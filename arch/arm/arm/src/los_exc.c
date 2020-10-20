@@ -192,7 +192,7 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
     UINT32 fsrFlag;
     BOOL write = FALSE;
 
-    if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) {
+    if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) {//当前CPU core 
         return LOS_ERRNO_VM_NOT_FOUND;
     }
 
@@ -217,7 +217,7 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
             pfFlags |= user ? VM_MAP_PF_FLAG_USER : 0;
             pfFlags |= instruction_fault ? VM_MAP_PF_FLAG_INSTRUCTION : 0;
             pfFlags |= VM_MAP_PF_FLAG_NOT_PRESENT;
-            return OsVmPageFaultHandler(far, pfFlags, frame);
+            return OsVmPageFaultHandler(far, pfFlags, frame);//中断处理程序
         }
         default:
             return LOS_ERRNO_VM_NOT_FOUND;

@@ -343,7 +343,7 @@ VOID OsMarkPageDirty(LosFilePage *fpage, LosVmMapRegion *region, INT32 off, INT3
         fpage->dirtyOff = off;//脏页偏移位置
         fpage->dirtyEnd = len;//脏页结束位置
     } else {
-        OsSetPageDirty(fpage->vmPage);////设置为脏页
+        OsSetPageDirty(fpage->vmPage);//设置为脏页
         if ((off + len) > fpage->dirtyEnd) {
             fpage->dirtyEnd = off + len;
         }
@@ -407,13 +407,13 @@ STATIC INT32 OsFlushDirtyPage(LosFilePage *fpage)
     if (file->f_inode && file->f_inode->u.i_mops->writepage) {//null
         ret = file->f_inode->u.i_mops->writepage(file, (buff + fpage->dirtyOff), len);
     } else {
-        ret = file_write(file, (VOID *)buff, len);//nuttx 中对应 fat_operations.fatfs_write 请自行查看
+        ret = file_write(file, (VOID *)buff, len);//脏页数据写入磁盘文件,nuttx 中对应 fat_operations.fatfs_write 请自行查看
     }
     if (ret <= 0) {
         VM_ERR("WritePage error ret %d", ret);
     }
     ret = (ret <= 0) ? LOS_NOK : LOS_OK;
-    OsCleanPageDirty(fpage->vmPage);//臣妾又干净了
+    OsCleanPageDirty(fpage->vmPage);//还清白之身,哈哈,臣妾又干净了.
     (VOID)file_seek(file, oldPos, SEEK_SET);//写完了脏数据，切回到老位置,一定要回到老位置，因为回写脏数据是内核的行为，而不是用户的行为
 
     return ret;
@@ -627,7 +627,7 @@ VOID OsFileCacheRemove(struct page_mapping *mapping)
     }
 }
 
-LosVmFileOps g_commVmOps = {
+LosVmFileOps g_commVmOps = {//
     .open = NULL,
     .close = NULL,
     .fault = OsVmmFileFault, //缺页处理

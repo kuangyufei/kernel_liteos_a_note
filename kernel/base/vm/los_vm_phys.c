@@ -512,23 +512,23 @@ VOID OsPhysSharePageCopy(PADDR_T oldPaddr, PADDR_T *newPaddr, LosVmPage *newPage
         return;
     }
 
-    seg = &g_vmPhysSeg[oldPage->segID];
+    seg = &g_vmPhysSeg[oldPage->segID];//拿到段
     LOS_SpinLockSave(&seg->freeListLock, &intSave);
-    if (LOS_AtomicRead(&oldPage->refCounts) == 1) {
+    if (LOS_AtomicRead(&oldPage->refCounts) == 1) {//页面引用次数仅一次,说明还没有被其他进程所使用过
         *newPaddr = oldPaddr;
     } else {
-        newMem = LOS_PaddrToKVaddr(*newPaddr);
-        oldMem = LOS_PaddrToKVaddr(oldPaddr);
+        newMem = LOS_PaddrToKVaddr(*newPaddr);	//新页虚拟地址
+        oldMem = LOS_PaddrToKVaddr(oldPaddr);	//老页虚拟地址
         if ((newMem == NULL) || (oldMem == NULL)) {
             LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
             return;
         }
-        if (memcpy_s(newMem, PAGE_SIZE, oldMem, PAGE_SIZE) != EOK) {
+        if (memcpy_s(newMem, PAGE_SIZE, oldMem, PAGE_SIZE) != EOK) {//老页内容复制给新页
             VM_ERR("memcpy_s failed");
         }
 
-        LOS_AtomicInc(&newPage->refCounts);
-        LOS_AtomicDec(&oldPage->refCounts);
+        LOS_AtomicInc(&newPage->refCounts);//新页ref++
+        LOS_AtomicDec(&oldPage->refCounts);//老页ref--
     }
     LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
     return;

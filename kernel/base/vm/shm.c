@@ -55,19 +55,19 @@ extern "C" {
 STATIC LosMux g_sysvShmMux;
 
 /* private macro */
-#define SYSV_SHM_LOCK()     (VOID)LOS_MuxLock(&g_sysvShmMux, LOS_WAIT_FOREVER)
-#define SYSV_SHM_UNLOCK()   (VOID)LOS_MuxUnlock(&g_sysvShmMux)
+#define SYSV_SHM_LOCK()     (VOID)LOS_MuxLock(&g_sysvShmMux, LOS_WAIT_FOREVER)	//拿永久等待锁
+#define SYSV_SHM_UNLOCK()   (VOID)LOS_MuxUnlock(&g_sysvShmMux)	//释放锁
 
-#define SHM_MAX_PAGES 12800
-#define SHM_MAX (SHM_MAX_PAGES * PAGE_SIZE)
+#define SHM_MAX_PAGES 12800	//共享最大页
+#define SHM_MAX (SHM_MAX_PAGES * PAGE_SIZE) // 12800*4K = 50M
 #define SHM_MIN 1
 #define SHM_MNI 192
 #define SHM_SEG 128
 #define SHM_ALL (SHM_MAX_PAGES)
 
-#define SHM_SEG_FREE    0x2000
-#define SHM_SEG_USED    0x4000
-#define SHM_SEG_REMOVE  0x8000
+#define SHM_SEG_FREE    0x2000	//空闲未使用
+#define SHM_SEG_USED    0x4000	//已使用
+#define SHM_SEG_REMOVE  0x8000	//删除
 
 #ifndef SHM_M
 #define SHM_M   010000
@@ -85,7 +85,7 @@ struct shmSegMap {
     vaddr_t vaddr;
     INT32 shmID;
 };
-
+//结构体定义可见于..\vendor_hisi_hi3861_hi3861\hi3861\platform\os\Huawei_LiteOS\components\lib\libc\musl\arch\generic\bits\shm.h
 struct shmIDSource {
     struct shmid_ds ds;
     UINT32 status;
@@ -94,21 +94,21 @@ struct shmIDSource {
 
 /* private data */
 STATIC struct shminfo g_shmInfo = {
-    .shmmax = SHM_MAX,
-    .shmmin = SHM_MIN,
-    .shmmni = SHM_MNI,
-    .shmseg = SHM_SEG,
+    .shmmax = SHM_MAX,//最大的内存segment的大小
+    .shmmin = SHM_MIN,//最小的内存segment的大小
+    .shmmni = SHM_MNI,//整个系统的内存segment的总个数
+    .shmseg = SHM_SEG,//每个进程可以使用的内存segment的最大个数
     .shmall = SHM_ALL,
 };
 
 STATIC struct shmIDSource *g_shmSegs = NULL;
-
+//共享内存初始化
 INT32 ShmInit(VOID)
 {
     UINT32 ret;
     UINT32 i;
 
-    ret = LOS_MuxInit(&g_sysvShmMux, NULL);
+    ret = LOS_MuxInit(&g_sysvShmMux, NULL);//初始化互斥锁
     if (ret != LOS_OK) {
         return -1;
     }
@@ -344,7 +344,7 @@ VOID OsShmRegionFree(LosVmSpace *space, LosVmMapRegion *region)
     }
     SYSV_SHM_UNLOCK();
 }
-
+//是否为共享线性区
 BOOL OsIsShmRegion(LosVmMapRegion *region)
 {
     return (region->regionFlags & VM_MAP_REGION_FLAG_SHM) ? TRUE : FALSE;
@@ -403,7 +403,12 @@ STATIC INT32 ShmPermCheck(struct shmIDSource *seg, mode_t mode)
         return EACCES;
     }
 }
-
+/*
+得到一个共享内存标识符或创建一个共享内存对象
+key_t:建立新共享内存对象
+size: 新建的共享内存大小，以字节为单位
+shmflg: IPC_CREAT IPC_EXCL
+*/
 INT32 ShmGet(key_t key, size_t size, INT32 shmflg)
 {
     INT32 ret;

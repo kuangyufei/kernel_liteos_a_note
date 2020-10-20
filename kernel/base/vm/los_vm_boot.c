@@ -60,7 +60,7 @@ VOID *OsVmBootMemAlloc(size_t len)
 {
     UINTPTR ptr;
 
-    if (g_kHeapInited) {// ??? g_kHeapInited 在什么时候会变成 true,没找到代码
+    if (g_kHeapInited) {// ????? g_kHeapInited 在什么时候会变成 true,没找到代码
         VM_ERR("kernel heap has been inited, should not to use boot mem alloc!");
         return NULL;
     }

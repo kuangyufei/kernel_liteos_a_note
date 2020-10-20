@@ -93,6 +93,8 @@ typedef struct VmFault {
     unsigned long   pgoff;              /* Logical page offset based on region */
     VADDR_T         vaddr;              /* Faulting virtual address */
     VADDR_T         *pageKVaddr;        /* KVaddr of pagefault's vm page's paddr */
+	//pageKVaddr为缺页的vm页面物理地址对应的内核虚拟地址,这里要说明下啥意思,缺页的意思是此进程的虚拟空间中没有这个虚拟地址的映射,
+	//但并不代表物理页框没有被别的进程虚拟空间所映射.一定要理解这里!
 } LosVmPgFault;
 //虚拟内存文件操作函数指针,上层开发可理解为 class 里的方法，注意是对线性区的操作
 struct VmFileOps {// 文件操作
@@ -160,15 +162,15 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_UNCACHED_DEVICE      (2<<0) /* only exists on some arches, otherwise UNCACHED */
 #define     VM_MAP_REGION_FLAG_WRITE_COMBINING      (3<<0) /* only exists on some arches, otherwise UNCACHED */
 #define     VM_MAP_REGION_FLAG_CACHE_MASK           (3<<0)		//缓冲区掩码
-#define     VM_MAP_REGION_FLAG_PERM_USER            (1<<2)		//用户态区
+#define     VM_MAP_REGION_FLAG_PERM_USER            (1<<2)		//可使用区
 #define     VM_MAP_REGION_FLAG_PERM_READ            (1<<3)		//可读取区
 #define     VM_MAP_REGION_FLAG_PERM_WRITE           (1<<4)		//可写入区
 #define     VM_MAP_REGION_FLAG_PERM_EXECUTE         (1<<5)		//可被执行区
 #define     VM_MAP_REGION_FLAG_PROT_MASK            (0xF<<2)	//访问权限掩码
 #define     VM_MAP_REGION_FLAG_NS                   (1<<6) /* NON-SECURE */
-#define     VM_MAP_REGION_FLAG_SHARED               (1<<7)		//共享区
-#define     VM_MAP_REGION_FLAG_PRIVATE              (1<<8)		//私有区
-#define     VM_MAP_REGION_FLAG_FLAG_MASK            (3<<7)		//掩码用途
+#define     VM_MAP_REGION_FLAG_SHARED               (1<<7)		//MAP_SHARED：把对该内存段的修改保存到磁盘文件中 详见 OsCvtProtFlagsToRegionFlags ,要和 VM_MAP_REGION_FLAG_SHM区别理解
+#define     VM_MAP_REGION_FLAG_PRIVATE              (1<<8)		//MAP_PRIVATE：内存段私有，对它的修改值仅对本进程有效,详见 OsCvtProtFlagsToRegionFlags。
+#define     VM_MAP_REGION_FLAG_FLAG_MASK            (3<<7)		//掩码
 #define     VM_MAP_REGION_FLAG_STACK                (1<<9)		//栈区
 #define     VM_MAP_REGION_FLAG_HEAP                 (1<<10)		//堆区
 #define     VM_MAP_REGION_FLAG_DATA                 (1<<11)		//data数据区 编译在ELF中
@@ -176,14 +178,14 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_BSS                  (1<<13)		//bbs数据区 由运行时动态分配
 #define     VM_MAP_REGION_FLAG_VDSO                 (1<<14)		//虚拟动态链接对象（Virtual Dynamically Shared Object、vDSO
 #define     VM_MAP_REGION_FLAG_MMAP                 (1<<15)		//映射区
-#define     VM_MAP_REGION_FLAG_SHM                  (1<<16) 	//共享内存区
+#define     VM_MAP_REGION_FLAG_SHM                  (1<<16) 	//共享内存区,和代码区同级概念,意思是整个线性区被贴上共享标签
 #define     VM_MAP_REGION_FLAG_INVALID              (1<<17) /* indicates that flags are not specified */
 
 STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned long flags)
 {
     UINT32 regionFlags = 0;
 
-    regionFlags |= VM_MAP_REGION_FLAG_PERM_USER;
+    regionFlags |= VM_MAP_REGION_FLAG_PERM_USER;								//必须得是可用区先
     regionFlags |= (prot & PROT_READ) ? VM_MAP_REGION_FLAG_PERM_READ : 0; 		//映射区可被读
     regionFlags |= (prot & PROT_WRITE) ? VM_MAP_REGION_FLAG_PERM_WRITE : 0;		//映射区可被写
     regionFlags |= (prot & PROT_EXEC) ? VM_MAP_REGION_FLAG_PERM_EXECUTE : 0;	//映射区可被执行

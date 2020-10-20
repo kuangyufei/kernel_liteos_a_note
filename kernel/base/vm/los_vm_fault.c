@@ -111,7 +111,7 @@ STATIC STATUS_T OsDoReadFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
     VADDR_T vaddr = (VADDR_T)vmPgFault->vaddr;
     LosVmSpace *space = region->space;
 
-    ret = LOS_ArchMmuQuery(&space->archMmu, vaddr, NULL, NULL);
+    ret = LOS_ArchMmuQuery(&space->archMmu, vaddr, NULL, NULL);//查询是否缺页
     if (ret == LOS_OK) {
         return LOS_OK;
     }
@@ -121,16 +121,16 @@ STATIC STATUS_T OsDoReadFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
     }
 
     (VOID)LOS_MuxAcquire(&region->unTypeData.rf.file->f_mapping->mux_lock);
-    ret = region->unTypeData.rf.vmFOps->fault(region, vmPgFault);
+    ret = region->unTypeData.rf.vmFOps->fault(region, vmPgFault);// 函数指针 g_commVmOps.OsVmmFileFault
     if (ret == LOS_OK) {
-        paddr = LOS_PaddrQuery(vmPgFault->pageKVaddr);
-        page = LOS_VmPageGet(paddr);
+        paddr = LOS_PaddrQuery(vmPgFault->pageKVaddr);//查询物理地址
+        page = LOS_VmPageGet(paddr);//获取page
         if (page != NULL) { /* just incase of page null */
-            LOS_AtomicInc(&page->refCounts);
+            LOS_AtomicInc(&page->refCounts);//ref 自增
             OsCleanPageLocked(page);
         }
         ret = LOS_ArchMmuMap(&space->archMmu, vaddr, paddr, 1,
-                             region->regionFlags & (~VM_MAP_REGION_FLAG_PERM_WRITE));
+                             region->regionFlags & (~VM_MAP_REGION_FLAG_PERM_WRITE));//重新映射为非可写
         if (ret < 0) {
             VM_ERR("LOS_ArchMmuMap fial");
             OsDelMapInfo(region, vmPgFault, false);
@@ -174,7 +174,7 @@ STATIC LosVmPage *OsCowUnmapOrg(LosArchMmu *archMmu, LosVmMapRegion *region, Los
     return oldPage;
 }
 #endif
-
+//写入私有空间时的缺页处理
 status_t OsDoCowFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
 {
     STATUS_T ret;
@@ -192,23 +192,23 @@ status_t OsDoCowFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
     }
 
     space = region->space;
-    ret = LOS_ArchMmuQuery(&space->archMmu, (VADDR_T)vmPgFault->vaddr, &oldPaddr, NULL);
+    ret = LOS_ArchMmuQuery(&space->archMmu, (VADDR_T)vmPgFault->vaddr, &oldPaddr, NULL);//查询出老物理地址
     if (ret == LOS_OK) {
-        oldPage = OsCowUnmapOrg(&space->archMmu, region, vmPgFault);
+        oldPage = OsCowUnmapOrg(&space->archMmu, region, vmPgFault);//取消页面映射
     }
 
-    newPage = LOS_PhysPageAlloc();
+    newPage = LOS_PhysPageAlloc();//分配一个新页面
     if (newPage == NULL) {
         VM_ERR("pmm_alloc_page fail");
         ret = LOS_ERRNO_VM_NO_MEMORY;
         goto ERR_OUT;
     }
 
-    newPaddr = VM_PAGE_TO_PHYS(newPage);
-    kvaddr = OsVmPageToVaddr(newPage);
+    newPaddr = VM_PAGE_TO_PHYS(newPage);//拿到新的物理地址
+    kvaddr = OsVmPageToVaddr(newPage);//拿到新的虚拟地址
 
     (VOID)LOS_MuxAcquire(&region->unTypeData.rf.file->f_mapping->mux_lock);
-    ret = region->unTypeData.rf.vmFOps->fault(region, vmPgFault);
+    ret = region->unTypeData.rf.vmFOps->fault(region, vmPgFault);// 函数指针 g_commVmOps.OsVmmFileFault
     if (ret != LOS_OK) {
         VM_ERR("call region->vm_ops->fault fail");
         (VOID)LOS_MuxRelease(&region->unTypeData.rf.file->f_mapping->mux_lock);
@@ -220,20 +220,20 @@ status_t OsDoCowFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
      * we can take it as a normal file cow map. 2.this page has done file cow map,
      * we can take it as a anonymous cow map.
      */
-    if ((oldPaddr == 0) || (LOS_PaddrToKVaddr(oldPaddr) == vmPgFault->pageKVaddr)) {
-        (VOID)memcpy_s(kvaddr, PAGE_SIZE, vmPgFault->pageKVaddr, PAGE_SIZE);
-        LOS_AtomicInc(&newPage->refCounts);
-        OsCleanPageLocked(LOS_VmPageGet(LOS_PaddrQuery(vmPgFault->pageKVaddr)));
+    if ((oldPaddr == 0) || (LOS_PaddrToKVaddr(oldPaddr) == vmPgFault->pageKVaddr)) {//没有映射或者 已在pagecache有映射
+        (VOID)memcpy_s(kvaddr, PAGE_SIZE, vmPgFault->pageKVaddr, PAGE_SIZE);//直接copy到新页
+        LOS_AtomicInc(&newPage->refCounts);//引用ref++
+        OsCleanPageLocked(LOS_VmPageGet(LOS_PaddrQuery(vmPgFault->pageKVaddr)));//解锁
     } else {
-        OsPhysSharePageCopy(oldPaddr, &newPaddr, newPage);
+        OsPhysSharePageCopy(oldPaddr, &newPaddr, newPage);//调用之前 oldPaddr肯定不等于newPaddr
         /* use old page free the new one */
-        if (newPaddr == oldPaddr) {
-            LOS_PhysPageFree(newPage);
+        if (newPaddr == oldPaddr) {//注意这里newPaddr可能已经被改变了,参数传入的是 &newPaddr 
+            LOS_PhysPageFree(newPage);//释放新页,别浪费的内存,内核使用内存是一分钱当十块用.
             newPage = NULL;
         }
     }
 
-    ret = LOS_ArchMmuMap(&space->archMmu, (VADDR_T)vmPgFault->vaddr, newPaddr, 1, region->regionFlags);
+    ret = LOS_ArchMmuMap(&space->archMmu, (VADDR_T)vmPgFault->vaddr, newPaddr, 1, region->regionFlags);//把新物理地址映射给缺页的虚拟地址,这样就不会缺页啦
     if (ret < 0) {
         VM_ERR("LOS_ArchMmuMap fial");
         ret =  LOS_ERRNO_VM_NO_MEMORY;
@@ -274,10 +274,10 @@ status_t OsDoSharedFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
         return LOS_ERRNO_VM_INVALID_ARGS;
     }
 
-    ret = LOS_ArchMmuQuery(&space->archMmu, vmPgFault->vaddr, &paddr, NULL);
+    ret = LOS_ArchMmuQuery(&space->archMmu, vmPgFault->vaddr, &paddr, NULL);//先能否查出地理地址
     if (ret == LOS_OK) {
-        LOS_ArchMmuUnmap(&space->archMmu, vmPgFault->vaddr, 1);
-        ret = LOS_ArchMmuMap(&space->archMmu, vaddr, paddr, 1, region->regionFlags);
+        LOS_ArchMmuUnmap(&space->archMmu, vmPgFault->vaddr, 1);//先取消映射
+        ret = LOS_ArchMmuMap(&space->archMmu, vaddr, paddr, 1, region->regionFlags);//再重新映射,为啥这么干,是因为regionFlags变了,
         if (ret < 0) {
             VM_ERR("LOS_ArchMmuMap failed. ret=%d", ret);
             return LOS_ERRNO_VM_NO_MEMORY;
@@ -286,7 +286,7 @@ status_t OsDoSharedFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
         LOS_SpinLockSave(&region->unTypeData.rf.file->f_mapping->list_lock, &intSave);
         fpage = OsFindGetEntry(region->unTypeData.rf.file->f_mapping, vmPgFault->pgoff);
         if (fpage) {
-            OsMarkPageDirty(fpage, region, 0, 0);
+            OsMarkPageDirty(fpage, region, 0, 0);//标记为脏页
         }
         LOS_SpinUnlockRestore(&region->unTypeData.rf.file->f_mapping->list_lock, intSave);
 
@@ -332,12 +332,12 @@ STATIC STATUS_T OsDoFileFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault, U
 
     if (flags & VM_MAP_PF_FLAG_WRITE) {
         if (region->regionFlags & VM_MAP_REGION_FLAG_SHARED) {
-            ret = OsDoSharedFault(region, vmPgFault);
+            ret = OsDoSharedFault(region, vmPgFault);//写操作时的共享缺页,最复杂,此页上的更改将写入磁盘文件
         } else {
-            ret = OsDoCowFault(region, vmPgFault);
+            ret = OsDoCowFault(region, vmPgFault);//写操作时的私有缺页,pagecache被复制到私有的任意一个页面上，并在此页面上进行更改,不会直接写入磁盘文件
         }
     } else {
-        ret = OsDoReadFault(region, vmPgFault);
+        ret = OsDoReadFault(region, vmPgFault);//读时缺页,读最简单 只需共享页面缓存
     }
     return ret;
 }

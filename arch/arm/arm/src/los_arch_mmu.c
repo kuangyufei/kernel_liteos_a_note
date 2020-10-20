@@ -434,7 +434,7 @@ STATIC UINT32 OsMapSection(const LosArchMmu *archMmu, UINT32 flags, VADDR_T *vad
 {
     UINT32 mmuFlags = 0;
 
-    mmuFlags |= OsCvtSecFlagsToAttrs(flags);
+    mmuFlags |= OsCvtSecFlagsToAttrs(flags);//flag转成L1层描述flag,场景不同说法得跟着变啦
     OsSavePte1(OsGetPte1Ptr(archMmu->virtTtb, *vaddr),
         OsTruncPte1(*paddr) | mmuFlags | MMU_DESCRIPTOR_L1_TYPE_SECTION);//保存L1页表项至L1页表
     *count -= MMU_DESCRIPTOR_L2_NUMBERS_PER_L1;//1M 
