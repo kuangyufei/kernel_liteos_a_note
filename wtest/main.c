@@ -5,6 +5,8 @@ typedef unsigned long PTE_T;
 typedef unsigned long VADDR_T;
 #define IS_ALIGNED(a, b)                 (!(((UINTPTR)(a)) & (((UINTPTR)(b)) - 1)))
 
+//鸿蒙内核源码分析系列篇 https://blog.csdn.net/kuangyufei
+
 void b(){
     UINT8 w[3]={0};
     PTE_T pte1BasePtr = 0x11100000;

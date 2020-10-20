@@ -52,12 +52,12 @@ extern "C" {
 
 #define VM_PAGE_TO_PHYS(page)    (page->physAddr)//获取页面物理地址
 #define VM_ORDER_TO_PAGES(order) (1 << (order))//伙伴算法由order 定位到该块组的页面单位,例如:order=2时，page[4]
-#define VM_ORDER_TO_PHYS(order)  (1 << (PAGE_SHIFT + (order)))//通过order找物理地址
+#define VM_ORDER_TO_PHYS(order)  (1 << (PAGE_SHIFT + (order)))//跳块例如 order=2 就是跳4页
 #define VM_PHYS_TO_ORDER(phys)   (min(LOS_LowBitGet((phys) >> PAGE_SHIFT), VM_LIST_ORDER_MAX - 1))//通过物理地址定位到order
 
 struct VmFreeList {
-    LOS_DL_LIST node;
-    UINT32 listCnt;
+    LOS_DL_LIST node;	//双循环链表
+    UINT32 listCnt;		//双循环链表节点总数
 };
 //针对匿名页和文件页各拆分成一个活跃，一个不活跃的链表。
 enum OsLruList {

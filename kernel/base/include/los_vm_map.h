@@ -171,10 +171,10 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_FLAG_MASK            (3<<7)		//掩码用途
 #define     VM_MAP_REGION_FLAG_STACK                (1<<9)		//栈区
 #define     VM_MAP_REGION_FLAG_HEAP                 (1<<10)		//堆区
-#define     VM_MAP_REGION_FLAG_DATA                 (1<<11)		//数据区
+#define     VM_MAP_REGION_FLAG_DATA                 (1<<11)		//data数据区 编译在ELF中
 #define     VM_MAP_REGION_FLAG_TEXT                 (1<<12)		//代码区
-#define     VM_MAP_REGION_FLAG_BSS                  (1<<13)		//bbs数据区
-#define     VM_MAP_REGION_FLAG_VDSO                 (1<<14)		//映射区
+#define     VM_MAP_REGION_FLAG_BSS                  (1<<13)		//bbs数据区 由运行时动态分配
+#define     VM_MAP_REGION_FLAG_VDSO                 (1<<14)		//虚拟动态链接对象（Virtual Dynamically Shared Object、vDSO
 #define     VM_MAP_REGION_FLAG_MMAP                 (1<<15)		//映射区
 #define     VM_MAP_REGION_FLAG_SHM                  (1<<16) 	//共享内存区
 #define     VM_MAP_REGION_FLAG_INVALID              (1<<17) /* indicates that flags are not specified */
@@ -224,7 +224,7 @@ STATIC INLINE BOOL LOS_IsRegionPermUserReadOnly(LosVmMapRegion* region)
     return ((region->regionFlags & VM_MAP_REGION_FLAG_PROT_MASK) ==
             (VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ));
 }
-//私有线性区
+//是否为私有线性区
 STATIC INLINE BOOL LOS_IsRegionFlagPrivateOnly(LosVmMapRegion* region)
 {
     return ((region->regionFlags & VM_MAP_REGION_FLAG_FLAG_MASK) == VM_MAP_REGION_FLAG_PRIVATE);
@@ -234,33 +234,33 @@ STATIC INLINE VOID LOS_SetRegionTypeFile(LosVmMapRegion* region)
 {
     region->regionType = VM_MAP_REGION_TYPE_FILE;
 }
-
+//是否为设备映射线性区
 STATIC INLINE BOOL LOS_IsRegionTypeDev(LosVmMapRegion* region)
 {
     return region->regionType == VM_MAP_REGION_TYPE_DEV;
 }
-
+//设为设备映射线性区
 STATIC INLINE VOID LOS_SetRegionTypeDev(LosVmMapRegion* region)
 {
     region->regionType = VM_MAP_REGION_TYPE_DEV;
 }
-
+//是否为匿名swap映射线性区
 STATIC INLINE BOOL LOS_IsRegionTypeAnon(LosVmMapRegion* region)
 {
     return region->regionType == VM_MAP_REGION_TYPE_ANON;
 }
-
+//设为匿名swap映射线性区
 STATIC INLINE VOID LOS_SetRegionTypeAnon(LosVmMapRegion* region)
 {
     region->regionType = VM_MAP_REGION_TYPE_ANON;
 }
-
+//虚拟地址是否在用户空间
 STATIC INLINE BOOL LOS_IsUserAddress(VADDR_T vaddr)
 {
     return ((vaddr >= USER_ASPACE_BASE) &&
             (vaddr <= (USER_ASPACE_BASE + (USER_ASPACE_SIZE - 1))));
 }
-
+//从vaddr 到 vaddr + len 这段虚拟地址是否在用户空间
 STATIC INLINE BOOL LOS_IsUserAddressRange(VADDR_T vaddr, size_t len)
 {
     return (vaddr + len > vaddr) && LOS_IsUserAddress(vaddr) && (LOS_IsUserAddress(vaddr + len - 1));

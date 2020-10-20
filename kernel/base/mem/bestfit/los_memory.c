@@ -1561,7 +1561,7 @@ STATIC INLINE INT32 OsMemPoolExpand(VOID *pool, UINT32 size, UINT32 intSave)
     endNode = (LosMemDynNode *)OS_MEM_END_NODE(pool, poolInfo->poolSize);
 
 RETRY:
-    newNode = (LosMemDynNode *)LOS_PhysPagesAllocContiguous(size >> PAGE_SHIFT);
+    newNode = (LosMemDynNode *)LOS_PhysPagesAllocContiguous(size >> PAGE_SHIFT);//分配连续的物理内存
     if (newNode == NULL) {
         if (tryCount > 0) {
             tryCount--;

@@ -44,9 +44,9 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-UINTPTR g_vmBootMemBase = (UINTPTR)&__bss_end;//内核空间的
+UINTPTR g_vmBootMemBase = (UINTPTR)&__bss_end;//内核空间可用于分配的区域
 BOOL g_kHeapInited = FALSE;//内核堆区初始化变量
-
+//虚拟内存区间检查, 需理解 los_vm_zone.h 中画出的鸿蒙虚拟内存全景图
 UINT32 OsVmAddrCheck(size_t tempAddr, size_t length)
 {
     if ((tempAddr >= KERNEL_VMM_BASE) && ((tempAddr + length) <= (PERIPH_UNCACHED_BASE + PERIPH_UNCACHED_SIZE))) {
@@ -60,7 +60,7 @@ VOID *OsVmBootMemAlloc(size_t len)
 {
     UINTPTR ptr;
 
-    if (g_kHeapInited) {//g_kHeapInited 在什么时候会变成 true？没找到代码
+    if (g_kHeapInited) {// ??? g_kHeapInited 在什么时候会变成 true,没找到代码
         VM_ERR("kernel heap has been inited, should not to use boot mem alloc!");
         return NULL;
     }

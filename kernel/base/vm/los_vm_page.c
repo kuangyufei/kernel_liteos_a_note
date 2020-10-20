@@ -94,8 +94,8 @@ LosVmPage *LOS_VmPageGet(PADDR_T paddr)
     INT32 segID;
     LosVmPage *page = NULL;
 
-    for (segID = 0; segID < g_vmPhysSegNum; segID++) {
-        page = OsVmPhysToPage(paddr, segID);
+    for (segID = 0; segID < g_vmPhysSegNum; segID++) {//物理内存采用段页管理
+        page = OsVmPhysToPage(paddr, segID);//通过物理地址和段ID找出物理页框
         if (page != NULL) {
             break;
         }

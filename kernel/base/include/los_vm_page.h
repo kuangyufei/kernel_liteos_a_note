@@ -54,8 +54,8 @@ typedef struct VmPage {
     UINT16              nPages;      /**< the vm page is used for kernel heap */
 } LosVmPage;
 
-extern LosVmPage *g_vmPageArray;//物理内存所有页记录数组
-extern size_t g_vmPageArraySize;//物理内存总页数
+extern LosVmPage *g_vmPageArray;//物理内存所有页框(page frame)记录数组
+extern size_t g_vmPageArraySize;//物理内存总页框(page frame)数
 
 LosVmPage *LOS_VmPageGet(PADDR_T paddr);
 VOID OsVmPageStartup(VOID);
