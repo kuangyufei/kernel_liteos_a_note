@@ -69,7 +69,7 @@ void *SysBrk(void *addr)
 {
     return LOS_DoBrk(addr);
 }
-
+//创建一个共享内存对象
 int SysShmGet(key_t key, size_t size, int shmflg)
 {
     int ret;

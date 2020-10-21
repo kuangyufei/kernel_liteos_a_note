@@ -44,19 +44,19 @@ extern "C" {
 
 #if (LOSCFG_BASE_IPC_MUX == YES)
 #define MUTEXATTR_TYPE_MASK 0x0FU
-
+//互斥属性初始化
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrInit(LosMuxAttr *attr)
 {
     if (attr == NULL) {
         return LOS_EINVAL;
     }
 
-    attr->protocol    = LOS_MUX_PRIO_INHERIT;
-    attr->prioceiling = OS_TASK_PRIORITY_LOWEST;
-    attr->type        = LOS_MUX_DEFAULT;
+    attr->protocol    = LOS_MUX_PRIO_INHERIT;	//协议默认用继承方式, A(4)task等B(19)释放锁时,B的调度优先级直接升到(4)
+    attr->prioceiling = OS_TASK_PRIORITY_LOWEST;//最低优先级
+    attr->type        = LOS_MUX_DEFAULT;		//默认 LOS_MUX_RECURSIVE
     return LOS_OK;
 }
-
+// ????? 销毁互斥属 ,这里啥也没干呀 
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrDestroy(LosMuxAttr *attr)
 {
     if (attr == NULL) {
@@ -65,7 +65,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrDestroy(LosMuxAttr *attr)
 
     return LOS_OK;
 }
-
+//获取互斥锁的类型给outType 
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrGetType(const LosMuxAttr *attr, INT32 *outType)
 {
     INT32 type;
@@ -83,7 +83,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrGetType(const LosMuxAttr *attr, INT32 *outTyp
 
     return LOS_OK;
 }
-
+//设置互斥锁的类型为type 
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrSetType(LosMuxAttr *attr, INT32 type)
 {
     if ((attr == NULL) || (type < LOS_MUX_NORMAL) || (type > LOS_MUX_ERRORCHECK)) {
@@ -93,7 +93,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrSetType(LosMuxAttr *attr, INT32 type)
     attr->type = (UINT8)((attr->type & ~MUTEXATTR_TYPE_MASK) | (UINT32)type);
     return LOS_OK;
 }
-
+//获取互斥锁属性的协议
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrGetProtocol(const LosMuxAttr *attr, INT32 *protocol)
 {
     if ((attr != NULL) && (protocol != NULL)) {
@@ -104,7 +104,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrGetProtocol(const LosMuxAttr *attr, INT32 *pr
 
     return LOS_OK;
 }
-
+//获取互斥锁属性的协议
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrSetProtocol(LosMuxAttr *attr, INT32 protocol)
 {
     if (attr == NULL) {
@@ -121,7 +121,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrSetProtocol(LosMuxAttr *attr, INT32 protocol)
             return LOS_EINVAL;
     }
 }
-
+//获取互斥锁属性优先级
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrGetPrioceiling(const LosMuxAttr *attr, INT32 *prioceiling)
 {
     if (attr == NULL) {
@@ -134,7 +134,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrGetPrioceiling(const LosMuxAttr *attr, INT32 
 
     return LOS_OK;
 }
-
+//设置互斥锁属性优先级
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrSetPrioceiling(LosMuxAttr *attr, INT32 prioceiling)
 {
     if ((attr == NULL) ||
@@ -147,7 +147,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrSetPrioceiling(LosMuxAttr *attr, INT32 prioce
 
     return LOS_OK;
 }
-
+//设置互斥锁mutex的优先级,老优先级由oldPrioceiling带走
 LITE_OS_SEC_TEXT UINT32 LOS_MuxSetPrioceiling(LosMux *mutex, INT32 prioceiling, INT32 *oldPrioceiling)
 {
     INT32 ret;
@@ -176,7 +176,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxSetPrioceiling(LosMux *mutex, INT32 prioceiling, 
 
     return ret;
 }
-
+//获取互斥锁属性优先级
 LITE_OS_SEC_TEXT UINT32 LOS_MuxGetPrioceiling(const LosMux *mutex, INT32 *prioceiling)
 {
     if ((mutex != NULL) && (prioceiling != NULL) && (mutex->magic == OS_MUX_MAGIC)) {
@@ -186,7 +186,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxGetPrioceiling(const LosMux *mutex, INT32 *prioce
 
     return LOS_EINVAL;
 }
-
+//互斥锁是否有效
 LITE_OS_SEC_TEXT BOOL LOS_MuxIsValid(const LosMux *mutex)
 {
     if ((mutex != NULL) && (mutex->magic == OS_MUX_MAGIC)) {
@@ -195,7 +195,7 @@ LITE_OS_SEC_TEXT BOOL LOS_MuxIsValid(const LosMux *mutex)
 
     return FALSE;
 }
-
+//检查互斥锁属性是否OK,否则 no ok :|)
 STATIC UINT32 OsCheckMutexAttr(const LosMuxAttr *attr)
 {
     if (((INT8)(attr->type) < LOS_MUX_NORMAL) || (attr->type > LOS_MUX_ERRORCHECK)) {
@@ -219,24 +219,24 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxInit(LosMux *mutex, const LosMuxAttr *attr)
     }
 
     if (attr == NULL) {
-        (VOID)LOS_MuxAttrInit(&mutex->attr);
+        (VOID)LOS_MuxAttrInit(&mutex->attr);//属性初始化
     } else {
-        (VOID)memcpy_s(&mutex->attr, sizeof(LosMuxAttr), attr, sizeof(LosMuxAttr));
+        (VOID)memcpy_s(&mutex->attr, sizeof(LosMuxAttr), attr, sizeof(LosMuxAttr));//把attr 拷贝到 mutex->attr
     }
 
-    if (OsCheckMutexAttr(&mutex->attr) != LOS_OK) {
+    if (OsCheckMutexAttr(&mutex->attr) != LOS_OK) {//检查属性
         return LOS_EINVAL;
     }
 
-    SCHEDULER_LOCK(intSave);
-    mutex->muxCount = 0;
-    mutex->owner = NULL;
-    LOS_ListInit(&mutex->muxList);
-    mutex->magic = OS_MUX_MAGIC;
-    SCHEDULER_UNLOCK(intSave);
+    SCHEDULER_LOCK(intSave);		//保存调度自旋锁
+    mutex->muxCount = 0;			//锁定互斥量的次数
+    mutex->owner = NULL;			//谁持有该锁
+    LOS_ListInit(&mutex->muxList);	//互斥量双循环链表
+    mutex->magic = OS_MUX_MAGIC;	//固定标识,相当于什么文件固定开头的几个字节
+    SCHEDULER_UNLOCK(intSave);		//释放调度自旋锁
     return LOS_OK;
 }
-
+//销毁互斥量
 LITE_OS_SEC_TEXT UINT32 LOS_MuxDestroy(LosMux *mutex)
 {
     UINT32 intSave;
@@ -245,28 +245,28 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxDestroy(LosMux *mutex)
         return LOS_EINVAL;
     }
 
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_LOCK(intSave);	//保存调度自旋锁
     if (mutex->magic != OS_MUX_MAGIC) {
-        SCHEDULER_UNLOCK(intSave);
+        SCHEDULER_UNLOCK(intSave);//释放调度自旋锁
         return LOS_EBADF;
     }
 
     if (mutex->muxCount != 0) {
-        SCHEDULER_UNLOCK(intSave);
+        SCHEDULER_UNLOCK(intSave);//释放调度自旋锁
         return LOS_EBUSY;
     }
 
-    (VOID)memset_s(mutex, sizeof(LosMux), 0, sizeof(LosMux));
-    SCHEDULER_UNLOCK(intSave);
+    (VOID)memset_s(mutex, sizeof(LosMux), 0, sizeof(LosMux));//很简单,全部清0处理.
+    SCHEDULER_UNLOCK(intSave);	//释放调度自旋锁
     return LOS_OK;
 }
-
+//
 STATIC VOID OsMuxBitmapSet(const LosMux *mutex, const LosTaskCB *runTask, LosTaskCB *owner)
-{
-    if ((owner->priority > runTask->priority) && (mutex->attr.protocol == LOS_MUX_PRIO_INHERIT)) {
-        LOS_BitmapSet(&(owner->priBitMap), owner->priority);
-        OsTaskPriModify(owner, runTask->priority);
-    }
+{	//当前任务优先级高于锁持有task时的处理
+    if ((owner->priority > runTask->priority) && (mutex->attr.protocol == LOS_MUX_PRIO_INHERIT)) {//协议用继承方式是怎么的呢?
+        LOS_BitmapSet(&(owner->priBitMap), owner->priority);//1.priBitMap是记录任务优先级变化的位图，这里把持有锁任务优先级记录在自己的priBitMap中
+        OsTaskPriModify(owner, runTask->priority);//2.把高优先级的当前任务优先级设为持有锁任务的优先级.
+    }//注意任务优先级有32个, 是0最高,31最低!!!这里等于提高了持有锁任务的优先级,目的是让其在下次调度中提高选中的概率,从而快速的释放锁.您明白了吗? :|)
 }
 
 VOID OsMuxBitmapRestore(const LosMux *mutex, const LosTaskCB *taskCB, LosTaskCB *owner)
@@ -309,81 +309,80 @@ STATIC LOS_DL_LIST *OsMuxPendFindPosSub(const LosTaskCB *runTask, const LosMux *
 
     return node;
 }
-
+//在等待锁的双向循链表中找一个优先级最高的能释放锁的任务
 STATIC LOS_DL_LIST *OsMuxPendFindPos(const LosTaskCB *runTask, LosMux *mutex)
 {
     LosTaskCB *pendedTask1 = NULL;
     LosTaskCB *pendedTask2 = NULL;
     LOS_DL_LIST *node = NULL;
 
-    if (LOS_ListEmpty(&mutex->muxList)) {
-        node = &mutex->muxList;
+    if (LOS_ListEmpty(&mutex->muxList)) {//任务列表为空
+        node = &mutex->muxList;//直接赋给node 返回
     } else {
-        pendedTask1 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&mutex->muxList));
-        pendedTask2 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_LAST(&mutex->muxList));
-        if ((pendedTask1 != NULL) && (pendedTask1->priority > runTask->priority)) {
-            node = mutex->muxList.pstNext;
-        } else if ((pendedTask2 != NULL) && (pendedTask2->priority <= runTask->priority)) {
-            node = &mutex->muxList;
+        pendedTask1 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&mutex->muxList));//找到第一个持有锁的任务
+        pendedTask2 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_LAST(&mutex->muxList));//找到最后一个持有锁的任务
+        if ((pendedTask1 != NULL) && (pendedTask1->priority > runTask->priority)) {//如果第一个任务优先级低于当前任务 要怎么搞?
+            node = mutex->muxList.pstNext;//找到了,
+        } else if ((pendedTask2 != NULL) && (pendedTask2->priority <= runTask->priority)) {//如果最后一个任务的优先级高获等于当前任务优先级
+            node = &mutex->muxList;//找到一个高的了 直接赋给node 返回
         } else {
-            node = OsMuxPendFindPosSub(runTask, mutex);
+            node = OsMuxPendFindPosSub(runTask, mutex);//找下一级
         }
     }
 
     return node;
 }
-
+//互斥锁的主体函数,由OsMuxlockUnsafe调用 
 STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
 {
     UINT32 ret;
     LOS_DL_LIST *node = NULL;
     LosTaskCB *owner = NULL;
 
-    if ((mutex->muxList.pstPrev == NULL) || (mutex->muxList.pstNext == NULL)) {
+    if ((mutex->muxList.pstPrev == NULL) || (mutex->muxList.pstNext == NULL)) {//列表为空时的处理
         /* This is for mutex macro initialization. */
-        mutex->muxCount = 0;
-        mutex->owner = NULL;
-        LOS_ListInit(&mutex->muxList);
+        mutex->muxCount = 0;//锁计数器清0
+        mutex->owner = NULL;//锁没有归属任务
+        LOS_ListInit(&mutex->muxList);//初始化mux链表
     }
 
-    if (mutex->muxCount == 0) {
-        mutex->muxCount++;
-        mutex->owner = (VOID *)runTask;
-        LOS_ListTailInsert(&runTask->lockList, &mutex->holdList);
-        if ((runTask->priority > mutex->attr.prioceiling) && (mutex->attr.protocol == LOS_MUX_PRIO_PROTECT)) {
-            LOS_BitmapSet(&runTask->priBitMap, runTask->priority);
-            OsTaskPriModify(runTask, mutex->attr.prioceiling);
-        }
+    if (mutex->muxCount == 0) {//无task用锁时
+        mutex->muxCount++;				//互斥锁计数器加1
+        mutex->owner = (VOID *)runTask;	//当前任务拿到锁
+        LOS_ListTailInsert(&runTask->lockList, &mutex->holdList);//持有锁的任务改变了,节点加入了task的锁链表
+        if ((runTask->priority > mutex->attr.prioceiling) && (mutex->attr.protocol == LOS_MUX_PRIO_PROTECT)) {//看保护协议的做法是怎样的?
+            LOS_BitmapSet(&runTask->priBitMap, runTask->priority);//1.priBitMap是记录任务优先级变化的位图，这里把任务当前的优先级记录在priBitMap
+            OsTaskPriModify(runTask, mutex->attr.prioceiling);//2.把高优先级的mutex->attr.prioceiling设为当前任务的优先级.
+        }//注意任务优先级有32个, 是0最高,31最低!!!这里等于提高了任务的优先级,目的是让其在下次调度中提高选中的概率,从而快速的释放锁.您明白了吗? :|)
         return LOS_OK;
     }
 
-    if (((LosTaskCB *)mutex->owner == runTask) && (mutex->attr.type == LOS_MUX_RECURSIVE)) {
-        mutex->muxCount++;
-        return LOS_OK;
+    if (((LosTaskCB *)mutex->owner == runTask) && (mutex->attr.type == LOS_MUX_RECURSIVE)) {//LOS_MUX_RECURSIVE类型 是需要计数的
+        mutex->muxCount++;	//互斥锁计数器加1
+        return LOS_OK;		//成功退出
     }
 
-    if (!timeout) {
-        return LOS_EINVAL;
+    if (!timeout) {//参数timeout表示拿锁等待时间
+        return LOS_EINVAL;//不等了,没拿到锁就返回不纠结,返回错误.见于LOS_MuxTrylock 
     }
 
-    if (!OsPreemptableInSched()) {
-        return LOS_EDEADLK;
+    if (!OsPreemptableInSched()) {//不能调度的情况(不能调度的原因是因为没有持有调度任务自旋锁)
+        return LOS_EDEADLK;//返回错误
     }
 
-    OsMuxBitmapSet(mutex, runTask, (LosTaskCB *)mutex->owner);
+    OsMuxBitmapSet(mutex, runTask, (LosTaskCB *)mutex->owner);//设置bitmap,尽可能的提高锁持有任务的优先级
 
-    owner = (LosTaskCB *)mutex->owner;
-    runTask->taskMux = (VOID *)mutex;
-    node = OsMuxPendFindPos(runTask, mutex);
-
-    ret = OsTaskWait(node, timeout, TRUE);
-    if (ret == LOS_ERRNO_TSK_TIMEOUT) {
-        runTask->taskMux = NULL;
-        ret = LOS_ETIMEDOUT;
+    owner = (LosTaskCB *)mutex->owner;	//持有锁任务赋值给临时变量
+    runTask->taskMux = (VOID *)mutex;	//当前任务持有锁
+    node = OsMuxPendFindPos(runTask, mutex);//找一个等互斥锁的任务的阻塞链表
+    ret = OsTaskWait(node, timeout, TRUE);//task陷入等待状态 TRUE 需要调度
+    if (ret == LOS_ERRNO_TSK_TIMEOUT) {//超时了
+        runTask->taskMux = NULL;// taskNux null
+        ret = LOS_ETIMEDOUT;//返回超时
     }
 
-    if (timeout != LOS_WAIT_FOREVER) {
-        OsMuxBitmapRestore(mutex, runTask, owner);
+    if (timeout != LOS_WAIT_FOREVER) {//不是永远等待的情况
+        OsMuxBitmapRestore(mutex, runTask, owner);//恢复bitmap
     }
 
     return ret;
@@ -391,7 +390,7 @@ STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
 
 UINT32 OsMuxLockUnsafe(LosMux *mutex, UINT32 timeout)
 {
-    LosTaskCB *runTask = OsCurrTaskGet();
+    LosTaskCB *runTask = OsCurrTaskGet();//获取当前任务
 
     if (mutex->magic != OS_MUX_MAGIC) {
         return LOS_EBADF;
@@ -400,7 +399,7 @@ UINT32 OsMuxLockUnsafe(LosMux *mutex, UINT32 timeout)
     if (OsCheckMutexAttr(&mutex->attr) != LOS_OK) {
         return LOS_EINVAL;
     }
-
+	//LOS_MUX_ERRORCHECK 时 muxCount是要等于0 ,当前任务持有锁就不能再lock了. 鸿蒙默认用的是 LOS_MUX_RECURSIVE
     if ((mutex->attr.type == LOS_MUX_ERRORCHECK) && (mutex->muxCount != 0) && (mutex->owner == (VOID *)runTask)) {
         return LOS_EDEADLK;
     }
@@ -429,7 +428,7 @@ UINT32 OsMuxTrylockUnsafe(LosMux *mutex, UINT32 timeout)
 
     return OsMuxPendOp(runTask, mutex, timeout);
 }
-
+//拿互斥锁,
 LITE_OS_SEC_TEXT UINT32 LOS_MuxLock(LosMux *mutex, UINT32 timeout)
 {
     LosTaskCB *runTask = NULL;
@@ -451,12 +450,12 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxLock(LosMux *mutex, UINT32 timeout)
         OsBackTrace();//打印task信息
     }
 
-    SCHEDULER_LOCK(intSave);//task 自旋锁
-    ret = OsMuxLockUnsafe(mutex, timeout);
+    SCHEDULER_LOCK(intSave);//调度自旋锁
+    ret = OsMuxLockUnsafe(mutex, timeout);//一直等待直到timeout 
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-
+//尝试锁不纠结,没拿到不会等待,返回
 LITE_OS_SEC_TEXT UINT32 LOS_MuxTrylock(LosMux *mutex)
 {
     LosTaskCB *runTask = NULL;
@@ -471,15 +470,15 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxTrylock(LosMux *mutex)
         return LOS_EINTR;
     }
 
-    runTask = (LosTaskCB *)OsCurrTaskGet();
+    runTask = (LosTaskCB *)OsCurrTaskGet();//获取当前执行的任务
     /* DO NOT Call blocking API in system tasks */
-    if (runTask->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {
+    if (runTask->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {//系统任务不能
         PRINTK("Warning: DO NOT call %s in system tasks.\n", __FUNCTION__);
         OsBackTrace();
     }
 
     SCHEDULER_LOCK(intSave);
-    ret = OsMuxTrylockUnsafe(mutex, 0);
+    ret = OsMuxTrylockUnsafe(mutex, 0);//timeout = 0,不等待,没拿到锁就算了
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
@@ -501,7 +500,7 @@ STATIC VOID OsMuxPostOpSub(LosTaskCB *taskCB, LosMux *mutex)
     LOS_BitmapClr(&taskCB->priBitMap, bitMapPri);
     OsTaskPriModify((LosTaskCB *)mutex->owner, bitMapPri);
 }
-
+//任务是否阻塞互斥锁,如果阻塞了就要调度啦
 STATIC UINT32 OsMuxPostOp(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched)
 {
     LosTaskCB *resumedTask = NULL;
@@ -528,7 +527,7 @@ STATIC UINT32 OsMuxPostOp(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched)
     LOS_ListDelete(&mutex->holdList);
     LOS_ListTailInsert(&resumedTask->lockList, &mutex->holdList);
     OsTaskWake(resumedTask);
-    if (needSched != NULL) {
+    if (needSched != NULL) {// ????? 这个地方有点让人看不懂了,没有任何改变它的地方,完全由参数一路传下来的.
         *needSched = TRUE;
     }
 
@@ -554,23 +553,23 @@ UINT32 OsMuxUnlockUnsafe(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched)
     if ((LosTaskCB *)mutex->owner != taskCB) {
         return LOS_EPERM;
     }
-
-    if ((--mutex->muxCount != 0) && (mutex->attr.type == LOS_MUX_RECURSIVE)) {
+	//注意 --mutex->muxCount 先执行了-- 操作.
+    if ((--mutex->muxCount != 0) && (mutex->attr.type == LOS_MUX_RECURSIVE)) {//LOS_MUX_RECURSIVE 情况是可以不为0的
         return LOS_OK;
     }
 
     if (mutex->attr.protocol == LOS_MUX_PRIO_PROTECT) {
-        bitMapPri = LOS_HighBitGet(taskCB->priBitMap);
+        bitMapPri = LOS_HighBitGet(taskCB->priBitMap);//找priBitMap记录中最高的那个优先级
         if (bitMapPri != LOS_INVALID_BIT_INDEX) {
-            LOS_BitmapClr(&taskCB->priBitMap, bitMapPri);
-            OsTaskPriModify(taskCB, bitMapPri);
+            LOS_BitmapClr(&taskCB->priBitMap, bitMapPri);//找priBitMap记录中最高的那个优先级
+            OsTaskPriModify(taskCB, bitMapPri);//改回task原来自己的优先级
         }
     }
 
-    /* Whether a task block the mutex lock. */
+    /* Whether a task block the mutex lock. *///任务是否阻塞互斥锁
     return OsMuxPostOp(taskCB, mutex, needSched);
 }
-
+//释放锁
 LITE_OS_SEC_TEXT UINT32 LOS_MuxUnlock(LosMux *mutex)
 {
     LosTaskCB *runTask = NULL;
@@ -586,9 +585,9 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxUnlock(LosMux *mutex)
         return LOS_EINTR;
     }
 
-    runTask = (LosTaskCB *)OsCurrTaskGet();
+    runTask = (LosTaskCB *)OsCurrTaskGet();//获取当前任务
     /* DO NOT Call blocking API in system tasks */
-    if (runTask->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {
+    if (runTask->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {//不能在系统任务里调用,因为很容易让系统任务发生死锁
         PRINTK("Warning: DO NOT call %s in system tasks.\n", __FUNCTION__);
         OsBackTrace();
     }
@@ -596,9 +595,9 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxUnlock(LosMux *mutex)
     SCHEDULER_LOCK(intSave);
     ret = OsMuxUnlockUnsafe(runTask, mutex, &needSched);
     SCHEDULER_UNLOCK(intSave);
-    if (needSched == TRUE) {
-        LOS_MpSchedule(OS_MP_CPU_ALL);
-        LOS_Schedule();
+    if (needSched == TRUE) {//需要调度的情况
+        LOS_MpSchedule(OS_MP_CPU_ALL);//多CPU的情况
+        LOS_Schedule();//发起调度
     }
     return ret;
 }

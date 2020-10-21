@@ -201,7 +201,7 @@ extern SPIN_LOCK_S g_taskSpin;
  *
  * The task is system-level task, like idle, swtmr and etc.
  */
-#define OS_TASK_FLAG_SYSTEM_TASK    0x2000U
+#define OS_TASK_FLAG_SYSTEM_TASK    0x2000U //系统任务
 
 /**
  * @ingroup los_task

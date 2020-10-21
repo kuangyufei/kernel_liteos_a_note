@@ -143,6 +143,7 @@ LITE_OS_SEC_TEXT WEAK VOID OsIdleTask(VOID)//空任务
  * Input       : taskCB    --- task control block
  *               priority  --- priority
  */
+ //修改任务的优先级
 LITE_OS_SEC_TEXT_MINOR VOID OsTaskPriModify(LosTaskCB *taskCB, UINT16 priority)
 {
     LosProcessCB *processCB = NULL;
@@ -152,8 +153,8 @@ LITE_OS_SEC_TEXT_MINOR VOID OsTaskPriModify(LosTaskCB *taskCB, UINT16 priority)
     if (taskCB->taskStatus & OS_TASK_STATUS_READY) {//只有就绪队列
         processCB = OS_PCB_FROM_PID(taskCB->processID);
         OS_TASK_PRI_QUEUE_DEQUEUE(processCB, taskCB);//先出队列再入队列
-        taskCB->priority = priority;
-        OS_TASK_PRI_QUEUE_ENQUEUE(processCB, taskCB);
+        taskCB->priority = priority;				//修改优先级
+        OS_TASK_PRI_QUEUE_ENQUEUE(processCB, taskCB);//再入队列,从尾部插入
     } else {
         taskCB->priority = priority;
     }

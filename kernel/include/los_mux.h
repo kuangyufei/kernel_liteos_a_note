@@ -46,15 +46,16 @@ extern "C" {
 #endif /* __cplusplus */
 
 enum {
-    LOS_MUX_PRIO_NONE = 0,
-    LOS_MUX_PRIO_INHERIT = 1,
-    LOS_MUX_PRIO_PROTECT = 2
+    LOS_MUX_PRIO_NONE = 0,		//线程的优先级和调度不会受到互斥锁影响,先来后到,普通排队.
+    LOS_MUX_PRIO_INHERIT = 1,	//当高优先级的等待低优先级的线程释放锁时，低优先级的线程以高优先级线程的优先级运行。
+    							//当线程解锁互斥量时，线程的优先级自动被将到它原来的优先级
+    LOS_MUX_PRIO_PROTECT = 2	//
 };
 
 enum {
-    LOS_MUX_NORMAL = 0,
-    LOS_MUX_RECURSIVE = 1,
-    LOS_MUX_ERRORCHECK = 2,
+    LOS_MUX_NORMAL = 0,		//不进行deadlock detection(死锁检测)
+    LOS_MUX_RECURSIVE = 1,	//mutex会有一个锁住次数（lock count）的概念。成功一次就++,释放就--
+    LOS_MUX_ERRORCHECK = 2,	//进行错误检查,如果一个线程企图对一个已经锁住的mutex进行relock或对未加锁的unlock，将返回一个错误。
     LOS_MUX_DEFAULT = LOS_MUX_RECURSIVE
 };
 
@@ -72,7 +73,7 @@ typedef struct {
 typedef struct OsMux {
     UINT32 magic;        /**< magic number */
     LosMuxAttr attr;     /**< Mutex attribute */
-    LOS_DL_LIST holdList; /**< The task holding the lock change */
+    LOS_DL_LIST holdList; /**< The task holding the lock change *///持有锁的任务改变了
     LOS_DL_LIST muxList; /**< Mutex linked list */
     VOID *owner;         /**< The current thread that is locking a mutex */
     UINT16 muxCount;     /**< Times of locking a mutex */

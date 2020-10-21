@@ -254,12 +254,12 @@ STATIC INT32 ShmFindSegByKey(key_t key)
 
     return -1;
 }
-
+//共享内存段有效性检查
 STATIC INT32 ShmSegValidCheck(INT32 segNum, size_t size, int shmFalg)
 {
-    struct shmIDSource *seg = &g_shmSegs[segNum];
+    struct shmIDSource *seg = &g_shmSegs[segNum];//拿到shmID
 
-    if (size > seg->ds.shm_segsz) {
+    if (size > seg->ds.shm_segsz) {//段长
         return -EINVAL;
     }
 
@@ -288,7 +288,7 @@ STATIC struct shmIDSource *ShmFindSeg(int shmid)
 
     return seg;
 }
-
+//共享内存映射
 STATIC VOID ShmVmmMapping(LosVmSpace *space, LOS_DL_LIST *pageList, VADDR_T vaddr, UINT32 regionFlags)
 {
     LosVmPage *vmPage = NULL;
@@ -297,9 +297,9 @@ STATIC VOID ShmVmmMapping(LosVmSpace *space, LOS_DL_LIST *pageList, VADDR_T vadd
     STATUS_T ret;
 
     LOS_DL_LIST_FOR_EACH_ENTRY(vmPage, pageList, LosVmPage, node) {
-        pa = VM_PAGE_TO_PHYS(vmPage);
-        LOS_AtomicInc(&vmPage->refCounts);
-        ret = LOS_ArchMmuMap(&space->archMmu, va, pa, 1, regionFlags);
+        pa = VM_PAGE_TO_PHYS(vmPage);//拿到物理地址
+        LOS_AtomicInc(&vmPage->refCounts);//自增
+        ret = LOS_ArchMmuMap(&space->archMmu, va, pa, 1, regionFlags);//虚实映射
         if (ret != 1) {
             VM_ERR("LOS_ArchMmuMap failed, ret = %d", ret);
         }
@@ -421,19 +421,19 @@ INT32 ShmGet(key_t key, size_t size, INT32 shmflg)
     INT32 shmid;
 
     SYSV_SHM_LOCK();
-    if ((((UINT32)shmflg & IPC_CREAT) == 0) &&
-        (((UINT32)shmflg & IPC_EXCL) == 0)) {
+    if ((((UINT32)shmflg & IPC_CREAT) == 0) && //IPC没有创建时
+        (((UINT32)shmflg & IPC_EXCL) == 0)) {	//IPC
         ret = -EINVAL;
         goto ERROR;
     }
 
     if (key == IPC_PRIVATE) {
-        ret = ShmAllocSeg(key, size, shmflg);
+        ret = ShmAllocSeg(key, size, shmflg);//分配共享页
         if (ret < 0) {
             goto ERROR;
         }
     } else {
-        ret = ShmFindSegByKey(key);
+        ret = ShmFindSegByKey(key);//通过key查找shmId
         if (ret < 0) {
             if (((unsigned int)shmflg & IPC_CREAT) == 0) {
                 ret = -ENOENT;
@@ -511,7 +511,7 @@ LosVmMapRegion *ShmatVmmAlloc(struct shmIDSource *seg, const VOID *shmaddr,
         ret = ENOMEM;
         goto ERROR;
     }
-    ShmVmmMapping(space, &seg->node, region->range.base, regionFlags);
+    ShmVmmMapping(space, &seg->node, region->range.base, regionFlags);//共享内存映射
     (VOID)LOS_MuxRelease(&space->regionMux);
     return region;
 ERROR:
@@ -538,7 +538,7 @@ VOID *ShmAt(INT32 shmid, const VOID *shmaddr, INT32 shmflg)
         return (VOID *)-1;
     }
 
-    if ((UINT32)shmflg & SHM_EXEC) {
+    if ((UINT32)shmflg & SHM_EXEC) {//flag 转换
         prot |= PROT_EXEC;
     } else if (((UINT32)shmflg & SHM_RDONLY) == 0) {
         prot |= PROT_WRITE;
