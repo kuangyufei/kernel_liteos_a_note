@@ -61,7 +61,7 @@ size_t arch_copy_to_user(void *dst, const void *src, size_t len)
 }
 
 size_t LOS_ArchCopyToUser(void *dst, const void *src, size_t len)
-{
+{//先判断地址是不是在用户空间
     if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dst, len)) {
         return len;
     }

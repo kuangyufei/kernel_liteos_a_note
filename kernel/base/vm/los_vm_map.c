@@ -453,7 +453,7 @@ LosVmMapRegion *OsCreateRegion(VADDR_T vaddr, size_t len, UINT32 regionFlags, un
     region->regionFlags = regionFlags;//标识,可读可写可执行这些
     region->regionType = VM_MAP_REGION_TYPE_NONE;//未映射
     region->forkFlags = 0;//
-    region->shmid = -1;
+    region->shmid = -1;			//默认线性区为不共享,无共享资源ID
     return region;
 }
 //通过虚拟地址查询物理地址

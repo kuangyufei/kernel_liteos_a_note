@@ -168,14 +168,14 @@ STATIC INLINE BOOL OsIsPageMapped(LosFilePage *page)
 /* The follow three functions is used to SHM module */
 STATIC INLINE VOID OsSetPageShared(LosVmPage *page)
 {
-    LOS_BitmapSet(&page->flags, FILE_PAGE_SHARED);
+    LOS_BitmapSet(&page->flags, FILE_PAGE_SHARED);//设为共享页面,共享页位 置0
 }
-
+//取消共享页属性
 STATIC INLINE VOID OsCleanPageShared(LosVmPage *page)
 {
-    LOS_BitmapClr(&page->flags, FILE_PAGE_SHARED);
+    LOS_BitmapClr(&page->flags, FILE_PAGE_SHARED);//共享页位 置0
 }
-
+//是否为共享页
 STATIC INLINE BOOL OsIsPageShared(LosVmPage *page)
 {
     return BIT_GET(page->flags, FILE_PAGE_SHARED);
