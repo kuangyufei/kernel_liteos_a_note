@@ -144,7 +144,7 @@ INT32 ShmDeinit(VOID)
 
     return 0;
 }
-//设置共享flag
+//给共享段中所有物理页框贴上共享标签
 STATIC inline VOID ShmSetSharedFlag(struct shmIDSource *seg)
 {
     LosVmPage *page = NULL;
@@ -153,7 +153,7 @@ STATIC inline VOID ShmSetSharedFlag(struct shmIDSource *seg)
         OsSetPageShared(page);
     }
 }
-
+//给共享段中所有物理页框撕掉共享标签
 STATIC inline VOID ShmClearSharedFlag(struct shmIDSource *seg)
 {
     LosVmPage *page = NULL;
@@ -210,35 +210,35 @@ STATIC INT32 ShmAllocSeg(key_t key, size_t size, int shmflg)
     seg->ds.shm_perm.mode = (unsigned int)shmflg & ACCESSPERMS;
     seg->ds.shm_perm.key = key;
     seg->ds.shm_segsz = size;
-    seg->ds.shm_perm.cuid = LOS_GetUserID();
-    seg->ds.shm_perm.uid = LOS_GetUserID();
-    seg->ds.shm_perm.cgid = LOS_GetGroupID();
-    seg->ds.shm_perm.gid = LOS_GetGroupID();
+    seg->ds.shm_perm.cuid = LOS_GetUserID();	//设置用户ID
+    seg->ds.shm_perm.uid = LOS_GetUserID();		//设置用户ID
+    seg->ds.shm_perm.cgid = LOS_GetGroupID();	//设置组ID
+    seg->ds.shm_perm.gid = LOS_GetGroupID();	//设置组ID
     seg->ds.shm_lpid = 0;
-    seg->ds.shm_nattch = 0;
-    seg->ds.shm_cpid = LOS_GetCurrProcessID();
+    seg->ds.shm_nattch = 0;						
+    seg->ds.shm_cpid = LOS_GetCurrProcessID();	//获取进程ID
     seg->ds.shm_atime = 0;
     seg->ds.shm_dtime = 0;
     seg->ds.shm_ctime = time(NULL);
 
     return segNum;
 }
-
+//释放seg->node 所占物理页框,seg本身重置
 STATIC INLINE VOID ShmFreeSeg(struct shmIDSource *seg)
 {
     UINT32 count;
 
-    ShmClearSharedFlag(seg);
-    count = LOS_PhysPagesFree(&seg->node);
-    if (count != (seg->ds.shm_segsz >> PAGE_SHIFT)) {
+    ShmClearSharedFlag(seg);//先撕掉 seg->node 中vmpage的共享标签
+    count = LOS_PhysPagesFree(&seg->node);//再挨个删除物理页框
+    if (count != (seg->ds.shm_segsz >> PAGE_SHIFT)) {//异常,必须要一样
         VM_ERR("free physical pages failed, count = %d, size = %d", count, seg->ds.shm_segsz >> PAGE_SHIFT);
         return;
     }
 
-    seg->status = SHM_SEG_FREE;
-    LOS_ListInit(&seg->node);
+    seg->status = SHM_SEG_FREE;//seg恢复自由之身
+    LOS_ListInit(&seg->node);//重置node
 }
-
+//通过key查找 shmId
 STATIC INT32 ShmFindSegByKey(key_t key)
 {
     INT32 i;
@@ -583,15 +583,15 @@ INT32 ShmCtl(INT32 shmid, INT32 cmd, struct shmid_ds *buf)
 {
     struct shmIDSource *seg = NULL;
     INT32 ret = 0;
-    struct shm_info shmInfo;
-    struct ipc_perm shm_perm;
+    struct shm_info shmInfo;//前往查看结构体内容 ..\vendor_hisi_hi3861_hi3861\hi3861\platform\os\Huawei_LiteOS\components\lib\libc\musl\arch\generic\bits\shm.h
+    struct ipc_perm shm_perm;//前往查看结构体内容 ..\vendor_hisi_hi3861_hi3861\hi3861\platform\os\Huawei_LiteOS\components\lib\libc\musl\arch\generic\bits\ipc.h
 
     cmd = ((UINT32)cmd & ~IPC_64);
 
     SYSV_SHM_LOCK();
 
     if ((cmd != IPC_INFO) && (cmd != SHM_INFO)) {
-        seg = ShmFindSeg(shmid);
+        seg = ShmFindSeg(shmid);//通过索引ID找到seg
         if (seg == NULL) {
             SYSV_SHM_UNLOCK();
             return -1;
@@ -664,7 +664,7 @@ INT32 ShmCtl(INT32 shmid, INT32 cmd, struct shmid_ds *buf)
             shmInfo.shm_tot = 0;
             shmInfo.swap_attempts = 0;
             shmInfo.swap_successes = 0;
-            shmInfo.used_ids = ShmSegUsedCount();
+            shmInfo.used_ids = ShmSegUsedCount();//在使用的seg数
             ret = LOS_ArchCopyToUser(buf, &shmInfo, sizeof(struct shm_info));//把内核空间的共享页数据拷贝到用户空间
             if (ret != 0) {
                 ret = EFAULT;

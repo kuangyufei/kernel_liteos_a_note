@@ -336,7 +336,7 @@ VOID OsVmPhysPagesFree(LosVmPage *page, UINT8 order)
 
     OsVmPhysFreeListAdd(page, order);//伙伴算法 空闲节点增加
 }
-
+//连续的释放物理页框, 如果8页连在一块是一起释放的,取决于使用了伙伴算法的order
 VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
 {
     paddr_t pa;
@@ -551,7 +551,7 @@ UINT32 OsVmPagesToOrder(size_t nPages)
 
     return order;
 }
-
+//释放双链表中的所有节点内存,本质是回归到伙伴orderlist中
 size_t LOS_PhysPagesFree(LOS_DL_LIST *list)
 {
     UINT32 intSave;
@@ -564,16 +564,16 @@ size_t LOS_PhysPagesFree(LOS_DL_LIST *list)
         return 0;
     }
 
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(page, nPage, list, LosVmPage, node) {
-        LOS_ListDelete(&page->node);
-        if (LOS_AtomicDecRet(&page->refCounts) <= 0) {
-            seg = &g_vmPhysSeg[page->segID];
-            LOS_SpinLockSave(&seg->freeListLock, &intSave);
-            OsVmPhysPagesFreeContiguous(page, ONE_PAGE);
-            LOS_AtomicSet(&page->refCounts, 0);
-            LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
+    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(page, nPage, list, LosVmPage, node) {//宏循环
+        LOS_ListDelete(&page->node);//先把自己摘出去
+        if (LOS_AtomicDecRet(&page->refCounts) <= 0) {//无引用
+            seg = &g_vmPhysSeg[page->segID];//获取物理段
+            LOS_SpinLockSave(&seg->freeListLock, &intSave);//锁住freeList
+            OsVmPhysPagesFreeContiguous(page, ONE_PAGE);//连续释放,注意这里的ONE_PAGE其实有误导,让人以为是释放4K,其实是指连续的物理页框,如果3页连在一块是一起释放的.
+            LOS_AtomicSet(&page->refCounts, 0);//引用重置为0
+            LOS_SpinUnlockRestore(&seg->freeListLock, intSave);//恢复锁
         }
-        count++;
+        count++;//继续取下一个node
     }
 
     return count;
