@@ -375,7 +375,7 @@ STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
     owner = (LosTaskCB *)mutex->owner;	//持有锁任务赋值给临时变量
     runTask->taskMux = (VOID *)mutex;	//当前任务持有锁
     node = OsMuxPendFindPos(runTask, mutex);//找一个等互斥锁的任务的阻塞链表
-    ret = OsTaskWait(node, timeout, TRUE);//task陷入等待状态 TRUE 需要调度
+    ret = OsTaskWait(node, timeout, TRUE);//task陷入等待状态 TRUE代表需要调度
     if (ret == LOS_ERRNO_TSK_TIMEOUT) {//超时了
         runTask->taskMux = NULL;// taskNux null
         ret = LOS_ETIMEDOUT;//返回超时
