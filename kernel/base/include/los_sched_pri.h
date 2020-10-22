@@ -42,20 +42,20 @@ extern "C" {
 #endif /* __cplusplus */
 
 extern UINT32 g_taskScheduled;
-
+//调度标志,一个位代表一个CPU核,这么看鸿蒙最大支持32核,例如:4个CPU,每个4核 就一共16个核,足够了.该标志用于在调用OSStartToRun之前防止内核调度
 /*
  * Schedule flag, one bit represents one core.
  * This flag is used to prevent kernel scheduling before OSStartToRun.
  */
 #define OS_SCHEDULER_SET(cpuid) do {     \
     g_taskScheduled |= (1U << (cpuid));  \
-} while (0);
+} while (0);//对应位设置为1
 
 #define OS_SCHEDULER_CLR(cpuid) do {     \
     g_taskScheduled &= ~(1U << (cpuid)); \
-} while (0);
+} while (0);//对应位设置为0
 
-#define OS_SCHEDULER_ACTIVE (g_taskScheduled & (1U << ArchCurrCpuid()))
+#define OS_SCHEDULER_ACTIVE (g_taskScheduled & (1U << ArchCurrCpuid()))//代表位上是否为1
 
 typedef enum {
     INT_NO_RESCH = 0,   /* no needs to schedule */
@@ -70,13 +70,15 @@ STATIC INLINE BOOL OsPreemptable(VOID)//是否可抢占
      * is called, needs mannually disable interrupt, to prevent current task from
      * being migrated to another core, and get the wrong preeptable status.
      */
-    UINT32 intSave = LOS_IntLock();
+     //与OsPreemptableInSched不同，当OsPreemptable时，中断可能不会被禁用,所以调用时，需要手动禁用中断，以防止当前任务
+	 //被迁移到另一个CPU核上，并得到错误的可接受状态。
+    UINT32 intSave = LOS_IntLock();//手动禁用中断
     BOOL preemptable = (OsPercpuGet()->taskLockCnt == 0);
     if (!preemptable) {
         /* Set schedule flag if preemption is disabled */
-        OsPercpuGet()->schedFlag = INT_PEND_RESCH;
+        OsPercpuGet()->schedFlag = INT_PEND_RESCH;//如果禁用抢占，则设置调度标志
     }
-    LOS_IntRestore(intSave);
+    LOS_IntRestore(intSave);//手动恢复中断
     return preemptable;
 }
 
@@ -122,8 +124,8 @@ extern VOID OsSchedPreempt(VOID);
  */
 STATIC INLINE VOID LOS_Schedule(VOID)
 {
-    if (OS_INT_ACTIVE) {
-        OsPercpuGet()->schedFlag = INT_PEND_RESCH;
+    if (OS_INT_ACTIVE) {//硬件中断是否激活,注意调度是需要切换任务上下文的
+        OsPercpuGet()->schedFlag = INT_PEND_RESCH;//
         return;
     }
 
@@ -132,7 +134,7 @@ STATIC INLINE VOID LOS_Schedule(VOID)
      * if neccessary, it will give up the timeslice more in time.
      * otherwhise, there's no other side effects.
      */
-    OsSchedPreempt();
+    OsSchedPreempt();//抢占式调度
 }
 
 #ifdef __cplusplus

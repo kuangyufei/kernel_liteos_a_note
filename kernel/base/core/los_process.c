@@ -830,15 +830,15 @@ LITE_OS_SEC_TEXT INT32 LOS_GetGroupID(VOID)
 STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const CHAR *name, UINT16 priority)
 {
     ProcessGroup *group = NULL;
-    UINT32 ret = OsInitPCB(processCB, flags, priority, LOS_SCHED_RR, name);
+    UINT32 ret = OsInitPCB(processCB, flags, priority, LOS_SCHED_RR, name);//初始化进程控制块
     if (ret != LOS_OK) {
         goto EXIT;
     }
 
 #if (LOSCFG_KERNEL_LITEIPC == YES)
-    if (OsProcessIsUserMode(processCB)) {
-        ret = LiteIpcPoolInit(&(processCB->ipcInfo));
-        if (ret != LOS_OK) {
+    if (OsProcessIsUserMode(processCB)) {//是否在用户模式
+        ret = LiteIpcPoolInit(&(processCB->ipcInfo));//IPC池初始化
+        if (ret != LOS_OK) {//异常处理
             ret = LOS_ENOMEM;
             PRINT_ERR("LiteIpcPoolInit failed!\n");
             goto EXIT;
@@ -854,14 +854,14 @@ STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const C
     }
 #endif
 
-    group = OsCreateProcessGroup(processCB->processID);
+    group = OsCreateProcessGroup(processCB->processID);//创建进程组
     if (group == NULL) {
         ret = LOS_ENOMEM;
         goto EXIT;
     }
 
-#ifdef LOSCFG_SECURITY_CAPABILITY
-    processCB->user = OsCreateUser(0, 0, 1);
+#ifdef LOSCFG_SECURITY_CAPABILITY	//用户安全宏
+    processCB->user = OsCreateUser(0, 0, 1);//创建用户
     if (processCB->user == NULL) {
         ret = LOS_ENOMEM;
         goto EXIT;
@@ -875,7 +875,7 @@ STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const C
     return LOS_OK;
 
 EXIT:
-    OsDeInitPCB(processCB);
+    OsDeInitPCB(processCB);//删除进程控制块
     return ret;
 }
 
@@ -948,32 +948,32 @@ STATIC INLINE INT32 OsProcessSchedlerParamCheck(INT32 which, INT32 pid, UINT16 p
     }
 
     if (which != LOS_PRIO_PROCESS) {//进程标识
-        return LOS_EOPNOTSUPP;
+        return LOS_EOPNOTSUPP;//返回操作不支持
     }
 
-    if (prio > OS_PROCESS_PRIORITY_LOWEST) {
-        return LOS_EINVAL;
+    if (prio > OS_PROCESS_PRIORITY_LOWEST) {//鸿蒙优先级是 0 -31级,0级最大
+        return LOS_EINVAL;//返回无效参数
     }
 
-    if ((policy != LOS_SCHED_FIFO) && (policy != LOS_SCHED_RR)) {
-        return LOS_EOPNOTSUPP;
+    if ((policy != LOS_SCHED_FIFO) && (policy != LOS_SCHED_RR)) {//调度方式既不是先进先得,也不是抢占式
+        return LOS_EOPNOTSUPP;//返回操作不支持
     }
 
     return LOS_OK;
 }
 
-#ifdef LOSCFG_SECURITY_CAPABILITY
+#ifdef LOSCFG_SECURITY_CAPABILITY //检查进程的安全许可证
 STATIC BOOL OsProcessCapPermitCheck(const LosProcessCB *processCB, UINT16 prio)
 {
-    LosProcessCB *runProcess = OsCurrProcessGet();
+    LosProcessCB *runProcess = OsCurrProcessGet();//获得当前进程
 
     /* always trust kernel process */
-    if (!OsProcessIsUserMode(runProcess)) {
+    if (!OsProcessIsUserMode(runProcess)) {//进程必须在内核模式下,也就是说在内核模式下是安全的.
         return TRUE;
     }
 
     /* user mode process can reduce the priority of itself */
-    if ((runProcess->processID == processCB->processID) && (prio > processCB->priority)) {
+    if ((runProcess->processID == processCB->processID) && (prio > processCB->priority)) {//用户模式下进程阔以降低自己的优先级
         return TRUE;
     }
 
@@ -991,54 +991,54 @@ LITE_OS_SEC_TEXT INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio
     UINT32 intSave;
     INT32 ret;
 
-    ret = OsProcessSchedlerParamCheck(which, pid, prio, policy);
+    ret = OsProcessSchedlerParamCheck(which, pid, prio, policy);//先参数检查
     if (ret != LOS_OK) {
         return -ret;
     }
 
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_LOCK(intSave);//持有调度自旋锁,多CPU情况下调度期间需要原子处理
     processCB = OS_PCB_FROM_PID(pid);
-    if (OsProcessIsInactive(processCB)) {
+    if (OsProcessIsInactive(processCB)) {//进程未活动的处理
         ret = LOS_ESRCH;
         goto EXIT;
     }
 
 #ifdef LOSCFG_SECURITY_CAPABILITY
-    if (!OsProcessCapPermitCheck(processCB, prio)) {
+    if (!OsProcessCapPermitCheck(processCB, prio)) {//检查是否安全
         ret = LOS_EPERM;
         goto EXIT;
     }
 #endif
 
-    if (policyFlag == TRUE) {
-        if (policy == LOS_SCHED_FIFO) {
-            processCB->timeSlice = 0;
+    if (policyFlag == TRUE) {//参数 policyFlag 表示调度方式要变吗?
+        if (policy == LOS_SCHED_FIFO) {//先进先出调度方式下
+            processCB->timeSlice = 0;//不需要时间片
         }
-        processCB->policy = policy;
+        processCB->policy = policy;//改变调度方式
     }
 
-    if (processCB->processStatus & OS_PROCESS_STATUS_READY) {
-        OS_PROCESS_PRI_QUEUE_DEQUEUE(processCB);
-        processCB->priority = prio;
-        OS_PROCESS_PRI_QUEUE_ENQUEUE(processCB);
+    if (processCB->processStatus & OS_PROCESS_STATUS_READY) {//进程处于就绪状态的处理
+        OS_PROCESS_PRI_QUEUE_DEQUEUE(processCB);//先出进程队列
+        processCB->priority = prio;//改变进程的优先级
+        OS_PROCESS_PRI_QUEUE_ENQUEUE(processCB);//再进入队列,排到新优先级队列的尾部
     } else {
-        processCB->priority = prio;
-        if (!(processCB->processStatus & OS_PROCESS_STATUS_RUNNING)) {
+        processCB->priority = prio;//改变优先级,没其他操作了,为什么?因为队列就是给就绪状态准备的,其他状态是没有队列的!
+        if (!(processCB->processStatus & OS_PROCESS_STATUS_RUNNING)) {//不是就绪也不是运行状态
             ret = LOS_OK;
-            goto EXIT;
+            goto EXIT;//直接goto退出
         }
     }
 
-    SCHEDULER_UNLOCK(intSave);
+    SCHEDULER_UNLOCK(intSave);//还锁
 
-    LOS_MpSchedule(OS_MP_CPU_ALL);
-    if (OS_SCHEDULER_ACTIVE) {
-        LOS_Schedule();
+    LOS_MpSchedule(OS_MP_CPU_ALL);//
+    if (OS_SCHEDULER_ACTIVE) {//当前CPU是否激活了,激活才能调度
+        LOS_Schedule();//真正的任务调度算法从LOS_Schedule始
     }
     return LOS_OK;
 
 EXIT:
-    SCHEDULER_UNLOCK(intSave);
+    SCHEDULER_UNLOCK(intSave);//还锁
     return -ret;
 }
 
