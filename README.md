@@ -18,8 +18,10 @@ kernel_liteos_a_note是基于鸿蒙开源内核kernel_liteos_a源码的注释中
 * **博文和源码注释怎么更新**
 
     好记性不如烂笔头,笔者把研究过程心得写成博文.
-    博文更新方式: 进入 [鸿蒙源码分析系列篇CSDN地址](https://blog.csdn.net/kuangyufei) ,[鸿蒙源码分析系列篇oschina地址](https://my.oschina.net/u/3751245) 查看, 持续更新中..., 感谢CSDN, oschina 对博文的推荐.
-    注释更新方式: 进入 [鸿蒙内核源码注释中文版CSDN仓库](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)  ,[鸿蒙内核源码注释中文版Gitee仓库 ](https://gitee.com/weharmony/kernel_liteos_a_note) ,[鸿蒙内核源码注释中文版Github仓库](https://github.com/kuangyufei/kernel_liteos_a_note) 查看,持续加注中..., 靠后的仓库会稍有延期.
+    
+    博文更新方式: 进入 鸿蒙源码分析系列篇 [CSDN站](https://blog.csdn.net/kuangyufei) | [oschina站](https://my.oschina.net/u/3751245) 查看, 持续更新中..., 感谢CSDN, oschina 对博文的推荐.
+    
+    注释更新方式: 进入 鸿蒙内核源码注释中文版 [CSDN仓库](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [Gitee仓库 ](https://gitee.com/weharmony/kernel_liteos_a_note) | [Github仓库](https://github.com/kuangyufei/kernel_liteos_a_note) 查看,持续加注中..., 靠后的仓库会稍有延期.
     
     精读内核源码当然是件很困难的事,但正因为很难才值得去做啊! 内心不渴望的永远不可能会接近自己.不要去纠结而没有行动.笔者一直坚信兴趣是最好的老师,也是在做自己感兴趣的事, 希望感兴趣的人能看到.如果能让更多人参与到内核的研究,减少学习的成本,哪怕就节省一天的时间,这么多人能节省多少时间, 这是件多好玩,多有意义的事情啊.
 
