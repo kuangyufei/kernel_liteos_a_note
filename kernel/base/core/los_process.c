@@ -129,23 +129,23 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskSchedQueueEnqueue(LosTaskCB *taskCB, UINT16 sta
     } else {
         LOS_ASSERT(!(processCB->processStatus & OS_PROCESS_STATUS_PEND));
         LOS_ASSERT((UINTPTR)processCB->pendList.pstNext);
-        if ((processCB->timeSlice == 0) && (processCB->policy == LOS_SCHED_RR)) {
-            OS_PROCESS_PRI_QUEUE_DEQUEUE(processCB);
-            OS_PROCESS_PRI_QUEUE_ENQUEUE(processCB);
+        if ((processCB->timeSlice == 0) && (processCB->policy == LOS_SCHED_RR)) {//没有时间片且采用抢占式调度算法的情况
+            OS_PROCESS_PRI_QUEUE_DEQUEUE(processCB);//进程先出队列
+            OS_PROCESS_PRI_QUEUE_ENQUEUE(processCB);//进程再入队列,区别是排到了最后.这可是队列前面还有很多人等着被调度呢.
         }
     }
 
-    OsSchedTaskEnqueue(processCB, taskCB); // 入进程的就绪队列
+    OsSchedTaskEnqueue(processCB, taskCB); // 加入进程的任务就绪队列,这个队列里排的都是task
 }
-
+//插入进程到空闲链表中
 STATIC INLINE VOID OsInsertPCBToFreeList(LosProcessCB *processCB)
 {
-    UINT32 pid = processCB->processID;
-    (VOID)memset_s(processCB, sizeof(LosProcessCB), 0, sizeof(LosProcessCB));
-    processCB->processID = pid;
-    processCB->processStatus = OS_PROCESS_FLAG_UNUSED;
-    processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;
-    LOS_ListTailInsert(&g_freeProcess, &processCB->pendList);
+    UINT32 pid = processCB->processID;//获取进程ID
+    (VOID)memset_s(processCB, sizeof(LosProcessCB), 0, sizeof(LosProcessCB));//进程描述符数据清0
+    processCB->processID = pid;//进程ID
+    processCB->processStatus = OS_PROCESS_FLAG_UNUSED;//设置为进程未使用
+    processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;//timeID初始化值
+    LOS_ListTailInsert(&g_freeProcess, &processCB->pendList);//进程节点挂入g_freeProcess以分配给后续进程使用
 }
 
 STATIC ProcessGroup *OsCreateProcessGroup(UINT32 pid)

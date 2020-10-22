@@ -7,4 +7,4 @@ git push github_origin master
 
 #git remote add github_origin git@github.com:kuangyufei/kernel_liteos_a_note.git 
 #git remote add gitee_origin git@gitee.com:weharmony/kernel_liteos_a_note.git
-#git remote add csdn_origin git@codechina.csdn.net:kuangyufei/kernel_liteos_a_note.git
+#git remote add origin git@codechina.csdn.net:kuangyufei/kernel_liteos_a_note.git
