@@ -61,8 +61,8 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
-LITE_OS_SEC_BSS LosProcessCB *g_runProcess[LOSCFG_KERNEL_CORE_NUM];// CPU内核个数
+//单核CPU只有并发（Concurrent）,多核才会有并行（Parallel） LITE_OS_SEC_BSS 和 LITE_OS_SEC_DATA_INIT 是告诉编译器这些全局变量放在哪个数据段
+LITE_OS_SEC_BSS LosProcessCB *g_runProcess[LOSCFG_KERNEL_CORE_NUM];// CPU内核个数,这才是真正的并行
 LITE_OS_SEC_BSS LosProcessCB *g_processCBArray = NULL; // 进程池数组
 LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_freeProcess;// 空闲状态下可供分配的进程,此时进程白纸一张
 LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_processRecyleList;// 需要回收的进程列表
@@ -89,7 +89,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskSchedQueueDequeue(LosTaskCB *taskCB, UINT16 sta
         OS_PROCESS_PRI_QUEUE_DEQUEUE(processCB);//进程出进程的就绪队列
     }
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#if (LOSCFG_KERNEL_SMP == YES)//
     if (OS_PROCESS_GET_RUNTASK_COUNT(processCB->processStatus) == 1) {
 #endif
         processCB->processStatus |= status;
@@ -622,7 +622,7 @@ STATIC LosProcessCB *OsGetFreePCB(VOID)
 
     return processCB;
 }
-
+//删除PCB块 其实是 PCB块回归进程池,先进入回收链表
 STATIC VOID OsDeInitPCB(LosProcessCB *processCB)
 {
     UINT32 intSave;
@@ -632,28 +632,28 @@ STATIC VOID OsDeInitPCB(LosProcessCB *processCB)
         return;
     }
 
-    OsProcessResourcesToFree(processCB);
+    OsProcessResourcesToFree(processCB);//释放进程所占用的资源
 
     SCHEDULER_LOCK(intSave);
     if (processCB->parentProcessID != OS_INVALID_VALUE) {
-        LOS_ListDelete(&processCB->siblingList);
+        LOS_ListDelete(&processCB->siblingList);//将进程从兄弟链表中摘除
         processCB->parentProcessID = OS_INVALID_VALUE;
     }
 
     if (processCB->group != NULL) {
-        OsExitProcessGroup(processCB, &group);
+        OsExitProcessGroup(processCB, &group);//退出进程组
     }
 
-    processCB->processStatus &= ~OS_PROCESS_STATUS_INIT;
-    processCB->processStatus |= OS_PROCESS_FLAG_EXIT;
-    LOS_ListHeadInsert(&g_processRecyleList, &processCB->pendList);
+    processCB->processStatus &= ~OS_PROCESS_STATUS_INIT;//设置进程状态为非初始化
+    processCB->processStatus |= OS_PROCESS_FLAG_EXIT;	//设置进程状态为退出
+    LOS_ListHeadInsert(&g_processRecyleList, &processCB->pendList);//
     SCHEDULER_UNLOCK(intSave);
 
-    (VOID)LOS_MemFree(m_aucSysMem1, group);
+    (VOID)LOS_MemFree(m_aucSysMem1, group);//释放内存
     OsWriteResourceEvent(OS_RESOURCE_EVENT_FREE);
     return;
 }
-
+//设置进程的名字
 STATIC UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name)
 {
     errno_t errRet;
@@ -1649,8 +1649,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
     return LOS_OK;
 
 ERROR:
-    (VOID)LOS_PhysPagesFreeContiguous(userText, initSize >> PAGE_SHIFT);
-    OsDeInitPCB(processCB);
+    (VOID)LOS_PhysPagesFreeContiguous(userText, initSize >> PAGE_SHIFT);//释放物理内存块
+    OsDeInitPCB(processCB);//删除PCB块
     return ret;
 }
 
