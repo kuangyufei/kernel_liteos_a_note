@@ -44,32 +44,32 @@ extern "C" {
 //*kfy 0x80000000U = 10000000000000000000000000000000(32个0) 
 #define PRIQUEUE_PRIOR0_BIT   0x80000000U 
 
-LITE_OS_SEC_BSS LOS_DL_LIST *g_priQueueList = NULL;
-LITE_OS_SEC_BSS UINT32 g_priQueueBitmap;
-
+LITE_OS_SEC_BSS LOS_DL_LIST *g_priQueueList = NULL;//队列链表
+LITE_OS_SEC_BSS UINT32 g_priQueueBitmap;//队列位图
+//内部队列初始化
 UINT32 OsPriQueueInit(VOID)
 {
     UINT32 priority;
 
-    /* system resident resource */
-    g_priQueueList = (LOS_DL_LIST *)LOS_MemAlloc(m_aucSysMem0, (OS_PRIORITY_QUEUE_NUM * sizeof(LOS_DL_LIST)));
+    /* system resident resource *///常驻内存
+    g_priQueueList = (LOS_DL_LIST *)LOS_MemAlloc(m_aucSysMem0, (OS_PRIORITY_QUEUE_NUM * sizeof(LOS_DL_LIST)));//分配32个队列头节点
     if (g_priQueueList == NULL) {
         return LOS_NOK;
     }
 
     for (priority = 0; priority < OS_PRIORITY_QUEUE_NUM; ++priority) {
-        LOS_ListInit(&g_priQueueList[priority]);
+        LOS_ListInit(&g_priQueueList[priority]);//队列初始化,前后指针指向自己
     }
     return LOS_OK;
 }
-
+//获取位图中最高优先级对应链表的第一个节点
 LOS_DL_LIST *OsPriQueueTop(LOS_DL_LIST *priQueueList, UINT32 *bitMap)
 {
     UINT32 priority;
 
     if (*bitMap != 0) {
-        priority = CLZ(*bitMap);
-        return LOS_DL_LIST_FIRST(&priQueueList[priority]);
+        priority = CLZ(*bitMap);//比如 bitmap = 0b00110101000 返回 4 ,意思是从右到左找到第一个出现1的索引位
+        return LOS_DL_LIST_FIRST(&priQueueList[priority]);//取出第一个节点
     }
 
     return NULL;

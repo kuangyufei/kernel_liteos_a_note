@@ -19,7 +19,7 @@
     
     系列篇文章查看: 进入>> 鸿蒙源码分析系列篇 [CSDN站](https://blog.csdn.net/kuangyufei) | [OSCHINA站](https://my.oschina.net/u/3751245) 查看, 正在持续更新中..., 感谢CSDN, OSCHINA 对博文的推荐.
     
-    注释中文版查看: 进入>> 鸿蒙内核源码注释中文版 [CSDN仓库](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [Gitee仓库 ](https://gitee.com/weharmony/kernel_liteos_a_note) | [Github仓库](https://github.com/kuangyufei/kernel_liteos_a_note)  [coding仓库](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) 查看,四大仓库同步更新. 正在持续加注中....
+    注释中文版查看: 进入>> 鸿蒙内核源码注释中文版 [CSDN仓库](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [Gitee仓库 ](https://gitee.com/weharmony/kernel_liteos_a_note) | [Github仓库](https://github.com/kuangyufei/kernel_liteos_a_note) | [Coding仓库](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) 查看,四大仓库同步更新. 正在持续加注中....
     
     精读内核源码当然是件很困难的事,但正因为很难才值得去做! 内心不渴望的永远不可能靠近自己.别再去纠结而没有行动.笔者一直坚信兴趣是最好的老师,加注就是在做自己感兴趣的事, 希望感兴趣的各位能看到.如果能让更多人参与到内核的研究,减少学习的成本,哪怕就节省一天的时间,这么多人能节省多少时间, 这是件多好玩,多有意义的事情啊.
 
