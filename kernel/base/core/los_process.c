@@ -498,66 +498,66 @@ STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
     LOS_Panic("pid : %u is the root process exit!\n", processCB->processID);
     return;
 }
-
-LITE_OS_SEC_TEXT_INIT UINT32 OsProcessInit(VOID)//进程模块初始化
+//进程模块初始化,被编译放在代码段 .init 中
+LITE_OS_SEC_TEXT_INIT UINT32 OsProcessInit(VOID)
 {
     UINT32 index;
     UINT32 size;
 
-    g_processMaxNum = LOSCFG_BASE_CORE_PROCESS_LIMIT;// 默认是64个
-    size = g_processMaxNum * sizeof(LosProcessCB);
+    g_processMaxNum = LOSCFG_BASE_CORE_PROCESS_LIMIT;//默认支持64个进程
+    size = g_processMaxNum * sizeof(LosProcessCB);//算出总大小
 
-    g_processCBArray = (LosProcessCB *)LOS_MemAlloc(m_aucSysMem1, size);// 进程池，占用内核堆
+    g_processCBArray = (LosProcessCB *)LOS_MemAlloc(m_aucSysMem1, size);// 进程池，占用内核堆,内存池分配 
     if (g_processCBArray == NULL) {
         return LOS_NOK;
     }
-    (VOID)memset_s(g_processCBArray, size, 0, size);//安全方式重置
+    (VOID)memset_s(g_processCBArray, size, 0, size);//安全方式重置清0
 
     LOS_ListInit(&g_freeProcess);//进程空闲链表初始化，创建一个进程时从g_freeProcess中申请一个进程描述符使用
     LOS_ListInit(&g_processRecyleList);//进程回收链表初始化,回收完成后进入g_freeProcess等待再次被申请使用
 
-    for (index = 0; index < g_processMaxNum; index++) {
+    for (index = 0; index < g_processMaxNum; index++) {//进程池循环创建
         g_processCBArray[index].processID = index;//进程ID[0-g_processMaxNum]赋值
         g_processCBArray[index].processStatus = OS_PROCESS_FLAG_UNUSED;// 默认都是白纸一张，臣妾干净着呢
         LOS_ListTailInsert(&g_freeProcess, &g_processCBArray[index].pendList);// 初始全是可分配进程描述符
     }
-
-    g_userInitProcess = 1; /* 1: The root process ID of the user-mode process is fixed at 1 */
+	// ????? 为啥用户模式的根进程 选1 ,内核模式的根进程选2 
+    g_userInitProcess = 1; /* 1: The root process ID of the user-mode process is fixed at 1 *///用户模式的根进程
     LOS_ListDelete(&g_processCBArray[g_userInitProcess].pendList);// 清空g_userInitProcess pend链表
 
-    g_kernelInitProcess = 2; /* 2: The root process ID of the kernel-mode process is fixed at 2 */
+    g_kernelInitProcess = 2; /* 2: The root process ID of the kernel-mode process is fixed at 2 *///内核模式的根进程
     LOS_ListDelete(&g_processCBArray[g_kernelInitProcess].pendList);// 清空g_kernelInitProcess pend链表
 
     return LOS_OK;
 }
-
+//创建一个名叫"KIdle"的进程,给CPU空闲的时候使用
 STATIC UINT32 OsCreateIdleProcess(VOID)
 {
     UINT32 ret;
     CHAR *idleName = "Idle";
     LosProcessCB *idleProcess = NULL;
     Percpu *perCpu = OsPercpuGet();
-    UINT32 *idleTaskID = &perCpu->idleTaskID;
+    UINT32 *idleTaskID = &perCpu->idleTaskID;//得到CPU的idle task
 
-    ret = OsCreateResourceFreeTask();// 创建一个资源回收任务 
+    ret = OsCreateResourceFreeTask();// 创建一个资源回收任务,优先级为5 用于回收进程退出时的各种资源
     if (ret != LOS_OK) {
         return ret;
     }
-
+	//创建一个名叫"KIdle"的进程,并创建一个idle task,CPU空闲的时候就待在 idle task中等待被唤醒
     ret = LOS_Fork(CLONE_FILES, "KIdle", (TSK_ENTRY_FUNC)OsIdleTask, LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE);
     if (ret < 0) {
         return LOS_NOK;
     }
-    g_kernelIdleProcess = (UINT32)ret;
+    g_kernelIdleProcess = (UINT32)ret;//返回进程ID
 
-    idleProcess = OS_PCB_FROM_PID(g_kernelIdleProcess);
-    *idleTaskID = idleProcess->threadGroupID;
-    OS_TCB_FROM_TID(*idleTaskID)->taskStatus |= OS_TASK_FLAG_SYSTEM_TASK;
+    idleProcess = OS_PCB_FROM_PID(g_kernelIdleProcess);//通过ID拿到进程实体
+    *idleTaskID = idleProcess->threadGroupID;//绑定CPU的IdleTask,或者说改变CPU现有的idle任务
+    OS_TCB_FROM_TID(*idleTaskID)->taskStatus |= OS_TASK_FLAG_SYSTEM_TASK;//设定Idle task 为一个系统任务
 #if (LOSCFG_KERNEL_SMP == YES)
-    OS_TCB_FROM_TID(*idleTaskID)->cpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
+    OS_TCB_FROM_TID(*idleTaskID)->cpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());//多核CPU的任务指定,防止乱串了,注意多核才会有并行处理
 #endif
-    (VOID)memset_s(OS_TCB_FROM_TID(*idleTaskID)->taskName, OS_TCB_NAME_LEN, 0, OS_TCB_NAME_LEN);
-    (VOID)memcpy_s(OS_TCB_FROM_TID(*idleTaskID)->taskName, OS_TCB_NAME_LEN, idleName, strlen(idleName));
+    (VOID)memset_s(OS_TCB_FROM_TID(*idleTaskID)->taskName, OS_TCB_NAME_LEN, 0, OS_TCB_NAME_LEN);//task 名字先清0
+    (VOID)memcpy_s(OS_TCB_FROM_TID(*idleTaskID)->taskName, OS_TCB_NAME_LEN, idleName, strlen(idleName));//task 名字叫 idle
     return LOS_OK;
 }
 

@@ -82,7 +82,7 @@ STATIC VOID OsSchedSwitchProcess(LosProcessCB *runProcess, LosProcessCB *newProc
         newProcess->timeSlice = OS_PROCESS_SCHED_RR_INTERVAL;//重新分配时间片，默认 20ms
     }
 }
-
+//重新调度实现
 VOID OsSchedResched(VOID)
 {
     LosTaskCB *runTask = NULL;
@@ -90,50 +90,50 @@ VOID OsSchedResched(VOID)
     LosProcessCB *runProcess = NULL;
     LosProcessCB *newProcess = NULL;
 
-    LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));
+    LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));//必须持有任务自旋锁,自旋锁是不是进程层面去抢锁,而是CPU各自核之间去争夺锁
 
-    if (!OsPreemptableInSched()) {
+    if (!OsPreemptableInSched()) {//是否置了重新调度标识位
         return;
     }
 
-    runTask = OsCurrTaskGet();
-    newTask = OsGetTopTask();
+    runTask = OsCurrTaskGet();//获取当前任务
+    newTask = OsGetTopTask();//获取优先级最最最高的任务
 
     /* always be able to get one task */
-    LOS_ASSERT(newTask != NULL);
+    LOS_ASSERT(newTask != NULL);//不能没有需调度的任务
 
-    if (runTask == newTask) {
+    if (runTask == newTask) {//当前任务就是最高任务,那还调度个啥的,直接退出.
         return;
     }
 
-    runTask->taskStatus &= ~OS_TASK_STATUS_RUNNING;
-    newTask->taskStatus |= OS_TASK_STATUS_RUNNING;
+    runTask->taskStatus &= ~OS_TASK_STATUS_RUNNING;//当前任务状态位置成不在运行状态
+    newTask->taskStatus |= OS_TASK_STATUS_RUNNING;//最高任务状态位置成在运行状态
 
-    runProcess = OS_PCB_FROM_PID(runTask->processID);
-    newProcess = OS_PCB_FROM_PID(newTask->processID);
+    runProcess = OS_PCB_FROM_PID(runTask->processID);//通过进程ID索引拿到进程实体
+    newProcess = OS_PCB_FROM_PID(newTask->processID);//同上
 
-    OsSchedSwitchProcess(runProcess, newProcess);
+    OsSchedSwitchProcess(runProcess, newProcess);//切换进程,里面主要涉及进程空间的切换,也就是MMU的上下文切换.
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#if (LOSCFG_KERNEL_SMP == YES)//CPU多核的情况
     /* mask new running task's owner processor */
-    runTask->currCpu = OS_TASK_INVALID_CPUID;
-    newTask->currCpu = ArchCurrCpuid();
+    runTask->currCpu = OS_TASK_INVALID_CPUID;//当前任务不占用CPU
+    newTask->currCpu = ArchCurrCpuid();//让新任务占用CPU
 #endif
 
-    (VOID)OsTaskSwitchCheck(runTask, newTask);
+    (VOID)OsTaskSwitchCheck(runTask, newTask);//切换task的检查
 
 #if (LOSCFG_KERNEL_SCHED_STATISTICS == YES)
     OsSchedStatistics(runTask, newTask);
 #endif
 
-    if ((newTask->timeSlice == 0) && (newTask->policy == LOS_SCHED_RR)) {
-        newTask->timeSlice = LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT;
+    if ((newTask->timeSlice == 0) && (newTask->policy == LOS_SCHED_RR)) {//没有时间片且是抢占式调度的方式,注意 非抢占式都不需要时间片的.
+        newTask->timeSlice = LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT;//给新任务时间片 默认 20ms
     }
 
-    OsCurrTaskSet((VOID*)newTask);
+    OsCurrTaskSet((VOID*)newTask);//设置新的task为CPU核的当前任务
 
-    if (OsProcessIsUserMode(newProcess)) {
-        OsCurrUserTaskSet(newTask->userArea);
+    if (OsProcessIsUserMode(newProcess)) {//用户模式下会怎么样?
+        OsCurrUserTaskSet(newTask->userArea);//设置task栈空间
     }
 
     PRINT_TRACE("cpu%d run process name: (%s) pid: %d status: %x threadMap: %x task name: (%s) tid: %d status: %x ->\n"
@@ -145,7 +145,7 @@ VOID OsSchedResched(VOID)
                 newProcess->threadScheduleMap, newTask->taskName, newTask->taskID, newTask->taskStatus);
 
     /* do the task context switch */
-    OsTaskSchedule(newTask, runTask);
+    OsTaskSchedule(newTask, runTask);//再执行调度,主要是切换CPU的上下文
 }
 
 VOID OsSchedPreempt(VOID)

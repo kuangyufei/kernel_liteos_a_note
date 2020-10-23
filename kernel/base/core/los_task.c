@@ -124,10 +124,10 @@ VOID OsSetMainTask()
         LOS_ListInit(&g_mainTask[i].lockList);//初始化 每个CPU core 持有的锁链表
     }
 }
-
-LITE_OS_SEC_TEXT WEAK VOID OsIdleTask(VOID)//空任务
+//空闲任务 注意 #define WEAK       __attribute__((weak)) 是用于防止crash的
+LITE_OS_SEC_TEXT WEAK VOID OsIdleTask(VOID)
 {
-    while (1) {
+    while (1) {//只有一个死循环
 #ifdef LOSCFG_KERNEL_TICKLESS
         if (OsTickIrqFlagGet()) {
             OsTickIrqFlagSet(0);
@@ -243,7 +243,7 @@ LITE_OS_SEC_TEXT UINT32 OsTaskSetDeatchUnsafe(LosTaskCB *taskCB)
 
     return LOS_EINVAL;
 }
-
+//任务扫描
 LITE_OS_SEC_TEXT VOID OsTaskScan(VOID)
 {
     SortLinkList *sortList = NULL;
@@ -253,7 +253,7 @@ LITE_OS_SEC_TEXT VOID OsTaskScan(VOID)
     LOS_DL_LIST *listObject = NULL;
     SortLinkAttribute *taskSortLink = NULL;
 
-    taskSortLink = &OsPercpuGet()->taskSortLink;
+    taskSortLink = &OsPercpuGet()->taskSortLink;//获取任务的排序链表
     taskSortLink->cursor = (taskSortLink->cursor + 1) & OS_TSK_SORTLINK_MASK;
     listObject = taskSortLink->sortLink + taskSortLink->cursor;
 
@@ -841,7 +841,7 @@ LOS_ERREND_REWIND_TCB:
 LOS_ERREND:
     return errRet;
 }
-
+//创建Task
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreate(UINT32 *taskID, TSK_INIT_PARAM_S *initParam)
 {
     UINT32 ret;
@@ -856,35 +856,35 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreate(UINT32 *taskID, TSK_INIT_PARAM_S *in
         return LOS_ERRNO_TSK_YIELD_IN_INT;
     }
 
-    if (initParam->uwResved & OS_TASK_FLAG_IDLEFLAG) {
-        initParam->processID = OsGetIdleProcessID();
-    } else if (OsProcessIsUserMode(OsCurrProcessGet())) {
-        initParam->processID = OsGetKernelInitProcessID();
+    if (initParam->uwResved & OS_TASK_FLAG_IDLEFLAG) {//OS_TASK_FLAG_IDLEFLAG 是属于内核 idle进程专用的
+        initParam->processID = OsGetIdleProcessID();//获取空闲进程
+    } else if (OsProcessIsUserMode(OsCurrProcessGet())) {//当前进程是否为用户模式
+        initParam->processID = OsGetKernelInitProcessID();//不是就取"Kernel"进程
     } else {
-        initParam->processID = OsCurrProcessGet()->processID;
+        initParam->processID = OsCurrProcessGet()->processID;//获取当前进程 ID赋值
     }
-    initParam->uwResved &= ~OS_TASK_FLAG_IDLEFLAG;
-    initParam->uwResved &= ~OS_TASK_FLAG_PTHREAD_JOIN;
-    if (initParam->uwResved & LOS_TASK_STATUS_DETACHED) {
-        initParam->uwResved = OS_TASK_FLAG_DETACHED;
+    initParam->uwResved &= ~OS_TASK_FLAG_IDLEFLAG;//不能是 OS_TASK_FLAG_IDLEFLAG
+    initParam->uwResved &= ~OS_TASK_FLAG_PTHREAD_JOIN;//不能是 OS_TASK_FLAG_PTHREAD_JOIN
+    if (initParam->uwResved & LOS_TASK_STATUS_DETACHED) {//是否设置了自动删除
+        initParam->uwResved = OS_TASK_FLAG_DETACHED;//自动删除,注意这里是 = ,也就是说只有 OS_TASK_FLAG_DETACHED 一个标签了
     }
 
-    ret = LOS_TaskCreateOnly(taskID, initParam);
+    ret = LOS_TaskCreateOnly(taskID, initParam);//创建一个任务,这是任务创建的实体,前面都只是前期准备工作
     if (ret != LOS_OK) {
         return ret;
     }
-    taskCB = OS_TCB_FROM_TID(*taskID);
+    taskCB = OS_TCB_FROM_TID(*taskID);//通过ID拿到task实体
 
     SCHEDULER_LOCK(intSave);
-    taskCB->taskStatus &= ~OS_TASK_STATUS_INIT;
-    OS_TASK_SCHED_QUEUE_ENQUEUE(taskCB, 0);
+    taskCB->taskStatus &= ~OS_TASK_STATUS_INIT;//任务不再是初始化
+    OS_TASK_SCHED_QUEUE_ENQUEUE(taskCB, 0);//进入调度就绪队列,新任务是直接进入就绪队列的
     SCHEDULER_UNLOCK(intSave);
 
     /* in case created task not running on this core,
        schedule or not depends on other schedulers status. */
-    LOS_MpSchedule(OS_MP_CPU_ALL);
-    if (OS_SCHEDULER_ACTIVE) {
-        LOS_Schedule();
+    LOS_MpSchedule(OS_MP_CPU_ALL);//如果创建的任务没有在这个核心上运行，是否调度取决于其他调度程序的状态。
+    if (OS_SCHEDULER_ACTIVE) {//当前CPU核处于可调度状态
+        LOS_Schedule();//发起调度
     }
 
     return LOS_OK;

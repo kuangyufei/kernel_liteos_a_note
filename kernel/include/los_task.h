@@ -491,7 +491,7 @@ typedef struct {
  *
  * Information of specified parameters passed in during task creation.
  */
-typedef struct tagTskInitParam {
+typedef struct tagTskInitParam {//Task的初始化参数
     TSK_ENTRY_FUNC  pfnTaskEntry;  /**< Task entrance function */
     UINT16          usTaskPrio;    /**< Task priority */
     UINT16          policy;        /**< Task policy */
