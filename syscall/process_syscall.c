@@ -133,7 +133,7 @@ int SysSchedGetScheduler(int id, int flag)
 
     return LOS_GetProcessScheduler(id);
 }
-
+//系统调用,设置调度参数
 int SysSchedSetScheduler(int id, int policy, int prio, int flag)
 {
     int ret;

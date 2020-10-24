@@ -55,7 +55,7 @@ extern "C" {
  * @return Return -EFAULT if error. Return 0 if success.
  */
 #define LOS_GetUser(dst, src) _arm_get_user((dst), (src), sizeof(*(dst)), sizeof(*(src)))
-
+//LOS_GetUser 用于在复制数据之前验证用户模式是否有权访问src。
 #ifdef __cplusplus
 #if __cplusplus
 }

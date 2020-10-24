@@ -37,7 +37,7 @@
 #include "user_copy.h"
 #include "los_signal.h"
 #include "los_strncpy_from_user.h"
-
+//打开消息队列
 mqd_t SysMqOpen(const char *mqName, int openFlag, mode_t mode, struct mq_attr *attr)
 {
     mqd_t ret;

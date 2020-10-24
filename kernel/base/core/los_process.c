@@ -67,7 +67,7 @@ extern "C" {
 //LITE_OS_SEC_BSS 和 LITE_OS_SEC_DATA_INIT 是告诉编译器这些全局变量放在哪个数据段
 LITE_OS_SEC_BSS LosProcessCB *g_runProcess[LOSCFG_KERNEL_CORE_NUM];// CPU内核个数,超过一个就实现了并行
 LITE_OS_SEC_BSS LosProcessCB *g_processCBArray = NULL; // 进程池数组
-LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_freeProcess;// 空闲状态下可供分配的进程,此时进程白纸一张
+LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_freeProcess;// 空闲状态下的进程链表, .个人觉得应该取名为 g_freeProcessList
 LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_processRecyleList;// 需要回收的进程列表
 LITE_OS_SEC_BSS UINT32 g_userInitProcess = OS_INVALID_VALUE;// 用户态的初始init进程,用户态下其他进程由它 fork
 LITE_OS_SEC_BSS UINT32 g_kernelInitProcess = OS_INVALID_VALUE;// 内核态初始Kprocess进程,内核态下其他进程由它 fork
@@ -408,7 +408,7 @@ LITE_OS_SEC_TEXT STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, Proc
 
     LOS_ListDelete(&childCB->pendList);
     if (childCB->processStatus & OS_PROCESS_FLAG_EXIT) {
-        LOS_ListHeadInsert(&g_processRecyleList, &childCB->pendList);
+        LOS_ListHeadInsert(&g_processRecyleList, &childCB->pendList);//注意g_processRecyleList挂的是pendList节点,所以要通过OS_PCB_FROM_PENDLIST找.
     } else if (childCB->processStatus & OS_PROCESS_FLAG_GROUP_LEADER) {
         LOS_ListTailInsert(&g_processRecyleList, &childCB->pendList);
     } else {
@@ -522,7 +522,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsProcessInit(VOID)
     for (index = 0; index < g_processMaxNum; index++) {//进程池循环创建
         g_processCBArray[index].processID = index;//进程ID[0-g_processMaxNum]赋值
         g_processCBArray[index].processStatus = OS_PROCESS_FLAG_UNUSED;// 默认都是白纸一张，臣妾干净着呢
-        LOS_ListTailInsert(&g_freeProcess, &g_processCBArray[index].pendList);// 初始全是可分配进程描述符
+        LOS_ListTailInsert(&g_freeProcess, &g_processCBArray[index].pendList);//注意g_freeProcess挂的是pendList节点,所以使用要通过OS_PCB_FROM_PENDLIST找到进程实体.
     }
 	// ????? 为啥用户模式的根进程 选1 ,内核模式的根进程选2 
     g_userInitProcess = 1; /* 1: The root process ID of the user-mode process is fixed at 1 *///用户模式的根进程
@@ -563,7 +563,7 @@ STATIC UINT32 OsCreateIdleProcess(VOID)
     (VOID)memcpy_s(OS_TCB_FROM_TID(*idleTaskID)->taskName, OS_TCB_NAME_LEN, idleName, strlen(idleName));//task 名字叫 idle
     return LOS_OK;
 }
-
+//进程回收再利用过程
 LITE_OS_SEC_TEXT VOID OsProcessCBRecyleToFree(VOID)
 {
     UINT32 intSave;
@@ -571,8 +571,9 @@ LITE_OS_SEC_TEXT VOID OsProcessCBRecyleToFree(VOID)
     LosProcessCB *processCB = NULL;
 
     SCHEDULER_LOCK(intSave);
-    while (!LOS_ListEmpty(&g_processRecyleList)) {
-        processCB = OS_PCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_processRecyleList));
+    while (!LOS_ListEmpty(&g_processRecyleList)) {//循环回收链表,直到为空
+        processCB = OS_PCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_processRecyleList));//找到回收链表中第一个进程实体
+        //OS_PCB_FROM_PENDLIST 代表的是通过pendlist节点找到 PCB实体,因为g_processRecyleList上面挂的是pendlist节点位置
         if (!(processCB->processStatus & OS_PROCESS_FLAG_EXIT)) {
             break;
         }
@@ -704,13 +705,13 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, U
     processCB->threadGroupID = OS_INVALID_VALUE;//所属线程组
     processCB->priority = priority;//优先级
     processCB->policy = policy;//调度算法 LOS_SCHED_RR
-    processCB->umask = OS_PROCESS_DEFAULT_UMASK;
+    processCB->umask = OS_PROCESS_DEFAULT_UMASK;//掩码
     processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;
 
-    LOS_ListInit(&processCB->threadSiblingList);
-    LOS_ListInit(&processCB->childrenList);
-    LOS_ListInit(&processCB->exitChildList);
-    LOS_ListInit(&(processCB->waitList));
+    LOS_ListInit(&processCB->threadSiblingList);//初始化任务/线程链表
+    LOS_ListInit(&processCB->childrenList);		//初始化孩子链表
+    LOS_ListInit(&processCB->exitChildList);	//初始化记录哪些孩子退出了的链表	
+    LOS_ListInit(&(processCB->waitList));		//初始化等待链表
 
     for (count = 0; count < OS_PRIORITY_QUEUE_NUM; ++count) { //根据 priority数 创建对应个数的队列
         LOS_ListInit(&processCB->threadPriQueueList[count]);  
@@ -1044,41 +1045,41 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);//还锁
     return -ret;
 }
-
+//接口封装 - 设置进程调度参数
 LITE_OS_SEC_TEXT INT32 LOS_SetProcessScheduler(INT32 pid, UINT16 policy, UINT16 prio)
 {
     return OsSetProcessScheduler(LOS_PRIO_PROCESS, pid, prio, policy, TRUE);
 }
-
+//接口封装 - 获得进程调度参数
 LITE_OS_SEC_TEXT INT32 LOS_GetProcessScheduler(INT32 pid)
 {
     LosProcessCB *processCB = NULL;
     UINT32 intSave;
     INT32 policy;
 
-    if (OS_PID_CHECK_INVALID(pid)) {
+    if (OS_PID_CHECK_INVALID(pid)) {//检查PID不能越界
         return -LOS_EINVAL;
     }
 
     SCHEDULER_LOCK(intSave);
-    processCB = OS_PCB_FROM_PID(pid);
-    if (OsProcessIsUnused(processCB)) {
+    processCB = OS_PCB_FROM_PID(pid);//通过pid获取进程实体
+    if (OsProcessIsUnused(processCB)) {//进程是否在使用判断
         policy = -LOS_ESRCH;
         goto OUT;
     }
 
-    policy = processCB->policy;
+    policy = processCB->policy;//获取进程调度方式
 
 OUT:
     SCHEDULER_UNLOCK(intSave);
     return policy;
 }
-
+//接口封装 - 设置进程优先级
 LITE_OS_SEC_TEXT INT32 LOS_SetProcessPriority(INT32 pid, UINT16 prio)
 {
-    return OsSetProcessScheduler(LOS_PRIO_PROCESS, pid, prio, LOS_SCHED_RR, FALSE);
+    return OsSetProcessScheduler(LOS_PRIO_PROCESS, pid, prio, LOS_SCHED_RR, FALSE);//抢占式调度
 }
-
+//接口封装 - 获取进程优先级 which:标识进程,进程组,用户
 LITE_OS_SEC_TEXT INT32 OsGetProcessPriority(INT32 which, INT32 pid)
 {
     LosProcessCB *processCB = NULL;
@@ -1107,12 +1108,12 @@ OUT:
     SCHEDULER_UNLOCK(intSave);
     return prio;
 }
-
+//接口封装 - 获取进程优先级
 LITE_OS_SEC_TEXT INT32 LOS_GetProcessPriority(INT32 pid)
 {
     return OsGetProcessPriority(LOS_PRIO_PROCESS, pid);
 }
-
+//等待唤醒进程的信号
 LITE_OS_SEC_TEXT VOID OsWaitSignalToWakeProcess(LosProcessCB *processCB)
 {
     LosTaskCB *taskCB = NULL;
@@ -1122,11 +1123,11 @@ LITE_OS_SEC_TEXT VOID OsWaitSignalToWakeProcess(LosProcessCB *processCB)
     }
 
     /* only suspend process can continue */
-    if (!(processCB->processStatus & OS_PROCESS_STATUS_PEND)) {
+    if (!(processCB->processStatus & OS_PROCESS_STATUS_PEND)) {//进程必须处于阻塞状态
         return;
     }
 
-    if (!LOS_ListEmpty(&processCB->waitList)) {
+    if (!LOS_ListEmpty(&processCB->waitList)) {//进程保存waitLits以支持wait/waitpid
         taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&processCB->waitList));
         OsWaitWakeTask(taskCB, OS_INVALID_VALUE);
     }
@@ -1702,7 +1703,7 @@ STATIC VOID OsInitCopyTaskParam(LosProcessCB *childProcessCB, const CHAR *name, 
 
     SCHEDULER_UNLOCK(intSave);
 }
-
+//拷贝一个Task过程
 STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR *name, UINTPTR entry, UINT32 size)
 {
     LosTaskCB *childTaskCB = NULL;
@@ -1711,9 +1712,9 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
     UINT32 intSave;
     UINT32 taskID;
 
-    OsInitCopyTaskParam(childProcessCB, name, entry, size, &childPara);
+    OsInitCopyTaskParam(childProcessCB, name, entry, size, &childPara);//初始化Task参数
 
-    ret = LOS_TaskCreateOnly(&taskID, &childPara);
+    ret = LOS_TaskCreateOnly(&taskID, &childPara);//只创建任务,不调度
     if (ret != LOS_OK) {
         if (ret == LOS_ERRNO_TSK_TCB_UNAVAILABLE) {
             return LOS_EAGAIN;
@@ -1721,19 +1722,19 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
         return LOS_ENOMEM;
     }
 
-    childTaskCB = OS_TCB_FROM_TID(taskID);
-    childTaskCB->taskStatus = OsCurrTaskGet()->taskStatus;
-    if (childTaskCB->taskStatus & OS_TASK_STATUS_RUNNING) {
-        childTaskCB->taskStatus &= ~OS_TASK_STATUS_RUNNING;
-    } else {
-        if (OS_SCHEDULER_ACTIVE) {
+    childTaskCB = OS_TCB_FROM_TID(taskID);//通过taskId获取task实体
+    childTaskCB->taskStatus = OsCurrTaskGet()->taskStatus;//任务状态先同步,注意这里是赋值操作. ...01101001 
+    if (childTaskCB->taskStatus & OS_TASK_STATUS_RUNNING) {//因只能有一个运行的task,所以如果一样要改4号位
+        childTaskCB->taskStatus &= ~OS_TASK_STATUS_RUNNING;//将四号位清0 ,变成 ...01100001 
+    } else {//非运行状态下会发生什么?
+        if (OS_SCHEDULER_ACTIVE) {//克隆线程发生错误未运行
             LOS_Panic("Clone thread status not running error status: 0x%x\n", childTaskCB->taskStatus);
         }
-        childTaskCB->taskStatus &= ~OS_TASK_STATUS_UNUSED;
-        childProcessCB->priority = OS_PROCESS_PRIORITY_LOWEST;
+        childTaskCB->taskStatus &= ~OS_TASK_STATUS_UNUSED;//干净的Task
+        childProcessCB->priority = OS_PROCESS_PRIORITY_LOWEST;//进程设为最低优先级
     }
 
-    if (OsProcessIsUserMode(childProcessCB)) {
+    if (OsProcessIsUserMode(childProcessCB)) {//是否是用户进程
         SCHEDULER_LOCK(intSave);
         OsUserCloneParentStack(childTaskCB, OsCurrTaskGet());
         SCHEDULER_UNLOCK(intSave);
@@ -1970,33 +1971,33 @@ LITE_OS_SEC_TEXT VOID OsProcessExit(LosTaskCB *runTask, INT32 status)
     OsProcessNaturalExit(runTask, status);
     SCHEDULER_UNLOCK(intSave);
 }
-
+//接口封装 进程退出
 LITE_OS_SEC_TEXT VOID LOS_Exit(INT32 status)
 {
     OsTaskExitGroup((UINT32)status);
     OsProcessExit(OsCurrTaskGet(), (UINT32)status);
 }
-
+//获取用户进程的根进程,所有用户进程都是g_processCBArray[g_userInitProcess] fork来的
 LITE_OS_SEC_TEXT UINT32 OsGetUserInitProcessID(VOID)
 {
     return g_userInitProcess;
 }
-
+//获取Idel进程,CPU不公正时待的地方,等待被事件唤醒
 LITE_OS_SEC_TEXT UINT32 OsGetIdleProcessID(VOID)
 {
     return g_kernelIdleProcess;
 }
-
+//获取内核进程的根进程,所有内核进程都是g_processCBArray[g_kernelInitProcess] fork来的,包括g_processCBArray[g_kernelIdleProcess]进程
 LITE_OS_SEC_TEXT UINT32 OsGetKernelInitProcessID(VOID)
 {
     return g_kernelInitProcess;
 }
-
+//设置进程的中断处理函数
 LITE_OS_SEC_TEXT VOID OsSetSigHandler(UINTPTR addr)
 {
     OsCurrProcessGet()->sigHandler = addr;
 }
-
+//获取进程的中断处理函数
 LITE_OS_SEC_TEXT UINTPTR OsGetSigHandler(VOID)
 {
     return OsCurrProcessGet()->sigHandler;

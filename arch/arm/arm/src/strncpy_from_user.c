@@ -38,7 +38,7 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+//从用户空间到内核空间的数据拷贝
 INT32 LOS_StrncpyFromUser(CHAR *dst, const CHAR *src, INT32 count)
 {
     CHAR character;
@@ -47,13 +47,13 @@ INT32 LOS_StrncpyFromUser(CHAR *dst, const CHAR *src, INT32 count)
     size_t offset = 0;
 
     if ((!LOS_IsKernelAddress((VADDR_T)(UINTPTR)dst)) || (!LOS_IsUserAddress((VADDR_T)(UINTPTR)src)) || (count <= 0)) {
-        return -EFAULT;
+        return -EFAULT;//判断是否在各自空间
     }
 
     maxCount = (LOS_IsUserAddressRange((VADDR_T)(UINTPTR)src, (size_t)count)) ? \
-                count : (USER_ASPACE_TOP_MAX - (UINTPTR)src);
-
-    for (i = 0; i < maxCount; ++i) {
+                count : (USER_ASPACE_TOP_MAX - (UINTPTR)src);//最大能拷贝的数据量,结束地址不能超过 USER_ASPACE_TOP_MAX
+															//USER_ASPACE_TOP_MAX 是用户空间能触及的最大虚拟内存空间地址
+    for (i = 0; i < maxCount; ++i) {//一个个字符拷贝
         if (LOS_GetUser(&character, src + offset) != LOS_OK) {
             return -EFAULT;
         }
