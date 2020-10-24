@@ -73,8 +73,8 @@ LITE_OS_SEC_BSS UINT32 g_userInitProcess = OS_INVALID_VALUE;// 用户态的初�
 LITE_OS_SEC_BSS UINT32 g_kernelInitProcess = OS_INVALID_VALUE;// 内核态初始Kprocess进程,内核态下其他进程由它 fork
 LITE_OS_SEC_BSS UINT32 g_kernelIdleProcess = OS_INVALID_VALUE;// 内核态idle进程,由Kprocess fork
 LITE_OS_SEC_BSS UINT32 g_processMaxNum;// 进程最大数量
-LITE_OS_SEC_BSS ProcessGroup *g_processGroup = NULL;// 进程组
-//将task从该进程的就绪队列中删除
+LITE_OS_SEC_BSS ProcessGroup *g_processGroup = NULL;// 全局进程组,负责管理所有进程组
+//将task从该进程的就绪队列中摘除,如果需要进程也从进程就绪队列中摘除
 LITE_OS_SEC_TEXT_INIT VOID OsTaskSchedQueueDequeue(LosTaskCB *taskCB, UINT16 status)
 {
     LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);//从进程池中取进程
@@ -150,48 +150,48 @@ STATIC INLINE VOID OsInsertPCBToFreeList(LosProcessCB *processCB)
     processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;//timeID初始化值
     LOS_ListTailInsert(&g_freeProcess, &processCB->pendList);//进程节点挂入g_freeProcess以分配给后续进程使用
 }
-
+//创建进程组
 STATIC ProcessGroup *OsCreateProcessGroup(UINT32 pid)
 {
     LosProcessCB *processCB = NULL;
-    ProcessGroup *group = LOS_MemAlloc(m_aucSysMem1, sizeof(ProcessGroup));
+    ProcessGroup *group = LOS_MemAlloc(m_aucSysMem1, sizeof(ProcessGroup));//从内存池中分配进程组结构体
     if (group == NULL) {
         return NULL;
     }
 
-    group->groupID = pid;
-    LOS_ListInit(&group->processList);
-    LOS_ListInit(&group->exitProcessList);
+    group->groupID = pid;//参数当进程组ID
+    LOS_ListInit(&group->processList);//初始化进程链表,这里把组内的进程都挂上去
+    LOS_ListInit(&group->exitProcessList);//初始化退出进程链表,这里挂退出的进程
 
-    processCB = OS_PCB_FROM_PID(pid);
-    LOS_ListTailInsert(&group->processList, &processCB->subordinateGroupList);
-    processCB->group = group;
-    processCB->processStatus |= OS_PROCESS_FLAG_GROUP_LEADER;
-    if (g_processGroup != NULL) {
-        LOS_ListTailInsert(&g_processGroup->groupList, &group->groupList);
+    processCB = OS_PCB_FROM_PID(pid);//通过pid获得进程实体
+    LOS_ListTailInsert(&group->processList, &processCB->subordinateGroupList);//通过subordinateGroupList挂在进程组上,自然后续要通过它来找到进程实体
+    processCB->group = group;//设置进程所属进程组
+    processCB->processStatus |= OS_PROCESS_FLAG_GROUP_LEADER;//进程状态贴上当老大的标签
+    if (g_processGroup != NULL) {//全局进程组链表判空,g_processGroup指向"Kernel"进程所在组,详见: OsKernelInitProcess
+        LOS_ListTailInsert(&g_processGroup->groupList, &group->groupList);//把进程组挂到全局进程组链表上
     }
 
     return group;
 }
-
-STATIC VOID OsExitProcessGroup(LosProcessCB *processCB, ProcessGroup **group)
+//退出进程组,参数是进程地址和进程组地址的地址
+STATIC VOID OsExitProcessGroup(LosProcessCB *processCB, ProcessGroup **group)//ProcessGroup *g_processGroup = NULL
 {
-    LosProcessCB *groupProcessCB = OS_PCB_FROM_PID(processCB->group->groupID);
+    LosProcessCB *groupProcessCB = OS_PCB_FROM_PID(processCB->group->groupID);//找到进程组老大进程的实体
 
-    LOS_ListDelete(&processCB->subordinateGroupList);
-    if (LOS_ListEmpty(&processCB->group->processList) && LOS_ListEmpty(&processCB->group->exitProcessList)) {
-        LOS_ListDelete(&processCB->group->groupList);
-        groupProcessCB->processStatus &= ~OS_PROCESS_FLAG_GROUP_LEADER;
-        *group = processCB->group;
-        if (OsProcessIsUnused(groupProcessCB) && !(groupProcessCB->processStatus & OS_PROCESS_FLAG_EXIT)) {
-            LOS_ListDelete(&groupProcessCB->pendList);
-            OsInsertPCBToFreeList(groupProcessCB);
+    LOS_ListDelete(&processCB->subordinateGroupList);//从进程组进程链表上摘出去
+    if (LOS_ListEmpty(&processCB->group->processList) && LOS_ListEmpty(&processCB->group->exitProcessList)) {//进程组进程链表和退出进程链表都为空时
+        LOS_ListDelete(&processCB->group->groupList);//从全局进程组链表上把自己摘出去 记住它是 LOS_ListTailInsert(&g_processGroup->groupList, &group->groupList) 挂上去的
+        groupProcessCB->processStatus &= ~OS_PROCESS_FLAG_GROUP_LEADER;//贴上不是组长的标签
+        *group = processCB->group;//????? 这步操作没看明白,谁能告诉我为何要这么做?
+        if (OsProcessIsUnused(groupProcessCB) && !(groupProcessCB->processStatus & OS_PROCESS_FLAG_EXIT)) {//组长进程时退出的标签
+            LOS_ListDelete(&groupProcessCB->pendList);//进程从全局进程链表上摘除
+            OsInsertPCBToFreeList(groupProcessCB);//释放进程的资源,回到freelist再利用
         }
     }
 
     processCB->group = NULL;
 }
-
+//通过组ID找个进程组
 STATIC ProcessGroup *OsFindProcessGroup(UINT32 gid)
 {
     ProcessGroup *group = NULL;
@@ -460,16 +460,16 @@ STATIC VOID OsChildProcessResourcesFree(const LosProcessCB *processCB)
         (VOID)LOS_MemFree(m_aucSysMem1, group);
     }
 }
-
+//进程的自然退出,参数是当前运行的任务
 STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
 {
-    LosProcessCB *processCB = OS_PCB_FROM_PID(runTask->processID);
+    LosProcessCB *processCB = OS_PCB_FROM_PID(runTask->processID);//通过task找到所属PCB
     LosProcessCB *parentCB = NULL;
 
-    LOS_ASSERT(!(processCB->threadScheduleMap != 0));
-    LOS_ASSERT(processCB->processStatus & OS_PROCESS_STATUS_RUNNING);
+    LOS_ASSERT(!(processCB->threadScheduleMap != 0));//断言没有任务需要调度了,当前task是最后一个了
+    LOS_ASSERT(processCB->processStatus & OS_PROCESS_STATUS_RUNNING);//断言必须为正在运行的进程
 
-    OsChildProcessResourcesFree(processCB);
+    OsChildProcessResourcesFree(processCB);//
 
 #ifdef LOSCFG_KERNEL_CPUP
     OsCpupClean(processCB->processID);
@@ -731,12 +731,12 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, U
         }
         (VOID)memset_s(ttb, PAGE_SIZE, 0, PAGE_SIZE);
         retVal = OsUserVmSpaceInit(space, ttb);//初始化虚拟空间和本进程 mmu
-        vmPage = OsVmVaddrToPage(ttb);
-        if ((retVal == FALSE) || (vmPage == NULL)) {
+        vmPage = OsVmVaddrToPage(ttb);//通过虚拟地址拿到page
+        if ((retVal == FALSE) || (vmPage == NULL)) {//异常处理
             PRINT_ERR("create space failed! ret: %d, vmPage: %#x\n", retVal, vmPage);
-            processCB->processStatus = OS_PROCESS_FLAG_UNUSED;
-            (VOID)LOS_MemFree(m_aucSysMem0, space);
-            LOS_PhysPagesFreeContiguous(ttb, 1);
+            processCB->processStatus = OS_PROCESS_FLAG_UNUSED;//进程未使用,干净
+            (VOID)LOS_MemFree(m_aucSysMem0, space);//释放虚拟空间
+            LOS_PhysPagesFreeContiguous(ttb, 1);//释放物理页,4K
             return LOS_EAGAIN;
         }
         processCB->vmSpace = space;
@@ -900,7 +900,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsKernelInitProcess(VOID)
     }
 
     processCB->processStatus &= ~OS_PROCESS_STATUS_INIT;// 进程初始化位 置1
-    g_processGroup = processCB->group;//进程组
+    g_processGroup = processCB->group;//全局进程组指向了KProcess所在的进程组
     LOS_ListInit(&g_processGroup->groupList);// 进程组链表初始化
     OsCurrProcessSet(processCB);// 设置为当前进程
 
