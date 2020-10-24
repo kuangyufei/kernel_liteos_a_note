@@ -297,7 +297,7 @@ typedef struct {
     VOID            *stackPointer;      /**< Task stack pointer */
     UINT16          taskStatus;         /**< Task status */
     UINT16          priority;           /**< Task priority */
-    UINT16          policy;
+    UINT16          policy;				//任务的调度方式(三种 .. LOS_SCHED_RR )
     UINT16          timeSlice;          /**< Remaining time slice */
     UINT32          stackSize;          /**< Task stack size */
     UINTPTR         topOfStack;         /**< Task stack top */
@@ -318,7 +318,7 @@ typedef struct {
                                              the priority can not be greater than 31 */
     INT32           errorNo;            /**< Error Num */
     UINT32          signal;             /**< Task signal */
-    sig_cb          sig;
+    sig_cb          sig;				//信号控制块
 #if (LOSCFG_KERNEL_SMP == YES)
     UINT16          currCpu;            /**< CPU core number of this task is running on */
     UINT16          lastCpu;            /**< CPU core number of this task is running on last time */
@@ -334,8 +334,8 @@ typedef struct {
     SchedStat       schedStat;          /**< Schedule statistics */
 #endif
 #endif
-    UINTPTR         userArea;
-    UINTPTR         userMapBase;
+    UINTPTR         userArea;			//使用区域,由运行时划定,根据运行态不同而不同
+    UINTPTR         userMapBase;		//使用区栈底位置
     UINT32          userMapSize;        /**< user thread stack size ,real size : userMapSize + USER_STACK_MIN_SIZE */
     UINT32          processID;          /**< Which belong process */
     FutexNode       futex;
@@ -345,9 +345,9 @@ typedef struct {
     UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
                                              a specific child process, or any child process */
 #if (LOSCFG_KERNEL_LITEIPC == YES)
-    UINT32          ipcStatus;
-    LOS_DL_LIST     msgListHead;
-    BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];
+    UINT32          ipcStatus;			//IPC状态
+    LOS_DL_LIST     msgListHead;		//消息队列头结点
+    BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];//访问图,指的是task之间是否能访问的标识,LOSCFG_BASE_CORE_TSK_LIMIT 为任务池总数
 #endif
 } LosTaskCB;
 

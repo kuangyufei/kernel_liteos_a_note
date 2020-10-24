@@ -36,17 +36,17 @@
 #include "los_vm_phys.h"
 #include "los_vm_map.h"
 #include "los_vm_dump.h"
-
+//进程开始执行,参数为加载完ELF后的信息
 STATIC INT32 OsExecve(const ELFLoadInfo *loadInfo)
 {
-    if ((loadInfo == NULL) || (loadInfo->elfEntry == 0)) {
+    if ((loadInfo == NULL) || (loadInfo->elfEntry == 0)) {//参数检查
         return LOS_NOK;
     }
 
     return OsExecStart((TSK_ENTRY_FUNC)(loadInfo->elfEntry), (UINTPTR)loadInfo->stackTop,
-                       loadInfo->stackBase, loadInfo->stackSize);
+                       loadInfo->stackBase, loadInfo->stackSize);//进程开始执行,设置上栈顶,栈底,栈大小
 }
-
+//获取真正的路径
 #ifdef LOSCFG_SHELL
 STATIC INT32 OsGetRealPath(const CHAR *fileName, CHAR *buf, UINT32 maxLen)
 {
@@ -54,7 +54,7 @@ STATIC INT32 OsGetRealPath(const CHAR *fileName, CHAR *buf, UINT32 maxLen)
     UINT32 len, workPathLen, newLen;
 
     if (access(fileName, F_OK) < 0) {
-        workingDirectory = OsShellGetWorkingDirtectory();
+        workingDirectory = OsShellGetWorkingDirtectory();//获取工作目录
         if (workingDirectory == NULL) {
             goto ERR_FILE;
         }
@@ -86,13 +86,13 @@ ERR_FILE:
     return -ENOENT;
 }
 #endif
-
+//拷贝用户参数
 STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *kfileName, UINT32 maxSize)
 {
     UINT32 strLen;
     errno_t err;
 
-    if (LOS_IsUserAddress((VADDR_T)(UINTPTR)fileName)) {
+    if (LOS_IsUserAddress((VADDR_T)(UINTPTR)fileName)) {//在用户空间
         err = LOS_StrncpyFromUser(kfileName, fileName, PATH_MAX + 1);
         if (err == -EFAULT) {
             return err;
@@ -100,9 +100,9 @@ STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *
             PRINT_ERR("%s[%d], filename len exceeds maxlen: %d\n", __FUNCTION__, __LINE__, PATH_MAX);
             return -ENAMETOOLONG;
         }
-    } else if (LOS_IsKernelAddress((VADDR_T)(UINTPTR)fileName)) {
+    } else if (LOS_IsKernelAddress((VADDR_T)(UINTPTR)fileName)) {//在内核空间
         strLen = strlen(fileName);
-        err = memcpy_s(kfileName, PATH_MAX, fileName, strLen);
+        err = memcpy_s(kfileName, PATH_MAX, fileName, strLen);//从filename -> kfilename 
         if (err != EOK) {
             PRINT_ERR("%s[%d], Copy failed! err: %d\n", __FUNCTION__, __LINE__, err);
             return -EFAULT;
@@ -117,7 +117,7 @@ STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *
 
 INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *envp)
 {
-    ELFLoadInfo loadInfo = { 0 };
+    ELFLoadInfo loadInfo = { 0 };//ELF加载信息结构体
     CHAR kfileName[PATH_MAX + 1] = { 0 };
     INT32 ret;
 #ifdef LOSCFG_SHELL
@@ -130,7 +130,7 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
         ((envp != NULL) && !LOS_IsUserAddress((VADDR_T)(UINTPTR)envp))) {
         return -EINVAL;
     }
-    ret = OsCopyUserParam(&loadInfo, fileName, kfileName, PATH_MAX);
+    ret = OsCopyUserParam(&loadInfo, fileName, kfileName, PATH_MAX);//将文件名拷贝到内核空间,PATH_MAX = 256
     if (ret != LOS_OK) {
         return ret;
     }
@@ -144,15 +144,15 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
     }
 #endif
 
-    loadInfo.newSpace = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmSpace));
+    loadInfo.newSpace = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmSpace));//分配一个虚拟空间结构体
     if (loadInfo.newSpace == NULL) {
         PRINT_ERR("%s %d, failed to allocate new vm space\n", __FUNCTION__, __LINE__);
         return -ENOMEM;
     }
-    virtTtb = LOS_PhysPagesAllocContiguous(1);
+    virtTtb = LOS_PhysPagesAllocContiguous(1);//分配一个物理页用于存放L1页表,虚拟地址<--->物理地址映射使用
     if (virtTtb == NULL) {
         PRINT_ERR("%s %d, failed to allocate ttb page\n", __FUNCTION__, __LINE__);
-        LOS_MemFree(m_aucSysMem0, loadInfo.newSpace);
+        LOS_MemFree(m_aucSysMem0, loadInfo.newSpace);//
         return -ENOMEM;
     }
 

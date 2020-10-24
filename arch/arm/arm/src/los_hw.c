@@ -127,7 +127,7 @@ LITE_OS_SEC_TEXT VOID OsUserCloneParentStack(LosTaskCB *childTaskCB, LosTaskCB *
     (VOID)memcpy_s(childTaskCB->stackPointer, sizeof(TaskContext), cloneStack, sizeof(TaskContext));
     context->R[0] = 0;
 }
-//用户栈初始化
+//用户任务使用栈初始化
 LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, TSK_ENTRY_FUNC taskEntry, UINTPTR stack)
 {
     LOS_ASSERT(context != NULL);
@@ -139,7 +139,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, TSK_ENTRY_F
 #endif
     context->R[0] = stack;//栈指针给r0寄存器
     context->SP = TRUNCATE(stack, LOSCFG_STACK_POINT_ALIGN_SIZE);//异常模式所专用的堆栈 segment fault 输出回溯信息
-    context->LR = 0;//保存子程序返回地址 a call b ,在b中保存 a地址
+    context->LR = 0;//保存子程序返回地址 例如 a call b ,在b中保存 a地址
     context->PC = (UINTPTR)taskEntry;//入口函数
 }
 

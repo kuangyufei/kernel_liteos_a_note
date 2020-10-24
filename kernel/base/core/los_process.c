@@ -127,7 +127,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskSchedQueueEnqueue(LosTaskCB *taskCB, UINT16 sta
         } else {
             OS_PROCESS_PRI_QUEUE_ENQUEUE(processCB);//入进程入g_priQueueList就绪队列
         }
-        processCB->processStatus &= ~(status | OS_PROCESS_STATUS_PEND);
+        processCB->processStatus &= ~(status | OS_PROCESS_STATUS_PEND);//去掉外传标签和阻塞标签
         processCB->processStatus |= OS_PROCESS_STATUS_READY;
     } else {
         LOS_ASSERT(!(processCB->processStatus & OS_PROCESS_STATUS_PEND));
@@ -739,10 +739,10 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, U
             LOS_PhysPagesFreeContiguous(ttb, 1);//释放物理页,4K
             return LOS_EAGAIN;
         }
-        processCB->vmSpace = space;
-        LOS_ListAdd(&processCB->vmSpace->archMmu.ptList, &(vmPage->node));
+        processCB->vmSpace = space;//设为进程虚拟空间
+        LOS_ListAdd(&processCB->vmSpace->archMmu.ptList, &(vmPage->node));//将空间映射页表挂在 空间的mmu L1页表, L1为表头
     } else {
-        processCB->vmSpace = LOS_GetKVmSpace();
+        processCB->vmSpace = LOS_GetKVmSpace();//内核共用一个虚拟空间,内核进程 常驻内存
     }
 
 #ifdef LOSCFG_SECURITY_VID
@@ -762,7 +762,7 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, U
 
     return LOS_OK;
 }
-
+//创建用户
 #ifdef LOSCFG_SECURITY_CAPABILITY
 STATIC User *OsCreateUser(UINT32 userID, UINT32 gid, UINT32 size)
 {
@@ -1540,7 +1540,7 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
     LOS_VmSpaceFree(oldSpace);
     return LOS_OK;
 }
-
+//进程层面的开始执行, entry为入口函数 ,其中 创建好task,task上下文 等待调度真正执行, sp:栈指针 mapBase:栈底 mapSize:栈大小
 LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBase, UINT32 mapSize)
 {
     LosProcessCB *processCB = NULL;
@@ -1552,36 +1552,36 @@ LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINT
         return LOS_NOK;
     }
 
-    if ((sp == 0) || (LOS_Align(sp, LOSCFG_STACK_POINT_ALIGN_SIZE) != sp)) {
+    if ((sp == 0) || (LOS_Align(sp, LOSCFG_STACK_POINT_ALIGN_SIZE) != sp)) {//对齐
         return LOS_NOK;
     }
 
-    if ((mapBase == 0) || (mapSize == 0) || (sp <= mapBase) || (sp > (mapBase + mapSize))) {
+    if ((mapBase == 0) || (mapSize == 0) || (sp <= mapBase) || (sp > (mapBase + mapSize))) {//参数检查
         return LOS_NOK;
     }
 
-    SCHEDULER_LOCK(intSave);
-    processCB = OsCurrProcessGet();
-    taskCB = OsCurrTaskGet();
+    SCHEDULER_LOCK(intSave);//拿自旋锁
+    processCB = OsCurrProcessGet();//获取当前进程
+    taskCB = OsCurrTaskGet();//获取当前任务
 
-    processCB->threadGroupID = taskCB->taskID;
-    taskCB->userMapBase = mapBase;
-    taskCB->userMapSize = mapSize;
-    taskCB->taskEntry = (TSK_ENTRY_FUNC)entry;
+    processCB->threadGroupID = taskCB->taskID;//threadGroupID是进程的主线程ID,也就是应用程序 main函数线程
+    taskCB->userMapBase = mapBase;//任务栈底地址
+    taskCB->userMapSize = mapSize;//任务栈大小
+    taskCB->taskEntry = (TSK_ENTRY_FUNC)entry;//任务的入口函数
 
-    taskContext = (TaskContext *)OsTaskStackInit(taskCB->taskID, taskCB->stackSize, (VOID *)taskCB->topOfStack, FALSE);
-    OsUserTaskStackInit(taskContext, taskCB->taskEntry, sp);
-    SCHEDULER_UNLOCK(intSave);
+    taskContext = (TaskContext *)OsTaskStackInit(taskCB->taskID, taskCB->stackSize, (VOID *)taskCB->topOfStack, FALSE);//创建任务上下文
+    OsUserTaskStackInit(taskContext, taskCB->taskEntry, sp);//用户进程任务栈初始化
+    SCHEDULER_UNLOCK(intSave);//解锁
     return LOS_OK;
 }
-
+//用户进程开始初始化
 STATIC UINT32 OsUserInitProcessStart(UINT32 processID, TSK_INIT_PARAM_S *param)
 {
     UINT32 intSave;
     INT32 taskID;
     INT32 ret;
 
-    taskID = OsCreateUserTask(processID, param);
+    taskID = OsCreateUserTask(processID, param);//创建一个用户态任务
     if (taskID < 0) {
         return LOS_NOK;
     }
@@ -1657,7 +1657,7 @@ ERROR:
     OsDeInitPCB(processCB);//删除PCB块
     return ret;
 }
-
+//拷贝用户信息 直接用memcpy_s
 STATIC UINT32 OsCopyUser(LosProcessCB *childCB, LosProcessCB *parentCB)
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -1671,7 +1671,7 @@ STATIC UINT32 OsCopyUser(LosProcessCB *childCB, LosProcessCB *parentCB)
 #endif
     return LOS_OK;
 }
-
+//任务初始化时拷贝任务信息
 STATIC VOID OsInitCopyTaskParam(LosProcessCB *childProcessCB, const CHAR *name, UINTPTR entry, UINT32 size,
                                 TSK_INIT_PARAM_S *childPara)
 {
@@ -1679,9 +1679,9 @@ STATIC VOID OsInitCopyTaskParam(LosProcessCB *childProcessCB, const CHAR *name, 
     UINT32 intSave;
 
     SCHEDULER_LOCK(intSave);
-    mainThread = OsCurrTaskGet();
+    mainThread = OsCurrTaskGet();//获取当前task,注意变量名从这里也可以看出 thread 和 task 是一个概念,只是内核常说task,上层应用说thread ,概念的映射.
 
-    if (OsProcessIsUserMode(childProcessCB)) {
+    if (OsProcessIsUserMode(childProcessCB)) {//用户模式进程
         childPara->pfnTaskEntry = mainThread->taskEntry;
         childPara->uwStackSize = mainThread->stackSize;
         childPara->userParam.userArea = mainThread->userArea;

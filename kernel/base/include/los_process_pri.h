@@ -359,7 +359,7 @@ STATIC INLINE BOOL OsProcessExitCodeSignalIsSet(LosProcessCB *processCB)
     return (processCB->exitCode) & 0x7FU;//低7位全部置1
 }
 
-STATIC INLINE VOID OsProcessExitCodeSet(LosProcessCB *processCB, UINT32 code)//外界提供退出码
+STATIC INLINE VOID OsProcessExitCodeSet(LosProcessCB *processCB, UINT32 code)//由外界提供退出码
 {
     processCB->exitCode |= ((code & 0x000000FFU) << 8U) & 0x0000FF00U; /* 8: Move 8 bits to the left, exitCode */
 }

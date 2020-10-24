@@ -862,7 +862,7 @@ unsigned int SysCreateUserThread(const TSK_ENTRY_FUNC func, const UserTaskParam 
 
     return OsCreateUserTask(OS_INVALID_VALUE, &param);
 }
-
+//系统调用-设置线程使用区域,所有的系统调用都运行在内核态,也运行在内核空间
 int SysSetThreadArea(const char *area)
 {
     unsigned int intSave;
@@ -870,27 +870,27 @@ int SysSetThreadArea(const char *area)
     LosProcessCB *processCB = NULL;
     unsigned int ret = LOS_OK;
 
-    if (!LOS_IsUserAddress((unsigned long)(uintptr_t)area)) {
+    if (!LOS_IsUserAddress((unsigned long)(uintptr_t)area)) {//区域不能在用户空间
         return EINVAL;
     }
 
     SCHEDULER_LOCK(intSave);
-    taskCB = OsCurrTaskGet();
-    processCB = OS_PCB_FROM_PID(taskCB->processID);
-    if (processCB->processMode != OS_USER_MODE) {
+    taskCB = OsCurrTaskGet();//获取当前任务
+    processCB = OS_PCB_FROM_PID(taskCB->processID);//获取当前进程
+    if (processCB->processMode != OS_USER_MODE) {//当前进程不能是用户模式
         ret = EPERM;
         goto OUT;
     }
 
-    taskCB->userArea = (unsigned long)(uintptr_t)area;
+    taskCB->userArea = (unsigned long)(uintptr_t)area;//task的使用区域
 OUT:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-
+//获取系统调用线程的使用区域
 char *SysGetThreadArea(void)
 {
-    return (char *)(OsCurrTaskGet()->userArea);
+    return (char *)(OsCurrTaskGet()->userArea);//直接返回使用区域
 }
 
 int SysUserThreadSetDeatch(unsigned int taskID)

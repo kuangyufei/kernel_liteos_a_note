@@ -1838,7 +1838,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsCreateUserTaskParamCheck(UINT32 processID,
 
     return LOS_OK;
 }
-
+//创建一个用户任务
 LITE_OS_SEC_TEXT_INIT INT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam)
 {
     LosProcessCB *processCB = NULL;
@@ -1851,32 +1851,32 @@ LITE_OS_SEC_TEXT_INIT INT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S 
         return ret;
     }
 
-    initParam->uwStackSize = OS_USER_TASK_SYSCALL_SATCK_SIZE;
-    initParam->usTaskPrio = OS_TASK_PRIORITY_LOWEST;
-    initParam->policy = LOS_SCHED_RR;
-    if (processID == OS_INVALID_VALUE) {
+    initParam->uwStackSize = OS_USER_TASK_SYSCALL_SATCK_SIZE;//设置任务栈大小,这里用了用户态下系统调用的栈大小(12K)      
+    initParam->usTaskPrio = OS_TASK_PRIORITY_LOWEST;//设置默认优先级
+    initParam->policy = LOS_SCHED_RR;//调度方式为抢占式,注意鸿蒙不仅仅只支持抢占式调度方式
+    if (processID == OS_INVALID_VALUE) {//外面没指定进程ID的处理
         SCHEDULER_LOCK(intSave);
-        processCB = OsCurrProcessGet();
-        initParam->processID = processCB->processID;
-        initParam->consoleID = processCB->consoleID;
+        processCB = OsCurrProcessGet();//拿当前运行的进程
+        initParam->processID = processCB->processID;//进程ID赋值
+        initParam->consoleID = processCB->consoleID;//任务控制台ID归属
         SCHEDULER_UNLOCK(intSave);
-    } else {
-        processCB = OS_PCB_FROM_PID(processID);
-        if (!(processCB->processStatus & (OS_PROCESS_STATUS_INIT | OS_PROCESS_STATUS_RUNNING))) {
-            return OS_INVALID_VALUE;
+    } else {//外面指定了进程ID的处理
+        processCB = OS_PCB_FROM_PID(processID);//通过ID拿到进程PCB
+        if (!(processCB->processStatus & (OS_PROCESS_STATUS_INIT | OS_PROCESS_STATUS_RUNNING))) {//进程状态有初始和正在运行两个标签时
+            return OS_INVALID_VALUE;//????? 为什么这两种情况下会无效
         }
-        initParam->processID = processID;
-        initParam->consoleID = 0;
+        initParam->processID = processID;//进程ID赋值
+        initParam->consoleID = 0;//默认0号控制台
     }
 
-    ret = LOS_TaskCreateOnly(&taskID, initParam);
+    ret = LOS_TaskCreateOnly(&taskID, initParam);//只创建task实体,不申请调度
     if (ret != LOS_OK) {
         return OS_INVALID_VALUE;
     }
 
     return taskID;
 }
-
+//获取任务的调度方式
 LITE_OS_SEC_TEXT INT32 LOS_GetTaskScheduler(INT32 taskID)
 {
     UINT32 intSave;
@@ -1887,45 +1887,45 @@ LITE_OS_SEC_TEXT INT32 LOS_GetTaskScheduler(INT32 taskID)
         return -LOS_EINVAL;
     }
 
-    taskCB = OS_TCB_FROM_TID(taskID);
+    taskCB = OS_TCB_FROM_TID(taskID);//通过任务ID获得任务TCB
     SCHEDULER_LOCK(intSave);
-    if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {
+    if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {//状态不能是没有在使用
         policy = -LOS_EINVAL;
         OS_GOTO_ERREND();
     }
 
-    policy = taskCB->policy;
+    policy = taskCB->policy;//任务的调度方式
 
 LOS_ERREND:
     SCHEDULER_UNLOCK(intSave);
     return policy;
 }
-
+//以不安全的方式设置任务的调度信息, 不安全指的是SCHEDULER_LOCK  在两个函数中SCHEDULER_UNLOCK 
 LITE_OS_SEC_TEXT INT32 OsTaskSchedulerSetUnsafe(LosTaskCB *taskCB, UINT16 policy, UINT16 priority,
                                                 BOOL policyFlag, UINT32 intSave)
 {
     BOOL needSched = TRUE;
-    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {
-        OS_TASK_PRI_QUEUE_DEQUEUE(OS_PCB_FROM_PID(taskCB->processID), taskCB);
-    }
+    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {//就绪状态的处理
+        OS_TASK_PRI_QUEUE_DEQUEUE(OS_PCB_FROM_PID(taskCB->processID), taskCB);//先出就绪队列,因为这里是要改变优先级的.
+    }//一旦任务的调度优先级,将划到对应优先级的队列中,每个进程都有32个任务就绪队列. process.threadPriQueueList负责管理
 
-    if (policyFlag == TRUE) {
-        if (policy == LOS_SCHED_FIFO) {
-            taskCB->timeSlice = 0;
+    if (policyFlag == TRUE) {//TRUE表示 调度方式要改
+        if (policy == LOS_SCHED_FIFO) {//如果是 FIFO 方式
+            taskCB->timeSlice = 0;//不要时间片,只有抢占式才会需要时间片
         }
-        taskCB->policy = policy;
+        taskCB->policy = policy;//改变调度方式
     }
-    taskCB->priority = priority;
+    taskCB->priority = priority;//改变优先级
 
-    if (taskCB->taskStatus & OS_TASK_STATUS_INIT) {
-        taskCB->taskStatus &= ~OS_TASK_STATUS_INIT;
-        taskCB->taskStatus |= OS_TASK_STATUS_READY;
+    if (taskCB->taskStatus & OS_TASK_STATUS_INIT) {//如果任务状态有初始状态的标签
+        taskCB->taskStatus &= ~OS_TASK_STATUS_INIT;//去掉初始状态标签
+        taskCB->taskStatus |= OS_TASK_STATUS_READY;//贴上就绪标签
     }
 
-    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {
-        taskCB->taskStatus &= ~OS_TASK_STATUS_READY;
-        OS_TASK_SCHED_QUEUE_ENQUEUE(taskCB, OS_PROCESS_STATUS_INIT);
-    } else if (taskCB->taskStatus & OS_TASK_STATUS_RUNNING) {
+    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {//如果有就绪标签
+        taskCB->taskStatus &= ~OS_TASK_STATUS_READY;//去掉就绪标签,why这么做?因为只有非就绪状态的任务才可能加入 OS_TASK_SCHED_QUEUE_ENQUEUE
+        OS_TASK_SCHED_QUEUE_ENQUEUE(taskCB, OS_PROCESS_STATUS_INIT);//任务加入到调度队列 ,具体看他的函数实现 OsTaskSchedQueueEnqueue
+    } else if (taskCB->taskStatus & OS_TASK_STATUS_RUNNING) {//如果有运行标签,直接goto调度
         goto SCHEDULE;
     } else {
         needSched = FALSE;
@@ -1936,12 +1936,12 @@ SCHEDULE:
 
     LOS_MpSchedule(OS_MP_CPU_ALL);
     if (OS_SCHEDULER_ACTIVE && (needSched == TRUE)) {
-        LOS_Schedule();
+        LOS_Schedule();//申请调度
     }
 
     return LOS_OK;
 }
-
+//设置任务的调度信息
 LITE_OS_SEC_TEXT INT32 LOS_SetTaskScheduler(INT32 taskID, UINT16 policy, UINT16 priority)
 {
     UINT32 intSave;
@@ -1959,9 +1959,9 @@ LITE_OS_SEC_TEXT INT32 LOS_SetTaskScheduler(INT32 taskID, UINT16 policy, UINT16 
         return LOS_EINVAL;
     }
 
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_LOCK(intSave);//拿到自旋锁
     taskCB = OS_TCB_FROM_TID(taskID);
-    return OsTaskSchedulerSetUnsafe(taskCB, policy, priority, TRUE, intSave);
+    return OsTaskSchedulerSetUnsafe(taskCB, policy, priority, TRUE, intSave);//以不安全的方式设置任务的调度信息,为什么不安全? 因为自旋锁跨了一个函数 
 }
 
 LITE_OS_SEC_TEXT VOID OsWriteResourceEvent(UINT32 events)
