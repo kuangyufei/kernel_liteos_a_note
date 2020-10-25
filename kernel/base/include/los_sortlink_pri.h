@@ -48,7 +48,7 @@ extern "C" {
  *   ------------------------------------------
  *  |<-High Bits->|<---------Low Bits--------->|
  *
- *  Low Bits  : circles
+ *  Low Bits  : circles		
  *  High Bits : sortlink index
  */
 #define OS_TSK_HIGH_BITS       3U
@@ -86,8 +86,8 @@ typedef struct {
 } SortLinkList;
 
 typedef struct {
-    LOS_DL_LIST *sortLink;
-    UINT16 cursor;
+    LOS_DL_LIST *sortLink;//排序双循环链表
+    UINT16 cursor;//游标
     UINT16 reserved;
 } SortLinkAttribute;
 

@@ -46,9 +46,9 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-LITE_OS_SEC_BSS volatile UINT64 g_tickCount[LOSCFG_KERNEL_CORE_NUM] = {0};
+LITE_OS_SEC_BSS volatile UINT64 g_tickCount[LOSCFG_KERNEL_CORE_NUM] = {0};//tick计数器,系统一旦启动,一直在++, 为防止溢出,这是一个 UINT64 的变量
 LITE_OS_SEC_DATA_INIT UINT32 g_sysClock;
-LITE_OS_SEC_DATA_INIT UINT32 g_tickPerSecond;
+LITE_OS_SEC_DATA_INIT UINT32 g_tickPerSecond;//每秒Tick数,鸿蒙默认是每秒100次,即:10ms
 LITE_OS_SEC_BSS DOUBLE g_cycle2NsScale;
 
 /* spinlock for task module */
@@ -56,13 +56,13 @@ LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_tickSpin);
 
 /*
  * Description : Tick interruption handler
- */
+ *///系统时钟中断处理函数 ,鸿蒙是 10ms触发一次
 LITE_OS_SEC_TEXT VOID OsTickHandler(VOID)
 {
     UINT32 intSave;
 
     TICK_LOCK(intSave);
-    g_tickCount[ArchCurrCpuid()]++;
+    g_tickCount[ArchCurrCpuid()]++;//当前CPU核 计数器
     TICK_UNLOCK(intSave);
 
 #ifdef LOSCFG_KERNEL_VDSO
@@ -82,7 +82,7 @@ LITE_OS_SEC_TEXT VOID OsTickHandler(VOID)
     OsTaskScan(); /* task timeout scan *///任务扫描
 
 #if (LOSCFG_BASE_CORE_SWTMR == YES)
-    OsSwtmrScan();//软时钟扫描
+    OsSwtmrScan();//定时器扫描,看是否有超时的定时器
 #endif
 }
 

@@ -38,7 +38,7 @@
 extern "C" {
 #endif
 #endif /* __cplusplus */
-
+//排序链表,这是通用处理函数
 LITE_OS_SEC_TEXT_INIT UINT32 OsSortLinkInit(SortLinkAttribute *sortLinkHeader)
 {
     UINT32 size;
@@ -46,7 +46,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSortLinkInit(SortLinkAttribute *sortLinkHeader)
     UINT32 index;
 
     size = sizeof(LOS_DL_LIST) << OS_TSK_SORTLINK_LOGLEN;
-    listObject = (LOS_DL_LIST *)LOS_MemAlloc(m_aucSysMem0, size); /* system resident resource */
+    listObject = (LOS_DL_LIST *)LOS_MemAlloc(m_aucSysMem0, size); /* system resident resource *///常驻内存
     if (listObject == NULL) {
         return LOS_NOK;
     }
