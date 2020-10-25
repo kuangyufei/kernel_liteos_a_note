@@ -239,7 +239,7 @@ typedef struct ProcessCB {
  * The process is dying or already dying.
  */
 #define OS_PROCESS_STATUS_INACTIVE       (OS_PROCESS_FLAG_EXIT | OS_PROCESS_STATUS_ZOMBIES) 
-//不活跃进程定义: 身上贴有退出便签且状态为僵死的进程
+//进程不活跃状态定义: 身上贴有退出便签且状态为僵死的进程
 /**
  * @ingroup los_process
  * Used to check if the process control block is unused.
@@ -256,7 +256,7 @@ STATIC INLINE BOOL OsProcessIsUnused(const LosProcessCB *processCB)//查下进�
 STATIC INLINE BOOL OsProcessIsInactive(const LosProcessCB *processCB)//查下进程是否不活跃?
 {
     return ((processCB->processStatus & (OS_PROCESS_FLAG_UNUSED | OS_PROCESS_STATUS_INACTIVE)) != 0);
-}
+}//进程不活跃函数定义:身上贴有不使用且不活跃标签的进程
 
 /**
  * @ingroup los_process

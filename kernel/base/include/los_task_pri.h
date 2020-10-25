@@ -177,16 +177,16 @@ extern SPIN_LOCK_S g_taskSpin;
  *
  * The task is joinable.
  */
-#define OS_TASK_FLAG_PTHREAD_JOIN   0x0400U
-
+#define OS_TASK_FLAG_PTHREAD_JOIN   0x0400U //主task和子task连在一块不分离
+//一个可结合的线程能够被其他线程收回其资源和杀死。在被其他线程回收之前，它的存储器资源（例如栈）是不释放的。
 /**
  * @ingroup los_task
  * Flag that indicates the task or task control block status.
  *
  * The task is status detached.
  */
-#define OS_TASK_FLAG_DETACHED       0x0800U
-
+#define OS_TASK_FLAG_DETACHED       0x0800U //任务分离 主task与子task分离，子task结束后，资源自动回收
+//一个分离的线程是不能被其他线程回收或杀死的，它的存储器资源在它终止时由系统自动释放。
 /**
  * @ingroup los_task
  * Flag that indicates the task property.
@@ -264,7 +264,7 @@ extern SPIN_LOCK_S g_taskSpin;
 * @see
 */
 #define OS_TCB_FROM_PENDLIST(ptr) LOS_DL_LIST_ENTRY(ptr, LosTaskCB, pendList)
-
+//通过pendList取出TCB,用于挂入链表节点时使用 pendList的情况 
 /**
 * @ingroup  los_task
 * @brief Obtain the pointer to a task control block.
@@ -281,7 +281,7 @@ extern SPIN_LOCK_S g_taskSpin;
 * @see
 */
 #define OS_TCB_FROM_TID(taskID) (((LosTaskCB *)g_taskCBArray) + (taskID))
-
+//通过Tid找到TCB
 #ifndef LOSCFG_STACK_POINT_ALIGN_SIZE
 #define LOSCFG_STACK_POINT_ALIGN_SIZE                       (sizeof(UINTPTR) * 2)
 #endif

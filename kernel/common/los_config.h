@@ -222,7 +222,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * @ingroup los_config
  * Configuration item for task (stack) monitoring module tailoring
  */
-#ifndef LOSCFG_BASE_CORE_TSK_MONITOR
+#ifndef LOSCFG_BASE_CORE_TSK_MONITOR //任务（栈）监控模块裁剪配置项
 #define LOSCFG_BASE_CORE_TSK_MONITOR YES
 #endif
 

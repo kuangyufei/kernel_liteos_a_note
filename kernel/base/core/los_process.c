@@ -607,21 +607,21 @@ LITE_OS_SEC_TEXT VOID OsProcessCBRecyleToFree(VOID)
 
     SCHEDULER_UNLOCK(intSave);
 }
-
+//获取一个可用的PCB(进程控制块)
 STATIC LosProcessCB *OsGetFreePCB(VOID)
 {
     LosProcessCB *processCB = NULL;
     UINT32 intSave;
 
     SCHEDULER_LOCK(intSave);
-    if (LOS_ListEmpty(&g_freeProcess)) {
+    if (LOS_ListEmpty(&g_freeProcess)) {//空闲池里还有未分配的task?
         SCHEDULER_UNLOCK(intSave);
         PRINT_ERR("No idle PCB in the system!\n");
         return NULL;
     }
 
-    processCB = OS_PCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_freeProcess));
-    LOS_ListDelete(&processCB->pendList);
+    processCB = OS_PCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_freeProcess));//拿到PCB,通过OS_PCB_FROM_PENDLIST是因为通过pendlist 节点挂在 freelist链表上.
+    LOS_ListDelete(&processCB->pendList);//分配出来了就要在freelist将自己摘除
     SCHEDULER_UNLOCK(intSave);
 
     return processCB;
@@ -1336,16 +1336,16 @@ ERROR:
     SCHEDULER_UNLOCK(intSave);
     return pid;
 }
-
+//设置进程组检查
 STATIC UINT32 OsSetProcessGroupCheck(const LosProcessCB *processCB, UINT32 gid)
 {
-    LosProcessCB *runProcessCB = OsCurrProcessGet();
-    LosProcessCB *groupProcessCB = OS_PCB_FROM_PID(gid);
+    LosProcessCB *runProcessCB = OsCurrProcessGet();//拿到当前运行进程
+    LosProcessCB *groupProcessCB = OS_PCB_FROM_PID(gid);//通过组ID拿到组长PCB实体
 
-    if (OsProcessIsInactive(processCB)) {
+    if (OsProcessIsInactive(processCB)) {//进程是否活动
         return LOS_ESRCH;
     }
-
+	//参数进程不在用户态或者组长不在用户态
     if (!OsProcessIsUserMode(processCB) || !OsProcessIsUserMode(groupProcessCB)) {
         return LOS_EPERM;
     }

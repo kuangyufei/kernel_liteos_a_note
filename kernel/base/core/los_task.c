@@ -335,8 +335,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
     for (index = 0; index < g_taskMaxNum; index++) {
         g_taskCBArray[index].taskStatus = OS_TASK_STATUS_UNUSED;
         g_taskCBArray[index].taskID = index;//任务ID最大默认127
-        LOS_ListTailInsert(&g_losFreeTask, &g_taskCBArray[index].pendList);//都插入空闲任务列表
-    }
+        LOS_ListTailInsert(&g_losFreeTask, &g_taskCBArray[index].pendList);//都插入空闲任务列表 
+    }//注意:这里挂的是pendList节点,所以取TCB要通过 OS_TCB_FROM_PENDLIST 取.
 
     ret = OsPriQueueInit();//创建32个任务优先级队列，即32个双向循环链表
     if (ret != LOS_OK) {
@@ -352,32 +352,32 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
     }
     return LOS_OK;
 }
-
+//获取IdletaskId,每个CPU核都对Task进行了内部管理,做到真正的并行处理
 UINT32 OsGetIdleTaskId(VOID)
 {
-    Percpu *perCpu = OsPercpuGet();
-    return perCpu->idleTaskID;
+    Percpu *perCpu = OsPercpuGet();//获取当前Cpu信息
+    return perCpu->idleTaskID;//返回当前CPU 空闲任务ID
 }
-
+//创建一个空闲任务
 LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
 {
     UINT32 ret;
     TSK_INIT_PARAM_S taskInitParam;
-    Percpu *perCpu = OsPercpuGet();
+    Percpu *perCpu = OsPercpuGet();//获取CPU信息
     UINT32 *idleTaskID = &perCpu->idleTaskID;
 
-    (VOID)memset_s((VOID *)(&taskInitParam), sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
-    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)OsIdleTask;
-    taskInitParam.uwStackSize = LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE;
-    taskInitParam.pcName = "Idle";
-    taskInitParam.usTaskPrio = OS_TASK_PRIORITY_LOWEST;
-    taskInitParam.uwResved = OS_TASK_FLAG_IDLEFLAG;
-#if (LOSCFG_KERNEL_SMP == YES)
-    taskInitParam.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
+    (VOID)memset_s((VOID *)(&taskInitParam), sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));//任务初始参数清0
+    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)OsIdleTask;//入口函数指定idle
+    taskInitParam.uwStackSize = LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE;//任务栈大小
+    taskInitParam.pcName = "Idle";//任务名称 叫pcName有点怪怪的,不能换个撒
+    taskInitParam.usTaskPrio = OS_TASK_PRIORITY_LOWEST;//默认最低优先级 31
+    taskInitParam.uwResved = OS_TASK_FLAG_IDLEFLAG;//默认idle flag
+#if (LOSCFG_KERNEL_SMP == YES)//CPU多核情况
+    taskInitParam.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());//意思是归于哪个CPU核调度,
 #endif
-    ret = LOS_TaskCreate(idleTaskID, &taskInitParam);
-    OS_TCB_FROM_TID(*idleTaskID)->taskStatus |= OS_TASK_FLAG_SYSTEM_TASK;
-
+    ret = LOS_TaskCreate(idleTaskID, &taskInitParam);//创建task并申请调度,
+    OS_TCB_FROM_TID(*idleTaskID)->taskStatus |= OS_TASK_FLAG_SYSTEM_TASK;//设置task状态为系统任务,系统任务运行在内核态.
+	//这里说下系统任务有哪些?比如: idle,swtmr(软时钟)等等 
     return ret;
 }
 
@@ -398,7 +398,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_CurTaskIDGet(VOID)
 #if (LOSCFG_BASE_CORE_TSK_MONITOR == YES)
 LITE_OS_SEC_TEXT STATIC VOID OsTaskStackCheck(LosTaskCB *oldTask, LosTaskCB *newTask)
 {
-    if (!OS_STACK_MAGIC_CHECK(oldTask->topOfStack)) {
+    if (!OS_STACK_MAGIC_CHECK(oldTask->topOfStack)) {//magic检查无效情况
         LOS_Panic("CURRENT task ID: %s:%d stack overflow!\n", oldTask->taskName, oldTask->taskID);
     }
 
@@ -414,20 +414,20 @@ LITE_OS_SEC_TEXT STATIC VOID OsTaskStackCheck(LosTaskCB *oldTask, LosTaskCB *new
 }
 
 #endif
-
+//任务切换检查
 LITE_OS_SEC_TEXT_MINOR UINT32 OsTaskSwitchCheck(LosTaskCB *oldTask, LosTaskCB *newTask)
 {
-#if (LOSCFG_BASE_CORE_TSK_MONITOR == YES)
-    OsTaskStackCheck(oldTask, newTask);
+#if (LOSCFG_BASE_CORE_TSK_MONITOR == YES)//这里宏指任务栈有没有启动监控
+    OsTaskStackCheck(oldTask, newTask);//任务栈监控检查
 #endif /* LOSCFG_BASE_CORE_TSK_MONITOR == YES */
 
 #if (LOSCFG_KERNEL_TRACE == YES)
-    LOS_Trace(LOS_TRACE_SWITCH, newTask->taskID, oldTask->taskID);
+    LOS_Trace(LOS_TRACE_SWITCH, newTask->taskID, oldTask->taskID);//打印新老任务
 #endif
 
     return LOS_OK;
 }
-
+//任务退出
 LITE_OS_SEC_TEXT VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status)
 {
     UINT32 intSave;
@@ -478,10 +478,10 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskEntry(UINT32 taskID)
     (VOID)LOS_IntUnLock();
 
     taskCB = OS_TCB_FROM_TID(taskID);
-    taskCB->joinRetval = taskCB->taskEntry(taskCB->args[0], taskCB->args[1],
+    taskCB->joinRetval = taskCB->taskEntry(taskCB->args[0], taskCB->args[1],//调用入口函数
                                            taskCB->args[2], taskCB->args[3]); /* 2 & 3: just for args array index */
-    if (taskCB->taskStatus & OS_TASK_FLAG_DETACHED) {
-        taskCB->joinRetval = 0;
+    if (taskCB->taskStatus & OS_TASK_FLAG_DETACHED) {//task有分离标签时
+        taskCB->joinRetval = 0;//结合数为0
     }
 
     OsTaskToExit(taskCB, 0);
@@ -766,21 +766,21 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_IN
 
     return LOS_OK;
 }
-
+//获取一个空闲TCB
 LITE_OS_SEC_TEXT LosTaskCB *OsGetFreeTaskCB(VOID)
 {
     UINT32 intSave;
     LosTaskCB *taskCB = NULL;
 
     SCHEDULER_LOCK(intSave);
-    if (LOS_ListEmpty(&g_losFreeTask)) {
+    if (LOS_ListEmpty(&g_losFreeTask)) {//全局空闲task为空
         SCHEDULER_UNLOCK(intSave);
         PRINT_ERR("No idle TCB in the system!\n");
         return NULL;
     }
 
-    taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_losFreeTask));
-    LOS_ListDelete(LOS_DL_LIST_FIRST(&g_losFreeTask));
+    taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_losFreeTask));//拿到第一节点并通过pendlist拿到完整的TCB
+    LOS_ListDelete(LOS_DL_LIST_FIRST(&g_losFreeTask));//从g_losFreeTask链表中摘除自己
     SCHEDULER_UNLOCK(intSave);
 
     return taskCB;

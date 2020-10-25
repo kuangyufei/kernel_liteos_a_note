@@ -64,9 +64,9 @@
 #endif
 
 /* Initial bit32 stack value. */
-#define OS_STACK_INIT            0xCACACACA
+#define OS_STACK_INIT            0xCACACACA	//栈指针初始化值 0b 1010 1010 1010
 /* Bit32 stack top magic number. */
-#define OS_STACK_MAGIC_WORD      0xCCCCCCCC
+#define OS_STACK_MAGIC_WORD      0xCCCCCCCC //用于栈顶值,可标识为栈是否被使用过,神奇的 "烫烫烫烫"的根源所在! 0b 1100 1100 1100
 
 #ifdef LOSCFG_GDB
 #define OS_EXC_UNDEF_STACK_SIZE  512

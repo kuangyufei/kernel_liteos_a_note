@@ -87,7 +87,7 @@ extern "C" {
  * Identification registers (c0)
  */
 #define MIDR                CP15_REG(c0, 0, c0, 0)    /* Main ID Register */
-#define MPIDR               CP15_REG(c0, 0, c0, 5)    /* Multiprocessor Affinity Register */
+#define MPIDR               CP15_REG(c0, 0, c0, 5)    /* Multiprocessor Affinity Register *///多处理器关联寄存器给每个CPU制定一个逻辑地址
 #define CCSIDR              CP15_REG(c0, 1, c0, 0)    /* Cache Size ID Registers */
 #define CLIDR               CP15_REG(c0, 1, c0, 1)    /* Cache Level ID Register */
 #define VPIDR               CP15_REG(c0, 4, c0, 0)    /* Virtualization Processor ID Register */
@@ -141,12 +141,12 @@ STATIC INLINE VOID ArchCurrUserTaskSet(UINTPTR val)
 {
     ARM_SYSREG_WRITE(TPIDRURO, (UINT32)val);
 }
-
+//https://www.keil.com/pack/doc/cmsis/Core_A/html/group__CMSIS__MPIDR.html
 STATIC INLINE UINT32 ArchCurrCpuid(VOID)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#if (LOSCFG_KERNEL_SMP == YES)//CPU多核情况
     return ARM_SYSREG_READ(MPIDR) & MPIDR_CPUID_MASK;
-#else
+#else//ARM架构通过MPIDR(Multiprocessor Affinity Register)寄存器给每个CPU制定一个逻辑地址。
     return 0;
 #endif
 }

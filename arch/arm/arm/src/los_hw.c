@@ -39,7 +39,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 /* support cpu vendors */
-CpuVendor g_cpuTable[] = {
+CpuVendor g_cpuTable[] = {//支持的CPU供应商
     /* armv7-a */
     { 0xc07, "Cortex-A7" },
     { 0xc09, "Cortex-A9" },

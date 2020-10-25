@@ -66,7 +66,7 @@ typedef struct {
 } Percpu;
 
 /* the kernel per-cpu structure */
-extern Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM];
+extern Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM];//CPU核
 
 STATIC INLINE Percpu *OsPercpuGet(VOID)
 {

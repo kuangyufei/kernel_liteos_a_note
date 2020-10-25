@@ -112,7 +112,7 @@ VOID OsExcStackInfoReg(const StackInfo *stackInfo, UINT32 stackNum)
     g_stackInfo = stackInfo;
     g_stackNum = stackNum;
 }
-
+//栈的初始化,设置固定的值. 0xcccccccc 和 0xcacacaca
 VOID OsStackInit(VOID *stacktop, UINT32 stacksize)
 {
     /* initialize the task stack, write magic num to stack top */
