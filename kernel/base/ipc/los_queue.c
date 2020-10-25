@@ -47,31 +47,31 @@ extern "C" {
 #error "queue maxnum cannot be zero"
 #endif /* LOSCFG_BASE_IPC_QUEUE_LIMIT <= 0 */
 
-LITE_OS_SEC_BSS LosQueueCB *g_allQueue = NULL;
-LITE_OS_SEC_BSS STATIC LOS_DL_LIST g_freeQueueList;
+LITE_OS_SEC_BSS LosQueueCB *g_allQueue = NULL;//管理所有IPC队列
+LITE_OS_SEC_BSS STATIC LOS_DL_LIST g_freeQueueList;//IPC空闲队列链表,管分配的,需要队列就从free中申请
 
 /*
  * Description : queue initial
  * Return      : LOS_OK on success or error code on failure
  */
-LITE_OS_SEC_TEXT_INIT UINT32 OsQueueInit(VOID)
+LITE_OS_SEC_TEXT_INIT UINT32 OsQueueInit(VOID)//IPC 队列初始化
 {
     LosQueueCB *queueNode = NULL;
     UINT32 index;
     UINT32 size;
 
-    size = LOSCFG_BASE_IPC_QUEUE_LIMIT * sizeof(LosQueueCB);
+    size = LOSCFG_BASE_IPC_QUEUE_LIMIT * sizeof(LosQueueCB);//支持1024个IPC队列
     /* system resident memory, don't free */
-    g_allQueue = (LosQueueCB *)LOS_MemAlloc(m_aucSysMem0, size);
+    g_allQueue = (LosQueueCB *)LOS_MemAlloc(m_aucSysMem0, size);//常驻内存
     if (g_allQueue == NULL) {
         return LOS_ERRNO_QUEUE_NO_MEMORY;
     }
-    (VOID)memset_s(g_allQueue, size, 0, size);
-    LOS_ListInit(&g_freeQueueList);
-    for (index = 0; index < LOSCFG_BASE_IPC_QUEUE_LIMIT; index++) {
-        queueNode = ((LosQueueCB *)g_allQueue) + index;
-        queueNode->queueID = index;
-        LOS_ListTailInsert(&g_freeQueueList, &queueNode->readWriteList[OS_QUEUE_WRITE]);
+    (VOID)memset_s(g_allQueue, size, 0, size);//清0
+    LOS_ListInit(&g_freeQueueList);//初始化空闲链表
+    for (index = 0; index < LOSCFG_BASE_IPC_QUEUE_LIMIT; index++) {//循环
+        queueNode = ((LosQueueCB *)g_allQueue) + index;//取item
+        queueNode->queueID = index;//记录队列index
+        LOS_ListTailInsert(&g_freeQueueList, &queueNode->readWriteList[OS_QUEUE_WRITE]);//挂入空闲队列链表上
     }
 
     if (OsQueueDbgInitHook() != LOS_OK) {
@@ -79,7 +79,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsQueueInit(VOID)
     }
     return LOS_OK;
 }
-
+//创建一个队列
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueCreate(CHAR *queueName, UINT16 len, UINT32 *queueID,
                                              UINT32 flags, UINT16 maxMsgSize)
 {

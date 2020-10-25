@@ -47,7 +47,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 LITE_OS_SEC_BSS volatile UINT64 g_tickCount[LOSCFG_KERNEL_CORE_NUM] = {0};//tick计数器,系统一旦启动,一直在++, 为防止溢出,这是一个 UINT64 的变量
-LITE_OS_SEC_DATA_INIT UINT32 g_sysClock;
+LITE_OS_SEC_DATA_INIT UINT32 g_sysClock;//系统时钟
 LITE_OS_SEC_DATA_INIT UINT32 g_tickPerSecond;//每秒Tick数,鸿蒙默认是每秒100次,即:10ms
 LITE_OS_SEC_BSS DOUBLE g_cycle2NsScale;
 

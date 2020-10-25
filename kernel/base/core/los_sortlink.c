@@ -38,24 +38,24 @@
 extern "C" {
 #endif
 #endif /* __cplusplus */
-//排序链表,这是通用处理函数
+//排序链表,这是通用处理函数 内核有两处使用 OsSwtmrInit 和 OsTaskInit 见于 Percpu 结构体
 LITE_OS_SEC_TEXT_INIT UINT32 OsSortLinkInit(SortLinkAttribute *sortLinkHeader)
 {
     UINT32 size;
     LOS_DL_LIST *listObject = NULL;
     UINT32 index;
 
-    size = sizeof(LOS_DL_LIST) << OS_TSK_SORTLINK_LOGLEN;
+    size = sizeof(LOS_DL_LIST) << OS_TSK_SORTLINK_LOGLEN;//这行代码很精彩,得到 8个 LOS_DL_LIST
     listObject = (LOS_DL_LIST *)LOS_MemAlloc(m_aucSysMem0, size); /* system resident resource *///常驻内存
     if (listObject == NULL) {
         return LOS_NOK;
     }
 
-    (VOID)memset_s(listObject, size, 0, size);
-    sortLinkHeader->sortLink = listObject;
-    sortLinkHeader->cursor = 0;
-    for (index = 0; index < OS_TSK_SORTLINK_LEN; index++, listObject++) {
-        LOS_ListInit(listObject);
+    (VOID)memset_s(listObject, size, 0, size);//清0
+    sortLinkHeader->sortLink = listObject;//可以知道 sortLink是个链表数组
+    sortLinkHeader->cursor = 0;//游标默认为0
+    for (index = 0; index < OS_TSK_SORTLINK_LEN; index++, listObject++) {// OS_TSK_SORTLINK_LEN = 8
+        LOS_ListInit(listObject);//初始化8个链表
     }
     return LOS_OK;
 }
@@ -71,8 +71,8 @@ LITE_OS_SEC_TEXT VOID OsAdd2SortLink(const SortLinkAttribute *sortLinkHeader, So
     /*
      * huge rollnum could cause carry to invalid high bit
      * and eventually affect the calculation of sort index.
-     */
-    if (sortList->idxRollNum > OS_TSK_MAX_ROLLNUM) {
+     */ //巨大的滚动数可能导致进位无效最终影响排序指标的计算。
+    if (sortList->idxRollNum > OS_TSK_MAX_ROLLNUM) { //滚动数索引最大就是 OS_TSK_MAX_ROLLNUM 
         SET_SORTLIST_VALUE(sortList, OS_TSK_MAX_ROLLNUM);
     }
     timeout = sortList->idxRollNum;
