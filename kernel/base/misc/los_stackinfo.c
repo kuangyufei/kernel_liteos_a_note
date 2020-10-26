@@ -39,25 +39,25 @@
 
 const StackInfo *g_stackInfo = NULL;
 UINT32 g_stackNum;
-
+//获取栈的水平线
 UINT32 OsStackWaterLineGet(const UINTPTR *stackBottom, const UINTPTR *stackTop, UINT32 *peakUsed)
 {
     UINT32 size;
     const UINTPTR *tmp = NULL;
-    if (*stackTop == OS_STACK_MAGIC_WORD) {
+    if (*stackTop == OS_STACK_MAGIC_WORD) {//栈顶值是否等于 magic 0xCCCCCCCC
         tmp = stackTop + 1;
-        while ((tmp < stackBottom) && (*tmp == OS_STACK_INIT)) {
+        while ((tmp < stackBottom) && (*tmp == OS_STACK_INIT)) {//记录从栈顶到栈低有多少个连续的 0xCACACACA
             tmp++;
         }
-        size = (UINT32)((UINTPTR)stackBottom - (UINTPTR)tmp);
-        *peakUsed = (size == 0) ? size : (size + sizeof(CHAR *));
+        size = (UINT32)((UINTPTR)stackBottom - (UINTPTR)tmp);//剩余多少非0xCACACACA的栈空间
+        *peakUsed = (size == 0) ? size : (size + sizeof(CHAR *));//得出高峰用值
         return LOS_OK;
     } else {
-        *peakUsed = OS_INVALID_WATERLINE;
+        *peakUsed = OS_INVALID_WATERLINE;//栈溢出了
         return LOS_NOK;
     }
 }
-
+//执行栈检查
 VOID OsExcStackCheck(VOID)
 {
     UINT32 index;

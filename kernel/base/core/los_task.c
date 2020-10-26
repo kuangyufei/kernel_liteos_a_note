@@ -1433,18 +1433,18 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskYield(VOID)
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
-//任务锁
+//任务加锁
 LITE_OS_SEC_TEXT_MINOR VOID LOS_TaskLock(VOID)
 {
     UINT32 intSave;
     UINT32 *losTaskLock = NULL;
 
-    intSave = LOS_IntLock();
+    intSave = LOS_IntLock();//禁止所有IRQ和FIQ中断
     losTaskLock = &OsPercpuGet()->taskLockCnt;//task lock 的计数器
     (*losTaskLock)++;
-    LOS_IntRestore(intSave);
+    LOS_IntRestore(intSave);//启用所有IRQ和FIQ中断
 }
-
+//任务解锁
 LITE_OS_SEC_TEXT_MINOR VOID LOS_TaskUnlock(VOID)
 {
     UINT32 intSave;
@@ -1510,16 +1510,17 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskInfoGet(UINT32 taskID, TSK_INFO_S *taskInf
     }
     taskInfo->acName[LOS_TASK_NAMELEN - 1] = '\0';
 
-    taskInfo->uwBottomOfStack = TRUNCATE(((UINTPTR)taskCB->topOfStack + taskCB->stackSize),
+    taskInfo->uwBottomOfStack = TRUNCATE(((UINTPTR)taskCB->topOfStack + taskCB->stackSize),//这里可以看出栈底地址是高于栈顶
                                          OS_TASK_STACK_ADDR_ALIGN);
-    taskInfo->uwCurrUsed = (UINT32)(taskInfo->uwBottomOfStack - taskInfo->uwSP);
+    taskInfo->uwCurrUsed = (UINT32)(taskInfo->uwBottomOfStack - taskInfo->uwSP);//当前已使用了多少
 
-    taskInfo->bOvf = OsStackWaterLineGet((const UINTPTR *)taskInfo->uwBottomOfStack,
+    taskInfo->bOvf = OsStackWaterLineGet((const UINTPTR *)taskInfo->uwBottomOfStack,//获取栈的使用情况
                                          (const UINTPTR *)taskInfo->uwTopOfStack, &taskInfo->uwPeakUsed);
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
-
+//CPU亲和性（affinity）就是进程要在某个给定的CPU上尽量长时间地运行而不被迁移到其他处理器
+//把任务设置为由那个CPU核调度,用于多核CPU情况
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskCpuAffiSet(UINT32 taskID, UINT16 cpuAffiMask)
 {
 #if (LOSCFG_KERNEL_SMP == YES)
@@ -1528,39 +1529,40 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskCpuAffiSet(UINT32 taskID, UINT16 cpuAffiMa
     BOOL needSched = FALSE;
     UINT16 currCpuMask;
 
-    if (OS_TID_CHECK_INVALID(taskID)) {
+    if (OS_TID_CHECK_INVALID(taskID)) {//检测taskid是否有效,task由task池分配,鸿蒙默认128个任务 ID范围[0:127]
         return LOS_ERRNO_TSK_ID_INVALID;
     }
 
-    if (!(cpuAffiMask & LOSCFG_KERNEL_CPU_MASK)) {
+    if (!(cpuAffiMask & LOSCFG_KERNEL_CPU_MASK)) {//检测cpu亲和力
         return LOS_ERRNO_TSK_CPU_AFFINITY_MASK_ERR;
     }
 
-    taskCB = OS_TCB_FROM_TID(taskID);
+    taskCB = OS_TCB_FROM_TID(taskID);//获取任务实体
     SCHEDULER_LOCK(intSave);
-    if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {
+    if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {//贴有未使用标签的处理
         SCHEDULER_UNLOCK(intSave);
         return LOS_ERRNO_TSK_NOT_CREATED;
     }
 
-    taskCB->cpuAffiMask = cpuAffiMask;
+    taskCB->cpuAffiMask = cpuAffiMask;//参数set给tcb
     currCpuMask = CPUID_TO_AFFI_MASK(taskCB->currCpu);
     if (!(currCpuMask & cpuAffiMask)) {
-        needSched = TRUE;
-        taskCB->signal = SIGNAL_AFFI;
+        needSched = TRUE;//需要调度
+        taskCB->signal = SIGNAL_AFFI;//设置信号
     }
     SCHEDULER_UNLOCK(intSave);
 
     if (needSched && OS_SCHEDULER_ACTIVE) {
-        LOS_MpSchedule(currCpuMask);
-        LOS_Schedule();
+        LOS_MpSchedule(currCpuMask);//发送信号调度信号给currCpuMask 1位上的CPU
+        LOS_Schedule();//申请调度
     }
 #endif
     (VOID)taskID;
     (VOID)cpuAffiMask;
     return LOS_OK;
 }
-
+//CPU亲和性（affinity）就是进程要在某个给定的CPU上尽量长时间地运行而不被迁移到其他处理器
+//获取task和CPU的亲和性信息
 LITE_OS_SEC_TEXT_MINOR UINT16 LOS_TaskCpuAffiGet(UINT32 taskID)
 {
 #if (LOSCFG_KERNEL_SMP == YES)
@@ -1592,19 +1594,19 @@ LITE_OS_SEC_TEXT_MINOR UINT16 LOS_TaskCpuAffiGet(UINT32 taskID)
 
 /*
  * Description : Process pending signals tagged by others cores
- */
+ *///处理由其他CPU核标记为挂起信号
 LITE_OS_SEC_TEXT_MINOR UINT32 OsTaskProcSignal(VOID)
 {
     Percpu *percpu = NULL;
     LosTaskCB *runTask = NULL;
     UINT32 intSave, ret;
-
+//私有且不可中断，无需保护。这个任务在其他CPU核看到它时总是在运行，所以它在执行代码的同时也可以继续接收信号
     /*
      * private and uninterruptable, no protection needed.
      * while this task is always running when others cores see it,
      * so it keeps recieving signals while follow code excuting.
      */
-    runTask = OsCurrTaskGet();
+    runTask = OsCurrTaskGet();//获取当前任务
     if (runTask->signal == SIGNAL_NONE) {
         goto EXIT;
     }
@@ -1613,7 +1615,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsTaskProcSignal(VOID)
         /*
          * clear the signal, and do the task deletion. if the signaled task has been
          * scheduled out, then this deletion will wait until next run.
-         */
+         *///清除信号，删除任务。如果发出信号的任务已出调度就绪队列，则此删除将等待下次运行
         SCHEDULER_LOCK(intSave);
         runTask->signal = SIGNAL_NONE;
         ret = OsTaskDeleteUnsafe(runTask, OS_PRO_EXIT_OK, intSave);
@@ -1644,7 +1646,7 @@ EXIT:
 
     return INT_NO_RESCH;
 }
-
+//设置任务名称
 LITE_OS_SEC_TEXT INT32 OsSetCurrTaskName(const CHAR *name)
 {
     UINT32 intSave;
@@ -1697,7 +1699,7 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);
     return err;
 }
-
+//任务退群操作
 LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
 {
     LosProcessCB *processCB = NULL;
@@ -1717,9 +1719,9 @@ LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
         return;
     }
 
-    processCB->processStatus |= OS_PROCESS_FLAG_EXIT;
-    runTask[ArchCurrCpuid()] = OsCurrTaskGet();
-    runTask[ArchCurrCpuid()]->sig.sigprocmask = OS_INVALID_VALUE;
+    processCB->processStatus |= OS_PROCESS_FLAG_EXIT;//贴上进程要退出的标签
+    runTask[ArchCurrCpuid()] = OsCurrTaskGet();//记录当前任务
+    runTask[ArchCurrCpuid()]->sig.sigprocmask = OS_INVALID_VALUE;//
 
     list = &processCB->threadSiblingList;
     head = list;
@@ -1753,13 +1755,13 @@ LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
     LOS_ASSERT(processCB->threadNumber == 1);
     return;
 }
-
+//任务退群并销毁,进入任务的回收链表之后再进入空闲链表,等着再次被分配使用.
 LITE_OS_SEC_TEXT VOID OsExecDestroyTaskGroup(VOID)
 {
     OsTaskExitGroup(OS_PRO_EXIT_OK);
     OsTaskCBRecyleToFree();
 }
-
+//暂停进程的所有任务
 LITE_OS_SEC_TEXT VOID OsProcessSuspendAllTask(VOID)
 {
     LosProcessCB *process = NULL;
@@ -1771,22 +1773,22 @@ LITE_OS_SEC_TEXT VOID OsProcessSuspendAllTask(VOID)
     UINT32 ret;
 
     SCHEDULER_LOCK(intSave);
-    process = OsCurrProcessGet();
-    runTask = OsCurrTaskGet();
+    process = OsCurrProcessGet();//获取当前进程
+    runTask = OsCurrTaskGet();//获取当前任务
 
-    list = &process->threadSiblingList;
+    list = &process->threadSiblingList;//threadSiblingList上挂了进程下面的所有线程(task)
     head = list;
     do {
-        taskCB = LOS_DL_LIST_ENTRY(list->pstNext, LosTaskCB, threadList);
-        if (taskCB != runTask) {
-            ret = OsTaskSuspend(taskCB);
-            if ((ret != LOS_OK) && (ret != LOS_ERRNO_TSK_ALREADY_SUSPENDED)) {
+        taskCB = LOS_DL_LIST_ENTRY(list->pstNext, LosTaskCB, threadList);//通过threadList找到任务控制块(TCB)
+        if (taskCB != runTask) {//只要不是当前任务就怎样?
+            ret = OsTaskSuspend(taskCB);//暂停掉他们
+            if ((ret != LOS_OK) && (ret != LOS_ERRNO_TSK_ALREADY_SUSPENDED)) {//暂停失败的处理
                 PRINT_ERR("process(%d) suspend all task(%u) failed! ERROR: 0x%x\n",
                           process->processID, taskCB->taskID, ret);
             }
         }
-        list = list->pstNext;
-    } while (head != list->pstNext);
+        list = list->pstNext;//下一个
+    } while (head != list->pstNext);//一直从头到尾的轮询一遍
 
     SCHEDULER_UNLOCK(intSave);
     return;

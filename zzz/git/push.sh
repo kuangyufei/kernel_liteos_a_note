@@ -1,6 +1,8 @@
 git add -A
-git commit -m  '内存,进程,task模块注释基本完成. 本次提交涉及 LOS_TaskYield PendList IRQ ,FIQ等知识点
-鸿蒙内核源码分析系列 https://blog.csdn.net/kuangyufei https://my.oschina.net/u/3751245'
+git commit -m  '提交栈运行空间全景图,CPU多核调度部分注释
+鸿蒙内核源码分析系列 https://blog.csdn.net/kuangyufei https://my.oschina.net/u/3751245
+鸿蒙内核源码注释中文版 【 CSDN仓 | Gitee仓 | Github仓 | Coding仓】四大仓库每日同步更新
+给鸿蒙内核源码逐行加上中文注释 ,让 HarmonyOS 楚楚动人, 从此不再神秘.'
 
 git push origin
 git push gitee_origin master

@@ -108,10 +108,10 @@ STATIC UINT32 g_nextExcWaitCpu = INVALID_CPUID;
 STATIC const StackInfo g_excStack[] = {
     { &__undef_stack, OS_EXC_UNDEF_STACK_SIZE, "udf_stack" },
     { &__abt_stack,   OS_EXC_ABT_STACK_SIZE,   "abt_stack" },
-    { &__fiq_stack,   OS_EXC_FIQ_STACK_SIZE,   "fiq_stack" },
-    { &__svc_stack,   OS_EXC_SVC_STACK_SIZE,   "svc_stack" },
-    { &__irq_stack,   OS_EXC_IRQ_STACK_SIZE,   "irq_stack" },
-    { &__exc_stack,   OS_EXC_STACK_SIZE,       "exc_stack" }
+    { &__fiq_stack,   OS_EXC_FIQ_STACK_SIZE,   "fiq_stack" },	//快中断栈
+    { &__svc_stack,   OS_EXC_SVC_STACK_SIZE,   "svc_stack" },	
+    { &__irq_stack,   OS_EXC_IRQ_STACK_SIZE,   "irq_stack" },	//中断请求栈
+    { &__exc_stack,   OS_EXC_STACK_SIZE,       "exc_stack" }	//运行栈
 };
 
 UINT32 OsGetSystemStatus(VOID)
@@ -663,7 +663,7 @@ VOID BackTrace(UINT32 regFP)
 
     BackTraceSub(regFP);
 }
-
+//运行初始化
 VOID OsExcInit(VOID)
 {
     OsExcStackInfoReg(g_excStack, sizeof(g_excStack) / sizeof(g_excStack[0]));
