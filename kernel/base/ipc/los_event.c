@@ -44,7 +44,7 @@
 extern "C" {
 #endif
 #endif /* __cplusplus */
-
+//时间初始化
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventInit(PEVENT_CB_S eventCB)
 {
     UINT32 intSave;
@@ -55,7 +55,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventInit(PEVENT_CB_S eventCB)
 
     intSave = LOS_IntLock();
     eventCB->uwEventID = 0;
-    LOS_ListInit(&eventCB->stEventList);
+    LOS_ListInit(&eventCB->stEventList);//事件链表初始化
     LOS_IntRestore(intSave);
     return LOS_OK;
 }

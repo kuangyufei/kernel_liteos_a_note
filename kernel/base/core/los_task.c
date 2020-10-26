@@ -486,7 +486,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskEntry(UINT32 taskID)
 
     OsTaskToExit(taskCB, 0);
 }
-
+//任务创建参数检查
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCreateParamCheck(const UINT32 *taskID,
     TSK_INIT_PARAM_S *initParam, VOID **pool)
 {

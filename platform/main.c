@@ -171,16 +171,16 @@ LITE_OS_SEC_TEXT_INIT INT32 main(VOID)
         return LOS_NOK;
     }
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#if (LOSCFG_KERNEL_SMP == YES)//多核支持
     PRINT_RELEASE("releasing %u secondary cores\n", LOSCFG_KERNEL_SMP_CORE_NUM - 1);
-    release_secondary_cores();
+    release_secondary_cores();//让CPU其他核也开始工作,真正的并行开始了.
 #endif
 
     CPU_MAP_SET(0, OsHwIDGet());
 
-    OsStart();
+    OsStart();//内核初始化完成,正式开始工作
 
     while (1) {
-        __asm volatile("wfi");
+        __asm volatile("wfi");//让cpu进入idle状态
     }
 }

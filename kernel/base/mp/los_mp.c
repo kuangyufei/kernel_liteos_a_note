@@ -43,33 +43,33 @@ extern "C" {
 
 #if (LOSCFG_KERNEL_SMP == YES)
 
-VOID LOS_MpSchedule(UINT32 target)
+VOID LOS_MpSchedule(UINT32 target)//target每位对应CPU core 
 {
     UINT32 cpuid = ArchCurrCpuid();
     target &= ~(1U << cpuid);
-    HalIrqSendIpi(target, LOS_MP_IPI_SCHEDULE);
+    HalIrqSendIpi(target, LOS_MP_IPI_SCHEDULE);//处理器间中断（IPI）
 }
-
+//硬中断唤醒处理函数
 VOID OsMpWakeHandler(VOID)
 {
     /* generic wakeup ipi, do nothing */
 }
-
+//硬中断调度处理函数
 VOID OsMpScheduleHandler(VOID)
-{
+{//将调度标志设置为与唤醒功能不同，这样就可以在硬中断结束时触发调度程序。
     /*
      * set schedule flag to differ from wake function,
      * so that the scheduler can be triggered at the end of irq.
      */
-    OsPercpuGet()->schedFlag = INT_PEND_RESCH;
+    OsPercpuGet()->schedFlag = INT_PEND_RESCH;//贴上调度标签
 }
-
+//硬中断调度处理函数
 VOID OsMpHaltHandler(VOID)
 {
     (VOID)LOS_IntLock();
-    OsPercpuGet()->excFlag = CPU_HALT;
+    OsPercpuGet()->excFlag = CPU_HALT;//让当前Cpu停止工作
 
-    while (1) {}
+    while (1) {}//陷入空循环,也就是空闲状态
 }
 
 VOID OsMpCollectTasks(VOID)

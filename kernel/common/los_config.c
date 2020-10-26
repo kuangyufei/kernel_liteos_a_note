@@ -139,35 +139,35 @@ LITE_OS_SEC_TEXT_INIT VOID osRegister(VOID)
 
     return;
 }
-
+//系统初始化已经完成,系统正式开始工作
 LITE_OS_SEC_TEXT_INIT VOID OsStart(VOID)
 {
     LosProcessCB *runProcess = NULL;
     LosTaskCB *taskCB = NULL;
     UINT32 cpuid = ArchCurrCpuid();
 
-    OsTickStart();
+    OsTickStart();//启动tick
 
     LOS_SpinLock(&g_taskSpin);
-    taskCB = OsGetTopTask();
+    taskCB = OsGetTopTask();//获取一个最高优先级任务
 
-    runProcess = OS_PCB_FROM_PID(taskCB->processID);
-    runProcess->processStatus |= OS_PROCESS_STATUS_RUNNING;
+    runProcess = OS_PCB_FROM_PID(taskCB->processID);//获取这个task所在进程
+    runProcess->processStatus |= OS_PROCESS_STATUS_RUNNING;//设这个进程为运行进程
 #if (LOSCFG_KERNEL_SMP == YES)
     /*
      * attention: current cpu needs to be set, in case first task deletion
      * may fail because this flag mismatch with the real current cpu.
-     */
-    taskCB->currCpu = cpuid;
+     *///注意：当前cpu需要设置，以防第一个任务被删除可能会失败，因为此标志与实际当前cpu不匹配
+    taskCB->currCpu = cpuid;//设置当前cpuID为当前任务跑在这个CPUID上
     runProcess->processStatus = OS_PROCESS_RUNTASK_COUNT_ADD(runProcess->processStatus);
 #endif
 
-    OS_SCHEDULER_SET(cpuid);
+    OS_SCHEDULER_SET(cpuid);//设置调度要使用的cpu id
 
     PRINTK("cpu %d entering scheduler\n", cpuid);
-    OsStartToRun(taskCB);
+    OsStartToRun(taskCB);//任务开始起跑
 }
-
+//进程通讯IPC初始化 由OsMain()调用
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsIpcInit(VOID)
 {
     UINT32 ret;
@@ -178,8 +178,8 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsIpcInit(VOID)
     }
 #endif
 
-#if (LOSCFG_BASE_IPC_QUEUE == YES)
-    ret = OsQueueInit();
+#if (LOSCFG_BASE_IPC_QUEUE == YES)//系统已配置支持队列IPC
+    ret = OsQueueInit();//队列初始化
     if (ret != LOS_OK) {
         return ret;
     }
@@ -302,7 +302,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     }
 
 #if (LOSCFG_BASE_CORE_SWTMR == YES)
-    ret = OsSwtmrInit();
+    ret = OsSwtmrInit();//软时钟模块初始化
     if (ret != LOS_OK) {
         return ret;
     }
@@ -313,7 +313,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 #endif
 
 #if (LOSCFG_KERNEL_SMP == YES)
-    (VOID)OsMpInit();
+    (VOID)OsMpInit();//多处理器模块的初始化
 #endif
 
 #if defined(LOSCFG_HW_RANDOM_ENABLE) || defined (LOSCFG_DRIVERS_RANDOM)
@@ -322,7 +322,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 #endif
 
 #ifdef LOSCFG_COMPAT_BSD
-    ret = OsBsdInit();
+    ret = OsBsdInit();//BSD模块初始化
     if (ret != LOS_OK) {
         PRINT_ERR("init bsd failed!\n");
         return ret;
@@ -333,7 +333,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     OsDriverPipeInit();
 #endif
 
-    ret = OsSystemInit();
+    ret = OsSystemInit();//系统初始化
     if (ret != LOS_OK) {
         return ret;
     }
@@ -343,11 +343,11 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 #endif
 
 #if (LOSCFG_KERNEL_TRACE == YES)
-    LOS_TraceInit();
+    LOS_TraceInit();//日志模块初始化,没有日志一片摸瞎.
 #endif
 
 #if (LOSCFG_KERNEL_LITEIPC == YES)
-    ret = LiteIpcInit();
+    ret = LiteIpcInit();//这是lite自有的IPC模块 初始化
     if (ret != LOS_OK) {
         return ret;
     }
@@ -361,20 +361,20 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 #endif
 
 #ifdef LOSCFG_KERNEL_VDSO
-    ret = OsInitVdso();
-    if (ret != LOS_OK) {
+    ret = OsInitVdso();//VDSO模块初始化
+    if (ret != LOS_OK) {//VDSO就是Virtual Dynamic Shared Object，即内核提供的虚拟的.so,这个.so文件不在磁盘上，而是在内核里头
         return ret;
     }
 #endif
-
-    ret = OsFutexInit();
+	//Fast Userspace muTexes (快速用户空间互斥体)
+    ret = OsFutexInit();//linux使用了futex来进行快速通信，pthread_xxx 相关接口全部都是基于futex实现的
     if (ret != LOS_OK) {
         PRINT_ERR("Create futex failed : %d!\n", ret);
         return ret;
     }
 
-    ret = OomTaskInit();
-    if (ret != LOS_OK) {
+    ret = OomTaskInit();//Out-Of-Memory 用户监控使用内存太大的task,在内存不足而某些进程太耗内存时
+    if (ret != LOS_OK) {//可以直接把进程干掉而释放内存
         return ret;
     }
 

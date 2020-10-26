@@ -197,13 +197,13 @@ int SysSchedGetParam(int id, int flag)
 
     return OsGetProcessPriority(LOS_PRIO_PROCESS, id);
 }
-
+//设置调度参数
 int SysSchedSetParam(int id, unsigned int prio, int flag)
 {
     int ret;
 
     if (flag < 0) {
-        return -OsUserTaskSchedulerSet(id, LOS_SCHED_RR, prio, FALSE);
+        return -OsUserTaskSchedulerSet(id, LOS_SCHED_RR, prio, FALSE);//用户态任务调度设置
     }
 
     if (prio < OS_USER_PROCESS_PRIORITY_HIGHEST) {
@@ -219,9 +219,9 @@ int SysSchedSetParam(int id, unsigned int prio, int flag)
         return ret;
     }
 
-    return OsSetProcessScheduler(LOS_PRIO_PROCESS, id, prio, LOS_SCHED_RR, FALSE);
+    return OsSetProcessScheduler(LOS_PRIO_PROCESS, id, prio, LOS_SCHED_RR, FALSE);//设置进程调度参数
 }
-
+//设置进程的优先级
 int SysSetProcessPriority(int which, int who, unsigned int prio)
 {
     int ret;
@@ -241,7 +241,7 @@ int SysSetProcessPriority(int which, int who, unsigned int prio)
 
     return OsSetProcessScheduler(which, who, prio, LOS_SCHED_RR, FALSE);
 }
-
+//获取进程优先级
 int SysGetProcessPriority(int which, int who)
 {
     if (who == 0) {

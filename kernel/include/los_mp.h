@@ -45,9 +45,9 @@ extern "C" {
 #define OS_MP_GC_PERIOD     100 /* ticks */
 
 typedef enum {
-    LOS_MP_IPI_WAKEUP,
-    LOS_MP_IPI_SCHEDULE,
-    LOS_MP_IPI_HALT,
+    LOS_MP_IPI_WAKEUP,	//唤醒CPU
+    LOS_MP_IPI_SCHEDULE,//调度CPU
+    LOS_MP_IPI_HALT,	//停止CPU
 } MP_IPI_TYPE;
 
 #if (LOSCFG_KERNEL_SMP == YES)

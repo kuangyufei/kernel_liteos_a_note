@@ -41,14 +41,14 @@ extern "C" {
 #endif /* __cplusplus */
 
 typedef enum {
-    OS_QUEUE_READ = 0,
-    OS_QUEUE_WRITE = 1,
+    OS_QUEUE_READ = 0,	//读队列
+    OS_QUEUE_WRITE = 1,	//写队列
     OS_QUEUE_N_RW = 2
 } QueueReadWrite;
 
 typedef enum {
-    OS_QUEUE_HEAD = 0,
-    OS_QUEUE_TAIL = 1
+    OS_QUEUE_HEAD = 0,	//队列头部标识
+    OS_QUEUE_TAIL = 1	//队列尾部标识
 } QueueHeadTail;
 
 #define OS_QUEUE_OPERATE_TYPE(ReadOrWrite, HeadOrTail) (((UINT32)(HeadOrTail) << 1) | (ReadOrWrite))
@@ -76,7 +76,7 @@ typedef struct {
     UINT16 readWriteableCnt[OS_QUEUE_N_RW]; /**< Count of readable or writable resources, 0:readable, 1:writable */
     LOS_DL_LIST readWriteList[OS_QUEUE_N_RW]; /**< the linked list to be read or written, 0:readlist, 1:writelist */
     LOS_DL_LIST memList; /**< Pointer to the memory linked list */
-} LosQueueCB;
+} LosQueueCB;//读写队列分离
 
 /* queue state */
 /**

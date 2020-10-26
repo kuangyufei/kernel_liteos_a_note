@@ -161,11 +161,11 @@ extern "C" {
  * @ingroup los_event
  * Event control structure
  */
-typedef struct tagEvent {
+typedef struct tagEvent {//EVENT_CB_S 这结构体名字取的不能统一下吗? 明显这里是另一个人的代码
     UINT32 uwEventID;        /**< Event mask in the event control block,
                                   indicating the event that has been logically processed. */
     LOS_DL_LIST stEventList; /**< Event control block linked list */
-} EVENT_CB_S, *PEVENT_CB_S;
+} EVENT_CB_S, *PEVENT_CB_S;//一个是结构体,一个是指针
 
 /**
  * @ingroup los_event
