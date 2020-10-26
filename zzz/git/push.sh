@@ -1,6 +1,6 @@
 git add -A
-git commit -m  '鸿蒙源码分析系列篇 https://blog.csdn.net/kuangyufei 
-                https://my.oschina.net/u/3751245'
+git commit -m  '内存,进程,task模块注释基本完成. 正在更新: 进程间IPC通讯消息队列模块代码注释...
+                鸿蒙内核源码分析系列 https://blog.csdn.net/kuangyufei https://my.oschina.net/u/3751245'
 git push origin
 git push gitee_origin master
 git push github_origin master

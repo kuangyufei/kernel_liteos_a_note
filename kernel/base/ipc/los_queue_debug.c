@@ -131,7 +131,7 @@ STATIC VOID SortQueueIndexArray(UINT32 *indexArray, UINT32 count)
     }
     (VOID)LOS_MemFree((VOID *)OS_SYS_MEM_ADDR, indexArray);
 }
-
+//队列检查
 VOID OsQueueCheck(VOID)
 {
     LosQueueCB queueNode = {0};

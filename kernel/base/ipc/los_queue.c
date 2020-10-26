@@ -232,7 +232,7 @@ STATIC VOID OsQueueBufferOperate(LosQueueCB *queueCB, UINT32 operateType, VOID *
         }
 
         *bufferSize = msgDataSize;//通过入参 带走消息的大小
-    } else {//只有读写两种操作,这里就是写队列了.写也分两步走
+    } else {//只有读写两种操作,这里就是写队列了.写也分两步走 , @@@@@ 这里建议鸿蒙加上 OS_QUEUE_IS_WRITE 判断 
         if (memcpy_s(queueNode, queueCB->queueSize, bufferAddr, *bufferSize) != EOK) {//1.写入消息内容长度 UINT32表示
             PRINT_ERR("store message failed\n");
             return;
@@ -244,65 +244,65 @@ STATIC VOID OsQueueBufferOperate(LosQueueCB *queueCB, UINT32 operateType, VOID *
         }
     }
 }
-
+//队列操作参数检查
 STATIC UINT32 OsQueueOperateParamCheck(const LosQueueCB *queueCB, UINT32 queueID,
                                        UINT32 operateType, const UINT32 *bufferSize)
 {
-    if ((queueCB->queueID != queueID) || (queueCB->queueState == OS_QUEUE_UNUSED)) {
+    if ((queueCB->queueID != queueID) || (queueCB->queueState == OS_QUEUE_UNUSED)) {//队列ID和状态判断
         return LOS_ERRNO_QUEUE_NOT_CREATE;
     }
 
-    if (OS_QUEUE_IS_READ(operateType) && (*bufferSize < (queueCB->queueSize - sizeof(UINT32)))) {
+    if (OS_QUEUE_IS_READ(operateType) && (*bufferSize < (queueCB->queueSize - sizeof(UINT32)))) {//读时判断
         return LOS_ERRNO_QUEUE_READ_SIZE_TOO_SMALL;
-    } else if (OS_QUEUE_IS_WRITE(operateType) && (*bufferSize > (queueCB->queueSize - sizeof(UINT32)))) {
+    } else if (OS_QUEUE_IS_WRITE(operateType) && (*bufferSize > (queueCB->queueSize - sizeof(UINT32)))) {//写时判断
         return LOS_ERRNO_QUEUE_WRITE_SIZE_TOO_BIG;
     }
     return LOS_OK;
 }
-
+//队列操作.是读是写由operateType定
 UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT32 *bufferSize, UINT32 timeout)
 {
     LosQueueCB *queueCB = NULL;
     LosTaskCB *resumedTask = NULL;
     UINT32 ret;
-    UINT32 readWrite = OS_QUEUE_READ_WRITE_GET(operateType);
+    UINT32 readWrite = OS_QUEUE_READ_WRITE_GET(operateType);//获取读写操作标识
     UINT32 intSave;
 
     SCHEDULER_LOCK(intSave);
-    queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);
-    ret = OsQueueOperateParamCheck(queueCB, queueID, operateType, bufferSize);
+    queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);//获取对应的队列控制块
+    ret = OsQueueOperateParamCheck(queueCB, queueID, operateType, bufferSize);//参数检查
     if (ret != LOS_OK) {
         goto QUEUE_END;
     }
 
-    if (queueCB->readWriteableCnt[readWrite] == 0) {
-        if (timeout == LOS_NO_WAIT) {
+    if (queueCB->readWriteableCnt[readWrite] == 0) {//没有数据
+        if (timeout == LOS_NO_WAIT) {//不等待直接退出
             ret = OS_QUEUE_IS_READ(operateType) ? LOS_ERRNO_QUEUE_ISEMPTY : LOS_ERRNO_QUEUE_ISFULL;
             goto QUEUE_END;
         }
 
-        if (!OsPreemptableInSched()) {
+        if (!OsPreemptableInSched()) {//不能抢占式调度
             ret = LOS_ERRNO_QUEUE_PEND_IN_LOCK;
             goto QUEUE_END;
         }
 
-        ret = OsTaskWait(&queueCB->readWriteList[readWrite], timeout, TRUE);
+        ret = OsTaskWait(&queueCB->readWriteList[readWrite], timeout, TRUE);//任务等待
         if (ret == LOS_ERRNO_TSK_TIMEOUT) {
             ret = LOS_ERRNO_QUEUE_TIMEOUT;
             goto QUEUE_END;
         }
     } else {
-        queueCB->readWriteableCnt[readWrite]--;
+        queueCB->readWriteableCnt[readWrite]--;//对应队列中计数器--
     }
 
-    OsQueueBufferOperate(queueCB, operateType, bufferAddr, bufferSize);
+    OsQueueBufferOperate(queueCB, operateType, bufferAddr, bufferSize);//发起读或写队列操作
 
-    if (!LOS_ListEmpty(&queueCB->readWriteList[!readWrite])) {
-        resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&queueCB->readWriteList[!readWrite]));
-        OsTaskWake(resumedTask);
+    if (!LOS_ListEmpty(&queueCB->readWriteList[!readWrite])) {//另外的operateType中还有其他消息时,如果 operateType=read,这时去查write队列,读写交互操作
+        resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&queueCB->readWriteList[!readWrite]));//拿到拥有这个队列节点的任务
+        OsTaskWake(resumedTask);//唤醒任务去处理队列的值
         SCHEDULER_UNLOCK(intSave);
-        LOS_MpSchedule(OS_MP_CPU_ALL);
-        LOS_Schedule();
+        LOS_MpSchedule(OS_MP_CPU_ALL);//让所有CPU参与调度
+        LOS_Schedule();//申请调度
         return LOS_OK;
     } else {
         queueCB->readWriteableCnt[!readWrite]++;

@@ -76,7 +76,7 @@ typedef struct {
     UINT16 readWriteableCnt[OS_QUEUE_N_RW]; /**< Count of readable or writable resources, 0:readable, 1:writable */
     LOS_DL_LIST readWriteList[OS_QUEUE_N_RW]; /**< the linked list to be read or written, 0:readlist, 1:writelist */
     LOS_DL_LIST memList; /**< Pointer to the memory linked list */
-} LosQueueCB;
+} LosQueueCB;//读写队列分离
 
 /* queue state */
 /**
