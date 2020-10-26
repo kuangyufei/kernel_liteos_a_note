@@ -143,7 +143,7 @@ UINT32 OsPriQueueProcessSize(LOS_DL_LIST *priQueueList, UINT32 priority)
 
     return itemCnt;
 }
-
+//获取队列的数量
 UINT32 OsPriQueueSize(LOS_DL_LIST *priQueueList, UINT32 priority)
 {
     UINT32 itemCnt = 0;
@@ -156,14 +156,14 @@ UINT32 OsPriQueueSize(LOS_DL_LIST *priQueueList, UINT32 priority)
     LOS_ASSERT(OsIntLocked());
     LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));
 
-    LOS_DL_LIST_FOR_EACH(curNode, &priQueueList[priority]) {
+    LOS_DL_LIST_FOR_EACH(curNode, &priQueueList[priority]) {//循环查找这优先级的数量
 #if (LOSCFG_KERNEL_SMP == YES)
-        task = OS_TCB_FROM_PENDLIST(curNode);
-        if (!(task->cpuAffiMask & (1U << cpuID))) {
+        task = OS_TCB_FROM_PENDLIST(curNode);//找到task
+        if (!(task->cpuAffiMask & (1U << cpuID))) {//属不属于当前CPU
             continue;
         }
 #endif
-        ++itemCnt;
+        ++itemCnt;//计数器
     }
 
     return itemCnt;

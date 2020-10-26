@@ -309,7 +309,7 @@ typedef struct {
     VOID            *taskEvent;         /**< Task-held event */
     UINTPTR         args[4];            /**< Parameter, of which the maximum number is 4 */
     CHAR            taskName[OS_TCB_NAME_LEN]; /**< Task name */
-    LOS_DL_LIST     pendList;           /**< Task pend node */
+    LOS_DL_LIST     pendList;           /**< Task pend node *///如果任务阻塞时就通过它挂到各种阻塞情况的链表上,比如OsTaskWait时
     LOS_DL_LIST     threadList;         /**< thread list */
     SortLinkList    sortList;           /**< Task sortlink node */
     UINT32          eventMask;          /**< Event mask */

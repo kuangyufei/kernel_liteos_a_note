@@ -319,7 +319,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
     UINT32 size;
 
     g_taskMaxNum = LOSCFG_BASE_CORE_TSK_LIMIT;//任务池中最多默认128个,可谓铁打的任务池流水的线程
-    size = (g_taskMaxNum + 1) * sizeof(LosTaskCB);//家谱的
+    size = (g_taskMaxNum + 1) * sizeof(LosTaskCB);//计算需分配内存总大小
     /*
      * This memory is resident memory and is used to save the system resources
      * of task control block and will not be freed.
@@ -1351,26 +1351,26 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_CurTaskPriSet(UINT16 taskPrio)
  *               taskStatus --- task status
  *               timeOut    ---  Expiry time
  * Return      : LOS_OK on success or LOS_NOK on failure
- */
+ *///任务等待
 UINT32 OsTaskWait(LOS_DL_LIST *list, UINT32 timeout, BOOL needSched)
 {
     LosTaskCB *runTask = NULL;
     LOS_DL_LIST *pendObj = NULL;
 
-    runTask = OsCurrTaskGet();
-    OS_TASK_SCHED_QUEUE_DEQUEUE(runTask, OS_PROCESS_STATUS_PEND);
+    runTask = OsCurrTaskGet();//获取当前任务
+    OS_TASK_SCHED_QUEUE_DEQUEUE(runTask, OS_PROCESS_STATUS_PEND);//将任务从就绪队列摘除,并变成阻塞状态
     pendObj = &runTask->pendList;
-    runTask->taskStatus |= OS_TASK_STATUS_PEND;
-    LOS_ListTailInsert(list, pendObj);
-    if (timeout != LOS_WAIT_FOREVER) {
-        runTask->taskStatus |= OS_TASK_STATUS_PEND_TIME;
-        OsAdd2TimerList(runTask, timeout);
+    runTask->taskStatus |= OS_TASK_STATUS_PEND;//给任务贴上阻塞任务标签
+    LOS_ListTailInsert(list, pendObj);//将阻塞任务挂到list上,,这步很关键,很重要!
+    if (timeout != LOS_WAIT_FOREVER) {//非永远等待的时候
+        runTask->taskStatus |= OS_TASK_STATUS_PEND_TIME;//阻塞任务再贴上一段时间内阻塞
+        OsAdd2TimerList(runTask, timeout);//把任务加到定时器链表中
     }
 
-    if (needSched == TRUE) {
-        OsSchedResched();
-        if (runTask->taskStatus & OS_TASK_STATUS_TIMEOUT) {
-            runTask->taskStatus &= ~OS_TASK_STATUS_TIMEOUT;
+    if (needSched == TRUE) {//是否需要调度
+        OsSchedResched();//申请调度,里面直接切换了任务上下文,此次任务不再往下执行了.
+        if (runTask->taskStatus & OS_TASK_STATUS_TIMEOUT) {//这条语句是被调度再次选中时执行的,和上面的语句可能隔了很长时间,所以很可能已经超时了
+            runTask->taskStatus &= ~OS_TASK_STATUS_TIMEOUT;//如果任务有timeout的标签,那么就去掉那个标签
             return LOS_ERRNO_TSK_TIMEOUT;
         }
     }
@@ -1381,21 +1381,21 @@ UINT32 OsTaskWait(LOS_DL_LIST *list, UINT32 timeout, BOOL needSched)
  * Description : delete the task from pendlist and also add to the priqueue
  * Input       : resumedTask --- resumed task
  *               taskStatus  --- task status
- */
-VOID OsTaskWake(LosTaskCB *resumedTask)
+ *///任务被唤醒
+VOID OsTaskWake(LosTaskCB *resumedTask)//这个函数是被别的task唤醒的,当前任务可不是resumedTask,一定要明白这点.
 {
-    LOS_ListDelete(&resumedTask->pendList);
-    resumedTask->taskStatus &= ~OS_TASK_STATUS_PEND;
+    LOS_ListDelete(&resumedTask->pendList);//将自己从阻塞链表中摘除
+    resumedTask->taskStatus &= ~OS_TASK_STATUS_PEND;//任务不再阻塞
 
-    if (resumedTask->taskStatus & OS_TASK_STATUS_PEND_TIME) {
-        OsTimerListDelete(resumedTask);
-        resumedTask->taskStatus &= ~OS_TASK_STATUS_PEND_TIME;
+    if (resumedTask->taskStatus & OS_TASK_STATUS_PEND_TIME) {//有阻塞时间标签的时候
+        OsTimerListDelete(resumedTask);//从CPU的taskSortLink中摘除自己
+        resumedTask->taskStatus &= ~OS_TASK_STATUS_PEND_TIME;//撕掉阻塞时间标签
     }
-    if (!(resumedTask->taskStatus & OS_TASK_STATUS_SUSPEND)) {
-        OS_TASK_SCHED_QUEUE_ENQUEUE(resumedTask, OS_PROCESS_STATUS_PEND);
-    }
+    if (!(resumedTask->taskStatus & OS_TASK_STATUS_SUSPEND)) {//任务不是挂起状态时
+        OS_TASK_SCHED_QUEUE_ENQUEUE(resumedTask, OS_PROCESS_STATUS_PEND);//将任务加入调度队列,OS_PROCESS_STATUS_PEND表示加入就绪队列前的状态
+    }//OS_TASK_SCHED_QUEUE_ENQUEUE 之后 resumedTask就变成了ready状态,等待被调度选中
 }
-
+//任务大公无私,主动让出CPU. 读懂这个函数 你就彻底搞懂了 yield
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskYield(VOID)
 {
     UINT32 tskCount;
@@ -1411,7 +1411,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskYield(VOID)
         return LOS_ERRNO_TSK_YIELD_IN_LOCK;
     }
 
-    runTask = OsCurrTaskGet();
+    runTask = OsCurrTaskGet();//获取当前任务
     if (OS_TID_CHECK_INVALID(runTask->taskID)) {
         return LOS_ERRNO_TSK_ID_INVALID;
     }
@@ -1419,28 +1419,28 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskYield(VOID)
     SCHEDULER_LOCK(intSave);
 
     /* reset timeslice of yeilded task */
-    runTask->timeSlice = 0;
-    runProcess = OS_PCB_FROM_PID(runTask->processID);
-    tskCount = OS_TASK_PRI_QUEUE_SIZE(runProcess, runTask);
+    runTask->timeSlice = 0;//重置时间片
+    runProcess = OS_PCB_FROM_PID(runTask->processID);//获取当前进程
+    tskCount = OS_TASK_PRI_QUEUE_SIZE(runProcess, runTask);//获取进程中和当前任务一样的task数
     if (tskCount > 0) {
-        OS_TASK_PRI_QUEUE_ENQUEUE(runProcess, runTask);
-        runTask->taskStatus |= OS_TASK_STATUS_READY;
+        OS_TASK_PRI_QUEUE_ENQUEUE(runProcess, runTask);//先出队列,再入就绪队列, 这句话总意思就是是把自己排到最后,给同级兄弟让位置,所以叫 yield 
+        runTask->taskStatus |= OS_TASK_STATUS_READY;//任务状态变成就绪
     } else {
         SCHEDULER_UNLOCK(intSave);
         return LOS_OK;
     }
-    OsSchedResched();
+    OsSchedResched();//申请调度
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
-
+//任务锁
 LITE_OS_SEC_TEXT_MINOR VOID LOS_TaskLock(VOID)
 {
     UINT32 intSave;
     UINT32 *losTaskLock = NULL;
 
     intSave = LOS_IntLock();
-    losTaskLock = &OsPercpuGet()->taskLockCnt;
+    losTaskLock = &OsPercpuGet()->taskLockCnt;//task lock 的计数器
     (*losTaskLock)++;
     LOS_IntRestore(intSave);
 }
@@ -1468,7 +1468,7 @@ LITE_OS_SEC_TEXT_MINOR VOID LOS_TaskUnlock(VOID)
 
     LOS_IntRestore(intSave);
 }
-
+//获取任务信息,给shell使用的
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskInfoGet(UINT32 taskID, TSK_INFO_S *taskInfo)
 {
     UINT32 intSave;

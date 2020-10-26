@@ -57,7 +57,7 @@ LITE_OS_SEC_BSS LosSemCB *g_allSem = NULL;
  * Description  : Initialize the semaphore doubly linked list
  * Return       : LOS_OK on success, or error code on failure
  */
-LITE_OS_SEC_TEXT_INIT UINT32 OsSemInit(VOID)
+LITE_OS_SEC_TEXT_INIT UINT32 OsSemInit(VOID)//信号量初始化
 {
     LosSemCB *semNode = NULL;
     UINT32 index;

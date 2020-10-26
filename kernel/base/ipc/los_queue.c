@@ -218,7 +218,7 @@ STATIC VOID OsQueueBufferOperate(LosQueueCB *queueCB, UINT32 operateType, VOID *
             return;
     }
 
-    queueNode = &(queueCB->queueHandle[(queuePosion * (queueCB->queueSize))]);//拿到队列节点
+    queueNode = &(queueCB->queueHandle[(queuePosion * (queueCB->queueSize))]);//执行回调函数
 
     if (OS_QUEUE_IS_READ(operateType)) {//读操作处理,读队列分两步走
         if (memcpy_s(&msgDataSize, sizeof(UINT32), queueNode + queueCB->queueSize - sizeof(UINT32),
@@ -286,9 +286,9 @@ UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT
             goto QUEUE_END;
         }
 
-        ret = OsTaskWait(&queueCB->readWriteList[readWrite], timeout, TRUE);//任务等待
-        if (ret == LOS_ERRNO_TSK_TIMEOUT) {
-            ret = LOS_ERRNO_QUEUE_TIMEOUT;
+        ret = OsTaskWait(&queueCB->readWriteList[readWrite], timeout, TRUE);//任务等待,这里很重要啊,说明下把当前任务从就绪列表摘除,
+        if (ret == LOS_ERRNO_TSK_TIMEOUT) {//并挂在readWriteList[readWrite]上,如此一来readWriteList[readWrite]上挂的都是task
+            ret = LOS_ERRNO_QUEUE_TIMEOUT;//通过OS_TCB_FROM_PENDLIST就能找到task实体
             goto QUEUE_END;
         }
     } else {
@@ -298,7 +298,7 @@ UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT
     OsQueueBufferOperate(queueCB, operateType, bufferAddr, bufferSize);//发起读或写队列操作
 
     if (!LOS_ListEmpty(&queueCB->readWriteList[!readWrite])) {//另外的operateType中还有其他消息时,如果 operateType=read,这时去查write队列,读写交互操作
-        resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&queueCB->readWriteList[!readWrite]));//拿到拥有这个队列节点的任务
+        resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&queueCB->readWriteList[!readWrite]));//拿到拥有这个队列节点的任务 ?????
         OsTaskWake(resumedTask);//唤醒任务去处理队列的值
         SCHEDULER_UNLOCK(intSave);
         LOS_MpSchedule(OS_MP_CPU_ALL);//让所有CPU参与调度
@@ -321,15 +321,15 @@ LITE_OS_SEC_TEXT UINT32 LOS_QueueReadCopy(UINT32 queueID,
     UINT32 ret;
     UINT32 operateType;
 
-    ret = OsQueueReadParameterCheck(queueID, bufferAddr, bufferSize, timeout);
+    ret = OsQueueReadParameterCheck(queueID, bufferAddr, bufferSize, timeout);//参数检查
     if (ret != LOS_OK) {
         return ret;
     }
 
-    operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_READ, OS_QUEUE_HEAD);
-    return OsQueueOperate(queueID, operateType, bufferAddr, bufferSize, timeout);
+    operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_READ, OS_QUEUE_HEAD);//意思是从头开始读
+    return OsQueueOperate(queueID, operateType, bufferAddr, bufferSize, timeout);//执行读操作
 }
-
+//接口函数 从队列头开始写
 LITE_OS_SEC_TEXT UINT32 LOS_QueueWriteHeadCopy(UINT32 queueID,
                                                VOID *bufferAddr,
                                                UINT32 bufferSize,
@@ -338,15 +338,15 @@ LITE_OS_SEC_TEXT UINT32 LOS_QueueWriteHeadCopy(UINT32 queueID,
     UINT32 ret;
     UINT32 operateType;
 
-    ret = OsQueueWriteParameterCheck(queueID, bufferAddr, &bufferSize, timeout);
+    ret = OsQueueWriteParameterCheck(queueID, bufferAddr, &bufferSize, timeout);//参数检查
     if (ret != LOS_OK) {
         return ret;
     }
 
-    operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_WRITE, OS_QUEUE_HEAD);
-    return OsQueueOperate(queueID, operateType, bufferAddr, &bufferSize, timeout);
+    operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_WRITE, OS_QUEUE_HEAD);//从头开始写
+    return OsQueueOperate(queueID, operateType, bufferAddr, &bufferSize, timeout);//执行写操作
 }
-
+//接口函数 从队列尾部开始写
 LITE_OS_SEC_TEXT UINT32 LOS_QueueWriteCopy(UINT32 queueID,
                                            VOID *bufferAddr,
                                            UINT32 bufferSize,
@@ -355,13 +355,13 @@ LITE_OS_SEC_TEXT UINT32 LOS_QueueWriteCopy(UINT32 queueID,
     UINT32 ret;
     UINT32 operateType;
 
-    ret = OsQueueWriteParameterCheck(queueID, bufferAddr, &bufferSize, timeout);
+    ret = OsQueueWriteParameterCheck(queueID, bufferAddr, &bufferSize, timeout);//参数检查
     if (ret != LOS_OK) {
         return ret;
     }
 
-    operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_WRITE, OS_QUEUE_TAIL);
-    return OsQueueOperate(queueID, operateType, bufferAddr, &bufferSize, timeout);
+    operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_WRITE, OS_QUEUE_TAIL);//从尾部开始写
+    return OsQueueOperate(queueID, operateType, bufferAddr, &bufferSize, timeout);//执行写操作
 }
 //读一个队列数据
 LITE_OS_SEC_TEXT UINT32 LOS_QueueRead(UINT32 queueID, VOID *bufferAddr, UINT32 bufferSize, UINT32 timeout)
@@ -445,7 +445,7 @@ QUEUE_END:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-
+//获取队列信息,用一个queueInfo 把 LosQueueCB数据接走 
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_QueueInfoGet(UINT32 queueID, QUEUE_INFO_S *queueInfo)
 {
     UINT32 intSave;
@@ -457,14 +457,14 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_QueueInfoGet(UINT32 queueID, QUEUE_INFO_S *que
         return LOS_ERRNO_QUEUE_PTR_NULL;
     }
 
-    if (GET_QUEUE_INDEX(queueID) >= LOSCFG_BASE_IPC_QUEUE_LIMIT) {
+    if (GET_QUEUE_INDEX(queueID) >= LOSCFG_BASE_IPC_QUEUE_LIMIT) {//1024
         return LOS_ERRNO_QUEUE_INVALID;
     }
 
-    (VOID)memset_s((VOID *)queueInfo, sizeof(QUEUE_INFO_S), 0, sizeof(QUEUE_INFO_S));
+    (VOID)memset_s((VOID *)queueInfo, sizeof(QUEUE_INFO_S), 0, sizeof(QUEUE_INFO_S));//接人之前先清0
     SCHEDULER_LOCK(intSave);
 
-    queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);
+    queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);//通过队列ID获取 QCB
     if ((queueCB->queueID != queueID) || (queueCB->queueState == OS_QUEUE_UNUSED)) {
         ret = LOS_ERRNO_QUEUE_NOT_CREATE;
         goto QUEUE_END;
@@ -475,18 +475,18 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_QueueInfoGet(UINT32 queueID, QUEUE_INFO_S *que
     queueInfo->usQueueSize = queueCB->queueSize;
     queueInfo->usQueueHead = queueCB->queueHead;
     queueInfo->usQueueTail = queueCB->queueTail;
-    queueInfo->usReadableCnt = queueCB->readWriteableCnt[OS_QUEUE_READ];
-    queueInfo->usWritableCnt = queueCB->readWriteableCnt[OS_QUEUE_WRITE];
+    queueInfo->usReadableCnt = queueCB->readWriteableCnt[OS_QUEUE_READ];//可读数
+    queueInfo->usWritableCnt = queueCB->readWriteableCnt[OS_QUEUE_WRITE];//可写数
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->readWriteList[OS_QUEUE_READ], LosTaskCB, pendList) {
-        queueInfo->uwWaitReadTask |= 1ULL << tskCB->taskID;
-    }
+    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->readWriteList[OS_QUEUE_READ], LosTaskCB, pendList) {//循环的目的是找出哪些task需要读
+        queueInfo->uwWaitReadTask |= 1ULL << tskCB->taskID;//记录等待读的任务号, uwWaitReadTask 每一位代表一个任务编号
+    }//0b..011011011 代表   0,1,3,4,6,7 号任务有数据等待读.
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->readWriteList[OS_QUEUE_WRITE], LosTaskCB, pendList) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->readWriteList[OS_QUEUE_WRITE], LosTaskCB, pendList) {//循环的目的是找出哪些task需要写
         queueInfo->uwWaitWriteTask |= 1ULL << tskCB->taskID;
     }
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->memList, LosTaskCB, pendList) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->memList, LosTaskCB, pendList) {//同上
         queueInfo->uwWaitMemTask |= 1ULL << tskCB->taskID;
     }
 

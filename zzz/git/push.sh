@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '内存,进程,task模块注释基本完成. 正在更新: 进程间IPC通讯消息队列模块代码注释...
+git commit -m  '内存,进程,task模块注释基本完成. 本次提交涉及 LOS_TaskYield PendList IRQ ,FIQ等知识点
 鸿蒙内核源码分析系列 https://blog.csdn.net/kuangyufei https://my.oschina.net/u/3751245'
 
 git push origin
