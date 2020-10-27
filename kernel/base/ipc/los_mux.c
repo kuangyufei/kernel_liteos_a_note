@@ -482,53 +482,54 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxTrylock(LosMux *mutex)
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-
+//降低参数任务的优先级上限
 STATIC VOID OsMuxPostOpSub(LosTaskCB *taskCB, LosMux *mutex)
 {
     LosTaskCB *pendedTask = NULL;
     UINT16 bitMapPri;
-
-    if (!LOS_ListEmpty(&mutex->muxList)) {
-        bitMapPri = LOS_HighBitGet(taskCB->priBitMap);
-        LOS_DL_LIST_FOR_EACH_ENTRY(pendedTask, (&mutex->muxList), LosTaskCB, pendList) {
-            if (bitMapPri != pendedTask->priority) {
-                LOS_BitmapClr(&taskCB->priBitMap, pendedTask->priority);
+	//理解OsMuxPostOpSub之前要先理解一个task在运行过程中优先级会变化,这些变化都记录在taskCB->priBitMap中
+    if (!LOS_ListEmpty(&mutex->muxList)) {//还有任务在等锁
+        bitMapPri = LOS_HighBitGet(taskCB->priBitMap);//获取参数任务bitmap中优先级下限(意思是最低优先级记录)
+        LOS_DL_LIST_FOR_EACH_ENTRY(pendedTask, (&mutex->muxList), LosTaskCB, pendList) {//循环拿等锁任务
+            if (bitMapPri != pendedTask->priority) {//等锁任务优先级不等于参数任务优先级下限的情况
+                LOS_BitmapClr(&taskCB->priBitMap, pendedTask->priority);//在bitmap的pendedTask->priority位上置0
             }
         }
     }
-    bitMapPri = LOS_LowBitGet(taskCB->priBitMap);
-    LOS_BitmapClr(&taskCB->priBitMap, bitMapPri);
-    OsTaskPriModify((LosTaskCB *)mutex->owner, bitMapPri);
+    bitMapPri = LOS_LowBitGet(taskCB->priBitMap);//拿低位优先级,也就是最高优先级的记录
+    LOS_BitmapClr(&taskCB->priBitMap, bitMapPri);//把taskCB已知的最高优先级记录位清0,实际等于降低了taskCB优先级的上限
+    OsTaskPriModify((LosTaskCB *)mutex->owner, bitMapPri);//修改持有任务的优先级
 }
-//任务是否阻塞互斥锁,如果阻塞了就要调度啦
+//是否有其他任务持有互斥锁而处于阻塞状,如果是就要唤醒它,注意唤醒一个任务的操作是由别的任务完成的
+//OsMuxPostOp只由OsMuxUnlockUnsafe,参数任务归还锁了,自然就会遇到锁要给谁用的问题, 因为很多任务在申请锁,由OsMuxPostOp来回答这个问题
 STATIC UINT32 OsMuxPostOp(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched)
 {
     LosTaskCB *resumedTask = NULL;
 
     if (LOS_ListEmpty(&mutex->muxList)) {//如果互斥锁列表为空
-        LOS_ListDelete(&mutex->holdList);//
+        LOS_ListDelete(&mutex->holdList);//把持有互斥锁的节点摘掉
         mutex->owner = NULL;
         return LOS_OK;
     }
 
-    resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(mutex->muxList)));//
-    if (mutex->attr.protocol == LOS_MUX_PRIO_INHERIT) {
-        if (resumedTask->priority > taskCB->priority) {
-            if (LOS_HighBitGet(taskCB->priBitMap) != resumedTask->priority) {
-                LOS_BitmapClr(&taskCB->priBitMap, resumedTask->priority);
+    resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(mutex->muxList)));//拿到等待互斥锁链表的第一个任务实体,接下来要唤醒任务
+    if (mutex->attr.protocol == LOS_MUX_PRIO_INHERIT) {//互斥锁属性协议是继承会怎么操作?
+        if (resumedTask->priority > taskCB->priority) {//拿到锁的任务优先级低于参数任务优先级
+            if (LOS_HighBitGet(taskCB->priBitMap) != resumedTask->priority) {//参数任务bitmap中最低的优先级不等于等待锁的任务优先级
+                LOS_BitmapClr(&taskCB->priBitMap, resumedTask->priority);//把等待任务锁的任务的优先级记录在参数任务的bitmap中
             }
-        } else if (taskCB->priBitMap != 0) {
-            OsMuxPostOpSub(taskCB, mutex);
+        } else if (taskCB->priBitMap != 0) {//如果bitmap不等于0说明参数任务至少有任务调度的优先级
+            OsMuxPostOpSub(taskCB, mutex);//
         }
     }
-    mutex->muxCount = 1;
-    mutex->owner = (VOID *)resumedTask;
-    resumedTask->taskMux = NULL;
-    LOS_ListDelete(&mutex->holdList);
-    LOS_ListTailInsert(&resumedTask->lockList, &mutex->holdList);
-    OsTaskWake(resumedTask);
-    if (needSched != NULL) {
-        *needSched = TRUE;
+    mutex->muxCount = 1;//互斥锁数量为1
+    mutex->owner = (VOID *)resumedTask;//互斥锁的持有人换了
+    resumedTask->taskMux = NULL;//resumedTask不再等锁了
+    LOS_ListDelete(&mutex->holdList);//自然要从等锁链表中把自己摘出去
+    LOS_ListTailInsert(&resumedTask->lockList, &mutex->holdList);//把锁挂到恢复任务的锁链表上,lockList是任务持有的所有锁记录
+    OsTaskWake(resumedTask);//resumedTask有了锁就唤醒它,因为当初在没有拿到锁时处于了pend状态
+    if (needSched != NULL) {//如果不为空
+        *needSched = TRUE;//就走起再次调度流程
     }
 
     return LOS_OK;
@@ -567,7 +568,7 @@ UINT32 OsMuxUnlockUnsafe(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched)
     }
 
     /* Whether a task block the mutex lock. *///任务是否阻塞互斥锁
-    return OsMuxPostOp(taskCB, mutex, needSched);
+    return OsMuxPostOp(taskCB, mutex, needSched);//一个任务去唤醒另一个在等锁的任务
 }
 //释放锁
 LITE_OS_SEC_TEXT UINT32 LOS_MuxUnlock(LosMux *mutex)
