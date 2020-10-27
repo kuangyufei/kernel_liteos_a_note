@@ -159,16 +159,16 @@ LITE_OS_SEC_TEXT_MINOR VOID OsTaskPriModify(LosTaskCB *taskCB, UINT16 priority)
         taskCB->priority = priority;
     }
 }
-
+//把任务加到定时器链表中
 LITE_OS_SEC_TEXT STATIC INLINE VOID OsAdd2TimerList(LosTaskCB *taskCB, UINT32 timeOut)
 {
-    SET_SORTLIST_VALUE(&taskCB->sortList, timeOut);
-    OsAdd2SortLink(&OsPercpuGet()->taskSortLink, &taskCB->sortList);
-#if (LOSCFG_KERNEL_SMP == YES)
+    SET_SORTLIST_VALUE(&taskCB->sortList, timeOut);//设置idxRollNum的值为timeOut
+    OsAdd2SortLink(&OsPercpuGet()->taskSortLink, &taskCB->sortList);//将任务挂到定时器排序链表上
+#if (LOSCFG_KERNEL_SMP == YES)//注意:这里的排序不是传统意义上12345的排序,而是根据timeOut的值来决定放到CPU core哪个taskSortLink[0:7]链表上
     taskCB->timerCpu = ArchCurrCpuid();
 #endif
 }
-
+//删除定时器链表
 LITE_OS_SEC_TEXT STATIC INLINE VOID OsTimerListDelete(LosTaskCB *taskCB)
 {
 #if (LOSCFG_KERNEL_SMP == YES)
@@ -176,9 +176,9 @@ LITE_OS_SEC_TEXT STATIC INLINE VOID OsTimerListDelete(LosTaskCB *taskCB)
 #else
     SortLinkAttribute *sortLinkHeader = &g_percpu[0].taskSortLink;
 #endif
-    OsDeleteSortLink(sortLinkHeader, &taskCB->sortList);
+    OsDeleteSortLink(sortLinkHeader, &taskCB->sortList);//把task从taskSortLink链表上摘出去
 }
-
+//插入一个TCB到空闲链表
 STATIC INLINE VOID OsInsertTCBToFreeList(LosTaskCB *taskCB)
 {
     UINT32 taskID = taskCB->taskID;
@@ -186,21 +186,21 @@ STATIC INLINE VOID OsInsertTCBToFreeList(LosTaskCB *taskCB)
     taskCB->taskID = taskID;
     taskCB->taskStatus = OS_TASK_STATUS_UNUSED;
     taskCB->processID = OS_INVALID_VALUE;
-    LOS_ListAdd(&g_losFreeTask, &taskCB->pendList);
-}
-
+    LOS_ListAdd(&g_losFreeTask, &taskCB->pendList);//内核挂在g_losFreeTask上的任务都是由pendList完成
+}//查找task 就通过 OS_TCB_FROM_PENDLIST 来完成,相当于由LOS_DL_LIST找到LosTaskCB
+//这个函数在task退出事调用,目的是自己要完蛋了,over之前要把那些和他绑在一起的task唤醒.
 LITE_OS_SEC_TEXT_INIT VOID OsTaskJoinPostUnsafe(LosTaskCB *taskCB)
 {
     LosTaskCB *resumedTask = NULL;
 
-    if (taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {
-        if (!LOS_ListEmpty(&taskCB->joinList)) {
-            resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(taskCB->joinList)));
-            OsTaskWake(resumedTask);
+    if (taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {//任务贴有
+        if (!LOS_ListEmpty(&taskCB->joinList)) {//注意到了这里 joinList中的节点身上都有阻塞标签
+            resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(taskCB->joinList)));//通过贴有JOIN标签链表的第一个节点找到Task
+            OsTaskWake(resumedTask);//唤醒任务
         }
-        taskCB->taskStatus &= ~OS_TASK_FLAG_PTHREAD_JOIN;
+        taskCB->taskStatus &= ~OS_TASK_FLAG_PTHREAD_JOIN;//去掉JOIN标签
     }
-    taskCB->taskStatus |= OS_TASK_STATUS_EXIT;
+    taskCB->taskStatus |= OS_TASK_STATUS_EXIT;//贴上任务退出标签
 }
 
 LITE_OS_SEC_TEXT UINT32 OsTaskJoinPendUnsafe(LosTaskCB *taskCB)
@@ -222,19 +222,19 @@ LITE_OS_SEC_TEXT UINT32 OsTaskJoinPendUnsafe(LosTaskCB *taskCB)
 
     return LOS_EINVAL;
 }
-
+//任务设置分离模式  Deatch和JOIN是一对有你没我的状态
 LITE_OS_SEC_TEXT UINT32 OsTaskSetDeatchUnsafe(LosTaskCB *taskCB)
 {
-    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
-    if (!(processCB->processStatus & OS_PROCESS_STATUS_RUNNING)) {
+    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);//获取进程实体
+    if (!(processCB->processStatus & OS_PROCESS_STATUS_RUNNING)) {//进程必须是运行状态
         return LOS_EPERM;
     }
 
-    if (taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {
-        if (LOS_ListEmpty(&(taskCB->joinList))) {
-            LOS_ListDelete(&(taskCB->joinList));
-            taskCB->taskStatus &= ~OS_TASK_FLAG_PTHREAD_JOIN;
-            taskCB->taskStatus |= OS_TASK_FLAG_DETACHED;
+    if (taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {//join状态时
+        if (LOS_ListEmpty(&(taskCB->joinList))) {//joinlist中没有数据了
+            LOS_ListDelete(&(taskCB->joinList));//所谓删除就是自己指向自己
+            taskCB->taskStatus &= ~OS_TASK_FLAG_PTHREAD_JOIN;//去掉JOIN标签
+            taskCB->taskStatus |= OS_TASK_FLAG_DETACHED;//贴上分离标签,自己独立存在,不和其他任务媾和,别的线程不能回收和干掉我,只能由系统来收我
             return LOS_OK;
         }
         /* This error code has a special purpose and is not allowed to appear again on the interface */
@@ -243,7 +243,7 @@ LITE_OS_SEC_TEXT UINT32 OsTaskSetDeatchUnsafe(LosTaskCB *taskCB)
 
     return LOS_EINVAL;
 }
-//任务扫描
+//任务扫描处理,注意这个函数只有 时钟中断处理函数OsTickHandler调用,非常稳定.所以游标每次进来都+1对应一个tick
 LITE_OS_SEC_TEXT VOID OsTaskScan(VOID)
 {
     SortLinkList *sortList = NULL;
@@ -255,9 +255,9 @@ LITE_OS_SEC_TEXT VOID OsTaskScan(VOID)
 
     taskSortLink = &OsPercpuGet()->taskSortLink;//获取任务的排序链表
     taskSortLink->cursor = (taskSortLink->cursor + 1) & OS_TSK_SORTLINK_MASK;
-    listObject = taskSortLink->sortLink + taskSortLink->cursor;
-
-    /*
+    listObject = taskSortLink->sortLink + taskSortLink->cursor;//只处理这个游标上的链表,因为系统对超时任务都已经规链表了.
+	//当任务因超时而挂起时，任务块处于超时排序链接上,（每个cpu）和ipc（互斥锁、扫描电镜等）的块同时被唤醒
+    /*不管是超时还是相应的ipc，它都在等待。现在使用synchronize sortlink precedure，因此整个任务扫描需要保护，防止另一个核心同时删除sortlink。
      * When task is pended with timeout, the task block is on the timeout sortlink
      * (per cpu) and ipc(mutex,sem and etc.)'s block at the same time, it can be waken
      * up by either timeout or corresponding ipc it's waiting.
@@ -271,12 +271,12 @@ LITE_OS_SEC_TEXT VOID OsTaskScan(VOID)
         LOS_SpinUnlock(&g_taskSpin);
         return;
     }
-    sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-    ROLLNUM_DEC(sortList->idxRollNum);
+    sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);//拿本次Tick对应链表的SortLinkList的第一个节点sortLinkNode
+    ROLLNUM_DEC(sortList->idxRollNum);//滚动数--
 
-    while (ROLLNUM(sortList->idxRollNum) == 0) {
+    while (ROLLNUM(sortList->idxRollNum) == 0) {//找到时间到了节点,注意这些节点都是由定时器产生的,
         LOS_ListDelete(&sortList->sortLinkNode);
-        taskCB = LOS_DL_LIST_ENTRY(sortList, LosTaskCB, sortList);
+        taskCB = LOS_DL_LIST_ENTRY(sortList, LosTaskCB, sortList);//拿任务,这里的任务都是超时任务
         taskCB->taskStatus &= ~OS_TASK_STATUS_PEND_TIME;
         tempStatus = taskCB->taskStatus;
         if (tempStatus & OS_TASK_STATUS_PEND) {
@@ -427,7 +427,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsTaskSwitchCheck(LosTaskCB *oldTask, LosTaskCB *n
 
     return LOS_OK;
 }
-//任务退出
+//一个任务的退出过程
 LITE_OS_SEC_TEXT VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status)
 {
     UINT32 intSave;
@@ -435,26 +435,26 @@ LITE_OS_SEC_TEXT VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status)
     LosTaskCB *mainTask = NULL;
 
     SCHEDULER_LOCK(intSave);
-    runProcess = OS_PCB_FROM_PID(taskCB->processID);
-    mainTask = OS_TCB_FROM_TID(runProcess->threadGroupID);
-    SCHEDULER_UNLOCK(intSave);
-    if (mainTask == taskCB) {
-        OsTaskExitGroup(status);
+    runProcess = OS_PCB_FROM_PID(taskCB->processID);//通过任务ID拿到进程实体
+    mainTask = OS_TCB_FROM_TID(runProcess->threadGroupID);//通过线程组ID拿到主任务实体,threadGroupID就是等于mainTask的taskId
+    SCHEDULER_UNLOCK(intSave);							//这个是在线程组创建的时候指定的.
+    if (mainTask == taskCB) {//如果参数任务就是主任务
+        OsTaskExitGroup(status);//task退出线程组
     }
 
     SCHEDULER_LOCK(intSave);
-    if (runProcess->threadNumber == 1) { /* 1: The last task of the process exits */
+    if (runProcess->threadNumber == 1) { /* 1: The last task of the process exits *///进程的最后一个任务退出
         SCHEDULER_UNLOCK(intSave);
-        (VOID)OsProcessExit(taskCB, status);
+        (VOID)OsProcessExit(taskCB, status);//调用进程退出流程
         return;
     }
 
-    if (taskCB->taskStatus & OS_TASK_FLAG_DETACHED) {
-        (VOID)OsTaskDeleteUnsafe(taskCB, status, intSave);
+    if (taskCB->taskStatus & OS_TASK_FLAG_DETACHED) {//任务贴有分离的标签
+        (VOID)OsTaskDeleteUnsafe(taskCB, status, intSave);//任务要over了,走起释放占用的资源的流程
     }
 
-    OsTaskJoinPostUnsafe(taskCB);
-    OsSchedResched();
+    OsTaskJoinPostUnsafe(taskCB);//退出前唤醒跟自己绑在一块的任务
+    OsSchedResched();//申请调度
     SCHEDULER_UNLOCK(intSave);
     return;
 }
@@ -462,7 +462,7 @@ LITE_OS_SEC_TEXT VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status)
 /*
  * Description : All task entry
  * Input       : taskID     --- The ID of the task to be run
- */
+ *///所有任务的入口函数,OsTaskEntry是在new task OsTaskStackInit 时指定的
 LITE_OS_SEC_TEXT_INIT VOID OsTaskEntry(UINT32 taskID)
 {
     LosTaskCB *taskCB = NULL;
@@ -478,13 +478,13 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskEntry(UINT32 taskID)
     (VOID)LOS_IntUnLock();
 
     taskCB = OS_TCB_FROM_TID(taskID);
-    taskCB->joinRetval = taskCB->taskEntry(taskCB->args[0], taskCB->args[1],//调用入口函数
+    taskCB->joinRetval = taskCB->taskEntry(taskCB->args[0], taskCB->args[1],//调用任务的入口函数
                                            taskCB->args[2], taskCB->args[3]); /* 2 & 3: just for args array index */
     if (taskCB->taskStatus & OS_TASK_FLAG_DETACHED) {//task有分离标签时
         taskCB->joinRetval = 0;//结合数为0
     }
-
-    OsTaskToExit(taskCB, 0);
+	
+    OsTaskToExit(taskCB, 0);//到这里任务跑完了要退出了
 }
 //任务创建参数检查
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCreateParamCheck(const UINT32 *taskID,

@@ -66,7 +66,7 @@
 /* Initial bit32 stack value. */
 #define OS_STACK_INIT            0xCACACACA	//栈指针初始化值 0b 1010 1010 1010
 /* Bit32 stack top magic number. */
-#define OS_STACK_MAGIC_WORD      0xCCCCCCCC //用于栈顶值,可标识为栈是否被使用过,神奇的 "烫烫烫烫"的根源所在! 0b 1100 1100 1100
+#define OS_STACK_MAGIC_WORD      0xCCCCCCCC //用于栈顶值,可标识为栈是否被溢出过,神奇的 "烫烫烫烫"的根源所在! 0b 1100 1100 1100
 /*************************************************************************** @note_pic
 *	鸿蒙虚拟内存-栈空间运行时图 
 *	鸿蒙源码分析系列篇: 			https://blog.csdn.net/kuangyufei 

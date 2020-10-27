@@ -218,7 +218,7 @@ STATIC UINT32 InitPthreadData(pthread_t threadID, pthread_attr_t *userAttr,
     SetPthreadDataAttr(userAttr, threadID, taskCB, created);
     return ret;
 }
-
+//POSIX 创建线程接口
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
                    void *(*startRoutine)(void *), void *arg)
 {

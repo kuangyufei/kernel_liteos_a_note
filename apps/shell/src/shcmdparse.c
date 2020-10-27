@@ -148,7 +148,7 @@ unsigned int OsCmdTokenSplit(char *cmdStr, char split, CmdParsed *cmdParsed)
 
     return ret;
 }
-
+//cmd命令解析
 unsigned int OsCmdParse(char *cmdStr, CmdParsed *cmdParsed)
 {
     if ((cmdStr == NULL) || (cmdParsed == NULL) || (strlen(cmdStr) == 0)) {

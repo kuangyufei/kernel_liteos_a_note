@@ -81,7 +81,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrTaskCreate(VOID)
     TSK_INIT_PARAM_S swtmrTask;
     UINT32 cpuid = ArchCurrCpuid();//获取当前CPU id
 
-    (VOID)memset_s(&swtmrTask, sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
+    (VOID)memset_s(&swtmrTask, sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));//清0
     swtmrTask.pfnTaskEntry = (TSK_ENTRY_FUNC)OsSwtmrTask;//入口函数
     swtmrTask.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;//16K默认内核任务栈
     swtmrTask.pcName = "Swt_Task";//任务名称
@@ -98,12 +98,12 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrTaskCreate(VOID)
 
     return ret;
 }
-//软时钟回收
+//回收指定进程的软时钟
 LITE_OS_SEC_TEXT_INIT VOID OsSwtmrRecycle(UINT32 processID)
 {
-    for (UINT16 index = 0; index < LOSCFG_BASE_CORE_SWTMR_LIMIT; index++) {
-        if (g_swtmrCBArray[index].uwOwnerPid == processID) {
-            LOS_SwtmrDelete(index);
+    for (UINT16 index = 0; index < LOSCFG_BASE_CORE_SWTMR_LIMIT; index++) {//一个进程往往会有多个定时器
+        if (g_swtmrCBArray[index].uwOwnerPid == processID) {//找到一个
+            LOS_SwtmrDelete(index);//删除定时器
         }
     }
 }
@@ -213,7 +213,7 @@ LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)//扫描定时器,如果碰到超时的,�
 
     swtmrSortLink->cursor = (swtmrSortLink->cursor + 1) & OS_TSK_SORTLINK_MASK;
     listObject = swtmrSortLink->sortLink + swtmrSortLink->cursor;
-
+	//由于swtmr是在特定的sortlink中，所以需要很小心的处理它,但其他CPU Core仍然有机会处理它，比如停止计时器
     /*
      * it needs to be carefully coped with, since the swtmr is in specific sortlink
      * while other cores still has the chance to process it, like stop the timer.
@@ -271,7 +271,7 @@ LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)//扫描定时器,如果碰到超时的,�
  * Description: Get next timeout
  * Return     : Count of the Timer list
  */
-LITE_OS_SEC_TEXT UINT32 OsSwtmrGetNextTimeout(VOID)
+LITE_OS_SEC_TEXT UINT32 OsSwtmrGetNextTimeout(VOID)//获取下一个timeout
 {
     return OsSortLinkGetNextExpireTime(&OsPercpuGet()->swtmrSortLink);
 }
@@ -519,7 +519,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrDelete(UINT16 swtmrID)
         case OS_SWTMR_STATUS_UNUSED:
             ret = LOS_ERRNO_SWTMR_NOT_CREATED;
             break;
-        case OS_SWTMR_STATUS_TICKING://正在计数就先停止
+        case OS_SWTMR_STATUS_TICKING://正在计数就先停止再删除,这里没有break;
             OsSwtmrStop(swtmr);
             /* fall-through */
         case OS_SWTMR_STATUS_CREATED://再删除定时器

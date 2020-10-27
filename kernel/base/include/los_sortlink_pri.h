@@ -52,13 +52,13 @@ extern "C" {
  *  High Bits : sortlink index
  */
 #define OS_TSK_HIGH_BITS       3U
-#define OS_TSK_LOW_BITS        (32U - OS_TSK_HIGH_BITS)
-#define OS_TSK_SORTLINK_LOGLEN OS_TSK_HIGH_BITS
-#define OS_TSK_SORTLINK_LEN    (1U << OS_TSK_SORTLINK_LOGLEN)
-#define OS_TSK_SORTLINK_MASK   (OS_TSK_SORTLINK_LEN - 1U)
-#define OS_TSK_MAX_ROLLNUM     (0xFFFFFFFFU - OS_TSK_SORTLINK_LEN)
-#define OS_TSK_HIGH_BITS_MASK  (OS_TSK_SORTLINK_MASK << OS_TSK_LOW_BITS)
-#define OS_TSK_LOW_BITS_MASK   (~OS_TSK_HIGH_BITS_MASK)
+#define OS_TSK_LOW_BITS        (32U - OS_TSK_HIGH_BITS) //29
+#define OS_TSK_SORTLINK_LOGLEN OS_TSK_HIGH_BITS	//3U
+#define OS_TSK_SORTLINK_LEN    (1U << OS_TSK_SORTLINK_LOGLEN)//链表长度 1<<3 = 8
+#define OS_TSK_SORTLINK_MASK   (OS_TSK_SORTLINK_LEN - 1U)// 0b111
+#define OS_TSK_MAX_ROLLNUM     (0xFFFFFFFFU - OS_TSK_SORTLINK_LEN)//最大滚动数0xFFFFFFFC
+#define OS_TSK_HIGH_BITS_MASK  (OS_TSK_SORTLINK_MASK << OS_TSK_LOW_BITS)//高位掩码 0b111000..00
+#define OS_TSK_LOW_BITS_MASK   (~OS_TSK_HIGH_BITS_MASK)//低位掩码 0b000...111
 
 #define EVALUATE_L(NUM, VALUE) NUM = (((NUM) & OS_TSK_HIGH_BITS_MASK) | (VALUE))
 
@@ -80,15 +80,35 @@ extern "C" {
 
 #define SET_SORTLIST_VALUE(sortList, value) (((SortLinkList *)(sortList))->idxRollNum = (value))
 
-typedef struct {
-    LOS_DL_LIST sortLinkNode;
-    UINT32 idxRollNum;
-} SortLinkList;
+/**************************************** @note_pic
+ sortLink
++-------->+-----------------+
+          |   sortLinkNode  |
+          +-----------------+
+          |   sortLinkNode  |
+          +-----------------+
+          |   sortLinkNode  |
+          +-----------------+
+          |   sortLinkNode  |
+          +-----------------+
+          |   sortLinkNode  |
+          +-----------------+
+          |   sortLinkNode  |
+          +-----------------+
+          |   sortLinkNode  |
+          +-----------------+
+          |   sortLinkNode  |
+          +-----------------+
+*/
 
 typedef struct {
-    LOS_DL_LIST *sortLink;//排序双循环链表
-    UINT16 cursor;//游标
-    UINT16 reserved;
+    LOS_DL_LIST sortLinkNode;	//链表节点
+    UINT32 idxRollNum;			//滚动数
+} SortLinkList;
+typedef struct {
+    LOS_DL_LIST *sortLink;//排序节点
+    UINT16 cursor;	//游标
+    UINT16 reserved;	//保留用
 } SortLinkAttribute;
 
 extern UINT32 OsSortLinkInit(SortLinkAttribute *sortLinkHeader);

@@ -292,7 +292,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Maximum supported number of software timers rather than the number of usable software timers
  */
 #ifndef LOSCFG_BASE_CORE_SWTMR_LIMIT
-#define LOSCFG_BASE_CORE_SWTMR_LIMIT 1024 // 支持的最大软件计时器数量，而不是可用的软件计时器数量
+#define LOSCFG_BASE_CORE_SWTMR_LIMIT 1024 // 支持的最大软件计时器数量
 #endif
 /**
  * @ingroup los_config

@@ -51,8 +51,8 @@ typedef enum {
 #endif
 
 typedef struct {
-    SortLinkAttribute taskSortLink;             /* task sort link */
-    SortLinkAttribute swtmrSortLink;            /* swtmr sort link */
+    SortLinkAttribute taskSortLink;             /* task sort link *///每个CPU core 都有一个task排序链表
+    SortLinkAttribute swtmrSortLink;            /* swtmr sort link *///每个CPU core 都有一个定时器排序链表
 
     UINT32 idleTaskID;                          /* idle task id */
     UINT32 taskLockCnt;                         /* task lock flag */

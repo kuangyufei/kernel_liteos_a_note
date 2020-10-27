@@ -37,7 +37,7 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+//现实 POSIX   thread 接口
 int pthread_attr_init(pthread_attr_t *attr)
 {
     if (attr == NULL) {
@@ -46,13 +46,13 @@ int pthread_attr_init(pthread_attr_t *attr)
 
     attr->detachstate                 = PTHREAD_CREATE_JOINABLE;
     attr->schedpolicy                 = SCHED_RR;
-    attr->schedparam.sched_priority   = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;
+    attr->schedparam.sched_priority   = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;//默认线程优先级
     attr->inheritsched                = PTHREAD_INHERIT_SCHED;
     attr->scope                       = PTHREAD_SCOPE_PROCESS;
     attr->stackaddr_set               = 0;
     attr->stackaddr                   = NULL;
     attr->stacksize_set               = 1;
-    attr->stacksize                   = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
+    attr->stacksize                   = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;//栈的大小 默认16K
 
 #if (LOSCFG_KERNEL_SMP == YES)
     attr->cpuset.__bits[0] = 0;

@@ -76,33 +76,33 @@ LITE_OS_SEC_TEXT VOID OsAdd2SortLink(const SortLinkAttribute *sortLinkHeader, So
         SET_SORTLIST_VALUE(sortList, OS_TSK_MAX_ROLLNUM);
     }
     timeout = sortList->idxRollNum;
-    sortIndex = timeout & OS_TSK_SORTLINK_MASK;
+    sortIndex = timeout & OS_TSK_SORTLINK_MASK;//  决定放在哪个链表中
     rollNum = (timeout >> OS_TSK_SORTLINK_LOGLEN) + 1;
     if (sortIndex == 0) {
         rollNum--;
     }
-    EVALUATE_L(sortList->idxRollNum, rollNum);
-    sortIndex = sortIndex + sortLinkHeader->cursor;
-    sortIndex = sortIndex & OS_TSK_SORTLINK_MASK;
-    EVALUATE_H(sortList->idxRollNum, sortIndex);
+    EVALUATE_L(sortList->idxRollNum, rollNum);//计算idxRollNum的低位
+    sortIndex = sortIndex + sortLinkHeader->cursor;//通过游标确定最终链表位置
+    sortIndex = sortIndex & OS_TSK_SORTLINK_MASK;//sortIndex不能大于OS_TSK_SORTLINK_MASK
+    EVALUATE_H(sortList->idxRollNum, sortIndex);//计算idxRollNum的高位
 
-    listObject = sortLinkHeader->sortLink + sortIndex;
-    if (listObject->pstNext == listObject) {
-        LOS_ListTailInsert(listObject, &sortList->sortLinkNode);
+    listObject = sortLinkHeader->sortLink + sortIndex;//找到最终要挂入的链表
+    if (listObject->pstNext == listObject) {//为空时
+        LOS_ListTailInsert(listObject, &sortList->sortLinkNode);//直接挂上去
     } else {
-        listSorted = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
+        listSorted = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);//取出SortLinkList
         do {
-            if (ROLLNUM(listSorted->idxRollNum) <= ROLLNUM(sortList->idxRollNum)) {
+            if (ROLLNUM(listSorted->idxRollNum) <= ROLLNUM(sortList->idxRollNum)) {// @note_? 这块没看懂,谁能帮帮我
                 ROLLNUM_SUB(sortList->idxRollNum, listSorted->idxRollNum);
             } else {
                 ROLLNUM_SUB(listSorted->idxRollNum, sortList->idxRollNum);
                 break;
             }
 
-            listSorted = LOS_DL_LIST_ENTRY(listSorted->sortLinkNode.pstNext, SortLinkList, sortLinkNode);
-        } while (&listSorted->sortLinkNode != listObject);
+            listSorted = LOS_DL_LIST_ENTRY(listSorted->sortLinkNode.pstNext, SortLinkList, sortLinkNode);//取下一个
+        } while (&listSorted->sortLinkNode != listObject);//一直查询直到回到起点位置
 
-        LOS_ListTailInsert(&listSorted->sortLinkNode, &sortList->sortLinkNode);
+        LOS_ListTailInsert(&listSorted->sortLinkNode, &sortList->sortLinkNode);//插入链表
     }
 }
 
@@ -144,7 +144,7 @@ LITE_OS_SEC_TEXT VOID OsDeleteSortLink(const SortLinkAttribute *sortLinkHeader, 
     }
     LOS_ListDelete(&sortList->sortLinkNode);
 }
-
+//计算超时时间
 LITE_OS_SEC_TEXT STATIC UINT32 OsCalcExpierTime(UINT32 rollNum, UINT32 sortIndex, UINT16 curSortIndex)
 {
     UINT32 expireTime;
@@ -157,7 +157,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsCalcExpierTime(UINT32 rollNum, UINT32 sortIndex
     expireTime = ((rollNum - 1) << OS_TSK_SORTLINK_LOGLEN) + sortIndex;
     return expireTime;
 }
-
+//从sortLink中获取下一个过期时间
 LITE_OS_SEC_TEXT UINT32 OsSortLinkGetNextExpireTime(const SortLinkAttribute *sortLinkHeader)
 {
     UINT16 cursor;
