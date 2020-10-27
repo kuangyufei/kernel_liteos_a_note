@@ -39,7 +39,7 @@
 
 const StackInfo *g_stackInfo = NULL;
 UINT32 g_stackNum;
-//获取栈的水平线
+//获取栈的吃水线
 UINT32 OsStackWaterLineGet(const UINTPTR *stackBottom, const UINTPTR *stackTop, UINT32 *peakUsed)
 {
     UINT32 size;
@@ -50,14 +50,14 @@ UINT32 OsStackWaterLineGet(const UINTPTR *stackBottom, const UINTPTR *stackTop, 
             tmp++;
         }
         size = (UINT32)((UINTPTR)stackBottom - (UINTPTR)tmp);//剩余多少非0xCACACACA的栈空间
-        *peakUsed = (size == 0) ? size : (size + sizeof(CHAR *));//得出高峰用值
+        *peakUsed = (size == 0) ? size : (size + sizeof(CHAR *));//得出高峰用值,还剩多少可用
         return LOS_OK;
     } else {
         *peakUsed = OS_INVALID_WATERLINE;//栈溢出了
         return LOS_NOK;
     }
 }
-//执行栈检查
+//执行栈检查,主要就是检查栈顶值有没有被改写
 VOID OsExcStackCheck(VOID)
 {
     UINT32 index;
@@ -70,14 +70,14 @@ VOID OsExcStackCheck(VOID)
     for (index = 0; index < g_stackNum; index++) {
         for (cpuid = 0; cpuid < LOSCFG_KERNEL_CORE_NUM; cpuid++) {
             stackTop = (UINTPTR *)((UINTPTR)g_stackInfo[index].stackTop + cpuid * g_stackInfo[index].stackSize);
-            if (*stackTop != OS_STACK_MAGIC_WORD) {
+            if (*stackTop != OS_STACK_MAGIC_WORD) {// 只要栈顶内容不是 0xCCCCCCCCC 就是溢出了. 
                 PRINT_ERR("cpu:%u %s overflow , magic word changed to 0x%x\n",
                           LOSCFG_KERNEL_CORE_NUM - 1 - cpuid, g_stackInfo[index].stackName, *stackTop);
             }
         }
     }
 }
-
+//打印栈的信息 把每个CPU的栈信息打印出来
 VOID OsExcStackInfo(VOID)
 {
     UINT32 index;
@@ -92,12 +92,11 @@ VOID OsExcStackInfo(VOID)
 
     PrintExcInfo("\n stack name    cpu id     stack addr     total size   used size\n"
                  " ----------    ------     ---------      --------     --------\n");
-
     for (index = 0; index < g_stackNum; index++) {
-        for (cpuid = 0; cpuid < LOSCFG_KERNEL_CORE_NUM; cpuid++) {
+        for (cpuid = 0; cpuid < LOSCFG_KERNEL_CORE_NUM; cpuid++) {//可以看出 各个CPU的栈是紧挨的的
             stackTop = (UINTPTR *)((UINTPTR)g_stackInfo[index].stackTop + cpuid * g_stackInfo[index].stackSize);
             stack = (UINTPTR *)((UINTPTR)stackTop + g_stackInfo[index].stackSize);
-            (VOID)OsStackWaterLineGet(stack, stackTop, &size);
+            (VOID)OsStackWaterLineGet(stack, stackTop, &size);//获取吃水线, 鸿蒙用WaterLine 这个词用的很妙
 
             PrintExcInfo("%11s      %-5d    %-10p     0x%-8x   0x%-4x\n", g_stackInfo[index].stackName,
                          LOSCFG_KERNEL_CORE_NUM - 1 - cpuid, stackTop, g_stackInfo[index].stackSize, size);
@@ -106,18 +105,40 @@ VOID OsExcStackInfo(VOID)
 
     OsExcStackCheck();
 }
+/***************************************************************************************@note_pic
+  OsExcStackInfo 各个CPU栈布局图,其他栈也是一样,CPU各核硬件栈都是紧挨着
+  __undef_stack(SMP)
++-------------------+ <--- cpu1 top
+|                   |
+|  CPU core1        |
+|                   |
++--------------------<--- cpu2 top
+|                   |
+|  cpu core 2       |
+|                   |
++--------------------<--- cpu3 top
+|                   |
+|  cpu core 3       |
+|                   |
++--------------------<--- cpu4 top
+|                   |
+|  cpu core 4       |
+|                   |
++-------------------+
+******************************************************************************************/
 
+//注册栈信息
 VOID OsExcStackInfoReg(const StackInfo *stackInfo, UINT32 stackNum)
 {
     g_stackInfo = stackInfo;
     g_stackNum = stackNum;
 }
-//栈的初始化,设置固定的值. 0xcccccccc 和 0xcacacaca
+//task栈的初始化,设置固定的值. 0xcccccccc 和 0xcacacaca
 VOID OsStackInit(VOID *stacktop, UINT32 stacksize)
 {
     /* initialize the task stack, write magic num to stack top */
-    (VOID)memset_s(stacktop, stacksize, (INT32)OS_STACK_INIT, stacksize);
-    *((UINTPTR *)stacktop) = OS_STACK_MAGIC_WORD;
+    (VOID)memset_s(stacktop, stacksize, (INT32)OS_STACK_INIT, stacksize);//清一色填 0xCACACACA
+    *((UINTPTR *)stacktop) = OS_STACK_MAGIC_WORD;//0xCCCCCCCCC 中文就是"烫烫烫烫" 这几个字懂点计算机的人都不会陌生了.
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG

@@ -105,26 +105,26 @@ STATIC UINT32 g_nextExcWaitCpu = INVALID_CPUID;
                             ((ptr) <= g_maxAddr) && \
                             (IS_ALIGNED((ptr), sizeof(CHAR *))))
 
-STATIC const StackInfo g_excStack[] = {
-    { &__undef_stack, OS_EXC_UNDEF_STACK_SIZE, "udf_stack" },
-    { &__abt_stack,   OS_EXC_ABT_STACK_SIZE,   "abt_stack" },
-    { &__fiq_stack,   OS_EXC_FIQ_STACK_SIZE,   "fiq_stack" },	//快中断栈
-    { &__svc_stack,   OS_EXC_SVC_STACK_SIZE,   "svc_stack" },	
-    { &__irq_stack,   OS_EXC_IRQ_STACK_SIZE,   "irq_stack" },	//中断请求栈
-    { &__exc_stack,   OS_EXC_STACK_SIZE,       "exc_stack" }	//运行栈
+STATIC const StackInfo g_excStack[] = {// 6个执行栈
+    { &__undef_stack, OS_EXC_UNDEF_STACK_SIZE, "udf_stack" },	//512 未定义的指令模式堆栈
+    { &__abt_stack,   OS_EXC_ABT_STACK_SIZE,   "abt_stack" },	//512 中止模式堆栈,用于数据中止,可以将处理程序设置为在触发异常终止时运行
+    { &__fiq_stack,   OS_EXC_FIQ_STACK_SIZE,   "fiq_stack" },	//64 FIQ中断模式堆栈.快速中断(FIQ)可能会在IRQ期间发生-它们就像优先级较高的IRQ.在FIQ中,FIQ和IRQ被禁用.
+    { &__svc_stack,   OS_EXC_SVC_STACK_SIZE,   "svc_stack" },	//8K 主管模式堆栈.有些指令只能在SVC模式下运行 	
+    { &__irq_stack,   OS_EXC_IRQ_STACK_SIZE,   "irq_stack" },	//64 中断(IRQ)模式堆栈. 
+    { &__exc_stack,   OS_EXC_STACK_SIZE,       "exc_stack" }	//4K 用户和系统模式堆栈.大多数情况下,这是你用于执行代码的常规堆栈
 };
-
+//获取系统状态
 UINT32 OsGetSystemStatus(VOID)
 {
     UINT32 flag;
-    UINT32 cpuID = g_currHandleExcCpuID;
+    UINT32 cpuID = g_currHandleExcCpuID;//全局变量 当前执行CPU ID
 
     if (cpuID == INVALID_CPUID) {
         flag = OS_SYSTEM_NORMAL;
-    } else if (cpuID == ArchCurrCpuid()) {
-        flag = OS_SYSTEM_EXC_CURR_CPU;
+    } else if (cpuID == ArchCurrCpuid()) {//真的是碰到了真在执行此处代码的CPU core
+        flag = OS_SYSTEM_EXC_CURR_CPU;//当前CPU
     } else {
-        flag = OS_SYSTEM_EXC_OTHER_CPU;
+        flag = OS_SYSTEM_EXC_OTHER_CPU;//其他CPU
     }
 
     return flag;

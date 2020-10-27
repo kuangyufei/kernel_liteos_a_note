@@ -49,7 +49,7 @@ enum {
     LOS_MUX_PRIO_NONE = 0,		//线程的优先级和调度不会受到互斥锁影响,先来后到,普通排队.
     LOS_MUX_PRIO_INHERIT = 1,	//当高优先级的等待低优先级的线程释放锁时，低优先级的线程以高优先级线程的优先级运行。
     							//当线程解锁互斥量时，线程的优先级自动被将到它原来的优先级
-    LOS_MUX_PRIO_PROTECT = 2	//
+    LOS_MUX_PRIO_PROTECT = 2	//详见:OsMuxPendOp中的注解,详细说明了LOS_MUX_PRIO_PROTECT的含义
 };
 
 enum {
@@ -60,9 +60,9 @@ enum {
 };
 
 typedef struct {
-    UINT8 protocol;
-    UINT8 prioceiling;
-    UINT8 type;
+    UINT8 protocol;		//协议
+    UINT8 prioceiling;	//优先级上限
+    UINT8 type;			//类型属性
     UINT8 reserved;
 } LosMuxAttr;
 

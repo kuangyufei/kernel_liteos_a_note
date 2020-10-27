@@ -42,9 +42,9 @@ extern "C" {
 #endif /* __cplusplus */
 
 typedef struct {
-    VOID *stackTop;
-    UINT32 stackSize;
-    CHAR *stackName;
+    VOID *stackTop;		//栈顶
+    UINT32 stackSize;	//栈大小
+    CHAR *stackName;	//栈名称
 } StackInfo;
 
 #define OS_INVALID_WATERLINE 0xFFFFFFFF

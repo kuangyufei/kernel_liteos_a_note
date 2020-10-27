@@ -1,8 +1,8 @@
 git add -A
-git commit -m  'CPU core 的两个sort list(taskSortLink,swtmrSortLink)模块的注释
+git commit -m  'CPU 硬件栈部分注释 解释 0xCCCCCCCC "烫烫烫烫" 的由来
 鸿蒙内核源码分析系列 https://blog.csdn.net/kuangyufei https://my.oschina.net/u/3751245
 鸿蒙内核源码注释中文版 【 CSDN仓 | Gitee仓 | Github仓 | Coding仓】四大仓库每日同步更新
-给鸿蒙内核源码逐行加上中文注释 ,让 HarmonyOS 楚楚动人, 从此不再神秘.'
+给鸿蒙内核源码逐行加上中文注释 ,让高冷,楚楚动人的HarmonyOS不再神秘,从此镌刻在脑海中,陪你仗剑走天涯 :|P'
 
 git push origin
 git push gitee_origin master
