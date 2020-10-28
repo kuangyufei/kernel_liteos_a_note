@@ -44,53 +44,45 @@ extern "C" {
 *	鸿蒙源码分析系列篇: 			https://blog.csdn.net/kuangyufei 
 *						https://my.oschina.net/u/3751245
 ***************************************************************************
-//	|---------------------------|0xFFFFFFFFU
-//	|	IO设备未缓存					|
-//	|	PERIPH_PMM_SIZE			|
-//	|---------------------------|外围设备未缓存基地址 PERIPH_UNCACHED_BASE
-//	|	IO设备缓存					|
-//	|	PERIPH_PMM_SIZE			|
-//	|---------------------------|外围设备缓存基地址 PERIPH_CACHED_BASE
-//	|	PERIPH_PMM_SIZE			|
-//	|	包括 IO设备					|
-//	|---------------------------|外围设备基地址 PERIPH_DEVICE_BASE
-//	|							|
-//	|							|
-//	|	kernel heap				|
-//	|	128M					|
-//	|							|
-//	|							|
-//	|---------------------------|内核动态分配开始地址 VMALLOC_START
-//	|							|
-//	|	DDR_MEM_SIZE			|
-//	|							|
-//	|							|
-//	|---------------------------|未缓存虚拟空间基地址 UNCACHED_VMM_BASE
-//	|							|
-//	|	内核空间					|
-//	|	KERNEL_VMM_SIZE			|
-//	|	.bss					|
-//	|	.rodata					|
-//	|	.text  					|
-//	|---------------------------|内核空间开始地址 KERNEL_ASPACE_BASE = KERNEL_VMM_BASE = KERNEL_VADDR_BASE##U
-//	|	16M预留区					|
-//	|---------------------------|用户空间栈顶 USER_ASPACE_TOP_MAX = USER_ASPACE_BASE + USER_ASPACE_SIZE
-//	|							|
-//	|							|
-//	|							|
-//	|							|
-//	|	用户空间					|
-//	|	USER_ASPACE_SIZE		|
-//	|	用户栈区(stack)				|
-//	|	映射区(map)				|
-//	|	堆区	(heap)				|
-//	|	.bss					|
-//	|	.data					|
-//	|	.text					|
-//	|							|
-//	|---------------------------|用户空间开始地址 USER_ASPACE_BASE
-//	|	16M预留区					|
-//	|---------------------------|0x00000000U
++----------------------------+ 0xFFFFFFFFU
+|  IO设备未缓存                   |
+|  PERIPH_PMM_SIZE           |
++----------------------------+ 外围设备未缓存基地址 PERIPH_UNCACHED_BASE
+|  IO设备缓存                    |
+|  PERIPH_PMM_SIZE           |
++----------------------------+ 外围设备缓存基地址 PERIPH_CACHED_BASE
+|  包括 IO设备                   |
+|  PERIPH_PMM_SIZE           |
++----------------------------+ 外围设备基地址 PERIPH_DEVICE_BASE
+|                            |
+|  kernel heap               |
+|  128M                      |
+|                            |
++----------------------------+ 内核动态分配开始地址 VMALLOC_START
+|   DDR_MEM_SIZE             |
+|                            |
++----------------------------+ 未缓存虚拟空间基地址 UNCACHED_VMM_BASE
+|   内核虚拟空间                   |
+|   KERNEL_VMM_SIZE          |
+|   .bss					 |
+|   .rodata                  |
+|   .text                    |
++----------------------------+ 内核空间开始地址 KERNEL_ASPACE_BASE = KERNEL_VMM_BASE
+|    16M预留区                  |
++----------------------------+ 用户空间栈顶 USER_ASPACE_TOP_MAX = USER_ASPACE_BASE + USER_ASPACE_SIZE
+|                            |
+|    用户空间                    |
+|    USER_ASPACE_SIZE        |
+|    用户栈区(stack)             |
+|    映射区(map)                |
+|    堆区	(heap)               |
+|    .bss                    |
+|    .data .text             |
++----------------------------+ 用户空间开始地址 USER_ASPACE_BASE
+|    16M预留区	                 |
++----------------------------+ 0x00000000U
+
+*******************************************************************************************************/
 
 
 #define DEFINE_(X)  X##U

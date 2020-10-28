@@ -2,8 +2,6 @@
 
 [鸿蒙源码分析系列篇 【 CSDN](https://blog.csdn.net/kuangyufei)[ | OSCHINA】](https://my.oschina.net/u/3751245) 从 HarmonyOS 架构层视角整理成文, 并首创用生活场景讲故事的方式试图去解构内核，一窥究竟。
 
-内容仅代表个人观点,会反复修正,出精品注解,写精品文章,一律原创,转载需注明出处,不修改内容,错漏之处欢迎指正第一时间加以完善。
-
 # **[kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note): 鸿蒙内核源码注释中文版**   
 每个码农,职业生涯,都应精读一遍内核源码. 鸿蒙内核源码就是很好的精读项目.一旦熟悉内核代码的实现,将迅速拔高对计算机整体理解,从此高屋建瓴看问题.
 
@@ -31,9 +29,9 @@
     
     鸿蒙是面向未来设计的系统,高瞻远瞩,格局远大,设计精良, 知识点巨多, 把研究过程心得写成鸿蒙源码分析系列篇,如此 源码中文注释+系列篇文章 将加速理解鸿蒙内核实现过程.
 
-    系列篇文章 进入 >> [鸿蒙系统源码分析(总目录) 【CSDN](https://blog.csdn.net/kuangyufei) | [OSCHINA】](https://my.oschina.net/u/3751245)查看,两大站点持续更新....感谢CSDN和OSCHINA对博客的推荐支持.
+    系列篇文章 进入 >> [鸿蒙系统源码分析(总目录) 【CSDN](https://blog.csdn.net/kuangyufei) | [OSCHINA】](https://my.oschina.net/u/3751245)查看,感谢CSDN和OSCHINA对博客的推荐支持.
 
-    注释中文版 进入>> [鸿蒙内核源码注释中文版 【 CSDN仓](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [Gitee仓](https://gitee.com/weharmony/kernel_liteos_a_note) | [Github仓](https://github.com/kuangyufei/kernel_liteos_a_note) | [Coding仓】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)阅读,四大仓库每日同步更新....
+    注释中文版 进入 >> [鸿蒙内核源码注释中文版 【 CSDN仓](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [Gitee仓](https://gitee.com/weharmony/kernel_liteos_a_note) | [Github仓](https://github.com/kuangyufei/kernel_liteos_a_note) | [Coding仓】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)阅读
 
 
 * ### **加注释方式是怎样的?**
@@ -44,7 +42,8 @@
 
     另外用字符画了一些图方便理解,直接嵌入到头文件中,比如虚拟内存的全景图,因没有这些图是很难理解内存是如何管理的,后续还会陆续加入更多的图方便理解.   
 
-    ![在这里插入图片描述](https://img-blog.csdnimg.cn/20201022075929701.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2t1YW5neXVmZWk=,size_16,color_FFFFFF,t_70#pic_center)
+  ![在这里插入图片描述](https://img-blog.csdnimg.cn/20201028154344813.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2t1YW5neXVmZWk=,size_16,color_FFFFFF,t_70#pic_center)
+
 
 * ### **仰望星空还是埋头走路**
     
@@ -57,10 +56,12 @@
 
  * ### **笔者联系方式**
 
-    邮箱: kuangyufei@126.com 私信请不要问一些没基础能不能学? 如何看待 鸿蒙 PK Android ? 用了多少linux源码之类的问题. 因为时间太宝贵, 大量的工作要完成. 不建议没经过深度思考就人云亦云,亦步亦趋. 如果非要纠结就想想QQ和微信的关系? 为何有了QQ还得有个微信,而且得由不同的BG来开发. 去翻翻微信刚出来那会有多少看不懂而质疑的声音. 笔者坚信鸿蒙未来一定可以很成功,誓做鸿蒙坚定的追随者和传播者.
+    邮箱: kuangyufei@126.com 私信请不要问没有基础能不能学? 兴趣是最好的老师,有兴趣一定能成,什么是兴趣, 不是一两天的头脑发热而是每天吃饭睡觉都在想着这个事的. 更不要问如何看待 鸿蒙 PK Android ? 用了多少别人的源码之类的问题. 因为时间太宝贵, 大量的工作要完成. 不建议没经过深度思考就人云亦云,亦步亦趋. 如果非要纠结就想想QQ和微信的关系? 为何有了QQ还得有个微信,而且得由不同的BG来开发. 去翻翻微信刚出来那会有多少看不懂而质疑的声音. 笔者坚信鸿蒙未来一定可以很成功,誓做鸿蒙坚定的追随者和传播者.
 
  * ### **既然选择了远方,就不要怕天高路远,行动起来!**
 
-    系列篇文章 进入 >> [鸿蒙系统源码分析(总目录) 【CSDN](https://blog.csdn.net/kuangyufei) | [OSCHINA】](https://my.oschina.net/u/3751245)查看
+    系列篇文章 进入 >> [鸿蒙系统源码分析(总目录) 【CSDN](https://blog.csdn.net/kuangyufei) | [OSCHINA】](https://my.oschina.net/u/3751245)查看
 
-    注释中文版 进入>> [鸿蒙内核源码注释中文版 【 CSDN仓](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [Gitee仓](https://gitee.com/weharmony/kernel_liteos_a_note) | [Github仓](https://github.com/kuangyufei/kernel_liteos_a_note) | [Coding仓】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)阅读
+    注释中文版 进入 >> [鸿蒙内核源码注释中文版 【 CSDN仓](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [Gitee仓](https://gitee.com/weharmony/kernel_liteos_a_note) | [Github仓](https://github.com/kuangyufei/kernel_liteos_a_note) | [Coding仓】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)阅读
+
+    内容仅代表个人观点,会反复修正,出精品注解,写精品文章,一律原创,转载需注明出处,不修改内容,错漏之处欢迎指正第一时间加以完善。

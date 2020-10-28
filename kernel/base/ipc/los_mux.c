@@ -451,7 +451,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxLock(LosMux *mutex, UINT32 timeout)
     }
 
     SCHEDULER_LOCK(intSave);//调度自旋锁
-    ret = OsMuxLockUnsafe(mutex, timeout);//一直等待直到timeout 
+    ret = OsMuxLockUnsafe(mutex, timeout);//如果任务没拿到锁,将进入阻塞队列一直等待,直到timeout或者持锁任务释放锁时唤醒它 
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
