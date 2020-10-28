@@ -305,7 +305,7 @@ typedef struct {
     TSK_ENTRY_FUNC  taskEntry;          /**< Task entrance function */
     VOID            *joinRetval;        /**< pthread adaption */
     VOID            *taskSem;           /**< Task-held semaphore */
-    VOID            *taskMux;           /**< Task-held mutex */
+    VOID            *taskMux;           /**< Task-held mutex *///task在等哪把锁
     VOID            *taskEvent;         /**< Task-held event */
     UINTPTR         args[4];            /**< Parameter, of which the maximum number is 4 */
     CHAR            taskName[OS_TCB_NAME_LEN]; /**< Task name */

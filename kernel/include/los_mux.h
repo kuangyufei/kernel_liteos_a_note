@@ -53,8 +53,8 @@ enum {
 };
 
 enum {
-    LOS_MUX_NORMAL = 0,		//不进行deadlock detection(死锁检测)
-    LOS_MUX_RECURSIVE = 1,	//mutex会有一个锁住次数（lock count）的概念。成功一次就++,释放就--
+    LOS_MUX_NORMAL = 0,		//非递归锁 只有[0.1]两个状态,不做任何特殊的错误检,不进行deadlock detection(死锁检测)
+    LOS_MUX_RECURSIVE = 1,	//递归锁 允许同一线程在互斥量解锁前对该互斥量进行多次加锁。递归互斥量维护锁的计数，在解锁次数和加锁次数不相同的情况下，不会释放锁，别的线程就无法加锁此互斥量。
     LOS_MUX_ERRORCHECK = 2,	//进行错误检查,如果一个线程企图对一个已经锁住的mutex进行relock或对未加锁的unlock，将返回一个错误。
     LOS_MUX_DEFAULT = LOS_MUX_RECURSIVE
 };

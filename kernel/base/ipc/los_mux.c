@@ -309,7 +309,7 @@ STATIC LOS_DL_LIST *OsMuxPendFindPosSub(const LosTaskCB *runTask, const LosMux *
 
     return node;
 }
-//在等待锁的双向循链表中找一个优先级最高的能释放锁的任务
+//在等锁链表中找到一个优先级比当前任务更低的任务
 STATIC LOS_DL_LIST *OsMuxPendFindPos(const LosTaskCB *runTask, LosMux *mutex)
 {
     LosTaskCB *pendedTask1 = NULL;
@@ -318,21 +318,22 @@ STATIC LOS_DL_LIST *OsMuxPendFindPos(const LosTaskCB *runTask, LosMux *mutex)
 
     if (LOS_ListEmpty(&mutex->muxList)) {//任务列表为空
         node = &mutex->muxList;//直接赋给node 返回
-    } else {
-        pendedTask1 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&mutex->muxList));//找到第一个持有锁的任务
-        pendedTask2 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_LAST(&mutex->muxList));//找到最后一个持有锁的任务
+    } else {//muxList上挂的都是task的pendlist节点
+        pendedTask1 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&mutex->muxList));//找到第一个等锁的任务, 
+        pendedTask2 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_LAST(&mutex->muxList));//找到最后一个等锁的任务
         if ((pendedTask1 != NULL) && (pendedTask1->priority > runTask->priority)) {//如果第一个任务优先级低于当前任务 要怎么搞?
-            node = mutex->muxList.pstNext;//找到了,
+            node = mutex->muxList.pstNext;//找到了,就是第一个
         } else if ((pendedTask2 != NULL) && (pendedTask2->priority <= runTask->priority)) {//如果最后一个任务的优先级高获等于当前任务优先级
-            node = &mutex->muxList;//找到一个高的了 直接赋给node 返回
-        } else {
+            node = &mutex->muxList;//返回自己,这里node就是当前任务的pendlist节点
+        } else {//当前任务比第一个低,比最后一个高的情况
             node = OsMuxPendFindPosSub(runTask, mutex);//找下一级
         }
     }
 
     return node;
 }
-//互斥锁的主体函数,由OsMuxlockUnsafe调用 
+//互斥锁的主体函数,由OsMuxlockUnsafe调用,互斥锁模块最重要的几个函数之一
+//最坏情况就是拿锁失败,让出CPU,变成阻塞任务,等别的任务释放锁后排到自己了接着执行. 
 STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
 {
     UINT32 ret;
@@ -343,41 +344,41 @@ STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
         /* This is for mutex macro initialization. */
         mutex->muxCount = 0;//锁计数器清0
         mutex->owner = NULL;//锁没有归属任务
-        LOS_ListInit(&mutex->muxList);//初始化mux链表
+        LOS_ListInit(&mutex->muxList);//初始化mux链表[]
     }
 
-    if (mutex->muxCount == 0) {//无task用锁时
+    if (mutex->muxCount == 0) {//无task用锁时,肯定能拿到锁了.在里面返回
         mutex->muxCount++;				//互斥锁计数器加1
         mutex->owner = (VOID *)runTask;	//当前任务拿到锁
-        LOS_ListTailInsert(&runTask->lockList, &mutex->holdList);//持有锁的任务改变了,节点加入了task的锁链表
+        LOS_ListTailInsert(&runTask->lockList, &mutex->holdList);//持有锁的任务改变了,节点挂到当前task的锁链表
         if ((runTask->priority > mutex->attr.prioceiling) && (mutex->attr.protocol == LOS_MUX_PRIO_PROTECT)) {//看保护协议的做法是怎样的?
             LOS_BitmapSet(&runTask->priBitMap, runTask->priority);//1.priBitMap是记录任务优先级变化的位图，这里把任务当前的优先级记录在priBitMap
             OsTaskPriModify(runTask, mutex->attr.prioceiling);//2.把高优先级的mutex->attr.prioceiling设为当前任务的优先级.
-        }//注意任务优先级有32个, 是0最高,31最低!!!这里等于提高了任务的优先级,目的是让其在下次调度中提高选中的概率,从而快速的释放锁.您明白了吗? :|)
+        }//注意任务优先级有32个, 是0最高,31最低!!!这里等于提高了任务的优先级,目的是让其在下次调度中继续提高被选中的概率,从而快速的释放锁.您明白了吗? :|)
         return LOS_OK;
     }
-
-    if (((LosTaskCB *)mutex->owner == runTask) && (mutex->attr.type == LOS_MUX_RECURSIVE)) {//LOS_MUX_RECURSIVE类型 是需要计数的
-        mutex->muxCount++;	//互斥锁计数器加1
+	//递归锁muxCount>0 如果是递归锁就要处理两种情况 1.runtask持有锁 2.锁被别的任务拿走了
+    if (((LosTaskCB *)mutex->owner == runTask) && (mutex->attr.type == LOS_MUX_RECURSIVE)) {//第一种情况 runtask是锁持有方
+        mutex->muxCount++;	//递归锁计数器加1,递归锁的目的是防止死锁,鸿蒙默认用的就是递归锁(LOS_MUX_DEFAULT = LOS_MUX_RECURSIVE)
         return LOS_OK;		//成功退出
     }
-
-    if (!timeout) {//参数timeout表示拿锁等待时间
-        return LOS_EINVAL;//不等了,没拿到锁就返回不纠结,返回错误.见于LOS_MuxTrylock 
+	//到了这里说明锁在别的任务那里,当前任务只能被阻塞了.
+    if (!timeout) {//参数timeout表示等待多久再来拿锁
+        return LOS_EINVAL;//timeout = 0表示不等了,没拿到锁就返回不纠结,返回错误.见于LOS_MuxTrylock 
     }
-
-    if (!OsPreemptableInSched()) {//不能调度的情况(不能调度的原因是因为没有持有调度任务自旋锁)
-        return LOS_EDEADLK;//返回错误
+	//自己要被阻塞,只能申请调度,让出CPU core 让别的任务上
+    if (!OsPreemptableInSched()) {//不能申请调度 (不能调度的原因是因为没有持有调度任务自旋锁)
+        return LOS_EDEADLK;//返回错误,自旋锁被别的CPU core 持有
     }
 
     OsMuxBitmapSet(mutex, runTask, (LosTaskCB *)mutex->owner);//设置bitmap,尽可能的提高锁持有任务的优先级
 
-    owner = (LosTaskCB *)mutex->owner;	//持有锁任务赋值给临时变量
-    runTask->taskMux = (VOID *)mutex;	//当前任务持有锁
-    node = OsMuxPendFindPos(runTask, mutex);//找一个等互斥锁的任务的阻塞链表
+    owner = (LosTaskCB *)mutex->owner;	//记录持有锁的任务
+    runTask->taskMux = (VOID *)mutex;	//记下当前任务在等待这把锁
+    node = OsMuxPendFindPos(runTask, mutex);//在都等锁阻塞链表上找一个适当的位置,在OsTaskWait中把自己从这个入口挂上去
     ret = OsTaskWait(node, timeout, TRUE);//task陷入等待状态 TRUE代表需要调度
-    if (ret == LOS_ERRNO_TSK_TIMEOUT) {//超时了
-        runTask->taskMux = NULL;// taskNux null
+    if (ret == LOS_ERRNO_TSK_TIMEOUT) {//这行代码虽和OsTaskWait挨在一起,但要过很久才会执行到,因为在OsTaskWait中CPU切换了任务上下文
+        runTask->taskMux = NULL;// 所以重新回到这里时可能已经超时了
         ret = LOS_ETIMEDOUT;//返回超时
     }
 
@@ -399,34 +400,34 @@ UINT32 OsMuxLockUnsafe(LosMux *mutex, UINT32 timeout)
     if (OsCheckMutexAttr(&mutex->attr) != LOS_OK) {
         return LOS_EINVAL;
     }
-	//LOS_MUX_ERRORCHECK 时 muxCount是要等于0 ,当前任务持有锁就不能再lock了. 鸿蒙默认用的是 LOS_MUX_RECURSIVE
+	//LOS_MUX_ERRORCHECK 时 muxCount是要等于0 ,当前任务持有锁就不能再lock了. 鸿蒙默认用的是递归锁LOS_MUX_RECURSIVE
     if ((mutex->attr.type == LOS_MUX_ERRORCHECK) && (mutex->muxCount != 0) && (mutex->owner == (VOID *)runTask)) {
         return LOS_EDEADLK;
     }
 
     return OsMuxPendOp(runTask, mutex, timeout);
 }
-
+//尝试加锁,
 UINT32 OsMuxTrylockUnsafe(LosMux *mutex, UINT32 timeout)
 {
-    LosTaskCB *runTask = OsCurrTaskGet();
+    LosTaskCB *runTask = OsCurrTaskGet();//获取当前任务
 
-    if (mutex->magic != OS_MUX_MAGIC) {
+    if (mutex->magic != OS_MUX_MAGIC) {//检查MAGIC有没有被改变
         return LOS_EBADF;
     }
 
-    if (OsCheckMutexAttr(&mutex->attr) != LOS_OK) {
+    if (OsCheckMutexAttr(&mutex->attr) != LOS_OK) {//检查互斥锁属性
         return LOS_EINVAL;
     }
 
-    if ((mutex->owner != NULL) && ((LosTaskCB *)mutex->owner != runTask)) {
-        return LOS_EBUSY;
+    if ((mutex->owner != NULL) && ((LosTaskCB *)mutex->owner != runTask)) {//已经名锁有主,可惜不是当前任务
+        return LOS_EBUSY;//返回busy
     }
-    if ((mutex->attr.type != LOS_MUX_RECURSIVE) && (mutex->muxCount != 0)) {
-        return LOS_EBUSY;
+    if ((mutex->attr.type != LOS_MUX_RECURSIVE) && (mutex->muxCount != 0)) {//非LOS_MUX_RECURSIVE时 muxCount只能是[0,1]两个值
+        return LOS_EBUSY;//这里也表示名锁有主了
     }
 
-    return OsMuxPendOp(runTask, mutex, timeout);
+    return OsMuxPendOp(runTask, mutex, timeout);//当前任务去拿锁,拿不到就等timeout
 }
 //拿互斥锁,
 LITE_OS_SEC_TEXT UINT32 LOS_MuxLock(LosMux *mutex, UINT32 timeout)
