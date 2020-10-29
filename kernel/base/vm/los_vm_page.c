@@ -58,7 +58,7 @@ STATIC INLINE VOID OsVmPageOrderListInit(LosVmPage *page, size_t nPages)
 {
     OsVmPhysPagesFreeContiguous(page, nPages);//释放页面使可用于伙伴算法分配
 }
-//* page初始化
+// page初始化
 VOID OsVmPageStartup(VOID)
 {
     struct VmPhysSeg *seg = NULL;

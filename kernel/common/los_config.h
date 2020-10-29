@@ -52,7 +52,7 @@ extern "C" {
  * @ingroup los_config
  * int stack start addr
  */
-extern CHAR __int_stack_start;	// 放置系统函数的开始地址
+extern CHAR __int_stack_start;	// 运行系统函数栈的开始地址
 extern CHAR __rodata_start;		// ROM开始地址 只读
 extern CHAR __rodata_end;		// ROM结束地址
 extern CHAR __bss_start;		// bss开始地址
