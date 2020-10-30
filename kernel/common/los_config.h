@@ -240,7 +240,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Configuration item for semaphore module tailoring
  */
 #ifndef LOSCFG_BASE_IPC_SEM
-#define LOSCFG_BASE_IPC_SEM YES
+#define LOSCFG_BASE_IPC_SEM YES	//信号量支持
 #endif
 
 /**
@@ -248,7 +248,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Maximum supported number of semaphores
  */
 #ifndef LOSCFG_BASE_IPC_SEM_LIMIT
-#define LOSCFG_BASE_IPC_SEM_LIMIT 1024
+#define LOSCFG_BASE_IPC_SEM_LIMIT 1024 //信号量的最大个数
 #endif
 
 /****************************** mutex module configuration ******************************/
@@ -257,7 +257,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Configuration item for mutex module tailoring
  */
 #ifndef LOSCFG_BASE_IPC_MUX
-#define LOSCFG_BASE_IPC_MUX YES
+#define LOSCFG_BASE_IPC_MUX YES	//互斥量的支持
 #endif
 
 /****************************** Queue module configuration ********************************/
@@ -266,7 +266,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Configuration item for queue module tailoring
  */
 #ifndef LOSCFG_BASE_IPC_QUEUE
-#define LOSCFG_BASE_IPC_QUEUE YES
+#define LOSCFG_BASE_IPC_QUEUE YES //是否支持IPC队列?
 #endif
 
 /**
@@ -274,17 +274,17 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Maximum supported number of queues rather than the number of usable queues
  */
 #ifndef LOSCFG_BASE_IPC_QUEUE_LIMIT
-#define LOSCFG_BASE_IPC_QUEUE_LIMIT 1024
+#define LOSCFG_BASE_IPC_QUEUE_LIMIT 1024 //队列个数
 #endif
 /****************************** Software timer module configuration **************************/
-#if (LOSCFG_BASE_IPC_QUEUE == YES)
+#if (LOSCFG_BASE_IPC_QUEUE == YES) //软时钟模块需打开IPC队列
 
 /**
  * @ingroup los_config
  * Configuration item for software timer module tailoring
  */
 #ifndef LOSCFG_BASE_CORE_SWTMR
-#define LOSCFG_BASE_CORE_SWTMR YES
+#define LOSCFG_BASE_CORE_SWTMR YES //是否支持软时钟?
 #endif
 
 /**

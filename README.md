@@ -1,12 +1,15 @@
-[鸿蒙内核源码注释中文版 【 Gitee仓](https://gitee.com/weharmony/kernel_liteos_a_note) | [CSDN仓](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [Github仓](https://github.com/kuangyufei/kernel_liteos_a_note) | [Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) 给 HarmonyOS 源码逐行加上中文注解,详细阐述设计细节, 助你快速精读 HarmonyOS 内核源码, 掌握整个鸿蒙内核运行机制,四大码仓和wiki每日同步更新.
+[鸿蒙内核源码注释中文版 【 Gitee仓 ](https://gitee.com/weharmony/kernel_liteos_a_note) | [ CSDN仓 ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [ Github仓 ](https://github.com/kuangyufei/kernel_liteos_a_note) | [ Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) 给 HarmonyOS 源码逐行加上中文注解,详细阐述设计细节, 助你快速精读 HarmonyOS 内核源码, 掌握整个鸿蒙内核运行机制,四大码仓和wiki每日同步更新.
 
-[鸿蒙源码分析系列篇 【 CSDN](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA](https://my.oschina.net/u/3751245/blog/4626852) [| WIKI 】](https://gitee.com/weharmony/kernel_liteos_a_note/wikis/pages) 从 HarmonyOS 架构层视角整理成文, 并首创用生活场景讲故事的方式试图去解构内核，一窥究竟。
+[鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852) [| WIKI 】](https://gitee.com/weharmony/kernel_liteos_a_note/wikis/pages) 从 HarmonyOS 架构层视角整理成文, 并首创用生活场景讲故事的方式试图去解构内核，一窥究竟。
 
 ---
 
 # **[kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note): 鸿蒙内核源码注释中文版**
 
+[![star](https://gitee.com/weharmony/kernel_liteos_a_note/badge/star.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note/stargazers)[![Fork me on Gitee](https://gitee.com/oschina/git-osc/widgets/widget_3.svg)](https://gitee.com/oschina/git-osc)[![fork](https://gitee.com/weharmony/kernel_liteos_a_note/badge/fork.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note/members)
+
 每个码农,职业生涯,都应精读一遍内核源码. 鸿蒙内核源码就是很好的精读项目.一旦熟悉内核代码级实现,将迅速拔高对计算机整体理解,从此高屋建瓴看问题.
+
 
 ## **做了些什么呢**
 
@@ -52,11 +55,7 @@
     
 -   ### **新增的zzz目录是干什么的?**
     
-    中文加注版比官方版无新增文件,只多了一个zzz的目录,里面放了一些笔者使用的文件,它与内核代码无关,大家可以忽略它,取名zzz是为了排在最后,减少对原有代码目录级的侵入,zzz的想法源于微信中名称为AAA的那批牛人,你的微信里应该也有他们熟悉的身影吧 :|P
-    
--   ### **笔者联系方式**
-    
-    邮箱: [kuangyufei@126.com](mailto:kuangyufei@126.com) 私信请不要问没有基础能不能学? 兴趣是最好的老师,有兴趣一定能成,什么是兴趣, 不是一两天的头脑发热而是每天吃饭睡觉都在想着这个事的. 更不要问如何看待 鸿蒙 PK Android ? 用了多少别人的源码之类的问题. 因为时间太宝贵, 大量的工作要完成. 不建议没经过深度思考就人云亦云,亦步亦趋. 如果非要纠结就想想QQ和微信的关系? 为何有了QQ还得有个微信,而且得由不同的BG来开发. 去翻翻微信刚出来那会有多少看不懂而质疑的声音. 笔者坚信鸿蒙未来一定可以很成功,誓做鸿蒙坚定的追随者和传播者.
+    中文加注版比官方版无新增文件,只多了一个zzz的目录,里面放了一些笔者使用的文件,它与内核代码无关,大家可以忽略它,取名zzz是为了排在最后,减少对原有代码目录级的侵入,zzz的想法源于微信中名称为AAA的那批牛人,你的微信里应该也有他们熟悉的身影吧 :|P  
     
 -   ### **既然选择了远方,就不要怕天高路远,行动起来!**
 

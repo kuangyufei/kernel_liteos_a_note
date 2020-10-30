@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '加入了wiki的支持,后续四大码仓wiki也同步推
+git commit -m  '开始对信号量这块代码进行注释,信号量的出现为了解决task的同步问题
 鸿蒙内核源码分析系列 【 CSDN | OSCHINA | WIKI 】
 鸿蒙内核源码注释中文版 【 CSDN仓 | Gitee仓 | Github仓 | Coding仓 】四大仓库每日同步更新代码和wiki
 给鸿蒙内核源码逐行加上中文注解,详细阐述设计细节, 助你快速精读 HarmonyOS 内核源码, 掌握整个鸿蒙内核运行机制.'

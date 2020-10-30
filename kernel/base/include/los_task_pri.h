@@ -61,7 +61,7 @@ extern "C" {
 #define SIGNAL_AFFI                 (1U << 2)
 
 /* scheduler lock */
-extern SPIN_LOCK_S g_taskSpin;
+extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 #define SCHEDULER_LOCK(state)       LOS_SpinLockSave(&g_taskSpin, &(state))
 #define SCHEDULER_UNLOCK(state)     LOS_SpinUnlockRestore(&g_taskSpin, state)
 

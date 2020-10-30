@@ -45,11 +45,11 @@ extern "C" {
  * Semaphore control structure.
  */
 typedef struct {
-    UINT8 semStat; /**< Semaphore state */
-    UINT16 semCount; /**< Number of available semaphores */
-    UINT16 maxSemCount;  /**< Max number of available semaphores */
-    UINT32 semID; /**< Semaphore control structure ID */
-    LOS_DL_LIST semList; /**< Queue of tasks that are waiting on a semaphore */
+    UINT8 semStat; /**< Semaphore state *///信号量的状态
+    UINT16 semCount; /**< Number of available semaphores *///有效信号量的数量
+    UINT16 maxSemCount;  /**< Max number of available semaphores *///有效信号量的最大数量
+    UINT32 semID; /**< Semaphore control structure ID *///信号ID
+    LOS_DL_LIST semList; /**< Queue of tasks that are waiting on a semaphore *///等待信号量的任务队列,作为一个节点挂上去
 } LosSemCB;
 
 /**

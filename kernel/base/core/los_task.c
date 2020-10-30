@@ -1363,7 +1363,7 @@ UINT32 OsTaskWait(LOS_DL_LIST *list, UINT32 timeout, BOOL needSched)
     runTask->taskStatus |= OS_TASK_STATUS_PEND;//给任务贴上阻塞任务标签
     LOS_ListTailInsert(list, pendObj);//将阻塞任务挂到list上,,这步很关键,很重要!
     if (timeout != LOS_WAIT_FOREVER) {//非永远等待的时候
-        runTask->taskStatus |= OS_TASK_STATUS_PEND_TIME;//阻塞任务再贴上一段时间内阻塞
+        runTask->taskStatus |= OS_TASK_STATUS_PEND_TIME;//阻塞任务再贴上在一段时间内阻塞的标签
         OsAdd2TimerList(runTask, timeout);//把任务加到定时器链表中
     }
 
