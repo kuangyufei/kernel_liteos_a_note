@@ -703,22 +703,22 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, U
     processCB->processStatus = OS_PROCESS_STATUS_INIT;//进程初始状态
     processCB->parentProcessID = OS_INVALID_VALUE;//爸爸进程，外面指定
     processCB->threadGroupID = OS_INVALID_VALUE;//所属线程组
-    processCB->priority = priority;//优先级
+    processCB->priority = priority;//进程优先级
     processCB->policy = policy;//调度算法 LOS_SCHED_RR
     processCB->umask = OS_PROCESS_DEFAULT_UMASK;//掩码
     processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;
 
-    LOS_ListInit(&processCB->threadSiblingList);//初始化任务/线程链表
-    LOS_ListInit(&processCB->childrenList);		//初始化孩子链表
-    LOS_ListInit(&processCB->exitChildList);	//初始化记录哪些孩子退出了的链表	
-    LOS_ListInit(&(processCB->waitList));		//初始化等待链表
+    LOS_ListInit(&processCB->threadSiblingList);//初始化孩子任务/线程链表，上面挂的都是由此fork的孩子线程 见于 OsTaskCBInit LOS_ListTailInsert(&(processCB->threadSiblingList), &(taskCB->threadList));
+    LOS_ListInit(&processCB->childrenList);		//初始化孩子进程链表，上面挂的都是由此fork的孩子进程 见于 OsCopyParent LOS_ListTailInsert(&parentProcessCB->childrenList, &childProcessCB->siblingList);
+    LOS_ListInit(&processCB->exitChildList);	//初始化记录退出孩子进程链表，上面挂的是哪些exit	见于 OsProcessNaturalExit LOS_ListTailInsert(&parentCB->exitChildList, &processCB->siblingList);
+    LOS_ListInit(&(processCB->waitList));		//初始化等待任务链表 上面挂的是处于等待的 见于 OsWaitInsertWaitLIstInOrder LOS_ListHeadInsert(&processCB->waitList, &runTask->pendList);
 
     for (count = 0; count < OS_PRIORITY_QUEUE_NUM; ++count) { //根据 priority数 创建对应个数的队列
-        LOS_ListInit(&processCB->threadPriQueueList[count]);  
-    }
+        LOS_ListInit(&processCB->threadPriQueueList[count]); //初始化一个个线程队列，队列中存放就绪状态的线程/task 
+    }//在鸿蒙内核中 task就是thread,在鸿蒙源码分析系列篇中有详细阐释 见于 https://my.oschina.net/u/3751245
 
-    if (OsProcessIsUserMode(processCB)) {// 是否为用户态进程
-        space = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmSpace));
+    if (OsProcessIsUserMode(processCB)) {// 是否为用户模式进程
+        space = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmSpace));//分配一个虚拟空间
         if (space == NULL) {
             PRINT_ERR("%s %d, alloc space failed\n", __FUNCTION__, __LINE__);
             return LOS_ENOMEM;
@@ -729,7 +729,7 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, U
             (VOID)LOS_MemFree(m_aucSysMem0, space);
             return LOS_ENOMEM;
         }
-        (VOID)memset_s(ttb, PAGE_SIZE, 0, PAGE_SIZE);
+        (VOID)memset_s(ttb, PAGE_SIZE, 0, PAGE_SIZE);//内存清0
         retVal = OsUserVmSpaceInit(space, ttb);//初始化虚拟空间和本进程 mmu
         vmPage = OsVmVaddrToPage(ttb);//通过虚拟地址拿到page
         if ((retVal == FALSE) || (vmPage == NULL)) {//异常处理
@@ -1743,7 +1743,7 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
     childTaskCB->taskStatus |= OS_TASK_STATUS_READY;
     return LOS_OK;
 }
-
+//拷贝父亲大人的遗传基因信息
 STATIC UINT32 OsCopyParent(UINT32 flags, LosProcessCB *childProcessCB, LosProcessCB *runProcessCB)
 {
     UINT32 ret;
@@ -1751,22 +1751,23 @@ STATIC UINT32 OsCopyParent(UINT32 flags, LosProcessCB *childProcessCB, LosProces
     LosProcessCB *parentProcessCB = NULL;
 
     SCHEDULER_LOCK(intSave);
-    childProcessCB->priority = runProcessCB->priority;
-    childProcessCB->policy = runProcessCB->policy;
+    childProcessCB->priority = runProcessCB->priority;	//当前进程所处阶级
+    childProcessCB->policy = runProcessCB->policy;		//当前进程参与的调度方式
 
-    if (flags & CLONE_PARENT) {
-        parentProcessCB = OS_PCB_FROM_PID(runProcessCB->parentProcessID);
-        childProcessCB->parentProcessID = parentProcessCB->processID;
-        LOS_ListTailInsert(&parentProcessCB->childrenList, &childProcessCB->siblingList);
-        childProcessCB->group = parentProcessCB->group;
-        LOS_ListTailInsert(&parentProcessCB->group->processList, &childProcessCB->subordinateGroupList);
+    if (flags & CLONE_PARENT) { //这里指明 childProcessCB 和 runProcessCB 有同一个父亲，是兄弟关系
+        parentProcessCB = OS_PCB_FROM_PID(runProcessCB->parentProcessID);//找出当前进程的父亲大人
+        childProcessCB->parentProcessID = parentProcessCB->processID;//指认父亲，这个赋值代表从此是你儿了
+        LOS_ListTailInsert(&parentProcessCB->childrenList, &childProcessCB->siblingList);//通过我的兄弟姐妹节点，挂到父亲的孩子链表上，于我而言，父亲的这个链表上挂的都是我的兄弟姐妹
+        													//不会被排序，老大，老二，老三 老天爷指定了。
+        childProcessCB->group = parentProcessCB->group;//跟父亲大人在同一个进程组，注意父亲可能是组长，但更可能不是组长，
+        LOS_ListTailInsert(&parentProcessCB->group->processList, &childProcessCB->subordinateGroupList);//自己去组里登记下，这个要自己登记，跟父亲没啥关系。
         ret = OsCopyUser(childProcessCB, parentProcessCB);
-    } else {
-        childProcessCB->parentProcessID = runProcessCB->processID;
-        LOS_ListTailInsert(&runProcessCB->childrenList, &childProcessCB->siblingList);
-        childProcessCB->group = runProcessCB->group;
-        LOS_ListTailInsert(&runProcessCB->group->processList, &childProcessCB->subordinateGroupList);
-        ret = OsCopyUser(childProcessCB, runProcessCB);
+    } else {//这里指明 childProcessCB 和 runProcessCB 是父子关系
+        childProcessCB->parentProcessID = runProcessCB->processID;//runProcessCB就是父亲，这个赋值代表从此是你儿了
+        LOS_ListTailInsert(&runProcessCB->childrenList, &childProcessCB->siblingList);//同上理解
+        childProcessCB->group = runProcessCB->group;//同上理解
+        LOS_ListTailInsert(&runProcessCB->group->processList, &childProcessCB->subordinateGroupList);//同上理解
+        ret = OsCopyUser(childProcessCB, runProcessCB);//同上理解
     }
     SCHEDULER_UNLOCK(intSave);
     return ret;
@@ -1777,7 +1778,7 @@ STATIC UINT32 OsCopyMM(UINT32 flags, LosProcessCB *childProcessCB, LosProcessCB 
     status_t status;
     UINT32 intSave;
 
-    if (!OsProcessIsUserMode(childProcessCB)) {
+    if (!OsProcessIsUserMode(childProcessCB)) {//不是用户模式，直接返回，什么意思？内核虚拟空间只有一个，无需COPY ！！！
         return LOS_OK;
     }
 
@@ -1817,19 +1818,19 @@ STATIC UINT32 OsCopyFile(UINT32 flags, LosProcessCB *childProcessCB, LosProcessC
 STATIC UINT32 OsForkInitPCB(UINT32 flags, LosProcessCB *child, const CHAR *name, UINTPTR sp, UINT32 size)
 {
     UINT32 ret;
-    LosProcessCB *run = OsCurrProcessGet();
+    LosProcessCB *run = OsCurrProcessGet();//获取当前进程
 
-    ret = OsInitPCB(child, run->processMode, OS_PROCESS_PRIORITY_LOWEST, LOS_SCHED_RR, name);
+    ret = OsInitPCB(child, run->processMode, OS_PROCESS_PRIORITY_LOWEST, LOS_SCHED_RR, name);//初始化PCB信息，进程模式，优先级，调度方式，名称 == 信息
     if (ret != LOS_OK) {
         return ret;
     }
 
-    ret = OsCopyParent(flags, child, run);
+    ret = OsCopyParent(flags, child, run);//拷贝父亲大人的基因信息
     if (ret != LOS_OK) {
         return ret;
     }
 
-    return OsCopyTask(flags, child, name, sp, size);
+    return OsCopyTask(flags, child, name, sp, size);//拷贝任务，设置任务入口函数，栈大小
 }
 
 STATIC UINT32 OsChildSetProcessGroupAndSched(LosProcessCB *child, LosProcessCB *run)
@@ -1893,15 +1894,15 @@ STATIC INT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProces
 STATIC INT32 OsCopyProcess(UINT32 flags, const CHAR *name, UINTPTR sp, UINT32 size)
 {
     UINT32 intSave, ret, processID;
-    LosProcessCB *run = OsCurrProcessGet();
+    LosProcessCB *run = OsCurrProcessGet();//获取当前进程
 
-    LosProcessCB *child = OsGetFreePCB();
+    LosProcessCB *child = OsGetFreePCB();//从进程池中申请一个进程控制块，鸿蒙进程池默认64
     if (child == NULL) {
         return -LOS_EAGAIN;
     }
     processID = child->processID;
 
-    ret = OsForkInitPCB(flags, child, name, sp, size);
+    ret = OsForkInitPCB(flags, child, name, sp, size);//初始化进程控制块
     if (ret != LOS_OK) {
         goto ERROR_INIT;
     }
@@ -1941,7 +1942,7 @@ LITE_OS_SEC_TEXT INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size)
 
     return OsCopyProcess(cloneFlag & flags, NULL, sp, size);
 }
-
+//著名的 fork 函数 记得前往 https://gitee.com/weharmony/kernel_liteos_a_note  fork一下 :)
 LITE_OS_SEC_TEXT INT32 LOS_Fork(UINT32 flags, const CHAR *name, const TSK_ENTRY_FUNC entry, UINT32 stackSize)
 {
     UINT32 cloneFlag = CLONE_PARENT | CLONE_THREAD | CLONE_VFORK | CLONE_FILES;
@@ -1951,7 +1952,7 @@ LITE_OS_SEC_TEXT INT32 LOS_Fork(UINT32 flags, const CHAR *name, const TSK_ENTRY_
     }
 
     flags |= CLONE_FILES;
-    return OsCopyProcess(cloneFlag & flags, name, (UINTPTR)entry, stackSize);
+    return OsCopyProcess(cloneFlag & flags, name, (UINTPTR)entry, stackSize);//拷贝一个进程
 }
 
 LITE_OS_SEC_TEXT UINT32 LOS_GetCurrProcessID(VOID)

@@ -83,11 +83,11 @@ STATIC VOID OsSemPendedTaskNamePrint(LosSemCB *semNode)
 #ifdef LOSCFG_DEBUG_SEMAPHORE
 
 typedef struct {
-    UINT16  origSemCount;   /* Number of orignal available semaphores */
-    UINT64  lastAccessTime; /* The last operation time */
-    TSK_ENTRY_FUNC creater; /* The task entry who created this sem */
+    UINT16  origSemCount;   /* Number of orignal available semaphores *///原始可用信号量数
+    UINT64  lastAccessTime; /* The last operation time */				//最后操作时间
+    TSK_ENTRY_FUNC creater; /* The task entry who created this sem */	//由哪个task的入口函数创建了这个任务
 } SemDebugCB;
-STATIC SemDebugCB *g_semDebugArray = NULL;
+STATIC SemDebugCB *g_semDebugArray = NULL;//默认1024个SemDebugCB debug信号量池
 
 STATIC BOOL SemCompareValue(const IpcSortParam *sortParam, UINT32 left, UINT32 right)
 {
@@ -107,23 +107,23 @@ UINT32 OsSemDbgInit(VOID)
     (VOID)memset_s(g_semDebugArray, size, 0, size);
     return LOS_OK;
 }
-
+//更新最后访问时间
 VOID OsSemDbgTimeUpdate(UINT32 semID)
 {
     SemDebugCB *semDebug = &g_semDebugArray[GET_SEM_INDEX(semID)];
-    semDebug->lastAccessTime = LOS_TickCountGet();
+    semDebug->lastAccessTime = LOS_TickCountGet();//获取tick总数
     return;
 }
-
+//更新信号量
 VOID OsSemDbgUpdate(UINT32 semID, TSK_ENTRY_FUNC creater, UINT16 count)
 {
     SemDebugCB *semDebug = &g_semDebugArray[GET_SEM_INDEX(semID)];
-    semDebug->creater = creater;
-    semDebug->lastAccessTime = LOS_TickCountGet();
-    semDebug->origSemCount = count;
+    semDebug->creater = creater;	//改为由参数入口函数创建了这个任务
+    semDebug->lastAccessTime = LOS_TickCountGet();//获取tick总数
+    semDebug->origSemCount = count;//原始信号量改变
     return;
 }
-
+//按信号量访问时间排序
 STATIC VOID OsSemSort(UINT32 *semIndexArray, UINT32 usedCount)
 {
     UINT32 i, intSave;

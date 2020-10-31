@@ -130,17 +130,17 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSemCreate(UINT16 count, UINT16 maxCount, UINT32 *
 ERR_HANDLER:
     OS_RETURN_ERROR_P2(errLine, errNo);
 }
-
+//对外接口 创建信号 
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_SemCreate(UINT16 count, UINT32 *semHandle)
 {
     return OsSemCreate(count, OS_SEM_COUNT_MAX, semHandle);
 }
-
+//对外接口 创建一个最大信号数为1的信号量，可以当互斥锁用
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_BinarySemCreate(UINT16 count, UINT32 *semHandle)
 {
     return OsSemCreate(count, OS_SEM_BINARY_COUNT_MAX, semHandle);
 }
-//删除信号量,参数就是 semID 
+//对外接口 删除信号量,参数就是 semID 
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_SemDelete(UINT32 semHandle)
 {
     UINT32 intSave;
@@ -178,7 +178,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_SemDelete(UINT32 semHandle)
 ERR_HANDLER:
     OS_RETURN_ERROR_P2(errLine, errNo);
 }
-//挂起信号
+//对外接口 挂起信号
 LITE_OS_SEC_TEXT UINT32 LOS_SemPend(UINT32 semHandle, UINT32 timeout)
 {
     UINT32 intSave;
@@ -272,7 +272,7 @@ LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)
 
     return LOS_OK;
 }
-
+//对外接口 释放信号
 LITE_OS_SEC_TEXT UINT32 LOS_SemPost(UINT32 semHandle)
 {
     UINT32 intSave;

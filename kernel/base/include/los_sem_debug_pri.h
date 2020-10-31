@@ -46,7 +46,7 @@ extern UINT32 OsSemDbgInit(VOID);
 STATIC INLINE UINT32 OsSemDbgInitHook(VOID)
 {
 #ifdef LOSCFG_DEBUG_SEMAPHORE
-    return OsSemDbgInit();
+    return OsSemDbgInit();//信号量debug初始化
 #else
     return LOS_OK;
 #endif
