@@ -294,23 +294,23 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 #define OS_TCB_NAME_LEN 32
 
 typedef struct {
-    VOID            *stackPointer;      /**< Task stack pointer */
-    UINT16          taskStatus;         /**< Task status */
-    UINT16          priority;           /**< Task priority */
+    VOID            *stackPointer;      /**< Task stack pointer */	//非用户模式下的栈指针
+    UINT16          taskStatus;         /**< Task status */			//各种状态标签，可以拥有多种标签，按位标识
+    UINT16          priority;           /**< Task priority */		//任务优先级[0:31],默认是31级
     UINT16          policy;				//任务的调度方式(三种 .. LOS_SCHED_RR )
-    UINT16          timeSlice;          /**< Remaining time slice */
-    UINT32          stackSize;          /**< Task stack size */
-    UINTPTR         topOfStack;         /**< Task stack top */
+    UINT16          timeSlice;          /**< Remaining time slice *///剩余时间片
+    UINT32          stackSize;          /**< Task stack size */		//非用户模式下栈大小
+    UINTPTR         topOfStack;         /**< Task stack top */		//非用户模式下的栈顶
     UINT32          taskID;             /**< Task ID */
-    TSK_ENTRY_FUNC  taskEntry;          /**< Task entrance function */
+    TSK_ENTRY_FUNC  taskEntry;          /**< Task entrance function */	//任务执行入口函数
     VOID            *joinRetval;        /**< pthread adaption */
-    VOID            *taskSem;           /**< Task-held semaphore */
-    VOID            *taskMux;           /**< Task-held mutex *///task在等哪把锁
-    VOID            *taskEvent;         /**< Task-held event */
-    UINTPTR         args[4];            /**< Parameter, of which the maximum number is 4 */
+    VOID            *taskSem;           /**< Task-held semaphore */	//task在等哪个信号量
+    VOID            *taskMux;           /**< Task-held mutex */		//task在等哪把锁
+    VOID            *taskEvent;         /**< Task-held event */		//task在等哪个事件
+    UINTPTR         args[4];            /**< Parameter, of which the maximum number is 4 */	//入口函数的参数 例如 main (int argc,char *argv[])
     CHAR            taskName[OS_TCB_NAME_LEN]; /**< Task name */
-    LOS_DL_LIST     pendList;           /**< Task pend node *///如果任务阻塞时就通过它挂到各种阻塞情况的链表上,比如OsTaskWait时
-    LOS_DL_LIST     threadList;         /**< thread list */
+    LOS_DL_LIST     pendList;           /**< Task pend node */		//如果任务阻塞时就通过它挂到各种阻塞情况的链表上,比如OsTaskWait时
+    LOS_DL_LIST     threadList;         /**< thread list */			
     SortLinkList    sortList;           /**< Task sortlink node */
     UINT32          eventMask;          /**< Event mask */
     UINT32          eventMode;          /**< Event mode */
@@ -335,7 +335,7 @@ typedef struct {
 #endif
 #endif
     UINTPTR         userArea;			//使用区域,由运行时划定,根据运行态不同而不同
-    UINTPTR         userMapBase;		//使用区栈底位置
+    UINTPTR         userMapBase;		//用户模式下的栈底位置
     UINT32          userMapSize;        /**< user thread stack size ,real size : userMapSize + USER_STACK_MIN_SIZE */
     UINT32          processID;          /**< Which belong process */
     FutexNode       futex;

@@ -594,11 +594,11 @@ LITE_OS_SEC_TEXT UINT32 OsTaskSyncWait(const LosTaskCB *taskCB)
     return LOS_OK;
 #endif
 }
-
+//任务同步唤醒
 STATIC INLINE VOID OsTaskSyncWake(const LosTaskCB *taskCB)
 {
 #if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)
-    (VOID)OsSemPostUnsafe(taskCB->syncSignal, NULL);
+    (VOID)OsSemPostUnsafe(taskCB->syncSignal, NULL);//唤醒一个挂在信号量链表上的阻塞任务
 #else
     (VOID)taskCB;
 #endif
@@ -617,19 +617,19 @@ STATIC VOID OsTaskKernelResourcesToFree(UINT32 syncSignal, UINTPTR topOfStack)
 #endif
     (VOID)LOS_MemFree(poolTmp, (VOID *)topOfStack);
 }
-
+//从回收链表中回收任务到空闲链表
 LITE_OS_SEC_TEXT VOID OsTaskCBRecyleToFree()
 {
     LosTaskCB *taskCB = NULL;
     UINT32 intSave;
 
     SCHEDULER_LOCK(intSave);
-    while (!LOS_ListEmpty(&g_taskRecyleList)) {
-        taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_taskRecyleList));
-        LOS_ListDelete(&taskCB->pendList);
+    while (!LOS_ListEmpty(&g_taskRecyleList)) {//不空就一个一个回收任务
+        taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_taskRecyleList));//取出第一个待回收任务
+        LOS_ListDelete(&taskCB->pendList);//从回收链表上将自己摘除
         SCHEDULER_UNLOCK(intSave);
 
-        OsTaskResourcesToFree(taskCB);
+        OsTaskResourcesToFree(taskCB);//释放任务资源
 
         SCHEDULER_LOCK(intSave);
     }
@@ -638,16 +638,16 @@ LITE_OS_SEC_TEXT VOID OsTaskCBRecyleToFree()
 
 LITE_OS_SEC_TEXT VOID OsTaskResourcesToFree(LosTaskCB *taskCB)
 {
-    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
+    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);//通过任务找到所属进程
     UINT32 syncSignal = LOSCFG_BASE_IPC_SEM_LIMIT;
     UINT32 mapSize, intSave;
     UINTPTR mapBase, topOfStack;
     UINT32 ret;
 
-    if (OsProcessIsUserMode(processCB) && (taskCB->userMapBase != 0)) {
+    if (OsProcessIsUserMode(processCB) && (taskCB->userMapBase != 0)) {//进程在用户态而且任务栈不为空
         SCHEDULER_LOCK(intSave);
-        mapBase = (UINTPTR)taskCB->userMapBase;
-        mapSize = taskCB->userMapSize;
+        mapBase = (UINTPTR)taskCB->userMapBase;//先保存任务栈底位置
+        mapSize = taskCB->userMapSize;//先保存任务栈大小
         taskCB->userMapBase = 0;
         taskCB->userArea = 0;
         SCHEDULER_UNLOCK(intSave);
@@ -1761,7 +1761,7 @@ LITE_OS_SEC_TEXT VOID OsExecDestroyTaskGroup(VOID)
     OsTaskExitGroup(OS_PRO_EXIT_OK);
     OsTaskCBRecyleToFree();
 }
-//暂停进程的所有任务
+//暂停当前进程的所有任务
 LITE_OS_SEC_TEXT VOID OsProcessSuspendAllTask(VOID)
 {
     LosProcessCB *process = NULL;

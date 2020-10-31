@@ -52,7 +52,7 @@ extern "C" {
  * Description: register information stored when an exception occurs on an LPC2458 platform.
  *
  * Note: The following register names without uw are the register names used in the chip manual.
- */
+ *///以下不带uw的寄存器名是芯片手册中使用的寄存器名
 #ifdef LOSCFG_ARCH_ARM_AARCH64
 #define EXC_GEN_REGS_NUM     30
 typedef struct {
@@ -64,9 +64,9 @@ typedef struct {
 } ExcContext;
 #else
 typedef struct {
-    UINT32 USP;     /**< User mode stack pointer */
-    UINT32 ULR;     /**< User mode program returning address */
-    UINT32 regCPSR; /**< Current program status register (CPSR) */
+    UINT32 USP;     /**< User mode stack pointer *///用户模式下栈指针
+    UINT32 ULR;     /**< User mode program returning address *///用户模式下程序返回地址
+    UINT32 regCPSR; /**< Current program status register (CPSR) *///当前程序状态寄存器
     UINT32 R0;      /**< Register R0 */
     UINT32 R1;      /**< Register R1 */
     UINT32 R2;      /**< Register R2 */
@@ -94,11 +94,11 @@ typedef struct {
  *
  */
 typedef struct {
-    UINT16 phase;        /**< Phase in which an exception occurs */
-    UINT16 type;         /**< Exception type */
-    UINT16 nestCnt;      /**< Count of nested exception */
+    UINT16 phase;        /**< Phase in which an exception occurs *///异常发生的阶段
+    UINT16 type;         /**< Exception type *///异常类型
+    UINT16 nestCnt;      /**< Count of nested exception *///嵌套异常计数
     UINT16 reserved;     /**< Reserved for alignment */
-    ExcContext *context; /**< Hardware context when an exception occurs */
+    ExcContext *context; /**< Hardware context when an exception occurs *///异常发生时的硬件上下文
 } ExcInfo;
 
 /**

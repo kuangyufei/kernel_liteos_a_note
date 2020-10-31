@@ -77,9 +77,9 @@ STATIC UINTPTR g_minAddr;
 STATIC UINTPTR g_maxAddr;
 STATIC UINT32 g_currHandleExcCpuID = INVALID_CPUID;
 VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr);
-UINT32 g_curNestCount[LOSCFG_KERNEL_CORE_NUM] = { 0 };
-BOOL g_excFromUserMode[LOSCFG_KERNEL_CORE_NUM];
-STATIC EXC_PROC_FUNC g_excHook = (EXC_PROC_FUNC)OsExcHook;
+UINT32 g_curNestCount[LOSCFG_KERNEL_CORE_NUM] = { 0 };//
+BOOL g_excFromUserMode[LOSCFG_KERNEL_CORE_NUM];//记录CPU core 是否在用户态运行
+STATIC EXC_PROC_FUNC g_excHook = (EXC_PROC_FUNC)OsExcHook;//函数指针 ->hook 
 #if (LOSCFG_KERNEL_SMP == YES)
 STATIC SPIN_LOCK_INIT(g_excSerializerSpin);
 STATIC UINT32 g_currHandleExcPID = OS_INVALID_VALUE;
@@ -254,11 +254,11 @@ STATIC const CHAR *g_excTypeString[] = {
     "address abort",
     "irq"
 };
-
+//打印系统信息
 STATIC VOID OsExcSysInfo(UINT32 excType, const ExcContext *excBufAddr)
 {
-    LosTaskCB *runTask = OsCurrTaskGet();
-    LosProcessCB *runProcess = OsCurrProcessGet();
+    LosTaskCB *runTask = OsCurrTaskGet();//获取当前任务
+    LosProcessCB *runProcess = OsCurrProcessGet();//获取当前进程
     LosVmMapRegion *region = NULL;
 
     PrintExcInfo("excType: %s\n"
@@ -284,30 +284,30 @@ STATIC VOID OsExcSysInfo(UINT32 excType, const ExcContext *excBufAddr)
     }
 
     PrintExcInfo("pc    = 0x%x ", excBufAddr->PC);
-    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
-        if (LOS_IsUserAddress((vaddr_t)excBufAddr->PC)) {
-            region = LOS_RegionFind(runProcess->vmSpace, (VADDR_T)excBufAddr->PC);
+    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {//当前CPU处于用户模式
+        if (LOS_IsUserAddress((vaddr_t)excBufAddr->PC)) {//pc寄存器处于用户空间
+            region = LOS_RegionFind(runProcess->vmSpace, (VADDR_T)excBufAddr->PC);//找到所在线性区
             if (region != NULL) {
-                PrintExcInfo("in %s ---> 0x%x", OsGetRegionNameOrFilePath(region),
-                             (VADDR_T)excBufAddr->PC - region->range.base);
+                PrintExcInfo("in %s ---> 0x%x", OsGetRegionNameOrFilePath(region),//获取线性区标识
+                             (VADDR_T)excBufAddr->PC - region->range.base);//得到线性区的偏移地址
             }
         }
 
-        PrintExcInfo("\nulr   = 0x%x ", excBufAddr->ULR);
-        region = LOS_RegionFind(runProcess->vmSpace, (VADDR_T)excBufAddr->ULR);
+        PrintExcInfo("\nulr   = 0x%x ", excBufAddr->ULR);//打印用户模式下程序的返回地址
+        region = LOS_RegionFind(runProcess->vmSpace, (VADDR_T)excBufAddr->ULR);//通过返回地址找到线性区
         if (region != NULL) {
-            PrintExcInfo("in %s ---> 0x%x", OsGetRegionNameOrFilePath(region),
-                         (VADDR_T)excBufAddr->ULR - region->range.base);
+            PrintExcInfo("in %s ---> 0x%x", OsGetRegionNameOrFilePath(region),//获取线性区标识
+                         (VADDR_T)excBufAddr->ULR - region->range.base);//得到线性区的偏移地址
         }
-        PrintExcInfo("\nusp   = 0x%x", excBufAddr->USP);
-    } else {
-        PrintExcInfo("\nklr   = 0x%x\n"
-                     "ksp   = 0x%x\n",
-                     excBufAddr->LR,
-                     excBufAddr->SP);
+        PrintExcInfo("\nusp   = 0x%x", excBufAddr->USP);//打印用户模式下栈指针
+    } else {//非用户模式下
+        PrintExcInfo("\nklr   = 0x%x\n"	//注意：只有一个内核空间和内核堆空间，而每个用户进程就有自己独立的用户空间。
+                     "ksp   = 0x%x\n",	//用户空间的虚拟地址范围是一样的，只是映射到不同的物理内存页。
+                     excBufAddr->LR,	//直接打印程序的返回地址
+                     excBufAddr->SP);	//直接打印栈空间
     }
 
-    PrintExcInfo("fp    = 0x%x\n", excBufAddr->R11);
+    PrintExcInfo("fp    = 0x%x\n", excBufAddr->R11);//FP(frame pointer)栈帧寄存器R11
 }
 
 STATIC VOID OsExcRegsInfo(const ExcContext *excBufAddr)
@@ -335,7 +335,7 @@ STATIC VOID OsExcRegsInfo(const ExcContext *excBufAddr)
                  excBufAddr->R7, excBufAddr->R8, excBufAddr->R9, excBufAddr->R10,
                  excBufAddr->R11, excBufAddr->R12, excBufAddr->regCPSR);
 }
-
+//注册hook
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_ExcRegHook(EXC_PROC_FUNC excHook)
 {
     UINT32 intSave;
@@ -346,7 +346,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_ExcRegHook(EXC_PROC_FUNC excHook)
 
     return LOS_OK;
 }
-
+//获取hook函数
 EXC_PROC_FUNC OsExcRegHookGet(VOID)
 {
     return g_excHook;
@@ -550,7 +550,7 @@ STATIC INLINE BOOL IsValidFP(UINTPTR regFP, UINTPTR start, UINTPTR end, vaddr_t 
 
     return TRUE;
 }
-
+//找到一个合适的栈
 STATIC INLINE BOOL FindSuitableStack(UINTPTR regFP, UINTPTR *start, UINTPTR *end, vaddr_t *vaddr)
 {
     UINT32 index, stackStart, stackEnd;
@@ -668,7 +668,7 @@ VOID OsExcInit(VOID)
 {
     OsExcStackInfoReg(g_excStack, sizeof(g_excStack) / sizeof(g_excStack[0]));
 }
-
+//由注册后回调
 VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 {
     OsExcType(excType, excBufAddr, far, fsr);
@@ -755,7 +755,7 @@ VOID OsBackTrace(VOID)
     PRINTK("runTask->taskID = %u\n", runTask->taskID);
     BackTrace(regFP);
 }
-
+//未定义的异常处理函数，由汇编调用 见于 los_hw_exc.s
 #ifdef LOSCFG_GDB
 VOID OsUndefIncExcHandleEntry(ExcContext *excBufAddr)
 {
@@ -771,7 +771,7 @@ VOID OsUndefIncExcHandleEntry(ExcContext *excBufAddr)
     }
     while (1) {}
 }
-
+//预取异常处理函数，由汇编调用 见于 los_hw_exc.s
 #if __LINUX_ARM_ARCH__ >= 7
 VOID OsPrefetchAbortExcHandleEntry(ExcContext *excBufAddr)
 {
@@ -791,7 +791,7 @@ VOID OsPrefetchAbortExcHandleEntry(ExcContext *excBufAddr)
     }
     while (1) {}
 }
-
+//数据中止异常处理函数，由汇编调用 见于 los_hw_exc.s
 VOID OsDataAbortExcHandleEntry(ExcContext *excBufAddr)
 {
     UINT32 far;
@@ -816,7 +816,7 @@ VOID OsDataAbortExcHandleEntry(ExcContext *excBufAddr)
 #if (LOSCFG_KERNEL_SMP == YES)
 #define EXC_WAIT_INTER 50U
 #define EXC_WAIT_TIME  2000U
-
+//打印所有CPU的状态信息
 STATIC VOID OsAllCpuStatusOutput(VOID)
 {
     UINT32 i;
@@ -937,33 +937,33 @@ STATIC VOID OsCheckCpuStatus(UINTPTR taskStackPointer)
     g_currHandleExcCpuID = ArchCurrCpuid();
 #endif
 }
-
+//执行期间的优先处置 excBufAddr为CPU硬件上下文，
 LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 {
 #if (LOSCFG_KERNEL_SMP == YES)
     UINT16 runCount;
 #endif
 
-    if ((excBufAddr->regCPSR & CPSR_MASK_MODE) == CPSR_USER_MODE) {
-        g_minAddr = USER_ASPACE_BASE;
-        g_maxAddr = USER_ASPACE_BASE + USER_ASPACE_SIZE;
-        g_excFromUserMode[ArchCurrCpuid()] = TRUE;
+    if ((excBufAddr->regCPSR & CPSR_MASK_MODE) == CPSR_USER_MODE) {//用户模式下，访问地址不能出用户空间
+        g_minAddr = USER_ASPACE_BASE;	//可访问地址范围的开始地址，
+        g_maxAddr = USER_ASPACE_BASE + USER_ASPACE_SIZE;//地址范围的结束地址，就是用户空间
+        g_excFromUserMode[ArchCurrCpuid()] = TRUE;//当前CPU执行切到用户态
     } else {
-        g_minAddr = KERNEL_ASPACE_BASE;
-        g_maxAddr = KERNEL_ASPACE_BASE + KERNEL_ASPACE_SIZE;
-        g_excFromUserMode[ArchCurrCpuid()] = FALSE;
+        g_minAddr = KERNEL_ASPACE_BASE;	//可访问地址范围的开始地址
+        g_maxAddr = KERNEL_ASPACE_BASE + KERNEL_ASPACE_SIZE;//可访问地址范围的结束地址
+        g_excFromUserMode[ArchCurrCpuid()] = FALSE;//当前CPU执行切到内核态
     }
 
-    OsCheckCpuStatus(excBufAddr->SP);
+    OsCheckCpuStatus(excBufAddr->SP);//检查CPU的状态
 
-    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
+    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {//为用户态时
         while (1) {
-            OsProcessSuspendAllTask();
-#if (LOSCFG_KERNEL_SMP == YES)
+            OsProcessSuspendAllTask();//当前进程的所有任务挂起
+#if (LOSCFG_KERNEL_SMP == YES)//多核情况下的处理
             LOS_SpinLock(&g_taskSpin);
-            runCount = OS_PROCESS_GET_RUNTASK_COUNT(OsCurrProcessGet()->processStatus);
+            runCount = OS_PROCESS_GET_RUNTASK_COUNT(OsCurrProcessGet()->processStatus);//获取正在运行的task数量，也就是并行数量
             LOS_SpinUnlock(&g_taskSpin);
-            if (runCount == 1) {
+            if (runCount == 1) {//直接跑到只剩下一个当前任务为止，其实就在等其他核的runtask跑完
                 break;
             }
 #else
@@ -977,11 +977,11 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
  * Description : EXC handler entry
  * Input       : excType    --- exc type
  *               excBufAddr --- address of EXC buf
- */
+ *///异常处理的执行入口，由汇编语言层调用 见于 los_hw_exc.s 文件
 LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 {
-    /* Task scheduling is not allowed during exception handling */
-    OsPercpuGet()->taskLockCnt++;
+    /* Task scheduling is not allowed during exception handling *///异常处理期间不允许任务调度
+    OsPercpuGet()->taskLockCnt++;//
 
     g_curNestCount[ArchCurrCpuid()]++;
 

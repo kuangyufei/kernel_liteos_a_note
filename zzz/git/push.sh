@@ -1,8 +1,8 @@
 git add -A
-git commit -m  '开始对信号量这块代码进行注释,信号量的出现为了解决task的同步问题
+git commit -m  'CPU硬件上下文 及其各种寄存器，异常处理函数的注释
 鸿蒙内核源码分析系列 【 CSDN | OSCHINA | WIKI 】
 鸿蒙内核源码注释中文版 【 CSDN仓 | Gitee仓 | Github仓 | Coding仓 】四大仓库每日同步更新代码和wiki
-给鸿蒙内核源码逐行加上中文注解,详细阐述设计细节, 助你快速精读 HarmonyOS 内核源码, 掌握整个鸿蒙内核运行机制.'
+项目给鸿蒙内核源码逐行加上中文注解,详细阐述框架和代码细节, 精读 HarmonyOS 内核源码, 将迅速拔高对计算机整体理解,从此高屋建瓴看问题.'
 
 git push origin
 git push gitee_origin master

@@ -35,9 +35,9 @@
     .extern   g_losTask
     .extern   g_intCount
     .extern   g_curNestCount
-    .extern   OsExcHandleEntry
-    .extern   __svc_stack_top
-    .extern   __exc_stack_top
+    .extern   OsExcHandleEntry 		@异常处理入口		
+    .extern   __svc_stack_top		@管理栈顶位置 操作系统使用的保护模式
+    .extern   __exc_stack_top		@任务栈顶位置
     .extern   __stack_chk_guard
     .extern   OsRandomStackGuard
 #ifdef LOSCFG_GDB
@@ -375,7 +375,7 @@ _osExceptionSwi:
     LDR     R4, [R3]
 
     CMP     R4, #0
-    BNE     _osExceptionGetSP
+    BNE     _osExceptionGetSP	@ BNE: 不相等则跳转
 
     LDR     R3, =g_intCount                                   @ Judge the exception is occur in task stack or system stack
     ADD     R3, R3, R2
@@ -392,7 +392,7 @@ _osExceptionGetSP:
     MOV     R2, R8                                            @ far
     MOV     R3, R9                                            @ fsr
     LDR     R5, =OsExcHandleEntry                             @ OsExcHandleEntry(UINT32 excType, ExcContext * excBufAddr)
-    BX      R5
+    BX      R5						@LDR为加载指令把OsExcHandleEntry加载到R5寄存器，BX为带分支的跳转指令，再跳到R5执行							
 
 _OsExcReturn:
     LDR     R0, [SP, #(2 * 4)]

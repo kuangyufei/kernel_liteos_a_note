@@ -139,7 +139,7 @@ STATIC INLINE VOID OsVmPhysFreeListInit(struct VmPhysSeg *seg)
     LOS_SpinLockSave(&seg->freeListLock, &intSave);
     for (i = 0; i < VM_LIST_ORDER_MAX; i++) {
         list = &seg->freeList[i];
-        LOS_ListInit(&list->node);//初始化9个链表 2|0,2|1,2|2 分配页框 |代表次方的意思
+        LOS_ListInit(&list->node);//初始化9个链表 2^0,2^1,2^2 分配页框 ^代表次方的意思
         list->listCnt = 0;
     }
     LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
@@ -322,12 +322,12 @@ VOID OsVmPhysPagesFree(LosVmPage *page, UINT8 order)
     if (order < VM_LIST_ORDER_MAX - 1) {//order[0,7]
         pa = VM_PAGE_TO_PHYS(page);//获取物理地址
         do {
-            pa ^= VM_ORDER_TO_PHYS(order);//注意这里是高位和低位的^=,也就是说跳到 order块组 物理地址处,此处处理甚妙!
-            buddyPage = OsVmPhysToPage(pa, page->segID);//如此就能拿到以2的order次方跳的buddyPage
+            pa ^= VM_ORDER_TO_PHYS(order);//注意这里是高位和低位的 ^= ,也就是说跳到 order块组 物理地址处,此处处理甚妙!
+            buddyPage = OsVmPhysToPage(pa, page->segID);//如此就能拿到以2^order次方跳的buddyPage
             if ((buddyPage == NULL) || (buddyPage->order != order)) {
                 break;
             }
-            OsVmPhysFreeListDel(buddyPage);//注意buddypage是连续的物理页框 例如order=2时,连续的4页就是一个块组 |_|_|_|_| 
+            OsVmPhysFreeListDel(buddyPage);//注意buddypage是连续的物理页框 例如order=2时,2^2=4页就是一个块组 |_|_|_|_| 
             order++;
             pa &= ~(VM_ORDER_TO_PHYS(order) - 1);
             page = OsVmPhysToPage(pa, page->segID);
@@ -355,10 +355,10 @@ VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
         nPages -= n;//总页数减少
         page += n;//释放的页数增多
     }
-	//举例省下 7个页框时，依次用 4 2 1 方式释放
+	//举例剩下 7个页框时，依次用 2^2 2^1 2^0 方式释放
     for (count = 0; count < nPages; count += n) {
         order = LOS_HighBitGet(nPages);//从高到低块组释放
-        n = VM_ORDER_TO_PAGES(order);//2的order次方
+        n = VM_ORDER_TO_PAGES(order);//2^order次方
         OsVmPhysPagesFree(page, order);//释放块组
         page += n;
     }
@@ -398,7 +398,7 @@ VOID *LOS_PhysPagesAllocContiguous(size_t nPages)
     if (nPages == 0) {
         return NULL;
     }
-	//鸿蒙 nPages 不能大于 2的8 次方,即256个页,1M内存,仅限于内核态,用户态不限制分配大小.
+	//鸿蒙 nPages 不能大于 2^8 次方,即256个页,1M内存,仅限于内核态,用户态不限制分配大小.
     page = OsVmPhysPagesGet(nPages);//通过伙伴算法获取物理上连续的页
     if (page == NULL) {
         return NULL;

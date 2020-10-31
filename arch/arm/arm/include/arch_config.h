@@ -31,30 +31,30 @@
 
 #ifndef _ARCH_CONFIG_H
 #define _ARCH_CONFIG_H
-
+//ARM处理器一共有7种工作模式
 #include "menuconfig.h"
-
-#define CPSR_INT_DISABLE         0xC0 /* Disable both FIQ and IRQ */
-#define CPSR_IRQ_DISABLE         0x80 /* IRQ disabled when =1 */
-#define CPSR_FIQ_DISABLE         0x40 /* FIQ disabled when =1 */
-#define CPSR_THUMB_ENABLE        0x20 /* Thumb mode when   =1 */
-#define CPSR_USER_MODE           0x10
-#define CPSR_FIQ_MODE            0x11
-#define CPSR_IRQ_MODE            0x12
-#define CPSR_SVC_MODE            0x13
-#define CPSR_ABT_MODE            0x17
-#define CPSR_UNDEF_MODE          0x1B
+//CPSR为当前程序的状态寄存器
+#define CPSR_INT_DISABLE         0xC0 /* Disable both FIQ and IRQ */	//禁止中断
+#define CPSR_IRQ_DISABLE         0x80 /* IRQ disabled when =1 */		//只禁止IRQ 中断
+#define CPSR_FIQ_DISABLE         0x40 /* FIQ disabled when =1 */		//禁止 FIQ中断
+#define CPSR_THUMB_ENABLE        0x20 /* Thumb mode when   =1 */		//模式 1:CPU处于Thumb状态， 0:CPU处于ARM状态
+#define CPSR_USER_MODE           0x10	//用户模式,除了用户模式，其余模式也叫特权模式,特权模式中除了系统模式以外的其余5种模式称为异常模式；
+#define CPSR_FIQ_MODE            0x11	//快中断模式 用于高速数据传输或通道处理
+#define CPSR_IRQ_MODE            0x12	//中断模式 用于通用的中断处理
+#define CPSR_SVC_MODE            0x13	//管理模式 操作系统使用的保护模式
+#define CPSR_ABT_MODE            0x17	//ABT模式 当数据或指令预取终止时进入该模式，用于虚拟存储及存储保护
+#define CPSR_UNDEF_MODE          0x1B	//未定义模式（其他模式）当未定义的指令执行时进入该模式，用于支持硬件协处理器的软件仿真
 #define CPSR_MASK_MODE           0x1F
 
-/* Define exception type ID */
-#define OS_EXCEPT_RESET          0x00
-#define OS_EXCEPT_UNDEF_INSTR    0x01
-#define OS_EXCEPT_SWI            0x02
-#define OS_EXCEPT_PREFETCH_ABORT 0x03
-#define OS_EXCEPT_DATA_ABORT     0x04
-#define OS_EXCEPT_FIQ            0x05
-#define OS_EXCEPT_ADDR_ABORT     0x06
-#define OS_EXCEPT_IRQ            0x07
+/* Define exception type ID */		//ARM处理器一共有7种工作模式，除了用户和系统模式其余都叫异常工作模式
+#define OS_EXCEPT_RESET          0x00	//重置功能，例如：开机就进入CPSR_SVC_MODE模式
+#define OS_EXCEPT_UNDEF_INSTR    0x01	//未定义的异常，就是others
+#define OS_EXCEPT_SWI            0x02	//软件定时器中断
+#define OS_EXCEPT_PREFETCH_ABORT 0x03	//预取异常
+#define OS_EXCEPT_DATA_ABORT     0x04	//数据异常
+#define OS_EXCEPT_FIQ            0x05	//快中断
+#define OS_EXCEPT_ADDR_ABORT     0x06	//地址异常
+#define OS_EXCEPT_IRQ            0x07	//普通中断
 
 /* Define core num */
 #ifdef LOSCFG_KERNEL_SMP
