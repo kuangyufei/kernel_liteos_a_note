@@ -1736,11 +1736,11 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
 
     if (OsProcessIsUserMode(childProcessCB)) {//是否是用户进程
         SCHEDULER_LOCK(intSave);
-        OsUserCloneParentStack(childTaskCB, OsCurrTaskGet());
+        OsUserCloneParentStack(childTaskCB, OsCurrTaskGet());//任务栈拷贝
         SCHEDULER_UNLOCK(intSave);
     }
-    OS_TASK_PRI_QUEUE_ENQUEUE(childProcessCB, childTaskCB);
-    childTaskCB->taskStatus |= OS_TASK_STATUS_READY;
+    OS_TASK_PRI_QUEUE_ENQUEUE(childProcessCB, childTaskCB);//将task加入进程的就绪队列
+    childTaskCB->taskStatus |= OS_TASK_STATUS_READY;//任务状态贴上就绪标签
     return LOS_OK;
 }
 //拷贝父亲大人的遗传基因信息
@@ -1782,10 +1782,10 @@ STATIC UINT32 OsCopyMM(UINT32 flags, LosProcessCB *childProcessCB, LosProcessCB 
         return LOS_OK;
     }
 
-    if (flags & CLONE_VM) {
+    if (flags & CLONE_VM) {//贴有虚拟内存的标签
         SCHEDULER_LOCK(intSave);
-        childProcessCB->vmSpace->archMmu.virtTtb = runProcessCB->vmSpace->archMmu.virtTtb;
-        childProcessCB->vmSpace->archMmu.physTtb = runProcessCB->vmSpace->archMmu.physTtb;
+        childProcessCB->vmSpace->archMmu.virtTtb = runProcessCB->vmSpace->archMmu.virtTtb;//TTB虚拟地址基地址,即L1表存放位置,virtTtb是个指针,进程的虚拟空间是指定的范围的
+        childProcessCB->vmSpace->archMmu.physTtb = runProcessCB->vmSpace->archMmu.physTtb;//TTB物理地址基地址,physTtb是个值,取决于运行时映射到物理内存的具体哪个位置.
         SCHEDULER_UNLOCK(intSave);
         return LOS_OK;
     }
@@ -1796,7 +1796,7 @@ STATIC UINT32 OsCopyMM(UINT32 flags, LosProcessCB *childProcessCB, LosProcessCB 
     }
     return LOS_OK;
 }
-
+//拷贝文件信息
 STATIC UINT32 OsCopyFile(UINT32 flags, LosProcessCB *childProcessCB, LosProcessCB *runProcessCB)
 {
 #ifdef LOSCFG_FS_VFS
@@ -1832,7 +1832,7 @@ STATIC UINT32 OsForkInitPCB(UINT32 flags, LosProcessCB *child, const CHAR *name,
 
     return OsCopyTask(flags, child, name, sp, size);//拷贝任务，设置任务入口函数，栈大小
 }
-
+//设置进程组和加入进程调度就绪队列
 STATIC UINT32 OsChildSetProcessGroupAndSched(LosProcessCB *child, LosProcessCB *run)
 {
     UINT32 intSave;
@@ -1840,17 +1840,17 @@ STATIC UINT32 OsChildSetProcessGroupAndSched(LosProcessCB *child, LosProcessCB *
     ProcessGroup *group = NULL;
 
     SCHEDULER_LOCK(intSave);
-    if (run->group->groupID == OS_USER_PRIVILEGE_PROCESS_GROUP) {
-        ret = OsSetProcessGroupIDUnsafe(child->processID, child->processID, &group);
+    if (run->group->groupID == OS_USER_PRIVILEGE_PROCESS_GROUP) {//如果是有用户特权进程组
+        ret = OsSetProcessGroupIDUnsafe(child->processID, child->processID, &group);//设置组ID,存在不安全的风险
         if (ret != LOS_OK) {
             SCHEDULER_UNLOCK(intSave);
             return LOS_ENOMEM;
         }
     }
 
-    OS_PROCESS_PRI_QUEUE_ENQUEUE(child);
-    child->processStatus &= ~OS_PROCESS_STATUS_INIT;
-    child->processStatus |= OS_PROCESS_STATUS_READY;
+    OS_PROCESS_PRI_QUEUE_ENQUEUE(child);//
+    child->processStatus &= ~OS_PROCESS_STATUS_INIT;//去掉初始化标签
+    child->processStatus |= OS_PROCESS_STATUS_READY;//贴上就绪标签
 
 #ifdef LOSCFG_KERNEL_CPUP
     OsCpupSet(child->processID);
@@ -1865,19 +1865,19 @@ STATIC INT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProces
 {
     UINT32 ret;
 
-    ret = OsCopyMM(flags, child, run);
+    ret = OsCopyMM(flags, child, run);//拷贝虚拟空间
     if (ret != LOS_OK) {
         return ret;
     }
 
-    ret = OsCopyFile(flags, child, run);
+    ret = OsCopyFile(flags, child, run);//拷贝文件信息
     if (ret != LOS_OK) {
         return ret;
     }
 
 #if (LOSCFG_KERNEL_LITEIPC == YES)
-    if (OsProcessIsUserMode(child)) {
-        ret = LiteIpcPoolReInit(&child->ipcInfo, (const ProcIpcInfo *)(&run->ipcInfo));
+    if (OsProcessIsUserMode(child)) {//用户模式下
+        ret = LiteIpcPoolReInit(&child->ipcInfo, (const ProcIpcInfo *)(&run->ipcInfo));//重新初始化IPC池
         if (ret != LOS_OK) {
             return LOS_ENOMEM;
         }
@@ -1885,7 +1885,7 @@ STATIC INT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProces
 #endif
 
 #ifdef LOSCFG_SECURITY_CAPABILITY
-    OsCopyCapability(run, child);
+    OsCopyCapability(run, child);//拷贝安全能力
 #endif
 
     return LOS_OK;
@@ -1907,18 +1907,18 @@ STATIC INT32 OsCopyProcess(UINT32 flags, const CHAR *name, UINTPTR sp, UINT32 si
         goto ERROR_INIT;
     }
 
-    ret = OsCopyProcessResources(flags, child, run);
+    ret = OsCopyProcessResources(flags, child, run);//拷贝进程的资源,包括虚拟空间,文件,安全,IPC ==
     if (ret != LOS_OK) {
         goto ERROR_TASK;
     }
 
-    ret = OsChildSetProcessGroupAndSched(child, run);
+    ret = OsChildSetProcessGroupAndSched(child, run);//设置进程组和加入进程调度就绪队列
     if (ret != LOS_OK) {
         goto ERROR_TASK;
     }
 
-    LOS_MpSchedule(OS_MP_CPU_ALL);
-    if (OS_SCHEDULER_ACTIVE) {
+    LOS_MpSchedule(OS_MP_CPU_ALL);//给各CPU发送准备接受调度信号
+    if (OS_SCHEDULER_ACTIVE) {//当前CPU core处于活动状态
         LOS_Schedule();// 申请调度
     }
 

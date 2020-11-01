@@ -319,37 +319,37 @@ VOID OsShmFork(LosVmSpace *space, LosVmMapRegion *oldRegion, LosVmMapRegion *new
         return;
     }
 
-    newRegion->shmid = oldRegion->shmid;
-    newRegion->forkFlags = oldRegion->forkFlags;
-    ShmVmmMapping(space, &seg->node, newRegion->range.base, newRegion->regionFlags);
-    seg->ds.shm_nattch++;
+    newRegion->shmid = oldRegion->shmid;//一样的共享区ID
+    newRegion->forkFlags = oldRegion->forkFlags;//forkFlags也一样了
+    ShmVmmMapping(space, &seg->node, newRegion->range.base, newRegion->regionFlags);//共享内存映射
+    seg->ds.shm_nattch++;//附在共享线性区上的进程数++
     SYSV_SHM_UNLOCK();
 }
-
+//释放共享线性区
 VOID OsShmRegionFree(LosVmSpace *space, LosVmMapRegion *region)
 {
     struct shmIDSource *seg = NULL;
 
     SYSV_SHM_LOCK();
-    seg = ShmFindSeg(region->shmid);
+    seg = ShmFindSeg(region->shmid);////通过线性区ID获取对应的共享资源ID结构体
     if (seg == NULL) {
         SYSV_SHM_UNLOCK();
         return;
     }
 
-    ShmPagesRefDec(seg);
-    seg->ds.shm_nattch--;
-    if (seg->ds.shm_nattch <= 0) {
-        ShmFreeSeg(seg);
+    ShmPagesRefDec(seg);//ref -- 
+    seg->ds.shm_nattch--;//附在共享线性区上的进程数--
+    if (seg->ds.shm_nattch <= 0) {//没有任何进程在使用这个线性区的情况
+        ShmFreeSeg(seg);//就释放掉物理内存!注意是:物理内存
     }
     SYSV_SHM_UNLOCK();
 }
-//是否为共享线性区
+//是否为共享线性区,看他有没有标签
 BOOL OsIsShmRegion(LosVmMapRegion *region)
 {
     return (region->regionFlags & VM_MAP_REGION_FLAG_SHM) ? TRUE : FALSE;
 }
-
+//使用共享段数量
 STATIC INT32 ShmSegUsedCount(VOID)
 {
     INT32 i;

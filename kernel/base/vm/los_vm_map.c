@@ -255,49 +255,49 @@ STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace)
         return LOS_ERRNO_VM_INVALID_ARGS;
     }
 
-    if ((OsIsVmRegionEmpty(oldVmSpace) == TRUE) || (oldVmSpace == &g_kVmSpace)) {
+    if ((OsIsVmRegionEmpty(oldVmSpace) == TRUE) || (oldVmSpace == &g_kVmSpace)) {//不允许clone内核空间,内核空间是独一无二的.
         return LOS_ERRNO_VM_INVALID_ARGS;
     }
-
+	//空间克隆的主体实现是:线性区重新一个个分配物理内存,重新映射.
     /* search the region list */
     newVmSpace->mapBase = oldVmSpace->mapBase;
     newVmSpace->heapBase = oldVmSpace->heapBase;
     newVmSpace->heapNow = oldVmSpace->heapNow;
     (VOID)LOS_MuxAcquire(&oldVmSpace->regionMux);
-    RB_SCAN_SAFE(&oldVmSpace->regionRbTree, pstRbNode, pstRbNodeNext)
+    RB_SCAN_SAFE(&oldVmSpace->regionRbTree, pstRbNode, pstRbNodeNext)//红黑树循环开始
         oldRegion = (LosVmMapRegion *)pstRbNode;
-        newRegion = OsVmRegionDup(newVmSpace, oldRegion, oldRegion->range.base, oldRegion->range.size);
+        newRegion = OsVmRegionDup(newVmSpace, oldRegion, oldRegion->range.base, oldRegion->range.size);//复制线性区
         if (newRegion == NULL) {
             VM_ERR("dup new region failed");
             ret = LOS_ERRNO_VM_NO_MEMORY;
             goto ERR_CLONE_ASPACE;
         }
 
-        if (oldRegion->regionFlags & VM_MAP_REGION_FLAG_SHM) {
-            OsShmFork(newVmSpace, oldRegion, newRegion);
-            continue;
+        if (oldRegion->regionFlags & VM_MAP_REGION_FLAG_SHM) {//如果老线性区是共享内存
+            OsShmFork(newVmSpace, oldRegion, newRegion);//fork共享线性区,如此新虚拟空间也能用那个线性区
+            continue;//不往下走了,因为共享内存不需要重新映射,下面无非就是需要MMU映射虚拟地址<-->物理地址
         }
 
-        if (oldRegion == oldVmSpace->heap) {
-            newVmSpace->heap = newRegion;
+        if (oldRegion == oldVmSpace->heap) {//如果这个线性区是堆区
+            newVmSpace->heap = newRegion;//那么新的线性区也是新虚拟空间的堆区
         }
 
-        numPages = newRegion->range.size >> PAGE_SHIFT;
-        for (i = 0; i < numPages; i++) {
+        numPages = newRegion->range.size >> PAGE_SHIFT;//计算线性区页数
+        for (i = 0; i < numPages; i++) {//一页一页进行重新映射
             vaddr = newRegion->range.base + (i << PAGE_SHIFT);
-            if (LOS_ArchMmuQuery(&oldVmSpace->archMmu, vaddr, &paddr, &flags) != LOS_OK) {
+            if (LOS_ArchMmuQuery(&oldVmSpace->archMmu, vaddr, &paddr, &flags) != LOS_OK) {//先查物理地址
                 continue;
             }
 
-            page = LOS_VmPageGet(paddr);
+            page = LOS_VmPageGet(paddr);//通过物理页获取物理内存的页框
             if (page != NULL) {
                 LOS_AtomicInc(&page->refCounts);//refCounts 自增
             }
-            if (flags & VM_MAP_REGION_FLAG_PERM_WRITE) {
-                LOS_ArchMmuUnmap(&oldVmSpace->archMmu, vaddr, 1);
-                LOS_ArchMmuMap(&oldVmSpace->archMmu, vaddr, paddr, 1, flags & ~VM_MAP_REGION_FLAG_PERM_WRITE);
+            if (flags & VM_MAP_REGION_FLAG_PERM_WRITE) {//可写入区标签
+                LOS_ArchMmuUnmap(&oldVmSpace->archMmu, vaddr, 1);//取消老空间映射
+                LOS_ArchMmuMap(&oldVmSpace->archMmu, vaddr, paddr, 1, flags & ~VM_MAP_REGION_FLAG_PERM_WRITE);//老空间重新映射
             }
-            LOS_ArchMmuMap(&newVmSpace->archMmu, vaddr, paddr, 1, flags & ~VM_MAP_REGION_FLAG_PERM_WRITE);
+            LOS_ArchMmuMap(&newVmSpace->archMmu, vaddr, paddr, 1, flags & ~VM_MAP_REGION_FLAG_PERM_WRITE);//映射新空间
 
 #ifdef LOSCFG_FS_VFS
             if (LOS_IsRegionFileValid(oldRegion)) {
@@ -311,7 +311,7 @@ STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace)
             }
 #endif
         }
-    RB_SCAN_SAFE_END(&oldVmSpace->regionRbTree, pstRbNode, pstRbNodeNext)
+    RB_SCAN_SAFE_END(&oldVmSpace->regionRbTree, pstRbNode, pstRbNodeNext)//红黑树循环结束
     goto OUT_CLONE_ASPACE;
 ERR_CLONE_ASPACE:
     if (LOS_VmSpaceFree(newVmSpace) != LOS_OK) {
