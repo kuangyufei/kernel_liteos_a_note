@@ -366,8 +366,8 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
     }
 
 #ifdef LOSCFG_FS_VFS
-    if (OsProcessIsUserMode(processCB)) {
-        delete_files(processCB, processCB->files);
+    if (OsProcessIsUserMode(processCB)) {//用户模式下
+        delete_files(processCB, processCB->files);//删除文件
     }
     processCB->files = NULL;
 #endif
@@ -379,7 +379,7 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
     }
 #endif
 
-    OsSwtmrRecycle(processCB->processID);
+    OsSwtmrRecycle(processCB->processID);//软件定时器回收
     processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;
 
 #ifdef LOSCFG_SECURITY_VID
@@ -390,29 +390,29 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 #endif
 
 #if (LOSCFG_KERNEL_LITEIPC == YES)
-    if (OsProcessIsUserMode(processCB)) {
-        LiteIpcPoolDelete(&(processCB->ipcInfo));
+    if (OsProcessIsUserMode(processCB)) {//用户模式下
+        LiteIpcPoolDelete(&(processCB->ipcInfo));//删除进程IPC
         (VOID)memset_s(&(processCB->ipcInfo), sizeof(ProcIpcInfo), 0, sizeof(ProcIpcInfo));
     }
 #endif
 }
-
+//回收僵死状态进程流程
 LITE_OS_SEC_TEXT STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, ProcessGroup **group)
 {
-    OsExitProcessGroup(childCB, group);
-    LOS_ListDelete(&childCB->siblingList);
-    if (childCB->processStatus & OS_PROCESS_STATUS_ZOMBIES) {
-        childCB->processStatus &= ~OS_PROCESS_STATUS_ZOMBIES;
-        childCB->processStatus |= OS_PROCESS_FLAG_UNUSED;
+    OsExitProcessGroup(childCB, group);//退出进程组
+    LOS_ListDelete(&childCB->siblingList);//从父亲大人的子孙链表上摘除
+    if (childCB->processStatus & OS_PROCESS_STATUS_ZOMBIES) {//如果身上僵死状态的标签
+        childCB->processStatus &= ~OS_PROCESS_STATUS_ZOMBIES;//去掉僵死标签
+        childCB->processStatus |= OS_PROCESS_FLAG_UNUSED;//贴上没使用标签，进程由进程池分配，进程退出后重新回到空闲进程池
     }
 
-    LOS_ListDelete(&childCB->pendList);
-    if (childCB->processStatus & OS_PROCESS_FLAG_EXIT) {
-        LOS_ListHeadInsert(&g_processRecyleList, &childCB->pendList);//注意g_processRecyleList挂的是pendList节点,所以要通过OS_PCB_FROM_PENDLIST找.
-    } else if (childCB->processStatus & OS_PROCESS_FLAG_GROUP_LEADER) {
-        LOS_ListTailInsert(&g_processRecyleList, &childCB->pendList);
+    LOS_ListDelete(&childCB->pendList);//将自己从阻塞链表上摘除，注意有很多原因引起阻塞，pendList挂在哪里就以为这属于哪类阻塞
+    if (childCB->processStatus & OS_PROCESS_FLAG_EXIT) {//如果有退出标签
+        LOS_ListHeadInsert(&g_processRecyleList, &childCB->pendList);//从头部插入，注意g_processRecyleList挂的是pendList节点,所以要通过OS_PCB_FROM_PENDLIST找.
+    } else if (childCB->processStatus & OS_PROCESS_FLAG_GROUP_LEADER) {//如果是进程组的组长
+        LOS_ListTailInsert(&g_processRecyleList, &childCB->pendList);//从尾部插入，意思就是组长尽量最后一个处理
     } else {
-        OsInsertPCBToFreeList(childCB);
+        OsInsertPCBToFreeList(childCB);//直接插到freeList中去，可用于重新分配了。
     }
 }
 
@@ -448,7 +448,7 @@ STATIC VOID OsDealAliveChildProcess(LosProcessCB *processCB)
 
     return;
 }
-
+//孩子进程资源释放
 STATIC VOID OsChildProcessResourcesFree(const LosProcessCB *processCB)
 {
     LosProcessCB *childCB = NULL;
@@ -1963,13 +1963,13 @@ LITE_OS_SEC_TEXT UINT32 LOS_GetCurrProcessID(VOID)
 LITE_OS_SEC_TEXT VOID OsProcessExit(LosTaskCB *runTask, INT32 status)
 {
     UINT32 intSave;
-    LOS_ASSERT(runTask == OsCurrTaskGet());
+    LOS_ASSERT(runTask == OsCurrTaskGet());//只有当前进程才能调用这个函数
 
-    OsTaskResourcesToFree(runTask);
-    OsProcessResourcesToFree(OsCurrProcessGet());
+    OsTaskResourcesToFree(runTask);//释放任务资源
+    OsProcessResourcesToFree(OsCurrProcessGet());//释放进程资源
 
     SCHEDULER_LOCK(intSave);
-    OsProcessNaturalExit(runTask, status);
+    OsProcessNaturalExit(runTask, status);//进程自然退出
     SCHEDULER_UNLOCK(intSave);
 }
 //接口封装 进程退出

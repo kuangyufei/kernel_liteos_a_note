@@ -679,7 +679,7 @@ LITE_OS_SEC_TEXT VOID OsTaskResourcesToFree(LosTaskCB *taskCB)
     }
     return;
 }
-
+//任务基本信息的初始化
 LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskCBInitBase(LosTaskCB *taskCB,
                                                    const VOID *stackPtr,
                                                    const VOID *topStack,
@@ -702,14 +702,14 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskCBInitBase(LosTaskCB *taskCB,
                             initParam->usCpuAffiMask : LOSCFG_KERNEL_CPU_MASK;
 #endif
 #if (LOSCFG_KERNEL_LITEIPC == YES)
-    LOS_ListInit(&(taskCB->msgListHead));
+    LOS_ListInit(&(taskCB->msgListHead));//初始化 liteipc的消息链表 
     (VOID)memset_s(taskCB->accessMap, sizeof(taskCB->accessMap), 0, sizeof(taskCB->accessMap));
 #endif
     taskCB->policy = (initParam->policy == LOS_SCHED_FIFO) ? LOS_SCHED_FIFO : LOS_SCHED_RR;
     taskCB->taskStatus = OS_TASK_STATUS_INIT;
-    if (initParam->uwResved & OS_TASK_FLAG_DETACHED) {
+    if (initParam->uwResved & OS_TASK_FLAG_DETACHED) {//分离模式 代表任务与其他任务的关系
         taskCB->taskStatus |= OS_TASK_FLAG_DETACHED;
-    } else {
+    } else {//参与模式
         LOS_ListInit(&taskCB->joinList);
         taskCB->taskStatus |= OS_TASK_FLAG_PTHREAD_JOIN;
     }
@@ -717,7 +717,7 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskCBInitBase(LosTaskCB *taskCB,
     taskCB->futex.index = OS_INVALID_VALUE;
     LOS_ListInit(&taskCB->lockList);
 }
-
+//任务初始化
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam,
                                                  const VOID *stackPtr, const VOID *topStack)
 {
@@ -727,7 +727,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_IN
     UINT16 mode;
     LosProcessCB *processCB = NULL;
 
-    OsTaskCBInitBase(taskCB, stackPtr, topStack, initParam);
+    OsTaskCBInitBase(taskCB, stackPtr, topStack, initParam);//初始化任务的基本信息
 
     SCHEDULER_LOCK(intSave);
     processCB = OS_PCB_FROM_PID(initParam->processID);//通过ID获取PCB ,单核进程数最多64个
@@ -741,12 +741,12 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_IN
         OsUserTaskStackInit(taskCB->stackPointer, taskCB->taskEntry, initParam->userParam.userSP);//用户任务栈上下文初始化
     }
 
-    if (!processCB->threadNumber) {
-        processCB->threadGroupID = taskCB->taskID;
+    if (!processCB->threadNumber) {//进程线程数量为0时，
+        processCB->threadGroupID = taskCB->taskID;//任务为线程组 组长
     }
-    processCB->threadNumber++;//这里说明 线程和TASK是一个意思
+    processCB->threadNumber++;//这里说明 线程和TASK是一个意思 threadNumber代表活动线程数
 
-    numCount = processCB->threadCount;
+    numCount = processCB->threadCount;//代表总线程数，包括销毁的，只要存在过的都算，这个值也就是在这里用下，
     processCB->threadCount++;
     SCHEDULER_UNLOCK(intSave);
 
@@ -794,7 +794,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *taskID, TSK_INIT_PARAM_S
     LosTaskCB *taskCB = NULL;
     VOID *pool = NULL;
 
-    errRet = OsTaskCreateParamCheck(taskID, initParam, &pool);
+    errRet = OsTaskCreateParamCheck(taskID, initParam, &pool);//参数检查
     if (errRet != LOS_OK) {
         return errRet;
     }
@@ -889,7 +889,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreate(UINT32 *taskID, TSK_INIT_PARAM_S *in
 
     return LOS_OK;
 }
-
+//任务恢复
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskResume(UINT32 taskID)
 {
     UINT32 intSave;
@@ -902,14 +902,14 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskResume(UINT32 taskID)
         return LOS_ERRNO_TSK_ID_INVALID;
     }
 
-    taskCB = OS_TCB_FROM_TID(taskID);
+    taskCB = OS_TCB_FROM_TID(taskID);//拿到任务实体
     SCHEDULER_LOCK(intSave);
 
     /* clear pending signal */
-    taskCB->signal &= ~SIGNAL_SUSPEND;
+    taskCB->signal &= ~SIGNAL_SUSPEND;//清楚挂起信号
 
     tempStatus = taskCB->taskStatus;
-    if (tempStatus & OS_TASK_STATUS_UNUSED) {
+    if (tempStatus & OS_TASK_STATUS_UNUSED) {//有未使用的标签
         errRet = LOS_ERRNO_TSK_NOT_CREATED;
         OS_GOTO_ERREND();
     } else if (!(tempStatus & OS_TASK_STATUS_SUSPEND)) {

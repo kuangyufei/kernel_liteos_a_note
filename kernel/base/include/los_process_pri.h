@@ -90,7 +90,7 @@ typedef struct ProcessCB {
     UINT32               exitCode;                     /**< process exit status */
     LOS_DL_LIST          pendList;                     /**< Block list to which the process belongs */
     LOS_DL_LIST          childrenList;                 /**< my children process list */
-    LOS_DL_LIST          exitChildList;                /**< my exit children process list */
+    LOS_DL_LIST          exitChildList;                /**< my exit children process list */	//那些要退出孩子进程链表，白发人送黑发人。
     LOS_DL_LIST          siblingList;                  /**< linkage in my parent's children list */
     ProcessGroup         *group;                       /**< Process group to which a process belongs */
     LOS_DL_LIST          subordinateGroupList;         /**< linkage in my group list */
@@ -99,9 +99,9 @@ typedef struct ProcessCB {
                                                             process */
     LOS_DL_LIST          threadSiblingList;            /**< List of threads under this process */
     LOS_DL_LIST          threadPriQueueList[OS_PRIORITY_QUEUE_NUM]; /**< The process's thread group schedules the
-                                                                         priority hash table */
-    volatile UINT32      threadNumber; /**< Number of threads alive under this process */
-    UINT32               threadCount;  /**< Total number of threads created under this process */
+                                                                         priority hash table */	//进程的线程组调度优先级哈希表
+    volatile UINT32      threadNumber; /**< Number of threads alive under this process */	//此进程下的活动线程数
+    UINT32               threadCount;  /**< Total number of threads created under this process */	//在此进程下创建的线程总数
     LOS_DL_LIST          waitList;     /**< The process holds the waitLits to support wait/waitpid */
 #if (LOSCFG_KERNEL_SMP == YES)
     UINT32               timerCpu;     /**< CPU core number of this task is delayed or pended */

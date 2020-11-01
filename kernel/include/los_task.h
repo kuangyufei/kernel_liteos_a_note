@@ -479,10 +479,10 @@ typedef VOID *(*TSK_ENTRY_FUNC)(UINTPTR param1,
  * You are not allowed to add any fields and adjust fields to the structure
  */
 typedef struct {
-    UINTPTR         userArea;
-    UINTPTR         userSP;
-    UINTPTR         userMapBase;
-    UINT32          userMapSize;
+    UINTPTR         userArea;//用户区域
+    UINTPTR         userSP;	//用户模式下栈指针
+    UINTPTR         userMapBase;//用户模式下映射基地址
+    UINT32          userMapSize;//用户模式下映射大小
 } UserTaskParam;
 
 /**
@@ -505,7 +505,7 @@ typedef struct tagTskInitParam {//Task的初始化参数
                                         It is unable to be deleted if set to 0. */
     UINT16          consoleID;     /**< The console id of task belongs  */
     UINT32          processID;
-    UserTaskParam   userParam;
+    UserTaskParam   userParam;	//用户参数
 } TSK_INIT_PARAM_S;
 
 /**
