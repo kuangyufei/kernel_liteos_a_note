@@ -50,19 +50,19 @@ extern "C" {
  * @ingroup los_event
  * Event reading mode: The task waits for all its expected events to occur.
  */
-#define LOS_WAITMODE_AND                    4U
+#define LOS_WAITMODE_AND                    4U 	//事件读取模式：任务等待所有预期事件发生。
 
 /**
  * @ingroup los_event
  * Event reading mode: The task waits for any of its expected events to occur.
  */
-#define LOS_WAITMODE_OR                     2U
+#define LOS_WAITMODE_OR                     2U 	//事件读取模式：任务等待任何预期事件发生。
 
 /**
  * @ingroup los_event
  * Event reading mode: The event flag is immediately cleared after the event is read.
  */
-#define LOS_WAITMODE_CLR                    1U
+#define LOS_WAITMODE_CLR                    1U	//事件读取模式：事件标志在读取事件后立即清除。
 
 /**
  * @ingroup los_event
@@ -161,7 +161,7 @@ extern "C" {
  * @ingroup los_event
  * Event control structure
  */
-typedef struct tagEvent {//EVENT_CB_S 这结构体名字取的不能统一下吗? 明显这里是另一个人的代码
+typedef struct tagEvent {
     UINT32 uwEventID;        /**< Event mask in the event control block,
                                   indicating the event that has been logically processed. */
     LOS_DL_LIST stEventList; /**< Event control block linked list */

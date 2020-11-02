@@ -454,7 +454,7 @@ STATIC VOID OsChildProcessResourcesFree(const LosProcessCB *processCB)
     LosProcessCB *childCB = NULL;
     ProcessGroup *group = NULL;
 
-    while (!LOS_ListEmpty(&((LosProcessCB *)processCB)->exitChildList)) {
+    while (!LOS_ListEmpty(&((LosProcessCB *)processCB)->exitChildList)) {//
         childCB = LOS_DL_LIST_ENTRY(processCB->exitChildList.pstNext, LosProcessCB, siblingList);
         OsRecycleZombiesProcess(childCB, &group);
         (VOID)LOS_MemFree(m_aucSysMem1, group);

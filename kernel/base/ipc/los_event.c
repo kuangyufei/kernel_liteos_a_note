@@ -44,7 +44,7 @@
 extern "C" {
 #endif
 #endif /* __cplusplus */
-//时间初始化
+//事件初始化
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventInit(PEVENT_CB_S eventCB)
 {
     UINT32 intSave;
@@ -59,7 +59,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventInit(PEVENT_CB_S eventCB)
     LOS_IntRestore(intSave);
     return LOS_OK;
 }
-
+//事件参数检查
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventParamCheck(const VOID *ptr, UINT32 eventMask, UINT32 mode)
 {
     if (ptr == NULL) {
@@ -259,28 +259,28 @@ LITE_OS_SEC_TEXT UINT32 LOS_EventPoll(UINT32 *eventID, UINT32 eventMask, UINT32 
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-
+//读事件
 LITE_OS_SEC_TEXT UINT32 LOS_EventRead(PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode, UINT32 timeout)
 {
     return OsEventRead(eventCB, eventMask, mode, timeout, FALSE);
 }
-
+//写事件
 LITE_OS_SEC_TEXT UINT32 LOS_EventWrite(PEVENT_CB_S eventCB, UINT32 events)
 {
     return OsEventWrite(eventCB, events, FALSE);
 }
-
+//只读一次事件
 LITE_OS_SEC_TEXT_MINOR UINT32 OsEventReadOnce(PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode,
                                               UINT32 timeout)
 {
     return OsEventRead(eventCB, eventMask, mode, timeout, TRUE);
 }
-
+//只写一次事件
 LITE_OS_SEC_TEXT_MINOR UINT32 OsEventWriteOnce(PEVENT_CB_S eventCB, UINT32 events)
 {
     return OsEventWrite(eventCB, events, TRUE);
 }
-
+//事件销毁
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventDestroy(PEVENT_CB_S eventCB)
 {
     UINT32 intSave;
@@ -301,7 +301,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventDestroy(PEVENT_CB_S eventCB)
 
     return LOS_OK;
 }
-
+//事件清除
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_EventClear(PEVENT_CB_S eventCB, UINT32 events)
 {
     UINT32 intSave;
@@ -315,7 +315,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_EventClear(PEVENT_CB_S eventCB, UINT32 events)
 
     return LOS_OK;
 }
-
+//有条件式读事件
 #ifdef LOSCFG_COMPAT_POSIX
 LITE_OS_SEC_TEXT UINT32 OsEventReadWithCond(const EventCond *cond, PEVENT_CB_S eventCB,
                                             UINT32 eventMask, UINT32 mode, UINT32 timeout)
