@@ -51,28 +51,28 @@ typedef enum {
 #endif
 
 typedef struct {
-    SortLinkAttribute taskSortLink;             /* task sort link *///每个CPU core 都有一个task排序链表
-    SortLinkAttribute swtmrSortLink;            /* swtmr sort link *///每个CPU core 都有一个定时器排序链表
+    SortLinkAttribute taskSortLink;             /* task sort link */	//每个CPU core 都有一个task排序链表
+    SortLinkAttribute swtmrSortLink;            /* swtmr sort link */	//每个CPU core 都有一个定时器排序链表
 
-    UINT32 idleTaskID;                          /* idle task id */
-    UINT32 taskLockCnt;                         /* task lock flag */
-    UINT32 swtmrHandlerQueue;                   /* software timer timeout queue id */
-    UINT32 swtmrTaskID;                         /* software timer task id */
+    UINT32 idleTaskID;                          /* idle task id */		//空闲任务ID 见于 OsIdleTaskCreate
+    UINT32 taskLockCnt;                         /* task lock flag */	//任务锁的数量,当 > 0 的时候,需要重新调度了
+    UINT32 swtmrHandlerQueue;                   /* software timer timeout queue id */	//软时钟超时队列句柄
+    UINT32 swtmrTaskID;                         /* software timer task id */	//软时钟任务ID
 
-    UINT32 schedFlag;                           /* pending scheduler flag */
+    UINT32 schedFlag;                           /* pending scheduler flag */	//调度标识 INT_NO_RESCH INT_PEND_RESCH
 #if (LOSCFG_KERNEL_SMP == YES)
-    UINT32 excFlag;                             /* cpu halt or exc flag */
+    UINT32 excFlag;                             /* cpu halt or exc flag */	//CPU处于停止或运行的标识
 #endif
 } Percpu;
 
 /* the kernel per-cpu structure */
 extern Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM];//CPU核
-
+//获得当前运行CPU的信息
 STATIC INLINE Percpu *OsPercpuGet(VOID)
 {
-    return &g_percpu[ArchCurrCpuid()];
+    return &g_percpu[ArchCurrCpuid()];	
 }
-
+//获得参数CPU的信息
 STATIC INLINE Percpu *OsPercpuGetByID(UINT32 cpuid)
 {
     return &g_percpu[cpuid];

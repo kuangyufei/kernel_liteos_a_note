@@ -183,7 +183,7 @@ int OsSigProcessForeachChild(LosProcessCB *spcb, ForEachTaskCB handler, void *ar
     }
     return LOS_OK;
 }
-
+//信号处理函数
 static int SigProcessSignalHandler(LosTaskCB *tcb, void *arg)
 {
     struct ProcessSignalInfo *info = (struct ProcessSignalInfo *)arg;
@@ -228,7 +228,7 @@ static int SigProcessSignalHandler(LosTaskCB *tcb, void *arg)
     }
     return 0; /* Keep searching */
 }
-
+//唤醒task 信号
 static int SigProcessKillSigHandler(LosTaskCB *tcb, void *arg)
 {
     struct ProcessSignalInfo *info = (struct ProcessSignalInfo *)arg;
@@ -500,7 +500,7 @@ int OsPause(void)
     oldSigprocmask = spcb->sig.sigprocmask;
     return OsSigSuspend(&oldSigprocmask);
 }
-
+//暂停信号
 int OsSigSuspend(const sigset_t *set)
 {
     unsigned int intSave;

@@ -66,16 +66,16 @@ typedef enum {
  * Queue information block structure
  */
 typedef struct {
-    UINT8 *queueHandle; /**< Pointer to a queue handle */
-    UINT16 queueState; /**< Queue state */
-    UINT16 queueLen; /**< Queue length */
-    UINT16 queueSize; /**< Node size */
-    UINT32 queueID; /**< queueID */
-    UINT16 queueHead; /**< Node head */
-    UINT16 queueTail; /**< Node tail */
+    UINT8 *queueHandle; /**< Pointer to a queue handle */	//指向队列句柄的指针
+    UINT16 queueState; /**< Queue state */	//队列状态
+    UINT16 queueLen; /**< Queue length */	//队列长度
+    UINT16 queueSize; /**< Node size */		//队列大小
+    UINT32 queueID; /**< queueID */			//队列ID
+    UINT16 queueHead; /**< Node head */		//队列头部节点
+    UINT16 queueTail; /**< Node tail */		//队列尾部节点
     UINT16 readWriteableCnt[OS_QUEUE_N_RW]; /**< Count of readable or writable resources, 0:readable, 1:writable */
     LOS_DL_LIST readWriteList[OS_QUEUE_N_RW]; /**< the linked list to be read or written, 0:readlist, 1:writelist */
-    LOS_DL_LIST memList; /**< Pointer to the memory linked list */
+    LOS_DL_LIST memList; /**< Pointer to the memory linked list */	//@note_? 这么尚未搞明白是啥意思 
 } LosQueueCB;//读写队列分离
 
 /* queue state */
