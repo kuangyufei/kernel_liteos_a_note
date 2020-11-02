@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '完善进程部分注释,注释进程是怎么一步步被Fork的
+git commit -m  'fix 46 commit IPC消息队列部分代码注释,消息队列的主体功能函数是 OsQueueBufferOperate
 鸿蒙内核源码分析系列 【 CSDN | OSCHINA | WIKI 】
 鸿蒙内核源码注释中文版 【 CSDN仓 | Gitee仓 | Github仓 | Coding仓 】四大仓库每日同步更新代码和wiki
 项目给鸿蒙内核源码逐行加上中文注解,详细阐述框架和代码细节, 精读 HarmonyOS 内核源码, 将迅速拔高对计算机整体理解,从此高屋建瓴看问题.'
