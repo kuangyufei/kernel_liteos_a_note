@@ -170,23 +170,23 @@ int OsSigprocMask(int how, const sigset_t_l *setl, sigset_t_l *oldset)
     }
     return ret;
 }
-
+//给进程的每一个task发送信号
 int OsSigProcessForeachChild(LosProcessCB *spcb, ForEachTaskCB handler, void *arg)
 {
     int ret;
 
-    /* Visit the main thread last (if present) */
-    LosTaskCB *taskCB = NULL;
+    /* Visit the main thread last (if present) */	//最后访问主线程（如果有）
+    LosTaskCB *taskCB = NULL;//遍历进程的 threadList 链表,里面存放的都是task节点
     LOS_DL_LIST_FOR_EACH_ENTRY(taskCB, &(spcb->threadSiblingList), LosTaskCB, threadList) {
-        ret = handler(taskCB, arg);
-        OS_RETURN_IF(ret != 0, ret);
+        ret = handler(taskCB, arg);//这里是个回调函数,给每个任务发信号,异步发信号
+        OS_RETURN_IF(ret != 0, ret);//这个宏的意思就是只有ret = 0时,啥也不处理.其余就返回 ret
     }
     return LOS_OK;
 }
-//信号处理函数
+//信号处理函数,这里就是上面的 handler =  SigProcessSignalHandler,见于 OsSigProcessSend
 static int SigProcessSignalHandler(LosTaskCB *tcb, void *arg)
 {
-    struct ProcessSignalInfo *info = (struct ProcessSignalInfo *)arg;
+    struct ProcessSignalInfo *info = (struct ProcessSignalInfo *)arg;//先把参数解出来
     int ret;
     int isMember;
 
@@ -195,18 +195,18 @@ static int SigProcessSignalHandler(LosTaskCB *tcb, void *arg)
     }
 
     /* If the default tcb is not setted, then set this one as default. */
-    if (!info->defaultTcb) {
+    if (!info->defaultTcb) {//如果没有默认发送方的TCB,就给一个.
         info->defaultTcb = tcb;
     }
 
     isMember = OsSigIsMember(&tcb->sig.sigwaitmask, info->sigInfo->si_signo);
-    if (isMember && (!info->awakenedTcb)) {
+    if (isMember && (!info->awakenedTcb)) {//这意味着任务正在等待此信号。
         /* This means the task is waiting for this signal. Stop looking for it and use this tcb.
          * The requirement is: if more than one task in this task group is waiting for the signal,
          * then only one indeterminate task in the group will receive the signal.
          */
-        ret = OsTcbDispatch(tcb, info->sigInfo);
-        OS_RETURN_IF(ret < 0, ret);
+        ret = OsTcbDispatch(tcb, info->sigInfo);//发送信号
+        OS_RETURN_IF(ret < 0, ret);//这种写法很有意思
 
         /* set this tcb as awakenedTcb */
         info->awakenedTcb = tcb;

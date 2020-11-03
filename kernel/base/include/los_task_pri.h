@@ -358,14 +358,14 @@ typedef struct {
 //typedef struct __sigset_t { unsigned long __bits[128/sizeof(long)]; } sigset_t;
 //见于 ..\vendor_hisi_hi3861_hi3861\hi3861\platform\os\Huawei_LiteOS\components\lib\libc\musl\include\bits\alltypes.h
 struct ProcessSignalInfo {//进程信号信息
-    siginfo_t *sigInfo;       /**< Signal to be dispatched */
-    LosTaskCB *defaultTcb;    /**< Default TCB */					//默认task
+    siginfo_t *sigInfo;       /**< Signal to be dispatched */		//发送信号
+    LosTaskCB *defaultTcb;    /**< Default TCB */					//默认task,指的是信号的发送方
     LosTaskCB *unblockedTcb;  /**< The signal unblock on this TCB*/	//这个task发解除阻塞信号
     LosTaskCB *awakenedTcb;   /**< This TCB was awakened */			//被唤醒task
-    LosTaskCB *receivedTcb;   /**< This TCB received the signal */	//收信号task
+    LosTaskCB *receivedTcb;   /**< This TCB received the signal */	//信号接收方task
 };
 
-typedef int (*ForEachTaskCB)(LosTaskCB *tcb, void *arg);
+typedef int (*ForEachTaskCB)(LosTaskCB *tcb, void *arg);//函数指针
 
 /**
  * @ingroup los_task

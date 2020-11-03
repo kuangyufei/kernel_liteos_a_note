@@ -43,9 +43,9 @@
 extern "C" {
 #endif
 #endif /* __cplusplus */
-
-#define OS_FUTEX_FROM_FUTEXLIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, futexList)
-#define OS_FUTEX_FROM_QUEUELIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, queueList)
+// Futex 是Fast Userspace muTexes的缩写 就是快速用户空间互斥体 ,本次注解简称它会 快锁
+#define OS_FUTEX_FROM_FUTEXLIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, futexList) 	//从 futexList 位置拿节点FutexNode
+#define OS_FUTEX_FROM_QUEUELIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, queueList)	//从 queueList 位置拿节点FutexNode//
 #define OS_FUTEX_KEY_BASE USER_ASPACE_BASE
 #define OS_FUTEX_KEY_MAX (USER_ASPACE_BASE + USER_ASPACE_SIZE)
 

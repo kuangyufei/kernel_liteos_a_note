@@ -32,7 +32,7 @@
 #ifndef _LOS_FUTEX_PRI_H
 #define _LOS_FUTEX_PRI_H
 #include "los_list.h"
-
+// Futex 是Fast Userspace muTexes的缩写 快速用户空间互斥体
 #define FUTEX_WAIT        0
 #define FUTEX_WAKE        1
 #define FUTEX_REQUEUE     3
@@ -45,13 +45,13 @@
 #define FUTEX_PRIVATE     128
 #define FUTEX_MASK        0x3U
 
-typedef struct {
-    UINTPTR      key;
-    UINT32       index;
-    UINT32       pid;
-    LOS_DL_LIST  pendList;
-    LOS_DL_LIST  queueList;
-    LOS_DL_LIST  futexList;
+typedef struct {//快锁节点
+    UINTPTR      key;	
+    UINT32       index;	
+    UINT32       pid;	//进程ID
+    LOS_DL_LIST  pendList;	//阻塞链表 阻塞任务将会挂上去
+    LOS_DL_LIST  queueList;	//队列链表
+    LOS_DL_LIST  futexList;	//快锁链表
 } FutexNode;
 
 extern UINT32 OsFutexInit(VOID);
