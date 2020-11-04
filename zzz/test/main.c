@@ -43,11 +43,16 @@ void round1(){
     //printf("ROUNDUP %d\n",ROUNDUP(9, 2));
     //printf("ROUNDDOWN %d\n",ROUNDDOWN(9, 2));
 }
-
+int     aw;
+int     bw=99;
+void Print(){
+    printf("ROUNDUP %d\n",ROUNDUP(0x00000200+512,1024));
+}
 int main()
 {
-    printf("ROUNDUP %d\n",ROUNDUP(0x00000200+512,1024));
-    
+    int b = 0;
+    //printf("ROUNDUP %d\n",ROUNDUP(0x00000200+512,1024));
+    Print();
     return 0;
 }
 

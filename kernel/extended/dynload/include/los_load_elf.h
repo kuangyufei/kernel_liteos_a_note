@@ -84,7 +84,7 @@ extern "C" {
 #define PF_R                                0x4
 #define PF_W                                0x2
 #define PF_X                                0x1
-
+//ELF 加载信息 可执行和可链接格式(Executable and Linkable Format，缩写为ELF)，常被称为ELF格式
 typedef struct {
     const CHAR   *fileName;
     CHAR         *execName;
@@ -99,19 +99,19 @@ typedef struct {
     UINT32       stackSize;
     INT32        stackProt;
     UINTPTR      loadAddr;
-    UINTPTR      elfEntry;
-    LD_ELF_EHDR  elfEhdr;
-    LD_ELF_PHDR  *elfPhdr;
+    UINTPTR      elfEntry;	//入口函数位置
+    LD_ELF_EHDR  elfEhdr;	//ELF head
+    LD_ELF_PHDR  *elfPhdr;	//ELF 程序头表
     UINT32       execFileLen;
     INT32        execFD;
-    LD_ELF_EHDR  interpELFEhdr;
+    LD_ELF_EHDR  interpELFEhdr;		//解释器段 ( 动态链接器路径 )
     LD_ELF_PHDR  *interpELFPhdr;
     UINT32       interpFileLen;
     INT32        interpFD;
     UINTPTR      topOfMem;
     UINTPTR      oldFiles;
-    LosVmSpace   *newSpace;
-    LosVmSpace   *oldSpace;
+    LosVmSpace   *newSpace;	//新的虚拟空间，新开一个空间，把ELF各segment加载到这个虚拟空间，再切换MMU上下文，开始ELF的运行
+    LosVmSpace   *oldSpace;	//老的虚拟空间，切当前进程的壳运行，由此保存当前进程的虚拟空间
 #ifdef LOSCFG_ASLR
     INT32        randomDevFD;
 #endif

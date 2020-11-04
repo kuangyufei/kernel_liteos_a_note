@@ -1522,7 +1522,7 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
     delete_files(OsCurrProcessGet(), (struct files_struct *)oldFiles);
 #endif
 
-    OsSwtmrRecycle(processCB->processID);
+    OsSwtmrRecycle(processCB->processID);//定时器回收
     processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;
 
 #ifdef LOSCFG_SECURITY_VID

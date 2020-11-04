@@ -377,7 +377,7 @@ OUT:
     }
     return ret;
 }
-
+//系统调用，运行.elf
 int SysExecve(const char *fileName, char *const *argv, char *const *envp)
 {
     return LOS_DoExecveFile(fileName, argv, envp);

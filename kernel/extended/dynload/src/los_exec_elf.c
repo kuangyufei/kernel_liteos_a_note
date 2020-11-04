@@ -92,7 +92,7 @@ STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *
     UINT32 strLen;
     errno_t err;
 
-    if (LOS_IsUserAddress((VADDR_T)(UINTPTR)fileName)) {//在用户空间
+    if (LOS_IsUserAddress((VADDR_T)(UINTPTR)fileName)) {//参数文件名存放在用户空间
         err = LOS_StrncpyFromUser(kfileName, fileName, PATH_MAX + 1);
         if (err == -EFAULT) {
             return err;
@@ -100,7 +100,7 @@ STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *
             PRINT_ERR("%s[%d], filename len exceeds maxlen: %d\n", __FUNCTION__, __LINE__, PATH_MAX);
             return -ENAMETOOLONG;
         }
-    } else if (LOS_IsKernelAddress((VADDR_T)(UINTPTR)fileName)) {//在内核空间
+    } else if (LOS_IsKernelAddress((VADDR_T)(UINTPTR)fileName)) {//参数文件存在内核空间
         strLen = strlen(fileName);
         err = memcpy_s(kfileName, PATH_MAX, fileName, strLen);//从filename -> kfilename 
         if (err != EOK) {
@@ -114,7 +114,7 @@ STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *
     loadInfo->fileName = kfileName;
     return LOS_OK;
 }
-
+//运行一个执行文件 .elf
 INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *envp)
 {
     ELFLoadInfo loadInfo = { 0 };//ELF加载信息结构体
@@ -127,7 +127,7 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
     LosVmPage *vmPage = NULL;
 
     if ((fileName == NULL) || ((argv != NULL) && !LOS_IsUserAddress((VADDR_T)(UINTPTR)argv)) ||
-        ((envp != NULL) && !LOS_IsUserAddress((VADDR_T)(UINTPTR)envp))) {
+        ((envp != NULL) && !LOS_IsUserAddress((VADDR_T)(UINTPTR)envp))) {//argv需要再用户空间
         return -EINVAL;
     }
     ret = OsCopyUserParam(&loadInfo, fileName, kfileName, PATH_MAX);//将文件名拷贝到内核空间,PATH_MAX = 256
@@ -165,12 +165,12 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
         LOS_PhysPagesFreeContiguous(virtTtb, 1);
         return -ENOMEM;
     }
-    LOS_ListAdd(&loadInfo.newSpace->archMmu.ptList, &(vmPage->node));
+    LOS_ListAdd(&loadInfo.newSpace->archMmu.ptList, &(vmPage->node));//用vmPage->node挂到  ptlist, vmPage 就是 L1表
 
-    loadInfo.argv = argv;
+    loadInfo.argv = argv;//
     loadInfo.envp = envp;
 
-    ret = OsLoadELFFile(&loadInfo);
+    ret = OsLoadELFFile(&loadInfo);//虚拟空间已经准备好了，该开始加载ELF文件到虚拟空间了。
     if (ret != LOS_OK) {
         return ret;
     }

@@ -73,7 +73,7 @@ HandleInfo g_cmsTask;
 HandleInfo g_serviceHandleMap[MAX_SERVICE_NUM];
 #endif
 STATIC LOS_DL_LIST g_ipcPendlist;
-STATIC LOS_DL_LIST g_ipcUsedNodelist[LOSCFG_BASE_CORE_PROCESS_LIMIT];
+STATIC LOS_DL_LIST g_ipcUsedNodelist[LOSCFG_BASE_CORE_PROCESS_LIMIT];//==进程数量 64个
 
 /* ipc lock */
 SPIN_LOCK_INIT(g_ipcSpin);
@@ -216,7 +216,7 @@ VOID IpcBacktrace(VOID)
     }
 }
 #endif
-
+//liteIpc 初始化
 LITE_OS_SEC_TEXT_INIT UINT32 LiteIpcInit(VOID)
 {
     UINT32 ret, i;
