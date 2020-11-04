@@ -165,20 +165,20 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
 /*
  * Description: Start Software Timer
  * Input      : swtmr --- Need to start software timer
- */
+ */ //开始定时器
 LITE_OS_SEC_TEXT VOID OsSwtmrStart(SWTMR_CTRL_S *swtmr)
 {
     if ((swtmr->ucOverrun == 0) && ((swtmr->ucMode == LOS_SWTMR_MODE_ONCE) ||
         (swtmr->ucMode == LOS_SWTMR_MODE_OPP) ||
         (swtmr->ucMode == LOS_SWTMR_MODE_NO_SELFDELETE))) {
-        SET_SORTLIST_VALUE(&(swtmr->stSortList), swtmr->uwExpiry);
+        SET_SORTLIST_VALUE(&(swtmr->stSortList), swtmr->uwExpiry);//设置过期时间
     } else {
         SET_SORTLIST_VALUE(&(swtmr->stSortList), swtmr->uwInterval);
     }
 
-    OsAdd2SortLink(&OsPercpuGet()->swtmrSortLink, &swtmr->stSortList);
+    OsAdd2SortLink(&OsPercpuGet()->swtmrSortLink, &swtmr->stSortList);	//通过stSortList节点挂到CPU的软件定时器排序链表上
 
-    swtmr->ucState = OS_SWTMR_STATUS_TICKING;
+    swtmr->ucState = OS_SWTMR_STATUS_TICKING;//定时器状态成正在 ticking 中
 
 #if (LOSCFG_KERNEL_SMP == YES)
     swtmr->uwCpuid = ArchCurrCpuid();
@@ -279,24 +279,24 @@ LITE_OS_SEC_TEXT UINT32 OsSwtmrGetNextTimeout(VOID)//获取下一个timeout
 /*
  * Description: Stop of Software Timer interface
  * Input      : swtmr --- the software timer contrl handler
- */
+ */ //停止定时器
 LITE_OS_SEC_TEXT STATIC VOID OsSwtmrStop(SWTMR_CTRL_S *swtmr)
 {
     SortLinkAttribute *sortLinkHeader = NULL;
 
 #if (LOSCFG_KERNEL_SMP == YES)
     /*
-     * the timer is running on the specific processor,
-     * we need delete the timer from that processor's sortlink.
+     * the timer is running on the specific processor,	//计时器正在特定处理器上运行
+     * we need delete the timer from that processor's sortlink. //我们需要从处理器的sortlink中删除计时器
      */
-    sortLinkHeader = &g_percpu[swtmr->uwCpuid].swtmrSortLink;
+    sortLinkHeader = &g_percpu[swtmr->uwCpuid].swtmrSortLink;//找到定时器所属CPU的 sortlind
 #else
     sortLinkHeader = &g_percpu[0].swtmrSortLink;
 #endif
-    OsDeleteSortLink(sortLinkHeader, &swtmr->stSortList);
+    OsDeleteSortLink(sortLinkHeader, &swtmr->stSortList);//将自己摘出去
 
-    swtmr->ucState = OS_SWTMR_STATUS_CREATED;
-    swtmr->ucOverrun = 0;
+    swtmr->ucState = OS_SWTMR_STATUS_CREATED;//状态变成已创建,又可以再利用.
+    swtmr->ucOverrun = 0;//计次器清0
 }
 
 /*
@@ -359,13 +359,13 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_SwtmrCreate(UINT32 interval,
     SWTMR_UNLOCK(intSave);
 
     swtmr->uwOwnerPid = OsCurrProcessGet()->processID;//定时器进程归属设定
-    swtmr->pfnHandler = handler;
-    swtmr->ucMode = mode;
-    swtmr->ucOverrun = 0;
-    swtmr->uwInterval = interval;
-    swtmr->uwExpiry = interval;
-    swtmr->uwArg = arg;
-    swtmr->ucState = OS_SWTMR_STATUS_CREATED;
+    swtmr->pfnHandler = handler;//时间到了的回调函数
+    swtmr->ucMode = mode;	//定时器模式
+    swtmr->ucOverrun = 0;	//重复计时的次数
+    swtmr->uwInterval = interval;	//周期性超时间隔
+    swtmr->uwExpiry = interval;		//一次性超时间隔
+    swtmr->uwArg = arg;				//回调函数的参数
+    swtmr->ucState = OS_SWTMR_STATUS_CREATED;	//已创建状态
     SET_SORTLIST_VALUE(&(swtmr->stSortList), 0);
     *swtmrID = swtmr->usTimerID;
 

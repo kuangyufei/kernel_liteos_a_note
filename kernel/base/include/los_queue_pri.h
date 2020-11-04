@@ -75,7 +75,7 @@ typedef struct {
     UINT16 queueTail; /**< Node tail */		//队列尾部节点
     UINT16 readWriteableCnt[OS_QUEUE_N_RW]; /**< Count of readable or writable resources, 0:readable, 1:writable */
     LOS_DL_LIST readWriteList[OS_QUEUE_N_RW]; /**< the linked list to be read or written, 0:readlist, 1:writelist */
-    LOS_DL_LIST memList; /**< Pointer to the memory linked list */	//@note_? 这么尚未搞明白是啥意思 
+    LOS_DL_LIST memList; /**< Pointer to the memory linked list */	//@note_why 这里尚未搞明白是啥意思 
 } LosQueueCB;//读写队列分离
 
 /* queue state */

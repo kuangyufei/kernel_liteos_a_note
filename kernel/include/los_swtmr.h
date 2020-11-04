@@ -229,10 +229,10 @@ extern "C" {
  * Software timer mode
  */
 enum enSwTmrType {
-    LOS_SWTMR_MODE_ONCE, /**< One-off software timer */
-    LOS_SWTMR_MODE_PERIOD, /**< Periodic software timer */
-    LOS_SWTMR_MODE_NO_SELFDELETE, /**< One-off software timer, but not self-delete */
-    LOS_SWTMR_MODE_OPP  /**< After the one-off timer finishes timing,
+    LOS_SWTMR_MODE_ONCE, /**< One-off software timer */		//一次性的软件计时器
+    LOS_SWTMR_MODE_PERIOD, /**< Periodic software timer */	//周期性的软件计时器
+    LOS_SWTMR_MODE_NO_SELFDELETE, /**< One-off software timer, but not self-delete */ //一次性软件计时器，但不能自删除
+    LOS_SWTMR_MODE_OPP  /**< After the one-off timer finishes timing, //一次性完成后启用周期性软件计时器,鸿蒙目前暂时不支持这种方式
                              the periodic software timer is enabled.
                              This mode is not supported temporarily. */
 };
@@ -257,27 +257,27 @@ enum enSwTmrType {
 * <ul><li>los_swtmr.h: the header file that contains the API declaration.</li></ul>
 * @see None.
 */
-typedef VOID (*SWTMR_PROC_FUNC)(UINTPTR arg);
+typedef VOID (*SWTMR_PROC_FUNC)(UINTPTR arg);	//函数指针, 赋值给 SWTMR_CTRL_S->pfnHandler,回调处理
 
 /**
  * @ingroup los_swtmr
  * Software timer control structure
  */
-typedef struct tagSwTmrCtrl {
+typedef struct tagSwTmrCtrl {// @note_why 鸿蒙内核经常出现 uc uw 这样的变量前缀命名,到底是什么意思?
     SortLinkList stSortList;
-    UINT8 ucState;      /**< Software timer state */
-    UINT8 ucMode;       /**< Software timer mode */
-    UINT8 ucOverrun;    /**< Times that a software timer repeats timing */
-    UINT16 usTimerID;   /**< Software timer ID */
-    UINT32 uwCount;     /**< Times that a software timer works */
-    UINT32 uwInterval;  /**< Timeout interval of a periodic software timer */
-    UINT32 uwExpiry;    /**< Timeout interval of an one-off software timer */
+    UINT8 ucState;      /**< Software timer state */							//软件计时器的状态
+    UINT8 ucMode;       /**< Software timer mode */								//软件计时器的模式
+    UINT8 ucOverrun;    /**< Times that a software timer repeats timing */		//软件计时器重复计时的次数
+    UINT16 usTimerID;   /**< Software timer ID */								//软件计时器ID,唯一标识,由软件计时器池分配
+    UINT32 uwCount;     /**< Times that a software timer works */				//软件计时器工作的时间
+    UINT32 uwInterval;  /**< Timeout interval of a periodic software timer */	//周期性软件计时器的超时间隔
+    UINT32 uwExpiry;    /**< Timeout interval of an one-off software timer */	//一次性软件计时器的超时间隔
 #if (LOSCFG_KERNEL_SMP == YES)
-    UINT32 uwCpuid;     /**< The cpu where the timer running on */
+    UINT32 uwCpuid;     /**< The cpu where the timer running on */				//多核情况下,定时器运行的cpu
 #endif
-    UINTPTR uwArg;      /**< Parameter passed in when the callback function
+    UINTPTR uwArg;      /**< Parameter passed in when the callback function		//回调函数的参数
                              that handles software timer timeout is called */
-    SWTMR_PROC_FUNC pfnHandler; /**< Callback function that handles software timer timeout */
+    SWTMR_PROC_FUNC pfnHandler; /**< Callback function that handles software timer timeout */	//处理软件计时器超时的回调函数
     UINT32          uwOwnerPid; /** Owner of this software timer */
 } SWTMR_CTRL_S;
 

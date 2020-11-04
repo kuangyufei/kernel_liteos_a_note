@@ -45,14 +45,14 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSortLinkInit(SortLinkAttribute *sortLinkHeader)
     LOS_DL_LIST *listObject = NULL;
     UINT32 index;
 
-    size = sizeof(LOS_DL_LIST) << OS_TSK_SORTLINK_LOGLEN;//这行代码很精彩,得到 8个 LOS_DL_LIST
-    listObject = (LOS_DL_LIST *)LOS_MemAlloc(m_aucSysMem0, size); /* system resident resource *///常驻内存
+    size = sizeof(LOS_DL_LIST) << OS_TSK_SORTLINK_LOGLEN;//这行代码很精彩, size=64个字节 每个LOS_DL_LIST8个字节,即等于 8个LOS_DL_LIST
+    listObject = (LOS_DL_LIST *)LOS_MemAlloc(m_aucSysMem0, size); /* system resident resource *///常驻内存 size表示字节的意思
     if (listObject == NULL) {
         return LOS_NOK;
     }
 
     (VOID)memset_s(listObject, size, 0, size);//清0
-    sortLinkHeader->sortLink = listObject;//可以知道 sortLink是个链表数组
+    sortLinkHeader->sortLink = listObject;//可以知道 sortLink是个链表数组,这个很重要
     sortLinkHeader->cursor = 0;//游标默认为0
     for (index = 0; index < OS_TSK_SORTLINK_LEN; index++, listObject++) {// OS_TSK_SORTLINK_LEN = 8
         LOS_ListInit(listObject);//初始化8个链表
@@ -92,7 +92,7 @@ LITE_OS_SEC_TEXT VOID OsAdd2SortLink(const SortLinkAttribute *sortLinkHeader, So
     } else {
         listSorted = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);//取出SortLinkList
         do {
-            if (ROLLNUM(listSorted->idxRollNum) <= ROLLNUM(sortList->idxRollNum)) {// @note_? 这块没看懂,谁能帮帮我
+            if (ROLLNUM(listSorted->idxRollNum) <= ROLLNUM(sortList->idxRollNum)) {// @note_why 这块没看懂,谁能帮帮我
                 ROLLNUM_SUB(sortList->idxRollNum, listSorted->idxRollNum);
             } else {
                 ROLLNUM_SUB(listSorted->idxRollNum, sortList->idxRollNum);
@@ -110,7 +110,7 @@ LITE_OS_SEC_TEXT STATIC VOID OsCheckSortLink(const LOS_DL_LIST *listHead, const 
 {
     LOS_DL_LIST *tmp = listNode->pstPrev;
 
-    /* recursive check until double link round to itself */
+    /* recursive check until double link round to itself */ //递归检查，直到双链接循环到自身
     while (tmp != listNode) {
         if (tmp == listHead) {
             goto FOUND;
@@ -125,17 +125,17 @@ LITE_OS_SEC_TEXT STATIC VOID OsCheckSortLink(const LOS_DL_LIST *listHead, const 
 FOUND:
     return;
 }
-
+//删除排序链表
 LITE_OS_SEC_TEXT VOID OsDeleteSortLink(const SortLinkAttribute *sortLinkHeader, SortLinkList *sortList)
 {
     LOS_DL_LIST *listObject = NULL;
     SortLinkList *nextSortList = NULL;
     UINT32 sortIndex;
 
-    sortIndex = SORT_INDEX(sortList->idxRollNum);
-    listObject = sortLinkHeader->sortLink + sortIndex;
+    sortIndex = SORT_INDEX(sortList->idxRollNum);//找出对应索引,索引是通过滚动的idxRollNum来定位的
+    listObject = sortLinkHeader->sortLink + sortIndex;//找出索引对应的链表
 
-    /* check if pstSortList node is on the right sortlink */
+    /* check if pstSortList node is on the right sortlink */ //检查pstSortList节点是否在正确的sortlink上
     OsCheckSortLink(listObject, &sortList->sortLinkNode);
 
     if (listObject != sortList->sortLinkNode.pstNext) {

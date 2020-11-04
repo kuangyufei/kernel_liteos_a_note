@@ -81,7 +81,8 @@ extern "C" {
 #define SET_SORTLIST_VALUE(sortList, value) (((SortLinkList *)(sortList))->idxRollNum = (value))
 
 /**************************************** @note_pic
- sortLink
+ 
+ sortLink[0:7] 
 +-------->+-----------------+
           |   sortLinkNode  |
           +-----------------+
@@ -106,7 +107,7 @@ typedef struct {
     UINT32 idxRollNum;			//滚动数
 } SortLinkList;
 typedef struct {
-    LOS_DL_LIST *sortLink;//排序节点
+    LOS_DL_LIST *sortLink;//排序链表,看上图它指向的结构.
     UINT16 cursor;	//游标
     UINT16 reserved;	//保留用
 } SortLinkAttribute;
