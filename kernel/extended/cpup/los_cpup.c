@@ -506,14 +506,14 @@ LITE_OS_SEC_TEXT UINT32 OsAllCpuUsageUnsafe(UINT16 maxNum, CPUP_INFO_S *cpupInfo
     OsProcessCycleStart();
     return LOS_OK;
 }
-
+// shell cpup 命令，查看所有CPU的使用情况  89.9%
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_AllCpuUsage(UINT16 maxNum, CPUP_INFO_S *cpupInfo, UINT16 mode, UINT16 flag)
 {
     UINT32 intSave;
     UINT32 ret;
 
     SCHEDULER_LOCK(intSave);
-    ret = OsAllCpuUsageUnsafe(maxNum, cpupInfo, mode, flag);
+    ret = OsAllCpuUsageUnsafe(maxNum, cpupInfo, mode, flag);//所有CPU使用情况
     SCHEDULER_UNLOCK(intSave);
 
     return ret;

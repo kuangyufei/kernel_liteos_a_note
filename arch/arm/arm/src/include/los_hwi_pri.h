@@ -49,7 +49,7 @@ extern "C" {
 #error "OS_HWI_FORM_EXC_NUM must be zero"
 #endif
 
-#ifdef LOSCFG_NO_SHARED_IRQ
+#ifdef LOSCFG_NO_SHARED_IRQ	//不共享中断
 #define HWI_IS_REGISTED(num)             ((&g_hwiForm[num])->pfnHook != NULL)
 #else
 #define HWI_IS_REGISTED(num)             ((&g_hwiForm[num])->pstNext != NULL)

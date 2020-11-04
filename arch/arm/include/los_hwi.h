@@ -212,19 +212,19 @@ extern size_t g_intCount[];
 
 /**
  * @ingroup los_hwi
- * Define the type of a hardware interrupt number.
+ * Define the type of a hardware interrupt number.		//定义硬件中断号的类型
  */
 typedef UINT32 HWI_HANDLE_T;
 
 /**
  * @ingroup los_hwi
- * Define the type of a hardware interrupt priority.
+ * Define the type of a hardware interrupt priority.	//定义硬件中断优先级的类型
  */
-typedef UINT16 HWI_PRIOR_T;
+typedef UINT16 HWI_PRIOR_T; //定义
 
 /**
  * @ingroup los_hwi
- * Define the type of hardware interrupt mode configurations.
+ * Define the type of hardware interrupt mode configurations.	//定义硬件中断配置的类型
  */
 typedef UINT16 HWI_MODE_T;
 
@@ -232,12 +232,12 @@ typedef UINT16 HWI_MODE_T;
  * @ingroup los_hwi
  * Define the type of the parameter used for the hardware interrupt creation function.
  * The function of this parameter varies among platforms.
- */
+ */							//定义用于硬件中断创建功能的参数类型。此参数的功能因平台而异
 typedef UINTPTR HWI_ARG_T;
 
 /**
  * @ingroup  los_hwi
- * Define the type of a hardware interrupt handling function.
+ * Define the type of a hardware interrupt handling function. //定义硬件中断处理函数的类型
  */
 typedef VOID (*HWI_PROC_FUNC)(VOID);
 
@@ -247,21 +247,21 @@ typedef VOID (*HWI_PROC_FUNC)(VOID);
  *
  * IRQF_SHARED - allow sharing the irq among several devices
  */
-#define IRQF_SHARED 0x8000U
+#define IRQF_SHARED 0x8000U	//IRQF_SHARED-允许在多个设备之间共享irq
 
-typedef struct tagHwiHandleForm {
-    HWI_PROC_FUNC pfnHook;
-    HWI_ARG_T uwParam;
-    struct tagHwiHandleForm *pstNext;
+typedef struct tagHwiHandleForm {	
+    HWI_PROC_FUNC pfnHook;	//中断处理函数
+    HWI_ARG_T uwParam;		//中断处理函数参数
+    struct tagHwiHandleForm *pstNext;	//节点，指向下一个中断
 } HwiHandleForm;
 
-typedef struct tagIrqParam {
-    int swIrq;
-    VOID *pDevId;
-    const CHAR *pName;
+typedef struct tagIrqParam {	//中断参数
+    int swIrq;		//	软件中断
+    VOID *pDevId;	//	设备ID
+    const CHAR *pName;	//名称
 } HwiIrqParam;
 
-extern HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];
+extern HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];//最大中断数量，OS_HWI_MAX_NUM 见于 ..\vendor_hisi_hi3861_hi3861\hi3861\platform\os\Huawei_LiteOS\arch\los_hwi.h
 
 /**
  * @ingroup los_hwi

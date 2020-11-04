@@ -759,7 +759,7 @@ static int GetGroups(int size, int list[])
     return groupCount;
 }
 #endif
-
+//系统调用之获取组
 int SysGetGroups(int size, int list[])
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -785,7 +785,7 @@ int SysGetGroups(int size, int list[])
     return groupCount;
 #endif
 }
-
+//系统调用之设置组
 int SysSetGroups(int size, int list[])
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -842,13 +842,13 @@ EXIT:
     return 0;
 #endif
 }
-
+//系统调用之创建一个用户线程
 unsigned int SysCreateUserThread(const TSK_ENTRY_FUNC func, const UserTaskParam *userParam, bool joinable)
 {
     TSK_INIT_PARAM_S param = { 0 };
     int ret;
 
-    ret = LOS_ArchCopyFromUser(&(param.userParam), userParam, sizeof(UserTaskParam));
+    ret = LOS_ArchCopyFromUser(&(param.userParam), userParam, sizeof(UserTaskParam));//参数copy，将用户空间的参数信息copy到内核空间
     if (ret != 0) {
         return OS_INVALID_VALUE;
     }
@@ -860,9 +860,9 @@ unsigned int SysCreateUserThread(const TSK_ENTRY_FUNC func, const UserTaskParam 
         param.uwResved = OS_TASK_FLAG_DETACHED;
     }
 
-    return OsCreateUserTask(OS_INVALID_VALUE, &param);
+    return OsCreateUserTask(OS_INVALID_VALUE, &param);//创建用户task
 }
-//系统调用-设置线程使用区域,所有的系统调用都运行在内核态,也运行在内核空间
+//系统调用之设置线程使用区域,所有的系统调用都运行在内核态,也运行在内核空间
 int SysSetThreadArea(const char *area)
 {
     unsigned int intSave;
@@ -887,12 +887,12 @@ OUT:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//获取系统调用线程的使用区域
+//系统调用之获取线程的使用区域
 char *SysGetThreadArea(void)
 {
     return (char *)(OsCurrTaskGet()->userArea);//直接返回使用区域
 }
-
+//系统调用之设置任务为分离模式
 int SysUserThreadSetDeatch(unsigned int taskID)
 {
     unsigned int intSave;
@@ -916,7 +916,7 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-
+//系统调用之线程分离，意思是这是一个独立的线程
 int SysUserThreadDetach(unsigned int taskID)
 {
     unsigned int intSave;
@@ -942,7 +942,7 @@ int SysUserThreadDetach(unsigned int taskID)
 
     return LOS_OK;
 }
-
+//系统调用之线程联结，意思是这是一个可联结的线程
 int SysThreadJoin(unsigned int taskID)
 {
     unsigned int intSave;
@@ -966,12 +966,12 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-
+//系统调用之退出线程组
 void SysUserExitGroup(int status)
 {
     OsTaskExitGroup((unsigned int)status);
 }
-
+//系统调用之退出线程
 void SysThreadExit(int status)
 {
     OsTaskToExit(OsCurrTaskGet(), (unsigned int)status);
@@ -990,10 +990,10 @@ int SysFutex(const unsigned int *uAddr, unsigned int flags, int val,
 
     return -OsFutexWait(uAddr, flags, val, absTime);
 }
-
+//获取当前任务ID
 unsigned int SysGetTid(void)
 {
-    return OsCurrTaskGet()->taskID;
+    return OsCurrTaskGet()->taskID;//获取当前任务ID
 }
 
 #ifdef __cplusplus

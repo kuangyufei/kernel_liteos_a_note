@@ -243,18 +243,18 @@ UINT32 HalCurIrqGet(VOID)
 {
     return g_curIrqNum;
 }
-
+//屏蔽所有CPU的硬件中断
 VOID HalIrqMask(UINT32 vector)
 {
     INT32 i;
-    const UINT32 mask = 1U << (vector % 32);
+    const UINT32 mask = 1U << (vector % 32);//通过参数获取掩码
 
     if ((vector > OS_USER_HWI_MAX) || (vector < OS_USER_HWI_MIN)) {
         return;
     }
 
     if (vector < 32) {
-        for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
+        for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {//
             GIC_REG_32(GICR_ICENABLER0(i)) = mask;
             GicWaitForRwp(GICR_CTLR(i));
         }
@@ -263,7 +263,7 @@ VOID HalIrqMask(UINT32 vector)
         GicWaitForRwp(GICD_CTLR);
     }
 }
-
+//取消屏蔽硬件中断
 VOID HalIrqUnmask(UINT32 vector)
 {
     INT32 i;

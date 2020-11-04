@@ -41,7 +41,7 @@
 extern "C" {
 #endif
 #endif /* __cplusplus */
-//*kfy 0x80000000U = 10000000000000000000000000000000(32个0) 
+// 0x80000000U = 10000000000000000000000000000000(32个0) 
 #define PRIQUEUE_PRIOR0_BIT   0x80000000U 
 
 LITE_OS_SEC_BSS LOS_DL_LIST *g_priQueueList = NULL;//队列链表
@@ -84,11 +84,11 @@ VOID OsPriQueueEnqueueHead(LOS_DL_LIST *priQueueList, UINT32 *bitMap, LOS_DL_LIS
      */
     LOS_ASSERT(priqueueItem->pstNext == NULL);
 
-    if (LOS_ListEmpty(&priQueueList[priority])) {
-        *bitMap |= PRIQUEUE_PRIOR0_BIT >> priority;
+    if (LOS_ListEmpty(&priQueueList[priority])) {//队列不为空
+        *bitMap |= PRIQUEUE_PRIOR0_BIT >> priority;//位图调度器上记录优先级
     }
 
-    LOS_ListHeadInsert(&priQueueList[priority], priqueueItem);
+    LOS_ListHeadInsert(&priQueueList[priority], priqueueItem);//从头部插入
 }
 
 VOID OsPriQueueEnqueue(LOS_DL_LIST *priQueueList, UINT32 *bitMap, LOS_DL_LIST *priqueueItem, UINT32 priority)
@@ -100,21 +100,21 @@ VOID OsPriQueueEnqueue(LOS_DL_LIST *priQueueList, UINT32 *bitMap, LOS_DL_LIST *p
      */
     LOS_ASSERT(priqueueItem->pstNext == NULL);
 
-    if (LOS_ListEmpty(&priQueueList[priority])) {
-        *bitMap |= PRIQUEUE_PRIOR0_BIT >> priority;//移到对应位
+    if (LOS_ListEmpty(&priQueueList[priority])) {////队列不为空
+        *bitMap |= PRIQUEUE_PRIOR0_BIT >> priority;//位图调度器上记录优先级
     }
 
-    LOS_ListTailInsert(&priQueueList[priority], priqueueItem);
+    LOS_ListTailInsert(&priQueueList[priority], priqueueItem);//从尾部插入
 }
-
+//出队列
 VOID OsPriQueueDequeue(LOS_DL_LIST *priQueueList, UINT32 *bitMap, LOS_DL_LIST *priqueueItem)
 {
     LosTaskCB *task = NULL;
-    LOS_ListDelete(priqueueItem);
+    LOS_ListDelete(priqueueItem);//将item从队列中摘除
 
-    task = LOS_DL_LIST_ENTRY(priqueueItem, LosTaskCB, pendList);
-    if (LOS_ListEmpty(&priQueueList[task->priority])) {
-        *bitMap &= ~(PRIQUEUE_PRIOR0_BIT >> task->priority);
+    task = LOS_DL_LIST_ENTRY(priqueueItem, LosTaskCB, pendList);//通过pendList节点，找到task
+    if (LOS_ListEmpty(&priQueueList[task->priority])) {//队列不为空时
+        *bitMap &= ~(PRIQUEUE_PRIOR0_BIT >> task->priority);//位图调度器上记录优先级
     }
 }
 
@@ -128,7 +128,7 @@ VOID OsPriQueueProcessDequeue(LOS_DL_LIST *priqueueItem)
         g_priQueueBitmap &= ~(PRIQUEUE_PRIOR0_BIT >> runProcess->priority);
     }
 }
-
+//队列大小
 UINT32 OsPriQueueProcessSize(LOS_DL_LIST *priQueueList, UINT32 priority)
 {
     UINT32 itemCnt = 0;
@@ -137,7 +137,7 @@ UINT32 OsPriQueueProcessSize(LOS_DL_LIST *priQueueList, UINT32 priority)
     LOS_ASSERT(OsIntLocked());
     LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));
 
-    LOS_DL_LIST_FOR_EACH(curNode, &priQueueList[priority]) {
+    LOS_DL_LIST_FOR_EACH(curNode, &priQueueList[priority]) {//遍历队列
         ++itemCnt;
     }
 
@@ -158,7 +158,7 @@ UINT32 OsPriQueueSize(LOS_DL_LIST *priQueueList, UINT32 priority)
 
     LOS_DL_LIST_FOR_EACH(curNode, &priQueueList[priority]) {//循环查找这优先级的数量
 #if (LOSCFG_KERNEL_SMP == YES)
-        task = OS_TCB_FROM_PENDLIST(curNode);//找到task
+        task = OS_TCB_FROM_PENDLIST(curNode);//通过pendList节点找到task
         if (!(task->cpuAffiMask & (1U << cpuID))) {//属不属于当前CPU
             continue;
         }
@@ -175,7 +175,7 @@ LOS_DL_LIST *OsTaskPriQueueTop(VOID)
     LosProcessCB *processCB = LOS_DL_LIST_ENTRY(OsPriQueueTop(g_priQueueList, &g_priQueueBitmap),
                                                 LosProcessCB,
                                                 pendList);
-    return OsPriQueueTop(processCB->threadPriQueueList, &processCB->threadScheduleMap);
+    return OsPriQueueTop(processCB->threadPriQueueList, &processCB->threadScheduleMap);//获取进程就绪队列中优先级最高的task
 }
 
 STATIC INLINE VOID OsDequeEmptySchedMap(LosProcessCB *processCB)
@@ -185,7 +185,7 @@ STATIC INLINE VOID OsDequeEmptySchedMap(LosProcessCB *processCB)
         OsPriQueueProcessDequeue(&processCB->pendList);
     }
 }
-
+//这个函数留给大家看，内核最美函数 获取优先级最高的task,了解了这个函数就了解了调度的机制
 LITE_OS_SEC_TEXT_MINOR LosTaskCB *OsGetTopTask(VOID)
 {
     UINT32 priority, processPriority;
