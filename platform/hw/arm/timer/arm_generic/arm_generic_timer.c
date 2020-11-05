@@ -87,7 +87,7 @@
 
 #endif
 
-#define OS_CYCLE_PER_TICK (g_sysClock / LOSCFG_BASE_CORE_TICK_PER_SECOND)
+#define OS_CYCLE_PER_TICK (g_sysClock / LOSCFG_BASE_CORE_TICK_PER_SECOND) //每个tick多少周期
 
 UINT32 HalClockFreqRead(VOID)
 {
@@ -126,18 +126,18 @@ UINT64 HalClockGetCycles(VOID)
     cntpct = READ_TIMER_REG64(TIMER_REG_CT);
     return cntpct;
 }
-
+//节拍回调函数
 LITE_OS_SEC_TEXT VOID OsTickEntry(VOID)
 {
     TimerCtlWrite(0);
 
-    OsTickHandler();
+    OsTickHandler();//节拍处理主体函数
 
-    /*
+    /*	//使用最近的 cval生成下一个tick的计时是绝对和准确的。
      * use last cval to generate the next tick's timing is
      * absolute and accurate. DO NOT use tval to drive the
      * generic time in which case tick will be slower.
-     */
+     *///不要使用tval来产生时间，在这种情况下，滴答声会变慢
     TimerCvalWrite(TimerCvalRead() + OS_CYCLE_PER_TICK);
     TimerCtlWrite(1);
 }
@@ -146,7 +146,7 @@ LITE_OS_SEC_TEXT_INIT VOID HalClockInit(VOID)
 {
     UINT32 ret;
 
-    g_sysClock = HalClockFreqRead();
+    g_sysClock = HalClockFreqRead();//读时间
     ret = LOS_HwiCreate(OS_TICK_INT_NUM, MIN_INTERRUPT_PRIORITY, 0, OsTickEntry, 0);
     if (ret != LOS_OK) {
         PRINT_ERR("%s, %d create tick irq failed, ret:0x%x\n", __FUNCTION__, __LINE__, ret);

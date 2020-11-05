@@ -131,11 +131,11 @@ extern "C" {
 
 extern UINT32 OsSystemInit(VOID);
 extern VOID SystemInit(VOID);
-
+//注册 HZ  , tick
 LITE_OS_SEC_TEXT_INIT VOID osRegister(VOID)
 {
-    g_sysClock = OS_SYS_CLOCK;
-    g_tickPerSecond =  LOSCFG_BASE_CORE_TICK_PER_SECOND;
+    g_sysClock = OS_SYS_CLOCK; //HZ 
+    g_tickPerSecond =  LOSCFG_BASE_CORE_TICK_PER_SECOND;//每秒节拍数 默认100 即一个tick = 10ms
 
     return;
 }

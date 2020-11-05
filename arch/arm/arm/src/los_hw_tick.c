@@ -37,7 +37,7 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+//节拍初始化
 LITE_OS_SEC_TEXT_INIT UINT32 OsTickInit(UINT32 systemClock, UINT32 tickPerSecond)
 {
     if ((systemClock == 0) ||
@@ -45,16 +45,16 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsTickInit(UINT32 systemClock, UINT32 tickPerSecond
         (tickPerSecond > systemClock)) {
         return LOS_ERRNO_TICK_CFG_INVALID;
     }
-    HalClockInit();
+    HalClockInit();//硬件时钟初始化
 
     return LOS_OK;
 }
-
+//启动节拍
 LITE_OS_SEC_TEXT_INIT VOID OsTickStart(VOID)
 {
-    HalClockStart();
+    HalClockStart();//硬件时钟开始工作
 }
-
+//获得CPU周期
 LITE_OS_SEC_TEXT_MINOR VOID LOS_GetCpuCycle(UINT32 *highCnt, UINT32 *lowCnt)
 {
     UINT64 cycle = HalClockGetCycles();

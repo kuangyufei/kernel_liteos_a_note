@@ -51,8 +51,9 @@ extern "C" {
 
 STATIC CmdModInfo g_cmdInfo;
 
-LOS_HAL_TABLE_BEGIN(g_shellcmd, shellcmd);
-LOS_HAL_TABLE_END(g_shellcmdEnd, shellcmd);
+LOS_HAL_TABLE_BEGIN(g_shellcmd, shellcmd);//硬件抽象层表开始 ,其中是两个汇编语句 直接编译到代码段指定位置
+LOS_HAL_TABLE_END(g_shellcmdEnd, shellcmd);//硬件抽象层表结束 
+
 
 CmdModInfo *OsCmdInfoGet(VOID)
 {

@@ -130,7 +130,7 @@ VOID OsExcStackInfo(VOID)
 //注册栈信息
 VOID OsExcStackInfoReg(const StackInfo *stackInfo, UINT32 stackNum)
 {
-    g_stackInfo = stackInfo;
+    g_stackInfo = stackInfo;	//g_excStack
     g_stackNum = stackNum;
 }
 //task栈的初始化,设置固定的值. 0xcccccccc 和 0xcacacaca

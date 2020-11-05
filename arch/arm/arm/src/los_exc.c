@@ -666,7 +666,7 @@ VOID BackTrace(UINT32 regFP)
 //运行初始化
 VOID OsExcInit(VOID)
 {
-    OsExcStackInfoReg(g_excStack, sizeof(g_excStack) / sizeof(g_excStack[0]));
+    OsExcStackInfoReg(g_excStack, sizeof(g_excStack) / sizeof(g_excStack[0]));//内核栈信息注册
 }
 //由注册后回调
 VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)

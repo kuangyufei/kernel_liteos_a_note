@@ -54,13 +54,13 @@ extern "C" {
 |  包括 IO设备                   |
 |  PERIPH_PMM_SIZE           |
 +----------------------------+ 外围设备基地址 PERIPH_DEVICE_BASE
-|                            |
+|  Vmalloc段                  |
 |  kernel heap               |
 |  128M                      |
 |                            |
 +----------------------------+ 内核动态分配开始地址 VMALLOC_START
 |   DDR_MEM_SIZE             |
-|                            |
+|   Uncached段                |
 +----------------------------+ 未缓存虚拟空间基地址 UNCACHED_VMM_BASE
 |   内核虚拟空间                   |
 |   KERNEL_VMM_SIZE          |
@@ -82,13 +82,41 @@ extern "C" {
 |    16M预留区	                 |
 +----------------------------+ 0x00000000U
 
+见于 ..\vendor_hisi_hi35xx_hi3516dv300\config\board\include\board.h
+
+/* Physical memory address base and size * /	//物理内存地址基地址和大小
+#ifdef LOSCFG_TEE_ENABLE
+#define DDR_MEM_ADDR            0x81000000
+#define DDR_MEM_SIZE            0x1f000000
+#else
+#define DDR_MEM_ADDR            0x80000000		
+#define DDR_MEM_SIZE            0x20000000		//512M
+#endif
+
+/* Peripheral register address base and size * / 外围寄存器地址基和大小
+#define PERIPH_PMM_BASE         0x10000000		// 256M
+#define PERIPH_PMM_SIZE         0x10000000		// 256M
+
+#ifdef LOSCFG_TEE_ENABLE
+#define KERNEL_VADDR_BASE       0x41000000
+#else
+#define KERNEL_VADDR_BASE       0x40000000		
+#endif
+#define KERNEL_VADDR_SIZE       DDR_MEM_SIZE	//512M
+
+#define SYS_MEM_BASE            DDR_MEM_ADDR	//0x80000000
+#define SYS_MEM_SIZE_DEFAULT    0x07f00000		//127M
+#define SYS_MEM_END             (SYS_MEM_BASE + SYS_MEM_SIZE_DEFAULT) //0x87f00000
+
+#define EXC_INTERACT_MEM_SIZE        0x100000 //1M
+
 *******************************************************************************************************/
 
 
 #define DEFINE_(X)  X##U
 #define DEFINE(X)   DEFINE_(X)
 
-#define KERNEL_VMM_BASE         DEFINE(KERNEL_VADDR_BASE)//内核虚拟内存开始位置
+#define KERNEL_VMM_BASE         DEFINE(KERNEL_VADDR_BASE)//内核虚拟内存开始位置 //0x40000000
 #define KERNEL_VMM_SIZE         DEFINE(KERNEL_VADDR_SIZE)//内核虚拟内存大小
 
 #define KERNEL_ASPACE_BASE      KERNEL_VMM_BASE //内核空间开始地址
