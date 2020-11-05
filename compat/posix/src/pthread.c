@@ -46,7 +46,7 @@ extern "C" {
 /*
  * Array of pthread control structures. A pthread_t object is
  * "just" an index into this array.
- */
+ */ //pthread控制结构的数组。pthread_t对象只是这个数组的一个索引
 STATIC _pthread_data g_pthreadData[LOSCFG_BASE_CORE_TSK_LIMIT + 1];
 
 /* Count of number of threads that have exited and not been reaped. */
@@ -218,7 +218,7 @@ STATIC UINT32 InitPthreadData(pthread_t threadID, pthread_attr_t *userAttr,
     SetPthreadDataAttr(userAttr, threadID, taskCB, created);
     return ret;
 }
-//POSIX 创建线程接口
+//POSIX接口之 创建一个线程
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
                    void *(*startRoutine)(void *), void *arg)
 {
@@ -281,7 +281,7 @@ ERROR_OUT:
 
     return map_errno(ret);
 }
-
+//POSIX接口之 终止当前线程
 void pthread_exit(void *retVal)
 {
     _pthread_data *self = pthread_get_self_data();
@@ -358,7 +358,7 @@ STATIC INT32 ProcessByJoinState(_pthread_data *joined)
     }
     return err;
 }
-
+//阻塞当前的线程，直到另外一个线程运行结束
 int pthread_join(pthread_t thread, void **retVal)
 {
     INT32 err;
@@ -688,7 +688,7 @@ OUT:
     LOS_TaskUnlock();
     return ret;
 }
-
+//
 int pthread_cancel(pthread_t thread)
 {
     _pthread_data *data = NULL;

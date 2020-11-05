@@ -197,7 +197,7 @@ int SysSchedGetParam(int id, int flag)
 
     return OsGetProcessPriority(LOS_PRIO_PROCESS, id);
 }
-//设置调度参数
+//设置调度参数 id = 线程ID    prio:优先级
 int SysSchedSetParam(int id, unsigned int prio, int flag)
 {
     int ret;
@@ -211,10 +211,10 @@ int SysSchedSetParam(int id, unsigned int prio, int flag)
     }
 
     if (id == 0) {
-        id = (int)LOS_GetCurrProcessID();
+        id = (int)LOS_GetCurrProcessID();//当前进程ID
     }
 
-    ret = OsPermissionToCheck(id, LOS_GetCurrProcessID());
+    ret = OsPermissionToCheck(id, LOS_GetCurrProcessID());//检查权限
     if (ret < 0) {
         return ret;
     }
@@ -226,20 +226,20 @@ int SysSetProcessPriority(int which, int who, unsigned int prio)
 {
     int ret;
 
-    if (prio < OS_USER_PROCESS_PRIORITY_HIGHEST) {
+    if (prio < OS_USER_PROCESS_PRIORITY_HIGHEST) { // 注意这里设置优先不能低于10，[]10:31]是用户进程的优先级范围
         return -EINVAL;
     }
 
     if (who == 0) {
-        who = (int)LOS_GetCurrProcessID();
+        who = (int)LOS_GetCurrProcessID();//获取当前进程ID
     }
 
-    ret = OsPermissionToCheck(who, LOS_GetCurrProcessID());
+    ret = OsPermissionToCheck(who, LOS_GetCurrProcessID());//检查权限
     if (ret < 0) {
         return ret;
     }
 
-    return OsSetProcessScheduler(which, who, prio, LOS_SCHED_RR, FALSE);
+    return OsSetProcessScheduler(which, who, prio, LOS_SCHED_RR, FALSE);//设置进程的调度参数
 }
 //获取进程优先级
 int SysGetProcessPriority(int which, int who)

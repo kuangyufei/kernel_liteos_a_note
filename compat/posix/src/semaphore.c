@@ -41,7 +41,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 /* Initialize semaphore to value, shared is not supported in Huawei LiteOS. */
-int sem_init(sem_t *sem, int shared, unsigned int value)
+int sem_init(sem_t *sem, int shared, unsigned int value)//初始化信号量的值，华为LiteOS不支持共享。
 {
     UINT32 semHandle = 0;
     UINT32 ret;
