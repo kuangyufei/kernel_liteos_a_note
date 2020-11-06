@@ -72,6 +72,6 @@ INT32 osShellCmdPartInfo(INT32 argc, const CHAR **argv)
     return LOS_OK;
 }
 
-SHELLCMD_ENTRY(partinfo_shellcmd, CMD_TYPE_EX, "partinfo", XARGS, (CmdCallBackFunc)osShellCmdPartInfo);
+SHELLCMD_ENTRY(partinfo_shellcmd, CMD_TYPE_EX, "partinfo", XARGS, (CmdCallBackFunc)osShellCmdPartInfo);//采用shell命令静态注册方式
 
 #endif

@@ -50,25 +50,25 @@ extern "C" {
 
 typedef BOOL (*CmdVerifyTransID)(UINT32 transID);
 
-typedef struct {
-    CmdType cmdType;
-    const CHAR *cmdKey;
-    UINT32 paraNum;
-    CmdCallBackFunc cmdHook;
-} CmdItem;
+typedef struct {	//cmd的条目项
+    CmdType cmdType;	//命令类型
+    const CHAR *cmdKey;	//命令关键字，函数在Shell中访问的名称。
+    UINT32 paraNum;		//调用的执行函数的入参最大个数，鸿蒙暂不支持。
+    CmdCallBackFunc cmdHook;	//命令执行函数地址，即命令实际执行函数。
+} CmdItem; 
 
-typedef struct {
+typedef struct {//cmd的条目项节点,增加一幅挂钩,让item挂在一起
     LOS_DL_LIST list;
     CmdItem *cmd;
 } CmdItemNode;
 
-/* global info for shell module */
+/* global info for shell module */	//全局shell信息模块 对应全局变量 g_cmdInfo
 typedef struct {
-    CmdItemNode cmdList;
-    UINT32 listNum;
-    UINT32 initMagicFlag;
-    LosMux muxLock;
-    CmdVerifyTransID transIdHook;
+    CmdItemNode cmdList;	//所有item将挂在上面
+    UINT32 listNum;			//item数量
+    UINT32 initMagicFlag;	//初始化时魔法数字
+    LosMux muxLock;			//互斥锁
+    CmdVerifyTransID transIdHook;// @note_why 验证转换ID的函数地址,  尚未清楚是干什么用的,看懂了的请私信我完善.
 } CmdModInfo;
 
 typedef struct {
@@ -77,6 +77,30 @@ typedef struct {
     CHAR cmdString[0];
 } CmdKeyLink;
 
+/**************************************************************** 
+*	Shell 注册命令。用户可以选择静态注册命令方式和系统运行时动态注册命令方式，
+----------------------------------------------------------------------------------------
+*	第一种:静态注册命令方式一般用在系统常用命令注册，动态注册命令方式一般用在用户命令注册。
+*	SHELLCMD_ENTRY(watch_shellcmd, CMD_TYPE_EX, "watch", XARGS, (CmdCallBackFunc)OsShellCmdWatch);
+* 	静态注册命令方式.通过宏的方式注册
+*	参数:
+*	l:			静态注册全局变量名（注意：不与系统中其他symbol重名）。
+*	cmdType:	命令类型
+*	cmdKey:		命令关键字，函数在Shell中访问的名称。
+*	paraNum:	调用的执行函数的入参最大个数，暂不支持。
+*	cmdHook:	命令执行函数地址，即命令实际执行函数。
+*	在build/mk/liteos_tables_ldflags.mk中添加相应选项：
+*	如：上述“watch”命令注册时，需在build/mk/liteos_tables_ldflags.mk中添加“-uwatch_shellcmd”。
+*	其中-u后面跟SHELLCMD_ENTRY的第一个参数。
+----------------------------------------------------------------------------------------
+*	第二种:.动态注册命令方式：
+*	注册函数原型：
+*	UINT32 osCmdReg(CmdT ype cmdType, CHAR *cmdKey, UINT32 paraNum, CmdCallBackFunc cmdProc)	
+----------------------------------------------------------------------------------------
+*	输入Shell命令，有两种输入方式：
+*	在串口工具中直接输入Shell命令。
+*	在telnet工具中输入Shell命令
+****************************************************************/
 #define SHELLCMD_ENTRY(l, cmdType, cmdKey, paraNum, cmdHook)    \
     CmdItem l LOS_HAL_TABLE_ENTRY(shellcmd) = {                 \
         cmdType,                                                \

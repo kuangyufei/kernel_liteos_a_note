@@ -197,7 +197,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdQueueInfoGet(UINT32 argc, const CHAR **a
     return LOS_OK;
 }
 
-SHELLCMD_ENTRY(queue_shellcmd, CMD_TYPE_EX, "queue", 0, (CmdCallBackFunc)OsShellCmdQueueInfoGet);
+SHELLCMD_ENTRY(queue_shellcmd, CMD_TYPE_EX, "queue", 0, (CmdCallBackFunc)OsShellCmdQueueInfoGet);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL */
 #endif /* LOSCFG_DEBUG_QUEUE */
 

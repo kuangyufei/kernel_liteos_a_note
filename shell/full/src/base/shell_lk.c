@@ -225,7 +225,7 @@ VOID OsLkLoggerInit(const CHAR *str)
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(log_shellcmd, CMD_TYPE_EX, "log", 1, (CmdCallBackFunc)CmdLog);
+SHELLCMD_ENTRY(log_shellcmd, CMD_TYPE_EX, "log", 1, (CmdCallBackFunc)CmdLog);//采用shell命令静态注册方式
 #endif
 
 #ifdef __cplusplus

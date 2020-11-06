@@ -140,7 +140,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdCpup(INT32 argc, const CHAR **argv)
     return LOS_OK;
 }
 
-SHELLCMD_ENTRY(cpup_shellcmd, CMD_TYPE_EX, "cpup", XARGS, (CmdCallBackFunc)OsShellCmdCpup);
+SHELLCMD_ENTRY(cpup_shellcmd, CMD_TYPE_EX, "cpup", XARGS, (CmdCallBackFunc)OsShellCmdCpup);//采用shell命令静态注册方式
 #ifdef __cplusplus
 #if __cplusplus
 }

@@ -1138,7 +1138,7 @@ ifconfig_error:
 }
 
 #ifdef LOSCFG_SHELL
-SHELLCMD_ENTRY(ifconfig_shellcmd, CMD_TYPE_EX, "ifconfig", XARGS, (CmdCallBackFunc)lwip_ifconfig);
+SHELLCMD_ENTRY(ifconfig_shellcmd, CMD_TYPE_EX, "ifconfig", XARGS, (CmdCallBackFunc)lwip_ifconfig);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL */
 /* add arp entry to arp cache */
 #define ARP_OPTION_ADD      1
@@ -1472,7 +1472,7 @@ arp_error:
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(arp_shellcmd, CMD_TYPE_EX, "arp", 1, (CmdCallBackFunc)lwip_arp);
+SHELLCMD_ENTRY(arp_shellcmd, CMD_TYPE_EX, "arp", 1, (CmdCallBackFunc)lwip_arp);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL_CMD_DEBUG */
 
 void ifup_internal(void *arg)
@@ -1915,7 +1915,7 @@ ping_error:
     return LOS_NOK;
 }
 #ifdef LOSCFG_SHELL
-SHELLCMD_ENTRY(ping_shellcmd, CMD_TYPE_EX, "ping", XARGS, (CmdCallBackFunc)osShellPing);
+SHELLCMD_ENTRY(ping_shellcmd, CMD_TYPE_EX, "ping", XARGS, (CmdCallBackFunc)osShellPing);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL */
 
 #else /* LWIP_EXT_POLL_SUPPORT*/
@@ -2068,7 +2068,7 @@ FAILURE:
 }
 
 #ifdef LOSCFG_SHELL
-SHELLCMD_ENTRY(ping_shellcmd, CMD_TYPE_EX, "ping", XARGS, (CmdCallBackFunc)osShellPing);
+SHELLCMD_ENTRY(ping_shellcmd, CMD_TYPE_EX, "ping", XARGS, (CmdCallBackFunc)osShellPing);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL */
 
 #endif /* LWIP_EXT_POLL_SUPPORT*/
@@ -2577,7 +2577,7 @@ LWIP_STATIC const char *convert_icmpv6_err_to_string(u8_t err_type)
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(ping6_shellcmd, CMD_TYPE_EX, "ping6", XARGS, (CmdCallBackFunc)osShellPing6);
+SHELLCMD_ENTRY(ping6_shellcmd, CMD_TYPE_EX, "ping6", XARGS, (CmdCallBackFunc)osShellPing6);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL_CMD_DEBUG */
 #endif /* LWIP_IPV6 */
 
@@ -2621,7 +2621,7 @@ usage:
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(ntpdate_shellcmd, CMD_TYPE_EX, "ntpdate", XARGS, (CmdCallBackFunc)osShellNtpdate);
+SHELLCMD_ENTRY(ntpdate_shellcmd, CMD_TYPE_EX, "ntpdate", XARGS, (CmdCallBackFunc)osShellNtpdate);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL_CMD_DEBUG */
 
 #endif /* LWIP_SNTP*/
@@ -2741,7 +2741,7 @@ usage:
     return LOS_NOK;
 }
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(tftp_shellcmd, CMD_TYPE_EX, "tftp", XARGS, (CmdCallBackFunc)osShellTftp);
+SHELLCMD_ENTRY(tftp_shellcmd, CMD_TYPE_EX, "tftp", XARGS, (CmdCallBackFunc)osShellTftp);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL_CMD_DEBUG */
 #endif /* LOSCFG_NET_LWIP_SACK_TFTP */
 
@@ -2815,7 +2815,7 @@ usage:
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(dns_shellcmd, CMD_TYPE_EX, "dns", XARGS, (CmdCallBackFunc)osShellDns);
+SHELLCMD_ENTRY(dns_shellcmd, CMD_TYPE_EX, "dns", XARGS, (CmdCallBackFunc)osShellDns);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL_CMD_DEBUG */
 #endif /* LWIP_DNS */
 #if LWIP_IPV6
@@ -3490,7 +3490,7 @@ err_hand:
     return LOS_NOK;
 }
 #ifdef LOSCFG_SHELL
-SHELLCMD_ENTRY(netstat_shellcmd, CMD_TYPE_EX, "netstat", XARGS, (CmdCallBackFunc)osShellNetstat);
+SHELLCMD_ENTRY(netstat_shellcmd, CMD_TYPE_EX, "netstat", XARGS, (CmdCallBackFunc)osShellNetstat);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL */
 
 #define NETIF_NAME_LEN 10
@@ -3540,7 +3540,7 @@ u32_t OsShellDhclient(int argc, const char **argv)
 }
 
 #ifdef LOSCFG_SHELL
-SHELLCMD_ENTRY(dhclient_shellcmd, CMD_TYPE_EX, "dhclient", XARGS, (CmdCallBackFunc)OsShellDhclient);
+SHELLCMD_ENTRY(dhclient_shellcmd, CMD_TYPE_EX, "dhclient", XARGS, (CmdCallBackFunc)OsShellDhclient);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL */
 
 #ifdef LWIP_DEBUG_TCPSERVER
@@ -3658,7 +3658,7 @@ u32_t osTcpserver(int argc, const char **argv)
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(tcpserver_shellcmd, CMD_TYPE_EX, "tcpserver", XARGS, (CmdCallBackFunc)osTcpserver);
+SHELLCMD_ENTRY(tcpserver_shellcmd, CMD_TYPE_EX, "tcpserver", XARGS, (CmdCallBackFunc)osTcpserver);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL_CMD_DEBUG */
 #endif /* LWIP_DEBUG_TCPSERVER */
 
@@ -3733,7 +3733,7 @@ void udpserver(int argc, const char **argv)
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(udpserver_shellcmd, CMD_TYPE_EX, "udpserver", XARGS, (CmdCallBackFunc)udpserver);
+SHELLCMD_ENTRY(udpserver_shellcmd, CMD_TYPE_EX, "udpserver", XARGS, (CmdCallBackFunc)udpserver);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL_CMD_DEBUG */
 #endif /* LWIP_DEBUG_UDPSERVER */
 
@@ -3854,7 +3854,7 @@ usage_sock:
 #endif /* LWIP_DEBUG_INFO */
 
 #if defined(LOSCFG_SHELL_CMD_DEBUG) && defined(LWIP_DEBUG_INFO)
-SHELLCMD_ENTRY(netdebug_shellcmd, CMD_TYPE_EX, "netdebug", XARGS, (CmdCallBackFunc)osShellNetDebug);
+SHELLCMD_ENTRY(netdebug_shellcmd, CMD_TYPE_EX, "netdebug", XARGS, (CmdCallBackFunc)osShellNetDebug);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL_CMD_DEBUG && LWIP_DEBUG_INFO */
 
 u32_t osShellIpDebug(int argc, const char **argv)
@@ -3984,7 +3984,7 @@ exit:
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(ipdebug_shellcmd, CMD_TYPE_EX, "ipdebug", XARGS, (CmdCallBackFunc)osShellIpDebug);
+SHELLCMD_ENTRY(ipdebug_shellcmd, CMD_TYPE_EX, "ipdebug", XARGS, (CmdCallBackFunc)osShellIpDebug);//采用shell命令静态注册方式
 #endif
 #ifdef LWIP_TESTBED
 extern void cmd_reset(void);
@@ -3995,7 +3995,7 @@ void osShellReboot(int argc, const char **argv)
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(reboot_shellcmd, CMD_TYPE_EX, "reboot", XARGS, (CmdCallBackFunc)osShellReboot);
+SHELLCMD_ENTRY(reboot_shellcmd, CMD_TYPE_EX, "reboot", XARGS, (CmdCallBackFunc)osShellReboot);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL_CMD_DEBUG */
 #endif
 

@@ -491,7 +491,7 @@ TASK_HELP:
 }
 
 #ifdef LOSCFG_SHELL
-SHELLCMD_ENTRY(task_shellcmd, CMD_TYPE_EX, "task", 1, (CmdCallBackFunc)OsShellCmdDumpTask);
+SHELLCMD_ENTRY(task_shellcmd, CMD_TYPE_EX, "task", 1, (CmdCallBackFunc)OsShellCmdDumpTask);//采用shell命令静态注册方式
 #endif
 
 #ifdef __cplusplus

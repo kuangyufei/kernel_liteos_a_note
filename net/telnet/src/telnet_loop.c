@@ -583,7 +583,7 @@ INT32 TelnetCmd(UINT32 argc, const CHAR **argv)
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(telnet_shellcmd, CMD_TYPE_EX, "telnet", 1, (CmdCallBackFunc)TelnetCmd);
+SHELLCMD_ENTRY(telnet_shellcmd, CMD_TYPE_EX, "telnet", 1, (CmdCallBackFunc)TelnetCmd);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL_CMD_DEBUG */
 #endif
 

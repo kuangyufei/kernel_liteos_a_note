@@ -50,7 +50,7 @@ extern "C" {
 typedef UINT32 (*FUNC_ONE_TOKEN)(VOID *ctx, UINT32 index, CHAR *token);
 
 /*
- * Description: the info struct after cmd parser
+ * Description: the info struct after cmd parser //通过解析之后的结构体
  */
 typedef struct {
     UINT32 paramCnt;                /* count of para */

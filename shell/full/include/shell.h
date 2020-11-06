@@ -84,9 +84,9 @@ extern "C" {
 #define QUOTES_STATUS_OPEN(qu)  ((qu) == TRUE)
 
 typedef struct {
-    UINT32   consoleID;
-    UINT32   shellTaskHandle;
-    UINT32   shellEntryHandle;
+    UINT32   consoleID;			//控制台ID
+    UINT32   shellTaskHandle;	//shell task 的入口函数,这是用于创建 task时指定,类似 应用程序的main函数
+    UINT32   shellEntryHandle;	
     VOID     *cmdKeyLink;
     VOID     *cmdHistoryKeyLink;
     VOID     *cmdMaskKeyLink;
@@ -99,11 +99,11 @@ typedef struct {
     CHAR     shellWorkingDirectory[PATH_MAX];
 } ShellCB;
 
-/* All support cmd types */
+/* All support cmd types *///所有支持的 CMD 类型
 typedef enum {
     CMD_TYPE_SHOW = 0,
-    CMD_TYPE_STD = 1,
-    CMD_TYPE_EX = 2,
+    CMD_TYPE_STD = 1,	//支持的标准命令参数输入，所有输入的字符都会通过命令解析后被传入
+    CMD_TYPE_EX = 2,	//不支持标准命令参数输入，会把用户填写的命令关键字屏蔽掉，例如：输入ls /ramfs，传入给注册函数的参数只有/ramfs，而ls命令关键字并不会被传入。
     CMD_TYPE_BUTT
 } CmdType;
 
@@ -116,16 +116,16 @@ typedef enum {
 } CmdKeyDirection;
 
 /*
- * Hook for user-defined debug function
+ * Hook for user-defined debug function			//用户定义的调试函数的钩子,统一不同模块的函数进行注册
  * Unify differnt module's func for registration
  */
-typedef UINT32 (*CmdCallBackFunc)(UINT32 argc, const CHAR **argv);
+typedef UINT32 (*CmdCallBackFunc)(UINT32 argc, const CHAR **argv);//shell 对应命令 的处理函数
 
 /* External interface, need reserved */
 typedef CmdCallBackFunc CMD_CBK_FUNC;
 typedef CmdType CMD_TYPE_E;
 
-extern UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNum, CmdCallBackFunc cmdProc);
+extern UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNum, CmdCallBackFunc cmdProc);//shell 动态命令注册
 
 #ifdef __cplusplus
 #if __cplusplus

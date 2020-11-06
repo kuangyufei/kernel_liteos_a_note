@@ -62,7 +62,7 @@ INT32 osShellCmdReadExcInfo(INT32 argc, CHAR **argv)
     buf = NULL;
     return LOS_OK;
 }
-SHELLCMD_ENTRY(readExcInfo_shellcmd, CMD_TYPE_EX, "excInfo", 0, (CmdCallBackFunc)osShellCmdReadExcInfo);
+SHELLCMD_ENTRY(readExcInfo_shellcmd, CMD_TYPE_EX, "excInfo", 0, (CmdCallBackFunc)osShellCmdReadExcInfo);//采用shell命令静态注册方式
 #ifdef __cplusplus
 #if __cplusplus
 }

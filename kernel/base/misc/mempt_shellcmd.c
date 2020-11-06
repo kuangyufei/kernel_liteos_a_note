@@ -318,21 +318,21 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemRecordDisable(INT32 argc, const CHAR 
 }
 
 SHELLCMD_ENTRY(memshowenable_shellcmd, CMD_TYPE_EX, "memshowenable", 0,
-               (CmdCallBackFunc)OsShellCmdMemRecordEnable);
+               (CmdCallBackFunc)OsShellCmdMemRecordEnable);//采用shell命令静态注册方式
 SHELLCMD_ENTRY(memshowdisable_shellcmd, CMD_TYPE_EX, "memshowdisable", 0,
-               (CmdCallBackFunc)OsShellCmdMemRecordDisable);
+               (CmdCallBackFunc)OsShellCmdMemRecordDisable);//采用shell命令静态注册方式
 #endif
 
 #ifdef LOSCFG_MEM_LEAKCHECK
-SHELLCMD_ENTRY(memused_shellcmd, CMD_TYPE_EX, "memused", 0, (CmdCallBackFunc)OsShellCmdMemUsed);
+SHELLCMD_ENTRY(memused_shellcmd, CMD_TYPE_EX, "memused", 0, (CmdCallBackFunc)OsShellCmdMemUsed);//采用shell命令静态注册方式
 #endif
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(memcheck_shellcmd, CMD_TYPE_EX, "memcheck", 0, (CmdCallBackFunc)OsShellCmdMemCheck);
-SHELLCMD_ENTRY(readreg_shellcmd, CMD_TYPE_EX, "readreg", MEMPT_ARG_NUM_2, (CmdCallBackFunc)OsShellCmdMemRead);
+SHELLCMD_ENTRY(memcheck_shellcmd, CMD_TYPE_EX, "memcheck", 0, (CmdCallBackFunc)OsShellCmdMemCheck);//采用shell命令静态注册方式
+SHELLCMD_ENTRY(readreg_shellcmd, CMD_TYPE_EX, "readreg", MEMPT_ARG_NUM_2, (CmdCallBackFunc)OsShellCmdMemRead);//采用shell命令静态注册方式
 #endif
-SHELLCMD_ENTRY(free_shellcmd, CMD_TYPE_EX, "free", XARGS, (CmdCallBackFunc)OsShellCmdFree);
-SHELLCMD_ENTRY(uname_shellcmd, CMD_TYPE_EX, "uname", XARGS, (CmdCallBackFunc)OsShellCmdUname);
+SHELLCMD_ENTRY(free_shellcmd, CMD_TYPE_EX, "free", XARGS, (CmdCallBackFunc)OsShellCmdFree);//采用shell命令静态注册方式
+SHELLCMD_ENTRY(uname_shellcmd, CMD_TYPE_EX, "uname", XARGS, (CmdCallBackFunc)OsShellCmdUname);//采用shell命令静态注册方式
 #endif
 
 #ifdef __cplusplus

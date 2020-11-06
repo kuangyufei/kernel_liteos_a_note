@@ -249,13 +249,13 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdOom(INT32 argc, const CHAR *argv[])
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(oom_shellcmd, CMD_TYPE_SHOW, OOM_CMD, 2, (CmdCallBackFunc)OsShellCmdOom);
-SHELLCMD_ENTRY(vm_shellcmd, CMD_TYPE_SHOW, VMM_CMD, 1, (CmdCallBackFunc)OsShellCmdDumpVm);
-SHELLCMD_ENTRY(v2p_shellcmd, CMD_TYPE_SHOW, VMM_PMM_CMD, 1, (CmdCallBackFunc)OsShellCmdV2P);
+SHELLCMD_ENTRY(oom_shellcmd, CMD_TYPE_SHOW, OOM_CMD, 2, (CmdCallBackFunc)OsShellCmdOom);//采用shell命令静态注册方式
+SHELLCMD_ENTRY(vm_shellcmd, CMD_TYPE_SHOW, VMM_CMD, 1, (CmdCallBackFunc)OsShellCmdDumpVm);//采用shell命令静态注册方式
+SHELLCMD_ENTRY(v2p_shellcmd, CMD_TYPE_SHOW, VMM_PMM_CMD, 1, (CmdCallBackFunc)OsShellCmdV2P);//采用shell命令静态注册方式
 #endif
 
 #ifdef LOSCFG_SHELL
-SHELLCMD_ENTRY(pmm_shellcmd, CMD_TYPE_SHOW, "pmm", 0, (CmdCallBackFunc)OsShellCmdDumpPmm);
+SHELLCMD_ENTRY(pmm_shellcmd, CMD_TYPE_SHOW, "pmm", 0, (CmdCallBackFunc)OsShellCmdDumpPmm);//采用shell命令静态注册方式
 #endif
 
 #ifdef __cplusplus

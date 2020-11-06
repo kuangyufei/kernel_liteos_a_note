@@ -271,5 +271,5 @@ WATCH_ERROR:
     return OS_ERROR;
 }
 
-SHELLCMD_ENTRY(watch_shellcmd, CMD_TYPE_EX, "watch", XARGS, (CmdCallBackFunc)OsShellCmdWatch);
+SHELLCMD_ENTRY(watch_shellcmd, CMD_TYPE_EX, "watch", XARGS, (CmdCallBackFunc)OsShellCmdWatch);//采用shell命令静态注册方式
 #endif

@@ -88,6 +88,6 @@ ERROR:
 }
 
 #ifdef LOSCFG_SHELL
-SHELLCMD_ENTRY(kill_shellcmd, CMD_TYPE_EX, "kill", 2, (CmdCallBackFunc)OsShellCmdKill);
+SHELLCMD_ENTRY(kill_shellcmd, CMD_TYPE_EX, "kill", 2, (CmdCallBackFunc)OsShellCmdKill);//采用shell命令静态注册方式
 #endif
 

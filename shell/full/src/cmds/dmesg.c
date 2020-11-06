@@ -772,7 +772,7 @@ ERR_OUT:
     return -1;
 }
 
-SHELLCMD_ENTRY(dmesg_shellcmd, CMD_TYPE_STD, "dmesg", XARGS, (CmdCallBackFunc)OsShellCmdDmesg);
+SHELLCMD_ENTRY(dmesg_shellcmd, CMD_TYPE_STD, "dmesg", XARGS, (CmdCallBackFunc)OsShellCmdDmesg);//采用shell命令静态注册方式
 
 #ifdef __cplusplus
 #if __cplusplus

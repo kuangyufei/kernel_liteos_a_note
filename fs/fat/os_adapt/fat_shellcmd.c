@@ -115,7 +115,7 @@ int osShellCmdVirstatfs(int argc, char** argv)
 #endif
 
 #if defined(LOSCFG_FS_FAT_VIRTUAL_PARTITION) && defined(LOSCFG_SHELL_CMD_DEBUG)
-    SHELLCMD_ENTRY(virstatfs_shellcmd, CMD_TYPE_EX, "virstatfs", XARGS, (CmdCallBackFunc)osShellCmdVirstatfs);
+    SHELLCMD_ENTRY(virstatfs_shellcmd, CMD_TYPE_EX, "virstatfs", XARGS, (CmdCallBackFunc)osShellCmdVirstatfs);//采用shell命令静态注册方式
 #endif
-SHELLCMD_ENTRY(format_shellcmd, CMD_TYPE_EX, "format", XARGS, (CmdCallBackFunc)osShellCmdFormat);
+SHELLCMD_ENTRY(format_shellcmd, CMD_TYPE_EX, "format", XARGS, (CmdCallBackFunc)osShellCmdFormat);//采用shell命令静态注册方式
 #endif

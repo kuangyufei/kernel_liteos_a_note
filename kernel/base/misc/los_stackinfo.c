@@ -142,5 +142,5 @@ VOID OsStackInit(VOID *stacktop, UINT32 stacksize)
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(stack_shellcmd, CMD_TYPE_EX, "stack", 1, (CmdCallBackFunc)OsExcStackInfo);
+SHELLCMD_ENTRY(stack_shellcmd, CMD_TYPE_EX, "stack", 1, (CmdCallBackFunc)OsExcStackInfo);//采用shell命令静态注册方式
 #endif

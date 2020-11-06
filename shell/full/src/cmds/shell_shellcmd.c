@@ -57,4 +57,4 @@ UINT32 OsShellCmdHelp(UINT32 argc, const CHAR **argv)
     return 0;
 }
 
-SHELLCMD_ENTRY(help_shellcmd, CMD_TYPE_EX, "help", 0, (CmdCallBackFunc)OsShellCmdHelp);
+SHELLCMD_ENTRY(help_shellcmd, CMD_TYPE_EX, "help", 0, (CmdCallBackFunc)OsShellCmdHelp);//采用shell命令静态注册方式

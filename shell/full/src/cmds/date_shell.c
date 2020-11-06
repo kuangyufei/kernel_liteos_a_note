@@ -299,4 +299,4 @@ INT32 OsShellCmdDate(INT32 argc, const CHAR **argv)
     return DATE_OK;
 }
 
-SHELLCMD_ENTRY(date_shellcmd, CMD_TYPE_STD, "date", XARGS, (CmdCallBackFunc)OsShellCmdDate);
+SHELLCMD_ENTRY(date_shellcmd, CMD_TYPE_STD, "date", XARGS, (CmdCallBackFunc)OsShellCmdDate);//采用shell命令静态注册方式

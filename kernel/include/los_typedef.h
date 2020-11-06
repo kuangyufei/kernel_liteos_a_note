@@ -224,7 +224,7 @@ typedef int STATUS_T;
 #define LOSBLD_ATTRIB_ALIGN(__align__) __attribute__((aligned(__align__)))
 #endif
 
-/* Assign a defined variable to a specific section */
+/* Assign a defined variable to a specific section */	//将定义的变量分配给特定的节
 #if !defined(LOSBLD_ATTRIB_SECTION)
 #define LOSBLD_ATTRIB_SECTION(__sect__) __attribute__((section(__sect__)))
 #endif

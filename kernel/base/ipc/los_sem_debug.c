@@ -301,7 +301,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdSemInfoGet(UINT32 argc, const CHAR **arg
     return ret;
 }
 
-SHELLCMD_ENTRY(sem_shellcmd, CMD_TYPE_EX, "sem", 1, (CmdCallBackFunc)OsShellCmdSemInfoGet);
+SHELLCMD_ENTRY(sem_shellcmd, CMD_TYPE_EX, "sem", 1, (CmdCallBackFunc)OsShellCmdSemInfoGet);//采用shell命令静态注册方式
 #endif
 
 #ifdef __cplusplus

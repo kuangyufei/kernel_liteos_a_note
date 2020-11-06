@@ -43,12 +43,12 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+//若开关LOSCFG_CPUP_INCLUDE_IRQ打开，则还会显示各个中断的处理时间（cycles）、CPU占用率以及中断类型。
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
 STATIC CPUP_INFO_S g_hwiCpupAll[OS_HWI_MAX_NUM];
 STATIC CPUP_INFO_S g_hwiCpup10s[OS_HWI_MAX_NUM];
 STATIC CPUP_INFO_S g_hwiCpup1s[OS_HWI_MAX_NUM];
-LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdHwi(INT32 argc, const CHAR **argv)
+LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdHwi(INT32 argc, const CHAR **argv)//hwi命令查询当前中断信息
 {
     UINT32 i;
     UINT32 intSave;
@@ -101,7 +101,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdHwi(INT32 argc, const CHAR **argv)
     return 0;
 }
 #else
-LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdHwi(INT32 argc, const CHAR **argv)
+LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdHwi(INT32 argc, const CHAR **argv) //hwi命令查询当前中断信息
 {
     UINT32 i;
 
@@ -113,18 +113,18 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdHwi(INT32 argc, const CHAR **argv)
 
     PRINTK(" InterruptNo     Count     Name\n");
     for (i = OS_HWI_FORM_EXC_NUM; i < OS_HWI_MAX_NUM + OS_HWI_FORM_EXC_NUM; i++) {
-        /* Different cores has different hwi form implementation */
-        if (HWI_IS_REGISTED(i) && (OsGetHwiFormName(i) != NULL)) {
-            PRINTK(" %8d:%10d:      %-s\n", i, OsGetHwiFormCnt(i), OsGetHwiFormName(i));
+        /* Different cores has different hwi form implementation */	//不同的核心有不同的硬件形式实现
+        if (HWI_IS_REGISTED(i) && (OsGetHwiFormName(i) != NULL)) {//中断是否注册且是否有名称
+            PRINTK(" %8d:%10d:      %-s\n", i, OsGetHwiFormCnt(i), OsGetHwiFormName(i));//中断号,中断次数,注册中断名称。
         } else if (HWI_IS_REGISTED(i)) {
-            PRINTK(" %8d:%10d:\n", i, OsGetHwiFormCnt(i));
+            PRINTK(" %8d:%10d:\n", i, OsGetHwiFormCnt(i));//中断次数
         }
     }
     return 0;
 }
 #endif
 
-SHELLCMD_ENTRY(hwi_shellcmd, CMD_TYPE_EX, "hwi", 0, (CmdCallBackFunc)OsShellCmdHwi);
+SHELLCMD_ENTRY(hwi_shellcmd, CMD_TYPE_EX, "hwi", 0, (CmdCallBackFunc)OsShellCmdHwi);//采用shell命令静态注册方式
 
 #ifdef __cplusplus
 #if __cplusplus

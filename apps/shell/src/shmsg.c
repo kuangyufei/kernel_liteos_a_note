@@ -537,26 +537,26 @@ void *ShellTask(void *argv)
 
     return NULL;
 }
-
+//shell 任务的初始化 参数为shell控制块, shell对内核来说本质就是一个task(线程) ,任务优先级为 9
 int ShellTaskInit(ShellCB *shellCB)
 {
     unsigned int ret;
-    size_t stackSize = SHELL_TASK_STACKSIZE;
+    size_t stackSize = SHELL_TASK_STACKSIZE;// 0x3000 = 12K
     void *arg = NULL;
-    pthread_attr_t attr;
+    pthread_attr_t attr;	// posix 线程属性
 
     if (shellCB == NULL) {
         return SH_NOK;
     }
 
-    ret = pthread_attr_init(&attr);
+    ret = pthread_attr_init(&attr);//posix 线程属性的初始化
     if (ret != SH_OK) {
         return SH_NOK;
     }
 
-    pthread_attr_setstacksize(&attr, stackSize);
+    pthread_attr_setstacksize(&attr, stackSize);//设置线程栈大小
     arg = (void *)shellCB;
-    ret = pthread_create(&shellCB->shellTaskHandle, &attr, &ShellTask, arg);
+    ret = pthread_create(&shellCB->shellTaskHandle, &attr, &ShellTask, arg);//通过posix创建shell task
     if (ret != SH_OK) {
         return SH_NOK;
     }
