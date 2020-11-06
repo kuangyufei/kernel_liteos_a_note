@@ -66,13 +66,13 @@ STATIC VOID OsPrintSwtmrMsg(const SWTMR_CTRL_S *swtmr)
            "%-6u  "
            "0x%08x  "
            "%p\n",
-           swtmr->usTimerID % LOSCFG_BASE_CORE_SWTMR_LIMIT,
-           g_shellSwtmrStatus[swtmr->ucState],
-           g_shellSwtmrMode[swtmr->ucMode],
-           swtmr->uwInterval,
-           swtmr->uwCount,
-           swtmr->uwArg,
-           swtmr->pfnHandler);
+           swtmr->usTimerID % LOSCFG_BASE_CORE_SWTMR_LIMIT,	//软件定时器ID。
+           g_shellSwtmrStatus[swtmr->ucState],	//软件定时器状态,状态可能为："UnUsed", "Created", "Ticking"。
+           g_shellSwtmrMode[swtmr->ucMode],		//软件定时器模式。模式可能为："Once", "Period", "NSD（单次定时器，定时结束后不会自动删除）"
+           swtmr->uwInterval,	//软件定时器使用的Tick数。
+           swtmr->uwCount,		//软件定时器已经工作的次数。
+           swtmr->uwArg,		//传入的参数。
+           swtmr->pfnHandler);	//回调函数的地址。
 }
 
 STATIC INLINE VOID OsPrintSwtmrMsgHead(VOID)
@@ -80,7 +80,9 @@ STATIC INLINE VOID OsPrintSwtmrMsgHead(VOID)
     PRINTK("\r\nSwTmrID     State    Mode    Interval  Count   Arg         handlerAddr\n");
     PRINTK("----------  -------  ------- --------- ------- ----------  --------\n");
 }
-
+//shell命令之swtmr 命令用于查询系统软件定时器相关信息。 
+//参数缺省时，默认显示所有软件定时器的相关信息。
+//swtmr后加ID号时，显示ID对应的软件定时器相关信息。
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdSwtmrInfoGet(INT32 argc, const UINT8 **argv)
 {
 #define OS_ALL_SWTMR_MASK 0xffffffff

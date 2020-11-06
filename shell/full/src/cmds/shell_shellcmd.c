@@ -30,12 +30,12 @@
  */
 
 #include "shcmd.h"
-
+//shell help 命令
 UINT32 OsShellCmdHelp(UINT32 argc, const CHAR **argv)
 {
     UINT32 loop = 0;
     CmdItemNode *curCmdItem = NULL;
-    CmdModInfo *cmdInfo = OsCmdInfoGet();
+    CmdModInfo *cmdInfo = OsCmdInfoGet();//获取命令链表
 
     (VOID)argv;
     if (argc > 0) {
@@ -44,11 +44,11 @@ UINT32 OsShellCmdHelp(UINT32 argc, const CHAR **argv)
     }
 
     PRINTK("*******************shell commands:*************************\n");
-    LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(cmdInfo->cmdList.list), CmdItemNode, list) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(cmdInfo->cmdList.list), CmdItemNode, list) {//循环链表
         if ((loop & (8 - 1)) == 0) { /* 8 - 1:just align print */
             PRINTK("\n");
         }
-        PRINTK("%-12s  ", curCmdItem->cmd->cmdKey);
+        PRINTK("%-12s  ", curCmdItem->cmd->cmdKey);//打印 ls 这类命令
 
         loop++;
     }

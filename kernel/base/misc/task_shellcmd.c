@@ -95,49 +95,49 @@ STATIC UINT32 *g_taskWaterLine = NULL;
 #else
 #define PROCESS_INFO_SHOW(seqBuf, arg...) PRINTK(arg)
 #endif
-
+//shell task 显示进程的模式
 LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellCmdProcessMode(UINT16 mode)
 {
-    if (mode == OS_KERNEL_MODE) {
+    if (mode == OS_KERNEL_MODE) {//内核进程
         return (UINT8 *)"kernel";
-    } else if (mode == OS_USER_MODE) {
+    } else if (mode == OS_USER_MODE) {//用户进程
         return (UINT8 *)"user";
     }
 
     return (UINT8 *)"ERROR";
 }
-
+//shell task 显示调度方式
 LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellCmdSchedPolicy(UINT16 policy)
 {
-    if (policy == LOS_SCHED_RR) {
+    if (policy == LOS_SCHED_RR) {//抢占式
         return (UINT8 *)"RR";
-    } else if (policy == LOS_SCHED_FIFO) {
+    } else if (policy == LOS_SCHED_FIFO) {//排队式
         return (UINT8 *)"FIFO";
     }
 
     return (UINT8 *)"ERROR";
 }
-
+//进程的五种状态
 LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellProcessStatus(UINT16 status)
 {
     status = status & OS_PROCESS_STATUS_MASK;
-    if (status & OS_PROCESS_STATUS_ZOMBIES) {
-        return (UINT8 *)"Zombies";
-    } else if (status & OS_PROCESS_STATUS_INIT) {
+    if (status & OS_PROCESS_STATUS_ZOMBIES) {//僵死状态
+        return (UINT8 *)"Zombies";	
+    } else if (status & OS_PROCESS_STATUS_INIT) {//初始状态
         return (UINT8 *)"Init";
-    } else if (status & OS_PROCESS_STATUS_RUNNING) {
+    } else if (status & OS_PROCESS_STATUS_RUNNING) {//正运行状态
         return (UINT8 *)"Running";
-    } else if (status & OS_PROCESS_STATUS_READY) {
+    } else if (status & OS_PROCESS_STATUS_READY) {//就绪状态
         return (UINT8 *)"Ready";
     } else {
-        if (status & OS_PROCESS_STATUS_PEND) {
+        if (status & OS_PROCESS_STATUS_PEND) {//阻塞状态
             return (UINT8 *)"Pend";
         }
     }
 
     return (UINT8 *)"Invalid";
 }
-
+//打印shell task 进程部分的头部
 STATIC VOID OsShellCmdProcessTitle(VOID *seqBuf, UINT16 flag)
 {
     PROCESS_INFO_SHOW(seqBuf, "\r\n  PID  PPID PGID       UID  Status ");
@@ -145,7 +145,7 @@ STATIC VOID OsShellCmdProcessTitle(VOID *seqBuf, UINT16 flag)
         PROCESS_INFO_SHOW(seqBuf, "VirtualMem ShareMem PhysicalMem ");
     }
 
-#ifdef LOSCFG_KERNEL_CPUP
+#ifdef LOSCFG_KERNEL_CPUP	//统计系统CPU的占用率开关
     if (flag & OS_PROCESS_INFO_ALL) {
         PROCESS_INFO_SHOW(seqBuf, "CPUUSE CPUUSE10s CPUUSE1s ");
     } else {
@@ -172,7 +172,7 @@ STATIC VOID OsShellCmdProcessInfoShow(const LosProcessCB *processCB, const INT32
         PROCESS_INFO_SHOW(seqBuf, "%#11x%#9x%#12x", procMemUsage[PROCESS_VM_INDEX], procMemUsage[PROCESS_SM_INDEX],
                           procMemUsage[PROCESS_PM_INDEX]);
     }
-#ifdef LOSCFG_KERNEL_CPUP
+#ifdef LOSCFG_KERNEL_CPUP	//统计系统CPU的占用率开关
     if (flag & OS_PROCESS_INFO_ALL) {
         PROCESS_INFO_SHOW(seqBuf, "%5u.%1u%8u.%1u%7u.%-1u ",
                           g_processCpupAll[pid].uwUsage / LOS_CPUP_PRECISION_MULT,
@@ -195,7 +195,7 @@ STATIC VOID OsShellCmdProcessInfoShow(const LosProcessCB *processCB, const INT32
     }
     PROCESS_INFO_SHOW(seqBuf, " %-32s\n", processCB->processName);
 }
-
+//shell task 所有进程的信息
 STATIC VOID OsShellCmdAllProcessInfoShow(const LosProcessCB *pcbArray, const INT32 *group,
                                          const UINT32 *memArray, VOID *seqBuf, UINT16 flag)
 {
@@ -204,23 +204,23 @@ STATIC VOID OsShellCmdAllProcessInfoShow(const LosProcessCB *pcbArray, const INT
 
     for (pid = 1; pid < g_processMaxNum; ++pid) {
         processCB = pcbArray + pid;
-        if (OsProcessIsUnused(processCB)) {
+        if (OsProcessIsUnused(processCB)) {//是否为线程池中未分配使用的进程
             continue;
         }
 
         OsShellCmdProcessInfoShow(processCB, group, memArray, seqBuf, flag);
     }
 }
-
+//进程内存的使用情况
 STATIC VOID OsProcessMemUsageGet(UINT32 *memArray)
 {
     UINT32 pid;
     LosProcessCB *processCB = NULL;
     UINT32 *proMemUsage = NULL;
 
-    for (pid = 0; pid < g_processMaxNum; ++pid) {
+    for (pid = 0; pid < g_processMaxNum; ++pid) {//遍历进程
         processCB = g_processCBArray + pid;
-        if (OsProcessIsUnused(processCB)) {
+        if (OsProcessIsUnused(processCB)) {//是否为线程池中未分配使用的进程
             continue;
         }
         proMemUsage = &memArray[pid * PROCESS_VM_INDEX_MAX];
@@ -339,7 +339,7 @@ STATIC VOID OsShellCmdTaskWaterLineGet(const LosTaskCB *allTaskArray)
                                   (const UINTPTR *)taskCB->topOfStack, &g_taskWaterLine[taskCB->taskID]);
     }
 }
-
+//打印 shell task 命令 title 信息
 STATIC VOID OsShellCmdTskInfoTitle(VOID *seqBuf, UINT16 flag)
 {
     PROCESS_INFO_SHOW(seqBuf, "\r\n  TID  PID ");
@@ -389,7 +389,7 @@ STATIC INLINE VOID OsShellTskInfoData(const LosTaskCB *taskCB, VOID *seqBuf, UIN
     }
     PROCESS_INFO_SHOW(seqBuf, "%#10x  %-32s\n", OsTaskMemUsage(taskCB->taskID), taskCB->taskName);
 }
-
+//获取所有任务的数据信息
 STATIC VOID OsShellCmdAllTaskInfoData(const LosTaskCB *allTaskArray, VOID *seqBuf, UINT16 flag)
 {
     const LosTaskCB *taskCB = NULL;
@@ -407,13 +407,13 @@ STATIC VOID OsShellCmdAllTaskInfoData(const LosTaskCB *allTaskArray, VOID *seqBu
         }
     }
 }
-
+//获取任务的数据信息
 STATIC VOID OsShellCmdTskInfoData(const LosTaskCB *allTaskArray, VOID *seqBuf, UINT16 flag)
 {
     OsShellCmdTskInfoTitle(seqBuf, flag);
     OsShellCmdAllTaskInfoData(allTaskArray, seqBuf, flag);
 }
-
+//获取进程和任务的信息
 STATIC VOID OsProcessAndTaskInfoGet(LosProcessCB **pcbArray, INT32 **group, LosTaskCB **tcbArray,
                                     UINT32 **memArray, UINT16 flag)
 {
@@ -456,16 +456,16 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdTskInfoGet(UINT32 taskID, VOID *seqBuf, 
             return LOS_NOK;
         }
         (VOID)memset_s(pcbArray, size, 0, size);
-        OsProcessAndTaskInfoGet(&pcbArray, &group, &tcbArray, &memArray, flag);
-        OsShellCmdProcessInfoData(pcbArray, group, memArray, seqBuf, flag);
-        OsShellCmdTskInfoData(tcbArray, seqBuf, flag);
+        OsProcessAndTaskInfoGet(&pcbArray, &group, &tcbArray, &memArray, flag);//获取进程和任务的信息
+        OsShellCmdProcessInfoData(pcbArray, group, memArray, seqBuf, flag);//获取进程的数据信息
+        OsShellCmdTskInfoData(tcbArray, seqBuf, flag);//获取任务的数据信息
 
         (VOID)LOS_MemFree(m_aucSysMem1, pcbArray);
     }
 
     return LOS_OK;
 }
-
+//用于查询进程及线程信息 命令格式: task/task -a(查看更多信息) 参数缺省时默认打印部分任务信息
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpTask(INT32 argc, const CHAR **argv)
 {
     UINT32 flag = 0;

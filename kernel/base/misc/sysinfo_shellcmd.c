@@ -119,34 +119,34 @@ UINT32 OsShellCmdSwtmrCntGet(VOID)
     LOS_IntRestore(intSave);
     return swtmrCnt;
 }
-
+//查看系统资源使用情况
 LITE_OS_SEC_TEXT_MINOR VOID OsShellCmdSystemInfoGet(VOID)
 {
     UINT8 isTaskEnable  = YES;
     UINT8 isSemEnable   = LOSCFG_BASE_IPC_SEM;
     UINT8 isQueueEnable = LOSCFG_BASE_IPC_QUEUE;
     UINT8 isSwtmrEnable = LOSCFG_BASE_CORE_SWTMR;
-
+//模块名称	当前使用量 最大可用量              	   模块是否开启 
     PRINTK("\n   Module    Used      Total     Enabled\n");
     PRINTK("--------------------------------------------\n");
     PRINTK("   Task      %-10u%-10d%s\n",
-           OsShellCmdTaskCntGet(),
-           LOSCFG_BASE_CORE_TSK_LIMIT,
-           SYSINFO_ENABLED(isTaskEnable));
+           OsShellCmdTaskCntGet(),		//有效任务数
+           LOSCFG_BASE_CORE_TSK_LIMIT,	//任务最大数 128
+           SYSINFO_ENABLED(isTaskEnable));//任务是否失效 YES or NO
     PRINTK("   Sem       %-10u%-10d%s\n",
-           OsShellCmdSemCntGet(),
-           LOSCFG_BASE_IPC_SEM_LIMIT,
-           SYSINFO_ENABLED(isSemEnable));
+           OsShellCmdSemCntGet(),		//信号量的数量
+           LOSCFG_BASE_IPC_SEM_LIMIT,	//信号量最大数 1024
+           SYSINFO_ENABLED(isSemEnable));//信号量是否失效 YES or NO
     PRINTK("   Queue     %-10u%-10d%s\n",
-           OsShellCmdQueueCntGet(),
-           LOSCFG_BASE_IPC_QUEUE_LIMIT,
-           SYSINFO_ENABLED(isQueueEnable));
+           OsShellCmdQueueCntGet(),		//队列的数量
+           LOSCFG_BASE_IPC_QUEUE_LIMIT,	//队列的最大数 1024
+           SYSINFO_ENABLED(isQueueEnable));//队列是否失效 YES or NO
     PRINTK("   SwTmr     %-10u%-10d%s\n",
-           OsShellCmdSwtmrCntGet(),
-           LOSCFG_BASE_CORE_SWTMR_LIMIT,
-           SYSINFO_ENABLED(isSwtmrEnable));
+           OsShellCmdSwtmrCntGet(),		//定时器的数量
+           LOSCFG_BASE_CORE_SWTMR_LIMIT,	//定时器的总数 1024
+           SYSINFO_ENABLED(isSwtmrEnable));	//定时器是否失效 YES or NO
 }
-
+//systeminfo命令用于显示当前操作系统内资源使用情况，包括任务、信号量、互斥量、队列、定时器等。
 INT32 OsShellCmdSystemInfo(INT32 argc, const CHAR **argv)
 {
     if (argc == 0) {

@@ -130,8 +130,8 @@ extern "C" {
  * Count the CPU usage structures of all processs.
  */
 typedef struct tagCpupInfo {
-    UINT16 usStatus; /**< Save the cur process status     */
-    UINT32 uwUsage;  /**< Usage. The value range is [0,1000].   */
+    UINT16 usStatus; /**< Save the cur process status     */	   //保存当前进程的状态
+    UINT32 uwUsage;  /**< Usage. The value range is [0,1000].   */ //CPU的使用率
 } CPUP_INFO_S;
 
 /**

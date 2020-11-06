@@ -107,7 +107,7 @@ INT32 OsRegionOverlapCheckUnlock(LosVmSpace *space, LosVmMapRegion *region)
 
     return 0;
 }
-
+//shell task 进程虚拟内存的使用情况
 UINT32 OsShellCmdProcessVmUsage(LosVmSpace *space)
 {
     LosVmMapRegion *region = NULL;
@@ -119,18 +119,18 @@ UINT32 OsShellCmdProcessVmUsage(LosVmSpace *space)
         return 0;
     }
 
-    if (space == LOS_GetKVmSpace()) {
+    if (space == LOS_GetKVmSpace()) {//内核空间
         OsShellCmdProcessPmUsage(space, NULL, &used);
-    } else {
-        RB_SCAN_SAFE(&space->regionRbTree, pstRbNode, pstRbNodeNext)
-            region = (LosVmMapRegion *)pstRbNode;
-            used += region->range.size;
-        RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNode, pstRbNodeNext)
+    } else {//用户空间
+        RB_SCAN_SAFE(&space->regionRbTree, pstRbNode, pstRbNodeNext)//开始扫描红黑树
+            region = (LosVmMapRegion *)pstRbNode;//拿到线性区,注意LosVmMapRegion结构体的第一个变量就是pstRbNode,所以可直接(LosVmMapRegion *)转
+            used += region->range.size;//size叠加,算出总使用
+        RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNode, pstRbNodeNext)//结束扫描红黑树
     }
 
     return used;
 }
-
+//内核空间物理内存使用情况统计
 VOID OsKProcessPmUsage(LosVmSpace *kSpace, UINT32 *actualPm)
 {
     UINT32 memUsed;
@@ -155,23 +155,23 @@ VOID OsKProcessPmUsage(LosVmSpace *kSpace, UINT32 *actualPm)
     /* Kernel resident memory, include default heap memory */
     memUsed = SYS_MEM_SIZE_DEFAULT - (totalCount << PAGE_SHIFT);
 
-    spaceList = LOS_GetVmSpaceList();
-    LOS_DL_LIST_FOR_EACH_ENTRY(space, spaceList, LosVmSpace, node) {
-        if (space == LOS_GetKVmSpace()) {
+    spaceList = LOS_GetVmSpaceList();//获取虚拟空间链表,上面挂了所有虚拟空间
+    LOS_DL_LIST_FOR_EACH_ENTRY(space, spaceList, LosVmSpace, node) {//遍历链表
+        if (space == LOS_GetKVmSpace()) {//内核空间不统计
             continue;
         }
-        OsUProcessPmUsage(space, NULL, &pmTmp);
-        UProcessUsed += pmTmp;
+        OsUProcessPmUsage(space, NULL, &pmTmp);//统计用户空间物理内存的使用情况
+        UProcessUsed += pmTmp;//用户空间物理内存叠加
     }
 
-    /* Kernel dynamic memory, include extended heap memory */
+    /* Kernel dynamic memory, include extended heap memory */	//内核动态内存，包括扩展堆内存
     memUsed += ((usedCount << PAGE_SHIFT) - UProcessUsed);
-    /* Remaining heap memory */
+    /* Remaining heap memory */	//剩余堆内存
     memUsed -= freeMem;
 
     *actualPm = memUsed;
 }
-
+//shell task 物理内存的使用情况
 VOID OsShellCmdProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
 {
     if (space == NULL) {
@@ -182,10 +182,10 @@ VOID OsShellCmdProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actual
         return;
     }
 
-    if (space == LOS_GetKVmSpace()) {
-        OsKProcessPmUsage(space, actualPm);
-    } else {
-        OsUProcessPmUsage(space, sharePm, actualPm);
+    if (space == LOS_GetKVmSpace()) {//内核空间
+        OsKProcessPmUsage(space, actualPm);//内核空间物理内存使用情况统计
+    } else {//用户空间
+        OsUProcessPmUsage(space, sharePm, actualPm);//用户空间物理内存使用情况统计
     }
 }
 
