@@ -54,7 +54,7 @@ int raise(int sig)
 
 #define GETUNMASKSET(procmask, pendFlag) ((~(procmask)) & (sigset_t)(pendFlag))
 #define UINT64_BIT_SIZE 64
-
+//信号是否为数字
 int OsSigIsMember(const sigset_t *set, int signo)
 {
     int ret = LOS_NOK;
@@ -170,7 +170,7 @@ int OsSigprocMask(int how, const sigset_t_l *setl, sigset_t_l *oldset)
     }
     return ret;
 }
-//给进程的每一个task发送信号
+//让进程的每一个task执行参数函数
 int OsSigProcessForeachChild(LosProcessCB *spcb, ForEachTaskCB handler, void *arg)
 {
     int ret;
@@ -178,7 +178,7 @@ int OsSigProcessForeachChild(LosProcessCB *spcb, ForEachTaskCB handler, void *ar
     /* Visit the main thread last (if present) */	//最后访问主线程（如果有）
     LosTaskCB *taskCB = NULL;//遍历进程的 threadList 链表,里面存放的都是task节点
     LOS_DL_LIST_FOR_EACH_ENTRY(taskCB, &(spcb->threadSiblingList), LosTaskCB, threadList) {
-        ret = handler(taskCB, arg);//这里是个回调函数,给每个任务发信号,异步发信号
+        ret = handler(taskCB, arg);//这里是个参数函数,执行这个参数函数
         OS_RETURN_IF(ret != 0, ret);//这个宏的意思就是只有ret = 0时,啥也不处理.其余就返回 ret
     }
     return LOS_OK;
@@ -228,21 +228,21 @@ static int SigProcessSignalHandler(LosTaskCB *tcb, void *arg)
     }
     return 0; /* Keep searching */
 }
-//唤醒task 信号
+//干掉 task 的信号
 static int SigProcessKillSigHandler(LosTaskCB *tcb, void *arg)
 {
     struct ProcessSignalInfo *info = (struct ProcessSignalInfo *)arg;
 
-    if ((tcb != NULL) && (info != NULL) && (info->sigInfo != NULL)) {
+    if ((tcb != NULL) && (info != NULL) && (info->sigInfo != NULL)) {//进程有信号
         sig_cb *sigcb = &tcb->sig;
-        if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->sigInfo->si_signo)) {
-            OsTaskWake(tcb);
-            OsSigEmptySet(&sigcb->sigwaitmask);
+        if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->sigInfo->si_signo)) {//waitlist 不为空 且 有信号
+            OsTaskWake(tcb);//唤醒这个任务，加入进程的就绪队列
+            OsSigEmptySet(&sigcb->sigwaitmask);//清空信号
         }
     }
     return 0;
 }
-
+//进程加载task控制块信号
 static void SigProcessLoadTcb(struct ProcessSignalInfo *info, siginfo_t *sigInfo)
 {
     LosTaskCB *tcb = NULL;
@@ -259,7 +259,7 @@ static void SigProcessLoadTcb(struct ProcessSignalInfo *info, siginfo_t *sigInfo
         (void)OsTcbDispatch(tcb, sigInfo);
     }
 }
-
+//给参数进程发送参数信号
 int OsSigProcessSend(LosProcessCB *spcb, siginfo_t *sigInfo)
 {
     int ret;
@@ -271,14 +271,14 @@ int OsSigProcessSend(LosProcessCB *spcb, siginfo_t *sigInfo)
         .receivedTcb = NULL
     };
 
-    /* visit all taskcb and dispatch signal */
-    if ((info.sigInfo != NULL) && (info.sigInfo->si_signo == SIGKILL)) {
-        (void)OsSigProcessForeachChild(spcb, SigProcessKillSigHandler, &info);
+    /* visit all taskcb and dispatch signal */ //访问所有任务和分发信号
+    if ((info.sigInfo != NULL) && (info.sigInfo->si_signo == SIGKILL)) {//需要干掉进程时 SIGKILL = 9， #linux kill 9 14
+        (void)OsSigProcessForeachChild(spcb, SigProcessKillSigHandler, &info);//给进程的所有task发送信号
         OsSigAddSet(&spcb->sigShare, info.sigInfo->si_signo);
-        OsWaitSignalToWakeProcess(spcb);
+        OsWaitSignalToWakeProcess(spcb);//等待信号唤醒进程
         return 0;
     } else {
-        ret = OsSigProcessForeachChild(spcb, SigProcessSignalHandler, &info);
+        ret = OsSigProcessForeachChild(spcb, SigProcessSignalHandler, &info);//给进程所有task发送信号
     }
     if (ret < 0) {
         return ret;
@@ -286,42 +286,42 @@ int OsSigProcessSend(LosProcessCB *spcb, siginfo_t *sigInfo)
     SigProcessLoadTcb(&info, sigInfo);
     return 0;
 }
-
+//清空信号
 int OsSigEmptySet(sigset_t *set)
 {
     *set = NULL_SIGNAL_SET;
     return 0;
 }
 
-/* Privilege process can't send to kernel and privilege process */
+/* Privilege process can't send to kernel and privilege process */ //特权进程无法发送到内核和特权进程
 static int OsSignalPermissionToCheck(const LosProcessCB *spcb)
 {
     UINT32 gid = spcb->group->groupID;
 
-    if (gid == OS_KERNEL_PROCESS_GROUP) {
+    if (gid == OS_KERNEL_PROCESS_GROUP) {//内核进程组
         return -EPERM;
-    } else if (gid == OS_USER_PRIVILEGE_PROCESS_GROUP) {
+    } else if (gid == OS_USER_PRIVILEGE_PROCESS_GROUP) {//用户特权进程组
         return -EPERM;
     }
 
     return 0;
 }
-
+//发送信号
 int OsDispatch(pid_t pid, siginfo_t *info, int permission)
 {
-    LosProcessCB *spcb = OS_PCB_FROM_PID(pid);
+    LosProcessCB *spcb = OS_PCB_FROM_PID(pid);//找到这个进程
     if (OsProcessIsUnused(spcb)) {
         return -ESRCH;
     }
-#ifdef LOSCFG_SECURITY_CAPABILITY
-    LosProcessCB *current = OsCurrProcessGet();
+#ifdef LOSCFG_SECURITY_CAPABILITY	//启用安全模式
+    LosProcessCB *current = OsCurrProcessGet();//获取当前进程
 
     /* If the process you want to kill had been inactive, but still exist. should return LOS_OK */
-    if (OsProcessIsInactive(spcb)) {
+    if (OsProcessIsInactive(spcb)) {//如果要终止的进程处于非活动状态，但仍然存在，应该返回OK
         return LOS_OK;
     }
 
-    /* Kernel process always has kill permission and user process should check permission */
+    /* Kernel process always has kill permission and user process should check permission *///内核进程总是有kill权限，用户进程应该检查权限
     if (OsProcessIsUserMode(current) && !(current->processStatus & OS_PROCESS_FLAG_EXIT)) {
         if ((current != spcb) && (!IsCapPermit(CAP_KILL)) && (current->user->userID != spcb->user->userID)) {
             return -EPERM;
@@ -331,29 +331,29 @@ int OsDispatch(pid_t pid, siginfo_t *info, int permission)
     if ((permission == OS_USER_KILL_PERMISSION) && (OsSignalPermissionToCheck(spcb) < 0)) {
         return -EPERM;
     }
-    return OsSigProcessSend(spcb, info);
+    return OsSigProcessSend(spcb, info);//发送信号
 }
-
+//发送信号14（SIGALRM默认行为为进程终止）给7号进程：kill 14 7（kill -14 7效果相同），
 int OsKill(pid_t pid, int sig, int permission)
 {
     siginfo_t info;
     int ret;
 
     /* Make sure that the para is valid */
-    if (!GOOD_SIGNO(sig) || pid < 0) {
+    if (!GOOD_SIGNO(sig) || pid < 0) {//有效信号
         return -EINVAL;
     }
-    if (OsProcessIDUserCheckInvalid(pid)) {
+    if (OsProcessIDUserCheckInvalid(pid)) {//检查参数
         return -ESRCH;
     }
 
-    /* Create the siginfo structure */
-    info.si_signo = sig;
-    info.si_code = SI_USER;
+    /* Create the siginfo structure */ //创建信号结构体
+    info.si_signo = sig;	//信号编号
+    info.si_code = SI_USER;	//表示用户信号
     info.si_value.sival_ptr = NULL;
 
     /* Send the signal */
-    ret = OsDispatch(pid, &info, permission);
+    ret = OsDispatch(pid, &info, permission);//发送信号
     return ret;
 }
 
@@ -454,7 +454,7 @@ int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
     sigcb = &task->sig;
 
     if (sigcb->waitList.pstNext == NULL) {
-        LOS_ListInit(&sigcb->waitList);
+        LOS_ListInit(&sigcb->waitList);//初始化信号等待链表
     }
     /* If pendingflag & set > 0, shound clear pending flag */
     sigset_t clear = sigcb->sigPendFlag & *set;
@@ -466,7 +466,7 @@ int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
         OsSigAddSet(set, SIGSTOP);
 
         sigcb->sigwaitmask |= *set;
-        ret = OsTaskWait(&sigcb->waitList, timeout, TRUE);
+        ret = OsTaskWait(&sigcb->waitList, timeout, TRUE);//将当前任务挂到waitlist上
         if (ret == LOS_ERRNO_TSK_TIMEOUT) {
             ret = -EAGAIN;
         }
@@ -477,7 +477,7 @@ int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
     }
     return ret;
 }
-
+//
 int OsSigTimedWait(sigset_t *set, siginfo_t *info, unsigned int timeout)
 {
     int ret;

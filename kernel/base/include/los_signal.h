@@ -53,8 +53,8 @@ extern "C" {
 #define OS_SYSCALL_GET_CPSR(regs) (*((unsigned long *)((UINTPTR)(regs) - 4)))
 #define SIG_STOP_VISIT 1
 
-#define OS_KERNEL_KILL_PERMISSION 0U
-#define OS_USER_KILL_PERMISSION   3U
+#define OS_KERNEL_KILL_PERMISSION 0U	//内核级 kill 权限
+#define OS_USER_KILL_PERMISSION   3U	//用户级 kill 权限
 
 #define OS_RETURN_IF(expr, errcode) \
     if ((expr)) {                   \
@@ -94,8 +94,8 @@ typedef void (*sa_sighandler_t)(int);
 typedef void (*sa_siginfoaction_t)(int, siginfo_t *, void *);
 
 #define SIGNO2SET(s) ((sigset_t)1ULL << (s))
-#define NULL_SIGNAL_SET ((sigset_t)0ULL)
-#define FULL_SIGNAL_SET ((sigset_t)~0ULL)
+#define NULL_SIGNAL_SET ((sigset_t)0ULL)	//设置成没有信号
+#define FULL_SIGNAL_SET ((sigset_t)~0ULL)	//设置成满格信号
 
 static inline int GOOD_SIGNO(unsigned int sig)
 {
@@ -156,14 +156,14 @@ typedef struct {
     unsigned int count;
 } sig_switch_context;
 
-typedef struct {
+typedef struct {//信号控制块(描述符)
     sigset_t sigFlag;
     sigset_t sigPendFlag;
-    sigset_t sigprocmask; /* Signals that are blocked            */
+    sigset_t sigprocmask; /* Signals that are blocked            */	//信号屏蔽
     sq_queue_t sigactionq;
-    LOS_DL_LIST waitList;
-    sigset_t sigwaitmask; /* Waiting for pending signals         */
-    siginfo_t sigunbinfo; /* Signal info when task unblocked     */
+    LOS_DL_LIST waitList;	//等待链表							
+    sigset_t sigwaitmask; /* Waiting for pending signals         */	//等待挂起的信号
+    siginfo_t sigunbinfo; /* Signal info when task unblocked     */	//任务解除阻止时的信号信息
     sig_switch_context context;
 } sig_cb;
 

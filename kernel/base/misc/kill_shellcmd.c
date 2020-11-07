@@ -45,7 +45,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsPrintKillUsage(VOID)
 {
     PRINTK("\nkill: usage: kill [sigspec] [pid]\n");
 }
-
+// shell kill 命令用于发送特定信号给指定进程。kill [signo | -signo] [pid]
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdKill(INT32 argc, const CHAR **argv)
 {
 #define  ARG_NUM 2
@@ -67,7 +67,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdKill(INT32 argc, const CHAR **argv)
             goto ERROR;
         }
 
-        ret = OsKill(pidNo, abs(sigNo), OS_USER_KILL_PERMISSION);
+        ret = OsKill(pidNo, abs(sigNo), OS_USER_KILL_PERMISSION);// OS_USER_KILL_PERMISSION 干掉用户进程
         HILOG_INFO(LOG_CORE, "Send signal(%d) to pidNo = %d!\n", abs(sigNo), pidNo);
         if (ret == -1) {
             HILOG_ERROR(LOG_CORE, "Kill fail ret = %d! Operation not permitted\n", ret);
@@ -83,7 +83,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdKill(INT32 argc, const CHAR **argv)
     }
     return 0;
 ERROR:
-    OsPrintKillUsage();
+    OsPrintKillUsage();//失败时 打印 kill 的用法
     return 0;
 }
 

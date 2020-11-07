@@ -82,54 +82,54 @@ extern "C" {
 #define CP14_REG(CRn, Op1, CRm, Op2)    "p14, "#Op1", %0, "#CRn","#CRm","#Op2
 #define CP15_REG(CRn, Op1, CRm, Op2)    "p15, "#Op1", %0, "#CRn","#CRm","#Op2
 #define CP15_REG64(CRn, Op1)            "p15, "#Op1", %0,    %H0,"#CRn
-
+//CP15 协处理器各寄存器信息
 /*
- * Identification registers (c0)
+ * Identification registers (c0)	//c0 - 身份寄存器
  */
-#define MIDR                CP15_REG(c0, 0, c0, 0)    /* Main ID Register */
+#define MIDR                CP15_REG(c0, 0, c0, 0)    /* Main ID Register */	//主ID寄存器
 #define MPIDR               CP15_REG(c0, 0, c0, 5)    /* Multiprocessor Affinity Register *///多处理器关联寄存器给每个CPU制定一个逻辑地址
-#define CCSIDR              CP15_REG(c0, 1, c0, 0)    /* Cache Size ID Registers */
-#define CLIDR               CP15_REG(c0, 1, c0, 1)    /* Cache Level ID Register */
-#define VPIDR               CP15_REG(c0, 4, c0, 0)    /* Virtualization Processor ID Register */
-#define VMPIDR              CP15_REG(c0, 4, c0, 5)    /* Virtualization Multiprocessor ID Register */
+#define CCSIDR              CP15_REG(c0, 1, c0, 0)    /* Cache Size ID Registers */	//缓存大小ID寄存器
+#define CLIDR               CP15_REG(c0, 1, c0, 1)    /* Cache Level ID Register */	//缓存登记ID寄存器
+#define VPIDR               CP15_REG(c0, 4, c0, 0)    /* Virtualization Processor ID Register */	//虚拟化处理器ID寄存器
+#define VMPIDR              CP15_REG(c0, 4, c0, 5)    /* Virtualization Multiprocessor ID Register */	//虚拟化多处理器ID寄存器
 
 /*
- * System control registers (c1)
+ * System control registers (c1)	//c1 - 系统控制寄存器 各种控制位（可读写）
  */
-#define SCTLR               CP15_REG(c1, 0, c0, 0)    /* System Control Register */
-#define ACTLR               CP15_REG(c1, 0, c0, 1)    /* Auxiliary Control Register */
-#define CPACR               CP15_REG(c1, 0, c0, 2)    /* Coprocessor Access Control Register */
+#define SCTLR               CP15_REG(c1, 0, c0, 0)    /* System Control Register */	//系统控制寄存器
+#define ACTLR               CP15_REG(c1, 0, c0, 1)    /* Auxiliary Control Register */	//辅助控制寄存器
+#define CPACR               CP15_REG(c1, 0, c0, 2)    /* Coprocessor Access Control Register */	//协处理器访问控制寄存器
 
 /*
- * Memory protection and control registers (c2 & c3)
+ * Memory protection and control registers (c2 & c3) //c2 - 传说中的TTB寄存器，主要是给MMU使用 c3 - 域访问控制位
  */
-#define TTBR0               CP15_REG(c2, 0, c0, 0)    /* Translation Table Base Register 0 */
-#define TTBR1               CP15_REG(c2, 0, c0, 1)    /* Translation Table Base Register 1 */
-#define TTBCR               CP15_REG(c2, 0, c0, 2)    /* Translation Table Base Control Register */
-#define DACR                CP15_REG(c3, 0, c0, 0)    /* Domain Access Control Register */
+#define TTBR0               CP15_REG(c2, 0, c0, 0)    /* Translation Table Base Register 0 */	//转换表基地址寄存器0
+#define TTBR1               CP15_REG(c2, 0, c0, 1)    /* Translation Table Base Register 1 */	//转换表基地址寄存器1
+#define TTBCR               CP15_REG(c2, 0, c0, 2)    /* Translation Table Base Control Register */	////转换表基地址控制寄存器
+#define DACR                CP15_REG(c3, 0, c0, 0)    /* Domain Access Control Register */	//域访问控制寄存器
 
 /*
- * Memory system fault registers (c5 & c6)
+ * Memory system fault registers (c5 & c6)	//c5 - 内存失效状态 c6 - 内存失效地址
  */
-#define DFSR                CP15_REG(c5, 0, c0, 0)    /* Data Fault Status Register */
-#define IFSR                CP15_REG(c5, 0, c0, 1)    /* Instruction Fault Status Register */
-#define DFAR                CP15_REG(c6, 0, c0, 0)    /* Data Fault Address Register */
-#define IFAR                CP15_REG(c6, 0, c0, 2)    /* Instruction Fault Address Register */
+#define DFSR                CP15_REG(c5, 0, c0, 0)    /* Data Fault Status Register */			//数据故障状态寄存器
+#define IFSR                CP15_REG(c5, 0, c0, 1)    /* Instruction Fault Status Register */	//指令故障状态寄存器
+#define DFAR                CP15_REG(c6, 0, c0, 0)    /* Data Fault Address Register */			//数据故障地址寄存器
+#define IFAR                CP15_REG(c6, 0, c0, 2)    /* Instruction Fault Address Register */	//指令错误地址寄存器
 
 /*
- * Process, context and thread ID registers (c13)
+ * Process, context and thread ID registers (c13) //c13 - 进程标识符
  */
-#define FCSEIDR             CP15_REG(c13, 0, c0, 0)    /* FCSE Process ID Register */
-#define CONTEXTIDR          CP15_REG(c13, 0, c0, 1)    /* Context ID Register */
-#define TPIDRURW            CP15_REG(c13, 0, c0, 2)    /* User Read/Write Thread ID Register */
-#define TPIDRURO            CP15_REG(c13, 0, c0, 3)    /* User Read-Only Thread ID Register */
-#define TPIDRPRW            CP15_REG(c13, 0, c0, 4)    /* PL1 only Thread ID Register */
+#define FCSEIDR             CP15_REG(c13, 0, c0, 0)    /* FCSE Process ID Register */	//FCSE（Fast Context Switch Extension，快速上下文切换）进程ID寄存器 位于CPU和MMU之间
+#define CONTEXTIDR          CP15_REG(c13, 0, c0, 1)    /* Context ID Register */	//上下文ID寄存器
+#define TPIDRURW            CP15_REG(c13, 0, c0, 2)    /* User Read/Write Thread ID Register */	//用户读/写线程ID寄存器
+#define TPIDRURO            CP15_REG(c13, 0, c0, 3)    /* User Read-Only Thread ID Register */	//用户只读写线程ID寄存器
+#define TPIDRPRW            CP15_REG(c13, 0, c0, 4)    /* PL1 only Thread ID Register */	//仅PL1线程ID寄存器
 
 #define MPIDR_CPUID_MASK    (0xffU)
-
+//获取当前task
 STATIC INLINE VOID *ArchCurrTaskGet(VOID)
 {
-    return (VOID *)(UINTPTR)ARM_SYSREG_READ(TPIDRPRW);
+    return (VOID *)(UINTPTR)ARM_SYSREG_READ(TPIDRPRW);//读c13寄存器
 }
 
 STATIC INLINE VOID ArchCurrTaskSet(VOID *val)

@@ -102,7 +102,7 @@ typedef struct ProcessCB {
                                                                          priority hash table */	//进程的线程组调度优先级哈希表
     volatile UINT32      threadNumber; /**< Number of threads alive under this process */	//此进程下的活动线程数
     UINT32               threadCount;  /**< Total number of threads created under this process */	//在此进程下创建的线程总数
-    LOS_DL_LIST          waitList;     /**< The process holds the waitLits to support wait/waitpid */
+    LOS_DL_LIST          waitList;     /**< The process holds the waitLits to support wait/waitpid *///进程持有等待链表以支持wait/waitpid
 #if (LOSCFG_KERNEL_SMP == YES)
     UINT32               timerCpu;     /**< CPU core number of this task is delayed or pended */
 #endif

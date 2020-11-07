@@ -1351,7 +1351,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_CurTaskPriSet(UINT16 taskPrio)
  *               taskStatus --- task status
  *               timeOut    ---  Expiry time
  * Return      : LOS_OK on success or LOS_NOK on failure
- *///任务等待
+ *///任务等待,将当前任务挂到参数 list上
 UINT32 OsTaskWait(LOS_DL_LIST *list, UINT32 timeout, BOOL needSched)
 {
     LosTaskCB *runTask = NULL;

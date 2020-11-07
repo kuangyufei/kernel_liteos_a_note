@@ -1127,9 +1127,9 @@ LITE_OS_SEC_TEXT VOID OsWaitSignalToWakeProcess(LosProcessCB *processCB)
         return;
     }
 
-    if (!LOS_ListEmpty(&processCB->waitList)) {//进程保存waitLits以支持wait/waitpid
-        taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&processCB->waitList));
-        OsWaitWakeTask(taskCB, OS_INVALID_VALUE);
+    if (!LOS_ListEmpty(&processCB->waitList)) {//waitList链表不为空
+        taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&processCB->waitList));//从链表上摘下第一个task,通过节点获取task主体
+        OsWaitWakeTask(taskCB, OS_INVALID_VALUE);//唤醒这个task
     }
 
     return;
