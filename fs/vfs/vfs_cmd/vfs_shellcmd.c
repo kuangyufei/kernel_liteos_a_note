@@ -219,7 +219,10 @@ int osShellCmdDoCatShow(UINTPTR arg)
   (void)pthread_mutex_unlock(&g_mutex_cat);
   return 0;
 }
-
+/*****************************************************************
+cat用于显示文本文件的内容。cat [pathname]
+cat weharmony.txt
+*****************************************************************/
 int osShellCmdCat(int argc, const char **argv)
 {
   char *fullpath = NULL;
@@ -299,11 +302,25 @@ static unsigned long get_mountflags(const char *options)
 
     return mountfalgs;
 }
-static inline void print_mount_usage(void)
+static inline void print_mount_usage(void)//mount 用法
 {
   PRINTK("mount [DEVICE] [PATH] [NAME]\n");
 }
+/*****************************************************************
+命令功能
+mount命令用来将设备挂载到指定目录。
+命令格式
+mount <device> <path> <name> [uid gid]
+device 要挂载的设备（格式为设备所在路径）。系统拥有的设备。
+path 指定目录。用户必须具有指定目录中的执行（搜索）许可权。N/A
+name 文件系统的种类。 vfat, yaffs, jffs, ramfs, nfs，procfs, romfs.
+uid gid uid是指用户ID。 gid是指组ID。可选参数，缺省值uid:0，gid:0。
 
+使用指南
+mount后加需要挂载的设备信息、指定目录以及设备文件格式，就能成功挂载文件系统到指定目录。
+使用实例
+举例：mount /dev/mmcblk0p0 /bin/vs/sd vfat
+*****************************************************************/
 int osShellCmdMount(int argc, const char **argv)
 {
   int ret;
@@ -436,7 +453,18 @@ int osShellCmdMount(int argc, const char **argv)
   free(fullpath);
   return 0;
 }
-
+/*****************************************************************
+命令功能
+umount命令用来卸载指定文件系统。
+命令格式
+umount [dir]
+参数说明
+dir 需要卸载文件系统对应的目录。 系统已挂载的文件系统的目录。
+使用指南
+umount后加上需要卸载的指定文件系统的目录，即将指定文件系统卸载。
+使用实例
+举例：mount /bin/vs/sd
+*****************************************************************/
 int osShellCmdUmount(int argc, const char **argv)
 {
   int ret;
@@ -485,7 +513,20 @@ int osShellCmdUmount(int argc, const char **argv)
   PRINTK("umount ok\n");
   return 0;
 }
+/*****************************************************************
+命令功能
+mkdir命令用来创建一个目录。
+命令格式
+mkdir [directory]
+参数说明
+directory 需要创建的目录。
+使用指南
+mkdir后加所需要创建的目录名会在当前目录下创建目录。
+mkdir后加路径，再加上需要创建的目录名，即在指定目录下创建目录。
 
+使用实例
+举例：mkdir harmony
+*****************************************************************/
 int osShellCmdMkdir(int argc, const char **argv)
 {
   int ret;
@@ -511,7 +552,14 @@ int osShellCmdMkdir(int argc, const char **argv)
   free(fullpath);
   return 0;
 }
-
+/*****************************************************************
+命令功能
+pwd命令用来显示当前路径。
+命令格式
+无
+使用指南
+pwd 命令将当前目录的全路径名称（从根目录）写入标准输出。全部目录使用 / （斜线）分隔。第一个 / 表示根目录， 最后一个目录是当前目录。
+*****************************************************************/
 int osShellCmdPwd(int argc, const char **argv)
 {
   char buf[SHOW_MAX_LEN] = {0};
@@ -546,7 +594,7 @@ int osShellCmdPwd(int argc, const char **argv)
   return 0;
 }
 
-static inline void print_statfs_usage(void)
+static inline void print_statfs_usage(void)//statfs 用法
 {
   PRINTK("Usage  :\n");
   PRINTK("    statfs <path>\n");
@@ -554,7 +602,17 @@ static inline void print_statfs_usage(void)
   PRINTK("Example:\n");
   PRINTK("    statfs /ramfs\n");
 }
-
+/*****************************************************************
+命令功能
+statfs命令用来打印文件系统的信息，如该文件系统类型、总大小、可用大小等信息。
+命令格式
+statfs [directory]
+参数说明
+directory 文件系统的路径。 必须是存在的文件系统，并且其支持statfs命令，当前支持的文件系统有：JFFS2，FAT，NFS。
+使用指南
+打印信息因文件系统而异。
+以nfs文件系统为例：	statfs /nfs
+*****************************************************************/
 int osShellCmdStatfs(int argc, const char **argv)
 {
   struct statfs sfs;
@@ -596,7 +654,12 @@ int osShellCmdStatfs(int argc, const char **argv)
 
   return 0;
 }
-
+/*****************************************************************
+touch命令用来在指定的目录下创建一个不存在的空文件。
+touch命令操作已存在的文件会成功，不会更新时间戳。touch [filename]
+touch命令用来创建一个空文件，该文件可读写。
+使用touch命令一次只能创建一个文件。
+*****************************************************************/
 int osShellCmdTouch(int argc, const char **argv)
 {
   int ret;
@@ -630,6 +693,20 @@ int osShellCmdTouch(int argc, const char **argv)
 #define CP_BUF_SIZE 4096
 pthread_mutex_t g_mutex_cp = PTHREAD_MUTEX_INITIALIZER;
 
+/*****************************************************************
+cp 拷贝文件，创建一份副本。
+cp [SOURCEFILE] [DESTFILE]
+使用指南
+	同一路径下，源文件与目的文件不能重名。
+	源文件必须存在，且不为目录。
+	源文件路径支持“*”和“？”通配符，“*”代表任意多个字符，“？”代表任意单个字符。目的路径不支持通配符。当源路径可匹配多个文件时，目的路径必须为目录。
+	目的路径为目录时，该目录必须存在。此时目的文件以源文件命名。
+	目的路径为文件时，所在目录必须存在。此时拷贝文件的同时为副本重命名。
+	目前不支持多文件拷贝。参数大于2个时，只对前2个参数进行操作。
+	目的文件不存在时创建新文件，已存在则覆盖。
+	拷贝系统重要资源时，会对系统造成死机等重大未知影响，如用于拷贝/dev/uartdev-0 文件时，会产生系统卡死现象。
+举例：cp weharmony.txt ./tmp/
+*****************************************************************/
 static int os_shell_cmd_do_cp(const char *src_filepath, const char *dst_filename)
 {
   int  ret;
@@ -799,7 +876,17 @@ errout_with_srcpath:
 /* The separator and EOF for a directory fullpath: '/'and '\0' */
 
 #define SEPARATOR_EOF_LEN 2
+/*****************************************************************
+rmdir命令用来删除一个目录。
+rmdir [dir]
+dir 需要删除目录的名称，删除目录必须为空，支持输入路径。
+使用指南
+	rmdir命令只能用来删除目录。
+	rmdir一次只能删除一个目录。
+	rmdir只能删除空目录。
 
+举例：输入rmdir dir
+*****************************************************************/
 static int os_shell_cmd_do_rmdir(const char *pathname)
 {
   struct dirent *dirent = NULL;
@@ -1230,11 +1317,17 @@ errout_with_srcpath:
   return VFS_ERROR;
 }
 
-static inline void print_rm_usage(void)
+static inline void print_rm_usage(void)//rm 使用方法
 {
   PRINTK("rm [FILE] or rm [-r/-R] [FILE]\n");
 }
 
+/*****************************************************************
+rm命令用来删除文件或文件夹。rm [-r] [dirname / filename]
+rm命令一次只能删除一个文件或文件夹。
+rm -r命令可以删除非空目录。
+rm log1.txt ; rm -r sd
+*****************************************************************/
 int osShellCmdRm(int argc, const char **argv)
 {
   int  ret = 0;
@@ -1362,7 +1455,13 @@ int checkNum(const char *arg)
     }
   return 0;
 }
-
+/*****************************************************************
+shell su 用于变更为其他使用者的身份
+su [uid] [gid]
+su命令缺省切换到root用户，uid默认为0，gid为0。
+在su命令后的输入参数uid和gid就可以切换到该uid和gid的用户。
+输入参数超出范围时，会打印提醒输入正确范围参数。
+*****************************************************************/
 int osShellCmdSu(int argc, const char **argv)
 {
   unsigned int su_uid;
@@ -1388,12 +1487,16 @@ int osShellCmdSu(int argc, const char **argv)
          (su_gid > 60000), PRINTK("uid_num or gid_num out of range!they should be [0~60000]\n"), return -1);
     }
 
-  SysSetUserID(su_uid);
-  SysSetGroupID(su_gid);
+  SysSetUserID(su_uid);//设置用户ID
+  SysSetGroupID(su_gid);//设置用户群组ID
   return 0;
 }
-
-
+/****************************************************************
+shell chmod 用于修改文件操作权限。chmod [mode] [pathname]
+mode 文件或文件夹权限，用8进制表示对应User、Group、及Other（拥有者、群组、其他组）的权限。[0,777]
+pathname 文件路径。已存在的文件。
+chmod 777 weharmony.txt
+****************************************************************/
 int osShellCmdChmod(int argc, const char **argv)
 {
   int i = 0;
@@ -1445,7 +1548,16 @@ int osShellCmdChmod(int argc, const char **argv)
   free(fullpath);
   return 0;
 }
-
+/****************************************************************
+shell chown 用于将指定文件的拥有者改为指定的用户或组。chown [owner] [group] [pathname]
+owner 	文件拥有者。[0,0xFFFFFFFF]
+group	文件群组。1、为空。2、[0,0xFFFFFFFF]
+pathname	文件路径。已存在的文件。
+在需要修改的文件名前加上文件拥有者和文件群组就可以分别修改该文件的拥有者和群组。
+当owner或group值为-1时则表示对应的owner或group不修改。
+group参数可以为空。
+举例：chown 100 200 weharmony.txt
+****************************************************************/
 int osShellCmdChown(int argc, const char **argv)
 {
   int ret;
@@ -1502,7 +1614,13 @@ int osShellCmdChown(int argc, const char **argv)
   free(fullpath);
   return 0;
 }
-
+/****************************************************************
+chgrp用于修改文件的群组。chgrp [group] [pathname]
+group 文件群组。[0,0xFFFFFFFF]
+pathname	文件路径。 已存在的文件。
+在需要修改的文件名前加上文件群组值就可以修改该文件的所属组。
+举例：chgrp 100 weharmony.txt
+****************************************************************/
 int osShellCmdChgrp(int argc, const char **argv)
 {
   int ret;

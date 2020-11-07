@@ -714,7 +714,23 @@ INT32 LOS_DmesgToFile(CHAR *filename)
 }
 #endif
 
+/****************************************************************
+命令功能
+dmesg命令用于控制内核dmesg缓存区。
 
+命令格式
+dmesg dmesg [-c/-C/-D/-E/-L/-U]
+dmesg -s [size] dmesg -l [level dmesg > [fileA]
+
+使用指南
+该命令依赖于LOSCFG_SHELL_DMESG，使用时通过menuconfig在配置项中开启"Enable Shell dmesg"：
+Debug ---> Enable a Debug Version ---> Enable Shell ---> Enable Shell dmesg
+dmesg参数缺省时，默认打印缓存区内容。各“ - ”选项不能混合使用。
+写入文件需确保已挂载文件系统。
+关闭串口打印会影响shell使用，建议先连接telnet再尝试关闭串口。
+举例：输入dmesg > /usr/dmesg.log。
+
+****************************************************************/
 INT32 OsShellCmdDmesg(INT32 argc, const CHAR **argv)
 {
     if (argc == 1) {

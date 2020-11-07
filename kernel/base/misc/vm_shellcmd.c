@@ -105,26 +105,26 @@ LITE_OS_SEC_TEXT_MINOR VOID OsDoDumpVm(pid_t pid)
         PRINTK("\tThe process [%d] not active\n", pid);
     }
 }
-
+//查看进程的虚拟内存使用情况。vmm [-a / -h / --help]， vmm [pid]
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpVm(INT32 argc, const CHAR *argv[])
 {
-    if (argc == 0) {
+    if (argc == 0) { //没有参数 使用 # vmm 查看所有进程使用虚拟内存的情况
         OsDumpAllAspace();
     } else if (argc == 1) {
         pid_t pid = OsPid(argv[0]);
-        if (strcmp(argv[0], "-a") == 0) {
+        if (strcmp(argv[0], "-a") == 0) {	//# vmm -a 查看所有进程使用虚拟内存的情况
             OsDumpAllAspace();
-        } else if (strcmp(argv[0], "-k") == 0) {
+        } else if (strcmp(argv[0], "-k") == 0) {//# vmm -k 查看内核进程使用虚拟内存的情况
             OsDumpKernelAspace();
-        } else if (pid >= 0) {
+        } else if (pid >= 0) { //# vmm 3 查看3号进程使用虚拟内存的情况
             OsDoDumpVm(pid);
-        } else if (strcmp(argv[0], "-h") == 0 || strcmp(argv[0], "--help") == 0) {
+        } else if (strcmp(argv[0], "-h") == 0 || strcmp(argv[0], "--help") == 0) { //# vmm -h 或者  vmm --help
             OsPrintUsage();
         } else {
-            PRINTK("%s: invalid option: %s\n", VMM_CMD, argv[0]);
+            PRINTK("%s: invalid option: %s\n", VMM_CMD, argv[0]);	//格式错误，输出规范格式
             OsPrintUsage();
         }
-    } else {
+    } else {	//多于一个参数 例如 # vmm 3 9
         OsPrintUsage();
     }
 
@@ -136,7 +136,7 @@ LITE_OS_SEC_TEXT_MINOR VOID V2PPrintUsage(VOID)
     PRINTK("pid vaddr(0x1000000~0x3e000000),     print physical address of virtual address\n"
            "-h | --help,                     print v2p command usage\n");
 }
-
+//v2p 虚拟内存对应的物理内存
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdV2P(INT32 argc, const CHAR *argv[])
 {
     UINT32 vaddr;
@@ -181,7 +181,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdV2P(INT32 argc, const CHAR *argv[])
 
     return LOS_OK;
 }
-
+//查看系统内存物理页及pagecache物理页使用情况 ,             Debug版本才具备的命令 # pmm
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpPmm(VOID)
 {
     OsVmPhysDump();
@@ -191,12 +191,13 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpPmm(VOID)
 
 LITE_OS_SEC_TEXT_MINOR VOID OomPrintUsage(VOID)
 {
-    PRINTK("\t-i [interval],     set oom check interval (ms)\n"
-           "\t-m [mem byte],     set oom low memory threshold (Byte)\n"
-           "\t-r [mem byte],     set page cache reclaim memory threshold (Byte)\n"
-           "\t-h | --help,       print vmm command usage\n");
+    PRINTK("\t-i [interval],     set oom check interval (ms)\n"	//设置oom线程任务检查的时间间隔。
+           "\t-m [mem byte],     set oom low memory threshold (Byte)\n"	//设置低内存阈值。
+           "\t-r [mem byte],     set page cache reclaim memory threshold (Byte)\n"	//设置pagecache内存回收阈值。
+           "\t-h | --help,       print vmm command usage\n");	//使用帮助。
 }
-
+//查看和设置低内存阈值以及pagecache内存回收阈值。参数缺省时，显示oom功能当前配置信息。 
+//当系统内存不足时，会打印出内存不足的提示信息。
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdOom(INT32 argc, const CHAR *argv[])
 {
     UINT32 lowMemThreshold;
@@ -218,7 +219,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdOom(INT32 argc, const CHAR *argv[])
                 PRINTK("[oom] low mem threshold %s(byte) invalid.\n", argv[1]);
                 return OS_ERROR;
             } else {
-                OomSetLowMemThreashold(lowMemThreshold);
+                OomSetLowMemThreashold(lowMemThreshold);//设置低内存阈值
             }
         } else if (strcmp(argv[0], "-i") == 0) {
             checkInterval = strtoul((CHAR *)argv[1], &endPtr, 0);
@@ -226,7 +227,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdOom(INT32 argc, const CHAR *argv[])
                 PRINTK("[oom] check interval %s(us) invalid.\n", argv[1]);
                 return OS_ERROR;
             } else {
-                OomSetCheckInterval(checkInterval);
+                OomSetCheckInterval(checkInterval);//设置oom线程任务检查的时间间隔
             }
         } else if (strcmp(argv[0], "-r") == 0) {
             reclaimMemThreshold = strtoul((CHAR *)argv[1], &endPtr, 0);
@@ -234,7 +235,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdOom(INT32 argc, const CHAR *argv[])
                 PRINTK("[oom] reclaim mem threshold %s(byte) invalid.\n", argv[1]);
                 return OS_ERROR;
             } else {
-                OomSetReclaimMemThreashold(reclaimMemThreshold);
+                OomSetReclaimMemThreashold(reclaimMemThreshold);//设置pagecache内存回收阈值
             }
         } else {
             PRINTK("%s: invalid option: %s %s\n", OOM_CMD, argv[0], argv[1]);
@@ -250,8 +251,8 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdOom(INT32 argc, const CHAR *argv[])
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 SHELLCMD_ENTRY(oom_shellcmd, CMD_TYPE_SHOW, OOM_CMD, 2, (CmdCallBackFunc)OsShellCmdOom);//采用shell命令静态注册方式
-SHELLCMD_ENTRY(vm_shellcmd, CMD_TYPE_SHOW, VMM_CMD, 1, (CmdCallBackFunc)OsShellCmdDumpVm);//采用shell命令静态注册方式
-SHELLCMD_ENTRY(v2p_shellcmd, CMD_TYPE_SHOW, VMM_PMM_CMD, 1, (CmdCallBackFunc)OsShellCmdV2P);//采用shell命令静态注册方式
+SHELLCMD_ENTRY(vm_shellcmd, CMD_TYPE_SHOW, VMM_CMD, 1, (CmdCallBackFunc)OsShellCmdDumpVm);//采用shell命令静态注册方式 vmm
+SHELLCMD_ENTRY(v2p_shellcmd, CMD_TYPE_SHOW, VMM_PMM_CMD, 1, (CmdCallBackFunc)OsShellCmdV2P);//采用shell命令静态注册方式 v2p
 #endif
 
 #ifdef LOSCFG_SHELL

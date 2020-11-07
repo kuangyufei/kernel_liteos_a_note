@@ -57,8 +57,8 @@
 #include "netif/etharp.h"
 #include "lwip/netif.h"
 
-#define LWIP_SHELL_CMD_PING_RETRY_TIMES     4
-#define LWIP_SHELL_CMD_PING_TIMEOUT     2000
+#define LWIP_SHELL_CMD_PING_RETRY_TIMES     4 //shell ping 重复ping的次数
+#define LWIP_SHELL_CMD_PING_TIMEOUT     2000	//ping timeout 单位毫秒 2秒
 
 #define TRANSFER_MODE_BINARY 1
 

@@ -65,7 +65,7 @@ int SysUname(struct utsname *name)
     }
     return ret;
 }
-
+//exec命令属于shell内置命令，目前实现最基础的执行用户态程序的功能。
 #ifdef LOSCFG_SHELL
 int SysShellExec(const char *msgName, const char *cmdString)
 {
@@ -76,35 +76,35 @@ int SysShellExec(const char *msgName, const char *cmdString)
     char msgNameDup[CMD_KEY_LEN + 1] = { 0 };
     char cmdStringDup[CMD_MAX_LEN + 1] = { 0 };
 
-    if (!IsCapPermit(CAP_SHELL_EXEC)) {
+    if (!IsCapPermit(CAP_SHELL_EXEC)) {//没有定义shell   exec能力情况
         return -EPERM;
     }
 
-    ret = LOS_StrncpyFromUser(msgNameDup, msgName, CMD_KEY_LEN + 1);
+    ret = LOS_StrncpyFromUser(msgNameDup, msgName, CMD_KEY_LEN + 1);//将参数从用户空间拷贝到内核空间
     if (ret < 0) {
         return -EFAULT;
     } else if (ret > CMD_KEY_LEN) {
         return -ENAMETOOLONG;
     }
 
-    ret = LOS_StrncpyFromUser(cmdStringDup, cmdString, CMD_MAX_LEN + 1);
+    ret = LOS_StrncpyFromUser(cmdStringDup, cmdString, CMD_MAX_LEN + 1);//将参数从用户空间拷贝到内核空间
     if (ret < 0) {
         return -EFAULT;
     } else if (ret > CMD_MAX_LEN) {
         return -ENAMETOOLONG;
     }
 
-    err = memset_s(&cmdParsed, sizeof(CmdParsed), 0, sizeof(CmdParsed));
+    err = memset_s(&cmdParsed, sizeof(CmdParsed), 0, sizeof(CmdParsed));//命令解析器数据清0
     if (err != EOK) {
         return -EFAULT;
     }
 
-    uintRet = ShellMsgTypeGet(&cmdParsed, msgNameDup);
+    uintRet = ShellMsgTypeGet(&cmdParsed, msgNameDup);//获取cmd类型 kill watch
     if (uintRet != LOS_OK) {
         PRINTK("%s:command not found\n", msgNameDup);
         return -EFAULT;
     } else {
-        (void)OsCmdExec(&cmdParsed, (char *)cmdStringDup);
+        (void)OsCmdExec(&cmdParsed, (char *)cmdStringDup);//执行程序 # exec helloworld
     }
 
     return 0;

@@ -39,10 +39,10 @@
 LITE_VDSO_DATAPAGE VdsoDataPage g_vdsoDataPage __attribute__((__used__));
 
 STATIC size_t g_vdsoSize;
-
+//初始化 虚拟动态链接对象区（Virtual Dynamically Shared Object、VDSO）
 UINT32 OsInitVdso(VOID)
 {
-    g_vdsoSize = &__vdso_text_end - &__vdso_data_start;
+    g_vdsoSize = &__vdso_text_end - &__vdso_data_start;//计算 vdso 大小
 
     if (memcmp((CHAR *)(&__vdso_text_start), ELF_HEAD, ELF_HEAD_LEN)) {
         PRINT_ERR("VDSO Init Failed!\n");
@@ -50,7 +50,7 @@ UINT32 OsInitVdso(VOID)
     }
     return LOS_OK;
 }
-
+//映射VDSO区
 STATIC INT32 OsMapVdso(LosVmSpace *space, size_t len, PADDR_T paddr, VADDR_T vaddr, UINT32 flag)
 {
     STATUS_T ret;
@@ -67,7 +67,7 @@ STATIC INT32 OsMapVdso(LosVmSpace *space, size_t len, PADDR_T paddr, VADDR_T vad
     }
     return LOS_OK;
 }
-
+//加载 虚拟动态链接对象区（Virtual Dynamically Shared Object、VDSO）
 vaddr_t OsLoadVdso(const LosProcessCB *processCB)
 {
     INT32 ret = -1;

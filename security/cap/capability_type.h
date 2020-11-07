@@ -31,39 +31,39 @@
 
 #ifndef CAPABILITY_TYPE_H
 #define CAPABILITY_TYPE_H
-
-// posix capabilities
+	
+// posix capabilities	//posix 接口能力
 #define CAP_CHOWN                       0
 #define CAP_DAC_EXECUTE                 1
 #define CAP_DAC_WRITE                   2
 #define CAP_DAC_READ_SEARCH             3
 #define CAP_FOWNER                      4
-#define CAP_KILL                        5
-#define CAP_SETGID                      6
-#define CAP_SETUID                      7
+#define CAP_KILL                        5	//kill
+#define CAP_SETGID                      6	//设置用户组ID
+#define CAP_SETUID                      7	//设置用户ID
 
-// socket capabilities
+// socket capabilities	//网络能力
 #define CAP_NET_BIND_SERVICE            8
 #define CAP_NET_BROADCAST               9
 #define CAP_NET_ADMIN                   10
 #define CAP_NET_RAW                     11
 
-// fs capabilities
+// fs capabilities	//文件系统能力
 #define CAP_FS_MOUNT                    12
 #define CAP_FS_FORMAT                   13
 
-// process capabilities
+// process capabilities	//进程调度能力，设置调度优先级
 #define CAP_SCHED_SETPRIORITY           14
 
-// time capabilities
+// time capabilities	//时间能力
 #define CAP_SET_TIMEOFDAY               15
 #define CAP_CLOCK_SETTIME               16
 
-// process capabilities
+// process capabilities	//进程能力
 #define CAP_CAPSET                      17
 
-// reboot capability
+// reboot capability	//重新启动功能
 #define CAP_REBOOT                      18
-// self deined privileged syscalls
+// self deined privileged syscalls	//自定义特权系统调用
 #define CAP_SHELL_EXEC                  19
 #endif

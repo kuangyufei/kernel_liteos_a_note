@@ -1781,7 +1781,7 @@ static void ping_cmd(unsigned int p0, unsigned int p1, unsigned int p2, unsigned
 
     ping_taskid = -1;
 }
-
+//shell ping 用于测试网络连接是否正常 ping_ [-n cnt_] [-w interval] [-l data_len]_ <IP>_
 u32_t osShellPing(int argc, const char **argv)
 {
     int ret;
@@ -1805,7 +1805,7 @@ u32_t osShellPing(int argc, const char **argv)
 
     /* could add more param support */
     while (argc > 0) {
-        if (strcmp("-n", argv[i]) == 0 && (argc > 1)) {
+        if (strcmp("-n", argv[i]) == 0 && (argc > 1)) {//执行的次数，不带本参数则默认为4次。
             ret = atoi(argv[i + 1]);
             if (ret <= 0) {
                 PRINTK("Ping count should be greater than 0 \n");
@@ -1815,12 +1815,12 @@ u32_t osShellPing(int argc, const char **argv)
             count_set = 1;
             i += 2;
             argc -= 2;
-        } else if (strcmp("-t", argv[i]) == 0) {
+        } else if (strcmp("-t", argv[i]) == 0) {//表示永久ping，直到使用ping -k杀死ping线程。
             count = 0; /* ping forerver */
             count_set = 1;
             i++;
             argc--;
-        } else if (strcmp("-w", argv[i]) == 0 && (argc > 1)) {
+        } else if (strcmp("-w", argv[i]) == 0 && (argc > 1)) {//发送两次ping包的时间间隔，单位毫秒。
             ret = atoi(argv[i + 1]);
             if (ret <= 0) {
                 PRINTK("Ping interval should be greater than 0 \n");
@@ -1830,7 +1830,7 @@ u32_t osShellPing(int argc, const char **argv)
             interval = ret;
             i += 2;
             argc -= 2;
-        } else if (strcmp("-l", argv[i]) == 0 && (argc > 1)) {
+        } else if (strcmp("-l", argv[i]) == 0 && (argc > 1)) {//ping包，即ICMP echo request报文的数据长度，不包含ICMP包头。
             ret = atoi(argv[i + 1]);
             if (ret < 0 || ret > (int)(LWIP_MAX_UDP_RAW_SEND_SIZE - sizeof(struct icmp_echo_hdr))) {
                 PRINTK("Ping data length error, should be in range of [0, %d] \n",
@@ -1840,7 +1840,7 @@ u32_t osShellPing(int argc, const char **argv)
             data_len = ret;
             i += 2;
             argc -= 2;
-        } else if (strcmp("-k", argv[i]) == 0) {
+        } else if (strcmp("-k", argv[i]) == 0) {//杀死ping线程，停止ping。
             if (ping_taskid > 0) {
                 ping_kill = 1; /* stop the current ping task */
                 return LOS_OK;
@@ -1867,7 +1867,7 @@ u32_t osShellPing(int argc, const char **argv)
         goto ping_error;
     }
 #if LWIP_DNS
-    dst_ipaddr.addr = get_hostip(argv[i]);
+    dst_ipaddr.addr = get_hostip(argv[i]);//获取主机地址
 #else /* LWIP_DNS */
     dst_ipaddr.addr = inet_addr(argv[i]);
 #endif /* LWIP_DNS */
@@ -1877,22 +1877,22 @@ u32_t osShellPing(int argc, const char **argv)
         return LOS_NOK;
     }
 
-    /* start one task if ping forever or ping count greater than 60 */
+    /* start one task if ping forever or ping count greater than 60 *///如果ping永远或ping计数大于60，则启动一个任务
     if (count == 0 || count > LWIP_SHELL_CMD_PING_RETRY_TIMES) {
-        if (ping_taskid > 0) {
+        if (ping_taskid > 0) {//Ping任务已经在运行，鸿蒙目前现在只支持一个
             PRINTK("Ping task already running and only support one now\n");
             return LOS_NOK;
         }
         stPingTask.pfnTaskEntry = (TSK_ENTRY_FUNC)ping_cmd;//线程的执行函数
         stPingTask.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;//0x4000 = 16K 
-        stPingTask.pcName = "ping_task";
+        stPingTask.pcName = "ping_task";	//ping task 名称
         stPingTask.usTaskPrio = 8; /* higher than shell 优先级高于10,属于内核态进程*/ 
         stPingTask.uwResved = LOS_TASK_STATUS_DETACHED;
         stPingTask.auwArgs[0] = dst_ipaddr.addr; /* network order */
         stPingTask.auwArgs[1] = count;
         stPingTask.auwArgs[2] = interval;
         stPingTask.auwArgs[3] = data_len;
-        ret = LOS_TaskCreate((UINT32 *)(&ping_taskid), &stPingTask);
+        ret = LOS_TaskCreate((UINT32 *)(&ping_taskid), &stPingTask);//创建任务，ping_taskid带出taskid
         if (ret != LOS_OK) {
             PRINTK("ping_task create failed 0x%08x.\n", ret);
             count = LWIP_SHELL_CMD_PING_RETRY_TIMES;
@@ -1911,11 +1911,11 @@ u32_t osShellPing(int argc, const char **argv)
 
     return LOS_OK;
 ping_error:
-    lwip_ping_usage();
+    lwip_ping_usage();//ping 的用法
     return LOS_NOK;
 }
 #ifdef LOSCFG_SHELL
-SHELLCMD_ENTRY(ping_shellcmd, CMD_TYPE_EX, "ping", XARGS, (CmdCallBackFunc)osShellPing);//采用shell命令静态注册方式
+SHELLCMD_ENTRY(ping_shellcmd, CMD_TYPE_EX, "ping", XARGS, (CmdCallBackFunc)osShellPing);//shell ping 命令静态注册方式
 #endif /* LOSCFG_SHELL */
 
 #else /* LWIP_EXT_POLL_SUPPORT*/
@@ -3856,7 +3856,7 @@ usage_sock:
 #if defined(LOSCFG_SHELL_CMD_DEBUG) && defined(LWIP_DEBUG_INFO)
 SHELLCMD_ENTRY(netdebug_shellcmd, CMD_TYPE_EX, "netdebug", XARGS, (CmdCallBackFunc)osShellNetDebug);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL_CMD_DEBUG && LWIP_DEBUG_INFO */
-
+//ip 调试命令
 u32_t osShellIpDebug(int argc, const char **argv)
 {
     u8_t i = 0;
@@ -3988,7 +3988,7 @@ SHELLCMD_ENTRY(ipdebug_shellcmd, CMD_TYPE_EX, "ipdebug", XARGS, (CmdCallBackFunc
 #endif
 #ifdef LWIP_TESTBED
 extern void cmd_reset(void);
-
+//shell reboot 重启命令
 void osShellReboot(int argc, const char **argv)
 {
   cmd_reset();

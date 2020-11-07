@@ -166,6 +166,15 @@ DONE:
     return 0;
 }
 
+/*********************************************************
+
+	text    表示代码段大小。
+	data    表示数据段大小。
+	rodata  表示只读数据段大小。
+	bss 	表示未初始化全局变量占用内存大小。
+
+*********************************************************/
+
 LITE_OS_SEC_TEXT_MINOR STATIC VOID OsShellCmdSectionInfo(INT32 argc, const CHAR *argv[])
 {
     size_t textLen = &__text_end - &__text_start;
@@ -184,7 +193,14 @@ LITE_OS_SEC_TEXT_MINOR STATIC VOID OsShellCmdSectionInfo(INT32 argc, const CHAR 
         PRINTK("Mem:    %-9lu    %-10lu    %-10lu    %-10lu\n", textLen, dataLen, rodataLen, bssLen);
     }
 }
+/*********************************************************
 
+	total 	表示系统动态内存池总量。
+	used    表示已使用内存总量。
+	free    表示未被分配的内存大小。
+	heap    表示已分配堆大小。
+
+*********************************************************/
 LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OsShellCmdFreeInfo(INT32 argc, const CHAR *argv[])
 {
 #ifdef LOSCFG_EXC_INTERACTION
@@ -238,17 +254,18 @@ LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OsShellCmdFreeInfo(INT32 argc, const CHAR *
     }
     return 0;
 }
-
+//free命令可显示系统内存的使用情况，同时显示系统的text段、data段、rodata段、bss段大小。
+//free [-k | -m] 以KB为单位显示 / 以MB为单位显示
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdFree(INT32 argc, const CHAR *argv[])
 {
     if (argc > 1) {
         PRINTK("\nUsage: free or free [-k/-m]\n");
         return OS_ERROR;
     }
-    if (OsShellCmdFreeInfo(argc, argv) != 0) {
+    if (OsShellCmdFreeInfo(argc, argv) != 0) {//剩余内存统计
         return OS_ERROR;
     }
-    OsShellCmdSectionInfo(argc, argv);
+    OsShellCmdSectionInfo(argc, argv);//显示系统各段使用情况
     return 0;
 }
 
@@ -318,21 +335,21 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemRecordDisable(INT32 argc, const CHAR 
 }
 
 SHELLCMD_ENTRY(memshowenable_shellcmd, CMD_TYPE_EX, "memshowenable", 0,
-               (CmdCallBackFunc)OsShellCmdMemRecordEnable);//采用shell命令静态注册方式
+               (CmdCallBackFunc)OsShellCmdMemRecordEnable);//shell memshowenable 命令静态注册方式
 SHELLCMD_ENTRY(memshowdisable_shellcmd, CMD_TYPE_EX, "memshowdisable", 0,
-               (CmdCallBackFunc)OsShellCmdMemRecordDisable);//采用shell命令静态注册方式
+               (CmdCallBackFunc)OsShellCmdMemRecordDisable);//shell memshowdisable命令静态注册方式
 #endif
 
 #ifdef LOSCFG_MEM_LEAKCHECK
-SHELLCMD_ENTRY(memused_shellcmd, CMD_TYPE_EX, "memused", 0, (CmdCallBackFunc)OsShellCmdMemUsed);//采用shell命令静态注册方式
+SHELLCMD_ENTRY(memused_shellcmd, CMD_TYPE_EX, "memused", 0, (CmdCallBackFunc)OsShellCmdMemUsed);//shell memused 命令静态注册方式
 #endif
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(memcheck_shellcmd, CMD_TYPE_EX, "memcheck", 0, (CmdCallBackFunc)OsShellCmdMemCheck);//采用shell命令静态注册方式
-SHELLCMD_ENTRY(readreg_shellcmd, CMD_TYPE_EX, "readreg", MEMPT_ARG_NUM_2, (CmdCallBackFunc)OsShellCmdMemRead);//采用shell命令静态注册方式
+SHELLCMD_ENTRY(memcheck_shellcmd, CMD_TYPE_EX, "memcheck", 0, (CmdCallBackFunc)OsShellCmdMemCheck);//shell memcheck 命令静态注册方式
+SHELLCMD_ENTRY(readreg_shellcmd, CMD_TYPE_EX, "readreg", MEMPT_ARG_NUM_2, (CmdCallBackFunc)OsShellCmdMemRead);//shell readreg 命令静态注册方式
 #endif
-SHELLCMD_ENTRY(free_shellcmd, CMD_TYPE_EX, "free", XARGS, (CmdCallBackFunc)OsShellCmdFree);//采用shell命令静态注册方式
-SHELLCMD_ENTRY(uname_shellcmd, CMD_TYPE_EX, "uname", XARGS, (CmdCallBackFunc)OsShellCmdUname);//采用shell命令静态注册方式
+SHELLCMD_ENTRY(free_shellcmd, CMD_TYPE_EX, "free", XARGS, (CmdCallBackFunc)OsShellCmdFree);//shell free 命令静态注册方式
+SHELLCMD_ENTRY(uname_shellcmd, CMD_TYPE_EX, "uname", XARGS, (CmdCallBackFunc)OsShellCmdUname);//shell uname命令静态注册方式
 #endif
 
 #ifdef __cplusplus

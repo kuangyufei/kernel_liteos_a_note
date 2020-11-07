@@ -753,7 +753,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdExec(CmdParsed *cmdParsed, CHAR *cmdStr)
         return (UINT32)OS_ERROR;
     }
 
-    ret = OsCmdParse(cmdStr, cmdParsed);
+    ret = OsCmdParse(cmdStr, cmdParsed);//解析cmd命令
     if (ret != LOS_OK) {//解析错误,命令输错了.
         goto OUT;
     }

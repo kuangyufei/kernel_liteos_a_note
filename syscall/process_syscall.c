@@ -440,7 +440,7 @@ int SysGetRealEffSaveUserID(int *ruid, int *euid, int *suid)
 
 int SysSetUserID(int uid)
 {
-#ifdef LOSCFG_SECURITY_CAPABILITY
+#ifdef LOSCFG_SECURITY_CAPABILITY //安全能力宏
     int ret = -EPERM;
     unsigned int intSave;
 
@@ -449,12 +449,12 @@ int SysSetUserID(int uid)
     }
 
     SCHEDULER_LOCK(intSave);
-    User *user = OsCurrUserGet();
-    if (IsCapPermit(CAP_SETUID)) {
-        user->userID = uid;
+    User *user = OsCurrUserGet();//获取当前用户
+    if (IsCapPermit(CAP_SETUID)) {	//是否定义了设置用户ID的能力
+        user->userID = uid;	//改变UID
         user->effUserID = uid;
         /* add process to a user */
-    } else if (user->userID != uid) {
+    } else if (user->userID != uid) { //
         goto EXIT;
     }
 

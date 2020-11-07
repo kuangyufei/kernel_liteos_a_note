@@ -247,16 +247,16 @@ static void SigProcessLoadTcb(struct ProcessSignalInfo *info, siginfo_t *sigInfo
 {
     LosTaskCB *tcb = NULL;
 
-    if (info->awakenedTcb == NULL && info->receivedTcb == NULL) {
-        if (info->unblockedTcb) {
-            tcb = info->unblockedTcb;
-        } else if (info->defaultTcb) {
+    if (info->awakenedTcb == NULL && info->receivedTcb == NULL) {//信号即没有指定接收task 也没有指定被唤醒task
+        if (info->unblockedTcb) {//如果进程信号信息体中有阻塞task
+            tcb = info->unblockedTcb;//
+        } else if (info->defaultTcb) {//如果有默认的发送方task
             tcb = info->defaultTcb;
         } else {
             return;
         }
         /* Deliver the signal to the selected task */
-        (void)OsTcbDispatch(tcb, sigInfo);
+        (void)OsTcbDispatch(tcb, sigInfo);//向所选任务发送信号
     }
 }
 //给参数进程发送参数信号
