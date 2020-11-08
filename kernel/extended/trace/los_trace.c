@@ -50,7 +50,7 @@ STATIC SPIN_LOCK_S g_traceCpuSpin[LOSCFG_KERNEL_CORE_NUM];
 #define TRACE_CPU_LOCK(state, cpuID)       LOS_SpinLockSave(&g_traceCpuSpin[(cpuID)], &(state))
 #define TRACE_CPU_UNLOCK(state, cpuID)     LOS_SpinUnlockRestore(&g_traceCpuSpin[(cpuID)], (state))
 
-STATIC TraceBuffer g_traceBuf[LOSCFG_KERNEL_CORE_NUM];
+STATIC TraceBuffer g_traceBuf[LOSCFG_KERNEL_CORE_NUM];//每个CPU core都有traceBuf
 STATIC TraceHook *g_traceInfo[LOS_TRACE_TYPE_NUM];
 STATIC UINT16 g_frameSize[LOS_TRACE_TYPE_NUM];
 

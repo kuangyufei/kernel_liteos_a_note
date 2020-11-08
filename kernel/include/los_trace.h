@@ -121,40 +121,40 @@ typedef UINT16 (*WriteHook)(UINT8 *inBuf, UINT32 newID, UINT32 oldID);
  * Stands for the trace type can be registered.
  */
 typedef enum {
-    LOS_TRACE_SWITCH    = 0,                /**< trace for task switch, 0 is reserved for taskswitch */
-    LOS_TRACE_INTERRUPT = 1,                /**< trace for Interrrupt, 1 is reserved for interrupt */
+    LOS_TRACE_SWITCH    = 0,                /**< trace for task switch, 0 is reserved for taskswitch */ //任务切换的跟踪，0是为taskswitch保留的
+    LOS_TRACE_INTERRUPT = 1,                /**< trace for Interrrupt, 1 is reserved for interrupt */	//中断，1表示为中断保留
     LOS_TRACE_TYPE_NUM  = 5,                /**< num for the register type, user can use 2~ LOS_TRACE_TYPE_NUM-1 */
 } TraceType;
 
 /**
  * @ingroup los_trace
- * struct to store the trace infomation
+ * struct to store the trace infomation	//结构来存储跟踪信息
  */
 typedef struct {
-    UINTPTR tracePos;                       /**< Data buffer current index position */
-    UINTPTR traceWrapPos;                   /**< Data buffer last loop end position */
-    UINT8   dataBuf[LOS_TRACE_BUFFER_SIZE]; /**< Data buffer */
+    UINTPTR tracePos;                       /**< Data buffer current index position */	//数据缓冲区当前索引位置
+    UINTPTR traceWrapPos;                   /**< Data buffer last loop end position */	//数据缓冲区最后一个循环结束位置
+    UINT8   dataBuf[LOS_TRACE_BUFFER_SIZE]; /**< Data buffer */		//数据缓存区
 } TraceBuffer;
 
 /**
  * @ingroup los_trace
- * struct to store the task switch infomation
+ * struct to store the task switch infomation	//结构来存储任务切换的信息
  */
 typedef struct {
-    UINT32  srcTaskId;                      /**< source taskid */
-    UINT32  destTaskId;                     /**< destination taskid */
-    UINT64  currentTick;                    /**< Time at which the task switch happens */
+    UINT32  srcTaskId;                      /**< source taskid */	//源任务ID
+    UINT32  destTaskId;                     /**< destination taskid */	//目标任务ID
+    UINT64  currentTick;                    /**< Time at which the task switch happens */	//任务上下文切换时发生的时间
 } TaskTraceFrame;
 
 /**
  * @ingroup los_trace
- * struct to store the interrupt infomation
+ * struct to store the interrupt infomation	//结构来存储中断信息
  */
 typedef struct {
-    UINT32  irqDirection;                   /**< IRQ_DIRECT_IN  stands for entering the irq handler */
-                                            /**< IRQ_DIRECT_OUT stands for leaving the previous irq handler */
-    UINT32  irqNum;                         /**< IRQ number which trigger the interrupt */
-    UINT64  currentTick;                    /**< Time at which the the trace is called */
+    UINT32  irqDirection;                   /**< IRQ_DIRECT_IN  stands for entering the irq handler */	//IRQ_DIRECT_IN代表进入IRQ处理程序
+                                            /**< IRQ_DIRECT_OUT stands for leaving the previous irq handler *///IRQ_DIRECT_OUT代表离开IRQ之前的处理程序
+    UINT32  irqNum;                         /**< IRQ number which trigger the interrupt */	//触发中断的IRQ号
+    UINT64  currentTick;                    /**< Time at which the the trace is called */ //trace被调用的时间
 } IntTraceFrame;
 
 /**

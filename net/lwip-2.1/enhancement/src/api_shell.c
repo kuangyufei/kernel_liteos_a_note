@@ -1338,7 +1338,21 @@ LWIP_STATIC void lwip_arp_usage(const char *cmd)
          "\n%s [-i IF] -d IPADDR\n",
            cmd, cmd, cmd);
 }
-
+/****************************************************************
+命令功能
+在以太网中，主机之间的通信是直接使用MAC地址（非IP地址）来通信的，所以，对于使用IP通信的协议，
+必须能够将IP地址转换成MAC地址，才能在局域网（以太网）内通信。解决这个问题的方法就是主机存储
+一张IP和MAC地址对应的表，即ARP缓存，主机要往一个局域网内的目的IP地址发送IP包时，就可以从ARP
+缓存表中查询到目的MAC地址。ARP缓存是由TCP/IP协议栈维护的，用户可通过ARP命令查看和修改ARP表。
+命令格式
+arp
+arp [-i IF] -s IPADDR HWADDR
+arp [-i IF] -d IPADDR
+使用指南
+arp命令用来查询和修改TCP/IP协议栈的ARP缓存表，增加非同一子网内的IP地址的ARP表项是没有意义的，协议栈会返回失败。
+命令需要启动TCP/IP协议栈后才能使用。
+shell arp 打印整个 ARP 缓存表
+****************************************************************/
 u32_t lwip_arp(int argc, const char **argv)
 {
     int i;
@@ -1364,7 +1378,7 @@ u32_t lwip_arp(int argc, const char **argv)
 
     i = 0;
     while (argc > 0) {
-        if (strcmp("-i", argv[i]) == 0 && (argc > 1)) {
+        if (strcmp("-i", argv[i]) == 0 && (argc > 1)) {//指定的网络接口（可选参数）
             /* get the network interface's name */
             interface_len = strlen(argv[i + 1]);
             if (interface_len < IFNAMSIZ) {
@@ -1383,7 +1397,8 @@ u32_t lwip_arp(int argc, const char **argv)
             }
             i += 2;
             argc -= 2;
-        } else if (strcmp("-d", argv[i]) == 0 && (argc > 1)) {
+        } else if (strcmp("-d", argv[i]) == 0 && (argc > 1)) {//删除一条ARP表项。
+			
             /* arp delete */
             arp_cmd.option = ARP_OPTION_DEL;
             arp_cmd.ipaddr = inet_addr(argv[i + 1]);
@@ -1395,7 +1410,7 @@ u32_t lwip_arp(int argc, const char **argv)
 
             i += 2;
             argc -= 2;
-        } else if (strcmp("-s", argv[i]) == 0 && (argc > 2)) {
+        } else if (strcmp("-s", argv[i]) == 0 && (argc > 2)) {//增加一条ARP表项，后面的参数是局域网中另一台主机的IP地址及其对应的MAC地址。
             /* arp add */
             char *digit = NULL;
             u32_t macaddrlen = strlen(argv[i + 2]) + 1;

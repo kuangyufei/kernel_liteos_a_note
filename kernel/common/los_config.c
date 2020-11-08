@@ -329,8 +329,8 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     }
 #endif
 
-#ifdef LOSCFG_KERNEL_PIPE
-    OsDriverPipeInit();
+#ifdef LOSCFG_KERNEL_PIPE	//打开管道宏
+    OsDriverPipeInit();//管道init
 #endif
 
     ret = OsSystemInit();//系统初始化
@@ -338,8 +338,8 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
         return ret;
     }
 
-#if LOSCFG_DRIVERS_HIEVENT
-    OsDriverHiEventInit();
+#if LOSCFG_DRIVERS_HIEVENT //打开HIEVENT宏
+    OsDriverHiEventInit();//HiEvent 初始化
 #endif
 
 #if (LOSCFG_KERNEL_TRACE == YES)
@@ -380,22 +380,22 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 
     return LOS_OK;
 }
-
+//创建系统初始化任务
 STATIC UINT32 OsSystemInitTaskCreate(VOID)
 {
     UINT32 taskID;
     TSK_INIT_PARAM_S sysTask;
 
     (VOID)memset_s(&sysTask, sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
-    sysTask.pfnTaskEntry = (TSK_ENTRY_FUNC)SystemInit;
+    sysTask.pfnTaskEntry = (TSK_ENTRY_FUNC)SystemInit;//外部函数，
     sysTask.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
     sysTask.pcName = "SystemInit";
-    sysTask.usTaskPrio = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;
-    sysTask.uwResved = LOS_TASK_STATUS_DETACHED;
+    sysTask.usTaskPrio = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;// 10 
+    sysTask.uwResved = LOS_TASK_STATUS_DETACHED;//任务分离模式
 #if (LOSCFG_KERNEL_SMP == YES)
     sysTask.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
-    return LOS_TaskCreate(&taskID, &sysTask);
+    return LOS_TaskCreate(&taskID, &sysTask);//创建任务
 }
 
 #ifdef LOSCFG_MEM_RECORDINFO
@@ -418,17 +418,17 @@ UINT32 OsSystemInit(VOID)
 {
     UINT32 ret;
 #ifdef LOSCFG_FS_VFS
-    los_vfs_init();
+    los_vfs_init(); //虚拟文件初始化
 #endif
 #ifdef LOSCFG_COMPAT_LINUXKPI
     g_pstSystemWq = create_workqueue("system_wq");
 #endif
-    ret = OsSystemInitTaskCreate();
+    ret = OsSystemInitTaskCreate();//创建 "SystemInit" 任务
     if (ret != LOS_OK) {
         return ret;
     }
 #ifdef LOSCFG_MEM_RECORDINFO
-    ret = OsMemShowTaskCreate();
+    ret = OsMemShowTaskCreate();//创建 "memshow_task"任务，用于显示虚拟内存使用
     if (ret != LOS_OK) {
         PRINTK("create memshow_Task error %u\n", ret);
         return ret;
