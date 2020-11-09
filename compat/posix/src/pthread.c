@@ -47,13 +47,13 @@ extern "C" {
  * Array of pthread control structures. A pthread_t object is
  * "just" an index into this array.
  */ //pthread控制结构的数组。pthread_t对象只是这个数组的一个索引
-STATIC _pthread_data g_pthreadData[LOSCFG_BASE_CORE_TSK_LIMIT + 1];
+STATIC _pthread_data g_pthreadData[LOSCFG_BASE_CORE_TSK_LIMIT + 1]; //128
 
-/* Count of number of threads that have exited and not been reaped. */
+/* Count of number of threads that have exited and not been reaped. */ //已退出但尚未获取的线程数的计数
 STATIC INT32 g_pthreadsExited = 0;
 
-/* this is to protect the pthread data */
-STATIC pthread_mutex_t g_pthreadsDataMutex = PTHREAD_MUTEX_INITIALIZER;
+/* this is to protect the pthread data */	//这是为了保护pthread数据
+STATIC pthread_mutex_t g_pthreadsDataMutex = PTHREAD_MUTEX_INITIALIZER; //posix 模块的互斥锁
 
 /* pointed to by PTHREAD_CANCELED */
 UINTPTR g_pthreadCanceledDummyVar;
@@ -61,15 +61,15 @@ UINTPTR g_pthreadCanceledDummyVar;
 /*
  * Private version of pthread_self() that returns a pointer to our internal
  * control structure.
- */
+ */ //获取当前线程的数据，返回指向内部控制结构的指针
 _pthread_data *pthread_get_self_data(void)
 {
-    UINT32 runningTaskPID = ((LosTaskCB *)(OsCurrTaskGet()))->taskID;
-    _pthread_data *data = &g_pthreadData[runningTaskPID];
+    UINT32 runningTaskPID = ((LosTaskCB *)(OsCurrTaskGet()))->taskID;//获取当前taskID
+    _pthread_data *data = &g_pthreadData[runningTaskPID];//获取当前线程的 posix 数据
 
     return data;
 }
-
+//以posix 方式获取线程的数据 参数为线程(task) id
 _pthread_data *pthread_get_data(pthread_t id)
 {
     _pthread_data *data = NULL;
@@ -79,12 +79,12 @@ _pthread_data *pthread_get_data(pthread_t id)
     }
 
     data = &g_pthreadData[id];
-    /* Check that this is a valid entry */
-    if ((data->state == PTHREAD_STATE_FREE) || (data->state == PTHREAD_STATE_EXITED)) {
+    /* Check that this is a valid entry */ //检查是否是一个有效的实体
+    if ((data->state == PTHREAD_STATE_FREE) || (data->state == PTHREAD_STATE_EXITED)) { 
         return NULL;
     }
 
-    /* Check that the entry matches the id */
+    /* Check that the entry matches the id */ //检查实体ID和参数ID是否一致
     if (data->id != id) {
         return NULL;
     }
@@ -118,24 +118,24 @@ STATIC VOID ProcessUnusedStatusTask(_pthread_data *data)
  * This function is called to tidy up and dispose of any threads that have
  * exited. This work must be done from a thread other than the one exiting.
  * Note: this function must be called with pthread_mutex locked.
- */
+ */ //这个函数必须在 持有 pthread_mutex 锁的情况下调用 ,该函数主要用于 posix 线程池和内核task池对退出情况的同步
 STATIC VOID PthreadReap(VOID)
 {
     UINT32 i;
     _pthread_data *data = NULL;
     /*
-     * Loop over the thread table looking for exited threads. The
+     * Loop over the thread table looking for exited threads. The //在线程池上循环，查找已退出的线程。
      * g_pthreadsExited counter springs us out of this once we have
      * found them all (and keeps us out if there are none to do).
      */
     for (i = 0; g_pthreadsExited && (i < g_taskMaxNum); i++) {
         data = &g_pthreadData[i];
-        if (data->state == PTHREAD_STATE_EXITED) {
+        if (data->state == PTHREAD_STATE_EXITED) { //找到一个退出线程
             /* the Huawei LiteOS not delete the dead TCB,so need to delete the TCB */
-            (VOID)LOS_TaskDelete(data->task->taskID);
-            if (data->task->taskStatus & OS_TASK_STATUS_UNUSED) {
-                ProcessUnusedStatusTask(data);
-                g_pthreadsExited--;
+            (VOID)LOS_TaskDelete(data->task->taskID);//删除这个task
+            if (data->task->taskStatus & OS_TASK_STATUS_UNUSED) {//如果task贴有未使用的标签
+                ProcessUnusedStatusTask(data);//posix线程数据清0,状态改为 free
+                g_pthreadsExited--;//退出线程计数器减少一个
             }
         }
     }
@@ -188,22 +188,22 @@ STATIC VOID SetPthreadDataAttr(const pthread_attr_t *userAttr, const pthread_t t
     created->stackmem     = taskCB->topOfStack;
     created->thread_data  = NULL;
 }
-
+//posix 初始化线程数据
 STATIC UINT32 InitPthreadData(pthread_t threadID, pthread_attr_t *userAttr,
                               const CHAR name[], size_t len)
 {
     errno_t err;
     UINT32 ret = LOS_OK;
-    LosTaskCB *taskCB = OS_TCB_FROM_TID(threadID);
-    _pthread_data *created = &g_pthreadData[threadID];
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(threadID);//取出task实体
+    _pthread_data *created = &g_pthreadData[threadID];//取出posix 对应的 线程实体
 
-    err = strncpy_s(created->name, sizeof(created->name), name, len);
+    err = strncpy_s(created->name, sizeof(created->name), name, len);//线程的名称用参数名称
     if (err != EOK) {
         PRINT_ERR("%s: %d, err: %d\n", __FUNCTION__, __LINE__, err);
         return LOS_NOK;
     }
-    userAttr->stacksize   = taskCB->stackSize;
-    err = memcpy_s(taskCB->taskName, OS_TCB_NAME_LEN, created->name, strlen(created->name));
+    userAttr->stacksize   = taskCB->stackSize;//栈大小用 task的
+    err = memcpy_s(taskCB->taskName, OS_TCB_NAME_LEN, created->name, strlen(created->name));//task名称用参数名称
     if (err != EOK) {
         PRINT_ERR("%s: %d, err: %d\n", __FUNCTION__, __LINE__, err);
         taskCB->taskName[0] = '\0';
@@ -211,11 +211,11 @@ STATIC UINT32 InitPthreadData(pthread_t threadID, pthread_attr_t *userAttr,
     }
 #if (LOSCFG_KERNEL_SMP == YES)
     if (userAttr->cpuset.__bits[0] > 0) {
-        taskCB->cpuAffiMask = (UINT16)userAttr->cpuset.__bits[0];
+        taskCB->cpuAffiMask = (UINT16)userAttr->cpuset.__bits[0];//指定task的CPU亲和力掩码
     }
 #endif
 
-    SetPthreadDataAttr(userAttr, threadID, taskCB, created);
+    SetPthreadDataAttr(userAttr, threadID, taskCB, created);//设置线程数据具体属性
     return ret;
 }
 //POSIX接口之 创建一个线程
@@ -224,7 +224,7 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
 {
     pthread_attr_t userAttr;
     UINT32 ret;
-    CHAR name[PTHREAD_DATA_NAME_MAX];
+    CHAR name[PTHREAD_DATA_NAME_MAX];//线程名称不能超过 20个字符
     STATIC UINT16 pthreadNumber = 1;
     TSK_INIT_PARAM_S taskInitParam = {0};
     UINT32 taskHandle;
@@ -239,33 +239,33 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
     (VOID)memset_s(name, sizeof(name), 0, sizeof(name));
     (VOID)snprintf_s(name, sizeof(name), sizeof(name) - 1, "pth%02d", pthreadNumber);
     pthreadNumber++;
-
-    taskInitParam.pcName       = name;
-    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)startRoutine;
-    taskInitParam.auwArgs[0]   = (UINTPTR)arg;
-    taskInitParam.usTaskPrio   = (UINT16)userAttr.schedparam.sched_priority;
-    taskInitParam.uwStackSize  = userAttr.stacksize;
-    if (OsProcessIsUserMode(OsCurrProcessGet())) {
-        taskInitParam.processID = OsGetKernelInitProcessID();
+	//参数的转化,适配
+    taskInitParam.pcName       = name;	//线程名称
+    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)startRoutine;//入口函数
+    taskInitParam.auwArgs[0]   = (UINTPTR)arg;	//入口函数的参数
+    taskInitParam.usTaskPrio   = (UINT16)userAttr.schedparam.sched_priority;//线程优先级
+    taskInitParam.uwStackSize  = userAttr.stacksize;//栈大小
+    if (OsProcessIsUserMode(OsCurrProcessGet())) {//当前进程是用户进程吗
+        taskInitParam.processID = OsGetKernelInitProcessID();// 赋予内核初始化进程ID 即:"Kprocess"进程
     } else {
-        taskInitParam.processID = OsCurrProcessGet()->processID;
+        taskInitParam.processID = OsCurrProcessGet()->processID;// 内核某个进程的ID
     }
-    if (userAttr.detachstate == PTHREAD_CREATE_DETACHED) {
+    if (userAttr.detachstate == PTHREAD_CREATE_DETACHED) {//线程间关系为 分离模式
         taskInitParam.uwResved = LOS_TASK_STATUS_DETACHED;
-    } else {
+    } else {////线程间关系为 联结模式
         /* Set the pthread default joinable */
         taskInitParam.uwResved = 0;
     }
 
-    PthreadReap();
-    ret = LOS_TaskCreateOnly(&taskHandle, &taskInitParam);
+    PthreadReap();// posix <--> liteos 数据同步
+    ret = LOS_TaskCreateOnly(&taskHandle, &taskInitParam);//创建一个任务
     if (ret == LOS_OK) {
-        *thread = (pthread_t)taskHandle;
-        ret = InitPthreadData(*thread, &userAttr, name, PTHREAD_DATA_NAME_MAX);
+        *thread = (pthread_t)taskHandle;//任务ID
+        ret = InitPthreadData(*thread, &userAttr, name, PTHREAD_DATA_NAME_MAX);//初始化线程数据
         if (ret != LOS_OK) {
             goto ERROR_OUT_WITH_TASK;
         }
-        (VOID)LOS_SetTaskScheduler(taskHandle, SCHED_RR, taskInitParam.usTaskPrio);
+        (VOID)LOS_SetTaskScheduler(taskHandle, SCHED_RR, taskInitParam.usTaskPrio);//设置任务的调度参数
     }
 
     if (ret == LOS_OK) {
@@ -284,7 +284,7 @@ ERROR_OUT:
 //POSIX接口之 终止当前线程
 void pthread_exit(void *retVal)
 {
-    _pthread_data *self = pthread_get_self_data();
+    _pthread_data *self = pthread_get_self_data();//获取当前线程实体
     UINT32 intSave;
 
     if (pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, (int *)0) != ENOERR) {
@@ -462,29 +462,29 @@ int pthread_detach(pthread_t thread)
 
     return ret;
 }
-
+//posix 设置线程的调度参数
 int pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *param)
 {
     _pthread_data *data = NULL;
     int ret;
 
-    if ((param == NULL) || (param->sched_priority > OS_TASK_PRIORITY_LOWEST)) {
+    if ((param == NULL) || (param->sched_priority > OS_TASK_PRIORITY_LOWEST)) {//优先级不能过 31级
         return EINVAL;
     }
 
-    if (policy != SCHED_RR) {
+    if (policy != SCHED_RR) {//必须是抢占式调度方式
         return EINVAL;
     }
 
     /* The parameters seem OK, change the thread. */
-    ret = pthread_mutex_lock(&g_pthreadsDataMutex);
+    ret = pthread_mutex_lock(&g_pthreadsDataMutex);//持有posix 线程互斥锁
     if (ret != ENOERR) {
         return ret;
     }
 
-    data = pthread_get_data(thread);
+    data = pthread_get_data(thread);//获取线程实体数据
     if (data == NULL) {
-        ret = pthread_mutex_unlock(&g_pthreadsDataMutex);
+        ret = pthread_mutex_unlock(&g_pthreadsDataMutex);//异常情况要释放锁
         if (ret != ENOERR) {
             return ret;
         }
@@ -492,18 +492,18 @@ int pthread_setschedparam(pthread_t thread, int policy, const struct sched_param
     }
 
     /* Only support one policy now */
-    data->attr.schedpolicy = SCHED_RR;
-    data->attr.schedparam  = *param;
+    data->attr.schedpolicy = SCHED_RR; 	//鸿蒙目前仅支持 抢占式调度
+    data->attr.schedparam  = *param;	//调度参数
 
-    ret = pthread_mutex_unlock(&g_pthreadsDataMutex);
+    ret = pthread_mutex_unlock(&g_pthreadsDataMutex);//释放锁
     if (ret != ENOERR) {
         return ret;
     }
-    (VOID)LOS_TaskPriSet((UINT32)thread, (UINT16)param->sched_priority);
+    (VOID)LOS_TaskPriSet((UINT32)thread, (UINT16)param->sched_priority);//设置调度的优先级
 
     return ENOERR;
 }
-
+//posix 获取线程的调度参数
 int pthread_getschedparam(pthread_t thread, int *policy, struct sched_param *param)
 {
     _pthread_data *data = NULL;
@@ -513,23 +513,23 @@ int pthread_getschedparam(pthread_t thread, int *policy, struct sched_param *par
         return EINVAL;
     }
 
-    ret = pthread_mutex_lock(&g_pthreadsDataMutex);
+    ret = pthread_mutex_lock(&g_pthreadsDataMutex);//持有posix 线程互斥锁
     if (ret != ENOERR) {
         return ret;
     }
 
-    data = pthread_get_data(thread);
+    data = pthread_get_data(thread);//获取线程实体数据
     if (data == NULL) {
         goto ERR_OUT;
     }
 
-    *policy = data->attr.schedpolicy;
-    *param = data->attr.schedparam;
+    *policy = data->attr.schedpolicy;//拿到调度方式
+    *param = data->attr.schedparam;//拿到调度参数
 
-    ret = pthread_mutex_unlock(&g_pthreadsDataMutex);
+    ret = pthread_mutex_unlock(&g_pthreadsDataMutex);//释放锁
     return ret;
 ERR_OUT:
-    ret = pthread_mutex_unlock(&g_pthreadsDataMutex);
+    ret = pthread_mutex_unlock(&g_pthreadsDataMutex);//异常情况下释放锁
     if (ret != ENOERR) {
         return ret;
     }
@@ -688,7 +688,7 @@ OUT:
     LOS_TaskUnlock();
     return ret;
 }
-//
+
 int pthread_cancel(pthread_t thread)
 {
     _pthread_data *data = NULL;
@@ -752,10 +752,10 @@ void pthread_testcancel(void)
     }
 }
 
-/* Get current thread id. */
+/* Get current thread id. */ //获取当前的线程ID
 pthread_t pthread_self(void)
 {
-    _pthread_data *data = pthread_get_self_data();
+    _pthread_data *data = pthread_get_self_data();//获取当前线程的实体
 
     return data->id;
 }

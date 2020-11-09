@@ -1456,33 +1456,33 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);
     return gid;
 }
-
+//获取当前进程的组ID
 LITE_OS_SEC_TEXT INT32 LOS_GetCurrProcessGroupID(VOID)
 {
     return LOS_GetProcessGroupID(OsCurrProcessGet()->processID);
 }
-
+//用户进程分配栈并初始化
 STATIC VOID *OsUserInitStackAlloc(UINT32 processID, UINT32 *size)
 {
     LosVmMapRegion *region = NULL;
-    LosProcessCB *processCB = OS_PCB_FROM_PID(processID);
-    UINT32 stackSize = ALIGN(OS_USER_TASK_STACK_SIZE, PAGE_SIZE);
-
+    LosProcessCB *processCB = OS_PCB_FROM_PID(processID);//获取当前进程实体
+    UINT32 stackSize = ALIGN(OS_USER_TASK_STACK_SIZE, PAGE_SIZE);//1M栈空间 按页对齐
+	//线性区分配虚拟内存
     region = LOS_RegionAlloc(processCB->vmSpace, 0, stackSize,
                              VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ |
-                             VM_MAP_REGION_FLAG_PERM_WRITE, 0);
+                             VM_MAP_REGION_FLAG_PERM_WRITE, 0);//可使用可读可写区
     if (region == NULL) {
         return NULL;
     }
 
-    LOS_SetRegionTypeAnon(region);
-    region->regionFlags |= VM_MAP_REGION_FLAG_STACK;
+    LOS_SetRegionTypeAnon(region);//匿名映射
+    region->regionFlags |= VM_MAP_REGION_FLAG_STACK;//标记该线性区为栈区
 
-    *size = stackSize;
+    *size = stackSize;//记录栈大小
 
     return (VOID *)(UINTPTR)region->range.base;
 }
-
+//执行回收和初始化,再利用
 LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR *name,
                                              LosVmSpace *oldSpace, UINTPTR oldFiles)
 {
@@ -1596,7 +1596,9 @@ STATIC UINT32 OsUserInitProcessStart(UINT32 processID, TSK_INIT_PARAM_S *param)
 
     return LOS_OK;
 }
-//所有的用户进程都是使用同一个用户代码段描述符和用户数据段描述符，它们是__USER_CS和__USER_DS，也就是每个进程处于用户态时，它们的CS寄存器和DS寄存器中的值是相同的。当任何进程或者中断异常进入内核后，都是使用相同的内核代码段描述符和内核数据段描述符，它们是__KERNEL_CS和__KERNEL_DS。这里要明确记得，内核数据段实际上就是内核态堆栈段。
+//所有的用户进程都是使用同一个用户代码段描述符和用户数据段描述符，它们是__USER_CS和__USER_DS，
+//也就是每个进程处于用户态时，它们的CS寄存器和DS寄存器中的值是相同的。当任何进程或者中断异常进入内核后，
+//都是使用相同的内核代码段描述符和内核数据段描述符，它们是__KERNEL_CS和__KERNEL_DS。这里要明确记得，内核数据段实际上就是内核态堆栈段。
 LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
 {
     INT32 ret;

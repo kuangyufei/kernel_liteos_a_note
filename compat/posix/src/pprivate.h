@@ -63,8 +63,8 @@ posix 线程属性结构体
 
 #define PTHREAD_DATA_NAME_MAX 20
 /*
- * Thread control data structure
- * Per-thread information needed by POSIX
+ * Thread control data structure			//线程控制数据结构
+ * Per-thread information needed by POSIX	//POSIX所需的每个线程信息
  */
 typedef struct {
     pthread_attr_t      attr; /* Current thread attributes *///当前线程属性
@@ -87,7 +87,7 @@ typedef struct {
  * struct _pthread_data about thread object.
  * Note: numerical order here is important, do not rearrange.
  */
-#define PTHREAD_STATE_FREE       0  /* This structure is free for reuse */		//这种结构可以免费重复使用
+#define PTHREAD_STATE_FREE       0  /* This structure is free for reuse */		//空闲状态,可以反复使用
 #define PTHREAD_STATE_DETACHED   1  /* The thread is running but detached */	//线程正在运行，但已分离
 #define PTHREAD_STATE_RUNNING    2  /* The thread is running and will wait to join when it exits */	//线程正在运行，退出时将等待加入
 #define PTHREAD_STATE_JOIN       3  /* The thread has exited and is waiting to be joined */ //线程已退出，正在等待加入

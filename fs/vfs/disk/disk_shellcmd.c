@@ -37,7 +37,15 @@
 #include "disk.h"
 #include "shcmd.h"
 #include "shell.h"
-
+/******************************************************
+命令功能
+partinfo命令用于查看系统识别的硬盘，SD卡多分区信息。
+命令格式
+partinfo <dev_inodename>
+参数说明
+dev_inodename 要查看的分区名字。
+例如:partinfo /dev/mmcblk0p0
+******************************************************/
 INT32 osShellCmdPartInfo(INT32 argc, const CHAR **argv)
 {
     struct inode *node = NULL;

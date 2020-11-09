@@ -37,18 +37,18 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-//现实 POSIX   thread 接口
+//posix thread 属性初始化
 int pthread_attr_init(pthread_attr_t *attr)
 {
     if (attr == NULL) {
         return EINVAL;
     }
 
-    attr->detachstate                 = PTHREAD_CREATE_JOINABLE;
-    attr->schedpolicy                 = SCHED_RR;
+    attr->detachstate                 = PTHREAD_CREATE_JOINABLE;//默认线程采用联结方式
+    attr->schedpolicy                 = SCHED_RR;	//默认调度方式为抢占式 
     attr->schedparam.sched_priority   = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;//默认线程优先级
-    attr->inheritsched                = PTHREAD_INHERIT_SCHED;
-    attr->scope                       = PTHREAD_SCOPE_PROCESS;
+    attr->inheritsched                = PTHREAD_INHERIT_SCHED;//表示新线程将继承创建线程的调度策略和参数 对应的就是 PTHREAD_EXPLICIT_SCHED
+    attr->scope                       = PTHREAD_SCOPE_PROCESS;//线程作用域,默认只在进程
     attr->stackaddr_set               = 0;
     attr->stackaddr                   = NULL;
     attr->stacksize_set               = 1;

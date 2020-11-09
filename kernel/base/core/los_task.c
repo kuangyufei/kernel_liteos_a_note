@@ -547,11 +547,11 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskStackAlloc(VOID **topStack, UINT32 stack
 {
     *topStack = (VOID *)LOS_MemAllocAlign(pool, stackSize, LOSCFG_STACK_POINT_ALIGN_SIZE);
 }
-
+//创建任务同步信号
 STATIC INLINE UINT32 OsTaskSyncCreate(LosTaskCB *taskCB)
 {
-#if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)
-    UINT32 ret = LOS_SemCreate(0, &taskCB->syncSignal);
+#if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)//CPU多核情况下任务同步宏是否开启
+    UINT32 ret = LOS_SemCreate(0, &taskCB->syncSignal);//创建一个syncSignal信号量
     if (ret != LOS_OK) {
         return LOS_ERRNO_TSK_MP_SYNC_RESOURCE;
     }
@@ -560,7 +560,7 @@ STATIC INLINE UINT32 OsTaskSyncCreate(LosTaskCB *taskCB)
 #endif
     return LOS_OK;
 }
-
+//删除任务同步信号
 STATIC INLINE VOID OsTaskSyncDestroy(UINT32 syncSignal)
 {
 #if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)
@@ -569,7 +569,7 @@ STATIC INLINE VOID OsTaskSyncDestroy(UINT32 syncSignal)
     (VOID)syncSignal;
 #endif
 }
-
+//同步信号等待
 LITE_OS_SEC_TEXT UINT32 OsTaskSyncWait(const LosTaskCB *taskCB)
 {
 #if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)
@@ -603,7 +603,7 @@ STATIC INLINE VOID OsTaskSyncWake(const LosTaskCB *taskCB)
     (VOID)taskCB;
 #endif
 }
-
+//释放任务内核资源
 STATIC VOID OsTaskKernelResourcesToFree(UINT32 syncSignal, UINTPTR topOfStack)
 {
     VOID *poolTmp = (VOID *)m_aucSysMem1;
@@ -733,7 +733,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_IN
     processCB = OS_PCB_FROM_PID(initParam->processID);//通过ID获取PCB ,单核进程数最多64个
     taskCB->processID = processCB->processID;//进程-线程的父子关系绑定
     mode = processCB->processMode;//调度方式同步process
-    LOS_ListTailInsert(&(processCB->threadSiblingList), &(taskCB->threadList));//插入进程的线程链表
+    LOS_ListTailInsert(&(processCB->threadSiblingList), &(taskCB->threadList));//挂入进程的线程链表
     if (mode == OS_USER_MODE) {//用户模式
         taskCB->userArea = initParam->userParam.userArea;
         taskCB->userMapBase = initParam->userParam.userMapBase;
@@ -744,10 +744,10 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_IN
     if (!processCB->threadNumber) {//进程线程数量为0时，
         processCB->threadGroupID = taskCB->taskID;//任务为线程组 组长
     }
-    processCB->threadNumber++;//这里说明 线程和TASK是一个意思 threadNumber代表活动线程数
+    processCB->threadNumber++;//这里说明 线程和TASK是一个意思 threadNumber代表活动线程数,thread消亡的时候会 threadNumber--
 
     numCount = processCB->threadCount;//代表总线程数，包括销毁的，只要存在过的都算，这个值也就是在这里用下，
-    processCB->threadCount++;
+    processCB->threadCount++;//线程总数++,注意这个数会一直累加的,哪怕thread最后退出了,这个统计这个进程曾经存在过的线程数量
     SCHEDULER_UNLOCK(intSave);
 
     if (initParam->pcName == NULL) {
@@ -757,7 +757,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_IN
         return LOS_OK;
     }
 
-    if (mode == OS_KERNEL_MODE) {
+    if (mode == OS_KERNEL_MODE) {//内核模式的情况
         ret = memcpy_s(taskCB->taskName, sizeof(CHAR) * OS_TCB_NAME_LEN, initParam->pcName, strlen(initParam->pcName));
         if (ret != EOK) {
             taskCB->taskName[0] = '\0';
@@ -785,7 +785,7 @@ LITE_OS_SEC_TEXT LosTaskCB *OsGetFreeTaskCB(VOID)
 
     return taskCB;
 }
-
+//只是创建一个任务,并不会加入就绪队列
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *taskID, TSK_INIT_PARAM_S *initParam)
 {
     UINT32 intSave, errRet;
@@ -841,7 +841,7 @@ LOS_ERREND_REWIND_TCB:
 LOS_ERREND:
     return errRet;
 }
-//创建Task
+//创建Task,并加入就绪队列,申请调度
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreate(UINT32 *taskID, TSK_INIT_PARAM_S *initParam)
 {
     UINT32 ret;
@@ -877,7 +877,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreate(UINT32 *taskID, TSK_INIT_PARAM_S *in
 
     SCHEDULER_LOCK(intSave);
     taskCB->taskStatus &= ~OS_TASK_STATUS_INIT;//任务不再是初始化
-    OS_TASK_SCHED_QUEUE_ENQUEUE(taskCB, 0);//进入调度就绪队列,新任务是直接进入就绪队列的
+    OS_TASK_SCHED_QUEUE_ENQUEUE(taskCB, 0);//加入调度就绪队列,新任务是直接进入就绪队列的
     SCHEDULER_UNLOCK(intSave);
 
     /* in case created task not running on this core,
