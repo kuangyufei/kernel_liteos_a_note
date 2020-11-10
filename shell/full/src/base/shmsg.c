@@ -154,7 +154,7 @@ STATIC INT32 ShellCmdLineCheckUDRL(const CHAR ch, ShellCB *shellCB)
     }
     return LOS_NOK;
 }
-
+//对shell命令的解析
 LITE_OS_SEC_TEXT_MINOR VOID ShellCmdLineParse(CHAR c, pf_OUTPUT outputFunc, ShellCB *shellCB)
 {
     const CHAR ch = c;
@@ -364,21 +364,21 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntry(UINTPTR param)
     }
 }
 #endif
-
+//处理shell 命令
 STATIC VOID ShellCmdProcess(ShellCB *shellCB)
 {
     CHAR *buf = NULL;
     while (1) {
-        buf = ShellGetInputBuf(shellCB);
+        buf = ShellGetInputBuf(shellCB);//获取输入buffer
         if (buf == NULL) {
             break;
         }
-        (VOID)ShellMsgParse(buf);
-        ShellSaveHistoryCmd(buf, shellCB);
+        (VOID)ShellMsgParse(buf);//对buffer进行解析,执行
+        ShellSaveHistoryCmd(buf, shellCB);//保存buffer到历史记录
         shellCB->cmdMaskKeyLink = shellCB->cmdHistoryKeyLink;
     }
 }
-
+//shell 任务的入口函数
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellTask(UINTPTR param1,
                                         UINTPTR param2,
                                         UINTPTR param3,
@@ -393,17 +393,17 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellTask(UINTPTR param1,
     while (1) {
         PRINTK("\nOHOS # ");
         ret = LOS_EventRead(&shellCB->shellEvent,
-                            0xFFF, LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
-        if (ret == SHELL_CMD_PARSE_EVENT) {
-            ShellCmdProcess(shellCB);
+                            0xFFF, LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);//等待用户的输入完成 读取cmd命令
+        if (ret == SHELL_CMD_PARSE_EVENT) {//收到解析cmd事件
+            ShellCmdProcess(shellCB);//处理shell 命令
         } else if (ret == CONSOLE_SHELL_KEY_EVENT) {
             break;
         }
     }
     OsShellKeyDeInit((CmdKeyLink *)shellCB->cmdKeyLink);
     OsShellKeyDeInit((CmdKeyLink *)shellCB->cmdHistoryKeyLink);
-    (VOID)LOS_EventDestroy(&shellCB->shellEvent);
-    (VOID)LOS_MemFree((VOID *)m_aucSysMem0, shellCB);
+    (VOID)LOS_EventDestroy(&shellCB->shellEvent);//删除shell的事件
+    (VOID)LOS_MemFree((VOID *)m_aucSysMem0, shellCB);//释放shell所用虚拟内存
     return 0;
 }
 
@@ -411,7 +411,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellTask(UINTPTR param1,
 #define SERIAL_ENTRY_TASK_NAME "SerialEntryTask"
 #define TELNET_SHELL_TASK_NAME "TelnetShellTask"
 #define TELNET_ENTRY_TASK_NAME "TelnetEntryTask"
-
+//shell 任务的初始化
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellTaskInit(ShellCB *shellCB)
 {
     CHAR *name = NULL;
@@ -425,18 +425,18 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellTaskInit(ShellCB *shellCB)
         return LOS_NOK;
     }
 
-    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ShellTask;
+    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ShellTask; //任务入口函数
     initParam.usTaskPrio   = 9; /* 9:shell task priority */
     initParam.auwArgs[0]   = (UINTPTR)shellCB;
-    initParam.uwStackSize  = 0x3000;
+    initParam.uwStackSize  = 0x3000;	//
     initParam.pcName       = name;
-    initParam.uwResved     = LOS_TASK_STATUS_DETACHED;
+    initParam.uwResved     = LOS_TASK_STATUS_DETACHED;	//线程分离模式
 
-    (VOID)LOS_EventInit(&shellCB->shellEvent);
+    (VOID)LOS_EventInit(&shellCB->shellEvent);//事件初始化
 
-    return LOS_TaskCreate(&shellCB->shellTaskHandle, &initParam);
+    return LOS_TaskCreate(&shellCB->shellTaskHandle, &initParam);//创建任务,并加入就绪队列,进行调度
 }
-
+//shell
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntryInit(ShellCB *shellCB)
 {
     UINT32 ret;

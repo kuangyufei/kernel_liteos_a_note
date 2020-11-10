@@ -52,13 +52,13 @@ extern "C" {
 #ifdef LOSCFG_FS_VFS
 
 /* Define two fixed console id for Console ID. */
-#define CONSOLE_SERIAL 1
-#define CONSOLE_TELNET 2
+#define CONSOLE_SERIAL 1	//串行方式
+#define CONSOLE_TELNET 2	//远程登录
 
 #define LOSCFG_PLATFORM_CONSOLE
-#define STDIN  0
-#define STDOUT 1
-#define STDERR 2
+#define STDIN  0	//标准输入
+#define STDOUT 1	//标准输出
+#define STDERR 2	//错误
 
 #define CONSOLE  "/dev/console"
 #define CONSOLE_NAMELEN 16
@@ -76,13 +76,13 @@ typedef struct {
     CirBuf cirBufCB;        /* Circular buffer CB */
     EVENT_CB_S sendEvent;   /* Inform telnet send task */
 } CirBufSendCB;
-
+//控制台控制块结构体
 typedef struct {
-    UINT32 consoleID;
-    UINT32 consoleType;
-    UINT32 consoleSem;
-    UINT32 shellEntryId;
-    UINT32 consoleMask;
+    UINT32 consoleID;	//控制台ID
+    UINT32 consoleType;	//控制台类型
+    UINT32 consoleSem;	//
+    UINT32 shellEntryId;//shell的入口ID
+    UINT32 consoleMask;	
     struct inode *devInode;
     CHAR *name;
     INT32 fd;

@@ -101,6 +101,11 @@ static inline int GOOD_SIGNO(unsigned int sig)
 {
     return (sig < _NSIG) ? 1 : 0;
 }
+/********************************************************************
+Musl官网 http://musl.libc.org/ 
+musl是构建在Linux系统调用API之上的C标准库的实现，包括在基本语言标准POSIX中定义的接口，
+以及广泛认可的扩展。musl是轻量级的，快速的，简单的，自由的.
+********************************************************************/
 
 #define MAX_SIG_ARRAY_IN_MUSL 128
 

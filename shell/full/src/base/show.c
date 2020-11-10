@@ -55,7 +55,7 @@ STATIC UINT32 OsShellCmdInit(VOID)
 
     return OsShellSysCmdRegister();
 }
-
+//创建shell task
 STATIC UINT32 OsShellCreateTask(ShellCB *shellCB)
 {
     UINT32 ret = ShellTaskInit(shellCB);

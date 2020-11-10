@@ -56,13 +56,13 @@ extern "C" {
 #define OS_ERRNO_SHELL_FIFO_ERROR               LOS_ERRNO_OS_ERROR(LOS_MOD_SHELL, 0x10)
 
 /* Max len of show str */
-#define SHOW_MAX_LEN CMD_MAX_LEN
+#define SHOW_MAX_LEN CMD_MAX_LEN //shell命令的最大长度
 
 #define XARGS 0xFFFFFFFF /* default args */
 
 #define CMD_MAX_PARAS           32
 #define CMD_KEY_LEN             16U
-#define CMD_MAX_LEN             (256U + CMD_KEY_LEN)
+#define CMD_MAX_LEN             (256U + CMD_KEY_LEN) //256+16 = 272 
 #define CMD_KEY_NUM             32
 #define CMD_HISTORY_LEN         10
 #define CMD_MAX_PATH            256
@@ -85,17 +85,17 @@ extern "C" {
 
 typedef struct {
     UINT32   consoleID;			//控制台ID
-    UINT32   shellTaskHandle;	//shell task 的入口函数,这是用于创建 task时指定,类似 应用程序的main函数
+    UINT32   shellTaskHandle;	//创建 shell task 的入口函数,这是用于创建 task时指定,类似 应用程序的main函数
     UINT32   shellEntryHandle;	
     VOID     *cmdKeyLink;
     VOID     *cmdHistoryKeyLink;
     VOID     *cmdMaskKeyLink;
     UINT32   shellBufOffset;
-    UINT32   shellKeyType;
-    EVENT_CB_S shellEvent;
-    pthread_mutex_t keyMutex;
-    pthread_mutex_t historyMutex;
-    CHAR     shellBuf[SHOW_MAX_LEN];
+    UINT32   shellKeyType;	//
+    EVENT_CB_S shellEvent;	//shell 事件
+    pthread_mutex_t keyMutex;	//键盘输入互斥锁
+    pthread_mutex_t historyMutex;//历史记录互斥锁
+    CHAR     shellBuf[SHOW_MAX_LEN];//shell命令的最大长度 不能大于 272个字符
     CHAR     shellWorkingDirectory[PATH_MAX];
 } ShellCB;
 

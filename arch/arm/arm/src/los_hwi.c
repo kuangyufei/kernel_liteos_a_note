@@ -107,7 +107,7 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
 #endif
     ++g_hwiFormCnt[intNum];//中断数量计数器++
 
-    *intCnt = *intCnt - 1;	//@note_why 这里没看明白有什么要 -1 
+    *intCnt = *intCnt - 1;	//@note_why 这里没看明白为什么要 -1 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ	//开启查询系统CPU的占用率的中断
     OsCpupIrqEnd(intNum);
 #endif
@@ -167,7 +167,7 @@ STATIC UINT32 OsHwiCreateNoShared(HWI_HANDLE_T hwiNum, HWI_MODE_T hwiMode,
     HWI_UNLOCK(intSave);
     return LOS_OK;
 }
-#else	//删除一个共性的中断
+#else	//删除一个共享中断
 STATIC UINT32 OsHwiDelShared(HWI_HANDLE_T hwiNum, const HwiIrqParam *irqParam)
 {
     HwiHandleForm *hwiForm = NULL;

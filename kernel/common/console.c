@@ -66,12 +66,12 @@ STATIC UINT8 g_taskConsoleIDArray[LOSCFG_BASE_CORE_TSK_LIMIT];
 STATIC SPIN_LOCK_INIT(g_consoleSpin);
 
 #define SHELL_ENTRYID_INVALID     0xFFFFFFFF
-#define SHELL_TASK_PRIORITY       9
-#define CONSOLE_CIRBUF_EVENT      0x02U
-#define CONSOLE_SEND_TASK_EXIT    0x04U
-#define CONSOLE_SEND_TASK_RUNNING 0x10U
+#define SHELL_TASK_PRIORITY       9		//shell 的优先级为 9
+#define CONSOLE_CIRBUF_EVENT      0x02U	//控制台清除buffer事件	
+#define CONSOLE_SEND_TASK_EXIT    0x04U	//控制台发送任务退出事件
+#define CONSOLE_SEND_TASK_RUNNING 0x10U	//控制台发送任务正在执行事件
 
-CONSOLE_CB *g_console[CONSOLE_NUM];
+CONSOLE_CB *g_console[CONSOLE_NUM];//控制台全局变量 默认为 2
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 /*
@@ -272,12 +272,12 @@ STATIC CONSOLE_CB *OsGetConsoleByDevice(const CHAR *deviceName)
         return NULL;
     }
 }
-
+//获取一个控制台ID 
 STATIC INT32 OsGetConsoleID(const CHAR *deviceName)
 {
     if ((deviceName != NULL) &&
         (strlen(deviceName) == strlen(SERIAL)) &&
-        (!strncmp(deviceName, SERIAL, strlen(SERIAL)))) {
+        (!strncmp(deviceName, SERIAL, strlen(SERIAL)))) {//
         return CONSOLE_SERIAL;
     }
 #ifdef LOSCFG_NET_TELNET
@@ -1226,11 +1226,11 @@ STATIC VOID OsConsoleCBDeinit(CONSOLE_CB *consoleCB)
     consoleCB->name = NULL;
     (VOID)LOS_MemFree((VOID *)m_aucSysMem0, consoleCB);
 }
-
+//创建一个控制台
 STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
 {
     INT32 ret;
-    CONSOLE_CB *consoleCB = OsConsoleCBInit(consoleID);
+    CONSOLE_CB *consoleCB = OsConsoleCBInit(consoleID);//
     if (consoleCB == NULL) {
         PRINT_ERR("console malloc error.\n");
         return NULL;
@@ -1298,9 +1298,9 @@ STATIC UINT32 OsConsoleDelete(CONSOLE_CB *consoleCB)
 
     return ret;
 }
-
+//初始化系统控制台并返回stdinfd stdoutfd stderrfd
 /* Initialized system console and return stdinfd stdoutfd stderrfd */
-INT32 system_console_init(const CHAR *deviceName)
+INT32 system_console_init(const CHAR *deviceName)//deviceName: /dev/serial /dev/telnet
 {
 #ifdef LOSCFG_SHELL
     UINT32 ret;
@@ -1309,20 +1309,20 @@ INT32 system_console_init(const CHAR *deviceName)
     UINT32 intSave;
     CONSOLE_CB *consoleCB = NULL;
 
-    consoleID = OsGetConsoleID(deviceName);
+    consoleID = OsGetConsoleID(deviceName);//获取控制台ID CONSOLE_SERIAL,CONSOLE_TELNET ,-1三种方式
     if (consoleID == -1) {
         PRINT_ERR("device is full.\n");
         return VFS_ERROR;
     }
 
-    consoleCB = OsConsoleCreate((UINT32)consoleID, deviceName);
+    consoleCB = OsConsoleCreate((UINT32)consoleID, deviceName);//创建一个控制台CB
     if (consoleCB == NULL) {
         PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
         return VFS_ERROR;
     }
 
     LOS_SpinLockSave(&g_consoleSpin, &intSave);
-    g_console[consoleID - 1] = consoleCB;
+    g_console[consoleID - 1] = consoleCB;//g_console最大值只有2
     if (OsCurrTaskGet() != NULL) {
         g_taskConsoleIDArray[OsCurrTaskGet()->taskID] = (UINT8)consoleID;
     }
