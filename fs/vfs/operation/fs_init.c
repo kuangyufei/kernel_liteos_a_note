@@ -38,7 +38,7 @@
 #include "linux/spinlock.h"
 #include "disk_pri.h"
 //VFS是Virtual File System（虚拟文件系统）的缩写，它不是一个实际的文件系统，而是一个异构文件系统之上的软件粘合层
-//虚拟文件系统初始化
+//虚拟文件系统初始化   los_vfs_init()只能调用一次，多次调用将会造成文件系统异常
 void los_vfs_init(void)
 {
     int err;

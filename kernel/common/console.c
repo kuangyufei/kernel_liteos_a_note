@@ -62,7 +62,7 @@ extern "C" {
 extern UINT32 g_uart_fputc_en;
 STATIC UINT32 ConsoleSendTask(UINTPTR param);
 
-STATIC UINT8 g_taskConsoleIDArray[LOSCFG_BASE_CORE_TSK_LIMIT];
+STATIC UINT8 g_taskConsoleIDArray[LOSCFG_BASE_CORE_TSK_LIMIT];//task 控制台数组,同步task数量,理论上每个task都可以有一个自己的控制台
 STATIC SPIN_LOCK_INIT(g_consoleSpin);
 
 #define SHELL_ENTRYID_INVALID     0xFFFFFFFF
@@ -1323,13 +1323,13 @@ INT32 system_console_init(const CHAR *deviceName)//deviceName: /dev/serial /dev/
 
     LOS_SpinLockSave(&g_consoleSpin, &intSave);
     g_console[consoleID - 1] = consoleCB;//g_console最大值只有2
-    if (OsCurrTaskGet() != NULL) {
-        g_taskConsoleIDArray[OsCurrTaskGet()->taskID] = (UINT8)consoleID;
+    if (OsCurrTaskGet() != NULL) {//当前task
+        g_taskConsoleIDArray[OsCurrTaskGet()->taskID] = (UINT8)consoleID;//任务绑定控制台ID
     }
     LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
 
 #ifdef LOSCFG_SHELL
-    ret = OsShellInit(consoleID);
+    ret = OsShellInit(consoleID);//通过控制台初始化shell
     if (ret != LOS_OK) {
         PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
         LOS_SpinLockSave(&g_consoleSpin, &intSave);

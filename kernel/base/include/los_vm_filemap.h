@@ -56,7 +56,7 @@ typedef struct FilePage {
     UINT32                  n_maps;       /* num of mapping */
     struct VmPhysSeg        *physSeg;      /* physical memory that file page belongs to */
     struct VmPage           *vmPage;	//物理页框
-    struct page_mapping     *mapping;	//此结构由文件系统提供，用于描述装入点 见于 ..\third_party_NuttX\include\nuttx\fs\fs.h
+    struct page_mapping     *mapping;	//此结构由文件系统提供，用于描述装入点 见于 ..\third_party\NuttX\include\nuttx\fs\fs.h
     VM_OFFSET_T             pgoff;		//页偏移地址，主要用于seek时使用
     UINT32                  flags;		//标签
     UINT16                  dirtyOff;	//脏页的页内偏移地址

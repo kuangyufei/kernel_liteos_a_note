@@ -4,9 +4,9 @@
 
 ---
 
-# ![](https://oscimg.oschina.net/oscnet/up-c1f5f5e88b38fcb25f274a2062384b0c61e.png)
-
 # **[kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note): 鸿蒙内核源码注释中文版**
+
+# ![](https://oscimg.oschina.net/oscnet/up-c1f5f5e88b38fcb25f274a2062384b0c61e.png)
 
 [![star](https://gitee.com/weharmony/kernel_liteos_a_note/badge/star.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)[![fork](https://gitee.com/weharmony/kernel_liteos_a_note/badge/fork.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)
 
@@ -39,7 +39,7 @@
     
     系列篇文章 进入 >\> [鸿蒙系统源码分析(总目录) 【 CSDN](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA](https://my.oschina.net/u/3751245/blog/4626852) [| WIKI 】](https://gitee.com/weharmony/kernel_liteos_a_note/wikis/pages)查看,两大站点持续更新,感谢CSDN和OSCHINA对博客的推荐支持.
     
-    注释中文版 进入 >\> [鸿蒙内核源码注释中文版 【 Gitee仓](https://gitee.com/weharmony/kernel_liteos_a_note) | [CSDN仓](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [Github仓](https://github.com/kuangyufei/kernel_liteos_a_note) | [Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)阅读,四大仓库和wiki同步更新
+    注释中文版 进入 >\> [鸿蒙内核源码注释中文版 【 Gitee仓](https://gitee.com/weharmony/kernel_liteos_a_note) | [CSDN仓](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [Github仓](https://github.com/kuangyufei/kernel_liteos_a_note) | [Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)阅读,四大仓库每日同步更新...
     
 -   ### **加注释方式是怎样的?**
     
@@ -50,6 +50,12 @@
     另外用字符画了一些图方便理解,直接嵌入到头文件中,比如虚拟内存的全景图,因没有这些图是很难理解内存是如何管理的,后续还会陆续加入更多的图方便理解.
     
     ![在这里插入图片描述](https://img-blog.csdnimg.cn/20201028154344813.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2t1YW5neXVmZWk=,size_16,color_FFFFFF,t_70#pic_center)
+
+    ### **有哪些方便查找的记号**
+
+    搜索 @note_why 是笔者暂时没看懂的代码和疑惑, 如果有兴趣请帮笔者一起完善注解,让鸿蒙内核注解越来越清晰.
+    搜索 @note_pic 是笔者用字符画的一些图,用于方便理解. 目前所绘制的图不多,会陆续增加.
+    联系方式: kuangyufei@126.com 有好的建议请邮箱或私信联系.
     
 -   ### **仰望星空还是埋头走路**
     
@@ -58,6 +64,7 @@
 -   ### **新增的zzz目录是干什么的?**
     
     中文加注版比官方版无新增文件,只多了一个zzz的目录,里面放了一些笔者使用的文件,它与内核代码无关,大家可以忽略它,取名zzz是为了排在最后,减少对原有代码目录级的侵入,zzz的想法源于微信中名称为AAA的那批牛人,你的微信里应该也有他们熟悉的身影吧 :|P  
+
     
 -   ### **既然选择了远方,就不要怕天高路远,行动起来!**
 

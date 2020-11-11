@@ -351,12 +351,11 @@ typedef struct {
 #endif
 } LosTaskCB;
 //LosTask结构体是给外部用的
-typedef struct {// 可见于..\vendor_hisi_hi3861_hi3861\hi3861\platform\os\Huawei_LiteOS\kernel\base\include\los_task_pri.h
+typedef struct {
     LosTaskCB *runTask;
     LosTaskCB *newTask;
 } LosTask;
-//typedef struct __sigset_t { unsigned long __bits[128/sizeof(long)]; } sigset_t;
-//见于 ..\vendor_hisi_hi3861_hi3861\hi3861\platform\os\Huawei_LiteOS\components\lib\libc\musl\include\bits\alltypes.h
+
 struct ProcessSignalInfo {//进程信号信息
     siginfo_t *sigInfo;       /**< Signal to be dispatched */		//要发送的信号 例如 9 代表 kill process信号
     LosTaskCB *defaultTcb;    /**< Default TCB */					//默认task,指的是信号的发送方

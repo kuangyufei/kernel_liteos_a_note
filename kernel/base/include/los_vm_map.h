@@ -50,7 +50,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 /*
-file结构体来自 ..\third_party_NuttX\include\nuttx\fs\fs.h
+file结构体来自 ..\third_party\NuttX\include\nuttx\fs\fs.h
 struct file //打开文件的基本表示形式
 {
   unsigned int         f_magicnum;  /* file magic number * /

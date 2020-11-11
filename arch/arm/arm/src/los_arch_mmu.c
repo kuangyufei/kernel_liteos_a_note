@@ -356,7 +356,7 @@ BOOL OsArchMmuInit(LosArchMmu *archMmu, VADDR_T *virtTtb)
     LOS_ListInit(&archMmu->ptList);//初始化页表，双循环进程所有物理页框 LOS_ListAdd(&processCB->vmSpace->archMmu.ptList, &(vmPage->node));
     archMmu->virtTtb = virtTtb;//为L1页表在内存位置 section(".bss.prebss.translation_table") UINT8 g_firstPageTable[MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS]
     archMmu->physTtb = (VADDR_T)(UINTPTR)virtTtb - KERNEL_ASPACE_BASE + SYS_MEM_BASE;// TTB寄存器是CP15协处理器的C2寄存器，存页表的基地址
-    //SYS_MEM_BASE = 0x80000000  KERNEL_ASPACE_BASE = 0x40000000	见于 ..\vendor_hisi_hi35xx_hi3516dv300\config\board\include\board.h
+    //SYS_MEM_BASE = 0x80000000  KERNEL_ASPACE_BASE = 0x40000000	见于 ..\vendor\hi3516dv300\config\board\include\board.h
     //archMmu->physTtb = (VADDR_T)(UINTPTR)virtTtb + 0x40000000; 
     return TRUE;
 }

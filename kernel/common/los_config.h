@@ -70,7 +70,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * System clock (unit: HZ)
  */
 #ifndef OS_SYS_CLOCK	//HZ:是每秒中的周期性变动重复次数的计量
-#define OS_SYS_CLOCK (get_bus_clk()) //50000000 即50微秒 见于 ..\vendor_hisi_hi35xx_hi3516dv300\config\board\include\hisoc\clock.h
+#define OS_SYS_CLOCK (get_bus_clk()) //50000000 即50微秒 见于 ..\vendor\hi3516dv300\config\board\include\hisoc\clock.h
 #endif
 /**
  * @ingroup los_config
@@ -88,7 +88,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
 #define OS_SYS_FUNC_ADDR_START ((UINTPTR)&__int_stack_start)
 #endif
 #ifndef OS_SYS_FUNC_ADDR_END
-#define OS_SYS_FUNC_ADDR_END (KERNEL_VMM_BASE + SYS_MEM_SIZE_DEFAULT)
+#define OS_SYS_FUNC_ADDR_END (KERNEL_VMM_BASE + SYS_MEM_SIZE_DEFAULT) //SYS_MEM_SIZE_DEFAULT 见于 ..\vendor\hi3516dv300
 #endif
 
 /**

@@ -261,7 +261,7 @@ typedef struct tagIrqParam {	//中断参数
     const CHAR *pName;	//名称
 } HwiIrqParam;
 
-extern HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];//最大中断数量，OS_HWI_MAX_NUM 见于 ..\vendor_hisi_hi3861_hi3861\hi3861\platform\os\Huawei_LiteOS\arch\los_hwi.h
+extern HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];
 
 /**
  * @ingroup los_hwi

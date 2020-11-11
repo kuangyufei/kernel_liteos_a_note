@@ -44,8 +44,8 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-STATIC BOOL g_shellSourceFlag = FALSE;
-
+STATIC BOOL g_shellSourceFlag = FALSE;// 标记shell Cmd 是否已初始化
+//初始化shell cmd 
 STATIC UINT32 OsShellCmdInit(VOID)
 {
     UINT32 ret = OsCmdInit();
@@ -121,7 +121,7 @@ ERR_OUT1:
     return ret;
 }
 
-
+//通过控制台ID 初始化shell
 UINT32 OsShellInit(INT32 consoleId)
 {
     if (g_shellSourceFlag == FALSE) {

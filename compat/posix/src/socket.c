@@ -37,7 +37,6 @@
 #include <lwip/sockets.h>
 
 #if !LWIP_COMPAT_SOCKETS
-//	详见： ..\vendor_hisi_hi3861_hi3861\hi3861\third_party\lwip_sack\include\lwip\sockets.h
 #define CHECK_NULL_PTR(ptr) do { if (ptr == NULL) { set_errno(EFAULT); return -1; } } while (0)
 //接受连接 
 int accept(int s, struct sockaddr *addr, socklen_t *addrlen)

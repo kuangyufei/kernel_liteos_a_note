@@ -32,7 +32,7 @@
 #ifndef __VM_ZONE_H__
 #define __VM_ZONE_H__
 
-#include "board.h"
+#include "board.h" // 由不同的芯片平台提供,例如: hi3516dv300
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -82,7 +82,7 @@ extern "C" {
 |    16M预留区	                 |
 +----------------------------+ 0x00000000U
 
-见于 ..\vendor_hisi_hi35xx_hi3516dv300\config\board\include\board.h
+以下定义 可见于 ..\vendor\hi3516dv300\config\board\include\board.h
 
 /* Physical memory address base and size * /	//物理内存地址基地址和大小
 #ifdef LOSCFG_TEE_ENABLE

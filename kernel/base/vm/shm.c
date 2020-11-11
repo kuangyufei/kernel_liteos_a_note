@@ -73,7 +73,7 @@ STATIC LosMux g_sysvShmMux;
 #define SHM_M   010000
 #endif
 
-#ifndef ACCESSPERMS //出工程区了,详见..\vendor_hisi_hi3861_hi3861\hi3861\platform\os\Huawei_LiteOS\components\lib\libc\musl\include\sys\stat.h
+#ifndef ACCESSPERMS
 #define ACCESSPERMS (S_IRWXU | S_IRWXG | S_IRWXO)//文件权限值意思就是 用户,用户组,其他可读可写.
 #endif //代表含义U:user G:group O:other
 
@@ -85,7 +85,7 @@ struct shmSegMap {
     vaddr_t vaddr;	//虚拟地址
     INT32 shmID;	//可看出共享内存使用了ID管理机制
 };
-//结构体定义可见于..\vendor_hisi_hi3861_hi3861\hi3861\platform\os\Huawei_LiteOS\components\lib\libc\musl\arch\generic\bits\shm.h
+
 struct shmIDSource {//共享存储结构体
     struct shmid_ds ds; //是内核为每一个共享内存段维护的数据结构,包含权限,各进程最后操作的时间,进程ID等信息
     UINT32 status;	//状态 SHM_SEG_FREE ...
@@ -583,8 +583,8 @@ INT32 ShmCtl(INT32 shmid, INT32 cmd, struct shmid_ds *buf)
 {
     struct shmIDSource *seg = NULL;
     INT32 ret = 0;
-    struct shm_info shmInfo;//前往查看结构体内容 ..\vendor_hisi_hi3861_hi3861\hi3861\platform\os\Huawei_LiteOS\components\lib\libc\musl\arch\generic\bits\shm.h
-    struct ipc_perm shm_perm;//前往查看结构体内容 ..\vendor_hisi_hi3861_hi3861\hi3861\platform\os\Huawei_LiteOS\components\lib\libc\musl\arch\generic\bits\ipc.h
+    struct shm_info shmInfo;
+    struct ipc_perm shm_perm;
 
     cmd = ((UINT32)cmd & ~IPC_64);
 

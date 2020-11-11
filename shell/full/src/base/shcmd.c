@@ -646,7 +646,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellKeyDeInit(CmdKeyLink *cmdKeyLink)
     cmdKeyLink->count = 0;
     (VOID)LOS_MemFree(m_aucSysMem0, cmdKeyLink);
 }
-
+//向内核注册cmd命令 hwi,watch ==
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellSysCmdRegister(VOID)
 {
     UINT32 i;
@@ -663,7 +663,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellSysCmdRegister(VOID)
     for (i = 0; i < index; ++i) {
         cmdItem = (CmdItemNode *)(cmdItemGroup + i * sizeof(CmdItemNode));
         cmdItem->cmd = &g_shellcmd[i];
-        OsCmdAscendingInsert(cmdItem);
+        OsCmdAscendingInsert(cmdItem);//按升序方式挂入链表
     }
     g_cmdInfo.listNum += index;
     return LOS_OK;
@@ -694,7 +694,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellCmdPush(const CHAR *string, CmdKeyLink *cmdKe
 
     return;
 }
-//显示命令的历史记录
+//显示命令的历史记录 ,shell history
 LITE_OS_SEC_TEXT_MINOR VOID OsShellHistoryShow(UINT32 value, ShellCB *shellCB)
 {
     CmdKeyLink *cmdtmp = NULL;
@@ -823,7 +823,7 @@ STATIC UINT32 OsCmdItemCreate(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNu
     cmdItemNode->cmd->cmdKey = cmdKey;
 
     (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);//拿锁
-    OsCmdAscendingInsert(cmdItemNode);//以递升方式插入
+    OsCmdAscendingInsert(cmdItemNode);//以递升方式挂入
     g_cmdInfo.listNum++;			//cmd总数++
     (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);//释放锁
 

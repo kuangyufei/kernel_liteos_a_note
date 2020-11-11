@@ -44,13 +44,13 @@ extern "C" {
 #endif /* __cplusplus */
 
 /* spinlock for hwi module, only available on SMP mode */
-LITE_OS_SEC_BSS  SPIN_LOCK_INIT(g_hwiSpin);
+LITE_OS_SEC_BSS  SPIN_LOCK_INIT(g_hwiSpin); //注意全局变量 g_hwiSpin 是在宏里面定义的
 #define HWI_LOCK(state)       LOS_SpinLockSave(&g_hwiSpin, &(state))
 #define HWI_UNLOCK(state)     LOS_SpinUnlockRestore(&g_hwiSpin, (state))
 
-size_t g_intCount[LOSCFG_KERNEL_CORE_NUM] = {0};//记录每个CPU core的中断数量
+size_t g_intCount[LOSCFG_KERNEL_CORE_NUM] = {0};//记录每个CPU core的中断数量 
 HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];		//记录每个硬件中断实体内容            @note_what 表用 form 来表示？有种写 HTML的感觉
-STATIC CHAR *g_hwiFormName[OS_HWI_MAX_NUM] = {0};//记录每个硬中断的名称
+STATIC CHAR *g_hwiFormName[OS_HWI_MAX_NUM] = {0};//记录每个硬中断的名称 OS_HWI_MAX_NUM = 128 定义于 hi3516dv300
 STATIC UINT32 g_hwiFormCnt[OS_HWI_MAX_NUM] = {0};//记录每个硬中断的总数量
 
 VOID OsIncHwiFormCnt(UINT32 index)	//增加一个中断数,递增的，所以只有++ ,没有--，
