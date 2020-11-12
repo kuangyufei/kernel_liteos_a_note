@@ -335,13 +335,13 @@ STATIC INT32 TelnetPoll(struct file *file, poll_table *table)
     return 0;
 }
 
-STATIC const struct file_operations_vfs g_telnetOps = {
-    TelnetOpen,
-    TelnetClose,
-    TelnetRead,
-    TelnetWrite,
+STATIC const struct file_operations_vfs g_telnetOps = {//远程登录操作
+    TelnetOpen,		//打开
+    TelnetClose,	//关闭
+    TelnetRead,		//读取数据
+    TelnetWrite,	//写入数据
     NULL,
-    TelnetIoctl,
+    TelnetIoctl,	//远程控制
     NULL,
 #ifndef CONFIG_DISABLE_POLL
     TelnetPoll,
@@ -376,7 +376,7 @@ INT32 TelnetedRegister(VOID)
 }
 
 /* When a telnet client connection established, update the output console for tasks. */
-INT32 TelnetDevInit(INT32 clientFd)
+INT32 TelnetDevInit(INT32 clientFd)//建立telnet客户机连接后，更新任务的输出控制台。
 {
     INT32 ret;
 
@@ -384,25 +384,25 @@ INT32 TelnetDevInit(INT32 clientFd)
         PRINT_ERR("Invalid telnet clientFd.\n");
         return -1;
     }
-    ret = system_console_init(TELNET);
+    ret = system_console_init(TELNET);//初始化系统控制台
     if (ret != 0) {
-        PRINT_ERR("Telnet console init error.\n");
+        PRINT_ERR("Telnet console init error.\n");//打印初始化失败
         return ret;
     }
-    ret = ioctl(STDIN_FILENO, CFG_TELNET_SET_FD, clientFd);
+    ret = ioctl(STDIN_FILENO, CFG_TELNET_SET_FD, clientFd);//ioctl:控制I/O设备, 提供了一种获得设备信息和向设备发送控制参数的手段
     if (ret != 0) {
         PRINT_ERR("Telnet device ioctl error.\n");
-        (VOID)system_console_deinit(TELNET);
+        (VOID)system_console_deinit(TELNET);//错误情况下删除初始化
     }
     return ret;
 }
 
 /* When closing the telnet client connection, reset the output console for tasks. */
-INT32 TelnetDevDeinit(VOID)
+INT32 TelnetDevDeinit(VOID)//关闭telnet客户端连接时，重置任务的输出控制台。
 {
     INT32 ret;
 
-    ret = system_console_deinit(TELNET);
+    ret = system_console_deinit(TELNET);//删除初始化
     if (ret != 0) {
         PRINT_ERR("Telnet console deinit error.\n");
     }

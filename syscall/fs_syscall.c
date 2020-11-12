@@ -262,7 +262,7 @@ ssize_t SysWrite(int fd, const void *buf, size_t nbytes)
     }
     return ret;
 }
-
+//系统调用之 打开一个文件
 int SysOpen(const char *path, int oflags, ...)
 {
     int ret;
@@ -271,20 +271,20 @@ int SysOpen(const char *path, int oflags, ...)
     int procFd = -1;
 
     if (path != NULL) {
-        ret = UserPathCopy(path, &pathRet);
+        ret = UserPathCopy(path, &pathRet);//先将path从用户空间拷贝到内核空间
         if (ret != 0) {
             goto OUT;
         }
     }
 
-    procFd = AllocProcessFd();
+    procFd = AllocProcessFd();//分配一个进程fd
     if (procFd  < 0) {
         ret = -EMFILE;
         goto OUT;
     }
 
-    if ((unsigned int)oflags & O_DIRECTORY) {
-        ret = do_opendir(pathRet, oflags);
+    if ((unsigned int)oflags & O_DIRECTORY) {//如果是个目录
+        ret = do_opendir(pathRet, oflags);//打开目录
         if (ret < 0) {
             ret = -get_errno();
         }

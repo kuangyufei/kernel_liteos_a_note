@@ -35,10 +35,10 @@
 #include "fs/file.h"
 #include "fs/fs.h"
 
-static void FileTableLock(struct fd_table_s *fdt)
+static void FileTableLock(struct fd_table_s *fdt)//对文件表操作前先拿锁
 {
     /* Take the semaphore (perhaps waiting) */
-    while (sem_wait(&fdt->ft_sem) != 0) {
+    while (sem_wait(&fdt->ft_sem) != 0) { //拿信号量，没有信号量就处于等待状态
         /*
         * The only case that an error should occur here is if the wait was
         * awakened by a signal.
@@ -46,16 +46,16 @@ static void FileTableLock(struct fd_table_s *fdt)
         LOS_ASSERT(get_errno() == EINTR);
     }
 }
-
-static void FileTableUnLock(struct fd_table_s *fdt)
+//
+static void FileTableUnLock(struct fd_table_s *fdt)//对文件表操作完后解锁
 {
-    int ret = sem_post(&fdt->ft_sem);
+    int ret = sem_post(&fdt->ft_sem);//发送信号
     if (ret == -1) {
         PRINTK("sem_post error, errno %d \n", get_errno());
     }
 }
 
-static int AssignProcessFd(const struct fd_table_s *fdt, int minFd)
+static int AssignProcessFd(const struct fd_table_s *fdt, int minFd)//分配进程fd
 {
     if (fdt == NULL) {
         return VFS_ERROR;
@@ -63,7 +63,7 @@ static int AssignProcessFd(const struct fd_table_s *fdt, int minFd)
 
     /* search unused fd from table */
     for (int i = minFd; i < fdt->max_fds; i++) {
-        if (!FD_ISSET(i, fdt->proc_fds)) {
+        if (!FD_ISSET(i, fdt->proc_fds)) {//i尚未被设置，则返回i
             return i;
         }
     }
@@ -87,7 +87,7 @@ static struct fd_table_s *GetFdTable(void)
 
     return fdt;
 }
-
+//是否为一个有效的进程fd
 static bool IsValidProcessFd(struct fd_table_s *fdt, int procFd)
 {
     if (fdt == NULL) {
@@ -98,12 +98,12 @@ static bool IsValidProcessFd(struct fd_table_s *fdt, int procFd)
     }
     return true;
 }
-
+//分配系统fd
 void AssociateSystemFd(int procFd, int sysFd)
 {
     struct fd_table_s *fdt = GetFdTable();
 
-    if (!IsValidProcessFd(fdt, procFd)) {
+    if (!IsValidProcessFd(fdt, procFd)) {//先检查进程fd的有效性
         return;
     }
 
@@ -111,7 +111,7 @@ void AssociateSystemFd(int procFd, int sysFd)
         return;
     }
 
-    FileTableLock(fdt);
+    FileTableLock(fdt);//操作临界区，先拿锁
     fdt->ft_fds[procFd].sysFd = sysFd;
     FileTableUnLock(fdt);
 }
@@ -215,26 +215,26 @@ int DisassociateProcessFd(int procFd)
 
     return sysFd;
 }
-
+//分配一个进程fd
 int AllocProcessFd(void)
 {
-    return AllocLowestProcessFd(MIN_START_FD);
+    return AllocLowestProcessFd(MIN_START_FD);//0,1,2已经分配给控制台了，所以从3开始
 }
 
 int AllocLowestProcessFd(int minFd)
 {
-    struct fd_table_s *fdt = GetFdTable();
+    struct fd_table_s *fdt = GetFdTable();//获取当前进程的文件管理器
 
     if (fdt == NULL) {
         return VFS_ERROR;
     }
-
+	//minFd应该是一个正数，0,1,2已经被分配到stdin，stdout，stderr
     /* minFd should be a positive number,and 0,1,2 had be distributed to stdin,stdout,stderr */
-    if (minFd < MIN_START_FD) {
+    if (minFd < MIN_START_FD) {//如果小于3，就改成3
         minFd = MIN_START_FD;
     }
 
-    FileTableLock(fdt);
+    FileTableLock(fdt);//操作临界区，必须上锁
 
     int procFd = AssignProcessFd(fdt, minFd);
     if (procFd == VFS_ERROR) {
@@ -244,7 +244,7 @@ int AllocLowestProcessFd(int minFd)
 
     // occupy the fd set
     FD_SET(procFd, fdt->proc_fds);
-    FileTableUnLock(fdt);
+    FileTableUnLock(fdt);//释放锁
 
     return procFd;
 }

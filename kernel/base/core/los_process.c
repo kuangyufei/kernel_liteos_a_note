@@ -851,7 +851,7 @@ STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const C
 #endif
 
 #ifdef LOSCFG_FS_VFS
-    processCB->files = alloc_files();
+    processCB->files = alloc_files();//分配进程的文件的管理器
     if (processCB->files == NULL) {
         ret = LOS_ENOMEM;
         goto EXIT;

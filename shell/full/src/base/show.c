@@ -158,10 +158,10 @@ INT32 OsShellDeinit(INT32 consoleId)
 
     return 0;
 }
-
+//获取进程当前工作目录
 CHAR *OsShellGetWorkingDirtectory(VOID)
 {
-    CONSOLE_CB *consoleCB = OsGetConsoleByTaskID(OsCurrTaskGet()->taskID);
+    CONSOLE_CB *consoleCB = OsGetConsoleByTaskID(OsCurrTaskGet()->taskID);//获取当前任务的控制台
     ShellCB *shellCB = NULL;
 
     if (consoleCB == NULL) {

@@ -130,7 +130,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 extern UINT32 OsSystemInit(VOID);
-extern VOID SystemInit(VOID);
+extern VOID SystemInit(VOID);//见于..\vendor\hi3516dv300\module_init\src\system_init.c
 //注册 HZ  , tick
 LITE_OS_SEC_TEXT_INIT VOID osRegister(VOID)
 {
@@ -187,21 +187,21 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsIpcInit(VOID)
     return LOS_OK;
 }
 
-#ifdef LOSCFG_KERNEL_PIPE
+#ifdef LOSCFG_KERNEL_PIPE//管道支持
 LITE_OS_SEC_TEXT_INIT STATIC VOID OsDriverPipeInit(VOID)
 {
-    (VOID)pipe_init();
+    (VOID)pipe_init();//管道初始化
 }
 #endif
 
-#ifdef LOSCFG_DRIVERS_HIEVENT
+#ifdef LOSCFG_DRIVERS_HIEVENT //hievent支持
 LITE_OS_SEC_TEXT_INIT STATIC VOID OsDriverHiEventInit(VOID)
 {
     (VOID)HieventInit();
 }
 #endif
 
-#ifdef LOSCFG_COMPAT_BSD
+#ifdef LOSCFG_COMPAT_BSD //是否兼容BSD
 extern void configure (void);
 LITE_OS_SEC_TEXT_INIT STATIC INT32 OsBsdInit(VOID)
 {
@@ -288,7 +288,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
      * 2. OsCpupInit
      * 3. other inits have task creation
      */
-#ifdef LOSCFG_KERNEL_CPUP
+#ifdef LOSCFG_KERNEL_CPUP //cpu统计是否支持
     ret = OsCpupInit();// shell cpup命令用于查询系统CPU的占用率 命令格式cpup [mode] [taskID]
     if (ret != LOS_OK) {
         PRINT_ERR("OsCpupInit error\n");
@@ -387,38 +387,38 @@ STATIC UINT32 OsSystemInitTaskCreate(VOID)
     TSK_INIT_PARAM_S sysTask;
 
     (VOID)memset_s(&sysTask, sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
-    sysTask.pfnTaskEntry = (TSK_ENTRY_FUNC)SystemInit;//外部函数，
-    sysTask.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
-    sysTask.pcName = "SystemInit";
-    sysTask.usTaskPrio = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;// 10 
+    sysTask.pfnTaskEntry = (TSK_ENTRY_FUNC)SystemInit;//任务的入口函数，这个任务由外部提供 比如..\vendor\hi3516dv300\module_init\src\system_init.c
+    sysTask.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;//16K
+    sysTask.pcName = "SystemInit";//任务的名称
+    sysTask.usTaskPrio = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;// 内核默认优先级为10 
     sysTask.uwResved = LOS_TASK_STATUS_DETACHED;//任务分离模式
 #if (LOSCFG_KERNEL_SMP == YES)
     sysTask.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
-    return LOS_TaskCreate(&taskID, &sysTask);//创建任务
+    return LOS_TaskCreate(&taskID, &sysTask);//创建任务并加入就绪队列，并立即参与调度
 }
 
-#ifdef LOSCFG_MEM_RECORDINFO
-STATIC UINT32 OsMemShowTaskCreate(VOID)
+#ifdef LOSCFG_MEM_RECORDINFO //记录内存信息功能
+STATIC UINT32 OsMemShowTaskCreate(VOID)//创建一个显示内存使用信息的任务
 {
     UINT32 taskID;
     TSK_INIT_PARAM_S appTask;
 
     (VOID)memset_s(&appTask, sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
-    appTask.pfnTaskEntry = (TSK_ENTRY_FUNC)OsMemRecordShowTask;
-    appTask.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
-    appTask.pcName = "memshow_Task";
-    appTask.usTaskPrio = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;
-    appTask.uwResved = LOS_TASK_STATUS_DETACHED;
-    return LOS_TaskCreate(&taskID, &appTask);
+    appTask.pfnTaskEntry = (TSK_ENTRY_FUNC)OsMemRecordShowTask; //任务的入口函数
+    appTask.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;//16K
+    appTask.pcName = "memshow_Task";//任务名称
+    appTask.usTaskPrio = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO; //优先级为10
+    appTask.uwResved = LOS_TASK_STATUS_DETACHED;//分离模式
+    return LOS_TaskCreate(&taskID, &appTask);//创建任务并加入就绪队列，并立即参与调度
 }
 #endif
 
 UINT32 OsSystemInit(VOID)
 {
     UINT32 ret;
-#ifdef LOSCFG_FS_VFS
-    los_vfs_init(); //虚拟文件初始化
+#ifdef LOSCFG_FS_VFS //虚拟文件系统支持
+    los_vfs_init(); //虚拟文件系统初始化
 #endif
 #ifdef LOSCFG_COMPAT_LINUXKPI
     g_pstSystemWq = create_workqueue("system_wq");
@@ -435,8 +435,8 @@ UINT32 OsSystemInit(VOID)
     }
     PRINTK("create memshow_Task ok\n");
 #endif
-#ifdef LOSCFG_KERNEL_TICKLESS
-    LOS_TicklessEnable();
+#ifdef LOSCFG_KERNEL_TICKLESS //低功耗模式
+    LOS_TicklessEnable();//使能低功耗模式
 #endif
 
     return 0;

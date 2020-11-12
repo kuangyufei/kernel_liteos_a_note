@@ -1,7 +1,7 @@
 git add -A
-git commit -m  '开始对VFS模块代码注释，从进程文件管理器切入 process->files
+git commit -m  '您知道工作台是如何创建的码? 添加 VFS部分shell命令代码的注释 
 鸿蒙内核源码分析系列 【 CSDN | OSCHINA | WIKI 】
-鸿蒙内核源码注释中文版 【 CSDN仓 | Gitee仓 | Github仓 | Coding仓 】四大仓库每日同步更新代码和wiki
+鸿蒙内核源码注释中文版 【 CSDN仓 | Gitee仓 | Github仓 | Coding仓 】四大仓库每日同步更新
 项目给鸿蒙内核源码逐行加上中文注解,详细阐述框架和代码细节, 精读 HarmonyOS 内核源码, 将迅速拔高对计算机整体理解,从此高屋建瓴看问题.'
 
 git push origin

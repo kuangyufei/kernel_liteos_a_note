@@ -1159,7 +1159,7 @@ STATIC VOID ConsoleCirBufDelete(CirBufSendCB *cirBufSendCB)
     (VOID)LOS_EventDestroy(&cirBufSendCB->sendEvent);
     (VOID)LOS_MemFree(m_aucSysMem0, cirBufSendCB);
 }
-
+//控制台缓存初始化，创建一个 发送任务
 STATIC UINT32 OsConsoleBufInit(CONSOLE_CB *consoleCB)
 {
     UINT32 ret;
@@ -1200,18 +1200,18 @@ STATIC VOID OsConsoleBufDeinit(CONSOLE_CB *consoleCB)
     consoleCB->cirBufSendCB = NULL;
     (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_SEND_TASK_EXIT);
 }
-
+//控制台描述符初始化
 STATIC CONSOLE_CB *OsConsoleCBInit(UINT32 consoleID)
 {
-    CONSOLE_CB *consoleCB = (CONSOLE_CB *)LOS_MemAlloc((VOID *)m_aucSysMem0, sizeof(CONSOLE_CB));
+    CONSOLE_CB *consoleCB = (CONSOLE_CB *)LOS_MemAlloc((VOID *)m_aucSysMem0, sizeof(CONSOLE_CB));//内核空间分配控制台描述符
     if (consoleCB == NULL) {
         return NULL;
     }
-    (VOID)memset_s(consoleCB, sizeof(CONSOLE_CB), 0, sizeof(CONSOLE_CB));
+    (VOID)memset_s(consoleCB, sizeof(CONSOLE_CB), 0, sizeof(CONSOLE_CB));//清0
 
-    consoleCB->consoleID = consoleID;
-    consoleCB->shellEntryId = SHELL_ENTRYID_INVALID; /* initialize shellEntryId to an invalid value */
-    consoleCB->name = LOS_MemAlloc((VOID *)m_aucSysMem0, CONSOLE_NAMELEN);
+    consoleCB->consoleID = consoleID;//记录控制台ID
+    consoleCB->shellEntryId = SHELL_ENTRYID_INVALID; /* initialize shellEntryId to an invalid value *///将shellEntryId初始化为无效值
+    consoleCB->name = LOS_MemAlloc((VOID *)m_aucSysMem0, CONSOLE_NAMELEN);//控制台名称 不能多于16个字符
     if (consoleCB->name == NULL) {
         PRINT_ERR("consoleCB->name malloc failed\n");
         (VOID)LOS_MemFree((VOID *)m_aucSysMem0, consoleCB);
@@ -1219,52 +1219,52 @@ STATIC CONSOLE_CB *OsConsoleCBInit(UINT32 consoleID)
     }
     return consoleCB;
 }
-
+//释放控制台描述符初始化时所占用的内核空间
 STATIC VOID OsConsoleCBDeinit(CONSOLE_CB *consoleCB)
 {
-    (VOID)LOS_MemFree((VOID *)m_aucSysMem0, consoleCB->name);
+    (VOID)LOS_MemFree((VOID *)m_aucSysMem0, consoleCB->name);//释放控制台名称占用的内核内存
     consoleCB->name = NULL;
-    (VOID)LOS_MemFree((VOID *)m_aucSysMem0, consoleCB);
+    (VOID)LOS_MemFree((VOID *)m_aucSysMem0, consoleCB);//释放控制台描述符所占用的内核内存
 }
 //创建一个控制台
 STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
 {
     INT32 ret;
-    CONSOLE_CB *consoleCB = OsConsoleCBInit(consoleID);//
+    CONSOLE_CB *consoleCB = OsConsoleCBInit(consoleID);//初始化控制台
     if (consoleCB == NULL) {
         PRINT_ERR("console malloc error.\n");
         return NULL;
     }
 
     ret = snprintf_s(consoleCB->name, CONSOLE_NAMELEN, CONSOLE_NAMELEN - 1,
-                     "%s%u", CONSOLE, consoleCB->consoleID);
+                     "%s%u", CONSOLE, consoleCB->consoleID);//通过printf方式得到name
     if (ret == -1) {
         PRINT_ERR("consoleCB->name snprintf_s failed\n");
         goto ERR_WITH_NAME;
     }
 
-    ret = (INT32)OsConsoleBufInit(consoleCB);
+    ret = (INT32)OsConsoleBufInit(consoleCB);//控制台buf初始化
     if (ret != LOS_OK) {
         goto ERR_WITH_NAME;
     }
 
-    ret = (INT32)LOS_SemCreate(1, &consoleCB->consoleSem);
+    ret = (INT32)LOS_SemCreate(1, &consoleCB->consoleSem);//创建控制台信号量
     if (ret != LOS_OK) {
         PRINT_ERR("creat sem for uart failed\n");
         goto ERR_WITH_BUF;
     }
 
-    ret = OsConsoleDevInit(consoleCB, deviceName);
+    ret = OsConsoleDevInit(consoleCB, deviceName);//控制台设备初始化
     if (ret != LOS_OK) {
         goto ERR_WITH_SEM;
     }
 
-    ret = OsConsoleFileInit(consoleCB);
+    ret = OsConsoleFileInit(consoleCB);//控制台文件初始化
     if (ret != LOS_OK) {
         goto ERR_WITH_DEV;
     }
 
-    OsConsoleTermiosInit(consoleCB, deviceName);
+    OsConsoleTermiosInit(consoleCB, deviceName);//控制台条款初始化
     return consoleCB;
 
 ERR_WITH_DEV:
@@ -1298,7 +1298,7 @@ STATIC UINT32 OsConsoleDelete(CONSOLE_CB *consoleCB)
 
     return ret;
 }
-//初始化系统控制台并返回stdinfd stdoutfd stderrfd
+//初始化系统控制台并返回 stdinfd stdoutfd stderrfd
 /* Initialized system console and return stdinfd stdoutfd stderrfd */
 INT32 system_console_init(const CHAR *deviceName)//deviceName: /dev/serial /dev/telnet
 {
@@ -1315,7 +1315,7 @@ INT32 system_console_init(const CHAR *deviceName)//deviceName: /dev/serial /dev/
         return VFS_ERROR;
     }
 
-    consoleCB = OsConsoleCreate((UINT32)consoleID, deviceName);//创建一个控制台CB
+    consoleCB = OsConsoleCreate((UINT32)consoleID, deviceName);//创建一个控制台控制块
     if (consoleCB == NULL) {
         PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
         return VFS_ERROR;
@@ -1328,7 +1328,7 @@ INT32 system_console_init(const CHAR *deviceName)//deviceName: /dev/serial /dev/
     }
     LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
 
-#ifdef LOSCFG_SHELL
+#ifdef LOSCFG_SHELL //shell支持
     ret = OsShellInit(consoleID);//通过控制台初始化shell
     if (ret != LOS_OK) {
         PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
@@ -1530,22 +1530,22 @@ INT32 ConsoleUpdateFd(VOID)
 
     return g_console[consoleID - 1]->fd;
 }
-
+//获取参数控制台ID 获取对应的控制台控制块(描述符)
 CONSOLE_CB *OsGetConsoleByID(INT32 consoleID)
 {
-    if (consoleID != CONSOLE_TELNET) {
+    if (consoleID != CONSOLE_TELNET) {//只允许 1,2存在，> 3 时统统变成1
         consoleID = CONSOLE_SERIAL;
     }
     return g_console[consoleID - 1];
 }
-
+//获取参数任务的控制台控制块(描述符)
 CONSOLE_CB *OsGetConsoleByTaskID(UINT32 taskID)
 {
     INT32 consoleID = g_taskConsoleIDArray[taskID];
 
     return OsGetConsoleByID(consoleID);
 }
-
+//设置控制台ID
 VOID OsSetConsoleID(UINT32 newTaskID, UINT32 curTaskID)
 {
     if ((newTaskID >= LOSCFG_BASE_CORE_TSK_LIMIT) || (curTaskID >= LOSCFG_BASE_CORE_TSK_LIMIT)) {
@@ -1579,7 +1579,7 @@ ERROUT:
     set_errno(ret);
     return VFS_ERROR;
 }
-
+//控制台发送任务
 STATIC UINT32 ConsoleSendTask(UINTPTR param)
 {
     CONSOLE_CB *consoleCB = (CONSOLE_CB *)param;

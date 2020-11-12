@@ -2,16 +2,14 @@
 
 [鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852) [| WIKI 】](https://gitee.com/weharmony/kernel_liteos_a_note/wikis/pages) 从 HarmonyOS 架构层视角整理成文, 并首创用生活场景讲故事的方式试图去解构内核，一窥究竟。
 
----
 
 # **[kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note): 鸿蒙内核源码注释中文版**
 
-# ![](https://oscimg.oschina.net/oscnet/up-c1f5f5e88b38fcb25f274a2062384b0c61e.png)
-
 [![star](https://gitee.com/weharmony/kernel_liteos_a_note/badge/star.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)[![fork](https://gitee.com/weharmony/kernel_liteos_a_note/badge/fork.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)
 
-每个码农,职业生涯,都应精读一遍内核源码. 鸿蒙内核源码就是很好的精读项目.一旦熟悉内核代码级实现,将迅速拔高对计算机整体理解,从此高屋建瓴看问题.
+# ![](https://oscimg.oschina.net/oscnet/up-c1f5f5e88b38fcb25f274a2062384b0c61e.png)
 
+每个码农,职业生涯,都应精读一遍内核源码. 鸿蒙内核源码就是很好的精读项目.一旦熟悉内核代码级实现,将迅速拔高对计算机整体理解,从此高屋建瓴看问题.
 
 ## **做了些什么呢**
 

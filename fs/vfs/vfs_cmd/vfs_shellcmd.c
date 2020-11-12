@@ -56,15 +56,15 @@
 #include <ctype.h>
 
 typedef enum
-{
-  RM_RECURSIVER,
-  RM_FILE,
-  RM_DIR,
-  CP_FILE,
-  CP_COUNT
+{	
+  RM_RECURSIVER,	//递归删除
+  RM_FILE,			//删除文件
+  RM_DIR,			//删除目录
+  CP_FILE,			//拷贝文件
+  CP_COUNT			//拷贝数量
 } wildcard_type;
 
-#define ERROR_OUT_IF(condition, message_function, handler) \
+#define ERROR_OUT_IF(condition, message_function, handler) \	//这种写法挺妙的
   do \
     { \
       if (condition) \
@@ -132,13 +132,30 @@ int osShellCmdDoChdir(const char *path)
 
   return 0;
 }
+/*******************************************************
+命令功能
+ls命令用来显示当前目录的内容。
 
+命令格式
+ls [path]
+
+path为空时，显示当前目录的内容。
+path为无效文件名时，显示失败，提示：
+ls error: No such directory。
+path为有效目录路径时，会显示对应目录下的内容。
+
+使用指南
+ls命令显示当前目录的内容。
+ls可以显示文件的大小。
+proc下ls无法统计文件大小，显示为0。
+
+*******************************************************/
 int osShellCmdLs(int argc, const char **argv)
 {
   char *fullpath = NULL;
   const char *filename = NULL;
   int ret;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();
+  char *shell_working_directory = OsShellGetWorkingDirtectory();//获取当前工作目录
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -146,31 +163,46 @@ int osShellCmdLs(int argc, const char **argv)
 
   ERROR_OUT_IF(argc > 1, PRINTK("ls or ls [DIRECTORY]\n"), return -1);
 
-  if (argc == 0)
+  if (argc == 0)//木有参数时 -> #ls 
     {
-      ls(shell_working_directory);
+      ls(shell_working_directory);//执行ls 当前工作目录
       return 0;
     }
 
-  filename = argv[0];
-  ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);
-  ERROR_OUT_IF(ret < 0, set_err(-ret, "ls error"), return -1);
+  filename = argv[0];//有参数时 -> #ls ../harmony  or #ls /no such file or directory
+  ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);//获取全路径,注意这里带出来fullpath，而fullpath已经在内核空间
+  ERROR_OUT_IF(ret < 0, set_err(-ret, "ls error"), return -1);//
 
-  ls(fullpath);
-  free(fullpath);
+  ls(fullpath);//执行 ls 全路径
+  free(fullpath);//释放全路径，为啥要释放，因为fullpath已经由内核空间分配
 
   return 0;
 }
+/*******************************************************
+命令功能
+cd命令用来改变当前目录。
 
+命令格式
+cd [path]
+
+未指定目录参数时，会跳转至根目录。
+cd后加路径名时，跳转至该路径。
+路径名以 /（斜杠）开头时，表示根目录。
+.（点）表示当前目录。
+..（点点）表示父目录。
+
+cd ..
+
+*******************************************************/
 int osShellCmdCd(int argc, const char **argv)
 {
-  if (argc == 0)
+  if (argc == 0)//没有参数时 #cd 
     {
       (void)osShellCmdDoChdir("/");
       return 0;
     }
 
-  (void)osShellCmdDoChdir(argv[0]);
+  (void)osShellCmdDoChdir(argv[0]);//#cd .. 带参数情况
 
   return 0;
 }
@@ -179,7 +211,18 @@ int osShellCmdCd(int argc, const char **argv)
 #define CAT_TASK_PRIORITY  10
 #define CAT_TASK_STACK_SIZE  0x3000
 pthread_mutex_t g_mutex_cat = PTHREAD_MUTEX_INITIALIZER;
+/*******************************************************
+cat用于显示文本文件的内容。
 
+命令格式
+cat [pathname]
+
+使用指南
+cat用于显示文本文件的内容。
+
+使用实例
+举例：cat harmony.txt
+*******************************************************/
 int osShellCmdDoCatShow(UINTPTR arg)
 {
   char buf[CAT_BUF_SIZE];
@@ -1002,7 +1045,7 @@ static int os_wildcard_match(const char *src, const char *filename)
 }
 
 /*   To determine whether a wildcard character exists in a path   */
-
+//确定路径中是否存在通配符
 static int os_is_containers_wildcard(const char *filename)
 {
   while (*filename != '\0')
@@ -1017,20 +1060,20 @@ static int os_is_containers_wildcard(const char *filename)
 }
 
 /*  Delete a matching file or directory  */
-
+//删除匹配的文件或目录
 static int os_wildcard_delete_file_or_dir(const char *fullpath, wildcard_type mark)
 {
   int ret;
 
   switch (mark)
     {
-      case RM_RECURSIVER:
-        ret = os_shell_cmd_do_rmdir(fullpath);
+      case RM_RECURSIVER://递归删除
+        ret = os_shell_cmd_do_rmdir(fullpath);//删除目录，其中递归调用 rmdir
         break;
-      case RM_FILE:
+      case RM_FILE://删除文件
         ret = unlink(fullpath);
         break;
-      case RM_DIR:
+      case RM_DIR://删除目录
         ret = rmdir(fullpath);
         break;
       default:
@@ -1048,7 +1091,7 @@ static int os_wildcard_delete_file_or_dir(const char *fullpath, wildcard_type ma
 }
 
 /*  Split the path with wildcard characters  */
-
+//使用通配符拆分路径
 static char* os_wildcard_split_path(char *fullpath, char **handle, char **wait)
 {
   int n = 0;
@@ -1084,7 +1127,7 @@ static char* os_wildcard_split_path(char *fullpath, char **handle, char **wait)
 }
 
 /*  Handling entry of the path with wildcard characters  */
-
+//处理具有通配符的目录
 static int os_wildcard_extract_directory(char *fullpath, void *dst, wildcard_type mark)
 {
   char separator[] = "/";
@@ -1213,7 +1256,29 @@ closedir_out:
   (void)closedir(d);
   return VFS_ERROR;
 }
+/*****************************************************************
+命令功能
+拷贝文件，创建一份副本。
 
+命令格式
+cp [SOURCEFILE] [DESTFILE]
+
+SOURCEFILE - 源文件路径。- 目前只支持文件,不支持目录。
+DESTFILE - 目的文件路径。 - 支持目录以及文件。
+
+使用指南
+同一路径下，源文件与目的文件不能重名。
+源文件必须存在，且不为目录。
+源文件路径支持“*”和“？”通配符，“*”代表任意多个字符，“？”代表任意单个字符。目的路径不支持通配符。当源路径可匹配多个文件时，目的路径必须为目录。
+目的路径为目录时，该目录必须存在。此时目的文件以源文件命名。
+目的路径为文件时，所在目录必须存在。此时拷贝文件的同时为副本重命名。
+目前不支持多文件拷贝。参数大于2个时，只对前2个参数进行操作。
+目的文件不存在时创建新文件，已存在则覆盖。
+拷贝系统重要资源时，会对系统造成死机等重大未知影响，如用于拷贝/dev/uartdev-0 文件时，会产生系统卡死现象。
+
+使用实例
+举例：cp harmony.txt ./tmp/
+*****************************************************************/
 int osShellCmdCp(int argc, const char **argv)
 {
   int  ret;
@@ -1223,20 +1288,20 @@ int osShellCmdCp(int argc, const char **argv)
   char *dst_fullpath = NULL;
   struct stat stat_buf;
   int count = 0;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();
+  char *shell_working_directory = OsShellGetWorkingDirtectory();//获取进程当前工作目录
   if (shell_working_directory == NULL)
     {
       return -1;
     }
 
-  ERROR_OUT_IF(argc < 2, PRINTK("cp [SOURCEFILE] [DESTFILE]\n"), return -1);
+  ERROR_OUT_IF(argc < 2, PRINTK("cp [SOURCEFILE] [DESTFILE]\n"), return -1);//参数必须要两个
 
   src = argv[0];
   dst = argv[1];
 
   /* Get source fullpath. */
 
-  ret = vfs_normalize_path(shell_working_directory, src, &src_fullpath);
+  ret = vfs_normalize_path(shell_working_directory, src, &src_fullpath);//获取源路径的全路径
   if (ret < 0)
     {
       set_errno(-ret);
@@ -1244,7 +1309,7 @@ int osShellCmdCp(int argc, const char **argv)
       return -1;
     }
 
-  if (src[strlen(src) - 1] == '/')
+  if (src[strlen(src) - 1] == '/')//如果src最后一个字符是 '/'说明是个目录,src必须是个文件，目前只支持文件，不支持目录
     {
       PRINTK("cp %s error: Source file can't be a directory.\n", src);
       goto errout_with_srcpath;
@@ -1252,7 +1317,7 @@ int osShellCmdCp(int argc, const char **argv)
 
   /* Get dest fullpath. */
 
-  ret = vfs_normalize_path(shell_working_directory, dst, &dst_fullpath);
+  ret = vfs_normalize_path(shell_working_directory, dst, &dst_fullpath);//获取目标路径的全路径
   if (ret < 0)
     {
       set_errno(-ret);
@@ -1262,27 +1327,27 @@ int osShellCmdCp(int argc, const char **argv)
 
   /* Is dest path exist? */
 
-  ret = stat(dst_fullpath, &stat_buf);
-  if (ret < 0)
+  ret = stat(dst_fullpath, &stat_buf);//判断目标路径存不存在
+  if (ret < 0)//不存在的情况
     {
-      /* Is dest path a directory? */
+      /* Is dest path a directory? */ //目标路径是个目录吗？
 
-      if (dst[strlen(dst) - 1] == '/')
+      if (dst[strlen(dst) - 1] == '/') //是个不存在的目录
         {
-          PRINTK("cp error: %s, %s.\n", dst_fullpath, strerror(errno));
+          PRINTK("cp error: %s, %s.\n", dst_fullpath, strerror(errno));//打印错误信息
           goto errout_with_path;
         }
     }
   else
     {
-      if (S_ISREG(stat_buf.st_mode) && dst[strlen(dst) - 1] == '/')
+      if (S_ISREG(stat_buf.st_mode) && dst[strlen(dst) - 1] == '/')//是普通文件但最后一个字符是'/'
         {
           PRINTK("cp error: %s is not a directory.\n", dst_fullpath);
           goto errout_with_path;
         }
     }
 
-   if (os_is_containers_wildcard(src_fullpath))
+   if (os_is_containers_wildcard(src_fullpath))//是否包含通配符
     {
       if (ret < 0 || S_ISREG(stat_buf.st_mode))
         {
@@ -1292,7 +1357,7 @@ int osShellCmdCp(int argc, const char **argv)
               PRINTK("cp error : Out of memory.\n");
               goto errout_with_path;
             }
-          (void)os_wildcard_extract_directory(src_copy, &count, CP_COUNT);
+          (void)os_wildcard_extract_directory(src_copy, &count, CP_COUNT);//处理具有通配符的目录
           free(src_copy);
           if (count > 1)
             {
@@ -1302,11 +1367,11 @@ int osShellCmdCp(int argc, const char **argv)
         }
       ret = os_wildcard_extract_directory(src_fullpath, dst_fullpath, CP_FILE);
     }
-  else
+  else//不包含通配符的情况
     {
-      ret = os_shell_cmd_do_cp(src_fullpath, dst_fullpath);
+      ret = os_shell_cmd_do_cp(src_fullpath, dst_fullpath);//执行拷贝操作
     }
-  free(dst_fullpath);
+  free(dst_fullpath); //这两个路径都由内核分配了内存，所以要释放
   free(src_fullpath);
   return ret;
 
@@ -1415,7 +1480,23 @@ int osShellCmdRmdir(int argc, const char **argv)
 
   return 0;
 }
+/*****************************************************************
+命令功能
+sync命令用于同步缓存数据（文件系统的数据）到sd卡。
 
+命令格式
+sync
+
+参数说明
+无。
+
+使用指南
+sync命令用来刷新缓存，当没有sd卡插入时不进行操作。
+有sd卡插入时缓存信息会同步到sd卡，成功返回时无显示。
+使用实例
+举例：输入sync，有sd卡时同步到sd卡，无sd卡时不操作。
+
+*****************************************************************/
 int osShellCmdSync(int argc, const char **argv)
 {
   ERROR_OUT_IF(argc > 0, PRINTK("\nUsage: sync\n"), return -1);
@@ -1423,6 +1504,19 @@ int osShellCmdSync(int argc, const char **argv)
   sync();
   return 0;
 }
+/*****************************************************************
+命令功能
+lsfd命令用来显示当前已经打开的文件描述符及对应的文件名。
+
+命令格式
+lsfd
+
+使用指南
+lsfd命令显示当前已经打开文件的fd号以及文件的名字。
+
+使用实例
+举例：输入lsfd
+*****************************************************************/
 
 int osShellCmdLsfd(int argc, const char **argv)
 {

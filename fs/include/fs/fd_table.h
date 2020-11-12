@@ -55,8 +55,8 @@ struct file_table_s {
 struct fd_table_s {//fd表结构体
     unsigned int max_fds;
     struct file_table_s *ft_fds; /* process fd array associate with system fd *///进程的FD数组，与系统fd相关联
-    fd_set *open_fds;	
-    fd_set *proc_fds;
+    fd_set *open_fds;	//打开的fds 默认打开了 0,1,2	       (stdin,stdout,stderr)
+    fd_set *proc_fds;	//处理的fds 默认打开了 0,1,2	       (stdin,stdout,stderr)
     sem_t ft_sem; /* manage access to the file table */ //管理对文件表的访问
 };
 //files_struct 一般用于进程 process->files 
@@ -72,19 +72,19 @@ struct files_struct {//进程文件表结构体
 };
 
 typedef struct ProcessCB LosProcessCB;
-
+//以下函数见于 ..\third_party\NuttX\fs\inode\fs_files.c
 void files_refer(int fd);
 
 struct files_struct *dup_fd(struct files_struct *oldf);
 
-struct files_struct *alloc_files(void);
+struct files_struct *alloc_files(void);//返回分配好的files_struct，其中包含fd总数，stdin,stdout,stderr等信息 stdin也是一个文件
 
-void delete_files(LosProcessCB *processCB, struct files_struct *files);
+void delete_files(LosProcessCB *processCB, struct files_struct *files);//删除进程的文件管理器
 
-struct files_struct *create_files_snapshot(const struct files_struct *oldf);
+struct files_struct *create_files_snapshot(const struct files_struct *oldf);//创建文件管理器快照，所谓快照就是一份拷贝
 
-void delete_files_snapshot(struct files_struct *files);
+void delete_files_snapshot(struct files_struct *files);//删除文件管理器快照
 
-int alloc_fd(int minfd);
+int alloc_fd(int minfd);//分配一个fd，当然是从files_struct->fdt 数组中拿一个未被使用(分配)的fd，默认都是 -1
 
 #endif

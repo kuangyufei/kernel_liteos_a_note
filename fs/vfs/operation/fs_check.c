@@ -56,7 +56,7 @@ FAR int fscheck(FAR const char *path)
     char *fullpath = NULL;
     char *fullpath_bak = NULL;
 
-    ret = vfs_normalize_path((const char *)NULL, path, &fullpath);
+    ret = vfs_normalize_path((const char *)NULL, path, &fullpath);//检查path的规范性
     if (ret < 0) {
         ret = -ret;
         goto errout;
