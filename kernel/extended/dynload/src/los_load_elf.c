@@ -146,8 +146,8 @@ STATIC INT32 OsELFLoadInit(const CHAR *fileName, ELFLoadInfo *loadInfo)
 {
     INT32 ret;
 #ifdef LOSCFG_FS_VFS
-    const struct files_struct *oldFiles = OsCurrProcessGet()->files;
-    loadInfo->oldFiles = (UINTPTR)create_files_snapshot(oldFiles);
+    const struct files_struct *oldFiles = OsCurrProcessGet()->files;//保存当前进程持有的文件管理器
+    loadInfo->oldFiles = (UINTPTR)create_files_snapshot(oldFiles);//创建老文件管理器快照
 #else
     loadInfo->oldFiles = NULL;
 #endif
@@ -1011,7 +1011,7 @@ STATIC VOID OsDeInitFiles(ELFLoadInfo *loadInfo)
         (VOID)close(loadInfo->interpFD);
     }
 #ifdef LOSCFG_FS_VFS
-    delete_files_snapshot((struct files_struct *)loadInfo->oldFiles);
+    delete_files_snapshot((struct files_struct *)loadInfo->oldFiles);//删除文件管理器快照
 #endif
 }
 //加载ELF文件

@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '看完整的kernel_liteos_a源码需引入third,verdor项目,包括FreeBSD/mbedtls/musl/NuttX 和 hi3516dv300
+git commit -m  '开始对VFS模块代码注释，从进程文件管理器切入 process->files
 鸿蒙内核源码分析系列 【 CSDN | OSCHINA | WIKI 】
 鸿蒙内核源码注释中文版 【 CSDN仓 | Gitee仓 | Github仓 | Coding仓 】四大仓库每日同步更新代码和wiki
 项目给鸿蒙内核源码逐行加上中文注解,详细阐述框架和代码细节, 精读 HarmonyOS 内核源码, 将迅速拔高对计算机整体理解,从此高屋建瓴看问题.'

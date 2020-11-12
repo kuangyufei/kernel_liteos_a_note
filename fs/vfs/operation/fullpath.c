@@ -182,7 +182,7 @@ static int vfs_normalize_path_parame_check(const char *filename, char **pathname
 
     return namelen;
 }
-
+//vfs不是绝对路径
 static char *vfs_not_absolute_path(const char *directory, const char *filename, char **pathname, int namelen)
 {
     int ret;
@@ -214,12 +214,12 @@ static char *vfs_not_absolute_path(const char *directory, const char *filename, 
 
     return fullpath;
 }
-
+//全路径标准化
 static char *vfs_normalize_fullpath(const char *directory, const char *filename, char **pathname, int namelen)
 {
     char *fullpath = NULL;
 
-    if (filename[0] != '/') {
+    if (filename[0] != '/') { //不是绝对路径的情况
         /* not a absolute path */
 
         fullpath = vfs_not_absolute_path(directory, filename, pathname, namelen);
@@ -246,7 +246,7 @@ static char *vfs_normalize_fullpath(const char *directory, const char *filename,
 
     return fullpath;
 }
-
+//路径标准化
 int vfs_normalize_path(const char *directory, const char *filename, char **pathname)
 {
     char *fullpath = NULL;

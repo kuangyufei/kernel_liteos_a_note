@@ -40,7 +40,7 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+//从用户空间拷贝
 size_t arch_copy_from_user(void *dst, const void *src, size_t len)
 {
     return LOS_ArchCopyFromUser(dst, src, len);
@@ -48,68 +48,68 @@ size_t arch_copy_from_user(void *dst, const void *src, size_t len)
 
 size_t LOS_ArchCopyFromUser(void *dst, const void *src, size_t len)
 {
-    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)src, len)) {
+    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)src, len)) {//[src,src+len]在内核空间
         return len;
     }
 
-    return _arm_user_copy(dst, src, len);
+    return _arm_user_copy(dst, src, len);//完成从用户空间到内核空间的拷贝
 }
-
+//拷贝到用户空间
 size_t arch_copy_to_user(void *dst, const void *src, size_t len)
 {
-    return LOS_ArchCopyToUser(dst, src, len);
+    return LOS_ArchCopyToUser(dst, src, len);//
 }
 
 size_t LOS_ArchCopyToUser(void *dst, const void *src, size_t len)
 {//先判断地址是不是在用户空间
-    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dst, len)) {
+    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dst, len)) {//[dst,dst+len]在内核空间
         return len;
     }
 
-    return _arm_user_copy(dst, src, len);
+    return _arm_user_copy(dst, src, len);//完成从内核空间到用户空间的拷贝
 }
-
+//将内核数据拷贝到用户空间
 INT32 LOS_CopyFromKernel(VOID *dest, UINT32 max, const VOID *src, UINT32 count)
 {
     INT32 ret;
 
-    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dest, count)) {
+    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dest, count)) {//[dest,dest+count] 在内核空间的情况
         ret = memcpy_s(dest, max, src, count);
-    } else {
-        ret = ((max >= count) ? _arm_user_copy(dest, src, count) : ERANGE_AND_RESET);
+    } else {//[dest,dest+count] 在用户空间
+        ret = ((max >= count) ? _arm_user_copy(dest, src, count) : ERANGE_AND_RESET);//用户空间copy
     }
 
     return ret;
 }
-
+//将用户空间的数据拷贝到内核空间
 INT32 LOS_CopyToKernel(VOID *dest, UINT32 max, const VOID *src, UINT32 count)
 {
     INT32 ret;
 
-    if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)src, count)) {
+    if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)src, count)) {//[src,src+count] 在内核空间的情况
         ret = memcpy_s(dest, max, src, count);
-    } else {
+    } else {//[src,src+count] 在内核空间的情况
         ret = ((max >= count) ? _arm_user_copy(dest, src, count) : ERANGE_AND_RESET);
     }
 
     return ret;
 }
-
+//清除用户空间
 INT32 LOS_UserMemClear(unsigned char *buf, UINT32 len)
 {
     INT32 ret = 0;
-    if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buf, len)) {
-        (VOID)memset_s(buf, len, 0, len);
+    if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buf, len)) {//内核空间的情况
+        (VOID)memset_s(buf, len, 0, len);//清0
     } else {
-        unsigned char *tmp = (unsigned char *)LOS_MemAlloc(OS_SYS_MEM_ADDR, len);
+        unsigned char *tmp = (unsigned char *)LOS_MemAlloc(OS_SYS_MEM_ADDR, len);//1.在内核申请内存
         if (tmp == NULL) {
             return -ENOMEM;
         }
-        (VOID)memset_s(tmp, len, 0, len);
-        if (_arm_user_copy(buf, tmp, len) != 0) {
-            ret = -EFAULT;
+        (VOID)memset_s(tmp, len, 0, len);//2.清0
+        if (_arm_user_copy(buf, tmp, len) != 0) {//这个清空有点意思，此时内核存钱清0了，再将0拷贝至用户内存
+            ret = -EFAULT;						 //不能直接将用户空间清0吗？要这么绕一圈 @note_thinking
         }
-        LOS_MemFree(OS_SYS_MEM_ADDR, tmp);
+        LOS_MemFree(OS_SYS_MEM_ADDR, tmp);//释放内核空间
     }
     return ret;
 }

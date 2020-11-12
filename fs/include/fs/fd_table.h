@@ -37,27 +37,37 @@
 #include <semaphore.h>
 #include "linux/spinlock.h"
 
+
+/****************************************************************************
+
+fd 文件描述符（file descriptor）为了高效管理已被打开的文件所创建的索引。本质上就是一个非负整数
+当应用程序请求内核打开/新建一个文件时，内核会返回一个文件描述符用于对应这个打开/新建的文件，
+读写文件也是需要使用这个文件描述符来指定待读写的文件的。
+在鸿蒙系统中，所有的文件操作，都是通过fd来定位资源和状态的
+
+****************************************************************************/
+
 /* open file table for process fd */
 struct file_table_s {
-    signed short sysFd; /* system fd associate with the tg_filelist index */
+    signed short sysFd; /* system fd associate with the tg_filelist index */ //与tg_filelist索引关联的系统fd
 };
 
-struct fd_table_s {
+struct fd_table_s {//fd表结构体
     unsigned int max_fds;
-    struct file_table_s *ft_fds; /* process fd array associate with system fd */
-    fd_set *open_fds;
+    struct file_table_s *ft_fds; /* process fd array associate with system fd *///进程的FD数组，与系统fd相关联
+    fd_set *open_fds;	
     fd_set *proc_fds;
-    sem_t ft_sem; /* manage access to the file table */
+    sem_t ft_sem; /* manage access to the file table */ //管理对文件表的访问
 };
-
-struct files_struct {
-    int count;
-    struct fd_table_s *fdt;
-    unsigned int file_lock;
-    unsigned int next_fd;
+//files_struct 一般用于进程 process->files 
+struct files_struct {//进程文件表结构体
+    int count;				//持有的文件数量
+    struct fd_table_s *fdt; //持有的文件表
+    unsigned int file_lock;	//文件互斥锁
+    unsigned int next_fd;	//下一个fd
 #ifdef VFS_USING_WORKDIR
-    spinlock_t workdir_lock;
-    char workdir[PATH_MAX];
+    spinlock_t workdir_lock;	//工作区目录自旋锁
+    char workdir[PATH_MAX];		//工作区路径
 #endif
 };
 

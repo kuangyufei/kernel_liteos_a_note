@@ -1497,7 +1497,7 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
     processName = strrchr(name, '/');
     processName = (processName == NULL) ? name : (processName + 1); /* 1: Do not include '/' */
 
-    ret = OsSetProcessName(processCB, processName);
+    ret = OsSetProcessName(processCB, processName);//设置进程名称
     if (ret != LOS_OK) {
         return ret;
     }
@@ -1519,7 +1519,7 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
     OsCurrTaskGet()->sig.sigprocmask = 0;
 
 #ifdef LOSCFG_FS_VFS
-    delete_files(OsCurrProcessGet(), (struct files_struct *)oldFiles);
+    delete_files(OsCurrProcessGet(), (struct files_struct *)oldFiles);//删除进程文件管理器快照
 #endif
 
     OsSwtmrRecycle(processCB->processID);//定时器回收

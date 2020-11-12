@@ -70,17 +70,17 @@ static int AssignProcessFd(const struct fd_table_s *fdt, int minFd)
 
     return VFS_ERROR;
 }
-
+//获取FD表
 static struct fd_table_s *GetFdTable(void)
 {
     struct fd_table_s *fdt = NULL;
-    struct files_struct *procFiles = OsCurrProcessGet()->files;
+    struct files_struct *procFiles = OsCurrProcessGet()->files;//获取当前进程的文件管理器
 
     if (procFiles == NULL) {
         return NULL;
     }
 
-    fdt = procFiles->fdt;
+    fdt = procFiles->fdt;//返回这个fdt
     if ((fdt == NULL) || (fdt->ft_fds == NULL)) {
         return NULL;
     }

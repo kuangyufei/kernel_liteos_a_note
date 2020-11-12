@@ -109,11 +109,11 @@ typedef struct ProcessCB {
     UINTPTR              sigHandler;   /**< signal handler */
     sigset_t             sigShare;     /**< signal share bit */
 #if (LOSCFG_KERNEL_LITEIPC == YES)
-    ProcIpcInfo         ipcInfo;       /**< memory pool for lite ipc */
+    ProcIpcInfo         ipcInfo;       /**< memory pool for lite ipc */ 
 #endif
-    LosVmSpace          *vmSpace;       /**< VMM space for processes */
+    LosVmSpace          *vmSpace;       /**< VMM space for processes */ //进程空间
 #ifdef LOSCFG_FS_VFS
-    struct files_struct *files;        /**< Files held by the process */
+    struct files_struct *files;        /**< Files held by the process */ //进程所持有的所有文件，注者称之为 文件管理器
 #endif
     timer_t             timerID;       /**< iTimer */
 
