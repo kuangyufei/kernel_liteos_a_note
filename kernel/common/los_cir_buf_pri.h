@@ -41,21 +41,22 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+//循环buf常用于控制台和socket buf,
 typedef enum {
-    CBUF_UNUSED,
-    CBUF_USED
+    CBUF_UNUSED,//未使用
+    CBUF_USED	//已使用
 } CirBufStatus;
 
 typedef struct {
-    UINT32 startIdx;
-    UINT32 endIdx;
-    UINT32 size;
-    UINT32 remain;
-    SPIN_LOCK_S lock;
-    CirBufStatus status;
-    CHAR *fifo;
+    UINT32 startIdx; 	//开始位置
+    UINT32 endIdx;		//结束位置
+    UINT32 size;		//大小
+    UINT32 remain;		//剩余多少
+    SPIN_LOCK_S lock;	//自旋锁
+    CirBufStatus status;//两种状态
+    CHAR *fifo;			//顺序buffer
 } CirBuf;
-
+//锁循环buf
 STATIC INLINE VOID LOS_CirBufLock(CirBuf *cirbufCB, UINT32 *intSave)
 {
     if (cirbufCB == NULL) {
@@ -63,7 +64,7 @@ STATIC INLINE VOID LOS_CirBufLock(CirBuf *cirbufCB, UINT32 *intSave)
     }
     LOS_SpinLockSave(&cirbufCB->lock, intSave);
 }
-
+//解锁循环buf
 STATIC INLINE VOID LOS_CirBufUnlock(CirBuf *cirbufCB, UINT32 intSave)
 {
     if (cirbufCB == NULL) {

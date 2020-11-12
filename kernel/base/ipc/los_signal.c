@@ -58,7 +58,8 @@ int raise(int sig)
 int OsSigIsMember(const sigset_t *set, int signo)
 {
     int ret = LOS_NOK;
-    /* In musl, sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */ //@note_why 这里对musl的说明没看明白,为什么要-1呢?
+    /* In musl, sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */ 
+	//@note_why 这里对musl的说明没看明白,为什么要-1呢?
     signo -= 1;
     /* Verify the signal */
     if (GOOD_SIGNO(signo)) {

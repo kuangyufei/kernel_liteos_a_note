@@ -50,19 +50,19 @@ extern "C" {
  * @ingroup los_event
  * Event reading mode: The task waits for all its expected events to occur.
  */
-#define LOS_WAITMODE_AND                    4U 	//事件读取模式：任务等待所有预期事件发生。
+#define LOS_WAITMODE_AND                    4U 	//事件读取模式：任务等待所有预期事件发生。读取掩码中所有事件类型，只有读取的所有事件类型都发生了，才能读取成功。
 
 /**
  * @ingroup los_event
  * Event reading mode: The task waits for any of its expected events to occur.
  */
-#define LOS_WAITMODE_OR                     2U 	//事件读取模式：任务等待任何预期事件发生。
+#define LOS_WAITMODE_OR                     2U 	//事件读取模式：任务等待任何预期事件发生。读取掩码中任一事件类型，读取的事件中任意一种事件类型发生了，就可以读取成功
 
 /**
  * @ingroup los_event
  * Event reading mode: The event flag is immediately cleared after the event is read.
  */
-#define LOS_WAITMODE_CLR                    1U	//事件读取模式：事件标志在读取事件后立即清除。
+#define LOS_WAITMODE_CLR                    1U	//事件读取模式：事件标志在读取事件后立即清除。表示读取成功后，对应事件类型位会自动清除
 
 /**
  * @ingroup los_event
@@ -162,9 +162,9 @@ extern "C" {
  * Event control structure
  */
 typedef struct tagEvent {
-    UINT32 uwEventID;        /**< Event mask in the event control block,
+    UINT32 uwEventID;        /**< Event mask in the event control block,//标识发生的事件类型位
                                   indicating the event that has been logically processed. */
-    LOS_DL_LIST stEventList; /**< Event control block linked list */
+    LOS_DL_LIST stEventList; /**< Event control block linked list *///读取事件任务链表
 } EVENT_CB_S, *PEVENT_CB_S;//一个是结构体,一个是指针
 
 /**

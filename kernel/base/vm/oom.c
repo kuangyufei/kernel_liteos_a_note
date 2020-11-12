@@ -119,8 +119,8 @@ LITE_OS_SEC_TEXT_MINOR STATIC BOOL OomReclaimPageCache(VOID)
 }
 
 /*
- * check is low memory or not, if low memory, try to kill process.
- * return is kill process or not.
+ * check is low memory or not, if low memory, try to kill process. //检查内存是否不足，如果内存不足，请尝试终止进程。
+ * return is kill process or not. //返回是否kill进程
  */
 LITE_OS_SEC_TEXT_MINOR BOOL OomCheckProcess(VOID)
 {

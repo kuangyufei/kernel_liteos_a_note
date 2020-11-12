@@ -70,34 +70,34 @@ extern "C" {
 #define CONSOLE_NUM                    2
 
 
-#define TELNET_CIRBUF_SIZE 0x2000
+#define TELNET_CIRBUF_SIZE 0x2000 //8K
 
 typedef struct {
-    CirBuf cirBufCB;        /* Circular buffer CB */
-    EVENT_CB_S sendEvent;   /* Inform telnet send task */
+    CirBuf cirBufCB;        /* Circular buffer CB */ //循环缓冲控制块
+    EVENT_CB_S sendEvent;   /* Inform telnet send task */ //通知telnet发送任务
 } CirBufSendCB;
-//控制台控制块结构体
+//控制台控制块(描述符)
 typedef struct {
     UINT32 consoleID;	//控制台ID
     UINT32 consoleType;	//控制台类型
-    UINT32 consoleSem;	//
+    UINT32 consoleSem;	//控制台信号量
     UINT32 shellEntryId;//shell的入口ID
-    UINT32 consoleMask;	
-    struct inode *devInode;
-    CHAR *name;
-    INT32 fd;
-    UINT32 refCount;
-    BOOL isNonBlock;
+    UINT32 consoleMask;	//控制台掩码
+    struct inode *devInode;//设备节点
+    CHAR *name;	//名称
+    INT32 fd;	//文件描述符
+    UINT32 refCount;	//引用次数
+    BOOL isNonBlock;	
 #ifdef LOSCFG_SHELL
-    VOID *shellHandle;
+    VOID *shellHandle;	//
 #endif
-    UINT32 sendTaskID;
-    CirBufSendCB *cirBufSendCB;
+    UINT32 sendTaskID;	//发送任务ID
+    CirBufSendCB *cirBufSendCB;	//循环缓冲描述符
     UINT8 fifo[CONSOLE_FIFO_SIZE];
     UINT32 fifoOut;
     UINT32 fifoIn;
     UINT32 currentLen;
-    struct termios consoleTermios;
+    struct termios consoleTermios; //控制台条款
 } CONSOLE_CB;
 
 extern INT32 system_console_init(const CHAR *deviceName);

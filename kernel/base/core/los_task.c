@@ -1970,7 +1970,7 @@ LITE_OS_SEC_TEXT VOID OsWriteResourceEvent(UINT32 events)
 {
     (VOID)LOS_EventWrite(&g_resourceEvent, events);
 }
-
+//资源回收任务
 STATIC VOID OsResourceRecoveryTask(VOID)
 {
     UINT32 ret;
@@ -1978,15 +1978,15 @@ STATIC VOID OsResourceRecoveryTask(VOID)
     while (1) {
         ret = LOS_EventRead(&g_resourceEvent, OS_RESOURCE_EVENT_MASK,
                             LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
-        if (ret & (OS_RESOURCE_EVENT_FREE | OS_RESOURCE_EVENT_OOM)) {
-            OsTaskCBRecyleToFree();
+        if (ret & (OS_RESOURCE_EVENT_FREE | OS_RESOURCE_EVENT_OOM)) {//资源释放或异常情况
+            OsTaskCBRecyleToFree();//回收任务到空闲任务池
 
-            OsProcessCBRecyleToFree();
+            OsProcessCBRecyleToFree();//回收进程到空闲进程池
         }
 
-#ifdef LOSCFG_ENABLE_OOM_LOOP_TASK
-        if (ret & OS_RESOURCE_EVENT_OOM) {
-            (VOID)OomCheckProcess();
+#ifdef LOSCFG_ENABLE_OOM_LOOP_TASK //内存溢出监测任务开关
+        if (ret & OS_RESOURCE_EVENT_OOM) {//触发了这个事件
+            (VOID)OomCheckProcess();//检查进程
         }
 #endif
     }
@@ -2004,11 +2004,11 @@ LITE_OS_SEC_TEXT UINT32 OsCreateResourceFreeTask(VOID)
     }
 
     (VOID)memset_s((VOID *)(&taskInitParam), sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
-    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)OsResourceRecoveryTask;
-    taskInitParam.uwStackSize = OS_TASK_RESOURCE_STATCI_SIZE;
+    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)OsResourceRecoveryTask;//入口函数
+    taskInitParam.uwStackSize = OS_TASK_RESOURCE_STATCI_SIZE;// 4K
     taskInitParam.pcName = "ResourcesTask";
     taskInitParam.usTaskPrio = OS_TASK_RESOURCE_FREE_PRIORITY;// 5
-    return LOS_TaskCreate(&taskID, &taskInitParam);
+    return LOS_TaskCreate(&taskID, &taskInitParam);//创建任务，并加入就绪队列，立即调度
 }
 
 #ifdef __cplusplus

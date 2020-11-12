@@ -121,7 +121,7 @@ UINT32 OsGetSystemStatus(VOID)
 
     if (cpuID == INVALID_CPUID) {
         flag = OS_SYSTEM_NORMAL;
-    } else if (cpuID == ArchCurrCpuid()) {//真的是碰到了真在执行此处代码的CPU core
+    } else if (cpuID == ArchCurrCpuid()) {//碰到了正在执行此处代码的CPU core
         flag = OS_SYSTEM_EXC_CURR_CPU;//当前CPU
     } else {
         flag = OS_SYSTEM_EXC_OTHER_CPU;//其他CPU

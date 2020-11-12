@@ -67,7 +67,7 @@ STATIC SPIN_LOCK_INIT(g_consoleSpin);
 
 #define SHELL_ENTRYID_INVALID     0xFFFFFFFF
 #define SHELL_TASK_PRIORITY       9		//shell 的优先级为 9
-#define CONSOLE_CIRBUF_EVENT      0x02U	//控制台清除buffer事件	
+#define CONSOLE_CIRBUF_EVENT      0x02U	//控制台循环buffer事件	
 #define CONSOLE_SEND_TASK_EXIT    0x04U	//控制台发送任务退出事件
 #define CONSOLE_SEND_TASK_RUNNING 0x10U	//控制台发送任务正在执行事件
 
@@ -599,7 +599,7 @@ INT32 FilepPoll(struct file *filep, const struct file_operations_vfs *fops, poll
     }
     return ret;
 }
-
+//打开控制台
 STATIC INT32 ConsoleOpen(struct file *filep)
 {
     INT32 ret;
@@ -675,7 +675,7 @@ STATIC ssize_t DoRead(CONSOLE_CB *consoleCB, CHAR *buffer, size_t bufLen,
 
     return ret;
 }
-
+//控制台读数据
 STATIC ssize_t ConsoleRead(struct file *filep, CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -737,7 +737,7 @@ ERROUT:
     set_errno(-ret);
     return VFS_ERROR;
 }
-
+//写入buf
 STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
 {
     INT32 cnt = 0;
@@ -761,7 +761,7 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
     LOS_CirBufUnlock(&cirBufSendCB->cirBufCB, intSave);
     /* Log is cached but not printed when a system exception occurs */
     if (OsGetSystemStatus() == OS_SYSTEM_NORMAL) {
-        (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_CIRBUF_EVENT);
+        (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_CIRBUF_EVENT);//写入循环buffer事件
     }
 #ifdef LOSCFG_SHELL_DMESG
     }
@@ -769,7 +769,7 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
 
     return cnt;
 }
-
+//控制台写数据
 STATIC ssize_t ConsoleWrite(struct file *filep, const CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -784,7 +784,7 @@ STATIC ssize_t ConsoleWrite(struct file *filep, const CHAR *buffer, size_t bufLe
         goto ERROUT;
     }
 
-    userBuf = LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buffer, bufLen);
+    userBuf = LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buffer, bufLen);//是用户空间地址吗？
 
     ret = GetFilepOps(filep, &privFilep, &fileOps);
     if ((ret != ENOERR) || (fileOps->write == NULL) || (filep->f_priv == NULL)) {
@@ -924,7 +924,7 @@ STATIC const struct file_operations_vfs g_consoleDevOps = {
 #endif
     .unlink = NULL,
 };
-
+//控制台条款初始化
 STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
 {
     struct termios consoleTermios;
@@ -951,7 +951,7 @@ STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
     }
 #endif
 }
-
+//控制台文件初始化
 STATIC INT32 OsConsoleFileInit(CONSOLE_CB *consoleCB)
 {
     INT32 ret;
@@ -996,7 +996,7 @@ ERROUT_WITH_FULLPATH:
 /*
  * Initialized console control platform so that when we operate /dev/console
  * as if we are operating /dev/ttyS0 (uart0).
- */
+ *///初始化控制台控制平台，以便在操作/dev/console时，就好像我们在操作/dev/ttyS0（uart0）
 STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
 {
     INT32 ret;
@@ -1114,7 +1114,7 @@ ERROUT:
     set_errno(ret);
     return LOS_NOK;
 }
-
+//创建一个控制台循环buf
 STATIC CirBufSendCB *ConsoleCirBufCreate(VOID)
 {
     UINT32 ret;
@@ -1122,25 +1122,25 @@ STATIC CirBufSendCB *ConsoleCirBufCreate(VOID)
     CirBufSendCB *cirBufSendCB = NULL;
     CirBuf *cirBufCB = NULL;
 
-    cirBufSendCB = (CirBufSendCB *)LOS_MemAlloc(m_aucSysMem0, sizeof(CirBufSendCB));
+    cirBufSendCB = (CirBufSendCB *)LOS_MemAlloc(m_aucSysMem0, sizeof(CirBufSendCB));//分配一个循环buf发送控制块
     if (cirBufSendCB == NULL) {
         return NULL;
     }
-    (VOID)memset_s(cirBufSendCB, sizeof(CirBufSendCB), 0, sizeof(CirBufSendCB));
+    (VOID)memset_s(cirBufSendCB, sizeof(CirBufSendCB), 0, sizeof(CirBufSendCB));//清0
 
-    fifo = (CHAR *)LOS_MemAlloc(m_aucSysMem0, TELNET_CIRBUF_SIZE);
+    fifo = (CHAR *)LOS_MemAlloc(m_aucSysMem0, TELNET_CIRBUF_SIZE);//分配一个缓存 8K
     if (fifo == NULL) {
         goto ERROR_WITH_SENDCB;
     }
-    (VOID)memset_s(fifo, TELNET_CIRBUF_SIZE, 0, TELNET_CIRBUF_SIZE);
+    (VOID)memset_s(fifo, TELNET_CIRBUF_SIZE, 0, TELNET_CIRBUF_SIZE);//清0
 
     cirBufCB = &cirBufSendCB->cirBufCB;
-    ret = LOS_CirBufInit(cirBufCB, fifo, TELNET_CIRBUF_SIZE);
+    ret = LOS_CirBufInit(cirBufCB, fifo, TELNET_CIRBUF_SIZE);//初始化循环buf
     if (ret != LOS_OK) {
         goto ERROR_WITH_FIFO;
     }
 
-    (VOID)LOS_EventInit(&cirBufSendCB->sendEvent);
+    (VOID)LOS_EventInit(&cirBufSendCB->sendEvent);//事件初始化
     return cirBufSendCB;
 
 ERROR_WITH_FIFO:
@@ -1149,15 +1149,15 @@ ERROR_WITH_SENDCB:
     (VOID)LOS_MemFree(m_aucSysMem0, cirBufSendCB);
     return NULL;
 }
-
+//删除循环buf
 STATIC VOID ConsoleCirBufDelete(CirBufSendCB *cirBufSendCB)
 {
     CirBuf *cirBufCB = &cirBufSendCB->cirBufCB;
 
-    (VOID)LOS_MemFree(m_aucSysMem0, cirBufCB->fifo);
-    LOS_CirBufDeinit(cirBufCB);
-    (VOID)LOS_EventDestroy(&cirBufSendCB->sendEvent);
-    (VOID)LOS_MemFree(m_aucSysMem0, cirBufSendCB);
+    (VOID)LOS_MemFree(m_aucSysMem0, cirBufCB->fifo);//释放内存 8K
+    LOS_CirBufDeinit(cirBufCB);//清除初始化操作
+    (VOID)LOS_EventDestroy(&cirBufSendCB->sendEvent);//销毁事件
+    (VOID)LOS_MemFree(m_aucSysMem0, cirBufSendCB);//释放循环buf发送控制块
 }
 //控制台缓存初始化，创建一个 发送任务
 STATIC UINT32 OsConsoleBufInit(CONSOLE_CB *consoleCB)
@@ -1165,30 +1165,30 @@ STATIC UINT32 OsConsoleBufInit(CONSOLE_CB *consoleCB)
     UINT32 ret;
     TSK_INIT_PARAM_S initParam = {0};
 
-    consoleCB->cirBufSendCB = ConsoleCirBufCreate();
+    consoleCB->cirBufSendCB = ConsoleCirBufCreate();//创建控制台
     if (consoleCB->cirBufSendCB == NULL) {
         return LOS_NOK;
     }
 
-    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ConsoleSendTask;
-    initParam.usTaskPrio   = SHELL_TASK_PRIORITY;
+    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ConsoleSendTask;//
+    initParam.usTaskPrio   = SHELL_TASK_PRIORITY;	//优先级9
     initParam.auwArgs[0]   = (UINTPTR)consoleCB;
-    initParam.uwStackSize  = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
-    if (consoleCB->consoleID == CONSOLE_SERIAL) {
-        initParam.pcName   = "SendToSer";
+    initParam.uwStackSize  = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;	//16K
+    if (consoleCB->consoleID == CONSOLE_SERIAL) {//控制台的两种方式
+        initParam.pcName   = "SendToSer"; 
     } else {
         initParam.pcName   = "SendToTelnet";
     }
-    initParam.uwResved     = LOS_TASK_STATUS_DETACHED;
+    initParam.uwResved     = LOS_TASK_STATUS_DETACHED; //使用任务分离模式
 
-    ret = LOS_TaskCreate(&consoleCB->sendTaskID, &initParam);
-    if (ret != LOS_OK) {
-        ConsoleCirBufDelete(consoleCB->cirBufSendCB);
-        consoleCB->cirBufSendCB = NULL;
+    ret = LOS_TaskCreate(&consoleCB->sendTaskID, &initParam);//创建task 并加入就绪队列，申请立即调度
+    if (ret != LOS_OK) { //创建失败处理
+        ConsoleCirBufDelete(consoleCB->cirBufSendCB);//释放循环buf
+        consoleCB->cirBufSendCB = NULL;//置NULL
         return LOS_NOK;
     }
     (VOID)LOS_EventRead(&consoleCB->cirBufSendCB->sendEvent, CONSOLE_SEND_TASK_RUNNING,
-                        LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
+                        LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);//读取事件
 
     return LOS_OK;
 }
@@ -1198,7 +1198,7 @@ STATIC VOID OsConsoleBufDeinit(CONSOLE_CB *consoleCB)
     CirBufSendCB *cirBufSendCB = consoleCB->cirBufSendCB;
 
     consoleCB->cirBufSendCB = NULL;
-    (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_SEND_TASK_EXIT);
+    (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_SEND_TASK_EXIT);//写任务退出事件 ConsoleSendTask将会收到事件，退出死循环
 }
 //控制台描述符初始化
 STATIC CONSOLE_CB *OsConsoleCBInit(UINT32 consoleID)
@@ -1226,7 +1226,7 @@ STATIC VOID OsConsoleCBDeinit(CONSOLE_CB *consoleCB)
     consoleCB->name = NULL;
     (VOID)LOS_MemFree((VOID *)m_aucSysMem0, consoleCB);//释放控制台描述符所占用的内核内存
 }
-//创建一个控制台
+//创建一个控制台，这个函数的goto语句贼多
 STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
 {
     INT32 ret;
@@ -1268,16 +1268,16 @@ STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
     return consoleCB;
 
 ERR_WITH_DEV:
-    ret = (INT32)OsConsoleDevDeinit(consoleCB);
+    ret = (INT32)OsConsoleDevDeinit(consoleCB);//控制台设备取消初始化
     if (ret != LOS_OK) {
         PRINT_ERR("OsConsoleDevDeinit failed!\n");
     }
 ERR_WITH_SEM:
-    (VOID)LOS_SemDelete(consoleCB->consoleSem);
+    (VOID)LOS_SemDelete(consoleCB->consoleSem);//控制台信号量删除
 ERR_WITH_BUF:
-    OsConsoleBufDeinit(consoleCB);
+    OsConsoleBufDeinit(consoleCB);//控制台buf取消初始化
 ERR_WITH_NAME:
-    OsConsoleCBDeinit(consoleCB);
+    OsConsoleCBDeinit(consoleCB);//控制块取消初始化
     return NULL;
 }
 
@@ -1554,7 +1554,7 @@ VOID OsSetConsoleID(UINT32 newTaskID, UINT32 curTaskID)
 
     g_taskConsoleIDArray[newTaskID] = g_taskConsoleIDArray[curTaskID];
 }
-
+//将buf内容写到终端设备
 STATIC ssize_t WriteToTerminal(const CONSOLE_CB *consoleCB, const CHAR *buffer, size_t bufLen)
 {
     INT32 ret, fd;
@@ -1564,14 +1564,14 @@ STATIC ssize_t WriteToTerminal(const CONSOLE_CB *consoleCB, const CHAR *buffer, 
     const struct file_operations_vfs *fileOps = NULL;
 
     fd = consoleCB->fd;
-    ret = fs_getfilep(fd, &filep);
-    ret = GetFilepOps(filep, &privFilep, &fileOps);
+    ret = fs_getfilep(fd, &filep);//获取文件指针
+    ret = GetFilepOps(filep, &privFilep, &fileOps);//获取文件的操作方法
 
     if ((fileOps == NULL) || (fileOps->write == NULL)) {
         ret = EFAULT;
         goto ERROUT;
     }
-    (VOID)fileOps->write(privFilep, buffer, bufLen);
+    (VOID)fileOps->write(privFilep, buffer, bufLen);//写入文件
 
     return cnt;
 
@@ -1589,45 +1589,45 @@ STATIC UINT32 ConsoleSendTask(UINTPTR param)
     UINT32 intSave;
     CHAR *buf = NULL;
 
-    (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_SEND_TASK_RUNNING);
+    (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_SEND_TASK_RUNNING);//发送一个控制台任务正在运行的事件
 
     while (1) {
         ret = LOS_EventRead(&cirBufSendCB->sendEvent, CONSOLE_CIRBUF_EVENT | CONSOLE_SEND_TASK_EXIT,
-                            LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
-        if (ret == CONSOLE_CIRBUF_EVENT) {
-            size =  LOS_CirBufUsedSize(cirBufCB);
+                            LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);//读取循环buf或任务退出的事件
+        if (ret == CONSOLE_CIRBUF_EVENT) {//控制台循环buf事件发生
+            size =  LOS_CirBufUsedSize(cirBufCB);//循环buf使用大小
             if (size == 0) {
                 continue;
             }
-            buf = (CHAR *)LOS_MemAlloc(m_aucSysMem1, size + 1);
+            buf = (CHAR *)LOS_MemAlloc(m_aucSysMem1, size + 1);//分配接收cirbuf的内存
             if (buf == NULL) {
                 continue;
             }
-            (VOID)memset_s(buf, size + 1, 0, size + 1);
+            (VOID)memset_s(buf, size + 1, 0, size + 1);//清0
 
             LOS_CirBufLock(cirBufCB, &intSave);
-            (VOID)LOS_CirBufRead(cirBufCB, buf, size);
+            (VOID)LOS_CirBufRead(cirBufCB, buf, size);//读取循环cirBufCB至  buf
             LOS_CirBufUnlock(cirBufCB, intSave);
 
-            (VOID)WriteToTerminal(consoleCB, buf, size);
-            (VOID)LOS_MemFree(m_aucSysMem1, buf);
-        } else if (ret == CONSOLE_SEND_TASK_EXIT) {
-            break;
+            (VOID)WriteToTerminal(consoleCB, buf, size);//将buf数据写到控制台终端设备
+            (VOID)LOS_MemFree(m_aucSysMem1, buf);//清除buf
+        } else if (ret == CONSOLE_SEND_TASK_EXIT) {//收到任务退出的事件
+            break;//退出循环
         }
     }
 
-    ConsoleCirBufDelete(cirBufSendCB);
+    ConsoleCirBufDelete(cirBufSendCB);//删除循环buf,归还内存
     return LOS_OK;
 }
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#if (LOSCFG_KERNEL_SMP == YES)//多处理器情况下
 VOID OsWaitConsoleSendTaskPend(UINT32 taskID)
 {
     UINT32 i;
     CONSOLE_CB *console = NULL;
     LosTaskCB *taskCB = NULL;
 
-    for (i = 0; i < CONSOLE_NUM; i++) {
+    for (i = 0; i < CONSOLE_NUM; i++) {//循环cpu core
         console = g_console[i];
         if (console == NULL) {
             continue;
@@ -1643,20 +1643,20 @@ VOID OsWaitConsoleSendTaskPend(UINT32 taskID)
         }
     }
 }
-
+//唤醒控制台发送任务
 VOID OsWakeConsoleSendTask(VOID)
 {
     UINT32 i;
     CONSOLE_CB *console = NULL;
 
-    for (i = 0; i < CONSOLE_NUM; i++) {
+    for (i = 0; i < CONSOLE_NUM; i++) {//循环控制台数量，只有2个
         console = g_console[i];
         if (console == NULL) {
             continue;
         }
 
-        if (console->cirBufSendCB != NULL) {
-            (VOID)LOS_EventWrite(&console->cirBufSendCB->sendEvent, CONSOLE_CIRBUF_EVENT);
+        if (console->cirBufSendCB != NULL) {//循环缓存描述符
+            (VOID)LOS_EventWrite(&console->cirBufSendCB->sendEvent, CONSOLE_CIRBUF_EVENT);//写循环缓存区buf事件
         }
     }
 }

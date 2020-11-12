@@ -286,11 +286,11 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 #define LOSCFG_STACK_POINT_ALIGN_SIZE                       (sizeof(UINTPTR) * 2)
 #endif
 
-#define OS_TASK_RESOURCE_STATCI_SIZE    0x1000
-#define OS_TASK_RESOURCE_FREE_PRIORITY  5
-#define OS_RESOURCE_EVENT_MASK          0xFF
-#define OS_RESOURCE_EVENT_OOM           0x02
-#define OS_RESOURCE_EVENT_FREE          0x04
+#define OS_TASK_RESOURCE_STATCI_SIZE    0x1000	//4K
+#define OS_TASK_RESOURCE_FREE_PRIORITY  5		//回收资源任务的优先级
+#define OS_RESOURCE_EVENT_MASK          0xFF	//资源事件的掩码
+#define OS_RESOURCE_EVENT_OOM           0x02	//资源异常事件 暂时的理解是:OutOfMemory @note_thinking
+#define OS_RESOURCE_EVENT_FREE          0x04	//资源释放事件
 #define OS_TCB_NAME_LEN 32
 
 typedef struct {
@@ -308,7 +308,7 @@ typedef struct {
     VOID            *taskMux;           /**< Task-held mutex */		//task在等哪把锁
     VOID            *taskEvent;         /**< Task-held event */		//task在等哪个事件
     UINTPTR         args[4];            /**< Parameter, of which the maximum number is 4 */	//入口函数的参数 例如 main (int argc,char *argv[])
-    CHAR            taskName[OS_TCB_NAME_LEN]; /**< Task name */
+    CHAR            taskName[OS_TCB_NAME_LEN]; /**< Task name */	//任务的名称
     LOS_DL_LIST     pendList;           /**< Task pend node */		//如果任务阻塞时就通过它挂到各种阻塞情况的链表上,比如OsTaskWait时
     LOS_DL_LIST     threadList;         /**< thread list */			//挂到所属进程的线程链表上
     SortLinkList    sortList;           /**< Task sortlink node */	//挂到cpu core 的任务执行链表上
@@ -337,7 +337,7 @@ typedef struct {
     UINTPTR         userArea;			//使用区域,由运行时划定,根据运行态不同而不同
     UINTPTR         userMapBase;		//用户模式下的栈底位置
     UINT32          userMapSize;        /**< user thread stack size ,real size : userMapSize + USER_STACK_MIN_SIZE */
-    UINT32          processID;          /**< Which belong process */
+    UINT32          processID;          /**< Which belong process *///所属进程ID
     FutexNode       futex;				//实现快锁功能
     LOS_DL_LIST     joinList;           /**< join list */ //联结链表,允许任务之间相互释放彼此
     LOS_DL_LIST     lockList;           /**< Hold the lock list */	//拿到了哪些锁链表

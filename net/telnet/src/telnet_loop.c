@@ -512,32 +512,32 @@ STATIC INT32 TelnetdMain(VOID)
 }
 
 /*
- * Try to create telnetd task.
+ * Try to create telnetd task. 创建远程任务
  */
 STATIC VOID TelnetdTaskInit(VOID)
 {
     UINT32 ret;
     TSK_INIT_PARAM_S initParam = {0};
 
-    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)TelnetdMain;
-    initParam.uwStackSize = TELNET_TASK_STACK_SIZE;
+    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)TelnetdMain; //入口函数
+    initParam.uwStackSize = TELNET_TASK_STACK_SIZE; //8K
     initParam.pcName = "TelnetServer";
-    initParam.usTaskPrio = TELNET_TASK_PRIORITY;
-    initParam.uwResved = LOS_TASK_STATUS_DETACHED;
+    initParam.usTaskPrio = TELNET_TASK_PRIORITY; //优先级9
+    initParam.uwResved = LOS_TASK_STATUS_DETACHED;//任务分离模式
 
     if (atomic_read(&g_telnetTaskId) != 0) {
         PRINT_ERR("telnet server is already running!\n");
         return;
     }
 
-    ret = LOS_TaskCreate((UINT32 *)&g_telnetTaskId, &initParam);
+    ret = LOS_TaskCreate((UINT32 *)&g_telnetTaskId, &initParam);//创建任务，并加入就绪队列，立即申请调度
     if (ret != LOS_OK) {
         PRINT_ERR("failed to create telnet server task!\n");
     }
 }
 
 /*
- * Try to destroy telnetd task.
+ * Try to destroy telnetd task. 销毁远程任务
  */
 STATIC VOID TelnetdTaskDeinit(VOID)
 {

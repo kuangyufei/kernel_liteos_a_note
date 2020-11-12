@@ -7,7 +7,6 @@
 
 [![star](https://gitee.com/weharmony/kernel_liteos_a_note/badge/star.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)[![fork](https://gitee.com/weharmony/kernel_liteos_a_note/badge/fork.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)
 
-# ![](https://oscimg.oschina.net/oscnet/up-c1f5f5e88b38fcb25f274a2062384b0c61e.png)
 
 每个码农,职业生涯,都应精读一遍内核源码. 鸿蒙内核源码就是很好的精读项目.一旦熟悉内核代码级实现,将迅速拔高对计算机整体理解,从此高屋建瓴看问题.
 
@@ -22,6 +21,16 @@
 -   ### **致敬鸿蒙内核开发者**
     
     感谢开放原子开源基金会,鸿蒙内核开发者提供了如此优秀的源码,一了多年的夙愿,津津乐道于此.越深入精读内核源码,越能感受到设计者的精巧用心,创新突破. 向开发者致敬. 可以毫不夸张的说 **[OpenHarmony/kernel\_liteos\_a](https://gitee.com/openharmony/kernel_liteos_a)** 可作为大学C语言,数据结构,操作系统,汇编语言 四门课程的教学项目.如此宝库,不深入研究实在是太可惜了.
+
+    ### **在加注的源码中有哪些特殊的记号**
+
+    搜索 **[@note_pic]()** 可查看绘制的全部字符图
+
+    搜索 **[@note_why]()** 是注者尚未看明白的地方，如果您看明白了，请告诉注者完善
+
+    搜索 **[@note_thinking]()** 是注者的思考和吐槽鸿蒙源码的地方
+
+    若有好的建议请邮箱**kuangyufei@126.com**或私信联系.
     
 -   ### **理解内核的三个层级**
     
@@ -48,12 +57,6 @@
     另外用字符画了一些图方便理解,直接嵌入到头文件中,比如虚拟内存的全景图,因没有这些图是很难理解内存是如何管理的,后续还会陆续加入更多的图方便理解.
     
     ![在这里插入图片描述](https://img-blog.csdnimg.cn/20201028154344813.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2t1YW5neXVmZWk=,size_16,color_FFFFFF,t_70#pic_center)
-
-    ### **有哪些方便查找的记号**
-
-    搜索 @note_why 是笔者暂时没看懂的代码和疑惑, 如果有兴趣请帮笔者一起完善注解,让鸿蒙内核注解越来越清晰.
-    搜索 @note_pic 是笔者用字符画的一些图,用于方便理解. 目前所绘制的图不多,会陆续增加.
-    联系方式: kuangyufei@126.com 有好的建议请邮箱或私信联系.
     
 -   ### **仰望星空还是埋头走路**
     
@@ -73,3 +76,5 @@
     注释中文版 进入 >\> [鸿蒙内核源码注释中文版 【 Gitee仓](https://gitee.com/weharmony/kernel_liteos_a_note) | [CSDN仓](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [Github仓](https://github.com/kuangyufei/kernel_liteos_a_note) | [Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)阅读
     
     内容仅代表个人观点,会反复修正,出精品注解,写精品文章,一律原创,转载需注明出处,不修改内容,不乱插广告,错漏之处欢迎指正笔者第一时间加以完善。
+
+    # ![](https://oscimg.oschina.net/oscnet/up-c1f5f5e88b38fcb25f274a2062384b0c61e.png)

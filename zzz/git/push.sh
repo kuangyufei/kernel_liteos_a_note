@@ -1,8 +1,9 @@
 git add -A
-git commit -m  '您知道工作台是如何创建的码? 添加 VFS部分shell命令代码的注释 
-鸿蒙内核源码分析系列 【 CSDN | OSCHINA | WIKI 】
-鸿蒙内核源码注释中文版 【 CSDN仓 | Gitee仓 | Github仓 | Coding仓 】四大仓库每日同步更新
-项目给鸿蒙内核源码逐行加上中文注解,详细阐述框架和代码细节, 精读 HarmonyOS 内核源码, 将迅速拔高对计算机整体理解,从此高屋建瓴看问题.'
+git commit -m  '新增控制台，事件，循环buf的代码注释，您知道工作台是如何创建的吗? 
+搜索 @note_pic 可以查看全部字符图
+搜索 @note_why 是注者尚未看明白的地方，如果您看明白了，请告诉注者完善
+搜索 @note_thinking 是注者的思考和吐槽的地方
+'
 
 git push origin
 git push gitee_origin master

@@ -207,7 +207,7 @@ STATIC VOID OsMemNodeSave(LosMemDynNode *node);
     (((UINTPTR)(value) ^ ((UINTPTR)&(value))) == (UINTPTR)(-1))
 
 UINT8 *m_aucSysMem0 = NULL; //@note_why 不明白鸿蒙对虚拟内存分配为什么要用两个全局变量
-UINT8 *m_aucSysMem1 = NULL;	//auc是什么意思? 0和1又代表什么意思?
+UINT8 *m_aucSysMem1 = NULL;	//auc是什么意思? 变量名最后0和1又代表什么意思? 就不能整个好听的名字吗？@note_thinking
 
 #ifdef LOSCFG_BASE_MEM_NODE_SIZE_CHECK
 STATIC UINT8 g_memCheckLevel = LOS_MEM_CHECK_LEVEL_DEFAULT;

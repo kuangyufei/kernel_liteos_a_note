@@ -44,7 +44,7 @@
 extern "C" {
 #endif
 #endif /* __cplusplus */
-//事件初始化
+//初始化一个事件控制块
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventInit(PEVENT_CB_S eventCB)
 {
     UINT32 intSave;
@@ -81,53 +81,53 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventParamCheck(const VOID *ptr, UINT32 eventMa
     }
     return LOS_OK;
 }
-
+////根据用户传入的事件值、事件掩码及校验模式，返回用户传入的事件是否符合预期
 LITE_OS_SEC_TEXT UINT32 OsEventPoll(UINT32 *eventID, UINT32 eventMask, UINT32 mode)
 {
     UINT32 ret = 0;
 
-    LOS_ASSERT(OsIntLocked());
-    LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));
+    LOS_ASSERT(OsIntLocked());//断言不允许中断了
+    LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));//任务自旋锁
 
-    if (mode & LOS_WAITMODE_OR) {
+    if (mode & LOS_WAITMODE_OR) {//如果模式是读取掩码中任意事件
         if ((*eventID & eventMask) != 0) {
             ret = *eventID & eventMask;
         }
-    } else {
-        if ((eventMask != 0) && (eventMask == (*eventID & eventMask))) {
+    } else {//等待全部事件发生
+        if ((eventMask != 0) && (eventMask == (*eventID & eventMask))) {//必须满足全部事件发生
             ret = *eventID & eventMask;
         }
     }
 
-    if (ret && (mode & LOS_WAITMODE_CLR)) {
+    if (ret && (mode & LOS_WAITMODE_CLR)) {//读取完成后清除事件
         *eventID = *eventID & ~ret;
     }
 
     return ret;
 }
-
+//检查读事件
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadCheck(const PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode)
 {
     UINT32 ret;
     LosTaskCB *runTask = NULL;
 
-    ret = OsEventParamCheck(eventCB, eventMask, mode);
+    ret = OsEventParamCheck(eventCB, eventMask, mode);//事件参数检查
     if (ret != LOS_OK) {
         return ret;
     }
 
-    if (OS_INT_ACTIVE) {
-        return LOS_ERRNO_EVENT_READ_IN_INTERRUPT;
+    if (OS_INT_ACTIVE) {//中断正在进行
+        return LOS_ERRNO_EVENT_READ_IN_INTERRUPT;//不能在中断发送时读事件
     }
 
-    runTask = OsCurrTaskGet();
-    if (runTask->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {
+    runTask = OsCurrTaskGet();//获取当前任务
+    if (runTask->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {//任务属于系统任务
         OsBackTrace();
-        return LOS_ERRNO_EVENT_READ_IN_SYSTEM_TASK;
+        return LOS_ERRNO_EVENT_READ_IN_SYSTEM_TASK;//不能在系统任务中读取事件
     }
     return LOS_OK;
 }
-
+//读取指定事件类型的实现函数，超时时间为相对时间：单位为Tick
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadImp(PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode,
                                               UINT32 timeout, BOOL once)
 {
@@ -135,49 +135,49 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadImp(PEVENT_CB_S eventCB, UINT32 eventM
     LosTaskCB *runTask = OsCurrTaskGet();
 
     if (once == FALSE) {
-        ret = OsEventPoll(&eventCB->uwEventID, eventMask, mode);
+        ret = OsEventPoll(&eventCB->uwEventID, eventMask, mode);//检测事件是否符合预期
     }
 
-    if (ret == 0) {
-        if (timeout == 0) {
+    if (ret == 0) {//不符合预期时
+        if (timeout == 0) {//不等待的情况
             return ret;
         }
 
-        if (!OsPreemptableInSched()) {
+        if (!OsPreemptableInSched()) {//不能抢占式调度
             return LOS_ERRNO_EVENT_READ_IN_LOCK;
         }
 
         runTask->eventMask = eventMask;
         runTask->eventMode = mode;
-        runTask->taskEvent = eventCB;
-        ret = OsTaskWait(&eventCB->stEventList, timeout, TRUE);
-        if (ret == LOS_ERRNO_TSK_TIMEOUT) {
+        runTask->taskEvent = eventCB;//事件控制块
+        ret = OsTaskWait(&eventCB->stEventList, timeout, TRUE);//任务进入等待状态，挂入阻塞链表
+        if (ret == LOS_ERRNO_TSK_TIMEOUT) {//如果返回超时
             runTask->taskEvent = NULL;
             return LOS_ERRNO_EVENT_READ_TIMEOUT;
         }
 
-        ret = OsEventPoll(&eventCB->uwEventID, eventMask, mode);
+        ret = OsEventPoll(&eventCB->uwEventID, eventMask, mode);//检测事件是否符合预期
     }
     return ret;
 }
-
+//读取指定事件类型，超时时间为相对时间：单位为Tick
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventRead(PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode, UINT32 timeout,
                                            BOOL once)
 {
     UINT32 ret;
     UINT32 intSave;
 
-    ret = OsEventReadCheck(eventCB, eventMask, mode);
+    ret = OsEventReadCheck(eventCB, eventMask, mode);//读取事件检查
     if (ret != LOS_OK) {
         return ret;
     }
 
     SCHEDULER_LOCK(intSave);
-    ret = OsEventReadImp(eventCB, eventMask, mode, timeout, once);
+    ret = OsEventReadImp(eventCB, eventMask, mode, timeout, once);//读事件实现函数
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-
+//事件恢复操作
 LITE_OS_SEC_TEXT STATIC UINT8 OsEventResume(LosTaskCB *resumedTask, const PEVENT_CB_S eventCB, UINT32 events)
 {
     UINT8 exitFlag = 0;
@@ -188,7 +188,7 @@ LITE_OS_SEC_TEXT STATIC UINT8 OsEventResume(LosTaskCB *resumedTask, const PEVENT
         exitFlag = 1;
 
         resumedTask->taskEvent = NULL;
-        OsTaskWake(resumedTask);
+        OsTaskWake(resumedTask);//唤醒任务
     }
 
     return exitFlag;
@@ -243,7 +243,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventWrite(PEVENT_CB_S eventCB, UINT32 events, 
     }
     return LOS_OK;
 }
-
+//根据用户传入的事件值、事件掩码及校验模式，返回用户传入的事件是否符合预期
 LITE_OS_SEC_TEXT UINT32 LOS_EventPoll(UINT32 *eventID, UINT32 eventMask, UINT32 mode)
 {
     UINT32 ret;
@@ -259,12 +259,12 @@ LITE_OS_SEC_TEXT UINT32 LOS_EventPoll(UINT32 *eventID, UINT32 eventMask, UINT32 
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//读事件
+//读取指定事件类型，超时时间为相对时间：单位为Tick
 LITE_OS_SEC_TEXT UINT32 LOS_EventRead(PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode, UINT32 timeout)
 {
     return OsEventRead(eventCB, eventMask, mode, timeout, FALSE);
 }
-//写事件
+//写指定的事件类型
 LITE_OS_SEC_TEXT UINT32 LOS_EventWrite(PEVENT_CB_S eventCB, UINT32 events)
 {
     return OsEventWrite(eventCB, events, FALSE);
@@ -280,7 +280,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsEventWriteOnce(PEVENT_CB_S eventCB, UINT32 event
 {
     return OsEventWrite(eventCB, events, TRUE);
 }
-//事件销毁
+//销毁指定的事件控制块
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventDestroy(PEVENT_CB_S eventCB)
 {
     UINT32 intSave;
@@ -301,7 +301,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventDestroy(PEVENT_CB_S eventCB)
 
     return LOS_OK;
 }
-//事件清除
+//清除指定的事件类型
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_EventClear(PEVENT_CB_S eventCB, UINT32 events)
 {
     UINT32 intSave;
