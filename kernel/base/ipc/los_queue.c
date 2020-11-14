@@ -131,7 +131,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueCreate(CHAR *queueName, UINT16 len, UINT32
     queueCB->queueState = OS_QUEUE_INUSED;	//队列状态使用中
     queueCB->readWriteableCnt[OS_QUEUE_READ] = 0;//可读资源计数，OS_QUEUE_READ(0):可读.
     queueCB->readWriteableCnt[OS_QUEUE_WRITE] = len;//可些资源计数 OS_QUEUE_WRITE(1):可写, 默认len可写.
-    queueCB->queueHead = 0;//队列都节点
+    queueCB->queueHead = 0;//队列头节点
     queueCB->queueTail = 0;//队列尾节点
     LOS_ListInit(&queueCB->readWriteList[OS_QUEUE_READ]);//初始化可读队列链表
     LOS_ListInit(&queueCB->readWriteList[OS_QUEUE_WRITE]);//初始化可写队列链表
@@ -150,12 +150,12 @@ STATIC LITE_OS_SEC_TEXT UINT32 OsQueueReadParameterCheck(UINT32 queueID, const V
     if (GET_QUEUE_INDEX(queueID) >= LOSCFG_BASE_IPC_QUEUE_LIMIT) {//队列ID不能超上限
         return LOS_ERRNO_QUEUE_INVALID;
     }
-    if ((bufferAddr == NULL) || (bufferSize == NULL)) {//目的地不能为NULL
+    if ((bufferAddr == NULL) || (bufferSize == NULL)) {//缓存地址不能为NULL
         return LOS_ERRNO_QUEUE_READ_PTR_NULL;
     }
 
-    if ((*bufferSize == 0) || (*bufferSize > (OS_NULL_SHORT - sizeof(UINT32)))) {//限制了读取数据的上限64K少一点点 OS_NULL_SHORT = 0XFFFF 
-        return LOS_ERRNO_QUEUE_READSIZE_IS_INVALID;
+    if ((*bufferSize == 0) || (*bufferSize > (OS_NULL_SHORT - sizeof(UINT32)))) {//限制了读取数据的上限64K, sizeof(UINT32)代表的是队列的长度
+        return LOS_ERRNO_QUEUE_READSIZE_IS_INVALID;					//所以要减去
     }
 
     OsQueueDbgTimeUpdateHook(queueID);
@@ -424,7 +424,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueDelete(UINT32 queueID)
     }
 
     if ((queueCB->readWriteableCnt[OS_QUEUE_WRITE] + queueCB->readWriteableCnt[OS_QUEUE_READ]) !=
-        queueCB->queueLen) {
+        queueCB->queueLen) {//读写队列的内容长度不等于总长度
         ret = LOS_ERRNO_QUEUE_IN_TSKWRITE;
         goto QUEUE_END;
     }
@@ -435,8 +435,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueDelete(UINT32 queueID)
     queueCB->queueID = SET_QUEUE_ID(GET_QUEUE_COUNT(queueCB->queueID) + 1, GET_QUEUE_INDEX(queueCB->queueID));
     OsQueueDbgUpdateHook(queueCB->queueID, NULL);
 
-    LOS_ListTailInsert(&g_freeQueueList, &queueCB->readWriteList[OS_QUEUE_WRITE]);
-    SCHEDULER_UNLOCK(intSave);
+    LOS_ListTailInsert(&g_freeQueueList, &queueCB->readWriteList[OS_QUEUE_WRITE]);//回收，通过write节点挂入链表，这里用OS_QUEUE_READ也没问题，
+    SCHEDULER_UNLOCK(intSave);									//但从链表中取出的时候也要用OS_QUEUE_READ，成对出现就行。
 
     ret = LOS_MemFree(m_aucSysMem1, (VOID *)queue);
     return ret;

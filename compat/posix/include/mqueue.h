@@ -73,7 +73,7 @@ extern "C" {
 
 /* TYPE DEFINITIONS */
 struct mqarray {
-    UINT32 mq_id : 31;
+    UINT32 mq_id : 31;		
     UINT32 unlinkflag : 1;
     char *mq_name;
     LosQueueCB *mqcb;
@@ -89,18 +89,18 @@ struct mqpersonal {
 
 /**
  * @ingroup mqueue
- * Message queue attribute structure
+ * Message queue attribute structure //消息队列属性结构
  */
 struct mq_attr {
-    long mq_flags;    /**< Message queue flags */
-    long mq_maxmsg;   /**< Maximum number of messages */
-    long mq_msgsize;  /**< Maximum size of a message */
-    long mq_curmsgs;  /**< Number of messages in the current message queue */
+    long mq_flags;    /**< Message queue flags */	//消息队列标志
+    long mq_maxmsg;   /**< Maximum number of messages */	//最大消息数
+    long mq_msgsize;  /**< Maximum size of a message */	//消息的最大大小
+    long mq_curmsgs;  /**< Number of messages in the current message queue */	//当前消息队列中的消息数
 };
 
 /**
  * @ingroup mqueue
- * Handle type of a message queue
+ * Handle type of a message queue	//消息队列的句柄类型
  */
 typedef UINTPTR   mqd_t;
 

@@ -124,9 +124,9 @@ extern UINT32 __heap_end;		// 堆区结束地址
 /****************************** Hardware interrupt module configuration ******************************/
 /**
  * @ingroup los_config
- * Configuration item for hardware interrupt tailoring
+ * Configuration item for hardware interrupt tailoring 
  */
-#ifndef LOSCFG_PLATFORM_HWI
+#ifndef LOSCFG_PLATFORM_HWI	//硬件中断裁剪配置项
 #define LOSCFG_PLATFORM_HWI YES
 #endif
 
@@ -170,7 +170,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * @ingroup los_config
  * Default task priority
  */
-#ifndef LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO
+#ifndef LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO	//内核任务默认优先级
 #define LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO 10
 #endif
 
@@ -178,7 +178,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * @ingroup los_config
  * Maximum supported number of tasks except the idle task rather than the number of usable tasks
  */
-#ifndef LOSCFG_BASE_CORE_TSK_LIMIT
+#ifndef LOSCFG_BASE_CORE_TSK_LIMIT	//支持的最大任务数（空闲任务除外，而不是可用任务数）
 #define LOSCFG_BASE_CORE_TSK_LIMIT 128
 #endif
 
@@ -186,7 +186,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * @ingroup los_config
  * Maximum supported number of process rather than the number of usable processes.
  */
-#ifndef LOSCFG_BASE_CORE_PROCESS_LIMIT
+#ifndef LOSCFG_BASE_CORE_PROCESS_LIMIT	//支持的最大进程数，而不是可用进程数
 #define LOSCFG_BASE_CORE_PROCESS_LIMIT 64
 #endif
 
@@ -198,7 +198,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * @ingroup los_config
  * Size of the idle task stack
  */
-#ifndef LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE
+#ifndef LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE	//空闲任务栈大小
 #define LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE SIZE(0x800)// 2K
 #endif
 
@@ -206,7 +206,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * @ingroup los_config
  * Default task stack size
  */
-#ifndef LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE
+#ifndef LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE	//内核默认任务栈大小
 #define LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE SIZE(0x4000) //16K 
 #endif
 
@@ -214,7 +214,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * @ingroup los_config
  * Longest execution time of tasks with the same priorities
  */
-#ifndef LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT
+#ifndef LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT	//相同优先级任务的最长执行时间，时间片
 #define LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT 2
 #endif
 
@@ -322,7 +322,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Starting address of the system memory
  */
 #ifndef OS_SYS_MEM_ADDR
-#define OS_SYS_MEM_ADDR                        (&m_aucSysMem1[0])// 系统(物理)内存起始地址
+#define OS_SYS_MEM_ADDR                        (&m_aucSysMem1[0])// 系统内存的起始地址
 #endif
 
 /**

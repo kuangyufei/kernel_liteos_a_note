@@ -52,7 +52,7 @@ STATIC INLINE UINT32 OsQueueDbgInitHook(VOID)
     return LOS_OK;
 #endif
 }
-/* Update the last time the queue was executed */
+/* Update the last time the queue was executed */ //更新上次执行队列的时间
 extern VOID OsQueueDbgTimeUpdate(UINT32 queueID);
 STATIC INLINE VOID OsQueueDbgTimeUpdateHook(UINT32 queueID)
 {

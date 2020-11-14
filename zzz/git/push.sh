@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '新增控制台，事件，循环buf的代码注释，您知道工作台是如何创建的吗? 
+git commit -m  'Posix IPC 部分代码的注释
 搜索 @note_pic 可以查看全部字符图
 搜索 @note_why 是注者尚未看明白的地方，如果您看明白了，请告诉注者完善
 搜索 @note_thinking 是注者的思考和吐槽的地方
