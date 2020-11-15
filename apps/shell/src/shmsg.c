@@ -66,7 +66,7 @@ char *GetCmdline(ShellCB *shellCB)
 
     return cmdNode->cmdString;
 }
-
+//保存 cmd 历史记录
 static void ShellSaveHistoryCmd(char *string, ShellCB *shellCB)
 {
     CmdKeyLink *cmdHistory = shellCB->cmdHistoryKeyLink;

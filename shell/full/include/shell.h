@@ -64,10 +64,10 @@ extern "C" {
 #define CMD_KEY_LEN             16U
 #define CMD_MAX_LEN             (256U + CMD_KEY_LEN) //256+16 = 272 
 #define CMD_KEY_NUM             32
-#define CMD_HISTORY_LEN         10
-#define CMD_MAX_PATH            256
-#define DEFAULT_SCREEN_WIDTH    80
-#define DEFAULT_SCREEN_HEIGNT   24
+#define CMD_HISTORY_LEN         10	//记录历史记录的长度
+#define CMD_MAX_PATH            256	//cmd 命令的最大路径
+#define DEFAULT_SCREEN_WIDTH    80	//默认的屏幕宽度
+#define DEFAULT_SCREEN_HEIGNT   24	//默认的屏幕高度
 
 #define SHELL_MODE              0
 #define OTHER_MODE              1
@@ -96,7 +96,7 @@ typedef struct {
     pthread_mutex_t keyMutex;	//键盘输入互斥锁
     pthread_mutex_t historyMutex;//历史记录互斥锁
     CHAR     shellBuf[SHOW_MAX_LEN];//shell命令的最大长度 不能大于 272个字符
-    CHAR     shellWorkingDirectory[PATH_MAX];
+    CHAR     shellWorkingDirectory[PATH_MAX];//shell的工作目录      类似:pwd
 } ShellCB;
 
 /* All support cmd types *///所有支持的 CMD 类型

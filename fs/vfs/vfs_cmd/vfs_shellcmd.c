@@ -1608,7 +1608,7 @@ int osShellCmdChmod(int argc, const char **argv)
   p = argv[0];
   while (p[i])
     {
-      if ((p[i] <= '7') && (p[i] >= '0'))
+      if ((p[i] <= '7') && (p[i] >= '0'))// 只能在 000 - 777 之间 
         {
           mode = (mode << MODE_BIT) | (p[i] - '0');
         }
@@ -1621,7 +1621,7 @@ int osShellCmdChmod(int argc, const char **argv)
     }
   filename = argv[1];
 
-  shell_working_directory = OsShellGetWorkingDirtectory();
+  shell_working_directory = OsShellGetWorkingDirtectory();//获取当前工作目录
   if (shell_working_directory == NULL)
     {
       return -1;

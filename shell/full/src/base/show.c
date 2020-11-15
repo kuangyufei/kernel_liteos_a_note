@@ -171,7 +171,7 @@ CHAR *OsShellGetWorkingDirtectory(VOID)
     if (shellCB == NULL) {
         return NULL;
     }
-    return shellCB->shellWorkingDirectory;
+    return shellCB->shellWorkingDirectory;//shell 控制块的工作目录
 }
 
 #ifdef __cplusplus

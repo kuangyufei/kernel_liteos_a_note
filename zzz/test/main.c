@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdarg.h>
+
 typedef unsigned int       UINTPTR;
 typedef unsigned char      UINT8;
 typedef unsigned long PTE_T;
@@ -51,10 +53,31 @@ void round1(){
     //printf("ROUNDUP %d\n",ROUNDUP(9, 2));
     //printf("ROUNDDOWN %d\n",ROUNDDOWN(9, 2));
 }
-
+void arg_test(int i, ...)
+{
+    int j=0,k=0;
+    va_list arg_ptr;
+    va_start(arg_ptr, i);
+    printf("&i = %p\n", &i);//打印参数i在堆栈中的地址
+    printf("arg_ptr = %p\n", arg_ptr);//打印va_start之后arg_ptr地址
+    printf("%d %d %d\n", i, j, k);
+    j=va_arg(arg_ptr, int);
+    printf("arg_ptr = %p\n", arg_ptr);//打印va_arg后arg_ptr的地址
+    printf("%d %d %d\n", i, j, k);
+    printf("arg_ptr = %p\n", arg_ptr);//打印va_arg后arg_ptr的地址
+    k=va_arg(arg_ptr, int);
+    printf("%d %d %d\n", i, j, k);
+    printf("arg_ptr = %p\n", arg_ptr);//打印va_arg后arg_ptr的地址
+    /*这时arg_ptr应该比参数i的地址高sizeof(int)个字节,即指向下一个参数的地址,如果已经是最后一个参数，arg_ptr会为NULL*/
+    va_end(arg_ptr);
+    printf("arg_ptr = %p\n", arg_ptr);//打印va_arg后arg_ptr的地址
+    printf("%d %d\n", i, j);
+}
 int main()
 {
     int size = 0;
+    printf("sizeof(int) %d\n",sizeof(int));
+    arg_test(99, 4,8,9);
     size = sizeof(LOS_DL_LIST) << OS_TSK_SORTLINK_LOGLEN;
     printf("LOS_DL_LIST %d\n",sizeof(LOS_DL_LIST *));
     printf("size %d\n",size);

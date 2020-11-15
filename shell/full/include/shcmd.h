@@ -72,8 +72,8 @@ typedef struct {
 } CmdModInfo;
 
 typedef struct {
-    UINT32 count;
-    LOS_DL_LIST list;
+    UINT32 count;//数量
+    LOS_DL_LIST list;//链表
     CHAR cmdString[0];
 } CmdKeyLink;
 

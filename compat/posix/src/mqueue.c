@@ -234,7 +234,7 @@ STATIC struct mqpersonal *DoMqueueOpen(struct mqarray *mqueueCB, INT32 openFlag)
 ERROUT:
     return (struct mqpersonal *)-1;
 }
-//创建或打开 posix 消息队列
+//posix ipc 标准接口之 创建或打开消息队列，参数是可变参数
 mqd_t mq_open(const char *mqName, int openFlag, ...)
 {
     struct mqarray *mqueueCB = NULL;
@@ -242,29 +242,29 @@ mqd_t mq_open(const char *mqName, int openFlag, ...)
     struct mq_attr *attr = NULL;
     struct mq_attr defaultAttr = { 0, MQ_MAX_MSG_NUM, MQ_MAX_MSG_LEN, 0 };
     int retVal;
-    va_list ap;
+    va_list ap;//一个字符指针，可以理解为指向当前参数的一个指针，取参必须通过这个指针进行
 
     if (MqNameCheck(mqName) == -1) {
         return (mqd_t)-1;
     }
 
     (VOID)pthread_mutex_lock(&g_mqueueMutex);
-    mqueueCB = GetMqueueCBByName(mqName);
-    if ((UINT32)openFlag & (UINT32)O_CREAT) {
+    mqueueCB = GetMqueueCBByName(mqName);//通过名称获取队列控制块
+    if ((UINT32)openFlag & (UINT32)O_CREAT) {//需要创建了队列的情况
         if (mqueueCB != NULL) {
-            if (((UINT32)openFlag & (UINT32)O_EXCL)) {
+            if (((UINT32)openFlag & (UINT32)O_EXCL)) {//已经在执行
                 errno = EEXIST;
                 goto OUT;
             }
-            privateMqPersonal = DoMqueueOpen(mqueueCB, openFlag);
-        } else {
-            va_start(ap, openFlag);
-            (VOID)va_arg(ap, int);
-            attr = va_arg(ap, struct mq_attr *);
-            va_end(ap);
+            privateMqPersonal = DoMqueueOpen(mqueueCB, openFlag);//打开队列
+        } else {//可变参数的实现 函数参数是以数据结构:栈的形式存取,从右至左入栈。
+            va_start(ap, openFlag);//对ap进行初始化，让它指向可变参数表里面的第一个参数，va_start第一个参数是 ap 本身，第二个参数是在变参表前面紧挨着的一个变量,即“...”之前的那个参数
+            (VOID)va_arg(ap, int);//获取int参数，调用va_arg，它的第一个参数是ap，第二个参数是要获取的参数的指定类型，然后返回这个指定类型的值，并且把 ap 的位置指向变参表的下一个变量位置
+            attr = va_arg(ap, struct mq_attr *);//获取mq_attr参数，调用va_arg，它的第一个参数是ap，第二个参数是要获取的参数的指定类型，然后返回这个指定类型的值，并且把 ap 的位置指向变参表的下一个变量位置
+            va_end(ap);//获取所有的参数之后，将这个 ap 指针关掉，以免发生危险，方法是调用 va_end，它将输入的参数 ap 置为 NULL
 
             if (attr != NULL) {
-                retVal = LOS_ArchCopyFromUser(&defaultAttr, attr, sizeof(struct mq_attr));
+                retVal = LOS_ArchCopyFromUser(&defaultAttr, attr, sizeof(struct mq_attr));//从用户区拷贝到内核区
                 if (retVal != 0) {
                     errno = EFAULT;
                     goto OUT;
@@ -275,14 +275,14 @@ mqd_t mq_open(const char *mqName, int openFlag, ...)
                     goto OUT;
                 }
             }
-            privateMqPersonal = DoMqueueCreate(&defaultAttr, mqName, openFlag);
+            privateMqPersonal = DoMqueueCreate(&defaultAttr, mqName, openFlag);//创建队列
         }
-    } else {
-        if (mqueueCB == NULL) {
+    } else {//已经创建了队列
+        if (mqueueCB == NULL) {//
             errno = ENOENT;
             goto OUT;
         }
-        privateMqPersonal = DoMqueueOpen(mqueueCB, openFlag);
+        privateMqPersonal = DoMqueueOpen(mqueueCB, openFlag);//直接打开队列
     }
 
 OUT:
@@ -452,7 +452,7 @@ ERROUT_UNLOCK:
     (VOID)pthread_mutex_unlock(&g_mqueueMutex);
     return -1;
 }
-
+//把时间转成 节拍
 STATIC INT32 ConvertTimeout(long flags, const struct timespec *absTimeout, UINT64 *ticks)
 {
     if ((UINT32)flags & (UINT32)FNONBLOCK) {
@@ -498,6 +498,7 @@ STATIC INLINE BOOL MqParamCheck(mqd_t personal, const char *msg, size_t msgLen)
         errno = errcode;                 \
         goto ERROUT;                     \
     }
+//posix ipc 标准接口之 定时发送消息 msgPrio为消息发送的优先级,目前尚未支持优先级的发送
 int mq_timedsend(mqd_t personal, const char *msg, size_t msgLen, unsigned int msgPrio,
                  const struct timespec *absTimeout)
 {
@@ -506,36 +507,36 @@ int mq_timedsend(mqd_t personal, const char *msg, size_t msgLen, unsigned int ms
     struct mqarray *mqueueCB = NULL;
     struct mqpersonal *privateMqPersonal = NULL;
 
-    OS_MQ_GOTO_ERROUT_IF(!MqParamCheck(personal, msg, msgLen), errno);
+    OS_MQ_GOTO_ERROUT_IF(!MqParamCheck(personal, msg, msgLen), errno);//参数异常处理
 
-    OS_MQ_GOTO_ERROUT_IF(msgPrio > (MQ_PRIO_MAX - 1), EINVAL);
+    OS_MQ_GOTO_ERROUT_IF(msgPrio > (MQ_PRIO_MAX - 1), EINVAL);//优先级异常处理，鸿蒙目前只支持 msgPrio <= 0
 
-    (VOID)pthread_mutex_lock(&g_mqueueMutex);
+    (VOID)pthread_mutex_lock(&g_mqueueMutex);//临界区拿锁操作
     privateMqPersonal = (struct mqpersonal *)personal;
-    OS_MQ_GOTO_ERROUT_UNLOCK_IF(privateMqPersonal->mq_status != MQ_USE_MAGIC, EBADF);
+    OS_MQ_GOTO_ERROUT_UNLOCK_IF(privateMqPersonal->mq_status != MQ_USE_MAGIC, EBADF);//魔法数字异常处理
 
     mqueueCB = privateMqPersonal->mq_posixdes;
-    OS_MQ_GOTO_ERROUT_UNLOCK_IF(msgLen > (size_t)(mqueueCB->mqcb->queueSize - sizeof(UINT32)), EMSGSIZE);
+    OS_MQ_GOTO_ERROUT_UNLOCK_IF(msgLen > (size_t)(mqueueCB->mqcb->queueSize - sizeof(UINT32)), EMSGSIZE);//消息长度异常处理
 
     OS_MQ_GOTO_ERROUT_UNLOCK_IF((((UINT32)privateMqPersonal->mq_flags & (UINT32)O_WRONLY) != (UINT32)O_WRONLY) &&
                                 (((UINT32)privateMqPersonal->mq_flags & (UINT32)O_RDWR) != (UINT32)O_RDWR),
-                                EBADF);
+                                EBADF);//消息标识异常，必须有只读而且是可读可写标签
 
-    OS_MQ_GOTO_ERROUT_UNLOCK_IF(ConvertTimeout(privateMqPersonal->mq_flags, absTimeout, &absTicks) == -1, errno);
-    mqueueID = mqueueCB->mq_id;
+    OS_MQ_GOTO_ERROUT_UNLOCK_IF(ConvertTimeout(privateMqPersonal->mq_flags, absTimeout, &absTicks) == -1, errno);//时间转换成tick 处理
+    mqueueID = mqueueCB->mq_id;//记录消息队列ID
     (VOID)pthread_mutex_unlock(&g_mqueueMutex);
 
-    err = LOS_QueueWriteCopy(mqueueID, (VOID *)msg, (UINT32)msgLen, (UINT32)absTicks);
+    err = LOS_QueueWriteCopy(mqueueID, (VOID *)msg, (UINT32)msgLen, (UINT32)absTicks);//拷贝消息内容到内核空间
     if (map_errno(err) != ENOERR) {
         goto ERROUT;
     }
     return 0;
 ERROUT_UNLOCK:
-    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    (VOID)pthread_mutex_unlock(&g_mqueueMutex);//释放锁
 ERROUT:
     return -1;
 }
-
+//定时接收消息
 ssize_t mq_timedreceive(mqd_t personal, char *msg, size_t msgLen, unsigned int *msgPrio,
                         const struct timespec *absTimeout)
 {
