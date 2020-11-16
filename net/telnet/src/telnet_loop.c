@@ -456,7 +456,7 @@ ERROUT:
 
 /*
  * Waiting for client's connection. Only allow 1 connection, and others will be discarded.
- */
+ */ //正在等待客户端连接, 只允许1个连接，其他连接将被丢弃
 STATIC VOID TelnetdAcceptLoop(INT32 listenFd)
 {
     INT32 clientFd = -1;
@@ -484,20 +484,20 @@ STATIC VOID TelnetdAcceptLoop(INT32 listenFd)
     }
     TelnetUnlock();
 }
-
+//远程登录的入口函数，远程登录也是个task,调度到任务时就从此处开始执行
 STATIC INT32 TelnetdMain(VOID)
 {
     INT32 sock;
     INT32 ret;
 
-    sock = TelnetdInit(TELNETD_PORT);
+    sock = TelnetdInit(TELNETD_PORT);//初始化远程登陆，创建socket
     if (sock == -1) {
         PRINT_ERR("telnet init error.\n");
         return -1;
     }
 
     TelnetLock();
-    ret = TelnetedRegister();
+    ret = TelnetedRegister();//注册在VFS中注册字符驱动程序
     TelnetUnlock();
 
     if (ret != 0) {
@@ -507,7 +507,7 @@ STATIC INT32 TelnetdMain(VOID)
     }
 
     PRINTK("start telnet server successfully, waiting for connection.\n");
-    TelnetdAcceptLoop(sock);
+    TelnetdAcceptLoop(sock);//成功启动telnet服务器，等待连接, 监听端口，等待数据 
     return 0;
 }
 

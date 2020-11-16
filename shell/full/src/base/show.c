@@ -134,7 +134,7 @@ UINT32 OsShellInit(INT32 consoleId)
     }
     return OsShellSourceInit(consoleId);
 }
-
+//deinit 类似于 C++ 析构函数,结束shell前的收尾工作
 INT32 OsShellDeinit(INT32 consoleId)
 {
     CONSOLE_CB *consoleCB = NULL;
@@ -153,8 +153,8 @@ INT32 OsShellDeinit(INT32 consoleId)
         return -1;
     }
 
-    (VOID)LOS_TaskDelete(shellCB->shellEntryHandle);
-    (VOID)LOS_EventWrite(&shellCB->shellEvent, CONSOLE_SHELL_KEY_EVENT);
+    (VOID)LOS_TaskDelete(shellCB->shellEntryHandle);//删除任务,所谓删除就是归还任务至任务池.
+    (VOID)LOS_EventWrite(&shellCB->shellEvent, CONSOLE_SHELL_KEY_EVENT);//写入一个key事件,退出ShellTask死循环
 
     return 0;
 }
@@ -164,10 +164,10 @@ CHAR *OsShellGetWorkingDirtectory(VOID)
     CONSOLE_CB *consoleCB = OsGetConsoleByTaskID(OsCurrTaskGet()->taskID);//获取当前任务的控制台
     ShellCB *shellCB = NULL;
 
-    if (consoleCB == NULL) {
+    if (consoleCB == NULL) {//控制台控制块
         return NULL;
     }
-    shellCB = (ShellCB *)consoleCB->shellHandle;
+    shellCB = (ShellCB *)consoleCB->shellHandle;//获取shell 控制块
     if (shellCB == NULL) {
         return NULL;
     }

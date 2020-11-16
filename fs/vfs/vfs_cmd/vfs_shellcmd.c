@@ -607,7 +607,7 @@ int osShellCmdPwd(int argc, const char **argv)
 {
   char buf[SHOW_MAX_LEN] = {0};
   DIR *dir = NULL;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();
+  char *shell_working_directory = OsShellGetWorkingDirtectory();//获取当前工作路径
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -615,7 +615,7 @@ int osShellCmdPwd(int argc, const char **argv)
 
   ERROR_OUT_IF(argc > 0, PRINTK("\nUsage: pwd\n"), return -1);
 
-  dir = opendir(shell_working_directory);
+  dir = opendir(shell_working_directory);//看能否打开目录
   if (dir == NULL)
     {
       perror("pwd error");
@@ -1608,13 +1608,13 @@ int osShellCmdChmod(int argc, const char **argv)
   p = argv[0];
   while (p[i])
     {
-      if ((p[i] <= '7') && (p[i] >= '0'))// 只能在 000 - 777 之间 
+      if ((p[i] <= '7') && (p[i] >= '0'))// 参数只能在 000 - 777 之间
         {
           mode = (mode << MODE_BIT) | (p[i] - '0');
         }
       else
         {
-          PRINTK("check the input <MODE>\n");
+          PRINTK("check the input <MODE>\n");//例如: chmod 807 是错误的
           return -1;
         }
       i++;
@@ -1626,7 +1626,7 @@ int osShellCmdChmod(int argc, const char **argv)
     {
       return -1;
     }
-  ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);
+  ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);//获取全路径
   ERROR_OUT_IF(ret < 0, set_err(-ret, "chmod error\n"), return -1);
 
   attr.attr_chg_mode = mode;

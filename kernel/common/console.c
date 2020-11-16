@@ -1298,7 +1298,7 @@ STATIC UINT32 OsConsoleDelete(CONSOLE_CB *consoleCB)
 
     return ret;
 }
-//初始化系统控制台并返回 stdinfd stdoutfd stderrfd
+//初始化系统控制台并返回 stdinfd stdoutfd stderrfd ，和system_console_deinit成对出现，像控制台的构造函数
 /* Initialized system console and return stdinfd stdoutfd stderrfd */
 INT32 system_console_init(const CHAR *deviceName)//deviceName: /dev/serial /dev/telnet
 {
@@ -1329,13 +1329,13 @@ INT32 system_console_init(const CHAR *deviceName)//deviceName: /dev/serial /dev/
     LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
 
 #ifdef LOSCFG_SHELL //shell支持
-    ret = OsShellInit(consoleID);//通过控制台初始化shell
-    if (ret != LOS_OK) {
+    ret = OsShellInit(consoleID);//初始化shell
+    if (ret != LOS_OK) {//初始化shell失败
         PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
         LOS_SpinLockSave(&g_consoleSpin, &intSave);
-        (VOID)OsConsoleDelete(consoleCB);
+        (VOID)OsConsoleDelete(consoleCB);//删除控制台
         g_console[consoleID - 1] = NULL;
-        g_taskConsoleIDArray[OsCurrTaskGet()->taskID] = 0;
+        g_taskConsoleIDArray[OsCurrTaskGet()->taskID] = 0;//表示当前任务还没有控制台。
         LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
         return VFS_ERROR;
     }
@@ -1343,7 +1343,7 @@ INT32 system_console_init(const CHAR *deviceName)//deviceName: /dev/serial /dev/
 
     return ENOERR;
 }
-
+//控制台结束前的处理 和 system_console_init成对出现,像控制台的析构函数
 INT32 system_console_deinit(const CHAR *deviceName)
 {
     UINT32 ret;
@@ -1352,29 +1352,30 @@ INT32 system_console_deinit(const CHAR *deviceName)
     LosTaskCB *taskCB = NULL;
     UINT32 intSave;
 
-    consoleCB = OsGetConsoleByDevice(deviceName);
+    consoleCB = OsGetConsoleByDevice(deviceName);//通过设备名称获取控制台描述符
     if (consoleCB == NULL) {
         return VFS_ERROR;
     }
 
 #ifdef LOSCFG_SHELL
-    (VOID)OsShellDeinit((INT32)consoleCB->consoleID);
+    (VOID)OsShellDeinit((INT32)consoleCB->consoleID);//shell结束前的处理，shell的析构函数
 #endif
 
     LOS_SpinLockSave(&g_consoleSpin, &intSave);
     /* Redirect all tasks to serial as telnet was unavailable after deinitializing */
-    for (taskIdx = 0; taskIdx < g_taskMaxNum; taskIdx++) {
+	//在远程登陆去初始化后变成无效时，将所有任务的控制台重定向到串口方式。
+    for (taskIdx = 0; taskIdx < g_taskMaxNum; taskIdx++) {//这里是对所有的任务控制台方式设为串口化
         taskCB = ((LosTaskCB *)g_taskCBArray) + taskIdx;
-        if (OsTaskIsUnused(taskCB)) {
-            continue;
+        if (OsTaskIsUnused(taskCB)) {//任务还没被使用过
+            continue;//继续
         } else {
-            g_taskConsoleIDArray[taskCB->taskID] = CONSOLE_SERIAL;
+            g_taskConsoleIDArray[taskCB->taskID] = CONSOLE_SERIAL;//任务对于的控制台变成串口方式
         }
     }
     g_console[consoleCB->consoleID - 1] = NULL;
     LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
 
-    ret = OsConsoleDelete(consoleCB);
+    ret = OsConsoleDelete(consoleCB);//删除控制台
     if (ret != LOS_OK) {
         PRINT_ERR("%s, Failed to system_console_deinit\n", __FUNCTION__);
         return VFS_ERROR;
@@ -1382,13 +1383,13 @@ INT32 system_console_deinit(const CHAR *deviceName)
 
     return ENOERR;
 }
-
+//控制台使能
 BOOL ConsoleEnable(VOID)
 {
     INT32 consoleID;
 
-    if (OsCurrTaskGet() != NULL) {
-        consoleID = g_taskConsoleIDArray[OsCurrTaskGet()->taskID];
+    if (OsCurrTaskGet() != NULL) {//有当前任务的情况下
+        consoleID = g_taskConsoleIDArray[OsCurrTaskGet()->taskID];//获取当前任务的控制台ID
         if (g_uart_fputc_en == 0) {
             if ((g_console[CONSOLE_TELNET - 1] != NULL) && OsPreemptable()) {
                 return TRUE;
@@ -1563,7 +1564,7 @@ STATIC ssize_t WriteToTerminal(const CONSOLE_CB *consoleCB, const CHAR *buffer, 
     struct file *filep = NULL;
     const struct file_operations_vfs *fileOps = NULL;
 
-    fd = consoleCB->fd;
+    fd = consoleCB->fd;//获取文件描述符
     ret = fs_getfilep(fd, &filep);//获取文件指针
     ret = GetFilepOps(filep, &privFilep, &fileOps);//获取文件的操作方法
 
@@ -1571,7 +1572,7 @@ STATIC ssize_t WriteToTerminal(const CONSOLE_CB *consoleCB, const CHAR *buffer, 
         ret = EFAULT;
         goto ERROUT;
     }
-    (VOID)fileOps->write(privFilep, buffer, bufLen);//写入文件
+    (VOID)fileOps->write(privFilep, buffer, bufLen);//写入文件,控制台的本质就是一个文件，这里写入文件就是在终端设备上呈现出来
 
     return cnt;
 

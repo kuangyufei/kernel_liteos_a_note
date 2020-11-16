@@ -86,7 +86,7 @@ extern "C" {
 typedef struct {
     UINT32   consoleID;			//控制台ID
     UINT32   shellTaskHandle;	//创建 shell task 的入口函数,这是用于创建 task时指定,类似 应用程序的main函数
-    UINT32   shellEntryHandle;	
+    UINT32   shellEntryHandle;	//其实就是任务ID
     VOID     *cmdKeyLink;
     VOID     *cmdHistoryKeyLink;
     VOID     *cmdMaskKeyLink;

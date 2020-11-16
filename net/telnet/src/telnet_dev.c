@@ -56,9 +56,9 @@ extern "C" {
 #define TELNET_EVENT_MORE_CMD   0x01
 #define TELNET_DEV_DRV_MODE     0666
 
-STATIC TELNET_DEV_S g_telnetDev;
-STATIC EVENT_CB_S *g_event;
-STATIC struct inode *g_currentInode;
+STATIC TELNET_DEV_S g_telnetDev;//远程登陆设备描述符
+STATIC EVENT_CB_S *g_event;	//事件描述符
+STATIC struct inode *g_currentInode;//当前节点
 
 STATIC INLINE TELNET_DEV_S *GetTelnetDevByFile(const struct file *file, BOOL isOpenOp)
 {
@@ -137,7 +137,7 @@ INT32 TelnetTx(const CHAR *buf, UINT32 bufLen)
 
 /*
  * Description : When open the telnet device, init the FIFO, wait queue etc.
- */
+ *///打开远程登陆
 STATIC INT32 TelnetOpen(struct file *file)
 {
     struct wait_queue_head *wait = NULL;
@@ -145,7 +145,7 @@ STATIC INT32 TelnetOpen(struct file *file)
 
     TelnetLock();
 
-    telnetDev = GetTelnetDevByFile(file, TRUE);
+    telnetDev = GetTelnetDevByFile(file, TRUE);//通过文件获取远程登陆设备描述符
     if (telnetDev == NULL) {
         TelnetUnlock();
         return -1;
@@ -153,8 +153,8 @@ STATIC INT32 TelnetOpen(struct file *file)
 
     if (telnetDev->cmdFifo == NULL) {
         wait = &telnetDev->wait;
-        (VOID)LOS_EventInit(&telnetDev->eventTelnet);
-        g_event = &telnetDev->eventTelnet;
+        (VOID)LOS_EventInit(&telnetDev->eventTelnet);//初始化远程事件
+        g_event = &telnetDev->eventTelnet;//全局变量记录事件
         telnetDev->cmdFifo = (TELNTE_FIFO_S *)malloc(sizeof(TELNTE_FIFO_S));
         if (telnetDev->cmdFifo == NULL) {
             TelnetUnlock();
@@ -280,7 +280,7 @@ STATIC ssize_t TelnetWrite(struct file *file, const CHAR *buf, const size_t bufL
     TelnetUnlock();
     return ret;
 }
-
+//远程登陆IO控制
 STATIC INT32 TelnetIoctl(struct file *file, const INT32 cmd, unsigned long arg)
 {
     TELNET_DEV_S *telnetDev = NULL;
@@ -360,14 +360,14 @@ INT32 TelnetedUnregister(VOID)
 }
 
 /* Once the telnet server started, setup the telnet device file. */
-INT32 TelnetedRegister(VOID)
+INT32 TelnetedRegister(VOID)//一旦telnet服务器启动，就安装telnet设备文件
 {
     INT32 ret;
 
     g_telnetDev.id = 0;
     g_telnetDev.cmdFifo = NULL;
     g_telnetDev.eventPend = TRUE;
-
+	//在伪文件系统中注册字符驱动程序 见于: ..\third_party\NuttX\fs\driver\fs_registerdriver.c
     ret = register_driver(TELNET, &g_telnetOps, TELNET_DEV_DRV_MODE, &g_telnetDev);
     if (ret != 0) {
         PRINT_ERR("Telnet register driver error.\n");

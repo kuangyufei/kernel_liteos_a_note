@@ -396,7 +396,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellTask(UINTPTR param1,
                             0xFFF, LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);//等待用户的输入完成 读取cmd命令
         if (ret == SHELL_CMD_PARSE_EVENT) {//收到解析cmd事件
             ShellCmdProcess(shellCB);//处理shell 命令
-        } else if (ret == CONSOLE_SHELL_KEY_EVENT) {
+        } else if (ret == CONSOLE_SHELL_KEY_EVENT) {//等待一个key事件退出死循环，见于 OsShellDeinit 
             break;
         }
     }

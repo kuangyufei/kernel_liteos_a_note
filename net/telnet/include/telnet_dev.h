@@ -44,31 +44,31 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifdef LOSCFG_NET_TELNET
+//FIFO (First Input First Output) 先进先出队列
+#define TELNET                 "/dev/telnet" //远程登陆文件名,本质也是个文件
 
-#define TELNET                 "/dev/telnet"
-
-#define FIFO_MAX               1024
+#define FIFO_MAX               1024 
 #define TELNET_IOC_MAGIC       't'
 #define CFG_TELNET_SET_FD      _IO(TELNET_IOC_MAGIC, 1)
 #define CFG_TELNET_EVENT_PEND  CONSOLE_CMD_RD_BLOCK_TELNET
 #define BLOCK_DISABLE          0
 #define BLOCK_ENABLE           1
 
-typedef struct {
-    UINT32 rxIndex;         /* index for receiving user's commands */
-    UINT32 rxOutIndex;      /* index for taking out commands by a shell task to run */
-    UINT32 fifoNum;         /* unused size of the cmdBuf */
+typedef struct { 	//远程登陆FIFO结构体
+    UINT32 rxIndex;         /* index for receiving user's commands */ //接收用户命令的索引
+    UINT32 rxOutIndex;      /* index for taking out commands by a shell task to run */ //用于获取shell任务要运行的命令的索引
+    UINT32 fifoNum;         /* unused size of the cmdBuf */	// cmd缓存未使用的大小
     UINT32 lock;
-    CHAR rxBuf[FIFO_MAX];   /* the real buffer to store user's commands */
+    CHAR rxBuf[FIFO_MAX];   /* the real buffer to store user's commands */ //存储用户命令的真正的缓冲区
 } TELNTE_FIFO_S;
 
-typedef struct {
-    INT32 clientFd;
+typedef struct {	//远程登陆设备结构体
+    INT32 clientFd;	
     UINT32 id;
-    BOOL eventPend;
-    EVENT_CB_S eventTelnet;
+    BOOL eventPend;	//
+    EVENT_CB_S eventTelnet; //远程登陆事件
     wait_queue_head_t wait;
-    TELNTE_FIFO_S *cmdFifo;  /* use a FIFO to store user's commands */
+    TELNTE_FIFO_S *cmdFifo;  /* use a FIFO to store user's commands */ //使用FIFO存储用户命令
 } TELNET_DEV_S;
 
 extern INT32 TelnetTx(const CHAR *buf, UINT32 len);

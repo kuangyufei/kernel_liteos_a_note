@@ -89,7 +89,7 @@ typedef struct {
     UINT32 refCount;	//引用次数
     BOOL isNonBlock;	
 #ifdef LOSCFG_SHELL
-    VOID *shellHandle;	//
+    VOID *shellHandle;	//shell句柄
 #endif
     UINT32 sendTaskID;	//发送任务ID
     CirBufSendCB *cirBufSendCB;	//循环缓冲描述符
