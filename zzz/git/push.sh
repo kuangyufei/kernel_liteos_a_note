@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '远程登陆 Telnet 部分代码注释
+git commit -m  '上传telnet rfc854协议, posix thread 部分代码注释
 搜索 @note_pic 可以查看全部字符图
 搜索 @note_why 是注者尚未看明白的地方，如果您看明白了，请告诉注者完善
 搜索 @note_thinking 是注者的思考和吐槽的地方

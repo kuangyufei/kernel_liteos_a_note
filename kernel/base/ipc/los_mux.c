@@ -209,7 +209,7 @@ STATIC UINT32 OsCheckMutexAttr(const LosMuxAttr *attr)
     }
     return LOS_OK;
 }
-//初始化互斥
+//初始化互斥量
 LITE_OS_SEC_TEXT UINT32 LOS_MuxInit(LosMux *mutex, const LosMuxAttr *attr)
 {
     UINT32 intSave;
@@ -228,11 +228,11 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxInit(LosMux *mutex, const LosMuxAttr *attr)
         return LOS_EINVAL;
     }
 
-    SCHEDULER_LOCK(intSave);		//保存调度自旋锁
+    SCHEDULER_LOCK(intSave);		//拿到调度自旋锁
     mutex->muxCount = 0;			//锁定互斥量的次数
     mutex->owner = NULL;			//谁持有该锁
     LOS_ListInit(&mutex->muxList);	//互斥量双循环链表
-    mutex->magic = OS_MUX_MAGIC;	//固定标识,相当于什么文件固定开头的几个字节
+    mutex->magic = OS_MUX_MAGIC;	//固定标识,互斥锁的魔法数字
     SCHEDULER_UNLOCK(intSave);		//释放调度自旋锁
     return LOS_OK;
 }

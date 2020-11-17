@@ -41,7 +41,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_MUX_MAGIC 0xEBCFDEA0
+#define OS_MUX_MAGIC 0xEBCFDEA0 //互斥量的魔法数字,魔法数字主要用于标识身份
 
 extern VOID OsMuxBitmapRestore(const LosMux *mutex, const LosTaskCB *taskCB, LosTaskCB *owner);
 extern UINT32 OsMuxLockUnsafe(LosMux *mutex, UINT32 timeout);

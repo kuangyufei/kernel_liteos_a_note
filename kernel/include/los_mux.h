@@ -56,27 +56,27 @@ enum {
     LOS_MUX_NORMAL = 0,		//非递归锁 只有[0.1]两个状态,不做任何特殊的错误检,不进行deadlock detection(死锁检测)
     LOS_MUX_RECURSIVE = 1,	//递归锁 允许同一线程在互斥量解锁前对该互斥量进行多次加锁。递归互斥量维护锁的计数，在解锁次数和加锁次数不相同的情况下，不会释放锁，别的线程就无法加锁此互斥量。
     LOS_MUX_ERRORCHECK = 2,	//进行错误检查,如果一个线程企图对一个已经锁住的mutex进行relock或对未加锁的unlock，将返回一个错误。
-    LOS_MUX_DEFAULT = LOS_MUX_RECURSIVE
+    LOS_MUX_DEFAULT = LOS_MUX_RECURSIVE //鸿蒙系统默认使用递归锁
 };
 
-typedef struct {
+typedef struct { //互斥锁的属性
     UINT8 protocol;		//协议
     UINT8 prioceiling;	//优先级上限
     UINT8 type;			//类型属性
-    UINT8 reserved;
+    UINT8 reserved;		//保留字段
 } LosMuxAttr;
 
 /**
  * @ingroup los_mux
  * Mutex object.
  */
-typedef struct OsMux {
-    UINT32 magic;        /**< magic number */
-    LosMuxAttr attr;     /**< Mutex attribute */
-    LOS_DL_LIST holdList; /**< The task holding the lock change *///持有锁的任务改变了
-    LOS_DL_LIST muxList; /**< Mutex linked list */
-    VOID *owner;         /**< The current thread that is locking a mutex */
-    UINT16 muxCount;     /**< Times of locking a mutex */
+typedef struct OsMux { //互斥锁结构体
+    UINT32 magic;        /**< magic number */		//魔法数字
+    LosMuxAttr attr;     /**< Mutex attribute */	//互斥锁属性
+    LOS_DL_LIST holdList; /**< The task holding the lock change */	//当有任务拿到本锁时,通过holdList节点把锁挂到该任务的锁链表上
+    LOS_DL_LIST muxList; /**< Mutex linked list */	//等本锁的任务链表,上面挂的都是任务,注意和holdList的区别.
+    VOID *owner;         /**< The current thread that is locking a mutex */ //当前拥有这把锁的任务
+    UINT16 muxCount;     /**< Times of locking a mutex */	//锁定互斥体的次数,递归锁允许多次
 } LosMux;
 
 extern UINT32 LOS_MuxAttrInit(LosMuxAttr *attr);

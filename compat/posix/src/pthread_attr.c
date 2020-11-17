@@ -37,7 +37,8 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-//posix thread 属性初始化
+//文件的返回值见于 ..\third_party\musl\kernel\arch\generic\bits\errno.h
+//posix之thread 属性初始化
 int pthread_attr_init(pthread_attr_t *attr)
 {
     if (attr == NULL) {
@@ -49,9 +50,9 @@ int pthread_attr_init(pthread_attr_t *attr)
     attr->schedparam.sched_priority   = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;//默认线程优先级
     attr->inheritsched                = PTHREAD_INHERIT_SCHED;//表示新线程将继承创建线程的调度策略和参数 对应的就是 PTHREAD_EXPLICIT_SCHED
     attr->scope                       = PTHREAD_SCOPE_PROCESS;//线程作用域,默认只在进程
-    attr->stackaddr_set               = 0;
-    attr->stackaddr                   = NULL;
-    attr->stacksize_set               = 1;
+    attr->stackaddr_set               = 0;	//0表示没有设置栈地址
+    attr->stackaddr                   = NULL;	//栈地址为NULL,未设置
+    attr->stacksize_set               = 1;	//1表示设置了栈大小
     attr->stacksize                   = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;//栈的大小 默认16K
 
 #if (LOSCFG_KERNEL_SMP == YES)
@@ -60,17 +61,17 @@ int pthread_attr_init(pthread_attr_t *attr)
 
     return ENOERR;
 }
-
+//posix之thread 销毁属性
 int pthread_attr_destroy(pthread_attr_t *attr)
 {
-    if (attr == NULL) {
+    if (attr == NULL) { //直接NULL,就是这么的粗暴!
         return EINVAL;
     }
 
     /* Nothing to do here... */
     return ENOERR;
 }
-
+//posix之thread 设置线程间的关系模式
 int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachState)
 {
     if ((attr != NULL) && ((detachState == PTHREAD_CREATE_JOINABLE) || (detachState == PTHREAD_CREATE_DETACHED))) {
@@ -80,7 +81,7 @@ int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachState)
 
     return EINVAL;
 }
-
+//posix之thread 获取线程间的关系模式
 int pthread_attr_getdetachstate(const pthread_attr_t *attr, int *detachState)
 {
     if ((attr == NULL) || (detachState == NULL)) {
@@ -91,25 +92,25 @@ int pthread_attr_getdetachstate(const pthread_attr_t *attr, int *detachState)
 
     return ENOERR;
 }
-
+//posix之thread 设置线程的作用域
 int pthread_attr_setscope(pthread_attr_t *attr, int scope)
 {
     if (attr == NULL) {
         return EINVAL;
     }
 
-    if (scope == PTHREAD_SCOPE_PROCESS) {
+    if (scope == PTHREAD_SCOPE_PROCESS) {//仅与同进程中的线程竞争CPU
         attr->scope = (unsigned int)scope;
         return ENOERR;
     }
 
-    if (scope == PTHREAD_SCOPE_SYSTEM) {
+    if (scope == PTHREAD_SCOPE_SYSTEM) {//表示与系统中所有线程一起竞争CPU时间，
         return ENOTSUP;
     }
 
     return EINVAL;
 }
-
+//posix之thread 获取线程的作用域
 int pthread_attr_getscope(const pthread_attr_t *attr, int *scope)
 {
     if ((attr == NULL) || (scope == NULL)) {
@@ -120,7 +121,9 @@ int pthread_attr_getscope(const pthread_attr_t *attr, int *scope)
 
     return ENOERR;
 }
-
+//PTHREAD_EXPLICIT_SCHED 	表示 新线程使用显式指定调度策略和调度参数
+//PTHREAD_INHERIT_SCHED 	表示继承调用者线程的值
+//posix之thread 设置线程的调度关系
 int pthread_attr_setinheritsched(pthread_attr_t *attr, int inherit)
 {
     if ((attr != NULL) && ((inherit == PTHREAD_INHERIT_SCHED) || (inherit == PTHREAD_EXPLICIT_SCHED))) {
@@ -130,7 +133,7 @@ int pthread_attr_setinheritsched(pthread_attr_t *attr, int inherit)
 
     return EINVAL;
 }
-
+//posix之thread 获取线程的调度关系
 int pthread_attr_getinheritsched(const pthread_attr_t *attr, int *inherit)
 {
     if ((attr == NULL) || (inherit == NULL)) {
@@ -141,7 +144,7 @@ int pthread_attr_getinheritsched(const pthread_attr_t *attr, int *inherit)
 
     return ENOERR;
 }
-
+// posix 之线程 设置调度方式
 int pthread_attr_setschedpolicy(pthread_attr_t *attr, int policy)
 {
     if ((attr != NULL) && (policy == SCHED_RR)) {
@@ -151,7 +154,7 @@ int pthread_attr_setschedpolicy(pthread_attr_t *attr, int policy)
 
     return EINVAL;
 }
-
+// posix 之线程 获取调度方式
 int pthread_attr_getschedpolicy(const pthread_attr_t *attr, int *policy)
 {
     if ((attr == NULL) || (policy == NULL)) {
@@ -162,7 +165,7 @@ int pthread_attr_getschedpolicy(const pthread_attr_t *attr, int *policy)
 
     return ENOERR;
 }
-
+// posix 之线程 设置调度参数
 int pthread_attr_setschedparam(pthread_attr_t *attr, const struct sched_param *param)
 {
     if ((attr == NULL) || (param == NULL)) {
@@ -175,7 +178,7 @@ int pthread_attr_setschedparam(pthread_attr_t *attr, const struct sched_param *p
 
     return ENOERR;
 }
-
+// posix 之线程 获取调度参数
 int pthread_attr_getschedparam(const pthread_attr_t *attr, struct sched_param *param)
 {
     if ((attr == NULL) || (param == NULL)) {
@@ -186,7 +189,7 @@ int pthread_attr_getschedparam(const pthread_attr_t *attr, struct sched_param *p
 
     return ENOERR;
 }
-
+// posix 之线程 设置任务栈的开始地址
 /*
  * Set starting address of stack. Whether this is at the start or end of
  * the memory block allocated for the stack depends on whether the stack
@@ -198,12 +201,12 @@ int pthread_attr_setstackaddr(pthread_attr_t *attr, void *stackAddr)
         return EINVAL;
     }
 
-    attr->stackaddr_set = 1;
-    attr->stackaddr     = stackAddr;
+    attr->stackaddr_set = 1;	//1表示已设置栈地址
+    attr->stackaddr     = stackAddr;	//栈地址由内核提供
 
     return ENOERR;
 }
-
+// posix 之线程 获取任务栈的开始地址
 int pthread_attr_getstackaddr(const pthread_attr_t *attr, void **stackAddr)
 {
     if (((attr != NULL) && (stackAddr != NULL)) && attr->stackaddr_set) {
@@ -213,7 +216,7 @@ int pthread_attr_getstackaddr(const pthread_attr_t *attr, void **stackAddr)
 
     return EINVAL; /* Stack address not set, return EINVAL. */
 }
-
+// posix 之线程 设置任务栈的大小
 int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stackSize)
 {
     /* Reject inadequate stack sizes */
@@ -221,12 +224,12 @@ int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stackSize)
         return EINVAL;
     }
 
-    attr->stacksize_set = 1;
-    attr->stacksize     = stackSize;
+    attr->stacksize_set = 1;	//1表示已设置栈大小
+    attr->stacksize     = stackSize;	//栈大小由内核提供
 
     return ENOERR;
 }
-
+// posix 之线程 获取任务栈的大小
 int pthread_attr_getstacksize(const pthread_attr_t *attr, size_t *stackSize)
 {
     /* Reject attempts to get a stack size when one has not been set. */
@@ -238,10 +241,10 @@ int pthread_attr_getstacksize(const pthread_attr_t *attr, size_t *stackSize)
 
     return ENOERR;
 }
-
+// posix 之线程 设置CPU亲和力
 /*
  * Set the cpu affinity mask
- */
+ */ //亲和力主要用户多CPU情况,意思就是调度任务被同一个CPU命中的概率,概率越高,亲和力就越好
 int pthread_attr_setaffinity_np(pthread_attr_t* attr, size_t cpusetsize, const cpu_set_t* cpuset)
 {
 #if (LOSCFG_KERNEL_SMP == YES)
@@ -263,7 +266,7 @@ int pthread_attr_setaffinity_np(pthread_attr_t* attr, size_t cpusetsize, const c
 
     return ENOERR;
 }
-
+// posix 之线程 获取CPU亲和力
 /*
  * Get the cpu affinity mask
  */
