@@ -154,7 +154,7 @@ int SysGetiTimer(int which, struct itimerval *value)
 
     return ret;
 }
-
+//系统调用 创建定时器
 int SysTimerCreate(clockid_t clockID, struct sigevent *evp, timer_t *timerID)
 {
     int ret;

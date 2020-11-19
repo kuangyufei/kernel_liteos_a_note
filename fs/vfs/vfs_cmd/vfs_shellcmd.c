@@ -627,13 +627,13 @@ int osShellCmdPwd(int argc, const char **argv)
     {
       LOS_TaskUnlock();
       PRINTK("pwd error: strncpy_s error!\n");
-      (void)closedir(dir);
+      (void)closedir(dir);//
       return -1;
     }
   LOS_TaskUnlock();
 
   PRINTK("%s\n", buf);
-  (void)closedir(dir);
+  (void)closedir(dir);//关闭目录
   return 0;
 }
 

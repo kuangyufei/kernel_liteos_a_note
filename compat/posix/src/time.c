@@ -614,7 +614,7 @@ static VOID SwtmrProc(UINTPTR tmrArg)
     OsDispatch(pid, &info, OS_USER_KILL_PERMISSION);
     return;
 }
-
+//posix 之创建定时器 
 int timer_create(clockid_t clockID, struct sigevent *evp, timer_t *timerID)
 {
     UINT32 ret;

@@ -23,4 +23,3 @@ platform/board.ld
 apps/init/init
 apps/shell/shell
 lib/libc/musl
-zzz/pic

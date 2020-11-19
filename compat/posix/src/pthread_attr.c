@@ -244,7 +244,7 @@ int pthread_attr_getstacksize(const pthread_attr_t *attr, size_t *stackSize)
 // posix 之线程 设置CPU亲和力
 /*
  * Set the cpu affinity mask
- */ //亲和力主要用户多CPU情况,意思就是调度任务被同一个CPU命中的概率,概率越高,亲和力就越好
+ */ //亲和力主要用于多CPU情况,意思就是调度任务被同一个CPU命中的概率,概率越高,亲和力就越好
 int pthread_attr_setaffinity_np(pthread_attr_t* attr, size_t cpusetsize, const cpu_set_t* cpuset)
 {
 #if (LOSCFG_KERNEL_SMP == YES)
