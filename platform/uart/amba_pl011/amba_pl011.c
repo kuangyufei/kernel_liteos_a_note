@@ -46,20 +46,20 @@ __attribute__ ((section(".data"))) UINT32 g_uart_fputc_en = 1;
 #define REG32(addr) ((volatile UINT32 *)(UINTPTR)(addr))
 #define UARTREG(base, reg)  (*REG32((base) + (reg)))
 #define UART_FR_TXFF (0x1U << 5)
-
+//向串口发送字符
 STATIC VOID UartPutcReg(UINTPTR base, CHAR c)
 {
     /* Spin while fifo is full */
     while (UARTREG(base, UART_FR) & UART_FR_TXFF) {}
     UARTREG(base, UART_DR) = c;
 }
-
+//获取串口寄存器基地址
 STATIC INLINE UINTPTR uart_to_ptr(UINTPTR n)
 {
     (VOID)n;
     return UART_REG_BASE;
 }
-
+//向端口发送字符
 INT32 uart_putc(INT32 port, CHAR c)
 {
     UINTPTR base = uart_to_ptr((UINT32)port);
@@ -80,14 +80,14 @@ CHAR uart_fputc(CHAR c, VOID *f)
     }
 }
 
-LITE_OS_SEC_BSS STATIC SPIN_LOCK_INIT(g_uartOutputSpin);
-
+LITE_OS_SEC_BSS STATIC SPIN_LOCK_INIT(g_uartOutputSpin);//串口输出自旋锁
+//向串口发送字符串
 STATIC VOID UartPutStr(UINTPTR base, const CHAR *s, UINT32 len)
 {
     UINT32 i;
 
     for (i = 0; i < len; i++) {
-        if (*(s + i) == '\n') {
+        if (*(s + i) == '\n') {//串口中 '\n'用 '\r'代替 
             UartPutcReg(base, '\r');
         }
         UartPutcReg(base, *(s + i));
@@ -102,7 +102,7 @@ UINT32 UartPutsReg(UINTPTR base, const CHAR *s, UINT32 len, BOOL isLock)
         return 0;
     }
 
-    if (isLock) {
+    if (isLock) {//使用自旋锁写入数据
         LOS_SpinLockSave(&g_uartOutputSpin, &intSave);
         UartPutStr(base, s, len);
         LOS_SpinUnlockRestore(&g_uartOutputSpin, intSave);
@@ -112,7 +112,7 @@ UINT32 UartPutsReg(UINTPTR base, const CHAR *s, UINT32 len, BOOL isLock)
 
     return len;
 }
-
+//向串口发送数据 isLock是否使用自旋锁
 VOID UartPuts(const CHAR *s, UINT32 len, BOOL isLock)
 {
     UINTPTR base = uart_to_ptr(0);
@@ -136,7 +136,7 @@ INT32 uart_puts(const CHAR *s, UINTPTR len, VOID *state)
 
     return (INT32)len;
 }
-
+//串口硬中断处理函数
 VOID uart_handler(VOID)
 {
     CHAR c;
@@ -173,24 +173,24 @@ VOID uart_handler(VOID)
 
 VOID uart_early_init(VOID)
 {
-    /* enable uart transmit */
+    /* enable uart transmit */ //启用uart传输
     UARTREG(UART_REG_BASE, UART_CR) = (1 << 8) | (1 << 0);
 }
-
+//串口初始化
 VOID uart_init(VOID)
 {
     UINT32 ret;
-
+	//在中断抢占模式下，uart中断优先级应该是最高的
     /* uart interrupt priority should be the highest in interrupt preemption mode */
-    ret = LOS_HwiCreate(NUM_HAL_INTERRUPT_UART, 0, 0, (HWI_PROC_FUNC)uart_handler, NULL);
+    ret = LOS_HwiCreate(NUM_HAL_INTERRUPT_UART, 0, 0, (HWI_PROC_FUNC)uart_handler, NULL);//创建串口硬中断
     if (ret != LOS_OK) {
         PRINT_ERR("%s,%d, uart interrupt created error:%x\n", __FUNCTION__, __LINE__, ret);
     } else {
         /* clear all irqs */
-        UARTREG(UART_REG_BASE, UART_ICR) = 0x3ff;
+        UARTREG(UART_REG_BASE, UART_ICR) = 0x3ff;//清除所有中断
 
         /* set fifo trigger level */
-        UARTREG(UART_REG_BASE, UART_IFLS) = 0;
+        UARTREG(UART_REG_BASE, UART_IFLS) = 0;//设置FIFO触发等级
 
         /* enable rx interrupt */
         UARTREG(UART_REG_BASE, UART_IMSC) = (1 << 4 | 1 << 6);

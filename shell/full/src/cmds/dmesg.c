@@ -148,29 +148,29 @@ STATIC INT32 OsDmesgRead(CHAR *buf, UINT32 len)
         if (ret != EOK) {
             return -1;
         }
-        g_dmesgInfo->logHead += readLen;//已占用缓冲区增加
-        g_dmesgInfo->logSize -= readLen;//可用缓冲区大小减少
+        g_dmesgInfo->logHead += readLen;//head位置往前挪
+        g_dmesgInfo->logSize -= readLen;//可读缓冲区大小减少
     } else { /* Case B */ 
-        if (readLen <= (g_logBufSize - head)) { 
-            ret = memcpy_s(buf, len, logBuf + head, readLen);
+        if (readLen <= (g_logBufSize - head)) {//可以读取连续的buf 
+            ret = memcpy_s(buf, len, logBuf + head, readLen);//可以一次性读走
             if (ret != EOK) {
                 return -1;
             }
-            g_dmesgInfo->logHead += readLen;
-            g_dmesgInfo->logSize -= readLen;
-        } else {
-            ret = memcpy_s(buf, len, logBuf + head, g_logBufSize - head);
+            g_dmesgInfo->logHead += readLen;//head位置往前挪
+            g_dmesgInfo->logSize -= readLen;//可读缓冲区大小减少
+        } else {//这种情况需分两次读
+            ret = memcpy_s(buf, len, logBuf + head, g_logBufSize - head);//先读到buf尾部
             if (ret != EOK) {
                 return -1;
             }
 
             ret = memcpy_s(buf + g_logBufSize - head, len - (g_logBufSize - head),
-                           logBuf, readLen - (g_logBufSize - head));
+                           logBuf, readLen - (g_logBufSize - head));//再从buf头开始读
             if (ret != EOK) {
                 return -1;
             }
-            g_dmesgInfo->logHead = readLen - (g_logBufSize - head);
-            g_dmesgInfo->logSize -= readLen;
+            g_dmesgInfo->logHead = readLen - (g_logBufSize - head);//重新
+            g_dmesgInfo->logSize -= readLen;//可读缓冲区大小减少
         }
     }
     return (INT32)readLen;
@@ -317,31 +317,31 @@ UINT32 OsDmesgInit(VOID)
     }
     g_mallocAddr = buffer;//@note_what 取名g_mallocAddr 用于记录日志缓冲区感觉怪怪的
     g_dmesgInfo = (DmesgInfo *)buffer;//整个buf的开头位置用于放置DmesgInfo
-    g_dmesgInfo->logHead = 0;//头部日志索引位置,注意buf中会存在很多的日志内容,每条独立
-    g_dmesgInfo->logTail = 0;//尾部日志索引位置
+    g_dmesgInfo->logHead = 0;//头部日志索引位置,主要用于读操作
+    g_dmesgInfo->logTail = 0;//尾部日志索引位置,主要用于写操作
     g_dmesgInfo->logSize = 0;//日志占用buf大小
     g_dmesgInfo->logBuf = buffer + sizeof(DmesgInfo);//日志内容紧跟在DmesgInfo之后
     g_logBufSize = KERNEL_LOG_BUF_SIZE;//buf大小 8K
 
     return LOS_OK;
 }
-
+//记录一个字符, 实现说明即使buf中写满了,还会继续写入,覆盖最早的数据.
 STATIC CHAR OsLogRecordChar(CHAR c)
 {
-    *(g_dmesgInfo->logBuf + g_dmesgInfo->logTail++) = c;
-
-    if (g_dmesgInfo->logTail > BUF_MAX_INDEX) {
-        g_dmesgInfo->logTail = 0;
+    *(g_dmesgInfo->logBuf + g_dmesgInfo->logTail++) = c;//将字符写在尾部位置 
+	//注者更喜欢这样的写法 *g_dmesgInfo->logBuf[g_dmesgInfo->logTail++] = c;
+    if (g_dmesgInfo->logTail > BUF_MAX_INDEX) {//写到尾了
+        g_dmesgInfo->logTail = 0;//下次需从头开始了
     }
 
-    if (g_dmesgInfo->logSize < g_logBufSize) {
-        (g_dmesgInfo->logSize)++;
-    } else {
-        g_dmesgInfo->logHead = g_dmesgInfo->logTail;
+    if (g_dmesgInfo->logSize < g_logBufSize) {//如果可读buf大小未超总大小
+        (g_dmesgInfo->logSize)++;//可读的buf大小 ++
+    } else {//整个buf被写满了
+        g_dmesgInfo->logHead = g_dmesgInfo->logTail;//头尾相等,读写索引在同一位置
     }
     return c;
 }
-
+//记录字符串
 UINT32 OsLogRecordStr(const CHAR *str, UINT32 len)
 {
     UINT32 i = 0;
@@ -349,13 +349,13 @@ UINT32 OsLogRecordStr(const CHAR *str, UINT32 len)
 
     LOS_SpinLockSave(&g_dmesgSpin, &intSave);
     while (len--) {
-        (VOID)OsLogRecordChar(str[i]);
+        (VOID)OsLogRecordChar(str[i]);//一个一个字符写入
         i++;
     }
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
     return i;
 }
-
+//以覆盖的方式写buf,FULL的意思是 g_dmesgInfo->logHead = g_dmesgInfo->logTail;
 STATIC VOID OsBufFullWrite(const CHAR *dst, UINT32 logLen)
 {
     UINT32 bufSize = g_logBufSize;
@@ -366,49 +366,49 @@ STATIC VOID OsBufFullWrite(const CHAR *dst, UINT32 logLen)
     if (!logLen || (dst == NULL)) {
         return;
     }
-    if (logLen > bufSize) { /* full re-write */
-        ret = memcpy_s(buf + tail, bufSize - tail, dst, bufSize - tail);
+    if (logLen > bufSize) { /* full re-write */ //日志长度大于缓存大小的时候怎么写? 答案是:一直覆盖
+        ret = memcpy_s(buf + tail, bufSize - tail, dst, bufSize - tail);//先从tail位置写到buf末尾
         if (ret != EOK) {
             PRINT_ERR("%s,%d memcpy_s failed, err:%d!\n", __FUNCTION__, __LINE__, ret);
             return;
         }
-        ret = memcpy_s(buf, bufSize, dst + bufSize - tail, tail);
+        ret = memcpy_s(buf, bufSize, dst + bufSize - tail, tail);//再从buf头部写到tail位置
         if (ret != EOK) {
             PRINT_ERR("%s,%d memcpy_s failed, err:%d!\n", __FUNCTION__, __LINE__, ret);
             return;
         }
 
-        OsBufFullWrite(dst + bufSize, logLen - bufSize);
+        OsBufFullWrite(dst + bufSize, logLen - bufSize);//哎呀! 用起递归来了哈. 
     } else {
-        if (logLen > (bufSize - tail)) { /* need cycle back to start */
-            ret = memcpy_s(buf + tail, bufSize - tail, dst, bufSize - tail);
+        if (logLen > (bufSize - tail)) { /* need cycle back to start */ //需要循环回到开始
+            ret = memcpy_s(buf + tail, bufSize - tail, dst, bufSize - tail); //先从tail位置写到buf末尾
             if (ret != EOK) {
                 PRINT_ERR("%s,%d memcpy_s failed, err:%d!\n", __FUNCTION__, __LINE__, ret);
                 return;
             }
-            ret = memcpy_s(buf, bufSize, dst + bufSize - tail, logLen - (bufSize - tail));
+            ret = memcpy_s(buf, bufSize, dst + bufSize - tail, logLen - (bufSize - tail));//再从buf头部写到剩余位置
             if (ret != EOK) {
                 PRINT_ERR("%s,%d memcpy_s failed, err:%d!\n", __FUNCTION__, __LINE__, ret);
                 return;
             }
 
-            g_dmesgInfo->logTail = logLen - (bufSize - tail);
-            g_dmesgInfo->logHead = g_dmesgInfo->logTail;
-        } else { /* no need cycle back to start */
-            ret = memcpy_s(buf + tail, bufSize - tail, dst, logLen);
+            g_dmesgInfo->logTail = logLen - (bufSize - tail);//写入起始位置变了
+            g_dmesgInfo->logHead = g_dmesgInfo->logTail;	//从tail位置开始读数据,因为即使有未读完的数据,此时也已经被dst覆盖了.
+        } else { /* no need cycle back to start */ //不需要循环回到开始
+            ret = memcpy_s(buf + tail, bufSize - tail, dst, logLen);//从tail位置写到buf末尾
             if (ret != EOK) {
                 PRINT_ERR("%s,%d memcpy_s failed, err:%d!\n", __FUNCTION__, __LINE__, ret);
                 return;
             }
-            g_dmesgInfo->logTail += logLen;
-            if (g_dmesgInfo->logTail > BUF_MAX_INDEX) {
-                g_dmesgInfo->logTail = 0;
+            g_dmesgInfo->logTail += logLen;//
+            if (g_dmesgInfo->logTail > BUF_MAX_INDEX) {//写到末尾了
+                g_dmesgInfo->logTail = 0;//从头开始写
             }
-            g_dmesgInfo->logHead = g_dmesgInfo->logTail;
+            g_dmesgInfo->logHead = g_dmesgInfo->logTail;//从tail位置开始读数据,因为即使有未读完的数据,此时也已经被dst覆盖了.
         }
     }
 }
-
+//从读数据的位置开始写入
 STATIC VOID OsWriteTailToHead(const CHAR *dst, UINT32 logLen)
 {
     UINT32 writeLen = 0;
@@ -429,7 +429,7 @@ STATIC VOID OsWriteTailToHead(const CHAR *dst, UINT32 logLen)
             return;
         }
 
-        g_dmesgInfo->logTail = g_dmesgInfo->logHead;
+        g_dmesgInfo->logTail = g_dmesgInfo->logHead;	//读写位置一致
         g_dmesgInfo->logSize = g_logBufSize;
         OsBufFullWrite(dst + writeLen, logLen - writeLen);
     } else {
@@ -468,7 +468,7 @@ STATIC VOID OsWriteTailToEnd(const CHAR *dst, UINT32 logLen)
         if (g_dmesgInfo->logSize == g_logBufSize) { /* Tail = Head is 0 */
             OsBufFullWrite(dst + writeLen, logLen - writeLen);
         } else {
-            OsWriteTailToHead(dst + writeLen, logLen - writeLen);
+            OsWriteTailToHead(dst + writeLen, logLen - writeLen);//从读数据的位置开始写入
         }
     } else { /* just do serial copy */
         ret = memcpy_s(buf + tail, bufSize - tail, dst, logLen);
@@ -504,7 +504,7 @@ INT32 OsLogMemcpyRecord(const CHAR *buf, UINT32 logLen)
 
     return LOS_OK;
 }
-
+//显示日志,写串口
 VOID OsLogShow(VOID)
 {
     UINT32 intSave;
@@ -513,28 +513,28 @@ VOID OsLogShow(VOID)
     CHAR *p = NULL;
 
     LOS_SpinLockSave(&g_dmesgSpin, &intSave);
-    index = g_dmesgInfo->logHead;
+    index = g_dmesgInfo->logHead;	//logHead表示开始读的位置
 
-    p = (CHAR *)malloc(g_dmesgInfo->logSize + 1);
+    p = (CHAR *)malloc(g_dmesgInfo->logSize + 1);//申请日志长度内存用于拷贝内容
     if (p == NULL) {
         LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
         return;
     }
-    (VOID)memset_s(p, g_dmesgInfo->logSize + 1, 0, g_dmesgInfo->logSize + 1);
+    (VOID)memset_s(p, g_dmesgInfo->logSize + 1, 0, g_dmesgInfo->logSize + 1);//内存块清0
 
     while (i < g_dmesgInfo->logSize) {
-        *(p + i) = *(g_dmesgInfo->logBuf + index++);
-        if (index > BUF_MAX_INDEX) {
-            index = 0;
+        *(p + i) = *(g_dmesgInfo->logBuf + index++);//一个一个字符复制
+        if (index > BUF_MAX_INDEX) {//读到尾部
+            index = 0;//从头开始读
         }
         i++;
-        if (index == g_dmesgInfo->logTail) {
+        if (index == g_dmesgInfo->logTail) {//读到写入位置,说明读完了.
             break;
         }
     }
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
-    UartPuts(p, i, UART_WITH_LOCK);
-    free(p);
+    UartPuts(p, i, UART_WITH_LOCK);//串口写入数据
+    free(p);//释放内存
 }
 
 STATIC INT32 OsDmesgLvSet(const CHAR *level)
@@ -580,11 +580,12 @@ ERR_OUT:
     PRINTK("Set dmesg buf size %u fail\n", sizeVal);
     return LOS_NOK;
 }
+//获取日志等级
 UINT32 OsDmesgLvGet(VOID)
 {
     return g_dmesgLogLevel;
 }
-
+//设置日志等级
 UINT32 LOS_DmesgLvSet(UINT32 level)
 {
     if (level > 5) { /* 5: count of level */
@@ -594,13 +595,13 @@ UINT32 LOS_DmesgLvSet(UINT32 level)
     g_dmesgLogLevel = level;
     return LOS_OK;
 }
-
+//清除缓存设置
 VOID LOS_DmesgClear(VOID)
 {
     UINT32 intSave;
 
     LOS_SpinLockSave(&g_dmesgSpin, &intSave);
-    (VOID)memset_s(g_dmesgInfo->logBuf, g_logBufSize, 0, g_logBufSize);
+    (VOID)memset_s(g_dmesgInfo->logBuf, g_logBufSize, 0, g_logBufSize);//缓存清0
     g_dmesgInfo->logHead = 0;
     g_dmesgInfo->logTail = 0;
     g_dmesgInfo->logSize = 0;
