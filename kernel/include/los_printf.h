@@ -53,19 +53,19 @@ extern VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *f
 
 #define LOS_EMG_LEVEL    0
 
-#define LOS_COMMON_LEVEL (LOS_EMG_LEVEL + 1)
+#define LOS_COMMON_LEVEL (LOS_EMG_LEVEL + 1)	//日志等级:普通
+	
+#define LOS_ERR_LEVEL    (LOS_COMMON_LEVEL + 1)	//日志等级:错误类
 
-#define LOS_ERR_LEVEL    (LOS_COMMON_LEVEL + 1)
+#define LOS_WARN_LEVEL   (LOS_ERR_LEVEL + 1)	//日志等级:警告类
 
-#define LOS_WARN_LEVEL   (LOS_ERR_LEVEL + 1)
+#define LOS_INFO_LEVEL   (LOS_WARN_LEVEL + 1)	//日志等级:信息类
 
-#define LOS_INFO_LEVEL   (LOS_WARN_LEVEL + 1)
+#define LOS_DEBUG_LEVEL  (LOS_INFO_LEVEL + 1)	//日志等级:调试类
 
-#define LOS_DEBUG_LEVEL  (LOS_INFO_LEVEL + 1)
+#define LOS_TRACE_LEVEL  (LOS_DEBUG_LEVEL + 1)	//日志等级:跟踪类
 
-#define LOS_TRACE_LEVEL  (LOS_DEBUG_LEVEL + 1)
-
-#define PRINT_LEVEL      LOS_ERR_LEVEL
+#define PRINT_LEVEL      LOS_ERR_LEVEL			//默认打印错误类
 
 typedef VOID (*pf_OUTPUT)(const CHAR *fmt, ...);
 
@@ -101,11 +101,11 @@ extern void dprintf(const char *fmt, ...);
 #define PRINT_RELEASE(fmt, args...)  LOS_LkPrint(LOS_COMMON_LEVEL, __FUNCTION__, __LINE__, fmt, ##args)
 #define PRINT_TRACE(fmt, args...)    LOS_LkPrint(LOS_TRACE_LEVEL, __FUNCTION__, __LINE__, fmt, ##args)
 
-typedef enum {
-    NO_OUTPUT = 0,
-    UART_OUTPUT = 1,
-    CONSOLE_OUTPUT = 2,
-    EXC_OUTPUT = 3
+typedef enum { //输出类型
+    NO_OUTPUT = 0,		
+    UART_OUTPUT = 1,	//串口输出
+    CONSOLE_OUTPUT = 2,	//控制台输出
+    EXC_OUTPUT = 3		//只输出当前CPU所执行任务的Log
 } OutputType;
 
 extern VOID OsVprintf(const CHAR *fmt, va_list ap, OutputType type);

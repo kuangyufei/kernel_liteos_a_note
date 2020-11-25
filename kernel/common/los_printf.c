@@ -76,7 +76,7 @@ STATIC VOID ErrorMsg(VOID)
     const CHAR *p = "Output illegal string! vsnprintf_s failed!\n";
     UartPuts(p, (UINT32)strlen(p), UART_WITH_LOCK);
 }
-
+//串口输出,打印消息的本质就是从串口输出buf
 STATIC VOID UartOutput(const CHAR *str, UINT32 len, BOOL isLock)
 {
 #ifdef LOSCFG_SHELL_DMESG
@@ -90,7 +90,7 @@ STATIC VOID UartOutput(const CHAR *str, UINT32 len, BOOL isLock)
     UartPuts(str, len, isLock);
 #endif
 }
-
+//输出日志
 VOID OutputControl(const CHAR *str, UINT32 len, OutputType type)
 {
     switch (type) {
@@ -120,7 +120,7 @@ STATIC VOID OsVprintfFree(CHAR *buf, UINT32 bufLen)
         (VOID)LOS_MemFree(m_aucSysMem0, buf);
     }
 }
-
+//
 VOID OsVprintf(const CHAR *fmt, va_list ap, OutputType type)
 {
     INT32 len;
@@ -163,11 +163,11 @@ VOID OsVprintf(const CHAR *fmt, va_list ap, OutputType type)
     }
     *(bBuf + len) = '\0';
 
-    systemStatus = OsGetSystemStatus();
-    if ((systemStatus == OS_SYSTEM_NORMAL) || (systemStatus == OS_SYSTEM_EXC_OTHER_CPU)) {
-        OutputControl(bBuf, len, type);
-    } else if (systemStatus == OS_SYSTEM_EXC_CURR_CPU) {
-        OutputControl(bBuf, len, EXC_OUTPUT);
+    systemStatus = OsGetSystemStatus();//获取系统的状态
+    if ((systemStatus == OS_SYSTEM_NORMAL) || (systemStatus == OS_SYSTEM_EXC_OTHER_CPU)) {//当前CPU空闲或其他CPU运行时
+        OutputControl(bBuf, len, type);//
+    } else if (systemStatus == OS_SYSTEM_EXC_CURR_CPU) {//当前CPU正在执行
+        OutputControl(bBuf, len, EXC_OUTPUT);//串口以无锁的方式输出
     }
     OsVprintfFree(bBuf, bufLen);
 }

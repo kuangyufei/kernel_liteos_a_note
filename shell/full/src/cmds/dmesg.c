@@ -70,14 +70,14 @@ extern "C" {
 
 #define BUF_MAX_INDEX (g_logBufSize - 1)
 
-LITE_OS_SEC_BSS STATIC SPIN_LOCK_INIT(g_dmesgSpin);
+LITE_OS_SEC_BSS STATIC SPIN_LOCK_INIT(g_dmesgSpin);//dmesg自旋锁初始化
 
-STATIC DmesgInfo *g_dmesgInfo = NULL;
-STATIC UINT32 g_logBufSize = 0;
-STATIC VOID *g_mallocAddr = NULL;
-STATIC UINT32 g_dmesgLogLevel = 3;
-STATIC UINT32 g_consoleLock = 0;
-STATIC UINT32 g_uartLock = 0;
+STATIC DmesgInfo *g_dmesgInfo = NULL;	//日志缓冲区描述符	
+STATIC UINT32 g_logBufSize = 0;		//日志buf大小,默认8K
+STATIC VOID *g_mallocAddr = NULL;	//dmesg buf地址
+STATIC UINT32 g_dmesgLogLevel = 3;	//默认日志等级 LOS_ERR_LEVEL = 3
+STATIC UINT32 g_consoleLock = 0;	//控制台锁
+STATIC UINT32 g_uartLock = 0;		//串口锁
 STATIC const CHAR *g_levelString[] = {
     "EMG",
     "COMMON",
@@ -107,13 +107,13 @@ STATIC VOID OsUnlockUart(VOID)
     g_uartLock = 0;
 }
 
-STATIC UINT32 OsCheckError(VOID)
+STATIC UINT32 OsCheckError(VOID)//检查缓冲区是否异常
 {
     if (g_dmesgInfo == NULL) {
         return LOS_NOK;
     }
 
-    if (g_dmesgInfo->logSize > g_logBufSize) {
+    if (g_dmesgInfo->logSize > g_logBufSize) {//超出缓冲区大小了
         return LOS_NOK;
     }
 
@@ -124,7 +124,7 @@ STATIC UINT32 OsCheckError(VOID)
 
     return LOS_OK;
 }
-
+//读取日志缓冲区数据,buf带走数据
 STATIC INT32 OsDmesgRead(CHAR *buf, UINT32 len)
 {
     UINT32 readLen;
@@ -141,17 +141,17 @@ STATIC INT32 OsDmesgRead(CHAR *buf, UINT32 len)
         return 0;
     }
 
-    readLen = len < logSize ? len : logSize;
+    readLen = len < logSize ? len : logSize;//最长只能读走g_dmesgInfo->logSize
 
-    if (head < tail) { /* Case A */
-        ret = memcpy_s(buf, len, logBuf + head, readLen);
+    if (head < tail) { /* Case A */ //不用循环的情况 head 在 tail前
+        ret = memcpy_s(buf, len, logBuf + head, readLen);//从head的位置一次性直接copy走
         if (ret != EOK) {
             return -1;
         }
-        g_dmesgInfo->logHead += readLen;
-        g_dmesgInfo->logSize -= readLen;
-    } else { /* Case B */
-        if (readLen <= (g_logBufSize - head)) {
+        g_dmesgInfo->logHead += readLen;//已占用缓冲区增加
+        g_dmesgInfo->logSize -= readLen;//可用缓冲区大小减少
+    } else { /* Case B */ 
+        if (readLen <= (g_logBufSize - head)) { 
             ret = memcpy_s(buf, len, logBuf + head, readLen);
             if (ret != EOK) {
                 return -1;
@@ -306,22 +306,22 @@ UINT32 OsCheckUartLock(VOID)
 {
     return g_uartLock;
 }
-
+//初始化内核dmesg缓存区,即内核为日志开辟的一个8K缓冲区,dmesg的管理是一个buf的循环管理.
 UINT32 OsDmesgInit(VOID)
 {
     CHAR* buffer = NULL;
 
-    buffer = (CHAR *)malloc(KERNEL_LOG_BUF_SIZE + sizeof(DmesgInfo));
+    buffer = (CHAR *)malloc(KERNEL_LOG_BUF_SIZE + sizeof(DmesgInfo));//注意这里用的是malloc分配,但鸿蒙做了适配调用了LOS_MemAlloc
     if (buffer == NULL) {
         return LOS_NOK;
     }
-    g_mallocAddr = buffer;
-    g_dmesgInfo = (DmesgInfo *)buffer;
-    g_dmesgInfo->logHead = 0;
-    g_dmesgInfo->logTail = 0;
-    g_dmesgInfo->logSize = 0;
-    g_dmesgInfo->logBuf = buffer + sizeof(DmesgInfo);
-    g_logBufSize = KERNEL_LOG_BUF_SIZE;
+    g_mallocAddr = buffer;//@note_what 取名g_mallocAddr 用于记录日志缓冲区感觉怪怪的
+    g_dmesgInfo = (DmesgInfo *)buffer;//整个buf的开头位置用于放置DmesgInfo
+    g_dmesgInfo->logHead = 0;//头部日志索引位置,注意buf中会存在很多的日志内容,每条独立
+    g_dmesgInfo->logTail = 0;//尾部日志索引位置
+    g_dmesgInfo->logSize = 0;//日志占用buf大小
+    g_dmesgInfo->logBuf = buffer + sizeof(DmesgInfo);//日志内容紧跟在DmesgInfo之后
+    g_logBufSize = KERNEL_LOG_BUF_SIZE;//buf大小 8K
 
     return LOS_OK;
 }
@@ -722,6 +722,24 @@ dmesg命令用于控制内核dmesg缓存区。
 dmesg dmesg [-c/-C/-D/-E/-L/-U]
 dmesg -s [size] dmesg -l [level dmesg > [fileA]
 
+参数说明
+
+参数	 参数说明 取值范围
+
+-c 	打印缓存区内容并清空缓存区。N/A
+
+-C 	清空缓存区。N/A
+
+-D/-E	关闭/开启控制台打印。 N/A
+
+-L/-U	关闭/开启串口打印。	N/A
+
+-s size	设置缓存区大小 size是要设置的大小。 N/A
+
+-l level	设置缓存等级。	0 - 5
+
+> fileA	将缓存区内容写入文件。N/A
+
 使用指南
 该命令依赖于LOSCFG_SHELL_DMESG，使用时通过menuconfig在配置项中开启"Enable Shell dmesg"：
 Debug ---> Enable a Debug Version ---> Enable Shell ---> Enable Shell dmesg
@@ -788,7 +806,7 @@ ERR_OUT:
     return -1;
 }
 
-SHELLCMD_ENTRY(dmesg_shellcmd, CMD_TYPE_STD, "dmesg", XARGS, (CmdCallBackFunc)OsShellCmdDmesg);//采用shell命令静态注册方式
+SHELLCMD_ENTRY(dmesg_shellcmd, CMD_TYPE_STD, "dmesg", XARGS, (CmdCallBackFunc)OsShellCmdDmesg);//shell dmesg命令 静态注册方式
 
 #ifdef __cplusplus
 #if __cplusplus

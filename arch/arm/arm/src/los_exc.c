@@ -119,8 +119,8 @@ UINT32 OsGetSystemStatus(VOID)
     UINT32 flag;
     UINT32 cpuID = g_currHandleExcCpuID;//全局变量 当前执行CPU ID
 
-    if (cpuID == INVALID_CPUID) {
-        flag = OS_SYSTEM_NORMAL;
+    if (cpuID == INVALID_CPUID) {//当前CPU处于空闲状态的情况
+        flag = OS_SYSTEM_NORMAL; 
     } else if (cpuID == ArchCurrCpuid()) {//碰到了正在执行此处代码的CPU core
         flag = OS_SYSTEM_EXC_CURR_CPU;//当前CPU
     } else {
