@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '内核日志缓冲区 Dmesg 实现部分代码注释
+git commit -m  'prinf,可变参数是如何实现的? 用到了musl的哪些标准C库代码 
 搜索 @note_pic 可以查看全部字符图
 搜索 @note_why 是注者尚未看明白的地方，如果您看明白了，请告诉注者完善
 搜索 @note_thinking 是注者的思考和吐槽的地方

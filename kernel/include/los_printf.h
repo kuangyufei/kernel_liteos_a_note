@@ -49,6 +49,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+//见于\third_party\musl\kernel\include\*.h
 extern VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, ...);
 
 #define LOS_EMG_LEVEL    0

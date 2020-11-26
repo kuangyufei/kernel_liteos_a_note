@@ -72,13 +72,13 @@ extern "C" {
 
 LITE_OS_SEC_BSS STATIC SPIN_LOCK_INIT(g_dmesgSpin);//dmesg自旋锁初始化
 
-STATIC DmesgInfo *g_dmesgInfo = NULL;	//日志缓冲区描述符	
-STATIC UINT32 g_logBufSize = 0;		//日志buf大小,默认8K
+STATIC DmesgInfo *g_dmesgInfo = NULL;	//缓存区描述符	
+STATIC UINT32 g_logBufSize = 0;		//缓存buf大小,默认8K
 STATIC VOID *g_mallocAddr = NULL;	//dmesg buf地址
 STATIC UINT32 g_dmesgLogLevel = 3;	//默认日志等级 LOS_ERR_LEVEL = 3
 STATIC UINT32 g_consoleLock = 0;	//控制台锁
 STATIC UINT32 g_uartLock = 0;		//串口锁
-STATIC const CHAR *g_levelString[] = {
+STATIC const CHAR *g_levelString[] = {//缓存等级
     "EMG",
     "COMMON",
     "ERR",
@@ -481,7 +481,7 @@ STATIC VOID OsWriteTailToEnd(const CHAR *dst, UINT32 logLen)
         g_dmesgInfo->logSize += logLen;
     }
 }
-
+//dmesg中记录日志
 INT32 OsLogMemcpyRecord(const CHAR *buf, UINT32 logLen)
 {
     UINT32 intSave;
@@ -491,20 +491,20 @@ INT32 OsLogMemcpyRecord(const CHAR *buf, UINT32 logLen)
         LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
         return -1;
     }
-    if (g_dmesgInfo->logSize < g_logBufSize) {
-        if (g_dmesgInfo->logHead <= g_dmesgInfo->logTail) {
-            OsWriteTailToEnd(buf, logLen);
+    if (g_dmesgInfo->logSize < g_logBufSize) {//小于缓冲区大小的情况将怎么写入数据?
+        if (g_dmesgInfo->logHead <= g_dmesgInfo->logTail) {//说明head位置还有未读取的数据
+            OsWriteTailToEnd(buf, logLen);//从写数据的位置开始写入
         } else {
-            OsWriteTailToHead(buf, logLen);
+            OsWriteTailToHead(buf, logLen);//从读数据的位置开始写入
         }
-    } else {
-        OsBufFullWrite(buf, logLen);
+    } else {//超过缓冲区大小的情况
+        OsBufFullWrite(buf, logLen);//全覆盖方式写buf
     }
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
 
     return LOS_OK;
 }
-//显示日志,写串口
+//打印缓存区内容 shell dmesg 命令调用 
 VOID OsLogShow(VOID)
 {
     UINT32 intSave;
@@ -533,10 +533,10 @@ VOID OsLogShow(VOID)
         }
     }
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
-    UartPuts(p, i, UART_WITH_LOCK);//串口写入数据
+    UartPuts(p, i, UART_WITH_LOCK);//向串口发送数据
     free(p);//释放内存
 }
-
+//设置缓存等级,一共五级,默认第三级
 STATIC INT32 OsDmesgLvSet(const CHAR *level)
 {
     UINT32 levelNum, ret;
@@ -558,18 +558,18 @@ STATIC INT32 OsDmesgLvSet(const CHAR *level)
         return -1;
     }
 }
-
+//设置缓冲区大小, shell dmesg -s 16K 
 STATIC INT32 OsDmesgMemSizeSet(const CHAR *size)
 {
     UINT32 sizeVal;
     CHAR *p = NULL;
 
-    sizeVal = strtoul(size, &p, 0);
-    if (sizeVal > MAX_KERNEL_LOG_BUF_SIZE) {
+    sizeVal = strtoul(size, &p, 0);//C库函数将size所指向的字符串根据给定的base转换为一个无符号长整数（类型为 unsigned long int 型）
+    if (sizeVal > MAX_KERNEL_LOG_BUF_SIZE) {//不能超过缓存区的上限,默认80K
         goto ERR_OUT;
     }
 
-    if (!(LOS_DmesgMemSet(NULL, sizeVal))) {
+    if (!(LOS_DmesgMemSet(NULL, sizeVal))) {//调整缓存区大小
         PRINTK("Set dmesg buf size %u success\n", sizeVal);
         return LOS_OK;
     } else {
@@ -619,7 +619,7 @@ UINT32 LOS_DmesgMemSet(VOID *addr, UINT32 size)
     }
     return ret;
 }
-
+//LOS 开头为外部接口, 封装 OsDmesgRead
 INT32 LOS_DmesgRead(CHAR *buf, UINT32 len)
 {
     INT32 ret;
@@ -637,13 +637,13 @@ INT32 LOS_DmesgRead(CHAR *buf, UINT32 len)
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
     return ret;
 }
-
+//将缓冲区内容写到指定文件
 INT32 OsDmesgWrite2File(const CHAR *fullpath, const CHAR *buf, UINT32 logSize)
 {
     INT32 ret;
-
-    INT32 fd = open(fullpath, O_CREAT | O_RDWR | O_APPEND, 0644); /* 0644:file right */
-    if (fd < 0) {
+	//见于 third_party\NuttX\fs\vfs\fs_open.c 
+    INT32 fd = open(fullpath, O_CREAT | O_RDWR | O_APPEND, 0644); /* 0644:file right */ //可读可写 ,并以append的方式写文件
+    if (fd < 0) { //fd必须大于0 ,并且 0,1,2 被控制台占用
         return -1;
     }
     ret = write(fd, buf, logSize);
@@ -651,7 +651,7 @@ INT32 OsDmesgWrite2File(const CHAR *fullpath, const CHAR *buf, UINT32 logSize)
     return ret;
 }
 
-#ifdef LOSCFG_FS_VFS
+#ifdef LOSCFG_FS_VFS //是否支持虚拟文件系统
 INT32 LOS_DmesgToFile(const CHAR *filename)
 {
     CHAR *fullpath = NULL;
@@ -706,7 +706,7 @@ ERR_OUT2:
     free(fullpath);
     return ret;
 }
-#else
+#else //不支持虚拟文件系统直接串口输出
 INT32 LOS_DmesgToFile(CHAR *filename)
 {
     (VOID)filename;
@@ -716,6 +716,11 @@ INT32 LOS_DmesgToFile(CHAR *filename)
 #endif
 
 /****************************************************************
+dmesg是一种程序，用于检测和控制内核环缓冲。程序用来帮助用户了解系统的启动信息。
+Linux dmesg命令用于显示开机信息。鸿蒙沿用了linux dmesg命令
+kernel会将开机信息存储在ring buffer中。您若是开机时来不及查看信息，可利用dmesg来查看。
+开机信息亦保存在/var/log目录中，名称为dmesg的文件里
+
 命令功能
 dmesg命令用于控制内核dmesg缓存区。
 
@@ -761,24 +766,24 @@ INT32 OsShellCmdDmesg(INT32 argc, const CHAR **argv)
             goto ERR_OUT;
         }
 
-        if (!strcmp(argv[1], "-c")) {
+        if (!strcmp(argv[1], "-c")) {//打印缓存区内容并清空缓存区。
             PRINTK("\n");
             OsLogShow();
             LOS_DmesgClear();
             return LOS_OK;
-        } else if (!strcmp(argv[1], "-C")) {
+        } else if (!strcmp(argv[1], "-C")) {//清空缓存区
             LOS_DmesgClear();
             return LOS_OK;
-        } else if (!strcmp(argv[1], "-D")) {
+        } else if (!strcmp(argv[1], "-D")) {//关闭控制台打印
             OsLockConsole();
             return LOS_OK;
-        } else if (!strcmp(argv[1], "-E")) {
+        } else if (!strcmp(argv[1], "-E")) {//开启控制台打印
             OsUnlockConsole();
             return LOS_OK;
-        } else if (!strcmp(argv[1], "-L")) {
+        } else if (!strcmp(argv[1], "-L")) {//关闭串口打印
             OsLockUart();
             return LOS_OK;
-        } else if (!strcmp(argv[1], "-U")) {
+        } else if (!strcmp(argv[1], "-U")) {//开启串口打印
             OsUnlockUart();
             return LOS_OK;
         }
@@ -796,9 +801,9 @@ INT32 OsShellCmdDmesg(INT32 argc, const CHAR **argv)
                 return LOS_OK;
             }
         } else if (!strcmp(argv[1], "-l")) {
-            return OsDmesgLvSet(argv[2]); /* 2:index of parameters */
+            return OsDmesgLvSet(argv[2]); /* 2:index of parameters */ //设置缓存等级,一共五级,默认第三级
         } else if (!strcmp(argv[1], "-s")) {
-            return OsDmesgMemSizeSet(argv[2]); /* 2:index of parameters */
+            return OsDmesgMemSizeSet(argv[2]); /* 2:index of parameters */ //设置缓冲区大小
         }
     }
 

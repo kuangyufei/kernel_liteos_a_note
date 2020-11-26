@@ -54,7 +54,7 @@ extern "C" {
 /* Define two fixed console id for Console ID. */
 #define CONSOLE_SERIAL 1	//串行方式
 #define CONSOLE_TELNET 2	//远程登录
-
+//POSIX 定义了 STDIN_FILENO、STDOUT_FILENO 和 STDERR_FILENO 来代替 0、1、2 
 #define LOSCFG_PLATFORM_CONSOLE
 #define STDIN  0	//标准输入
 #define STDOUT 1	//标准输出

@@ -76,37 +76,37 @@ STATIC VOID ErrorMsg(VOID)
     const CHAR *p = "Output illegal string! vsnprintf_s failed!\n";
     UartPuts(p, (UINT32)strlen(p), UART_WITH_LOCK);
 }
-//串口输出,打印消息的本质就是从串口输出buf
+//串口输出,打印消息的本质就是向串口输出buf
 STATIC VOID UartOutput(const CHAR *str, UINT32 len, BOOL isLock)
 {
-#ifdef LOSCFG_SHELL_DMESG
-    if (!OsCheckUartLock()) {
-        UartPuts(str, len, isLock);
+#ifdef LOSCFG_SHELL_DMESG //是否打开了 dmesg开关,打开了会写到文件中 var/log/dmesg 文件中
+    if (!OsCheckUartLock()) {//是否被锁
+        UartPuts(str, len, isLock);//直接写串口
     }
     if (isLock != UART_WITHOUT_LOCK) {
-        (VOID)OsLogMemcpyRecord(str, len);
+        (VOID)OsLogMemcpyRecord(str, len);//写入dmesg缓存区
     }
 #else
-    UartPuts(str, len, isLock);
+    UartPuts(str, len, isLock);//没有打开dmesg开关时,直接写串口 
 #endif
 }
-//输出日志
+//输出控制处理
 VOID OutputControl(const CHAR *str, UINT32 len, OutputType type)
 {
     switch (type) {
         case CONSOLE_OUTPUT:
 #ifdef LOSCFG_PLATFORM_CONSOLE
-            if (ConsoleEnable() == TRUE) {
-                (VOID)write(STDOUT_FILENO, str, (size_t)len);
-                break;
+            if (ConsoleEnable() == TRUE) {//POSIX 定义了 STDIN_FILENO、STDOUT_FILENO 和 STDERR_FILENO 来代替 0、1、2 
+                (VOID)write(STDOUT_FILENO, str, (size_t)len);//向控制台写日志, STDOUT_FILENO可理解为 fd = 1 的一个文件
+                break;//在三个文件会在 VFS中默认创建
             }
 #endif
-            /* fall-through */
+            /* fall-through */ //落空的情况下,会接着向串口打印数据
         case UART_OUTPUT:
-            UartOutput(str, len, UART_WITH_LOCK);
+            UartOutput(str, len, UART_WITH_LOCK);//向串口发送数据
             break;
         case EXC_OUTPUT:
-            UartOutput(str, len, UART_WITHOUT_LOCK);
+            UartOutput(str, len, UART_WITHOUT_LOCK);//以串口不加锁的方式发送数据
             break;
         default:
             break;
@@ -120,41 +120,42 @@ STATIC VOID OsVprintfFree(CHAR *buf, UINT32 bufLen)
         (VOID)LOS_MemFree(m_aucSysMem0, buf);
     }
 }
-//
+//printf由 print 和 format 两个单词构成,格式化输出函数, 一般用于向标准输出设备按规定格式输出信息 
+//鸿蒙由OsVprintf 来实现可变参数日志格式的输入
 VOID OsVprintf(const CHAR *fmt, va_list ap, OutputType type)
 {
     INT32 len;
-    const CHAR *errMsgMalloc = "OsVprintf, malloc failed!\n";
-    const CHAR *errMsgLen = "OsVprintf, length overflow!\n";
+    const CHAR *errMsgMalloc = "OsVprintf, malloc failed!\n";//内存分配失败的错误日志,注意这是在打印函数里分配内存失败的情况
+    const CHAR *errMsgLen = "OsVprintf, length overflow!\n";//所以要直接向串口发送字符串,不能再调用 printK(...)打印日志了.
     CHAR aBuf[SIZEBUF] = {0};
     CHAR *bBuf = NULL;
     UINT32 bufLen = SIZEBUF;
     UINT32 systemStatus;
 
     bBuf = aBuf;
-    len = vsnprintf_s(bBuf, bufLen, bufLen - 1, fmt, ap);
-    if ((len == -1) && (*bBuf == '\0')) {
-        /* parameter is illegal or some features in fmt dont support */
+    len = vsnprintf_s(bBuf, bufLen, bufLen - 1, fmt, ap);//C语言库函数之一，属于可变参数。用于向字符串中打印数据、数据格式用户自定义。
+    if ((len == -1) && (*bBuf == '\0')) {//直接碰到字符串结束符或长度异常
+        /* parameter is illegal or some features in fmt dont support */ //参数非法或fmt中的某些功能不支持
         ErrorMsg();
         return;
     }
 
-    while (len == -1) {
+    while (len == -1) {//处理((len == -1) && (*bBuf != '\0'))的情况
         /* bBuf is not enough */
         OsVprintfFree(bBuf, bufLen);
 
         bufLen = bufLen << 1;
-        if ((INT32)bufLen <= 0) {
+        if ((INT32)bufLen <= 0) {//异常情况下 向串口发送
             UartPuts(errMsgLen, (UINT32)strlen(errMsgLen), UART_WITH_LOCK);
             return;
         }
         bBuf = (CHAR *)LOS_MemAlloc(m_aucSysMem0, bufLen);
-        if (bBuf == NULL) {
+        if (bBuf == NULL) {//分配内存失败,直接向串口发送错误信息
             UartPuts(errMsgMalloc, (UINT32)strlen(errMsgMalloc), UART_WITH_LOCK);
             return;
         }
-        len = vsnprintf_s(bBuf, bufLen, bufLen - 1, fmt, ap);
-        if (*bBuf == '\0') {
+        len = vsnprintf_s(bBuf, bufLen, bufLen - 1, fmt, ap);//将ap按格式输出到buf中
+        if (*bBuf == '\0') {//字符串结束符
             /* parameter is illegal or some features in fmt dont support */
             (VOID)LOS_MemFree(m_aucSysMem0, bBuf);
             ErrorMsg();
@@ -171,12 +172,12 @@ VOID OsVprintf(const CHAR *fmt, va_list ap, OutputType type)
     }
     OsVprintfFree(bBuf, bufLen);
 }
-
+//串口方式输入printf内容
 VOID UartVprintf(const CHAR *fmt, va_list ap)
 {
     OsVprintf(fmt, ap, UART_OUTPUT);
 }
-
+//__attribute__((noinline)) 意思是告诉编译器 这是非内联函数
 __attribute__((noinline)) VOID UartPrintf(const CHAR *fmt, ...)
 {
     va_list ap;
@@ -192,7 +193,7 @@ __attribute__ ((noinline)) VOID dprintf(const CHAR *fmt, ...)
     OsVprintf(fmt, ap, CONSOLE_OUTPUT);
     va_end(ap);
 }
-
+//LK 注者的理解是 log kernel(内核日志)
 VOID LkDprintf(const CHAR *fmt, va_list ap)
 {
     OsVprintf(fmt, ap, CONSOLE_OUTPUT);
@@ -246,7 +247,7 @@ VOID PrintExcInfo(const CHAR *fmt, ...)
     va_end(ap);
 }
 
-#ifndef LOSCFG_SHELL_LK
+#ifndef LOSCFG_SHELL_LK //log kernel 内核日志
 VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, ...)
 {
     va_list ap;
@@ -256,9 +257,9 @@ VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, ...
     }
 
     if ((level != LOS_COMMON_LEVEL) && ((level > LOS_EMG_LEVEL) && (level <= LOS_TRACE_LEVEL))) {
-        dprintf("[%s]", g_logString[level]);
+        dprintf("[%s]", g_logString[level]);//日志格式,先打印日志头           INFO ..... 
     }
-    OsVprintf(fmt, ap, CONSOLE_OUTPUT);
+    OsVprintf(fmt, ap, CONSOLE_OUTPUT);//控制台打印
     va_end(ap);
 }
 #endif

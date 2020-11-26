@@ -12,21 +12,19 @@ typedef struct LOS_DL_LIST {
     struct LOS_DL_LIST *pstNext; /**< Current node's pointer to the next node */
 } LOS_DL_LIST;
 
-//鸿蒙内核源码分析系列篇 https://blog.csdn.net/kuangyufei
-
 void b(){
     UINT8 w[3]={0};
     PTE_T pte1BasePtr = 0x11100000;
     VADDR_T vaddr = 0x80738903;  
 
-#define MMU_DESCRIPTOR_L1_SMALL_SIZE                            0x100000 //1M
-#define MMU_DESCRIPTOR_L1_SMALL_MASK                            (MMU_DESCRIPTOR_L1_SMALL_SIZE - 1)
-#define MMU_DESCRIPTOR_L1_SMALL_FRAME                           (~MMU_DESCRIPTOR_L1_SMALL_MASK)
-#define MMU_DESCRIPTOR_L1_SMALL_SHIFT                           20
-#define MMU_DESCRIPTOR_L1_SECTION_ADDR(x)                       ((x) & MMU_DESCRIPTOR_L1_SMALL_FRAME)
-#define OS_TSK_HIGH_BITS       3U
-#define OS_TSK_LOW_BITS        (32U - OS_TSK_HIGH_BITS) //29
-#define OS_TSK_SORTLINK_LOGLEN OS_TSK_HIGH_BITS	//3U
+    #define MMU_DESCRIPTOR_L1_SMALL_SIZE                            0x100000 //1M
+    #define MMU_DESCRIPTOR_L1_SMALL_MASK                            (MMU_DESCRIPTOR_L1_SMALL_SIZE - 1)
+    #define MMU_DESCRIPTOR_L1_SMALL_FRAME                           (~MMU_DESCRIPTOR_L1_SMALL_MASK)
+    #define MMU_DESCRIPTOR_L1_SMALL_SHIFT                           20
+    #define MMU_DESCRIPTOR_L1_SECTION_ADDR(x)                       ((x) & MMU_DESCRIPTOR_L1_SMALL_FRAME)
+    #define OS_TSK_HIGH_BITS       3U
+    #define OS_TSK_LOW_BITS        (32U - OS_TSK_HIGH_BITS) //29
+    #define OS_TSK_SORTLINK_LOGLEN OS_TSK_HIGH_BITS	//3U
 
     PTE_T  l1Entry = pte1BasePtr + vaddr >> MMU_DESCRIPTOR_L1_SMALL_SHIFT;
     printf("pte1BasePtr ad: %x\n",&pte1BasePtr);

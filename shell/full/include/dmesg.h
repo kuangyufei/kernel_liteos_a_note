@@ -44,13 +44,13 @@ extern "C" {
  * @ingroup dmesg
  * Defalut dmesg buffer size.
  */
-#define KERNEL_LOG_BUF_SIZE (8 * 1024)
+#define KERNEL_LOG_BUF_SIZE (8 * 1024) //默认缓存区大小
 
 /**
  * @ingroup dmesg
  * Max dmesg buffer size to set.
  */
-#define MAX_KERNEL_LOG_BUF_SIZE (8 * 1024 * 10)
+#define MAX_KERNEL_LOG_BUF_SIZE (8 * 1024 * 10) //设置缓冲区大小的上限 可以通过shell dmesg -s XX(K) 来改变缓冲区大小
 
 /**
  * @ingroup dmesg
