@@ -40,6 +40,12 @@
 extern "C" {
 #endif
 #endif /* __cplusplus */
+/*******************************************************	
+多CPU核的操作系统3种处理模式(SMP+AMP+BMP) 鸿蒙实现的是 SMP 的方式
+非对称多处理（Asymmetric multiprocessing，AMP）每个CPU内核运行一个独立的操作系统或同一操作系统的独立实例（instantiation）。
+对称多处理（Symmetric multiprocessing，SMP）一个操作系统的实例可以同时管理所有CPU内核，且应用并不绑定某一个内核。
+混合多处理（Bound multiprocessing，BMP）一个操作系统的实例可以同时管理所有CPU内核，但每个应用被锁定于某个指定的核心。
+********************************************************/
 
 #if (LOSCFG_KERNEL_SMP == YES)
 //给target对应位CPU发送调度信号
@@ -63,7 +69,7 @@ VOID OsMpScheduleHandler(VOID)
      */
     OsPercpuGet()->schedFlag = INT_PEND_RESCH;//贴上调度标签
 }
-//硬中断调度处理函数
+//硬中断暂停处理函数
 VOID OsMpHaltHandler(VOID)
 {
     (VOID)LOS_IntLock();
@@ -71,7 +77,7 @@ VOID OsMpHaltHandler(VOID)
 
     while (1) {}//陷入空循环,也就是空闲状态
 }
-
+//MP定时器处理函数, 递归检查所有可用任务
 VOID OsMpCollectTasks(VOID)
 {
     LosTaskCB *taskCB = NULL;
@@ -86,7 +92,7 @@ VOID OsMpCollectTasks(VOID)
             continue;
         }
 
-        /*
+        /* 虽然任务状态不是原子的，但此检查可能成功，但无法完成删除,此删除将在下次运行之前处理
          * though task status is not atomic, this check may success but not accomplish
          * the deletion; this deletion will be handled until the next run.
          */
@@ -98,14 +104,14 @@ VOID OsMpCollectTasks(VOID)
         }
     }
 }
-
+//MP(multiprocessing) 多核处理器初始化
 UINT32 OsMpInit(VOID)
 {
     UINT16 swtmrId;
 
-    (VOID)LOS_SwtmrCreate(OS_MP_GC_PERIOD, LOS_SWTMR_MODE_PERIOD,
-                          (SWTMR_PROC_FUNC)OsMpCollectTasks, &swtmrId, 0);
-    (VOID)LOS_SwtmrStart(swtmrId);
+    (VOID)LOS_SwtmrCreate(OS_MP_GC_PERIOD, LOS_SWTMR_MODE_PERIOD, //创建一个周期性,持续时间为 100个tick的定时器
+                          (SWTMR_PROC_FUNC)OsMpCollectTasks, &swtmrId, 0);//OsMpCollectTasks为超时回调函数
+    (VOID)LOS_SwtmrStart(swtmrId);//开始定时任务
 
     return LOS_OK;
 }

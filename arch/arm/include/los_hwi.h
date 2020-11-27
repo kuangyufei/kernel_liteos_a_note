@@ -282,9 +282,9 @@ extern HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];
  * @par Dependency:
  * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_IntRestore
- *///在所有中断被禁用之前获得的CPSR值
-STATIC INLINE UINT32 LOS_IntLock(VOID)
-{//此API用于禁用CPSR中的所有IRQ和FIQ中断。
+ */
+STATIC INLINE UINT32 LOS_IntLock(VOID)//在所有中断被禁用之前获得的CPSR值 /|\ 
+{//此API用于禁用CPSR中的所有IRQ和FIQ中断。CPSR:程序状态寄存器(current program status register)
     return ArchIntLock();
 }//IRQ(Interrupt Request)：指中断模式。FIQ(Fast Interrupt Request)：指快速中断模式。
 
@@ -307,8 +307,8 @@ STATIC INLINE UINT32 LOS_IntLock(VOID)
  * @par Dependency:
  * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_IntLock
- *///启用所有中断后获得的CPSR值
-STATIC INLINE UINT32 LOS_IntUnLock(VOID)
+ */
+STATIC INLINE UINT32 LOS_IntUnLock(VOID)//启用所有中断后获得的CPSR值
 {//此API用于启用CPSR中的所有IRQ和FIQ中断。
     return ArchIntUnlock();
 }
@@ -333,8 +333,8 @@ STATIC INLINE UINT32 LOS_IntUnLock(VOID)
  * @par Dependency:
  * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_IntLock
- *///在所有中断被禁用之前获得的CPSR值
-STATIC INLINE VOID LOS_IntRestore(UINT32 intSave)
+ */
+STATIC INLINE VOID LOS_IntRestore(UINT32 intSave)//在所有中断被禁用之前获得的CPSR值
 {//只有在禁用所有中断之后才能调用此API，并且输入参数值应为LOS_IntLock返回的值。
     ArchIntRestore(intSave);
 }

@@ -336,11 +336,11 @@ extern UINT32 __heap_end;		// 堆区结束地址
 
 /****************************** SMP module configuration **************************/
 #ifndef LOSCFG_KERNEL_SMP
-#define LOSCFG_KERNEL_SMP                               NO //SMP一般指对称多处理。对称多处理"（Symmetrical Multi-Processing）
+#define LOSCFG_KERNEL_SMP                               NO //SMP指对称多处理（Symmetrical Multi-Processing）,多核时要设为 YES
 #endif
 
 #ifndef LOSCFG_KERNEL_SMP_LOCKDEP
-#define LOSCFG_KERNEL_SMP_LOCKDEP                       NO
+#define LOSCFG_KERNEL_SMP_LOCKDEP                       NO //死锁检测模块 Lockdep
 #endif
 
 #ifndef LOSCFG_KERNEL_SMP_TASK_SYNC
@@ -348,20 +348,20 @@ extern UINT32 __heap_end;		// 堆区结束地址
 #endif
 
 #ifndef LOSCFG_KERNEL_SCHED_STATISTICS
-#define LOSCFG_KERNEL_SCHED_STATISTICS                  NO
+#define LOSCFG_KERNEL_SCHED_STATISTICS                  NO //对任务调度的统计
 #endif
 
 #if (LOSCFG_KERNEL_SMP == YES)
-#define LOSCFG_KERNEL_CORE_NUM                          LOSCFG_KERNEL_SMP_CORE_NUM
+#define LOSCFG_KERNEL_CORE_NUM                          LOSCFG_KERNEL_SMP_CORE_NUM //多核情况下支持的CPU核数
 #else
-#define LOSCFG_KERNEL_CORE_NUM                          1
+#define LOSCFG_KERNEL_CORE_NUM                          1	//单核配置
 #endif
 
-#define LOSCFG_KERNEL_CPU_MASK                          ((1 << LOSCFG_KERNEL_CORE_NUM) - 1)
+#define LOSCFG_KERNEL_CPU_MASK                          ((1 << LOSCFG_KERNEL_CORE_NUM) - 1) //CPU掩码,每一个核占用一个位,用于计算和定位具体CPU核
 
 /****************************** trace module configuration **************************/
 #ifndef LOSCFG_KERNEL_TRACE
-#define LOSCFG_KERNEL_TRACE                             NO
+#define LOSCFG_KERNEL_TRACE                             NO  //内核追踪开关
 #endif
 
 /**
@@ -369,7 +369,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * It's the total size of trace buffer. It's in the unit of char
  */
 #if (LOSCFG_KERNEL_TRACE == YES)
-#define LOS_TRACE_BUFFER_SIZE                           2048
+#define LOS_TRACE_BUFFER_SIZE                           2048 //内核追踪缓存大小 2K
 #endif
 
 /**
@@ -383,28 +383,28 @@ extern UINT32 __heap_end;		// 堆区结束地址
 
 /**
  * @ingroup los_config
- * The Version number of Public
+ * The Version number of Public 	//Public的版本号 ,每个占8位,刚好一个字节
  */
-#define KERNEL_MAJOR                     2
-#define KERNEL_MINOR                     0
-#define KERNEL_PATCH                     0
-#define KERNEL_ITRE                      35
+#define KERNEL_MAJOR                     2	//主版本号
+#define KERNEL_MINOR                     0	//小版本号
+#define KERNEL_PATCH                     0	//补丁版本号
+#define KERNEL_ITRE                      35	//内部定义版本号
 
 #define VERSION_NUM(a, b, c, d) (((a) << 24) | ((b) << 16) | (c) << 8 | (d))
 #define KERNEL_OPEN_VERSION_NUM VERSION_NUM(KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE)
 
 /****************************** Dynamic loading module configuration **************************/
 #ifndef OS_AUTOINIT_DYNLOADER
-#define OS_AUTOINIT_DYNLOADER YES
+#define OS_AUTOINIT_DYNLOADER YES	//是否支持动态加载ELF运行
 #endif
 
 /****************************** exception information  configuration ******************************/
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SHELL_EXCINFO	//异常信息开关
 /**
  * @ingroup los_config
  * the size of space for recording exception information
  */
-#define EXCINFO_RECORD_BUF_SIZE (16 * 1024)
+#define EXCINFO_RECORD_BUF_SIZE (16 * 1024)	//记录异常信息缓存大小 16K
 
 /**
  * @ingroup los_config
@@ -416,7 +416,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * </ul>
  *
  */
-#define EXCINFO_RECORD_ADDR (0xffffffff)
+#define EXCINFO_RECORD_ADDR (0xffffffff) //记录异常信息的空间地址
 
 /**
  * @ingroup los_config
@@ -440,7 +440,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * @par Dependency:
  * <ul><li>los_config.h: the header file that contains the type defination.</li></ul>
  * @see
- */
+ */ //定义用于读取或写入异常信息的指针函数类型
 typedef VOID (*log_read_write_fn)(UINT32 startAddr, UINT32 space, UINT32 rwFlag, CHAR *buf);
 
 /**
@@ -469,6 +469,13 @@ typedef VOID (*log_read_write_fn)(UINT32 startAddr, UINT32 space, UINT32 rwFlag,
  * <ul><li>los_config.h: the header file that contains the API declaration.</li></ul>
  * @see
  */
+/**
+*	此API用于注册记录异常信息函数，并指定位置、空间和大小
+*	startAddr:	保存发送异常的地址信息的启始地址
+*	space:		buf的大小
+*	buf:		缓存区
+*	hook:		读写异常信息的函数
+*/
 VOID LOS_ExcInfoRegHook(UINT32 startAddr, UINT32 space, CHAR *buf, log_read_write_fn hook);
 #endif
 

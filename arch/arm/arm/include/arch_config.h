@@ -52,9 +52,9 @@
 #define OS_EXCEPT_SWI            0x02	//软件定时器中断
 #define OS_EXCEPT_PREFETCH_ABORT 0x03	//预取异常
 #define OS_EXCEPT_DATA_ABORT     0x04	//数据异常
-#define OS_EXCEPT_FIQ            0x05	//快中断
+#define OS_EXCEPT_FIQ            0x05	//快中断异常
 #define OS_EXCEPT_ADDR_ABORT     0x06	//地址异常
-#define OS_EXCEPT_IRQ            0x07	//普通中断
+#define OS_EXCEPT_IRQ            0x07	//普通中断异常
 
 /* Define core num */
 #ifdef LOSCFG_KERNEL_SMP
@@ -121,8 +121,8 @@
 #define REG_R13  13
 #define REG_R14  14
 #define REG_R15  15
-#define REG_CPSR 16 //程序状态寄存器(current program status register) (当前程序状态寄存器)
-#define REG_SP   REG_R13 //堆栈指针 当不使用堆栈时，R13 也可以用做通用数据寄存器
-#define REG_LR   REG_R14 //连接寄存器。当执行子程序或者异常中断时，跳转指令会自动将当前地址存入LR寄存器中，当执行完子程 序或者中断后，根据LR中的值，恢复或者说是返回之前被打断的地址继续执行
-#define REG_PC   REG_R15  //指令寄存器
+#define REG_CPSR 16 		//程序状态寄存器(current program status register) (当前程序状态寄存器)
+#define REG_SP   REG_R13 	//堆栈指针 当不使用堆栈时，R13 也可以用做通用数据寄存器
+#define REG_LR   REG_R14 	//连接寄存器。当执行子程序或者异常中断时，跳转指令会自动将当前地址存入LR寄存器中，当执行完子程 序或者中断后，根据LR中的值，恢复或者说是返回之前被打断的地址继续执行
+#define REG_PC   REG_R15  	//指令寄存器
 #endif

@@ -147,8 +147,8 @@ STATIC INLINE UINTPTR Get_Fp(VOID)
  * los_exc.h: the header file that contains the API declaration.
  * @see None.
  */
-typedef VOID (*EXC_PROC_FUNC)(UINT32, ExcContext *, UINT32, UINT32);
-
+typedef VOID (*EXC_PROC_FUNC)(UINT32, ExcContext *, UINT32, UINT32);//定义异常处理函数钩子
+//此API用于根据异常处理函数的类型定义异常处理函数钩子并记录异常
 /**
  * @ingroup los_exc
  * @brief Register an exception handling hook.
@@ -165,7 +165,7 @@ typedef VOID (*EXC_PROC_FUNC)(UINT32, ExcContext *, UINT32, UINT32);
  * los_exc.h: the header file that contains the API declaration.
  * @see None.
  */
-extern UINT32 LOS_ExcRegHook(EXC_PROC_FUNC excHook);
+extern UINT32 LOS_ExcRegHook(EXC_PROC_FUNC excHook);//注册异常处理钩子
 
 /**
  * @ingroup los_exc

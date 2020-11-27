@@ -401,9 +401,9 @@ VOID HalIrqInit(VOID)
 #if (LOSCFG_KERNEL_SMP == YES)
     /* register inter-processor interrupt *///注册寄存器处理器间中断处理函数,啥意思?就是当前CPU核向其他CPU核发送中断信号
     //处理器间中断允许一个CPU向系统其他的CPU发送中断信号，处理器间中断（IPI）不是通过IRQ线传输的，而是作为信号直接放在连接所有CPU本地APIC的总线上。
-    LOS_HwiCreate(LOS_MP_IPI_WAKEUP, 0xa0, 0, OsMpWakeHandler, 0);//中断处理函数
-    LOS_HwiCreate(LOS_MP_IPI_SCHEDULE, 0xa0, 0, OsMpScheduleHandler, 0);//中断处理函数
-    LOS_HwiCreate(LOS_MP_IPI_HALT, 0xa0, 0, OsMpScheduleHandler, 0);//中断处理函数
+    LOS_HwiCreate(LOS_MP_IPI_WAKEUP, 0xa0, 0, OsMpWakeHandler, 0);		//唤醒处理函数
+    LOS_HwiCreate(LOS_MP_IPI_SCHEDULE, 0xa0, 0, OsMpScheduleHandler, 0);//调度处理函数
+    LOS_HwiCreate(LOS_MP_IPI_HALT, 0xa0, 0, OsMpScheduleHandler, 0);	//暂停处理函数
 #endif
 }
 

@@ -40,10 +40,10 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-typedef struct {
-    VOID (*opHandler)(VOID);
-    CHAR *helpMsg;
-    CHAR magicKey;
+typedef struct { //魔法键处理结构体
+    VOID (*opHandler)(VOID);	//触发执行函数
+    CHAR *helpMsg;	//消息提示
+    CHAR magicKey;	//魔法键
 } MagicKeyOp;
 
 extern INT32 CheckMagicKey(CHAR key);

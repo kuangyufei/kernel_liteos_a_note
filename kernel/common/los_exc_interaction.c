@@ -45,12 +45,12 @@ extern CONSOLE_CB *g_console[];
 
 #define IS_UARTSHELL_ID(taskID) (((taskID) == shellCB->shellTaskHandle) || \
                                  ((taskID) == shellCB->shellEntryHandle))
-
+//判断是否为空闲任务
 STATIC BOOL IsIdleTask(UINT32 taskID)
 {
     UINT32 i;
 
-    for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
+    for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {//检查每个CPU core的空闲任务
         if (taskID == g_percpu[i].idleTaskID) {
             return TRUE;
         }
@@ -58,12 +58,12 @@ STATIC BOOL IsIdleTask(UINT32 taskID)
 
     return FALSE;
 }
-
+//判断是否为定时器任务
 STATIC BOOL IsSwtTask(UINT32 taskID)
 {
     UINT32 i;
 
-    for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
+    for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {//检查每个CPU core的定时器任务
         if (taskID == g_percpu[i].swtmrTaskID) {
             return TRUE;
         }
@@ -71,14 +71,14 @@ STATIC BOOL IsSwtTask(UINT32 taskID)
 
     return FALSE;
 }
-
+//检查互动任务,或者叫中间态任务,怎么理解?可理解为其他任务而服务的任务.
 UINT32 OsExcInteractionTaskCheck(const TSK_INIT_PARAM_S *initParam)
 {
-    if (initParam->pfnTaskEntry == (TSK_ENTRY_FUNC)OsIdleTask) {
+    if (initParam->pfnTaskEntry == (TSK_ENTRY_FUNC)OsIdleTask) {//空闲任务是属于这种类型
         return LOS_OK;
     }
-    if ((initParam->pfnTaskEntry == (TSK_ENTRY_FUNC)ShellTask) ||
-        (initParam->pfnTaskEntry == (TSK_ENTRY_FUNC)ShellEntry)) {
+    if ((initParam->pfnTaskEntry == (TSK_ENTRY_FUNC)ShellTask) ||//shell 属于这种类型
+        (initParam->pfnTaskEntry == (TSK_ENTRY_FUNC)ShellEntry)) {//@note_thinking 暂没理解它和 ShellTask的区别
         return LOS_OK;
     }
     return LOS_NOK;

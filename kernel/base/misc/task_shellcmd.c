@@ -435,7 +435,7 @@ STATIC VOID OsProcessAndTaskInfoGet(LosProcessCB **pcbArray, INT32 **group, LosT
         SCHEDULER_UNLOCK(intSave);
     }
 }
-
+//shell task -a 
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdTskInfoGet(UINT32 taskID, VOID *seqBuf, UINT16 flag)
 {
     UINT32 size;

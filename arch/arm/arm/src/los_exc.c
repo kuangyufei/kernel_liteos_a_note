@@ -79,9 +79,9 @@ STATIC UINT32 g_currHandleExcCpuID = INVALID_CPUID;
 VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr);
 UINT32 g_curNestCount[LOSCFG_KERNEL_CORE_NUM] = { 0 };//
 BOOL g_excFromUserMode[LOSCFG_KERNEL_CORE_NUM];//记录CPU core 是否在用户态运行
-STATIC EXC_PROC_FUNC g_excHook = (EXC_PROC_FUNC)OsExcHook;//函数指针 ->hook 
+STATIC EXC_PROC_FUNC g_excHook = (EXC_PROC_FUNC)OsExcHook;//全局异常处理钩子
 #if (LOSCFG_KERNEL_SMP == YES)
-STATIC SPIN_LOCK_INIT(g_excSerializerSpin);
+STATIC SPIN_LOCK_INIT(g_excSerializerSpin);//初始化异常系列化自旋锁
 STATIC UINT32 g_currHandleExcPID = OS_INVALID_VALUE;
 STATIC UINT32 g_nextExcWaitCpu = INVALID_CPUID;
 #endif
@@ -223,10 +223,10 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
             return LOS_ERRNO_VM_NOT_FOUND;
     }
 }
-
+//异常类型
 STATIC VOID OsExcType(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 {
-    /* undefinited exception handling or software interrupt */
+    /* undefinited exception handling or software interrupt */ //未定义的异常处理或软件中断
     if ((excType == OS_EXCEPT_UNDEF_INSTR) || (excType == OS_EXCEPT_SWI)) {
         if ((excBufAddr->regCPSR & INSTR_SET_MASK) == 0) { /* work status: ARM */
             excBufAddr->PC = excBufAddr->PC - ARM_INSTR_LEN;
@@ -309,7 +309,7 @@ STATIC VOID OsExcSysInfo(UINT32 excType, const ExcContext *excBufAddr)
 
     PrintExcInfo("fp    = 0x%x\n", excBufAddr->R11);//FP(frame pointer)栈帧寄存器R11
 }
-
+//异常情况下打印各寄存器的信息
 STATIC VOID OsExcRegsInfo(const ExcContext *excBufAddr)
 {
     /*
@@ -335,7 +335,7 @@ STATIC VOID OsExcRegsInfo(const ExcContext *excBufAddr)
                  excBufAddr->R7, excBufAddr->R8, excBufAddr->R9, excBufAddr->R10,
                  excBufAddr->R11, excBufAddr->R12, excBufAddr->regCPSR);
 }
-//注册hook
+//注册异常处理钩子
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_ExcRegHook(EXC_PROC_FUNC excHook)
 {
     UINT32 intSave;

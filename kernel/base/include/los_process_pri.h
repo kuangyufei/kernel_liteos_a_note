@@ -369,7 +369,7 @@ extern LosProcessCB *g_runProcess[LOSCFG_KERNEL_CORE_NUM];//运行进程，并�
 extern UINT32 g_processMaxNum;//进程最大数量
 
 #define OS_PID_CHECK_INVALID(pid) (((UINT32)(pid)) >= g_processMaxNum)
-
+//内联函数 进程ID是否有效
 STATIC INLINE BOOL OsProcessIDUserCheckInvalid(UINT32 pid)
 {
     return ((pid >= g_processMaxNum) || (pid == 0));
@@ -390,7 +390,7 @@ STATIC INLINE VOID OsCurrProcessSet(const LosProcessCB *process)
 {
     g_runProcess[ArchCurrCpuid()] = (LosProcessCB *)process;
 }
-
+//以不完全的方式获取进程ID,鸿蒙Unsafe和safe的区别在于有没有加锁.
 STATIC INLINE UINT32 OsCpuProcessIDGetUnsafe(UINT16 cpuID)
 {
     LosProcessCB *runProcess = g_runProcess[cpuID];

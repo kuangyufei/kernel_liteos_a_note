@@ -42,11 +42,11 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifdef LOSCFG_SHELL_EXCINFO
-STATIC log_read_write_fn g_excInfoRW = NULL; /* the hook of read-writing exception information */
-STATIC CHAR *g_excInfoBuf = NULL;            /* pointer to the buffer for storing the exception information */
-STATIC UINT32 g_excInfoIndex = 0xFFFFFFFF;   /* the index of the buffer for storing the exception information */
-STATIC UINT32 g_recordAddr = 0;              /* the address of storing the exception information */
-STATIC UINT32 g_recordSpace = 0;             /* the size of storing the exception information */
+STATIC log_read_write_fn g_excInfoRW = NULL; /* the hook of read-writing exception information *///读写异常信息的钩子
+STATIC CHAR *g_excInfoBuf = NULL;            /* pointer to the buffer for storing the exception information *///指向存储异常信息的缓冲区的指针
+STATIC UINT32 g_excInfoIndex = 0xFFFFFFFF;   /* the index of the buffer for storing the exception information *///用于存储异常信息的缓冲区的索引
+STATIC UINT32 g_recordAddr = 0;              /* the address of storing the exception information */ //存储异常信息的地址
+STATIC UINT32 g_recordSpace = 0;             /* the size of storing the exception information */	//存储异常信息的大小
 
 VOID SetExcInfoRW(log_read_write_fn func)
 {
@@ -97,7 +97,7 @@ UINT32 GetRecordSpace(VOID)
 {
     return g_recordSpace;
 }
-
+//vsnprintf 为C标准库可变参数的实现函数 见于 ..\third_party\musl\kernel\src\stdio\vsnprintf.c
 VOID WriteExcBufVa(const CHAR *format, va_list arglist)
 {
     errno_t ret;
@@ -112,16 +112,15 @@ VOID WriteExcBufVa(const CHAR *format, va_list arglist)
         g_excInfoIndex += ret;
     }
 }
-
+//写异常信息到系统异常信息中心
 VOID WriteExcInfoToBuf(const CHAR *format, ...)
 {
-    va_list arglist;
-
-    va_start(arglist, format);
-    WriteExcBufVa(format, arglist);
-    va_end(arglist);
+    va_list arglist;//va_arg
+    va_start(arglist, format);//从任务栈中取出入栈参数
+    WriteExcBufVa(format, arglist);//入栈参数列表作为实参传入交由vsnprintf处理
+    va_end(arglist);//释放资源
 }
-
+//用于注册记录异常信息函数，并指定位置、空间和大小
 VOID LOS_ExcInfoRegHook(UINT32 startAddr, UINT32 space, CHAR *buf, log_read_write_fn hook)
 {
     if ((hook == NULL) || (buf == NULL)) {
@@ -135,7 +134,7 @@ VOID LOS_ExcInfoRegHook(UINT32 startAddr, UINT32 space, CHAR *buf, log_read_writ
     g_excInfoRW = hook;
 
 #ifdef LOSCFG_FS_VFS
-    los_vfs_init();
+    los_vfs_init();//初始化虚拟文件系统
 #endif
 }
 

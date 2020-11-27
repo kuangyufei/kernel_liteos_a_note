@@ -330,7 +330,7 @@ typedef struct {
 #if (LOSCFG_KERNEL_SMP_LOCKDEP == YES)
     LockDep         lockDep;
 #endif
-#if (LOSCFG_KERNEL_SCHED_STATISTICS == YES)
+#if (LOSCFG_KERNEL_SCHED_STATISTICS == YES) //调度统计开关,显然打开这个开关性能会受到影响,鸿蒙默认是关闭的
     SchedStat       schedStat;          /**< Schedule statistics */	//调度统计
 #endif
 #endif
@@ -350,7 +350,7 @@ typedef struct {
     BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];//访问图,指的是task之间是否能访问的标识,LOSCFG_BASE_CORE_TSK_LIMIT 为任务池总数
 #endif
 } LosTaskCB;
-//LosTask结构体是给外部用的
+//LosTask结构体是给外部使用的
 typedef struct {
     LosTaskCB *runTask;
     LosTaskCB *newTask;

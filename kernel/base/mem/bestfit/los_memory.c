@@ -60,12 +60,12 @@ extern "C" {
 
 /* Memory pool information structure */
 typedef struct {
-    VOID *pool;      /* Starting address of a memory pool */
-    UINT32 poolSize; /* Memory pool size */
-    UINT32 flag;     /* Whether the memory pool supports expansion */
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
-    UINT32 poolWaterLine;   /* Maximum usage size in a memory pool */
-    UINT32 poolCurUsedSize; /* Current usage size in a memory pool */
+    VOID *pool;      /* Starting address of a memory pool */			//内存池开始地址
+    UINT32 poolSize; /* Memory pool size */								//内存池大小
+    UINT32 flag;     /* Whether the memory pool supports expansion */	//内存池是否支持扩展
+#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)	//警戒线					
+    UINT32 poolWaterLine;   /* Maximum usage size in a memory pool */	//内存池中的最大使用大小
+    UINT32 poolCurUsedSize; /* Current usage size in a memory pool */	//当前已使用内存池大小
 #endif
 #ifdef LOSCFG_MEM_MUL_POOL
     VOID *nextPool;
@@ -1369,7 +1369,7 @@ STATIC UINT32 DoOsMemIntegrityCheck(LosMemDynNode **tmpNode, const VOID *pool, c
     }
     return LOS_OK;
 }
-
+//内存池完整性检查
 STATIC UINT32 OsMemIntegrityCheck(const VOID *pool, LosMemDynNode **tmpNode, LosMemDynNode **preNode)
 {
     const LosMemPoolInfo *poolInfo = (const LosMemPoolInfo *)pool;
@@ -1397,7 +1397,7 @@ STATIC UINT32 OsMemIntegrityCheck(const VOID *pool, LosMemDynNode **tmpNode, Los
     return LOS_OK;
 }
 
-#ifdef LOSCFG_MEM_LEAKCHECK
+#ifdef LOSCFG_MEM_LEAKCHECK //内存泄漏检查开关
 STATIC VOID OsMemNodeBacktraceInfo(const LosMemDynNode *tmpNode,
                                    const LosMemDynNode *preNode)
 {
@@ -1460,7 +1460,7 @@ STATIC VOID OsMemNodeInfo(const LosMemDynNode *tmpNode,
         PRINTK("\n---------------------------------------------\n");
     }
 }
-
+//内存池完整性检查错误
 STATIC VOID OsMemIntegrityCheckError(const LosMemDynNode *tmpNode,
                                      const LosMemDynNode *preNode,
                                      UINT32 intSave)
@@ -1500,11 +1500,11 @@ STATIC VOID OsMemIntegrityCheckError(const LosMemDynNode *tmpNode,
 }
 
 /*
- * Description : memory pool integrity checking
+ * Description : memory pool integrity checking 
  * Input       : pool --Pointer to memory pool
  * Return      : LOS_OK --memory pool integrate or LOS_NOK--memory pool impaired
  */
-LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemIntegrityCheck(const VOID *pool)
+LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemIntegrityCheck(const VOID *pool)	//内存池完整性检查
 {
     LosMemDynNode *tmpNode = NULL;
     LosMemDynNode *preNode = NULL;

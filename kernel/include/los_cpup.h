@@ -139,9 +139,9 @@ typedef struct tagCpupInfo {
  * Query the CPU usage of the system.
  */
 enum {
-    CPUP_LAST_TEN_SECONDS = 0, /**< Display CPU usage in the last ten seconds. */
-    CPUP_LAST_ONE_SECONDS = 1, /**< Display CPU usage in the last one seconds. */
-    CPUP_ALL_TIME = 0xffff     /**< Display CPU usage from system startup to now. */
+    CPUP_LAST_TEN_SECONDS = 0, /**< Display CPU usage in the last ten seconds. */ //显示最近10秒的CPU使用情况。
+    CPUP_LAST_ONE_SECONDS = 1, /**< Display CPU usage in the last one seconds. */ //显示最近1秒的CPU使用情况。
+    CPUP_ALL_TIME = 0xffff     /**< Display CPU usage from system startup to now. */	//显示从系统启动到现在的CPU使用情况
 };
 
 

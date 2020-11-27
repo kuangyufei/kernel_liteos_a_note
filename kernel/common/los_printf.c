@@ -234,13 +234,13 @@ __attribute__((noinline)) VOID ExcPrintf(const CHAR *fmt, ...)
     OsVprintf(fmt, ap, EXC_OUTPUT);
     va_end(ap);
 }
-
+//打印异常信息
 VOID PrintExcInfo(const CHAR *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
     /* uart output without print-spinlock */
-    OsVprintf(fmt, ap, EXC_OUTPUT);
+    OsVprintf(fmt, ap, EXC_OUTPUT);//异常信息打印主体函数
 #ifdef LOSCFG_SHELL_EXCINFO
     WriteExcBufVa(fmt, ap);
 #endif

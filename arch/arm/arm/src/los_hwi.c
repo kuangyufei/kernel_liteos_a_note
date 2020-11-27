@@ -304,11 +304,11 @@ LITE_OS_SEC_TEXT_INIT VOID OsHwiInit(VOID)//硬件中断初始化
     return;
 }
 //创建一个硬中断
-LITE_OS_SEC_TEXT_INIT UINT32 LOS_HwiCreate(HWI_HANDLE_T hwiNum,
-                                           HWI_PRIOR_T hwiPrio,
-                                           HWI_MODE_T hwiMode,
-                                           HWI_PROC_FUNC hwiHandler,
-                                           HwiIrqParam *irqParam)
+LITE_OS_SEC_TEXT_INIT UINT32 LOS_HwiCreate(HWI_HANDLE_T hwiNum,	//硬中断句柄编号 默认范围[0-127]
+                                           HWI_PRIOR_T hwiPrio,		//硬中断优先级	
+                                           HWI_MODE_T hwiMode,		//硬中断模式 共享和非共享
+                                           HWI_PROC_FUNC hwiHandler,//硬中断处理函数
+                                           HwiIrqParam *irqParam)	//硬中断处理函数参数
 {
     UINT32 ret;
 

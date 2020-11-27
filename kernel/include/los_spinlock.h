@@ -190,7 +190,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinUnlock(SPIN_LOCK_S *lock)
  * @see LOS_SpinLock
  */
 LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinLockSave(SPIN_LOCK_S *lock, UINT32 *intSave)
-{//自旋锁是不切换任务上下文的,忙等状态.锁的是细颗粒的操作,代码量小,运行时间端的临界区
+{//自旋锁是不切换任务上下文的,忙等状态.锁的是细颗粒的操作,代码量小,运行时间极短的临界区
     *intSave = LOS_IntLock();
     LOS_SpinLock(lock);
 }
@@ -286,9 +286,9 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinUnlock(SPIN_LOCK_S *lock)
 {
     (VOID)lock;
 }
-
+//自旋锁是不切换任务上下文的,忙等状态.锁的是细颗粒的操作,代码量小,运行时间极短的临界区
 LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinLockSave(SPIN_LOCK_S *lock, UINT32 *intSave)
-{//自旋锁是不切换任务上下文的,忙等状态.锁的是细颗粒的操作,代码量小,运行时间端的临界区
+{
     (VOID)lock;
     *intSave = LOS_IntLock();
 }

@@ -106,7 +106,7 @@ typedef enum { //输出类型
     NO_OUTPUT = 0,		
     UART_OUTPUT = 1,	//串口输出
     CONSOLE_OUTPUT = 2,	//控制台输出
-    EXC_OUTPUT = 3		//只输出当前CPU所执行任务的Log
+    EXC_OUTPUT = 3		//出现异常时的输出
 } OutputType;
 
 extern VOID OsVprintf(const CHAR *fmt, va_list ap, OutputType type);

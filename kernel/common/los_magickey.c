@@ -47,25 +47,25 @@ STATIC VOID OsMagicTaskShow(VOID);
 STATIC VOID OsMagicPanic(VOID);
 STATIC VOID OsMagicMemCheck(VOID);
 
-STATIC MagicKeyOp g_magicMemCheckOp = {
+STATIC MagicKeyOp g_magicMemCheckOp = {//快捷键内存检查
     .opHandler = OsMagicMemCheck,
     .helpMsg = "Check system memory(ctrl+e) ",
     .magicKey = 0x05 /* ctrl + e */
 };
 
-STATIC MagicKeyOp g_magicPanicOp = {
-    .opHandler = OsMagicPanic,
+STATIC MagicKeyOp g_magicPanicOp = {//panic 表示kernel走到了一个不知道该怎么走下一步的状况，
+    .opHandler = OsMagicPanic,		//一旦到这个情况，kernel就尽可能把它此时能获取的全部信息都打印出来.
     .helpMsg = "System panic(ctrl+p) ",
     .magicKey = 0x10 /* ctrl + p */
 };
 
-STATIC MagicKeyOp g_magicTaskShowOp = {
+STATIC MagicKeyOp g_magicTaskShowOp = { //快捷键显示任务操作
     .opHandler = OsMagicTaskShow,
     .helpMsg = "Show task information(ctrl+t) ",
     .magicKey = 0x14 /* ctrl + t */
 };
 
-STATIC MagicKeyOp g_magicHelpOp = {
+STATIC MagicKeyOp g_magicHelpOp = {	//快捷键帮助操作
     .opHandler = OsMagicHelp,
     .helpMsg = "Show all magic op key(ctrl+z) ",
     .magicKey = 0x1a /* ctrl + z */
@@ -99,7 +99,7 @@ STATIC VOID OsMagicHelp(VOID)
     PRINTK("\n");
     return;
 }
-
+//执行 shell task -a 命令 
 STATIC VOID OsMagicTaskShow(VOID)
 {
     const CHAR *arg = "-a";
@@ -113,7 +113,7 @@ STATIC VOID OsMagicPanic(VOID)
     LOS_Panic("Magic key :\n");
     return;
 }
-
+//快捷键触发内存检查
 STATIC VOID OsMagicMemCheck(VOID)
 {
     if (LOS_MemIntegrityCheck(m_aucSysMem1) == LOS_OK) {
@@ -125,10 +125,10 @@ STATIC VOID OsMagicMemCheck(VOID)
 
 INT32 CheckMagicKey(CHAR key)
 {
-#ifdef LOSCFG_ENABLE_MAGICKEY
+#ifdef LOSCFG_ENABLE_MAGICKEY //魔法键开关
     INT32 i;
     STATIC UINT32 magicKeySwitch = 0;
-    if (key == 0x12) { /* ctrl + r */
+    if (key == 0x12) { /* ctrl + r */ //用0x12 来打开和关闭魔法键开关
         magicKeySwitch = ~magicKeySwitch;
         if (magicKeySwitch != 0) {
             PRINTK("Magic key on\n");
