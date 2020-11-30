@@ -695,7 +695,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsMemSystemInit(UINTPTR memStart)
     return ret;
 }
 
-#ifdef LOSCFG_MEM_LEAKCHECK
+#ifdef LOSCFG_MEM_LEAKCHECK //内存泄漏开关
 STATIC INLINE VOID OsMemLinkRegisterRecord(LosMemDynNode *node)
 {
     UINT32 count = 0;

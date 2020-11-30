@@ -46,8 +46,8 @@ STATIC INLINE VOID OsSetCurrCpuSp(UINTPTR regSp)
 }
 
 #define OS_SYSTEM_NORMAL        0	//当前CPU都处于空闲状态
-#define OS_SYSTEM_EXC_CURR_CPU  1	//当前CPU处于执行状态
-#define OS_SYSTEM_EXC_OTHER_CPU 2	//其他CPU处于执行状态
+#define OS_SYSTEM_EXC_CURR_CPU  1	//当前CPU处于异常状态
+#define OS_SYSTEM_EXC_OTHER_CPU 2	//其他CPU处于异常状态
 
 extern UINT32 OsGetSystemStatus(VOID);
 extern VOID BackTraceSub(UINTPTR regFP);

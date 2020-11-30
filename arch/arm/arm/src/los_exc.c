@@ -78,7 +78,7 @@ STATIC UINTPTR g_maxAddr;
 STATIC UINT32 g_currHandleExcCpuID = INVALID_CPUID;
 VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr);
 UINT32 g_curNestCount[LOSCFG_KERNEL_CORE_NUM] = { 0 };//
-BOOL g_excFromUserMode[LOSCFG_KERNEL_CORE_NUM];//记录CPU core 是否在用户态运行
+BOOL g_excFromUserMode[LOSCFG_KERNEL_CORE_NUM];//记录CPU core 异常来自用户态
 STATIC EXC_PROC_FUNC g_excHook = (EXC_PROC_FUNC)OsExcHook;//全局异常处理钩子
 #if (LOSCFG_KERNEL_SMP == YES)
 STATIC SPIN_LOCK_INIT(g_excSerializerSpin);//初始化异常系列化自旋锁
@@ -183,7 +183,7 @@ STATIC INT32 OsDecodeDataFSR(UINT32 regDFSR)
     ret = OsDecodeFS(bitsFS);
     return ret;
 }
-//共享页缺失
+//共享页缺失异常
 UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT32 fsr)
 {
     PRINT_INFO("page fault entry!!!\n");
@@ -274,12 +274,12 @@ STATIC VOID OsExcSysInfo(UINT32 excType, const ExcContext *excBufAddr)
                  runProcess->vmSpace->base + runProcess->vmSpace->size,
                  runTask->taskName,
                  runTask->taskID);
-
-    if (OsProcessIsUserMode(runProcess)) {
-        PrintExcInfo("task user stack   = 0x%08x -> 0x%08x\n",
+	//这里可以看出一个任务有两个运行栈空间
+    if (OsProcessIsUserMode(runProcess)) {//用户态栈空间,对于栈而言,栈底的地址要小于栈顶的地址
+        PrintExcInfo("task user stack   = 0x%08x -> 0x%08x\n", //用户态栈空间由用户空间提供
                      runTask->userMapBase, runTask->userMapBase + runTask->userMapSize);
-    } else {
-        PrintExcInfo("task kernel stack = 0x%08x -> 0x%08x\n",
+    } else {//内核态栈空间,由内核空间提供
+        PrintExcInfo("task kernel stack = 0x%08x -> 0x%08x\n",//
                      runTask->topOfStack, runTask->topOfStack + runTask->stackSize);
     }
 
@@ -518,7 +518,8 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
     g_intCount[currCpu]++;
     PrintExcInfo("User mode exception ends unscheduled!\n");
 }
-
+//此函数用于验证fp或验证检查开始和结束范围 
+//sp是上级函数即调用者的堆栈首地址，fp是上级函数的堆栈结束地址
 /* this function is used to validate fp or validate the checking range start and end. */
 STATIC INLINE BOOL IsValidFP(UINTPTR regFP, UINTPTR start, UINTPTR end, vaddr_t *vaddr)
 {
@@ -559,7 +560,7 @@ STATIC INLINE BOOL FindSuitableStack(UINTPTR regFP, UINTPTR *start, UINTPTR *end
     const StackInfo *stack = NULL;
     vaddr_t kvaddr;
 
-    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
+    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {//当前CPU在用户态执行发生异常
         taskCB = OsCurrTaskGet();
         stackStart = taskCB->userMapBase;
         stackEnd = taskCB->userMapBase + taskCB->userMapSize;
@@ -656,17 +657,17 @@ VOID BackTraceSub(UINTPTR regFP)
         }
     }
 }
-
+//回溯追踪
 VOID BackTrace(UINT32 regFP)
 {
     PrintExcInfo("*******backtrace begin*******\n");
 
     BackTraceSub(regFP);
 }
-//运行初始化
+//异常初始化
 VOID OsExcInit(VOID)
 {
-    OsExcStackInfoReg(g_excStack, sizeof(g_excStack) / sizeof(g_excStack[0]));//内核栈信息注册
+    OsExcStackInfoReg(g_excStack, sizeof(g_excStack) / sizeof(g_excStack[0]));//异常模式下注册内核栈信息
 }
 //由注册后回调
 VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)

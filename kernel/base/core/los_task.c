@@ -492,7 +492,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCreateParamCheck(const UINT32 *taskID,
 {
     LosProcessCB *process = NULL;
     UINT32 poolSize = OS_SYS_MEM_SIZE;
-    *pool = (VOID *)m_aucSysMem1;
+    *pool = (VOID *)m_aucSysMem1;//默认使用
 
     if (taskID == NULL) {
         return LOS_ERRNO_TSK_ID_INVALID;
@@ -521,7 +521,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCreateParamCheck(const UINT32 *taskID,
         return LOS_ERRNO_TSK_PRIOR_ERROR;
     }
 
-#ifdef LOSCFG_EXC_INTERACTION
+#ifdef LOSCFG_EXC_INTERACTION 
     if (!OsExcInteractionTaskCheck(initParam)) {
         *pool = m_aucSysMem0;
         poolSize = OS_EXC_INTERACTMEM_SIZE;
@@ -690,8 +690,8 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskCBInitBase(LosTaskCB *taskCB,
     taskCB->args[1]      = initParam->auwArgs[1];
     taskCB->args[2]      = initParam->auwArgs[2];
     taskCB->args[3]      = initParam->auwArgs[3];
-    taskCB->topOfStack   = (UINTPTR)topStack;
-    taskCB->stackSize    = initParam->uwStackSize;
+    taskCB->topOfStack   = (UINTPTR)topStack;	//内核态栈顶位置
+    taskCB->stackSize    = initParam->uwStackSize;//
     taskCB->priority     = initParam->usTaskPrio;
     taskCB->taskEntry    = initParam->pfnTaskEntry;
     taskCB->signal       = SIGNAL_NONE;
@@ -809,14 +809,14 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *taskID, TSK_INIT_PARAM_S
     if (errRet != LOS_OK) {
         goto LOS_ERREND_REWIND_TCB;
     }
-
+	//OsTaskStackAlloc 只在LOS_TaskCreateOnly中被调用,此处是分配任务在内核态栈空间 
     OsTaskStackAlloc(&topStack, initParam->uwStackSize, pool);//为任务栈分配空间
     if (topStack == NULL) {
         errRet = LOS_ERRNO_TSK_NO_MEMORY;
         goto LOS_ERREND_REWIND_SYNC;
     }
 
-    stackPtr = OsTaskStackInit(taskCB->taskID, initParam->uwStackSize, topStack, TRUE);//初始化上下文
+    stackPtr = OsTaskStackInit(taskCB->taskID, initParam->uwStackSize, topStack, TRUE);//初始化任务栈
     errRet = OsTaskCBInit(taskCB, initParam, stackPtr, topStack);//初始化TCB,包括绑定进程等操作
     if (errRet != LOS_OK) {
         goto LOS_ERREND_TCB_INIT;
