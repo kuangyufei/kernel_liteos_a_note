@@ -42,7 +42,7 @@ extern "C" {
 
 STATIC INLINE VOID OsSetCurrCpuSp(UINTPTR regSp)
 {
-    __asm__ __volatile__("mov sp, %0" :: "r"(regSp));
+    __asm__ __volatile__("mov sp, %0" :: "r"(regSp));//将参数设为 sp寄存器的值
 }
 
 #define OS_SYSTEM_NORMAL        0	//当前CPU都处于空闲状态

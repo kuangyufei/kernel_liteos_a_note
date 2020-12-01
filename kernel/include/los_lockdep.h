@@ -40,7 +40,7 @@ extern "C" {
 
 typedef struct Spinlock SPIN_LOCK_S;
 
-#define MAX_LOCK_DEPTH  16U
+#define MAX_LOCK_DEPTH  16U //最大的锁深度
 
 enum LockDepErrType {
     LOCKDEP_SUCEESS = 0,
@@ -81,7 +81,7 @@ typedef struct {
  * <ul><li>los_lockdep.h: the header file that contains the API declaration.</li></ul>
  * @see
  */
-extern VOID OsLockDepCheckIn(SPIN_LOCK_S *lock);
+extern VOID OsLockDepCheckIn(SPIN_LOCK_S *lock);//此API用于检查spinlock中的死锁
 
 /**
  * @ingroup los_lockdep
@@ -100,7 +100,7 @@ extern VOID OsLockDepCheckIn(SPIN_LOCK_S *lock);
  * <ul><li>los_lockdep.h: the header file that contains the API declaration.</li></ul>
  * @see
  */
-extern VOID OsLockDepRecord(SPIN_LOCK_S *lock);
+extern VOID OsLockDepRecord(SPIN_LOCK_S *lock);//此API用于跟踪自旋锁锁定的时间
 
 /**
  * @ingroup los_lockdep
@@ -119,7 +119,7 @@ extern VOID OsLockDepRecord(SPIN_LOCK_S *lock);
  * <ul><li>los_lockdep.h: the header file that contains the API declaration.</li></ul>
  * @see
  */
-extern VOID OsLockDepCheckOut(SPIN_LOCK_S *lock);
+extern VOID OsLockDepCheckOut(SPIN_LOCK_S *lock);//此API用于跟踪自旋锁何时解锁
 
 /**
  * @ingroup los_lockdep
@@ -137,7 +137,7 @@ extern VOID OsLockDepCheckOut(SPIN_LOCK_S *lock);
  * <ul><li>los_lockdep.h: the header file that contains the API declaration.</li></ul>
  * @see
  */
-extern VOID OsLockdepClearSpinlocks(VOID);
+extern VOID OsLockdepClearSpinlocks(VOID);//此API用于清除curret task的lockdep记录
 
 #ifdef __cplusplus
 #if __cplusplus

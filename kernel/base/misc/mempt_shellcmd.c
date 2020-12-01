@@ -128,7 +128,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemCheck(INT32 argc, const CHAR *argv[])
         WriteExcInfoToBuf("system memcheck over, all passed!\n");
 #endif
     }
-#ifdef LOSCFG_EXC_INTERACTION
+#ifdef LOSCFG_EXC_INTERACTION 
     if (LOS_MemIntegrityCheck(m_aucSysMem0) == LOS_OK) {
         PRINTK("exc interaction memcheck over, all passed!\n");
 #ifdef LOSCFG_SHELL_EXCINFO
@@ -188,7 +188,6 @@ DONE:
 	bss 	表示未初始化全局变量占用内存大小。
 
 *********************************************************/
-
 LITE_OS_SEC_TEXT_MINOR STATIC VOID OsShellCmdSectionInfo(INT32 argc, const CHAR *argv[])
 {
     size_t textLen = &__text_end - &__text_start;
@@ -268,8 +267,23 @@ LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OsShellCmdFreeInfo(INT32 argc, const CHAR *
     }
     return 0;
 }
-//free命令可显示系统内存的使用情况，同时显示系统的text段、data段、rodata段、bss段大小。
-//free [-k | -m] 以KB为单位显示 / 以MB为单位显示
+/*************************************************************
+命令功能
+free命令可显示系统内存的使用情况，同时显示系统的text段、data段、rodata段、bss段大小。
+
+命令格式
+free [-k | -m]
+
+参数说明
+
+参数 参数说明 取值范围 
+
+无参数    以Byte为单位显示。N/A
+-k	以KB为单位显示。N/A
+-m	以MB为单位显示。N/A
+使用实例
+举例：分别输入free、free -k、free -m.
+*************************************************************/
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdFree(INT32 argc, const CHAR *argv[])
 {
     if (argc > 1) {
@@ -282,7 +296,30 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdFree(INT32 argc, const CHAR *argv[])
     OsShellCmdSectionInfo(argc, argv);//显示系统各段使用情况
     return 0;
 }
+/*************************************************************
+命令功能
+uname命令用于显示当前操作系统的名称，版本创建时间，系统名称，版本信息等。
 
+命令格式
+uname [-a | -s | -t | -v | --help]
+
+参数说明
+
+
+参数		参数说明		
+无参数		默认显示操作系统名称。
+-a		显示全部信息。
+-t		显示版本创建的时间。
+-s		显示操作系统名称。
+-v		显示版本信息。
+--help	显示uname指令格式提示。
+
+使用指南
+uname用于显示当前操作系统名称。语法uname -a | -t| -s| -v 描述uname 命令将正在使用的操作系统名写到标准输出中，这几个参数不能混合使用。
+
+使用实例
+举例：输入uname -a
+*************************************************************/
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdUname(INT32 argc, const CHAR *argv[])
 {
     if (argc == 0) {

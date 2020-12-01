@@ -105,13 +105,13 @@ STATIC UINT32 g_nextExcWaitCpu = INVALID_CPUID;
                             ((ptr) <= g_maxAddr) && \
                             (IS_ALIGNED((ptr), sizeof(CHAR *))))
 
-STATIC const StackInfo g_excStack[] = {// 6个执行栈
+STATIC const StackInfo g_excStack[] = {// 6种异常情况下对应的栈 
     { &__undef_stack, OS_EXC_UNDEF_STACK_SIZE, "udf_stack" },	//512 未定义的指令模式堆栈
     { &__abt_stack,   OS_EXC_ABT_STACK_SIZE,   "abt_stack" },	//512 中止模式堆栈,用于数据中止,可以将处理程序设置为在触发异常终止时运行
     { &__fiq_stack,   OS_EXC_FIQ_STACK_SIZE,   "fiq_stack" },	//64 FIQ中断模式堆栈.快速中断(FIQ)可能会在IRQ期间发生-它们就像优先级较高的IRQ.在FIQ中,FIQ和IRQ被禁用.
     { &__svc_stack,   OS_EXC_SVC_STACK_SIZE,   "svc_stack" },	//8K 主管模式堆栈.有些指令只能在SVC模式下运行 	
     { &__irq_stack,   OS_EXC_IRQ_STACK_SIZE,   "irq_stack" },	//64 中断(IRQ)模式堆栈. 
-    { &__exc_stack,   OS_EXC_STACK_SIZE,       "exc_stack" }	//4K 用户和系统模式堆栈.大多数情况下,这是你用于执行代码的常规堆栈
+    { &__exc_stack,   OS_EXC_STACK_SIZE,       "exc_stack" }	//4K 异常处理堆栈
 };
 //获取系统状态
 UINT32 OsGetSystemStatus(VOID)
@@ -235,24 +235,24 @@ STATIC VOID OsExcType(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32
         }
     }
 
-    if (excType == OS_EXCEPT_PREFETCH_ABORT) {
+    if (excType == OS_EXCEPT_PREFETCH_ABORT) {//取指异常
         PrintExcInfo("prefetch_abort fault fsr:0x%x, far:0x%0+8x\n", fsr, far);
         (VOID)OsDecodeInstructionFSR(fsr);
-    } else if (excType == OS_EXCEPT_DATA_ABORT) {
+    } else if (excType == OS_EXCEPT_DATA_ABORT) {//数据异常
         PrintExcInfo("data_abort fsr:0x%x, far:0x%0+8x\n", fsr, far);
         (VOID)OsDecodeDataFSR(fsr);
     }
 }
 
-STATIC const CHAR *g_excTypeString[] = {
-    "reset",
-    "undefined instruction",
-    "software interrupt",
-    "prefetch abort",
-    "data abort",
-    "fiq",
-    "address abort",
-    "irq"
+STATIC const CHAR *g_excTypeString[] = {//异常类型的字符说明,在鸿蒙内核中什么才算是异常? 看这里
+    "reset",		//重置命令
+    "undefined instruction",	//未定义的指令
+    "software interrupt",	//软中断,比如定时器
+    "prefetch abort",	//取指异常
+    "data abort",		//数据异常
+    "fiq",				//快中断异常
+    "address abort",	//地址异常
+    "irq"				//中断异常
 };
 //打印系统信息
 STATIC VOID OsExcSysInfo(UINT32 excType, const ExcContext *excBufAddr)
@@ -459,28 +459,28 @@ VOID OsDumpContextMem(const ExcContext *excBufAddr)
         OsDumpMemByte(DUMPSIZE, (excBufAddr->SP - (DUMPSIZE >> 1)));
     }
 }
-
+//异常恢复,继续执行
 STATIC VOID OsExcRestore(UINTPTR taskStackPointer)
 {
-    UINT32 currCpuID = ArchCurrCpuid();
+    UINT32 currCpuID = ArchCurrCpuid();		//获取当前CPU ID
 
-    g_excFromUserMode[currCpuID] = FALSE;
-    g_intCount[currCpuID] = 0;
+    g_excFromUserMode[currCpuID] = FALSE;	//CPU内核态运行
+    g_intCount[currCpuID] = 0;				//CPU对应的中断数量清0
     g_curNestCount[currCpuID] = 0;
 #if (LOSCFG_KERNEL_SMP == YES)
     OsPercpuGet()->excFlag = CPU_RUNNING;
 #endif
     OsPercpuGet()->taskLockCnt = 0;
 
-    OsSetCurrCpuSp(taskStackPointer);
+    OsSetCurrCpuSp(taskStackPointer);//汇编设置当前CPU sp寄存器值
 }
-
+//用户态异常处理函数
 STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 {
     UINT32 currCpu = ArchCurrCpuid();
     LosProcessCB *runProcess = OsCurrProcessGet();
 
-    if (g_excFromUserMode[ArchCurrCpuid()] == FALSE) {
+    if (g_excFromUserMode[ArchCurrCpuid()] == FALSE) {//内核态直接退出,8处理了.
         return;
     }
 
@@ -497,9 +497,9 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 #else
     g_currHandleExcCpuID = INVALID_CPUID;
 #endif
-    runProcess->processStatus &= ~OS_PROCESS_FLAG_EXIT;
+    runProcess->processStatus &= ~OS_PROCESS_FLAG_EXIT; //进程去掉退出标签,要接着执行
 
-    OsExcRestore(excBufAddr->SP);
+    OsExcRestore(excBufAddr->SP);	//通过sp恢复
 
 #if (LOSCFG_KERNEL_SMP == YES)
 #ifdef LOSCFG_FS_VFS
@@ -514,7 +514,7 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
     /* kill user exc process */
     LOS_Exit(OS_PRO_EXIT_OK);
 
-    /* User mode exception handling failed , which normally does not exist */
+    /* User mode exception handling failed , which normally does not exist */ //用户态的异常处理失败，通常情况下不会发生
     g_curNestCount[currCpu]++;
     g_intCount[currCpu]++;
     PrintExcInfo("User mode exception ends unscheduled!\n");
@@ -665,7 +665,7 @@ VOID BackTrace(UINT32 regFP)//fp:R11寄存器
 
     BackTraceSub(regFP);
 }
-//异常初始化
+//异常处理模块的初始化
 VOID OsExcInit(VOID)
 {
     OsExcStackInfoReg(g_excStack, sizeof(g_excStack) / sizeof(g_excStack[0]));//异常模式下注册内核栈信息
@@ -686,20 +686,20 @@ VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 #endif
         OsDumpProcessUsedMemNode(OS_EXC_VMM_NO_REGION);
 
-        OsExcStackInfo();
+        OsExcStackInfo();//	打印任务栈的信息
 #ifndef LOSCFG_DEBUG_VERSION
     }
 #endif
 
-    OsDumpContextMem(excBufAddr);
+    OsDumpContextMem(excBufAddr);// 打印上下文
 
-    (VOID)OsShellCmdMemCheck(0, NULL);//检查内存
+    (VOID)OsShellCmdMemCheck(0, NULL);//检查内存,相当于执行 shell memcheck 命令
 
 #ifdef LOSCFG_COREDUMP
     LOS_CoreDumpV2(excType, excBufAddr);
 #endif
 
-    OsUserExcHandle(excBufAddr);
+    OsUserExcHandle(excBufAddr);//用户态下异常的处理
 }
 //打印调用栈信息
 VOID OsCallStackInfo(VOID)
@@ -792,8 +792,8 @@ VOID OsPrefetchAbortExcHandleEntry(ExcContext *excBufAddr)
     }
 
     if (g_excHook != NULL) {
-        far = OsArmReadIfar();
-        fsr = OsArmReadIfsr();
+        far = OsArmReadIfar();//far 为CP15的 C6寄存器 详见:https://blog.csdn.net/kuangyufei/article/details/108994081
+        fsr = OsArmReadIfsr();//fsr 为CP15的 C5寄存器
         g_excHook(OS_EXCEPT_PREFETCH_ABORT, excBufAddr, far, fsr);//回调函数,详见: OsExcHook
     }
     while (1) {}
@@ -886,7 +886,7 @@ STATIC VOID OsWaitOtherCoresHandleExcEnd(UINT32 currCpuID)
         LOS_Mdelay(EXC_WAIT_INTER);
     }
 }
-
+//检查所以CPU的状态
 STATIC VOID OsCheckAllCpuStatus(UINTPTR taskStackPointer)
 {
     UINT32 currCpuID = ArchCurrCpuid();
@@ -902,9 +902,9 @@ STATIC VOID OsCheckAllCpuStatus(UINTPTR taskStackPointer)
         LOS_SpinUnlock(&g_excSerializerSpin);
         if (g_excFromUserMode[currCpuID] == FALSE) {
             target = (UINT32)(OS_MP_CPU_ALL & ~CPUID_TO_AFFI_MASK(currCpuID));
-            HalIrqSendIpi(target, LOS_MP_IPI_HALT);
+            HalIrqSendIpi(target, LOS_MP_IPI_HALT);//向目标CPU发送停止消息
         }
-    } else if (g_excFromUserMode[currCpuID] == TRUE) {
+    } else if (g_excFromUserMode[currCpuID] == TRUE) {//当前运行在用户态
         if (OsCurrProcessGet()->processID == g_currHandleExcPID) {
             LOS_SpinUnlock(&g_excSerializerSpin);
             OsExcRestore(taskStackPointer);

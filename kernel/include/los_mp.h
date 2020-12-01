@@ -44,7 +44,7 @@ extern "C" {
 
 #define OS_MP_GC_PERIOD     100 /* ticks */
 
-typedef enum {
+typedef enum {//处理器之间发送消息
     LOS_MP_IPI_WAKEUP,	//唤醒CPU
     LOS_MP_IPI_SCHEDULE,//调度CPU
     LOS_MP_IPI_HALT,	//停止CPU

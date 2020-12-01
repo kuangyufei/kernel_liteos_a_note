@@ -71,7 +71,7 @@ struct LosHeapNode* OsHeapPrvGetNext(struct LosHeapManager *heapMan, struct LosH
  *               UITN32 size --- size of the heap memory pool
  * Return      : 1:success 0:error
  */
-BOOL OsHeapInit(VOID *pool, UINT32 size)
+BOOL OsHeapInit(VOID *pool, UINT32 size)//堆的初始化
 {
     struct LosHeapNode *node = NULL;
     struct LosHeapManager *heapMan = HEAP_CAST(struct LosHeapManager *, pool);

@@ -57,7 +57,7 @@ UINT32 OsStackWaterLineGet(const UINTPTR *stackBottom, const UINTPTR *stackTop, 
         return LOS_NOK;
     }
 }
-//执行栈检查,主要就是检查栈顶值有没有被改写
+//异常情况下的栈检查,主要就是检查栈顶值有没有被改写
 VOID OsExcStackCheck(VOID)
 {
     UINT32 index;
@@ -103,7 +103,7 @@ VOID OsExcStackInfo(VOID)
         }
     }
 
-    OsExcStackCheck();
+    OsExcStackCheck();//发生异常时栈检查
 }
 /*************************************************************************************** @note_pic
   OsExcStackInfo 各个CPU栈布局图,其他栈也是一样,CPU各核硬件栈都是紧挨着

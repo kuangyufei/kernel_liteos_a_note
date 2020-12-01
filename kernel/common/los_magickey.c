@@ -48,27 +48,27 @@ STATIC VOID OsMagicPanic(VOID);
 STATIC VOID OsMagicMemCheck(VOID);
 
 STATIC MagicKeyOp g_magicMemCheckOp = {//快捷键内存检查
-    .opHandler = OsMagicMemCheck,
+    .opHandler = OsMagicMemCheck,	//等于执行了一次 shell memcheck 
     .helpMsg = "Check system memory(ctrl+e) ",
-    .magicKey = 0x05 /* ctrl + e */
+    .magicKey = 0x05 /* ctrl + e */ //系统进行简单完整性内存池检查，检查出错会输出相关错误信息，检查正常会输出“system memcheck over, all passed!”
 };
 
 STATIC MagicKeyOp g_magicPanicOp = {//panic 表示kernel走到了一个不知道该怎么走下一步的状况，
     .opHandler = OsMagicPanic,		//一旦到这个情况，kernel就尽可能把它此时能获取的全部信息都打印出来.
     .helpMsg = "System panic(ctrl+p) ",
-    .magicKey = 0x10 /* ctrl + p */
+    .magicKey = 0x10 /* ctrl + p */ //系统主动进入panic，输出panic相关信息后，系统会挂住；
 };
 
 STATIC MagicKeyOp g_magicTaskShowOp = { //快捷键显示任务操作
-    .opHandler = OsMagicTaskShow,
+    .opHandler = OsMagicTaskShow,	//等于执行了一次 shell task -a 
     .helpMsg = "Show task information(ctrl+t) ",
-    .magicKey = 0x14 /* ctrl + t */
+    .magicKey = 0x14 /* ctrl + t */ //输出任务相关信息；
 };
 
 STATIC MagicKeyOp g_magicHelpOp = {	//快捷键帮助操作
     .opHandler = OsMagicHelp,
     .helpMsg = "Show all magic op key(ctrl+z) ",
-    .magicKey = 0x1a /* ctrl + z */
+    .magicKey = 0x1a /* ctrl + z */ //帮助键，输出相关魔法键简单介绍；
 };
 
 /*
@@ -89,7 +89,7 @@ STATIC MagicKeyOp *g_magicOpTable[MAGIC_KEY_NUM] = {
     NULL                /* rserved */
 };
 
-STATIC VOID OsMagicHelp(VOID)
+STATIC VOID OsMagicHelp(VOID)//遍历一下 g_magicOpTable
 {
     INT32 i;
     PRINTK("HELP: ");
@@ -128,7 +128,7 @@ INT32 CheckMagicKey(CHAR key)
 #ifdef LOSCFG_ENABLE_MAGICKEY //魔法键开关
     INT32 i;
     STATIC UINT32 magicKeySwitch = 0;
-    if (key == 0x12) { /* ctrl + r */ //用0x12 来打开和关闭魔法键开关
+    if (key == 0x12) { /* ctrl + r */ //用0x12 打开和关闭魔法键检测功能
         magicKeySwitch = ~magicKeySwitch;
         if (magicKeySwitch != 0) {
             PRINTK("Magic key on\n");
