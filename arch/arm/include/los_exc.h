@@ -45,6 +45,9 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+/*********************************************************** @note_pic
+
+************************************************************/
 /**
  * @ingroup los_exc
  * Register information structure
@@ -52,7 +55,7 @@ extern "C" {
  * Description: register information stored when an exception occurs on an LPC2458 platform.
  *
  * Note: The following register names without uw are the register names used in the chip manual.
- *///以下不带uw的寄存器名是芯片手册中使用的寄存器名
+ */ //在LPC2458平台上发生异常时存储的寄存器信息 以下不带uw的寄存器名是芯片手册中使用的寄存器名
 #ifdef LOSCFG_ARCH_ARM_AARCH64
 #define EXC_GEN_REGS_NUM     30
 typedef struct {
@@ -80,9 +83,9 @@ typedef struct { //异常上下文,任务被中断需切换上下文,就是一�
     UINT32 R10;     /**< Register R10 */
     UINT32 R11;     /**< Register R11 */
     UINT32 R12;     /**< Register R12 */
-    UINT32 SP;      /**< Stack pointer */	//内核态下栈指针
+    UINT32 SP;      /**< Stack pointer */	//内核态栈指针
     UINT32 LR;      /**< Program returning address. */	//用户态下程序返回地址
-    UINT32 PC;      /**< PC pointer of the exceptional function */ //异常函数的PC位置
+    UINT32 PC;      /**< PC pointer of the exceptional function */ //异常函数的程序计数器PC位置
 } ExcContext;
 #endif
 
@@ -117,7 +120,7 @@ typedef struct {//异常信息结构体
  * los_exc.h: the header file that contains the API declaration.
  * @see None.
  */
-STATIC INLINE UINTPTR Get_Fp(VOID)//内核FP寄存器地址获取函数
+STATIC INLINE UINTPTR Get_Fp(VOID)//获取内核FP寄存器地址
 {
     UINTPTR regFp;
 

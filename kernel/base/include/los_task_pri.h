@@ -300,7 +300,7 @@ typedef struct {
     UINT16          policy;				//任务的调度方式(三种 .. LOS_SCHED_RR )
     UINT16          timeSlice;          /**< Remaining time slice *///剩余时间片
     UINT32          stackSize;          /**< Task stack size */		//非用户模式下栈大小
-    UINTPTR         topOfStack;         /**< Task stack top */		//非用户模式下的栈顶
+    UINTPTR         topOfStack;         /**< Task stack top */		//非用户模式下的栈顶 bottom = top + size
     UINT32          taskID;             /**< Task ID */				//任务ID，任务池本质是一个大数组，ID就是数组的索引，默认 < 128
     TSK_ENTRY_FUNC  taskEntry;          /**< Task entrance function */	//任务执行入口函数
     VOID            *joinRetval;        /**< pthread adaption */

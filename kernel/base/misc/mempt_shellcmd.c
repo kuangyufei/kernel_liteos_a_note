@@ -100,7 +100,21 @@ VOID OsDumpMemByte(size_t length, UINTPTR addr)
 
     return;
 }
+/***************************************************************
+memcheck
+命令功能
+检查动态申请的内存块是否完整，是否存在内存越界造成节点损坏。
 
+命令格式
+memcheck
+
+参数说明
+无。
+
+使用指南
+当内存池所有节点完整时，输出"system memcheck over, all passed!"。
+当内存池存在节点不完整时，输出被损坏节点的内存块信息。
+***************************************************************/
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemCheck(INT32 argc, const CHAR *argv[])
 {
     if (argc > 0) {
@@ -110,7 +124,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemCheck(INT32 argc, const CHAR *argv[])
 
     if (LOS_MemIntegrityCheck(m_aucSysMem1) == LOS_OK) {
         PRINTK("system memcheck over, all passed!\n");
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SHELL_EXCINFO //支持异常缓存时,写缓存
         WriteExcInfoToBuf("system memcheck over, all passed!\n");
 #endif
     }

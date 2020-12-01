@@ -147,7 +147,7 @@ VOID OsReadWriteExceptionInfo(UINT32 startAddr, UINT32 space, UINT32 flag, CHAR 
     }
     // user can write exception information to files here
 }
-
+//记录异常信息发送的时间
 VOID OsRecordExcInfoTime(VOID)
 {
 #ifdef LOSCFG_FS_VFS
@@ -157,12 +157,12 @@ VOID OsRecordExcInfoTime(VOID)
     CHAR nowTime[NOW_TIME_LENGTH];
 
     (VOID)time(&t);
-    tmTime = localtime(&t);
+    tmTime = localtime(&t);//获取本地时间的标准C库函数
     if (tmTime == NULL) {
         return;
     }
     (VOID)memset_s(nowTime, sizeof(nowTime), 0, sizeof(nowTime));
-    (VOID)strftime(nowTime, NOW_TIME_LENGTH, "%Y-%m-%d %H:%M:%S", tmTime);
+    (VOID)strftime(nowTime, NOW_TIME_LENGTH, "%Y-%m-%d %H:%M:%S", tmTime);//生成时间格式
 #undef NOW_TIME_LENGTH
     WriteExcInfoToBuf("%s \n", nowTime);
 #endif

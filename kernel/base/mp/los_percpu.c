@@ -37,7 +37,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM];
+Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM];//CPU核描述符,描述每个CPU的信息.
 
 #ifdef __cplusplus
 #if __cplusplus

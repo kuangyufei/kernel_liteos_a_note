@@ -117,7 +117,7 @@ extern "C" {
 #define ROUNDOFFSET(a, b)                ((a) & ((b) - 1))
 #define MIN2(a, b)                       (((a) < (b)) ? (a) : (b))
 
-#define IS_ALIGNED(a, b)                 (!(((UINTPTR)(a)) & (((UINTPTR)(b)) - 1)))
+#define IS_ALIGNED(a, b)                 (!(((UINTPTR)(a)) & (((UINTPTR)(b)) - 1)))//是否按指定的参数对齐
 #define IS_PAGE_ALIGNED(x)               IS_ALIGNED(x, PAGE_SIZE) //是否按页大小对齐 4K
 #define IS_SECTION_ALIGNED(x)            IS_ALIGNED(x, SECTION_SIZE)//是否按段大小对齐
 

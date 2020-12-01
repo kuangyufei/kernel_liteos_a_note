@@ -1622,7 +1622,7 @@ STATIC UINT32 ConsoleSendTask(UINTPTR param)
 }
 
 #if (LOSCFG_KERNEL_SMP == YES)//多处理器情况下
-VOID OsWaitConsoleSendTaskPend(UINT32 taskID)
+VOID OsWaitConsoleSendTaskPend(UINT32 taskID)//等待控制台任务结束
 {
     UINT32 i;
     CONSOLE_CB *console = NULL;
@@ -1640,7 +1640,7 @@ VOID OsWaitConsoleSendTaskPend(UINT32 taskID)
 
         taskCB = OS_TCB_FROM_TID(console->sendTaskID);
         while ((taskCB->taskEvent == NULL) && (taskID != console->sendTaskID)) {
-            LOS_Mdelay(1); /* 1: wait console task pend */
+            LOS_Mdelay(1); /* 1: wait console task pend */ //等待控制台任务阻塞
         }
     }
 }

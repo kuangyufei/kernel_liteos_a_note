@@ -33,7 +33,7 @@
 #define _ARCH_CONFIG_H
 //ARM处理器一共有7种工作模式
 #include "menuconfig.h"
-//CPSR为当前程序的状态寄存器
+//CPSR 当前程序的状态寄存器
 #define CPSR_INT_DISABLE         0xC0 /* Disable both FIQ and IRQ */	//禁止中断
 #define CPSR_IRQ_DISABLE         0x80 /* IRQ disabled when =1 */		//只禁止IRQ 中断
 #define CPSR_FIQ_DISABLE         0x40 /* FIQ disabled when =1 */		//禁止 FIQ中断
@@ -50,7 +50,7 @@
 #define OS_EXCEPT_RESET          0x00	//重置功能，例如：开机就进入CPSR_SVC_MODE模式
 #define OS_EXCEPT_UNDEF_INSTR    0x01	//未定义的异常，就是others
 #define OS_EXCEPT_SWI            0x02	//软件定时器中断
-#define OS_EXCEPT_PREFETCH_ABORT 0x03	//预取异常
+#define OS_EXCEPT_PREFETCH_ABORT 0x03	//预取异常(取指异常), 指令三步骤: 取指,译码,执行, 
 #define OS_EXCEPT_DATA_ABORT     0x04	//数据异常
 #define OS_EXCEPT_FIQ            0x05	//快中断异常
 #define OS_EXCEPT_ADDR_ABORT     0x06	//地址异常

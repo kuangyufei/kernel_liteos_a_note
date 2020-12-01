@@ -78,7 +78,7 @@ STATIC UINTPTR g_maxAddr;
 STATIC UINT32 g_currHandleExcCpuID = INVALID_CPUID;
 VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr);
 UINT32 g_curNestCount[LOSCFG_KERNEL_CORE_NUM] = { 0 };//
-BOOL g_excFromUserMode[LOSCFG_KERNEL_CORE_NUM];//记录CPU core 异常来自用户态
+BOOL g_excFromUserMode[LOSCFG_KERNEL_CORE_NUM];//记录CPU core 异常来自用户态还是内核态 TRUE为用户态,默认为内核态
 STATIC EXC_PROC_FUNC g_excHook = (EXC_PROC_FUNC)OsExcHook;//全局异常处理钩子
 #if (LOSCFG_KERNEL_SMP == YES)
 STATIC SPIN_LOCK_INIT(g_excSerializerSpin);//初始化异常系列化自旋锁
@@ -86,8 +86,8 @@ STATIC UINT32 g_currHandleExcPID = OS_INVALID_VALUE;
 STATIC UINT32 g_nextExcWaitCpu = INVALID_CPUID;
 #endif
 
-#define OS_MAX_BACKTRACE    15U
-#define DUMPSIZE            128U
+#define OS_MAX_BACKTRACE    15U //打印栈内容的数目
+#define DUMPSIZE            128U	
 #define DUMPREGS            12U
 #define INSTR_SET_MASK      0x01000020U
 #define THUMB_INSTR_LEN     2U
@@ -304,7 +304,7 @@ STATIC VOID OsExcSysInfo(UINT32 excType, const ExcContext *excBufAddr)
         PrintExcInfo("\nklr   = 0x%x\n"	//注意：只有一个内核空间和内核堆空间，而每个用户进程就有自己独立的用户空间。
                      "ksp   = 0x%x\n",	//用户空间的虚拟地址范围是一样的，只是映射到不同的物理内存页。
                      excBufAddr->LR,	//直接打印程序的返回地址
-                     excBufAddr->SP);	//直接打印栈空间
+                     excBufAddr->SP);	//直接打印栈指针
     }
 
     PrintExcInfo("fp    = 0x%x\n", excBufAddr->R11);//FP(frame pointer)栈帧寄存器R11
@@ -313,10 +313,10 @@ STATIC VOID OsExcSysInfo(UINT32 excType, const ExcContext *excBufAddr)
 STATIC VOID OsExcRegsInfo(const ExcContext *excBufAddr)
 {
     /*
-     * Split register information into two parts:
+     * Split register information into two parts: 
      * Ensure printing does not rely on memory modules.
-     */
-    PrintExcInfo("R0    = 0x%x\n"
+     */ //将寄存器信息分为两部分：确保打印不依赖内存模块。
+    PrintExcInfo("R0    = 0x%x\n" 
                  "R1    = 0x%x\n"
                  "R2    = 0x%x\n"
                  "R3    = 0x%x\n"
@@ -351,7 +351,7 @@ EXC_PROC_FUNC OsExcRegHookGet(VOID)
 {
     return g_excHook;
 }
-
+//dump 虚拟空间下异常虚拟地址线性区
 STATIC VOID OsDumpExcVaddrRegion(LosVmSpace *space, LosVmMapRegion *region)
 {
     INT32 i, numPages, pageCount;
@@ -393,7 +393,7 @@ STATIC VOID OsDumpExcVaddrRegion(LosVmSpace *space, LosVmMapRegion *region)
         startPaddr = 0;
     }
 }
-
+//dump 进程使用的内存线性区
 STATIC VOID OsDumpProcessUsedMemRegion(LosProcessCB *runProcess, LosVmSpace *runspace, UINT16 vmmFlags)
 {
     LosVmMapRegion *region = NULL;
@@ -412,7 +412,7 @@ STATIC VOID OsDumpProcessUsedMemRegion(LosProcessCB *runProcess, LosVmSpace *run
         (VOID)OsRegionOverlapCheckUnlock(runspace, region);
     RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNodeTemp, pstRbNodeNext)
 }
-
+//dump 进程使用的内存节点
 STATIC VOID OsDumpProcessUsedMemNode(UINT16 vmmFalgs)
 {
     LosProcessCB *runProcess = NULL;
@@ -437,7 +437,8 @@ STATIC VOID OsDumpProcessUsedMemNode(UINT16 vmmFalgs)
     OsDumpProcessUsedMemRegion(runProcess, runspace, vmmFalgs);
     return;
 }
-
+//dump 上下文内存,注意内核异常不能简单的映射理解为应用的异常,异常对内核来说是一个很常见操作,
+//比如任务的切换对内核来说就是一个异常处理
 VOID OsDumpContextMem(const ExcContext *excBufAddr)
 {
     UINT32 count = 0;
@@ -657,8 +658,8 @@ VOID BackTraceSub(UINTPTR regFP)
         }
     }
 }
-//回溯追踪
-VOID BackTrace(UINT32 regFP)
+//打印调用栈信息 
+VOID BackTrace(UINT32 regFP)//fp:R11寄存器 
 {
     PrintExcInfo("*******backtrace begin*******\n");
 
@@ -669,18 +670,18 @@ VOID OsExcInit(VOID)
 {
     OsExcStackInfoReg(g_excStack, sizeof(g_excStack) / sizeof(g_excStack[0]));//异常模式下注册内核栈信息
 }
-//由注册后回调
+//由注册后回调,发送异常情况下会回调这里执行,见于 OsUndefIncExcHandleEntry, OsExcHandleEntry ==函数
 VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
-{
-    OsExcType(excType, excBufAddr, far, fsr);
-    OsExcSysInfo(excType, excBufAddr);
-    OsExcRegsInfo(excBufAddr);
+{//参考文档 https://gitee.com/openharmony/docs/blob/master/kernel/%E7%94%A8%E6%88%B7%E6%80%81%E5%BC%82%E5%B8%B8%E4%BF%A1%E6%81%AF%E8%AF%B4%E6%98%8E.md
+    OsExcType(excType, excBufAddr, far, fsr);	//1.打印异常的类型
+    OsExcSysInfo(excType, excBufAddr);	//2.打印异常的基本信息
+    OsExcRegsInfo(excBufAddr);	//3.打印异常的寄存器信息
 
-    BackTrace(excBufAddr->R11);
+    BackTrace(excBufAddr->R11);	//4.打印调用栈信息,
 
-    (VOID)OsShellCmdTskInfoGet(OS_ALL_TASK_MASK, NULL, OS_PROCESS_INFO_ALL);
+    (VOID)OsShellCmdTskInfoGet(OS_ALL_TASK_MASK, NULL, OS_PROCESS_INFO_ALL);//打印进程线程基本信息 相当于执行下 shell task -a 命令
 
-#ifndef LOSCFG_DEBUG_VERSION
+#ifndef LOSCFG_DEBUG_VERSION //打开debug开关
     if (g_excFromUserMode[ArchCurrCpuid()] != TRUE) {
 #endif
         OsDumpProcessUsedMemNode(OS_EXC_VMM_NO_REGION);
@@ -692,7 +693,7 @@ VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 
     OsDumpContextMem(excBufAddr);
 
-    (VOID)OsShellCmdMemCheck(0, NULL);
+    (VOID)OsShellCmdMemCheck(0, NULL);//检查内存
 
 #ifdef LOSCFG_COREDUMP
     LOS_CoreDumpV2(excType, excBufAddr);
@@ -700,25 +701,25 @@ VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 
     OsUserExcHandle(excBufAddr);
 }
-
+//打印调用栈信息
 VOID OsCallStackInfo(VOID)
 {
     UINT32 count = 0;
     LosTaskCB *runTask = OsCurrTaskGet();
-    UINTPTR stackBottom = runTask->topOfStack + runTask->stackSize;
+    UINTPTR stackBottom = runTask->topOfStack + runTask->stackSize;//内核态的 栈底 = 栈顶 + 大小
     UINT32 *stackPointer = (UINT32 *)stackBottom;
 
     PrintExcInfo("runTask->stackPointer = 0x%x\n"
                  "runTask->topOfStack = 0x%x\n"
                  "text_start:0x%x,text_end:0x%x\n",
                  stackPointer, runTask->topOfStack, &__text_start, &__text_end);
-
+	//打印OS_MAX_BACKTRACE多一条栈信息,注意stack中存放的是函数调用地址和指令的地址
     while ((stackPointer > (UINT32 *)runTask->topOfStack) && (count < OS_MAX_BACKTRACE)) {
-        if ((*stackPointer > (UINTPTR)(&__text_start)) &&
+        if ((*stackPointer > (UINTPTR)(&__text_start)) && //正常情况下 sp的内容都是文本段的内容
             (*stackPointer < (UINTPTR)(&__text_end)) &&
-            IS_ALIGNED((*stackPointer), POINTER_SIZE)) {
-            if ((*(stackPointer - 1) > (UINT32)runTask->topOfStack) &&
-                (*(stackPointer - 1) < stackBottom) &&
+            IS_ALIGNED((*stackPointer), POINTER_SIZE)) { //sp的内容是否对齐, sp指向指令的地址
+            if ((*(stackPointer - 1) > (UINT32)runTask->topOfStack) && 
+                (*(stackPointer - 1) < stackBottom) && //@note_why 这里为什么要对 stackPointer - 1 进行判断   
                 IS_ALIGNED((*(stackPointer - 1)), POINTER_SIZE)) {
                 count++;
                 PrintExcInfo("traceback %u -- lr = 0x%x\n", count, *stackPointer);
@@ -728,8 +729,13 @@ VOID OsCallStackInfo(VOID)
     }
     PRINTK("\n");
 }
-
-VOID OsTaskBackTrace(UINT32 taskID)
+/***********************************************
+R11寄存器(frame pointer)
+在程序执行过程中（通常是发生了某种意外情况而需要进行调试），通过SP和FP所限定的stack frame，
+就可以得到母函数的SP和FP，从而得到母函数的stack frame（PC，LR，SP，FP会在函数调用的第一时间压栈），
+以此追溯，即可得到所有函数的调用顺序。
+***********************************************/
+VOID OsTaskBackTrace(UINT32 taskID)//任务栈信息追溯
 {
     LosTaskCB *taskCB = NULL;
 
@@ -766,9 +772,9 @@ VOID OsUndefIncExcHandleEntry(ExcContext *excBufAddr)
         return;
     }
 
-    if (g_excHook != NULL) {
+    if (g_excHook != NULL) { //是否注册异常打印函数
         /* far, fsr are unused in exc type of OS_EXCEPT_UNDEF_INSTR */
-        g_excHook(OS_EXCEPT_UNDEF_INSTR, excBufAddr, 0, 0);
+        g_excHook(OS_EXCEPT_UNDEF_INSTR, excBufAddr, 0, 0);//回调函数,详见: OsExcHook 
     }
     while (1) {}
 }
@@ -788,7 +794,7 @@ VOID OsPrefetchAbortExcHandleEntry(ExcContext *excBufAddr)
     if (g_excHook != NULL) {
         far = OsArmReadIfar();
         fsr = OsArmReadIfsr();
-        g_excHook(OS_EXCEPT_PREFETCH_ABORT, excBufAddr, far, fsr);
+        g_excHook(OS_EXCEPT_PREFETCH_ABORT, excBufAddr, far, fsr);//回调函数,详见: OsExcHook
     }
     while (1) {}
 }
@@ -807,7 +813,7 @@ VOID OsDataAbortExcHandleEntry(ExcContext *excBufAddr)
     if (g_excHook != NULL) {
         far = OsArmReadDfar();
         fsr = OsArmReadDfsr();
-        g_excHook(OS_EXCEPT_DATA_ABORT, excBufAddr, far, fsr);
+        g_excHook(OS_EXCEPT_DATA_ABORT, excBufAddr, far, fsr);////回调函数,详见: OsExcHook
     }
     while (1) {}
 }
@@ -815,8 +821,8 @@ VOID OsDataAbortExcHandleEntry(ExcContext *excBufAddr)
 #endif /* LOSCFG_GDB */
 
 #if (LOSCFG_KERNEL_SMP == YES)
-#define EXC_WAIT_INTER 50U
-#define EXC_WAIT_TIME  2000U
+#define EXC_WAIT_INTER 50U		//异常等待间隔时间
+#define EXC_WAIT_TIME  2000U	//异常等待时间
 //打印所有CPU的状态信息
 STATIC VOID OsAllCpuStatusOutput(VOID)
 {
@@ -839,7 +845,7 @@ STATIC VOID OsAllCpuStatusOutput(VOID)
     }
     PrintExcInfo("The current handling the exception is cpu%u !\n", ArchCurrCpuid());
 }
-
+//等待所有CPU停止
 STATIC VOID WaitAllCpuStop(UINT32 cpuID)
 {
     UINT32 i;
@@ -990,23 +996,23 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
 
 #if (LOSCFG_KERNEL_SMP == YES)
 #ifdef LOSCFG_FS_VFS
-    /* Wait for the end of the Console task to avoid multicore printing code */
-    OsWaitConsoleSendTaskPend(OsCurrTaskGet()->taskID);
+    /* Wait for the end of the Console task to avoid multicore printing code */ 
+    OsWaitConsoleSendTaskPend(OsCurrTaskGet()->taskID);//等待控制台任务结束，以避免多核打印代码
 #endif
 #endif
-
+	//不允许在此异常信息之前添加任何其他打印信息
     /* You are not allowed to add any other print information before this exception information */
-    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
+    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) { //用户态发生异常
         PrintExcInfo("##################excFrom: User!####################\n");
-    } else {
+    } else {//内核态发生异常
         PrintExcInfo("##################excFrom: kernel###################!\n");
     }
 
 #if (LOSCFG_KERNEL_SMP == YES)
-    OsAllCpuStatusOutput();
+    OsAllCpuStatusOutput();//打印各CPU core的状态
 #endif
 
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SHELL_EXCINFO 
     log_read_write_fn func = GetExcInfoRW();
 #endif
 

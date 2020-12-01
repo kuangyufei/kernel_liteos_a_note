@@ -44,9 +44,9 @@ extern "C" {
 
 #if (LOSCFG_KERNEL_SMP == YES)
 typedef enum {
-    CPU_RUNNING = 0,   /* cpu is running */
-    CPU_HALT,          /* cpu in the halt */
-    CPU_EXC            /* cpu in the exc */
+    CPU_RUNNING = 0,   /* cpu is running */ 	//CPU正在运行状态
+    CPU_HALT,          /* cpu in the halt */	//CPU处于空闲状态
+    CPU_EXC            /* cpu in the exc */		//CPU处于异常状态
 } ExcFlag;
 #endif
 
@@ -66,7 +66,7 @@ typedef struct {
 } Percpu;
 
 /* the kernel per-cpu structure */
-extern Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM];//CPU核
+extern Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM];//每个cpu的内核描述符
 //获得当前运行CPU的信息
 STATIC INLINE Percpu *OsPercpuGet(VOID)
 {
