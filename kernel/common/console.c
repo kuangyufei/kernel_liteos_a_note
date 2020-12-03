@@ -386,23 +386,23 @@ STATIC INLINE VOID UserEndOfRead(CONSOLE_CB *consoleCB, struct file *filep,
 }
 
 enum {
-    STAT_NOMAL_KEY,
-    STAT_ESC_KEY,
-    STAT_MULTI_KEY
+    STAT_NOMAL_KEY,	//控制台上的普通按键,如 a,b,c键
+    STAT_ESC_KEY,	//退出键 0x1B esc 
+    STAT_MULTI_KEY	//组合键 例如 ctrl + s
 };
-
+//shell 检查上下左右
 STATIC INT32 UserShellCheckUDRL(const CHAR ch, INT32 *lastTokenType)
 {
     INT32 ret = LOS_OK;
     if (ch == 0x1b) { /* 0x1b: ESC */
         *lastTokenType = STAT_ESC_KEY;
         return ret;
-    } else if (ch == 0x5b) { /* 0x5b: first Key combination */
+    } else if (ch == 0x5b) { /* 0x5b: first Key combination */ //对应字符 0x5B = '['
         if (*lastTokenType == STAT_ESC_KEY) {
             *lastTokenType = STAT_MULTI_KEY;
             return ret;
         }
-    } else if (ch == 0x41) { /* up */
+    } else if (ch == 0x41) { /* up */ 
         if (*lastTokenType == STAT_MULTI_KEY) {
             *lastTokenType = STAT_NOMAL_KEY;
             return ret;
@@ -517,7 +517,7 @@ STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const stru
 
     return ret;
 }
-
+//读控制台数据 fops:封装了虚拟文件的操作方法
 INT32 FilepRead(struct file *filep, const struct file_operations_vfs *fops, CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -529,21 +529,21 @@ INT32 FilepRead(struct file *filep, const struct file_operations_vfs *fops, CHAR
      * and write data to buffer (filep is
      * corresponding to filep of /dev/console)
      */
-    ret = fops->read(filep, buffer, bufLen);
+    ret = fops->read(filep, buffer, bufLen);//用buffer 将控制台上输入的信息接走
     if (ret < 0) {
         return -EPERM;
     }
     return ret;
 }
-
+//写 /dev/console
 INT32 FilepWrite(struct file *filep, const struct file_operations_vfs *fops, const CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
     if (fops->write == NULL) {
         return -EFAULT;
     }
-
-    ret = fops->write(filep, buffer, bufLen);
+	///dev/console
+    ret = fops->write(filep, buffer, bufLen);//将数据写到控制台
     if (ret < 0) {
         return -EPERM;
     }

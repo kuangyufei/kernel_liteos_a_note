@@ -65,7 +65,7 @@ STATIC UINT32 OsShellCreateTask(ShellCB *shellCB)
 
     return ShellEntryInit(shellCB);
 }
-
+//shell所用资源初始化
 STATIC UINT32 OsShellSourceInit(INT32 consoleId)
 {
     UINT32 ret = LOS_NOK;
@@ -73,7 +73,7 @@ STATIC UINT32 OsShellSourceInit(INT32 consoleId)
     if ((consoleCB == NULL) || (consoleCB->shellHandle != NULL)) {
         return LOS_NOK;
     }
-    consoleCB->shellHandle = LOS_MemAlloc((VOID *)m_aucSysMem0, sizeof(ShellCB));
+    consoleCB->shellHandle = LOS_MemAlloc((VOID *)m_aucSysMem0, sizeof(ShellCB));//分配shell句柄本质就是shell描述符
     if (consoleCB->shellHandle == NULL) {
         return LOS_NOK;
     }
@@ -82,17 +82,17 @@ STATIC UINT32 OsShellSourceInit(INT32 consoleId)
         goto ERR_OUT1;
     }
 
-    shellCB->consoleID = (UINT32)consoleId;
-    ret = (UINT32)pthread_mutex_init(&shellCB->keyMutex, NULL);
+    shellCB->consoleID = (UINT32)consoleId;//控制台和shell互绑
+    ret = (UINT32)pthread_mutex_init(&shellCB->keyMutex, NULL);//初始化shell按键互斥锁
     if (ret != LOS_OK) {
         goto ERR_OUT1;
     }
-    ret = (UINT32)pthread_mutex_init(&shellCB->historyMutex, NULL);
+    ret = (UINT32)pthread_mutex_init(&shellCB->historyMutex, NULL);//初始化shell历史记录互斥锁
     if (ret != LOS_OK) {
         goto ERR_OUT2;
     }
 
-    ret = OsShellKeyInit(shellCB);
+    ret = OsShellKeyInit(shellCB);//cmd 命令链接初始化
     if (ret != LOS_OK) {
         goto ERR_OUT3;
     }
@@ -100,8 +100,8 @@ STATIC UINT32 OsShellSourceInit(INT32 consoleId)
         ret = LOS_NOK;
         goto ERR_OUT4;
     }
-    if (consoleId == CONSOLE_TELNET) {
-        ret = OsShellCreateTask(shellCB);
+    if (consoleId == CONSOLE_TELNET) {//远程登录的控制台
+        ret = OsShellCreateTask(shellCB);//通过shell 描述符 创建一个task创建一个shell task
         if (ret != LOS_OK) {
             goto ERR_OUT4;
         }
@@ -132,7 +132,7 @@ UINT32 OsShellInit(INT32 consoleId)
             return ret;
         }
     }
-    return OsShellSourceInit(consoleId);
+    return OsShellSourceInit(consoleId);//初始化shell所用到的资源
 }
 //deinit 类似于 C++ 析构函数,结束shell前的收尾工作
 INT32 OsShellDeinit(INT32 consoleId)

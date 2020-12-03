@@ -338,7 +338,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntry(UINTPTR param)
     INT32 n = 0;
     ShellCB *shellCB = (ShellCB *)param;
 
-    CONSOLE_CB *consoleCB = OsGetConsoleByID((INT32)shellCB->consoleID);
+    CONSOLE_CB *consoleCB = OsGetConsoleByID((INT32)shellCB->consoleID);//通过参数拿到控制台描述符
     if (consoleCB == NULL) {
         PRINT_ERR("Shell task init error!\n");
         return 1;
@@ -427,8 +427,8 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellTaskInit(ShellCB *shellCB)
 
     initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ShellTask; //任务入口函数
     initParam.usTaskPrio   = 9; /* 9:shell task priority */
-    initParam.auwArgs[0]   = (UINTPTR)shellCB;
-    initParam.uwStackSize  = 0x3000;	//
+    initParam.auwArgs[0]   = (UINTPTR)shellCB; //shell描述符作为首个参数
+    initParam.uwStackSize  = 0x3000;	//12K
     initParam.pcName       = name;
     initParam.uwResved     = LOS_TASK_STATUS_DETACHED;	//线程分离模式
 

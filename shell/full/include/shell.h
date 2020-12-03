@@ -83,20 +83,20 @@ extern "C" {
 #define QUOTES_STATUS_CLOSE(qu) ((qu) == FALSE)
 #define QUOTES_STATUS_OPEN(qu)  ((qu) == TRUE)
 
-typedef struct {
+typedef struct {//shell 描述符
     UINT32   consoleID;			//控制台ID
-    UINT32   shellTaskHandle;	//创建 shell task 的入口函数,这是用于创建 task时指定,类似 应用程序的main函数
+    UINT32   shellTaskHandle;	//创建 shell task 的入口函数,由创建task时指定,类似 应用程序的main函数
     UINT32   shellEntryHandle;	//其实就是任务ID
     VOID     *cmdKeyLink;
     VOID     *cmdHistoryKeyLink;
     VOID     *cmdMaskKeyLink;
     UINT32   shellBufOffset;
-    UINT32   shellKeyType;	//
+    UINT32   shellKeyType;	//shell 按键的类型,有三种(普通,组合,退出)
     EVENT_CB_S shellEvent;	//shell 事件
     pthread_mutex_t keyMutex;	//键盘输入互斥锁
     pthread_mutex_t historyMutex;//历史记录互斥锁
     CHAR     shellBuf[SHOW_MAX_LEN];//shell命令的最大长度 不能大于 272个字符
-    CHAR     shellWorkingDirectory[PATH_MAX];//shell的工作目录      类似:pwd
+    CHAR     shellWorkingDirectory[PATH_MAX];//shell的工作目录      类似:pwd 得到的结果
 } ShellCB;
 
 /* All support cmd types *///所有支持的 CMD 类型

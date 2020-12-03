@@ -783,7 +783,7 @@ OUT:
 
     return (UINT32)ret;
 }
-//初始化 cmd 模块
+//初始化 shell 命令
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdInit(VOID)
 {
     UINT32 ret;

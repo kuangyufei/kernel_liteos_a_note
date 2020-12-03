@@ -51,7 +51,7 @@ extern "C" {
 
 #ifdef LOSCFG_FS_VFS
 
-/* Define two fixed console id for Console ID. */
+/* Define two fixed console id for Console ID. */ //两种固定的控制台id
 #define CONSOLE_SERIAL 1	//串行方式
 #define CONSOLE_TELNET 2	//远程登录
 //POSIX 定义了 STDIN_FILENO、STDOUT_FILENO 和 STDERR_FILENO 来代替 0、1、2 
@@ -89,7 +89,7 @@ typedef struct {
     UINT32 refCount;	//引用次数
     BOOL isNonBlock;	
 #ifdef LOSCFG_SHELL
-    VOID *shellHandle;	//shell句柄
+    VOID *shellHandle;	//shell句柄,本质是 shell控制块 ShellCB
 #endif
     UINT32 sendTaskID;	//发送任务ID
     CirBufSendCB *cirBufSendCB;	//循环缓冲描述符
