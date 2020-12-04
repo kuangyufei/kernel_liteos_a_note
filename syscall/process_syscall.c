@@ -450,7 +450,7 @@ int SysSetUserID(int uid)
 
     SCHEDULER_LOCK(intSave);
     User *user = OsCurrUserGet();//获取当前用户
-    if (IsCapPermit(CAP_SETUID)) {	//是否定义了设置用户ID的能力
+    if (IsCapPermit(CAP_SETUID)) {	//是否有设置用户ID的能力
         user->userID = uid;	//改变UID
         user->effUserID = uid;
         /* add process to a user */

@@ -193,14 +193,14 @@ int netstat_udp_sendq(struct udp_pcb *upcb);
 int netstat_netconn_sendq(struct netconn *conn);
 /* Forward Declarations [END] */
 
-#define IFCONFIG_OPTION_SET_IP          (1)
-#define IFCONFIG_OPTION_SET_NETMASK     (1 << 1)
-#define IFCONFIG_OPTION_SET_GW          (1 << 2)
-#define IFCONFIG_OPTION_SET_HW          (1 << 3)
-#define IFCONFIG_OPTION_SET_UP          (1 << 4)
-#define IFCONFIG_OPTION_SET_DOWN        (1 << 5)
-#define IFCONFIG_OPTION_SET_MTU         (1 << 6)
-#define IFCONFIG_OPTION_DEL_IP          (1 << 7)
+#define IFCONFIG_OPTION_SET_IP          (1)			//ifconfig add 命令之设置IP地址
+#define IFCONFIG_OPTION_SET_NETMASK     (1 << 1)	//ifconfig netmask 命令 之设置子网掩码
+#define IFCONFIG_OPTION_SET_GW          (1 << 2)	//ifconfig gateway 命令 之设置网关
+#define IFCONFIG_OPTION_SET_HW          (1 << 3)	//ifconfig hw ether 命令 之设置板子硬件mac地址
+#define IFCONFIG_OPTION_SET_UP          (1 << 4)	//ifconfig up 命令 之设置启用网卡数据处理，需指定网卡名
+#define IFCONFIG_OPTION_SET_DOWN        (1 << 5)	//ifconfig down 命令 之设置关闭网卡数据处理，需指定网卡名
+#define IFCONFIG_OPTION_SET_MTU         (1 << 6)	//ifconfig mtu 命令 之设置网络最大传输单元。
+#define IFCONFIG_OPTION_DEL_IP          (1 << 7)	//ifconfig del 命令 之删除IP
 
 #define NETSTAT_ENTRY_SIZE 120
 #define MAX_NETSTAT_ENTRY (NETSTAT_ENTRY_SIZE * (MEMP_NUM_TCP_PCB + MEMP_NUM_UDP_PCB + MEMP_NUM_TCP_PCB_LISTEN + 1))
@@ -235,7 +235,7 @@ int netstat_netconn_sendq(struct netconn *conn);
 } while(0)
 
 #define LWIP_MSECS_TO_SECS(time_in_msecs) (time_in_msecs / 1000)
-struct ifconfig_option {
+struct ifconfig_option { //shell ifconfig 命令所需内容结构体
     char iface[IFNAMSIZ];
     unsigned int option;
     ip_addr_t ip_addr;
@@ -255,13 +255,13 @@ struct netstat_data {
     s8_t *netstat_out_buf;
     u32_t netstat_out_buf_len;
     u32_t netstat_out_buf_updated_len;
-    sys_sem_t cb_completed;
+    sys_sem_t cb_completed;//call back 信号量
 };
 
 struct if_cmd_data {
     char *if_name;
     err_t err;
-    sys_sem_t cb_completed;
+    sys_sem_t cb_completed;//call back 信号量
 };
 
 #ifndef LWIP_TESTBED
@@ -678,8 +678,44 @@ LWIP_STATIC void lwip_ifconfig_usage(const char *cmd)
          "\n[interface up|down]\n",
            cmd);
 }
+/*******************************************************
+https://gitee.com/openharmony/docs/blob/master/kernel/ifconfig.md
+命令功能
+ifconfig命令用来查询和设置网卡的IP地址、网络掩码、网关、硬件mac地址等参数。并能够启用/关闭网卡。
 
-u32_t lwip_ifconfig(int argc, const char **argv)
+命令格式
+ifconfig
+[-a]
+<interface> <address> [netmask <mask>] [gateway <address>]
+[hw ether <address>] [mtu <size>]
+[inet6 add <address>]
+[inet6 del <address>]
+[up|down]
+
+参数			参数说明		取值范围
+不带参数		打印所有网卡的IP地址、网络掩码、网关、硬件mac地址、MTU、运行状态等信息。
+-a			打印协议栈收发数据信息。
+interface	指定网卡名，比如eth0。
+address		设置IP地址，比如192.168.1.10，需指定网卡名。
+netmask		设置子网掩码，后面要掩码参数，比如255.255.255.0。
+gateway		设置网关，后面跟网关参数，比如192.168.1.1。
+hw ether	设置mac地址， 后面是MAC地址，比如00:11:22:33:44:55。目前只支持ether硬件类型。
+mtu			设置mtu大小，后面是mtu大小，比如1000。	仅支持ipv4情况下的范围为[68,1500]。支持ipv6情况下的范围为[1280,1500]。
+add			设置ipv6的地址，比如2001:a:b:c:d:e:f:d，需指定网卡名和inet6。
+del			删除ipv6的地址，需指定网卡名和inet6。
+up			启用网卡数据处理，需指定网卡名。
+down		关闭网卡数据处理，需指定网卡名。
+
+使用指南
+命令需要启动TCP/IP协议栈后才能使用。
+由于IP冲突检测需要反应时间，每次使用ifconfig设置IP后会有2S左右的延时。
+使用实例
+ifconfig eth0 192.168.100.31 netmask 255.255.255.0 gateway 192.168.100.1 hw ether 00:49:cb:6c:a1:31
+ifconfig -a
+ifconfig eth0 inet6 add 2001:a:b:c:d:e:f:d
+ifconfig eth0 inet6 del 2001:a:b:c:d:e:f:d
+*******************************************************/
+u32_t lwip_ifconfig(int argc, const char **argv)//一个400多行代码的函数
 {
     int i;
     static struct ifconfig_option ifconfig_cmd;
@@ -1141,21 +1177,21 @@ ifconfig_error:
 SHELLCMD_ENTRY(ifconfig_shellcmd, CMD_TYPE_EX, "ifconfig", XARGS, (CmdCallBackFunc)lwip_ifconfig);//采用shell命令静态注册方式
 #endif /* LOSCFG_SHELL */
 /* add arp entry to arp cache */
-#define ARP_OPTION_ADD      1
+#define ARP_OPTION_ADD      1 	//向arp缓存添加arp条目
 /* delete arp entry to arp cache */
-#define ARP_OPTION_DEL      2
+#define ARP_OPTION_DEL      2	//向arp缓存删除arp条目
 /* print all arp entry in arp cache */
-#define ARP_OPTION_SHOW     3
+#define ARP_OPTION_SHOW     3	//打印所有arp条目
 
 struct arp_option {
     /* see the ARP_OPTION_ above */
     int option;
-    /* descriptive abbreviation of network interface */
-    char iface[IFNAMSIZ];
+    /* descriptive abbreviation of network interface */ 
+    char iface[IFNAMSIZ];//表示该ARP表项使用的接口名。
     /* ip addr */
-    unsigned int ipaddr;
+    unsigned int ipaddr;//如192.168.1.35  ipaddr记录是 35
     /* hw addr */
-    unsigned char ethaddr[6];
+    unsigned char ethaddr[6];//表示网络设备的MAC地址。
     /* when using telnet, printf to the telnet socket will result in system  */
     /* deadlock.so don't do it.cahe the data to prinf to a buf, and when     */
     /* callback returns, then printf the data out to the telnet socket       */
@@ -1339,6 +1375,13 @@ LWIP_STATIC void lwip_arp_usage(const char *cmd)
            cmd, cmd, cmd);
 }
 /****************************************************************
+地址解析协议，即ARP（Address Resolution Protocol），是根据IP地址获取物理地址的一个TCP/IP协议。
+主机发送信息时将包含目标IP地址的ARP请求广播到局域网络上的所有主机，并接收返回消息，
+以此确定目标的物理地址；收到返回消息后将该IP地址和物理地址存入本机ARP缓存中并保留一定时间，
+下次请求时直接查询ARP缓存以节约资源。地址解析协议是建立在网络中各个主机互相信任的基础上的，
+局域网络上的主机可以自主发送ARP应答消息，其他主机收到应答报文时不会检测该报文的真实性就会将
+其记入本机ARP缓存；
+
 命令功能
 在以太网中，主机之间的通信是直接使用MAC地址（非IP地址）来通信的，所以，对于使用IP通信的协议，
 必须能够将IP地址转换成MAC地址，才能在局域网（以太网）内通信。解决这个问题的方法就是主机存储
@@ -1566,7 +1609,7 @@ LWIP_STATIC unsigned int get_hostip(const char *hname)
 }
 #endif
 
-#if LWIP_EXT_POLL_SUPPORT
+#if LWIP_EXT_POLL_SUPPORT // 使用poll实现 I/O多路复用
 static int ping_taskid = -1;
 static int ping_kill = 0;
 #define PING_ZERO_DATA_LEN 8
@@ -1796,8 +1839,27 @@ static void ping_cmd(unsigned int p0, unsigned int p1, unsigned int p2, unsigned
 
     ping_taskid = -1;
 }
-//shell ping 用于测试网络连接是否正常 ping_ [-n cnt_] [-w interval] [-l data_len]_ <IP>_
-u32_t osShellPing(int argc, const char **argv)
+
+/**********************************************************
+https://gitee.com/openharmony/docs/blob/master/kernel/ping.md
+
+命令功能
+ping命令用于测试网络连接是否正常。
+
+命令格式
+ping_ [-n cnt_] [-w interval] [-l data_len]_ <IP>_
+ping [-t] [-w interval] <IP>
+ping -k
+
+使用指南
+ping命令用来测试到目的IP的网络连接是否正常，参数为目的IP地址。
+如果目的IP不可达，会显示请求超时。
+如果显示发送错误，说明没有到目的IP的路由。
+命令需要启动TCP/IP协议栈后才能使用。
+使用实例
+举例：输入ping 169.254.60.115
+**********************************************************/
+u32_t osShellPing(int argc, const char **argv) 
 {
     int ret;
     u32_t i = 0;
@@ -2088,7 +2150,26 @@ SHELLCMD_ENTRY(ping_shellcmd, CMD_TYPE_EX, "ping", XARGS, (CmdCallBackFunc)osShe
 
 #endif /* LWIP_EXT_POLL_SUPPORT*/
 
-#if LWIP_IPV6
+#if LWIP_IPV6	//鸿蒙默认支持ipv6,物联网时代那是必须滴 
+/**********************************************************
+https://gitee.com/openharmony/docs/blob/master/kernel/ping.md
+
+命令功能
+ping6用于测试IPv6网络连接是否正常。
+
+命令格式
+ping6 [-c count] [-I interface / sourceAddress] destination
+
+使用指南
+如果目的IPv6地址不可达，会显示请求超时。
+如果显示发送错误，说明没有到目的IPV6的路由。
+命令需要启动TCP/IP协议栈后才能使用。
+使用实例
+ping6 2001:a:b:c:d:e:f:b
+ping6 -c 3 2001:a:b:c:d:e:f:b
+ping6 -I eth0 2001:a:b:c:d:e:f:b
+ping6 -I 2001:a:b:c:d:e:f:d 2001:a:b:c:d:e:f:b
+**********************************************************/
 u32_t osShellPing6(int argc, const char **argv)
 {
     u16_t icmpv6_id;
@@ -2346,7 +2427,7 @@ usage:
     PRINTK("\tping6 [-c count] [-I interface/sourceAddress] destination\n");
     return LOS_NOK;
 }
-
+//创建一个 ping ipv6 的socket
 LWIP_STATIC int create_ping6_socket(u8_t type, const void *param)
 {
     int sfd;
@@ -3456,7 +3537,16 @@ out:
     sys_sem_signal(&ndata->cb_completed);
     return;
 }
+/************************************************
+https://gitee.com/openharmony/docs/blob/master/kernel/netstat.md
+命令功能
+netstat是控制台命令,是一个监测TCP/IP网络的非常有用的工具，
+它可以显示实际的网络连接以及每一个网络接口设备的状态信息。
+netstat用于显示与TCP、UDP协议相关的统计数据，一般用于检验本设备（单板）各端口的网络连接情况。
 
+命令格式
+netstat
+************************************************/
 u32_t osShellNetstat(int argc, const char **argv)
 {
     struct netstat_data ndata;

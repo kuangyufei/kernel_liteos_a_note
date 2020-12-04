@@ -175,7 +175,7 @@ typedef struct {
 #define IPC_THREAD_STATUS_STOP         0x0008U
 
 #if (LOSCFG_KERNEL_TRACE == YES)
-#define LOS_TRACE_IPC 3
+#define LOS_TRACE_IPC 3 //IPC 对应..\kernel\include\los_trace.h TraceType 理解
 
 typedef enum {
     WRITE,

@@ -389,20 +389,27 @@ u32_t lwip_tftp_put_file_by_filename(u32_t ulHostAddr,
 {
     return 0;
 }
+/****************************************************************
+著名的tcp 11种状态表述,参考博文:https://blog.csdn.net/zzhongcy/article/details/38851271
 
-
+状态迁移过程：
+　　a、客户端：
+　　　　CLOSED->SYN_SENT->ESTABLISHED->FIN_WAIT_1->FIN_WAIT_2->TIME_WAIT->CLOSED
+　　b、服务端
+　　　　CLOSED->LISTEN->SYN_RECEIVED->ESTABLISHED->CLOSE_WAIT->LAST_ACK->CLOSE
+****************************************************************/
 const char *const tcp_state_str[] = {
-        "CLOSED",
-        "LISTEN",
-        "SYN_SENT",
-        "SYN_RCVD",
-        "ESTABLISHED",
-        "FIN_WAIT_1",
-        "FIN_WAIT_2",
-        "CLOSE_WAIT",
-        "CLOSING",
-        "LAST_ACK",
-        "TIME_WAIT"
+        "CLOSED",		//没有使用这个套接字[netstat 无法显示closed状态]
+        "LISTEN",		//套接字正在监听连接[调用listen后]
+        "SYN_SENT",		//套接字正在试图主动建立连接[发送SYN后还没有收到ACK]
+        "SYN_RCVD",		//正在处于连接的初始同步状态[收到对方的SYN，但还没收到自己发过去的SYN的ACK]
+        "ESTABLISHED",	//连接已建立,表示两台机器正在传输数据。
+        "FIN_WAIT_1",	//套接字已关闭，正在关闭连接[发送FIN，没有收到ACK也没有收到FIN]
+        "FIN_WAIT_2",	//套接字已关闭，正在等待远程套接字关闭[在FIN_WAIT_1状态下收到发过去FIN对应的ACK],从远程TCP等待连接中断请求，主动关闭端接到ACK后，就进入了FIN-WAIT-2 .
+        "CLOSE_WAIT",	//远程套接字已经关闭：正在等待关闭这个套接字[被动关闭的一方收到FIN]
+        "CLOSING",		//套接字已关闭，远程套接字正在关闭，暂时挂起关闭确认[在FIN_WAIT_1状态下收到被动方的FIN],等待远程TCP对连接中断的确认,处于此种状态比较少见。
+        "LAST_ACK",		//远程套接字已关闭，正在等待本地套接字的关闭确认[被动方在CLOSE_WAIT状态下发送FIN],等待原来的发向远程TCP的连接中断请求的确认,被动关闭端一段时间后，接收到文件结束符的应用程序将调用CLOSE关闭连接,TCP也发送一个 FIN,等待对方的ACK.进入LAST-ACK。
+        "TIME_WAIT"		//套接字已经关闭，正在等待远程套接字的关闭传送[FIN、ACK、FIN、ACK都完毕，这是主动方的最后一个状态，在过了2MSL时间后变为CLOSED状态]
 };
 
 volatile int tcpip_init_finish = 1; // needed by api_shell.c

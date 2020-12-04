@@ -36,13 +36,13 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+// 文件作用:统计多CPU core下运行情况,打开开关必然消耗大量的性能
 #if (LOSCFG_KERNEL_SCHED_STATISTICS == YES)
-#define HIGHTASKPRI           16
+#define HIGHTASKPRI           16 //界定高优先级任务的标准 
 #define NS_PER_MS             1000000
 #define DECIMAL_TO_PERCENTAGE 100
 
-typedef struct {
+typedef struct {	//每个cpu core 运行参数描述体
     UINT64      idleRuntime;
     UINT64      idleStarttime;
     UINT64      highTaskRuntime;
@@ -304,7 +304,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellMpStaticStop(VOID)
             if (cpuid == (UINT32)(OS_TASK_INVALID_CPUID)) {
                 continue;
             }
-            if (!strcmp(taskCB->taskName, "Idle")) {
+            if (!strcmp(taskCB->taskName, "Idle")) { //空闲任务情况下
                 runtime = mpStaticStopTime - g_mpStatPercpu[cpuid].idleStarttime;
                 g_mpStatPercpu[cpuid].idleRuntime += runtime;
                 g_mpStatPercpu[cpuid].idleStarttime = 0;

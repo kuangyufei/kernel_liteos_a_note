@@ -128,7 +128,7 @@ VOID OsSetMainTask()
 LITE_OS_SEC_TEXT WEAK VOID OsIdleTask(VOID)
 {
     while (1) {//只有一个死循环
-#ifdef LOSCFG_KERNEL_TICKLESS
+#ifdef LOSCFG_KERNEL_TICKLESS //低功耗模式开关, idle task 中关闭tick
         if (OsTickIrqFlagGet()) {
             OsTickIrqFlagSet(0);
             OsTicklessStart();
@@ -1191,7 +1191,7 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);
     return errRet;
 }
-
+//删除任务,回归任务池
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskDelete(UINT32 taskID)
 {
     UINT32 intSave;
@@ -1215,10 +1215,10 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskDelete(UINT32 taskID)
     }
 
     processCB = OS_PCB_FROM_PID(taskCB->processID);
-    if (processCB->threadNumber == 1) {
-        if (processCB == OsCurrProcessGet()) {
+    if (processCB->threadNumber == 1) {//此任务为进程的最后一个任务的处理
+        if (processCB == OsCurrProcessGet()) {//是否为当前任务
             SCHEDULER_UNLOCK(intSave);
-            OsProcessExit(taskCB, OS_PRO_EXIT_OK);
+            OsProcessExit(taskCB, OS_PRO_EXIT_OK);//进程退出
             return LOS_OK;
         }
 
@@ -1226,7 +1226,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskDelete(UINT32 taskID)
         OS_GOTO_ERREND();
     }
 
-    return OsTaskDeleteUnsafe(taskCB, OS_PRO_EXIT_OK, intSave);
+    return OsTaskDeleteUnsafe(taskCB, OS_PRO_EXIT_OK, intSave);//任务以非安全模式删除
 
 LOS_ERREND:
     SCHEDULER_UNLOCK(intSave);
@@ -1512,7 +1512,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskInfoGet(UINT32 taskID, TSK_INFO_S *taskInf
 
     taskInfo->uwBottomOfStack = TRUNCATE(((UINTPTR)taskCB->topOfStack + taskCB->stackSize),//这里可以看出栈底地址是高于栈顶
                                          OS_TASK_STACK_ADDR_ALIGN);
-    taskInfo->uwCurrUsed = (UINT32)(taskInfo->uwBottomOfStack - taskInfo->uwSP);//当前已使用了多少
+    taskInfo->uwCurrUsed = (UINT32)(taskInfo->uwBottomOfStack - taskInfo->uwSP);//当前任务栈已使用了多少
 
     taskInfo->bOvf = OsStackWaterLineGet((const UINTPTR *)taskInfo->uwBottomOfStack,//获取栈的使用情况
                                          (const UINTPTR *)taskInfo->uwTopOfStack, &taskInfo->uwPeakUsed);

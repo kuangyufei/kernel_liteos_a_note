@@ -480,9 +480,9 @@ typedef VOID *(*TSK_ENTRY_FUNC)(UINTPTR param1,
  */
 typedef struct {
     UINTPTR         userArea;//用户区域
-    UINTPTR         userSP;	//用户模式下栈指针
-    UINTPTR         userMapBase;//用户模式下映射基地址
-    UINT32          userMapSize;//用户模式下映射大小
+    UINTPTR         userSP;	//用户态下栈指针
+    UINTPTR         userMapBase;//用户态下映射基地址
+    UINT32          userMapSize;//用户态下映射大小
 } UserTaskParam;
 
 /**
@@ -499,13 +499,13 @@ typedef struct tagTskInitParam {//Task的初始化参数
     UINT32          uwStackSize;   /**< Task stack size */	//任务栈大小
     CHAR            *pcName;       /**< Task name */		//任务名称
 #if (LOSCFG_KERNEL_SMP == YES)
-    UINT16          usCpuAffiMask; /**< Task cpu affinity mask         */	//任务cpu关联掩码
+    UINT16          usCpuAffiMask; /**< Task cpu affinity mask         */	//任务cpu亲和力掩码
 #endif
     UINT32          uwResved;      /**< It is automatically deleted if set to LOS_TASK_STATUS_DETACHED.
                                         It is unable to be deleted if set to 0. */ //如果设置为LOS_TASK_STATUS_DETACHED，则自动删除。如果设置为0，则无法删除
     UINT16          consoleID;     /**< The console id of task belongs  */ //任务的控制台id所属
     UINT32          processID;	//进程ID
-    UserTaskParam   userParam;	//用户参数
+    UserTaskParam   userParam;	//在用户态运行时栈参数
 } TSK_INIT_PARAM_S;
 
 /**
@@ -520,7 +520,7 @@ typedef struct tagTskInitParam {//Task的初始化参数
  * Task information structure.
  *
  */
-typedef struct tagTskInfo {
+typedef struct tagTskInfo { //主要用于 shell task -a 使用 
     CHAR                acName[LOS_TASK_NAMELEN];   /**< Task entrance function                                     */
     UINT32              uwTaskID;                   /**< Task ID                                                    */
     UINT16              usTaskStatus;               /**< Task status                                                */

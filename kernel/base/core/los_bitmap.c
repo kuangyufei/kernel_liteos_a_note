@@ -56,7 +56,7 @@ VOID LOS_BitmapSet(UINT32 *bitmap, UINT16 pos)
 
     *bitmap |= 1U << (pos & OS_BITMAP_MASK);//在对应位上置1
 }
-
+//对应位上置0
 VOID LOS_BitmapClr(UINT32 *bitmap, UINT16 pos)
 {
     if (bitmap == NULL) {

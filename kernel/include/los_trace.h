@@ -118,12 +118,12 @@ typedef UINT16 (*WriteHook)(UINT8 *inBuf, UINT32 newID, UINT32 oldID);
 
 /**
  * @ingroup los_trace
- * Stands for the trace type can be registered.
+ * Stands for the trace type can be registered. //表示可以注册的跟踪类型
  */
 typedef enum {
     LOS_TRACE_SWITCH    = 0,                /**< trace for task switch, 0 is reserved for taskswitch */ //任务切换的跟踪，0是为taskswitch保留的
     LOS_TRACE_INTERRUPT = 1,                /**< trace for Interrrupt, 1 is reserved for interrupt */	//中断，1表示为中断保留
-    LOS_TRACE_TYPE_NUM  = 5,                /**< num for the register type, user can use 2~ LOS_TRACE_TYPE_NUM-1 */
+    LOS_TRACE_TYPE_NUM  = 5,                /**< num for the register type, user can use 2~ LOS_TRACE_TYPE_NUM-1 *///寄存器数量,用于控制中断范围
 } TraceType;
 
 /**
@@ -133,7 +133,7 @@ typedef enum {
 typedef struct {
     UINTPTR tracePos;                       /**< Data buffer current index position */	//数据缓冲区当前索引位置
     UINTPTR traceWrapPos;                   /**< Data buffer last loop end position */	//数据缓冲区最后一个循环结束位置
-    UINT8   dataBuf[LOS_TRACE_BUFFER_SIZE]; /**< Data buffer */		//数据缓存区
+    UINT8   dataBuf[LOS_TRACE_BUFFER_SIZE]; /**< Data buffer */		//数据缓存区 2K
 } TraceBuffer;
 
 /**
