@@ -111,7 +111,7 @@ extern "C" {
 
 /* directory configure */
 
-#define VFS_USING_WORKDIR               // enable current working directory
+#define VFS_USING_WORKDIR               // enable current working directory 使能当前工作区
 
 #ifdef __cplusplus
 #if __cplusplus

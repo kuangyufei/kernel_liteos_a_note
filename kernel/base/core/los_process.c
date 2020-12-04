@@ -191,7 +191,7 @@ STATIC VOID OsExitProcessGroup(LosProcessCB *processCB, ProcessGroup **group)//P
 
     processCB->group = NULL;
 }
-//通过组ID找个进程组
+//通过组ID找到进程组
 STATIC ProcessGroup *OsFindProcessGroup(UINT32 gid)
 {
     ProcessGroup *group = NULL;
@@ -764,8 +764,8 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, U
 }
 //创建用户
 #ifdef LOSCFG_SECURITY_CAPABILITY
-STATIC User *OsCreateUser(UINT32 userID, UINT32 gid, UINT32 size)
-{
+STATIC User *OsCreateUser(UINT32 userID, UINT32 gid, UINT32 size)//参数size 表示组数量
+{	//(size - 1) * sizeof(UINT32) 用于 user->groups[..],这种设计节约了内存,不造成不需要的浪费
     User *user = LOS_MemAlloc(m_aucSysMem1, sizeof(User) + (size - 1) * sizeof(UINT32));
     if (user == NULL) {
         return NULL;
@@ -775,11 +775,11 @@ STATIC User *OsCreateUser(UINT32 userID, UINT32 gid, UINT32 size)
     user->effUserID = userID;
     user->gid = gid;
     user->effGid = gid;
-    user->groupNumber = size;
-    user->groups[0] = gid;
+    user->groupNumber = size;//用户组数量
+    user->groups[0] = gid;	 //用户组列表,一个用户可以属于多个用户组
     return user;
 }
-
+//检查参数群组ID是否在当前用户所属群组中
 LITE_OS_SEC_TEXT BOOL LOS_CheckInGroups(UINT32 gid)
 {
     UINT32 intSave;
@@ -787,8 +787,8 @@ LITE_OS_SEC_TEXT BOOL LOS_CheckInGroups(UINT32 gid)
     User *user = NULL;
 
     SCHEDULER_LOCK(intSave);
-    user = OsCurrUserGet();
-    for (count = 0; count < user->groupNumber; count++) {
+    user = OsCurrUserGet();//当前进程所属用户
+    for (count = 0; count < user->groupNumber; count++) {//循环对比
         if (user->groups[count] == gid) {
             SCHEDULER_UNLOCK(intSave);
             return TRUE;
@@ -872,14 +872,14 @@ STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const C
     }
 #endif
 
-#ifdef LOSCFG_KERNEL_CPUP
+#ifdef LOSCFG_KERNEL_CPUP //CPU性能统计开关
     OsCpupSet(processCB->processID);
 #endif
 
     return LOS_OK;
 
 EXIT:
-    OsDeInitPCB(processCB);//删除进程控制块
+    OsDeInitPCB(processCB);//删除进程控制块,归还内存
     return ret;
 }
 

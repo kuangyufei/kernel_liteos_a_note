@@ -82,7 +82,7 @@ int lstat(const char *path, struct stat *buffer)
 {
     return stat(path, buffer);
 }
-
+//虚拟文件系统权限检查
 int VfsPermissionCheck(uint fuid, uint fgid, mode_t fileMode, int accMode)
 {
     uint uid = OsCurrUserGet()->effUserID;
@@ -216,7 +216,7 @@ int chdir(const char *path)
  *
  * @return the returned current directory.
  */
-
+//此函数是一个与POSIX兼容的版本，它将返回当前工作目录。
 char *getcwd(char *buf, size_t n)
 {
 #ifdef VFS_USING_WORKDIR

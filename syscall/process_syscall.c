@@ -437,7 +437,7 @@ int SysGetRealEffSaveUserID(int *ruid, int *euid, int *suid)
 
     return 0;
 }
-
+//设置用户ID
 int SysSetUserID(int uid)
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY //安全能力宏
@@ -537,7 +537,7 @@ int SysSetRealEffUserID(int ruid, int euid)
     return 0;
 #endif
 }
-
+//设置用户群组ID
 int SysSetGroupID(int gid)
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY

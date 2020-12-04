@@ -1430,13 +1430,13 @@ int osShellCmdRm(int argc, const char **argv)
       ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);
       ERROR_OUT_IF(ret < 0, set_err(-ret, "rm error"), return -1);
 
-      if (os_is_containers_wildcard(fullpath))
+      if (os_is_containers_wildcard(fullpath))//是否包含通配符
         {
-          ret = os_wildcard_extract_directory(fullpath, NULL, RM_FILE);
+          ret = os_wildcard_extract_directory(fullpath, NULL, RM_FILE);//对通配符文件的处理
         }
       else
         {
-          ret = unlink(fullpath);
+          ret = unlink(fullpath);//删除由装入点管理的文件,本质是释放一个inode
         }
     }
   if (ret == -1)
@@ -1446,7 +1446,24 @@ int osShellCmdRm(int argc, const char **argv)
   free(fullpath);
   return 0;
 }
+/*******************************************************
+命令功能
+rmdir命令用来删除一个目录。
 
+命令格式
+rmdir [dir]
+
+参数说明
+参数		参数说明		取值范围
+dir		需要删除目录的名称，删除目录必须为空，支持输入路径。N/A
+
+使用指南
+rmdir命令只能用来删除目录。
+rmdir一次只能删除一个目录。
+rmdir只能删除空目录。
+使用实例
+举例：输入rmdir dir
+*******************************************************/
 int osShellCmdRmdir(int argc, const char **argv)
 {
   int  ret;
@@ -1466,11 +1483,11 @@ int osShellCmdRmdir(int argc, const char **argv)
 
   if (os_is_containers_wildcard(fullpath))
     {
-      ret = os_wildcard_extract_directory(fullpath, NULL, RM_DIR);
+      ret = os_wildcard_extract_directory(fullpath, NULL, RM_DIR);//;//对通配符目录的处理
     }
   else
     {
-      ret = rmdir(fullpath);
+      ret = rmdir(fullpath);// 删除由装入点管理的文件,本质是删除一个目录inode
     }
   free(fullpath);
 
@@ -1562,10 +1579,9 @@ int osShellCmdSu(int argc, const char **argv)
   unsigned int su_uid;
   unsigned int su_gid;
 
-  if (argc == 0)
+  if (argc == 0)//无参时切换到root用户
     {
       /* for su root */
-
       su_uid = 0;
       su_gid = 0;
     }
@@ -1575,10 +1591,10 @@ int osShellCmdSu(int argc, const char **argv)
       ERROR_OUT_IF((checkNum(argv[0]) != 0) || (checkNum(argv[1]) != 0), /* check argv is digit */
       PRINTK("check uid_num and gid_num is digit\n"), return -1);
 
-      su_uid = atoi(argv[0]);
+      su_uid = atoi(argv[0]);//标准musl C库函数 字符串转数字
       su_gid = atoi(argv[1]);
-
-      ERROR_OUT_IF((su_uid < 0) || (su_uid > 60000) || (su_gid < 0) ||
+	  
+      ERROR_OUT_IF((su_uid < 0) || (su_uid > 60000) || (su_gid < 0) || //uid 和 gid 的范围限制
          (su_gid > 60000), PRINTK("uid_num or gid_num out of range!they should be [0~60000]\n"), return -1);
     }
 
@@ -1590,7 +1606,7 @@ int osShellCmdSu(int argc, const char **argv)
 shell chmod 用于修改文件操作权限。chmod [mode] [pathname]
 mode 文件或文件夹权限，用8进制表示对应User、Group、及Other（拥有者、群组、其他组）的权限。[0,777]
 pathname 文件路径。已存在的文件。
-chmod 777 weharmony.txt
+chmod 777 weharmony.txt 暂不支持 chmod ugo+r file1.txt这种写法
 ****************************************************************/
 int osShellCmdChmod(int argc, const char **argv)
 {
@@ -1599,7 +1615,7 @@ int osShellCmdChmod(int argc, const char **argv)
   int ret;
   char *fullpath = NULL;
   const char *filename = NULL;
-  struct IATTR attr = {0};
+  struct IATTR attr = {0};//IATTR是用来inode的属性 见于 ..\third_party\NuttX\include\nuttx\fs\fs.h
   char *shell_working_directory = NULL;
   const char *p = NULL;
 #define MODE_BIT 3 /* 3 bits express 1 mode */
@@ -1630,9 +1646,9 @@ int osShellCmdChmod(int argc, const char **argv)
   ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);//获取全路径
   ERROR_OUT_IF(ret < 0, set_err(-ret, "chmod error\n"), return -1);
 
-  attr.attr_chg_mode = mode;
-  attr.attr_chg_valid = CHG_MODE; /* change mode */
-  ret = chattr(fullpath, &attr);
+  attr.attr_chg_mode = mode;// 7(rwx)代表(可读,可写,可执行)
+  attr.attr_chg_valid = CHG_MODE; /* change mode */ 
+  ret = chattr(fullpath, &attr);//改变文件属性
   if (ret < 0)
     {
       free(fullpath);
@@ -1664,30 +1680,30 @@ int osShellCmdChown(int argc, const char **argv)
   attr.attr_chg_valid = 0;
 
   ERROR_OUT_IF(((argc != 2) && (argc != 3)), PRINTK("Usage: chown [OWNER] [GROUP] FILE\n"), return -1);
-  if (argc == 2)
+  if (argc == 2)//只有二个参数解析 chown 100 weharmony.txt
     {
       ERROR_OUT_IF((checkNum(argv[0]) != 0), PRINTK("check OWNER is digit\n"), return -1);
       owner = atoi(argv[0]);
       filename = argv[1];
     }
-  if (argc == 3)
+  if (argc == 3)//有三个参数解析 chown 100 200 weharmony.txt
     {
       ERROR_OUT_IF((checkNum(argv[0]) != 0), PRINTK("check OWNER is digit\n"), return -1);
       ERROR_OUT_IF((checkNum(argv[1]) != 0), PRINTK("check GROUP is digit\n"), return -1);
-      owner = atoi(argv[0]);
-      group = atoi(argv[1]);
+      owner = atoi(argv[0]);//第一个参数用于修改拥有者指定用户
+      group = atoi(argv[1]);//第二个参数用于修改拥有者指定组
       filename = argv[2];
     }
 
-  if (group != -1)
+  if (group != -1)//-1代表不需要处理
     {
       attr.attr_chg_gid = group;
-      attr.attr_chg_valid |= CHG_GID;
+      attr.attr_chg_valid |= CHG_GID;//贴上拥有组被修改过的标签
     }
-  if (owner != -1)
+  if (owner != -1)//-1代表不需要处理
     {
       attr.attr_chg_uid = owner;
-      attr.attr_chg_valid |= CHG_UID;
+      attr.attr_chg_valid |= CHG_UID;//贴上拥有者被修改过的标签
     }
 
   char *shell_working_directory = OsShellGetWorkingDirtectory();
@@ -1698,7 +1714,7 @@ int osShellCmdChown(int argc, const char **argv)
   ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);
   ERROR_OUT_IF(ret < 0, set_err(-ret, "chown error\n"), return -1);
 
-  ret = chattr(fullpath, &attr);
+  ret = chattr(fullpath, &attr);//修改属性,在chattr中,参数attr将会和fullpath原有attr->attr_chg_valid 按|运算
   if (ret < 0)
     {
       free(fullpath);
@@ -1729,8 +1745,8 @@ int osShellCmdChgrp(int argc, const char **argv)
   group = atoi(argv[0]);
   filename = argv[1];
 
-  if (group != -1) {
-    attr.attr_chg_gid = group;
+  if (group != -1) {//可以看出 chgrp 是 chown 命令的裁剪版
+    attr.attr_chg_gid = group; 
     attr.attr_chg_valid |= CHG_GID;
   }
 
@@ -1741,7 +1757,7 @@ int osShellCmdChgrp(int argc, const char **argv)
   ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);
   ERROR_OUT_IF(ret < 0, set_err(-ret, "chmod error"), return -1);
 
-  ret = chattr(fullpath, &attr);
+  ret = chattr(fullpath, &attr);//修改属性
   if (ret < 0) {
     free(fullpath);
     PRINTK("chgrp error! %s\n", strerror(errno));

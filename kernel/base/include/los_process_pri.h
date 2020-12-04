@@ -59,13 +59,13 @@ extern "C" {
 #ifdef LOSCFG_SECURITY_CAPABILITY
 #define OS_GROUPS_NUMBER_MAX 256
 
-typedef struct {
-    UINT32  userID;
+typedef struct { //用户描述体
+    UINT32  userID;	//用户ID [0,60000],0为root用户
     UINT32  effUserID;
-    UINT32  gid;
+    UINT32  gid;	//用户组ID [0,60000],0为root用户组
     UINT32  effGid;
-    UINT32  groupNumber;
-    UINT32  groups[1];
+    UINT32  groupNumber;//用户组数量 
+    UINT32  groups[1];	//所属用户组列表,一个用户可属多个用户组
 } User;
 #endif
 
@@ -117,9 +117,9 @@ typedef struct ProcessCB {
 #endif
     timer_t             timerID;       /**< iTimer */
 
-#ifdef LOSCFG_SECURITY_CAPABILITY
-    User                *user;
-    UINT32              capability;
+#ifdef LOSCFG_SECURITY_CAPABILITY	//安全能力
+    User                *user;		//进程的拥有者
+    UINT32              capability;	//安全能力范围 对应 CAP_SETGID
 #endif
 #ifdef LOSCFG_SECURITY_VID
     TimerIdMap          timerIdMap;
@@ -410,7 +410,7 @@ STATIC INLINE UINT32 OsCpuProcessIDGet(UINT16 cpuID)
 }
 
 #ifdef LOSCFG_SECURITY_CAPABILITY
-STATIC INLINE User *OsCurrUserGet(VOID)
+STATIC INLINE User *OsCurrUserGet(VOID)//获取当前进程的所属用户
 {
     User *user = NULL;
     UINT32 intSave;

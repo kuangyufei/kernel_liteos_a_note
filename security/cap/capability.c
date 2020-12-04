@@ -35,10 +35,10 @@
 #include "user_copy.h"
 #include "los_printf.h"
 
-#define CAPABILITY_INIT_STAT            0xffffffff
+#define CAPABILITY_INIT_STAT            0xffffffff //能力范围的初始化值,用于划定进程的能力边界
 #define CAPABILITY_GET_CAP_MASK(x)      (1 << ((x) & 31))
 #define CAPABILITY_MAX                  31
-
+//进程是否拥有 参数 能力
 BOOL IsCapPermit(UINT32 capIndex)
 {
     UINT32 capability = OsCurrProcessGet()->capability;
@@ -49,12 +49,12 @@ BOOL IsCapPermit(UINT32 capIndex)
 
     return (capability & (CAPABILITY_GET_CAP_MASK(capIndex)));
 }
-
+//初始化进程的能力
 VOID OsInitCapability(LosProcessCB *processCB)
 {
     processCB->capability = CAPABILITY_INIT_STAT;
 }
-
+//进程能力拷贝
 VOID OsCopyCapability(LosProcessCB *from, LosProcessCB *to)
 {
     UINT32 intSave;
@@ -63,21 +63,21 @@ VOID OsCopyCapability(LosProcessCB *from, LosProcessCB *to)
     to->capability = from->capability;
     SCHEDULER_UNLOCK(intSave);
 }
-
+//设置进程能力
 UINT32 SysCapSet(UINT32 caps)
 {
     UINT32 intSave;
 
-    if (!IsCapPermit(CAP_CAPSET)) {
+    if (!IsCapPermit(CAP_CAPSET)) {//是否有设置进程能力的能力
         return -EPERM;
     }
 
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_LOCK(intSave);//这种耗时很短的临界区用自旋锁
     OsCurrProcessGet()->capability = caps;
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
-
+//获取进程能力
 UINT32 SysCapGet(UINT32 *caps)
 {
     UINT32 intSave;
@@ -87,7 +87,7 @@ UINT32 SysCapGet(UINT32 *caps)
     kCaps = OsCurrProcessGet()->capability;
     SCHEDULER_UNLOCK(intSave);
 
-    if (LOS_ArchCopyToUser(caps, &kCaps, sizeof(UINT32)) != LOS_OK) {
+    if (LOS_ArchCopyToUser(caps, &kCaps, sizeof(UINT32)) != LOS_OK) {//完成从内核空间到用户空间的拷贝
         return -EFAULT;
     }
 
