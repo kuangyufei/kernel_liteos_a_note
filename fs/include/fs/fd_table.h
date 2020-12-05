@@ -85,6 +85,6 @@ struct files_struct *create_files_snapshot(const struct files_struct *oldf);//�
 
 void delete_files_snapshot(struct files_struct *files);//删除文件管理器快照
 
-int alloc_fd(int minfd);//分配一个fd，当然是从files_struct->fdt 数组中拿一个未被使用(分配)的fd，默认都是 -1
+int alloc_fd(int minfd);//分配一个fd，从files_struct->fdt 数组中拿一个未被使用(分配)的fd，默认都是 -1
 
 #endif

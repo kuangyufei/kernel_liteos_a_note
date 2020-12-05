@@ -48,13 +48,13 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-los_disk g_sysDisk[SYS_MAX_DISK];
-los_part g_sysPart[SYS_MAX_PART];
+los_disk g_sysDisk[SYS_MAX_DISK];//支持挂载的磁盘总数量 5个
+los_part g_sysPart[SYS_MAX_PART];//支持磁盘的分区总数量 5*16,每个磁盘最大分16个区
 
-UINT32 g_uwFatSectorsPerBlock = CONFIG_FS_FAT_SECTOR_PER_BLOCK;
-UINT32 g_uwFatBlockNums = CONFIG_FS_FAT_BLOCK_NUMS;
+UINT32 g_uwFatSectorsPerBlock = CONFIG_FS_FAT_SECTOR_PER_BLOCK; //每块支持扇区数 默认64个扇区
+UINT32 g_uwFatBlockNums = CONFIG_FS_FAT_BLOCK_NUMS;	//块数量 默认28
 
-spinlock_t g_diskSpinlock;
+spinlock_t g_diskSpinlock;	//磁盘自锁锁
 spinlock_t g_diskFatBlockSpinlock;
 
 UINT32 g_usbMode = 0;
@@ -216,7 +216,7 @@ static BOOL GetDiskUsbStatus(UINT32 diskID)
     return (g_usbMode & (1u << diskID)) ? TRUE : FALSE;
 }
 #endif
-
+//获取某个磁盘的描述符
 los_disk *get_disk(INT32 id)
 {
     if ((id >= 0) && (id < SYS_MAX_DISK)) {
@@ -225,7 +225,7 @@ los_disk *get_disk(INT32 id)
 
     return NULL;
 }
-
+//获取某个分区的描述符
 los_part *get_part(INT32 id)
 {
     if ((id >= 0) && (id < SYS_MAX_PART)) {
@@ -1279,40 +1279,46 @@ static VOID OsDiskInitSub(const CHAR *diskName, INT32 diskID, los_disk *disk,
     disk->bcache = bc;
 #endif
 
-    (VOID)pthread_mutexattr_init(&attr);
-    attr.type = PTHREAD_MUTEX_RECURSIVE;
-    (VOID)pthread_mutex_init(&disk->disk_mutex, &attr);
+    (VOID)pthread_mutexattr_init(&attr);//posix 互斥量属性初始化
+    attr.type = PTHREAD_MUTEX_RECURSIVE;//使用递归型互斥，鸿蒙内核为降低死锁概率 默认就是递归方式
+    (VOID)pthread_mutex_init(&disk->disk_mutex, &attr);//初始化磁盘的互斥量
 
-    DiskStructInit(diskName, diskID, diskInfo, blkDriver, disk);
+    DiskStructInit(diskName, diskID, diskInfo, blkDriver, disk);//初始化磁盘描述符los_disk
 }
-
+/***************************************************************
+磁盘初始化 , diskName 必须是 /dev/***
+当块设备注册到系统。它被文件系统用来执行文件系统处理。它可以处理struct inode
+inode:索引节点对象，存放关于具体文件的一般信息，每个索引节点对象都有一个索引节点号
+	  这个节点号唯一地标识文件系统中的文件
+geometry block_operations:	见于../../../../../third_party/NuttX/include/nuttx/fs/fs.h
+***************************************************************/
 INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
                     VOID *priv, INT32 diskID, VOID *info)
 {
-    struct geometry diskInfo;
+    struct geometry diskInfo;	//此结构提供有关块驱动程序状态的信息
     struct inode *blkDriver = NULL;
     los_disk *disk = get_disk(diskID);
-    struct inode_search_s desc;
+    struct inode_search_s desc;//见于 ../../../../../third_party/NuttX/fs/inode/inode.h
     INT32 ret;
 
-    if ((diskName == NULL) || (disk == NULL) ||
+    if ((diskName == NULL) || (disk == NULL) || //磁盘不能是未准备好状态
         (disk->disk_status != STAT_UNREADY) || (strlen(diskName) > DISK_NAME)) {
         return VFS_ERROR;
     }
-
-    if (register_blockdriver(diskName, bops, RWE_RW_RW, priv) != 0) {
+	//详见 \third_party\NuttX\fs\driver\fs_registerblockdriver.c
+    if (register_blockdriver(diskName, bops, RWE_RW_RW, priv) != 0) {//1.在伪文件系统中注册块驱动程序，注册之后可以对其进行操作
         PRINT_ERR("disk_init : register %s fail!\n", diskName);
         return VFS_ERROR;
     }
 
-    SETUP_SEARCH(&desc, diskName, false);
-    ret = inode_find(&desc);
+    SETUP_SEARCH(&desc, diskName, false);//是个赋值宏操作 desc.path     = diskName;
+    ret = inode_find(&desc);//2.更新desc.node
     if (ret < 0) {
         PRINT_ERR("disk_init : find %s fail!\n", diskName);
         ret = ENOENT;
         goto DISK_FIND_ERROR;
     }
-    blkDriver = desc.node;
+    blkDriver = desc.node;//
 
     if ((blkDriver->u.i_bops == NULL) || (blkDriver->u.i_bops->geometry == NULL) ||
         (blkDriver->u.i_bops->geometry(blkDriver, &diskInfo) != 0)) {
@@ -1324,7 +1330,7 @@ INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
 
     PRINTK("disk_init : register %s ok!\n", diskName);
 
-    OsDiskInitSub(diskName, diskID, disk, &diskInfo, blkDriver);
+    OsDiskInitSub(diskName, diskID, disk, &diskInfo, blkDriver);//3.初始化los_disk
     inode_release(blkDriver);
 
     if (DiskDivideAndPartitionRegister(info, disk) != ENOERR) {
@@ -1347,7 +1353,7 @@ DISK_FIND_ERROR:
     (VOID)unregister_blockdriver(diskName);
     return VFS_ERROR;
 }
-
+//磁盘去初始化，和los_disk_init成对出现，类似于 C++ 的构造<->析构函数
 INT32 los_disk_deinit(INT32 diskID)
 {
     los_disk *disk = get_disk(diskID);

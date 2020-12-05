@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '从ifconfig netstat 等常用网络命令的实现来理解lwip协议栈 
+git commit -m  '对文件系统 磁盘,分区描述符的注释
 搜索 @note_pic 可以查看全部字符图
 搜索 @note_why 是注者尚未看明白的地方，如果您看明白了，请告诉注者完善
 搜索 @note_thinking 是注者的思考和吐槽的地方

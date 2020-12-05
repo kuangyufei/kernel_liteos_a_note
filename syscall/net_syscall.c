@@ -259,7 +259,7 @@ static void *DupUserMem(const void *ptr, size_t len, int needCopy)
         ptr##arr->arr = ptr##cpybak.arr; \
         ptr##cpybak.arr = tmp; \
     }
-
+//系统调用之socket
 int SysSocket(int domain, int type, int protocol)
 {
     int ret;
@@ -272,7 +272,7 @@ int SysSocket(int domain, int type, int protocol)
     SOCKET_K2U(ret);
     return ret;
 }
-
+//系统调用之绑定
 int SysBind(int s, const struct sockaddr *name, socklen_t namelen)
 {
     int ret;

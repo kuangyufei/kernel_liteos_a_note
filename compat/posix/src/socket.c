@@ -35,8 +35,12 @@
 
 #ifdef LOSCFG_NET_LWIP_SACK
 #include <lwip/sockets.h>
+/*****************************************************
+* posix socket标准接口，对 lwip协议族适配封装层
+*****************************************************/
 
-#if !LWIP_COMPAT_SOCKETS
+#if !LWIP_COMPAT_SOCKETS 
+//检查空指针,注意 do while(0)的妙用，想想这样写的好处是什么？
 #define CHECK_NULL_PTR(ptr) do { if (ptr == NULL) { set_errno(EFAULT); return -1; } } while (0)
 //接受连接 
 int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
@@ -97,7 +101,7 @@ int connect(int s, const struct sockaddr *name, socklen_t namelen)
     }
     return lwip_connect(s, name, namelen);
 }
-//监听本socket的请求
+//监听socket的请求
 int listen(int s, int backlog)
 {
     return lwip_listen(s, backlog);
@@ -146,7 +150,13 @@ ssize_t sendto(int s, const void *dataptr, size_t size, int flags,
     }
     return lwip_sendto(s, dataptr, size, flags, to, tolen);
 }
-//	创建socket
+/*********************************************************
+posix 之创建socket 
+domain:	协议族名字 如 AF_INET 为 IPv4 
+type:	指示类型
+protocol:
+返回FD
+*********************************************************/
 int socket(int domain, int type, int protocol)
 {
     return lwip_socket(domain, type, protocol);

@@ -165,49 +165,49 @@ extern "C" {
 #define DISK_ATA_GET_MODEL      21  /* Get model name */
 #define DISK_ATA_GET_SN         22  /* Get serial number */
 
-typedef enum _disk_status_ {
-    STAT_UNUSED,
-    STAT_INUSED,
-    STAT_UNREADY
+typedef enum _disk_status_ {//磁盘的状态
+    STAT_UNUSED,	//未使用
+    STAT_INUSED,	//使用中
+    STAT_UNREADY	//未准备,可理解为未格式化
 } disk_status_e;
 
-typedef struct _los_disk_ {
-    UINT32 disk_id : 8;     /* physics disk number */
-    UINT32 disk_status : 2; /* status of disk */
-    UINT32 part_count : 8;  /* current partition count */
-    UINT32 reserved : 14;
+typedef struct _los_disk_ {	//磁盘描述符
+    UINT32 disk_id : 8;     /* physics disk number */ 	//标识磁盘ID
+    UINT32 disk_status : 2; /* status of disk */		//磁盘的状态 disk_status_e
+    UINT32 part_count : 8;  /* current partition count */	//分了多少个区(los_part)
+    UINT32 reserved : 14;	//保留，注意 disk_id|disk_status|part_count|reserved 共用一个UINT32				
     struct inode *dev;      /* device */
-#ifdef LOSCFG_FS_FAT_CACHE
+#ifdef LOSCFG_FS_FAT_CACHE	//磁盘缓存，在所有分区中共享
     OsBcache *bcache;       /* cache of the disk, shared in all partitions */
 #endif
-    UINT32 sector_size;     /* disk sector size */
-    UINT64 sector_start;    /* disk start sector */
-    UINT64 sector_count;    /* disk sector number */
-    UINT8 type;
-    CHAR *disk_name;
-    LOS_DL_LIST head;       /* link head of all the partitions */
+    UINT32 sector_size;     /* disk sector size */	//扇区大小
+    UINT64 sector_start;    /* disk start sector */	//开始扇区
+    UINT64 sector_count;    /* disk sector number *///扇区数量	
+    UINT8 type;				//flash的类型 例如:EMMC
+    CHAR *disk_name;		//设备名称
+    LOS_DL_LIST head;       /* link head of all the partitions */ //双向链表上挂所有分区(los_part->list)
     struct pthread_mutex disk_mutex;
 } los_disk;
 
-typedef struct _los_part_ {
-    UINT32 disk_id : 8;      /* physics disk number */
-    UINT32 part_id : 8;      /* partition number in the system */
-    UINT32 part_no_disk : 8; /* partition number in the disk */
-    UINT32 part_no_mbr : 5;  /* partition number in the mbr */
-    UINT32 reserved : 3;
-    UINT8 filesystem_type;   /* filesystem used in the partition */
-    UINT8 type;
-    struct inode *dev;      /* dev devices used in the partition */
-    CHAR *part_name;
-    UINT64 sector_start;     /*
+typedef struct _los_part_ {//分区描述符
+    UINT32 disk_id : 8;      /* physics disk number */	//标识磁盘ID
+    UINT32 part_id : 8;      /* partition number in the system */ //标识整个系统的分区ID
+    UINT32 part_no_disk : 8; /* partition number in the disk */	  //标识所属磁盘的分区ID
+    UINT32 part_no_mbr : 5;  /* partition number in the mbr */	  //硬盘主引导记录（即Master Boot Record，一般简称为MBR），主分区ID	
+    UINT32 reserved : 3;	////保留，注意 disk_id|part_id|part_no_disk|part_no_mbr|reserved 共用一个UINT32
+    UINT8 filesystem_type;   /* filesystem used in the partition */ //文件系统类型
+    UINT8 type;				//flash的类型 例如:EMMC
+    struct inode *dev;      /* dev devices used in the partition */ //分区所使用的dev设备
+    CHAR *part_name;		//区名称
+    UINT64 sector_start;     /* //开始扇区编号
                               * offset of a partition to the primary devices
                               * (multi-mbr partitions are seen as same parition)
                               */
-    UINT64 sector_count;     /*
+    UINT64 sector_count;     /*	//扇区数量
                               * sector numbers of a partition. If there is no addpartition operation,
                               * then all the mbr devices equal to the primary device count.
                               */
-    LOS_DL_LIST list;        /* linklist of partition */
+    LOS_DL_LIST list;        /* linklist of partition */ //通过它挂到los_disk->head上
 } los_part;
 
 struct partition_info {

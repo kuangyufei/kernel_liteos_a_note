@@ -60,7 +60,7 @@ extern "C" {
 
 #ifdef LOSCFG_PLATFORM_HI3516DV300
 #define STORAGE_SIZE 0x3200000
-STATIC los_disk *g_emmcDisk = NULL;
+STATIC los_disk *g_emmcDisk = NULL; 
 #endif
 
 #ifndef LOSCFG_SECURITY_BOOT
@@ -369,7 +369,7 @@ ERROUT:
 #endif
 
 #ifdef LOSCFG_PLATFORM_HI3516DV300
-STATIC VOID OsMountUserdata(const CHAR *fsType)
+STATIC VOID OsMountUserdata(const CHAR *fsType)//mount emmc /userdata
 {
     INT32 ret;
     INT32 err;
@@ -413,26 +413,26 @@ STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
 {
     INT32 ret;
     INT32 err;
-    if (strcmp(fsType, "vfat") == 0) {
-        ret = mount(rootDev, "/", fsType, MS_RDONLY, NULL);
+    if (strcmp(fsType, "vfat") == 0) { //vfat 格式处理  VFAT (Virtual File Allocation Table) 虚拟文件分配表
+        ret = mount(rootDev, "/", fsType, MS_RDONLY, NULL);// mount /
         if (ret != LOS_OK) {
             err = get_errno();
             PRINT_ERR("Failed to mount vfat rootfs, errno %d: %s\n", err, strerror(err));
             return ret;
         }
-        g_root_inode->i_mode |= S_IRWXU | S_IRWXG | S_IRWXO;
+        g_root_inode->i_mode |= S_IRWXU | S_IRWXG | S_IRWXO; // 777
 #ifdef LOSCFG_PLATFORM_HI3516DV300
-        ret = mkdir("/storage", VFAT_STORAGE_MOUNT_DIR_MODE);
+        ret = mkdir("/storage", VFAT_STORAGE_MOUNT_DIR_MODE); //根目录下创建storage目录
         if (ret != LOS_OK) {
             err = get_errno();
             PRINT_ERR("Failed to reserve inode /storage, errno %d: %s\n", err, strerror(err));
-        } else {
+        } else { 
             CHAR emmcStorageDev[DISK_NAME] = {0};
             if (snprintf_s(emmcStorageDev, sizeof(emmcStorageDev), sizeof(emmcStorageDev) - 1,
                 "%s%s", g_emmcDisk->disk_name, "p1") < 0) {
                 PRINT_ERR("Failed to get emmc storage dev name!\n");
             } else {
-                ret = mount(emmcStorageDev, "/storage", fsType, 0, "umask=000");
+                ret = mount(emmcStorageDev, "/storage", fsType, 0, "umask=000");//挂载storage目录
                 if (ret != LOS_OK) {
                     err = get_errno();
                     PRINT_ERR("Failed to mount /storage, errno %d: %s\n", err, strerror(err));
@@ -441,7 +441,7 @@ STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
         }
         OsMountUserdata(fsType);
 #endif
-    } else {
+    } else { //非 vfat格式
         ret = mount(rootDev, "/", fsType, MS_RDONLY, NULL);
         if (ret != LOS_OK) {
             err = get_errno();
@@ -454,7 +454,7 @@ STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
             err = get_errno();
             PRINT_ERR("Failed to reserve inode /storage, errno %d: %s\n", err, strerror(err));
         } else {
-            ret = mount(DEV_STORAGE_PATH, "/storage", fsType, 0, NULL);
+            ret = mount(DEV_STORAGE_PATH, "/storage", fsType, 0, NULL);//挂载storage目录
             if (ret != LOS_OK) {
                 err = get_errno();
                 PRINT_ERR("Failed to mount /storage, errno %d: %s\n", err, strerror(err));
@@ -464,7 +464,11 @@ STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
     }
     return LOS_OK;
 }
-
+/******************************************************
+	挂载根文件系统 分两个阶段
+1.文件系统提供一个作为初始安装点的空目录
+2.内核在空目录上安装根文件系统
+******************************************************/
 INT32 OsMountRootfs(VOID)
 {
     INT32 ret = LOS_OK;
@@ -489,9 +493,9 @@ INT32 OsMountRootfs(VOID)
     rootSize = (rootSize >= 0) ? rootSize : ROOTFS_FLASH_SIZE;
 #endif
 
-    rootDev = GetDevName(rootType, rootAddr, rootSize);
+    rootDev = GetDevName(rootType, rootAddr, rootSize);//获取根设备 /dev/***
     if (rootDev != NULL) {
-        ret = OsMountRootfsAndUserfs(rootDev, fsType);
+        ret = OsMountRootfsAndUserfs(rootDev, fsType);//将根设备挂到 /下， 
         if (ret != LOS_OK) {
             err = get_errno();
             PRINT_ERR("Failed to mount rootfs, errno %d: %s\n", err, strerror(err));

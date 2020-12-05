@@ -126,7 +126,7 @@ int CheckProcessFd(int procFd)
 
     return OK;
 }
-
+//分配一个系统文件描述符
 int GetAssociatedSystemFd(int procFd)
 {
     struct fd_table_s *fdt = GetFdTable();
