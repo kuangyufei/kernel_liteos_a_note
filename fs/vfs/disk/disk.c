@@ -242,27 +242,27 @@ static UINT64 GetFirstPartStart(const los_part *part)
     firstPart = (disk == NULL) ? NULL : LOS_DL_LIST_ENTRY(disk->head.pstNext, los_part, list);
     return (firstPart == NULL) ? 0 : firstPart->sector_start;
 }
-
+//磁盘增加一个分区
 static VOID DiskPartAddToDisk(los_disk *disk, los_part *part)
 {
-    part->disk_id = disk->disk_id;
-    part->part_no_disk = disk->part_count;
-    LOS_ListTailInsert(&disk->head, &part->list);
-    disk->part_count++;
+    part->disk_id = disk->disk_id;//分区描述符记录磁盘ID
+    part->part_no_disk = disk->part_count;//分区数量
+    LOS_ListTailInsert(&disk->head, &part->list);//将分区结点挂入磁盘分区双链表
+    disk->part_count++;//磁盘分区数量增加
 }
-
+//删除磁盘分区
 static VOID DiskPartDelFromDisk(los_disk *disk, los_part *part)
 {
-    LOS_ListDelete(&part->list);
-    disk->part_count--;
+    LOS_ListDelete(&part->list);//从链表上摘掉分区结点
+    disk->part_count--;//磁盘分区数量减少
 }
-
+//设置分区信息
 static los_part *DiskPartAllocate(struct inode *dev, UINT64 start, UINT64 count)
 {
     UINT32 i;
     los_part *part = get_part(0); /* traversing from the beginning of the array */
 
-    for (i = 0; i < SYS_MAX_PART; i++) {
+    for (i = 0; i < SYS_MAX_PART; i++) {//从数组开始遍历
         if (part->dev == NULL) {
             part->part_id = i;
             part->part_no_mbr = 0;
@@ -279,7 +279,7 @@ static los_part *DiskPartAllocate(struct inode *dev, UINT64 start, UINT64 count)
 
     return NULL;
 }
-
+//清空分区信息
 static VOID DiskPartRelease(los_part *part)
 {
     part->dev = NULL;
@@ -297,8 +297,8 @@ static VOID DiskPartRelease(los_part *part)
  * 'p' : 1
  * part_count: 1
  */
-#define DEV_NAME_BUFF_SIZE  (DISK_NAME + 3)
-
+#define DEV_NAME_BUFF_SIZE  (DISK_NAME + 3)//为何加3, 就是上面的disk_name+p+part_count
+//磁盘增加一个分区
 static INT32 DiskAddPart(los_disk *disk, UINT64 sectorStart, UINT64 sectorCount)
 {
     CHAR devName[DEV_NAME_BUFF_SIZE];
@@ -312,12 +312,12 @@ static INT32 DiskAddPart(los_disk *disk, UINT64 sectorStart, UINT64 sectorCount)
         (disk->dev == NULL)) {
         return VFS_ERROR;
     }
-
+	//扇区判断,磁盘在创建伊始就扇区数量就固定了
     if ((sectorCount > disk->sector_count) || ((disk->sector_count - sectorCount) < sectorStart)) {
         PRINT_ERR("DiskAddPart failed: sector start is %llu, sector count is %llu\n", sectorStart, sectorCount);
         return VFS_ERROR;
     }
-
+	///devName = /dev/mmcblk0p2 代表的是 0号磁盘的2号分区
     ret = snprintf_s(devName, sizeof(devName), sizeof(devName) - 1, "%s%c%u",
                      (disk->disk_name == NULL ? "null" : disk->disk_name), 'p', disk->part_count);
     if (ret < 0) {
@@ -325,12 +325,12 @@ static INT32 DiskAddPart(los_disk *disk, UINT64 sectorStart, UINT64 sectorCount)
     }
 
     diskDev = disk->dev;
-    if (register_blockdriver(devName, diskDev->u.i_bops, RWE_RW_RW, diskDev->i_private)) {
+    if (register_blockdriver(devName, diskDev->u.i_bops, RWE_RW_RW, diskDev->i_private)) {//注册块驱动程序
         PRINT_ERR("DiskAddPart : register %s fail!\n", devName);
         return VFS_ERROR;
     }
 
-    SETUP_SEARCH(&desc, devName, false);
+    SETUP_SEARCH(&desc, devName, false);//
     ret = inode_find(&desc);
     if (ret < 0) {
         PRINT_ERR("DiskAddPart : find %s fail!\n", devName);
