@@ -30,8 +30,34 @@
  */
 
 #include "include/board.h"
+/***********************************************
+本文件经过
+python build.py ipcamera_hi3516dv300 
+编译后生成 board.ld,内容如下:
 
-#define TEXT_BASE  KERNEL_VADDR_BASE
+OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+
+MEMORY
+{
+    ram : ORIGIN = 0x40000000, LENGTH = 0x20000000
+    sram : ORIGIN = 0x40000000, LENGTH = 0x1000
+    user_ram : ORIGIN = 0x1000000, LENGTH = 0x100000
+}
+SECTIONS
+{
+    /DISCARD/ : { *(.comment .note) }
+
+    .ram_vectors 0x40000000 : {
+        __ram_vectors_vma = .;
+        KEEP (*(.vectors))
+    } > ram
+    __ram_vectors_lma = LOADADDR(.ram_vectors);
+}
+
+USER_INIT_VM_START = 0x1000000;
+***********************************************/
+#define TEXT_BASE  KERNEL_VADDR_BASE 
 
 OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
 OUTPUT_ARCH(arm)

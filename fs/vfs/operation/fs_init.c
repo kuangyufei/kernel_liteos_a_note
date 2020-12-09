@@ -70,7 +70,7 @@ inode->i_mode 的标签如下:
 
 例如：chmod 777 (S_IRWXU S_IRWXG S_IRWXO)
 ************************************************************************/
-void los_vfs_init(void)
+void los_vfs_init(void)//系统调用了los_vfs_init()后，会将"/"作为root_inode
 {
     int err;
     uint retval;

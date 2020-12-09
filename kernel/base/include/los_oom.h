@@ -48,11 +48,11 @@
 
 typedef UINT32 (*OomFn)(UINTPTR param);
 
-typedef struct {
-    UINT32       lowMemThreshold;       /* byte */
-    UINT32       reclaimMemThreshold;   /* byte */
+typedef struct { //内存溢出控制块(描述符)
+    UINT32       lowMemThreshold;       /* byte */ 	//最低运行内存
+    UINT32       reclaimMemThreshold;   /* byte */	//回收内存起点
     UINT32       checkInterval;         /* microsecond */
-    OomFn        processVictimCB;       /* process victim process cb function */
+    OomFn        processVictimCB;       /* process victim process cb function */ 
     OomFn        scoreCB;               /* out of memory, the process score function */
     UINT16       swtmrID;
     BOOL         enabled;               /* oom is enabled or not */

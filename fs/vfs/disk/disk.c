@@ -250,13 +250,13 @@ static VOID DiskPartAddToDisk(los_disk *disk, los_part *part)
     LOS_ListTailInsert(&disk->head, &part->list);
     disk->part_count++;
 }
-
+//从磁盘上删除分区
 static VOID DiskPartDelFromDisk(los_disk *disk, los_part *part)
 {
-    LOS_ListDelete(&part->list);
-    disk->part_count--;
+    LOS_ListDelete(&part->list);//摘掉分区节点
+    disk->part_count--;//分区数减少
 }
-
+//分配一个磁盘分区
 static los_part *DiskPartAllocate(struct inode *dev, UINT64 start, UINT64 count)
 {
     UINT32 i;

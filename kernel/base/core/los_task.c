@@ -83,7 +83,7 @@ LITE_OS_SEC_BSS LOS_DL_LIST  g_losFreeTask;//空闲任务链表
 LITE_OS_SEC_BSS LOS_DL_LIST  g_taskRecyleList;//回收任务链表
 LITE_OS_SEC_BSS UINT32       g_taskMaxNum;//任务最大个数
 LITE_OS_SEC_BSS UINT32       g_taskScheduled; /* one bit for each cores *///一位代表一个CPU core 的调度
-LITE_OS_SEC_BSS EVENT_CB_S   g_resourceEvent;//资源事件
+LITE_OS_SEC_BSS EVENT_CB_S   g_resourceEvent;//关于资源的事件
 /* spinlock for task module, only available on SMP mode */
 LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_taskSpin);
 
@@ -234,7 +234,7 @@ LITE_OS_SEC_TEXT UINT32 OsTaskSetDeatchUnsafe(LosTaskCB *taskCB)
         if (LOS_ListEmpty(&(taskCB->joinList))) {//joinlist中没有数据了
             LOS_ListDelete(&(taskCB->joinList));//所谓删除就是自己指向自己
             taskCB->taskStatus &= ~OS_TASK_FLAG_PTHREAD_JOIN;//去掉JOIN标签
-            taskCB->taskStatus |= OS_TASK_FLAG_DETACHED;//贴上分离标签,自己独立存在,不和其他任务媾和,别的线程不能回收和干掉我,只能由系统来收我
+            taskCB->taskStatus |= OS_TASK_FLAG_DETACHED;//贴上分离标签,自己独立存在,不和其他任务媾和,不能被别的任务回收和干掉,只能由系统回收
             return LOS_OK;
         }
         /* This error code has a special purpose and is not allowed to appear again on the interface */
@@ -821,8 +821,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *taskID, TSK_INIT_PARAM_S
     if (errRet != LOS_OK) {
         goto LOS_ERREND_TCB_INIT;
     }
-    if (OsConsoleIDSetHook != NULL) {
-        OsConsoleIDSetHook(taskCB->taskID, OsCurrTaskGet()->taskID);
+    if (OsConsoleIDSetHook != NULL) {//每个人任务都可以有属于自己的控制台
+        OsConsoleIDSetHook(taskCB->taskID, OsCurrTaskGet()->taskID);//设置控制台ID
     }
 
     *taskID = taskCB->taskID;
@@ -1810,7 +1810,7 @@ UINT32 OsUserTaskOperatePermissionsCheck(LosTaskCB *taskCB)
 
     return LOS_OK;
 }
-
+//创建任务之前,检查用户态任务栈的参数,是否地址在用户空间
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsCreateUserTaskParamCheck(UINT32 processID, TSK_INIT_PARAM_S *param)
 {
     UserTaskParam *userParam = NULL;
@@ -1975,30 +1975,29 @@ STATIC VOID OsResourceRecoveryTask(VOID)
 {
     UINT32 ret;
 
-    while (1) {
+    while (1) {//死循环,回收资源不存在退出情况,只要系统在运行资源就需要回收
         ret = LOS_EventRead(&g_resourceEvent, OS_RESOURCE_EVENT_MASK,
-                            LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
+                            LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);//读取资源事件
         if (ret & (OS_RESOURCE_EVENT_FREE | OS_RESOURCE_EVENT_OOM)) {//资源释放或异常情况
             OsTaskCBRecyleToFree();//回收任务到空闲任务池
-
             OsProcessCBRecyleToFree();//回收进程到空闲进程池
         }
 
 #ifdef LOSCFG_ENABLE_OOM_LOOP_TASK //内存溢出监测任务开关
         if (ret & OS_RESOURCE_EVENT_OOM) {//触发了这个事件
-            (VOID)OomCheckProcess();//检查进程
+            (VOID)OomCheckProcess();//检查进程的内存溢出情况
         }
 #endif
     }
 }
-
+//创建一个回收资源的任务
 LITE_OS_SEC_TEXT UINT32 OsCreateResourceFreeTask(VOID)
 {
     UINT32 ret;
     UINT32 taskID;
     TSK_INIT_PARAM_S taskInitParam;
 
-    ret = LOS_EventInit((PEVENT_CB_S)&g_resourceEvent);
+    ret = LOS_EventInit((PEVENT_CB_S)&g_resourceEvent);//初始化资源事件
     if (ret != LOS_OK) {
         return LOS_NOK;
     }
@@ -2007,7 +2006,7 @@ LITE_OS_SEC_TEXT UINT32 OsCreateResourceFreeTask(VOID)
     taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)OsResourceRecoveryTask;//入口函数
     taskInitParam.uwStackSize = OS_TASK_RESOURCE_STATCI_SIZE;// 4K
     taskInitParam.pcName = "ResourcesTask";
-    taskInitParam.usTaskPrio = OS_TASK_RESOURCE_FREE_PRIORITY;// 5
+    taskInitParam.usTaskPrio = OS_TASK_RESOURCE_FREE_PRIORITY;// 5 ,优先级很高
     return LOS_TaskCreate(&taskID, &taskInitParam);//创建任务，并加入就绪队列，立即调度
 }
 

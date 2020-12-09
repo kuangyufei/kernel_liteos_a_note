@@ -181,7 +181,7 @@ static INT32 AddParamCheck(UINT32 startAddr,
 
     return ENOERR;
 }
-
+//注册块设备
 static INT32 BlockDriverRegisterOperate(mtd_partition *newNode,
                                         const partition_param *param,
                                         UINT32 partitionNum)
@@ -203,7 +203,7 @@ static INT32 BlockDriverRegisterOperate(mtd_partition *newNode,
             newNode->blockdriver_name = NULL;
             return -ENAMETOOLONG;
         }
-
+		//在伪文件系统中注册块驱动程序,生成设备结点 inode
         ret = register_blockdriver(newNode->blockdriver_name, param->flash_ops,
             RWE_RW_RW, newNode);
         if (ret) {
@@ -217,7 +217,7 @@ static INT32 BlockDriverRegisterOperate(mtd_partition *newNode,
     }
     return ENOERR;
 }
-
+//注册字符设备
 static INT32 CharDriverRegisterOperate(mtd_partition *newNode,
                                        const partition_param *param,
                                        UINT32 partitionNum)
@@ -239,7 +239,7 @@ static INT32 CharDriverRegisterOperate(mtd_partition *newNode,
             newNode->chardriver_name = NULL;
             return -ENAMETOOLONG;
         }
-
+		//在伪文件系统中注册字符设备驱动程序,生成设备结点 inode
         ret = register_driver(newNode->chardriver_name, param->char_ops, RWE_RW_RW, newNode);
         if (ret) {
             PRINT_ERR("register chardev partion error\n");
@@ -252,7 +252,7 @@ static INT32 CharDriverRegisterOperate(mtd_partition *newNode,
     }
     return ENOERR;
 }
-
+//注销块设备驱动程序,从伪文件系统中删除“path”处的块驱动程序inode
 static INT32 BlockDriverUnregister(mtd_partition *node)
 {
     INT32 ret;
@@ -268,7 +268,7 @@ static INT32 BlockDriverUnregister(mtd_partition *node)
     }
     return ENOERR;
 }
-
+//注销字符设备驱动程序,从伪文件系统中删除“path”处的字符驱动程序inode
 static INT32 CharDriverUnregister(mtd_partition *node)
 {
     INT32 ret;

@@ -51,7 +51,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 LITE_OS_SEC_BSS OomCB *g_oomCB = NULL;
-static SPIN_LOCK_INIT(g_oomSpinLock);
+static SPIN_LOCK_INIT(g_oomSpinLock);//内存溢出自旋锁
 
 LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomScoreProcess(LosProcessCB *candidateProcess)
 {
@@ -60,7 +60,7 @@ LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomScoreProcess(LosProcessCB *candidateProc
 #if (LOSCFG_KERNEL_SMP != YES)
     (VOID)LOS_MuxAcquire(&candidateProcess->vmSpace->regionMux);
 #endif
-    /* we only consider actual physical memory here. */
+    /* we only consider actual physical memory here. */ //只考虑实际的物理内存
     OsUProcessPmUsage(candidateProcess->vmSpace, NULL, &actualPm);
 #if (LOSCFG_KERNEL_SMP != YES)
     (VOID)LOS_MuxRelease(&candidateProcess->vmSpace->regionMux);
@@ -129,8 +129,8 @@ LITE_OS_SEC_TEXT_MINOR BOOL OomCheckProcess(VOID)
     BOOL isLowMemory = FALSE;
 
     /*
-     * spinlock the current core schedule, make sure oom process atomic
-     * spinlock other place entering OomCheckProcess, make sure oom process mutex
+     * spinlock the current core schedule, make sure oom process atomic //旋转锁定当前核心计划，确保oom进程原子化
+     * spinlock other place entering OomCheckProcess, make sure oom process mutex //旋转锁定其他进入OomCheckProcess的地方，确保oom进程互斥
      */
     LOS_SpinLock(&g_oomSpinLock);
 
@@ -155,14 +155,14 @@ NO_VICTIM_PROCESS:
     return isLowMemory;
 }
 
-#ifdef LOSCFG_ENABLE_OOM_LOOP_TASK
-STATIC VOID OomWriteEvent(VOID)
+#ifdef LOSCFG_ENABLE_OOM_LOOP_TASK	//内存溢出监测任务开关
+STATIC VOID OomWriteEvent(VOID) // OomTaskInit中创建的定时器回调
 {
-    OsWriteResourceEvent(OS_RESOURCE_EVENT_OOM);
+    OsWriteResourceEvent(OS_RESOURCE_EVENT_OOM);//写内存溢出事件
 }
 #endif
 
-LITE_OS_SEC_TEXT_MINOR VOID OomInfodump(VOID)
+LITE_OS_SEC_TEXT_MINOR VOID OomInfodump(VOID) //打印内存溢出信息
 {
     PRINTK("[oom] oom loop task status: %s\n"
            "      oom low memory threshold: %#x(byte)\n"
@@ -216,7 +216,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OomSetCheckInterval(UINT32 checkInterval)
                g_oomCB->checkInterval, OOM_CHECK_MIN, OOM_CHECK_MAX);
     }
 }
-
+//内存溢出任务初始化
 LITE_OS_SEC_TEXT_MINOR UINT32 OomTaskInit(VOID)
 {
     g_oomCB = (OomCB *)LOS_MemAlloc(m_aucSysMem0, sizeof(OomCB));
@@ -232,10 +232,10 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OomTaskInit(VOID)
     g_oomCB->scoreCB             = (OomFn)OomScoreProcess;
     g_oomCB->enabled             = FALSE;
 
-#ifdef LOSCFG_ENABLE_OOM_LOOP_TASK
+#ifdef LOSCFG_ENABLE_OOM_LOOP_TASK //内存溢出检测开关
     g_oomCB->enabled         = TRUE;
     UINT32 ret = LOS_SwtmrCreate(g_oomCB->checkInterval, LOS_SWTMR_MODE_PERIOD, (SWTMR_PROC_FUNC)OomWriteEvent,
-                                 &g_oomCB->swtmrID, (UINTPTR)g_oomCB);
+                                 &g_oomCB->swtmrID, (UINTPTR)g_oomCB);//创建检测定时器
     if (ret != LOS_OK) {
         return ret;
     }

@@ -40,7 +40,7 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+//获取抢占式调度任务的最高优先级 
 int sched_get_priority_min(int policy)
 {
     if (policy != SCHED_RR) {
@@ -50,7 +50,7 @@ int sched_get_priority_min(int policy)
 
     return OS_TASK_PRIORITY_HIGHEST;
 }
-
+//获取抢占式调度任务的最低优先级
 int sched_get_priority_max(int policy)
 {
     if (policy != SCHED_RR) {
@@ -63,7 +63,7 @@ int sched_get_priority_max(int policy)
 
 /*
  * This API is Linux-specific, not conforming to POSIX.
- */
+ */ //这个API是Linux特有的，不适用于POSIX
 int sched_setaffinity(pid_t pid, size_t set_size, const cpu_set_t* set)
 {
 #if (LOSCFG_KERNEL_SMP == YES)
@@ -95,7 +95,7 @@ int sched_setaffinity(pid_t pid, size_t set_size, const cpu_set_t* set)
 
 /*
  * This API is Linux-specific, not conforming to POSIX.
- */
+ */ //这个API是Linux特有的，不适用于POSIX
 int sched_getaffinity(pid_t pid, size_t set_size, cpu_set_t* set)
 {
 #if (LOSCFG_KERNEL_SMP == YES)
