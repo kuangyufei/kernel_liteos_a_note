@@ -191,9 +191,9 @@ typedef struct _los_disk_ {	//磁盘描述符
 
 typedef struct _los_part_ {//分区描述符
     UINT32 disk_id : 8;      /* physics disk number */	//标识磁盘ID
-    UINT32 part_id : 8;      /* partition number in the system */ //标识整个系统的分区ID
-    UINT32 part_no_disk : 8; /* partition number in the disk */	  //标识所属磁盘的分区ID
-    UINT32 part_no_mbr : 5;  /* partition number in the mbr */	  //硬盘主引导记录（即Master Boot Record，一般简称为MBR），主分区ID	
+    UINT32 part_id : 8;      /* partition number in the system */ //标识整个系统的分区数量
+    UINT32 part_no_disk : 8; /* partition number in the disk */	  //标识所属磁盘的分区数量
+    UINT32 part_no_mbr : 5;  /* partition number in the mbr */	  //硬盘主引导记录（即Master Boot Record，一般简称为MBR），主分区数量	
     UINT32 reserved : 3;	////保留，注意 disk_id|part_id|part_no_disk|part_no_mbr|reserved 共用一个UINT32
     UINT8 filesystem_type;   /* filesystem used in the partition */ //文件系统类型
     UINT8 type;				//flash的类型 例如:EMMC
