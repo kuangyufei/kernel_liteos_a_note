@@ -38,20 +38,20 @@
 #include "los_vm_map.h"
 #include "los_vm_lock.h"
 #include "user_copy.h"
+//hilog是鸿蒙的一个用于输出的功能模块
+#define HILOG_BUFFER 1024 // 1K缓存, ring buf 方式管理
+#define DRIVER_MODE 0666 //权限 chmod 666
+#define HILOG_DRIVER "/dev/hilog" // 可以看出hilog是当一种字符设备来实现
 
-#define HILOG_BUFFER 1024
-#define DRIVER_MODE 0666
-#define HILOG_DRIVER "/dev/hilog"
-
-struct HiLogEntry {
-    unsigned int len;
-    unsigned int hdrSize;
-    unsigned int pid : 16;
-    unsigned int taskId : 16;
-    unsigned int sec;
-    unsigned int nsec;
-    unsigned int reserved;
-    char msg[0];
+struct HiLogEntry { //hilog 实体
+    unsigned int len;	//写入buffer的内容长度
+    unsigned int hdrSize;	// sizeof(struct HiLogEntry) ,为何命名hdr @note_why
+    unsigned int pid : 16;	//进程ID
+    unsigned int taskId : 16;	//任务ID
+    unsigned int sec;	//秒级
+    unsigned int nsec;	//纳秒级,提供给外部准确分析和定位问题
+    unsigned int reserved;//保留位
+    char msg[0];	//消息内容
 };
 
 ssize_t HilogRead(struct file *filep, char __user *buf, size_t count);
@@ -61,7 +61,7 @@ int HiLogClose(FAR struct file *filep);
 
 static ssize_t HiLogWrite(FAR struct file *filep, const char *buffer, size_t bufLen);
 static ssize_t HiLogRead(FAR struct file *filep, char *buffer, size_t bufLen);
-
+//实现VFS接口函数,对hilog进行操作
 STATIC struct file_operations_vfs g_hilogFops = {
     HiLogOpen,  /* open */
     HiLogClose, /* close */
@@ -76,51 +76,51 @@ STATIC struct file_operations_vfs g_hilogFops = {
     NULL, /* unlink */
 };
 
-FAR struct HiLogCharDevice {
-    int flag;
-    LosMux mtx;
-    unsigned char *buffer;
+FAR struct HiLogCharDevice {//hilog 本质上是个字符设备
+    int flag;	//设备标签
+    LosMux mtx;	//读写buf的互斥量
+    unsigned char *buffer;//采用 ring buffer 管理
     wait_queue_head_t wq;
-    size_t writeOffset;
-    size_t headOffset;
-    size_t size;
-    size_t count;
+    size_t writeOffset;//用于写操作,不断累加
+    size_t headOffset;//用于读操作,不断累加
+    size_t size;//记录buffer使用的大小, 读写操作会返回 +-这个size
+    size_t count;//读写操作的次数对冲
 } g_hiLogDev;
 
 static inline unsigned char *HiLogBufferHead(void)
 {
     return g_hiLogDev.buffer + g_hiLogDev.headOffset;
 }
-
+//为支持VFS,作打开状
 int HiLogOpen(FAR struct file *filep)
 {
     (void)filep;
     return 0;
 }
-
+//为支持VFS,作关闭状
 int HiLogClose(FAR struct file *filep)
 {
     (void)filep;
     return 0;
 }
-
+//读写对冲,对hilog的写操作,更新相关变量内容
 static void HiLogBufferInc(size_t sz)
 {
     if (g_hiLogDev.size + sz <= HILOG_BUFFER) {
-        g_hiLogDev.size += sz;
-        g_hiLogDev.writeOffset += sz;
-        g_hiLogDev.writeOffset %= HILOG_BUFFER;
-        g_hiLogDev.count++;
+        g_hiLogDev.size += sz;	//已使用buf的size 
+        g_hiLogDev.writeOffset += sz;//大小是不断累加
+        g_hiLogDev.writeOffset %= HILOG_BUFFER;//ring buf
+        g_hiLogDev.count++;//读写对冲
     }
 }
-
+//读写对冲,对hilog的读操作,更新相关变量内容
 static void HiLogBufferDec(size_t sz)
 {
     if (g_hiLogDev.size >= sz) {
-        g_hiLogDev.size -= sz;
+        g_hiLogDev.size -= sz;//维持可使用buf size
         g_hiLogDev.headOffset += sz;
         g_hiLogDev.headOffset %= HILOG_BUFFER;
-        g_hiLogDev.count--;
+        g_hiLogDev.count--;//读写对冲
     }
 }
 
@@ -170,7 +170,7 @@ static ssize_t HiLogRead(FAR struct file *filep, char *buffer, size_t bufLen)
 
     wait_event_interruptible(g_hiLogDev.wq, (g_hiLogDev.size > 0));
 
-    (VOID)LOS_MuxAcquire(&g_hiLogDev.mtx);
+    (VOID)LOS_MuxAcquire(&g_hiLogDev.mtx);//临界区操作开始
     retval = HiLogReadRingBuffer((unsigned char *)&header, sizeof(header));
     if (retval < 0) {
         retval = -EINVAL;
@@ -200,10 +200,10 @@ static ssize_t HiLogRead(FAR struct file *filep, char *buffer, size_t bufLen)
     HiLogBufferDec(header.len);
     retval = header.len + sizeof(header);
 out:
-    (VOID)LOS_MuxRelease(&g_hiLogDev.mtx);
+    (VOID)LOS_MuxRelease(&g_hiLogDev.mtx);//临界区操作结束
     return retval;
 }
-
+//写入 RingBuffer环形缓冲，也叫 circleBuffer
 static int HiLogWriteRingBuffer(unsigned char *buffer, size_t bufLen)
 {
     int retval;
@@ -222,23 +222,23 @@ static int HiLogWriteRingBuffer(unsigned char *buffer, size_t bufLen)
     }
     return 0;
 }
-
+//hilog实体初始化
 static void HiLogHeadInit(struct HiLogEntry *header, size_t len)
 {
-    struct timespec now;
+    struct timespec now;//标准C库函数,时间格式,包含秒数和纳秒数
     int ret;
 
-    ret = clock_gettime(CLOCK_REALTIME, &now);
+    ret = clock_gettime(CLOCK_REALTIME, &now);//获取系统实时时间
     if (ret != 0) {
         dprintf("In %s line %d,clock_gettime fail", __FUNCTION__, __LINE__);
         return;
     }
 
-    header->len = len;
-    header->pid = LOS_GetCurrProcessID();
-    header->taskId = LOS_CurTaskIDGet();
-    header->sec = now.tv_sec;
-    header->nsec = now.tv_nsec;
+    header->len = len;//写入buffer的内容长度
+    header->pid = LOS_GetCurrProcessID();//当前进程ID
+    header->taskId = LOS_CurTaskIDGet();	//当前任务ID
+    header->sec = now.tv_sec;	//秒级记录
+    header->nsec = now.tv_nsec; //纳秒级记录
     header->hdrSize = sizeof(struct HiLogEntry);
 }
 
@@ -257,7 +257,7 @@ static void HiLogCoverOldLog(size_t bufLen)
         HiLogBufferDec(sizeof(header) + header.len);
     }
 }
-
+//将外部buf写入hilog设备分两步完成
 int HiLogWriteInternal(const char *buffer, size_t bufLen)
 {
     struct HiLogEntry header;
@@ -267,14 +267,14 @@ int HiLogWriteInternal(const char *buffer, size_t bufLen)
     HiLogCoverOldLog(bufLen);
     HiLogHeadInit(&header, bufLen);
 
-    retval = HiLogWriteRingBuffer((unsigned char *)&header, sizeof(header));
+    retval = HiLogWriteRingBuffer((unsigned char *)&header, sizeof(header));//1.先写入头部内容
     if (retval) {
         retval = -ENODATA;
         goto out;
     }
-    HiLogBufferInc(sizeof(header));
+    HiLogBufferInc(sizeof(header));//
 
-    retval = HiLogWriteRingBuffer((unsigned char *)(buffer), header.len);
+    retval = HiLogWriteRingBuffer((unsigned char *)(buffer), header.len);//2.再写入实际buf内容
     if (retval) {
         retval = -ENODATA;
         goto out;
@@ -294,7 +294,7 @@ out:
     }
     return retval;
 }
-
+//写hilog,外部以VFS方式写入
 static ssize_t HiLogWrite(FAR struct file *filep, const char *buffer, size_t bufLen)
 {
     (void)filep;
@@ -305,26 +305,26 @@ static ssize_t HiLogWrite(FAR struct file *filep, const char *buffer, size_t buf
 
     return HiLogWriteInternal(buffer, bufLen);
 }
-
+//初始化全局变量g_hiLogDev
 static void HiLogDeviceInit(void)
 {
-    g_hiLogDev.buffer = LOS_MemAlloc((VOID *)OS_SYS_MEM_ADDR, HILOG_BUFFER);
+    g_hiLogDev.buffer = LOS_MemAlloc((VOID *)OS_SYS_MEM_ADDR, HILOG_BUFFER);//分配内核空间
     if (g_hiLogDev.buffer == NULL) {
         dprintf("In %s line %d,LOS_MemAlloc fail", __FUNCTION__, __LINE__);
     }
+	//初始化waitqueue头,请确保输入参数wait有效，否则系统将崩溃。
+    init_waitqueue_head(&g_hiLogDev.wq);//见于..\third_party\FreeBSD\sys\compat\linuxkpi\common\src\linux_semaphore.c
+    LOS_MuxInit(&g_hiLogDev.mtx, NULL);//初始化hilog互斥量
 
-    init_waitqueue_head(&g_hiLogDev.wq);
-    LOS_MuxInit(&g_hiLogDev.mtx, NULL);
-
-    g_hiLogDev.writeOffset = 0;
+    g_hiLogDev.writeOffset = 0;//写g_hiLogDev.buffer偏移地址
     g_hiLogDev.headOffset = 0;
-    g_hiLogDev.size = 0;
+    g_hiLogDev.size = 0;	//
     g_hiLogDev.count = 0;
 }
-
+//初始化hilog驱动
 int HiLogDriverInit(VOID)
 {
-    HiLogDeviceInit();
-    return register_driver(HILOG_DRIVER, &g_hilogFops, DRIVER_MODE, NULL);
+    HiLogDeviceInit();//初始化全局变量g_hiLogDev
+    return register_driver(HILOG_DRIVER, &g_hilogFops, DRIVER_MODE, NULL);//注册字符设备驱动程序,生成inode节点
 }
 

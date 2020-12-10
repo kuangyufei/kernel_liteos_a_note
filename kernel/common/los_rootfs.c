@@ -219,7 +219,7 @@ STATIC INT32 GetArgs(CHAR **args)
 #endif
 
 #ifdef LOSCFG_PLATFORM_HI3518EV300
-    struct MtdDev *mtd = GetMtd(FLASH_TYPE);
+    struct MtdDev *mtd = GetMtd(FLASH_TYPE);//获取flash设备描述符
     if (mtd == NULL) {
         PRINT_ERR("Get spinor mtd failed!\n");
         goto ERROUT;

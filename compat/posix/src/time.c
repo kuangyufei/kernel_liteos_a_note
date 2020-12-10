@@ -456,6 +456,15 @@ int clock_settime(clockid_t clockID, const struct timespec *tp)
     return settimeofday(&tv, NULL);
 }
 
+/*******************************************************
+获取系统时钟时间
+参数:clk_id 设置时间的类型
+	CLOCK_REALTIME:系统实时时间,随系统实时时间改变而改变,即从 UTC1970-1-1 0:0:0 开始计时,
+	               中间时刻如果系统时间被用户改成其他,则对应的时间相应改变
+	CLOCK_MONOTONIC:从系统启动这一刻起开始计时,不受系统时间被用户改变的影响
+	CLOCK_PROCESS_CPUTIME_ID:本进程到当前代码系统CPU花费的时间
+	CLOCK_THREAD_CPUTIME_ID:本线程到当前代码系统CPU花费的时间
+/********************************************************/
 int clock_gettime(clockid_t clockID, struct timespec *tp)
 {
     UINT32 intSave;
@@ -470,7 +479,7 @@ int clock_gettime(clockid_t clockID, struct timespec *tp)
         goto ERROUT;
     }
 
-    OsGetHwTime(&hwTime);
+    OsGetHwTime(&hwTime);//获取硬件时间
 
     switch (clockID) {
         case CLOCK_MONOTONIC_RAW:
@@ -484,7 +493,7 @@ int clock_gettime(clockid_t clockID, struct timespec *tp)
             tp->tv_sec = tmp.tv_sec;
             tp->tv_nsec = tmp.tv_nsec;
             break;
-        case CLOCK_REALTIME:
+        case CLOCK_REALTIME://实时时间
             LOS_SpinLockSave(&g_timeSpin, &intSave);
             tmp = OsTimeSpecAdd(hwTime, g_accDeltaFromAdj);
             tmp = OsTimeSpecAdd(tmp, g_accDeltaFromSet);

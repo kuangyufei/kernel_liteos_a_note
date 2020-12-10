@@ -73,29 +73,29 @@ MTD设备通常可分为四层
 这四层从上到下依次是：设备节点、MTD设备层、MTD原始设备层和硬件驱动层。
 ***************************************************************/
 typedef struct mtd_node {//通过mknod在/dev子目录下建立MTD块设备节点（主设备号为31）和MTD字符设备节点（主设备号为90） 
-    UINT32 start_block;
-    UINT32 end_block;
-    UINT32 patitionnum;
-    CHAR *blockdriver_name;
-    CHAR *chardriver_name;
-    CHAR *mountpoint_name;
-    VOID *mtd_info; /* Driver used by a partition */
-    LOS_DL_LIST node_info;
-    LosMux lock;
-    UINT32 user_num;
+    UINT32 start_block;	//开始块索引
+    UINT32 end_block;	//结束块索引
+    UINT32 patitionnum;	//分区编号
+    CHAR *blockdriver_name;	//块设备驱动名称
+    CHAR *chardriver_name;	//字符设备驱动名称
+    CHAR *mountpoint_name;	//挂载点名称
+    VOID *mtd_info; /* Driver used by a partition *///分区使用的驱动程序
+    LOS_DL_LIST node_info;//双循环节点,挂在首个分区节点上
+    LosMux lock;			//每个分区都有自己的互斥量
+    UINT32 user_num;	
 } mtd_partition;
 
-typedef struct par_param {
-    mtd_partition *partition_head;
-    struct MtdDev *flash_mtd;	
-    const struct block_operations *flash_ops;//块设备的操作方法
-    const struct file_operations_vfs *char_ops;//字符设备的操作方法
+typedef struct par_param {//分区参数描述符,一个分区既可支持按块访问也可以支持按字符访问,只要有驱动程序就可
+    mtd_partition *partition_head;	//首个分区,其他分区都挂在.node_info节点上
+    struct MtdDev *flash_mtd;	//flash设备描述符,属于硬件驱动层
+    const struct block_operations *flash_ops;	//块设备的操作方法
+    const struct file_operations_vfs *char_ops;	//字符设备的操作方法
     CHAR *blockname;	//块设备名称
     CHAR *charname;		//字符设备名称
-    UINT32 block_size;
+    UINT32 block_size;	//块单位(4K),对文件系统而言是按块读取数据,方便和内存页置换
 } partition_param;
 
-#define CONFIG_MTD_PATTITION_NUM 20
+#define CONFIG_MTD_PATTITION_NUM 20 //分区数量的上限
 
 #define ALIGN_ASSIGN(len, startAddr, startBlk, endBlk, blkSize) do {    \
     (len) = (((len) + ((blkSize) - 1)) & ~((blkSize) - 1));             \

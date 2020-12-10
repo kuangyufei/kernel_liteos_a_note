@@ -49,20 +49,20 @@ extern "C" {
 
 #define DRIVER_NAME_ADD_SIZE    3
 pthread_mutex_t g_mtdPartitionLock = PTHREAD_MUTEX_INITIALIZER;
-
-static INT32 JffsLockInit(VOID) __attribute__((weakref("JffsMutexCreate")));
-static VOID JffsLockDeinit(VOID) __attribute__((weakref("JffsMutexDelete")));
+//通常在NorFlash上会选取jffs及jffs2文件系统
+static INT32 JffsLockInit(VOID) __attribute__((weakref("JffsMutexCreate")));//弱引用 JffsMutexCreate
+static VOID JffsLockDeinit(VOID) __attribute__((weakref("JffsMutexDelete")));//弱引用 JffsMutexDelete
 
 partition_param *g_spinorPartParam = NULL;
 mtd_partition *g_spinorPartitionHead = NULL;
 
-#define RWE_RW_RW 0755
+#define RWE_RW_RW 0755 //文件读/写/执权限,chmod 755
 
 mtd_partition *GetSpinorPartitionHead(VOID)
 {
     return g_spinorPartitionHead;
 }
-
+//初始化 norflash 参数
 static VOID MtdNorParamAssign(partition_param *spinorParam, const struct MtdDev *spinorMtd)
 {
     LOS_ListInit(&g_spinorPartitionHead->node_info);
@@ -71,21 +71,21 @@ static VOID MtdNorParamAssign(partition_param *spinorParam, const struct MtdDev 
      * you can change the SPIBLK_NAME or SPICHR_NAME to NULL.
      */
     spinorParam->flash_mtd = (struct MtdDev *)spinorMtd;
-    spinorParam->flash_ops = GetDevSpinorOps();
-    spinorParam->char_ops = GetMtdCharFops();
+    spinorParam->flash_ops = GetDevSpinorOps();	//获取块设备操作方法
+    spinorParam->char_ops = GetMtdCharFops();	//获取字符设备操作方法
     spinorParam->blockname = SPIBLK_NAME;
     spinorParam->charname = SPICHR_NAME;
     spinorParam->partition_head = g_spinorPartitionHead;
-    spinorParam->block_size = spinorMtd->eraseSize;
+    spinorParam->block_size = spinorMtd->eraseSize;//4K, 读/写/擦除 的最小单位
 }
-
+//反初始化 norflash 参数
 static VOID MtdDeinitSpinorParam(VOID)
 {
     if (JffsLockDeinit != NULL) {
         JffsLockDeinit();
     }
 }
-
+//初始化 nor flash 参数
 static partition_param *MtdInitSpinorParam(partition_param *spinorParam)
 {
     struct MtdDev *spinorMtd = GetMtd("spinor");
@@ -118,7 +118,7 @@ static partition_param *MtdInitSpinorParam(partition_param *spinorParam)
     return spinorParam;
 }
 
-/* According the flash-type to init the param of the partition. */
+/* According the flash-type to init the param of the partition. *///根据flash类型初始化分区的参数
 static INT32 MtdInitFsparParam(const CHAR *type, partition_param **fsparParam)
 {
     if (strcmp(type, "spinor") == 0) {

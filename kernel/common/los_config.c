@@ -330,7 +330,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 #endif
 
 #ifdef LOSCFG_KERNEL_PIPE	//打开管道宏
-    OsDriverPipeInit();//管道init
+    OsDriverPipeInit();//管道模块初始化
 #endif
 
     ret = OsSystemInit();//系统初始化
@@ -347,14 +347,14 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 #endif
 
 #if (LOSCFG_KERNEL_LITEIPC == YES)
-    ret = LiteIpcInit();//这是lite自有的IPC模块 初始化
+    ret = LiteIpcInit();//初始化鸿蒙自有的进程间通讯模块
     if (ret != LOS_OK) {
         return ret;
     }
 #endif
 
-#if (LOSCFG_BASE_CORE_HILOG == YES)
-    ret = HiLogDriverInit();
+#if (LOSCFG_BASE_CORE_HILOG == YES)//hilog开关
+    ret = HiLogDriverInit();//初始化hilog字符设备驱动程序
     if (ret != LOS_OK) {
         return ret;
     }
@@ -373,8 +373,8 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
         return ret;
     }
 
-    ret = OomTaskInit();//Out-Of-Memory 用户监控使用内存太大的task,在内存不足而某些进程太耗内存时
-    if (ret != LOS_OK) {//可以直接把进程干掉而释放内存
+    ret = OomTaskInit();//Out-Of-Memory 用于监控使用内存太大的task.
+    if (ret != LOS_OK) {//在内存不足而某些进程太耗内存时,内核可直接把进程干掉而释放内存
         return ret;
     }
 

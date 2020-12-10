@@ -334,7 +334,7 @@ STATIC INT32 TelnetPoll(struct file *file, poll_table *table)
     TelnetUnlock();
     return 0;
 }
-
+//实现VFS接口函数,对远程登录进行操作
 STATIC const struct file_operations_vfs g_telnetOps = {//远程登录操作
     TelnetOpen,		//打开
     TelnetClose,	//关闭

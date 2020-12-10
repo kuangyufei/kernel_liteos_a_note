@@ -198,7 +198,7 @@ ERROUT:
     set_errno(-ret);
     return VFS_ERROR;
 }
-
+//实现VFS接口函数,对串行设备进行操作
 STATIC const struct file_operations_vfs g_serialDevOps = {
     SerialOpen,  /* open */
     SerialClose, /* close */

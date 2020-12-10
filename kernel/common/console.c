@@ -910,8 +910,8 @@ ERROUT:
     return VFS_ERROR;
 }
 
-/* console device driver function structure */
-STATIC const struct file_operations_vfs g_consoleDevOps = {
+/* console device driver function structure *///控制台设备驱动程序功能结构体
+STATIC const struct file_operations_vfs g_consoleDevOps = {//实现VFS接口函数,对控制台进行操作
     .open = ConsoleOpen,   /* open */
     .close = ConsoleClose, /* close */
     .read = ConsoleRead,   /* read */
@@ -996,7 +996,7 @@ ERROUT_WITH_FULLPATH:
 /*
  * Initialized console control platform so that when we operate /dev/console
  * as if we are operating /dev/ttyS0 (uart0).
- *///初始化控制台控制平台，以便在操作/dev/console时，就好像我们在操作/dev/ttyS0（uart0）
+ *///初始化控制台以此来控制平台，以便在操作/dev/console时，就好像我们在操作/dev/ttyS0（uart0）
 STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
 {
     INT32 ret;
@@ -1025,7 +1025,6 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
         goto ERROUT_WITH_FULLPATH;
     }
     inode = desc.node;
-
     consoleCB->devInode = inode;
 
     /*
@@ -1033,6 +1032,10 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
      * assign the uart0 inode of /dev/ttyS0 to console inod of /dev/console,
      * then we can operate console's filep as if we operate uart0 filep of
      * /dev/ttyS0.
+     */
+     /*
+     初始化与/dev/console关联的console filep，将/dev/ttyS0的uart0 inode赋给
+     /dev/console的console inod，就可以像操作/dev/ttyS0的uart0 filep一样操作控制台的filep
      */
     (VOID)memset_s(filep, sizeof(struct file), 0, sizeof(struct file));
     filep->f_oflags = O_RDWR;
@@ -1052,7 +1055,9 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
      * Use filep to connect console and uart, we can find uart driver function throught filep.
      * now we can operate /dev/console to operate /dev/ttyS0 through filep.
      */
-    ret = register_driver(consoleCB->name, &g_consoleDevOps, DEFFILEMODE, filep);
+     //使用filep连接控制台和uart，通过它可以找到uart驱动函数, 可以通过filep操作/dev/console
+     //达到操作/dev/ttyS0的目的
+    ret = register_driver(consoleCB->name, &g_consoleDevOps, DEFFILEMODE, filep);//注册字符设备驱动程序
     if (ret != LOS_OK) {
         goto ERROUT_WITH_INODE;
     }

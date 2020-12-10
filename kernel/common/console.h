@@ -59,7 +59,17 @@ extern "C" {
 #define STDIN  0	//标准输入
 #define STDOUT 1	//标准输出
 #define STDERR 2	//错误
+/**********************************************************
+https://www.cnblogs.com/sparkdev/p/11460821.html
 
+TTY 是 Teletype 或 Teletypewriter 的缩写，字符设备的通称,原来是指电传打字机，
+后来这种设备逐渐键盘和显示器取代。不管是电传打字机还是键盘,显示器，
+都是作为计算机的终端设备存在的，所以 TTY 也泛指计算机的终端(terminal)设备。
+为了支持这些 TTY 设备，Linux 实现了一个叫做 TTY 的子系统。所以 TTY 既指终端，也指 Linux 的 TTY 子系统
+
+/dev/console是一个虚拟的tty，在鸿蒙它映射到真正的dev/ttyS0(UART0)上
+能直接显示系统消息的那个终端称为控制台，其他的则称为终端
+**********************************************************/
 #define CONSOLE  "/dev/console"
 #define CONSOLE_NAMELEN 16
 #define CONSOLE_RD_BLOCK               1

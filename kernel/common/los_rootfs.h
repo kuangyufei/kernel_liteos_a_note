@@ -58,8 +58,8 @@
 
 #define FLASH_TYPE              "spinor" //flash类型
 #define FLASH_DEV_NAME          "/dev/spinorblk0" //根文件系统路径
-
-#define EMMC_SEC_SIZE           512
+//扇区是对硬盘而言，而块是对文件系统而言
+#define EMMC_SEC_SIZE           512	//扇区大小,按512个字节,按扇区对齐
 
 #define DEC_NUMBER_STRING       "0123456789"
 #define HEX_NUMBER_STRING       "0123456789abcdefABCDEF"

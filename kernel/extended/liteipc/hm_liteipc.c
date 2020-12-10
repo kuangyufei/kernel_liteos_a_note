@@ -88,7 +88,7 @@ STATIC UINT32 LiteIpcWrite(IpcContent *content);
 STATIC UINT32 GetTid(UINT32 serviceHandle, UINT32 *taskID);
 STATIC UINT32 HandleSpecialObjects(UINT32 dstTid, IpcListNode *node, BOOL isRollback);
 
-
+//实现VFS接口函数,对liteIpc进行操作
 STATIC const struct file_operations_vfs g_liteIpcFops = {
     LiteIpcOpen,   /* open */
     LiteIpcClose,  /* close */
