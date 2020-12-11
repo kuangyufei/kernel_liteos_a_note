@@ -447,7 +447,7 @@ static INT32 GPTInfoGet(struct inode *blkDrv, CHAR *gptBuf)
 
     return ENOERR;
 }
-
+//GPT(Globally Unique Identifier Partition Table Format)，全局唯一标识符的分区表的格式
 static INT32 OsGPTPartitionRecognitionSub(struct disk_divide_info *info, const CHAR *partitionBuf,
                                           UINT32 *partitionCount, UINT64 partitionStart, UINT64 partitionEnd)
 {
@@ -603,7 +603,7 @@ static INT32 OsEBRInfoGet(struct inode *blkDrv, const struct disk_divide_info *i
 
     return ENOERR;
 }
-
+//给所有主分区的分区信息初始化
 static INT32 OsPrimaryPartitionRecognition(const CHAR *mbrBuf, struct disk_divide_info *info,
                                            INT32 *extendedPos, INT32 *mbrCount)
 {
@@ -612,7 +612,7 @@ static INT32 OsPrimaryPartitionRecognition(const CHAR *mbrBuf, struct disk_divid
     INT32 extendedFlag = 0;
     INT32 count = 0;
 
-    for (i = 0; i < MAX_PRIMARY_PART_PER_DISK; i++) {
+    for (i = 0; i < MAX_PRIMARY_PART_PER_DISK; i++) {//遍历主分区
         mbrPartitionType = mbrBuf[PAR_OFFSET + PAR_TYPE_OFFSET + (i * PAR_TABLE_SIZE)];
         if (mbrPartitionType) {
             info->part[i].type = mbrPartitionType;
@@ -630,7 +630,7 @@ static INT32 OsPrimaryPartitionRecognition(const CHAR *mbrBuf, struct disk_divid
 
     return extendedFlag;
 }
-
+//给所有逻辑分区的分区信息初始化
 static INT32 OsLogicalPartitionRecognition(struct inode *blkDrv, struct disk_divide_info *info,
                                            UINT32 extendedAddress, CHAR *ebrBuf, INT32 mbrCount)
 {
@@ -1298,7 +1298,7 @@ INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
                     VOID *priv, INT32 diskID, VOID *info)
 {
     struct geometry diskInfo;	//此结构提供有关块驱动程序状态的信息
-    struct inode *blkDriver = NULL;
+    struct inode *blkDriver = NULL;//块设备驱动
     los_disk *disk = get_disk(diskID);
     struct inode_search_s desc;//见于 ../../../../../third_party/NuttX/fs/inode/inode.h
     INT32 ret;
@@ -1576,7 +1576,7 @@ ERROR_HANDLE:
     DISK_UNLOCK(&disk->disk_mutex);
     return VFS_ERROR;
 }
-
+//增加一个MMC分区
 INT32 add_mmc_partition(struct disk_divide_info *info, size_t sectorStart, size_t sectorCount)
 {
     UINT32 index, i;

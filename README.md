@@ -29,8 +29,6 @@
     搜索 **[@note_why]()** 是注者尚未看明白的地方，如果您看明白了，请告诉注者完善
 
     搜索 **[@note_thinking]()** 是注者的思考和吐槽鸿蒙源码的地方
-
-    若有好的建议请邮箱**kuangyufei@126.com**或私信联系.
     
 -   ### **理解内核的三个层级**
     
@@ -66,8 +64,13 @@
     
     中文加注版比官方版无新增文件,只多了一个zzz的目录,里面放了一些笔者使用的文件,它与内核代码无关,大家可以忽略它,取名zzz是为了排在最后,减少对原有代码目录级的侵入,zzz的想法源于微信中名称为AAA的那批牛人,你的微信里应该也有他们熟悉的身影吧 :|P  
 
-    
--   ### **既然选择了远方,就不要怕天高路远,行动起来!**
+-   ### **参与贡献**
+    1. Fork 本仓库 >> 新建 Feat_xxx 分支 >> 提交代码注解 >> 新建 Pull Request
+
+    2. [新建 Issue](https://gitee.com/weharmony/kernel_liteos_a_note/issues)
+
+-   ### **联系方式**
+    kuangyufei@126.com
 
     ---
 
@@ -75,6 +78,5 @@
     
     注释中文版 进入 >\> [鸿蒙内核源码注释中文版 【 Gitee仓](https://gitee.com/weharmony/kernel_liteos_a_note) | [CSDN仓](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [Github仓](https://github.com/kuangyufei/kernel_liteos_a_note) | [Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)阅读
     
-    内容仅代表个人观点,会反复修正,出精品注解,写精品文章,一律原创,转载需注明出处,不修改内容,不乱插广告,错漏之处欢迎指正笔者第一时间加以完善。
 
     # ![](https://oscimg.oschina.net/oscnet/up-c1f5f5e88b38fcb25f274a2062384b0c61e.png)

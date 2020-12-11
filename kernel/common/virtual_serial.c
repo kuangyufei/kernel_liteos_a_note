@@ -205,7 +205,7 @@ STATIC const struct file_operations_vfs g_serialDevOps = {
     SerialRead,  /* read */
     SerialWrite,
     NULL,
-    SerialIoctl,
+    SerialIoctl,//ioctl主要用read/write很难定义的情况,比如 光盘播放的快进,倒退等,ioctl命令和设备紧耦合.
     NULL,
 #ifndef CONFIG_DISABLE_POLL
     SerialPoll,

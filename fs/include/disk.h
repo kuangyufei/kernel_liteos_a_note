@@ -52,13 +52,30 @@
 extern "C" {
 #endif
 #endif /* __cplusplus */
+/***********************************************
+https://blog.csdn.net/buzaikoulan/article/details/44405915
+MBR 全称为Master Boot Record，即硬盘的主引导记录,硬盘分区有三种，主磁盘分区、扩展磁盘分区、逻辑分区
+主分区：也叫引导分区，硬盘的启动分区,最多可能创建4个
+扩展磁盘分区:除了主分区外，剩余的磁盘空间就是扩展分区了，扩展分区可以没有，最多1个。
+逻辑分区：在扩展分区上面，可以创建多个逻辑分区。逻辑分区相当于一块存储截止，和操作系统还有别的逻辑分区、主分区没有什么关系，是“独立的”。
+硬盘的容量＝主分区的容量＋扩展分区的容量 
+扩展分区的容量＝各个逻辑分区的容量之和 
+通俗的讲主分区是硬盘的主人，而扩展分区是这个硬盘上的仆人，主分区和扩展分区为主从关系。 
 
-#define SYS_MAX_DISK                5
-#define MAX_DIVIDE_PART_PER_DISK    16
-#define MAX_PRIMARY_PART_PER_DISK   4
-#define SYS_MAX_PART                (SYS_MAX_DISK * MAX_DIVIDE_PART_PER_DISK)
-#define DISK_NAME                   255
-#define DISK_MAX_SECTOR_SIZE        512
+给新硬盘上建立分区时都要遵循以下的顺序：建立主分区→建立扩展分区→建立逻辑分区→激活主分区→格式化所有分区
+--------------------------
+与MBR对应的是GPT,是对超大容量磁盘的一种分区格式
+GPT，即Globally Unique Identifier Partition Table Format，全局唯一标识符的分区表的格式。
+这种分区模式相比MBR有着非常多的优势。
+首先，它至少可以分出128个分区，完全不需要扩展分区和逻辑分区来帮忙就可以分出任何想要的分区来。
+其次，GPT最大支持18EB的硬盘，几乎就相当于没有限制。
+***********************************************/
+#define SYS_MAX_DISK                5	//最大支持磁盘数量
+#define MAX_DIVIDE_PART_PER_DISK    16	//磁盘最大支持逻辑分区数
+#define MAX_PRIMARY_PART_PER_DISK   4	//磁盘最大支持主分区数
+#define SYS_MAX_PART                (SYS_MAX_DISK * MAX_DIVIDE_PART_PER_DISK)	//系统最大支持分区数
+#define DISK_NAME                   255	//磁盘名称
+#define DISK_MAX_SECTOR_SIZE        512	//扇区大小,字节
 
 #define PAR_OFFSET           446     /* MBR: Partition table offset (2) */
 #define BS_SIG55AA           510     /* Signature word (2) */
@@ -71,9 +88,9 @@ extern "C" {
 #define PAR_START_OFFSET     8
 #define PAR_COUNT_OFFSET     12
 #define PAR_TABLE_SIZE       16
-#define EXTENDED_PAR         0x0F
-#define EXTENDED_8G          0x05
-#define EMMC                 0xEC
+#define EXTENDED_PAR         0x0F 	//扩展分区
+#define EXTENDED_8G          0x05	//
+#define EMMC                 0xEC	//eMMC=NAND闪存+闪存控制芯片+标准接口封装
 #define OTHERS               0x01    /* sdcard or umass */
 
 #define BS_FS_TYPE_MASK      0xFFFFFF
@@ -210,21 +227,21 @@ typedef struct _los_part_ {//分区描述符
     LOS_DL_LIST list;        /* linklist of partition */ //通过它挂到los_disk->head上
 } los_part;
 
-struct partition_info {
-    UINT8 type;
-    UINT64 sector_start;
-    UINT64 sector_count;
+struct partition_info {//分区信息
+    UINT8 type;	//分区类型,是主分区还是扩展分区
+    UINT64 sector_start;//开始扇区位置
+    UINT64 sector_count;//扇区大小
 };
 
-struct disk_divide_info {
-    UINT64 sector_count;
-    UINT32 sector_size;
-    UINT32 part_count;
+struct disk_divide_info {//磁盘分区描述符,
+    UINT64 sector_count;	//扇区数量
+    UINT32 sector_size;		//扇区大小,一般是512字节
+    UINT32 part_count;		//分区数量 需 < MAX_DIVIDE_PART_PER_DISK + MAX_PRIMARY_PART_PER_DISK
     /*
      * The primary partition place should be reversed and set to 0 in case all the partitions are
      * logical partition (maximum 16 currently). So the maximum part number should be 4 + 16.
-     */
-    struct partition_info part[MAX_DIVIDE_PART_PER_DISK + MAX_PRIMARY_PART_PER_DISK];
+     */ //如果所有分区都是逻辑分区（目前最多16个），则主分区位置应颠倒并设置为0。所以最大分区号应该是4+16。
+    struct partition_info part[MAX_DIVIDE_PART_PER_DISK + MAX_PRIMARY_PART_PER_DISK];//分区数组,记录每个分区的详细情况
 };
 
 /**

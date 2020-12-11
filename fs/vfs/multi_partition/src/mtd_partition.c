@@ -65,7 +65,7 @@ mtd_partition *GetSpinorPartitionHead(VOID)
 //初始化 norflash 参数
 static VOID MtdNorParamAssign(partition_param *spinorParam, const struct MtdDev *spinorMtd)
 {
-    LOS_ListInit(&g_spinorPartitionHead->node_info);
+    LOS_ListInit(&g_spinorPartitionHead->node_info);//初始化双向链表,链表用于挂其他分区,方便管理
     /*
      * If the user do not want to use block mtd or char mtd ,
      * you can change the SPIBLK_NAME or SPICHR_NAME to NULL.
@@ -147,7 +147,7 @@ static INT32 MtdDeinitFsparParam(const CHAR *type)
 
     return ENOERR;
 }
-
+//分区参数检查
 static INT32 AddParamCheck(UINT32 startAddr,
                            const partition_param *param,
                            UINT32 partitionNum,
@@ -181,7 +181,7 @@ static INT32 AddParamCheck(UINT32 startAddr,
 
     return ENOERR;
 }
-//注册块设备
+//注册块设备,此函数之后设备将支持VFS访问
 static INT32 BlockDriverRegisterOperate(mtd_partition *newNode,
                                         const partition_param *param,
                                         UINT32 partitionNum)
@@ -217,7 +217,7 @@ static INT32 BlockDriverRegisterOperate(mtd_partition *newNode,
     }
     return ENOERR;
 }
-//注册字符设备
+//注册字符设备,,此函数之后设备将支持VFS访问
 static INT32 CharDriverRegisterOperate(mtd_partition *newNode,
                                        const partition_param *param,
                                        UINT32 partitionNum)
@@ -289,7 +289,7 @@ static INT32 CharDriverUnregister(mtd_partition *node)
 /*
  * Attention: both startAddr and length should be aligned with block size.
  * If not, the actual start address and length won't be what you expected.
- */
+ */ //参数必须对齐 块大小检查
 INT32 add_mtd_partition(const CHAR *type, UINT32 startAddr,
                         UINT32 length, UINT32 partitionNum)
 {
@@ -323,7 +323,7 @@ INT32 add_mtd_partition(const CHAR *type, UINT32 startAddr,
     }
 
     PAR_ASSIGNMENT(newNode, length, startAddr, partitionNum, param->flash_mtd, param->block_size);
-
+	//注册块设备驱动程序,支持VFS访问
     ret = BlockDriverRegisterOperate(newNode, param, partitionNum);
     if (ret) {
         goto ERROR_OUT1;

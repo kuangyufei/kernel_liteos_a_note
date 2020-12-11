@@ -95,7 +95,7 @@ los_disk *GetMmcDisk(UINT8 type)
 #endif
 
 #ifdef LOSCFG_PLATFORM_HI3516DV300
-STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize)
+STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize)//在EMMC介质上增加一个根文件系统分区
 {
     INT32 ret;
 
@@ -106,7 +106,7 @@ STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize)
         return NULL;
     }
 
-    struct disk_divide_info *emmc = get_emmc();
+    struct disk_divide_info *emmc = get_emmc();//获取emmc,将完善其分区信息
     ret = add_mmc_partition(emmc, rootAddr / EMMC_SEC_SIZE, rootSize / EMMC_SEC_SIZE);
     if (ret != LOS_OK) {
         PRINT_ERR("Failed to add mmc root partition!\n");
@@ -138,7 +138,7 @@ STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize)
     }
 }
 #endif
-
+//系统可以有多个根文件系统并存,可放在 USB,SD卡,flash上
 STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSize)
 {
     const CHAR *rootDev = NULL;
@@ -439,7 +439,7 @@ STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
                 }
             }
         }
-        OsMountUserdata(fsType);
+        OsMountUserdata(fsType);//挂载用户数据
 #endif
     } else { //非 vfat格式
         ret = mount(rootDev, "/", fsType, MS_RDONLY, NULL);
