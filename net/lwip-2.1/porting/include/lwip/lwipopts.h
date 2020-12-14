@@ -214,7 +214,7 @@
 
 // Options for old lwipopts.h
 #define IP_FRAG_MAX_MTU                 1500
-#define LWIP_CONFIG_NUM_SOCKETS         128
+#define LWIP_CONFIG_NUM_SOCKETS         128	//套接字描述符的最大数目
 #define IP_REASS_MAX_MEM_SIZE           (MEM_SIZE / 4)
 
 #define LWIP_DHCPS                      1

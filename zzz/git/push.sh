@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '根文件系统rootfs 部分注释
+git commit -m  '文件句柄的本质就是一个数字凭证,用户程序不用关心凭证的背后实现,因为内核都考虑的很周到了.
 搜索 @note_pic 可以查看全部字符图
 搜索 @note_why 是注者尚未看明白的地方，如果您看明白了，请告诉注者完善
 搜索 @note_thinking 是注者的思考和吐槽的地方

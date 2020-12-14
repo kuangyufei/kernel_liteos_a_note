@@ -1862,10 +1862,10 @@ LITE_OS_SEC_TEXT_INIT INT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S 
         initParam->processID = processCB->processID;//进程ID赋值
         initParam->consoleID = processCB->consoleID;//任务控制台ID归属
         SCHEDULER_UNLOCK(intSave);
-    } else {//外面指定了进程ID的处理
+    } else {//进程已经创建
         processCB = OS_PCB_FROM_PID(processID);//通过ID拿到进程PCB
         if (!(processCB->processStatus & (OS_PROCESS_STATUS_INIT | OS_PROCESS_STATUS_RUNNING))) {//进程状态有初始和正在运行两个标签时
-            return OS_INVALID_VALUE;//????? 为什么这两种情况下会无效
+            return OS_INVALID_VALUE;//@note_why 为什么这两种情况下会创建任务失败
         }
         initParam->processID = processID;//进程ID赋值
         initParam->consoleID = 0;//默认0号控制台

@@ -288,7 +288,7 @@ ERROUT:
     PRINT_ERR("Invalid bootarg \"%s\"!\n", p);
     return LOS_NOK;
 }
-
+//匹配根文件系统信息
 STATIC INT32 MatchRootInfo(CHAR *p, CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 *rootSize)
 {
     const CHAR *rootName = "root=";

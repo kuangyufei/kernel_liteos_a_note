@@ -35,19 +35,19 @@
 #define SYS_CALL_VALUE 0x900001
 
 #ifdef LOSCFG_KERNEL_DYNLOAD
-LITE_USER_SEC_RODATA STATIC CHAR *g_initPath = "/bin/init";
+LITE_USER_SEC_RODATA STATIC CHAR *g_initPath = "/bin/init";//由Init_lite在编译后,生成
 #endif
-
+//将 sys_call3 链接在 section(".user.text")段
 LITE_USER_SEC_TEXT STATIC UINT32 sys_call3(UINT32 nbr, UINT32 parm1, UINT32 parm2, UINT32 parm3)
 {
-    register UINT32 reg7 __asm__("r7") = (UINT32)(nbr);
+    register UINT32 reg7 __asm__("r7") = (UINT32)(nbr); 	//给寄存器直接赋值
     register UINT32 reg2 __asm__("r2") = (UINT32)(parm3);
     register UINT32 reg1 __asm__("r1") = (UINT32)(parm2);
     register UINT32 reg0 __asm__("r0") = (UINT32)(parm1);
 
     __asm__ __volatile__
     (
-        "svc %1"
+        "svc %1" //管理模式（svc）      ［10011］：操作系统使用的保护模式
         : "=r"(reg0)
         : "i"(SYS_CALL_VALUE), "r"(reg7), "r"(reg0), "r"(reg1), "r"(reg2)
         : "memory", "r14"
@@ -58,9 +58,9 @@ LITE_USER_SEC_TEXT STATIC UINT32 sys_call3(UINT32 nbr, UINT32 parm1, UINT32 parm
 
 LITE_USER_SEC_ENTRY VOID OsUserInit(VOID *args)
 {
-#ifdef LOSCFG_KERNEL_DYNLOAD
+#ifdef LOSCFG_KERNEL_DYNLOAD //内核是否支持动态加载
     sys_call3(__NR_execve, (UINTPTR)g_initPath, 0, 0);
 #endif
-    while (1) {
+    while (1) { //进入死循环,首个用户态进程的优先级是很低的,28级
     }
 }

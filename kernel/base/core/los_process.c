@@ -1586,8 +1586,8 @@ STATIC UINT32 OsUserInitProcessStart(UINT32 processID, TSK_INIT_PARAM_S *param)
         return LOS_NOK;
     }
 
-    ret = LOS_SetTaskScheduler(taskID, LOS_SCHED_RR, OS_TASK_PRIORITY_LOWEST);
-    if (ret < 0) {
+    ret = LOS_SetTaskScheduler(taskID, LOS_SCHED_RR, OS_TASK_PRIORITY_LOWEST);//调度器:设置为抢占式调度和最低任务优先级(31级)
+    if (ret < 0) {//初始化调度器失败的处理
         PRINT_ERR("User init process set scheduler failed! ERROR:%d \n", ret);
         SCHEDULER_LOCK(intSave);
         (VOID)OsTaskDeleteUnsafe(OS_TCB_FROM_TID(taskID), OS_PRO_EXIT_OK, intSave);
@@ -1606,13 +1606,13 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
     TSK_INIT_PARAM_S param = { 0 };
     VOID *stack = NULL;
     VOID *userText = NULL;
-    CHAR *userInitTextStart = (CHAR *)&__user_init_entry;//代码区开始位置 ,所有进程
-    CHAR *userInitBssStart = (CHAR *)&__user_init_bss;// 未初始化数据区（BSS）。在运行时改变其值
+    CHAR *userInitTextStart = (CHAR *)&__user_init_entry;//代码区开始位置 ,对应 LITE_USER_SEC_ENTRY
+    CHAR *userInitBssStart = (CHAR *)&__user_init_bss;// 未初始化数据区（BSS）。在运行时改变其值 对应 LITE_USER_SEC_BSS
     CHAR *userInitEnd = (CHAR *)&__user_init_end;// 结束地址
     UINT32 initBssSize = userInitEnd - userInitBssStart;
     UINT32 initSize = userInitEnd - userInitTextStart;
 
-    LosProcessCB *processCB = OS_PCB_FROM_PID(g_userInitProcess);
+    LosProcessCB *processCB = OS_PCB_FROM_PID(g_userInitProcess);//"Init进程的优先级是 28"
     ret = OsProcessCreateInit(processCB, OS_USER_MODE, "Init", OS_PROCESS_USERINIT_PRIORITY);// 初始化用户进程,它将是所有应用程序的父进程
     if (ret != LOS_OK) {
         return ret;

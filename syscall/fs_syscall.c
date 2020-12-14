@@ -1670,7 +1670,7 @@ int SysFallocate64(int fd, int mode, off64_t offset, off64_t len)
     }
     return ret;
 }
-
+//系统调用之读文件
 ssize_t SysPreadv(int fd, const struct iovec *iov, int iovcnt, off_t offset)
 {
     int ret;

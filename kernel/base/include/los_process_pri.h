@@ -113,8 +113,8 @@ typedef struct ProcessCB {
 #endif
     LosVmSpace          *vmSpace;       /**< VMM space for processes */ //进程空间
 #ifdef LOSCFG_FS_VFS
-    struct files_struct *files;        /**< Files held by the process */ //进程所持有的所有文件，注者称之为 文件管理器
-#endif
+    struct files_struct *files;        /**< Files held by the process */ //进程所持有的所有文件，注者称之为进程的文件管理器
+#endif	//每个进程都有属于自己的文件管理器,记录对文件的操作. 注意:一个文件可以被多个进程操作
     timer_t             timerID;       /**< iTimer */
 
 #ifdef LOSCFG_SECURITY_CAPABILITY	//安全能力
@@ -463,9 +463,9 @@ STATIC INLINE User *OsCurrUserGet(VOID)//获取当前进程的所属用户
 #define OS_PROCESS_INFO_ALL 1
 #define OS_PROCESS_DEFAULT_UMASK 0022
 
-extern UINTPTR __user_init_entry;
-extern UINTPTR __user_init_bss;
-extern UINTPTR __user_init_end;
+extern UINTPTR __user_init_entry;	// 第一个用户态进程入口地址 查看 LITE_USER_SEC_ENTRY
+extern UINTPTR __user_init_bss;		// 查看 LITE_USER_SEC_BSS
+extern UINTPTR __user_init_end;		//
 extern UINTPTR __user_init_load_addr;
 extern UINT32 OsKernelInitProcess(VOID);
 extern VOID OsProcessCBRecyleToFree(VOID);

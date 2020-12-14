@@ -43,7 +43,7 @@ extern "C" {
 
 #define CONFIG_DISABLE_MQUEUE   // disable posix mqueue inode configure
 
-/* file system configur */
+/* file system configure */
 
 #define CONFIG_FS_WRITABLE      // enable file system can be written
 #define CONFIG_FS_READABLE      // enable file system can be read
@@ -91,23 +91,23 @@ extern "C" {
 
 /* net configure */
 
-#ifdef LOSCFG_NET_LWIP_SACK             // enable socket and net function
+#ifdef LOSCFG_NET_LWIP_SACK             // enable socket and net function //网络开关
 #include "lwip/lwipopts.h"
-#define CONFIG_NSOCKET_DESCRIPTORS  LWIP_CONFIG_NUM_SOCKETS  // max numbers of socket descriptor
+#define CONFIG_NSOCKET_DESCRIPTORS  LWIP_CONFIG_NUM_SOCKETS  // max numbers of socket descriptor 套接字描述符的最大数目
 
 /* max numbers of other descriptors except socket descriptors */
 
-#define CONFIG_NFILE_DESCRIPTORS    512
-#define CONFIG_NET_SENDFILE         1   // enable sendfile function
+#define CONFIG_NFILE_DESCRIPTORS    512	//除套接字描述符外的其他描述符的最大数目
+#define CONFIG_NET_SENDFILE         1   // enable sendfile function //因打开网络开关,所以同时也打开发送文件开关
 #define CONFIG_NET_TCP              1   // enable sendfile and send function
 #else
-#define CONFIG_NSOCKET_DESCRIPTORS  0
-#define CONFIG_NFILE_DESCRIPTORS    512
-#define CONFIG_NET_SENDFILE         0   // disable sendfile function
-#define CONFIG_NET_TCP              0   // disable sendfile and send function
+#define CONFIG_NSOCKET_DESCRIPTORS  0	//关闭网络开关,当然NFS的数量为0,鸿蒙和LINUX一样,一切皆为文件,而是文件就需要文件描述符(FD)
+#define CONFIG_NFILE_DESCRIPTORS    512 //除套接字描述符外的其他描述符的最大数目
+#define CONFIG_NET_SENDFILE         0   // disable sendfile function 
+#define CONFIG_NET_TCP              0   // disable sendfile and send function //禁用sendfile和send函数功能
 #endif
 
-#define NR_OPEN_DEFAULT CONFIG_NFILE_DESCRIPTORS
+#define NR_OPEN_DEFAULT CONFIG_NFILE_DESCRIPTORS //
 
 /* directory configure */
 

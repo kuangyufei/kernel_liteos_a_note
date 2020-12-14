@@ -70,7 +70,7 @@ static int AssignProcessFd(const struct fd_table_s *fdt, int minFd)//分配进�
 
     return VFS_ERROR;
 }
-//获取FD表
+//获取进程的文件描述表,每个进程都有一个 FD表
 static struct fd_table_s *GetFdTable(void)
 {
     struct fd_table_s *fdt = NULL;
@@ -218,7 +218,7 @@ int DisassociateProcessFd(int procFd)
 //分配一个进程fd
 int AllocProcessFd(void)
 {
-    return AllocLowestProcessFd(MIN_START_FD);//0,1,2已经分配给控制台了，所以从3开始
+    return AllocLowestProcessFd(MIN_START_FD);//0,1,2已经分配给了 stdin，stdout，stderr，所以从3开始
 }
 
 int AllocLowestProcessFd(int minFd)

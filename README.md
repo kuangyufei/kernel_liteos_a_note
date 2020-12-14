@@ -68,7 +68,6 @@
     1. Fork 本仓库 >> 新建 Feat_xxx 分支 >> 提交代码注解 >> 新建 Pull Request
 
     2. [新建 Issue](https://gitee.com/weharmony/kernel_liteos_a_note/issues)
-
 -   ### **联系方式**
     kuangyufei@126.com
 
