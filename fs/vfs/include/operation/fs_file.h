@@ -31,7 +31,7 @@
 
 #ifndef FS_FILE_H
 #define FS_FILE_H
-
+//0,1,2分别用于stdin、stdout、stderr
 #define MIN_START_FD 3 // 0,1,2 are used for stdin,stdout,stderr respectively
 
 int AllocProcessFd(void);

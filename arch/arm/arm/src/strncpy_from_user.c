@@ -38,7 +38,9 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-//从用户空间到内核空间的数据拷贝
+/*************************************************
+从用户空间到内核空间的数据拷贝
+*************************************************/
 INT32 LOS_StrncpyFromUser(CHAR *dst, const CHAR *src, INT32 count)
 {
     CHAR character;

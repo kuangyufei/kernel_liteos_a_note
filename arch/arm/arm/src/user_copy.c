@@ -40,7 +40,11 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-//从用户空间拷贝
+/*******************************************************
+从用户空间拷贝到内核空间
+请思考个问题,系统调用时为什么一定要copy_from_user ? 为什么不直接用memcpy？
+https://mp.weixin.qq.com/s/H3nXlOpP_XyF7M-1B4qreQ
+*******************************************************/
 size_t arch_copy_from_user(void *dst, const void *src, size_t len)
 {
     return LOS_ArchCopyFromUser(dst, src, len);
@@ -106,7 +110,7 @@ INT32 LOS_UserMemClear(unsigned char *buf, UINT32 len)
             return -ENOMEM;
         }
         (VOID)memset_s(tmp, len, 0, len);//2.清0
-        if (_arm_user_copy(buf, tmp, len) != 0) {//这个清空有点意思，此时内核存钱清0了，再将0拷贝至用户内存
+        if (_arm_user_copy(buf, tmp, len) != 0) {//这个清空有点意思，此时内核空间清0了，再将0拷贝至用户空间
             ret = -EFAULT;						 //不能直接将用户空间清0吗？要这么绕一圈 @note_thinking
         }
         LOS_MemFree(OS_SYS_MEM_ADDR, tmp);//释放内核空间

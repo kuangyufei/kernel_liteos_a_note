@@ -39,6 +39,8 @@
 /****************************************************************************
 fd:文件描述符（file descriptor）也叫文件句柄.
 为了高效管理已被打开的文件所创建的索引,是一个非负整数,本质上一个凭证.凭证上岗.
+fd只是个索引, 顺藤摸瓜, fd -> file -> inode -> 块/字符驱动程序
+
 当应用程序请求内核打开/新建一个文件时，内核会返回一个文件描述符用于对应这个打开/新建的文件，
 读写文件也是需要使用这个文件描述符来指定待读写的文件的。
 鸿蒙和LINUX一样,一切皆为文件,系统中，所有的文件操作，都是通过fd来定位资源和状态的
@@ -65,12 +67,12 @@ select()机制中提供一fd_set的数据结构，实际上是一long类型的�
 
 /* open file table for process fd */
 struct file_table_s {
-    signed short sysFd; /* system fd associate with the tg_filelist index */ //与tg_filelist索引关联的系统fd
-};
+    signed short sysFd; /* system fd associate with the tg_filelist index */ //系统分配的fd,系统全局FD表由tg_filelist维护
+};//sysFd的默认值是-1
 
 struct fd_table_s {//fd表结构体
     unsigned int max_fds;//一个进程能打开的最大文件数量, 一般是 512 + 128 个,512指普通文件, 128指网络文件
-    struct file_table_s *ft_fds; /* process fd array associate with system fd *///进程的FD数组 ,fd 默认是 -1
+    struct file_table_s *ft_fds; /* process fd array associate with system fd *///系统分配给进程的FD数组 ,fd 默认是 -1
     fd_set *open_fds;	//打开的fds 默认打开了 0,1,2	       (stdin,stdout,stderr)
     fd_set *proc_fds;	//处理的fds 默认打开了 0,1,2	       (stdin,stdout,stderr)
     sem_t ft_sem; /* manage access to the file table */ //管理对文件表的访问的信号量
@@ -92,15 +94,14 @@ typedef struct ProcessCB LosProcessCB;
 void files_refer(int fd);
 
 struct files_struct *dup_fd(struct files_struct *oldf);
-//alloc_files 实现见于 ..\third_party\NuttX\fs\inode\fs_files.c
-struct files_struct *alloc_files(void);//为进程分配文件管理器，其中包含fd总数，stdin,stdout,stderr是三个默认打开的文件
 
-void delete_files(LosProcessCB *processCB, struct files_struct *files);//删除进程的文件管理器
+struct files_struct *alloc_files(void);//为进程分配文件管理器，其中包含fd总数，(0,1,2)默认给了stdin,stdout,stderr
+
+void delete_files(LosProcessCB *processCB, struct files_struct *files);//删除参数进程的文件管理器
 
 struct files_struct *create_files_snapshot(const struct files_struct *oldf);//创建文件管理器快照，所谓快照就是一份拷贝
 
 void delete_files_snapshot(struct files_struct *files);//删除文件管理器快照
 
-int alloc_fd(int minfd);//分配一个fd，从files_struct->fdt 数组中拿一个未被使用(分配)的fd，默认都是 -1
-
+int alloc_fd(int minfd);//分配一个系统fd，从全局tg_filelist中拿sysFd
 #endif

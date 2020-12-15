@@ -54,12 +54,12 @@
 #include "fs_file.h"
 #include "capability_type.h"
 #include "capability_api.h"
-
+//拷贝用户空间路径到内核空间
 static int UserPathCopy(const char *userPath, char **pathBuf)
 {
     int ret;
 
-    *pathBuf = (char *)LOS_MemAlloc(OS_SYS_MEM_ADDR, PATH_MAX + 1);
+    *pathBuf = (char *)LOS_MemAlloc(OS_SYS_MEM_ADDR, PATH_MAX + 1);//
     if (*pathBuf == NULL) {
         return -ENOMEM;
     }
@@ -78,7 +78,7 @@ static int UserPathCopy(const char *userPath, char **pathBuf)
 
     return 0;
 }
-
+//用户空间 io向量地址范围检查
 static int UserIovItemCheck(const struct iovec *iov, const int iovcnt)
 {
     int i;
@@ -160,7 +160,7 @@ static void RestorePollfd(struct pollfd *fds, nfds_t nfds, const int *pollFds)
         p_fds->fd = pollFds[i];
     }
 }
-
+//使用poll方式 实现IO多路复用的机制
 static int UserPoll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
     int *pollFds = NULL;
@@ -202,7 +202,7 @@ static int FcntlDupFd(int fd, void *arg, int (*fcntl)(int, int, ...))
 
     return ret;
 }
-
+//关闭文件句柄
 int SysClose(int fd)
 {
     int ret;
@@ -218,7 +218,7 @@ int SysClose(int fd)
     FreeProcessFd(fd);
     return ret;
 }
-//用户进程调用 read 接口
+//系统调用|读文件:从文件中读取nbytes长度的内容到buf中(用户空间)
 ssize_t SysRead(int fd, void *buf, size_t nbytes)
 {
     int ret;
@@ -226,21 +226,20 @@ ssize_t SysRead(int fd, void *buf, size_t nbytes)
     if (nbytes == 0) {
         return 0;
     }
-	//虚拟地址必须在用户空间范围内
+	//[buf,buf+nbytes]地址必须在用户空间
     if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buf, nbytes)) {
         return -EFAULT;
     }
 
     /* Process fd convert to system global fd */
-    fd = GetAssociatedSystemFd(fd);
-
+    fd = GetAssociatedSystemFd(fd);//获得关联的系统fd,因为真正的read,write是需要sysFd的
     ret = read(fd, buf, nbytes);
     if (ret < 0) {
         return -get_errno();
     }
     return ret;
 }
-
+//系统调用|写文件:将buf中(用户空间)nbytes长度的内容写到文件中
 ssize_t SysWrite(int fd, const void *buf, size_t nbytes)
 {
     int ret;
@@ -248,7 +247,7 @@ ssize_t SysWrite(int fd, const void *buf, size_t nbytes)
     if (nbytes == 0) {
         return 0;
     }
-
+	//[buf,buf+nbytes]地址必须在用户空间
     if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buf, nbytes)) {
         return -EFAULT;
     }
@@ -262,7 +261,7 @@ ssize_t SysWrite(int fd, const void *buf, size_t nbytes)
     }
     return ret;
 }
-//系统调用之 打开一个文件
+//系统调用|打开文件, 正常情况下返回进程的FD值
 int SysOpen(const char *path, int oflags, ...)
 {
     int ret;
@@ -291,16 +290,17 @@ int SysOpen(const char *path, int oflags, ...)
         goto OUT;
     }
 
-#ifdef LOSCFG_FILE_MODE
+#ifdef LOSCFG_FILE_MODE //文件权限开关
     va_list ap;
 
     va_start(ap, oflags);
     mode = va_arg(ap, int);
     va_end(ap);
 #else
-    mode = 0666; /* 0666: File read-write properties. */
+    mode = 0666; /* 0666: File read-write properties. */ //相当于chmod 666
 #endif
-
+//当fd参数的值是AT_FDCWD，并且path参数是一个相对路径名，fstatat会计算相对于当前目录的path参数。
+//如果path是一个绝对路径，fd参数就会被忽略
     ret = do_open(AT_FDCWD, (path ? pathRet : NULL), oflags, mode);
     if (ret < 0) {
         ret = -get_errno();
@@ -311,15 +311,27 @@ OUT:
         LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
     }
     if (ret >= 0) {
-        AssociateSystemFd(procFd, ret);
-        ret = procFd;
+        AssociateSystemFd(procFd, ret);//进程FD 关联 系统FD
+        ret = procFd;//正常情况下返回的是进程Fd
     } else {
         FreeProcessFd(procFd);
     }
 
     return ret;
 }
+/************************************************
+创建文件,从实现看 SysCreat 和 SysOpen 并没有太大的区别,只有打开方式的区别
+SysCreat函数完全可以被SysOpen函数替代,常用标签如下:
 
+O_CREAT:若文件存在，此标志无用；若不存在，建新文件
+O_TRUNC:若文件存在，则长度被截为0，属性不变
+O_WRONLY:写文件 
+O_RDONLY:读文件
+O_BINARY:此标志可显示地给出以二进制方式打开文件 
+O_TEXT :此标志可用于显示地给出以文本方式打开文件
+O_RDWR :即读也写
+O_APPEND:即读也写，但每次写总是在文件尾添加
+************************************************/
 int SysCreat(const char *pathname, mode_t mode)
 {
     int ret = 0;
@@ -337,7 +349,7 @@ int SysCreat(const char *pathname, mode_t mode)
         ret = -EMFILE;
         goto OUT;
     }
-
+	// 调用关系 open -> do_open chmod 666 
     ret = open((pathname ? pathRet : NULL), O_CREAT | O_TRUNC | O_WRONLY, mode);
     if (ret < 0) {
         FreeProcessFd(procFd);
@@ -353,7 +365,7 @@ OUT:
     }
     return ret;
 }
-
+//删除链接
 int SysUnlink(const char *pathname)
 {
     int ret;
@@ -377,12 +389,12 @@ OUT:
     }
     return ret;
 }
-//系统调用，运行.elf
+//系统调用|运行可执行文件|.elf
 int SysExecve(const char *fileName, char *const *argv, char *const *envp)
 {
     return LOS_DoExecveFile(fileName, argv, envp);
 }
-
+//改变当前工作目录
 int SysChdir(const char *path)
 {
     int ret;
@@ -406,7 +418,7 @@ OUT:
     }
     return ret;
 }
-
+//移动文件指针
 off_t SysLseek(int fd, off_t offset, int whence)
 {
     int ret;
@@ -448,7 +460,7 @@ off_t SysLseek(int fd, off_t offset, int whence)
     }
     return ret;
 }
-
+//移动文件指针
 off64_t SysLseek64(int fd, int offsetHigh, int offsetLow, off64_t *result, int whence)
 {
     off64_t ret;
@@ -499,7 +511,7 @@ out:
 
     return 0;
 }
-
+//安装文件系统
 int SysMount(const char *source, const char *target, const char *filesystemtype, unsigned long mountflags,
              const void *data)
 {
@@ -550,7 +562,7 @@ OUT:
     }
     return ret;
 }
-
+//卸载文件系统
 int SysUmount(const char *target)
 {
     int ret;
@@ -578,7 +590,7 @@ OUT:
     }
     return ret;
 }
-
+//确定文件的可存取性
 int SysAccess(const char *path, int amode)
 {
     int ret;
@@ -608,7 +620,7 @@ OUT:
 
     return ret;
 }
-
+//重命名文件
 int SysRename(const char *oldpath, const char *newpath)
 {
     int ret;
@@ -644,7 +656,7 @@ OUT:
     }
     return ret;
 }
-
+//创建目录
 int SysMkdir(const char *pathname, mode_t mode)
 {
     int ret;
@@ -668,7 +680,7 @@ OUT:
     }
     return ret;
 }
-
+//删除目录
 int SysRmdir(const char *pathname)
 {
     int ret;
@@ -692,7 +704,7 @@ OUT:
     }
     return ret;
 }
-
+//复制已打开的文件句柄
 int SysDup(int fd)
 {
     int ret = -1;
@@ -715,12 +727,12 @@ int SysDup(int fd)
 
     return procFd;
 }
-
+//将内存缓冲区数据写回硬盘
 void SysSync(void)
 {
     sync();
 }
-
+//卸载文件系统
 int SysUmount2(const char *target, int flags)
 {
     if (flags != 0) {
@@ -728,7 +740,7 @@ int SysUmount2(const char *target, int flags)
     }
     return SysUmount(target);
 }
-
+//I/O总控制函数
 int SysIoctl(int fd, int req, void *arg)
 {
     int ret;
@@ -757,7 +769,7 @@ int SysIoctl(int fd, int req, void *arg)
     }
     return ret;
 }
-
+//文件控制
 int SysFcntl(int fd, int cmd, void *arg)
 {
     /* Process fd convert to system global fd */
@@ -772,7 +784,7 @@ int SysFcntl(int fd, int cmd, void *arg)
     }
     return ret;
 }
-
+//创建管道
 int SysPipe(int pipefd[2]) /* 2 : pipe fds for read and write */
 {
     int ret;
@@ -813,7 +825,7 @@ int SysPipe(int pipefd[2]) /* 2 : pipe fds for read and write */
     }
     return ret;
 }
-
+//按指定条件复制文件描述字
 int SysDup2(int fd1, int fd2)
 {
     int ret;
@@ -848,7 +860,7 @@ int SysDup2(int fd1, int fd2)
     AssociateSystemFd(fd2, sysfd1);
     return fd2;
 }
-
+//select()参数检查
 static int SelectParamCheckCopy(fd_set *readfds, fd_set *writefds, fd_set *exceptfds, fd_set **fdsBuf)
 {
     fd_set *readfdsRet = NULL;
@@ -887,7 +899,7 @@ static int SelectParamCheckCopy(fd_set *readfds, fd_set *writefds, fd_set *excep
 
     return 0;
 }
-
+//系统调用|文件系统|select .鸿蒙liteos目前不支持epoll方式
 int SysSelect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
 {
     int ret;
@@ -897,7 +909,7 @@ int SysSelect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, st
     fd_set *exceptfdsRet = NULL;
     struct timeval timeoutRet = {0};
 
-    ret = SelectParamCheckCopy(readfds, writefds, exceptfds, &fdsRet);
+    ret = SelectParamCheckCopy(readfds, writefds, exceptfds, &fdsRet);//检查参数
     if (ret != 0) {
         return ret;
     }
@@ -911,7 +923,7 @@ int SysSelect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, st
             goto ERROUT;
         }
     }
-
+	//poll()是在NuttX下执行此类监视操作的基本API
     ret = do_select(nfds, (readfds ? readfdsRet : NULL), (writefds ? writefdsRet : NULL),
                  (exceptfds ? exceptfdsRet : NULL), (timeout ? (&timeoutRet) : NULL), UserPoll);
     if (ret < 0) {
@@ -944,7 +956,7 @@ ERROUT:
     LOS_MemFree(OS_SYS_MEM_ADDR, fdsRet);
     return -EFAULT;
 }
-
+//系统调用|文件系统|截断功能
 int SysTruncate(const char *path, off_t length)
 {
     int ret;
@@ -977,7 +989,7 @@ OUT:
     }
     return ret;
 }
-
+//系统调用|文件系统|截断功能
 int SysTruncate64(const char *path, off64_t length)
 {
     int ret;
@@ -1010,7 +1022,7 @@ OUT:
     }
     return ret;
 }
-
+//系统调用|文件系统|截断功能
 int SysFtruncate(int fd, off_t length)
 {
     int ret;
@@ -1024,7 +1036,7 @@ int SysFtruncate(int fd, off_t length)
     }
     return ret;
 }
-
+//获取文件系统信息
 int SysStatfs(const char *path, struct statfs *buf)
 {
     int ret;
@@ -1055,7 +1067,7 @@ OUT:
     }
     return ret;
 }
-
+//获取文件系统信息
 int SysStatfs64(const char *path, size_t sz, struct statfs *buf)
 {
     int ret;
@@ -1091,7 +1103,7 @@ OUT:
     }
     return ret;
 }
-
+//获取文件状态信息
 int SysStat(const char *path, struct stat *buf)
 {
     int ret;
@@ -1122,7 +1134,7 @@ OUT:
     }
     return ret;
 }
-
+//参见SysStat
 int SysLstat(const char *path, struct stat *buffer)
 {
     int ret;
@@ -1153,7 +1165,7 @@ OUT:
     }
     return ret;
 }
-
+//参见SysStat
 int SysFstat(int fd, struct stat *buf)
 {
     int ret;
@@ -1189,7 +1201,7 @@ int SysStatx(int fd, const char *restrict path, int flag, unsigned mask, struct 
 {
     return -ENOSYS;
 }
-
+//把文件在内存中的部分写回磁盘
 int SysFsync(int fd)
 {
     int ret;
@@ -1216,7 +1228,7 @@ int SysFsync(int fd)
     }
     return ret;
 }
-
+//从文件读入数据到缓冲数组中
 ssize_t SysReadv(int fd, const struct iovec *iov, int iovcnt)
 {
     int ret;
@@ -1249,7 +1261,7 @@ OUT:
     (void)LOS_MemFree(OS_SYS_MEM_ADDR, iovRet);
     return ret;
 }
-
+//将缓冲数组里的数据写入文件
 ssize_t SysWritev(int fd, const struct iovec *iov, int iovcnt)
 {
     int ret;
@@ -1282,7 +1294,7 @@ OUT_FREE:
     (void)LOS_MemFree(OS_SYS_MEM_ADDR, iovRet);
     return ret;
 }
-
+//I/O多路转换
 int SysPoll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
     int ret;
@@ -1327,7 +1339,7 @@ OUT_KFD:
     free(kfds);
     return ret;
 }
-
+//对进程进行特定操作
 int SysPrctl(int option, ...)
 {
     unsigned long name;
@@ -1354,7 +1366,7 @@ ERROR:
     va_end(ap);
     return -err;
 }
-
+//对进程进行特定操作
 ssize_t SysPread64(int fd, void *buf, size_t nbytes, off64_t offset)
 {
     int ret, retVal;
@@ -1460,7 +1472,7 @@ char *SysGetcwd(char *buf, size_t n)
     LOS_MemFree(OS_SYS_MEM_ADDR, bufRet);
     return ret;
 }
-
+//发送文件
 ssize_t SysSendFile(int outfd, int infd, off_t *offset, size_t count)
 {
     int ret, retVal;
@@ -1487,7 +1499,7 @@ ssize_t SysSendFile(int outfd, int infd, off_t *offset, size_t count)
 
     return ret;
 }
-
+//文件截断
 int SysFtruncate64(int fd, off64_t length)
 {
     int ret;
@@ -1501,7 +1513,7 @@ int SysFtruncate64(int fd, off64_t length)
     }
     return ret;
 }
-
+//系统调用|文件系统|在指定目录下打开文件
 int SysOpenat(int dirfd, const char *path, int oflags, ...)
 {
     int ret;
@@ -1540,7 +1552,7 @@ OUT:
     }
     return ret;
 }
-
+//系统调用|文件系统|在指定目录下创建目录
 int SysMkdirat(int dirfd, const char *pathname, mode_t mode)
 {
     int ret;
@@ -1569,7 +1581,7 @@ OUT:
     }
     return ret;
 }
-
+//删除链接
 int SysUnlinkat(int dirfd, const char *pathname, int flag)
 {
     int ret;
@@ -1598,7 +1610,7 @@ OUT:
     }
     return ret;
 }
-
+//文件重命名
 int SysRenameat(int oldfd, const char *oldpath, int newdfd, const char *newpath)
 {
     int ret;
@@ -1670,7 +1682,7 @@ int SysFallocate64(int fd, int mode, off64_t offset, off64_t len)
     }
     return ret;
 }
-//系统调用之读文件
+//对文件随机读
 ssize_t SysPreadv(int fd, const struct iovec *iov, int iovcnt, off_t offset)
 {
     int ret;
@@ -1703,7 +1715,7 @@ OUT_FREE:
     (void)LOS_MemFree(OS_SYS_MEM_ADDR, iovRet);
     return ret;
 }
-
+//对文件随机写
 ssize_t SysPwritev(int fd, const struct iovec *iov, int iovcnt, off_t offset)
 {
     int ret;
