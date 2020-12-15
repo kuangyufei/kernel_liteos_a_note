@@ -127,7 +127,7 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
     LosVmPage *vmPage = NULL;
 
     if ((fileName == NULL) || ((argv != NULL) && !LOS_IsUserAddress((VADDR_T)(UINTPTR)argv)) ||
-        ((envp != NULL) && !LOS_IsUserAddress((VADDR_T)(UINTPTR)envp))) {//argv需要再用户空间
+        ((envp != NULL) && !LOS_IsUserAddress((VADDR_T)(UINTPTR)envp))) {//参数必须在用户空间
         return -EINVAL;
     }
     ret = OsCopyUserParam(&loadInfo, fileName, kfileName, PATH_MAX);//将文件名拷贝到内核空间,PATH_MAX = 256
@@ -144,7 +144,7 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
     }
 #endif
 
-    loadInfo.newSpace = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmSpace));//分配一个虚拟空间结构体
+    loadInfo.newSpace = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmSpace));//分配一个新的虚拟空间
     if (loadInfo.newSpace == NULL) {
         PRINT_ERR("%s %d, failed to allocate new vm space\n", __FUNCTION__, __LINE__);
         return -ENOMEM;
@@ -157,7 +157,7 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
     }
 
     (VOID)memset_s(virtTtb, PAGE_SIZE, 0, PAGE_SIZE);
-    ret = OsUserVmSpaceInit(loadInfo.newSpace, virtTtb);
+    ret = OsUserVmSpaceInit(loadInfo.newSpace, virtTtb);//用户虚拟空间初始化
     vmPage = OsVmVaddrToPage(virtTtb);
     if ((ret == FALSE) || (vmPage == NULL)) {
         PRINT_ERR("%s %d, create space failed, ret: %d, vmPage: %#x\n", __FUNCTION__, __LINE__, ret, vmPage);
@@ -174,14 +174,14 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
     if (ret != LOS_OK) {
         return ret;
     }
-
+	//对当前进程回收再利用,用当前进程去跑elf
     ret = OsExecRecycleAndInit(OsCurrProcessGet(), loadInfo.fileName, loadInfo.oldSpace, loadInfo.oldFiles);
     if (ret != LOS_OK) {
         (VOID)LOS_VmSpaceFree(loadInfo.oldSpace);
         goto OUT;
     }
 
-    ret = OsExecve(&loadInfo);
+    ret = OsExecve(&loadInfo);//elf开始运行
     if (ret != LOS_OK) {
         goto OUT;
     }

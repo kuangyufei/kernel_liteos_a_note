@@ -582,7 +582,7 @@ LITE_OS_SEC_TEXT UINT32 OsTaskSyncWait(const LosTaskCB *taskCB)
      * triggered right at the timeout has reached, we set the timeout as double
      * of the gc peroid.
      */
-    if (LOS_SemPend(taskCB->syncSignal, OS_MP_GC_PERIOD * 2) != LOS_OK) {
+    if (LOS_SemPend(taskCB->syncSignal, OS_MP_GC_PERIOD * 2) != LOS_OK) {//发送同步信号
         ret = LOS_ERRNO_TSK_MP_SYNC_FAILED;
     }
 
@@ -1061,7 +1061,7 @@ STATIC INLINE VOID OsTaskReleaseHoldLock(LosProcessCB *processCB, LosTaskCB *tas
 
     OsTaskSyncWake(taskCB);//同步唤醒任务
 }
-//删除参数的任务
+////删除一个正在运行的任务
 LITE_OS_SEC_TEXT VOID OsRunTaskToDelete(LosTaskCB *taskCB)
 {
     LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);//拿到task所属进程
@@ -1071,7 +1071,7 @@ LITE_OS_SEC_TEXT VOID OsRunTaskToDelete(LosTaskCB *taskCB)
     LOS_ListDelete(&taskCB->threadList);//从进程的线程链表中将自己摘除
     processCB->threadNumber--;//进程的活动task --，注意进程还有一个记录总task的变量 processCB->threadCount
     LOS_ListTailInsert(&g_taskRecyleList, &taskCB->pendList);//将task插入回收链表，等待回收资源再利用
-    OsEventWriteUnsafe(&g_resourceEvent, OS_RESOURCE_EVENT_FREE, FALSE, NULL);//产生一个资源释放了的事件
+    OsEventWriteUnsafe(&g_resourceEvent, OS_RESOURCE_EVENT_FREE, FALSE, NULL);//发送释放资源的事件,事件由 OsResourceRecoveryTask 消费
 
     OsSchedResched();//申请调度
     return;
@@ -1123,60 +1123,60 @@ STATIC BOOL OsRunTaskToDeleteCheckOnRun(LosTaskCB *taskCB, UINT32 *ret)
 
     return TRUE;
 }
-
+//删除不活动的任务 !OS_TASK_STATUS_RUNNING 
 STATIC VOID OsTaskDeleteInactive(LosProcessCB *processCB, LosTaskCB *taskCB)
 {
-    LosMux *mux = (LosMux *)taskCB->taskMux;
+    LosMux *mux = (LosMux *)taskCB->taskMux; //任务
 
-    LOS_ASSERT(!(taskCB->taskStatus & OS_TASK_STATUS_RUNNING));
+    LOS_ASSERT(!(taskCB->taskStatus & OS_TASK_STATUS_RUNNING));//不活动任务的定义:非OS_TASK_STATUS_RUNNING状态的任务叫...
 
-    OsTaskReleaseHoldLock(processCB, taskCB);
+    OsTaskReleaseHoldLock(processCB, taskCB);//释放任务所持有的锁
 
-    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {
-        OS_TASK_SCHED_QUEUE_DEQUEUE(taskCB, 0);
-    } else if (taskCB->taskStatus & OS_TASK_STATUS_PEND) {
-        LOS_ListDelete(&taskCB->pendList);
-        if (LOS_MuxIsValid(mux) == TRUE) {
-            OsMuxBitmapRestore(mux, taskCB, (LosTaskCB *)mux->owner);
+    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {//就绪状态时
+        OS_TASK_SCHED_QUEUE_DEQUEUE(taskCB, 0);//从就绪队列中删除
+    } else if (taskCB->taskStatus & OS_TASK_STATUS_PEND) {//阻塞状态时
+        LOS_ListDelete(&taskCB->pendList);//从阻塞链表中摘除节点
+        if (LOS_MuxIsValid(mux) == TRUE) {//如果是在等待锁
+            OsMuxBitmapRestore(mux, taskCB, (LosTaskCB *)mux->owner);//恢复互斥锁位图
         }
     }
 
-    if (taskCB->taskStatus & (OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME)) {
-        OsTimerListDelete(taskCB);
+    if (taskCB->taskStatus & (OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME)) {//定时任务
+        OsTimerListDelete(taskCB);//从定时器列表中删除
     }
-    OsTaskStatusUnusedSet(taskCB);
+    OsTaskStatusUnusedSet(taskCB);//重置任务状态为未使用状态
 
-    LOS_ListDelete(&taskCB->threadList);
-    processCB->threadNumber--;
-    LOS_ListTailInsert(&g_taskRecyleList, &taskCB->pendList);
+    LOS_ListDelete(&taskCB->threadList);//将自己从进程的任务链表上摘除掉.
+    processCB->threadNumber--;//任务数减少
+    LOS_ListTailInsert(&g_taskRecyleList, &taskCB->pendList);//把自己挂到可回收链表上,等待系统的回收再利用.
     return;
 }
-//删除参数任务
+//以不安全的方式删除参数任务
 LITE_OS_SEC_TEXT UINT32 OsTaskDeleteUnsafe(LosTaskCB *taskCB, UINT32 status, UINT32 intSave)
 {
     LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);//获取进程实体
     UINT32 mode = processCB->processMode;
     UINT32 errRet = LOS_OK;
 
-    if (taskCB->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {//系统任务是不能被删除的
+    if (taskCB->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {//系统任务是不能被删除的, 请您说出3个系统任务.
         errRet = LOS_ERRNO_TSK_OPERATE_SYSTEM_TASK;
         goto EXIT;
     }
 
-    if ((taskCB->taskStatus & OS_TASK_STATUS_RUNNING) && !OsRunTaskToDeleteCheckOnRun(taskCB, &errRet)) {//正在运行且检测到正在运行不能删除的情况
+    if ((taskCB->taskStatus & OS_TASK_STATUS_RUNNING) && !OsRunTaskToDeleteCheckOnRun(taskCB, &errRet)) {//正在运行且检测正在运行不能删除的情况
         goto EXIT;
     }
 
-    if (!(taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {//任务正在运行
-        OsTaskDeleteInactive(processCB, taskCB);//
-        SCHEDULER_UNLOCK(intSave);
-        OsWriteResourceEvent(OS_RESOURCE_EVENT_FREE);//
-        return errRet;
+    if (!(taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {//任务不在活动
+        OsTaskDeleteInactive(processCB, taskCB);//删除未活动的任务
+        SCHEDULER_UNLOCK(intSave);//释放自旋锁,这就是不安全的标记,函数内部并没有拿自旋锁
+        OsWriteResourceEvent(OS_RESOURCE_EVENT_FREE);//写一个资源释放事件,资源回收任务会收到事件,并回收任务的资源.
+        return errRet;//消费OS_RESOURCE_EVENT_FREE事件可见于 OsResourceRecoveryTask 的处理
     }
 
-    if (mode == OS_USER_MODE) {
-        SCHEDULER_UNLOCK(intSave);
-        OsTaskResourcesToFree(taskCB);
+    if (mode == OS_USER_MODE) { //用户态模式
+        SCHEDULER_UNLOCK(intSave);//先释放锁
+        OsTaskResourcesToFree(taskCB);//释放任务资源
         SCHEDULER_LOCK(intSave);
     }
 
@@ -1185,7 +1185,7 @@ LITE_OS_SEC_TEXT UINT32 OsTaskDeleteUnsafe(LosTaskCB *taskCB, UINT32 status, UIN
 #else
     LOS_ASSERT(OsPercpuGet()->taskLockCnt == 0);
 #endif
-    OsRunTaskToDelete(taskCB);
+    OsRunTaskToDelete(taskCB);//删除一个正在运行的任务
 
 EXIT:
     SCHEDULER_UNLOCK(intSave);
@@ -1699,7 +1699,7 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);
     return err;
 }
-//任务退群操作
+//1.当前进程中的任务集体退群, 2.当前进程贴上退出标签
 LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
 {
     LosProcessCB *processCB = NULL;
@@ -1712,53 +1712,53 @@ LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
     UINT16 cpu;
 #endif
 
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_LOCK(intSave);//调度自旋锁,这块锁的代码有点多,这块容易出问题!出问题也不好复现,希望鸿蒙有充分测试这块的功能. @note_thinking
     processCB = OsCurrProcessGet();
-    if (processCB->processStatus & OS_PROCESS_FLAG_EXIT) {
+    if (processCB->processStatus & OS_PROCESS_FLAG_EXIT) {//进程被贴上退出标记
         SCHEDULER_UNLOCK(intSave);
         return;
     }
 
     processCB->processStatus |= OS_PROCESS_FLAG_EXIT;//贴上进程要退出的标签
     runTask[ArchCurrCpuid()] = OsCurrTaskGet();//记录当前任务
-    runTask[ArchCurrCpuid()]->sig.sigprocmask = OS_INVALID_VALUE;//
+    runTask[ArchCurrCpuid()]->sig.sigprocmask = OS_INVALID_VALUE;//当前进程不再接受任何信号
 
-    list = &processCB->threadSiblingList;
+    list = &processCB->threadSiblingList;//拿到进程的任务列表
     head = list;
     do {
-        taskCB = LOS_DL_LIST_ENTRY(list->pstNext, LosTaskCB, threadList);
-        if (!(taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {
-            OsTaskDeleteInactive(processCB, taskCB);
+        taskCB = LOS_DL_LIST_ENTRY(list->pstNext, LosTaskCB, threadList);//遍历任务列表
+        if (!(taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {//不在运行(活动)的任务
+            OsTaskDeleteInactive(processCB, taskCB);//删除不活动的任务
         } else {
-#if (LOSCFG_KERNEL_SMP == YES)
-            if (taskCB->currCpu != ArchCurrCpuid()) {
-                taskCB->signal = SIGNAL_KILL;
-                runTask[taskCB->currCpu] = taskCB;
-                LOS_MpSchedule(taskCB->currCpu);
+#if (LOSCFG_KERNEL_SMP == YES) //多CPU core时,注意一个进程的多个任务很可能是多个CPU在跑的,系统调度会尽量确保一个CPU跑一个任务,
+            if (taskCB->currCpu != ArchCurrCpuid()) {//在任务被打断再次调度后由同一个CPU完成,但并不100%确保每次都是同一个cpu跑完一个任务的生命周期
+                taskCB->signal = SIGNAL_KILL;//任务信号变成kill
+                runTask[taskCB->currCpu] = taskCB;//将另一个cpu的运行任务强制变成taskCB
+                LOS_MpSchedule(taskCB->currCpu);//给另一个CPU发送调度信号,另一个CPU接收到信号后立即调度,干掉taskCB
             }
 #endif
-            list = list->pstNext;
+            list = list->pstNext;//处理下一个任务
         }
-    } while (head != list->pstNext);
+    } while (head != list->pstNext);//双向循环链表的标准结束动作就是(head == list->pstNext)
 
-#if (LOSCFG_KERNEL_SMP == YES)
-    for (cpu = 0; cpu < LOSCFG_KERNEL_CORE_NUM; cpu++) {
-        if ((cpu == ArchCurrCpuid()) || (runTask[cpu] == NULL)) {
-            continue;
-        }
+#if (LOSCFG_KERNEL_SMP == YES)	//多cpu core的情况, 例如: ipcamera_hi3516dv300 平台是 2个core
+    for (cpu = 0; cpu < LOSCFG_KERNEL_CORE_NUM; cpu++) {//这个循环很有意思,主要目的是用来确认task在其他CPU的执行情况
+        if ((cpu == ArchCurrCpuid()) || (runTask[cpu] == NULL)) {//1. runTask数据记录了会在其他CPU执行的任务
+            continue;//2.如果是当前CPU那已经在 OsTaskDeleteInactive 中就把task给干掉了.
+        }//3.那问题来了,剩下的如果知道其他CPU也把相应的任务给干掉了呢?
 
-        (VOID)OsTaskSyncWait(runTask[cpu]);
-    }
+        (VOID)OsTaskSyncWait(runTask[cpu]);//4.方法就是给要被干掉的任务发同步信号,如此另一个CPU调度到task,发现了上面的SIGNAL_KILL信号
+    }//5.那是一个要干掉task的信号,task被干掉后自然发不出回复信号,OsTaskSyncWait中2个周期后等待时间到.此时返回LOS_ERRNO_TSK_MP_SYNC_FAILED
 #endif
     SCHEDULER_UNLOCK(intSave);
 
-    LOS_ASSERT(processCB->threadNumber == 1);
+    LOS_ASSERT(processCB->threadNumber == 1);//这一趟下来,断言进程只有一个正在活动的任务了
     return;
 }
 //任务退群并销毁,进入任务的回收链表之后再进入空闲链表,等着再次被分配使用.
 LITE_OS_SEC_TEXT VOID OsExecDestroyTaskGroup(VOID)
 {
-    OsTaskExitGroup(OS_PRO_EXIT_OK);
+    OsTaskExitGroup(OS_PRO_EXIT_OK);//进程
     OsTaskCBRecyleToFree();
 }
 //暂停当前进程的所有任务
@@ -1978,7 +1978,7 @@ STATIC VOID OsResourceRecoveryTask(VOID)
     while (1) {//死循环,回收资源不存在退出情况,只要系统在运行资源就需要回收
         ret = LOS_EventRead(&g_resourceEvent, OS_RESOURCE_EVENT_MASK,
                             LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);//读取资源事件
-        if (ret & (OS_RESOURCE_EVENT_FREE | OS_RESOURCE_EVENT_OOM)) {//资源释放或异常情况
+        if (ret & (OS_RESOURCE_EVENT_FREE | OS_RESOURCE_EVENT_OOM)) {//收到资源释放或内存异常情况
             OsTaskCBRecyleToFree();//回收任务到空闲任务池
             OsProcessCBRecyleToFree();//回收进程到空闲进程池
         }

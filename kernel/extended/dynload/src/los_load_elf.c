@@ -971,21 +971,21 @@ STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
 
     return LOS_OK;
 }
-//擦除虚拟空间
+//虚拟空间,腾笼换鸟,借壳上市,点赞!
 STATIC VOID OsFlushAspace(ELFLoadInfo *loadInfo)
 {
     LosProcessCB *processCB = OsCurrProcessGet();//获取当前进程
 
-    OsExecDestroyTaskGroup();
+    OsExecDestroyTaskGroup();//销毁任务组
 
     loadInfo->oldSpace = processCB->vmSpace;//当前进程的虚拟空间记录下来
-    processCB->vmSpace = loadInfo->newSpace;//新空间换成当前进程的虚拟空间，牛逼借壳上市
+    processCB->vmSpace = loadInfo->newSpace;//新空间换成当前进程的虚拟空间，牛逼! 借壳上市
     processCB->vmSpace->heapBase += OsGetRndOffset(loadInfo);//堆区基地址
     processCB->vmSpace->heapNow = processCB->vmSpace->heapBase;//堆区现地址
     processCB->vmSpace->mapBase += OsGetRndOffset(loadInfo);//映射区基地址
     LOS_ArchMmuContextSwitch(&OsCurrProcessGet()->vmSpace->archMmu);//mmu上下文切换
 }
-
+//反初始化加载信息,析构函数,释放关闭文件和释放内存
 STATIC VOID OsDeInitLoadInfo(ELFLoadInfo *loadInfo)
 {
 #ifdef LOSCFG_ASLR
@@ -1014,12 +1014,12 @@ STATIC VOID OsDeInitFiles(ELFLoadInfo *loadInfo)
     delete_files_snapshot((struct files_struct *)loadInfo->oldFiles);//删除文件管理器快照
 #endif
 }
-//加载ELF文件
+//加载ELF文件,这里做了大量的工作
 INT32 OsLoadELFFile(ELFLoadInfo *loadInfo)
 {
     INT32 ret;
 
-    ret = OsELFLoadInit(loadInfo->fileName, loadInfo);//ELF加载初始化
+    ret = OsELFLoadInit(loadInfo->fileName, loadInfo);//加载ELF并初始化
     if (ret != LOS_OK) {
         goto OUT;
     }
@@ -1029,22 +1029,22 @@ INT32 OsLoadELFFile(ELFLoadInfo *loadInfo)
         goto OUT;
     }
 
-    ret = OsReadInterpInfo(loadInfo);
+    ret = OsReadInterpInfo(loadInfo);//
     if (ret != LOS_OK) {
         goto OUT;
     }
 
-    ret = OsSetArgParams(loadInfo, loadInfo->argv, loadInfo->envp);
+    ret = OsSetArgParams(loadInfo, loadInfo->argv, loadInfo->envp);//设置参数和环境变量
     if (ret != LOS_OK) {
         goto OUT;
     }
 
-    (VOID)OsFlushAspace(loadInfo);//冲洗干净空间，这里的意思就是打扫干净房子，准备放东西进来。
+    (VOID)OsFlushAspace(loadInfo);//冲洗干净空间，借壳上市,当前进程的虚拟空间切换成新的虚拟空间
 
-    ret = OsLoadELFSegment(loadInfo);//加载ELF各个段，放东西进虚拟空间
+    ret = OsLoadELFSegment(loadInfo);//加载ELF各个段，放入虚拟空间
     if (ret != LOS_OK) {//如果加载失败
-        OsCurrProcessGet()->vmSpace = loadInfo->oldSpace;//之前的虚拟空间还给当前进程
-        LOS_ArchMmuContextSwitch(&OsCurrProcessGet()->vmSpace->archMmu);//切换mmu上下文
+        OsCurrProcessGet()->vmSpace = loadInfo->oldSpace;//当前进程用回原有虚拟空间
+        LOS_ArchMmuContextSwitch(&OsCurrProcessGet()->vmSpace->archMmu);//切回原有mmu上下文
         goto OUT;
     }
 

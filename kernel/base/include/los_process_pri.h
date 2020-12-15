@@ -97,7 +97,7 @@ typedef struct ProcessCB {
     UINT32               threadGroupID;                /**< Which thread group , is the main thread ID of the process */
     UINT32               threadScheduleMap;            /**< The scheduling bitmap table for the thread group of the
                                                             process */
-    LOS_DL_LIST          threadSiblingList;            /**< List of threads under this process */
+    LOS_DL_LIST          threadSiblingList;            /**< List of threads under this process *///进程的线程(任务)列表
     LOS_DL_LIST          threadPriQueueList[OS_PRIORITY_QUEUE_NUM]; /**< The process's thread group schedules the
                                                                          priority hash table */	//进程的线程组调度优先级哈希表
     volatile UINT32      threadNumber; /**< Number of threads alive under this process */	//此进程下的活动线程数
@@ -230,7 +230,7 @@ typedef struct ProcessCB {
  *
  * The process has performed the exec operation.
  */
-#define OS_PROCESS_FLAG_ALREADY_EXEC      0x1000U //进程已经开始工作的标签
+#define OS_PROCESS_FLAG_ALREADY_EXEC      0x1000U //进程已执行exec操作 load elf时使用
 
 /**
  * @ingroup los_process
@@ -337,7 +337,7 @@ STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)//进程处
  * 31    15           8           7        0
  * |     | exit code  | core dump | signal |
  */
-#define OS_PRO_EXIT_OK 0
+#define OS_PRO_EXIT_OK 0 //进程退出
 //以下函数都是进程的退出方式
 STATIC INLINE VOID OsProcessExitCodeCoreDumpSet(LosProcessCB *processCB)
 {

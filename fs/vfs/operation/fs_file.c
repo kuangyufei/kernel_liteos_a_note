@@ -93,7 +93,7 @@ static bool IsValidProcessFd(struct fd_table_s *fdt, int procFd)
     if (fdt == NULL) {
         return false;
     }
-    if ((procFd < 0) || (procFd >= fdt->max_fds)) {
+    if ((procFd < 0) || (procFd >= fdt->max_fds)) {//[0,512/512+128]
         return false;
     }
     return true;

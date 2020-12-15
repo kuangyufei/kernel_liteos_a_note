@@ -54,7 +54,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define INTERP_FULL_PATH                    "/lib/libc.so"
+#define INTERP_FULL_PATH                    "/lib/libc.so" //动态链接库 解析路径
 #define INVALID_FD                          (-1)
 #define STRINGS_COUNT_MAX                   256
 #define ELF_PHDR_NUM_MAX                    128
@@ -68,11 +68,11 @@ extern "C" {
 #define FILE_PATH_MIN                       2
 #endif
 
-#define USER_STACK_SIZE                     0x100000
+#define USER_STACK_SIZE                     0x100000 
 #define USER_PARAM_BYTE_MAX                 0x1000
 #define USER_STACK_TOP_MAX                  USER_ASPACE_TOP_MAX
 
-#define EXEC_MMAP_BASE                      0x02000000
+#define EXEC_MMAP_BASE                      0x02000000 
 
 #ifdef LOSCFG_ASLR
 #define RANDOM_MASK                         ((((USER_ASPACE_TOP_MAX + GB - 1) & (-GB)) >> 3) - 1)
@@ -103,17 +103,19 @@ typedef struct {
     LD_ELF_EHDR  elfEhdr;	//ELF head
     LD_ELF_PHDR  *elfPhdr;	//ELF 程序头表
     UINT32       execFileLen;
-    INT32        execFD;
+    INT32        execFD;	//执行文件句柄
     LD_ELF_EHDR  interpELFEhdr;		//解释器段 ( 动态链接器路径 )
     LD_ELF_PHDR  *interpELFPhdr;
     UINT32       interpFileLen;
-    INT32        interpFD;
+    INT32        interpFD;	//解析器文件句柄,帮助装入动态链接库，做好全部重定位映射工作
     UINTPTR      topOfMem;
-    UINTPTR      oldFiles;
+    UINTPTR      oldFiles;	//保存进程原有的文件管理器
     LosVmSpace   *newSpace;	//新的虚拟空间，新开一个空间，把ELF各segment加载到这个虚拟空间，再切换MMU上下文，开始ELF的运行
     LosVmSpace   *oldSpace;	//老的虚拟空间，切当前进程的壳运行，由此保存当前进程的虚拟空间
-#ifdef LOSCFG_ASLR
-    INT32        randomDevFD;
+#ifdef LOSCFG_ASLR //地址空间布局随机化开关
+//地址空间随机化Address Space Layout Randomization（ASLR）是一种操作系统用来抵御缓冲区溢出攻击的内存保护机制。
+//这种技术使得系统上运行的进程的内存地址无法被预测，使得与这些进程有关的漏洞变得更加难以利用。
+    INT32        randomDevFD;//随机化设备文件句柄,可当 VFS文件操作
 #endif
 } ELFLoadInfo;
 

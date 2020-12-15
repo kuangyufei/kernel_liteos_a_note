@@ -48,7 +48,7 @@ extern "C" {
 ********************************************************/
 
 #if (LOSCFG_KERNEL_SMP == YES)
-//给target对应位CPU发送调度信号
+//给参数CPU发送调度信号
 VOID LOS_MpSchedule(UINT32 target)//target每位对应CPU core 
 {
     UINT32 cpuid = ArchCurrCpuid();

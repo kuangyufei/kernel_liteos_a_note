@@ -208,14 +208,14 @@ int SysClose(int fd)
     int ret;
 
     /* Process fd convert to system global fd */
-    int sysfd = DisassociateProcessFd(fd);
+    int sysfd = DisassociateProcessFd(fd);//先解除关联
 
-    ret = close(sysfd);
-    if (ret < 0) {
-        AssociateSystemFd(fd, sysfd);
+    ret = close(sysfd);//关闭文件,个人认为应该先 close - > DisassociateProcessFd 
+    if (ret < 0) {//关闭失败时
+        AssociateSystemFd(fd, sysfd);//继续关联
         return -get_errno();
     }
-    FreeProcessFd(fd);
+    FreeProcessFd(fd);//释放进程fd
     return ret;
 }
 //系统调用|读文件:从文件中读取nbytes长度的内容到buf中(用户空间)
@@ -365,7 +365,14 @@ OUT:
     }
     return ret;
 }
-//删除链接
+/**************************************************
+删除链:删除由装入点管理的文件
+
+执行unlink()函数并不一定会真正的删除文件，它先会检查文件系统中此文件的连接数是否为1，
+如果不是1说明此文件还有其他链接对象，因此只对此文件的连接数进行减1操作。若连接数为1，
+并且在此时没有任何进程打开该文件，此内容才会真正地被删除掉。在有进程打开此文件的情况下，
+则暂时不会删除，直到所有打开该文件的进程都结束时文件就会被删除。
+**************************************************/
 int SysUnlink(const char *pathname)
 {
     int ret;
@@ -377,7 +384,7 @@ int SysUnlink(const char *pathname)
             goto OUT;
         }
     }
-
+	//删除由装入点管理的文件
     ret = do_unlink(AT_FDCWD, (pathname ? pathRet : NULL));
     if (ret < 0) {
         ret = -get_errno();

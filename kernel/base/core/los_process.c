@@ -571,36 +571,36 @@ LITE_OS_SEC_TEXT VOID OsProcessCBRecyleToFree(VOID)
     LosProcessCB *processCB = NULL;
 
     SCHEDULER_LOCK(intSave);
-    while (!LOS_ListEmpty(&g_processRecyleList)) {//循环回收链表,直到为空
+    while (!LOS_ListEmpty(&g_processRecyleList)) {//循环任务回收链表,直到为空
         processCB = OS_PCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_processRecyleList));//找到回收链表中第一个进程实体
         //OS_PCB_FROM_PENDLIST 代表的是通过pendlist节点找到 PCB实体,因为g_processRecyleList上面挂的是pendlist节点位置
-        if (!(processCB->processStatus & OS_PROCESS_FLAG_EXIT)) {
+        if (!(processCB->processStatus & OS_PROCESS_FLAG_EXIT)) {//进程没有退出标签
             break;
         }
         SCHEDULER_UNLOCK(intSave);
 
-        OsTaskCBRecyleToFree();
+        OsTaskCBRecyleToFree();//将任务从回收链表移到空闲链表,以便被分配再使用.
 
         SCHEDULER_LOCK(intSave);
-        processCB->processStatus &= ~OS_PROCESS_FLAG_EXIT;
-        if (OsProcessIsUserMode(processCB)) {
-            space = processCB->vmSpace;
+        processCB->processStatus &= ~OS_PROCESS_FLAG_EXIT;//给进程撕掉退出标签,(可能进程并没有这个标签)
+        if (OsProcessIsUserMode(processCB)) {//进程是否是用户态进程
+            space = processCB->vmSpace;//只有用户态的进程才需要释放虚拟内存空间
         }
         processCB->vmSpace = NULL;
         /* OS_PROCESS_FLAG_GROUP_LEADER: The lead process group cannot be recycled without destroying the PCB.
          * !OS_PROCESS_FLAG_UNUSED: Parent process does not reclaim child process resources.
          */
-        LOS_ListDelete(&processCB->pendList);
-        if ((processCB->processStatus & OS_PROCESS_FLAG_GROUP_LEADER) ||
+        LOS_ListDelete(&processCB->pendList);//将进程从进程链表上摘除
+        if ((processCB->processStatus & OS_PROCESS_FLAG_GROUP_LEADER) ||//如果进程是进程组组长或者处于僵死状态
             (processCB->processStatus & OS_PROCESS_STATUS_ZOMBIES)) {
-            LOS_ListTailInsert(&g_processRecyleList, &processCB->pendList);
+            LOS_ListTailInsert(&g_processRecyleList, &processCB->pendList);//将进程挂到进程回收链表上,因为组长不能走啊
         } else {
             /* Clear the bottom 4 bits of process status */
-            OsInsertPCBToFreeList(processCB);
+            OsInsertPCBToFreeList(processCB);//进程回到可分配池中,再分配利用
         }
         SCHEDULER_UNLOCK(intSave);
 
-        (VOID)LOS_VmSpaceFree(space);
+        (VOID)LOS_VmSpaceFree(space);//释放用户态进程的虚拟内存空间,因为内核只有一个虚拟空间,因此不需要释放虚拟空间.
 
         SCHEDULER_LOCK(intSave);
     }
@@ -1482,7 +1482,10 @@ STATIC VOID *OsUserInitStackAlloc(UINT32 processID, UINT32 *size)
 
     return (VOID *)(UINTPTR)region->range.base;
 }
-//执行回收和初始化,再利用
+/**************************************************
+进程的回收再利用,被LOS_DoExecveFile调用
+
+**************************************************/
 LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR *name,
                                              LosVmSpace *oldSpace, UINTPTR oldFiles)
 {
@@ -1534,8 +1537,8 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
     }
 #endif
 
-    processCB->processStatus &= ~OS_PROCESS_FLAG_EXIT;
-    processCB->processStatus |= OS_PROCESS_FLAG_ALREADY_EXEC;
+    processCB->processStatus &= ~OS_PROCESS_FLAG_EXIT;	//去掉进程退出标签
+    processCB->processStatus |= OS_PROCESS_FLAG_ALREADY_EXEC;//加上进程运行 elf标签
 
     LOS_VmSpaceFree(oldSpace);
     return LOS_OK;

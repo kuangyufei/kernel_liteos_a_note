@@ -424,11 +424,11 @@ extern "C" {
 /**
 * @ingroup los_task
 * Task error code: Task sync failed on operating running task across cores.
-*
+* 
 * Value: 0x02000226
 *
 * Solution: Check task delete can be handled in user's scenario.
-*/
+*/ //跨核心运行任务时任务同步失败,检查任务删除可以在用户场景中处理
 #define LOS_ERRNO_TSK_MP_SYNC_FAILED            LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x26)
 
 /**

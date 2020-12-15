@@ -289,7 +289,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 #define OS_TASK_RESOURCE_STATCI_SIZE    0x1000	//4K
 #define OS_TASK_RESOURCE_FREE_PRIORITY  5		//回收资源任务的优先级
 #define OS_RESOURCE_EVENT_MASK          0xFF	//资源事件的掩码
-#define OS_RESOURCE_EVENT_OOM           0x02	//资源异常事件 暂时的理解是:OutOfMemory @note_thinking
+#define OS_RESOURCE_EVENT_OOM           0x02	//内存溢出事件
 #define OS_RESOURCE_EVENT_FREE          0x04	//资源释放事件
 #define OS_TCB_NAME_LEN 32
 
@@ -303,7 +303,7 @@ typedef struct {
     UINTPTR         topOfStack;         /**< Task stack top */		//非用户模式下的栈顶 bottom = top + size
     UINT32          taskID;             /**< Task ID */				//任务ID，任务池本质是一个大数组，ID就是数组的索引，默认 < 128
     TSK_ENTRY_FUNC  taskEntry;          /**< Task entrance function */	//任务执行入口函数
-    VOID            *joinRetval;        /**< pthread adaption */
+    VOID            *joinRetval;        /**< pthread adaption */	//用来存储join线程的返回值
     VOID            *taskSem;           /**< Task-held semaphore */	//task在等哪个信号量
     VOID            *taskMux;           /**< Task-held mutex */		//task在等哪把锁
     VOID            *taskEvent;         /**< Task-held event */		//task在等哪个事件
@@ -312,22 +312,22 @@ typedef struct {
     LOS_DL_LIST     pendList;           /**< Task pend node */		//如果任务阻塞时就通过它挂到各种阻塞情况的链表上,比如OsTaskWait时
     LOS_DL_LIST     threadList;         /**< thread list */			//挂到所属进程的线程链表上
     SortLinkList    sortList;           /**< Task sortlink node */	//挂到cpu core 的任务执行链表上
-    UINT32          eventMask;          /**< Event mask */	//事件屏蔽
-    UINT32          eventMode;          /**< Event mode */	//事件模式
+    UINT32          eventMask;          /**< Event mask */			//事件屏蔽
+    UINT32          eventMode;          /**< Event mode */			//事件模式
     UINT32          priBitMap;          /**< BitMap for recording the change of task priority,	//任务在执行过程中优先级会经常变化，这个变量用来记录所有曾经变化
                                              the priority can not be greater than 31 */			//过的优先级，例如 ..01001011 曾经有过 0,1,3,6 优先级
     INT32           errorNo;            /**< Error Num */
     UINT32          signal;             /**< Task signal */ //任务信号 注意这个信号和 下面的sig是完全不一样的两个东东。
-    sig_cb          sig;				//信号控制块，和上面的signal是两个东西，独立使用。鸿蒙这样放在一块会误导开发者！
+    sig_cb          sig;									//信号控制块，和上面的signal是两个东西，独立使用。鸿蒙这样放在一块会误导开发者！
 #if (LOSCFG_KERNEL_SMP == YES)
     UINT16          currCpu;            /**< CPU core number of this task is running on */	//正在运行此任务的CPU内核号
     UINT16          lastCpu;            /**< CPU core number of this task is running on last time */ //上次运行此任务的CPU内核号
     UINT16          cpuAffiMask;        /**< CPU affinity mask, support up to 16 cores */	//CPU亲和力掩码，最多支持16核，亲和力很重要，多核情况下尽量一个任务在一个CPU核上运行，提高效率
     UINT32          timerCpu;           /**< CPU core number of this task is delayed or pended */	//此任务的CPU内核号被延迟或挂起
 #if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)
-    UINT32          syncSignal;         /**< Synchronization for signal handling */	//信号同步处理
+    UINT32          syncSignal;         /**< Synchronization for signal handling */	//用于CPU之间 同步信号
 #endif
-#if (LOSCFG_KERNEL_SMP_LOCKDEP == YES)
+#if (LOSCFG_KERNEL_SMP_LOCKDEP == YES)	//死锁检测开关
     LockDep         lockDep;
 #endif
 #if (LOSCFG_KERNEL_SCHED_STATISTICS == YES) //调度统计开关,显然打开这个开关性能会受到影响,鸿蒙默认是关闭的
