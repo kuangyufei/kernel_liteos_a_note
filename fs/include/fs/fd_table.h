@@ -63,8 +63,12 @@ fd_set:
 select()机制中提供一fd_set的数据结构，实际上是一long类型的数组，每一个数组元素都能与一打开的文件句柄
 （不管是socket句柄，还是其他文件或命名管道或设备句柄）建立联系，建立联系的工作由程序员完成，当调用select()时，
 由内核根据IO状态修改fd_set的内容，由此来通知执行了select()的进程哪一socket或文件发生了可读或可写事件。
-****************************************************************************/
 
+process fd 和 system fd 的区别和联系
+process fd(进程FD):每个进程都有一个属于自己的files_struct
+system fd(系统FD):整个系统共用的fd表
+二者的关系描述为:files_struct->ft_fds[进程FD].sysFd = 系统FD ;
+****************************************************************************/
 /* open file table for process fd */
 struct file_table_s {
     signed short sysFd; /* system fd associate with the tg_filelist index */ //系统分配的fd,系统全局FD表由tg_filelist维护

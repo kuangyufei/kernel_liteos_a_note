@@ -105,7 +105,7 @@ extern "C" {
 #ifndef PAGE_SIZE
 #define PAGE_SIZE                        (0x1000U) // 页大小4K
 #endif
-#define PAGE_MASK                        (~(PAGE_SIZE - 1))
+#define PAGE_MASK                        (~(PAGE_SIZE - 1)) //页掩码,用于页内偏移地址的计算
 #define PAGE_SHIFT                       (12)// 12位 - 4K 偏移
 
 #define KB                               (1024UL)

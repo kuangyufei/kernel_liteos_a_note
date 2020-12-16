@@ -63,11 +63,15 @@ size_t arch_copy_to_user(void *dst, const void *src, size_t len)
 {
     return LOS_ArchCopyToUser(dst, src, len);//
 }
-
+/********************************************
+从内核空间拷贝到用户空间
+dst:必须在用户空间
+src:必须在内核空间
+********************************************/
 size_t LOS_ArchCopyToUser(void *dst, const void *src, size_t len)
 {//先判断地址是不是在用户空间
-    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dst, len)) {//[dst,dst+len]在内核空间
-        return len;
+    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dst, len)) {//[dest,dest+count] 不在用户空间
+        return len;//必须在用户空间
     }
 
     return _arm_user_copy(dst, src, len);//完成从内核空间到用户空间的拷贝
@@ -77,7 +81,7 @@ INT32 LOS_CopyFromKernel(VOID *dest, UINT32 max, const VOID *src, UINT32 count)
 {
     INT32 ret;
 
-    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dest, count)) {//[dest,dest+count] 在内核空间的情况
+    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dest, count)) {//[dest,dest+count] 不在用户空间
         ret = memcpy_s(dest, max, src, count);
     } else {//[dest,dest+count] 在用户空间
         ret = ((max >= count) ? _arm_user_copy(dest, src, count) : ERANGE_AND_RESET);//用户空间copy
@@ -98,20 +102,20 @@ INT32 LOS_CopyToKernel(VOID *dest, UINT32 max, const VOID *src, UINT32 count)
 
     return ret;
 }
-//清除用户空间
+//清除用户空间数据
 INT32 LOS_UserMemClear(unsigned char *buf, UINT32 len)
 {
     INT32 ret = 0;
-    if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buf, len)) {//内核空间的情况
+    if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buf, len)) {//[buf,buf+len] 不在用户空间
         (VOID)memset_s(buf, len, 0, len);//清0
-    } else {
+    } else {//在用户空间
         unsigned char *tmp = (unsigned char *)LOS_MemAlloc(OS_SYS_MEM_ADDR, len);//1.在内核申请内存
         if (tmp == NULL) {
             return -ENOMEM;
         }
         (VOID)memset_s(tmp, len, 0, len);//2.清0
         if (_arm_user_copy(buf, tmp, len) != 0) {//这个清空有点意思，此时内核空间清0了，再将0拷贝至用户空间
-            ret = -EFAULT;						 //不能直接将用户空间清0吗？要这么绕一圈 @note_thinking
+            ret = -EFAULT;						 //不能直接将用户空间清0吗？要这么绕一圈 @note_why
         }
         LOS_MemFree(OS_SYS_MEM_ADDR, tmp);//释放内核空间
     }

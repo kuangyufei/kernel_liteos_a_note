@@ -399,7 +399,7 @@ OUT:
 //系统调用|运行可执行文件|.elf
 int SysExecve(const char *fileName, char *const *argv, char *const *envp)
 {
-    return LOS_DoExecveFile(fileName, argv, envp);
+    return LOS_DoExecveFile(fileName, argv, envp);//用当前进程运行ELF
 }
 //改变当前工作目录
 int SysChdir(const char *path)
@@ -432,10 +432,10 @@ off_t SysLseek(int fd, off_t offset, int whence)
     struct file *filep = NULL;
 
     /* Process fd convert to system global fd */
-    fd = GetAssociatedSystemFd(fd);
+    fd = GetAssociatedSystemFd(fd);//获得全局sysFd
 
-    /* Get the file structure corresponding to the file descriptor. */
-    ret = fs_getfilep(fd, &filep);
+    /* Get the file structure corresponding to the file descriptor. */	
+    ret = fs_getfilep(fd, &filep);//获取与文件描述符对应的文件结构
     if (ret < 0) {
         /* The errno value has already been set */
         return (off_t)-get_errno();
@@ -443,9 +443,9 @@ off_t SysLseek(int fd, off_t offset, int whence)
 
     /* libc seekdir function should set the whence to SEEK_SET, so we can discard
      * the whence argument here */
-    if (filep->f_oflags & O_DIRECTORY) {
+    if (filep->f_oflags & O_DIRECTORY) {//文件是个目录,注意对鸿蒙来说一切皆文件,目录/网络都是文件.
         /* defensive coding */
-        if (filep->f_dir == NULL) {
+        if (filep->f_dir == NULL) {// 防御性编码
             return (off_t)-EINVAL;
         }
         if (offset == 0) {
@@ -461,7 +461,7 @@ off_t SysLseek(int fd, off_t offset, int whence)
     }
 
     /* Then let file_seek do the real work */
-    ret = file_seek(filep, offset, whence);
+    ret = file_seek(filep, offset, whence);//主干函数,执行真正的seek
     if (ret < 0) {
         return -get_errno();
     }
@@ -505,13 +505,13 @@ off64_t SysLseek64(int fd, int offsetHigh, int offsetLow, off64_t *result, int w
     }
 
     /* Then let file_seek do the real work */
-    ret = file_seek64(filep, offset, whence);
+    ret = file_seek64(filep, offset, whence);//这是lseek的内部实现 
     if (ret < 0) {
         return (off64_t)-get_errno();
     }
 
 out:
-    retVal = LOS_ArchCopyToUser(result, &ret, sizeof(off64_t));
+    retVal = LOS_ArchCopyToUser(result, &ret, sizeof(off64_t));//从内核拷贝数据到用户空间
     if (retVal != 0) {
         return -EFAULT;
     }

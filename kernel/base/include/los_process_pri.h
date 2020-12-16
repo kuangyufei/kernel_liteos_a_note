@@ -77,26 +77,26 @@ typedef struct {
 } ProcessGroup;
 
 typedef struct ProcessCB {
-    CHAR                 processName[OS_PCB_NAME_LEN]; /**< Process name */
-    UINT32               processID;                    /**< process ID = leader thread ID */
+    CHAR                 processName[OS_PCB_NAME_LEN]; /**< Process name */	//进程名称
+    UINT32               processID;                    /**< process ID = leader thread ID */	//进程ID,由进程池分配,范围[0,64]
     UINT16               processStatus;                /**< [15:4] process Status; [3:0] The number of threads currently
                                                             running in the process *///这里设计很巧妙.用一个16表示了两层逻辑 数量和状态,点赞!
-    UINT16               priority;                     /**< process priority */
-    UINT16               policy;                       /**< process policy */
-    UINT16               timeSlice;                    /**< Remaining time slice */
-    UINT16               consoleID;                    /**< The console id of task belongs  */
-    UINT16               processMode;                  /**< Kernel Mode:0; User Mode:1; */
-    UINT32               parentProcessID;              /**< Parent process ID */
-    UINT32               exitCode;                     /**< process exit status */
-    LOS_DL_LIST          pendList;                     /**< Block list to which the process belongs */
-    LOS_DL_LIST          childrenList;                 /**< my children process list */
-    LOS_DL_LIST          exitChildList;                /**< my exit children process list */	//那些要退出孩子进程链表，白发人送黑发人。
-    LOS_DL_LIST          siblingList;                  /**< linkage in my parent's children list */
-    ProcessGroup         *group;                       /**< Process group to which a process belongs */
-    LOS_DL_LIST          subordinateGroupList;         /**< linkage in my group list */
-    UINT32               threadGroupID;                /**< Which thread group , is the main thread ID of the process */
+    UINT16               priority;                     /**< process priority */	//进程优先级
+    UINT16               policy;                       /**< process policy */	//进程的调度方式,默认抢占式
+    UINT16               timeSlice;                    /**< Remaining time slice *///进程时间片,默认2个tick
+    UINT16               consoleID;                    /**< The console id of task belongs  *///任务的控制台id归属
+    UINT16               processMode;                  /**< Kernel Mode:0; User Mode:1; */	//模式指定为内核还是用户进程
+    UINT32               parentProcessID;              /**< Parent process ID */	//父进程ID
+    UINT32               exitCode;                     /**< process exit status */	//进程退出状态码
+    LOS_DL_LIST          pendList;                     /**< Block list to which the process belongs */ //进程所属的阻塞列表,如果因拿锁失败,就由此节点挂到等锁链表上
+    LOS_DL_LIST          childrenList;                 /**< my children process list */	//孩子进程都挂到这里,形成双循环链表
+    LOS_DL_LIST          exitChildList;                /**< my exit children process list */	//那些要退出孩子进程挂到这里，白发人送黑发人。
+    LOS_DL_LIST          siblingList;                  /**< linkage in my parent's children list */ //兄弟进程链表, 56个民族是一家,来自同一个父进程.
+    ProcessGroup         *group;                       /**< Process group to which a process belongs */ //所属进程组
+    LOS_DL_LIST          subordinateGroupList;         /**< linkage in my group list */ //进程是组长时,有哪些组员进程
+    UINT32               threadGroupID;                /**< Which thread group , is the main thread ID of the process */ //哪个线程组是进程的主线程ID
     UINT32               threadScheduleMap;            /**< The scheduling bitmap table for the thread group of the
-                                                            process */
+                                                            process */ //进程的各线程调度位图
     LOS_DL_LIST          threadSiblingList;            /**< List of threads under this process *///进程的线程(任务)列表
     LOS_DL_LIST          threadPriQueueList[OS_PRIORITY_QUEUE_NUM]; /**< The process's thread group schedules the
                                                                          priority hash table */	//进程的线程组调度优先级哈希表
@@ -104,12 +104,12 @@ typedef struct ProcessCB {
     UINT32               threadCount;  /**< Total number of threads created under this process */	//在此进程下创建的线程总数
     LOS_DL_LIST          waitList;     /**< The process holds the waitLits to support wait/waitpid *///进程持有等待链表以支持wait/waitpid
 #if (LOSCFG_KERNEL_SMP == YES)
-    UINT32               timerCpu;     /**< CPU core number of this task is delayed or pended */
+    UINT32               timerCpu;     /**< CPU core number of this task is delayed or pended *///统计各线程被延期或阻塞的时间
 #endif
-    UINTPTR              sigHandler;   /**< signal handler */
-    sigset_t             sigShare;     /**< signal share bit */
+    UINTPTR              sigHandler;   /**< signal handler */ //信号处理函数
+    sigset_t             sigShare;     /**< signal share bit */	//信号共享位
 #if (LOSCFG_KERNEL_LITEIPC == YES)
-    ProcIpcInfo         ipcInfo;       /**< memory pool for lite ipc */ 
+    ProcIpcInfo         ipcInfo;       /**< memory pool for lite ipc */ //用于进程间通讯的 内存文件系统,设备装载点为 /dev/litepc
 #endif
     LosVmSpace          *vmSpace;       /**< VMM space for processes */ //进程空间
 #ifdef LOSCFG_FS_VFS

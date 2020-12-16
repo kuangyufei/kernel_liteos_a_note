@@ -1540,7 +1540,7 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
     processCB->processStatus &= ~OS_PROCESS_FLAG_EXIT;	//去掉进程退出标签
     processCB->processStatus |= OS_PROCESS_FLAG_ALREADY_EXEC;//加上进程运行 elf标签
 
-    LOS_VmSpaceFree(oldSpace);
+    LOS_VmSpaceFree(oldSpace);//ELF已经接管了进程,进程的原有虚拟空间要被释放掉
     return LOS_OK;
 }
 //进程层面的开始执行, entry为入口函数 ,其中 创建好task,task上下文 等待调度真正执行, sp:栈指针 mapBase:栈底 mapSize:栈大小
@@ -1968,7 +1968,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_GetCurrProcessID(VOID)
 LITE_OS_SEC_TEXT VOID OsProcessExit(LosTaskCB *runTask, INT32 status)
 {
     UINT32 intSave;
-    LOS_ASSERT(runTask == OsCurrTaskGet());//只有当前进程才能调用这个函数
+    LOS_ASSERT(runTask == OsCurrTaskGet());//只有当前进程才能调用这个函数,即进程最后的退出不假手他人
 
     OsTaskResourcesToFree(runTask);//释放任务资源
     OsProcessResourcesToFree(OsCurrProcessGet());//释放进程资源
@@ -1998,7 +1998,7 @@ LITE_OS_SEC_TEXT UINT32 OsGetKernelInitProcessID(VOID)
 {
     return g_kernelInitProcess;
 }
-//设置进程的中断处理函数
+//设置进程的信号处理函数
 LITE_OS_SEC_TEXT VOID OsSetSigHandler(UINTPTR addr)
 {
     OsCurrProcessGet()->sigHandler = addr;

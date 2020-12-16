@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '注解运行ELF的过程,内核腾笼换鸟,借壳上市这招玩的真漂亮,点赞!
+git commit -m  '完善对进程/任务注解
 搜索 @note_pic 可以查看全部字符图
 搜索 @note_why 是注者尚未看明白的地方，如果您看明白了，请告诉注者完善
 搜索 @note_thinking 是注者的思考和吐槽的地方

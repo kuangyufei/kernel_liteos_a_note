@@ -40,7 +40,11 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+/*********************************************
+此函数用于在复制数据之前验证usermode是否有权访问src。
+函数由汇编实现
+//liteos_a\arch\arm\arm\src\hw_user_get.S
+*********************************************/
 errno_t _arm_get_user(void *dst, const void *src, size_t dstTypeLen, size_t srcTypeLen);
 
 #ifdef __cplusplus
