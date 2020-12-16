@@ -38,7 +38,7 @@
 #define CAP_DAC_WRITE                   2
 #define CAP_DAC_READ_SEARCH             3
 #define CAP_FOWNER                      4
-#define CAP_KILL                        5	//kill
+#define CAP_KILL                        5	//杀死(进程,线程 ==)能力
 #define CAP_SETGID                      6	//设置用户组ID
 #define CAP_SETUID                      7	//设置用户ID
 

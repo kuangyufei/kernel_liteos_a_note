@@ -55,10 +55,10 @@ extern "C" {
  *
  * Task siginal types.
  */
-#define SIGNAL_NONE                 0U
-#define SIGNAL_KILL                 (1U << 0)
-#define SIGNAL_SUSPEND              (1U << 1)
-#define SIGNAL_AFFI                 (1U << 2)
+#define SIGNAL_NONE                 0U	//无信号
+#define SIGNAL_KILL                 (1U << 0)	//干掉
+#define SIGNAL_SUSPEND              (1U << 1)	//挂起
+#define SIGNAL_AFFI                 (1U << 2)	//CPU 亲和力,一个任务被切换后被同一个CPU再次执行,则亲和力高
 
 /* scheduler lock */
 extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
@@ -317,8 +317,8 @@ typedef struct {
     UINT32          priBitMap;          /**< BitMap for recording the change of task priority,	//任务在执行过程中优先级会经常变化，这个变量用来记录所有曾经变化
                                              the priority can not be greater than 31 */			//过的优先级，例如 ..01001011 曾经有过 0,1,3,6 优先级
     INT32           errorNo;            /**< Error Num */
-    UINT32          signal;             /**< Task signal */ //任务信号 注意这个信号和 下面的sig是完全不一样的两个东东。
-    sig_cb          sig;									//信号控制块，和上面的signal是两个东西，独立使用。鸿蒙这样放在一块会误导开发者！
+    UINT32          signal;             /**< Task signal */ //任务信号类型,(SIGNAL_NONE,SIGNAL_KILL,SIGNAL_SUSPEND,SIGNAL_AFFI)
+    sig_cb          sig;				//信号控制块，这里用于进程间通讯的信号,类似于 linux singal模块
 #if (LOSCFG_KERNEL_SMP == YES)
     UINT16          currCpu;            /**< CPU core number of this task is running on */	//正在运行此任务的CPU内核号
     UINT16          lastCpu;            /**< CPU core number of this task is running on last time */ //上次运行此任务的CPU内核号
@@ -356,7 +356,7 @@ typedef struct {
     LosTaskCB *newTask;
 } LosTask;
 
-struct ProcessSignalInfo {//进程信号信息
+struct ProcessSignalInfo {//进程信号描述符
     siginfo_t *sigInfo;       /**< Signal to be dispatched */		//要发送的信号 例如 9 代表 kill process信号
     LosTaskCB *defaultTcb;    /**< Default TCB */					//默认task,指的是信号的发送方
     LosTaskCB *unblockedTcb;  /**< The signal unblock on this TCB*/	//解除阻塞这个task的信号
@@ -364,7 +364,7 @@ struct ProcessSignalInfo {//进程信号信息
     LosTaskCB *receivedTcb;   /**< This TCB received the signal */	//指定task接收信号
 };
 
-typedef int (*ForEachTaskCB)(LosTaskCB *tcb, void *arg);//函数指针
+typedef int (*ForEachTaskCB)(LosTaskCB *tcb, void *arg);//每个任务的回调函数,可用于进程被kill 9 时,通知所有任务善后处理
 
 /**
  * @ingroup los_task

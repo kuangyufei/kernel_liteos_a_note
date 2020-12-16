@@ -178,7 +178,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_SemDelete(UINT32 semHandle)
 ERR_HANDLER:
     OS_RETURN_ERROR_P2(errLine, errNo);
 }
-//对外接口 挂起信号
+//对外接口 等待信号
 LITE_OS_SEC_TEXT UINT32 LOS_SemPend(UINT32 semHandle, UINT32 timeout)
 {
     UINT32 intSave;

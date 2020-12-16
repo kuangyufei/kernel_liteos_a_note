@@ -106,7 +106,7 @@ typedef struct ProcessCB {
 #if (LOSCFG_KERNEL_SMP == YES)
     UINT32               timerCpu;     /**< CPU core number of this task is delayed or pended *///统计各线程被延期或阻塞的时间
 #endif
-    UINTPTR              sigHandler;   /**< signal handler */ //信号处理函数
+    UINTPTR              sigHandler;   /**< signal handler */ //信号处理函数,处理如 SIGSYS 等信号 
     sigset_t             sigShare;     /**< signal share bit */	//信号共享位
 #if (LOSCFG_KERNEL_LITEIPC == YES)
     ProcIpcInfo         ipcInfo;       /**< memory pool for lite ipc */ //用于进程间通讯的 内存文件系统,设备装载点为 /dev/litepc

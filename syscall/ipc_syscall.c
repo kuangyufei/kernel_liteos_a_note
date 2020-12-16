@@ -183,23 +183,32 @@ ssize_t SysMqTimedReceive(mqd_t personal, char *msg, size_t msgLen, unsigned int
     }
     return receiveLen;
 }
-
+//系统调用之捕捉信号,鸿蒙内核只捕捉了SIGSYS 信号
 int SysSigAction(int sig, const sigaction_t *restrict sa, sigaction_t *restrict old, size_t sigsetsize)
 {
     return OsSigAction(sig, sa, old);
 }
 
+/*****************************************************
+系统调用之进程信号屏蔽, 
+什么意思?简单说就是 一个信号来了进程要不要处理,阻塞就是不处理,注意不能阻塞SIGKILL和SIGSTOP信号,必须要处理.
+
+how
+SIG_BLOCK	  加入信号到进程屏蔽。set包含了希望阻塞的附加信号
+SIG_UNBLOCK	  从进程屏蔽里将信号删除。set包含了希望解除阻塞的信号
+SIG_SETMASK	  将set的值设定为新的进程屏蔽
+*****************************************************/
 int SysSigprocMask(int how, const sigset_t_l *restrict setl, sigset_t_l *restrict oldl, size_t sigsetsize)
 {
     /* Let nxsig_procmask do all of the work */
     return OsSigprocMask(how, setl, oldl);
 }
-
+//系统调用之干掉进程
 int SysKill(pid_t pid, int sig)
 {
     return OsKillLock(pid, sig);
 }
-
+//系统调用之干掉线程
 int SysPthreadKill(pid_t pid, int sig)
 {
     return OsPthreadKill(pid, sig);

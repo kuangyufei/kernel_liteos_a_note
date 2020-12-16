@@ -569,7 +569,12 @@ STATIC INLINE VOID OsTaskSyncDestroy(UINT32 syncSignal)
     (VOID)syncSignal;
 #endif
 }
-//同步信号等待
+/******************************************
+等待任务的同步信号,
+A --发送syncSignal-- > B
+B --回一个syncSignal-- > A
+如此A就知道B此时还在
+*******************************************/
 LITE_OS_SEC_TEXT UINT32 OsTaskSyncWait(const LosTaskCB *taskCB)
 {
 #if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)
@@ -1086,38 +1091,46 @@ LITE_OS_SEC_TEXT VOID OsRunTaskToDelete(LosTaskCB *taskCB)
  * 3. Do the deletion in hard-irq
  * then LOS_TaskDelete will directly return with 'ret' value.
  */
+ /****************************************************************
+ 检查是否需要对正在运行的任务执行删除操作,如果需要删除，则返回TRUE。
+ 如果满足以下情况，则返回FALSE：
+ 1.如果启用了SMP，则跨CPU执行删除
+ 2.禁用抢占时执行删除
+ 3.在硬irq中删除
+ 然后LOS_TaskDelete将直接返回ret值
+ ****************************************************************/
 STATIC BOOL OsRunTaskToDeleteCheckOnRun(LosTaskCB *taskCB, UINT32 *ret)
 {
     /* init default out return value */
     *ret = LOS_OK;
 
 #if (LOSCFG_KERNEL_SMP == YES)
-    /* ASYNCHRONIZED. No need to do task lock checking */
-    if (taskCB->currCpu != ArchCurrCpuid()) {
+    /* ASYNCHRONIZED. No need to do task lock checking *///异步操作,不需要进行任务锁检查
+    if (taskCB->currCpu != ArchCurrCpuid()) {//任务运行在其他CPU,跨核心执行删除
         /*
          * the task is running on another cpu.
          * mask the target task with "kill" signal, and trigger mp schedule
          * which might not be essential but the deletion could more in time.
          */
-        taskCB->signal = SIGNAL_KILL;
-        LOS_MpSchedule(taskCB->currCpu);
-        *ret = OsTaskSyncWait(taskCB);
+        taskCB->signal = SIGNAL_KILL;	//贴上干掉标记
+        LOS_MpSchedule(taskCB->currCpu);//通知任务所属CPU发生调度
+        *ret = OsTaskSyncWait(taskCB);	//同步等待可怜的任务被干掉
         return FALSE;
     }
 #endif
 
-    if (!OsPreemptableInSched()) {
+    if (!OsPreemptableInSched()) {//如果任务正在运行且调度程序已锁定，则无法删除它
         /* If the task is running and scheduler is locked then you can not delete it */
         *ret = LOS_ERRNO_TSK_DELETE_LOCKED;
         return FALSE;
     }
 
-    if (OS_INT_ACTIVE) {
+    if (OS_INT_ACTIVE) {//硬中断进行中...会屏蔽掉所有信号,当然包括kill了
         /*
          * delete running task in interrupt.
          * mask "kill" signal and later deletion will be handled.
          */
-        taskCB->signal = SIGNAL_KILL;
+        taskCB->signal = SIGNAL_KILL;//硬中断后将处理删除。
         return FALSE;
     }
 
@@ -1594,13 +1607,17 @@ LITE_OS_SEC_TEXT_MINOR UINT16 LOS_TaskCpuAffiGet(UINT32 taskID)
 
 /*
  * Description : Process pending signals tagged by others cores
- *///处理由其他CPU核标记为挂起信号
+ */
+ /******************************************************
+ 	由其他CPU核触发阻塞进程的信号
+	函数由汇编代码调用 ..\arch\arm\arm\src\los_dispatch.S
+ ******************************************************/
 LITE_OS_SEC_TEXT_MINOR UINT32 OsTaskProcSignal(VOID)
 {
     Percpu *percpu = NULL;
     LosTaskCB *runTask = NULL;
     UINT32 intSave, ret;
-//私有且不可中断，无需保护。这个任务在其他CPU核看到它时总是在运行，所以它在执行代码的同时也可以继续接收信号
+	//私有且不可中断，无需保护。这个任务在其他CPU核看到它时总是在运行，所以它在执行代码的同时也可以继续接收信号
     /*
      * private and uninterruptable, no protection needed.
      * while this task is always running when others cores see it,
@@ -1611,28 +1628,28 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsTaskProcSignal(VOID)
         goto EXIT;
     }
 
-    if (runTask->signal & SIGNAL_KILL) {
+    if (runTask->signal & SIGNAL_KILL) {//意思是其他cpu发起了要干掉你的信号
         /*
          * clear the signal, and do the task deletion. if the signaled task has been
          * scheduled out, then this deletion will wait until next run.
-         *///清除信号，删除任务。如果发出信号的任务已出调度就绪队列，则此删除将等待下次运行
+         *///如果发出信号的任务已出调度就绪队列，则此删除将等待下次运行
         SCHEDULER_LOCK(intSave);
-        runTask->signal = SIGNAL_NONE;
-        ret = OsTaskDeleteUnsafe(runTask, OS_PRO_EXIT_OK, intSave);
+        runTask->signal = SIGNAL_NONE;//清除信号，
+        ret = OsTaskDeleteUnsafe(runTask, OS_PRO_EXIT_OK, intSave);//任务的自杀行动,这可是正在运行的任务.
         if (ret) {
             PRINT_ERR("Task proc signal delete task(%u) failed err:0x%x\n", runTask->taskID, ret);
         }
-    } else if (runTask->signal & SIGNAL_SUSPEND) {
-        runTask->signal &= ~SIGNAL_SUSPEND;
+    } else if (runTask->signal & SIGNAL_SUSPEND) {//意思是其他cpu发起了要挂起你的信号
+        runTask->signal &= ~SIGNAL_SUSPEND;//
 
         /* suspend killed task may fail, ignore the result */
         (VOID)LOS_TaskSuspend(runTask->taskID);
 #if (LOSCFG_KERNEL_SMP == YES)
-    } else if (runTask->signal & SIGNAL_AFFI) {
+    } else if (runTask->signal & SIGNAL_AFFI) {//意思是下次调度其他cpu要媾和你
         runTask->signal &= ~SIGNAL_AFFI;
 
         /* pri-queue has updated, notify the target cpu */
-        LOS_MpSchedule((UINT32)runTask->cpuAffiMask);
+        LOS_MpSchedule((UINT32)runTask->cpuAffiMask);//任务队列已更新，通知目标cpu
 #endif
     }
 

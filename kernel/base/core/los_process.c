@@ -67,12 +67,12 @@ extern "C" {
 //LITE_OS_SEC_BSS 和 LITE_OS_SEC_DATA_INIT 是告诉编译器这些全局变量放在哪个数据段
 LITE_OS_SEC_BSS LosProcessCB *g_runProcess[LOSCFG_KERNEL_CORE_NUM];// CPU内核个数,超过一个就实现了并行
 LITE_OS_SEC_BSS LosProcessCB *g_processCBArray = NULL; // 进程池数组
-LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_freeProcess;// 空闲状态下的进程链表, .个人觉得应该取名为 g_freeProcessList
+LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_freeProcess;// 空闲状态下的进程链表, .个人觉得应该取名为 g_freeProcessList  @note_thinking
 LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_processRecyleList;// 需要回收的进程列表
 LITE_OS_SEC_BSS UINT32 g_userInitProcess = OS_INVALID_VALUE;// 用户态的初始init进程,用户态下其他进程由它 fork
 LITE_OS_SEC_BSS UINT32 g_kernelInitProcess = OS_INVALID_VALUE;// 内核态初始Kprocess进程,内核态下其他进程由它 fork
 LITE_OS_SEC_BSS UINT32 g_kernelIdleProcess = OS_INVALID_VALUE;// 内核态idle进程,由Kprocess fork
-LITE_OS_SEC_BSS UINT32 g_processMaxNum;// 进程最大数量
+LITE_OS_SEC_BSS UINT32 g_processMaxNum;// 进程最大数量,默认64个
 LITE_OS_SEC_BSS ProcessGroup *g_processGroup = NULL;// 全局进程组,负责管理所有进程组
 //将task从该进程的就绪队列中摘除,如果需要进程也从进程就绪队列中摘除
 LITE_OS_SEC_TEXT_INIT VOID OsTaskSchedQueueDequeue(LosTaskCB *taskCB, UINT16 status)
@@ -2003,7 +2003,7 @@ LITE_OS_SEC_TEXT VOID OsSetSigHandler(UINTPTR addr)
 {
     OsCurrProcessGet()->sigHandler = addr;
 }
-//获取进程的中断处理函数
+//获取进程的信号处理函数
 LITE_OS_SEC_TEXT UINTPTR OsGetSigHandler(VOID)
 {
     return OsCurrProcessGet()->sigHandler;

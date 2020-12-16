@@ -45,7 +45,23 @@ LITE_OS_SEC_TEXT_MINOR VOID OsPrintKillUsage(VOID)
 {
     PRINTK("\nkill: usage: kill [sigspec] [pid]\n");
 }
-// shell kill 命令用于发送特定信号给指定进程。kill [signo | -signo] [pid]
+/********************************************* 
+命令功能
+命令用于发送特定信号给指定进程。
+
+命令格式
+kill [signo | -signo] [pid]
+
+参数		参数说明		取值范围
+signo	信号ID	[1,30]
+pid		进程ID	[1,MAX_INT]
+
+须知： signo有效范围为[0,64]，建议取值范围为[1,30]，其余为保留内容。
+
+使用指南
+必须指定发送的信号编号及进程号。
+进程编号取值范围根据系统配置变化，例如系统最大支持pid为256，则取值范围缩小为[1-256]。
+*********************************************/
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdKill(INT32 argc, const CHAR **argv)
 {
 #define  ARG_NUM 2

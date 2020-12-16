@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '完善对进程/任务注解
+git commit -m  '如何跨CPU删除任务?注解一个任务是如何自杀和被他杀的.
 搜索 @note_pic 可以查看全部字符图
 搜索 @note_why 是注者尚未看明白的地方，如果您看明白了，请告诉注者完善
 搜索 @note_thinking 是注者的思考和吐槽的地方
