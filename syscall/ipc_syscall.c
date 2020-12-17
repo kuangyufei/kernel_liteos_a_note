@@ -37,7 +37,26 @@
 #include "user_copy.h"
 #include "los_signal.h"
 #include "los_strncpy_from_user.h"
-//创建和打开一个posix消息队列
+/********************************************************
+本文说明:系统调用|IPC
+IPC（Inter-Process Communication，进程间通信）
+每个进程各自有不同的用户地址空间，进程之间地址保护,相互隔离,任何一个进程的信息在另一个进程中都看不到，
+所以进程之间要交换数据必须通过内核，在内核中开辟一块缓冲区，进程A把数据从用户空间拷到内核缓冲区，
+进程B再从内核缓冲区把数据读走，
+
+IPC实现方式之消息队列:
+消息队列特点总结：
+（1）消息队列是消息的链表,具有特定的格式,存放在内存中并由消息队列标识符标识.
+（2）消息队列允许一个或多个进程向它写入与读取消息.
+（3）管道和消息队列的通信数据都是先进先出的原则。
+（4）消息队列可以实现消息的随机查询,消息不一定要以先进先出的次序读取,也可以按消息的类型读取.比FIFO更有优势。
+（5）消息队列克服了信号承载信息量少，管道只能承载无格式字节流以及缓冲区大小受限等缺点。
+（6）目前主要有两种类型的消息队列：POSIX消息队列以及System V消息队列，System V消息队列是随内核持续的，
+	 只有在内核重起或者人工删除时，该消息队列才会被删除。
+	 
+鸿蒙liteos 支持POSIX消息队列并加入了一种自研的消息队列 liteipc,此处重点讲 posix消息队列
+********************************************************/
+//打开一个消息队列,封装了posix接口
 mqd_t SysMqOpen(const char *mqName, int openFlag, mode_t mode, struct mq_attr *attr)
 {
     mqd_t ret;
@@ -48,7 +67,7 @@ mqd_t SysMqOpen(const char *mqName, int openFlag, mode_t mode, struct mq_attr *a
     if (retValue < 0) {
         return retValue;
     }
-    ret = mq_open(kMqName, openFlag, mode, attr);
+    ret = mq_open(kMqName, openFlag, mode, attr);//posix
     if (ret == -1) {
         return (mqd_t)-get_errno();
     }
@@ -251,7 +270,7 @@ int SysSigTimedWait(const sigset_t_l *setl, siginfo_t *info, const struct timesp
     }
     return (ret == 0 ? infoIntr.si_signo : ret);
 }
-
+//IPC系统调用之暂停任务
 int SysPause(void)
 {
     return OsPause();

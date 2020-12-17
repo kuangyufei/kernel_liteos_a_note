@@ -46,6 +46,7 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
+//定义所有的系统调用的ID ..\third_party\musl\kernel\obj\include\bits\syscall.h
 
 /**
  * @ingroup los_sys

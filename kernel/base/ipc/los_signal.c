@@ -86,11 +86,11 @@ int OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info)
     masked = (bool)OsSigIsMember(&sigcb->sigprocmask, info->si_signo);//@note_thinking 这里还有 masked= -1的情况要处理!!!
     if (masked) {//集合中已有该信号
         /* If signal is in wait list and mask list, need unblock it */ //如果信号在等待列表和掩码列表中，需要解除阻止
-        if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->si_signo)) {//等待
-            OsTaskWake(stcb);
-            OsSigEmptySet(&sigcb->sigwaitmask);
+        if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->si_signo)) {//waitList上挂的都是task,sigwaitmask表示是否在等si_signo
+            OsTaskWake(stcb);//唤醒任务,从阻塞状态变成就绪态
+            OsSigEmptySet(&sigcb->sigwaitmask);//将sigwaitmask清空,都已经变成就绪状态了,当然就没有要等待的信号了.
         } else {
-            OsSigAddSet(&sigcb->sigPendFlag, info->si_signo);
+            OsSigAddSet(&sigcb->sigPendFlag, info->si_signo);//
         }
     } else {//
         /* unmasked signal actions */
@@ -409,7 +409,7 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-
+//添加信号到指定信号集
 int OsSigAddSet(sigset_t *set, int signo)
 {
     /* Verify the signal */
@@ -419,11 +419,11 @@ int OsSigAddSet(sigset_t *set, int signo)
         /* In musl, sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */
         signo -= 1;
         /* Add the signal to the set */
-        *set |= SIGNO2SET((unsigned int)signo);
+        *set |= SIGNO2SET((unsigned int)signo);//填充信号集
         return LOS_OK;
     }
 }
-//
+//获取当前进程的阻塞信号集
 int OsSigPending(sigset_t *set)
 {
     LosTaskCB *tcb = NULL;
@@ -435,7 +435,7 @@ int OsSigPending(sigset_t *set)
 
     SCHEDULER_LOCK(intSave);
     tcb = OsCurrTaskGet();
-    *set = tcb->sig.sigPendFlag;
+    *set = tcb->sig.sigPendFlag;//因何而被阻塞
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
@@ -484,7 +484,7 @@ int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
     }
     return ret;
 }
-//
+//让当前任务等待的信号
 int OsSigTimedWait(sigset_t *set, siginfo_t *info, unsigned int timeout)
 {
     int ret;
@@ -492,12 +492,12 @@ int OsSigTimedWait(sigset_t *set, siginfo_t *info, unsigned int timeout)
 
     SCHEDULER_LOCK(intSave);
 
-    ret = OsSigTimedWaitNoLock(set, info, timeout);
+    ret = OsSigTimedWaitNoLock(set, info, timeout);//以不加锁的方式等待
 
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-
+//让当前任务暂停的信号
 int OsPause(void)
 {
     LosTaskCB *spcb = NULL;
@@ -507,7 +507,7 @@ int OsPause(void)
     oldSigprocmask = spcb->sig.sigprocmask;
     return OsSigSuspend(&oldSigprocmask);
 }
-//暂停信号
+//让当前任务暂停的信号
 int OsSigSuspend(const sigset_t *set)
 {
     unsigned int intSave;
@@ -568,7 +568,9 @@ int OsSigAction(int sig, const sigaction_t *act, sigaction_t *oact)
 
     return LOS_OK;
 }
-//保存信号现场
+/**********************************************
+产生系统调用时,也就是软中断时,保存用户栈寄存器现场信息
+**********************************************/
 void OsSaveSignalContext(unsigned int *sp)
 {
     UINTPTR sigHandler;
@@ -581,26 +583,26 @@ void OsSaveSignalContext(unsigned int *sp)
     OS_RETURN_IF_VOID(sp == NULL);
     cpsr = OS_SYSCALL_GET_CPSR(sp);
 
-    OS_RETURN_IF_VOID(((cpsr & CPSR_MASK_MODE) != CPSR_USER_MODE));
+    OS_RETURN_IF_VOID(((cpsr & CPSR_MASK_MODE) != CPSR_USER_MODE));//必须在用户模式下保存
     SCHEDULER_LOCK(intSave);
     task = OsCurrTaskGet();
     process = OsCurrProcessGet();
-    sigcb = &task->sig;
+    sigcb = &task->sig;//获取任务的信号控制块
 
-    if ((sigcb->context.count == 0) && ((sigcb->sigFlag != 0) || (process->sigShare != 0))) {
+    if ((sigcb->context.count == 0) && ((sigcb->sigFlag != 0) || (process->sigShare != 0))) {//未保存上下文且关注了信号
         sigHandler = OsGetSigHandler();
-        if (sigHandler == 0) {
+        if (sigHandler == 0) {//信号没有注册
             sigcb->sigFlag = 0;
             process->sigShare = 0;
             SCHEDULER_UNLOCK(intSave);
             PRINT_ERR("The signal processing function for the current process pid =%d is NULL!\n", task->processID);
             return;
         }
-        /* One pthread do the share signal */
-        sigcb->sigFlag |= process->sigShare;
+        /* One pthread do the share signal */ 
+        sigcb->sigFlag |= process->sigShare;//记录由一个线程执行可进程的共享信号,这些恢复上下文时就找到对应的任务
         unsigned int signo = (unsigned int)FindFirstSetedBit(sigcb->sigFlag) + 1;
         OsProcessExitCodeSignalSet(process, signo);
-        sigcb->context.CPSR = cpsr;
+        sigcb->context.CPSR = cpsr;		//保存当前各寄存器的信息
         sigcb->context.PC = sp[REG_PC];
         sigcb->context.USP = sp[REG_SP];
         sigcb->context.ULR = sp[REG_LR];
@@ -610,17 +612,18 @@ void OsSaveSignalContext(unsigned int *sp)
         sigcb->context.R3 = sp[REG_R3];
         sigcb->context.R7 = sp[REG_R7];
         sigcb->context.R12 = sp[REG_R12];
-        sp[REG_PC] = sigHandler;
-        sp[REG_R0] = signo;
-        sp[REG_R1] = (unsigned int)(UINTPTR)(sigcb->sigunbinfo.si_value.sival_ptr);
+        sp[REG_PC] = sigHandler;//下一个要执行的函数,信号注册函数
+        sp[REG_R0] = signo;		//信号注册函数参数
+        sp[REG_R1] = (unsigned int)(UINTPTR)(sigcb->sigunbinfo.si_value.sival_ptr); //@note_why 这里看明白,是干啥子用的?
         /* sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */
         sigcb->sigFlag ^= 1ULL << (signo - 1);
-        sigcb->context.count++;
+        sigcb->context.count++;	//代表已保存
     }
 
     SCHEDULER_UNLOCK(intSave);
 }
-//保存信号中断现场
+//发生硬中断时,需保存用户态的用户栈现场,多了一个参数 R7寄存器
+//汇编调用 见于 los_dispatch.S | 254行:    BL      OsSaveSignalContextIrq
 void OsSaveSignalContextIrq(unsigned int *sp, unsigned int r7)
 {
     UINTPTR sigHandler;
@@ -633,7 +636,7 @@ void OsSaveSignalContextIrq(unsigned int *sp, unsigned int r7)
 
     OS_RETURN_IF_VOID(sp == NULL);
     cpsr = context->CPSR;
-    OS_RETURN_IF_VOID(((cpsr & CPSR_MASK_MODE) != CPSR_USER_MODE));
+    OS_RETURN_IF_VOID(((cpsr & CPSR_MASK_MODE) != CPSR_USER_MODE));//必须在用户模式下保存用户栈信息
 
     SCHEDULER_LOCK(intSave);
     task = OsCurrTaskGet();
@@ -651,7 +654,7 @@ void OsSaveSignalContextIrq(unsigned int *sp, unsigned int r7)
         sigcb->sigFlag |= process->sigShare;
         unsigned int signo = (unsigned int)FindFirstSetedBit(sigcb->sigFlag) + 1;
         OsProcessExitCodeSignalSet(process, signo);
-        (VOID)memcpy_s(&sigcb->context.R0, sizeof(TaskIrqDataSize), &context->R0, sizeof(TaskIrqDataSize));
+        (VOID)memcpy_s(&sigcb->context.R0, sizeof(TaskIrqDataSize), &context->R0, sizeof(TaskIrqDataSize));//note_why 为何此处和OsSaveSignalContext的处理不一致?
         sigcb->context.R7 = r7;
         context->PC = sigHandler;
         context->R0 = signo;
@@ -662,7 +665,13 @@ void OsSaveSignalContextIrq(unsigned int *sp, unsigned int r7)
     }
     SCHEDULER_UNLOCK(intSave);
 }
-//恢复信号上下文
+/****************************************************
+恢复信号上下文,由系统调用之__NR_sigreturn产生,这是一个内部产生的系统调用.
+为什么要恢复呢?
+因为系统调用的执行由任务内核态完成,使用的栈也是内核栈,CPU相关寄存器记录的都是内核栈的内容,
+而系统调用完成后,需返回任务的用户栈执行,这时需将CPU各寄存器回到用户态现场
+所以函数的功能就变成了还原寄存器的值
+****************************************************/
 void OsRestorSignalContext(unsigned int *sp)
 {
     LosTaskCB *task = NULL; /* Do not adjust this statement */
@@ -672,28 +681,28 @@ void OsRestorSignalContext(unsigned int *sp)
 
     SCHEDULER_LOCK(intSave);
     task = OsCurrTaskGet();
-    sigcb = &task->sig;
+    sigcb = &task->sig;//获取当前任务信号控制块
 
-    if (sigcb->context.count != 1) {
+    if (sigcb->context.count != 1) {//必须之前保存过,才能被恢复
         SCHEDULER_UNLOCK(intSave);
         PRINT_ERR("sig error count : %d\n", sigcb->context.count);
         return;
     }
 
-    process = OsCurrProcessGet();
-    sp[REG_PC] = sigcb->context.PC;
-    OS_SYSCALL_SET_CPSR(sp, sigcb->context.CPSR);
-    sp[REG_SP] = sigcb->context.USP;
-    sp[REG_LR] = sigcb->context.ULR;
+    process = OsCurrProcessGet();//获取当前进程
+    sp[REG_PC] = sigcb->context.PC;//指令寄存器
+    OS_SYSCALL_SET_CPSR(sp, sigcb->context.CPSR);//重置程序状态寄存器
+    sp[REG_SP] = sigcb->context.USP;//堆栈指针, USP指的是 用户态的堆栈,即将回到用户栈继续运行
+    sp[REG_LR] = sigcb->context.ULR;//连接寄存器
     sp[REG_R0] = sigcb->context.R0;
     sp[REG_R1] = sigcb->context.R1;
     sp[REG_R2] = sigcb->context.R2;
     sp[REG_R3] = sigcb->context.R3;
     sp[REG_R7] = sigcb->context.R7;
     sp[REG_R12] = sigcb->context.R12;
-    sigcb->context.count--;
-    process->sigShare = 0;
-    OsProcessExitCodeSignalClear(process);
+    sigcb->context.count--;	//信号上下文的数量回到减少
+    process->sigShare = 0;	//回到用户态,信号共享清0
+    OsProcessExitCodeSignalClear(process);//清空进程退出码
     SCHEDULER_UNLOCK(intSave);
 }
 

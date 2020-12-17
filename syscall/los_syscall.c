@@ -65,20 +65,21 @@
 #endif
 #include "sys/shm.h"
 
+//500以后是LiteOS自定义的系统调用，与ARM EABI不兼容
+#define SYS_CALL_NUM    (__NR_syscallend + 1) // __NR_syscallend = 500 + customized syscalls
+#define NARG_BITS       4	//参数占用位,这里可以看出系统调用的最大参数个数为 2^4 = 16个参数.
+#define NARG_MASK       0x0F//参数掩码
+#define NARG_PER_BYTE   2	//每个字节两个参数
 
-#define SYS_CALL_NUM    (__NR_syscallend + 1)
-#define NARG_BITS       4
-#define NARG_MASK       0x0F
-#define NARG_PER_BYTE   2
-
-typedef UINT32 (*SyscallFun1)(UINT32);
-typedef UINT32 (*SyscallFun3)(UINT32, UINT32, UINT32);
+typedef UINT32 (*SyscallFun1)(UINT32);//一个参数的注册函数
+typedef UINT32 (*SyscallFun3)(UINT32, UINT32, UINT32);//1,3,5,7 代表参数的个数
 typedef UINT32 (*SyscallFun5)(UINT32, UINT32, UINT32, UINT32, UINT32);
 typedef UINT32 (*SyscallFun7)(UINT32, UINT32, UINT32, UINT32, UINT32, UINT32, UINT32);
 
-static UINTPTR g_syscallHandle[SYS_CALL_NUM] = {0};
-static UINT8 g_syscallNArgs[(SYS_CALL_NUM + 1) / NARG_PER_BYTE] = {0};
+static UINTPTR g_syscallHandle[SYS_CALL_NUM] = {0};	//系统调用入口函数注册
+static UINT8 g_syscallNArgs[(SYS_CALL_NUM + 1) / NARG_PER_BYTE] = {0};//保存系统调用对应的参数数量
 
+//系统调用初始化,完成对系统调用的注册
 void SyscallHandleInit(void)
 {
 #define SYSCALL_HAND_DEF(id, fun, rType, nArg)                                             \
@@ -92,40 +93,46 @@ void SyscallHandleInit(void)
 }
 
 /* The SYSCALL ID is in R7 on entry.  Parameters follow in R0..R6 */
+/******************************************************************
+由汇编调用,见于 los_hw_exc.s  第197行 BLX         OsArmA32SyscallHandle
+SYSCALL是产生系统调用时触发的信号,R7寄存器存放具体的系统调用ID,也叫系统调用号
+regs:参数就是所有寄存器
+注意:本函数在用户态和内核态下都可能被调用到
+******************************************************************/
 LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
 {
     UINT32 ret;
     UINT8 nArgs;
     UINTPTR handle;
-    UINT32 cmd = regs[REG_R7];
-
-    if (cmd >= SYS_CALL_NUM) {
+    UINT32 cmd = regs[REG_R7];//C7寄存器记录了触发了具体哪个系统调用
+	
+    if (cmd >= SYS_CALL_NUM) {//系统调用的总数
         PRINT_ERR("Syscall ID: error %d !!!\n", cmd);
         return regs;
     }
 
-    if (cmd == __NR_sigreturn) {
-        OsRestorSignalContext(regs);
+    if (cmd == __NR_sigreturn) {//此时运行在内核栈,程序返回的调用,从内核态返回用户态时触发
+        OsRestorSignalContext(regs);//恢复信号上下文,执行完函数后,切到了用户栈
         return regs;
     }
 
-    handle = g_syscallHandle[cmd];
+    handle = g_syscallHandle[cmd];//拿到系统调用的注册函数,类似 SysRead 
     nArgs = g_syscallNArgs[cmd / NARG_PER_BYTE]; /* 4bit per nargs */
-    nArgs = (cmd & 1) ? (nArgs >> NARG_BITS) : (nArgs & NARG_MASK);
-    if ((handle == 0) || (nArgs > ARG_NUM_7)) {
+    nArgs = (cmd & 1) ? (nArgs >> NARG_BITS) : (nArgs & NARG_MASK);//获取参数个数
+    if ((handle == 0) || (nArgs > ARG_NUM_7)) {//系统调用必须有参数且参数不能大于8个
         PRINT_ERR("Unsupport syscall ID: %d nArgs: %d\n", cmd, nArgs);
         regs[REG_R0] = -ENOSYS;
         return regs;
     }
-
-    switch (nArgs) {
+	//regs[0-6] 记录系统调用的参数
+    switch (nArgs) { 
         case ARG_NUM_0:
         case ARG_NUM_1:
-            ret = (*(SyscallFun1)handle)(regs[REG_R0]);
+            ret = (*(SyscallFun1)handle)(regs[REG_R0]);//执行系统调用,类似 SysUnlink(pathname);
             break;
-        case ARG_NUM_2:
+        case ARG_NUM_2://@note_thinking 如何是两个参数的系统调用,这里传的确是三个参数,任务栈中会出现怎样的情况呢?
         case ARG_NUM_3:
-            ret = (*(SyscallFun3)handle)(regs[REG_R0], regs[REG_R1], regs[REG_R2]);
+            ret = (*(SyscallFun3)handle)(regs[REG_R0], regs[REG_R1], regs[REG_R2]);//类似 SysExecve(fileName, argv, envp);
             break;
         case ARG_NUM_4:
         case ARG_NUM_5:
@@ -137,12 +144,12 @@ LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
                                          regs[REG_R4], regs[REG_R5], regs[REG_R6]);
     }
 
-    regs[REG_R0] = ret;
+    regs[REG_R0] = ret;//R0保存系统调用返回值
 
-    OsSaveSignalContext(regs);
+    OsSaveSignalContext(regs);//保存用户栈现场
 
     /* Return the last value of curent_regs.  This supports context switches on return from the exception.
      * That capability is only used with theSYS_context_switch system call.
      */
-    return regs;
+    return regs;//返回寄存器的值
 }

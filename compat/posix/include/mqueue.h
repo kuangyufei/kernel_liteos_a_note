@@ -67,24 +67,24 @@ extern "C" {
 
 /* CONSTANTS */
 
-#define MQ_USE_MAGIC  0x89abcdef
+#define MQ_USE_MAGIC  0x89abcdef //消息队列的魔法数字
 /* not suppurt prio */
 #define MQ_PRIO_MAX 1
 
 /* TYPE DEFINITIONS */
-struct mqarray {
-    UINT32 mq_id : 31;		
-    UINT32 unlinkflag : 1;
-    char *mq_name;
-    LosQueueCB *mqcb;
-    struct mqpersonal *mq_personal;
+struct mqarray {	//消息队列管理的实体结构
+    UINT32 mq_id : 31;		//消息队列ID
+    UINT32 unlinkflag : 1;  //链接标记
+    char *mq_name;			//消息队列的名称
+    LosQueueCB *mqcb;		//内核消息队列控制块
+    struct mqpersonal *mq_personal;	//
 };
 
 struct mqpersonal {
     struct mqarray *mq_posixdes;
-    struct mqpersonal *mq_next;
+    struct mqpersonal *mq_next;	//下一个
     int mq_flags;
-    UINT32 mq_status;
+    UINT32 mq_status;	//状态,初始为魔法数字 MQ_USE_MAGIC
 };
 
 /**
@@ -100,9 +100,9 @@ struct mq_attr {
 
 /**
  * @ingroup mqueue
- * Handle type of a message queue	//消息队列的句柄类型
+ * Handle type of a message queue
  */
-typedef UINTPTR   mqd_t;
+typedef UINTPTR   mqd_t;//被称为消息队列描述符,也称消息队列句柄,其本质就是一个数字凭证
 
 /**
  * @ingroup mqueue

@@ -570,7 +570,7 @@ STATIC INLINE VOID OsTaskSyncDestroy(UINT32 syncSignal)
 #endif
 }
 /******************************************
-等待任务的同步信号,
+等待任务的同步信号量,
 A --发送syncSignal-- > B
 B --回一个syncSignal-- > A
 如此A就知道B此时还在
@@ -587,7 +587,7 @@ LITE_OS_SEC_TEXT UINT32 OsTaskSyncWait(const LosTaskCB *taskCB)
      * triggered right at the timeout has reached, we set the timeout as double
      * of the gc peroid.
      */
-    if (LOS_SemPend(taskCB->syncSignal, OS_MP_GC_PERIOD * 2) != LOS_OK) {//发送同步信号
+    if (LOS_SemPend(taskCB->syncSignal, OS_MP_GC_PERIOD * 2) != LOS_OK) {//发送同步信号量
         ret = LOS_ERRNO_TSK_MP_SYNC_FAILED;
     }
 
@@ -1364,7 +1364,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_CurTaskPriSet(UINT16 taskPrio)
  *               taskStatus --- task status
  *               timeOut    ---  Expiry time
  * Return      : LOS_OK on success or LOS_NOK on failure
- *///任务等待,将当前任务挂到参数 list上
+ */	//任务等待,将当前任务挂到参数 list上
 UINT32 OsTaskWait(LOS_DL_LIST *list, UINT32 timeout, BOOL needSched)
 {
     LosTaskCB *runTask = NULL;
@@ -1381,7 +1381,7 @@ UINT32 OsTaskWait(LOS_DL_LIST *list, UINT32 timeout, BOOL needSched)
     }
 
     if (needSched == TRUE) {//是否需要调度
-        OsSchedResched();//申请调度,里面直接切换了任务上下文,此次任务不再往下执行了.
+        OsSchedResched();//申请调度,里面直接切换了任务上下文,至此任务不再往下执行了.
         if (runTask->taskStatus & OS_TASK_STATUS_TIMEOUT) {//这条语句是被调度再次选中时执行的,和上面的语句可能隔了很长时间,所以很可能已经超时了
             runTask->taskStatus &= ~OS_TASK_STATUS_TIMEOUT;//如果任务有timeout的标签,那么就去掉那个标签
             return LOS_ERRNO_TSK_TIMEOUT;

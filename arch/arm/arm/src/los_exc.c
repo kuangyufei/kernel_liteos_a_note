@@ -944,7 +944,7 @@ STATIC VOID OsCheckCpuStatus(UINTPTR taskStackPointer)
     g_currHandleExcCpuID = ArchCurrCpuid();
 #endif
 }
-//执行期间的优先处置 excBufAddr为CPU硬件上下文，
+//执行期间的优先处理 excBufAddr为CPU异常上下文，
 LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 {
 #if (LOSCFG_KERNEL_SMP == YES)

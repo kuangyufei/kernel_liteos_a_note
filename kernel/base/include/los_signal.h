@@ -45,7 +45,11 @@ extern "C" {
 #endif /* __cplusplus */
 /********************************************
 https://www.cnblogs.com/hoys/archive/2012/08/19/2646377.html
-信号本质:用于进程之间的异步通信
+
+信号是Linux系统中用于进程间互相通信或者操作的一种机制，信号可以在任何时候发给某一进程，而无需知道该进程的状态。
+如果该进程当前并未处于执行状态，则该信号就由内核保存起来，直到该进程被调度执行并传递给它为止。
+如果一个信号被进程设置为阻塞，则该信号的传递被延迟，直到其阻塞被取消时才被传递给进程。
+
 软中断信号（signal，又简称为信号）用来通知进程发生了异步事件。在软件层次上是对中断机制的一种模拟，
 在原理上，一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。信号是进程间通信机制中唯一
 的异步通信机制，一个进程不必通过任何操作来等待信号的到达，事实上，进程也不知道信号到底什么时候到达。
@@ -181,7 +185,7 @@ struct sigpendq {
 };
 typedef struct sigpendq sigpendq_t;
 
-struct sq_queue_s {
+struct sq_queue_s {//信号队列
     sq_entry_t *head;
     sq_entry_t *tail;
 };
@@ -204,19 +208,19 @@ typedef struct {//任务中断上下文
 
 typedef struct {//信号切换上下文
     TASK_IRQ_CONTEXT
-    unsigned int R7;
-    unsigned int count;
+    unsigned int R7;	//存放系统调用的ID
+    unsigned int count;	//信号上下文的数量
 } sig_switch_context;
 
 typedef struct {//信号控制块(描述符)
     sigset_t sigFlag;
-    sigset_t sigPendFlag;
+    sigset_t sigPendFlag;	//信号阻塞标签集,记录因哪些信号被阻塞
     sigset_t sigprocmask; /* Signals that are blocked            */	//进程屏蔽了哪些信号
     sq_queue_t sigactionq;	//信号捕捉队列					
     LOS_DL_LIST waitList;	//等待链表,上面挂的可是等待信号到来的任务, 请查找 OsTaskWait(&sigcb->waitList, timeout, TRUE)	理解						
-    sigset_t sigwaitmask; /* Waiting for pending signals         */	//等待挂起的信号,意思就是位信号来了都要处理,比如 SIGKILL,SIGSTOP信号
+    sigset_t sigwaitmask; /* Waiting for pending signals         */	//任务在等待某某信号的掩码
     siginfo_t sigunbinfo; /* Signal info when task unblocked     */	//任务解除阻止时的信号信息
-    sig_switch_context context;	//信号切换上下文,用于保存切换现场								
+    sig_switch_context context;	//信号切换上下文, 用于保存切换现场, 比如发生系统调用时的返回,涉及同一个任务的两个栈进行切换							
 } sig_cb;
 
 #define SIGEV_THREAD_ID 4

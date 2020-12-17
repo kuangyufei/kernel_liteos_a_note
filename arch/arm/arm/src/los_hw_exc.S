@@ -48,7 +48,7 @@
 #endif
 #endif
     .extern OsArmSharedPageFault
-    .extern OsArmA32SyscallHandle
+    .extern OsArmA32SyscallHandle 
     .extern LOS_Exit
 
     .global   _osExceptFiqHdl
@@ -194,7 +194,7 @@ _osExceptSwiHdl:
 
     MOV     FP, #0                                           @ Init frame pointer
     CPSIE   I
-    BLX     OsArmA32SyscallHandle
+    BLX     OsArmA32SyscallHandle	/*处理系统调用*/
     CPSID   I
 
     POP_FPU_REGS R1

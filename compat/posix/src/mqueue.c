@@ -43,11 +43,14 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
+/****************************************************
+本文说明:鸿蒙对POSIX消息队列各接口的实现
 
+****************************************************/
 #define FNONBLOCK   O_NONBLOCK
 
 /* GLOBALS */
-STATIC struct mqarray g_queueTable[LOSCFG_BASE_IPC_QUEUE_LIMIT];//posix ipc 队列全局表
+STATIC struct mqarray g_queueTable[LOSCFG_BASE_IPC_QUEUE_LIMIT];//消息队列内存池,可等同进程池,任务池理解.
 STATIC pthread_mutex_t g_mqueueMutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
 /* LOCAL FUNCTIONS */
@@ -234,7 +237,7 @@ STATIC struct mqpersonal *DoMqueueOpen(struct mqarray *mqueueCB, INT32 openFlag)
 ERROUT:
     return (struct mqpersonal *)-1;
 }
-//posix ipc 标准接口之 创建或打开消息队列，参数是可变参数
+//创建或打开一个消息队列，参数是可变参数,返回值是mqd_t类型的值，被称为消息队列描述符
 mqd_t mq_open(const char *mqName, int openFlag, ...)
 {
     struct mqarray *mqueueCB = NULL;
