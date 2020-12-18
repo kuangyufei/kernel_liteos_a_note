@@ -167,7 +167,7 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_PERM_WRITE           (1<<4)		//可写入区
 #define     VM_MAP_REGION_FLAG_PERM_EXECUTE         (1<<5)		//可被执行区
 #define     VM_MAP_REGION_FLAG_PROT_MASK            (0xF<<2)	//访问权限掩码
-#define     VM_MAP_REGION_FLAG_NS                   (1<<6) /* NON-SECURE */
+#define     VM_MAP_REGION_FLAG_NS                   (1<<6) 		/* NON-SECURE */
 #define     VM_MAP_REGION_FLAG_SHARED               (1<<7)		//MAP_SHARED：把对该内存段的修改保存到磁盘文件中 详见 OsCvtProtFlagsToRegionFlags ,要和 VM_MAP_REGION_FLAG_SHM区别理解
 #define     VM_MAP_REGION_FLAG_PRIVATE              (1<<8)		//MAP_PRIVATE：内存段私有，对它的修改值仅对本进程有效,详见 OsCvtProtFlagsToRegionFlags。
 #define     VM_MAP_REGION_FLAG_FLAG_MASK            (3<<7)		//掩码

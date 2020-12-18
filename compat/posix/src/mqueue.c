@@ -50,8 +50,8 @@ extern "C" {
 #define FNONBLOCK   O_NONBLOCK
 
 /* GLOBALS */
-STATIC struct mqarray g_queueTable[LOSCFG_BASE_IPC_QUEUE_LIMIT];//消息队列内存池,可等同进程池,任务池理解.
-STATIC pthread_mutex_t g_mqueueMutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+STATIC struct mqarray g_queueTable[LOSCFG_BASE_IPC_QUEUE_LIMIT];//POSIX 消息队列池.
+STATIC pthread_mutex_t g_mqueueMutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;//嵌套锁
 
 /* LOCAL FUNCTIONS */
 STATIC INLINE INT32 MqNameCheck(const CHAR *mqName)
@@ -72,7 +72,7 @@ STATIC INLINE INT32 MqNameCheck(const CHAR *mqName)
     }
     return 0;
 }
-//通过ID获取 队列控制块
+//通过ID获取 los队列控制块
 STATIC INLINE UINT32 GetMqueueCBByID(UINT32 queueID, LosQueueCB **queueCB)
 {
     LosQueueCB *tmpQueueCB = NULL;
@@ -84,7 +84,7 @@ STATIC INLINE UINT32 GetMqueueCBByID(UINT32 queueID, LosQueueCB **queueCB)
     if ((GET_QUEUE_INDEX(queueID) >= LOSCFG_BASE_IPC_QUEUE_LIMIT) || (tmpQueueCB->queueID != queueID)) {
         return LOS_ERRNO_QUEUE_INVALID;
     }
-    *queueCB = tmpQueueCB;
+    *queueCB = tmpQueueCB;//指向的还是 g_allQueue[queueID]
 
     return LOS_OK;
 }
@@ -154,20 +154,20 @@ STATIC int SaveMqueueName(const CHAR *mqName, struct mqarray *mqueueCB)
     mqueueCB->mq_name[nameLen] = '\0';//结尾字符
     return LOS_OK;
 }
-//创建一个posix队列，并和VFS进行捆绑
+//创建一个posix消息队列
 STATIC struct mqpersonal *DoMqueueCreate(const struct mq_attr *attr, const CHAR *mqName, INT32 openFlag)
 {
     struct mqarray *mqueueCB = NULL;
     UINT32 mqueueID;
 
-    UINT32 err = LOS_QueueCreate(NULL, attr->mq_maxmsg, &mqueueID, 0, attr->mq_msgsize);//创建队列，带出队列ID
+    UINT32 err = LOS_QueueCreate(NULL, attr->mq_maxmsg, &mqueueID, 0, attr->mq_msgsize);//先创建LOS消息队列，带出队列ID
     if (map_errno(err) != ENOERR) {
         goto ERROUT;
     }
 
-    if (g_queueTable[GET_QUEUE_INDEX(mqueueID)].mqcb == NULL) {//新创建的队列和g_queueTable捆绑
-        mqueueCB = &(g_queueTable[GET_QUEUE_INDEX(mqueueID)]);
-        mqueueCB->mq_id = mqueueID;
+    if (g_queueTable[GET_QUEUE_INDEX(mqueueID)].mqcb == NULL) {//posix 和 los 进行捆绑
+        mqueueCB = &(g_queueTable[GET_QUEUE_INDEX(mqueueID)]);//分配一个posix消息队列,可以看出posix队列同步los队列创建
+        mqueueCB->mq_id = mqueueID;// 记录ID 
     }
 
     if (mqueueCB == NULL) {
@@ -193,10 +193,10 @@ STATIC struct mqpersonal *DoMqueueCreate(const struct mq_attr *attr, const CHAR 
         goto ERROUT;
     }
 
-    mqueueCB->unlinkflag = FALSE;
+    mqueueCB->unlinkflag = FALSE;	
     mqueueCB->mq_personal->mq_status = MQ_USE_MAGIC;//魔法数字
     mqueueCB->mq_personal->mq_next = NULL;			//指向下一个mq_personal
-    mqueueCB->mq_personal->mq_posixdes = mqueueCB; //指向目标posix队列控制块
+    mqueueCB->mq_personal->mq_posixdes = mqueueCB; 	//指向目标posix队列控制块
     mqueueCB->mq_personal->mq_flags = (INT32)((UINT32)openFlag | ((UINT32)attr->mq_flags & (UINT32)FNONBLOCK));
 
     return mqueueCB->mq_personal;
@@ -208,13 +208,13 @@ ERROUT:
     }
     return (struct mqpersonal *)-1;
 }
-//通过参数mqueueCB和VFS进行捆绑
+//通过参数mqueueCB
 STATIC struct mqpersonal *DoMqueueOpen(struct mqarray *mqueueCB, INT32 openFlag)
 {
     struct mqpersonal *privateMqPersonal = NULL;
 
     /* already have the same name of g_squeuetable */
-    if (mqueueCB->unlinkflag == TRUE) {
+    if (mqueueCB->unlinkflag == TRUE) {//已经捆绑过了
         errno = EINVAL;
         goto ERROUT;
     }
@@ -238,6 +238,7 @@ ERROUT:
     return (struct mqpersonal *)-1;
 }
 //创建或打开一个消息队列，参数是可变参数,返回值是mqd_t类型的值，被称为消息队列描述符
+//它符合POSIX IPC的名字规则,openFlag有必须的选项：O_RDONLY，O_WRONLY，O_RDWR，还有可选的选项：O_NONBLOCK，O_CREAT，O_EXCL。
 mqd_t mq_open(const char *mqName, int openFlag, ...)
 {
     struct mqarray *mqueueCB = NULL;
@@ -254,7 +255,7 @@ mqd_t mq_open(const char *mqName, int openFlag, ...)
     (VOID)pthread_mutex_lock(&g_mqueueMutex);
     mqueueCB = GetMqueueCBByName(mqName);//通过名称获取队列控制块
     if ((UINT32)openFlag & (UINT32)O_CREAT) {//需要创建了队列的情况
-        if (mqueueCB != NULL) {
+        if (mqueueCB != NULL) {//已经有同名队列
             if (((UINT32)openFlag & (UINT32)O_EXCL)) {//已经在执行
                 errno = EEXIST;
                 goto OUT;
@@ -292,14 +293,15 @@ OUT:
     (VOID)pthread_mutex_unlock(&g_mqueueMutex);
     return (mqd_t)privateMqPersonal;
 }
-//关闭posix队列
+//关闭posix队列,用于关闭一个消息队列，和文件的close类型，关闭后，消息队列并不从系统中删除。
+//一个进程结束，会自动调用关闭打开着的消息队列。
 int mq_close(mqd_t personal)
 {
     INT32 ret = 0;
     struct mqarray *mqueueCB = NULL;
     struct mqpersonal *privateMqPersonal = NULL;
     struct mqpersonal *tmp = NULL;
-
+	//posix队列本质是在内核开辟的一块缓存区,用于进程间数据的交换
     if (!LOS_IsKernelAddressRange(personal, sizeof(struct mqpersonal))) {//不是在内核空间，返回错误
         errno = EBADF;
         return -1;
@@ -334,7 +336,7 @@ int mq_close(mqd_t personal)
         tmp->mq_next = privateMqPersonal->mq_next;
     }
     /* flag no use */
-    privateMqPersonal->mq_status = 0;
+    privateMqPersonal->mq_status = 0;//未被使用
 
     /* free the personal */
     ret = LOS_MemFree(OS_SYS_MEM_ADDR, privateMqPersonal);
@@ -344,8 +346,8 @@ int mq_close(mqd_t personal)
         goto OUT_UNLOCK;
     }
 
-    if ((mqueueCB->unlinkflag == TRUE) && (mqueueCB->mq_personal == NULL)) {
-        ret = DoMqueueDelete(mqueueCB);
+    if ((mqueueCB->unlinkflag == TRUE) && (mqueueCB->mq_personal == NULL)) {//没有引用,且没有链接时可以删除队列
+        ret = DoMqueueDelete(mqueueCB);//
     }
 OUT_UNLOCK:
     (VOID)pthread_mutex_unlock(&g_mqueueMutex);
@@ -357,7 +359,7 @@ int OsMqGetAttr(mqd_t personal, struct mq_attr *mqAttr)
     struct mqarray *mqueueCB = NULL;
     struct mqpersonal *privateMqPersonal = NULL;
 
-    if (!LOS_IsKernelAddressRange(personal, sizeof(struct mqpersonal))) {//必须在内核空间
+    if (!LOS_IsKernelAddressRange(personal, sizeof(struct mqpersonal))) {//personal 必须在内核空间
         errno = EBADF;
         return -1;
     }
@@ -368,7 +370,7 @@ int OsMqGetAttr(mqd_t personal, struct mq_attr *mqAttr)
     }
 
     (VOID)pthread_mutex_lock(&g_mqueueMutex);
-    privateMqPersonal = (struct mqpersonal *)personal;
+    privateMqPersonal = (struct mqpersonal *)personal;//获取引用描述符
     if (privateMqPersonal->mq_status != MQ_USE_MAGIC) {
         errno = EBADF;
         (VOID)pthread_mutex_unlock(&g_mqueueMutex);
@@ -399,8 +401,8 @@ int OsMqSetAttr(mqd_t personal, const struct mq_attr *mqSetAttr, struct mq_attr 
     }
 
     (VOID)pthread_mutex_lock(&g_mqueueMutex);
-    privateMqPersonal = (struct mqpersonal *)personal;
-    if (privateMqPersonal->mq_status != MQ_USE_MAGIC) {//魔法数字对不上
+    privateMqPersonal = (struct mqpersonal *)personal;//获取引用描述对象
+    if (privateMqPersonal->mq_status != MQ_USE_MAGIC) {//魔法数字对不上,说明可能发生过 OOM 异常
         errno = EBADF;
         (VOID)pthread_mutex_unlock(&g_mqueueMutex);
         return -1;
@@ -425,7 +427,11 @@ int mq_getsetattr(mqd_t mqd, const struct mq_attr *new, struct mq_attr *old)
     }
     return OsMqSetAttr(mqd, new, old);
 }
-
+/************************************************************
+返回值：成功，0；出错，-1
+每个消息队列有一个保存其当前打开的描述符数的引用计数，只有当引用计数为0时，
+才删除该消息队列。mq_unlink和mq_close都会让引用数减一
+************************************************************/
 int mq_unlink(const char *mqName)
 {
     INT32 ret = 0;
@@ -442,10 +448,10 @@ int mq_unlink(const char *mqName)
         goto ERROUT_UNLOCK;
     }
 
-    if (mqueueCB->mq_personal != NULL) {
-        mqueueCB->unlinkflag = TRUE;//是否为私有队列
+    if (mqueueCB->mq_personal != NULL) {//引用计数不为0,不删除.
+        mqueueCB->unlinkflag = TRUE;//执行了
     } else {
-        ret = DoMqueueDelete(mqueueCB);
+        ret = DoMqueueDelete(mqueueCB);//只有当引用计数为0时，才删除该消息队列
     }
 
     (VOID)pthread_mutex_unlock(&g_mqueueMutex);
@@ -597,11 +603,12 @@ ERROUT:
 }
 
 /* not support the prio */
+//给描述符mqdes指向的消息队列发送消息，大小为msg_len，内容存放在msg_ptr中，prio为优先级(暂不支持)
 int mq_send(mqd_t personal, const char *msg_ptr, size_t msg_len, unsigned int msg_prio)
 {
     return mq_timedsend(personal, msg_ptr, msg_len, msg_prio, NULL);
 }
-
+//从描述符personal指向的消息队列中读取消息存放msg_ptr中。
 ssize_t mq_receive(mqd_t personal, char *msg_ptr, size_t msg_len, unsigned int *msg_prio)
 {
     return mq_timedreceive(personal, msg_ptr, msg_len, msg_prio, NULL);

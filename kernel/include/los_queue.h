@@ -334,18 +334,18 @@ extern "C" {
 /**
  * @ingroup los_queue
  * Structure of the block for queue information query
- */
-typedef struct tagQueueInfo {
-    UINT32 uwQueueID;       /**< Queue ID */
-    UINT16 usQueueLen;      /**< Queue length */
-    UINT16 usQueueSize;     /**< Node size */
-    UINT16 usQueueHead;     /**< Node head */
-    UINT16 usQueueTail;     /**< Node tail */
-    UINT16 usWritableCnt;   /**< Count of writable resources */
-    UINT16 usReadableCnt;   /**< Count of readable resources */
-    UINT64 uwWaitReadTask;  /**< Resource reading task */
-    UINT64 uwWaitWriteTask; /**< Resource writing task */
-    UINT64 uwWaitMemTask;   /**< Memory task */
+ */ //队列信息对外展示的结构体
+typedef struct tagQueueInfo { //@note_why 一直没弄明白用 uw,us作为变量的前缀是啥意思
+    UINT32 uwQueueID;       /**< Queue ID */	//队列ID
+    UINT16 usQueueLen;      /**< Queue length *///队列中消息个数
+    UINT16 usQueueSize;     /**< Node size */	//消息节点大小
+    UINT16 usQueueHead;     /**< Node head */	//消息头节点位置（数组下标）
+    UINT16 usQueueTail;     /**< Node tail */	//消息尾节点位置（数组下标）
+    UINT16 usWritableCnt;   /**< Count of writable resources */	//可写消息数
+    UINT16 usReadableCnt;   /**< Count of readable resources */	//可读消息数
+    UINT64 uwWaitReadTask;  /**< Resource reading task */		//等待读取消息的任务ID,按位记录,例如 00110110 ,代表1,2,4,5 号任务在等待读消息
+    UINT64 uwWaitWriteTask; /**< Resource writing task */		//等待写入消息的任务ID,按位记录,例如 00110110 ,代表1,2,4,5 号任务在等待写消息
+    UINT64 uwWaitMemTask;   /**< Memory task */ //MailBox模块使用
 } QUEUE_INFO_S;
 
 /**

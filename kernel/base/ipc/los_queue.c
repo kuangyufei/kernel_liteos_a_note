@@ -483,7 +483,7 @@ QUEUE_END:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//获取队列信息,用一个queueInfo 把 LosQueueCB数据接走 
+//外部接口, 获取队列信息,用queueInfo 把 LosQueueCB数据接走,QUEUE_INFO_S对内部数据的封装 
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_QueueInfoGet(UINT32 queueID, QUEUE_INFO_S *queueInfo)
 {
     UINT32 intSave;
@@ -499,7 +499,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_QueueInfoGet(UINT32 queueID, QUEUE_INFO_S *que
         return LOS_ERRNO_QUEUE_INVALID;
     }
 
-    (VOID)memset_s((VOID *)queueInfo, sizeof(QUEUE_INFO_S), 0, sizeof(QUEUE_INFO_S));//接人之前先清0
+    (VOID)memset_s((VOID *)queueInfo, sizeof(QUEUE_INFO_S), 0, sizeof(QUEUE_INFO_S));//接走数据之前先清0
     SCHEDULER_LOCK(intSave);
 
     queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);//通过队列ID获取 QCB
@@ -516,16 +516,16 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_QueueInfoGet(UINT32 queueID, QUEUE_INFO_S *que
     queueInfo->usReadableCnt = queueCB->readWriteableCnt[OS_QUEUE_READ];//可读数
     queueInfo->usWritableCnt = queueCB->readWriteableCnt[OS_QUEUE_WRITE];//可写数
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->readWriteList[OS_QUEUE_READ], LosTaskCB, pendList) {//循环的目的是找出哪些task需要读
-        queueInfo->uwWaitReadTask |= 1ULL << tskCB->taskID;//记录等待读的任务号, uwWaitReadTask 每一位代表一个任务编号
-    }//0b..011011011 代表   0,1,3,4,6,7 号任务有数据等待读.
+    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->readWriteList[OS_QUEUE_READ], LosTaskCB, pendList) {//找出哪些task需要读消息
+        queueInfo->uwWaitReadTask |= 1ULL << tskCB->taskID;//记录等待读消息的任务号, uwWaitReadTask 每一位代表一个任务编号
+    }//0b..011011011 代表   0,1,3,4,6,7 号任务有数据等待读消息.
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->readWriteList[OS_QUEUE_WRITE], LosTaskCB, pendList) {//循环的目的是找出哪些task需要写
-        queueInfo->uwWaitWriteTask |= 1ULL << tskCB->taskID;
-    }
+    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->readWriteList[OS_QUEUE_WRITE], LosTaskCB, pendList) {//找出哪些task需要写消息
+        queueInfo->uwWaitWriteTask |= 1ULL << tskCB->taskID;//记录等待写消息的任务号, uwWaitWriteTask 每一位代表一个任务编号
+    }////0b..011011011 代表   0,1,3,4,6,7 号任务有数据等待写消息.
 
     LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->memList, LosTaskCB, pendList) {//同上
-        queueInfo->uwWaitMemTask |= 1ULL << tskCB->taskID;
+        queueInfo->uwWaitMemTask |= 1ULL << tskCB->taskID; //MailBox模块使用
     }
 
 QUEUE_END:

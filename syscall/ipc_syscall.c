@@ -67,7 +67,7 @@ mqd_t SysMqOpen(const char *mqName, int openFlag, mode_t mode, struct mq_attr *a
     if (retValue < 0) {
         return retValue;
     }
-    ret = mq_open(kMqName, openFlag, mode, attr);//posix
+    ret = mq_open(kMqName, openFlag, mode, attr);//posix ,一个消息队列可以有多个进程向它读写消息
     if (ret == -1) {
         return (mqd_t)-get_errno();
     }

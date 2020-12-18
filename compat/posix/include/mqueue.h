@@ -54,15 +54,15 @@ extern "C" {
 
 /**
  * @ingroup mqueue
- * Maximum number of messages in a message queue
+ * Maximum number of messages in a message queue 
  */
-#define MQ_MAX_MSG_NUM    16
+#define MQ_MAX_MSG_NUM    16 //消息队列中的最大消息数, 最多16条消息
 
 /**
  * @ingroup mqueue
  * Maximum size of a single message in a message queue
  */
-#define MQ_MAX_MSG_LEN    64
+#define MQ_MAX_MSG_LEN    64 //消息队列中单个消息的最大大小, 消息的内容不能超过64个字节
 
 
 /* CONSTANTS */
@@ -72,30 +72,30 @@ extern "C" {
 #define MQ_PRIO_MAX 1
 
 /* TYPE DEFINITIONS */
-struct mqarray {	//消息队列管理的实体结构
+struct mqarray {	//posix 消息队列结构体,对LosQueueCB的装饰,方便扩展
     UINT32 mq_id : 31;		//消息队列ID
     UINT32 unlinkflag : 1;  //链接标记
     char *mq_name;			//消息队列的名称
-    LosQueueCB *mqcb;		//内核消息队列控制块
-    struct mqpersonal *mq_personal;	//
+    LosQueueCB *mqcb;		//内核消息队列控制块, 指向->g_allQueue[queueID]
+    struct mqpersonal *mq_personal;	//保存消息队列当前打开的描述符数的引用计数,可理解为多个进程打开一个消息队列,跟文件一样.
 };
 
 struct mqpersonal {
-    struct mqarray *mq_posixdes;
-    struct mqpersonal *mq_next;	//下一个
-    int mq_flags;
-    UINT32 mq_status;	//状态,初始为魔法数字 MQ_USE_MAGIC
-};
+    struct mqarray *mq_posixdes; 	//记录捆绑了哪个消息队列
+    struct mqpersonal *mq_next;		//指向下一条打开的引用
+    int mq_flags;		//队列的读写权限( O_WRONLY , O_RDWR ==)
+    UINT32 mq_status;	//状态,初始为魔法数字 MQ_USE_MAGIC,放在尾部是必须的, 这个字段在结构体的结尾,也在mqarray的结尾
+};//因为一旦发送内存溢出,这个值会被修改掉,从而知道发生过异常.
 
 /**
  * @ingroup mqueue
  * Message queue attribute structure //消息队列属性结构
  */
 struct mq_attr {
-    long mq_flags;    /**< Message queue flags */	//消息队列标志
+    long mq_flags;    /**< Message queue flags */			//阻塞标志， 0或O_NONBLOCK
     long mq_maxmsg;   /**< Maximum number of messages */	//最大消息数
-    long mq_msgsize;  /**< Maximum size of a message */	//消息的最大大小
-    long mq_curmsgs;  /**< Number of messages in the current message queue */	//当前消息队列中的消息数
+    long mq_msgsize;  /**< Maximum size of a message */		//每个消息最大大小
+    long mq_curmsgs;  /**< Number of messages in the current message queue */	//当前消息数
 };
 
 /**
