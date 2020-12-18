@@ -115,7 +115,7 @@ INT32 LOS_UserMemClear(unsigned char *buf, UINT32 len)
         }
         (VOID)memset_s(tmp, len, 0, len);//2.清0
         if (_arm_user_copy(buf, tmp, len) != 0) {//这个清空有点意思，此时内核空间清0了，再将0拷贝至用户空间
-            ret = -EFAULT;						 //不能直接将用户空间清0吗？要这么绕一圈 @note_why
+            ret = -EFAULT;						 // @note_why 不能直接将用户空间清0吗？非要这么绕一圈 
         }
         LOS_MemFree(OS_SYS_MEM_ADDR, tmp);//释放内核空间
     }

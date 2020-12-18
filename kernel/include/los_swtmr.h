@@ -263,7 +263,7 @@ typedef VOID (*SWTMR_PROC_FUNC)(UINTPTR arg);	//函数指针, 赋值给 SWTMR_CT
  * @ingroup los_swtmr
  * Software timer control structure
  */
-typedef struct tagSwTmrCtrl {// @note_why 鸿蒙内核经常出现 uc uw 这样的变量前缀命名,到底是什么意思?
+typedef struct tagSwTmrCtrl {// @note_why 鸿蒙内核经常出现 uc uw us 这样的变量前缀命名,到底是什么意思?
     SortLinkList stSortList;
     UINT8 ucState;      /**< Software timer state */							//软件计时器的状态
     UINT8 ucMode;       /**< Software timer mode */								//软件计时器的模式

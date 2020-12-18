@@ -68,7 +68,7 @@ typedef struct {
     UINT32 listNum;			//item数量
     UINT32 initMagicFlag;	//初始化时魔法数字
     LosMux muxLock;			//互斥锁
-    CmdVerifyTransID transIdHook;// @note_why 验证转换ID的函数地址,  尚未清楚是干什么用的,看懂了的请私信我完善.
+    CmdVerifyTransID transIdHook;// @note_why 尚未明白是干什么用的
 } CmdModInfo;
 
 typedef struct {

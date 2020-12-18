@@ -38,9 +38,9 @@
     .extern   g_taskSpin
     .extern   g_percpu
     .global   OsStartToRun
-    .global   OsTaskSchedule
-    .global   OsIrqHandler
-    .global   ArchSpinUnlock
+    .global   OsTaskSchedule	/*任务调度*/
+    .global   OsIrqHandler		/*硬中断处理*/
+    .global   ArchSpinUnlock	/*自旋锁解锁*/
     .global   OsSchedToUserSpinUnlock
 
     .equ OS_TASK_STATUS_RUNNING,       0x0010U
@@ -112,25 +112,25 @@ OsStartToRun:
  * R0: new task
  * R1: run task
  */
-OsTaskSchedule:
-    MRS      R2, CPSR
-    STMFD    SP!, {LR}
-    STMFD    SP!, {LR}
+OsTaskSchedule:			/*新老任务切换上下文*/
+    MRS      R2, CPSR 	/*MRS 指令用于将特殊寄存器(如 CPSR 和 SPSR)中的数据传递给通用寄存器，要读取特殊寄存器的数据只能使用 MRS 指令*/
+    STMFD    SP!, {LR}	/*返回地址入栈*/
+    STMFD    SP!, {LR}	/*为何返回地址要再次入栈 @note_why*/
     /* jump sp */
-    SUB      SP, SP, #4
+    SUB      SP, SP, #4 /*SP=SP-4 减4是向低地址偏移4个字节的位置的地址，即堆栈的头部的地址*/
 
     /* push r0-r12*/
-    STMFD    SP!, {R0-R12}
-    STMFD    SP!, {R2}
+    STMFD    SP!, {R0-R12} 	/*R0-R12入栈*/
+    STMFD    SP!, {R2}		/*R2 入栈*/
 
     /* 8 bytes stack align */
-    SUB      SP, SP, #4
+    SUB      SP, SP, #4	/*SP=SP-4*/
 
     /* save fpu registers */
-    PUSH_FPU_REGS   R2
+    PUSH_FPU_REGS   R2	/*保存fpu寄存器*/
 
     /* store sp on running task */
-    STR     SP, [R1]
+    STR     SP, [R1] /*在R1上保存了SP,保存了老任务的现场*/
 
 OsTaskContextLoad:
     /* clear the flag of ldrex */

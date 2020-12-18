@@ -111,9 +111,17 @@ void *SysBrk(void *addr)
     return LOS_DoBrk(addr);
 }
 /**************************************************
-获得共享内存对象
+得到一个共享内存标识符或创建一个共享内存对象
+key_t:	建立新共享内存对象 标识符是IPC对象的内部名。为使多个合作进程能够在同一IPC对象上汇聚，需要提供一个外部命名方案。
+		为此，每个IPC对象都与一个键（key）相关联，这个键作为该对象的外部名,无论何时创建IPC结构（通过msgget、semget、shmget创建），
+		都应给IPC指定一个键, key_t由ftok创建,ftok当然在本工程里找不到,所以要写这么多.
+size: 新建的共享内存大小，以字节为单位
+shmflg: IPC_CREAT IPC_EXCL
+		IPC_CREAT：	在创建新的IPC时，如果key参数是IPC_PRIVATE或者和当前某种类型的IPC结构无关，则需要指明flag参数的IPC_CREAT标志位，
+					则用来创建一个新的IPC结构。（如果IPC结构已存在，并且指定了IPC_CREAT，则IPC_CREAT什么都不做，函数也不出错）
+		IPC_EXCL：	此参数一般与IPC_CREAT配合使用来创建一个新的IPC结构。如果创建的IPC结构已存在函数就出错返回，
+					返回EEXIST（这与open函数指定O_CREAT和O_EXCL标志原理相同）
 **************************************************/
-
 int SysShmGet(key_t key, size_t size, int shmflg)
 {
     int ret;
@@ -126,7 +134,10 @@ int SysShmGet(key_t key, size_t size, int shmflg)
     return ret;
 }
 /**************************************************
-
+连接共享内存标识符为shmid的共享内存，连接成功后把共享内存区对象映射到调用进程的地址空间，随后可像本地空间一样访问
+一旦创建/引用了一个共享存储段，那么进程就可调用shmat函数将其连接到它的地址空间中
+如果shmat成功执行，那么内核将使与该共享存储相关的shmid_ds结构中的shm_nattch计数器值加1
+shmid 就是个索引,就跟进程和线程的ID一样 g_shmSegs[shmid] shmid > 192个
 **************************************************/
 void *SysShmAt(int shmid, const void *shmaddr, int shmflg)
 {
@@ -139,7 +150,16 @@ void *SysShmAt(int shmid, const void *shmaddr, int shmflg)
 
     return ret;
 }
+/**************************************************
+完成对共享内存的控制
+此函数可以对shmid指定的共享存储进行多种操作（删除、取信息、加锁、解锁等）
 
+msqid	共享内存标识符
+cmd		IPC_STAT：得到共享内存的状态，把共享内存的shmid_ds结构复制到buf中
+		IPC_SET：改变共享内存的状态，把buf所指的shmid_ds结构中的uid、gid、mode复制到共享内存的shmid_ds结构内
+		IPC_RMID：删除这片共享内存
+buf		共享内存管理结构体。
+**************************************************/
 int SysShmCtl(int shmid, int cmd, struct shmid_ds *buf)
 {
     int ret;
@@ -151,7 +171,12 @@ int SysShmCtl(int shmid, int cmd, struct shmid_ds *buf)
 
     return ret;
 }
-
+/**************************************************
+与shmat函数相反，是用来断开与共享内存附加点的地址，禁止本进程访问此片共享内存
+shmaddr：连接的共享内存的起始地址
+本函数调用并不删除所指定的共享内存区，而只是将先前用shmat函数连接（attach）好的共享内存脱离（detach）目前的进程
+返回值	成功：0	出错：-1，错误原因存于error中r
+**************************************************/
 int SysShmDt(const void *shmaddr)
 {
     int ret;
