@@ -165,7 +165,7 @@ extern "C" {
 #define MMU_DESCRIPTOR_L2_AP_P_RO_U_NA                          (MMU_DESCRIPTOR_L2_AP2_1 | MMU_DESCRIPTOR_L2_AP01_1)
 #define MMU_DESCRIPTOR_L2_AP_MASK                               (MMU_DESCRIPTOR_L2_AP2_1 | MMU_DESCRIPTOR_L2_AP01_3)
 
-#define MMU_DESCRIPTOR_L2_SHAREABLE                             (1 << 10)
+#define MMU_DESCRIPTOR_L2_SHAREABLE                             (1 << 10)	//共享区
 #define MMU_DESCRIPTOR_L2_NON_GLOBAL                            (1 << 11)
 #define MMU_DESCRIPTOR_L2_SMALL_PAGE_ADDR(x)                    ((x) & MMU_DESCRIPTOR_L2_SMALL_FRAME)
 

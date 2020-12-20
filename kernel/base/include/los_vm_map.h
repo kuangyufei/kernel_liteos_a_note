@@ -78,7 +78,7 @@ struct page_mapping {
 
 typedef struct VmMapRange {
     VADDR_T             base;           /**< vm region base addr */ //线性区基地址
-    UINT32              size;           /**< vm region size */	//线性区大小
+    UINT32              size;           /**< vm region size */		//线性区大小
 } LosVmMapRange;
 
 struct VmMapRegion;
@@ -104,25 +104,25 @@ struct VmFileOps {// 文件操作
     void (*remove)(struct VmMapRegion *region, LosArchMmu *archMmu, VM_OFFSET_T offset);//删除
 };
 
-struct VmMapRegion {
-    LosRbNode           rbNode;         /**< region red-black tree node */	//红黑树节点,主要是挂在VmSpace.regionRbTree
-    LosVmSpace          *space;			//所属虚拟空间
-    LOS_DL_LIST         node;           /**< region dl list */				//链表节点,主要是挂在VmSpace.regions上
+struct VmMapRegion {//线性区描述符,内核通过线性区管理虚拟地址,而线性地址就是虚拟地址
+    LosRbNode           rbNode;         /**< region red-black tree node */	//红黑树节点,通过它将本线性区挂在VmSpace.regionRbTree
+    LosVmSpace          *space;			//所属虚拟空间,虚拟空间由多个线性区组成
+    LOS_DL_LIST         node;           /**< region dl list */				//链表节点,通过它将本线性区挂在VmSpace.regions上
     LosVmMapRange       range;          /**< region address range */		//记录线性区的范围
     VM_OFFSET_T         pgOff;          /**< region page offset to file */	//区域页面到文件的偏移量
-    UINT32              regionFlags;   /**< region flags: cow, user_wired */
+    UINT32              regionFlags;   /**< region flags: cow, user_wired *///线性区标签
     UINT32              shmid;          /**< shmid about shared region */	//shmid为共享线性区id
     UINT8               protectFlags;   /**< vm region protect flags: PROT_READ, PROT_WRITE, *///线性区中页框的访问许可权
     UINT8               forkFlags;      /**< vm space fork flags: COPY, ZERO, */	//fork的方式
     UINT8               regionType;     /**< vm region type: ANON, FILE, DEV */	//映射类型是匿名,文件,还是设备,所谓匿名可理解为内存映射
     union {
-        struct VmRegionFile {
+        struct VmRegionFile {//
             unsigned int fileMagic;//具有特殊文件格式的文件,魔法数字.例如 stack top 的魔法数字为 0xCCCCCCCC
             struct file *file;		//文件指针
             const LosVmFileOps *vmFOps;//文件处理各操作接口
         } rf;
-        struct VmRegionAnon {
-            LOS_DL_LIST  node;          /**< region LosVmPage list */ //线性区虚拟页链表
+        struct VmRegionAnon {//匿名映射可理解为就是物理内存
+            LOS_DL_LIST  node;          /**< region LosVmPage list */ 	//线性区虚拟页链表
         } ra;
         struct VmRegionDev {
             LOS_DL_LIST  node;          /**< region LosVmPage list */	//线性区虚拟页链表
@@ -132,15 +132,15 @@ struct VmMapRegion {
 };
 
 typedef struct VmSpace {
-    LOS_DL_LIST         node;           /**< vm space dl list */	//节点,主要用于通过它挂到全局虚拟空间链表上
-    LOS_DL_LIST         regions;        /**< region dl list */		//双循环链表方式管理虚拟空间的各个线性区
-    LosRbTree           regionRbTree;   /**< region red-black tree root */	//采用红黑树方式管理虚拟空间的各个线性区
+    LOS_DL_LIST         node;           /**< vm space dl list */	//节点,通过它挂到全局虚拟空间链表上
+    LOS_DL_LIST         regions;        /**< region dl list */		//双循环链表方式管理本空间各个线性区
+    LosRbTree           regionRbTree;   /**< region red-black tree root */	//采用红黑树方式管理本空间各个线性区
     LosMux              regionMux;      /**< region list mutex lock */	//虚拟空间的互斥锁
-    VADDR_T             base;           /**< vm space base addr */	//虚拟空间的基地址
-    UINT32              size;           /**< vm space size */		//虚拟空间大小
+    VADDR_T             base;           /**< vm space base addr */		//虚拟空间的基地址
+    UINT32              size;           /**< vm space size */			//虚拟空间大小
     VADDR_T             heapBase;       /**< vm space heap base address */	//虚拟空间堆区基地址
-    VADDR_T             heapNow;        /**< vm space heap base now */		//记录虚拟空间分配到哪了
-    LosVmMapRegion      *heap;          /**< heap region */		//堆区
+    VADDR_T             heapNow;        /**< vm space heap base now */		//虚拟空间堆区分配到哪了
+    LosVmMapRegion      *heap;          /**< heap region */					//堆区
     VADDR_T             mapBase;        /**< vm space mapping area base */	//虚拟空间映射区基地址
     UINT32              mapSize;        /**< vm space mapping area size */	//虚拟空间映射区大小
     LosArchMmu          archMmu;        /**< vm mapping physical memory */	//MMU记录和物理地址的映射情况
@@ -177,7 +177,7 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_TEXT                 (1<<12)		//代码区
 #define     VM_MAP_REGION_FLAG_BSS                  (1<<13)		//bbs数据区 由运行时动态分配
 #define     VM_MAP_REGION_FLAG_VDSO                 (1<<14)		//VDSO(Virtual Dynamically-lined Shared Object)由内核提供的虚拟.so文件，它不在磁盘上，而在内核里，内核将其映射到一个地址空间中，被所有程序共享，正文段大小为一个页面。
-#define     VM_MAP_REGION_FLAG_MMAP                 (1<<15)		//映射区
+#define     VM_MAP_REGION_FLAG_MMAP                 (1<<15)		//映射区,虚拟空间内有专门用来存储<虚拟地址-物理地址>映射的区域
 #define     VM_MAP_REGION_FLAG_SHM                  (1<<16) 	//共享内存区,和代码区同级概念,意思是整个线性区被贴上共享标签
 #define     VM_MAP_REGION_FLAG_INVALID              (1<<17) /* indicates that flags are not specified */
 

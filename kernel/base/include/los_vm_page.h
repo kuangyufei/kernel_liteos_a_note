@@ -43,15 +43,15 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 //注意: vmPage 中并没有虚拟地址，只有物理地址
-typedef struct VmPage {
-    LOS_DL_LIST         node;        /**< vm object dl list */
-    UINT32              index;       /**< vm page index to vm object */
-    PADDR_T             physAddr;    /**< vm page physical addr */
-    Atomic              refCounts;   /**< vm page ref count */
-    UINT32              flags;       /**< vm page flags */
-    UINT8               order;       /**< vm page in which order list */
-    UINT8               segID;       /**< the segment id of vm page */
-    UINT16              nPages;      /**< the vm page is used for kernel heap */
+typedef struct VmPage {	//虚拟内存描述符
+    LOS_DL_LIST         node;        /**< vm object dl list */ //虚拟内存节点,通过它挂到全局虚拟页上
+    UINT32              index;       /**< vm page index to vm object */	//索引位置
+    PADDR_T             physAddr;    /**< vm page physical addr */		//物理地址
+    Atomic              refCounts;   /**< vm page ref count */			//被引用次数,共享内存会被多次引用
+    UINT32              flags;       /**< vm page flags */				//页标签
+    UINT8               order;       /**< vm page in which order list */	//被安置在伙伴算法的几号序列(              2^0,2^1,2^2,...,2^order)
+    UINT8               segID;       /**< the segment id of vm page */	//所在段ID
+    UINT16              nPages;      /**< the vm page is used for kernel heap */	//vm页面用于内核堆
 } LosVmPage;
 
 extern LosVmPage *g_vmPageArray;//物理内存所有页框(page frame)记录数组

@@ -519,11 +519,12 @@ ERROR:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return NULL;
 }
-/*	共享存储的连接使用
-	一旦创建/引用了一个共享存储段，那么进程就可调用shmat函数将其连接到它的地址空间中
-	如果shmat成功执行，那么内核将使与该共享存储相关的shmid_ds结构中的shm_nattch计数器值加1
-	shmid 就是个索引,就跟进程和线程的ID一样 g_shmSegs[shmid] shmid > 192个
-*/
+/**************************************************
+连接共享内存标识符为shmid的共享内存，连接成功后把共享内存区对象映射到调用进程的地址空间，随后可像本地空间一样访问
+一旦创建/引用了一个共享存储段，那么进程就可调用shmat函数将其连接到它的地址空间中
+如果shmat成功执行，那么内核将使与该共享存储相关的shmid_ds结构中的shm_nattch计数器值加1
+shmid 就是个索引,就跟进程和线程的ID一样 g_shmSegs[shmid] shmid > 192个
+**************************************************/
 VOID *ShmAt(INT32 shmid, const VOID *shmaddr, INT32 shmflg)
 {
     INT32 ret;

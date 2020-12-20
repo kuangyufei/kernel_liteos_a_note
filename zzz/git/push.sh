@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '1.CPU切换任务汇编注解 2.对内存的部分系统调用接口注解
+git commit -m  '完善虚拟内存模块注解
 搜索 @note_pic 可以查看全部字符图
 搜索 @note_why 是注者尚未看明白的地方，如果您看明白了，请告诉注者完善
 搜索 @note_thinking 是注者的思考和吐槽的地方

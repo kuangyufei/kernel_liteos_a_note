@@ -83,18 +83,32 @@ STATUS_T OsAnonMMap(LosVmMapRegion *region)
     LOS_SetRegionTypeAnon(region);
     return LOS_OK;
 }
-//用户进程调用这里申请虚拟内存
-//prot:用于设置内存段的访问权限 读/写/允许执行/不能访问
-//flags:控制程序对内存段的改变所造成的影响 1.MAP_PRIVATE：内存段私有，对它的修改值仅对本进程有效 2.MAP_SHARED：把对该内存段的修改保存到磁盘文件中。
-//fd:打开的文件描述符
-//offset:用以改变经共享内存段访问的文件中数据的起始偏移值。
+/**************************************************
+系统调用|申请虚拟内存
+参数		描述		
+addr	用来请求使用某个特定的虚拟内存地址。如果取NULL，结果地址就将自动分配（这是推荐的做法），
+		否则会降低程序的可移植性，因为不同系统的可用地址范围不一样。
+length	内存段的大小。
+prot	用于设置内存段的访问权限，有如下权限：
+		PROT_READ：允许读该内存段。
+		PROT_WRITE：允许写该内存段。
+		PROT_EXEC：允许执行该内存段。
+		PROT_NONE：不能访问。
+flags	控制程序对内存段的改变所造成的影响，有如下属性：
+		MAP_PRIVATE：内存段私有，对它的修改值仅对本进程有效。
+		MAP_SHARED：把对该内存段的修改保存到磁盘文件中。
+fd		打开的文件描述符。
+offset	用以改变经共享内存段访问的文件中数据的起始偏移值。
+成功返回：虚拟内存地址，这地址是页对齐。
+失败返回：(void *)-1。
+**************************************************/
 VADDR_T LOS_MMap(VADDR_T vaddr, size_t len, unsigned prot, unsigned long flags, int fd, unsigned long pgoff)
 {
     STATUS_T status;
     VADDR_T resultVaddr;
     UINT32 regionFlags;
-    LosVmMapRegion *newRegion = NULL;
-    struct file *filep = NULL;
+    LosVmMapRegion *newRegion = NULL;//应用的内存分配对应到内核就是分配一个线性区
+    struct file *filep = NULL;// inode : file = 1:N ,一对多关系,一个inode可以被多个进程打开,返回不同的file但都指向同一个inode 
     LosVmSpace *vmSpace = OsCurrProcessGet()->vmSpace;
 
     vaddr = ROUNDUP(vaddr, PAGE_SIZE);
@@ -103,9 +117,9 @@ VADDR_T LOS_MMap(VADDR_T vaddr, size_t len, unsigned prot, unsigned long flags, 
     if (checkRst != LOS_OK) {
         return checkRst;
     }
-
-    if (LOS_IsNamedMapping(flags)) {//非匿名映射
-        status = fs_getfilep(fd, &filep);//获取文件状态
+	
+    if (LOS_IsNamedMapping(flags)) {//是否文件映射
+        status = fs_getfilep(fd, &filep);//获取文件描述符和状态
         if (status < 0) {
             return -EBADF;
         }

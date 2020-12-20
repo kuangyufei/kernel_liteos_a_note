@@ -69,7 +69,7 @@ STATIC INLINE PTE_T *OsGetPte2BasePtr(PTE_T pte1)
     PADDR_T pa = MMU_DESCRIPTOR_L1_PAGE_TABLE_ADDR(pte1);
     return LOS_PaddrToKVaddr(pa);
 }
-
+//解除L1表的映射关系
 STATIC INLINE UINT32 OsUnmapL1Invalid(vaddr_t *vaddr, UINT32 *count)
 {
     UINT32 unmapCount;
@@ -497,12 +497,12 @@ STATIC VOID OsMapL1PTE(LosArchMmu *archMmu, PTE_T *pte1Ptr, vaddr_t vaddr, UINT3
 }
 
 /* convert user level mmu flags to L2 descriptors flags */
-STATIC UINT32 OsCvtPte2FlagsToAttrs(uint32_t flags)
+STATIC UINT32 OsCvtPte2FlagsToAttrs(uint32_t flags)//状态的转换(映射),从用户级标识到L2描述表的标识
 {
     UINT32 mmuFlags = 0;
 
     switch (flags & VM_MAP_REGION_FLAG_CACHE_MASK) {
-        case VM_MAP_REGION_FLAG_CACHED:
+        case VM_MAP_REGION_FLAG_CACHED://缓冲区
 #if (LOSCFG_KERNEL_SMP == YES)
             mmuFlags |= MMU_DESCRIPTOR_L2_SHAREABLE;
 #endif

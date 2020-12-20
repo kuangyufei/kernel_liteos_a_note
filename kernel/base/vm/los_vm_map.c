@@ -709,7 +709,7 @@ STATUS_T OsVmRegionAdjust(LosVmSpace *space, VADDR_T newRegionStart, size_t size
     }
     return LOS_OK;
 }
-
+//删除线性区
 STATUS_T OsRegionsRemove(LosVmSpace *space, VADDR_T regionBase, size_t size)
 {
     STATUS_T status;
@@ -725,7 +725,7 @@ STATUS_T OsRegionsRemove(LosVmSpace *space, VADDR_T regionBase, size_t size)
         goto ERR_REGION_SPLIT;
     }
 
-    RB_SCAN_SAFE(&space->regionRbTree, pstRbNodeTemp, pstRbNodeNext)
+    RB_SCAN_SAFE(&space->regionRbTree, pstRbNodeTemp, pstRbNodeNext)//扫描虚拟空间内的线性区
         regionTemp = (LosVmMapRegion *)pstRbNodeTemp;
         if (regionBase <= regionTemp->range.base && regionEnd >= LOS_RegionEndAddr(regionTemp)) {
             status = LOS_RegionFree(space, regionTemp);
@@ -744,7 +744,7 @@ ERR_REGION_SPLIT:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return status;
 }
-//用户进程释放堆
+//释放用户空间的堆区
 INT32 OsUserHeapFree(LosVmSpace *vmSpace, VADDR_T addr, size_t len)
 {
     LosVmMapRegion *vmRegion = NULL;
@@ -753,24 +753,24 @@ INT32 OsUserHeapFree(LosVmSpace *vmSpace, VADDR_T addr, size_t len)
     VADDR_T vaddr;
     STATUS_T ret;
 
-    if (vmSpace == LOS_GetKVmSpace() || vmSpace->heap == NULL) {//非内核空间
+    if (vmSpace == LOS_GetKVmSpace() || vmSpace->heap == NULL) {//虚拟空间堆区必须在非内核空间
         return -1;
     }
 
-    vmRegion = LOS_RegionFind(vmSpace, addr);//找到线性区
+    vmRegion = LOS_RegionFind(vmSpace, addr);//通过参数虚拟地址红黑树找到线性区,线性区范围内包含了参数虚拟地址
     if (vmRegion == NULL) {
         return -1;
     }
 
-    if (vmRegion == vmSpace->heap) {//当前指向线性区指针和找到的线性区一致
+    if (vmRegion == vmSpace->heap) {//虚拟空间的堆区和找到的线性区虚拟地址一致,确定是找到了堆区的线性区
         vaddr = addr;
         while (len > 0) {//参数0 代表不获取 flags 信息
             if (LOS_ArchMmuQuery(&vmSpace->archMmu, vaddr, &paddr, 0) == LOS_OK) {//通过虚拟地址查到物理地址
-                ret = LOS_ArchMmuUnmap(&vmSpace->archMmu, vaddr, 1);//解除映射关系
+                ret = LOS_ArchMmuUnmap(&vmSpace->archMmu, vaddr, 1);//解除映射关系以页为单位,这里解除1页
                 if (ret <= 0) {
                     VM_ERR("unmap failed, ret = %d", ret);
                 }
-                vmPage = LOS_VmPageGet(paddr);//获取页信息
+                vmPage = LOS_VmPageGet(paddr);//获取物理页面信息
                 LOS_PhysPageFree(vmPage);//释放页
             }
             vaddr += PAGE_SIZE;
@@ -803,7 +803,7 @@ STATUS_T OsIsRegionCanExpand(LosVmSpace *space, LosVmMapRegion *region, size_t s
 
     return LOS_NOK;
 }
-//取消映射
+//解除一定范围的虚拟地址的映射关系
 STATUS_T OsUnMMap(LosVmSpace *space, VADDR_T addr, size_t size)
 {
     size = LOS_Align(size, PAGE_SIZE);
