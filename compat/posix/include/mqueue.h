@@ -51,7 +51,22 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
+/******************************************************************* @note_pic
+posix ipc 消息队列和进程引用展示图,本图是理解posix消息队列的关键
+一个消息队列可以被多个进程使用,进程的一次打开就是一个 mqpersonal 
 
+              mqarray
+     +---------------------------------------+
+     |                         |mqpersonal * |
+     +---^--------------+-----------------+-++
+         |              ^                 ^ |
+         |              |                 | v
++--------+------+    +--+------------+  +-+-+----------+
+|mqarray * |next+--->+mqarray * |next+->+mqarray *|next|
++---------------+    +---------------+  +--------------+
+  mqpersonal           mqpersonal         mqpersonal
+
+********************************************************************/
 /**
  * @ingroup mqueue
  * Maximum number of messages in a message queue 
@@ -73,8 +88,8 @@ extern "C" {
 
 /* TYPE DEFINITIONS */
 struct mqarray {	//posix 消息队列结构体,对LosQueueCB的装饰,方便扩展
-    UINT32 mq_id : 31;		//消息队列ID
-    UINT32 unlinkflag : 1;  //链接标记
+    UINT32 mq_id : 31;		//消息队列ID,注意这个一定要放在第一位
+    UINT32 unlinkflag : 1;  //标记是否执行过mq_unlink的操作,因为是unlink是异步操作,所以用一个flag来标记.
     char *mq_name;			//消息队列的名称
     LosQueueCB *mqcb;		//内核消息队列控制块, 指向->g_allQueue[queueID]
     struct mqpersonal *mq_personal;	//保存消息队列当前打开的描述符数的引用计数,可理解为多个进程打开一个消息队列,跟文件一样.
@@ -82,7 +97,7 @@ struct mqarray {	//posix 消息队列结构体,对LosQueueCB的装饰,方便扩�
 
 struct mqpersonal {
     struct mqarray *mq_posixdes; 	//记录捆绑了哪个消息队列
-    struct mqpersonal *mq_next;		//指向下一条打开的引用
+    struct mqpersonal *mq_next;		//指向下一个打开这个消息队列的进程,一个消息队列允许多个进程打开.
     int mq_flags;		//队列的读写权限( O_WRONLY , O_RDWR ==)
     UINT32 mq_status;	//状态,初始为魔法数字 MQ_USE_MAGIC,放在尾部是必须的, 这个字段在结构体的结尾,也在mqarray的结尾
 };//因为一旦发送内存溢出,这个值会被修改掉,从而知道发生过异常.

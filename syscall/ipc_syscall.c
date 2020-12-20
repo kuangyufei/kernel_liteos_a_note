@@ -38,7 +38,7 @@
 #include "los_signal.h"
 #include "los_strncpy_from_user.h"
 /********************************************************
-本文说明:系统调用|IPC
+本文说明:包含消息队列和信号两部分内容,是实现IPC的其中两种方式 
 IPC（Inter-Process Communication，进程间通信）
 每个进程各自有不同的用户地址空间，进程之间地址保护,相互隔离,任何一个进程的信息在另一个进程中都看不到，
 所以进程之间要交换数据必须通过内核，在内核中开辟一块缓冲区，进程A把数据从用户空间拷到内核缓冲区，
@@ -84,7 +84,12 @@ int SysMqClose(mqd_t personal)
     }
     return ret;
 }
-
+/******************************************************
+封装posix的标准接口，获取和设置消息队列的属性
+new:来判断是否是获取还是设置功能
+	new==null 获取
+	否则为设置
+******************************************************/
 int SysMqGetSetAttr(mqd_t mqd, const struct mq_attr *new, struct mq_attr *old)
 {
     int ret;
@@ -108,7 +113,14 @@ int SysMqGetSetAttr(mqd_t mqd, const struct mq_attr *new, struct mq_attr *old)
     }
     return ret;
 }
-
+/******************************************************
+从内核中删除名为mqName的消息队列
+如果该函数被调用了,但是仍然有进程已经打开了这个消息队列,那么这个消息队列
+的销毁会被推迟到所有的引用都被关闭时执行.并且函数 mq_unlink() 不需要阻塞
+到所有的引用都被关闭为止,它会立即返回.函数 mq_unlink()调用成功后, 如果在
+随后调用 mq_open() 时重用这个消息队列名字,效果就像这个名字的消息队列不存在,
+如果没有设置O_CREAT标志,函数mq_open() 会返回失败,否则会创建一个新的消息队列.
+******************************************************/
 int SysMqUnlink(const char *mqName)
 {
     int ret;
@@ -126,7 +138,9 @@ int SysMqUnlink(const char *mqName)
     }
     return ret;
 }
-
+/******************************************************
+定时时间发送消息,任务将被阻塞,等待被唤醒写入消息
+******************************************************/
 int SysMqTimedSend(mqd_t personal, const char *msg, size_t msgLen, unsigned int msgPrio,
                    const struct timespec *absTimeout)
 {
@@ -152,14 +166,16 @@ int SysMqTimedSend(mqd_t personal, const char *msg, size_t msgLen, unsigned int 
         free(msgIntr);
         return -EFAULT;
     }
-    ret = mq_timedsend(personal, msgIntr, msgLen, msgPrio, absTimeout ? &timeout : NULL);
+    ret = mq_timedsend(personal, msgIntr, msgLen, msgPrio, absTimeout ? &timeout : NULL);//posix 接口的实现
     free(msgIntr);
     if (ret < 0) {
         return -get_errno();
     }
     return ret;
 }
-
+/******************************************************
+定时接收消息,任务将被阻塞,等待被唤醒读取
+******************************************************/
 ssize_t SysMqTimedReceive(mqd_t personal, char *msg, size_t msgLen, unsigned int *msgPrio,
                           const struct timespec *absTimeout)
 {
@@ -181,7 +197,7 @@ ssize_t SysMqTimedReceive(mqd_t personal, char *msg, size_t msgLen, unsigned int
     if (msgIntr == NULL) {
         return -ENOMEM;
     }
-    receiveLen = mq_timedreceive(personal, msgIntr, msgLen, &kMsgPrio, absTimeout ? &timeout : NULL);
+    receiveLen = mq_timedreceive(personal, msgIntr, msgLen, &kMsgPrio, absTimeout ? &timeout : NULL);//posix 接口的实现
     if (receiveLen < 0) {
         free(msgIntr);
         return -get_errno();

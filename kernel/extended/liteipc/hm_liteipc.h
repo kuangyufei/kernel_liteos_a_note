@@ -55,10 +55,10 @@ typedef enum {
     HANDLE_REGISTED
 } HandleStatus;
 
-typedef struct {
-    HandleStatus status;
-    UINT32       taskID;
-    UINTPTR      maxMsgSize;
+typedef struct {//句柄信息
+    HandleStatus status;	//状态
+    UINT32       taskID;	//任务ID,以任务当句柄
+    UINTPTR      maxMsgSize;//最大消息大小
 } HandleInfo;
 
 typedef struct {

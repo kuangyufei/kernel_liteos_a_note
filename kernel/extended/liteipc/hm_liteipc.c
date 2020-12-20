@@ -45,21 +45,21 @@
 #include "los_vm_page.h"
 #include "los_vm_lock.h"
 
-#define USE_TASKID_AS_HANDLE YES
-#define USE_MMAP YES
-#define IPC_MSG_DATA_SZ_MAX 1024
-#define IPC_MSG_OBJECT_NUM_MAX 256
+#define USE_TASKID_AS_HANDLE YES 	//使用任务ID作为句柄
+#define USE_MMAP YES				//
+#define IPC_MSG_DATA_SZ_MAX 1024	//最大的消息内容 1K ,posix最大消息内容 64个字节
+#define IPC_MSG_OBJECT_NUM_MAX 256	//最大的消息数量256 ,posix最大消息数量 16个
 
-#define LITE_IPC_POOL_NAME "liteipc"
-#define LITE_IPC_POOL_PAGE_MAX_NUM 64 /* 256KB */
+#define LITE_IPC_POOL_NAME "liteipc"	//ipc池名称
+#define LITE_IPC_POOL_PAGE_MAX_NUM 64 	/* 256KB */
 #define LITE_IPC_POOL_PAGE_DEFAULT_NUM 16 /* 64KB */
 #define LITE_IPC_POOL_MAX_SIZE (LITE_IPC_POOL_PAGE_MAX_NUM << PAGE_SHIFT)
 #define LITE_IPC_POOL_DEFAULT_SIZE (LITE_IPC_POOL_PAGE_DEFAULT_NUM << PAGE_SHIFT)
 #define LITE_IPC_POOL_UVADDR 0x10000000
 #define INVAILD_ID (-1)
 
-#define LITEIPC_TIMEOUT_MS 5000UL
-#define LITEIPC_TIMEOUT_NS 5000000000ULL
+#define LITEIPC_TIMEOUT_MS 5000UL			//超时时间单位毫秒
+#define LITEIPC_TIMEOUT_NS 5000000000ULL	//超时时间单位纳秒
 
 typedef struct {
     LOS_DL_LIST list;
@@ -72,11 +72,11 @@ HandleInfo g_cmsTask;
 #else
 HandleInfo g_serviceHandleMap[MAX_SERVICE_NUM];
 #endif
-STATIC LOS_DL_LIST g_ipcPendlist;
-STATIC LOS_DL_LIST g_ipcUsedNodelist[LOSCFG_BASE_CORE_PROCESS_LIMIT];//==进程数量 64个
+STATIC LOS_DL_LIST g_ipcPendlist;//阻塞链表,上面挂等待读/写消息的任务
+STATIC LOS_DL_LIST g_ipcUsedNodelist[LOSCFG_BASE_CORE_PROCESS_LIMIT];//IPC节点池,默认等于进程数
 
 /* ipc lock */
-SPIN_LOCK_INIT(g_ipcSpin);
+SPIN_LOCK_INIT(g_ipcSpin);//初始化IPC自旋锁
 #define IPC_LOCK(state)       LOS_SpinLockSave(&g_ipcSpin, &(state))
 #define IPC_UNLOCK(state)     LOS_SpinUnlockRestore(&g_ipcSpin, state)
 

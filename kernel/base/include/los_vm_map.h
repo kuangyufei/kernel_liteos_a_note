@@ -185,7 +185,7 @@ STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned lo
 {
     UINT32 regionFlags = 0;
 
-    regionFlags |= VM_MAP_REGION_FLAG_PERM_USER;								//必须得是可用区先
+    regionFlags |= VM_MAP_REGION_FLAG_PERM_USER;								//必须是可用区
     regionFlags |= (prot & PROT_READ) ? VM_MAP_REGION_FLAG_PERM_READ : 0; 		//映射区可被读
     regionFlags |= (prot & PROT_WRITE) ? VM_MAP_REGION_FLAG_PERM_WRITE : 0;		//映射区可被写
     regionFlags |= (prot & PROT_EXEC) ? VM_MAP_REGION_FLAG_PERM_EXECUTE : 0;	//映射区可被执行
@@ -262,13 +262,13 @@ STATIC INLINE BOOL LOS_IsUserAddress(VADDR_T vaddr)
     return ((vaddr >= USER_ASPACE_BASE) &&
             (vaddr <= (USER_ASPACE_BASE + (USER_ASPACE_SIZE - 1))));
 }
-//从vaddr 到 vaddr + len 这段虚拟地址是否在用户空间
+//虚拟地址[vaddr,vaddr + len]是否在用户空间
 STATIC INLINE BOOL LOS_IsUserAddressRange(VADDR_T vaddr, size_t len)
 {
     return (vaddr + len > vaddr) && LOS_IsUserAddress(vaddr) && (LOS_IsUserAddress(vaddr + len - 1));
 }
 
-//是否是一个动态分配地址
+//是否是一个动态分配的地址
 STATIC INLINE BOOL LOS_IsVmallocAddress(VADDR_T vaddr)
 {
     return ((vaddr >= VMALLOC_START) &&

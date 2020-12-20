@@ -176,7 +176,7 @@ static int UserPoll(struct pollfd *fds, nfds_t nfds, int timeout)
     free(pollFds);
     return ret;
 }
-
+//复杂一个文件描述符
 static int FcntlDupFd(int fd, void *arg, int (*fcntl)(int, int, ...))
 {
     int ret;
@@ -776,7 +776,25 @@ int SysIoctl(int fd, int req, void *arg)
     }
     return ret;
 }
-//文件控制
+/********************************************************
+用来修改已经打开文件的属性的函数包含5个功能：
+1.复制一个已有文件描述符，功能和dup和dup2相同，对应的cmd：F_DUPFD、F_DUPFD_CLOEXEC。
+	当使用这两个cmd时，需要传入第三个参数，fcntl返回复制后的文件描述符，此返回值是之前未被占用的描述符，
+	并且必须一个大于等于第三个参数值。
+	F_DUPFD命令要求返回的文件描述符会清除对应的FD_CLOEXEC
+	F_DUPFD_CLOEXEC要求设置新描述符的FD_CLOEXEC标志。
+
+2.获取、设置文件描述符标志，对应的cmd：F_GETFD、F_SETFD。
+	用于设置FD_CLOEXEC标志，此标志的含义是：当进程执行exec系统调用后此文件描述符会被自动关闭。
+
+3.获取、设置文件访问状态标志，对应的cmd：F_GETFL、F_SETFL。
+	获取当前打开文件的访问标志，设置对应的访问标志，一般常用来设置做非阻塞读写操作。
+
+4.获取、设置记录锁功能，对应的cmd：F_GETLK、F_SETLK、F_SETLKW。
+
+5.获取、设置异步I/O所有权，对应的cmd：F_GETOWN、F_SETOWN。
+  	获取和设置用来接收SIGIO/SIGURG信号的进程id或者进程组id。返回对应的进程id或者进程组id取负值。
+********************************************************/
 int SysFcntl(int fd, int cmd, void *arg)
 {
     /* Process fd convert to system global fd */
@@ -791,23 +809,38 @@ int SysFcntl(int fd, int cmd, void *arg)
     }
     return ret;
 }
-//创建管道
+/********************************************************
+管道是一种最基本的IPC机制，作用于有血缘关系的进程之间，完成数据传递。
+调用pipe系统函数即可创建一个管道。有如下特质：
+
+1. 其本质是一个伪文件(实为内核缓冲区)
+2. 由两个文件描述符引用，一个表示读端，一个表示写端。
+3. 规定数据从管道的写端流入管道，从读端流出。
+
+管道的原理: 管道实为内核使用环形队列机制，借助内核缓冲区(4k)实现。
+管道的局限性：
+	① 数据自己读不能自己写。
+	② 数据一旦被读走，便不在管道中存在，不可反复读取。
+	③ 由于管道采用半双工通信方式。因此，数据只能在一个方向上流动。
+	④ 只能在有公共祖先的进程间使用管道。
+常见的通信方式有，单工通信、半双工通信、全双工通信。
+********************************************************/
 int SysPipe(int pipefd[2]) /* 2 : pipe fds for read and write */
 {
     int ret;
     int pipeFdIntr[2] = {0}; /* 2 : pipe fds for read and write */
 
-    int procFd0 = AllocProcessFd();
+    int procFd0 = AllocProcessFd();//读端管道,像 stdin对应标准输入
     if (procFd0 < 0) {
         return -EMFILE;
     }
-    int procFd1 = AllocProcessFd();
+    int procFd1 = AllocProcessFd();//写端管道,像 stdout对应标准输出
     if (procFd1 < 0) {
         FreeProcessFd(procFd0);
         return -EMFILE;
     }
 
-    ret = pipe(pipeFdIntr);
+    ret = pipe(pipeFdIntr);//创建管道
     if (ret < 0) {
         FreeProcessFd(procFd0);
         FreeProcessFd(procFd1);
@@ -816,13 +849,13 @@ int SysPipe(int pipefd[2]) /* 2 : pipe fds for read and write */
     int sysPipeFd0 = pipeFdIntr[0];
     int sysPipeFd1 = pipeFdIntr[1];
 
-    AssociateSystemFd(procFd0, sysPipeFd0);
+    AssociateSystemFd(procFd0, sysPipeFd0);//进程FD和系统FD绑定
     AssociateSystemFd(procFd1, sysPipeFd1);
 
     pipeFdIntr[0] = procFd0;
     pipeFdIntr[1] = procFd1;
 
-    ret = LOS_ArchCopyToUser(pipefd, pipeFdIntr, sizeof(pipeFdIntr));
+    ret = LOS_ArchCopyToUser(pipefd, pipeFdIntr, sizeof(pipeFdIntr));//参数都走两个进程FD
     if (ret != 0) {
         FreeProcessFd(procFd0);
         FreeProcessFd(procFd1);
@@ -832,15 +865,17 @@ int SysPipe(int pipefd[2]) /* 2 : pipe fds for read and write */
     }
     return ret;
 }
-//按指定条件复制文件描述字
+/********************************************************
+/复制文件描述符
+********************************************************/
 int SysDup2(int fd1, int fd2)
 {
     int ret;
     int sysfd1 = GetAssociatedSystemFd(fd1);
     int sysfd2 = GetAssociatedSystemFd(fd2);
-
+	//检查参数是否有效，注意：socket fd不支持dup2
     /* Check if the param is valid, note that: socket fd is not support dup2 */
-    if ((sysfd1 < 0) || (sysfd1 >= CONFIG_NFILE_DESCRIPTORS) || (CheckProcessFd(fd2) != OK)) {
+    if ((sysfd1 < 0) || (sysfd1 >= CONFIG_NFILE_DESCRIPTORS) || (CheckProcessFd(fd2) != OK)) {//socket的fd必大于CONFIG_NFILE_DESCRIPTORS
         return -EBADF;
     }
 

@@ -333,7 +333,7 @@ QUEUE_END:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//接口函数 鸿蒙 LOS_ 开头的都是可供外面调用的接口函数
+//接口函数定时读取消息队列
 LITE_OS_SEC_TEXT UINT32 LOS_QueueReadCopy(UINT32 queueID,
                                           VOID *bufferAddr,
                                           UINT32 *bufferSize,
@@ -347,10 +347,10 @@ LITE_OS_SEC_TEXT UINT32 LOS_QueueReadCopy(UINT32 queueID,
         return ret;
     }
 
-    operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_READ, OS_QUEUE_HEAD);//意思是从头开始读
-    return OsQueueOperate(queueID, operateType, bufferAddr, bufferSize, timeout);//执行读操作
+    operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_READ, OS_QUEUE_HEAD);//从头开始读
+    return OsQueueOperate(queueID, operateType, bufferAddr, bufferSize, timeout);//定时执行读操作
 }
-//接口函数 从队列头开始写
+//接口函数从队列头开始写
 LITE_OS_SEC_TEXT UINT32 LOS_QueueWriteHeadCopy(UINT32 queueID,
                                                VOID *bufferAddr,
                                                UINT32 bufferSize,
