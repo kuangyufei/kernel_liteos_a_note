@@ -346,7 +346,7 @@ typedef struct {
                                              a specific child process, or any child process */
 #if (LOSCFG_KERNEL_LITEIPC == YES)
     UINT32          ipcStatus;			//IPC状态
-    LOS_DL_LIST     msgListHead;		//消息队列头结点
+    LOS_DL_LIST     msgListHead;		//消息队列头结点,上面挂的都是任务要读的消息
     BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];//访问图,指的是task之间是否能访问的标识,LOSCFG_BASE_CORE_TSK_LIMIT 为任务池总数
 #endif
 } LosTaskCB;

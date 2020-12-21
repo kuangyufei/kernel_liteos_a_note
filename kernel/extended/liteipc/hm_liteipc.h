@@ -43,34 +43,39 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
-#define LITEIPC_DRIVER "/dev/lite_ipc"
-#define DRIVER_MODE 0666
-#define MAX_SERVICE_NUM LOSCFG_BASE_CORE_TSK_LIMIT
+/****************************************************
+什么是句柄?
+从形象意义的理解,跟门的把柄一样,握住门柄就控制了整个大门.
+句柄是给用户程序使用的一个数字凭证,能以小博大,通过柄
+能牵动内核模块工作.
+****************************************************/
+#define LITEIPC_DRIVER "/dev/lite_ipc"	//设备位置
+#define DRIVER_MODE 0666	//权限, chmod 666
+#define MAX_SERVICE_NUM LOSCFG_BASE_CORE_TSK_LIMIT //最大服务数等于任务数 默认128
 #define USE_TIMESTAMP YES
 
-typedef enum {
-    HANDLE_NOT_USED,
-    HANDLE_REGISTING,
-    HANDLE_REGISTED
+typedef enum { //句柄状态
+    HANDLE_NOT_USED,	//未使用
+    HANDLE_REGISTING,	//注册中
+    HANDLE_REGISTED		//已注册
 } HandleStatus;
 
 typedef struct {//句柄信息
     HandleStatus status;	//状态
-    UINT32       taskID;	//任务ID,以任务当句柄
+    UINT32       taskID;	//任务ID,以任务标识句柄
     UINTPTR      maxMsgSize;//最大消息大小
 } HandleInfo;
 
-typedef struct {
-    VOID   *uvaddr;
-    VOID   *kvaddr;
-    UINT32 poolSize;
+typedef struct {// ipc池
+    VOID   *uvaddr;	//用户空间虚拟地址
+    VOID   *kvaddr;	//内核空间虚拟地址
+    UINT32 poolSize;//ipc池大小
 } IpcPool;
-
-typedef struct {
-    IpcPool pool;
-    UINT32 ipcTaskID;
-    UINT32 access[LOSCFG_BASE_CORE_TSK_LIMIT];
+//见于进程结构体:	LosProcessCB.ipcInfo
+typedef struct {//进程IPC信息
+    IpcPool pool;	//ipc池
+    UINT32 ipcTaskID;	//
+    UINT32 access[LOSCFG_BASE_CORE_TSK_LIMIT];	//访问的任务数组
 } ProcIpcInfo;
 
 typedef enum {
@@ -101,15 +106,15 @@ typedef struct {
     ObjContent  content;
 } SpecialObj;
 
-typedef enum {
-    MT_REQUEST,
-    MT_REPLY,
-    MT_FAILED_REPLY,
-    MT_DEATH_NOTIFY,
+typedef enum {	//消息的类型
+    MT_REQUEST,	//请求
+    MT_REPLY,	//回复
+    MT_FAILED_REPLY,//回复失败
+    MT_DEATH_NOTIFY,//通知死亡
     MT_NUM
 } MsgType;
 
-/* lite ipc ioctl */
+/* lite ipc ioctl */// 控制命令
 #define IPC_IOC_MAGIC       'i'
 #define IPC_SET_CMS         _IO(IPC_IOC_MAGIC, 1)
 #define IPC_CMS_CMD         _IOWR(IPC_IOC_MAGIC, 2, CmsCmdContent)
@@ -134,38 +139,38 @@ typedef enum {
 } IpcFlag;
 
 typedef struct {
-    MsgType        type;       /**< cmd type, decide the data structure below*/
-    SvcIdentity    target;    /**< serviceHandle or targetTaskId, depending on type */
-    UINT32         code;      /**< service function code */
-    UINT32         flag;
+    MsgType        type;       /**< cmd type, decide the data structure below*/	//命令类型，决定下面的数据结构
+    SvcIdentity    target;    /**< serviceHandle or targetTaskId, depending on type */	//因命令类型不同而异
+    UINT32         code;      /**< service function code */	//服务功能代码
+    UINT32         flag;	//标签
 #if (USE_TIMESTAMP == YES)
-    UINT64         timestamp;
+    UINT64         timestamp;	//时间戳
 #endif
-    UINT32         dataSz;    /**< size of data */
-    VOID           *data;
-    UINT32         spObjNum;
-    VOID           *offsets;
-    UINT32         processID; /**< filled by kernel, processId of sender/reciever */
-    UINT32         taskID;    /**< filled by kernel, taskId of sender/reciever */
-#ifdef LOSCFG_SECURITY_CAPABILITY
-    UINT32         userID;
-    UINT32         gid;
+    UINT32         dataSz;    /**< size of data */ //消息内容大小
+    VOID           *data;	//消息的内容,真正要传递的消息
+    UINT32         spObjNum;	// ..
+    VOID           *offsets;	// ..
+    UINT32         processID; /**< filled by kernel, processId of sender/reciever */ //由内核填充,发送/接收消息的进程ID
+    UINT32         taskID;    /**< filled by kernel, taskId of sender/reciever */	//由内核填充,发送/接收消息的任务ID
+#ifdef LOSCFG_SECURITY_CAPABILITY	
+    UINT32         userID;	//用户ID
+    UINT32         gid;		//组ID
 #endif
 } IpcMsg;
 
-typedef struct {
-    IpcMsg         msg;
-    LOS_DL_LIST    listNode;
+typedef struct {	//IPC 内容节点
+    IpcMsg         msg;	//内容体
+    LOS_DL_LIST    listNode;//通过它挂到LosTaskCB.msgListHead链表上
 } IpcListNode;
 
-#define SEND (1 << 0)
-#define RECV (1 << 1)
+#define SEND (1 << 0)	//发送
+#define RECV (1 << 1)	//接收
 #define BUFF_FREE (1 << 2)
 
-typedef struct {
-    UINT32               flag;      /**< size of writeData */
-    IpcMsg               *outMsg;   /**< data to send to target */
-    IpcMsg               *inMsg;    /**< data reply by target */
+typedef struct {	//IPC消息内容回路,记录消息周期
+    UINT32               flag;      /**< size of writeData */ //IPC标签 (SEND,RECV,BUFF_FREE)
+    IpcMsg               *outMsg;   /**< data to send to target */ 	//发给给目标任务的消息内容
+    IpcMsg               *inMsg;    /**< data reply by target */	//目标任务回复的消息内容
     VOID                 *buffToFree;
 } IpcContent;
 
@@ -187,21 +192,21 @@ typedef enum {
     OPERATION_NUM
 } IpcOpertion;
 
-typedef struct {
-    UINT32  srcTid : 8;
-    UINT32  srcPid : 8;
-    UINT32  dstTid : 8;
-    UINT32  dstPid : 8;
+typedef struct {//进程/任务ID 参数
+    UINT32  srcTid : 8;	//源任务ID
+    UINT32  srcPid : 8;	//源进程ID
+    UINT32  dstTid : 8;	//目标任务ID
+    UINT32  dstPid : 8;	//目标进程ID
 } IdArg;
 
-typedef struct {
-    UINT32  msgType : 8;
-    UINT32  code : 8;
-    UINT32  operation : 8;
-    UINT32  ipcStatus : 8;
+typedef struct {//消息参数
+    UINT32  msgType : 8;	//消息类型
+    UINT32  code : 8;		//消息码
+    UINT32  operation : 8;	//具体操作
+    UINT32  ipcStatus : 8;	//IPC状态
 } MsgArg;
 
-typedef struct {
+typedef struct {	
     UINT32  idInfo;
     UINT32  msgInfo;
     UINT64  timestamp;

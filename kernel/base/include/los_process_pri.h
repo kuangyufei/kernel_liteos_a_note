@@ -109,7 +109,7 @@ typedef struct ProcessCB {
     UINTPTR              sigHandler;   /**< signal handler */ //信号处理函数,处理如 SIGSYS 等信号 
     sigset_t             sigShare;     /**< signal share bit */	//信号共享位
 #if (LOSCFG_KERNEL_LITEIPC == YES)
-    ProcIpcInfo         ipcInfo;       /**< memory pool for lite ipc */ //用于进程间通讯的 内存文件系统,设备装载点为 /dev/litepc
+    ProcIpcInfo         ipcInfo;       /**< memory pool for lite ipc */ //用于进程间通讯的虚拟设备文件系统,设备装载点为 /dev/lite_ipc
 #endif
     LosVmSpace          *vmSpace;       /**< VMM space for processes */ //进程空间
 #ifdef LOSCFG_FS_VFS
