@@ -699,13 +699,13 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, U
     status_t status;
     BOOL retVal = FALSE;
 
-    processCB->processMode = mode;//用户态进程还是内核态进程
-    processCB->processStatus = OS_PROCESS_STATUS_INIT;//进程初始状态
-    processCB->parentProcessID = OS_INVALID_VALUE;//爸爸进程，外面指定
-    processCB->threadGroupID = OS_INVALID_VALUE;//所属线程组
-    processCB->priority = priority;//进程优先级
-    processCB->policy = policy;//调度算法 LOS_SCHED_RR
-    processCB->umask = OS_PROCESS_DEFAULT_UMASK;//掩码
+    processCB->processMode = mode;						//用户态进程还是内核态进程
+    processCB->processStatus = OS_PROCESS_STATUS_INIT;	//进程初始状态
+    processCB->parentProcessID = OS_INVALID_VALUE;		//爸爸进程，外面指定
+    processCB->threadGroupID = OS_INVALID_VALUE;		//所属线程组
+    processCB->priority = priority;						//进程优先级
+    processCB->policy = policy;							//调度算法 LOS_SCHED_RR
+    processCB->umask = OS_PROCESS_DEFAULT_UMASK;		//掩码
     processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;
 
     LOS_ListInit(&processCB->threadSiblingList);//初始化孩子任务/线程链表，上面挂的都是由此fork的孩子线程 见于 OsTaskCBInit LOS_ListTailInsert(&(processCB->threadSiblingList), &(taskCB->threadList));
@@ -730,7 +730,7 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, U
             return LOS_ENOMEM;
         }
         (VOID)memset_s(ttb, PAGE_SIZE, 0, PAGE_SIZE);//内存清0
-        retVal = OsUserVmSpaceInit(space, ttb);//初始化虚拟空间和本进程 mmu
+        retVal = OsUserVmSpaceInit(space, ttb);//初始化虚拟空间和进程mmu
         vmPage = OsVmVaddrToPage(ttb);//通过虚拟地址拿到page
         if ((retVal == FALSE) || (vmPage == NULL)) {//异常处理
             PRINT_ERR("create space failed! ret: %d, vmPage: %#x\n", retVal, vmPage);
@@ -872,7 +872,7 @@ STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const C
     }
 #endif
 
-#ifdef LOSCFG_KERNEL_CPUP //CPU性能统计开关
+#ifdef LOSCFG_KERNEL_CPUP //CPU性能统计开关,默认是打开的
     OsCpupSet(processCB->processID);
 #endif
 

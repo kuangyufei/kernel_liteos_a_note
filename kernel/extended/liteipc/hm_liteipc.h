@@ -67,8 +67,8 @@ typedef struct {//句柄信息
 } HandleInfo;
 
 typedef struct {// ipc池
-    VOID   *uvaddr;	//用户空间虚拟地址
-    VOID   *kvaddr;	//内核空间虚拟地址
+    VOID   *uvaddr;	//虚拟地址,指向进程的LiteIPC线性区基地址
+    VOID   *kvaddr;	//注意这里指的是物理地址
     UINT32 poolSize;//ipc池大小
 } IpcPool;
 //见于进程结构体:	LosProcessCB.ipcInfo
@@ -182,10 +182,10 @@ typedef struct {	//IPC消息内容回路,记录消息周期
 #if (LOSCFG_KERNEL_TRACE == YES)
 #define LOS_TRACE_IPC 3 //IPC 对应..\kernel\include\los_trace.h TraceType 理解
 
-typedef enum {
-    WRITE,
-    WRITE_DROP,
-    TRY_READ,
+typedef enum {	//IPC包含哪些操作
+    WRITE,	//写消息
+    WRITE_DROP, 
+    TRY_READ,	
     READ,
     READ_DROP,
     READ_TIMEOUT,

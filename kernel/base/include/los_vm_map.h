@@ -132,7 +132,7 @@ struct VmMapRegion {//线性区描述符,内核通过线性区管理虚拟地址
 };
 
 typedef struct VmSpace {
-    LOS_DL_LIST         node;           /**< vm space dl list */	//节点,通过它挂到全局虚拟空间链表上
+    LOS_DL_LIST         node;           /**< vm space dl list */	//节点,通过它挂到全局虚拟空间 g_vmSpaceList 链表上
     LOS_DL_LIST         regions;        /**< region dl list */		//双循环链表方式管理本空间各个线性区
     LosRbTree           regionRbTree;   /**< region red-black tree root */	//采用红黑树方式管理本空间各个线性区
     LosMux              regionMux;      /**< region list mutex lock */	//虚拟空间的互斥锁
@@ -140,10 +140,10 @@ typedef struct VmSpace {
     UINT32              size;           /**< vm space size */			//虚拟空间大小
     VADDR_T             heapBase;       /**< vm space heap base address */	//虚拟空间堆区基地址
     VADDR_T             heapNow;        /**< vm space heap base now */		//虚拟空间堆区分配到哪了
-    LosVmMapRegion      *heap;          /**< heap region */					//堆区
+    LosVmMapRegion      *heap;          /**< heap region */					//堆区也是个线性区
     VADDR_T             mapBase;        /**< vm space mapping area base */	//虚拟空间映射区基地址
     UINT32              mapSize;        /**< vm space mapping area size */	//虚拟空间映射区大小
-    LosArchMmu          archMmu;        /**< vm mapping physical memory */	//MMU记录和物理地址的映射情况
+    LosArchMmu          archMmu;        /**< vm mapping physical memory */	//MMU记录<虚拟地址,物理地址>的映射情况
 #ifdef LOSCFG_DRIVERS_TZDRIVER
     VADDR_T             codeStart;      /**< user process code area start */
     VADDR_T             codeEnd;        /**< user process code area end */

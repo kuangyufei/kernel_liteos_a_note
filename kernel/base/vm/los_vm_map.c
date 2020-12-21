@@ -124,7 +124,7 @@ ULONG_T OsRegionRbCmpKeyFn(VOID *pNodeKeyA, VOID *pNodeKeyB)
     }
     return RB_EQUAL;
 }
-
+//初始化虚拟空间
 STATIC BOOL OsVmSpaceInitCommon(LosVmSpace *vmSpace, VADDR_T *virtTtb)
 {
     LOS_RbInitTree(&vmSpace->regionRbTree, OsRegionRbCmpKeyFn, OsRegionRbFreeFn, OsRegionRbGetKeyFn);//初始化虚拟存储空间-以红黑树组织方式
@@ -140,7 +140,7 @@ STATIC BOOL OsVmSpaceInitCommon(LosVmSpace *vmSpace, VADDR_T *virtTtb)
     LOS_ListAdd(&g_vmSpaceList, &vmSpace->node);//加入到虚拟空间双循环链表
     (VOID)LOS_MuxRelease(&g_vmSpaceListMux);
 
-    return OsArchMmuInit(&vmSpace->archMmu, virtTtb);//对空间mmu初始化
+    return OsArchMmuInit(&vmSpace->archMmu, virtTtb);//对mmu初始化
 }
 
 VOID OsVmMapInit(VOID)
@@ -1027,7 +1027,7 @@ VMM_ALLOC_SUCCEED:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return err;
 }
-
+//申请虚拟内存
 VOID *LOS_VMalloc(size_t size)//从g_vMallocSpace中申请物理内存
 {
     LosVmSpace *space = &g_vMallocSpace;
@@ -1043,7 +1043,7 @@ VOID *LOS_VMalloc(size_t size)//从g_vMallocSpace中申请物理内存
     if ((size == 0) || (size > space->size)) {
         return NULL;
     }
-    sizeCount = size >> PAGE_SHIFT;//按申请 所以需右移12位
+    sizeCount = size >> PAGE_SHIFT;//按页申请所以需右移12位
 
     LOS_DL_LIST_HEAD(pageList);
     (VOID)LOS_MuxAcquire(&space->regionMux);//获得互斥锁
@@ -1108,7 +1108,7 @@ VOID LOS_VFree(const VOID *addr)
 DONE:
     (VOID)LOS_MuxRelease(&space->regionMux);
 }
-
+//分配大内存
 STATIC INLINE BOOL OsMemLargeAlloc(UINT32 size)
 {
     UINT32 wasteMem;
@@ -1120,7 +1120,7 @@ STATIC INLINE BOOL OsMemLargeAlloc(UINT32 size)
     /* that is 1K ram wasted, waste too much mem ! */
     return (wasteMem < VM_MAP_WASTE_MEM_LEVEL);//浪费大于1K时用伙伴算法
 }
-
+//内核空间内存分配
 VOID *LOS_KernelMalloc(UINT32 size)
 {
     VOID *ptr = NULL;

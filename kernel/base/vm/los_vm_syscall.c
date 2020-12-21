@@ -49,10 +49,10 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+//检查用户空间虚拟内存参数
 STATUS_T OsCheckMMapParams(VADDR_T vaddr, unsigned prot, unsigned long flags, size_t len, unsigned long pgoff)
 {
-    if ((vaddr != 0) && !LOS_IsUserAddressRange(vaddr, len)) {
+    if ((vaddr != 0) && !LOS_IsUserAddressRange(vaddr, len)) {//因系统调用,[vaddr,vaddr+len]必须在用户空间
         return -EINVAL;
     }
 
@@ -61,10 +61,10 @@ STATUS_T OsCheckMMapParams(VADDR_T vaddr, unsigned prot, unsigned long flags, si
     }
 
     /* we only support some prot and flags */
-    if ((prot & PROT_SUPPORT_MASK) == 0) {
+    if ((prot & PROT_SUPPORT_MASK) == 0) {//不能超过权限范围
         return -EINVAL;
     }
-    if ((flags & MAP_SUPPORT_MASK) == 0) {
+    if ((flags & MAP_SUPPORT_MASK) == 0) {//映射权限限制
         return -EINVAL;
     }
     if (((flags & MAP_SHARED_PRIVATE) == 0) || ((flags & MAP_SHARED_PRIVATE) == MAP_SHARED_PRIVATE)) {
@@ -77,7 +77,7 @@ STATUS_T OsCheckMMapParams(VADDR_T vaddr, unsigned prot, unsigned long flags, si
 
     return LOS_OK;
 }
-//匿名映射 SWAP
+//匿名映射指的是swap分区
 STATUS_T OsAnonMMap(LosVmMapRegion *region)
 {
     LOS_SetRegionTypeAnon(region);
@@ -159,7 +159,7 @@ MMAP_DONE:
     (VOID)LOS_MuxRelease(&vmSpace->regionMux);
     return resultVaddr;
 }
-
+//解除映射关系
 STATUS_T LOS_UnMMap(VADDR_T addr, size_t size)
 {
     if ((addr <= 0) || (size <= 0)) {
@@ -168,7 +168,7 @@ STATUS_T LOS_UnMMap(VADDR_T addr, size_t size)
 
     return OsUnMMap(OsCurrProcessGet()->vmSpace, addr, size);
 }
-
+//用户进程向内核申请空间，进一步说用于扩展用户堆栈空间，或者回收用户堆栈空间
 VOID *LOS_DoBrk(VOID *addr)
 {
     LosVmSpace *space = OsCurrProcessGet()->vmSpace;

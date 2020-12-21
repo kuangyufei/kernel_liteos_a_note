@@ -309,7 +309,7 @@ LITE_OS_SEC_TEXT STATIC INT32 DoIpcMmap(LosProcessCB *pcb, LosVmMapRegion *regio
     (VOID)LOS_MuxRelease(&pcb->vmSpace->regionMux);
     return ret;
 }
-//映射IPC线性区,IPC是单独
+//将参数线性区设为IPC专用区
 LITE_OS_SEC_TEXT STATIC int LiteIpcMmap(FAR struct file* filep, LosVmMapRegion *region)
 {
     int ret = 0;
@@ -323,19 +323,19 @@ LITE_OS_SEC_TEXT STATIC int LiteIpcMmap(FAR struct file* filep, LosVmMapRegion *
     if (IsPoolMapped()) {
         return -EEXIST;
     }
-    if (pcb->ipcInfo.pool.uvaddr != NULL) {
+    if (pcb->ipcInfo.pool.uvaddr != NULL) {//通过用户空间虚拟地址找到线性区
         regionTemp = LOS_RegionFind(pcb->vmSpace, (VADDR_T)(UINTPTR)pcb->ipcInfo.pool.uvaddr);
-        if (regionTemp != NULL) {
+        if (regionTemp != NULL) {//
             (VOID)LOS_RegionFree(pcb->vmSpace, regionTemp);
         }
     }
-    pcb->ipcInfo.pool.uvaddr = (VOID *)(UINTPTR)region->range.base;
+    pcb->ipcInfo.pool.uvaddr = (VOID *)(UINTPTR)region->range.base;//ipc绑定线性区
     if (pcb->ipcInfo.pool.kvaddr != NULL) {
         LOS_VFree(pcb->ipcInfo.pool.kvaddr);
         pcb->ipcInfo.pool.kvaddr = NULL;
     }
     /* use vmalloc to alloc phy mem */
-    pcb->ipcInfo.pool.kvaddr = LOS_VMalloc(region->range.size);
+    pcb->ipcInfo.pool.kvaddr = LOS_VMalloc(region->range.size);//分配物理内存
     if (pcb->ipcInfo.pool.kvaddr == NULL) {
         ret = -ENOMEM;
         goto ERROR_REGION_OUT;
@@ -350,7 +350,7 @@ LITE_OS_SEC_TEXT STATIC int LiteIpcMmap(FAR struct file* filep, LosVmMapRegion *
         ret = -EINVAL;
         goto ERROR_MAP_OUT;
     }
-    pcb->ipcInfo.pool.poolSize = region->range.size;
+    pcb->ipcInfo.pool.poolSize = region->range.size;//线性区
     return 0;
 ERROR_MAP_OUT:
     LOS_VFree(pcb->ipcInfo.pool.kvaddr);
@@ -359,7 +359,7 @@ ERROR_REGION_OUT:
     pcb->ipcInfo.pool.kvaddr = NULL;
     return ret;
 }
-//ipc池初始化
+//ipc内存池初始化
 LITE_OS_SEC_TEXT_INIT UINT32 LiteIpcPoolInit(ProcIpcInfo *ipcInfo)
 {
     ipcInfo->pool.uvaddr = NULL;

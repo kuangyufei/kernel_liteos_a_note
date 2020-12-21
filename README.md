@@ -64,8 +64,8 @@
 
     2. [新建 Issue](https://gitee.com/weharmony/kernel_liteos_a_note/issues)
 -   ### **联系方式**
-    kuangyufei@126.com,有事请邮件/私信笔者, 抱歉因加注占用了全部空闲时间,所以无法微信回复.
-    
+    kuangyufei@126.com,欢迎邮件/私信笔者, 抱歉因加注占用了全部空闲时间,所以无法微信回复.
+
     ---
 
     系列篇文章 进入 >\> [鸿蒙系统源码分析(总目录) 【 CSDN](https://blog.csdn.net/kuangyufei/article/details/108727970) | [OSCHINA](https://my.oschina.net/u/3751245/blog/4626852) [| WIKI 】](https://gitee.com/weharmony/kernel_liteos_a_note/wikis/pages)查看
