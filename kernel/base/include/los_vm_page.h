@@ -48,7 +48,7 @@ typedef struct VmPage {	//虚拟内存描述符
     UINT32              index;       /**< vm page index to vm object */	//索引位置
     PADDR_T             physAddr;    /**< vm page physical addr */		//物理地址
     Atomic              refCounts;   /**< vm page ref count */			//被引用次数,共享内存会被多次引用
-    UINT32              flags;       /**< vm page flags */				//页标签
+    UINT32              flags;       /**< vm page flags */				//页标签，（共享/引用/活动/被锁==）
     UINT8               order;       /**< vm page in which order list */	//被安置在伙伴算法的几号序列(              2^0,2^1,2^2,...,2^order)
     UINT8               segID;       /**< the segment id of vm page */	//所在段ID
     UINT16              nPages;      /**< the vm page is used for kernel heap */	//vm页面用于内核堆

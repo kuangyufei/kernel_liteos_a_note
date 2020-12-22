@@ -52,17 +52,17 @@ extern "C" {
 //见于\third_party\musl\kernel\include\*.h
 extern VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, ...);
 
-#define LOS_EMG_LEVEL    0
+#define LOS_EMG_LEVEL    0						//用于紧急事件消息，它们一般是系统崩溃之前提示的消息
 
 #define LOS_COMMON_LEVEL (LOS_EMG_LEVEL + 1)	//日志等级:普通
 	
-#define LOS_ERR_LEVEL    (LOS_COMMON_LEVEL + 1)	//日志等级:错误类
+#define LOS_ERR_LEVEL    (LOS_COMMON_LEVEL + 1)	//日志等级:错误类，用于报告错误状态，设备驱动程序会经常使用它来报告来自硬件的问题
 
-#define LOS_WARN_LEVEL   (LOS_ERR_LEVEL + 1)	//日志等级:警告类
+#define LOS_WARN_LEVEL   (LOS_ERR_LEVEL + 1)	//日志等级:警告类，对可能出现问题的情况进行警告，但这类错误通常不会对系统造成严重的问题
 
-#define LOS_INFO_LEVEL   (LOS_WARN_LEVEL + 1)	//日志等级:信息类
+#define LOS_INFO_LEVEL   (LOS_WARN_LEVEL + 1)	//日志等级:信息类，提示性信息，很多驱动程序在启动时用这个级别来打印硬件信息
 
-#define LOS_DEBUG_LEVEL  (LOS_INFO_LEVEL + 1)	//日志等级:调试类
+#define LOS_DEBUG_LEVEL  (LOS_INFO_LEVEL + 1)	//日志等级:调试类，用于调试信息
 
 #define LOS_TRACE_LEVEL  (LOS_DEBUG_LEVEL + 1)	//日志等级:跟踪类
 

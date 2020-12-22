@@ -168,7 +168,14 @@ STATUS_T LOS_UnMMap(VADDR_T addr, size_t size)
 
     return OsUnMMap(OsCurrProcessGet()->vmSpace, addr, size);
 }
-//用户进程向内核申请空间，进一步说用于扩展用户堆栈空间，或者回收用户堆栈空间
+/******************************************************************
+用户进程向内核申请空间，进一步说用于扩展用户堆栈空间，或者回收用户堆栈空间
+扩展当前进程的堆空间
+一个进程所有的线性区都在进程指定的线性地址范围内，
+线性区之间是不会有地址的重叠的，开始都是连续的，随着进程的运行出现了释放再分配的情况
+由此出现了断断续续的线性区，内核回收线性区时会检测是否和周边的线性区可合并成一个更大
+的线性区用于分配。
+******************************************************************/
 VOID *LOS_DoBrk(VOID *addr)
 {
     LosVmSpace *space = OsCurrProcessGet()->vmSpace;
@@ -178,51 +185,51 @@ VOID *LOS_DoBrk(VOID *addr)
     VOID *alignAddr = NULL;
     VADDR_T newBrk, oldBrk;
 
-    if (addr == NULL) {
-        return (void *)(UINTPTR)space->heapNow;
+    if (addr == NULL) {//参数地址未传情况
+        return (void *)(UINTPTR)space->heapNow;//以现有指向地址为基础进行扩展
     }
 
-    if ((UINTPTR)addr < (UINTPTR)space->heapBase) {
+    if ((UINTPTR)addr < (UINTPTR)space->heapBase) {//heapBase是堆区的开始地址，所以参数地址不能低于它
         return (VOID *)-ENOMEM;
     }
 
-    size = (UINTPTR)addr - (UINTPTR)space->heapBase;
-    size = ROUNDUP(size, PAGE_SIZE);
-    alignAddr = (CHAR *)(UINTPTR)(space->heapBase) + size;
+    size = (UINTPTR)addr - (UINTPTR)space->heapBase;//算出大小
+    size = ROUNDUP(size, PAGE_SIZE);	//圆整size
+    alignAddr = (CHAR *)(UINTPTR)(space->heapBase) + size;//得到新的线性区的结束地址
     PRINT_INFO("brk addr %p , size 0x%x, alignAddr %p, align %d\n", addr, size, alignAddr, PAGE_SIZE);
 
-    if (addr < (VOID *)(UINTPTR)space->heapNow) {
+    if (addr < (VOID *)(UINTPTR)space->heapNow) {//如果新的地址小于线性区现有的结束地址，则只需做裁剪的工作
         newBrk = LOS_Align((VADDR_T)(UINTPTR)addr, PAGE_SIZE);
         oldBrk = LOS_Align(space->heapNow, PAGE_SIZE);
-        if (LOS_UnMMap(newBrk, (oldBrk - newBrk)) < 0) {
-            return (void *)(UINTPTR)space->heapNow;
+        if (LOS_UnMMap(newBrk, (oldBrk - newBrk)) < 0) {//只需要裁剪掉多余部分的映射关系
+            return (void *)(UINTPTR)space->heapNow;//失败返回老的结束地址
         }
-        space->heapNow = (VADDR_T)(UINTPTR)addr;
-        return addr;
+        space->heapNow = (VADDR_T)(UINTPTR)addr;//更新线性区结束地址
+        return addr;//返回新地址
     }
 
     (VOID)LOS_MuxAcquire(&space->regionMux);
-    if (space->heapBase == space->heapNow) {
-        region = LOS_RegionAlloc(space, space->heapBase, size,
-                                 VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE |
+    if (space->heapBase == space->heapNow) {//往往是第一次调用this函数才会出现，因为初始化时 heapBase = heapNow
+        region = LOS_RegionAlloc(space, space->heapBase, size,//分配一个可读/可写/可使用的线性区，只需分配一次
+                                 VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE |//线性区的大小由range.size决定
                                  VM_MAP_REGION_FLAG_PERM_USER, 0);
         if (region == NULL) {
             ret = (VOID *)-ENOMEM;
             VM_ERR("LOS_RegionAlloc failed");
             goto REGION_ALLOC_FAILED;
         }
-        region->regionFlags |= VM_MAP_REGION_FLAG_HEAP;
-        space->heap = region;
+        region->regionFlags |= VM_MAP_REGION_FLAG_HEAP;//贴上线性区类型为堆区的标签,注意一个线性区可以有多种标签
+        space->heap = region;//更新虚拟空间堆区为分配的线性区
     }
 
-    if ((UINTPTR)alignAddr >= space->mapBase) {
-        VM_ERR("Process heap memory space is insufficient");
-        goto REGION_ALLOC_FAILED;
+    if ((UINTPTR)alignAddr >= space->mapBase) {//在进程的虚拟空间中，映射区是贴着堆区的，所以堆区的结束地址是不能超过映射区的开始地址的
+        VM_ERR("Process heap memory space is insufficient");//提示进程堆内存空间不足
+        goto REGION_ALLOC_FAILED;//这段判断代码应该放在 得到 alignAddr后执行 @note_thinking
     }
 
-    space->heapNow = (VADDR_T)(UINTPTR)alignAddr;
-    space->heap->range.size = size;
-    ret = (VOID *)(UINTPTR)space->heapNow;
+    space->heapNow = (VADDR_T)(UINTPTR)alignAddr;//更新线性区结束地址
+    space->heap->range.size = size;	//更新堆区大小,经此操作线性区变大或缩小了
+    ret = (VOID *)(UINTPTR)space->heapNow;//返回线性区最新的地址
 
 REGION_ALLOC_FAILED:
     (VOID)LOS_MuxRelease(&space->regionMux);

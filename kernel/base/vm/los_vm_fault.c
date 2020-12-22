@@ -341,7 +341,13 @@ STATIC STATUS_T OsDoFileFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault, U
     }
     return ret;
 }
-//缺页中断处理程序
+/***************************************************************
+缺页中断处理程序
+通常有两种情况导致
+第一种:由编程错误引起的异常
+第二种:属于进程的地址空间范围但还尚未分配物理页框引起的异常
+***************************************************************/
+
 STATUS_T OsVmPageFaultHandler(VADDR_T vaddr, UINT32 flags, ExcContext *frame)
 {
     LosVmSpace *space = LOS_SpaceGet(vaddr);//获取所属空间
@@ -408,7 +414,7 @@ STATUS_T OsVmPageFaultHandler(VADDR_T vaddr, UINT32 flags, ExcContext *frame)
         goto DONE;
     }
 #endif
-
+	//请求调页:推迟到不能再推迟为止
     newPage = LOS_PhysPageAlloc();//分配一个新的物理页
     if (newPage == NULL) {
         status = LOS_ERRNO_VM_NO_MEMORY;

@@ -47,10 +47,10 @@ extern "C" {
 #endif /* __cplusplus */
 
 typedef struct ArchMmu {
-    LosMux              mtx;            /**< arch mmu page table entry modification mutex lock */
+    LosMux              mtx;            /**< arch mmu page table entry modification mutex lock *///对页表操作的互斥量
     VADDR_T             *virtTtb;       /**< translation table base virtual addr */ //注意:这里是个指针,内核操作都用这个地址
     PADDR_T             physTtb;        /**< translation table base phys addr */	//注意:这里是个值,这个值是记录给MMU使用的,MMU只认它,内核是无法使用的
-    UINT32              asid;           /**< TLB asid */
+    UINT32              asid;           /**< TLB asid */			//标识进程用的，由mmu分配，有了它在mmu层面才知道是哪个进程的虚拟地址
     LOS_DL_LIST         ptList;         /**< page table vm page list *///L1 为表头，后面挂的是n多L2
 } LosArchMmu;
 

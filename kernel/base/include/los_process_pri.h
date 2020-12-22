@@ -111,7 +111,7 @@ typedef struct ProcessCB {
 #if (LOSCFG_KERNEL_LITEIPC == YES)
     ProcIpcInfo         ipcInfo;       /**< memory pool for lite ipc */ //用于进程间通讯的虚拟设备文件系统,设备装载点为 /dev/lite_ipc
 #endif
-    LosVmSpace          *vmSpace;       /**< VMM space for processes */ //进程空间
+    LosVmSpace          *vmSpace;       /**< VMM space for processes */ //虚拟空间,描述进程虚拟内存的数据结构，linux称为内存描述符
 #ifdef LOSCFG_FS_VFS
     struct files_struct *files;        /**< Files held by the process */ //进程所持有的所有文件，注者称之为进程的文件管理器
 #endif	//每个进程都有属于自己的文件管理器,记录对文件的操作. 注意:一个文件可以被多个进程操作

@@ -136,13 +136,13 @@ typedef struct VmSpace {
     LOS_DL_LIST         regions;        /**< region dl list */		//双循环链表方式管理本空间各个线性区
     LosRbTree           regionRbTree;   /**< region red-black tree root */	//采用红黑树方式管理本空间各个线性区
     LosMux              regionMux;      /**< region list mutex lock */	//虚拟空间的互斥锁
-    VADDR_T             base;           /**< vm space base addr */		//虚拟空间的基地址
+    VADDR_T             base;           /**< vm space base addr */		//虚拟空间的基地址,常用于判断地址是否在内核还是用户空间
     UINT32              size;           /**< vm space size */			//虚拟空间大小
-    VADDR_T             heapBase;       /**< vm space heap base address */	//虚拟空间堆区基地址
-    VADDR_T             heapNow;        /**< vm space heap base now */		//虚拟空间堆区分配到哪了
-    LosVmMapRegion      *heap;          /**< heap region */					//堆区也是个线性区
-    VADDR_T             mapBase;        /**< vm space mapping area base */	//虚拟空间映射区基地址
-    UINT32              mapSize;        /**< vm space mapping area size */	//虚拟空间映射区大小
+    VADDR_T             heapBase;       /**< vm space heap base address */	//用户进程专用，堆区基地址，表堆区范围起点
+    VADDR_T             heapNow;        /**< vm space heap base now */		//用户进程专用，堆区结束地址，表堆区范围终点，do_brk()直接修改堆的大小返回新的堆区结束地址， heapNow >= heapBase
+    LosVmMapRegion      *heap;          /**< heap region */					//堆区是个特殊的线性区，用于满足进程的动态内存需求，大家熟知的malloc,realloc,free其实就是在操作这个区
+    VADDR_T             mapBase;        /**< vm space mapping area base */	//虚拟空间映射区基地址,L1，L2表存放在这个区
+    UINT32              mapSize;        /**< vm space mapping area size */	//虚拟空间映射区大小，映射区是个很大的区。
     LosArchMmu          archMmu;        /**< vm mapping physical memory */	//MMU记录<虚拟地址,物理地址>的映射情况
 #ifdef LOSCFG_DRIVERS_TZDRIVER
     VADDR_T             codeStart;      /**< user process code area start */
@@ -151,10 +151,10 @@ typedef struct VmSpace {
 } LosVmSpace;
 
 #define     VM_MAP_REGION_TYPE_NONE                 (0x0)//初始化使用
-#define     VM_MAP_REGION_TYPE_ANON                 (0x1)//匿名映射区
-#define     VM_MAP_REGION_TYPE_FILE                 (0x2)//文件映射区
-#define     VM_MAP_REGION_TYPE_DEV                  (0x4)//设备映射区
-#define     VM_MAP_REGION_TYPE_MASK                 (0x7)
+#define     VM_MAP_REGION_TYPE_ANON                 (0x1)//匿名映射线性区
+#define     VM_MAP_REGION_TYPE_FILE                 (0x2)//文件映射线性区
+#define     VM_MAP_REGION_TYPE_DEV                  (0x4)//设备映射线性区
+#define     VM_MAP_REGION_TYPE_MASK                 (0x7)//映射线性区掩码
 
 /* the high 8 bits(24~31) should reserved, shm will use it */
 #define     VM_MAP_REGION_FLAG_CACHED               (0<<0)		//缓冲区
@@ -171,8 +171,8 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_SHARED               (1<<7)		//MAP_SHARED：把对该内存段的修改保存到磁盘文件中 详见 OsCvtProtFlagsToRegionFlags ,要和 VM_MAP_REGION_FLAG_SHM区别理解
 #define     VM_MAP_REGION_FLAG_PRIVATE              (1<<8)		//MAP_PRIVATE：内存段私有，对它的修改值仅对本进程有效,详见 OsCvtProtFlagsToRegionFlags。
 #define     VM_MAP_REGION_FLAG_FLAG_MASK            (3<<7)		//掩码
-#define     VM_MAP_REGION_FLAG_STACK                (1<<9)		//栈区
-#define     VM_MAP_REGION_FLAG_HEAP                 (1<<10)		//堆区
+#define     VM_MAP_REGION_FLAG_STACK                (1<<9)		//线性区的类型:栈区
+#define     VM_MAP_REGION_FLAG_HEAP                 (1<<10)		//线性区的类型:堆区
 #define     VM_MAP_REGION_FLAG_DATA                 (1<<11)		//data数据区 编译在ELF中
 #define     VM_MAP_REGION_FLAG_TEXT                 (1<<12)		//代码区
 #define     VM_MAP_REGION_FLAG_BSS                  (1<<13)		//bbs数据区 由运行时动态分配

@@ -439,7 +439,7 @@ LosFilePage *OsDumpDirtyPage(LosFilePage *oldFPage)
 
     return newFPage;
 }
-
+//做冲洗脏页的操作
 VOID OsDoFlushDirtyPage(LosFilePage *fpage)
 {
     if (fpage == NULL) {

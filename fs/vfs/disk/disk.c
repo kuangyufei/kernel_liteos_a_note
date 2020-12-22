@@ -96,10 +96,10 @@ UINT32 GetFatSectorsPerBlock(VOID)
 {
     return g_uwFatSectorsPerBlock;
 }
-
+//设置FAR每块扇区数
 VOID SetFatSectorsPerBlock(UINT32 sectorsPerBlock)
 {
-    if (((sectorsPerBlock % UNSIGNED_INTEGER_BITS) == 0) &&
+    if (((sectorsPerBlock % UNSIGNED_INTEGER_BITS) == 0) &&//1.必须是整数倍
         ((sectorsPerBlock >> UNINT_LOG2_SHIFT) <= BCACHE_BLOCK_FLAGS)) {
         g_uwFatSectorsPerBlock = sectorsPerBlock;
     }

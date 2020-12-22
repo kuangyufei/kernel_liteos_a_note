@@ -43,7 +43,7 @@ extern "C" {
 #endif /* __cplusplus */
 //鸿蒙与Linux标准库的差异 https://gitee.com/openharmony/docs/blob/master/kernel/%E4%B8%8ELinux%E6%A0%87%E5%87%86%E5%BA%93%E7%9A%84%E5%B7%AE%E5%BC%82.md
 /**************************************************
-系统调用|申请虚拟内存
+系统调用|申请虚拟内存(分配线性地址区间)
 参数		描述		
 addr	用来请求使用某个特定的虚拟内存地址。如果取NULL，结果地址就将自动分配（这是推荐的做法），
 		否则会降低程序的可移植性，因为不同系统的可用地址范围不一样。
@@ -54,9 +54,9 @@ prot	用于设置内存段的访问权限，有如下权限：
 		PROT_EXEC：允许执行该内存段。
 		PROT_NONE：不能访问。
 flags	控制程序对内存段的改变所造成的影响，有如下属性：
-		MAP_PRIVATE：内存段私有，对它的修改值仅对本进程有效。
-		MAP_SHARED：把对该内存段的修改保存到磁盘文件中。
-fd		打开的文件描述符。
+		MAP_PRIVATE：标志指定线性区中的页可以被进程独享
+		MAP_SHARED：标志指定线性区中的页可以被几个进程共享
+fd		打开的文件描述符,如果新的线性区将把一个文件映射到内存的情况
 offset	用以改变经共享内存段访问的文件中数据的起始偏移值。
 成功返回：虚拟内存地址，这地址是页对齐。
 失败返回：(void *)-1。
@@ -66,7 +66,7 @@ void *SysMmap(void *addr, size_t size, int prot, int flags, int fd, size_t offse
     /* Process fd convert to system global fd */
     fd = GetAssociatedSystemFd(fd);
 
-    return (void *)LOS_MMap((uintptr_t)addr, size, prot, flags, fd, offset);
+    return (void *)LOS_MMap((uintptr_t)addr, size, prot, flags, fd, offset);//分配线性地址区间
 }
 /**************************************************
 释放虚拟内存

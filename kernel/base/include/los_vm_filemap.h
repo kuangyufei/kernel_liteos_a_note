@@ -84,93 +84,93 @@ enum OsPageFlags {
 #define MAX_SHRINK_PAGECACHE_TRY        2
 #define VM_FILEMAP_MAX_SCAN             (SYS_MEM_SIZE_DEFAULT >> PAGE_SHIFT)
 #define VM_FILEMAP_MIN_SCAN             32
-
+//给页面贴上被锁的标签
 STATIC INLINE VOID OsSetPageLocked(LosVmPage *page)
 {
     LOS_BitmapSet(&page->flags, FILE_PAGE_LOCKED);
 }
-
+//给页面撕掉被锁的标签
 STATIC INLINE VOID OsCleanPageLocked(LosVmPage *page)
 {
     LOS_BitmapClr(&page->flags, FILE_PAGE_LOCKED);
 }
-
+//给页面贴上数据被修改的标签
 STATIC INLINE VOID OsSetPageDirty(LosVmPage *page)
 {
     LOS_BitmapSet(&page->flags, FILE_PAGE_DIRTY);
 }
-
+//给页面撕掉数据被修改的标签
 STATIC INLINE VOID OsCleanPageDirty(LosVmPage *page)
 {
     LOS_BitmapClr(&page->flags, FILE_PAGE_DIRTY);
 }
-
+//给页面贴上活动的标签
 STATIC INLINE VOID OsSetPageActive(LosVmPage *page)
 {
     LOS_BitmapSet(&page->flags, FILE_PAGE_ACTIVE);
 }
-
+//给页面撕掉活动的标签
 STATIC INLINE VOID OsCleanPageActive(LosVmPage *page)
 {
     LOS_BitmapClr(&page->flags, FILE_PAGE_ACTIVE);
 }
-
+//给页面贴上置换页的标签
 STATIC INLINE VOID OsSetPageLRU(LosVmPage *page)
 {
     LOS_BitmapSet(&page->flags, FILE_PAGE_LRU);
 }
-
+//给页面贴上被释放的标签
 STATIC INLINE VOID OsSetPageFree(LosVmPage *page)
 {
     LOS_BitmapSet(&page->flags, FILE_PAGE_FREE);
 }
-
+//给页面撕掉被释放的标签
 STATIC INLINE VOID OsCleanPageFree(LosVmPage *page)
 {
     LOS_BitmapClr(&page->flags, FILE_PAGE_FREE);
 }
-
+//给页面贴上被引用的标签
 STATIC INLINE VOID OsSetPageReferenced(LosVmPage *page)
 {
     LOS_BitmapSet(&page->flags, FILE_PAGE_REFERENCED);
 }
-
+//给页面撕掉被引用的标签
 STATIC INLINE VOID OsCleanPageReferenced(LosVmPage *page)
 {
     LOS_BitmapClr(&page->flags, FILE_PAGE_REFERENCED);
 }
-
+//页面是否活动
 STATIC INLINE BOOL OsIsPageActive(LosVmPage *page)
 {
     return BIT_GET(page->flags, FILE_PAGE_ACTIVE);
 }
-
+//页面是否被锁
 STATIC INLINE BOOL OsIsPageLocked(LosVmPage *page)
 {
     return BIT_GET(page->flags, FILE_PAGE_LOCKED);
 }
-
+//页面是否被引用，只被一个进程引用的页叫私有页，多个进程引用就是共享页，此为共享内存的本质所在
 STATIC INLINE BOOL OsIsPageReferenced(LosVmPage *page)
 {
     return BIT_GET(page->flags, FILE_PAGE_REFERENCED);
 }
-
+//页面是否为脏页，所谓脏页就是页内数据是否被更新过，只有脏页才会有写时拷贝
 STATIC INLINE BOOL OsIsPageDirty(LosVmPage *page)
 {
     return BIT_GET(page->flags, FILE_PAGE_DIRTY);
 }
-
+//文件页是否映射过了
 STATIC INLINE BOOL OsIsPageMapped(LosFilePage *page)
 {
-    return (page->n_maps != 0);
+    return (page->n_maps != 0);//由映射的次数来判断
 }
 
 /* The follow three functions is used to SHM module */
-STATIC INLINE VOID OsSetPageShared(LosVmPage *page)
+STATIC INLINE VOID OsSetPageShared(LosVmPage *page)//给页面贴上共享页标签
 {
     LOS_BitmapSet(&page->flags, FILE_PAGE_SHARED);//设为共享页面,共享页位 置0
 }
-//取消共享页属性
+//给页面撕掉共享页标签
 STATIC INLINE VOID OsCleanPageShared(LosVmPage *page)
 {
     LOS_BitmapClr(&page->flags, FILE_PAGE_SHARED);//共享页位 置0
