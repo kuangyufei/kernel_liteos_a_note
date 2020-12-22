@@ -89,9 +89,9 @@ struct VmSpace;
 typedef struct VmSpace LosVmSpace;
 //缺页结构信息体 
 typedef struct VmFault {
-    UINT32          flags;              /* FAULT_FLAG_xxx flags */
-    unsigned long   pgoff;              /* Logical page offset based on region */
-    VADDR_T         vaddr;              /* Faulting virtual address */
+    UINT32          flags;              /* FAULT_FLAG_xxx flags */	//缺页标识
+    unsigned long   pgoff;              /* Logical page offset based on region */	//基于线性区的逻辑页偏移量
+    VADDR_T         vaddr;              /* Faulting virtual address */ //产生缺页的虚拟地址
     VADDR_T         *pageKVaddr;        /* KVaddr of pagefault's vm page's paddr */
 	//pageKVaddr为缺页的vm页面物理地址对应的内核虚拟地址,这里要说明下啥意思,缺页的意思是此进程的虚拟空间中没有这个虚拟地址的映射,
 	//但并不代表物理页框没有被别的进程虚拟空间所映射.一定要理解这里!

@@ -35,8 +35,8 @@
 #include "fs/file.h"
 #include "los_vm_filemap.h"
 
-/* unmap a lru page by map record info caller need lru lock *///通过映射记录信息调用者需要lru锁来取消一个映射lru页面
-VOID OsUnmapPageLocked(LosFilePage *page, LosMapInfo *info)
+/* unmap a lru page by map record info caller need lru lock */
+VOID OsUnmapPageLocked(LosFilePage *page, LosMapInfo *info)//通过映射记录信息调用者需要lru锁来取消一个映射lru页面
 {
     if (page == NULL || info == NULL) {
         VM_ERR("UnmapPage error input null!");
@@ -60,8 +60,8 @@ VOID OsUnmapAllLocked(LosFilePage *page)
     }
 }
 
-/* add a new lru node to lru list, lruType can be file or anon *///在lru列表中添加一个新的lru节点，lruType可以是文件或匿名
-VOID OsLruCacheAdd(LosFilePage *fpage, enum OsLruList lruType)
+/* add a new lru node to lru list, lruType can be file or anon */
+VOID OsLruCacheAdd(LosFilePage *fpage, enum OsLruList lruType)//在lru列表中添加一个新的lru节点，lruType可以是文件或匿名
 {
     UINT32 intSave;
     LosVmPhysSeg *physSeg = fpage->physSeg;	//得到页面对应段
@@ -76,8 +76,8 @@ VOID OsLruCacheAdd(LosFilePage *fpage, enum OsLruList lruType)
     LOS_SpinUnlockRestore(&physSeg->lruLock, intSave);//解锁
 }
 
-/* dellete a lru node, caller need hold lru_lock *///删除lru节点，调用者需要拿到lru锁
-VOID OsLruCacheDel(LosFilePage *fpage)
+/* dellete a lru node, caller need hold lru_lock */
+VOID OsLruCacheDel(LosFilePage *fpage)//删除lru节点，调用者需要拿到lru锁
 {
     LosVmPhysSeg *physSeg = fpage->physSeg;	//得到页面对应段
     int type = OsIsPageActive(fpage->vmPage) ? VM_LRU_ACTIVE_FILE : VM_LRU_INACTIVE_FILE;//得到页面LRU类型
@@ -92,8 +92,8 @@ BOOL OsInactiveListIsLow(LosVmPhysSeg *physSeg)
             physSeg->lruSize[VM_LRU_INACTIVE_FILE]) ? TRUE : FALSE;//直接对比size，效率杠杠的
 }
 
-/* move a page from inactive list to active list  head *///将页面从非活动列表移动到活动列表
-STATIC INLINE VOID OsMoveToActiveList(LosFilePage *fpage)
+/* move a page from inactive list to active list  head */
+STATIC INLINE VOID OsMoveToActiveList(LosFilePage *fpage)//将页面从非活动列表移动到活动列表
 {
     LosVmPhysSeg *physSeg = fpage->physSeg;		//得到页面对应段
 

@@ -48,32 +48,32 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+//增加页到页高速缓存 
 STATIC VOID OsPageCacheAdd(LosFilePage *page, struct page_mapping *mapping, VM_OFFSET_T pgoff)
 {
     LosFilePage *fpage = NULL;
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(fpage, &mapping->page_list, LosFilePage, node) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(fpage, &mapping->page_list, LosFilePage, node) {//遍历page_list链表
         if (fpage->pgoff > pgoff) {
-            LOS_ListTailInsert(&fpage->node, &page->node);
+            LOS_ListTailInsert(&fpage->node, &page->node);//挂到链表上
             goto done_add;
         }
     }
 
-    LOS_ListTailInsert(&mapping->page_list, &page->node);
+    LOS_ListTailInsert(&mapping->page_list, &page->node);//挂到链表上
 
-    OsSetPageLRU(page->vmPage);	//将页面加入LRU表
+    OsSetPageLRU(page->vmPage);	//给页面贴上LRU标签
 
 done_add:
     mapping->nrpages++;
 }
-
+//将页面加到活动文件页LRU链表上
 VOID OsAddToPageacheLru(LosFilePage *page, struct page_mapping *mapping, VM_OFFSET_T pgoff)
 {
     OsPageCacheAdd(page, mapping, pgoff);
     OsLruCacheAdd(page, VM_LRU_ACTIVE_FILE);
 }
-
+//从页高速缓存上删除页
 VOID OsPageCacheDel(LosFilePage *fpage)
 {
     /* delete from file cache list */
@@ -492,7 +492,11 @@ VOID OsDelMapInfo(LosVmMapRegion *region, LosVmPgFault *vmf, BOOL cleanDirty)
     }
     LOS_SpinUnlockRestore(&region->unTypeData.rf.file->f_mapping->list_lock, intSave);
 }
-//文件缺页时的处理,先读入磁盘数据，再重新读页数据
+/**************************************************************************************************
+文件缺页时的处理,先读入磁盘数据，再重新读页数据
+
+ 
+**************************************************************************************************/
 INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
 {
     INT32 ret;
@@ -505,7 +509,7 @@ INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
     struct page_mapping *mapping = NULL;
     LosFilePage *fpage = NULL;
 
-    if (!LOS_IsRegionFileValid(region) || (region->unTypeData.rf.file->f_mapping == NULL) || (vmf == NULL)) {
+    if (!LOS_IsRegionFileValid(region) || (region->unTypeData.rf.file->f_mapping == NULL) || (vmf == NULL)) {//文件是否映射到了内存
         VM_ERR("Input param is NULL");
         return LOS_NOK;
     }
@@ -518,7 +522,7 @@ INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
     if (fpage != NULL) {
         OsPageRefIncLocked(fpage);
     } else {
-        fpage = OsPageCacheAlloc(mapping, vmf->pgoff);//其中分配一个vmpage(物理页框) + fpage
+        fpage = OsPageCacheAlloc(mapping, vmf->pgoff);//分配一个vmpage(物理页框) + fpage
         if (fpage == NULL) {
             VM_ERR("Failed to alloc a page frame");
             LOS_SpinUnlockRestore(&mapping->list_lock, intSave);
@@ -535,7 +539,7 @@ INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
         oldPos = file_seek(file, 0, SEEK_CUR);//相对当前位置偏移,记录偏移后的位置 NUTTX
         file_seek(file, fpage->pgoff << PAGE_SHIFT, SEEK_SET);// 相对开始位置偏移
         if (file->f_inode && file->f_inode->u.i_mops->readpage) {//见于 NUTTX fat_operations.readpage = NULL
-            ret = file->f_inode->u.i_mops->readpage(file, (char *)kvaddr, PAGE_SIZE);
+            ret = file->f_inode->u.i_mops->readpage(file, (char *)kvaddr, PAGE_SIZE);//从文件中读取一页数据到kvaddr
         } else {
             ret = file_read(file, kvaddr, PAGE_SIZE);//将4K数据读到虚拟地址,磁盘数据进入物理页框 fpage->pgoff << PAGE_SHIFT 处
         }
@@ -630,7 +634,7 @@ VOID OsFileCacheRemove(struct page_mapping *mapping)
 LosVmFileOps g_commVmOps = {//
     .open = NULL,
     .close = NULL,
-    .fault = OsVmmFileFault, //缺页处理
+    .fault = OsVmmFileFault, //缺页中断处理
     .remove = OsVmmFileRemove,//删除页
 };
 
@@ -692,8 +696,11 @@ LosFilePage *OsFindGetEntry(struct page_mapping *mapping, VM_OFFSET_T pgoff)
 }
 
 /* need mutex & change memory to dma zone. */
-//Direct Memory Access（存储器直接访问）指一种高速的数据传输操作，允许在外部设备和存储器之间直接读写数据。
-//整个数据传输操作在一个称为"DMA控制器"的控制下进行的。CPU只需在数据传输开始和结束时做一点处理（开始和结束时候要做中断处理）
+/**************************************************************************************************
+以页高速缓存方式分配一个文件页 LosFilePage
+ Direct Memory Access（存储器直接访问）指一种高速的数据传输操作，允许在外部设备和存储器之间直接读写数据。
+ 整个数据传输操作在一个称为"DMA控制器"的控制下进行的。CPU只需在数据传输开始和结束时做一点处理（开始和结束时候要做中断处理）
+**************************************************************************************************/
 LosFilePage *OsPageCacheAlloc(struct page_mapping *mapping, VM_OFFSET_T pgoff)
 {
     VOID *kvaddr = NULL;
@@ -701,13 +708,13 @@ LosFilePage *OsPageCacheAlloc(struct page_mapping *mapping, VM_OFFSET_T pgoff)
     LosVmPage *vmPage = NULL;
     LosFilePage *fpage = NULL;
 
-    vmPage = LOS_PhysPageAlloc();	//分配一个物理页
+    vmPage = LOS_PhysPageAlloc();	//先分配一个物理页
     if (vmPage == NULL) {
         VM_ERR("alloc vm page failed");
         return NULL;
     }
     physSeg = OsVmPhysSegGet(vmPage);//通过页获取所在seg
-    kvaddr = OsVmPageToVaddr(vmPage);//获取内核空间的虚拟地址,具体点进去看函数说明，这里一定要理解透彻
+    kvaddr = OsVmPageToVaddr(vmPage);//获取内核空间的虚拟地址,具体点进去看函数说明，这里一定要理解透彻！
     if ((physSeg == NULL) || (kvaddr == NULL)) {
         LOS_PhysPageFree(vmPage);	//异常情况要释放vmPage
         VM_ERR("alloc vm page failed!");
@@ -731,9 +738,9 @@ LosFilePage *OsPageCacheAlloc(struct page_mapping *mapping, VM_OFFSET_T pgoff)
     fpage->dirtyEnd = 0;			//脏页结束位置
     fpage->physSeg = physSeg;		//页框所属段.其中包含了 LRU LIST ==
     fpage->vmPage = vmPage;			//物理页框
-    fpage->mapping = mapping;		//page_mapping 见于 NUTTX
+    fpage->mapping = mapping;		//记录所有文件页映射
     fpage->pgoff = pgoff;			//偏移
-    (VOID)memset_s(kvaddr, PAGE_SIZE, 0, PAGE_SIZE);//4K地址清0
+    (VOID)memset_s(kvaddr, PAGE_SIZE, 0, PAGE_SIZE);//页内数据清0
 
     return fpage;
 }

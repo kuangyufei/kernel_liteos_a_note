@@ -48,6 +48,41 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
+
+/**************************************************************************************************
+ 磁盘高速缓存是一种软件机制，它允许系统把通常存放在磁盘上的一些数据保留在 RAM 中，以便对那些数据的
+ 进一步访问不用再访问磁盘而能尽快得到满足。
+ 页高速缓存中的信息单位是一个完整的页。
+ 一个页包含的磁盘块在物理上不一定相邻，所以不能用设备号和块号标识，而是通过页的所有者和所有者数据中的索引来识别。
+ 页高速缓存可以缓存以下内容
+ A.普通文件数据
+ B.含有目录的页 
+ C.直接从快设备读取的页 
+ D.用户进程数据的页
+ E.特殊文件系统的文件页
+**************************************************************************************************/
+#if 0 //@note_#if0 
+//page_mapping描述的是一个文件在内存中被映射了多少页,<文件,文件页的关系>
+/* file mapped in VMM pages */
+struct page_mapping {
+  LOS_DL_LIST                           page_list;    /* all pages */ //文件映射的所有页链表，这些页的内容都来源同一个文件
+  SPIN_LOCK_S                           list_lock;    /* lock protecting it */
+  LosMux                                mux_lock;     /* mutex lock */	//
+  unsigned long                         nrpages;      /* number of total pages */
+  unsigned long                         flags;
+  Atomic                                ref;          /* reference counting */
+  struct file                           *host;        /* owner of this mapping *///属于哪个文件的映射
+};
+
+/* map: full_path(owner) <-> mapping */
+struct file_map {
+  LOS_DL_LIST           head;
+  LosMux                lock;         /* lock to protect this mapping */
+  struct page_mapping   mapping;
+  char                  *owner;     /* owner: full path of file */
+};
+#endif
+
 //文件页结构体
 typedef struct FilePage {
     LOS_DL_LIST             node;		//节点		

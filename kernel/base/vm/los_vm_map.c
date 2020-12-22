@@ -418,14 +418,14 @@ VADDR_T OsAllocSpecificRange(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len)
 
     return vaddr;
 }
-
+//映射类型为文件的线性区是否有效
 BOOL LOS_IsRegionFileValid(LosVmMapRegion *region)
 {
     struct file *filep = NULL;
     if ((region != NULL) && (LOS_IsRegionTypeFile(region)) &&
-        (region->unTypeData.rf.file != NULL)) {
+        (region->unTypeData.rf.file != NULL)) {//满足文件映射的条件
         filep = region->unTypeData.rf.file;
-        if (region->unTypeData.rf.fileMagic == filep->f_magicnum) {
+        if (region->unTypeData.rf.fileMagic == filep->f_magicnum) {//魔法数字未被改变
             return TRUE;
         }
     }

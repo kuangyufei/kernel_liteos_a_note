@@ -97,7 +97,7 @@ void los_vfs_init(void)//系统调用了los_vfs_init()后，会将"/"作为root_
     }
     dev->i_mode |= S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
 
-    retval = init_file_mapping();//初始化文件映射
+    retval = init_file_mapping();//初始化文件映射模块
     if (retval != LOS_OK) {
         PRINT_ERR("Page cache file map init failed\n");
         return;

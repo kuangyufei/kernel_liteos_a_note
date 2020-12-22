@@ -261,7 +261,7 @@ VOID *OsVmPageToVaddr(LosVmPage *page)//
     VADDR_T vaddr;
     vaddr = KERNEL_ASPACE_BASE + page->physAddr - SYS_MEM_BASE;//page->physAddr - SYS_MEM_BASE 得到物理地址上的偏移量
 	//因在整个虚拟内存中内核空间和用户空间是通过地址隔离的，如此很巧妙的就把该物理页映射到了内核空间
-	//内核空间的vmPage是不会被置换的，所以是常驻内存，内核空间初始化mmu时就映射好了L1表
+	//内核空间的vmPage是不会被置换的，因为是常驻内存，内核空间初始化mmu时就映射好了L1表
     return (VOID *)(UINTPTR)vaddr;
 }
 //通过虚拟地址找映射的物理页框
