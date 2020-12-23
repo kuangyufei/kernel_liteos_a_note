@@ -255,7 +255,7 @@ LosVmPage *OsVmPhysToPage(paddr_t pa, UINT8 segID)
     offset = pa - seg->start;//得到偏移地址
     return (seg->pageBase + (offset >> PAGE_SHIFT));//得到第n页page
 }
-//通过page获取空间的虚拟地址 参考OsArchMmuInit
+//通过page获取内核空间的虚拟地址 参考OsArchMmuInit
 VOID *OsVmPageToVaddr(LosVmPage *page)//
 {
     VADDR_T vaddr;

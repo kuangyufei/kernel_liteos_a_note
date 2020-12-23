@@ -77,7 +77,7 @@ STATUS_T OsCheckMMapParams(VADDR_T vaddr, unsigned prot, unsigned long flags, si
 
     return LOS_OK;
 }
-//匿名映射指的是swap分区
+//线性区映射类型:匿名映射
 STATUS_T OsAnonMMap(LosVmMapRegion *region)
 {
     LOS_SetRegionTypeAnon(region);

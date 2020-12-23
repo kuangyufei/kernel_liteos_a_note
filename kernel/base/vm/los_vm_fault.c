@@ -334,7 +334,7 @@ STATIC STATUS_T OsDoFileFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault, U
         if (region->regionFlags & VM_MAP_REGION_FLAG_SHARED) {
             ret = OsDoSharedFault(region, vmPgFault);//写操作时的共享缺页,最复杂,此页上的更改将写入磁盘文件
         } else {
-            ret = OsDoCowFault(region, vmPgFault);//写操作时的私有缺页,pagecache被复制到私有的任意一个页面上，并在此页面上进行更改,不会直接写入磁盘文件
+            ret = OsDoCowFault(region, vmPgFault);//(写时拷贝技术)写操作时的私有缺页,pagecache被复制到私有的任意一个页面上，并在此页面上进行更改,不会直接写入磁盘文件
         }
     } else {
         ret = OsDoReadFault(region, vmPgFault);//读时缺页,读最简单 只需共享页面缓存
@@ -347,7 +347,6 @@ STATIC STATUS_T OsDoFileFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault, U
 第一种:由编程错误引起的异常
 第二种:属于进程的地址空间范围但还尚未分配物理页框引起的异常
 ***************************************************************/
-
 STATUS_T OsVmPageFaultHandler(VADDR_T vaddr, UINT32 flags, ExcContext *frame)
 {
     LosVmSpace *space = LOS_SpaceGet(vaddr);//获取所属空间
@@ -406,7 +405,7 @@ STATUS_T OsVmPageFaultHandler(VADDR_T vaddr, UINT32 flags, ExcContext *frame)
         vmPgFault.flags = flags;
         vmPgFault.pageKVaddr = NULL;
 
-        status = OsDoFileFault(region, &vmPgFault, flags);
+        status = OsDoFileFault(region, &vmPgFault, flags);//缺页处理
         if (status) {
             VM_ERR("vm fault error, status=%d", status);
             goto CHECK_FAILED;
