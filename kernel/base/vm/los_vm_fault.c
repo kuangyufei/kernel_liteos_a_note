@@ -53,7 +53,7 @@ extern "C" {
 
 extern char __exc_table_start[];
 extern char __exc_table_end[];
-//线性区正确检查
+//线性区正确性检查
 STATIC STATUS_T OsVmRegionRightCheck(LosVmMapRegion *region, UINT32 flags)
 {
     if ((flags & VM_MAP_PF_FLAG_WRITE) == VM_MAP_PF_FLAG_WRITE) {//写入许可
@@ -102,8 +102,8 @@ STATIC VOID OsFaultTryFixup(ExcContext *frame, VADDR_T excVaddr, STATUS_T *statu
 #endif
 }
 
-#ifdef LOSCFG_FS_VFS
-STATIC STATUS_T OsDoReadFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
+#ifdef LOSCFG_FS_VFS 
+STATIC STATUS_T OsDoReadFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)//读缺页
 {
     status_t ret;
     PADDR_T paddr;
@@ -112,16 +112,16 @@ STATIC STATUS_T OsDoReadFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
     LosVmSpace *space = region->space;
 
     ret = LOS_ArchMmuQuery(&space->archMmu, vaddr, NULL, NULL);//查询是否缺页
-    if (ret == LOS_OK) {
-        return LOS_OK;
+    if (ret == LOS_OK) {//注意这里时LOS_OK却返回,都OK了说明查到了物理地址,有页了。
+        return LOS_OK;//查到了就说明不缺页的，缺页就是因为虚拟地址没有映射到物理地址嘛
     }
-    if (region->unTypeData.rf.vmFOps == NULL || region->unTypeData.rf.vmFOps->fault == NULL) {
+    if (region->unTypeData.rf.vmFOps == NULL || region->unTypeData.rf.vmFOps->fault == NULL) {//线性区必须有实现了缺页接口
         VM_ERR("region args invalid, file path: %s", region->unTypeData.rf.file->f_path);
         return LOS_ERRNO_VM_INVALID_ARGS;
     }
 
     (VOID)LOS_MuxAcquire(&region->unTypeData.rf.file->f_mapping->mux_lock);
-    ret = region->unTypeData.rf.vmFOps->fault(region, vmPgFault);// 函数指针 g_commVmOps.OsVmmFileFault
+    ret = region->unTypeData.rf.vmFOps->fault(region, vmPgFault);// 函数指针，执行的是g_commVmOps.OsVmmFileFault
     if (ret == LOS_OK) {
         paddr = LOS_PaddrQuery(vmPgFault->pageKVaddr);//查询物理地址
         page = LOS_VmPageGet(paddr);//获取page
@@ -294,7 +294,7 @@ status_t OsDoSharedFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
     }
 
     (VOID)LOS_MuxAcquire(&region->unTypeData.rf.file->f_mapping->mux_lock);
-    ret = region->unTypeData.rf.vmFOps->fault(region, vmPgFault);
+    ret = region->unTypeData.rf.vmFOps->fault(region, vmPgFault);//函数指针，执行的是g_commVmOps.OsVmmFileFault
     if (ret == LOS_OK) {
         paddr = LOS_PaddrQuery(vmPgFault->pageKVaddr);
         page = LOS_VmPageGet(paddr);
@@ -330,14 +330,14 @@ STATIC STATUS_T OsDoFileFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault, U
 {
     STATUS_T ret;
 
-    if (flags & VM_MAP_PF_FLAG_WRITE) {
-        if (region->regionFlags & VM_MAP_REGION_FLAG_SHARED) {
+    if (flags & VM_MAP_PF_FLAG_WRITE) {//写页的时候产生缺页
+        if (region->regionFlags & VM_MAP_REGION_FLAG_SHARED) {//共享线性区
             ret = OsDoSharedFault(region, vmPgFault);//写操作时的共享缺页,最复杂,此页上的更改将写入磁盘文件
-        } else {
+        } else {//非共享线性区
             ret = OsDoCowFault(region, vmPgFault);//(写时拷贝技术)写操作时的私有缺页,pagecache被复制到私有的任意一个页面上，并在此页面上进行更改,不会直接写入磁盘文件
         }
-    } else {
-        ret = OsDoReadFault(region, vmPgFault);//读时缺页,读最简单 只需共享页面缓存
+    } else {//读页的时候产生缺页
+        ret = OsDoReadFault(region, vmPgFault);//读时缺页,读最简单
     }
     return ret;
 }
@@ -395,15 +395,15 @@ STATUS_T OsVmPageFaultHandler(VADDR_T vaddr, UINT32 flags, ExcContext *frame)
     }
 
     vaddr = ROUNDDOWN(vaddr, PAGE_SIZE);//为啥要向下圆整，因为这一页要重新使用，需找到页面基地址
-#ifdef LOSCFG_FS_VFS
-    if (LOS_IsRegionFileValid(region)) {
+#ifdef LOSCFG_FS_VFS 
+    if (LOS_IsRegionFileValid(region)) {//是否为文件线性区
         if (region->unTypeData.rf.file->f_mapping == NULL) {
             goto  CHECK_FAILED;
         }
-        vmPgFault.vaddr = vaddr;
+        vmPgFault.vaddr = vaddr;//
         vmPgFault.pgoff = ((vaddr - region->range.base) >> PAGE_SHIFT) + region->pgOff;
         vmPgFault.flags = flags;
-        vmPgFault.pageKVaddr = NULL;
+        vmPgFault.pageKVaddr = NULL;//没有物理地址
 
         status = OsDoFileFault(region, &vmPgFault, flags);//缺页处理
         if (status) {

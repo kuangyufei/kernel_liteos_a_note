@@ -92,7 +92,7 @@ typedef struct FilePage {
     struct VmPhysSeg        *physSeg;      /* physical memory that file page belongs to */ //物理内存是唯一的
     struct VmPage           *vmPage;	//物理页框
     struct page_mapping     *mapping;	//此结构由文件系统提供，用于描述装入点 见于 ..\third_party\NuttX\include\nuttx\fs\fs.h
-    VM_OFFSET_T             pgoff;		//记录文件的位置,文件从哪个位置开始数据映射到文件页中的,用于读写文件数据时确定开始位置
+    VM_OFFSET_T             pgoff;		//页标，文件被切成一页一页读到内存
     UINT32                  flags;		//标签
     UINT16                  dirtyOff;	//脏页的页内偏移地址
     UINT16                  dirtyEnd;	//脏页的结束位置

@@ -423,7 +423,7 @@ STATIC INT32 OsFlushDirtyPage(LosFilePage *fpage)
         VM_ERR("WritePage error ret %d", ret);
     }
     ret = (ret <= 0) ? LOS_NOK : LOS_OK;
-    OsCleanPageDirty(fpage->vmPage);//还清白之身,哈哈,臣妾又干净了.
+    OsCleanPageDirty(fpage->vmPage);//撕掉脏页标签，还清白之身,哈哈,臣妾又干净了.
     (VOID)file_seek(file, oldPos, SEEK_SET);//写完了脏数据，切回到老位置,一定要回到老位置，因为回写脏数据是内核的行为，而不是用户的行为
 
     return ret;
@@ -504,7 +504,7 @@ VOID OsDelMapInfo(LosVmMapRegion *region, LosVmPgFault *vmf, BOOL cleanDirty)
 }
 /**************************************************************************************************
 文件缺页时的处理,先读入磁盘数据，再重新读页数据
-
+被 OsDoReadFault(...),OsDoCowFault(...),OsDoSharedFault(...) 等调用
 **************************************************************************************************/
 INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
 {
@@ -527,11 +527,11 @@ INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
 
     /* get or create a new cache node */
     LOS_SpinLockSave(&mapping->list_lock, &intSave);
-    fpage = OsFindGetEntry(mapping, vmf->pgoff);//获取fpage
-    if (fpage != NULL) {
+    fpage = OsFindGetEntry(mapping, vmf->pgoff);//获取文件页
+    if (fpage != NULL) {//找到了,该页已经在页高速缓存中
         OsPageRefIncLocked(fpage);
-    } else {
-        fpage = OsPageCacheAlloc(mapping, vmf->pgoff);//分配一个vmpage(物理页框) + fpage
+    } else {//真的缺页了,页高速缓存中没找到
+        fpage = OsPageCacheAlloc(mapping, vmf->pgoff);//分配一个文件页，将数据初始化好，包括vmpage(物理页框)
         if (fpage == NULL) {
             VM_ERR("Failed to alloc a page frame");
             LOS_SpinUnlockRestore(&mapping->list_lock, intSave);
@@ -571,7 +571,7 @@ INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
     }
 
     /* share page fault, mark the page dirty */
-    if ((vmf->flags & VM_MAP_PF_FLAG_WRITE) && (region->regionFlags & VM_MAP_REGION_FLAG_SHARED)) {
+    if ((vmf->flags & VM_MAP_PF_FLAG_WRITE) && (region->regionFlags & VM_MAP_REGION_FLAG_SHARED)) {//有过写操作或者为共享线性区
         OsMarkPageDirty(fpage, region, 0, 0);//标记为脏页,要回写磁盘,内核会在适当的时候回写磁盘
     }
 
@@ -759,7 +759,7 @@ LosFilePage *OsPageCacheAlloc(struct page_mapping *mapping, VM_OFFSET_T pgoff)
     fpage->physSeg = physSeg;		//页框所属段.其中包含了 LRU LIST ==
     fpage->vmPage = vmPage;			//物理页框
     fpage->mapping = mapping;		//记录所有文件页映射
-    fpage->pgoff = pgoff;			//偏移
+    fpage->pgoff = pgoff;			//将文件切成一页页，页标
     (VOID)memset_s(kvaddr, PAGE_SIZE, 0, PAGE_SIZE);//页内数据清0
 
     return fpage;

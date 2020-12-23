@@ -92,8 +92,8 @@ typedef struct VmFault {
     UINT32          flags;              /* FAULT_FLAG_xxx flags */	//缺页标识
     unsigned long   pgoff;              /* Logical page offset based on region */	//基于线性区的逻辑页偏移量
     VADDR_T         vaddr;              /* Faulting virtual address */ //产生缺页的虚拟地址
-    VADDR_T         *pageKVaddr;        /* KVaddr of pagefault's vm page's paddr */
-	//pageKVaddr为缺页的vm页面物理地址对应的内核虚拟地址,这里要说明下啥意思,缺页的意思是此进程的虚拟空间中没有这个虚拟地址的映射,
+    VADDR_T         *pageKVaddr;        /* KVaddr of pagefault's vm page's paddr */ //指的就是物理地址
+	//pageKVaddr为缺页的vm页面的物理地址,这里要说明下啥意思,缺页的意思是此进程MMU没有虚拟地址与物理地址的映射,
 	//但并不代表物理页框没有被别的进程虚拟空间所映射.一定要理解这里!
 } LosVmPgFault;
 //虚拟内存文件操作函数指针,上层开发可理解为 class 里的方法，注意是对线性区的操作
@@ -109,7 +109,7 @@ struct VmMapRegion {//线性区描述符,内核通过线性区管理虚拟地址
     LosVmSpace          *space;			//所属虚拟空间,虚拟空间由多个线性区组成
     LOS_DL_LIST         node;           /**< region dl list */				//链表节点,通过它将本线性区挂在VmSpace.regions上
     LosVmMapRange       range;          /**< region address range */		//记录线性区的范围
-    VM_OFFSET_T         pgOff;          /**< region page offset to file */	//区域页面到文件的偏移量
+    VM_OFFSET_T         pgOff;          /**< region page offset to file */	//以文件开始处的偏移量, 必须是分页大小的整数倍, 通常为0, 表示从文件头开始映射。
     UINT32              regionFlags;   /**< region flags: cow, user_wired *///线性区标签
     UINT32              shmid;          /**< shmid about shared region */	//shmid为共享线性区id
     UINT8               protectFlags;   /**< vm region protect flags: PROT_READ, PROT_WRITE, *///线性区中页框的访问许可权

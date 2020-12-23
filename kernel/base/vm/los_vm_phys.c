@@ -255,11 +255,17 @@ LosVmPage *OsVmPhysToPage(paddr_t pa, UINT8 segID)
     offset = pa - seg->start;//得到偏移地址
     return (seg->pageBase + (offset >> PAGE_SHIFT));//得到第n页page
 }
-//通过page获取内核空间的虚拟地址 参考OsArchMmuInit
+
+/******************************************************************************
+ 通过page获取内核空间的虚拟地址 参考OsArchMmuInit
+ #define SYS_MEM_BASE            DDR_MEM_ADDR /* physical memory base 物理地址的起始地址 * /
+ 本函数非常重要，通过一个物理地址找到内核虚拟地址
+ 内核静态映射:提升虚实转化效率,段映射减少页表项
+******************************************************************************/
 VOID *OsVmPageToVaddr(LosVmPage *page)//
 {
     VADDR_T vaddr;
-    vaddr = KERNEL_ASPACE_BASE + page->physAddr - SYS_MEM_BASE;//page->physAddr - SYS_MEM_BASE 得到物理地址上的偏移量
+    vaddr = KERNEL_ASPACE_BASE + page->physAddr - SYS_MEM_BASE;//page->physAddr - SYS_MEM_BASE 得到物理地址的偏移量
 	//因在整个虚拟内存中内核空间和用户空间是通过地址隔离的，如此很巧妙的就把该物理页映射到了内核空间
 	//内核空间的vmPage是不会被置换的，因为是常驻内存，内核空间初始化mmu时就映射好了L1表
     return (VOID *)(UINTPTR)vaddr;
@@ -466,7 +472,7 @@ VOID LOS_PhysPageFree(LosVmPage *page)
         LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
     }
 }
-
+//供外部调用
 LosVmPage *LOS_PhysPageAlloc(VOID)
 {
     return OsVmPhysPagesGet(ONE_PAGE);//分配一页物理页
