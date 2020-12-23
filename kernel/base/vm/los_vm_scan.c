@@ -36,7 +36,11 @@
 #include "los_vm_filemap.h"
 
 /* unmap a lru page by map record info caller need lru lock */
-VOID OsUnmapPageLocked(LosFilePage *page, LosMapInfo *info)//通过映射记录信息调用者需要lru锁来取消一个映射lru页面
+/**************************************************************************************************
+ 解除文件页和进程(mmu)的映射关系
+ 参数info记录了进程的MMU
+**************************************************************************************************/
+VOID OsUnmapPageLocked(LosFilePage *page, LosMapInfo *info)
 {
     if (page == NULL || info == NULL) {
         VM_ERR("UnmapPage error input null!");
@@ -46,16 +50,16 @@ VOID OsUnmapPageLocked(LosFilePage *page, LosMapInfo *info)//通过映射记录�
     LOS_ListDelete(&info->node);
     LOS_AtomicDec(&page->vmPage->refCounts);
     LOS_ArchMmuUnmap(info->archMmu, info->vaddr, 1);
-    LOS_MemFree(m_aucSysMem0, info);
+    LOS_MemFree(m_aucSysMem0, info);//释放虚拟
 }
-//取消所有文件页的映射
+//解除文件页在所有进程的映射
 VOID OsUnmapAllLocked(LosFilePage *page)
 {
     LosMapInfo *info = NULL;
     LosMapInfo *next = NULL;
     LOS_DL_LIST *immap = &page->i_mmap;
-
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(info, next, immap, LosMapInfo, node) {
+	
+    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(info, next, immap, LosMapInfo, node) {//遍历 immap->info 链表
         OsUnmapPageLocked(page, info);
     }
 }

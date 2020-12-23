@@ -65,7 +65,7 @@ extern "C" {
 //page_mapping描述的是一个文件在内存中被映射了多少页,<文件,文件页的关系>
 /* file mapped in VMM pages */
 struct page_mapping {
-  LOS_DL_LIST                           page_list;    /* all pages */ //文件映射的所有页链表，这些页的内容都来源同一个文件
+  LOS_DL_LIST                           page_list;    /* all pages */ //链表上挂的是属于该文件的所有FilePage，这些页的内容都来源同一个文件
   SPIN_LOCK_S                           list_lock;    /* lock protecting it */
   LosMux                                mux_lock;     /* mutex lock */	//
   unsigned long                         nrpages;      /* number of total pages */
@@ -85,24 +85,24 @@ struct file_map {
 
 //文件页结构体
 typedef struct FilePage {
-    LOS_DL_LIST             node;		//节点		
+    LOS_DL_LIST             node;		//节点,节点挂到page_mapping.page_list上,链表以 pgoff 从小到大方式排序.
     LOS_DL_LIST             lru;		//lru节点, 结合 LosVmPhysSeg: LOS_DL_LIST lruList[VM_NR_LRU_LISTS] 理解
-    LOS_DL_LIST             i_mmap;       /* list of mappings */
-    UINT32                  n_maps;       /* num of mapping */
-    struct VmPhysSeg        *physSeg;      /* physical memory that file page belongs to */
+    LOS_DL_LIST             i_mmap;     /* list of mappings */ //链表记录文件页被哪些进程映射 MapInfo.node挂上来
+    UINT32                  n_maps;       /* num of mapping */ //记录被进程映射的次数
+    struct VmPhysSeg        *physSeg;      /* physical memory that file page belongs to */ //物理内存是唯一的
     struct VmPage           *vmPage;	//物理页框
     struct page_mapping     *mapping;	//此结构由文件系统提供，用于描述装入点 见于 ..\third_party\NuttX\include\nuttx\fs\fs.h
-    VM_OFFSET_T             pgoff;		//页偏移地址，主要用于seek时使用
+    VM_OFFSET_T             pgoff;		//记录文件的位置,文件从哪个位置开始数据映射到文件页中的,用于读写文件数据时确定开始位置
     UINT32                  flags;		//标签
     UINT16                  dirtyOff;	//脏页的页内偏移地址
     UINT16                  dirtyEnd;	//脏页的结束位置
 } LosFilePage;
 //虚拟地址和文件页的映射信息
-typedef struct MapInfo {
-    LOS_DL_LIST             node;	//节点
-    VADDR_T                 vaddr;	//虚拟地址
-    LosFilePage             *page;	//文件页
-    LosArchMmu              *archMmu;//mmu
+typedef struct MapInfo {//在一个进程使用文件页之前,需要提前做好文件页在此内存空间的映射关系,如此通过虚拟内存就可以对文件页读写操作.
+    LOS_DL_LIST             node;	//节点,挂到page->i_mmap链表上.链表上记录要操作文件页的进程对这个page的映射信息
+    VADDR_T                 vaddr;	//虚拟地址.每个进程访问同一个文件页的虚拟地址都是不一样的
+    LosFilePage             *page;	//文件页中只记录物理地址,是不会变的.但它是需要被多个进程访问,和映射的.
+    LosArchMmu              *archMmu;//mmu完成vaddr和page->vmPage->physAddr物理地址的映射
 } LosMapInfo;
 //Flags由 bitmap 管理
 enum OsPageFlags {

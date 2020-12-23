@@ -224,7 +224,7 @@ LosVmMapRegion *OsShareRegionClone(LosVmMapRegion *oldRegion)
     *newRegion = *oldRegion;
     return newRegion;
 }
-//克隆私有线性区，输入老区，输出新区
+//克隆私有线性区，输入旧区，输出新区
 LosVmMapRegion *OsPrivateRegionClone(LosVmMapRegion *oldRegion)
 {
     /* need to create vm object */
@@ -302,13 +302,13 @@ STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace)
             }
             LOS_ArchMmuMap(&newVmSpace->archMmu, vaddr, paddr, 1, flags & ~VM_MAP_REGION_FLAG_PERM_WRITE);//映射新空间
 
-#ifdef LOSCFG_FS_VFS
-            if (LOS_IsRegionFileValid(oldRegion)) {
+#ifdef LOSCFG_FS_VFS //文件系统开关
+            if (LOS_IsRegionFileValid(oldRegion)) {//是都是一个文件映射线性区
                 LosFilePage *fpage = NULL;
                 LOS_SpinLockSave(&oldRegion->unTypeData.rf.file->f_mapping->list_lock, &intSave);
                 fpage = OsFindGetEntry(oldRegion->unTypeData.rf.file->f_mapping, newRegion->pgOff + i);
                 if ((fpage != NULL) && (fpage->vmPage == page)) { /* cow page no need map */
-                    OsAddMapInfo(fpage, &newVmSpace->archMmu, vaddr);
+                    OsAddMapInfo(fpage, &newVmSpace->archMmu, vaddr);//添加文件页映射,记录页面被进程映射过
                 }
                 LOS_SpinUnlockRestore(&oldRegion->unTypeData.rf.file->f_mapping->list_lock, intSave);
             }
