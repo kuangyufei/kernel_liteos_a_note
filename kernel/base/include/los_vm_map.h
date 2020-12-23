@@ -49,32 +49,32 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-/*
+#if 0 // @note_#if0
 file结构体来自 ..\third_party\NuttX\include\nuttx\fs\fs.h
 struct file //打开文件的基本表示形式
 {
-  unsigned int         f_magicnum;  /* file magic number * /
-  int                  f_oflags;    /* Open mode flags * /
-  FAR struct inode     *f_inode;    /* Driver interface * /
-  loff_t               f_pos;       /* File position * /
-  unsigned long        f_refcount;  /* reference count * /
-  char                 *f_path;     /* File fullpath * /
-  void                 *f_priv;     /* Per file driver private data * /
-  const char           *f_relpath;  /* realpath * /
-  struct page_mapping  *f_mapping;  /* mapping file to memory * /
-  void                 *f_dir;      /* DIR struct for iterate the directory if open a directory * /
+  unsigned int         f_magicnum;  /* file magic number */
+  int                  f_oflags;    /* Open mode flags */
+  FAR struct inode     *f_inode;    /* Driver interface */
+  loff_t               f_pos;       /* File position */
+  unsigned long        f_refcount;  /* reference count */
+  char                 *f_path;     /* File fullpath */
+  void                 *f_priv;     /* Per file driver private data */
+  const char           *f_relpath;  /* realpath */
+  struct page_mapping  *f_mapping;  /* mapping file to memory */
+  void                 *f_dir;      /* DIR struct for iterate the directory if open a directory */
 };
 
 struct page_mapping {
-  LOS_DL_LIST                           page_list;    /* all pages * /
-  SPIN_LOCK_S                           list_lock;    /* lock protecting it * /
-  LosMux                                mux_lock;     /* mutex lock * /
-  unsigned long                         nrpages;      /* number of total pages * /
+  LOS_DL_LIST                           page_list;    /* all pages */
+  SPIN_LOCK_S                           list_lock;    /* lock protecting it */
+  LosMux                                mux_lock;     /* mutex lock */
+  unsigned long                         nrpages;      /* number of total pages */
   unsigned long                         flags;
-  Atomic                                ref;          /* reference counting * /
-  struct file                           *host;        /* owner of this mapping * /
+  Atomic                                ref;          /* reference counting */
+  struct file                           *host;        /* owner of this mapping */
 };
-*/
+#endif
 
 typedef struct VmMapRange {
     VADDR_T             base;           /**< vm region base addr */ //线性区基地址
