@@ -47,7 +47,7 @@ size_t g_vmPageArraySize;
 STATIC VOID OsVmPageInit(LosVmPage *page, paddr_t pa, UINT8 segID)
 {
     LOS_ListInit(&page->node);			//页节点初始化	
-    page->flags = FILE_PAGE_FREE;		//映射文件初始标识
+    page->flags = FILE_PAGE_FREE;		//页标签,初始为空闲页
     LOS_AtomicSet(&page->refCounts, 0);	//引用次数0
     page->physAddr = pa;				//物理地址
     page->segID = segID;				//物理地址使用段管理，段ID
@@ -75,7 +75,7 @@ VOID OsVmPageStartup(VOID)
 
     OsVmPhysAreaSizeAdjust(ROUNDUP(g_vmPageArraySize, PAGE_SIZE));// g_physArea 变小
 
-    OsVmPhysSegAdd();// 段页绑定
+    OsVmPhysSegAdd();// 完成对段的初始化,将段切成一页一页
     OsVmPhysInit();// 加入空闲链表和设置置换算法,LRU(最近最久未使用)算法
 
     for (segID = 0; segID < g_vmPhysSegNum; segID++) {

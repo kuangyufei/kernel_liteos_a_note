@@ -43,8 +43,13 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define VM_LIST_ORDER_MAX    9
-#define VM_PHYS_SEG_MAX    32
+/******************************************************************************
+LRU是Least Recently Used的缩写，即最近最少使用页面置换算法，是为虚拟页式存储管理服务的，
+是根据页面调入内存后的使用情况进行决策了。由于无法预测各页面将来的使用情况，只能利用
+“最近的过去”作为“最近的将来”的近似，因此，LRU算法就是将最近最久未使用的页面予以淘汰。
+******************************************************************************/
+#define VM_LIST_ORDER_MAX    9	//伙伴算法分组,即物理内存层面一次最大分配 2^8 * 4K = 1M 
+#define VM_PHYS_SEG_MAX    32	//最大支持32个段
 
 #ifndef min
 #define min(x, y) ((x) < (y) ? (x) : (y))
@@ -69,20 +74,20 @@ enum OsLruList {//Lru全称是Least Recently Used，即最近最久未使用的�
     VM_NR_LRU_LISTS
 };
 
-typedef struct VmPhysSeg {
-    PADDR_T start;            /* The start of physical memory area */
-    size_t size;              /* The size of physical memory area */
-    LosVmPage *pageBase;      /* The first page address of this area */
+typedef struct VmPhysSeg {//物理段描述符
+    PADDR_T start;            /* The start of physical memory area */	//物理内存的开始地址
+    size_t size;              /* The size of physical memory area */	//物理内存的大小
+    LosVmPage *pageBase;      /* The first page address of this area */	//本段首个物理页框地址
 
-    SPIN_LOCK_S freeListLock; /* The buddy list spinlock */
-    struct VmFreeList freeList[VM_LIST_ORDER_MAX];  /* The free pages in the buddy list */
+    SPIN_LOCK_S freeListLock; /* The buddy list spinlock */				//伙伴算法自旋锁,用于操作freeList上锁
+    struct VmFreeList freeList[VM_LIST_ORDER_MAX];  /* The free pages in the buddy list */ //伙伴算法的分组,默认分成10组 2^0,2^1,...,2^VM_LIST_ORDER_MAX
 
     SPIN_LOCK_S lruLock;//置换锁
     size_t lruSize[VM_NR_LRU_LISTS];		//5个双循环链表大小，如此方便得到size
-    LOS_DL_LIST lruList[VM_NR_LRU_LISTS];	//5个双循环链表头，它们分别描述五中不同类型的链表
+    LOS_DL_LIST lruList[VM_NR_LRU_LISTS];	//页面置换算法,5个双循环链表头，它们分别描述五中不同类型的链表
 } LosVmPhysSeg;
 
-struct VmPhysArea {
+struct VmPhysArea {//物理区描述,仅用于方案商区划分
     PADDR_T start;
     size_t size;
 };

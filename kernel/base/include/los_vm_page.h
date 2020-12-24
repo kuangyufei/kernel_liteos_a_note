@@ -42,16 +42,20 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
+/******************************************************************************
+ 虚拟内存体现的是程序对内存资源的需求，而物理内存是对该请求的供应。
+ 伙伴算法的思想是：把内存中连续的空闲页框空间看成是空闲页框块，并按照它们的大小（连续页框的数目）分组
+******************************************************************************/
 //注意: vmPage 中并没有虚拟地址，只有物理地址
-typedef struct VmPage {	//虚拟内存描述符
-    LOS_DL_LIST         node;        /**< vm object dl list */ //虚拟内存节点,通过它挂到全局虚拟页上
+typedef struct VmPage {	//物理页框描述符
+    LOS_DL_LIST         node;        /**< vm object dl list */ //虚拟内存节点,通过它挂到全局g_vmPhysSeg[segID]->freeList[order]物理页框链表上
     UINT32              index;       /**< vm page index to vm object */	//索引位置
-    PADDR_T             physAddr;    /**< vm page physical addr */		//物理地址
+    PADDR_T             physAddr;    /**< vm page physical addr */		//物理页框起始物理地址,只能用于计算,不会用于操作(读/写数据==)
     Atomic              refCounts;   /**< vm page ref count */			//被引用次数,共享内存会被多次引用
-    UINT32              flags;       /**< vm page flags */				//页标签，（共享/引用/活动/被锁==）
+    UINT32              flags;       /**< vm page flags */				//页标签，同时可以有多个标签（共享/引用/活动/被锁==）
     UINT8               order;       /**< vm page in which order list */	//被安置在伙伴算法的几号序列(              2^0,2^1,2^2,...,2^order)
-    UINT8               segID;       /**< the segment id of vm page */	//所在段ID
-    UINT16              nPages;      /**< the vm page is used for kernel heap */	//vm页面用于内核堆
+    UINT8               segID;       /**< the segment id of vm page */	//所属段ID
+    UINT16              nPages;      /**< the vm page is used for kernel heap */	//页总数,页大小4K的倍数
 } LosVmPage;
 
 extern LosVmPage *g_vmPageArray;//物理内存所有页框(page frame)记录数组
