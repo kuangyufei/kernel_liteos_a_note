@@ -51,14 +51,17 @@ STATIC VOID OsVmPageInit(LosVmPage *page, paddr_t pa, UINT8 segID)
     LOS_AtomicSet(&page->refCounts, 0);	//引用次数0
     page->physAddr = pa;				//物理地址
     page->segID = segID;				//物理地址使用段管理，段ID
-    page->order = VM_LIST_ORDER_MAX;	//所属伙伴算法块组
+    page->order = VM_LIST_ORDER_MAX;	//所属伙伴算法块组,VM_LIST_ORDER_MAX代表初始化值,不属于任何块组
 }
-
+//伙伴算法初始化
 STATIC INLINE VOID OsVmPageOrderListInit(LosVmPage *page, size_t nPages)
-{
-    OsVmPhysPagesFreeContiguous(page, nPages);//释放页面使可用于伙伴算法分配
+{//@note_why 此时所有页面 page->order 都是 VM_LIST_ORDER_MAX,能顺利的加入伙伴算法的链表吗?
+    OsVmPhysPagesFreeContiguous(page, nPages);//释放连续的物理页框
 }
-// page初始化
+/******************************************************************************
+ 完成对物理内存整体初始化,本函数一定运行在实模式下
+ 1.申请大块内存g_vmPageArray存放LosVmPage,按4K一页划分物理内存存放在数组中.
+******************************************************************************/
 VOID OsVmPageStartup(VOID)
 {
     struct VmPhysSeg *seg = NULL;
@@ -71,21 +74,21 @@ VOID OsVmPageStartup(VOID)
 
     nPage = OsVmPhysPageNumGet();//得到 g_physArea 总页数
     g_vmPageArraySize = nPage * sizeof(LosVmPage);//页表总大小
-    g_vmPageArray = (LosVmPage *)OsVmBootMemAlloc(g_vmPageArraySize);//申请页表存放区域
+    g_vmPageArray = (LosVmPage *)OsVmBootMemAlloc(g_vmPageArraySize);//实模式下申请内存,此时还没有初始化MMU
 
-    OsVmPhysAreaSizeAdjust(ROUNDUP(g_vmPageArraySize, PAGE_SIZE));// g_physArea 变小
+    OsVmPhysAreaSizeAdjust(ROUNDUP(g_vmPageArraySize, PAGE_SIZE));//
 
     OsVmPhysSegAdd();// 完成对段的初始化,将段切成一页一页
     OsVmPhysInit();// 加入空闲链表和设置置换算法,LRU(最近最久未使用)算法
 
-    for (segID = 0; segID < g_vmPhysSegNum; segID++) {
+    for (segID = 0; segID < g_vmPhysSegNum; segID++) {//遍历物理段
         seg = &g_vmPhysSeg[segID];
-        nPage = seg->size >> PAGE_SHIFT;
-        for (page = seg->pageBase, pa = seg->start; page <= seg->pageBase + nPage;
+        nPage = seg->size >> PAGE_SHIFT;//本段总页数
+        for (page = seg->pageBase, pa = seg->start; page <= seg->pageBase + nPage;//遍历,算出每个页框的物理地址
              page++, pa += PAGE_SIZE) {
-            OsVmPageInit(page, pa, segID);//page初始化
+            OsVmPageInit(page, pa, segID);//对物理页框进行初始化,注意每页的物理地址都不一样
         }
-        OsVmPageOrderListInit(seg->pageBase, nPage);// 页面分配的排序
+        OsVmPageOrderListInit(seg->pageBase, nPage);//伙伴算法初始化,将所有页加入空闲链表供分配
     }
 }
 //通过物理地址获取页框

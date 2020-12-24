@@ -55,8 +55,8 @@ extern "C" {
 extern CHAR __int_stack_start;	// 运行系统函数栈的开始地址
 extern CHAR __rodata_start;		// ROM开始地址 只读
 extern CHAR __rodata_end;		// ROM结束地址
-extern CHAR __bss_start;		// bss开始地址
-extern CHAR __bss_end;			// bss结束地址
+extern CHAR __bss_start;		// bss开始地址 __attribute__((section(".__bss_start")));
+extern CHAR __bss_end;			// bss结束地址 __attribute__((section(".__bss_end")));
 extern CHAR __text_start;		// 代码区开始地址
 extern CHAR __text_end;			// 代码区结束地址
 extern CHAR __ram_data_start;	// RAM开始地址 可读可写

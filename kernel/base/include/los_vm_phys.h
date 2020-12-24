@@ -57,7 +57,7 @@ LRU是Least Recently Used的缩写，即最近最少使用页面置换算法，�
 
 #define VM_PAGE_TO_PHYS(page)    (page->physAddr)//获取页面物理地址
 #define VM_ORDER_TO_PAGES(order) (1 << (order))//伙伴算法由order 定位到该块组的页面单位,例如:order=2时，page[4]
-#define VM_ORDER_TO_PHYS(order)  (1 << (PAGE_SHIFT + (order)))//跳块例如 order=2 就是跳4页
+#define VM_ORDER_TO_PHYS(order)  (1 << (PAGE_SHIFT + (order)))//通过order块组跳到物理地址
 #define VM_PHYS_TO_ORDER(phys)   (min(LOS_LowBitGet((phys) >> PAGE_SHIFT), VM_LIST_ORDER_MAX - 1))//通过物理地址定位到order
 
 struct VmFreeList {
@@ -78,11 +78,9 @@ typedef struct VmPhysSeg {//物理段描述符
     PADDR_T start;            /* The start of physical memory area */	//物理内存的开始地址
     size_t size;              /* The size of physical memory area */	//物理内存的大小
     LosVmPage *pageBase;      /* The first page address of this area */	//本段首个物理页框地址
-
     SPIN_LOCK_S freeListLock; /* The buddy list spinlock */				//伙伴算法自旋锁,用于操作freeList上锁
     struct VmFreeList freeList[VM_LIST_ORDER_MAX];  /* The free pages in the buddy list */ //伙伴算法的分组,默认分成10组 2^0,2^1,...,2^VM_LIST_ORDER_MAX
-
-    SPIN_LOCK_S lruLock;//置换锁
+    SPIN_LOCK_S lruLock;		//用于置换的自旋锁,用于操作lruList
     size_t lruSize[VM_NR_LRU_LISTS];		//5个双循环链表大小，如此方便得到size
     LOS_DL_LIST lruList[VM_NR_LRU_LISTS];	//页面置换算法,5个双循环链表头，它们分别描述五中不同类型的链表
 } LosVmPhysSeg;

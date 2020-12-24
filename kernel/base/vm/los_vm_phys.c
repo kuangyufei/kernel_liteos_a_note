@@ -162,7 +162,7 @@ VOID OsVmPhysInit(VOID)
         OsVmPhysLruInit(seg);		//初始化LRU置换链表
     }
 }
-//将页框挂入空闲链表,分配物理内存从空闲链表里拿
+//将页框挂入空闲链表,分配物理页框从空闲链表里拿
 STATIC VOID OsVmPhysFreeListAdd(LosVmPage *page, UINT8 order)
 {
     struct VmPhysSeg *seg = NULL;
@@ -240,13 +240,13 @@ STATIC VOID OsVmPhysPagesSpiltUnsafe(LosVmPage *page, UINT8 oldOrder, UINT8 newO
     LosVmPage *buddyPage = NULL;
 
     for (order = newOrder; order > oldOrder;) {//把肉剁碎的过程,把多余的肉块切成2^7,2^6...标准块,
-        order--;//逐一放回仓库,一直切到最后的2^2块
-        buddyPage = &page[VM_ORDER_TO_PAGES(order)];//@note_why 先把多余的肉割出来,但  没有理解是怎么做到的?
-        LOS_ASSERT(buddyPage->order == VM_LIST_ORDER_MAX);//@note_why 同样没理解为什么能下这个断言
-        OsVmPhysFreeListAddUnsafe(buddyPage, order);//将劈开的节点挂到对应序号的链表上
+        order--;//越切越小,逐一挂到对应的空闲链表上
+        buddyPage = &page[VM_ORDER_TO_PAGES(order)];//@note_good 先把多余的肉割出来,这句代码很赞!因为LosVmPage本身是在一个大数组上,page[nPages]可直接定位
+        LOS_ASSERT(buddyPage->order == VM_LIST_ORDER_MAX);//没挂到伙伴算法对应组块空闲链表上的物理页框的order必须是VM_LIST_ORDER_MAX
+        OsVmPhysFreeListAddUnsafe(buddyPage, order);//将劈开的节点挂到对应序号的链表上,buddyPage->order = order
     }
 }
-//通过物理地址获取所属物理页框
+//通过物理地址获取所属参数段的物理页框
 LosVmPage *OsVmPhysToPage(paddr_t pa, UINT8 segID)
 {
     struct VmPhysSeg *seg = NULL;
@@ -261,7 +261,7 @@ LosVmPage *OsVmPhysToPage(paddr_t pa, UINT8 segID)
     }
 
     offset = pa - seg->start;//得到物理地址的偏移量
-    return (seg->pageBase + (offset >> PAGE_SHIFT));//得到第n页page
+    return (seg->pageBase + (offset >> PAGE_SHIFT));//得到对应的物理页框
 }
 
 /******************************************************************************
@@ -323,7 +323,7 @@ DONE:
     OsVmPhysPagesSpiltUnsafe(page, order, newOrder);//将物理页框劈开,把用不了的页再挂到对应的空闲链表上
     return page;
 }
-//释放物理页,所谓释放物理页就是把页挂到空闲链表中
+//释放物理页框,所谓释放物理页就是把页挂到空闲链表中
 VOID OsVmPhysPagesFree(LosVmPage *page, UINT8 order)
 {
     paddr_t pa;
@@ -337,8 +337,8 @@ VOID OsVmPhysPagesFree(LosVmPage *page, UINT8 order)
         pa = VM_PAGE_TO_PHYS(page);//获取物理地址
         do {
             pa ^= VM_ORDER_TO_PHYS(order);//注意这里是高位和低位的 ^= ,也就是说跳到 order块组 物理地址处,此处处理甚妙!
-            buddyPage = OsVmPhysToPage(pa, page->segID);//如此就能拿到以2^order次方跳的buddyPage
-            if ((buddyPage == NULL) || (buddyPage->order != order)) {
+            buddyPage = OsVmPhysToPage(pa, page->segID);//通过物理地址拿到页框
+            if ((buddyPage == NULL) || (buddyPage->order != order)) {//页框所在组块必须要对应
                 break;
             }
             OsVmPhysFreeListDel(buddyPage);//注意buddypage是连续的物理页框 例如order=2时,2^2=4页就是一个块组 |_|_|_|_| 
@@ -350,7 +350,7 @@ VOID OsVmPhysPagesFree(LosVmPage *page, UINT8 order)
 
     OsVmPhysFreeListAdd(page, order);//伙伴算法 空闲节点增加
 }
-//连续的释放物理页框, 如果8页连在一块是一起释放的,取决于使用了伙伴算法的order
+//连续的释放物理页框, 如果8页连在一块是一起释放的
 VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
 {
     paddr_t pa;
@@ -358,11 +358,11 @@ VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
     size_t count;
     size_t n;
 
-    while (TRUE) {
+    while (TRUE) {//死循环
         pa = VM_PAGE_TO_PHYS(page);//获取页面物理地址
         order = VM_PHYS_TO_ORDER(pa);//通过物理地址找到伙伴算法的级别
-        n = VM_ORDER_TO_PAGES(order);//通过级别找到物理页块 (1<<order),意思是如果order=3，就是有8个页块
-        if (n > nPages) {//只剩小于 2的order时，退出循环
+        n = VM_ORDER_TO_PAGES(order);//通过级别找到物理页块 (1<<order),意思是如果order=3，就可以释放8个页块
+        if (n > nPages) {//只剩小于2的order时，退出循环
             break;
         }
         OsVmPhysPagesFree(page, order);//释放伙伴算法对应块组
@@ -377,7 +377,11 @@ VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
         page += n;
     }
 }
-//获取一定数量的页框
+
+/******************************************************************************
+ 获取一定数量的页框 LosVmPage实体是放在全局大数组中的,
+ LosVmPage->nPages 标记了分配页数
+******************************************************************************/
 STATIC LosVmPage *OsVmPhysPagesGet(size_t nPages)
 {
     UINT32 intSave;
@@ -392,7 +396,7 @@ STATIC LosVmPage *OsVmPhysPagesGet(size_t nPages)
     for (segID = 0; segID < g_vmPhysSegNum; segID++) {
         seg = &g_vmPhysSeg[segID];
         LOS_SpinLockSave(&seg->freeListLock, &intSave);
-        page = OsVmPhysPagesAlloc(seg, nPages);//分配指定页数的物理页, 可分析出 nPages 不能大于 256个
+        page = OsVmPhysPagesAlloc(seg, nPages);//分配指定页数的物理页,nPages需小于伙伴算法一次最大分配页数
         if (page != NULL) {
             /*  */
             LOS_AtomicSet(&page->refCounts, 0);//设置引用次数为0
@@ -441,11 +445,14 @@ VOID LOS_PhysPagesFreeContiguous(VOID *ptr, size_t nPages)
     seg = &g_vmPhysSeg[page->segID];
     LOS_SpinLockSave(&seg->freeListLock, &intSave);
 
-    OsVmPhysPagesFreeContiguous(page, nPages);//Os层具体释放实现
+    OsVmPhysPagesFreeContiguous(page, nPages);//具体释放实现
 
     LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
 }
-//通过物理地址获取内核虚拟地址
+/******************************************************************************
+ 通过物理地址获取内核虚拟地址
+ 可以看出内核虚拟空间
+******************************************************************************/
 VADDR_T *LOS_PaddrToKVaddr(PADDR_T paddr)
 {
     struct VmPhysSeg *seg = NULL;
@@ -457,8 +464,8 @@ VADDR_T *LOS_PaddrToKVaddr(PADDR_T paddr)
             return (VADDR_T *)(UINTPTR)(paddr - SYS_MEM_BASE + KERNEL_ASPACE_BASE);
         }
     }
-
-    return (VADDR_T *)(UINTPTR)(paddr - SYS_MEM_BASE + KERNEL_ASPACE_BASE);
+	//内核
+    return (VADDR_T *)(UINTPTR)(paddr - SYS_MEM_BASE + KERNEL_ASPACE_BASE);//
 }
 
 VOID LOS_PhysPageFree(LosVmPage *page)
@@ -556,7 +563,7 @@ struct VmPhysSeg *OsVmPhysSegGet(LosVmPage *page)
 
     return (OsGVmPhysSegGet() + page->segID);
 }
-//通过总页数 ,获取块组 ,例如需要分配 8个页,返回就是 3 ,例如 1023个 返回就是 10
+//通过总页数 ,获取块组 ,例如需要分配 8个页,返回就是3 ,如果是1023 ,返回就是10
 UINT32 OsVmPagesToOrder(size_t nPages)
 {
     UINT32 order;
