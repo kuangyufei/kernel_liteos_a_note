@@ -360,7 +360,11 @@ BOOL OsArchMmuInit(LosArchMmu *archMmu, VADDR_T *virtTtb)
     //archMmu->physTtb = (VADDR_T)(UINTPTR)virtTtb + 0x40000000; 
     return TRUE;
 }
-//通过虚拟地址查询物理地址
+
+/******************************************************************************
+本函数是内核高频函数,通过MMU查询虚拟地址是否映射过,
+带走映射的物理地址和权限
+******************************************************************************/
 STATUS_T LOS_ArchMmuQuery(const LosArchMmu *archMmu, VADDR_T vaddr, PADDR_T *paddr, UINT32 *flags)
 {//archMmu->virtTtb:转换表基地址
     PTE_T l1Entry = OsGetPte1(archMmu->virtTtb, vaddr);//获取PTE vaddr右移20位 得到L1描述子地址

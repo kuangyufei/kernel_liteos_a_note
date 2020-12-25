@@ -92,9 +92,7 @@ typedef struct VmFault {
     UINT32          flags;              /* FAULT_FLAG_xxx flags */	//缺页标识
     unsigned long   pgoff;              /* Logical page offset based on region */	//基于线性区的逻辑页偏移量
     VADDR_T         vaddr;              /* Faulting virtual address */ //产生缺页的虚拟地址
-    VADDR_T         *pageKVaddr;        /* KVaddr of pagefault's vm page's paddr */ //指的就是物理地址
-	//pageKVaddr为缺页的vm页面的物理地址,这里要说明下啥意思,缺页的意思是此进程MMU没有虚拟地址与物理地址的映射,
-	//但并不代表物理页框没有被别的进程虚拟空间所映射.一定要理解这里!
+    VADDR_T         *pageKVaddr;        /* KVaddr of pagefault's vm page's paddr */ //page cache中的虚拟地址
 } LosVmPgFault;
 //虚拟内存文件操作函数指针,上层开发可理解为 class 里的方法，注意是对线性区的操作
 struct VmFileOps {// 文件操作

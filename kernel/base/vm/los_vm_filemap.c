@@ -575,7 +575,7 @@ INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
         OsMarkPageDirty(fpage, region, 0, 0);//标记为脏页,要回写磁盘,内核会在适当的时候回写磁盘
     }
 
-    vmf->pageKVaddr = kvaddr;
+    vmf->pageKVaddr = kvaddr;//将文件页的虚拟地址带给缺陷页
     LOS_SpinUnlockRestore(&mapping->list_lock, intSave);
     return LOS_OK;
 }

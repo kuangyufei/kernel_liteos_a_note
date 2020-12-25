@@ -1155,7 +1155,7 @@ VOID *LOS_KernelMallocAlign(UINT32 size, UINT32 boundary)
 
     return ptr;
 }
-
+//内核内存分配
 VOID *LOS_KernelRealloc(VOID *ptr, UINT32 size)
 {
     VOID *tmpPtr = NULL;

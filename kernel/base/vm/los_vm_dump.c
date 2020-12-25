@@ -473,7 +473,7 @@ VOID OsDumpPte(VADDR_T vaddr)
 ERR:
     PRINTK("%s, error vaddr: %#x, l2Table: %#x, l2Index: %#x\n", __FUNCTION__, vaddr, l2Table, l2Index);
 }
-
+//获取段剩余页框数
 UINT32 OsVmPhySegPagesGet(LosVmPhysSeg *seg)
 {
     UINT32 intSave;
@@ -481,12 +481,12 @@ UINT32 OsVmPhySegPagesGet(LosVmPhysSeg *seg)
     UINT32 segFreePages = 0;
 
     LOS_SpinLockSave(&seg->freeListLock, &intSave);
-    for (flindex = 0; flindex < VM_LIST_ORDER_MAX; flindex++) {
-        segFreePages += ((1 << flindex) * seg->freeList[flindex].listCnt);
+    for (flindex = 0; flindex < VM_LIST_ORDER_MAX; flindex++) {//遍历块组
+        segFreePages += ((1 << flindex) * seg->freeList[flindex].listCnt);//1 << flindex等于页数, * 节点数 得到组块的总页数.
     }
     LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
 
-    return segFreePages;
+    return segFreePages;//返回剩余未分配的总物理页框
 }
 //dump 物理内存
 /***********************************************************

@@ -51,11 +51,11 @@ STATIC VOID OsVmPageInit(LosVmPage *page, paddr_t pa, UINT8 segID)
     LOS_AtomicSet(&page->refCounts, 0);	//引用次数0
     page->physAddr = pa;				//物理地址
     page->segID = segID;				//物理地址使用段管理，段ID
-    page->order = VM_LIST_ORDER_MAX;	//所属伙伴算法块组,VM_LIST_ORDER_MAX代表初始化值,不属于任何块组
+    page->order = VM_LIST_ORDER_MAX;	//初始化值,不属于任何块组
 }
 //伙伴算法初始化
 STATIC INLINE VOID OsVmPageOrderListInit(LosVmPage *page, size_t nPages)
-{//@note_why 此时所有页面 page->order 都是 VM_LIST_ORDER_MAX,能顺利的加入伙伴算法的链表吗?
+{//@note_why 此时所有页面 page->order = VM_LIST_ORDER_MAX,能挂入伙伴算法的链表吗?
     OsVmPhysPagesFreeContiguous(page, nPages);//释放连续的物理页框
 }
 /******************************************************************************

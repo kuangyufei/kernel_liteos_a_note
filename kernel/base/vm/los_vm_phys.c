@@ -140,9 +140,9 @@ STATIC INLINE VOID OsVmPhysFreeListInit(struct VmPhysSeg *seg)
     LOS_SpinInit(&seg->freeListLock);//初始化用于分配的自旋锁
 
     LOS_SpinLockSave(&seg->freeListLock, &intSave);
-    for (i = 0; i < VM_LIST_ORDER_MAX; i++) {
-        list = &seg->freeList[i];
-        LOS_ListInit(&list->node);	//初始化9个链表, 链表上挂分配大小为 2^0,2^1,2^2 ..的页框(LosVmPage)
+    for (i = 0; i < VM_LIST_ORDER_MAX; i++) {//遍历伙伴算法空闲块组链表
+        list = &seg->freeList[i];	//一个个来
+        LOS_ListInit(&list->node);	//LosVmPage.node将挂到list->node上
         list->listCnt = 0;			//链表上的数量默认0
     }
     LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
@@ -335,8 +335,8 @@ VOID OsVmPhysPagesFree(LosVmPage *page, UINT8 order)
 
     if (order < VM_LIST_ORDER_MAX - 1) {//order[0,7]
         pa = VM_PAGE_TO_PHYS(page);//获取物理地址
-        do {
-            pa ^= VM_ORDER_TO_PHYS(order);//注意这里是高位和低位的 ^= ,也就是说跳到 order块组 物理地址处,此处处理甚妙!
+        do {//按位异或
+            pa ^= VM_ORDER_TO_PHYS(order);//@note_good 注意这里是高位和低位的 ^= ,也就是说跳到order块组物理地址处,此处处理甚妙!
             buddyPage = OsVmPhysToPage(pa, page->segID);//通过物理地址拿到页框
             if ((buddyPage == NULL) || (buddyPage->order != order)) {//页框所在组块必须要对应
                 break;
@@ -362,7 +362,7 @@ VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
         pa = VM_PAGE_TO_PHYS(page);//获取页面物理地址
         order = VM_PHYS_TO_ORDER(pa);//通过物理地址找到伙伴算法的级别
         n = VM_ORDER_TO_PAGES(order);//通过级别找到物理页块 (1<<order),意思是如果order=3，就可以释放8个页块
-        if (n > nPages) {//只剩小于2的order时，退出循环
+        if (n > nPages) {//nPages只剩下小于2^order时，退出循环
             break;
         }
         OsVmPhysPagesFree(page, order);//释放伙伴算法对应块组
@@ -374,7 +374,7 @@ VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
         order = LOS_HighBitGet(nPages);//从高到低块组释放
         n = VM_ORDER_TO_PAGES(order);//2^order次方
         OsVmPhysPagesFree(page, order);//释放块组
-        page += n;
+        page += n;//相当于page[n]
     }
 }
 
@@ -396,8 +396,8 @@ STATIC LosVmPage *OsVmPhysPagesGet(size_t nPages)
     for (segID = 0; segID < g_vmPhysSegNum; segID++) {
         seg = &g_vmPhysSeg[segID];
         LOS_SpinLockSave(&seg->freeListLock, &intSave);
-        page = OsVmPhysPagesAlloc(seg, nPages);//分配指定页数的物理页,nPages需小于伙伴算法一次最大分配页数
-        if (page != NULL) {
+        page = OsVmPhysPagesAlloc(seg, nPages);//分配指定页数的物理页,nPages需小于伙伴算法一次能分配的最大页数
+        if (page != NULL) {//分配成功
             /*  */
             LOS_AtomicSet(&page->refCounts, 0);//设置引用次数为0
             page->nPages = nPages;//页数
@@ -435,12 +435,12 @@ VOID LOS_PhysPagesFreeContiguous(VOID *ptr, size_t nPages)
         return;
     }
 
-    page = OsVmVaddrToPage(ptr);//通过虚拟地址找page
+    page = OsVmVaddrToPage(ptr);//通过虚拟地址找到页框
     if (page == NULL) {
         VM_ERR("vm page of ptr(%#x) is null", ptr);
         return;
     }
-    page->nPages = 0;
+    page->nPages = 0;//被分配的页数置为0,表示不被分配
 
     seg = &g_vmPhysSeg[page->segID];
     LOS_SpinLockSave(&seg->freeListLock, &intSave);
@@ -450,8 +450,7 @@ VOID LOS_PhysPagesFreeContiguous(VOID *ptr, size_t nPages)
     LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
 }
 /******************************************************************************
- 通过物理地址获取内核虚拟地址
- 可以看出内核虚拟空间
+ 通过物理地址获取内核虚拟地址,内核静态映射,减少虚实地址的转换
 ******************************************************************************/
 VADDR_T *LOS_PaddrToKVaddr(PADDR_T paddr)
 {
@@ -467,7 +466,7 @@ VADDR_T *LOS_PaddrToKVaddr(PADDR_T paddr)
 	//内核
     return (VADDR_T *)(UINTPTR)(paddr - SYS_MEM_BASE + KERNEL_ASPACE_BASE);//
 }
-
+//释放物理页框
 VOID LOS_PhysPageFree(LosVmPage *page)
 {
     UINT32 intSave;
@@ -513,7 +512,7 @@ size_t LOS_PhysPagesAlloc(size_t nPages, LOS_DL_LIST *list)
 
     return count;
 }
-//共享页面拷贝实现
+//拷贝共享页面
 VOID OsPhysSharePageCopy(PADDR_T oldPaddr, PADDR_T *newPaddr, LosVmPage *newPage)
 {
     UINT32 intSave;
@@ -527,43 +526,43 @@ VOID OsPhysSharePageCopy(PADDR_T oldPaddr, PADDR_T *newPaddr, LosVmPage *newPage
         return;
     }
 
-    oldPage = LOS_VmPageGet(oldPaddr);//由物理地址得到 page信息页
+    oldPage = LOS_VmPageGet(oldPaddr);//由物理地址得到页框
     if (oldPage == NULL) {
         VM_ERR("invalid paddr %p", oldPaddr);
         return;
     }
 
-    seg = &g_vmPhysSeg[oldPage->segID];//拿到段
+    seg = &g_vmPhysSeg[oldPage->segID];//拿到物理段
     LOS_SpinLockSave(&seg->freeListLock, &intSave);
-    if (LOS_AtomicRead(&oldPage->refCounts) == 1) {//页面引用次数仅一次,说明还没有被其他进程所使用过
-        *newPaddr = oldPaddr;
-    } else {
+    if (LOS_AtomicRead(&oldPage->refCounts) == 1) {//页面引用次数仅一次,说明只有一个进程在操作
+        *newPaddr = oldPaddr;//新老指向同一块物理地址
+    } else {//是个共享内存
         newMem = LOS_PaddrToKVaddr(*newPaddr);	//新页虚拟地址
         oldMem = LOS_PaddrToKVaddr(oldPaddr);	//老页虚拟地址
         if ((newMem == NULL) || (oldMem == NULL)) {
             LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
             return;
-        }
-        if (memcpy_s(newMem, PAGE_SIZE, oldMem, PAGE_SIZE) != EOK) {//老页内容复制给新页
+        }//请记住,在保护模式下,物理地址只能用于计算,操作(包括拷贝)需要虚拟地址! 
+        if (memcpy_s(newMem, PAGE_SIZE, oldMem, PAGE_SIZE) != EOK) {//老页内容复制给新页,需操作虚拟地址,拷贝一页数据
             VM_ERR("memcpy_s failed");
         }
 
-        LOS_AtomicInc(&newPage->refCounts);//新页ref++
-        LOS_AtomicDec(&oldPage->refCounts);//老页ref--
+        LOS_AtomicInc(&newPage->refCounts);//新页引用次数以原子方式自动减量 
+        LOS_AtomicDec(&oldPage->refCounts);//老页引用次数以原子方式自动减量
     }
     LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
     return;
 }
-
+//获取物理页框所在段
 struct VmPhysSeg *OsVmPhysSegGet(LosVmPage *page)
 {
     if ((page == NULL) || (page->segID >= VM_PHYS_SEG_MAX)) {
         return NULL;
     }
 
-    return (OsGVmPhysSegGet() + page->segID);
+    return (OsGVmPhysSegGet() + page->segID);//等用于OsGVmPhysSegGet()[page->segID]
 }
-//通过总页数 ,获取块组 ,例如需要分配 8个页,返回就是3 ,如果是1023 ,返回就是10
+//获取参数nPages对应的块组,例如 7 -> 2^3 返回 3
 UINT32 OsVmPagesToOrder(size_t nPages)
 {
     UINT32 order;

@@ -65,6 +65,13 @@ VOID LOS_BitmapClr(UINT32 *bitmap, UINT16 pos)
 
     *bitmap &= ~(1U << (pos & OS_BITMAP_MASK));//在对应位上置0
 }
+/********************************************************
+杂项算术指令
+CLZ 用于计算操作数最高端0的个数，这条指令主要用于一下两个场合
+　　计算操作数规范化（使其最高位为1）时需要左移的位数
+　　确定一个优先级掩码中最高优先级
+
+********************************************************/
 //从高到低 返回第一个为1的位数， 例如: 00110110 返回 5
 UINT16 LOS_HighBitGet(UINT32 bitmap)
 {
@@ -74,14 +81,14 @@ UINT16 LOS_HighBitGet(UINT32 bitmap)
 
     return (OS_BITMAP_MASK - CLZ(bitmap));
 }
-//从低到高 返回第一个为1的位数， 例如: 00110110 返回 1
+//从低到高 返回第一个为1的位数， 例如: 00110110 返回 2
 UINT16 LOS_LowBitGet(UINT32 bitmap)
 {
     if (bitmap == 0) {
         return LOS_INVALID_BIT_INDEX;
     }
 
-    return CTZ(bitmap);
+    return CTZ(bitmap);//
 }
 //从start位置开始设置numsSet个bit位 置1 
 VOID LOS_BitmapSetNBits(UINTPTR *bitmap, UINT32 start, UINT32 numsSet)
