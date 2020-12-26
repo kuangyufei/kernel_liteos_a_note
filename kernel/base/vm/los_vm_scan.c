@@ -197,7 +197,7 @@ VOID OsPageRefDecNoLock(LosFilePage *fpage)
     page = fpage->vmPage;
     isOrgActive = OsIsPageActive(page);
 
-    if (!OsIsPageReferenced(page) && OsIsPageActive(page)) {
+    if (!OsIsPageReferenced(page) && OsIsPageActive(page)) {//[ref:0,act:1]的情况
         OsCleanPageActive(page);
         OsSetPageReferenced(page);
     } else if (OsIsPageReferenced(page)) {
@@ -208,7 +208,7 @@ VOID OsPageRefDecNoLock(LosFilePage *fpage)
         OsMoveToInactiveList(fpage);
     }
 }
-//缩小未活动页链表
+//缩小活动页链表
 VOID OsShrinkActiveList(LosVmPhysSeg *physSeg, int nScan)
 {
     LosFilePage *fpage = NULL;

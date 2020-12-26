@@ -147,7 +147,7 @@ STATIC STATUS_T OsDoReadFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)//
     return LOS_ERRNO_VM_NO_MEMORY;
 }
 
-/* numap a page when cow happend only */
+/* numap a page when cow happend only *///仅当写时拷贝发生时取消页面映射
 STATIC LosVmPage *OsCowUnmapOrg(LosArchMmu *archMmu, LosVmMapRegion *region, LosVmPgFault *vmf)
 {
     UINT32 intSave;
@@ -404,7 +404,7 @@ STATUS_T OsVmPageFaultHandler(VADDR_T vaddr, UINT32 flags, ExcContext *frame)
         vmPgFault.vaddr = vaddr;//虚拟地址
         vmPgFault.pgoff = ((vaddr - region->range.base) >> PAGE_SHIFT) + region->pgOff;//计算出文件读取位置
         vmPgFault.flags = flags;
-        vmPgFault.pageKVaddr = NULL;//没有物理地址
+        vmPgFault.pageKVaddr = NULL;//缺失页初始化没有物理地址
 
         status = OsDoFileFault(region, &vmPgFault, flags);//缺页处理
         if (status) {

@@ -95,11 +95,11 @@ typedef struct VmFault {
     VADDR_T         *pageKVaddr;        /* KVaddr of pagefault's vm page's paddr */ //page cache中的虚拟地址
 } LosVmPgFault;
 //虚拟内存文件操作函数指针,上层开发可理解为 class 里的方法，注意是对线性区的操作
-struct VmFileOps {// 文件操作
+struct VmFileOps {// 文件操作 见于g_commVmOps
     void (*open)(struct VmMapRegion *region); //打开
     void (*close)(struct VmMapRegion *region);//关闭
-    int  (*fault)(struct VmMapRegion *region, LosVmPgFault *pageFault);//缺页
-    void (*remove)(struct VmMapRegion *region, LosArchMmu *archMmu, VM_OFFSET_T offset);//删除
+    int  (*fault)(struct VmMapRegion *region, LosVmPgFault *pageFault);//缺页,OsVmmFileFault
+    void (*remove)(struct VmMapRegion *region, LosArchMmu *archMmu, VM_OFFSET_T offset);//删除 OsVmmFileRemove
 };
 
 struct VmMapRegion {//线性区描述符,内核通过线性区管理虚拟地址,而线性地址就是虚拟地址

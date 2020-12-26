@@ -64,23 +64,24 @@ extern "C" {
 #if 0 //@note_#if0 
 //page_mapping描述的是一个文件在内存中被映射了多少页,<文件,文件页的关系>
 /* file mapped in VMM pages */
-struct page_mapping {
+struct page_mapping {//记录文件页和文件关系的结构体,叫文件页映射
   LOS_DL_LIST                           page_list;    /* all pages */ //链表上挂的是属于该文件的所有FilePage，这些页的内容都来源同一个文件
-  SPIN_LOCK_S                           list_lock;    /* lock protecting it */
-  LosMux                                mux_lock;     /* mutex lock */	//
-  unsigned long                         nrpages;      /* number of total pages */
-  unsigned long                         flags;
-  Atomic                                ref;          /* reference counting */
+  SPIN_LOCK_S                           list_lock;    /* lock protecting it */ //操作page_list的自旋锁
+  LosMux                                mux_lock;     /* mutex lock */	//		//操作page_mapping的互斥量
+  unsigned long                         nrpages;      /* number of total pages */ //page_list的节点数量	
+  unsigned long                         flags;			//@note_why 全量代码中也没查到源码中对其操作	
+  Atomic                                ref;          /* reference counting */	//引用次数(自增/自减),对应add_mapping/dec_mapping
   struct file                           *host;        /* owner of this mapping *///属于哪个文件的映射
 };
 
-/* map: full_path(owner) <-> mapping */
-struct file_map {
-  LOS_DL_LIST           head;
+/* map: full_path(owner) <-> mapping */ //叫文件映射
+struct file_map { //为在内核层面文件在内存的身份证,每个需映射到内存的文件必须创建一个file_map，都挂到全局g_file_mapping链表上
+  LOS_DL_LIST           head;		//链表节点,用于挂到g_file_mapping上
   LosMux                lock;         /* lock to protect this mapping */
-  struct page_mapping   mapping;
-  char                  *owner;     /* owner: full path of file */
+  struct page_mapping   mapping;	//每个文件都有唯一的page_mapping标识其在内存的身份
+  char                  *owner;     /* owner: full path of file *///文件全路径来标识唯一性
 };
+
 #endif
 
 //文件页结构体
@@ -89,7 +90,7 @@ typedef struct FilePage {
     LOS_DL_LIST             lru;		//lru节点, 结合 LosVmPhysSeg: LOS_DL_LIST lruList[VM_NR_LRU_LISTS] 理解
     LOS_DL_LIST             i_mmap;     /* list of mappings */ //链表记录文件页被哪些进程映射 MapInfo.node挂上来
     UINT32                  n_maps;       /* num of mapping */ //记录被进程映射的次数
-    struct VmPhysSeg        *physSeg;      /* physical memory that file page belongs to */ //物理内存是唯一的
+    struct VmPhysSeg        *physSeg;      /* physical memory that file page belongs to */ //物理段:物理页框 = 1:N
     struct VmPage           *vmPage;	//物理页框
     struct page_mapping     *mapping;	//此结构由文件系统提供，用于描述装入点 见于 ..\third_party\NuttX\include\nuttx\fs\fs.h
     VM_OFFSET_T             pgoff;		//页标，文件被切成一页一页读到内存

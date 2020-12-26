@@ -41,44 +41,47 @@
 #if 0 //@note_#if0
 定义见于 ..\third_party\NuttX\include\nuttx\fs\fs.h
 typedef volatile INT32 Atomic;
-struct page_mapping {
-  LOS_DL_LIST                           page_list;    /* all pages */
-  SPIN_LOCK_S                           list_lock;    /* lock protecting it */
-  LosMux                                mux_lock;     /* mutex lock * /
-  unsigned long                         nrpages;      /* number of total pages */
-  unsigned long                         flags;
-  Atomic                                ref;          /* reference counting */
-  struct file                           *host;        /* owner of this mapping */
+//page_mapping描述的是一个文件在内存中被映射了多少页,<文件,文件页的关系>
+/* file mapped in VMM pages */
+struct page_mapping {//记录文件页和文件关系的结构体,叫文件页映射
+  LOS_DL_LIST                           page_list;    /* all pages */ //链表上挂的是属于该文件的所有FilePage，这些页的内容都来源同一个文件
+  SPIN_LOCK_S                           list_lock;    /* lock protecting it */ //操作page_list的自旋锁
+  LosMux                                mux_lock;     /* mutex lock */	//		//操作page_mapping的互斥量
+  unsigned long                         nrpages;      /* number of total pages */ //page_list的节点数量	
+  unsigned long                         flags;			//@note_why 全量代码中也没查到源码中对其操作	
+  Atomic                                ref;          /* reference counting */	//引用次数(自增/自减),对应add_mapping/dec_mapping
+  struct file                           *host;        /* owner of this mapping *///属于哪个文件的映射
 };
 
-/* map: full_path(owner) <-> mapping * /
-struct file_map {
-  LOS_DL_LIST           head;		//挂入文件链表的节点
-  LosMux                lock;         /* lock to protect this mapping * /
-  struct page_mapping   mapping;	//映射内容区
-  char                  *owner;     /* owner: full path of file * /
+/* map: full_path(owner) <-> mapping */ //叫文件映射
+struct file_map { //为在内核层面文件在内存的身份证,每个需映射到内存的文件必须创建一个file_map，都挂到全局g_file_mapping链表上
+  LOS_DL_LIST           head;		//链表节点,用于挂到g_file_mapping上
+  LosMux                lock;         /* lock to protect this mapping */
+  struct page_mapping   mapping;	//每个文件都有唯一的page_mapping标识其在内存的身份
+  char                  *owner;     /* owner: full path of file *///文件全路径来标识唯一性
 };
 
-struct file
+struct file //文件系统最重要的两个结构体之一,另一个是inode
 {
-  unsigned int         f_magicnum;  /* file magic number */
-  int                  f_oflags;    /* Open mode flags */
-  FAR struct inode     *f_inode;    /* Driver interface */
-  loff_t               f_pos;       /* File position */
-  unsigned long        f_refcount;  /* reference count */
-  char                 *f_path;     /* File fullpath */
-  void                 *f_priv;     /* Per file driver private data */
-  const char           *f_relpath;  /* realpath */
-  struct page_mapping  *f_mapping;  /* mapping file to memory */
-  void                 *f_dir;      /* DIR struct for iterate the directory if open a directory */
+  unsigned int         f_magicnum;  /* file magic number */ //文件魔法数字
+  int                  f_oflags;    /* Open mode flags */	//打开模式标签
+  FAR struct inode     *f_inode;    /* Driver interface */	//设备驱动程序
+  loff_t               f_pos;       /* File position */		//文件的位置
+  unsigned long        f_refcount;  /* reference count */	//被引用的数量,一个文件可被多个进程打开
+  char                 *f_path;     /* File fullpath */		//全路径
+  void                 *f_priv;     /* Per file driver private data */ //文件私有数据
+  const char           *f_relpath;  /* realpath */			//真实路径
+  struct page_mapping  *f_mapping;  /* mapping file to memory */ //与内存的映射 page-cache
+  void                 *f_dir;      /* DIR struct for iterate the directory if open a directory */ //所在目录
 };
+
 #endif
 
-static struct file_map g_file_mapping = {0};
+static struct file_map g_file_mapping = {0};//用于挂载所有文件的file_map
 
 /**************************************************************************************************
  初始化文件映射模块，
- file_map: 每个需映射到内存的文件必须创建一个 file_map，都挂到全部g_file_mapping链表上
+ file_map: 每个需映射到内存的文件必须创建一个 file_map，都挂到全局g_file_mapping链表上
  page_mapping: 记录的是<文件，文件页>的关系，一个文件在操作过程中被映射成了多少个页，
  file：是文件系统管理层面的概念
 **************************************************************************************************/
@@ -132,8 +135,8 @@ void add_mapping(struct file *filep, const char *fullpath)
     mapping = find_mapping_nolock(fullpath);//是否已有文件映射
     if (mapping) {//有映射过的情况
         LOS_AtomicInc(&mapping->ref);//引用自增
-        filep->f_mapping = mapping;//赋值
-        mapping->host = filep;
+        filep->f_mapping = mapping;//记录文件自己在内存的身份
+        mapping->host = filep;	//记录page_mapping的老板
         (VOID)LOS_MuxUnlock(&g_file_mapping.lock);//释放锁
         return;//收工
     }
@@ -227,7 +230,12 @@ void clear_file_mapping_nolock(const struct page_mapping *mapping)
         i++;
     }
 }
-//删除一个映射
+
+/******************************************************************************
+ 删除一个文件映射,需要有个三个地方删除才算断开了文件和内存的联系.
+ 
+ 1. 进程文件
+******************************************************************************/
 int remove_mapping_nolock(const char *fullpath, const struct file *ex_filp)
 {
     int fd;
@@ -276,11 +284,11 @@ int remove_mapping_nolock(const char *fullpath, const struct file *ex_filp)
     }
 
     (VOID)LOS_MuxDestroy(&mapping->mux_lock);
-    clear_file_mapping_nolock(mapping);//清除自己
-    OsFileCacheRemove(mapping);//从缓存中删除自己
+    clear_file_mapping_nolock(mapping);//清除进程对page_mapping的映射
+    OsFileCacheRemove(mapping);//从页高速缓存中删除文件页
     fmap = LOS_DL_LIST_ENTRY(mapping,
-    struct file_map, mapping);//找到自己的inode
-    LOS_ListDelete(&fmap->head);//从链表中摘除自己
+    struct file_map, mapping);//通过page_mapping找到fmap
+    LOS_ListDelete(&fmap->head);//从g_file_mapping链表上摘掉自己
     LOS_MemFree(m_aucSysMem0, fmap);
 
 out:
