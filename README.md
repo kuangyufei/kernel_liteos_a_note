@@ -6,16 +6,15 @@
 
 [![star](https://gitee.com/weharmony/kernel_liteos_a_note/badge/star.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)[![fork](https://gitee.com/weharmony/kernel_liteos_a_note/badge/fork.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)
 
-项目中文注解鸿蒙官方内核源码,图文并茂,详细阐述鸿蒙架构和代码设计细节,每个码农,学职生涯,都应精读一遍内核源码.
-精读内核源码最大的好处是:将孤立知识点织成一张高浓度,高密度底层网,对计算机底层体系化理解形成永久记忆,从此高屋建瓴分析/解决问题.
+项目中文注解鸿蒙官方内核源码,图文并茂,详细阐述鸿蒙架构和代码设计细节.每个码农,学职生涯,都应精读一遍内核源码.精读内核源码最大的好处是:将孤立知识点织成一张高浓度,高密度底层网,对计算机底层体系化理解形成永久记忆,从此高屋建瓴分析/解决问题.
 
 ## **做了些什么呢**
 
-**[kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在鸿蒙官方开源项目 **[OpenHarmony/kernel\_liteos\_a](https://gitee.com/openharmony/kernel_liteos_a)** 基础上给源码加上中文注解的版本,目前几大核心模块加注已基本完成,**整体加注完成70%**,其余正持续加注完善中...
+**[WeHarmony/kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在鸿蒙官方开源项目 **[OpenHarmony/kernel\_liteos\_a](https://gitee.com/openharmony/kernel_liteos_a)** 基础上给源码加上中文注解的版本,目前几大核心模块加注已基本完成,**整体加注完成70%**,其余正持续加注完善中...
 
 -   ### **为何想给鸿蒙源码加上中文注释**
     
-    源于大学时阅读linux 2.6 内核痛苦经历,一直有个心愿,想让更多计算机尤其是内核感兴趣的减少阅读时间,加速对计算机系统级的理解,不至于过早的放弃.但因过程种种,一直没有成行,基本要放弃这件事了. 但9月10日鸿蒙正式开源,重新激活了注者多年的心愿,就有那么点一发不可收拾了 :|P
+    源于大学时阅读linux 2.6 内核痛苦经历,一直有个心愿,如何让更多对内核感兴趣的同学减少阅读时间,加速对计算机系统级的理解,而不至于过早的放弃.但因过程种种,一直没有成行,基本要放弃这件事了. 但9月10日鸿蒙正式开源,重新激活了注者多年的心愿,就有那么点一发不可收拾了 :|P
     
 -   ### **致敬鸿蒙内核开发者**
     
@@ -55,6 +54,39 @@
     
     ![在这里插入图片描述](https://img-blog.csdnimg.cn/20201028154344813.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2t1YW5neXVmZWk=,size_16,color_FFFFFF,t_70#pic_center)
     
+-   ### **系列博客更新到哪里了?**
+
+    - **[鸿蒙源码分析系列(总目录)](https://blog.csdn.net/kuangyufei/article/details/108727970)**
+
+       * **[|-  鸿蒙内核源码分析(内存规则篇) | 内存管理到底在管什么？](https://blog.csdn.net/kuangyufei/article/details/109437223)**
+
+       * **[|-  鸿蒙内核源码分析(源码注释篇) | 精读内核源码有哪些好处?](https://blog.csdn.net/kuangyufei/article/details/109251754)**
+
+       * **[|-  鸿蒙内核源码分析(内存映射篇) | 虚拟内存<-->物理内存是怎么映射的?](https://blog.csdn.net/kuangyufei/article/details/109032636)**
+
+       * **[|-  鸿蒙内核源码分析(内存汇编篇) | 内存实现涉及哪些汇编代码](https://blog.csdn.net/kuangyufei/article/details/108994081)**
+
+       * **[|-  鸿蒙内核源码分析(内存分配篇) | 内存有哪些分配方式](https://blog.csdn.net/kuangyufei/article/details/108989906)**
+
+       * **[|-  鸿蒙内核源码分析(内存管理篇) | 虚拟内存和物理内存是怎么管理的?](https://blog.csdn.net/kuangyufei/article/details/108821442)**
+
+       * **[|-  鸿蒙内核源码分析(内存概念篇) | 手眼通天的虚拟内存](https://blog.csdn.net/kuangyufei/article/details/108723672)**
+
+       * **[|-  鸿蒙内核源码分析(必读故事篇) | 张大爷的故事 | 用故事说内核持续更新中...](https://blog.csdn.net/kuangyufei/article/details/108745174)**
+
+       * **[|-  鸿蒙内核源码分析(调度机制篇) | 任务是如何被调度执行的?](https://blog.csdn.net/kuangyufei/article/details/108705968)**
+
+       * **[|-  鸿蒙内核源码分析(调度队列篇) | 就绪队列对调度的作用](https://blog.csdn.net/kuangyufei/article/details/108626671)**
+
+       * **[|-  鸿蒙内核源码分析(任务管理篇) | 任务是内核调度的单元](https://blog.csdn.net/kuangyufei/article/details/108621428)**
+
+       * **[|-  鸿蒙内核源码分析(时钟管理篇) | 触发调度最大的源动力](https://blog.csdn.net/kuangyufei/article/details/108603468)**
+
+       * **[|-  鸿蒙内核源码分析(进程管理篇) | 进程是内核资源管理单元](https://blog.csdn.net/kuangyufei/article/details/108595941)**
+
+       * **[|-  鸿蒙内核源码分析(双循环链表篇) | 内核最重要结构体](https://blog.csdn.net/kuangyufei/article/details/108585659)**
+
+
 -   ### **干困难事,必有所得**
     
     精读内核源码当然是件很困难的事,时间上要以月为单位,正因为很难才值得去做! 内心不渴望的永远不可能靠近自己.笔者一直坚信兴趣是最好的老师,加注也是在做自己感兴趣的事.如果能让更多人参与到内核的研究,减少学习的成本,哪怕就节省一天的时间,这么多人能节省多少时间, 这是件多好玩,多有意义的事情. 从内核一行行的代码中能深深体会到开发者各中艰辛与坚持,及鸿蒙生态对未来的价值,笔者坚信鸿蒙大势所趋,未来可期,是其坚定的追随者和传播者.
