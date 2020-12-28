@@ -42,14 +42,18 @@ void a(){
     printf("BITMAP_BITS_PER_WORD %d\n",BITMAP_BITS_PER_WORD);
     printf("BITMAP_NUM_WORDS %d\n",BITMAP_NUM_WORDS(1UL << 8));
 }
+
 void round1(){
+    #define PAGE_SIZE                        (0x1000U) // 页大小4K
     #define ROUNDUP(a, b)                    (((a) + ((b) - 1)) & ~((b) - 1))
     #define ROUNDDOWN(a, b)                  ((a) & ~((b) - 1))
+    #define ROUNDOFFSET(a, b)                ((a) & ((b) - 1))
     int a = 0xFF;
-    printf("a>> %d\n",a>>3);
-    printf("a/ %d\n",a/8);
-    //printf("ROUNDUP %d\n",ROUNDUP(9, 2));
-    //printf("ROUNDDOWN %d\n",ROUNDDOWN(9, 2));
+    //printf("a>> %d\n",a>>3);
+    //printf("a/ %d\n",a/8);
+    printf("ROUNDUP %d,%d,%d\n", ROUNDUP(7,4) ,ROUNDUP(8,4) ,ROUNDUP(9,4));
+    printf("ROUNDDOWN %d,%d,%d\n", ROUNDDOWN(7,4),ROUNDDOWN(8,4),ROUNDDOWN(9,4));
+    printf("ROUNDOFFSET %d,%d,%d\n", ROUNDOFFSET(7,4),ROUNDOFFSET(8,4),ROUNDOFFSET(9,4));
 }
 void arg_test(int i, ...)
 {
@@ -75,10 +79,11 @@ int main()
 {
     int size = 0;
     printf("sizeof(int) %d\n",sizeof(int));
-    arg_test(99, 4,8,9);
-    size = sizeof(LOS_DL_LIST) << OS_TSK_SORTLINK_LOGLEN;
-    printf("LOS_DL_LIST %d\n",sizeof(LOS_DL_LIST *));
-    printf("size %d\n",size);
+    round1();
+    //arg_test(99, 4,8,9);
+    //size = sizeof(LOS_DL_LIST) << OS_TSK_SORTLINK_LOGLEN;
+    //printf("LOS_DL_LIST %d\n",sizeof(LOS_DL_LIST *));
+    //printf("size %d\n",size);
     return 0;
 }
 

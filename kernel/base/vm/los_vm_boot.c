@@ -70,14 +70,14 @@ VOID *OsVmBootMemAlloc(size_t len)
     //这样也行,g_vmBootMemBase 真是野蛮粗暴
     return (VOID *)ptr;
 }
-
+//整个系统内存初始化
 UINT32 OsSysMemInit(VOID)
 {
     STATUS_T ret;
 
     OsKSpaceInit();//内核空间初始化
 
-    ret = OsKHeapInit(OS_KHEAP_BLOCK_SIZE);// 内核动态内存初始化 512K   
+    ret = OsKHeapInit(OS_KHEAP_BLOCK_SIZE);// 内核堆空间初始化 512K   
     if (ret != LOS_OK) {
         VM_ERR("OsKHeapInit fail");
         return LOS_NOK;

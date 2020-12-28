@@ -55,7 +55,7 @@ extern "C" {
 #define VMM_CMD            "vmm"
 #define OOM_CMD            "oom"
 #define VMM_PMM_CMD        "v2p"
-
+//dump内核空间
 LITE_OS_SEC_TEXT_MINOR VOID OsDumpKernelAspace(VOID)
 {
     LosVmSpace *kAspace = LOS_GetKVmSpace();

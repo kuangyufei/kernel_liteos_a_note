@@ -75,8 +75,8 @@ enum OsLruList {//Lru全称是Least Recently Used，即最近最久未使用的�
 };
 
 typedef struct VmPhysSeg {//物理段描述符
-    PADDR_T start;            /* The start of physical memory area */	//物理内存的开始地址
-    size_t size;              /* The size of physical memory area */	//物理内存的大小
+    PADDR_T start;            /* The start of physical memory area */	//物理内存段的开始地址
+    size_t size;              /* The size of physical memory area */	//物理内存段的大小
     LosVmPage *pageBase;      /* The first page address of this area */	//本段首个物理页框地址
     SPIN_LOCK_S freeListLock; /* The buddy list spinlock */				//伙伴算法自旋锁,用于操作freeList上锁
     struct VmFreeList freeList[VM_LIST_ORDER_MAX];  /* The free pages in the buddy list */ //伙伴算法的分组,默认分成10组 2^0,2^1,...,2^VM_LIST_ORDER_MAX
@@ -85,7 +85,7 @@ typedef struct VmPhysSeg {//物理段描述符
     LOS_DL_LIST lruList[VM_NR_LRU_LISTS];	//页面置换算法,5个双循环链表头，它们分别描述五中不同类型的链表
 } LosVmPhysSeg;
 
-struct VmPhysArea {//物理区描述,仅用于方案商区划分
+struct VmPhysArea {//物理区描述,仅用于方案商配置范围使用
     PADDR_T start;
     size_t size;
 };

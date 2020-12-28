@@ -57,7 +57,7 @@ extern "C" {
 |  Vmalloc段                  |
 |  kernel heap               |
 |  128M                      |
-|                            |
+|  映射区                       |
 +----------------------------+ 内核动态分配开始地址 VMALLOC_START
 |   DDR_MEM_SIZE             |
 |   Uncached段                |
@@ -67,6 +67,7 @@ extern "C" {
 |   .bss					 |
 |   .rodata                  |
 |   .text                    |
+|  映射区                       |
 +----------------------------+ 内核空间开始地址 KERNEL_ASPACE_BASE = KERNEL_VMM_BASE
 |    16M预留区                  |
 +----------------------------+ 用户空间栈顶 USER_ASPACE_TOP_MAX = USER_ASPACE_BASE + USER_ASPACE_SIZE

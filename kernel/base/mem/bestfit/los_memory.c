@@ -2944,10 +2944,9 @@ STATUS_T OsKHeapInit(size_t size)
      * should page mapping, remaining region should section mapping. so the boundary should be
      * MB aligned.
      */
-     //向上舍入到MB对齐是为了设置内核属性。内核文本/代码/数据属性应该是页映射，其余区域应该是段映射,所以边界应该对齐。
+     //向上舍入到MB对齐是为了设置内核属性。内核文本/代码/数据属性使用页映射，其余区域使用段映射,所以边界应该对齐。
     UINTPTR end = ROUNDUP(g_vmBootMemBase + size, MB);//用M是因为采用section mapping 鸿蒙内核源码分析(内存映射篇)有阐述
     size = end - g_vmBootMemBase;
-	//ROUNDUP(0x00000200+512,1024) = 1024  ROUNDUP(0x00000201+512,1024) = 2048 此处需细品! 
     ptr = OsVmBootMemAlloc(size);//因刚开机，使用引导分配器分配
     if (!ptr) {
         PRINT_ERR("vmm_kheap_init boot_alloc_mem failed! %d\n", size);

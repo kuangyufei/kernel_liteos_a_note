@@ -1,4 +1,4 @@
-[鸿蒙内核源码注释中文版 【 Gitee仓 ](https://gitee.com/weharmony/kernel_liteos_a_note) | [ CSDN仓 ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [ Github仓 ](https://github.com/kuangyufei/kernel_liteos_a_note) | [ Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)  给 HarmonyOS 源码加上中文注解,详细阐述架构设计和代码实现细节, 快速精读鸿蒙内核源码, 掌握整个鸿蒙内核运行机制,四大码仓每日同步更新.
+[鸿蒙内核源码注释中文版 【 Gitee仓 ](https://gitee.com/weharmony/kernel_liteos_a_note) | [ CSDN仓 ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [ Github仓 ](https://github.com/kuangyufei/kernel_liteos_a_note) | [ Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) 项目中文注解鸿蒙官方内核源码,图文并茂,详细阐述鸿蒙架构和代码设计细节.每个码农,学职生涯,都应精读一遍内核源码.精读内核源码最大的好处是:将孤立知识点织成一张高浓度,高密度底层网,对计算机底层体系化理解形成永久记忆,从此高屋建瓴分析/解决问题.
 
 [鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852) [| WIKI 】](https://gitee.com/weharmony/kernel_liteos_a_note/wikis/pages) 从 HarmonyOS 架构层视角整理成文, 并首创用生活场景讲故事的方式试图去解构内核，一窥究竟。
 
@@ -6,7 +6,7 @@
 
 [![star](https://gitee.com/weharmony/kernel_liteos_a_note/badge/star.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)[![fork](https://gitee.com/weharmony/kernel_liteos_a_note/badge/fork.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)
 
-项目中文注解鸿蒙官方内核源码,图文并茂,详细阐述鸿蒙架构和代码设计细节.每个码农,学职生涯,都应精读一遍内核源码.精读内核源码最大的好处是:将孤立知识点织成一张高浓度,高密度底层网,对计算机底层体系化理解形成永久记忆,从此高屋建瓴分析/解决问题.
+
 
 ## **做了些什么呢**
 
@@ -56,7 +56,9 @@
     
 -   ### **系列博客更新到哪里了?**
 
-    - **[鸿蒙源码分析系列(总目录)](https://blog.csdn.net/kuangyufei/article/details/108727970)**
+    - **[鸿蒙源码分析系列(总目录)|持续更新中...](https://blog.csdn.net/kuangyufei/article/details/108727970)**
+
+       * **[|-  鸿蒙内核源码分析(物理内存篇) | 伙伴算法像极了在卖标准猪肉块 ](https://blog.csdn.net/kuangyufei/article/details/111765600)**
 
        * **[|-  鸿蒙内核源码分析(内存规则篇) | 内存管理到底在管什么？](https://blog.csdn.net/kuangyufei/article/details/109437223)**
 
@@ -89,7 +91,7 @@
 
 -   ### **干困难事,必有所得**
     
-    精读内核源码当然是件很困难的事,时间上要以月为单位,正因为很难才值得去做! 内心不渴望的永远不可能靠近自己.笔者一直坚信兴趣是最好的老师,加注也是在做自己感兴趣的事.如果能让更多人参与到内核的研究,减少学习的成本,哪怕就节省一天的时间,这么多人能节省多少时间, 这是件多好玩,多有意义的事情. 从内核一行行的代码中能深深体会到开发者各中艰辛与坚持,及鸿蒙生态对未来的价值,笔者坚信鸿蒙大势所趋,未来可期,是其坚定的追随者和传播者.
+    精读内核源码当然是件很困难的事,时间上要以月为单位,但正因为很难才值得去做! 干困难事,必有所得.笔者一直坚信兴趣是最好的老师,加注也是在做自己感兴趣的事.如果能让更多人参与到内核的研究,减少学习的成本,哪怕就节省一天的时间,这么多人能节省多少时间, 这是件多好玩,多有意义的事情. 从内核一行行的代码中能深深体会到开发者各中艰辛与坚持,及鸿蒙生态对未来的价值,笔者坚信鸿蒙大势所趋,未来可期,是其坚定的追随者和传播者.
     
 -   ### **新增的zzz目录是干什么的?**
     
@@ -100,7 +102,7 @@
 
     2. [新建 Issue](https://gitee.com/weharmony/kernel_liteos_a_note/issues)
 -   ### **联系方式**
-    kuangyufei@126.com,欢迎邮件/私信笔者, 抱歉因加注占用了全部空闲时间,所以无法微信回复.
+    kuangyufei@126.com,欢迎邮件/私信笔者.
 
     ---
 

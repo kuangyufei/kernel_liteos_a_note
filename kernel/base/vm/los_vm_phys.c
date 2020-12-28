@@ -210,7 +210,7 @@ STATIC VOID OsVmPhysFreeListDelUnsafe(LosVmPage *page)
     list = &seg->freeList[page->order];	//根据伙伴算法组序号找到空闲链表
     list->listCnt--;					//链表节点总数减一
     LOS_ListDelete(&page->node);		//将自己从链表上摘除
-    page->order = VM_LIST_ORDER_MAX;	//告诉系统物理页框已不在空闲链表上, 已妙用于OsVmPhysPagesSpiltUnsafe的断言
+    page->order = VM_LIST_ORDER_MAX;	//告诉系统物理页框已不在空闲链表上, 用于OsVmPhysPagesSpiltUnsafe的断言
 }
 //同上
 STATIC VOID OsVmPhysFreeListDel(LosVmPage *page)

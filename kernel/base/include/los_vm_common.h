@@ -111,11 +111,18 @@ extern "C" {
 #define KB                               (1024UL)
 #define MB                               (1024UL * 1024UL)
 #define GB                               (1024UL * 1024UL * 1024UL)
-
-#define ROUNDUP(a, b)                    (((a) + ((b) - 1)) & ~((b) - 1))
-#define ROUNDDOWN(a, b)                  ((a) & ~((b) - 1))
-#define ROUNDOFFSET(a, b)                ((a) & ((b) - 1))
-#define MIN2(a, b)                       (((a) < (b)) ? (a) : (b))
+/******************************************************************
+圆整通常被理解为为满足某种要求而进行的数据修正。按照修正后的数据在数值上是否比原数据大，
+又可分为向上圆整和向下圆整。它们很像对模拟信号进行采样，对一定范围的数据向一个固定的数据靠拢。
+举例:ROUNDUP(7,4) = 8 		,ROUNDUP(8,4) = 8 		,ROUNDUP(9,4) = 12  
+	 ROUNDDOWN(7,4) = 4 	,ROUNDDOWN(8,4) = 8 	,ROUNDDOWN(9,4) = 8
+	 ROUNDOFFSET(7,4) = 3	,ROUNDOFFSET(8,4) = 0	,ROUNDOFFSET(9,4) = 1
+发现规律看明白了吗?
+******************************************************************/
+#define ROUNDUP(a, b)                    (((a) + ((b) - 1)) & ~((b) - 1))	//向上圆整
+#define ROUNDDOWN(a, b)                  ((a) & ~((b) - 1))	//向下圆整
+#define ROUNDOFFSET(a, b)                ((a) & ((b) - 1))	//圆整偏移
+#define MIN2(a, b)                       (((a) < (b)) ? (a) : (b))	//找到最小值
 
 #define IS_ALIGNED(a, b)                 (!(((UINTPTR)(a)) & (((UINTPTR)(b)) - 1)))//是否按指定的参数对齐
 #define IS_PAGE_ALIGNED(x)               IS_ALIGNED(x, PAGE_SIZE) //是否按页大小对齐 4K

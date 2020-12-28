@@ -50,11 +50,11 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define VM_MAP_WASTE_MEM_LEVEL          (PAGE_SIZE >> 2)
-LosMux g_vmSpaceListMux;
-LOS_DL_LIST_HEAD(g_vmSpaceList);
-LosVmSpace g_kVmSpace;	//内核空间地址
-LosVmSpace g_vMallocSpace;//虚拟分配空间地址
+#define VM_MAP_WASTE_MEM_LEVEL          (PAGE_SIZE >> 2) //	浪费内存等级(1K)
+LosMux g_vmSpaceListMux;				//用于锁g_vmSpaceList的互斥量
+LOS_DL_LIST_HEAD(g_vmSpaceList);		//初始化全局虚拟空间节点,所有虚拟空间都挂到此节点上.
+LosVmSpace g_kVmSpace;					//内核空间地址
+LosVmSpace g_vMallocSpace;				//内核堆空间地址
 //通过虚拟地址获取所属空间地址
 LosVmSpace *LOS_SpaceGet(VADDR_T vaddr)
 {
@@ -62,23 +62,23 @@ LosVmSpace *LOS_SpaceGet(VADDR_T vaddr)
         return LOS_GetKVmSpace();		//获取内核空间
     } else if (LOS_IsUserAddress(vaddr)) {//是否为用户空间
         return OsCurrProcessGet()->vmSpace;//当前进程的虚拟空间
-    } else if (LOS_IsVmallocAddress(vaddr)) {//是否为内核分配空间
-        return LOS_GetVmallocSpace();//获取内核分配空间
+    } else if (LOS_IsVmallocAddress(vaddr)) {//是否为内核堆空间
+        return LOS_GetVmallocSpace();//获取内核堆空间
     } else {
         return NULL;
     }
 }
-//内核虚拟空间只有g_kVmSpace一个，所有的内核进程都共用一个内核虚拟空间
+//内核空间只有g_kVmSpace一个，所有的内核进程都共用一个内核空间
 LosVmSpace *LOS_GetKVmSpace(VOID)
 {
     return &g_kVmSpace;
 }
-//获取虚拟空间双循环链表 g_vmSpaceList中存放的是 g_kVmSpace, g_vMallocSpace,所有用户进程虚拟空间(每个用户进程独有一个)
+//获取虚拟空间双循环链表 g_vmSpaceList中存放的是 g_kVmSpace, g_vMallocSpace,所有用户进程空间(每个用户进程独有一个)
 LOS_DL_LIST *LOS_GetVmSpaceList(VOID)
 {
     return &g_vmSpaceList;
 }
-//获取内核分配空间的全局变量
+//获取内核堆空间的全局变量
 LosVmSpace *LOS_GetVmallocSpace(VOID)
 {
     return &g_vMallocSpace;
@@ -145,34 +145,34 @@ STATIC BOOL OsVmSpaceInitCommon(LosVmSpace *vmSpace, VADDR_T *virtTtb)
 
     return OsArchMmuInit(&vmSpace->archMmu, virtTtb);//对mmu初始化
 }
-
+//@note_thinking 这个函数名称和内容不太搭
 VOID OsVmMapInit(VOID)
 {
-    status_t retval = LOS_MuxInit(&g_vmSpaceListMux, NULL);
+    status_t retval = LOS_MuxInit(&g_vmSpaceListMux, NULL);//初始化虚拟空间的互斥量
     if (retval != LOS_OK) {
         VM_ERR("Create mutex for g_vmSpaceList failed, status: %d", retval);
     }
 }
-//内核虚拟空间初始化
+//初始化内核虚拟空间
 BOOL OsKernVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)//内核空间页表是编译时放在bbs段指定的,共用 L1表
 {
-    vmSpace->base = KERNEL_ASPACE_BASE;//内核虚拟空间基地址
-    vmSpace->size = KERNEL_ASPACE_SIZE;//内核虚拟空间大小
-    vmSpace->mapBase = KERNEL_VMM_BASE;//内核虚拟空间映射基地址
-    vmSpace->mapSize = KERNEL_VMM_SIZE;//内核虚拟空间映射大小
+    vmSpace->base = KERNEL_ASPACE_BASE;//内核空间基地址
+    vmSpace->size = KERNEL_ASPACE_SIZE;//内核空间大小
+    vmSpace->mapBase = KERNEL_VMM_BASE;//内核空间映射区基地址
+    vmSpace->mapSize = KERNEL_VMM_SIZE;//内核空间映射区大小
 #ifdef LOSCFG_DRIVERS_TZDRIVER
     vmSpace->codeStart = 0;
     vmSpace->codeEnd = 0;
 #endif
     return OsVmSpaceInitCommon(vmSpace, virtTtb);//virtTtb 用于初始化 mmu
 }
-//内核虚拟分配空间初始化
+//初始化内核堆空间
 BOOL OsVMallocSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)//内核动态空间的页表是动态申请得来，共用 L1表
 {
-    vmSpace->base = VMALLOC_START;//内核虚拟分配空间基地址
-    vmSpace->size = VMALLOC_SIZE;//内核虚拟分配空间大小
-    vmSpace->mapBase = VMALLOC_START;//内核虚拟分配空间映射基地址
-    vmSpace->mapSize = VMALLOC_SIZE;//内核虚拟分配空间映射区大小
+    vmSpace->base = VMALLOC_START;//内核堆空间基地址
+    vmSpace->size = VMALLOC_SIZE;//内核堆空间大小
+    vmSpace->mapBase = VMALLOC_START;//内核堆空间映射基地址
+    vmSpace->mapSize = VMALLOC_SIZE;//内核堆空间映射区大小
 #ifdef LOSCFG_DRIVERS_TZDRIVER
     vmSpace->codeStart = 0;
     vmSpace->codeEnd = 0;
@@ -195,12 +195,12 @@ BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)//用户空间的TT
 #endif
     return OsVmSpaceInitCommon(vmSpace, virtTtb);
 }
-//鸿蒙内核空间有两个(内核进程空间和内核动态分配空间),共用一张L1页表
+//鸿蒙内核空间有两个(内核空间和内核堆空间),共用一张L1页表
 VOID OsKSpaceInit(VOID)
 {
     OsVmMapInit();// 初始化互斥量
-    OsKernVmSpaceInit(&g_kVmSpace, OsGFirstTableGet());// 初始化内核虚拟空间，OsGFirstTableGet 为L1表基地址
-    OsVMallocSpaceInit(&g_vMallocSpace, OsGFirstTableGet());// 初始化动态分配区虚拟空间，OsGFirstTableGet 为L1表基地址
+    OsKernVmSpaceInit(&g_kVmSpace, OsGFirstTableGet());// 初始化内核空间，OsGFirstTableGet 为L1表基地址
+    OsVMallocSpaceInit(&g_vMallocSpace, OsGFirstTableGet());// 初始化内核堆空间，OsGFirstTableGet 为L1表基地址
 }//g_kVmSpace g_vMallocSpace 共用一个L1页表
 
 STATIC BOOL OsVmSpaceParamCheck(LosVmSpace *vmSpace)//这么简单也要写个函数?
@@ -829,7 +829,7 @@ ERR_REGION_SPLIT:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return status;
 }
-//释放虚拟空间
+//释放虚拟空间,注意内核空间不能被释放掉,永驻内存
 STATUS_T LOS_VmSpaceFree(LosVmSpace *space)
 {
     LosVmMapRegion *region = NULL;
@@ -969,7 +969,7 @@ STATUS_T LOS_VaddrToPaddrMmap(LosVmSpace *space, VADDR_T vaddr, PADDR_T paddr, s
     }
     return LOS_OK;
 }
-
+//对外接口|用户空间申请堆内存
 STATUS_T LOS_UserSpaceVmAlloc(LosVmSpace *space, size_t size, VOID **ptr, UINT8 align_log2, UINT32 regionFlags)
 {
     STATUS_T err = LOS_OK;
@@ -1036,7 +1036,7 @@ VMM_ALLOC_SUCCEED:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return err;
 }
-//申请虚拟内存
+//对外接口|申请内核堆空间内存
 VOID *LOS_VMalloc(size_t size)//从g_vMallocSpace中申请物理内存
 {
     LosVmSpace *space = &g_vMallocSpace;
@@ -1089,7 +1089,7 @@ ERROR:
     (VOID)LOS_MuxRelease(&space->regionMux);//释放互斥锁
     return NULL;
 }
-//释放虚拟内存
+//对外接口|释放内核堆空间内存
 VOID LOS_VFree(const VOID *addr)
 {
     LosVmSpace *space = &g_vMallocSpace;
@@ -1117,24 +1117,24 @@ VOID LOS_VFree(const VOID *addr)
 DONE:
     (VOID)LOS_MuxRelease(&space->regionMux);
 }
-//分配大内存
-STATIC INLINE BOOL OsMemLargeAlloc(UINT32 size)
+//@note_thinking 函数名称和内存不搭
+STATIC INLINE BOOL OsMemLargeAlloc(UINT32 size)//是不是分配浪费大于1K的内存
 {
     UINT32 wasteMem;
 
     if (size < PAGE_SIZE) {
         return FALSE;
     }
-    wasteMem = ROUNDUP(size, PAGE_SIZE) - size;
+    wasteMem = ROUNDUP(size, PAGE_SIZE) - size;//举例:ROUNDUP(7K-1, PAGE_SIZE) = 8K ,ROUNDUP(8K, PAGE_SIZE) = 0
     /* that is 1K ram wasted, waste too much mem ! */
-    return (wasteMem < VM_MAP_WASTE_MEM_LEVEL);//浪费大于1K时用伙伴算法
+    return (wasteMem < VM_MAP_WASTE_MEM_LEVEL);//浪费小于1K时用伙伴算法
 }
 //内核空间内存分配
 VOID *LOS_KernelMalloc(UINT32 size)
 {
     VOID *ptr = NULL;
-
-    if (OsMemLargeAlloc(size)) {//超过4K,为大尺寸内存用伙伴算法分配
+	//从本函数可知,内核空间的分配有两种方式
+    if (OsMemLargeAlloc(size)) {//是不是分配浪费小于1K的内存
         ptr = LOS_PhysPagesAllocContiguous(ROUNDUP(size, PAGE_SIZE) >> PAGE_SHIFT);//分配连续的物理内存页
     } else {
         ptr = LOS_MemAlloc(OS_SYS_MEM_ADDR, size);//从内存池分配

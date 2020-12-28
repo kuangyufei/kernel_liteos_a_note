@@ -41,9 +41,9 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-LosVmPage *g_vmPageArray = NULL;
-size_t g_vmPageArraySize;
-//虚拟页初始化
+LosVmPage *g_vmPageArray = NULL;//物理页框数组
+size_t g_vmPageArraySize;//物理页框大小
+//页框初始化
 STATIC VOID OsVmPageInit(LosVmPage *page, paddr_t pa, UINT8 segID)
 {
     LOS_ListInit(&page->node);			//页节点初始化	
@@ -78,10 +78,10 @@ VOID OsVmPageStartup(VOID)
 
     OsVmPhysAreaSizeAdjust(ROUNDUP(g_vmPageArraySize, PAGE_SIZE));//
 
-    OsVmPhysSegAdd();// 完成对段的初始化,将段切成一页一页
+    OsVmPhysSegAdd();// 完成对段的初始化
     OsVmPhysInit();// 加入空闲链表和设置置换算法,LRU(最近最久未使用)算法
 
-    for (segID = 0; segID < g_vmPhysSegNum; segID++) {//遍历物理段
+    for (segID = 0; segID < g_vmPhysSegNum; segID++) {//遍历物理段,将段切成一页一页
         seg = &g_vmPhysSeg[segID];
         nPage = seg->size >> PAGE_SHIFT;//本段总页数
         for (page = seg->pageBase, pa = seg->start; page <= seg->pageBase + nPage;//遍历,算出每个页框的物理地址
