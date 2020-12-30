@@ -52,15 +52,23 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+/******************************************************************************
+共享内存是进程间通信中最简单的方式之一。共享内存允许两个或更多进程访问同一块内存
+不同进程返回了指向同一个物理内存区域的指针。当一个进程改变了这块地址中的内容的时候，
+其它进程都会察觉到这个更改。
+
+共享线性区可以由任意的进程创建,每个使用共享线性区都必须经过映射.
+******************************************************************************/
+
 STATIC LosMux g_sysvShmMux;
 
 /* private macro */
-#define SYSV_SHM_LOCK()     (VOID)LOS_MuxLock(&g_sysvShmMux, LOS_WAIT_FOREVER)	//拿永久等待锁
+#define SYSV_SHM_LOCK()     (VOID)LOS_MuxLock(&g_sysvShmMux, LOS_WAIT_FOREVER)	//申请永久等待锁
 #define SYSV_SHM_UNLOCK()   (VOID)LOS_MuxUnlock(&g_sysvShmMux)	//释放锁
 
 #define SHM_MAX_PAGES 12800	//共享最大页
-#define SHM_MAX (SHM_MAX_PAGES * PAGE_SIZE) // 12800*4K = 50M
-#define SHM_MIN 1
+#define SHM_MAX (SHM_MAX_PAGES * PAGE_SIZE) // 最大共享空间,12800*4K = 50M
+#define SHM_MIN 1	
 #define SHM_MNI 192
 #define SHM_SEG 128
 #define SHM_ALL (SHM_MAX_PAGES)
@@ -86,7 +94,7 @@ struct shmSegMap {
     INT32 shmID;	//可看出共享内存使用了ID管理机制
 };
 
-struct shmIDSource {//共享存储结构体
+struct shmIDSource {//共享内存描述符
     struct shmid_ds ds; //是内核为每一个共享内存段维护的数据结构,包含权限,各进程最后操作的时间,进程ID等信息
     UINT32 status;	//状态 SHM_SEG_FREE ...
     LOS_DL_LIST node; //节点,挂vmPage
@@ -98,7 +106,7 @@ STATIC struct shminfo g_shmInfo = {
     .shmmin = SHM_MIN,//最小的内存segment的大小 1M
     .shmmni = SHM_MNI,//整个系统的内存segment的总个数  :默认192     			ShmAllocSeg 
     .shmseg = SHM_SEG,//每个进程可以使用的内存segment的最大个数 128
-    .shmall = SHM_ALL,
+    .shmall = SHM_ALL,//系统范围内共享内存的最大页数
 };
 
 STATIC struct shmIDSource *g_shmSegs = NULL;
@@ -129,7 +137,7 @@ INT32 ShmInit(VOID)
 
     return 0;
 }
-//共享内存释放初始化
+//共享内存反初始化
 INT32 ShmDeinit(VOID)
 {
     UINT32 ret;
@@ -296,7 +304,7 @@ STATIC VOID ShmVmmMapping(LosVmSpace *space, LOS_DL_LIST *pageList, VADDR_T vadd
     PADDR_T pa;
     STATUS_T ret;
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(vmPage, pageList, LosVmPage, node) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(vmPage, pageList, LosVmPage, node) {//遍历一页一页映射
         pa = VM_PAGE_TO_PHYS(vmPage);//拿到物理地址
         LOS_AtomicInc(&vmPage->refCounts);//自增
         ret = LOS_ArchMmuMap(&space->archMmu, va, pa, 1, regionFlags);//虚实映射
@@ -321,7 +329,7 @@ VOID OsShmFork(LosVmSpace *space, LosVmMapRegion *oldRegion, LosVmMapRegion *new
 
     newRegion->shmid = oldRegion->shmid;//一样的共享区ID
     newRegion->forkFlags = oldRegion->forkFlags;//forkFlags也一样了
-    ShmVmmMapping(space, &seg->node, newRegion->range.base, newRegion->regionFlags);//共享内存映射
+    ShmVmmMapping(space, &seg->node, newRegion->range.base, newRegion->regionFlags);//新线性区与共享内存进行映射
     seg->ds.shm_nattch++;//附在共享线性区上的进程数++
     SYSV_SHM_UNLOCK();
 }
@@ -331,7 +339,7 @@ VOID OsShmRegionFree(LosVmSpace *space, LosVmMapRegion *region)
     struct shmIDSource *seg = NULL;
 
     SYSV_SHM_LOCK();
-    seg = ShmFindSeg(region->shmid);////通过线性区ID获取对应的共享资源ID结构体
+    seg = ShmFindSeg(region->shmid);//通过线性区ID获取对应的共享资源ID结构体
     if (seg == NULL) {
         SYSV_SHM_UNLOCK();
         return;
@@ -344,7 +352,7 @@ VOID OsShmRegionFree(LosVmSpace *space, LosVmMapRegion *region)
     }
     SYSV_SHM_UNLOCK();
 }
-//是否为共享线性区,看他有没有标签
+//是否为共享线性区,是否有标签?
 BOOL OsIsShmRegion(LosVmMapRegion *region)
 {
     return (region->regionFlags & VM_MAP_REGION_FLAG_SHM) ? TRUE : FALSE;
@@ -478,7 +486,7 @@ INT32 ShmatParamCheck(const void *shmaddr, int shmflg)
 
     return 0;
 }
-//共享
+//分配一个共享线性区
 LosVmMapRegion *ShmatVmmAlloc(struct shmIDSource *seg, const VOID *shmaddr,
                               INT32 shmflg, UINT32 prot)
 {

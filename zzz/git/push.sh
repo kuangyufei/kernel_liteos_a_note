@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '注解让你彻底明白什么是圆整函数(ROUNDUP,ROUNDDOWN).
+git commit -m  '关于内核这些问题你知道多少? .
 搜索 @note_pic 方便理解画的字符图
 搜索 @note_why 尚未看明白的地方，如果您看明白了，请告知完善
 搜索 @note_thinking 一点思考和吐槽的地方

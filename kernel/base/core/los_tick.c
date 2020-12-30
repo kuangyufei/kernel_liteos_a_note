@@ -52,7 +52,7 @@ LITE_OS_SEC_DATA_INIT UINT32 g_tickPerSecond;//每秒Tick数,鸿蒙默认是每�
 LITE_OS_SEC_BSS DOUBLE g_cycle2NsScale;
 
 /* spinlock for task module */
-LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_tickSpin);
+LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_tickSpin); //节拍器自旋锁
 
 /*
  * Description : Tick interruption handler

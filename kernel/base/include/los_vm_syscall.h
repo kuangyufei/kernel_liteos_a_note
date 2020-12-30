@@ -45,12 +45,12 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
-STATIC INLINE BOOL LOS_IsNamedMapping(unsigned long flags)//是否非匿名映射
+//是否非匿名映射
+STATIC INLINE BOOL LOS_IsNamedMapping(unsigned long flags)
 {
     return ((flags & MAP_ANONYMOUS) == 0);
 }
-
+//是否匿名映射
 STATIC INLINE BOOL LOS_IsAnonymousMapping(unsigned long flags)
 {
     return ((flags & MAP_ANONYMOUS) == MAP_ANONYMOUS);
