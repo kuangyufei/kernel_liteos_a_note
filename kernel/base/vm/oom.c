@@ -67,13 +67,13 @@ LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomScoreProcess(LosProcessCB *candidateProc
 #endif
     return actualPm;
 }
-//内存不足时,进程
+//用于设置   g_oomCB->processVictimCB 回调函数
 LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomKillProcess(UINTPTR param)
 {
     /* we will not kill process, and do nothing here */
     return LOS_OK;
 }
-
+//强制收缩内存
 LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomForceShrinkMemory(VOID)
 {
     UINT32 i;
@@ -83,13 +83,14 @@ LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomForceShrinkMemory(VOID)
      * TryShrinkMemory maybe reclaim 0 pages in the first time from active list
      * to inactive list, and in the second time reclaim memory from inactive list.
      */
+     //TryShrinkMemory可能会在第一时间从活动列表中回收0页到非活动列表，并在第二次从非活动列表中回收内存。
     for (i = 0; i < MAX_SHRINK_PAGECACHE_TRY; i++) {
         reclaimMemPages += OsTryShrinkMemory(0);
     }
 
     return reclaimMemPages;
 }
-
+//内存不足时回收页高速缓存
 LITE_OS_SEC_TEXT_MINOR STATIC BOOL OomReclaimPageCache(VOID)
 {
     UINT32 totalPm = 0;
@@ -99,30 +100,31 @@ LITE_OS_SEC_TEXT_MINOR STATIC BOOL OomReclaimPageCache(VOID)
     UINT32 i;
 
     for (i = 0; i < MAX_SHRINK_PAGECACHE_TRY; i++) {
-        OsVmPhysUsedInfoGet(&usedPm, &totalPm);
-        isReclaimMemory = ((totalPm - usedPm) << PAGE_SHIFT) < g_oomCB->reclaimMemThreshold;
-        if (isReclaimMemory) {
+        OsVmPhysUsedInfoGet(&usedPm, &totalPm);//获取总的和已经使用的物理内存数量
+        isReclaimMemory = ((totalPm - usedPm) << PAGE_SHIFT) < g_oomCB->reclaimMemThreshold;//检查是否过了回收门槛
+        if (isReclaimMemory) {//要回收了
             /*
              * we do force memory reclaim from page cache here.
              * if we get memory, we will reclaim pagecache memory again.
              * if there is no memory to reclaim, we will return.
              */
-            reclaimMemPages = OomForceShrinkMemory();
-            if (reclaimMemPages > 0) {
+             //在这里强制从页缓存中回收内存,
+            reclaimMemPages = OomForceShrinkMemory();//强制回收内存
+            if (reclaimMemPages > 0) {//如果得到内存，将再次回收pagecache内存
                 continue;
             }
         }
-        break;
+        break;//实在没有内存可回收
     }
 
-    return isReclaimMemory;
+    return isReclaimMemory;//返回回收的数量
 }
 
 /*
- * check is low memory or not, if low memory, try to kill process. //检查内存是否不足，如果内存不足，请尝试终止进程。
- * return is kill process or not. //返回是否kill进程
+ * check is low memory or not, if low memory, try to kill process. 
+ * return is kill process or not. 
  */
-LITE_OS_SEC_TEXT_MINOR BOOL OomCheckProcess(VOID)
+LITE_OS_SEC_TEXT_MINOR BOOL OomCheckProcess(VOID)//检查内存是否不足，如果内存不足，请尝试终止进程,返回是否kill进程
 {
     UINT32 totalPm;
     UINT32 usedPm;
@@ -135,7 +137,7 @@ LITE_OS_SEC_TEXT_MINOR BOOL OomCheckProcess(VOID)
     LOS_SpinLock(&g_oomSpinLock);
 
     /* first we will check if we need to reclaim pagecache memory */
-    if (OomReclaimPageCache() == FALSE) {
+    if (OomReclaimPageCache() == FALSE) {//
         goto NO_VICTIM_PROCESS;
     }
 
@@ -158,10 +160,10 @@ NO_VICTIM_PROCESS:
 #ifdef LOSCFG_ENABLE_OOM_LOOP_TASK	//内存溢出监测任务开关
 STATIC VOID OomWriteEvent(VOID) // OomTaskInit中创建的定时器回调
 {
-    OsWriteResourceEvent(OS_RESOURCE_EVENT_OOM);//写内存溢出事件
+    OsWriteResourceEvent(OS_RESOURCE_EVENT_OOM);//广播内存溢出事件
 }
 #endif
-
+//打印内存不足时的信息
 LITE_OS_SEC_TEXT_MINOR VOID OomInfodump(VOID) //打印内存溢出信息
 {
     PRINTK("[oom] oom loop task status: %s\n"
@@ -172,7 +174,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OomInfodump(VOID) //打印内存溢出信息
            g_oomCB->lowMemThreshold, g_oomCB->reclaimMemThreshold,
            g_oomCB->checkInterval);
 }
-
+//设置低内存门槛
 LITE_OS_SEC_TEXT_MINOR VOID OomSetLowMemThreashold(UINT32 lowMemThreshold)
 {
     if ((lowMemThreshold > OOM_DEFAULT_LOW_MEM_THRESHOLD_MAX)) {
@@ -186,7 +188,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OomSetLowMemThreashold(UINT32 lowMemThreshold)
                g_oomCB->lowMemThreshold);
     }
 }
-
+//设置回收内存的门槛
 LITE_OS_SEC_TEXT_MINOR VOID OomSetReclaimMemThreashold(UINT32 reclaimMemThreshold)
 {
     UINT32 totalPm = 0;
@@ -204,7 +206,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OomSetReclaimMemThreashold(UINT32 reclaimMemThreshol
                g_oomCB->reclaimMemThreshold);
     }
 }
-
+//设置监控间隔
 LITE_OS_SEC_TEXT_MINOR VOID OomSetCheckInterval(UINT32 checkInterval)
 {
     if ((checkInterval >= OOM_CHECK_MIN) && (checkInterval <= OOM_CHECK_MAX)) {
@@ -216,7 +218,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OomSetCheckInterval(UINT32 checkInterval)
                g_oomCB->checkInterval, OOM_CHECK_MIN, OOM_CHECK_MAX);
     }
 }
-//内存溢出任务初始化
+//内存不足监控任务初始化, OOM 通过开一个软件定时器来检查内存的使用情况
 LITE_OS_SEC_TEXT_MINOR UINT32 OomTaskInit(VOID)
 {
     g_oomCB = (OomCB *)LOS_MemAlloc(m_aucSysMem0, sizeof(OomCB));
@@ -225,12 +227,12 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OomTaskInit(VOID)
         return LOS_NOK;
     }
 
-    g_oomCB->lowMemThreshold     = OOM_DEFAULT_LOW_MEM_THRESHOLD;
-    g_oomCB->reclaimMemThreshold = OOM_DEFAULT_RECLAIM_MEM_THRESHOLD;
-    g_oomCB->checkInterval       = OOM_DEFAULT_CHECK_INTERVAL;
-    g_oomCB->processVictimCB     = (OomFn)OomKillProcess;
-    g_oomCB->scoreCB             = (OomFn)OomScoreProcess;
-    g_oomCB->enabled             = FALSE;
+    g_oomCB->lowMemThreshold     = OOM_DEFAULT_LOW_MEM_THRESHOLD;		//运行任务的门槛
+    g_oomCB->reclaimMemThreshold = OOM_DEFAULT_RECLAIM_MEM_THRESHOLD;	//回收内存的门槛
+    g_oomCB->checkInterval       = OOM_DEFAULT_CHECK_INTERVAL;			//检测时间间隔 1S 
+    g_oomCB->processVictimCB     = (OomFn)OomKillProcess;	//出问题时对进程的处理函数
+    g_oomCB->scoreCB             = (OomFn)OomScoreProcess;	//统计进程占用的物理内存
+    g_oomCB->enabled             = FALSE;				//是否启用监控
 
 #ifdef LOSCFG_ENABLE_OOM_LOOP_TASK //内存溢出检测开关
     g_oomCB->enabled         = TRUE;
@@ -240,7 +242,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OomTaskInit(VOID)
         return ret;
     }
 
-    return LOS_SwtmrStart(g_oomCB->swtmrID);
+    return LOS_SwtmrStart(g_oomCB->swtmrID);//启动定时器
 #else
     return LOS_OK;
 #endif

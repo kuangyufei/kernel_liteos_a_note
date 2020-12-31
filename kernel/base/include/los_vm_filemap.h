@@ -118,8 +118,8 @@ enum OsPageFlags {
 
 #define PGOFF_MAX                       2000
 #define MAX_SHRINK_PAGECACHE_TRY        2
-#define VM_FILEMAP_MAX_SCAN             (SYS_MEM_SIZE_DEFAULT >> PAGE_SHIFT)
-#define VM_FILEMAP_MIN_SCAN             32
+#define VM_FILEMAP_MAX_SCAN             (SYS_MEM_SIZE_DEFAULT >> PAGE_SHIFT) //扫描文件映射页最大数量
+#define VM_FILEMAP_MIN_SCAN             32 //扫描文件映射页最小数量
 //给页面贴上被锁的标签
 STATIC INLINE VOID OsSetPageLocked(LosVmPage *page)
 {

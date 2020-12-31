@@ -432,7 +432,7 @@ STATIC INT32 OsFlushDirtyPage(LosFilePage *fpage)
 
     return ret;
 }
-//把一页脏数据拷贝给新页,老脏页撕掉脏页标签
+//备份脏页,老脏页撕掉脏页标签
 LosFilePage *OsDumpDirtyPage(LosFilePage *oldFPage)
 {
     LosFilePage *newFPage = NULL;
@@ -453,7 +453,7 @@ LosFilePage *OsDumpDirtyPage(LosFilePage *oldFPage)
 
     return newFPage;
 }
-//处理脏页数据
+//冲洗脏页数据,将脏页数据回写磁盘
 VOID OsDoFlushDirtyPage(LosFilePage *fpage)
 {
     if (fpage == NULL) {

@@ -141,7 +141,7 @@ ref:0, act:0 --> ref:1, act:0
 ref:1, act:0 --> ref:0, act:1
 ref:0, act:1 --> ref:1, act:1
 */
-VOID OsPageRefIncLocked(LosFilePage *fpage)
+VOID OsPageRefIncLocked(LosFilePage *fpage)// ref ,act 标签转换功能
 {
     BOOL isOrgActive;
     UINT32 intSave;
@@ -151,16 +151,16 @@ VOID OsPageRefIncLocked(LosFilePage *fpage)
         return;
     }
 
-    LOS_SpinLockSave(&fpage->physSeg->lruLock, &intSave);
+    LOS_SpinLockSave(&fpage->physSeg->lruLock, &intSave);//要处理lruList,先拿锁
 
-    page = fpage->vmPage;
-    isOrgActive = OsIsPageActive(page);
+    page = fpage->vmPage;//拿到物理页框
+    isOrgActive = OsIsPageActive(page);//页面是否在活动
 
-    if (OsIsPageReferenced(page) && !OsIsPageActive(page)) {
-        OsCleanPageReferenced(page);
-        OsSetPageActive(page);
+    if (OsIsPageReferenced(page) && !OsIsPageActive(page)) {//身兼 不活动和引用标签
+        OsCleanPageReferenced(page);//撕掉引用标签  ref:1, act:0 --> ref:0, act:1
+        OsSetPageActive(page);		//贴上活动标签
     } else if (!OsIsPageReferenced(page)) {
-        OsSetPageReferenced(page);
+        OsSetPageReferenced(page);//ref:0, act:0 --> ref:1, act:0
     }
 
     if (!isOrgActive && OsIsPageActive(page)) {
@@ -185,7 +185,7 @@ ref:1, act:1 --> ref:0, act:1
 ref:0, act:1 --> ref:1, act:0
 ref:1, act:0 --> ref:0, act:0
 */
-VOID OsPageRefDecNoLock(LosFilePage *fpage)
+VOID OsPageRefDecNoLock(LosFilePage *fpage) // ref ,act 标签转换功能
 {
     BOOL isOrgActive;
     LosVmPage *page = NULL;
@@ -215,25 +215,25 @@ VOID OsShrinkActiveList(LosVmPhysSeg *physSeg, int nScan)
     LosFilePage *fnext = NULL;
     LOS_DL_LIST *activeFile = &physSeg->lruList[VM_LRU_ACTIVE_FILE];
 
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(fpage, fnext, activeFile, LosFilePage, lru) {
-        if (LOS_SpinTrylock(&fpage->mapping->list_lock) != LOS_OK) {
-            continue;
+    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(fpage, fnext, activeFile, LosFilePage, lru) {//一页一页处理
+        if (LOS_SpinTrylock(&fpage->mapping->list_lock) != LOS_OK) {//尝试获取文件页所在的page_mapping锁
+            continue;//接着处理下一文件页
         }
 
-        /* happend when caller hold cache lock and try reclaim this page */
-        if (OsIsPageLocked(fpage->vmPage)) {
-            LOS_SpinUnlock(&fpage->mapping->list_lock);
-            continue;
+        /* happend when caller hold cache lock and try reclaim this page *///调用方持有缓存锁并尝试回收此页时发生
+        if (OsIsPageLocked(fpage->vmPage)) {//页面是否被锁
+            LOS_SpinUnlock(&fpage->mapping->list_lock);//失败时,一定要释放page_mapping锁.
+            continue;//接着处理下一文件页
         }
 
-        if (OsIsPageMapped(fpage) && (fpage->flags & VM_MAP_REGION_FLAG_PERM_EXECUTE)) {
-            LOS_SpinUnlock(&fpage->mapping->list_lock);
-            continue;
+        if (OsIsPageMapped(fpage) && (fpage->flags & VM_MAP_REGION_FLAG_PERM_EXECUTE)) {//文件页是否被映射而且是个可执行文件 ?
+            LOS_SpinUnlock(&fpage->mapping->list_lock);//是时,一定要释放page_mapping锁.
+            continue;//接着处理下一文件页
         }
+		//找了可以收缩的文件页
+        OsPageRefDecNoLock(fpage); //将页面移到未活动文件链表
 
-        OsPageRefDecNoLock(fpage);
-
-        LOS_SpinUnlock(&fpage->mapping->list_lock);
+        LOS_SpinUnlock(&fpage->mapping->list_lock);	//释放page_mapping锁.
 
         if (--nScan <= 0) {
             break;
@@ -251,36 +251,36 @@ int OsShrinkInactiveList(LosVmPhysSeg *physSeg, int nScan, LOS_DL_LIST *list)
     LosFilePage *ftemp = NULL;
     LOS_DL_LIST *inactive_file = &physSeg->lruList[VM_LRU_INACTIVE_FILE];
 
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(fpage, fnext, inactive_file, LosFilePage, lru) {
+    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(fpage, fnext, inactive_file, LosFilePage, lru) {//遍历链表一页一页处理
         flock = &fpage->mapping->list_lock;
 
-        if (LOS_SpinTrylock(flock) != LOS_OK) {
-            continue;
+        if (LOS_SpinTrylock(flock) != LOS_OK) {//尝试获取文件页所在的page_mapping锁
+            continue;//接着处理下一文件页
         }
 
-        page = fpage->vmPage;
-        if (OsIsPageLocked(page)) {
+        page = fpage->vmPage;//获取物理页框
+        if (OsIsPageLocked(page)) {//页面是否被锁
             LOS_SpinUnlock(flock);
-            continue;
+            continue;//接着处理下一文件页
         }
 
         if (OsIsPageMapped(fpage) && (OsIsPageDirty(page) || (fpage->flags & VM_MAP_REGION_FLAG_PERM_EXECUTE))) {
-            LOS_SpinUnlock(flock);
-            continue;
+            LOS_SpinUnlock(flock);//文件页是否被映射而且是个脏页获取是个可执行文件 ?
+            continue;//接着处理下一文件页
         }
 
         if (OsIsPageDirty(page)) {//是脏页
-            ftemp = OsDumpDirtyPage(fpage);
-            if (ftemp != NULL) {
-                LOS_ListTailInsert(list, &ftemp->node);
+            ftemp = OsDumpDirtyPage(fpage);//备份脏页
+            if (ftemp != NULL) {//备份成功了
+                LOS_ListTailInsert(list, &ftemp->node);//将脏页挂到参数链表上带走
             }
         }
 
-        OsDeletePageCacheLru(fpage);
+        OsDeletePageCacheLru(fpage);//将文件页从LRU和pagecache上摘除
         LOS_SpinUnlock(flock);
-        nrReclaimed++;
+        nrReclaimed++;//成功回收了一页
 
-        if (--nScan <= 0) {
+        if (--nScan <= 0) {//继续回收
             break;
         }
     }
@@ -294,48 +294,48 @@ bool InactiveListIsLow(LosVmPhysSeg *physSeg)
 }
 
 #ifdef LOSCFG_FS_VFS
-int OsTryShrinkMemory(size_t nPage)
+int OsTryShrinkMemory(size_t nPage)//尝试收缩文件页
 {
     UINT32 intSave;
     size_t totalPages;
     size_t nReclaimed = 0;
     LosVmPhysSeg *physSeg = NULL;
     UINT32 index;
-    LOS_DL_LIST_HEAD(dirtyList);
+    LOS_DL_LIST_HEAD(dirtyList);//初始化脏页链表,上面将挂所有脏页用于同步到磁盘后回收
     LosFilePage *fpage = NULL;
     LosFilePage *fnext = NULL;
 
     if (nPage <= 0) {
-        nPage = VM_FILEMAP_MIN_SCAN;
+        nPage = VM_FILEMAP_MIN_SCAN;//
     }
 
     if (nPage > VM_FILEMAP_MAX_SCAN) {
         nPage = VM_FILEMAP_MAX_SCAN;
     }
 
-    for (index = 0; index < g_vmPhysSegNum; index++) {
-        physSeg = &g_vmPhysSeg[index];
+    for (index = 0; index < g_vmPhysSegNum; index++) {//遍历整个物理段组
+        physSeg = &g_vmPhysSeg[index];//一段段来
         LOS_SpinLockSave(&physSeg->lruLock, &intSave);
-        totalPages = physSeg->lruSize[VM_LRU_ACTIVE_FILE] + physSeg->lruSize[VM_LRU_INACTIVE_FILE];
-        if (totalPages < VM_FILEMAP_MIN_SCAN) {
+        totalPages = physSeg->lruSize[VM_LRU_ACTIVE_FILE] + physSeg->lruSize[VM_LRU_INACTIVE_FILE];//统计所有文件页
+        if (totalPages < VM_FILEMAP_MIN_SCAN) {//文件页占用内存不多的情况下,怎么处理?
             LOS_SpinUnlockRestore(&physSeg->lruLock, intSave);
-            continue;
+            continue;//放过这一段,找下一段
         }
 
-        if (InactiveListIsLow(physSeg)) {
-            OsShrinkActiveList(physSeg, (nPage < VM_FILEMAP_MIN_SCAN) ? VM_FILEMAP_MIN_SCAN : nPage);
+        if (InactiveListIsLow(physSeg)) {//未活动页少于活动页的情况
+            OsShrinkActiveList(physSeg, (nPage < VM_FILEMAP_MIN_SCAN) ? VM_FILEMAP_MIN_SCAN : nPage);//缩小活动页
         }
 
-        nReclaimed += OsShrinkInactiveList(physSeg, nPage, &dirtyList);
+        nReclaimed += OsShrinkInactiveList(physSeg, nPage, &dirtyList);//缩小未活动页,带出脏页链表
         LOS_SpinUnlockRestore(&physSeg->lruLock, intSave);
 
-        if (nReclaimed >= nPage) {
-            break;
+        if (nReclaimed >= nPage) {//够了,够了,达到目的了.
+            break;//退出收缩
         }
     }
 
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(fpage, fnext, &dirtyList, LosFilePage, node) {
-        OsDoFlushDirtyPage(fpage);
+    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(fpage, fnext, &dirtyList, LosFilePage, node) {//遍历处理脏页数据
+        OsDoFlushDirtyPage(fpage);//冲洗脏页数据,将脏页数据回写磁盘
     }
 
     return nReclaimed;
