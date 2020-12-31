@@ -212,7 +212,12 @@ STATIC VOID ShmPagesRefDec(struct shmIDSource *seg)
         LOS_AtomicDec(&page->refCounts);
     }
 }
-//分配共享页
+
+/******************************************************************************
+ 为共享段分配物理内存
+ 例如:参数size = 4097, LOS_Align(size, PAGE_SIZE) = 8192
+ 分配页数    size >> PAGE_SHIFT = 2页 
+******************************************************************************/
 STATIC INT32 ShmAllocSeg(key_t key, size_t size, int shmflg)
 {
     INT32 i;
@@ -224,9 +229,9 @@ STATIC INT32 ShmAllocSeg(key_t key, size_t size, int shmflg)
         (size > g_shmInfo.shmmax)) {
         return -EINVAL;
     }
-    size = LOS_Align(size, PAGE_SIZE);
+    size = LOS_Align(size, PAGE_SIZE);//必须对齐 
 
-    for (i = 0; i < g_shmInfo.shmmni; i++) {
+    for (i = 0; i < g_shmInfo.shmmni; i++) {//试图找到一个空闲段与参数key绑定
         if (g_shmSegs[i].status & SHM_SEG_FREE) {//找到空闲段
             g_shmSegs[i].status &= ~SHM_SEG_FREE;//变成非空闲状态
             segNum = i;//标号
@@ -240,17 +245,17 @@ STATIC INT32 ShmAllocSeg(key_t key, size_t size, int shmflg)
 
     seg = &g_shmSegs[segNum];
     count = LOS_PhysPagesAlloc(size >> PAGE_SHIFT, &seg->node);//分配共享页面,函数内部把node都挂好了.
-    if (count != (size >> PAGE_SHIFT)) {//异常释放
-        (VOID)LOS_PhysPagesFree(&seg->node);//
-        seg->status = SHM_SEG_FREE;//回归seg池
+    if (count != (size >> PAGE_SHIFT)) {//当未分配到足够的内存时,处理方式是:不稀罕给那么点,舍弃!
+        (VOID)LOS_PhysPagesFree(&seg->node);//释放节点上的物理页框
+        seg->status = SHM_SEG_FREE;//共享段变回空闲状态
         return -ENOMEM;
     }
-    ShmSetSharedFlag(seg);//node的每个页面设置为此乃共享页也
+    ShmSetSharedFlag(seg);//将node的每个页面设置为共享页
 
-    seg->status |= SHM_SEG_USED;	//段已使用
+    seg->status |= SHM_SEG_USED;	//共享段贴上已在使用的标签
     seg->ds.shm_perm.mode = (unsigned int)shmflg & ACCESSPERMS; //使用权限
-    seg->ds.shm_perm.key = key;//
-    seg->ds.shm_segsz = size;
+    seg->ds.shm_perm.key = key;//保存参数key,如此 key 和 共享ID绑定在一块
+    seg->ds.shm_segsz = size;	//共享段的大小
     seg->ds.shm_perm.cuid = LOS_GetUserID();	//设置用户ID
     seg->ds.shm_perm.uid = LOS_GetUserID();		//设置用户ID
     seg->ds.shm_perm.cgid = LOS_GetGroupID();	//设置组ID
@@ -285,10 +290,10 @@ STATIC INT32 ShmFindSegByKey(key_t key)
     INT32 i;
     struct shmIDSource *seg = NULL;
 
-    for (i = 0; i < g_shmInfo.shmmni; i++) {
+    for (i = 0; i < g_shmInfo.shmmni; i++) {//遍历共享段池,找到与key绑定的共享ID
         seg = &g_shmSegs[i];
         if ((seg->status & SHM_SEG_USED) &&
-            (seg->ds.shm_perm.key == key)) {
+            (seg->ds.shm_perm.key == key)) {//满足两个条件,找到后返回
             return i;
         }
     }
@@ -311,7 +316,7 @@ STATIC INT32 ShmSegValidCheck(INT32 segNum, size_t size, int shmFalg)
 
     return segNum;
 }
-//通过ID找到资源
+//通过ID找到共享内存资源
 STATIC struct shmIDSource *ShmFindSeg(int shmid)
 {
     struct shmIDSource *seg = NULL;
@@ -390,7 +395,7 @@ BOOL OsIsShmRegion(LosVmMapRegion *region)
 {
     return (region->regionFlags & VM_MAP_REGION_FLAG_SHM) ? TRUE : FALSE;
 }
-//使用共享段数量
+//获取共享内存池中已被使用的段数量
 STATIC INT32 ShmSegUsedCount(VOID)
 {
     INT32 i;
@@ -399,16 +404,16 @@ STATIC INT32 ShmSegUsedCount(VOID)
 
     for (i = 0; i < g_shmInfo.shmmni; i++) {
         seg = &g_shmSegs[i];
-        if (seg->status & SHM_SEG_USED) {
+        if (seg->status & SHM_SEG_USED) {//找到一个
             count++;
         }
     }
     return count;
 }
-//共享内存权限检查
+//对共享内存段权限检查
 STATIC INT32 ShmPermCheck(struct shmIDSource *seg, mode_t mode)
 {
-    INT32 uid = LOS_GetUserID();
+    INT32 uid = LOS_GetUserID();//当前进程的用户ID
     UINT32 tmpMode = 0;
     mode_t privMode = seg->ds.shm_perm.mode;
     mode_t accMode;

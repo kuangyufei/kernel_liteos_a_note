@@ -50,7 +50,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-LITE_OS_SEC_BSS OomCB *g_oomCB = NULL;
+LITE_OS_SEC_BSS OomCB *g_oomCB = NULL; //全局内存溢出控制块
 static SPIN_LOCK_INIT(g_oomSpinLock);//内存溢出自旋锁
 
 LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomScoreProcess(LosProcessCB *candidateProcess)
@@ -67,7 +67,7 @@ LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomScoreProcess(LosProcessCB *candidateProc
 #endif
     return actualPm;
 }
-
+//内存不足时,进程
 LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomKillProcess(UINTPTR param)
 {
     /* we will not kill process, and do nothing here */

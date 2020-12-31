@@ -46,16 +46,16 @@
 
 #define OOM_DEFAULT_RECLAIM_MEM_THRESHOLD   0x500000 /* 5MByte */
 
-typedef UINT32 (*OomFn)(UINTPTR param);
+typedef UINT32 (*OomFn)(UINTPTR param);//内存溢出的回调函数定义
 
 typedef struct { //内存溢出控制块(描述符)
     UINT32       lowMemThreshold;       /* byte */ 	//最低运行内存
     UINT32       reclaimMemThreshold;   /* byte */	//回收内存起点
     UINT32       checkInterval;         /* microsecond */
     OomFn        processVictimCB;       /* process victim process cb function */ 
-    OomFn        scoreCB;               /* out of memory, the process score function */
-    UINT16       swtmrID;
-    BOOL         enabled;               /* oom is enabled or not */
+    OomFn        scoreCB;               /* out of memory, the process score function */ //内存不足时,进程得分函数
+    UINT16       swtmrID;				//定时器ID
+    BOOL         enabled;               /* oom is enabled or not *///是否启用了内存溢出监控
 } OomCB;
 
 LITE_OS_SEC_TEXT_MINOR UINT32 OomTaskInit(VOID);

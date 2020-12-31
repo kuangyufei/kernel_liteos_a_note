@@ -1,31 +1,19 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include "turing.h"
 
-typedef unsigned int       UINTPTR;
-typedef unsigned char      UINT8;
-typedef unsigned long PTE_T;
-typedef unsigned long VADDR_T;
-#define IS_ALIGNED(a, b)                 (!(((UINTPTR)(a)) & (((UINTPTR)(b)) - 1)))
-
-typedef struct LOS_DL_LIST {
-    struct LOS_DL_LIST *pstPrev; /**< Current node's pointer to the previous node */
-    struct LOS_DL_LIST *pstNext; /**< Current node's pointer to the next node */
-} LOS_DL_LIST;
-
+LITE_OS_SEC_TEXT UINTPTR LOS_Align(UINTPTR addr, UINT32 boundary)
+{
+    if ((addr + boundary - 1) > addr) {
+        return (addr + boundary - 1) & ~((UINTPTR)(boundary - 1));
+    } else {
+        return addr & ~((UINTPTR)(boundary - 1));
+    }
+}
 void b(){
     UINT8 w[3]={0};
     PTE_T pte1BasePtr = 0x11100000;
     VADDR_T vaddr = 0x80738903;  
-
-    #define MMU_DESCRIPTOR_L1_SMALL_SIZE                            0x100000 //1M
-    #define MMU_DESCRIPTOR_L1_SMALL_MASK                            (MMU_DESCRIPTOR_L1_SMALL_SIZE - 1)
-    #define MMU_DESCRIPTOR_L1_SMALL_FRAME                           (~MMU_DESCRIPTOR_L1_SMALL_MASK)
-    #define MMU_DESCRIPTOR_L1_SMALL_SHIFT                           20
-    #define MMU_DESCRIPTOR_L1_SECTION_ADDR(x)                       ((x) & MMU_DESCRIPTOR_L1_SMALL_FRAME)
-    #define OS_TSK_HIGH_BITS       3U
-    #define OS_TSK_LOW_BITS        (32U - OS_TSK_HIGH_BITS) //29
-    #define OS_TSK_SORTLINK_LOGLEN OS_TSK_HIGH_BITS	//3U
-
     PTE_T  l1Entry = pte1BasePtr + vaddr >> MMU_DESCRIPTOR_L1_SMALL_SHIFT;
     printf("pte1BasePtr ad: %x\n",&pte1BasePtr);
     printf("w[1] ad: %x\n",&w[1]);
@@ -35,19 +23,12 @@ void b(){
     printf("MMU_DESCRIPTOR_L1_SMALL_FRAME:%x\n",MMU_DESCRIPTOR_L1_SMALL_FRAME);
     printf("pa: %x\n",MMU_DESCRIPTOR_L1_SECTION_ADDR(l1Entry) + (vaddr & (MMU_DESCRIPTOR_L1_SMALL_SIZE - 1)));
 }
-
 void a(){
-    #define BITMAP_BITS_PER_WORD (sizeof(UINTPTR) * 8)
-    #define BITMAP_NUM_WORDS(x) (((x) + BITMAP_BITS_PER_WORD - 1) / BITMAP_BITS_PER_WORD)
     printf("BITMAP_BITS_PER_WORD %d\n",BITMAP_BITS_PER_WORD);
     printf("BITMAP_NUM_WORDS %d\n",BITMAP_NUM_WORDS(1UL << 8));
 }
 
 void round1(){
-    #define PAGE_SIZE                        (0x1000U) // 页大小4K
-    #define ROUNDUP(a, b)                    (((a) + ((b) - 1)) & ~((b) - 1))
-    #define ROUNDDOWN(a, b)                  ((a) & ~((b) - 1))
-    #define ROUNDOFFSET(a, b)                ((a) & ((b) - 1))
     int a = 0xFF;
     //printf("a>> %d\n",a>>3);
     //printf("a/ %d\n",a/8);
@@ -77,13 +58,14 @@ void arg_test(int i, ...)
 }
 int main()
 {
-    int size = 0;
-    printf("sizeof(int) %d\n",sizeof(int));
-    round1();
+    int size = 4097;
+    size = LOS_Align(size, PAGE_SIZE);//必须对齐
+    printf("sizeof(int) %d\n",size);
+    //round1();
     //arg_test(99, 4,8,9);
     //size = sizeof(LOS_DL_LIST) << OS_TSK_SORTLINK_LOGLEN;
     //printf("LOS_DL_LIST %d\n",sizeof(LOS_DL_LIST *));
     //printf("size %d\n",size);
     return 0;
 }
-
+// gcc -o main main.c

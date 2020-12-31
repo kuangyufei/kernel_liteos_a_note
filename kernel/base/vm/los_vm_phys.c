@@ -491,7 +491,10 @@ LosVmPage *LOS_PhysPageAlloc(VOID)
 {
     return OsVmPhysPagesGet(ONE_PAGE);//分配一页物理页
 }
-
+/******************************************************************************
+ 分配nPages页个物理页框,并将页框挂入list
+ 返回已分配的页面大小,不负责一定能分配到nPages的页框
+******************************************************************************/
 size_t LOS_PhysPagesAlloc(size_t nPages, LOS_DL_LIST *list)
 {
     LosVmPage *page = NULL;
@@ -506,7 +509,7 @@ size_t LOS_PhysPagesAlloc(size_t nPages, LOS_DL_LIST *list)
         if (page == NULL) {
             break;
         }
-        LOS_ListTailInsert(list, &page->node);//从参数链表list尾部插入新页面结点
+        LOS_ListTailInsert(list, &page->node);//从参数链表list尾部挂入新页面结点
         count++;
     }
 
