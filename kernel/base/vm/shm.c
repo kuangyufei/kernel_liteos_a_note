@@ -60,7 +60,7 @@ extern "C" {
 共享线性区可以由任意的进程创建,每个使用共享线性区都必须经过映射.
 ******************************************************************************/
 
-STATIC LosMux g_sysvShmMux;
+STATIC LosMux g_sysvShmMux; //互斥锁,共享内存本身并不保证操作的同步性,所以需用互斥锁
 
 /* private macro */
 #define SYSV_SHM_LOCK()     (VOID)LOS_MuxLock(&g_sysvShmMux, LOS_WAIT_FOREVER)	//申请永久等待锁
@@ -88,11 +88,44 @@ STATIC LosMux g_sysvShmMux;
 #define SHM_GROUPE_TO_USER  3
 #define SHM_OTHER_TO_USER   6
 
+#if 0 // @note_#if0
+
+struct ipc_perm {
+	key_t __ipc_perm_key;	//调用shmget()时给出的关键字
+	uid_t uid;				//共享内存所有者的有效用户ID
+	gid_t gid;				//共享内存所有者所属组的有效组ID
+	uid_t cuid;				//共享内存创建 者的有效用户ID
+	gid_t cgid;				//共享内存创建者所属组的有效组ID
+	mode_t mode;			//权限 + SHM_DEST / SHM_LOCKED /SHM_HUGETLB 标志位
+	int __ipc_perm_seq;		//序列号
+	long __pad1;			//保留扩展用
+	long __pad2;
+};
+
+struct shmid_ds {
+	struct ipc_perm shm_perm; //内核为每一个IPC对象保存一个ipc_perm结构体，该结构说明了IPC对象的权限和所有者
+	size_t shm_segsz;	//段大小
+	time_t shm_atime;	//访问时间	
+	time_t shm_dtime; 	//分离时间
+	time_t shm_ctime; 	//创建时间
+	pid_t shm_cpid;		//当前操作进程的ID
+	pid_t shm_lpid;		//最后一个操作的进程ID,常用于分离操作
+	unsigned long shm_nattch;	//绑定进程的数量
+	unsigned long __pad1;	//保留扩展用
+	unsigned long __pad2;
+};
+
+struct shminfo {
+	unsigned long shmmax, shmmin, shmmni, shmseg, shmall, __unused[4];
+};
+
+#endif
 /* private structure */
 struct shmSegMap {
     vaddr_t vaddr;	//虚拟地址
     INT32 shmID;	//可看出共享内存使用了ID管理机制
 };
+
 
 struct shmIDSource {//共享内存描述符
     struct shmid_ds ds; //是内核为每一个共享内存段维护的数据结构,包含权限,各进程最后操作的时间,进程ID等信息
@@ -101,7 +134,7 @@ struct shmIDSource {//共享内存描述符
 };
 
 /* private data */
-STATIC struct shminfo g_shmInfo = {
+STATIC struct shminfo g_shmInfo = { //描述共享内存范围的全局变量
     .shmmax = SHM_MAX,//最大的内存segment的大小 50M
     .shmmin = SHM_MIN,//最小的内存segment的大小 1M
     .shmmni = SHM_MNI,//整个系统的内存segment的总个数  :默认192     			ShmAllocSeg 
@@ -215,19 +248,19 @@ STATIC INT32 ShmAllocSeg(key_t key, size_t size, int shmflg)
     ShmSetSharedFlag(seg);//node的每个页面设置为此乃共享页也
 
     seg->status |= SHM_SEG_USED;	//段已使用
-    seg->ds.shm_perm.mode = (unsigned int)shmflg & ACCESSPERMS;
-    seg->ds.shm_perm.key = key;
+    seg->ds.shm_perm.mode = (unsigned int)shmflg & ACCESSPERMS; //使用权限
+    seg->ds.shm_perm.key = key;//
     seg->ds.shm_segsz = size;
     seg->ds.shm_perm.cuid = LOS_GetUserID();	//设置用户ID
     seg->ds.shm_perm.uid = LOS_GetUserID();		//设置用户ID
     seg->ds.shm_perm.cgid = LOS_GetGroupID();	//设置组ID
     seg->ds.shm_perm.gid = LOS_GetGroupID();	//设置组ID
-    seg->ds.shm_lpid = 0;
-    seg->ds.shm_nattch = 0;						
+    seg->ds.shm_lpid = 0; //最后一个操作的进程
+    seg->ds.shm_nattch = 0;	//绑定进程的数量					
     seg->ds.shm_cpid = LOS_GetCurrProcessID();	//获取进程ID
-    seg->ds.shm_atime = 0;
-    seg->ds.shm_dtime = 0;
-    seg->ds.shm_ctime = time(NULL);
+    seg->ds.shm_atime = 0;	//访问时间
+    seg->ds.shm_dtime = 0;	//detach 分离时间 共享内存使用完之后，需要将它从进程地址空间中分离出来；将共享内存分离并不是删除它，只是使该共享内存对当前的进程不再可用
+    seg->ds.shm_ctime = time(NULL);//创建时间
 
     return segNum;
 }
@@ -696,11 +729,13 @@ ERROR:
     PRINT_DEBUG("%s %d, ret = %d\n", __FUNCTION__, __LINE__, ret);
     return -1;
 }
-/*	当对共享存储的操作已经结束时，则调用shmdt与该存储段分离
+
+/******************************************************************************
+ 当对共享存储的操作已经结束时，则调用shmdt与该存储段分离
 	如果shmat成功执行，那么内核将使与该共享存储相关的shmid_ds结构中的shm_nattch计数器值减1
 注意：这并不从系统中删除共享存储的标识符以及其相关的数据结构。共享存储的仍然存在，
 	直至某个进程带IPC_RMID命令的调用shmctl特地删除共享存储为止
-*/
+******************************************************************************/
 INT32 ShmDt(const VOID *shmaddr)
 {
     LosVmSpace *space = OsCurrProcessGet()->vmSpace;//获取进程空间
@@ -731,7 +766,7 @@ INT32 ShmDt(const VOID *shmaddr)
     LOS_RbDelNode(&space->regionRbTree, &region->rbNode);//从红黑树和链表中摘除节点
     LOS_ArchMmuUnmap(&space->archMmu, region->range.base, region->range.size >> PAGE_SHIFT);//解除线性区的映射
     /* free it */
-    free(region);//规划线性区所占内存池中的内存
+    free(region);//释放线性区所占内存池中的内存
 
     SYSV_SHM_LOCK();
     seg = ShmFindSeg(shmid);//找到seg,线性区和共享段的关系是 1:N 的关系,其他空间的线性区也会绑在共享段上
@@ -744,12 +779,12 @@ INT32 ShmDt(const VOID *shmaddr)
     ShmPagesRefDec(seg);//页面引用数 --
     seg->ds.shm_nattch--;//使用共享内存的进程数少了一个
     if ((seg->ds.shm_nattch <= 0) && //无任何进程使用共享内存
-        (seg->status & SHM_SEG_REMOVE)) {//状态为删除时需要释放 物理页内存了,否则其他进程还要继续使用共享内存
+        (seg->status & SHM_SEG_REMOVE)) {//状态为删除时需要释放物理页内存了,否则其他进程还要继续使用共享内存
         ShmFreeSeg(seg);//释放seg 页框链表中的页框内存,再重置seg状态
     }
 
-    seg->ds.shm_dtime = time(NULL);
-    seg->ds.shm_lpid = LOS_GetCurrProcessID();//获取当前进程ID
+    seg->ds.shm_dtime = time(NULL);//记录分离的时间
+    seg->ds.shm_lpid = LOS_GetCurrProcessID();//记录操作进程ID
     SYSV_SHM_UNLOCK();
     (VOID)LOS_MuxRelease(&space->regionMux);
     return 0;

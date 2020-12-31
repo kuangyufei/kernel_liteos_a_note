@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '关于内核这些问题你知道多少? .
+git commit -m  '完善共享内存几个结构体的注解.
 搜索 @note_pic 方便理解画的字符图
 搜索 @note_why 尚未看明白的地方，如果您看明白了，请告知完善
 搜索 @note_thinking 一点思考和吐槽的地方
