@@ -282,8 +282,8 @@ extern HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];
  * @par Dependency:
  * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_IntRestore
- */
-STATIC INLINE UINT32 LOS_IntLock(VOID)//在所有中断被禁用之前获得的CPSR值 /|\ 
+ */ //关闭当前处理器所有中断响应
+STATIC INLINE UINT32 LOS_IntLock(VOID)
 {//此API用于禁用CPSR中的所有IRQ和FIQ中断。CPSR:程序状态寄存器(current program status register)
     return ArchIntLock();
 }//IRQ(Interrupt Request)：指中断模式。FIQ(Fast Interrupt Request)：指快速中断模式。
@@ -307,8 +307,8 @@ STATIC INLINE UINT32 LOS_IntLock(VOID)//在所有中断被禁用之前获得的C
  * @par Dependency:
  * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_IntLock
- */
-STATIC INLINE UINT32 LOS_IntUnLock(VOID)//启用所有中断后获得的CPSR值
+ */	//打开当前处理器所有中断响应
+STATIC INLINE UINT32 LOS_IntUnLock(VOID)
 {//此API用于启用CPSR中的所有IRQ和FIQ中断。
     return ArchIntUnlock();
 }
@@ -333,8 +333,8 @@ STATIC INLINE UINT32 LOS_IntUnLock(VOID)//启用所有中断后获得的CPSR值
  * @par Dependency:
  * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_IntLock
- */
-STATIC INLINE VOID LOS_IntRestore(UINT32 intSave)//在所有中断被禁用之前获得的CPSR值
+ */	//恢复到使用LOS_IntLock关闭所有中断之前的状态
+STATIC INLINE VOID LOS_IntRestore(UINT32 intSave)
 {//只有在禁用所有中断之后才能调用此API，并且输入参数值应为LOS_IntLock返回的值。
     ArchIntRestore(intSave);
 }
@@ -375,7 +375,7 @@ STATIC INLINE VOID LOS_IntRestore(UINT32 intSave)//在所有中断被禁用之�
  * @par Dependency:
  * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
  * @see None.
- */
+ */ //中断创建，注册中断号、中断触发模式、中断优先级、中断处理程序。中断被触发时，handleIrq会调用该中断处理程序
 extern UINT32 LOS_HwiCreate(HWI_HANDLE_T hwiNum,
                             HWI_PRIOR_T hwiPrio,
                             HWI_MODE_T hwiMode,
@@ -410,7 +410,7 @@ extern UINT32 LOS_HwiCreate(HWI_HANDLE_T hwiNum,
  * @par Dependency:
  * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
  * @see None.
- */
+ */ //删除中断
 extern UINT32 LOS_HwiDelete(HWI_HANDLE_T hwiNum, HwiIrqParam *irqParam);
 
 #ifdef __cplusplus

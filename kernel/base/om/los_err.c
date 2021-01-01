@@ -36,9 +36,16 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
-LITE_OS_SEC_BSS STATIC LOS_ERRORHANDLE_FUNC g_errHandleHook = NULL;
-
+//系统中只有一个错误处理的钩子函数。当多次注册钩子函数时，最后一次注册的钩子函数会覆盖前一次注册的函数。
+LITE_OS_SEC_BSS STATIC LOS_ERRORHANDLE_FUNC g_errHandleHook = NULL;//错误接管钩子函数
+/******************************************************************************
+调用钩子函数，处理错误
+	fileName：存放错误日志的文件名,系统内部调用时，入参为"os_unspecific_file"
+	lineNo：发生错误的代码行号系统内部调用时，若值为0xa1b2c3f8，表示未传递行号
+	errnoNo：错误码
+	paraLen：入参para的长度系统内部调用时，入参为0
+	para：错误标签系统内部调用时，入参为NULL
+******************************************************************************/
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_ErrHandle(CHAR *fileName, UINT32 lineNo, UINT32 errorNo,
                                            UINT32 paraLen, VOID *para)
 {
@@ -48,7 +55,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_ErrHandle(CHAR *fileName, UINT32 lineNo, UINT32
 
     return LOS_OK;
 }
-
+//设置钩子函数，处理错误
 LITE_OS_SEC_TEXT_INIT VOID LOS_SetErrHandleHook(LOS_ERRORHANDLE_FUNC fun)
 {
     g_errHandleHook = fun;

@@ -54,7 +54,7 @@ extern "C" {
  *
  * Solution: Configure the maximum number of queue resources to be greater than 0. If queue modules are not used,
  * set the configuration item for the tailoring of the maximum number of queue resources to NO.
- */
+ */	//系统支持的最大队列数为0
 #define LOS_ERRNO_QUEUE_MAXNUM_ZERO         LOS_ERRNO_OS_ERROR(LOS_MOD_QUE, 0x00)
 
 /**

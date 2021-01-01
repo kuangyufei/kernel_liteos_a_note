@@ -23,15 +23,15 @@
     		+ [los_tick.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/core/los_tick.c) -> [鸿蒙内核源码分析(时钟管理篇)](https://blog.csdn.net/kuangyufei/article/details/108603468) ->  是谁在一直触发调度 ? 硬时钟中断都干了些什么事?
     		+ [los_timeslice.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/core/los_timeslice.c) -> []() -> 进程和任务能一直占有CPU吗 ? 怎么合理的分配时间 ?
     	+ [ipc](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/ipc/) -> []() -> 进程间通讯有哪些方式 ? 请说出三种 ? 是如何实现的 ?
-    		+ [los_event.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/ipc/base/los_event.c) -> []() -> 事件解决了什么问题 ? 怎么管理的 ?
-    		+ [los_futex.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/ipc/base/los_futex.c) -> []() -> futex 是Fast Userspace muTexes的缩写(快速用户空间互斥体),它有什么作用 ?
-    		+ [los_ipcdebug.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/ipc/base/los_ipcdebug.c) -> []() -> 进程间通讯如何调试 ?
-    		+ [los_mux.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/ipc/base/los_mux.c) -> []() -> 互斥量,有你没我的零和博弈, 为什么需要互斥量 ? 是如何实现的 ?
-    		+ [los_queue.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/ipc/base/los_queue.c) -> []() -> 内核消息队列是如何实现的 ? 对长度和大小有限制吗 ? 
-    		+ [los_queue_debug.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/ipc/base/los_queue_debug.c) -> []() ->  如何调试消息队列 ? 
-    		+ [los_sem.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/ipc/base/los_sem.c) -> []() -> 信号量解决了什么问题 ? 它的本质是什么 ?
-    		+ [los_sem_debug.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/ipc/base/los_sem_debug.c) -> []() -> 如何调试信号量 ?
-    		+ [los_signal.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/ipc/base/los_signal.c) -> []() -> 信号解决了什么问题? 你知道哪些信号 ?
+    		+ [los_event.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/ipc/los_event.c) -> []() -> 事件解决了什么问题 ? 怎么管理的 ?
+    		+ [los_futex.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/ipc/base/los_futex.c) -> []() -> futex 是Fast Userspace muTexes的缩写(快速用户空间互斥体),它有什么作用 ?
+    		+ [los_ipcdebug.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/ipc/base/los_ipcdebug.c) -> []() -> 进程间通讯如何调试 ?
+    		+ [los_mux.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/ipc/los_mux.c) -> []() -> 互斥量,有你没我的零和博弈, 为什么需要互斥量 ? 是如何实现的 ?
+    		+ [los_queue.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/ipc/los_queue.c) -> []() -> 内核消息队列是如何实现的 ? 对长度和大小有限制吗 ? 
+    		+ [los_queue_debug.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/ipc/los_queue_debug.c) -> []() ->  如何调试消息队列 ? 
+    		+ [los_sem.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/ipc/los_sem.c) -> []() -> 信号量解决了什么问题 ? 它的本质是什么 ?
+    		+ [los_sem_debug.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/ipc/los_sem_debug.c) -> []() -> 如何调试信号量 ?
+    		+ [los_signal.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/ipc/los_signal.c) -> []() -> 信号解决了什么问题? 你知道哪些信号 ?
         + [mem](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mem/) -> []() -> 
     	+ [misc](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/misc/) -> []() -> 
     		+ [kill_shellcmd.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/misc/kill_shellcmd.c) -> []() -> shell命令kill的实现,熟悉的 kill 9 18 的背后发生了什么?
