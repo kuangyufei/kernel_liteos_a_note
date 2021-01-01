@@ -41,13 +41,21 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-enum DmaMemType {
-    DMA_CACHE,
-    DMA_NOCACHE
+/******************************************************************************
+DMA，全称Direct Memory Access，即直接存储器访问。
+DMA传输将数据从一个地址空间复制到另一个地址空间，提供在外设和存储器之间或者存储器和存储器之间的高速数据传输。
+DMA的作用就是实现数据的直接传输，而去掉了传统数据传输需要CPU寄存器参与的环节，主要涉及四种情况的数据传输，
+但本质上是一样的，都是从内存的某一区域传输到内存的另一区域（外设的数据寄存器本质上就是内存的一个存储单元）
+******************************************************************************/
+
+
+enum DmaMemType { 
+    DMA_CACHE, 	//有缓存的DMA
+    DMA_NOCACHE	//无缓存的DMA
 };
 
-#define IS_PERIPH_ADDR(addr)    ((addr >= PERIPH_PMM_BASE) && (addr <= PERIPH_PMM_BASE + PERIPH_PMM_SIZE))
-#define IS_MEMORY_ADDR(addr)    ((addr >= DDR_MEM_ADDR) && (addr <= DDR_MEM_ADDR + DDR_MEM_SIZE))
+#define IS_PERIPH_ADDR(addr)    ((addr >= PERIPH_PMM_BASE) && (addr <= PERIPH_PMM_BASE + PERIPH_PMM_SIZE))	//是否为外围设备地址
+#define IS_MEMORY_ADDR(addr)    ((addr >= DDR_MEM_ADDR) && (addr <= DDR_MEM_ADDR + DDR_MEM_SIZE)) //是否为内存地址
 
 /* thread safety */
 VOID *LOS_DmaMemAlloc(DMA_ADDR_T *dmaAddr, size_t size, size_t align, enum DmaMemType type);

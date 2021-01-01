@@ -54,7 +54,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsTickStart(VOID)
 {
     HalClockStart();//硬件时钟开始工作
 }
-//获得CPU周期
+//获取自系统启动以来的Cycle数
 LITE_OS_SEC_TEXT_MINOR VOID LOS_GetCpuCycle(UINT32 *highCnt, UINT32 *lowCnt)
 {
     UINT64 cycle = HalClockGetCycles();
@@ -62,7 +62,7 @@ LITE_OS_SEC_TEXT_MINOR VOID LOS_GetCpuCycle(UINT32 *highCnt, UINT32 *lowCnt)
     *highCnt = cycle >> 32; /* 32: offset 32 bits and retain high bits */
     *lowCnt = cycle & 0xFFFFFFFFU;
 }
-
+//获取自系统启动以来的纳秒数
 LITE_OS_SEC_TEXT_MINOR UINT64 LOS_CurrNanosec(VOID)
 {
     DOUBLE nanos;
@@ -70,12 +70,12 @@ LITE_OS_SEC_TEXT_MINOR UINT64 LOS_CurrNanosec(VOID)
     nanos = (DOUBLE)HalClockGetCycles() * OS_SYS_NS_PER_SECOND / g_sysClock;
     return (UINT64)nanos;
 }
-
+//以us为单位的忙等，但可以被优先级更高的任务抢占
 LITE_OS_SEC_TEXT_MINOR VOID LOS_Udelay(UINT32 usecs)
 {
     HalDelayUs(usecs);
 }
-
+//以ms为单位的忙等，但可以被优先级更高的任务抢占
 LITE_OS_SEC_TEXT_MINOR VOID LOS_Mdelay(UINT32 msecs)
 {
     HalDelayUs(msecs * 1000); /* 1000 : 1ms = 1000us */

@@ -39,7 +39,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 #define OS_MAX_VALUE    0xFFFFFFFF
-//获取Tick数量
+//获取自系统启动以来的Tick数
 LITE_OS_SEC_TEXT_MINOR UINT64 LOS_TickCountGet(VOID)
 {
     UINT32 intSave;
@@ -55,12 +55,12 @@ LITE_OS_SEC_TEXT_MINOR UINT64 LOS_TickCountGet(VOID)
 
     return tick;
 }
-
+//每个Tick多少Cycle数
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_CyclePerTickGet(VOID)
 {
     return g_sysClock / LOSCFG_BASE_CORE_TICK_PER_SECOND;
 }
-//毫秒转Tick
+//毫秒转换成Tick
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MS2Tick(UINT32 millisec)
 {
     if (millisec == OS_MAX_VALUE) {
@@ -69,7 +69,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MS2Tick(UINT32 millisec)
 
     return ((UINT64)millisec * LOSCFG_BASE_CORE_TICK_PER_SECOND) / OS_SYS_MS_PER_SECOND;
 }
-//Tick转毫秒
+//Tick转化为毫秒
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_Tick2MS(UINT32 tick)
 {
     return ((UINT64)tick * OS_SYS_MS_PER_SECOND) / LOSCFG_BASE_CORE_TICK_PER_SECOND;

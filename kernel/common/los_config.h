@@ -70,7 +70,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * System clock (unit: HZ)
  */
 #ifndef OS_SYS_CLOCK	//HZ:是每秒中的周期性变动重复次数的计量
-#define OS_SYS_CLOCK (get_bus_clk()) //50000000 即50微秒 见于 ..\vendor\hi3516dv300\config\board\include\hisoc\clock.h
+#define OS_SYS_CLOCK (get_bus_clk()) //系统主时钟频率 例如:50000000 即50微秒 
 #endif
 /**
  * @ingroup los_config
@@ -85,10 +85,10 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * limit addr range when search for  'func local(frame pointer)' or 'func name'
  */
 #ifndef OS_SYS_FUNC_ADDR_START
-#define OS_SYS_FUNC_ADDR_START ((UINTPTR)&__int_stack_start)
+#define OS_SYS_FUNC_ADDR_START ((UINTPTR)&__int_stack_start)	//
 #endif
 #ifndef OS_SYS_FUNC_ADDR_END
-#define OS_SYS_FUNC_ADDR_END (KERNEL_VMM_BASE + SYS_MEM_SIZE_DEFAULT) //SYS_MEM_SIZE_DEFAULT 见于 ..\vendor\hi3516dv300
+#define OS_SYS_FUNC_ADDR_END (KERNEL_VMM_BASE + SYS_MEM_SIZE_DEFAULT) 
 #endif
 
 /**
@@ -96,7 +96,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Number of Ticks in one second
  */
 #ifndef LOSCFG_BASE_CORE_TICK_PER_SECOND
-#define LOSCFG_BASE_CORE_TICK_PER_SECOND 100
+#define LOSCFG_BASE_CORE_TICK_PER_SECOND 100 //每秒Tick数
 #endif
 
 /**

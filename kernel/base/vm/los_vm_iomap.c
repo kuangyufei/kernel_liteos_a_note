@@ -177,7 +177,7 @@ VOID *LOS_DmaMemAlloc(DMA_ADDR_T *dmaAddr, size_t size, size_t align, enum DmaMe
 
     return kVaddr;
 }
-
+//释放DMA内存
 VOID LOS_DmaMemFree(VOID *vaddr)
 {
     UINTPTR addr;
@@ -197,7 +197,7 @@ VOID LOS_DmaMemFree(VOID *vaddr)
     }
     return;
 }
-
+//由虚拟地址获取DMA的物理地址
 DMA_ADDR_T LOS_DmaVaddrToPaddr(VOID *vaddr)
 {
     status_t ret;

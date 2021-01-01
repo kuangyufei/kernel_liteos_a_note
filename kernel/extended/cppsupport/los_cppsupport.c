@@ -40,6 +40,13 @@ extern "C" {
 
 typedef VOID (*InitFunc)(VOID);
 
+/******************************************************************************
+使用C++特性的前置条件 初始化C++构造函数
+	第一个参数：init_array段的起始地址。
+	第二个参数：init_array段的结束地址。
+	第三个参数：标记调用C++特性时的场景。
+LOSCFG_KERNEL_CPPSUPPORT C++特性的裁剪开关
+******************************************************************************/
 LITE_OS_SEC_TEXT_MINOR INT32 LOS_CppSystemInit(UINTPTR initArrayStart, UINTPTR initArrayEnd, INT32 flag)
 {
     UINTPTR *start     = (UINTPTR *)initArrayStart;

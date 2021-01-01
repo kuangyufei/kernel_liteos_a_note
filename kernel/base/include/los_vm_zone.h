@@ -111,6 +111,14 @@ extern "C" {
 
 #define EXC_INTERACT_MEM_SIZE        0x100000 //1M
 
+
+cached地址和uncached地址的区别是
+对cached地址的访问是委托给CPU进行的，也就是说你的操作到底是提交给真正的外设或内存，还是转到CPU缓存，
+是由CPU决定的。CPU有一套缓存策略来决定什么时候从缓存中读取数据，什么时候同步缓存。
+对unchached地址的访问是告诉CPU忽略缓存，访问操作直接反映到外设或内存上。 
+对于IO设备一定要用uncached地址访问，是因为你的IO输出操作肯定是希望立即反映到IO设备上，不希望让CPU缓存你的操作；
+另一方面，IO设备的状态是独立于CPU的，也就是说IO口状态的改变CPU是不知道，这样就导致缓存和外设的内容不一致，
+你从IO设备读取数据时，肯定是希望直接读取IO设备的当前状态，而不是CPU缓存的过期值。
 *******************************************************************************************************/
 
 
@@ -137,9 +145,9 @@ extern "C" {
 #define PERIPH_UNCACHED_BASE    (PERIPH_CACHED_BASE + PERIPH_CACHED_SIZE)//外围设备未缓存空间大小
 #define PERIPH_UNCACHED_SIZE    PERIPH_PMM_SIZE //外围设备未缓存空间大小
 
-#define IO_DEVICE_ADDR(paddr)        (paddr - PERIPH_PMM_BASE + PERIPH_DEVICE_BASE)//获取IO设备地址
-#define IO_CACHED_ADDR(paddr)        (paddr - PERIPH_PMM_BASE + PERIPH_CACHED_BASE)//获取IO设备缓存地址
-#define IO_UNCACHED_ADDR(paddr)      (paddr - PERIPH_PMM_BASE + PERIPH_UNCACHED_BASE)//获取IO设备未缓存地址
+#define IO_DEVICE_ADDR(paddr)        (paddr - PERIPH_PMM_BASE + PERIPH_DEVICE_BASE)		//通过物理地址获取IO设备虚拟地址
+#define IO_CACHED_ADDR(paddr)        (paddr - PERIPH_PMM_BASE + PERIPH_CACHED_BASE)		//通过物理地址获取IO设备虚拟缓存地址
+#define IO_UNCACHED_ADDR(paddr)      (paddr - PERIPH_PMM_BASE + PERIPH_UNCACHED_BASE)	//通过物理地址获取IO设备虚拟未缓存地址
 //DDR_MEM_ADDRDDR内存全称是DDR SDRAM(Double Data Rate SDRAM，双倍速率SDRAM)
 
 #define MEM_CACHED_ADDR(paddr)       (paddr - DDR_MEM_ADDR + KERNEL_VMM_BASE)

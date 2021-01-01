@@ -45,10 +45,35 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+/******************************************************************************
+基本概念
+	双向链表是指含有往前和往后两个方向的链表，即每个结点中除存放下一个节点指针外，
+	还增加一个指向前一个节点的指针。其头指针head是唯一确定的。
+
+	从双向链表中的任意一个结点开始，都可以很方便地访问它的前驱结点和后继结点，这种
+	数据结构形式使得双向链表在查找时更加方便，特别是大量数据的遍历。由于双向链表
+	具有对称性，能方便地完成各种插入、删除等操作，但需要注意前后方向的操作。
+
+双向链表的典型开发流程：
+	调用LOS_ListInit/LOS_DL_LIST_HEAD初始双向链表。
+	调用LOS_ListAdd/LOS_ListHeadInsert向链表头部插入节点。
+	调用LOS_ListTailInsert向链表尾部插入节点。
+	调用LOS_ListDelete删除指定节点。
+	调用LOS_ListEmpty判断链表是否为空。
+	调用LOS_ListDelInit删除指定节点并以此节点初始化链表。 
+
+注意事项
+	需要注意节点指针前后方向的操作。
+	链表操作接口，为底层接口，不对入参进行判空，需要使用者确保传参合法。
+	如果链表节点的内存是动态申请的，删除节点时，要注意释放内存。	
+
+参考
+	https://gitee.com/LiteOS/LiteOS/blob/master/doc/Huawei_LiteOS_Kernel_Developer_Guide_zh.md#setup
+******************************************************************************/
 /**
  * @ingroup los_list
  * Structure of a node in a doubly linked list.
- */
+ */	//双向链表，内核最重要结构体
 typedef struct LOS_DL_LIST {
     struct LOS_DL_LIST *pstPrev; /**< Current node's pointer to the previous node */
     struct LOS_DL_LIST *pstNext; /**< Current node's pointer to the next node */
@@ -70,9 +95,7 @@ typedef struct LOS_DL_LIST {
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
- 
- //双向循环链表
+ */	//将指定节点初始化为双向链表节点
 LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListInit(LOS_DL_LIST *list)
 {
     list->pstNext = list;
@@ -98,7 +121,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListInit(LOS_DL_LIST *list)
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */	//获取指定节点的后继结点
 #define LOS_DL_LIST_FIRST(object) ((object)->pstNext)
 
 /**
@@ -120,7 +143,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListInit(LOS_DL_LIST *list)
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */ 
 #define LOS_DL_LIST_IS_END(list, node) ((list) == (node) ? TRUE : FALSE)
 
 /**
@@ -164,7 +187,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListInit(LOS_DL_LIST *list)
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */	//获取指定节点的前驱结点
 #define LOS_DL_LIST_LAST(object) ((object)->pstPrev)
 
 /**
@@ -185,7 +208,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListInit(LOS_DL_LIST *list)
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_ListDelete
- */
+ */	//将指定节点插入到双向链表头端
 LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListAdd(LOS_DL_LIST *list, LOS_DL_LIST *node)
 {
     node->pstNext = list->pstNext;
@@ -212,7 +235,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListAdd(LOS_DL_LIST *list, LOS_DL_
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_ListAdd | LOS_ListHeadInsert
- */
+ */	//将指定节点插入到双向链表尾端
 LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListTailInsert(LOS_DL_LIST *list, LOS_DL_LIST *node)
 {
     LOS_ListAdd(list->pstPrev, node);
@@ -236,7 +259,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListTailInsert(LOS_DL_LIST *list, 
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_ListAdd | LOS_ListTailInsert
- */
+ */	//将指定节点插入到双向链表头端
 LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListHeadInsert(LOS_DL_LIST *list, LOS_DL_LIST *node)
 {
     LOS_ListAdd(list, node);
@@ -260,7 +283,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListHeadInsert(LOS_DL_LIST *list, 
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_ListAdd
- */
+ */	//将指定节点从链表中删除
 LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListDelete(LOS_DL_LIST *node)
 {
     node->pstNext->pstPrev = node->pstPrev;
@@ -289,7 +312,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListDelete(LOS_DL_LIST *node)
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */	//判断链表是否为空
 LITE_OS_SEC_ALW_INLINE STATIC INLINE BOOL LOS_ListEmpty(LOS_DL_LIST *list)
 {
     return (BOOL)(list->pstNext == list);
@@ -414,7 +437,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListHeadInsertList(LOS_DL_LIST *ol
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */	//获取指定结构体内的成员相对于结构体起始地址的偏移量
 #define LOS_OFF_SET_OF(type, member) ((UINTPTR)&((type *)0)->member)
 
 /**
@@ -439,7 +462,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListHeadInsertList(LOS_DL_LIST *ol
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */	//获取包含链表的结构体地址，接口的第一个入参表示的是链表中的某个节点，第二个入参是要获取的结构体名称，第三个入参是链表在该结构体中的名称
 #define LOS_DL_LIST_ENTRY(item, type, member) \
     ((type *)(VOID *)((CHAR *)(item) - LOS_OFF_SET_OF(type, member)))
 
@@ -463,7 +486,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListHeadInsertList(LOS_DL_LIST *ol
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */ //遍历指定双向链表，获取包含该链表节点的结构体地址
 #define LOS_DL_LIST_FOR_EACH_ENTRY(item, list, type, member)             \
     for (item = LOS_DL_LIST_ENTRY((list)->pstNext, type, member);        \
          &(item)->member != (list);                                      \
@@ -490,7 +513,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListHeadInsertList(LOS_DL_LIST *ol
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */ //遍历指定双向链表，获取包含该链表节点的结构体地址，并存储包含当前节点的后继节点的结构体地址
 #define LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, next, list, type, member)               \
     for (item = LOS_DL_LIST_ENTRY((list)->pstNext, type, member),                     \
          next = LOS_DL_LIST_ENTRY((item)->member.pstNext, type, member);              \
@@ -514,7 +537,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListHeadInsertList(LOS_DL_LIST *ol
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */	//将指定节点从链表中删除，并使用该节点初始化链表
 LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListDelInit(LOS_DL_LIST *list)
 {
     list->pstNext->pstPrev = list->pstPrev;
@@ -540,7 +563,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListDelInit(LOS_DL_LIST *list)
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */ //遍历双向链表
 #define LOS_DL_LIST_FOR_EACH(item, list) \
     for (item = (list)->pstNext;         \
          (item) != (list);               \
@@ -565,7 +588,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListDelInit(LOS_DL_LIST *list)
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */ //遍历双向链表，并存储当前节点的后继节点用于安全校验
 #define LOS_DL_LIST_FOR_EACH_SAFE(item, next, list)      \
     for (item = (list)->pstNext, next = (item)->pstNext; \
          (item) != (list);                               \
@@ -588,7 +611,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListDelInit(LOS_DL_LIST *list)
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */	//定义一个节点并初始化为双向链表节点
 #define LOS_DL_LIST_HEAD(list) LOS_DL_LIST list = { &(list), &(list) }
 
 #define LOS_ListPeekHeadType(list, type, element) ({             \

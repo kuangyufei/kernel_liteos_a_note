@@ -45,6 +45,33 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+/******************************************************************************
+基本概念
+	C++作为目前使用最广泛的编程语言之一，支持类、封装、重载等特性，是在C语言基础上
+	开发的一种面向对象的编程语言。
+
+运作机制
+	STL（Standard Template Library）标准模板库，是一些“容器”的集合，也是算法和其他
+	一些组件的集合。其目的是标准化组件，使用标准化组件后可以不用重新开发，直接使用现成的组件。
+
+开发流程
+	通过make menuconfig使能C++支持。
+	使用C++特性之前，需要调用函数LOS_CppSystemInit，初始化C++构造函数。
+	C函数与C++函数混合调用。在C++中调用C程序的函数，代码需加入C++包含的宏：
+	#ifdef __cplusplus
+	#if __cplusplus
+	extern "C" {
+	#endif /* __cplusplus * /
+	#endif /* __cplusplus * /
+	/* code * /
+	...
+	#ifdef __cplusplus
+	#if __cplusplus
+	}
+	#endif /* __cplusplus * /
+	#endif /* __cplusplus * /
+******************************************************************************/
+
 /**
  * @ingroup los_cppsupport
  * If scatter load is disabled, this flag should be passed as the third parameter when LOS_CppSystemInit() is called.
@@ -74,7 +101,7 @@ extern "C" {
  * @par Dependency:
  * <ul><li>los_cppsupport.h: the header file that contains the API declaration.</li></ul>
  * @see None.
- */
+ */	//初始化C++构造函数
 extern INT32 LOS_CppSystemInit(UINTPTR initArrayStart, UINTPTR initArrayEnd, INT32 flag);
 
 #ifdef __cplusplus

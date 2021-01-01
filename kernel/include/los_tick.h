@@ -55,7 +55,7 @@ extern "C" {
  *
  * Solution: Change values of the OS_SYS_CLOCK and LOSCFG_BASE_CORE_TICK_PER_SECOND system time configuration modules
  * in Los_config.h.
- */
+ */	//无效的系统Tick配置
 #define LOS_ERRNO_TICK_CFG_INVALID       LOS_ERRNO_OS_ERROR(LOS_MOD_TICK, 0x00)
 
 /**
@@ -83,13 +83,13 @@ extern "C" {
  * @ingroup los_config
  * system clock
  */
-extern UINT32 g_sysClock;
+extern UINT32 g_sysClock; //系统主时钟
 
 /**
  * @ingroup los_config
  * ticks per second
  */
-extern UINT32 g_tickPerSecond;
+extern UINT32 g_tickPerSecond;	//每秒TICK数
 
 /**
  * @ingroup  los_tick
@@ -111,7 +111,7 @@ extern UINT32 g_tickPerSecond;
  * @par Dependency:
  * <ul><li>los_tick.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */	//获取自系统启动以来的Cycle数
 extern VOID LOS_GetCpuCycle(UINT32 *puwCntHi, UINT32 *puwCntLo);
 
 /**
@@ -130,7 +130,7 @@ extern VOID LOS_GetCpuCycle(UINT32 *puwCntHi, UINT32 *puwCntLo);
  * @par Dependency:
  * <ul><li>los_tick.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */	//获取自系统启动以来的纳秒数
 extern UINT64 LOS_CurrNanosec(VOID);
 
 /**
@@ -149,7 +149,7 @@ extern UINT64 LOS_CurrNanosec(VOID);
  * @par Dependency:
  * <ul><li>los_tick.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */	//以us为单位的忙等，但可以被优先级更高的任务抢占
 extern VOID LOS_Udelay(UINT32 usecs);
 
 /**
@@ -168,7 +168,7 @@ extern VOID LOS_Udelay(UINT32 usecs);
  * @par Dependency:
  * <ul><li>los_tick.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */	//以ms为单位的忙等，但可以被优先级更高的任务抢占
 extern VOID LOS_Mdelay(UINT32 usecs);
 
 #ifdef __cplusplus

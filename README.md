@@ -9,7 +9,7 @@
 [![star](https://gitee.com/weharmony/kernel_liteos_a_note/badge/star.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)[![fork](https://gitee.com/weharmony/kernel_liteos_a_note/badge/fork.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)
 
 
-## **做了些什么呢**
+## **做了些什么呢？**
 
 **[WeHarmony/kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在鸿蒙官方开源项目 **[OpenHarmony/kernel\_liteos\_a](https://gitee.com/openharmony/kernel_liteos_a)** 基础上给源码加上中文注解的版本,目前几大核心模块加注已基本完成,**整体加注完成70%**,其余正持续加注完善中...
 
@@ -33,7 +33,7 @@
 
     搜索 **[@note_good]()** 是注者给源码点赞的地方
 
--   ### **鸿蒙内核500问**
+-   ### **鸿蒙内核500问，你知道多少？**
 
     是笔者抛出的500个内核知识问题,可前往 **[鸿蒙内核源码分析(源码结构篇) | 内核500问 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/111938348) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4869137)** 查看.
 
@@ -49,7 +49,7 @@
     
     鸿蒙是面向未来设计的系统,高瞻远瞩,格局远大,设计精良, 海量知识点, 目前做的只是冰山一角,把研究过程心得写成鸿蒙源码分析系列篇,如此源码中文注释+系列篇文章 将加速理解鸿蒙内核实现过程.
     
--   ### **加注释方式是怎样的?**
+-   ### **加注释方式是怎样的？**
     
     因鸿蒙内核6W+代码量,本身只有很少的注释, 中文注解以不对原有代码侵入为前提,源码中所有英文部分都是原有鸿蒙注释,所有中文部分都是笔者的注释,尽量不去增加代码的行数,不破坏文件的结构,笔者试图把知识讲透彻,注释多类似以下的方式, 如图举例: 这是申请互斥锁的主体函数,不可谓不重要,而官方注释仅有一行.
     
@@ -59,31 +59,31 @@
     
     ![在这里插入图片描述](https://img-blog.csdnimg.cn/20201028154344813.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2t1YW5neXVmZWk=,size_16,color_FFFFFF,t_70#pic_center)
     
--   ### **系列博客更新到哪里了?**
+-   ### **系列博客更新到哪里了？**
 
     - **[鸿蒙源码分析系列(总目录) | 持续更新中... 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4626852)**
 
-        * **[|-  鸿蒙内核源码分析(源码结构篇) | 内核500问 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/111938348) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4869137)**
+        * **[|-  鸿蒙内核源码分析(源码结构篇) | 内核500问你能答对多少？ 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/111938348) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4869137)**
 
         * **[|-  鸿蒙内核源码分析(物理内存篇) | 伙伴算法像极了在卖标准猪肉块【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/111765600) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4842408)**
 
         * **[|-  鸿蒙内核源码分析(内存规则篇) | 内存管理到底在管什么？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/109437223) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4698384)**
 
-        * **[|-  鸿蒙内核源码分析(源码注释篇) | 精读内核源码有哪些好处?【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/109251754) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4686747)**
+        * **[|-  鸿蒙内核源码分析(源码注释篇) | 精读内核源码有哪些好处？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/109251754) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4686747)**
 
-        * **[|-  鸿蒙内核源码分析(内存映射篇) | 虚拟内存<->物理内存是怎么映射的?【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/109032636) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4694841)**
+        * **[|-  鸿蒙内核源码分析(内存映射篇) | 虚拟内存<->物理内存是怎么映射的？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/109032636) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4694841)**
 
-        * **[|-  鸿蒙内核源码分析(内存汇编篇) | 内存实现涉及哪些汇编代码【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108994081) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4692156)**
+        * **[|-  鸿蒙内核源码分析(内存汇编篇) | 内存实现涉及哪些汇编代码？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108994081) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4692156)**
 
-        * **[|-  鸿蒙内核源码分析(内存分配篇) | 内存有哪些分配方式【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108989906) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4646802)**
+        * **[|-  鸿蒙内核源码分析(内存分配篇) | 内存有哪些分配方式？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108989906) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4646802)**
 
-        * **[|-  鸿蒙内核源码分析(内存管理篇) | 虚拟内存和物理内存是怎么管理的?【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108821442) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4652284)**
+        * **[|-  鸿蒙内核源码分析(内存管理篇) | 虚拟内存和物理内存是怎么管理的？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108821442) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4652284)**
 
         * **[|-  鸿蒙内核源码分析(内存概念篇) | 手眼通天的虚拟内存【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108723672) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4646802)**
 
         * **[|-  鸿蒙内核源码分析(必读故事篇) | 张大爷的故事 | 用故事说内核持续更新中...【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108745174) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4634668)**
 
-        * **[|-  鸿蒙内核源码分析(调度机制篇) | 任务是如何被调度执行的?【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108705968) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4623040)**
+        * **[|-  鸿蒙内核源码分析(调度机制篇) | 任务是如何被调度执行的？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108705968) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4623040)**
 
         * **[|-  鸿蒙内核源码分析(调度队列篇) | 就绪队列对调度的作用【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108626671) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4606916)**
 
@@ -93,7 +93,7 @@
 
         * **[|-  鸿蒙内核源码分析(进程管理篇) | 进程是内核资源管理单元【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108595941) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4574429)**
 
-        * **[|-  鸿蒙内核源码分析(双循环链表篇) | 谁是内核最重要结构体 ?【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108585659) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4572304)**
+        * **[|-  鸿蒙内核源码分析(双向链表篇) | 谁是内核最重要结构体？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108585659) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4572304)**
 
 
 -   ### **干困难事,必有所得**
