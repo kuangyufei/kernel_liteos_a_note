@@ -41,7 +41,13 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-//在多CPU系统上，如果当前的CPU没有任务或者只有一个任务的前提下，系统将不向该CPU发送timer tick
+
+/******************************************************************************
+Tickless机制通过计算下一次有意义的时钟中断的时间，来减少不必要的时钟中断，
+从而降低系统功耗。打开Tickless功能后，系统会在CPU空闲时启动Tickless机制。
+
+在多CPU系统上，如果当前的CPU没有任务或者只有一个任务的前提下，系统将不向该CPU发送timer tick
+******************************************************************************/
 STATIC BOOL g_ticklessFlag = FALSE;
 STATIC BOOL g_tickIrqFlag[LOSCFG_KERNEL_CORE_NUM] = {FALSE};
 STATIC volatile UINT32 g_sleepTicks[LOSCFG_KERNEL_CORE_NUM] = {0};

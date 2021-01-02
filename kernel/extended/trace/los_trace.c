@@ -41,6 +41,12 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+/******************************************************************************
+实时获取事件发生的上下文，并写入缓冲区。支持自定义缓冲区，跟踪指定模块的事件，
+开启/停止Trace，清除/输出trace缓冲区数据等。
+LMS：实时检测内存操作合法性，LMS能够检测的内存问题包括缓冲区溢出（buffer overflow），
+释放后使用（use after free），多重释放（double free）和释放野指针（wild pointer） 
+******************************************************************************/
 #if (LOSCFG_KERNEL_TRACE == YES)
 LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_traceSpin); //定义trace自旋锁
 #define TRACE_LOCK(state)       LOS_SpinLockSave(&g_traceSpin, &(state))

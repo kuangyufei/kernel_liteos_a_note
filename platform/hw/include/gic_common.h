@@ -36,8 +36,7 @@
 #include "asm/platform.h"
 #include "los_config.h"
 /*************************************************************************************
-*
-*	GIC（Generic Interrupt Controller）是ARM公司提供的一个通用的中断控制器，
+*	GIC（Generic Interrupt Controller）是ARM公司提供的一个通用的中断控制器，在ARM Cortex-A7中使用的中断控制器是GIC
 *	其architecture specification目前有四个版本，
 *	V1～V4(V2最多支持8个ARM core，V3/V4支持更多的ARM core，主要用于ARM64服务器系统结构
 *	GIC-v2支持三种类型的中断
