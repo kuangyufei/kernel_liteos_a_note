@@ -52,6 +52,61 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+/******************************************************************************
+基本概念
+	内存管理模块管理系统的内存资源，它是操作系统的核心模块之一，主要包括内存的初始化、分配以及释放。
+	在系统运行过程中，内存管理模块通过对内存的申请/释放来管理用户和OS对内存的使用，
+	使内存的利用率和使用效率达到最优，同时最大限度地解决系统的内存碎片问题。
+
+内存管理分为静态内存管理和动态内存管理，提供内存初始化、分配、释放等功能。
+	动态内存：在动态内存池中分配用户指定大小的内存块。
+		优点：按需分配。
+		缺点：内存池中可能出现碎片。
+	
+	静态内存：在静态内存池中分配用户初始化时预设（固定）大小的内存块。
+		优点：分配和释放效率高，静态内存池中无碎片。
+		缺点：只能申请到初始化预设大小的内存块，不能按需申请。
+
+动态内存运作机制
+	动态内存管理，即在内存资源充足的情况下，根据用户需求，从系统配置的一块比较大的连续内存
+	（内存池，也是堆内存）中分配任意大小的内存块。当用户不需要该内存块时，又可以释放回系统供下一次使用。
+	与静态内存相比，动态内存管理的优点是按需分配，缺点是内存池中容易出现碎片。
+	LiteOS动态内存支持bestfit（也称为dlink）和bestfit_little两种内存管理算法。
+
+使用场景
+	动态内存管理的主要工作是动态分配并管理用户申请到的内存区间。
+	动态内存管理主要用于用户需要使用大小不等的内存块的场景。当用户需要使用内存时，
+	可以通过操作系统的动态内存申请函数索取指定大小的内存块，一旦使用完毕，
+	通过动态内存释放函数归还所占用内存，使之可以重复使用。
+
+	对于bestfit_little算法，只支持宏开关LOSCFG_MEM_MUL_POOL控制的多内存池相关接口和
+	宏开关LOSCFG_BASE_MEM_NODE_INTEGRITY_CHECK控制的内存合法性检查接口，不支持其他内存调测功能。
+	通过LOS_MemAllocAlign/LOS_MemMallocAlign申请的内存进行LOS_MemRealloc/LOS_MemMrealloc操作后，
+	不能保障新的内存首地址保持对齐。
+	对于bestfit_little算法，不支持对LOS_MemAllocAlign申请的内存进行LOS_MemRealloc操作，否则将返回失败。
+
+注意事项
+	由于动态内存管理需要管理控制块数据结构来管理内存，这些数据结构会额外消耗内存，
+	故实际用户可使用内存总量小于配置项OS_SYS_MEM_SIZE的大小。
+	
+	对齐分配内存接口LOS_MemAllocAlign/LOS_MemMallocAlign因为要进行地址对齐，可能会额外
+	消耗部分内存，故存在一些遗失内存，当系统释放该对齐内存时，同时回收由于对齐导致的遗失内存。
+	
+	重新分配内存接口LOS_MemRealloc/LOS_MemMrealloc如果分配成功，系统会自己判定是否需要
+	释放原来申请的内存，并返回重新分配的内存地址。如果重新分配失败，原来的内存保持不变，
+	并返回NULL。禁止使用pPtr = LOS_MemRealloc(pool, pPtr, uwSize)，
+	即：不能使用原来的旧内存地址pPtr变量来接收返回值。
+	
+	对同一块内存多次调用LOS_MemFree/LOS_MemMfree时，第一次会返回成功，但对同一块内存多次
+	重复释放会导致非法指针操作，结果不可预知。
+	
+	由于动态内存管理的内存节点控制块结构体LosMemDynNode中，成员sizeAndFlag的数据类型为UINT32，
+	高两位为标志位，余下的30位表示内存结点大小，因此用户初始化内存池的大小不能超过1G，否则会出现不可预知的结果。
+	
+参考
+	https://gitee.com/LiteOS/LiteOS/blob/master/doc/Huawei_LiteOS_Kernel_Developer_Guide_zh.md
+******************************************************************************/
+
 #define NODEDUMPSIZE  64  /* the dump size of current broken node when memcheck error */
 #define COLUMN_NUM    8   /* column num of the output info of mem node */
 
@@ -1503,8 +1558,8 @@ STATIC VOID OsMemIntegrityCheckError(const LosMemDynNode *tmpNode,
  * Description : memory pool integrity checking 
  * Input       : pool --Pointer to memory pool
  * Return      : LOS_OK --memory pool integrate or LOS_NOK--memory pool impaired
- */
-LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemIntegrityCheck(const VOID *pool)	//内存池完整性检查
+ */ //对指定内存池做完整性检查，仅打开LOSCFG_BASE_MEM_NODE_INTEGRITY_CHECK时有效
+LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemIntegrityCheck(const VOID *pool)
 {
     LosMemDynNode *tmpNode = NULL;
     LosMemDynNode *preNode = NULL;
@@ -1826,7 +1881,7 @@ STATIC UINT32 OsMemInit(VOID *pool, UINT32 size)
 
     return LOS_OK;
 }
-//初始化内存池
+//初始化一块指定的动态内存池，大小为size
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_MemInit(VOID *pool, UINT32 size)
 {
     UINT32 intSave;
@@ -1861,7 +1916,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_MemInit(VOID *pool, UINT32 size)
     return LOS_OK;
 }
 
-#ifdef LOSCFG_MEM_MUL_POOL
+#ifdef LOSCFG_MEM_MUL_POOL //删除指定内存池，仅打开LOSCFG_MEM_MUL_POOL时有效
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_MemDeInit(VOID *pool)
 {
     UINT32 intSave;
@@ -1897,7 +1952,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_MemDeInit(VOID *pool)
     MEM_UNLOCK(intSave);
     return ret;
 }
-
+//打印系统中已初始化的所有内存池，包括内存池的起始地址、内存池大小、空闲内存总大小、已使用内存总大小、
+//最大的空闲内存块大小、空闲内存块数量、已使用的内存块数量。仅打开LOSCFG_MEM_MUL_POOL时有效
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_MemPoolList(VOID)
 {
     VOID *nextPool = g_poolHead;
@@ -1911,7 +1967,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_MemPoolList(VOID)
     return index;
 }
 #endif
-//动态分配内存
+//从指定动态内存池中申请size长度的内存
 LITE_OS_SEC_TEXT VOID *LOS_MemAlloc(VOID *pool, UINT32 size)
 {
     VOID *ptr = NULL;
@@ -1937,7 +1993,7 @@ LITE_OS_SEC_TEXT VOID *LOS_MemAlloc(VOID *pool, UINT32 size)
 
     return ptr;
 }
-
+//从指定动态内存池中申请长度为size且地址按boundary字节对齐的内存
 LITE_OS_SEC_TEXT VOID *LOS_MemAllocAlign(VOID *pool, UINT32 size, UINT32 boundary)
 {
     UINT32 useSize;
@@ -2025,7 +2081,7 @@ LITE_OS_SEC_TEXT STATIC INLINE UINT32 OsMemBackupCheckAndRetore(VOID *pool, VOID
     return LOS_OK;
 }
 #endif
-
+//释放已申请的内存
 LITE_OS_SEC_TEXT UINT32 LOS_MemFree(VOID *pool, VOID *ptr)
 {
     UINT32 ret = LOS_NOK;
@@ -2158,7 +2214,7 @@ STATIC VOID *OsMemRealloc(VOID *pool, const VOID *ptr, LosMemDynNode *node, UINT
     }
     return tmpPtr;
 }
-
+//按size大小重新分配内存块，并将原内存块内容拷贝到新内存块。如果新内存块申请成功，则释放原内存块
 LITE_OS_SEC_TEXT_MINOR VOID *LOS_MemRealloc(VOID *pool, VOID *ptr, UINT32 size)
 {
     UINT32 intSave;
@@ -2204,7 +2260,7 @@ OUT_UNLOCK:
 OUT:
     return newPtr;
 }
-
+//获取指定动态内存池的总使用量大小
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemTotalUsedGet(VOID *pool)
 {
     LosMemDynNode *tmpNode = NULL;
@@ -2244,7 +2300,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemTotalUsedGet(VOID *pool)
 
     return memUsed;
 }
-
+//获取指定内存池已使用的内存块数量
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemUsedBlksGet(VOID *pool)
 {
     LosMemDynNode *tmpNode = NULL;
@@ -2269,7 +2325,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemUsedBlksGet(VOID *pool)
 
     return blkNums;
 }
-
+//获取申请了指定内存块的任务ID
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemTaskIdGet(VOID *ptr)
 {
     LosMemDynNode *tmpNode = NULL;
@@ -2307,7 +2363,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemTaskIdGet(VOID *ptr)
     MEM_UNLOCK(intSave);
     return OS_INVALID;
 }
-
+//获取指定内存池的空闲内存块数量
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemFreeBlksGet(VOID *pool)
 {
     LosMemDynNode *tmpNode = NULL;
@@ -2332,7 +2388,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemFreeBlksGet(VOID *pool)
 
     return blkNums;
 }
-
+//获取内存池最后一个已使用内存块的结束地址
 LITE_OS_SEC_TEXT_MINOR UINTPTR LOS_MemLastUsedGet(VOID *pool)
 {
     LosMemPoolInfo *poolInfo = (LosMemPoolInfo *)pool;
@@ -2371,7 +2427,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsMemResetEndNode(VOID *pool, UINTPTR preAddr)
     OsMemNodeSave(endNode);
 #endif
 }
-
+//获取指定动态内存池的总大小
 UINT32 LOS_MemPoolSizeGet(const VOID *pool)
 {
     UINT32 count = 0;
@@ -2426,7 +2482,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsMemInfoPrint(VOID *pool)
            status.uwFreeNodeNum);
 #endif
 }
-
+//获取指定内存池的内存结构信息，包括空闲内存大小、已使用内存大小、空闲内存块数量、已使用的内存块数量、最大的空闲内存块大小
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemInfoGet(VOID *pool, LOS_MEM_POOL_STATUS *poolStatus)
 {
     LosMemPoolInfo *poolInfo = (LosMemPoolInfo *)pool;
@@ -2500,7 +2556,7 @@ STATIC INLINE VOID OsShowFreeNode(UINT32 index, UINT32 length, const UINT32 *cou
         count++;
     }
 }
-
+//打印指定内存池的空闲内存块的大小及数量
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemFreeNodeShow(VOID *pool)
 {
     LOS_DL_LIST *listNodeHead = NULL;
@@ -2612,7 +2668,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsMemUsedNodeShow(VOID *pool)
 #endif
 
 #ifdef LOSCFG_BASE_MEM_NODE_SIZE_CHECK
-
+//获取指定内存块的总大小和可用大小，仅打开LOSCFG_BASE_MEM_NODE_SIZE_CHECK时有效
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemNodeSizeCheck(VOID *pool, VOID *ptr, UINT32 *totalSize, UINT32 *availSize)
 {
     const VOID *head = NULL;
@@ -2683,7 +2739,7 @@ LITE_OS_SEC_TEXT_MINOR const VOID *OsMemFindNodeCtrl(const VOID *pool, const VOI
     }
     return head;
 }
-
+//设置内存检查级别
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemCheckLevelSet(UINT8 checkLevel)
 {
     if (checkLevel == LOS_MEM_CHECK_LEVEL_LOW) {
@@ -2699,7 +2755,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemCheckLevelSet(UINT8 checkLevel)
     g_memCheckLevel = checkLevel;
     return LOS_OK;
 }
-
+//获得内存检查级别
 LITE_OS_SEC_TEXT_MINOR UINT8 LOS_MemCheckLevelGet(VOID)
 {
     return g_memCheckLevel;
@@ -2805,7 +2861,7 @@ STATIC INLINE UINT32 OsMemNodeSizeGet(VOID *ptr)
 
     return OS_MEM_NODE_GET_SIZE(node->selfNode.sizeAndFlag);
 }
-
+//从指定动态内存池分配size长度的内存给指定模块，并纳入模块统计
 VOID *LOS_MemMalloc(VOID *pool, UINT32 size, UINT32 moduleID)
 {
     UINT32 intSave;
@@ -2826,7 +2882,7 @@ VOID *LOS_MemMalloc(VOID *pool, UINT32 size, UINT32 moduleID)
     }
     return ptr;
 }
-
+//从指定动态内存池中申请长度为size且地址按boundary字节对齐的内存给指定模块，并纳入模块统计
 VOID *LOS_MemMallocAlign(VOID *pool, UINT32 size, UINT32 boundary, UINT32 moduleID)
 {
     UINT32 intSave;
@@ -2847,7 +2903,7 @@ VOID *LOS_MemMallocAlign(VOID *pool, UINT32 size, UINT32 boundary, UINT32 module
     }
     return ptr;
 }
-
+//释放已经申请的内存块，并纳入模块统计
 UINT32 LOS_MemMfree(VOID *pool, VOID *ptr, UINT32 moduleID)
 {
     UINT32 intSave;
@@ -2880,7 +2936,7 @@ UINT32 LOS_MemMfree(VOID *pool, VOID *ptr, UINT32 moduleID)
     }
     return ret;
 }
-
+//按size大小重新分配内存块给指定模块，并将原内存块内容拷贝到新内存块，同时纳入模块统计。如果新内存块申请成功，则释放原内存块
 VOID *LOS_MemMrealloc(VOID *pool, VOID *ptr, UINT32 size, UINT32 moduleID)
 {
     VOID *newPtr = NULL;
@@ -2925,7 +2981,7 @@ VOID *LOS_MemMrealloc(VOID *pool, VOID *ptr, UINT32 size, UINT32 moduleID)
     }
     return newPtr;
 }
-
+//获取指定模块的内存使用量，仅打开LOSCFG_MEM_MUL_MODULE时有效
 UINT32 LOS_MemMusedGet(UINT32 moduleID)
 {
     if (OsMemModCheck(moduleID) == LOS_NOK) {

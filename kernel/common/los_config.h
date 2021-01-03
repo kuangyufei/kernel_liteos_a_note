@@ -322,14 +322,14 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Starting address of the system memory
  */
 #ifndef OS_SYS_MEM_ADDR
-#define OS_SYS_MEM_ADDR                        (&m_aucSysMem1[0])// 系统内存的起始地址
+#define OS_SYS_MEM_ADDR                        (&m_aucSysMem1[0])//系统动态内存起始地址
 #endif
 
 /**
  * @ingroup los_config
  * Memory size
  */
-#ifndef OS_SYS_MEM_SIZE
+#ifndef OS_SYS_MEM_SIZE //系统动态内存池的大小（DDR自适应配置），以byte为单位,从bss段末尾至系统DDR末尾
 #define OS_SYS_MEM_SIZE \
     ((OS_SYS_FUNC_ADDR_END) - ((OS_EXC_INTERACTMEM_SIZE + ((UINTPTR)&__bss_end) + (64 - 1)) & ~(64 - 1)))
 #endif

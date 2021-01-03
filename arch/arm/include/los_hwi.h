@@ -95,7 +95,7 @@ extern size_t g_intCount[];
  * Value: 0x02000900
  *
  * Solution: Ensure that the interrupt number is valid.
- */
+ */ //创建或删除中断时，传入了无效中断号
 #define OS_ERRNO_HWI_NUM_INVALID                LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x00)
 
 /**

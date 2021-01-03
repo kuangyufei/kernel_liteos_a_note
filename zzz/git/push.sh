@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '异常接管是操作系统对运行期间发生的异常情况（芯片硬件异常）进行处理的一系列动作
+git commit -m  '完善内存模块的注解
 搜索 @note_pic 方便理解画的字符图
 搜索 @note_why 尚未看明白的地方，如果您看明白了，请告知完善
 搜索 @note_thinking 一点思考和吐槽的地方
