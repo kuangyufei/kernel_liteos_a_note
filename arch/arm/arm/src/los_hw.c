@@ -39,16 +39,16 @@ extern "C" {
 #endif /* __cplusplus */
 
 /* support cpu vendors */
-CpuVendor g_cpuTable[] = {//支持的CPU供应商
+CpuVendor g_cpuTable[] = {	//支持的CPU供应商
     /* armv7-a */
     { 0xc07, "Cortex-A7" },
     { 0xc09, "Cortex-A9" },
     { 0, NULL }
 };
 
-/* logical cpu mapping */
+/* logical cpu mapping */	//逻辑层cpu映射
 UINT64 g_cpuMap[LOSCFG_KERNEL_CORE_NUM] = {
-    [0 ... LOSCFG_KERNEL_CORE_NUM - 1] = (UINT64)(-1)
+    [0 ... LOSCFG_KERNEL_CORE_NUM - 1] = (UINT64)(-1) //统一赋值,这个赋值方式还挺别致的.
 };
 
 /* bit[30] is enable FPU */
@@ -56,7 +56,7 @@ UINT64 g_cpuMap[LOSCFG_KERNEL_CORE_NUM] = {
 LITE_OS_SEC_TEXT_INIT VOID OsTaskExit(VOID)
 {// swi {cond} <immed_24>
     __asm__ __volatile__("swi  0");//处理器产生软中断异常，swi指令的低24位存放的是0
-}
+}//该指令可以产生SWI异常，ARM通过该指令可以实现用户模式中对操作系统中特权模式的程序的调用，即系统调用实现的基础；
 
 #ifdef LOSCFG_GDB
 STATIC VOID OsTaskEntrySetupLoopFrame(UINT32) __attribute__((noinline, naked));
@@ -74,7 +74,7 @@ VOID OsTaskEntrySetupLoopFrame(UINT32 arg0)
                  "\tpop {fp, pc}\n");
 }
 #endif
-
+//任务栈初始化,非常重要的函数
 LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOID *topStack, BOOL initFlag)
 {
     UINT32 index = 1;
@@ -85,7 +85,7 @@ LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOI
     }
     taskContext = (TaskContext *)(((UINTPTR)topStack + stackSize) - sizeof(TaskContext));//注意看上下文将存放在栈的底部
 
-    /* initialize the task context */
+    /* initialize the task context */ //初始化任务上下文
 #ifdef LOSCFG_GDB
     taskContext->PC = (UINTPTR)OsTaskEntrySetupLoopFrame;
 #else
@@ -145,17 +145,17 @@ LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, TSK_ENTRY_F
 
 VOID Sev(VOID)
 {
-    __asm__ __volatile__ ("sev" : : : "memory");
+    __asm__ __volatile__ ("sev" : : : "memory");//多处理器环境中向所有的处理器发送事件（包括自身）
 }
 
-VOID Wfe(VOID)//用在spinlock中 spinlock的功能，是在不同CPU core之间，保护共享资源
+VOID Wfe(VOID)//等待事件，如果没有之前该事件的记录，进入休眠模式；如果有的话，则清除事件锁存并继续执行；
 {
-    __asm__ __volatile__ ("wfe" : : : "memory");//在获得不到资源时，让Core进入busy loop，而通过插入WFE指令，可以节省功耗
+    __asm__ __volatile__ ("wfe" : : : "memory");//wait for Events 等待事件，即下一次事件发生前都在此hold住不干活
 }
 
-VOID Wfi(VOID)//WFI指令:arm core 立即进入low-power standby state，直到有WFI Wakeup events发生
+VOID Wfi(VOID)//WFI指令:arm core 立即进入low-power standby state，等待中断，进入休眠模式。
 {
-    __asm__ __volatile__ ("wfi" : : : "memory");//一般用于cpuidle
+    __asm__ __volatile__ ("wfi" : : : "memory");//wait for Interrupt 等待中断，即下一次中断发生前都在此hold住不干活
 }
 
 VOID Dmb(VOID)//数据存储器隔离。DMB 指令保证： 仅当所有在它前面的存储器访问操作都执行完毕后，才提交(commit)在它后面的存储器访问操作。

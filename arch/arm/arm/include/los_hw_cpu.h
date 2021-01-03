@@ -150,7 +150,7 @@ STATIC INLINE UINT32 ArchCurrCpuid(VOID)
     return 0;
 #endif
 }
-
+//获取CPU硬件ID,每个CPU都有自己的唯一标识
 STATIC INLINE UINT64 OsHwIDGet(VOID)
 {
     return ARM_SYSREG_READ(MPIDR);

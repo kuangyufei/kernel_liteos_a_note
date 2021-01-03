@@ -614,7 +614,7 @@ void OsSaveSignalContext(unsigned int *sp)
         sigcb->context.R12 = sp[REG_R12];
         sp[REG_PC] = sigHandler;//下一个要执行的函数,信号注册函数
         sp[REG_R0] = signo;		//信号注册函数参数
-        sp[REG_R1] = (unsigned int)(UINTPTR)(sigcb->sigunbinfo.si_value.sival_ptr); //@note_why 这里看明白,是干啥子用的?
+        sp[REG_R1] = (unsigned int)(UINTPTR)(sigcb->sigunbinfo.si_value.sival_ptr); //@note_why 这里没看明白是什么意思?
         /* sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */
         sigcb->sigFlag ^= 1ULL << (signo - 1);
         sigcb->context.count++;	//代表已保存

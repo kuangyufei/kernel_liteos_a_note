@@ -54,7 +54,7 @@ extern "C" {
  * Value: 0x02000300
  *
  * Solution: Define the timeout handling function.
- */
+ */	//软件定时器回调函数为空
 #define LOS_ERRNO_SWTMR_PTR_NULL               LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x00)
 
 /**
@@ -64,7 +64,7 @@ extern "C" {
  * Value: 0x02000301
  *
  * Solution: Re-define the expiration time.
- */
+ */	//软件定时器的定时时长为0
 #define LOS_ERRNO_SWTMR_INTERVAL_NOT_SUITED    LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x01)
 
 /**
@@ -74,7 +74,7 @@ extern "C" {
  * Value: 0x02000302
  *
  * Solution: Check the mode value. The value range is [0,3].
- */
+ */	//不正确的软件定时器模式
 #define LOS_ERRNO_SWTMR_MODE_INVALID           LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x02)
 
 /**
@@ -84,7 +84,7 @@ extern "C" {
  * Value: 0x02000303
  *
  * Solution: Define the software timer ID before passing it in.
- */
+ */	//入参的软件定时器ID指针为NULL
 #define LOS_ERRNO_SWTMR_RET_PTR_NULL           LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x03)
 
 /**
@@ -95,7 +95,7 @@ extern "C" {
  *
  * Solution: Re-configure the permitted maximum number of software timers, or wait for a software timer to become
  * available.
- */
+ */	//软件定时器个数超过最大值
 #define LOS_ERRNO_SWTMR_MAXSIZE                LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x04)
 
 /**
@@ -105,7 +105,7 @@ extern "C" {
  * Value: 0x02000305
  *
  * Solution: Pass in a valid software timer ID.
- */
+ */	//入参的软件定时器ID不正确
 #define LOS_ERRNO_SWTMR_ID_INVALID             LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x05)
 
 /**
@@ -115,7 +115,7 @@ extern "C" {
  * Value: 0x02000306
  *
  * Solution: Create a software timer.
- */
+ */	//软件定时器未创建
 #define LOS_ERRNO_SWTMR_NOT_CREATED            LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x06)
 
 /**
@@ -125,7 +125,7 @@ extern "C" {
  * Value: 0x02000307
  *
  * Solution: Allocate bigger memory partition to software timer linked list creation.
- */
+ */	//初始化软件定时器模块时，内存不足
 #define LOS_ERRNO_SWTMR_NO_MEMORY              LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x07)
 
 /**
@@ -135,7 +135,7 @@ extern "C" {
  * Value: 0x02000308
  *
  * Solution: Re-configure the number of software timers.
- */
+ */	//配置的软件计时器数无效
 #define LOS_ERRNO_SWTMR_MAXSIZE_INVALID        LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x08)
 
 /**
@@ -145,7 +145,7 @@ extern "C" {
  * Value: 0x02000309
  *
  * Solution: Change the source code and do not use the software timer during an interrupt.
- */
+ */	//在中断中使用定时器-修改源代码确保不在中断中使用
 #define LOS_ERRNO_SWTMR_HWI_ACTIVE             LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x09)
 
 /**
@@ -155,7 +155,7 @@ extern "C" {
  * Value: 0x0200030a
  *
  * Solution: Expand the memory allocated by membox.
- */
+ */	//membox分配的内存不足
 #define LOS_ERRNO_SWTMR_HANDLER_POOL_NO_MEM    LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x0a)
 
 /**
@@ -165,7 +165,7 @@ extern "C" {
  * Value: 0x0200030b
  *
  * Solution: Check whether more memory can be allocated to the queue to be created.
- */
+ */	//在软件定时器初始化时，创建定时器队列失败 - 调整OS_SYS_MEM_SIZE，以确保有足够的内存供软件定时器创建队列
 #define LOS_ERRNO_SWTMR_QUEUE_CREATE_FAILED    LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x0b)
 
 /**
@@ -175,7 +175,7 @@ extern "C" {
  * Value: 0x0200030c
  *
  * Solution: Check whether the memory is sufficient and re-create the task.
- */
+ */	//在软件定时器初始化时，创建定时器任务失败 - 调整OS_SYS_MEM_SIZE，以确保有足够的内存供软件定时器创建任务
 #define LOS_ERRNO_SWTMR_TASK_CREATE_FAILED     LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x0c)
 
 /**
@@ -185,7 +185,7 @@ extern "C" {
  * Value: 0x0200030d
  *
  * Solution: Start the software timer.
- */
+ */	//未启动软件定时器 - 启动软件定时器
 #define LOS_ERRNO_SWTMR_NOT_STARTED            LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x0d)
 
 /**
@@ -195,13 +195,13 @@ extern "C" {
  * Value: 0x0200030e
  *
  * Solution: Check the software timer state.
- */
+ */	//不正确的软件定时器状态 - 检查确认软件定时器状态
 #define LOS_ERRNO_SWTMR_STATUS_INVALID         LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x0e)
 
 /**
  * @ingroup los_swtmr
  * This error code is not in use temporarily.
- */
+ */	//暂不使用该错误码
 #define LOS_ERRNO_SWTMR_SORTLIST_NULL          LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x0f)
 
 /**
@@ -211,7 +211,7 @@ extern "C" {
  * Value: 0x02000310
  *
  * Solution: Define a variable of the number of remaining Ticks before passing in the number of remaining Ticks.
- */
+ */	//用以获取软件定时器剩余Tick数的入参指针为NULL
 #define LOS_ERRNO_SWTMR_TICK_PTR_NULL          LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x10)
 
 /**
@@ -221,7 +221,7 @@ extern "C" {
  * Value: 0x02000311
  *
  * Solution: Check whether the memory is sufficient and re-create the sortlink.
- */
+ */	//在软件定时器初始化时，创建定时器链表失败
 #define LOS_ERRNO_SWTMR_SORTLINK_CREATE_FAILED LOS_ERRNO_OS_ERROR(LOS_MOD_SWTMR, 0x11)
 
 /**
@@ -263,22 +263,22 @@ typedef VOID (*SWTMR_PROC_FUNC)(UINTPTR arg);	//函数指针, 赋值给 SWTMR_CT
  * @ingroup los_swtmr
  * Software timer control structure
  */
-typedef struct tagSwTmrCtrl {// @note_why 鸿蒙内核经常出现 uc uw us 这样的变量前缀命名,到底是什么意思?
+typedef struct tagSwTmrCtrl {//变量前缀 uc:UINT8  us:UINT16 uw:UINT32 代表的意思
     SortLinkList stSortList;
-    UINT8 ucState;      /**< Software timer state */							//软件计时器的状态
-    UINT8 ucMode;       /**< Software timer mode */								//软件计时器的模式
-    UINT8 ucOverrun;    /**< Times that a software timer repeats timing */		//软件计时器重复计时的次数
-    UINT16 usTimerID;   /**< Software timer ID */								//软件计时器ID,唯一标识,由软件计时器池分配
-    UINT32 uwCount;     /**< Times that a software timer works */				//软件计时器工作的时间
-    UINT32 uwInterval;  /**< Timeout interval of a periodic software timer */	//周期性软件计时器的超时间隔
-    UINT32 uwExpiry;    /**< Timeout interval of an one-off software timer */	//一次性软件计时器的超时间隔
+    UINT8 ucState;      /**< Software timer state */							//软件定时器的状态
+    UINT8 ucMode;       /**< Software timer mode */								//软件定时器的模式
+    UINT8 ucOverrun;    /**< Times that a software timer repeats timing */		//软件定时器重复计时的次数
+    UINT16 usTimerID;   /**< Software timer ID */								//软件定时器ID,唯一标识,由软件计时器池分配
+    UINT32 uwCount;     /**< Times that a software timer works */				//软件定时器工作的时间
+    UINT32 uwInterval;  /**< Timeout interval of a periodic software timer */	//周期性软件定时器的超时间隔
+    UINT32 uwExpiry;    /**< Timeout interval of an one-off software timer */	//一次性软件定时器的超时间隔
 #if (LOSCFG_KERNEL_SMP == YES)
     UINT32 uwCpuid;     /**< The cpu where the timer running on */				//多核情况下,定时器运行的cpu
 #endif
     UINTPTR uwArg;      /**< Parameter passed in when the callback function		//回调函数的参数
                              that handles software timer timeout is called */
     SWTMR_PROC_FUNC pfnHandler; /**< Callback function that handles software timer timeout */	//处理软件计时器超时的回调函数
-    UINT32          uwOwnerPid; /** Owner of this software timer */
+    UINT32          uwOwnerPid; /** Owner of this software timer */	//软件定时器所属进程ID号
 } SWTMR_CTRL_S;
 
 /**

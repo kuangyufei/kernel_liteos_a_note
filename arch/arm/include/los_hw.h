@@ -64,11 +64,11 @@ extern "C" {
 #define PSR_MODE_USR_THUMB                                  (PSR_MODE_USR | PSR_T_THUMB)
 #define PSR_MODE_USR_ARM                                    (PSR_MODE_USR | PSR_T_ARM)
 
-#define LOS_CHECK_SCHEDULE                                  ((!OS_INT_ACTIVE) && OsPreemptable())
+#define LOS_CHECK_SCHEDULE                                  ((!OS_INT_ACTIVE) && OsPreemptable()) //检查是否可以调度
 
-typedef struct {
-    const UINT32 partNo;
-    const CHAR *cpuName;
+typedef struct {//CPU供货商描述符
+    const UINT32 partNo;	//编号
+    const CHAR *cpuName;	//CPU名称
 } CpuVendor;
 
 extern CpuVendor g_cpuTable[];

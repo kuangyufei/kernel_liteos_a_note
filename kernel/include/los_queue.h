@@ -335,7 +335,7 @@ extern "C" {
  * @ingroup los_queue
  * Structure of the block for queue information query
  */ //队列信息对外展示的结构体
-typedef struct tagQueueInfo { //@note_why 一直没弄明白用 uw,us作为变量的前缀是啥意思
+typedef struct tagQueueInfo { //变量前缀 uc:UINT8  us:UINT16 uw:UINT32 代表的意思
     UINT32 uwQueueID;       /**< Queue ID */	//队列ID
     UINT16 usQueueLen;      /**< Queue length *///队列中消息个数
     UINT16 usQueueSize;     /**< Node size */	//消息节点大小

@@ -330,7 +330,7 @@ reset_platform:
     mov    r0, #0
     mov    pc, r0   // Jump to reset vector
 #endif
-cpu_start:
+cpu_start:	/* 启动次级CPU */
     ldr     r4, =g_firstPageTable               /* r4 = physical address of translation table and clear it */
     add     r4, r4, r11
     orr     r8, r4, #MMU_TTBRx_FLAGS
@@ -341,10 +341,10 @@ cpu_start:
     add     r4, r4, r11                         /* r4 = tt_trampoline paddr */
 
     bl     mmu_setup
-    bl     secondary_cpu_start
+    bl     secondary_cpu_start	/* 启动次级CPU */
     b      .
 
-secondary_cpu_init:
+secondary_cpu_init:	/* 次级CPU初始化 */
 #ifdef LOSCFG_TEE_ENABLE
     /* enable fpu+neon */
     ldr    r0, =0x60c00

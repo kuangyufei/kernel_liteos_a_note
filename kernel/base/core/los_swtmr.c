@@ -108,7 +108,7 @@ extern "C" {
 #error "swtmr maxnum cannot be zero"
 #endif /* LOSCFG_BASE_CORE_SWTMR_LIMIT <= 0 */
 
-LITE_OS_SEC_BSS SWTMR_CTRL_S    *g_swtmrCBArray = NULL;     /* First address in Timer memory space */
+LITE_OS_SEC_BSS SWTMR_CTRL_S    *g_swtmrCBArray = NULL;     /* First address in Timer memory space *///定时器池
 LITE_OS_SEC_BSS UINT8           *g_swtmrHandlerPool = NULL; /* Pool of Swtmr Handler *///用于注册软时钟的回调函数
 LITE_OS_SEC_BSS LOS_DL_LIST     g_swtmrFreeList;            /* Free list of Software Timer */
 
@@ -169,7 +169,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsSwtmrRecycle(UINT32 processID)
         }
     }
 }
-//软时钟初始化
+//软时钟初始化 ,注意函数在多CPU情况下会执行多次
 LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
 {
     UINT32 size;
@@ -178,7 +178,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
     SWTMR_CTRL_S *swtmr = NULL;
     UINT32 swtmrHandlePoolSize;
     UINT32 cpuid = ArchCurrCpuid();
-    if (cpuid == 0) {
+    if (cpuid == 0) {//确保以下代码块由一个CPU执行,g_swtmrCBArray和g_swtmrHandlerPool 是所有CPU共用的
         size = sizeof(SWTMR_CTRL_S) * LOSCFG_BASE_CORE_SWTMR_LIMIT;//申请软时钟内存大小 
         swtmr = (SWTMR_CTRL_S *)LOS_MemAlloc(m_aucSysMem0, size); /* system resident resource */ //常驻内存
         if (swtmr == NULL) {
@@ -190,33 +190,33 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
         LOS_ListInit(&g_swtmrFreeList);//初始化空闲链表
         for (index = 0; index < LOSCFG_BASE_CORE_SWTMR_LIMIT; index++, swtmr++) {
             swtmr->usTimerID = index;//按顺序赋值
-            LOS_ListTailInsert(&g_swtmrFreeList, &swtmr->stSortList.sortLinkNode);//用sortLinkNode把结构体全部 挂到空闲链表 
+            LOS_ListTailInsert(&g_swtmrFreeList, &swtmr->stSortList.sortLinkNode);//通过sortLinkNode将节点挂到空闲链表 
         }
-		//用于软时钟注册的内存为何要用静态内存申请? 请大家想想这个问题
-        swtmrHandlePoolSize = LOS_MEMBOX_SIZE(sizeof(SwtmrHandlerItem), OS_SWTMR_HANDLE_QUEUE_SIZE);//申请静态内存
-
+		
+        swtmrHandlePoolSize = LOS_MEMBOX_SIZE(sizeof(SwtmrHandlerItem), OS_SWTMR_HANDLE_QUEUE_SIZE);//计算所有注册函数内存大小
+		//规划一片内存区域作为软时钟处理函数的静态内存池。
         g_swtmrHandlerPool = (UINT8 *)LOS_MemAlloc(m_aucSysMem1, swtmrHandlePoolSize); /* system resident resource *///常驻内存
         if (g_swtmrHandlerPool == NULL) {
             return LOS_ERRNO_SWTMR_NO_MEMORY;
         }
-
+		
         ret = LOS_MemboxInit(g_swtmrHandlerPool, swtmrHandlePoolSize, sizeof(SwtmrHandlerItem));//初始化软时钟注册池
         if (ret != LOS_OK) {
             return LOS_ERRNO_SWTMR_HANDLER_POOL_NO_MEM;
         }
     }
-	//创建一个 OS_SWTMR_HANDLE_QUEUE_SIZE 的队列
+	//每个CPU都会创建一个属于自己的 OS_SWTMR_HANDLE_QUEUE_SIZE 的队列
     ret = LOS_QueueCreate(NULL, OS_SWTMR_HANDLE_QUEUE_SIZE, &g_percpu[cpuid].swtmrHandlerQueue, 0, sizeof(CHAR *));//为当前CPU core 创建软时钟队列 maxMsgSize:sizeof(CHAR *)
     if (ret != LOS_OK) {
         return LOS_ERRNO_SWTMR_QUEUE_CREATE_FAILED;
     }
 
-    ret = OsSwtmrTaskCreate();//创建软时钟任务,统一处理队列
+    ret = OsSwtmrTaskCreate();//每个CPU独自创建属于自己的软时钟任务,统一处理队列
     if (ret != LOS_OK) {
         return LOS_ERRNO_SWTMR_TASK_CREATE_FAILED;
     }
 
-    ret = OsSortLinkInit(&g_percpu[cpuid].swtmrSortLink);//排序初始化,为啥要排序因为每个定时器的时间不一样,鸿蒙把用时短的排在前面
+    ret = OsSortLinkInit(&g_percpu[cpuid].swtmrSortLink);//每个CPU独自对自己软时钟链表排序初始化,为啥要排序因为每个定时器的时间不一样,鸿蒙把用时短的排在前面
     if (ret != LOS_OK) {
         return LOS_ERRNO_SWTMR_SORTLINK_CREATE_FAILED;
     }
@@ -233,9 +233,9 @@ LITE_OS_SEC_TEXT VOID OsSwtmrStart(SWTMR_CTRL_S *swtmr)
     if ((swtmr->ucOverrun == 0) && ((swtmr->ucMode == LOS_SWTMR_MODE_ONCE) ||
         (swtmr->ucMode == LOS_SWTMR_MODE_OPP) ||
         (swtmr->ucMode == LOS_SWTMR_MODE_NO_SELFDELETE))) {
-        SET_SORTLIST_VALUE(&(swtmr->stSortList), swtmr->uwExpiry);//设置过期时间
+        SET_SORTLIST_VALUE(&(swtmr->stSortList), swtmr->uwExpiry);//设置一次性定时器的超时间隔
     } else {
-        SET_SORTLIST_VALUE(&(swtmr->stSortList), swtmr->uwInterval);
+        SET_SORTLIST_VALUE(&(swtmr->stSortList), swtmr->uwInterval);//设置周期性定时器的超时间隔
     }
 
     OsAdd2SortLink(&OsPercpuGet()->swtmrSortLink, &swtmr->stSortList);	//通过stSortList节点挂到CPU的软件定时器排序链表上
@@ -381,7 +381,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsSwtmrTimeGet(const SWTMR_CTRL_S *swtmr)
 
     return OsSortLinkGetTargetExpireTime(sortLinkHeader, &swtmr->stSortList);
 }
-//接口函数 创建一个定时器
+//创建定时器，设置定时器的定时时长、定时器模式、回调函数，并返回定时器ID
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_SwtmrCreate(UINT32 interval,
                                              UINT8 mode,
                                              SWTMR_PROC_FUNC handler,
@@ -515,7 +515,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStop(UINT16 swtmrID)
     SWTMR_UNLOCK(intSave);
     return ret;
 }
-//接口函数 获取定时器的时间 通过 *tick 带走 
+//接口函数 获得软件定时器剩余Tick数 通过 *tick 带走 
 LITE_OS_SEC_TEXT UINT32 LOS_SwtmrTimeGet(UINT16 swtmrID, UINT32 *tick)
 {
     SWTMR_CTRL_S *swtmr = NULL;

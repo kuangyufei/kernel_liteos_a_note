@@ -38,7 +38,7 @@
 #ifdef LOSCFG_SECURITY_VID
 #include "vid_api.h"
 #else
-#define MAX_INVALID_TIMER_VID OS_SWTMR_MAX_TIMERID //最大支持的软件定时器
+#define MAX_INVALID_TIMER_VID OS_SWTMR_MAX_TIMERID //最大支持的软件定时器数量 <65535
 #endif
 
 #ifdef __cplusplus
@@ -51,32 +51,32 @@ extern "C" {
  * @ingroup los_swtmr_pri
  * Software timer state
  */
-enum SwtmrState {
-    OS_SWTMR_STATUS_UNUSED,     /**< The software timer is not used.    */
-    OS_SWTMR_STATUS_CREATED,    /**< The software timer is created.     */
-    OS_SWTMR_STATUS_TICKING     /**< The software timer is timing.      */
+enum SwtmrState {	//定时器状态
+    OS_SWTMR_STATUS_UNUSED,     /**< The software timer is not used.    */	//定时器未使用,系统在定时器模块初始化时，会将系统中所有定时器资源初始化成该状态。
+    OS_SWTMR_STATUS_CREATED,    /**< The software timer is created.     */	//定时器创建后未启动，或已停止.定时器创建后，不处于计数状态时，定时器将变成该状态。
+    OS_SWTMR_STATUS_TICKING     /**< The software timer is timing.      */	//定时器处于计数状态,在定时器创建后调用LOS_SwtmrStart接口启动，定时器将变成该状态，是定时器运行时的状态。
 };
 
 /**
  * @ingroup los_swtmr_pri
  * Structure of the callback function that handles software timer timeout
  */
-typedef struct {
-    SWTMR_PROC_FUNC handler;    /**< Callback function that handles software timer timeout  */
+typedef struct {//处理软件定时器超时的回调函数的结构体
+    SWTMR_PROC_FUNC handler;    /**< Callback function that handles software timer timeout  */	//处理软件定时器超时的回调函数
     UINTPTR arg;                /**< Parameter passed in when the callback function
-                                     that handles software timer timeout is called */
+                                     that handles software timer timeout is called */	//调用处理软件计时器超时的回调函数时传入的参数
 } SwtmrHandlerItem;
 
 /**
  * @ingroup los_swtmr_pri
  * Type of the pointer to the structure of the callback function that handles software timer timeout
- */
+ */	//指向处理软件计时器超时的回调函数结构的指针的类型
 typedef SwtmrHandlerItem *SwtmrHandlerItemPtr;
 
-extern SWTMR_CTRL_S *g_swtmrCBArray;
+extern SWTMR_CTRL_S *g_swtmrCBArray;//软件定时器数组,后续统一注解为定时器池
 
-extern SortLinkAttribute g_swtmrSortLink; /* The software timer count list */
-
+extern SortLinkAttribute g_swtmrSortLink; /* The software timer count list */	//软件计时器计数链表	
+//通过参数ID找到对应定时器描述体
 #define OS_SWT_FROM_SID(swtmrID) ((SWTMR_CTRL_S *)g_swtmrCBArray + ((swtmrID) % LOSCFG_BASE_CORE_SWTMR_LIMIT))
 
 /**

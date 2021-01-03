@@ -260,7 +260,7 @@ STATIC VOID OsMemNodeSave(LosMemDynNode *node);
     (value) = (LOS_DL_LIST *)(((UINTPTR)&(value)) ^ (UINTPTR)(-1))
 #define OS_MEM_MAGIC_VALID(value) \
     (((UINTPTR)(value) ^ ((UINTPTR)&(value))) == (UINTPTR)(-1))
-
+//变量前缀 uc:UINT8  us:UINT16 uw:UINT32 代表的意思
 UINT8 *m_aucSysMem0 = NULL; //@note_why 不明白鸿蒙对虚拟内存分配为什么要用两个全局变量
 UINT8 *m_aucSysMem1 = NULL;	//auc是什么意思? 变量名最后0和1又代表什么意思? 就不能整个好听的名字吗？@note_thinking
 

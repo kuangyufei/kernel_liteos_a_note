@@ -272,9 +272,9 @@ bss_loop:
 _start_hang:
     b      _start_hang
 
-mmu_setup: //设置MMU
-    mov     r12, #0								/*设置8号寄存器以控制TLB并将映射设置为无效*/
-    mcr     p15, 0, r12, c8, c7, 0              /* Set c8 to control the TLB and set the mapping to invalid */
+mmu_setup: //安装MMU
+    mov     r12, #0								
+    mcr     p15, 0, r12, c8, c7, 0              /* Set c8 to control the TLB and set the mapping to invalid *//*设置8号寄存器以控制TLB并将映射设置为无效*/
     isb
 
     mcr     p15, 0, r12, c2, c0, 2              /* Initialize the c2 register *///初始化C2寄存器
@@ -323,8 +323,8 @@ reset_platform:
     mov    r0, #0
     mov    pc, r0   /* Jump to reset vector */
 #endif
-cpu_start:
-    bl     secondary_cpu_start
+cpu_start:	/* 启动CPU */
+    bl     secondary_cpu_start /* 启动次级CPU */
     b      .
 
 
