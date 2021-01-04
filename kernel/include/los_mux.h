@@ -74,7 +74,7 @@ typedef struct OsMux { //互斥锁结构体
     UINT32 magic;        /**< magic number */		//魔法数字
     LosMuxAttr attr;     /**< Mutex attribute */	//互斥锁属性
     LOS_DL_LIST holdList; /**< The task holding the lock change */	//当有任务拿到本锁时,通过holdList节点把锁挂到该任务的锁链表上
-    LOS_DL_LIST muxList; /**< Mutex linked list */	//等本锁的任务链表,上面挂的都是任务,注意和holdList的区别.
+    LOS_DL_LIST muxList; /**< Mutex linked list */	//等这个锁的任务链表,上面挂的都是任务,注意和holdList的区别.
     VOID *owner;         /**< The current thread that is locking a mutex */ //当前拥有这把锁的任务
     UINT16 muxCount;     /**< Times of locking a mutex */	//锁定互斥体的次数,递归锁允许多次
 } LosMux;

@@ -192,14 +192,14 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
             swtmr->usTimerID = index;//按顺序赋值
             LOS_ListTailInsert(&g_swtmrFreeList, &swtmr->stSortList.sortLinkNode);//通过sortLinkNode将节点挂到空闲链表 
         }
-		
+		//想要用静态内存池管理,就必须要使用LOS_MEMBOX_SIZE来计算申请的内存大小,因为需要点前缀内存承载头部信息.
         swtmrHandlePoolSize = LOS_MEMBOX_SIZE(sizeof(SwtmrHandlerItem), OS_SWTMR_HANDLE_QUEUE_SIZE);//计算所有注册函数内存大小
 		//规划一片内存区域作为软时钟处理函数的静态内存池。
         g_swtmrHandlerPool = (UINT8 *)LOS_MemAlloc(m_aucSysMem1, swtmrHandlePoolSize); /* system resident resource *///常驻内存
         if (g_swtmrHandlerPool == NULL) {
             return LOS_ERRNO_SWTMR_NO_MEMORY;
         }
-		
+
         ret = LOS_MemboxInit(g_swtmrHandlerPool, swtmrHandlePoolSize, sizeof(SwtmrHandlerItem));//初始化软时钟注册池
         if (ret != LOS_OK) {
             return LOS_ERRNO_SWTMR_HANDLER_POOL_NO_MEM;
@@ -294,7 +294,7 @@ LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)//扫描定时器,如果碰到超时的,�
         LOS_ListDelete(&sortList->sortLinkNode);
         swtmr = LOS_DL_LIST_ENTRY(sortList, SWTMR_CTRL_S, stSortList);
 
-        swtmrHandler = (SwtmrHandlerItemPtr)LOS_MemboxAlloc(g_swtmrHandlerPool);
+        swtmrHandler = (SwtmrHandlerItemPtr)LOS_MemboxAlloc(g_swtmrHandlerPool);//取出一个可用的软时钟处理项
         if (swtmrHandler != NULL) {
             swtmrHandler->handler = swtmr->pfnHandler;
             swtmrHandler->arg = swtmr->uwArg;

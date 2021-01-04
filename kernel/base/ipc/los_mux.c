@@ -395,7 +395,7 @@ STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
         /* This is for mutex macro initialization. */
         mutex->muxCount = 0;//锁计数器清0
         mutex->owner = NULL;//锁没有归属任务
-        LOS_ListInit(&mutex->muxList);//初始化mux链表[]
+        LOS_ListInit(&mutex->muxList);//初始化锁的任务链表,后续申请这把锁任务都会挂上去
     }
 
     if (mutex->muxCount == 0) {//无task用锁时,肯定能拿到锁了.在里面返回
@@ -405,7 +405,7 @@ STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
         if ((runTask->priority > mutex->attr.prioceiling) && (mutex->attr.protocol == LOS_MUX_PRIO_PROTECT)) {//看保护协议的做法是怎样的?
             LOS_BitmapSet(&runTask->priBitMap, runTask->priority);//1.priBitMap是记录任务优先级变化的位图，这里把任务当前的优先级记录在priBitMap
             OsTaskPriModify(runTask, mutex->attr.prioceiling);//2.把高优先级的mutex->attr.prioceiling设为当前任务的优先级.
-        }//注意任务优先级有32个, 是0最高,31最低!!!这里等于提高了任务的优先级,目的是让其在下次调度中继续提高被选中的概率,从而快速的释放锁.您明白了吗? :|)
+        }//注意任务优先级有32个, 是0最高,31最低!!!这里等于提高了任务的优先级,目的是让其在下次调度中继续提高被选中的概率,从而快速的释放锁.
         return LOS_OK;
     }
 	//递归锁muxCount>0 如果是递归锁就要处理两种情况 1.runtask持有锁 2.锁被别的任务拿走了
@@ -422,11 +422,11 @@ STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
         return LOS_EDEADLK;//返回错误,自旋锁被别的CPU core 持有
     }
 
-    OsMuxBitmapSet(mutex, runTask, (LosTaskCB *)mutex->owner);//设置bitmap,尽可能的提高锁持有任务的优先级
+    OsMuxBitmapSet(mutex, runTask, (LosTaskCB *)mutex->owner);//设置锁位图,尽可能的提高锁持有任务的优先级
 
     owner = (LosTaskCB *)mutex->owner;	//记录持有锁的任务
     runTask->taskMux = (VOID *)mutex;	//记下当前任务在等待这把锁
-    node = OsMuxPendFindPos(runTask, mutex);//在都等锁阻塞链表上找一个适当的位置,在OsTaskWait中把自己从这个入口挂上去
+    node = OsMuxPendFindPos(runTask, mutex);//在等锁链表中找到一个优先级比当前任务更低的任务
     ret = OsTaskWait(node, timeout, TRUE);//task陷入等待状态 TRUE代表需要调度
     if (ret == LOS_ERRNO_TSK_TIMEOUT) {//这行代码虽和OsTaskWait挨在一起,但要过很久才会执行到,因为在OsTaskWait中CPU切换了任务上下文
         runTask->taskMux = NULL;// 所以重新回到这里时可能已经超时了
@@ -434,7 +434,7 @@ STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
     }
 
     if (timeout != LOS_WAIT_FOREVER) {//不是永远等待的情况
-        OsMuxBitmapRestore(mutex, runTask, owner);//恢复bitmap
+        OsMuxBitmapRestore(mutex, runTask, owner);//恢复锁的位图
     }
 
     return ret;

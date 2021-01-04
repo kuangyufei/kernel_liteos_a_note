@@ -68,7 +68,6 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
 /******************************************************************************
 基本概念
 	异常接管是操作系统对运行期间发生的异常情况（芯片硬件异常）进行处理的一系列动作，
@@ -105,6 +104,9 @@ extern "C" {
 
 注意事项
 	要查看调用栈信息，必须添加编译选项宏-fno-omit-frame-pointer支持stack frame，否则编译时FP寄存器是关闭的。
+
+参考
+	https://gitee.com/LiteOS/LiteOS/blob/master/doc/Huawei_LiteOS_Kernel_Developer_Guide_zh.md
 ******************************************************************************/
 #define INVALID_CPUID  0xFFFF
 #define OS_EXC_VMM_NO_REGION  0x0U
@@ -867,20 +869,20 @@ STATIC VOID OsAllCpuStatusOutput(VOID)
 
     for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
         switch (g_percpu[i].excFlag) {
-            case CPU_RUNNING:
+            case CPU_RUNNING://处于运行状态
                 PrintExcInfo("cpu%u is running.\n", i);
                 break;
-            case CPU_HALT:
+            case CPU_HALT://处于停止状态
                 PrintExcInfo("cpu%u is halted.\n", i);
                 break;
-            case CPU_EXC:
+            case CPU_EXC://处于异常接管状态
                 PrintExcInfo("cpu%u is in exc.\n", i);
                 break;
             default:
                 break;
         }
     }
-    PrintExcInfo("The current handling the exception is cpu%u !\n", ArchCurrCpuid());
+    PrintExcInfo("The current handling the exception is cpu%u !\n", ArchCurrCpuid());//当前正在处理异常的CPU是:
 }
 //等待所有CPU停止
 STATIC VOID WaitAllCpuStop(UINT32 cpuID)
@@ -923,13 +925,13 @@ STATIC VOID OsWaitOtherCoresHandleExcEnd(UINT32 currCpuID)
         LOS_Mdelay(EXC_WAIT_INTER);
     }
 }
-//检查所以CPU的状态
+//检查所有CPU的状态
 STATIC VOID OsCheckAllCpuStatus(UINTPTR taskStackPointer)
 {
     UINT32 currCpuID = ArchCurrCpuid();
     UINT32 ret, target;
 
-    OsPercpuGet()->excFlag = CPU_EXC;
+    OsPercpuGet()->excFlag = CPU_EXC;//CPU处于异常接管状态
     LOCKDEP_CLEAR_LOCKS();
 
     LOS_SpinLock(&g_excSerializerSpin);

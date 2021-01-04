@@ -45,7 +45,7 @@ extern "C" {
 #if (LOSCFG_KERNEL_SMP == YES)
 typedef enum {
     CPU_RUNNING = 0,   /* cpu is running */ 	//CPU正在运行状态
-    CPU_HALT,          /* cpu in the halt */	//CPU处于空闲状态
+    CPU_HALT,          /* cpu in the halt */	//CPU处于暂停状态
     CPU_EXC            /* cpu in the exc */		//CPU处于异常状态
 } ExcFlag;
 #endif
