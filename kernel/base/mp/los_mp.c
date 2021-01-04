@@ -42,9 +42,21 @@ extern "C" {
 #endif /* __cplusplus */
 /*******************************************************	
 多CPU核的操作系统3种处理模式(SMP+AMP+BMP) 鸿蒙实现的是 SMP 的方式
-非对称多处理（Asymmetric multiprocessing，AMP）每个CPU内核运行一个独立的操作系统或同一操作系统的独立实例（instantiation）。
-对称多处理（Symmetric multiprocessing，SMP）一个操作系统的实例可以同时管理所有CPU内核，且应用并不绑定某一个内核。
-混合多处理（Bound multiprocessing，BMP）一个操作系统的实例可以同时管理所有CPU内核，但每个应用被锁定于某个指定的核心。
+	非对称多处理（Asymmetric multiprocessing，AMP）每个CPU内核
+	运行一个独立的操作系统或同一操作系统的独立实例（instantiation）。
+	
+	对称多处理（Symmetric multiprocessing，SMP）一个操作系统的实例
+	可以同时管理所有CPU内核，且应用并不绑定某一个内核。
+	
+	混合多处理（Bound multiprocessing，BMP）一个操作系统的实例可以
+	同时管理所有CPU内核，但每个应用被锁定于某个指定的核心。
+
+多核多线程处理器的中断
+	由 PIC(Programmable Interrupt Controller）统一控制。PIC 允许一个
+	硬件线程中断其他的硬件线程，这种方式被称为核间中断(Inter-Processor Interrupts,IPI）
+	
+SGI:软件触发中断(Software Generated Interrupt)。在arm处理器中，
+	SGI共有16个,硬件中断号分别为ID0~ID15。它通常用于多核间通讯。
 ********************************************************/
 
 #if (LOSCFG_KERNEL_SMP == YES)
@@ -52,8 +64,8 @@ extern "C" {
 VOID LOS_MpSchedule(UINT32 target)//target每位对应CPU core 
 {
     UINT32 cpuid = ArchCurrCpuid();
-    target &= ~(1U << cpuid);
-    HalIrqSendIpi(target, LOS_MP_IPI_SCHEDULE);//处理器间中断（IPI）
+    target &= ~(1U << cpuid);//获取除了自身之外的其他CPU
+    HalIrqSendIpi(target, LOS_MP_IPI_SCHEDULE);//向目标CPU发送调度信号,核间中断(Inter-Processor Interrupts),IPI
 }
 //硬中断唤醒处理函数
 VOID OsMpWakeHandler(VOID)
@@ -85,7 +97,7 @@ VOID OsMpCollectTasks(VOID)
     UINT32 ret;
 
     /* recursive checking all the available task */
-    for (; taskID <= g_taskMaxNum; taskID++) {
+    for (; taskID <= g_taskMaxNum; taskID++) {	//递归检查所有可用任务
         taskCB = &g_taskCBArray[taskID];
 
         if (OsTaskIsUnused(taskCB) || OsTaskIsRunning(taskCB)) {
@@ -96,8 +108,8 @@ VOID OsMpCollectTasks(VOID)
          * though task status is not atomic, this check may success but not accomplish
          * the deletion; this deletion will be handled until the next run.
          */
-        if (taskCB->signal & SIGNAL_KILL) {
-            ret = LOS_TaskDelete(taskID);
+        if (taskCB->signal & SIGNAL_KILL) {//任务收到被干掉信号
+            ret = LOS_TaskDelete(taskID);//干掉任务,回归任务池
             if (ret != LOS_OK) {
                 PRINT_WARN("GC collect task failed err:0x%x\n", ret);
             }

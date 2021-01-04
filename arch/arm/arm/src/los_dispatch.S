@@ -235,7 +235,7 @@ OsIrqFromKernel:
     EXC_SP_SET __svc_stack_top, OS_EXC_SVC_STACK_SIZE, R1, R2
 #endif
 
-    BLX     HalIrqHandler
+    BLX     HalIrqHandler /* 调用硬中断处理程序 */
 
 #ifdef LOSCFG_IRQ_USE_STANDALONE_STACK
     MOV     SP, R4

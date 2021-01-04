@@ -66,8 +66,8 @@
 #define CTLR_DS BIT_32(6)
 #define CTLR_E1NWF BIT_32(7)
 #define GICD_CTLR_RWP BIT_32(31)
-
-/* peripheral identification registers */
+//定义GICD: Generic Interrupt Controller Distributor
+/* peripheral identification registers */ //外设身份寄存器
 #define GICD_CIDR0 (GICD_OFFSET + 0xfff0)
 #define GICD_CIDR1 (GICD_OFFSET + 0xfff4)
 #define GICD_CIDR2 (GICD_OFFSET + 0xfff8)
@@ -80,24 +80,24 @@
 /* GICD_PIDR bit definitions and masks */
 #define GICD_PIDR2_ARCHREV_SHIFT 4
 #define GICD_PIDR2_ARCHREV_MASK 0xf
-
-/* redistributor registers */
+//定义GICR: Generic Interrupt Controller Redistributor
+/* redistributor registers */ //再分发寄存器组,每个CPU都对应一个Redistributor
 #define GICR_SGI_OFFSET (GICR_OFFSET + 0x10000)
 
-#define GICR_CTLR(i)        (GICR_OFFSET + GICR_STRIDE * (i) + 0x0000)
-#define GICR_IIDR(i)        (GICR_OFFSET + GICR_STRIDE * (i) + 0x0004)
-#define GICR_TYPER(i, n)    (GICR_OFFSET + GICR_STRIDE * (i) + 0x0008 + (n)*4)
+#define GICR_CTLR(i)        (GICR_OFFSET + GICR_STRIDE * (i) + 0x0000)	//对Distributor控制使能的寄存器
+#define GICR_IIDR(i)        (GICR_OFFSET + GICR_STRIDE * (i) + 0x0004)	//获取SOC平台厂商提供的GIC的具体信息，现在一般提供信息是该GIC能够支持最多多少个IRQ硬件中断源
+#define GICR_TYPER(i, n)    (GICR_OFFSET + GICR_STRIDE * (i) + 0x0008 + (n)*4)	
 #define GICR_STATUSR(i)     (GICR_OFFSET + GICR_STRIDE * (i) + 0x0010)
-#define GICR_WAKER(i)       (GICR_OFFSET + GICR_STRIDE * (i) + 0x0014)
+#define GICR_WAKER(i)       (GICR_OFFSET + GICR_STRIDE * (i) + 0x0014)	//用于支持电源管理功能
 #define GICR_IGROUPR0(i)    (GICR_SGI_OFFSET + GICR_STRIDE * (i) + 0x0080)
 #define GICR_IGRPMOD0(i)    (GICR_SGI_OFFSET + GICR_STRIDE * (i) + 0x0d00)
 #define GICR_ISENABLER0(i)  (GICR_SGI_OFFSET + GICR_STRIDE * (i) + 0x0100)
 #define GICR_ICENABLER0(i)  (GICR_SGI_OFFSET + GICR_STRIDE * (i) + 0x0180)
 #define GICR_ISPENDR0(i)    (GICR_SGI_OFFSET + GICR_STRIDE * (i) + 0x0200)
 #define GICR_ICPENDR0(i)    (GICR_SGI_OFFSET + GICR_STRIDE * (i) + 0x0280)
-#define GICR_ISACTIVER0(i)  (GICR_SGI_OFFSET + GICR_STRIDE * (i) + 0x0300)
+#define GICR_ISACTIVER0(i)  (GICR_SGI_OFFSET + GICR_STRIDE * (i) + 0x0300)	//记录某一个IRQ是否ACTIVE
 #define GICR_ICACTIVER0(i)  (GICR_SGI_OFFSET + GICR_STRIDE * (i) + 0x0380)
-#define GICR_IPRIORITYR0(i) (GICR_SGI_OFFSET + GICR_STRIDE * (i) + 0x0400)
+#define GICR_IPRIORITYR0(i) (GICR_SGI_OFFSET + GICR_STRIDE * (i) + 0x0400)	//记录对应IRQ的优先级别
 #define GICR_ICFGR0(i)      (GICR_SGI_OFFSET + GICR_STRIDE * (i) + 0x0c00)
 #define GICR_ICFGR1(i)      (GICR_SGI_OFFSET + GICR_STRIDE * (i) + 0x0c04)
 #define GICR_NSACR(i)       (GICR_SGI_OFFSET + GICR_STRIDE * (i) + 0x0e00)
@@ -172,7 +172,7 @@ STATIC INLINE VOID GiccSetEoir(UINT32 val)
 #endif
     ISB;
 }
-
+//获取中断号
 STATIC INLINE UINT32 GiccGetIar(VOID)
 {
     UINT32 temp;

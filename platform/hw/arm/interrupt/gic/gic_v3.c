@@ -34,6 +34,47 @@
 #include "los_typedef.h"
 #include "los_hwi_pri.h"
 #include "los_mp.h"
+/******************************************************************************
+GIC，Generic Interrupt Controller。是ARM公司提供的一个通用的中断控制器。主要作用为：
+	接受硬件中断信号，并经过一定处理后，分发给对应的CPU进行处理。
+
+SPI (Shared Peripheral Interrupt)
+	公用的外部设备中断，也定义为共享中断。可以多个Cpu或者说Core处理，不限定特定的Cpu。
+	比如按键触发一个中断，手机触摸屏触发的中断。
+PPI (Private Peripheral Interrupt)
+	私有外设中断。这是每个核心私有的中断。PPI会送达到指定的CPU上，应用场景有CPU本地时钟。
+SGI (Software Generated Interrupt)
+	软件触发的中断。软件可以通过写GICD_SGIR寄存器来触发一个中断事件，一般用于核间通信。
+LPI (Locality-specific Peripheral Interrupt)
+	LPI是GICv3中的新特性，它们在很多方面与其他类型的中断不同。LPI始终是基于消息的中断，
+	它们的配置保存在表中而不是寄存器。比如PCIe的MSI/MSI-x中断。
+
+	硬件中断号	中断类型
+	0-15		SGI
+	16 - 31		PPI
+	32 - 1019	SPI
+	1020 - 1023	用于指示特殊情况的特殊中断
+	1024 - 8191	Reservd
+	8192 - MAX	LPI
+	
+GICv3控制器由以下部分组成:
+	distributor： SPI中断的管理，将中断发送给redistributor
+	redistributor： PPI，SGI，LPI中断的管理，将中断发送给cpu interface
+	cpu interface： 传输中断给core
+	ITS： Interrupt Translation Service, 用来解析LPI中断
+	其中，cpu interface是实现在core内部的，distributor，redistributor，ITS是实现在gic内部的.
+	
+四种中断状态
+	Inactive	中断即没有Pending也没有Active
+	Pending	由于外设硬件产生了中断事件（或者软件触发）该中断事件已经通过
+		硬件信号通知到GIC，等待GIC分配的那个CPU进行处理
+	Active	CPU已经应答（acknowledge）了该interrupt请求，并且正在处理中
+	Active and Pending	当一个中断源处于Active状态的时候，同一中断源又触发了中断，
+		进入pending状态
+
+参考
+	https://blog.csdn.net/yhb1047818384/article/details/86708769
+******************************************************************************/
 
 #ifdef LOSCFG_PLATFORM_BSP_GIC_V3
 
@@ -48,7 +89,7 @@ STATIC INLINE UINT64 MpidrToAffinity(UINT64 mpidr)
 }
 
 #if (LOSCFG_KERNEL_SMP == YES)
-
+//获取cpuMask中下一个CPU 
 STATIC UINT32 NextCpu(UINT32 cpu, UINT32 cpuMask)
 {
     UINT32 next = cpu + 1;
@@ -91,7 +132,7 @@ out:
     *base = cpu;
     return tList;
 }
-
+//软件触发的中断,软件可以通过写GICD_SGIR寄存器来触发一个中断事件，一般用于核间通信。
 STATIC VOID GicSgi(UINT32 irq, UINT32 cpuMask)
 {
     UINT16 tList;
@@ -116,12 +157,12 @@ STATIC VOID GicSgi(UINT32 irq, UINT32 cpuMask)
         cpu++;
     }
 }
-
+//Inter-Processor Interrupts,IPI ,向目标CPU发送核间中断
 VOID HalIrqSendIpi(UINT32 target, UINT32 ipi)
 {
     GicSgi(ipi, target);
 }
-
+//给指定中断号设置CPU亲和性
 VOID HalIrqSetAffinity(UINT32 irq, UINT32 cpuMask)
 {
     UINT64 affinity = MpidrToAffinity(NextCpu(0, cpuMask));
@@ -263,12 +304,12 @@ VOID HalIrqMask(UINT32 vector)
         GicWaitForRwp(GICD_CTLR);
     }
 }
-//取消屏蔽硬件中断
+//取消屏蔽指定硬件中断向量号,vector范围[0,127]
 VOID HalIrqUnmask(UINT32 vector)
 {
     INT32 i;
     const UINT32 mask = 1U << (vector % 32);
-
+	
     if ((vector > OS_USER_HWI_MAX) || (vector < OS_USER_HWI_MIN)) {
         return;
     }
@@ -292,7 +333,7 @@ VOID HalIrqPending(UINT32 vector)
 
     GIC_REG_32(GICD_ISPENDR(vector >> 5)) = 1U << (vector % 32);
 }
-
+//清除中断号对应的中断寄存器的状态位，此接口依赖中断控制器版本，非必需
 VOID HalIrqClear(UINT32 vector)
 {
     GiccSetEoir(vector);
@@ -318,7 +359,7 @@ UINT32 HalIrqSetPrio(UINT32 vector, UINT8 priority)
 
     return LOS_OK;
 }
-
+//当前CPU初始化硬中断
 VOID HalIrqInitPercpu(VOID)
 {
     INT32 idx;
@@ -350,19 +391,19 @@ VOID HalIrqInitPercpu(VOID)
     HalIrqUnmask(LOS_MP_IPI_HALT);
 #endif
 }
-
+//硬中断初始化
 VOID HalIrqInit(VOID)
 {
     UINT32 i;
     UINT64 affinity;
 
-    /* disable distributor */
-    GIC_REG_32(GICD_CTLR) = 0;
+    /* disable distributor */ 
+    GIC_REG_32(GICD_CTLR) = 0;	//禁止仲裁寄存器工作
     GicWaitForRwp(GICD_CTLR);
     ISB;
 
     /* set externel interrupts to be level triggered, active low. */
-    for (i = 32; i < OS_HWI_MAX_NUM; i += 16) {
+    for (i = 32; i < OS_HWI_MAX_NUM; i += 16) {//将外部中断设置为电平触发，低电平有效
         GIC_REG_32(GICD_ICFGR(i / 16)) = 0;
     }
 
@@ -396,36 +437,36 @@ VOID HalIrqInit(VOID)
         GIC_REG_64(GICD_IROUTER(i)) = affinity;
     }
 
-    HalIrqInitPercpu();
+    HalIrqInitPercpu();//每个CPU初始化硬中断
 
 #if (LOSCFG_KERNEL_SMP == YES)
     /* register inter-processor interrupt *///注册寄存器处理器间中断处理函数,啥意思?就是当前CPU核向其他CPU核发送中断信号
     //处理器间中断允许一个CPU向系统其他的CPU发送中断信号，处理器间中断（IPI）不是通过IRQ线传输的，而是作为信号直接放在连接所有CPU本地APIC的总线上。
-    LOS_HwiCreate(LOS_MP_IPI_WAKEUP, 0xa0, 0, OsMpWakeHandler, 0);		//唤醒处理函数
-    LOS_HwiCreate(LOS_MP_IPI_SCHEDULE, 0xa0, 0, OsMpScheduleHandler, 0);//调度处理函数
-    LOS_HwiCreate(LOS_MP_IPI_HALT, 0xa0, 0, OsMpScheduleHandler, 0);	//暂停处理函数
+    LOS_HwiCreate(LOS_MP_IPI_WAKEUP, 0xa0, 0, OsMpWakeHandler, 0);		//创建硬中断,用于唤醒处理函数
+    LOS_HwiCreate(LOS_MP_IPI_SCHEDULE, 0xa0, 0, OsMpScheduleHandler, 0);//创建硬中断,用于调度处理函数
+    LOS_HwiCreate(LOS_MP_IPI_HALT, 0xa0, 0, OsMpScheduleHandler, 0);	//创建硬中断,用于暂停处理函数
 #endif
 }
-
+//硬中断处理函数，这里由硬件触发,调用见于 ..\arch\arm\arm\src\los_dispatch.S
 VOID HalIrqHandler(VOID)
 {
-    UINT32 iar = GiccGetIar();
+    UINT32 iar = GiccGetIar();//获取中断号
     UINT32 vector = iar & 0x3FFU;
 
     /*
      * invalid irq number, mainly the spurious interrupts 0x3ff,
      * valid irq ranges from 0~1019, we use OS_HWI_MAX_NUM to do
      * the checking.
-     */
-    if (vector >= OS_HWI_MAX_NUM) {
+     */ //无效的中断号，主要是伪中断0x3ff，有效的中断号在0~1019之间,使用OS_HWI_MAX_NUM来检查
+    if (vector >= OS_HWI_MAX_NUM) {//[0,127]
         return;
     }
-    g_curIrqNum = vector;
+    g_curIrqNum = vector;//记录当前中断号
 
     OsInterrupt(vector);
     GiccSetEoir(vector);
 }
-
+//获取中断控制器版本
 CHAR *HalIrqVersion(VOID)
 {
     UINT32 pidr = GIC_REG_32(GICD_PIDR2V3);

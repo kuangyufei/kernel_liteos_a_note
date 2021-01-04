@@ -155,13 +155,13 @@ STATIC INLINE UINT64 OsHwIDGet(VOID)
 {
     return ARM_SYSREG_READ(MPIDR);
 }
-
+//获取CPU型号,包含CPU各种信息,例如:[15:4]表示 arm 7或arm 9
 STATIC INLINE UINT32 OsMainIDGet(VOID)
 {
     return ARM_SYSREG_READ(MIDR);
 }
 
-/* CPU interrupt mask handle implementation */
+/* CPU interrupt mask handle implementation */ //CPU中断掩码句柄实现
 #if LOSCFG_ARM_ARCH >= 6
 
 STATIC INLINE UINT32 ArchIntLock(VOID)

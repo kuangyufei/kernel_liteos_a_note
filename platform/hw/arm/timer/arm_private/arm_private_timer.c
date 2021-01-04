@@ -67,13 +67,13 @@ VOID HalClockFreqWrite(UINT32 freq)
 
 VOID HalClockStart(VOID)
 {
-    HalIrqUnmask(PRVTIMER_INT_NUM);
+    HalIrqUnmask(PRVTIMER_INT_NUM);//取消屏蔽 PRVTIMER_INT_NUM 号中断
 
     g_privateTimer->load = OS_CYCLE_PER_TICK;
     g_privateTimer->control = 0x06; /* IAE bits = 110, not eanbled yet */
     g_privateTimer->control |= 0x01; /* enable private timer */
 }
-
+//硬时钟回调函数
 VOID OsTickEntry(VOID)
 {
     OsTickHandler();
@@ -81,11 +81,11 @@ VOID OsTickEntry(VOID)
     /* clear private timer */
     g_privateTimer->intStatus = 0x01;
 }
-//硬件时钟初始化
+//硬时钟初始化
 VOID HalClockInit(VOID)
 {
     UINT32 ret;
-	//创建一个硬时钟
+	//创建一个硬中断
     ret =  LOS_HwiCreate(PRVTIMER_INT_NUM, 0xa0, 0, OsTickEntry, NULL);
     if (ret != LOS_OK) {
         PRINT_ERR("%s, %d create tick irq failed, ret:0x%x\n", __FUNCTION__, __LINE__, ret);

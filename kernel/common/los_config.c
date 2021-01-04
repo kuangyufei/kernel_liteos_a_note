@@ -130,7 +130,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 extern UINT32 OsSystemInit(VOID);
-extern VOID SystemInit(VOID);//见于..\vendor\hi3516dv300\module_init\src\system_init.c
+extern VOID SystemInit(VOID);
 //注册 HZ  , tick
 LITE_OS_SEC_TEXT_INIT VOID osRegister(VOID)
 {
@@ -139,7 +139,7 @@ LITE_OS_SEC_TEXT_INIT VOID osRegister(VOID)
 
     return;
 }
-//系统初始化已经完成,系统正式开始工作
+//系统初始化已经完成,系统正式开始工作,此处每个CPU都会调用一次
 LITE_OS_SEC_TEXT_INIT VOID OsStart(VOID)
 {
     LosProcessCB *runProcess = NULL;
@@ -162,24 +162,24 @@ LITE_OS_SEC_TEXT_INIT VOID OsStart(VOID)
     runProcess->processStatus = OS_PROCESS_RUNTASK_COUNT_ADD(runProcess->processStatus);
 #endif
 
-    OS_SCHEDULER_SET(cpuid);//设置调度要使用的cpu id
+    OS_SCHEDULER_SET(cpuid);//设置调度cpu id
 
     PRINTK("cpu %d entering scheduler\n", cpuid);
-    OsStartToRun(taskCB);//任务开始起跑
+    OsStartToRun(taskCB);//任务开始跑任务
 }
 //进程通讯IPC初始化 由OsMain()调用
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsIpcInit(VOID)
 {
     UINT32 ret;
 #if (LOSCFG_BASE_IPC_SEM == YES)
-    ret = OsSemInit();
+    ret = OsSemInit();	//信号量初始化
     if (ret != LOS_OK) {
         return ret;
     }
 #endif
 
 #if (LOSCFG_BASE_IPC_QUEUE == YES)//系统已配置支持队列IPC
-    ret = OsQueueInit();//队列初始化
+    ret = OsQueueInit();	//队列初始化
     if (ret != LOS_OK) {
         return ret;
     }
@@ -187,7 +187,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsIpcInit(VOID)
     return LOS_OK;
 }
 
-#ifdef LOSCFG_KERNEL_PIPE//管道支持
+#ifdef LOSCFG_KERNEL_PIPE	//管道支持
 LITE_OS_SEC_TEXT_INIT STATIC VOID OsDriverPipeInit(VOID)
 {
     (VOID)pipe_init();//管道初始化
@@ -242,12 +242,12 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 #endif
 
 #if (LOSCFG_PLATFORM_HWI == YES)
-    OsHwiInit();// 硬件中断定制的配置项初始化
+    OsHwiInit();// 硬中断初始化
 #endif
 
-    OsExcInit();// 初始化执行任务堆栈
+    OsExcInit();// 异常接管初始化
 
-    ret = OsTickInit(g_sysClock, LOSCFG_BASE_CORE_TICK_PER_SECOND);// 时钟管理初始化,包含注册中断事件
+    ret = OsTickInit(g_sysClock, LOSCFG_BASE_CORE_TICK_PER_SECOND);// tick初始化,包含注册中断事件
     if (ret != LOS_OK) {
         return ret;
     }
@@ -393,7 +393,7 @@ STATIC UINT32 OsSystemInitTaskCreate(VOID)
     sysTask.usTaskPrio = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;// 内核默认优先级为10 
     sysTask.uwResved = LOS_TASK_STATUS_DETACHED;//任务分离模式
 #if (LOSCFG_KERNEL_SMP == YES)
-    sysTask.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
+    sysTask.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());//cpu 亲和性设置,记录执行过任务的CPU,尽量确保由同一个CPU完成任务周期
 #endif
     return LOS_TaskCreate(&taskID, &sysTask);//创建任务并加入就绪队列，并立即参与调度
 }

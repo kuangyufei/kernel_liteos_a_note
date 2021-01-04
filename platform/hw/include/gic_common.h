@@ -89,7 +89,7 @@ enum {
 
 #ifdef LOSCFG_PLATFORM_BSP_GIC_V3
 #define GICD_IGRPMODR(n)                (GICD_OFFSET + 0x0d00 + (n) * 4) /* Interrupt Group Mode Registers */	//中断组模式寄存器
-#define GICD_IROUTER(n)                 (GICD_OFFSET + 0x6000 + (n) * 8) /* Interrupt Rounter Registers */	//中断阻断寄存器
+#define GICD_IROUTER(n)                 (GICD_OFFSET + 0x6000 + (n) * 8) /* Interrupt Rounter Registers */	//中断路由寄存器,控制一个IRQ发到哪个CPU进行处理
 #endif
 
 #define GIC_REG_8(reg)                  (*(volatile UINT8 *)((UINTPTR)(GIC_BASE_ADDR + (reg))))
@@ -104,7 +104,7 @@ enum {
 
 #define GIC_MIN_SPI_NUM                 32
 
-/* Interrupt preemption config */
+/* Interrupt preemption config */	//中断抢占配置
 #define GIC_PRIORITY_MASK               0xFFU
 #define GIC_PRIORITY_OFFSET             8
 

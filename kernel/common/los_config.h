@@ -77,7 +77,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * time timer clock (unit: HZ)
  */
 #ifndef OS_TIME_TIMER_CLOCK
-#define OS_TIME_TIMER_CLOCK OS_SYS_CLOCK
+#define OS_TIME_TIMER_CLOCK OS_SYS_CLOCK //定时器频率
 #endif
 
 /**
@@ -109,16 +109,16 @@ extern UINT32 __heap_end;		// 堆区结束地址
 
 /**
  * @ingroup los_config
- * Sched clck interval
+ * Sched clock interval
  */
-#define SCHED_CLOCK_INTETRVAL_TICKS 100
+#define SCHED_CLOCK_INTETRVAL_TICKS 100	//调度时间间隔
 
 /**
  * @ingroup los_config
  * External configuration item for timer tailoring
  */
 #ifndef LOSCFG_BASE_CORE_TICK_HW_TIME
-#define LOSCFG_BASE_CORE_TICK_HW_TIME NO
+#define LOSCFG_BASE_CORE_TICK_HW_TIME NO //定时器裁剪的外部配置项
 #endif
 
 /****************************** Hardware interrupt module configuration ******************************/

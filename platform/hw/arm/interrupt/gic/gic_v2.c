@@ -99,7 +99,7 @@ VOID HalIrqPending(UINT32 vector)
 
     GIC_REG_32(GICD_ISPENDR(vector >> 5)) = 1U << (vector % 32);
 }
-
+//清除中断号对应的中断寄存器的状态位，此接口依赖中断控制器版本，非必需
 VOID HalIrqClear(UINT32 vector)
 {
     GIC_REG_32(GICC_EOIR) = vector;
@@ -151,7 +151,7 @@ VOID HalIrqInit(VOID)
     LOS_HwiCreate(LOS_MP_IPI_HALT, 0xa0, 0, OsMpScheduleHandler, 0);//中断处理函数
 #endif
 }
-//硬中断处理函数，这里由硬件触发
+//硬中断处理函数，这里由硬件触发,调用见于 ..\arch\arm\arm\src\los_dispatch.S
 VOID HalIrqHandler(VOID)
 {
     UINT32 iar = GIC_REG_32(GICC_IAR);
@@ -172,7 +172,7 @@ VOID HalIrqHandler(VOID)
     /* use orignal iar to do the EOI */
     GIC_REG_32(GICC_EOIR) = iar;
 }
-
+//获取中断控制器版本
 CHAR *HalIrqVersion(VOID)
 {
     UINT32 pidr = GIC_REG_32(GICD_PIDR2V2);

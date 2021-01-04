@@ -292,12 +292,12 @@ extern VOID DCacheInvRange(UINTPTR start, UINTPTR end);
  * @par Dependency:
  * los_hw.h: the header file that contains the API declaration.
  * @see None.
- */
+ */ //获取CPU信息
 STATIC INLINE const CHAR *LOS_CpuInfo(VOID)
 {
     INT32 i;
     UINT32 midr = OsMainIDGet();
-    /* [15:4] is the primary part number */
+    /* [15:4] is the primary part number */ //[15:4]是主要编号
     UINT32 partNo = (midr & 0xFFF0) >> 0x4;
 
     for (i = 0; g_cpuTable[i].partNo != 0; i++) {
