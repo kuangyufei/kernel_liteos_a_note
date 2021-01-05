@@ -114,8 +114,8 @@ extern "C" {
 #define MEM_POOL_EXPAND_DISABLE 0 //内存池禁止扩展
 
 /* Memory pool information structure */
-typedef struct {
-    VOID *pool;      /* Starting address of a memory pool */			//内存池开始地址
+typedef struct { //内存池信息结构体,bestfit动态内存管理第一部分
+    VOID *pool;      /* Starting address of a memory pool */			//内存池开始地址,必须放在结构体首位
     UINT32 poolSize; /* Memory pool size */								//内存池大小
     UINT32 flag;     /* Whether the memory pool supports expansion */	//内存池是否支持扩展
 #if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)	//警戒线					
@@ -128,9 +128,9 @@ typedef struct {
 } LosMemPoolInfo;
 
 /* Memory linked list control node structure */
-typedef struct {
-    LOS_DL_LIST freeNodeInfo;         /* Free memory node */
-    struct tagLosMemDynNode *preNode; /* Pointer to the previous memory node */
+typedef struct {//内存链表节点实体结构体体
+    LOS_DL_LIST freeNodeInfo;         /* Free memory node */	//空闲链表,将通过它挂到 LosMultipleDlinkHead[n]上
+    struct tagLosMemDynNode *preNode; /* Pointer to the previous memory node */	//指向前一个节点
 
 #ifdef LOSCFG_MEM_HEAD_BACKUP
     UINT32 gapSize;
@@ -152,11 +152,11 @@ typedef struct {
     UINT32 reserve2; /* 64-bit alignment */
 #endif
     /* Size and flag of the current node (the high two bits represent a flag,and the rest bits specify the size) */
-    UINT32 sizeAndFlag;
+    UINT32 sizeAndFlag;//当前节点的大小和标志（高两位表示标志，其余位指定大小）
 } LosMemCtlNode;
 
 /* Memory linked list node structure */
-typedef struct tagLosMemDynNode {
+typedef struct tagLosMemDynNode {//内存链表节点结构体,bestfit动态内存管理第三部分
 #ifdef LOSCFG_MEM_HEAD_BACKUP
     LosMemCtlNode backupNode;
 #endif
@@ -217,7 +217,7 @@ STATIC VOID OsMemNodeSave(LosMemDynNode *node);
 #endif
 
 #define OS_MEM_ALIGN(p, alignSize) (((UINTPTR)(p) + (alignSize) - 1) & ~((UINTPTR)((alignSize) - 1)))
-#define OS_MEM_NODE_HEAD_SIZE      sizeof(LosMemDynNode)
+#define OS_MEM_NODE_HEAD_SIZE      sizeof(LosMemDynNode)	//内存池第三部分 一个节点的大小
 #define OS_MEM_MIN_POOL_SIZE       (OS_DLNK_HEAD_SIZE + (2 * OS_MEM_NODE_HEAD_SIZE) + sizeof(LosMemPoolInfo))
 #define IS_POW_TWO(value)          ((((UINTPTR)(value)) & ((UINTPTR)(value) - 1)) == 0)
 #define POOL_ADDR_ALIGNSIZE        64
@@ -243,27 +243,27 @@ STATIC VOID OsMemNodeSave(LosMemDynNode *node);
 #define OS_MEM_NODE_GET_SIZE(sizeAndFlag) \
     ((sizeAndFlag) & ~OS_MEM_NODE_ALIGNED_AND_USED_FLAG)
 #define OS_MEM_HEAD(pool, size) \
-    OsDLnkMultiHead(OS_MEM_HEAD_ADDR(pool), size)
+    OsDLnkMultiHead(OS_MEM_HEAD_ADDR(pool), size) //通过size找到链表头节点
 #define OS_MEM_HEAD_ADDR(pool) \
-    ((VOID *)((UINTPTR)(pool) + sizeof(LosMemPoolInfo)))
+    ((VOID *)((UINTPTR)(pool) + sizeof(LosMemPoolInfo))) //指向内存池的第二部分
 #define OS_MEM_NEXT_NODE(node) \
-    ((LosMemDynNode *)(VOID *)((UINT8 *)(node) + OS_MEM_NODE_GET_SIZE((node)->selfNode.sizeAndFlag)))
+    ((LosMemDynNode *)(VOID *)((UINT8 *)(node) + OS_MEM_NODE_GET_SIZE((node)->selfNode.sizeAndFlag)))//获取节点的下一个节点
 #define OS_MEM_FIRST_NODE(pool) \
-    ((LosMemDynNode *)(VOID *)((UINT8 *)OS_MEM_HEAD_ADDR(pool) + OS_DLNK_HEAD_SIZE))
+    ((LosMemDynNode *)(VOID *)((UINT8 *)OS_MEM_HEAD_ADDR(pool) + OS_DLNK_HEAD_SIZE)) //指向内存池的第三部分
 #define OS_MEM_END_NODE(pool, size) \
-    ((LosMemDynNode *)(VOID *)(((UINT8 *)(pool) + (size)) - OS_MEM_NODE_HEAD_SIZE))
+    ((LosMemDynNode *)(VOID *)(((UINT8 *)(pool) + (size)) - OS_MEM_NODE_HEAD_SIZE)) //指向内存池的第三部分的最后一个节点
 #define OS_MEM_MIDDLE_ADDR_OPEN_END(startAddr, middleAddr, endAddr) \
     (((UINT8 *)(startAddr) <= (UINT8 *)(middleAddr)) && ((UINT8 *)(middleAddr) < (UINT8 *)(endAddr)))
 #define OS_MEM_MIDDLE_ADDR(startAddr, middleAddr, endAddr) \
     (((UINT8 *)(startAddr) <= (UINT8 *)(middleAddr)) && ((UINT8 *)(middleAddr) <= (UINT8 *)(endAddr)))
 #define OS_MEM_SET_MAGIC(value) \
-    (value) = (LOS_DL_LIST *)(((UINTPTR)&(value)) ^ (UINTPTR)(-1))
+    (value) = (LOS_DL_LIST *)(((UINTPTR)&(value)) ^ (UINTPTR)(-1)) //设置魔法数字
 #define OS_MEM_MAGIC_VALID(value) \
-    (((UINTPTR)(value) ^ ((UINTPTR)&(value))) == (UINTPTR)(-1))
-//变量前缀 uc:UINT8  us:UINT16 uw:UINT32 代表的意思
-UINT8 *m_aucSysMem0 = NULL; //@note_why 不明白鸿蒙对虚拟内存分配为什么要用两个全局变量
-UINT8 *m_aucSysMem1 = NULL;	//auc是什么意思? 变量名最后0和1又代表什么意思? 就不能整个好听的名字吗？@note_thinking
-
+    (((UINTPTR)(value) ^ ((UINTPTR)&(value))) == (UINTPTR)(-1))	//魔法数字是否有效,被修改过即无效
+//变量前缀 uc:UINT8  us:UINT16 uw:UINT32 的意思
+//auc是什么意思? 为何要用0,1来命名,就不能整个好听的名字吗？@note_thinking
+UINT8 *m_aucSysMem0 = NULL; //异常接管内存池
+UINT8 *m_aucSysMem1 = NULL;	//系统动态内存池 
 #ifdef LOSCFG_BASE_MEM_NODE_SIZE_CHECK
 STATIC UINT8 g_memCheckLevel = LOS_MEM_CHECK_LEVEL_DEFAULT;
 #endif
@@ -613,7 +613,7 @@ STATIC INLINE VOID OsMemSetGapSize(LosMemCtlNode *ctlNode, UINT32 gapSize)
 {
     ctlNode->gapSize = gapSize;
 }
-
+//保存一个动态节点
 STATIC VOID OsMemNodeSave(LosMemDynNode *node)
 {
     OsMemSetGapSize(&node->selfNode, 0);
@@ -707,13 +707,13 @@ VOID LOS_MemBadNodeShow(VOID *pool)
 }
 
 #else  /* without LOSCFG_MEM_HEAD_BACKUP */
-
+//删除一个节点
 STATIC VOID OsMemListDelete(LOS_DL_LIST *node, const VOID *firstNode)
 {
     (VOID)firstNode;
     LOS_ListDelete(node);
 }
-
+//增加一个节点
 STATIC VOID OsMemListAdd(LOS_DL_LIST *listNode, LOS_DL_LIST *node, const VOID *firstNode)
 {
     (VOID)firstNode;
@@ -742,7 +742,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsMemSystemInit(UINTPTR memStart)
 
     m_aucSysMem1 = (UINT8 *)((memStart + (POOL_ADDR_ALIGNSIZE - 1)) & ~((UINTPTR)(POOL_ADDR_ALIGNSIZE - 1)));
     poolSize = OS_SYS_MEM_SIZE;
-    ret = LOS_MemInit(m_aucSysMem1, poolSize);
+    ret = LOS_MemInit(m_aucSysMem1, poolSize);////初始化 m_aucSysMem1 内存池
     PRINT_INFO("LiteOS system heap memory address:%p,size:0x%x\n", m_aucSysMem1, poolSize);
 #ifndef LOSCFG_EXC_INTERACTION
     m_aucSysMem0 = m_aucSysMem1;
@@ -1843,18 +1843,18 @@ STATIC UINT32 OsMemPoolAdd(VOID *pool, UINT32 size)
     return LOS_OK;
 }
 #endif
-//内存池初始化
+//初始化内存池
 STATIC UINT32 OsMemInit(VOID *pool, UINT32 size)
 {
-    LosMemPoolInfo *poolInfo = (LosMemPoolInfo *)pool;
+    LosMemPoolInfo *poolInfo = (LosMemPoolInfo *)pool;//内存池的头部信息
     LosMemDynNode *newNode = NULL;
     LosMemDynNode *endNode = NULL;
     LOS_DL_LIST *listNodeHead = NULL;
 
-    poolInfo->pool = pool;
-    poolInfo->poolSize = size;
+    poolInfo->pool = pool;	//内存池开始地址,这里决定了 pool 变量一定要放在结构体的首位
+    poolInfo->poolSize = size;	//内存池大小
     poolInfo->flag = MEM_POOL_EXPAND_DISABLE;//内存池默认不能扩展
-    OsDLnkInitMultiHead(OS_MEM_HEAD_ADDR(pool));
+    OsDLnkInitMultiHead(OS_MEM_HEAD_ADDR(pool));//初始化内存池的第二部分(双向链表部分)
     newNode = OS_MEM_FIRST_NODE(pool);
     newNode->selfNode.sizeAndFlag = (size - (UINT32)((UINTPTR)newNode - (UINTPTR)pool) - OS_MEM_NODE_HEAD_SIZE);
     newNode->selfNode.preNode = (LosMemDynNode *)OS_MEM_END_NODE(pool, size);
@@ -1881,7 +1881,13 @@ STATIC UINT32 OsMemInit(VOID *pool, UINT32 size)
 
     return LOS_OK;
 }
-//初始化一块指定的动态内存池，大小为size
+/******************************************************************************
+初始化一块指定的动态内存池，大小为size,被以下函数调用
+LiteIpcMmap
+OsKHeapInit
+OsMemSystemInit
+OsMemExcInteractionInit
+******************************************************************************/
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_MemInit(VOID *pool, UINT32 size)
 {
     UINT32 intSave;
@@ -1904,7 +1910,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_MemInit(VOID *pool, UINT32 size)
     }
 #endif
 
-    if (OsMemInit(pool, size)) {
+    if (OsMemInit(pool, size)) {//主体函数,初始化内存池
 #ifdef LOSCFG_MEM_MUL_POOL
         (VOID)LOS_MemDeInit(pool);
 #endif
@@ -3010,7 +3016,7 @@ STATUS_T OsKHeapInit(size_t size)
     }
 
     m_aucSysMem0 = m_aucSysMem1 = ptr;//内存池基地址，auc 是啥意思没整明白？
-    ret = LOS_MemInit(m_aucSysMem0, size);//初始化内存池
+    ret = LOS_MemInit(m_aucSysMem0, size);//初始化 m_aucSysMem0 内存池
     if (ret != LOS_OK) {
         PRINT_ERR("vmm_kheap_init LOS_MemInit failed!\n");
         g_vmBootMemBase -= size;//分配失败时需归还size, g_vmBootMemBase是很野蛮粗暴的

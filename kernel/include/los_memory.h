@@ -69,13 +69,13 @@ extern "C" {
  * The start address of exc interaction dynamic memory pool address, when the exc
  * interaction feature not support, m_aucSysMem0 equals to m_aucSysMem1.
  */
-extern UINT8 *m_aucSysMem0;
+extern UINT8 *m_aucSysMem0; //异常接管动态内存池的起始地址,异常接管一般用于调试,当不支持异常接管功能时,m_aucSysMem0 = m_aucSysMem1
 
 /**
  * @ingroup los_memory
  * The start address of system dynamic memory pool address.
  */
-extern UINT8 *m_aucSysMem1;
+extern UINT8 *m_aucSysMem1; //系统动态内存池的起始地址
 
 /**
  * @ingroup los_memory
@@ -86,7 +86,7 @@ extern UINT8 *m_aucSysMem1;
  * <li> OS_MEM_WATERLINE=NO: close the function for Maximum memory usage statistics, it set to NO as usual </li>
  * </ul>
  */
-#ifdef LOSCFG_MEM_WATERLINE
+#ifdef LOSCFG_MEM_WATERLINE //水位线,用于统计内存使用上线
 #define OS_MEM_WATERLINE NO
 #endif
 
@@ -279,13 +279,13 @@ extern UINT32 LOS_MemPoolList(VOID);
  * @ingroup los_memory
  * Memory pool extern information structure
  */
-typedef struct {
-    UINT32 uwTotalUsedSize;
-    UINT32 uwTotalFreeSize;
-    UINT32 uwMaxFreeNodeSize;
-    UINT32 uwUsedNodeNum;
-    UINT32 uwFreeNodeNum;
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
+typedef struct { //内存池外部信息结构体
+    UINT32 uwTotalUsedSize;	//总使用大小
+    UINT32 uwTotalFreeSize;	//总剩余大小
+    UINT32 uwMaxFreeNodeSize;	//最大剩余节点大小
+    UINT32 uwUsedNodeNum;	//已使用的节点大小
+    UINT32 uwFreeNodeNum;	//空闲节点大小
+#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)//水位线
     UINT32 uwUsageWaterLine;
 #endif
 } LOS_MEM_POOL_STATUS;

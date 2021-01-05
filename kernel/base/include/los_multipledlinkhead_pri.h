@@ -41,20 +41,20 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_MAX_MULTI_DLNK_LOG2  30
-#define OS_MIN_MULTI_DLNK_LOG2  4
-#define OS_MULTI_DLNK_NUM       ((OS_MAX_MULTI_DLNK_LOG2 - OS_MIN_MULTI_DLNK_LOG2) + 1)
+#define OS_MAX_MULTI_DLNK_LOG2  30 	//最大分配内存大小 2^30 = 1G ,LOG2指的是对数的意思
+#define OS_MIN_MULTI_DLNK_LOG2  4	//最小分配内存大小 2^4 = 16字节,LOG2指的是对数的意思 例如: log2 16 = 4
+#define OS_MULTI_DLNK_NUM       ((OS_MAX_MULTI_DLNK_LOG2 - OS_MIN_MULTI_DLNK_LOG2) + 1)//双向链表数组大小,[4,30],所以必须加1
 #define OS_DLNK_HEAD_SIZE       OS_MULTI_DLNK_HEAD_SIZE
 #define OS_MULTI_DLNK_HEAD_SIZE sizeof(LosMultipleDlinkHead)
-
-typedef struct {
+//每个元素是一个双向链表，所有free节点的控制头都会被分类挂在这个数组的双向链表中
+typedef struct {//bestfit动态内存管理 第二部分
     LOS_DL_LIST listHead[OS_MULTI_DLNK_NUM];
 } LosMultipleDlinkHead;
-
+//返回内存池中,参数链表头节点的下一个链表头节点位置
 STATIC INLINE LOS_DL_LIST *OsDLnkNextMultiHead(VOID *headAddr, LOS_DL_LIST *listNodeHead)
 {
     LosMultipleDlinkHead *head = (LosMultipleDlinkHead *)headAddr;
-
+	//如果是最后一个了,返回NULL,表示没有下一个了.
     return (&head->listHead[OS_MULTI_DLNK_NUM - 1] == listNodeHead) ? NULL : (listNodeHead + 1);
 }
 

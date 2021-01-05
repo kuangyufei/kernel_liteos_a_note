@@ -37,34 +37,34 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+//获取size的最高位, 意思就是将size变成2^return 对数表示
 STATIC INLINE UINT32 OsLog2(UINT32 size)
 {
     return (size > 0) ? (UINT32)LOS_HighBitGet(size) : 0;
 }
-//初始化内存池双循环链表 ，默认OS_MULTI_DLNK_NUM      = 28个
+//初始化内存池双向链表 ，默认OS_MULTI_DLNK_NUM      = 27个
 LITE_OS_SEC_TEXT_INIT VOID OsDLnkInitMultiHead(VOID *headAddr)
 {
     LosMultipleDlinkHead *dlinkHead = (LosMultipleDlinkHead *)headAddr;
-    LOS_DL_LIST *listNodeHead = dlinkHead->listHead;
+    LOS_DL_LIST *listNodeHead = dlinkHead->listHead;//拿到双向链表数组
     UINT32 index;
 
-    for (index = 0; index < OS_MULTI_DLNK_NUM; ++index, ++listNodeHead) {
-        LOS_ListInit(listNodeHead);
+    for (index = 0; index < OS_MULTI_DLNK_NUM; ++index, ++listNodeHead) {//遍历链表数组
+        LOS_ListInit(listNodeHead);//初始化链表
     }
 }
-
+//找到内存池和size相匹配的链表头节点,读懂函数之前一定要充分理解LosMultipleDlinkHead中存放的是一个双向链表数组
 LITE_OS_SEC_TEXT_MINOR LOS_DL_LIST *OsDLnkMultiHead(VOID *headAddr, UINT32 size)
 {
     LosMultipleDlinkHead *dlinkHead = (LosMultipleDlinkHead *)headAddr;
     UINT32 index = OsLog2(size);
-    if (index > OS_MAX_MULTI_DLNK_LOG2) {
+    if (index > OS_MAX_MULTI_DLNK_LOG2) {//换算后的对数值大于上限
         return NULL;
-    } else if (index <= OS_MIN_MULTI_DLNK_LOG2) {
-        index = OS_MIN_MULTI_DLNK_LOG2;
+    } else if (index <= OS_MIN_MULTI_DLNK_LOG2) {//换算后的对数值小于下限
+        index = OS_MIN_MULTI_DLNK_LOG2;//意思是如果申请小于16个字节内存,将分配16个字节的内存
     }
-
-    return dlinkHead->listHead + (index - OS_MIN_MULTI_DLNK_LOG2);
+	//注者会将下句写成 return dlinkHead->listHead[index - OS_MIN_MULTI_DLNK_LOG2];
+    return dlinkHead->listHead + (index - OS_MIN_MULTI_DLNK_LOG2);//@note_good 这里快速的定位到对应内存块的头节点处
 }
 
 #ifdef __cplusplus
