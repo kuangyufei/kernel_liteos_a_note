@@ -49,13 +49,13 @@ extern "C" {
 /**
  * @ingroup los_hwi
  * Count of interrupts.
- */
+ */ //中断次数,每个CPU都会记录响应中断的次数
 extern size_t g_intCount[];
 
 /**
  * @ingroup los_hwi
  * An interrupt is active.
- */
+ */ //中断处于活动状态
 #define OS_INT_ACTIVE ({                    \
     size_t intCount;                        \
     UINT32 intSave_ = LOS_IntLock();        \
@@ -67,25 +67,25 @@ extern size_t g_intCount[];
 /**
  * @ingroup los_hwi
  * An interrupt is inactive.
- */
+ */ //中断处于非活动状态
 #define OS_INT_INACTIVE (!(OS_INT_ACTIVE))
 
 /**
  * @ingroup los_hwi
  * Highest priority of a hardware interrupt.
- */
+ */ //硬件中断的最高优先级
 #define OS_HWI_PRIO_HIGHEST 0
 
 /**
  * @ingroup los_hwi
  * Lowest priority of a hardware interrupt.
- */
+ */ //硬件中断的最低优先级
 #define OS_HWI_PRIO_LOWEST 31
 
 /**
  * @ingroup los_hwi
  * Max name length of a hardware interrupt.
- */
+ */	//硬件中断的最大名称长度
 #define OS_HWI_MAX_NAMELEN 10
 
 /**

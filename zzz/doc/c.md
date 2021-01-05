@@ -1,19 +1,19 @@
-[鸿蒙内核源码注释中文版 【 Gitee仓 ](https://gitee.com/weharmony/kernel_liteos_a_note) | [ CSDN仓 ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [ Github仓 ](https://github.com/kuangyufei/kernel_liteos_a_note) | [ Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) 项目中文注解鸿蒙官方内核源码,图文并茂,详细阐述鸿蒙架构和代码设计细节.每个码农,学职生涯,都应精读一遍内核源码.精读内核源码最大的好处是:将孤立知识点织成一张高浓度,高密度底层网,对计算机底层体系化理解形成永久记忆,从此高屋建瓴分析/解决问题.
+[鸿蒙内核源码注释中文版 【 Gitee仓 ](https://gitee.com/weharmony/kernel_liteos_a_note) | [ CSDN仓 ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [ Github仓 ](https://github.com/kuangyufei/kernel_liteos_a_note) | [ Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) 项目中文注解鸿蒙官方内核源码,图文并茂,详细阐述鸿蒙架构和代码设计细节.每个码农,学职生涯,都应精读一遍内核源码.最大的好处是:将孤立知识点织成一张高浓度,高密度底层网,对计算机底层体系化理解形成永久记忆,从此高屋建瓴分析/解决问题.
 
 [鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852) [| WIKI 】](https://gitee.com/weharmony/kernel_liteos_a_note/wikis/pages) 从 HarmonyOS 架构层视角整理成文, 并首创用生活场景讲故事的方式试图去解构内核，一窥究竟。
 
 ---
 
-## **[kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note): 鸿蒙内核源码注释中文版 -> 点击目录和文件查看源码的详细中文注解**  
+## **[kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note): 鸿蒙内核源码注释中文版**  
 
-可以肯定是以下问题在一行行的源码中都能找到答案
+点击目录和文件查看详细源码中文注解,走进内核的世界.
 
 ---
 
 - [kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note/)
   * [kernel](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/)
     + [base](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/)
-    	+ [core](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/core/)
+    	+ [core](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/core/) -> []() -> 这个core指的是与CPU core相关的文件 
     		+ [los_bitmap.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/core/los_bitmap.c) -> []() -> 位图管理器有什么作用 ? 在内核常应用于哪些场景 ?
     		+ [los_process.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/core/los_process.c) -> [鸿蒙内核源码分析(进程管理篇)](https://blog.csdn.net/kuangyufei/article/details/108595941) -> 进程是内核的资源管理单元,它是如何管理 任务, 内存,文件的 ? 进程间是如何协作的 ?
     		+ [los_sortlink.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/core/los_sortlink.c) -> []() -> 排序链表的实现,它的应用场景是怎样的 ? 
@@ -32,7 +32,15 @@
     		+ [los_sem.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/ipc/los_sem.c) -> []() -> 信号量解决了什么问题 ? 它的本质是什么 ?
     		+ [los_sem_debug.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/ipc/los_sem_debug.c) -> []() -> 如何调试信号量 ?
     		+ [los_signal.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/ipc/los_signal.c) -> []() -> 信号解决了什么问题? 你知道哪些信号 ?
-        + [mem](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mem/) -> []() -> 
+        + [mem](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mem/) -> []() -> 内存管理模块管理系统的内存资源，它是操作系统的核心模块之一
+            + [bestfit](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mem/bestfit/) -> []() -> 动态内存管理的优点是按需分配，那缺点又是什么?
+                + [los_memory.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mem/bestfit/los_memory.c) -> []() -> 鸿蒙内核中动态内存池由哪三个部分组成 ?
+                + [los_multipledlinkhead.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mem/bestfit/los_multipledlinkhead.c) -> []() -> 什么是最佳适应算法? 是如何实现 ?
+            + [bestfit_little](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mem/bestfit_little/) -> []() -> bestfit_little算法是在最佳适配算法的基础上加入slab机制形成的算法。
+                + [los_heap.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mem/bestfit/los_heap.c) -> []() -> slab算法机制是怎样的? 又是如何实现的 ?
+            + [common](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mem/common/) -> []() -> 
+            + [membox](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mem/membox/) -> []() -> 静态内存池的优点是分配和释放效率高，无碎片, 那缺点呢 ?
+                + [los_membox.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mem/membox/los_membox.c) -> []() -> 静态内存有什么用? 是如何实现的?
     	+ [misc](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/misc/) -> []() -> 
     		+ [kill_shellcmd.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/misc/kill_shellcmd.c) -> []() -> shell命令kill的实现,熟悉的 kill 9 18 的背后发生了什么?
             + [los_misc.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/misc/los_misc.c) -> []() -> 
@@ -42,9 +50,9 @@
             + [sysinfo_shellcmd.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/misc/sysinfo_shellcmd.c) -> []() -> 和系统信息相关的shell命令有哪些 ? 
             + [task_shellcmd.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/misc/task_shellcmd.c) -> []() -> 和任务相关的shell命令有哪些 ? 
             + [vm_shellcmd.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/misc/vm_shellcmd.c) -> []() -> 和虚拟内存相关的shell命令有哪些 ? 
-        + [mp](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mp/) -> []() ->
+        + [mp](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mp/) -> []() -> MP指支持多处理器的模块
             + [los_lockdep.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mp/los_lockdep.c) -> []() -> 死锁是怎么发生的 ? 如何检测死锁 ?
-            + [los_mp.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mp/los_mp.c) -> []() -> 鸿蒙支持多CPU吗 ? 它们是如何工作的? CPU之间是如何通讯的 ?
+            + [los_mp.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mp/los_mp.c) -> []() -> 鸿蒙最大支持多少个CPU ? 它们是如何工作的? CPU之间是如何通讯的 ?
             + [los_percpu.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mp/los_percpu.c) -> []() ->  CPU有哪些信息 ?
             + [los_stat.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/mp/los_stat.c) -> []() -> CPU的运行信息如何统计 ?
         + [om](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/base/om/) -> []() ->
@@ -101,15 +109,7 @@
                 + [los_vdso_sys.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/extended/vdso/usr/los_vdso_sys.c) -> []() ->      
     + [user/src](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/user/src/) -> []() ->
     	+ [los_user_init.c](https://gitee.com/weharmony/kernel_liteos_a_note/tree/master/kernel/user/src/los_user_init.c) -> []() ->
-
-
-
-
-
-
-
-
-
+        
 ---
 
 系列篇文章 进入 >\> [鸿蒙系统源码分析(总目录) 【 CSDN](https://blog.csdn.net/kuangyufei/article/details/108727970) | [OSCHINA](https://my.oschina.net/u/3751245/blog/4626852) [| WIKI 】](https://gitee.com/weharmony/kernel_liteos_a_note/wikis/pages)查看

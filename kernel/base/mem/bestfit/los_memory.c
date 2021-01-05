@@ -218,30 +218,36 @@ STATIC VOID OsMemNodeSave(LosMemDynNode *node);
 
 #define OS_MEM_ALIGN(p, alignSize) (((UINTPTR)(p) + (alignSize) - 1) & ~((UINTPTR)((alignSize) - 1)))
 #define OS_MEM_NODE_HEAD_SIZE      sizeof(LosMemDynNode)	//内存池第三部分 一个节点的大小
-#define OS_MEM_MIN_POOL_SIZE       (OS_DLNK_HEAD_SIZE + (2 * OS_MEM_NODE_HEAD_SIZE) + sizeof(LosMemPoolInfo))
+/******************************************************************************
+一个内存池最低内存大小是多少呢? 可以算出固定值,
+第一部分: sizeof(LosMemPoolInfo)
+第二部分: OS_DLNK_HEAD_SIZE
+第三部分: 至少需要头尾两个节点 (2 * OS_MEM_NODE_HEAD_SIZE)
+******************************************************************************/
+#define OS_MEM_MIN_POOL_SIZE       (OS_DLNK_HEAD_SIZE + (2 * OS_MEM_NODE_HEAD_SIZE) + sizeof(LosMemPoolInfo))//成为一个内存池最低配置
 #define IS_POW_TWO(value)          ((((UINTPTR)(value)) & ((UINTPTR)(value) - 1)) == 0)
 #define POOL_ADDR_ALIGNSIZE        64
 #ifdef LOSCFG_AARCH64
-#define OS_MEM_ALIGN_SIZE 8
+#define OS_MEM_ALIGN_SIZE 8	//8字节对齐方式 8*8 = 64
 #else
-#define OS_MEM_ALIGN_SIZE 4
+#define OS_MEM_ALIGN_SIZE 4	//4字节对齐方式 4*8 = 64
 #endif
 #define OS_MEM_NODE_USED_FLAG             0x80000000U
 #define OS_MEM_NODE_ALIGNED_FLAG          0x40000000U
-#define OS_MEM_NODE_ALIGNED_AND_USED_FLAG (OS_MEM_NODE_USED_FLAG | OS_MEM_NODE_ALIGNED_FLAG)
+#define OS_MEM_NODE_ALIGNED_AND_USED_FLAG (OS_MEM_NODE_USED_FLAG | OS_MEM_NODE_ALIGNED_FLAG) //0xB0000000U
 
 #define OS_MEM_NODE_GET_ALIGNED_FLAG(sizeAndFlag) \
-    ((sizeAndFlag) & OS_MEM_NODE_ALIGNED_FLAG)
+    ((sizeAndFlag) & OS_MEM_NODE_ALIGNED_FLAG) //获取对齐标签
 #define OS_MEM_NODE_SET_ALIGNED_FLAG(sizeAndFlag) \
-    ((sizeAndFlag) = ((sizeAndFlag) | OS_MEM_NODE_ALIGNED_FLAG))
+    ((sizeAndFlag) = ((sizeAndFlag) | OS_MEM_NODE_ALIGNED_FLAG)) //设置对齐标签
 #define OS_MEM_NODE_GET_ALIGNED_GAPSIZE(sizeAndFlag) \
-    ((sizeAndFlag) & ~OS_MEM_NODE_ALIGNED_FLAG)
+    ((sizeAndFlag) & ~OS_MEM_NODE_ALIGNED_FLAG) //通过增加Gap域确保返回的指针符合对齐要求
 #define OS_MEM_NODE_GET_USED_FLAG(sizeAndFlag) \
-    ((sizeAndFlag) & OS_MEM_NODE_USED_FLAG)
+    ((sizeAndFlag) & OS_MEM_NODE_USED_FLAG) //获取使用标签
 #define OS_MEM_NODE_SET_USED_FLAG(sizeAndFlag) \
-    ((sizeAndFlag) = ((sizeAndFlag) | OS_MEM_NODE_USED_FLAG))
+    ((sizeAndFlag) = ((sizeAndFlag) | OS_MEM_NODE_USED_FLAG)) //设置使用标签
 #define OS_MEM_NODE_GET_SIZE(sizeAndFlag) \
-    ((sizeAndFlag) & ~OS_MEM_NODE_ALIGNED_AND_USED_FLAG)
+    ((sizeAndFlag) & ~OS_MEM_NODE_ALIGNED_AND_USED_FLAG) //获得大小
 #define OS_MEM_HEAD(pool, size) \
     OsDLnkMultiHead(OS_MEM_HEAD_ADDR(pool), size) //通过size找到链表头节点
 #define OS_MEM_HEAD_ADDR(pool) \
@@ -249,13 +255,13 @@ STATIC VOID OsMemNodeSave(LosMemDynNode *node);
 #define OS_MEM_NEXT_NODE(node) \
     ((LosMemDynNode *)(VOID *)((UINT8 *)(node) + OS_MEM_NODE_GET_SIZE((node)->selfNode.sizeAndFlag)))//获取节点的下一个节点
 #define OS_MEM_FIRST_NODE(pool) \
-    ((LosMemDynNode *)(VOID *)((UINT8 *)OS_MEM_HEAD_ADDR(pool) + OS_DLNK_HEAD_SIZE)) //指向内存池的第三部分
+    ((LosMemDynNode *)(VOID *)((UINT8 *)OS_MEM_HEAD_ADDR(pool) + OS_DLNK_HEAD_SIZE)) //指向内存池的第三部分的头节点
 #define OS_MEM_END_NODE(pool, size) \
     ((LosMemDynNode *)(VOID *)(((UINT8 *)(pool) + (size)) - OS_MEM_NODE_HEAD_SIZE)) //指向内存池的第三部分的最后一个节点
 #define OS_MEM_MIDDLE_ADDR_OPEN_END(startAddr, middleAddr, endAddr) \
-    (((UINT8 *)(startAddr) <= (UINT8 *)(middleAddr)) && ((UINT8 *)(middleAddr) < (UINT8 *)(endAddr)))
+    (((UINT8 *)(startAddr) <= (UINT8 *)(middleAddr)) && ((UINT8 *)(middleAddr) < (UINT8 *)(endAddr))) //判断是否为中间地址,只包括等于开始地址
 #define OS_MEM_MIDDLE_ADDR(startAddr, middleAddr, endAddr) \
-    (((UINT8 *)(startAddr) <= (UINT8 *)(middleAddr)) && ((UINT8 *)(middleAddr) <= (UINT8 *)(endAddr)))
+    (((UINT8 *)(startAddr) <= (UINT8 *)(middleAddr)) && ((UINT8 *)(middleAddr) <= (UINT8 *)(endAddr))) //判断是否为中间地址,包括等于开始和末尾地址
 #define OS_MEM_SET_MAGIC(value) \
     (value) = (LOS_DL_LIST *)(((UINTPTR)&(value)) ^ (UINTPTR)(-1)) //设置魔法数字
 #define OS_MEM_MAGIC_VALID(value) \
@@ -285,7 +291,7 @@ const VOID *OsMemFindNodeCtrl(const VOID *pool, const VOID *ptr);
     (ctlNode)->gapSize ^                           \
     (ctlNode)->sizeAndFlag ^                       \
     CHECKSUM_MAGICNUM)
-
+//打印节点信息
 STATIC INLINE VOID OsMemDispCtlNode(const LosMemCtlNode *ctlNode)
 {
     UINTPTR checksum;
@@ -793,20 +799,20 @@ STATIC INLINE VOID OsMemLinkRegisterRecord(LosMemDynNode *node)
  *               allocSize --- Size of memory in bytes which note need allocate
  * Return      : NULL      --- no suitable block found
  *               tmpNode   --- pointer a suitable free block
- */
+ */	//使用最佳适应算法从内存池中找到空闲节点
 STATIC INLINE LosMemDynNode *OsMemFindSuitableFreeBlock(VOID *pool, UINT32 allocSize)
 {
     LOS_DL_LIST *listNodeHead = NULL;
     LosMemDynNode *tmpNode = NULL;
-    UINT32 maxCount = (LOS_MemPoolSizeGet(pool) / allocSize) << 1;
+    UINT32 maxCount = (LOS_MemPoolSizeGet(pool) / allocSize) << 1;//循环退出条件
     UINT32 count;
 #ifdef LOSCFG_MEM_HEAD_BACKUP
     UINT32 ret = LOS_OK;
 #endif
-    for (listNodeHead = OS_MEM_HEAD(pool, allocSize); listNodeHead != NULL;
-         listNodeHead = OsDLnkNextMultiHead(OS_MEM_HEAD_ADDR(pool), listNodeHead)) {
+    for (listNodeHead = OS_MEM_HEAD(pool, allocSize); listNodeHead != NULL;//从最匹配自身链表一直开始找,自身链表不满足时找下一级链表
+         listNodeHead = OsDLnkNextMultiHead(OS_MEM_HEAD_ADDR(pool), listNodeHead)) {//因为下一级的内存块比匹配自身链表要大
         count = 0;
-        LOS_DL_LIST_FOR_EACH_ENTRY(tmpNode, listNodeHead, LosMemDynNode, selfNode.freeNodeInfo) {
+        LOS_DL_LIST_FOR_EACH_ENTRY(tmpNode, listNodeHead, LosMemDynNode, selfNode.freeNodeInfo) {//遍历链表
             if (count++ >= maxCount) {
                 PRINT_ERR("[%s:%d]node: execute too much time\n", __FUNCTION__, __LINE__);
                 break;
@@ -829,7 +835,7 @@ STATIC INLINE LosMemDynNode *OsMemFindSuitableFreeBlock(VOID *pool, UINT32 alloc
                           __FUNCTION__, __LINE__, OS_MEM_HEAD_ADDR(pool), listNodeHead, allocSize, tmpNode);
                 break;
             }
-            if (tmpNode->selfNode.sizeAndFlag >= allocSize) {
+            if (tmpNode->selfNode.sizeAndFlag >= allocSize) {//找到节点
                 return tmpNode;
             }
         }
@@ -841,7 +847,7 @@ STATIC INLINE LosMemDynNode *OsMemFindSuitableFreeBlock(VOID *pool, UINT32 alloc
 /*
  * Description : clear a mem node, set every member to NULL
  * Input       : node    --- Pointer to the mem node which will be cleared up
- */
+ */ //清空指定动态内存节点
 STATIC INLINE VOID OsMemClearNode(LosMemDynNode *node)
 {
     (VOID)memset_s((VOID *)node, sizeof(LosMemDynNode), 0, sizeof(LosMemDynNode));
@@ -850,7 +856,7 @@ STATIC INLINE VOID OsMemClearNode(LosMemDynNode *node)
 /*
  * Description : merge this node and pre node, then clear this node info
  * Input       : node    --- Pointer to node which will be merged
- */
+ */ //合并指定动态内存节点
 STATIC INLINE VOID OsMemMergeNode(LosMemDynNode *node)
 {
     LosMemDynNode *nextNode = NULL;
@@ -864,7 +870,7 @@ STATIC INLINE VOID OsMemMergeNode(LosMemDynNode *node)
 #endif
     OsMemClearNode(node);
 }
-
+//是否是一个扩展内存池
 STATIC INLINE BOOL IsExpandPoolNode(VOID *pool, LosMemDynNode *node)
 {
     UINTPTR start = (UINTPTR)pool;
@@ -879,7 +885,7 @@ STATIC INLINE BOOL IsExpandPoolNode(VOID *pool, LosMemDynNode *node)
  *                            After pick up it's node info, change to point the new node
  *               allocSize -- the size of new node
  * Output      : allocNode -- save new node addr
- */
+ */	//从allocNode拆分新节点，必要时合并剩余的内存
 STATIC INLINE VOID OsMemSplitNode(VOID *pool,
                                   LosMemDynNode *allocNode, UINT32 allocSize)
 {
@@ -918,7 +924,7 @@ STATIC INLINE VOID OsMemSplitNode(VOID *pool,
 
 STATIC INLINE LosMemDynNode *PreSentinelNodeGet(const VOID *pool, const LosMemDynNode *node);
 STATIC INLINE BOOL OsMemIsLastSentinelNode(LosMemDynNode *node);
-
+//释放大节点内存块,方法是直接释放物理内存
 UINT32 OsMemLargeNodeFree(const VOID *ptr)
 {
     LosVmPage *page = OsVmVaddrToPage((VOID *)ptr);
@@ -929,7 +935,7 @@ UINT32 OsMemLargeNodeFree(const VOID *ptr)
 
     return LOS_OK;
 }
-
+//尝试缩小内存池
 STATIC INLINE BOOL TryShrinkPool(const VOID *pool, const LosMemDynNode *node)
 {
     LosMemDynNode *mySentinel = NULL;
@@ -967,7 +973,7 @@ STATIC INLINE BOOL TryShrinkPool(const VOID *pool, const LosMemDynNode *node)
  *               at last update "listNodeHead' which saved all free node control head
  * Input       : node -- the node which need be freed
  *               pool -- Pointer to memory pool
- */
+ */	//从内存中释放节点,如果旁边有空闲节点，则合并它们,最后更新listNodeHead，它保存了所有空闲节点控制头
 STATIC INLINE VOID OsMemFreeNode(LosMemDynNode *node, VOID *pool)
 {
     LosMemDynNode *preNode = NULL;
@@ -1118,7 +1124,7 @@ STATIC INLINE BOOL OsMemIsLastSentinelNode(LosMemDynNode *node)
         return FALSE;
     }
 }
-
+//将指定节点设置有哨兵节点
 STATIC INLINE VOID OsMemSentinelNodeSet(LosMemDynNode *sentinelNode, VOID *newNode, UINT32 size)
 {
     if (sentinelNode->selfNode.freeNodeInfo.pstNext != NULL) {
@@ -1289,12 +1295,12 @@ STATIC INLINE UINT32 OsMemCheckUsedNode(const VOID *pool, const LosMemDynNode *n
 /*
  * Description : set magic & taskid
  * Input       : node -- the node which will be set magic & taskid
- */
+ */	//给指定节点设置魔法数字和任务ID
 STATIC INLINE VOID OsMemSetMagicNumAndTaskID(LosMemDynNode *node)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
 
-    OS_MEM_SET_MAGIC(node->selfNode.freeNodeInfo.pstPrev);
+    OS_MEM_SET_MAGIC(node->selfNode.freeNodeInfo.pstPrev);//通过pstPrev生成魔法数字也是挺赞的! @note_good
 
     /*
      * If the operation occured before task initialization(runTask was not assigned)
@@ -1478,7 +1484,7 @@ STATIC VOID OsMemNodeBacktraceInfo(const LosMemDynNode *tmpNode,
 #endif
 }
 #endif
-
+//打印节点信息
 STATIC VOID OsMemNodeInfo(const LosMemDynNode *tmpNode,
                           const LosMemDynNode *preNode)
 {
@@ -1613,7 +1619,7 @@ STATIC INLINE INT32 OsMemPoolExpand(VOID *pool, UINT32 size, UINT32 intSave)
     LOS_DL_LIST *listNodeHead = NULL;
 
     size = ROUNDUP(size + OS_MEM_NODE_HEAD_SIZE, PAGE_SIZE);
-    endNode = (LosMemDynNode *)OS_MEM_END_NODE(pool, poolInfo->poolSize);
+    endNode = (LosMemDynNode *)OS_MEM_END_NODE(pool, poolInfo->poolSize);//获取内存池的尾部节点
 
 RETRY:
     newNode = (LosMemDynNode *)LOS_PhysPagesAllocContiguous(size >> PAGE_SHIFT);//分配连续的物理内存
@@ -1664,7 +1670,7 @@ VOID LOS_MemExpandEnable(VOID *pool)
     ((LosMemPoolInfo *)pool)->flag = MEM_POOL_EXPAND_ENABLE;
 }
 
-#ifdef LOSCFG_BASE_MEM_NODE_INTEGRITY_CHECK
+#ifdef LOSCFG_BASE_MEM_NODE_INTEGRITY_CHECK //内存节点完整性检查开关
 
 STATIC INLINE UINT32 OsMemAllocCheck(VOID *pool, UINT32 intSave)
 {
@@ -1691,7 +1697,7 @@ STATIC INLINE UINT32 OsMemAllocCheck(VOID *pool, UINT32 intSave)
  * Input       : pool  --- Pointer to memory pool
  *               size  --- Size of memory in bytes to allocate
  * Return      : Pointer to allocated memory
- */
+ */	//从内存池分配节点
 STATIC INLINE VOID *OsMemAllocWithCheck(VOID *pool, UINT32 size, UINT32 intSave)
 {
     LosMemDynNode *allocNode = NULL;
@@ -1700,28 +1706,28 @@ STATIC INLINE VOID *OsMemAllocWithCheck(VOID *pool, UINT32 size, UINT32 intSave)
     const VOID *firstNode = (const VOID *)((UINT8 *)OS_MEM_HEAD_ADDR(pool) + OS_DLNK_HEAD_SIZE);
     INT32 ret;
 
-    if (OsMemAllocCheck(pool, intSave) == LOS_NOK) {
+    if (OsMemAllocCheck(pool, intSave) == LOS_NOK) {//检查内存池的完整性
         return NULL;
     }
 
     allocSize = OS_MEM_ALIGN(size + OS_MEM_NODE_HEAD_SIZE, OS_MEM_ALIGN_SIZE);
-    if (allocSize == 0) {
+    if (allocSize == 0) {//检查对齐
         return NULL;
     }
 retry:
 
-    allocNode = OsMemFindSuitableFreeBlock(pool, allocSize);//从内存池中找到合适的内存块
-    if (allocNode == NULL) {
-        if (poolInfo->flag & MEM_POOL_EXPAND_ENABLE) {
-            ret = OsMemPoolExpand(pool, allocSize, intSave);//木有找到就扩展内存池
-            if (ret == 0) {
-                goto retry;
+    allocNode = OsMemFindSuitableFreeBlock(pool, allocSize);//从内存池中找到合适的节点
+    if (allocNode == NULL) {//内存池中没有找到合适的节点
+        if (poolInfo->flag & MEM_POOL_EXPAND_ENABLE) {//内存池是否允许扩展
+            ret = OsMemPoolExpand(pool, allocSize, intSave);//扩大内存池
+            if (ret == 0) {//扩大成功了
+                goto retry; // 注意这个goto语句,回去再找合适的节点
             }
         }
         PRINT_ERR("---------------------------------------------------"
                   "--------------------------------------------------------\n");
         MEM_UNLOCK(intSave);
-        OsMemInfoPrint(pool);
+        OsMemInfoPrint(pool);//打印内存池的信息
         MEM_LOCK(intSave);
         PRINT_ERR("[%s] No suitable free block, require free node size: 0x%x\n", __FUNCTION__, allocSize);
         PRINT_ERR("----------------------------------------------------"
@@ -1729,11 +1735,11 @@ retry:
         return NULL;
     }
     if ((allocSize + OS_MEM_NODE_HEAD_SIZE + OS_MEM_ALIGN_SIZE) <= allocNode->selfNode.sizeAndFlag) {
-        OsMemSplitNode(pool, allocNode, allocSize);//找到了就劈开node
+        OsMemSplitNode(pool, allocNode, allocSize);//用不了那么多内存的情况劈开node
     }
-    OsMemListDelete(&allocNode->selfNode.freeNodeInfo, firstNode);//从空闲双链表中删除该节点
-    OsMemSetMagicNumAndTaskID(allocNode);
-    OS_MEM_NODE_SET_USED_FLAG(allocNode->selfNode.sizeAndFlag);
+    OsMemListDelete(&allocNode->selfNode.freeNodeInfo, firstNode);//从空闲链表中删除该节点
+    OsMemSetMagicNumAndTaskID(allocNode);//设置魔法数字和任务ID
+    OS_MEM_NODE_SET_USED_FLAG(allocNode->selfNode.sizeAndFlag);//贴上节点已使用的标签
     if ((pool == (VOID *)OS_SYS_MEM_ADDR) || (pool == (VOID *)m_aucSysMem0)) {
         OS_MEM_ADD_USED(OS_MEM_NODE_GET_SIZE(allocNode->selfNode.sizeAndFlag), OS_MEM_TASKID_GET(allocNode));
     }
@@ -1851,24 +1857,24 @@ STATIC UINT32 OsMemInit(VOID *pool, UINT32 size)
     LosMemDynNode *endNode = NULL;
     LOS_DL_LIST *listNodeHead = NULL;
 
-    poolInfo->pool = pool;	//内存池开始地址,这里决定了 pool 变量一定要放在结构体的首位
-    poolInfo->poolSize = size;	//内存池大小
+    poolInfo->pool = pool;	//保存内存池开始地址,这里决定了 pool 变量一定要放在结构体的首位
+    poolInfo->poolSize = size;	//保证内存池大小
     poolInfo->flag = MEM_POOL_EXPAND_DISABLE;//内存池默认不能扩展
     OsDLnkInitMultiHead(OS_MEM_HEAD_ADDR(pool));//初始化内存池的第二部分(双向链表部分)
-    newNode = OS_MEM_FIRST_NODE(pool);
-    newNode->selfNode.sizeAndFlag = (size - (UINT32)((UINTPTR)newNode - (UINTPTR)pool) - OS_MEM_NODE_HEAD_SIZE);
-    newNode->selfNode.preNode = (LosMemDynNode *)OS_MEM_END_NODE(pool, size);
-    listNodeHead = OS_MEM_HEAD(pool, newNode->selfNode.sizeAndFlag);
-    if (listNodeHead == NULL) {
+    newNode = OS_MEM_FIRST_NODE(pool);//跳到内存池第三部分(动态节点部分)
+    newNode->selfNode.sizeAndFlag = (size - (UINT32)((UINTPTR)newNode - (UINTPTR)pool) - OS_MEM_NODE_HEAD_SIZE);//得到内存池剩余的大小
+    newNode->selfNode.preNode = (LosMemDynNode *)OS_MEM_END_NODE(pool, size);//首个节点指向最后一个节点
+    listNodeHead = OS_MEM_HEAD(pool, newNode->selfNode.sizeAndFlag);//通过节点大小,找到节点在内存池第二部分对应的链表头
+    if (listNodeHead == NULL) {//只有一种情况,给的内存池太大了,大于 2^30, 无法管理
         return LOS_NOK;
     }
 
-    LOS_ListTailInsert(listNodeHead, &(newNode->selfNode.freeNodeInfo));
-    endNode = (LosMemDynNode *)OS_MEM_END_NODE(pool, size);
-    (VOID)memset_s(endNode, sizeof(*endNode), 0, sizeof(*endNode));
+    LOS_ListTailInsert(listNodeHead, &(newNode->selfNode.freeNodeInfo));//将首个节点挂入对应的链表
+    endNode = (LosMemDynNode *)OS_MEM_END_NODE(pool, size);//取出尾部节点
+    (VOID)memset_s(endNode, sizeof(*endNode), 0, sizeof(*endNode));//清空尾部节点
 
-    endNode->selfNode.preNode = newNode;
-    OsMemSentinelNodeSet(endNode, NULL, 0);
+    endNode->selfNode.preNode = newNode;//尾部节点的前一个节点为首个节点
+    OsMemSentinelNodeSet(endNode, NULL, 0);//将尾部节点设置为哨兵节点
 #if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
     poolInfo->poolCurUsedSize = sizeof(LosMemPoolInfo) + OS_MULTI_DLNK_HEAD_SIZE +
                                 OS_MEM_NODE_GET_SIZE(endNode->selfNode.sizeAndFlag);
@@ -1979,17 +1985,17 @@ LITE_OS_SEC_TEXT VOID *LOS_MemAlloc(VOID *pool, UINT32 size)
     VOID *ptr = NULL;
     UINT32 intSave;
 
-    if ((pool == NULL) || (size == 0)) {
+    if ((pool == NULL) || (size == 0)) {//不指定内存池和大小时,通常开机时
         return (size > 0) ? OsVmBootMemAlloc(size) : NULL;//引导分配器分配，粗暴！
     }
 
     MEM_LOCK(intSave);//内存自旋锁
     do {
         if (OS_MEM_NODE_GET_USED_FLAG(size) || OS_MEM_NODE_GET_ALIGNED_FLAG(size)) {//最大不超过2G,对齐不超过1G
-            break;
+            break;//要的太大,申请失败
         }
 
-        ptr = OsMemAllocWithCheck(pool, size, intSave);//从内存池分配       详见 鸿蒙内核源码分析(内存分配篇) 
+        ptr = OsMemAllocWithCheck(pool, size, intSave);//从内存池分配的主体函数
     } while (0);//只执行一次为什么要这么写，这是面试经常考的地方！
 
 #ifdef LOSCFG_MEM_RECORDINFO

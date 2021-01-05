@@ -61,10 +61,15 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-//并发（Concurrent）:多个线程在单个核心运行，同一时间一个线程运行，系统不停切换线程，看起来像同时运行，实际上是线程不停切换
-//并行（Parallel）每个线程分配给独立的CPU核心，线程同时运行
-//单核CPU多个进程或多个线程内能实现并发（微观上的串行，宏观上的并行）；多核CPU线程间可以实现宏观和微观上的并行
-//LITE_OS_SEC_BSS 和 LITE_OS_SEC_DATA_INIT 是告诉编译器这些全局变量放在哪个数据段
+
+/******************************************************************************
+ 并发（Concurrent）:多个线程在单个核心运行，同一时间一个线程运行，系统不停切换线程，
+ 		看起来像同时运行，实际上是线程不停切换
+ 并行（Parallel）每个线程分配给独立的CPU核心，线程同时运行
+ 单核CPU多个进程或多个线程内能实现并发（微观上的串行，宏观上的并行）
+ 多核CPU线程间可以实现宏观和微观上的并行
+ LITE_OS_SEC_BSS 和 LITE_OS_SEC_DATA_INIT 是告诉编译器这些全局变量放在哪个数据段
+******************************************************************************/
 LITE_OS_SEC_BSS LosProcessCB *g_runProcess[LOSCFG_KERNEL_CORE_NUM];// CPU内核个数,超过一个就实现了并行
 LITE_OS_SEC_BSS LosProcessCB *g_processCBArray = NULL; // 进程池数组
 LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_freeProcess;// 空闲状态下的进程链表, .个人觉得应该取名为 g_freeProcessList  @note_thinking
@@ -78,9 +83,9 @@ LITE_OS_SEC_BSS ProcessGroup *g_processGroup = NULL;// 全局进程组,负责管
 LITE_OS_SEC_TEXT_INIT VOID OsTaskSchedQueueDequeue(LosTaskCB *taskCB, UINT16 status)
 {
     LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);//从进程池中取进程
-    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {//判断task是否是就绪状态
-        OS_TASK_PRI_QUEUE_DEQUEUE(processCB, taskCB);//从进程就绪队列中删除
-        taskCB->taskStatus &= ~OS_TASK_STATUS_READY;//置task为非就绪状态
+    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {	//判断task是否是就绪状态
+        OS_TASK_PRI_QUEUE_DEQUEUE(processCB, taskCB);	//从进程就绪队列中删除
+        taskCB->taskStatus &= ~OS_TASK_STATUS_READY;	//给task贴上非就绪状态标签
     }
 
     if (processCB->threadScheduleMap != 0) {//判断所属进程是否还有就绪状态的task

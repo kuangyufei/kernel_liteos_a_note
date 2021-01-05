@@ -402,7 +402,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_HwiCreate(HWI_HANDLE_T hwiNum,	//硬中断句�
     if (hwiHandler == NULL) {//中断处理函数不能为NULL
         return OS_ERRNO_HWI_PROC_FUNC_NULL;
     }
-    if ((hwiNum > OS_USER_HWI_MAX) || ((INT32)hwiNum < OS_USER_HWI_MIN)) {//中断数区间限制
+    if ((hwiNum > OS_USER_HWI_MAX) || ((INT32)hwiNum < OS_USER_HWI_MIN)) {//中断数区间限制 [32,96]
         return OS_ERRNO_HWI_NUM_INVALID;
     }
 

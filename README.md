@@ -4,18 +4,18 @@
 
 ---
 
-# **[kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note): 鸿蒙内核源码注释中文版**
+# **鸿蒙内核源码注释中文版 | 从此走进内核的世界**
 
 [![star](https://gitee.com/weharmony/kernel_liteos_a_note/badge/star.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)[![fork](https://gitee.com/weharmony/kernel_liteos_a_note/badge/fork.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)
 
 
 ## **做了些什么呢？**
 
-**[WeHarmony/kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在鸿蒙官方开源项目 **[OpenHarmony/kernel\_liteos\_a](https://gitee.com/openharmony/kernel_liteos_a)** 基础上给源码加上中文注解的版本,目前几大核心模块加注已基本完成,**整体加注完成70%**,其余正持续加注完善中...
+**[WeHarmony/kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在鸿蒙官方开源项目 **[OpenHarmony/kernel\_liteos\_a](https://gitee.com/openharmony/kernel_liteos_a)** 基础上给源码加上中文注解的版本,目前几大核心模块加注已基本完成, **整体加注完成70%**, 正持续加注完善中 ...
 
--   ### **为何想给鸿蒙源码加上中文注释**
+-   ### **为何想给鸿蒙内核源码加上中文注释**
     
-    源于大学时阅读linux 2.6 内核痛苦经历,一直有个心愿,如何让更多对内核感兴趣的同学减少阅读时间,加速对计算机系统级的理解,而不至于过早的放弃.但因过程种种,一直没有行动,基本要放弃这件事了. 但 2020/9/10 鸿蒙正式开源,重新激活了多年的心愿,就有那么点一发不可收拾了. :|P
+    源于大学时阅读linux 2.6 内核痛苦经历,一直有个心愿,如何让更多对内核感兴趣的同学减少阅读时间,加速对计算机系统级的理解,而不至于过早的放弃.但因过程种种,多年一直没有行动,基本要放弃这件事了. 恰逢 2020/9/10 鸿蒙正式开源,重新激活了多年的心愿,就有那么点一发不可收拾了. :|P
     
 -   ### **致敬鸿蒙内核开发者**
     
@@ -105,7 +105,7 @@
     
 -   ### **通过fork及时同步最新注解内容**
 
-    注解几乎占用了所有的空闲时间,每天都在更新,每天对内核源码都有新感悟,一行行源码在不断的刷新和拓展对内核知识的认知边界. 对已经关注和fork的同学请及时同步最新的注解内容. 内核知识点体量实在太过巨大,过程会反复修正完善,力求言简意赅,词达本意.肯定会有诸多错漏之处,请多包涵. :)  
+    注解几乎占用了所有的空闲时间,每天都会更新,每天都有新感悟,一行行源码在不断的刷新和拓展对内核知识的认知边界. 对已经关注和fork的同学请及时同步最新的注解内容. 内核知识点体量实在太过巨大,过程会反复修正完善,力求言简意赅,词达本意.肯定会有诸多错漏之处,请多包涵. :)  
 
 -   ### **新增的zzz目录是干什么的?**
     

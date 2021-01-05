@@ -1,5 +1,3 @@
-
-
 typedef unsigned int       UINTPTR;
 typedef unsigned char      UINT8;
 typedef unsigned short     UINT16;
@@ -28,3 +26,14 @@ typedef struct LOS_DL_LIST {
     struct LOS_DL_LIST *pstPrev; /**< Current node's pointer to the previous node */
     struct LOS_DL_LIST *pstNext; /**< Current node's pointer to the next node */
 } LOS_DL_LIST;
+//--------------------------------------------------------------------------------------------------------------------
+#define HEAP_CAST(t, exp) ((t)(exp))
+#define HEAP_ALIGN 4
+#define HEAP_TAIL_NODE_SIZE_THRESHOLD   1024
+#define ALIGNE(sz)                            (((sz) + HEAP_ALIGN - 1) & (~(HEAP_ALIGN - 1)))
+#define OS_MEM_ALIGN(value, align)            (((UINT32)(UINTPTR)(value) + (UINT32)((align) - 1)) & \
+                                               (~(UINT32)((align) - 1)))
+#define OS_MEM_ALIGN_FLAG                     0x80000000
+#define OS_MEM_SET_ALIGN_FLAG(align)          ((align) = ((align) | OS_MEM_ALIGN_FLAG))
+#define OS_MEM_GET_ALIGN_FLAG(align)          ((align) & OS_MEM_ALIGN_FLAG)
+#define OS_MEM_GET_ALIGN_GAPSIZE(align)       ((align) & (~OS_MEM_ALIGN_FLAG))
