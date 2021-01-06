@@ -145,7 +145,7 @@ VOID OsSchedResched(VOID)
                 newProcess->threadScheduleMap, newTask->taskName, newTask->taskID, newTask->taskStatus);
 
     /* do the task context switch */
-    OsTaskSchedule(newTask, runTask);//切换CPU的上下文,由汇编实现,见于 los_dispatch.s
+    OsTaskSchedule(newTask, runTask);//切换CPU的上下文,注意OsTaskSchedule是一个汇编函数 见于 los_dispatch.s
 }
 
 VOID OsSchedPreempt(VOID)

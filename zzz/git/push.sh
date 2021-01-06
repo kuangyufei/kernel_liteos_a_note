@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '注解:CPSR(当前程序的状态寄存器)各位表示什么含义 ? 如何读取这个寄存器 ?
+git commit -m  '注解汇编代码,原来它们竟如此可爱,爱了爱了.
     搜索 @note_pic 可查看绘制的全部字符图
     搜索 @note_why 是尚未看明白的地方，有看明白的，请Pull Request完善
     搜索 @note_thinking 是一些的思考和建议

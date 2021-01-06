@@ -203,7 +203,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE INT32 LOS_SpinTrylock(SPIN_LOCK_S *lock)
 LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinUnlock(SPIN_LOCK_S *lock)
 {
     LOCKDEP_CHECK_OUT(lock);
-    ArchSpinUnlock(&lock->rawLock);
+    ArchSpinUnlock(&lock->rawLock);//注意ArchSpinUnlock是一个汇编函数 见于 los_dispatch.s
 
     /* restore the scheduler flag */
     LOS_TaskUnlock();

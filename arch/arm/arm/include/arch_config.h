@@ -76,11 +76,18 @@ MRS{条件} 通用寄存器，程序状态寄存器(CPSR 或SPSR)
 	MRS R0，CPSR   @传送CPSR 的内容到R0
 	MRS R0，SPSR   @传送SPSR 的内容到R0
                	  @MRS指令是唯一可以直接读取CPSR和SPSR寄存器的指令
+
+SPSR
+	程序状态保护寄存器，每一种模式下都有一个状态寄存器SPSR，用于保存CPSR的状态，
+	以便异常返回后恢复异常发生时的工作状态。用户模式和系统模式不是异常状态，
+	所以没有SPSR，在这两种模式下访问SPSR，将产生不可预知的后果。
+	1、SPSR 为 CPSR 中断时刻的副本，退出中断后，将SPSR中数据恢复到CPSR中。
+	2、用户模式和系统模式下SPSR不可用。
 ******************************************************************************/
 #define CPSR_INT_DISABLE         0xC0 /* Disable both FIQ and IRQ */	//禁止IRQ和FIQ中断,因为0xC0 = 0x80 + 0x40
-#define CPSR_IRQ_DISABLE         0x80 /* IRQ disabled when =1 */		//只禁止IRQ 中断
+#define CPSR_IRQ_DISABLE         0x80 /* IRQ disabled when =1 */		//禁止IRQ 中断
 #define CPSR_FIQ_DISABLE         0x40 /* FIQ disabled when =1 */		//禁止 FIQ中断
-#define CPSR_THUMB_ENABLE        0x20 /* Thumb mode when   =1 */		//模式 1:CPU处于Thumb状态， 0:CPU处于ARM状态
+#define CPSR_THUMB_ENABLE        0x20 /* Thumb mode when   =1 */		//使能Thumb模式 1:CPU处于Thumb状态， 0:CPU处于ARM状态
 #define CPSR_USER_MODE           0x10	//用户模式,除了用户模式，其余模式也叫特权模式,特权模式中除了系统模式以外的其余5种模式称为异常模式；
 #define CPSR_FIQ_MODE            0x11	//快中断模式 用于高速数据传输或通道处理
 #define CPSR_IRQ_MODE            0x12	//中断模式 用于通用的中断处理

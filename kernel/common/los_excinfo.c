@@ -41,38 +41,38 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#ifdef LOSCFG_SHELL_EXCINFO
-STATIC log_read_write_fn g_excInfoRW = NULL; /* the hook of read-writing exception information *///读写异常信息的钩子
-STATIC CHAR *g_excInfoBuf = NULL;            /* pointer to the buffer for storing the exception information *///指向存储异常信息的缓冲区的指针
-STATIC UINT32 g_excInfoIndex = 0xFFFFFFFF;   /* the index of the buffer for storing the exception information *///用于存储异常信息的缓冲区的索引
+#ifdef LOSCFG_SHELL_EXCINFO //异常信息开关
+STATIC log_read_write_fn g_excInfoRW = NULL; /* the hook of read-writing exception information */	//读写异常信息的钩子函数
+STATIC CHAR *g_excInfoBuf = NULL;            /* pointer to the buffer for storing the exception information */	//指向存储异常信息的缓冲区的指针
+STATIC UINT32 g_excInfoIndex = 0xFFFFFFFF;   /* the index of the buffer for storing the exception information */	//用于存储异常信息的缓冲区的索引
 STATIC UINT32 g_recordAddr = 0;              /* the address of storing the exception information */ //存储异常信息的地址
 STATIC UINT32 g_recordSpace = 0;             /* the size of storing the exception information */	//存储异常信息的大小
-
+//设置异常信息的读写函数
 VOID SetExcInfoRW(log_read_write_fn func)
 {
     g_excInfoRW = func;
 }
-
+//获取异常信息读写函数
 log_read_write_fn GetExcInfoRW(VOID)
 {
     return g_excInfoRW;
 }
-
+//设置异常信息的缓存
 VOID SetExcInfoBuf(CHAR *buf)
 {
     g_excInfoBuf = buf;
 }
-
+//获取异常信息的缓存
 CHAR *GetExcInfoBuf(VOID)
 {
     return g_excInfoBuf;
 }
-
+//设置异常信息索引位
 VOID SetExcInfoIndex(UINT32 index)
 {
     g_excInfoIndex = index;
 }
-
+//获取异常信息索引位
 UINT32 GetExcInfoIndex(VOID)
 {
     return g_excInfoIndex;
@@ -138,7 +138,7 @@ VOID LOS_ExcInfoRegHook(UINT32 startAddr, UINT32 space, CHAR *buf, log_read_writ
 #endif
 }
 
-/* Be called in the exception. */
+/* Be called in the exception. */ //异常发生时回调这里
 VOID OsReadWriteExceptionInfo(UINT32 startAddr, UINT32 space, UINT32 flag, CHAR *buf)
 {
     if ((buf == NULL) || (space == 0)) {
@@ -147,7 +147,7 @@ VOID OsReadWriteExceptionInfo(UINT32 startAddr, UINT32 space, UINT32 flag, CHAR 
     }
     // user can write exception information to files here
 }
-//记录异常信息发送的时间
+//记录异常信息产生的时间
 VOID OsRecordExcInfoTime(VOID)
 {
 #ifdef LOSCFG_FS_VFS

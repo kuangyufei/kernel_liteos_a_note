@@ -84,6 +84,7 @@ extern "C" {
 	同时将函数入参、局部变量、寄存器入栈。栈帧从高地址向低地址生长。
 	
 	以ARM32 CPU架构为例，每个栈帧中都会保存PC、LR、SP和FP寄存器的历史值。
+	ARM处理器中的R13被用作SP
 
 堆栈分析
 	LR寄存器（Link Register），链接寄存器，指向函数的返回地址。
@@ -143,8 +144,8 @@ STATIC UINT32 g_nextExcWaitCpu = INVALID_CPUID;
 #define IS_VALID_ADDR(ptr) (((ptr) >= g_minAddr) &&       \
                             ((ptr) <= g_maxAddr) && \
                             (IS_ALIGNED((ptr), sizeof(CHAR *))))
-
-STATIC const StackInfo g_excStack[] = {// 6种异常情况下对应的栈 
+//6种异常情况下对应的栈,每一种异常模式都有其独立的堆栈,用不同的堆栈指针来索引,这样当ARM进入异常模式的时候，
+STATIC const StackInfo g_excStack[] = {//程序就可以把一般通用寄存器压入堆栈，返回时再出栈，保证了各种模式下程序的状态的完整性 
     { &__undef_stack, OS_EXC_UNDEF_STACK_SIZE, "udf_stack" },	//512 未定义的指令模式堆栈
     { &__abt_stack,   OS_EXC_ABT_STACK_SIZE,   "abt_stack" },	//512 中止模式堆栈,用于数据中止,可以将处理程序设置为在触发异常终止时运行
     { &__fiq_stack,   OS_EXC_FIQ_STACK_SIZE,   "fiq_stack" },	//64 FIQ中断模式堆栈.快速中断(FIQ)可能会在IRQ期间发生-它们就像优先级较高的IRQ.在FIQ中,FIQ和IRQ被禁用.

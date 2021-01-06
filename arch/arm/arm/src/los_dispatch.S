@@ -33,36 +33,36 @@
 #include "arch_config.h"
 
 #ifdef LOSCFG_KERNEL_SMP_LOCKDEP
-    .extern   OsLockDepCheckOut
+    .extern   OsLockDepCheckOut/*使用外部定义的函数*/
 #endif
     .extern   g_taskSpin
     .extern   g_percpu
-    .global   OsStartToRun
-    .global   OsTaskSchedule	/*任务调度*/
+    .global   OsStartToRun 		/*任务开始执行  告诉 OsStartToRun()在本文件实现,将被外部函数调用,见于OsStart()   */
+    .global   OsTaskSchedule	/*任务调度,见于OsSchedResched()*/
     .global   OsIrqHandler		/*硬中断处理*/
     .global   ArchSpinUnlock	/*自旋锁解锁*/
-    .global   OsSchedToUserSpinUnlock
+    .global   OsSchedToUserSpinUnlock /*尚未实现*/
 
-    .equ OS_TASK_STATUS_RUNNING,       0x0010U
+    .equ OS_TASK_STATUS_RUNNING,       0x0010U /* .equ用于把常量值设置为可以在文本段中使用的符号 #define OS_TASK_STATUS_RUNNING 0x0010U */
     .equ OS_PERCPU_STRUCT_SIZE,        0x28U
     .equ OS_PERCPU_TASK_LOCK_OFFSET,   0x14U
-    .fpu vfpv4
-
+    .fpu vfpv4 /* .fpu @note_why 尚未知这句话的含义 */
+/* 此宏用于对齐和不对齐8字节边界上的堆栈以符合ABI */
 /* macros to align and unalign the stack on 8 byte boundary for ABI compliance */
-.macro STACK_ALIGN, reg
+.macro STACK_ALIGN, reg /* 汇编带参数的宏定义*/ 
     MOV     \reg, sp
     TST     SP, #4
     SUBEQ   SP, #4
     PUSH    { \reg }
 .endm
 
-.macro STACK_RESTORE, reg
-    POP     { \reg }
+.macro STACK_RESTORE, reg /*汇编带参数的宏定义*/ 
+    POP     { \reg } @
     MOV     sp, \reg
 .endm
 
 /* macros to save and restore fpu regs */
-.macro PUSH_FPU_REGS reg1
+.macro PUSH_FPU_REGS reg1 /* 汇编宏定义,类似于 #define PUSH_FPU_REGS(reg1) ... */ 
 #if !defined(LOSCFG_ARCH_FPU_DISABLE)
     VMRS    \reg1, FPEXC
     PUSH    {\reg1}
@@ -106,7 +106,7 @@ OsStartToRun:
     VPUSH   {D0}
     VPOP    {D0}
 
-    B       OsTaskContextLoad
+    B       OsTaskContextLoad @加载任务的上下文
 
 /*
  * R0: new task
@@ -120,7 +120,7 @@ OsTaskSchedule:			/*新老任务切换上下文*/
     SUB      SP, SP, #4 /*SP=SP-4 减4是向低地址偏移4个字节的位置的地址，即堆栈的头部的地址*/
 
     /* push r0-r12*/
-    STMFD    SP!, {R0-R12} 	/*R0-R12入栈*/
+    STMFD    SP!, {R0-R12} 	 @将寄存器列表中的寄存器(R0-R12)压栈。
     STMFD    SP!, {R2}		/*R2 入栈*/
 
     /* 8 bytes stack align */
@@ -130,26 +130,26 @@ OsTaskSchedule:			/*新老任务切换上下文*/
     PUSH_FPU_REGS   R2	/*保存fpu寄存器*/
 
     /* store sp on running task */
-    STR     SP, [R1] /*在R1上保存了SP,保存了老任务的现场*/
+    STR     SP, [R1] @将sp中的数据保存到以R1为地址的存储器中
 
 OsTaskContextLoad:
-    /* clear the flag of ldrex */
-    CLREX
+    /* clear the flag of ldrex */ @LDREX 可从内存加载数据,如果物理地址有共享TLB属性，则LDREX会将该物理地址标记为由当前处理器独占访问，并且会清除该处理器对其他任何物理地址的任何独占访问标记。
+    CLREX @清除ldrex指令的标记
 
     /* switch to new task's sp */
-    LDR     SP, [R0]
+    LDR     SP, [R0] @将存储器地址为R0的数据读入寄存器SP
 
     /* restore fpu registers */
-    POP_FPU_REGS    R2
+    POP_FPU_REGS    R2 @恢复fpu寄存器,这里用了汇编宏R2是宏的参数
 
     /* 8 bytes stack align */
-    ADD     SP, SP, #4
+    ADD     SP, SP, #4 /*SP=SP+4*/
 
-    LDMFD   SP!, {R0}
-    MOV     R4, R0
-    AND     R0, R0, #CPSR_MASK_MODE
-    CMP     R0, #CPSR_USER_MODE
-    BNE     OsKernelTaskLoad
+    LDMFD   SP!, {R0}  @将堆栈内容出栈保存到寄存器R0
+    MOV     R4, R0	@R4=R0 说明R4也记录了CPSR内容,这个内容将用于 OsKernelTaskLoad中保存到SPSR 
+    AND     R0, R0, #CPSR_MASK_MODE @R0 =R0&CPSR_MASK_MODE ,目的是清除高16位
+    CMP     R0, #CPSR_USER_MODE @比较R0是否为用户模式
+    BNE     OsKernelTaskLoad @不相等则跳转到OsKernelTaskLoad执行
 
 #ifdef LOSCFG_KERNEL_SMP
 #ifdef LOSCFG_KERNEL_SMP_LOCKDEP
@@ -181,12 +181,12 @@ OsTaskContextLoad:
     ADD     SP, SP, #(2 * 4)
     LDMFD   SP!, {PC}^
 
-OsKernelTaskLoad:
-    MSR     SPSR_cxsf, R4
+OsKernelTaskLoad: @内核任务的加载
+    MSR     SPSR_cxsf, R4 @将R4保存到程序状态保存寄存器32位
     /* restore r0-r12, lr */
-    LDMFD   SP!, {R0-R12}
-    ADD     SP, SP, #4
-    LDMFD   SP!, {LR, PC}^
+    LDMFD   SP!, {R0-R12} @出栈,依次保存到 R0-R12,其实就是恢复现场
+    ADD     SP, SP, #4 @sp=SP+4
+    LDMFD   SP!, {LR, PC}^ @返回地址赋给pc指针
 
 OsIrqHandler:
     SUB     LR, LR, #4

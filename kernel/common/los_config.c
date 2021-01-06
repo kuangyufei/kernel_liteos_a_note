@@ -165,7 +165,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsStart(VOID)
     OS_SCHEDULER_SET(cpuid);//设置调度cpu id
 
     PRINTK("cpu %d entering scheduler\n", cpuid);
-    OsStartToRun(taskCB);//任务开始跑任务
+    OsStartToRun(taskCB);//任务开始跑,注意OsStartToRun是一个汇编函数 见于 los_dispatch.s
 }
 //进程通讯IPC初始化 由OsMain()调用
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsIpcInit(VOID)
