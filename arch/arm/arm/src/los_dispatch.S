@@ -91,9 +91,9 @@
 /* R0: new task */
 OsStartToRun:
 
-    MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)
+    MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)  @禁止中断并切到管理模式
 
-    LDRH    R1, [R0, #4]
+    LDRH    R1, [R0, #4] 	@将存储器地址为R0+4 的低16位数据读入寄存器R1，并将R1 的高16 位清零
     ORR     R1, #OS_TASK_STATUS_RUNNING
     STRH    R1, [R0, #4]
 

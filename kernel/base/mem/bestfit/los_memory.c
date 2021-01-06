@@ -856,19 +856,19 @@ STATIC INLINE VOID OsMemClearNode(LosMemDynNode *node)
 /*
  * Description : merge this node and pre node, then clear this node info
  * Input       : node    --- Pointer to node which will be merged
- */ //合并指定动态内存节点
+ */ //将指定动态内存节点和前节点合并
 STATIC INLINE VOID OsMemMergeNode(LosMemDynNode *node)
 {
     LosMemDynNode *nextNode = NULL;
 
-    node->selfNode.preNode->selfNode.sizeAndFlag += node->selfNode.sizeAndFlag;
-    nextNode = (LosMemDynNode *)((UINTPTR)node + node->selfNode.sizeAndFlag);
-    nextNode->selfNode.preNode = node->selfNode.preNode;
+    node->selfNode.preNode->selfNode.sizeAndFlag += node->selfNode.sizeAndFlag;//前节点大小变大
+    nextNode = (LosMemDynNode *)((UINTPTR)node + node->selfNode.sizeAndFlag);//找到node的后节点
+    nextNode->selfNode.preNode = node->selfNode.preNode;//后节点指向前节点,如此完成了合并
 #ifdef LOSCFG_MEM_HEAD_BACKUP
     OsMemNodeSave(node->selfNode.preNode);
     OsMemNodeSave(nextNode);
 #endif
-    OsMemClearNode(node);
+    OsMemClearNode(node);//清空节点
 }
 //是否是一个扩展内存池
 STATIC INLINE BOOL IsExpandPoolNode(VOID *pool, LosMemDynNode *node)
@@ -1306,11 +1306,11 @@ STATIC INLINE VOID OsMemSetMagicNumAndTaskID(LosMemDynNode *node)
      * If the operation occured before task initialization(runTask was not assigned)
      * or in interrupt, make the value of taskid of node to 0xffffffff
      */
-    if ((runTask != NULL) && OS_INT_INACTIVE) {
-        OS_MEM_TASKID_SET(node, runTask->taskID);
-    } else {
+    if ((runTask != NULL) && OS_INT_INACTIVE) {//当前没有中断发生时
+        OS_MEM_TASKID_SET(node, runTask->taskID);//设置节点的使用任务
+    } else {//发生中断的情况 @note_why 为何中断发生时不能设置任务?
         /* If the task mode does not initialize, the field is the 0xffffffff */
-        node->selfNode.freeNodeInfo.pstNext = (LOS_DL_LIST *)OS_NULL_INT;
+        node->selfNode.freeNodeInfo.pstNext = (LOS_DL_LIST *)OS_NULL_INT;//如果任务模式没有初始化,设置为 0xffffffff
     }
 }
 
