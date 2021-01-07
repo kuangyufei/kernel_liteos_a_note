@@ -285,14 +285,14 @@ STATIC VOID OsExcType(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32
 }
 
 STATIC const CHAR *g_excTypeString[] = {//异常类型的字符说明,在鸿蒙内核中什么才算是异常? 看这里
-    "reset",		//重置命令
-    "undefined instruction",	//未定义的指令
-    "software interrupt",	//软中断,比如定时器
-    "prefetch abort",	//取指异常
-    "data abort",		//数据异常
-    "fiq",				//快中断异常
-    "address abort",	//地址异常
-    "irq"				//中断异常
+    "reset",					//复位异常源    - SVC模式（Supervisor保护模式）
+    "undefined instruction",	//未定义指令异常源- und模式    
+    "software interrupt",		//软中断异常源 - SVC模式 
+    "prefetch abort",			//取指异常源 - abort模式	
+    "data abort",				//数据异常源 - abort模式
+    "fiq",						//快中断异常源 - FIQ模式  
+    "address abort",			//地址异常源 - abort模式
+    "irq"						//中断异常源 - IRQ模式 
 };
 //打印系统信息
 STATIC VOID OsExcSysInfo(UINT32 excType, const ExcContext *excBufAddr)
@@ -705,7 +705,7 @@ VOID BackTrace(UINT32 regFP)//fp:R11寄存器
 
     BackTraceSub(regFP);
 }
-//异常处理模块的初始化
+//异常接管模块的初始化
 VOID OsExcInit(VOID)
 {
     OsExcStackInfoReg(g_excStack, sizeof(g_excStack) / sizeof(g_excStack[0]));//异常模式下注册内核栈信息

@@ -42,28 +42,28 @@
     .global   OsIrqHandler		/*硬中断处理*/
     .global   ArchSpinUnlock	/*自旋锁解锁*/
     .global   OsSchedToUserSpinUnlock /*尚未实现*/
-
+	/* @note_why 为何要重新定义OS_TASK_STATUS_RUNNING? */
     .equ OS_TASK_STATUS_RUNNING,       0x0010U /* .equ用于把常量值设置为可以在文本段中使用的符号 #define OS_TASK_STATUS_RUNNING 0x0010U */
     .equ OS_PERCPU_STRUCT_SIZE,        0x28U
     .equ OS_PERCPU_TASK_LOCK_OFFSET,   0x14U
     .fpu vfpv4 /* .fpu @note_why 尚未知这句话的含义 */
 /* 此宏用于对齐和不对齐8字节边界上的堆栈以符合ABI */
 /* macros to align and unalign the stack on 8 byte boundary for ABI compliance */
-.macro STACK_ALIGN, reg /* 汇编带参数的宏定义*/ 
-    MOV     \reg, sp
+.macro STACK_ALIGN, reg /* 栈对齐*/ 
+    MOV     \reg, sp 
     TST     SP, #4
     SUBEQ   SP, #4
     PUSH    { \reg }
 .endm
 
-.macro STACK_RESTORE, reg /*汇编带参数的宏定义*/ 
-    POP     { \reg } @
-    MOV     sp, \reg
+.macro STACK_RESTORE, reg /*栈恢复*/ 
+    POP     { \reg } 
+    MOV     sp, \reg 
 .endm
-
-/* macros to save and restore fpu regs */
-.macro PUSH_FPU_REGS reg1 /* 汇编宏定义,类似于 #define PUSH_FPU_REGS(reg1) ... */ 
-#if !defined(LOSCFG_ARCH_FPU_DISABLE)
+/* FPU(floating-point processor unit)浮点运算单元*/
+/* macros to save and restore fpu regs */ 
+.macro PUSH_FPU_REGS reg1 /* 保存fpu寄存器 */ 
+#if !defined(LOSCFG_ARCH_FPU_DISABLE) @FPU使能
     VMRS    \reg1, FPEXC
     PUSH    {\reg1}
     VMRS    \reg1, FPSCR
@@ -75,7 +75,7 @@
 #endif
 .endm
 
-.macro POP_FPU_REGS reg1
+.macro POP_FPU_REGS reg1 /* 恢复fpu寄存器 */ 
 #if !defined(LOSCFG_ARCH_FPU_DISABLE)
     VPOP    {D0-D15}
 #if defined(LOSCFG_ARCH_FPU_VFP_D32)
@@ -94,12 +94,12 @@ OsStartToRun:
     MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)  @禁止中断并切到管理模式
 
     LDRH    R1, [R0, #4] 	@将存储器地址为R0+4 的低16位数据读入寄存器R1，并将R1 的高16 位清零
-    ORR     R1, #OS_TASK_STATUS_RUNNING
-    STRH    R1, [R0, #4]
+    ORR     R1, #OS_TASK_STATUS_RUNNING @或指令 R1=R1|OS_TASK_STATUS_RUNNING
+    STRH    R1, [R0, #4] 	@将寄存器R1中的低16位写入以R0+4地址的存储器中
 
     /* R0 is new task, save it on tpidrprw */
-    MCR     p15, 0, R0, c13, c0, 4
-    ISB
+    MCR     p15, 0, R0, c13, c0, 4 @ C5=C4=R0
+    ISB 	@指令同步屏障，清除流水线并且确保在新指令执行时，之前的指令都已经执行完毕。
 
     VPUSH   {S0}                                     /* fpu */
     VPOP    {S0}
@@ -149,15 +149,15 @@ OsTaskContextLoad:
     MOV     R4, R0	@R4=R0 说明R4也记录了CPSR内容,这个内容将用于 OsKernelTaskLoad中保存到SPSR 
     AND     R0, R0, #CPSR_MASK_MODE @R0 =R0&CPSR_MASK_MODE ,目的是清除高16位
     CMP     R0, #CPSR_USER_MODE @比较R0是否为用户模式
-    BNE     OsKernelTaskLoad @不相等则跳转到OsKernelTaskLoad执行
+    BNE     OsKernelTaskLoad @不相等则跳转到OsKernelTaskLoad执行,return回去了
 
 #ifdef LOSCFG_KERNEL_SMP
 #ifdef LOSCFG_KERNEL_SMP_LOCKDEP
     /* 8 bytes stack align */
-    SUB     SP, SP, #4
-    LDR     R0, =g_taskSpin
-    BL      OsLockDepCheckOut
-    ADD     SP, SP, #4
+    SUB     SP, SP, #4 @sp = sp -4
+    LDR     R0, =g_taskSpin @R0 = g_taskSpin
+    BL      OsLockDepCheckOut @带链接的跳转指令。指令将下一条指令的地址拷贝到R14(即LR)链接寄存器中，然后跳转到指定地址运行程序
+    ADD     SP, SP, #4 @sp=sp+4
 #endif
     /* R0 = &g_taskSpin.rawLock */
     LDR     R0, =g_taskSpin
@@ -181,12 +181,12 @@ OsTaskContextLoad:
     ADD     SP, SP, #(2 * 4)
     LDMFD   SP!, {PC}^
 
-OsKernelTaskLoad: @内核任务的加载
-    MSR     SPSR_cxsf, R4 @将R4保存到程序状态保存寄存器32位
+OsKernelTaskLoad: 			@内核任务的加载
+    MSR     SPSR_cxsf, R4 	@将R4保存到程序状态保存寄存器32位
     /* restore r0-r12, lr */
-    LDMFD   SP!, {R0-R12} @出栈,依次保存到 R0-R12,其实就是恢复现场
-    ADD     SP, SP, #4 @sp=SP+4
-    LDMFD   SP!, {LR, PC}^ @返回地址赋给pc指针
+    LDMFD   SP!, {R0-R12} 	@出栈,依次保存到 R0-R12,其实就是恢复现场
+    ADD     SP, SP, #4 		@sp=SP+4
+    LDMFD   SP!, {LR, PC}^ 	@返回地址赋给pc指针
 
 OsIrqHandler:
     SUB     LR, LR, #4

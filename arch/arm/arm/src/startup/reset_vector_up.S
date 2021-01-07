@@ -36,6 +36,10 @@
 #include "los_mmu_descriptor_v6.h"
 #undef ASSEMBLY
 
+/******************************************************************************
+单CPU下异常向量表
+
+******************************************************************************/
 
     .global __exc_stack_top
     .global __irq_stack_top
@@ -68,16 +72,16 @@
 
     .fpu vfpv4
     .arm
-
+/* 设置异常模式栈的SP 参数1为栈底, 参数2为栈大小 r11 存放的是 cpu id */
 /* param0 is stack bottom, param1 is stack size, r11 hold cpu id */
 .macro EXC_SP_SET param0, param1
-    ldr    r1, =\param0
-    mov    r0, \param1
-    bl     sp_set
+    ldr    r1, =\param0 @r1 = 栈底
+    mov    r0, \param1 @r0 = 栈大小
+    bl     sp_set @跳到设置SP处
 .endm
 
 /* param0 is stack top, param1 is stack size, param2 is magic num */
-.macro STACK_MAGIC_SET param0, param1, param2
+.macro STACK_MAGIC_SET param0, param1, param2 @设置栈魔法数字
     ldr     r0, =\param0
     mov     r1, \param1
     ldr     r2, =\param2
@@ -332,12 +336,12 @@ cpu_start:	/* 启动CPU */
 /*
  * set sp for current cpu
  * r1 is stack bottom, r0 is stack size, r11 hold cpu id
- */
+ */@设置当前CPU的SP, r1为栈底, r0为栈大小 r11 为 cpu id
 sp_set:
-    mul    r3, r0, r11
-    sub    r2, r1, r3
-    mov    sp, r2
-    bx     lr          /* set sp */
+    mul    r3, r0, r11 	@r3=r0*r11 先计算偏移量
+    sub    r2, r1, r3 	@r2=r1-r3 如此得到r2为cpu的SP位置,从这里可以看出 栈底地址是要高于栈顶的
+    mov    sp, r2 		@sp = r2 设置栈指针位置,SP默认指向了栈底
+    bx     lr          /* set sp */ @跳回去继续执行
 
 /*
  * r4: page table base address
@@ -468,6 +472,6 @@ __svc_stack:
     .space OS_EXC_SVC_STACK_SIZE * CORE_NUM
 __svc_stack_top:
 
-__exc_stack:
+__exc_stack: 
     .space OS_EXC_STACK_SIZE * CORE_NUM
 __exc_stack_top:

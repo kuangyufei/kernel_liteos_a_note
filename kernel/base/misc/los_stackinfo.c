@@ -37,8 +37,8 @@
 #include "shell.h"
 #endif
 
-const StackInfo *g_stackInfo = NULL;
-UINT32 g_stackNum;
+const StackInfo *g_stackInfo = NULL;    //CPU所有工作模式的栈信息
+UINT32 g_stackNum;  //CPU所有工作模式的栈数量
 //获取栈的吃水线
 UINT32 OsStackWaterLineGet(const UINTPTR *stackBottom, const UINTPTR *stackTop, UINT32 *peakUsed)
 {
@@ -130,7 +130,7 @@ VOID OsExcStackInfo(VOID)
 //注册栈信息
 VOID OsExcStackInfoReg(const StackInfo *stackInfo, UINT32 stackNum)
 {
-    g_stackInfo = stackInfo;	//g_excStack
+    g_stackInfo = stackInfo;	//全局变量指向g_excStack
     g_stackNum = stackNum;
 }
 //task栈的初始化,设置固定的值. 0xcccccccc 和 0xcacacaca
