@@ -39,15 +39,23 @@
 /******************************************************************************
 单CPU下异常向量表
 
+指令名		功能描述
+DMB		数据存储器隔离。DMB 指令保证： 仅当所有在它前面的存储器访问操作
+		都执行完毕后，才提交(commit)在它后面的存储器访问操作。
+		
+DSB		数据同步隔离。比 DMB 严格： 仅当所有在它前面的存储器访问操作
+		都执行完毕后，才执行在它后面的指令（亦即任何指令都要等待存储器访问操作）
+		
+ISB		指令同步隔离。最严格：它会清洗流水线，以保证所有它前面的指令都执
+		行完毕之后，才执行它后面的指令。
 ******************************************************************************/
-
-    .global __exc_stack_top
+    .global __exc_stack_top @注意这个top并不是栈顶的意思,而是栈的地址高位,恰恰说的是栈底的位置
     .global __irq_stack_top
     .global __fiq_stack_top
     .global __svc_stack_top
     .global __abt_stack_top
     .global __undef_stack_top
-    .global __exc_stack
+    .global __exc_stack 
     .global __irq_stack
     .global __fiq_stack
     .global __svc_stack
@@ -116,7 +124,7 @@ __exception_handlers:
     /* Startup code which will get the machine into supervisor mode */
     .global reset_vector
     .type   reset_vector,function
-reset_vector:
+reset_vector: @重置异常向量表
     /* do some early cpu setup: i/d cache disable, mmu disabled */
     mrc     p15, 0, r0, c1, c0, 0
     bic     r0, #(1<<12)
@@ -152,7 +160,7 @@ reloc_img_to_bottom_loop:
 reloc_img_to_bottom_done:
     ldr     r4, =g_firstPageTable               /* r4: physical address of translation table and clear it */
     add     r4, r4, r11
-    bl      page_table_clear
+    bl      page_table_clear @清除页表
 
     PAGE_TABLE_SET SYS_MEM_BASE, KERNEL_VMM_BASE, KERNEL_VMM_SIZE, MMU_DESCRIPTOR_KERNEL_L1_PTE_FLAGS
     PAGE_TABLE_SET SYS_MEM_BASE, UNCACHED_VMM_BASE, UNCACHED_VMM_SIZE, MMU_INITIAL_MAP_STRONGLY_ORDERED
@@ -185,9 +193,9 @@ reloc_img_to_bottom_done:
     cmp     r11, #0
     bne     excstatck_loop_done
 
-excstatck_loop:
+excstatck_loop:	@清除中断和异常堆栈，并设置魔法数字用于检查溢出
     /* clear out the interrupt and exception stack and set magic num to check the overflow */
-    ldr     r0, =__undef_stack
+    ldr     r0, =__undef_stack 
     ldr     r1, =__exc_stack_top
     bl      stack_init
 
@@ -199,41 +207,41 @@ excstatck_loop:
     STACK_MAGIC_SET __exc_stack, #OS_EXC_STACK_SIZE, OS_STACK_MAGIC_WORD
 
 excstatck_loop_done:
-warm_reset:
+warm_reset:	@初始化5大中断/异常环境
     /* initialize interrupt/exception environments */
-    mov    r0, #(CPSR_IRQ_DISABLE |CPSR_FIQ_DISABLE|CPSR_IRQ_MODE)
-    msr    cpsr, r0
-    EXC_SP_SET __irq_stack_top, #OS_EXC_IRQ_STACK_SIZE
+    mov    r0, #(CPSR_IRQ_DISABLE |CPSR_FIQ_DISABLE|CPSR_IRQ_MODE) @计划切到IRQ模式,并屏蔽IRQ和FIQ中断
+    msr    cpsr, r0 @执行切换计划,执行完成后CPU将切换到IRQ栈运行
+    EXC_SP_SET __irq_stack_top, #OS_EXC_IRQ_STACK_SIZE @设置IRQ的SP
 
-    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_UNDEF_MODE)
-    msr    cpsr, r0
-    EXC_SP_SET __undef_stack_top, #OS_EXC_UNDEF_STACK_SIZE
+    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_UNDEF_MODE) @计划切到UNDEF模式,并屏蔽IRQ和FIQ中断
+    msr    cpsr, r0 @执行切换计划,执行完成后CPU将切换到UNDEF栈运行
+    EXC_SP_SET __undef_stack_top, #OS_EXC_UNDEF_STACK_SIZE	@设置UNDEF的SP
 
-    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_ABT_MODE)
+    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_ABT_MODE) @同上
     msr    cpsr, r0
     EXC_SP_SET __abt_stack_top, #OS_EXC_ABT_STACK_SIZE
 
-    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_FIQ_MODE)
+    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_FIQ_MODE) @同上
     msr    cpsr, r0
     EXC_SP_SET __fiq_stack_top, #OS_EXC_FIQ_STACK_SIZE
 
-    /* initialize CPSR (machine state register) */
-    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_SVC_MODE)
-    msr    cpsr, r0
+    /* initialize CPSR (machine state register) */ @初始化CPSR(机器状态寄存器)
+    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_SVC_MODE) @计划切到SVC模式,并屏蔽IRQ和FIQ中断
+    msr    cpsr, r0 @执行切换计划,执行完成后CPU将切换到SVC栈运行
 
     /* Note: some functions in LIBGCC1 will cause a "restore from SPSR"!! */
-    msr    spsr, r0
-
+    msr    spsr, r0 @保存程序状态寄存器值,用于后续的恢复
+	@设置SVC栈,每个CPU都有自己的SVC栈
     /* set svc stack, every cpu has OS_EXC_SVC_STACK_SIZE stack */
-    ldr    r0, =__svc_stack_top
+    ldr    r0, =__svc_stack_top @
     mov    r2, #OS_EXC_SVC_STACK_SIZE
-    mul    r2, r2, r11
-    sub    r0, r0, r2
-    mov    sp, r0
+    mul    r2, r2, r11 @r2 = OS_EXC_SVC_STACK_SIZE * r11(存放了CPUID)
+    sub    r0, r0, r2 @r0=r0-r2,此时r2是偏移量,计算出SP的位置
+    mov    sp, r0 @改变SP的值
 
     /* enable fpu+neon */
-    MRC    p15, 0, r0, c1, c1, 2
-    ORR    r0, r0, #0xC00
+    MRC    p15, 0, r0, c1, c1, 2 @r0 = c1
+    ORR    r0, r0, #0xC00 @r0 =|0xC00 
     BIC    r0, r0, #0xC000
     MCR    p15, 0, r0, c1, c1, 2
 
@@ -246,16 +254,16 @@ warm_reset:
     LDR    r0, =__exception_handlers
     MCR    p15, 0, r0, c12, c0, 0
 
-    cmp    r11, #0
-    bne    cpu_start
+    cmp    r11, #0 @是否为0号CPU,注意0号CPU为主寄存器
+    bne    cpu_start @不是0号时,跳到cpu_start启动次级CPU
 
 clear_bss:
-    ldr    r1, =__bss_start
-    ldr    r2, =__bss_end
-    mov    r0, #0
+    ldr    r1, =__bss_start @r1=__bss_start
+    ldr    r2, =__bss_end @r2=__bss_end
+    mov    r0, #0	@r0=0
 
 bss_loop:
-    cmp    r1, r2
+    cmp    r1, r2 @比较R1和R2
     strlo  r0, [r1], #4
     blo    bss_loop
 
@@ -271,21 +279,39 @@ bss_loop:
     .word  0xe7ffdeff
 #endif
 
-    bl     main /*子程序跳转,执行main..\platform\main.c*/
+    bl     main /*子程序跳转,执行大家熟悉的main函数*/
 
-_start_hang:
+_start_hang: @悬停在此,死循环了
     b      _start_hang
+/******************************************************************************
+ARM协处理器CP15寄存器
 
+MCR{cond}     coproc，opcode1，Rd，CRn，CRm，opcode2
+MRC {cond}    coproc，opcode1，Rd，CRn，CRm，opcode2
+coproc       指令操作的协处理器名.标准名为pn,n,为0~15 
+opcode1      协处理器的特定操作码. 对于CP15寄存器来说，opcode1永远为0，不为0时，操作结果不可预知
+CRd          作为目标寄存器的协处理器寄存器. 
+CRn          存放第1个操作数的协处理器寄存器. 
+CRm          存放第2个操作数的协处理器寄存器. （用来区分同一个编号的不同物理寄存器，当不需要提供附加信息时，指定为C0）
+opcode2      可选的协处理器特定操作码.                （用来区分同一个编号的不同物理寄存器，当不需要提供附加信息时，指定为0）
+
+C2 :存储保护和控制 地址转换表基地址
+C3 :存储保护和控制 域访问控制位
+C7 :高速缓存和写缓存控制
+C8 :TLB 控制
+C9 :高速缓存锁定
+C10:TLB 锁定
+******************************************************************************/
 mmu_setup: //安装MMU
-    mov     r12, #0								
-    mcr     p15, 0, r12, c8, c7, 0              /* Set c8 to control the TLB and set the mapping to invalid *//*设置8号寄存器以控制TLB并将映射设置为无效*/
+    mov     r12, #0 @r12=0 ,这么做的目的是为了下一条语句,C15协处理只能通过寄存器赋值								
+    mcr     p15, 0, r12, c8, c7, 0              /* Set c8 to control the TLB and set the mapping to invalid *//*设置C8,C7=0以控制TLB,将映射设置为无效*/
     isb
 
-    mcr     p15, 0, r12, c2, c0, 2              /* Initialize the c2 register *///初始化C2寄存器
+    mcr     p15, 0, r12, c2, c0, 2              /* Initialize the c2 register *///初始化C2,C0=0
     isb
 
-    orr     r12, r4, #MMU_TTBRx_FLAGS
-    mcr     p15, 0, r12, c2, c0, 0              /* Set attributes and set temp page table */
+    orr     r12, r4, #MMU_TTBRx_FLAGS @r12 =| MMU_TTBRx_FLAGS
+    mcr     p15, 0, r12, c2, c0, 0              /* Set attributes and set temp page table */ @设置页表属性
     isb
 
     mov     r12, #0x7                           /* 0b0111 */
@@ -321,15 +347,15 @@ reset_platform:
 #ifdef A7SEM_HAL_ROM_MONITOR
     /* initialize CPSR (machine state register) */
     mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_SVC_MODE)
-    msr    cpsr, r0
-    b      warm_reset
+    msr    cpsr, r0 @切到SVC模式,禁止中断
+    b      warm_reset 
 #else
     mov    r0, #0
     mov    pc, r0   /* Jump to reset vector */
 #endif
-cpu_start:	/* 启动CPU */
-    bl     secondary_cpu_start /* 启动次级CPU */
-    b      .
+cpu_start:	/* 启动次级CPU */
+    bl     secondary_cpu_start @此处用了BL,说明执行完后要回到这里继续执行
+    b      . @B为无条件跳转,跳到当前地址,意思就是进入死循环
 
 
 
@@ -344,17 +370,17 @@ sp_set:
     bx     lr          /* set sp */ @跳回去继续执行
 
 /*
- * r4: page table base address
- * r5 and r6 will be used as variable
+ * r4: page table base address 页表基地址
+ * r5 and r6 will be used as variable r5和r6将用作变量
  */
-page_table_clear:
-    mov     r5, #0
-    mov     r6, #0
+page_table_clear: @清除页表
+    mov     r5, #0 @r5 = 0
+    mov     r6, #0 @r6 = 0
 0:
     str     r5, [r4, r6, lsl #2]
-    add     r6, #1
+    add     r6, #1 @r6++
     cmp     r6, #0x1000                         /* r6 < 4096 */
-    blt     0b
+    blt     0b @小于 跳转到0,相当于条件循环
     bx      lr
 
 /*
@@ -365,7 +391,7 @@ page_table_clear:
  * r10: flags
  * r9 and r12 will be used as variable
  */
-page_table_build:
+page_table_build: @构建页面
     mov     r9, r6
     bfc     r9, #20, #12                        /* r9: pa % MB */
     add     r8, r8, r9

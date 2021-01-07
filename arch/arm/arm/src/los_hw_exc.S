@@ -248,7 +248,7 @@ _osKernelExceptPrefetchAbortHdl:
 #endif
 
 @ Description: Data abort exception handler
-_osExceptDataAbortHdl:
+_osExceptDataAbortHdl: @数据异常处理,缺页就属于数据异常
 #ifdef LOSCFG_GDB
 #if __LINUX_ARM_ARCH__ >= 7
     GDB_HANDLE OsDataAbortExcHandleEntry
@@ -261,11 +261,11 @@ _osExceptDataAbortHdl:
 
     MOV     R0, #OS_EXCEPT_DATA_ABORT                        @ Set exception ID to OS_EXCEPT_DATA_ABORT.
 
-    B     _osExcPageFault
+    B     _osExcPageFault @跳到缺页异常处理
 #endif
 
 @ Description: Address abort exception handler
-_osExceptAddrAbortHdl:
+_osExceptAddrAbortHdl: @地址异常处理
     SUB     LR, LR, #8                                       @ LR offset to return from this exception: -8.
     STMFD   SP, {R0-R7}                                      @ Push working registers, but don`t change SP.
 
@@ -274,7 +274,7 @@ _osExceptAddrAbortHdl:
     B       _osExceptDispatch                                @ Branch to global exception handler.
 
 @ Description: Fast interrupt request exception handler
-_osExceptFiqHdl:
+_osExceptFiqHdl: @快中断异常处理
     SUB     LR, LR, #4                                       @ LR offset to return from this exception: -4.
     STMFD   SP, {R0-R7}                                      @ Push working registers.
 
@@ -282,7 +282,7 @@ _osExceptFiqHdl:
 
     B       _osExceptDispatch                                @ Branch to global exception handler.
 
-_osExcPageFault:
+_osExcPageFault:  @缺页异常处理函数 
     SUB     R3, SP, #(8 * 4)                                 @ Save the start address of working registers.
     MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)      @ Switch to SVC mode, and disable all interrupts
     MOV     R2, SP
@@ -322,12 +322,12 @@ _osExcPageFault:
     BEQ     _OsExcReturn
 
     MOV     R0, R5                                           @ exc type
-    B       _osExceptionSwi
+    B       _osExceptionSwi 		@跳到软中断执行,系统调用就是通过软中断实现
 
 @ Description: Exception handler
-@ Parameter  : R0     Exception Type
-@ Regs Hold  : R3     Exception`s CPSR
-_osExceptDispatch:
+@ Parameter  : R0     Exception Type 异常类型
+@ Regs Hold  : R3     Exception`s CPSR 发生异常时的CPSR值 @note_thinking 鸿蒙官方的注释错了,应该是Regs Hold: R2
+_osExceptDispatch: @处理异常分发
     MRS     R2, SPSR                                         @ Save CPSR before exception.
     MOV     R1, LR                                           @ Save PC before exception.
     SUB     R3, SP, #(8 * 4)                                 @ Save the start address of working registers.
@@ -344,27 +344,27 @@ _osExceptDispatch:
     STMFD   SP!, {R4-R11}
     STMFD   SP!, {R2}                                        @ Push task`s CPSR (i.e. exception SPSR).
 
-    CMP     R0, #OS_EXCEPT_DATA_ABORT
-    BNE     1f
-    MRC     P15, 0, R8, C6, C0, 0
-    MRC     P15, 0, R9, C5, C0, 0
-    B       3f
-1:  CMP     R0, #OS_EXCEPT_PREFETCH_ABORT
-    BNE     2f
-    MRC     P15, 0, R8, C6, C0, 2
-    MRC     P15, 0, R9, C5, C0, 1
-    B       3f
+    CMP     R0, #OS_EXCEPT_DATA_ABORT 		@是数据异常吗?
+    BNE     1f 								@不是跳到 锚点1处
+    MRC     P15, 0, R8, C6, C0, 0 			@R8=C6(内存失效的地址) 0(访问数据失效)
+    MRC     P15, 0, R9, C5, C0, 0 			@R9=C5(内存失效的状态) 0(无效整个指令cache)
+    B       3f 								@跳到锚点3处执行
+1:  CMP     R0, #OS_EXCEPT_PREFETCH_ABORT 	@是预取异常吗?
+    BNE     2f 								@不是跳到 锚点2处
+    MRC     P15, 0, R8, C6, C0, 2 			@R8=C6(内存失效的地址) 2(访问指令失效)
+    MRC     P15, 0, R9, C5, C0, 1 			@R9=C5(内存失效的状态) 1(虚拟地址)
+    B       3f 								@跳到锚点3处执行
 2:  MOV     R8, #0
     MOV     R9, #0
 
-3:  AND     R2, R2, #CPSR_MASK_MODE
+3:  AND     R2, R2, #CPSR_MASK_MODE 
     CMP     R2, #CPSR_USER_MODE                              @ User mode
-    BNE     4f
+    BNE     4f @不是用户模式
     STMFD   SP, {R13, R14}^                                  @ save user mode sp and lr
 4:
-    SUB     SP, SP, #(4 * 2)
+    SUB     SP, SP, #(4 * 2) @sp=sp-(4*2)
 
-_osExceptionSwi:
+_osExceptionSwi: 				@软中断的处理,系统调用就是由软中断实现的
     MOV     R1, SP                                            @ The second argument to the exception
 
     MRC     P15, 0, R4, C0, C0, 5
@@ -375,7 +375,7 @@ _osExceptionSwi:
     LDR     R4, [R3]
 
     CMP     R4, #0
-    BNE     _osExceptionGetSP	@ BNE: 不相等则跳转
+    BNE     _osExceptionGetSP	@不相等则跳转
 
     LDR     R3, =g_intCount                                   @ Judge the exception is occur in task stack or system stack
     ADD     R3, R3, R2
@@ -398,10 +398,10 @@ _OsExcReturn:
     LDR     R0, [SP, #(2 * 4)]
     AND     R0, R0,  #CPSR_MASK_MODE
     CMP     R0, #CPSR_USER_MODE                               @ User mode
-    BNE     _OsExcReturnToKernel
+    BNE     _OsExcReturnToKernel 	@非用户模式跳转执行
     LDMFD   SP, {R13, R14}^                                   @ load user mode sp and lr
 
-_OsExcReturnToKernel:
+_OsExcReturnToKernel: 
     ADD     SP, SP, #(2 * 4)
     LDMFD   SP!, {R1}
     MSR     SPSR_cxsf, R1                                     @ Set the return mode SPSR
