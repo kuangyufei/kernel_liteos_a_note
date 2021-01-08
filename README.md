@@ -27,17 +27,17 @@
 
     在每个模块的.c文件开始位置先对模块功能做整体的介绍,例如异常接管模块注解如图所示:
 
-    ![在这里插入图片描述](https://img-blog.csdnimg.cn/20210104173532255.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2t1YW5neXVmZWk=,size_16,color_FFFFFF,t_70)
+    ![在这里插入图片描述](./zzz/pic/other/ycjg.png)
 
     注解过程中查阅了很多的资料和书籍,在具体代码处都附上了参考链接.
 
     而函数级注解会详细到重点行,甚至每一行, 例如申请互斥锁的主体函数,不可谓不重要,而官方注释仅有一行,如图所示
     
-    ![在这里插入图片描述](https://img-blog.csdnimg.cn/20210104173532225.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2t1YW5neXVmZWk=,size_16,color_FFFFFF,t_70)
+    ![在这里插入图片描述](./zzz/pic/other/sop.png)
     
     另外画了一些字符图方便理解,直接嵌入到头文件中,比如虚拟内存的全景图,因没有这些图是很难理解虚拟内存是如何管理的.
     
-    ![在这里插入图片描述](https://img-blog.csdnimg.cn/20201028154344813.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2t1YW5neXVmZWk=,size_16,color_FFFFFF,t_70#pic_center)
+    ![在这里插入图片描述](./zzz/pic/other/vm.png)
 
 -   ### **有哪些特殊的记号**
 
@@ -115,8 +115,12 @@
     1. Fork 本仓库 >> 新建 Feat_xxx 分支 >> 提交代码注解 >> 新建 Pull Request
 
     2. [新建 Issue](https://gitee.com/weharmony/kernel_liteos_a_note/issues)
--   ### **联系方式**
-    kuangyufei@126.com,欢迎邮件/私信.
+-   ### **鸿蒙内核源码分析 官方公众号**
+    ![在这里插入图片描述](./zzz/pic/other/wxcode.png)
+
+    感谢关注,您的支持是注者最大的动力,将持续输出内核精品内容. 
+
+    邮箱:weharmony@126.com
 
     ---
 
