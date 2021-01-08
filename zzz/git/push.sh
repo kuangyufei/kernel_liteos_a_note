@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '添加官方公众号,持续输出优质内核内容.
+git commit -m  '内核是地基工程,地基不牢,何谈万丈高楼.
     搜索 @note_pic 可查看绘制的全部字符图
     搜索 @note_why 是尚未看明白的地方，有看明白的，请Pull Request完善
     搜索 @note_thinking 是一些的思考和建议
