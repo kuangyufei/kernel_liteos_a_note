@@ -147,7 +147,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrTaskCreate(VOID)
     swtmrTask.pfnTaskEntry = (TSK_ENTRY_FUNC)OsSwtmrTask;//入口函数
     swtmrTask.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;//16K默认内核任务栈
     swtmrTask.pcName = "Swt_Task";//任务名称
-    swtmrTask.usTaskPrio = 0;//哇塞! 逮到一个最高优先级的任务
+    swtmrTask.usTaskPrio = 0;//哇塞! 逮到一个最高优先级的任务 @note_thinking 这里应该用 OS_TASK_PRIORITY_HIGHEST 表示
     swtmrTask.uwResved = LOS_TASK_STATUS_DETACHED;//分离模式
 #if (LOSCFG_KERNEL_SMP == YES)
     swtmrTask.usCpuAffiMask   = CPUID_TO_AFFI_MASK(cpuid);//交给当前CPU执行这个任务

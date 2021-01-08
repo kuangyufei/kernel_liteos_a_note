@@ -1,13 +1,14 @@
-[鸿蒙内核源码注释中文版 【 Gitee仓 ](https://gitee.com/weharmony/kernel_liteos_a_note) | [ CSDN仓 ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [ Github仓 ](https://github.com/kuangyufei/kernel_liteos_a_note) | [ Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) 中文注解鸿蒙官方内核源码,图文并茂,详细阐述鸿蒙架构设计和代码实现细节.精读内核源码最大的好处是:将孤立知识点织成一张高浓度,高密度底层网,是对计算机底层体系化理解形成永久记忆的地基工程.
+[鸿蒙内核源码注释中文版 【 Gitee仓 ](https://gitee.com/weharmony/kernel_liteos_a_note) | [ CSDN仓 ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [ Github仓 ](https://github.com/kuangyufei/kernel_liteos_a_note) | [ Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) 精读内核源码,中文详细注解.深挖地基工程,构建底层网图.
 
-[鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852) [| WIKI 】](https://gitee.com/weharmony/kernel_liteos_a_note/wikis/pages) 从 HarmonyOS 架构层视角整理成文, 并首创用生活场景讲故事的方式试图去解构内核，一窥究竟。
+[鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852) [| WIKI 】](https://gitee.com/weharmony/kernel_liteos_a_note/wikis/pages) 问答式导读, 生活式比喻, 图形化展示, 层层剥开内核神秘外衣.
 
 ---
 
-# **鸿蒙内核源码注释中文版 | 深挖内核这个地基工程**
+# **鸿蒙内核源码注释中文版 | 深挖内核地基工程**
 
 [![star](https://gitee.com/weharmony/kernel_liteos_a_note/badge/star.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)[![fork](https://gitee.com/weharmony/kernel_liteos_a_note/badge/fork.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)
 
+每个码农,学职生涯,都应精读一遍内核源码.精读内核源码最大的好处是:将孤立知识点织成一张高浓度,高密度底层网,是对计算机底层体系化理解形成永久记忆
 
 ## **做了些什么呢？**
 
@@ -112,15 +113,17 @@
     中文加注版比官方版无新增文件,只多了一个zzz的目录,里面放了一些文件,它与内核代码无关,大家可以忽略它,取名zzz是为了排在最后,减少对原有代码目录级的侵入,zzz的想法源于微信中名称为AAA的那帮朋友,你的微信里应该也有他们熟悉的身影吧 :|P  
 
 -   ### **参与贡献**
-    1. Fork 本仓库 >> 新建 Feat_xxx 分支 >> 提交代码注解 >> 新建 Pull Request
+    1. Fork 本仓库 >> 新建 Feat_xxx 分支 >> 提交代码注解 >> [新建 Pull Request](https://gitee.com/weharmony/kernel_liteos_a_note/pull/new/weharmony:master...weharmony:master)
 
     2. [新建 Issue](https://gitee.com/weharmony/kernel_liteos_a_note/issues)
+
 -   ### **鸿蒙内核源码分析 官方公众号**
+
     ![在这里插入图片描述](./zzz/pic/other/wxcode.png)
 
-    感谢关注,您的支持是注者最大的动力,将持续输出内核精品内容. 
+    感谢关注,您的支持是注者最大的动力. 
 
-    邮箱:weharmony@126.com
+    作者邮箱:weharmony@126.com
 
     ---
 

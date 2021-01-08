@@ -73,10 +73,10 @@ extern "C" {
 /**
  * @ingroup los_list
  * Structure of a node in a doubly linked list.
- */	//双向链表，内核最重要结构体
-typedef struct LOS_DL_LIST {
-    struct LOS_DL_LIST *pstPrev; /**< Current node's pointer to the previous node */
-    struct LOS_DL_LIST *pstNext; /**< Current node's pointer to the next node */
+ */	
+typedef struct LOS_DL_LIST {//双向链表，内核最重要结构体
+    struct LOS_DL_LIST *pstPrev; /**< Current node's pointer to the previous node *///前驱节点(左手)
+    struct LOS_DL_LIST *pstNext; /**< Current node's pointer to the next node *///后继节点(右手)
 } LOS_DL_LIST;
 
 /**

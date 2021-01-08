@@ -147,24 +147,24 @@ VOID OsSchedResched(VOID)
     /* do the task context switch */
     OsTaskSchedule(newTask, runTask);//切换CPU的上下文,注意OsTaskSchedule是一个汇编函数 见于 los_dispatch.s
 }
-
+//抢占式调度,调用极为频繁的函数
 VOID OsSchedPreempt(VOID)
 {
     LosTaskCB *runTask = NULL;
     UINT32 intSave;
 
-    if (!OsPreemptable()) {
+    if (!OsPreemptable()) {//是否允许抢占式调度? 中断发生时是不允许调度的
         return;
     }
 
     SCHEDULER_LOCK(intSave);
 
     /* add run task back to ready queue */
-    runTask = OsCurrTaskGet();
-    OS_TASK_SCHED_QUEUE_ENQUEUE(runTask, 0);
+    runTask = OsCurrTaskGet();//当前任务要被重新回到就绪队列
+    OS_TASK_SCHED_QUEUE_ENQUEUE(runTask, 0);//参数0代表不改变当前任务的状态,因为任务正在运行,所以将从头部插入
 
     /* reschedule to new thread */
-    OsSchedResched();
+    OsSchedResched();//执行调度算法
 
     SCHEDULER_UNLOCK(intSave);
 }

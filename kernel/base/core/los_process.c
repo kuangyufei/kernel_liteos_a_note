@@ -227,7 +227,7 @@ STATIC LosProcessCB *OsFindGroupExitProcess(ProcessGroup *group, INT32 pid)
     PRINT_INFO("%s find exit process : %d failed in group : %u\n", __FUNCTION__, pid, group->groupID);
     return NULL;
 }
-
+//查找进程是否有指定孩子进程
 STATIC UINT32 OsFindChildProcess(const LosProcessCB *processCB, INT32 childPid)
 {
     LosProcessCB *childCB = NULL;
@@ -236,7 +236,7 @@ STATIC UINT32 OsFindChildProcess(const LosProcessCB *processCB, INT32 childPid)
         goto ERR;
     }
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(childCB, &(processCB->childrenList), LosProcessCB, siblingList) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(childCB, &(processCB->childrenList), LosProcessCB, siblingList) {//
         if (childCB->processID == childPid) {
             return LOS_OK;
         }
@@ -260,7 +260,7 @@ STATIC LosProcessCB *OsFindExitChildProcess(const LosProcessCB *processCB, INT32
     PRINT_INFO("%s is find the exit child : %d failed in parent : %u\n", __FUNCTION__, childPid, processCB->processID);
     return NULL;
 }
-
+//等待唤醒任务
 STATIC INLINE VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID)
 {
     taskCB->waitID = wakePID;
@@ -1176,7 +1176,7 @@ STATIC VOID OsWaitInsertWaitListInOrder(LosTaskCB *runTask, LosProcessCB *proces
     LOS_ListHeadInsert(list, &runTask->pendList);
     return;
 }
-
+//等待设置标签
 STATIC UINT32 OsWaitSetFlag(const LosProcessCB *processCB, INT32 pid, LosProcessCB **child)
 {
     LosProcessCB *childCB = NULL;
@@ -1184,7 +1184,7 @@ STATIC UINT32 OsWaitSetFlag(const LosProcessCB *processCB, INT32 pid, LosProcess
     LosTaskCB *runTask = OsCurrTaskGet();
     UINT32 ret;
 
-    if (pid > 0) {
+    if (pid > 0) {//等待进程号为pid的子进程
         /* Wait for the child process whose process number is pid. */
         childCB = OsFindExitChildProcess(processCB, pid);
         if (childCB != NULL) {
@@ -1197,7 +1197,7 @@ STATIC UINT32 OsWaitSetFlag(const LosProcessCB *processCB, INT32 pid, LosProcess
         }
         runTask->waitFlag = OS_PROCESS_WAIT_PRO;
         runTask->waitID = pid;
-    } else if (pid == 0) {
+    } else if (pid == 0) {//等待同一进程组中的任何子进程
         /* Wait for any child process in the same process group */
         childCB = OsFindGroupExitProcess(processCB->group, OS_INVALID_VALUE);
         if (childCB != NULL) {
@@ -1233,7 +1233,7 @@ WAIT_BACK:
     *child = childCB;
     return LOS_OK;
 }
-
+//等待回收孩子进程 @note_thinking 这样写Porcess不太好吧
 STATIC INT32 OsWaitRecycleChildPorcess(const LosProcessCB *childCB, UINT32 intSave, INT32 *status)
 {
     ProcessGroup *group = NULL;

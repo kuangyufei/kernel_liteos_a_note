@@ -55,10 +55,10 @@ extern "C" {
  *
  * Task siginal types.
  */
-#define SIGNAL_NONE                 0U	//无信号
+#define SIGNAL_NONE                 0U			//无信号
 #define SIGNAL_KILL                 (1U << 0)	//干掉
 #define SIGNAL_SUSPEND              (1U << 1)	//挂起
-#define SIGNAL_AFFI                 (1U << 2)	//CPU 亲和力,一个任务被切换后被同一个CPU再次执行,则亲和力高
+#define SIGNAL_AFFI                 (1U << 2)	//CPU 亲和性,一个任务被切换后被同一个CPU再次执行,则亲和力高
 
 /* scheduler lock */
 extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
@@ -81,7 +81,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * Highest task priority.
  */
-#define OS_TASK_PRIORITY_HIGHEST    0
+#define OS_TASK_PRIORITY_HIGHEST    0	//任务最高优先级,软时钟任务就是最高级任务,见于 OsSwtmrTaskCreate
 
 /**
  * @ingroup los_task
@@ -89,7 +89,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * Lowest task priority.
  */
-#define OS_TASK_PRIORITY_LOWEST     31
+#define OS_TASK_PRIORITY_LOWEST     31 //任务最低优先级
 
 /**
  * @ingroup los_task
@@ -97,7 +97,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is init.
  */
-#define OS_TASK_STATUS_INIT         0x0001U
+#define OS_TASK_STATUS_INIT         0x0001U //初始化状态
 
 /**
  * @ingroup los_task
@@ -105,7 +105,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is ready.
  */
-#define OS_TASK_STATUS_READY        0x0002U
+#define OS_TASK_STATUS_READY        0x0002U //就绪状态的任务都将插入就绪队列,注意就绪队列的本质是个双向链表
 
 /**
  * @ingroup los_task
@@ -113,7 +113,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is running.
  */
-#define OS_TASK_STATUS_RUNNING      0x0004U
+#define OS_TASK_STATUS_RUNNING      0x0004U //运行状态
 
 /**
  * @ingroup los_task
@@ -121,7 +121,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is suspended.
  */
-#define OS_TASK_STATUS_SUSPEND      0x0008U
+#define OS_TASK_STATUS_SUSPEND      0x0008U 
 
 /**
  * @ingroup los_task
@@ -129,7 +129,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is blocked.
  */
-#define OS_TASK_STATUS_PEND         0x0010U
+#define OS_TASK_STATUS_PEND         0x0010U 
 
 /**
  * @ingroup los_task
