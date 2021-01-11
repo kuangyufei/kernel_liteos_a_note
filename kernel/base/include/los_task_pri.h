@@ -121,7 +121,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is suspended.
  */
-#define OS_TASK_STATUS_SUSPEND      0x0008U 
+#define OS_TASK_STATUS_SUSPEND      0x0008U //挂起状态
 
 /**
  * @ingroup los_task
@@ -129,7 +129,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is blocked.
  */
-#define OS_TASK_STATUS_PEND         0x0010U 
+#define OS_TASK_STATUS_PEND         0x0010U //阻塞状态
 
 /**
  * @ingroup los_task
@@ -137,7 +137,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is delayed.
  */
-#define OS_TASK_STATUS_DELAY        0x0020U
+#define OS_TASK_STATUS_DELAY        0x0020U //延期状态
 
 /**
  * @ingroup los_task

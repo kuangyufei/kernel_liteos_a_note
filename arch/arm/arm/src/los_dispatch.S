@@ -31,7 +31,39 @@
 
 #include "asm.h"
 #include "arch_config.h"
+/******************************************************************************
+ARM的指令系统中关于栈指令的内容比较容易引起迷惑，这是因为准确描述一个栈的特点需要两个参数：
+	栈地址的增长方向：ARM将向高地址增长的栈称为递增栈（Descendent Stack），
+		将向低地址增长的栈称为递减栈（Acendant Stack）
+	栈指针的指向位置：ARM将栈指针指向栈顶元素位置的栈称为满栈（Full Stack），
+		将栈指针指向即将入栈的元素位置的栈称为空栈（Empty Stack）
 
+栈类型
+	根据栈地址增长方向雨栈指针指向位置的不同，自然可以将栈分为四类：
+
+			递增栈	   	递减栈
+	空栈		EA栈		ED栈
+	满栈		FA栈		FD栈 
+	
+栈指令
+	栈的操作指令无非两种：入栈和出栈，由于ARM描述了四种不同类型的栈，因此对应的栈指令一共有8条。
+
+			入栈		出栈
+	EA栈		STMEA	LDMEA
+	ED栈		STMED	LDMED
+	FA栈		STMFA	LDMFA
+	FD栈		STMFD	LDMFD
+	
+	这些指令具有相似的前缀：
+	STM：（STore Multiple data）表示存储数据，即入栈。
+	LDM：（LoaD Multiple data）表示加载数据，即出栈。
+	一般情况下，可以将栈操作指令分解为两步微指令：数据存取和栈指针移动。这两步操作的先后顺序和栈指针的移动方式由栈的类型决定。
+	STMFD	SP减少	写[SP] STMDB
+	LDMFD	读[SP] SP增加	LDMIA
+
+参考
+	https://www.cnblogs.com/fanzhidongyzby/p/5250116.html
+******************************************************************************/
 #ifdef LOSCFG_KERNEL_SMP_LOCKDEP
     .extern   OsLockDepCheckOut/*使用外部定义的函数*/
 #endif
