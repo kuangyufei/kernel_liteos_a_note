@@ -125,7 +125,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskSchedQueueEnqueue(LosTaskCB *taskCB, UINT16 sta
     LOS_ASSERT(!(taskCB->taskStatus & OS_TASK_STATUS_READY));// 只有非就绪状态任务才能入队
 	
     processCB = OS_PCB_FROM_PID(taskCB->processID);// 通过一个任务得到这个任务所在的进程
-    if (!(processCB->processStatus & OS_PROCESS_STATUS_READY)) {//task状态为就绪状态
+    if (!(processCB->processStatus & OS_PROCESS_STATUS_READY)) {//task状态没有就绪状态标签
         if (((processCB->policy == LOS_SCHED_RR) && (processCB->timeSlice != 0)) ||//调度方式为抢断且时间片没用完
             ((processCB->processStatus & OS_PROCESS_STATUS_RUNNING) && (processCB->policy == LOS_SCHED_FIFO))) {//或处于运行的FIFO调度方式的task
             OS_PROCESS_PRI_QUEUE_ENQUEUE_HEAD(processCB);//进程入g_priQueueList就绪队列头部
@@ -139,7 +139,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskSchedQueueEnqueue(LosTaskCB *taskCB, UINT16 sta
         LOS_ASSERT((UINTPTR)processCB->pendList.pstNext);
         if ((processCB->timeSlice == 0) && (processCB->policy == LOS_SCHED_RR)) {//没有时间片且采用抢占式调度算法的情况
             OS_PROCESS_PRI_QUEUE_DEQUEUE(processCB);//进程先出队列
-            OS_PROCESS_PRI_QUEUE_ENQUEUE(processCB);//进程再入队列,区别是排到了最后.这可是队列前面还有很多人等着被调度呢.
+            OS_PROCESS_PRI_QUEUE_ENQUEUE(processCB);//进程再入队列,区别是排到了最后.队列前面还有很多进程在等着被调度.
         }
     }
 
@@ -362,29 +362,29 @@ STATIC VOID OsWaitCheckAndWakeParentProcess(LosProcessCB *parentCB, const LosPro
 
     return;
 }
-
+//回收指定进程的资源
 LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 {
-    if (!(processCB->processStatus & (OS_PROCESS_STATUS_INIT | OS_PROCESS_STATUS_RUNNING))) {
-        PRINT_ERR("The process(%d) has no permission to release process(%d) resources!\n",
+    if (!(processCB->processStatus & (OS_PROCESS_STATUS_INIT | OS_PROCESS_STATUS_RUNNING))) {//1.初始化阶段并没有使用到资源,所以不用回收
+        PRINT_ERR("The process(%d) has no permission to release process(%d) resources!\n",//2.正在运行的进程不能回收
                   OsCurrProcessGet()->processID, processCB->processID);
     }
 
 #ifdef LOSCFG_FS_VFS
-    if (OsProcessIsUserMode(processCB)) {//用户模式下
-        delete_files(processCB, processCB->files);//删除文件
+    if (OsProcessIsUserMode(processCB)) {//用户进程
+        delete_files(processCB, processCB->files);//删除与用户进程相关的文件
     }
     processCB->files = NULL;
 #endif
 
-#ifdef LOSCFG_SECURITY_CAPABILITY
+#ifdef LOSCFG_SECURITY_CAPABILITY //安全开关
     if (processCB->user != NULL) {
-        (VOID)LOS_MemFree(m_aucSysMem1, processCB->user);
+        (VOID)LOS_MemFree(m_aucSysMem1, processCB->user);//删除用户
         processCB->user = NULL;
     }
 #endif
 
-    OsSwtmrRecycle(processCB->processID);//软件定时器回收
+    OsSwtmrRecycle(processCB->processID);//回收进程使用的定时器
     processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;
 
 #ifdef LOSCFG_SECURITY_VID
@@ -395,13 +395,13 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 #endif
 
 #if (LOSCFG_KERNEL_LITEIPC == YES)
-    if (OsProcessIsUserMode(processCB)) {//用户模式下
-        LiteIpcPoolDelete(&(processCB->ipcInfo));//删除进程IPC
+    if (OsProcessIsUserMode(processCB)) {//用户进程
+        LiteIpcPoolDelete(&(processCB->ipcInfo));//删除进程对lite IPC的开销
         (VOID)memset_s(&(processCB->ipcInfo), sizeof(ProcIpcInfo), 0, sizeof(ProcIpcInfo));
     }
 #endif
 }
-//回收僵死状态进程流程
+//回收僵死状态进程的资源
 LITE_OS_SEC_TEXT STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, ProcessGroup **group)
 {
     OsExitProcessGroup(childCB, group);//退出进程组
@@ -420,7 +420,7 @@ LITE_OS_SEC_TEXT STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, Proc
         OsInsertPCBToFreeList(childCB);//直接插到freeList中去，可用于重新分配了。
     }
 }
-
+//当一个进程自然退出的时候,它的孩子进程要怎么处理
 STATIC VOID OsDealAliveChildProcess(LosProcessCB *processCB)
 {
     UINT32 parentID;
@@ -429,13 +429,13 @@ STATIC VOID OsDealAliveChildProcess(LosProcessCB *processCB)
     LOS_DL_LIST *nextList = NULL;
     LOS_DL_LIST *childHead = NULL;
 
-    if (!LOS_ListEmpty(&processCB->childrenList)) {
+    if (!LOS_ListEmpty(&processCB->childrenList)) {//如果存在孩子进程
         childHead = processCB->childrenList.pstNext;
         LOS_ListDelete(&(processCB->childrenList));
-        if (OsProcessIsUserMode(processCB)) {
-            parentID = g_userInitProcess;
+        if (OsProcessIsUserMode(processCB)) {//是用户模式吗?
+            parentID = g_userInitProcess;//指定1号进程父ID
         } else {
-            parentID = g_kernelInitProcess;
+            parentID = g_kernelInitProcess;//指定2号进程为父ID
         }
 
         for (nextList = childHead; ;) {
@@ -474,9 +474,9 @@ STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
     LOS_ASSERT(!(processCB->threadScheduleMap != 0));//断言没有任务需要调度了,当前task是最后一个了
     LOS_ASSERT(processCB->processStatus & OS_PROCESS_STATUS_RUNNING);//断言必须为正在运行的进程
 
-    OsChildProcessResourcesFree(processCB);//
+    OsChildProcessResourcesFree(processCB);//释放孩子进程的资源
 
-#ifdef LOSCFG_KERNEL_CPUP
+#ifdef LOSCFG_KERNEL_CPUP 
     OsCpupClean(processCB->processID);
 #endif
 
@@ -495,7 +495,7 @@ STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
 
         OsDealAliveChildProcess(processCB);
 
-        processCB->processStatus |= OS_PROCESS_STATUS_ZOMBIES;
+        processCB->processStatus |= OS_PROCESS_STATUS_ZOMBIES;//贴上僵死进程的标签
 
         (VOID)OsKill(processCB->parentProcessID, SIGCHLD, OS_KERNEL_KILL_PERMISSION);
         LOS_ListHeadInsert(&g_processRecyleList, &processCB->pendList);
@@ -526,10 +526,10 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsProcessInit(VOID)
 
     for (index = 0; index < g_processMaxNum; index++) {//进程池循环创建
         g_processCBArray[index].processID = index;//进程ID[0-g_processMaxNum]赋值
-        g_processCBArray[index].processStatus = OS_PROCESS_FLAG_UNUSED;// 默认都是白纸一张，臣妾干净着呢
+        g_processCBArray[index].processStatus = OS_PROCESS_FLAG_UNUSED;// 默认都是白纸一张,贴上未使用标签
         LOS_ListTailInsert(&g_freeProcess, &g_processCBArray[index].pendList);//注意g_freeProcess挂的是pendList节点,所以使用要通过OS_PCB_FROM_PENDLIST找到进程实体.
     }
-	// ????? 为啥用户模式的根进程 选1 ,内核模式的根进程选2 
+
     g_userInitProcess = 1; /* 1: The root process ID of the user-mode process is fixed at 1 *///用户模式的根进程
     LOS_ListDelete(&g_processCBArray[g_userInitProcess].pendList);// 清空g_userInitProcess pend链表
 

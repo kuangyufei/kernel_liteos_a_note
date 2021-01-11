@@ -98,7 +98,7 @@ VOID HalClockFreqWrite(UINT32 freq)
 {
     WRITE_TIMER_REG32(TIMER_REG_CNTFRQ, freq);
 }
-
+//写时间控制寄存器
 STATIC_INLINE VOID TimerCtlWrite(UINT32 cntpCtl)
 {
     WRITE_TIMER_REG32(TIMER_REG_CTL, cntpCtl);
@@ -146,20 +146,20 @@ LITE_OS_SEC_TEXT_INIT VOID HalClockInit(VOID)
 {
     UINT32 ret;
 
-    g_sysClock = HalClockFreqRead();//读时间
-    ret = LOS_HwiCreate(OS_TICK_INT_NUM, MIN_INTERRUPT_PRIORITY, 0, OsTickEntry, 0);
-    if (ret != LOS_OK) {
+    g_sysClock = HalClockFreqRead();//读硬时钟频率
+    ret = LOS_HwiCreate(OS_TICK_INT_NUM, MIN_INTERRUPT_PRIORITY, 0, OsTickEntry, 0);//创建硬时钟中断
+    if (ret != LOS_OK) {//29号中断,暂时使用安全物理计时器
         PRINT_ERR("%s, %d create tick irq failed, ret:0x%x\n", __FUNCTION__, __LINE__, ret);
     }
 }
 
 LITE_OS_SEC_TEXT_INIT VOID HalClockStart(VOID)
 {
-    HalIrqUnmask(OS_TICK_INT_NUM);
+    HalIrqUnmask(OS_TICK_INT_NUM);//取消屏蔽29号中断
 
     /* triggle the first tick */
-    TimerCtlWrite(0);
-    TimerTvalWrite(OS_CYCLE_PER_TICK);
+    TimerCtlWrite(0);//
+    TimerTvalWrite(OS_CYCLE_PER_TICK);//设置节拍周期
     TimerCtlWrite(1);
 }
 
@@ -188,12 +188,12 @@ UINT32 HalClockGetTickTimerCycles(VOID)
 
 VOID HalClockTickTimerReload(UINT32 cycles)
 {
-    HalIrqMask(OS_TICK_INT_NUM);
-    HalIrqClear(OS_TICK_INT_NUM);
+    HalIrqMask(OS_TICK_INT_NUM);//先屏蔽时钟中断
+    HalIrqClear(OS_TICK_INT_NUM);//清除中断位
 
     TimerCtlWrite(0);
     TimerCvalWrite(HalClockGetCycles() + cycles);
     TimerCtlWrite(1);
 
-    HalIrqUnmask(OS_TICK_INT_NUM);
+    HalIrqUnmask(OS_TICK_INT_NUM);//取消屏蔽时钟中断
 }

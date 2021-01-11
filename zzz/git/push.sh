@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '内核哪种任务的优先级是最高的 ?.
+git commit -m  '初始化硬时钟.
     搜索 @note_pic 可查看绘制的全部字符图
     搜索 @note_why 是尚未看明白的地方，有看明白的，请Pull Request完善
     搜索 @note_thinking 是一些的思考和建议

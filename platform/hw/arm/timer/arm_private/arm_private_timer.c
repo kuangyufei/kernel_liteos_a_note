@@ -33,19 +33,19 @@
 #include "los_hwi.h"
 #include "los_tick_pri.h"
 
-#define OS_CYCLE_PER_TICK (TIMER_FREQ / LOSCFG_BASE_CORE_TICK_PER_SECOND)
+#define OS_CYCLE_PER_TICK (TIMER_FREQ / LOSCFG_BASE_CORE_TICK_PER_SECOND) 
 
 typedef struct {
-    UINT32 load;        /* Private Timer Load Register */
-    UINT32 count;       /* Private Timer Counter Register */
-    UINT32 control;     /* Private Timer Control Register */
-    UINT32 intStatus;   /* Private Timer Interrupt Status Register */
+    UINT32 load;        /* Private Timer Load Register */ //专用定时器加载寄存器
+    UINT32 count;       /* Private Timer Counter Register */ //专用定时器计数寄存器
+    UINT32 control;     /* Private Timer Control Register */ //专用定时器控制寄存器
+    UINT32 intStatus;   /* Private Timer Interrupt Status Register */ //专用定时器中断状态寄存器
 } PrivateTimer;
 
-typedef struct {
-    UINT32 low;         /* Global Timer Counter Registers, low bits */
+typedef struct {//全局计数器
+    UINT32 low;         /* Global Timer Counter Registers, low bits */ //需用64位来表示,所以需要高低位
     UINT32 high;        /* Global Timer Counter Registers, high bits */
-    UINT32 control;     /* Global Timer Control Register */
+    UINT32 control;     /* Global Timer Control Register */	
     UINT32 intStatus;   /* Global Timer Interrupt Status Register */
     UINT32 compareLow;  /* Comparator Value Registers, low bits */
     UINT32 compareHigh; /* Comparator Value Registers, high bits */

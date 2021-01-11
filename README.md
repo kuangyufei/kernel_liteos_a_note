@@ -8,7 +8,7 @@
 
 [![star](https://gitee.com/weharmony/kernel_liteos_a_note/badge/star.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)[![fork](https://gitee.com/weharmony/kernel_liteos_a_note/badge/fork.svg?theme=dark)](https://gitee.com/weharmony/kernel_liteos_a_note)
 
-每个码农,学职生涯,都应精读一遍内核源码.精读内核源码最大的好处是:将孤立知识点织成一张高浓度,高密度底层网,是对计算机底层体系化理解形成永久记忆
+每个码农,学职生涯,都应精读一遍内核源码.是浇筑计算机知识大厦的地基工程，地基纵深坚固程度，决定了大厦能盖多高。为何一定要精读?因为内核代码本身并不太多，都是浓缩的精华，精读就是让各个知识点高频出现，闪爆大脑，短时间内容易结成一张高浓度，高密度的底层网，形成永久大脑记忆。跟骑单车一样，一旦学会，即便多年不骑，照样跨上就走，游刃有余。
 
 ## **做了些什么呢？**
 
@@ -61,16 +61,14 @@
     第二: **专业概念抽象级** 对抽象的专业逻辑概念具体化认知, 比如虚拟内存,老百姓是听不懂的,学过计算机的人都懂,具体怎么实现的很多人又都不懂了,但这并不妨碍成为一个优秀的上层应用程序员,因为虚拟内存已经被抽象出来,目的是要屏蔽上层对它的现实认知.试图用 **[鸿蒙源码分析系列篇 【 CSDN](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA](https://my.oschina.net/u/3751245/blog/4626852) [| WIKI 】](https://gitee.com/weharmony/kernel_liteos_a_note/wikis/pages)** 去拆解那些已经被抽象出来的专业概念, 希望能卷入更多对内核感兴趣的应用软件人才流入基础软件生态, 应用软件咱们是无敌宇宙,但基础软件却很薄弱.
     
     第三: **具体微观代码级** 这一级是具体到每一行代码的实现,到了用代码指令级的地步,这段代码是什么意思?为什么要这么设计? **[kernel\_liteos\_a_note:鸿蒙内核源码注释中文版](https://gitee.com/weharmony/kernel_liteos_a_note)** 试图从细微处去解释代码实现层,英文真的是天生适合设计成编程语言的人类语言,计算机的01码映射到人类世界的26个字母,诞生了太多的伟大奇迹.但我们的母语注定了很大部分人存在着自然语言层级的理解映射,希望注释中文版能让更多爱好者快速的理解内核,共同进步.
-
--   ### **鸿蒙内核500问，你知道多少？**
-
-    抛出的500个内核知识问题,可前往 **[鸿蒙内核源码分析(源码结构篇) | 内核500问 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/111938348) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4869137)** 查看.   
     
 -   ### **系列博客更新到哪里了？**
 
-    把研究过程心得写成鸿蒙源码分析系列篇,如此源码中文注释+系列篇文章,将加速理解鸿蒙内核实现过程,因时间有限,博文更新较慢,会反复修正.
+    把研究过程心得写成鸿蒙源码分析系列篇,如此源码中文注释+系列篇文章,将加速理解鸿蒙内核实现过程.
 
     - **[鸿蒙源码分析系列(总目录) | 持续更新中... 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4626852)**
+
+        * **[|-  鸿蒙内核源码分析(位图管理篇) | 为何进程和线程都是32个优先级？ 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/112394982) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4888467)**
 
         * **[|-  鸿蒙内核源码分析(源码结构篇) | 内核500问你能答对多少？ 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/111938348) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4869137)**
 
@@ -117,11 +115,9 @@
 
     2. [新建 Issue](https://gitee.com/weharmony/kernel_liteos_a_note/issues)
 
--   ### **鸿蒙内核源码分析 官方公众号**
+-   ### **喜欢关注官方公众号**
 
     ![在这里插入图片描述](./zzz/pic/other/wxcode.png)
-
-    感谢关注,您的支持是注者最大的动力. 
 
     作者邮箱:weharmony@126.com
 

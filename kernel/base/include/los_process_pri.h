@@ -314,9 +314,9 @@ STATIC INLINE BOOL OsProcessIsDead(const LosProcessCB *processCB)//查下进程�
 #define OS_USER_TASK_SYSCALL_SATCK_SIZE 0x3000	//用户通过系统调用的栈大小 12K ,这时是运行在内核模式下
 #define OS_USER_TASK_STACK_SIZE         0x100000	//用户任务运行在用户空间的栈大小 1M 
 
-#define OS_KERNEL_MODE 0x0U	//内核态模式
-#define OS_USER_MODE   0x1U	//用户态模式
-STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)//进程处于用户态?
+#define OS_KERNEL_MODE 0x0U	//内核模式
+#define OS_USER_MODE   0x1U	//用户模式
+STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)//用户模式进程
 {
     return (processCB->processMode == OS_USER_MODE);
 }

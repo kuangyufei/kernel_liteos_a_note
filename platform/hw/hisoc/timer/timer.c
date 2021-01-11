@@ -174,11 +174,11 @@ UINT32 HiGetMsClock(VOID)
 
     return (UINT32)(t64 / temp);
 }
-
+//硬时钟初始化
 VOID HalClockInit(VOID)
 {
     UINT32 temp;
-    UINT32 period = g_sysClock / LOSCFG_BASE_CORE_TICK_PER_SECOND;
+    UINT32 period = g_sysClock / LOSCFG_BASE_CORE_TICK_PER_SECOND;//一个TICK的周期数
     /*
      * enable time0, timer1 here,
      * but only time0 is used for system clock.
