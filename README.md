@@ -68,6 +68,8 @@
 
     - **[鸿蒙源码分析系列(总目录) | 持续更新中... 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4626852)**
 
+        * **[|-  鸿蒙内核源码分析(汇编语言篇) | 栈是构建底层运行的基础 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/112534331) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4893388)**
+
         * **[|-  鸿蒙内核源码分析(位图管理篇) | 为何进程和线程都是32个优先级？ 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/112394982) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4888467)**
 
         * **[|-  鸿蒙内核源码分析(源码结构篇) | 内核500问你能答对多少？ 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/111938348) [| OSCHINA 】](https://my.oschina.net/u/3751245/blog/4869137)**
