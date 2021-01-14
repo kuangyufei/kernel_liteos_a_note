@@ -25,3 +25,5 @@ apps/shell/shell
 lib/libc/musl
 zzz/pic/代码目录结构.png
 zzz/pic/compile_success.png
+zzz/md/node_modules
+zzz/md/docs/.vuepress/dist
