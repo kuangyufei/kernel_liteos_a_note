@@ -22,4 +22,15 @@ git push -f git@github.com:weharmony/weharmony.github.io.git master
 # 如果发布到 https://<USERNAME>.github.io/<REPO>
 # git push -f git@github.com:kuangyufei/kernel_liteos_a_note.git master:gh-pages
 
+# 进入markdown的文件夹,推送wiki
+cd docs/guide
+git init
+git add -A
+git commit -m 'deploy wiki'
+git push -f git@gitee.com:weharmony/kernel_liteos_a_note.wiki.git master
+git push -f git@github.com:kuangyufei/kernel_liteos_a_note.wiki.git  master
+git push -f git@codechina.csdn.net:kuangyufei/kernel_liteos_a_note.wiki.git master
+#git push -f git@e.coding.net:weharmony/harmony/kernel_liteos_a_note.wiki.git master
+#git push -f git@gitee.com:weharmony/www.weharmonyos.com.git master
+
 cd -
