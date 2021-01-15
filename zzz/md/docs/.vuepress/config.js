@@ -45,7 +45,9 @@ module.exports = {
                 items: [
                   { text: 'CSDN', link: 'https://blog.csdn.net/kuangyufei/article/details/108727970' },
                   { text: '开源中国', link: 'https://my.oschina.net/u/3751245/blog/4626852' },
-                  { text: 'HarmonyOS', link: 'https://weharmony.github.io/' }
+                  { text: '21盒子', link: 'https://harmonyos.21yunbox.com/' },
+                  { text: 'HarmonyOS', link: 'https://weharmony.github.io/' },
+                  
                 ]
             }
           ],

@@ -1,26 +1,3 @@
----
-home: true
-#heroImage: /hero.png
-heroText: 鸿蒙内核源码注释中文版
-tagline: 精读内核源码 深挖地基工程
-actionText: 注解仓库地址 →
-actionLink: https://gitee.com/weharmony/kernel_liteos_a_note
-features:
-- title: 中文注解官方源码
-  details: 以官方源码为基础,中文详细注解内核实现细节，深挖地基工程,构建底层网图
-- title: 故事说内核
-  details: 问答式导读, 生活式比喻, 图形化展示, 轻轻松松,层层递进剥开内核神秘外衣
-- title: 四大码仓,三大网站同步更新
-  details: https://gitee.com/weharmony/kernel_liteos_a_note 
-           https://github.com/kuangyufei/kernel_liteos_a_note
-footer: MIT Licensed | Copyright © 2021-present weharmony www.weharmonyos.com
----
-[鸿蒙内核源码注释中文版 【 Gitee仓 ](https://gitee.com/weharmony/kernel_liteos_a_note)|[ CSDN仓 ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)|[ Github仓 ](https://github.com/kuangyufei/kernel_liteos_a_note)|[ Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)精读内核源码,中文详细注解.深挖地基工程,构建底层网图.
-
-[鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)[| HarmonyOS 】](https://weharmony.github.io/)问答式导读, 生活式比喻, 图形化展示, 层层剥开内核神秘外衣.
-
----
-
 -   ### **鸿蒙源码分析系列篇**
     
     - [鸿蒙源码分析系列(总目录) | 持续更新中... 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)|[ HarmonyOS 】](https://weharmony.github.io)
@@ -60,17 +37,3 @@ footer: MIT Licensed | Copyright © 2021-present weharmony www.weharmonyos.com
         * [|-  鸿蒙内核源码分析(进程管理篇) | 进程是内核资源管理单元【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108595941) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4574429)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(进程管理篇).html)
 
         * [|-  鸿蒙内核源码分析(双向链表篇) | 谁是内核最重要结构体？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108585659) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4572304)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(双向链表篇).html)
-
-### **喜欢就关注下吧,您的关注真的很重要**
-
-![在这里插入图片描述](https://gitee.com/weharmony/kernel_liteos_a_note/raw/master/zzz/pic/other/wxcode.png)
-
-作者邮箱:weharmony@126.com
-
----
-
-[![WeHarmony/kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note/widgets/widget_card.svg?colors=4183c4,ffffff,ffffff,e3e9ed,666666,9b9b9b)](https://gitee.com/weharmony/kernel_liteos_a_note)
-
-[鸿蒙内核源码注释中文版 【 Gitee仓 ](https://gitee.com/weharmony/kernel_liteos_a_note)|[ CSDN仓 ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)|[ Github仓 ](https://github.com/kuangyufei/kernel_liteos_a_note)|[ Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)精读内核源码,中文详细注解.深挖地基工程,构建底层网图.
-
-[鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)[| HarmonyOS 】](https://weharmony.github.io/)问答式导读, 生活式比喻, 图形化展示, 层层剥开内核神秘外衣.
