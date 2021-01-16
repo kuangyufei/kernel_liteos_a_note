@@ -82,7 +82,7 @@ STATIC VOID OsSchedSwitchProcess(LosProcessCB *runProcess, LosProcessCB *newProc
         newProcess->timeSlice = OS_PROCESS_SCHED_RR_INTERVAL;//重新分配时间片，默认 20ms
     }
 }
-//重新调度实现
+//调度算法的实现
 VOID OsSchedResched(VOID)
 {
     LosTaskCB *runTask = NULL;
@@ -145,7 +145,7 @@ VOID OsSchedResched(VOID)
                 newProcess->threadScheduleMap, newTask->taskName, newTask->taskID, newTask->taskStatus);
 
     /* do the task context switch */
-    OsTaskSchedule(newTask, runTask);//切换CPU的上下文,注意OsTaskSchedule是一个汇编函数 见于 los_dispatch.s
+    OsTaskSchedule(newTask, runTask);//切换任务上下文,注意OsTaskSchedule是一个汇编函数 见于 los_dispatch.s
 }
 //抢占式调度,调用极为频繁的函数
 VOID OsSchedPreempt(VOID)

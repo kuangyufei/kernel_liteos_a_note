@@ -32,7 +32,7 @@
 
         * [|-  鸿蒙内核源码分析(任务管理篇) | 任务是内核调度的单元【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108621428) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4603919)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(任务管理篇).html)
 
-        * [|-  鸿蒙内核源码分析(时钟管理篇) | 触发调度最大的动力来自哪里？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108603468) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4574493)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(时钟管理篇).html)
+        * [|-  鸿蒙内核源码分析(时钟任务篇) | 触发调度最大的动力来自哪里？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108603468) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4574493)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(时钟管理篇).html)
 
         * [|-  鸿蒙内核源码分析(进程管理篇) | 进程是内核资源管理单元【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108595941) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4574429)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(进程管理篇).html)
 

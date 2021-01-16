@@ -1,6 +1,6 @@
-[鸿蒙内核源码注释中文版 【 Gitee仓 ](https://gitee.com/weharmony/kernel_liteos_a_note) | [ CSDN仓 ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) | [ Github仓 ](https://github.com/kuangyufei/kernel_liteos_a_note) | [ Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) 精读内核源码,中文详细注解.深挖地基工程,构建底层网图.
+[鸿蒙内核源码注释中文版 【 Gitee仓 ](https://gitee.com/weharmony/kernel_liteos_a_note)|[ CSDN仓 ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)|[ Github仓 ](https://github.com/kuangyufei/kernel_liteos_a_note)|[ Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)精读内核源码,中文注解分析.深挖地基工程,构建底层网图.
 
-[鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852) [| HarmonyOS 】](https://weharmony.github.io/) 问答式导读, 生活式比喻, 图形化展示, 层层剥开内核神秘外衣.
+[鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)[| HarmonyOS 】](https://weharmony.github.io/)问答式导读, 生活式比喻, 图形化展示, 层层剥开内核神秘外衣.
 
 ---
 
@@ -60,8 +60,8 @@
     
     第二: **专业概念抽象级** 对抽象的专业逻辑概念具体化认知, 比如虚拟内存,老百姓是听不懂的,学过计算机的人都懂,具体怎么实现的很多人又都不懂了,但这并不妨碍成为一个优秀的上层应用程序员,因为虚拟内存已经被抽象出来,目的是要屏蔽上层对它的现实认知.试图用 **[鸿蒙源码分析系列篇 【 CSDN](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA](https://my.oschina.net/u/3751245/blog/4626852) [| HarmonyOS 】](https://weharmony.github.io/)** 去拆解那些已经被抽象出来的专业概念, 希望能卷入更多对内核感兴趣的应用软件人才流入基础软件生态, 应用软件咱们是无敌宇宙,但基础软件却很薄弱.
     
-    第三: **具体微观代码级** 这一级是具体到每一行代码的实现,到了用代码指令级的地步,这段代码是什么意思?为什么要这么设计? **[kernel\_liteos\_a_note:鸿蒙内核源码注释中文版](https://gitee.com/weharmony/kernel_liteos_a_note)** 试图从细微处去解释代码实现层,英文真的是天生适合设计成编程语言的人类语言,计算机的01码映射到人类世界的26个字母,诞生了太多的伟大奇迹.但我们的母语注定了很大部分人存在着自然语言层级的理解映射,希望注释中文版能让更多爱好者快速的理解内核,共同进步.
-    
+    第三: **具体微观代码级** 这一级是具体到每一行代码的实现,到了用代码指令级的地步,这段代码是什么意思?为什么要这么设计? **[kernel\_liteos\_a_note:鸿蒙内核源码注释中文版](https://gitee.com/weharmony/kernel_liteos_a_note)** 试图从细微处去解释代码实现层,英文真的是天生适合设计成编程语言的人类语言,计算机的01码映射到人类世界的26个字母,诞生了太多的伟大奇迹.但我们的母语注定了很大部分人存在着自然语言层级的理解映射,希望注释中文版能让更多爱好者快速的理解内核,共同进步.    
+
 -   ### **鸿蒙源码分析系列篇**
     
     - [鸿蒙源码分析系列(总目录) | 持续更新中... 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)|[ HarmonyOS 】](https://weharmony.github.io)
@@ -96,7 +96,7 @@
 
         * [|-  鸿蒙内核源码分析(任务管理篇) | 任务是内核调度的单元【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108621428) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4603919)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(任务管理篇).html)
 
-        * [|-  鸿蒙内核源码分析(时钟管理篇) | 触发调度最大的动力来自哪里？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108603468) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4574493)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(时钟管理篇).html)
+        * [|-  鸿蒙内核源码分析(时钟任务篇) | 触发调度最大的动力来自哪里？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108603468) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4574493)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(时钟管理篇).html)
 
         * [|-  鸿蒙内核源码分析(进程管理篇) | 进程是内核资源管理单元【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108595941) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4574429)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(进程管理篇).html)
 
@@ -115,17 +115,18 @@
 
     2. [新建 Issue](https://gitee.com/weharmony/kernel_liteos_a_note/issues)
 
--   ### **喜欢就关注下吧,您的关注真的很重要**
 
-    ![在这里插入图片描述](https://gitee.com/weharmony/kernel_liteos_a_note/raw/master/zzz/pic/other/wxcode.png)
 
-    作者邮箱:weharmony@126.com
+### **喜欢就关注下吧,您的关注真的很重要**
 
-    ---
+![在这里插入图片描述](https://gitee.com/weharmony/kernel_liteos_a_note/raw/master/zzz/pic/other/wxcode.png)
 
-    [![WeHarmony/kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note/widgets/widget_card.svg?colors=4183c4,ffffff,ffffff,e3e9ed,666666,9b9b9b)](https://gitee.com/weharmony/kernel_liteos_a_note)
+作者邮箱:weharmony@126.com
 
-    [鸿蒙内核源码注释中文版 【 Gitee仓 ](https://gitee.com/weharmony/kernel_liteos_a_note)|[ CSDN仓 ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)|[ Github仓 ](https://github.com/kuangyufei/kernel_liteos_a_note)|[ Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)精读内核源码,中文详细注解.深挖地基工程,构建底层网图.
+---
 
-    [鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)[| HarmonyOS 】](https://weharmony.github.io/)问答式导读, 生活式比喻, 图形化展示, 层层剥开内核神秘外衣.
-    
+[![WeHarmony/kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note/widgets/widget_card.svg?colors=4183c4,ffffff,ffffff,e3e9ed,666666,9b9b9b)](https://gitee.com/weharmony/kernel_liteos_a_note)
+
+[鸿蒙内核源码注释中文版 【 Gitee仓 ](https://gitee.com/weharmony/kernel_liteos_a_note)|[ CSDN仓 ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)|[ Github仓 ](https://github.com/kuangyufei/kernel_liteos_a_note)|[ Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)精读内核源码,中文详细注解.深挖地基工程,构建底层网图.
+
+[鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)[| HarmonyOS 】](https://weharmony.github.io/)问答式导读, 生活式比喻, 图形化展示, 层层剥开内核神秘外衣.

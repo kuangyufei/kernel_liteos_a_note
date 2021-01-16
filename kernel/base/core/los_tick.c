@@ -62,7 +62,7 @@ LITE_OS_SEC_TEXT VOID OsTickHandler(VOID)
     UINT32 intSave;
 
     TICK_LOCK(intSave);
-    g_tickCount[ArchCurrCpuid()]++;//当前CPU核 计数器
+    g_tickCount[ArchCurrCpuid()]++;//当前CPU核计数器
     TICK_UNLOCK(intSave);
 
 #ifdef LOSCFG_KERNEL_VDSO

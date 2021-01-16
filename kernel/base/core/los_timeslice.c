@@ -37,32 +37,32 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+//检查进程和任务的时间片,如果没有时间片了直接调度
 LITE_OS_SEC_TEXT VOID OsTimesliceCheck(VOID)
 {
     LosTaskCB *runTask = NULL;
-    LosProcessCB *runProcess = OsCurrProcessGet();
-    if (runProcess->policy != LOS_SCHED_RR) {
-        goto SCHED_TASK;
+    LosProcessCB *runProcess = OsCurrProcessGet();//获取当前进程
+    if (runProcess->policy != LOS_SCHED_RR) {//进程调度算法是否是抢占式
+        goto SCHED_TASK;//进程不是抢占式调度直接去检查任务的时间片
     }
 
-    if (runProcess->timeSlice != 0) {
+    if (runProcess->timeSlice != 0) {//进程还有时间片吗?
         runProcess->timeSlice--;//进程时间片减少一次
-        if (runProcess->timeSlice == 0) {
+        if (runProcess->timeSlice == 0) {//没有时间片了
             LOS_Schedule();//进程时间片用完,发起调度
         }
     }
 
 SCHED_TASK:
-    runTask = OsCurrTaskGet();
-    if (runTask->policy != LOS_SCHED_RR) {
-        return;
+    runTask = OsCurrTaskGet();//获取当前任务
+    if (runTask->policy != LOS_SCHED_RR) {//任务调度算法是否是抢占式
+        return;//任务不是抢占式调度直接结束检查
     }
 
-    if (runTask->timeSlice != 0) {
-        runTask->timeSlice--;//对应任务时间片也减少一次
-        if (runTask->timeSlice == 0) {
-            LOS_Schedule();
+    if (runTask->timeSlice != 0) {//任务还有时间片吗?
+        runTask->timeSlice--;//任务时间片也减少一次
+        if (runTask->timeSlice == 0) {//没有时间片了
+            LOS_Schedule();//任务时间片用完,发起调度
         }
     }
 }

@@ -378,12 +378,12 @@ LITE_OS_SEC_TEXT VOID OsTaskScan(VOID)
 
     LOS_SpinUnlock(&g_taskSpin);
 
-    if (needSchedule != FALSE) {
-        LOS_MpSchedule(OS_MP_CPU_ALL);
-        LOS_Schedule();
+    if (needSchedule != FALSE) {//需要调度
+        LOS_MpSchedule(OS_MP_CPU_ALL);//核间通讯,给所有CPU发送调度信号
+        LOS_Schedule();//开始调度
     }
 }
-
+//初始化任务
 LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
 {
     UINT32 index;
