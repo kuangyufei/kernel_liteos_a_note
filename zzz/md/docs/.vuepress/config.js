@@ -5,12 +5,33 @@ module.exports = {
         nav: [
             { text: '回首页', link: 'https://weharmony.github.io/' },
             {
-                text: '博客文章列表',
+              text: '注解仓库',
+              ariaLabel: 'Language Menu',
+              items: [
+                { text: 'Gitee仓', link: 'https://gitee.com/weharmony/kernel_liteos_a_note' },
+                { text: 'Github仓', link: 'https://github.com/kuangyufei/kernel_liteos_a_note' },
+                { text: 'CSDN仓', link: 'https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note' },
+                { text: 'Coding仓', link: 'https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files' }
+              ]
+            },
+            {
+                text: '博客站点',
+                ariaLabel: 'Language Menu',
+                items: [
+                  { text: '公众号', link: 'https://gitee.com/weharmony/kernel_liteos_a_note/raw/master/zzz/pic/other/wxcode.png' },
+                  { text: 'CSDN', link: 'https://blog.csdn.net/kuangyufei/article/details/108727970' },
+                  { text: '开源中国', link: 'https://my.oschina.net/u/3751245/blog/4626852' },
+                  { text: 'HarmonyOS', link: 'https://weharmony.github.io/' },
+                  { text: '21盒子', link: 'https://harmonyos.21yunbox.com/' },
+                ]
+            },
+            {
+                text: '博客系列篇',
                 ariaLabel: 'Language Menu',
                 items: [
                   { text: '鸿蒙内核源码分析(双向链表篇)', link: 'https://weharmony.github.io/guide/鸿蒙内核源码分析(双向链表篇).html' },
                   { text: '鸿蒙内核源码分析(进程管理篇)', link: 'https://weharmony.github.io/guide/鸿蒙内核源码分析(进程管理篇).html' },
-                  { text: '鸿蒙内核源码分析(时钟管理篇)', link: 'https://weharmony.github.io/guide/鸿蒙内核源码分析(时钟管理篇).html' },
+                  { text: '鸿蒙内核源码分析(时钟任务篇)', link: 'https://weharmony.github.io/guide/鸿蒙内核源码分析(时钟任务篇).html' },
                   { text: '鸿蒙内核源码分析(任务管理篇)', link: 'https://weharmony.github.io/guide/鸿蒙内核源码分析(任务管理篇).html' },
                   { text: '鸿蒙内核源码分析(调度队列篇)', link: 'https://weharmony.github.io/guide/鸿蒙内核源码分析(调度队列篇).html' },
                   { text: '鸿蒙内核源码分析(调度机制篇)', link: 'https://weharmony.github.io/guide/鸿蒙内核源码分析(调度机制篇).html' },
@@ -29,27 +50,6 @@ module.exports = {
                   { text: '鸿蒙源码分析系列(总目录)', link: 'https://weharmony.github.io/guide/鸿蒙源码分析系列(总目录).html' },
                 ]
             },
-            {
-              text: '代码仓库',
-              ariaLabel: 'Language Menu',
-              items: [
-                { text: 'Gitee仓', link: 'https://gitee.com/weharmony/kernel_liteos_a_note' },
-                { text: 'Github仓', link: 'https://github.com/kuangyufei/kernel_liteos_a_note' },
-                { text: 'CSDN仓', link: 'https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note' },
-                { text: 'Coding仓', link: 'https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files' }
-              ]
-            },
-            {
-                text: '博客系列篇',
-                ariaLabel: 'Language Menu',
-                items: [
-                  { text: 'CSDN', link: 'https://blog.csdn.net/kuangyufei/article/details/108727970' },
-                  { text: '开源中国', link: 'https://my.oschina.net/u/3751245/blog/4626852' },
-                  { text: '21盒子', link: 'https://harmonyos.21yunbox.com/' },
-                  { text: 'HarmonyOS', link: 'https://weharmony.github.io/' },
-                  
-                ]
-            }
           ],
           sidebar: {
             "/guide/": "auto",

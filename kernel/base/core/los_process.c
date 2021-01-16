@@ -887,7 +887,7 @@ EXIT:
     OsDeInitPCB(processCB);//删除进程控制块,归还内存
     return ret;
 }
-
+//初始化 2号进程,即内核根进程
 LITE_OS_SEC_TEXT_INIT UINT32 OsKernelInitProcess(VOID)
 {
     LosProcessCB *processCB = NULL;

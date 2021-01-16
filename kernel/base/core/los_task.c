@@ -206,7 +206,7 @@ LITE_OS_SEC_TEXT WEAK VOID OsIdleTask(VOID)
             OsTicklessStart();
         }
 #endif
-        Wfi();
+        Wfi();//WFI指令:arm core 立即进入low-power standby state，等待中断，进入休眠模式。
     }
 }
 

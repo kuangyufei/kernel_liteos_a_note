@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '鸿蒙内核源码分析(时钟任务篇) | 时钟是触发调度最大的源动力 | 中文注解HarmonyOS源码 | v3.04
+git commit -m  '整理技术文章内容
     搜索 @note_pic 可查看绘制的全部字符图
     搜索 @note_why 是尚未看明白的地方，有看明白的，请Pull Request完善
     搜索 @note_thinking 是一些的思考和建议
