@@ -28,17 +28,17 @@
 
     在每个模块的.c文件开始位置先对模块功能做整体的介绍,例如异常接管模块注解如图所示:
 
-    ![在这里插入图片描述](https://gitee.com/weharmony/weharmony/raw/master/pic/other/ycjg.png)
+    ![在这里插入图片描述](https://gitee.com/weharmony/docs/raw/master/pic/other/ycjg.png)
 
     注解过程中查阅了很多的资料和书籍,在具体代码处都附上了参考链接.
 
     而函数级注解会详细到重点行,甚至每一行, 例如申请互斥锁的主体函数,不可谓不重要,而官方注释仅有一行,如图所示
     
-    ![在这里插入图片描述](https://gitee.com/weharmony/weharmony/raw/master/pic/other/sop.png)
+    ![在这里插入图片描述](https://gitee.com/weharmony/docs/raw/master/pic/other/sop.png)
     
     另外画了一些字符图方便理解,直接嵌入到头文件中,比如虚拟内存的全景图,因没有这些图是很难理解虚拟内存是如何管理的.
     
-    ![在这里插入图片描述](https://gitee.com/weharmony/weharmony/raw/master/pic/other/vm.png)
+    ![在这里插入图片描述](https://gitee.com/weharmony/docs/raw/master/pic/other/vm.png)
 
 -   ### **理解内核的三个层级**
     
