@@ -24,7 +24,7 @@
 
         * [|-  鸿蒙内核源码分析(内存概念篇) | 虚拟内存虚在哪里？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108723672) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4646802)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(内存概念篇).html)
 
-        * [|-  鸿蒙内核源码分析(必读故事篇) | 张大爷的故事 | 用故事说内核持续更新中...【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108745174) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4634668)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(必读故事篇).html)
+        * [|-  鸿蒙内核源码分析(必读故事篇) | 西门和金莲的那点破事【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108745174) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4634668)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(必读故事篇).html)
 
         * [|-  鸿蒙内核源码分析(调度机制篇) | 任务是如何被调度执行的？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108705968) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4623040)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(调度机制篇).html)
 

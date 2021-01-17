@@ -9,7 +9,7 @@ features:
 - title: 中文注解官方源码
   details: 以官方源码为基础,中文详细注解内核实现细节，深挖地基工程,构建底层网图
 - title: 故事说内核
-  details: 问答式导读, 生活式比喻, 图形化展示, 轻轻松松,层层递进剥开内核神秘外衣
+  details: 问答式导读, 生活式比喻, 表格化说明, 图形化展示, 轻轻松松,层层递进剥开内核神秘外衣
 - title: 四大码仓,三大网站同步更新
   details: https://gitee.com/weharmony/kernel_liteos_a_note 
            https://github.com/kuangyufei/kernel_liteos_a_note
@@ -17,7 +17,7 @@ footer: MIT Licensed | Copyright © 2021-present weharmony www.weharmonyos.com
 ---
 [鸿蒙内核源码注释中文版 【 Gitee仓 ](https://gitee.com/weharmony/kernel_liteos_a_note)|[ CSDN仓 ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)|[ Github仓 ](https://github.com/kuangyufei/kernel_liteos_a_note)|[ Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)精读内核源码,中文详细注解.深挖地基工程,构建底层网图.
 
-[鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)[| HarmonyOS 】](https://weharmony.github.io/)问答式导读, 生活式比喻, 图形化展示, 层层剥开内核神秘外衣.
+[鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)[| HarmonyOS 】](https://weharmony.github.io/)问答式导读, 生活式比喻, 表格化说明, 图形化展示, 层层剥开内核神秘外衣.
 
 ---
 
@@ -47,7 +47,7 @@ footer: MIT Licensed | Copyright © 2021-present weharmony www.weharmonyos.com
 
         * [|-  鸿蒙内核源码分析(内存概念篇) | 虚拟内存虚在哪里？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108723672) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4646802)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(内存概念篇).html)
 
-        * [|-  鸿蒙内核源码分析(必读故事篇) | 张大爷的故事 | 用故事说内核持续更新中...【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108745174) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4634668)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(必读故事篇).html)
+        * [|-  鸿蒙内核源码分析(必读故事篇) | 西门和金莲的那点破事【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108745174) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4634668)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(必读故事篇).html)
 
         * [|-  鸿蒙内核源码分析(调度机制篇) | 任务是如何被调度执行的？【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108705968) [| OSCHINA ](https://my.oschina.net/u/3751245/blog/4623040)|[ HarmonyOS 】](https://weharmony.github.io/guide/鸿蒙内核源码分析(调度机制篇).html)
 
@@ -73,4 +73,4 @@ footer: MIT Licensed | Copyright © 2021-present weharmony www.weharmonyos.com
 
 [鸿蒙内核源码注释中文版 【 Gitee仓 ](https://gitee.com/weharmony/kernel_liteos_a_note)|[ CSDN仓 ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)|[ Github仓 ](https://github.com/kuangyufei/kernel_liteos_a_note)|[ Coding仓 】](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)精读内核源码,中文详细注解.深挖地基工程,构建底层网图.
 
-[鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)[| HarmonyOS 】](https://weharmony.github.io/)问答式导读, 生活式比喻, 图形化展示, 层层剥开内核神秘外衣.
+[鸿蒙源码分析系列篇 【 CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)[| HarmonyOS 】](https://weharmony.github.io/)问答式导读, 生活式比喻, 表格化说明, 图形化展示, 层层剥开内核神秘外衣.
