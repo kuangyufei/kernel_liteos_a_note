@@ -1,0 +1,1 @@
+python ../../build/lite/build_ext_components.py --path=/harmony/kernel/liteos_a --prebuilts=sh\ build.sh\ hi3516dv300\ clang\ release --command=make\ clean\ OUTDIR=/harmony/out/ipcamera_hi3516dv300/obj/kernel/liteos_a\ \&\&\ make\ rootfs\ VERSION=\"OpenHarmony\ 1.0\"\ -j\ 16\ OUTDIR=/harmony/out/ipcamera_hi3516dv300/obj/kernel/liteos_a
