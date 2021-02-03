@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '鸿蒙内核源码分析(进程概念篇) | 进程都管理了哪些资源? < CSDN | 开源中国 | WeHarmony >
+git commit -m  '鸿蒙内核源码分析(自旋锁篇) | 汇编到令人心碎的自旋锁
     搜索 @note_pic 可查看绘制的全部字符图
     搜索 @note_why 是尚未看明白的地方，有看明白的，请Pull Request完善
     搜索 @note_thinking 是一些的思考和建议

@@ -936,7 +936,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreate(UINT32 *taskID, TSK_INIT_PARAM_S *in
     if (initParam->uwResved & OS_TASK_FLAG_IDLEFLAG) {//OS_TASK_FLAG_IDLEFLAG 是属于内核 idle进程专用的
         initParam->processID = OsGetIdleProcessID();//获取空闲进程
     } else if (OsProcessIsUserMode(OsCurrProcessGet())) {//当前进程是否为用户模式
-        initParam->processID = OsGetKernelInitProcessID();//不是就取"Kernel"进程
+        initParam->processID = OsGetKernelInitProcessID();//是就取"Kernel"进程
     } else {
         initParam->processID = OsCurrProcessGet()->processID;//获取当前进程 ID赋值
     }
@@ -1518,40 +1518,40 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskYield(VOID)
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
-//锁任务调度，但任务仍可被中断打断
+//任务上锁
 LITE_OS_SEC_TEXT_MINOR VOID LOS_TaskLock(VOID)
 {
     UINT32 intSave;
     UINT32 *losTaskLock = NULL;
 
     intSave = LOS_IntLock();//禁止所有IRQ和FIQ中断
-    losTaskLock = &OsPercpuGet()->taskLockCnt;//task lock 的计数器
-    (*losTaskLock)++;
+    losTaskLock = &OsPercpuGet()->taskLockCnt;//获取cpu 上锁任务数
+    (*losTaskLock)++;//任务上锁数量自增
     LOS_IntRestore(intSave);//启用所有IRQ和FIQ中断
 }
-//解锁任务调度
+//解锁任务
 LITE_OS_SEC_TEXT_MINOR VOID LOS_TaskUnlock(VOID)
 {
     UINT32 intSave;
     UINT32 *losTaskLock = NULL;
     Percpu *percpu = NULL;
 
-    intSave = LOS_IntLock();
+    intSave = LOS_IntLock();//禁止所有IRQ和FIQ中断
 
-    percpu = OsPercpuGet();
-    losTaskLock = &OsPercpuGet()->taskLockCnt;
-    if (*losTaskLock > 0) {
-        (*losTaskLock)--;
+    percpu = OsPercpuGet();//获取当前CPU
+    losTaskLock = &OsPercpuGet()->taskLockCnt;//获取cpu 上锁任务数
+    if (*losTaskLock > 0) {//说明有存在上锁的任务
+        (*losTaskLock)--;//减少一个上锁任务
         if ((*losTaskLock == 0) && (percpu->schedFlag == INT_PEND_RESCH) &&
             OS_SCHEDULER_ACTIVE) {
             percpu->schedFlag = INT_NO_RESCH;
-            LOS_IntRestore(intSave);
+            LOS_IntRestore(intSave);//启用所有IRQ和FIQ中断
             LOS_Schedule();
             return;
         }
     }
 
-    LOS_IntRestore(intSave);
+    LOS_IntRestore(intSave);//启用所有IRQ和FIQ中断
 }
 //获取任务信息,给shell使用的
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskInfoGet(UINT32 taskID, TSK_INFO_S *taskInfo)

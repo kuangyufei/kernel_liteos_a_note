@@ -85,11 +85,11 @@ extern VOID ArchSpinUnlock(size_t *lock);
 extern INT32 ArchSpinTrylock(size_t *lock);
 
 typedef struct Spinlock {
-    size_t      rawLock;
-#if (LOSCFG_KERNEL_SMP_LOCKDEP == YES)
-    UINT32      cpuid;
-    VOID        *owner;
-    const CHAR  *name;
+    size_t      rawLock;//记录次数
+#if (LOSCFG_KERNEL_SMP_LOCKDEP == YES) // 死锁检测模块开关
+    UINT32      cpuid;	//持有锁的CPU
+    VOID        *owner;	//持有锁任务
+    const CHAR  *name;	//锁名称
 #endif
 } SPIN_LOCK_S;
 
@@ -144,12 +144,12 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinLock(SPIN_LOCK_S *lock)
      * disable the scheduler, so it won't do schedule untill
      * scheduler is reenabled. The LOS_TaskUnlock should not
      * be directly called along this critic area.
-     */
-    LOS_TaskLock();
+     */////调度被重新启用之前,禁止调度,LOS_TaskUnlock不能在这里被调用
+    LOS_TaskLock();//1.先告诉CPU有个任务要上锁
 
-    LOCKDEP_CHECK_IN(lock);
-    ArchSpinLock(&lock->rawLock);
-    LOCKDEP_RECORD(lock);
+    LOCKDEP_CHECK_IN(lock);//2.检查自旋锁
+    ArchSpinLock(&lock->rawLock);//3.自旋锁工作主体,一段汇编代码
+    LOCKDEP_RECORD(lock);//4.记录自旋锁
 }
 
 /**
@@ -205,7 +205,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinUnlock(SPIN_LOCK_S *lock)
     LOCKDEP_CHECK_OUT(lock);
     ArchSpinUnlock(&lock->rawLock);//注意ArchSpinUnlock是一个汇编函数 见于 los_dispatch.s
 
-    /* restore the scheduler flag */
+    /* restore the scheduler flag */ //恢复调度标签
     LOS_TaskUnlock();
 }
 

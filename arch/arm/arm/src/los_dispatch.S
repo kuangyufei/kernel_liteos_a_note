@@ -349,31 +349,34 @@ OsIrqContextRestoreToKernel:
     ADD     SP, SP, #4
     LDMFD   SP!, {PC}^
 
-FUNCTION(ArchSpinLock)
-    mov     r1, #1
-1:
-    ldrex   r2, [r0]
-    cmp     r2, #0
-    wfene
-    strexeq r2, r1, [r0]
-    cmpeq   r2, #0
-    bne     1b
-    dmb
-    bx      lr
+FUNCTION(ArchSpinLock)	@对变量上锁
+	mov 	r1, #1		@r1=1
+1:						@循环的作用,因SEV是广播事件.不一定lock->rawLock的值已经改变了
+	ldrex	r2, [r0]	@r0 = &lock->rawLock, 即 r2 = lock->rawLock
+	cmp 	r2, #0		@r2和0比较
+	wfene				@不相等时,说明资源被占用,CPU核进入睡眠状态
+	strexeq r2, r1, [r0]@此时CPU被重新唤醒,尝试令lock->rawLock=1,成功写入则r2=0
+	cmpeq	r2, #0		@再来比较r2是否等于0,如果相等则获取到了锁
+	bne 	1b			@如果不相等,继续进入循环
+	dmb 				@用DMB指令来隔离，以保证缓冲中的数据已经落实到RAM中
+	bx		lr			@此时是一定拿到锁了,跳回调用ArchSpinLock函数
 
-FUNCTION(ArchSpinTrylock)
-    mov     r1, #1
-    mov     r2, r0
-    ldrex   r0, [r2]
-    cmp     r0, #0
-    strexeq r0, r1, [r2]
-    dmb
-    bx      lr
 
-FUNCTION(ArchSpinUnlock)
-    mov     r1, #0
-    dmb
-    str     r1, [r0]
-    dsb
-    sev
-    bx      lr
+FUNCTION(ArchSpinTrylock)	@对变量尝试上锁
+	mov 	r1, #1			@r1=1
+	mov 	r2, r0			@r2 = r0	   
+	ldrex	r0, [r2]		@r2 = &lock->rawLock, 即 r0 = lock->rawLock
+	cmp 	r0, #0			@r0和0比较
+	strexeq r0, r1, [r2]	@尝试令lock->rawLock=1,成功写入则r0=0,否则 r0 =1
+	dmb 					@数据存储隔离，以保证缓冲中的数据已经落实到RAM中
+	bx		lr				@跳回调用ArchSpinLock函数
+
+
+FUNCTION(ArchSpinUnlock)	@释放锁
+	mov 	r1, #0			@r1=0				
+	dmb 					@数据存储隔离，以保证缓冲中的数据已经落实到RAM中
+	str 	r1, [r0]		@令lock->rawLock = 0
+	dsb 					@数据同步隔离
+	sev 					@给各CPU广播事件,唤醒沉睡的CPU们
+	bx		lr				@跳回调用ArchSpinLock函数
+
