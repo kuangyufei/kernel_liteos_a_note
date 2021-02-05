@@ -196,14 +196,14 @@ OsTaskSchedule:			/*新老任务切换上下文*/
     PUSH_FPU_REGS   R2	/*保存fpu寄存器*/
 
     /* store sp on running task */
-    STR     SP, [R1] @将sp中的数据保存到以R1为地址的存储器中
+    STR     SP, [R1] @存储任务到栈
 
 OsTaskContextLoad:
     /* clear the flag of ldrex */ @LDREX 可从内存加载数据,如果物理地址有共享TLB属性，则LDREX会将该物理地址标记为由当前处理器独占访问，并且会清除该处理器对其他任何物理地址的任何独占访问标记。
     CLREX @清除ldrex指令的标记
 
     /* switch to new task's sp */
-    LDR     SP, [R0] @将存储器地址为R0的数据读入寄存器SP
+    LDR     SP, [R0] @从栈中取出任务
 
     /* restore fpu registers */
     POP_FPU_REGS    R2 @恢复fpu寄存器,这里用了汇编宏R2是宏的参数
@@ -349,7 +349,7 @@ OsIrqContextRestoreToKernel:
     ADD     SP, SP, #4
     LDMFD   SP!, {PC}^
 
-FUNCTION(ArchSpinLock)	@对变量上锁
+FUNCTION(ArchSpinLock)	@非要拿到锁
 	mov 	r1, #1		@r1=1
 1:						@循环的作用,因SEV是广播事件.不一定lock->rawLock的值已经改变了
 	ldrex	r2, [r0]	@r0 = &lock->rawLock, 即 r2 = lock->rawLock
@@ -362,7 +362,8 @@ FUNCTION(ArchSpinLock)	@对变量上锁
 	bx		lr			@此时是一定拿到锁了,跳回调用ArchSpinLock函数
 
 
-FUNCTION(ArchSpinTrylock)	@对变量尝试上锁
+
+FUNCTION(ArchSpinTrylock)	@尝试拿锁
 	mov 	r1, #1			@r1=1
 	mov 	r2, r0			@r2 = r0	   
 	ldrex	r0, [r2]		@r2 = &lock->rawLock, 即 r0 = lock->rawLock
@@ -372,6 +373,7 @@ FUNCTION(ArchSpinTrylock)	@对变量尝试上锁
 	bx		lr				@跳回调用ArchSpinLock函数
 
 
+
 FUNCTION(ArchSpinUnlock)	@释放锁
 	mov 	r1, #0			@r1=0				
 	dmb 					@数据存储隔离，以保证缓冲中的数据已经落实到RAM中
@@ -379,4 +381,5 @@ FUNCTION(ArchSpinUnlock)	@释放锁
 	dsb 					@数据同步隔离
 	sev 					@给各CPU广播事件,唤醒沉睡的CPU们
 	bx		lr				@跳回调用ArchSpinLock函数
+
 
