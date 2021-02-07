@@ -157,7 +157,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSemCreate(UINT16 count, UINT16 maxCount, UINT32 *
         OS_GOTO_ERR_HANDLER(LOS_ERRNO_SEM_OVERFLOW);
     }
 
-    SCHEDULER_LOCK(intSave);//进入临界区了,拿自旋锁
+    SCHEDULER_LOCK(intSave);//进入临界区,拿自旋锁
 
     if (LOS_ListEmpty(&g_unusedSemList)) {//没有可分配的空闲信号提供
         SCHEDULER_UNLOCK(intSave);
@@ -165,7 +165,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSemCreate(UINT16 count, UINT16 maxCount, UINT32 *
         OS_GOTO_ERR_HANDLER(LOS_ERRNO_SEM_ALL_BUSY);
     }
 
-    unusedSem = LOS_DL_LIST_FIRST(&g_unusedSemList);//拿第一个出来创建
+    unusedSem = LOS_DL_LIST_FIRST(&g_unusedSemList);//从未使用信号量池中取首个
     LOS_ListDelete(unusedSem);//从空闲链表上摘除
     semCreated = GET_SEM_LIST(unusedSem);//通过semList挂到链表上的,这里也要通过它把LosSemCB头查到. 进程,线程等结构体也都是这么干的.
     semCreated->semCount = count;//设置数量
@@ -230,7 +230,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_SemDelete(UINT32 semHandle)
 ERR_HANDLER:
     OS_RETURN_ERROR_P2(errLine, errNo);
 }
-//对外接口 等待信号
+//对外接口 等待信号量
 LITE_OS_SEC_TEXT UINT32 LOS_SemPend(UINT32 semHandle, UINT32 timeout)
 {
     UINT32 intSave;
@@ -324,7 +324,7 @@ LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)
 
     return LOS_OK;
 }
-//对外接口 释放信号
+//对外接口 释放信号量
 LITE_OS_SEC_TEXT UINT32 LOS_SemPost(UINT32 semHandle)
 {
     UINT32 intSave;
