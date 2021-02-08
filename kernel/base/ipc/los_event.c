@@ -96,10 +96,10 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventInit(PEVENT_CB_S eventCB)
         return LOS_ERRNO_EVENT_PTR_NULL;
     }
 
-    intSave = LOS_IntLock();
+    intSave = LOS_IntLock();//锁中断
     eventCB->uwEventID = 0;
     LOS_ListInit(&eventCB->stEventList);//事件链表初始化
-    LOS_IntRestore(intSave);
+    LOS_IntRestore(intSave);//恢复中断
     return LOS_OK;
 }
 //事件参数检查
@@ -124,7 +124,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventParamCheck(const VOID *ptr, UINT32 eventMa
     }
     return LOS_OK;
 }
-////根据用户传入的事件值、事件掩码及校验模式，返回用户传入的事件是否符合预期
+//根据用户传入的事件值、事件掩码及校验模式，返回用户传入的事件是否符合预期
 LITE_OS_SEC_TEXT UINT32 OsEventPoll(UINT32 *eventID, UINT32 eventMask, UINT32 mode)
 {
     UINT32 ret = 0;
@@ -223,46 +223,46 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventRead(PEVENT_CB_S eventCB, UINT32 eventMask
 //事件恢复操作
 LITE_OS_SEC_TEXT STATIC UINT8 OsEventResume(LosTaskCB *resumedTask, const PEVENT_CB_S eventCB, UINT32 events)
 {
-    UINT8 exitFlag = 0;
+    UINT8 exitFlag = 0;//是否唤醒
 
     if (((resumedTask->eventMode & LOS_WAITMODE_OR) && ((resumedTask->eventMask & events) != 0)) ||
         ((resumedTask->eventMode & LOS_WAITMODE_AND) &&
-        ((resumedTask->eventMask & eventCB->uwEventID) == resumedTask->eventMask))) {
-        exitFlag = 1;
+        ((resumedTask->eventMask & eventCB->uwEventID) == resumedTask->eventMask))) {//逻辑与 和 逻辑或 的处理
+        exitFlag = 1; 
 
         resumedTask->taskEvent = NULL;
-        OsTaskWake(resumedTask);//唤醒任务
+        OsTaskWake(resumedTask);//唤醒任务,加入就绪队列
     }
 
     return exitFlag;
 }
-
+//以不安全的方式写事件
 LITE_OS_SEC_TEXT VOID OsEventWriteUnsafe(PEVENT_CB_S eventCB, UINT32 events, BOOL once, UINT8 *exitFlag)
 {
     LosTaskCB *resumedTask = NULL;
     LosTaskCB *nextTask = NULL;
     BOOL schedFlag = FALSE;
 
-    eventCB->uwEventID |= events;
-    if (!LOS_ListEmpty(&eventCB->stEventList)) {
+    eventCB->uwEventID |= events;//对应位贴上标签
+    if (!LOS_ListEmpty(&eventCB->stEventList)) {//等待事件链表判断,处理等待事件的任务
         for (resumedTask = LOS_DL_LIST_ENTRY((&eventCB->stEventList)->pstNext, LosTaskCB, pendList);
-             &resumedTask->pendList != &eventCB->stEventList;) {
-            nextTask = LOS_DL_LIST_ENTRY(resumedTask->pendList.pstNext, LosTaskCB, pendList);
-            if (OsEventResume(resumedTask, eventCB, events)) {
-                schedFlag = TRUE;
+             &resumedTask->pendList != &eventCB->stEventList;) {//循环获取任务链表
+            nextTask = LOS_DL_LIST_ENTRY(resumedTask->pendList.pstNext, LosTaskCB, pendList);//获取任务实体
+            if (OsEventResume(resumedTask, eventCB, events)) {//是否恢复任务
+                schedFlag = TRUE;//任务已加至就绪队列,申请发生一次调度
             }
-            if (once == TRUE) {
-                break;
+            if (once == TRUE) {//是否只处理一次任务
+                break;//退出循环
             }
-            resumedTask = nextTask;
+            resumedTask = nextTask;//检查链表中下一个任务
         }
     }
 
-    if ((exitFlag != NULL) && (schedFlag == TRUE)) {
+    if ((exitFlag != NULL) && (schedFlag == TRUE)) {//是否让外面调度
         *exitFlag = 1;
     }
 }
-
+//写入事件
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventWrite(PEVENT_CB_S eventCB, UINT32 events, BOOL once)
 {
     UINT32 intSave;
@@ -276,13 +276,13 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventWrite(PEVENT_CB_S eventCB, UINT32 events, 
         return LOS_ERRNO_EVENT_SETBIT_INVALID;
     }
 
-    SCHEDULER_LOCK(intSave);
-    OsEventWriteUnsafe(eventCB, events, once, &exitFlag);
-    SCHEDULER_UNLOCK(intSave);
+    SCHEDULER_LOCK(intSave);	//禁止调度
+    OsEventWriteUnsafe(eventCB, events, once, &exitFlag);//写入事件
+    SCHEDULER_UNLOCK(intSave);	//允许调度
 
-    if (exitFlag == 1) {
-        LOS_MpSchedule(OS_MP_CPU_ALL);
-        LOS_Schedule();
+    if (exitFlag == 1) { //需要发生调度
+        LOS_MpSchedule(OS_MP_CPU_ALL);//通知所有CPU调度
+        LOS_Schedule();//执行调度
     }
     return LOS_OK;
 }

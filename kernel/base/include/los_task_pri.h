@@ -312,8 +312,8 @@ typedef struct {
     LOS_DL_LIST     pendList;           /**< Task pend node */		//如果任务阻塞时就通过它挂到各种阻塞情况的链表上,比如OsTaskWait时
     LOS_DL_LIST     threadList;         /**< thread list */			//挂到所属进程的线程链表上
     SortLinkList    sortList;           /**< Task sortlink node */	//挂到cpu core 的任务执行链表上
-    UINT32          eventMask;          /**< Event mask */			//事件屏蔽
-    UINT32          eventMode;          /**< Event mode */			//事件模式
+    UINT32          eventMask;          /**< Event mask */			//对哪些事件进行屏蔽
+    UINT32          eventMode;          /**< Event mode */			//事件三种模式(LOS_WAITMODE_AND,LOS_WAITMODE_OR,LOS_WAITMODE_CLR)
     UINT32          priBitMap;          /**< BitMap for recording the change of task priority,	//任务在执行过程中优先级会经常变化，这个变量用来记录所有曾经变化
                                              the priority can not be greater than 31 */			//过的优先级，例如 ..01001011 曾经有过 0,1,3,6 优先级
     INT32           errorNo;            /**< Error Num */

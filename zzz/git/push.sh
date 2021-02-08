@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '鸿蒙内核源码分析(信号量篇) | 信号量解决任务同步问题
+git commit -m  '鸿蒙内核源码分析(事件控制篇) | 任务间一对多和多对多的同步方案
     搜索 @note_pic 可查看绘制的全部字符图
     搜索 @note_why 是尚未看明白的地方，有看明白的，请Pull Request完善
     搜索 @note_thinking 是一些的思考和建议
