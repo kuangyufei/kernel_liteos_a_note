@@ -110,7 +110,7 @@ extern "C" {
 
 LITE_OS_SEC_BSS SWTMR_CTRL_S    *g_swtmrCBArray = NULL;     /* First address in Timer memory space *///定时器池
 LITE_OS_SEC_BSS UINT8           *g_swtmrHandlerPool = NULL; /* Pool of Swtmr Handler *///用于注册软时钟的回调函数
-LITE_OS_SEC_BSS LOS_DL_LIST     g_swtmrFreeList;            /* Free list of Software Timer */
+LITE_OS_SEC_BSS LOS_DL_LIST     g_swtmrFreeList;            /* Free list of Software Timer *///空闲定时器链表
 
 /* spinlock for swtmr module, only available on SMP mode */
 LITE_OS_SEC_BSS  SPIN_LOCK_INIT(g_swtmrSpin);//初始化软时钟自旋锁,只有SMP情况才需要,只要是自旋锁都是用于CPU多核的同步
@@ -417,7 +417,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_SwtmrCreate(UINT32 interval,
 
     sortList = LOS_DL_LIST_ENTRY(g_swtmrFreeList.pstNext, SortLinkList, sortLinkNode);
     swtmr = LOS_DL_LIST_ENTRY(sortList, SWTMR_CTRL_S, stSortList);
-    LOS_ListDelete(LOS_DL_LIST_FIRST(&g_swtmrFreeList));
+    LOS_ListDelete(LOS_DL_LIST_FIRST(&g_swtmrFreeList));//
     SWTMR_UNLOCK(intSave);
 
     swtmr->uwOwnerPid = OsCurrProcessGet()->processID;//定时器进程归属设定

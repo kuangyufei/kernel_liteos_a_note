@@ -55,7 +55,9 @@
 
 ## **百篇博客分析**
 
-* (总目录) | 精读内核源码 深挖地基工程[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108727970) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4626852)
+在给鸿蒙内核源码加注释过程中,整理出以下文章.
+
+* (总目录) | 百万汉字注解 百篇博客分析[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108727970) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4626852)
 
 ### **故事篇**
 
@@ -112,6 +114,8 @@
 
 ### **基础篇**
 
+* (定时器机制篇) | 内核最高优先级任务是谁???[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113774260) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4951625)
+
 * (汇编传参篇) | 汇编如何传递复杂的参数?[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113265990) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4927892)
 
 * (汇编基础篇) | CPU在哪里打卡上班 ?[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/112986628) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4920361)
@@ -122,13 +126,13 @@
 
 * (源码结构篇) | 内核500问你能答对多少？[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/111938348) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4869137)
 
-* (源码注释篇) | 精读内核源码有哪些好处？[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/109251754) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4686747)
+* (源码注释篇) | 精读内核源码 深挖地基工程[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/109251754) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4686747)
 
 * (双向链表篇) | 谁是内核最重要结构体？[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108585659) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4572304)
 
 ### **主流站点**
 
-感谢 OSCHINA，CSDN，华为开发者论坛, 51CTO, 电子发烧友，以及其他小伙伴通过自己的公众号对系列文章的转载和推荐，无以为报，唯有不断的深挖内核地基，输出更多文章，错漏之处请多见谅，会持续完善源码注解和文档内容，精雕细琢，尽全力打磨精品内容。文章输出站点:
+感谢 `OSCHINA`，`CSDN`，`华为开发者论坛`, `51CTO`, `电子发烧友`，以及其他小伙伴通过自己的公众号对系列文章的转载和推荐，无以为报，唯有不断的深挖内核地基，输出更多文章，错漏之处请多见谅，会持续完善源码注解和文档内容，精雕细琢，尽全力打磨精品内容。文章输出站点:
 
 **[CSDN |](https://blog.csdn.net/kuangyufei)** **[开源中国 |](https://my.oschina.net/weharmony)** **[51CTO |](https://harmonyos.51cto.com/column/34)** **[头条号 |](https://gitee.com/weharmony/docs/raw/master/pic/other/tt.png)** **[WeHarmony |](https://weharmony.gitee.io)** **[公众号](https://gitee.com/weharmony/docs/raw/master/pic/other/wxcode.png)**
 
@@ -169,7 +173,3 @@
 百万汉字注解 >> 精读内核源码,中文注解分析, 深挖地基工程,大脑永久记忆,四大码仓每日同步更新[< Gitee ](https://gitee.com/weharmony/kernel_liteos_a_note)[| Github ](https://github.com/kuangyufei/kernel_liteos_a_note)[| CSDN ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)[| Coding >](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)
 
 百篇博客分析 >> 故事说内核,问答式导读,生活式比喻,表格化说明,图形化展示,多站点每日同步更新[< OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)[| CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| WeHarmony >](https://weharmony.gitee.io/)
-
-
-
-

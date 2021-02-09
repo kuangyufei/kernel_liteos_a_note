@@ -263,8 +263,8 @@ typedef VOID (*SWTMR_PROC_FUNC)(UINTPTR arg);	//函数指针, 赋值给 SWTMR_CT
  * @ingroup los_swtmr
  * Software timer control structure
  */
-typedef struct tagSwTmrCtrl {//变量前缀 uc:UINT8  us:UINT16 uw:UINT32 代表的意思
-    SortLinkList stSortList;
+typedef struct tagSwTmrCtrl {//软件定时器控制块
+    SortLinkList stSortList;//通过它挂到对应CPU核定时器链表上
     UINT8 ucState;      /**< Software timer state */							//软件定时器的状态
     UINT8 ucMode;       /**< Software timer mode */								//软件定时器的模式
     UINT8 ucOverrun;    /**< Times that a software timer repeats timing */		//软件定时器重复计时的次数
@@ -279,7 +279,7 @@ typedef struct tagSwTmrCtrl {//变量前缀 uc:UINT8  us:UINT16 uw:UINT32 代表
                              that handles software timer timeout is called */
     SWTMR_PROC_FUNC pfnHandler; /**< Callback function that handles software timer timeout */	//处理软件计时器超时的回调函数
     UINT32          uwOwnerPid; /** Owner of this software timer */	//软件定时器所属进程ID号
-} SWTMR_CTRL_S;
+} SWTMR_CTRL_S;//变量前缀 uc:UINT8  us:UINT16 uw:UINT32 代表的意思
 
 /**
  * @ingroup los_swtmr
