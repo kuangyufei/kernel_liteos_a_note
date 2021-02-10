@@ -50,15 +50,13 @@ typedef enum {
 } ExcFlag;
 #endif
 
-typedef struct {
-    SortLinkAttribute taskSortLink;             /* task sort link */	//每个CPU core 都有一个task排序链表
-    SortLinkAttribute swtmrSortLink;            /* swtmr sort link */	//每个CPU core 都有一个定时器排序链表
-
+typedef struct {//内核对cpu的描述
+    SortLinkAttribute taskSortLink;             /* task sort link */	//task wait/delay 排序链表
+    SortLinkAttribute swtmrSortLink;            /* swtmr sort link */	//定时器排序链表
     UINT32 idleTaskID;                          /* idle task id */		//空闲任务ID 见于 OsIdleTaskCreate
     UINT32 taskLockCnt;                         /* task lock flag */	//任务锁的数量,当 > 0 的时候,需要重新调度了
     UINT32 swtmrHandlerQueue;                   /* software timer timeout queue id */	//软时钟超时队列句柄
     UINT32 swtmrTaskID;                         /* software timer task id */	//软时钟任务ID
-
     UINT32 schedFlag;                           /* pending scheduler flag */	//调度标识 INT_NO_RESCH INT_PEND_RESCH
 #if (LOSCFG_KERNEL_SMP == YES)
     UINT32 excFlag;                             /* cpu halt or exc flag */	//CPU处于停止或运行的标识

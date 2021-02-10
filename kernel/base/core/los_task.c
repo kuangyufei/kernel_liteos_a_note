@@ -231,7 +231,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsTaskPriModify(LosTaskCB *taskCB, UINT16 priority)
         taskCB->priority = priority;
     }
 }
-//把任务加到定时器链表中
+//把任务加到CPU等待链表中
 LITE_OS_SEC_TEXT STATIC INLINE VOID OsAdd2TimerList(LosTaskCB *taskCB, UINT32 timeOut)
 {
     SET_SORTLIST_VALUE(&taskCB->sortList, timeOut);//设置idxRollNum的值为timeOut

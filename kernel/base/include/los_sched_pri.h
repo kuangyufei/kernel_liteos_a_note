@@ -124,7 +124,7 @@ extern VOID OsSchedPreempt(VOID);
  */
 STATIC INLINE VOID LOS_Schedule(VOID)
 {
-    if (OS_INT_ACTIVE) {//硬件中断是否激活,注意调度是需要切换任务上下文的
+    if (OS_INT_ACTIVE) {//发生硬件中断,调度被阻塞
         OsPercpuGet()->schedFlag = INT_PEND_RESCH;//
         return;
     }

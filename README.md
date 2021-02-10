@@ -9,7 +9,7 @@
 
 ## **百万汉字注解**
 
-**[kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在鸿蒙官方开源项目 **[kernel\_liteos\_a](https://gitee.com/openharmony/kernel_liteos_a)** 基础上给源码加上中文注解的版本,目前几大核心模块加注已基本完成, **整体加注完成70%**, 正持续加注完善中 ...
+**[kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在鸿蒙官方开源项目 **[kernel\_liteos\_a](https://gitee.com/openharmony/kernel_liteos_a)** 基础上给源码加上中文注解的版本,目前几大核心模块加注已基本完成, **整体加注完成70%**
 
 ### **为何要精读内核源码?**
 
@@ -66,6 +66,8 @@
 * (内存主奴篇) | 紫禁城的主子和奴才如何相处? [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108723672) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4646802)
 
 ### **进程/线程**
+
+* (CPU篇) | 内核是如何描述CPU的 ?[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113782749) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4952034)
 
 * (并发并行篇) | 内核如何管理多个CPU？[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113516222) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4940329)
 
@@ -158,11 +160,11 @@
 
 ### **参与贡献**
 
-* 1. Fork 本仓库 >> 新建 Feat_xxx 分支 >> 提交代码注解 >> [新建 Pull Request](https://gitee.com/weharmony/kernel_liteos_a_note/pull/new/weharmony:master...weharmony:master)
+* Fork 本仓库 >> 新建 Feat_xxx 分支 >> 提交代码注解 >> [新建 Pull Request](https://gitee.com/weharmony/kernel_liteos_a_note/pull/new/weharmony:master...weharmony:master)
 
-* 2. [新建 Issue](https://gitee.com/weharmony/kernel_liteos_a_note/issues)
+* [新建 Issue](https://gitee.com/weharmony/kernel_liteos_a_note/issues)
 
-### **喜欢就请收藏吧**
+### **喜欢就大方 点赞+关注+收藏 吧**
 
 各大站点搜 **"鸿蒙内核源码分析"**  ,快速找到组织.
 
