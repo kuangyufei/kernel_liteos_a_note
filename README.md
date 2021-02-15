@@ -86,6 +86,7 @@
 * (进程概念篇) | 进程都管理了哪些资源?[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113395872) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4937521)
 
 ### **进程通讯(IPC)**
+* (消息队列篇) | 进程间如何异步解耦传递大数据 ? [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113815355) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4952961)
 
 * (事件控制篇) | 任务间一对多和多对多的同步方案 [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113759481) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4950956)
 
@@ -175,3 +176,6 @@
 百万汉字注解 >> 精读内核源码,中文注解分析, 深挖地基工程,大脑永久记忆,四大码仓每日同步更新[< Gitee ](https://gitee.com/weharmony/kernel_liteos_a_note)[| Github ](https://github.com/kuangyufei/kernel_liteos_a_note)[| CSDN ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)[| Coding >](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)
 
 百篇博客分析 >> 故事说内核,问答式导读,生活式比喻,表格化说明,图形化展示,多站点每日同步更新[< OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)[| CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| WeHarmony >](https://weharmony.gitee.io/)
+
+
+

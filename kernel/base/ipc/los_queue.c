@@ -178,8 +178,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueCreate(CHAR *queueName, UINT16 len, UINT32
     queueCB->readWriteableCnt[OS_QUEUE_WRITE] = len;//可些资源计数 OS_QUEUE_WRITE(1):可写, 默认len可写.
     queueCB->queueHead = 0;//队列头节点
     queueCB->queueTail = 0;//队列尾节点
-    LOS_ListInit(&queueCB->readWriteList[OS_QUEUE_READ]);//初始化可读队列链表
-    LOS_ListInit(&queueCB->readWriteList[OS_QUEUE_WRITE]);//初始化可写队列链表
+    LOS_ListInit(&queueCB->readWriteList[OS_QUEUE_READ]);//初始化可读队列任务链表
+    LOS_ListInit(&queueCB->readWriteList[OS_QUEUE_WRITE]);//初始化可写队列任务链表
     LOS_ListInit(&queueCB->memList);//
 
     OsQueueDbgUpdateHook(queueCB->queueID, OsCurrTaskGet()->taskEntry);//在创建或删除队列调试信息时更新任务条目
