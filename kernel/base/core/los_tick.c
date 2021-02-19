@@ -62,7 +62,7 @@ LITE_OS_SEC_TEXT VOID OsTickHandler(VOID)
     UINT32 intSave;
 
     TICK_LOCK(intSave);
-    g_tickCount[ArchCurrCpuid()]++;//当前CPU核计数器
+    g_tickCount[ArchCurrCpuid()]++;// 累加当前CPU核tick数
     TICK_UNLOCK(intSave);
 
 #ifdef LOSCFG_KERNEL_VDSO
@@ -79,10 +79,10 @@ LITE_OS_SEC_TEXT VOID OsTickHandler(VOID)
 
     OsTimesliceCheck();//时间片检查
 
-    OsTaskScan(); /* task timeout scan *///任务扫描
+    OsTaskScan(); /* task timeout scan *///扫描超时任务 例如:delay(300)
 
 #if (LOSCFG_BASE_CORE_SWTMR == YES)
-    OsSwtmrScan();//定时器扫描,看是否有超时的定时器
+    OsSwtmrScan();//扫描定时器,查看是否有超时定时器,加入队列
 #endif
 }
 

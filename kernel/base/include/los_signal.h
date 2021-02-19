@@ -213,11 +213,11 @@ typedef struct {//信号切换上下文
 } sig_switch_context;
 
 typedef struct {//信号控制块(描述符)
-    sigset_t sigFlag;
+    sigset_t sigFlag;		//信号标签集
     sigset_t sigPendFlag;	//信号阻塞标签集,记录因哪些信号被阻塞
     sigset_t sigprocmask; /* Signals that are blocked            */	//进程屏蔽了哪些信号
     sq_queue_t sigactionq;	//信号捕捉队列					
-    LOS_DL_LIST waitList;	//等待链表,上面挂的可是等待信号到来的任务, 请查找 OsTaskWait(&sigcb->waitList, timeout, TRUE)	理解						
+    LOS_DL_LIST waitList;	//等待链表,上面挂的是等待信号到来的任务, 请查找 OsTaskWait(&sigcb->waitList, timeout, TRUE)	理解						
     sigset_t sigwaitmask; /* Waiting for pending signals         */	//任务在等待某某信号的掩码
     siginfo_t sigunbinfo; /* Signal info when task unblocked     */	//任务解除阻止时的信号信息
     sig_switch_context context;	//信号切换上下文, 用于保存切换现场, 比如发生系统调用时的返回,涉及同一个任务的两个栈进行切换							

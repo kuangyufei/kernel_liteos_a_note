@@ -55,9 +55,10 @@
 
 ## **百篇博客分析**
 
-在给鸿蒙内核源码加注释过程中,整理出以下文章.
+给 **[鸿蒙内核源码加注释](https://gitee.com/weharmony/kernel_liteos_a_note)** 过程中,整理出以下文章.
 
-* (总目录) | 百万汉字注解 百篇博客分析[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108727970) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4626852)
+
+* (总目录) | 百万汉字注解 百篇博客分析[<  CSDN](https://blog.csdn.net/kuangyufei) [ | OSCHINA  >](https://my.oschina.net/weharmony)
 
 ### **故事篇**
 
@@ -85,7 +86,7 @@
 
 * (进程概念篇) | 进程都管理了哪些资源?[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113395872) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4937521)
 
-### **进程通讯(IPC)**
+### **进程通讯**
 * (消息队列篇) | 进程间如何异步解耦传递大数据 ? [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113815355) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4952961)
 
 * (事件控制篇) | 任务间一对多和多对多的同步方案 [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113759481) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4950956)
@@ -116,6 +117,10 @@
 * (内存主奴篇) | 紫禁城的主子和奴才如何相处?[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108723672) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4646802)
 
 ### **基础篇**
+
+* (时间管理篇) | Tick是操作系统的基本时间单位  [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113867785) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4956163)
+
+* (原子操作篇) | 是哪两条汇编指令在为原子操作保驾护航 ? [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113850603) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4955290)
 
 * (定时器机制篇) | 内核最高优先级任务是谁???[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113774260) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4951625)
 
@@ -176,6 +181,7 @@
 百万汉字注解 >> 精读内核源码,中文注解分析, 深挖地基工程,大脑永久记忆,四大码仓每日同步更新[< Gitee ](https://gitee.com/weharmony/kernel_liteos_a_note)[| Github ](https://github.com/kuangyufei/kernel_liteos_a_note)[| CSDN ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)[| Coding >](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)
 
 百篇博客分析 >> 故事说内核,问答式导读,生活式比喻,表格化说明,图形化展示,多站点每日同步更新[< OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)[| CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| WeHarmony >](https://weharmony.gitee.io/)
+
 
 
 
