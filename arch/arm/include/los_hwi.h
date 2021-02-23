@@ -105,7 +105,7 @@ extern size_t g_intCount[];
  * Value: 0x02000901
  *
  * Solution: Pass in a valid non-null hardware interrupt handling function.
- */
+ */	//创建中断时，传入的中断处理程序指针为空
 #define OS_ERRNO_HWI_PROC_FUNC_NULL             LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x01)
 
 /**
@@ -115,7 +115,7 @@ extern size_t g_intCount[];
  * Value: 0x02000902
  *
  * Solution: Increase the configured maximum number of supported hardware interrupts.
- */
+ */	//无可用中断资源
 #define OS_ERRNO_HWI_CB_UNAVAILABLE             LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x02)
 
 /**
@@ -125,7 +125,7 @@ extern size_t g_intCount[];
  * Value: 0x02000903
  *
  * Solution: Expand the configured memory.
- */
+ */	//创建中断时，出现内存不足的情况
 #define OS_ERRNO_HWI_NO_MEMORY                  LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x03)
 
 /**
@@ -135,7 +135,7 @@ extern size_t g_intCount[];
  * Value: 0x02000904
  *
  * Solution: Check whether the interrupt specified by the passed-in interrupt number has already been created.
- */
+ */	//创建中断时，发现要注册的中断号已经创建
 #define OS_ERRNO_HWI_ALREADY_CREATED            LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x04)
 
 /**
@@ -145,7 +145,7 @@ extern size_t g_intCount[];
  * Value: 0x02000905
  *
  * Solution: Ensure that the interrupt priority is valid.
- */
+ */	//创建中断时，传入的中断优先级无效
 #define OS_ERRNO_HWI_PRIO_INVALID               LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x05)
 
 /**
@@ -156,7 +156,7 @@ extern size_t g_intCount[];
  *
  * Solution: The interrupt creation mode can be only set to OS_HWI_MODE_COMM or OS_HWI_MODE_FAST of
  * which the value can be 0 or 1.
- */
+ */	//中断模式无效
 #define OS_ERRNO_HWI_MODE_INVALID               LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x06)
 
 /**
@@ -166,7 +166,7 @@ extern size_t g_intCount[];
  * Value: 0x02000907
  *
  * Solution: Check whether the interrupt specified by the passed-in interrupt number has already been created.
- */
+ */	//创建硬中断时，发现要注册的中断号，已经创建为快速中断
 #define OS_ERRNO_HWI_FASTMODE_ALREADY_CREATED LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x07)
 
 /**
@@ -176,7 +176,7 @@ extern size_t g_intCount[];
  * Value: 0x02000908
  *
  * * Solution: Do not call the API during an interrupt.
- */
+ */	//接口在中断中调用
 #define OS_ERRNO_HWI_INTERR                     LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x08)
 
 /**
@@ -187,7 +187,7 @@ extern size_t g_intCount[];
  *
  * * Solution: Check the input params hwiMode and irqParam of LOS_HwiCreate or
  * LOS_HwiDelete whether adapt the current hwi.
- */
+ */ //中断共享出现错误
 #define OS_ERRNO_HWI_SHARED_ERROR               LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x09)
 
 /**
@@ -197,7 +197,7 @@ extern size_t g_intCount[];
  * Value: 0x0200090a
  *
  * * Solution: Check the interrupt Arg, Arg should not be NULL and pDevId should not be NULL.
- */
+ */ //注册中断入参有误
 #define OS_ERRNO_HWI_ARG_INVALID                LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x0a)
 
 /**
@@ -207,7 +207,7 @@ extern size_t g_intCount[];
  * Value: 0x0200090b
  *
  * * Solution: Check the hwi number or devid, make sure the hwi number or devid need to delete.
- */
+ */	//中断共享情况下，删除中断时，中断号对应的链表中，无法匹配到相应的设备ID
 #define OS_ERRNO_HWI_HWINUM_UNCREATE            LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x0b)
 
 /**
@@ -252,7 +252,7 @@ typedef VOID (*HWI_PROC_FUNC)(VOID);
 typedef struct tagHwiHandleForm {	
     HWI_PROC_FUNC pfnHook;	//中断处理函数
     HWI_ARG_T uwParam;		//中断处理函数参数
-    struct tagHwiHandleForm *pstNext;	//节点，指向下一个中断
+    struct tagHwiHandleForm *pstNext;	//节点，指向下一个中断,用于共享中断的情况
 } HwiHandleForm;
 
 typedef struct tagIrqParam {	//中断参数

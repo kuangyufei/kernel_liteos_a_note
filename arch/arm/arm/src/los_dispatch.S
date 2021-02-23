@@ -254,30 +254,30 @@ OsKernelTaskLoad: 			@内核任务的加载
     ADD     SP, SP, #4 		@sp=SP+4
     LDMFD   SP!, {LR, PC}^ 	@返回地址赋给pc指针
 
-OsIrqHandler:
+OsIrqHandler:	@中断处理
     SUB     LR, LR, #4
 
     /* push r0-r3 to irq stack */
     STMFD   SP, {R0-R3}
     SUB     R0, SP, #(4 * 4)
-    MRS     R1, SPSR
+    MRS     R1, SPSR		@获取程序状态控制寄存器
     MOV     R2, LR
 
     /* disable irq, switch to svc mode */
-    CPSID   i, #0x13
+    CPSID   i, #0x13				@禁止中断,切换到SVC模式
 
     /* push spsr and pc in svc stack */
     STMFD   SP!, {R1, R2}
     STMFD   SP, {LR}
 
-    AND     R3, R1, #CPSR_MASK_MODE
-    CMP     R3, #CPSR_USER_MODE
-    BNE     OsIrqFromKernel
+    AND     R3, R1, #CPSR_MASK_MODE	
+    CMP     R3, #CPSR_USER_MODE		@中断是否发生在用户模式
+    BNE     OsIrqFromKernel			@中断不发生在用户模式下则跳转到OsIrqFromKernel
 
     /* push user sp, lr in svc stack */
     STMFD   SP, {R13, R14}^
 
-OsIrqFromKernel:
+OsIrqFromKernel:	@从内核发起中断
     /* from svc not need save sp and lr */
     SUB     SP, SP, #(2 * 4)
 

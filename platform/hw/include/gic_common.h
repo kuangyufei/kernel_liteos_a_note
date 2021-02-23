@@ -128,7 +128,7 @@ enum {
 /*
  * The preemption level is up to 128, and the maximum value corresponding to the interrupt priority is 254 [7:1].
  * If the GIC_MAX_INTERRUPT_PREEMPTION_LEVEL is 0, the minimum priority is 0xff.
- */
+ *///中断优先级 最高中断优先级为 0 ,最低优先级为 255
 #define MIN_INTERRUPT_PRIORITY              ((UINT8)((GIC_MAX_INTERRUPT_PREEMPTION_LEVEL - 1) << PRIORITY_SHIFT))
 
 #endif

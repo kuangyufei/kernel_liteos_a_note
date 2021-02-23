@@ -878,7 +878,7 @@ STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const C
 #endif
 
 #ifdef LOSCFG_KERNEL_CPUP //CPU性能统计开关,默认是打开的
-    OsCpupSet(processCB->processID);
+    OsCpupSet(processCB->processID);//初始化进程性能统计
 #endif
 
     return LOS_OK;

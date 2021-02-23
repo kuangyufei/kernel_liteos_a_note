@@ -61,7 +61,7 @@ LITE_OS_SEC_TEXT VOID OsTickHandler(VOID)
 {
     UINT32 intSave;
 
-    TICK_LOCK(intSave);
+    TICK_LOCK(intSave);//tick自旋锁
     g_tickCount[ArchCurrCpuid()]++;// 累加当前CPU核tick数
     TICK_UNLOCK(intSave);
 

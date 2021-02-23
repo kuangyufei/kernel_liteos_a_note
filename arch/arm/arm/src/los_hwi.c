@@ -161,7 +161,7 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
     *intCnt = *intCnt + 1;
 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ //开启查询系统CPU的占用率的中断
-    OsCpupIrqStart();
+    OsCpupIrqStart();//开始统计本次中断处理还是时间
 #endif
 
 #ifdef LOSCFG_KERNEL_TICKLESS
@@ -191,10 +191,10 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
 
     *intCnt = *intCnt - 1;	//@note_why 这里没看明白为什么要 -1 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ	//开启查询系统CPU的占用率的中断
-    OsCpupIrqEnd(intNum);
+    OsCpupIrqEnd(intNum);//结束统计本次中断处理还是时间
 #endif
 }
-//copy 硬中断参数
+//申请内核空间拷贝硬中断参数
 STATIC HWI_ARG_T OsHwiCpIrqParam(const HwiIrqParam *irqParam)
 {
     HwiIrqParam *paramByAlloc = NULL;
@@ -236,7 +236,7 @@ STATIC UINT32 OsHwiCreateNoShared(HWI_HANDLE_T hwiNum, HWI_MODE_T hwiMode,
     if (g_hwiForm[hwiNum].pfnHook == NULL) {
         g_hwiForm[hwiNum].pfnHook = hwiHandler;//记录上回调函数
 
-        retParam = OsHwiCpIrqParam(irqParam);//参数copy一份出来记录
+        retParam = OsHwiCpIrqParam(irqParam);//获取中断处理函数的参数
         if (retParam == LOS_NOK) {
             HWI_UNLOCK(intSave);
             return OS_ERRNO_HWI_NO_MEMORY;
@@ -307,7 +307,7 @@ STATIC UINT32 OsHwiDelShared(HWI_HANDLE_T hwiNum, const HwiIrqParam *irqParam)
     HWI_UNLOCK(intSave);
     return LOS_OK;
 }
-//创建一个共享硬件中断
+//创建一个共享硬件中断,共享中断就是一个中断能触发多个响应函数
 STATIC UINT32 OsHwiCreateShared(HWI_HANDLE_T hwiNum, HWI_MODE_T hwiMode,
                                 HWI_PROC_FUNC hwiHandler, const HwiIrqParam *irqParam)
 {
@@ -321,39 +321,39 @@ STATIC UINT32 OsHwiCreateShared(HWI_HANDLE_T hwiNum, HWI_MODE_T hwiMode,
         return OS_ERRNO_HWI_SHARED_ERROR;
     }
 
-    HWI_LOCK(intSave);
+    HWI_LOCK(intSave);//中断自旋锁
 
-    hwiForm = &g_hwiForm[hwiNum];
+    hwiForm = &g_hwiForm[hwiNum];//获取中断处理项
     if ((hwiForm->pstNext != NULL) && ((modeResult == 0) || (!(hwiForm->uwParam & IRQF_SHARED)))) {
         HWI_UNLOCK(intSave);
         return OS_ERRNO_HWI_SHARED_ERROR;
     }
 
-    while (hwiForm->pstNext != NULL) {
-        hwiForm = hwiForm->pstNext;
-        hwiParam = (HwiIrqParam *)(hwiForm->uwParam);
-        if (hwiParam->pDevId == irqParam->pDevId) {
+    while (hwiForm->pstNext != NULL) {//pstNext指向 共享中断的各处理函数节点,此处一直撸到最后一个
+        hwiForm = hwiForm->pstNext;//找下一个中断
+        hwiParam = (HwiIrqParam *)(hwiForm->uwParam);//获取中断参数,用于检测该设备ID是否已经有中断处理函数
+        if (hwiParam->pDevId == irqParam->pDevId) {//设备ID一致时,说明设备对应的中断处理函数已经存在了.
             HWI_UNLOCK(intSave);
             return OS_ERRNO_HWI_ALREADY_CREATED;
         }
     }
 
-    hwiFormNode = (HwiHandleForm *)LOS_MemAlloc(m_aucSysMem0, sizeof(HwiHandleForm));
+    hwiFormNode = (HwiHandleForm *)LOS_MemAlloc(m_aucSysMem0, sizeof(HwiHandleForm));//创建一个中断处理节点
     if (hwiFormNode == NULL) {
         HWI_UNLOCK(intSave);
         return OS_ERRNO_HWI_NO_MEMORY;
     }
 
-    hwiFormNode->uwParam = OsHwiCpIrqParam(irqParam);
+    hwiFormNode->uwParam = OsHwiCpIrqParam(irqParam);//获取中断处理函数的参数
     if (hwiFormNode->uwParam == LOS_NOK) {
         HWI_UNLOCK(intSave);
         (VOID)LOS_MemFree(m_aucSysMem0, hwiFormNode);
         return OS_ERRNO_HWI_NO_MEMORY;
     }
 
-    hwiFormNode->pfnHook = hwiHandler;
-    hwiFormNode->pstNext = (struct tagHwiHandleForm *)NULL;
-    hwiForm->pstNext = hwiFormNode;
+    hwiFormNode->pfnHook = hwiHandler;//绑定中断处理函数
+    hwiFormNode->pstNext = (struct tagHwiHandleForm *)NULL;//指定下一个中断为NULL,用于后续遍历找到最后一个中断项(见于以上 while (hwiForm->pstNext != NULL)处)
+    hwiForm->pstNext = hwiFormNode;//共享中断
 
     if ((irqParam != NULL) && (irqParam->pName != NULL)) {
         g_hwiFormName[hwiNum] = (CHAR *)irqParam->pName;
@@ -373,7 +373,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsHwiInit(VOID)//硬件中断初始化
 {
     UINT32 hwiNum;
 
-    for (hwiNum = 0; hwiNum < OS_HWI_MAX_NUM; hwiNum++) {
+    for (hwiNum = 0; hwiNum < OS_HWI_MAX_NUM; hwiNum++) {//初始化中断向量表,默认128个中断
         g_hwiForm[hwiNum].pfnHook = NULL;
         g_hwiForm[hwiNum].uwParam = 0;
         g_hwiForm[hwiNum].pstNext = NULL;

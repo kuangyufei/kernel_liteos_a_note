@@ -78,7 +78,7 @@ GICv3控制器由以下部分组成:
 
 #ifdef LOSCFG_PLATFORM_BSP_GIC_V3
 
-STATIC UINT32 g_curIrqNum = 0;
+STATIC UINT32 g_curIrqNum = 0; //记录当前中断号
 
 STATIC INLINE UINT64 MpidrToAffinity(UINT64 mpidr)
 {
@@ -363,10 +363,10 @@ UINT32 HalIrqSetPrio(UINT32 vector, UINT8 priority)
 VOID HalIrqInitPercpu(VOID)
 {
     INT32 idx;
-    UINT32 cpu = ArchCurrCpuid();
+    UINT32 cpu = ArchCurrCpuid();//获取当前CPU
 
     /* GICR init */
-    GicrSetWaker(cpu);
+    GicrSetWaker(cpu);//设置CPU为唤醒状态
     GicrSetGroup(cpu);
     GicWaitForRwp(GICR_CTLR(cpu));
 
@@ -387,8 +387,8 @@ VOID HalIrqInitPercpu(VOID)
 
 #ifdef LOSCFG_KERNEL_SMP
     /* unmask ipi interrupts */
-    HalIrqUnmask(LOS_MP_IPI_WAKEUP);
-    HalIrqUnmask(LOS_MP_IPI_HALT);
+    HalIrqUnmask(LOS_MP_IPI_WAKEUP);//恢复CPU唤醒信号
+    HalIrqUnmask(LOS_MP_IPI_HALT);//恢复CPU停止信号
 #endif
 }
 //硬中断初始化
@@ -404,16 +404,16 @@ VOID HalIrqInit(VOID)
 
     /* set externel interrupts to be level triggered, active low. */
     for (i = 32; i < OS_HWI_MAX_NUM; i += 16) {//将外部中断设置为电平触发，低电平有效
-        GIC_REG_32(GICD_ICFGR(i / 16)) = 0;
+        GIC_REG_32(GICD_ICFGR(i / 16)) = 0;//设置16个私有外设中断
     }
-
+	//SPI是串行外设接口(Serial Peripheral Interface)的缩写
     /* config distributer, mask and clear all spis, set group x */
-    for (i = 32; i < OS_HWI_MAX_NUM; i += 32) {
-        GIC_REG_32(GICD_ICENABLER(i / 32)) = 0xffffffff;
-        GIC_REG_32(GICD_ICPENDR(i / 32)) = 0xffffffff;
-        GIC_REG_32(GICD_IGRPMODR(i / 32)) = 0;
+    for (i = 32; i < OS_HWI_MAX_NUM; i += 32) {//配置分配器，屏蔽并清除所有SPI,设置组
+        GIC_REG_32(GICD_ICENABLER(i / 32)) = 0xffffffff;//屏蔽中断使能寄存器
+        GIC_REG_32(GICD_ICPENDR(i / 32)) = 0xffffffff;////屏蔽中断挂起寄存器
+        GIC_REG_32(GICD_IGRPMODR(i / 32)) = 0;//清除中断组模式寄存器
 
-        GicdSetGroup(i);
+        GicdSetGroup(i);//设置中断组
     }
 
     /* set spi priority as default */
@@ -424,7 +424,7 @@ VOID HalIrqInit(VOID)
     GicWaitForRwp(GICD_CTLR);
 
     /* disable all interrupts. */
-    for (i = 0; i < OS_HWI_MAX_NUM; i += 32) {
+    for (i = 0; i < OS_HWI_MAX_NUM; i += 32) {//让所有中断失效
         GIC_REG_32(GICD_ICENABLER(i / 32)) = 0xffffffff;
     }
 

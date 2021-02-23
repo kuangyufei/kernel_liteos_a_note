@@ -37,7 +37,7 @@ STATIC_ASSERT(OS_USER_HWI_MAX <= 1020, "hwi max is too large!");
 
 #ifdef LOSCFG_PLATFORM_BSP_GIC_V2
 
-STATIC UINT32 g_curIrqNum = 0;
+STATIC UINT32 g_curIrqNum = 0; //记录当前中断号
 
 #if (LOSCFG_KERNEL_SMP == YES)
 /*
@@ -53,12 +53,12 @@ STATIC VOID GicWriteSgi(UINT32 vector, UINT32 cpuMask, UINT32 filter)
 
     GIC_REG_32(GICD_SGIR) = val;
 }
-
+//向指定核发送核间中断
 VOID HalIrqSendIpi(UINT32 target, UINT32 ipi)
 {
     GicWriteSgi(ipi, target, 0);
 }
-
+//设置中断的亲和性，即设置中断在固定核响应（该函数仅在SMP模式下支持）
 VOID HalIrqSetAffinity(UINT32 vector, UINT32 cpuMask)
 {
     UINT32 offset = vector / 4;
@@ -67,7 +67,7 @@ VOID HalIrqSetAffinity(UINT32 vector, UINT32 cpuMask)
     GIC_REG_8(GICD_ITARGETSR(offset) + index) = cpuMask;
 }
 #endif
-
+//获取当前中断号
 UINT32 HalCurIrqGet(VOID)
 {
     return g_curIrqNum;
@@ -90,7 +90,7 @@ VOID HalIrqUnmask(UINT32 vector)
 
     GIC_REG_32(GICD_ISENABLER(vector >> 5)) = 1U << (vector % 32);
 }
-
+//挂起中断
 VOID HalIrqPending(UINT32 vector)
 {
     if ((vector > OS_USER_HWI_MAX) || (vector < OS_USER_HWI_MIN)) {
@@ -155,7 +155,7 @@ VOID HalIrqInit(VOID)
 VOID HalIrqHandler(VOID)
 {
     UINT32 iar = GIC_REG_32(GICC_IAR);
-    UINT32 vector = iar & 0x3FFU;
+    UINT32 vector = iar & 0x3FFU;//计算中断向量号
 
     /*
      * invalid irq number, mainly the spurious interrupts 0x3ff,
@@ -167,7 +167,7 @@ VOID HalIrqHandler(VOID)
     }
     g_curIrqNum = vector;
 
-    OsInterrupt(vector);
+    OsInterrupt(vector);//调用上层中断处理函数
 
     /* use orignal iar to do the EOI */
     GIC_REG_32(GICC_EOIR) = iar;

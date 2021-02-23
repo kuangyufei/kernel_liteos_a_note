@@ -44,15 +44,15 @@ extern "C" {
 
 LITE_OS_SEC_BSS STATIC UINT16 swtmrID;
 LITE_OS_SEC_BSS STATIC UINT16 cpupInitFlg = 0;
-LITE_OS_SEC_BSS OsCpupCB *g_cpup = NULL;
-LITE_OS_SEC_BSS STATIC UINT16 cpupMaxNum;
+LITE_OS_SEC_BSS OsCpupCB *g_cpup = NULL;//监测CPU使用情况
+LITE_OS_SEC_BSS STATIC UINT16 cpupMaxNum;//监测最大数量 包括(进程+中断号)
 LITE_OS_SEC_BSS STATIC UINT16 hisPos = 0; /* current Sampling point of historyTime */
 LITE_OS_SEC_BSS STATIC UINT64 cpuHistoryTime[OS_CPUP_HISTORY_RECORD_NUM + 1];
 
-LITE_OS_SEC_BSS STATIC UINT64 startCycles = 0;
+LITE_OS_SEC_BSS STATIC UINT64 startCycles = 0;//开始周期
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
-LITE_OS_SEC_BSS STATIC UINT64 timeInIrqPerProcessSwitch[LOSCFG_KERNEL_CORE_NUM];
-LITE_OS_SEC_BSS STATIC UINT64 intTimeStart[LOSCFG_KERNEL_CORE_NUM];
+LITE_OS_SEC_BSS STATIC UINT64 timeInIrqPerProcessSwitch[LOSCFG_KERNEL_CORE_NUM];//统计各CPU核花在切换中断上的时间
+LITE_OS_SEC_BSS STATIC UINT64 intTimeStart[LOSCFG_KERNEL_CORE_NUM];//统计各CPU核花在处理中断上的时间
 #endif
 
 #define OS_CPUP_UNUSED 0x0U
@@ -112,10 +112,10 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsCpupInit(VOID)
 
     cpupMaxNum = LOSCFG_BASE_CORE_PROCESS_LIMIT;
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
-    cpupMaxNum += OS_HWI_MAX_NUM;
+    cpupMaxNum += OS_HWI_MAX_NUM;//最大中断号数量 默认 128
 #endif
 
-    /* every process has only one record, and it won't operated at the same time */
+    /* every process has only one record, and it won't operated at the same time *///每个进程只有一条记录，不会同时运行
     size = cpupMaxNum * sizeof(OsCpupCB);
     g_cpup = (OsCpupCB *)LOS_MemAlloc(m_aucSysMem0, size);
     if (g_cpup == NULL) {
@@ -123,21 +123,21 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsCpupInit(VOID)
     }
 
     (VOID)memset_s(g_cpup, size, 0, size);
-    cpupInitFlg = 1;
+    cpupInitFlg = 1;//已完成初始化标识
     return LOS_OK;
 }
-
+//设置 进程/中断 占用CPU统计
 LITE_OS_SEC_TEXT VOID OsCpupSet(UINT32 id)
 {
     g_cpup[id].id = id;
     g_cpup[id].status = OS_CPUP_USED;
 }
-
+//清除 进程/中断 占用CPU统计
 LITE_OS_SEC_TEXT VOID OsCpupClean(UINT32 id)
 {
     (VOID)memset_s((VOID *)&g_cpup[id], sizeof(OsCpupCB), 0, sizeof(OsCpupCB));
 }
-
+//重置 进程/中断 占用CPU统计
 LITE_OS_SEC_TEXT_INIT VOID LOS_CpupReset(VOID)
 {
     UINT32 cpupIndex;
@@ -179,7 +179,7 @@ LITE_OS_SEC_TEXT_INIT VOID LOS_CpupReset(VOID)
 
     return;
 }
-
+//设置CPU周期
 LITE_OS_SEC_TEXT_MINOR VOID OsSetCpuCycle(UINT64 cycles)
 {
     startCycles = cycles;
@@ -406,7 +406,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_HistorySysCpuUsage(UINT16 mode)
     SCHEDULER_UNLOCK(intSave);
     return cpup;
 }
-
+//获取参数进程的CPU历史使用情况
 LITE_OS_SEC_TEXT UINT32 OsHistoryProcessCpuUsageUnsafe(UINT32 pid, UINT16 mode)
 {
     UINT64 cpuCycleAll;
@@ -417,7 +417,7 @@ LITE_OS_SEC_TEXT UINT32 OsHistoryProcessCpuUsageUnsafe(UINT32 pid, UINT16 mode)
     UINT32 ret;
     OsCpupCB *processCpup = &g_cpup[pid];
 
-    ret = OsCpuUsageParaCheck(pid);
+    ret = OsCpuUsageParaCheck(pid);//参数检查
     if (ret != LOS_OK) {
         return ret;
     }
@@ -431,23 +431,23 @@ LITE_OS_SEC_TEXT UINT32 OsHistoryProcessCpuUsageUnsafe(UINT32 pid, UINT16 mode)
         cpup = (UINT32)((LOS_CPUP_SINGLE_CORE_PRECISION * cpuCycleCurProcess) / cpuCycleAll);
     }
 
-    OsProcessCycleStart();
+    OsProcessCycleStart();//进程
 
     return cpup;
 }
-
+//获取参数进程的CPU历史使用情况
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_HistoryProcessCpuUsage(UINT32 pid, UINT16 mode)
 {
     UINT32 cpup;
     UINT32 intSave;
 
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_LOCK(intSave);//禁止调度
     cpup = OsHistoryProcessCpuUsageUnsafe(pid, mode);
-    SCHEDULER_UNLOCK(intSave);
+    SCHEDULER_UNLOCK(intSave);//恢复调度
 
     return cpup;
 }
-
+//获取所有CPU的使用情况
 LITE_OS_SEC_TEXT UINT32 OsAllCpuUsageUnsafe(UINT16 maxNum, CPUP_INFO_S *cpupInfo, UINT16 mode, UINT16 flag)
 {
     UINT16 loop;
@@ -525,11 +525,11 @@ LITE_OS_SEC_TEXT_MINOR VOID OsCpupIrqStart(VOID)
     UINT32 high;
     UINT32 low;
 
-    LOS_GetCpuCycle(&high, &low);
-    intTimeStart[ArchCurrCpuid()] = ((UINT64)high << HIGH_BITS) + low;
+    LOS_GetCpuCycle(&high, &low);//获取CPU周期
+    intTimeStart[ArchCurrCpuid()] = ((UINT64)high << HIGH_BITS) + low;//
     return;
 }
-
+//统计中断结束数据
 LITE_OS_SEC_TEXT_MINOR VOID OsCpupIrqEnd(UINT32 intNum)
 {
     UINT32 high;
@@ -540,10 +540,10 @@ LITE_OS_SEC_TEXT_MINOR VOID OsCpupIrqEnd(UINT32 intNum)
     LOS_GetCpuCycle(&high, &low);
     intTimeEnd = ((UINT64)high << HIGH_BITS) + low;
 
-    g_cpup[g_processMaxNum + intNum].id = intNum;
-    g_cpup[g_processMaxNum + intNum].status = OS_CPUP_USED;
-    timeInIrqPerProcessSwitch[cpuID] += (intTimeEnd - intTimeStart[cpuID]);
-    g_cpup[g_processMaxNum + intNum].allTime += (intTimeEnd - intTimeStart[cpuID]);
+    g_cpup[g_processMaxNum + intNum].id = intNum;//(进程ID/中断号)
+    g_cpup[g_processMaxNum + intNum].status = OS_CPUP_USED;//使用了CPU监测
+    timeInIrqPerProcessSwitch[cpuID] += (intTimeEnd - intTimeStart[cpuID]);//累计CPU的耗时
+    g_cpup[g_processMaxNum + intNum].allTime += (intTimeEnd - intTimeStart[cpuID]);//累计(进程/中断号)的耗时
 
     return;
 }

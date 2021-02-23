@@ -151,20 +151,20 @@ void uart_get_raw(void)
     }
 }
 extern void dprintf(const char *fmt, ...);
-
+//串口硬中断处理函数
 static void uart_irqhandle(void)
 {
     UINT8 ch;
-    shellCmdLineParse(0, dprintf);
+    shellCmdLineParse(0, dprintf);//shell解析输入的内容
 }
-
+//创建串口硬中断
 int uart_hwiCreate(void)
 {
     UINT32 uwRet = 0;
     if (uwRet != LOS_HwiCreate(NUM_HAL_INTERRUPT_UART, 0xa0, 0, uart_irqhandle, 0)) {
         return uwRet;
     }
-    uart_interrupt_unmask();
+    uart_interrupt_unmask();//取消中断屏蔽
     return 0;
 }
 
@@ -206,10 +206,10 @@ void uart_init()
     /* enable UART1 */
     WRITE_UINT32(0x1, UART_REG_BASE + UART_IER); /*lint !e40*/
 
-    (VOID)LOS_EventInit(&g_uartEvent);
+    (VOID)LOS_EventInit(&g_uartEvent);//初始化串口事件
 }
-
+//取消串口中断屏蔽
 void uart_interrupt_unmask(void)
 {
-    HalIrqUnmask(NUM_HAL_INTERRUPT_UART);
+    HalIrqUnmask(NUM_HAL_INTERRUPT_UART);//参考见于 harmony\vendor\hisi\hi35xx\hi3516dv300\config\board\include\hisoc\uart.h
 }
