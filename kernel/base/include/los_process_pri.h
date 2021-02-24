@@ -80,7 +80,7 @@ typedef struct ProcessCB {
     CHAR                 processName[OS_PCB_NAME_LEN]; /**< Process name */	//进程名称
     UINT32               processID;                    /**< process ID = leader thread ID */	//进程ID,由进程池分配,范围[0,64]
     UINT16               processStatus;                /**< [15:4] process Status; [3:0] The number of threads currently
-                                                            running in the process *///这里设计很巧妙.用一个16表示了两层逻辑 数量和状态,点赞!
+                                                            running in the process *///这里设计很巧妙.用一个变量表示了两层逻辑 数量和状态,点赞!
     UINT16               priority;                     /**< process priority */	//进程优先级
     UINT16               policy;                       /**< process policy */	//进程的调度方式,默认抢占式
     UINT16               timeSlice;                    /**< Remaining time slice *///进程时间片,默认2个tick

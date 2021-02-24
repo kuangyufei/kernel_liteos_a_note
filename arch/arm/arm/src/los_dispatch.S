@@ -254,23 +254,23 @@ OsKernelTaskLoad: 			@内核任务的加载
     ADD     SP, SP, #4 		@sp=SP+4
     LDMFD   SP!, {LR, PC}^ 	@返回地址赋给pc指针
 
-OsIrqHandler:	@中断处理
+OsIrqHandler:	@硬中断处理
     SUB     LR, LR, #4
 
     /* push r0-r3 to irq stack */
-    STMFD   SP, {R0-R3}
+    STMFD   SP, {R0-R3}		@r0-r3寄存器入栈
     SUB     R0, SP, #(4 * 4)
     MRS     R1, SPSR		@获取程序状态控制寄存器
     MOV     R2, LR
 
-    /* disable irq, switch to svc mode */
-    CPSID   i, #0x13				@禁止中断,切换到SVC模式
-
+    /* disable irq, switch to svc mode */@超级用户模式(SVC 模式)，主要用于 SWI(软件中断)和 OS(操作系统)。
+    CPSID   i, #0x13				@切换到SVC模式,此处一切换,后续指令将入SVC的栈
+					@CPSID i为关中断指令,对应的是CPSIE
     /* push spsr and pc in svc stack */
-    STMFD   SP!, {R1, R2}
-    STMFD   SP, {LR}
+    STMFD   SP!, {R1, R2} @实际是将 SPSR,和LR入栈,入栈顺序为 R1,R2,SP自增
+    STMFD   SP, {LR}	  @LR再入栈,SP不自增
 
-    AND     R3, R1, #CPSR_MASK_MODE	
+    AND     R3, R1, #CPSR_MASK_MODE	@获取CPU的运行模式
     CMP     R3, #CPSR_USER_MODE		@中断是否发生在用户模式
     BNE     OsIrqFromKernel			@中断不发生在用户模式下则跳转到OsIrqFromKernel
 
@@ -324,15 +324,15 @@ OsIrqFromKernel:	@从内核发起中断
 
     ADD     SP, SP, #4
 
-OsIrqContextRestore:
-    LDR     R0, [SP, #(4 * 7)]
-    MSR     SPSR_cxsf, R0
+OsIrqContextRestore:	@中断环境恢复
+    LDR     R0, [SP, #(4 * 7)]	@读取 SP+28 位置数据给R0
+    MSR     SPSR_cxsf, R0		@恢复spsr
     AND     R0, R0, #CPSR_MASK_MODE
-    CMP     R0, #CPSR_USER_MODE
+    CMP     R0, #CPSR_USER_MODE	@
 
-    LDMFD   SP!, {R0-R3, R12}
+    LDMFD   SP!, {R0-R3, R12}	@
 
-    BNE     OsIrqContextRestoreToKernel
+    BNE     OsIrqContextRestoreToKernel @CPU工作在非用户模式
 
     /* load user sp and lr, and jump cpsr */
     LDMFD   SP, {R13, R14}^

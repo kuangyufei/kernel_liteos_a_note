@@ -436,7 +436,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
     UINT32 ret;
     TSK_INIT_PARAM_S taskInitParam;
     Percpu *perCpu = OsPercpuGet();//获取CPU信息
-    UINT32 *idleTaskID = &perCpu->idleTaskID;
+    UINT32 *idleTaskID = &perCpu->idleTaskID;//指定CPU的空闲任务
 
     (VOID)memset_s((VOID *)(&taskInitParam), sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));//任务初始参数清0
     taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)OsIdleTask;//入口函数指定idle
@@ -449,7 +449,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
 #endif
     ret = LOS_TaskCreate(idleTaskID, &taskInitParam);//创建task并申请调度,
     OS_TCB_FROM_TID(*idleTaskID)->taskStatus |= OS_TASK_FLAG_SYSTEM_TASK;//设置task状态为系统任务,系统任务运行在内核态.
-	//这里说下系统任务有哪些?比如: idle,swtmr(软时钟)等等 
+	//这里说下系统任务有哪些?比如: idle,swtmr(软时钟),资源回收等等 
     return ret;
 }
 
@@ -457,7 +457,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
  * Description : get id of current running task.
  * Return      : task id
  */
-LITE_OS_SEC_TEXT UINT32 LOS_CurTaskIDGet(VOID)
+LITE_OS_SEC_TEXT UINT32 LOS_CurTaskIDGet(VOID)//获取当前任务的ID
 {
     LosTaskCB *runTask = OsCurrTaskGet();
 
@@ -506,10 +506,10 @@ LITE_OS_SEC_TEXT VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status)
     LosProcessCB *runProcess = NULL;
     LosTaskCB *mainTask = NULL;
 
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_LOCK(intSave);//禁止调度
     runProcess = OS_PCB_FROM_PID(taskCB->processID);//通过任务ID拿到进程实体
-    mainTask = OS_TCB_FROM_TID(runProcess->threadGroupID);//通过线程组ID拿到主任务实体,threadGroupID就是等于mainTask的taskId
-    SCHEDULER_UNLOCK(intSave);							//这个是在线程组创建的时候指定的.
+    mainTask = OS_TCB_FROM_TID(runProcess->threadGroupID);//通过线程组ID拿到主任务实体,threadGroupID就是等于mainTask的taskId,这个是在线程组创建的时候指定的.
+    SCHEDULER_UNLOCK(intSave);//恢复调度
     if (mainTask == taskCB) {//如果参数任务就是主任务
         OsTaskExitGroup(status);//task退出线程组
     }
@@ -521,8 +521,8 @@ LITE_OS_SEC_TEXT VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status)
         return;
     }
 
-    if (taskCB->taskStatus & OS_TASK_FLAG_DETACHED) {//任务贴有分离的标签
-        (VOID)OsTaskDeleteUnsafe(taskCB, status, intSave);//任务要over了,走起释放占用的资源的流程
+    if (taskCB->taskStatus & OS_TASK_FLAG_DETACHED) {//任务状态是否有分离标签
+        (VOID)OsTaskDeleteUnsafe(taskCB, status, intSave);//任务要over了,释放占用的资源
     }
 
     OsTaskJoinPostUnsafe(taskCB);//退出前唤醒跟自己绑在一块的任务
@@ -546,8 +546,8 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskEntry(UINT32 taskID)
      * from interrupt and other cores. release task spinlock and enable
      * interrupt in sequence at the task entry.
      */
-    LOS_SpinUnlock(&g_taskSpin);
-    (VOID)LOS_IntUnLock();
+    LOS_SpinUnlock(&g_taskSpin);//释放任务自旋锁
+    (VOID)LOS_IntUnLock();//恢复中断
 
     taskCB = OS_TCB_FROM_TID(taskID);
     taskCB->joinRetval = taskCB->taskEntry(taskCB->args[0], taskCB->args[1],//调用任务的入口函数
@@ -782,17 +782,17 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskCBInitBase(LosTaskCB *taskCB,
     LOS_ListInit(&(taskCB->msgListHead));//初始化 liteipc的消息链表 
     (VOID)memset_s(taskCB->accessMap, sizeof(taskCB->accessMap), 0, sizeof(taskCB->accessMap));
 #endif
-    taskCB->policy = (initParam->policy == LOS_SCHED_FIFO) ? LOS_SCHED_FIFO : LOS_SCHED_RR;
-    taskCB->taskStatus = OS_TASK_STATUS_INIT;
+    taskCB->policy = (initParam->policy == LOS_SCHED_FIFO) ? LOS_SCHED_FIFO : LOS_SCHED_RR;//调度模式
+    taskCB->taskStatus = OS_TASK_STATUS_INIT;//任务初始状态
     if (initParam->uwResved & OS_TASK_FLAG_DETACHED) {//分离模式 代表任务与其他任务的关系
-        taskCB->taskStatus |= OS_TASK_FLAG_DETACHED;
+        taskCB->taskStatus |= OS_TASK_FLAG_DETACHED;//任务状态贴上分离标签
     } else {//参与模式
         LOS_ListInit(&taskCB->joinList);
-        taskCB->taskStatus |= OS_TASK_FLAG_PTHREAD_JOIN;
+        taskCB->taskStatus |= OS_TASK_FLAG_PTHREAD_JOIN;//任务状态贴上联合标签
     }
 
     taskCB->futex.index = OS_INVALID_VALUE;
-    LOS_ListInit(&taskCB->lockList);
+    LOS_ListInit(&taskCB->lockList);//初始化互斥锁链表
 }
 //任务初始化
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam,

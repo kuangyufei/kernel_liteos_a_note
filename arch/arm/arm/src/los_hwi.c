@@ -215,14 +215,14 @@ STATIC UINT32 OsHwiDelNoShared(HWI_HANDLE_T hwiNum)
 {
     UINT32 intSave;
 
-    HWI_LOCK(intSave);
+    HWI_LOCK(intSave);//申请硬中断自旋锁
     g_hwiForm[hwiNum].pfnHook = NULL;//回调函数直接NULL
     if (g_hwiForm[hwiNum].uwParam) {//如有参数
         (VOID)LOS_MemFree(m_aucSysMem0, (VOID *)g_hwiForm[hwiNum].uwParam);//释放内存
     }
     g_hwiForm[hwiNum].uwParam = 0; //NULL
 
-    HWI_UNLOCK(intSave);
+    HWI_UNLOCK(intSave);//释放硬中断自旋锁
     return LOS_OK;
 }
 //创建一个不支持共享的中断
@@ -258,7 +258,7 @@ STATIC UINT32 OsHwiDelShared(HWI_HANDLE_T hwiNum, const HwiIrqParam *irqParam)
     UINT32 intSave;
 
     HWI_LOCK(intSave);
-    hwiForm = &g_hwiForm[hwiNum];
+    hwiForm = &g_hwiForm[hwiNum];//从全局注册的中断向量表中获取中断项
     hwiFormtmp = hwiForm;
 
     if ((hwiForm->uwParam & IRQF_SHARED) && ((irqParam == NULL) || (irqParam->pDevId == NULL))) {

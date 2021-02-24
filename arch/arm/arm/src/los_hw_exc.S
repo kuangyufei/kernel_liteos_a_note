@@ -158,7 +158,7 @@ __stack_chk_guard_setup:
     POP     {FP, PC}
 
 @ Description: Undefined instruction exception handler
-_osExceptUndefInstrHdl:
+_osExceptUndefInstrHdl:@出现未定义的指令处理
 #ifdef LOSCFG_GDB
     GDB_HANDLE OsUndefIncExcHandleEntry
 #else
@@ -172,43 +172,43 @@ _osExceptUndefInstrHdl:
 #endif
 
 @ Description: Software interrupt exception handler
-_osExceptSwiHdl:
-    SUB     SP, SP, #(4 * 16)
-    STMIA   SP, {R0-R12}
-    MRS     R3, SPSR
-    MOV     R4, LR
+_osExceptSwiHdl: @软中断异常处理
+    SUB     SP, SP, #(4 * 16)	@先申请16个栈空间用于处理本次软中断
+    STMIA   SP, {R0-R12}		@保存R0-R12寄存器值
+    MRS     R3, SPSR			@读取本模式下的SPSR值
+    MOV     R4, LR				@保存回跳寄存器LR
 
-    AND     R1, R3, #CPSR_MASK_MODE                          @ Interrupted mode
-    CMP     R1, #CPSR_USER_MODE                              @ User mode
-    BNE     OsKernelSVCHandler                               @ Branch if not user mode
-
+    AND     R1, R3, #CPSR_MASK_MODE                          @ Interrupted mode 获取中断模式
+    CMP     R1, #CPSR_USER_MODE                              @ User mode	是否为用户模式
+    BNE     OsKernelSVCHandler                               @ Branch if not user mode 非用户模式下跳转
+	@ 当为用户模式时,获取SP和LR寄出去值
     @ we enter from user mode, we need get the values of  USER mode r13(sp) and r14(lr).
     @ stmia with ^ will return the user mode registers (provided that r15 is not in the register list).
-    MOV     R0, SP
-    STMFD   SP!, {R3}                                        @ Save the CPSR
-    ADD     R3, SP, #(4 * 17)                                @ Offset to pc/cpsr storage
-    STMFD   R3!, {R4}                                        @ Save the CPSR and r15(pc)
-    STMFD   R3, {R13, R14}^                                  @ Save user mode r13(sp) and r14(lr)
+    MOV     R0, SP											 @获取SP值,R0将作为OsArmA32SyscallHandle的参数
+    STMFD   SP!, {R3}                                        @ Save the CPSR 入栈保存CPSR值
+    ADD     R3, SP, #(4 * 17)                                @ Offset to pc/cpsr storage 跳到PC/CPSR存储位置
+    STMFD   R3!, {R4}                                        @ Save the CPSR and r15(pc) 保存LR寄存器
+    STMFD   R3, {R13, R14}^                                  @ Save user mode r13(sp) and r14(lr) 保存用户模式下的SP和LR寄存器
     SUB     SP, SP, #4
     PUSH_FPU_REGS R1
 
     MOV     FP, #0                                           @ Init frame pointer
-    CPSIE   I
+    CPSIE   I	@开中断,表明在系统调用期间可响应中断
     BLX     OsArmA32SyscallHandle	/*处理系统调用*/
-    CPSID   I
+    CPSID   I	@执行后续指令前必须先关中断
 
-    POP_FPU_REGS R1
-    ADD     SP, SP,#4
-    LDMFD   SP!, {R3}                                        @ Fetch the return SPSR
-    MSR     SPSR_cxsf, R3                                    @ Set the return mode SPSR
+    POP_FPU_REGS R1											 @弹出FP值给R1
+    ADD     SP, SP,#4										 @ 定位到保存旧SPSR值的位置
+    LDMFD   SP!, {R3}                                        @ Fetch the return SPSR 弹出旧SPSR值
+    MSR     SPSR_cxsf, R3                                    @ Set the return mode SPSR 恢复该模式下的SPSR值
 
     @ we are leaving to user mode, we need to restore the values of USER mode r13(sp) and r14(lr).
     @ ldmia with ^ will return the user mode registers (provided that r15 is not in the register list)
 
-    LDMFD   SP!, {R0-R12}
-    LDMFD   SP, {R13, R14}^                                  @ Restore user mode R13/R14
-    ADD     SP, SP, #(2 * 4)
-    LDMFD   SP!, {PC}^                                       @ Return to user
+    LDMFD   SP!, {R0-R12}									 @恢复R0-R12寄存器
+    LDMFD   SP, {R13, R14}^                                  @ Restore user mode R13/R14 恢复用户模式的R13/R14寄存器
+    ADD     SP, SP, #(2 * 4)								 @定位到保存旧PC值的位置
+    LDMFD   SP!, {PC}^                                       @ Return to user 弹出值给PC寄存器
 
 OsKernelSVCHandler:
     ADD     R0, SP, #(4 * 16)

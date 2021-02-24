@@ -1,6 +1,7 @@
 git add -A
-git commit -m  '硬中断代码注释
-    百万汉字注解 + 百篇博客分析 -> 挖透鸿蒙内核源码
+git commit -m  '系统调用由软中断实现,对其汇编代码注解
+    百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
+    https://weharmony.gitee.io
 '
 
 git push  origin master

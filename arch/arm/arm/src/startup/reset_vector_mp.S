@@ -96,10 +96,10 @@
 
     .global __exception_handlers
 __exception_handlers:
-    /*
+    /* //假设：ROM代码在硬件重置地址有这些向量
     *Assumption:  ROM code has these vectors at the hardware reset address.
     *A simple jump removes any address-space dependencies [i.e. safer]
-    */
+    *///一个简单的跳转将删除任何地址空间依赖关系
     b   reset_vector
     b   _osExceptUndefInstrHdl
     b   _osExceptSwiHdl
