@@ -194,7 +194,7 @@ _osExceptSwiHdl: @软中断异常处理
 
     MOV     FP, #0                                           @ Init frame pointer
     CPSIE   I	@开中断,表明在系统调用期间可响应中断
-    BLX     OsArmA32SyscallHandle	/*处理系统调用*/
+    BLX     OsArmA32SyscallHandle	/*交给C语言处理系统调用*/
     CPSID   I	@执行后续指令前必须先关中断
 
     POP_FPU_REGS R1											 @弹出FP值给R1

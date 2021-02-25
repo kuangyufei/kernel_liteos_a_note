@@ -69,8 +69,8 @@
     .arm
 
 /* param0 is stack bottom, param1 is stack size, r12 hold cpu id */
-.macro EXC_SP_SET param0, param1
-    ldr    r1, =\param0
+.macro EXC_SP_SET param0, param1 @设置各工作模式栈 ,r12保存了CPU ID
+    ldr    r1, =\param0 
     mov    r0, \param1
     bl     sp_set
 .endm
@@ -100,42 +100,42 @@ __exception_handlers:
     *Assumption:  ROM code has these vectors at the hardware reset address.
     *A simple jump removes any address-space dependencies [i.e. safer]
     *///一个简单的跳转将删除任何地址空间依赖关系
-    b   reset_vector
-    b   _osExceptUndefInstrHdl
-    b   _osExceptSwiHdl
-    b   _osExceptPrefetchAbortHdl
-    b   _osExceptDataAbortHdl
-    b   _osExceptAddrAbortHdl
-    b   OsIrqHandler
-    b   _osExceptFiqHdl
-
+    b   reset_vector @所有的异常中断入口组成了reset vector
+    b   _osExceptUndefInstrHdl 	@异常处理之CPU碰到不认识的指令
+    b   _osExceptSwiHdl			@异常处理之:软中断
+    b   _osExceptPrefetchAbortHdl	@异常处理之:取指异常
+    b   _osExceptDataAbortHdl		@异常处理之:数据异常
+    b   _osExceptAddrAbortHdl		@异常处理之:地址异常
+    b   OsIrqHandler				@异常处理之:硬中断
+    b   _osExceptFiqHdl				@异常处理之:快中断
+	@使机器进入管理模式的启动代码
     /* Startup code which will get the machine into supervisor mode */
     .global reset_vector
     .type   reset_vector,function
 reset_vector:
     /* clear register TPIDRPRW */
-    mov     r0, #0
-    mcr     p15, 0, r0, c13, c0, 4
-    /* do some early cpu setup: i/d cache disable, mmu disabled */
-    mrc     p15, 0, r0, c1, c0, 0
-    bic     r0, #(1<<12)
-    bic     r0, #(1<<2 | 1<<0)
-    mcr     p15, 0, r0, c1, c0, 0
+    mov     r0, #0					@r0 = 0
+    mcr     p15, 0, r0, c13, c0, 4 	@c0,c13 = 0, C13为进程标识符 含义见 ARM720T.PDF 第64页
+    /* do some early cpu setup: i/d cache disable, mmu disabled */ @禁用MMU, i/d缓存
+    mrc     p15, 0, r0, c1, c0, 0  	@r0 = c1 ,c1寄存器详细解释见第64页
+    bic     r0, #(1<<12) 			@位清除指令,清除r0的第11位
+    bic     r0, #(1<<2 | 1<<0)		@清除第0和2位 ,禁止 MMU和缓存 0位:MMU enable/disable 2位:Cache enable/disable
+    mcr     p15, 0, r0, c1, c0, 0 	@c1=r0 
 
-    /* r11: delta of physical address and virtual address */
-    adr     r11, pa_va_offset
-    ldr     r0, [r11]
-    sub     r11, r11, r0
+    /* r11: delta of physical address and virtual address */@物理地址和虚拟地址的增量
+    adr     r11, pa_va_offset @将基于PC相对偏移的地址pa_va_offset值读取到寄存器R11中
+    ldr     r0, [r11]		  @将R11的值给r0
+    sub     r11, r11, r0	  @r11 = r11 - r0	
 
-    mrc     p15, 0, r12, c0, c0, 5              /* r12: get cpuid */
-    and     r12, r12, #MPIDR_CPUID_MASK
-    cmp     r12, #0
-    bne     secondary_cpu_init
+    mrc     p15, 0, r12, c0, c0, 5              /* r12: get cpuid */ @获取CPUID
+    and     r12, r12, #MPIDR_CPUID_MASK @r12经过掩码过滤
+    cmp     r12, #0	@当前是否为0号CPU
+    bne     secondary_cpu_init @不是0号主CPU则调用secondary_cpu_init
 
     /* if we need to relocate to proper location or not */
-    adr     r4, __exception_handlers            /* r4: base of load address */
-    ldr     r5, =SYS_MEM_BASE                   /* r5: base of physical address */
-    subs    r12, r4, r5                         /* r12: delta of load address and physical address */
+    adr     r4, __exception_handlers            /* r4: base of load address */ @r4获得加载基地址
+    ldr     r5, =SYS_MEM_BASE                   /* r5: base of physical address */@r5获得物理基地址
+    subs    r12, r4, r5                         /* r12: delta of load address and physical address */ @r12=r4-r5 加载地址和物理地址的增量
     beq     reloc_img_to_bottom_done            /* if we load image at the bottom of physical address */
 
     /* we need to relocate image at the bottom of physical address */
@@ -154,10 +154,10 @@ reloc_img_to_bottom_loop:
     sub     r11, r11, r12                       /* r11: eventual address offset */
 
 reloc_img_to_bottom_done:
-    ldr     r4, =g_firstPageTable               /* r4: physical address of translation table and clear it */
-    add     r4, r4, r11
-    bl      page_table_clear
-
+    ldr     r4, =g_firstPageTable               /* r4: physical address of translation table and clear it */ @获取页面地址
+    add     r4, r4, r11 @r4 = r4 + r11
+    bl      page_table_clear	@清除页表
+	@设置页表
     PAGE_TABLE_SET SYS_MEM_BASE, KERNEL_VMM_BASE, KERNEL_VMM_SIZE, MMU_DESCRIPTOR_KERNEL_L1_PTE_FLAGS
     PAGE_TABLE_SET SYS_MEM_BASE, UNCACHED_VMM_BASE, UNCACHED_VMM_SIZE, MMU_INITIAL_MAP_STRONGLY_ORDERED
     PAGE_TABLE_SET PERIPH_PMM_BASE, PERIPH_DEVICE_BASE, PERIPH_DEVICE_SIZE, MMU_INITIAL_MAP_DEVICE
@@ -169,7 +169,7 @@ reloc_img_to_bottom_done:
     add     r4, r4, r11
     ldr     r4, [r4]
     add     r4, r4, r11                         /* r4: jump pagetable paddr */
-    bl      page_table_clear
+    bl      page_table_clear	/* 执行清除操作 */
 
     /* build 1M section mapping, in order to jump va during turing on mmu:pa == pa, va == pa */
     mov     r6, pc
@@ -184,23 +184,23 @@ reloc_img_to_bottom_done:
     bl      _bootaddr_setup
 
     bl      mmu_setup                           /* set up the mmu */
-
+	/* 清除中断和异常堆栈，并设置magic num来检查溢出 */
     /* clear out the interrupt and exception stack and set magic num to check the overflow */
     ldr     r0, =__undef_stack
     ldr     r1, =__exc_stack_top
-    bl      stack_init
-
-    STACK_MAGIC_SET __undef_stack, #OS_EXC_UNDEF_STACK_SIZE, OS_STACK_MAGIC_WORD
+    bl      stack_init @初始化栈
+	@设置栈顶魔法数字
+    STACK_MAGIC_SET __undef_stack, #OS_EXC_UNDEF_STACK_SIZE, OS_STACK_MAGIC_WORD 
     STACK_MAGIC_SET __abt_stack, #OS_EXC_ABT_STACK_SIZE, OS_STACK_MAGIC_WORD
     STACK_MAGIC_SET __irq_stack, #OS_EXC_IRQ_STACK_SIZE, OS_STACK_MAGIC_WORD
     STACK_MAGIC_SET __fiq_stack, #OS_EXC_FIQ_STACK_SIZE, OS_STACK_MAGIC_WORD
     STACK_MAGIC_SET __svc_stack, #OS_EXC_SVC_STACK_SIZE, OS_STACK_MAGIC_WORD
     STACK_MAGIC_SET __exc_stack, #OS_EXC_STACK_SIZE, OS_STACK_MAGIC_WORD
 
-warm_reset:
+warm_reset: @初始化CPU各异常工作模式环境
     /* initialize interrupt/exception environments */
     mov    r0, #(CPSR_IRQ_DISABLE |CPSR_FIQ_DISABLE|CPSR_IRQ_MODE)
-    msr    cpsr, r0
+    msr    cpsr, r0 @先切到IRQ模式
     EXC_SP_SET __irq_stack_top, #OS_EXC_IRQ_STACK_SIZE
 
     mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_UNDEF_MODE)
@@ -212,7 +212,7 @@ warm_reset:
     EXC_SP_SET __abt_stack_top, #OS_EXC_ABT_STACK_SIZE
 
     mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_FIQ_MODE)
-    msr    cpsr, r0
+    msr    cpsr, r0 
     EXC_SP_SET __fiq_stack_top, #OS_EXC_FIQ_STACK_SIZE
 
     /* initialize CPSR (machine state register) */
@@ -223,19 +223,19 @@ warm_reset:
     msr    spsr, r0
 
     /* get cpuid and keep it in r12 */
-    mrc     p15, 0, r12, c0, c0, 5
-    and     r12, r12, #MPIDR_CPUID_MASK
+    mrc     p15, 0, r12, c0, c0, 5		@从C0获取CPUID给R12
+    and     r12, r12, #MPIDR_CPUID_MASK @掩码操作
 
-    /* set svc stack, every cpu has OS_EXC_SVC_STACK_SIZE stack */
-    ldr    r0, =__svc_stack_top
-    mov    r2, #OS_EXC_SVC_STACK_SIZE
-    mul    r2, r2, r12
-    sub    r0, r0, r2
-    mov    sp, r0
+    /* set svc stack, every cpu has OS_EXC_SVC_STACK_SIZE stack *//*设置每一个SVC栈,每个CPU都有独立的 SVC栈*/
+    ldr    r0, =__svc_stack_top	@栈底位置,注意这里虽然使用了top,但实际是栈底
+    mov    r2, #OS_EXC_SVC_STACK_SIZE @栈大小
+    mul    r2, r2, r12 @定位到栈位置,CPU SVC栈是连在一块的
+    sub    r0, r0, r2  @计算栈顶位置,使用sub也说明了栈底大于栈顶	
+    mov    sp, r0 @栈顶位置
 
     /* enable fpu+neon */
 #ifndef LOSCFG_TEE_ENABLE
-    MRC    p15, 0, r0, c1, c1, 2
+    MRC    p15, 0, r0, c1, c1, 2 
     ORR    r0, r0, #0xC00
     BIC    r0, r0, #0xC000
     MCR    p15, 0, r0, c1, c1, 2
@@ -248,10 +248,10 @@ warm_reset:
     VMSR   FPEXC, r3
 
     LDR    r0, =__exception_handlers
-    MCR    p15, 0, r0, c12, c0, 0
+    MCR    p15, 0, r0, c12, c0, 0 @c12=r0
 
-    cmp    r12, #0
-    bne    cpu_start
+    cmp    r12, #0	@是否为主CPU
+    bne    cpu_start @跳转到cpu_start运行
 
 clear_bss:
     ldr    r1, =__bss_start
@@ -280,8 +280,8 @@ bss_loop:
 _start_hang:
     b      _start_hang
 
-mmu_setup:
-    mov     r12, #0
+mmu_setup:			@启动MMU
+    mov     r12, #0 
     mcr     p15, 0, r12, c8, c7, 0              /* Set c8 to control the TLB and set the mapping to invalid */
     isb
     mcr     p15, 0, r12, c2, c0, 2              /* Initialize the c2 register */
@@ -413,15 +413,15 @@ page_table_build_loop:
     bx      lr
 
 /*
- * init stack to initial value
+ * init stack to initial value 初始化栈,前置条件:r0和r1分别为栈顶和栈底
  * r0 is stack mem start, r1 is stack mem end
  */
 stack_init:
-    ldr     r2, =OS_STACK_INIT
-    ldr     r3, =OS_STACK_INIT
+    ldr     r2, =OS_STACK_INIT	@魔法数字
+    ldr     r3, =OS_STACK_INIT	@魔法数字
     /* Main loop sets 32 bytes at a time. */
 stack_init_loop:
-    .irp    offset, #0, #8, #16, #24
+    .irp    offset, #0, #8, #16, #24 @等价于 strd    r2, r3, [r0, 0],...,strd    r2, r3, [r0, 24]
     strd    r2, r3, [r0, \offset]
     .endr
     add     r0, #32
@@ -479,9 +479,9 @@ init_flag:
     */
     .section ".int_stack", "wa", %nobits
     .align  3
-
+@申请对应的内存空间
 __undef_stack:
-    .space OS_EXC_UNDEF_STACK_SIZE * CORE_NUM
+    .space OS_EXC_UNDEF_STACK_SIZE * CORE_NUM 
 __undef_stack_top:
 
 __abt_stack:
@@ -489,7 +489,7 @@ __abt_stack:
 __abt_stack_top:
 
 __irq_stack:
-    .space OS_EXC_IRQ_STACK_SIZE * CORE_NUM
+    .space OS_EXC_IRQ_STACK_SIZE * CORE_NUM 
 __irq_stack_top:
 
 __fiq_stack:

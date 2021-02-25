@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '系统调用由软中断实现,对其汇编代码注解
+git commit -m  '开机的第一条汇编指令在哪里? 注解开机汇编代码部分
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     https://weharmony.gitee.io
 '
