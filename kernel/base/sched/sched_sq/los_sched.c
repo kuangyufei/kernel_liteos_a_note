@@ -147,7 +147,11 @@ VOID OsSchedResched(VOID)
     /* do the task context switch */
     OsTaskSchedule(newTask, runTask);//切换任务上下文,注意OsTaskSchedule是一个汇编函数 见于 los_dispatch.s
 }
-//抢占式调度,调用极为频繁的函数
+/******************************************************
+   抢占式调度函数
+   1.LOS_Schedule会判断是否发生硬件中断
+   2.硬件中断处理完成后由汇编调用: ..\arch\arm\arm\src\los_dispatch.S
+******************************************************/
 VOID OsSchedPreempt(VOID)
 {
     LosTaskCB *runTask = NULL;

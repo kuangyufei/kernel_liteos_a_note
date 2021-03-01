@@ -77,12 +77,12 @@ MRS{条件} 通用寄存器，程序状态寄存器(CPSR 或SPSR)
 	MRS R0，SPSR   @传送SPSR 的内容到R0
                	  @MRS指令是唯一可以直接读取CPSR和SPSR寄存器的指令
 
-SPSR
-	程序状态保护寄存器，每一种模式下都有一个状态寄存器SPSR，用于保存CPSR的状态，
+SPSR（saved program status register）程序状态保存寄存器.
+	每一种模式下都有一个状态寄存器SPSR，用于保存CPSR的状态，
 	以便异常返回后恢复异常发生时的工作状态。用户模式和系统模式不是异常状态，
 	所以没有SPSR，在这两种模式下访问SPSR，将产生不可预知的后果。
 	1、SPSR 为 CPSR 中断时刻的副本，退出中断后，将SPSR中数据恢复到CPSR中。
-	2、用户模式和系统模式下SPSR不可用。
+	2、用户模式和系统模式下SPSR不可用,所以SPSR寄存器只有5个
 ******************************************************************************/
 #define CPSR_INT_DISABLE         0xC0 /* Disable both FIQ and IRQ */	//禁止IRQ和FIQ中断,因为0xC0 = 0x80 + 0x40
 #define CPSR_IRQ_DISABLE         0x80 /* IRQ disabled when =1 */		//禁止IRQ 中断
@@ -99,7 +99,7 @@ SPSR
 /* Define exception type ID */		//ARM处理器一共有7种工作模式，除了用户和系统模式其余都叫异常工作模式
 #define OS_EXCEPT_RESET          0x00	//重置功能，例如：开机就进入CPSR_SVC_MODE模式
 #define OS_EXCEPT_UNDEF_INSTR    0x01	//未定义的异常，就是others
-#define OS_EXCEPT_SWI            0x02	//软件定时器中断
+#define OS_EXCEPT_SWI            0x02	//软中断
 #define OS_EXCEPT_PREFETCH_ABORT 0x03	//预取异常(取指异常), 指令三步骤: 取指,译码,执行, 
 #define OS_EXCEPT_DATA_ABORT     0x04	//数据异常
 #define OS_EXCEPT_FIQ            0x05	//快中断异常

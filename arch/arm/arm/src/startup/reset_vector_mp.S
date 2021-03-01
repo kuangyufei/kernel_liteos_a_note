@@ -100,7 +100,7 @@ __exception_handlers:
     *Assumption:  ROM code has these vectors at the hardware reset address.
     *A simple jump removes any address-space dependencies [i.e. safer]
     *///一个简单的跳转将删除任何地址空间依赖关系
-    b   reset_vector @所有的异常中断入口组成了reset vector
+    b   reset_vector 			@开机代码
     b   _osExceptUndefInstrHdl 	@异常处理之CPU碰到不认识的指令
     b   _osExceptSwiHdl			@异常处理之:软中断
     b   _osExceptPrefetchAbortHdl	@异常处理之:取指异常
@@ -136,7 +136,7 @@ reset_vector:
     adr     r4, __exception_handlers            /* r4: base of load address */ @r4获得加载基地址
     ldr     r5, =SYS_MEM_BASE                   /* r5: base of physical address */@r5获得物理基地址
     subs    r12, r4, r5                         /* r12: delta of load address and physical address */ @r12=r4-r5 加载地址和物理地址的增量
-    beq     reloc_img_to_bottom_done            /* if we load image at the bottom of physical address */
+    beq     reloc_img_to_bottom_done            /* if we load image at the bottom of physical address */@物理地址底部加载镜像
 
     /* we need to relocate image at the bottom of physical address */
     ldr     r7, =__exception_handlers           /* r7: base of linked address (or vm address) */
@@ -229,9 +229,9 @@ warm_reset: @初始化CPU各异常工作模式环境
     /* set svc stack, every cpu has OS_EXC_SVC_STACK_SIZE stack *//*设置每一个SVC栈,每个CPU都有独立的 SVC栈*/
     ldr    r0, =__svc_stack_top	@栈底位置,注意这里虽然使用了top,但实际是栈底
     mov    r2, #OS_EXC_SVC_STACK_SIZE @栈大小
-    mul    r2, r2, r12 @定位到栈位置,CPU SVC栈是连在一块的
-    sub    r0, r0, r2  @计算栈顶位置,使用sub也说明了栈底大于栈顶	
-    mov    sp, r0 @栈顶位置
+    mul    r2, r2, r12 	@定位到栈位置,CPU SVC栈是连在一块的
+    sub    r0, r0, r2  	@计算栈顶位置,使用sub也说明了栈底大于栈顶	
+    mov    sp, r0 		@栈顶位置
 
     /* enable fpu+neon */
 #ifndef LOSCFG_TEE_ENABLE
@@ -479,7 +479,7 @@ init_flag:
     */
     .section ".int_stack", "wa", %nobits
     .align  3
-@申请对应的内存空间
+@六种特权模式申请对应的栈运行空间
 __undef_stack:
     .space OS_EXC_UNDEF_STACK_SIZE * CORE_NUM 
 __undef_stack_top:

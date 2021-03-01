@@ -211,7 +211,7 @@ _osExceptSwiHdl: @软中断异常处理
     LDMFD   SP!, {PC}^                                       @ Return to user 弹出值给PC寄存器
 
 OsKernelSVCHandler:
-    ADD     R0, SP, #(4 * 16)
+    ADD     R0, SP, #(4 * 16)	@R0=sp+64
     MOV     R5, R0
     STMFD   R0!, {R4}                                        @ Store PC
     STMFD   R0!, {R4}

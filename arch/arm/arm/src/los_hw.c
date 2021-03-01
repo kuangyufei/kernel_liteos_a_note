@@ -56,7 +56,7 @@ UINT64 g_cpuMap[LOSCFG_KERNEL_CORE_NUM] = {
 LITE_OS_SEC_TEXT_INIT VOID OsTaskExit(VOID)
 {// swi {cond} <immed_24>
     __asm__ __volatile__("swi  0");//处理器产生软中断异常，swi指令的低24位存放的是0
-}//该指令可以产生SWI异常，ARM通过该指令可以实现用户模式中对操作系统中特权模式的程序的调用，即系统调用实现的基础；
+}//该指令可以产生SWI异常，ARM通过该指令从用户模式切到SVC模式.
 
 #ifdef LOSCFG_GDB
 STATIC VOID OsTaskEntrySetupLoopFrame(UINT32) __attribute__((noinline, naked));

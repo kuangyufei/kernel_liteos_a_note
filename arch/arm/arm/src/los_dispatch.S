@@ -109,16 +109,16 @@ ARM的指令系统中关于栈指令的内容比较容易引起迷惑，这是�
     .global   ArchSpinUnlock	/*自旋锁解锁*/
     .global   OsSchedToUserSpinUnlock /*尚未实现*/
 	/* @note_why 为何要重新定义OS_TASK_STATUS_RUNNING? */
-    .equ OS_TASK_STATUS_RUNNING,       0x0010U /* .equ用于把常量值设置为可以在文本段中使用的符号 #define OS_TASK_STATUS_RUNNING 0x0010U */
-    .equ OS_PERCPU_STRUCT_SIZE,        0x28U
-    .equ OS_PERCPU_TASK_LOCK_OFFSET,   0x14U
+    .equ OS_TASK_STATUS_RUNNING,       0x0010U 	/* .equ用于把常量值设置为可以在文本段中使用的符号 #define OS_TASK_STATUS_RUNNING 0x0010U */
+    .equ OS_PERCPU_STRUCT_SIZE,        0x28U 	/*宏定义 #define OS_PERCPU_STRUCT_SIZE 0x28U*/
+    .equ OS_PERCPU_TASK_LOCK_OFFSET,   0x14U	/*宏定义 #define OS_PERCPU_TASK_LOCK_OFFSET 0x14U*/
     .fpu vfpv4 /* .fpu @note_why 尚未知这句话的含义 */
 /* 此宏用于对齐和不对齐8字节边界上的堆栈以符合ABI */
 /* macros to align and unalign the stack on 8 byte boundary for ABI compliance */
 .macro STACK_ALIGN, reg /* 栈对齐*/ 
-    MOV     \reg, sp 
-    TST     SP, #4
-    SUBEQ   SP, #4
+    MOV     \reg, sp 	@reg=sp
+    TST     SP, #4		@来检查是否设置了特定的位
+    SUBEQ   SP, #4		@表示相等时相减
     PUSH    { \reg }
 .endm
 
@@ -226,13 +226,13 @@ OsTaskContextLoad:
     ADD     SP, SP, #4 @sp=sp+4
 #endif
     /* R0 = &g_taskSpin.rawLock */
-    LDR     R0, =g_taskSpin
-    BL      ArchSpinUnlock
-    LDR     R2, =g_percpu
-    MRC     P15, 0, R3, C0, C0, 5
-    UXTB    R3, R3
-    MOV     R1, #OS_PERCPU_STRUCT_SIZE
-    MLA     R3, R1, R3, R2
+    LDR     R0, =g_taskSpin @ R0 = &g_taskSpin.rawLock 将作为 ArchSpinUnlock的参数
+    BL      ArchSpinUnlock 	@释放自旋锁g_taskSpin
+    LDR     R2, =g_percpu 
+    MRC     P15, 0, R3, C0, C0, 5 @获取CPUID给R3
+    UXTB    R3, R3 @字节被无符号扩展到32位（高24位清0）
+    MOV     R1, #OS_PERCPU_STRUCT_SIZE @R1 = sizeof(Percpu)
+    MLA     R3, R1, R3, R2 @R3=R1*R3 
     MOV     R2, #0
     STR     R2, [R3, #OS_PERCPU_TASK_LOCK_OFFSET]
 #endif
@@ -254,18 +254,18 @@ OsKernelTaskLoad: 			@内核任务的加载
     ADD     SP, SP, #4 		@sp=SP+4
     LDMFD   SP!, {LR, PC}^ 	@返回地址赋给pc指针
 
-OsIrqHandler:	@硬中断处理
+OsIrqHandler:	@硬中断处理,此时已切换到硬中断栈
     SUB     LR, LR, #4
 
     /* push r0-r3 to irq stack */
-    STMFD   SP, {R0-R3}		@r0-r3寄存器入栈
-    SUB     R0, SP, #(4 * 4)
+    STMFD   SP, {R0-R3}		@r0-r3寄存器入 irq 栈
+    SUB     R0, SP, #(4 * 4)@r0 = sp - 16
     MRS     R1, SPSR		@获取程序状态控制寄存器
-    MOV     R2, LR
+    MOV     R2, LR			@r2=lr
 
     /* disable irq, switch to svc mode */@超级用户模式(SVC 模式)，主要用于 SWI(软件中断)和 OS(操作系统)。
     CPSID   i, #0x13				@切换到SVC模式,此处一切换,后续指令将入SVC的栈
-					@CPSID i为关中断指令,对应的是CPSIE
+									@CPSID i为关中断指令,对应的是CPSIE
     /* push spsr and pc in svc stack */
     STMFD   SP!, {R1, R2} @实际是将 SPSR,和LR入栈,入栈顺序为 R1,R2,SP自增
     STMFD   SP, {LR}	  @LR再入栈,SP不自增
@@ -275,14 +275,14 @@ OsIrqHandler:	@硬中断处理
     BNE     OsIrqFromKernel			@中断不发生在用户模式下则跳转到OsIrqFromKernel
 
     /* push user sp, lr in svc stack */
-    STMFD   SP, {R13, R14}^
+    STMFD   SP, {R13, R14}^ 		@sp和LR入svc栈
 
 OsIrqFromKernel:	@从内核发起中断
-    /* from svc not need save sp and lr */
-    SUB     SP, SP, #(2 * 4)
+    /* from svc not need save sp and lr */@svc模式下发生的中断不需要保存sp和lr寄存器值
+    SUB     SP, SP, #(2 * 4)	@申请8个栈空间
 
-    /* pop r0-r3 form irq stack*/
-    LDMFD   R0, {R0-R3}
+    /* pop r0-r3 from irq stack*/
+    LDMFD   R0, {R0-R3}	@出栈
 
     /* push caller saved regs as trashed regs in svc stack */
     STMFD   SP!, {R0-R3, R12}
@@ -295,34 +295,34 @@ OsIrqFromKernel:	@从内核发起中断
      * altered in interrupt handlers.
      */
     PUSH_FPU_REGS   R0
-#ifdef LOSCFG_IRQ_USE_STANDALONE_STACK
+#ifdef LOSCFG_IRQ_USE_STANDALONE_STACK @IRQ使用独立栈
     PUSH    {R4}
     MOV     R4, SP
     EXC_SP_SET __svc_stack_top, OS_EXC_SVC_STACK_SIZE, R1, R2
 #endif
+	/*BLX 带链接和状态切换的跳转*/
+    BLX     HalIrqHandler /* 调用硬中断处理程序,无参 */
 
-    BLX     HalIrqHandler /* 调用硬中断处理程序 */
-
-#ifdef LOSCFG_IRQ_USE_STANDALONE_STACK
+#ifdef LOSCFG_IRQ_USE_STANDALONE_STACK @是否使用了独立的IRQ栈
     MOV     SP, R4
     POP     {R4}
 #endif
 
-    /* process pending signals */
-    BL      OsTaskProcSignal
+    /* process pending signals */ 	@处理挂起信号
+    BL      OsTaskProcSignal 		@跳转至C代码 
 
-    /* check if needs to schedule */
-    CMP     R0, #0
-    BLNE    OsSchedPreempt
+    /* check if needs to schedule */@检查是否需要调度
+    CMP     R0, #0	@是否需要调度,R0为参数保存值
+    BLNE    OsSchedPreempt @不相等,即R0非0,一般是 1
 
-    MOV     R0,SP
-    MOV     R1,R7
-    BL      OsSaveSignalContextIrq
+    MOV     R0,SP	@ OsSaveSignalContextIrq 参数1来源
+    MOV     R1,R7	@ OsSaveSignalContextIrq 参数2来源
+    BL      OsSaveSignalContextIrq @跳转至C代码 
 
     /* restore fpu regs */
-    POP_FPU_REGS    R0
+    POP_FPU_REGS    R0 @恢复fpu寄存器值
 
-    ADD     SP, SP, #4
+    ADD     SP, SP, #4 @sp = sp + 4 
 
 OsIrqContextRestore:	@中断环境恢复
     LDR     R0, [SP, #(4 * 7)]	@读取 SP+28 位置数据给R0

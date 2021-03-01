@@ -1108,7 +1108,7 @@ __attribute__((noinline)) VOID LOS_Panic(const CHAR *fmt, ...)
     va_start(ap, fmt);
     UartVprintf(fmt, ap);
     va_end(ap);
-    __asm__ __volatile__("swi 0");
+    __asm__ __volatile__("swi 0");//触发断异常
 }
 
 /* stack protector */
