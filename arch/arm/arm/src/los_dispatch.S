@@ -324,7 +324,7 @@ OsIrqFromKernel:	@从内核发起中断
 
     ADD     SP, SP, #4 @sp = sp + 4 
 
-OsIrqContextRestore:	@中断环境恢复
+OsIrqContextRestore:	@恢复硬中断环境
     LDR     R0, [SP, #(4 * 7)]	@读取 SP+28 位置数据给R0
     MSR     SPSR_cxsf, R0		@恢复spsr
     AND     R0, R0, #CPSR_MASK_MODE

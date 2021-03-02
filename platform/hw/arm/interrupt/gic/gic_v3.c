@@ -463,7 +463,7 @@ VOID HalIrqHandler(VOID)
     }
     g_curIrqNum = vector;//记录当前中断号
 
-    OsInterrupt(vector);
+    OsInterrupt(vector);//处理中断
     GiccSetEoir(vector);
 }
 //获取中断控制器版本

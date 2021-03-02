@@ -98,6 +98,7 @@ void SyscallHandleInit(void)
 SYSCALL是产生系统调用时触发的信号,R7寄存器存放具体的系统调用ID,也叫系统调用号
 regs:参数就是所有寄存器
 注意:本函数在用户态和内核态下都可能被调用到
+//MOV     R0, SP @获取SP值,R0将作为OsArmA32SyscallHandle的参数
 ******************************************************************/
 LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
 {
@@ -124,8 +125,8 @@ LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
         regs[REG_R0] = -ENOSYS;
         return regs;
     }
-	//regs[0-6] 记录系统调用的参数
-    switch (nArgs) { 
+	//regs[0-6] 记录系统调用的参数,这也是由R7寄存器保存系统调用号的原因
+    switch (nArgs) {//参数的个数 
         case ARG_NUM_0:
         case ARG_NUM_1:
             ret = (*(SyscallFun1)handle)(regs[REG_R0]);//执行系统调用,类似 SysUnlink(pathname);
@@ -139,13 +140,12 @@ LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
             ret = (*(SyscallFun5)handle)(regs[REG_R0], regs[REG_R1], regs[REG_R2], regs[REG_R3],
                                          regs[REG_R4]);
             break;
-        default:
+        default:	//7个参数的情况
             ret = (*(SyscallFun7)handle)(regs[REG_R0], regs[REG_R1], regs[REG_R2], regs[REG_R3],
                                          regs[REG_R4], regs[REG_R5], regs[REG_R6]);
     }
 
     regs[REG_R0] = ret;//R0保存系统调用返回值
-
     OsSaveSignalContext(regs);//保存用户栈现场
 
     /* Return the last value of curent_regs.  This supports context switches on return from the exception.

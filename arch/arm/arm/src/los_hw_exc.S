@@ -190,7 +190,7 @@ _osExceptSwiHdl: @软中断异常处理
     STMFD   R3!, {R4}                                        @ Save the CPSR and r15(pc) 保存LR寄存器
     STMFD   R3, {R13, R14}^                                  @ Save user mode r13(sp) and r14(lr) 保存用户模式下的SP和LR寄存器
     SUB     SP, SP, #4
-    PUSH_FPU_REGS R1
+    PUSH_FPU_REGS R1	@保存中断模式(用户模式模式)											
 
     MOV     FP, #0                                           @ Init frame pointer
     CPSIE   I	@开中断,表明在系统调用期间可响应中断
@@ -208,7 +208,7 @@ _osExceptSwiHdl: @软中断异常处理
     LDMFD   SP!, {R0-R12}									 @恢复R0-R12寄存器
     LDMFD   SP, {R13, R14}^                                  @ Restore user mode R13/R14 恢复用户模式的R13/R14寄存器
     ADD     SP, SP, #(2 * 4)								 @定位到保存旧PC值的位置
-    LDMFD   SP!, {PC}^                                       @ Return to user 弹出值给PC寄存器
+    LDMFD   SP!, {PC}^                                       @ Return to user 切回用户模式运行
 
 OsKernelSVCHandler:
     ADD     R0, SP, #(4 * 16)	@R0=sp+64

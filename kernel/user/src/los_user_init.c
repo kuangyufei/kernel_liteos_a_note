@@ -40,20 +40,21 @@ LITE_USER_SEC_RODATA STATIC CHAR *g_initPath = "/bin/init";//由Init_lite在编�
 //将 sys_call3 链接在 section(".user.text")段
 LITE_USER_SEC_TEXT STATIC UINT32 sys_call3(UINT32 nbr, UINT32 parm1, UINT32 parm2, UINT32 parm3)
 {
-    register UINT32 reg7 __asm__("r7") = (UINT32)(nbr); 	//给寄存器直接赋值
-    register UINT32 reg2 __asm__("r2") = (UINT32)(parm3);
-    register UINT32 reg1 __asm__("r1") = (UINT32)(parm2);
-    register UINT32 reg0 __asm__("r0") = (UINT32)(parm1);
-
+    register UINT32 reg7 __asm__("r7") = (UINT32)(nbr); //系统调用号给了R7寄存器
+    register UINT32 reg2 __asm__("r2") = (UINT32)(parm3);//R2 = 参数3
+    register UINT32 reg1 __asm__("r1") = (UINT32)(parm2);//R1 = 参数2
+    register UINT32 reg0 __asm__("r0") = (UINT32)(parm1);//R0 = 参数1
+    
+//SVC指令会触发一个“特权调用”异常。这为非特权软件调用操作系统或其他只能在PL1级别访问的系统组件提供了一种机制。
     __asm__ __volatile__
     (
         "svc %1" //管理模式（svc）      ［10011］：操作系统使用的保护模式
-        : "=r"(reg0)
+        : "=r"(reg0)	//输出寄存器为R0
         : "i"(SYS_CALL_VALUE), "r"(reg7), "r"(reg0), "r"(reg1), "r"(reg2)
         : "memory", "r14"
     );
-
-    return reg0;
+//相当于执行了 reset_vector_mp.S 中的 向量表0x08对应的 _osExceptSwiHdl 
+    return reg0;//reg0的值将在汇编中改变.
 }
 
 LITE_USER_SEC_ENTRY VOID OsUserInit(VOID *args)

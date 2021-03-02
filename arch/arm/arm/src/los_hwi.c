@@ -161,7 +161,7 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
     *intCnt = *intCnt + 1;
 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ //开启查询系统CPU的占用率的中断
-    OsCpupIrqStart();//开始统计本次中断处理还是时间
+    OsCpupIrqStart();//记录本次中断处理开始时间
 #endif
 
 #ifdef LOSCFG_KERNEL_TICKLESS
@@ -191,7 +191,7 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
 
     *intCnt = *intCnt - 1;	//@note_why 这里没看明白为什么要 -1 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ	//开启查询系统CPU的占用率的中断
-    OsCpupIrqEnd(intNum);//结束统计本次中断处理还是时间
+    OsCpupIrqEnd(intNum);//记录中断处理时间完成时间
 #endif
 }
 //申请内核空间拷贝硬中断参数

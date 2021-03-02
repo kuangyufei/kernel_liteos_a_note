@@ -623,7 +623,7 @@ void OsSaveSignalContext(unsigned int *sp)
     SCHEDULER_UNLOCK(intSave);
 }
 //发生硬中断时,需保存用户态的用户栈现场,多了一个参数 R7寄存器
-//汇编调用 见于 los_dispatch.S | 254行:    BL      OsSaveSignalContextIrq
+//汇编调用 见于 los_dispatch.S | 254行:    BL        OsSaveSignalContextIrq
 void OsSaveSignalContextIrq(unsigned int *sp, unsigned int r7)
 {
     UINTPTR sigHandler;
@@ -632,14 +632,14 @@ void OsSaveSignalContextIrq(unsigned int *sp, unsigned int r7)
     sig_cb *sigcb = NULL;
     unsigned long cpsr;
     UINT32 intSave;
-    TaskIrqContext *context = (TaskIrqContext *)(sp);
+    TaskIrqContext *context = (TaskIrqContext *)(sp);//汇编设置好SP位置
 
     OS_RETURN_IF_VOID(sp == NULL);
     cpsr = context->CPSR;
     OS_RETURN_IF_VOID(((cpsr & CPSR_MASK_MODE) != CPSR_USER_MODE));//必须在用户模式下保存用户栈信息
 
     SCHEDULER_LOCK(intSave);
-    task = OsCurrTaskGet();
+    task = OsCurrTaskGet();	//获取当前任务
     process = OsCurrProcessGet();
     sigcb = &task->sig;
     if ((sigcb->context.count == 0) && ((sigcb->sigFlag != 0) || (process->sigShare != 0))) {
@@ -656,9 +656,9 @@ void OsSaveSignalContextIrq(unsigned int *sp, unsigned int r7)
         OsProcessExitCodeSignalSet(process, signo);
         (VOID)memcpy_s(&sigcb->context.R0, sizeof(TaskIrqDataSize), &context->R0, sizeof(TaskIrqDataSize));//note_why 为何此处和OsSaveSignalContext的处理不一致?
         sigcb->context.R7 = r7;
-        context->PC = sigHandler;
-        context->R0 = signo;
-        context->R1 = (UINT32)(UINTPTR)sigcb->sigunbinfo.si_value.sival_ptr;
+        context->PC = sigHandler;//入口函数
+        context->R0 = signo;	//参数1
+        context->R1 = (UINT32)(UINTPTR)sigcb->sigunbinfo.si_value.sival_ptr;//参数2
         /* sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */
         sigcb->sigFlag ^= 1ULL << (signo - 1);
         sigcb->context.count++;

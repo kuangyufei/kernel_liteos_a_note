@@ -64,7 +64,7 @@ typedef struct {
     UINT32 PC;              /* R15 */
 } TaskContext;
 
-typedef struct {
+typedef struct {//任务中断上下文
 #if !defined(LOSCFG_ARCH_FPU_DISABLE)
     UINT64 D[FP_REGS_NUM]; /* D0-D31 */
     UINT32 regFPSCR;       /* FPSCR */

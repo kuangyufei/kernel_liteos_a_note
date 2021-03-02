@@ -56,7 +56,7 @@ IPC实现方式之消息队列:
 	 
 鸿蒙liteos 支持POSIX消息队列并加入了一种自研的消息队列 liteipc,此处重点讲 posix消息队列
 ********************************************************/
-//打开一个消息队列,封装了posix接口
+//打开一个消息队列,由posix接口封装
 mqd_t SysMqOpen(const char *mqName, int openFlag, mode_t mode, struct mq_attr *attr)
 {
     mqd_t ret;

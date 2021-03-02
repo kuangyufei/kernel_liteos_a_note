@@ -112,7 +112,7 @@ __exception_handlers:
     /* Startup code which will get the machine into supervisor mode */
     .global reset_vector
     .type   reset_vector,function
-reset_vector:
+reset_vector: //鸿蒙开机代码
     /* clear register TPIDRPRW */
     mov     r0, #0					@r0 = 0
     mcr     p15, 0, r0, c13, c0, 4 	@c0,c13 = 0, C13为进程标识符 含义见 ARM720T.PDF 第64页

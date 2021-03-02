@@ -1,8 +1,8 @@
 [![在这里插入图片描述](https://gitee.com/weharmony/docs/raw/master/pic/other/io.png)](https://weharmony.gitee.io)
 
-百万汉字注解 >> 精读内核源码,中文注解分析, 深挖地基工程,大脑永久记忆,四大码仓每日同步更新[< Gitee ](https://gitee.com/weharmony/kernel_liteos_a_note)[| Github ](https://github.com/kuangyufei/kernel_liteos_a_note)[| CSDN ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)[| Coding >](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)
+百万汉字注解 >> 精读内核源码,中文注解分析, 深挖地基工程,大脑永久记忆,四大码仓每日同步更新[< gitee ](https://gitee.com/weharmony/kernel_liteos_a_note)[| github ](https://github.com/kuangyufei/kernel_liteos_a_note)[| csdn ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)[| coding >](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)
 
-百篇博客分析 >> 故事说内核,问答式导读,生活式比喻,表格化说明,图形化展示,多站点每日同步更新[< OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)[| CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| WeHarmony >](https://weharmony.gitee.io/)
+百篇博客分析 >> 故事说内核,问答式导读,生活式比喻,表格化说明,图形化展示,多站点每日同步更新[< oschina ](https://my.oschina.net/u/3751245/blog/4626852)[| csdn ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| weharmony >](https://weharmony.gitee.io/)
 
 ---
 
@@ -57,92 +57,97 @@
 
 给 **[鸿蒙内核源码加注释](https://gitee.com/weharmony/kernel_liteos_a_note)** 过程中,整理出以下文章.
 
-
-* (总目录) | 百万汉字注解 百篇博客分析[<  CSDN](https://blog.csdn.net/kuangyufei) [ | OSCHINA  >](https://my.oschina.net/weharmony)
-
+* (总目录) | 百万汉字注解 百篇博客分析[<  csdn](https://blog.csdn.net/kuangyufei) [ | oschina  >](https://my.oschina.net/weharmony)
+  
 ### **故事篇**
 
-* (调度故事篇) | 通俗易懂故事说内核 [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108745174) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4634668)
+* (调度故事篇) | 用故事说内核调度 [<  csdn](https://blog.csdn.net/kuangyufei/article/details/108745174) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4634668)
 
-* (内存主奴篇) | 紫禁城的主子和奴才如何相处? [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108723672) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4646802)
+* (内存主奴篇) | 用故事说内存管理 [<  csdn](https://blog.csdn.net/kuangyufei/article/details/108723672) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4646802)
 
-### **进程/线程**
+* (源码注释篇) | 热爱是所有的理由和答案[<  csdn](https://blog.csdn.net/kuangyufei/article/details/109251754) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4686747)
 
-* (CPU篇) | 内核是如何描述CPU的 ?[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113782749) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4952034)
+### **ARM汇编篇**
 
-* (并发并行篇) | 内核如何管理多个CPU？[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113516222) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4940329)
+* (系统调用篇) | 全盘解剖鸿蒙系统调用实现过程[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114285166) [ | oschina  >](https://my.oschina.net/weharmony/blog/4967613)
 
-* (调度机制篇) | 任务是如何被调度执行的？[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108705968) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4623040)
+* (工作模式篇) | 鸿蒙开机代码长啥样？[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114168567) [ | oschina  >](https://my.oschina.net/weharmony/blog/4965052)
 
-* (调度队列篇) | 就绪队列对调度的作用[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108626671) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4606916)
+* (汇编传参篇) | 汇编如何传递复杂的参数?[<  csdn](https://blog.csdn.net/kuangyufei/article/details/113265990) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4927892)
 
-* (任务管理篇) | 任务是内核调度的单元[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108621428) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4603919)
+* (汇编基础篇) | CPU在哪里打卡上班 ?[<  csdn](https://blog.csdn.net/kuangyufei/article/details/112986628) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4920361)
 
-* (时钟任务篇) | 调度最大的动力来自哪里？[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108603468) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4574493)
+### **进程/线程篇**
 
-* (进程管理篇) | 进程是内核资源管理单元[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108595941) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4574429)
+* (CPU篇) | 内核是如何描述CPU的 ?[<  csdn](https://blog.csdn.net/kuangyufei/article/details/113782749) [ | oschina  >](https://my.oschina.net/weharmony/blog/4952034)
 
-* (线程概念篇) | 是谁在不断的折腾CPU?[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/112870193) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4915543)
+* (并发并行篇) | 内核如何管理多个CPU？[<  csdn](https://blog.csdn.net/kuangyufei/article/details/113516222) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4940329)
 
-* (进程概念篇) | 进程都管理了哪些资源?[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113395872) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4937521)
+* (调度机制篇) | 任务是如何被调度执行的？[<  csdn](https://blog.csdn.net/kuangyufei/article/details/108705968) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4623040)
 
-### **进程通讯**
-* (消息队列篇) | 进程间如何异步解耦传递大数据 ? [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113815355) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4952961)
+* (调度队列篇) | 就绪队列对调度的作用[<  csdn](https://blog.csdn.net/kuangyufei/article/details/108626671) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4606916)
 
-* (事件控制篇) | 任务间一对多和多对多的同步方案 [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113759481) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4950956)
+* (任务管理篇) | 任务是内核调度的单元[<  csdn](https://blog.csdn.net/kuangyufei/article/details/108621428) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4603919)
 
-* (信号量篇) | 信号量解决任务同步问题 [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113744267) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4949720)
+* (时钟任务篇) | 调度最大的动力来自哪里？[<  csdn](https://blog.csdn.net/kuangyufei/article/details/108603468) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4574493)
+
+* (进程管理篇) | 进程是内核资源管理单元[<  csdn](https://blog.csdn.net/kuangyufei/article/details/108595941) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4574429)
+
+* (线程概念篇) | 是谁在不断的折腾CPU?[<  csdn](https://blog.csdn.net/kuangyufei/article/details/112870193) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4915543)
+
+* (进程概念篇) | 进程都管理了哪些资源?[<  csdn](https://blog.csdn.net/kuangyufei/article/details/113395872) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4937521)
+
+### **通讯方式篇**
+
+* (消息队列篇) | 进程间如何异步解耦传递大数据 ? [<  csdn](https://blog.csdn.net/kuangyufei/article/details/113815355) [ | oschina  >](https://my.oschina.net/weharmony/blog/4952961)
+
+* (事件控制篇) | 任务间一对多和多对多的同步方案 [<  csdn](https://blog.csdn.net/kuangyufei/article/details/113759481) [ | oschina  >](https://my.oschina.net/weharmony/blog/4950956)
+
+* (信号量篇) | 信号量解决任务同步问题 [<  csdn](https://blog.csdn.net/kuangyufei/article/details/113744267) [ | oschina  >](https://my.oschina.net/weharmony/blog/4949720)
   
-* (进程通讯篇) | 九大通讯方式一网打尽 [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113700751) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4947398)
+* (进程通讯篇) | 九大通讯方式一网打尽 [<  csdn](https://blog.csdn.net/kuangyufei/article/details/113700751) [ | oschina  >](https://my.oschina.net/weharmony/blog/4947398)
 
-* (互斥锁篇) | 互斥锁比自旋锁丰满许多 [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113660357) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4945465)
+* (互斥锁篇) | 互斥锁比自旋锁丰满许多 [<  csdn](https://blog.csdn.net/kuangyufei/article/details/113660357) [ | oschina  >](https://my.oschina.net/weharmony/blog/4945465)
 
-
-* (自旋锁篇) | 汇编到令人心碎的自旋锁 [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113616250) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4944129)
+* (自旋锁篇) | 汇编到令人心碎的自旋锁 [<  csdn](https://blog.csdn.net/kuangyufei/article/details/113616250) [ | oschina  >](https://my.oschina.net/weharmony/blog/4944129)
 
 ### **内存篇**
 
-* (物理内存篇) | 伙伴算法是在卖标准猪肉块吗？[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/111765600) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4842408)
+* (物理内存篇) | 伙伴算法是在卖标准猪肉块吗？[<  csdn](https://blog.csdn.net/kuangyufei/article/details/111765600) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4842408)
 
-* (内存规则篇) | 内存管理到底在管什么？[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/109437223) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4698384)
+* (内存规则篇) | 内存管理到底在管什么？[<  csdn](https://blog.csdn.net/kuangyufei/article/details/109437223) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4698384)
 
-* (内存映射篇) | 什么是内存最重要的实现基础 ?[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/109032636) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4694841)
+* (内存映射篇) | 什么是内存最重要的实现基础 ?[<  csdn](https://blog.csdn.net/kuangyufei/article/details/109032636) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4694841)
 
-* (内存汇编篇) | 什么是虚拟内存的实现基础？[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108994081) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4692156)
+* (内存汇编篇) | 什么是虚拟内存的实现基础？[<  csdn](https://blog.csdn.net/kuangyufei/article/details/108994081) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4692156)
 
-* (内存分配篇) | 内存有哪些分配方式？[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108989906) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4646802)
+* (内存分配篇) | 内存有哪些分配方式？[<  csdn](https://blog.csdn.net/kuangyufei/article/details/108989906) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4646802)
 
-* (内存管理篇) | 虚拟内存全景图是怎样的？[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108821442) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4652284)
+* (内存管理篇) | 虚拟内存全景图是怎样的？[<  csdn](https://blog.csdn.net/kuangyufei/article/details/108821442) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4652284)
 
-* (内存主奴篇) | 紫禁城的主子和奴才如何相处?[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108723672) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4646802)
+* (内存主奴篇) | 紫禁城的主子和奴才如何相处?[<  csdn](https://blog.csdn.net/kuangyufei/article/details/108723672) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4646802)
 
 ### **基础篇**
 
-* (时间管理篇) | Tick是操作系统的基本时间单位  [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113867785) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4956163)
+* (时间管理篇) | Tick是操作系统的基本时间单位  [<  csdn](https://blog.csdn.net/kuangyufei/article/details/113867785) [ | oschina  >](https://my.oschina.net/weharmony/blog/4956163)
 
-* (原子操作篇) | 是哪两条汇编指令在为原子操作保驾护航 ? [<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113850603) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4955290)
+* (原子操作篇) | 是哪两条汇编指令在为原子操作保驾护航 ? [<  csdn](https://blog.csdn.net/kuangyufei/article/details/113850603) [ | oschina  >](https://my.oschina.net/weharmony/blog/4955290)
 
-* (定时器机制篇) | 内核最高优先级任务是谁???[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113774260) [ | OSCHINA  >](https://my.oschina.net/weharmony/blog/4951625)
+* (定时器机制篇) | 内核最高优先级任务是谁???[<  csdn](https://blog.csdn.net/kuangyufei/article/details/113774260) [ | oschina  >](https://my.oschina.net/weharmony/blog/4951625)
 
-* (汇编传参篇) | 汇编如何传递复杂的参数?[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/113265990) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4927892)
+* (用栈方式篇) | 栈是构建底层运行的基础[<  csdn](https://blog.csdn.net/kuangyufei/article/details/112534331) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4893388)
 
-* (汇编基础篇) | CPU在哪里打卡上班 ?[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/112986628) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4920361)
+* (位图管理篇) | 为何进程和线程都是32个优先级？[<  csdn](https://blog.csdn.net/kuangyufei/article/details/112394982) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4888467)
 
-* (用栈方式篇) | 栈是构建底层运行的基础[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/112534331) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4893388)
+* (源码结构篇) | 内核500问你能答对多少？[<  csdn](https://blog.csdn.net/kuangyufei/article/details/111938348) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4869137)
 
-* (位图管理篇) | 为何进程和线程都是32个优先级？[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/112394982) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4888467)
-
-* (源码结构篇) | 内核500问你能答对多少？[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/111938348) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4869137)
-
-* (源码注释篇) | 精读内核源码 深挖地基工程[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/109251754) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4686747)
-
-* (双向链表篇) | 谁是内核最重要结构体？[<  CSDN](https://blog.csdn.net/kuangyufei/article/details/108585659) [ | OSCHINA  >](https://my.oschina.net/u/3751245/blog/4572304)
+* (双向链表篇) | 谁是内核最重要结构体？[<  csdn](https://blog.csdn.net/kuangyufei/article/details/108585659) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4572304)
 
 ### **主流站点**
 
-感谢 `OSCHINA`，`CSDN`，`华为开发者论坛`, `51CTO`, `电子发烧友`，以及其他小伙伴通过自己的公众号对系列文章的转载和推荐，无以为报，唯有不断的深挖内核地基，输出更多文章，错漏之处请多见谅，会持续完善源码注解和文档内容，精雕细琢，尽全力打磨精品内容。文章输出站点:
+感谢 `oschina`，`csdn`，`华为开发者论坛`, `51CTO`, `电子发烧友`，以及其他小伙伴通过自己的公众号对系列文章的转载和推荐，无以为报，唯有不断的深挖内核地基，输出更多文章，错漏之处请多见谅，会持续完善源码注解和文档内容，精雕细琢，尽全力打磨精品内容。文章输出站点:
 
-**[CSDN |](https://blog.csdn.net/kuangyufei)** **[开源中国 |](https://my.oschina.net/weharmony)** **[51CTO |](https://harmonyos.51cto.com/column/34)** **[头条号 |](https://gitee.com/weharmony/docs/raw/master/pic/other/tt.png)** **[WeHarmony |](https://weharmony.gitee.io)** **[公众号](https://gitee.com/weharmony/docs/raw/master/pic/other/wxcode.png)**
+**[csdn |](https://blog.csdn.net/kuangyufei)** **[开源中国 |](https://my.oschina.net/weharmony)** **[51cto |](https://harmonyos.51cto.com/column/34)** **[头条号 |](https://gitee.com/weharmony/docs/raw/master/pic/other/tt.png)** **[weharmony |](https://weharmony.gitee.io)** **[公众号](https://gitee.com/weharmony/docs/raw/master/pic/other/wxcode.png)**
 
 ## **Fork Me**
 
@@ -178,9 +183,9 @@
 
 ---
 
-百万汉字注解 >> 精读内核源码,中文注解分析, 深挖地基工程,大脑永久记忆,四大码仓每日同步更新[< Gitee ](https://gitee.com/weharmony/kernel_liteos_a_note)[| Github ](https://github.com/kuangyufei/kernel_liteos_a_note)[| CSDN ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)[| Coding >](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)
+百万汉字注解 >> 精读内核源码,中文注解分析, 深挖地基工程,大脑永久记忆,四大码仓每日同步更新[< gitee ](https://gitee.com/weharmony/kernel_liteos_a_note)[| github ](https://github.com/kuangyufei/kernel_liteos_a_note)[| csdn ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)[| coding >](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)
 
-百篇博客分析 >> 故事说内核,问答式导读,生活式比喻,表格化说明,图形化展示,多站点每日同步更新[< OSCHINA ](https://my.oschina.net/u/3751245/blog/4626852)[| CSDN ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| WeHarmony >](https://weharmony.gitee.io/)
+百篇博客分析 >> 故事说内核,问答式导读,生活式比喻,表格化说明,图形化展示,多站点每日同步更新[< oschina ](https://my.oschina.net/u/3751245/blog/4626852)[| csdn ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| weharmony >](https://weharmony.gitee.io/)
 
 
 
