@@ -152,23 +152,23 @@ SPSR（saved program status register）程序状态保存寄存器.
 #endif
 #define OS_EXC_FIQ_STACK_SIZE    64
 #define OS_EXC_IRQ_STACK_SIZE    64
-#define OS_EXC_SVC_STACK_SIZE    0x2000
-#define OS_EXC_STACK_SIZE        0x1000
+#define OS_EXC_SVC_STACK_SIZE    0x2000	//8K
+#define OS_EXC_STACK_SIZE        0x1000	//4K
 
-#define REG_R0   0 
+#define REG_R0   0 			//头号寄存器,常用于传首个参数和返回值
 #define REG_R1   1
 #define REG_R2   2
 #define REG_R3   3
 #define REG_R4   4
 #define REG_R5   5
 #define REG_R6   6
-#define REG_R7   7
+#define REG_R7   7			//特殊情况下用于保存系统调用号
 #define REG_R8   8
 #define REG_R9   9
 #define REG_R10  10
-#define REG_R11  11
+#define REG_R11  11			//特殊情况下用于 FP寄存器
 #define REG_R12  12
-#define REG_R13  13
+#define REG_R13  13		
 #define REG_R14  14
 #define REG_R15  15
 #define REG_CPSR 16 		//程序状态寄存器(current program status register) (当前程序状态寄存器)
