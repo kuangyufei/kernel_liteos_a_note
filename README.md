@@ -19,9 +19,9 @@
 
 + 因大学时阅读 `linux 2.6` 内核痛苦经历,一直有个心愿,如何让更多对内核感兴趣的同学减少阅读时间,加速对计算机系统级的理解,而不至于过早的放弃.但因过程种种,多年一直没有行动,基本要放弃这件事了. 恰逢 `2020/9/10` 鸿蒙正式开源,重新激活了多年的心愿,就有那么点一发不可收拾了. :|P
 
-### **致敬鸿蒙内核开发者**
+### **(〃･ิ‿･ิ)ゞ鸿蒙内核开发者**
 
-* 感谢开放原子开源基金会,鸿蒙内核开发者提供了如此优秀的源码,一了多年的夙愿,津津乐道于此.精读内核源码当然是件很困难的事,时间上要以月甚至年为单位,但正因为很难才值得去做! 干困难事,必有所得. 专注聚焦,必有所获. 
+* 感谢开放原子开源基金会,致敬鸿蒙内核开发者提供了如此优秀的源码,一了多年的夙愿,津津乐道于此.精读内核源码当然是件很困难的事,时间上要以月甚至年为单位,但正因为很难才值得去做! 干困难事,必有所得. 专注聚焦,必有所获. 
 
 * 致敬内核开发者,从内核一行行的代码中能深深体会到开发者各中艰辛与坚持,及鸿蒙生态对未来的价值,可以毫不夸张的说鸿蒙内核源码可作为大学C语言,数据结构,操作系统,汇编语言 四门课程的教学项目.如此宝库,不深入研究实在是暴殄天物,于心不忍,注者坚信鸿蒙大势所趋,未来可期,是其坚定的追随者和传播者.
 
@@ -69,6 +69,8 @@
 
 ### **ARM架构**
 
+* [(异常接管篇) | 社会很单纯,复杂的是人 ](https://weharmony.gitee.io/异常接管篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114438285) [ | oschina  >](https://my.oschina.net/weharmony/blog/4973016)**
+  
 * [(寄存器篇) | arm 37个寄存器一网打尽,不再神秘 ](https://weharmony.gitee.io/寄存器篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114326994) [ | oschina  >](https://my.oschina.net/weharmony/blog/4969487)**
 
 * [(系统调用篇) | 全盘解剖鸿蒙系统调用实现过程 ](https://weharmony.gitee.io/系统调用篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114285166) [ | oschina  >](https://my.oschina.net/weharmony/blog/4967613)**
@@ -182,13 +184,15 @@
 
 ### **参与贡献**
 
-* Fork 本仓库 >> 新建 Feat_xxx 分支 >> 提交代码注解 >> [新建 Pull Request](https://gitee.com/weharmony/kernel_liteos_a_note/pull/new/weharmony:master...weharmony:master)
+* [访问注解仓库地址](https://gitee.com/weharmony/kernel_liteos_a_note)
+
+* [Fork 本仓库](https://gitee.com/weharmony/kernel_liteos_a_note) >> 新建 Feat_xxx 分支 >> 提交代码注解 >> [新建 Pull Request](https://gitee.com/weharmony/kernel_liteos_a_note/pull/new/weharmony:master...weharmony:master)
 
 * [新建 Issue](https://gitee.com/weharmony/kernel_liteos_a_note/issues)
 
 ### **喜欢就大方 点赞+关注+收藏 吧**
 
-各大站点搜 **"鸿蒙内核源码分析"**  ,快速找到组织.
+各大站点搜 **"鸿蒙内核源码分析"** ,快速找到组织, 欢迎转载,请注明出处.
 
 ![公众号: 鸿蒙内核源码分析](https://gitee.com/weharmony/docs/raw/master/pic/other/so1so.png)
 
