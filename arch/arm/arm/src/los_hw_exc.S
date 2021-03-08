@@ -277,9 +277,9 @@ _osExceptAddrAbortHdl: @地址异常处理
 _osExceptFiqHdl: @快中断异常处理
     SUB     LR, LR, #4                                       @ LR offset to return from this exception: -4.
     STMFD   SP, {R0-R7}                                      @ Push working registers.
-
+															 @ R0~R7入栈保存
     MOV     R0, #OS_EXCEPT_FIQ                               @ Set exception ID to OS_EXCEPT_FIQ.
-
+															 @ 设置参数异常类型,将作为参数传给_osExceptDispatch
     B       _osExceptDispatch                                @ Branch to global exception handler.
 
 _osExcPageFault:  @缺页异常处理函数 
@@ -328,41 +328,43 @@ _osExcPageFault:  @缺页异常处理函数
 @ Parameter  : R0     Exception Type 异常类型
 @ Regs Hold  : R3     Exception`s CPSR 发生异常时的CPSR值 @note_thinking 鸿蒙官方的注释错了,应该是Regs Hold: R2
 _osExceptDispatch: @处理异常分发
-    MRS     R2, SPSR                                         @ Save CPSR before exception.
-    MOV     R1, LR                                           @ Save PC before exception.
+    MRS     R2, SPSR                                         @ Save CPSR before exception.先用R2保存CPSR
+    MOV     R1, LR                                           @ Save PC before exception.  在用R1保存PC寄存器
     SUB     R3, SP, #(8 * 4)                                 @ Save the start address of working registers.
-
+															 @ 保存工作寄存器的起始地址,R0~R7八个寄存器
     MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)      @ Switch to SVC mode, and disable all interrupts
-    MOV     R5, SP
-    EXC_SP_SET __exc_stack_top, OS_EXC_STACK_SIZE, R6, R7
+    														 @ 切换到SVC模式,屏蔽掉所有中断
+    MOV     R5, SP											 @ R5 = SP ,保存SP位置
+    EXC_SP_SET __exc_stack_top, OS_EXC_STACK_SIZE, R6, R7	 @ 切换到当前CPU的SVC模式栈处理
 
-    STMFD   SP!, {R1}                                        @ Push Exception PC
-    STMFD   SP!, {LR}                                        @ Push SVC LR
-    STMFD   SP!, {R5}                                        @ Push SVC SP
-    STMFD   SP!, {R8-R12}                                    @ Push original R12-R8,
+    STMFD   SP!, {R1}                                        @ Push Exception PC 保存上一个工作模式的PC
+    STMFD   SP!, {LR}                                        @ Push SVC LR	保存上一个工作模式的LR
+    STMFD   SP!, {R5}                                        @ Push SVC SP  保存上一个工作模式的SP
+    STMFD   SP!, {R8-R12}                                    @ Push original R12-R8,保存上一个工作模式的R8-R12
     LDMFD   R3!, {R4-R11}                                    @ Move original R7-R0 from exception stack to original stack.
-    STMFD   SP!, {R4-R11}
+    														 @ 将保存在上一个工作模式的R0~R7取出
+    STMFD   SP!, {R4-R11}								     @ 将上一个工作模式的R0~R7保存到新的栈中
     STMFD   SP!, {R2}                                        @ Push task`s CPSR (i.e. exception SPSR).
-
+															 @ 任务的CPSR入栈
     CMP     R0, #OS_EXCEPT_DATA_ABORT 		@是数据异常吗?
     BNE     1f 								@不是跳到 锚点1处
     MRC     P15, 0, R8, C6, C0, 0 			@R8=C6(内存失效的地址) 0(访问数据失效)
     MRC     P15, 0, R9, C5, C0, 0 			@R9=C5(内存失效的状态) 0(无效整个指令cache)
     B       3f 								@跳到锚点3处执行
 1:  CMP     R0, #OS_EXCEPT_PREFETCH_ABORT 	@是预取异常吗?
-    BNE     2f 								@不是跳到 锚点2处
+    BNE     2f 								@不是,跳到 锚点2: 处运行
     MRC     P15, 0, R8, C6, C0, 2 			@R8=C6(内存失效的地址) 2(访问指令失效)
     MRC     P15, 0, R9, C5, C0, 1 			@R9=C5(内存失效的状态) 1(虚拟地址)
-    B       3f 								@跳到锚点3处执行
-2:  MOV     R8, #0
-    MOV     R9, #0
+    B       3f 								@直接跳到 锚点3: 处执行
+2:  MOV     R8, #0							@R8=0
+    MOV     R9, #0							@R9=0
 
-3:  AND     R2, R2, #CPSR_MASK_MODE 
-    CMP     R2, #CPSR_USER_MODE                              @ User mode
-    BNE     4f @不是用户模式
-    STMFD   SP, {R13, R14}^                                  @ save user mode sp and lr
+3:  AND     R2, R2, #CPSR_MASK_MODE			@获取当前工作模式 
+    CMP     R2, #CPSR_USER_MODE             @ User mode 是否为用户模式
+    BNE     4f 								@不是用户模式,跳到 锚点4: 处运行
+    STMFD   SP, {R13, R14}^                 @ save user mode sp and lr 保存用户模式的SP和LR
 4:
-    SUB     SP, SP, #(4 * 2) @sp=sp-(4*2)
+    SUB     SP, SP, #(4 * 2) 				@sp=sp-(4*2) 指向真正的栈顶
 
 _osExceptionSwi: 				@软中断的处理,系统调用就是由软中断实现的
     MOV     R1, SP                                            @ The second argument to the exception

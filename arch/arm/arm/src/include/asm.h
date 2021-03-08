@@ -48,13 +48,13 @@ extern "C" {
  *          | stackSize |  ... | stackSize | stackSize |
  */
 .macro EXC_SP_SET stackBottom, stackSize, reg0, reg1
-    mrc    p15, 0, \reg0, c0, c0, 5
-    and    \reg0, \reg0, #MPIDR_CPUID_MASK /* get cpu id */
-    mov    \reg1, #\stackSize
-    mul    \reg1, \reg1, \reg0             /* calculate current cpu stack offset */
-    ldr    \reg0, =\stackBottom
-    sub    \reg0, \reg0, \reg1             /* calculate current cpu stack bottom */
-    mov    sp, \reg0                       /* set  sp */
+    mrc    p15, 0, \reg0, c0, c0, 5        @获取CPU信息
+    and    \reg0, \reg0, #MPIDR_CPUID_MASK /* get cpu id */ @获取当前运行CPUID
+    mov    \reg1, #\stackSize			   @reg1 记录 栈大小
+    mul    \reg1, \reg1, \reg0             /* calculate current cpu stack offset */ @计算当前CPU栈的偏移位置
+    ldr    \reg0, =\stackBottom			   @reg0 记录栈底
+    sub    \reg0, \reg0, \reg1             /* calculate current cpu stack bottom */ @相减得到栈顶
+    mov    sp, \reg0                       /* set  sp */ @设置SP,将SP移到栈顶
 .endm
 
 #ifdef __cplusplus
