@@ -30,42 +30,59 @@
  */
 
 #include "asm.h"
-
+/*********************************************
+BEQ    相等
+BNE    不等
+BPL    非负
+BMI    负
+BCC    无进位
+BCS    有进位
+BLO    小于（无符号数）
+BHS    大于等于（无符号数）
+BHI    大于（无符号数）
+BLS    小于等于（无符号数）
+BVC    无溢出（有符号数）
+BVS    有溢出（有符号数）
+BGT    大于（有符号数）
+BGE    大于等于（有符号数）
+BLT    小于（有符号数）
+BLE    小于等于（有符号数）
+*********************************************/
 .syntax unified
 .arm
 
 // errno_t _arm_get_user(void *dst, const void *src, size_t dstTypeLen, size_t srcTypeLen)
 FUNCTION(_arm_get_user)
-    stmdb   sp!, {r0, r1, r2, r3, lr}
-    cmp     r2, #0
-    beq     .Lget_user_return
-    cmp     r2, r3
-    bne     .Lget_user_err
-    cmp     r2, #1
-    bhi     .Lget_user_half
-.Lget_user_byte:
-0:  ldrbt   r3, [r1], #0
-1:  strb    r3, [r0], #0
-    b       .Lget_user_return
+    stmdb   sp!, {r0, r1, r2, r3, lr} @四个参数入栈,保存LR
+    cmp     r2, #0	@r2 和 0比较
+    beq     .Lget_user_return @相等 跳到Lget_user_return 直接返回
+    cmp     r2, r3	@r2 和 r3比较
+    bne     .Lget_user_err	@不等,说明函数要返回错误
+    cmp     r2, #1	@r2 和 1比较
+    bhi     .Lget_user_half @if(dstTypeLen>1) 跳转到Lget_user_half
+.Lget_user_byte:		 @按字节拷贝数据
+0:  ldrbt   r3, [r1], #0 @r3=*r1
+1:  strb    r3, [r0], #0 @*r0=r3
+    b       .Lget_user_return 
 .Lget_user_half:
-    cmp     r2, #2
-    bhi     .Lget_user_word
-2:  ldrht   r3, [r1], #0
-3:  strh    r3, [r0], #0
+    cmp     r2, #2	@r2 和 2比较
+    bhi     .Lget_user_word  @if(dstTypeLen>2) Lget_user_word
+2:  ldrht   r3, [r1], #0 	@完成最后一个字节的拷贝
+3:  strh    r3, [r0], #0	@完成最后一个字节的拷贝
     b       .Lget_user_return
 .Lget_user_word:
-    cmp     r2, #4
-    bhi     .Lget_user_err
+    cmp     r2, #4 @r2 和 4比较
+    bhi     .Lget_user_err @if(dstTypeLen>4) 跳转到Lget_user_err
 4:  ldrt   r3, [r1], #0
 5:  str    r3, [r0], #0
-.Lget_user_return:
-    ldmia   sp!, {r0, r1, r2, r3, lr}
-    mov     r0, 0
-    bx      lr
+.Lget_user_return:	@返回锚点
+    ldmia   sp!, {r0, r1, r2, r3, lr} 	@保存的内容出栈,恢复各寄存器值
+    mov     r0, 0	@r0保存返回值为0
+    bx      lr	@跳回调用函数继续执行,_arm_get_user到此结束!
 .Lget_user_err:
-    ldmia   sp!, {r0, r1, r2, r3, lr}
-    mov     r0, #-14
-    bx      lr
+    ldmia   sp!, {r0, r1, r2, r3, lr}	@保存的内容出栈,恢复各寄存器值
+    mov     r0, #-14	@r0保存返回值为-14	
+    bx      lr	@跳回调用函数继续执行,_arm_get_user到此结束!
 
 .pushsection __exc_table, "a"
     .long   0b,  .Lget_user_err

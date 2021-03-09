@@ -71,11 +71,12 @@ LITE_OS_SEC_TEXT_INIT VOID OsSystemInfo(VOID)
             HalIrqVersion(), __DATE__, __TIME__,\
             KERNEL_NAME, KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE, buildType);
 }
-//次级CPU初始化,本函数执行的次数由次级CPU的个数决定. 例如:在四核情况下,会被执行3次, 0号通常被定义为主CPU 执行main
+//次级CPU初始化,本函数执行的次数由次级CPU的个数决定. 
+//例如:在四核情况下,会被执行3次, 0号通常被定义为主CPU 执行main
 LITE_OS_SEC_TEXT_INIT VOID secondary_cpu_start(VOID)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
-    UINT32 cpuid = ArchCurrCpuid();
+#if (LOSCFG_KERNEL_SMP == YES)//支持多cpu核开关
+    UINT32 cpuid = ArchCurrCpuid();//获取当前cpu id
 
     OsArchMmuInitPerCPU();//每个CPU都需要初始化MMU
 
@@ -91,10 +92,10 @@ LITE_OS_SEC_TEXT_INIT VOID secondary_cpu_start(VOID)
     OsCurrProcessSet(OS_PCB_FROM_PID(OsGetKernelInitProcessID())); //设置内核进程为CPU进程
     OsSwtmrInit();		//定时任务初始化,每个CPU维护自己的定时器队列
     OsIdleTaskCreate();	//创建空闲任务,每个CPU维护自己的任务队列
-    OsStart(); //本CPU正式启动在内核层的工作
+    OsStart(); //正式启动在内核层的工作
     while (1) {
-        __asm volatile("wfi");//wait for Interrupt 等待中断，即下一次中断发生前都在此hold住不干活
-    }//类似的还有 WFE: wait for Events 等待事件，即下一次事件发生前都在此hold住不干活
+        __asm volatile("wfi");//wait for Interrupt 等待中断，即下一次中断发生前都在此呆着不干活
+    }//类似的还有 WFE: wait for Events 等待事件，即下一次事件发生前都在此呆着不干活
 #endif
 }
 
@@ -150,7 +151,7 @@ LITE_OS_SEC_TEXT_INIT VOID release_secondary_cores(VOID)//调动次级CPU干活
 内核入口函数,由汇编调用,见于reset_vector_up.S 和 reset_vector_mp.S
 up指单核CPU, mp指多核CPU
 ******************************************************************************/
-LITE_OS_SEC_TEXT_INIT INT32 main(VOID)//由主CPU执行,默认 0号为主CPU 
+LITE_OS_SEC_TEXT_INIT INT32 main(VOID)//由主CPU执行,默认0号CPU 为主CPU 
 {
     UINT32 uwRet = LOS_OK;
 
@@ -167,7 +168,7 @@ LITE_OS_SEC_TEXT_INIT INT32 main(VOID)//由主CPU执行,默认 0号为主CPU
     /* system and chip info */
     OsSystemInfo();//输出系统和芯片的信息
 
-    PRINT_RELEASE("\nmain core booting up...\n"); //主内核启动中...
+    PRINT_RELEASE("\nmain core booting up...\n"); //控制台输出 主内核启动中...
 
     uwRet = OsMain();// 内核各模块初始化
     if (uwRet != LOS_OK) {

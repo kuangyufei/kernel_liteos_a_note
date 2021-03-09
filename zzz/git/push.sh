@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '注解异常分发汇编代码
+git commit -m  '注解用户空间,内核空间的汇编拷贝代码
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     https://weharmony.gitee.io
 '

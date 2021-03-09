@@ -200,31 +200,31 @@ reloc_img_to_bottom_done:
 warm_reset: @初始化CPU各异常工作模式环境
     /* initialize interrupt/exception environments */
     mov    r0, #(CPSR_IRQ_DISABLE |CPSR_FIQ_DISABLE|CPSR_IRQ_MODE)
-    msr    cpsr, r0 @先切到IRQ模式
+    msr    cpsr, r0 @设置为普通中断模式和栈
     EXC_SP_SET __irq_stack_top, #OS_EXC_IRQ_STACK_SIZE
 
     mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_UNDEF_MODE)
-    msr    cpsr, r0
+    msr    cpsr, r0 @设置为未定义模式和栈
     EXC_SP_SET __undef_stack_top, #OS_EXC_UNDEF_STACK_SIZE
 
     mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_ABT_MODE)
-    msr    cpsr, r0
+    msr    cpsr, r0 @设置为终止模式和栈
     EXC_SP_SET __abt_stack_top, #OS_EXC_ABT_STACK_SIZE
 
     mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_FIQ_MODE)
-    msr    cpsr, r0 
+    msr    cpsr, r0 @设置为快中断模式和栈
     EXC_SP_SET __fiq_stack_top, #OS_EXC_FIQ_STACK_SIZE
 
     /* initialize CPSR (machine state register) */
     mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_SVC_MODE)
-    msr    cpsr, r0
+    msr    cpsr, r0 @设置为管理模式和栈
 
     /* Note: some functions in LIBGCC1 will cause a "restore from SPSR"!! */
-    msr    spsr, r0
+    msr    spsr, r0 @同步设置spsr
 
     /* get cpuid and keep it in r12 */
-    mrc     p15, 0, r12, c0, c0, 5		@从C0获取CPUID给R12
-    and     r12, r12, #MPIDR_CPUID_MASK @掩码操作
+    mrc     p15, 0, r12, c0, c0, 5		@R12保存CPUID 
+    and     r12, r12, #MPIDR_CPUID_MASK @掩码操作获取当前cpu id
 
     /* set svc stack, every cpu has OS_EXC_SVC_STACK_SIZE stack *//*设置每一个SVC栈,每个CPU都有独立的 SVC栈*/
     ldr    r0, =__svc_stack_top	@栈底位置,注意这里虽然使用了top,但实际是栈底
@@ -340,7 +340,7 @@ cpu_start:	/* 启动次级CPU */
     ldr     r4, [r4]
     add     r4, r4, r11                         /* r4 = tt_trampoline paddr */
 
-    bl     mmu_setup
+    bl     mmu_setup			/* 安装MMU */
     bl     secondary_cpu_start	/* 启动次级CPU */
     b      .
 
@@ -357,19 +357,19 @@ secondary_cpu_init:	/* 次级CPU初始化 */
     mcr    p15, 0, r1, c1, c1, 0
     cps    #0x13
 #endif
-    bl      warm_reset
+    bl      warm_reset @重置次级CPU
 
 /*
  * set sp for current cpu
  * r1 is stack bottom, r0 is stack size, r12 hold cpu id
  */
-sp_set:
-    mrc    p15, 0, r12, c0, c0, 5
-    and    r12, r12, #MPIDR_CPUID_MASK
-    mul    r3, r0, r12
-    sub    r2, r1, r3
-    mov    sp, r2
-    bx     lr          /* set sp */
+sp_set: /* 设置当前cpu 栈顶指针 ,r1是栈底 ,r0是栈大小,r12是cpuid*/
+    mrc    p15, 0, r12, c0, c0, 5 @从协处理器取出cpuid
+    and    r12, r12, #MPIDR_CPUID_MASK @掩码获取当前运行cpu id
+    mul    r3, r0, r12 @ r3 = r0 * r12 计算出偏移量
+    sub    r2, r1, r3  @ r2 = r1 - r3 算出cpuid 对应的栈顶位置
+    mov    sp, r2	   @ 将栈顶指针sp移到栈顶位置.
+    bx     lr          /* set sp */ @跳回到LR执行
 
 /*
  * r4: page table base address

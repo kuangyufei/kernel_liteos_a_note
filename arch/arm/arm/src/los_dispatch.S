@@ -97,6 +97,10 @@ ARM的指令系统中关于栈指令的内容比较容易引起迷惑，这是�
 			|	变量2			|
 			|---------------|
 			|---------------|						低地址	
+			
+LDMFD   SP!, {PC}^
+LDM/STR架构中{∧}为可选后缀,当指令为LDM且寄存器列表中包含R15（PC）,
+选用该后缀时表示:除了正常的数据传送之外,还将SPSR复制到CPSR（将备份的程序状态寄存器SPCR恢复到当前程序状态寄存器CPSR）。
 ******************************************************************************/
 #ifdef LOSCFG_KERNEL_SMP_LOCKDEP
     .extern   OsLockDepCheckOut/*使用外部定义的函数*/
@@ -196,7 +200,7 @@ OsTaskSchedule:			/*新老任务切换上下文*/
     PUSH_FPU_REGS   R2	/*保存fpu寄存器*/
 
     /* store sp on running task */
-    STR     SP, [R1] @存储任务到栈
+    STR     SP, [R1] @在运行的任务栈中保存SP
 
 OsTaskContextLoad:
     /* clear the flag of ldrex */ @LDREX 可从内存加载数据,如果物理地址有共享TLB属性，则LDREX会将该物理地址标记为由当前处理器独占访问，并且会清除该处理器对其他任何物理地址的任何独占访问标记。
@@ -237,9 +241,9 @@ OsTaskContextLoad:
     STR     R2, [R3, #OS_PERCPU_TASK_LOCK_OFFSET]
 #endif
 
-    MVN     R3, #CPSR_INT_DISABLE
+    MVN     R3, #CPSR_INT_DISABLE @按位取反 R3 = 0x3F
     AND     R4, R4, R3
-    MSR     SPSR_cxsf, R4
+    MSR     SPSR_cxsf, R4	@修改spsr值
 
     /* restore r0-r12, lr */
     LDMFD   SP!, {R0-R12}
@@ -282,30 +286,30 @@ OsIrqFromKernel:	@从内核发起中断
     SUB     SP, SP, #(2 * 4)	@申请8个栈空间
 
     /* pop r0-r3 from irq stack*/
-    LDMFD   R0, {R0-R3}	@出栈
+    LDMFD   R0, {R0-R3}		    @从R0位置依次出栈
 
     /* push caller saved regs as trashed regs in svc stack */
-    STMFD   SP!, {R0-R3, R12}
+    STMFD   SP!, {R0-R3, R12}	@R0~R3入栈,R12入栈
 
     /* 8 bytes stack align */
-    SUB     SP, SP, #4
+    SUB     SP, SP, #4			@栈对齐
 
     /*
      * save fpu regs in case in case those been
      * altered in interrupt handlers.
      */
-    PUSH_FPU_REGS   R0
-#ifdef LOSCFG_IRQ_USE_STANDALONE_STACK @IRQ使用独立栈
-    PUSH    {R4}
-    MOV     R4, SP
-    EXC_SP_SET __svc_stack_top, OS_EXC_SVC_STACK_SIZE, R1, R2
+    PUSH_FPU_REGS   R0 @保存fpu regs，以防中断处理程序中的fpu regs被修改。
+#ifdef LOSCFG_IRQ_USE_STANDALONE_STACK @是否使用了独立的IRQ栈
+    PUSH    {R4}	@R4先入栈保存,接下来要切换栈,需保存现场
+    MOV     R4, SP	@R4=SP
+    EXC_SP_SET __svc_stack_top, OS_EXC_SVC_STACK_SIZE, R1, R2 @切换到svc栈
 #endif
 	/*BLX 带链接和状态切换的跳转*/
-    BLX     HalIrqHandler /* 调用硬中断处理程序,无参 */
+    BLX     HalIrqHandler /* 调用硬中断处理程序,无参 ,说明HalIrqHandler在svc栈中执行 */
 
 #ifdef LOSCFG_IRQ_USE_STANDALONE_STACK @是否使用了独立的IRQ栈
-    MOV     SP, R4
-    POP     {R4}
+    MOV     SP, R4	@恢复现场,sp = R4 
+    POP     {R4}	@弹出R4
 #endif
 
     /* process pending signals */ 	@处理挂起信号
@@ -327,10 +331,10 @@ OsIrqFromKernel:	@从内核发起中断
 OsIrqContextRestore:	@恢复硬中断环境
     LDR     R0, [SP, #(4 * 7)]	@读取 SP+28 位置数据给R0
     MSR     SPSR_cxsf, R0		@恢复spsr
-    AND     R0, R0, #CPSR_MASK_MODE
-    CMP     R0, #CPSR_USER_MODE	@
+    AND     R0, R0, #CPSR_MASK_MODE @掩码找出当前工作模式
+    CMP     R0, #CPSR_USER_MODE	@是否为用户模式?
 
-    LDMFD   SP!, {R0-R3, R12}	@
+    LDMFD   SP!, {R0-R3, R12}	@从SP位置依次出栈
 
     BNE     OsIrqContextRestoreToKernel @CPU工作在非用户模式
 
@@ -339,7 +343,7 @@ OsIrqContextRestore:	@恢复硬中断环境
     ADD     SP, SP, #(3 * 4)
 
     /* return to user mode */
-    LDMFD   SP!, {PC}^
+    LDMFD   SP!, {PC}^ @回到用户模式
 
 OsIrqContextRestoreToKernel:
     /* svc mode not load sp */
