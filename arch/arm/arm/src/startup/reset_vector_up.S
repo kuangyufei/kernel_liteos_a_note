@@ -124,7 +124,7 @@ __exception_handlers:
     /* Startup code which will get the machine into supervisor mode */
     .global reset_vector
     .type   reset_vector,function
-reset_vector: @重置异常向量表
+reset_vector: @单核cpu时,鸿蒙开机代码
     /* do some early cpu setup: i/d cache disable, mmu disabled */
     mrc     p15, 0, r0, c1, c0, 0
     bic     r0, #(1<<12)

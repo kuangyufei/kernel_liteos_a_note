@@ -64,7 +64,7 @@ FUNCTION(arm_inv_cache_range)
     pop    {r2, r3}
     mov    pc, lr
 
-FUNCTION(arm_clean_cache_range)
+FUNCTION(arm_clean_cache_range)	@清除缓存范围
     push   {r2, r3}
     DCACHE_LINE_SIZE r2, r3
     sub    r3, r2, #1

@@ -33,7 +33,7 @@
 
 .syntax unified
 .arm
-
+//将内核空间数据拷贝用户空间汇编实现
 // errno_t _arm_put_user(void *dst, const void *src, size_t dstTypeLen, size_t srcTypeLen)
 FUNCTION(_arm_put_user)
     stmdb   sp!, {r0, r1, r2, r3, lr}

@@ -182,44 +182,44 @@ OsStartToRun:
  * R0: new task
  * R1: run task
  */
-OsTaskSchedule:			/*新老任务切换上下文*/
+OsTaskSchedule:			/*任务调度*/
     MRS      R2, CPSR 	/*MRS 指令用于将特殊寄存器(如 CPSR 和 SPSR)中的数据传递给通用寄存器，要读取特殊寄存器的数据只能使用 MRS 指令*/
     STMFD    SP!, {LR}	/*返回地址入栈*/
     STMFD    SP!, {LR}	/*为何返回地址要再次入栈 @note_why*/
     /* jump sp */
-    SUB      SP, SP, #4 /*SP=SP-4 减4是向低地址偏移4个字节的位置的地址，即堆栈的头部的地址*/
+    SUB      SP, SP, #4 /**/
 
     /* push r0-r12*/
     STMFD    SP!, {R0-R12} 	 @将寄存器列表中的寄存器(R0-R12)压栈。
     STMFD    SP!, {R2}		/*R2 入栈*/
 
     /* 8 bytes stack align */
-    SUB      SP, SP, #4	/*SP=SP-4*/
+    SUB      SP, SP, #4		@栈对齐
 
     /* save fpu registers */
     PUSH_FPU_REGS   R2	/*保存fpu寄存器*/
 
     /* store sp on running task */
-    STR     SP, [R1] @在运行的任务栈中保存SP
+    STR     SP, [R1] @在运行的任务栈中保存SP,即runTask->stackPointer = sp
 
-OsTaskContextLoad:
+OsTaskContextLoad: @加载上下文
     /* clear the flag of ldrex */ @LDREX 可从内存加载数据,如果物理地址有共享TLB属性，则LDREX会将该物理地址标记为由当前处理器独占访问，并且会清除该处理器对其他任何物理地址的任何独占访问标记。
     CLREX @清除ldrex指令的标记
 
     /* switch to new task's sp */
-    LDR     SP, [R0] @从栈中取出任务
+    LDR     SP, [R0] @ 即:sp = new task->stackPointer
 
     /* restore fpu registers */
     POP_FPU_REGS    R2 @恢复fpu寄存器,这里用了汇编宏R2是宏的参数
 
     /* 8 bytes stack align */
-    ADD     SP, SP, #4 /*SP=SP+4*/
+    ADD     SP, SP, #4 @栈对齐
 
     LDMFD   SP!, {R0}  @将堆栈内容出栈保存到寄存器R0
     MOV     R4, R0	@R4=R0 说明R4也记录了CPSR内容,这个内容将用于 OsKernelTaskLoad中保存到SPSR 
     AND     R0, R0, #CPSR_MASK_MODE @R0 =R0&CPSR_MASK_MODE ,目的是清除高16位
-    CMP     R0, #CPSR_USER_MODE @比较R0是否为用户模式
-    BNE     OsKernelTaskLoad @不相等则跳转到OsKernelTaskLoad执行,return回去了
+    CMP     R0, #CPSR_USER_MODE @R0 和 用户模式比较
+    BNE     OsKernelTaskLoad @非用户模式则跳转到OsKernelTaskLoad执行,跳出
 
 #ifdef LOSCFG_KERNEL_SMP
 #ifdef LOSCFG_KERNEL_SMP_LOCKDEP
@@ -242,21 +242,21 @@ OsTaskContextLoad:
 #endif
 
     MVN     R3, #CPSR_INT_DISABLE @按位取反 R3 = 0x3F
-    AND     R4, R4, R3
+    AND     R4, R4, R3		@使能中断
     MSR     SPSR_cxsf, R4	@修改spsr值
 
     /* restore r0-r12, lr */
-    LDMFD   SP!, {R0-R12}
-    LDMFD   SP, {R13, R14}^
-    ADD     SP, SP, #(2 * 4)
-    LDMFD   SP!, {PC}^
+    LDMFD   SP!, {R0-R12}	@恢复寄存器值
+    LDMFD   SP, {R13, R14}^	@恢复SP和LR的值,注意此时SP值已经变了,CPU换地方上班了.
+    ADD     SP, SP, #(2 * 4)@sp = sp + 8
+    LDMFD   SP!, {PC}^		@恢复PC寄存器值,如此一来 SP和PC都有了新值,完成了上下文切换.完美!
 
 OsKernelTaskLoad: 			@内核任务的加载
-    MSR     SPSR_cxsf, R4 	@将R4保存到程序状态保存寄存器32位
+    MSR     SPSR_cxsf, R4 	@将R4整个写入到程序状态保存寄存器
     /* restore r0-r12, lr */
     LDMFD   SP!, {R0-R12} 	@出栈,依次保存到 R0-R12,其实就是恢复现场
     ADD     SP, SP, #4 		@sp=SP+4
-    LDMFD   SP!, {LR, PC}^ 	@返回地址赋给pc指针
+    LDMFD   SP!, {LR, PC}^ 	@返回地址赋给pc指针,直接跳出.
 
 OsIrqHandler:	@硬中断处理,此时已切换到硬中断栈
     SUB     LR, LR, #4

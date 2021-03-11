@@ -147,11 +147,11 @@
 .endm
 #endif
 
-@ Description: Stack-Protector Init
+@ Description: Stack-Protector Init @初始化堆栈保护器
 __stack_chk_guard_setup:
-    PUSH    {FP, LR}
+    PUSH    {FP, LR}	@FP,LR入栈
     BL      OsRandomStackGuard
-    LDR     R1, =__stack_chk_guard
+    LDR     R1, =__stack_chk_guard @0xd00a0dff
     MOV     R3, R0
     ORR     R2, R3, #0X80000000
     STR     R2, [R1]
@@ -221,9 +221,9 @@ OsKernelSVCHandler:
     SUB     SP, SP, #(4 * 2)                                 @ user sp and lr
 
     MOV     R0, #OS_EXCEPT_SWI                               @ Set exception ID to OS_EXCEPT_SWI.
-
+															 @ 设置异常ID为软中断
     B       _osExceptionSwi                                  @ Branch to global exception handler.
-
+															 @ 跳到软中断处理
 @ Description: Prefectch abort exception handler
 _osExceptPrefetchAbortHdl:
 #ifdef LOSCFG_GDB
@@ -368,34 +368,35 @@ _osExceptDispatch: @处理异常分发
 
 _osExceptionSwi: 				@软中断的处理,系统调用就是由软中断实现的
     MOV     R1, SP                                            @ The second argument to the exception
-
-    MRC     P15, 0, R4, C0, C0, 5
+															  @ 异常的第二个参数,第一个参数是R0
+    MRC     P15, 0, R4, C0, C0, 5							  @ R4获取当前cpu id
     AND     R4, R4, #MPIDR_CPUID_MASK                         @ Get Current cpu id
-    LSL     R2, R4, #2
+    LSL     R2, R4, #2			@(Logic Shift Left)逻辑左移指令		R2 = R4<<2	@note_why 没看明白这句话的含义							 
     LDR     R3, =g_curNestCount                               @ if(g_curNestCount > 0) dump to _osExceptionGetSP
-    ADD     R3, R3, R2
-    LDR     R4, [R3]
+    							@将g_curNestCount的地址存入R3
+    ADD     R3, R3, R2			@ R3 = R3 + R2
+    LDR     R4, [R3]			@R4 = *R3
 
-    CMP     R4, #0
+    CMP     R4, #0				@R4 和 0对比
     BNE     _osExceptionGetSP	@不相等则跳转
-
+	@判断异常发生在任务堆栈或系统堆栈中
     LDR     R3, =g_intCount                                   @ Judge the exception is occur in task stack or system stack
     ADD     R3, R3, R2
     LDR     R4, [R3]
-
-    CMP     R4, #0                                            @ if (g_intCount[ArchCurrCpuid()] > 0)
-    BNE     _osExceptionGetSP                                 @ can not switch svc stack
-
+	@软中断的优先级要低于硬中断,这里判断是否有硬中断发生,有则需先处理硬中断
+    CMP     R4, #0                                            @ if (g_intCount[ArchCurrCpuid()] > 0) 当前有中断要处理
+    BNE     _osExceptionGetSP                                 @ can not switch svc stack 无法切换到svc堆栈
+	@切换到统一异常堆栈(SVC栈)
     EXC_SP_SET __svc_stack_top, OS_EXC_SVC_STACK_SIZE, R6, R7 @ Switch to unified exception stack.
     ADD     R4, R4, #1
     STR     R4, [R3]
 
 _osExceptionGetSP:
-    MOV     R2, R8                                            @ far
-    MOV     R3, R9                                            @ fsr
+    MOV     R2, R8                                            @ far 从CP15的c6获取
+    MOV     R3, R9                                            @ fsr 从CP15的c5获取
     LDR     R5, =OsExcHandleEntry                             @ OsExcHandleEntry(UINT32 excType, ExcContext * excBufAddr)
-    BX      R5						@LDR为加载指令把OsExcHandleEntry加载到R5寄存器，BX为带分支的跳转指令，再跳到R5执行							
-
+    BX      R5						@LDR为加载指令把OsExcHandleEntry的地址放入R5，BX为带分支的跳转指令,去执行OsExcHandleEntry						
+	
 _OsExcReturn:
     LDR     R0, [SP, #(2 * 4)]
     AND     R0, R0,  #CPSR_MASK_MODE
