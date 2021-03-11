@@ -149,7 +149,7 @@ LITE_OS_SEC_TEXT_INIT VOID release_secondary_cores(VOID)//调动次级CPU干活
 #endif /* LOSCFG_KERNEL_SMP */
 /******************************************************************************
 内核入口函数,由汇编调用,见于reset_vector_up.S 和 reset_vector_mp.S
-up指单核CPU, mp指多核CPU
+up指单核CPU, mp指多核CPU bl        main
 ******************************************************************************/
 LITE_OS_SEC_TEXT_INIT INT32 main(VOID)//由主CPU执行,默认0号CPU 为主CPU 
 {
