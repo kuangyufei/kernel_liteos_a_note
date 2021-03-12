@@ -60,55 +60,55 @@
     .extern _osExceptSwiHdl
     .extern _osExceptUndefInstrHdl
     .extern __stack_chk_guard_setup
-    .extern g_firstPageTable
-    .extern g_mmuJumpPageTable
+    .extern g_firstPageTable 	/*一级页表,section(".bss.prebss.translation_table") UINT8 g_firstPageTable[MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS]*/
+    .extern g_mmuJumpPageTable	/*临时页表,仅用于系统开机阶段使用*/
 
     .equ MPIDR_CPUID_MASK, 0xffU
 
     .fpu vfpv4
     .arm
-
+/* 参数顺序:栈底,栈大小,r12:保存了cpuid*/
 /* param0 is stack bottom, param1 is stack size, r12 hold cpu id */
-.macro EXC_SP_SET param0, param1 @设置各工作模式栈 ,r12保存了CPU ID
+.macro EXC_SP_SET param0, param1
     ldr    r1, =\param0 
     mov    r0, \param1
     bl     sp_set
 .endm
-
+/* 参数顺序:栈顶,栈大小,魔法数字*/
 /* param0 is stack top, param1 is stack size, param2 is magic num */
 .macro STACK_MAGIC_SET param0, param1, param2
     ldr     r0, =\param0
     mov     r1, \param1
     ldr     r2, =\param2
-    bl      excstack_magic
+    bl      excstack_magic @初始化栈
 .endm
-
+/* 参数顺序:物理地址,虚拟地址,大小,标签*/
 /* param0 is physical address, param1 virtual address, param2 is sizes, param3 is flag */
 .macro PAGE_TABLE_SET param0, param1, param2, param3
     ldr     r6, =\param0
     ldr     r7, =\param1
     ldr     r8, =\param2
     ldr     r10, =\param3
-    bl      page_table_build
+    bl      page_table_build @创建页表
 .endm
     .code   32
     .section ".vectors","ax"
 
     .global __exception_handlers
-__exception_handlers:
-    /* //假设：ROM代码在硬件重置地址有这些向量
+__exception_handlers:@异常处理
+    /* 
     *Assumption:  ROM code has these vectors at the hardware reset address.
     *A simple jump removes any address-space dependencies [i.e. safer]
-    *///一个简单的跳转将删除任何地址空间依赖关系
-    b   reset_vector 			@开机代码
-    b   _osExceptUndefInstrHdl 	@异常处理之CPU碰到不认识的指令
-    b   _osExceptSwiHdl			@异常处理之:软中断
-    b   _osExceptPrefetchAbortHdl	@异常处理之:取指异常
-    b   _osExceptDataAbortHdl		@异常处理之:数据异常
-    b   _osExceptAddrAbortHdl		@异常处理之:地址异常
-    b   OsIrqHandler				@异常处理之:硬中断
-    b   _osExceptFiqHdl				@异常处理之:快中断
-	@使机器进入管理模式的启动代码
+    */
+    b   reset_vector 			@开机代码,此句被定位在零起始地址
+    b   _osExceptUndefInstrHdl 	@CPU碰到不认识的指令入口
+    b   _osExceptSwiHdl			@软中断入口
+    b   _osExceptPrefetchAbortHdl	@取指异常入口
+    b   _osExceptDataAbortHdl		@数据异常入口
+    b   _osExceptAddrAbortHdl		@地址异常入口
+    b   OsIrqHandler				@硬中断入口
+    b   _osExceptFiqHdl				@快中断入口
+
     /* Startup code which will get the machine into supervisor mode */
     .global reset_vector
     .type   reset_vector,function
@@ -121,22 +121,27 @@ reset_vector: //鸿蒙开机代码
     bic     r0, #(1<<12) 			@位清除指令,清除r0的第11位
     bic     r0, #(1<<2 | 1<<0)		@清除第0和2位 ,禁止 MMU和缓存 0位:MMU enable/disable 2位:Cache enable/disable
     mcr     p15, 0, r0, c1, c0, 0 	@c1=r0 
-	@adr指令 寄存器小范围的转变,得到一个与PC有关的值，必定是个地址
+									@adr指令 寄存器小范围的转变
     /* r11: delta of physical address and virtual address */@物理地址和虚拟地址的增量
     adr     r11, pa_va_offset @将基于PC相对偏移的地址pa_va_offset值读取到寄存器R11中
-    ldr     r0, [r11]		  @r0 = *r11
+    ldr     r0, [r11]		  @r0 = *r11 
     sub     r11, r11, r0	  @r11 = r11 - r0	
 
     mrc     p15, 0, r12, c0, c0, 5              /* r12: get cpuid */ @获取CPUID
     and     r12, r12, #MPIDR_CPUID_MASK @r12经过掩码过滤
     cmp     r12, #0	@ cpu id 和 0 比较
     bne     secondary_cpu_init @不是0号主CPU则调用secondary_cpu_init
-
+	/*
+	adr是小范围的地址读取伪指令,它将基于PC寄存器相对偏移的地址值读取到寄存器中
+	例如: 0x00000004 	 : adr     r4, __exception_handlers
+	则此时PC寄存器的值为: 0x00000004 + 8(在三级流水线时,PC和执行地址相差8)
+	最后r4 = (0x00000004 + 8) + __exception_handlers
+	*/
     /* if we need to relocate to proper location or not */ @如果需要重新安装到合适的位置
     adr     r4, __exception_handlers            /* r4: base of load address */ @r4记录加载基地址,即:各异常的跳转指令
     ldr     r5, =SYS_MEM_BASE                   /* r5: base of physical address */@r5获得物理基地址 SYS_MEM_BASE = 0x80000000
-	@subs中的s表示把进位结果写入CPSR r12 = r4-r5
-	subs    r12, r4, r5                         /* r12: delta of load address and physical address */ @r12=r4-r5 加载地址和物理地址的增量
+												@subs中的s表示把进位结果写入CPSR r12 = r4-r5
+	subs    r12, r4, r5                         /* r12: delta of load address and physical address */ 
     beq     reloc_img_to_bottom_done            /* if we load image at the bottom of physical address */@物理地址底部加载镜像
 
     /* we need to relocate image at the bottom of physical address */ @在物理地址的底部重新定位镜像
@@ -158,7 +163,7 @@ reloc_img_to_bottom_done:
     ldr     r4, =g_firstPageTable               /* r4: physical address of translation table and clear it */ @获取页面地址
     add     r4, r4, r11 		@r4 = r4 + r11
     bl      page_table_clear	@清除页表
-	@设置页表
+	@设置页表 /*PAGE_TABLE_SET的参数顺序:物理地址,虚拟地址,大小,标签*/
     PAGE_TABLE_SET SYS_MEM_BASE, KERNEL_VMM_BASE, KERNEL_VMM_SIZE, MMU_DESCRIPTOR_KERNEL_L1_PTE_FLAGS
     PAGE_TABLE_SET SYS_MEM_BASE, UNCACHED_VMM_BASE, UNCACHED_VMM_SIZE, MMU_INITIAL_MAP_STRONGLY_ORDERED
     PAGE_TABLE_SET PERIPH_PMM_BASE, PERIPH_DEVICE_BASE, PERIPH_DEVICE_SIZE, MMU_INITIAL_MAP_DEVICE
@@ -171,7 +176,7 @@ reloc_img_to_bottom_done:
     ldr     r4, [r4]
     add     r4, r4, r11                         /* r4: jump pagetable paddr */
     bl      page_table_clear	/* 执行清除操作 */
-
+	/* L1页表项有三种描述格式,创建SECTION页表项,指向1M节的页表项*/
     /* build 1M section mapping, in order to jump va during turing on mmu:pa == pa, va == pa */
     mov     r6, pc
     mov     r7, r6                              /* r7: pa (MB aligned)*/
@@ -198,7 +203,7 @@ reloc_img_to_bottom_done:
     STACK_MAGIC_SET __svc_stack, #OS_EXC_SVC_STACK_SIZE, OS_STACK_MAGIC_WORD
     STACK_MAGIC_SET __exc_stack, #OS_EXC_STACK_SIZE, OS_STACK_MAGIC_WORD
 
-warm_reset: @初始化CPU各异常工作模式环境
+warm_reset: @热启动,初始化CPU各异常工作模式环境
     /* initialize interrupt/exception environments */
     mov    r0, #(CPSR_IRQ_DISABLE |CPSR_FIQ_DISABLE|CPSR_IRQ_MODE)
     msr    cpsr, r0 @设置为普通中断模式和栈
@@ -325,8 +330,8 @@ reset_platform:		@平台复位
 #ifdef A7SEM_HAL_ROM_MONITOR
     /* initialize CPSR (machine state register) */
     mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_SVC_MODE) @禁止中断和切换到SVC模式
-    msr    cpsr, r0	@修改CPSR寄存器值
-    b      warm_reset 
+    msr    cpsr, r0		@修改CPSR寄存器值
+    b      warm_reset 	@跳转到热启动
 #else
     mov    r0, #0
     mov    pc, r0   // Jump to reset vector @跳到重置向量表处
@@ -358,7 +363,7 @@ secondary_cpu_init:	/* 次级CPU初始化 */
     mcr    p15, 0, r1, c1, c1, 0
     cps    #0x13
 #endif
-    bl      warm_reset @重置次级CPU
+    bl      warm_reset @热启动
 
 /*
  * set sp for current cpu
@@ -414,9 +419,9 @@ page_table_build_loop:
     bx      lr
 
 /*
- * init stack to initial value 初始化栈,前置条件:r0和r1分别为栈顶和栈底
+ * init stack to initial value 
  * r0 is stack mem start, r1 is stack mem end
- */
+ *///初始化栈,前置条件:r0和r1分别为栈顶和栈底
 stack_init:@初始化栈,注意这里执行完 stack_init后会接着执行stack_init_loop,因为pc寄存器会一直往下走,直到有指令令它改变走向
     ldr     r2, =OS_STACK_INIT	@魔法数字
     ldr     r3, =OS_STACK_INIT	@魔法数字
@@ -430,8 +435,8 @@ stack_init_loop:@循环初始化栈
     blt     stack_init_loop
     bx      lr @ mov pc lr 改变走向
 
-pa_va_offset:@物理地址和虚拟地址偏移量
-    .word   .
+pa_va_offset:	@物理地址和虚拟地址偏移量
+    .word   .   @表示无偏移
 
 /*
  * set magic num to stack top for all cpu
@@ -451,7 +456,7 @@ excstack_magic_loop:@给所有CPU栈顶位置设置魔法数字
  * 0xe51ff004 = "ldr  pc, [pc, #-4]" 
  * next addr value will be the real booting addr 下一个addr将是真正的引导addr
  */
-_bootaddr_setup:
+_bootaddr_setup:@引导程序 另外 0xE28FE004 = "add lr,pc,#4"
     mov     r0, #0
     ldr     r1, =0xe51ff004 @等同于 MOV r1, #0xe51ff004   ,
     str     r1, [r0] @等同于 *r0 = r1

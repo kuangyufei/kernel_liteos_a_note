@@ -42,7 +42,7 @@
 #if (LOSCFG_KERNEL_SMP == YES)
 STATIC Atomic g_ncpu = 1;	//统计CPU的数量
 #endif
-
+//系统信息
 LITE_OS_SEC_TEXT_INIT VOID OsSystemInfo(VOID)
 {
 #ifdef LOSCFG_DEBUG_VERSION
@@ -55,10 +55,10 @@ LITE_OS_SEC_TEXT_INIT VOID OsSystemInfo(VOID)
             "Processor   : %s"
 #if (LOSCFG_KERNEL_SMP == YES)
             " * %d\n"
-            "Run Mode    : SMP\n"
+            "Run Mode    : SMP\n" 	//对称多处理（Symmetric multiprocessing，SMP）
 #else
             "\n"
-            "Run Mode    : UP\n"
+            "Run Mode    : UP\n"	//单核处理器( unit processing,UP) 
 #endif
             "GIC Rev     : %s\n"
             "build time  : %s %s\n"
