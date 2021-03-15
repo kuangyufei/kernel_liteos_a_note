@@ -168,7 +168,7 @@ OsStartToRun:
     STRH    R1, [R0, #4] 	@将寄存器R1中的低16位写入以R0+4地址的存储器中
 
     /* R0 is new task, save it on tpidrprw */
-    MCR     p15, 0, R0, c13, c0, 4 @ C5=C4=R0
+    MCR     p15, 0, R0, c13, c0, 4 @ C13=R0
     ISB 	@指令同步屏障，清除流水线并且确保在新指令执行时，之前的指令都已经执行完毕。
 
     VPUSH   {S0}                                     /* fpu */
@@ -182,19 +182,19 @@ OsStartToRun:
  * R0: new task
  * R1: run task
  */
-OsTaskSchedule:			/*任务调度*/
+OsTaskSchedule:			/*任务调度,OsTaskSchedule的目的是将寄存器值按TaskContext的格式保存起来*/
     MRS      R2, CPSR 	/*MRS 指令用于将特殊寄存器(如 CPSR 和 SPSR)中的数据传递给通用寄存器，要读取特殊寄存器的数据只能使用 MRS 指令*/
-    STMFD    SP!, {LR}	/*返回地址入栈*/
-    STMFD    SP!, {LR}	/*为何返回地址要再次入栈 @note_why*/
+    STMFD    SP!, {LR}	/*返回地址入栈,对应TaskContext->PC(R15寄存器)*/
+    STMFD    SP!, {LR}	/*再次入栈对应,对应TaskContext->LR(R14寄存器)*/
     /* jump sp */
-    SUB      SP, SP, #4 /**/
-
+    SUB      SP, SP, #4 /* 跳的目的是为了,对应TaskContext->SP(R13寄存器)*/
+	
     /* push r0-r12*/
-    STMFD    SP!, {R0-R12} 	 @将寄存器列表中的寄存器(R0-R12)压栈。
-    STMFD    SP!, {R2}		/*R2 入栈*/
+    STMFD    SP!, {R0-R12} 	 @对应TaskContext->R[GEN_REGS_NUM](R0~R12寄存器)。
+    STMFD    SP!, {R2}		/*R2 入栈 对应TaskContext->regPSR*/
 
     /* 8 bytes stack align */
-    SUB      SP, SP, #4		@栈对齐
+    SUB      SP, SP, #4		@栈对齐,对应TaskContext->resved
 
     /* save fpu registers */
     PUSH_FPU_REGS   R2	/*保存fpu寄存器*/
@@ -215,8 +215,8 @@ OsTaskContextLoad: @加载上下文
     /* 8 bytes stack align */
     ADD     SP, SP, #4 @栈对齐
 
-    LDMFD   SP!, {R0}  @将堆栈内容出栈保存到寄存器R0
-    MOV     R4, R0	@R4=R0 说明R4也记录了CPSR内容,这个内容将用于 OsKernelTaskLoad中保存到SPSR 
+    LDMFD   SP!, {R0}  @此时SP!位置保存的是CPSR的内容,弹出到R0
+    MOV     R4, R0	@R4=R0,将CPSR保存在r4, 将在OsKernelTaskLoad中保存到SPSR 
     AND     R0, R0, #CPSR_MASK_MODE @R0 =R0&CPSR_MASK_MODE ,目的是清除高16位
     CMP     R0, #CPSR_USER_MODE @R0 和 用户模式比较
     BNE     OsKernelTaskLoad @非用户模式则跳转到OsKernelTaskLoad执行,跳出

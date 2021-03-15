@@ -101,7 +101,7 @@ LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOI
 
 #ifdef LOSCFG_INTERWORK_THUMB // 16位模式
     taskContext->regPSR = PSR_MODE_SVC_THUMB; /* CPSR (Enable IRQ and FIQ interrupts, THUMNB-mode) */
-#else
+#else //用于设置CPSR寄存器
     taskContext->regPSR = PSR_MODE_SVC_ARM;   /* CPSR (Enable IRQ and FIQ interrupts, ARM-mode) */
 #endif
 
@@ -135,7 +135,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, TSK_ENTRY_F
 #ifdef LOSCFG_INTERWORK_THUMB
     context->regPSR = PSR_MODE_USR_THUMB;
 #else
-    context->regPSR = PSR_MODE_USR_ARM;
+    context->regPSR = PSR_MODE_USR_ARM;//工作模式:用户模式 + 工作状态:arm
 #endif
     context->R[0] = stack;//栈指针给r0寄存器
     context->SP = TRUNCATE(stack, LOSCFG_STACK_POINT_ALIGN_SIZE);//异常模式所专用的堆栈 segment fault 输出回溯信息

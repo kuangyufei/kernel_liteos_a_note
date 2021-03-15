@@ -44,16 +44,16 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_SCHEDULE_IN_IRQ                                  0x0
-#define OS_SCHEDULE_IN_TASK                                 0x1
+#define OS_SCHEDULE_IN_IRQ                                  0x0	//因中断产生调度
+#define OS_SCHEDULE_IN_TASK                                 0x1	//因任务产生调度
 
-#define PSR_T_ARM                                           0x00000000u
-#define PSR_T_THUMB                                         0x00000020u
-#define PSR_MODE_SVC                                        0x00000013u
-#define PSR_MODE_SYS                                        0x0000001Fu
-#define PSR_FIQ_DIS                                         0x00000040u
-#define PSR_IRQ_DIS                                         0x00000080u
-#define PSR_MODE_USR                                        0x00000010u
+#define PSR_T_ARM                                           0x00000000u	//工作状态:arm
+#define PSR_T_THUMB                                         0x00000020u	//工作状态:thumb
+#define PSR_MODE_SVC                                        0x00000013u	//管理模式
+#define PSR_MODE_SYS                                        0x0000001Fu	//系统模式
+#define PSR_FIQ_DIS                                         0x00000040u	//禁止快中断
+#define PSR_IRQ_DIS                                         0x00000080u	//禁止普通中断
+#define PSR_MODE_USR                                        0x00000010u	//用户模式
 
 #define PSR_MODE_SVC_THUMB                                  (PSR_MODE_SVC | PSR_T_THUMB | PSR_FIQ_DIS | PSR_IRQ_DIS)
 #define PSR_MODE_SVC_ARM                                    (PSR_MODE_SVC | PSR_T_ARM   | PSR_FIQ_DIS | PSR_IRQ_DIS)
