@@ -74,7 +74,7 @@ VOID OsTaskEntrySetupLoopFrame(UINT32 arg0)
                  "\tpop {fp, pc}\n");
 }
 #endif
-//任务栈初始化,非常重要的函数
+//内核态运行栈初始化
 LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOID *topStack, BOOL initFlag)
 {
     UINT32 index = 1;
@@ -83,7 +83,7 @@ LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOI
     if (initFlag == TRUE) {
         OsStackInit(topStack, stackSize);
     }
-    taskContext = (TaskContext *)(((UINTPTR)topStack + stackSize) - sizeof(TaskContext));//注意看上下文将存放在栈的底部
+    taskContext = (TaskContext *)(((UINTPTR)topStack + stackSize) - sizeof(TaskContext));//上下文存放在栈的底部
 
     /* initialize the task context */ //初始化任务上下文
 #ifdef LOSCFG_GDB
@@ -94,10 +94,10 @@ LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOI
     taskContext->LR = (UINTPTR)OsTaskExit;  /* LR should be kept, to distinguish it's THUMB or ARM instruction */
     taskContext->resved = 0x0;
     taskContext->R[0] = taskID;             /* R0 */
-    taskContext->R[index++] = 0x01010101;   /* R1, 0x01010101 : reg initialed magic word */
+    taskContext->R[index++] = 0x01010101;   /* R1, 0x01010101 : reg initialed magic word */ //0x55
     for (; index < GEN_REGS_NUM; index++) {//R2 - R12的初始化很有意思,为什么要这么做？
         taskContext->R[index] = taskContext->R[index - 1] + taskContext->R[1]; /* R2 - R12 */
-    }
+    }//R[2]=R[2]<<1=0xAA
 
 #ifdef LOSCFG_INTERWORK_THUMB // 16位模式
     taskContext->regPSR = PSR_MODE_SVC_THUMB; /* CPSR (Enable IRQ and FIQ interrupts, THUMNB-mode) */
@@ -127,7 +127,7 @@ LITE_OS_SEC_TEXT VOID OsUserCloneParentStack(LosTaskCB *childTaskCB, LosTaskCB *
     (VOID)memcpy_s(childTaskCB->stackPointer, sizeof(TaskContext), cloneStack, sizeof(TaskContext));//直接把任务上下文拷贝了一份
     context->R[0] = 0;//R0寄存器为0
 }
-//用户任务使用栈初始化
+//用户态运行栈初始化
 LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, TSK_ENTRY_FUNC taskEntry, UINTPTR stack)
 {
     LOS_ASSERT(context != NULL);

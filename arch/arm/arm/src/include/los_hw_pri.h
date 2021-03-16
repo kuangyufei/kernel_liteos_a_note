@@ -51,7 +51,7 @@ extern "C" {
 
 /* The size of this structure must be smaller than or equal to the size specified by OS_TSK_STACK_ALIGN (16 bytes). */
 typedef struct { //参考OsTaskSchedule来理解
-#if !defined(LOSCFG_ARCH_FPU_DISABLE)
+#if !defined(LOSCFG_ARCH_FPU_DISABLE) //支持浮点运算
     UINT64 D[FP_REGS_NUM]; /* D0-D31 */
     UINT32 regFPSCR;       /* FPSCR */
     UINT32 regFPEXC;       /* FPEXC */

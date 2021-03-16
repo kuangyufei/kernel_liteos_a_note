@@ -145,7 +145,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The time for waiting for an event to occur expires.
  */
-#define OS_TASK_STATUS_TIMEOUT      0x0040U
+#define OS_TASK_STATUS_TIMEOUT      0x0040U	//任务超时
 
 /**
  * @ingroup los_task
@@ -294,13 +294,13 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 #define OS_TCB_NAME_LEN 32
 
 typedef struct {
-    VOID            *stackPointer;      /**< Task stack pointer */	//用于保存任务上下文TaskContext *context
+    VOID            *stackPointer;      /**< Task stack pointer */	//内核态栈指针,SP位置,切换任务时先保存上下文并指向TaskContext位置.
     UINT16          taskStatus;         /**< Task status */			//各种状态标签，可以拥有多种标签，按位标识
     UINT16          priority;           /**< Task priority */		//任务优先级[0:31],默认是31级
     UINT16          policy;				//任务的调度方式(三种 .. LOS_SCHED_RR )
     UINT16          timeSlice;          /**< Remaining time slice *///剩余时间片
-    UINT32          stackSize;          /**< Task stack size */		//非用户模式下栈大小
-    UINTPTR         topOfStack;         /**< Task stack top */		//非用户模式下的栈顶 bottom = top + size
+    UINT32          stackSize;          /**< Task stack size */		//内核态栈大小
+    UINTPTR         topOfStack;         /**< Task stack top */		//内核态栈顶 bottom = top + size
     UINT32          taskID;             /**< Task ID */				//任务ID，任务池本质是一个大数组，ID就是数组的索引，默认 < 128
     TSK_ENTRY_FUNC  taskEntry;          /**< Task entrance function */	//任务执行入口函数
     VOID            *joinRetval;        /**< pthread adaption */	//用来存储join线程的返回值

@@ -134,12 +134,12 @@ LDM/STR架构中{∧}为可选后缀,当指令为LDM且寄存器列表中包含R
 /* macros to save and restore fpu regs */ 
 .macro PUSH_FPU_REGS reg1 /* 保存fpu寄存器 */ 
 #if !defined(LOSCFG_ARCH_FPU_DISABLE) @FPU使能
-    VMRS    \reg1, FPEXC
-    PUSH    {\reg1}
-    VMRS    \reg1, FPSCR
-    PUSH    {\reg1}
+    VMRS    \reg1, FPEXC 	
+    PUSH    {\reg1}			@对应TaskContext->regFPEXC
+    VMRS    \reg1, FPSCR	
+    PUSH    {\reg1}			@对应TaskContext->regFPSCR
 #if defined(LOSCFG_ARCH_FPU_VFP_D32)
-    VPUSH   {D16-D31}
+    VPUSH   {D16-D31}		@对应TaskContext->D
 #endif
     VPUSH   {D0-D15}
 #endif
@@ -200,14 +200,14 @@ OsTaskSchedule:			/*任务调度,OsTaskSchedule的目的是将寄存器值按Tas
     PUSH_FPU_REGS   R2	/*保存fpu寄存器*/
 
     /* store sp on running task */
-    STR     SP, [R1] @在运行的任务栈中保存SP,即runTask->stackPointer = sp
+    STR     SP, [R1] @在运行的任务栈中保存SP,即*runTask->stackPointer = sp
 
 OsTaskContextLoad: @加载上下文
     /* clear the flag of ldrex */ @LDREX 可从内存加载数据,如果物理地址有共享TLB属性，则LDREX会将该物理地址标记为由当前处理器独占访问，并且会清除该处理器对其他任何物理地址的任何独占访问标记。
     CLREX @清除ldrex指令的标记
 
     /* switch to new task's sp */
-    LDR     SP, [R0] @ 即:sp = new task->stackPointer
+    LDR     SP, [R0] @ 即:sp =  *task->stackPointer
 
     /* restore fpu registers */
     POP_FPU_REGS    R2 @恢复fpu寄存器,这里用了汇编宏R2是宏的参数

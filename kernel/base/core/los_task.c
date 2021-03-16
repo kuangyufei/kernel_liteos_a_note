@@ -762,12 +762,12 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskCBInitBase(LosTaskCB *taskCB,
                                                    const VOID *topStack,
                                                    const TSK_INIT_PARAM_S *initParam)
 {
-    taskCB->stackPointer = (VOID *)stackPtr;
+    taskCB->stackPointer = (VOID *)stackPtr;//内核态SP位置
     taskCB->args[0]      = initParam->auwArgs[0]; /* 0~3: just for args array index */
     taskCB->args[1]      = initParam->auwArgs[1];
     taskCB->args[2]      = initParam->auwArgs[2];
     taskCB->args[3]      = initParam->auwArgs[3];
-    taskCB->topOfStack   = (UINTPTR)topStack;	//内核态栈顶位置
+    taskCB->topOfStack   = (UINTPTR)topStack;	//内核态栈起始位置
     taskCB->stackSize    = initParam->uwStackSize;//
     taskCB->priority     = initParam->usTaskPrio;
     taskCB->taskEntry    = initParam->pfnTaskEntry;
@@ -809,7 +809,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_IN
     SCHEDULER_LOCK(intSave);
     processCB = OS_PCB_FROM_PID(initParam->processID);//通过ID获取PCB ,单核进程数最多64个
     taskCB->processID = processCB->processID;//进程-线程的父子关系绑定
-    mode = processCB->processMode;//调度方式同步process
+    mode = processCB->processMode;//模式方式同步process
     LOS_ListTailInsert(&(processCB->threadSiblingList), &(taskCB->threadList));//挂入进程的线程链表
     if (mode == OS_USER_MODE) {//用户模式
         taskCB->userArea = initParam->userParam.userArea;
@@ -887,7 +887,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *taskID, TSK_INIT_PARAM_S
         goto LOS_ERREND_REWIND_TCB;
     }
 	//OsTaskStackAlloc 只在LOS_TaskCreateOnly中被调用,此处是分配任务在内核态栈空间 
-    OsTaskStackAlloc(&topStack, initParam->uwStackSize, pool);//为任务栈分配空间
+    OsTaskStackAlloc(&topStack, initParam->uwStackSize, pool);//为任务分配内核态栈空间
     if (topStack == NULL) {
         errRet = LOS_ERRNO_TSK_NO_MEMORY;
         goto LOS_ERREND_REWIND_SYNC;
