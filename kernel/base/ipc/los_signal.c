@@ -632,7 +632,7 @@ void OsSaveSignalContextIrq(unsigned int *sp, unsigned int r7)
     sig_cb *sigcb = NULL;
     unsigned long cpsr;
     UINT32 intSave;
-    TaskIrqContext *context = (TaskIrqContext *)(sp);//汇编设置好SP位置
+    TaskIrqContext *context = (TaskIrqContext *)(sp);//汇编设置SP,从SP位置取出TaskIrqContext
 
     OS_RETURN_IF_VOID(sp == NULL);
     cpsr = context->CPSR;

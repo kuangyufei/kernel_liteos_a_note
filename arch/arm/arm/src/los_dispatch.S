@@ -259,46 +259,49 @@ OsKernelTaskLoad: 			@内核任务的加载
     LDMFD   SP!, {LR, PC}^ 	@返回地址赋给pc指针,直接跳出.
 
 OsIrqHandler:	@硬中断处理,此时已切换到硬中断栈
-    SUB     LR, LR, #4
+    SUB     LR, LR, #4	@记录译码指令地址,以防切换过程丢失指令.
 
     /* push r0-r3 to irq stack */
     STMFD   SP, {R0-R3}		@r0-r3寄存器入 irq 栈
-    SUB     R0, SP, #(4 * 4)@r0 = sp - 16
+    SUB     R0, SP, #(4 * 4)@r0 = sp - 16,目的是记录{R0-R3}4个寄存器保存的开始位置,届时从R3开始出栈
     MRS     R1, SPSR		@获取程序状态控制寄存器
     MOV     R2, LR			@r2=lr
 
     /* disable irq, switch to svc mode */@超级用户模式(SVC 模式)，主要用于 SWI(软件中断)和 OS(操作系统)。
-    CPSID   i, #0x13				@切换到SVC模式,此处一切换,后续指令将入SVC的栈
+    CPSID   i, #0x13				@切换到SVC模式,此处一切换,后续指令将在SVC栈运行
 									@CPSID i为关中断指令,对应的是CPSIE
+	@TaskIrqContext 开始保存中断现场 ......							
     /* push spsr and pc in svc stack */
-    STMFD   SP!, {R1, R2} @实际是将 SPSR,和LR入栈,入栈顺序为 R1,R2,SP自增
-    STMFD   SP, {LR}	  @LR再入栈,SP不自增
-
+    STMFD   SP!, {R1, R2} @实际是将 SPSR,和PC入栈对应TaskIrqContext.PC,TaskIrqContext.CPSR,
+    STMFD   SP, {LR}	  @LR再入栈,SP不自增,如果是用户模式,LR值将被 282行:STMFD   SP, {R13, R14}^覆盖  
+						  @如果非用户模式,将被 286行:SUB     SP, SP, #(2 * 4) 跳过.
     AND     R3, R1, #CPSR_MASK_MODE	@获取CPU的运行模式
     CMP     R3, #CPSR_USER_MODE		@中断是否发生在用户模式
-    BNE     OsIrqFromKernel			@中断不发生在用户模式下则跳转到OsIrqFromKernel
+    BNE     OsIrqFromKernel			@非用户模式不用将USP,ULR保存在TaskIrqContext
 
     /* push user sp, lr in svc stack */
-    STMFD   SP, {R13, R14}^ 		@sp和LR入svc栈
+    STMFD   SP, {R13, R14}^ 		@将用户模式的sp和LR入svc栈
 
 OsIrqFromKernel:	@从内核发起中断
     /* from svc not need save sp and lr */@svc模式下发生的中断不需要保存sp和lr寄存器值
-    SUB     SP, SP, #(2 * 4)	@申请8个栈空间
-
+    SUB     SP, SP, #(2 * 4)	@目的是为了留白给 TaskIrqContext.USP,TaskIrqContext.ULR
+								@TaskIrqContext.ULR已经在 276行保存了,276行用的是SP而不是SP!,所以此处要跳2个空间
     /* pop r0-r3 from irq stack*/
-    LDMFD   R0, {R0-R3}		    @从R0位置依次出栈
+    LDMFD   R0, {R0-R3}		    @从R0位置依次出栈 
 
     /* push caller saved regs as trashed regs in svc stack */
-    STMFD   SP!, {R0-R3, R12}	@R0~R3入栈,R12入栈
+    STMFD   SP!, {R0-R3, R12}	@寄存器入栈,对应 TaskIrqContext.R0~R3,R12
 
     /* 8 bytes stack align */
-    SUB     SP, SP, #4			@栈对齐
+    SUB     SP, SP, #4			@栈对齐 对应TaskIrqContext.resved
 
     /*
      * save fpu regs in case in case those been
      * altered in interrupt handlers.
      */
     PUSH_FPU_REGS   R0 @保存fpu regs，以防中断处理程序中的fpu regs被修改。
+    @TaskIrqContext 结束保存中断现场	......	
+    @开始执行真正的中断处理函数了.
 #ifdef LOSCFG_IRQ_USE_STANDALONE_STACK @是否使用了独立的IRQ栈
     PUSH    {R4}	@R4先入栈保存,接下来要切换栈,需保存现场
     MOV     R4, SP	@R4=SP
@@ -319,8 +322,8 @@ OsIrqFromKernel:	@从内核发起中断
     CMP     R0, #0	@是否需要调度,R0为参数保存值
     BLNE    OsSchedPreempt @不相等,即R0非0,一般是 1
 
-    MOV     R0,SP	@ OsSaveSignalContextIrq 参数1来源
-    MOV     R1,R7	@ OsSaveSignalContextIrq 参数2来源
+    MOV     R0,SP	@参数
+    MOV     R1,R7	@参数
     BL      OsSaveSignalContextIrq @跳转至C代码 
 
     /* restore fpu regs */
@@ -329,29 +332,31 @@ OsIrqFromKernel:	@从内核发起中断
     ADD     SP, SP, #4 @sp = sp + 4 
 
 OsIrqContextRestore:	@恢复硬中断环境
-    LDR     R0, [SP, #(4 * 7)]	@读取 SP+28 位置数据给R0
-    MSR     SPSR_cxsf, R0		@恢复spsr
+    LDR     R0, [SP, #(4 * 7)]	@R0 = sp + 7,目的是跳到恢复中断现场TaskIrqContext.CPSR位置,刚好是TaskIrqContext倒数第7的位置.
+    MSR     SPSR_cxsf, R0		@恢复spsr 即:spsr = TaskIrqContext.CPSR
     AND     R0, R0, #CPSR_MASK_MODE @掩码找出当前工作模式
     CMP     R0, #CPSR_USER_MODE	@是否为用户模式?
-
-    LDMFD   SP!, {R0-R3, R12}	@从SP位置依次出栈
-
-    BNE     OsIrqContextRestoreToKernel @CPU工作在非用户模式
+	@TaskIrqContext 开始恢复中断现场 ......	
+    LDMFD   SP!, {R0-R3, R12}	@从SP位置依次出栈 对应 TaskIrqContext.R0~R3,R12
+								@此时已经恢复了5个寄存器,接来下是TaskIrqContext.USP,TaskIrqContext.ULR
+    BNE     OsIrqContextRestoreToKernel @看非用户模式,怎么恢复中断现场.
 
     /* load user sp and lr, and jump cpsr */
-    LDMFD   SP, {R13, R14}^
-    ADD     SP, SP, #(3 * 4)
+    LDMFD   SP, {R13, R14}^ @出栈,恢复用户模式sp和lr值 即:TaskIrqContext.USP,TaskIrqContext.ULR
+    ADD     SP, SP, #(3 * 4) @跳3个位置,跳过 CPSR ,因为上一句不是 SP!,所以跳3个位置,刚好到了保存TaskIrqContext.PC的位置
 
     /* return to user mode */
-    LDMFD   SP!, {PC}^ @回到用户模式
+    LDMFD   SP!, {PC}^ @回到用户模式,整个中断过程完成
+	@TaskIrqContext 结束恢复中断现场(用户模式下) ......	
 
-OsIrqContextRestoreToKernel:
+OsIrqContextRestoreToKernel:@从内核恢复中断
     /* svc mode not load sp */
-    ADD     SP, SP, #4
-    LDMFD   SP!, {LR}
+    ADD     SP, SP, #4 @其实是跳过TaskIrqContext.USP,因为在内核模式下并没有保存这个值,翻看 287行
+    LDMFD   SP!, {LR} @弹出LR
     /* jump cpsr and return to svc mode */
-    ADD     SP, SP, #4
-    LDMFD   SP!, {PC}^
+    ADD     SP, SP, #4 @跳过cpsr
+    LDMFD   SP!, {PC}^ @回到svc模式,整个中断过程完成
+	@TaskIrqContext 结束恢复中断现场(内核模式下) ......
 
 FUNCTION(ArchSpinLock)	@非要拿到锁
 	mov 	r1, #1		@r1=1

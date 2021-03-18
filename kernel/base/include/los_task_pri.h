@@ -334,7 +334,7 @@ typedef struct {
     SchedStat       schedStat;          /**< Schedule statistics */	//调度统计
 #endif
 #endif
-    UINTPTR         userArea;			//使用区域,由运行时划定,根据运行态不同而不同
+    UINTPTR         userArea;			//用户区域,由运行时划定,根据运行态不同而不同
     UINTPTR         userMapBase;		//用户模式下的栈底位置
     UINT32          userMapSize;        /**< user thread stack size ,real size : userMapSize + USER_STACK_MIN_SIZE */
     UINT32          processID;          /**< Which belong process *///所属进程ID

@@ -882,12 +882,12 @@ int SysSetThreadArea(const char *area)
         goto OUT;
     }
 
-    taskCB->userArea = (unsigned long)(uintptr_t)area;//task的使用区域
+    taskCB->userArea = (unsigned long)(uintptr_t)area;//task的用户区域
 OUT:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//系统调用之获取线程的使用区域
+//系统调用之获取线程的用户态区域
 char *SysGetThreadArea(void)
 {
     return (char *)(OsCurrTaskGet()->userArea);//直接返回使用区域

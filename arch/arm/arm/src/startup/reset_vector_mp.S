@@ -348,7 +348,7 @@ cpu_start:	/* CPU 启动 */
 
     bl     mmu_setup			/* 安装MMU */
     bl     secondary_cpu_start	/* 启动次级CPU */
-    b      . //注意 b . 就会跳转到当前地址,相当死循环
+    b      . //注意 b . 就会跳转到当前地址,相当于死循环
 
 secondary_cpu_init:	/* 次级CPU初始化 */
 #ifdef LOSCFG_TEE_ENABLE
@@ -495,7 +495,7 @@ __abt_stack:
 __abt_stack_top:
 
 __irq_stack:
-    .space OS_EXC_IRQ_STACK_SIZE * CORE_NUM 
+    .space OS_EXC_IRQ_STACK_SIZE * CORE_NUM //64
 __irq_stack_top:
 
 __fiq_stack:
