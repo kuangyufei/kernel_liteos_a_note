@@ -6,7 +6,6 @@
 
 ---
 
-
 ## **百万汉字注解**
 
 **[kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在鸿蒙官方开源项目 **[kernel\_liteos\_a](https://gitee.com/openharmony/kernel_liteos_a)** 基础上给源码加上中文注解的版本
@@ -21,7 +20,7 @@
 
 * 因大学时阅读 `linux 2.6` 内核痛并快乐的经历,一直有个心愿,如何让更多对内核感兴趣的朋友减少阅读时间,加速对计算机系统级的理解,而不至于过早的放弃.但因过程种种,多年一直没有行动,基本要放弃这件事了. 恰逢 **2020/9/10** 鸿蒙正式开源,重新激活了多年的心愿,就有那么点一发不可收拾了. 
   
-* 到今天 **2021/3/10** 刚好半年, 对内核源码的注解已完成了 **70%** ,对内核源码的博客分析已完成了**40篇**, 每天都很充实,很兴奋,连做梦内核代码都在往脑海里鱼贯而入.如此疯狂的做一件事还是当年谈恋爱的时候, 只因热爱, 热爱是所有的理由和答案. :P
+* 到今天 **2021/3/10** 刚好半年, 对内核源码的注解已完成了 **70%** ,对内核源码的博客分析已完成了**40篇**, 每天都很充实,很兴奋,连做梦内核代码都在往脑海里鱼贯而入.如此疯狂地做一件事还是当年谈恋爱的时候, 只因热爱, 热爱是所有的理由和答案. :P
 
 ### **(〃･ิ‿･ิ)ゞ鸿蒙内核开发者**
 
@@ -56,11 +55,10 @@
 * **专业概念抽象级:** 对抽象的专业逻辑概念具体化认知, 比如虚拟内存,老百姓是听不懂的,学过计算机的人都懂,具体怎么实现的很多人又都不懂了,但这并不妨碍成为一个优秀的上层应用程序员,因为虚拟内存已经被抽象出来,目的是要屏蔽上层对它的现实认知.试图用 **[鸿蒙内核源码分析(总目录)百篇博客](https://my.oschina.net/weharmony)** 去拆解那些已经被抽象出来的专业概念, 希望能卷入更多对内核感兴趣的应用软件人才流入基础软件生态, 应用软件咱们是无敌宇宙,但基础软件却很薄弱.
 
 * **具体微观代码级:** 这一级是具体到每一行代码的实现,到了用代码指令级的地步,这段代码是什么意思?为什么要这么设计? **[鸿蒙内核源码注解分析](https://gitee.com/weharmony/kernel_liteos_a_note)** 试图从细微处去解释代码实现层,英文真的是天生适合设计成编程语言的人类语言,计算机的01码映射到人类世界的26个字母,诞生了太多的伟大奇迹.但我们的母语注定了很大部分人存在着自然语言层级的理解映射,希望对鸿蒙内核源码注解分析能让更多爱好者快速的理解内核,共同进步.
-
 ## **百篇博客分析**
 
 * 给 **[鸿蒙内核源码加注释](https://gitee.com/weharmony/kernel_liteos_a_note)** 过程中,整理出以下文章.内容多以 轻松口语化的故事,生活场景打比方,表格,图像 将尽可能多的内核知识点置入某种场景,具有画面感,形成多重联接路径,达到轻松记忆,甚至永久记忆的目的.
-* 鸿蒙内核源码注解分析系列不仅是百度教条式的在说清楚一堆诘屈聱牙的概念,那没什么意思.更希望是让内核变得栩栩如生,倍感亲切.确实有难度,不自量力,但已经出发,回头已是不可能的了.:P
+* 鸿蒙内核源码注解分析系列不是百度教条式的在说清楚一堆诘屈聱牙的概念,那没什么意思.更希望是让内核变得栩栩如生,倍感亲切.确实有难度,不自量力,但已经出发,回头已是不可能的了.:P
 
 ### **总目录**
 
@@ -76,15 +74,19 @@
 
 ### **ARM架构**
 
+* [(中断概念篇) | 外人眼中权势滔天的当红海公公 ](https://weharmony.gitee.io/中断概念篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/115014442) [ | oschina  >](https://my.oschina.net/weharmony/blog/4992750)**
+  
+* [(中断切换篇) | 自下而上逐行分析保存和恢复中断现场全过程 ](https://weharmony.gitee.io/中断切换篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114988891) [ | oschina  >](https://my.oschina.net/weharmony/blog/4990948)**
+
 * [(汇编汇总篇) |  鸿蒙所有的汇编代码都在这里 ](https://weharmony.gitee.io/汇编汇总篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114597179) [ | oschina  >](https://my.oschina.net/weharmony/blog/4977924)**
 
 * [(异常接管篇) | 社会很单纯,复杂的是人 ](https://weharmony.gitee.io/异常接管篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114438285) [ | oschina  >](https://my.oschina.net/weharmony/blog/4973016)**
   
-* [(寄存器篇) | arm 37个寄存器一网打尽,不再神秘 ](https://weharmony.gitee.io/寄存器篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114326994) [ | oschina  >](https://my.oschina.net/weharmony/blog/4969487)**
+* [(寄存器篇) | ARM 37个寄存器一网打尽,不再神秘 ](https://weharmony.gitee.io/寄存器篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114326994) [ | oschina  >](https://my.oschina.net/weharmony/blog/4969487)**
 
 * [(系统调用篇) | 全盘解剖鸿蒙系统调用实现过程 ](https://weharmony.gitee.io/系统调用篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114285166) [ | oschina  >](https://my.oschina.net/weharmony/blog/4967613)**
 
-* [(工作模式篇) | 鸿蒙开机代码长啥样? ](https://weharmony.gitee.io/工作模式篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114168567) [ | oschina  >](https://my.oschina.net/weharmony/blog/4965052)**
+* [(工作模式篇) | CPU是韦小宝,有七个老婆 ](https://weharmony.gitee.io/工作模式篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114168567) [ | oschina  >](https://my.oschina.net/weharmony/blog/4965052)**
 
 * [(汇编传参篇) | 汇编如何传递复杂的参数? ](https://weharmony.gitee.io/汇编传参篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/113265990) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4927892)**
 
@@ -92,6 +94,8 @@
 
 ### **进程线程**
 
+* [(任务切换篇) | 逐行汇编分析TaskContext保存和恢复全过程 ](https://weharmony.gitee.io/任务切换篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114890180) [ | oschina  >](https://my.oschina.net/weharmony/blog/4988628)**
+  
 * [(CPU篇) | 内核是如何描述CPU的? ](https://weharmony.gitee.io/CPU篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/113782749) [ | oschina  >](https://my.oschina.net/weharmony/blog/4952034)**
 
 * [(并发并行篇) | 内核如何管理多个CPU? ](https://weharmony.gitee.io/并发并行篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/113516222) [ | oschina  >](https://my.oschina.net/u/3751245/blog/4940329)**
@@ -206,5 +210,3 @@
 ![公众号: 鸿蒙内核源码分析](https://gitee.com/weharmony/docs/raw/master/pic/other/so1so.png)
 
 [进入 >> 百万汉字注解 百篇博客分析 精读鸿蒙源码 深挖地基工程](https://weharmony.gitee.io) **[< gitee ](https://gitee.com/weharmony/kernel_liteos_a_note)[| csdn](https://blog.csdn.net/kuangyufei)  [ | oschina >](https://my.oschina.net/weharmony)**
-
-
