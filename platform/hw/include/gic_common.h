@@ -63,7 +63,7 @@ enum {
 #define GICC_PMR                        (GICC_OFFSET + 0x04)            /* Interrupt Priority Mask Register */	//中断优先级屏蔽寄存器
 #define GICC_BPR                        (GICC_OFFSET + 0x08)            /* Binary Point Register */				//二进制点寄存器
 #define GICC_IAR                        (GICC_OFFSET + 0x0c)            /* Interrupt Acknowledge Register */	//中断确认寄存器
-#define GICC_EOIR                       (GICC_OFFSET + 0x10)            /* End of Interrupt Register */			//中断结尾寄存器
+#define GICC_EOIR                       (GICC_OFFSET + 0x10)            /* End of Interrupt Register */			//中断结束寄存器
 #define GICC_RPR                        (GICC_OFFSET + 0x14)            /* Running Priority Register */			//运行优先寄存器
 #define GICC_HPPIR                      (GICC_OFFSET + 0x18)            /* Highest Priority Pending Interrupt Register */	//最高优先级挂起中断寄存器
 #endif

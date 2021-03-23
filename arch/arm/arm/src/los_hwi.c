@@ -130,9 +130,9 @@ LITE_OS_SEC_BSS  SPIN_LOCK_INIT(g_hwiSpin); //注意全局变量 g_hwiSpin 是�
 #define HWI_LOCK(state)       LOS_SpinLockSave(&g_hwiSpin, &(state))
 #define HWI_UNLOCK(state)     LOS_SpinUnlockRestore(&g_hwiSpin, (state))
 
-size_t g_intCount[LOSCFG_KERNEL_CORE_NUM] = {0};//记录每个CPU core的中断数量 
-HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];		//记录每个硬件中断实体内容             @note_why 用 form 来表示？有种写 HTML的感觉
-STATIC CHAR *g_hwiFormName[OS_HWI_MAX_NUM] = {0};//记录每个硬中断的名称 OS_HWI_MAX_NUM = 128 定义于 hi3516dv300
+size_t g_intCount[LOSCFG_KERNEL_CORE_NUM] = {0};//记录每个CPUcore的中断数量 
+HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];		//中断注册表        @note_why 用 form 来表示？有种写 HTML的感觉
+STATIC CHAR *g_hwiFormName[OS_HWI_MAX_NUM] = {0};//记录每个硬中断的名称
 STATIC UINT32 g_hwiFormCnt[OS_HWI_MAX_NUM] = {0};//记录每个硬中断的总数量
 
 VOID OsIncHwiFormCnt(UINT32 index)	//增加一个中断数,递增的，所以只有++ ,没有--，
@@ -158,7 +158,7 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
     UINT32 *intCnt = NULL;
 
     intCnt = &g_intCount[ArchCurrCpuid()];//当前CPU的中断总数量 ++
-    *intCnt = *intCnt + 1;
+    *intCnt = *intCnt + 1;//@note_why 这里没看明白为什么要 +1
 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ //开启查询系统CPU的占用率的中断
     OsCpupIrqStart();//记录本次中断处理开始时间
@@ -178,7 +178,7 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
                 UINTPTR *param = (UINTPTR *)(hwiForm->uwParam);
                 func((INT32)(*param), (VOID *)(*(param + 1)));//运行带参数的回调函数
             }
-        } else {//木有参数的情况
+        } else {//没有参数的情况
             HWI_PROC_FUNC0 func = (HWI_PROC_FUNC0)hwiForm->pfnHook;//获取回调函数
             if (func != NULL) {
                 func();//运行回调函数
@@ -187,7 +187,7 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
 #ifndef LOSCFG_NO_SHARED_IRQ
     }
 #endif
-    ++g_hwiFormCnt[intNum];//中断数量计数器++
+    ++g_hwiFormCnt[intNum];//对应中断号计数器总数累加
 
     *intCnt = *intCnt - 1;	//@note_why 这里没看明白为什么要 -1 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ	//开启查询系统CPU的占用率的中断

@@ -45,13 +45,13 @@ STATIC UINT32 g_curIrqNum = 0; //记录当前中断号
  *   0b00: forward to the cpu interfaces specified in cpu_mask
  *   0b01: forward to all cpu interfaces
  *   0b10: forward only to the cpu interface that request the irq
- */
+ *///SGI软件触发中断(Software Generated Interrupt)通常用于多核间通讯
 STATIC VOID GicWriteSgi(UINT32 vector, UINT32 cpuMask, UINT32 filter)
 {
     UINT32 val = ((filter & 0x3) << 24) | ((cpuMask & 0xFF) << 16) |
                  (vector & 0xF);
 
-    GIC_REG_32(GICD_SGIR) = val;
+    GIC_REG_32(GICD_SGIR) = val;//写SGI寄存器
 }
 //向指定核发送核间中断
 VOID HalIrqSendIpi(UINT32 target, UINT32 ipi)
@@ -107,7 +107,7 @@ VOID HalIrqClear(UINT32 vector)
 //给每个CPU core初始化硬件中断
 VOID HalIrqInitPercpu(VOID)
 {
-    /* unmask interrupts */	//取消屏蔽中断
+    /* unmask interrupts */	//取消中断屏蔽
     GIC_REG_32(GICC_PMR) = 0xFF;
 
     /* enable gic cpu interface */	//启用gic cpu接口
@@ -138,13 +138,13 @@ VOID HalIrqInit(VOID)
         GIC_REG_32(GICD_ICENABLER(i / 32)) = ~0;
     }
 
-    HalIrqInitPercpu();
+    HalIrqInitPercpu();//初始化当前CPU中断信息
 
     /* enable gic distributor control */
-    GIC_REG_32(GICD_CTLR) = 1;
+    GIC_REG_32(GICD_CTLR) = 1;//使能分发中断寄存器,该寄存器作用是允许给CPU发送中断信号
 
 #if (LOSCFG_KERNEL_SMP == YES)
-    /* register inter-processor interrupt *///注册寄存器处理器间中断处理函数,啥意思?就是当前CPU核向其他CPU核发送中断信号
+    /* register inter-processor interrupt *///注册核间中断,啥意思?就是CPU各核直接可以发送中断信号
     //处理器间中断允许一个CPU向系统其他的CPU发送中断信号，处理器间中断（IPI）不是通过IRQ线传输的，而是作为信号直接放在连接所有CPU本地APIC的总线上。
     LOS_HwiCreate(LOS_MP_IPI_WAKEUP, 0xa0, 0, OsMpWakeHandler, 0);//中断处理函数
     LOS_HwiCreate(LOS_MP_IPI_SCHEDULE, 0xa0, 0, OsMpScheduleHandler, 0);//中断处理函数
@@ -154,7 +154,7 @@ VOID HalIrqInit(VOID)
 //硬中断处理函数，这里由硬件触发,调用见于 ..\arch\arm\arm\src\los_dispatch.S
 VOID HalIrqHandler(VOID)
 {
-    UINT32 iar = GIC_REG_32(GICC_IAR);
+    UINT32 iar = GIC_REG_32(GICC_IAR);//从中断确认寄存器获取中断ID号
     UINT32 vector = iar & 0x3FFU;//计算中断向量号
 
     /*
@@ -165,12 +165,12 @@ VOID HalIrqHandler(VOID)
     if (vector >= OS_HWI_MAX_NUM) {
         return;
     }
-    g_curIrqNum = vector;
+    g_curIrqNum = vector;//记录当前中断ID号
 
     OsInterrupt(vector);//调用上层中断处理函数
 
     /* use orignal iar to do the EOI */
-    GIC_REG_32(GICC_EOIR) = iar;
+    GIC_REG_32(GICC_EOIR) = iar;//更新中断结束寄存器
 }
 //获取中断控制器版本
 CHAR *HalIrqVersion(VOID)

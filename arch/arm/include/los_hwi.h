@@ -261,7 +261,7 @@ typedef struct tagIrqParam {	//中断参数
     const CHAR *pName;	//名称
 } HwiIrqParam;
 
-extern HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];
+extern HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];//中断注册表
 
 /**
  * @ingroup los_hwi

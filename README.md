@@ -75,8 +75,10 @@
 ### **ARM架构**
 
 * [(中断概念篇) | 外人眼中权势滔天的当红海公公 ](https://weharmony.gitee.io/中断概念篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/115014442) [ | oschina  >](https://my.oschina.net/weharmony/blog/4992750)**
-  
-* [(中断切换篇) | 自下而上逐行分析保存和恢复中断现场全过程 ](https://weharmony.gitee.io/中断切换篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114988891) [ | oschina  >](https://my.oschina.net/weharmony/blog/4990948)**
+
+* [(中断管理篇) | 硬中断的实现类似观察者模式 ](https://weharmony.gitee.io/中断管理篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/115130055) [ | oschina  >](https://my.oschina.net/weharmony/blog/4995800)**
+
+* [(中断切换篇) | 在中断切换的那一瞬间发生了什么? ](https://weharmony.gitee.io/中断切换篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114988891) [ | oschina  >](https://my.oschina.net/weharmony/blog/4990948)**
 
 * [(汇编汇总篇) |  鸿蒙所有的汇编代码都在这里 ](https://weharmony.gitee.io/汇编汇总篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114597179) [ | oschina  >](https://my.oschina.net/weharmony/blog/4977924)**
 
@@ -94,7 +96,7 @@
 
 ### **进程线程**
 
-* [(任务切换篇) | 逐行汇编分析TaskContext保存和恢复全过程 ](https://weharmony.gitee.io/任务切换篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114890180) [ | oschina  >](https://my.oschina.net/weharmony/blog/4988628)**
+* [(任务切换篇) | 汇编逐行注解分析任务上下文 ](https://weharmony.gitee.io/任务切换篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/114890180) [ | oschina  >](https://my.oschina.net/weharmony/blog/4988628)**
   
 * [(CPU篇) | 内核是如何描述CPU的? ](https://weharmony.gitee.io/CPU篇.html) **[<  csdn](https://blog.csdn.net/kuangyufei/article/details/113782749) [ | oschina  >](https://my.oschina.net/weharmony/blog/4952034)**
 
@@ -210,3 +212,5 @@
 ![公众号: 鸿蒙内核源码分析](https://gitee.com/weharmony/docs/raw/master/pic/other/so1so.png)
 
 [进入 >> 百万汉字注解 百篇博客分析 精读鸿蒙源码 深挖地基工程](https://weharmony.gitee.io) **[< gitee ](https://gitee.com/weharmony/kernel_liteos_a_note)[| csdn](https://blog.csdn.net/kuangyufei)  [ | oschina >](https://my.oschina.net/weharmony)**
+
+

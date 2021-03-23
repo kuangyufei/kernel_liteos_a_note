@@ -1,7 +1,7 @@
 git add -A
-git commit -m  '鸿蒙内核源码分析(中断概念篇) | 外人眼中权势滔天的当红海公公 | 百篇博客分析鸿蒙源码 | v43.01
+git commit -m  '鸿蒙内核源码分析(中断管理篇) | 硬中断的实现类似观察者模式 | 百篇博客分析鸿蒙源码 | v44.01
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
-    https://weharmony.gitee.io
+    https://my.oschina.net/weharmony
 '
 
 git push  origin master
