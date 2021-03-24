@@ -117,7 +117,7 @@ STATIC UINTPTR g_minAddr;
 STATIC UINTPTR g_maxAddr;
 STATIC UINT32 g_currHandleExcCpuID = INVALID_CPUID;
 VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr);
-UINT32 g_curNestCount[LOSCFG_KERNEL_CORE_NUM] = { 0 };//
+UINT32 g_curNestCount[LOSCFG_KERNEL_CORE_NUM] = { 0 };//记录当前嵌套异常的数量
 BOOL g_excFromUserMode[LOSCFG_KERNEL_CORE_NUM];//记录CPU core 异常来自用户态还是内核态 TRUE为用户态,默认为内核态
 STATIC EXC_PROC_FUNC g_excHook = (EXC_PROC_FUNC)OsExcHook;//全局异常处理钩子
 #if (LOSCFG_KERNEL_SMP == YES)
@@ -239,7 +239,11 @@ STATIC INT32 OsDecodeDataFSR(UINT32 regDFSR)
     ret = OsDecodeFS(bitsFS);
     return ret;
 }
-//共享页缺失异常
+/*
+* 共享页缺失异常
+* 异常状态寄存器(Fault Status Register -FAR)
+* 异常地址寄存器(Fault Address Register -FSR) 
+*/
 UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT32 fsr)
 {
     PRINT_INFO("page fault entry!!!\n");
@@ -1040,7 +1044,12 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
  * Description : EXC handler entry
  * Input       : excType    --- exc type
  *               excBufAddr --- address of EXC buf
- *///异常处理的执行入口，由汇编语言层调用 见于 los_hw_exc.s 文件
+ */
+/*异常处理的执行入口，由汇编语言层调用 见于 los_hw_exc.s 文件
+* 参数excBufAddr为异常发生时保存下来寄存器的值.
+* 异常状态寄存器(Fault Status Register -FAR)
+* 异常地址寄存器(Fault Address Register -FSR) 
+*/
 LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 {
     /* Task scheduling is not allowed during exception handling *///异常处理期间不允许任务调度
