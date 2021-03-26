@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '异常分发,缺页中断 汇编部分代码注解
+git commit -m  '文案整理,方便阅读
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     https://my.oschina.net/weharmony
 '

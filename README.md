@@ -2,7 +2,7 @@
 
 百万汉字注解 >> 精读内核源码,中文注解分析, 深挖地基工程,大脑永久记忆,四大码仓每日同步更新[<]()[ gitee ](https://gitee.com/weharmony/kernel_liteos_a_note)[| github ](https://github.com/kuangyufei/kernel_liteos_a_note)[| csdn ](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note)[| coding ](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files)[>]()
 
-百篇博客分析 >> 故事说内核,问答式导读,生活式比喻,表格化说明,图形化展示,主流站点定期更新中[<]()[ oschina ](https://my.oschina.net/u/3751245/blog/4626852)[| csdn ](https://blog.csdn.net/kuangyufei/article/details/108727970)[| 掘金 ](https://juejin.cn/user/756888642000808)[| weharmony ](https://weharmony.gitee.io/)[>]()
+百篇博客分析 >> 故事说内核,问答式导读,生活式比喻,表格化说明,图形化展示,主流站点定期更新中[<]()[ oschina ](https://my.oschina.net/weharmony)[| csdn ](https://blog.csdn.net/kuangyufei)[| 掘金 ](https://juejin.cn/user/756888642000808)[| harmony ](https://weharmony.gitee.io/)[>]()
 
 ---
 
@@ -60,107 +60,96 @@
 * 给 **[鸿蒙内核源码加注释](https://gitee.com/weharmony/kernel_liteos_a_note)** 过程中,整理出以下文章.内容多以 轻松口语化的故事,生活场景打比方,表格,图像 将尽可能多的内核知识点置入某种场景,具有画面感,形成多重联接路径,达到轻松记忆,甚至永久记忆的目的.
 * 鸿蒙内核源码注解分析系列不是百度教条式的在说清楚一堆诘屈聱牙的概念,那没什么意思.更希望是让内核变得栩栩如生,倍感亲切.确实有难度,不自量力,但已经出发,回头已是不可能的了.:P
 
-### **总目录**
+### **鸿蒙源码百篇博客 往期回顾**
 
-* [(总目录) | 百万汉字注解 百篇博客分析 ](https://weharmony.gitee.io/总目录.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei) [ | oschina  ](https://my.oschina.net/weharmony)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v44.03 (中断管理篇) | 硬中断的实现<>观察者模式 ](https://my.oschina.net/weharmony/blog/4995800) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/115130055) [ | harmony  ](https://weharmony.gitee.io/44_中断管理篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v43.03 (中断概念篇) | 外人眼中权势滔天的当红海公公 ](https://my.oschina.net/weharmony/blog/4992750) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/115014442) [ | harmony  ](https://weharmony.gitee.io/43_中断概念篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v42.03 (中断切换篇) | 中断切换到底在切换什么?](https://my.oschina.net/weharmony/blog/4990948) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114988891) [ | harmony  ](https://weharmony.gitee.io/42_中断切换篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v41.03 (任务切换篇) | 汇编逐行注解分析任务上下文 ](https://my.oschina.net/weharmony/blog/4988628) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114890180) [ | harmony  ](https://weharmony.gitee.io/41_任务切换篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v40.03 (汇编汇总篇) |  所有的汇编代码都在这里 ](https://my.oschina.net/weharmony/blog/4977924) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114597179) [ | harmony  ](https://weharmony.gitee.io/40_汇编汇总篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v39.03 (异常接管篇) | 社会很单纯,复杂的是人 ](https://my.oschina.net/weharmony/blog/4973016) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114438285) [ | harmony  ](https://weharmony.gitee.io/39_异常接管篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v38.03 (寄存器篇) | ARM所有寄存器一网打尽,不再神秘 ](https://my.oschina.net/weharmony/blog/4969487) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114326994) [ | harmony  ](https://weharmony.gitee.io/38_寄存器篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v37.03 (系统调用篇) | 全盘解剖系统调用实现过程 ](https://my.oschina.net/weharmony/blog/4967613) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114285166) [ | harmony  ](https://weharmony.gitee.io/37_系统调用篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v36.03 (工作模式篇) | CPU是韦小宝,有哪七个老婆? ](https://my.oschina.net/weharmony/blog/4965052) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114168567) [ | harmony  ](https://weharmony.gitee.io/36_工作模式篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v35.03 (时间管理篇) | Tick是操作系统的基本时间单位 ](https://my.oschina.net/weharmony/blog/4956163) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113867785) [ | harmony  ](https://weharmony.gitee.io/35_时间管理篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v34.03 (原子操作篇) | 是谁在为原子操作保驾护航? ](https://my.oschina.net/weharmony/blog/4955290) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113850603) [ | harmony  ](https://weharmony.gitee.io/34_原子操作篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v33.03 (消息队列篇) | 进程间如何异步解耦传递大数据 ? ](https://my.oschina.net/weharmony/blog/4952961) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113815355) [ | harmony  ](https://weharmony.gitee.io/33_消息队列篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v32.03 (CPU篇) | 内核是如何描述CPU的? ](https://my.oschina.net/weharmony/blog/4952034) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113782749) [ | harmony  ](https://weharmony.gitee.io/32_CPU篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**  
+
+* [v31.03 (定时器篇) | 内核最高优先级任务是谁? ](https://my.oschina.net/weharmony/blog/4951625) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113774260) [ | harmony  ](https://weharmony.gitee.io/31_定时器机制篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v30.03 (事件控制篇) | 任务间多对多的同步方案 ](https://my.oschina.net/weharmony/blog/4950956) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113759481) [ | harmony  ](https://weharmony.gitee.io/30_事件控制篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v29.03 (信号量篇) | 信号量解决任务同步问题 ](https://my.oschina.net/weharmony/blog/4949720) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113744267) [ | harmony  ](https://weharmony.gitee.io/29_信号量篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
   
-### **故事叙述**
+* [v28.03 (进程通讯篇) | 进程间通讯有哪九大方式? ](https://my.oschina.net/weharmony/blog/4947398) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113700751) [ | harmony  ](https://weharmony.gitee.io/28_进程通讯篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-* [(调度故事篇) | 用故事说内核调度 ](https://weharmony.gitee.io/调度故事篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108745174) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4634668)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v27.03 (互斥锁篇) | 互斥锁比自旋锁可丰满许多 ](https://my.oschina.net/weharmony/blog/4945465) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113660357) [ | harmony  ](https://weharmony.gitee.io/27_互斥锁篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-* [(内存主奴篇) | 用故事说内存管理 ](https://weharmony.gitee.io/内存主奴篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108723672) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4646802)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v26.03 (自旋锁篇) | 想为自旋锁立贞节牌坊! ](https://my.oschina.net/weharmony/blog/4944129) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113616250) [ | harmony  ](https://weharmony.gitee.io/26_自旋锁篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-* [(源码注释篇) | 热爱是所有的理由和答案 ](https://weharmony.gitee.io/源码注释篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/109251754) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4686747)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v25.03 (并发并行篇) | 怎么记住并发并行的区别? ](https://my.oschina.net/u/3751245/blog/4940329) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113516222) [ | harmony  ](https://weharmony.gitee.io/25_并发并行篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-### **ARM架构**
+* [v24.03 (进程概念篇) | 进程在管理哪些资源? ](https://my.oschina.net/u/3751245/blog/4937521) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113395872) [ | harmony  ](https://weharmony.gitee.io/24_进程概念篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-* [(中断概念篇) | 外人眼中权势滔天的当红海公公 ](https://weharmony.gitee.io/中断概念篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/115014442) [ | oschina  ](https://my.oschina.net/weharmony/blog/4992750)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v23.02 (汇编传参篇) | 汇编如何传递复杂的参数? ](https://my.oschina.net/u/3751245/blog/4927892) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113265990) [ | harmony  ](https://weharmony.gitee.io/23_汇编传参篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-* [(中断管理篇) | 硬中断的实现类似观察者模式 ](https://weharmony.gitee.io/中断管理篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/115130055) [ | oschina  ](https://my.oschina.net/weharmony/blog/4995800)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v22.02 (汇编基础篇) | CPU在哪里打卡上班? ](https://my.oschina.net/u/3751245/blog/4920361) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/112986628) [ | harmony  ](https://weharmony.gitee.io/22_汇编基础篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-* [(中断切换篇) | 在中断切换的那一瞬间发生了什么? ](https://weharmony.gitee.io/中断切换篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114988891) [ | oschina  ](https://my.oschina.net/weharmony/blog/4990948)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v21.02 (线程概念篇) | 是谁在不断的折腾CPU? ](https://my.oschina.net/u/3751245/blog/4915543) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/112870193) [ | harmony  ](https://weharmony.gitee.io/21_线程概念篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-* [(汇编汇总篇) |  鸿蒙所有的汇编代码都在这里 ](https://weharmony.gitee.io/汇编汇总篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114597179) [ | oschina  ](https://my.oschina.net/weharmony/blog/4977924)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v20.02 (用栈方式篇) | 栈是构建底层运行的基础 ](https://my.oschina.net/u/3751245/blog/4893388) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/112534331) [ | harmony  ](https://weharmony.gitee.io/20_用栈方式篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-* [(异常接管篇) | 社会很单纯,复杂的是人 ](https://weharmony.gitee.io/异常接管篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114438285) [ | oschina  ](https://my.oschina.net/weharmony/blog/4973016)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v19.02 (位图管理篇) | 为何进程和线程优先级都是32个? ](https://my.oschina.net/u/3751245/blog/4888467) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/112394982) [ | harmony  ](https://weharmony.gitee.io/19_位图管理篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v18.02 (源码结构篇) | 内核500问你能答对多少? ](https://my.oschina.net/u/3751245/blog/4869137) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/111938348) [ | harmony  ](https://weharmony.gitee.io/18_源码结构篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v17.02 (物理内存篇) | 这样记伙伴算法永远不会忘 ](https://my.oschina.net/u/3751245/blog/4842408) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/111765600) [ | harmony  ](https://weharmony.gitee.io/17_物理内存篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v16.02 (内存规则篇) | 内存管理到底在管什么? ](https://my.oschina.net/u/3751245/blog/4698384) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/109437223) [ | harmony  ](https://weharmony.gitee.io/16_内存规则篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v15.02 (内存映射篇) | 什么是内存最重要的实现基础 ? ](https://my.oschina.net/u/3751245/blog/4694841) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/109032636) [ | harmony  ](https://weharmony.gitee.io/15_内存映射篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v14.02 (内存汇编篇) | 什么是虚拟内存的实现基础? ](https://my.oschina.net/u/3751245/blog/4692156) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108994081) [ | harmony  ](https://weharmony.gitee.io/14_内存汇编篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v13.02 (源码注释篇) | 热爱是所有的理由和答案 ](https://my.oschina.net/u/3751245/blog/4686747) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/109251754) [ | harmony  ](https://weharmony.gitee.io/13_源码注释篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v12.02 (内存管理篇) | 虚拟内存全景图是怎样的? ](https://my.oschina.net/u/3751245/blog/4652284) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108821442) [ | harmony  ](https://weharmony.gitee.io/12_内存管理篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v11.02 (内存分配篇) | 内存有哪些分配方式? ](https://my.oschina.net/u/3751245/blog/4646802) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108989906) [ | harmony  ](https://weharmony.gitee.io/11_内存分配篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+
+* [v10.02 (内存主奴篇) | 紫禁城的主子和奴才如何相处? ](https://my.oschina.net/u/3751245/blog/4646802) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108723672) [ | harmony  ](https://weharmony.gitee.io/10_内存主奴篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
   
-* [(寄存器篇) | ARM 37个寄存器一网打尽,不再神秘 ](https://weharmony.gitee.io/寄存器篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114326994) [ | oschina  ](https://my.oschina.net/weharmony/blog/4969487)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v09.02 (调度故事篇) | 用故事说内核调度 ](https://my.oschina.net/u/3751245/blog/4634668) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108745174) [ | harmony  ](https://weharmony.gitee.io/09_调度故事篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-* [(系统调用篇) | 全盘解剖鸿蒙系统调用实现过程 ](https://weharmony.gitee.io/系统调用篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114285166) [ | oschina  ](https://my.oschina.net/weharmony/blog/4967613)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(工作模式篇) | CPU是韦小宝,有七个老婆 ](https://weharmony.gitee.io/工作模式篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114168567) [ | oschina  ](https://my.oschina.net/weharmony/blog/4965052)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(汇编传参篇) | 汇编如何传递复杂的参数? ](https://weharmony.gitee.io/汇编传参篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113265990) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4927892)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(汇编基础篇) | CPU在哪里打卡上班? ](https://weharmony.gitee.io/汇编基础篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/112986628) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4920361)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-### **进程线程**
-
-* [(任务切换篇) | 汇编逐行注解分析任务上下文 ](https://weharmony.gitee.io/任务切换篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114890180) [ | oschina  ](https://my.oschina.net/weharmony/blog/4988628)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v08.02 (总目录) | 百万汉字注解 百篇博客分析 ](https://my.oschina.net/weharmony) **[<]()[  csdn](https://blog.csdn.net/kuangyufei) [ | harmony  ](https://weharmony.gitee.io/08_总目录.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
   
-* [(CPU篇) | 内核是如何描述CPU的? ](https://weharmony.gitee.io/CPU篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113782749) [ | oschina  ](https://my.oschina.net/weharmony/blog/4952034)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v07.02 (调度机制篇) | 任务是如何被调度执行的? ](https://my.oschina.net/u/3751245/blog/4623040) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108705968) [ | harmony  ](https://weharmony.gitee.io/07_调度机制篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-* [(并发并行篇) | 内核如何管理多个CPU? ](https://weharmony.gitee.io/并发并行篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113516222) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4940329)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v06.02 (调度队列篇) | 就绪队列对调度的作用 ](https://my.oschina.net/u/3751245/blog/4606916) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108626671) [ | harmony  ](https://weharmony.gitee.io/06_调度队列篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-* [(调度机制篇) | 任务是如何被调度执行的? ](https://weharmony.gitee.io/调度机制篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108705968) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4623040)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(调度队列篇) | 就绪队列对调度的作用 ](https://weharmony.gitee.io/调度队列篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108626671) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4606916)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(任务管理篇) | 任务是内核调度的单元 ](https://weharmony.gitee.io/任务管理篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108621428) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4603919)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(时钟任务篇) | 调度最大的动力来自哪里? ](https://weharmony.gitee.io/时钟任务篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108603468) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4574493)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(进程管理篇) | 进程是内核资源管理单元 ](https://weharmony.gitee.io/进程管理篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108595941) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4574429)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(线程概念篇) | 是谁在不断的折腾CPU? ](https://weharmony.gitee.io/线程概念篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/112870193) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4915543)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(进程概念篇) | 进程都管理了哪些资源? ](https://weharmony.gitee.io/进程概念篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113395872) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4937521)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-### **通讯方式**
-
-* [(消息队列篇) | 进程间如何异步解耦传递大数据 ? ](https://weharmony.gitee.io/消息队列篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113815355) [ | oschina  ](https://my.oschina.net/weharmony/blog/4952961)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(事件控制篇) | 任务间一对多和多对多的同步方案 ](https://weharmony.gitee.io/事件控制篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113759481) [ | oschina  ](https://my.oschina.net/weharmony/blog/4950956)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(信号量篇) | 信号量解决任务同步问题 ](https://weharmony.gitee.io/信号量篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113744267) [ | oschina  ](https://my.oschina.net/weharmony/blog/4949720)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v05.02 (任务管理篇) | 谁在让CPU忙忙碌碌? ](https://my.oschina.net/u/3751245/blog/4603919) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108661248) [ | harmony  ](https://weharmony.gitee.io/05_任务管理篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
   
-* [(进程通讯篇) | 九大通讯方式一网打尽 ](https://weharmony.gitee.io/进程通讯篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113700751) [ | oschina  ](https://my.oschina.net/weharmony/blog/4947398)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v04.02 (任务调度篇) | 任务是内核调度的单元 ](https://my.oschina.net/weharmony/blog/4595539) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108621428) [ | harmony  ](https://weharmony.gitee.io/04_任务调度篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-* [(互斥锁篇) | 互斥锁比自旋锁丰满许多 ](https://weharmony.gitee.io/互斥锁篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113660357) [ | oschina  ](https://my.oschina.net/weharmony/blog/4945465)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v03.02 (时钟任务篇) | 触发调度最大的动力来自哪里? ](https://my.oschina.net/u/3751245/blog/4574493) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108603468) [ | harmony  ](https://weharmony.gitee.io/03_时钟任务篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-* [(自旋锁篇) | 汇编到令人心碎的自旋锁 ](https://weharmony.gitee.io/自旋锁篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113616250) [ | oschina  ](https://my.oschina.net/weharmony/blog/4944129)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* [v02.02 (进程管理篇) | 进程是内核资源管理单元 ](https://my.oschina.net/u/3751245/blog/4574429) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108595941) [ | harmony  ](https://weharmony.gitee.io/02_进程管理篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-### **虚实内存**
+* [v01.09 (双向链表篇) | 谁是内核最重要结构体? ](https://my.oschina.net/u/3751245/blog/4572304) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108585659) [ | harmony  ](https://weharmony.gitee.io/01_双向链表篇.html)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
-* [(物理内存篇) | 伙伴算法是在卖标准猪肉块吗？ ](https://weharmony.gitee.io/物理内存篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/111765600) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4842408)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(内存规则篇) | 内存管理到底在管什么? ](https://weharmony.gitee.io/内存规则篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/109437223) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4698384)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(内存映射篇) | 什么是内存最重要的实现基础 ? ](https://weharmony.gitee.io/内存映射篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/109032636) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4694841)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(内存汇编篇) | 什么是虚拟内存的实现基础? ](https://weharmony.gitee.io/内存汇编篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108994081) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4692156)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(内存分配篇) | 内存有哪些分配方式? ](https://weharmony.gitee.io/内存分配篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108989906) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4646802)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(内存管理篇) | 虚拟内存全景图是怎样的? ](https://weharmony.gitee.io/内存管理篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108821442) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4652284)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(内存主奴篇) | 紫禁城的主子和奴才如何相处? ](https://weharmony.gitee.io/内存主奴篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108723672) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4646802)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-### **基础工具**
-
-* [(时间管理篇) | Tick是操作系统的基本时间单位 ](https://weharmony.gitee.io/时间管理篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113867785) [ | oschina  ](https://my.oschina.net/weharmony/blog/4956163)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(原子操作篇) | 是哪两条汇编指令在为原子操作保驾护航? ](https://weharmony.gitee.io/原子操作篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113850603) [ | oschina  ](https://my.oschina.net/weharmony/blog/4955290)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(定时器机制篇) | 内核最高优先级任务是谁??? ](https://weharmony.gitee.io/定时器机制篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113774260) [ | oschina  ](https://my.oschina.net/weharmony/blog/4951625)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(用栈方式篇) | 栈是构建底层运行的基础 ](https://weharmony.gitee.io/用栈方式篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/112534331) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4893388)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(位图管理篇) | 为何进程和线程都是32个优先级? ](https://weharmony.gitee.io/位图管理篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/112394982) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4888467)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(源码结构篇) | 内核500问你能答对多少? ](https://weharmony.gitee.io/源码结构篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/111938348) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4869137)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
-
-* [(双向链表篇) | 谁是内核最重要结构体? ](https://weharmony.gitee.io/双向链表篇.html) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108585659) [ | oschina  ](https://my.oschina.net/u/3751245/blog/4572304)[ | 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
 
 ### **主流站点**
 
@@ -208,8 +197,8 @@
 
 ### **喜欢请大方 点赞+关注+收藏 吧**
 
-各大站点搜 **"鸿蒙内核源码分析"** .欢迎转载,请注明出处. 
+* [关注「鸿蒙内核源码分析」公众号，百万汉字注解 + 百篇博客分析 => 深挖鸿蒙内核源码](https://gitee.com/weharmony/docs/raw/master/pic/other/so1so.png)
+  
+* ![公众号: 鸿蒙内核源码分析](https://gitee.com/weharmony/docs/raw/master/pic/other/so1so.png)
 
-![公众号: 鸿蒙内核源码分析](https://gitee.com/weharmony/docs/raw/master/pic/other/so1so.png)
-
-[进入 >> 百万汉字注解 百篇博客分析 精读鸿蒙源码 深挖地基工程](https://weharmony.gitee.io) **[<]()[ gitee ](https://gitee.com/weharmony/kernel_liteos_a_note)[ | oschina ](https://my.oschina.net/weharmony)[| csdn](https://blog.csdn.net/kuangyufei)  [| 掘金 ](https://juejin.cn/user/756888642000808)[>]()**
+* 各大站点搜 **"鸿蒙内核源码分析"** .欢迎转载,请注明出处. 
