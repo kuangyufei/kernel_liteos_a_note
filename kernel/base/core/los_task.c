@@ -1696,7 +1696,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsTaskProcSignal(VOID)
      * so it keeps recieving signals while follow code excuting.
      */
     runTask = OsCurrTaskGet();//获取当前任务
-    if (runTask->signal == SIGNAL_NONE) {
+    if (runTask->signal == SIGNAL_NONE) {//无任务信号
         goto EXIT;
     }
 
@@ -1712,25 +1712,25 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsTaskProcSignal(VOID)
             PRINT_ERR("Task proc signal delete task(%u) failed err:0x%x\n", runTask->taskID, ret);
         }
     } else if (runTask->signal & SIGNAL_SUSPEND) {//意思是其他cpu发起了要挂起你的信号
-        runTask->signal &= ~SIGNAL_SUSPEND;//
+        runTask->signal &= ~SIGNAL_SUSPEND;//任务贴上被其他CPU挂起的标签
 
         /* suspend killed task may fail, ignore the result */
         (VOID)LOS_TaskSuspend(runTask->taskID);
 #if (LOSCFG_KERNEL_SMP == YES)
     } else if (runTask->signal & SIGNAL_AFFI) {//意思是下次调度其他cpu要媾和你
-        runTask->signal &= ~SIGNAL_AFFI;
+        runTask->signal &= ~SIGNAL_AFFI;//任务贴上被其他CPU媾和的标签
 
         /* pri-queue has updated, notify the target cpu */
-        LOS_MpSchedule((UINT32)runTask->cpuAffiMask);//任务队列已更新，通知目标cpu
+        LOS_MpSchedule((UINT32)runTask->cpuAffiMask);//发生调度,此任务将移交给媾和CPU运行.
 #endif
     }
 
 EXIT:
     /* check if needs to schedule */
-    percpu = OsPercpuGet();
-    if (OsPreemptable() && (percpu->schedFlag == INT_PEND_RESCH)) {
-        percpu->schedFlag = INT_NO_RESCH;
-        return INT_PEND_RESCH;
+    percpu = OsPercpuGet();//获取当前CPU信息
+    if (OsPreemptable() && (percpu->schedFlag == INT_PEND_RESCH)) {//注意这是CPU的调度标识,而不是任务的.
+        percpu->schedFlag = INT_NO_RESCH;//贴上不需要调度的标签
+        return INT_PEND_RESCH;//返回需要调度,返回值后的指令是: CMP     R0, #0	,BLNE          OsSchedPreempt ,如此将发生一轮调度. 
     }
 
     return INT_NO_RESCH;

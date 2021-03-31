@@ -135,38 +135,47 @@ LDM/STR架构中{∧}为可选后缀,当指令为LDM且寄存器列表中包含R
 .macro PUSH_FPU_REGS reg1 /* 保存fpu寄存器 */ 
 #if !defined(LOSCFG_ARCH_FPU_DISABLE) @FPU使能
     VMRS    \reg1, FPEXC 	
-    PUSH    {\reg1}			@对应TaskContext->regFPEXC
+    PUSH    {\reg1}			@对应 TaskContext->regFPEXC
     VMRS    \reg1, FPSCR	
-    PUSH    {\reg1}			@对应TaskContext->regFPSCR
+    PUSH    {\reg1}			@对应 TaskContext->regFPSCR
 #if defined(LOSCFG_ARCH_FPU_VFP_D32)
-    VPUSH   {D16-D31}		@对应TaskContext->D
+    VPUSH   {D16-D31}		@对应 TaskContext->D
 #endif
-    VPUSH   {D0-D15}
+    VPUSH   {D0-D15}		@对应 TaskContext->D
 #endif
 .endm
 
 .macro POP_FPU_REGS reg1 /* 恢复fpu寄存器 */ 
 #if !defined(LOSCFG_ARCH_FPU_DISABLE)
-    VPOP    {D0-D15}
+    VPOP    {D0-D15}	@对应 TaskContext->D
 #if defined(LOSCFG_ARCH_FPU_VFP_D32)
-    VPOP    {D16-D31}
+    VPOP    {D16-D31}	@对应 TaskContext->D
 #endif
     POP     {\reg1}
-    VMSR    FPSCR, \reg1
+    VMSR    FPSCR, \reg1	@对应 TaskContext->regFPSCR
     POP     {\reg1}
-    VMSR    FPEXC, \reg1
+    VMSR    FPEXC, \reg1	@对应 TaskContext->regFPEXC
 #endif
 .endm
 
 /* R0: new task */
-OsStartToRun:
+OsStartToRun:	@启动一个任务
 
     MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)  @禁止中断并切到管理模式
 
     LDRH    R1, [R0, #4] 	@将存储器地址为R0+4 的低16位数据读入寄存器R1，并将R1 的高16 位清零
     ORR     R1, #OS_TASK_STATUS_RUNNING @或指令 R1=R1|OS_TASK_STATUS_RUNNING
     STRH    R1, [R0, #4] 	@将寄存器R1中的低16位写入以R0+4地址的存储器中
+/*
+使用 TPIDRURO 保存当前线程的 KTHREAD 地址，KTHREAD 是每个线程在内
+核空间中的核心数据结构。C13 c0 3
 
+使用 TPIDRURW 保存当前线程的 TEB 地址，TEB 是每个线程在用户空间中的核
+心数据结构。C13 c0 2
+
+使用 TPIDRPRW 保存当前 CPU 的 KPCR 地址，KPCR（Processor Control Region）
+是每个 CPU 的核心数据结构地址。C13 c0 4
+*/
     /* R0 is new task, save it on tpidrprw */
     MCR     p15, 0, R0, c13, c0, 4 @ C13=R0
     ISB 	@指令同步屏障，清除流水线并且确保在新指令执行时，之前的指令都已经执行完毕。
@@ -319,12 +328,12 @@ OsIrqFromKernel:	@从内核发起中断
     BL      OsTaskProcSignal 		@跳转至C代码 
 
     /* check if needs to schedule */@检查是否需要调度
-    CMP     R0, #0	@是否需要调度,R0为参数保存值
-    BLNE    OsSchedPreempt @不相等,即R0非0,一般是 1
+    CMP     R0, #0	@OsTaskProcSignal的返回值 和 0 进行比较
+    BLNE    OsSchedPreempt @返回INT_PEND_RESCH,则执行 OsSchedPreempt
 
-    MOV     R0,SP	@参数
-    MOV     R1,R7	@参数
-    BL      OsSaveSignalContextIrq @跳转至C代码 
+    MOV     R0,SP	@TaskIrqContext开始位置
+    MOV     R1,R7	@第二个参数,R7
+    BL      OsSaveSignalContextIrq @保存信号上下文 
 
     /* restore fpu regs */
     POP_FPU_REGS    R0 @恢复fpu寄存器值

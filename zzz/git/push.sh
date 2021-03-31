@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '文案整理,方便阅读
+git commit -m  '对sig_cb模块注解
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     https://my.oschina.net/weharmony
 '

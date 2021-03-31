@@ -33,23 +33,23 @@
 #include "arch_config.h"
 
     .extern   g_losTask
-    .extern   g_intCount
-    .extern   g_curNestCount
+    .extern   g_intCount			@中断数量数组
+    .extern   g_curNestCount		@异常嵌套数量数组
     .extern   OsExcHandleEntry 		@异常处理入口		
     .extern   __svc_stack_top		@管理栈顶位置 操作系统使用的保护模式
-    .extern   __exc_stack_top		@任务栈顶位置
+    .extern   __exc_stack_top		@异常栈顶位置
     .extern   __stack_chk_guard
     .extern   OsRandomStackGuard
 #ifdef LOSCFG_GDB
-    .extern   OsUndefIncExcHandleEntry
+    .extern   OsUndefIncExcHandleEntry	@未定义指令异常处理函数
 #if __LINUX_ARM_ARCH__ >= 7
-    .extern   OsPrefetchAbortExcHandleEntry
-    .extern   OsDataAbortExcHandleEntry
+    .extern   OsPrefetchAbortExcHandleEntry @预取指令终止异常处理函数
+    .extern   OsDataAbortExcHandleEntry	@数据终止异常处理函数
 #endif
 #endif
-    .extern OsArmSharedPageFault
-    .extern OsArmA32SyscallHandle 
-    .extern LOS_Exit
+    .extern OsArmSharedPageFault	@共享缺页中断处理函数
+    .extern OsArmA32SyscallHandle 	@系统调用处理函数
+    .extern LOS_Exit				@进程退出
 
     .global   _osExceptFiqHdl
     .global   _osExceptAddrAbortHdl
@@ -236,7 +236,7 @@ OsKernelSVCHandler:@主要目的是保存ExcContext中除(R0~R12)的其他寄存
 _osExceptPrefetchAbortHdl: @预取异常处理
 #ifdef LOSCFG_GDB
 #if __LINUX_ARM_ARCH__ >= 7
-    GDB_HANDLE OsPrefetchAbortExcHandleEntry
+    GDB_HANDLE OsPrefetchAbortExcHandleEntry @取指令终止异常处理入口
 #endif
 #else
     SUB     LR, LR, #4                                       @ LR offset to return from this exception: -4.
@@ -259,7 +259,7 @@ _osKernelExceptPrefetchAbortHdl:
 _osExceptDataAbortHdl: @数据异常处理,缺页就属于数据异常
 #ifdef LOSCFG_GDB
 #if __LINUX_ARM_ARCH__ >= 7
-    GDB_HANDLE OsDataAbortExcHandleEntry
+    GDB_HANDLE OsDataAbortExcHandleEntry @取数据终止异常处理入口
 #endif
 #else
     SUB     LR, LR, #8                                       @ LR offset to return from this exception: -8.

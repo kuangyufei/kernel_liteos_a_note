@@ -497,7 +497,7 @@ int OsSigTimedWait(sigset_t *set, siginfo_t *info, unsigned int timeout)
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//让当前任务暂停的信号
+//通过信号挂起当前任务
 int OsPause(void)
 {
     LosTaskCB *spcb = NULL;
@@ -581,7 +581,7 @@ void OsSaveSignalContext(unsigned int *sp)
     unsigned long cpsr;
 
     OS_RETURN_IF_VOID(sp == NULL);
-    cpsr = OS_SYSCALL_GET_CPSR(sp);
+    cpsr = OS_SYSCALL_GET_CPSR(sp);//获取系统调用时的 CPSR值
 
     OS_RETURN_IF_VOID(((cpsr & CPSR_MASK_MODE) != CPSR_USER_MODE));//必须在用户模式下保存
     SCHEDULER_LOCK(intSave);
@@ -590,7 +590,7 @@ void OsSaveSignalContext(unsigned int *sp)
     sigcb = &task->sig;//获取任务的信号控制块
 
     if ((sigcb->context.count == 0) && ((sigcb->sigFlag != 0) || (process->sigShare != 0))) {//未保存上下文且关注了信号
-        sigHandler = OsGetSigHandler();
+        sigHandler = OsGetSigHandler();//获取信号处理函数
         if (sigHandler == 0) {//信号没有注册
             sigcb->sigFlag = 0;
             process->sigShare = 0;
@@ -603,18 +603,18 @@ void OsSaveSignalContext(unsigned int *sp)
         unsigned int signo = (unsigned int)FindFirstSetedBit(sigcb->sigFlag) + 1;
         OsProcessExitCodeSignalSet(process, signo);
         sigcb->context.CPSR = cpsr;		//保存当前各寄存器的信息
-        sigcb->context.PC = sp[REG_PC];
+        sigcb->context.PC = sp[REG_PC]; //获取被打断现场寄存器的值
         sigcb->context.USP = sp[REG_SP];
         sigcb->context.ULR = sp[REG_LR];
         sigcb->context.R0 = sp[REG_R0];
         sigcb->context.R1 = sp[REG_R1];
         sigcb->context.R2 = sp[REG_R2];
-        sigcb->context.R3 = sp[REG_R3];
-        sigcb->context.R7 = sp[REG_R7];
-        sigcb->context.R12 = sp[REG_R12];
-        sp[REG_PC] = sigHandler;//下一个要执行的函数,信号注册函数
-        sp[REG_R0] = signo;		//信号注册函数参数
-        sp[REG_R1] = (unsigned int)(UINTPTR)(sigcb->sigunbinfo.si_value.sival_ptr); //@note_why 这里没看明白是什么意思?
+        sigcb->context.R3 = sp[REG_R3]; 
+        sigcb->context.R7 = sp[REG_R7];//为何参数不用传R7,是因为系统调用发生时 R7始终保存的是系统调用号.
+        sigcb->context.R12 = sp[REG_R12];//详见 https://my.oschina.net/weharmony/blog/4967613
+        sp[REG_PC] = sigHandler;//指定信号执行函数,注意此处改变保存任务上下文中PC寄存器的值,恢复上下文时将执行这个函数.
+        sp[REG_R0] = signo;		//参数1,信号ID
+        sp[REG_R1] = (unsigned int)(UINTPTR)(sigcb->sigunbinfo.si_value.sival_ptr); //参数2
         /* sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */
         sigcb->sigFlag ^= 1ULL << (signo - 1);
         sigcb->context.count++;	//代表已保存
@@ -623,7 +623,7 @@ void OsSaveSignalContext(unsigned int *sp)
     SCHEDULER_UNLOCK(intSave);
 }
 //发生硬中断时,需保存用户态的用户栈现场,多了一个参数 R7寄存器
-//汇编调用 见于 los_dispatch.S | 254行:    BL        OsSaveSignalContextIrq
+//汇编调用 见于 los_dispatch.S |  BL        OsSaveSignalContextIrq
 void OsSaveSignalContextIrq(unsigned int *sp, unsigned int r7)
 {
     UINTPTR sigHandler;
@@ -641,12 +641,12 @@ void OsSaveSignalContextIrq(unsigned int *sp, unsigned int r7)
     SCHEDULER_LOCK(intSave);
     task = OsCurrTaskGet();	//获取当前任务
     process = OsCurrProcessGet();
-    sigcb = &task->sig;
+    sigcb = &task->sig;//获取任务的信号控制块
     if ((sigcb->context.count == 0) && ((sigcb->sigFlag != 0) || (process->sigShare != 0))) {
-        sigHandler = OsGetSigHandler();
-        if (sigHandler == 0) {
-            sigcb->sigFlag = 0;
-            process->sigShare = 0;
+        sigHandler = OsGetSigHandler();//获取进程的信号处理函数
+        if (sigHandler == 0) {//没有设置处理函数
+            sigcb->sigFlag = 0;//进程没有设置信号处理函数,所以任务的信号无意义,标签回0
+            process->sigShare = 0;//进程的共享位也无意义,回0
             SCHEDULER_UNLOCK(intSave);
             PRINT_ERR("The current process pid =%d starts fail!\n", task->processID);
             return;
@@ -654,9 +654,11 @@ void OsSaveSignalContextIrq(unsigned int *sp, unsigned int r7)
         sigcb->sigFlag |= process->sigShare;
         unsigned int signo = (unsigned int)FindFirstSetedBit(sigcb->sigFlag) + 1;
         OsProcessExitCodeSignalSet(process, signo);
-        (VOID)memcpy_s(&sigcb->context.R0, sizeof(TaskIrqDataSize), &context->R0, sizeof(TaskIrqDataSize));//note_why 为何此处和OsSaveSignalContext的处理不一致?
-        sigcb->context.R7 = r7;
-        context->PC = sigHandler;//入口函数
+        (VOID)memcpy_s(&sigcb->context.R0, sizeof(TaskIrqDataSize), &context->R0, sizeof(TaskIrqDataSize));//拷贝中断上下文到任务的信号上下文
+        //这里其实类似于 OsSaveSignalContext 中的 sigcb->context.USP = sp[REG_SP] ...
+        sigcb->context.R7 = r7;//因为是硬件触发,所以此处不同于 OsSaveSignalContext(unsigned int *sp),需要通过底层将 R7 带过来. MOV R1,R7, BL OsSaveSignalContextIrq
+		//同样的改变了栈中PC,R0,R1的值,意味着恢复现场后将执行 sigHandler(R0,R1)
+        context->PC = sigHandler;//信号入口函数
         context->R0 = signo;	//参数1
         context->R1 = (UINT32)(UINTPTR)sigcb->sigunbinfo.si_value.sival_ptr;//参数2
         /* sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */

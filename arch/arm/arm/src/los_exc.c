@@ -838,7 +838,7 @@ VOID OsUndefIncExcHandleEntry(ExcContext *excBufAddr)
     }
     while (1) {}
 }
-//预取异常处理函数，由汇编调用 见于 los_hw_exc.s
+//预取指令异常处理函数，由汇编调用 见于 los_hw_exc.s
 #if __LINUX_ARM_ARCH__ >= 7
 VOID OsPrefetchAbortExcHandleEntry(ExcContext *excBufAddr)
 {
@@ -1055,7 +1055,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
     /* Task scheduling is not allowed during exception handling *///异常处理期间不允许任务调度
     OsPercpuGet()->taskLockCnt++;//
 
-    g_curNestCount[ArchCurrCpuid()]++;
+    g_curNestCount[ArchCurrCpuid()]++;//记录当前CPU异常数量
 
     OsExcPriorDisposal(excBufAddr);
 
@@ -1078,11 +1078,11 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
 #endif
 
 #ifdef LOSCFG_SHELL_EXCINFO 
-    log_read_write_fn func = GetExcInfoRW();
+    log_read_write_fn func = GetExcInfoRW();//获取异常信息读写函数,用于打印异常信息栈
 #endif
 
-    if (g_excHook != NULL) {
-        if (g_curNestCount[ArchCurrCpuid()] == 1) {
+    if (g_excHook != NULL) {//全局异常钩子函数
+        if (g_curNestCount[ArchCurrCpuid()] == 1) {//说明只有一个异常
 #ifdef LOSCFG_SHELL_EXCINFO
             if (func != NULL) {
                 SetExcInfoIndex(0);
@@ -1092,8 +1092,8 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
             }
 #endif
             g_excHook(excType, excBufAddr, far, fsr);
-        } else {
-            OsCallStackInfo();
+        } else {//说明出现了异常嵌套的情况
+            OsCallStackInfo();//打印栈内容
         }
 
 #ifdef LOSCFG_SHELL_EXCINFO

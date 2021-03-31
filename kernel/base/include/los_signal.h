@@ -209,7 +209,7 @@ typedef struct {//任务中断上下文
 typedef struct {//信号切换上下文
     TASK_IRQ_CONTEXT
     unsigned int R7;	//存放系统调用的ID
-    unsigned int count;	//信号上下文的数量
+    unsigned int count;	//记录是否保存了任务上下文
 } sig_switch_context;
 
 typedef struct {//信号控制块(描述符)
