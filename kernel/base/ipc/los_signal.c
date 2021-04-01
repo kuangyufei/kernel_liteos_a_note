@@ -55,7 +55,7 @@ int raise(int sig)
 #define GETUNMASKSET(procmask, pendFlag) ((~(procmask)) & (sigset_t)(pendFlag))
 #define UINT64_BIT_SIZE 64
 /****************************************************
-用来检测参数signum 代表的信号是否已加入至参数set信号集里。
+判定信号signo是否存在信号集中。
 如果信号集里已有该信号则返回1，否则返回0。如果有错误则返回-1
 ****************************************************/
 int OsSigIsMember(const sigset_t *set, int signo)
@@ -116,7 +116,12 @@ void OsSigMaskSwitch(LosTaskCB * const rtcb, sigset_t set)
         rtcb->sig.sigPendFlag ^= unmaskset;
     }
 }
-//设置进程的信号掩码
+/******************************************************************
+不同how参数，实现不同功能
+	SIG_BLOCK：将set指向信号集中的信号，添加到进程阻塞信号集；
+	SIG_UNBLOCK：将set指向信号集中的信号，从进程阻塞信号集删除；
+	SIG_SETMASK：将set指向信号集中的信号，设置成进程阻塞信号集；
+*******************************************************************/
 int OsSigprocMask(int how, const sigset_t_l *setl, sigset_t_l *oldset)
 {
     LosTaskCB *spcb = NULL;
@@ -199,7 +204,7 @@ static int SigProcessSignalHandler(LosTaskCB *tcb, void *arg)
     }
 
     /* If the default tcb is not setted, then set this one as default. */
-    if (!info->defaultTcb) {//如果没有默认发送方的TCB,就给一个.
+    if (!info->defaultTcb) {//如果没有默认发送方的任务,就默认参数任务.
         info->defaultTcb = tcb;
     }
 
@@ -209,7 +214,7 @@ static int SigProcessSignalHandler(LosTaskCB *tcb, void *arg)
          * The requirement is: if more than one task in this task group is waiting for the signal,
          * then only one indeterminate task in the group will receive the signal.
          */
-        ret = OsTcbDispatch(tcb, info->sigInfo);//发送信号
+        ret = OsTcbDispatch(tcb, info->sigInfo);//发送信号,注意这是给其他任务发送信号
         OS_RETURN_IF(ret < 0, ret);//这种写法很有意思
 
         /* set this tcb as awakenedTcb */
@@ -232,7 +237,7 @@ static int SigProcessSignalHandler(LosTaskCB *tcb, void *arg)
     }
     return 0; /* Keep searching */
 }
-//SIGKILL 干掉进程引发处理函数
+//进程收到 SIGKILL 信号后,通知任务tcb处理.
 static int SigProcessKillSigHandler(LosTaskCB *tcb, void *arg)
 {
     struct ProcessSignalInfo *info = (struct ProcessSignalInfo *)arg;//转参
@@ -241,7 +246,7 @@ static int SigProcessKillSigHandler(LosTaskCB *tcb, void *arg)
         sig_cb *sigcb = &tcb->sig;
         if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->sigInfo->si_signo)) {//waitlist 不为空 且 有信号
             OsTaskWake(tcb);//唤醒这个任务，加入进程的就绪队列
-            OsSigEmptySet(&sigcb->sigwaitmask);//清空信号等待位,啥意思?
+            OsSigEmptySet(&sigcb->sigwaitmask);//清空信号等待位,不等任何信号了.
         }
     }
     return 0;
@@ -277,12 +282,12 @@ int OsSigProcessSend(LosProcessCB *spcb, siginfo_t *sigInfo)
 
     /* visit all taskcb and dispatch signal */ //访问所有任务和分发信号
     if ((info.sigInfo != NULL) && (info.sigInfo->si_signo == SIGKILL)) {//需要干掉进程时 SIGKILL = 9， #linux kill 9 14
-        (void)OsSigProcessForeachChild(spcb, SigProcessKillSigHandler, &info);//进程要被干掉了,信息要通知其所有task知道
+        (void)OsSigProcessForeachChild(spcb, SigProcessKillSigHandler, &info);//进程要被干掉了,通知所有task做善后处理
         OsSigAddSet(&spcb->sigShare, info.sigInfo->si_signo);
         OsWaitSignalToWakeProcess(spcb);//等待信号唤醒进程
         return 0;
     } else {
-        ret = OsSigProcessForeachChild(spcb, SigProcessSignalHandler, &info);//给进程所有task发送信号
+        ret = OsSigProcessForeachChild(spcb, SigProcessSignalHandler, &info);//进程通知所有task处理信号
     }
     if (ret < 0) {
         return ret;
@@ -290,7 +295,7 @@ int OsSigProcessSend(LosProcessCB *spcb, siginfo_t *sigInfo)
     SigProcessLoadTcb(&info, sigInfo);
     return 0;
 }
-//清空信号
+//信号集全部清0
 int OsSigEmptySet(sigset_t *set)
 {
     *set = NULL_SIGNAL_SET;
@@ -310,7 +315,7 @@ static int OsSignalPermissionToCheck(const LosProcessCB *spcb)
 
     return 0;
 }
-//发送信号
+//信号分发
 int OsDispatch(pid_t pid, siginfo_t *info, int permission)
 {
     LosProcessCB *spcb = OS_PCB_FROM_PID(pid);//找到这个进程
@@ -338,6 +343,7 @@ int OsDispatch(pid_t pid, siginfo_t *info, int permission)
     return OsSigProcessSend(spcb, info);//给参数进程发送信号
 }
 /************************************************
+用于向进程或进程组发送信号
 shell命令 kill 14 7（kill -14 7效果相同）
 发送信号14（SIGALRM默认行为为进程终止）给7号进程
 ************************************************/
@@ -363,7 +369,7 @@ int OsKill(pid_t pid, int sig, int permission)
     ret = OsDispatch(pid, &info, permission);//发送信号
     return ret;
 }
-//给发送杀死进程信号的过程加锁
+//给发送信号过程加锁
 int OsKillLock(pid_t pid, int sig)
 {
     int ret;
@@ -374,7 +380,7 @@ int OsKillLock(pid_t pid, int sig)
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//发送信号干掉线程
+//发送信号
 int OsPthreadKill(UINT32 tid, int signo)
 {
     LosTaskCB *stcb = NULL;
@@ -409,7 +415,7 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//添加信号到指定信号集
+//向信号集中加入signo信号
 int OsSigAddSet(sigset_t *set, int signo)
 {
     /* Verify the signal */
@@ -423,7 +429,7 @@ int OsSigAddSet(sigset_t *set, int signo)
         return LOS_OK;
     }
 }
-//获取当前进程的阻塞信号集
+//获取已发送到进程，却被阻塞的所有信号
 int OsSigPending(sigset_t *set)
 {
     LosTaskCB *tcb = NULL;
@@ -435,7 +441,7 @@ int OsSigPending(sigset_t *set)
 
     SCHEDULER_LOCK(intSave);
     tcb = OsCurrTaskGet();
-    *set = tcb->sig.sigPendFlag;//因何而被阻塞
+    *set = tcb->sig.sigPendFlag;//被阻塞的信号集
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
@@ -507,7 +513,7 @@ int OsPause(void)
     oldSigprocmask = spcb->sig.sigprocmask;
     return OsSigSuspend(&oldSigprocmask);
 }
-//让当前任务暂停的信号
+//用set代替进程的原有掩码，并暂停进程执行，直到收到信号再恢复原有掩码并继续执行进程。
 int OsSigSuspend(const sigset_t *set)
 {
     unsigned int intSave;
@@ -541,9 +547,10 @@ int OsSigSuspend(const sigset_t *set)
 /**************************************************
 安装信号,函数用于改变进程接收到特定信号后的行为。
 sig:信号的值，可以为除SIGKILL及SIGSTOP外的任何一个特定有效的信号（为这两个信号定义自己的处理函数，将导致信号安装错误）。
-act:指向结构sigaction的一个实例的指针，在结构sigaction的实例中，指定了对特定信号的处理，可以为空，进程会以缺省方式对信号处理；
-oldact:指向的对象用来保存返回的原来对相应信号的处理，可指定oldact为NULL。
+act:设置对signal信号的新处理方式。
+oldact:原来对信号的处理方式。
 如果把第二、第三个参数都设为NULL，那么该函数可用于检查信号的有效性。
+返回值：0 表示成功，-1 表示有错误发生。
 **************************************************/
 int OsSigAction(int sig, const sigaction_t *act, sigaction_t *oact)
 {
@@ -659,7 +666,7 @@ void OsSaveSignalContextIrq(unsigned int *sp, unsigned int r7)
         sigcb->context.R7 = r7;//因为是硬件触发,所以此处不同于 OsSaveSignalContext(unsigned int *sp),需要通过底层将 R7 带过来. MOV R1,R7, BL OsSaveSignalContextIrq
 		//同样的改变了栈中PC,R0,R1的值,意味着恢复现场后将执行 sigHandler(R0,R1)
         context->PC = sigHandler;//信号入口函数
-        context->R0 = signo;	//参数1
+        context->R0 = signo;	//参数1.信号ID
         context->R1 = (UINT32)(UINTPTR)sigcb->sigunbinfo.si_value.sival_ptr;//参数2
         /* sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */
         sigcb->sigFlag ^= 1ULL << (signo - 1);

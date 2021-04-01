@@ -82,7 +82,7 @@ STATIC VOID OsSchedSwitchProcess(LosProcessCB *runProcess, LosProcessCB *newProc
         newProcess->timeSlice = OS_PROCESS_SCHED_RR_INTERVAL;//重新分配时间片，默认 20ms
     }
 }
-//调度算法的实现
+//重新调度任务
 VOID OsSchedResched(VOID)
 {
     LosTaskCB *runTask = NULL;
@@ -109,18 +109,18 @@ VOID OsSchedResched(VOID)
     runTask->taskStatus &= ~OS_TASK_STATUS_RUNNING;//当前任务状态位置成不在运行状态
     newTask->taskStatus |= OS_TASK_STATUS_RUNNING;//最高任务状态位置成在运行状态
 
-    runProcess = OS_PCB_FROM_PID(runTask->processID);//通过进程ID索引拿到进程实体
-    newProcess = OS_PCB_FROM_PID(newTask->processID);//同上
+    runProcess = OS_PCB_FROM_PID(runTask->processID);//获取当前进程实体
+    newProcess = OS_PCB_FROM_PID(newTask->processID);//获取要切换的进程实体
 
-    OsSchedSwitchProcess(runProcess, newProcess);//切换进程,里面主要涉及进程空间的切换,也就是MMU的上下文切换.
+    OsSchedSwitchProcess(runProcess, newProcess);//切换进程,里面主要涉及进程空间的切换,即:MMU的上下文切换.
 
 #if (LOSCFG_KERNEL_SMP == YES)//CPU多核的情况
-    /* mask new running task's owner processor */
-    runTask->currCpu = OS_TASK_INVALID_CPUID;//当前任务不占用CPU
-    newTask->currCpu = ArchCurrCpuid();//让新任务占用CPU
+    /* mask new running task's owner processor *///此处只是贴标签,任务切换期间会有用.
+    runTask->currCpu = OS_TASK_INVALID_CPUID;//贴上当前任务不占用CPU标签
+    newTask->currCpu = ArchCurrCpuid();//贴上新任务占用CPU的标签
 #endif
 
-    (VOID)OsTaskSwitchCheck(runTask, newTask);//切换task的检查
+    (VOID)OsTaskSwitchCheck(runTask, newTask);//切换之前检查新老task
 
 #if (LOSCFG_KERNEL_SCHED_STATISTICS == YES)
     OsSchedStatistics(runTask, newTask);
@@ -132,7 +132,7 @@ VOID OsSchedResched(VOID)
 
     OsCurrTaskSet((VOID*)newTask);//设置新的task为CPU核的当前任务
 
-    if (OsProcessIsUserMode(newProcess)) {//用户模式下会怎么样?
+    if (OsProcessIsUserMode(newProcess)) {//用户模式需自带栈空间
         OsCurrUserTaskSet(newTask->userArea);//设置task栈空间
     }
 
@@ -145,7 +145,7 @@ VOID OsSchedResched(VOID)
                 newProcess->threadScheduleMap, newTask->taskName, newTask->taskID, newTask->taskStatus);
 
     /* do the task context switch */
-    OsTaskSchedule(newTask, runTask);//切换任务上下文,注意OsTaskSchedule是一个汇编函数 见于 los_dispatch.s
+    OsTaskSchedule(newTask, runTask);//切换任务上下文, 注意OsTaskSchedule是一个汇编函数 见于 los_dispatch.s
 }
 /******************************************************
    抢占式调度函数

@@ -88,12 +88,12 @@ typedef struct ProcessCB {
     UINT16               processMode;                  /**< Kernel Mode:0; User Mode:1; */	//模式指定为内核还是用户进程
     UINT32               parentProcessID;              /**< Parent process ID */	//父进程ID
     UINT32               exitCode;                     /**< process exit status */	//进程退出状态码
-    LOS_DL_LIST          pendList;                     /**< Block list to which the process belongs */ //进程所属的阻塞列表,如果因拿锁失败,就由此节点挂到等锁链表上
+    LOS_DL_LIST          pendList;                     /**< Block list to which the process belongs */ //进程所在的阻塞列表,进程因阻塞挂入相应的链表.
     LOS_DL_LIST          childrenList;                 /**< my children process list */	//孩子进程都挂到这里,形成双循环链表
-    LOS_DL_LIST          exitChildList;                /**< my exit children process list */	//那些要退出孩子进程挂到这里，白发人送黑发人。
+    LOS_DL_LIST          exitChildList;                /**< my exit children process list */	//要退出的孩子进程链表，白发人要送黑发人.
     LOS_DL_LIST          siblingList;                  /**< linkage in my parent's children list */ //兄弟进程链表, 56个民族是一家,来自同一个父进程.
     ProcessGroup         *group;                       /**< Process group to which a process belongs */ //所属进程组
-    LOS_DL_LIST          subordinateGroupList;         /**< linkage in my group list */ //进程是组长时,有哪些组员进程
+    LOS_DL_LIST          subordinateGroupList;         /**< linkage in my group list */ //进程组员链表
     UINT32               threadGroupID;                /**< Which thread group , is the main thread ID of the process */ //哪个线程组是进程的主线程ID
     UINT32               threadScheduleMap;            /**< The scheduling bitmap table for the thread group of the
                                                             process */ //进程的各线程调度位图
@@ -353,10 +353,10 @@ STATIC INLINE VOID OsProcessExitCodeSignalClear(LosProcessCB *processCB)
 {
     processCB->exitCode &= (~0x7FU);//低7位全部清0
 }
-
+//进程退出码是否被设置过,默认是 0 ,如果 & 0x7FU 还是 0 ,说明没有被设置过.
 STATIC INLINE BOOL OsProcessExitCodeSignalIsSet(LosProcessCB *processCB)
 {
-    return (processCB->exitCode) & 0x7FU;//低7位全部置1
+    return (processCB->exitCode) & 0x7FU;
 }
 
 STATIC INLINE VOID OsProcessExitCodeSet(LosProcessCB *processCB, UINT32 code)//由外界提供退出码

@@ -51,8 +51,8 @@ https://www.cnblogs.com/hoys/archive/2012/08/19/2646377.html
 如果一个信号被进程设置为阻塞，则该信号的传递被延迟，直到其阻塞被取消时才被传递给进程。
 
 软中断信号（signal，又简称为信号）用来通知进程发生了异步事件。在软件层次上是对中断机制的一种模拟，
-在原理上，一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。信号是进程间通信机制中唯一
-的异步通信机制，一个进程不必通过任何操作来等待信号的到达，事实上，进程也不知道信号到底什么时候到达。
+在原理上，一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。信号是进程间通信机制中异步通信机制，
+一个进程不必通过任何操作来等待信号的到达，事实上，进程也不知道信号到底什么时候到达。
 进程之间可以互相通过系统调用kill发送软中断信号。内核也可以因为内部事件而给进程发送信号，通知进程
 发生了某个事件。信号机制除了基本通知功能外，还可以传递附加信息。
 
@@ -63,34 +63,34 @@ https://www.cnblogs.com/hoys/archive/2012/08/19/2646377.html
 #define SIGILL    4	//非法指令
 #define SIGTRAP   5	//跟踪陷阱（trace trap），启动进程，跟踪代码的执行
 #define SIGABRT   6	//由abort(3)发出的退出指令
-#define SIGIOT    SIGABRT 
+#define SIGIOT    SIGABRT //abort发出的信号
 #define SIGBUS    7	//总线错误 
 #define SIGFPE    8	//浮点异常
-#define SIGKILL   9		//常用的命令 kill 9 123 
+#define SIGKILL   9		//常用的命令 kill 9 123 | 不能被忽略、处理和阻塞
 #define SIGUSR1   10	//用户自定义信号1 
 #define SIGSEGV   11	//无效的内存引用, 段违例（segmentation     violation），进程试图去访问其虚地址空间以外的位置 
 #define SIGUSR2   12	//用户自定义信号2
 #define SIGPIPE   13	//向某个非读管道中写入数据 
 #define SIGALRM   14	//由alarm(2)发出的信号,默认行为为进程终止
-#define SIGTERM   15	//软件终止（software  termination）
-#define SIGSTKFLT 16
+#define SIGTERM   15	//终止信号
+#define SIGSTKFLT 16	//栈溢出
 #define SIGCHLD   17	//子进程结束信号
 #define SIGCONT   18	//进程继续（曾被停止的进程）
-#define SIGSTOP   19	//终止进程
+#define SIGSTOP   19	//终止进程  	 | 不能被忽略、处理和阻塞
 #define SIGTSTP   20	//控制终端（tty）上 按下停止键
-#define SIGTTIN   21	//后台进程企图从控制终端读
-#define SIGTTOU   22	//后台进程企图从控制终端写
-#define SIGURG    23
-#define SIGXCPU   24
-#define SIGXFSZ   25
-#define SIGVTALRM 26
-#define SIGPROF   27
-#define SIGWINCH  28
-#define SIGIO     29
-#define SIGPOLL   29
-#define SIGPWR    30	//电源故障
+#define SIGTTIN   21	//进程停止，后台进程企图从控制终端读
+#define SIGTTOU   22	//进程停止，后台进程企图从控制终端写
+#define SIGURG    23	//I/O有紧急数据到达当前进程
+#define SIGXCPU   24	//进程的CPU时间片到期
+#define SIGXFSZ   25	//文件大小的超出上限
+#define SIGVTALRM 26	//虚拟时钟超时
+#define SIGPROF   27	//profile时钟超时
+#define SIGWINCH  28	//窗口大小改变
+#define SIGIO     29	//I/O相关
+#define SIGPOLL   29	//
+#define SIGPWR    30	//电源故障,关机
 #define SIGSYS    31	//系统调用中参数错，如系统调用号非法 
-#define SIGUNUSED SIGSYS
+#define SIGUNUSED SIGSYS		//系统调用异常
 
 #define _NSIG 65 //信号范围,不超过_NSIG
 ********************************************/
@@ -145,9 +145,9 @@ typedef void (*sa_sighandler_t)(int);
 typedef void (*sa_siginfoaction_t)(int, siginfo_t *, void *);
 
 #define SIGNO2SET(s) ((sigset_t)1ULL << (s))
-#define NULL_SIGNAL_SET ((sigset_t)0ULL)	//设置成没有信号
-#define FULL_SIGNAL_SET ((sigset_t)~0ULL)	//设置成满格信号
-//信号量是否有效
+#define NULL_SIGNAL_SET ((sigset_t)0ULL)	//信号集全部清0
+#define FULL_SIGNAL_SET ((sigset_t)~0ULL)	//信号集全部置1
+//信号ID是否有效
 static inline int GOOD_SIGNO(unsigned int sig)
 {
     return (sig < _NSIG) ? 1 : 0;// 
@@ -158,7 +158,7 @@ musl是构建在Linux系统调用API之上的C标准库的实现，包括在基�
 以及广泛认可的扩展。musl是轻量级的，快速的，简单的，自由的.
 ********************************************************************/
 
-#define MAX_SIG_ARRAY_IN_MUSL 128 
+#define MAX_SIG_ARRAY_IN_MUSL 128 //128个信号
 
 typedef struct {
     unsigned long sig[MAX_SIG_ARRAY_IN_MUSL / sizeof(unsigned long)];
@@ -202,7 +202,7 @@ typedef struct sq_queue_s sq_queue_t;
         unsigned int CPSR;   \
         unsigned int PC;
 
-typedef struct {//任务中断上下文
+typedef struct {//中断上下文
     TASK_IRQ_CONTEXT
 } TaskIrqDataSize;
 

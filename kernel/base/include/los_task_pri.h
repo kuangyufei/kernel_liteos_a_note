@@ -318,7 +318,7 @@ typedef struct {
                                              the priority can not be greater than 31 */			//过的优先级，例如 ..01001011 曾经有过 0,1,3,6 优先级
     INT32           errorNo;            /**< Error Num */
     UINT32          signal;             /**< Task signal */ //任务信号类型,(SIGNAL_NONE,SIGNAL_KILL,SIGNAL_SUSPEND,SIGNAL_AFFI)
-    sig_cb          sig;				//信号控制块，这里用于进程间通讯的信号,类似于 linux singal模块
+    sig_cb          sig;				//信号控制块，用于异步通信,类似于 linux singal模块
 #if (LOSCFG_KERNEL_SMP == YES)
     UINT16          currCpu;            /**< CPU core number of this task is running on */	//正在运行此任务的CPU内核号
     UINT16          lastCpu;            /**< CPU core number of this task is running on last time */ //上次运行此任务的CPU内核号
@@ -357,14 +357,14 @@ typedef struct {
 } LosTask;
 
 struct ProcessSignalInfo {//进程信号描述符
-    siginfo_t *sigInfo;       /**< Signal to be dispatched */		//要发送的信号 例如 9 代表 kill process信号
+    siginfo_t *sigInfo;       /**< Signal to be dispatched */		//要发送的信号
     LosTaskCB *defaultTcb;    /**< Default TCB */					//默认task,指的是信号的发送方
-    LosTaskCB *unblockedTcb;  /**< The signal unblock on this TCB*/	//解除阻塞这个task的信号
-    LosTaskCB *awakenedTcb;   /**< This TCB was awakened */			//指定task要被唤醒的信号
-    LosTaskCB *receivedTcb;   /**< This TCB received the signal */	//指定task接收信号
+    LosTaskCB *unblockedTcb;  /**< The signal unblock on this TCB*/	//此任务的信号阻塞解除
+    LosTaskCB *awakenedTcb;   /**< This TCB was awakened */			//被唤醒的任务
+    LosTaskCB *receivedTcb;   /**< This TCB received the signal */	//接收信号的任务
 };
 
-typedef int (*ForEachTaskCB)(LosTaskCB *tcb, void *arg);//每个任务的回调函数,可用于进程被kill 9 时,通知所有任务善后处理
+typedef int (*ForEachTaskCB)(LosTaskCB *tcb, void *arg);//回调任务函数,例如:进程被kill 9 时,通知所有任务善后处理
 
 /**
  * @ingroup los_task

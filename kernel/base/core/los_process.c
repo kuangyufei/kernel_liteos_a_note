@@ -300,7 +300,7 @@ STATIC BOOL OsWaitWakeSpecifiedProcess(LOS_DL_LIST *head, const LosProcessCB *pr
 
     return find;
 }
-
+//检查父进程的等待任务并唤醒任务
 STATIC VOID OsWaitCheckAndWakeParentProcess(LosProcessCB *parentCB, const LosProcessCB *processCB)
 {
     LOS_DL_LIST *head = &parentCB->waitList;
@@ -465,7 +465,7 @@ STATIC VOID OsChildProcessResourcesFree(const LosProcessCB *processCB)
         (VOID)LOS_MemFree(m_aucSysMem1, group);
     }
 }
-//进程的自然退出,参数是当前运行的任务
+//一个进程的自然消亡过程,参数是当前运行的任务
 STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
 {
     LosProcessCB *processCB = OS_PCB_FROM_PID(runTask->processID);//通过task找到所属PCB
@@ -481,25 +481,25 @@ STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
 #endif
 
     /* is a child process */
-    if (processCB->parentProcessID != OS_INVALID_VALUE) {
-        parentCB = OS_PCB_FROM_PID(processCB->parentProcessID);
-        LOS_ListDelete(&processCB->siblingList);
-        if (!OsProcessExitCodeSignalIsSet(processCB)) {
-            OsProcessExitCodeSet(processCB, status);
+    if (processCB->parentProcessID != OS_INVALID_VALUE) {//判断是否有父进程
+        parentCB = OS_PCB_FROM_PID(processCB->parentProcessID);//获取父进程实体
+        LOS_ListDelete(&processCB->siblingList);//将自己从兄弟链表中摘除,家人们,永告别了!
+        if (!OsProcessExitCodeSignalIsSet(processCB)) {//是否设置了退出码?
+            OsProcessExitCodeSet(processCB, status);//将进程状态设为退出码
         }
-        LOS_ListTailInsert(&parentCB->exitChildList, &processCB->siblingList);
-        LOS_ListDelete(&processCB->subordinateGroupList);
-        LOS_ListTailInsert(&processCB->group->exitProcessList, &processCB->subordinateGroupList);
+        LOS_ListTailInsert(&parentCB->exitChildList, &processCB->siblingList);//挂到父进程的孩子消亡链表,家人中,永别的可不止我一个.
+        LOS_ListDelete(&processCB->subordinateGroupList);//和志同道合的朋友们永别了,注意家里可不一定是朋友的,所有各有链表.
+        LOS_ListTailInsert(&processCB->group->exitProcessList, &processCB->subordinateGroupList);//挂到进程组消亡链表,朋友中,永远的可不止我一个.
 
-        OsWaitCheckAndWakeParentProcess(parentCB, processCB);
+        OsWaitCheckAndWakeParentProcess(parentCB, processCB);//检查父进程的等待任务并唤醒任务,此处将会切换到其他任务运行.
 
-        OsDealAliveChildProcess(processCB);
+        OsDealAliveChildProcess(processCB);//安排孩子进程,上面和长辈,同辈,朋友告别了,接下来跟娃娃们告别.
 
         processCB->processStatus |= OS_PROCESS_STATUS_ZOMBIES;//贴上僵死进程的标签
 
-        (VOID)OsKill(processCB->parentProcessID, SIGCHLD, OS_KERNEL_KILL_PERMISSION);
-        LOS_ListHeadInsert(&g_processRecyleList, &processCB->pendList);
-        OsRunTaskToDelete(runTask);
+        (VOID)OsKill(processCB->parentProcessID, SIGCHLD, OS_KERNEL_KILL_PERMISSION);//以内核权限发送SIGCHLD(子进程退出)信号.
+        LOS_ListHeadInsert(&g_processRecyleList, &processCB->pendList);//将进程通过其阻塞节点挂入全局进程回收链表
+        OsRunTaskToDelete(runTask);//删除正在运行的任务
         return;
     }
 
@@ -1284,7 +1284,7 @@ STATIC UINT32 OsWaitOptionsCheck(UINT32 options)
 
     return LOS_OK;
 }
-
+//阻塞参数进程
 LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, VOID *rusage)
 {
     (VOID)rusage;

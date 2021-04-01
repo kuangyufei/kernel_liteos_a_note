@@ -587,13 +587,13 @@ int clock_nanosleep(clockid_t clk, int flags, const struct timespec *req, struct
 
     TIME_RETURN(0);
 }
-
+//定时器处理函数之参数
 typedef struct {
-    int sigev_signo;
-    UINT32 pid;
+    int sigev_signo; //信号ID
+    UINT32 pid;		 //进程ID,用于给进程发送信号
     union sigval sigev_value;
 } swtmr_proc_arg;
-
+//定时器处理函数,发送信号
 static VOID SwtmrProc(UINTPTR tmrArg)
 {
     int sig;
@@ -620,7 +620,7 @@ static VOID SwtmrProc(UINTPTR tmrArg)
     info.si_value.sival_ptr = arg->sigev_value.sival_ptr;
 
     /* Send the signal */
-    OsDispatch(pid, &info, OS_USER_KILL_PERMISSION);
+    OsDispatch(pid, &info, OS_USER_KILL_PERMISSION);//以用户权限发送信号
     return;
 }
 //posix 之创建定时器 
