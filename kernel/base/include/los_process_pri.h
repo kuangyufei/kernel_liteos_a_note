@@ -102,8 +102,8 @@ typedef struct ProcessCB {
                                                                          priority hash table */	//进程的线程组调度优先级哈希表
     volatile UINT32      threadNumber; /**< Number of threads alive under this process */	//此进程下的活动线程数
     UINT32               threadCount;  /**< Total number of threads created under this process */	//在此进程下创建的线程总数
-    LOS_DL_LIST          waitList;     /**< The process holds the waitLits to support wait/waitpid *///进程持有等待链表以支持wait/waitpid
-#if (LOSCFG_KERNEL_SMP == YES)
+    LOS_DL_LIST          waitList;     /**< The process holds the waitLits to support wait/waitpid *///父进程通过进程等待的方式，回收子进程资源，获取子进程退出信息
+#if (LOSCFG_KERNEL_SMP == YES)																		
     UINT32               timerCpu;     /**< CPU core number of this task is delayed or pended *///统计各线程被延期或阻塞的时间
 #endif
     UINTPTR              sigHandler;   /**< signal handler */ //信号处理函数,处理如 SIGSYS 等信号 
@@ -130,15 +130,16 @@ typedef struct ProcessCB {
     mode_t umask;
 } LosProcessCB;
 
-#define CLONE_VM       0x00000100
-#define CLONE_FS       0x00000200
-#define CLONE_FILES    0x00000400
-#define CLONE_SIGHAND  0x00000800
-#define CLONE_PTRACE   0x00002000
-#define CLONE_VFORK    0x00004000
-#define CLONE_PARENT   0x00008000
-#define CLONE_THREAD   0x00010000
-
+#define CLONE_VM       0x00000100	//子进程与父进程运行于相同的内存空间
+#define CLONE_FS       0x00000200	//子进程与父进程共享相同的文件系统，包括root、当前目录、umask
+#define CLONE_FILES    0x00000400	//子进程与父进程共享相同的文件描述符（file descriptor）表
+#define CLONE_SIGHAND  0x00000800	//子进程与父进程共享相同的信号处理（signal handler）表
+#define CLONE_PTRACE   0x00002000	//若父进程被trace，子进程也被trace
+#define CLONE_VFORK    0x00004000	//父进程被挂起，直至子进程释放虚拟内存资源
+#define CLONE_PARENT   0x00008000	//创建的子进程的父进程是调用者的父进程，新进程与创建它的进程成了“兄弟”而不是“父子”
+#define CLONE_THREAD   0x00010000	//Linux 2.4中增加以支持POSIX线程标准，子进程与父进程共享相同的线程群
+//CLONE_NEWNS 在新的namespace启动子进程，namespace描述了进程的文件hierarchy
+//CLONE_PID 子进程在创建时PID与父进程一致
 #define OS_PCB_FROM_PID(processID) (((LosProcessCB *)g_processCBArray) + (processID))//通过数组找到LosProcessCB
 #define OS_PCB_FROM_SIBLIST(ptr)   LOS_DL_LIST_ENTRY((ptr), LosProcessCB, siblingList)//通过siblingList节点找到 LosProcessCB
 #define OS_PCB_FROM_PENDLIST(ptr)  LOS_DL_LIST_ENTRY((ptr), LosProcessCB, pendList) //通过pendlist节点找到 LosProcessCB
@@ -425,38 +426,38 @@ STATIC INLINE User *OsCurrUserGet(VOID)//获取当前进程的所属用户
 /*
  * return immediately if no child has exited.
  */
-#define LOS_WAIT_WNOHANG   (1 << 0U)
+#define LOS_WAIT_WNOHANG   (1 << 0U) //如果没有孩子退出，请立即返回 no hang
 
 /*
  * return if a child has stopped (but not traced via ptrace(2)).
  * Status for traced children which have stopped is provided even
  * if this option is not specified.
  */
-#define LOS_WAIT_WUNTRACED (1 << 1U)
+#define LOS_WAIT_WUNTRACED (1 << 1U) //如果子进程进入暂停执行情况则马上返回，但结束状态不予以理会。untraced
 
 /*
  * return if a stopped child has been resumed by delivery of SIGCONT.
  * (For Linux-only options, see below.)
  */
-#define LOS_WAIT_WCONTINUED (1 << 3U)
+#define LOS_WAIT_WCONTINUED (1 << 3U) //可获取子进程恢复执行的状态，也就是可获取continued状态 continued
 
 /*
  * Indicates that you are already in a wait state
  */
-#define OS_PROCESS_WAIT     (1 << 15U)
+#define OS_PROCESS_WAIT     (1 << 15U) //表示已经处于等待状态
 
 /*
  * Wait for any child process to finish
  */
-#define OS_PROCESS_WAIT_ANY (1 << 0U)
+#define OS_PROCESS_WAIT_ANY (1 << 0U) //等待任意子进程完成
 
 /*
  * Wait for the child process specified by the pid to finish
  */
-#define OS_PROCESS_WAIT_PRO (1 << 1U)
+#define OS_PROCESS_WAIT_PRO (1 << 1U) //等待pid指定的子进程完成
 
 /*
- * Waits for any child process in the specified process group to finish.
+ * Waits for any child process in the specified process group to finish. //等待指定进程组中的任何子进程完成
  */
 #define OS_PROCESS_WAIT_GID (1 << 2U)
 

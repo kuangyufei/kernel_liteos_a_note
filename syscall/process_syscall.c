@@ -315,7 +315,7 @@ int SysWait(int pid, USER int *status, int options, void *rusage)
 
     return LOS_Wait(pid, status, (unsigned int)options, NULL);
 }
-
+//系统调用之fork ,建议去 https://gitee.com/weharmony/kernel_liteos_a_note fork 一下? :P 
 int SysFork(void)
 {
     return OsClone(CLONE_SIGHAND, 0, 0);
@@ -890,7 +890,7 @@ OUT:
 //系统调用之获取线程的用户态区域
 char *SysGetThreadArea(void)
 {
-    return (char *)(OsCurrTaskGet()->userArea);//直接返回使用区域
+    return (char *)(OsCurrTaskGet()->userArea);//直接返回用户区域
 }
 //系统调用之设置任务为分离模式
 int SysUserThreadSetDeatch(unsigned int taskID)

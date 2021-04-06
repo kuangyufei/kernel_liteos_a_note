@@ -300,10 +300,10 @@ STATIC BOOL OsWaitWakeSpecifiedProcess(LOS_DL_LIST *head, const LosProcessCB *pr
 
     return find;
 }
-//检查父进程的等待任务并唤醒任务
+//检查父进程的等待任务并唤醒父进程
 STATIC VOID OsWaitCheckAndWakeParentProcess(LosProcessCB *parentCB, const LosProcessCB *processCB)
 {
-    LOS_DL_LIST *head = &parentCB->waitList;
+    LOS_DL_LIST *head = &parentCB->waitList;//
     LOS_DL_LIST *list = NULL;
     LosTaskCB *taskCB = NULL;
     BOOL findSpecified = FALSE;
@@ -483,13 +483,13 @@ STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
     /* is a child process */
     if (processCB->parentProcessID != OS_INVALID_VALUE) {//判断是否有父进程
         parentCB = OS_PCB_FROM_PID(processCB->parentProcessID);//获取父进程实体
-        LOS_ListDelete(&processCB->siblingList);//将自己从兄弟链表中摘除,家人们,永告别了!
+        LOS_ListDelete(&processCB->siblingList);//将自己从兄弟链表中摘除,家人们,永别了!
         if (!OsProcessExitCodeSignalIsSet(processCB)) {//是否设置了退出码?
             OsProcessExitCodeSet(processCB, status);//将进程状态设为退出码
         }
         LOS_ListTailInsert(&parentCB->exitChildList, &processCB->siblingList);//挂到父进程的孩子消亡链表,家人中,永别的可不止我一个.
         LOS_ListDelete(&processCB->subordinateGroupList);//和志同道合的朋友们永别了,注意家里可不一定是朋友的,所有各有链表.
-        LOS_ListTailInsert(&processCB->group->exitProcessList, &processCB->subordinateGroupList);//挂到进程组消亡链表,朋友中,永远的可不止我一个.
+        LOS_ListTailInsert(&processCB->group->exitProcessList, &processCB->subordinateGroupList);//挂到进程组消亡链表,朋友中,永别的可不止我一个.
 
         OsWaitCheckAndWakeParentProcess(parentCB, processCB);//检查父进程的等待任务并唤醒任务,此处将会切换到其他任务运行.
 
@@ -1139,7 +1139,7 @@ LITE_OS_SEC_TEXT VOID OsWaitSignalToWakeProcess(LosProcessCB *processCB)
 
     return;
 }
-
+//将任务插入waitList链表
 STATIC VOID OsWaitInsertWaitListInOrder(LosTaskCB *runTask, LosProcessCB *processCB)
 {
     LOS_DL_LIST *head = &processCB->waitList;
@@ -1184,7 +1184,7 @@ STATIC UINT32 OsWaitSetFlag(const LosProcessCB *processCB, INT32 pid, LosProcess
     LosTaskCB *runTask = OsCurrTaskGet();
     UINT32 ret;
 
-    if (pid > 0) {//等待进程号为pid的子进程
+    if (pid > 0) {//等待进程号为pid的子进程,回收指定pid的子进程
         /* Wait for the child process whose process number is pid. */
         childCB = OsFindExitChildProcess(processCB, pid);
         if (childCB != NULL) {
@@ -1205,7 +1205,7 @@ STATIC UINT32 OsWaitSetFlag(const LosProcessCB *processCB, INT32 pid, LosProcess
         }
         runTask->waitID = processCB->group->groupID;
         runTask->waitFlag = OS_PROCESS_WAIT_GID;
-    } else if (pid == -1) {
+    } else if (pid == -1) {//回收任意子进程（相当于wait）
         /* Wait for any child process */
         childCB = OsFindExitChildProcess(processCB, OS_INVALID_VALUE);
         if (childCB != NULL) {
@@ -1213,7 +1213,7 @@ STATIC UINT32 OsWaitSetFlag(const LosProcessCB *processCB, INT32 pid, LosProcess
         }
         runTask->waitID = pid;
         runTask->waitFlag = OS_PROCESS_WAIT_ANY;
-    } else { /* pid < -1 */
+    } else { /* pid < -1 */ //回收指定进程组内为|pid|的所有子进程
         /* Wait for any child process whose group number is the pid absolute value. */
         group = OsFindProcessGroup(-pid);
         if (group == NULL) {
@@ -1255,7 +1255,7 @@ STATIC INT32 OsWaitRecycleChildPorcess(const LosProcessCB *childCB, UINT32 intSa
     (VOID)LOS_MemFree(m_aucSysMem1, group);
     return pid;
 }
-
+//检查要等待的孩子进程
 STATIC INT32 OsWaitChildProcessCheck(LosProcessCB *processCB, INT32 pid, LosProcessCB **childCB)
 {
     if (LOS_ListEmpty(&(processCB->childrenList)) && LOS_ListEmpty(&(processCB->exitChildList))) {
@@ -1271,20 +1271,20 @@ STATIC UINT32 OsWaitOptionsCheck(UINT32 options)
 
     flag = ~flag & options;
     if (flag != 0) {
-        return LOS_EINVAL;
+        return LOS_EINVAL;//无效参数
     }
 
     if ((options & (LOS_WAIT_WCONTINUED | LOS_WAIT_WUNTRACED)) != 0) {
-        return LOS_EOPNOTSUPP;
+        return LOS_EOPNOTSUPP;//不支持
     }
 
-    if (OS_INT_ACTIVE) {
-        return LOS_EINTR;
+    if (OS_INT_ACTIVE) {//中断发生期间
+        return LOS_EINTR;//中断提示
     }
 
     return LOS_OK;
 }
-//阻塞参数进程
+//返回已经终止的子进程的进程ID号，并清除僵死进程。
 LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, VOID *rusage)
 {
     (VOID)rusage;
@@ -1294,14 +1294,14 @@ LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, V
     LosProcessCB *processCB = NULL;
     LosTaskCB *runTask = NULL;
 
-    ret = OsWaitOptionsCheck(options);
+    ret = OsWaitOptionsCheck(options);//参数检查 只支持 LOS_WAIT_WNOHANG | LOS_WAIT_WUNTRACED 
     if (ret != LOS_OK) {
         return -ret;
     }
 
     SCHEDULER_LOCK(intSave);
-    processCB = OsCurrProcessGet();
-    runTask = OsCurrTaskGet();
+    processCB = OsCurrProcessGet();	//获取当前进程
+    runTask = OsCurrTaskGet();		//获取当前任务
 
     ret = OsWaitChildProcessCheck(processCB, pid, &childCB);
     if (ret != LOS_OK) {
@@ -1691,20 +1691,20 @@ STATIC VOID OsInitCopyTaskParam(LosProcessCB *childProcessCB, const CHAR *name, 
     SCHEDULER_LOCK(intSave);
     mainThread = OsCurrTaskGet();//获取当前task,注意变量名从这里也可以看出 thread 和 task 是一个概念,只是内核常说task,上层应用说thread ,概念的映射.
 
-    if (OsProcessIsUserMode(childProcessCB)) {//用户模式进程
-        childPara->pfnTaskEntry = mainThread->taskEntry;
-        childPara->uwStackSize = mainThread->stackSize;
-        childPara->userParam.userArea = mainThread->userArea;
-        childPara->userParam.userMapBase = mainThread->userMapBase;
-        childPara->userParam.userMapSize = mainThread->userMapSize;
+    if (OsProcessIsUserMode(childProcessCB)) {//用户态进程
+        childPara->pfnTaskEntry = mainThread->taskEntry;//拷贝当前任务入口地址
+        childPara->uwStackSize = mainThread->stackSize;	//栈空间大小
+        childPara->userParam.userArea = mainThread->userArea;		//用户态栈区栈顶位置
+        childPara->userParam.userMapBase = mainThread->userMapBase;	//用户态栈底
+        childPara->userParam.userMapSize = mainThread->userMapSize;	//用户态栈大小
     } else {
-        childPara->pfnTaskEntry = (TSK_ENTRY_FUNC)entry;
-        childPara->uwStackSize = size;
+        childPara->pfnTaskEntry = (TSK_ENTRY_FUNC)entry;//参数(sp)为内核态入口地址
+        childPara->uwStackSize = size;//参数(size)为内核态栈大小
     }
-    childPara->pcName = (CHAR *)name;
-    childPara->policy = mainThread->policy;
-    childPara->usTaskPrio = mainThread->priority;
-    childPara->processID = childProcessCB->processID;
+    childPara->pcName = (CHAR *)name;					//拷贝进程名字
+    childPara->policy = mainThread->policy;				//拷贝调度模式
+    childPara->usTaskPrio = mainThread->priority;		//拷贝优先级
+    childPara->processID = childProcessCB->processID;	//拷贝进程ID
     if (mainThread->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {
         childPara->uwResved = OS_TASK_FLAG_PTHREAD_JOIN;
     } else if (mainThread->taskStatus & OS_TASK_FLAG_DETACHED) {
@@ -1746,10 +1746,10 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
 
     if (OsProcessIsUserMode(childProcessCB)) {//是否是用户进程
         SCHEDULER_LOCK(intSave);
-        OsUserCloneParentStack(childTaskCB, OsCurrTaskGet());//任务栈拷贝
+        OsUserCloneParentStack(childTaskCB, OsCurrTaskGet());//拷贝当前任务上下文给新的任务
         SCHEDULER_UNLOCK(intSave);
     }
-    OS_TASK_PRI_QUEUE_ENQUEUE(childProcessCB, childTaskCB);//将task加入进程的就绪队列
+    OS_TASK_PRI_QUEUE_ENQUEUE(childProcessCB, childTaskCB);//将task加入子进程的就绪队列
     childTaskCB->taskStatus |= OS_TASK_STATUS_READY;//任务状态贴上就绪标签
     return LOS_OK;
 }
