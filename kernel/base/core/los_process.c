@@ -432,7 +432,7 @@ STATIC VOID OsDealAliveChildProcess(LosProcessCB *processCB)
     if (!LOS_ListEmpty(&processCB->childrenList)) {//如果存在孩子进程
         childHead = processCB->childrenList.pstNext;
         LOS_ListDelete(&(processCB->childrenList));
-        if (OsProcessIsUserMode(processCB)) {//是用户模式吗?
+        if (OsProcessIsUserMode(processCB)) {//是用户态进程
             parentID = g_userInitProcess;//指定1号进程父ID
         } else {
             parentID = g_kernelInitProcess;//指定2号进程为父ID
@@ -530,10 +530,10 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsProcessInit(VOID)
         LOS_ListTailInsert(&g_freeProcess, &g_processCBArray[index].pendList);//注意g_freeProcess挂的是pendList节点,所以使用要通过OS_PCB_FROM_PENDLIST找到进程实体.
     }
 
-    g_userInitProcess = 1; /* 1: The root process ID of the user-mode process is fixed at 1 *///用户模式的根进程
+    g_userInitProcess = 1; /* 1: The root process ID of the user-mode process is fixed at 1 *///用户态的根进程
     LOS_ListDelete(&g_processCBArray[g_userInitProcess].pendList);// 清空g_userInitProcess pend链表
 
-    g_kernelInitProcess = 2; /* 2: The root process ID of the kernel-mode process is fixed at 2 *///内核模式的根进程
+    g_kernelInitProcess = 2; /* 2: The root process ID of the kernel-mode process is fixed at 2 *///内核态的根进程
     LOS_ListDelete(&g_processCBArray[g_kernelInitProcess].pendList);// 清空g_kernelInitProcess pend链表
 
     return LOS_OK;
@@ -722,7 +722,7 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, U
         LOS_ListInit(&processCB->threadPriQueueList[count]); //初始化一个个线程队列，队列中存放就绪状态的线程/task 
     }//在鸿蒙内核中 task就是thread,在鸿蒙源码分析系列篇中有详细阐释 见于 https://my.oschina.net/u/3751245
 
-    if (OsProcessIsUserMode(processCB)) {// 是否为用户模式进程
+    if (OsProcessIsUserMode(processCB)) {// 是否为用户态进程
         space = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmSpace));//分配一个虚拟空间
         if (space == NULL) {
             PRINT_ERR("%s %d, alloc space failed\n", __FUNCTION__, __LINE__);
@@ -747,7 +747,7 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, U
         processCB->vmSpace = space;//设为进程虚拟空间
         LOS_ListAdd(&processCB->vmSpace->archMmu.ptList, &(vmPage->node));//将空间映射页表挂在 空间的mmu L1页表, L1为表头
     } else {
-        processCB->vmSpace = LOS_GetKVmSpace();//内核共用一个虚拟空间,内核进程 常驻内存
+        processCB->vmSpace = LOS_GetKVmSpace();//内核共用一个虚拟空间,内核进程常驻内存
     }
 
 #ifdef LOSCFG_SECURITY_VID
@@ -887,7 +887,7 @@ EXIT:
     OsDeInitPCB(processCB);//删除进程控制块,归还内存
     return ret;
 }
-//初始化 2号进程,即内核根进程
+//初始化 2号进程,即内核态进程的老祖宗
 LITE_OS_SEC_TEXT_INIT UINT32 OsKernelInitProcess(VOID)
 {
     LosProcessCB *processCB = NULL;
@@ -1466,7 +1466,7 @@ LITE_OS_SEC_TEXT INT32 LOS_GetCurrProcessGroupID(VOID)
 {
     return LOS_GetProcessGroupID(OsCurrProcessGet()->processID);
 }
-//用户进程分配栈并初始化
+//为用户态任务分配栈空间
 STATIC VOID *OsUserInitStackAlloc(UINT32 processID, UINT32 *size)
 {
     LosVmMapRegion *region = NULL;
@@ -1489,7 +1489,6 @@ STATIC VOID *OsUserInitStackAlloc(UINT32 processID, UINT32 *size)
 }
 /**************************************************
 进程的回收再利用,被LOS_DoExecveFile调用
-
 **************************************************/
 LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR *name,
                                              LosVmSpace *oldSpace, UINTPTR oldFiles)
@@ -1573,8 +1572,8 @@ LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINT
     taskCB = OsCurrTaskGet();//获取当前任务
 
     processCB->threadGroupID = taskCB->taskID;//threadGroupID是进程的主线程ID,也就是应用程序 main函数线程
-    taskCB->userMapBase = mapBase;//任务栈底地址
-    taskCB->userMapSize = mapSize;//任务栈大小
+    taskCB->userMapBase = mapBase;//任务用户态栈底地址
+    taskCB->userMapSize = mapSize;//任务用户态栈大小
     taskCB->taskEntry = (TSK_ENTRY_FUNC)entry;//任务的入口函数
 
     taskContext = (TaskContext *)OsTaskStackInit(taskCB->taskID, taskCB->stackSize, (VOID *)taskCB->topOfStack, FALSE);//创建任务上下文
@@ -1642,7 +1641,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
 
     (VOID)memset_s((VOID *)((UINTPTR)userText + userInitBssStart - userInitTextStart), initBssSize, 0, initBssSize);// 除了代码段，其余都清0
 
-    stack = OsUserInitStackAlloc(g_userInitProcess, &size);// 初始化堆栈区
+    stack = OsUserInitStackAlloc(g_userInitProcess, &size);//分配任务在用户态下的运行栈,大小为1M,注意此内存来自进程空间,而非内核空间.
     if (stack == NULL) {
         PRINTK("user init process malloc user stack failed!\n");
         ret = LOS_NOK;
@@ -1650,9 +1649,9 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
     }
 
     param.pfnTaskEntry = (TSK_ENTRY_FUNC)userInitTextStart;// 从代码区开始执行，也就是应用程序main 函数的位置
-    param.userParam.userSP = (UINTPTR)stack + size;// 指向栈顶
-    param.userParam.userMapBase = (UINTPTR)stack;// 栈底
-    param.userParam.userMapSize = size;// 栈大小
+    param.userParam.userSP = (UINTPTR)stack + size;// 用户态栈底
+    param.userParam.userMapBase = (UINTPTR)stack;// 用户态栈顶
+    param.userParam.userMapSize = size;// 用户态栈大小
     param.uwResved = OS_TASK_FLAG_PTHREAD_JOIN;// 可结合的（joinable）能够被其他线程收回其资源和杀死
     ret = OsUserInitProcessStart(g_userInitProcess, &param);// 创建一个任务，来运行main函数
     if (ret != LOS_OK) {

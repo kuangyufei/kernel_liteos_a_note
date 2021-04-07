@@ -315,8 +315,8 @@ STATIC INLINE BOOL OsProcessIsDead(const LosProcessCB *processCB)//查下进程�
 #define OS_USER_TASK_SYSCALL_SATCK_SIZE 0x3000	//用户通过系统调用的栈大小 12K ,这时是运行在内核模式下
 #define OS_USER_TASK_STACK_SIZE         0x100000	//用户任务运行在用户空间的栈大小 1M 
 
-#define OS_KERNEL_MODE 0x0U	//内核模式
-#define OS_USER_MODE   0x1U	//用户模式
+#define OS_KERNEL_MODE 0x0U	//内核态
+#define OS_USER_MODE   0x1U	//用户态
 STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)//用户模式进程
 {
     return (processCB->processMode == OS_USER_MODE);
@@ -330,8 +330,8 @@ STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)//用户模
 #define LOS_PRIO_PGRP     1U	//进程组标识	
 #define LOS_PRIO_USER     2U	//用户标识
 
-#define OS_KERNEL_PROCESS_GROUP         2U	//内核进程组
-#define OS_USER_PRIVILEGE_PROCESS_GROUP 1U 	//用户特权进程组
+#define OS_KERNEL_PROCESS_GROUP         2U	//内核态进程组
+#define OS_USER_PRIVILEGE_PROCESS_GROUP 1U 	//用户态特权进程组
 
 /*
  * Process exit code
@@ -464,7 +464,7 @@ STATIC INLINE User *OsCurrUserGet(VOID)//获取当前进程的所属用户
 #define OS_PROCESS_INFO_ALL 1
 #define OS_PROCESS_DEFAULT_UMASK 0022
 
-extern UINTPTR __user_init_entry;	// 第一个用户态进程入口地址 查看 LITE_USER_SEC_ENTRY
+extern UINTPTR __user_init_entry;	// 第一个用户态任务的入口地址 查看 LITE_USER_SEC_ENTRY
 extern UINTPTR __user_init_bss;		// 查看 LITE_USER_SEC_BSS
 extern UINTPTR __user_init_end;		//
 extern UINTPTR __user_init_load_addr;

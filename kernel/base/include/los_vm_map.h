@@ -160,7 +160,7 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_UNCACHED_DEVICE      (2<<0) /* only exists on some arches, otherwise UNCACHED */
 #define     VM_MAP_REGION_FLAG_WRITE_COMBINING      (3<<0) /* only exists on some arches, otherwise UNCACHED */
 #define     VM_MAP_REGION_FLAG_CACHE_MASK           (3<<0)		//缓冲区掩码
-#define     VM_MAP_REGION_FLAG_PERM_USER            (1<<2)		//可使用区
+#define     VM_MAP_REGION_FLAG_PERM_USER            (1<<2)		//用户区
 #define     VM_MAP_REGION_FLAG_PERM_READ            (1<<3)		//可读取区
 #define     VM_MAP_REGION_FLAG_PERM_WRITE           (1<<4)		//可写入区
 #define     VM_MAP_REGION_FLAG_PERM_EXECUTE         (1<<5)		//可被执行区

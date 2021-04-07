@@ -337,7 +337,7 @@ int OsDispatch(pid_t pid, siginfo_t *info, int permission)
         }
     }
 #endif
-    if ((permission == OS_USER_KILL_PERMISSION) && (OsSignalPermissionToCheck(spcb) < 0)) {//
+    if ((permission == OS_USER_KILL_PERMISSION) && (OsSignalPermissionToCheck(spcb) < 0)) {
         return -EPERM;
     }
     return OsSigProcessSend(spcb, info);//给参数进程发送信号

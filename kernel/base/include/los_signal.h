@@ -104,8 +104,8 @@ https://www.cnblogs.com/hoys/archive/2012/08/19/2646377.html
 #define OS_SYSCALL_GET_CPSR(regs) (*((unsigned long *)((UINTPTR)(regs) - 4)))
 #define SIG_STOP_VISIT 1
 
-#define OS_KERNEL_KILL_PERMISSION 0U	//内核级 kill 权限
-#define OS_USER_KILL_PERMISSION   3U	//用户级 kill 权限
+#define OS_KERNEL_KILL_PERMISSION 0U	//内核态 kill 权限
+#define OS_USER_KILL_PERMISSION   3U	//用户态 kill 权限
 
 #define OS_RETURN_IF(expr, errcode) \
     if ((expr)) {                   \

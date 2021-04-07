@@ -585,11 +585,11 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCreateParamCheck(const UINT32 *taskID,
         }
     }
 
-    if (initParam->pfnTaskEntry == NULL) {
+    if (initParam->pfnTaskEntry == NULL) {//入口函数不能为空
         return LOS_ERRNO_TSK_ENTRY_NULL;
     }
 
-    if (initParam->usTaskPrio > OS_TASK_PRIORITY_LOWEST) {
+    if (initParam->usTaskPrio > OS_TASK_PRIORITY_LOWEST) {//优先级必须大于31
         return LOS_ERRNO_TSK_PRIOR_ERROR;
     }
 
@@ -599,16 +599,16 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCreateParamCheck(const UINT32 *taskID,
         poolSize = OS_EXC_INTERACTMEM_SIZE;
     }
 #endif
-    if (initParam->uwStackSize > poolSize) {
+    if (initParam->uwStackSize > poolSize) {//希望申请的栈大小不能大于总池子
         return LOS_ERRNO_TSK_STKSZ_TOO_LARGE;
     }
 
-    if (initParam->uwStackSize == 0) {
+    if (initParam->uwStackSize == 0) {//运行栈空间不能为0
         initParam->uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
     }
     initParam->uwStackSize = (UINT32)ALIGN(initParam->uwStackSize, LOSCFG_STACK_POINT_ALIGN_SIZE);
 
-    if (initParam->uwStackSize < LOS_TASK_MIN_STACK_SIZE) {
+    if (initParam->uwStackSize < LOS_TASK_MIN_STACK_SIZE) {//运行栈空间不能低于最低值
         return LOS_ERRNO_TSK_STKSZ_TOO_SMALL;
     }
 
@@ -804,18 +804,20 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_IN
     UINT16 mode;
     LosProcessCB *processCB = NULL;
 
-    OsTaskCBInitBase(taskCB, stackPtr, topStack, initParam);//初始化任务的基本信息
+    OsTaskCBInitBase(taskCB, stackPtr, topStack, initParam);//初始化任务的基本信息,
+    					//taskCB->stackPointer = stackPtr ,用户态时将改写taskCB->stackPointer指向 
 
     SCHEDULER_LOCK(intSave);
     processCB = OS_PCB_FROM_PID(initParam->processID);//通过ID获取PCB ,单核进程数最多64个
     taskCB->processID = processCB->processID;//进程-线程的父子关系绑定
     mode = processCB->processMode;//模式方式同步process
     LOS_ListTailInsert(&(processCB->threadSiblingList), &(taskCB->threadList));//挂入进程的线程链表
-    if (mode == OS_USER_MODE) {//用户模式
+    if (mode == OS_USER_MODE) {//任务支持用户态时,将改写 taskCB->stackPointer = initParam->userParam.userSP
         taskCB->userArea = initParam->userParam.userArea;
         taskCB->userMapBase = initParam->userParam.userMapBase;
         taskCB->userMapSize = initParam->userParam.userMapSize;
-        OsUserTaskStackInit(taskCB->stackPointer, taskCB->taskEntry, initParam->userParam.userSP);//用户任务栈上下文初始化
+        OsUserTaskStackInit(taskCB->stackPointer, taskCB->taskEntry, initParam->userParam.userSP);//初始化用户态任务栈
+        //这里要注意,任务的上下文是始终保存在内核栈空间,但用户态时运行是在用户态的栈空间.(因为SP指向了用户态空间)
     }
 
     if (!processCB->threadNumber) {//进程线程数量为0时，
@@ -887,18 +889,18 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *taskID, TSK_INIT_PARAM_S
         goto LOS_ERREND_REWIND_TCB;
     }
 	//OsTaskStackAlloc 只在LOS_TaskCreateOnly中被调用,此处是分配任务在内核态栈空间 
-    OsTaskStackAlloc(&topStack, initParam->uwStackSize, pool);//为任务分配内核态栈空间
+    OsTaskStackAlloc(&topStack, initParam->uwStackSize, pool);//为任务分配内核栈空间,注意此内存来自系统内核空间
     if (topStack == NULL) {
         errRet = LOS_ERRNO_TSK_NO_MEMORY;
         goto LOS_ERREND_REWIND_SYNC;
     }
 
-    stackPtr = OsTaskStackInit(taskCB->taskID, initParam->uwStackSize, topStack, TRUE);//初始化任务栈
+    stackPtr = OsTaskStackInit(taskCB->taskID, initParam->uwStackSize, topStack, TRUE);//初始化内核态任务栈,返回栈SP位置
     errRet = OsTaskCBInit(taskCB, initParam, stackPtr, topStack);//初始化TCB,包括绑定进程等操作
     if (errRet != LOS_OK) {
         goto LOS_ERREND_TCB_INIT;
     }
-    if (OsConsoleIDSetHook != NULL) {//每个人任务都可以有属于自己的控制台
+    if (OsConsoleIDSetHook != NULL) {//每个任务都可以有属于自己的控制台
         OsConsoleIDSetHook(taskCB->taskID, OsCurrTaskGet()->taskID);//设置控制台ID
     }
 
@@ -936,7 +938,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreate(UINT32 *taskID, TSK_INIT_PARAM_S *in
     if (initParam->uwResved & OS_TASK_FLAG_IDLEFLAG) {//OS_TASK_FLAG_IDLEFLAG 是属于内核 idle进程专用的
         initParam->processID = OsGetIdleProcessID();//获取空闲进程
     } else if (OsProcessIsUserMode(OsCurrProcessGet())) {//当前进程是否为用户模式
-        initParam->processID = OsGetKernelInitProcessID();//是就取"Kernel"进程
+        initParam->processID = OsGetKernelInitProcessID();//任务归属于"Kernel"进程
     } else {
         initParam->processID = OsCurrProcessGet()->processID;//获取当前进程 ID赋值
     }
@@ -1929,7 +1931,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsCreateUserTaskParamCheck(UINT32 processID,
 
     return LOS_OK;
 }
-//创建一个用户任务
+//创建一个用户态任务
 LITE_OS_SEC_TEXT_INIT INT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam)
 {
     LosProcessCB *processCB = NULL;

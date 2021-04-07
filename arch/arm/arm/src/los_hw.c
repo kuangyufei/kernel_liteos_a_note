@@ -74,7 +74,7 @@ VOID OsTaskEntrySetupLoopFrame(UINT32 arg0)
                  "\tpop {fp, pc}\n");
 }
 #endif
-//内核态运行栈初始化
+//内核态任务运行栈初始化
 LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOID *topStack, BOOL initFlag)
 {
     UINT32 index = 1;
@@ -89,11 +89,12 @@ LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOI
 #ifdef LOSCFG_GDB
     taskContext->PC = (UINTPTR)OsTaskEntrySetupLoopFrame;
 #else
-    taskContext->PC = (UINTPTR)OsTaskEntry;//程序计数器,CPU首次执行task时跑的第一条指令位置
+    taskContext->PC = (UINTPTR)OsTaskEntry;//内核态任务有统一的入口地址.
 #endif
     taskContext->LR = (UINTPTR)OsTaskExit;  /* LR should be kept, to distinguish it's THUMB or ARM instruction */
     taskContext->resved = 0x0;
-    taskContext->R[0] = taskID;             /* R0 */
+    taskContext->R[0] = taskID;             /* R0 *///因为所有内核态的任务处理函数入口都是一样的,
+    //OsTaskEntry(UINT32 taskID)需要传递任务ID作为参数来检索调用哪个任务的处理函数.
     taskContext->R[index++] = 0x01010101;   /* R1, 0x01010101 : reg initialed magic word */ //0x55
     for (; index < GEN_REGS_NUM; index++) {//R2 - R12的初始化很有意思,为什么要这么做？
         taskContext->R[index] = taskContext->R[index - 1] + taskContext->R[1]; /* R2 - R12 */
@@ -127,7 +128,10 @@ LITE_OS_SEC_TEXT VOID OsUserCloneParentStack(LosTaskCB *childTaskCB, LosTaskCB *
     (VOID)memcpy_s(childTaskCB->stackPointer, sizeof(TaskContext), cloneStack, sizeof(TaskContext));//直接把任务上下文拷贝了一份
     context->R[0] = 0;//R0寄存器为0,这个很重要, pid = fork()  pid == 0 是子进程返回.
 }
-//用户态运行栈初始化
+/*
+用户态运行栈初始化,此时上下文还在内核区
+
+*/
 LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, TSK_ENTRY_FUNC taskEntry, UINTPTR stack)
 {
     LOS_ASSERT(context != NULL);
@@ -137,10 +141,10 @@ LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, TSK_ENTRY_F
 #else
     context->regPSR = PSR_MODE_USR_ARM;//工作模式:用户模式 + 工作状态:arm
 #endif
-    context->R[0] = stack;//栈指针给r0寄存器
-    context->SP = TRUNCATE(stack, LOSCFG_STACK_POINT_ALIGN_SIZE);//异常模式所专用的堆栈 segment fault 输出回溯信息
+    context->R[0] = stack;//因为要回到用户态空间运行,所以要作为参数传回SP值
+    context->SP = TRUNCATE(stack, LOSCFG_STACK_POINT_ALIGN_SIZE);//改变 上下文的SP值,指向用户栈空间
     context->LR = 0;//保存子程序返回地址 例如 a call b ,在b中保存 a地址
-    context->PC = (UINTPTR)taskEntry;//入口函数
+    context->PC = (UINTPTR)taskEntry;//入口函数,由外部传入,由上层应用指定,固然每个都不一样.
 }
 
 VOID Sev(VOID)
