@@ -386,7 +386,7 @@ STATIC INLINE LosProcessCB *OsCurrProcessGet(VOID)
     LOS_IntRestore(intSave);//恢复硬件中断
     return runProcess;
 }
-//设置当前进程,加入g_runProcess中
+//设置使用CPU的当前进程,加入g_runProcess中
 STATIC INLINE VOID OsCurrProcessSet(const LosProcessCB *process)
 {
     g_runProcess[ArchCurrCpuid()] = (LosProcessCB *)process;

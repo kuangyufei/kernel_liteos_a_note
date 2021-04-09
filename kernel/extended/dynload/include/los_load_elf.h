@@ -92,11 +92,11 @@ typedef struct {
     INT32        envc;
     CHAR *const  *argv;
     CHAR *const  *envp;
-    UINTPTR      stackTop;
-    UINTPTR      stackTopMax;
-    UINTPTR      stackBase;
+    UINTPTR      stackTop;	//当前栈顶
+    UINTPTR      stackTopMax;	//栈顶最大值,其实必 stackTopMax < stackTop
+    UINTPTR      stackBase;	//栈底 
     UINTPTR      stackParamBase;
-    UINT32       stackSize;
+    UINT32       stackSize;//栈大小
     INT32        stackProt;
     UINTPTR      loadAddr;
     UINTPTR      elfEntry;	//入口函数位置

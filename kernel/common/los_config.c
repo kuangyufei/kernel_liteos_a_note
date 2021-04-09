@@ -296,7 +296,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     }
 #endif
 
-    ret = OsKernelInitProcess();// 完成内核进程的初始化
+    ret = OsKernelInitProcess();// 初始化内核态根进程
     if (ret != LOS_OK) {
         return ret;
     }
@@ -387,7 +387,7 @@ STATIC UINT32 OsSystemInitTaskCreate(VOID)
     TSK_INIT_PARAM_S sysTask;
 
     (VOID)memset_s(&sysTask, sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
-    sysTask.pfnTaskEntry = (TSK_ENTRY_FUNC)SystemInit;//任务的入口函数，这个任务由外部提供 比如..\vendor\hi3516dv300\module_init\src\system_init.c
+    sysTask.pfnTaskEntry = (TSK_ENTRY_FUNC)SystemInit;//任务的入口函数，这个任务由外部提供比如..\vendor\hi3516dv300\module_init\src\system_init.c
     sysTask.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;//16K
     sysTask.pcName = "SystemInit";//任务的名称
     sysTask.usTaskPrio = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;// 内核默认优先级为10 
@@ -423,7 +423,7 @@ UINT32 OsSystemInit(VOID)
 #ifdef LOSCFG_COMPAT_LINUXKPI
     g_pstSystemWq = create_workqueue("system_wq");
 #endif
-    ret = OsSystemInitTaskCreate();//创建 "SystemInit" 任务
+    ret = OsSystemInitTaskCreate();//创建 "SystemInit" 任务,用户创建用户态根进程
     if (ret != LOS_OK) {
         return ret;
     }

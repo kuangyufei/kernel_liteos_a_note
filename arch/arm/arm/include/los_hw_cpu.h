@@ -131,17 +131,20 @@ STATIC INLINE VOID *ArchCurrTaskGet(VOID)
 {
     return (VOID *)(UINTPTR)ARM_SYSREG_READ(TPIDRPRW);//读c13寄存器
 }
-
+//设置当前task ID
 STATIC INLINE VOID ArchCurrTaskSet(VOID *val)
 {
     ARM_SYSREG_WRITE(TPIDRPRW, (UINT32)(UINTPTR)val);
 }
-
+//向协处理器写入用户态任务ID TPIDRURO 仅用于用户态
 STATIC INLINE VOID ArchCurrUserTaskSet(UINTPTR val)
 {
     ARM_SYSREG_WRITE(TPIDRURO, (UINT32)val);
 }
-//https://www.keil.com/pack/doc/cmsis/Core_A/html/group__CMSIS__MPIDR.html
+/*
+*	https://www.keil.com/pack/doc/cmsis/Core_A/html/group__CMSIS__MPIDR.html
+*	在多处理器系统中，MPIDR为调度目的提供额外的处理器标识机制，并指示实现是否包括多处理器扩展。
+*/
 STATIC INLINE UINT32 ArchCurrCpuid(VOID)
 {
 #if (LOSCFG_KERNEL_SMP == YES)//CPU多核情况
@@ -163,7 +166,7 @@ STATIC INLINE UINT32 OsMainIDGet(VOID)
 
 /* CPU interrupt mask handle implementation */ //CPU中断掩码句柄实现
 #if LOSCFG_ARM_ARCH >= 6
-
+//禁止中断
 STATIC INLINE UINT32 ArchIntLock(VOID)
 {
     UINT32 intSave;
@@ -175,7 +178,7 @@ STATIC INLINE UINT32 ArchIntLock(VOID)
         : "memory");
     return intSave;
 }
-
+//恢复中断
 STATIC INLINE UINT32 ArchIntUnlock(VOID)
 {
     UINT32 intSave;

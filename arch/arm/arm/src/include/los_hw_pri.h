@@ -59,8 +59,8 @@ typedef struct { //参考OsTaskSchedule来理解
     UINT32 resved;          /* It's stack 8 aligned */
     UINT32 regPSR;
     UINT32 R[GEN_REGS_NUM]; /* R0-R12 */
-    UINT32 SP;              /* R13 */
-    UINT32 LR;              /* R14 */
+    UINT32 SP;              /* R13 */ //保存用户空间SP
+    UINT32 LR;              /* R14 */ //保存用户空间LR
     UINT32 PC;              /* R15 */
 } TaskContext;
 

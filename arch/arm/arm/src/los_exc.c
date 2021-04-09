@@ -623,8 +623,8 @@ STATIC INLINE BOOL FindSuitableStack(UINTPTR regFP, UINTPTR *start, UINTPTR *end
 
     if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {//当前CPU在用户态执行发生异常
         taskCB = OsCurrTaskGet();
-        stackStart = taskCB->userMapBase;
-        stackEnd = taskCB->userMapBase + taskCB->userMapSize;
+        stackStart = taskCB->userMapBase;//用户态栈基地址,即用户态栈顶
+        stackEnd = taskCB->userMapBase + taskCB->userMapSize;//用户态栈结束地址
         if (IsValidFP(regFP, stackStart, stackEnd, &kvaddr) == TRUE) {
             found = TRUE;
             goto FOUND;
@@ -632,22 +632,22 @@ STATIC INLINE BOOL FindSuitableStack(UINTPTR regFP, UINTPTR *start, UINTPTR *end
         return found;
     }
 
-    /* Search in the task stacks */
+    /* Search in the task stacks *///找任务的内核态栈
     for (index = 0; index < g_taskMaxNum; index++) {
         taskCB = &g_taskCBArray[index];
         if (OsTaskIsUnused(taskCB)) {
             continue;
         }
 
-        stackStart = taskCB->topOfStack;
-        stackEnd = taskCB->topOfStack + taskCB->stackSize;
+        stackStart = taskCB->topOfStack;//内核态栈顶
+        stackEnd = taskCB->topOfStack + taskCB->stackSize;//内核态栈底
         if (IsValidFP(regFP, stackStart, stackEnd, &kvaddr) == TRUE) {
             found = TRUE;
             goto FOUND;
         }
     }
 
-    /* Search in the exc stacks */
+    /* Search in the exc stacks *///从异常栈中找
     for (index = 0; index < sizeof(g_excStack) / sizeof(StackInfo); index++) {
         stack = &g_excStack[index];
         stackStart = (UINTPTR)stack->stackTop;

@@ -130,10 +130,10 @@ VOID OsSchedResched(VOID)
         newTask->timeSlice = LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT;//给新任务时间片 默认 20ms
     }
 
-    OsCurrTaskSet((VOID*)newTask);//设置新的task为CPU核的当前任务
+    OsCurrTaskSet((VOID*)newTask);//设置新的task为当前任务
 
-    if (OsProcessIsUserMode(newProcess)) {//用户模式需自带栈空间
-        OsCurrUserTaskSet(newTask->userArea);//设置task栈空间
+    if (OsProcessIsUserMode(newProcess)) {//用户态进程
+        OsCurrUserTaskSet(newTask->userArea);//向CP15 (c13, 0, c0, 3) 设置当前线程ID
     }
 
     PRINT_TRACE("cpu%d run process name: (%s) pid: %d status: %x threadMap: %x task name: (%s) tid: %d status: %x ->\n"

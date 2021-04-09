@@ -178,9 +178,9 @@ STMDA（完成操作而后地址递减）、STMED（空递减堆栈）。
 */
 
 @ Description: Software interrupt exception handler
-_osExceptSwiHdl: @软中断异常处理
+_osExceptSwiHdl: @软中断异常处理,注意此时已在内核栈运行
 	@保存任务上下文(TaskContext) 开始... 一定要对照TaskContext来理解
-    SUB     SP, SP, #(4 * 16)	@先申请16个栈空间用于处理本次软中断
+    SUB     SP, SP, #(4 * 16)	@先申请16个栈空间单元用于处理本次软中断
     STMIA   SP, {R0-R12}		@TaskContext.R[GEN_REGS_NUM] STMIA从左到右执行,先放R0 .. R12
     MRS     R3, SPSR			@读取本模式下的SPSR值
     MOV     R4, LR				@保存回跳寄存器LR
@@ -201,7 +201,7 @@ _osExceptSwiHdl: @软中断异常处理
 	@保存任务上下文(TaskContext) 结束
     MOV     FP, #0                                           @ Init frame pointer
     CPSIE   I	@开中断,表明在系统调用期间可响应中断
-    BLX     OsArmA32SyscallHandle	/*交给C语言处理系统调用*/
+    BLX     OsArmA32SyscallHandle	/*交给C语言处理系统调用,参数为R0,指向TaskContext的开始位置*/
     CPSID   I	@执行后续指令前必须先关中断
 	@恢复任务上下文(TaskContext) 开始
     POP_FPU_REGS R1											 @弹出FP值给R1

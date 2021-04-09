@@ -86,7 +86,7 @@ SPSR（saved program status register）程序状态保存寄存器.
 ******************************************************************************/
 #define CPSR_INT_DISABLE         0xC0 /* Disable both FIQ and IRQ */	//禁止IRQ和FIQ中断,因为0xC0 = 0x80 + 0x40
 #define CPSR_IRQ_DISABLE         0x80 /* IRQ disabled when =1 */		//禁止IRQ 中断
-#define CPSR_FIQ_DISABLE         0x40 /* FIQ disabled when =1 */		//禁止 FIQ中断
+#define CPSR_FIQ_DISABLE         0x40 /* FIQ disabled when =1 */		//禁止FIQ中断
 #define CPSR_THUMB_ENABLE        0x20 /* Thumb mode when   =1 */		//使能Thumb模式 1:CPU处于Thumb状态， 0:CPU处于ARM状态
 #define CPSR_USER_MODE           0x10	//用户模式,除了用户模式，其余模式也叫特权模式,特权模式中除了系统模式以外的其余5种模式称为异常模式；
 #define CPSR_FIQ_MODE            0x11	//快中断模式 用于高速数据传输或通道处理

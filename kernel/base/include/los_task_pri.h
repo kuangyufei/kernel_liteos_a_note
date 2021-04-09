@@ -294,13 +294,13 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 #define OS_TCB_NAME_LEN 32
 
 typedef struct {
-    VOID            *stackPointer;      /**< Task stack pointer */	//栈指针,SP位置,切换任务时先保存上下文并指向TaskContext位置.
+    VOID            *stackPointer;      /**< Task stack pointer */	//内核栈指针位置,内核栈默认保存了初始的上下文信息.
     UINT16          taskStatus;         /**< Task status */			//各种状态标签，可以拥有多种标签，按位标识
     UINT16          priority;           /**< Task priority */		//任务优先级[0:31],默认是31级
     UINT16          policy;				//任务的调度方式(三种 .. LOS_SCHED_RR )
     UINT16          timeSlice;          /**< Remaining time slice *///剩余时间片
-    UINT32          stackSize;          /**< Task stack size */		//栈大小,内存来自内核空间
-    UINTPTR         topOfStack;         /**< Task stack top */		//栈顶 bottom = top + size,内存来自内核空间
+    UINT32          stackSize;          /**< Task stack size */		//内核态栈大小,内存来自内核空间
+    UINTPTR         topOfStack;         /**< Task stack top */		//内核态栈顶 bottom = top + size
     UINT32          taskID;             /**< Task ID */				//任务ID，任务池本质是一个大数组，ID就是数组的索引，默认 < 128
     TSK_ENTRY_FUNC  taskEntry;          /**< Task entrance function */	//任务执行入口函数
     VOID            *joinRetval;        /**< pthread adaption */	//用来存储join线程的返回值
@@ -334,8 +334,8 @@ typedef struct {
     SchedStat       schedStat;          /**< Schedule statistics */	//调度统计
 #endif
 #endif
-    UINTPTR         userArea;			//用户区域,由运行时划定,根据运行态不同而不同
-    UINTPTR         userMapBase;		//内存来自进程空间,用户态下的栈底位置,和topOfStack有本质的区别.
+    UINTPTR         userArea;			//用户空间,由运行时划定,根据运行态不同而不同
+    UINTPTR         userMapBase;		//用户态栈基地址,内存来自用户空间,和topOfStack有本质的区别.
     UINT32          userMapSize;        /**< user thread stack size ,real size : userMapSize + USER_STACK_MIN_SIZE */
     UINT32          processID;          /**< Which belong process *///所属进程ID
     FutexNode       futex;				//实现快锁功能
@@ -395,12 +395,12 @@ STATIC INLINE LosTaskCB *OsCurrTaskGet(VOID)
 {
     return (LosTaskCB *)ArchCurrTaskGet();
 }
-//设置当前CPUcore运行任务
+//告诉协处理器当前任务使用范围为内核空间 
 STATIC INLINE VOID OsCurrTaskSet(LosTaskCB *task)
 {
     ArchCurrTaskSet(task);
 }
-//用户模式下设置当前Cpucore运行任务，参数为线程
+//告诉协处理器当前任务使用范围为 用户空间
 STATIC INLINE VOID OsCurrUserTaskSet(UINTPTR thread)
 {
     ArchCurrUserTaskSet(thread);

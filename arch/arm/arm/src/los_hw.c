@@ -141,7 +141,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, TSK_ENTRY_F
 #else
     context->regPSR = PSR_MODE_USR_ARM;//工作模式:用户模式 + 工作状态:arm
 #endif
-    context->R[0] = stack;//因为要回到用户态空间运行,所以要作为参数传回SP值
+    context->R[0] = stack;//将用户态栈指针保存到上下文R0处
     context->SP = TRUNCATE(stack, LOSCFG_STACK_POINT_ALIGN_SIZE);//改变 上下文的SP值,指向用户栈空间
     context->LR = 0;//保存子程序返回地址 例如 a call b ,在b中保存 a地址
     context->PC = (UINTPTR)taskEntry;//入口函数,由外部传入,由上层应用指定,固然每个都不一样.

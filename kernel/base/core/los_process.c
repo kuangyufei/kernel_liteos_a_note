@@ -525,16 +525,19 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsProcessInit(VOID)
     LOS_ListInit(&g_processRecyleList);//进程回收链表初始化,回收完成后进入g_freeProcess等待再次被申请使用
 
     for (index = 0; index < g_processMaxNum; index++) {//进程池循环创建
-        g_processCBArray[index].processID = index;//进程ID[0-g_processMaxNum]赋值
+        g_processCBArray[index].processID = index;//进程ID[0-g_processMaxNum-1]赋值
         g_processCBArray[index].processStatus = OS_PROCESS_FLAG_UNUSED;// 默认都是白纸一张,贴上未使用标签
         LOS_ListTailInsert(&g_freeProcess, &g_processCBArray[index].pendList);//注意g_freeProcess挂的是pendList节点,所以使用要通过OS_PCB_FROM_PENDLIST找到进程实体.
     }
 
     g_userInitProcess = 1; /* 1: The root process ID of the user-mode process is fixed at 1 *///用户态的根进程
-    LOS_ListDelete(&g_processCBArray[g_userInitProcess].pendList);// 清空g_userInitProcess pend链表
+    LOS_ListDelete(&g_processCBArray[g_userInitProcess].pendList);// 将1号进程从空闲链表上摘出去
 
     g_kernelInitProcess = 2; /* 2: The root process ID of the kernel-mode process is fixed at 2 *///内核态的根进程
-    LOS_ListDelete(&g_processCBArray[g_kernelInitProcess].pendList);// 清空g_kernelInitProcess pend链表
+    LOS_ListDelete(&g_processCBArray[g_kernelInitProcess].pendList);// 将2号进程从空闲链表上摘出去
+
+	//注意:这波骚操作之后,g_freeProcess链表上还有,0,3,4,...g_processMaxNum-1号进程.创建进程是从g_freeProcess上申请
+	//即下次申请到的将是0号进程,而 OsCreateIdleProcess 将占有0号进程.
 
     return LOS_OK;
 }
@@ -553,10 +556,10 @@ STATIC UINT32 OsCreateIdleProcess(VOID)
     }
 	//创建一个名叫"KIdle"的进程,并创建一个idle task,CPU空闲的时候就待在 idle task中等待被唤醒
     ret = LOS_Fork(CLONE_FILES, "KIdle", (TSK_ENTRY_FUNC)OsIdleTask, LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE);
-    if (ret < 0) {
+    if (ret < 0) {//内核进程的fork并不会一次调用,返回两次,此子进程执行的开始位置是参数OsIdleTask
         return LOS_NOK;
     }
-    g_kernelIdleProcess = (UINT32)ret;//返回进程ID
+    g_kernelIdleProcess = (UINT32)ret;//返回 0号进程
 
     idleProcess = OS_PCB_FROM_PID(g_kernelIdleProcess);//通过ID拿到进程实体
     *idleTaskID = idleProcess->threadGroupID;//绑定CPU的IdleTask,或者说改变CPU现有的idle任务
@@ -619,14 +622,14 @@ STATIC LosProcessCB *OsGetFreePCB(VOID)
     UINT32 intSave;
 
     SCHEDULER_LOCK(intSave);
-    if (LOS_ListEmpty(&g_freeProcess)) {//空闲池里还有未分配的task?
+    if (LOS_ListEmpty(&g_freeProcess)) {//空闲池里还有未分配的进程?
         SCHEDULER_UNLOCK(intSave);
         PRINT_ERR("No idle PCB in the system!\n");
         return NULL;
     }
 
     processCB = OS_PCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_freeProcess));//拿到PCB,通过OS_PCB_FROM_PENDLIST是因为通过pendlist 节点挂在 freelist链表上.
-    LOS_ListDelete(&processCB->pendList);//分配出来了就要在freelist将自己摘除
+    LOS_ListDelete(&processCB->pendList);//将自己从g_freeProcess链表摘除
     SCHEDULER_UNLOCK(intSave);
 
     return processCB;
@@ -907,7 +910,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsKernelInitProcess(VOID)
     processCB->processStatus &= ~OS_PROCESS_STATUS_INIT;// 进程初始化位 置1
     g_processGroup = processCB->group;//全局进程组指向了KProcess所在的进程组
     LOS_ListInit(&g_processGroup->groupList);// 进程组链表初始化
-    OsCurrProcessSet(processCB);// 设置为当前进程
+    OsCurrProcessSet(processCB);// 将KProcess设置为当前进程
 
     return OsCreateIdleProcess();// 创建一个空闲状态的进程
 }
@@ -1547,7 +1550,7 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
     LOS_VmSpaceFree(oldSpace);//ELF已经接管了进程,进程的原有虚拟空间要被释放掉
     return LOS_OK;
 }
-//进程层面的开始执行, entry为入口函数 ,其中 创建好task,task上下文 等待调度真正执行, sp:栈指针 mapBase:栈底 mapSize:栈大小
+//执行用户态任务, entry为入口函数 ,其中 创建好task,task上下文 等待调度真正执行, sp:栈指针 mapBase:栈底 mapSize:栈大小
 LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBase, UINT32 mapSize)
 {
     LosProcessCB *processCB = NULL;
@@ -1572,12 +1575,13 @@ LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINT
     taskCB = OsCurrTaskGet();//获取当前任务
 
     processCB->threadGroupID = taskCB->taskID;//threadGroupID是进程的主线程ID,也就是应用程序 main函数线程
-    taskCB->userMapBase = mapBase;//任务用户态栈底地址
-    taskCB->userMapSize = mapSize;//任务用户态栈大小
+    taskCB->userMapBase = mapBase;//用户态栈顶
+    taskCB->userMapSize = mapSize;//用户态栈大小
     taskCB->taskEntry = (TSK_ENTRY_FUNC)entry;//任务的入口函数
 
-    taskContext = (TaskContext *)OsTaskStackInit(taskCB->taskID, taskCB->stackSize, (VOID *)taskCB->topOfStack, FALSE);//创建任务上下文
-    OsUserTaskStackInit(taskContext, taskCB->taskEntry, sp);//用户进程任务栈初始化
+    taskContext = (TaskContext *)OsTaskStackInit(taskCB->taskID, taskCB->stackSize, (VOID *)taskCB->topOfStack, FALSE);//在内核栈中创建任务上下文
+    OsUserTaskStackInit(taskContext, taskCB->taskEntry, sp);//初始化用户栈,将内核栈中上下文的 context->R[0] = sp ,context->sp = sp
+    //这样做的目的是将用户栈SP保存到内核栈中,
     SCHEDULER_UNLOCK(intSave);//解锁
     return LOS_OK;
 }
@@ -1641,7 +1645,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
 
     (VOID)memset_s((VOID *)((UINTPTR)userText + userInitBssStart - userInitTextStart), initBssSize, 0, initBssSize);// 除了代码段，其余都清0
 
-    stack = OsUserInitStackAlloc(g_userInitProcess, &size);//分配任务在用户态下的运行栈,大小为1M,注意此内存来自进程空间,而非内核空间.
+    stack = OsUserInitStackAlloc(g_userInitProcess, &size);//分配任务在用户态下的运行栈,大小为1M,注意此内存来自用户空间.
     if (stack == NULL) {
         PRINTK("user init process malloc user stack failed!\n");
         ret = LOS_NOK;
@@ -1696,7 +1700,7 @@ STATIC VOID OsInitCopyTaskParam(LosProcessCB *childProcessCB, const CHAR *name, 
         childPara->userParam.userArea = mainThread->userArea;		//用户态栈区栈顶位置
         childPara->userParam.userMapBase = mainThread->userMapBase;	//用户态栈底
         childPara->userParam.userMapSize = mainThread->userMapSize;	//用户态栈大小
-    } else {
+    } else {//注意内核态进程创建任务的入口由外界指定,例如 OsCreateIdleProcess 指定了OsIdleTask
         childPara->pfnTaskEntry = (TSK_ENTRY_FUNC)entry;//参数(sp)为内核态入口地址
         childPara->uwStackSize = size;//参数(size)为内核态栈大小
     }
@@ -1987,17 +1991,17 @@ LITE_OS_SEC_TEXT VOID LOS_Exit(INT32 status)
     OsTaskExitGroup((UINT32)status);
     OsProcessExit(OsCurrTaskGet(), (UINT32)status);
 }
-//获取用户进程的根进程,所有用户进程都是g_processCBArray[g_userInitProcess] fork来的
+//获取用户态进程的根进程,所有用户进程都是g_processCBArray[g_userInitProcess] fork来的
 LITE_OS_SEC_TEXT UINT32 OsGetUserInitProcessID(VOID)
 {
     return g_userInitProcess;
 }
-//获取Idel进程,CPU不公正时待的地方,等待被事件唤醒
+//获取Idel进程,CPU休息时待的地方,等待被事件唤醒
 LITE_OS_SEC_TEXT UINT32 OsGetIdleProcessID(VOID)
 {
     return g_kernelIdleProcess;
 }
-//获取内核进程的根进程,所有内核进程都是g_processCBArray[g_kernelInitProcess] fork来的,包括g_processCBArray[g_kernelIdleProcess]进程
+//获取内核态进程的根进程,所有内核进程都是g_processCBArray[g_kernelInitProcess] fork来的,包括g_processCBArray[g_kernelIdleProcess]进程
 LITE_OS_SEC_TEXT UINT32 OsGetKernelInitProcessID(VOID)
 {
     return g_kernelInitProcess;

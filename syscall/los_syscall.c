@@ -94,7 +94,7 @@ void SyscallHandleInit(void)
 
 /* The SYSCALL ID is in R7 on entry.  Parameters follow in R0..R6 */
 /******************************************************************
-由汇编调用,见于 los_hw_exc.s  第197行 BLX         OsArmA32SyscallHandle
+由汇编调用,见于 los_hw_exc.s    / BLX    OsArmA32SyscallHandle
 SYSCALL是产生系统调用时触发的信号,R7寄存器存放具体的系统调用ID,也叫系统调用号
 regs:参数就是所有寄存器
 注意:本函数在用户态和内核态下都可能被调用到
@@ -112,8 +112,8 @@ LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
         return regs;
     }
 
-    if (cmd == __NR_sigreturn) {//此时运行在内核栈,程序返回的调用,从内核态返回用户态时触发
-        OsRestorSignalContext(regs);//恢复信号上下文,执行完函数后,切到了用户栈
+    if (cmd == __NR_sigreturn) {//收到 __NR_sigreturn 信号
+        OsRestorSignalContext(regs);//恢复信号上下文
         return regs;
     }
 
@@ -131,7 +131,7 @@ LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
         case ARG_NUM_1:
             ret = (*(SyscallFun1)handle)(regs[REG_R0]);//执行系统调用,类似 SysUnlink(pathname);
             break;
-        case ARG_NUM_2://@note_thinking 如何是两个参数的系统调用,这里传的确是三个参数,任务栈中会出现怎样的情况呢?
+        case ARG_NUM_2://如何是两个参数的系统调用,这里传三个参数也没有问题,因被调用函数不会去取用R2值
         case ARG_NUM_3:
             ret = (*(SyscallFun3)handle)(regs[REG_R0], regs[REG_R1], regs[REG_R2]);//类似 SysExecve(fileName, argv, envp);
             break;
@@ -146,7 +146,7 @@ LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
     }
 
     regs[REG_R0] = ret;//R0保存系统调用返回值
-    OsSaveSignalContext(regs);//保存用户栈现场
+    OsSaveSignalContext(regs);//保存信号上下文现场
 
     /* Return the last value of curent_regs.  This supports context switches on return from the exception.
      * That capability is only used with theSYS_context_switch system call.

@@ -767,7 +767,7 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskCBInitBase(LosTaskCB *taskCB,
     taskCB->args[1]      = initParam->auwArgs[1];
     taskCB->args[2]      = initParam->auwArgs[2];
     taskCB->args[3]      = initParam->auwArgs[3];
-    taskCB->topOfStack   = (UINTPTR)topStack;	//内核态栈起始位置
+    taskCB->topOfStack   = (UINTPTR)topStack;	//内核态栈顶
     taskCB->stackSize    = initParam->uwStackSize;//
     taskCB->priority     = initParam->usTaskPrio;
     taskCB->taskEntry    = initParam->pfnTaskEntry;
@@ -805,7 +805,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_IN
     LosProcessCB *processCB = NULL;
 
     OsTaskCBInitBase(taskCB, stackPtr, topStack, initParam);//初始化任务的基本信息,
-    					//taskCB->stackPointer = stackPtr ,用户态时将改写taskCB->stackPointer指向 
+    					//taskCB->stackPointer指向内核态栈 sp位置,该位置存着 任务初始上下文
 
     SCHEDULER_LOCK(intSave);
     processCB = OS_PCB_FROM_PID(initParam->processID);//通过ID获取PCB ,单核进程数最多64个
@@ -817,7 +817,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_IN
         taskCB->userMapBase = initParam->userParam.userMapBase;
         taskCB->userMapSize = initParam->userParam.userMapSize;
         OsUserTaskStackInit(taskCB->stackPointer, taskCB->taskEntry, initParam->userParam.userSP);//初始化用户态任务栈
-        //这里要注意,任务的上下文是始终保存在内核栈空间,但用户态时运行是在用户态的栈空间.(因为SP指向了用户态空间)
+        //这里要注意,任务的上下文是始终保存在内核栈空间,而用户态时运行在用户态栈空间.(context->SP = userSP 指向了用户态栈空间)
     }
 
     if (!processCB->threadNumber) {//进程线程数量为0时，
@@ -1584,8 +1584,8 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskInfoGet(UINT32 taskID, TSK_INFO_S *taskInf
 
     taskInfo->usTaskStatus = taskCB->taskStatus;
     taskInfo->usTaskPrio = taskCB->priority;
-    taskInfo->uwStackSize = taskCB->stackSize;
-    taskInfo->uwTopOfStack = taskCB->topOfStack;
+    taskInfo->uwStackSize = taskCB->stackSize;//内核态栈大小
+    taskInfo->uwTopOfStack = taskCB->topOfStack;//内核态栈顶位置
     taskInfo->uwEventMask = taskCB->eventMask;
     taskInfo->taskEvent = taskCB->taskEvent;
     taskInfo->pTaskSem = taskCB->taskSem;
