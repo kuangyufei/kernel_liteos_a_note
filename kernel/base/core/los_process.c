@@ -541,7 +541,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsProcessInit(VOID)
 
     return LOS_OK;
 }
-//创建一个名叫"KIdle"的进程,给CPU空闲的时候使用
+//创建一个名叫"KIdle"的0号进程,给CPU空闲的时候使用
 STATIC UINT32 OsCreateIdleProcess(VOID)
 {
     UINT32 ret;
