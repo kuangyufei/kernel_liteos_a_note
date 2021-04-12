@@ -1,5 +1,5 @@
 git add -A
-git commit -m  'V46.xx 鸿蒙内核源码分析(特殊进程篇) | 龙生龙,凤生凤,老鼠生儿会打洞
+git commit -m  '进程回收过程注解
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     https://my.oschina.net/weharmony
 '

@@ -341,9 +341,9 @@ typedef struct {
     FutexNode       futex;				//实现快锁功能
     LOS_DL_LIST     joinList;           /**< join list */ //联结链表,允许任务之间相互释放彼此
     LOS_DL_LIST     lockList;           /**< Hold the lock list */	//拿到了哪些锁链表
-    UINT32          waitID;             /**< Wait for the PID or GID of the child process */	//等待孩子的PID或GID进程
+    UINT32          waitID;             /**< Wait for the PID or GID of the child process */	//本任务将负责等待(PID或GID)的孩子进程结束
     UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
-                                             a specific child process, or any child process */
+                                             a specific child process, or any child process */  //以什么样的方式等待子进程结束(OS_PROCESS_WAIT_PRO,..)
 #if (LOSCFG_KERNEL_LITEIPC == YES)
     UINT32          ipcStatus;			//IPC状态
     LOS_DL_LIST     msgListHead;		//消息队列头结点,上面挂的都是任务要读的消息

@@ -449,17 +449,17 @@ STATIC INLINE User *OsCurrUserGet(VOID)//获取当前进程的所属用户
 /*
  * Wait for any child process to finish
  */
-#define OS_PROCESS_WAIT_ANY (1 << 0U) //等待任意子进程完成
+#define OS_PROCESS_WAIT_ANY (1 << 0U) //等待任意子进程完成,这个被等待的进程不一定是等待进程的子进程
 
 /*
  * Wait for the child process specified by the pid to finish
  */
-#define OS_PROCESS_WAIT_PRO (1 << 1U) //等待pid指定的子进程完成
+#define OS_PROCESS_WAIT_PRO (1 << 1U) //等待pid指定的子进程完成,这个被等待的进程一定是等待进程的子进程
 
 /*
- * Waits for any child process in the specified process group to finish. //等待指定进程组中的任何子进程完成
+ * Waits for any child process in the specified process group to finish. 
  */
-#define OS_PROCESS_WAIT_GID (1 << 2U)
+#define OS_PROCESS_WAIT_GID (1 << 2U) //等待指定进程组中的任何子进程完成,这个被等待的进程和等待进程在同一个进程组
 
 #define OS_PROCESS_INFO_ALL 1
 #define OS_PROCESS_DEFAULT_UMASK 0022

@@ -436,16 +436,16 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
     UINT32 ret;
     TSK_INIT_PARAM_S taskInitParam;
     Percpu *perCpu = OsPercpuGet();//获取CPU信息
-    UINT32 *idleTaskID = &perCpu->idleTaskID;//指定CPU的空闲任务
+    UINT32 *idleTaskID = &perCpu->idleTaskID;//每个CPU都有一个空闲任务
 
     (VOID)memset_s((VOID *)(&taskInitParam), sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));//任务初始参数清0
-    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)OsIdleTask;//入口函数指定idle
-    taskInitParam.uwStackSize = LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE;//任务栈大小
+    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)OsIdleTask;//入口函数
+    taskInitParam.uwStackSize = LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE;//任务栈大小 2K
     taskInitParam.pcName = "Idle";//任务名称 叫pcName有点怪怪的,不能换个撒
     taskInitParam.usTaskPrio = OS_TASK_PRIORITY_LOWEST;//默认最低优先级 31
     taskInitParam.uwResved = OS_TASK_FLAG_IDLEFLAG;//默认idle flag
 #if (LOSCFG_KERNEL_SMP == YES)//CPU多核情况
-    taskInitParam.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());//意思是归于哪个CPU核调度,
+    taskInitParam.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());//每个idle任务只在单独的cpu上运行
 #endif
     ret = LOS_TaskCreate(idleTaskID, &taskInitParam);//创建task并申请调度,
     OS_TCB_FROM_TID(*idleTaskID)->taskStatus |= OS_TASK_FLAG_SYSTEM_TASK;//设置task状态为系统任务,系统任务运行在内核态.

@@ -260,7 +260,7 @@ STATIC LosProcessCB *OsFindExitChildProcess(const LosProcessCB *processCB, INT32
     PRINT_INFO("%s is find the exit child : %d failed in parent : %u\n", __FUNCTION__, childPid, processCB->processID);
     return NULL;
 }
-//等待唤醒任务
+//唤醒等待wakePID结束的任务,
 STATIC INLINE VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID)
 {
     taskCB->waitID = wakePID;
@@ -269,7 +269,7 @@ STATIC INLINE VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID)
     LOS_MpSchedule(OS_MP_CPU_ALL);
 #endif
 }
-
+//唤醒等待参数进程结束的任务
 STATIC BOOL OsWaitWakeSpecifiedProcess(LOS_DL_LIST *head, const LosProcessCB *processCB, LOS_DL_LIST **anyList)
 {
     LOS_DL_LIST *list = head;
@@ -277,17 +277,17 @@ STATIC BOOL OsWaitWakeSpecifiedProcess(LOS_DL_LIST *head, const LosProcessCB *pr
     UINT32 pid = 0;
     BOOL find = FALSE;
 
-    while (list->pstNext != head) {
-        taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(list));
-        if ((taskCB->waitFlag == OS_PROCESS_WAIT_PRO) && (taskCB->waitID == processCB->processID)) {
+    while (list->pstNext != head) {//遍历等待链表 processCB->waitList
+        taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(list));//一个一个来
+        if ((taskCB->waitFlag == OS_PROCESS_WAIT_PRO) && (taskCB->waitID == processCB->processID)) {//符合OS_PROCESS_WAIT_PRO方式的
             if (pid == 0) {
-                pid = processCB->processID;
-                find = TRUE;
-            } else {
+                pid = processCB->processID;//等待的进程
+                find = TRUE;//找到了
+            } else {// @note_thinking 这个代码有点多余吧,会执行到吗?
                 pid = OS_INVALID_VALUE;
             }
 
-            OsWaitWakeTask(taskCB, pid);
+            OsWaitWakeTask(taskCB, pid);//唤醒这个任务,此时会切到 LOS_Wait runTask->waitFlag = 0;处运行
             continue;
         }
 
@@ -300,38 +300,38 @@ STATIC BOOL OsWaitWakeSpecifiedProcess(LOS_DL_LIST *head, const LosProcessCB *pr
 
     return find;
 }
-//检查父进程的等待任务并唤醒父进程
+//检查父进程的等待任务并唤醒父进程去处理等待任务
 STATIC VOID OsWaitCheckAndWakeParentProcess(LosProcessCB *parentCB, const LosProcessCB *processCB)
 {
-    LOS_DL_LIST *head = &parentCB->waitList;//
+    LOS_DL_LIST *head = &parentCB->waitList;
     LOS_DL_LIST *list = NULL;
     LosTaskCB *taskCB = NULL;
     BOOL findSpecified = FALSE;
 
-    if (LOS_ListEmpty(&parentCB->waitList)) {
-        return;
+    if (LOS_ListEmpty(&parentCB->waitList)) {//父进程中是否有在等待子进程退出的任务?
+        return;//没有就退出
     }
 
-    findSpecified = OsWaitWakeSpecifiedProcess(head, processCB, &list);
+    findSpecified = OsWaitWakeSpecifiedProcess(head, processCB, &list);//找到指定的任务
     if (findSpecified == TRUE) {
         /* No thread is waiting for any child process to finish */
-        if (LOS_ListEmpty(&parentCB->waitList)) {
-            return;
+        if (LOS_ListEmpty(&parentCB->waitList)) {//没有线程正在等待任何子进程结束
+            return;//已经处理完了,注意在OsWaitWakeSpecifiedProcess中做了频繁的任务切换
         } else if (!LOS_ListEmpty(&parentCB->childrenList)) {
             /* Other child processes exist, and other threads that are waiting
              * for the child to finish continue to wait
-             */
+             *///存在其他子进程，正在等待它们的子进程结束而将继续等待
             return;
         }
     }
 
     /* Waiting threads are waiting for a specified child process to finish */
-    if (list == NULL) {
+    if (list == NULL) {//等待线程正在等待指定的子进程结束
         return;
     }
 
     /* No child processes exist and all waiting threads are awakened */
-    if (findSpecified == TRUE) {
+    if (findSpecified == TRUE) {//所有等待的任务都被一一唤醒
         while (list->pstNext != head) {
             taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(list));
             OsWaitWakeTask(taskCB, OS_INVALID_VALUE);
@@ -339,7 +339,7 @@ STATIC VOID OsWaitCheckAndWakeParentProcess(LosProcessCB *parentCB, const LosPro
         return;
     }
 
-    while (list->pstNext != head) {
+    while (list->pstNext != head) {//处理 OS_PROCESS_WAIT_GID 标签
         taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(list));
         if (taskCB->waitFlag == OS_PROCESS_WAIT_GID) {
             if (taskCB->waitID != processCB->group->groupID) {
@@ -491,9 +491,9 @@ STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
         LOS_ListDelete(&processCB->subordinateGroupList);//和志同道合的朋友们永别了,注意家里可不一定是朋友的,所有各有链表.
         LOS_ListTailInsert(&processCB->group->exitProcessList, &processCB->subordinateGroupList);//挂到进程组消亡链表,朋友中,永别的可不止我一个.
 
-        OsWaitCheckAndWakeParentProcess(parentCB, processCB);//检查父进程的等待任务并唤醒任务,此处将会切换到其他任务运行.
+        OsWaitCheckAndWakeParentProcess(parentCB, processCB);//检查父进程的等待任务链表并唤醒对应的任务,此处将会频繁的切到其他任务运行.
 
-        OsDealAliveChildProcess(processCB);//安排孩子进程,上面和长辈,同辈,朋友告别了,接下来跟娃娃们告别.
+        OsDealAliveChildProcess(processCB);//孩子们要怎么处理,移交给(用户态和内核态)根进程
 
         processCB->processStatus |= OS_PROCESS_STATUS_ZOMBIES;//贴上僵死进程的标签
 
@@ -1142,16 +1142,18 @@ LITE_OS_SEC_TEXT VOID OsWaitSignalToWakeProcess(LosProcessCB *processCB)
 
     return;
 }
-//将任务插入waitList链表
+//将任务挂入进程的waitList链表,表示这个任务在等待某个进程的退出
+//当被等待进程退出时候会将自己挂到父进程的退出子进程链表和进程组的退出进程链表.
+//
 STATIC VOID OsWaitInsertWaitListInOrder(LosTaskCB *runTask, LosProcessCB *processCB)
 {
     LOS_DL_LIST *head = &processCB->waitList;
     LOS_DL_LIST *list = head;
     LosTaskCB *taskCB = NULL;
 
-    (VOID)OsTaskWait(&processCB->waitList, LOS_WAIT_FOREVER, FALSE);
-    LOS_ListDelete(&runTask->pendList);
-    if (runTask->waitFlag == OS_PROCESS_WAIT_PRO) {
+    (VOID)OsTaskWait(&processCB->waitList, LOS_WAIT_FOREVER, FALSE);//将当前任务挂入waitList链表,FALSE代表不调度.
+    LOS_ListDelete(&runTask->pendList);//将当前任务从 pendlist链表上摘除.
+    if (runTask->waitFlag == OS_PROCESS_WAIT_PRO) {//等待
         LOS_ListHeadInsert(&processCB->waitList, &runTask->pendList);
         return;
     } else if (runTask->waitFlag == OS_PROCESS_WAIT_GID) {
@@ -1179,7 +1181,7 @@ STATIC VOID OsWaitInsertWaitListInOrder(LosTaskCB *runTask, LosProcessCB *proces
     LOS_ListHeadInsert(list, &runTask->pendList);
     return;
 }
-//等待设置标签
+//设置等待子进程退出方式方法
 STATIC UINT32 OsWaitSetFlag(const LosProcessCB *processCB, INT32 pid, LosProcessCB **child)
 {
     LosProcessCB *childCB = NULL;
@@ -1187,49 +1189,49 @@ STATIC UINT32 OsWaitSetFlag(const LosProcessCB *processCB, INT32 pid, LosProcess
     LosTaskCB *runTask = OsCurrTaskGet();
     UINT32 ret;
 
-    if (pid > 0) {//等待进程号为pid的子进程,回收指定pid的子进程
+    if (pid > 0) {//等待进程号为pid的子进程结束
         /* Wait for the child process whose process number is pid. */
-        childCB = OsFindExitChildProcess(processCB, pid);
-        if (childCB != NULL) {
-            goto WAIT_BACK;
+        childCB = OsFindExitChildProcess(processCB, pid);//看能否从退出的孩子链表中找到PID
+        if (childCB != NULL) {//找到了,确实有一个已经退出的PID,注意一个进程退出时会挂到父进程的exitChildList上
+            goto WAIT_BACK;//直接成功返回
         }
 
-        ret = OsFindChildProcess(processCB, pid);
+        ret = OsFindChildProcess(processCB, pid);//看能否从现有的孩子链表中找到PID
         if (ret != LOS_OK) {
-            return LOS_ECHILD;
+            return LOS_ECHILD;//参数进程并没有这个PID孩子,返回孩子进程失败.
         }
-        runTask->waitFlag = OS_PROCESS_WAIT_PRO;
-        runTask->waitID = pid;
+        runTask->waitFlag = OS_PROCESS_WAIT_PRO;//设置当前任务的等待类型
+        runTask->waitID = pid;	//当前任务要等待进程ID结束
     } else if (pid == 0) {//等待同一进程组中的任何子进程
         /* Wait for any child process in the same process group */
-        childCB = OsFindGroupExitProcess(processCB->group, OS_INVALID_VALUE);
-        if (childCB != NULL) {
-            goto WAIT_BACK;
+        childCB = OsFindGroupExitProcess(processCB->group, OS_INVALID_VALUE);//看能否从退出的孩子链表中找到PID
+        if (childCB != NULL) {//找到了,确实有一个已经退出的PID
+            goto WAIT_BACK;//直接成功返回
         }
-        runTask->waitID = processCB->group->groupID;
-        runTask->waitFlag = OS_PROCESS_WAIT_GID;
-    } else if (pid == -1) {//回收任意子进程（相当于wait）
+        runTask->waitID = processCB->group->groupID;//等待进程组的任意一个子进程结束
+        runTask->waitFlag = OS_PROCESS_WAIT_GID;//设置当前任务的等待类型
+    } else if (pid == -1) {//等待任意子进程
         /* Wait for any child process */
-        childCB = OsFindExitChildProcess(processCB, OS_INVALID_VALUE);
-        if (childCB != NULL) {
+        childCB = OsFindExitChildProcess(processCB, OS_INVALID_VALUE);//看能否从退出的孩子链表中找到PID
+        if (childCB != NULL) {//找到了,确实有一个已经退出的PID
             goto WAIT_BACK;
         }
-        runTask->waitID = pid;
-        runTask->waitFlag = OS_PROCESS_WAIT_ANY;
-    } else { /* pid < -1 */ //回收指定进程组内为|pid|的所有子进程
+        runTask->waitID = pid;//等待PID,这个PID可以和当前进程没有任何关系
+        runTask->waitFlag = OS_PROCESS_WAIT_ANY;//设置当前任务的等待类型
+    } else { /* pid < -1 */ //等待指定进程组内为|pid|的所有子进程
         /* Wait for any child process whose group number is the pid absolute value. */
-        group = OsFindProcessGroup(-pid);
+        group = OsFindProcessGroup(-pid);//先通过PID找到进程组
         if (group == NULL) {
             return LOS_ECHILD;
         }
 
-        childCB = OsFindGroupExitProcess(group, OS_INVALID_VALUE);
+        childCB = OsFindGroupExitProcess(group, OS_INVALID_VALUE);//在进程组里任意一个已经退出的子进程
         if (childCB != NULL) {
             goto WAIT_BACK;
         }
 
-        runTask->waitID = -pid;
-        runTask->waitFlag = OS_PROCESS_WAIT_GID;
+        runTask->waitID = -pid;//此处用负数是为了和(pid == 0)以示区别,因为二者的waitFlag都一样.
+        runTask->waitFlag = OS_PROCESS_WAIT_GID;//设置当前任务的等待类型
     }
 
 WAIT_BACK:
@@ -1244,12 +1246,12 @@ STATIC INT32 OsWaitRecycleChildPorcess(const LosProcessCB *childCB, UINT32 intSa
     UINT16 mode = childCB->processMode;
     INT32 exitCode = childCB->exitCode;
 
-    OsRecycleZombiesProcess((LosProcessCB *)childCB, &group);
+    OsRecycleZombiesProcess((LosProcessCB *)childCB, &group);//回收僵尸进程
     SCHEDULER_UNLOCK(intSave);
 
     if (status != NULL) {
-        if (mode == OS_USER_MODE) {
-            (VOID)LOS_ArchCopyToUser((VOID *)status, (const VOID *)(&(exitCode)), sizeof(INT32));
+        if (mode == OS_USER_MODE) {//孩子为用户态进程
+            (VOID)LOS_ArchCopyToUser((VOID *)status, (const VOID *)(&(exitCode)), sizeof(INT32));//从内核空间拷贝退出码
         } else {
             *status = exitCode;
         }
@@ -1260,12 +1262,12 @@ STATIC INT32 OsWaitRecycleChildPorcess(const LosProcessCB *childCB, UINT32 intSa
 }
 //检查要等待的孩子进程
 STATIC INT32 OsWaitChildProcessCheck(LosProcessCB *processCB, INT32 pid, LosProcessCB **childCB)
-{
+{	//当进程没有孩子且没有退出的孩子进程
     if (LOS_ListEmpty(&(processCB->childrenList)) && LOS_ListEmpty(&(processCB->exitChildList))) {
         return LOS_ECHILD;
     }
 
-    return OsWaitSetFlag(processCB, pid, childCB);
+    return OsWaitSetFlag(processCB, pid, childCB);//设置等待子进程退出方式方法
 }
 
 STATIC UINT32 OsWaitOptionsCheck(UINT32 options)
@@ -1306,38 +1308,38 @@ LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, V
     processCB = OsCurrProcessGet();	//获取当前进程
     runTask = OsCurrTaskGet();		//获取当前任务
 
-    ret = OsWaitChildProcessCheck(processCB, pid, &childCB);
+    ret = OsWaitChildProcessCheck(processCB, pid, &childCB);//先检查下看能不能找到参数要求的退出子进程
     if (ret != LOS_OK) {
         pid = -ret;
         goto ERROR;
     }
 
-    if (childCB != NULL) {
-        return OsWaitRecycleChildPorcess(childCB, intSave, status);
+    if (childCB != NULL) {//找到了进程
+        return OsWaitRecycleChildPorcess(childCB, intSave, status);//回收进程
     }
-
-    if ((options & LOS_WAIT_WNOHANG) != 0) {
-        runTask->waitFlag = 0;
-        pid = 0;
+	//没有找到,看是否要返回还是去做个登记
+    if ((options & LOS_WAIT_WNOHANG) != 0) {//不登记的方式,立即返回
+        runTask->waitFlag = 0;//等待标识置0
+        pid = 0;//这里置0,是为了 return 0
         goto ERROR;
     }
-
-    OsWaitInsertWaitListInOrder(runTask, processCB);
-
-    OsSchedResched();
-
+	//等待孩子进程退出
+    OsWaitInsertWaitListInOrder(runTask, processCB);//将当前任务挂入进程waitList链表
+	//发起调度的目的是为了让出CPU,让其他进程/任务运行
+    OsSchedResched();//发起调度
+	
     runTask->waitFlag = 0;
     if (runTask->waitID == OS_INVALID_VALUE) {
-        pid = -LOS_ECHILD;
+        pid = -LOS_ECHILD;//没有此子进程
         goto ERROR;
     }
 
-    childCB = OS_PCB_FROM_PID(runTask->waitID);
-    if (!(childCB->processStatus & OS_PROCESS_STATUS_ZOMBIES)) {
-        pid = -LOS_ESRCH;
+    childCB = OS_PCB_FROM_PID(runTask->waitID);//获取当前任务的等待子进程ID
+    if (!(childCB->processStatus & OS_PROCESS_STATUS_ZOMBIES)) {//子进程非僵死进程
+        pid = -LOS_ESRCH;//没有此进程
         goto ERROR;
     }
-
+	//回收僵死进程
     return OsWaitRecycleChildPorcess(childCB, intSave, status);
 
 ERROR:

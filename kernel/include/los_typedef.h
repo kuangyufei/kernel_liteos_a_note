@@ -121,63 +121,63 @@ typedef size_t             BOOL;
 #endif
 
 #ifndef LOS_OK
-#define LOS_OK             0
+#define LOS_OK             0	//正常返回
 #endif
 
 #ifndef LOS_NOK
-#define LOS_NOK            1
+#define LOS_NOK            1	//不OK
 #endif
 
 #ifndef LOS_EPERM
-#define LOS_EPERM          1
+#define LOS_EPERM          1	//操作不允许
 #endif
 
 #ifndef LOS_ESRCH
-#define LOS_ESRCH          3
+#define LOS_ESRCH          3	//没有此进程
 #endif
 
 #ifndef LOS_EINTR
-#define LOS_EINTR          4
+#define LOS_EINTR          4	//系统调用被禁止
 #endif
 
 #ifndef LOS_EBADF
-#define LOS_EBADF          9
+#define LOS_EBADF          9	//文件数目错误
 #endif
 
 #ifndef LOS_ECHILD
-#define LOS_ECHILD         10
+#define LOS_ECHILD         10	//没有此子进程
 #endif
 
 #ifndef LOS_EAGAIN
-#define LOS_EAGAIN         11
+#define LOS_EAGAIN         11	//再试一遍
 #endif
 
 #ifndef LOS_ENOMEM
-#define LOS_ENOMEM         12
+#define LOS_ENOMEM         12	//内存溢出
 #endif
 
 #ifndef LOS_EACCES
-#define LOS_EACCES         13
+#define LOS_EACCES         13	//拒绝访问
 #endif
 
 #ifndef LOS_EBUSY
-#define LOS_EBUSY          16
+#define LOS_EBUSY          16	//设备或资源忙
 #endif
 
 #ifndef LOS_EINVAL
-#define LOS_EINVAL         22
+#define LOS_EINVAL         22	//无效的参数
 #endif
 
 #ifndef LOS_EDEADLK
-#define LOS_EDEADLK        35
+#define LOS_EDEADLK        35	//资源发生死锁
 #endif
 
 #ifndef LOS_EOPNOTSUPP
-#define LOS_EOPNOTSUPP     95
+#define LOS_EOPNOTSUPP     95	//不支持该操作
 #endif
 
 #ifndef LOS_ETIMEDOUT
-#define LOS_ETIMEDOUT      110
+#define LOS_ETIMEDOUT      110	//超时
 #endif
 
 #define OS_FAIL            1
