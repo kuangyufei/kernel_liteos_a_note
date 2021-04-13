@@ -1140,7 +1140,7 @@ STATIC INLINE VOID OsTaskReleaseHoldLock(LosProcessCB *processCB, LosTaskCB *tas
 
     OsTaskSyncWake(taskCB);//同步唤醒任务
 }
-////删除一个正在运行的任务
+//删除一个正在运行的任务
 LITE_OS_SEC_TEXT VOID OsRunTaskToDelete(LosTaskCB *taskCB)
 {
     LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);//拿到task所属进程

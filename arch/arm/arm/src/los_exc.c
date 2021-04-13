@@ -540,7 +540,7 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
     UINT32 currCpu = ArchCurrCpuid();
     LosProcessCB *runProcess = OsCurrProcessGet();
 
-    if (g_excFromUserMode[ArchCurrCpuid()] == FALSE) {//内核态直接退出,8处理了.
+    if (g_excFromUserMode[ArchCurrCpuid()] == FALSE) {//内核态直接退出,不处理了.
         return;
     }
 
@@ -572,7 +572,7 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 #endif
     OsProcessExitCodeSignalSet(runProcess, SIGUSR2);
     /* kill user exc process */
-    LOS_Exit(OS_PRO_EXIT_OK);
+    LOS_Exit(OS_PRO_EXIT_OK);//进程退出
 
     /* User mode exception handling failed , which normally does not exist */ //用户态的异常处理失败，通常情况下不会发生
     g_curNestCount[currCpu]++;

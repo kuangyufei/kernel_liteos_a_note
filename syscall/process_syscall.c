@@ -308,7 +308,7 @@ int SysSchedRRGetInterval(int pid, struct timespec *tp)
 
     return 0;
 }
-//阻塞参数进程
+//等待子进程结束
 int SysWait(int pid, USER int *status, int options, void *rusage)
 {
     (void)rusage;

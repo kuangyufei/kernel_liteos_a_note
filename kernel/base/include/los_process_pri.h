@@ -338,18 +338,18 @@ STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)//用户模
  * 31    15           8           7        0
  * |     | exit code  | core dump | signal |
  */
-#define OS_PRO_EXIT_OK 0 //进程退出
-//以下函数都是进程的退出方式
+#define OS_PRO_EXIT_OK 0 //进程正常退出
+//置进程退出码第七位为1
 STATIC INLINE VOID OsProcessExitCodeCoreDumpSet(LosProcessCB *processCB)
 {
-    processCB->exitCode |= 0x80U;// 0b10000000 对应退出码为看
+    processCB->exitCode |= 0x80U;// 0b10000000 
 }
-
+//设置进程退出信号(0 ~ 7)
 STATIC INLINE VOID OsProcessExitCodeSignalSet(LosProcessCB *processCB, UINT32 signal)
 {
     processCB->exitCode |= signal & 0x7FU;//0b01111111
 }
-
+//清除进程退出信号(0 ~ 7)
 STATIC INLINE VOID OsProcessExitCodeSignalClear(LosProcessCB *processCB)
 {
     processCB->exitCode &= (~0x7FU);//低7位全部清0
@@ -359,8 +359,8 @@ STATIC INLINE BOOL OsProcessExitCodeSignalIsSet(LosProcessCB *processCB)
 {
     return (processCB->exitCode) & 0x7FU;
 }
-
-STATIC INLINE VOID OsProcessExitCodeSet(LosProcessCB *processCB, UINT32 code)//由外界提供退出码
+//设置进程退出号(8 ~ 15)
+STATIC INLINE VOID OsProcessExitCodeSet(LosProcessCB *processCB, UINT32 code)
 {
     processCB->exitCode |= ((code & 0x000000FFU) << 8U) & 0x0000FF00U; /* 8: Move 8 bits to the left, exitCode */
 }
@@ -426,14 +426,14 @@ STATIC INLINE User *OsCurrUserGet(VOID)//获取当前进程的所属用户
 /*
  * return immediately if no child has exited.
  */
-#define LOS_WAIT_WNOHANG   (1 << 0U) //如果没有孩子退出，请立即返回 no hang
+#define LOS_WAIT_WNOHANG   (1 << 0U) //如果没有孩子进程退出，则立即返回,而不是阻塞在这个函数上等待；如果结束了，则返回该子进程的进程号。
 
 /*
  * return if a child has stopped (but not traced via ptrace(2)).
  * Status for traced children which have stopped is provided even
  * if this option is not specified.
  */
-#define LOS_WAIT_WUNTRACED (1 << 1U) //如果子进程进入暂停执行情况则马上返回，但结束状态不予以理会。untraced
+#define LOS_WAIT_WUNTRACED (1 << 1U) //如果子进程进入暂停情况则马上返回，不予以理会结束状态。untraced
 
 /*
  * return if a stopped child has been resumed by delivery of SIGCONT.

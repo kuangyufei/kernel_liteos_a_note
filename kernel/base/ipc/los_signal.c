@@ -608,7 +608,7 @@ void OsSaveSignalContext(unsigned int *sp)
         /* One pthread do the share signal */ 
         sigcb->sigFlag |= process->sigShare;//记录由一个线程执行可进程的共享信号,这些恢复上下文时就找到对应的任务
         unsigned int signo = (unsigned int)FindFirstSetedBit(sigcb->sigFlag) + 1;
-        OsProcessExitCodeSignalSet(process, signo);
+        OsProcessExitCodeSignalSet(process, signo);//设置进程退出信号
         sigcb->context.CPSR = cpsr;		//保存当前各寄存器的信息
         sigcb->context.PC = sp[REG_PC]; //获取被打断现场寄存器的值
         sigcb->context.USP = sp[REG_SP];

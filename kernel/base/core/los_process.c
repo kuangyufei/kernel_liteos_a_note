@@ -420,7 +420,7 @@ LITE_OS_SEC_TEXT STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, Proc
         OsInsertPCBToFreeList(childCB);//直接插到freeList中去，可用于重新分配了。
     }
 }
-//当一个进程自然退出的时候,它的孩子进程要怎么处理
+//当一个进程自然退出的时候,它的孩子进程由两位老祖宗收养
 STATIC VOID OsDealAliveChildProcess(LosProcessCB *processCB)
 {
     UINT32 parentID;
@@ -430,25 +430,25 @@ STATIC VOID OsDealAliveChildProcess(LosProcessCB *processCB)
     LOS_DL_LIST *childHead = NULL;
 
     if (!LOS_ListEmpty(&processCB->childrenList)) {//如果存在孩子进程
-        childHead = processCB->childrenList.pstNext;
-        LOS_ListDelete(&(processCB->childrenList));
+        childHead = processCB->childrenList.pstNext;//获取孩子链表
+        LOS_ListDelete(&(processCB->childrenList));//清空自己的孩子链表
         if (OsProcessIsUserMode(processCB)) {//是用户态进程
-            parentID = g_userInitProcess;//指定1号进程父ID
+            parentID = g_userInitProcess;//用户态进程老祖宗
         } else {
-            parentID = g_kernelInitProcess;//指定2号进程为父ID
+            parentID = g_kernelInitProcess;//内核态进程老祖宗
         }
 
-        for (nextList = childHead; ;) {
-            childCB = OS_PCB_FROM_SIBLIST(nextList);
-            childCB->parentProcessID = parentID;
-            nextList = nextList->pstNext;
-            if (nextList == childHead) {
+        for (nextList = childHead; ;) {//遍历孩子链表
+            childCB = OS_PCB_FROM_SIBLIST(nextList);//找到孩子的真身
+            childCB->parentProcessID = parentID;//孩子磕头认老祖宗为爸爸
+            nextList = nextList->pstNext;//找下一个孩子进程
+            if (nextList == childHead) {//一圈下来,孩子们都磕完头了
                 break;
             }
         }
 
-        parentCB = OS_PCB_FROM_PID(parentID);
-        LOS_ListTailInsertList(&parentCB->childrenList, childHead);
+        parentCB = OS_PCB_FROM_PID(parentID);//找个老祖宗的真身
+        LOS_ListTailInsertList(&parentCB->childrenList, childHead);//挂到老祖宗的孩子链表上
     }
 
     return;
@@ -1275,11 +1275,11 @@ STATIC UINT32 OsWaitOptionsCheck(UINT32 options)
     UINT32 flag = LOS_WAIT_WNOHANG | LOS_WAIT_WUNTRACED | LOS_WAIT_WCONTINUED;
 
     flag = ~flag & options;
-    if (flag != 0) {
+    if (flag != 0) {//三种方式中一种都没有
         return LOS_EINVAL;//无效参数
     }
 
-    if ((options & (LOS_WAIT_WCONTINUED | LOS_WAIT_WUNTRACED)) != 0) {
+    if ((options & (LOS_WAIT_WCONTINUED | LOS_WAIT_WUNTRACED)) != 0) {//暂不支持这两种方式.
         return LOS_EOPNOTSUPP;//不支持
     }
 
@@ -1299,7 +1299,7 @@ LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, V
     LosProcessCB *processCB = NULL;
     LosTaskCB *runTask = NULL;
 
-    ret = OsWaitOptionsCheck(options);//参数检查 只支持 LOS_WAIT_WNOHANG | LOS_WAIT_WUNTRACED 
+    ret = OsWaitOptionsCheck(options);//参数检查,只支持LOS_WAIT_WNOHANG
     if (ret != LOS_OK) {
         return -ret;
     }
@@ -1318,7 +1318,7 @@ LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, V
         return OsWaitRecycleChildPorcess(childCB, intSave, status);//回收进程
     }
 	//没有找到,看是否要返回还是去做个登记
-    if ((options & LOS_WAIT_WNOHANG) != 0) {//不登记的方式,立即返回
+    if ((options & LOS_WAIT_WNOHANG) != 0) {//有LOS_WAIT_WNOHANG标签
         runTask->waitFlag = 0;//等待标识置0
         pid = 0;//这里置0,是为了 return 0
         goto ERROR;
