@@ -164,6 +164,23 @@ typedef struct {
     unsigned long sig[MAX_SIG_ARRAY_IN_MUSL / sizeof(unsigned long)];
 } sigset_t_l;
 
+/***************************************************
+struct sigaction {
+	union {
+		void (*sa_handler)(int); //信号处理函数——普通版
+		void (*sa_sigaction)(int, siginfo_t *, void *);//信号处理函数——高级版
+	} __sa_handler;
+	sigset_t sa_mask;//指定信号处理程序执行过程中需要阻塞的信号；
+	int sa_flags;	 //标示位
+					 //	SA_RESTART：使被信号打断的syscall重新发起。
+					 //	SA_NOCLDSTOP：使父进程在它的子进程暂停或继续运行时不会收到 SIGCHLD 信号。
+					 //	SA_NOCLDWAIT：使父进程在它的子进程退出时不会收到SIGCHLD信号，这时子进程如果退出也不会成为僵 尸进程。
+					 //	SA_NODEFER：使对信号的屏蔽无效，即在信号处理函数执行期间仍能发出这个信号。
+					 //	SA_RESETHAND：信号处理之后重新设置为默认的处理方式。
+					 //	SA_SIGINFO：使用sa_sigaction成员而不是sa_handler作为信号处理函数。
+	void (*sa_restorer)(void);
+};
+****************************************************/
 typedef struct sigaction sigaction_t;
 
 struct sigactq {
@@ -218,8 +235,8 @@ typedef struct {//信号控制块(描述符)
     sigset_t sigprocmask; /* Signals that are blocked            */	//进程屏蔽了哪些信号
     sq_queue_t sigactionq;	//信号捕捉队列					
     LOS_DL_LIST waitList;	//等待链表,上面挂的是等待信号到来的任务, 请查找 OsTaskWait(&sigcb->waitList, timeout, TRUE)	理解						
-    sigset_t sigwaitmask; /* Waiting for pending signals         */	//任务在等待某某信号的掩码
-    siginfo_t sigunbinfo; /* Signal info when task unblocked     */	//任务解除阻止时的信号信息
+    sigset_t sigwaitmask; /* Waiting for pending signals         */	//任务在等待阻塞信号
+    siginfo_t sigunbinfo; /* Signal info when task unblocked     */	//任务解锁时的信号信息
     sig_switch_context context;	//信号切换上下文, 用于保存切换现场, 比如发生系统调用时的返回,涉及同一个任务的两个栈进行切换							
 } sig_cb;
 

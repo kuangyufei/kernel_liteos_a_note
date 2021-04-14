@@ -62,7 +62,7 @@
 
 ### **鸿蒙源码百篇博客 往期回顾**
 
-* [v47.xx (进程回收篇) | 老父亲如何向老祖宗临终托孤 ?  ](https://my.oschina.net/weharmony/blog/5017716) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/115672752) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/47_进程回收篇.html)[>]()**
+* [v47.xx (进程回收篇) | 进程在临终前如何向老祖宗托孤 ](https://my.oschina.net/weharmony/blog/5017716) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/115672752) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/47_进程回收篇.html)[>]()**
 
 * [v46.xx (特殊进程篇) | 龙生龙,凤生凤,老鼠生儿会打洞  ](https://my.oschina.net/weharmony/blog/5014444) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/115556505) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/46_特殊进程篇.html)[>]()**
 
@@ -92,7 +92,7 @@
 
 * [v33.xx (消息队列篇) | 进程间如何异步解耦传递大数据 ? ](https://my.oschina.net/weharmony/blog/4952961) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113815355) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/33_消息队列篇.html)[>]()**
 
-* [v32.xx (CPU篇) | 内核是如何描述CPU的? ](https://my.oschina.net/weharmony/blog/4952034) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113782749) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/32_CPU篇.html)[>]()**  
+* [v32.xx (cpu篇) | 内核是如何描述cpu的? ](https://my.oschina.net/weharmony/blog/4952034) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113782749) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/32_CPU篇.html)[>]()**  
 
 * [v31.xx (定时器篇) | 内核最高优先级任务是谁? ](https://my.oschina.net/weharmony/blog/4951625) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113774260) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/31_定时器机制篇.html)[>]()**
 
@@ -112,15 +112,15 @@
 
 * [v23.xx (汇编传参篇) | 汇编如何传递复杂的参数? ](https://my.oschina.net/u/3751245/blog/4927892) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113265990) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/23_汇编传参篇.html)[>]()**
 
-* [v22.xx (汇编基础篇) | CPU在哪里打卡上班? ](https://my.oschina.net/u/3751245/blog/4920361) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/112986628) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/22_汇编基础篇.html)[>]()**
+* [v22.xx (汇编基础篇) | cpu在哪里打卡上班? ](https://my.oschina.net/u/3751245/blog/4920361) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/112986628) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/22_汇编基础篇.html)[>]()**
 
-* [v21.xx (线程概念篇) | 是谁在不断的折腾CPU? ](https://my.oschina.net/u/3751245/blog/4915543) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/112870193) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/21_线程概念篇.html)[>]()**
+* [v21.xx (线程概念篇) | 是谁在不断的折腾cpu? ](https://my.oschina.net/u/3751245/blog/4915543) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/112870193) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/21_线程概念篇.html)[>]()**
 
 * [v20.xx (用栈方式篇) | 栈是构建底层运行的基础 ](https://my.oschina.net/u/3751245/blog/4893388) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/112534331) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/20_用栈方式篇.html)[>]()**
 
 * [v19.xx (位图管理篇) | 为何进程和线程优先级都是32个? ](https://my.oschina.net/u/3751245/blog/4888467) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/112394982) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/19_位图管理篇.html)[>]()**
 
-* [v18.xx (源码结构篇) | 内核500问你能答对多少? ](https://my.oschina.net/u/3751245/blog/4869137) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/111938348) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/18_源码结构篇.html)[>]()**
+* [v18.xx (源码结构篇) | 梳理内核源文件的作用和含义 ](https://my.oschina.net/u/3751245/blog/4869137) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/111938348) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/18_源码结构篇.html)[>]()**
 
 * [v17.xx (物理内存篇) | 这样记伙伴算法永远不会忘 ](https://my.oschina.net/u/3751245/blog/4842408) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/111765600) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/17_物理内存篇.html)[>]()**
 
@@ -138,19 +138,19 @@
 
 * [v10.xx (内存主奴篇) | 紫禁城的主子和奴才如何相处? ](https://my.oschina.net/u/3751245/blog/4646802) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108723672) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/10_内存主奴篇.html)[>]()**
   
-* [v09.xx (调度故事篇) | 用故事说内核调度 ](https://my.oschina.net/u/3751245/blog/4634668) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108745174) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/09_调度故事篇.html)[>]()**
+* [v09.xx (调度故事篇) | 用故事说内核调度过程 ](https://my.oschina.net/u/3751245/blog/4634668) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108745174) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/09_调度故事篇.html)[>]()**
 
 * [v08.xx (总目录) | 百万汉字注解 百篇博客分析 ](https://my.oschina.net/weharmony) **[<]()[  csdn](https://blog.csdn.net/kuangyufei) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/08_总目录.html)[>]()**
   
 * [v07.xx (调度机制篇) | 任务是如何被调度执行的? ](https://my.oschina.net/u/3751245/blog/4623040) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108705968) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/07_调度机制篇.html)[>]()**
 
-* [v06.xx (调度队列篇) | 就绪队列对调度的作用 ](https://my.oschina.net/u/3751245/blog/4606916) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108626671) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/06_调度队列篇.html)[>]()**
+* [v06.xx (调度队列篇) | 内核有多少个调度队列? ](https://my.oschina.net/u/3751245/blog/4606916) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108626671) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/06_调度队列篇.html)[>]()**
 
-* [v05.xx (任务管理篇) | 谁在让CPU忙忙碌碌? ](https://my.oschina.net/u/3751245/blog/4603919) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108661248) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/05_任务管理篇.html)[>]()**
+* [v05.xx (任务管理篇) | 任务池是如何管理的? ](https://my.oschina.net/u/3751245/blog/4603919) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108661248) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/05_任务管理篇.html)[>]()**
   
 * [v04.xx (任务调度篇) | 任务是内核调度的单元 ](https://my.oschina.net/weharmony/blog/4595539) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108621428) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/04_任务调度篇.html)[>]()**
 
-* [v03.xx (时钟任务篇) | 触发调度最大的动力来自哪里? ](https://my.oschina.net/u/3751245/blog/4574493) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108603468) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/03_时钟任务篇.html)[>]()**
+* [v03.xx (时钟任务篇) | 调度最大的源动力来自哪里? ](https://my.oschina.net/u/3751245/blog/4574493) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108603468) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/03_时钟任务篇.html)[>]()**
 
 * [v02.xx (进程管理篇) | 进程是内核资源管理单元 ](https://my.oschina.net/u/3751245/blog/4574429) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108595941) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/02_进程管理篇.html)[>]()**
 
@@ -195,7 +195,7 @@
 
 ### 喜欢请「点赞+关注+收藏」
 
-* [关注「鸿蒙内核源码分析」公众号](https://gitee.com/weharmony/docs/raw/master/pic/other/so1so.png)
+* [![鸿蒙内核源码分析](https://gitee.com/weharmony/docs/raw/master/pic/other/so1so.png)](https://gitee.com/weharmony/docs/raw/master/pic/other/so1so.png)
 
 * 各大站点搜 **「鸿蒙内核源码分析」**.欢迎转载,请注明出处.
   

@@ -513,7 +513,7 @@ int OsPause(void)
     oldSigprocmask = spcb->sig.sigprocmask;
     return OsSigSuspend(&oldSigprocmask);
 }
-//用set代替进程的原有掩码，并暂停进程执行，直到收到信号再恢复原有掩码并继续执行进程。
+//用参数set代替进程的原有掩码，并暂停进程执行，直到收到信号再恢复原有掩码并继续执行进程。
 int OsSigSuspend(const sigset_t *set)
 {
     unsigned int intSave;
@@ -545,7 +545,7 @@ int OsSigSuspend(const sigset_t *set)
     return -EINTR;
 }
 /**************************************************
-安装信号,函数用于改变进程接收到特定信号后的行为。
+信号安装,函数用于改变进程接收到特定信号后的行为。
 sig:信号的值，可以为除SIGKILL及SIGSTOP外的任何一个特定有效的信号（为这两个信号定义自己的处理函数，将导致信号安装错误）。
 act:设置对signal信号的新处理方式。
 oldact:原来对信号的处理方式。
