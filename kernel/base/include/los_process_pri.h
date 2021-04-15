@@ -245,7 +245,7 @@ typedef struct ProcessCB {
  * @ingroup los_process
  * Used to check if the process control block is unused.
  */
-STATIC INLINE BOOL OsProcessIsUnused(const LosProcessCB *processCB)//查下进程是否没在使用?
+STATIC INLINE BOOL OsProcessIsUnused(const LosProcessCB *processCB)//查下进程是否还在使用?
 {
     return ((processCB->processStatus & OS_PROCESS_FLAG_UNUSED) != 0);
 }

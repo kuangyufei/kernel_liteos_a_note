@@ -358,10 +358,10 @@ typedef struct {
 
 struct ProcessSignalInfo {//进程信号描述符
     siginfo_t *sigInfo;       /**< Signal to be dispatched */		//要发送的信号
-    LosTaskCB *defaultTcb;    /**< Default TCB */					//默认task,指的是信号的发送方
-    LosTaskCB *unblockedTcb;  /**< The signal unblock on this TCB*/	//此任务的信号阻塞解除
-    LosTaskCB *awakenedTcb;   /**< This TCB was awakened */			//被唤醒的任务
-    LosTaskCB *receivedTcb;   /**< This TCB received the signal */	//接收信号的任务
+    LosTaskCB *defaultTcb;    /**< Default TCB */					//默认task,默认接收信号的任务.
+    LosTaskCB *unblockedTcb;  /**< The signal unblock on this TCB*/	//信号在此TCB上解除阻塞
+    LosTaskCB *awakenedTcb;   /**< This TCB was awakened */			//即 任务在等待这个信号,此信号一来任务被唤醒.
+    LosTaskCB *receivedTcb;   /**< This TCB received the signal */	//如果没有屏蔽信号,任务将接收这个信号.
 };
 
 typedef int (*ForEachTaskCB)(LosTaskCB *tcb, void *arg);//回调任务函数,例如:进程被kill 9 时,通知所有任务善后处理

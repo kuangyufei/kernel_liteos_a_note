@@ -112,8 +112,8 @@ LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
         return regs;
     }
 
-    if (cmd == __NR_sigreturn) {//收到 __NR_sigreturn 信号
-        OsRestorSignalContext(regs);//恢复信号上下文
+    if (cmd == __NR_sigreturn) {//收到 __NR_sigreturn 信号,说明信号处理结束了
+        OsRestorSignalContext(regs);//恢复信号上下文,回到用户栈运行.
         return regs;
     }
 
@@ -146,7 +146,7 @@ LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
     }
 
     regs[REG_R0] = ret;//R0保存系统调用返回值
-    OsSaveSignalContext(regs);//保存信号上下文现场
+    OsSaveSignalContext(regs);//如果有信号要处理
 
     /* Return the last value of curent_regs.  This supports context switches on return from the exception.
      * That capability is only used with theSYS_context_switch system call.

@@ -238,12 +238,12 @@ int SysSigprocMask(int how, const sigset_t_l *restrict setl, sigset_t_l *restric
     /* Let nxsig_procmask do all of the work */
     return OsSigprocMask(how, setl, oldl);
 }
-//系统调用之干掉进程
+//系统调用之向进程发送信号
 int SysKill(pid_t pid, int sig)
 {
     return OsKillLock(pid, sig);
 }
-//系统调用之干掉线程
+//系统调用之之向进程发送信号
 int SysPthreadKill(pid_t pid, int sig)
 {
     return OsPthreadKill(pid, sig);
