@@ -80,21 +80,21 @@ int OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info)
 
     OS_RETURN_IF_NULL(sigcb);
     /* If signo is 0, not send signal, just check process or pthread exist */
-    if (info->si_signo == 0) {
+    if (info->si_signo == 0) {//如果信号为0,则不发送信号,只是作为检查进程和线程是否还存在.
         return 0;
     }
     masked = (bool)OsSigIsMember(&sigcb->sigprocmask, info->si_signo);//@note_thinking 这里还有 masked= -1的情况要处理!!!
-    if (masked) {//集合中已有该信号
+    if (masked) {//如果信号被屏蔽了,要看等待信号集,sigwaitmask
         /* If signal is in wait list and mask list, need unblock it */ //如果信号在等待列表和掩码列表中，需要解除阻止
         if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->si_signo)) {//waitList上挂的都是task,sigwaitmask表示是否在等si_signo
             OsTaskWake(stcb);//唤醒任务,从阻塞状态变成就绪态
-            OsSigEmptySet(&sigcb->sigwaitmask);//将sigwaitmask清空,都已经变成就绪状态了,当然就没有要等待的信号了.
+            OsSigEmptySet(&sigcb->sigwaitmask);//将sigwaitmask清空,都已经变成就绪状态了,就没必要等待的信号了.
         } else {
-            OsSigAddSet(&sigcb->sigPendFlag, info->si_signo);//
+            OsSigAddSet(&sigcb->sigPendFlag, info->si_signo);//将信号加入阻塞集
         }
-    } else {//
+    } else {//信号没有被屏蔽的处理
         /* unmasked signal actions */
-        OsSigAddSet(&sigcb->sigFlag, info->si_signo);
+        OsSigAddSet(&sigcb->sigFlag, info->si_signo);//不屏蔽的信号集
         if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->si_signo)) {
             OsTaskWake(stcb);
             OsSigEmptySet(&sigcb->sigwaitmask);
@@ -109,11 +109,11 @@ void OsSigMaskSwitch(LosTaskCB * const rtcb, sigset_t set)
     sigset_t unmaskset;
 
     rtcb->sig.sigprocmask = set;
-    unmaskset = GETUNMASKSET(rtcb->sig.sigprocmask, rtcb->sig.sigPendFlag);
+    unmaskset = GETUNMASKSET(rtcb->sig.sigprocmask, rtcb->sig.sigPendFlag);//过滤出没有被屏蔽的信号集
     if (unmaskset != NULL_SIGNAL_SET) {
         /* pendlist do */
-        rtcb->sig.sigFlag |= unmaskset;
-        rtcb->sig.sigPendFlag ^= unmaskset;
+        rtcb->sig.sigFlag |= unmaskset;	//加入不屏蔽信号集
+        rtcb->sig.sigPendFlag ^= unmaskset;//从阻塞集中去掉unmaskset
     }
 }
 /******************************************************************
@@ -167,7 +167,7 @@ int OsSigprocMask(int how, const sigset_t_l *setl, sigset_t_l *oldset)
                 break;
         }
         /* If pending mask not in sigmask, need set sigflag. */
-        OsSigMaskSwitch(spcb, spcb->sig.sigprocmask);
+        OsSigMaskSwitch(spcb, spcb->sig.sigprocmask);//更新与屏蔽信号相关的变量
     }
     SCHEDULER_UNLOCK(intSave);
 
@@ -285,7 +285,7 @@ int OsSigProcessSend(LosProcessCB *spcb, siginfo_t *sigInfo)
     if ((info.sigInfo != NULL) && (info.sigInfo->si_signo == SIGKILL)) {//需要干掉进程时 SIGKILL = 9， #linux kill 9 14
         (void)OsSigProcessForeachChild(spcb, SigProcessKillSigHandler, &info);//进程要被干掉了,通知所有task做善后处理
         OsSigAddSet(&spcb->sigShare, info.sigInfo->si_signo);//信号集中增加信号
-        OsWaitSignalToWakeProcess(spcb);//等待信号唤醒进程
+        OsWaitSignalToWakeProcess(spcb);//唤醒等待waitpid信号的进程
         return 0;
     } else {
         ret = OsSigProcessForeachChild(spcb, SigProcessSignalHandler, &info);//进程通知所有task处理信号
@@ -324,7 +324,7 @@ int OsDispatch(pid_t pid, siginfo_t *info, int permission)
         return -ESRCH;
     }
 #ifdef LOSCFG_SECURITY_CAPABILITY	//启用能力安全模式
-    LosProcessCB *current = OsCurrProcessGet();//获取当前进程
+    LosProcessCB *current = OsCurrProcessGet();//获取当前进程,检查当前进程是否有发送信号的权限.
 
     /* If the process you want to kill had been inactive, but still exist. should return LOS_OK */
     if (OsProcessIsInactive(spcb)) {//不向非活动进程发送信息,但返回OK
@@ -424,7 +424,7 @@ int OsSigAddSet(sigset_t *set, int signo)
         return -EINVAL;
     } else {
         /* In musl, sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */
-        signo -= 1;
+        signo -= 1;// 信号范围是 [1 ~ 64 ],而保存变量位的范围是[0 ~ 63]
         /* Add the signal to the set */
         *set |= SIGNO2SET((unsigned int)signo);//填充信号集
         return LOS_OK;
@@ -457,7 +457,7 @@ STATIC int FindFirstSetedBit(UINT64 n)
     for (count = 0; (count < UINT64_BIT_SIZE) && (n ^ 1ULL); n >>= 1, count++) {}
     return (count < UINT64_BIT_SIZE) ? count : (-1);
 }
-
+//等待信号时间
 int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
 {
     LosTaskCB *task = NULL;
@@ -561,14 +561,17 @@ int OsSigAction(int sig, const sigaction_t *act, sigaction_t *oact)
     if (!GOOD_SIGNO(sig) || sig < 1 || act == NULL) {
         return -EINVAL;
     }
-    if (LOS_ArchCopyFromUser(&action, act, sizeof(sigaction_t)) != LOS_OK) {
-        return -EFAULT;
-    }
-
-    if (sig == SIGSYS) {//系统调用中参数错，如系统调用号非法 
-        addr = OsGetSigHandler();//获取进程信号处理函数
-        if (addr == 0) {//进程没有信号处理函数时
-            OsSetSigHandler((unsigned long)(UINTPTR)action.sa_handler);//设置进程信号处理函数
+	//将数据从用户空间拷贝到内核空间
+	if (LOS_ArchCopyFromUser(&action, act, sizeof(sigaction_t)) != LOS_OK) {
+		return -EFAULT;
+	}
+	
+	if (sig == SIGSYS) {//系统调用中参数错，如系统调用号非法 
+		addr = OsGetSigHandler();//获取进程信号处理函数
+		if (addr == 0) {//进程没有设置信号处理函数时
+			OsSetSigHandler((unsigned long)(UINTPTR)action.sa_handler);//设置进程信号处理函数
+			//void (*sa_handler)(int); //信号处理函数——普通版
+			//void (*sa_sigaction)(int, siginfo_t *, void *);//信号处理函数——高级版
             return LOS_OK;
         }
         return -EINVAL;
@@ -591,9 +594,8 @@ void OsSaveSignalContext(unsigned int *sp)
 
     OS_RETURN_IF_VOID(sp == NULL);
     cpsr = OS_SYSCALL_GET_CPSR(sp);//获取系统调用时的 CPSR值
-
-    OS_RETURN_IF_VOID(((cpsr & CPSR_MASK_MODE) != CPSR_USER_MODE));//必须在用户模式下保存
-    SCHEDULER_LOCK(intSave);
+    OS_RETURN_IF_VOID(((cpsr & CPSR_MASK_MODE) != CPSR_USER_MODE));//必须工作在CPU的用户模式下,注意CPSR_USER_MODE(cpu层面)和OS_USER_MODE(系统层面)是两码事.
+    SCHEDULER_LOCK(intSave);//如有不明白前往 https://my.oschina.net/weharmony 翻看工作模式/信号分发/信号处理篇
     task = OsCurrTaskGet();
     process = OsCurrProcessGet();
     sigcb = &task->sig;//获取任务的信号控制块
@@ -612,7 +614,7 @@ void OsSaveSignalContext(unsigned int *sp)
         sigcb->sigFlag |= process->sigShare;//扩展任务的信号标签集
         unsigned int signo = (unsigned int)FindFirstSetedBit(sigcb->sigFlag) + 1;
         OsProcessExitCodeSignalSet(process, signo);//设置进程退出信号
-        sigcb->context.CPSR = cpsr;		//保存当前各寄存器的信息
+        sigcb->context.CPSR = cpsr;		//保存状态寄存器
         sigcb->context.PC = sp[REG_PC]; //获取被打断现场寄存器的值
         sigcb->context.USP = sp[REG_SP];//用户栈顶位置,以便能从内核栈切回用户栈
         sigcb->context.ULR = sp[REG_LR];//用户栈返回地址
@@ -706,8 +708,8 @@ void OsRestorSignalContext(unsigned int *sp)
     process = OsCurrProcessGet();//获取当前进程
     sp[REG_PC] = sigcb->context.PC;//指令寄存器
     OS_SYSCALL_SET_CPSR(sp, sigcb->context.CPSR);//重置程序状态寄存器
-    sp[REG_SP] = sigcb->context.USP;//堆栈指针, USP指的是 用户态的堆栈,即将回到用户栈继续运行
-    sp[REG_LR] = sigcb->context.ULR;//连接寄存器
+    sp[REG_SP] = sigcb->context.USP;//用户栈堆栈指针, USP指的是 用户态的堆栈,即将回到用户栈继续运行
+    sp[REG_LR] = sigcb->context.ULR;//返回用户栈代码执行位置
     sp[REG_R0] = sigcb->context.R0;
     sp[REG_R1] = sigcb->context.R1;
     sp[REG_R2] = sigcb->context.R2;

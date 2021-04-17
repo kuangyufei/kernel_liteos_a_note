@@ -209,7 +209,7 @@ excstatck_loop:	@清除中断和异常堆栈，并设置魔法数字用于检查
 excstatck_loop_done:
 warm_reset:	@初始化5大中断/异常环境
     /* initialize interrupt/exception environments */
-    mov    r0, #(CPSR_IRQ_DISABLE |CPSR_FIQ_DISABLE|CPSR_IRQ_MODE) @计划切到IRQ模式,并屏蔽IRQ和FIQ中断
+    mov    r0, #(CPSR_IRQ_DISABLE |CPSR_FIQ_DISABLE|CPSR_IRQ_MODE) @将切到IRQ模式,并屏蔽IRQ和FIQ中断
     msr    cpsr, r0 @执行切换计划,执行完成后CPU将切换到IRQ栈运行
     EXC_SP_SET __irq_stack_top, #OS_EXC_IRQ_STACK_SIZE @设置IRQ的SP
 

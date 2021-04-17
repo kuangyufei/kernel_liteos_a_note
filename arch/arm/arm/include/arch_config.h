@@ -155,7 +155,7 @@ SPSR（saved program status register）程序状态保存寄存器.
 #define OS_EXC_SVC_STACK_SIZE    0x2000	//8K
 #define OS_EXC_STACK_SIZE        0x1000	//4K
 
-#define REG_R0   0 			//头号寄存器,常用于传首个参数和返回值
+#define REG_R0   0 			//高频寄存器,传参/保存返回值
 #define REG_R1   1
 #define REG_R2   2
 #define REG_R3   3

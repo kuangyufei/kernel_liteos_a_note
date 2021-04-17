@@ -264,9 +264,9 @@ STATIC LosProcessCB *OsFindExitChildProcess(const LosProcessCB *processCB, INT32
 STATIC INLINE VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID)
 {
     taskCB->waitID = wakePID;
-    OsTaskWake(taskCB);
+    OsTaskWake(taskCB);//唤醒任务,将任务加入就绪队列
 #if (LOSCFG_KERNEL_SMP == YES)
-    LOS_MpSchedule(OS_MP_CPU_ALL);
+    LOS_MpSchedule(OS_MP_CPU_ALL);//向所有cpu发送调度指令
 #endif
 }
 //唤醒等待参数进程结束的任务
@@ -1121,7 +1121,7 @@ LITE_OS_SEC_TEXT INT32 LOS_GetProcessPriority(INT32 pid)
 {
     return OsGetProcessPriority(LOS_PRIO_PROCESS, pid);
 }
-//等待唤醒进程的信号
+//唤醒等待信号的进程
 LITE_OS_SEC_TEXT VOID OsWaitSignalToWakeProcess(LosProcessCB *processCB)
 {
     LosTaskCB *taskCB = NULL;

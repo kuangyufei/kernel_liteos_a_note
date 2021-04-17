@@ -111,8 +111,8 @@ LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
         PRINT_ERR("Syscall ID: error %d !!!\n", cmd);
         return regs;
     }
-
-    if (cmd == __NR_sigreturn) {//收到 __NR_sigreturn 信号,说明信号处理结束了
+	//用户进程信号处理函数完成后的系统调用 svc 119 #__NR_sigreturn
+    if (cmd == __NR_sigreturn) {
         OsRestorSignalContext(regs);//恢复信号上下文,回到用户栈运行.
         return regs;
     }
@@ -146,10 +146,10 @@ LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
     }
 
     regs[REG_R0] = ret;//R0保存系统调用返回值
-    OsSaveSignalContext(regs);//如果有信号要处理
+    OsSaveSignalContext(regs);//如果有信号要处理,将改写sp,r0,r1寄存器,使
 
     /* Return the last value of curent_regs.  This supports context switches on return from the exception.
-     * That capability is only used with theSYS_context_switch system call.
+     * That capability is only used with the SYS_context_switch system call.
      */
     return regs;//返回寄存器的值
 }

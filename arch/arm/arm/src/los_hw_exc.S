@@ -197,14 +197,14 @@ _osExceptSwiHdl: @软中断异常处理,注意此时已在内核栈运行
     STMFD   R3!, {R4}                                        @ Save the CPSR and r15(pc) 保存LR寄存器 => TaskContext.PC
     STMFD   R3, {R13, R14}^                                  @ Save user mode r13(sp) and r14(lr) 从右向左 保存 => TaskContext.LR和SP
     SUB     SP, SP, #4										 @ => TaskContext.resved
-    PUSH_FPU_REGS R1	@保存中断模式(用户模式模式)											
+    PUSH_FPU_REGS R1	@保存中断模式(用户模式)											
 	@保存任务上下文(TaskContext) 结束
     MOV     FP, #0                                           @ Init frame pointer
     CPSIE   I	@开中断,表明在系统调用期间可响应中断
     BLX     OsArmA32SyscallHandle	/*交给C语言处理系统调用,参数为R0,指向TaskContext的开始位置*/
     CPSID   I	@执行后续指令前必须先关中断
 	@恢复任务上下文(TaskContext) 开始
-    POP_FPU_REGS R1											 @弹出FP值给R1
+    POP_FPU_REGS R1											 @弹出FPU值给R1
     ADD     SP, SP,#4										 @ 定位到保存旧SPSR值的位置
     LDMFD   SP!, {R3}                                        @ Fetch the return SPSR 弹出旧SPSR值
     MSR     SPSR_cxsf, R3                                    @ Set the return mode SPSR 恢复该模式下的SPSR值
@@ -293,7 +293,7 @@ _osExceptFiqHdl: @快中断异常处理
 _osExcPageFault:  @缺页中断处理函数 
     SUB     R3, SP, #(8 * 4)                                 @ Save the start address of working registers.
     MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)      @ Switch to SVC mode, and disable all interrupts
-    MOV     R2, SP
+    MOV     R2, SP			
     @按 ExcContext 格式开始保存现场 因为 OsArmSharedPageFault 第二个参数就是 ExcContext
     STMFD   SP!, {R5}                                        @ Push original PC
     STMFD   SP!, {LR}                                        @ Push original svc LR

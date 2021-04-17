@@ -230,8 +230,8 @@ typedef struct {//信号切换上下文
 } sig_switch_context;
 
 typedef struct {//信号控制块(描述符)
-    sigset_t sigFlag;		//信号标签集
-    sigset_t sigPendFlag;	//信号阻塞标签集,记录因哪些信号被阻塞
+    sigset_t sigFlag;		//不屏蔽的信号集
+    sigset_t sigPendFlag;	//信号阻塞标签集,记录那些信号来过,任务依然阻塞的集合.即:这些信号不能唤醒任务
     sigset_t sigprocmask; /* Signals that are blocked            */	//任务屏蔽了哪些信号
     sq_queue_t sigactionq;	//信号捕捉队列					
     LOS_DL_LIST waitList;	//等待链表,上面挂的是等待信号到来的任务, 请查找 OsTaskWait(&sigcb->waitList, timeout, TRUE)	理解						
