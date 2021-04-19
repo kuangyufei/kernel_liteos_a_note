@@ -430,7 +430,7 @@ int OsSigAddSet(sigset_t *set, int signo)
         return LOS_OK;
     }
 }
-//获取已发送到进程，却被阻塞的所有信号
+//获取阻塞当前任务的信号集
 int OsSigPending(sigset_t *set)
 {
     LosTaskCB *tcb = NULL;

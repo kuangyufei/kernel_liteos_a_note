@@ -226,7 +226,7 @@ int SysSigAction(int sig, const sigaction_t *restrict sa, sigaction_t *restrict 
 
 /*****************************************************
 系统调用之进程信号屏蔽, 
-什么意思?简单说就是 一个信号来了进程要不要处理,阻塞就是不处理,注意不能阻塞SIGKILL和SIGSTOP信号,必须要处理.
+什么意思?简单说就是 一个信号来了进程要不要处理,屏蔽就是不处理,注意不能屏蔽SIGKILL和SIGSTOP信号,必须要处理.
 
 how
 SIG_BLOCK	  加入信号到进程屏蔽。set包含了希望阻塞的附加信号
@@ -286,12 +286,12 @@ int SysSigTimedWait(const sigset_t_l *setl, siginfo_t *info, const struct timesp
     }
     return (ret == 0 ? infoIntr.si_signo : ret);
 }
-//IPC系统调用之暂停任务
+//系统调用之暂停任务
 int SysPause(void)
 {
     return OsPause();
 }
-
+//获取阻塞当前任务的信号集
 int SysSigPending(sigset_t_l *setl)
 {
     sigset_t set;
@@ -311,7 +311,7 @@ int SysSigPending(sigset_t_l *setl)
     }
     return ret;
 }
-
+//
 int SysSigSuspend(sigset_t_l *setl)
 {
     sigset_t set;

@@ -1043,9 +1043,9 @@ LITE_OS_SEC_TEXT INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio
 
     SCHEDULER_UNLOCK(intSave);//还锁
 
-    LOS_MpSchedule(OS_MP_CPU_ALL);//
-    if (OS_SCHEDULER_ACTIVE) {//当前CPU是否激活了,激活才能调度
-        LOS_Schedule();//真正的任务调度算法从LOS_Schedule始
+    LOS_MpSchedule(OS_MP_CPU_ALL);//核间中断
+    if (OS_SCHEDULER_ACTIVE) {//调度是否活跃
+        LOS_Schedule();//发起调度
     }
     return LOS_OK;
 
@@ -1053,12 +1053,12 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);//还锁
     return -ret;
 }
-//接口封装 - 设置进程调度参数
+//设置进程调度方式
 LITE_OS_SEC_TEXT INT32 LOS_SetProcessScheduler(INT32 pid, UINT16 policy, UINT16 prio)
 {
     return OsSetProcessScheduler(LOS_PRIO_PROCESS, pid, prio, policy, TRUE);
 }
-//接口封装 - 获得进程调度参数
+//获得进程调度方式
 LITE_OS_SEC_TEXT INT32 LOS_GetProcessScheduler(INT32 pid)
 {
     LosProcessCB *processCB = NULL;
@@ -1144,7 +1144,6 @@ LITE_OS_SEC_TEXT VOID OsWaitSignalToWakeProcess(LosProcessCB *processCB)
 }
 //将任务挂入进程的waitList链表,表示这个任务在等待某个进程的退出
 //当被等待进程退出时候会将自己挂到父进程的退出子进程链表和进程组的退出进程链表.
-//
 STATIC VOID OsWaitInsertWaitListInOrder(LosTaskCB *runTask, LosProcessCB *processCB)
 {
     LOS_DL_LIST *head = &processCB->waitList;

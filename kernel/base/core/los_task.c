@@ -154,8 +154,8 @@ LITE_OS_SEC_BSS LosTaskCB    *g_taskCBArray;//任务池 128个
 LITE_OS_SEC_BSS LOS_DL_LIST  g_losFreeTask;//空闲任务链表
 LITE_OS_SEC_BSS LOS_DL_LIST  g_taskRecyleList;//回收任务链表
 LITE_OS_SEC_BSS UINT32       g_taskMaxNum;//任务最大个数
-LITE_OS_SEC_BSS UINT32       g_taskScheduled; /* one bit for each cores *///一位代表一个CPU core 的调度
-LITE_OS_SEC_BSS EVENT_CB_S   g_resourceEvent;//关于资源的事件
+LITE_OS_SEC_BSS UINT32       g_taskScheduled; /* one bit for each cores *///任务调度器,每个CPU都有对应位
+LITE_OS_SEC_BSS EVENT_CB_S   g_resourceEvent;//资源的事件
 /* spinlock for task module, only available on SMP mode */
 LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_taskSpin);
 
@@ -180,7 +180,7 @@ VOID OsSetMainTask()
     UINT32 i;
     CHAR *name = "osMain";
     errno_t ret;
-//为每个CPU core 设置mainTask
+	//为每个CPU core 设置mainTask
     for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
         g_mainTask[i].taskStatus = OS_TASK_STATUS_UNUSED;
         g_mainTask[i].taskID = LOSCFG_BASE_CORE_TSK_LIMIT;//128
@@ -193,10 +193,10 @@ VOID OsSetMainTask()
         if (ret != EOK) {
             g_mainTask[i].taskName[0] = '\0';
         }
-        LOS_ListInit(&g_mainTask[i].lockList);//初始化 每个CPU core 持有的锁链表
+        LOS_ListInit(&g_mainTask[i].lockList);//初始化任务锁链表,上面挂的是任务已申请到的互斥锁
     }
 }
-//空闲任务 注意 #define WEAK       __attribute__((weak)) 是用于防止crash的
+//空闲任务,每个CPU都有自己的空闲任务
 LITE_OS_SEC_TEXT WEAK VOID OsIdleTask(VOID)
 {
     while (1) {//只有一个死循环
@@ -222,20 +222,20 @@ LITE_OS_SEC_TEXT_MINOR VOID OsTaskPriModify(LosTaskCB *taskCB, UINT16 priority)
 
     LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));
 
-    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {//只有就绪队列
+    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {//就绪状态时,任务先出队列再入队列
         processCB = OS_PCB_FROM_PID(taskCB->processID);
         OS_TASK_PRI_QUEUE_DEQUEUE(processCB, taskCB);//先出队列再入队列
         taskCB->priority = priority;				//修改优先级
         OS_TASK_PRI_QUEUE_ENQUEUE(processCB, taskCB);//再入队列,从尾部插入
     } else {
-        taskCB->priority = priority;
+        taskCB->priority = priority;//不在就绪队列直接修改.
     }
 }
 //把任务加到CPU等待链表中
 LITE_OS_SEC_TEXT STATIC INLINE VOID OsAdd2TimerList(LosTaskCB *taskCB, UINT32 timeOut)
 {
     SET_SORTLIST_VALUE(&taskCB->sortList, timeOut);//设置idxRollNum的值为timeOut
-    OsAdd2SortLink(&OsPercpuGet()->taskSortLink, &taskCB->sortList);//将任务挂到定时器排序链表上
+    OsAdd2SortLink(&OsPercpuGet()->taskSortLink, &taskCB->sortList);//将任务挂到排序链表上
 #if (LOSCFG_KERNEL_SMP == YES)//注意:这里的排序不是传统意义上12345的排序,而是根据timeOut的值来决定放到CPU core哪个taskSortLink[0:7]链表上
     taskCB->timerCpu = ArchCurrCpuid();
 #endif
@@ -248,7 +248,7 @@ LITE_OS_SEC_TEXT STATIC INLINE VOID OsTimerListDelete(LosTaskCB *taskCB)
 #else
     SortLinkAttribute *sortLinkHeader = &g_percpu[0].taskSortLink;
 #endif
-    OsDeleteSortLink(sortLinkHeader, &taskCB->sortList);//把task从taskSortLink链表上摘出去
+    OsDeleteSortLink(sortLinkHeader, &taskCB->sortList);//把任务从taskSortLink链表上摘出去
 }
 //插入一个TCB到空闲链表
 STATIC INLINE VOID OsInsertTCBToFreeList(LosTaskCB *taskCB)
@@ -265,7 +265,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskJoinPostUnsafe(LosTaskCB *taskCB)
 {
     LosTaskCB *resumedTask = NULL;
 
-    if (taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {//任务贴有
+    if (taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {//join任务处理
         if (!LOS_ListEmpty(&taskCB->joinList)) {//注意到了这里 joinList中的节点身上都有阻塞标签
             resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(taskCB->joinList)));//通过贴有JOIN标签链表的第一个节点找到Task
             OsTaskWake(resumedTask);//唤醒任务
@@ -383,7 +383,7 @@ LITE_OS_SEC_TEXT VOID OsTaskScan(VOID)
         LOS_Schedule();//开始调度
     }
 }
-//初始化任务
+//初始化任务模块
 LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
 {
     UINT32 index;
@@ -396,21 +396,21 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
      * This memory is resident memory and is used to save the system resources
      * of task control block and will not be freed.
      */
-    g_taskCBArray = (LosTaskCB *)LOS_MemAlloc(m_aucSysMem0, size);//任务池 常驻内存,不被释放
+    g_taskCBArray = (LosTaskCB *)LOS_MemAlloc(m_aucSysMem0, size);//任务池常驻内存,不被释放
     if (g_taskCBArray == NULL) {
         return LOS_ERRNO_TSK_NO_MEMORY;
     }
     (VOID)memset_s(g_taskCBArray, size, 0, size);
 
-    LOS_ListInit(&g_losFreeTask);//空闲任务链表
-    LOS_ListInit(&g_taskRecyleList);//需回收任务链表
-    for (index = 0; index < g_taskMaxNum; index++) {
-        g_taskCBArray[index].taskStatus = OS_TASK_STATUS_UNUSED;
-        g_taskCBArray[index].taskID = index;//任务ID最大默认127
-        LOS_ListTailInsert(&g_losFreeTask, &g_taskCBArray[index].pendList);//都插入空闲任务列表 
-    }//注意:这里挂的是pendList节点,所以取TCB要通过 OS_TCB_FROM_PENDLIST 取.
+    LOS_ListInit(&g_losFreeTask);//初始化空闲任务链表
+    LOS_ListInit(&g_taskRecyleList);//初始化回收任务链表
+    for (index = 0; index < g_taskMaxNum; index++) {//任务挨个初始化
+        g_taskCBArray[index].taskStatus = OS_TASK_STATUS_UNUSED;//默认未使用,干净.
+        g_taskCBArray[index].taskID = index;//任务ID [0 ~ g_taskMaxNum - 1]
+        LOS_ListTailInsert(&g_losFreeTask, &g_taskCBArray[index].pendList);//通过pendList节点插入空闲任务列表 
+    }//注意:这里挂的是pendList节点,所以取TCB也要通过 OS_TCB_FROM_PENDLIST 取.
 
-    ret = OsPriQueueInit();//创建32个任务优先级队列，即32个双向循环链表
+    ret = OsPriQueueInit();//初始化32个任务优先级队列，即32个双向循环链表
     if (ret != LOS_OK) {
         return LOS_ERRNO_TSK_NO_MEMORY;
     }
@@ -435,7 +435,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
 {
     UINT32 ret;
     TSK_INIT_PARAM_S taskInitParam;
-    Percpu *perCpu = OsPercpuGet();//获取CPU信息
+    Percpu *perCpu = OsPercpuGet();//获取当前运行CPU信息
     UINT32 *idleTaskID = &perCpu->idleTaskID;//每个CPU都有一个空闲任务
 
     (VOID)memset_s((VOID *)(&taskInitParam), sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));//任务初始参数清0
@@ -1531,7 +1531,7 @@ LITE_OS_SEC_TEXT_MINOR VOID LOS_TaskLock(VOID)
     (*losTaskLock)++;//任务上锁数量自增
     LOS_IntRestore(intSave);//启用所有IRQ和FIQ中断
 }
-//解锁任务
+//任务解锁
 LITE_OS_SEC_TEXT_MINOR VOID LOS_TaskUnlock(VOID)
 {
     UINT32 intSave;
@@ -1584,7 +1584,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskInfoGet(UINT32 taskID, TSK_INFO_S *taskInf
 
     taskInfo->usTaskStatus = taskCB->taskStatus;
     taskInfo->usTaskPrio = taskCB->priority;
-    taskInfo->uwStackSize = taskCB->stackSize;//内核态栈大小
+    taskInfo->uwStackSize = taskCB->stackSize;	//内核态栈大小
     taskInfo->uwTopOfStack = taskCB->topOfStack;//内核态栈顶位置
     taskInfo->uwEventMask = taskCB->eventMask;
     taskInfo->taskEvent = taskCB->taskEvent;
@@ -1606,8 +1606,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskInfoGet(UINT32 taskID, TSK_INFO_S *taskInf
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
-//CPU亲和性（affinity）就是进程要在某个给定的CPU上尽量长时间地运行而不被迁移到其他处理器
-//把任务设置为由哪个CPU核调度,用于多核CPU情况,（该函数仅在SMP模式下支持）
+//CPU亲和性（affinity）将任务绑在指定CPU上,用于多核CPU情况,（该函数仅在SMP模式下支持）
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskCpuAffiSet(UINT32 taskID, UINT16 cpuAffiMask)
 {
 #if (LOSCFG_KERNEL_SMP == YES)
@@ -1648,8 +1647,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskCpuAffiSet(UINT32 taskID, UINT16 cpuAffiMa
     (VOID)cpuAffiMask;
     return LOS_OK;
 }
-//CPU亲和性（affinity）就是进程要在某个给定的CPU上尽量长时间地运行而不被迁移到其他处理器
-//获取task和CPU的亲和性信息
+//查询任务绑在哪个CPU上
 LITE_OS_SEC_TEXT_MINOR UINT16 LOS_TaskCpuAffiGet(UINT32 taskID)
 {
 #if (LOSCFG_KERNEL_SMP == YES)

@@ -14,19 +14,19 @@
 
 * 在每位码农的学职生涯,都应精读一遍内核源码.以浇筑好计算机知识大厦的地基，地基纵深的坚固程度，很大程度能决定了未来大厦能盖多高。为何一定要精读细品呢?
   
-* 因为内核代码本身并不太多，都是浓缩的精华，精读是让各个知识点高频出现，不孤立成点状记忆,让各点相连成面,刻意练习,闪爆大脑，如此短时间内容易结成一张高浓度，高密度的底层网，不断训练大脑肌肉记忆,将这些地基信息从临时记忆区转移到永久记忆区。跟骑单车一样，一旦学会，即便多年不骑，照样跨上就走，游刃有余。
+* 因为内核代码本身并不太多，都是浓缩的精华，精读是让各个知识点高频出现，不孤立成点状记忆,让各点相连成线,线线成面,刻意练习,闪爆大脑，如此短时间内容易结成一张高浓度，高密度的底层网，内核画面越描越清晰,越雕越深刻,不断训练大脑肌肉记忆,将记忆从临时区转移到永久区。跟骑单车一样，一旦学会，即便多年不骑，照样跨上就走，游刃有余。
 
 ### **热爱是所有的理由和答案**
 
 * 因大学时阅读 `linux 2.6` 内核痛并快乐的经历,一直有个心愿,如何让更多对内核感兴趣的朋友减少阅读时间,加速对计算机系统级的理解,而不至于过早的放弃.但因过程种种,多年一直没有行动,基本要放弃这件事了. 恰逢 **2020/9/10** 鸿蒙正式开源,重新激活了多年的心愿,就有那么点一发不可收拾了. 
   
-* 到 **2021/3/10** 刚好半年, 对内核源码的注解已完成了 **70%** ,对内核源码的博客分析已完成了**40篇**, 每天都很充实,很兴奋,连做梦内核代码都在往脑海里鱼贯而入.如此疯狂地做一件事还是当年谈恋爱的时候, 只因热爱, 热爱是所有的理由和答案. :P
+* 到 **2021/3/10** 刚好半年, 对内核源码的注解已完成了 **70%** ,对内核源码的博客分析已完成了**40篇**, 每天都很充实,很兴奋,连做梦内核代码都在往脑海里鱼贯而入.如此疯狂地做一件事还是当年谈恋爱的时候, 只因热爱, 热爱是所有的理由和答案. :P 
 
 ### **(〃･ิ‿･ิ)ゞ鸿蒙内核开发者**
 
 * 感谢开放原子开源基金会,致敬鸿蒙内核开发者提供了如此优秀的源码,一了多年的夙愿,津津乐道于此.精读内核源码当然是件很困难的事,时间上要以月甚至年为单位,但正因为很难才值得去做! 干困难事,必有所得. 专注聚焦,必有所获. 
 
-* 从内核一行行的代码中能深深感受到开发者各中艰辛与坚持,及鸿蒙生态对未来的价值,这些是张嘴就来的网络喷子们永远不能体会到的.可以毫不夸张的说鸿蒙内核源码可作为大学 **C语言**,**数据结构**,**操作系统**,**汇编语言**,**计算机组成原理** 五门课程的教学项目.如此宝库,不深入研究实在是暴殄天物,于心不忍,注者坚信鸿蒙大势所趋,未来可期,是其坚定的追随者和传播者.
+* 从内核一行行的代码中能深深感受到开发者各中艰辛与坚持,及鸿蒙生态对未来的价值,这些是张嘴就来的网络喷子们永远不能体会到的.可以毫不夸张的说鸿蒙内核源码可作为大学 **C语言**,**数据结构**,**操作系统**,**汇编语言**,**计算机组成原理** 五门课程的教学项目.如此宝库,不深入研究实在是暴殄天物,于心不忍,注者坚信鸿蒙大势所趋,未来可期,它必须成功,也必然成功,誓做其坚定的追随者和传播者.
 
 ### **加注方式是怎样的？**
 
@@ -52,15 +52,17 @@
 
 * **普通概念映射级:** 这一级不涉及专业知识,用大众所熟知的公共认知就能听明白是个什么概念,也就是说用一个普通人都懂的概念去诠释或者映射一个他们从没听过的概念.让陌生的知识点与大脑中烂熟于心的知识点建立多重链接,加深记忆.说别人能听得懂的话这很重要!!! 一个没学过计算机知识的卖菜大妈就不可能知道内核的基本运作了吗? 不一定!,在系列篇中试图用 **[鸿蒙内核源码分析(总目录)之故事篇](https://my.oschina.net/weharmony)** 去引导这一层级的认知,希望能卷入更多的人来关注基础软件,尤其是那些资本大鳄,加大对基础软件的投入.
 
-* **专业概念抽象级:** 对抽象的专业逻辑概念具体化认知, 比如虚拟内存,老百姓是听不懂的,学过计算机的人都懂,具体怎么实现的很多人又都不懂了,但这并不妨碍成为一个优秀的上层应用程序员,因为虚拟内存已经被抽象出来,目的是要屏蔽上层对它的现实认知.试图用 **[鸿蒙内核源码分析(总目录)百篇博客](https://my.oschina.net/weharmony)** 去拆解那些已经被抽象出来的专业概念, 希望能卷入更多对内核感兴趣的应用软件人才流入基础软件生态, 应用软件咱们是无敌宇宙,但基础软件却很薄弱.
+* **专业概念抽象级:** 对抽象的专业逻辑概念具体化认知, 比如虚拟内存,老百姓是听不懂的,学过计算机的人都懂,具体怎么实现的很多人又都不懂了,但这并不妨碍成为一个优秀的上层应用程序员,因为虚拟内存已经被抽象出来,目的是要屏蔽上层对它具体实现的认知.试图用 **[鸿蒙内核源码分析(总目录)百篇博客](https://my.oschina.net/weharmony)** 去拆解那些已经被抽象出来的专业概念, 希望能卷入更多对内核感兴趣的应用软件人才流入基础软件生态, 应用软件咱们是无敌宇宙,但基础软件却很薄弱.
 
-* **具体微观代码级:** 这一级是具体到每一行代码的实现,到了用代码指令级的地步,这段代码是什么意思?为什么要这么设计? **[鸿蒙内核源码注解分析](https://gitee.com/weharmony/kernel_liteos_a_note)** 试图从细微处去解释代码实现层,英文真的是天生适合设计成编程语言的人类语言,计算机的01码映射到人类世界的26个字母,诞生了太多的伟大奇迹.但我们的母语注定了很大部分人存在着自然语言层级的理解映射,希望对鸿蒙内核源码注解分析能让更多爱好者快速的理解内核,共同进步.
+* **具体微观代码级:** 这一级是具体到每一行代码的实现,到了用代码指令级的地步,这段代码是什么意思?为什么要这么设计?有没有更好的方案? **[鸿蒙内核源码注解分析](https://gitee.com/weharmony/kernel_liteos_a_note)** 试图从细微处去解释代码实现层,英文真的是天生适合设计成编程语言的人类语言,计算机的01码映射到人类世界的26个字母,诞生了太多的伟大奇迹.但我们的母语注定了很大部分人存在着自然语言层级的理解映射,希望鸿蒙内核源码注解分析能让更多爱好者快速的理解内核,共同进步.
 ## 百篇博客分析
 
-* 给 [鸿蒙内核源码加注释](https://gitee.com/weharmony/kernel_liteos_a_note) 过程中,整理出以下文章.内容多以 轻松口语化的故事,生活场景打比方,表格,图像 将尽可能多的内核知识点置入某种场景,具有画面感,形成多重联接路径,达到轻松记忆,甚至永久记忆的目的.
-* 鸿蒙内核源码注解分析系列不是百度教条式的在说清楚一堆诘屈聱牙的概念,那没什么意思.更希望是让内核变得栩栩如生,倍感亲切.确实有难度,自不量力,但已经出发,回头已是不可能的了.:P
+* 在给 [鸿蒙内核源码加中文注释](https://gitee.com/weharmony/kernel_liteos_a_note) 过程中,整理出以下文章.内容立足源码,常以生活场景打比方尽可能多的将内核知识点置入某种场景,具有画面感.而绝不是百度教条式的在说一堆诘屈聱牙的概念,那没什么意思.更希望让内核变得栩栩如生,倍感亲切.确实有难度,自不量力,但已经出发,回头已是不可能的了.:P
 
+* 文章和注解一样会反复修改, .xx代表修改的次数,持续完善源码注解和文档内容，精雕细琢，尽全力打磨精品内容.  
+  
 ### **鸿蒙源码百篇博客 往期回顾**
+* [v48.xx (信号生产篇) | 生产异步通讯信号的过程 ](https://my.oschina.net/weharmony/blog/5022149) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/115768099) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/48_信号分发篇.html)[>]()**
 
 * [v47.xx (进程回收篇) | 进程在临终前如何向老祖宗托孤 ](https://my.oschina.net/weharmony/blog/5017716) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/115672752) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/47_进程回收篇.html)[>]()**
 
@@ -74,25 +76,25 @@
 
 * [v42.xx (中断切换篇) | 中断切换到底在切换什么?](https://my.oschina.net/weharmony/blog/4990948) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114988891) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/42_中断切换篇.html)[>]()**
 
-* [v41.xx (任务切换篇) | 汇编逐行注解分析任务上下文 ](https://my.oschina.net/weharmony/blog/4988628) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114890180) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/41_任务切换篇.html)[>]()**
+* [v41.xx (任务切换篇) | 汇编告诉任务到底在切换什么 ](https://my.oschina.net/weharmony/blog/4988628) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114890180) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/41_任务切换篇.html)[>]()**
 
-* [v40.xx (汇编汇总篇) |  所有的汇编代码都在这里 ](https://my.oschina.net/weharmony/blog/4977924) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114597179) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/40_汇编汇总篇.html)[>]()**
+* [v40.xx (汇编汇总篇) | 所有的汇编代码都在这里 ](https://my.oschina.net/weharmony/blog/4977924) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114597179) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/40_汇编汇总篇.html)[>]()**
 
 * [v39.xx (异常接管篇) | 社会很单纯,复杂的是人 ](https://my.oschina.net/weharmony/blog/4973016) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114438285) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/39_异常接管篇.html)[>]()**
 
-* [v38.xx (寄存器篇) | ARM所有寄存器一网打尽,不再神秘 ](https://my.oschina.net/weharmony/blog/4969487) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114326994) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/38_寄存器篇.html)[>]()**
+* [v38.xx (寄存器篇) | arm所有寄存器一网打尽,不再神秘 ](https://my.oschina.net/weharmony/blog/4969487) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114326994) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/38_寄存器篇.html)[>]()**
 
-* [v37.xx (系统调用篇) | 全盘解剖系统调用实现过程 ](https://my.oschina.net/weharmony/blog/4967613) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114285166) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/37_系统调用篇.html)[>]()**
+* [v37.xx (系统调用篇) | 系统调用到底经历了什么 ](https://my.oschina.net/weharmony/blog/4967613) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114285166) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/37_系统调用篇.html)[>]()**
 
-* [v36.xx (工作模式篇) | CPU是韦小宝,有哪七个老婆? ](https://my.oschina.net/weharmony/blog/4965052) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114168567) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/36_工作模式篇.html)[>]()**
+* [v36.xx (工作模式篇) | cpu是韦小宝,有哪七个老婆? ](https://my.oschina.net/weharmony/blog/4965052) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/114168567) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/36_工作模式篇.html)[>]()**
 
-* [v35.xx (时间管理篇) | Tick是操作系统的基本时间单位 ](https://my.oschina.net/weharmony/blog/4956163) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113867785) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/35_时间管理篇.html)[>]()**
+* [v35.xx (时间管理篇) | tick是操作系统的基本时间单位 ](https://my.oschina.net/weharmony/blog/4956163) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113867785) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/35_时间管理篇.html)[>]()**
 
 * [v34.xx (原子操作篇) | 是谁在为原子操作保驾护航? ](https://my.oschina.net/weharmony/blog/4955290) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113850603) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/34_原子操作篇.html)[>]()**
 
 * [v33.xx (消息队列篇) | 进程间如何异步解耦传递大数据 ? ](https://my.oschina.net/weharmony/blog/4952961) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113815355) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/33_消息队列篇.html)[>]()**
 
-* [v32.xx (cpu篇) | 内核是如何描述cpu的? ](https://my.oschina.net/weharmony/blog/4952034) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113782749) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/32_CPU篇.html)[>]()**  
+* [v32.xx (cpu篇) | 整个内核就是一个死循环 ](https://my.oschina.net/weharmony/blog/4952034) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113782749) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/32_CPU篇.html)[>]()**  
 
 * [v31.xx (定时器篇) | 内核最高优先级任务是谁? ](https://my.oschina.net/weharmony/blog/4951625) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/113774260) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/31_定时器机制篇.html)[>]()**
 
@@ -157,17 +159,15 @@
 * [v01.xx (双向链表篇) | 谁是内核最重要结构体? ](https://my.oschina.net/u/3751245/blog/4572304) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108585659) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/01_双向链表篇.html)[>]()**
 
 
-### 主流站点
+### 主流站点输出
 
-感谢 `oschina`，`csdn`，`华为开发者论坛`, `51cto`, `掘金`,`电子发烧友`，以及其他小伙伴对系列文章的转载和推荐，无以为报，唯有不断的深挖内核地基，输出更多内容，错漏之处请多见谅，会持续完善源码注解和文档内容，精雕细琢，尽全力打磨精品内容。
-
-### 文章输出站点
+感谢 `oschina`，`csdn`，`华为开发者论坛`, `51cto`, `掘金`,`电子发烧友`，以及其他小伙伴对系列文章的转载和推荐。
 
 [oschina |](https://my.oschina.net/weharmony)[ csdn  |](https://blog.csdn.net/kuangyufei)[ 51cto |](https://harmonyos.51cto.com/column/34)[ 简书 |](https://www.jianshu.com/u/f7f5bf861106)[ 掘金 |](https://harmonyos.51cto.com/column/34)[ 华为开发者论坛 |](https://developer.huawei.com/consumer/cn/forum/)[ 头条号 |](https://gitee.com/weharmony/docs/raw/master/pic/other/tt.png)[ 公众号 |](https://gitee.com/weharmony/docs/raw/master/pic/other/so1so.png)[ weharmony.gitee.io |](https://weharmony.gitee.io)[ weharmony.github.io |](https://weharmony.github.io)
 
 ## **Fork Me**
 
-* 注解几乎占用了所有的空闲时间,每天都会更新,每天都有新感悟,一行行源码在不断的刷新和拓展对内核知识的认知边界. 对已经关注和fork的同学请及时同步最新的注解内容. 内核知识点体量实在太过巨大,过程会反复修正完善,力求言简意赅,词达本意.肯定会有诸多错漏之处,请多包涵. :)  
+注解几乎占用了所有的空闲时间,每天都会更新,每天都有新感悟,一行行源码在不断的刷新和拓展对内核知识的认知边界. 对已经关注和fork的同学请及时同步最新的注解内容. 内核知识点体量实在太过巨大,跟软件一样,会存在bug,但会反复修正完善,力求言简意赅,词达本意.
 
 ### **有哪些特殊的记号**
 

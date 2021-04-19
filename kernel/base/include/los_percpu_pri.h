@@ -51,9 +51,9 @@ typedef enum {
 #endif
 
 typedef struct {//内核对cpu的描述
-    SortLinkAttribute taskSortLink;             /* task sort link */	//task wait/delay 排序链表
-    SortLinkAttribute swtmrSortLink;            /* swtmr sort link */	//定时器排序链表
-    UINT32 idleTaskID;                          /* idle task id */		//空闲任务ID 见于 OsIdleTaskCreate
+    SortLinkAttribute taskSortLink;             /* task sort link */	//挂等待和延时的任务
+    SortLinkAttribute swtmrSortLink;            /* swtmr sort link */	//挂定时器
+    UINT32 idleTaskID;                          /* idle task id */		//每个CPU都有一个空闲任务 见于 OsIdleTaskCreate
     UINT32 taskLockCnt;                         /* task lock flag */	//任务锁的数量,当 > 0 的时候,需要重新调度了
     UINT32 swtmrHandlerQueue;                   /* software timer timeout queue id */	//软时钟超时队列句柄
     UINT32 swtmrTaskID;                         /* software timer task id */	//软时钟任务ID
