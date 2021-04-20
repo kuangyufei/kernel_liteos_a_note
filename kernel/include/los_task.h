@@ -50,7 +50,7 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+//cpuid转换 2 -> 0100
 #define CPUID_TO_AFFI_MASK(cpuid)               (0x1u << (cpuid))
 
 /**
@@ -479,10 +479,10 @@ typedef VOID *(*TSK_ENTRY_FUNC)(UINTPTR param1,
  * You are not allowed to add any fields and adjust fields to the structure
  */
 typedef struct {//用户态栈信息,(按递减满栈方式注解)
-    UINTPTR         userArea;	//用户区域
-    UINTPTR         userSP;		//用户态下栈底位置
-    UINTPTR         userMapBase;//用户态下映射基地址,代表栈顶位置.
-    UINT32          userMapSize;//用户态下映射大小,代表栈大小
+    UINTPTR         userArea;	//用户空间的堆区开始位置
+    UINTPTR         userSP;		//用户空间当前栈指针位置
+    UINTPTR         userMapBase;//用户空间的栈顶位置.
+    UINT32          userMapSize;//用户空间的栈大小,栈底 = userMapBase + userMapSize
 } UserTaskParam;
 
 /**

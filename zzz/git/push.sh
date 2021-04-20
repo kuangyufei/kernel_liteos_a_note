@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '完善之前的一些注解
+git commit -m  '完善任务在用户态运行的注解
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     https://my.oschina.net/weharmony
 '

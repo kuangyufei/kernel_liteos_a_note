@@ -154,7 +154,7 @@ LITE_OS_SEC_BSS LosTaskCB    *g_taskCBArray;//任务池 128个
 LITE_OS_SEC_BSS LOS_DL_LIST  g_losFreeTask;//空闲任务链表
 LITE_OS_SEC_BSS LOS_DL_LIST  g_taskRecyleList;//回收任务链表
 LITE_OS_SEC_BSS UINT32       g_taskMaxNum;//任务最大个数
-LITE_OS_SEC_BSS UINT32       g_taskScheduled; /* one bit for each cores *///任务调度器,每个CPU都有对应位
+LITE_OS_SEC_BSS UINT32       g_taskScheduled; /* one bit for each cores *///任务调度器,每个CPU都有对应位 
 LITE_OS_SEC_BSS EVENT_CB_S   g_resourceEvent;//资源的事件
 /* spinlock for task module, only available on SMP mode */
 LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_taskSpin);
@@ -961,7 +961,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreate(UINT32 *taskID, TSK_INIT_PARAM_S *in
 
     /* in case created task not running on this core,
        schedule or not depends on other schedulers status. */
-    LOS_MpSchedule(OS_MP_CPU_ALL);//如果创建的任务没有在这个核心上运行，是否调度取决于其他调度程序的状态。
+    LOS_MpSchedule(OS_MP_CPU_ALL);//向所有cpu发送调度
     if (OS_SCHEDULER_ACTIVE) {//当前CPU核处于可调度状态
         LOS_Schedule();//发起调度
     }
@@ -998,8 +998,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskResume(UINT32 taskID)
 
     taskCB->taskStatus &= ~OS_TASK_STATUS_SUSPEND;
     if (!(taskCB->taskStatus & OS_CHECK_TASK_BLOCK)) {
-        OS_TASK_SCHED_QUEUE_ENQUEUE(taskCB, OS_PROCESS_STATUS_PEND);
-        if (OS_SCHEDULER_ACTIVE) {
+        OS_TASK_SCHED_QUEUE_ENQUEUE(taskCB, OS_PROCESS_STATUS_PEND);//去掉任务阻塞标签,加入就绪队列
+        if (OS_SCHEDULER_ACTIVE) {//当前CPU是否可调度
             needSched = TRUE;
         }
     }
@@ -1007,7 +1007,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskResume(UINT32 taskID)
     SCHEDULER_UNLOCK(intSave);
 
     if (needSched) {//需要调度
-        LOS_MpSchedule(OS_MP_CPU_ALL);//
+        LOS_MpSchedule(OS_MP_CPU_ALL);
         LOS_Schedule();
     }
 
@@ -1631,7 +1631,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskCpuAffiSet(UINT32 taskID, UINT16 cpuAffiMa
     }
 
     taskCB->cpuAffiMask = cpuAffiMask;//参数set给tcb
-    currCpuMask = CPUID_TO_AFFI_MASK(taskCB->currCpu);
+    currCpuMask = CPUID_TO_AFFI_MASK(taskCB->currCpu);//获取掩码位 0100 代表 2号CPU
     if (!(currCpuMask & cpuAffiMask)) {
         needSched = TRUE;//需要调度
         taskCB->signal = SIGNAL_AFFI;//设置信号
@@ -1639,7 +1639,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskCpuAffiSet(UINT32 taskID, UINT16 cpuAffiMa
     SCHEDULER_UNLOCK(intSave);
 
     if (needSched && OS_SCHEDULER_ACTIVE) {
-        LOS_MpSchedule(currCpuMask);//发送信号调度信号给currCpuMask 1位上的CPU
+        LOS_MpSchedule(currCpuMask);//发送信号调度信号给目标CPU
         LOS_Schedule();//申请调度
     }
 #endif
@@ -1647,7 +1647,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskCpuAffiSet(UINT32 taskID, UINT16 cpuAffiMa
     (VOID)cpuAffiMask;
     return LOS_OK;
 }
-//查询任务绑在哪个CPU上
+//查询任务被绑在哪个CPU上
 LITE_OS_SEC_TEXT_MINOR UINT16 LOS_TaskCpuAffiGet(UINT32 taskID)
 {
 #if (LOSCFG_KERNEL_SMP == YES)
@@ -1660,20 +1660,20 @@ LITE_OS_SEC_TEXT_MINOR UINT16 LOS_TaskCpuAffiGet(UINT32 taskID)
         return INVALID_CPU_AFFI_MASK;
     }
 
-    taskCB = OS_TCB_FROM_TID(taskID);
+    taskCB = OS_TCB_FROM_TID(taskID);//获取任务实体
     SCHEDULER_LOCK(intSave);
-    if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {
+    if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) { //任务必须在使用
         SCHEDULER_UNLOCK(intSave);
         return INVALID_CPU_AFFI_MASK;
     }
 
-    cpuAffiMask = taskCB->cpuAffiMask;
+    cpuAffiMask = taskCB->cpuAffiMask; //获取亲和力掩码
     SCHEDULER_UNLOCK(intSave);
 
     return cpuAffiMask;
 #else
     (VOID)taskID;
-    return 1;
+    return 1;//单核情况直接返回1 ,0号cpu对应0x01
 #endif
 }
 
@@ -1841,7 +1841,7 @@ LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
 #endif
     SCHEDULER_UNLOCK(intSave);
 
-    LOS_ASSERT(processCB->threadNumber == 1);//这一趟下来,断言进程只有一个正在活动的任务了
+    LOS_ASSERT(processCB->threadNumber == 1);//这一趟下来,进程只有一个正在活动的任务
     return;
 }
 //任务退群并销毁,进入任务的回收链表之后再进入空闲链表,等着再次被分配使用.
@@ -1909,18 +1909,18 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsCreateUserTaskParamCheck(UINT32 processID,
     }
 
     userParam = &param->userParam;
-    if ((processID == OS_INVALID_VALUE) && !LOS_IsUserAddress(userParam->userArea)) {
+    if ((processID == OS_INVALID_VALUE) && !LOS_IsUserAddress(userParam->userArea)) {//堆地址必须在用户空间
         return OS_INVALID_VALUE;
     }
 
-    if (!LOS_IsUserAddress((UINTPTR)param->pfnTaskEntry)) {
+    if (!LOS_IsUserAddress((UINTPTR)param->pfnTaskEntry)) {//入口函数必须在用户空间
         return OS_INVALID_VALUE;
     }
-
+	//堆栈必须在用户空间
     if ((!userParam->userMapSize) || !LOS_IsUserAddressRange(userParam->userMapBase, userParam->userMapSize)) {
         return OS_INVALID_VALUE;
     }
-
+	//检查堆,栈范围
     if (userParam->userArea &&
         ((userParam->userSP <= userParam->userMapBase) ||
         (userParam->userSP > (userParam->userMapBase + userParam->userMapSize)))) {
@@ -1937,13 +1937,13 @@ LITE_OS_SEC_TEXT_INIT INT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S 
     UINT32 ret;
     UINT32 intSave;
 
-    ret = OsCreateUserTaskParamCheck(processID, initParam);
+    ret = OsCreateUserTaskParamCheck(processID, initParam);//检查参数,堆栈,入口地址必须在用户空间
     if (ret != LOS_OK) {
         return ret;
     }
-
-    initParam->uwStackSize = OS_USER_TASK_SYSCALL_SATCK_SIZE;//设置任务栈大小,这里用了用户态下系统调用的栈大小(12K)      
-    initParam->usTaskPrio = OS_TASK_PRIORITY_LOWEST;//设置默认优先级
+	//这里可看出一个任务有两个栈,内核态栈(内核指定栈大小)和用户态栈(用户指定栈大小)
+    initParam->uwStackSize = OS_USER_TASK_SYSCALL_SATCK_SIZE;//设置内核栈大小,即处理系统调用的栈(12K)      
+    initParam->usTaskPrio = OS_TASK_PRIORITY_LOWEST;//设置最低优先级 31级
     initParam->policy = LOS_SCHED_RR;//调度方式为抢占式,注意鸿蒙不仅仅只支持抢占式调度方式
     if (processID == OS_INVALID_VALUE) {//外面没指定进程ID的处理
         SCHEDULER_LOCK(intSave);
@@ -1953,7 +1953,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S 
         SCHEDULER_UNLOCK(intSave);
     } else {//进程已经创建
         processCB = OS_PCB_FROM_PID(processID);//通过ID拿到进程PCB
-        if (!(processCB->processStatus & (OS_PROCESS_STATUS_INIT | OS_PROCESS_STATUS_RUNNING))) {//进程状态有初始和正在运行两个标签时
+        if (!(processCB->processStatus & (OS_PROCESS_STATUS_INIT | OS_PROCESS_STATUS_RUNNING))) {//进程未初始化和未正在运行时
             return OS_INVALID_VALUE;//@note_why 为什么这两种情况下会创建任务失败
         }
         initParam->processID = processID;//进程ID赋值

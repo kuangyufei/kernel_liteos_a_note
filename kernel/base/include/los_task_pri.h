@@ -294,7 +294,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 #define OS_TCB_NAME_LEN 32
 
 typedef struct {
-    VOID            *stackPointer;      /**< Task stack pointer */	//内核栈指针位置,内核栈默认保存了初始的上下文信息.
+    VOID            *stackPointer;      /**< Task stack pointer */	//栈指针SP,任务当前执行栈的位置(用户栈和内核栈切换)
     UINT16          taskStatus;         /**< Task status */			//各种状态标签，可以拥有多种标签，按位标识
     UINT16          priority;           /**< Task priority */		//任务优先级[0:31],默认是31级
     UINT16          policy;				//任务的调度方式(三种 .. LOS_SCHED_RR )
@@ -312,7 +312,7 @@ typedef struct {
     LOS_DL_LIST     pendList;           /**< Task pend node */		//如果任务阻塞时就通过它挂到各种阻塞情况的链表上,比如OsTaskWait时
     LOS_DL_LIST     threadList;         /**< thread list */			//挂到所属进程的线程链表上
     SortLinkList    sortList;           /**< Task sortlink node */	//task wait,delay时挂到cpu core的taskSortLink链表上
-    UINT32          eventMask;          /**< Event mask */			//对哪些事件进行屏蔽
+    UINT32          eventMask;          /**< Event mask */			//任务对哪些事件进行屏蔽
     UINT32          eventMode;          /**< Event mode */			//事件三种模式(LOS_WAITMODE_AND,LOS_WAITMODE_OR,LOS_WAITMODE_CLR)
     UINT32          priBitMap;          /**< BitMap for recording the change of task priority,	//任务在执行过程中优先级会经常变化，这个变量用来记录所有曾经变化
                                              the priority can not be greater than 31 */			//过的优先级，例如 ..01001011 曾经有过 0,1,3,6 优先级
@@ -334,9 +334,9 @@ typedef struct {
     SchedStat       schedStat;          /**< Schedule statistics */	//调度统计
 #endif
 #endif
-    UINTPTR         userArea;			//用户空间,由运行时划定,根据运行态不同而不同
-    UINTPTR         userMapBase;		//用户态栈基地址,内存来自用户空间,和topOfStack有本质的区别.
-    UINT32          userMapSize;        /**< user thread stack size ,real size : userMapSize + USER_STACK_MIN_SIZE */
+    UINTPTR         userArea;			//用户空间的堆区开始位置
+    UINTPTR         userMapBase;		//用户空间的栈顶位置,内存来自用户空间,和topOfStack有本质的区别.
+    UINT32          userMapSize;        /**< user thread stack size ,real size : userMapSize + USER_STACK_MIN_SIZE *///用户栈大小
     UINT32          processID;          /**< Which belong process *///所属进程ID
     FutexNode       futex;				//实现快锁功能
     LOS_DL_LIST     joinList;           /**< join list */ //联结链表,允许任务之间相互释放彼此
@@ -456,9 +456,8 @@ STATIC INLINE BOOL OsTaskIsInactive(const LosTaskCB *taskCB)
 #define OS_TASK_PRI_QUEUE_DEQUEUE(processCB, taskCB) \
     OsPriQueueDequeue((processCB)->threadPriQueueList, &((processCB)->threadScheduleMap), &((taskCB)->pendList))
 
-//入和出 任务调度就绪队列
-#define OS_TASK_SCHED_QUEUE_ENQUEUE(taskCB, status) OsTaskSchedQueueEnqueue(taskCB, status)
-#define OS_TASK_SCHED_QUEUE_DEQUEUE(taskCB, status) OsTaskSchedQueueDequeue(taskCB, status)
+#define OS_TASK_SCHED_QUEUE_ENQUEUE(taskCB, status) OsTaskSchedQueueEnqueue(taskCB, status) //加入任务调度就绪队列
+#define OS_TASK_SCHED_QUEUE_DEQUEUE(taskCB, status) OsTaskSchedQueueDequeue(taskCB, status)	//退出任务调度就绪队列
 //入和出 进程的就绪队列 ，还提供了从头部入队列的方法
 #define OS_PROCESS_PRI_QUEUE_ENQUEUE(processCB) \	
     OsPriQueueEnqueue(g_priQueueList, &g_priQueueBitmap, &((processCB)->pendList), (processCB)->priority)

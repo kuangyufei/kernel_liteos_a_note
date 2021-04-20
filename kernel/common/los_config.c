@@ -162,7 +162,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsStart(VOID)
     runProcess->processStatus = OS_PROCESS_RUNTASK_COUNT_ADD(runProcess->processStatus);
 #endif
 
-    OS_SCHEDULER_SET(cpuid);//设置调度cpu id
+    OS_SCHEDULER_SET(cpuid);//设置可发生调度的cpuid
 
     PRINTK("cpu %d entering scheduler\n", cpuid);
     OsStartToRun(taskCB);//任务开始跑,注意OsStartToRun是一个汇编函数 见于 los_dispatch.s

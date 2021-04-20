@@ -42,20 +42,20 @@ extern "C" {
 #endif /* __cplusplus */
 
 extern UINT32 g_taskScheduled;
-//调度标志,一个位代表一个CPU核,这么看鸿蒙最大支持32核,例如:4个CPU,每个4核 就一共16个核,足够了.该标志用于在调用OSStartToRun之前防止内核调度
+//设置调度标识位,对应位设置为1,一个位代表一个CPU核,此标志用于在OSStartRun之前阻止内核调度
 /*
  * Schedule flag, one bit represents one core.
  * This flag is used to prevent kernel scheduling before OSStartToRun.
  */
 #define OS_SCHEDULER_SET(cpuid) do {     \
     g_taskScheduled |= (1U << (cpuid));  \
-} while (0);//对应位设置为1
-
+} while (0);
+//清楚调度标识位,对应位设置为0
 #define OS_SCHEDULER_CLR(cpuid) do {     \
     g_taskScheduled &= ~(1U << (cpuid)); \
-} while (0);//对应位设置为0
+} while (0);
 
-#define OS_SCHEDULER_ACTIVE (g_taskScheduled & (1U << ArchCurrCpuid()))//代表位上是否为1
+#define OS_SCHEDULER_ACTIVE (g_taskScheduled & (1U << ArchCurrCpuid()))//用于判断当前cpu是否可调度
 
 typedef enum {
     INT_NO_RESCH = 0,   /* no needs to schedule */
