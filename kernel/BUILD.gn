@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -30,30 +30,27 @@
 import("//build/lite/config/component/lite_component.gni")
 
 lite_component("kernel") {
-    features = [
-        "base",
-        "syscall",
-        "user",
-    ]
-    if (LOSCFG_KERNEL_CPUP) {
-        features += [ "extended/cpup" ]
-    }
-    if (LOSCFG_KERNEL_MPU) {
-        features += [ "extended/mpu" ]
-    }
-    if (LOSCFG_KERNEL_CPPSUPPORT) {
-        features += [ "extended/cppsupport" ]
-    }
-    if (LOSCFG_KERNEL_DYNLOAD) {
-        features += [ "extended/dynload" ]
-    }
-    if (LOSCFG_KERNEL_TICKLESS) {
-        features += [ "extended/tickless" ]
-    }
-    if (LOSCFG_KERNEL_TRACE) {
-        features += [ "extended/trace" ]
-    }
-    if (LOSCFG_KERNEL_VDSO) {
-        features += [ "extended/vdso" ]
-    }
+  features = [
+    "base",
+    "syscall",
+    "user",
+  ]
+  if (LOSCFG_KERNEL_CPUP) {
+    features += [ "extended/cpup" ]
+  }
+  if (LOSCFG_KERNEL_MPU) {
+    features += [ "extended/mpu" ]
+  }
+  if (LOSCFG_KERNEL_CPPSUPPORT) {
+    features += [ "extended/cppsupport" ]
+  }
+  if (LOSCFG_KERNEL_DYNLOAD) {
+    features += [ "extended/dynload" ]
+  }
+  if (LOSCFG_KERNEL_TRACE) {
+    features += [ "extended/trace" ]
+  }
+  if (LOSCFG_KERNEL_VDSO) {
+    features += [ "extended/vdso" ]
+  }
 }

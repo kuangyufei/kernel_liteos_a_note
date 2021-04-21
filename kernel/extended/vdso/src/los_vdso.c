@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -39,10 +39,10 @@
 LITE_VDSO_DATAPAGE VdsoDataPage g_vdsoDataPage __attribute__((__used__));
 
 STATIC size_t g_vdsoSize;
-//初始化 虚拟动态链接对象区（Virtual Dynamically Shared Object、VDSO）
+
 UINT32 OsInitVdso(VOID)
 {
-    g_vdsoSize = &__vdso_text_end - &__vdso_data_start;//计算 vdso 大小
+    g_vdsoSize = &__vdso_text_end - &__vdso_data_start;
 
     if (memcmp((CHAR *)(&__vdso_text_start), ELF_HEAD, ELF_HEAD_LEN)) {
         PRINT_ERR("VDSO Init Failed!\n");
@@ -50,7 +50,7 @@ UINT32 OsInitVdso(VOID)
     }
     return LOS_OK;
 }
-//映射VDSO区
+
 STATIC INT32 OsMapVdso(LosVmSpace *space, size_t len, PADDR_T paddr, VADDR_T vaddr, UINT32 flag)
 {
     STATUS_T ret;
@@ -67,7 +67,7 @@ STATIC INT32 OsMapVdso(LosVmSpace *space, size_t len, PADDR_T paddr, VADDR_T vad
     }
     return LOS_OK;
 }
-//加载 虚拟动态链接对象区（Virtual Dynamically Shared Object、VDSO）
+
 vaddr_t OsLoadVdso(const LosProcessCB *processCB)
 {
     INT32 ret = -1;
@@ -108,12 +108,12 @@ LOCK_RELEASE:
 STATIC VOID OsLockVdso(VdsoDataPage *vdsoDataPage)
 {
     vdsoDataPage->lockCount = 1;
-    Dmb();
+    DMB;
 }
 
 STATIC VOID OsUnlockVdso(VdsoDataPage *vdsoDataPage)
 {
-    Dmb();
+    DMB;
     vdsoDataPage->lockCount = 0;
 }
 

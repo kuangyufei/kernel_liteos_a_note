@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -38,11 +38,6 @@
 #include "shcmd.h"
 #endif /* LOSCFG_SHELL */
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 
 #define OS_ALL_SEM_MASK 0xffffffff
 
@@ -71,7 +66,7 @@ STATIC VOID OsSemPendedTaskNamePrint(LosSemCB *semNode)
     PRINTK("Pended task list : ");
     for (i = 0; i < num; i++) {
         if (i == 0) {
-            PRINTK("%s\n", nameArr[i]);
+            PRINTK("\n%s", nameArr[i]);
         } else {
             PRINTK(", %s", nameArr[i]);
         }
@@ -304,8 +299,3 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdSemInfoGet(UINT32 argc, const CHAR **arg
 SHELLCMD_ENTRY(sem_shellcmd, CMD_TYPE_EX, "sem", 1, (CmdCallBackFunc)OsShellCmdSemInfoGet);//采用shell命令静态注册方式
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

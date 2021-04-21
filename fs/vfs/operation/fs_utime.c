@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,138 +36,86 @@
 #include "errno.h"
 #include "vfs_config.h"
 #include "sys/stat.h"
-#include "inode/inode.h"
+#include "fs/vnode.h"
 #include "string.h"
 #include "stdlib.h"
 #include "utime.h"
+#include "fs_other.h"
 
 /****************************************************************************
  * Global Functions
  ****************************************************************************/
 
-/****************************************************************************
- * Name: utime
- *
- * Returned Value:
- *   Zero on success; -1 on failure with errno set:
- *
- ****************************************************************************/
-
-static int utime_pseudo(FAR struct inode *pinode, FAR const struct utimbuf *ptimes)
+int utime(const char *path, const struct utimbuf *ptimes)
 {
-    return ENOSYS;
-}
-
-int utime(FAR const char *path, FAR const struct utimbuf *ptimes)
-{
-    FAR struct inode *pinode = NULL;
-    const char *relpath = NULL;
-    int ret = OK;
+    int ret;
     char *fullpath = NULL;
+    struct Vnode *vnode = NULL;
     time_t cur_sec;
-    struct tm *set_tm = NULL;
-    struct inode_search_s desc;
+    struct IATTR attr = {0};
 
     /* Sanity checks */
 
+
     if (path == NULL) {
-        ret = EINVAL;
+        ret = -EINVAL;
         goto errout;
     }
 
     if (!path[0]) {
-        ret = ENOENT;
+        ret = -ENOENT;
         goto errout;
     }
 
     ret = vfs_normalize_path((const char *)NULL, path, &fullpath);
     if (ret < 0) {
-        ret = -ret;
         goto errout;
     }
 
-    /* Check for the fake root directory (which has no inode) */
-
-    if (strcmp(fullpath, "/") == 0) {
-        ret = EACCES;
+    /* Get the vnode for this file */
+    VnodeHold();
+    ret = VnodeLookup(fullpath, &vnode, 0);
+    if (ret != LOS_OK) {
+        VnodeDrop();
         goto errout_with_path;
     }
 
-    /* Get an inode for this file */
-    SETUP_SEARCH(&desc, fullpath, false);
-    ret = inode_find(&desc);
-    if (ret < 0) {
-        /* This name does not refer to a psudeo-inode and there is no
-         * mountpoint that includes in this path.
-         */
-
-        ret = EACCES;
-        goto errout_with_path;
-    }
-    pinode = desc.node;
-
-    /* The way we handle the utime depends on the type of inode that we
-     * are dealing with.
-     */
-
-#ifndef CONFIG_DISABLE_MOUNTPOINT
-    if (INODE_IS_MOUNTPT(pinode)) {
-        /* The node is a file system mointpoint. Verify that the mountpoint
-         * supports the utime() method.
-         */
-
-        if (pinode->u.i_mops && pinode->u.i_mops->utime) {
-            if (ptimes == NULL) {
-                /*get current seconds*/
-
-                cur_sec = time(NULL);
-                set_tm = localtime(&cur_sec);   /* transform seconds to struct tm */
-            } else {
-                set_tm = gmtime(&ptimes->modtime);   /* transform seconds to struct tm */
-            }
-
-            /* Perform the utime() operation */
-
-            if (set_tm == NULL) {
-                ret = EINVAL;
-                goto errout_with_inode;
-            }
-            ret = pinode->u.i_mops->utime(pinode, relpath, set_tm);
+    if (vnode->vop && vnode->vop->Chattr) {
+        if (ptimes == NULL) {
+            /* get current seconds */
+            cur_sec = time(NULL);
+            attr.attr_chg_atime = cur_sec;
+            attr.attr_chg_mtime = cur_sec;
         } else {
-            ret = ENOSYS;
-            goto errout_with_inode;
+            attr.attr_chg_atime = ptimes->actime;
+            attr.attr_chg_mtime = ptimes->modtime;
         }
-    } else
-#endif
-    {
-        /* The node is part of the root pseudo file system */
-
-        ret = utime_pseudo(pinode, ptimes);
-        goto errout_with_inode;
+        attr.attr_chg_valid = CHG_ATIME | CHG_MTIME;
+        ret = vnode->vop->Chattr(vnode, &attr);
+        if (ret != OK) {
+            VnodeDrop();
+            goto errout_with_path;
+        }
+    } else {
+        ret = -ENOSYS;
+        VnodeDrop();
+        goto errout_with_path;
     }
-
-    /* Check if the stat operation was successful */
-
-    if (ret < 0) {
-        ret = -ret;
-        goto errout_with_inode;
-    }
+    VnodeDrop();
 
     /* Successfully stat'ed the file */
-
-    inode_release(pinode);
     free(fullpath);
+
     return OK;
 
     /* Failure conditions always set the errno appropriately */
 
-errout_with_inode:
-    inode_release(pinode);
 errout_with_path:
     free(fullpath);
 errout:
+
     if (ret != 0) {
-        set_errno(ret);
+        set_errno(-ret);
     }
     return VFS_ERROR;
 }

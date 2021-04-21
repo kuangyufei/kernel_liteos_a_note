@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,7 +29,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "include/board.h"
+#include "los_vm_zone.h"
 /***********************************************
 本文件经过
 python build.py ipcamera_hi3516dv300 
@@ -57,7 +57,7 @@ SECTIONS
 
 USER_INIT_VM_START = 0x1000000;
 ***********************************************/
-#define TEXT_BASE  KERNEL_VADDR_BASE 
+#define TEXT_BASE  KERNEL_VADDR_BASE
 
 OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
 OUTPUT_ARCH(arm)

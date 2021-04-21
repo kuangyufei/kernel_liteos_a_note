@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -55,7 +55,7 @@ typedef struct TagRbNode {
     ULONG_T lColor;
 } LosRbNode;
 
-typedef ULONG_T (*pfRBCmpKeyFn)(VOID *, VOID *);
+typedef ULONG_T (*pfRBCmpKeyFn)(const VOID *, const VOID *);
 typedef ULONG_T (*pfRBFreeFn)(LosRbNode *);
 typedef VOID *(*pfRBGetKeyFn)(LosRbNode *);
 

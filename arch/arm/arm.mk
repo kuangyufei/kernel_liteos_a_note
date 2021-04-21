@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -42,7 +42,10 @@ LITEOS_ARCH_ARM         :=
 endif
 
 LITEOS_BASELIB          += -l$(LOSCFG_ARCH_CPU)
+LITEOS_BASELIB          += -lgic
+
 LIB_SUBDIRS             += arch/arm/$(LITEOS_ARCH_ARM)
+LIB_SUBDIRS             += arch/arm/gic
 
 # CPU compile options
 ifeq ($(LOSCFG_ARCH_ARM_AARCH64), y)

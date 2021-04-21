@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -55,6 +55,9 @@
 #include "los_vm_phys.h"
 #include "los_vm_fault.h"
 #include "los_vm_common.h"
+#ifdef LOSCFG_KERNEL_DYNLOAD
+#include "los_load_elf.h"
+#endif
 #include "arm.h"
 #include "los_bitmap.h"
 #include "los_process_pri.h"
@@ -63,11 +66,6 @@
 #include "console.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 /******************************************************************************
 基本概念
 	异常接管是操作系统对运行期间发生的异常情况（芯片硬件异常）进行处理的一系列动作，
@@ -244,6 +242,7 @@ STATIC INT32 OsDecodeDataFSR(UINT32 regDFSR)
 * 异常状态寄存器(Fault Status Register -FAR)
 * 异常地址寄存器(Fault Address Register -FSR) 
 */
+#ifdef LOSCFG_KERNEL_VM
 UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT32 fsr)
 {
     PRINT_INFO("page fault entry!!!\n");
@@ -283,6 +282,7 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
             return LOS_ERRNO_VM_NOT_FOUND;
     }
 }
+#endif
 //异常类型
 STATIC VOID OsExcType(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 {
@@ -315,59 +315,105 @@ STATIC const CHAR *g_excTypeString[] = {//异常类型的字符说明,在鸿蒙�
     "irq"						//中断异常源 - IRQ模式 
 };
 //打印系统信息
+#ifdef LOSCFG_KERNEL_VM
+STATIC VADDR_T OsGetTextRegionBase(LosVmMapRegion *region, LosProcessCB *runProcess)
+{
+    struct file *curFilep = NULL;
+    struct file *lastFilep = NULL;
+    LosVmMapRegion *curRegion = NULL;
+    LosVmMapRegion *lastRegion = NULL;
+
+    if ((region == NULL) || (runProcess == NULL)) {
+        return 0;
+    }
+
+    if (!LOS_IsRegionFileValid(region)) {
+        return region->range.base;
+    }
+
+    lastRegion = region;
+    do {
+        curRegion = lastRegion;
+        lastRegion = LOS_RegionFind(runProcess->vmSpace, curRegion->range.base - 1);
+        if ((lastRegion == NULL) || !LOS_IsRegionFileValid(lastRegion)) {
+            goto DONE;
+        }
+        curFilep = curRegion->unTypeData.rf.file;
+        lastFilep = lastRegion->unTypeData.rf.file;
+    } while (!strcmp(curFilep->f_path, lastFilep->f_path));
+
+DONE:
+#ifdef LOSCFG_KERNEL_DYNLOAD
+    if (curRegion->range.base == EXEC_MMAP_BASE) {
+        return 0;
+    }
+#endif
+    return curRegion->range.base;
+}
+#endif
 STATIC VOID OsExcSysInfo(UINT32 excType, const ExcContext *excBufAddr)
 {
     LosTaskCB *runTask = OsCurrTaskGet();//获取当前任务
     LosProcessCB *runProcess = OsCurrProcessGet();//获取当前进程
-    LosVmMapRegion *region = NULL;
 
     PrintExcInfo("excType: %s\n"
                  "processName       = %s\n"
                  "processID         = %u\n"
+#ifdef LOSCFG_KERNEL_VM
                  "process aspace    = 0x%08x -> 0x%08x\n"
+#endif
                  "taskName          = %s\n"
                  "taskID            = %u\n",
                  g_excTypeString[excType],
                  runProcess->processName,
                  runProcess->processID,
+#ifdef LOSCFG_KERNEL_VM
                  runProcess->vmSpace->base,
                  runProcess->vmSpace->base + runProcess->vmSpace->size,
+#endif
                  runTask->taskName,
                  runTask->taskID);
 	//这里可以看出一个任务有两个运行栈空间
+#ifdef LOSCFG_KERNEL_VM
     if (OsProcessIsUserMode(runProcess)) {//用户态栈空间,对于栈而言,栈底的地址要小于栈顶的地址
         PrintExcInfo("task user stack   = 0x%08x -> 0x%08x\n", //用户态栈空间由用户空间提供
                      runTask->userMapBase, runTask->userMapBase + runTask->userMapSize);
-    } else {//内核态栈空间,由内核空间提供
+    } else
+#endif
+    {
         PrintExcInfo("task kernel stack = 0x%08x -> 0x%08x\n",//
                      runTask->topOfStack, runTask->topOfStack + runTask->stackSize);
     }
 
     PrintExcInfo("pc    = 0x%x ", excBufAddr->PC);
+#ifdef LOSCFG_KERNEL_VM
+    LosVmMapRegion *region = NULL;
     if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {//当前CPU处于用户模式
         if (LOS_IsUserAddress((vaddr_t)excBufAddr->PC)) {//pc寄存器处于用户空间
             region = LOS_RegionFind(runProcess->vmSpace, (VADDR_T)excBufAddr->PC);//找到所在线性区
             if (region != NULL) {
-                PrintExcInfo("in %s ---> 0x%x", OsGetRegionNameOrFilePath(region),//获取线性区标识
-                             (VADDR_T)excBufAddr->PC - region->range.base);//得到线性区的偏移地址
+                PrintExcInfo("in %s ---> 0x%x", OsGetRegionNameOrFilePath(region),
+                             (VADDR_T)excBufAddr->PC - OsGetTextRegionBase(region, runProcess));
             }
         }
 
         PrintExcInfo("\nulr   = 0x%x ", excBufAddr->ULR);//打印用户模式下程序的返回地址
         region = LOS_RegionFind(runProcess->vmSpace, (VADDR_T)excBufAddr->ULR);//通过返回地址找到线性区
         if (region != NULL) {
-            PrintExcInfo("in %s ---> 0x%x", OsGetRegionNameOrFilePath(region),//获取线性区标识
-                         (VADDR_T)excBufAddr->ULR - region->range.base);//得到线性区的偏移地址
+            PrintExcInfo("in %s ---> 0x%x", OsGetRegionNameOrFilePath(region),
+                         (VADDR_T)excBufAddr->ULR - OsGetTextRegionBase(region, runProcess));
         }
         PrintExcInfo("\nusp   = 0x%x", excBufAddr->USP);//打印用户模式下栈指针
-    } else {//非用户模式下
+    } else
+#endif
+    {
         PrintExcInfo("\nklr   = 0x%x\n"	//注意：只有一个内核空间和内核堆空间，而每个用户进程就有自己独立的用户空间。
                      "ksp   = 0x%x\n",	//用户空间的虚拟地址范围是一样的，只是映射到不同的物理内存页。
                      excBufAddr->LR,	//直接打印程序的返回地址
                      excBufAddr->SP);	//直接打印栈指针
     }
 
-    PrintExcInfo("fp    = 0x%x\n", excBufAddr->R11);//FP(frame pointer)栈帧寄存器R11
+    PrintExcInfo("\nfp    = 0x%x\n", excBufAddr->R11);
 }
 //异常情况下打印各寄存器的信息
 STATIC VOID OsExcRegsInfo(const ExcContext *excBufAddr)
@@ -412,6 +458,7 @@ EXC_PROC_FUNC OsExcRegHookGet(VOID)
     return g_excHook;
 }
 //dump 虚拟空间下异常虚拟地址线性区
+#ifdef LOSCFG_KERNEL_VM
 STATIC VOID OsDumpExcVaddrRegion(LosVmSpace *space, LosVmMapRegion *region)
 {
     INT32 i, numPages, pageCount;
@@ -448,7 +495,7 @@ STATIC VOID OsDumpExcVaddrRegion(LosVmSpace *space, LosVmMapRegion *region)
             mmuFlag = FALSE;
         }
         PrintExcInfo("       0x%08x   0x%08x   0x%08x\n",
-                     startVaddr, LOS_PaddrToKVaddr(startPaddr), pageCount << PAGE_SHIFT);
+                     startVaddr, LOS_PaddrToKVaddr(startPaddr), (UINT32)pageCount << PAGE_SHIFT);
         pageCount = 0;
         startPaddr = 0;
     }
@@ -497,6 +544,7 @@ STATIC VOID OsDumpProcessUsedMemNode(UINT16 vmmFalgs)
     OsDumpProcessUsedMemRegion(runProcess, runspace, vmmFalgs);
     return;
 }
+#endif
 //dump 上下文内存,注意内核异常不能简单的映射理解为应用的异常,异常对内核来说是一个很常见操作,
 //比如任务的切换对内核来说就是一个异常处理
 VOID OsDumpContextMem(const ExcContext *excBufAddr)
@@ -584,18 +632,17 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 /* this function is used to validate fp or validate the checking range start and end. */
 STATIC INLINE BOOL IsValidFP(UINTPTR regFP, UINTPTR start, UINTPTR end, vaddr_t *vaddr)
 {
-    LosProcessCB *runProcess = NULL;
-    LosVmSpace *runspace = NULL;
     VADDR_T kvaddr = regFP;
-    PADDR_T paddr;
 
     if (!((regFP > start) && (regFP < end) && IS_ALIGNED(regFP, sizeof(CHAR *)))) {
         return FALSE;
     }
 
+#ifdef LOSCFG_KERNEL_VM
+    PADDR_T paddr;
     if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
-        runProcess = OsCurrProcessGet();
-        runspace = runProcess->vmSpace;
+        LosProcessCB *runProcess = OsCurrProcessGet();
+        LosVmSpace *runspace = runProcess->vmSpace;
         if (runspace == NULL) {
             return FALSE;
         }
@@ -606,6 +653,7 @@ STATIC INLINE BOOL IsValidFP(UINTPTR regFP, UINTPTR start, UINTPTR end, vaddr_t 
 
         kvaddr = (PADDR_T)(UINTPTR)LOS_PaddrToKVaddr(paddr);
     }
+#endif
     if (vaddr != NULL) {
         *vaddr = kvaddr;
     }
@@ -674,7 +722,6 @@ VOID BackTraceSub(UINTPTR regFP)
     UINTPTR stackStart, stackEnd;
     UINTPTR backFP = regFP;
     UINT32 count = 0;
-    LosVmMapRegion *region = NULL;
     VADDR_T kvaddr;
 
     if (FindSuitableStack(regFP, &stackStart, &stackEnd, &kvaddr) == FALSE) {
@@ -696,12 +743,23 @@ VOID BackTraceSub(UINTPTR regFP)
 
     while (IsValidFP(backFP, stackStart, stackEnd, &kvaddr) == TRUE) {
         tmpFP = backFP;
+#ifdef LOSCFG_COMPILER_CLANG_LLVM
+	backFP = *(UINTPTR *)(UINTPTR)kvaddr;
+        if (IsValidFP(tmpFP + POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
+            PrintExcInfo("traceback backLR check failed, backLP: 0x%x\n", tmpFP + POINTER_SIZE);
+            return;
+        }
         backLR = *(UINTPTR *)(UINTPTR)kvaddr;
+#else
+	backLR = *(UINTPTR *)(UINTPTR)kvaddr;
         if (IsValidFP(tmpFP - POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
             PrintExcInfo("traceback backFP check failed, backFP: 0x%x\n", tmpFP - POINTER_SIZE);
             return;
         }
         backFP = *(UINTPTR *)(UINTPTR)kvaddr;
+#endif
+#ifdef LOSCFG_KERNEL_VM
+        LosVmMapRegion *region = NULL;
         if (LOS_IsUserAddress((VADDR_T)backLR) == TRUE) {
             region = LOS_RegionFind(OsCurrProcessGet()->vmSpace, (VADDR_T)backLR);
         }
@@ -709,7 +767,9 @@ VOID BackTraceSub(UINTPTR regFP)
             PrintExcInfo("traceback %u -- lr = 0x%x    fp = 0x%x lr in %s --> 0x%x\n", count, backLR, backFP,
                          OsGetRegionNameOrFilePath(region), backLR - region->range.base);
             region = NULL;
-        } else {
+        } else
+#endif
+        {
             PrintExcInfo("traceback %u -- lr = 0x%x    fp = 0x%x\n", count, backLR, backFP);
         }
         count++;
@@ -744,8 +804,9 @@ VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 #ifndef LOSCFG_DEBUG_VERSION //打开debug开关
     if (g_excFromUserMode[ArchCurrCpuid()] != TRUE) {
 #endif
+#ifdef LOSCFG_KERNEL_VM
         OsDumpProcessUsedMemNode(OS_EXC_VMM_NO_REGION);
-
+#endif
         OsExcStackInfo();//	打印任务栈的信息
 #ifndef LOSCFG_DEBUG_VERSION
     }
@@ -817,9 +878,9 @@ VOID OsBackTrace(VOID)
 {
     UINT32 regFP = Get_Fp();
     LosTaskCB *runTask = OsCurrTaskGet();
-    PRINTK("OsBackTrace fp = 0x%x\n", regFP);
-    PRINTK("runTask->taskName = %s\n", runTask->taskName);
-    PRINTK("runTask->taskID = %u\n", runTask->taskID);
+    PrintExcInfo("OsBackTrace fp = 0x%x\n", regFP);
+    PrintExcInfo("runTask->taskName = %s\n", runTask->taskName);
+    PrintExcInfo("runTask->taskID = %u\n", runTask->taskID);
     BackTrace(regFP);
 }
 //未定义的异常处理函数，由汇编调用 见于 los_hw_exc.s
@@ -1038,26 +1099,6 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 #endif
         }
     }
-}
-
-/*
- * Description : EXC handler entry
- * Input       : excType    --- exc type
- *               excBufAddr --- address of EXC buf
- */
-/*异常处理的执行入口，由汇编语言层调用 见于 los_hw_exc.s 文件
-* 参数excBufAddr为异常发生时保存下来寄存器的值.
-* 异常状态寄存器(Fault Status Register -FAR)
-* 异常地址寄存器(Fault Address Register -FSR) 
-*/
-LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
-{
-    /* Task scheduling is not allowed during exception handling *///异常处理期间不允许任务调度
-    OsPercpuGet()->taskLockCnt++;//
-
-    g_curNestCount[ArchCurrCpuid()]++;//记录当前CPU异常数量
-
-    OsExcPriorDisposal(excBufAddr);
 
 #if (LOSCFG_KERNEL_SMP == YES)
 #ifdef LOSCFG_FS_VFS
@@ -1065,13 +1106,43 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
     OsWaitConsoleSendTaskPend(OsCurrTaskGet()->taskID);//等待控制台任务结束，以避免多核打印代码
 #endif
 #endif
-	//不允许在此异常信息之前添加任何其他打印信息
+}
+
+LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
+{
+#ifdef LOSCFG_KERNEL_VM
     /* You are not allowed to add any other print information before this exception information */
-    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) { //用户态发生异常
+    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
+#ifdef LOSCFG_DEBUG_VERSION
+        VADDR_T vaddr = ROUNDDOWN(far, PAGE_SIZE);
+        LosVmSpace *space = LOS_SpaceGet(vaddr);
+        if (space != NULL) {
+            LOS_DumpMemRegion(vaddr);
+        }
+#endif
         PrintExcInfo("##################excFrom: User!####################\n");
-    } else {//内核态发生异常
-        PrintExcInfo("##################excFrom: kernel###################!\n");
+    } else
+#endif
+    {
+        PrintExcInfo("##################excFrom: kernel!###################\n");
     }
+}
+
+/*
+ * Description : EXC handler entry
+ * Input       : excType    --- exc type
+ *               excBufAddr --- address of EXC buf
+ */
+LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
+{
+    /* Task scheduling is not allowed during exception handling */
+    OsPercpuGet()->taskLockCnt++;
+
+    g_curNestCount[ArchCurrCpuid()]++;
+
+    OsExcPriorDisposal(excBufAddr);
+
+    OsPrintExcHead(far);
 
 #if (LOSCFG_KERNEL_SMP == YES)
     OsAllCpuStatusOutput();//打印各CPU core的状态
@@ -1108,6 +1179,13 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
 #ifdef LOSCFG_EXC_INTERACTION
     OsExcInteractionTaskKeep();
 #endif
+#ifdef LOSCFG_SHELL_CMD_DEBUG
+    SystemRebootFunc rebootHook = OsGetRebootHook();
+    if ((OsSystemExcIsReset() == TRUE) && (rebootHook != NULL)) {
+        LOS_Mdelay(3000); /* 3000: System dead, delay 3 seconds after system restart */
+        rebootHook();
+    }
+#endif
     while (1) {}
 }
 
@@ -1118,6 +1196,7 @@ __attribute__((noinline)) VOID LOS_Panic(const CHAR *fmt, ...)
     UartVprintf(fmt, ap);
     va_end(ap);
     __asm__ __volatile__("swi 0");//触发断异常
+    while (1);
 }
 
 /* stack protector */
@@ -1130,8 +1209,43 @@ VOID __stack_chk_fail(VOID)
               __builtin_return_address(0));
 }
 
-#ifdef __cplusplus
-#if __cplusplus
+VOID LOS_RecordLR(UINTPTR *LR, UINT32 LRSize, UINT32 recordCount, UINT32 jumpCount)
+{
+    UINT32 count = 0;
+    UINT32 index = 0;
+    UINT32 stackStart, stackEnd;
+    LosTaskCB *taskCB = NULL;
+    UINTPTR framePtr, tmpFramePtr, linkReg;
+
+    if (LR == NULL) {
+        return;
+    }
+    /* if LR array is not enough,just record LRSize. */
+    if (LRSize < recordCount) {
+        recordCount = LRSize;
+    }
+
+    taskCB = OsCurrTaskGet();
+    stackStart = taskCB->topOfStack;
+    stackEnd = stackStart + taskCB->stackSize;
+
+    framePtr = Get_Fp();
+    while ((framePtr > stackStart) && (framePtr < stackEnd) && IS_ALIGNED(framePtr, sizeof(CHAR *))) {
+        tmpFramePtr = framePtr;
+        linkReg = *(UINTPTR *)framePtr;
+        if (index >= jumpCount) {
+            LR[count++] = linkReg;
+            if (count == recordCount) {
+                break;
+            }
+        }
+        index++;
+        framePtr = *(UINTPTR *)(tmpFramePtr - sizeof(UINTPTR));
+    }
+
+    /* if linkReg is not enough,clean up the last of the effective LR as the end. */
+    if (count < recordCount) {
+        LR[count] = 0;
+    }
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+

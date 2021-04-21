@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -43,17 +43,10 @@
 #include "linux/spinlock.h"
 #include "los_process_pri.h"
 #include "los_task_pri.h"
-#include "inode/inode.h"
 #include "capability_api.h"
-
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#include "fs/vnode.h"
 
 #define MAX_DIR_ENT 1024
-
 int fstat(int fd, struct stat *buf)
 {
     struct file *filep = NULL;
@@ -82,8 +75,15 @@ int lstat(const char *path, struct stat *buffer)
 {
     return stat(path, buffer);
 }
-//虚拟文件系统权限检查
-int VfsPermissionCheck(uint fuid, uint fgid, mode_t fileMode, int accMode)
+
+int VfsVnodePermissionCheck(const struct Vnode *node, int accMode)
+{
+    uint fuid = node->uid;
+    uint fgid = node->gid;
+    uint fileMode = node->mode;
+    return VfsPermissionCheck(fuid, fgid, fileMode, accMode);
+}
+int VfsPermissionCheck(uint fuid, uint fgid, uint fileMode, int accMode)
 {
     uint uid = OsCurrUserGet()->effUserID;
     mode_t tmpMode = fileMode;
@@ -96,30 +96,31 @@ int VfsPermissionCheck(uint fuid, uint fgid, mode_t fileMode, int accMode)
 
     tmpMode &= (READ_OP | WRITE_OP | EXEC_OP);
 
-    if ((accMode & tmpMode) == accMode) {
+    if (((uint)accMode & tmpMode) == accMode) {
         return 0;
     }
 
     tmpMode = 0;
     if (S_ISDIR(fileMode)) {
-        if ((accMode & EXEC_OP) && (IsCapPermit(CAP_DAC_READ_SEARCH))) {
+        if (IsCapPermit(CAP_DAC_EXECUTE)
+            || (!((uint)accMode & WRITE_OP) && IsCapPermit(CAP_DAC_READ_SEARCH))) {
             tmpMode |= EXEC_OP;
         }
     } else {
-        if ((accMode & EXEC_OP) && (IsCapPermit(CAP_DAC_EXECUTE)) && (fileMode & MODE_IXUGO)) {
+        if (IsCapPermit(CAP_DAC_EXECUTE) && (fileMode & MODE_IXUGO)) {
             tmpMode |= EXEC_OP;
         }
     }
 
-    if ((accMode & WRITE_OP) && IsCapPermit(CAP_DAC_WRITE)) {
+    if (IsCapPermit(CAP_DAC_WRITE)) {
         tmpMode |= WRITE_OP;
     }
 
-    if ((accMode & READ_OP) && IsCapPermit(CAP_DAC_READ_SEARCH)) {
+    if (IsCapPermit(CAP_DAC_READ_SEARCH)) {
         tmpMode |= READ_OP;
     }
 
-    if ((accMode & tmpMode) == accMode) {
+    if (((uint)accMode & tmpMode) == accMode) {
         return 0;
     }
 
@@ -127,7 +128,7 @@ int VfsPermissionCheck(uint fuid, uint fgid, mode_t fileMode, int accMode)
 }
 
 #ifdef VFS_USING_WORKDIR
-int SetWorkDir(char *dir, size_t len)
+static int SetWorkDir(const char *dir, size_t len)
 {
   errno_t ret;
   uint lock_flags;
@@ -151,6 +152,7 @@ int chdir(const char *path)
     char *fullpath = NULL;
     char *fullpath_bak = NULL;
     struct stat statBuff;
+
 
     if (!path) {
         set_errno(EFAULT);
@@ -216,7 +218,7 @@ int chdir(const char *path)
  *
  * @return the returned current directory.
  */
-//此函数是一个与POSIX兼容的版本，它将返回当前工作目录。
+
 char *getcwd(char *buf, size_t n)
 {
 #ifdef VFS_USING_WORKDIR
@@ -282,28 +284,11 @@ int access(const char *path, int amode)
     return OK;
 }
 
-bool IS_MOUNTPT(const char *dev)
-{
-    struct inode *node = NULL;
-    bool ret = 0;
-    struct inode_search_s desc;
-
-    SETUP_SEARCH(&desc, dev, false);
-    if (inode_find(&desc) < 0) {
-        return 0;
-    }
-    node = desc.node;
-
-    ret = INODE_IS_MOUNTPT(node);
-    inode_release(node);
-    return ret;
-}
-
 static struct dirent **scandir_get_file_list(const char *dir, int *num, int(*filter)(const struct dirent *))
 {
     DIR *od = NULL;
     int listSize = MAX_DIR_ENT;
-    int n = *num;
+    int n = 0;
     struct dirent **list = NULL;
     struct dirent **newList = NULL;
     struct dirent *ent = NULL;
@@ -493,7 +478,7 @@ static void PrintFileInfo64(const struct stat64 *stat64Info, const char *name)
     int i;
 
     for (i = 0; i < UGO_NUMS; i++) {
-        mode = stat64Info->st_mode >> (USER_MODE_SHIFT - i * UGO_NUMS);
+        mode = stat64Info->st_mode >> (uint)(USER_MODE_SHIFT - i * UGO_NUMS);
         str[i][0] = (mode & READ_OP) ? 'r' : '-';
         str[i][1] = (mode & WRITE_OP) ? 'w' : '-';
         str[i][UGO_NUMS - 1] = (mode & EXEC_OP) ? 'x' : '-';
@@ -513,7 +498,7 @@ static void PrintFileInfo(const struct stat *statInfo, const char *name)
     int i;
 
     for (i = 0; i < UGO_NUMS; i++) {
-        mode = statInfo->st_mode >> (USER_MODE_SHIFT - i * UGO_NUMS);
+        mode = statInfo->st_mode >> (uint)(USER_MODE_SHIFT - i * UGO_NUMS);
         str[i][0] = (mode & READ_OP) ? 'r' : '-';
         str[i][1] = (mode & WRITE_OP) ? 'w' : '-';
         str[i][UGO_NUMS - 1] = (mode & EXEC_OP) ? 'x' : '-';
@@ -525,16 +510,74 @@ static void PrintFileInfo(const struct stat *statInfo, const char *name)
            str[0], str[1], str[UGO_NUMS - 1], statInfo->st_size, statInfo->st_uid, statInfo->st_gid, name);
 }
 
-void ls(const char *pathname)
+int LsFile(const char *path)
 {
-    struct stat64 stat64_info;
-    struct stat stat_info;
-    struct dirent *pdirent = NULL;
-    char *path = NULL;
+    struct stat64 stat64Info;
+    struct stat statInfo;
+
+    if (stat64(path, &stat64Info) == 0) {
+        PrintFileInfo64(&stat64Info, path);
+    } else if (stat(path, &statInfo) == 0) {
+        PrintFileInfo(&statInfo, path);
+    } else {
+        return -1;
+    }
+
+    return 0;
+}
+
+int LsDir(const char *path)
+{
+    struct stat statInfo = { 0 };
+    struct stat64 stat64Info = { 0 };
+    DIR *d = NULL;
     char *fullpath = NULL;
     char *fullpath_bak = NULL;
+    struct dirent *pdirent = NULL;
+
+    d = opendir(path);
+    if (d == NULL) {
+        return -1;
+    }
+
+    PRINTK("Directory %s:\n", path);
+    do {
+        pdirent = readdir(d);
+        if (pdirent == NULL) {
+            break;
+        } else {
+            if (!strcmp(pdirent->d_name, ".") || !strcmp(pdirent->d_name, "..")) {
+                continue;
+            }
+            (void)memset_s(&statInfo, sizeof(struct stat), 0, sizeof(struct stat));
+            (void)memset_s(&stat64Info, sizeof(struct stat), 0, sizeof(struct stat));
+            fullpath = ls_get_fullpath(path, pdirent);
+            if (fullpath == NULL) {
+                (void)closedir(d);
+                return -1;
+            }
+
+            fullpath_bak = fullpath;
+            if (stat64(fullpath, &stat64Info) == 0) {
+                PrintFileInfo64(&stat64Info, pdirent->d_name);
+            } else if (stat(fullpath, &statInfo) == 0) {
+                PrintFileInfo(&statInfo, pdirent->d_name);
+            } else {
+                PRINTK("BAD file: %s\n", pdirent->d_name);
+            }
+            free(fullpath_bak);
+        }
+    } while (1);
+    (void)closedir(d);
+
+    return 0;
+}
+
+void ls(const char *pathname)
+{
+    struct stat statInfo = { 0 };
+    char *path = NULL;
     int ret;
-    DIR *d = NULL;
 
     if (pathname == NULL) {
 #ifdef VFS_USING_WORKDIR
@@ -560,44 +603,23 @@ void ls(const char *pathname)
         }
     }
 
-    /* list all directory and file*/
-
-    d = opendir(path);
-    if (d == NULL) {
+    ret = stat(path, &statInfo);
+    if (ret < 0) {
         perror("ls error");
-    } else {
-        PRINTK("Directory %s:\n", path);
-        do {
-            pdirent = readdir(d);
-            if (pdirent == NULL) {
-                break;
-            } else {
-                if (!strcmp(pdirent->d_name, ".") || !strcmp(pdirent->d_name, "..")) {
-                    continue;
-                }
-                (void)memset_s(&stat_info, sizeof(struct stat), 0, sizeof(struct stat));
-                fullpath = ls_get_fullpath(path, pdirent);
-                if (fullpath == NULL) {
-                    free(path);
-                    (void)closedir(d);
-                    return;
-                }
-
-                fullpath_bak = fullpath;
-                if (stat64(fullpath, &stat64_info) == 0) {
-                    PrintFileInfo64(&stat64_info, pdirent->d_name);
-                } else if (stat(fullpath, &stat_info) == 0) {
-                    PrintFileInfo(&stat_info, pdirent->d_name);
-                } else
-                    PRINTK("BAD file: %s\n", pdirent->d_name);
-                free(fullpath_bak);
-            }
-        } while (1);
-
-        (void)closedir(d);
+        free(path);
+        return;
     }
-    free(path);
 
+    if (statInfo.st_mode & S_IFDIR) { /* list all directory and file */
+        ret = LsDir((pathname == NULL) ? path : pathname);
+    } else { /* show the file infomation */
+        ret = LsFile(path);
+    }
+    if (ret < 0) {
+        perror("ls error");
+    }
+
+    free(path);
     return;
 }
 
@@ -642,10 +664,10 @@ char *realpath(const char *path, char *resolved_path)
 
 void lsfd(void)
 {
-    FAR struct filelist *f_list = NULL;
+    struct filelist *f_list = NULL;
     unsigned int i = 3; /* file start fd */
     int ret;
-    FAR struct inode *node = NULL;
+    struct Vnode *node = NULL;
 
     f_list = &tg_filelist;
 
@@ -684,8 +706,3 @@ mode_t SysUmask(mode_t mask)
     return oldUmask;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

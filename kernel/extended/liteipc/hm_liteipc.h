@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -50,7 +50,7 @@ extern "C" {
 能牵动内核模块工作.
 ****************************************************/
 #define LITEIPC_DRIVER "/dev/lite_ipc"	//设备位置
-#define DRIVER_MODE 0666	//权限, chmod 666
+#define LITEIPC_DRIVER_MODE 0644
 #define MAX_SERVICE_NUM LOSCFG_BASE_CORE_TSK_LIMIT //最大服务数等于任务数 默认128
 #define USE_TIMESTAMP YES
 
@@ -178,41 +178,6 @@ typedef struct {	//IPC消息内容回路,记录消息周期
 #define IPC_THREAD_STATUS_START        0x0002U
 #define IPC_THREAD_STATUS_PEND         0x0004U
 #define IPC_THREAD_STATUS_STOP         0x0008U
-
-#if (LOSCFG_KERNEL_TRACE == YES)
-#define LOS_TRACE_IPC 3 //IPC 对应..\kernel\include\los_trace.h TraceType 理解
-
-typedef enum {	//IPC包含哪些操作
-    WRITE,	//写消息
-    WRITE_DROP, 
-    TRY_READ,	
-    READ,
-    READ_DROP,
-    READ_TIMEOUT,
-    OPERATION_NUM
-} IpcOpertion;
-
-typedef struct {//进程/任务ID 参数
-    UINT32  srcTid : 8;	//源任务ID
-    UINT32  srcPid : 8;	//源进程ID
-    UINT32  dstTid : 8;	//目标任务ID
-    UINT32  dstPid : 8;	//目标进程ID
-} IdArg;
-
-typedef struct {//消息参数
-    UINT32  msgType : 8;	//消息类型
-    UINT32  code : 8;		//消息码
-    UINT32  operation : 8;	//具体操作
-    UINT32  ipcStatus : 8;	//IPC状态
-} MsgArg;
-
-typedef struct {	
-    UINT32  idInfo;
-    UINT32  msgInfo;
-    UINT64  timestamp;
-} IpcTraceFrame;
-#endif
-
 
 /* init liteipc driver */
 extern UINT32 LiteIpcInit(VOID);

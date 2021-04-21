@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,6 +36,7 @@
 #include "time.h"
 #include "user_copy.h"
 #include "sys/times.h"
+#include "los_signal.h"
 #include "los_memory.h"
 #include "los_strncpy_from_user.h"
 
@@ -154,7 +155,7 @@ int SysGetiTimer(int which, struct itimerval *value)
 
     return ret;
 }
-//系统调用 创建定时器
+
 int SysTimerCreate(clockid_t clockID, struct sigevent *evp, timer_t *timerID)
 {
     int ret;
@@ -330,7 +331,7 @@ int SysClockNanoSleep(clockid_t clk, int flags, const struct timespec *req, stru
 {
     int ret;
     struct timespec sreq;
-    struct timespec srem;
+    struct timespec srem = { 0 };
 
     if (!req || LOS_ArchCopyFromUser(&sreq, req, sizeof(struct timespec))) {
         errno = EFAULT;
@@ -354,7 +355,7 @@ int SysNanoSleep(const struct timespec *rqtp, struct timespec *rmtp)
 {
     int ret;
     struct timespec srqtp;
-    struct timespec srmtp;
+    struct timespec srmtp = { 0 };
 
     if (!rqtp || LOS_ArchCopyFromUser(&srqtp, rqtp, sizeof(struct timespec))) {
         errno = EFAULT;
@@ -379,9 +380,15 @@ clock_t SysTimes(struct tms *buf)
     clock_t ret;
     struct tms sbuf;
 
-    ret = times(buf ? &sbuf : NULL);
-
-    if (buf && LOS_ArchCopyToUser(buf, &sbuf, sizeof(struct tms))) {
+    if (buf == NULL) {
+        errno = EFAULT;
+        return -EFAULT;
+    }
+    ret = times(&sbuf);
+    if (ret == -1) {
+        return -get_errno();
+    }
+    if (LOS_ArchCopyToUser(buf, &sbuf, sizeof(struct tms))) {
         errno = EFAULT;
         return -EFAULT;
     }
@@ -477,9 +484,9 @@ int SysClockNanoSleep64(clockid_t clk, int flags, const struct timespec64 *req, 
 {
     int ret;
     struct timespec rq;
-    struct timespec rm;
+    struct timespec rm = { 0 };
     struct timespec64 sreq;
-    struct timespec64 srem;
+    struct timespec64 srem = { 0 };
 
     if (!req || LOS_ArchCopyFromUser(&sreq, req, sizeof(struct timespec64))) {
         errno = EFAULT;

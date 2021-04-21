@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -32,7 +32,10 @@ include $(LITEOSTOPDIR)/config.mk
 MODULE_NAME := $(notdir $(shell pwd))
 
 LOCAL_SRCS := \
-$(LITEOSTHIRDPARTY)/NuttX/fs/fs_initialize.c \
+$(LITEOSTOPDIR)/fs/vfs/mount.c \
+$(LITEOSTOPDIR)/fs/vfs/vnode.c \
+$(LITEOSTOPDIR)/fs/vfs/path_cache.c \
+$(LITEOSTOPDIR)/fs/vfs/vnode_hash.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_close.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_dup2.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_dup.c \
@@ -65,14 +68,7 @@ $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_write.c \
 $(wildcard operation/*.c) \
 \
 $(LITEOSTHIRDPARTY)/NuttX/fs/inode/fs_files.c \
-$(LITEOSTHIRDPARTY)/NuttX/fs/inode/fs_foreachinode.c \
-$(LITEOSTHIRDPARTY)/NuttX/fs/inode/fs_inodeaddref.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/inode/fs_inode.c \
-$(LITEOSTHIRDPARTY)/NuttX/fs/inode/fs_inodefind.c \
-$(LITEOSTHIRDPARTY)/NuttX/fs/inode/fs_inoderelease.c \
-$(LITEOSTHIRDPARTY)/NuttX/fs/inode/fs_inoderemove.c \
-$(LITEOSTHIRDPARTY)/NuttX/fs/inode/fs_inodereserve.c \
-$(LITEOSTHIRDPARTY)/NuttX/fs/inode/fs_inodesearch.c \
 \
 $(LITEOSTHIRDPARTY)/NuttX/fs/dirent/fs_closedir.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/dirent/fs_opendir.c \
@@ -81,15 +77,15 @@ $(LITEOSTHIRDPARTY)/NuttX/fs/dirent/fs_rewinddir.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/dirent/fs_seekdir.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/dirent/fs_telldir.c \
 \
-$(LITEOSTHIRDPARTY)/NuttX/fs/mount/fs_foreachmountpoint.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/mount/fs_mount.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/mount/fs_umount.c \
 \
 $(LITEOSTHIRDPARTY)/NuttX/fs/driver/fs_blockproxy.c \
-$(LITEOSTHIRDPARTY)/NuttX/fs/driver/fs_closeblockdriver.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/driver/fs_devsyslog.c \
+$(LITEOSTHIRDPARTY)/NuttX/fs/mount/fs_foreachmountpoint.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/driver/fs_findblockdriver.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/driver/fs_openblockdriver.c \
+$(LITEOSTHIRDPARTY)/NuttX/fs/driver/fs_closeblockdriver.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/driver/fs_registerblockdriver.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/driver/fs_registerdriver.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/driver/fs_unregisterblockdriver.c \
@@ -105,7 +101,7 @@ LOCAL_INCLUDE := \
 	-I $(LITEOSTOPDIR)/fs/vfs/include/multi_partition\
 	-I $(LITEOSTOPDIR)/fs/vfs/include/operation\
 	-I $(LITEOSTOPDIR)/fs/include/inode\
-	-I $(LITEOSTOPDIR)/syscall
+	-I $(LITEOSTOPDIR)/syscall\
 
 ifeq ($(LOSCFG_FS_FAT), y)
 LOCAL_INCLUDE += -I $(LITEOSTHIRDPARTY)/FatFs/source

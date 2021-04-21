@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,9 +35,10 @@
 #include "string.h"
 #include "stdlib.h"
 #include "fs/fs.h"
-#include "inode/inode.h"
 #include "user_copy.h"
-//将文件数据读取到内核空间
+#include "stdio.h"
+#include "limits.h"
+
 static char *pread_buf_and_check(int fd, const struct iovec *iov, int iovcnt, ssize_t *totalbytesread, off_t *offset)
 {
     char *buf = NULL;
@@ -62,7 +63,11 @@ static char *pread_buf_and_check(int fd, const struct iovec *iov, int iovcnt, ss
         return NULL;
     }
 
-    buf = (char *)LOS_VMalloc(buflen * sizeof(char));//申请内核内存
+#ifdef LOSCFG_KERNEL_VM
+    buf = (char *)LOS_VMalloc(buflen * sizeof(char));
+#else
+    buf = (char *)malloc(buflen * sizeof(char));
+#endif
     if (buf == NULL) {
         set_errno(ENOMEM);
         *totalbytesread = VFS_ERROR;
@@ -70,15 +75,19 @@ static char *pread_buf_and_check(int fd, const struct iovec *iov, int iovcnt, ss
     }
 
     *totalbytesread = (offset == NULL) ? read(fd, buf, buflen)
-                                       : pread(fd, buf, buflen, *offset);//读入内核内存
+                                       : pread(fd, buf, buflen, *offset);
     if ((*totalbytesread == VFS_ERROR) || (*totalbytesread == 0)) {
+#ifdef LOSCFG_KERNEL_VM
         LOS_VFree(buf);
+#else
+        free(buf);
+#endif
         return NULL;
     }
 
     return buf;
 }
-//vfs 读文件操作
+
 ssize_t vfs_readv(int fd, const struct iovec *iov, int iovcnt, off_t *offset)
 {
     int i;
@@ -89,8 +98,8 @@ ssize_t vfs_readv(int fd, const struct iovec *iov, int iovcnt, off_t *offset)
     ssize_t totalbytesread = 0;
     ssize_t bytesleft;
 
-    buf = pread_buf_and_check(fd, iov, iovcnt, &totalbytesread, offset);//将文件数据读取到内核buf
-    if (buf == NULL) {//
+    buf = pread_buf_and_check(fd, iov, iovcnt, &totalbytesread, offset);
+    if (buf == NULL) {
         return totalbytesread;
     }
 
@@ -103,12 +112,12 @@ ssize_t vfs_readv(int fd, const struct iovec *iov, int iovcnt, off_t *offset)
         }
 
         if (bytesleft <= bytestoread) {
-            ret = LOS_CopyFromKernel(iov[i].iov_base, bytesleft, curbuf, bytesleft);//从内核拷贝buf至用户空间
+            ret = LOS_CopyFromKernel(iov[i].iov_base, bytesleft, curbuf, bytesleft);
             bytesleft = ret;
             goto out;
         }
 
-        ret = LOS_CopyFromKernel(iov[i].iov_base, bytestoread, curbuf, bytestoread);//从内核拷贝buf至用户空间
+        ret = LOS_CopyFromKernel(iov[i].iov_base, bytestoread, curbuf, bytestoread);
         if (ret != 0) {
             bytesleft = bytesleft - (bytestoread - ret);
             goto out;
@@ -118,7 +127,11 @@ ssize_t vfs_readv(int fd, const struct iovec *iov, int iovcnt, off_t *offset)
     }
 
 out:
-    LOS_VFree(buf);//释放内核内存
+#ifdef LOSCFG_KERNEL_VM
+    LOS_VFree(buf);
+#else
+    free(buf);
+#endif
     if ((i == 0) && (ret == iov[i].iov_len)) {
         /* failed in the first iovec copy, and 0 bytes copied */
         set_errno(EFAULT);
@@ -127,7 +140,7 @@ out:
 
     return totalbytesread - bytesleft;
 }
-//读文件操作
+
 ssize_t readv(int fd, const struct iovec *iov, int iovcnt)
 {
     return vfs_readv(fd, iov, iovcnt, NULL);

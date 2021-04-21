@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -44,10 +44,17 @@ typedef struct {
 } SchedPercpu;
 
 typedef struct {
-    UINT64      startRuntime;
     UINT64      allRuntime;
-    UINT32      allContextSwitch;
-    SchedPercpu schedPercpu[LOSCFG_KERNEL_SMP_CORE_NUM];
+    UINT64      runTime;
+    UINT64      switchCount;          /* sched switch count */
+    UINT64      timeSliceRealTime;    /* The actual usage time of each time slice */
+    UINT64      timeSliceTime;
+    UINT64      timeSliceCount;       /* The number of time slices allocated */
+    UINT64      pendTime;
+    UINT64      pendCount;
+    UINT64      waitSchedTime;        /* task status is ready to running times */
+    UINT64      waitSchedCount;
+    SchedPercpu schedPercpu[LOSCFG_KERNEL_CORE_NUM];
 } SchedStat;
 
 #ifdef __cplusplus

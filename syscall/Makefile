@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -33,10 +33,14 @@ MODULE_NAME := $(notdir $(shell pwd))
 
 LOCAL_SRCS := $(wildcard *.c)
 
+ifneq ($(LOSCFG_NET_LWIP_SACK), y)
+LOCAL_SRCS := $(filter-out net_syscall.c, $(LOCAL_SRCS))
+endif
+
 LOCAL_INCLUDE := -I $(LITEOSTOPDIR)/kernel/base/include \
+                 -I $(LITEOSTOPDIR)/kernel/extended/dynload/include \
                  -I $(LITEOSTOPDIR)/fs/include \
                  -I $(LITEOSTOPDIR)/compat/posix/include \
                  -I $(LITEOSTOPDIR)/bsd/compat/linuxkpi/include \
                  -I $(LITEOSTOPDIR)/../../third_party/musl/kernel/include
-
 include $(MODULE)

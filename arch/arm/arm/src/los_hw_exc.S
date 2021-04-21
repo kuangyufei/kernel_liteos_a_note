@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -57,7 +57,11 @@
     .global   _osExceptPrefetchAbortHdl
     .global   _osExceptSwiHdl
     .global   _osExceptUndefInstrHdl
+#if defined(LOSCFG_CC_STACKPROTECTOR_ALL) || \
+    defined(LOSCFG_CC_STACKPROTECTOR_STRONG) || \
+    defined(LOSCFG_CC_STACKPROTECTOR)
     .global   __stack_chk_guard_setup
+#endif
 
 
     .fpu vfpv4
@@ -147,15 +151,22 @@
 .endm
 #endif
 
+#if defined(LOSCFG_CC_STACKPROTECTOR_ALL) || \
+    defined(LOSCFG_CC_STACKPROTECTOR_STRONG) || \
+    defined(LOSCFG_CC_STACKPROTECTOR)
 @ Description: Stack-Protector Init @初始化堆栈保护器
 __stack_chk_guard_setup:
     PUSH    {FP, LR}	@FP,LR入栈
+#if defined(LOSCFG_PLATFORM_HI3516DV300) || defined(LOSCFG_PLATFORM_HI3518EV300)
+    /* Randomize __stack_chk_quard using platform-specific function. */
     BL      OsRandomStackGuard
     LDR     R1, =__stack_chk_guard @0xd00a0dff
     MOV     R3, R0
     ORR     R2, R3, #0X80000000
     STR     R2, [R1]
+#endif
     POP     {FP, PC}
+#endif
 
 @ Description: Undefined instruction exception handler
 _osExceptUndefInstrHdl:@出现未定义的指令处理
@@ -185,6 +196,7 @@ _osExceptSwiHdl: @软中断异常处理,注意此时已在内核栈运行
     MRS     R3, SPSR			@读取本模式下的SPSR值
     MOV     R4, LR				@保存回跳寄存器LR
 
+#ifdef LOSCFG_KERNEL_SYSCALL
     AND     R1, R3, #CPSR_MASK_MODE                          @ Interrupted mode 获取中断模式
     CMP     R1, #CPSR_USER_MODE                              @ User mode	是否为用户模式
     BNE     OsKernelSVCHandler                               @ Branch if not user mode 非用户模式下跳转
@@ -219,6 +231,7 @@ _osExceptSwiHdl: @软中断异常处理,注意此时已在内核栈运行
 	@恢复任务上下文(TaskContext) 结束
 
 OsKernelSVCHandler:@主要目的是保存ExcContext中除(R0~R12)的其他寄存器
+#endif
     ADD     R0, SP, #(4 * 16)	@跳转到保存PC,LR,SP的位置,此时R0位置刚好是SP的位置
     MOV     R5, R0				@由R5记录SP位置,因为R0要暂时充当SP寄存器来使用
     STMFD   R0!, {R4}                                        @ Store PC => ExcContext.PC
@@ -246,9 +259,11 @@ _osExceptPrefetchAbortHdl: @预取异常处理
 
     MOV     R0, #OS_EXCEPT_PREFETCH_ABORT                    @ Set exception ID to OS_EXCEPT_PREFETCH_ABORT.
 
+#ifdef LOSCFG_KERNEL_VM
     AND     R4, R1, #CPSR_MASK_MODE                          @ Interrupted mode
     CMP     R4, #CPSR_USER_MODE                              @ User mode
     BEQ     _osExcPageFault                                  @ Branch if user mode
+#endif
 
 _osKernelExceptPrefetchAbortHdl:
     MOV     LR, R5
@@ -268,8 +283,11 @@ _osExceptDataAbortHdl: @数据异常处理,缺页就属于数据异常
     MRS     R1, SPSR
 
     MOV     R0, #OS_EXCEPT_DATA_ABORT                        @ Set exception ID to OS_EXCEPT_DATA_ABORT.
-
-    B     _osExcPageFault @跳到缺页异常处理
+#ifdef LOSCFG_KERNEL_VM
+    B     _osExcPageFault
+#else
+    B     _osExceptDispatch
+#endif
 #endif
 
 @ Description: Address abort exception handler
@@ -290,6 +308,7 @@ _osExceptFiqHdl: @快中断异常处理
 															 @ 设置参数异常类型,将作为参数传给_osExceptDispatch
     B       _osExceptDispatch                                @ Branch to global exception handler.
 
+#ifdef LOSCFG_KERNEL_VM
 _osExcPageFault:  @缺页中断处理函数 
     SUB     R3, SP, #(8 * 4)                                 @ Save the start address of working registers.
     MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)      @ Switch to SVC mode, and disable all interrupts
@@ -332,6 +351,7 @@ _osExcPageFault:  @缺页中断处理函数
 
     MOV     R0, R5                                           @ exc type
     B       _osExceptionSwi 		@跳到软中断执行,系统调用就是通过软中断实现
+#endif
 
 @ Description: Exception handler
 @ Parameter  : R0     Exception Type 异常类型

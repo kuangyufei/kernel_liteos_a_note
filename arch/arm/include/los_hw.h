@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -76,134 +76,6 @@ extern UINT64 g_cpuMap[];
 
 #define CPU_MAP_GET(cpuid)          g_cpuMap[(cpuid)]
 #define CPU_MAP_SET(cpuid, hwid)    g_cpuMap[(cpuid)] = (hwid)
-
-/**
- * @ingroup los_hw
- * @brief Set Event.
- *
- * @par Description:
- * <ul>
- * <li>This API is used to send an event to all cores within a muti-processor system.</li>
- * </ul>
- * @attention
- * <ul>
- * <li>This API is not implemented.</li>
- * </ul>
- *
- * @param None.
- *
- * @retval #None.
- *
- * @par Dependency:
- * los_hw.h: the header file that contains the API declaration.
- * @see wfe.
- */
-extern VOID Sev(VOID);
-
-/**
- * @ingroup los_hw
- * @brief Wait for event.
- *
- * @par Description:
- * <ul>
- * <li>This API is used to suspend execution until events occurs if the event register is not set.</li>
- * </ul>
- * @attention
- * <ul>
- * <li>This API is not implemented.</li>
- * </ul>
- *
- * @param None.
- *
- * @retval #None.
- *
- * @par Dependency:
- * los_hw.h: the header file that contains the API declaration.
- * @see sev.
- */
-extern VOID Wfe(VOID);
-
-/**
- * @ingroup los_hw
- * @brief Wait for interrupt.
- *
- * @par Description:
- * <ul>
- * <li>This API is used to suspend execution until interrupt or a debug request occurs.</li>
- * </ul>
- * @attention None.
- *
- * @param None.
- *
- * @retval #None.
- *
- * @par Dependency:
- * los_hw.h: the header file that contains the API declaration.
- * @see None.
- */
-extern VOID Wfi(VOID);
-
-/**
- * @ingroup los_hw
- * @brief Data Memory Barrier.
- *
- * @par Description:
- * <ul>
- * <li>This API is used as a memory barrier</li>
- * </ul>
- * @attention None.
- *
- * @param None.
- *
- * @retval #None.
- *
- * @par Dependency:
- * los_hw.h: the header file that contains the API declaration.
- * @see None.
- */
-extern VOID Dmb(VOID);
-
-/**
- * @ingroup los_hw
- * @brief Data Synchronization Barrier.
- *
- * @par Description:
- * <ul>
- * <li>This API is used as a special kind of memory barrier</li>
- * </ul>
- * @attention None.
- *
- * @param None.
- *
- * @retval #None.
- *
- * @par Dependency:
- * los_hw.h: the header file that contains the API declaration.
- * @see None.
- */
-extern VOID Dsb(VOID);
-
-/**
- * @ingroup los_hw
- * @brief Instruction Synchronization Barrier.
- *
- * @par Description:
- * <ul>
- * <li>This API is used to flush the pipeline in the processor,
- * so that all instructions following the ISB are fetched from cache or memory,
- * after the instruction has been completed.</li>
- * </ul>
- * @attention None.
- *
- * @param None.
- *
- * @retval #None.
- *
- * @par Dependency:
- * los_hw.h: the header file that contains the API declaration.
- * @see None.
- */
-extern VOID Isb(VOID);
 
 /**
  * @ingroup los_hw
@@ -292,12 +164,12 @@ extern VOID DCacheInvRange(UINTPTR start, UINTPTR end);
  * @par Dependency:
  * los_hw.h: the header file that contains the API declaration.
  * @see None.
- */ //获取CPU信息
+ */
 STATIC INLINE const CHAR *LOS_CpuInfo(VOID)
 {
     INT32 i;
     UINT32 midr = OsMainIDGet();
-    /* [15:4] is the primary part number */ //[15:4]是主要编号
+    /* [15:4] is the primary part number */
     UINT32 partNo = (midr & 0xFFF0) >> 0x4;
 
     for (i = 0; g_cpuTable[i].partNo != 0; i++) {

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -30,22 +30,22 @@
  */
 
 #include "errno.h"
+#include "sysinfo.h"
+#include "sys/reboot.h"
+#include "sys/resource.h"
+#include "sys/times.h"
+#include "sys/utsname.h"
+#include "time.h"
+#include "capability_type.h"
+#include "capability_api.h"
 #include "los_process_pri.h"
+#include "los_strncpy_from_user.h"
 #ifdef LOSCFG_SHELL
 #include "shcmd.h"
 #include "shmsg.h"
 #endif
-#include "sys/utsname.h"
 #include "user_copy.h"
-#include "los_strncpy_from_user.h"
-#include "capability_type.h"
-#include "capability_api.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 int SysUname(struct utsname *name)
 {
@@ -65,7 +65,41 @@ int SysUname(struct utsname *name)
     }
     return ret;
 }
-//exec命令属于shell内置命令，目前实现最基础的执行用户态程序的功能。
+
+int SysInfo(struct sysinfo *info)
+{
+    int ret;
+    struct sysinfo tmpInfo = { 0 };
+
+    tmpInfo.totalram = LOS_MemPoolSizeGet(m_aucSysMem1);
+    tmpInfo.freeram = LOS_MemPoolSizeGet(m_aucSysMem1) - LOS_MemTotalUsedGet(m_aucSysMem1);
+    tmpInfo.sharedram = 0;
+    tmpInfo.bufferram = 0;
+    tmpInfo.totalswap = 0;
+    tmpInfo.freeswap = 0;
+
+    ret = LOS_ArchCopyToUser(info, &tmpInfo, sizeof(struct sysinfo));
+    if (ret != 0) {
+        return -EFAULT;
+    }
+    return 0;
+}
+
+int SysReboot(int magic, int magic2, int type)
+{
+    (void)magic;
+    (void)magic2;
+    if (!IsCapPermit(CAP_REBOOT)) {
+        return -EPERM;
+    }
+    SystemRebootFunc rebootHook = OsGetRebootHook();
+    if ((type == RB_AUTOBOOT) && (rebootHook != NULL)) {
+        rebootHook();
+        return 0;
+    }
+    return -EFAULT;
+}
+
 #ifdef LOSCFG_SHELL
 int SysShellExec(const char *msgName, const char *cmdString)
 {
@@ -76,43 +110,86 @@ int SysShellExec(const char *msgName, const char *cmdString)
     char msgNameDup[CMD_KEY_LEN + 1] = { 0 };
     char cmdStringDup[CMD_MAX_LEN + 1] = { 0 };
 
-    if (!IsCapPermit(CAP_SHELL_EXEC)) {//没有定义shell   exec能力情况
+    if (!IsCapPermit(CAP_SHELL_EXEC)) {
         return -EPERM;
     }
 
-    ret = LOS_StrncpyFromUser(msgNameDup, msgName, CMD_KEY_LEN + 1);//将参数从用户空间拷贝到内核空间
+    ret = LOS_StrncpyFromUser(msgNameDup, msgName, CMD_KEY_LEN + 1);
     if (ret < 0) {
         return -EFAULT;
     } else if (ret > CMD_KEY_LEN) {
         return -ENAMETOOLONG;
     }
 
-    ret = LOS_StrncpyFromUser(cmdStringDup, cmdString, CMD_MAX_LEN + 1);//将参数从用户空间拷贝到内核空间
+    ret = LOS_StrncpyFromUser(cmdStringDup, cmdString, CMD_MAX_LEN + 1);
     if (ret < 0) {
         return -EFAULT;
     } else if (ret > CMD_MAX_LEN) {
         return -ENAMETOOLONG;
     }
 
-    err = memset_s(&cmdParsed, sizeof(CmdParsed), 0, sizeof(CmdParsed));//命令解析器数据清0
+    err = memset_s(&cmdParsed, sizeof(CmdParsed), 0, sizeof(CmdParsed));
     if (err != EOK) {
         return -EFAULT;
     }
 
-    uintRet = ShellMsgTypeGet(&cmdParsed, msgNameDup);//获取cmd类型 kill watch
+    uintRet = ShellMsgTypeGet(&cmdParsed, msgNameDup);
     if (uintRet != LOS_OK) {
         PRINTK("%s:command not found\n", msgNameDup);
         return -EFAULT;
     } else {
-        (void)OsCmdExec(&cmdParsed, (char *)cmdStringDup);//执行程序 # exec helloworld
+        (void)OsCmdExec(&cmdParsed, (char *)cmdStringDup);
     }
 
     return 0;
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
+#define USEC_PER_SEC 1000000
+
+static void ConvertClocks(struct timeval *time, clock_t clk)
+{
+    time->tv_usec = (clk % CLOCKS_PER_SEC) * USEC_PER_SEC / CLOCKS_PER_SEC;
+    time->tv_sec = (clk) / CLOCKS_PER_SEC;
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+
+int SysGetrusage(int what, struct rusage *ru)
+{
+    int ret;
+    struct tms time;
+    clock_t usec, sec;
+    struct rusage kru;
+
+    ret = LOS_ArchCopyFromUser(&kru, ru, sizeof(struct rusage));
+    if (ret != 0) {
+        return -EFAULT;
+    }
+
+    if (times(&time) == -1) {
+        return -EFAULT;
+    }
+
+    switch (what) {
+        case RUSAGE_SELF: {
+            usec = time.tms_utime;
+            sec = time.tms_stime;
+            break;
+        }
+        case RUSAGE_CHILDREN: {
+            usec = time.tms_cutime;
+            sec = time.tms_cstime;
+            break;
+        }
+        default:
+            return -EINVAL;
+    }
+    ConvertClocks(&kru.ru_utime, usec);
+    ConvertClocks(&kru.ru_stime, sec);
+
+    ret = LOS_ArchCopyToUser(ru, &kru, sizeof(struct rusage));
+    if (ret != 0) {
+        return -EFAULT;
+    }
+    return 0;
+}
+

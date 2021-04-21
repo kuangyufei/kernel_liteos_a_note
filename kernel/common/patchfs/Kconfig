@@ -1,0 +1,6 @@
+config PLATFORM_PATCHFS
+    bool "Enable PATCHFS"
+    default n
+    depends on FS_JFFS
+    help
+      Answer Y to enable LiteOS support patchfs.

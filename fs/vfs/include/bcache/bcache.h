@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,12 +35,7 @@
 #include "pthread.h"
 #include "linux/rbtree.h"
 #include "los_list.h"
-
-#ifdef LOSCFG_SHELL
-#include "reset_shell.h"
-#endif
-
-#include "inode/inode.h"
+#include "fs/vnode.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -80,12 +75,12 @@ typedef struct {
     BOOL allDirty;          /* the whole block is dirty */
 } OsBcacheBlock;
 
-typedef INT32 (*BcacheReadFun)(struct inode *, /* private data */
+typedef INT32 (*BcacheReadFun)(struct Vnode *, /* private data */
                                UINT8 *,        /* block buffer */
                                UINT32,         /* number of blocks to read */
                                UINT64);        /* starting block number */
 
-typedef INT32 (*BcacheWriteFun)(struct inode *, /* private data */
+typedef INT32 (*BcacheWriteFun)(struct Vnode *, /* private data */
                                 const UINT8 *,  /* block buffer */
                                 UINT32,         /* number of blocks to write */
                                 UINT64);        /* starting block number */
@@ -136,6 +131,7 @@ typedef struct tagOsBcache {
  * @param  len   [IN]  number of bytes to read
  * @param  num   [IN]  starting block number
  * @param  pos   [IN]  starting position inside starting block
+ * @param  useRead [IN]  whether use the read block or write block
  *
  * @attention
  * <ul>
@@ -152,7 +148,8 @@ typedef struct tagOsBcache {
 INT32 BlockCacheRead(OsBcache *bc,
                      UINT8 *buf,
                      UINT32 *len,
-                     UINT64 pos);
+                     UINT64 pos,
+                     BOOL useRead);
 
 /**
  * @ingroup  bcache
@@ -229,7 +226,7 @@ INT32 BlockCacheSync(OsBcache *bc);
  * <ul><li>bcache.h</li></ul>
  *
  */
-OsBcache *BlockCacheInit(struct inode *devNode,
+OsBcache *BlockCacheInit(struct Vnode *devNode,
                          UINT32 sectorSize,
                          UINT32 sectorPerBlock,
                          UINT32 blockNum,
@@ -256,6 +253,7 @@ OsBcache *BlockCacheInit(struct inode *devNode,
  */
 VOID BlockCacheDeinit(OsBcache *bc);
 
+INT32 BcacheClearCache(OsBcache *bc);
 INT32 OsSdSync(INT32 id);
 
 #ifdef LOSCFG_FS_FAT_CACHE_SYNC_THREAD

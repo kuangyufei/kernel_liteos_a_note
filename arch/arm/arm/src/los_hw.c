@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,11 +32,6 @@
 #include "los_hw_pri.h"
 #include "los_task_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 /* support cpu vendors */
 CpuVendor g_cpuTable[] = {	//支持的CPU供应商
@@ -147,32 +142,17 @@ LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, TSK_ENTRY_F
     context->PC = (UINTPTR)taskEntry;//入口函数,由外部传入,由上层应用指定,固然每个都不一样.
 }
 
-VOID Sev(VOID)
-{
-    __asm__ __volatile__ ("sev" : : : "memory");//多处理器环境中向所有的处理器发送事件（包括自身）
-}
-
-VOID Wfe(VOID)//等待事件，如果没有之前该事件的记录，进入休眠模式；如果有的话，则清除事件锁存并继续执行；
-{
-    __asm__ __volatile__ ("wfe" : : : "memory");//wait for Events 等待事件，即下一次事件发生前都在此hold住不干活
-}
-
-VOID Wfi(VOID)//WFI指令:arm core 立即进入low-power standby state，等待中断，进入休眠模式。
-{
-    __asm__ __volatile__ ("wfi" : : : "memory");//wait for Interrupt 等待中断，即下一次中断发生前都在此hold住不干活
-}
-
-VOID Dmb(VOID)//数据存储器隔离。DMB 指令保证： 仅当所有在它前面的存储器访问操作都执行完毕后，才提交(commit)在它后面的存储器访问操作。
+DEPRECATED VOID Dmb(VOID)
 {
     __asm__ __volatile__ ("dmb" : : : "memory");
 }
 
-VOID Dsb(VOID)//数据同步隔离。比 DMB 严格： 仅当所有在它前面的存储器访问操作都执行完毕后，才执行在它后面的指令
+DEPRECATED VOID Dsb(VOID)
 {
     __asm__ __volatile__("dsb" : : : "memory");
 }
 
-VOID Isb(VOID)//指令同步隔离。最严格：它会清洗流水线，以保证所有它前面的指令都执行完毕之后，才执行它后面的指令。
+DEPRECATED VOID Isb(VOID)
 {
     __asm__ __volatile__("isb" : : : "memory");
 }
@@ -196,8 +176,3 @@ VOID DCacheInvRange(UINT32 start, UINT32 end)
     arm_inv_cache_range(start, end);
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

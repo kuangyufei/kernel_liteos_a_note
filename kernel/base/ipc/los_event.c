@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,16 +34,11 @@
 #include "los_spinlock.h"
 #include "los_mp.h"
 #include "los_percpu_pri.h"
-
+#include "los_sched_pri.h"
 #if (LOSCFG_BASE_CORE_SWTMR == YES)
 #include "los_exc.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 /******************************************************************************
 事件（Event）是一种任务间通信的机制，可用于任务间的同步。
 	多任务环境下，任务之间往往需要同步操作，一个等待即是一个同步。事件可以提供一对多、多对多的同步操作。
@@ -193,9 +188,9 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadImp(PEVENT_CB_S eventCB, UINT32 eventM
         runTask->eventMask = eventMask;
         runTask->eventMode = mode;
         runTask->taskEvent = eventCB;//事件控制块
-        ret = OsTaskWait(&eventCB->stEventList, timeout, TRUE);//任务进入等待状态，挂入阻塞链表
-        if (ret == LOS_ERRNO_TSK_TIMEOUT) {//如果返回超时
-            runTask->taskEvent = NULL;
+        OsTaskWaitSetPendMask(OS_TASK_WAIT_EVENT, eventMask, timeout);
+        ret = OsSchedTaskWait(&eventCB->stEventList, timeout, TRUE);
+        if (ret == LOS_ERRNO_TSK_TIMEOUT) {
             return LOS_ERRNO_EVENT_READ_TIMEOUT;
         }
 
@@ -231,7 +226,8 @@ LITE_OS_SEC_TEXT STATIC UINT8 OsEventResume(LosTaskCB *resumedTask, const PEVENT
         exitFlag = 1; 
 
         resumedTask->taskEvent = NULL;
-        OsTaskWake(resumedTask);//唤醒任务,加入就绪队列
+        OsTaskWakeClearPendMask(resumedTask);
+        OsSchedTaskWake(resumedTask);
     }
 
     return exitFlag;
@@ -385,8 +381,3 @@ OUT:
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

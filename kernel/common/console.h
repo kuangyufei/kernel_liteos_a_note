@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -76,11 +76,10 @@ TTY 是 Teletype 或 Teletypewriter 的缩写，字符设备的通称,原来是�
 #define CONSOLE_RD_NONBLOCK            0
 #define CONSOLE_SHELL_KEY_EVENT        0x112
 #define CONSOLE_SHELL_EXITED           0x400
-#define CONSOLE_FIFO_SIZE              1024
+#define CONSOLE_FIFO_SIZE              0x400
 #define CONSOLE_NUM                    2
 
-
-#define TELNET_CIRBUF_SIZE 0x2000 //8K
+#define CONSOLE_CIRCBUF_SIZE 0x400
 
 typedef struct {
     CirBuf cirBufCB;        /* Circular buffer CB */ //循环缓冲控制块
@@ -93,7 +92,7 @@ typedef struct {
     UINT32 consoleSem;	//控制台信号量
     UINT32 shellEntryId;//shell的入口ID
     UINT32 consoleMask;	//控制台掩码
-    struct inode *devInode;//设备节点
+    struct Vnode *devVnode;
     CHAR *name;	//名称
     INT32 fd;	//文件描述符
     UINT32 refCount;	//引用次数

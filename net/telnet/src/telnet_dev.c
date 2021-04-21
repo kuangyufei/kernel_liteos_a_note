@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -41,48 +41,45 @@
 #if (LOSCFG_BASE_CORE_SWTMR == YES)
 #include "los_swtmr_pri.h"
 #endif
+#include "los_sched_pri.h"
 #include "console.h"
 #include "lwip/opt.h"
 #include "lwip/sockets.h"
 #include "telnet_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#include "fs/vnode.h"
 
 /* event: there are more commands left in the FIFO to run */
 #define TELNET_EVENT_MORE_CMD   0x01
 #define TELNET_DEV_DRV_MODE     0666
 
-STATIC TELNET_DEV_S g_telnetDev;//远程登陆设备描述符
-STATIC EVENT_CB_S *g_event;	//事件描述符
-STATIC struct inode *g_currentInode;//当前节点
+STATIC TELNET_DEV_S g_telnetDev;
+STATIC EVENT_CB_S *g_event;
+STATIC struct Vnode *g_currentVnode;
 
 STATIC INLINE TELNET_DEV_S *GetTelnetDevByFile(const struct file *file, BOOL isOpenOp)
 {
-    struct inode *telnetInode = NULL;
+    struct Vnode *telnetInode = NULL;
     TELNET_DEV_S *telnetDev = NULL;
 
     if (file == NULL) {
         return NULL;
     }
-    telnetInode = file->f_inode;
+    telnetInode = file->f_vnode;
     if (telnetInode == NULL) {
         return NULL;
     }
     /*
-     * Check if the f_inode is valid here for non-open ops (open is supposed to get invalid f_inode):
+     * Check if the f_vnode is valid here for non-open ops (open is supposed to get invalid f_vnode):
      * when telnet is disconnected, there still may be 'TelentShellTask' tasks trying to write
-     * to the file, but the file has illegal f_inode because the file is used by others.
+     * to the file, but the file has illegal f_vnode because the file is used by others.
      */
     if (!isOpenOp) {
-        if (telnetInode != g_currentInode) {
+        if (telnetInode != g_currentVnode) {
             return NULL;
         }
     }
-    telnetDev = (TELNET_DEV_S *)telnetInode->i_private;
+    telnetDev = (TELNET_DEV_S *)((struct drv_data*)telnetInode->data)->priv;
     return telnetDev;
 }
 
@@ -137,7 +134,7 @@ INT32 TelnetTx(const CHAR *buf, UINT32 bufLen)
 
 /*
  * Description : When open the telnet device, init the FIFO, wait queue etc.
- *///打开远程登陆
+ */
 STATIC INT32 TelnetOpen(struct file *file)
 {
     struct wait_queue_head *wait = NULL;
@@ -145,7 +142,7 @@ STATIC INT32 TelnetOpen(struct file *file)
 
     TelnetLock();
 
-    telnetDev = GetTelnetDevByFile(file, TRUE);//通过文件获取远程登陆设备描述符
+    telnetDev = GetTelnetDevByFile(file, TRUE);
     if (telnetDev == NULL) {
         TelnetUnlock();
         return -1;
@@ -153,8 +150,8 @@ STATIC INT32 TelnetOpen(struct file *file)
 
     if (telnetDev->cmdFifo == NULL) {
         wait = &telnetDev->wait;
-        (VOID)LOS_EventInit(&telnetDev->eventTelnet);//初始化远程事件
-        g_event = &telnetDev->eventTelnet;//全局变量记录事件
+        (VOID)LOS_EventInit(&telnetDev->eventTelnet);
+        g_event = &telnetDev->eventTelnet;
         telnetDev->cmdFifo = (TELNTE_FIFO_S *)malloc(sizeof(TELNTE_FIFO_S));
         if (telnetDev->cmdFifo == NULL) {
             TelnetUnlock();
@@ -164,7 +161,7 @@ STATIC INT32 TelnetOpen(struct file *file)
         telnetDev->cmdFifo->fifoNum = FIFO_MAX;
         LOS_ListInit(&wait->poll_queue);
     }
-    g_currentInode = file->f_inode;
+    g_currentVnode = file->f_vnode;
     TelnetUnlock();
     return 0;
 }
@@ -188,7 +185,7 @@ STATIC INT32 TelnetClose(struct file *file)
         (VOID)LOS_EventDestroy(&telnetDev->eventTelnet);
         g_event = NULL;
     }
-    g_currentInode = NULL;
+    g_currentVnode = NULL;
     TelnetUnlock();
     return 0;
 }
@@ -280,7 +277,7 @@ STATIC ssize_t TelnetWrite(struct file *file, const CHAR *buf, const size_t bufL
     TelnetUnlock();
     return ret;
 }
-//远程登陆IO控制
+
 STATIC INT32 TelnetIoctl(struct file *file, const INT32 cmd, unsigned long arg)
 {
     TELNET_DEV_S *telnetDev = NULL;
@@ -334,14 +331,14 @@ STATIC INT32 TelnetPoll(struct file *file, poll_table *table)
     TelnetUnlock();
     return 0;
 }
-//实现VFS接口函数,对远程登录进行操作
-STATIC const struct file_operations_vfs g_telnetOps = {//远程登录操作
-    TelnetOpen,		//打开
-    TelnetClose,	//关闭
-    TelnetRead,		//读取数据
-    TelnetWrite,	//写入数据
+
+STATIC const struct file_operations_vfs g_telnetOps = {
+    TelnetOpen,
+    TelnetClose,
+    TelnetRead,
+    TelnetWrite,
     NULL,
-    TelnetIoctl,	//远程控制
+    TelnetIoctl,
     NULL,
 #ifndef CONFIG_DISABLE_POLL
     TelnetPoll,
@@ -360,14 +357,14 @@ INT32 TelnetedUnregister(VOID)
 }
 
 /* Once the telnet server started, setup the telnet device file. */
-INT32 TelnetedRegister(VOID)//一旦telnet服务器启动，就安装telnet设备文件
+INT32 TelnetedRegister(VOID)
 {
     INT32 ret;
 
     g_telnetDev.id = 0;
     g_telnetDev.cmdFifo = NULL;
     g_telnetDev.eventPend = TRUE;
-	//在伪文件系统中注册字符驱动程序 见于: ..\third_party\NuttX\fs\driver\fs_registerdriver.c
+
     ret = register_driver(TELNET, &g_telnetOps, TELNET_DEV_DRV_MODE, &g_telnetDev);
     if (ret != 0) {
         PRINT_ERR("Telnet register driver error.\n");
@@ -376,7 +373,7 @@ INT32 TelnetedRegister(VOID)//一旦telnet服务器启动，就安装telnet设�
 }
 
 /* When a telnet client connection established, update the output console for tasks. */
-INT32 TelnetDevInit(INT32 clientFd)//建立telnet客户机连接后，更新任务的输出控制台。
+INT32 TelnetDevInit(INT32 clientFd)
 {
     INT32 ret;
 
@@ -384,25 +381,25 @@ INT32 TelnetDevInit(INT32 clientFd)//建立telnet客户机连接后，更新任�
         PRINT_ERR("Invalid telnet clientFd.\n");
         return -1;
     }
-    ret = system_console_init(TELNET);//初始化系统控制台
+    ret = system_console_init(TELNET);
     if (ret != 0) {
-        PRINT_ERR("Telnet console init error.\n");//打印初始化失败
+        PRINT_ERR("Telnet console init error.\n");
         return ret;
     }
-    ret = ioctl(STDIN_FILENO, CFG_TELNET_SET_FD, clientFd);//ioctl:控制I/O设备, 提供了一种获得设备信息和向设备发送控制参数的手段
+    ret = ioctl(STDIN_FILENO, CFG_TELNET_SET_FD, clientFd);
     if (ret != 0) {
         PRINT_ERR("Telnet device ioctl error.\n");
-        (VOID)system_console_deinit(TELNET);//错误情况下删除初始化
+        (VOID)system_console_deinit(TELNET);
     }
     return ret;
 }
 
 /* When closing the telnet client connection, reset the output console for tasks. */
-INT32 TelnetDevDeinit(VOID)//关闭telnet客户端连接时，重置任务的输出控制台。
+INT32 TelnetDevDeinit(VOID)
 {
     INT32 ret;
 
-    ret = system_console_deinit(TELNET);//删除初始化
+    ret = system_console_deinit(TELNET);
     if (ret != 0) {
         PRINT_ERR("Telnet console deinit error.\n");
     }
@@ -410,8 +407,3 @@ INT32 TelnetDevDeinit(VOID)//关闭telnet客户端连接时，重置任务的输
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

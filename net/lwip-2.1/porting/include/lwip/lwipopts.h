@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -78,13 +78,11 @@
 #define DRV_STS_DEBUG                   LWIP_DBG_ON
 #endif
 
-//select、poll、epoll之间的区别 可以看 https://www.cnblogs.com/aspirant/p/9166944.html
-// Options only in new opt.h
-#define LWIP_SOCKET_SELECT              0	//O(n),它仅仅知道了，有I/O事件发生了，却并不知道是哪那几个流（可能有一个，多个，甚至全部），我们只能无差别轮询所有流，找出能读出数据，或者写入数据的流，对他们进行操作。所以select具有O(n)的无差别轮询复杂度，同时处理的流越多，无差别轮询时间就越长。
-#define LWIP_SOCKET_POLL                1	//O(n),poll本质上和select没有区别，它将用户传入的数组拷贝到内核空间，然后查询每个fd对应的设备状态， 但是它没有最大连接数的限制，原因是它是基于链表来存储的.
 
-//鸿蒙liteos并不支持 epoll(event poll),其不同于忙轮询和无差别轮询，epoll会把哪个流发生了怎样的I/O事件通知。
-//所以epoll实际上是事件驱动（每个事件关联上fd）的,复杂度降低到了O(1)
+// Options only in new opt.h
+#define LWIP_SOCKET_SELECT              0
+#define LWIP_SOCKET_POLL                1
+
 
 // Options in old opt.h that differs from new opt.h
 #define MEM_ALIGNMENT                   __SIZEOF_POINTER__
@@ -214,10 +212,13 @@
 
 // Options for old lwipopts.h
 #define IP_FRAG_MAX_MTU                 1500
-#define LWIP_CONFIG_NUM_SOCKETS         128	//套接字描述符的最大数目
+#define LWIP_CONFIG_NUM_SOCKETS         128
 #define IP_REASS_MAX_MEM_SIZE           (MEM_SIZE / 4)
 
+// Options for enhancement code, same for old lwipopts.h
+#define LWIP_NETIF_PROMISC              1
 #define LWIP_DHCPS                      1
 #define LWIP_ENABLE_NET_CAPABILITY      1
+#define LWIP_ENABLE_CAP_NET_BROADCAST   0
 
 #endif /* _LWIP_PORTING_LWIPOPTS_H_ */

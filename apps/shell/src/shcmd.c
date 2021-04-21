@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,11 +36,6 @@
 #include "dirent.h"
 #include "securec.h"
 
-#ifdef  __cplusplus
-#if  __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #define SHELL_INIT_MAGIC_FLAG 0xABABABAB
 #define CTRL_C 0x03 /* 0x03: ctrl+c ASCII */
@@ -85,7 +80,7 @@ static int OsStrSeparateTabStrGet(const char **tabStr, CmdParsed *parsed, unsign
     if ((strlen(shiftStr) == 0) || (tempStr[strlen(tempStr) - 1] != shiftStr[strlen(shiftStr) - 1])) {
         *tabStr = "";
     } else {
-        if (OsCmdTokenSplit(shiftStr, ' ', parsed)) {
+        if (OsCmdParse(shiftStr, parsed)) {
             free(tempStr);
             return (int)SH_ERROR;
         }
@@ -201,7 +196,7 @@ static int OsSurePrintAll(unsigned int count)
     char readChar = 0;
     printf("\nDisplay all %u possibilities?(y/n)", count);
     while (1) {
-        if (read(0, &readChar, 1) != 1) {
+        if (read(STDIN_FILENO, &readChar, 1) != 1) {
             return (int)SH_ERROR;
         }
         if ((readChar == 'n') || (readChar == 'N') || (readChar == CTRL_C)) {
@@ -406,7 +401,7 @@ unsigned int OsCmdKeyShift(const char *cmdKey, char *cmdOut, unsigned int size)
     }
     output = (char *)malloc(len + 1);
     if (output == NULL) {
-        printf("malloc failure in %s[%d]", __FUNCTION__, __LINE__);
+        printf("malloc failure in %s[%d]\n", __FUNCTION__, __LINE__);
         return (unsigned int)SH_ERROR;
     }
 
@@ -453,18 +448,13 @@ unsigned int OsCmdKeyShift(const char *cmdKey, char *cmdOut, unsigned int size)
     free(outputBak);
     return SH_OK;
 }
+
 int OsTabCompletion(char *cmdKey, unsigned int *len)
 {
     int count;
-    char *cmdMainStr = cmdKey;
 
     if ((cmdKey == NULL) || (len == NULL)) {
         return (int)SH_ERROR;
-    }
-
-    /* cut left space */
-    while (*cmdMainStr == 0x20) {
-        cmdMainStr++;
     }
 
     count = OsTabMatchFile(cmdKey, len);
@@ -604,8 +594,3 @@ unsigned int OsCmdExec(CmdParsed *cmdParsed, char *cmdStr)
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

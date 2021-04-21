@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,25 +35,20 @@
 #include "los_cpup_pri.h"
 #endif
 #include "los_hwi_pri.h"
-#include "los_process_pri.h"
 #include "shcmd.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+
 //若开关LOSCFG_CPUP_INCLUDE_IRQ打开，则还会显示各个中断的处理时间（cycles）、CPU占用率以及中断类型。
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
-STATIC CPUP_INFO_S g_hwiCpupAll[OS_HWI_MAX_NUM];
-STATIC CPUP_INFO_S g_hwiCpup10s[OS_HWI_MAX_NUM];
-STATIC CPUP_INFO_S g_hwiCpup1s[OS_HWI_MAX_NUM];
+STATIC CPUP_INFO_S hwiCpupAll[OS_HWI_MAX_NUM];
+STATIC CPUP_INFO_S hwiCpup10s[OS_HWI_MAX_NUM];
+STATIC CPUP_INFO_S hwiCpup1s[OS_HWI_MAX_NUM];
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdHwi(INT32 argc, const CHAR **argv)//hwi命令查询当前中断信息
 {
     UINT32 i;
-    UINT32 intSave;
     UINT64 cycles;
     size_t size = sizeof(CPUP_INFO_S) * OS_HWI_MAX_NUM;
+    OsIrqCpupCB *irqCpup = OsGetIrqCpupArrayBase();
 
     (VOID)argv;
     if (argc > 0) {
@@ -61,42 +56,37 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdHwi(INT32 argc, const CHAR **argv)//hwi�
         return OS_ERROR;
     }
 
-    (VOID)memset_s(g_hwiCpupAll, size, 0, size);
-    (VOID)memset_s(g_hwiCpup10s, size, 0, size);
-    (VOID)memset_s(g_hwiCpup1s, size, 0, size);
+    if (irqCpup == NULL) {
+        return OS_ERROR;
+    }
 
-    intSave = LOS_IntLock();
-    (VOID)LOS_AllCpuUsage(OS_HWI_MAX_NUM, g_hwiCpupAll, CPUP_ALL_TIME, 0);
-    (VOID)LOS_AllCpuUsage(OS_HWI_MAX_NUM, g_hwiCpup10s, CPUP_LAST_TEN_SECONDS, 0);
-    (VOID)LOS_AllCpuUsage(OS_HWI_MAX_NUM, g_hwiCpup1s, CPUP_LAST_ONE_SECONDS, 0);
-    LOS_IntRestore(intSave);
+    (VOID)LOS_GetAllIrqCpuUsage(CPUP_ALL_TIME, hwiCpupAll, size);
+    (VOID)LOS_GetAllIrqCpuUsage(CPUP_LAST_TEN_SECONDS, hwiCpup10s, size);
+    (VOID)LOS_GetAllIrqCpuUsage(CPUP_LAST_ONE_SECONDS, hwiCpup1s, size);
 
-    PRINTK(" InterruptNo     Count     Name         CYCLECOST  CPUUSE   CPUUSE10s   CPUUSE1s   mode\n");
+    PRINTK(" InterruptNo      Count  ATime(us)   CPUUSE  CPUUSE10s  CPUUSE1s   Mode Name\n");
     for (i = OS_HWI_FORM_EXC_NUM; i < OS_HWI_MAX_NUM + OS_HWI_FORM_EXC_NUM; i++) {
-        if (OsGetHwiFormCnt(i)) {
-            cycles = g_cpup[g_processMaxNum + i].allTime / OsGetHwiFormCnt(i);
+        UINT32 count = OsGetHwiFormCnt(i);
+        if (count) {
+            cycles = (((OsIrqCpupCB *)(&irqCpup[i]))->cpup.allTime * OS_NS_PER_CYCLE) / (count * OS_SYS_NS_PER_US);
         } else {
             cycles = 0;
         }
         /* Different cores has different hwi form implementation */
-        if (HWI_IS_REGISTED(i) && (OsGetHwiFormName(i) != NULL)) {
-            PRINTK(" %8d:       %-10d%-12s  %-10llu", i, OsGetHwiFormCnt(i), OsGetHwiFormName(i), cycles);
-        } else if (HWI_IS_REGISTED(i)) {
-            PRINTK(" %8d:       %-10d%-12s  %-10llu", i, OsGetHwiFormCnt(i), "", cycles);
+        if (HWI_IS_REGISTED(i)) {
+            PRINTK(" %10d:%11u%11llu", i, count, cycles);
         } else {
             continue;
         }
-        PRINTK("%2d.%-7d"
-               "%2d.%-9d"
-               "%2d.%-6d"
-               "%s\n",
-               g_hwiCpupAll[i].uwUsage / LOS_CPUP_PRECISION_MULT,
-               g_hwiCpupAll[i].uwUsage % LOS_CPUP_PRECISION_MULT,
-               g_hwiCpup10s[i].uwUsage / LOS_CPUP_PRECISION_MULT,
-               g_hwiCpup10s[i].uwUsage % LOS_CPUP_PRECISION_MULT,
-               g_hwiCpup1s[i].uwUsage / LOS_CPUP_PRECISION_MULT,
-               g_hwiCpup1s[i].uwUsage % LOS_CPUP_PRECISION_MULT,
-               g_hwiForm[i].uwParam == IRQF_SHARED ? "shared" : "normal");
+        PRINTK("%6u.%-2u%8u.%-2u%7u.%-2u%7s %-12s\n",
+               hwiCpupAll[i].usage / LOS_CPUP_PRECISION_MULT,
+               hwiCpupAll[i].usage % LOS_CPUP_PRECISION_MULT,
+               hwiCpup10s[i].usage / LOS_CPUP_PRECISION_MULT,
+               hwiCpup10s[i].usage % LOS_CPUP_PRECISION_MULT,
+               hwiCpup1s[i].usage / LOS_CPUP_PRECISION_MULT,
+               hwiCpup1s[i].usage % LOS_CPUP_PRECISION_MULT,
+               (g_hwiForm[i].uwParam == IRQF_SHARED) ? "shared" : "normal",
+               (OsGetHwiFormName(i) != NULL) ? OsGetHwiFormName(i) : "");
     }
     return 0;
 }
@@ -126,9 +116,4 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdHwi(INT32 argc, const CHAR **argv) //hwi
 
 SHELLCMD_ENTRY(hwi_shellcmd, CMD_TYPE_EX, "hwi", 0, (CmdCallBackFunc)OsShellCmdHwi);//采用shell命令静态注册方式
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 #endif /* LOSCFG_SHELL */

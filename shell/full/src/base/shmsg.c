@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -41,17 +41,11 @@
 #include "los_event.h"
 #include "los_list.h"
 #include "los_printf.h"
-#include "hisoc/uart.h"
 
 #ifdef LOSCFG_FS_VFS
 #include "console.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 CHAR *ShellGetInputBuf(ShellCB *shellCB)
 {
@@ -154,7 +148,7 @@ STATIC INT32 ShellCmdLineCheckUDRL(const CHAR ch, ShellCB *shellCB)
     }
     return LOS_NOK;
 }
-//对shell命令的解析
+
 LITE_OS_SEC_TEXT_MINOR VOID ShellCmdLineParse(CHAR c, pf_OUTPUT outputFunc, ShellCB *shellCB)
 {
     const CHAR ch = c;
@@ -338,7 +332,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntry(UINTPTR param)
     INT32 n = 0;
     ShellCB *shellCB = (ShellCB *)param;
 
-    CONSOLE_CB *consoleCB = OsGetConsoleByID((INT32)shellCB->consoleID);//通过参数拿到控制台描述符
+    CONSOLE_CB *consoleCB = OsGetConsoleByID((INT32)shellCB->consoleID);
     if (consoleCB == NULL) {
         PRINT_ERR("Shell task init error!\n");
         return 1;
@@ -364,21 +358,21 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntry(UINTPTR param)
     }
 }
 #endif
-//处理shell 命令
+
 STATIC VOID ShellCmdProcess(ShellCB *shellCB)
 {
     CHAR *buf = NULL;
     while (1) {
-        buf = ShellGetInputBuf(shellCB);//获取输入buffer
+        buf = ShellGetInputBuf(shellCB);
         if (buf == NULL) {
             break;
         }
-        (VOID)ShellMsgParse(buf);//对buffer进行解析,执行
-        ShellSaveHistoryCmd(buf, shellCB);//保存buffer到历史记录
+        (VOID)ShellMsgParse(buf);
+        ShellSaveHistoryCmd(buf, shellCB);
         shellCB->cmdMaskKeyLink = shellCB->cmdHistoryKeyLink;
     }
 }
-//shell 任务的入口函数
+
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellTask(UINTPTR param1,
                                         UINTPTR param2,
                                         UINTPTR param3,
@@ -390,20 +384,20 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellTask(UINTPTR param1,
     (VOID)param3;
     (VOID)param4;
 
-    while (1) {//死循环读事件
+    while (1) {
         PRINTK("\nOHOS # ");
         ret = LOS_EventRead(&shellCB->shellEvent,
-                            0xFFF, LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);//等待用户的输入完成 读取cmd命令
-        if (ret == SHELL_CMD_PARSE_EVENT) {//收到解析cmd事件
-            ShellCmdProcess(shellCB);//处理shell 命令
-        } else if (ret == CONSOLE_SHELL_KEY_EVENT) {//等待一个key事件退出死循环，见于 OsShellDeinit 
+                            0xFFF, LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
+        if (ret == SHELL_CMD_PARSE_EVENT) {
+            ShellCmdProcess(shellCB);
+        } else if (ret == CONSOLE_SHELL_KEY_EVENT) {
             break;
         }
     }
     OsShellKeyDeInit((CmdKeyLink *)shellCB->cmdKeyLink);
     OsShellKeyDeInit((CmdKeyLink *)shellCB->cmdHistoryKeyLink);
-    (VOID)LOS_EventDestroy(&shellCB->shellEvent);//删除shell的事件
-    (VOID)LOS_MemFree((VOID *)m_aucSysMem0, shellCB);//释放shell所用虚拟内存
+    (VOID)LOS_EventDestroy(&shellCB->shellEvent);
+    (VOID)LOS_MemFree((VOID *)m_aucSysMem0, shellCB);
     return 0;
 }
 
@@ -411,7 +405,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellTask(UINTPTR param1,
 #define SERIAL_ENTRY_TASK_NAME "SerialEntryTask"
 #define TELNET_SHELL_TASK_NAME "TelnetShellTask"
 #define TELNET_ENTRY_TASK_NAME "TelnetEntryTask"
-//shell 任务的初始化
+
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellTaskInit(ShellCB *shellCB)
 {
     CHAR *name = NULL;
@@ -425,18 +419,18 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellTaskInit(ShellCB *shellCB)
         return LOS_NOK;
     }
 
-    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ShellTask; //任务入口函数
+    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ShellTask;
     initParam.usTaskPrio   = 9; /* 9:shell task priority */
-    initParam.auwArgs[0]   = (UINTPTR)shellCB; //shell描述符作为首个参数
-    initParam.uwStackSize  = 0x3000;	//12K
+    initParam.auwArgs[0]   = (UINTPTR)shellCB;
+    initParam.uwStackSize  = 0x3000;
     initParam.pcName       = name;
-    initParam.uwResved     = LOS_TASK_STATUS_DETACHED;	//线程分离模式
+    initParam.uwResved     = LOS_TASK_STATUS_DETACHED;
 
-    (VOID)LOS_EventInit(&shellCB->shellEvent);//事件初始化
+    (VOID)LOS_EventInit(&shellCB->shellEvent);
 
-    return LOS_TaskCreate(&shellCB->shellTaskHandle, &initParam);//创建任务,并加入就绪队列,进行调度
+    return LOS_TaskCreate(&shellCB->shellTaskHandle, &initParam);
 }
-//shell
+
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntryInit(ShellCB *shellCB)
 {
     UINT32 ret;
@@ -466,8 +460,3 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntryInit(ShellCB *shellCB)
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

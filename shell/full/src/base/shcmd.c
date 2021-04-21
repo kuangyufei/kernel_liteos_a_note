@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -38,22 +38,16 @@
 #include "securec.h"
 #include "los_mux.h"
 #include "los_memory.h"
-#include "hisoc/uart.h"
+#include "los_typedef.h"
 
-#ifdef  __cplusplus
-#if  __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #define SHELL_INIT_MAGIC_FLAG 0xABABABAB
 #define CTRL_C 0x03 /* 0x03: ctrl+c ASCII */
 
 STATIC CmdModInfo g_cmdInfo;
 
-LOS_HAL_TABLE_BEGIN(g_shellcmd, shellcmd);//硬件抽象层表开始 ,其中是两个汇编语句 直接编译到代码段指定位置
-LOS_HAL_TABLE_END(g_shellcmdEnd, shellcmd);//硬件抽象层表结束 
-
+LOS_HAL_TABLE_BEGIN(g_shellcmd, shellcmd);
+LOS_HAL_TABLE_END(g_shellcmdEnd, shellcmd);
 
 CmdModInfo *OsCmdInfoGet(VOID)
 {
@@ -276,7 +270,6 @@ STATIC VOID strncmp_cut(const CHAR *s1, CHAR *s2, size_t n)
     }
     return;
 }
-
 STATIC INT32 OsExecNameMatch(const CHAR *strPath, const CHAR *nameLooking, CHAR *strObj, UINT32 *maxLen)
 {
     INT32 count = 0;
@@ -646,7 +639,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellKeyDeInit(CmdKeyLink *cmdKeyLink)
     cmdKeyLink->count = 0;
     (VOID)LOS_MemFree(m_aucSysMem0, cmdKeyLink);
 }
-//向内核注册cmd命令 hwi,watch ==
+
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellSysCmdRegister(VOID)
 {
     UINT32 i;
@@ -663,7 +656,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellSysCmdRegister(VOID)
     for (i = 0; i < index; ++i) {
         cmdItem = (CmdItemNode *)(cmdItemGroup + i * sizeof(CmdItemNode));
         cmdItem->cmd = &g_shellcmd[i];
-        OsCmdAscendingInsert(cmdItem);//按升序方式挂入链表
+        OsCmdAscendingInsert(cmdItem);
     }
     g_cmdInfo.listNum += index;
     return LOS_OK;
@@ -694,7 +687,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellCmdPush(const CHAR *string, CmdKeyLink *cmdKe
 
     return;
 }
-//显示命令的历史记录 ,shell history
+
 LITE_OS_SEC_TEXT_MINOR VOID OsShellHistoryShow(UINT32 value, ShellCB *shellCB)
 {
     CmdKeyLink *cmdtmp = NULL;
@@ -740,7 +733,7 @@ END:
     (VOID)pthread_mutex_unlock(&shellCB->historyMutex);
     return;
 }
-//运行CMD命令 比如telnet输入 hwi ,先要经过解释,再找到hwi对应的处理函数去执行
+
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdExec(CmdParsed *cmdParsed, CHAR *cmdStr)
 {
     UINT32 ret;
@@ -753,28 +746,28 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdExec(CmdParsed *cmdParsed, CHAR *cmdStr)
         return (UINT32)OS_ERROR;
     }
 
-    ret = OsCmdParse(cmdStr, cmdParsed);//解析cmd命令
-    if (ret != LOS_OK) {//解析错误,命令输错了.
+    ret = OsCmdParse(cmdStr, cmdParsed);
+    if (ret != LOS_OK) {
         goto OUT;
     }
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(g_cmdInfo.cmdList.list), CmdItemNode, list) {//遍历全局cmd链表
+    LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(g_cmdInfo.cmdList.list), CmdItemNode, list) {
         cmdKey = curCmdItem->cmd->cmdKey;
         if ((cmdParsed->cmdType == curCmdItem->cmd->cmdType) &&
             (strlen(cmdKey) == strlen(cmdParsed->cmdKeyword)) &&
-            (strncmp(cmdKey, (CHAR *)(cmdParsed->cmdKeyword), strlen(cmdKey)) == 0)) {//找到对应的命令
-            cmdHook = curCmdItem->cmd->cmdHook;//拿到回调函数
+            (strncmp(cmdKey, (CHAR *)(cmdParsed->cmdKeyword), strlen(cmdKey)) == 0)) {
+            cmdHook = curCmdItem->cmd->cmdHook;
             break;
         }
     }
 
     ret = OS_ERROR;
     if (cmdHook != NULL) {
-        ret = (cmdHook)(cmdParsed->paramCnt, (const CHAR **)cmdParsed->paramArray);//执行回调函数 hook,类似于设计模式中的观察者模式
+        ret = (cmdHook)(cmdParsed->paramCnt, (const CHAR **)cmdParsed->paramArray);
     }
 
 OUT:
-    for (i = 0; i < cmdParsed->paramCnt; i++) {//命令执行完了善后处理
+    for (i = 0; i < cmdParsed->paramCnt; i++) {
         if (cmdParsed->paramArray[i] != NULL) {
             (VOID)LOS_MemFree(m_aucSysMem0, cmdParsed->paramArray[i]);
             cmdParsed->paramArray[i] = NULL;
@@ -783,60 +776,59 @@ OUT:
 
     return (UINT32)ret;
 }
-//初始化 shell 命令
+
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdInit(VOID)
 {
     UINT32 ret;
-    LOS_ListInit(&(g_cmdInfo.cmdList.list));//初始化链表
-    g_cmdInfo.listNum = 0;//CMD总数量	
-    g_cmdInfo.initMagicFlag = SHELL_INIT_MAGIC_FLAG;//魔法数字,用于判断是否初始化过 0xABABABAB ,还记得栈区内容的魔法数字是多少吗? 是0xCBCBCBCB
-    ret = LOS_MuxInit(&g_cmdInfo.muxLock, NULL);//互斥锁初始化
+    LOS_ListInit(&(g_cmdInfo.cmdList.list));
+    g_cmdInfo.listNum = 0;
+    g_cmdInfo.initMagicFlag = SHELL_INIT_MAGIC_FLAG;
+    ret = LOS_MuxInit(&g_cmdInfo.muxLock, NULL);
     if (ret != LOS_OK) {
         PRINT_ERR("Create mutex for shell cmd info failed\n");
         return OS_ERROR;
     }
     return LOS_OK;
 }
-//创建一个cmd 命令,采用动态方式,又 osCmdReg 调用
-//静态方式创建为 SHELLCMD_ENTRY(oom_shellcmd, CMD_TYPE_SHOW, OOM_CMD, 2, (CmdCallBackFunc)OsShellCmdOom);
+
 STATIC UINT32 OsCmdItemCreate(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNum, CmdCallBackFunc cmdProc)
 {
     CmdItem *cmdItem = NULL;
     CmdItemNode *cmdItemNode = NULL;
 
-    cmdItem = (CmdItem *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdItem));//分配一个item
+    cmdItem = (CmdItem *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdItem));
     if (cmdItem == NULL) {
         return OS_ERRNO_SHELL_CMDREG_MEMALLOC_ERROR;
     }
-    (VOID)memset_s(cmdItem, sizeof(CmdItem), '\0', sizeof(CmdItem));//内存块数据清0
+    (VOID)memset_s(cmdItem, sizeof(CmdItem), '\0', sizeof(CmdItem));
 
-    cmdItemNode = (CmdItemNode *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdItemNode));//分配一个itemNode
-    if (cmdItemNode == NULL) {	//申请失败
-        (VOID)LOS_MemFree(m_aucSysMem0, cmdItem);//释放之前申请的内存
+    cmdItemNode = (CmdItemNode *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdItemNode));
+    if (cmdItemNode == NULL) {
+        (VOID)LOS_MemFree(m_aucSysMem0, cmdItem);
         return OS_ERRNO_SHELL_CMDREG_MEMALLOC_ERROR;
     }
-    (VOID)memset_s(cmdItemNode, sizeof(CmdItemNode), '\0', sizeof(CmdItemNode));//内存块数据清0
-    cmdItemNode->cmd = cmdItem;			
+    (VOID)memset_s(cmdItemNode, sizeof(CmdItemNode), '\0', sizeof(CmdItemNode));
+    cmdItemNode->cmd = cmdItem;
     cmdItemNode->cmd->cmdHook = cmdProc;
     cmdItemNode->cmd->paraNum = paraNum;
     cmdItemNode->cmd->cmdType = cmdType;
     cmdItemNode->cmd->cmdKey = cmdKey;
 
-    (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);//拿锁
-    OsCmdAscendingInsert(cmdItemNode);//以递升方式挂入
-    g_cmdInfo.listNum++;			//cmd总数++
-    (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);//释放锁
+    (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);
+    OsCmdAscendingInsert(cmdItemNode);
+    g_cmdInfo.listNum++;
+    (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
 
     return LOS_OK;
 }
 
-/* open API */ //对外开发的API接口, 动态注册一个cmd命令,方便调试.
+/* open API */
 LITE_OS_SEC_TEXT_MINOR UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNum, CmdCallBackFunc cmdProc)
 {
     CmdItemNode *cmdItemNode = NULL;
 
     (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);
-    if (g_cmdInfo.initMagicFlag != SHELL_INIT_MAGIC_FLAG) {//检查魔法数字对不对,初始化时会赋值
+    if (g_cmdInfo.initMagicFlag != SHELL_INIT_MAGIC_FLAG) {
         (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
         PRINT_ERR("[%s] shell is not yet initialized!\n", __FUNCTION__);
         return OS_ERRNO_SHELL_NOT_INIT;
@@ -859,7 +851,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT
     }
 
     (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);
-    LOS_DL_LIST_FOR_EACH_ENTRY(cmdItemNode, &(g_cmdInfo.cmdList.list), CmdItemNode, list) {//循环检查防止出现一样的cmd
+    LOS_DL_LIST_FOR_EACH_ENTRY(cmdItemNode, &(g_cmdInfo.cmdList.list), CmdItemNode, list) {
         if ((cmdType == cmdItemNode->cmd->cmdType) &&
             ((strlen(cmdKey) == strlen(cmdItemNode->cmd->cmdKey)) &&
             (strncmp((CHAR *)(cmdItemNode->cmd->cmdKey), cmdKey, strlen(cmdKey)) == 0))) {
@@ -869,11 +861,6 @@ LITE_OS_SEC_TEXT_MINOR UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT
     }
     (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
 
-    return OsCmdItemCreate(cmdType, cmdKey, paraNum, cmdProc);//创建一个新的cmd命令
+    return OsCmdItemCreate(cmdType, cmdKey, paraNum, cmdProc);
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

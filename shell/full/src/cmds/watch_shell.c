@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -211,23 +211,7 @@ UINT32 OsWatchTaskCreate(WatchCB *watchItem)
     }
     return ret;
 }
-/*************************************************************
-命令功能
-watch命令用于周期性的监视一个命令的运行结果。
-命令格式
-watch
-watch [-c/-n/-t/--count/--interval/-no-title/--over] [command]
--c / --count 命令执行的总次数。
--n / --interval 命令周期性执行的时间间隔（s）
--t / -no-title 关闭顶端的时间显示。
-command 需要监测的命令。
---over 关闭当前监测指令。
 
-使用指南
-watch运行过程中可以执行watch --over结束本次watch命令。
-输入举例：
-watch -n 2 -c 6 task 总共有6次task命令打印，每次间隔2秒
-*************************************************************/
 UINT32 OsShellCmdWatch(UINT32 argc, const CHAR **argv)
 {
     WatchCB *watchItem = NULL;
@@ -287,5 +271,5 @@ WATCH_ERROR:
     return OS_ERROR;
 }
 
-SHELLCMD_ENTRY(watch_shellcmd, CMD_TYPE_EX, "watch", XARGS, (CmdCallBackFunc)OsShellCmdWatch);//采用shell命令静态注册方式
+SHELLCMD_ENTRY(watch_shellcmd, CMD_TYPE_EX, "watch", XARGS, (CmdCallBackFunc)OsShellCmdWatch);
 #endif

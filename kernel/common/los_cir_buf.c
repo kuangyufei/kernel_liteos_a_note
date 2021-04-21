@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,11 +31,7 @@
 
 #include "los_cir_buf_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+
 //返回循环buf已使用的大小
 UINT32 LOS_CirBufUsedSize(CirBuf *cirbufCB)
 {
@@ -236,8 +232,3 @@ VOID LOS_CirBufDeinit(CirBuf *cirbufCB)
     (VOID)memset_s(cirbufCB, sizeof(CirBuf), 0, sizeof(CirBuf));
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

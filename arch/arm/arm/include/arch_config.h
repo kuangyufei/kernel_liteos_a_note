@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,7 +32,6 @@
 #ifndef _ARCH_CONFIG_H
 #define _ARCH_CONFIG_H
 //ARM处理器一共有7种工作模式
-#include "menuconfig.h"
 /******************************************************************************
 CPSR(current program status register)当前程序的状态寄存器
 	CPSR有4个8位区域：标志域（F）、状态域（S）、扩展域（X）、控制域（C）
@@ -170,7 +169,7 @@ SPSR（saved program status register）程序状态保存寄存器.
 #define REG_R12  12
 #define REG_R13  13		
 #define REG_R14  14
-#define REG_R15  15
+#define REG_R15  15			
 #define REG_CPSR 16 		//程序状态寄存器(current program status register) (当前程序状态寄存器)
 #define REG_SP   REG_R13 	//堆栈指针 当不使用堆栈时，R13 也可以用做通用数据寄存器
 #define REG_LR   REG_R14 	//连接寄存器。当执行子程序或者异常中断时，跳转指令会自动将当前地址存入LR寄存器中，当执行完子程 序或者中断后，根据LR中的值，恢复或者说是返回之前被打断的地址继续执行

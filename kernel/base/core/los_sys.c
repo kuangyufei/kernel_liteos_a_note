@@ -30,13 +30,8 @@
  */
 
 #include "los_sys_pri.h"
-#include "los_tick_pri.h"
+#include "los_sched_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 /******************************************************************************
 基本概念
 	时间管理以系统时钟为基础，给应用程序提供所有和时间有关的服务。
@@ -70,22 +65,11 @@ extern "C" {
 参考
 	https://gitee.com/LiteOS/LiteOS/blob/master/doc/Huawei_LiteOS_Kernel_Developer_Guide_zh.md#setup
 ******************************************************************************/
-#define OS_MAX_VALUE    0xFFFFFFFF
+#define OS_MAX_VALUE    0xFFFFFFFFUL
 //获取自系统启动以来的Tick数
 LITE_OS_SEC_TEXT_MINOR UINT64 LOS_TickCountGet(VOID)
 {
-    UINT32 intSave;
-    UINT64 tick;
-
-    /*
-     * use core0's tick as system's timeline,
-     * the tick needs to be atomic.
-     */
-    TICK_LOCK(intSave);
-    tick = g_tickCount[0];//使用CPU core0作为系统的 tick数
-    TICK_UNLOCK(intSave);
-
-    return tick;
+    return OsGerCurrSchedTimeCycle() / OS_CYCLE_PER_TICK;
 }
 //每个Tick多少Cycle数
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_CyclePerTickGet(VOID)
@@ -107,8 +91,14 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_Tick2MS(UINT32 tick)
     return ((UINT64)tick * OS_SYS_MS_PER_SECOND) / LOSCFG_BASE_CORE_TICK_PER_SECOND;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
+LITE_OS_SEC_TEXT_MINOR UINT32 OsUS2Tick(UINT64 microsec)
+{
+    const UINT32 usPerTick = OS_SYS_US_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND;
+
+    UINT64 ticks = (microsec + usPerTick - 1) / usPerTick;
+    if (ticks > OS_MAX_VALUE) {
+        ticks = OS_MAX_VALUE;
+    }
+    return (UINT32)ticks;
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+

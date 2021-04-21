@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,11 +35,41 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+#ifdef LOSCFG_QUICK_START
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+
+#define QUICKSTART_IOC_MAGIC    'T'
+#define QUICKSTART_INITSTEP2    _IO(QUICKSTART_IOC_MAGIC, 0)
+#define WAIT_FOR_SAMPLE         300000  // wait 300ms for sample
+#endif
 int main(int argc, char * const *argv)
 {
     int ret;
     const char *shellPath = "/bin/shell";
 
+#ifdef LOSCFG_QUICK_START
+    const char *samplePath = "/dev/shm/sample_quickstart";
+
+    ret = fork();
+    if (ret < 0) {
+        printf("Failed to fork for sample_quickstart\n");
+    } else if (ret == 0) {
+        (void)execve(samplePath, NULL, NULL);
+        exit(0);
+    }
+
+    usleep(WAIT_FOR_SAMPLE);
+
+    int fd = open("/dev/quickstart", O_RDONLY);
+    if (fd != -1) {
+        ioctl(fd, QUICKSTART_INITSTEP2);
+        close(fd);
+    }
+#endif
     ret = fork();
     if (ret < 0) {
         printf("Failed to fork for shell\n");

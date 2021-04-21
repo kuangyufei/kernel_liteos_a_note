@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,17 +31,11 @@
 
 #include "los_hwi.h"
 #include "los_memory.h"
-#include "los_tickless_pri.h"
 #include "los_spinlock.h"
 #ifdef LOSCFG_KERNEL_CPUP
 #include "los_cpup_pri.h"
 #endif
-
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#include "los_sched_pri.h"
 
 /******************************************************************************
 基本概念
@@ -150,6 +144,10 @@ CHAR *OsGetHwiFormName(UINT32 index)//获取某个中断的名称
     return g_hwiFormName[index];
 }
 
+UINT32 LOS_GetSystemHwiMaximum(VOID)
+{
+    return OS_HWI_MAX_NUM;
+}
 typedef VOID (*HWI_PROC_FUNC0)(VOID);
 typedef VOID (*HWI_PROC_FUNC2)(INT32, VOID *);
 VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
@@ -160,13 +158,11 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
     intCnt = &g_intCount[ArchCurrCpuid()];//当前CPU的中断总数量 ++
     *intCnt = *intCnt + 1;//@note_why 这里没看明白为什么要 +1
 
+    OsSchedIrqStartTime();
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ //开启查询系统CPU的占用率的中断
     OsCpupIrqStart();//记录本次中断处理开始时间
 #endif
 
-#ifdef LOSCFG_KERNEL_TICKLESS
-    OsTicklessUpdate(intNum);
-#endif
     hwiForm = (&g_hwiForm[intNum]);//获取对应中断的实体
 #ifndef LOSCFG_NO_SHARED_IRQ	//如果没有定义不共享中断 ，意思就是如果是共享中断
     while (hwiForm->pstNext != NULL) { //一直撸到最后
@@ -189,10 +185,13 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
 #endif
     ++g_hwiFormCnt[intNum];//对应中断号计数器总数累加
 
-    *intCnt = *intCnt - 1;	//@note_why 这里没看明白为什么要 -1 
-#ifdef LOSCFG_CPUP_INCLUDE_IRQ	//开启查询系统CPU的占用率的中断
-    OsCpupIrqEnd(intNum);//记录中断处理时间完成时间
+#ifdef LOSCFG_CPUP_INCLUDE_IRQ
+    OsCpupIrqEnd(intNum);
 #endif
+    OsSchedIrqUpdateUsedTime();
+
+    /* Must keep the operation at the end of the interface */
+    *intCnt = *intCnt - 1;
 }
 //申请内核空间拷贝硬中断参数
 STATIC HWI_ARG_T OsHwiCpIrqParam(const HwiIrqParam *irqParam)
@@ -430,8 +429,3 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_HwiDelete(HWI_HANDLE_T hwiNum, HwiIrqParam *irq
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

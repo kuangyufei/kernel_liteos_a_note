@@ -34,6 +34,7 @@
 
 #include "los_base.h"
 #include "los_hw_cpu.h"
+#include "los_spinlock.h"
 #include "los_sortlink_pri.h"
 
 #ifdef __cplusplus
@@ -52,14 +53,20 @@ typedef enum {
 
 typedef struct {//内核对cpu的描述
     SortLinkAttribute taskSortLink;             /* task sort link */	//挂等待和延时的任务
-    SortLinkAttribute swtmrSortLink;            /* swtmr sort link */	//挂定时器
+    SPIN_LOCK_S       taskSortLinkSpin;      /* task sort link spin lock */
+    SortLinkAttribute swtmrSortLink;         /* swtmr sort link */
+    SPIN_LOCK_S       swtmrSortLinkSpin;     /* swtmr sort link spin lock */
+    UINT64            responseTime;          /* Response time for current nuclear Tick interrupts */
+    UINT32            responseID;            /* The response ID of the current nuclear TICK interrupt */
+    UINTPTR           runProcess;            /* The address of the process control block pointer to which
+                                                the current kernel is running */
     UINT32 idleTaskID;                          /* idle task id */		//每个CPU都有一个空闲任务 见于 OsIdleTaskCreate
     UINT32 taskLockCnt;                         /* task lock flag */	//任务锁的数量,当 > 0 的时候,需要重新调度了
     UINT32 swtmrHandlerQueue;                   /* software timer timeout queue id */	//软时钟超时队列句柄
     UINT32 swtmrTaskID;                         /* software timer task id */	//软时钟任务ID
     UINT32 schedFlag;                           /* pending scheduler flag */	//调度标识 INT_NO_RESCH INT_PEND_RESCH
 #if (LOSCFG_KERNEL_SMP == YES)
-    UINT32 excFlag;                             /* cpu halt or exc flag */	//CPU处于停止或运行的标识
+    UINT32            excFlag;               /* cpu halt or exc flag */
 #endif
 } Percpu;
 

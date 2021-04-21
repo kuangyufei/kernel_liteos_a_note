@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -58,10 +58,8 @@ extern UINT32 OsMemLargeNodeFree(const VOID *ptr);
 extern BOOL OsMemIsHeapNode(const VOID *ptr);
 extern UINT32 OsShellCmdMemCheck(INT32 argc, const CHAR *argv[]);
 
-/* spinlock for mem module, only available on SMP mode */
-extern SPIN_LOCK_S g_memSpin;
-#define MEM_LOCK(state)       LOS_SpinLockSave(&g_memSpin, &(state))
-#define MEM_UNLOCK(state)     LOS_SpinUnlockRestore(&g_memSpin, (state))
+/* memory expand size at least 1/8 of pool size if we can */
+#define MEM_EXPAND_SIZE(poolSize)     (poolSize >> 3)
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,11 +36,9 @@
 #ifndef _LOS_CONFIG_H
 #define _LOS_CONFIG_H
 
-#include "platform_config.h"
 #include "los_tick.h"
 #include "los_vm_zone.h"
 #include "sys_config.h"
-#include "hisoc/clock.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -96,7 +94,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Number of Ticks in one second
  */
 #ifndef LOSCFG_BASE_CORE_TICK_PER_SECOND
-#define LOSCFG_BASE_CORE_TICK_PER_SECOND 100 //每秒Tick数
+#define LOSCFG_BASE_CORE_TICK_PER_SECOND  1000  /* 1ms per tick */
 #endif
 
 /**
@@ -111,7 +109,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * @ingroup los_config
  * Sched clock interval
  */
-#define SCHED_CLOCK_INTETRVAL_TICKS 100	//调度时间间隔
+#define SCHED_CLOCK_INTETRVAL_TICKS  LOSCFG_BASE_CORE_TICK_PER_SECOND
 
 /**
  * @ingroup los_config
@@ -215,7 +213,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Longest execution time of tasks with the same priorities
  */
 #ifndef LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT	//相同优先级任务的最长执行时间，时间片
-#define LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT 2
+#define LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT  20000 /* 20ms */
 #endif
 
 /**
@@ -359,17 +357,12 @@ extern UINT32 __heap_end;		// 堆区结束地址
 
 #define LOSCFG_KERNEL_CPU_MASK                          ((1 << LOSCFG_KERNEL_CORE_NUM) - 1) //CPU掩码,每一个核占用一个位,用于计算和定位具体CPU核
 
-/****************************** trace module configuration **************************/
-#ifndef LOSCFG_KERNEL_TRACE
-#define LOSCFG_KERNEL_TRACE                             NO  //内核追踪开关
-#endif
-
 /**
  * @ingroup los_trace
  * It's the total size of trace buffer. It's in the unit of char
  */
-#if (LOSCFG_KERNEL_TRACE == YES)
-#define LOS_TRACE_BUFFER_SIZE                           2048 //内核追踪缓存大小 2K
+#ifdef LOSCFG_KERNEL_TRACE
+#define LOS_TRACE_BUFFER_SIZE                           (1024 * 512)
 #endif
 
 /**
@@ -388,7 +381,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
 #define KERNEL_MAJOR                     2	//主版本号
 #define KERNEL_MINOR                     0	//小版本号
 #define KERNEL_PATCH                     0	//补丁版本号
-#define KERNEL_ITRE                      35	//内部定义版本号
+#define KERNEL_ITRE                      37
 
 #define VERSION_NUM(a, b, c, d) (((a) << 24) | ((b) << 16) | (c) << 8 | (d))
 #define KERNEL_OPEN_VERSION_NUM VERSION_NUM(KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE)
@@ -482,6 +475,9 @@ VOID LOS_ExcInfoRegHook(UINT32 startAddr, UINT32 space, CHAR *buf, log_read_writ
 extern VOID OsStart(VOID);
 extern INT32 OsMain(VOID);
 
+typedef VOID (*SystemRebootFunc)(VOID);
+VOID OsSetRebootHook(SystemRebootFunc func);
+SystemRebootFunc OsGetRebootHook(VOID);
 #ifdef __cplusplus
 #if __cplusplus
 }

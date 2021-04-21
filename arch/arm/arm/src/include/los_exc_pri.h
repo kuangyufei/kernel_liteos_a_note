@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -52,7 +52,7 @@ STATIC INLINE VOID OsSetCurrCpuSp(UINTPTR regSp)
 extern UINT32 OsGetSystemStatus(VOID);
 extern VOID BackTraceSub(UINTPTR regFP);
 extern VOID OsExcInit(VOID);
-extern VOID OsKillUserProcess(UINTPTR sp);
+extern BOOL OsSystemExcIsReset(VOID);
 #ifdef __cplusplus
 #if __cplusplus
 }

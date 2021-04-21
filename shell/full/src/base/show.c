@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -33,19 +33,10 @@
 #include "shmsg.h"
 #include "shcmd.h"
 #include "console.h"
-#include "asm/hal_platform_ints.h"
-#ifdef LOSCFG_DRIVERS_HDF_PLATFORM_UART
-#include "hisoc/uart.h"
-#endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
-STATIC BOOL g_shellSourceFlag = FALSE;// 标记shell Cmd 是否已初始化
-//初始化shell cmd 
+STATIC BOOL g_shellSourceFlag = FALSE;
+
 STATIC UINT32 OsShellCmdInit(VOID)
 {
     UINT32 ret = OsCmdInit();
@@ -55,7 +46,7 @@ STATIC UINT32 OsShellCmdInit(VOID)
 
     return OsShellSysCmdRegister();
 }
-//创建shell task
+
 STATIC UINT32 OsShellCreateTask(ShellCB *shellCB)
 {
     UINT32 ret = ShellTaskInit(shellCB);
@@ -65,7 +56,7 @@ STATIC UINT32 OsShellCreateTask(ShellCB *shellCB)
 
     return ShellEntryInit(shellCB);
 }
-//shell所用资源初始化
+
 STATIC UINT32 OsShellSourceInit(INT32 consoleId)
 {
     UINT32 ret = LOS_NOK;
@@ -73,7 +64,7 @@ STATIC UINT32 OsShellSourceInit(INT32 consoleId)
     if ((consoleCB == NULL) || (consoleCB->shellHandle != NULL)) {
         return LOS_NOK;
     }
-    consoleCB->shellHandle = LOS_MemAlloc((VOID *)m_aucSysMem0, sizeof(ShellCB));//分配shell句柄本质就是shell描述符
+    consoleCB->shellHandle = LOS_MemAlloc((VOID *)m_aucSysMem0, sizeof(ShellCB));
     if (consoleCB->shellHandle == NULL) {
         return LOS_NOK;
     }
@@ -82,17 +73,17 @@ STATIC UINT32 OsShellSourceInit(INT32 consoleId)
         goto ERR_OUT1;
     }
 
-    shellCB->consoleID = (UINT32)consoleId;//控制台和shell互绑
-    ret = (UINT32)pthread_mutex_init(&shellCB->keyMutex, NULL);//初始化shell按键互斥锁
+    shellCB->consoleID = (UINT32)consoleId;
+    ret = (UINT32)pthread_mutex_init(&shellCB->keyMutex, NULL);
     if (ret != LOS_OK) {
         goto ERR_OUT1;
     }
-    ret = (UINT32)pthread_mutex_init(&shellCB->historyMutex, NULL);//初始化shell历史记录互斥锁
+    ret = (UINT32)pthread_mutex_init(&shellCB->historyMutex, NULL);
     if (ret != LOS_OK) {
         goto ERR_OUT2;
     }
 
-    ret = OsShellKeyInit(shellCB);//cmd 命令链接初始化
+    ret = OsShellKeyInit(shellCB);
     if (ret != LOS_OK) {
         goto ERR_OUT3;
     }
@@ -100,8 +91,17 @@ STATIC UINT32 OsShellSourceInit(INT32 consoleId)
         ret = LOS_NOK;
         goto ERR_OUT4;
     }
-    if (consoleId == CONSOLE_TELNET) {//远程登录的控制台
-        ret = OsShellCreateTask(shellCB);//通过shell 描述符 创建一个task创建一个shell task
+#if !defined(LOSCFG_PLATFORM_ROOTFS)
+    /*
+     * In case of ROOTFS disabled but
+     * serial console enabled, it is required
+     * to create Shell task in kernel for it.
+     */
+    if (consoleId == CONSOLE_TELNET || consoleId == CONSOLE_SERIAL) {
+#else
+    if (consoleId == CONSOLE_TELNET) {
+#endif
+        ret = OsShellCreateTask(shellCB);
         if (ret != LOS_OK) {
             goto ERR_OUT4;
         }
@@ -121,7 +121,6 @@ ERR_OUT1:
     return ret;
 }
 
-//通过控制台ID 初始化shell
 UINT32 OsShellInit(INT32 consoleId)
 {
     if (g_shellSourceFlag == FALSE) {
@@ -132,9 +131,9 @@ UINT32 OsShellInit(INT32 consoleId)
             return ret;
         }
     }
-    return OsShellSourceInit(consoleId);//初始化shell所用到的资源
+    return OsShellSourceInit(consoleId);
 }
-//deinit 类似于 C++ 析构函数,结束shell前的收尾工作
+
 INT32 OsShellDeinit(INT32 consoleId)
 {
     CONSOLE_CB *consoleCB = NULL;
@@ -153,29 +152,24 @@ INT32 OsShellDeinit(INT32 consoleId)
         return -1;
     }
 
-    (VOID)LOS_TaskDelete(shellCB->shellEntryHandle);//删除任务,所谓删除就是归还任务至任务池.
-    (VOID)LOS_EventWrite(&shellCB->shellEvent, CONSOLE_SHELL_KEY_EVENT);//写入一个key事件,退出ShellTask死循环
+    (VOID)LOS_TaskDelete(shellCB->shellEntryHandle);
+    (VOID)LOS_EventWrite(&shellCB->shellEvent, CONSOLE_SHELL_KEY_EVENT);
 
     return 0;
 }
-//获取进程当前工作目录
+
 CHAR *OsShellGetWorkingDirtectory(VOID)
 {
-    CONSOLE_CB *consoleCB = OsGetConsoleByTaskID(OsCurrTaskGet()->taskID);//获取当前任务的控制台
+    CONSOLE_CB *consoleCB = OsGetConsoleByTaskID(OsCurrTaskGet()->taskID);
     ShellCB *shellCB = NULL;
 
-    if (consoleCB == NULL) {//控制台控制块
+    if (consoleCB == NULL) {
         return NULL;
     }
-    shellCB = (ShellCB *)consoleCB->shellHandle;//获取shell 控制块
+    shellCB = (ShellCB *)consoleCB->shellHandle;
     if (shellCB == NULL) {
         return NULL;
     }
-    return shellCB->shellWorkingDirectory;//shell 控制块的工作目录
+    return shellCB->shellWorkingDirectory;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

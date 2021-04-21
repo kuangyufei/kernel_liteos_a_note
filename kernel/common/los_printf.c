@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,7 +36,6 @@
 #endif
 #include "los_hwi.h"
 #include "los_memory_pri.h"
-#include "uart.h"
 #ifdef LOSCFG_FS_VFS
 #include "console.h"
 #endif
@@ -48,11 +47,6 @@
 #endif
 #include "los_exc_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #define SIZEBUF  256
 
@@ -91,13 +85,29 @@ STATIC VOID UartOutput(const CHAR *str, UINT32 len, BOOL isLock)
 #endif
 }
 //输出控制处理
+STATIC VOID ConsoleOutput(const CHAR *str, UINT32 len)
+{
+    ssize_t writen = 0;
+    ssize_t cnt;
+    ssize_t toWrite = len;
+
+    for (;;) {
+        cnt = write(STDOUT_FILENO, str + writen, (size_t)toWrite);
+        if ((cnt < 0) || (toWrite == cnt)) {
+            break;
+        }
+        writen += cnt;
+        toWrite -= cnt;
+    }
+}
+
 VOID OutputControl(const CHAR *str, UINT32 len, OutputType type)
 {
     switch (type) {
         case CONSOLE_OUTPUT:
 #ifdef LOSCFG_PLATFORM_CONSOLE
             if (ConsoleEnable() == TRUE) {//POSIX 定义了 STDIN_FILENO、STDOUT_FILENO 和 STDERR_FILENO 来代替 0、1、2 
-                (VOID)write(STDOUT_FILENO, str, (size_t)len);//向控制台写日志, STDOUT_FILENO可理解为 fd = 1 的一个文件
+                ConsoleOutput(str, len);
                 break;//在三个文件会在 VFS中默认创建
             }
 #endif
@@ -106,7 +116,7 @@ VOID OutputControl(const CHAR *str, UINT32 len, OutputType type)
             UartOutput(str, len, UART_WITH_LOCK);//向串口发送数据
             break;
         case EXC_OUTPUT:
-            UartOutput(str, len, UART_WITHOUT_LOCK);//以串口不加锁的方式发送数据
+            UartPuts(str, len, UART_WITH_LOCK);
             break;
         default:
             break;
@@ -251,7 +261,7 @@ VOID PrintExcInfo(const CHAR *fmt, ...)
 VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, ...)
 {
     va_list ap;
-    va_start(ap, fmt);
+
     if (level > PRINT_LEVEL) {
         return;
     }
@@ -259,13 +269,9 @@ VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, ...
     if ((level != LOS_COMMON_LEVEL) && ((level > LOS_EMG_LEVEL) && (level <= LOS_TRACE_LEVEL))) {
         dprintf("[%s]", g_logString[level]);//日志格式,先打印日志头           INFO ..... 
     }
+    va_start(ap, fmt);
     OsVprintf(fmt, ap, CONSOLE_OUTPUT);//控制台打印
     va_end(ap);
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

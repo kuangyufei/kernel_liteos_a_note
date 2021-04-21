@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -102,22 +102,13 @@ LDMFD   SP!, {PC}^
 LDM/STR架构中{∧}为可选后缀,当指令为LDM且寄存器列表中包含R15（PC）,
 选用该后缀时表示:除了正常的数据传送之外,还将SPSR复制到CPSR（将备份的程序状态寄存器SPCR恢复到当前程序状态寄存器CPSR）。
 ******************************************************************************/
-#ifdef LOSCFG_KERNEL_SMP_LOCKDEP
-    .extern   OsLockDepCheckOut/*使用外部定义的函数*/
-#endif
-    .extern   g_taskSpin
-    .extern   g_percpu
-    .global   OsStartToRun 		/*任务开始执行  告诉 OsStartToRun()在本文件实现,将被外部函数调用,见于OsStart()   */
-    .global   OsTaskSchedule	/*任务调度,见于OsSchedResched()*/
-    .global   OsIrqHandler		/*硬中断处理*/
-    .global   ArchSpinUnlock	/*自旋锁解锁*/
-    .global   OsSchedToUserSpinUnlock /*尚未实现*/
-	/* @note_why 为何要重新定义OS_TASK_STATUS_RUNNING? */
-    .equ OS_TASK_STATUS_RUNNING,       0x0010U 	/* .equ用于把常量值设置为可以在文本段中使用的符号 #define OS_TASK_STATUS_RUNNING 0x0010U */
-    .equ OS_PERCPU_STRUCT_SIZE,        0x28U 	/*宏定义 #define OS_PERCPU_STRUCT_SIZE 0x28U*/
-    .equ OS_PERCPU_TASK_LOCK_OFFSET,   0x14U	/*宏定义 #define OS_PERCPU_TASK_LOCK_OFFSET 0x14U*/
-    .fpu vfpv4 /* .fpu @note_why 尚未知这句话的含义 */
-/* 此宏用于对齐和不对齐8字节边界上的堆栈以符合ABI */
+    .extern   OsSchedToUserReleaseLock
+    .global   OsTaskSchedule
+    .global   OsTaskContextLoad
+    .global   OsIrqHandler
+
+    .fpu vfpv4
+
 /* macros to align and unalign the stack on 8 byte boundary for ABI compliance */
 .macro STACK_ALIGN, reg /* 栈对齐*/ 
     MOV     \reg, sp 	@reg=sp
@@ -130,7 +121,7 @@ LDM/STR架构中{∧}为可选后缀,当指令为LDM且寄存器列表中包含R
     POP     { \reg } 
     MOV     sp, \reg 
 .endm
-/* FPU(floating-point processor unit)浮点运算单元*/
+
 /* macros to save and restore fpu regs */ 
 .macro PUSH_FPU_REGS reg1 /* 保存fpu寄存器 */ 
 #if !defined(LOSCFG_ARCH_FPU_DISABLE) @FPU使能
@@ -157,35 +148,6 @@ LDM/STR架构中{∧}为可选后缀,当指令为LDM且寄存器列表中包含R
     VMSR    FPEXC, \reg1	@对应 TaskContext->regFPEXC
 #endif
 .endm
-
-/* R0: new task */
-OsStartToRun:	@启动一个任务
-
-    MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)  @禁止中断并切到管理模式
-
-    LDRH    R1, [R0, #4] 	@将存储器地址为R0+4 的低16位数据读入寄存器R1，并将R1 的高16 位清零
-    ORR     R1, #OS_TASK_STATUS_RUNNING @或指令 R1=R1|OS_TASK_STATUS_RUNNING
-    STRH    R1, [R0, #4] 	@将寄存器R1中的低16位写入以R0+4地址的存储器中
-/*
-使用 TPIDRURO 保存当前线程的 KTHREAD 地址，KTHREAD 是每个线程在内
-核空间中的核心数据结构。C13 c0 3
-
-使用 TPIDRURW 保存当前线程的 TEB 地址，TEB 是每个线程在用户空间中的核
-心数据结构。C13 c0 2
-
-使用 TPIDRPRW 保存当前 CPU 的 KPCR 地址，KPCR（Processor Control Region）
-是每个 CPU 的核心数据结构地址。C13 c0 4
-*/
-    /* R0 is new task, save it on tpidrprw */
-    MCR     p15, 0, R0, c13, c0, 4 @ C13=R0
-    ISB 	@指令同步屏障，清除流水线并且确保在新指令执行时，之前的指令都已经执行完毕。
-
-    VPUSH   {S0}                                     /* fpu */
-    VPOP    {S0}
-    VPUSH   {D0}
-    VPOP    {D0}
-
-    B       OsTaskContextLoad @加载任务的上下文
 
 /*
  * R0: new task
@@ -231,23 +193,10 @@ OsTaskContextLoad: @加载上下文
     BNE     OsKernelTaskLoad @非用户模式则跳转到OsKernelTaskLoad执行,跳出
 
 #ifdef LOSCFG_KERNEL_SMP
-#ifdef LOSCFG_KERNEL_SMP_LOCKDEP
     /* 8 bytes stack align */
     SUB     SP, SP, #4 @sp = sp -4
-    LDR     R0, =g_taskSpin @R0 = g_taskSpin
-    BL      OsLockDepCheckOut @带链接的跳转指令。指令将下一条指令的地址拷贝到R14(即LR)链接寄存器中，然后跳转到指定地址运行程序
+    BL      OsSchedToUserReleaseLock
     ADD     SP, SP, #4 @sp=sp+4
-#endif
-    /* R0 = &g_taskSpin.rawLock */
-    LDR     R0, =g_taskSpin @ R0 = &g_taskSpin.rawLock 将作为 ArchSpinUnlock的参数
-    BL      ArchSpinUnlock 	@释放自旋锁g_taskSpin
-    LDR     R2, =g_percpu 
-    MRC     P15, 0, R3, C0, C0, 5 @获取CPUID给R3
-    UXTB    R3, R3 @字节被无符号扩展到32位（高24位清0）
-    MOV     R1, #OS_PERCPU_STRUCT_SIZE @R1 = sizeof(Percpu)
-    MLA     R3, R1, R3, R2 @R3=R1*R3 
-    MOV     R2, #0
-    STR     R2, [R3, #OS_PERCPU_TASK_LOCK_OFFSET]
 #endif
 
     MVN     R3, #CPSR_INT_DISABLE @按位取反 R3 = 0x3F
@@ -295,7 +244,7 @@ OsIrqFromKernel:	@从内核发起中断
     /* from svc not need save sp and lr */@svc模式下发生的中断不需要保存sp和lr寄存器值
     SUB     SP, SP, #(2 * 4)	@目的是为了留白给 TaskIrqContext.USP,TaskIrqContext.ULR
 								@TaskIrqContext.ULR已经在 276行保存了,276行用的是SP而不是SP!,所以此处要跳2个空间
-    /* pop r0-r3 from irq stack*/
+    /* pop r0-r3 form irq stack*/
     LDMFD   R0, {R0-R3}		    @从R0位置依次出栈 
 
     /* push caller saved regs as trashed regs in svc stack */
@@ -327,9 +276,7 @@ OsIrqFromKernel:	@从内核发起中断
     /* process pending signals */ 	@处理挂起信号
     BL      OsTaskProcSignal 		@跳转至C代码 
 
-    /* check if needs to schedule */@检查是否需要调度
-    CMP     R0, #0	@OsTaskProcSignal的返回值 和 0 进行比较
-    BLNE    OsSchedPreempt @返回INT_PEND_RESCH,则执行 OsSchedPreempt
+    BL      OsSchedIrqEndCheckNeedSched
 
     MOV     R0,SP	@TaskIrqContext开始位置
     MOV     R1,R7	@第二个参数,R7

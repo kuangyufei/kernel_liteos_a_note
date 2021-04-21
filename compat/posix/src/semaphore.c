@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,14 +34,9 @@
 #include "map_error.h"
 #include "time_posix.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 /* Initialize semaphore to value, shared is not supported in Huawei LiteOS. */
-int sem_init(sem_t *sem, int shared, unsigned int value)//初始化信号量的值，华为LiteOS不支持共享。
+int sem_init(sem_t *sem, int shared, unsigned int value)
 {
     UINT32 semHandle = 0;
     UINT32 ret;
@@ -197,8 +192,3 @@ int sem_unlink(const char *name)
     return -1;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

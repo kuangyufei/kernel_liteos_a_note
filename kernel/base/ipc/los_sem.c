@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,15 +34,11 @@
 #include "los_err_pri.h"
 #include "los_task_pri.h"
 #include "los_exc.h"
+#include "los_sched_pri.h"
 #include "los_spinlock.h"
 #include "los_mp.h"
 #include "los_percpu_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 
 /******************************************************************************
 基本概念
@@ -167,6 +163,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSemCreate(UINT16 count, UINT16 maxCount, UINT32 *
 
     unusedSem = LOS_DL_LIST_FIRST(&g_unusedSemList);//从未使用信号量池中取首个
     LOS_ListDelete(unusedSem);//从空闲链表上摘除
+    SCHEDULER_UNLOCK(intSave);
     semCreated = GET_SEM_LIST(unusedSem);//通过semList挂到链表上的,这里也要通过它把LosSemCB头查到. 进程,线程等结构体也都是这么干的.
     semCreated->semCount = count;//设置数量
     semCreated->semStat = OS_SEM_USED;//设置可用状态
@@ -176,7 +173,6 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSemCreate(UINT16 count, UINT16 maxCount, UINT32 *
 
     OsSemDbgUpdateHook(semCreated->semID, OsCurrTaskGet()->taskEntry, count);
 
-    SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 
 ERR_HANDLER:
@@ -279,10 +275,9 @@ LITE_OS_SEC_TEXT UINT32 LOS_SemPend(UINT32 semHandle, UINT32 timeout)
         goto OUT;
     }
 
-    runTask->taskSem = (VOID *)semPended;//标记当前任务在等这个信号量
-    retErr = OsTaskWait(&semPended->semList, timeout, TRUE);//任务进入等待状态,当前任务会挂到semList上,并在其中切换任务上下文
+    OsTaskWaitSetPendMask(OS_TASK_WAIT_SEM, semPended->semID, timeout);
+    retErr = OsSchedTaskWait(&semPended->semList, timeout, TRUE);
     if (retErr == LOS_ERRNO_TSK_TIMEOUT) {//注意:这里是涉及到task切换的,把自己挂起,唤醒其他task 
-        runTask->taskSem = NULL;
         retErr = LOS_ERRNO_SEM_TIMEOUT;
     }
 
@@ -295,10 +290,6 @@ LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)
 {
     LosSemCB *semPosted = NULL;
     LosTaskCB *resumedTask = NULL;
-
-    if (GET_SEM_INDEX(semHandle) >= LOSCFG_BASE_IPC_SEM_LIMIT) {
-        return LOS_ERRNO_SEM_INVALID;
-    }
 
     semPosted = GET_SEM(semHandle);
     if ((semPosted->semID != semHandle) || (semPosted->semStat == OS_SEM_UNUSED)) {
@@ -313,8 +304,8 @@ LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)
     }
     if (!LOS_ListEmpty(&semPosted->semList)) {//当前有任务挂在semList上,要去唤醒任务
         resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(semPosted->semList)));//semList上面挂的都是task->pendlist节点,取第一个task下来唤醒
-        resumedTask->taskSem = NULL;//任务不用等信号了,重新变成NULL值
-        OsTaskWake(resumedTask);//唤醒任务,注意resumedTask一定不是当前任务,OsTaskWake里面并不会自己切换任务上下文,只是设置状态
+        OsTaskWakeClearPendMask(resumedTask);
+        OsSchedTaskWake(resumedTask);
         if (needSched != NULL) {//参数不为空,就返回需要调度的标签
             *needSched = TRUE;//TRUE代表需要调度
         }
@@ -331,6 +322,9 @@ LITE_OS_SEC_TEXT UINT32 LOS_SemPost(UINT32 semHandle)
     UINT32 ret;
     BOOL needSched = FALSE;
 
+    if (GET_SEM_INDEX(semHandle) >= LOSCFG_BASE_IPC_SEM_LIMIT) {
+        return LOS_ERRNO_SEM_INVALID;
+    }
     SCHEDULER_LOCK(intSave);
     ret = OsSemPostUnsafe(semHandle, &needSched);
         SCHEDULER_UNLOCK(intSave);
@@ -343,8 +337,3 @@ LITE_OS_SEC_TEXT UINT32 LOS_SemPost(UINT32 semHandle)
 }
 #endif /* (LOSCFG_BASE_IPC_SEM == YES) */
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

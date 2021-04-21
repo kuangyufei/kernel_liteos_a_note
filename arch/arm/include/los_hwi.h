@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -338,6 +338,23 @@ STATIC INLINE VOID LOS_IntRestore(UINT32 intSave)
 {//只有在禁用所有中断之后才能调用此API，并且输入参数值应为LOS_IntLock返回的值。
     ArchIntRestore(intSave);
 }
+
+/**
+ * @ingroup los_hwi
+ * @brief Gets the maximum number of interrupts supported by the system.
+ *
+ * @par Description:
+ * <ul>
+ * <li>This API is used to gets the maximum number of interrupts supported by the system.</li>
+ * </ul>
+ *
+ * @param  None.
+ *
+ * @retval None.
+ * @par Dependency:
+ * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
+ */
+extern UINT32 LOS_GetSystemHwiMaximum(VOID);
 
 /**
  * @ingroup  los_hwi

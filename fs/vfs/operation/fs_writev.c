@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,8 +35,8 @@
 #include "string.h"
 #include "stdlib.h"
 #include "fs/fs.h"
-#include "inode/inode.h"
 #include "user_copy.h"
+#include "limits.h"
 
 static int iov_trans_to_buf(char *buf, ssize_t totallen, const struct iovec *iov, int iovcnt)
 {
@@ -103,21 +103,33 @@ ssize_t vfs_writev(int fd, const struct iovec *iov, int iovcnt, off_t *offset)
     }
 
     totallen = buflen * sizeof(char);
+#ifdef LOSCFG_KERNEL_VM
     buf = (char *)LOS_VMalloc(totallen);
+#else
+    buf = (char *)malloc(totallen);
+#endif
     if (buf == NULL) {
         return VFS_ERROR;
     }
 
     ret = iov_trans_to_buf(buf, totallen, iov, iovcnt);
     if (ret <= 0) {
+#ifdef LOSCFG_KERNEL_VM
         LOS_VFree(buf);
+#else
+        free(buf);
+#endif
         return VFS_ERROR;
     }
 
     bytestowrite = (ssize_t)ret;
     totalbyteswritten = (offset == NULL) ? write(fd, buf, bytestowrite)
                                          : pwrite(fd, buf, bytestowrite, *offset);
+#ifdef LOSCFG_KERNEL_VM
     LOS_VFree(buf);
+#else
+    free(buf);
+#endif
     return totalbyteswritten;
 }
 

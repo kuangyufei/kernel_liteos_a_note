@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2020, Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -33,144 +33,110 @@
 #include "securec.h"
 #include "los_typedef.h"
 #include "los_task_pri.h"
-#include "los_memory.h"
+#include "ctype.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#ifdef LOSCFG_SHELL
+#include "shcmd.h"
+#include "shell.h"
+#include "unistd.h"
+#include "stdlib.h"
+#endif
 
-/******************************************************************************
-实时获取事件发生的上下文，并写入缓冲区。支持自定义缓冲区，跟踪指定模块的事件，
-开启/停止Trace，清除/输出trace缓冲区数据等。
-LMS：实时检测内存操作合法性，LMS能够检测的内存问题包括缓冲区溢出（buffer overflow），
-释放后使用（use after free），多重释放（double free）和释放野指针（wild pointer） 
-******************************************************************************/
-#if (LOSCFG_KERNEL_TRACE == YES)
-LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_traceSpin); //定义trace自旋锁
+
+#ifndef LOSCFG_KERNEL_TRACE
+VOID LOS_TraceInit(VOID)
+{
+    return;
+}
+
+UINT32 LOS_TraceReg(TraceType traceType, WriteHook inHook, const CHAR *typeStr, TraceSwitch onOff)
+{
+    (VOID)traceType;
+    (VOID)inHook;
+    (VOID)onOff;
+    (VOID)typeStr;
+    return LOS_OK;
+}
+
+UINT32 LOS_TraceUnreg(TraceType traceType)
+{
+    (VOID)traceType;
+    return LOS_OK;
+}
+
+VOID LOS_Trace(TraceType traceType, ...)
+{
+    (VOID)traceType;
+    return;
+}
+
+VOID LOS_TraceSwitch(TraceSwitch onOff)
+{
+    (VOID)onOff;
+}
+
+UINT32 LOS_TraceTypeSwitch(TraceType traceType, TraceSwitch onOff)
+{
+    (VOID)traceType;
+    (VOID)onOff;
+    return LOS_OK;
+}
+
+VOID LOS_TracePrint(VOID)
+{
+    return;
+}
+
+INT32 LOS_Trace2File(const CHAR *filename)
+{
+    (VOID)filename;
+    return 0;
+}
+
+UINT8 *LOS_TraceBufDataGet(UINT32 *desLen, UINT32 *relLen)
+{
+    (VOID)desLen;
+    (VOID)relLen;
+    return NULL;
+}
+
+#else
+
+SPIN_LOCK_INIT(g_traceSpin);
 #define TRACE_LOCK(state)       LOS_SpinLockSave(&g_traceSpin, &(state))
 #define TRACE_UNLOCK(state)     LOS_SpinUnlockRestore(&g_traceSpin, (state))
 
-STATIC SPIN_LOCK_S g_traceCpuSpin[LOSCFG_KERNEL_CORE_NUM];//定义每个CPU单独的自旋锁
-#define TRACE_CPU_LOCK(state, cpuID)       LOS_SpinLockSave(&g_traceCpuSpin[(cpuID)], &(state))
-#define TRACE_CPU_UNLOCK(state, cpuID)     LOS_SpinUnlockRestore(&g_traceCpuSpin[(cpuID)], (state))
+#define TMP_DATALEN 128
 
-STATIC TraceBuffer g_traceBuf[LOSCFG_KERNEL_CORE_NUM];//每个CPU core都有traceBuf
-STATIC TraceHook *g_traceInfo[LOS_TRACE_TYPE_NUM];
-STATIC UINT16 g_frameSize[LOS_TRACE_TYPE_NUM];
+STATIC UINT8 traceBufArray[LOS_TRACE_BUFFER_SIZE];
+STATIC TraceBufferCtl traceBufCtl;
+STATIC TraceHook traceFunc[LOS_TRACE_TYPE_MAX + 1];
 
-STATIC VOID OsTracePosAdj(UINT16 bufferSize)
+VOID LOS_TraceInit(VOID)
 {
-    UINT32 cpu = ArchCurrCpuid();
-    if ((g_traceBuf[cpu].tracePos == LOS_TRACE_BUFFER_SIZE) ||
-        ((g_traceBuf[cpu].tracePos + bufferSize + LOS_TRACE_TAG_LENGTH) > LOS_TRACE_BUFFER_SIZE)) {
-        /* When wrap happened, record the postion before wrap */
-        g_traceBuf[cpu].traceWrapPos = g_traceBuf[cpu].tracePos;
-        g_traceBuf[cpu].tracePos = 0;
-    }
-}
-//任务上下文切换时的触发函数,由trace初始化时注册 LOS_TRACE_SWITCH
-STATIC UINT16 OsTaskTrace(UINT8 *inputBuffer, UINT32 newTaskID, UINT32 oldTaskID)
-{
-    TaskTraceFrame *taskInfo = NULL;
-
-    if (inputBuffer == NULL) {
-        return 0;
-    }
-
-    taskInfo = (TaskTraceFrame *)inputBuffer;
-    taskInfo->currentTick = LOS_TickCountGet();//记录切换任务上下文的时间
-    taskInfo->srcTaskId = oldTaskID;	//源任务ID
-    taskInfo->destTaskId = newTaskID;	//目标任务ID
-
-    return sizeof(TaskTraceFrame);
-}
-//中断产生时触发函数,由trace初始化时注册 LOS_TRACE_INTERRUPT
-STATIC UINT16 OsIntTrace(UINT8 *inputBuffer, UINT32 newIrqNum, UINT32 direFlag)
-{//函数详细记录了中断发生时的现场
-    IntTraceFrame *interruptInfo = NULL;
-    UINT16 useSize = 0;
-
-    if (inputBuffer == NULL) {
-        return 0;
-    }
-
-    /* ignore tick and uart interrupts */ //忽略掉tick和UART硬中断
-    if ((newIrqNum != OS_TICK_INT_NUM) && (newIrqNum != NUM_HAL_INTERRUPT_UART)) {
-        useSize = sizeof(IntTraceFrame);
-        interruptInfo = (IntTraceFrame *)inputBuffer;
-        interruptInfo->currentTick = LOS_TickCountGet();//中断发生时的时间
-        interruptInfo->irqNum = newIrqNum;
-        interruptInfo->irqDirection = direFlag;
-    }
-
-    return useSize;
-}
-//trace模块注册不同类型trace下的处理函数 
-UINT32 OsTraceReg(TraceType traceType, WriteHook inHook)
-{
-    TraceHook *traceInfo = NULL;
-
-    if (g_traceInfo[traceType]) {//已经注册过的就更新
-        /* The Buffer has been alocated before */
-        traceInfo = g_traceInfo[traceType];
-    } else {	//未注册过的分配空间
-        /* First time allocate */
-        traceInfo = (TraceHook *)LOS_MemAlloc(m_aucSysMem0, sizeof(TraceHook));
-        if (traceInfo == NULL) {
-            return LOS_ERRNO_TRACE_NO_MEMORY;
-        }
-
-        g_traceInfo[traceType] = traceInfo;
-    }
-
-    traceInfo->type = traceType; 
-    traceInfo->inputHook = inHook;
-
-    return LOS_OK;
-}
-//trace 初始化 ,trace是内核系统极为重要的模块,trace模块是解决,定位问题的基础工具.
-UINT32 LOS_TraceInit(VOID)
-{
-    UINT32 ret;
-    INT32 cpuID;
     UINT32 intSave;
 
-    /* Initialize the global variable */
-    (VOID)memset_s((VOID *)g_traceInfo, sizeof(g_traceInfo), 0, sizeof(g_traceInfo));
-    (VOID)memset_s((VOID *)g_traceBuf, sizeof(g_traceBuf), 0, sizeof(g_traceBuf));
-    (VOID)memset_s((VOID *)g_frameSize, sizeof(g_frameSize), 0, sizeof(g_frameSize));
+    /* Initialize the global variable. */
+    (VOID)memset_s((VOID *)traceBufArray, LOS_TRACE_BUFFER_SIZE, 0, LOS_TRACE_BUFFER_SIZE);
+    (VOID)memset_s(&traceBufCtl, sizeof(traceBufCtl), 0, sizeof(traceBufCtl));
+    (VOID)memset_s((VOID *)traceFunc, sizeof(traceFunc), 0, sizeof(traceFunc));
 
     TRACE_LOCK(intSave);
-    for (cpuID = 0; cpuID < LOSCFG_KERNEL_CORE_NUM; cpuID++) {
-        LOS_SpinInit(&g_traceCpuSpin[cpuID]); /* initialize all buffer spin lock */
-    }
 
-    g_frameSize[LOS_TRACE_SWITCH] = sizeof(TaskTraceFrame);
-    ret = OsTraceReg(LOS_TRACE_SWITCH, OsTaskTrace);//注册任务上下文切换时的触发函数
-    if (ret != LOS_OK) {
-        TRACE_UNLOCK(intSave);
-        return ret;
-    }
+    /* Initialize trace contrl. */
+    traceBufCtl.bufLen = LOS_TRACE_BUFFER_SIZE;
+    traceBufCtl.dataBuf = traceBufArray;
+    traceBufCtl.onOff = LOS_TRACE_ENABLE;
 
-    g_frameSize[LOS_TRACE_INTERRUPT] = sizeof(IntTraceFrame);
-    ret = OsTraceReg(LOS_TRACE_INTERRUPT, OsIntTrace);//注册trace中断时触发处理函数
-    if (ret != LOS_OK) {
-        TRACE_UNLOCK(intSave);
-        return ret;
-    }
     TRACE_UNLOCK(intSave);
-
-    return LOS_OK;
 }
-//供外部调用,注册trace处理函数
-UINT32 LOS_TraceUserReg(TraceType traceType, WriteHook inHook, UINT16 useSize)
+
+UINT32 LOS_TraceReg(TraceType traceType, WriteHook inHook, const CHAR *typeStr, TraceSwitch onOff)
 {
     UINT32 intSave;
-    UINT32 ret;
+    INT32 i;
 
-    if ((traceType <= LOS_TRACE_INTERRUPT) || (traceType >= LOS_TRACE_TYPE_NUM)) {
+    if ((traceType < LOS_TRACE_TYPE_MIN) || (traceType > LOS_TRACE_TYPE_MAX)) {
         return LOS_ERRNO_TRACE_TYPE_INVALID;
     }
 
@@ -178,79 +144,368 @@ UINT32 LOS_TraceUserReg(TraceType traceType, WriteHook inHook, UINT16 useSize)
         return LOS_ERRNO_TRACE_FUNCTION_NULL;
     }
 
-    if ((useSize == 0) || (((UINT32)useSize + LOS_TRACE_TAG_LENGTH) > LOS_TRACE_BUFFER_SIZE)) {
-        return LOS_ERRNO_TRACE_MAX_SIZE_INVALID;
-    }
-
     TRACE_LOCK(intSave);
-    g_frameSize[traceType] = useSize;
-    ret = OsTraceReg(traceType, inHook);
-    TRACE_UNLOCK(intSave);
-
-    return ret;
-}
-//记录两个任务 切换或通讯时的日志
-VOID LOS_Trace(TraceType traceType, UINT32 newID, UINT32 oldID)
-{
-    TraceHook *traceInfo = NULL;
-    UINT32 intSave, intSaveCpu;
-    UINT32 cpu;
-    UINT16 useSize;
-
-    intSaveCpu = LOS_IntLock();
-    cpu = ArchCurrCpuid();
-
-    if (traceType < LOS_TRACE_TYPE_NUM) {
-        TRACE_CPU_LOCK(intSave, cpu);
-        traceInfo = g_traceInfo[traceType];
-        if ((traceInfo != NULL) && (traceInfo->inputHook != NULL)) {
-            useSize = g_frameSize[traceType];
-            OsTracePosAdj(useSize);
-            useSize = traceInfo->inputHook(&g_traceBuf[cpu].dataBuf[g_traceBuf[cpu].tracePos], newID, oldID);
-            if (useSize) {
-                g_traceBuf[cpu].tracePos += useSize;
-
-                /* Add tag by trace system, to avoid the user's misuse */
-                *(UINTPTR *)&(g_traceBuf[cpu].dataBuf[g_traceBuf[cpu].tracePos]) = (UINTPTR)traceType;
-                g_traceBuf[cpu].tracePos += LOS_TRACE_TAG_LENGTH;
+    /* if inputHook is NULL，return failed. */
+    if (traceFunc[traceType].inputHook != NULL) {
+        PRINT_ERR("Registered Failed!\n");
+        for (i = 0; i <= LOS_TRACE_TYPE_MAX; i++) {
+            if (traceFunc[i].inputHook == NULL) {
+                PRINTK("type:%d ", i);
             }
         }
-        TRACE_CPU_UNLOCK(intSave, cpu);
+        PRINTK("could be registered\n");
+        TRACE_UNLOCK(intSave);
+        return LOS_ERRNO_TRACE_TYPE_EXISTED;
+    } else {
+        traceFunc[traceType].inputHook = inHook;
+        traceFunc[traceType].onOff = onOff;
+        traceFunc[traceType].typeStr = typeStr;
     }
-
-    LOS_IntRestore(intSaveCpu);
-}
-
-INT32 LOS_TraceFrameSizeGet(TraceType traceType)
-{
-    if ((traceType < LOS_TRACE_SWITCH) || (traceType >= LOS_TRACE_TYPE_NUM)) {
-        return -1;
-    }
-    return g_frameSize[traceType];
-}
-
-UINT32 LOS_TraceBufGet(TraceBuffer *outputBuf, UINT32 cpuID)
-{
-    UINT32 intSave;
-
-    if ((outputBuf == NULL) || (cpuID >= LOSCFG_KERNEL_CORE_NUM)) {
-        return LOS_NOK;
-    }
-
-    TRACE_CPU_LOCK(intSave, cpuID);
-    if (memcpy_s(outputBuf, sizeof(TraceBuffer), &g_traceBuf[cpuID], sizeof(TraceBuffer)) != EOK) {
-        TRACE_CPU_UNLOCK(intSave, cpuID);
-        return LOS_NOK;
-    }
-    TRACE_CPU_UNLOCK(intSave, cpuID);
-
+    TRACE_UNLOCK(intSave);
     return LOS_OK;
 }
 
+UINT32 LOS_TraceUnreg(TraceType traceType)
+{
+    UINT32 intSave;
+
+    if ((traceType < LOS_TRACE_TYPE_MIN) || (traceType > LOS_TRACE_TYPE_MAX)) {
+        return LOS_ERRNO_TRACE_TYPE_INVALID;
+    }
+
+    TRACE_LOCK(intSave);
+    /* if inputHook is NULL，return failed. */
+    if (traceFunc[traceType].inputHook == NULL) {
+        PRINT_ERR("Trace not exist!\n");
+        TRACE_UNLOCK(intSave);
+        return LOS_ERRNO_TRACE_TYPE_NOT_EXISTED;
+    } else {
+        traceFunc[traceType].inputHook = NULL;
+        traceFunc[traceType].onOff = LOS_TRACE_DISABLE;
+        traceFunc[traceType].typeStr = NULL;
+    }
+    TRACE_UNLOCK(intSave);
+    return LOS_OK;
+}
+
+
+VOID LOS_TraceSwitch(TraceSwitch onOff)
+{
+    traceBufCtl.onOff = onOff;
+}
+
+UINT32 LOS_TraceTypeSwitch(TraceType traceType, TraceSwitch onOff)
+{
+    UINT32 intSave;
+    if (traceType < LOS_TRACE_TYPE_MIN || traceType > LOS_TRACE_TYPE_MAX) {
+        return LOS_ERRNO_TRACE_TYPE_INVALID;
+    }
+    TRACE_LOCK(intSave);
+    if (traceFunc[traceType].inputHook != NULL) {
+        traceFunc[traceType].onOff = onOff;
+        TRACE_UNLOCK(intSave);
+        return LOS_OK;
+    }
+    TRACE_UNLOCK(intSave);
+    return LOS_ERRNO_TRACE_TYPE_NOT_EXISTED;
+}
+
+STATIC UINT32 OsFindReadFrameHead(UINT32 readIndex, UINT32 dataSize)
+{
+    UINT32 historySize = 0;
+    UINT32 index = readIndex;
+    while (historySize < dataSize) {
+        historySize += ((FrameHead *)&(traceBufCtl.dataBuf[index]))->frameSize;
+        index = readIndex + historySize;
+        if (index >= traceBufCtl.bufLen) {
+            index = index - traceBufCtl.bufLen;
+        }
+    }
+    return index;
+}
+
+STATIC VOID OsAddData2Buf(UINT8 *buf, UINT32 dataSize)
+{
+    UINT32 intSave;
+    UINT32 ret;
+
+    TRACE_LOCK(intSave);
+
+    UINT32 desLen = traceBufCtl.bufLen;
+    UINT32 writeIndex = traceBufCtl.writeIndex;
+    UINT32 readIndex = traceBufCtl.readIndex;
+    UINT32 writeRange = writeIndex + dataSize;
+    UINT8  *des = traceBufCtl.dataBuf + writeIndex;
+
+    /* update readIndex */
+    if ((readIndex > writeIndex) && (writeRange > readIndex)) {
+        traceBufCtl.readIndex = OsFindReadFrameHead(readIndex, writeRange - readIndex);
+    } else if ((readIndex <= writeIndex) && (writeRange > desLen + readIndex)) {
+        traceBufCtl.readIndex = OsFindReadFrameHead(readIndex, writeRange - readIndex - desLen);
+    }
+
+    /* copy the data and update writeIndex */
+    UINT32 tmpLen = desLen - writeIndex;
+    if (tmpLen >= dataSize) {
+        ret = (UINT32)memcpy_s(des, tmpLen, buf, dataSize);
+        if (ret != 0) {
+            goto EXIT;
+        }
+        traceBufCtl.writeIndex = writeIndex + dataSize;
+    } else {
+        ret = (UINT32)memcpy_s(des, tmpLen, buf, tmpLen);  /* tmpLen: The length of ringbuf that can be written */
+        if (ret != 0) {
+            goto EXIT;
+        }
+        ret = (UINT32)memcpy_s(traceBufCtl.dataBuf, desLen, buf + tmpLen, dataSize - tmpLen);
+        if (ret != 0) {
+            goto EXIT;
+        }
+        traceBufCtl.writeIndex = dataSize - tmpLen;
+    }
+
+EXIT:
+    TRACE_UNLOCK(intSave);
+}
+
+VOID LOS_Trace(TraceType traceType, ...)
+{
+    va_list ap;
+    if ((traceType > LOS_TRACE_TYPE_MAX) || (traceType < LOS_TRACE_TYPE_MIN) ||
+        (traceFunc[traceType].inputHook == NULL)) {
+        return;
+    }
+    if ((traceBufCtl.onOff == LOS_TRACE_DISABLE) || (traceFunc[traceType].onOff == LOS_TRACE_DISABLE)) {
+        return;
+    }
+    /* Set the trace frame head */
+    UINT8 buf[TMP_DATALEN];
+    FrameHead *frameHead = (FrameHead *)buf;
+    frameHead->type = traceType;
+    frameHead->cpuID = ArchCurrCpuid();
+    frameHead->taskID = LOS_CurTaskIDGet();
+    frameHead->timestamp = HalClockGetCycles();
+
+#ifdef LOSCFG_TRACE_LR
+    /* Get the linkreg from stack fp and storage to frameHead */
+    LOS_RecordLR(frameHead->linkReg, LOSCFG_TRACE_LR_RECORD, LOSCFG_TRACE_LR_RECORD, LOSCFG_TRACE_LR_IGNOR);
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
+    /* Get the trace message */
+    va_start(ap, traceType);
+    INT32 dataSize = (traceFunc[traceType].inputHook)(buf + sizeof(FrameHead), TMP_DATALEN - sizeof(FrameHead), ap);
+    va_end(ap);
+    if (dataSize <= 0) {
+        return;
+    }
+    frameHead->frameSize = sizeof(FrameHead) + dataSize;
+    OsAddData2Buf(buf, frameHead->frameSize);
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+
+UINT8 *LOS_TraceBufDataGet(UINT32 *desLen, UINT32 *relLen)
+{
+    UINT32 traceSwitch = traceBufCtl.onOff;
+
+    if (desLen == NULL || relLen == NULL) {
+        return NULL;
+    }
+
+    if (traceSwitch != LOS_TRACE_DISABLE) {
+        LOS_TraceSwitch(LOS_TRACE_DISABLE);
+    }
+
+    UINT32 writeIndex = traceBufCtl.writeIndex;
+    UINT32 readIndex = traceBufCtl.readIndex;
+    UINT32 srcLen = traceBufCtl.bufLen;
+    UINT8 *des = (UINT8 *)malloc(srcLen * sizeof(UINT8));
+    if (des == NULL) {
+        *desLen = 0;
+        *relLen = 0;
+        if (traceSwitch != LOS_TRACE_DISABLE) {
+            LOS_TraceSwitch(LOS_TRACE_DISABLE);
+        }
+        return NULL;
+    }
+    *desLen = LOS_TRACE_BUFFER_SIZE;
+    if (EOK != memset_s(des, srcLen * sizeof(UINT8), 0, LOS_TRACE_BUFFER_SIZE)) {
+        *desLen = 0;
+        *relLen = 0;
+        free(des);
+        return NULL;
+    }
+    if (writeIndex > readIndex) {
+        *relLen = readIndex - writeIndex;
+        (VOID)memcpy_s(des, *desLen, &(traceBufArray[readIndex]), *relLen);
+    } else {
+        UINT32 sumLen = srcLen - readIndex;
+        (VOID)memcpy_s(des, *desLen, &(traceBufArray[readIndex]), sumLen);
+        (VOID)memcpy_s(&(des[sumLen]), *desLen - sumLen, traceBufArray, writeIndex);
+        *relLen = sumLen + writeIndex;
+    }
+
+    if (traceSwitch != LOS_TRACE_DISABLE) {
+        LOS_TraceSwitch(LOS_TRACE_ENABLE);
+    }
+
+    return des;
+}
+
+#ifdef LOSCFG_FS_VFS
+INT32 LOS_Trace2File(const CHAR *filename)
+{
+    INT32 ret;
+    CHAR *fullpath = NULL;
+    CHAR *shellWorkingDirectory = OsShellGetWorkingDirtectory();
+    UINT32 traceSwitch = traceBufCtl.onOff;
+
+    ret = vfs_normalize_path(shellWorkingDirectory, filename, &fullpath);
+    if (ret != 0) {
+        return -1;
+    }
+
+    if (traceSwitch != LOS_TRACE_DISABLE) {
+        LOS_TraceSwitch(LOS_TRACE_DISABLE);
+    }
+
+    INT32 fd = open(fullpath, O_CREAT | O_RDWR | O_APPEND, 0644); /* 0644:file right */
+    if (fd < 0) {
+        return -1;
+    }
+
+    UINT32 writeIndex = traceBufCtl.writeIndex;
+    UINT32 readIndex = traceBufCtl.readIndex;
+
+    if (writeIndex > readIndex) {
+        ret = write(fd, &(traceBufArray[readIndex]), writeIndex - readIndex);
+    } else {
+        ret = write(fd, &(traceBufArray[readIndex]), traceBufCtl.bufLen - readIndex);
+        ret += write(fd, traceBufArray, writeIndex);
+    }
+
+    (VOID)close(fd);
+
+    free(fullpath);
+
+    if (traceSwitch != LOS_TRACE_DISABLE) {
+        LOS_TraceSwitch(LOS_TRACE_ENABLE);
+    }
+    return ret;
+}
+#endif
+
+#ifdef LOSCFG_SHELL
+UINT32 OsShellCmdTraceNumSwitch(TraceType traceType, const CHAR *onOff)
+{
+    UINT32 ret = LOS_NOK;
+
+    if (strcmp("on", onOff) == 0) {
+        ret = LOS_TraceTypeSwitch(traceType, LOS_TRACE_ENABLE);
+        if (ret == LOS_OK) {
+            PRINTK("trace %s on\n", traceFunc[traceType].typeStr);
+        } else {
+            PRINTK("trace %d is unregistered\n", traceType);
+        }
+    } else if (strcmp("off", onOff) == 0) {
+        ret = LOS_TraceTypeSwitch(traceType, LOS_TRACE_DISABLE);
+        if (ret == LOS_OK) {
+            PRINTK("trace %s off\n", traceFunc[traceType].typeStr);
+        } else {
+            PRINTK("trace %d is unregistered\n", traceType);
+        }
+    } else {
+        PRINTK("Unknown option: %s\n", onOff);
+    }
+
+    return ret;
+}
+
+UINT32 OsShellCmdTraceStrSwitch(const CHAR *typeStr, const CHAR *onOff)
+{
+    UINT32 ret = LOS_NOK;
+    UINT32 i;
+    for (i = 0; i <= LOS_TRACE_TYPE_MAX; i++) {
+        if (traceFunc[i].typeStr != NULL && !strcmp(typeStr, traceFunc[i].typeStr)) {
+            ret = OsShellCmdTraceNumSwitch(i, onOff);
+            if (ret != LOS_OK) {
+                PRINTK("Unknown option: %s\n", onOff);
+            }
+            return ret;
+        }
+    }
+    PRINTK("Unknown option: %s\n", typeStr);
+    return ret;
+}
+
+UINT32 OsShellCmdTraceSwitch(INT32 argc, const CHAR **argv)
+{
+    UINT32 ret;
+    if (argc == 1) {
+        if (strcmp("on", argv[0]) == 0) {
+            LOS_TraceSwitch(LOS_TRACE_ENABLE);
+            PRINTK("trace on\n");
+        } else if (strcmp("off", argv[0]) == 0) {
+            LOS_TraceSwitch(LOS_TRACE_DISABLE);
+            PRINTK("trace off\n");
+        } else {
+            PRINTK("Unknown option: %s\n", argv[0]);
+            goto TRACE_HELP;
+        }
+    } else if (argc == 2) { /* 2:argc number limited */
+        if (isdigit(argv[0][0]) != 0) {
+            CHAR *endPtr = NULL;
+            UINT32 traceType = strtoul(argv[0], &endPtr, 0);
+            if ((endPtr != NULL) || (*endPtr != 0)) {
+                PRINTK("Unknown option: %s\n", argv[0]);
+                goto TRACE_HELP;
+            }
+            ret = OsShellCmdTraceNumSwitch(traceType, argv[1]);
+            if (ret != LOS_OK) {
+                goto TRACE_HELP;
+            }
+        } else {
+            ret = OsShellCmdTraceStrSwitch(argv[0], argv[1]);
+            if (ret != LOS_OK) {
+                goto TRACE_HELP;
+            }
+        }
+    } else {
+        PRINTK("Argc is Incorrect!\n");
+        goto TRACE_HELP;
+    }
+    return LOS_OK;
+TRACE_HELP:
+    PRINTK("Usage:trace [typeNum/typeName] on/off\n");
+    PRINTK("      typeNum range: [%d,%d]\n", LOS_TRACE_TYPE_MIN, LOS_TRACE_TYPE_MAX);
+    return LOS_NOK;
+}
+
+#ifdef LOSCFG_FS_VFS
+UINT32 OsShellCmdTrace2File(INT32 argc, const CHAR **argv)
+{
+    INT32 ret;
+    if (argc == 1) {
+        ret = LOS_Trace2File(argv[0]);
+        if (ret == -1) {
+            PRINTK("Trace to file failed: %s\n", argv[0]);
+        } else {
+            PRINTK("Trace to file successed: %s\n", argv[0]);
+        }
+    } else {
+        PRINTK("Trace to file:wrong argc\n");
+        goto TRACE_HELP;
+    }
+    return LOS_OK;
+
+TRACE_HELP:
+    PRINTK("usage:trace2file filename\n");
+    return LOS_NOK;
+}
+
+SHELLCMD_ENTRY(trace2file_shellcmd, CMD_TYPE_EX, "trace2file", 1, (CmdCallBackFunc)OsShellCmdTrace2File);
+#endif
+
+SHELLCMD_ENTRY(trace_shellcmd, CMD_TYPE_EX, "trace", 1, (CmdCallBackFunc)OsShellCmdTraceSwitch);
+#endif
+
+#endif
+

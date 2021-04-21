@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,19 +34,16 @@
  * @ingroup kernel
  */
 
-#include "los_typedef.h"
 #include "los_asid.h"
+#include "los_bitmap.h"
 #include "los_spinlock.h"
 #include "los_mmu_descriptor_v6.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+
+#ifdef LOSCFG_KERNEL_VM
 
 STATIC SPIN_LOCK_INIT(g_cpuAsidLock);
-STATIC UINTPTR g_asidPool[BITMAP_NUM_WORDS(1UL << MMU_ARM_ASID_BITS)];//8
+STATIC UINTPTR g_asidPool[BITMAP_NUM_WORDS(1UL << MMU_ARM_ASID_BITS)];
 
 /* allocate and free asid */
 status_t OsAllocAsid(UINT32 *asid)
@@ -72,9 +69,5 @@ VOID OsFreeAsid(UINT32 asid)
     LOS_BitmapClrNBits(g_asidPool, asid, 1);
     LOS_SpinUnlockRestore(&g_cpuAsidLock, flags);
 }
+#endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

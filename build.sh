@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -30,20 +30,31 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 set -e
 
-echo "sh param:$1,$2,$3"
-source="tools/build/config/$1_release.config"
+echo "sh param:$1,$2,$3,$4,$5,$6,$7"
 destination=".config"
+config_file=""
+tee=""
+outdir="../..$3/test_info/gen/kernel/test"
+if [ "$5" = "tee" ]; then
+    tee="_tee"
+fi
+productName="$(basename $7)"
+source="tools/build/config/${productName}_release.config"
 if [ "$2" = "clang" ]; then
-    if [ "$3" = "debug" ]; then
-        source="tools/build/config/debug/$1_$2.config"
+    if [ "$4" = "debug" ]; then
+        config_file="${productName}_$2$tee.config"
+        source="tools/build/config/debug/$config_file"
     else
-        source="tools/build/config/$1_$2_release.config"
+        config_file="${productName}_$2_release$tee.config"
+        source="tools/build/config/$config_file"
     fi
 elif [ "$2" = "gcc" ]; then
-    if [ "$3" = "debug" ]; then
-        source="tools/build/config/$1_debug_shell.config"
+    if [ "$4" = "debug" ]; then
+        config_file="${productName}_debug_shell$tee.config"
+        source="tools/build/config/$config_file"
     else
-        source="tools/build/config/$1_release.config"
+        config_file="${productName}_release$tee.config"
+        source="tools/build/config/$config_file"
     fi
 fi
 if [ -d "./out" ]; then
@@ -52,4 +63,11 @@ fi
 if [ -f "$destination" ]; then
     rm -rf $destination
 fi
+if [ ! -f "$source" ]; then
+    source="$7/config/sys/$config_file"
+fi
 cp $source $destination
+
+mkdir -p $outdir
+cp kernel_test.sources $outdir
+

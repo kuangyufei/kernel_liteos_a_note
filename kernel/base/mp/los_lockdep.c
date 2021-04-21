@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,11 +36,6 @@
 #include "los_atomic.h"
 #include "los_exc.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #if (LOSCFG_KERNEL_SMP_LOCKDEP == YES)
 
@@ -273,7 +268,7 @@ VOID OsLockDepCheckOut(SPIN_LOCK_S *lock)
     depth = lockDep->lockDepth;
 
     /* find the lock position */
-    while (depth-- >= 0) {
+    while (--depth >= 0) {
         if (heldlocks[depth].lockPtr == lock) {
             break;
         }
@@ -314,10 +309,33 @@ VOID OsLockdepClearSpinlocks(VOID)
     }
 }
 
-#endif /* LOSCFG_KERNEL_SMP_LOCKDEP */
+#else /* LOSCFG_KERNEL_SMP_LOCKDEP */
 
-#ifdef __cplusplus
-#if __cplusplus
+VOID OsLockDepCheckIn(SPIN_LOCK_S *lock)
+{
+    (VOID)lock;
+
+    return;
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+
+VOID OsLockDepRecord(SPIN_LOCK_S *lock)
+{
+    (VOID)lock;
+
+    return;
+}
+
+VOID OsLockDepCheckOut(SPIN_LOCK_S *lock)
+{
+    (VOID)lock;
+
+    return;
+}
+
+VOID OsLockdepClearSpinlocks(VOID)
+{
+    return;
+}
+
+#endif
+

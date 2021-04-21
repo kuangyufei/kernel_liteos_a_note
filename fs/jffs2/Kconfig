@@ -4,3 +4,10 @@ config FS_JFFS
     depends on FS_VFS
     help
       Answer Y to enable LiteOS support jffs2 filesystem.
+
+config FS_JFFS2_SUMMARY
+    bool "Enable JFFS2 SUMMARY"
+    default n
+    depends on FS_JFFS
+    help
+      Answer Y to enable LiteOS jffs2 filesystem support Summary Patch.

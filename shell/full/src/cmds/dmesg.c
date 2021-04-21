@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -59,26 +59,19 @@ Case B:
 #include "unistd.h"
 #include "stdlib.h"
 #include "los_task.h"
-#include "hisoc/uart.h"
-#include "inode/inode.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #define BUF_MAX_INDEX (g_logBufSize - 1)
 
-LITE_OS_SEC_BSS STATIC SPIN_LOCK_INIT(g_dmesgSpin);//dmesg自旋锁初始化
+LITE_OS_SEC_BSS STATIC SPIN_LOCK_INIT(g_dmesgSpin);
 
-STATIC DmesgInfo *g_dmesgInfo = NULL;	//缓存区描述符	
-STATIC UINT32 g_logBufSize = 0;		//缓存buf大小,默认8K
-STATIC VOID *g_mallocAddr = NULL;	//dmesg buf地址
-STATIC UINT32 g_dmesgLogLevel = 3;	//默认日志等级 LOS_ERR_LEVEL = 3
-STATIC UINT32 g_consoleLock = 0;	//控制台锁
-STATIC UINT32 g_uartLock = 0;		//串口锁
-STATIC const CHAR *g_levelString[] = {//缓存等级
+STATIC DmesgInfo *g_dmesgInfo = NULL;
+STATIC UINT32 g_logBufSize = 0;
+STATIC VOID *g_mallocAddr = NULL;
+STATIC UINT32 g_dmesgLogLevel = 3;
+STATIC UINT32 g_consoleLock = 0;
+STATIC UINT32 g_uartLock = 0;
+STATIC const CHAR *g_levelString[] = {
     "EMG",
     "COMMON",
     "ERR",
@@ -107,13 +100,13 @@ STATIC VOID OsUnlockUart(VOID)
     g_uartLock = 0;
 }
 
-STATIC UINT32 OsCheckError(VOID)//检查缓冲区是否异常
+STATIC UINT32 OsCheckError(VOID)
 {
     if (g_dmesgInfo == NULL) {
         return LOS_NOK;
     }
 
-    if (g_dmesgInfo->logSize > g_logBufSize) {//超出缓冲区大小了
+    if (g_dmesgInfo->logSize > g_logBufSize) {
         return LOS_NOK;
     }
 
@@ -124,7 +117,7 @@ STATIC UINT32 OsCheckError(VOID)//检查缓冲区是否异常
 
     return LOS_OK;
 }
-//读取日志缓冲区数据,buf带走数据
+
 STATIC INT32 OsDmesgRead(CHAR *buf, UINT32 len)
 {
     UINT32 readLen;
@@ -141,36 +134,36 @@ STATIC INT32 OsDmesgRead(CHAR *buf, UINT32 len)
         return 0;
     }
 
-    readLen = len < logSize ? len : logSize;//最长只能读走g_dmesgInfo->logSize
+    readLen = len < logSize ? len : logSize;
 
-    if (head < tail) { /* Case A */ //不用循环的情况 head 在 tail前
-        ret = memcpy_s(buf, len, logBuf + head, readLen);//从head的位置一次性直接copy走
+    if (head < tail) { /* Case A */
+        ret = memcpy_s(buf, len, logBuf + head, readLen);
         if (ret != EOK) {
             return -1;
         }
-        g_dmesgInfo->logHead += readLen;//head位置往前挪
-        g_dmesgInfo->logSize -= readLen;//可读缓冲区大小减少
-    } else { /* Case B */ 
-        if (readLen <= (g_logBufSize - head)) {//可以读取连续的buf 
-            ret = memcpy_s(buf, len, logBuf + head, readLen);//可以一次性读走
+        g_dmesgInfo->logHead += readLen;
+        g_dmesgInfo->logSize -= readLen;
+    } else { /* Case B */
+        if (readLen <= (g_logBufSize - head)) {
+            ret = memcpy_s(buf, len, logBuf + head, readLen);
             if (ret != EOK) {
                 return -1;
             }
-            g_dmesgInfo->logHead += readLen;//head位置往前挪
-            g_dmesgInfo->logSize -= readLen;//可读缓冲区大小减少
-        } else {//这种情况需分两次读
-            ret = memcpy_s(buf, len, logBuf + head, g_logBufSize - head);//先读到buf尾部
+            g_dmesgInfo->logHead += readLen;
+            g_dmesgInfo->logSize -= readLen;
+        } else {
+            ret = memcpy_s(buf, len, logBuf + head, g_logBufSize - head);
             if (ret != EOK) {
                 return -1;
             }
 
             ret = memcpy_s(buf + g_logBufSize - head, len - (g_logBufSize - head),
-                           logBuf, readLen - (g_logBufSize - head));//再从buf头开始读
+                           logBuf, readLen - (g_logBufSize - head));
             if (ret != EOK) {
                 return -1;
             }
-            g_dmesgInfo->logHead = readLen - (g_logBufSize - head);//重新
-            g_dmesgInfo->logSize -= readLen;//可读缓冲区大小减少
+            g_dmesgInfo->logHead = readLen - (g_logBufSize - head);
+            g_dmesgInfo->logSize -= readLen;
         }
     }
     return (INT32)readLen;
@@ -306,42 +299,42 @@ UINT32 OsCheckUartLock(VOID)
 {
     return g_uartLock;
 }
-//初始化内核dmesg缓存区,即内核为日志开辟的一个8K缓冲区,dmesg的管理是一个buf的循环管理.
+
 UINT32 OsDmesgInit(VOID)
 {
     CHAR* buffer = NULL;
 
-    buffer = (CHAR *)malloc(KERNEL_LOG_BUF_SIZE + sizeof(DmesgInfo));//注意这里用的是malloc分配,但鸿蒙做了适配调用了LOS_MemAlloc
+    buffer = (CHAR *)malloc(KERNEL_LOG_BUF_SIZE + sizeof(DmesgInfo));
     if (buffer == NULL) {
         return LOS_NOK;
     }
-    g_mallocAddr = buffer;//@note_what 取名g_mallocAddr 用于记录日志缓冲区感觉怪怪的
-    g_dmesgInfo = (DmesgInfo *)buffer;//整个buf的开头位置用于放置DmesgInfo
-    g_dmesgInfo->logHead = 0;//头部日志索引位置,主要用于读操作
-    g_dmesgInfo->logTail = 0;//尾部日志索引位置,主要用于写操作
-    g_dmesgInfo->logSize = 0;//日志占用buf大小
-    g_dmesgInfo->logBuf = buffer + sizeof(DmesgInfo);//日志内容紧跟在DmesgInfo之后
-    g_logBufSize = KERNEL_LOG_BUF_SIZE;//buf大小 8K
+    g_mallocAddr = buffer;
+    g_dmesgInfo = (DmesgInfo *)buffer;
+    g_dmesgInfo->logHead = 0;
+    g_dmesgInfo->logTail = 0;
+    g_dmesgInfo->logSize = 0;
+    g_dmesgInfo->logBuf = buffer + sizeof(DmesgInfo);
+    g_logBufSize = KERNEL_LOG_BUF_SIZE;
 
     return LOS_OK;
 }
-//记录一个字符, 实现说明即使buf中写满了,还会继续写入,覆盖最早的数据.
+
 STATIC CHAR OsLogRecordChar(CHAR c)
 {
-    *(g_dmesgInfo->logBuf + g_dmesgInfo->logTail++) = c;//将字符写在尾部位置 
-	//注者更喜欢这样的写法 *g_dmesgInfo->logBuf[g_dmesgInfo->logTail++] = c;
-    if (g_dmesgInfo->logTail > BUF_MAX_INDEX) {//写到尾了
-        g_dmesgInfo->logTail = 0;//下次需从头开始了
+    *(g_dmesgInfo->logBuf + g_dmesgInfo->logTail++) = c;
+
+    if (g_dmesgInfo->logTail > BUF_MAX_INDEX) {
+        g_dmesgInfo->logTail = 0;
     }
 
-    if (g_dmesgInfo->logSize < g_logBufSize) {//如果可读buf大小未超总大小
-        (g_dmesgInfo->logSize)++;//可读的buf大小 ++
-    } else {//整个buf被写满了
-        g_dmesgInfo->logHead = g_dmesgInfo->logTail;//头尾相等,读写索引在同一位置
+    if (g_dmesgInfo->logSize < g_logBufSize) {
+        (g_dmesgInfo->logSize)++;
+    } else {
+        g_dmesgInfo->logHead = g_dmesgInfo->logTail;
     }
     return c;
 }
-//记录字符串
+
 UINT32 OsLogRecordStr(const CHAR *str, UINT32 len)
 {
     UINT32 i = 0;
@@ -349,13 +342,13 @@ UINT32 OsLogRecordStr(const CHAR *str, UINT32 len)
 
     LOS_SpinLockSave(&g_dmesgSpin, &intSave);
     while (len--) {
-        (VOID)OsLogRecordChar(str[i]);//一个一个字符写入
+        (VOID)OsLogRecordChar(str[i]);
         i++;
     }
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
     return i;
 }
-//以覆盖的方式写buf,FULL的意思是 g_dmesgInfo->logHead = g_dmesgInfo->logTail;
+
 STATIC VOID OsBufFullWrite(const CHAR *dst, UINT32 logLen)
 {
     UINT32 bufSize = g_logBufSize;
@@ -366,49 +359,49 @@ STATIC VOID OsBufFullWrite(const CHAR *dst, UINT32 logLen)
     if (!logLen || (dst == NULL)) {
         return;
     }
-    if (logLen > bufSize) { /* full re-write */ //日志长度大于缓存大小的时候怎么写? 答案是:一直覆盖
-        ret = memcpy_s(buf + tail, bufSize - tail, dst, bufSize - tail);//先从tail位置写到buf末尾
+    if (logLen > bufSize) { /* full re-write */
+        ret = memcpy_s(buf + tail, bufSize - tail, dst, bufSize - tail);
         if (ret != EOK) {
             PRINT_ERR("%s,%d memcpy_s failed, err:%d!\n", __FUNCTION__, __LINE__, ret);
             return;
         }
-        ret = memcpy_s(buf, bufSize, dst + bufSize - tail, tail);//再从buf头部写到tail位置
+        ret = memcpy_s(buf, bufSize, dst + bufSize - tail, tail);
         if (ret != EOK) {
             PRINT_ERR("%s,%d memcpy_s failed, err:%d!\n", __FUNCTION__, __LINE__, ret);
             return;
         }
 
-        OsBufFullWrite(dst + bufSize, logLen - bufSize);//哎呀! 用起递归来了哈. 
+        OsBufFullWrite(dst + bufSize, logLen - bufSize);
     } else {
-        if (logLen > (bufSize - tail)) { /* need cycle back to start */ //需要循环回到开始
-            ret = memcpy_s(buf + tail, bufSize - tail, dst, bufSize - tail); //先从tail位置写到buf末尾
+        if (logLen > (bufSize - tail)) { /* need cycle back to start */
+            ret = memcpy_s(buf + tail, bufSize - tail, dst, bufSize - tail);
             if (ret != EOK) {
                 PRINT_ERR("%s,%d memcpy_s failed, err:%d!\n", __FUNCTION__, __LINE__, ret);
                 return;
             }
-            ret = memcpy_s(buf, bufSize, dst + bufSize - tail, logLen - (bufSize - tail));//再从buf头部写到剩余位置
+            ret = memcpy_s(buf, bufSize, dst + bufSize - tail, logLen - (bufSize - tail));
             if (ret != EOK) {
                 PRINT_ERR("%s,%d memcpy_s failed, err:%d!\n", __FUNCTION__, __LINE__, ret);
                 return;
             }
 
-            g_dmesgInfo->logTail = logLen - (bufSize - tail);//写入起始位置变了
-            g_dmesgInfo->logHead = g_dmesgInfo->logTail;	//从tail位置开始读数据,因为即使有未读完的数据,此时也已经被dst覆盖了.
-        } else { /* no need cycle back to start */ //不需要循环回到开始
-            ret = memcpy_s(buf + tail, bufSize - tail, dst, logLen);//从tail位置写到buf末尾
+            g_dmesgInfo->logTail = logLen - (bufSize - tail);
+            g_dmesgInfo->logHead = g_dmesgInfo->logTail;
+        } else { /* no need cycle back to start */
+            ret = memcpy_s(buf + tail, bufSize - tail, dst, logLen);
             if (ret != EOK) {
                 PRINT_ERR("%s,%d memcpy_s failed, err:%d!\n", __FUNCTION__, __LINE__, ret);
                 return;
             }
-            g_dmesgInfo->logTail += logLen;//
-            if (g_dmesgInfo->logTail > BUF_MAX_INDEX) {//写到末尾了
-                g_dmesgInfo->logTail = 0;//从头开始写
+            g_dmesgInfo->logTail += logLen;
+            if (g_dmesgInfo->logTail > BUF_MAX_INDEX) {
+                g_dmesgInfo->logTail = 0;
             }
-            g_dmesgInfo->logHead = g_dmesgInfo->logTail;//从tail位置开始读数据,因为即使有未读完的数据,此时也已经被dst覆盖了.
+            g_dmesgInfo->logHead = g_dmesgInfo->logTail;
         }
     }
 }
-//从读数据的位置开始写入
+
 STATIC VOID OsWriteTailToHead(const CHAR *dst, UINT32 logLen)
 {
     UINT32 writeLen = 0;
@@ -429,7 +422,7 @@ STATIC VOID OsWriteTailToHead(const CHAR *dst, UINT32 logLen)
             return;
         }
 
-        g_dmesgInfo->logTail = g_dmesgInfo->logHead;	//读写位置一致
+        g_dmesgInfo->logTail = g_dmesgInfo->logHead;
         g_dmesgInfo->logSize = g_logBufSize;
         OsBufFullWrite(dst + writeLen, logLen - writeLen);
     } else {
@@ -468,7 +461,7 @@ STATIC VOID OsWriteTailToEnd(const CHAR *dst, UINT32 logLen)
         if (g_dmesgInfo->logSize == g_logBufSize) { /* Tail = Head is 0 */
             OsBufFullWrite(dst + writeLen, logLen - writeLen);
         } else {
-            OsWriteTailToHead(dst + writeLen, logLen - writeLen);//从读数据的位置开始写入
+            OsWriteTailToHead(dst + writeLen, logLen - writeLen);
         }
     } else { /* just do serial copy */
         ret = memcpy_s(buf + tail, bufSize - tail, dst, logLen);
@@ -481,7 +474,7 @@ STATIC VOID OsWriteTailToEnd(const CHAR *dst, UINT32 logLen)
         g_dmesgInfo->logSize += logLen;
     }
 }
-//dmesg中记录日志
+
 INT32 OsLogMemcpyRecord(const CHAR *buf, UINT32 logLen)
 {
     UINT32 intSave;
@@ -491,20 +484,20 @@ INT32 OsLogMemcpyRecord(const CHAR *buf, UINT32 logLen)
         LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
         return -1;
     }
-    if (g_dmesgInfo->logSize < g_logBufSize) {//小于缓冲区大小的情况将怎么写入数据?
-        if (g_dmesgInfo->logHead <= g_dmesgInfo->logTail) {//说明head位置还有未读取的数据
-            OsWriteTailToEnd(buf, logLen);//从写数据的位置开始写入
+    if (g_dmesgInfo->logSize < g_logBufSize) {
+        if (g_dmesgInfo->logHead <= g_dmesgInfo->logTail) {
+            OsWriteTailToEnd(buf, logLen);
         } else {
-            OsWriteTailToHead(buf, logLen);//从读数据的位置开始写入
+            OsWriteTailToHead(buf, logLen);
         }
-    } else {//超过缓冲区大小的情况
-        OsBufFullWrite(buf, logLen);//全覆盖方式写buf
+    } else {
+        OsBufFullWrite(buf, logLen);
     }
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
 
     return LOS_OK;
 }
-//打印缓存区内容 shell dmesg 命令调用 
+
 VOID OsLogShow(VOID)
 {
     UINT32 intSave;
@@ -513,30 +506,30 @@ VOID OsLogShow(VOID)
     CHAR *p = NULL;
 
     LOS_SpinLockSave(&g_dmesgSpin, &intSave);
-    index = g_dmesgInfo->logHead;	//logHead表示开始读的位置
+    index = g_dmesgInfo->logHead;
 
-    p = (CHAR *)malloc(g_dmesgInfo->logSize + 1);//申请日志长度内存用于拷贝内容
+    p = (CHAR *)malloc(g_dmesgInfo->logSize + 1);
     if (p == NULL) {
         LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
         return;
     }
-    (VOID)memset_s(p, g_dmesgInfo->logSize + 1, 0, g_dmesgInfo->logSize + 1);//内存块清0
+    (VOID)memset_s(p, g_dmesgInfo->logSize + 1, 0, g_dmesgInfo->logSize + 1);
 
     while (i < g_dmesgInfo->logSize) {
-        *(p + i) = *(g_dmesgInfo->logBuf + index++);//一个一个字符复制
-        if (index > BUF_MAX_INDEX) {//读到尾部
-            index = 0;//从头开始读
+        *(p + i) = *(g_dmesgInfo->logBuf + index++);
+        if (index > BUF_MAX_INDEX) {
+            index = 0;
         }
         i++;
-        if (index == g_dmesgInfo->logTail) {//读到写入位置,说明读完了.
+        if (index == g_dmesgInfo->logTail) {
             break;
         }
     }
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
-    UartPuts(p, i, UART_WITH_LOCK);//向串口发送数据
-    free(p);//释放内存
+    UartPuts(p, i, UART_WITH_LOCK);
+    free(p);
 }
-//设置缓存等级,一共五级,默认第三级
+
 STATIC INT32 OsDmesgLvSet(const CHAR *level)
 {
     UINT32 levelNum, ret;
@@ -558,18 +551,18 @@ STATIC INT32 OsDmesgLvSet(const CHAR *level)
         return -1;
     }
 }
-//设置缓冲区大小, shell dmesg -s 16K 
+
 STATIC INT32 OsDmesgMemSizeSet(const CHAR *size)
 {
     UINT32 sizeVal;
     CHAR *p = NULL;
 
-    sizeVal = strtoul(size, &p, 0);//C库函数将size所指向的字符串根据给定的base转换为一个无符号长整数（类型为 unsigned long int 型）
-    if (sizeVal > MAX_KERNEL_LOG_BUF_SIZE) {//不能超过缓存区的上限,默认80K
+    sizeVal = strtoul(size, &p, 0);
+    if (sizeVal > MAX_KERNEL_LOG_BUF_SIZE) {
         goto ERR_OUT;
     }
 
-    if (!(LOS_DmesgMemSet(NULL, sizeVal))) {//调整缓存区大小
+    if (!(LOS_DmesgMemSet(NULL, sizeVal))) {
         PRINTK("Set dmesg buf size %u success\n", sizeVal);
         return LOS_OK;
     } else {
@@ -580,12 +573,11 @@ ERR_OUT:
     PRINTK("Set dmesg buf size %u fail\n", sizeVal);
     return LOS_NOK;
 }
-//获取日志等级
 UINT32 OsDmesgLvGet(VOID)
 {
     return g_dmesgLogLevel;
 }
-//设置日志等级
+
 UINT32 LOS_DmesgLvSet(UINT32 level)
 {
     if (level > 5) { /* 5: count of level */
@@ -595,20 +587,20 @@ UINT32 LOS_DmesgLvSet(UINT32 level)
     g_dmesgLogLevel = level;
     return LOS_OK;
 }
-//清除缓存设置
+
 VOID LOS_DmesgClear(VOID)
 {
     UINT32 intSave;
 
     LOS_SpinLockSave(&g_dmesgSpin, &intSave);
-    (VOID)memset_s(g_dmesgInfo->logBuf, g_logBufSize, 0, g_logBufSize);//缓存清0
+    (VOID)memset_s(g_dmesgInfo->logBuf, g_logBufSize, 0, g_logBufSize);
     g_dmesgInfo->logHead = 0;
     g_dmesgInfo->logTail = 0;
     g_dmesgInfo->logSize = 0;
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
 }
 
-UINT32 LOS_DmesgMemSet(VOID *addr, UINT32 size)
+UINT32 LOS_DmesgMemSet(const VOID *addr, UINT32 size)
 {
     UINT32 ret = 0;
 
@@ -619,7 +611,7 @@ UINT32 LOS_DmesgMemSet(VOID *addr, UINT32 size)
     }
     return ret;
 }
-//LOS 开头为外部接口, 封装 OsDmesgRead
+
 INT32 LOS_DmesgRead(CHAR *buf, UINT32 len)
 {
     INT32 ret;
@@ -637,13 +629,13 @@ INT32 LOS_DmesgRead(CHAR *buf, UINT32 len)
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
     return ret;
 }
-//将缓冲区内容写到指定文件
+
 INT32 OsDmesgWrite2File(const CHAR *fullpath, const CHAR *buf, UINT32 logSize)
 {
     INT32 ret;
-	//见于 third_party\NuttX\fs\vfs\fs_open.c 
-    INT32 fd = open(fullpath, O_CREAT | O_RDWR | O_APPEND, 0644); /* 0644:file right */ //可读可写 ,并以append的方式写文件
-    if (fd < 0) { //fd必须大于0 ,并且 0,1,2 被控制台占用
+
+    INT32 fd = open(fullpath, O_CREAT | O_RDWR | O_APPEND, 0644); /* 0644:file right */
+    if (fd < 0) {
         return -1;
     }
     ret = write(fd, buf, logSize);
@@ -651,7 +643,7 @@ INT32 OsDmesgWrite2File(const CHAR *fullpath, const CHAR *buf, UINT32 logSize)
     return ret;
 }
 
-#ifdef LOSCFG_FS_VFS //是否支持虚拟文件系统
+#ifdef LOSCFG_FS_VFS
 INT32 LOS_DmesgToFile(const CHAR *filename)
 {
     CHAR *fullpath = NULL;
@@ -706,7 +698,7 @@ ERR_OUT2:
     free(fullpath);
     return ret;
 }
-#else //不支持虚拟文件系统直接串口输出
+#else
 INT32 LOS_DmesgToFile(CHAR *filename)
 {
     (VOID)filename;
@@ -715,46 +707,7 @@ INT32 LOS_DmesgToFile(CHAR *filename)
 }
 #endif
 
-/****************************************************************
-dmesg是一种程序，用于检测和控制内核环缓冲。程序用来帮助用户了解系统的启动信息。
-Linux dmesg命令用于显示开机信息。鸿蒙沿用了linux dmesg命令
-kernel会将开机信息存储在ring buffer中。您若是开机时来不及查看信息，可利用dmesg来查看。
-开机信息亦保存在/var/log目录中，名称为dmesg的文件里
 
-命令功能
-dmesg命令用于控制内核dmesg缓存区。
-
-命令格式
-dmesg dmesg [-c/-C/-D/-E/-L/-U]
-dmesg -s [size] dmesg -l [level dmesg > [fileA]
-
-参数说明
-
-参数	 参数说明 取值范围
-
--c 	打印缓存区内容并清空缓存区。N/A
-
--C 	清空缓存区。N/A
-
--D/-E	关闭/开启控制台打印。 N/A
-
--L/-U	关闭/开启串口打印。	N/A
-
--s size	设置缓存区大小 size是要设置的大小。 N/A
-
--l level	设置缓存等级。	0 - 5
-
-> fileA	将缓存区内容写入文件。N/A
-
-使用指南
-该命令依赖于LOSCFG_SHELL_DMESG，使用时通过menuconfig在配置项中开启"Enable Shell dmesg"：
-Debug ---> Enable a Debug Version ---> Enable Shell ---> Enable Shell dmesg
-dmesg参数缺省时，默认打印缓存区内容。各“ - ”选项不能混合使用。
-写入文件需确保已挂载文件系统。
-关闭串口打印会影响shell使用，建议先连接telnet再尝试关闭串口。
-举例：输入dmesg > /usr/dmesg.log。
-
-****************************************************************/
 INT32 OsShellCmdDmesg(INT32 argc, const CHAR **argv)
 {
     if (argc == 1) {
@@ -766,24 +719,24 @@ INT32 OsShellCmdDmesg(INT32 argc, const CHAR **argv)
             goto ERR_OUT;
         }
 
-        if (!strcmp(argv[1], "-c")) {//打印缓存区内容并清空缓存区。
+        if (!strcmp(argv[1], "-c")) {
             PRINTK("\n");
             OsLogShow();
             LOS_DmesgClear();
             return LOS_OK;
-        } else if (!strcmp(argv[1], "-C")) {//清空缓存区
+        } else if (!strcmp(argv[1], "-C")) {
             LOS_DmesgClear();
             return LOS_OK;
-        } else if (!strcmp(argv[1], "-D")) {//关闭控制台打印
+        } else if (!strcmp(argv[1], "-D")) {
             OsLockConsole();
             return LOS_OK;
-        } else if (!strcmp(argv[1], "-E")) {//开启控制台打印
+        } else if (!strcmp(argv[1], "-E")) {
             OsUnlockConsole();
             return LOS_OK;
-        } else if (!strcmp(argv[1], "-L")) {//关闭串口打印
+        } else if (!strcmp(argv[1], "-L")) {
             OsLockUart();
             return LOS_OK;
-        } else if (!strcmp(argv[1], "-U")) {//开启串口打印
+        } else if (!strcmp(argv[1], "-U")) {
             OsUnlockUart();
             return LOS_OK;
         }
@@ -801,9 +754,9 @@ INT32 OsShellCmdDmesg(INT32 argc, const CHAR **argv)
                 return LOS_OK;
             }
         } else if (!strcmp(argv[1], "-l")) {
-            return OsDmesgLvSet(argv[2]); /* 2:index of parameters */ //设置缓存等级,一共五级,默认第三级
+            return OsDmesgLvSet(argv[2]); /* 2:index of parameters */
         } else if (!strcmp(argv[1], "-s")) {
-            return OsDmesgMemSizeSet(argv[2]); /* 2:index of parameters */ //设置缓冲区大小
+            return OsDmesgMemSizeSet(argv[2]); /* 2:index of parameters */
         }
     }
 
@@ -812,11 +765,6 @@ ERR_OUT:
     return -1;
 }
 
-SHELLCMD_ENTRY(dmesg_shellcmd, CMD_TYPE_STD, "dmesg", XARGS, (CmdCallBackFunc)OsShellCmdDmesg);//shell dmesg命令 静态注册方式
+SHELLCMD_ENTRY(dmesg_shellcmd, CMD_TYPE_STD, "dmesg", XARGS, (CmdCallBackFunc)OsShellCmdDmesg);
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 #endif

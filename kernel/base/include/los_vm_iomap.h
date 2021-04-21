@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -53,9 +53,6 @@ enum DmaMemType {
     DMA_CACHE, 	//有缓存的DMA
     DMA_NOCACHE	//无缓存的DMA
 };
-
-#define IS_PERIPH_ADDR(addr)    ((addr >= PERIPH_PMM_BASE) && (addr <= PERIPH_PMM_BASE + PERIPH_PMM_SIZE))	//是否为外围设备地址
-#define IS_MEMORY_ADDR(addr)    ((addr >= DDR_MEM_ADDR) && (addr <= DDR_MEM_ADDR + DDR_MEM_SIZE)) //是否为内存地址
 
 /* thread safety */
 VOID *LOS_DmaMemAlloc(DMA_ADDR_T *dmaAddr, size_t size, size_t align, enum DmaMemType type);

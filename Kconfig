@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -42,11 +42,11 @@ choice
 
 config COMPILER_HIMIX_32
     bool "arm-linux-ohoseabi"
-    depends on PLATFORM_HI3518EV300 || PLATFORM_HI3516DV300
+    depends on PLATFORM_HI3518EV300 || PLATFORM_HI3516DV300 || PLATFORM_QEMU_ARM_VIRT_CA7
 
 config COMPILER_CLANG_LLVM
     bool "clang-llvm"
-        depends on PLATFORM_HI3518EV300 || PLATFORM_HI3516DV300
+    depends on PLATFORM_HI3518EV300 || PLATFORM_HI3516DV300 || PLATFORM_QEMU_ARM_VIRT_CA7
 
 endchoice
 endmenu
@@ -61,6 +61,15 @@ source "../../kernel/liteos_a/arch/Kconfig"
 
 ######################### config options of rootfs #####################
 source "../../kernel/liteos_a/kernel/common/Kconfig"
+######################### config options of patchfs #####################
+source "../../kernel/liteos_a/kernel/common/patchfs/Kconfig"
+
+config QUICK_START
+    bool "Enable QUICK_START"
+    default n
+    depends on DRIVERS && FS_VFS
+    help
+      Answer Y to enable LiteOS support quick start.
 endmenu
 
 ######################### config options of kernel #####################
@@ -84,6 +93,28 @@ source "../../kernel/liteos_a/fs/ramfs/Kconfig"
 source "../../kernel/liteos_a/fs/nfs/Kconfig"
 source "../../kernel/liteos_a/fs/proc/Kconfig"
 source "../../kernel/liteos_a/fs/jffs2/Kconfig"
+config ENABLE_READ_BUFFER
+    bool "Enable read buffer Option"
+    default n
+    depends on FS_VFS
+    help
+      Answer Y to add enable read buffer Option.
+
+config MAX_VNODE_SIZE
+    int "Vnode max number"
+    range 0 512
+    default 512
+    depends on FS_VFS
+    help
+      vnode number, range from 0 to 512.
+
+config MAX_PATH_CACHE_SIZE
+    int "PathCache max number"
+    range 0 1024
+    default 512
+    depends on FS_VFS
+    help
+      pathCache number, range from 0 to 1024.
 endmenu
 
 ######################## config options of net ############################
@@ -106,6 +137,7 @@ config PLATFORM_ADAPT
 config ENABLE_OOM_LOOP_TASK
     bool "Enable Oom loop task"
     default n
+    depends on KERNEL_VM
     help
       Answer Y to enable oom loop kthread to check system out of memory.
 
@@ -197,6 +229,13 @@ config EXC_INTERACTION
       Answer Y to enable exception interaction for LiteOS, when the system enter exception, user can also interact with system by shell
       command like readreg, writereg,task,hwi.
 
+config SCHED_DEBUG
+    bool "Enable sched debug Feature"
+    default n
+    depends on DEBUG_VERSION
+    help
+      If you wish to build LiteOS with support for sched debug.
+
 config USER_INIT_DEBUG
     bool "Enable user init Debug"
     default n
@@ -221,30 +260,6 @@ config MEM_DEBUG
     help
       Answer Y to enable LiteOS support mem debug.
 
-config MEM_MUL_MODULE
-    bool "Enable Memory module statistics"
-    default n
-    depends on MEM_DEBUG
-    help
-      Answer Y to enable LiteOS support memory statistics depend on different module
-config MEM_MUL_POOL
-    bool "Enable Memory multi-pool control"
-    default y
-    depends on DEBUG_VERSION && MEM_DEBUG
-    help
-      Answer Y to enable LiteOS support memory multi-pool control
-config MEM_HEAD_BACKUP
-    bool "Enable Node Head Backup"
-    default 0
-    depends on DEBUG_VERSION && MEM_DEBUG
-    help
-      Answer Y to enable node head backup
-config MEM_RECORDINFO
-    bool "Enable Mem Record"
-    default n
-    depends on DEBUG_VERSION && MEM_DEBUG
-    help
-      Answer Y to enable mem record
 config MEM_LEAKCHECK
     bool "Enable Function call stack of Mem operation recorded"
     default n
@@ -255,14 +270,10 @@ config BASE_MEM_NODE_INTEGRITY_CHECK
     bool "Enable integrity check or not "
     default n
     depends on DEBUG_VERSION && MEM_DEBUG
-config BASE_MEM_NODE_SIZE_CHECK
-    bool "Enable size check or not"
+config MEM_WATERLINE
+    bool "Enable memory pool waterline or not"
     default n
     depends on DEBUG_VERSION && MEM_DEBUG
-config SLAB_INFO_STATISTIC
-    bool "Enable SLAB Statistic"
-    default n
-    depends on  DEBUG_VERSION && KERNEL_MEM_SLAB && MEM_DEBUG
 
 config VM_OVERLAP_CHECK
     bool "Enable VM overlap check or not"
@@ -274,23 +285,10 @@ config VM_OVERLAP_CHECK
 config NULL_ADDRESS_PROTECT
     bool "Enable NULL Address protect"
     default n
-    depends on (PLATFORM_HI3518EV200 || PLATFORM_HI3516CV300 || PLATFORM_HI3518EV300 || PLATFORM_HI3516DV300) && DEBUG_VERSION
+    depends on (PLATFORM_HI3518EV200 || PLATFORM_HI3516CV300 || PLATFORM_HI3518EV300 || PLATFORM_HI3516DV300 || PLATFORM_QEMU_ARM_VIRT_CA7) && DEBUG_VERSION
     help
       Answer Y to set mem address 0~1M prohibit to access, read or write will trigger exception.
 
-choice
-    prompt "Enable Uart"
-    default DRIVERS_HDF_PLATFORM_UART
-    help
-      Enable simple uart (without vfs) only for litekernel.
-      Enable general uart (with vfs) for full code.
-source "../../vendor/hisi/hi35xx/platform/uart/Kconfig"
-config PLATFORM_UART_WITHOUT_VFS
-    bool "Simple Uart"
-config PLATFORM_NO_UART
-    bool "NO Uart"
-
-endchoice
 endmenu
 
 ######################## config options os drivers ########################
@@ -301,42 +299,13 @@ config DRIVERS
     help
       Answer Y to enable LiteOS support driver.
 
-source "../../vendor/hisi/hi35xx/platform/hiedmac/Kconfig"
 source "../../kernel/liteos_a/bsd/dev/usb/Kconfig"
-source "../../drivers/hdf/lite/Kconfig"
+source "../../drivers/adapter/khdf/liteos/Kconfig"
 
-config DRIVERS_NETDEV
-    bool "Enable Net Device"
-    default y
-    depends on DRIVERS && NET_LWIP_SACK
-    help
-      Answer Y to enable LiteOS support net device.
-
-choice
-    depends on DRIVERS_NETDEV
-    prompt "MAC"
-    default n
-    help
-      Enable higmac for hi3516a hi3519 hi3559a_cortex-a53_aarch64.
-      Enable hieth-sf for hi3516cv300 hi3516ev200 and hi3518ev200.
-source "../../vendor/hisi/hi35xx/platform/hieth-sf/Kconfig"
-endchoice
-
-source "../../drivers/liteos/mem/Kconfig"
-source "../../vendor/hisi/hi35xx/platform/mmc/Kconfig"
-
-
-config DRIVERS_MTD
-    bool "Enable MTD"
-    default y
-    depends on DRIVERS && FS_VFS
-    help
-      Answer Y to enable LiteOS support jffs2 multipartion.
-
-source "../../vendor/hisi/hi35xx/platform/mtd/spi_nor/Kconfig"
-source "../../drivers/liteos/random/Kconfig"
+source "drivers/char/mem/Kconfig"
+source "drivers/char/random/Kconfig"
 source "../../drivers/liteos/tzdriver/Kconfig"
-source "../../drivers/liteos/video/Kconfig"
+source "drivers/char/video/Kconfig"
 source "../../drivers/liteos/hievent/Kconfig"
 
 endmenu

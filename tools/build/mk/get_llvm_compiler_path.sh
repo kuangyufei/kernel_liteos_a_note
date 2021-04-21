@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -30,20 +30,28 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 set -e
+declare TEMP="$1"
+declare TEMP2="$2"
+declare llvm_path_linux=${TEMP2}/../../prebuilts/clang/ohos/linux-x86_64/llvm
+declare llvm_path_windows=${TEMP2}/../../prebuilts/clang/ohos/windows-x86_64/llvm
 function get_compiler_path()
 {
     local system=$(uname -s)
     local user_clang=clang
     local clang_install_path=$(which "${user_clang}")
     if [ "$system" == "Linux" ] ; then
-        if [ -n "${clang_install_path}" ] ; then
+        if [ -e "${llvm_path_linux}" ] ; then
+            echo "${llvm_path_linux}"
+        elif [ -n "${clang_install_path}" ] ; then
             clang_install_path=$(dirname ${clang_install_path})/../
             echo "${clang_install_path}"
         else
             echo "WARNING:Set llvm/bin path in PATH."
         fi
     else
-        if [ -n "${clang_install_path}" ] ; then
+        if [ -e "${llvm_path_windows}" ] ; then
+            echo "${llvm_path_windows}"
+        elif [ -n "${clang_install_path}" ] ; then
             clang_install_path=$(dirname ${clang_install_path})/../
             echo "${clang_install_path}"
         else

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -37,11 +37,6 @@
 #include "los_rbtree.h"
 #include "los_memory.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 STATIC VOID OsRbLeftRotateNode(LosRbTree *pstTree, LosRbNode *pstX);
 STATIC VOID OsRbRightRotateNode(LosRbTree *pstTree, LosRbNode *pstY);
@@ -296,9 +291,6 @@ STATIC VOID OsRbDeleteNode(LosRbTree *pstTree, VOID *pstData)
         return;
     }
 
-    if (pstTree == NULL) {
-        return;
-    }
     (pstTree->ulNodes)--;
 
     if (!LOS_ListEmpty(&pstTree->stWalkHead)) {
@@ -767,9 +759,4 @@ ULONG_T LOS_RbAddNode(LosRbTree *pstTree, LosRbNode *pstNew)
     return TRUE;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 

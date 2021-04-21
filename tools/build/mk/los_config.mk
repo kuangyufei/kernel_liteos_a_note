@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -101,7 +101,6 @@ LITEOS_COMPILER_CXXLIB_PATH :=
 LITEOS_COMPILER_GCCLIB_PATH  :=
 LITEOS_COMPILER_GCC_INCLUDE  :=
 LITEOS_DRIVERS_BASE_PATH :=
-LITEOS_VENDOR_DRIVERS_BASE_PATH :=
 
 ## variable define ##
 ifeq ($(LITEOSTHIRDPARTY),)
@@ -120,6 +119,7 @@ CXX_PATH  = $(LITEOSTOPDIR)/lib/cxxstl
 JFFS_PATH  = $(LITEOSTOPDIR)/fs/jffs2
 LITEOS_SCRIPTPATH ?= $(LITEOSTOPDIR)/tools/scripts
 LITEOS_LIB_BIGODIR  = $(OUT)/lib/obj
+LITEOS_MENUCONFIG_H = $(LITEOSTOPDIR)/include/generated/autoconf.h
 LOSCFG_ENTRY_SRC    = $(LITEOSTOPDIR)/kernel/common/los_config.c
 
 ### include variable
@@ -127,8 +127,6 @@ MODULE = $(MK_PATH)/module.mk
 ifeq ($(LOSCFG_COMPILER_HIMIX_32), y)
 LITEOS_CMACRO      += -D__COMPILER_HUAWEILITEOS__
 else ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LITEOS_CMACRO      += -D__COMPILER_HUAWEILITEOS__
-else ifeq ($(LOSCFG_COMPILER_HIMIX100_64), y)
 LITEOS_CMACRO      += -D__COMPILER_HUAWEILITEOS__
 else ifeq ($(LOSCFG_COMPILER_HCC_64), y)
 LITEOS_CMACRO      += -D__COMPILER_HUAWEILITEOS__
@@ -143,7 +141,11 @@ LITEOS_BASELIB     += -lgcc_eh
 endif
 AS_OBJS_LIBC_FLAGS  = -D__ASSEMBLY__
 
+ifeq ($(LOSCFG_QUICK_START), y)
+WARNING_AS_ERROR   := -Wall
+else
 WARNING_AS_ERROR   := -Wall -Werror
+endif
 
 ####################################### CPU Option Begin #########################################
 include $(LITEOSTOPDIR)/arch/cpu.mk
@@ -156,6 +158,11 @@ ifeq ($(LOSCFG_PLATFORM_ROOTFS), y)
     LITEOS_BASELIB  += -lrootfs
     LIB_SUBDIRS     += $(LITEOSTOPDIR)/kernel/common
 endif
+
+ifeq ($(LOSCFG_PLATFORM_PATCHFS), y)
+    LITEOS_BASELIB  += -lpatchfs
+    LIB_SUBDIRS     += $(LITEOSTOPDIR)/kernel/common/patchfs
+endif
 ############################# Platform Option End #################################
 
 ####################################### Kernel Option Begin ###########################################
@@ -163,8 +170,12 @@ LITEOS_BASELIB += -lbase
 LIB_SUBDIRS       += kernel/base
 LITEOS_KERNEL_INCLUDE   := -I $(LITEOSTOPDIR)/kernel/include
 
-LITEOS_BASELIB += -lhi35xx_bsp
-LIB_SUBDIRS += $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/$(LITEOS_PLATFORM)/config/board/
+LITEOS_BASELIB += -lbsp_config
+LIB_SUBDIRS += $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH)
+
+ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
+LITEOS_PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH)/include/
+endif
 
 ifeq ($(LOSCFG_KERNEL_CPUP), y)
     LITEOS_BASELIB   += -lcpup
@@ -191,17 +202,9 @@ ifeq ($(LOSCFG_KERNEL_VDSO), y)
     LITEOS_VDSO_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/vdso/include
 endif
 
-ifeq ($(LOSCFG_KERNEL_TICKLESS), y)
-    LITEOS_BASELIB += -ltickless
-    LIB_SUBDIRS       += kernel/extended/tickless
-    LITEOS_TICKLESS_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/tickless
-endif
-
-ifeq ($(LOSCFG_KERNEL_TRACE), y)
     LITEOS_BASELIB += -ltrace
     LIB_SUBDIRS       += kernel/extended/trace
     LITEOS_TRACE_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/trace
-endif
 
 ifeq ($(LOSCFG_KERNEL_LITEIPC), y)
     LITEOS_BASELIB     += -lliteipc
@@ -211,8 +214,8 @@ endif
 
 ifeq ($(LOSCFG_KERNEL_PIPE), y)
     LITEOS_BASELIB     += -lpipes
-    LIB_SUBDIRS           += kernel/extended/pipe
-    LITEOS_PIPE_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/pipe
+    LIB_SUBDIRS           += kernel/extended/pipes
+    LITEOS_PIPE_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/pipes
 endif
 ################################### Kernel Option End ################################
 
@@ -336,6 +339,11 @@ ifeq ($(LOSCFG_FS_JFFS), y)
     LITEOS_BASELIB  += -ljffs2
     LIB_SUBDIRS     += fs/jffs2
 endif
+
+ifeq ($(LOSCFG_FS_ZPFS), y)
+    LITEOS_BASELIB  += -lzpfs
+    LIB_SUBDIRS     += fs/zpfs
+endif
 #################################### FS Option End ##################################
 
 
@@ -351,6 +359,15 @@ ifeq ($(LOSCFG_NET_LWIP_SACK_2_1), y)
         -I $(LITEOSTOPDIR)/net/mac
 
     LITEOS_CMACRO     +=  $(LWIP_MACROS)
+else ifeq ($(LOSCFG_NET_LWIP_SACK_2_0), y)
+    LWIPDIR := $(LITEOSTHIRDPARTY)/lwip_enhanced
+    LITEOS_BASELIB += -llwip
+    LIB_SUBDIRS       += $(LWIPDIR)
+    LITEOS_LWIP_SACK_INCLUDE   += \
+        -I $(LWIPDIR)/include \
+        -I $(LITEOSTOPDIR)/net/mac
+    LWIP_MACROS += -DLWIP_CONFIG_FILE=\"lwip/lwipopts.h\"
+    LITEOS_CMACRO     +=  $(LWIP_MACROS)
 else
     $(error "unknown lwip version")
 endif
@@ -358,26 +375,15 @@ endif
 
 #################################### Net Option End####################################
 LITEOS_DRIVERS_BASE_PATH := $(LITEOSTOPDIR)/../../drivers/liteos
-LITEOS_VENDOR_DRIVERS_BASE_PATH := $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/platform
 ################################## Driver Option Begin #################################
 ifeq ($(LOSCFG_DRIVERS_HDF), y)
-include $(LITEOSTOPDIR)/../../drivers/hdf/lite/hdf_lite.mk
+include $(LITEOSTOPDIR)/../../drivers/adapter/khdf/liteos/hdf_lite.mk
 endif
 
 ifeq ($(LOSCFG_DRIVERS_HIEVENT), y)
     LITEOS_BASELIB     += -lhievent
     LIB_SUBDIRS           += $(LITEOS_DRIVERS_BASE_PATH)/hievent
     LITEOS_HIEVENT_INCLUDE   += -I $(LITEOS_DRIVERS_BASE_PATH)/hievent/include
-endif
-
-ifeq ($(LOSCFG_DRIVERS_HIEDMAC), y)
-    LITEOS_BASELIB    += -lhiedmac
-    LITEOS_HIDMAC_INCLUDE   += -I $(LITEOS_VENDOR_DRIVERS_BASE_PATH)/hiedmac/include
-endif
-
-ifeq ($(LOSCFG_DRIVERS_HIETH_SF), y)
-    LITEOS_BASELIB    += -lhieth-sf
-    LITEOS_HIETH_SF_INCLUDE += -I $(LITEOS_VENDOR_DRIVERS_BASE_PATH)/hieth-sf/include
 endif
 
 ifeq ($(LOSCFG_DRIVERS_TZDRIVER), y)
@@ -388,36 +394,20 @@ endif
 
 ifeq ($(LOSCFG_DRIVERS_MEM), y)
     LITEOS_BASELIB += -lmem
-    LIB_SUBDIRS       += $(LITEOS_DRIVERS_BASE_PATH)/mem
+    LIB_SUBDIRS       += $(LITEOSTOPDIR)/drivers/char/mem
+    LITEOS_DEV_MEM_INCLUDE = -I $(LITEOSTOPDIR)/drivers/char/mem/include
 endif
 
-ifeq ($(LOSCFG_DRIVERS_MMC), y)
-    MMC_HOST_DIR := himci
-    LITEOS_BASELIB  += -lmmc
-    LITEOS_MMC_INCLUDE += -I $(LITEOS_VENDOR_DRIVERS_BASE_PATH)/mmc/include
-endif
-
-ifeq ($(LOSCFG_DRIVERS_MTD), y)
-    LITEOS_BASELIB    += -lmtd_common
-    LITEOS_MTD_SPI_NOR_INCLUDE  +=  -I $(LITEOS_VENDOR_DRIVERS_BASE_PATH)/mtd/common/include
-
-    ifeq ($(LOSCFG_DRIVERS_MTD_SPI_NOR), y)
-        ifeq ($(LOSCFG_DRIVERS_MTD_SPI_NOR_HISFC350), y)
-            NOR_DRIVER_DIR := hisfc350
-    else ifeq ($(LOSCFG_DRIVERS_MTD_SPI_NOR_HIFMC100), y)
-            NOR_DRIVER_DIR := hifmc100
-    endif
-
-    LITEOS_BASELIB   += -lspinor_flash
-    LITEOS_MTD_SPI_NOR_INCLUDE  +=  -I $(LITEOS_VENDOR_DRIVERS_BASE_PATH)/mtd/spi_nor/include
-
-    endif
+ifeq ($(LOSCFG_QUICK_START), y)
+    LITEOS_BASELIB += -lquickstart
+    LIB_SUBDIRS       += $(LITEOSTOPDIR)/drivers/char/quickstart
+    LITEOS_QUICK_START_INCLUDE = -I $(LITEOSTOPDIR)/drivers/char/quickstart/include
 endif
 
 ifeq ($(LOSCFG_DRIVERS_RANDOM), y)
     LITEOS_BASELIB += -lrandom
-    LIB_SUBDIRS    += $(LITEOS_DRIVERS_BASE_PATH)/random
-    LITEOS_RANDOM_INCLUDE += -I $(LITEOS_DRIVERS_BASE_PATH)/random/include
+    LIB_SUBDIRS    += $(LITEOSTOPDIR)/drivers/char/random
+    LITEOS_RANDOM_INCLUDE += -I $(LITEOSTOPDIR)/drivers/char/random/include
 endif
 
 ifeq ($(LOSCFG_DRIVERS_USB), y)
@@ -431,7 +421,7 @@ endif
 
 ifeq ($(LOSCFG_DRIVERS_VIDEO), y)
     LITEOS_BASELIB += -lvideo
-    LIB_SUBDIRS       += $(LITEOS_DRIVERS_BASE_PATH)/video
+    LIB_SUBDIRS       += $(LITEOSTOPDIR)/drivers/char/video
     LITEOS_VIDEO_INCLUDE += -I $(LITEOSTOPDIR)/../../third_party/NuttX/include/nuttx/video
 endif
 
@@ -440,8 +430,9 @@ endif
 ############################## Dfx Option Begin#######################################
 ifeq ($(LOSCFG_BASE_CORE_HILOG), y)
     LITEOS_BASELIB     += -lhilog
-    LIB_SUBDIRS           += $(LITEOSTOPDIR)/../../base/hiviewdfx/frameworks/hilog_lite/featured
-    LITEOS_HILOG_INCLUDE  += -I $(LITEOSTOPDIR)/../../base/hiviewdfx/interfaces/kits/hilog
+    LIB_SUBDIRS           += $(LITEOSTOPDIR)/../../base/hiviewdfx/hilog_lite/frameworks/featured
+    LITEOS_HILOG_INCLUDE  += -I $(LITEOSTOPDIR)/../../base/hiviewdfx/hilog_lite/interfaces/native/kits
+    LITEOS_HILOG_INCLUDE  += -I $(LITEOSTOPDIR)/../../base/hiviewdfx/hilog_lite/interfaces/native/kits/hilog
     LITEOS_CMACRO += -DLOSCFG_BASE_CORE_HILOG
 endif
 ############################## Dfx Option End #######################################
@@ -457,7 +448,14 @@ ifeq ($(LOSCFG_COMPILE_DEBUG), y)
     LITEOS_COPTS_OPTION  = -g -gdwarf-2
 else
     ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-        LITEOS_COPTS_OPTMIZE = -Oz -flto
+        ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
+                # WORKAROUND: Disable LTO to avoid undefined __stack_chk_guard
+                #             problem. "externally_visible" attribute could be
+                #             a fix for that but it is not known to our LLVM.
+                LITEOS_COPTS_OPTMIZE = -Oz #-flto
+        else
+                LITEOS_COPTS_OPTMIZE = -Oz -flto
+        endif
     else
         LITEOS_COPTS_OPTMIZE = -O2
     endif
@@ -491,8 +489,10 @@ ifeq ($(LOSCFG_NULL_ADDRESS_PROTECT), y)
     LITEOS_CMACRO += -DLOSCFG_NULL_ADDRESS_PROTECT
 endif
 
+ifeq ($(LOSCFG_KERNEL_SYSCALL), y)
 LITEOS_BASELIB += -lsyscall
 LIB_SUBDIRS += syscall
+endif
 LIB_SUBDIRS += kernel/user
 
 ############################# Tools && Debug Option End #################################
@@ -526,7 +526,7 @@ endif
 
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 ifeq ($(LITEOS_COMPILER_PATH),)
-LITEOS_COMPILER_PATH := $(shell $(LITEOSTOPDIR)/tools/build/mk/get_llvm_compiler_path.sh  $(CROSS_COMPILE) $(LITEOSTOPDIR))
+LITEOS_COMPILER_PATH := $(shell $(LITEOSTOPDIR)/tools/build/mk/get_llvm_compiler_path.sh "$(CROSS_COMPILE)" "$(LITEOSTOPDIR)")
 export LITEOS_COMPILER_PATH
 endif
 CC  = $(LITEOS_COMPILER_PATH)/bin/clang
@@ -548,7 +548,7 @@ LLVM_EXTRA_OPTS := -target $(LLVM_TARGET) -fms-extensions -Wno-address-of-packed
 LLVM_EXTRA_LD_OPTS := -fuse-ld=lld --rtlib=compiler-rt
 else
 ifeq ($(LITEOS_COMPILER_PATH),)
-LITEOS_COMPILER_PATH := $(shell $(LITEOSTOPDIR)/tools/build/mk/get_compiler_path.sh  $(CROSS_COMPILE) $(LITEOSTOPDIR))
+LITEOS_COMPILER_PATH := $(shell $(LITEOSTOPDIR)/tools/build/mk/get_compiler_path.sh "$(CROSS_COMPILE)" "$(LITEOSTOPDIR)")
 export LITEOS_COMPILER_PATH
 endif
 CC  = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)gcc
@@ -578,10 +578,6 @@ else ifeq ($(LOSCFG_COMPILER_HIMIX_32), y)
 LITEOS_COMPILER_CXXLIB_PATH = $(LITEOS_COMPILER_PATH)/$(COMPILE_NAME)/lib
 LITEOS_COMPILER_GCCLIB_PATH = $(LITEOS_COMPILER_PATH)/lib/gcc/$(COMPILE_NAME)/$(VERSION_NUM)
 LITEOS_COMPILER_GCC_INCLUDE = -I $(LITEOS_COMPILER_PATH)/lib/gcc/arm-linux-ohoseabi/$(VERSION_NUM)/include
-else ifeq ($(LOSCFG_COMPILER_HIMIX100_64), y)
-LITEOS_COMPILER_CXXLIB_PATH = $(LITEOS_COMPILER_PATH)/$(COMPILE_NAME)/lib64
-LITEOS_COMPILER_GCCLIB_PATH = $(LITEOS_COMPILER_PATH)/lib/gcc/$(COMPILE_NAME)/$(VERSION_NUM)
-LITEOS_COMPILER_GCC_INCLUDE = -I $(LITEOS_COMPILER_PATH)/lib/gcc/aarch64-linux-android/$(VERSION_NUM)/include
 else ifeq ($(LOSCFG_COMPILER_HCC_64), y)
 LITEOS_COMPILER_CXXLIB_PATH = $(LITEOS_COMPILER_PATH)/$(COMPILE_NAME)/lib64
 LITEOS_COMPILER_GCCLIB_PATH = $(LITEOS_COMPILER_PATH)/lib64/gcc/$(COMPILE_NAME)/$(VERSION_NUM)
@@ -607,11 +603,6 @@ ifeq ($(LOSCFG_COMPILER_HIMIX_32), y)
         -I $(LITEOS_COMPILER_CXX_PATH)/c++/$(VERSION_NUM)/arm-linux-ohoseabi
     LITEOS_CXXMACRO   += -DLOSCFG_KERNEL_CPP_EXCEPTIONS_SUPPORT
     LITEOS_CMACRO     += -DLOSCFG_KERNEL_CPP_EXCEPTIONS_SUPPORT
-else ifeq ($(LOSCFG_COMPILER_HIMIX100_64), y)
-    LITEOS_CXXINCLUDE += \
-        -I $(LITEOS_COMPILER_CXX_PATH)/c++/$(VERSION_NUM)/aarch64-linux-android
-    LITEOS_CXXMACRO   += -DLOSCFG_KERNEL_CPP_EXCEPTIONS_SUPPORT
-    LITEOS_CMACRO     += -DLOSCFG_KERNEL_CPP_EXCEPTIONS_SUPPORT
 else ifeq ($(LOSCFG_COMPILER_HCC_64), y)
     LITEOS_CXXINCLUDE += \
         -I $(LITEOS_COMPILER_CXX_PATH)/c++/$(VERSION_NUM)/aarch64-linux-gnu
@@ -620,9 +611,9 @@ else ifeq ($(LOSCFG_COMPILER_HCC_64), y)
 endif
 
 LITEOS_CXXINCLUDE +=  $(LITEOS_COMPILER_GCC_INCLUDE)
-
+FP = -fno-omit-frame-pointer
 LITEOS_CXXOPTS_BASE  += -std=c++11 -nostdlib -nostdinc -nostdinc++ -fexceptions -fpermissive -fno-use-cxa-atexit \
-                        -fno-builtin -frtti -fno-pic -Winvalid-pch $(WARNING_AS_ERROR) $(LLVM_EXTRA_OPTS)
+                        -fno-builtin -frtti -fno-pic -Winvalid-pch $(WARNING_AS_ERROR) $(LLVM_EXTRA_OPTS) $(FP)
 
 
 LITEOS_EXTKERNEL_INCLUDE   := $(LITEOS_CPPSUPPORT_INCLUDE) $(LITEOS_DYNLOAD_INCLUDE) \
@@ -643,23 +634,23 @@ LITEOS_DRIVERS_INCLUDE     := $(LITEOS_CELLWISE_INCLUDE)   $(LITEOS_GPIO_INCLUDE
                               $(LITEOS_HIDMAC_INCLUDE)     $(LITEOS_HIETH_SF_INCLUDE) \
                               $(LITEOS_HIGMAC_INCLUDE)     $(LITEOS_I2C_INCLUDE) \
                               $(LITEOS_LCD_INCLUDE)        $(LITEOS_MMC_INCLUDE) \
-                              $(LITEOS_MTD_SPI_NOR_INCLUDE) \
+                              $(LITEOS_MTD_SPI_NOR_INCLUDE) $(LITEOS_MTD_NAND_INCLUDE) \
                               $(LITEOS_RANDOM_INCLUDE)     $(LITEOS_RTC_INCLUDE) \
                               $(LITEOS_SPI_INCLUDE)        $(LITEOS_USB_INCLUDE) \
                               $(LITEOS_WTDG_INCLUDE)       $(LITEOS_DBASE_INCLUDE) \
                               $(LITEOS_CPUFREQ_INCLUDE)    $(LITEOS_DEVFREQ_INCLUDE) \
                               $(LITEOS_REGULATOR_INCLUDE)  $(LITEOS_VIDEO_INCLUDE) \
                               $(LITEOS_DRIVERS_HDF_INCLUDE) $(LITEOS_TZDRIVER_INCLUDE) \
-                              $(LITEOS_HIEVENT_INCLUDE)
+                              $(LITEOS_HIEVENT_INCLUDE)    $(LITEOS_DEV_MEM_INCLUDE) \
+                              $(LITEOS_QUICK_START_INCLUDE)
 LITEOS_DFX_INCLUDE    := $(LITEOS_HILOG_INCLUDE)
 
 LITEOS_SECURITY_INCLUDE    := $(LITEOS_SECURITY_CAP_INC) $(LITEOS_SECURITY_VID_INC)
 LOSCFG_TOOLS_DEBUG_INCLUDE := $(LITEOS_SHELL_INCLUDE)  $(LITEOS_UART_INCLUDE) \
                               $(LITEOS_TELNET_INCLUDE)
 
-
-FP = -fno-omit-frame-pointer
-LITEOS_COPTS_BASE  := -fno-pic -fno-builtin -nostdinc -nostdlib $(WARNING_AS_ERROR) $(LITEOS_SSP) $(LLVM_EXTRA_OPTS) -fno-strict-aliasing -fno-common -fsigned-char
+LITEOS_COPTS_BASE  := -fno-pic -fno-builtin -nostdinc -nostdlib $(WARNING_AS_ERROR) $(LITEOS_SSP) $(LLVM_EXTRA_OPTS) \
+                      -fno-strict-aliasing -fno-common -fsigned-char
 ifneq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 LITEOS_COPTS_BASE += -fno-aggressive-loop-optimizations
 endif
@@ -673,12 +664,15 @@ endif
 endif
 LITEOS_COPTS_EXTRA += -fno-short-enums
 ifeq ($(LOSCFG_THUMB), y)
-LITEOS_COPTS_EXTRA_INTERWORK := $(LITEOS_COPTS_EXTRA) -mthumb
+LITEOS_COPTS_EXTRA_INTERWORK := $(LITEOS_COPTS_EXTRA) -mthumb -Wa,-mimplicit-it=thumb
 LITEOS_CMACRO     += -DLOSCFG_INTERWORK_THUMB
 else
 LITEOS_COPTS_EXTRA_INTERWORK := $(LITEOS_COPTS_EXTRA)
 #-fno-inline
 endif
+
+# kernel configuration macros
+LITEOS_CMACRO     += -imacros $(LITEOS_MENUCONFIG_H)
 
 ifneq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 LITEOS_LD_OPTS += -nostartfiles
@@ -700,7 +694,9 @@ endif
 
 # temporary
 LITEOS_PLATFORM_INCLUDE += \
-        -I $(LITEOSTOPDIR)/kernel/base/include
+        -I $(LITEOSTOPDIR)/kernel/base/include \
+        -I $(LITEOSTOPDIR)/kernel/extended/include
+
 LITEOS_CXXINCLUDE += \
         $(LITEOS_NET_INCLUDE) \
         -I $(LITEOSTOPDIR)/kernel/base/include

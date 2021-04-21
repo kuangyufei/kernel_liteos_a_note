@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -30,6 +30,11 @@
  */
 
 #define _GNU_SOURCE
+#ifdef LOSCFG_FS_VFS
+#include "fs/fs.h"
+#include "fs/file.h"
+#endif
+#include "los_signal.h"
 #include "los_syscall.h"
 #include "los_task_pri.h"
 #include "los_process_pri.h"
@@ -40,10 +45,6 @@
 #include "mqueue.h"
 #include "los_futex_pri.h"
 #include "sys/times.h"
-#ifdef LOSCFG_FS_VFS
-#include "fs/fs.h"
-#include "fs/file.h"
-#endif
 #include "dirent.h"
 #include "fcntl.h"
 #include "unistd.h"
@@ -146,7 +147,7 @@ LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
     }
 
     regs[REG_R0] = ret;//R0保存系统调用返回值
-    OsSaveSignalContext(regs);//如果有信号要处理,将改写sp,r0,r1寄存器,使
+    OsSaveSignalContext(regs);//如果有信号要处理,将改写sp,r0,r1寄存器,改变返回正常用户态路径,而先去执行信号处理程序.
 
     /* Return the last value of curent_regs.  This supports context switches on return from the exception.
      * That capability is only used with the SYS_context_switch system call.

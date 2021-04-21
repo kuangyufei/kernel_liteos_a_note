@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,11 +36,8 @@
 #include "los_vm_dump.h"
 #include "los_process_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+
+#ifdef LOSCFG_KERNEL_VM
 /******************************************************************************
 鸿蒙物理内存采用段页式管理
  
@@ -99,7 +96,7 @@ VOID OsVmPhysSegAdd(VOID)
 {
     INT32 i, ret;
 
-    LOS_ASSERT(g_vmPhysSegNum <= VM_PHYS_SEG_MAX);
+    LOS_ASSERT(g_vmPhysSegNum < VM_PHYS_SEG_MAX);
 	
     for (i = 0; i < (sizeof(g_physArea) / sizeof(g_physArea[0])); i++) {//遍历g_physArea数组
         ret = OsVmPhysSegCreate(g_physArea[i].start, g_physArea[i].size);//由区划分转成段管理
@@ -111,13 +108,14 @@ VOID OsVmPhysSegAdd(VOID)
 //段区域大小调整
 VOID OsVmPhysAreaSizeAdjust(size_t size)
 {
-    INT32 i;
-
-    for (i = 0; i < (sizeof(g_physArea) / sizeof(g_physArea[0])); i++) {
-        g_physArea[i].start += size;
-        g_physArea[i].size -= size;
-    }
+    /*
+     * The first physics memory segment is used for kernel image and kernel heap,
+     * so just need to adjust the first one here.
+     */
+    g_physArea[0].start += size;
+    g_physArea[0].size -= size;
 }
+
 //获得物理内存的总页数
 UINT32 OsVmPhysPageNumGet(VOID)
 {
@@ -294,33 +292,86 @@ LosVmPage *OsVmVaddrToPage(VOID *ptr)
 
     return NULL;
 }
-//从参数段中分配参数页数
-LosVmPage *OsVmPhysPagesAlloc(struct VmPhysSeg *seg, size_t nPages)
+
+STATIC INLINE VOID OsVmRecycleExtraPages(LosVmPage *page, size_t startPage, size_t endPage)
+{
+    if (startPage >= endPage) {
+        return;
+    }
+
+    OsVmPhysPagesFreeContiguous(page, endPage - startPage);
+}
+
+STATIC LosVmPage *OsVmPhysLargeAlloc(struct VmPhysSeg *seg, size_t nPages)
 {
     struct VmFreeList *list = NULL;
     LosVmPage *page = NULL;
+    LosVmPage *tmp = NULL;
+    PADDR_T paStart;
+    PADDR_T paEnd;
+    size_t size = nPages << PAGE_SHIFT;
+
+    list = &seg->freeList[VM_LIST_ORDER_MAX - 1];
+    LOS_DL_LIST_FOR_EACH_ENTRY(page, &list->node, LosVmPage, node) {
+        paStart = page->physAddr;
+        paEnd = paStart + size;
+        if (paEnd > (seg->start + seg->size)) {
+            continue;
+        }
+
+        for (;;) {
+            paStart += PAGE_SIZE << (VM_LIST_ORDER_MAX - 1);
+            if ((paStart >= paEnd) || (paStart < seg->start) ||
+                (paStart >= (seg->start + seg->size))) {
+                break;
+            }
+            tmp = &seg->pageBase[(paStart - seg->start) >> PAGE_SHIFT];
+            if (tmp->order != (VM_LIST_ORDER_MAX - 1)) {
+                break;
+            }
+        }
+        if (paStart >= paEnd) {
+            return page;
+        }
+    }
+
+    return NULL;
+}
+
+STATIC LosVmPage *OsVmPhysPagesAlloc(struct VmPhysSeg *seg, size_t nPages)
+{
+    struct VmFreeList *list = NULL;
+    LosVmPage *page = NULL;
+    LosVmPage *tmp = NULL;
     UINT32 order;
     UINT32 newOrder;
 
-    if ((seg == NULL) || (nPages == 0)) {
-        return NULL;
-    }
-	//因为伙伴算法分配单元是 1,2,4,8 页,比如nPages = 3时,就需要从 4号空闲链表中分,剩余的1页需要劈开放到1号空闲链表中
-    order = OsVmPagesToOrder(nPages);//根据页数计算出用哪个块组
-    if (order < VM_LIST_ORDER_MAX) {//order不能大于9 即:256*4K = 1M 可理解为向内核堆申请内存一次不能超过1M
-        for (newOrder = order; newOrder < VM_LIST_ORDER_MAX; newOrder++) {//没有就找更大块
-            list = &seg->freeList[newOrder];//从最合适的块处开始找
-            if (LOS_ListEmpty(&list->node)) {//理想情况链表为空,说明没找到
-                continue;//继续找更大块的
+    order = OsVmPagesToOrder(nPages);
+    if (order < VM_LIST_ORDER_MAX) {
+        for (newOrder = order; newOrder < VM_LIST_ORDER_MAX; newOrder++) {
+            list = &seg->freeList[newOrder];
+            if (LOS_ListEmpty(&list->node)) {
+                continue;
             }
-            page = LOS_DL_LIST_ENTRY(LOS_DL_LIST_FIRST(&list->node), LosVmPage, node);//找第一个节点就行,因为链表上挂的都是同样大小物理页框
+            page = LOS_DL_LIST_ENTRY(LOS_DL_LIST_FIRST(&list->node), LosVmPage, node);
+            goto DONE;
+        }
+    } else {
+        newOrder = VM_LIST_ORDER_MAX - 1;
+        page = OsVmPhysLargeAlloc(seg, nPages);
+        if (page != NULL) {
             goto DONE;
         }
     }
     return NULL;
 DONE:
-    OsVmPhysFreeListDelUnsafe(page);//将物理页框从链表上摘出来
-    OsVmPhysPagesSpiltUnsafe(page, order, newOrder);//将物理页框劈开,把用不了的页再挂到对应的空闲链表上
+
+    for (tmp = page; tmp < &page[nPages]; tmp = &tmp[1 << newOrder]) {
+        OsVmPhysFreeListDelUnsafe(tmp);
+    }
+    OsVmPhysPagesSpiltUnsafe(page, order, newOrder);
+    OsVmRecycleExtraPages(&page[nPages], nPages, ROUNDUP(nPages, (1 << min(order, newOrder))));
+
     return page;
 }
 //释放物理页框,所谓释放物理页就是把页挂到空闲链表中
@@ -355,7 +406,6 @@ VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
 {
     paddr_t pa;
     UINT32 order;
-    size_t count;
     size_t n;
 
     while (TRUE) {//死循环
@@ -370,10 +420,11 @@ VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
         page += n;//释放的页数增多
     }
 	//举例剩下 7个页框时，依次用 2^2 2^1 2^0 方式释放
-    for (count = 0; count < nPages; count += n) {
+    while (nPages > 0) {
         order = LOS_HighBitGet(nPages);//从高到低块组释放
         n = VM_ORDER_TO_PAGES(order);//2^order次方
         OsVmPhysPagesFree(page, order);//释放块组
+        nPages -= n;
         page += n;//相当于page[n]
     }
 }
@@ -388,10 +439,6 @@ STATIC LosVmPage *OsVmPhysPagesGet(size_t nPages)
     struct VmPhysSeg *seg = NULL;
     LosVmPage *page = NULL;
     UINT32 segID;
-
-    if (nPages == 0) {
-        return NULL;
-    }
 
     for (segID = 0; segID < g_vmPhysSegNum; segID++) {
         seg = &g_vmPhysSeg[segID];
@@ -601,9 +648,14 @@ size_t LOS_PhysPagesFree(LOS_DL_LIST *list)
 
     return count;
 }
+#else
+VADDR_T *LOS_PaddrToKVaddr(PADDR_T paddr)
+{
+    if ((paddr < DDR_MEM_ADDR) || (paddr >= (DDR_MEM_ADDR + DDR_MEM_SIZE))) {
+        return NULL;
+    }
 
-#ifdef __cplusplus
-#if __cplusplus
+    return (VADDR_T *)DMA_TO_VMM_ADDR(paddr);
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#endif
+

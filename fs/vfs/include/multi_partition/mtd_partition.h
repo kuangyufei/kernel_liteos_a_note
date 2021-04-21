@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -47,55 +47,36 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define SPIBLK_NAME  "/dev/spinorblk"	//nor flash block 名称
-#define SPICHR_NAME  "/dev/spinorchr"	//nor flash char 名称
+#define SPIBLK_NAME  "/dev/spinorblk"
+#define SPICHR_NAME  "/dev/spinorchr"
 
-#define NANDBLK_NAME "/dev/nandblk" //nand flash block 名称
-#define NANDCHR_NAME "/dev/nandchr"	//nand flash char 名称
-/***************************************************************
-https://blog.csdn.net/lwj103862095/article/details/21545791
+#define NANDBLK_NAME "/dev/nandblk"
+#define NANDCHR_NAME "/dev/nandchr"
 
-MTD，Memory Technology Device即内存技术设备，在Linux内核中，引入MTD层为
-NOR FLASH和NAND FLASH设备提供统一接口。MTD将文件系统与底层FLASH存储器进行了隔离。
-
-字符设备和块设备的区别在于前者只能被顺序读写，后者可以随机访问；同时，两者读写数据的基本单元不同。
-字符设备，以字节为基本单位，在Linux中，字符设备实现的比较简单，不需要缓冲区即可直接读写，
-
-内核例程和用户态API一一对应，用户层的Read函数直接对应了内核中的Read例程，这种映射关系由字符设备的
-file_operations维护。
-
-块设备，则以块为单位接受输入和返回输出。对这种设备的读写是按块进行的，其接口相对于字符设备复杂，
-read、write API没有直接到块设备层，而是直接到文件系统层，然后再由文件系统层发起读写请求。 
-同时，由于块设备的IO性能与CPU相比很差，因此，块设备的数据流往往会引入文件系统的Cache机制。
-
-MTD设备既非块设备也不是字符设备，但可以同时提供字符设备和块设备接口来操作它。
-MTD设备通常可分为四层 
-这四层从上到下依次是：设备节点、MTD设备层、MTD原始设备层和硬件驱动层。
-***************************************************************/
-typedef struct mtd_node {//通过mknod在/dev子目录下建立MTD块设备节点（主设备号为31）和MTD字符设备节点（主设备号为90） 
-    UINT32 start_block;	//开始块索引
-    UINT32 end_block;	//结束块索引
-    UINT32 patitionnum;	//分区编号
-    CHAR *blockdriver_name;	//块设备驱动名称
-    CHAR *chardriver_name;	//字符设备驱动名称
-    CHAR *mountpoint_name;	//挂载点名称
-    VOID *mtd_info; /* Driver used by a partition *///分区使用的驱动程序
-    LOS_DL_LIST node_info;//双循环节点,挂在首个分区节点上
-    LosMux lock;			//每个分区都有自己的互斥量
-    UINT32 user_num;	
+typedef struct mtd_node {
+    UINT32 start_block;
+    UINT32 end_block;
+    UINT32 patitionnum;
+    CHAR *blockdriver_name;
+    CHAR *chardriver_name;
+    CHAR *mountpoint_name;
+    VOID *mtd_info; /* Driver used by a partition */
+    LOS_DL_LIST node_info;
+    LosMux lock;
+    UINT32 user_num;
 } mtd_partition;
 
-typedef struct par_param {//分区参数描述符,一个分区既可支持按块访问也可以支持按字符访问,只要有驱动程序就可
-    mtd_partition *partition_head;	//首个分区,其他分区都挂在.node_info节点上
-    struct MtdDev *flash_mtd;	//flash设备描述符,属于硬件驱动层
-    const struct block_operations *flash_ops;	//块设备的操作方法
-    const struct file_operations_vfs *char_ops;	//字符设备的操作方法
-    CHAR *blockname;	//块设备名称
-    CHAR *charname;		//字符设备名称
-    UINT32 block_size;	//块单位(4K),对文件系统而言是按块读取数据,方便和内存页置换
+typedef struct par_param {
+    mtd_partition *partition_head;
+    struct MtdDev *flash_mtd;
+    const struct block_operations *flash_ops;
+    const struct file_operations_vfs *char_ops;
+    CHAR *blockname;
+    CHAR *charname;
+    UINT32 block_size;
 } partition_param;
 
-#define CONFIG_MTD_PATTITION_NUM 20 //分区数量的上限
+#define CONFIG_MTD_PATTITION_NUM 20
 
 #define ALIGN_ASSIGN(len, startAddr, startBlk, endBlk, blkSize) do {    \
     (len) = (((len) + ((blkSize) - 1)) & ~((blkSize) - 1));             \
@@ -112,6 +93,8 @@ typedef struct par_param {//分区参数描述符,一个分区既可支持按块
     (node)->mountpoint_name = NULL;                                     \
 } while (0)
 
+partition_param *GetNandPartParam(VOID);
+partition_param *GetSpinorPartParam(VOID);
 mtd_partition *GetSpinorPartitionHead(VOID);
 
 /**

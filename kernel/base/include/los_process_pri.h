@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,8 +32,6 @@
 #ifndef _LOS_PROCESS_PRI_H
 #define _LOS_PROCESS_PRI_H
 
-#include "los_sortlink_pri.h"
-#include "los_priqueue_pri.h"
 #include "los_task_pri.h"
 #include "los_sem_pri.h"
 #include "los_process.h"
@@ -82,10 +80,9 @@ typedef struct ProcessCB {
     UINT16               processStatus;                /**< [15:4] process Status; [3:0] The number of threads currently
                                                             running in the process *///这里设计很巧妙.用一个变量表示了两层逻辑 数量和状态,点赞!
     UINT16               priority;                     /**< process priority */	//进程优先级
-    UINT16               policy;                       /**< process policy */	//进程的调度方式,默认抢占式
-    UINT16               timeSlice;                    /**< Remaining time slice *///进程时间片,默认2个tick
     UINT16               consoleID;                    /**< The console id of task belongs  *///任务的控制台id归属
     UINT16               processMode;                  /**< Kernel Mode:0; User Mode:1; */	//模式指定为内核还是用户进程
+    UINT16               readyTaskNum;                 /**< The number of ready tasks in the current process */
     UINT32               parentProcessID;              /**< Parent process ID */	//父进程ID
     UINT32               exitCode;                     /**< process exit status */	//进程退出状态码
     LOS_DL_LIST          pendList;                     /**< Block list to which the process belongs */ //进程所在的阻塞列表,进程因阻塞挂入相应的链表.
@@ -95,11 +92,7 @@ typedef struct ProcessCB {
     ProcessGroup         *group;                       /**< Process group to which a process belongs */ //所属进程组
     LOS_DL_LIST          subordinateGroupList;         /**< linkage in my group list */ //进程组员链表
     UINT32               threadGroupID;                /**< Which thread group , is the main thread ID of the process */ //哪个线程组是进程的主线程ID
-    UINT32               threadScheduleMap;            /**< The scheduling bitmap table for the thread group of the
-                                                            process */ //进程的各线程调度位图
     LOS_DL_LIST          threadSiblingList;            /**< List of threads under this process *///进程的线程(任务)列表
-    LOS_DL_LIST          threadPriQueueList[OS_PRIORITY_QUEUE_NUM]; /**< The process's thread group schedules the
-                                                                         priority hash table */	//进程的线程组调度优先级哈希表
     volatile UINT32      threadNumber; /**< Number of threads alive under this process */	//此进程下的活动线程数
     UINT32               threadCount;  /**< Total number of threads created under this process */	//在此进程下创建的线程总数
     LOS_DL_LIST          waitList;     /**< The process holds the waitLits to support wait/waitpid *///父进程通过进程等待的方式，回收子进程资源，获取子进程退出信息
@@ -111,7 +104,9 @@ typedef struct ProcessCB {
 #if (LOSCFG_KERNEL_LITEIPC == YES)
     ProcIpcInfo         ipcInfo;       /**< memory pool for lite ipc */ //用于进程间通讯的虚拟设备文件系统,设备装载点为 /dev/lite_ipc
 #endif
+#ifdef LOSCFG_KERNEL_VM
     LosVmSpace          *vmSpace;       /**< VMM space for processes */ //虚拟空间,描述进程虚拟内存的数据结构，linux称为内存描述符
+#endif
 #ifdef LOSCFG_FS_VFS
     struct files_struct *files;        /**< Files held by the process */ //进程所持有的所有文件，注者称之为进程的文件管理器
 #endif	//每个进程都有属于自己的文件管理器,记录对文件的操作. 注意:一个文件可以被多个进程操作
@@ -128,6 +123,9 @@ typedef struct ProcessCB {
     struct file         *execFile;     /**< Exec bin of the process */
 #endif
     mode_t umask;
+#ifdef LOSCFG_KERNEL_CPUP
+    OsCpupBase           processCpup; /**< Process cpu usage */
+#endif
 } LosProcessCB;
 
 #define CLONE_VM       0x00000100	//子进程与父进程运行于相同的内存空间
@@ -174,7 +172,7 @@ typedef struct ProcessCB {
  *
  * The process is pend
  */
-#define OS_PROCESS_STATUS_PEND           0x0080U	//进程阻塞状态
+#define OS_PROCESS_STATUS_PENDING       0x0080U
 
 /**
  * @ingroup los_process
@@ -270,12 +268,6 @@ STATIC INLINE BOOL OsProcessIsDead(const LosProcessCB *processCB)//查下进程�
 
 /**
  * @ingroup los_process
- * Hold the time slice process
- */
-#define OS_PROCESS_SCHED_RR_INTERVAL     LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT //抢占式调度方式采用的时间片数量
-
-/**
- * @ingroup los_process
  * The highest priority of a kernel mode process.
  */
 #define OS_PROCESS_PRIORITY_HIGHEST      0	//进程最高优先级
@@ -325,13 +317,14 @@ STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)//用户模
 #define LOS_SCHED_NORMAL  0U	//正常调度
 #define LOS_SCHED_FIFO    1U 	//先进先出，按顺序
 #define LOS_SCHED_RR      2U 	//抢占式调度
+#define LOS_SCHED_IDLE    3U
 
 #define LOS_PRIO_PROCESS  0U 	//进程标识
 #define LOS_PRIO_PGRP     1U	//进程组标识	
 #define LOS_PRIO_USER     2U	//用户标识
 
-#define OS_KERNEL_PROCESS_GROUP         2U	//内核态进程组
-#define OS_USER_PRIVILEGE_PROCESS_GROUP 1U 	//用户态特权进程组
+#define OS_USER_PRIVILEGE_PROCESS_GROUP 1U
+#define OS_KERNEL_PROCESS_GROUP         2U
 
 /*
  * Process exit code
@@ -366,7 +359,6 @@ STATIC INLINE VOID OsProcessExitCodeSet(LosProcessCB *processCB, UINT32 code)
 }
 
 extern LosProcessCB *g_processCBArray;//进程池 OsProcessInit
-extern LosProcessCB *g_runProcess[LOSCFG_KERNEL_CORE_NUM];//运行进程，并行(Parallel)进程
 extern UINT32 g_processMaxNum;//进程最大数量
 
 #define OS_PID_CHECK_INVALID(pid) (((UINT32)(pid)) >= g_processMaxNum)
@@ -379,35 +371,16 @@ STATIC INLINE BOOL OsProcessIDUserCheckInvalid(UINT32 pid)
 STATIC INLINE LosProcessCB *OsCurrProcessGet(VOID)
 {
     UINT32 intSave;
-    LosProcessCB *runProcess = NULL;
 
-    intSave = LOS_IntLock();//不响应硬件中断
-    runProcess = g_runProcess[ArchCurrCpuid()];//定义当前进程:当前运行进程数组里找索引位当前运行的CPU核ID的
-    LOS_IntRestore(intSave);//恢复硬件中断
+    intSave = LOS_IntLock();
+    LosProcessCB *runProcess = (LosProcessCB *)OsPercpuGet()->runProcess;
+    LOS_IntRestore(intSave);
     return runProcess;
 }
-//设置使用CPU的当前进程,加入g_runProcess中
+
 STATIC INLINE VOID OsCurrProcessSet(const LosProcessCB *process)
 {
-    g_runProcess[ArchCurrCpuid()] = (LosProcessCB *)process;
-}
-//以不完全的方式获取进程ID,鸿蒙Unsafe和safe的区别在于有没有加锁.
-STATIC INLINE UINT32 OsCpuProcessIDGetUnsafe(UINT16 cpuID)
-{
-    LosProcessCB *runProcess = g_runProcess[cpuID];
-    return runProcess->processID;
-}
-
-STATIC INLINE UINT32 OsCpuProcessIDGet(UINT16 cpuID)
-{
-    UINT32 pid;
-    UINT32 intSave;
-
-    SCHEDULER_LOCK(intSave);
-    pid = OsCpuProcessIDGetUnsafe(cpuID);
-    SCHEDULER_UNLOCK(intSave);
-
-    return pid;
+    OsPercpuGet()->runProcess = (UINTPTR)process;
 }
 
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -449,17 +422,17 @@ STATIC INLINE User *OsCurrUserGet(VOID)//获取当前进程的所属用户
 /*
  * Wait for any child process to finish
  */
-#define OS_PROCESS_WAIT_ANY (1 << 0U) //等待任意子进程完成,这个被等待的进程不一定是等待进程的子进程
+#define OS_PROCESS_WAIT_ANY OS_TASK_WAIT_ANYPROCESS
 
 /*
  * Wait for the child process specified by the pid to finish
  */
-#define OS_PROCESS_WAIT_PRO (1 << 1U) //等待pid指定的子进程完成,这个被等待的进程一定是等待进程的子进程
+#define OS_PROCESS_WAIT_PRO OS_TASK_WAIT_PROCESS
 
 /*
- * Waits for any child process in the specified process group to finish. 
+ * Waits for any child process in the specified process group to finish.
  */
-#define OS_PROCESS_WAIT_GID (1 << 2U) //等待指定进程组中的任何子进程完成,这个被等待的进程和等待进程在同一个进程组
+#define OS_PROCESS_WAIT_GID OS_TASK_WAIT_GID
 
 #define OS_PROCESS_INFO_ALL 1
 #define OS_PROCESS_DEFAULT_UMASK 0022
@@ -468,7 +441,7 @@ extern UINTPTR __user_init_entry;	// 第一个用户态任务的入口地址 查
 extern UINTPTR __user_init_bss;		// 查看 LITE_USER_SEC_BSS
 extern UINTPTR __user_init_end;		//
 extern UINTPTR __user_init_load_addr;
-extern UINT32 OsKernelInitProcess(VOID);
+extern UINT32 OsSystemProcessCreate(VOID);
 extern VOID OsProcessCBRecyleToFree(VOID);
 extern VOID OsProcessResourcesToFree(LosProcessCB *processCB);
 extern VOID OsProcessExit(LosTaskCB *runTask, INT32 status);
@@ -480,7 +453,8 @@ extern VOID OsWaitSignalToWakeProcess(LosProcessCB *processCB);
 extern UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR *name,
                                    LosVmSpace *oldAspace, UINTPTR oldFiles);
 extern UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBase, UINT32 mapSize);
-extern INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio, UINT16 policy, BOOL policyFlag);
+extern UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name);
+extern INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio, UINT16 policy);
 extern INT32 OsGetProcessPriority(INT32 which, INT32 pid);
 extern VOID *OsUserStackAlloc(UINT32 processID, UINT32 *size);
 extern UINT32 OsGetUserInitProcessID(VOID);

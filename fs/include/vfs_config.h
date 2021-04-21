@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -43,7 +43,7 @@ extern "C" {
 
 #define CONFIG_DISABLE_MQUEUE   // disable posix mqueue inode configure
 
-/* file system configure */
+/* file system configur */
 
 #define CONFIG_FS_WRITABLE      // enable file system can be written
 #define CONFIG_FS_READABLE      // enable file system can be read
@@ -66,7 +66,7 @@ extern "C" {
 
 /* config dirty ratio of bcache for fat file system */
 
-#define CONFIG_FS_FAT_DIRTY_RATIO      80
+#define CONFIG_FS_FAT_DIRTY_RATIO      60
 
 /* config time interval of sync thread for fat file system, in milliseconds */
 
@@ -87,31 +87,43 @@ extern "C" {
 #define CONFIG_STDIO_BUFFER_SIZE    0
 #define CONFIG_NUNGET_CHARS         0
 
-#define FD_SETSIZE                  (CONFIG_NFILE_DESCRIPTORS + CONFIG_NSOCKET_DESCRIPTORS)  // total fds
+#define FD_SET_TOTAL_SIZE               (FD_SETSIZE + CONFIG_NEXPANED_DESCRIPTORS)
+#define FD_SETSIZE                      (CONFIG_NFILE_DESCRIPTORS + CONFIG_NSOCKET_DESCRIPTORS)
+#define CONFIG_NEXPANED_DESCRIPTORS     (CONFIG_NTIME_DESCRIPTORS + CONFIG_NQUEUE_DESCRIPTORS)
+#define TIMER_FD_OFFSET                 FD_SETSIZE
+#define MQUEUE_FD_OFFSET                (FD_SETSIZE + CONFIG_NTIME_DESCRIPTORS)
 
 /* net configure */
 
-#ifdef LOSCFG_NET_LWIP_SACK             // enable socket and net function //网络开关
+#ifdef LOSCFG_NET_LWIP_SACK             // enable socket and net function
 #include "lwip/lwipopts.h"
-#define CONFIG_NSOCKET_DESCRIPTORS  LWIP_CONFIG_NUM_SOCKETS  // max numbers of socket descriptor 套接字描述符的最大数目
+#define CONFIG_NSOCKET_DESCRIPTORS  LWIP_CONFIG_NUM_SOCKETS  // max numbers of socket descriptor
 
 /* max numbers of other descriptors except socket descriptors */
 
-#define CONFIG_NFILE_DESCRIPTORS    512	//除套接字描述符外的其他描述符的最大数目
-#define CONFIG_NET_SENDFILE         1   // enable sendfile function //因打开网络开关,所以同时也打开发送文件开关
+#define CONFIG_NFILE_DESCRIPTORS    512
+#define CONFIG_NET_SENDFILE         1   // enable sendfile function
 #define CONFIG_NET_TCP              1   // enable sendfile and send function
 #else
-#define CONFIG_NSOCKET_DESCRIPTORS  0	//关闭网络开关,当然NFS的数量为0,鸿蒙和LINUX一样,一切皆为文件,而是文件就需要文件描述符(FD)
-#define CONFIG_NFILE_DESCRIPTORS    512 //除套接字描述符外的其他描述符的最大数目
-#define CONFIG_NET_SENDFILE         0   // disable sendfile function 
-#define CONFIG_NET_TCP              0   // disable sendfile and send function //禁用sendfile和send函数功能
+#define CONFIG_NSOCKET_DESCRIPTORS  0
+#define CONFIG_NFILE_DESCRIPTORS    512
+#define CONFIG_NET_SENDFILE         0   // disable sendfile function
+#define CONFIG_NET_TCP              0   // disable sendfile and send function
 #endif
 
-#define NR_OPEN_DEFAULT CONFIG_NFILE_DESCRIPTORS //
+#define NR_OPEN_DEFAULT CONFIG_NFILE_DESCRIPTORS
+
+/* time configure */
+
+#define CONFIG_NTIME_DESCRIPTORS     0
+
+/* mqueue configure */
+
+#define CONFIG_NQUEUE_DESCRIPTORS    256
 
 /* directory configure */
 
-#define VFS_USING_WORKDIR               // enable current working directory 使能当前工作区
+#define VFS_USING_WORKDIR               // enable current working directory
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,20 +31,17 @@
 
 #include "los_process_pri.h"
 #include "los_task_pri.h"
+#include "los_sched_pri.h"
 #include "los_hw_pri.h"
 #include "los_sys_pri.h"
 #include "los_futex_pri.h"
+#include "los_mp.h"
 #include "user_copy.h"
 #include "time.h"
 #ifdef LOSCFG_SECURITY_CAPABILITY
 #include "capability_api.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 static int OsPermissionToCheck(unsigned int pid, unsigned int who)
 {
@@ -66,7 +63,7 @@ static int OsUserTaskSchedulerSet(unsigned int tid, unsigned short policy, unsig
 {
     int ret;
     unsigned int intSave;
-    LosTaskCB *taskCB = NULL;
+    bool needSched = false;
 
     if (OS_TID_CHECK_INVALID(tid)) {
         return EINVAL;
@@ -81,24 +78,28 @@ static int OsUserTaskSchedulerSet(unsigned int tid, unsigned short policy, unsig
     }
 
     SCHEDULER_LOCK(intSave);
-    taskCB = OS_TCB_FROM_TID(tid);
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(tid);
     ret = OsUserTaskOperatePermissionsCheck(taskCB);
     if (ret != LOS_OK) {
         SCHEDULER_UNLOCK(intSave);
         return ret;
     }
 
-    return OsTaskSchedulerSetUnsafe(taskCB, policy, priority, policyFlag, intSave);
+    policy = (policyFlag == true) ? policy : taskCB->policy;
+    needSched = OsSchedModifyTaskSchedParam(taskCB, policy, priority);
+    SCHEDULER_UNLOCK(intSave);
+
+    LOS_MpSchedule(OS_MP_CPU_ALL);
+    if (needSched && OS_SCHEDULER_ACTIVE) {
+        LOS_Schedule();
+    }
+
+    return LOS_OK;
 }
 
 void SysSchedYield(int type)
 {
-    if (type < 0) {
-        (void)LOS_TaskYield();
-        return;
-    }
-
-    (void)LOS_ProcessYield();
+    (void)LOS_TaskYield();
     return;
 }
 
@@ -127,28 +128,19 @@ int SysSchedGetScheduler(int id, int flag)
         return policy;
     }
 
-    if (id == 0) {
-        id = (int)LOS_GetCurrProcessID();
-    }
-
     return LOS_GetProcessScheduler(id);
 }
-//系统调用,设置调度参数
+
 int SysSchedSetScheduler(int id, int policy, int prio, int flag)
 {
     int ret;
 
     if (flag < 0) {
-        return -OsUserTaskSchedulerSet(id, policy, prio, TRUE);
+        return -OsUserTaskSchedulerSet(id, policy, prio, true);
     }
 
     if (prio < OS_USER_PROCESS_PRIORITY_HIGHEST) {
         return -EINVAL;
-    }
-
-    /* Temporarily not support linux policy: SCHED_BATCH 3U, SCHED_RESET_ON_FORK 4U, SCHED_IDLE 5U, SCHED_DEADLINE 6U */
-    if ((policy == 0) || (policy == 3) || (policy == 4) || (policy == 5) || (policy == 6)) {
-        return -ENOSYS;
     }
 
     if (id == 0) {
@@ -160,7 +152,7 @@ int SysSchedSetScheduler(int id, int policy, int prio, int flag)
         return ret;
     }
 
-    return OsSetProcessScheduler(LOS_PRIO_PROCESS, id, prio, policy, TRUE);
+    return OsSetProcessScheduler(LOS_PRIO_PROCESS, id, prio, policy);
 }
 
 int SysSchedGetParam(int id, int flag)
@@ -197,51 +189,36 @@ int SysSchedGetParam(int id, int flag)
 
     return OsGetProcessPriority(LOS_PRIO_PROCESS, id);
 }
-//设置调度参数 id = 线程ID    prio:优先级
-int SysSchedSetParam(int id, unsigned int prio, int flag)
+
+int SysSetProcessPriority(int which, int who, unsigned int prio)
 {
     int ret;
-
-    if (flag < 0) {
-        return -OsUserTaskSchedulerSet(id, LOS_SCHED_RR, prio, FALSE);//用户态任务调度设置
-    }
 
     if (prio < OS_USER_PROCESS_PRIORITY_HIGHEST) {
         return -EINVAL;
     }
 
-    if (id == 0) {
-        id = (int)LOS_GetCurrProcessID();//当前进程ID
-    }
-
-    ret = OsPermissionToCheck(id, LOS_GetCurrProcessID());//检查权限
-    if (ret < 0) {
-        return ret;
-    }
-
-    return OsSetProcessScheduler(LOS_PRIO_PROCESS, id, prio, LOS_SCHED_RR, FALSE);//设置进程调度参数
-}
-//设置进程的优先级
-int SysSetProcessPriority(int which, int who, unsigned int prio)
-{
-    int ret;
-
-    if (prio < OS_USER_PROCESS_PRIORITY_HIGHEST) { // 注意这里设置优先不能低于10，[]10:31]是用户进程的优先级范围
-        return -EINVAL;
-    }
-
     if (who == 0) {
-        who = (int)LOS_GetCurrProcessID();//获取当前进程ID
+        who = (int)LOS_GetCurrProcessID();
     }
 
-    ret = OsPermissionToCheck(who, LOS_GetCurrProcessID());//检查权限
+    ret = OsPermissionToCheck(who, LOS_GetCurrProcessID());
     if (ret < 0) {
         return ret;
     }
 
-    return OsSetProcessScheduler(which, who, prio, LOS_SCHED_RR, FALSE);//设置进程的调度参数
+    return OsSetProcessScheduler(which, who, prio, LOS_GetProcessScheduler(who));
 }
-//获取进程优先级
+
+int SysSchedSetParam(int id, unsigned int prio, int flag)
+{
+    if (flag < 0) {
+        return -OsUserTaskSchedulerSet(id, LOS_SCHED_RR, prio, false);
+    }
+
+    return SysSetProcessPriority(LOS_PRIO_PROCESS, id, prio);
+}
+
 int SysGetProcessPriority(int which, int who)
 {
     if (who == 0) {
@@ -253,11 +230,7 @@ int SysGetProcessPriority(int which, int who)
 
 int SysSchedGetPriorityMin(int policy)
 {
-    /* Temporarily not support linux policy: SCHED_BATCH 3U, SCHED_RESET_ON_FORK 4U, SCHED_IDLE 5U, SCHED_DEADLINE 6U */
-    if ((policy == 0) || (policy == 3) || (policy == 4) || (policy == 5) || (policy == 6)) {
-        return -ENOSYS;
-    }
-    if ((policy != LOS_SCHED_RR) && (policy != LOS_SCHED_FIFO)) {
+    if (policy != LOS_SCHED_RR) {
         return -EINVAL;
     }
 
@@ -266,11 +239,7 @@ int SysSchedGetPriorityMin(int policy)
 
 int SysSchedGetPriorityMax(int policy)
 {
-    /* Temporarily not support linux policy: SCHED_BATCH 3U, SCHED_RESET_ON_FORK 4U, SCHED_IDLE 5U, SCHED_DEADLINE 6U */
-    if ((policy == 0) || (policy == 3) || (policy == 4) || (policy == 5) || (policy == 6)) {
-        return -ENOSYS;
-    }
-    if ((policy != LOS_SCHED_RR) && (policy != LOS_SCHED_FIFO)) {
+    if (policy != LOS_SCHED_RR) {
         return -EINVAL;
     }
 
@@ -279,10 +248,12 @@ int SysSchedGetPriorityMax(int policy)
 
 int SysSchedRRGetInterval(int pid, struct timespec *tp)
 {
+    unsigned int intSave;
     int ret;
-    time_t msec;
+    time_t timeSlice = 0;
     struct timespec tv;
-    LosProcessCB *pcb = NULL;
+    LosTaskCB *taskCB = NULL;
+    LosProcessCB *processCB = NULL;
 
     if (tp == NULL) {
         return -EINVAL;
@@ -292,15 +263,30 @@ int SysSchedRRGetInterval(int pid, struct timespec *tp)
         return -EINVAL;
     }
 
+    if (pid == 0) {
+        processCB = OsCurrProcessGet();
+    } else {
+        processCB = OS_PCB_FROM_PID(pid);
+    }
+
+    SCHEDULER_LOCK(intSave);
     /* if can not find process by pid return ESRCH */
-    pcb = OS_PCB_FROM_PID(pid);
-    if (OsProcessIsInactive(pcb)) {
+    if (OsProcessIsInactive(processCB)) {
+        SCHEDULER_UNLOCK(intSave);
         return -ESRCH;
     }
 
-    msec = LOS_Tick2MS(OS_PROCESS_SCHED_RR_INTERVAL);
-    tv.tv_sec = msec / OS_SYS_MS_PER_SECOND;
-    tv.tv_nsec = (msec % OS_SYS_MS_PER_SECOND) * OS_SYS_NS_PER_MS;
+    LOS_DL_LIST_FOR_EACH_ENTRY(taskCB, &processCB->threadSiblingList, LosTaskCB, threadList) {
+        if (!OsTaskIsInactive(taskCB) && (taskCB->policy == LOS_SCHED_RR)) {
+            timeSlice += taskCB->initTimeSlice;
+        }
+    }
+
+    SCHEDULER_UNLOCK(intSave);
+
+    timeSlice = timeSlice * OS_NS_PER_CYCLE;
+    tv.tv_sec = timeSlice / OS_SYS_NS_PER_SECOND;
+    tv.tv_nsec = timeSlice % OS_SYS_NS_PER_SECOND;
     ret = LOS_ArchCopyToUser(tp, &tv, sizeof(struct timespec));
     if (ret != 0) {
         return -EFAULT;
@@ -308,17 +294,22 @@ int SysSchedRRGetInterval(int pid, struct timespec *tp)
 
     return 0;
 }
-//等待子进程结束
+
 int SysWait(int pid, USER int *status, int options, void *rusage)
 {
     (void)rusage;
 
     return LOS_Wait(pid, status, (unsigned int)options, NULL);
 }
-//系统调用之fork ,建议去 https://gitee.com/weharmony/kernel_liteos_a_note fork 一下? :P 
+
 int SysFork(void)
 {
-    return OsClone(CLONE_SIGHAND, 0, 0);
+    return OsClone(0, 0, 0);
+}
+
+int SysVfork(void)
+{
+    return OsClone(CLONE_VFORK, 0, 0);
 }
 
 unsigned int SysGetPPID(void)
@@ -437,10 +428,10 @@ int SysGetRealEffSaveUserID(int *ruid, int *euid, int *suid)
 
     return 0;
 }
-//设置用户ID
+
 int SysSetUserID(int uid)
 {
-#ifdef LOSCFG_SECURITY_CAPABILITY //安全能力宏
+#ifdef LOSCFG_SECURITY_CAPABILITY
     int ret = -EPERM;
     unsigned int intSave;
 
@@ -449,12 +440,12 @@ int SysSetUserID(int uid)
     }
 
     SCHEDULER_LOCK(intSave);
-    User *user = OsCurrUserGet();//获取当前用户
-    if (IsCapPermit(CAP_SETUID)) {	//是否有设置用户ID的能力
-        user->userID = uid;	//改变UID
+    User *user = OsCurrUserGet();
+    if (IsCapPermit(CAP_SETUID)) {
+        user->userID = uid;
         user->effUserID = uid;
         /* add process to a user */
-    } else if (user->userID != uid) { //
+    } else if (user->userID != uid) {
         goto EXIT;
     }
 
@@ -537,7 +528,7 @@ int SysSetRealEffUserID(int ruid, int euid)
     return 0;
 #endif
 }
-//设置用户群组ID
+
 int SysSetGroupID(int gid)
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -759,7 +750,7 @@ static int GetGroups(int size, int list[])
     return groupCount;
 }
 #endif
-//系统调用之获取组
+
 int SysGetGroups(int size, int list[])
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -785,8 +776,8 @@ int SysGetGroups(int size, int list[])
     return groupCount;
 #endif
 }
-//系统调用之设置组
-int SysSetGroups(int size, int list[])
+
+int SysSetGroups(int size, const int list[])
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY
     int ret;
@@ -842,13 +833,13 @@ EXIT:
     return 0;
 #endif
 }
-//系统调用之创建一个用户线程
+
 unsigned int SysCreateUserThread(const TSK_ENTRY_FUNC func, const UserTaskParam *userParam, bool joinable)
 {
     TSK_INIT_PARAM_S param = { 0 };
     int ret;
 
-    ret = LOS_ArchCopyFromUser(&(param.userParam), userParam, sizeof(UserTaskParam));//参数copy，将用户空间的参数信息copy到内核空间
+    ret = LOS_ArchCopyFromUser(&(param.userParam), userParam, sizeof(UserTaskParam));
     if (ret != 0) {
         return OS_INVALID_VALUE;
     }
@@ -860,9 +851,9 @@ unsigned int SysCreateUserThread(const TSK_ENTRY_FUNC func, const UserTaskParam 
         param.uwResved = OS_TASK_FLAG_DETACHED;
     }
 
-    return OsCreateUserTask(OS_INVALID_VALUE, &param);//创建用户task
+    return OsCreateUserTask(OS_INVALID_VALUE, &param);
 }
-//系统调用之设置线程使用区域,所有的系统调用都运行在内核态,也运行在内核空间
+
 int SysSetThreadArea(const char *area)
 {
     unsigned int intSave;
@@ -870,29 +861,29 @@ int SysSetThreadArea(const char *area)
     LosProcessCB *processCB = NULL;
     unsigned int ret = LOS_OK;
 
-    if (!LOS_IsUserAddress((unsigned long)(uintptr_t)area)) {//区域不能在用户空间
+    if (!LOS_IsUserAddress((unsigned long)(uintptr_t)area)) {
         return EINVAL;
     }
 
     SCHEDULER_LOCK(intSave);
-    taskCB = OsCurrTaskGet();//获取当前任务
-    processCB = OS_PCB_FROM_PID(taskCB->processID);//获取当前进程
-    if (processCB->processMode != OS_USER_MODE) {//当前进程不能是用户模式
+    taskCB = OsCurrTaskGet();
+    processCB = OS_PCB_FROM_PID(taskCB->processID);
+    if (processCB->processMode != OS_USER_MODE) {
         ret = EPERM;
         goto OUT;
     }
 
-    taskCB->userArea = (unsigned long)(uintptr_t)area;//task的用户区域
+    taskCB->userArea = (unsigned long)(uintptr_t)area;
 OUT:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//系统调用之获取线程的用户态区域
+
 char *SysGetThreadArea(void)
 {
-    return (char *)(OsCurrTaskGet()->userArea);//直接返回用户区域
+    return (char *)(OsCurrTaskGet()->userArea);
 }
-//系统调用之设置任务为分离模式
+
 int SysUserThreadSetDeatch(unsigned int taskID)
 {
     unsigned int intSave;
@@ -916,7 +907,7 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//系统调用之线程分离，意思是这是一个独立的线程
+
 int SysUserThreadDetach(unsigned int taskID)
 {
     unsigned int intSave;
@@ -942,7 +933,7 @@ int SysUserThreadDetach(unsigned int taskID)
 
     return LOS_OK;
 }
-//系统调用之线程联结，意思是这是一个可联结的线程
+
 int SysThreadJoin(unsigned int taskID)
 {
     unsigned int intSave;
@@ -966,12 +957,12 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//系统调用之退出线程组
+
 void SysUserExitGroup(int status)
 {
     OsTaskExitGroup((unsigned int)status);
 }
-//系统调用之退出线程
+
 void SysThreadExit(int status)
 {
     OsTaskToExit(OsCurrTaskGet(), (unsigned int)status);
@@ -990,14 +981,125 @@ int SysFutex(const unsigned int *uAddr, unsigned int flags, int val,
 
     return -OsFutexWait(uAddr, flags, val, absTime);
 }
-//获取当前任务ID
+
 unsigned int SysGetTid(void)
 {
-    return OsCurrTaskGet()->taskID;//获取当前任务ID
+    return OsCurrTaskGet()->taskID;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
+/* If flag >= 0, the process mode is used. If flag < 0, the thread mode is used. */
+static int SchedAffinityParameterPreprocess(int id, int flag, unsigned int *taskID, unsigned int *processID)
+{
+    if (flag >= 0) {
+        if (OS_PID_CHECK_INVALID(id)) {
+            return -ESRCH;
+        }
+        *taskID = (id == 0) ? (OsCurrTaskGet()->taskID) : (OS_PCB_FROM_PID((UINT32)id)->threadGroupID);
+        *processID = (id == 0) ? (OS_TCB_FROM_TID(*taskID)->processID) : id;
+    } else {
+        if (OS_TID_CHECK_INVALID(id)) {
+            return -ESRCH;
+        }
+        *taskID = id;
+        *processID = OS_INVALID_VALUE;
+    }
+    return LOS_OK;
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+
+/* If flag >= 0, the process mode is used. If flag < 0, the thread mode is used. */
+int SysSchedGetAffinity(int id, unsigned int *cpuset, int flag)
+{
+    int ret;
+    unsigned int processID;
+    unsigned int taskID;
+    unsigned int intSave;
+    unsigned int cpuAffiMask;
+
+    ret = SchedAffinityParameterPreprocess(id, flag, &taskID, &processID);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    if (flag >= 0) {
+        if (OsProcessIsInactive(OS_PCB_FROM_PID(processID))) {
+            SCHEDULER_UNLOCK(intSave);
+            return -ESRCH;
+        }
+    } else {
+        ret = OsUserTaskOperatePermissionsCheck(OS_TCB_FROM_TID(taskID));
+        if (ret != LOS_OK) {
+            SCHEDULER_UNLOCK(intSave);
+            if (ret == EINVAL) {
+                return -ESRCH;
+            }
+            return -ret;
+        }
+    }
+
+#if (LOSCFG_KERNEL_SMP == YES)
+    cpuAffiMask = (unsigned int)OS_TCB_FROM_TID(taskID)->cpuAffiMask;
+#else
+    cpuAffiMask = 1;
+#endif /* LOSCFG_KERNEL_SMP */
+
+    SCHEDULER_UNLOCK(intSave);
+    ret = LOS_ArchCopyToUser(cpuset, &cpuAffiMask, sizeof(unsigned int));
+    if (ret != LOS_OK) {
+        return -EFAULT;
+    }
+
+    return LOS_OK;
+}
+
+/* If flag >= 0, the process mode is used. If flag < 0, the thread mode is used. */
+int SysSchedSetAffinity(int id, const unsigned short cpuset, int flag)
+{
+    int ret;
+    unsigned int processID;
+    unsigned int taskID;
+    unsigned int intSave;
+    unsigned short currCpuMask;
+    bool needSched = FALSE;
+
+    if (cpuset > LOSCFG_KERNEL_CPU_MASK) {
+        return -EINVAL;
+    }
+
+    ret = SchedAffinityParameterPreprocess(id, flag, &taskID, &processID);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+
+    if (flag >= 0) {
+        ret = OsPermissionToCheck(processID, LOS_GetCurrProcessID());
+        if (ret != LOS_OK) {
+            return ret;
+        }
+        SCHEDULER_LOCK(intSave);
+        if (OsProcessIsInactive(OS_PCB_FROM_PID(processID))) {
+            SCHEDULER_UNLOCK(intSave);
+            return -ESRCH;
+        }
+    } else {
+        SCHEDULER_LOCK(intSave);
+        ret = OsUserTaskOperatePermissionsCheck(OS_TCB_FROM_TID(taskID));
+        if (ret != LOS_OK) {
+            SCHEDULER_UNLOCK(intSave);
+            if (ret == EINVAL) {
+                return -ESRCH;
+            }
+            return -ret;
+        }
+    }
+
+    needSched = OsTaskCpuAffiSetUnsafe(taskID, cpuset, &currCpuMask);
+    SCHEDULER_UNLOCK(intSave);
+    if (needSched && OS_SCHEDULER_ACTIVE) {
+        LOS_MpSchedule(currCpuMask);
+        LOS_Schedule();
+    }
+
+    return LOS_OK;
+}
+

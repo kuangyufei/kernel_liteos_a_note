@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -51,6 +51,7 @@ extern "C" {
 #define DSB     __asm__ volatile("dsb" ::: "memory")
 #define DMB     __asm__ volatile("dmb" ::: "memory")
 #define ISB     __asm__ volatile("isb" ::: "memory")
+#define WFI     __asm__ volatile("wfi" ::: "memory")
 #define BARRIER __asm__ volatile("":::"memory")
 
 #define ARM_SYSREG_READ(REG)                    \

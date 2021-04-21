@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -69,13 +69,13 @@ extern "C" {
  * The start address of exc interaction dynamic memory pool address, when the exc
  * interaction feature not support, m_aucSysMem0 equals to m_aucSysMem1.
  */
-extern UINT8 *m_aucSysMem0; //异常接管动态内存池的起始地址,异常接管一般用于调试,当不支持异常接管功能时,m_aucSysMem0 = m_aucSysMem1
+extern UINT8 *m_aucSysMem0;
 
 /**
  * @ingroup los_memory
  * The start address of system dynamic memory pool address.
  */
-extern UINT8 *m_aucSysMem1; //系统动态内存池的起始地址
+extern UINT8 *m_aucSysMem1;
 
 /**
  * @ingroup los_memory
@@ -86,152 +86,8 @@ extern UINT8 *m_aucSysMem1; //系统动态内存池的起始地址
  * <li> OS_MEM_WATERLINE=NO: close the function for Maximum memory usage statistics, it set to NO as usual </li>
  * </ul>
  */
-#ifdef LOSCFG_MEM_WATERLINE //水位线,用于统计内存使用上线
-#define OS_MEM_WATERLINE NO
-#endif
-
-#ifdef LOSCFG_MEM_MUL_MODULE
-/**
- * @ingroup los_memory
- * The memory usage statistics depend on module, this is the max module no.
- */
-#define MEM_MODULE_MAX 0x20
-
-/**
- * @ingroup los_memory
- * @brief Allocate dynamic memory.
- *
- * @par Description:
- * <ul>
- * <li>This API is used to allocate a memory block of which the size is specified and update module mem used.</li>
- * </ul>
- * @attention
- * <ul>
- * <li>The input pool parameter must be initialized via func LOS_MemInit.</li>
- * <li>The size of the input parameter size can not be greater than the memory pool size that specified at the second
- * input parameter of LOS_MemInit.</li>
- * <li>The size of the input parameter size must be four byte-aligned.</li>
- * </ul>
- *
- * @param  pool     [IN] Pointer to the memory pool that contains the memory block to be allocated.
- * @param  size     [IN] Size of the memory block to be allocated (unit: byte).
- * @param  moduleID [IN] module ID (0~MODULE_MAX).
- *
- * @retval #NULL         The memory fails to be allocated.
- * @retval #VOID*        The memory is successfully allocated with the starting address of the allocated memory block
- *                       returned.
- * @par Dependency:
- * <ul><li>los_memory.h: the header file that contains the API declaration.</li></ul>
- * @see LOS_MemRealloc | LOS_MemAllocAlign | LOS_MemFree
- */
-extern VOID *LOS_MemMalloc(VOID *pool, UINT32 size, UINT32 moduleID);
-
-/**
- * @ingroup los_memory
- * @brief Allocate aligned memory.
- *
- * @par Description:
- * <ul>
- * <li>This API is used to allocate memory blocks of specified size and of which the starting addresses are aligned on
- * a specified boundary and update module mem used.</li>
- * </ul>
- * @attention
- * <ul>
- * <li>The input pool parameter must be initialized via func LOS_MemInit.</li>
- * <li>The size of the input parameter size can not be greater than the memory pool size that specified at the second
- * input parameter of LOS_MemInit.</li>
- * <li>The alignment parameter value must be a power of 2 with the minimum value being 4.</li>
- * </ul>
- *
- * @param  pool      [IN] Pointer to the memory pool that contains the memory blocks to be allocated.
- * @param  size      [IN] Size of the memory to be allocated.
- * @param  boundary  [IN] Boundary on which the memory is aligned.
- * @param  moduleID  [IN] module ID (0~MODULE_MAX).
- *
- * @retval #NULL          The memory fails to be allocated.
- * @retval #VOID*         The memory is successfully allocated with the starting address of the allocated
- *                        memory returned.
- * @par Dependency:
- * <ul><li>los_memory.h: the header file that contains the API declaration.</li></ul>
- * @see LOS_MemAlloc | LOS_MemRealloc | LOS_MemFree
- */
-extern VOID *LOS_MemMallocAlign(VOID *pool, UINT32 size, UINT32 boundary, UINT32 moduleID);
-
-/**
- * @ingroup los_memory
- * @brief Free dynamic memory.
- *
- * @par Description:
- * <li>This API is used to free specified dynamic memory that has been allocated and update module mem used.</li>
- * @attention
- * <ul>
- * <li>The input pool parameter must be initialized via func LOS_MemInit.</li>
- * <li>The input ptr parameter must be allocated by LOS_MemAlloc or LOS_MemAllocAlign or LOS_MemRealloc.</li>
- * </ul>
- *
- * @param  pool     [IN] Pointer to the memory pool that contains the dynamic memory block to be freed.
- * @param  ptr      [IN] Starting address of the memory block to be freed.
- * @param  moduleID [IN] module ID (0~MODULE_MAX).
- *
- * @retval #LOS_NOK          The memory block fails to be freed because the starting address of the memory block is
- * invalid, or the memory overwriting occurs.
- * @retval #LOS_OK           The memory block is successfully freed.
- * @par Dependency:
- * <ul><li>los_memory.h: the header file that contains the API declaration.</li></ul>
- * @see LOS_MemAlloc | LOS_MemRealloc | LOS_MemAllocAlign
- */
-extern UINT32 LOS_MemMfree(VOID *pool, VOID *ptr, UINT32 moduleID);
-
-/**
- * @ingroup los_memory
- * @brief Re-allocate a memory block.
- *
- * @par Description:
- * <ul>
- * <li>This API is used to allocate a new memory block of which the size is specified by size if the original memory
- * block size is insufficient. The new memory block will copy the data in the original memory block of which the
- * address is specified by ptr.The size of the new memory block determines the maximum size of data to be copied.
- * After the new memory block is created, the original one is freed. And update module mem used</li>
- * </ul>
- * @attention
- * <ul>
- * <li>The input pool parameter must be initialized via func LOS_MemInit.</li>
- * <li>The input ptr parameter must be allocated by LOS_MemAlloc or LOS_MemAllocAlign.</li>
- * <li>The size of the input parameter size can not be greater than the memory pool size that specified at the second
- * input parameter of LOS_MemInit.</li>
- * <li>The size of the input parameter size must be aligned as follows: 1) if the ptr is allocated by LOS_MemAlloc,
- * it must be four byte-aligned; 2) if the ptr is allocated by LOS_MemAllocAlign, it must be aligned with the size of
- * the input parameter boundary of LOS_MemAllocAlign.</li>
- * </ul>
- *
- * @param  pool      [IN] Pointer to the memory pool that contains the original and new memory blocks.
- * @param  ptr       [IN] Address of the original memory block.
- * @param  size      [IN] Size of the new memory block.
- * @param  moduleID  [IN] module ID (0~MODULE_MAX).
- *
- * @retval #NULL          The memory fails to be re-allocated.
- * @retval #VOID*         The memory is successfully re-allocated with the starting address of the new memory block
- *                        returned.
- * @par Dependency:
- * <ul><li>los_memory.h: the header file that contains the API declaration.</li></ul>
- * @see LOS_MemAlloc | LOS_MemAllocAlign | LOS_MemFree
- */
-extern VOID *LOS_MemMrealloc(VOID *pool, VOID *ptr, UINT32 size, UINT32 moduleID);
-
-/**
- * @ingroup los_memory
- * @brief get special module's mem consume size.
- *
- * @par Description:
- * <li>This API is used to get special module's mem consume size.</li>
- * @param  moduleID   [IN] module ID (0~MODULE_MAX).
- *
- * @retval #UINT32         The size of the special module's memory consumed.
- * @retval #OS_NULL_INT    The illegal module.
- * @par Dependency:
- * <ul><li>los_memory.h: the header file that contains the API declaration.</li></ul>
- */
-extern UINT32 LOS_MemMusedGet(UINT32 moduleID);
+#ifdef LOSCFG_MEM_WATERLINE
+#define OS_MEM_WATERLINE YES
 #endif
 
 #ifdef LOSCFG_MEM_MUL_POOL
@@ -279,14 +135,14 @@ extern UINT32 LOS_MemPoolList(VOID);
  * @ingroup los_memory
  * Memory pool extern information structure
  */
-typedef struct { //内存池外部信息结构体
-    UINT32 uwTotalUsedSize;	//总使用大小
-    UINT32 uwTotalFreeSize;	//总剩余大小
-    UINT32 uwMaxFreeNodeSize;	//最大剩余节点大小
-    UINT32 uwUsedNodeNum;	//已使用的节点大小
-    UINT32 uwFreeNodeNum;	//空闲节点大小
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)//水位线
-    UINT32 uwUsageWaterLine;
+typedef struct {
+    UINT32 totalUsedSize;
+    UINT32 totalFreeSize;
+    UINT32 maxFreeNodeSize;
+    UINT32 usedNodeNum;
+    UINT32 freeNodeNum;
+#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
+    UINT32 usageWaterLine;
 #endif
 } LOS_MEM_POOL_STATUS;
 
@@ -508,101 +364,6 @@ extern UINT32 LOS_MemTotalUsedGet(VOID *pool);
 
 /**
  * @ingroup los_memory
- * @brief Get the number of free memory nodes.
- *
- * @par Description:
- * <ul>
- * <li>This API is used to get the number of free memory nodes in memory pool.</li>
- * </ul>
- * @attention
- * <ul>
- * <li>The input pool parameter must be initialized via func LOS_MemInit.</li>
- * </ul>
- *
- * @param  pool           [IN] A pointer pointed to the memory pool.
- *
- * @retval #LOS_NOK        The incoming parameter pool is NULL.
- * @retval #UINT32         The number of free memory nodes.
- * @par Dependency:
- * <ul><li>los_memory.h: the header file that contains the API declaration.</li></ul>
- * @see None.
- */
-extern UINT32 LOS_MemFreeBlksGet(VOID *pool);
-
-/**
- * @ingroup los_memory
- * @brief Get the number of used memory nodes.
- *
- * @par Description:
- * <ul>
- * <li>This API is used to get the number of used memory nodes in memory pool.</li>
- * </ul>
- * @attention
- * <ul>
- * <li>The input pool parameter must be initialized via func LOS_MemInit.</li>
- * </ul>
- *
- * @param  pool           [IN] A pointer pointed to the memory pool.
- *
- * @retval #LOS_NOK        The incoming parameter pool is NULL.
- * @retval #UINT32         The number of used memory nodes.
- * @par Dependency:
- * <ul><li>los_memory.h: the header file that contains the API declaration.</li></ul>
- * @see None.
- */
-extern UINT32 LOS_MemUsedBlksGet(VOID *pool);
-
-/**
- * @ingroup los_memory
- * @brief Get the task ID of a used memory node.
- *
- * @par Description:
- * <ul>
- * <li>This API is used to get the task ID of a used memory node.</li>
- * </ul>
- * @attention
- * <ul>
- * <li>The input ptr parameter must be allocated by LOS_MemAlloc or LOS_MemAllocAlign.</li>
- * <li>This interface only support obtain the task ID of a used memory node which is allocated from the system memory
- * pool (OS_SYS_MEM_ADDR) at present.</li>
- * </ul>
- *
- * @param  ptr               [IN] A used memory node.
- *
- * @retval #OS_INVALID        The incoming parameter ptr is illegal.
- * @retval #UINT32            The task ID of used memory node ptr.
- * @par Dependency:
- * <ul><li>los_memory.h: the header file that contains the API declaration.</li></ul>
- * @see None.
- */
-extern UINT32 LOS_MemTaskIdGet(VOID *ptr);
-
-/**
- * @ingroup los_memory
- * @brief Get the address of last node.
- *
- * @par Description:
- * <ul>
- * <li>This API is used to get the address of last node.</li>
- * </ul>
- * @attention
- * <ul>
- * <li>The input pool parameter must be initialized via func LOS_MemInit.</li>
- * <li>The last node of memory pool is not the end node.</li>
- * </ul>
- *
- * @param  pool               [IN] A pointer pointed to the memory pool.
- *
- * @retval #LOS_NOK           The incoming parameter pool is NULL.
- * @retval #UINTPTR           The address of the last used node that casts to UINTPTR.
- * @par Dependency:
- * <ul><li>los_memory.h: the header file that contains the API declaration.</li></ul>
- * @see None.
- */
-extern UINTPTR LOS_MemLastUsedGet(VOID *pool);
-
-/**
- * @ingroup los_memory
  * @brief Get the infomation of memory pool.
  *
  * @par Description:
@@ -674,159 +435,7 @@ extern UINT32 LOS_MemFreeNodeShow(VOID *pool);
  */
 extern UINT32 LOS_MemIntegrityCheck(const VOID *pool);
 
-/**
- * @ingroup los_memory
- * @brief Check the size of memory node specified.
- *
- * @par Description:
- * <ul>
- * <li>This API is used to check the size of memory node.</li>
- * </ul>
- * @attention
- * <ul>
- * <li>The input pool parameter must be initialized via func LOS_MemInit.</li>
- * <li>The input ptr parameter must be allocated by LOS_MemAlloc or LOS_MemAllocAlign.</li>
- * <li>The function will be called by function specified, such as memset or memcpy.</li>
- * <li>The feature can be enabled when you set the macro value of LOSCFG_BASE_MEM_NODE_SIZE_CHECK as YES.</li>
- * <li>You had better set memory check level as LOS_MEM_CHECK_LEVEL_DISABLE when copy bin file.</li>
- * </ul>
- *
- * @param  pool            [IN]  A pointer pointed to the memory pool.
- * @param  ptr             [IN]  A pointer pointed to the source node.
- * @param  totalSize       [OUT] A pointer to save total size, must point to valid memory.
- * @param  availSize       [OUT] A pointer to save available size, must point to valid memory.
- *
- * @retval #LOS_ERRNO_MEMCHECK_DISABLED         Memcheck function does not open.
- * @retval #LOS_ERRNO_MEMCHECK_PARA_NULL        The pool or ptr is NULL.
- * @retval #LOS_ERRNO_MEMCHECK_OUTSIDE          The ptr address is not in the reasonable range.
- * @retval #LOS_ERRNO_MEMCHECK_NO_HEAD          Can't find the control head node from ptr.
- * @retval #LOS_ERRNO_MEMCHECK_WRONG_LEVEL      The memory check level is illegal.
- * @retval #LOS_OK                              Success to get total size and available size of the memory node (ptr).
- * @par Dependency:
- * <ul><li>los_memory.h: the header file that contains the API declaration.</li></ul>
- * @see LOS_MemCheckLevelSet | LOS_MemCheckLevelGet
- */
-extern UINT32 LOS_MemNodeSizeCheck(VOID *pool, VOID *ptr, UINT32 *totalSize, UINT32 *availSize);
-
-/**
- * @ingroup los_memory
- * @brief Set the memory check level.
- *
- * @par Description:
- * <ul>
- * <li>This API is used to set the memory check level.</li>
- * </ul>
- * @attention
- * <ul>
- * <li>There are three level you can set.</li>
- * <li>The legal level are LOS_MEM_CHECK_LEVEL_LOW, LOS_MEM_CHECK_LEVEL_HIGH, LOS_MEM_CHECK_LEVEL_DISABLE.</li>
- * </ul>
- *
- * @param  checkLevel                                  [IN] The level what you want to set.
- *
- * @retval #LOS_ERRNO_MEMCHECK_WRONG_LEVEL          The memory check level what you want to set is illegal.
- * @retval #LOS_OK                                  Success to set the memory check level.
- * @par Dependency:
- * <ul><li>los_memory.h: the header file that contains the API declaration.</li></ul>
- * @see LOS_MemNodeSizeCheck | LOS_MemCheckLevelGet
- */
-extern UINT32 LOS_MemCheckLevelSet(UINT8 checkLevel);
-
 extern void *boot_alloc_mem(size_t len);
-
-/**
- * @ingroup los_memory
- * @brief Get the memory check level.
- *
- * @par Description:
- * <ul>
- * <li>This API is used to get the current memory check level.</li>
- * </ul>
- * @attention
- * <ul>
- * <li>None.</li>
- * </ul>
- *
- * @param  None
- *
- * @retval #UINT8           The current memory check level.
- * @par Dependency:
- * <ul><li>los_memory.h: the header file that contains the API declaration.</li></ul>
- * @see LOS_MemNodeSizeCheck | LOS_MemCheckLevelSet
- */
-extern UINT8 LOS_MemCheckLevelGet(VOID);
-
-/**
- * @ingroup los_memory
- * Define a mem size check intensity
- *
- * Lowest mem check.
- */
-#define LOS_MEM_CHECK_LEVEL_LOW 0
-
-/**
- * @ingroup los_memory
- * Define a mem size check intensity
- *
- * Highest mem check.
- */
-#define LOS_MEM_CHECK_LEVEL_HIGH 1
-
-/**
- * @ingroup los_memory
- * Define a mem size check intensity
- *
- * disable mem check.
- */
-#define LOS_MEM_CHECK_LEVEL_DISABLE 0xff
-
-/**
- * @ingroup los_memory
- * Define a mem size check intensity
- *
- * default intensity set mem check.
- */
-#define LOS_MEM_CHECK_LEVEL_DEFAULT LOS_MEM_CHECK_LEVEL_DISABLE
-
-/**
- * @ingroup los_memory
- *  memcheck error code: the ptr or pool is NULL
- *  Value: 0x02000101
- *  Solution: don't give a NULL parameter
- */
-#define LOS_ERRNO_MEMCHECK_PARA_NULL LOS_ERRNO_OS_ERROR(LOS_MOD_MEM, 0x1)
-
-/**
- * @ingroup los_memory
- *  memcheck error code: the ptr addr not in the suit range
- *  Value: 0x02000102
- *  Solution: check ptr and comfirm it included by stack
- */
-#define LOS_ERRNO_MEMCHECK_OUTSIDE LOS_ERRNO_OS_ERROR(LOS_MOD_MEM, 0x2)
-
-/**
- * @ingroup los_memory
- *  memcheck error code: can't find the ctrl node
- *  Value: 0x02000103
- *  Solution: confirm the ptr if this node has been freed or has not been alloced
- */
-#define LOS_ERRNO_MEMCHECK_NO_HEAD LOS_ERRNO_OS_ERROR(LOS_MOD_MEM, 0x3)
-
-/**
- * @ingroup los_memory
- *  memcheck error code: the para level is wrong
- *  Value: 0x02000104
- *  Solution: checkout the memcheck level by the func "OS_GetMemCheck_Level"
- */
-#define LOS_ERRNO_MEMCHECK_WRONG_LEVEL LOS_ERRNO_OS_ERROR(LOS_MOD_MEM, 0x4)
-
-/**
- * @ingroup los_memory
- *  memcheck error code: memcheck func not open
- *  Value: 0x02000105
- *  Solution: enable memcheck by the func "OS_SetMemCheck_Level"
- */
-#define LOS_ERRNO_MEMCHECK_DISABLED LOS_ERRNO_OS_ERROR(LOS_MOD_MEM, 0x5)
 
 #ifdef __cplusplus
 #if __cplusplus

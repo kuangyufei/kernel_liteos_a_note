@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,17 +32,13 @@
 #include "los_signal.h"
 #include "pthread.h"
 #include "los_process_pri.h"
+#include "los_sched_pri.h"
 #include "los_hw_pri.h"
 #include "user_copy.h"
 #ifdef LOSCFG_SECURITY_CAPABILITY
 #include "capability_api.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 int raise(int sig)
 {
@@ -87,7 +83,8 @@ int OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info)
     if (masked) {//如果信号被屏蔽了,要看等待信号集,sigwaitmask
         /* If signal is in wait list and mask list, need unblock it */ //如果信号在等待列表和掩码列表中，需要解除阻止
         if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->si_signo)) {//waitList上挂的都是task,sigwaitmask表示是否在等si_signo
-            OsTaskWake(stcb);//唤醒任务,从阻塞状态变成就绪态
+            OsTaskWakeClearPendMask(stcb);
+            OsSchedTaskWake(stcb);
             OsSigEmptySet(&sigcb->sigwaitmask);//将sigwaitmask清空,都已经变成就绪状态了,就没必要等待的信号了.
         } else {
             OsSigAddSet(&sigcb->sigPendFlag, info->si_signo);//将信号加入阻塞集
@@ -96,7 +93,8 @@ int OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info)
         /* unmasked signal actions */
         OsSigAddSet(&sigcb->sigFlag, info->si_signo);//不屏蔽的信号集
         if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->si_signo)) {
-            OsTaskWake(stcb);
+            OsTaskWakeClearPendMask(stcb);
+            OsSchedTaskWake(stcb);
             OsSigEmptySet(&sigcb->sigwaitmask);
         }
     }
@@ -245,7 +243,8 @@ static int SigProcessKillSigHandler(LosTaskCB *tcb, void *arg)
     if ((tcb != NULL) && (info != NULL) && (info->sigInfo != NULL)) {//进程有信号
         sig_cb *sigcb = &tcb->sig;
         if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->sigInfo->si_signo)) {//如果任务在等待这个信号
-            OsTaskWake(tcb);//唤醒这个任务，加入进程的就绪队列,,并不申请调度
+            OsTaskWakeClearPendMask(tcb);
+            OsSchedTaskWake(tcb);
             OsSigEmptySet(&sigcb->sigwaitmask);//清空信号等待位,不等任何信号了.因为这是SIGKILL信号
         }
     }
@@ -480,7 +479,8 @@ int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
         OsSigAddSet(set, SIGSTOP);//终止进程的信号也必须处理
 
         sigcb->sigwaitmask |= *set;//按位加到等待集上,也就是说sigwaitmask的信号来了都是要处理的.
-        ret = OsTaskWait(&sigcb->waitList, timeout, TRUE);//将当前任务挂到waitlist上
+        OsTaskWaitSetPendMask(OS_TASK_WAIT_SIGNAL, sigcb->sigwaitmask, timeout);
+        ret = OsSchedTaskWait(&sigcb->waitList, timeout, TRUE);
         if (ret == LOS_ERRNO_TSK_TIMEOUT) {
             ret = -EAGAIN;
         }
@@ -519,7 +519,6 @@ int OsSigSuspend(const sigset_t *set)
 {
     unsigned int intSave;
     LosTaskCB *rtcb = NULL;
-    unsigned int sigTempProcMask;
     sigset_t setSuspend;
     int ret;
 
@@ -528,7 +527,6 @@ int OsSigSuspend(const sigset_t *set)
     }
     SCHEDULER_LOCK(intSave);
     rtcb = OsCurrTaskGet();
-    sigTempProcMask = rtcb->sig.sigprocmask;
 
     /* Wait signal calc */
     setSuspend = FULL_SIGNAL_SET & (~(*set));
@@ -539,8 +537,6 @@ int OsSigSuspend(const sigset_t *set)
     if (ret < 0) {
         PRINT_ERR("FUNC %s LINE = %d, ret = %x\n", __FUNCTION__, __LINE__, ret);
     }
-    /* Restore old sigprocmask */
-    OsSigMaskSwitch(rtcb, sigTempProcMask);
 
     SCHEDULER_UNLOCK(intSave);
     return -EINTR;
@@ -566,8 +562,8 @@ int OsSigAction(int sig, const sigaction_t *act, sigaction_t *oact)
 		return -EFAULT;
 	}
 	
-	if (sig == SIGSYS) {//系统调用中参数错，如系统调用号非法 
-		addr = OsGetSigHandler();//获取进程信号处理函数
+	if (sig == SIGSYS) {//鸿蒙此处通过错误的系统调用 来安装信号处理函数,有点巧妙. 
+		addr = OsGetSigHandler();//是否已存在信号处理函数
 		if (addr == 0) {//进程没有设置信号处理函数时
 			OsSetSigHandler((unsigned long)(UINTPTR)action.sa_handler);//设置进程信号处理函数
 			//void (*sa_handler)(int); //信号处理函数——普通版
@@ -722,8 +718,3 @@ void OsRestorSignalContext(unsigned int *sp)
     SCHEDULER_UNLOCK(intSave);
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

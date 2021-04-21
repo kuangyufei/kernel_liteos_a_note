@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -37,7 +37,6 @@
 #endif
 #include "unistd.h"
 #include "securec.h"
-#include "inode/inode.h"
 #ifdef LOSCFG_SHELL_DMESG
 #include "dmesg_pri.h"
 #endif
@@ -47,12 +46,11 @@
 #endif
 #include "los_exc_pri.h"
 #include "los_process_pri.h"
+#include "los_sched_pri.h"
+#include "fs/path_cache.h"
+#include "fs/vfs_util.h"
 #include "user_copy.h"
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#include "fs/vnode.h"
 
 #define EACH_CHAR 1
 #define UART_IOC_MAGIC   'u'
@@ -83,20 +81,24 @@ INT32 GetFilepOps(const struct file *filep, struct file **privFilep, const struc
 {
     INT32 ret;
 
-    if ((filep == NULL) || (filep->f_inode == NULL) || (filep->f_inode->i_private == NULL)) {
+    if ((filep == NULL) || (filep->f_vnode == NULL) || (filep->f_vnode->data == NULL)) {
         ret = EINVAL;
         goto ERROUT;
     }
 
     /* to find console device's filep(now it is *privFilep) throught i_private */
-    *privFilep = (struct file *)filep->f_inode->i_private;
-    if (((*privFilep)->f_inode == NULL) || ((*privFilep)->f_inode->u.i_ops == NULL)) {
+    struct drv_data *drv = (struct drv_data *)filep->f_vnode->data;
+    *privFilep = (struct file *)drv->priv;
+    if (((*privFilep)->f_vnode == NULL) || ((*privFilep)->f_vnode->data == NULL)) {
         ret = EINVAL;
         goto ERROUT;
     }
 
     /* to find uart driver operation function throutht u.i_opss */
-    *filepOps = (*privFilep)->f_inode->u.i_ops;
+
+    drv = (struct drv_data *)(*privFilep)->f_vnode->data;
+
+    *filepOps = (const struct file_operations_vfs *)drv->ops;
 
     return ENOERR;
 ERROUT:
@@ -241,33 +243,21 @@ STATIC INT32 ConsoleCtrlRightsRelease(CONSOLE_CB *consoleCB)
 STATIC CONSOLE_CB *OsGetConsoleByDevice(const CHAR *deviceName)
 {
     INT32 ret;
-    CHAR *fullpath = NULL;
-    struct inode *inode = NULL;
-    struct inode_search_s desc;
+    struct Vnode *vnode = NULL;
 
-    ret = vfs_normalize_path(NULL, deviceName, &fullpath);
-    if (ret < 0) {
-        set_errno(EINVAL);
-        return NULL;
-    }
-    SETUP_SEARCH(&desc, fullpath, false);
-    ret = inode_find(&desc);
+    VnodeHold();
+    ret = VnodeLookup(deviceName, &vnode, 0);
+    VnodeDrop();
     if (ret < 0) {
         set_errno(EACCES);
-        free(fullpath);
         return NULL;
     }
-    inode = desc.node;
-    free(fullpath);
 
-    if (g_console[CONSOLE_SERIAL - 1]->devInode == inode) {
-        inode_release(inode);
+    if (g_console[CONSOLE_SERIAL - 1]->devVnode == vnode) {
         return g_console[CONSOLE_SERIAL - 1];
-    } else if (g_console[CONSOLE_TELNET - 1]->devInode == inode) {
-        inode_release(inode);
+    } else if (g_console[CONSOLE_TELNET - 1]->devVnode == vnode) {
         return g_console[CONSOLE_TELNET - 1];
     } else {
-        inode_release(inode);
         set_errno(ENOENT);
         return NULL;
     }
@@ -451,7 +441,9 @@ STATIC VOID StoreReadChar(CONSOLE_CB *consoleCB, char ch, INT32 readcount)
 {
     if ((readcount == EACH_CHAR) && (consoleCB->fifoIn <= (CONSOLE_FIFO_SIZE - 3))) {
         if (ch == '\b') {
-            consoleCB->fifo[--consoleCB->fifoIn] = '\0';
+            if (!ConsoleFifoEmpty(consoleCB)) {
+                consoleCB->fifo[--consoleCB->fifoIn] = '\0';
+            }
         } else {
             consoleCB->fifo[consoleCB->fifoIn] = (UINT8)ch;
             consoleCB->fifoIn++;
@@ -685,9 +677,13 @@ STATIC ssize_t ConsoleRead(struct file *filep, CHAR *buffer, size_t bufLen)
     BOOL userBuf = FALSE;
     const struct file_operations_vfs *fileOps = NULL;
 
-    if ((buffer == NULL) || (bufLen == 0) || (bufLen > CONSOLE_FIFO_SIZE)) {
+    if ((buffer == NULL) || (bufLen == 0)) {
         ret = EINVAL;
         goto ERROUT;
+    }
+
+    if (bufLen > CONSOLE_FIFO_SIZE) {
+        bufLen = CONSOLE_FIFO_SIZE;
     }
 
     userBuf = LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buffer, bufLen);
@@ -740,36 +736,40 @@ ERROUT:
 //写入buf
 STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
 {
-    INT32 cnt = 0;
+    INT32 cnt;
+    size_t writen = 0;
+    size_t toWrite = bufLen;
     UINT32 intSave;
 
 #ifdef LOSCFG_SHELL_DMESG
     (VOID)OsLogMemcpyRecord(buffer, bufLen);
-    if (!OsCheckConsoleLock()) {
+    if (OsCheckConsoleLock()) {
+        return 0;
+    }
 #endif
     LOS_CirBufLock(&cirBufSendCB->cirBufCB, &intSave);
-    while (cnt < (INT32)bufLen) {
-        if ((buffer[cnt] == '\n') || (buffer[cnt] == '\r')) {
+    while (writen < (INT32)bufLen) {
+        /* Transform for CR/LR mode */
+        if ((buffer[writen] == '\n') || (buffer[writen] == '\r')) {
             (VOID)LOS_CirBufWrite(&cirBufSendCB->cirBufCB, "\r", 1);
-            (VOID)LOS_CirBufWrite(&cirBufSendCB->cirBufCB, &buffer[cnt], 1);
-            cnt++;
-            continue;
         }
-        (VOID)LOS_CirBufWrite(&cirBufSendCB->cirBufCB, &buffer[cnt], 1);
-        cnt++;
+
+        cnt = LOS_CirBufWrite(&cirBufSendCB->cirBufCB, &buffer[writen], 1);
+        if (cnt <= 0) {
+            break;
+        }
+        toWrite -= cnt;
+        writen += cnt;
     }
     LOS_CirBufUnlock(&cirBufSendCB->cirBufCB, intSave);
     /* Log is cached but not printed when a system exception occurs */
     if (OsGetSystemStatus() == OS_SYSTEM_NORMAL) {
-        (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_CIRBUF_EVENT);//写入循环buffer事件
+        (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_CIRBUF_EVENT);
     }
-#ifdef LOSCFG_SHELL_DMESG
-    }
-#endif
 
-    return cnt;
+    return writen;
 }
-//控制台写数据
+
 STATIC ssize_t ConsoleWrite(struct file *filep, const CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -779,12 +779,16 @@ STATIC ssize_t ConsoleWrite(struct file *filep, const CHAR *buffer, size_t bufLe
     struct file *privFilep = NULL;
     const struct file_operations_vfs *fileOps = NULL;
 
-    if ((buffer == NULL) || (bufLen == 0) || (bufLen > CONSOLE_FIFO_SIZE)) {
+    if ((buffer == NULL) || (bufLen == 0)) {
         ret = EINVAL;
         goto ERROUT;
     }
 
-    userBuf = LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buffer, bufLen);//是用户空间地址吗？
+    if (bufLen > CONSOLE_FIFO_SIZE) {
+        bufLen = CONSOLE_FIFO_SIZE;
+    }
+
+    userBuf = LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buffer, bufLen);
 
     ret = GetFilepOps(filep, &privFilep, &fileOps);
     if ((ret != ENOERR) || (fileOps->write == NULL) || (filep->f_priv == NULL)) {
@@ -922,7 +926,6 @@ STATIC const struct file_operations_vfs g_consoleDevOps = {//实现VFS接口函�
 #ifndef CONFIG_DISABLE_POLL
     .poll = ConsolePoll,
 #endif
-    .unlink = NULL,
 };
 //控制台条款初始化
 STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
@@ -955,40 +958,40 @@ STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
 STATIC INT32 OsConsoleFileInit(CONSOLE_CB *consoleCB)
 {
     INT32 ret;
-    struct inode *inode = NULL;
+    struct Vnode *vnode = NULL;
     struct file *filep = NULL;
     CHAR *fullpath = NULL;
-    struct inode_search_s desc;
 
     ret = vfs_normalize_path(NULL, consoleCB->name, &fullpath);
     if (ret < 0) {
         return EINVAL;
     }
-    SETUP_SEARCH(&desc, fullpath, false);
-    ret = inode_find(&desc);
-    if (ret < 0) {
+
+    VnodeHold();
+    ret = VnodeLookup(fullpath, &vnode, 0);
+    if (ret != LOS_OK) {
         ret = EACCES;
         goto ERROUT_WITH_FULLPATH;
     }
-    inode = desc.node;
 
-    consoleCB->fd = files_allocate(inode, O_RDWR, (off_t)0, consoleCB, STDERR_FILENO + 1);
+    consoleCB->fd = files_allocate(vnode, O_RDWR, (off_t)0, consoleCB, STDERR_FILENO + 1);
     if (consoleCB->fd < 0) {
         ret = EMFILE;
-        goto ERROUT_WITH_INODE;
+        goto ERROUT_WITH_FULLPATH;
     }
 
     ret = fs_getfilep(consoleCB->fd, &filep);
     if (ret < 0) {
         ret = EPERM;
-        goto ERROUT_WITH_INODE;
+        goto ERROUT_WITH_FULLPATH;
     }
     filep->f_path = fullpath;
+    filep->ops = (struct file_operations_vfs *)((struct drv_data *)vnode->data)->ops;
+    VnodeDrop();
     return LOS_OK;
 
-ERROUT_WITH_INODE:
-    inode_release(inode);
 ERROUT_WITH_FULLPATH:
+    VnodeDrop();
     free(fullpath);
     return ret;
 }
@@ -1000,10 +1003,8 @@ ERROUT_WITH_FULLPATH:
 STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
 {
     INT32 ret;
-    CHAR *fullpath = NULL;
     struct file *filep = NULL;
-    struct inode *inode = NULL;
-    struct inode_search_s desc;
+    struct Vnode *vnode = NULL;
 
     /* allocate memory for filep,in order to unchange the value of filep */
     filep = (struct file *)LOS_MemAlloc(m_aucSysMem0, sizeof(struct file));
@@ -1012,20 +1013,16 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
         goto ERROUT;
     }
 
-    /* Adopt procedure of open function to allocate 'filep' to /dev/console */
-    ret = vfs_normalize_path(NULL, deviceName, &fullpath);
-    if (ret < 0) {
-        ret = EINVAL;
-        goto ERROUT_WITH_FILEP;
-    }
-    SETUP_SEARCH(&desc, fullpath, false);
-    ret = inode_find(&desc);
-    if (ret < 0) {
+    VnodeHold();
+    ret = VnodeLookup(deviceName, &vnode, V_DUMMY);
+    VnodeDrop(); // not correct, but can't fix perfectly here
+    if (ret != LOS_OK) {
         ret = EACCES;
-        goto ERROUT_WITH_FULLPATH;
+        PRINTK("!! can not find %s\n", consoleCB->name);
+        goto ERROUT;
     }
-    inode = desc.node;
-    consoleCB->devInode = inode;
+
+    consoleCB->devVnode = vnode;
 
     /*
      * initialize the console filep which is associated with /dev/console,
@@ -1040,17 +1037,9 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
     (VOID)memset_s(filep, sizeof(struct file), 0, sizeof(struct file));
     filep->f_oflags = O_RDWR;
     filep->f_pos = 0;
-    filep->f_inode = inode;
+    filep->f_vnode = vnode;
     filep->f_path = NULL;
     filep->f_priv = NULL;
-
-    if (inode->u.i_ops->open != NULL) {
-        (VOID)inode->u.i_ops->open(filep);
-    } else {
-        ret = EFAULT;
-        goto ERROUT_WITH_INODE;
-    }
-
     /*
      * Use filep to connect console and uart, we can find uart driver function throught filep.
      * now we can operate /dev/console to operate /dev/ttyS0 through filep.
@@ -1059,66 +1048,25 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
      //达到操作/dev/ttyS0的目的
     ret = register_driver(consoleCB->name, &g_consoleDevOps, DEFFILEMODE, filep);//注册字符设备驱动程序
     if (ret != LOS_OK) {
-        goto ERROUT_WITH_INODE;
+        goto ERROUT;
     }
 
-    inode_release(inode);
-    free(fullpath);
     return LOS_OK;
 
-ERROUT_WITH_INODE:
-    inode_release(inode);
-ERROUT_WITH_FULLPATH:
-    free(fullpath);
-ERROUT_WITH_FILEP:
-    (VOID)LOS_MemFree(m_aucSysMem0, filep);
 ERROUT:
+     if (filep) {
+        (VOID)LOS_MemFree(m_aucSysMem0, filep);
+    }
+
     set_errno(ret);
     return LOS_NOK;
 }
 
 STATIC UINT32 OsConsoleDevDeinit(const CONSOLE_CB *consoleCB)
 {
-    INT32 ret;
-    struct file *filep = NULL;
-    struct inode *inode = NULL;
-    CHAR *fullpath = NULL;
-    struct inode_search_s desc;
-
-    ret = vfs_normalize_path(NULL, consoleCB->name, &fullpath);
-    if (ret < 0) {
-        ret = EINVAL;
-        goto ERROUT;
-    }
-    SETUP_SEARCH(&desc, fullpath, false);
-    ret = inode_find(&desc);
-    if (ret < 0) {
-        ret = EACCES;
-        goto ERROUT_WITH_FULLPATH;
-    }
-    inode = desc.node;
-
-    filep = inode->i_private;
-    if (filep != NULL) {
-        (VOID)LOS_MemFree(m_aucSysMem0, filep); /* free filep what you malloc from console_init */
-        inode->i_private = NULL;
-    } else {
-        ret = EBADF;
-        goto ERROUT_WITH_INODE;
-    }
-    inode_release(inode);
-    free(fullpath);
-    (VOID)unregister_driver(consoleCB->name);
-    return LOS_OK;
-
-ERROUT_WITH_INODE:
-    inode_release(inode);
-ERROUT_WITH_FULLPATH:
-    free(fullpath);
-ERROUT:
-    set_errno(ret);
-    return LOS_NOK;
+    return unregister_driver(consoleCB->name);
 }
+
 //创建一个控制台循环buf
 STATIC CirBufSendCB *ConsoleCirBufCreate(VOID)
 {
@@ -1131,16 +1079,16 @@ STATIC CirBufSendCB *ConsoleCirBufCreate(VOID)
     if (cirBufSendCB == NULL) {
         return NULL;
     }
-    (VOID)memset_s(cirBufSendCB, sizeof(CirBufSendCB), 0, sizeof(CirBufSendCB));//清0
+    (VOID)memset_s(cirBufSendCB, sizeof(CirBufSendCB), 0, sizeof(CirBufSendCB));
 
-    fifo = (CHAR *)LOS_MemAlloc(m_aucSysMem0, TELNET_CIRBUF_SIZE);//分配一个缓存 8K
+    fifo = (CHAR *)LOS_MemAlloc(m_aucSysMem0, CONSOLE_CIRCBUF_SIZE);
     if (fifo == NULL) {
         goto ERROR_WITH_SENDCB;
     }
-    (VOID)memset_s(fifo, TELNET_CIRBUF_SIZE, 0, TELNET_CIRBUF_SIZE);//清0
+    (VOID)memset_s(fifo, CONSOLE_CIRCBUF_SIZE, 0, CONSOLE_CIRCBUF_SIZE);
 
     cirBufCB = &cirBufSendCB->cirBufCB;
-    ret = LOS_CirBufInit(cirBufCB, fifo, TELNET_CIRBUF_SIZE);//初始化循环buf
+    ret = LOS_CirBufInit(cirBufCB, fifo, CONSOLE_CIRCBUF_SIZE);
     if (ret != LOS_OK) {
         goto ERROR_WITH_FIFO;
     }
@@ -1250,6 +1198,7 @@ STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
 
     ret = (INT32)OsConsoleBufInit(consoleCB);//控制台buf初始化
     if (ret != LOS_OK) {
+        PRINT_ERR("console OsConsoleBufInit error. %d\n", ret);
         goto ERR_WITH_NAME;
     }
 
@@ -1261,11 +1210,13 @@ STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
 
     ret = OsConsoleDevInit(consoleCB, deviceName);//控制台设备初始化
     if (ret != LOS_OK) {
+        PRINT_ERR("console OsConsoleDevInitlloc error. %d\n", ret);
         goto ERR_WITH_SEM;
     }
 
     ret = OsConsoleFileInit(consoleCB);//控制台文件初始化
     if (ret != LOS_OK) {
+        PRINT_ERR("console OsConsoleFileInit error. %d\n", ret);
         goto ERR_WITH_DEV;
     }
 
@@ -1525,7 +1476,7 @@ INT32 ConsoleUpdateFd(VOID)
         } else if (g_console[CONSOLE_TELNET - 1] != NULL) {
             consoleID = CONSOLE_TELNET;
         } else {
-            PRINT_ERR("No console dev used.\n");
+            PRINTK("No console dev used.\n");
             return -1;
         }
     }
@@ -1632,6 +1583,7 @@ VOID OsWaitConsoleSendTaskPend(UINT32 taskID)//等待控制台任务结束
     UINT32 i;
     CONSOLE_CB *console = NULL;
     LosTaskCB *taskCB = NULL;
+    INT32 waitTime = 3000; /* 3000: 3 seconds */
 
     for (i = 0; i < CONSOLE_NUM; i++) {//循环cpu core
         console = g_console[i];
@@ -1644,8 +1596,9 @@ VOID OsWaitConsoleSendTaskPend(UINT32 taskID)//等待控制台任务结束
         }
 
         taskCB = OS_TCB_FROM_TID(console->sendTaskID);
-        while ((taskCB->taskEvent == NULL) && (taskID != console->sendTaskID)) {
+        while ((waitTime > 0) && (taskCB->taskEvent == NULL) && (taskID != console->sendTaskID)) {
             LOS_Mdelay(1); /* 1: wait console task pend */ //等待控制台任务阻塞
+            --waitTime;
         }
     }
 }
@@ -1668,8 +1621,3 @@ VOID OsWakeConsoleSendTask(VOID)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

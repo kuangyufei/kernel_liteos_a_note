@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,7 +32,6 @@
 #include "virpart.h"
 #include "errno.h"
 #include "fatfs.h"
-#include "dirop_fat.h"
 #include "errcode_fat.h"
 #include "disk.h"
 
@@ -189,7 +188,7 @@ static INT FatfsScanFat(void *handle)
 {
     FATFS *fat = (FATFS *)handle;
     UINT i;
-    INT ret;
+    INT ret = FR_OK;
 
     for (i = 0; i < fat->vir_amount; i++) {
         /* Assert error will not abort the scanning process */
@@ -442,15 +441,17 @@ INT FatFsMakeVirPart(void *handle, BYTE vol)
     return fatfs_2_vfs(ret);
 }
 
-INT fatfs_virstatfs_internel(struct inode *mountpt, const char *relpath, struct statfs *buf)
+INT fatfs_virstatfs_internel(struct Vnode *mountpt, const char *relpath, struct statfs *buf)
 {
     char drive[MAX_LFNAME_LENTH];
     DWORD freClust, allClust;
     FATFS *fat = NULL;
     INT result, vol;
 
-    fat = (FATFS *)mountpt->i_private;
-    FAT_CHECK(fat);
+    fat = (FATFS *)(mountpt->originMount->data);
+    if (fat == NULL) {
+        return -EINVAL;
+    }
 
     if (fat->vir_flag != FS_PARENT) {
         return -EINVAL;

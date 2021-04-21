@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -33,24 +33,21 @@
  * Included Files
  ****************************************************************************/
 
-#include "vfs_config.h"
-#include "sys/types.h"
 #include "assert.h"
 #include "errno.h"
 #include "fcntl.h"
+#include "fs/fs.h"
 #include "sched.h"
+#include "sys/types.h"
 #include "unistd.h"
-
-#include "inode/inode.h"
-
+#include "vfs_config.h"
 
 /****************************************************************************
  * Name: file_fallocate
  ****************************************************************************/
 
-ssize_t file_fallocate64(FAR struct file *filep, int mode, off64_t offset, off64_t len)
+ssize_t file_fallocate64(struct file *filep, int mode, off64_t offset, off64_t len)
 {
-    FAR struct inode *inode = NULL;
     int ret;
     int err;
 
@@ -67,16 +64,14 @@ ssize_t file_fallocate64(FAR struct file *filep, int mode, off64_t offset, off64
     }
 
     /* Is a driver registered? Does it support the fallocate method? */
-
-    inode = filep->f_inode;
-    if (!inode || !inode->u.i_mops || !inode->u.i_mops->fallocate64) {
+    if (!filep->ops || !filep->ops->fallocate64) {
         err = EBADF;
         goto errout;
     }
 
     /* Yes, then let the driver perform the fallocate */
 
-    ret = inode->u.i_mops->fallocate64(filep, mode, offset, len);
+    ret = filep->ops->fallocate64(filep, mode, offset, len);
     if (ret < 0) {
         err = -ret;
         goto errout;
@@ -113,7 +108,7 @@ errout:
 int fallocate64(int fd, int mode, off64_t offset, off64_t len)
 {
 #if CONFIG_NFILE_DESCRIPTORS > 0
-    FAR struct file *filep = NULL;
+    struct file *filep = NULL;
 #endif
 
     /* Did we get a valid file descriptor? */

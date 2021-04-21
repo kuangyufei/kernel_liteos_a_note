@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,54 +32,45 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "los_config.h"
-
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 #include "disk.h"
 #include "shcmd.h"
 #include "shell.h"
-/******************************************************
-命令功能
-partinfo命令用于查看系统识别的硬盘，SD卡多分区信息。
-命令格式
-partinfo <dev_inodename>
-参数说明
-dev_inodename 要查看的分区名字。
-例如:partinfo /dev/mmcblk0p0
-******************************************************/
+#include "fs/path_cache.h"
+
 INT32 osShellCmdPartInfo(INT32 argc, const CHAR **argv)
 {
-    struct inode *node = NULL;
+    struct Vnode *node = NULL;
     los_part *part = NULL;
     const CHAR *str = "/dev";
-    struct inode_search_s desc;
     int ret;
 
     if ((argc != 1) || (strncmp(argv[0], str, strlen(str)) != 0)) {
         PRINTK("Usage  :\n");
-        PRINTK("        partinfo <dev_inodename>\n");
-        PRINTK("        dev_inodename : the name of dev\n");
+        PRINTK("        partinfo <dev_vnodename>\n");
+        PRINTK("        dev_vnodename : the name of dev\n");
         PRINTK("Example:\n");
         PRINTK("        partinfo /dev/sdap0 \n");
 
         set_errno(EINVAL);
         return -LOS_NOK;
     }
-    SETUP_SEARCH(&desc, argv[0], false);
-    ret = inode_find(&desc);
+    VnodeHold();
+    ret = VnodeLookup(argv[0], &node, 0);
     if (ret < 0) {
         PRINT_ERR("no part found\n");
+        VnodeDrop();
         set_errno(ENOENT);
         return -LOS_NOK;
     }
-    node = desc.node;
 
     part = los_part_find(node);
-    inode_release(node);
+    VnodeDrop();
     show_part(part);
 
     return LOS_OK;
 }
 
-SHELLCMD_ENTRY(partinfo_shellcmd, CMD_TYPE_EX, "partinfo", XARGS, (CmdCallBackFunc)osShellCmdPartInfo);//采用shell命令静态注册方式
+SHELLCMD_ENTRY(partinfo_shellcmd, CMD_TYPE_EX, "partinfo", XARGS, (CmdCallBackFunc)osShellCmdPartInfo);
 
 #endif

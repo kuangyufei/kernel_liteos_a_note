@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -73,6 +73,14 @@ extern "C" {
 #define CLZ(value)                                  (__clz(value))
 #endif
 
+#ifndef NORETURN
+#define NORETURN                                    __declspec(noreturn)
+#endif
+
+#ifndef DEPRECATED
+#define DEPRECATED                                  __attribute__((deprecated))
+#endif
+
 /* for IAR Compiler */
 #elif defined ( __ICCARM__ )
 
@@ -104,6 +112,14 @@ extern "C" {
 #define CTZ(value)                                  (__UNDEFINED(value))
 #endif
 
+#ifndef NORETURN
+#define NORETURN                                    __attribute__ ((__noreturn__))
+#endif
+
+#ifndef DEPRECATED
+#define DEPRECATED                                  __attribute__((deprecated))
+#endif
+
 /* for GNU Compiler */
 #elif defined ( __GNUC__ )
 
@@ -133,6 +149,14 @@ extern "C" {
 
 #ifndef CTZ
 #define CTZ(value)                                  (__builtin_ctz(value))
+#endif
+
+#ifndef NORETURN
+#define NORETURN                                    __attribute__ ((__noreturn__))
+#endif
+
+#ifndef DEPRECATED
+#define DEPRECATED                                  __attribute__((deprecated))
 #endif
 
 #else

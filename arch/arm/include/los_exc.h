@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -45,9 +45,6 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-/*********************************************************** @note_pic
-
-************************************************************/
 /**
  * @ingroup los_exc
  * Register information structure
@@ -186,7 +183,25 @@ extern UINT32 LOS_ExcRegHook(EXC_PROC_FUNC excHook);//注册异常处理钩子
  * los_exc.h: the header file that contains the API declaration.
  * @see None.
  */
-VOID LOS_Panic(const CHAR *fmt, ...);
+VOID LOS_Panic(const CHAR *fmt, ...) NORETURN;
+
+/**
+ * @ingroup los_exc
+ * @brief record LR function.
+ *
+ * @par Description:
+ * @attention
+ * @param LR            [IN] Type #UINTPTR * LR buffer.
+ * @param recordCount   [IN] Type UINT32 record LR lay number.
+ * @param jumpCount     [IN] Type UINT32 ignore LR lay number.
+ *
+ * @retval #None.
+ *
+ * @par Dependency:
+ * los_exc.h: the header file that contains the API declaration.
+ * @see None.
+ */
+VOID LOS_RecordLR(UINTPTR *LR, UINT32 LRSize, UINT32 recordCount, UINT32 jumpCount);
 
 /**
  * @ingroup los_exc

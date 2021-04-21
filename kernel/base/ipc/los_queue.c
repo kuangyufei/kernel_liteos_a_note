@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,15 +32,11 @@
 #include "los_queue_pri.h"
 #include "los_queue_debug_pri.h"
 #include "los_task_pri.h"
+#include "los_sched_pri.h"
 #include "los_spinlock.h"
 #include "los_mp.h"
 #include "los_percpu_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 /******************************************************************************
 基本概念
 	队列又称消息队列，是一种常用于任务间通信的数据结构。队列接收来自任务或中断的
@@ -335,7 +331,8 @@ UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT
             goto QUEUE_END;
         }
 		//任务等待,这里很重要啊,将自己从就绪列表摘除,让出了CPU并发起了调度,并挂在readWriteList[readWrite]上,挂的都等待读/写消息的task
-        ret = OsTaskWait(&queueCB->readWriteList[readWrite], timeout, TRUE);//任务被唤醒后会回到这里执行,什么时候会被唤醒?当然是有消息的时候!
+        OsTaskWaitSetPendMask(OS_TASK_WAIT_QUEUE, queueCB->queueID, timeout);
+        ret = OsSchedTaskWait(&queueCB->readWriteList[readWrite], timeout, TRUE);
         if (ret == LOS_ERRNO_TSK_TIMEOUT) {//唤醒后如果超时了,返回读/写消息失败
             ret = LOS_ERRNO_QUEUE_TIMEOUT;
             goto QUEUE_END;//
@@ -348,7 +345,8 @@ UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT
 
     if (!LOS_ListEmpty(&queueCB->readWriteList[!readWrite])) {//如果还有任务在排着队等待读/写入消息(当时不能读/写的原因有可能当时队列满了==)
         resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&queueCB->readWriteList[!readWrite]));//取出要读/写消息的任务
-        OsTaskWake(resumedTask);//唤醒任务去读/写消息啊
+        OsTaskWakeClearPendMask(resumedTask);
+        OsSchedTaskWake(resumedTask);
         SCHEDULER_UNLOCK(intSave);
         LOS_MpSchedule(OS_MP_CPU_ALL);//让所有CPU发出调度申请,因为很可能那个要读/写消息的队列是由其他CPU执行
         LOS_Schedule();//申请调度
@@ -563,8 +561,3 @@ QUEUE_END:
 
 #endif /* (LOSCFG_BASE_IPC_QUEUE == YES) */
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

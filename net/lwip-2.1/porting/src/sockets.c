@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,15 +31,13 @@
 
 #include <lwip/sockets.h>
 #include <lwip/priv/tcpip_priv.h>
-#include <api_shell_fix.h>
+#include <lwip/fixme.h>
 
 #if LWIP_ENABLE_NET_CAPABILITY
 #include "capability_type.h"
 #include "capability_api.h"
 #define BIND_SERVICE_CAP_MIN_PORT 1024
 #endif
-
-#define netif_find netifapi_netif_find_by_name
 
 #define IOCTL_CMD_CASE_HANDLER() \
     {                                                          \
@@ -86,7 +84,8 @@ int lwip_bind(int s, const struct sockaddr *name, socklen_t namelen)
     return lwip_bind_wrap(s, name, namelen);
 }
 
-static ssize_t lwip_sendto_wrap(int s, const void *dataptr, size_t size, int flags, const struct sockaddr *to, socklen_t tolen);
+static ssize_t lwip_sendto_wrap(int s, const void *dataptr, size_t size, int flags,
+                                const struct sockaddr *to, socklen_t tolen);
 ssize_t lwip_sendto(int s, const void *dataptr, size_t size, int flags, const struct sockaddr *to, socklen_t tolen)
 {
     return lwip_sendto_wrap(s, dataptr, size, flags, to, tolen);
@@ -143,12 +142,14 @@ static int lwip_setsockopt_wrap(int s, int level, int optname, const void *optva
 #if LWIP_ENABLE_NET_CAPABILITY
     if (level == SOL_SOCKET) {
         switch (optname) {
+#if LWIP_ENABLE_CAP_NET_BROADCAST
             case SO_BROADCAST:
                 if (!IsCapPermit(CAP_NET_BROADCAST)) {
                     set_errno(EPERM);
                     return -1;
                 }
                 break;
+#endif
             case SO_DEBUG:
             case SO_MARK:
             case SO_PRIORITY:
@@ -167,7 +168,7 @@ static int lwip_setsockopt_wrap(int s, int level, int optname, const void *optva
     return lwip_setsockopt2(s, level, optname, optval, optlen);
 }
 
-#if LWIP_ENABLE_NET_CAPABILITY
+#if LWIP_ENABLE_NET_CAPABILITY && LWIP_ENABLE_CAP_NET_BROADCAST
 static int ip_addr_isbroadcast_bysock(const ip_addr_t *ipaddr, int s)
 {
     struct sockaddr sa;
@@ -216,16 +217,12 @@ static int lwip_bind_wrap(int s, const struct sockaddr *name, socklen_t namelen)
             LWIP_ERROR("permission deny: NET_BIND_SERVICE\n", IsCapPermit(CAP_NET_BIND_SERVICE),
                        set_errno(EPERM); return -1);
         }
-        if (ip_addr_isany(&ipaddr)) {
-            LWIP_ERROR("permission deny: NET_RAW\n", IsCapPermit(CAP_NET_RAW),
-                       set_errno(EPERM); return -1);
-            LWIP_ERROR("permission deny: NET_ADMIN\n", IsCapPermit(CAP_NET_ADMIN),
-                       set_errno(EPERM); return -1);
-        }
+#if LWIP_ENABLE_CAP_NET_BROADCAST
         if (ip_addr_ismulticast(&ipaddr) || ip_addr_isbroadcast_bysock(&ipaddr, s)) {
             LWIP_ERROR("permission deny: NET_BROADCAST\n", IsCapPermit(CAP_NET_BROADCAST),
                        set_errno(EPERM); return -1);
         }
+#endif
     }
 #endif
 
@@ -233,21 +230,22 @@ static int lwip_bind_wrap(int s, const struct sockaddr *name, socklen_t namelen)
 }
 
 static ssize_t lwip_sendto_wrap(int s, const void *dataptr, size_t size, int flags,
-               const struct sockaddr *to, socklen_t tolen)
+                                const struct sockaddr *to, socklen_t tolen)
 {
 #if LWIP_ENABLE_NET_CAPABILITY
     if (to &&
         ((to->sa_family == AF_INET && tolen >= sizeof(struct sockaddr_in)) ||
-        (to->sa_family == AF_INET6 && tolen >= sizeof(struct sockaddr_in6)))) {
+         (to->sa_family == AF_INET6 && tolen >= sizeof(struct sockaddr_in6)))) {
         ip_addr_t ipaddr;
         u16_t port;
 
         SOCKADDR_TO_IPADDR_PORT(to, &ipaddr, port);
-
+#if LWIP_ENABLE_CAP_NET_BROADCAST
         if (ip_addr_ismulticast(&ipaddr) || ip_addr_isbroadcast_bysock(&ipaddr, s)) {
             LWIP_ERROR("permission deny: NET_BROADCAST\n", IsCapPermit(CAP_NET_BROADCAST),
                        set_errno(EPERM); return -1);
         }
+#endif
     }
 #endif
 
@@ -372,7 +370,6 @@ int get_unused_socket_num(void)
 // Options for lwip ioctl
 #define LWIP_IOCTL_ROUTE                1
 #define LWIP_IOCTL_IF                   1
-#define LWIP_NETIF_PROMISC              1
 #define LWIP_NETIF_ETHTOOL              0
 #define LWIP_IOCTL_IPV6DPCTD            0
 #undef LWIP_IPV6_DUP_DETECT_ATTEMPTS
@@ -764,7 +761,7 @@ static u8_t lwip_ioctl_internal_SIOCSIFNETMASK(struct ifreq *ifr)
             loc_netif = loc_netif->next;
         }
 
-#if LWIP_DHCP // LWIP_DHCP
+#if LWIP_DHCP
         if ((netif_dhcp_data(netif) != NULL) &&
             (netif_dhcp_data(netif)->state != DHCP_STATE_OFF)) {
             (void)netif_dhcp_off(netif);

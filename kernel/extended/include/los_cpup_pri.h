@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -46,33 +46,33 @@ extern "C" {
 */
 #define OS_CPUP_HISTORY_RECORD_NUM   11
 
+typedef struct {
+    UINT64 allTime;    /**< Total running time */
+    UINT64 startTime;  /**< Time before a task is invoked */
+    UINT64 historyTime[OS_CPUP_HISTORY_RECORD_NUM + 1]; /**< Historical running time, the last one saves zero */
+} OsCpupBase;
+
 /**
  * @ingroup los_cpup
  * Count the CPU usage structures of a task.
  */
 typedef struct {
-    UINT32 id;                                            /**< Task ID */
-    UINT16 status;                                        /**< Task status */
-    UINT64 allTime;                                       /**< Total running time */
-    UINT64 startTime;                                     /**< Time before a task is invoked */
-    UINT64 historyTime[OS_CPUP_HISTORY_RECORD_NUM + 1];   /**< Historical running time, the last one saves zero */
-} OsCpupCB;
-
-extern OsCpupCB *g_cpup;
+    UINT32 id;         /**< irq ID */
+    UINT16 status;     /**< irq status */
+    OsCpupBase cpup;   /**< irq cpup base */
+} OsIrqCpupCB;
 
 extern UINT32 OsCpupInit(VOID);
 extern VOID OsCpupGuardCreator(VOID);
-extern VOID OsSetCpuCycle(UINT64 startCycles);
-extern UINT64 OsGetCpuCycle(VOID);
-extern VOID OsProcessCycleEndStart(UINT32 newID, UINT16 runTaskCount);
-extern VOID OsCpupSet(UINT32 id);
-extern VOID OsCpupClean(UINT32 id);
-extern UINT32 OsHistorySysCpuUsageUnsafe(UINT16 mode);
-extern UINT32 OsHistoryProcessCpuUsageUnsafe(UINT32 pid, UINT16 mode);
-extern UINT32 OsAllCpuUsageUnsafe(UINT16 maxNum, CPUP_INFO_S *cpupInfo, UINT16 mode, UINT16 flag);
+extern VOID OsCpupCycleEndStart(UINT32 runTaskID, UINT32 newTaskID);
+extern UINT32 OsGetAllTaskCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len);
+extern UINT32 OsGetAllProcessCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len);
+extern UINT32 OsGetAllProcessAndTaskCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len);
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
-VOID OsCpupIrqStart(VOID);
-VOID OsCpupIrqEnd(UINT32);
+extern UINT32 OsGetAllIrqCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len);
+extern VOID OsCpupIrqStart(VOID);
+extern VOID OsCpupIrqEnd(UINT32);
+extern OsIrqCpupCB *OsGetIrqCpupArrayBase(VOID);
 #endif
 
 #ifdef __cplusplus

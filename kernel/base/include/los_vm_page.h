@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -49,7 +49,6 @@ extern "C" {
 //注意: vmPage 中并没有虚拟地址，只有物理地址
 typedef struct VmPage {	//物理页框描述符
     LOS_DL_LIST         node;        /**< vm object dl list */ //虚拟内存节点,通过它挂/摘到全局g_vmPhysSeg[segID]->freeList[order]物理页框链表上
-    UINT32              index;       /**< vm page index to vm object */	//索引位置
     PADDR_T             physAddr;    /**< vm page physical addr */		//物理页框起始物理地址,只能用于计算,不会用于操作(读/写数据==)
     Atomic              refCounts;   /**< vm page ref count */			//被引用次数,共享内存会被多次引用
     UINT32              flags;       /**< vm page flags */				//页标签，同时可以有多个标签（共享/引用/活动/被锁==）

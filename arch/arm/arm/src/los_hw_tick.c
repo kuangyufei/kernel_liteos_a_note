@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,11 +32,7 @@
 #include "los_sys_pri.h"
 #include "los_hwi.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+
 //节拍初始化
 LITE_OS_SEC_TEXT_INIT UINT32 OsTickInit(UINT32 systemClock, UINT32 tickPerSecond)
 {
@@ -65,10 +61,8 @@ LITE_OS_SEC_TEXT_MINOR VOID LOS_GetCpuCycle(UINT32 *highCnt, UINT32 *lowCnt)
 //获取自系统启动以来的纳秒数
 LITE_OS_SEC_TEXT_MINOR UINT64 LOS_CurrNanosec(VOID)
 {
-    DOUBLE nanos;
-
-    nanos = (DOUBLE)HalClockGetCycles() * OS_SYS_NS_PER_SECOND / g_sysClock;
-    return (UINT64)nanos;
+    UINT64 cycle = HalClockGetCycles();
+    return (cycle / g_sysClock) * OS_SYS_NS_PER_SECOND + (cycle % g_sysClock) * OS_SYS_NS_PER_SECOND / g_sysClock;
 }
 //以us为单位的忙等，但可以被优先级更高的任务抢占
 LITE_OS_SEC_TEXT_MINOR VOID LOS_Udelay(UINT32 usecs)
@@ -81,8 +75,3 @@ LITE_OS_SEC_TEXT_MINOR VOID LOS_Mdelay(UINT32 msecs)
     HalDelayUs(msecs * 1000); /* 1000 : 1ms = 1000us */
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

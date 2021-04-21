@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,11 +36,6 @@
 #include "shcmd.h"
 #endif /* LOSCFG_SHELL */
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_DEBUG_QUEUE
 
@@ -131,7 +126,7 @@ STATIC VOID SortQueueIndexArray(UINT32 *indexArray, UINT32 count)
     }
     (VOID)LOS_MemFree((VOID *)OS_SYS_MEM_ADDR, indexArray);
 }
-//队列检查
+//队列检�?
 VOID OsQueueCheck(VOID)
 {
     LosQueueCB queueNode = {0};
@@ -197,12 +192,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdQueueInfoGet(UINT32 argc, const CHAR **a
     return LOS_OK;
 }
 
-SHELLCMD_ENTRY(queue_shellcmd, CMD_TYPE_EX, "queue", 0, (CmdCallBackFunc)OsShellCmdQueueInfoGet);//采用shell命令静态注册方式
+SHELLCMD_ENTRY(queue_shellcmd, CMD_TYPE_EX, "queue", 0, (CmdCallBackFunc)OsShellCmdQueueInfoGet);
 #endif /* LOSCFG_SHELL */
 #endif /* LOSCFG_DEBUG_QUEUE */
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

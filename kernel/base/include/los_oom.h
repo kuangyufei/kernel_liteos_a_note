@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -40,22 +40,22 @@
 #define OOM_DEFAULT_CHECK_INTERVAL          100     /* 1s */
 #define OOM_CHECK_MAX                       1000    /* 10s */
 
-#define OOM_DEFAULT_LOW_MEM_THRESHOLD       0x80000  /* 512KByte */	//低内存门槛
-#define OOM_DEFAULT_LOW_MEM_THRESHOLD_MIN   0        /* 0, means always no memory */ 
-#define OOM_DEFAULT_LOW_MEM_THRESHOLD_MAX   0x100000 /* 1MByte */	
+#define OOM_DEFAULT_LOW_MEM_THRESHOLD       0x80000  /* 512KByte */
+#define OOM_DEFAULT_LOW_MEM_THRESHOLD_MIN   0        /* 0, means always no memory */
+#define OOM_DEFAULT_LOW_MEM_THRESHOLD_MAX   0x100000 /* 1MByte */
 
-#define OOM_DEFAULT_RECLAIM_MEM_THRESHOLD   0x500000 /* 5MByte */ //默认回收内存门槛
+#define OOM_DEFAULT_RECLAIM_MEM_THRESHOLD   0x500000 /* 5MByte */
 
-typedef UINT32 (*OomFn)(UINTPTR param);//内存溢出的回调函数定义
+typedef UINT32 (*OomFn)(UINTPTR param);
 
-typedef struct { //内存溢出控制块(描述符)
-    UINT32       lowMemThreshold;       /* byte */ 	//最低运行内存
-    UINT32       reclaimMemThreshold;   /* byte */	//回收内存起点
-    UINT32       checkInterval;         /* microsecond */	//检测间隔,毫秒级
-    OomFn        processVictimCB;       /* process victim process cb function */ //出问题时对进程的处理函数
-    OomFn        scoreCB;               /* out of memory, the process score function */ //内存不足时,统计进程占用的物理内存
-    UINT16       swtmrID;				//定时器ID
-    BOOL         enabled;               /* oom is enabled or not *///是否启用了内存溢出监控
+typedef struct {
+    UINT32       lowMemThreshold;       /* byte */
+    UINT32       reclaimMemThreshold;   /* byte */
+    UINT32       checkInterval;         /* microsecond */
+    OomFn        processVictimCB;       /* process victim process cb function */
+    OomFn        scoreCB;               /* out of memory, the process score function */
+    UINT16       swtmrID;
+    BOOL         enabled;               /* oom is enabled or not */
 } OomCB;
 
 LITE_OS_SEC_TEXT_MINOR UINT32 OomTaskInit(VOID);

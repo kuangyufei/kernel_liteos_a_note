@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -45,11 +45,8 @@
 #include "los_vm_boot.h"
 #include "los_mmu_descriptor_v6.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+
+#ifdef LOSCFG_KERNEL_MMU
 
 __attribute__((aligned(MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS))) \
     __attribute__((section(".bss.prebss.translation_table"))) UINT8 \
@@ -69,6 +66,12 @@ STATIC INLINE PTE_T *OsGetPte2BasePtr(PTE_T pte1)
     PADDR_T pa = MMU_DESCRIPTOR_L1_PAGE_TABLE_ADDR(pte1);
     return LOS_PaddrToKVaddr(pa);
 }
+
+VADDR_T *OsGFirstTableGet(VOID)
+{
+    return (VADDR_T *)g_firstPageTable;
+}
+
 //解除L1表的映射关系
 STATIC INLINE UINT32 OsUnmapL1Invalid(vaddr_t *vaddr, UINT32 *count)
 {
@@ -91,11 +94,6 @@ STATIC INT32 OsMapParamCheck(UINT32 flags, VADDR_T vaddr, PADDR_T paddr)
     }
 #endif
 
-    if (!(flags & VM_MAP_REGION_FLAG_PERM_READ)) {
-        VM_ERR("miss read flag");
-        return LOS_ERRNO_VM_INVALID_ARGS;
-    }
-
     /* paddr and vaddr must be aligned */
     if (!MMU_DESCRIPTOR_IS_L2_SIZE_ALIGNED(vaddr) || !MMU_DESCRIPTOR_IS_L2_SIZE_ALIGNED(paddr)) {
         return LOS_ERRNO_VM_INVALID_ARGS;
@@ -114,6 +112,9 @@ STATIC VOID OsCvtPte2AttsToFlags(PTE_T l1Entry, PTE_T l2Entry, UINT32 *flags)
 
     switch (l2Entry & MMU_DESCRIPTOR_L2_TEX_TYPE_MASK) {
         case MMU_DESCRIPTOR_L2_TYPE_STRONGLY_ORDERED:
+            *flags |= VM_MAP_REGION_FLAG_STRONGLY_ORDERED;
+            break;
+        case MMU_DESCRIPTOR_L2_TYPE_NORMAL_NOCACHE:
             *flags |= VM_MAP_REGION_FLAG_UNCACHED;
             break;
         case MMU_DESCRIPTOR_L2_TYPE_DEVICE_SHARED:
@@ -148,7 +149,6 @@ STATIC VOID OsCvtPte2AttsToFlags(PTE_T l1Entry, PTE_T l2Entry, UINT32 *flags)
 
 STATIC VOID OsPutL2Table(const LosArchMmu *archMmu, UINT32 l1Index, paddr_t l2Paddr)
 {
-    LosVmPage *vmPage = NULL;
     UINT32 index;
     PTE_T ttEntry;
     /* check if any l1 entry points to this l2 table */
@@ -158,8 +158,9 @@ STATIC VOID OsPutL2Table(const LosArchMmu *archMmu, UINT32 l1Index, paddr_t l2Pa
             return;
         }
     }
+#ifdef LOSCFG_KERNEL_VM
     /* we can free this l2 table */
-    vmPage = LOS_VmPageGet(l2Paddr);
+    LosVmPage *vmPage = LOS_VmPageGet(l2Paddr);
     if (vmPage == NULL) {
         LOS_Panic("bad page table paddr %#x\n", l2Paddr);
         return;
@@ -167,6 +168,9 @@ STATIC VOID OsPutL2Table(const LosArchMmu *archMmu, UINT32 l1Index, paddr_t l2Pa
 
     LOS_ListDelete(&vmPage->node);
     LOS_PhysPageFree(vmPage);
+#else
+    (VOID)LOS_MemFree(OS_SYS_MEM_ADDR, LOS_PaddrToKVaddr(l2Paddr));
+#endif
 }
 
 STATIC VOID OsTryUnmapL1PTE(const LosArchMmu *archMmu, vaddr_t vaddr, UINT32 scanIndex, UINT32 scanCount)
@@ -208,10 +212,10 @@ STATIC VOID OsTryUnmapL1PTE(const LosArchMmu *archMmu, vaddr_t vaddr, UINT32 sca
     }
 }
 
-/* convert user level mmu flags to L1 descriptors flags */
-STATIC UINT32 OsCvtSecFlagsToAttrs(UINT32 flags)
+STATIC UINT32 OsCvtSecCacheFlagsToMMUFlags(UINT32 flags)
 {
-    UINT32 mmuFlags = MMU_DESCRIPTOR_L1_SMALL_DOMAIN_CLIENT;
+    UINT32 mmuFlags = 0;
+
     switch (flags & VM_MAP_REGION_FLAG_CACHE_MASK) {
         case VM_MAP_REGION_FLAG_CACHED:
             mmuFlags |= MMU_DESCRIPTOR_L1_TYPE_NORMAL_WRITE_BACK_ALLOCATE;
@@ -219,9 +223,11 @@ STATIC UINT32 OsCvtSecFlagsToAttrs(UINT32 flags)
             mmuFlags |= MMU_DESCRIPTOR_L1_SECTION_SHAREABLE;
 #endif
             break;
-        case VM_MAP_REGION_FLAG_WRITE_COMBINING:
-        case VM_MAP_REGION_FLAG_UNCACHED:
+        case VM_MAP_REGION_FLAG_STRONGLY_ORDERED:
             mmuFlags |= MMU_DESCRIPTOR_L1_TYPE_STRONGLY_ORDERED;
+            break;
+        case VM_MAP_REGION_FLAG_UNCACHED:
+            mmuFlags |= MMU_DESCRIPTOR_L1_TYPE_NORMAL_NOCACHE;
             break;
         case VM_MAP_REGION_FLAG_UNCACHED_DEVICE:
             mmuFlags |= MMU_DESCRIPTOR_L1_TYPE_DEVICE_SHARED;
@@ -229,23 +235,51 @@ STATIC UINT32 OsCvtSecFlagsToAttrs(UINT32 flags)
         default:
             return LOS_ERRNO_VM_INVALID_ARGS;
     }
+    return mmuFlags;
+}
 
-    switch (flags & (VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_WRITE)) {
+STATIC UINT32 OsCvtSecAccessFlagsToMMUFlags(UINT32 flags)
+{
+    UINT32 mmuFlags = 0;
+
+    switch (flags & (VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE)) {
         case 0:
+            mmuFlags |= MMU_DESCRIPTOR_L1_AP_P_NA_U_NA;
+            break;
+        case VM_MAP_REGION_FLAG_PERM_READ:
+        case VM_MAP_REGION_FLAG_PERM_USER:
             mmuFlags |= MMU_DESCRIPTOR_L1_AP_P_RO_U_NA;
             break;
-        case VM_MAP_REGION_FLAG_PERM_WRITE:
-            mmuFlags |= MMU_DESCRIPTOR_L1_AP_P_RW_U_NA;
-            break;
-        case VM_MAP_REGION_FLAG_PERM_USER:
+        case VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ:
             mmuFlags |= MMU_DESCRIPTOR_L1_AP_P_RO_U_RO;
             break;
+        case VM_MAP_REGION_FLAG_PERM_WRITE:
+        case VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE:
+            mmuFlags |= MMU_DESCRIPTOR_L1_AP_P_RW_U_NA;
+            break;
         case VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_WRITE:
+        case VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE:
             mmuFlags |= MMU_DESCRIPTOR_L1_AP_P_RW_U_RW;
             break;
         default:
             break;
     }
+    return mmuFlags;
+}
+
+/* convert user level mmu flags to L1 descriptors flags */
+STATIC UINT32 OsCvtSecFlagsToAttrs(UINT32 flags)
+{
+    UINT32 mmuFlags;
+
+    mmuFlags = OsCvtSecCacheFlagsToMMUFlags(flags);
+    if (mmuFlags == LOS_ERRNO_VM_INVALID_ARGS) {
+        return mmuFlags;
+    }
+
+    mmuFlags |= MMU_DESCRIPTOR_L1_SMALL_DOMAIN_CLIENT;
+
+    mmuFlags |= OsCvtSecAccessFlagsToMMUFlags(flags);
 
     if (!(flags & VM_MAP_REGION_FLAG_PERM_EXECUTE)) {
         mmuFlags |= MMU_DESCRIPTOR_L1_SECTION_XN;
@@ -271,6 +305,9 @@ STATIC VOID OsCvtSecAttsToFlags(PTE_T l1Entry, UINT32 *flags)
 
     switch (l1Entry & MMU_DESCRIPTOR_L1_TEX_TYPE_MASK) {
         case MMU_DESCRIPTOR_L1_TYPE_STRONGLY_ORDERED:
+            *flags |= VM_MAP_REGION_FLAG_STRONGLY_ORDERED;
+            break;
+        case MMU_DESCRIPTOR_L1_TYPE_NORMAL_NOCACHE:
             *flags |= VM_MAP_REGION_FLAG_UNCACHED;
             break;
         case MMU_DESCRIPTOR_L1_TYPE_DEVICE_SHARED:
@@ -342,10 +379,12 @@ STATIC UINT32 OsUnmapSection(LosArchMmu *archMmu, vaddr_t *vaddr, UINT32 *count)
 //mmu 初始化 
 BOOL OsArchMmuInit(LosArchMmu *archMmu, VADDR_T *virtTtb)
 {
+#ifdef LOSCFG_KERNEL_VM
     if (OsAllocAsid(&archMmu->asid) != LOS_OK) {//分配一个asid,ASID可用来唯一标识进程
         VM_ERR("alloc arch mmu asid failed");//地址空间标识码（address-space identifier，ASID）为CP15协处理器 C13寄存器
         return FALSE;
     }
+#endif
 
     status_t retval = LOS_MuxInit(&archMmu->mtx, NULL);
     if (retval != LOS_OK) {
@@ -455,7 +494,6 @@ STATIC STATUS_T OsGetL2Table(LosArchMmu *archMmu, UINT32 l1Index, paddr_t *ppa)
     UINT32 index;
     PTE_T ttEntry;
     VADDR_T *kvaddr = NULL;
-    LosVmPage *vmPage = NULL;
     UINT32 l2Offset = (MMU_DESCRIPTOR_L2_SMALL_SIZE / MMU_DESCRIPTOR_L1_SMALL_L2_TABLES_PER_PAGE) *
         (l1Index & (MMU_DESCRIPTOR_L1_SMALL_L2_TABLES_PER_PAGE - 1));//计算偏移量,因为一个L2表最大是1K,而一个物理页框是4K,内核不铺张浪费把4个L2表放在一个页框中
     /* lookup an existing l2 page table *///查询已存在的L2表
@@ -468,14 +506,22 @@ STATIC STATUS_T OsGetL2Table(LosArchMmu *archMmu, UINT32 l1Index, paddr_t *ppa)
         }
     }
 
+#ifdef LOSCFG_KERNEL_VM
     /* not found: allocate one (paddr) */
-    vmPage = LOS_PhysPageAlloc();//分配一个物理页存 L2页
+    LosVmPage *vmPage = LOS_PhysPageAlloc();
     if (vmPage == NULL) {
         VM_ERR("have no memory to save l2 page");
         return LOS_ERRNO_VM_NO_MEMORY;
     }
-    LOS_ListAdd(&archMmu->ptList, &vmPage->node);//加了双循环链表,ptList的头结点就是 L1页表
-    kvaddr = OsVmPageToVaddr(vmPage);//获取页面的虚拟空间地址
+    LOS_ListAdd(&archMmu->ptList, &vmPage->node);
+    kvaddr = OsVmPageToVaddr(vmPage);
+#else
+    kvaddr = LOS_MemAlloc(OS_SYS_MEM_ADDR, MMU_DESCRIPTOR_L2_SMALL_SIZE);
+    if (kvaddr == NULL) {
+        VM_ERR("have no memory to save l2 page");
+        return LOS_ERRNO_VM_NO_MEMORY;
+    }
+#endif
     (VOID)memset_s(kvaddr, MMU_DESCRIPTOR_L2_SMALL_SIZE, 0, MMU_DESCRIPTOR_L2_SMALL_SIZE);
 
     /* get physical address */
@@ -500,21 +546,22 @@ STATIC VOID OsMapL1PTE(LosArchMmu *archMmu, PTE_T *pte1Ptr, vaddr_t vaddr, UINT3
     OsSavePte1(OsGetPte1Ptr(archMmu->virtTtb, vaddr), *pte1Ptr);//写入L1表
 }
 
-/* convert user level mmu flags to L2 descriptors flags */
-STATIC UINT32 OsCvtPte2FlagsToAttrs(uint32_t flags)//状态的转换(映射),从用户级标识到L2描述表的标识
+STATIC UINT32 OsCvtPte2CacheFlagsToMMUFlags(UINT32 flags)
 {
     UINT32 mmuFlags = 0;
 
     switch (flags & VM_MAP_REGION_FLAG_CACHE_MASK) {
-        case VM_MAP_REGION_FLAG_CACHED://缓冲区
+        case VM_MAP_REGION_FLAG_CACHED:
 #if (LOSCFG_KERNEL_SMP == YES)
             mmuFlags |= MMU_DESCRIPTOR_L2_SHAREABLE;
 #endif
             mmuFlags |= MMU_DESCRIPTOR_L2_TYPE_NORMAL_WRITE_BACK_ALLOCATE;
             break;
-        case VM_MAP_REGION_FLAG_WRITE_COMBINING:
-        case VM_MAP_REGION_FLAG_UNCACHED:
+        case VM_MAP_REGION_FLAG_STRONGLY_ORDERED:
             mmuFlags |= MMU_DESCRIPTOR_L2_TYPE_STRONGLY_ORDERED;
+            break;
+        case VM_MAP_REGION_FLAG_UNCACHED:
+            mmuFlags |= MMU_DESCRIPTOR_L2_TYPE_NORMAL_NOCACHE;
             break;
         case VM_MAP_REGION_FLAG_UNCACHED_DEVICE:
             mmuFlags |= MMU_DESCRIPTOR_L2_TYPE_DEVICE_SHARED;
@@ -522,23 +569,49 @@ STATIC UINT32 OsCvtPte2FlagsToAttrs(uint32_t flags)//状态的转换(映射),从
         default:
             return LOS_ERRNO_VM_INVALID_ARGS;
     }
+    return mmuFlags;
+}
 
-    switch (flags & (VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_WRITE)) {
+STATIC UINT32 OsCvtPte2AccessFlagsToMMUFlags(UINT32 flags)
+{
+    UINT32 mmuFlags = 0;
+
+    switch (flags & (VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE)) {
         case 0:
+            mmuFlags |= MMU_DESCRIPTOR_L1_AP_P_NA_U_NA;
+            break;
+        case VM_MAP_REGION_FLAG_PERM_READ:
+        case VM_MAP_REGION_FLAG_PERM_USER:
             mmuFlags |= MMU_DESCRIPTOR_L2_AP_P_RO_U_NA;
             break;
-        case VM_MAP_REGION_FLAG_PERM_WRITE:
-            mmuFlags |= MMU_DESCRIPTOR_L2_AP_P_RW_U_NA;
-            break;
-        case VM_MAP_REGION_FLAG_PERM_USER:
+        case VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ:
             mmuFlags |= MMU_DESCRIPTOR_L2_AP_P_RO_U_RO;
             break;
+        case VM_MAP_REGION_FLAG_PERM_WRITE:
+        case VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE:
+            mmuFlags |= MMU_DESCRIPTOR_L2_AP_P_RW_U_NA;
+            break;
         case VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_WRITE:
+        case VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE:
             mmuFlags |= MMU_DESCRIPTOR_L2_AP_P_RW_U_RW;
             break;
         default:
             break;
     }
+    return mmuFlags;
+}
+
+/* convert user level mmu flags to L2 descriptors flags */
+STATIC UINT32 OsCvtPte2FlagsToAttrs(UINT32 flags)
+{
+    UINT32 mmuFlags;
+
+    mmuFlags = OsCvtPte2CacheFlagsToMMUFlags(flags);
+    if (mmuFlags == LOS_ERRNO_VM_INVALID_ARGS) {
+        return mmuFlags;
+    }
+
+    mmuFlags |= OsCvtPte2AccessFlagsToMMUFlags(flags);
 
     if (!(flags & VM_MAP_REGION_FLAG_PERM_EXECUTE)) {
         mmuFlags |= MMU_DESCRIPTOR_L2_TYPE_SMALL_PAGE_XN;
@@ -630,8 +703,7 @@ STATUS_T LOS_ArchMmuChangeProt(LosArchMmu *archMmu, VADDR_T vaddr, size_t count,
 
         status = LOS_ArchMmuUnmap(archMmu, vaddr, 1);//2. 取消原有映射
         if (status < 0) {
-            VM_ERR("invalid args:aspace %p, vaddr %p, count %d",
-                   __FUNCTION__, __LINE__, archMmu, vaddr, count);
+            VM_ERR("invalid args:aspace %p, vaddr %p, count %d", archMmu, vaddr, count);
             return LOS_NOK;
         }
 
@@ -700,21 +772,26 @@ VOID LOS_ArchMmuContextSwitch(LosArchMmu *archMmu)
         ttbcr |= MMU_DESCRIPTOR_TTBCR_PD0;
     }
 
+#ifdef LOSCFG_KERNEL_VM
     /* from armv7a arm B3.10.4, we should do synchronization changes of ASID and TTBR. */
     OsArmWriteContextidr(LOS_GetKVmSpace()->archMmu.asid);//这里先把asid切到内核空间的ID
     ISB;
+#endif
     OsArmWriteTtbr0(ttbr);//通过r0寄存器将进程页面基址写入TTB
     ISB;
     OsArmWriteTtbcr(ttbcr);//写入TTB状态位
     ISB;
+#ifdef LOSCFG_KERNEL_VM
     if (archMmu) {
         OsArmWriteContextidr(archMmu->asid);//通过R0寄存器写入进程标识符至C13寄存器
         ISB;
     }
+#endif
 }
 
 STATUS_T LOS_ArchMmuDestroy(LosArchMmu *archMmu)
 {
+#ifdef LOSCFG_KERNEL_VM
     LosVmPage *page = NULL;
     /* free all of the pages allocated in archMmu->ptList */
     while ((page = LOS_ListRemoveHeadType(&archMmu->ptList, LosVmPage, node)) != NULL) {
@@ -723,6 +800,7 @@ STATUS_T LOS_ArchMmuDestroy(LosArchMmu *archMmu)
 
     OsArmWriteTlbiasid(archMmu->asid);
     OsFreeAsid(archMmu->asid);
+#endif
     (VOID)LOS_MuxDestroy(&archMmu->mtx);
     return LOS_OK;
 }
@@ -754,39 +832,36 @@ STATIC VOID OsSwitchTmpTTB(VOID)
     OsArmWriteTtbr0(kSpace->archMmu.physTtb | MMU_TTBRx_FLAGS);
     ISB;
 }
-//获取L1页表
-VADDR_T *OsGFirstTableGet()
-{
-    return (VADDR_T *)g_firstPageTable;//UINT8 g_firstPageTable[MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS]
-}
+
 //设置内核空间段属性,可看出内核空间是固定映射到物理地址
-STATIC VOID OsSetKSectionAttr(VOID)
+STATIC VOID OsSetKSectionAttr(UINTPTR virtAddr, BOOL uncached)
 {
+    UINT32 offset = virtAddr - KERNEL_VMM_BASE;
     /* every section should be page aligned */
-    UINTPTR textStart = (UINTPTR)&__text_start;//代码段开始位置
-    UINTPTR textEnd = (UINTPTR)&__text_end;//代码段结束位置
-    UINTPTR rodataStart = (UINTPTR)&__rodata_start;//常量只读段开始位置
-    UINTPTR rodataEnd = (UINTPTR)&__rodata_end;//常量只读段结束位置
-    UINTPTR ramDataStart = (UINTPTR)&__ram_data_start;//全局变量段开始位置
-    UINTPTR bssEnd = (UINTPTR)&__bss_end;//bss结束位置
+    UINTPTR textStart = (UINTPTR)&__text_start + offset;
+    UINTPTR textEnd = (UINTPTR)&__text_end + offset;
+    UINTPTR rodataStart = (UINTPTR)&__rodata_start + offset;
+    UINTPTR rodataEnd = (UINTPTR)&__rodata_end + offset;
+    UINTPTR ramDataStart = (UINTPTR)&__ram_data_start + offset;
+    UINTPTR bssEnd = (UINTPTR)&__bss_end + offset;
     UINT32 bssEndBoundary = ROUNDUP(bssEnd, MB);
     LosArchMmuInitMapping mmuKernelMappings[] = {
         {
-            .phys = SYS_MEM_BASE + textStart - KERNEL_VMM_BASE,//映射物理内存位置
+            .phys = SYS_MEM_BASE + textStart - virtAddr,
             .virt = textStart,//内核代码区
             .size = ROUNDUP(textEnd - textStart, MMU_DESCRIPTOR_L2_SMALL_SIZE),//代码区大小
             .flags = VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_EXECUTE,//代码段只读，可执行
             .name = "kernel_text"
         },
         {
-            .phys = SYS_MEM_BASE + rodataStart - KERNEL_VMM_BASE,//映射物理内存位置
+            .phys = SYS_MEM_BASE + rodataStart - virtAddr,
             .virt = rodataStart,//内核常量区
             .size = ROUNDUP(rodataEnd - rodataStart, MMU_DESCRIPTOR_L2_SMALL_SIZE),//4K对齐
             .flags = VM_MAP_REGION_FLAG_PERM_READ,//常量段只读
             .name = "kernel_rodata"
         },
         {
-            .phys = SYS_MEM_BASE + ramDataStart - KERNEL_VMM_BASE,//映射物理内存位置
+            .phys = SYS_MEM_BASE + ramDataStart - virtAddr,
             .virt = ramDataStart,
             .size = ROUNDUP(bssEndBoundary - ramDataStart, MMU_DESCRIPTOR_L2_SMALL_SIZE),
             .flags = VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE,//全局变量区可读可写
@@ -796,33 +871,39 @@ STATIC VOID OsSetKSectionAttr(VOID)
     LosVmSpace *kSpace = LOS_GetKVmSpace();//获取内核空间
     status_t status;
     UINT32 length;
-    paddr_t oldTtPhyBase;
     int i;
     LosArchMmuInitMapping *kernelMap = NULL;//内核映射
     UINT32 kmallocLength;
+    UINT32 flags;
 
     /* use second-level mapping of default READ and WRITE */
     kSpace->archMmu.virtTtb = (PTE_T *)g_firstPageTable;//__attribute__((section(".bss.prebss.translation_table"))) UINT8 g_firstPageTable[MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS];
     kSpace->archMmu.physTtb = LOS_PaddrQuery(kSpace->archMmu.virtTtb);//通过TTB虚拟地址查询TTB物理地址
-    status = LOS_ArchMmuUnmap(&kSpace->archMmu, KERNEL_VMM_BASE,
-                               (bssEndBoundary - KERNEL_VMM_BASE) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT);//解绑 bssEndBoundary - KERNEL_VMM_BASE 映射
-    if (status != ((bssEndBoundary - KERNEL_VMM_BASE) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {//解绑失败
+    status = LOS_ArchMmuUnmap(&kSpace->archMmu, virtAddr,
+                               (bssEndBoundary - virtAddr) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT);
+    if (status != ((bssEndBoundary - virtAddr) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
         VM_ERR("unmap failed, status: %d", status);
         return;
     }
-	//映射 textStart - KERNEL_VMM_BASE 区
-    status = LOS_ArchMmuMap(&kSpace->archMmu, KERNEL_VMM_BASE, SYS_MEM_BASE,
-                             (textStart - KERNEL_VMM_BASE) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT,
-                             VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE |
-                             VM_MAP_REGION_FLAG_PERM_EXECUTE);
-    if (status != ((textStart - KERNEL_VMM_BASE) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
+
+    flags = VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE | VM_MAP_REGION_FLAG_PERM_EXECUTE;
+    if (uncached) {
+        flags |= VM_MAP_REGION_FLAG_UNCACHED;
+    }
+    status = LOS_ArchMmuMap(&kSpace->archMmu, virtAddr, SYS_MEM_BASE,
+                             (textStart - virtAddr) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT,
+                             flags);
+    if (status != ((textStart - virtAddr) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
         VM_ERR("mmap failed, status: %d", status);
         return;
     }
 
     length = sizeof(mmuKernelMappings) / sizeof(LosArchMmuInitMapping);
-    for (i = 0; i < length; i++) {//对mmuKernelMappings一一映射好
+    for (i = 0; i < length; i++) {
         kernelMap = &mmuKernelMappings[i];
+	if (uncached) {
+	    flags |= VM_MAP_REGION_FLAG_UNCACHED;
+	}
         status = LOS_ArchMmuMap(&kSpace->archMmu, kernelMap->virt, kernelMap->phys,
                                  kernelMap->size >> MMU_DESCRIPTOR_L2_SMALL_SHIFT, kernelMap->flags);
         if (status != (kernelMap->size >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
@@ -832,16 +913,29 @@ STATIC VOID OsSetKSectionAttr(VOID)
         LOS_VmSpaceReserve(kSpace, kernelMap->size, kernelMap->virt);//保留区
     }
 	//将剩余空间映射好
-    kmallocLength = KERNEL_VMM_BASE + SYS_MEM_SIZE_DEFAULT - bssEndBoundary;
+    kmallocLength = virtAddr + SYS_MEM_SIZE_DEFAULT - bssEndBoundary;
+    flags = VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE;
+    if (uncached) {
+        flags |= VM_MAP_REGION_FLAG_UNCACHED;
+    }
     status = LOS_ArchMmuMap(&kSpace->archMmu, bssEndBoundary,
-                             SYS_MEM_BASE + bssEndBoundary - KERNEL_VMM_BASE,
+                             SYS_MEM_BASE + bssEndBoundary - virtAddr,
                              kmallocLength >> MMU_DESCRIPTOR_L2_SMALL_SHIFT,
-                             VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE);
+                             flags);
     if (status != (kmallocLength >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
-        VM_ERR("unmap failed, status: %d", status);
+        VM_ERR("mmap failed, status: %d", status);
         return;
     }
     LOS_VmSpaceReserve(kSpace, kmallocLength, bssEndBoundary);
+}
+
+STATIC VOID OsKSectionNewAttrEnable(VOID)
+{
+    LosVmSpace *kSpace = LOS_GetKVmSpace();
+    paddr_t oldTtPhyBase;
+
+    kSpace->archMmu.virtTtb = (PTE_T *)g_firstPageTable;
+    kSpace->archMmu.physTtb = LOS_PaddrQuery(kSpace->archMmu.virtTtb);
 
     /* we need free tmp ttbase */
     oldTtPhyBase = OsArmReadTtbr0();//读取TTB值
@@ -875,14 +969,12 @@ VOID OsInitMappingStartUp(VOID)
 
     OsSwitchTmpTTB();//切换到临时TTB
 
-    OsSetKSectionAttr();//设置内核段(text,rodata,bss)映射
+    OsSetKSectionAttr(KERNEL_VMM_BASE, FALSE);
+    OsSetKSectionAttr(UNCACHED_VMM_BASE, TRUE);
+    OsKSectionNewAttrEnable();
 
     OsArchMmuInitPerCPU();//初始化CPU与mmu相关信息
 }
+#endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 

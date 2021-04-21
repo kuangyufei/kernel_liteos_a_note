@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -35,6 +35,7 @@ LOCAL_SRCS := $(wildcard src/*.c) $(wildcard src/*.S)
 LOCAL_INCLUDE := \
 	-I $(LITEOSTOPDIR)/kernel/base/include \
 	-I $(LITEOSTOPDIR)/kernel/extended/include \
+	-I $(LITEOSTOPDIR)/kernel/extended/dynload/include \
 	-I $(LITEOSTOPDIR)/arch/arm/arm/include \
 
 ifeq ($(LITEOS_ARM_ARCH), -march=armv7-a)

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,10 +35,11 @@
 #include "user_copy.h"
 #include "los_printf.h"
 
-#define CAPABILITY_INIT_STAT            0xffffffff //能力范围的初始化值,用于划定进程的能力边界
+#define CAPABILITY_INIT_STAT            0xffffffff
 #define CAPABILITY_GET_CAP_MASK(x)      (1 << ((x) & 31))
 #define CAPABILITY_MAX                  31
-//进程是否拥有 参数 能力
+#define VALID_CAPS(a, b)                (((a) & (~(b))) != 0)
+
 BOOL IsCapPermit(UINT32 capIndex)
 {
     UINT32 capability = OsCurrProcessGet()->capability;
@@ -49,12 +50,12 @@ BOOL IsCapPermit(UINT32 capIndex)
 
     return (capability & (CAPABILITY_GET_CAP_MASK(capIndex)));
 }
-//初始化进程的能力
+
 VOID OsInitCapability(LosProcessCB *processCB)
 {
     processCB->capability = CAPABILITY_INIT_STAT;
 }
-//进程能力拷贝
+
 VOID OsCopyCapability(LosProcessCB *from, LosProcessCB *to)
 {
     UINT32 intSave;
@@ -63,31 +64,53 @@ VOID OsCopyCapability(LosProcessCB *from, LosProcessCB *to)
     to->capability = from->capability;
     SCHEDULER_UNLOCK(intSave);
 }
-//设置进程能力
+
 UINT32 SysCapSet(UINT32 caps)
 {
     UINT32 intSave;
 
-    if (!IsCapPermit(CAP_CAPSET)) {//是否有设置进程能力的能力
+    SCHEDULER_LOCK(intSave);
+    if (!IsCapPermit(CAP_CAPSET)) {
+        SCHEDULER_UNLOCK(intSave);
         return -EPERM;
     }
 
-    SCHEDULER_LOCK(intSave);//这种耗时很短的临界区用自旋锁
+    if (VALID_CAPS(caps, OsCurrProcessGet()->capability)) {
+        SCHEDULER_UNLOCK(intSave);
+        return -EPERM;
+    }
+
     OsCurrProcessGet()->capability = caps;
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
-//获取进程能力
-UINT32 SysCapGet(UINT32 *caps)
+
+UINT32 SysCapGet(pid_t pid, UINT32 *caps)
 {
     UINT32 intSave;
     UINT32 kCaps;
+    LosProcessCB *processCB = NULL;
+
+    if ((OS_PID_CHECK_INVALID((UINT32)pid))) {
+        return -EINVAL;
+    }
+
+    if (pid == 0) {
+        processCB = OsCurrProcessGet();
+    } else {
+        processCB = OS_PCB_FROM_PID(pid);
+    }
 
     SCHEDULER_LOCK(intSave);
-    kCaps = OsCurrProcessGet()->capability;
+    if (OsProcessIsInactive(processCB)) {
+        SCHEDULER_UNLOCK(intSave);
+        return -ESRCH;
+    }
+
+    kCaps = processCB->capability;
     SCHEDULER_UNLOCK(intSave);
 
-    if (LOS_ArchCopyToUser(caps, &kCaps, sizeof(UINT32)) != LOS_OK) {//完成从内核空间到用户空间的拷贝
+    if (LOS_ArchCopyToUser(caps, &kCaps, sizeof(UINT32)) != LOS_OK) {
         return -EFAULT;
     }
 

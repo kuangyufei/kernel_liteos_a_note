@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,12 +34,7 @@
 #include "los_queue_pri.h"
 #include "los_task_pri.h"
 #include "los_process_pri.h"
-
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#include "los_sched_pri.h"
 
 /******************************************************************************
 基本概念
@@ -204,6 +199,10 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
         if (ret != LOS_OK) {
             return LOS_ERRNO_SWTMR_HANDLER_POOL_NO_MEM;
         }
+        ret = OsSchedSwtmrScanRegister((SchedScan)OsSwtmrScan);
+        if (ret != LOS_OK) {
+            return ret;
+        }
     }
 	//每个CPU都会创建一个属于自己的 OS_SWTMR_HANDLE_QUEUE_SIZE 的队列
     ret = LOS_QueueCreate(NULL, OS_SWTMR_HANDLE_QUEUE_SIZE, &g_percpu[cpuid].swtmrHandlerQueue, 0, sizeof(CHAR *));//为当前CPU core 创建软时钟队列 maxMsgSize:sizeof(CHAR *)
@@ -230,22 +229,22 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
  */ //开始定时器
 LITE_OS_SEC_TEXT VOID OsSwtmrStart(SWTMR_CTRL_S *swtmr)
 {
-    if ((swtmr->ucOverrun == 0) && ((swtmr->ucMode == LOS_SWTMR_MODE_ONCE) ||
+    UINT32 ticks;
+    UINT64 currTime = OsGerCurrSchedTimeCycle();
+
+    if ((swtmr->uwOverrun == 0) && ((swtmr->ucMode == LOS_SWTMR_MODE_ONCE) ||
         (swtmr->ucMode == LOS_SWTMR_MODE_OPP) ||
         (swtmr->ucMode == LOS_SWTMR_MODE_NO_SELFDELETE))) {
-        SET_SORTLIST_VALUE(&(swtmr->stSortList), swtmr->uwExpiry);//设置一次性定时器的超时间隔
+        ticks = swtmr->uwExpiry;
     } else {
-        SET_SORTLIST_VALUE(&(swtmr->stSortList), swtmr->uwInterval);//设置周期性定时器的超时间隔
+        ticks = swtmr->uwInterval;
     }
+    swtmr->ucState = OS_SWTMR_STATUS_TICKING;
 
-    OsAdd2SortLink(&OsPercpuGet()->swtmrSortLink, &swtmr->stSortList);	//通过stSortList节点挂到CPU的软件定时器排序链表上
-
-    swtmr->ucState = OS_SWTMR_STATUS_TICKING;//定时器状态成正在 ticking 中
-
-#if (LOSCFG_KERNEL_SMP == YES)
-    swtmr->uwCpuid = ArchCurrCpuid();
-#endif
-
+    OsAdd2SortLink(&swtmr->stSortList, currTime, ticks, OS_SORT_LINK_SWTMR);
+    if (OS_SCHEDULER_ACTIVE) {
+        OsSchedUpdateExpireTime(currTime);
+    }
     return;
 }
 
@@ -261,64 +260,69 @@ STATIC INLINE VOID OsSwtmrDelete(SWTMR_CTRL_S *swtmr)
     swtmr->uwOwnerPid = 0;//谁拥有这个定时器? 是 0号进程, 0号进程出来了,竟然是虚拟的一个进程.用于这类缓冲使用.
 }
 
+STATIC INLINE VOID OsWakePendTimeSwtmr(Percpu *cpu, SWTMR_CTRL_S *swtmr)
+{
+    LOS_SpinLock(&g_swtmrSpin);
+    SwtmrHandlerItemPtr swtmrHandler = (SwtmrHandlerItemPtr)LOS_MemboxAlloc(g_swtmrHandlerPool);
+    if (swtmrHandler != NULL) {
+        swtmrHandler->handler = swtmr->pfnHandler;
+        swtmrHandler->arg = swtmr->uwArg;
+
+        if (LOS_QueueWrite(cpu->swtmrHandlerQueue, swtmrHandler, sizeof(CHAR *), LOS_NO_WAIT)) {
+            (VOID)LOS_MemboxFree(g_swtmrHandlerPool, swtmrHandler);
+        }
+    }
+
+    if (swtmr->ucMode == LOS_SWTMR_MODE_ONCE) {
+        OsSwtmrDelete(swtmr);
+
+        if (swtmr->usTimerID < (OS_SWTMR_MAX_TIMERID - LOSCFG_BASE_CORE_SWTMR_LIMIT)) {
+            swtmr->usTimerID += LOSCFG_BASE_CORE_SWTMR_LIMIT;
+        } else {
+            swtmr->usTimerID %= LOSCFG_BASE_CORE_SWTMR_LIMIT;
+        }
+    } else if (swtmr->ucMode == LOS_SWTMR_MODE_NO_SELFDELETE) {
+        swtmr->ucState = OS_SWTMR_STATUS_CREATED;
+    } else {
+        swtmr->uwOverrun++;
+        OsSwtmrStart(swtmr);
+    }
+
+    LOS_SpinUnlock(&g_swtmrSpin);
+}
 /*
  * Description: Tick interrupt interface module of software timer
  * Return     : LOS_OK on success or error code on failure
  *///OsSwtmrScan 由系统时钟中断处理函数调用
 LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)//扫描定时器,如果碰到超时的,就放入超时队列
 {
-    SortLinkList *sortList = NULL;
-    SWTMR_CTRL_S *swtmr = NULL;
-    SwtmrHandlerItemPtr swtmrHandler = NULL;
-    LOS_DL_LIST *listObject = NULL;
-    SortLinkAttribute* swtmrSortLink = &OsPercpuGet()->swtmrSortLink;//拿到当前CPU的定时器链表
+    Percpu *cpu = OsPercpuGet();
+    SortLinkAttribute* swtmrSortLink = &OsPercpuGet()->swtmrSortLink;
+    LOS_DL_LIST *listObject = &swtmrSortLink->sortLink;
 
-    swtmrSortLink->cursor = (swtmrSortLink->cursor + 1) & OS_TSK_SORTLINK_MASK;
-    listObject = swtmrSortLink->sortLink + swtmrSortLink->cursor;
-	//由于swtmr是在特定的sortlink中，所以需要很小心的处理它,但其他CPU Core仍然有机会处理它，比如停止计时器
     /*
      * it needs to be carefully coped with, since the swtmr is in specific sortlink
      * while other cores still has the chance to process it, like stop the timer.
      */
-    LOS_SpinLock(&g_swtmrSpin);
+    LOS_SpinLock(&cpu->swtmrSortLinkSpin);
 
     if (LOS_ListEmpty(listObject)) {
-        LOS_SpinUnlock(&g_swtmrSpin);
+        LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
         return;
     }
-    sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-    ROLLNUM_DEC(sortList->idxRollNum);
+    SortLinkList *sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
 
-    while (ROLLNUM(sortList->idxRollNum) == 0) {
+    UINT64 currTime = OsGerCurrSchedTimeCycle();
+    while (sortList->responseTime <= currTime) {
         sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-        LOS_ListDelete(&sortList->sortLinkNode);
-        swtmr = LOS_DL_LIST_ENTRY(sortList, SWTMR_CTRL_S, stSortList);
+        OsDeleteNodeSortLink(swtmrSortLink, sortList);
 
-        swtmrHandler = (SwtmrHandlerItemPtr)LOS_MemboxAlloc(g_swtmrHandlerPool);//取出一个可用的软时钟处理项
-        if (swtmrHandler != NULL) {
-            swtmrHandler->handler = swtmr->pfnHandler;
-            swtmrHandler->arg = swtmr->uwArg;
+        SWTMR_CTRL_S *swtmr = LOS_DL_LIST_ENTRY(sortList, SWTMR_CTRL_S, stSortList);
+        LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
 
-            if (LOS_QueueWrite(OsPercpuGet()->swtmrHandlerQueue, swtmrHandler, sizeof(CHAR *), LOS_NO_WAIT)) {
-                (VOID)LOS_MemboxFree(g_swtmrHandlerPool, swtmrHandler);
-            }
-        }
+        OsWakePendTimeSwtmr(cpu, swtmr);
 
-        if (swtmr->ucMode == LOS_SWTMR_MODE_ONCE) {
-            OsSwtmrDelete(swtmr);
-
-            if (swtmr->usTimerID < (OS_SWTMR_MAX_TIMERID - LOSCFG_BASE_CORE_SWTMR_LIMIT)) {
-                swtmr->usTimerID += LOSCFG_BASE_CORE_SWTMR_LIMIT;
-            } else {
-                swtmr->usTimerID %= LOSCFG_BASE_CORE_SWTMR_LIMIT;
-            }
-        } else if (swtmr->ucMode == LOS_SWTMR_MODE_NO_SELFDELETE) {
-            swtmr->ucState = OS_SWTMR_STATUS_CREATED;
-        } else {
-            swtmr->ucOverrun++;
-            OsSwtmrStart(swtmr);
-        }
-
+        LOS_SpinLock(&cpu->swtmrSortLinkSpin);
         if (LOS_ListEmpty(listObject)) {
             break;
         }
@@ -326,7 +330,7 @@ LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)//扫描定时器,如果碰到超时的,�
         sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
     }
 
-    LOS_SpinUnlock(&g_swtmrSpin);
+    LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
 }
 
 /*
@@ -341,24 +345,17 @@ LITE_OS_SEC_TEXT UINT32 OsSwtmrGetNextTimeout(VOID)//获取下一个timeout
 /*
  * Description: Stop of Software Timer interface
  * Input      : swtmr --- the software timer contrl handler
- */ //停止定时器
+ */
 LITE_OS_SEC_TEXT STATIC VOID OsSwtmrStop(SWTMR_CTRL_S *swtmr)
 {
-    SortLinkAttribute *sortLinkHeader = NULL;
+    OsDeleteSortLink(&swtmr->stSortList, OS_SORT_LINK_SWTMR);
 
-#if (LOSCFG_KERNEL_SMP == YES)
-    /*
-     * the timer is running on the specific processor,	//计时器正在特定处理器上运行
-     * we need delete the timer from that processor's sortlink. //我们需要从处理器的sortlink中删除计时器
-     */
-    sortLinkHeader = &g_percpu[swtmr->uwCpuid].swtmrSortLink;//找到定时器所属CPU的 sortlind
-#else
-    sortLinkHeader = &g_percpu[0].swtmrSortLink;
-#endif
-    OsDeleteSortLink(sortLinkHeader, &swtmr->stSortList);//将自己摘出去
+    swtmr->ucState = OS_SWTMR_STATUS_CREATED;
+    swtmr->uwOverrun = 0;
 
-    swtmr->ucState = OS_SWTMR_STATUS_CREATED;//状态变成已创建,又可以再利用.
-    swtmr->ucOverrun = 0;//计次器清0
+    if (OS_SCHEDULER_ACTIVE) {
+        OsSchedUpdateExpireTime(OsGerCurrSchedTimeCycle());
+    }
 }
 
 /*
@@ -367,19 +364,7 @@ LITE_OS_SEC_TEXT STATIC VOID OsSwtmrStop(SWTMR_CTRL_S *swtmr)
  */
 LITE_OS_SEC_TEXT STATIC UINT32 OsSwtmrTimeGet(const SWTMR_CTRL_S *swtmr)
 {
-    SortLinkAttribute *sortLinkHeader = NULL;
-
-#if (LOSCFG_KERNEL_SMP == YES)
-    /*
-     * the timer is running on the specific processor,
-     * we need search the timer from that processor's sortlink.
-     */
-    sortLinkHeader = &g_percpu[swtmr->uwCpuid].swtmrSortLink;
-#else
-    sortLinkHeader = &g_percpu[0].swtmrSortLink;
-#endif
-
-    return OsSortLinkGetTargetExpireTime(sortLinkHeader, &swtmr->stSortList);
+    return OsSortLinkGetTargetExpireTime(&swtmr->stSortList);
 }
 //创建定时器，设置定时器的定时时长、定时器模式、回调函数，并返回定时器ID
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_SwtmrCreate(UINT32 interval,
@@ -423,12 +408,12 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_SwtmrCreate(UINT32 interval,
     swtmr->uwOwnerPid = OsCurrProcessGet()->processID;//定时器进程归属设定
     swtmr->pfnHandler = handler;//时间到了的回调函数
     swtmr->ucMode = mode;	//定时器模式
-    swtmr->ucOverrun = 0;	//重复计时的次数
+    swtmr->uwOverrun = 0;
     swtmr->uwInterval = interval;	//周期性超时间隔
     swtmr->uwExpiry = interval;		//一次性超时间隔
     swtmr->uwArg = arg;				//回调函数的参数
     swtmr->ucState = OS_SWTMR_STATUS_CREATED;	//已创建状态
-    SET_SORTLIST_VALUE(&(swtmr->stSortList), 0);
+    SET_SORTLIST_VALUE(&swtmr->stSortList, OS_SORT_LINK_INVALID_TIME);
     *swtmrID = swtmr->usTimerID;
 
     return LOS_OK;
@@ -445,10 +430,10 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStart(UINT16 swtmrID)
         return LOS_ERRNO_SWTMR_ID_INVALID;
     }
 
-    SWTMR_LOCK(intSave);
     swtmrCBID = swtmrID % LOSCFG_BASE_CORE_SWTMR_LIMIT;//取模
     swtmr = g_swtmrCBArray + swtmrCBID;//获取定时器控制结构体
 
+    SWTMR_LOCK(intSave);
     if (swtmr->usTimerID != swtmrID) {//ID必须一样
         SWTMR_UNLOCK(intSave);
         return LOS_ERRNO_SWTMR_ID_INVALID;
@@ -488,9 +473,9 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStop(UINT16 swtmrID)
         return LOS_ERRNO_SWTMR_ID_INVALID;
     }
 
-    SWTMR_LOCK(intSave);
     swtmrCBID = swtmrID % LOSCFG_BASE_CORE_SWTMR_LIMIT;//取模
     swtmr = g_swtmrCBArray + swtmrCBID;//获取定时器控制结构体
+    SWTMR_LOCK(intSave);
 
     if (swtmr->usTimerID != swtmrID) {//ID必须一样
         SWTMR_UNLOCK(intSave);
@@ -531,9 +516,9 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrTimeGet(UINT16 swtmrID, UINT32 *tick)
         return LOS_ERRNO_SWTMR_TICK_PTR_NULL;
     }
 
-    SWTMR_LOCK(intSave);
     swtmrCBID = swtmrID % LOSCFG_BASE_CORE_SWTMR_LIMIT;//取模
     swtmr = g_swtmrCBArray + swtmrCBID;//获取定时器控制结构体
+    SWTMR_LOCK(intSave);
 
     if (swtmr->usTimerID != swtmrID) {//ID必须一样
         SWTMR_UNLOCK(intSave);
@@ -568,9 +553,9 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrDelete(UINT16 swtmrID)
         return LOS_ERRNO_SWTMR_ID_INVALID;
     }
 
-    SWTMR_LOCK(intSave);
     swtmrCBID = swtmrID % LOSCFG_BASE_CORE_SWTMR_LIMIT;//取模
     swtmr = g_swtmrCBArray + swtmrCBID;//获取定时器控制结构体
+    SWTMR_LOCK(intSave);
 
     if (swtmr->usTimerID != swtmrID) {//ID必须一样
         SWTMR_UNLOCK(intSave);
@@ -598,8 +583,3 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrDelete(UINT16 swtmrID)
 
 #endif /* (LOSCFG_BASE_CORE_SWTMR == YES) */
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

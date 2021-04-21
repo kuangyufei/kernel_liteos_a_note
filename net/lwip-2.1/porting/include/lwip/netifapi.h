@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -45,6 +45,7 @@ err_t netifapi_dhcps_stop(struct netif *netif);
 #define netifapi_dhcp_is_bound(n)         netifapi_netif_common(n, NULL, dhcp_is_bound)
 
 void netifapi_netif_rmv_ip6_address(struct netif *netif, ip_addr_t *ipaddr);
+struct netif *netifapi_netif_find_by_name(const char *name);
 
 #ifndef __LWIP__
 #define netifapi_netif_add(a, b, c, d)       netifapi_netif_add(a, b, c, d, (a)->state, driverif_init, tcpip_input)

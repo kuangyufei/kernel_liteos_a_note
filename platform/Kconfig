@@ -2,14 +2,31 @@ config PLATFORM
     string
     default "hi3516dv300"     if PLATFORM_HI3516DV300
     default "hi3518ev300"     if PLATFORM_HI3518EV300
+    default "virt"            if PLATFORM_QEMU_ARM_VIRT_CA7
+
+config PRODUCT_NAME
+    string "unknown"
+    default "ipcamera_hi3516dv300_liteos" if PRODUCT_IPCAMERA_HI3516DV300_LITEOS
+    default "ipcamera_hi3518ev300_liteos" if PRODUCT_IPCAMERA_HI3518EV300_LITEOS
+    default "hispark_taurus" if PRODUCT_HISPARK_TAURUS
+    default "hispark_aries" if PRODUCT_HISPARK_ARIES
+    default "arm_virt" if PRODUCT_QEMU_ARM
+
+config DEVICE_COMPANY
+    string "unknown"
+    default "hisilicon" if PLATFORM_HI3516DV300
+    default "hisilicon" if PLATFORM_HI3518EV300
+    default "qemu" if PLATFORM_QEMU_ARM_VIRT_CA7
 
 choice
-    prompt "Board"
+    prompt "Chip"
     default PLATFORM_HI3516DV300
     help
       IPC has several chips:
       hi3516dv300
       hi3518ev300
+      Qemu ARM Virt variants (based on different CPU types):
+      qemu_arm_virt_ca7
 
 config PLATFORM_HI3516DV300
     bool "hi3516dv300"
@@ -19,7 +36,36 @@ config PLATFORM_HI3518EV300
     bool "hi3518ev300"
     select ARCH_CORTEX_A7
 
+config PLATFORM_QEMU_ARM_VIRT_CA7
+    bool "qemu_arm_virt_ca7"
+    select ARCH_CORTEX_A7
+    help
+        QEMU ARM Virtual Platform using Cortex-A7 CPU.
+
 endchoice
+
+choice
+    prompt "Porduct"
+    help
+      Select your target board.
+
+config PRODUCT_IPCAMERA_HI3516DV300_LITEOS
+    bool "ipcamera_hi3516dv300_liteos" if PLATFORM_HI3516DV300
+config PRODUCT_HISPARK_TAURUS
+    bool "hispark_taurus" if PLATFORM_HI3516DV300
+
+config PRODUCT_IPCAMERA_HI3518EV300_LITEOS
+    bool "ipcamera_hi3518ev300_liteos" if PLATFORM_HI3518EV300
+config PRODUCT_HISPARK_ARIES
+    bool "hispark_aries" if PLATFORM_HI3518EV300
+
+config PRODUCT_QEMU_ARM
+    bool "arm_virt" if PLATFORM_QEMU_ARM_VIRT_CA7
+endchoice
+
+config BOARD_CONFIG_PATH
+    string "BOARD CONFIG PATH"
+    default "config/board"
 
 config TEE_ENABLE
     bool "ENABLE TEE"
@@ -28,22 +74,9 @@ config TEE_ENABLE
     help
         ENABLE teeos in platform
 
-choice
-    prompt "IRQCHIP"
-    default PLATFORM_BSP_GIC_V2
+config HRTIMER_ENABLE
+    bool "HR TIMER enable"
+    default y
     help
-      Interrupt Controller.
+      Enable High-resolution timer support
 
-config PLATFORM_BSP_GIC_V2
-    bool "GIC Version 2"
-    help
-      This GIC(General Interrupt Controller) version 2 driver is compatatble with
-      GIC version 1 and version 2.
-
-config PLATFORM_BSP_GIC_V3
-    bool "GIC Version 3"
-    depends on ARCH_ARM_V8A || ARCH_ARM_V8R
-    help
-      General Interrupt Controller version 3.
-
-endchoice

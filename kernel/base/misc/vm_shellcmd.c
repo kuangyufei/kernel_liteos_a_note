@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -42,12 +42,10 @@
 #include "los_oom.h"
 #include "los_vm_dump.h"
 #include "los_process_pri.h"
+#include "fs/path_cache.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+
+#ifdef LOSCFG_KERNEL_VM
 
 #define ARGC_2             2
 #define ARGC_1             1
@@ -152,7 +150,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdV2P(INT32 argc, const CHAR *argv[])
     } else if (argc == 2) {
         pid_t pid = OsPid(argv[0]);
         vaddr = strtoul((CHAR *)argv[1], &endPtr, 0);
-        if ((endPtr == NULL) || (*endPtr != 0)) {
+        if ((endPtr == NULL) || (*endPtr != 0) || !LOS_IsUserAddress(vaddr)) {
             PRINTK("vaddr %s invalid. should be in range(0x1000000~0x3e000000) \n", argv[1]);
             return OS_ERROR;
         } else {
@@ -186,6 +184,8 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpPmm(VOID)
 {
     OsVmPhysDump();
 
+    PathCacheMemoryDump();
+    VnodeMemoryDump();
     return OS_ERROR;
 }
 
@@ -258,9 +258,5 @@ SHELLCMD_ENTRY(v2p_shellcmd, CMD_TYPE_SHOW, VMM_PMM_CMD, 1, (CmdCallBackFunc)OsS
 #ifdef LOSCFG_SHELL
 SHELLCMD_ENTRY(pmm_shellcmd, CMD_TYPE_SHOW, "pmm", 0, (CmdCallBackFunc)OsShellCmdDumpPmm);//采用shell命令静态注册方式
 #endif
+#endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

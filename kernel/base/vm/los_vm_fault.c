@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -45,17 +45,19 @@
 #include "los_process_pri.h"
 #include "arm.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+
+#ifdef LOSCFG_KERNEL_VM
 
 extern char __exc_table_start[];
 extern char __exc_table_end[];
 //线性区正确性检查
 STATIC STATUS_T OsVmRegionRightCheck(LosVmMapRegion *region, UINT32 flags)
 {
+    if ((region->regionFlags & VM_MAP_REGION_FLAG_PERM_READ) != VM_MAP_REGION_FLAG_PERM_READ) {
+        VM_ERR("read permission check failed operation flags %x, region flags %x", flags, region->regionFlags);
+        return LOS_NOK;
+    }
+
     if ((flags & VM_MAP_PF_FLAG_WRITE) == VM_MAP_PF_FLAG_WRITE) {//写入许可
         if ((region->regionFlags & VM_MAP_REGION_FLAG_PERM_WRITE) != VM_MAP_REGION_FLAG_PERM_WRITE) {
             VM_ERR("write permission check failed operation flags %x, region flags %x", flags, region->regionFlags);
@@ -77,10 +79,6 @@ STATIC VOID OsFaultTryFixup(ExcContext *frame, VADDR_T excVaddr, STATUS_T *statu
 {
     INT32 tableNum = (__exc_table_end - __exc_table_start) / sizeof(LosExcTable);
     LosExcTable *excTable = (LosExcTable *)__exc_table_start;
-#ifdef LOSCFG_DEBUG_VERSION
-    LosVmSpace *space = NULL;
-    VADDR_T vaddr;
-#endif
 
     if ((frame->regCPSR & CPSR_MODE_MASK) != CPSR_MODE_USR) {
         for (int i = 0; i < tableNum; ++i, ++excTable) {
@@ -92,14 +90,6 @@ STATIC VOID OsFaultTryFixup(ExcContext *frame, VADDR_T excVaddr, STATUS_T *statu
             }
         }
     }
-
-#ifdef LOSCFG_DEBUG_VERSION
-    vaddr = ROUNDDOWN(excVaddr, PAGE_SIZE);
-    space = LOS_SpaceGet(vaddr);
-    if (space != NULL) {
-        LOS_DumpMemRegion(vaddr);
-    }
-#endif
 }
 
 #ifdef LOSCFG_FS_VFS 
@@ -133,7 +123,7 @@ STATIC STATUS_T OsDoReadFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)//
         ret = LOS_ArchMmuMap(&space->archMmu, vaddr, paddr, 1,
                              region->regionFlags & (~VM_MAP_REGION_FLAG_PERM_WRITE));//重新映射为非可写
         if (ret < 0) {
-            VM_ERR("LOS_ArchMmuMap fial");
+            VM_ERR("LOS_ArchMmuMap failed");
             OsDelMapInfo(region, vmPgFault, false);
             (VOID)LOS_MuxRelease(&region->unTypeData.rf.file->f_mapping->mux_lock);
             return LOS_ERRNO_VM_NO_MEMORY;
@@ -236,7 +226,7 @@ status_t OsDoCowFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
 
     ret = LOS_ArchMmuMap(&space->archMmu, (VADDR_T)vmPgFault->vaddr, newPaddr, 1, region->regionFlags);//把新物理地址映射给缺页的虚拟地址,这样就不会缺页啦
     if (ret < 0) {
-        VM_ERR("LOS_ArchMmuMap fial");
+        VM_ERR("LOS_ArchMmuMap failed");
         ret =  LOS_ERRNO_VM_NO_MEMORY;
         (VOID)LOS_MuxRelease(&region->unTypeData.rf.file->f_mapping->mux_lock);
         goto ERR_OUT;
@@ -466,9 +456,5 @@ DONE:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return status;
 }
+#endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,16 +35,23 @@
 #include <net/if.h> // For IFNAMSIZ/IF_NAMESIZE and `struct ifreq', by `lwip/netif.h' and `api/sockets.c'
 #include <netinet/ip.h> // For IP_OFFMASK, by `core/ipv4/ip4_frag.c'
 
-struct dhcps;
+#define netif_find netifapi_netif_find_by_name
+
+#if LWIP_DHCPS
+#define LWIP_NETIF_CLIENT_DATA_INDEX_DHCP   LWIP_NETIF_CLIENT_DATA_INDEX_DHCP, \
+                                            LWIP_NETIF_CLIENT_DATA_INDEX_DHCPS
+#endif
 #define linkoutput      linkoutput; \
                         void (*drv_send)(struct netif *netif, struct pbuf *p); \
                         u8_t (*drv_set_hwaddr)(struct netif *netif, u8_t *addr, u8_t len); \
                         void (*drv_config)(struct netif *netif, u32_t config_flags, u8_t setBit); \
-                        struct dhcps *dhcps; \
                         char full_name[IFNAMSIZ]; \
                         u16_t link_layer_type
 #include_next <lwip/netif.h>
 #undef linkoutput
+#if LWIP_DHCPS
+#undef LWIP_NETIF_CLIENT_DATA_INDEX_DHCP
+#endif
 
 #include <lwip/etharp.h> // For ETHARP_HWADDR_LEN, by `hieth-sf src/interface.c' and `wal/wal_net.c'
 
@@ -64,9 +71,7 @@ err_t driverif_init(struct netif *netif);
 void driverif_input(struct netif *netif, struct pbuf *p);
 
 #ifndef __LWIP__
-struct netif *netifapi_netif_find_by_name(const char *name);
-#define PF_PKT_SUPPORT              1 // For netif->drv_config
-#define netif_find(name)            netifapi_netif_find_by_name(name)
+#define PF_PKT_SUPPORT              LWIP_NETIF_PROMISC
 #define netif_add(a, b, c, d)       netif_add(a, b, c, d, (a)->state, driverif_init, tcpip_input)
 #else /* __LWIP__ */
 #define netif_get_name(netif)       ((netif)->full_name)

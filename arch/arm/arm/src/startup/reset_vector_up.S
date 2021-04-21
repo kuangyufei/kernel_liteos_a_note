@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -55,7 +55,7 @@ ISB		指令同步隔离。最严格：它会清洗流水线，以保证所有它
     .global __svc_stack_top
     .global __abt_stack_top
     .global __undef_stack_top
-    .global __exc_stack 
+    .global __exc_stack
     .global __irq_stack
     .global __fiq_stack
     .global __svc_stack
@@ -65,7 +65,6 @@ ISB		指令同步隔离。最严格：它会清洗流水线，以保证所有它
     .extern __bss_start
     .extern __bss_end
     .extern hal_clock_initialize_start
-    .extern los_bss_init
     .extern _osExceptFiqHdl
     .extern _osExceptAddrAbortHdl
     .extern _osExceptDataAbortHdl
@@ -78,7 +77,9 @@ ISB		指令同步隔离。最严格：它会清洗流水线，以保证所有它
 
     .equ MPIDR_CPUID_MASK, 0xffU
 
-    .fpu vfpv4
+    .fpu neon-vfpv4
+    .syntax unified
+    .arch armv7-a
     .arm
 /* 设置异常模式栈的SP 参数1为栈底, 参数2为栈大小 r11 存放的是 cpu id */
 /* param0 is stack bottom, param1 is stack size, r11 hold cpu id */
@@ -131,6 +132,20 @@ reset_vector: @单核cpu时,鸿蒙开机代码
     bic     r0, #(1<<2 | 1<<0)
     mcr     p15, 0, r0, c1, c0, 0
 
+    /* enable fpu+neon */
+#ifndef LOSCFG_TEE_ENABLE
+    MRC    p15, 0, r0, c1, c1, 2
+    ORR    r0, r0, #0xC00
+    BIC    r0, r0, #0xC000
+    MCR    p15, 0, r0, c1, c1, 2
+
+    LDR    r0, =(0xF << 20)
+    MCR    p15, 0, r0, c1, c0, 2
+    ISB
+#endif
+    MOV    r3, #0x40000000
+    VMSR   FPEXC, r3
+
     /* r11: delta of physical address and virtual address */
     adr     r11, pa_va_offset
     ldr     r0, [r11]
@@ -158,12 +173,16 @@ reloc_img_to_bottom_loop:
     sub     r11, r11, r12                       /* r11: eventual address offset */
 
 reloc_img_to_bottom_done:
+#ifdef LOSCFG_KERNEL_MMU
     ldr     r4, =g_firstPageTable               /* r4: physical address of translation table and clear it */
     add     r4, r4, r11
-    bl      page_table_clear @清除页表
+    mov     r0, r4
+    mov     r1, #0
+    mov     r2, #MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS
+    bl      memset_optimized                    /* optimized memset since r0 is 64-byte aligned */
 
     PAGE_TABLE_SET SYS_MEM_BASE, KERNEL_VMM_BASE, KERNEL_VMM_SIZE, MMU_DESCRIPTOR_KERNEL_L1_PTE_FLAGS
-    PAGE_TABLE_SET SYS_MEM_BASE, UNCACHED_VMM_BASE, UNCACHED_VMM_SIZE, MMU_INITIAL_MAP_STRONGLY_ORDERED
+    PAGE_TABLE_SET SYS_MEM_BASE, UNCACHED_VMM_BASE, UNCACHED_VMM_SIZE, MMU_INITIAL_MAP_NORMAL_NOCACHE
     PAGE_TABLE_SET PERIPH_PMM_BASE, PERIPH_DEVICE_BASE, PERIPH_DEVICE_SIZE, MMU_INITIAL_MAP_DEVICE
     PAGE_TABLE_SET PERIPH_PMM_BASE, PERIPH_CACHED_BASE, PERIPH_CACHED_SIZE, MMU_DESCRIPTOR_KERNEL_L1_PTE_FLAGS
     PAGE_TABLE_SET PERIPH_PMM_BASE, PERIPH_UNCACHED_BASE, PERIPH_UNCACHED_SIZE, MMU_INITIAL_MAP_STRONGLY_ORDERED
@@ -173,7 +192,6 @@ reloc_img_to_bottom_done:
     add     r4, r4, r11
     ldr     r4, [r4]
     add     r4, r4, r11                         /* r4: jump pagetable paddr */
-    bl      page_table_clear
 
     /* build 1M section mapping, in order to jump va during turing on mmu:pa == pa, va == pa */
     mov     r6, pc
@@ -186,7 +204,7 @@ reloc_img_to_bottom_done:
     str     r12, [r4, r7, lsr #(20 - 2)]        /* jumpTable[vaIndex] = pt entry */
 
     bl      mmu_setup                           /* set up the mmu */
-
+#endif
     /* get cpuid and keep it in r11 */
     mrc     p15, 0, r11, c0, c0, 5
     and     r11, r11, #MPIDR_CPUID_MASK
@@ -258,14 +276,11 @@ warm_reset:	@初始化5大中断/异常环境
     bne    cpu_start @不是0号时,跳到cpu_start启动次级CPU
 
 clear_bss:
-    ldr    r1, =__bss_start @r1=__bss_start
-    ldr    r2, =__bss_end @r2=__bss_end
-    mov    r0, #0	@r0=0
-
-bss_loop:
-    cmp    r1, r2 @比较R1和R2
-    strlo  r0, [r1], #4
-    blo    bss_loop
+    ldr    r0, =__bss_start
+    ldr    r2, =__bss_end
+    mov    r1, #0
+    sub    r2, r2, r0
+    bl     memset
 
 #if defined(LOSCFG_CC_STACKPROTECTOR_ALL) || \
     defined(LOSCFG_CC_STACKPROTECTOR_STRONG) || \
@@ -302,6 +317,7 @@ C8 :TLB 控制
 C9 :高速缓存锁定
 C10:TLB 锁定
 ******************************************************************************/
+#ifdef LOSCFG_KERNEL_MMU
 mmu_setup: //安装MMU
     mov     r12, #0 @r12=0 ,这么做的目的是为了下一条语句,C15协处理只能通过寄存器赋值								
     mcr     p15, 0, r12, c8, c7, 0              /* Set c8 to control the TLB and set the mapping to invalid *//*设置C8,C7=0以控制TLB,将映射设置为无效*/
@@ -338,7 +354,7 @@ mmu_setup: //安装MMU
 
     sub     lr,  r11                            /* adjust lr with delta of physical address and virtual address */
     bx      lr
-
+#endif
     .code  32
 
     .global reset_platform
@@ -370,20 +386,6 @@ sp_set:
     bx     lr          /* set sp */ @跳回去继续执行
 
 /*
- * r4: page table base address 页表基地址
- * r5 and r6 will be used as variable r5和r6将用作变量
- */
-page_table_clear: @清除页表
-    mov     r5, #0 @r5 = 0
-    mov     r6, #0 @r6 = 0
-0:
-    str     r5, [r4, r6, lsl #2]
-    add     r6, #1 @r6++
-    cmp     r6, #0x1000                         /* r6 < 4096 */
-    blt     0b @小于 跳转到0,相当于条件循环
-    bx      lr
-
-/*
  * r4: page table base address
  * r6: physical address
  * r7: virtual address
@@ -391,6 +393,7 @@ page_table_clear: @清除页表
  * r10: flags
  * r9 and r12 will be used as variable
  */
+#ifdef LOSCFG_KERNEL_MMU
 page_table_build: @构建页面
     mov     r9, r6
     bfc     r9, #20, #12                        /* r9: pa % MB */
@@ -409,7 +412,7 @@ page_table_build_loop:
     subs    r8, #1                              /* sizes-- */
     bne     page_table_build_loop
     bx      lr
-
+#endif
 /*
  * init stack to initial value
  * r0 is stack mem start, r1 is stack mem end
@@ -462,6 +465,19 @@ _bootaddr_setup:
 
     bx      lr
 
+#ifdef LOSCFG_KERNEL_MMU
+memset_optimized:
+    mov     r3, r0
+    vdup.8  q0, r1
+    vmov    q1, q0
+    vmov    q2, q0
+    vmov    q3, q0
+memset_optimized_loop:
+    subs    r2, #64
+    vstmia  r3!, {d0 - d7}
+    bge     memset_optimized_loop
+    bx      lr
+#endif
 init_done:
     .long  0xDEADB00B
 
@@ -498,6 +514,6 @@ __svc_stack:
     .space OS_EXC_SVC_STACK_SIZE * CORE_NUM
 __svc_stack_top:
 
-__exc_stack: 
+__exc_stack:
     .space OS_EXC_STACK_SIZE * CORE_NUM
 __exc_stack_top:

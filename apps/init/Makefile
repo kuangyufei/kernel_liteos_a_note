@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -43,6 +43,12 @@ ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 LOCAL_FLAGS += -Wno-shift-op-parentheses -Wno-bitwise-op-parentheses -Wnonnull $(LLVM_SYSROOT)
 LDCFLAGS += $(LLVM_EXTRA_LD_OPTS) $(LLVM_SYSROOT)
 endif
+
+ifeq ($(LOSCFG_QUICK_START), y)
+LDCFLAGS += --static
+CFLAGS += -DLOSCFG_QUICK_START
+endif
+
 INITNAME := init
 
 all: $(INITNAME)

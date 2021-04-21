@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,39 +31,39 @@
 
 #ifndef CAPABILITY_TYPE_H
 #define CAPABILITY_TYPE_H
-	
-// posix capabilities	//posix 接口能力范围
-#define CAP_CHOWN                       0	//修改拥有者
-#define CAP_DAC_EXECUTE                 1	//
+
+// posix capabilities
+#define CAP_CHOWN                       0
+#define CAP_DAC_EXECUTE                 1
 #define CAP_DAC_WRITE                   2
 #define CAP_DAC_READ_SEARCH             3
 #define CAP_FOWNER                      4
-#define CAP_KILL                        5	//杀死(进程,线程 ==)能力
-#define CAP_SETGID                      6	//设置用户组ID
-#define CAP_SETUID                      7	//设置用户ID
+#define CAP_KILL                        5
+#define CAP_SETGID                      6
+#define CAP_SETUID                      7
 
-// socket capabilities	//网络能力
-#define CAP_NET_BIND_SERVICE            8	//绑定端口
-#define CAP_NET_BROADCAST               9	//网络广播
-#define CAP_NET_ADMIN                   10	//网络管理
-#define CAP_NET_RAW                     11	//网络读写访问
+// socket capabilities
+#define CAP_NET_BIND_SERVICE            8
+#define CAP_NET_BROADCAST               9
+#define CAP_NET_ADMIN                   10
+#define CAP_NET_RAW                     11
 
-// fs capabilities	//文件系统能力
-#define CAP_FS_MOUNT                    12	//挂载
-#define CAP_FS_FORMAT                   13	//格式化
+// fs capabilities
+#define CAP_FS_MOUNT                    12
+#define CAP_FS_FORMAT                   13
 
-// process capabilities	//进程调度能力，
-#define CAP_SCHED_SETPRIORITY           14 //设置调度优先级
+// process capabilities
+#define CAP_SCHED_SETPRIORITY           14
 
-// time capabilities	//时间能力
-#define CAP_SET_TIMEOFDAY               15	//重置系统时间
-#define CAP_CLOCK_SETTIME               16	//设置时钟
+// time capabilities
+#define CAP_SET_TIMEOFDAY               15
+#define CAP_CLOCK_SETTIME               16
 
-// process capabilities	//进程能力
-#define CAP_CAPSET                      17	//设置进程能力的能力
+// process capabilities
+#define CAP_CAPSET                      17
 
-// reboot capability	//重新启动功能
-#define CAP_REBOOT                      18	//重启系统
-// self deined privileged syscalls	//自定义特权系统调用
-#define CAP_SHELL_EXEC                  19	//自定义 shell 命令 
+// reboot capability
+#define CAP_REBOOT                      18
+// self deined privileged syscalls
+#define CAP_SHELL_EXEC                  19
 #endif

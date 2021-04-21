@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -33,27 +33,47 @@ set -e
 system=$(uname -s)
 ROOTFS_DIR=$1
 FSTYPE=$2
-ROOTFS_IMG=${ROOTFS_DIR}".img"
-JFFS2_TOOL=$(dirname $(readlink -f "$0"))/../../fsimage/mkfs.jffs2
-WIN_JFFS2_TOOL=$(dirname $(readlink -f "$0"))/../../fsimage/win-x86/mkfs.jffs2.exe
+ROOTFS_IMG=${ROOTFS_DIR}"_"${FSTYPE}".img"
+JFFS2_TOOL=mkfs.jffs2
+WIN_JFFS2_TOOL=mkfs.jffs2.exe
+YAFFS2_TOOL=mkyaffs2image100
+VFAT_TOOL=mkfs.vfat
+MCOPY_TOOL=mcopy
 
-if [ "${ROOTFS_DIR}" = "*rootfs" ]; then
-    chmod -R 755 ${ROOTFS_DIR}
+tool_check() {
+local ret='0'
+command -v "$1" >/dev/null 2>&1 || { local ret='1'; }
+if [ "$ret" -ne 0 ]; then
+    echo "$1 tool is not exit, please install it" >&2
+fi
+return 0
+}
+
+chmod -R 755 ${ROOTFS_DIR}
+if [ -f "${ROOTFS_DIR}/bin/init" ]; then
     chmod 700 ${ROOTFS_DIR}/bin/init 2> /dev/null
+fi
+if [ -f "${ROOTFS_DIR}/bin/shell" ]; then
     chmod 700 ${ROOTFS_DIR}/bin/shell 2> /dev/null
 fi
 
 if [ "${FSTYPE}" = "jffs2" ]; then
     if [ "${system}" != "Linux" ] ; then
+        tool_check ${WIN_JFFS2_TOOL}
         ${WIN_JFFS2_TOOL} -q -o ${ROOTFS_IMG} -d ${ROOTFS_DIR} --pagesize=4096
     else
-        chmod +x ${JFFS2_TOOL}
+        tool_check ${JFFS2_TOOL}
         ${JFFS2_TOOL} -q -o ${ROOTFS_IMG} -d ${ROOTFS_DIR} --pagesize=4096
     fi
+elif [ "${FSTYPE}" = "yaffs2" ]; then
+        tool_check ${YAFFS2_TOOL}
+	${YAFFS2_TOOL}  ${ROOTFS_DIR} ${ROOTFS_IMG} 2k 24bit
 elif [ "${FSTYPE}" = "vfat" ]; then
     if [ "${system}" != "Linux" ] ; then
-        echo "Unsupported fs type!"
+        echo "Unsupported fs type!" >&2
     else
+        tool_check ${VFAT_TOOL}
+        tool_check ${MCOPY_TOOL}
         BLK_SIZE=512
         CLT_SIZE=2048
         FAT_TAB_NUM=2
@@ -73,9 +93,9 @@ elif [ "${FSTYPE}" = "vfat" ]; then
         IMG_CNT=$(( (${IMG_SIZE} + ${BLK_SIZE} - 1) / ${BLK_SIZE} ))
         echo mtools_skip_check=1 >> ~/.mtoolsrc
         dd if=/dev/zero of=${ROOTFS_IMG} count=${IMG_CNT} bs=${BLK_SIZE}
-        mkfs.vfat ${ROOTFS_IMG} -s ${CLT_CNT} -f ${FAT_TAB_NUM} -S ${BLK_SIZE} > /dev/null
-        mcopy -i ${ROOTFS_IMG} ${ROOTFS_DIR}/* -/ ::/
+        ${VFAT_TOOL} ${ROOTFS_IMG} -s ${CLT_CNT} -f ${FAT_TAB_NUM} -S ${BLK_SIZE} > /dev/null
+        ${MCOPY_TOOL} -i ${ROOTFS_IMG} ${ROOTFS_DIR}/* -/ ::/
     fi
 else
-    echo "Unsupported fs type!"
+    echo "Unsupported fs type!" >&2
 fi

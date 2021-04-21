@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -30,14 +30,14 @@
  */
 
 #include "los_config.h"
-#include "los_task_pri.h"
-#include "los_swtmr_pri.h"
 #include "los_printf.h"
 #include "los_atomic.h"
-#include "gic_common.h"
-#include "uart.h"
 #include "los_process_pri.h"
+#include "los_task_pri.h"
+#include "los_swtmr_pri.h"
+#include "los_sched_pri.h"
 #include "los_arch_mmu.h"
+#include "gic_common.h"
 
 #if (LOSCFG_KERNEL_SMP == YES)
 STATIC Atomic g_ncpu = 1;	//统计CPU的数量
@@ -78,7 +78,9 @@ LITE_OS_SEC_TEXT_INIT VOID secondary_cpu_start(VOID)
 #if (LOSCFG_KERNEL_SMP == YES)//支持多cpu核开关
     UINT32 cpuid = ArchCurrCpuid();//获取当前cpu id
 
+#ifdef LOSCFG_KERNEL_MMU
     OsArchMmuInitPerCPU();//每个CPU都需要初始化MMU
+#endif
 
     OsCurrTaskSet(OsGetMainTask());//设置CPU的当前任务
 
@@ -92,7 +94,7 @@ LITE_OS_SEC_TEXT_INIT VOID secondary_cpu_start(VOID)
     OsCurrProcessSet(OS_PCB_FROM_PID(OsGetKernelInitProcessID())); //设置内核进程为CPU进程
     OsSwtmrInit();		//定时任务初始化,每个CPU维护自己的定时器队列
     OsIdleTaskCreate();	//创建空闲任务,每个CPU维护自己的任务队列
-    OsStart(); //正式启动在内核层的工作
+    OsSchedStart();
     while (1) {
         __asm volatile("wfi");//wait for Interrupt 等待中断，即下一次中断发生前都在此呆着不干活
     }//类似的还有 WFE: wait for Events 等待事件，即下一次事件发生前都在此呆着不干活
@@ -135,7 +137,7 @@ LITE_OS_SEC_TEXT_INIT VOID release_secondary_cores(VOID)//调动次级CPU干活
 {
     UINT32 regval;
 
-    /* clear the slave cpu reset */ 
+    /* clear the second cpu reset status */
     READ_UINT32(regval, PERI_CRG30_BASE);
     CLEAR_RESET_REG_STATUS(regval); //清除,并重置 从cpu寄存器状态
     WRITE_UINT32(regval, PERI_CRG30_BASE);
@@ -158,11 +160,9 @@ LITE_OS_SEC_TEXT_INIT INT32 main(VOID)//由主CPU执行,默认0号CPU 为主CPU
     OsSetMainTask();// 设置各CPU主任务
     OsCurrTaskSet(OsGetMainTask());//设置当前CPU主任务
 
-    /* set smp system counter freq */
-#if (LOSCFG_KERNEL_SMP == YES)
+    /* set system counter freq */
 #ifndef LOSCFG_TEE_ENABLE
     HalClockFreqWrite(OS_SYS_CLOCK); //多CPU情况下设置时钟频率
-#endif
 #endif
 
     /* system and chip info */
@@ -182,7 +182,7 @@ LITE_OS_SEC_TEXT_INIT INT32 main(VOID)//由主CPU执行,默认0号CPU 为主CPU
 
     CPU_MAP_SET(0, OsHwIDGet());//设置CPU映射,参数0 代表0号CPU
 
-    OsStart();//内核初始化完成,正式开始工作
+    OsSchedStart();
 
     while (1) {
         __asm volatile("wfi");//WFI: wait for Interrupt 等待中断，即下一次中断发生前都在此hold住不干活

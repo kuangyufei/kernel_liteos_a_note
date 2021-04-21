@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 include $(LITEOSTOPDIR)/config.mk
+include $(LITEOSTOPDIR)/../../drivers/adapter/khdf/liteos/lite.mk
 
 MODULE_NAME := usb_base
 
@@ -120,12 +121,20 @@ ifeq ($(LOSCFG_DRIVERS_USB_MASS_STORAGE), y)
 LOCAL_SRCS += $(STORAGE_SRC)/umass.c
 endif
 
-ifeq ($(LOSCFG_DRIVERS_USB_HID_CLASS), y)
+ifeq ($(LOSCFG_DRIVERS_USB_HID_CLASS)_$(LOSCFG_DRIVERS_HDF_INPUT), y_y)
+LOCAL_FLAGS += -I$(LITEOSTOPDIR)/../../drivers/framework/model/input/driver \
+               -I$(LITEOSTOPDIR)/../../drivers/framework/include/core \
+               -I$(LITEOSTOPDIR)/../../drivers/framework/core/common/include/host \
+               -I$(LITEOSTOPDIR)/../../drivers/framework/utils \
+               -I$(LITEOSTOPDIR)/../../drivers/framework/osal \
+               -I$(LITEOSTOPDIR)/../../drivers/framework/ability/sbuf/include \
+               -I$(LITEOSTOPDIR)/../../drivers/framework/include/osal \
+               -I$(LITEOSTOPDIR)/../../third_party/FreeBSD/sys/dev/evdev
+
 LOCAL_SRCS += $(INPUT_SRC)/uhid.c  \
               $(CORE_SRC)/usb_hid.c
 endif
 
 LOCAL_FLAGS += $(LITEOS_GCOV_OPTS)
 
-include $(MODULE)
-
+include $(HDF_DRIVER)

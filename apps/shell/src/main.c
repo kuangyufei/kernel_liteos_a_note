@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,11 +36,6 @@
 #include "securec.h"
 #include "unistd.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 ShellCB *g_shellCB = NULL;
 
@@ -98,6 +93,8 @@ int main()
     int ret = SH_NOK;
     ShellCB *shellCB = NULL;
 
+    setbuf(stdout, NULL);
+
     shellCB = (ShellCB *)malloc(sizeof(ShellCB));
     if (shellCB == NULL) {
         goto ERR_OUT1;
@@ -137,8 +134,3 @@ ERR_OUT1:
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

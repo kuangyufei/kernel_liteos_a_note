@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -38,7 +38,6 @@
 #include "shell.h"
 #include "fs/fs.h"
 #include "sys/stat.h"
-#include "inode/inode.h"
 #include "stdlib.h"
 #include "unistd.h"
 #include "fs_other.h"
@@ -54,17 +53,18 @@
 
 #include "los_process_pri.h"
 #include <ctype.h>
+#include "fs/fs_operation.h"
 
 typedef enum
-{	
-  RM_RECURSIVER,	//递归删除
-  RM_FILE,			//删除文件
-  RM_DIR,			//删除目录
-  CP_FILE,			//拷贝文件
-  CP_COUNT			//拷贝数量
+{
+  RM_RECURSIVER,
+  RM_FILE,
+  RM_DIR,
+  CP_FILE,
+  CP_COUNT
 } wildcard_type;
 
-#define ERROR_OUT_IF(condition, message_function, handler) \	//这种写法挺妙的
+#define ERROR_OUT_IF(condition, message_function, handler) \
   do \
     { \
       if (condition) \
@@ -132,30 +132,13 @@ int osShellCmdDoChdir(const char *path)
 
   return 0;
 }
-/*******************************************************
-命令功能
-ls命令用来显示当前目录的内容。
 
-命令格式
-ls [path]
-
-path为空时，显示当前目录的内容。
-path为无效文件名时，显示失败，提示：
-ls error: No such directory。
-path为有效目录路径时，会显示对应目录下的内容。
-
-使用指南
-ls命令显示当前目录的内容。
-ls可以显示文件的大小。
-proc下ls无法统计文件大小，显示为0。
-
-*******************************************************/
 int osShellCmdLs(int argc, const char **argv)
 {
   char *fullpath = NULL;
   const char *filename = NULL;
   int ret;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();//获取当前工作目录
+  char *shell_working_directory = OsShellGetWorkingDirtectory();
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -163,46 +146,31 @@ int osShellCmdLs(int argc, const char **argv)
 
   ERROR_OUT_IF(argc > 1, PRINTK("ls or ls [DIRECTORY]\n"), return -1);
 
-  if (argc == 0)//木有参数时 -> #ls 
+  if (argc == 0)
     {
-      ls(shell_working_directory);//执行ls 当前工作目录
+      ls(shell_working_directory);
       return 0;
     }
 
-  filename = argv[0];//有参数时 -> #ls ../harmony  or #ls /no such file or directory
-  ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);//获取全路径,注意这里带出来fullpath，而fullpath已经在内核空间
-  ERROR_OUT_IF(ret < 0, set_err(-ret, "ls error"), return -1);//
+  filename = argv[0];
+  ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);
+  ERROR_OUT_IF(ret < 0, set_err(-ret, "ls error"), return -1);
 
-  ls(fullpath);//执行 ls 全路径
-  free(fullpath);//释放全路径，为啥要释放，因为fullpath已经由内核空间分配
+  ls(fullpath);
+  free(fullpath);
 
   return 0;
 }
-/*******************************************************
-命令功能
-cd命令用来改变当前目录。
 
-命令格式
-cd [path]
-
-未指定目录参数时，会跳转至根目录。
-cd后加路径名时，跳转至该路径。
-路径名以 /（斜杠）开头时，表示根目录。
-.（点）表示当前目录。
-..（点点）表示父目录。
-
-cd ..
-
-*******************************************************/
 int osShellCmdCd(int argc, const char **argv)
 {
-  if (argc == 0)//没有参数时 #cd 
+  if (argc == 0)
     {
       (void)osShellCmdDoChdir("/");
       return 0;
     }
 
-  (void)osShellCmdDoChdir(argv[0]);//#cd .. 带参数情况
+  (void)osShellCmdDoChdir(argv[0]);
 
   return 0;
 }
@@ -211,33 +179,23 @@ int osShellCmdCd(int argc, const char **argv)
 #define CAT_TASK_PRIORITY  10
 #define CAT_TASK_STACK_SIZE  0x3000
 pthread_mutex_t g_mutex_cat = PTHREAD_MUTEX_INITIALIZER;
-/*******************************************************
-cat用于显示文本文件的内容。
 
-命令格式
-cat [pathname]
-
-使用指南
-cat用于显示文本文件的内容。
-
-使用实例
-举例：cat harmony.txt
-*******************************************************/
 int osShellCmdDoCatShow(UINTPTR arg)
 {
+  int ret = 0;
   char buf[CAT_BUF_SIZE];
-  size_t size;
-  FILE *ini = NULL;
+  size_t size, writen, toWrite;
+  ssize_t cnt;
   char *fullpath = (char *)arg;
+  FILE *ini = NULL;
 
   (void)pthread_mutex_lock(&g_mutex_cat);
   ini = fopen(fullpath, "r");
   if (ini == NULL)
     {
+      ret = -1;
       perror("cat error");
-      (void)pthread_mutex_unlock(&g_mutex_cat);
-      free(fullpath);
-      return -1;
+      goto out;
     }
 
   do
@@ -246,35 +204,46 @@ int osShellCmdDoCatShow(UINTPTR arg)
       size = fread(buf, 1, CAT_BUF_SIZE, ini);
       if ((int)size < 0)
         {
+          ret = -1;
           perror("cat error");
-          (void)pthread_mutex_unlock(&g_mutex_cat);
-          free(fullpath);
-          (void)fclose(ini);
-          return -1;
+          goto out_with_fclose;
         }
-      (void)write(1, buf, size);
-      (void)LOS_TaskDelay(1);
-    }
-  while (size == CAT_BUF_SIZE);
 
-  free(fullpath);
+      for (toWrite = size, writen = 0; toWrite > 0;)
+        {
+          cnt = write(1, buf + writen, toWrite);
+          if (cnt == 0)
+            {
+              /* avoid task-starvation */
+              (void)LOS_TaskDelay(1);
+              continue;
+            }
+          else if (cnt < 0)
+            {
+              perror("cat write error");
+              break;
+            }
+
+          writen += cnt;
+          toWrite -= cnt;
+        }
+    }
+  while (size > 0);
+
+out_with_fclose:
   (void)fclose(ini);
+out:
+  free(fullpath);
   (void)pthread_mutex_unlock(&g_mutex_cat);
-  return 0;
+  return ret;
 }
-/*****************************************************************
-cat用于显示文本文件的内容。cat [pathname]
-cat weharmony.txt
-*****************************************************************/
+
 int osShellCmdCat(int argc, const char **argv)
 {
   char *fullpath = NULL;
-  const char *filename = NULL;
-  char *fullpath_bak = NULL;
-  FAR const char *relpath = NULL;
   int ret;
   unsigned int ca_task;
-  FAR struct inode *inode = NULL;
+  struct Vnode *vnode = NULL;
   TSK_INIT_PARAM_S init_param;
   char *shell_working_directory = OsShellGetWorkingDirtectory();
   if (shell_working_directory == NULL)
@@ -284,40 +253,43 @@ int osShellCmdCat(int argc, const char **argv)
 
   ERROR_OUT_IF(argc != 1, PRINTK("cat [FILE]\n"), return -1);
 
-  filename = argv[0];
-  ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);
+  ret = vfs_normalize_path(shell_working_directory, argv[0], &fullpath);
   ERROR_OUT_IF(ret < 0, set_err(-ret, "cat error"), return -1);
 
-  inode_semtake();
-  fullpath_bak = fullpath;
-  inode = inode_search((FAR const char **)&fullpath, (FAR struct inode **)NULL, (FAR struct inode **)NULL, &relpath);
-  if (inode == NULL)
-    {
-      set_errno(ENOENT);
-      perror("cat error");
-      inode_semgive();
-      free(fullpath_bak);
-      return -1;
-    }
-  if (INODE_IS_BLOCK(inode) || INODE_IS_DRIVER(inode))
-    {
-      set_errno(EPERM);
-      perror("cat error");
-      inode_semgive();
-      free(fullpath_bak);
-      return -1;
-    }
-  inode_semgive();
+  VnodeHold();
+  ret = VnodeLookup(fullpath, &vnode, O_RDONLY);
+    if (ret != LOS_OK)
+      {
+        set_errno(-ret);
+        perror("cat error");
+        VnodeDrop();
+        free(fullpath);
+        return -1;
+      }
+    if (vnode->type != VNODE_TYPE_REG)
+      {
+        set_errno(EINVAL);
+        perror("cat error");
+        VnodeDrop();
+        free(fullpath);
+        return -1;
+      }
+  VnodeDrop();
   (void)memset_s(&init_param, sizeof(init_param), 0, sizeof(TSK_INIT_PARAM_S));
   init_param.pfnTaskEntry = (TSK_ENTRY_FUNC)osShellCmdDoCatShow;
   init_param.usTaskPrio   = CAT_TASK_PRIORITY;
-  init_param.auwArgs[0]   = (UINTPTR)fullpath_bak;
+  init_param.auwArgs[0]   = (UINTPTR)fullpath;
   init_param.uwStackSize  = CAT_TASK_STACK_SIZE;
   init_param.pcName       = "shellcmd_cat";
   init_param.uwResved     = LOS_TASK_STATUS_DETACHED | OS_TASK_FLAG_SPECIFIES_PROCESS;
   init_param.processID    = 2; /* 2: kProcess */
 
   ret = (int)LOS_TaskCreate(&ca_task, &init_param);
+
+  if (ret != LOS_OK)
+    {
+      free(fullpath);
+    }
 
   return ret;
 }
@@ -345,25 +317,11 @@ static unsigned long get_mountflags(const char *options)
 
     return mountfalgs;
 }
-static inline void print_mount_usage(void)//mount 用法
+static inline void print_mount_usage(void)
 {
   PRINTK("mount [DEVICE] [PATH] [NAME]\n");
 }
-/*****************************************************************
-命令功能
-mount命令用来将设备挂载到指定目录。
-命令格式
-mount <device> <path> <name> [uid gid]
-device 要挂载的设备（格式为设备所在路径）。系统拥有的设备。
-path 指定目录。用户必须具有指定目录中的执行（搜索）许可权。N/A
-name 文件系统的种类。 vfat, yaffs, jffs, ramfs, nfs，procfs, romfs.
-uid gid uid是指用户ID。 gid是指组ID。可选参数，缺省值uid:0，gid:0。
 
-使用指南
-mount后加需要挂载的设备信息、指定目录以及设备文件格式，就能成功挂载文件系统到指定目录。
-使用实例
-举例：mount /dev/mmcblk0p0 /bin/vs/sd vfat
-*****************************************************************/
 int osShellCmdMount(int argc, const char **argv)
 {
   int ret;
@@ -496,18 +454,7 @@ int osShellCmdMount(int argc, const char **argv)
   free(fullpath);
   return 0;
 }
-/*****************************************************************
-命令功能
-umount命令用来卸载指定文件系统。
-命令格式
-umount [dir]
-参数说明
-dir 需要卸载文件系统对应的目录。 系统已挂载的文件系统的目录。
-使用指南
-umount后加上需要卸载的指定文件系统的目录，即将指定文件系统卸载。
-使用实例
-举例：mount /bin/vs/sd
-*****************************************************************/
+
 int osShellCmdUmount(int argc, const char **argv)
 {
   int ret;
@@ -532,7 +479,6 @@ int osShellCmdUmount(int argc, const char **argv)
   target_path = fullpath;
   cmp_num = strlen(fullpath);
   ret = strncmp(work_path, target_path, cmp_num);
-
   if (ret == 0)
     {
       work_path += cmp_num;
@@ -556,20 +502,7 @@ int osShellCmdUmount(int argc, const char **argv)
   PRINTK("umount ok\n");
   return 0;
 }
-/*****************************************************************
-命令功能
-mkdir命令用来创建一个目录。
-命令格式
-mkdir [directory]
-参数说明
-directory 需要创建的目录。
-使用指南
-mkdir后加所需要创建的目录名会在当前目录下创建目录。
-mkdir后加路径，再加上需要创建的目录名，即在指定目录下创建目录。
 
-使用实例
-举例：mkdir harmony
-*****************************************************************/
 int osShellCmdMkdir(int argc, const char **argv)
 {
   int ret;
@@ -595,20 +528,12 @@ int osShellCmdMkdir(int argc, const char **argv)
   free(fullpath);
   return 0;
 }
-/*****************************************************************
-命令功能
-pwd命令用来显示当前路径。
-命令格式
-无
-使用指南
-pwd 命令将当前目录的全路径名称（从根目录）写入标准输出。全部目录使用 / （斜线）分隔。
-第一个 / 表示根目录， 最后一个目录是当前目录。
-*****************************************************************/
+
 int osShellCmdPwd(int argc, const char **argv)
 {
   char buf[SHOW_MAX_LEN] = {0};
   DIR *dir = NULL;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();//获取当前工作路径
+  char *shell_working_directory = OsShellGetWorkingDirtectory();
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -616,7 +541,7 @@ int osShellCmdPwd(int argc, const char **argv)
 
   ERROR_OUT_IF(argc > 0, PRINTK("\nUsage: pwd\n"), return -1);
 
-  dir = opendir(shell_working_directory);//看能否打开目录
+  dir = opendir(shell_working_directory);
   if (dir == NULL)
     {
       perror("pwd error");
@@ -628,17 +553,17 @@ int osShellCmdPwd(int argc, const char **argv)
     {
       LOS_TaskUnlock();
       PRINTK("pwd error: strncpy_s error!\n");
-      (void)closedir(dir);//
+      (void)closedir(dir);
       return -1;
     }
   LOS_TaskUnlock();
 
   PRINTK("%s\n", buf);
-  (void)closedir(dir);//关闭目录
+  (void)closedir(dir);
   return 0;
 }
 
-static inline void print_statfs_usage(void)//statfs 用法
+static inline void print_statfs_usage(void)
 {
   PRINTK("Usage  :\n");
   PRINTK("    statfs <path>\n");
@@ -646,17 +571,7 @@ static inline void print_statfs_usage(void)//statfs 用法
   PRINTK("Example:\n");
   PRINTK("    statfs /ramfs\n");
 }
-/*****************************************************************
-命令功能
-statfs命令用来打印文件系统的信息，如该文件系统类型、总大小、可用大小等信息。
-命令格式
-statfs [directory]
-参数说明
-directory 文件系统的路径。 必须是存在的文件系统，并且其支持statfs命令，当前支持的文件系统有：JFFS2，FAT，NFS。
-使用指南
-打印信息因文件系统而异。
-以nfs文件系统为例：	statfs /nfs
-*****************************************************************/
+
 int osShellCmdStatfs(int argc, const char **argv)
 {
   struct statfs sfs;
@@ -698,12 +613,7 @@ int osShellCmdStatfs(int argc, const char **argv)
 
   return 0;
 }
-/*****************************************************************
-touch命令用来在指定的目录下创建一个不存在的空文件。
-touch命令操作已存在的文件会成功，不会更新时间戳。touch [filename]
-touch命令用来创建一个空文件，该文件可读写。
-使用touch命令一次只能创建一个文件。
-*****************************************************************/
+
 int osShellCmdTouch(int argc, const char **argv)
 {
   int ret;
@@ -737,20 +647,6 @@ int osShellCmdTouch(int argc, const char **argv)
 #define CP_BUF_SIZE 4096
 pthread_mutex_t g_mutex_cp = PTHREAD_MUTEX_INITIALIZER;
 
-/*****************************************************************
-cp 拷贝文件，创建一份副本。
-cp [SOURCEFILE] [DESTFILE]
-使用指南
-	同一路径下，源文件与目的文件不能重名。
-	源文件必须存在，且不为目录。
-	源文件路径支持“*”和“？”通配符，“*”代表任意多个字符，“？”代表任意单个字符。目的路径不支持通配符。当源路径可匹配多个文件时，目的路径必须为目录。
-	目的路径为目录时，该目录必须存在。此时目的文件以源文件命名。
-	目的路径为文件时，所在目录必须存在。此时拷贝文件的同时为副本重命名。
-	目前不支持多文件拷贝。参数大于2个时，只对前2个参数进行操作。
-	目的文件不存在时创建新文件，已存在则覆盖。
-	拷贝系统重要资源时，会对系统造成死机等重大未知影响，如用于拷贝/dev/uartdev-0 文件时，会产生系统卡死现象。
-举例：cp weharmony.txt ./tmp/
-*****************************************************************/
 static int os_shell_cmd_do_cp(const char *src_filepath, const char *dst_filename)
 {
   int  ret;
@@ -761,7 +657,8 @@ static int os_shell_cmd_do_cp(const char *src_filepath, const char *dst_filename
   char *buf = NULL;
   const char *filename = NULL;
   size_t r_size, w_size;
-  int src_fd, dst_fd;
+  int src_fd = -1;
+  int dst_fd = -1;
   struct stat stat_buf;
   mode_t src_mode;
   char *shell_working_directory = OsShellGetWorkingDirtectory();
@@ -868,7 +765,7 @@ static int os_shell_cmd_do_cp(const char *src_filepath, const char *dst_filename
       goto errout_with_mutex;
     }
 
-  dst_fd = open(dst_fullpath, O_CREAT | O_WRONLY, src_mode);
+  dst_fd = open(dst_fullpath, O_CREAT | O_WRONLY | O_TRUNC, src_mode);
   if (dst_fd < 0)
     {
       PRINTK("cp error: can't create %s. %s.\n", dst_fullpath, strerror(errno));
@@ -920,17 +817,7 @@ errout_with_srcpath:
 /* The separator and EOF for a directory fullpath: '/'and '\0' */
 
 #define SEPARATOR_EOF_LEN 2
-/*****************************************************************
-rmdir命令用来删除一个目录。
-rmdir [dir]
-dir 需要删除目录的名称，删除目录必须为空，支持输入路径。
-使用指南
-	rmdir命令只能用来删除目录。
-	rmdir一次只能删除一个目录。
-	rmdir只能删除空目录。
 
-举例：输入rmdir dir
-*****************************************************************/
 static int os_shell_cmd_do_rmdir(const char *pathname)
 {
   struct dirent *dirent = NULL;
@@ -960,6 +847,12 @@ static int os_shell_cmd_do_rmdir(const char *pathname)
       if (strcmp(dirent->d_name, "..") && strcmp(dirent->d_name, "."))
         {
           size_t fullpath_buf_size = strlen(pathname) + strlen(dirent->d_name) + SEPARATOR_EOF_LEN;
+          if (fullpath_buf_size <= 0)
+            {
+              PRINTK("buffer size is invalid!\n");
+              (void)closedir(d);
+              return -1;
+            }
           fullpath = (char *)malloc(fullpath_buf_size);
           if (fullpath == NULL)
             {
@@ -1046,7 +939,7 @@ static int os_wildcard_match(const char *src, const char *filename)
 }
 
 /*   To determine whether a wildcard character exists in a path   */
-//确定路径中是否存在通配符
+
 static int os_is_containers_wildcard(const char *filename)
 {
   while (*filename != '\0')
@@ -1061,20 +954,20 @@ static int os_is_containers_wildcard(const char *filename)
 }
 
 /*  Delete a matching file or directory  */
-//删除匹配的文件或目录
+
 static int os_wildcard_delete_file_or_dir(const char *fullpath, wildcard_type mark)
 {
   int ret;
 
   switch (mark)
     {
-      case RM_RECURSIVER://递归删除
-        ret = os_shell_cmd_do_rmdir(fullpath);//删除目录，其中递归调用 rmdir
+      case RM_RECURSIVER:
+        ret = os_shell_cmd_do_rmdir(fullpath);
         break;
-      case RM_FILE://删除文件
+      case RM_FILE:
         ret = unlink(fullpath);
         break;
-      case RM_DIR://删除目录
+      case RM_DIR:
         ret = rmdir(fullpath);
         break;
       default:
@@ -1092,7 +985,7 @@ static int os_wildcard_delete_file_or_dir(const char *fullpath, wildcard_type ma
 }
 
 /*  Split the path with wildcard characters  */
-//使用通配符拆分路径
+
 static char* os_wildcard_split_path(char *fullpath, char **handle, char **wait)
 {
   int n = 0;
@@ -1128,7 +1021,7 @@ static char* os_wildcard_split_path(char *fullpath, char **handle, char **wait)
 }
 
 /*  Handling entry of the path with wildcard characters  */
-//处理具有通配符的目录
+
 static int os_wildcard_extract_directory(char *fullpath, void *dst, wildcard_type mark)
 {
   char separator[] = "/";
@@ -1257,29 +1150,7 @@ closedir_out:
   (void)closedir(d);
   return VFS_ERROR;
 }
-/*****************************************************************
-命令功能
-拷贝文件，创建一份副本。
 
-命令格式
-cp [SOURCEFILE] [DESTFILE]
-
-SOURCEFILE - 源文件路径。- 目前只支持文件,不支持目录。
-DESTFILE - 目的文件路径。 - 支持目录以及文件。
-
-使用指南
-同一路径下，源文件与目的文件不能重名。
-源文件必须存在，且不为目录。
-源文件路径支持“*”和“？”通配符，“*”代表任意多个字符，“？”代表任意单个字符。目的路径不支持通配符。当源路径可匹配多个文件时，目的路径必须为目录。
-目的路径为目录时，该目录必须存在。此时目的文件以源文件命名。
-目的路径为文件时，所在目录必须存在。此时拷贝文件的同时为副本重命名。
-目前不支持多文件拷贝。参数大于2个时，只对前2个参数进行操作。
-目的文件不存在时创建新文件，已存在则覆盖。
-拷贝系统重要资源时，会对系统造成死机等重大未知影响，如用于拷贝/dev/uartdev-0 文件时，会产生系统卡死现象。
-
-使用实例
-举例：cp harmony.txt ./tmp/
-*****************************************************************/
 int osShellCmdCp(int argc, const char **argv)
 {
   int  ret;
@@ -1289,20 +1160,20 @@ int osShellCmdCp(int argc, const char **argv)
   char *dst_fullpath = NULL;
   struct stat stat_buf;
   int count = 0;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();//获取进程当前工作目录
+  char *shell_working_directory = OsShellGetWorkingDirtectory();
   if (shell_working_directory == NULL)
     {
       return -1;
     }
 
-  ERROR_OUT_IF(argc < 2, PRINTK("cp [SOURCEFILE] [DESTFILE]\n"), return -1);//参数必须要两个
+  ERROR_OUT_IF(argc < 2, PRINTK("cp [SOURCEFILE] [DESTFILE]\n"), return -1);
 
   src = argv[0];
   dst = argv[1];
 
   /* Get source fullpath. */
 
-  ret = vfs_normalize_path(shell_working_directory, src, &src_fullpath);//获取源路径的全路径
+  ret = vfs_normalize_path(shell_working_directory, src, &src_fullpath);
   if (ret < 0)
     {
       set_errno(-ret);
@@ -1310,7 +1181,7 @@ int osShellCmdCp(int argc, const char **argv)
       return -1;
     }
 
-  if (src[strlen(src) - 1] == '/')//如果src最后一个字符是 '/'说明是个目录,src必须是个文件，目前只支持文件，不支持目录
+  if (src[strlen(src) - 1] == '/')
     {
       PRINTK("cp %s error: Source file can't be a directory.\n", src);
       goto errout_with_srcpath;
@@ -1318,7 +1189,7 @@ int osShellCmdCp(int argc, const char **argv)
 
   /* Get dest fullpath. */
 
-  ret = vfs_normalize_path(shell_working_directory, dst, &dst_fullpath);//获取目标路径的全路径
+  ret = vfs_normalize_path(shell_working_directory, dst, &dst_fullpath);
   if (ret < 0)
     {
       set_errno(-ret);
@@ -1328,27 +1199,27 @@ int osShellCmdCp(int argc, const char **argv)
 
   /* Is dest path exist? */
 
-  ret = stat(dst_fullpath, &stat_buf);//判断目标路径存不存在
-  if (ret < 0)//不存在的情况
+  ret = stat(dst_fullpath, &stat_buf);
+  if (ret < 0)
     {
-      /* Is dest path a directory? */ //目标路径是个目录吗？
+      /* Is dest path a directory? */
 
-      if (dst[strlen(dst) - 1] == '/') //是个不存在的目录
+      if (dst[strlen(dst) - 1] == '/')
         {
-          PRINTK("cp error: %s, %s.\n", dst_fullpath, strerror(errno));//打印错误信息
+          PRINTK("cp error: %s, %s.\n", dst_fullpath, strerror(errno));
           goto errout_with_path;
         }
     }
   else
     {
-      if (S_ISREG(stat_buf.st_mode) && dst[strlen(dst) - 1] == '/')//是普通文件但最后一个字符是'/'
+      if (S_ISREG(stat_buf.st_mode) && dst[strlen(dst) - 1] == '/')
         {
           PRINTK("cp error: %s is not a directory.\n", dst_fullpath);
           goto errout_with_path;
         }
     }
 
-   if (os_is_containers_wildcard(src_fullpath))//是否包含通配符
+   if (os_is_containers_wildcard(src_fullpath))
     {
       if (ret < 0 || S_ISREG(stat_buf.st_mode))
         {
@@ -1358,7 +1229,7 @@ int osShellCmdCp(int argc, const char **argv)
               PRINTK("cp error : Out of memory.\n");
               goto errout_with_path;
             }
-          (void)os_wildcard_extract_directory(src_copy, &count, CP_COUNT);//处理具有通配符的目录
+          (void)os_wildcard_extract_directory(src_copy, &count, CP_COUNT);
           free(src_copy);
           if (count > 1)
             {
@@ -1368,11 +1239,11 @@ int osShellCmdCp(int argc, const char **argv)
         }
       ret = os_wildcard_extract_directory(src_fullpath, dst_fullpath, CP_FILE);
     }
-  else//不包含通配符的情况
+  else
     {
-      ret = os_shell_cmd_do_cp(src_fullpath, dst_fullpath);//执行拷贝操作
+      ret = os_shell_cmd_do_cp(src_fullpath, dst_fullpath);
     }
-  free(dst_fullpath); //这两个路径都由内核分配了内存，所以要释放
+  free(dst_fullpath);
   free(src_fullpath);
   return ret;
 
@@ -1383,17 +1254,11 @@ errout_with_srcpath:
   return VFS_ERROR;
 }
 
-static inline void print_rm_usage(void)//rm 使用方法
+static inline void print_rm_usage(void)
 {
   PRINTK("rm [FILE] or rm [-r/-R] [FILE]\n");
 }
 
-/*****************************************************************
-rm命令用来删除文件或文件夹。rm [-r] [dirname / filename]
-rm命令一次只能删除一个文件或文件夹。
-rm -r命令可以删除非空目录。
-rm log1.txt ; rm -r sd
-*****************************************************************/
 int osShellCmdRm(int argc, const char **argv)
 {
   int  ret = 0;
@@ -1430,13 +1295,13 @@ int osShellCmdRm(int argc, const char **argv)
       ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);
       ERROR_OUT_IF(ret < 0, set_err(-ret, "rm error"), return -1);
 
-      if (os_is_containers_wildcard(fullpath))//是否包含通配符
+      if (os_is_containers_wildcard(fullpath))
         {
-          ret = os_wildcard_extract_directory(fullpath, NULL, RM_FILE);//对通配符文件的处理
+          ret = os_wildcard_extract_directory(fullpath, NULL, RM_FILE);
         }
       else
         {
-          ret = unlink(fullpath);//删除由装入点管理的文件,本质是释放一个inode
+          ret = unlink(fullpath);
         }
     }
   if (ret == -1)
@@ -1446,24 +1311,7 @@ int osShellCmdRm(int argc, const char **argv)
   free(fullpath);
   return 0;
 }
-/*******************************************************
-命令功能
-rmdir命令用来删除一个目录。
 
-命令格式
-rmdir [dir]
-
-参数说明
-参数		参数说明		取值范围
-dir		需要删除目录的名称，删除目录必须为空，支持输入路径。N/A
-
-使用指南
-rmdir命令只能用来删除目录。
-rmdir一次只能删除一个目录。
-rmdir只能删除空目录。
-使用实例
-举例：输入rmdir dir
-*******************************************************/
 int osShellCmdRmdir(int argc, const char **argv)
 {
   int  ret;
@@ -1483,38 +1331,21 @@ int osShellCmdRmdir(int argc, const char **argv)
 
   if (os_is_containers_wildcard(fullpath))
     {
-      ret = os_wildcard_extract_directory(fullpath, NULL, RM_DIR);//;//对通配符目录的处理
+      ret = os_wildcard_extract_directory(fullpath, NULL, RM_DIR);
     }
   else
     {
-      ret = rmdir(fullpath);// 删除由装入点管理的文件,本质是删除一个目录inode
+      ret = rmdir(fullpath);
+    }
+  if (ret == -1)
+    {
+      PRINTK("rmdir %s failed. Error: %s.\n", fullpath, strerror(errno));
     }
   free(fullpath);
 
-  if (ret == -1)
-    {
-      perror("rmdir error");
-    }
-
   return 0;
 }
-/*****************************************************************
-命令功能
-sync命令用于同步缓存数据（文件系统的数据）到sd卡。
 
-命令格式
-sync
-
-参数说明
-无。
-
-使用指南
-sync命令用来刷新缓存，当没有sd卡插入时不进行操作。
-有sd卡插入时缓存信息会同步到sd卡，成功返回时无显示。
-使用实例
-举例：输入sync，有sd卡时同步到sd卡，无sd卡时不操作。
-
-*****************************************************************/
 int osShellCmdSync(int argc, const char **argv)
 {
   ERROR_OUT_IF(argc > 0, PRINTK("\nUsage: sync\n"), return -1);
@@ -1522,19 +1353,6 @@ int osShellCmdSync(int argc, const char **argv)
   sync();
   return 0;
 }
-/*****************************************************************
-命令功能
-lsfd命令用来显示当前已经打开的文件描述符及对应的文件名。
-
-命令格式
-lsfd
-
-使用指南
-lsfd命令显示当前已经打开文件的fd号以及文件的名字。
-
-使用实例
-举例：输入lsfd
-*****************************************************************/
 
 int osShellCmdLsfd(int argc, const char **argv)
 {
@@ -1567,21 +1385,17 @@ int checkNum(const char *arg)
     }
   return 0;
 }
-/*****************************************************************
-shell su 用于变更为其他使用者的身份
-su [uid] [gid]
-su命令缺省切换到root用户，uid默认为0，gid为0。
-在su命令后的输入参数uid和gid就可以切换到该uid和gid的用户。
-输入参数超出范围时，会打印提醒输入正确范围参数。
-*****************************************************************/
+
+#ifdef LOSCFG_KERNEL_SYSCALL
 int osShellCmdSu(int argc, const char **argv)
 {
   unsigned int su_uid;
   unsigned int su_gid;
 
-  if (argc == 0)//无参时切换到root用户
+  if (argc == 0)
     {
       /* for su root */
+
       su_uid = 0;
       su_gid = 0;
     }
@@ -1591,23 +1405,19 @@ int osShellCmdSu(int argc, const char **argv)
       ERROR_OUT_IF((checkNum(argv[0]) != 0) || (checkNum(argv[1]) != 0), /* check argv is digit */
       PRINTK("check uid_num and gid_num is digit\n"), return -1);
 
-      su_uid = atoi(argv[0]);//标准musl C库函数 字符串转数字
+      su_uid = atoi(argv[0]);
       su_gid = atoi(argv[1]);
-	  
-      ERROR_OUT_IF((su_uid < 0) || (su_uid > 60000) || (su_gid < 0) || //uid 和 gid 的范围限制
+
+      ERROR_OUT_IF((su_uid < 0) || (su_uid > 60000) || (su_gid < 0) ||
          (su_gid > 60000), PRINTK("uid_num or gid_num out of range!they should be [0~60000]\n"), return -1);
     }
 
-  SysSetUserID(su_uid);//设置用户ID
-  SysSetGroupID(su_gid);//设置用户群组ID
+  SysSetUserID(su_uid);
+  SysSetGroupID(su_gid);
   return 0;
 }
-/****************************************************************
-shell chmod 用于修改文件操作权限。chmod [mode] [pathname]
-mode 文件或文件夹权限，用8进制表示对应User、Group、及Other（拥有者、群组、其他组）的权限。[0,777]
-pathname 文件路径。已存在的文件。
-chmod 777 weharmony.txt 暂不支持 chmod ugo+r file1.txt这种写法
-****************************************************************/
+#endif
+
 int osShellCmdChmod(int argc, const char **argv)
 {
   int i = 0;
@@ -1615,7 +1425,7 @@ int osShellCmdChmod(int argc, const char **argv)
   int ret;
   char *fullpath = NULL;
   const char *filename = NULL;
-  struct IATTR attr = {0};//IATTR是用来inode的属性 见于 ..\third_party\NuttX\include\nuttx\fs\fs.h
+  struct IATTR attr = {0};
   char *shell_working_directory = NULL;
   const char *p = NULL;
 #define MODE_BIT 3 /* 3 bits express 1 mode */
@@ -1625,30 +1435,30 @@ int osShellCmdChmod(int argc, const char **argv)
   p = argv[0];
   while (p[i])
     {
-      if ((p[i] <= '7') && (p[i] >= '0'))// 参数只能在 000 - 777 之间
+      if ((p[i] <= '7') && (p[i] >= '0'))
         {
-          mode = (mode << MODE_BIT) | (p[i] - '0');
+          mode = ((uint)mode << MODE_BIT) | (uint)(p[i] - '0');
         }
       else
         {
-          PRINTK("check the input <MODE>\n");//例如: chmod 807 是错误的
+          PRINTK("check the input <MODE>\n");
           return -1;
         }
       i++;
     }
   filename = argv[1];
 
-  shell_working_directory = OsShellGetWorkingDirtectory();//获取当前工作目录
+  shell_working_directory = OsShellGetWorkingDirtectory();
   if (shell_working_directory == NULL)
     {
       return -1;
     }
-  ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);//获取全路径
+  ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);
   ERROR_OUT_IF(ret < 0, set_err(-ret, "chmod error\n"), return -1);
 
-  attr.attr_chg_mode = mode;// 7(rwx)代表(可读,可写,可执行)
-  attr.attr_chg_valid = CHG_MODE; /* change mode */ 
-  ret = chattr(fullpath, &attr);//改变文件属性
+  attr.attr_chg_mode = mode;
+  attr.attr_chg_valid = CHG_MODE; /* change mode */
+  ret = chattr(fullpath, &attr);
   if (ret < 0)
     {
       free(fullpath);
@@ -1659,16 +1469,7 @@ int osShellCmdChmod(int argc, const char **argv)
   free(fullpath);
   return 0;
 }
-/****************************************************************
-shell chown 用于将指定文件的拥有者改为指定的用户或组。chown [owner] [group] [pathname]
-owner 	文件拥有者。[0,0xFFFFFFFF]
-group	文件群组。1、为空。2、[0,0xFFFFFFFF]
-pathname	文件路径。已存在的文件。
-在需要修改的文件名前加上文件拥有者和文件群组就可以分别修改该文件的拥有者和群组。
-当owner或group值为-1时则表示对应的owner或group不修改。
-group参数可以为空。
-举例：chown 100 200 weharmony.txt
-****************************************************************/
+
 int osShellCmdChown(int argc, const char **argv)
 {
   int ret;
@@ -1680,30 +1481,30 @@ int osShellCmdChown(int argc, const char **argv)
   attr.attr_chg_valid = 0;
 
   ERROR_OUT_IF(((argc != 2) && (argc != 3)), PRINTK("Usage: chown [OWNER] [GROUP] FILE\n"), return -1);
-  if (argc == 2)//只有二个参数解析 chown 100 weharmony.txt
+  if (argc == 2)
     {
       ERROR_OUT_IF((checkNum(argv[0]) != 0), PRINTK("check OWNER is digit\n"), return -1);
       owner = atoi(argv[0]);
       filename = argv[1];
     }
-  if (argc == 3)//有三个参数解析 chown 100 200 weharmony.txt
+  if (argc == 3)
     {
       ERROR_OUT_IF((checkNum(argv[0]) != 0), PRINTK("check OWNER is digit\n"), return -1);
       ERROR_OUT_IF((checkNum(argv[1]) != 0), PRINTK("check GROUP is digit\n"), return -1);
-      owner = atoi(argv[0]);//第一个参数用于修改拥有者指定用户
-      group = atoi(argv[1]);//第二个参数用于修改拥有者指定组
+      owner = atoi(argv[0]);
+      group = atoi(argv[1]);
       filename = argv[2];
     }
 
-  if (group != -1)//-1代表不需要处理
+  if (group != -1)
     {
       attr.attr_chg_gid = group;
-      attr.attr_chg_valid |= CHG_GID;//贴上拥有组被修改过的标签
+      attr.attr_chg_valid |= CHG_GID;
     }
-  if (owner != -1)//-1代表不需要处理
+  if (owner != -1)
     {
       attr.attr_chg_uid = owner;
-      attr.attr_chg_valid |= CHG_UID;//贴上拥有者被修改过的标签
+      attr.attr_chg_valid |= CHG_UID;
     }
 
   char *shell_working_directory = OsShellGetWorkingDirtectory();
@@ -1714,7 +1515,7 @@ int osShellCmdChown(int argc, const char **argv)
   ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);
   ERROR_OUT_IF(ret < 0, set_err(-ret, "chown error\n"), return -1);
 
-  ret = chattr(fullpath, &attr);//修改属性,在chattr中,参数attr将会和fullpath原有attr->attr_chg_valid 按|运算
+  ret = chattr(fullpath, &attr);
   if (ret < 0)
     {
       free(fullpath);
@@ -1725,13 +1526,7 @@ int osShellCmdChown(int argc, const char **argv)
   free(fullpath);
   return 0;
 }
-/****************************************************************
-chgrp用于修改文件的群组。chgrp [group] [pathname]
-group 文件群组。[0,0xFFFFFFFF]
-pathname	文件路径。 已存在的文件。
-在需要修改的文件名前加上文件群组值就可以修改该文件的所属组。
-举例：chgrp 100 weharmony.txt
-****************************************************************/
+
 int osShellCmdChgrp(int argc, const char **argv)
 {
   int ret;
@@ -1745,8 +1540,8 @@ int osShellCmdChgrp(int argc, const char **argv)
   group = atoi(argv[0]);
   filename = argv[1];
 
-  if (group != -1) {//可以看出 chgrp 是 chown 命令的裁剪版
-    attr.attr_chg_gid = group; 
+  if (group != -1) {
+    attr.attr_chg_gid = group;
     attr.attr_chg_valid |= CHG_GID;
   }
 
@@ -1757,7 +1552,7 @@ int osShellCmdChgrp(int argc, const char **argv)
   ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);
   ERROR_OUT_IF(ret < 0, set_err(-ret, "chmod error"), return -1);
 
-  ret = chattr(fullpath, &attr);//修改属性
+  ret = chattr(fullpath, &attr);
   if (ret < 0) {
     free(fullpath);
     PRINTK("chgrp error! %s\n", strerror(errno));
@@ -1769,31 +1564,27 @@ int osShellCmdChgrp(int argc, const char **argv)
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(lsfd_shellcmd, CMD_TYPE_EX, "lsfd", XARGS, (CmdCallBackFunc)osShellCmdLsfd);//#lsfd 命令静态注册方式
-#if (defined(LOSCFG_FS_FAT) || defined(LOSCFG_FS_RAMFS) ||  defined(LOSCFG_FS_JFFS))
-SHELLCMD_ENTRY(statfs_shellcmd, CMD_TYPE_EX, "statfs", XARGS, (CmdCallBackFunc)osShellCmdStatfs);//#statfs 命令静态注册方式
-SHELLCMD_ENTRY(touch_shellcmd, CMD_TYPE_EX, "touch", XARGS, (CmdCallBackFunc)osShellCmdTouch);//#touch 命令静态注册方式
-#endif
+SHELLCMD_ENTRY(lsfd_shellcmd, CMD_TYPE_EX, "lsfd", XARGS, (CmdCallBackFunc)osShellCmdLsfd);
+SHELLCMD_ENTRY(statfs_shellcmd, CMD_TYPE_EX, "statfs", XARGS, (CmdCallBackFunc)osShellCmdStatfs);
+SHELLCMD_ENTRY(touch_shellcmd, CMD_TYPE_EX, "touch", XARGS, (CmdCallBackFunc)osShellCmdTouch);
 #if (defined(LOSCFG_FS_FAT))
-SHELLCMD_ENTRY(sync_shellcmd, CMD_TYPE_EX, "sync", XARGS, (CmdCallBackFunc)osShellCmdSync);//#sync 命令静态注册方式
+SHELLCMD_ENTRY(sync_shellcmd, CMD_TYPE_EX, "sync", XARGS, (CmdCallBackFunc)osShellCmdSync);
 #endif
-SHELLCMD_ENTRY(su_shellcmd, CMD_TYPE_EX, "su", XARGS, (CmdCallBackFunc)osShellCmdSu);//#su 命令静态注册方式
+#ifdef LOSCFG_KERNEL_SYSCALL
+SHELLCMD_ENTRY(su_shellcmd, CMD_TYPE_EX, "su", XARGS, (CmdCallBackFunc)osShellCmdSu);
 #endif
-SHELLCMD_ENTRY(ls_shellcmd, CMD_TYPE_EX, "ls", XARGS, (CmdCallBackFunc)osShellCmdLs);//#ls 命令静态注册方式
-SHELLCMD_ENTRY(pwd_shellcmd, CMD_TYPE_EX, "pwd", XARGS, (CmdCallBackFunc)osShellCmdPwd);//#pwd 命令静态注册方式
-SHELLCMD_ENTRY(cd_shellcmd, CMD_TYPE_EX, "cd", XARGS, (CmdCallBackFunc)osShellCmdCd);//#cd 命令静态注册方式
-SHELLCMD_ENTRY(cat_shellcmd, CMD_TYPE_EX, "cat", XARGS, (CmdCallBackFunc)osShellCmdCat);//#cat 命令静态注册方式
-SHELLCMD_ENTRY(rm_shellcmd, CMD_TYPE_EX, "rm", XARGS, (CmdCallBackFunc)osShellCmdRm);//#rm 命令静态注册方式
-SHELLCMD_ENTRY(rmdir_shellcmd, CMD_TYPE_EX, "rmdir", XARGS, (CmdCallBackFunc)osShellCmdRmdir);//#rmdir 命令静态注册方式
-SHELLCMD_ENTRY(mkdir_shellcmd, CMD_TYPE_EX, "mkdir", XARGS, (CmdCallBackFunc)osShellCmdMkdir);//#mkdir 命令静态注册方式
-SHELLCMD_ENTRY(chmod_shellcmd, CMD_TYPE_EX, "chmod", XARGS, (CmdCallBackFunc)osShellCmdChmod);//#chmod 命令静态注册方式
-SHELLCMD_ENTRY(chown_shellcmd, CMD_TYPE_EX, "chown", XARGS, (CmdCallBackFunc)osShellCmdChown);//#chown 命令静态注册方式
-SHELLCMD_ENTRY(chgrp_shellcmd, CMD_TYPE_EX, "chgrp", XARGS, (CmdCallBackFunc)osShellCmdChgrp);//#chgrp 命令静态注册方式
-#if (defined(LOSCFG_FS_FAT) || defined(LOSCFG_FS_RAMFS) ||  defined(LOSCFG_FS_JFFS))
-SHELLCMD_ENTRY(mount_shellcmd, CMD_TYPE_EX, "mount", XARGS, (CmdCallBackFunc)osShellCmdMount);//#mount 命令静态注册方式
-SHELLCMD_ENTRY(umount_shellcmd, CMD_TYPE_EX, "umount", XARGS, (CmdCallBackFunc)osShellCmdUmount);//#umount 命令静态注册方式
 #endif
-#if (defined(LOSCFG_FS_FAT) || defined(LOSCFG_FS_RAMFS) || defined(LOSCFG_FS_JFFS))
-SHELLCMD_ENTRY(cp_shellcmd, CMD_TYPE_EX, "cp", XARGS, (CmdCallBackFunc)osShellCmdCp);//#cp 命令静态注册方式
-#endif
+SHELLCMD_ENTRY(ls_shellcmd, CMD_TYPE_EX, "ls", XARGS, (CmdCallBackFunc)osShellCmdLs);
+SHELLCMD_ENTRY(pwd_shellcmd, CMD_TYPE_EX, "pwd", XARGS, (CmdCallBackFunc)osShellCmdPwd);
+SHELLCMD_ENTRY(cd_shellcmd, CMD_TYPE_EX, "cd", XARGS, (CmdCallBackFunc)osShellCmdCd);
+SHELLCMD_ENTRY(cat_shellcmd, CMD_TYPE_EX, "cat", XARGS, (CmdCallBackFunc)osShellCmdCat);
+SHELLCMD_ENTRY(rm_shellcmd, CMD_TYPE_EX, "rm", XARGS, (CmdCallBackFunc)osShellCmdRm);
+SHELLCMD_ENTRY(rmdir_shellcmd, CMD_TYPE_EX, "rmdir", XARGS, (CmdCallBackFunc)osShellCmdRmdir);
+SHELLCMD_ENTRY(mkdir_shellcmd, CMD_TYPE_EX, "mkdir", XARGS, (CmdCallBackFunc)osShellCmdMkdir);
+SHELLCMD_ENTRY(chmod_shellcmd, CMD_TYPE_EX, "chmod", XARGS, (CmdCallBackFunc)osShellCmdChmod);
+SHELLCMD_ENTRY(chown_shellcmd, CMD_TYPE_EX, "chown", XARGS, (CmdCallBackFunc)osShellCmdChown);
+SHELLCMD_ENTRY(chgrp_shellcmd, CMD_TYPE_EX, "chgrp", XARGS, (CmdCallBackFunc)osShellCmdChgrp);
+SHELLCMD_ENTRY(mount_shellcmd, CMD_TYPE_EX, "mount", XARGS, (CmdCallBackFunc)osShellCmdMount);
+SHELLCMD_ENTRY(umount_shellcmd, CMD_TYPE_EX, "umount", XARGS, (CmdCallBackFunc)osShellCmdUmount);
+SHELLCMD_ENTRY(cp_shellcmd, CMD_TYPE_EX, "cp", XARGS, (CmdCallBackFunc)osShellCmdCp);
 #endif

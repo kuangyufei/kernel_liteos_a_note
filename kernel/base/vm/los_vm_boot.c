@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -38,30 +38,18 @@
 #include "los_vm_page.h"
 #include "los_arch_mmu.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 UINTPTR g_vmBootMemBase = (UINTPTR)&__bss_end;//内核空间可用于分配的区域
 BOOL g_kHeapInited = FALSE;//内核堆区初始化变量
 //虚拟内存区间检查, 需理解 los_vm_zone.h 中画出的鸿蒙虚拟内存全景图
-UINT32 OsVmAddrCheck(size_t tempAddr, size_t length)
-{
-    if ((tempAddr >= KERNEL_VMM_BASE) && ((tempAddr + length) <= (PERIPH_UNCACHED_BASE + PERIPH_UNCACHED_SIZE))) {
-        return LOS_OK;
-    }
 
-    return LOS_NOK;
-}
 //开机引导分配器分配内存,只有开机时采用的分配方式
 VOID *OsVmBootMemAlloc(size_t len)
 {
     UINTPTR ptr;
 
     if (g_kHeapInited) {//@note_why 在什么时候会变成true,没找到代码
-        VM_ERR("kernel heap has been inited, should not to use boot mem alloc!");
+        VM_ERR("kernel heap has been initialized, do not to use boot memory allocation!");
         return NULL;
     }
 
@@ -71,6 +59,7 @@ VOID *OsVmBootMemAlloc(size_t len)
     return (VOID *)ptr;
 }
 //整个系统内存初始化
+#ifdef LOSCFG_KERNEL_VM
 UINT32 OsSysMemInit(VOID)
 {
     STATUS_T ret;
@@ -84,19 +73,30 @@ UINT32 OsSysMemInit(VOID)
     }
 
     OsVmPageStartup();// 物理内存初始化
+    g_kHeapInited = TRUE;
     OsInitMappingStartUp();// 映射初始化
 
+#ifdef LOSCFG_KERNEL_SHM
     ret = ShmInit();// 共享内存初始化
     if (ret < 0) {
         VM_ERR("ShmInit fail");  
         return LOS_NOK;
     }
-
+#endif
     return LOS_OK;
 }
+#else
+UINT32 OsSysMemInit(VOID)
+{
+    STATUS_T ret;
 
-#ifdef __cplusplus
-#if __cplusplus
+    ret = OsKHeapInit(OS_KHEAP_BLOCK_SIZE);
+    if (ret != LOS_OK) {
+        VM_ERR("OsKHeapInit fail");
+        return LOS_NOK;
+    }
+    g_kHeapInited = TRUE;
+    return LOS_OK;
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#endif
+

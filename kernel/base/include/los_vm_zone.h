@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,7 +32,7 @@
 #ifndef __VM_ZONE_H__
 #define __VM_ZONE_H__
 
-#include "board.h" // 由不同的芯片平台提供,例如: hi3516dv300
+#include "target_config.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -84,32 +84,21 @@ extern "C" {
 +----------------------------+ 0x00000000U
 
 以下定义 可见于 ..\vendor\hi3516dv300\config\board\include\board.h
-
-/* Physical memory address base and size * /	//物理内存地址基地址和大小
-#ifdef LOSCFG_TEE_ENABLE
-#define DDR_MEM_ADDR            0x81000000
-#define DDR_MEM_SIZE            0x1f000000
-#else
-#define DDR_MEM_ADDR            0x80000000		
-#define DDR_MEM_SIZE            0x20000000		//512M
-#endif
-
-/* Peripheral register address base and size * / 外围寄存器地址基和大小
-#define PERIPH_PMM_BASE         0x10000000		// 256M
-#define PERIPH_PMM_SIZE         0x10000000		// 256M
-
+#ifdef LOSCFG_KERNEL_MMU
 #ifdef LOSCFG_TEE_ENABLE
 #define KERNEL_VADDR_BASE       0x41000000
 #else
-#define KERNEL_VADDR_BASE       0x40000000		
+#define KERNEL_VADDR_BASE       0x40000000
 #endif
-#define KERNEL_VADDR_SIZE       DDR_MEM_SIZE	//512M
+#else
+#define KERNEL_VADDR_BASE       DDR_MEM_ADDR
+#endif
+#define KERNEL_VADDR_SIZE       DDR_MEM_SIZE
 
-#define SYS_MEM_BASE            DDR_MEM_ADDR	//0x80000000
-#define SYS_MEM_SIZE_DEFAULT    0x07f00000		//127M
-#define SYS_MEM_END             (SYS_MEM_BASE + SYS_MEM_SIZE_DEFAULT) //0x87f00000
+#define SYS_MEM_BASE            DDR_MEM_ADDR
+#define SYS_MEM_END             (SYS_MEM_BASE + SYS_MEM_SIZE_DEFAULT)
 
-#define EXC_INTERACT_MEM_SIZE        0x100000 //1M
+#define EXC_INTERACT_MEM_SIZE   0x100000
 
 
 cached地址和uncached地址的区别是
@@ -121,12 +110,27 @@ cached地址和uncached地址的区别是
 你从IO设备读取数据时，肯定是希望直接读取IO设备的当前状态，而不是CPU缓存的过期值。
 *******************************************************************************************************/
 
+#ifdef LOSCFG_KERNEL_MMU
+#ifdef LOSCFG_TEE_ENABLE
+#define KERNEL_VADDR_BASE       0x41000000
+#else
+#define KERNEL_VADDR_BASE       0x40000000
+#endif
+#else
+#define KERNEL_VADDR_BASE       DDR_MEM_ADDR
+#endif
+#define KERNEL_VADDR_SIZE       DDR_MEM_SIZE
 
-#define DEFINE_(X)  X##U
-#define DEFINE(X)   DEFINE_(X)
+#define SYS_MEM_BASE            DDR_MEM_ADDR
+#define SYS_MEM_END             (SYS_MEM_BASE + SYS_MEM_SIZE_DEFAULT)
 
-#define KERNEL_VMM_BASE         DEFINE(KERNEL_VADDR_BASE)//内核虚拟内存开始位置 //0x40000000
-#define KERNEL_VMM_SIZE         DEFINE(KERNEL_VADDR_SIZE)//内核虚拟内存大小
+#define EXC_INTERACT_MEM_SIZE   0x100000
+
+#define _U32_C(X)  X##U
+#define U32_C(X)   _U32_C(X)
+
+#define KERNEL_VMM_BASE         U32_C(KERNEL_VADDR_BASE)
+#define KERNEL_VMM_SIZE         U32_C(KERNEL_VADDR_SIZE)
 
 #define KERNEL_ASPACE_BASE      KERNEL_VMM_BASE //内核空间开始地址
 #define KERNEL_ASPACE_SIZE      KERNEL_VMM_SIZE //内核空间大小
@@ -138,12 +142,21 @@ cached地址和uncached地址的区别是
 #define VMALLOC_START           (UNCACHED_VMM_BASE + UNCACHED_VMM_SIZE)//动态分配基地址
 #define VMALLOC_SIZE            0x08000000//128M
 
-#define PERIPH_DEVICE_BASE      (VMALLOC_START + VMALLOC_SIZE)//外围设备基地址
-#define PERIPH_DEVICE_SIZE      PERIPH_PMM_SIZE //外围设备空间大小
-#define PERIPH_CACHED_BASE      (PERIPH_DEVICE_BASE + PERIPH_DEVICE_SIZE)//外围设备缓存基地址
-#define PERIPH_CACHED_SIZE      PERIPH_PMM_SIZE //外围设备缓存空间大小
-#define PERIPH_UNCACHED_BASE    (PERIPH_CACHED_BASE + PERIPH_CACHED_SIZE)//外围设备未缓存空间大小
-#define PERIPH_UNCACHED_SIZE    PERIPH_PMM_SIZE //外围设备未缓存空间大小
+#ifdef LOSCFG_KERNEL_MMU
+#define PERIPH_DEVICE_BASE      (VMALLOC_START + VMALLOC_SIZE)
+#define PERIPH_DEVICE_SIZE      U32_C(PERIPH_PMM_SIZE)
+#define PERIPH_CACHED_BASE      (PERIPH_DEVICE_BASE + PERIPH_DEVICE_SIZE)
+#define PERIPH_CACHED_SIZE      U32_C(PERIPH_PMM_SIZE)
+#define PERIPH_UNCACHED_BASE    (PERIPH_CACHED_BASE + PERIPH_CACHED_SIZE)
+#define PERIPH_UNCACHED_SIZE    U32_C(PERIPH_PMM_SIZE)
+#else
+#define PERIPH_DEVICE_BASE      PERIPH_PMM_BASE
+#define PERIPH_DEVICE_SIZE      U32_C(PERIPH_PMM_SIZE)
+#define PERIPH_CACHED_BASE      PERIPH_PMM_BASE
+#define PERIPH_CACHED_SIZE      U32_C(PERIPH_PMM_SIZE)
+#define PERIPH_UNCACHED_BASE    PERIPH_PMM_BASE
+#define PERIPH_UNCACHED_SIZE    U32_C(PERIPH_PMM_SIZE)
+#endif
 
 #define IO_DEVICE_ADDR(paddr)        (paddr - PERIPH_PMM_BASE + PERIPH_DEVICE_BASE)		//通过物理地址获取IO设备虚拟地址
 #define IO_CACHED_ADDR(paddr)        (paddr - PERIPH_PMM_BASE + PERIPH_CACHED_BASE)		//通过物理地址获取IO设备虚拟缓存地址

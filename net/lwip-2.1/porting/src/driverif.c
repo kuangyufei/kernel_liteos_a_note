@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -44,7 +44,6 @@
 #define link_rx_drop cachehit
 #define link_rx_overrun cachehit
 
-#define NETIF_NAME_LEN 2
 #define LWIP_STATIC static
 
 #ifndef LWIP_NETIF_IFINDEX_MAX_EX
@@ -56,6 +55,9 @@ driverif_init_ifname(struct netif *netif)
 {
     struct netif *tmpnetif = NULL;
     const char *prefix = (netif->link_layer_type == WIFI_DRIVER_IF) ? "wlan" : "eth";
+
+    netif->name[0] = prefix[0];
+    netif->name[1] = prefix[1];
 
     for (int i = 0; i < LWIP_NETIF_IFINDEX_MAX_EX; ++i) {
         if (snprintf_s(netif->full_name, sizeof(netif->full_name), sizeof(netif->full_name) - 1,
@@ -140,7 +142,7 @@ driverif_input(struct netif *netif, struct pbuf *p)
 #endif
 #else
     u16_t ethhdr_type;
-    struct eth_hdr* ethhdr = NULL;
+    struct eth_hdr *ethhdr = NULL;
 #endif
     err_t ret = ERR_VAL;
 
@@ -241,7 +243,6 @@ err_t
 driverif_init(struct netif *netif)
 {
     u16_t link_layer_type;
-    err_t ret;
 
     if (netif == NULL) {
         return ERR_IF;
@@ -262,17 +263,7 @@ driverif_init(struct netif *netif)
 
 #if LWIP_NETIF_HOSTNAME
     /* Initialize interface hostname */
-#if LOSCFG_NET_LWIP_SACK_2_0
-    if (strncpy_s(netif->hostname, NETIF_HOSTNAME_MAX_LEN,
-                  LWIP_NETIF_HOSTNAME_DEFAULT, NETIF_HOSTNAME_MAX_LEN - 1) == EOK) {
-        netif->hostname[NETIF_HOSTNAME_MAX_LEN - 1] = '\0';
-    } else {
-        LWIP_DEBUGF(DRIVERIF_DEBUG, ("driverif_init: hostname %s in invalid\n", LWIP_NETIF_HOSTNAME_DEFAULT));
-        netif->hostname[0] = '\0';
-    }
-#else
     netif->hostname = LWIP_NETIF_HOSTNAME_DEFAULT;
-#endif
 #endif /* LWIP_NETIF_HOSTNAME */
 
     /*
@@ -285,21 +276,6 @@ driverif_init(struct netif *netif)
     netif->output = etharp_output;
     netif->linkoutput = driverif_output;
 
-    if (link_layer_type == ETHERNET_DRIVER_IF) {
-        ret = memcpy_s(netif->name, sizeof(netif->name), "et", NETIF_NAME_LEN);
-    } else {
-        ret = memcpy_s(netif->name, sizeof(netif->name), "wl", NETIF_NAME_LEN);
-    }
-    if (ret != EOK) {
-#if LWIP_NETIF_HOSTNAME
-#if LOSCFG_NET_LWIP_SACK_2_0
-        netif->hostname[0] = '\0';
-#else
-        netif->hostname = NULL;
-#endif
-#endif
-        return ERR_IF;
-    }
     /* init the netif's full name */
     driverif_init_ifname(netif);
 
@@ -309,30 +285,30 @@ driverif_init(struct netif *netif)
     /* device capabilities */
     /* don't set NETIF_FLAG_ETHARP if this device is not an ethernet one */
     netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP |
-#if DRIVER_STATUS_CHECK
-            NETIF_FLAG_DRIVER_RDY |
-#endif
-#if LWIP_IGMP
-            NETIF_FLAG_IGMP |
-#endif
+                   #if DRIVER_STATUS_CHECK
+                   NETIF_FLAG_DRIVER_RDY |
+                   #endif
+                   #if LWIP_IGMP
+                   NETIF_FLAG_IGMP |
+                   #endif
 
-/**
-@page RFC-2710 RFC-2710
-@par Compliant Sections
-Section 5. Node State Transition Diagram
-@par Behavior Description
-MLD messages are sent for multicast addresses whose scope is 2
-(link-local), including Solicited-Node multicast addresses.\n
-Behavior:Stack will send MLD6 report /Done to solicited node multicast address
-if the LWIP_MLD6_ENABLE_MLD_ON_DAD is enabled. By default, this is disabled.
-*/
-/* Enable sending MLD report /done for solicited address during neighbour discovery */
-#if LWIP_IPV6 && LWIP_IPV6_MLD
-#if LWIP_MLD6_ENABLE_MLD_ON_DAD
-            NETIF_FLAG_MLD6 |
-#endif /* LWIP_MLD6_ENABLE_MLD_ON_DAD */
-#endif
-            NETIF_FLAG_LINK_UP;
+                   /**
+                   @page RFC-2710 RFC-2710
+                   @par Compliant Sections
+                   Section 5. Node State Transition Diagram
+                   @par Behavior Description
+                   MLD messages are sent for multicast addresses whose scope is 2
+                   (link-local), including Solicited-Node multicast addresses.\n
+                   Behavior:Stack will send MLD6 report /Done to solicited node multicast address
+                   if the LWIP_MLD6_ENABLE_MLD_ON_DAD is enabled. By default, this is disabled.
+                   */
+                   /* Enable sending MLD report /done for solicited address during neighbour discovery */
+                   #if LWIP_IPV6 && LWIP_IPV6_MLD
+                   #if LWIP_MLD6_ENABLE_MLD_ON_DAD
+                   NETIF_FLAG_MLD6 |
+                   #endif /* LWIP_MLD6_ENABLE_MLD_ON_DAD */
+                   #endif
+                   NETIF_FLAG_LINK_UP;
 
 #if DRIVER_STATUS_CHECK
     netif->waketime = -1;

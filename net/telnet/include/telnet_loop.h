@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -41,11 +41,11 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifdef LOSCFG_NET_TELNET
-#define TELNETD_PORT        23 	//telnet 监听23端口
-#define TELNET_KEEPALIVE    1	//保持连接
-#define TELNET_KEEPIDLE     60	//设置keepalive的开始时间
-#define TELNET_KEEPINTV     2	//两次KeepAlive探测间的时间间隔 2S
-#define TELNET_KEEPCNT      5	//重连次数	
+#define TELNETD_PORT        23
+#define TELNET_KEEPALIVE    1
+#define TELNET_KEEPIDLE     60
+#define TELNET_KEEPINTV     2
+#define TELNET_KEEPCNT      5
 
 extern INT32 TelnetCmd(UINT32 argc, const CHAR **argv);
 #endif

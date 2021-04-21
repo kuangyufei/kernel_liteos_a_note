@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,9 +32,13 @@
 #include "los_user_init.h"
 #include "los_syscall.h"
 
+#ifdef LOSCFG_KERNEL_SYSCALL
+
 #define SYS_CALL_VALUE 0x900001
 
-#ifdef LOSCFG_KERNEL_DYNLOAD
+#ifdef LOSCFG_QUICK_START
+LITE_USER_SEC_RODATA STATIC CHAR *g_initPath = "/dev/shm/init";
+#else
 LITE_USER_SEC_RODATA STATIC CHAR *g_initPath = "/bin/init";//由Init_lite在编译后,生成
 #endif
 //将 sys_call3 链接在 section(".user.text")段
@@ -59,9 +63,10 @@ LITE_USER_SEC_TEXT STATIC UINT32 sys_call3(UINT32 nbr, UINT32 parm1, UINT32 parm
 
 LITE_USER_SEC_ENTRY VOID OsUserInit(VOID *args)
 {
-#ifdef LOSCFG_KERNEL_DYNLOAD //内核是否支持动态加载
+#ifdef LOSCFG_KERNEL_DYNLOAD
     sys_call3(__NR_execve, (UINTPTR)g_initPath, 0, 0);
 #endif
-    while (1) { //进入死循环,首个用户态进程的优先级是很低的,28级
+    while (true) {
     }
 }
+#endif

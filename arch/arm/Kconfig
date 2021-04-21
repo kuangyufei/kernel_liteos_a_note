@@ -75,3 +75,29 @@ config ARCH_CORTEX_A7
 config ARCH_CPU
     string
     default "cortex-a7" if ARCH_CORTEX_A7
+
+#
+# Supported GIC version
+#
+
+choice
+    prompt "GIC version"
+    default ARCH_GIC_V2
+    help
+      Interrupt Controller.
+
+config ARCH_GIC_V2
+    bool "GIC Version 2"
+    help
+      This GIC(General Interrupt Controller) version 2 driver is compatatble with
+      GIC version 1 and version 2.
+
+config ARCH_GIC_V3
+    bool "GIC Version 3"
+    depends on ARCH_ARM_V8A || ARCH_ARM_V8R
+    help
+      General Interrupt Controller version 3.
+
+endchoice
+
+

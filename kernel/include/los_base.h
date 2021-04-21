@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -60,6 +60,8 @@ extern "C" {
 
 #define LOS_ASSERT_COND(expression) LOS_ASSERT(expression)
 
+extern VOID PrintExcInfo(const CHAR *fmt, ...);
+
 /**
  * @ingroup los_base
  * Define the timeout interval as LOS_NO_WAIT.
@@ -91,73 +93,73 @@ extern "C" {
  * @ingroup los_base
  * Read a UINT8 value from addr and stroed in value.
  */
-#define READ_UINT8(value, addr)                     ({ (value) = *((volatile UINT8 *)((UINTPTR)(addr))); Dsb(); })
+#define READ_UINT8(value, addr)                     ({ (value) = *((volatile UINT8 *)((UINTPTR)(addr))); DSB; })
 
 /**
  * @ingroup los_base
  * Read a UINT16 value from addr and stroed in addr.
  */
-#define READ_UINT16(value, addr)                    ({ (value) = *((volatile UINT16 *)((UINTPTR)(addr))); Dsb(); })
+#define READ_UINT16(value, addr)                    ({ (value) = *((volatile UINT16 *)((UINTPTR)(addr))); DSB; })
 
 /**
  * @ingroup los_base
  * Read a UINT32 value from addr and stroed in value.
  */
-#define READ_UINT32(value, addr)                    ({ (value) = *((volatile UINT32 *)((UINTPTR)(addr))); Dsb(); })
+#define READ_UINT32(value, addr)                    ({ (value) = *((volatile UINT32 *)((UINTPTR)(addr))); DSB; })
 
 /**
  * @ingroup los_base
  * Read a UINT64 value from addr and stroed in value.
  */
-#define READ_UINT64(value, addr)                    ({ (value) = *((volatile UINT64 *)((UINTPTR)(addr))); Dsb(); })
+#define READ_UINT64(value, addr)                    ({ (value) = *((volatile UINT64 *)((UINTPTR)(addr))); DSB; })
 
 /**
  * @ingroup los_base
  * Write a UINT8 value to addr.
  */
-#define WRITE_UINT8(value, addr)                    ({ Dsb(); *((volatile UINT8 *)((UINTPTR)(addr))) = (value); })
+#define WRITE_UINT8(value, addr)                    ({ DSB; *((volatile UINT8 *)((UINTPTR)(addr))) = (value); })
 
 /**
  * @ingroup los_base
  * Write a UINT16 value to addr.
  */
-#define WRITE_UINT16(value, addr)                   ({ Dsb(); *((volatile UINT16 *)((UINTPTR)(addr))) = (value); })
+#define WRITE_UINT16(value, addr)                   ({ DSB; *((volatile UINT16 *)((UINTPTR)(addr))) = (value); })
 
 /**
  * @ingroup los_base
  * Write a UINT32 value to addr.
  */
-#define WRITE_UINT32(value, addr)                   ({ Dsb(); *((volatile UINT32 *)((UINTPTR)(addr))) = (value); })
+#define WRITE_UINT32(value, addr)                   ({ DSB; *((volatile UINT32 *)((UINTPTR)(addr))) = (value); })
 
 /**
  * @ingroup los_base
  * Write a UINT64 addr to addr.
  */
-#define WRITE_UINT64(value, addr)                   ({ Dsb(); *((volatile UINT64 *)((UINTPTR)(addr))) = (value); })
+#define WRITE_UINT64(value, addr)                   ({ DSB; *((volatile UINT64 *)((UINTPTR)(addr))) = (value); })
 
 /**
  * @ingroup los_base
  * Get a UINT8 value from addr.
  */
-#define GET_UINT8(addr)                             ({ UINT8 r = *((volatile UINT8 *)((UINTPTR)(addr))); Dsb(); r; })
+#define GET_UINT8(addr)                             ({ UINT8 r = *((volatile UINT8 *)((UINTPTR)(addr))); DSB; r; })
 
 /**
  * @ingroup los_base
  * Get a UINT16 value from addr.
  */
-#define GET_UINT16(addr)                            ({ UINT16 r = *((volatile UINT16 *)((UINTPTR)(addr))); Dsb(); r; })
+#define GET_UINT16(addr)                            ({ UINT16 r = *((volatile UINT16 *)((UINTPTR)(addr))); DSB; r; })
 
 /**
  * @ingroup los_base
  * Get a UINT32 value from addr.
  */
-#define GET_UINT32(addr)                            ({ UINT32 r = *((volatile UINT32 *)((UINTPTR)(addr))); Dsb(); r; })
+#define GET_UINT32(addr)                            ({ UINT32 r = *((volatile UINT32 *)((UINTPTR)(addr))); DSB; r; })
 
 /**
  * @ingroup los_base
  * Get a UINT64 value from addr.
  */
-#define GET_UINT64(addr)                            ({ UINT64 r = *((volatile UINT64 *)((UINTPTR)(addr))); Dsb(); r; })
+#define GET_UINT64(addr)                            ({ UINT64 r = *((volatile UINT64 *)((UINTPTR)(addr))); l; r; })
 
 #ifdef LOSCFG_DEBUG_VERSION
 #define LOS_ASSERT(judge) do {                                                     \

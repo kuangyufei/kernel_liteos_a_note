@@ -25,6 +25,10 @@ config NET_LWIP_SACK_2_1
     bool "Enable Lwipsack (2.1)"
     depends on NET_LWIP_SACK
 
+config NET_LWIP_SACK_2_0
+    bool "Enable Lwipsack (2.0)"
+    depends on NET_LWIP_SACK
+
 endchoice
 endmenu
 

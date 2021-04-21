@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -35,8 +35,11 @@ LOCAL_SRCS := $(wildcard os_adapt/*.c)
 LOCAL_SRCS += $(wildcard $(LITEOSTHIRDPARTY)/FatFs/source/*.c)
 
 LOCAL_INCLUDE := \
-    -I $(LITEOSTHIRDPARTY)/FatFs/source \
-    -I $(LITEOSTOPDIR)/fs/fat/virpart/include
+	-I $(LITEOSTHIRDPARTY)/FatFs/source \
+	-I $(LITEOSTOPDIR)/fs/fat/os_adapt \
+	-I $(LITEOSTOPDIR)/fs/fat/virpart/include \
+	-I $(LITEOSTOPDIR)/fs/vfs \
+	-I $(LITEOSTHIRDPARTY)/NuttX/include
 
 LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
 

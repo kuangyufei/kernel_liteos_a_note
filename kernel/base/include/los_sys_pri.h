@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -79,6 +79,30 @@ extern "C" {
 
 /**
  * @ingroup los_sys
+ * Number of cycle in one tick.
+ */
+#define OS_CYCLE_PER_TICK       (OS_SYS_CLOCK / LOSCFG_BASE_CORE_TICK_PER_SECOND)
+
+/**
+ * @ingroup los_sys
+ * Number of nanoseconds in one cycle.
+ */
+#define OS_NS_PER_CYCLE         (OS_SYS_NS_PER_SECOND / OS_SYS_CLOCK)
+
+/**
+ * @ingroup los_sys
+ * Number of microseconds in one tick.
+ */
+#define OS_US_PER_TICK          (OS_SYS_US_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND)
+
+/**
+ * @ingroup los_sys
+ * Number of nanoseconds in one tick.
+ */
+#define OS_NS_PER_TICK          (OS_SYS_NS_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND)
+
+/**
+ * @ingroup los_sys
  * The maximum length of name.
  */
 #define OS_SYS_APPVER_NAME_MAX 64			//名字的最大长度
@@ -95,6 +119,11 @@ extern "C" {
  */
 #define OS_SYS_EMPTY_STACK     0xCACACACA	//栈的填充内容魔法数字
 
+/**
+ * @ingroup los_sys
+ * Convert microseconds to Ticks.
+ */
+extern UINT32 OsUS2Tick(UINT64 microsec);
 #ifdef __cplusplus
 #if __cplusplus
 }

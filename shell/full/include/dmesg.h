@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -44,13 +44,13 @@ extern "C" {
  * @ingroup dmesg
  * Defalut dmesg buffer size.
  */
-#define KERNEL_LOG_BUF_SIZE (8 * 1024) //默认缓存区大小
+#define KERNEL_LOG_BUF_SIZE (8 * 1024)
 
 /**
  * @ingroup dmesg
  * Max dmesg buffer size to set.
  */
-#define MAX_KERNEL_LOG_BUF_SIZE (8 * 1024 * 10) //设置缓冲区大小的上限 可以通过shell dmesg -s XX(K) 来改变缓冲区大小
+#define MAX_KERNEL_LOG_BUF_SIZE (8 * 1024 * 10)
 
 /**
  * @ingroup dmesg
@@ -74,7 +74,7 @@ extern "C" {
  * <ul><li>dmesg.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_DmesgMemSet
  */
-extern UINT32 LOS_DmesgMemSet(VOID *addr, UINT32 size);
+extern UINT32 LOS_DmesgMemSet(const VOID *addr, UINT32 size);
 
 /**
  * @ingroup dmesg

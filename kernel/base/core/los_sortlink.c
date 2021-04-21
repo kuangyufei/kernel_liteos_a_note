@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,213 +32,218 @@
 #include "los_sortlink_pri.h"
 #include "los_memory.h"
 #include "los_exc.h"
+#include "los_percpu_pri.h"
+#include "los_sched_pri.h"
+#include "los_mp.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
-//排序链表,这是通用处理函数 内核有两处使用 OsSwtmrInit 和 OsTaskInit 见于 Percpu 结构体
-LITE_OS_SEC_TEXT_INIT UINT32 OsSortLinkInit(SortLinkAttribute *sortLinkHeader)
+
+UINT32 OsSortLinkInit(SortLinkAttribute *sortLinkHeader)
 {
-    UINT32 size;
-    LOS_DL_LIST *listObject = NULL;
-    UINT32 index;
-
-    size = sizeof(LOS_DL_LIST) << OS_TSK_SORTLINK_LOGLEN;//这行代码很精彩, size=64个字节 每个LOS_DL_LIST8个字节,即等于 8个LOS_DL_LIST
-    listObject = (LOS_DL_LIST *)LOS_MemAlloc(m_aucSysMem0, size); /* system resident resource *///常驻内存 size表示字节的意思
-    if (listObject == NULL) {
-        return LOS_NOK;
-    }
-
-    (VOID)memset_s(listObject, size, 0, size);//清0
-    sortLinkHeader->sortLink = listObject;//可以知道 sortLink是个链表数组,这个很重要
-    sortLinkHeader->cursor = 0;//游标默认为0
-    for (index = 0; index < OS_TSK_SORTLINK_LEN; index++, listObject++) {// OS_TSK_SORTLINK_LEN = 8
-        LOS_ListInit(listObject);//初始化8个链表
-    }
+    LOS_ListInit(&sortLinkHeader->sortLink);
+    sortLinkHeader->nodeNum = 0;
     return LOS_OK;
 }
 
-LITE_OS_SEC_TEXT VOID OsAdd2SortLink(const SortLinkAttribute *sortLinkHeader, SortLinkList *sortList)
+STATIC INLINE VOID OsAddNode2SortLink(SortLinkAttribute *sortLinkHeader, SortLinkList *sortList)
 {
-    SortLinkList *listSorted = NULL;
-    LOS_DL_LIST *listObject = NULL;
-    UINT32 sortIndex;
-    UINT32 rollNum;
-    UINT32 timeout;
+    LOS_DL_LIST *head = (LOS_DL_LIST *)&sortLinkHeader->sortLink;
 
-    /*
-     * huge rollnum could cause carry to invalid high bit
-     * and eventually affect the calculation of sort index.
-     */ //巨大的滚动数可能导致进位无效最终影响排序指标的计算。
-    if (sortList->idxRollNum > OS_TSK_MAX_ROLLNUM) { //滚动数索引最大就是 OS_TSK_MAX_ROLLNUM 
-        SET_SORTLIST_VALUE(sortList, OS_TSK_MAX_ROLLNUM);
-    }
-    timeout = sortList->idxRollNum;
-    sortIndex = timeout & OS_TSK_SORTLINK_MASK;//  决定放在哪个链表中
-    rollNum = (timeout >> OS_TSK_SORTLINK_LOGLEN) + 1;
-    if (sortIndex == 0) {
-        rollNum--;
-    }
-    EVALUATE_L(sortList->idxRollNum, rollNum);//计算idxRollNum的低位
-    sortIndex = sortIndex + sortLinkHeader->cursor;//通过游标确定最终链表位置
-    sortIndex = sortIndex & OS_TSK_SORTLINK_MASK;//sortIndex不能大于OS_TSK_SORTLINK_MASK
-    EVALUATE_H(sortList->idxRollNum, sortIndex);//计算idxRollNum的高位
-
-    listObject = sortLinkHeader->sortLink + sortIndex;//找到最终要挂入的链表
-    if (listObject->pstNext == listObject) {//为空时
-        LOS_ListTailInsert(listObject, &sortList->sortLinkNode);//直接挂上去
-    } else {
-        listSorted = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);//取出SortLinkList
-        do {
-            if (ROLLNUM(listSorted->idxRollNum) <= ROLLNUM(sortList->idxRollNum)) {// @note_why 这块没看懂,谁能帮帮我
-                ROLLNUM_SUB(sortList->idxRollNum, listSorted->idxRollNum);
-            } else {
-                ROLLNUM_SUB(listSorted->idxRollNum, sortList->idxRollNum);
-                break;
-            }
-
-            listSorted = LOS_DL_LIST_ENTRY(listSorted->sortLinkNode.pstNext, SortLinkList, sortLinkNode);//取下一个
-        } while (&listSorted->sortLinkNode != listObject);//一直查询直到回到起点位置
-
-        LOS_ListTailInsert(&listSorted->sortLinkNode, &sortList->sortLinkNode);//插入链表
-    }
-}
-
-LITE_OS_SEC_TEXT STATIC VOID OsCheckSortLink(const LOS_DL_LIST *listHead, const LOS_DL_LIST *listNode)
-{
-    LOS_DL_LIST *tmp = listNode->pstPrev;
-
-    /* recursive check until double link round to itself */ //递归检查，直到双链接循环到自身
-    while (tmp != listNode) {
-        if (tmp == listHead) {
-            goto FOUND;
-        }
-        tmp = tmp->pstPrev;
-    }
-
-    /* delete invalid sortlink node */
-    PRINT_ERR("the node is not on this sortlink!\n");
-    OsBackTrace();
-
-FOUND:
-    return;
-}
-//删除排序链表
-LITE_OS_SEC_TEXT VOID OsDeleteSortLink(const SortLinkAttribute *sortLinkHeader, SortLinkList *sortList)
-{
-    LOS_DL_LIST *listObject = NULL;
-    SortLinkList *nextSortList = NULL;
-    UINT32 sortIndex;
-
-    sortIndex = SORT_INDEX(sortList->idxRollNum);//找出对应索引,索引是通过滚动的idxRollNum来定位的
-    listObject = sortLinkHeader->sortLink + sortIndex;//找出索引对应的链表
-
-    /* check if pstSortList node is on the right sortlink */ //检查pstSortList节点是否在正确的sortlink上
-    OsCheckSortLink(listObject, &sortList->sortLinkNode);
-
-    if (listObject != sortList->sortLinkNode.pstNext) {
-        nextSortList = LOS_DL_LIST_ENTRY(sortList->sortLinkNode.pstNext, SortLinkList, sortLinkNode);
-        ROLLNUM_ADD(nextSortList->idxRollNum, sortList->idxRollNum);
-    }
-    LOS_ListDelete(&sortList->sortLinkNode);
-}
-//计算超时时间
-LITE_OS_SEC_TEXT STATIC UINT32 OsCalcExpierTime(UINT32 rollNum, UINT32 sortIndex, UINT16 curSortIndex)
-{
-    UINT32 expireTime;
-
-    if (sortIndex > curSortIndex) {
-        sortIndex = sortIndex - curSortIndex;
-    } else {
-        sortIndex = OS_TSK_SORTLINK_LEN - curSortIndex + sortIndex;
-    }
-    expireTime = ((rollNum - 1) << OS_TSK_SORTLINK_LOGLEN) + sortIndex;
-    return expireTime;
-}
-//从sortLink中获取下一个过期时间
-LITE_OS_SEC_TEXT UINT32 OsSortLinkGetNextExpireTime(const SortLinkAttribute *sortLinkHeader)
-{
-    UINT16 cursor;
-    UINT32 minSortIndex = OS_INVALID_VALUE;
-    UINT32 minRollNum = OS_TSK_LOW_BITS_MASK;
-    UINT32 expireTime = OS_INVALID_VALUE;
-    LOS_DL_LIST *listObject = NULL;
-    SortLinkList *listSorted = NULL;
-    UINT32 i;
-
-    cursor = (sortLinkHeader->cursor + 1) & OS_TSK_SORTLINK_MASK;
-
-    for (i = 0; i < OS_TSK_SORTLINK_LEN; i++) {
-        listObject = sortLinkHeader->sortLink + ((cursor + i) & OS_TSK_SORTLINK_MASK);
-        if (!LOS_ListEmpty(listObject)) {
-            listSorted = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-            if (minRollNum > ROLLNUM(listSorted->idxRollNum)) {
-                minRollNum = ROLLNUM(listSorted->idxRollNum);
-                minSortIndex = (cursor + i) & OS_TSK_SORTLINK_MASK;
-            }
-        }
-    }
-
-    if (minRollNum != OS_TSK_LOW_BITS_MASK) {
-        expireTime = OsCalcExpierTime(minRollNum, minSortIndex, sortLinkHeader->cursor);
-    }
-
-    return expireTime;
-}
-
-LITE_OS_SEC_TEXT VOID OsSortLinkUpdateExpireTime(UINT32 sleepTicks, SortLinkAttribute *sortLinkHeader)
-{
-    SortLinkList *sortList = NULL;
-    LOS_DL_LIST *listObject = NULL;
-    UINT32 i;
-    UINT32 sortIndex;
-    UINT32 rollNum;
-
-    if (sleepTicks == 0) {
+    if (LOS_ListEmpty(head)) {
+        LOS_ListHeadInsert(head, &sortList->sortLinkNode);
+        sortLinkHeader->nodeNum++;
         return;
     }
-    sortIndex = sleepTicks & OS_TSK_SORTLINK_MASK;
-    rollNum = (sleepTicks >> OS_TSK_SORTLINK_LOGLEN) + 1;
-    if (sortIndex == 0) {
-        rollNum--;
-        sortIndex = OS_TSK_SORTLINK_LEN;
+
+    SortLinkList *listSorted = LOS_DL_LIST_ENTRY(head->pstNext, SortLinkList, sortLinkNode);
+    if (listSorted->responseTime >= sortList->responseTime) {
+        LOS_ListAdd(head, &sortList->sortLinkNode);
+        sortLinkHeader->nodeNum++;
+        return;
     }
 
-    for (i = 0; i < OS_TSK_SORTLINK_LEN; i++) {
-        listObject = sortLinkHeader->sortLink + ((sortLinkHeader->cursor + i) & OS_TSK_SORTLINK_MASK);
-        if (listObject->pstNext != listObject) {
-            sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-            ROLLNUM_SUB(sortList->idxRollNum, rollNum - 1);
-            if ((i > 0) && (i < sortIndex)) {
-                ROLLNUM_DEC(sortList->idxRollNum);
-            }
+    LOS_DL_LIST *prevNode = head->pstPrev;
+    do {
+        listSorted = LOS_DL_LIST_ENTRY(prevNode, SortLinkList, sortLinkNode);
+        if (listSorted->responseTime <= sortList->responseTime) {
+            LOS_ListAdd(prevNode, &sortList->sortLinkNode);
+            sortLinkHeader->nodeNum++;
+            break;
         }
-    }
-    sortLinkHeader->cursor = (sortLinkHeader->cursor + sleepTicks - 1) % OS_TSK_SORTLINK_LEN;
+
+        prevNode = prevNode->pstPrev;
+    } while (1);
 }
 
-LITE_OS_SEC_TEXT_MINOR UINT32 OsSortLinkGetTargetExpireTime(const SortLinkAttribute *sortLinkHeader,
-                                                            const SortLinkList *targetSortList)
+VOID OsDeleteNodeSortLink(SortLinkAttribute *sortLinkHeader, SortLinkList *sortList)
 {
-    SortLinkList *listSorted = NULL;
-    LOS_DL_LIST *listObject = NULL;
-    UINT32 sortIndex = SORT_INDEX(targetSortList->idxRollNum);
-    UINT32 rollNum = ROLLNUM(targetSortList->idxRollNum);
+    LOS_ListDelete(&sortList->sortLinkNode);
+    SET_SORTLIST_VALUE(sortList, OS_SORT_LINK_INVALID_TIME);
+    sortLinkHeader->nodeNum--;
+}
 
-    listObject = sortLinkHeader->sortLink + sortIndex;
+STATIC INLINE UINT64 OsGetSortLinkNextExpireTime(SortLinkAttribute *sortHeader, UINT64 startTime)
+{
+    UINT64 expirTime = 0;
+    UINT64 nextExpirTime = 0;
+    LOS_DL_LIST *head = &sortHeader->sortLink;
+    LOS_DL_LIST *list = head->pstNext;
 
-    listSorted = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-    while (listSorted != targetSortList) {
-        rollNum += ROLLNUM(listSorted->idxRollNum);
-        listSorted = LOS_DL_LIST_ENTRY((listSorted->sortLinkNode).pstNext, SortLinkList, sortLinkNode);
+    if (LOS_ListEmpty(head)) {
+        return (UINT64)-1;
     }
-    return OsCalcExpierTime(rollNum, sortIndex, sortLinkHeader->cursor);
+
+    do {
+        SortLinkList *listSorted = LOS_DL_LIST_ENTRY(list, SortLinkList, sortLinkNode);
+        if (listSorted->responseTime <= startTime) {
+            expirTime = startTime;
+            list = list->pstNext;
+        } else {
+            nextExpirTime = listSorted->responseTime;
+            break;
+        }
+    } while (list != head);
+
+    if (expirTime == 0) {
+        return nextExpirTime;
+    }
+
+    if (nextExpirTime == 0) {
+        return expirTime;
+    }
+
+    if ((nextExpirTime - expirTime) <= OS_US_PER_TICK) {
+        return nextExpirTime;
+    }
+
+    return expirTime;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
+STATIC Percpu *OsFindIdleCpu(UINT16 *ildeCpuID)
+{
+    Percpu *idleCpu = OsPercpuGetByID(0);
+    *ildeCpuID = 0;
+
+#if (LOSCFG_KERNEL_SMP == YES)
+    UINT16 cpuID = 1;
+    UINT32 nodeNum = idleCpu->taskSortLink.nodeNum + idleCpu->swtmrSortLink.nodeNum;
+
+    do {
+        Percpu *cpu = OsPercpuGetByID(cpuID);
+        UINT32 temp = cpu->taskSortLink.nodeNum + cpu->swtmrSortLink.nodeNum;
+        if (nodeNum > temp) {
+            idleCpu = cpu;
+            *ildeCpuID = cpuID;
+        }
+
+        cpuID++;
+    } while (cpuID < LOSCFG_KERNEL_CORE_NUM);
 #endif
-#endif /* __cplusplus */
+
+    return idleCpu;
+}
+
+VOID OsAdd2SortLink(SortLinkList *node, UINT64 startTime, UINT32 waitTicks, SortLinkType type)
+{
+    UINT32 intSave;
+    Percpu *cpu = NULL;
+    SortLinkAttribute *sortLinkHeader = NULL;
+    SPIN_LOCK_S *spinLock = NULL;
+    UINT16 idleCpu;
+
+    if (OS_SCHEDULER_ACTIVE) {
+        cpu = OsFindIdleCpu(&idleCpu);
+    } else {
+        idleCpu = ArchCurrCpuid();
+        cpu = OsPercpuGet();
+    }
+
+    if (type == OS_SORT_LINK_TASK) {
+        sortLinkHeader = &cpu->taskSortLink;
+        spinLock = &cpu->taskSortLinkSpin;
+    } else if (type == OS_SORT_LINK_SWTMR) {
+        sortLinkHeader = &cpu->swtmrSortLink;
+        spinLock = &cpu->swtmrSortLinkSpin;
+    } else {
+        LOS_Panic("Sort link type error : %u\n", type);
+    }
+
+    LOS_SpinLockSave(spinLock, &intSave);
+    SET_SORTLIST_VALUE(node, startTime + (UINT64)waitTicks * OS_CYCLE_PER_TICK);
+    OsAddNode2SortLink(sortLinkHeader, node);
+#if (LOSCFG_KERNEL_SMP == YES)
+    node->cpuid = idleCpu;
+    if (idleCpu != ArchCurrCpuid()) {
+        LOS_MpSchedule(CPUID_TO_AFFI_MASK(idleCpu));
+    }
+#endif
+    LOS_SpinUnlockRestore(spinLock, intSave);
+}
+
+VOID OsDeleteSortLink(SortLinkList *node, SortLinkType type)
+{
+    UINT32 intSave;
+#if (LOSCFG_KERNEL_SMP == YES)
+    Percpu *cpu = OsPercpuGetByID(node->cpuid);
+#else
+    Percpu *cpu = OsPercpuGetByID(0);
+#endif
+
+    SPIN_LOCK_S *spinLock = NULL;
+    SortLinkAttribute *sortLinkHeader = NULL;
+    if (type == OS_SORT_LINK_TASK) {
+        sortLinkHeader = &cpu->taskSortLink;
+        spinLock = &cpu->taskSortLinkSpin;
+    } else if (type == OS_SORT_LINK_SWTMR) {
+        sortLinkHeader = &cpu->swtmrSortLink;
+        spinLock = &cpu->swtmrSortLinkSpin;
+    } else {
+        LOS_Panic("Sort link type error : %u\n", type);
+    }
+
+    LOS_SpinLockSave(spinLock, &intSave);
+    if (node->responseTime != OS_SORT_LINK_INVALID_TIME) {
+        OsDeleteNodeSortLink(sortLinkHeader, node);
+    }
+    LOS_SpinUnlockRestore(spinLock, intSave);
+}
+
+UINT64 OsGetNextExpireTime(UINT64 startTime)
+{
+    UINT32 intSave;
+    Percpu *cpu = OsPercpuGet();
+    SortLinkAttribute *taskHeader = &cpu->taskSortLink;
+    SortLinkAttribute *swtmrHeader = &cpu->swtmrSortLink;
+
+    LOS_SpinLockSave(&cpu->taskSortLinkSpin, &intSave);
+    UINT64 taskExpirTime = OsGetSortLinkNextExpireTime(taskHeader, startTime);
+    LOS_SpinUnlockRestore(&cpu->taskSortLinkSpin, intSave);
+
+    LOS_SpinLockSave(&cpu->swtmrSortLinkSpin, &intSave);
+    UINT64 swtmrExpirTime = OsGetSortLinkNextExpireTime(swtmrHeader, startTime);
+    LOS_SpinUnlockRestore(&cpu->swtmrSortLinkSpin, intSave);
+
+    return (taskExpirTime < swtmrExpirTime) ? taskExpirTime : swtmrExpirTime;
+}
+
+UINT32 OsSortLinkGetTargetExpireTime(const SortLinkList *targetSortList)
+{
+    UINT64 currTimes = OsGerCurrSchedTimeCycle();
+    if (currTimes >= targetSortList->responseTime) {
+        return 0;
+    }
+
+    return (UINT32)(targetSortList->responseTime - currTimes) / OS_CYCLE_PER_TICK;
+}
+
+UINT32 OsSortLinkGetNextExpireTime(const SortLinkAttribute *sortLinkHeader)
+{
+    LOS_DL_LIST *head = (LOS_DL_LIST *)&sortLinkHeader->sortLink;
+
+    if (LOS_ListEmpty(head)) {
+        return 0;
+    }
+
+    SortLinkList *listSorted = LOS_DL_LIST_ENTRY(head->pstNext, SortLinkList, sortLinkNode);
+    return OsSortLinkGetTargetExpireTime(listSorted);
+}
+

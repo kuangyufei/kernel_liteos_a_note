@@ -39,5 +39,5 @@ config FS_FAT_VOLUMES
 
 config FS_FAT_DISK
     bool "Enable partinfo for storage device"
-    depends on FS_FAT || DRIVERS_MMC || DRIVERS_USB
+    depends on FS_VFS && (FS_FAT || DRIVERS_MMC || DRIVERS_USB)
     default y

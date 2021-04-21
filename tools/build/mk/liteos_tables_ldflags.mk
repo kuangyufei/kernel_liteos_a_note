@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -31,7 +31,7 @@
 #task_shellcmd.c -utask_shellcmd
 #cpup_shellcmd.c -ucpup_shellcmd
 #shell_shellcmd.c -uhelp_shellcmd
-#mempt_shellcmd.c -ufree_shellcmd -umemcheck_shellcmd -uuname_shellcmd -ureadreg_shellcmd -uwritereg_shellcmd
+#mempt_shellcmd.c -ufree_shellcmd -umemcheck_shellcmd -uuname_shellcmd -uwritereg_shellcmd
 #sem_shellcmd.c -usem_shellcmd
 #sysinfo_shellcmd.c -usysteminfo_shellcmd
 #swtmr_shellcmd.c -uswtmr_shellcmd
@@ -58,8 +58,9 @@ LITEOS_TABLES_KERNEL_LDFLAGS := \
     -uwatch_shellcmd \
     -udeadlock_shellcmd \
     -ukill_shellcmd \
-    -upmm_shellcmd
-
+    -upmm_shellcmd \
+    -upanic_reset_shellcmd \
+    -ushm_shellcmd
 
 ####Net command####
 #api_shell.c -uarp_shellcmd -uifconfig_shellcmd -uping_shellcmd -utftp_shellcmd -unetstat_shellcmd -udns_shellcmd -untpdate_shellcmd
@@ -150,6 +151,10 @@ LITEOS_TABLES_FSMAP_LDFLAGS := \
     -ujffs_fsmap \
     -uprocfs_fsmap \
     -ug_fsmap
+
+#ifdef LOSCFG_FS_ZPFS
+LITEOS_TABLES_FSMAP_LDFLAGS += -uzpfs_fsmap
+#endif
 
 LITEOS_TABLES_LDFLAGS := \
     $(LITEOS_TABLES_KERNEL_LDFLAGS)\

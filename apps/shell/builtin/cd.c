@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -37,11 +37,6 @@
 #include "shcmd.h"
 #include "sherr.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 int Chdir(const char *tgtDir)
 {
@@ -53,17 +48,9 @@ int Chdir(const char *tgtDir)
 
     ret = chdir(tgtDir);
     if (ret == 0) {
-        ret = OsShellSetWorkingDirtectory(tgtDir, strlen(tgtDir) + 1); /* 1: the length of '\0' */
-        if (ret != SH_NOK) {
-            return ret;
-        }
+        ret = OsShellSetWorkingDirtectory(tgtDir, strlen(tgtDir) + 1); /* 1: the length of '\0' */        
     }
 
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

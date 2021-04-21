@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -43,6 +43,9 @@
 #include "limits.h"
 #include "los_typedef.h"
 #include "time.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "los_queue_pri.h"
 
@@ -51,73 +54,72 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-/******************************************************************* @note_pic
-posix ipc 消息队列和进程引用展示图,本图是理解posix消息队列的关键
-一个消息队列可以被多个进程使用,进程的一次打开就是一个 mqpersonal 
 
-              mqarray
-     +---------------------------------------+
-     |                         |mqpersonal * |
-     +---^--------------+-----------------+-++
-         |              ^                 ^ |
-         |              |                 | v
-+--------+------+    +--+------------+  +-+-+----------+
-|mqarray * |next+--->+mqarray * |next+->+mqarray *|next|
-+---------------+    +---------------+  +--------------+
-  mqpersonal           mqpersonal         mqpersonal
-
-********************************************************************/
 /**
  * @ingroup mqueue
- * Maximum number of messages in a message queue 
+ * Maximum number of messages in a message queue
  */
-#define MQ_MAX_MSG_NUM    16 //消息队列中的最大消息数, 最多16条消息
+#define MQ_MAX_MSG_NUM    16
 
 /**
  * @ingroup mqueue
  * Maximum size of a single message in a message queue
  */
-#define MQ_MAX_MSG_LEN    64 //消息队列中单个消息的最大大小, 消息的内容不能超过64个字节
+#define MQ_MAX_MSG_LEN    64
 
 
 /* CONSTANTS */
 
-#define MQ_USE_MAGIC  0x89abcdef //消息队列的魔法数字
+#define MQ_USE_MAGIC  0x89abcdef
 /* not suppurt prio */
 #define MQ_PRIO_MAX 1
 
+typedef union send_receive_t {
+    unsigned oth : 3;
+    unsigned grp : 6;
+    unsigned usr : 9;
+    short data;
+} mode_s;
+
 /* TYPE DEFINITIONS */
-struct mqarray {	//posix 消息队列结构体,对LosQueueCB的装饰,方便扩展
-    UINT32 mq_id : 31;		//消息队列ID,注意这个一定要放在第一位
-    UINT32 unlinkflag : 1;  //标记是否执行过mq_unlink的操作,因为是unlink是异步操作,所以用一个flag来标记.
-    char *mq_name;			//消息队列的名称
-    LosQueueCB *mqcb;		//内核消息队列控制块, 指向->g_allQueue[queueID]
-    struct mqpersonal *mq_personal;	//保存消息队列当前打开的描述符数的引用计数,可理解为多个进程打开一个消息队列,跟文件一样.
+struct mqarray {
+    UINT32 mq_id : 31;
+    UINT32 unlinkflag : 1;
+    char *mq_name;
+    UINT32 unlink_ref;
+    mode_s mode_data; /* mode data of mqueue */
+    uid_t euid; /* euid of mqueue */
+    gid_t egid; /* egid of mqueue */
+    fd_set mq_fdset; /* mqueue sysFd bit map */
+    LosQueueCB *mqcb;
+    struct mqpersonal *mq_personal;
 };
 
 struct mqpersonal {
-    struct mqarray *mq_posixdes; 	//记录捆绑了哪个消息队列
-    struct mqpersonal *mq_next;		//指向下一个打开这个消息队列的进程,一个消息队列允许多个进程打开.
-    int mq_flags;		//队列的读写权限( O_WRONLY , O_RDWR ==)
-    UINT32 mq_status;	//状态,初始为魔法数字 MQ_USE_MAGIC,放在尾部是必须的, 这个字段在结构体的结尾,也在mqarray的结尾
-};//因为一旦发送内存溢出,这个值会被修改掉,从而知道发生过异常.
+    struct mqarray *mq_posixdes;
+    struct mqpersonal *mq_next;
+    int mq_flags;
+    int mq_mode;  /* Mode of mqueue */
+    UINT32 mq_status;
+    UINT32 mq_refcount;
+};
 
 /**
  * @ingroup mqueue
- * Message queue attribute structure //消息队列属性结构
+ * Message queue attribute structure
  */
 struct mq_attr {
-    long mq_flags;    /**< Message queue flags */			//阻塞标志， 0或O_NONBLOCK
-    long mq_maxmsg;   /**< Maximum number of messages */	//最大消息数
-    long mq_msgsize;  /**< Maximum size of a message */		//每个消息最大大小
-    long mq_curmsgs;  /**< Number of messages in the current message queue */	//当前消息数
+    long mq_flags;    /**< Message queue flags */
+    long mq_maxmsg;   /**< Maximum number of messages */
+    long mq_msgsize;  /**< Maximum size of a message */
+    long mq_curmsgs;  /**< Number of messages in the current message queue */
 };
 
 /**
  * @ingroup mqueue
  * Handle type of a message queue
  */
-typedef UINTPTR   mqd_t;//被称为消息队列描述符,也称消息队列句柄,其本质就是一个数字凭证
+typedef UINTPTR   mqd_t;
 
 /**
  * @ingroup mqueue
@@ -414,6 +416,8 @@ extern int mq_timedsend(mqd_t personal, const char *msg, size_t msgLen,
  */
 extern ssize_t mq_timedreceive(mqd_t personal, char *msg, size_t msgLen,
                                unsigned int *msgPrio, const struct timespec *absTimeout);
+
+extern void mqueue_refer(int sysFd);
 
 #ifdef __cplusplus
 #if __cplusplus

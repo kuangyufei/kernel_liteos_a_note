@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -33,6 +33,7 @@
 #define _FS_OTHER_H
 
 #include "sys/types.h"
+#include "fs/vnode.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -44,7 +45,7 @@ extern void lsfd(void);
 
 extern void set_sd_sync_fn(int (*sync_fn)(int));
 
-extern struct inode *files_get_openfile(int fd);
+extern struct Vnode *files_get_openfile(int fd);
 
 #define READ_OP                 4
 #define WRITE_OP                2
@@ -58,6 +59,7 @@ extern struct inode *files_get_openfile(int fd);
 mode_t GetUmask(void);
 
 int VfsPermissionCheck(uint fuid, uint fgid, mode_t fileMode, int accMode);
+int VfsVnodePermissionCheck(const struct Vnode *node, int accMode);
 
 #ifdef __cplusplus
 #if __cplusplus

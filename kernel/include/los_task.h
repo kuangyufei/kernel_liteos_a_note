@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -916,6 +916,25 @@ extern UINT32 LOS_CurTaskIDGet(VOID);
 
 /**
  * @ingroup  los_task
+ * @brief Gets the maximum number of threads supported by the system.
+ *
+ * @par Description:
+ * This API is used to gets the maximum number of threads supported by the system.
+ *
+ * @attention
+ * <ul>
+ * <li> This interface should not be called before system initialized.</li>
+ * </ul>
+ *
+ * @retval None.
+ * @par Dependency:
+ * <ul><li>los_task.h: the header file that contains the API declaration.</li></ul>
+ * @see
+ */
+extern UINT32 LOS_GetSystemTaskMaximum(VOID);
+
+/**
+ * @ingroup  los_task
  * @brief Obtain a task information structure.
  *
  * @par Description:
@@ -1028,6 +1047,23 @@ extern INT32 LOS_GetTaskScheduler(INT32 taskID);
  * @see LOS_GetTaskScheduler
  */
 extern INT32 LOS_SetTaskScheduler(INT32 taskID, UINT16 policy, UINT16 priority);
+
+/**
+ * @ingroup  los_task
+ * @brief Trigger active task scheduling.
+ *
+ * @par Description:
+ * This API is used to trigger active task scheduling.
+ *
+ * @attention None.
+ *
+ * @param None
+ *
+ * @retval Nobe
+ * @par Dependency:
+ * <ul><li>los_task.h: the header file that contains the API declaration.</li></ul>
+ */
+extern VOID LOS_Schedule(VOID);
 
 #ifdef __cplusplus
 #if __cplusplus

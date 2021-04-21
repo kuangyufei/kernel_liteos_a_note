@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -121,63 +121,63 @@ typedef size_t             BOOL;
 #endif
 
 #ifndef LOS_OK
-#define LOS_OK             0	//正常返回
+#define LOS_OK             0
 #endif
 
 #ifndef LOS_NOK
-#define LOS_NOK            1	//不OK
+#define LOS_NOK            1
 #endif
 
 #ifndef LOS_EPERM
-#define LOS_EPERM          1	//操作不允许
+#define LOS_EPERM          1
 #endif
 
 #ifndef LOS_ESRCH
-#define LOS_ESRCH          3	//没有此进程
+#define LOS_ESRCH          3
 #endif
 
 #ifndef LOS_EINTR
-#define LOS_EINTR          4	//系统调用被禁止
+#define LOS_EINTR          4
 #endif
 
 #ifndef LOS_EBADF
-#define LOS_EBADF          9	//文件数目错误
+#define LOS_EBADF          9
 #endif
 
 #ifndef LOS_ECHILD
-#define LOS_ECHILD         10	//没有此子进程
+#define LOS_ECHILD         10
 #endif
 
 #ifndef LOS_EAGAIN
-#define LOS_EAGAIN         11	//再试一遍
+#define LOS_EAGAIN         11
 #endif
 
 #ifndef LOS_ENOMEM
-#define LOS_ENOMEM         12	//内存溢出
+#define LOS_ENOMEM         12
 #endif
 
 #ifndef LOS_EACCES
-#define LOS_EACCES         13	//拒绝访问
+#define LOS_EACCES         13
 #endif
 
 #ifndef LOS_EBUSY
-#define LOS_EBUSY          16	//设备或资源忙
+#define LOS_EBUSY          16
 #endif
 
 #ifndef LOS_EINVAL
-#define LOS_EINVAL         22	//无效的参数
+#define LOS_EINVAL         22
 #endif
 
 #ifndef LOS_EDEADLK
-#define LOS_EDEADLK        35	//资源发生死锁
+#define LOS_EDEADLK        35
 #endif
 
 #ifndef LOS_EOPNOTSUPP
-#define LOS_EOPNOTSUPP     95	//不支持该操作
+#define LOS_EOPNOTSUPP     95
 #endif
 
 #ifndef LOS_ETIMEDOUT
-#define LOS_ETIMEDOUT      110	//超时
+#define LOS_ETIMEDOUT      110
 #endif
 
 #define OS_FAIL            1
@@ -215,7 +215,7 @@ typedef unsigned long paddr_t;
 typedef unsigned long DMA_ADDR_T;
 typedef unsigned long ADDR_T;
 typedef unsigned long VM_OFFSET_T;
-typedef unsigned long PTE_T;//Page table entry 页表项
+typedef unsigned long PTE_T;
 typedef unsigned int  ULONG_T;
 typedef int STATUS_T;
 
@@ -224,7 +224,7 @@ typedef int STATUS_T;
 #define LOSBLD_ATTRIB_ALIGN(__align__) __attribute__((aligned(__align__)))
 #endif
 
-/* Assign a defined variable to a specific section */	//将定义的变量分配给特定的节
+/* Assign a defined variable to a specific section */
 #if !defined(LOSBLD_ATTRIB_SECTION)
 #define LOSBLD_ATTRIB_SECTION(__sect__) __attribute__((section(__sect__)))
 #endif

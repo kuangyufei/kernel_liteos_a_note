@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -44,12 +44,12 @@ extern "C" {
 
 /*
  * The dmesg buffer is start with this info structure, then the log.
- *///dmesg缓冲区从这个信息结构开始，然后是日志内容
+ */
 typedef struct {
-    UINT32 logSize; /* The size of log in buffer */ //日志在buf中的大小
-    UINT32 logHead; /* The index of the first log data. Data_out_flag */ // 第一个日志数据的索引
-    UINT32 logTail; /* The index where to write, write in and plus one. Data_it_flag */ //尾部日志索引位置
-    CHAR   *logBuf; /* The log buffer addr */ //指向缓冲区开始位置
+    UINT32 logSize; /* The size of log in buffer */
+    UINT32 logHead; /* The index of the first log data. Data_out_flag */
+    UINT32 logTail; /* The index where to write, write in and plus one. Data_it_flag */
+    CHAR   *logBuf; /* The log buffer addr */
 } DmesgInfo;
 
 extern UINT32 OsDmesgInit(VOID);

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,7 +31,7 @@
 
 #ifndef FS_FILE_H
 #define FS_FILE_H
-//0,1,2分别用于stdin、stdout、stderr
+
 #define MIN_START_FD 3 // 0,1,2 are used for stdin,stdout,stderr respectively
 
 int AllocProcessFd(void);

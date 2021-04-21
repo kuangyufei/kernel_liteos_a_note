@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -161,13 +161,6 @@ extern "C" {
 
 /**
  * @ingroup los_sem
- * Maximum number of semaphores.
- *
- */
-#define OS_SEM_COUNT_MAX                        0xFFFE
-
-/**
- * @ingroup los_sem
  * Maximum number of binary semaphores.
  *
  */
@@ -185,7 +178,7 @@ extern "C" {
  * <li>None.</li>
  * </ul>
  *
- * @param count       [IN] Initial number of available semaphores. The value range is [0, OS_SEM_COUNT_MAX).
+ * @param count       [IN] Initial number of available semaphores. The value range is [0, OS_SEM_COUNT_MAX].
  * @param semHandle   [OUT] ID of the semaphore control structure that is initialized.
  *
  * @retval #LOS_ERRNO_SEM_PTR_NULL  The passed-in semHandle value is NULL.

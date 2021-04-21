@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -44,7 +44,7 @@ LOCAL_FLAGS += $(LOCAL_INCLUDE)
 
 LOCAL_SRCS := $(wildcard porting/src/*.c $(LWIPNOAPPSFILES))
 LOCAL_SRCS += $(wildcard enhancement/src/*.c)
-LOCAL_SRCS += $(wildcard $(LWIPDIR)/core/ipv4/dhcps.c)
+LOCAL_SRCS := $(filter-out $(LWIPDIR)/core/ipv4/dhcp.c, $(LOCAL_SRCS))
 LOCAL_SRCS := $(filter-out $(LWIPDIR)/core/ipv4/etharp.c, $(LOCAL_SRCS))
 LOCAL_SRCS := $(filter-out $(LWIPDIR)/api/sockets.c, $(LOCAL_SRCS))
 

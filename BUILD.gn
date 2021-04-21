@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -27,42 +27,56 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import("//build/lite/config/component/lite_component.gni")
 import("//build/lite/config/subsystem/lite_subsystem.gni")
 
+generate_notice_file("kernel_notice_file") {
+  module_name = "kernel"
+  module_source_dir_list = [
+    "//third_party/FreeBSD",
+    "//third_party/musl",
+    "//third_party/zlib",
+    "//third_party/FatFs",
+    "//third_party/Linux_Kernel",
+    "//third_party/lwip",
+    "//third_party/NuttX",
+    "//third_party/mtd-utils",
+  ]
+}
+
 declare_args() {
-    enable_ohos_kernel_liteos_a_ext_build = true
-    LOSCFG_TEST_APPS = false
+  enable_ohos_kernel_liteos_a_ext_build = true
+  LOSCFG_TEST_APPS = false
+  tee_enable = ""
 }
 
 lite_subsystem("kernel") {
-    subsystem_components = []
+  subsystem_components = []
 
-    if (enable_ohos_kernel_liteos_a_ext_build == false) {
-        subsystem_components += [
-            "//kernel/liteos_a/kernel",
-            "//kernel/liteos_a/net",
-            "//kernel/liteos_a/lib",
-            "//kernel/liteos_a/compat",
-            "//kernel/liteos_a/fs",
-            "//kernel/liteos_a/arch:platform_cpu",
-        ]
-        if (LOSCFG_SHELL) {
-            subsystem_components += [ "//kernel/liteos_a/shell" ]
-        }
-    } else {
-        deps = [":make"]
+  if (enable_ohos_kernel_liteos_a_ext_build == false) {
+    subsystem_components += [
+      "//kernel/liteos_a/kernel",
+      "//kernel/liteos_a/net",
+      "//kernel/liteos_a/lib",
+      "//kernel/liteos_a/compat",
+      "//kernel/liteos_a/fs",
+      "//kernel/liteos_a/arch:platform_cpu",
+    ]
+    if (LOSCFG_SHELL) {
+      subsystem_components += [ "//kernel/liteos_a/shell" ]
     }
+  } else {
+    deps = [ ":make" ]
+  }
 }
 
-action("make") {
-    script = "//build/lite/build_ext_components.py"
-    outputs = [ "$target_gen_dir/liteos_a_build_log.txt" ]
-    exec_path = rebase_path(rebase_path(".", root_build_dir))
-    outdir = rebase_path(get_path_info(".", "out_dir"))
-    command = "make clean OUTDIR=$outdir && make rootfs VERSION=\"${ohos_version}\" -j 16 OUTDIR=$outdir"
-    args = [
-        "--path=$exec_path",
-        "--prebuilts=sh build.sh ${board_name} ${ohos_build_compiler} ${ohos_build_type}",
-        "--command=${command}"
-    ]
+build_ext_component("make") {
+  exec_path = rebase_path(".", root_build_dir)
+  tee_enable = "false"
+  if (board_name == "hi3516dv300" && enable_tee_ree) {
+    tee_enable = "tee"
+  }
+  prebuilts = "sh build.sh ${board_name} ${ohos_build_compiler} ${root_build_dir} ${ohos_build_type} ${tee_enable} \"${device_company}\" \"${product_path}\""
+  outdir = rebase_path(get_path_info(".", "out_dir"))
+  command = "make clean OUTDIR=$outdir && make rootfs VERSION=\"${ohos_version}\" -j 16 OUTDIR=$outdir"
 }

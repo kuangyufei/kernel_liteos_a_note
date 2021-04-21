@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -138,6 +138,7 @@ static UINT16 GetFreeVid(VOID)
     }
 
     (void)memcpy_s(tmp, mapMaxNum * sizeof(UINT32), idMap->bitMap, (mapMaxNum - 1) * sizeof(UINT32));
+    LOS_MemFree(m_aucSysMem0, idMap->bitMap);
     idMap->bitMap = tmp;
     idMap->mapCount = mapMaxNum;
     idMap->bitMap[i] = 1;

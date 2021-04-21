@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -28,55 +28,53 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 static_library("base") {
+  sources = [
+    "core/los_bitmap.c",
+    "core/los_process.c",
+    "core/los_sortlink.c",
+    "core/los_swtmr.c",
+    "core/los_sys.c",
+    "core/los_task.c",
+    "core/los_tick.c",
+    "core/los_timeslice.c",
+    "ipc/los_event.c",
+    "ipc/los_ipcdebug.c",
+    "ipc/los_mux.c",
+    "ipc/los_mux_debug.c",
+    "ipc/los_queue.c",
+    "ipc/los_queue_debug.c",
+    "ipc/los_sem.c",
+    "ipc/los_sem_debug.c",
+    "mem/bestfit/los_memory.c",
+    "mem/bestfit/los_multipledlinkhead.c",
+    "mem/common/los_memstat.c",
+    "mem/membox/los_membox.c",
+    "misc/los_misc.c",
+    "misc/los_stackinfo.c",
+    "misc/mempt_shellcmd.c",
+    "misc/swtmr_shellcmd.c",
+    "misc/sysinfo_shellcmd.c",
+    "misc/task_shellcmd.c",
+    "misc/vm_shellcmd.c",
+    "mp/los_lockdep.c",
+    "mp/los_mp.c",
+    "mp/los_percpu.c",
+    "mp/los_stat.c",
+    "om/los_err.c",
+    "sched/sched_sq/los_priqueue.c",
+    "sched/sched_sq/los_sched.c",
+    "vm/filemap.c",
+    "vm/pmm.c",
+    "vm/vm.c",
+    "vm/vmm.c",
+  ]
 
-    sources = [
-        "ipc/los_mux.c",
-        "ipc/los_sem_debug.c",
-        "ipc/los_queue_debug.c",
-        "ipc/los_ipcdebug.c",
-        "ipc/los_mux_debug.c",
-        "ipc/los_sem.c",
-        "ipc/los_event.c",
-        "ipc/los_queue.c",
-        "core/los_swtmr.c",
-        "core/los_task.c",
-        "core/los_timeslice.c",
-        "core/los_sortlink.c",
-        "core/los_bitmap.c",
-        "core/los_process.c",
-        "core/los_sys.c",
-        "core/los_tick.c",
-        "mem/bestfit/los_memory.c",
-        "mem/bestfit/los_multipledlinkhead.c",
-        "mem/membox/los_membox.c",
-        "mem/common/los_memstat.c",
-        "om/los_err.c",
-        "misc/task_shellcmd.c",
-        "misc/los_stackinfo.c",
-        "misc/sysinfo_shellcmd.c",
-        "misc/los_misc.c",
-        "misc/swtmr_shellcmd.c",
-        "misc/mempt_shellcmd.c",
-        "misc/vm_shellcmd.c",
-        "mp/los_stat.c",
-        "mp/los_lockdep.c",
-        "mp/los_mp.c",
-        "mp/los_percpu.c",
-        "sched/sched_sq/los_priqueue.c",
-        "sched/sched_sq/los_sched.c",
-        "vm/filemap.c",
-        "vm/pmm.c",
-        "vm/vm.c",
-        "vm/vmm.c",
-    ]
-
-    include_dirs = [
-        "include",
-        "../extended/include",
-        "../extended/vdso/include",
-        "../extended/dynload/include",
-        "../include",
-        "mem",
-    ]
-
+  include_dirs = [
+    "include",
+    "../extended/include",
+    "../extended/vdso/include",
+    "../extended/dynload/include",
+    "../include",
+    "mem",
+  ]
 }

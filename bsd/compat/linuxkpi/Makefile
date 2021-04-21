@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -32,6 +32,10 @@ include $(LITEOSTOPDIR)/config.mk
 MODULE_NAME := $(notdir $(shell pwd))
 
 LOCAL_SRCS :=  $(wildcard src/*.c)
+
+ifneq ($(LOSCFG_HRTIMER_ENABLE), y)
+LOCAL_SRCS := $(filter-out src/linux_hrtimer.c, $(LOCAL_SRCS))
+endif
 
 LOCAL_INCLUDE := \
         -I $(LITEOSTOPDIR)/kernel/base/include \

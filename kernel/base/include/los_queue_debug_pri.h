@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -52,7 +52,7 @@ STATIC INLINE UINT32 OsQueueDbgInitHook(VOID)
     return LOS_OK;
 #endif
 }
-/* Update the last time the queue was executed */ //更新上次执行队列的时间
+/* Update the last time the queue was executed */
 extern VOID OsQueueDbgTimeUpdate(UINT32 queueID);
 STATIC INLINE VOID OsQueueDbgTimeUpdateHook(UINT32 queueID)
 {

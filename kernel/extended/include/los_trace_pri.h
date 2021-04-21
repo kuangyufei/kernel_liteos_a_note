@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,6 +34,7 @@
 
 #include "los_trace.h"
 #include "los_spinlock.h"
+#include "los_seq_buf.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -42,11 +43,24 @@ extern "C" {
 #endif /* __cplusplus */
 
 typedef struct {
-    TraceType type;
+    TraceSwitch onOff;
     WriteHook inputHook;
+    const CHAR *typeStr;
 } TraceHook;
 
-UINT32 OsTraceReg(TraceType traceType, WriteHook inHook);
+/*
+ * |1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0|
+ *  |                         |
+ * readIndex                writeIndex
+ */
+
+typedef struct {
+    UINT8 *dataBuf;
+    UINT32 bufLen;
+    TraceSwitch onOff;
+    UINT32 writeIndex;
+    UINT32 readIndex;
+} TraceBufferCtl;
 
 #ifdef __cplusplus
 #if __cplusplus

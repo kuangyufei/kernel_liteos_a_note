@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -46,6 +46,7 @@ static u32_t lwprot_thread = LOS_ERRNO_TSK_ID_INVALID;
 static int lwprot_count = 0;
 #endif /* LOSCFG_KERNEL_SMP == YES */
 
+#define ROUND_UP_DIV(val, div) (((val) + (div) - 1) / (div))
 
 /**
  * Thread and System misc
@@ -59,11 +60,11 @@ sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, 
 
     /* Create host Task */
     task.pfnTaskEntry = (TSK_ENTRY_FUNC)thread;
-    task.uwStackSize  = stackSize;
+    task.uwStackSize = stackSize;
     task.pcName = (char *)name;
     task.usTaskPrio = prio;
     task.auwArgs[0] = (UINTPTR)arg;
-    task.uwResved   = LOS_TASK_STATUS_DETACHED;
+    task.uwResved = LOS_TASK_STATUS_DETACHED;
     ret = LOS_TaskCreate(&taskID, &task);
     if (ret != LOS_OK) {
         LWIP_DEBUGF(SYS_DEBUG, ("sys_thread_new: LOS_TaskCreate error %u\n", ret));
@@ -84,8 +85,16 @@ void sys_init(void)
 u32_t sys_now(void)
 {
     /* Lwip docs mentioned like wraparound is not a problem in this funtion */
-    return (u32_t)(((double)LOS_TickCountGet() * OS_SYS_MS_PER_SECOND) / LOSCFG_BASE_CORE_TICK_PER_SECOND);
+    return (u32_t)((LOS_TickCountGet() * OS_SYS_MS_PER_SECOND) / LOSCFG_BASE_CORE_TICK_PER_SECOND);
 }
+
+#if (LWIP_CHKSUM_ALGORITHM == 4) /* version #4, asm based */
+#include "in_cksum.h"
+u16_t lwip_standard_chksum(const void *dataptr, int len)
+{
+    return ~(u16_t)(in_cksum(dataptr, len));
+}
+#endif
 
 
 /**
@@ -140,7 +149,7 @@ void sys_arch_unprotect(sys_prot_t pval)
 err_t sys_mbox_new(sys_mbox_t *mbox, int size)
 {
     CHAR qName[] = "lwIP";
-    UINT32 ret = LOS_QueueCreate(qName, (UINT16)size, mbox, 0, sizeof(void*));
+    UINT32 ret = LOS_QueueCreate(qName, (UINT16)size, mbox, 0, sizeof(void *));
     switch (ret) {
         case LOS_OK:
             return ERR_OK;
@@ -184,8 +193,8 @@ err_t sys_mbox_trypost_fromisr(sys_mbox_t *mbox, void *msg);
 u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeoutMs)
 {
     void *ignore = 0; /* if msg==NULL, the fetched msg should be dropped */
-    UINT64 tick = ((UINT64)timeoutMs * LOSCFG_BASE_CORE_TICK_PER_SECOND + OS_SYS_MS_PER_SECOND - 1) / OS_SYS_MS_PER_SECOND;
-    UINT32 ret = LOS_QueueRead(*mbox, msg ? msg : &ignore, sizeof(void*), tick ? (UINT32)tick : LOS_WAIT_FOREVER);
+    UINT64 tick = ROUND_UP_DIV((UINT64)timeoutMs * LOSCFG_BASE_CORE_TICK_PER_SECOND, OS_SYS_MS_PER_SECOND);
+    UINT32 ret = LOS_QueueRead(*mbox, msg ? msg : &ignore, sizeof(void *), tick ? (UINT32)tick : LOS_WAIT_FOREVER);
     switch (ret) {
         case LOS_OK:
             return ERR_OK;
@@ -202,7 +211,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeoutMs)
 u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
 {
     void *ignore = 0; /* if msg==NULL, the fetched msg should be dropped */
-    UINT32 ret = LOS_QueueRead(*mbox, msg ? msg : &ignore, sizeof(void*), 0);
+    UINT32 ret = LOS_QueueRead(*mbox, msg ? msg : &ignore, sizeof(void *), 0);
     switch (ret) {
         case LOS_OK:
             return ERR_OK;
@@ -255,7 +264,7 @@ void sys_sem_signal(sys_sem_t *sem)
 
 u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeoutMs)
 {
-    UINT64 tick = ((UINT64)timeoutMs * LOSCFG_BASE_CORE_TICK_PER_SECOND + OS_SYS_MS_PER_SECOND - 1) / OS_SYS_MS_PER_SECOND;
+    UINT64 tick = ROUND_UP_DIV((UINT64)timeoutMs * LOSCFG_BASE_CORE_TICK_PER_SECOND, OS_SYS_MS_PER_SECOND);
     UINT32 ret = LOS_SemPend(*sem, tick ? (UINT32)tick : LOS_WAIT_FOREVER); // timeoutMs 0 means wait forever
     switch (ret) {
         case LOS_OK:

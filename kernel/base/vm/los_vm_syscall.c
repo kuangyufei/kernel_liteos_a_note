@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -44,26 +44,27 @@
 #include "los_vm_filemap.h"
 #include "los_process_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
-//检查用户空间虚拟内存参数
-STATUS_T OsCheckMMapParams(VADDR_T vaddr, unsigned prot, unsigned long flags, size_t len, unsigned long pgoff)
+
+#ifdef LOSCFG_KERNEL_VM
+
+STATUS_T OsCheckMMapParams(VADDR_T *vaddr, unsigned long flags, size_t len, unsigned long pgoff)
 {
-    if ((vaddr != 0) && !LOS_IsUserAddressRange(vaddr, len)) {//因系统调用,[vaddr,vaddr+len]必须在用户空间
+    if ((len == 0) || (len > USER_ASPACE_SIZE)) {
+        return -EINVAL;
+    }
+    if (len > OsCurrProcessGet()->vmSpace->mapSize) {
+        return -ENOMEM;
+    }
+
+    if (((flags & MAP_FIXED) == 0) && ((flags & MAP_FIXED_NOREPLACE) == 0)) {
+        *vaddr = ROUNDUP(*vaddr, PAGE_SIZE);
+        if ((*vaddr != 0) && (!LOS_IsUserAddressRange(*vaddr, len))) {
+            *vaddr = 0;
+        }
+    } else if ((!LOS_IsUserAddressRange(*vaddr, len)) || (!IS_ALIGNED(*vaddr, PAGE_SIZE))) {
         return -EINVAL;
     }
 
-    if (len == 0) {
-        return -EINVAL;
-    }
-
-    /* we only support some prot and flags */
-    if ((prot & PROT_SUPPORT_MASK) == 0) {//不能超过权限范围
-        return -EINVAL;
-    }
     if ((flags & MAP_SUPPORT_MASK) == 0) {//映射权限限制
         return -EINVAL;
     }
@@ -77,7 +78,24 @@ STATUS_T OsCheckMMapParams(VADDR_T vaddr, unsigned prot, unsigned long flags, si
 
     return LOS_OK;
 }
-//线性区映射类型:匿名映射
+
+STATUS_T OsNamedMmapingPermCheck(struct file *filep, unsigned long flags, unsigned prot)
+{
+    if (!((unsigned int)filep->f_oflags & O_RDWR) && (((unsigned int)filep->f_oflags & O_ACCMODE) ^ O_RDONLY)) {
+        return -EACCES;
+    }
+    if (flags & MAP_SHARED) {
+        if (((unsigned int)filep->f_oflags & O_APPEND) && (prot & PROT_WRITE)) {
+            return -EACCES;
+        }
+        if ((prot & PROT_WRITE) && !((unsigned int)filep->f_oflags & O_RDWR)) {
+            return -EACCES;
+        }
+    }
+
+    return LOS_OK;
+}
+
 STATUS_T OsAnonMMap(LosVmMapRegion *region)
 {
     LOS_SetRegionTypeAnon(region);
@@ -111,9 +129,8 @@ VADDR_T LOS_MMap(VADDR_T vaddr, size_t len, unsigned prot, unsigned long flags, 
     struct file *filep = NULL;// inode : file = 1:N ,一对多关系,一个inode可以被多个进程打开,返回不同的file但都指向同一个inode 
     LosVmSpace *vmSpace = OsCurrProcessGet()->vmSpace;
 
-    vaddr = ROUNDUP(vaddr, PAGE_SIZE);
     len = ROUNDUP(len, PAGE_SIZE);
-    STATUS_T checkRst = OsCheckMMapParams(vaddr, prot, flags, len, pgoff);
+    STATUS_T checkRst = OsCheckMMapParams(&vaddr, flags, len, pgoff);
     if (checkRst != LOS_OK) {
         return checkRst;
     }
@@ -122,6 +139,11 @@ VADDR_T LOS_MMap(VADDR_T vaddr, size_t len, unsigned prot, unsigned long flags, 
         status = fs_getfilep(fd, &filep);//获取文件描述符和状态
         if (status < 0) {
             return -EBADF;
+        }
+
+        status = OsNamedMmapingPermCheck(filep, flags, prot);
+        if (status < 0) {
+            return status;
         }
     }
 
@@ -168,6 +190,33 @@ STATUS_T LOS_UnMMap(VADDR_T addr, size_t size)
 
     return OsUnMMap(OsCurrProcessGet()->vmSpace, addr, size);
 }
+STATIC INLINE BOOL OsProtMprotectPermCheck(unsigned long prot, LosVmMapRegion *region)
+{
+    UINT32 protFlags = 0;
+    UINT32 permFlags = 0;
+    UINT32 fileFlags = (((region->unTypeData).rf).file)->f_oflags;
+    permFlags |= ((fileFlags & O_ACCMODE) ^ O_RDONLY) ? 0 : VM_MAP_REGION_FLAG_PERM_READ;
+    permFlags |= (fileFlags & O_WRONLY) ? VM_MAP_REGION_FLAG_PERM_WRITE : 0;
+    permFlags |= (fileFlags & O_RDWR) ? (VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE) : 0;
+    protFlags |= (prot & PROT_READ) ? VM_MAP_REGION_FLAG_PERM_READ : 0;
+    protFlags |= (prot & PROT_WRITE) ? VM_MAP_REGION_FLAG_PERM_WRITE : 0;
+
+    return ((protFlags & permFlags) == protFlags);
+}
+
+VOID *OsShrinkHeap(VOID *addr, LosVmSpace *space)
+{
+    VADDR_T newBrk, oldBrk;
+
+    newBrk = LOS_Align((VADDR_T)(UINTPTR)addr, PAGE_SIZE);
+    oldBrk = LOS_Align(space->heapNow, PAGE_SIZE);
+    if (LOS_UnMMap(newBrk, (oldBrk - newBrk)) < 0) {
+        return (void *)(UINTPTR)space->heapNow;
+    }
+    space->heapNow = (VADDR_T)(UINTPTR)addr;
+    return addr;
+}
+
 /******************************************************************
 用户进程向内核申请空间，进一步说用于扩展用户堆栈空间，或者回收用户堆栈空间
 扩展当前进程的堆空间
@@ -183,7 +232,7 @@ VOID *LOS_DoBrk(VOID *addr)
     VOID *ret = NULL;
     LosVmMapRegion *region = NULL;
     VOID *alignAddr = NULL;
-    VADDR_T newBrk, oldBrk;
+    VOID *shrinkAddr = NULL;
 
     if (addr == NULL) {//参数地址未传情况
         return (void *)(UINTPTR)space->heapNow;//以现有指向地址为基础进行扩展
@@ -198,21 +247,23 @@ VOID *LOS_DoBrk(VOID *addr)
     alignAddr = (CHAR *)(UINTPTR)(space->heapBase) + size;//得到新的线性区的结束地址
     PRINT_INFO("brk addr %p , size 0x%x, alignAddr %p, align %d\n", addr, size, alignAddr, PAGE_SIZE);
 
-    if (addr < (VOID *)(UINTPTR)space->heapNow) {//如果新的地址小于线性区现有的结束地址，则只需做裁剪的工作
-        newBrk = LOS_Align((VADDR_T)(UINTPTR)addr, PAGE_SIZE);
-        oldBrk = LOS_Align(space->heapNow, PAGE_SIZE);
-        if (LOS_UnMMap(newBrk, (oldBrk - newBrk)) < 0) {//只需要裁剪掉多余部分的映射关系
-            return (void *)(UINTPTR)space->heapNow;//失败返回老的结束地址
-        }
-        space->heapNow = (VADDR_T)(UINTPTR)addr;//更新线性区结束地址
-        return addr;//返回新地址
+    (VOID)LOS_MuxAcquire(&space->regionMux);
+    if (addr < (VOID *)(UINTPTR)space->heapNow) {
+        shrinkAddr = OsShrinkHeap(addr, space);
+        (VOID)LOS_MuxRelease(&space->regionMux);
+        return shrinkAddr;
     }
 
-    (VOID)LOS_MuxAcquire(&space->regionMux);
+    if ((UINTPTR)alignAddr >= space->mapBase) {
+        VM_ERR("Process heap memory space is insufficient");
+        ret = (VOID *)-ENOMEM;
+        goto REGION_ALLOC_FAILED;
+    }
+
     if (space->heapBase == space->heapNow) {//往往是第一次调用this函数才会出现，因为初始化时 heapBase = heapNow
         region = LOS_RegionAlloc(space, space->heapBase, size,//分配一个可读/可写/可使用的线性区，只需分配一次
                                  VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE |//线性区的大小由range.size决定
-                                 VM_MAP_REGION_FLAG_PERM_USER, 0);
+                                 VM_MAP_REGION_FLAG_FIXED | VM_MAP_REGION_FLAG_PERM_USER, 0);
         if (region == NULL) {
             ret = (VOID *)-ENOMEM;
             VM_ERR("LOS_RegionAlloc failed");
@@ -220,11 +271,6 @@ VOID *LOS_DoBrk(VOID *addr)
         }
         region->regionFlags |= VM_MAP_REGION_FLAG_HEAP;//贴上线性区类型为堆区的标签,注意一个线性区可以有多种标签
         space->heap = region;//更新虚拟空间堆区为分配的线性区
-    }
-
-    if ((UINTPTR)alignAddr >= space->mapBase) {//在进程的虚拟空间中，映射区是贴着堆区的，所以堆区的结束地址是不能超过映射区的开始地址的
-        VM_ERR("Process heap memory space is insufficient");//提示进程堆内存空间不足
-        goto REGION_ALLOC_FAILED;//这段判断代码应该放在 得到 alignAddr后执行 @note_thinking
     }
 
     space->heapNow = (VADDR_T)(UINTPTR)alignAddr;//更新线性区结束地址
@@ -256,6 +302,17 @@ int LOS_DoMprotect(VADDR_T vaddr, size_t len, unsigned long prot)
         goto OUT_MPROTECT;
     }
 
+    if ((region->regionFlags & VM_MAP_REGION_FLAG_VDSO) || (region->regionFlags & VM_MAP_REGION_FLAG_HEAP)) {
+        ret = -EPERM;
+        goto OUT_MPROTECT;
+    }
+
+    if (LOS_IsRegionTypeFile(region) && (region->regionFlags & VM_MAP_REGION_FLAG_SHARED)) {
+        if (!OsProtMprotectPermCheck(prot, region)) {
+            ret = -EACCES;
+            goto OUT_MPROTECT;
+        }
+    }
     len = LOS_Align(len, PAGE_SIZE);
     /* can't operation cross region */
     if (region->range.base + region->range.size < vaddr + len) {
@@ -385,7 +442,9 @@ VADDR_T LOS_DoMremap(VADDR_T oldAddress, size_t oldSize, size_t newSize, int fla
             ret = -ENOMEM;
             goto OUT_MREMAP;
         }
-        status = LOS_ArchMmuMove(&space->archMmu, oldAddress, newAddr, newSize >> PAGE_SHIFT, regionOld->regionFlags);
+        status = LOS_ArchMmuMove(&space->archMmu, oldAddress, newAddr,
+                                 ((newSize < regionOld->range.size) ? newSize : regionOld->range.size) >> PAGE_SHIFT,
+                                 regionOld->regionFlags);
         if (status) {
             LOS_RegionFree(space, regionNew);
             ret = -ENOMEM;
@@ -415,8 +474,8 @@ VADDR_T LOS_DoMremap(VADDR_T oldAddress, size_t oldSize, size_t newSize, int fla
             ret = -ENOMEM;
             goto OUT_MREMAP;
         }
-        status = LOS_ArchMmuMove(&space->archMmu, oldAddress, regionNew->range.base, newSize >> PAGE_SHIFT,
-                                 regionOld->regionFlags);
+        status = LOS_ArchMmuMove(&space->archMmu, oldAddress, regionNew->range.base,
+                                 regionOld->range.size >> PAGE_SHIFT, regionOld->regionFlags);
         if (status) {
             LOS_RegionFree(space, regionNew);
             ret = -ENOMEM;
@@ -456,9 +515,5 @@ VOID LOS_DumpMemRegion(VADDR_T vaddr)
     OsDumpPte(vaddr);//dump L1 L2
     OsDumpAspace(space);//dump 空间
 }
+#endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

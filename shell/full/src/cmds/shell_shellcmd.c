@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -30,12 +30,12 @@
  */
 
 #include "shcmd.h"
-//shell help 命令
+
 UINT32 OsShellCmdHelp(UINT32 argc, const CHAR **argv)
 {
     UINT32 loop = 0;
     CmdItemNode *curCmdItem = NULL;
-    CmdModInfo *cmdInfo = OsCmdInfoGet();//获取命令链表
+    CmdModInfo *cmdInfo = OsCmdInfoGet();
 
     (VOID)argv;
     if (argc > 0) {
@@ -44,11 +44,11 @@ UINT32 OsShellCmdHelp(UINT32 argc, const CHAR **argv)
     }
 
     PRINTK("*******************shell commands:*************************\n");
-    LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(cmdInfo->cmdList.list), CmdItemNode, list) {//循环链表
+    LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(cmdInfo->cmdList.list), CmdItemNode, list) {
         if ((loop & (8 - 1)) == 0) { /* 8 - 1:just align print */
             PRINTK("\n");
         }
-        PRINTK("%-12s  ", curCmdItem->cmd->cmdKey);//打印 ls 这类命令
+        PRINTK("%-12s  ", curCmdItem->cmd->cmdKey);
 
         loop++;
     }
@@ -57,4 +57,4 @@ UINT32 OsShellCmdHelp(UINT32 argc, const CHAR **argv)
     return 0;
 }
 
-SHELLCMD_ENTRY(help_shellcmd, CMD_TYPE_EX, "help", 0, (CmdCallBackFunc)OsShellCmdHelp);//采用shell命令静态注册方式
+SHELLCMD_ENTRY(help_shellcmd, CMD_TYPE_EX, "help", 0, (CmdCallBackFunc)OsShellCmdHelp);

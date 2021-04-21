@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -42,11 +42,6 @@
 #include "shell_pri.h"
 #include "shcmd.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 
 char *GetCmdline(ShellCB *shellCB)
@@ -61,8 +56,18 @@ char *GetCmdline(ShellCB *shellCB)
     }
 
     cmdNode = SH_LIST_ENTRY(cmdkey->list.pstNext, CmdKeyLink, list);
+    if (cmdNode == NULL) {
+        (void)pthread_mutex_unlock(&shellCB->keyMutex);
+        return NULL;
+    }
+
     SH_ListDelete(&(cmdNode->list));
     (void)pthread_mutex_unlock(&shellCB->keyMutex);
+
+    if (strlen(cmdNode->cmdString) == 0) {
+        free(cmdNode);
+        return NULL;
+    }
 
     return cmdNode->cmdString;
 }
@@ -73,7 +78,8 @@ static void ShellSaveHistoryCmd(char *string, ShellCB *shellCB)
     CmdKeyLink *cmdkey = SH_LIST_ENTRY(string, CmdKeyLink, cmdString);
     CmdKeyLink *cmdNxt = NULL;
 
-    if ((string == NULL) || (*string == '\n') || (strlen(string) == 0)) {
+    if (*string == '\n') {
+        free(cmdkey);
         return;
     }
 
@@ -87,7 +93,7 @@ static void ShellSaveHistoryCmd(char *string, ShellCB *shellCB)
         }
     }
 
-    if (cmdHistory->count == CMD_HISTORY_LEN) {
+    if (cmdHistory->count >= CMD_HISTORY_LEN) {
         cmdNxt = SH_LIST_ENTRY(cmdHistory->list.pstNext, CmdKeyLink, list);
         SH_ListDelete(&(cmdNxt->list));
         SH_ListTailInsert(&(cmdHistory->list), &(cmdkey->list));
@@ -566,7 +572,7 @@ int ShellTaskInit(ShellCB *shellCB)
 
 static int ShellKernelReg(unsigned int shellHandle)
 {
-    return ioctl(0, CONSOLE_CONTROL_REG_USERTASK, shellHandle);
+    return ioctl(STDIN_FILENO, CONSOLE_CONTROL_REG_USERTASK, shellHandle);
 }
 
 void *ShellEntry(void *argv)
@@ -595,10 +601,6 @@ void *ShellEntry(void *argv)
     }
 
     while (1) {
-        /* is console ready for shell ? */
-        if (ret != SH_OK)
-            break;
-
         n = read(0, &ch, 1);
         if (n == 1) {
             ShellCmdLineParse(ch, (OutputFunc)printf, shellCB);
@@ -633,8 +635,3 @@ int ShellEntryInit(ShellCB *shellCB)
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

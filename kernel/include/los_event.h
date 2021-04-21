@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -312,11 +312,11 @@ extern UINT32 LOS_EventClear(PEVENT_CB_S eventCB, UINT32 events);
 
 /**
  * @ingroup los_event
- * @brief Destroy a event.
+ * @brief Destroy an event.
  *
  * @par Description:
  * <ul>
- * <li>This API is used to Destroy a event.</li>
+ * <li>This API is used to Destroy an event.</li>
  * </ul>
  * @attention
  * <ul>

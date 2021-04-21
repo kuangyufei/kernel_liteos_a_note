@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,65 +36,139 @@
 #include "mtd_list.h"
 #include "los_config.h"
 #include "los_mux.h"
-#include "inode/inode.h"
 
-#if defined(LOSCFG_FS_JFFS)
 #include "mtd_common.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
+#include "cfiflash.h"
+#endif
+
 
 #define DRIVER_NAME_ADD_SIZE    3
 pthread_mutex_t g_mtdPartitionLock = PTHREAD_MUTEX_INITIALIZER;
-//通常在NorFlash上会选取jffs及jffs2文件系统
-static INT32 JffsLockInit(VOID) __attribute__((weakref("JffsMutexCreate")));//弱引用 JffsMutexCreate
-static VOID JffsLockDeinit(VOID) __attribute__((weakref("JffsMutexDelete")));//弱引用 JffsMutexDelete
 
+static VOID YaffsLockInit(VOID) __attribute__((weakref("yaffsfs_OSInitialisation")));
+static VOID YaffsLockDeinit(VOID) __attribute__((weakref("yaffsfs_OsDestroy")));
+static INT32 Jffs2LockInit(VOID) __attribute__((weakref("Jffs2MutexCreate")));
+static VOID Jffs2LockDeinit(VOID) __attribute__((weakref("Jffs2MutexDelete")));
+
+partition_param *g_nandPartParam = NULL;
 partition_param *g_spinorPartParam = NULL;
 mtd_partition *g_spinorPartitionHead = NULL;
+mtd_partition *g_nandPartitionHead = NULL;
 
-#define RWE_RW_RW 0755 //文件读/写/执权限,chmod 755
+#define RWE_RW_RW 0755
+
+partition_param *GetNandPartParam(VOID)
+{
+    return g_nandPartParam;
+}
+
+partition_param *GetSpinorPartParam(VOID)
+{
+    return g_spinorPartParam;
+}
 
 mtd_partition *GetSpinorPartitionHead(VOID)
 {
     return g_spinorPartitionHead;
 }
-//初始化 norflash 参数
+
+
+static VOID MtdNandParamAssign(partition_param *nandParam, const struct MtdDev *nandMtd)
+{
+    LOS_ListInit(&g_nandPartitionHead->node_info);
+    /*
+     * If the user do not want to use block mtd or char mtd ,
+     * you can change the NANDBLK_NAME or NANDCHR_NAME to NULL.
+     */
+    nandParam->flash_mtd = (struct MtdDev *)nandMtd;
+    nandParam->flash_ops = GetDevNandOps();
+    nandParam->char_ops = GetMtdCharFops();
+    nandParam->blockname = NANDBLK_NAME;
+    nandParam->charname = NANDCHR_NAME;
+    nandParam->partition_head = g_nandPartitionHead;
+    nandParam->block_size = nandMtd->eraseSize;
+}
+
+static VOID MtdDeinitNandParam(VOID)
+{
+    if (YaffsLockDeinit != NULL) {
+        YaffsLockDeinit();
+    }
+}
+
+static partition_param *MtdInitNandParam(partition_param *nandParam)
+{
+    struct MtdDev *nandMtd = GetMtd("nand");
+    if (nandMtd == NULL) {
+        return NULL;
+    }
+    if (nandParam == NULL) {
+        if (YaffsLockInit != NULL) {
+            YaffsLockInit();
+        }
+        nandParam = (partition_param *)zalloc(sizeof(partition_param));
+        if (nandParam == NULL) {
+            MtdDeinitNandParam();
+            return NULL;
+        }
+        g_nandPartitionHead = (mtd_partition *)zalloc(sizeof(mtd_partition));
+        if (g_nandPartitionHead == NULL) {
+            MtdDeinitNandParam();
+            free(nandParam);
+            return NULL;
+        }
+
+        MtdNandParamAssign(nandParam, nandMtd);
+    }
+
+    return nandParam;
+}
+
 static VOID MtdNorParamAssign(partition_param *spinorParam, const struct MtdDev *spinorMtd)
 {
-    LOS_ListInit(&g_spinorPartitionHead->node_info);//初始化双向链表,链表用于挂其他分区,方便管理
+    LOS_ListInit(&g_spinorPartitionHead->node_info);
     /*
      * If the user do not want to use block mtd or char mtd ,
      * you can change the SPIBLK_NAME or SPICHR_NAME to NULL.
      */
     spinorParam->flash_mtd = (struct MtdDev *)spinorMtd;
-    spinorParam->flash_ops = GetDevSpinorOps();	//获取块设备操作方法
-    spinorParam->char_ops = GetMtdCharFops();	//获取字符设备操作方法
+#ifndef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
+    spinorParam->flash_ops = GetDevSpinorOps();
+    spinorParam->char_ops = GetMtdCharFops();
     spinorParam->blockname = SPIBLK_NAME;
     spinorParam->charname = SPICHR_NAME;
+#else
+    spinorParam->flash_ops = GetCfiBlkOps();
+    spinorParam->char_ops = NULL;
+    spinorParam->blockname = CFI_DRIVER;
+    spinorParam->charname = NULL;
+#endif
     spinorParam->partition_head = g_spinorPartitionHead;
-    spinorParam->block_size = spinorMtd->eraseSize;//4K, 读/写/擦除 的最小单位
+    spinorParam->block_size = spinorMtd->eraseSize;
 }
-//反初始化 norflash 参数
+
 static VOID MtdDeinitSpinorParam(VOID)
 {
-    if (JffsLockDeinit != NULL) {
-        JffsLockDeinit();
+    if (Jffs2LockDeinit != NULL) {
+        Jffs2LockDeinit();
     }
 }
-//初始化 nor flash 参数
+
 static partition_param *MtdInitSpinorParam(partition_param *spinorParam)
 {
+#ifndef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
     struct MtdDev *spinorMtd = GetMtd("spinor");
+#else
+    struct MtdDev *spinorMtd = GetCfiMtdDev();
+#endif
     if (spinorMtd == NULL) {
         return NULL;
     }
     if (spinorParam == NULL) {
-        if (JffsLockInit != NULL) {
-            if (JffsLockInit() != 0) { /* create jffs2 lock failed */
+        if (Jffs2LockInit != NULL) {
+            if (Jffs2LockInit() != 0) { /* create jffs2 lock failed */
                 return NULL;
             }
         }
@@ -118,10 +192,13 @@ static partition_param *MtdInitSpinorParam(partition_param *spinorParam)
     return spinorParam;
 }
 
-/* According the flash-type to init the param of the partition. *///根据flash类型初始化分区的参数
+/* According the flash-type to init the param of the partition. */
 static INT32 MtdInitFsparParam(const CHAR *type, partition_param **fsparParam)
 {
-    if (strcmp(type, "spinor") == 0) {
+    if (strcmp(type, "nand") == 0) {
+        g_nandPartParam = MtdInitNandParam(g_nandPartParam);
+        *fsparParam = g_nandPartParam;
+    } else if (strcmp(type, "spinor") == 0 || strcmp(type, "cfi-flash") == 0) {
         g_spinorPartParam = MtdInitSpinorParam(g_spinorPartParam);
         *fsparParam = g_spinorPartParam;
     } else {
@@ -138,7 +215,10 @@ static INT32 MtdInitFsparParam(const CHAR *type, partition_param **fsparParam)
 /* According the flash-type to deinit the param of the partition. */
 static INT32 MtdDeinitFsparParam(const CHAR *type)
 {
-    if (strcmp(type, "spinor") == 0) {
+    if (strcmp(type, "nand") == 0) {
+        MtdDeinitNandParam();
+        g_nandPartParam = NULL;
+    } else if (strcmp(type, "spinor") == 0 || strcmp(type, "cfi-flash") == 0) {
         MtdDeinitSpinorParam();
         g_spinorPartParam = NULL;
     } else {
@@ -147,7 +227,7 @@ static INT32 MtdDeinitFsparParam(const CHAR *type)
 
     return ENOERR;
 }
-//分区参数检查
+
 static INT32 AddParamCheck(UINT32 startAddr,
                            const partition_param *param,
                            UINT32 partitionNum,
@@ -181,7 +261,7 @@ static INT32 AddParamCheck(UINT32 startAddr,
 
     return ENOERR;
 }
-//注册块设备,此函数之后设备将支持VFS访问
+
 static INT32 BlockDriverRegisterOperate(mtd_partition *newNode,
                                         const partition_param *param,
                                         UINT32 partitionNum)
@@ -203,7 +283,7 @@ static INT32 BlockDriverRegisterOperate(mtd_partition *newNode,
             newNode->blockdriver_name = NULL;
             return -ENAMETOOLONG;
         }
-		//在伪文件系统中注册块驱动程序,生成设备结点 inode
+
         ret = register_blockdriver(newNode->blockdriver_name, param->flash_ops,
             RWE_RW_RW, newNode);
         if (ret) {
@@ -217,7 +297,7 @@ static INT32 BlockDriverRegisterOperate(mtd_partition *newNode,
     }
     return ENOERR;
 }
-//注册字符设备,,此函数之后设备将支持VFS访问
+
 static INT32 CharDriverRegisterOperate(mtd_partition *newNode,
                                        const partition_param *param,
                                        UINT32 partitionNum)
@@ -239,7 +319,7 @@ static INT32 CharDriverRegisterOperate(mtd_partition *newNode,
             newNode->chardriver_name = NULL;
             return -ENAMETOOLONG;
         }
-		//在伪文件系统中注册字符设备驱动程序,生成设备结点 inode
+
         ret = register_driver(newNode->chardriver_name, param->char_ops, RWE_RW_RW, newNode);
         if (ret) {
             PRINT_ERR("register chardev partion error\n");
@@ -252,7 +332,7 @@ static INT32 CharDriverRegisterOperate(mtd_partition *newNode,
     }
     return ENOERR;
 }
-//注销块设备驱动程序,从伪文件系统中删除“path”处的块驱动程序inode
+
 static INT32 BlockDriverUnregister(mtd_partition *node)
 {
     INT32 ret;
@@ -268,7 +348,7 @@ static INT32 BlockDriverUnregister(mtd_partition *node)
     }
     return ENOERR;
 }
-//注销字符设备驱动程序,从伪文件系统中删除“path”处的字符驱动程序inode
+
 static INT32 CharDriverUnregister(mtd_partition *node)
 {
     INT32 ret;
@@ -289,7 +369,7 @@ static INT32 CharDriverUnregister(mtd_partition *node)
 /*
  * Attention: both startAddr and length should be aligned with block size.
  * If not, the actual start address and length won't be what you expected.
- */ //参数必须对齐 块大小检查
+ */
 INT32 add_mtd_partition(const CHAR *type, UINT32 startAddr,
                         UINT32 length, UINT32 partitionNum)
 {
@@ -323,7 +403,7 @@ INT32 add_mtd_partition(const CHAR *type, UINT32 startAddr,
     }
 
     PAR_ASSIGNMENT(newNode, length, startAddr, partitionNum, param->flash_mtd, param->block_size);
-	//注册块设备驱动程序,支持VFS访问
+
     ret = BlockDriverRegisterOperate(newNode, param, partitionNum);
     if (ret) {
         goto ERROR_OUT1;
@@ -356,7 +436,9 @@ static INT32 DeleteParamCheck(UINT32 partitionNum,
                               const CHAR *type,
                               partition_param **param)
 {
-    if (strcmp(type, "spinor") == 0) {
+    if (strcmp(type, "nand") == 0) {
+        *param = g_nandPartParam;
+    } else if (strcmp(type, "spinor") == 0 || strcmp(type, "cfi-flash") == 0) {
         *param = g_spinorPartParam;
     } else {
         PRINT_ERR("type error \n");
@@ -470,9 +552,3 @@ INT32 delete_mtd_partition(UINT32 partitionNum, const CHAR *type)
     return ENOERR;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
-#endif

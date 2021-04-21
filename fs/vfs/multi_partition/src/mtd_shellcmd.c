@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,22 +29,16 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "mtd_partition.h"
 #include "stdlib.h"
 #include "stdio.h"
 #include "los_config.h"
-#include "mtd_partition.h"
-#include "inode/inode.h"
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 #include "shcmd.h"
 
-#if defined(LOSCFG_FS_JFFS)
-extern partition_param *g_spinorPartParam;
-#endif
-
 INT32 osShellCmdPartitionShow(INT32 argc, const CHAR **argv)
 {
-#if defined(LOSCFG_FS_JFFS)
     mtd_partition *node = NULL;
     const CHAR *fs = NULL;
     partition_param *param = NULL;
@@ -55,19 +49,16 @@ INT32 osShellCmdPartitionShow(INT32 argc, const CHAR **argv)
     } else {
         fs = argv[0];
     }
-#endif
 
-#if defined(LOSCFG_FS_JFFS)
-    if (strcmp(fs, "spinor") == 0) {
-        param = g_spinorPartParam;
-    } else
-#endif
-    {
+    if (strcmp(fs, "nand") == 0) {
+        param = GetNandPartParam();
+    } else if (strcmp(fs, "spinor") == 0) {
+        param = GetSpinorPartParam();
+    } else {
         PRINT_ERR("not supported!\n");
         return -EINVAL;
     }
 
-#if defined(LOSCFG_FS_JFFS)
     if ((param == NULL) || (param->flash_mtd == NULL)) {
         PRINT_ERR("no partition!\n");
         return -EINVAL;
@@ -80,7 +71,6 @@ INT32 osShellCmdPartitionShow(INT32 argc, const CHAR **argv)
             ((node->end_block - node->start_block) + 1) * param->block_size);
     }
     return ENOERR;
-#endif
 }
 
 SHELLCMD_ENTRY(partition_shellcmd, CMD_TYPE_EX, "partition", XARGS, (CmdCallBackFunc)osShellCmdPartitionShow);

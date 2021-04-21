@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,11 +32,6 @@
 #include "shcmd.h"
 #include "sherr.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 /*
  * Filter out double quote or single-quoted strings at both ends
@@ -148,7 +143,7 @@ unsigned int OsCmdTokenSplit(char *cmdStr, char split, CmdParsed *cmdParsed)
 
     return ret;
 }
-//cmd命令解析
+
 unsigned int OsCmdParse(char *cmdStr, CmdParsed *cmdParsed)
 {
     if ((cmdStr == NULL) || (cmdParsed == NULL) || (strlen(cmdStr) == 0)) {
@@ -157,8 +152,3 @@ unsigned int OsCmdParse(char *cmdStr, CmdParsed *cmdParsed)
     return OsCmdTokenSplit(cmdStr, ' ', cmdParsed);
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

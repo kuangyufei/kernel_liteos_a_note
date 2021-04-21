@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -75,7 +75,8 @@ struct page_mapping {
   struct file                           *host;        /* owner of this mapping */
 };
 #endif
-
+/* If the kernel malloc size is less than 16k, use heap, otherwise use physical pages */
+#define KMALLOC_LARGE_SIZE    (PAGE_SIZE << 2)
 typedef struct VmMapRange {
     VADDR_T             base;           /**< vm region base addr */ //线性区基地址
     UINT32              size;           /**< vm region size */		//线性区大小
@@ -110,7 +111,6 @@ struct VmMapRegion {//线性区描述符,内核通过线性区管理虚拟地址
     VM_OFFSET_T         pgOff;          /**< region page offset to file */	//以文件开始处的偏移量, 必须是分页大小的整数倍, 通常为0, 表示从文件头开始映射。
     UINT32              regionFlags;   /**< region flags: cow, user_wired *///线性区标签
     UINT32              shmid;          /**< shmid about shared region */	//shmid为共享线性区id,id背后就是共享线性区
-    UINT8               protectFlags;   /**< vm region protect flags: PROT_READ, PROT_WRITE, *///线性区中页框的访问许可权
     UINT8               forkFlags;      /**< vm space fork flags: COPY, ZERO, */	//fork的方式
     UINT8               regionType;     /**< vm region type: ANON, FILE, DEV */	//映射类型是匿名,文件,还是设备,所谓匿名可理解为内存映射
     union {
@@ -158,7 +158,7 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_CACHED               (0<<0)		//缓冲区
 #define     VM_MAP_REGION_FLAG_UNCACHED             (1<<0)		//非缓冲区
 #define     VM_MAP_REGION_FLAG_UNCACHED_DEVICE      (2<<0) /* only exists on some arches, otherwise UNCACHED */
-#define     VM_MAP_REGION_FLAG_WRITE_COMBINING      (3<<0) /* only exists on some arches, otherwise UNCACHED */
+#define     VM_MAP_REGION_FLAG_STRONGLY_ORDERED     (3<<0) /* only exists on some arches, otherwise UNCACHED */
 #define     VM_MAP_REGION_FLAG_CACHE_MASK           (3<<0)		//缓冲区掩码
 #define     VM_MAP_REGION_FLAG_PERM_USER            (1<<2)		//用户区
 #define     VM_MAP_REGION_FLAG_PERM_READ            (1<<3)		//可读取区
@@ -177,7 +177,9 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_VDSO                 (1<<14)		//VDSO(Virtual Dynamically-lined Shared Object)由内核提供的虚拟.so文件，它不在磁盘上，而在内核里，内核将其映射到一个地址空间中，被所有程序共享，正文段大小为一个页面。
 #define     VM_MAP_REGION_FLAG_MMAP                 (1<<15)		//映射区,虚拟空间内有专门用来存储<虚拟地址-物理地址>映射的区域
 #define     VM_MAP_REGION_FLAG_SHM                  (1<<16) 	//共享内存区,和代码区同级概念,意思是整个线性区被贴上共享标签
-#define     VM_MAP_REGION_FLAG_INVALID              (1<<17) /* indicates that flags are not specified */
+#define     VM_MAP_REGION_FLAG_FIXED                (1<<17)
+#define     VM_MAP_REGION_FLAG_FIXED_NOREPLACE      (1<<18)
+#define     VM_MAP_REGION_FLAG_INVALID              (1<<19) /* indicates that flags are not specified */
 
 STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned long flags)
 {
@@ -185,10 +187,12 @@ STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned lo
 
     regionFlags |= VM_MAP_REGION_FLAG_PERM_USER;								//必须是可用区
     regionFlags |= (prot & PROT_READ) ? VM_MAP_REGION_FLAG_PERM_READ : 0; 		//映射区可被读
-    regionFlags |= (prot & PROT_WRITE) ? VM_MAP_REGION_FLAG_PERM_WRITE : 0;		//映射区可被写
-    regionFlags |= (prot & PROT_EXEC) ? VM_MAP_REGION_FLAG_PERM_EXECUTE : 0;	//映射区可被执行
-    regionFlags |= (flags & MAP_SHARED) ? VM_MAP_REGION_FLAG_SHARED : 0;		//映射区可被共享
-    regionFlags |= (flags & MAP_PRIVATE) ? VM_MAP_REGION_FLAG_PRIVATE : 0;		//映射区私有
+    regionFlags |= (prot & PROT_WRITE) ? (VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE) : 0;
+    regionFlags |= (prot & PROT_EXEC) ? (VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_EXECUTE) : 0;
+    regionFlags |= (flags & MAP_SHARED) ? VM_MAP_REGION_FLAG_SHARED : 0;
+    regionFlags |= (flags & MAP_PRIVATE) ? VM_MAP_REGION_FLAG_PRIVATE : 0;
+    regionFlags |= (flags & MAP_FIXED) ? VM_MAP_REGION_FLAG_FIXED : 0;
+    regionFlags |= (flags & MAP_FIXED_NOREPLACE) ? VM_MAP_REGION_FLAG_FIXED_NOREPLACE : 0;
 
     return regionFlags;
 }
@@ -288,13 +292,13 @@ VOID OsInitMappingStartUp(VOID);
 VOID OsKSpaceInit(VOID);
 BOOL LOS_IsRangeInSpace(const LosVmSpace *space, VADDR_T vaddr, size_t size);
 STATUS_T LOS_VmSpaceReserve(LosVmSpace *space, size_t size, VADDR_T vaddr);
-LosVmSpace *LOS_GetKVmSpace(VOID);
 INT32 OsUserHeapFree(LosVmSpace *vmSpace, VADDR_T addr, size_t len);
 VADDR_T OsAllocRange(LosVmSpace *vmSpace, size_t len);
-VADDR_T OsAllocSpecificRange(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len);
+VADDR_T OsAllocSpecificRange(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len, UINT32 regionFlags);
 LosVmMapRegion *OsCreateRegion(VADDR_T vaddr, size_t len, UINT32 regionFlags, unsigned long offset);
 BOOL OsInsertRegion(LosRbTree *regionRbTree, LosVmMapRegion *region);
 LosVmSpace *LOS_SpaceGet(VADDR_T vaddr);
+LosVmSpace *LOS_CurrSpaceGet(VOID);
 BOOL LOS_IsRegionFileValid(LosVmMapRegion *region);
 LosVmMapRegion *LOS_RegionRangeFind(LosVmSpace *vmSpace, VADDR_T addr, size_t len);
 LosVmMapRegion *LOS_RegionFind(LosVmSpace *vmSpace, VADDR_T addr);
@@ -308,6 +312,7 @@ STATUS_T LOS_RegionFree(LosVmSpace *space, LosVmMapRegion *region);
 STATUS_T LOS_VmSpaceFree(LosVmSpace *space);
 STATUS_T LOS_VaddrToPaddrMmap(LosVmSpace *space, VADDR_T vaddr, PADDR_T paddr, size_t len, UINT32 flags);
 BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb);
+LosVmSpace *OsCreateUserVmSapce(VOID);
 STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace);
 STATUS_T LOS_UserSpaceVmAlloc(LosVmSpace *space, size_t size, VOID **ptr, UINT8 align_log2, UINT32 regionFlags);
 LosMux *OsGVmSpaceMuxGet(VOID);

@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -34,7 +34,8 @@ MODULE_NAME := $(notdir $(shell pwd))
 LOCAL_SRCS :=  $(wildcard src/*.c)
 
 LOCAL_INCLUDE := \
-	-I $(LITEOSTOPDIR)/fs/fat/virpart/include
+	-I $(LITEOSTOPDIR)/fs/fat/virpart/include \
+	-I $(LITEOSTOPDIR)/fs/fat/os_adapt
 
 LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
 

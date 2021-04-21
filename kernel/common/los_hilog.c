@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -56,11 +56,11 @@ struct HiLogEntry { //hilog 实体
 
 ssize_t HilogRead(struct file *filep, char __user *buf, size_t count);
 ssize_t HilogWrite(struct file *filep, const char __user *buf, size_t count);
-int HiLogOpen(FAR struct file *filep);
-int HiLogClose(FAR struct file *filep);
+int HiLogOpen(struct file *filep);
+int HiLogClose(struct file *filep);
 
-static ssize_t HiLogWrite(FAR struct file *filep, const char *buffer, size_t bufLen);
-static ssize_t HiLogRead(FAR struct file *filep, char *buffer, size_t bufLen);
+static ssize_t HiLogWrite(struct file *filep, const char *buffer, size_t bufLen);
+static ssize_t HiLogRead(struct file *filep, char *buffer, size_t bufLen);
 //实现VFS接口函数,对hilog进行操作
 STATIC struct file_operations_vfs g_hilogFops = {
     HiLogOpen,  /* open */
@@ -76,7 +76,7 @@ STATIC struct file_operations_vfs g_hilogFops = {
     NULL, /* unlink */
 };
 
-FAR struct HiLogCharDevice {//hilog 本质上是个字符设备
+struct HiLogCharDevice {
     int flag;	//设备标签
     LosMux mtx;	//读写buf的互斥量
     unsigned char *buffer;//采用 ring buffer 管理
@@ -92,13 +92,13 @@ static inline unsigned char *HiLogBufferHead(void)
     return g_hiLogDev.buffer + g_hiLogDev.headOffset;
 }
 //为支持VFS,作打开状
-int HiLogOpen(FAR struct file *filep)
+int HiLogOpen(struct file *filep)
 {
     (void)filep;
     return 0;
 }
 //为支持VFS,作关闭状
-int HiLogClose(FAR struct file *filep)
+int HiLogClose(struct file *filep)
 {
     (void)filep;
     return 0;
@@ -127,16 +127,16 @@ static void HiLogBufferDec(size_t sz)
 static int HiLogBufferCopy(unsigned char *dst, unsigned dstLen, unsigned char *src, size_t srcLen)
 {
     int retval = -1;
-
     size_t minLen = (dstLen > srcLen) ? srcLen : dstLen;
 
-    if (LOS_IsUserAddressRange((VADDR_T)dst, minLen) && LOS_IsUserAddressRange((VADDR_T)src, minLen)) {
+    if (LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dst, minLen) &&
+        LOS_IsUserAddressRange((VADDR_T)(UINTPTR)src, minLen)) {
         return retval;
     }
 
-    if (LOS_IsUserAddressRange((VADDR_T)dst, minLen)) {
+    if (LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dst, minLen)) {
         retval = LOS_ArchCopyToUser(dst, src, minLen);
-    } else if (LOS_IsUserAddressRange((VADDR_T)src, minLen)) {
+    } else if (LOS_IsUserAddressRange((VADDR_T)(UINTPTR)src, minLen)) {
         retval = LOS_ArchCopyFromUser(dst, src, minLen);
     } else {
         retval = memcpy_s(dst, dstLen, src, srcLen);
@@ -161,7 +161,7 @@ static int HiLogReadRingBuffer(unsigned char *buffer, size_t bufLen)
     return retval;
 }
 
-static ssize_t HiLogRead(FAR struct file *filep, char *buffer, size_t bufLen)
+static ssize_t HiLogRead(struct file *filep, char *buffer, size_t bufLen)
 {
     size_t retval;
     struct HiLogEntry header;
@@ -178,7 +178,7 @@ static ssize_t HiLogRead(FAR struct file *filep, char *buffer, size_t bufLen)
     }
 
     if (bufLen < header.len + sizeof(header)) {
-        dprintf("buffer too small,bufLen=%d, header.len=%d,%d\n", bufLen, header.len, header.hdrSize, header.nsec);
+        dprintf("buffer too small,bufLen=%d, header.len=%d,%d\n", bufLen, header.len, header.hdrSize);
         retval = -ENOMEM;
         goto out;
     }
@@ -248,13 +248,14 @@ static void HiLogCoverOldLog(size_t bufLen)
     struct HiLogEntry header;
     size_t totalSize = bufLen + sizeof(struct HiLogEntry);
 
-    while (totalSize + g_hiLogDev.size >= HILOG_BUFFER) {
+    while (totalSize + g_hiLogDev.size > HILOG_BUFFER) {
         retval = HiLogReadRingBuffer((unsigned char *)&header, sizeof(header));
         if (retval < 0) {
             break;
         }
 
-        HiLogBufferDec(sizeof(header) + header.len);
+        HiLogBufferDec(sizeof(header));
+        HiLogBufferDec(header.len);
     }
 }
 //将外部buf写入hilog设备分两步完成
@@ -262,6 +263,12 @@ int HiLogWriteInternal(const char *buffer, size_t bufLen)
 {
     struct HiLogEntry header;
     int retval;
+    LosTaskCB *runTask =  (LosTaskCB *)OsCurrTaskGet();
+
+    if ((g_hiLogDev.buffer == NULL) || (OS_INT_ACTIVE) || (runTask->taskStatus & OS_TASK_FLAG_SYSTEM_TASK)) {
+        PRINTK("%s\n", buffer);
+        return -EAGAIN;
+    }
 
     (VOID)LOS_MuxAcquire(&g_hiLogDev.mtx);
     HiLogCoverOldLog(bufLen);
@@ -295,7 +302,7 @@ out:
     return retval;
 }
 //写hilog,外部以VFS方式写入
-static ssize_t HiLogWrite(FAR struct file *filep, const char *buffer, size_t bufLen)
+static ssize_t HiLogWrite(struct file *filep, const char *buffer, size_t bufLen)
 {
     (void)filep;
     if (bufLen + sizeof(struct HiLogEntry) > HILOG_BUFFER) {

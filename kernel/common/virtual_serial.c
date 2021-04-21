@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,19 +35,15 @@
 #include "stdarg.h"
 #endif
 #ifdef LOSCFG_FS_VFS
-#include "inode/inode.h"
 #include "console.h"
 #endif
-#include "uart.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#include "fs/path_cache.h"
+
 
 STATIC volatile UINT32 g_serialType = 0;
 STATIC struct file g_serialFilep;
+
 
 UINT32 SerialTypeGet(VOID)
 {
@@ -131,7 +127,7 @@ ERROUT:
 }
 
 /* Note: do not add print function in this module! */
-STATIC ssize_t SerialWrite(FAR struct file *filep, FAR const CHAR *buffer, size_t bufLen)
+STATIC ssize_t SerialWrite(struct file *filep,  const CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
     struct file *privFilep = NULL;
@@ -198,14 +194,14 @@ ERROUT:
     set_errno(-ret);
     return VFS_ERROR;
 }
-//实现VFS接口函数,对串行设备进行操作
+
 STATIC const struct file_operations_vfs g_serialDevOps = {
     SerialOpen,  /* open */
     SerialClose, /* close */
     SerialRead,  /* read */
     SerialWrite,
     NULL,
-    SerialIoctl,//ioctl主要用read/write很难定义的情况,比如 光盘播放的快进,倒退等,ioctl命令和设备紧耦合.
+    SerialIoctl,
     NULL,
 #ifndef CONFIG_DISABLE_POLL
     SerialPoll,
@@ -216,9 +212,7 @@ STATIC const struct file_operations_vfs g_serialDevOps = {
 INT32 virtual_serial_init(const CHAR *deviceName)
 {
     INT32 ret;
-    CHAR *fullpath = NULL;
-    struct inode *inode = NULL;
-    struct inode_search_s desc;
+    struct Vnode *vnode = NULL;
 
     if (deviceName == NULL) {
         ret = EINVAL;
@@ -227,90 +221,38 @@ INT32 virtual_serial_init(const CHAR *deviceName)
 
     SerialTypeSet(deviceName);
 
-    ret = vfs_normalize_path(NULL, deviceName, &fullpath);
-    if (ret < 0) {
-        ret = EINVAL;
+    VnodeHold();
+    ret = VnodeLookup(deviceName, &vnode, V_DUMMY);
+    if (ret != LOS_OK) {
+        ret = EACCES;
         goto ERROUT;
     }
-    SETUP_SEARCH(&desc, fullpath, false);
-    ret = inode_find(&desc);
-    if (ret < 0) {
-        ret = EACCES;
-        goto ERROUT_WITH_FULLPATH;
-    }
-    inode = desc.node;
 
     (VOID)memset_s(&g_serialFilep, sizeof(struct file), 0, sizeof(struct file));
     g_serialFilep.f_oflags = O_RDWR;
-    g_serialFilep.f_inode = inode;
+    g_serialFilep.f_vnode = vnode;
+    g_serialFilep.ops = ((struct drv_data *)vnode->data)->ops;
 
-    if (inode->u.i_ops->open != NULL) {
-        (VOID)inode->u.i_ops->open(&g_serialFilep);
+    if (g_serialFilep.ops->open != NULL) {
+        (VOID)g_serialFilep.ops->open(&g_serialFilep);
     } else {
         ret = EFAULT;
-        inode_release(inode);
-        goto ERROUT_WITH_FULLPATH;
+        PRINTK("virtual_serial_init %s open is NULL\n", deviceName);
+        goto ERROUT;
     }
-
     (VOID)register_driver(SERIAL, &g_serialDevOps, DEFFILEMODE, &g_serialFilep);
-    inode_release(inode);
-    free(fullpath);
+
+    VnodeDrop();
     return ENOERR;
 
-ERROUT_WITH_FULLPATH:
-    free(fullpath);
 ERROUT:
+    VnodeDrop();
     set_errno(ret);
     return VFS_ERROR;
 }
 
 INT32 virtual_serial_deinit(VOID)
 {
-    INT32 ret;
-    struct file *filep = NULL;
-    struct inode *inode = NULL;
-    CHAR *fullpath = NULL;
-    struct inode_search_s desc;
-
-    /* It's a process opposite virtual_serial_init */
-    ret = vfs_normalize_path(NULL, SERIAL, &fullpath);
-    if (ret < 0) {
-        ret = EINVAL;
-        goto ERROUT;
-    }
-    SETUP_SEARCH(&desc, fullpath, false);
-    ret = inode_find(&desc);
-    if (ret < 0) {
-        ret = EACCES;
-        goto ERROUT_WITH_FULLPATH;
-    }
-    inode = desc.node;
-
-    filep = inode->i_private;
-    if ((filep != NULL) && (inode->u.i_ops != NULL)) {
-        (VOID)inode->u.i_ops->close(filep);     /* close filep */
-        inode->i_private = NULL;
-    } else {
-        ret = EBADF;
-        goto ERROUT_WITH_INODE;
-    }
-    inode_release(inode);
-    free(fullpath);
-    (VOID)unregister_driver(SERIAL);
-
-    return ENOERR;
-
-ERROUT_WITH_INODE:
-    inode_release(inode);
-ERROUT_WITH_FULLPATH:
-    free(fullpath);
-ERROUT:
-    set_errno(ret);
-    return VFS_ERROR;
+    return unregister_driver(SERIAL);
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,11 +36,7 @@
 #include "los_vm_syscall.h"
 #include "fs_file.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+
 //鸿蒙与Linux标准库的差异 https://gitee.com/openharmony/docs/blob/master/kernel/%E4%B8%8ELinux%E6%A0%87%E5%87%86%E5%BA%93%E7%9A%84%E5%B7%AE%E5%BC%82.md
 /**************************************************
 系统调用|申请虚拟内存(分配线性地址区间)
@@ -122,6 +118,7 @@ shmflg: IPC_CREAT IPC_EXCL
 		IPC_EXCL：	此参数一般与IPC_CREAT配合使用来创建一个新的IPC结构。如果创建的IPC结构已存在函数就出错返回，
 					返回EEXIST（这与open函数指定O_CREAT和O_EXCL标志原理相同）
 **************************************************/
+#ifdef LOSCFG_KERNEL_SHM
 int SysShmGet(key_t key, size_t size, int shmflg)
 {
     int ret;
@@ -188,9 +185,5 @@ int SysShmDt(const void *shmaddr)
 
     return ret;
 }
+#endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

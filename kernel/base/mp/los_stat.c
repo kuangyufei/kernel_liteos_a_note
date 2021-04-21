@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,11 +31,7 @@
 
 #include "los_task_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+
 // 文件作用:统计多CPU core下运行情况,打开开关必然消耗大量的性能
 #if (LOSCFG_KERNEL_SCHED_STATISTICS == YES)
 #define HIGHTASKPRI           16 //界定高优先级任务的标准 
@@ -326,8 +322,3 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellMpStaticStop(VOID)
 
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

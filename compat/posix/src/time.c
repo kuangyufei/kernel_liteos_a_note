@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -30,7 +30,6 @@
  */
 
 #include "time.h"
-#include "asm/hal_platform_ints.h"
 #include "stdint.h"
 #include "stdio.h"
 #include "sys/times.h"
@@ -51,11 +50,6 @@
 #include "los_swtmr_pri.h"
 #include "los_sys_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 /*
  * Do a time package defined return. This requires the error code
@@ -281,7 +275,7 @@ STATIC VOID OsGetHwTime(struct timespec64 *hwTime)
 {
     UINT64 nowNsec;
 
-    nowNsec = hi_sched_clock();
+    nowNsec = LOS_CurrNanosec();
     hwTime->tv_sec = nowNsec / OS_SYS_NS_PER_SECOND;
     hwTime->tv_nsec = nowNsec - hwTime->tv_sec * OS_SYS_NS_PER_SECOND;
 }
@@ -456,15 +450,6 @@ int clock_settime(clockid_t clockID, const struct timespec *tp)
     return settimeofday(&tv, NULL);
 }
 
-/*******************************************************
-获取系统时钟时间
-参数:clk_id 设置时间的类型
-	CLOCK_REALTIME:系统实时时间,随系统实时时间改变而改变,即从 UTC1970-1-1 0:0:0 开始计时,
-	               中间时刻如果系统时间被用户改成其他,则对应的时间相应改变
-	CLOCK_MONOTONIC:从系统启动这一刻起开始计时,不受系统时间被用户改变的影响
-	CLOCK_PROCESS_CPUTIME_ID:本进程到当前代码系统CPU花费的时间
-	CLOCK_THREAD_CPUTIME_ID:本线程到当前代码系统CPU花费的时间
-/********************************************************/
 int clock_gettime(clockid_t clockID, struct timespec *tp)
 {
     UINT32 intSave;
@@ -479,7 +464,7 @@ int clock_gettime(clockid_t clockID, struct timespec *tp)
         goto ERROUT;
     }
 
-    OsGetHwTime(&hwTime);//获取硬件时间
+    OsGetHwTime(&hwTime);
 
     switch (clockID) {
         case CLOCK_MONOTONIC_RAW:
@@ -493,7 +478,7 @@ int clock_gettime(clockid_t clockID, struct timespec *tp)
             tp->tv_sec = tmp.tv_sec;
             tp->tv_nsec = tmp.tv_nsec;
             break;
-        case CLOCK_REALTIME://实时时间
+        case CLOCK_REALTIME:
             LOS_SpinLockSave(&g_timeSpin, &intSave);
             tmp = OsTimeSpecAdd(hwTime, g_accDeltaFromAdj);
             tmp = OsTimeSpecAdd(tmp, g_accDeltaFromSet);
@@ -587,15 +572,16 @@ int clock_nanosleep(clockid_t clk, int flags, const struct timespec *req, struct
 
     TIME_RETURN(0);
 }
-//定时器处理函数之参数
+
 typedef struct {
-    int sigev_signo; //信号ID
-    UINT32 pid;		 //进程ID,用于给进程发送信号
+    int sigev_signo;
+    UINT32 pid;
     union sigval sigev_value;
 } swtmr_proc_arg;
-//定时器处理函数,发送信号
+
 static VOID SwtmrProc(UINTPTR tmrArg)
 {
+    unsigned int intSave;
     int sig;
     pid_t pid;
     siginfo_t info;
@@ -620,10 +606,13 @@ static VOID SwtmrProc(UINTPTR tmrArg)
     info.si_value.sival_ptr = arg->sigev_value.sival_ptr;
 
     /* Send the signal */
-    OsDispatch(pid, &info, OS_USER_KILL_PERMISSION);//以用户权限发送信号
+    SCHEDULER_LOCK(intSave);
+    OsDispatch(pid, &info, OS_USER_KILL_PERMISSION);
+    SCHEDULER_UNLOCK(intSave);
+
     return;
 }
-//posix 之创建定时器 
+
 int timer_create(clockid_t clockID, struct sigevent *evp, timer_t *timerID)
 {
     UINT32 ret;
@@ -753,7 +742,7 @@ int timer_settime(timer_t timerID, int flags,
     swtmr->ucMode = interval ? LOS_SWTMR_MODE_OPP : LOS_SWTMR_MODE_NO_SELFDELETE;
     swtmr->uwExpiry = expiry + !!expiry; // PS: skip the first tick because it is NOT a full tick.
     swtmr->uwInterval = interval;
-    swtmr->ucOverrun = 0;
+    swtmr->uwOverrun = 0;
     LOS_SpinUnlockRestore(&g_swtmrSpin, intSave);
 
     if ((value->it_value.tv_sec == 0) && (value->it_value.tv_nsec == 0)) {
@@ -822,20 +811,15 @@ int timer_getoverrun(timer_t timerID)
         return -1;
     }
 
-    overRun = (INT32)(swtmr->ucOverrun);
+    overRun = (INT32)(swtmr->uwOverrun);
     return (overRun > DELAYTIMER_MAX) ? DELAYTIMER_MAX : overRun;
 }
 
-STATIC INT32 DoNanoSleep(UINT64 nseconds)
+STATIC INT32 DoNanoSleep(UINT64 useconds)
 {
-    UINT64 tick;
     UINT32 ret;
-    const UINT32 nsPerTick = OS_SYS_NS_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND;
 
-    tick = (nseconds + nsPerTick - 1) / nsPerTick; // Round up for ticks
-
-    /* PS: skip the first tick because it is NOT a full tick. */
-    ret = LOS_TaskDelay((tick >= UINT32_MAX) ? UINT32_MAX : (tick ? ((UINT32)tick + 1) : 0));
+    ret = LOS_TaskDelay(OsUS2Tick(useconds));
     if (ret == LOS_OK || ret == LOS_ERRNO_TSK_YIELD_NOT_ENOUGH_TASK) {
         return 0;
     }
@@ -844,12 +828,12 @@ STATIC INT32 DoNanoSleep(UINT64 nseconds)
 
 int usleep(unsigned useconds)
 {
-    return DoNanoSleep((UINT64)useconds * OS_SYS_NS_PER_US);
+    return DoNanoSleep((UINT64)useconds);
 }
 
 int nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
 {
-    UINT64 nseconds;
+    UINT64 useconds;
     INT32 ret = -1;
 
     (VOID)rmtp;
@@ -860,14 +844,14 @@ int nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
         return ret;
     }
 
-    nseconds = (UINT64)rqtp->tv_sec * OS_SYS_NS_PER_SECOND + rqtp->tv_nsec;
+    useconds = (UINT64)rqtp->tv_sec * OS_SYS_US_PER_SECOND + rqtp->tv_nsec / OS_SYS_NS_PER_US;
 
-    return DoNanoSleep(nseconds);
+    return DoNanoSleep(useconds);
 }
 
 unsigned int sleep(unsigned int seconds)
 {
-    return DoNanoSleep((UINT64)seconds * OS_SYS_NS_PER_SECOND);
+    return DoNanoSleep((UINT64)seconds * OS_SYS_US_PER_SECOND);
 }
 
 double difftime(time_t time2, time_t time1)
@@ -880,31 +864,28 @@ clock_t clock(VOID)
     clock_t clockMsec;
     UINT64 nowNsec;
 
-    nowNsec = hi_sched_clock();
-    clockMsec = (clock_t)(nowNsec / OS_SYS_NS_PER_MS);
+    nowNsec = LOS_CurrNanosec();
+    clockMsec = (clock_t)(nowNsec / (OS_SYS_NS_PER_SECOND / CLOCKS_PER_SEC));
 
     return clockMsec;
 }
 
 clock_t times(struct tms *buf)
 {
-    clock_t clockTick;
+    clock_t clockTick = -1;
 
-    clockTick = LOS_TickCountGet();
-    if (buf != NULL) {
-        buf->tms_cstime = clockTick;
-        buf->tms_cutime = clockTick;
-        buf->tms_stime  = clockTick;
-        buf->tms_utime  = clockTick;
-    }
+    (void)buf;
+    set_errno(ENOSYS);
 
     return clockTick;
 }
 
 int setitimer(int which, const struct itimerval *value, struct itimerval *ovalue)
 {
+    UINT32 intSave;
     LosTaskCB *taskCB = OS_TCB_FROM_TID(LOS_CurTaskIDGet());
     LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
+    timer_t timerID = 0;
     struct itimerspec spec;
     struct itimerspec ospec;
     int ret = LOS_OK;
@@ -914,15 +895,34 @@ int setitimer(int which, const struct itimerval *value, struct itimerval *ovalue
         set_errno(EINVAL);
         return -1;
     }
-    LOS_TaskLock();
+
+    /* To avoid creating an invalid timer after the timer has already been create */
     if (processCB->timerID == (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID) {
-        ret = timer_create(CLOCK_REALTIME, NULL, &processCB->timerID);
+        ret = timer_create(CLOCK_REALTIME, NULL, &timerID);
         if (ret != LOS_OK) {
-            LOS_TaskUnlock();
             return ret;
         }
     }
-    LOS_TaskUnlock();
+
+    /* The initialization of this global timer must be in spinlock
+     * timer_create cannot be located in spinlock.
+     */
+    SCHEDULER_LOCK(intSave);
+    if (processCB->timerID == (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID) {
+        processCB->timerID = timerID;
+        SCHEDULER_UNLOCK(intSave);
+    } else {
+        SCHEDULER_UNLOCK(intSave);
+        if (timerID) {
+            timer_delete(timerID);
+        }
+    }
+
+    if (!ValidTimeval(&value->it_value) || !ValidTimeval(&value->it_interval)) {
+        set_errno(EINVAL);
+        return -1;
+    }
+
     TIMEVAL_TO_TIMESPEC(&value->it_value, &spec.it_value);
     TIMEVAL_TO_TIMESPEC(&value->it_interval, &spec.it_interval);
 
@@ -986,8 +986,3 @@ VOID OsGetVdsoTime(VdsoDataPage *vdsoDataPage)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

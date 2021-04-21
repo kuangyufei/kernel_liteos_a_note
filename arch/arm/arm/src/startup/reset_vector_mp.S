@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -65,7 +65,9 @@
 
     .equ MPIDR_CPUID_MASK, 0xffU
 
-    .fpu vfpv4
+    .fpu neon-vfpv4
+    .syntax unified
+    .arch armv7-a
     .arm
 /* 参数顺序:栈底,栈大小,r12:保存了cpuid*/
 /* param0 is stack bottom, param1 is stack size, r12 hold cpu id */
@@ -112,6 +114,18 @@ __exception_handlers:@异常处理
     /* Startup code which will get the machine into supervisor mode */
     .global reset_vector
     .type   reset_vector,function
+#ifdef LOSCFG_QUICK_START
+__quickstart_args_start:
+    .fill 512,1,0
+__quickstart_args_end:
+
+.global OsGetArgsAddr
+.type   OsGetArgsAddr,function
+
+OsGetArgsAddr:
+    ldr     r0, =__quickstart_args_start
+    bx      lr
+#endif
 reset_vector: //鸿蒙开机代码
     /* clear register TPIDRPRW */
     mov     r0, #0					@r0 = 0
@@ -122,6 +136,19 @@ reset_vector: //鸿蒙开机代码
     bic     r0, #(1<<2 | 1<<0)		@清除第0和2位 ,禁止 MMU和缓存 0位:MMU enable/disable 2位:Cache enable/disable
     mcr     p15, 0, r0, c1, c0, 0 	@c1=r0 
 									@adr指令 寄存器小范围的转变
+    /* enable fpu+neon */
+#ifndef LOSCFG_TEE_ENABLE
+    MRC    p15, 0, r0, c1, c1, 2
+    ORR    r0, r0, #0xC00
+    BIC    r0, r0, #0xC000
+    MCR    p15, 0, r0, c1, c1, 2
+
+    LDR    r0, =(0xF << 20)
+    MCR    p15, 0, r0, c1, c0, 2
+    ISB
+#endif
+    MOV    r3, #0x40000000
+    VMSR   FPEXC, r3
     /* r11: delta of physical address and virtual address */@物理地址和虚拟地址的增量
     adr     r11, pa_va_offset @将基于PC相对偏移的地址pa_va_offset值读取到寄存器R11中
     ldr     r0, [r11]		  @r0 = *r11 
@@ -160,12 +187,16 @@ reloc_img_to_bottom_loop:
     sub     r11, r11, r12                       /* r11: eventual address offset */
 
 reloc_img_to_bottom_done:
-    ldr     r4, =g_firstPageTable               /* r4: physical address of translation table and clear it */ @获取页面地址
-    add     r4, r4, r11 		@r4 = r4 + r11
-    bl      page_table_clear	@清除页表
-	@设置页表 /*PAGE_TABLE_SET的参数顺序:物理地址,虚拟地址,大小,标签*/
+#ifdef LOSCFG_KERNEL_MMU
+    ldr     r4, =g_firstPageTable               /* r4: physical address of translation table and clear it */
+    add     r4, r4, r11
+    mov     r0, r4
+    mov     r1, #0
+    mov     r2, #MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS
+    bl      memset_optimized                    /* optimized memset since r0 is 64-byte aligned */
+
     PAGE_TABLE_SET SYS_MEM_BASE, KERNEL_VMM_BASE, KERNEL_VMM_SIZE, MMU_DESCRIPTOR_KERNEL_L1_PTE_FLAGS
-    PAGE_TABLE_SET SYS_MEM_BASE, UNCACHED_VMM_BASE, UNCACHED_VMM_SIZE, MMU_INITIAL_MAP_STRONGLY_ORDERED
+    PAGE_TABLE_SET SYS_MEM_BASE, UNCACHED_VMM_BASE, UNCACHED_VMM_SIZE, MMU_INITIAL_MAP_NORMAL_NOCACHE
     PAGE_TABLE_SET PERIPH_PMM_BASE, PERIPH_DEVICE_BASE, PERIPH_DEVICE_SIZE, MMU_INITIAL_MAP_DEVICE
     PAGE_TABLE_SET PERIPH_PMM_BASE, PERIPH_CACHED_BASE, PERIPH_CACHED_SIZE, MMU_DESCRIPTOR_KERNEL_L1_PTE_FLAGS
     PAGE_TABLE_SET PERIPH_PMM_BASE, PERIPH_UNCACHED_BASE, PERIPH_UNCACHED_SIZE, MMU_INITIAL_MAP_STRONGLY_ORDERED
@@ -175,8 +206,7 @@ reloc_img_to_bottom_done:
     add     r4, r4, r11
     ldr     r4, [r4]
     add     r4, r4, r11                         /* r4: jump pagetable paddr */
-    bl      page_table_clear	/* 执行清除操作 */
-	/* L1页表项有三种描述格式,创建SECTION页表项,指向1M节的页表项*/
+
     /* build 1M section mapping, in order to jump va during turing on mmu:pa == pa, va == pa */
     mov     r6, pc
     mov     r7, r6                              /* r7: pa (MB aligned)*/
@@ -186,11 +216,11 @@ reloc_img_to_bottom_done:
     str     r12, [r4, r7, lsr #(20 - 2)]        /* jumpTable[paIndex] = pt entry */
     rsb     r7, r11, r6, lsl #20                /* r7: va */
     str     r12, [r4, r7, lsr #(20 - 2)]        /* jumpTable[vaIndex] = pt entry */
-
+#endif
     bl      _bootaddr_setup	@安装引导地址
-
+#ifdef LOSCFG_KERNEL_MMU
     bl      mmu_setup                           /* set up the mmu */@安装MMU
-	/* 清除中断和异常堆栈，并设置magic num来检查溢出 */
+#endif
     /* clear out the interrupt and exception stack and set magic num to check the overflow */
     ldr     r0, =__undef_stack
     ldr     r1, =__exc_stack_top
@@ -232,42 +262,25 @@ warm_reset: @热启动,初始化CPU各异常工作模式环境
     mrc     p15, 0, r12, c0, c0, 5		@R12保存CPUID 
     and     r12, r12, #MPIDR_CPUID_MASK @掩码操作获取当前cpu id
 
-    /* set svc stack, every cpu has OS_EXC_SVC_STACK_SIZE stack *//*设置每一个SVC栈,每个CPU都有独立的 SVC栈*/
-    ldr    r0, =__svc_stack_top	@栈底位置,注意这里虽然使用了top,但实际是栈底
-    mov    r2, #OS_EXC_SVC_STACK_SIZE @栈大小
-    mul    r2, r2, r12 	@定位到栈位置,CPU SVC栈是连在一块的
-    sub    r0, r0, r2  	@计算栈顶位置,使用sub也说明了栈底大于栈顶	
-    mov    sp, r0 		@栈顶位置
-
-    /* enable fpu+neon */
-#ifndef LOSCFG_TEE_ENABLE
-    MRC    p15, 0, r0, c1, c1, 2 
-    ORR    r0, r0, #0xC00
-    BIC    r0, r0, #0xC000
-    MCR    p15, 0, r0, c1, c1, 2
-
-    LDR    r0, =(0xF << 20)
-    MCR    p15, 0, r0, c1, c0, 2
-#endif
-
-    MOV    r3, #0x40000000
-    VMSR   FPEXC, r3
+    /* set svc stack, every cpu has OS_EXC_SVC_STACK_SIZE stack */
+    ldr    r0, =__svc_stack_top
+    mov    r2, #OS_EXC_SVC_STACK_SIZE
+    mul    r2, r2, r12
+    sub    r0, r0, r2
+    mov    sp, r0
 
     LDR    r0, =__exception_handlers
-    MCR    p15, 0, r0, c12, c0, 0 @c12=r0
+    MCR    p15, 0, r0, c12, c0, 0
 
-    cmp    r12, #0	@是否为主CPU
-    bne    cpu_start @跳转到cpu_start运行
+    cmp    r12, #0
+    bne    cpu_start
 
-clear_bss:	@清楚bss
-    ldr    r1, =__bss_start @bbs开始地址
-    ldr    r2, =__bss_end	@bss结束地址
-    mov    r0, #0	@r0 = 0
-
-bss_loop:	
-    cmp    r1, r2	@r1和r2比较
-    strlo  r0, [r1], #4 @ *r1 = r0 ,r1 = r1 +4 其实就是将r1慢慢清零
-    blo    bss_loop @循环
+clear_bss:
+    ldr    r0, =__bss_start
+    ldr    r2, =__bss_end
+    mov    r1, #0
+    sub    r2, r2, r0
+    bl     memset
 
 #if defined(LOSCFG_CC_STACKPROTECTOR_ALL) || \
     defined(LOSCFG_CC_STACKPROTECTOR_STRONG) || \
@@ -285,7 +298,7 @@ bss_loop:
 
 _start_hang: @悬停 ,相当于死循环,不再往下走了.
     b      _start_hang
-
+#ifdef LOSCFG_KERNEL_MMU
 mmu_setup:			@安装MMU,初始化MMU操作
     mov     r12, #0 							@ r12 = 0的目的是 将c8设置为控制TLB，并将映射设置为无效
     mcr     p15, 0, r12, c8, c7, 0              /* Set c8 to control the TLB and set the mapping to invalid */
@@ -321,7 +334,7 @@ mmu_setup:			@安装MMU,初始化MMU操作
     isb
     sub     lr,  r11                            /* adjust lr with delta of physical address and virtual address */
     bx      lr
-
+#endif
     .code  32
 
     .global reset_platform
@@ -337,6 +350,7 @@ reset_platform:		@平台复位
     mov    pc, r0   // Jump to reset vector @跳到重置向量表处
 #endif
 cpu_start:	/* CPU 启动 */
+#ifdef LOSCFG_KERNEL_MMU
     ldr     r4, =g_firstPageTable               /* r4 = physical address of translation table and clear it */
     add     r4, r4, r11
     orr     r8, r4, #MMU_TTBRx_FLAGS
@@ -347,6 +361,7 @@ cpu_start:	/* CPU 启动 */
     add     r4, r4, r11                         /* r4 = tt_trampoline paddr */
 
     bl     mmu_setup			/* 安装MMU */
+#endif
     bl     secondary_cpu_start	/* 启动次级CPU */
     b      . //注意 b . 就会跳转到当前地址,相当于死循环
 
@@ -379,26 +394,13 @@ sp_set: /* 设置当前cpu 栈顶指针 ,r1是栈底 ,r0是栈大小,r12是cpuid
 
 /*
  * r4: page table base address
- * r5 and r6 will be used as variable
- */
-page_table_clear:	@清空页表,一页一页来
-    mov     r5, #0
-    mov     r6, #0
-0:
-    str     r5, [r4, r6, lsl #2]
-    add     r6, #1
-    cmp     r6, #0x1000                         /* r6 < 4096 */
-    blt     0b
-    bx      lr
-
-/*
- * r4: page table base address 页表基地址
  * r6: physical address		   物理地址
  * r7: virtual address		   虚拟地址
  * r8: sizes				   大小(4K)
  * r10: flags				   标签
  * r9 and r12 will be used as variable 作为变量使用
  */
+#ifdef LOSCFG_KERNEL_MMU
 page_table_build:	@创建页面
     mov     r9, r6
     bfc     r9, #20, #12                        /* r9: pa % MB */
@@ -417,7 +419,7 @@ page_table_build_loop:
     subs    r8, #1                              /* sizes-- */
     bne     page_table_build_loop
     bx      lr
-
+#endif
 /*
  * init stack to initial value 
  * r0 is stack mem start, r1 is stack mem end
@@ -470,6 +472,19 @@ _bootaddr_setup:@引导程序 另外 0xE28FE004 = "add lr,pc,#4"
 
     bx      lr @跳回调用处
 
+#ifdef LOSCFG_KERNEL_MMU
+memset_optimized:
+    mov     r3, r0
+    vdup.8  q0, r1
+    vmov    q1, q0
+    vmov    q2, q0
+    vmov    q3, q0
+memset_optimized_loop:
+    subs    r2, #64
+    vstmia  r3!, {d0 - d7}
+    bge     memset_optimized_loop
+    bx      lr
+#endif
 init_done:
     .long  0xDEADB00B
 

@@ -8,8 +8,14 @@
 
 ## **百万汉字注解**
 
-**[kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在鸿蒙官方开源项目 **[kernel\_liteos\_a](https://gitee.com/openharmony/kernel_liteos_a)** 基础上给源码加上中文注解的版本
+**[kernel\_liteos\_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在鸿蒙官方开源项目 **[kernel\_liteos\_a](https://gitee.com/openharmony/kernel_liteos_a)** 基础上给源码加上中文注解的版本.
 
+### **同步官方源码历史**
+
+* 后续将每月同步一次
+* 2021/4/21 -- 官方优化了很多之前吐槽的地方,点赞鸿蒙的效率
+* 2020/9/16 -- 中文注解版起点
+  
 ### **为何要精读内核源码?**
 
 * 在每位码农的学职生涯,都应精读一遍内核源码.以浇筑好计算机知识大厦的地基，地基纵深的坚固程度，很大程度能决定了未来大厦能盖多高。为何一定要精读细品呢?
@@ -56,13 +62,16 @@
 
 * **具体微观代码级:** 这一级是具体到每一行代码的实现,到了用代码指令级的地步,这段代码是什么意思?为什么要这么设计?有没有更好的方案? **[鸿蒙内核源码注解分析](https://gitee.com/weharmony/kernel_liteos_a_note)** 试图从细微处去解释代码实现层,英文真的是天生适合设计成编程语言的人类语言,计算机的01码映射到人类世界的26个字母,诞生了太多的伟大奇迹.但我们的母语注定了很大部分人存在着自然语言层级的理解映射,希望鸿蒙内核源码注解分析能让更多爱好者快速的理解内核,共同进步.
 ## 百篇博客分析
-
-* 在给 [鸿蒙内核源码加中文注释](https://gitee.com/weharmony/kernel_liteos_a_note) 过程中,整理出以下文章.内容立足源码,常以生活场景打比方尽可能多的将内核知识点置入某种场景,具有画面感.而绝不是百度教条式的在说一堆诘屈聱牙的概念,那没什么意思.更希望让内核变得栩栩如生,倍感亲切.确实有难度,自不量力,但已经出发,回头已是不可能的了.:P
-
-* 文章和注解一样会反复修改, .xx代表修改的次数,持续完善源码注解和文档内容，精雕细琢，尽全力打磨精品内容.  
   
 ### **鸿蒙源码百篇博客 往期回顾**
-* [v48.xx (信号生产篇) | 生产异步通讯信号的过程 ](https://my.oschina.net/weharmony/blog/5022149) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/115768099) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/48_信号分发篇.html)[>]()**
+* 在给 [鸿蒙内核源码加中文注释](https://gitee.com/weharmony/kernel_liteos_a_note) 过程中,整理出以下文章.内容立足源码,常以生活场景打比方尽可能多的将内核知识点置入某种场景,具有画面感.百篇博客绝不是百度教条式的在说一堆诘屈聱牙的概念,那没什么意思.更希望让内核变得栩栩如生,倍感亲切.确实有难度,自不量力,但已经出发,回头已是不可能的了.:P
+
+* 写文章比写代码累多了,越深入研究,越觉得没写好,所以文章和注解会反复修正, .xx代表修改的次数, 将持续完善源码注解和文档内容，精雕细琢，言简意赅, 尽全力打磨精品内容.  
+
+
+* [v49.xx (信号消费篇) | 用户栈到内核栈的两次切换 ](https://my.oschina.net/weharmony/blog/5027224) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/115958293) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/49_信号消费篇.html)[>]()** 
+
+* [v48.xx (信号生产篇) | 如何安装和发送信号? ](https://my.oschina.net/weharmony/blog/5022149) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/115768099) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/48_信号分发篇.html)[>]()**
 
 * [v47.xx (进程回收篇) | 进程在临终前如何向老祖宗托孤 ](https://my.oschina.net/weharmony/blog/5017716) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/115672752) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/47_进程回收篇.html)[>]()**
 
@@ -132,7 +141,7 @@
 
 * [v14.xx (内存汇编篇) | 什么是虚拟内存的实现基础? ](https://my.oschina.net/u/3751245/blog/4692156) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108994081) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/14_内存汇编篇.html)[>]()**
 
-* [v13.xx (源码注释篇) | 热爱是所有的理由和答案 ](https://my.oschina.net/u/3751245/blog/4686747) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/109251754) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/13_源码注释篇.html)[>]()**
+* [v13.xx (源码注释篇) | 鸿蒙必须成功,也必然成功 ](https://my.oschina.net/u/3751245/blog/4686747) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/109251754) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/13_源码注释篇.html)[>]()**
 
 * [v12.xx (内存管理篇) | 虚拟内存全景图是怎样的? ](https://my.oschina.net/u/3751245/blog/4652284) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108821442) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/12_内存管理篇.html)[>]()**
 
@@ -157,6 +166,8 @@
 * [v02.xx (进程管理篇) | 进程是内核资源管理单元 ](https://my.oschina.net/u/3751245/blog/4574429) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108595941) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/02_进程管理篇.html)[>]()**
 
 * [v01.xx (双向链表篇) | 谁是内核最重要结构体? ](https://my.oschina.net/u/3751245/blog/4572304) **[<]()[  csdn](https://blog.csdn.net/kuangyufei/article/details/108585659) [ | 51cto  ](https://harmonyos.51cto.com/column/34)[ | harmony  ](https://weharmony.gitee.io/01_双向链表篇.html)[>]()**
+
+* [进入 >>  oschina ](https://my.oschina.net/weharmony)[| csdn ](https://blog.csdn.net/kuangyufei)[| 51cto ](https://harmonyos.51cto.com/column/34)[| 掘金 ](https://juejin.cn/user/756888642000808/posts)[| harmony ](https://weharmony.gitee.io/)
 
 
 ### 主流站点输出

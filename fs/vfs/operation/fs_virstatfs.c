@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -40,7 +40,6 @@
 #include "string.h"
 #include "sched.h"
 
-#include "inode/inode.h"
 #include "errno.h"
 #include "stdlib.h"
 /****************************************************************************
@@ -52,10 +51,10 @@
 ****************************************************************************/
 
 #ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
-int virstatfs(FAR const char *path, FAR struct statfs *buf)
+int virstatfs(const char *path,  struct statfs *buf)
 {
-  FAR struct inode *inode;
-  FAR const char   *relpath  = NULL;
+#ifdef VFS_IMPL_LATER
+   struct inode *inode = NULL;
   int              ret       = OK;
   char             *fullpath = NULL;
   struct inode_search_s desc;
@@ -95,7 +94,6 @@ int virstatfs(FAR const char *path, FAR struct statfs *buf)
       goto errout;
     }
   inode = desc.node;
-  relpath = desc.relpath;
 
   /* The way we handle the statfs depends on the type of inode that we
    * are dealing with.
@@ -108,11 +106,11 @@ int virstatfs(FAR const char *path, FAR struct statfs *buf)
       * supports the statfs() method
       */
 
-      if (inode->u.i_mops && inode->u.i_mops->virstatfs)
+      if (inode->u.i_mops)
         {
           /* Perform the statfs() operation */
 
-          ret = inode->u.i_mops->virstatfs(inode, relpath, buf);
+          ret = LOS_OK;
         }
       else
         {
@@ -149,5 +147,7 @@ errout_with_inode:
 errout:
   set_errno(ret);
   return VFS_ERROR;
+#endif
+  return 0;
 }
 #endif

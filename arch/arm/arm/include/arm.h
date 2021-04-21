@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,10 +35,6 @@
 
 #define CPSR_MODE_USR  0x10
 #define CPSR_MODE_MASK 0x1f
-
-#define DSB __asm__ volatile("dsb" ::: "memory")
-#define ISB __asm__ volatile("isb" ::: "memory")
-#define DMB __asm__ volatile("dmb" ::: "memory")
 
 STATIC INLINE UINT32 OsArmReadSctlr(VOID)
 {

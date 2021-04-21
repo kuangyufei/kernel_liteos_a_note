@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -30,7 +30,9 @@
  */
 
 #include "los_load_elf.h"
+#include "fcntl.h"
 #include "fs/fd_table.h"
+#include "fs_file.h"
 #include "los_config.h"
 #include "los_vm_map.h"
 #include "los_vm_syscall.h"
@@ -42,6 +44,26 @@
 #ifdef LOSCFG_DRIVERS_TZDRIVER
 #include "tzdriver.h"
 #endif
+
+static int OsELFOpen(const CHAR *fileName, INT32 oflags)
+{
+    int ret = -LOS_NOK;
+    int procFd;
+
+    procFd = AllocProcessFd();
+    if (procFd < 0) {
+        return -EMFILE;
+    }
+
+    ret = open(fileName, oflags);
+    if (ret < 0) {
+        FreeProcessFd(procFd);
+        return -get_errno();
+    }
+
+    AssociateSystemFd(procFd, ret);
+    return ret;
+}
 
 STATIC INT32 OsGetFileLength(UINT32 *fileLen, const CHAR *fileName)
 {
@@ -141,171 +163,104 @@ STATIC INT32 OsVerifyELFPhdr(const LD_ELF_PHDR *phdr)
 
     return LOS_OK;
 }
-//ELF加载初始化
-STATIC INT32 OsELFLoadInit(const CHAR *fileName, ELFLoadInfo *loadInfo)
+
+STATIC VOID OsLoadInit(ELFLoadInfo *loadInfo)
 {
-    INT32 ret;
 #ifdef LOSCFG_FS_VFS
-    const struct files_struct *oldFiles = OsCurrProcessGet()->files;//保存当前进程持有的文件管理器
-    loadInfo->oldFiles = (UINTPTR)create_files_snapshot(oldFiles);//创建老文件管理器快照
+    const struct files_struct *oldFiles = OsCurrProcessGet()->files;
+    loadInfo->oldFiles = (UINTPTR)create_files_snapshot(oldFiles);
 #else
     loadInfo->oldFiles = NULL;
 #endif
-    loadInfo->execFD = INVALID_FD;
-    loadInfo->interpFD = INVALID_FD;
+    loadInfo->execInfo.fd = INVALID_FD;
+    loadInfo->interpInfo.fd = INVALID_FD;
+}
 
-    ret = OsGetFileLength(&loadInfo->execFileLen, fileName);
+STATIC INT32 OsReadEhdr(const CHAR *fileName, ELFInfo *elfInfo, BOOL isExecFile)
+{
+    INT32 ret;
+
+    ret = OsGetFileLength(&elfInfo->fileLen, fileName);
     if (ret != LOS_OK) {
         return -ENOENT;
     }
 
-    loadInfo->execFD = open(fileName, O_RDONLY | O_EXECVE);
-    if (loadInfo->execFD < 0) {
-        if (get_errno() == EACCES) {
-            return -EACCES;
-        }
+    ret = OsELFOpen(fileName, O_RDONLY | O_EXECVE);
+    if (ret < 0) {
         PRINT_ERR("%s[%d], Failed to open ELF file: %s!\n", __FUNCTION__, __LINE__, fileName);
-        return -ENOENT;
+        return ret;
     }
+    elfInfo->fd = ret;
 
 #ifdef LOSCFG_DRIVERS_TZDRIVER
-    ret = fs_getfilep(loadInfo->execFD, &OsCurrProcessGet()->execFile);
-    if (ret) {
-        PRINT_ERR("%s[%d], Failed to get struct file %s!\n", __FUNCTION__, __LINE__, fileName);
+    if (isExecFile) {
+        ret = fs_getfilep(elfInfo->fd, &OsCurrProcessGet()->execFile);
+        if (ret) {
+            PRINT_ERR("%s[%d], Failed to get struct file %s!\n", __FUNCTION__, __LINE__, fileName);
+        }
     }
 #endif
-    ret = OsReadELFInfo(loadInfo->execFD, (UINT8 *)&loadInfo->elfEhdr, sizeof(LD_ELF_EHDR), 0);
+    ret = OsReadELFInfo(elfInfo->fd, (UINT8 *)&elfInfo->elfEhdr, sizeof(LD_ELF_EHDR), 0);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
         return -EIO;
     }
 
-    ret = OsVerifyELFEhdr(&loadInfo->elfEhdr, loadInfo->execFileLen);
+    ret = OsVerifyELFEhdr(&elfInfo->elfEhdr, elfInfo->fileLen);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
-        return -ENOEXEC;
+        return isExecFile ? -ENOEXEC : -ELIBBAD;
     }
 
     return LOS_OK;
 }
 
-STATIC INT32 OsLoadProgramHdrs(ELFLoadInfo *loadInfo)
+STATIC INT32 OsReadPhdrs(ELFInfo *elfInfo, BOOL isExecFile)
 {
-    LD_ELF_EHDR *elfEhdr = NULL;
-    UINT32 size;
-    INT32 ret;
-
-    if (loadInfo->elfEhdr.elfPhNum < 1) {
-        PRINT_ERR("%s[%d], No program sections in file: %s!\n", __FUNCTION__, __LINE__, loadInfo->fileName);
-        return -ENOEXEC;
-    }
-
-    elfEhdr = &loadInfo->elfEhdr;
-    if (elfEhdr->elfPhEntSize != sizeof(LD_ELF_PHDR)) {
-        PRINT_ERR("%s[%d], e_phentsize is invalid, file: %s\n", __FUNCTION__, __LINE__, loadInfo->fileName);
-        return -ENOEXEC;
-    }
-
-    size = sizeof(LD_ELF_PHDR) * elfEhdr->elfPhNum;
-    if ((elfEhdr->elfPhoff + size) > loadInfo->execFileLen) {
-        PRINT_ERR("%s[%d], Size for program header exceeds limit! file: %s\n", __FUNCTION__, __LINE__,
-                  loadInfo->fileName);
-        return -ENOEXEC;
-    }
-
-    loadInfo->elfPhdr = LOS_MemAlloc(m_aucSysMem0, size);
-    if (loadInfo->elfPhdr == NULL) {
-        PRINT_ERR("%s[%d], Failed to allocate for elfPhdr! file: %s\n", __FUNCTION__, __LINE__, loadInfo->fileName);
-        return -ENOMEM;
-    }
-
-    ret = OsReadELFInfo(loadInfo->execFD, (UINT8 *)loadInfo->elfPhdr, size, elfEhdr->elfPhoff);
-    if (ret != LOS_OK) {
-        (VOID)LOS_MemFree(m_aucSysMem0, loadInfo->elfPhdr);
-        loadInfo->elfPhdr = NULL;
-        PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
-        return -EIO;
-    }
-
-    return LOS_OK;
-}
-
-STATIC INT32 OsGetInterpEhdr(const CHAR *fileName, ELFLoadInfo *loadInfo)
-{
-    INT32 ret;
-
-    ret = OsGetFileLength(&loadInfo->interpFileLen, fileName);
-    if (ret != LOS_OK) {
-        return -ENOENT;
-    }
-
-    loadInfo->interpFD = open(fileName, O_RDONLY);
-    if (loadInfo->interpFD < 0) {
-        PRINT_ERR("%s[%d], Failed to open ELF file: %s!\n", __FUNCTION__, __LINE__, fileName);
-        return -ENOENT;
-    }
-
-    ret = OsReadELFInfo(loadInfo->interpFD, (UINT8 *)&loadInfo->interpELFEhdr, sizeof(LD_ELF_EHDR), 0);
-    if (ret != LOS_OK) {
-        PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
-        return -EIO;
-    }
-
-    ret = OsVerifyELFEhdr(&loadInfo->interpELFEhdr, loadInfo->interpFileLen);
-    if (ret != LOS_OK) {
-        PRINT_ERR("%s[%d], ELF header of file: %s is invalid!\n", __FUNCTION__, __LINE__, fileName);
-        return -ELIBBAD;
-    }
-
-    return LOS_OK;
-}
-
-STATIC INT32 OsLoadInterpProgramHdrs(ELFLoadInfo *loadInfo)
-{
-    LD_ELF_EHDR *elfEhdr = &loadInfo->interpELFEhdr;
+    LD_ELF_EHDR *elfEhdr = &elfInfo->elfEhdr;
     UINT32 size;
     INT32 ret;
 
     if (elfEhdr->elfPhNum < 1) {
-        PRINT_ERR("%s[%d], No program sections of interpreter!\n", __FUNCTION__, __LINE__);
-        return -ELIBBAD;
+        goto OUT;
     }
 
     if (elfEhdr->elfPhEntSize != sizeof(LD_ELF_PHDR)) {
-        PRINT_ERR("%s[%d], e_phentsize of interpreter is invalid!\n", __FUNCTION__, __LINE__);
-        return -ELIBBAD;
+        goto OUT;
     }
 
     size = sizeof(LD_ELF_PHDR) * elfEhdr->elfPhNum;
-    if ((elfEhdr->elfPhoff + size) > loadInfo->interpFileLen) {
-        PRINT_ERR("%s[%d], Size for program header of interpreter exceeds limit!\n", __FUNCTION__, __LINE__);
-        return -ELIBBAD;
+    if ((elfEhdr->elfPhoff + size) > elfInfo->fileLen) {
+        goto OUT;
     }
 
-    loadInfo->interpELFPhdr = LOS_MemAlloc(m_aucSysMem0, size);
-    if (loadInfo->interpELFPhdr == NULL) {
-        PRINT_ERR("%s[%d], Failed to allocate for elfPhdr of interpreter!\n", __FUNCTION__, __LINE__);
+    elfInfo->elfPhdr = LOS_MemAlloc(m_aucSysMem0, size);
+    if (elfInfo->elfPhdr == NULL) {
+        PRINT_ERR("%s[%d], Failed to allocate for elfPhdr!\n", __FUNCTION__, __LINE__);
         return -ENOMEM;
     }
 
-    ret = OsReadELFInfo(loadInfo->interpFD, (UINT8 *)loadInfo->interpELFPhdr, size, elfEhdr->elfPhoff);
+    ret = OsReadELFInfo(elfInfo->fd, (UINT8 *)elfInfo->elfPhdr, size, elfEhdr->elfPhoff);
     if (ret != LOS_OK) {
-        (VOID)LOS_MemFree(m_aucSysMem0, loadInfo->interpELFPhdr);
-        loadInfo->interpELFPhdr = NULL;
-        PRINT_ERR("%s[%d], Failed to read program header of interpreter!\n", __FUNCTION__, __LINE__);
+        (VOID)LOS_MemFree(m_aucSysMem0, elfInfo->elfPhdr);
+        elfInfo->elfPhdr = NULL;
+        PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
         return -EIO;
     }
 
     return LOS_OK;
+OUT:
+    PRINT_ERR("%s[%d], elf file is bad!\n", __FUNCTION__, __LINE__);
+    return isExecFile ? -ENOEXEC : -ELIBBAD;
 }
 
 STATIC INT32 OsReadInterpInfo(ELFLoadInfo *loadInfo)
 {
-    LD_ELF_PHDR *elfPhdr = loadInfo->elfPhdr;
+    LD_ELF_PHDR *elfPhdr = loadInfo->execInfo.elfPhdr;
     CHAR *elfInterpName = NULL;
     INT32 ret, i;
 
-    for (i = 0; i < loadInfo->elfEhdr.elfPhNum; ++i, ++elfPhdr) {
+    for (i = 0; i < loadInfo->execInfo.elfEhdr.elfPhNum; ++i, ++elfPhdr) {
         if (elfPhdr->type != LD_PT_INTERP) {
             continue;
         }
@@ -315,7 +270,7 @@ STATIC INT32 OsReadInterpInfo(ELFLoadInfo *loadInfo)
         }
 
         if ((elfPhdr->fileSize > FILE_PATH_MAX) || (elfPhdr->fileSize < FILE_PATH_MIN) ||
-            (elfPhdr->offset + elfPhdr->fileSize > loadInfo->execFileLen)) {
+            (elfPhdr->offset + elfPhdr->fileSize > loadInfo->execInfo.fileLen)) {
             PRINT_ERR("%s[%d], The size of file is out of limit!\n", __FUNCTION__, __LINE__);
             return -ENOEXEC;
         }
@@ -326,7 +281,7 @@ STATIC INT32 OsReadInterpInfo(ELFLoadInfo *loadInfo)
             return -ENOMEM;
         }
 
-        ret = OsReadELFInfo(loadInfo->execFD, (UINT8 *)elfInterpName, elfPhdr->fileSize, elfPhdr->offset);
+        ret = OsReadELFInfo(loadInfo->execInfo.fd, (UINT8 *)elfInterpName, elfPhdr->fileSize, elfPhdr->offset);
         if (ret != LOS_OK) {
             PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
             ret = -EIO;
@@ -339,13 +294,13 @@ STATIC INT32 OsReadInterpInfo(ELFLoadInfo *loadInfo)
             goto OUT;
         }
 
-        ret = OsGetInterpEhdr(INTERP_FULL_PATH, loadInfo);
+        ret = OsReadEhdr(INTERP_FULL_PATH, &loadInfo->interpInfo, FALSE);
         if (ret != LOS_OK) {
             PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
             goto OUT;
         }
 
-        ret = OsLoadInterpProgramHdrs(loadInfo);
+        ret = OsReadPhdrs(&loadInfo->interpInfo, FALSE);
         if (ret != LOS_OK) {
             goto OUT;
         }
@@ -478,7 +433,7 @@ STATIC INT32 OsSetBss(const LD_ELF_PHDR *elfPhdr, INT32 fd, UINTPTR bssStart, UI
     }
 
     ret = LOS_UserSpaceVmAlloc(OsCurrProcessGet()->vmSpace, PAGE_SIZE, (VOID **)&bssPageStart,
-                               0, OsCvtProtFlagsToRegionFlags(elfProt, 0));
+                               0, OsCvtProtFlagsToRegionFlags(elfProt, MAP_FIXED));
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d], Failed to do vmm alloc!\n", __FUNCTION__, __LINE__);
         return -ENOMEM;
@@ -533,8 +488,11 @@ STATIC INT32 OsMmapELFFile(INT32 fd, const LD_ELF_PHDR *elfPhdr, const LD_ELF_EH
         if ((elfProt & PROT_READ) == 0) {
             return -ENOEXEC;
         }
-        elfFlags = MAP_PRIVATE;
+        elfFlags = MAP_PRIVATE | MAP_FIXED;
         vAddr = elfPhdrTemp->vAddr;
+        if ((vAddr == 0) && (*loadBase == 0)) {
+            elfFlags &= ~MAP_FIXED;
+        }
 
         mapAddr = OsDoMmapFile(fd, (vAddr + *loadBase), elfPhdrTemp, elfProt, elfFlags, mapSize);
         if (!LOS_IsUserAddress((VADDR_T)mapAddr)) {
@@ -553,7 +511,6 @@ STATIC INT32 OsMmapELFFile(INT32 fd, const LD_ELF_PHDR *elfPhdr, const LD_ELF_EH
 
         if ((*loadBase == 0) && (elfEhdr->elfType == LD_ET_DYN)) {
             *loadBase = mapAddr;
-            elfFlags |= MAP_FIXED;
         }
 
         if ((elfPhdrTemp->memSize > elfPhdrTemp->fileSize) && (elfPhdrTemp->flags & PF_W)) {
@@ -575,14 +532,14 @@ STATIC INT32 OsLoadInterpBinary(const ELFLoadInfo *loadInfo, UINTPTR *interpMapB
     UINT32 mapSize;
     INT32 ret;
 
-    mapSize = OsGetAllocSize(loadInfo->interpELFPhdr, loadInfo->interpELFEhdr.elfPhNum);
+    mapSize = OsGetAllocSize(loadInfo->interpInfo.elfPhdr, loadInfo->interpInfo.elfEhdr.elfPhNum);
     if (mapSize == 0) {
         PRINT_ERR("%s[%d], Failed to get interp allocation size!\n", __FUNCTION__, __LINE__);
         return -EINVAL;
     }
 
-    ret = OsMmapELFFile(loadInfo->interpFD, loadInfo->interpELFPhdr, &loadInfo->interpELFEhdr, interpMapBase,
-                        mapSize, &loadBase);
+    ret = OsMmapELFFile(loadInfo->interpInfo.fd, loadInfo->interpInfo.elfPhdr, &loadInfo->interpInfo.elfEhdr,
+                        interpMapBase, mapSize, &loadBase);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
         return ret;
@@ -765,10 +722,10 @@ STATIC UINT32 OsGetRndOffset(const ELFLoadInfo *loadInfo)
 
 STATIC VOID OsGetStackProt(ELFLoadInfo *loadInfo)
 {
-    LD_ELF_PHDR *elfPhdrTemp = loadInfo->elfPhdr;
+    LD_ELF_PHDR *elfPhdrTemp = loadInfo->execInfo.elfPhdr;
     INT32 i;
 
-    for (i = 0; i < loadInfo->elfEhdr.elfPhNum; ++i, ++elfPhdrTemp) {
+    for (i = 0; i < loadInfo->execInfo.elfEhdr.elfPhNum; ++i, ++elfPhdrTemp) {
         if (elfPhdrTemp->type == LD_PT_GNU_STACK) {
             loadInfo->stackProt = OsGetProt(elfPhdrTemp->flags);
         }
@@ -796,7 +753,7 @@ STATIC INT32 OsSetArgParams(ELFLoadInfo *loadInfo, CHAR *const *argv, CHAR *cons
     loadInfo->stackBase = loadInfo->stackTopMax - USER_STACK_SIZE;
     loadInfo->stackSize = USER_STACK_SIZE;
     loadInfo->stackParamBase = loadInfo->stackTopMax - USER_PARAM_BYTE_MAX;
-    vmFlags = OsCvtProtFlagsToRegionFlags(loadInfo->stackProt, 0);
+    vmFlags = OsCvtProtFlagsToRegionFlags(loadInfo->stackProt, MAP_FIXED);
     vmFlags |= VM_MAP_REGION_FLAG_STACK;
     status = LOS_UserSpaceVmAlloc((VOID *)loadInfo->newSpace, USER_PARAM_BYTE_MAX,
                                   (VOID **)&loadInfo->stackParamBase, 0, vmFlags);
@@ -888,13 +845,13 @@ STATIC INT32 OsMakeArgsStack(ELFLoadInfo *loadInfo, UINTPTR interpMapBase)
     vaddr_t vdsoLoadAddr;
 #endif
 
-    AUX_VEC_ENTRY(auxVector, vecIndex, AUX_PHDR,   loadInfo->loadAddr + loadInfo->elfEhdr.elfPhoff);
+    AUX_VEC_ENTRY(auxVector, vecIndex, AUX_PHDR,   loadInfo->loadAddr + loadInfo->execInfo.elfEhdr.elfPhoff);
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_PHENT,  sizeof(LD_ELF_PHDR));
-    AUX_VEC_ENTRY(auxVector, vecIndex, AUX_PHNUM,  loadInfo->elfEhdr.elfPhNum);
+    AUX_VEC_ENTRY(auxVector, vecIndex, AUX_PHNUM,  loadInfo->execInfo.elfEhdr.elfPhNum);
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_PAGESZ, PAGE_SIZE);
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_BASE,   interpMapBase);
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_FLAGS,  0);
-    AUX_VEC_ENTRY(auxVector, vecIndex, AUX_ENTRY,  loadInfo->elfEhdr.elfEntry);
+    AUX_VEC_ENTRY(auxVector, vecIndex, AUX_ENTRY,  loadInfo->execInfo.elfEhdr.elfEntry);
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_UID,    0);
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_EUID,   0);
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_GID,    0);
@@ -924,16 +881,16 @@ STATIC INT32 OsMakeArgsStack(ELFLoadInfo *loadInfo, UINTPTR interpMapBase)
 
 STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
 {
-    LD_ELF_PHDR *elfPhdrTemp = loadInfo->elfPhdr;
+    LD_ELF_PHDR *elfPhdrTemp = loadInfo->execInfo.elfPhdr;
     UINTPTR loadBase = 0;
     UINTPTR interpMapBase = 0;
     UINT32 mapSize = 0;
     INT32 ret;
     loadInfo->loadAddr = 0;
 
-    if (loadInfo->elfEhdr.elfType == LD_ET_DYN) {
+    if (loadInfo->execInfo.elfEhdr.elfType == LD_ET_DYN) {
         loadBase = EXEC_MMAP_BASE + OsGetRndOffset(loadInfo);
-        mapSize = OsGetAllocSize(elfPhdrTemp, loadInfo->elfEhdr.elfPhNum);
+        mapSize = OsGetAllocSize(elfPhdrTemp, loadInfo->execInfo.elfEhdr.elfPhNum);
         if (mapSize == 0) {
             PRINT_ERR("%s[%d], Failed to get allocation size of file: %s!\n", __FUNCTION__, __LINE__,
                       loadInfo->fileName);
@@ -941,23 +898,23 @@ STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
         }
     }
 
-    ret = OsMmapELFFile(loadInfo->execFD, loadInfo->elfPhdr, &loadInfo->elfEhdr, &loadInfo->loadAddr, mapSize,
-                        &loadBase);
+    ret = OsMmapELFFile(loadInfo->execInfo.fd, loadInfo->execInfo.elfPhdr, &loadInfo->execInfo.elfEhdr,
+                        &loadInfo->loadAddr, mapSize, &loadBase);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
         return ret;
     }
 
-    if (loadInfo->interpFD != INVALID_FD) {
+    if (loadInfo->interpInfo.fd != INVALID_FD) {
         ret = OsLoadInterpBinary(loadInfo, &interpMapBase);
         if (ret != LOS_OK) {
             return ret;
         }
 
-        loadInfo->elfEntry = loadInfo->interpELFEhdr.elfEntry + interpMapBase;
-        loadInfo->elfEhdr.elfEntry = loadInfo->elfEhdr.elfEntry + loadBase;
+        loadInfo->elfEntry = loadInfo->interpInfo.elfEhdr.elfEntry + interpMapBase;
+        loadInfo->execInfo.elfEhdr.elfEntry = loadInfo->execInfo.elfEhdr.elfEntry + loadBase;
     } else {
-        loadInfo->elfEntry = loadInfo->elfEhdr.elfEntry;
+        loadInfo->elfEntry = loadInfo->execInfo.elfEhdr.elfEntry;
     }
 
     ret = OsMakeArgsStack(loadInfo, interpMapBase);
@@ -971,84 +928,87 @@ STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
 
     return LOS_OK;
 }
-//虚拟空间,腾笼换鸟,借壳上市,点赞!
+
 STATIC VOID OsFlushAspace(ELFLoadInfo *loadInfo)
 {
-    LosProcessCB *processCB = OsCurrProcessGet();//获取当前进程
+    LosProcessCB *processCB = OsCurrProcessGet();
 
-    OsExecDestroyTaskGroup();//销毁任务组
+    OsExecDestroyTaskGroup();
 
-    loadInfo->oldSpace = processCB->vmSpace;//当前进程的虚拟空间记录下来
-    processCB->vmSpace = loadInfo->newSpace;//新空间换成当前进程的虚拟空间，牛逼! 借壳上市
-    processCB->vmSpace->heapBase += OsGetRndOffset(loadInfo);//堆区基地址
-    processCB->vmSpace->heapNow = processCB->vmSpace->heapBase;//堆区现地址
-    processCB->vmSpace->mapBase += OsGetRndOffset(loadInfo);//映射区基地址
-    LOS_ArchMmuContextSwitch(&OsCurrProcessGet()->vmSpace->archMmu);//mmu上下文切换
+    loadInfo->oldSpace = processCB->vmSpace;
+    processCB->vmSpace = loadInfo->newSpace;
+    processCB->vmSpace->heapBase += OsGetRndOffset(loadInfo);
+    processCB->vmSpace->heapNow = processCB->vmSpace->heapBase;
+    processCB->vmSpace->mapBase += OsGetRndOffset(loadInfo);
+    processCB->vmSpace->mapSize = loadInfo->stackBase - processCB->vmSpace->mapBase;
+    LOS_ArchMmuContextSwitch(&OsCurrProcessGet()->vmSpace->archMmu);
 }
-//反初始化加载信息,析构函数,释放关闭文件和释放内存
+
 STATIC VOID OsDeInitLoadInfo(ELFLoadInfo *loadInfo)
 {
 #ifdef LOSCFG_ASLR
     (VOID)close(loadInfo->randomDevFD);
 #endif
 
-    if (loadInfo->elfPhdr != NULL) {
-        (VOID)LOS_MemFree(m_aucSysMem0, loadInfo->elfPhdr);
+    if (loadInfo->execInfo.elfPhdr != NULL) {
+        (VOID)LOS_MemFree(m_aucSysMem0, loadInfo->execInfo.elfPhdr);
     }
 
-    if (loadInfo->interpELFPhdr != NULL) {
-        (VOID)LOS_MemFree(m_aucSysMem0, loadInfo->interpELFPhdr);
+    if (loadInfo->interpInfo.elfPhdr != NULL) {
+        (VOID)LOS_MemFree(m_aucSysMem0, loadInfo->interpInfo.elfPhdr);
     }
 }
 
 STATIC VOID OsDeInitFiles(ELFLoadInfo *loadInfo)
 {
-    if (loadInfo->execFD != INVALID_FD) {
-        (VOID)close(loadInfo->execFD);
+    if (loadInfo->execInfo.fd != INVALID_FD) {
+        (VOID)close(loadInfo->execInfo.fd);
     }
 
-    if (loadInfo->interpFD != INVALID_FD) {
-        (VOID)close(loadInfo->interpFD);
+    if (loadInfo->interpInfo.fd != INVALID_FD) {
+        (VOID)close(loadInfo->interpInfo.fd);
     }
 #ifdef LOSCFG_FS_VFS
-    delete_files_snapshot((struct files_struct *)loadInfo->oldFiles);//删除文件管理器快照
+    delete_files_snapshot((struct files_struct *)loadInfo->oldFiles);
 #endif
 }
-//加载ELF文件,这里做了大量的工作
+
 INT32 OsLoadELFFile(ELFLoadInfo *loadInfo)
 {
     INT32 ret;
 
-    ret = OsELFLoadInit(loadInfo->fileName, loadInfo);//加载ELF并初始化
+    OsLoadInit(loadInfo);
+
+    ret = OsReadEhdr(loadInfo->fileName, &loadInfo->execInfo, TRUE);
     if (ret != LOS_OK) {
         goto OUT;
     }
 
-    ret = OsLoadProgramHdrs(loadInfo);//加载程序头
+    ret = OsReadPhdrs(&loadInfo->execInfo, TRUE);
     if (ret != LOS_OK) {
         goto OUT;
     }
 
-    ret = OsReadInterpInfo(loadInfo);//
+    ret = OsReadInterpInfo(loadInfo);
     if (ret != LOS_OK) {
         goto OUT;
     }
 
-    ret = OsSetArgParams(loadInfo, loadInfo->argv, loadInfo->envp);//设置参数和环境变量
+    ret = OsSetArgParams(loadInfo, loadInfo->argv, loadInfo->envp);
     if (ret != LOS_OK) {
         goto OUT;
     }
 
-    (VOID)OsFlushAspace(loadInfo);//冲洗干净空间，借壳上市,当前进程的虚拟空间切换成新的虚拟空间
+    OsFlushAspace(loadInfo);
 
-    ret = OsLoadELFSegment(loadInfo);//加载ELF各个段，放入虚拟空间
-    if (ret != LOS_OK) {//如果加载失败
-        OsCurrProcessGet()->vmSpace = loadInfo->oldSpace;//当前进程用回原有虚拟空间
-        LOS_ArchMmuContextSwitch(&OsCurrProcessGet()->vmSpace->archMmu);//切回原有mmu上下文
+    ret = OsLoadELFSegment(loadInfo);
+    if (ret != LOS_OK) {
+        OsCurrProcessGet()->vmSpace = loadInfo->oldSpace;
+        LOS_ArchMmuContextSwitch(&OsCurrProcessGet()->vmSpace->archMmu);
         goto OUT;
     }
 
-    (VOID)OsDeInitLoadInfo(loadInfo);
+    OsDeInitLoadInfo(loadInfo);
 
     return LOS_OK;
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -37,51 +37,28 @@
 #ifndef _DISK_H
 #define _DISK_H
 
+#include "fs/fs.h"
 #include "los_base.h"
+#include "pthread.h"
 
 #ifdef LOSCFG_FS_FAT_CACHE
 #include "bcache.h"
-#else
-
-#include "inode/inode.h"
-
 #endif
+
+#include "pthread.h"
 
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
 #endif
 #endif /* __cplusplus */
-/***********************************************
-https://blog.csdn.net/buzaikoulan/article/details/44405915
-MBR 全称为Master Boot Record，即硬盘的主引导记录,硬盘分区有三种，主磁盘分区、扩展磁盘分区、逻辑分区
-主分区：也叫引导分区，硬盘的启动分区,最多可能创建4个
-扩展磁盘分区:除了主分区外，剩余的磁盘空间就是扩展分区了，扩展分区可以没有，最多1个。
-逻辑分区：在扩展分区上面，可以创建多个逻辑分区。逻辑分区相当于一块存储截止，和操作系统还有别的逻辑分区、主分区没有什么关系，是“独立的”。
-硬盘的容量＝主分区的容量＋扩展分区的容量 
-扩展分区的容量＝各个逻辑分区的容量之和 
-通俗的讲主分区是硬盘的主人，而扩展分区是这个硬盘上的仆人，主分区和扩展分区为主从关系。 
 
-给新硬盘上建立分区时都要遵循以下的顺序：建立主分区→建立扩展分区→建立逻辑分区→激活主分区→格式化所有分区
---------------------------
-与MBR对应的是GPT,是对超大容量磁盘的一种分区格式
-GPT，即Globally Unique Identifier Partition Table Format，全局唯一标识符的分区表的格式。
-这种分区模式相比MBR有着非常多的优势。
-首先，它至少可以分出128个分区，完全不需要扩展分区和逻辑分区来帮忙就可以分出任何想要的分区来。
-其次，GPT最大支持18EB的硬盘，几乎就相当于没有限制。
-
-扇区:是硬件设备传送数据的基本单位。
-块:	是VFS和文件系统传送数据的基本单位。块大小必须是2的幂，而且不能超过一个页框（4K），它必须是扇区的整数倍，每块包含整数个扇区。
-	块设备大小不唯一，同一个磁盘上的不同分区可能使用不同的块大小。每个块都需要自己的块缓冲区，即内核用来存放块内容的RAM内存区。
-	当内核从磁盘读出一个块时，就用从硬件设备中所获得的值来填充相应的块缓冲区。写块也是同理。这个缓冲区就是 page cache(页高速缓存)
-
-***********************************************/
-#define SYS_MAX_DISK                5	//最大支持磁盘数量
-#define MAX_DIVIDE_PART_PER_DISK    16	//磁盘最大支持逻辑分区数
-#define MAX_PRIMARY_PART_PER_DISK   4	//磁盘最大支持主分区数
-#define SYS_MAX_PART                (SYS_MAX_DISK * MAX_DIVIDE_PART_PER_DISK)	//系统最大支持分区数
-#define DISK_NAME                   255	//磁盘名称
-#define DISK_MAX_SECTOR_SIZE        512	//扇区大小,字节
+#define SYS_MAX_DISK                5
+#define MAX_DIVIDE_PART_PER_DISK    16
+#define MAX_PRIMARY_PART_PER_DISK   4
+#define SYS_MAX_PART                (SYS_MAX_DISK * MAX_DIVIDE_PART_PER_DISK)
+#define DISK_NAME                   255
+#define DISK_MAX_SECTOR_SIZE        512
 
 #define PAR_OFFSET           446     /* MBR: Partition table offset (2) */
 #define BS_SIG55AA           510     /* Signature word (2) */
@@ -94,9 +71,9 @@ GPT，即Globally Unique Identifier Partition Table Format，全局唯一标识�
 #define PAR_START_OFFSET     8
 #define PAR_COUNT_OFFSET     12
 #define PAR_TABLE_SIZE       16
-#define EXTENDED_PAR         0x0F 	//扩展分区
-#define EXTENDED_8G          0x05	//
-#define EMMC                 0xEC	//eMMC=NAND闪存+闪存控制芯片+标准接口封装
+#define EXTENDED_PAR         0x0F
+#define EXTENDED_8G          0x05
+#define EMMC                 0xEC
 #define OTHERS               0x01    /* sdcard or umass */
 
 #define BS_FS_TYPE_MASK      0xFFFFFF
@@ -188,66 +165,66 @@ GPT，即Globally Unique Identifier Partition Table Format，全局唯一标识�
 #define DISK_ATA_GET_MODEL      21  /* Get model name */
 #define DISK_ATA_GET_SN         22  /* Get serial number */
 
-typedef enum _disk_status_ {//磁盘的状态
-    STAT_UNUSED,	//未使用
-    STAT_INUSED,	//使用中
-    STAT_UNREADY	//未准备,可理解为未格式化
+typedef enum _disk_status_ {
+    STAT_UNUSED,
+    STAT_INUSED,
+    STAT_UNREADY
 } disk_status_e;
 
-typedef struct _los_disk_ {	//磁盘描述符
-    UINT32 disk_id : 8;     /* physics disk number */ 	//标识磁盘ID
-    UINT32 disk_status : 2; /* status of disk */		//磁盘的状态 disk_status_e
-    UINT32 part_count : 8;  /* current partition count */	//分了多少个区(los_part)
-    UINT32 reserved : 14;	//保留，注意 disk_id|disk_status|part_count|reserved 共用一个UINT32				
-    struct inode *dev;      /* device */
-#ifdef LOSCFG_FS_FAT_CACHE	//磁盘缓存，在所有分区中共享
+typedef struct _los_disk_ {
+    UINT32 disk_id : 8;     /* physics disk number */
+    UINT32 disk_status : 2; /* status of disk */
+    UINT32 part_count : 8;  /* current partition count */
+    UINT32 reserved : 14;
+    struct Vnode *dev;      /* device */
+#ifdef LOSCFG_FS_FAT_CACHE
     OsBcache *bcache;       /* cache of the disk, shared in all partitions */
 #endif
-    UINT32 sector_size;     /* disk sector size */	//扇区大小
-    UINT64 sector_start;    /* disk start sector */	//开始扇区
-    UINT64 sector_count;    /* disk sector number *///扇区数量	
-    UINT8 type;				//flash的类型 例如:EMMC
-    CHAR *disk_name;		//设备名称
-    LOS_DL_LIST head;       /* link head of all the partitions */ //双向链表上挂所有分区(los_part->list)
+    UINT32 sector_size;     /* disk sector size */
+    UINT64 sector_start;    /* disk start sector */
+    UINT64 sector_count;    /* disk sector number */
+    UINT8 type;
+    CHAR *disk_name;
+    LOS_DL_LIST head;       /* link head of all the partitions */
     struct pthread_mutex disk_mutex;
 } los_disk;
 
-typedef struct _los_part_ {//分区描述符
-    UINT32 disk_id : 8;      /* physics disk number */	//标识磁盘ID
-    UINT32 part_id : 8;      /* partition number in the system */ //标识整个系统的分区数量
-    UINT32 part_no_disk : 8; /* partition number in the disk */	  //标识所属磁盘的分区数量
-    UINT32 part_no_mbr : 5;  /* partition number in the mbr */	  //硬盘主引导记录（即Master Boot Record，一般简称为MBR），主分区数量	
-    UINT32 reserved : 3;	////保留，注意 disk_id|part_id|part_no_disk|part_no_mbr|reserved 共用一个UINT32
-    UINT8 filesystem_type;   /* filesystem used in the partition */ //文件系统类型
-    UINT8 type;				//flash的类型 例如:EMMC
-    struct inode *dev;      /* dev devices used in the partition */ //分区所使用的dev设备
-    CHAR *part_name;		//区名称
-    UINT64 sector_start;     /* //开始扇区编号
+typedef struct _los_part_ {
+    UINT32 disk_id : 8;      /* physics disk number */
+    UINT32 part_id : 8;      /* partition number in the system */
+    UINT32 part_no_disk : 8; /* partition number in the disk */
+    UINT32 part_no_mbr : 5;  /* partition number in the mbr */
+    UINT32 reserved : 3;
+    UINT8 filesystem_type;   /* filesystem used in the partition */
+    UINT8 type;
+    struct Vnode *dev;      /* dev devices used in the partition */
+    CHAR *part_name;
+    UINT64 sector_start;     /*
                               * offset of a partition to the primary devices
                               * (multi-mbr partitions are seen as same parition)
                               */
-    UINT64 sector_count;     /*	//扇区数量
+    UINT64 sector_count;     /*
                               * sector numbers of a partition. If there is no addpartition operation,
                               * then all the mbr devices equal to the primary device count.
                               */
-    LOS_DL_LIST list;        /* linklist of partition */ //通过它挂到los_disk->head上
+    LOS_DL_LIST list;        /* linklist of partition */
 } los_part;
 
-struct partition_info {//分区信息
-    UINT8 type;	//分区类型,是主分区还是扩展分区
-    UINT64 sector_start;//开始扇区位置
-    UINT64 sector_count;//扇区大小
+struct partition_info {
+    UINT8 type;
+    UINT64 sector_start;
+    UINT64 sector_count;
 };
 
-struct disk_divide_info {//磁盘分区描述符,
-    UINT64 sector_count;	//扇区数量
-    UINT32 sector_size;		//扇区大小,一般是512字节
-    UINT32 part_count;		//分区数量 需 < MAX_DIVIDE_PART_PER_DISK + MAX_PRIMARY_PART_PER_DISK
+struct disk_divide_info {
+    UINT64 sector_count;
+    UINT32 sector_size;
+    UINT32 part_count;
     /*
      * The primary partition place should be reversed and set to 0 in case all the partitions are
      * logical partition (maximum 16 currently). So the maximum part number should be 4 + 16.
-     */ //如果所有分区都是逻辑分区（目前最多16个），则主分区位置应颠倒并设置为0。所以最大分区号应该是4+16。
-    struct partition_info part[MAX_DIVIDE_PART_PER_DISK + MAX_PRIMARY_PART_PER_DISK];//分区数组,记录每个分区的详细情况
+     */
+    struct partition_info part[MAX_DIVIDE_PART_PER_DISK + MAX_PRIMARY_PART_PER_DISK];
 };
 
 /**
@@ -270,7 +247,7 @@ struct disk_divide_info {//磁盘分区描述符,
  *
  * @param  diskName  [IN] Type #const CHAR *                      disk driver name.
  * @param  bops      [IN] Type #const struct block_operations *   block driver control sturcture.
- * @param  priv      [IN] Type #VOID *                            private data of inode.
+ * @param  priv      [IN] Type #VOID *                            private data of vnode.
  * @param  diskID    [IN] Type #INT32                             disk id number, less than SYS_MAX_DISK.
  * @param  info      [IN] Type #VOID *                            disk driver partition information.
  *
@@ -326,6 +303,7 @@ INT32 los_disk_deinit(INT32 diskID);
  * @param  buf     [OUT] Type #VOID *        memory which used to store read data.
  * @param  sector  [IN]  Type #UINT64        expected start sector number to read.
  * @param  count   [IN]  Type #UINT32        expected sector count to read.
+ * @param  useRead [IN]  Type #BOOL          set FALSE to use the write block for optimization
  *
  * @retval #0      Read success.
  * @retval #-1     Read failed.
@@ -335,7 +313,7 @@ INT32 los_disk_deinit(INT32 diskID);
  * @see los_disk_write
  *
  */
-INT32 los_disk_read(INT32 drvID, VOID *buf, UINT64 sector, UINT32 count);
+INT32 los_disk_read(INT32 drvID, VOID *buf, UINT64 sector, UINT32 count, BOOL useRead);
 
 /**
  * @ingroup  disk
@@ -461,6 +439,7 @@ INT32 los_disk_set_bcache(INT32 drvID, UINT32 sectorPerBlock, UINT32 blockNum);
  * @param  buf     [OUT] Type #VOID *       memory which used to store the data to be read.
  * @param  sector  [IN]  Type #UINT64       start sector number of chosen partition.
  * @param  count   [IN]  Type #UINT32       the expected sector count for reading.
+ * @param  useRead [IN]  Type #BOOL         FALSE when reading large contiguous data, TRUE for other situations
  *
  * @retval #0      Read success.
  * @retval #-1     Read failed.
@@ -470,7 +449,7 @@ INT32 los_disk_set_bcache(INT32 drvID, UINT32 sectorPerBlock, UINT32 blockNum);
  * @see los_part_read
  *
  */
-INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count);
+INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count, BOOL useRead);
 
 /**
  * @ingroup  disk
@@ -498,7 +477,31 @@ INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count);
  * @see los_part_read
  *
  */
-INT32 los_part_write(INT32 pt, VOID *buf, UINT64 sector, UINT32 count);
+INT32 los_part_write(INT32 pt, const VOID *buf, UINT64 sector, UINT32 count);
+
+/**
+ * @ingroup  disk
+ * @brief Clear the bcache data
+ *
+ * @par Description:
+ * Flush the data and mark the block as unused.
+ *
+ * @attention
+ * <ul>
+ * None
+ * </ul>
+ *
+ * @param  drvID      [IN] Type #INT32        disk id
+ *
+ * @retval #0      Write success.
+ * @retval #-1     Write failed.
+ *
+ * @par Dependency:
+ * <ul><li>disk.h</li></ul>
+ * @see los_part_read
+ *
+ */
+INT32 los_disk_cache_clear(INT32 drvID);
 
 /**
  * @ingroup  disk
@@ -558,14 +561,14 @@ INT32 los_part_access(const CHAR *dev, mode_t mode);
  * @brief Find disk partition.
  *
  * @par Description:
- * By driver partition inode to find disk partition.
+ * By driver partition vnode to find disk partition.
  *
  * @attention
  * <ul>
  * None
  * </ul>
  *
- * @param  blkDriver  [IN]  Type #struct inode *    partition driver inode.
+ * @param  blkDriver  [IN]  Type #struct Vnode *    partition driver vnode.
  *
  * @retval #NULL           Can't find chosen disk partition.
  * @retval #los_part *     This is partition structure pointer of chosen disk partition.
@@ -575,7 +578,7 @@ INT32 los_part_access(const CHAR *dev, mode_t mode);
  * @see None
  *
  */
-los_part *los_part_find(struct inode *blkDriver);
+los_part *los_part_find(struct Vnode *blkDriver);
 
 /**
  * @ingroup  disk

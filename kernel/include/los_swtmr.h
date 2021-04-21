@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -267,14 +267,11 @@ typedef struct tagSwTmrCtrl {//软件定时器控制块
     SortLinkList stSortList;//通过它挂到对应CPU核定时器链表上
     UINT8 ucState;      /**< Software timer state */							//软件定时器的状态
     UINT8 ucMode;       /**< Software timer mode */								//软件定时器的模式
-    UINT8 ucOverrun;    /**< Times that a software timer repeats timing */		//软件定时器重复计时的次数
     UINT16 usTimerID;   /**< Software timer ID */								//软件定时器ID,唯一标识,由软件计时器池分配
+    UINT32 uwOverrun;    /**< Times that a software timer repeats timing */
     UINT32 uwCount;     /**< Times that a software timer works */				//软件定时器工作的时间
     UINT32 uwInterval;  /**< Timeout interval of a periodic software timer */	//周期性软件定时器的超时间隔
     UINT32 uwExpiry;    /**< Timeout interval of an one-off software timer */	//一次性软件定时器的超时间隔
-#if (LOSCFG_KERNEL_SMP == YES)
-    UINT32 uwCpuid;     /**< The cpu where the timer running on */				//多核情况下,定时器运行的cpu
-#endif
     UINTPTR uwArg;      /**< Parameter passed in when the callback function		//回调函数的参数
                              that handles software timer timeout is called */
     SWTMR_PROC_FUNC pfnHandler; /**< Callback function that handles software timer timeout */	//处理软件计时器超时的回调函数

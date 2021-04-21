@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,6 +31,7 @@
 
 #include "los_futex_pri.h"
 #include "los_process_pri.h"
+#include "los_hash.h"
 #include "los_sys_pri.h"
 #include "los_sched_pri.h"
 #include "los_mp.h"
@@ -38,23 +39,29 @@
 #include "los_mux_pri.h"
 #include "user_copy.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
-// Futex 是Fast Userspace muTexes的缩写 就是快速用户空间互斥体 ,注解简称它为快锁
-#define OS_FUTEX_FROM_FUTEXLIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, futexList) 	//从 futexList 位置拿节点FutexNode
-#define OS_FUTEX_FROM_QUEUELIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, queueList)	//从 queueList 位置拿节点FutexNode//
+
+#ifdef LOSCFG_KERNEL_VM
+
+#define OS_FUTEX_FROM_FUTEXLIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, futexList)
+#define OS_FUTEX_FROM_QUEUELIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, queueList)
 #define OS_FUTEX_KEY_BASE USER_ASPACE_BASE
 #define OS_FUTEX_KEY_MAX (USER_ASPACE_BASE + USER_ASPACE_SIZE)
+
+/* private: 0~63    hash index_num
+ * shared:  64~79   hash index_num */
+#define FUTEX_INDEX_PRIVATE_MAX     64
+#define FUTEX_INDEX_SHARED_MAX      16
+#define FUTEX_INDEX_MAX             (FUTEX_INDEX_PRIVATE_MAX + FUTEX_INDEX_SHARED_MAX)
+
+#define FUTEX_INDEX_SHARED_POS      FUTEX_INDEX_PRIVATE_MAX
+#define FUTEX_HASH_PRIVATE_MASK     (FUTEX_INDEX_PRIVATE_MAX - 1)
+#define FUTEX_HASH_SHARED_MASK      (FUTEX_INDEX_SHARED_MAX - 1)
 
 typedef struct {
     LosMux      listLock;
     LOS_DL_LIST lockList;
 } FutexHash;
 
-#define FUTEX_INDEX_MAX  128
 FutexHash g_futexHash[FUTEX_INDEX_MAX];
 
 STATIC INT32 OsFutexLock(LosMux *lock)
@@ -102,7 +109,7 @@ STATIC VOID OsFutexShowTaskNodeAttr(const LOS_DL_LIST *futexList)
     LOS_DL_LIST *queueList = NULL;
 
     tempNode = OS_FUTEX_FROM_FUTEXLIST(futexList);
-    PRINTK("key           : 0x%x : ->", tempNode->key);
+    PRINTK("key(pid)           : 0x%x(%d) : ->", tempNode->key, tempNode->pid);
 
     for (queueList = &tempNode->queueList; ;) {
         lastNode = OS_FUTEX_FROM_QUEUELIST(queueList);
@@ -127,7 +134,7 @@ VOID OsFutexHashShow(VOID)
     INT32 count;
     /* The maximum number of barrels of a hash table */
     INT32 hashNodeMax = FUTEX_INDEX_MAX;
-    PRINTK("################los_futex_pri.hash ######################\n");
+    PRINTK("#################### los_futex_pri.hash ####################\n");
     for (count = 0; count < hashNodeMax; count++) {
         futexList = &(g_futexHash[count].lockList);
         if (LOS_ListEmpty(futexList)) {
@@ -143,30 +150,38 @@ VOID OsFutexHashShow(VOID)
 }
 #endif
 
-STATIC UINT32 OsFutexGetTick(UINT32 absTime)
+STATIC INLINE UINTPTR OsFutexFlagsToKey(const UINT32 *userVaddr, const UINT32 flags)
 {
-    UINT32 interval;
+    UINTPTR futexKey;
 
-    /* the values not less than per Millisecond */
-    if (absTime < OS_SYS_MS_PER_SECOND) {
-        interval = OS_SYS_MS_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND;
+    if (flags & FUTEX_PRIVATE) {
+        futexKey = (UINTPTR)userVaddr;
     } else {
-        interval = absTime / OS_SYS_MS_PER_SECOND;
+        futexKey = (UINTPTR)LOS_PaddrQuery((UINT32 *)userVaddr);
     }
 
-    interval = LOS_MS2Tick(interval);
-    if (interval == 0) {
-        interval = 1;
-    }
-
-    return interval;
+    return futexKey;
 }
 
-STATIC INLINE VOID OsFutexSetKey(UINTPTR futexKey, FutexNode *node)
+STATIC INLINE UINT32 OsFutexKeyToIndex(const UINTPTR futexKey, const UINT32 flags)
+{
+    UINT32 index = LOS_HashFNV32aBuf(&futexKey, sizeof(UINTPTR), FNV1_32A_INIT);
+
+    if (flags & FUTEX_PRIVATE) {
+        index &= FUTEX_HASH_PRIVATE_MASK;
+    } else {
+        index &= FUTEX_HASH_SHARED_MASK;
+        index += FUTEX_INDEX_SHARED_POS;
+    }
+
+    return index;
+}
+
+STATIC INLINE VOID OsFutexSetKey(UINTPTR futexKey, UINT32 flags, FutexNode *node)
 {
     node->key = futexKey;
-    node->index = futexKey / OS_FUTEX_KEY_BASE;
-    node->pid = LOS_GetCurrProcessID();
+    node->index = OsFutexKeyToIndex(futexKey, flags);
+    node->pid = (flags & FUTEX_PRIVATE) ? LOS_GetCurrProcessID() : OS_INVALID;
 }
 
 STATIC INLINE VOID OsFutexDeinitFutexNode(FutexNode *node)
@@ -225,8 +240,8 @@ EXIT:
 VOID OsFutexNodeDeleteFromFutexHash(FutexNode *node, BOOL isDeleteHead, FutexNode **headNode, BOOL *queueFlags)
 {
     FutexHash *hashNode = NULL;
-    UINT32 index = node->key / OS_FUTEX_KEY_BASE;
 
+    UINT32 index = OsFutexKeyToIndex(node->key, (node->pid == OS_INVALID) ? 0 : FUTEX_PRIVATE);
     if (index >= FUTEX_INDEX_MAX) {
         return;
     }
@@ -301,15 +316,11 @@ STATIC VOID OsFutexInsertNewFutexKeyToHash(FutexNode *node)
          futexList != &(hashNode->lockList);
          futexList = futexList->pstNext) {
         headNode = OS_FUTEX_FROM_FUTEXLIST(futexList);
-        if (node->key > headNode->key) {
-            continue;
-        } else if (node->key < headNode->key) {
+        if (node->key <= headNode->key) {                 
             LOS_ListTailInsert(&(headNode->futexList), &(node->futexList));
             break;
         }
-
-        LOS_ListTailInsert(&(headNode->futexList), &(node->futexList));
-        break;
+        
     }
 
 EXIT:
@@ -326,6 +337,9 @@ STATIC INT32 OsFutexInsertFindFormBackToFront(LOS_DL_LIST *queueList, const LosT
     for (; listHead != listTail; listTail = listTail->pstPrev) {
         tempNode = OS_FUTEX_FROM_QUEUELIST(listTail);
         tempNode = OsFutexDeleteAlreadyWakeTaskAndGetNext(tempNode, NULL, FALSE);
+        if (tempNode == NULL) {
+            return LOS_NOK;
+        }
         taskTail = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(tempNode->pendList)));
         if (runTask->priority >= taskTail->priority) {
             LOS_ListHeadInsert(&(tempNode->queueList), &(node->queueList));
@@ -351,6 +365,9 @@ STATIC INT32 OsFutexInsertFindFromFrontToBack(LOS_DL_LIST *queueList, const LosT
     for (; listHead != listTail; listHead = listHead->pstNext) {
         tempNode = OS_FUTEX_FROM_QUEUELIST(listHead);
         tempNode = OsFutexDeleteAlreadyWakeTaskAndGetNext(tempNode, NULL, FALSE);
+        if (tempNode == NULL) {
+            return LOS_NOK;
+        }
         taskHead = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(tempNode->pendList)));
         /* High priority comes before low priority,
          * in the case of the same priority, after the current node
@@ -465,39 +482,45 @@ STATIC INT32 OsFindAndInsertToHash(FutexNode *node)
     return ret;
 }
 
-STATIC INT32 OsFutexWaitParmaCheck(const UINT32 *userVaddr, UINT32 flags, UINT32 val, UINT32 absTime)
+STATIC INT32 OsFutexKeyShmPermCheck(const UINT32 *userVaddr, const UINT32 flags)
 {
-    UINTPTR futexKey = (UINTPTR)userVaddr;
-    UINT32 lockVal;
-    INT32 ret;
+    PADDR_T paddr;
+
+    /* Check whether the futexKey is a shared lock */
+    if (!(flags & FUTEX_PRIVATE)) {
+        paddr = (UINTPTR)LOS_PaddrQuery((UINT32 *)userVaddr);
+        if (paddr == 0) return LOS_NOK;
+    }
+
+    return LOS_OK;
+}
+
+STATIC INT32 OsFutexWaitParamCheck(const UINT32 *userVaddr, UINT32 flags, UINT32 absTime)
+{
+    VADDR_T vaddr = (VADDR_T)(UINTPTR)userVaddr;
 
     if (OS_INT_ACTIVE) {
         return LOS_EINTR;
     }
 
-    if (flags) {
-        PRINT_ERR("Futex wait parma check failed! error flags: 0x%x\n", flags);
+    if (flags & (~FUTEX_PRIVATE)) {
+        PRINT_ERR("Futex wait param check failed! error flags: 0x%x\n", flags);
         return LOS_EINVAL;
     }
 
-    if ((futexKey % sizeof(INT32)) || (futexKey < OS_FUTEX_KEY_BASE) || (futexKey >= OS_FUTEX_KEY_MAX)) {
-        PRINT_ERR("Futex wait parma check failed! error futex key: 0x%x\n", futexKey);
+    if ((vaddr % sizeof(INT32)) || (vaddr < OS_FUTEX_KEY_BASE) || (vaddr >= OS_FUTEX_KEY_MAX)) {
+        PRINT_ERR("Futex wait param check failed! error userVaddr: 0x%x\n", vaddr);
+        return LOS_EINVAL;
+    }
+
+    if (flags && (OsFutexKeyShmPermCheck(userVaddr, flags) != LOS_OK)) {
+        PRINT_ERR("Futex wait param check failed! error shared memory perm userVaddr: 0x%x\n", userVaddr);
         return LOS_EINVAL;
     }
 
     if (!absTime) {
-        PRINT_ERR("Futex wait parma check failed! error absTime: %u\n", absTime);
+        PRINT_ERR("Futex wait param check failed! error absTime: %u\n", absTime);
         return LOS_EINVAL;
-    }
-
-    ret = LOS_ArchCopyFromUser(&lockVal, userVaddr, sizeof(UINT32));
-    if (ret) {
-        PRINT_ERR("Futex wait parma check failed! copy from user failed!\n");
-        return LOS_EINVAL;
-    }
-
-    if (lockVal != val) {
-        return LOS_EBADF;
     }
 
     return LOS_OK;
@@ -526,12 +549,12 @@ STATIC INT32 OsFutexDeleteTimeoutTaskNode(FutexHash *hashNode, FutexNode *node)
     return LOS_ETIMEDOUT;
 }
 
-STATIC INT32 OsFutexInserTaskToHash(LosTaskCB **taskCB, FutexNode **node, const UINTPTR futexKey)
+STATIC INT32 OsFutexInsertTaskToHash(LosTaskCB **taskCB, FutexNode **node, const UINTPTR futexKey, const UINT32 flags)
 {
     INT32 ret;
     *taskCB = OsCurrTaskGet();
     *node = &((*taskCB)->futex);
-    OsFutexSetKey(futexKey, *node);
+    OsFutexSetKey(futexKey, flags, *node);
 
     ret = OsFindAndInsertToHash(*node);
     if (ret) {
@@ -542,31 +565,41 @@ STATIC INT32 OsFutexInserTaskToHash(LosTaskCB **taskCB, FutexNode **node, const 
     return LOS_OK;
 }
 
-STATIC INT32 OsFutexWaitTask(const UINT32 timeOut, const UINT32 *userVaddr)
+STATIC INT32 OsFutexWaitTask(const UINT32 *userVaddr, const UINT32 flags, const UINT32 val, const UINT32 timeOut)
 {
     INT32 futexRet;
-    UINT32 intSave;
+    UINT32 intSave, lockVal;
     LosTaskCB *taskCB = NULL;
     FutexNode *node = NULL;
-    UINTPTR futexKey = (UINTPTR)userVaddr;
-    UINT32 index = futexKey / OS_FUTEX_KEY_BASE;
+    UINTPTR futexKey = OsFutexFlagsToKey(userVaddr, flags);
+    UINT32 index = OsFutexKeyToIndex(futexKey, flags);
     FutexHash *hashNode = &g_futexHash[index];
 
     if (OsFutexLock(&hashNode->listLock)) {
         return LOS_EINVAL;
     }
 
-    if (OsFutexInserTaskToHash(&taskCB, &node, futexKey)) {
+    if (LOS_ArchCopyFromUser(&lockVal, userVaddr, sizeof(UINT32))) {
+        PRINT_ERR("Futex wait param check failed! copy from user failed!\n");
+        futexRet = LOS_EINVAL;
         goto EXIT_ERR;
     }
+
+    if (lockVal != val) {
+        futexRet = LOS_EBADF;
+        goto EXIT_ERR;
+    }
+
+    if (OsFutexInsertTaskToHash(&taskCB, &node, futexKey, flags)) {
+        futexRet = LOS_NOK;
+        goto EXIT_ERR;
+    }
+
     SCHEDULER_LOCK(intSave);
-    OsTaskWait(&(node->pendList), timeOut, FALSE);
+    OsTaskWaitSetPendMask(OS_TASK_WAIT_FUTEX, futexKey, timeOut);
+    OsSchedTaskWait(&(node->pendList), timeOut, FALSE);
     OsPercpuGet()->taskLockCnt++;
     LOS_SpinUnlock(&g_taskSpin);
-
-#ifdef LOS_FUTEX_DEBUG
-    OsFutexHashShow();
-#endif
 
     futexRet = OsFutexUnlock(&hashNode->listLock);
     if (futexRet) {
@@ -594,12 +627,9 @@ STATIC INT32 OsFutexWaitTask(const UINT32 timeOut, const UINT32 *userVaddr)
     return LOS_OK;
 
 EXIT_ERR:
-    futexRet = OsFutexUnlock(&hashNode->listLock);
+    (VOID)OsFutexUnlock(&hashNode->listLock);
 EXIT_UNLOCK_ERR:
-    if (futexRet) {
-        return futexRet;
-    }
-    return LOS_NOK;
+    return futexRet;
 }
 
 INT32 OsFutexWait(const UINT32 *userVaddr, UINT32 flags, UINT32 val, UINT32 absTime)
@@ -607,15 +637,37 @@ INT32 OsFutexWait(const UINT32 *userVaddr, UINT32 flags, UINT32 val, UINT32 absT
     INT32 ret;
     UINT32 timeOut = LOS_WAIT_FOREVER;
 
-    ret = OsFutexWaitParmaCheck(userVaddr, flags, val, absTime);
+    ret = OsFutexWaitParamCheck(userVaddr, flags, absTime);
     if (ret) {
         return ret;
     }
     if (absTime != LOS_WAIT_FOREVER) {
-        timeOut = OsFutexGetTick(absTime);
+        timeOut = OsUS2Tick(absTime);
     }
 
-    return OsFutexWaitTask(timeOut, userVaddr);
+    return OsFutexWaitTask(userVaddr, flags, val, timeOut);
+}
+
+STATIC INT32 OsFutexWakeParamCheck(const UINT32 *userVaddr, UINT32 flags)
+{
+    VADDR_T vaddr = (VADDR_T)(UINTPTR)userVaddr;
+
+    if ((flags & (~FUTEX_PRIVATE)) != FUTEX_WAKE) {
+        PRINT_ERR("Futex wake param check failed! error flags: 0x%x\n", flags);
+        return LOS_EINVAL;
+    }
+
+    if ((vaddr % sizeof(INT32)) || (vaddr < OS_FUTEX_KEY_BASE) || (vaddr >= OS_FUTEX_KEY_MAX)) {
+        PRINT_ERR("Futex wake param check failed! error userVaddr: 0x%x\n", userVaddr);
+        return LOS_EINVAL;
+    }
+
+    if (flags && (OsFutexKeyShmPermCheck(userVaddr, flags) != LOS_OK)) {
+        PRINT_ERR("Futex wake param check failed! error shared memory perm userVaddr: 0x%x\n", userVaddr);
+        return LOS_EINVAL;
+    }
+
+    return LOS_OK;
 }
 
 /* Check to see if the task to be awakened has timed out
@@ -636,7 +688,8 @@ STATIC VOID OsFutexCheckAndWakePendTask(FutexNode *headNode, const INT32 wakeNum
         }
         node = *nextNode;
         taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(node->pendList)));
-        OsTaskWake(taskCB);
+        OsTaskWakeClearPendMask(taskCB);
+        OsSchedTaskWake(taskCB);
         *wakeAny = TRUE;
         *nextNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_FIRST(&(node->queueList)));
         if (node != headNode) {
@@ -654,17 +707,17 @@ STATIC VOID OsFutexCheckAndWakePendTask(FutexNode *headNode, const INT32 wakeNum
     return;
 }
 
-STATIC INT32 OsFutexWakeTask(UINTPTR futexKey, INT32 wakeNumber, FutexNode **newHeadNode, BOOL *wakeAny)
+STATIC INT32 OsFutexWakeTask(UINTPTR futexKey, UINT32 flags, INT32 wakeNumber, FutexNode **newHeadNode, BOOL *wakeAny)
 {
     UINT32 intSave;
     FutexNode *node = NULL;
     FutexNode *headNode = NULL;
-    UINT32 index = futexKey / OS_FUTEX_KEY_BASE;
+    UINT32 index = OsFutexKeyToIndex(futexKey, flags);
     FutexHash *hashNode = &g_futexHash[index];
     FutexNode tempNode = {
         .key = futexKey,
         .index = index,
-        .pid = LOS_GetCurrProcessID(),
+        .pid = (flags & FUTEX_PRIVATE) ? LOS_GetCurrProcessID() : OS_INVALID,
     };
 
     node = OsFindFutexNode(&tempNode);
@@ -691,28 +744,25 @@ STATIC INT32 OsFutexWakeTask(UINTPTR futexKey, INT32 wakeNumber, FutexNode **new
 INT32 OsFutexWake(const UINT32 *userVaddr, UINT32 flags, INT32 wakeNumber)
 {
     INT32 ret, futexRet;
-    UINTPTR futexKey = (UINTPTR)userVaddr;
+    UINTPTR futexKey;
+    UINT32 index;
     FutexHash *hashNode = NULL;
-    INT32 index = futexKey / OS_FUTEX_KEY_BASE;
     FutexNode *headNode = NULL;
     BOOL wakeAny = FALSE;
 
-    if (!(flags & FUTEX_WAKE)) {
-        PRINT_ERR("Futex wake param check failed! error flags: 0x%x\n", flags);
+    if (OsFutexWakeParamCheck(userVaddr, flags)) {
         return LOS_EINVAL;
     }
 
-    if ((futexKey % sizeof(INT32)) || (futexKey < OS_FUTEX_KEY_BASE) || (futexKey >= OS_FUTEX_KEY_MAX)) {
-        PRINT_ERR("Futex wake param check failed! error futex key: 0x%x\n", futexKey);
-        return LOS_EINVAL;
-    }
+    futexKey = OsFutexFlagsToKey(userVaddr, flags);
+    index = OsFutexKeyToIndex(futexKey, flags);
 
     hashNode = &g_futexHash[index];
     if (OsFutexLock(&hashNode->listLock)) {
         return LOS_EINVAL;
     }
 
-    ret = OsFutexWakeTask(futexKey, wakeNumber, &headNode, &wakeAny);
+    ret = OsFutexWakeTask(futexKey, flags, wakeNumber, &headNode, &wakeAny);
     if (ret) {
         goto EXIT_ERR;
     }
@@ -751,7 +801,7 @@ STATIC INT32 OsFutexRequeueInsertNewKey(UINTPTR newFutexKey, INT32 newIndex, Fut
     FutexNode newTempNode = {
         .key = newFutexKey,
         .index = newIndex,
-        .pid = LOS_GetCurrProcessID(),
+        .pid = (newIndex < FUTEX_INDEX_SHARED_POS) ? LOS_GetCurrProcessID() : OS_INVALID,
     };
     LOS_DL_LIST *queueList = &oldHeadNode->queueList;
     FutexNode *newHeadNode = OsFindFutexNode(&newTempNode);
@@ -787,15 +837,16 @@ STATIC INT32 OsFutexRequeueInsertNewKey(UINTPTR newFutexKey, INT32 newIndex, Fut
     return LOS_OK;
 }
 
-STATIC VOID OsFutexRequeueSplitTwoLists(FutexHash *oldHashNode, FutexNode *oldHeadNode, UINTPTR futexKey, INT32 count)
+STATIC VOID OsFutexRequeueSplitTwoLists(FutexHash *oldHashNode, FutexNode *oldHeadNode,
+                                        UINT32 flags, UINTPTR futexKey, INT32 count)
 {
     LOS_DL_LIST *queueList = &oldHeadNode->queueList;
     FutexNode *tailNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_LAST(queueList));
-    INT32 newIndex = futexKey / OS_FUTEX_KEY_BASE;
+    INT32 newIndex = OsFutexKeyToIndex(futexKey, flags);
     FutexNode *nextNode = NULL;
     FutexNode *newHeadNode = NULL;
     LOS_DL_LIST *futexList = NULL;
-    BOOL IsAll = FALSE;
+    BOOL isAll = FALSE;
     INT32 i;
 
     for (i = 0; i < count; i++) {
@@ -803,7 +854,7 @@ STATIC VOID OsFutexRequeueSplitTwoLists(FutexHash *oldHashNode, FutexNode *oldHe
         nextNode->key = futexKey;
         nextNode->index = newIndex;
         if (queueList->pstNext == &oldHeadNode->queueList) {
-            IsAll = TRUE;
+            isAll = TRUE;
             break;
         }
 
@@ -812,7 +863,7 @@ STATIC VOID OsFutexRequeueSplitTwoLists(FutexHash *oldHashNode, FutexNode *oldHe
 
     futexList = oldHeadNode->futexList.pstPrev;
     LOS_ListDelete(&oldHeadNode->futexList);
-    if (IsAll == TRUE) {
+    if (isAll == TRUE) {
         return;
     }
 
@@ -825,21 +876,21 @@ STATIC VOID OsFutexRequeueSplitTwoLists(FutexHash *oldHashNode, FutexNode *oldHe
     return;
 }
 
-STATIC FutexNode *OsFutexRequeueRemoveOldKeyAndGetHead(UINTPTR oldFutexKey, INT32 wakeNumber,
+STATIC FutexNode *OsFutexRequeueRemoveOldKeyAndGetHead(UINTPTR oldFutexKey, UINT32 flags, INT32 wakeNumber,
                                                        UINTPTR newFutexKey, INT32 requeueCount, BOOL *wakeAny)
 {
     INT32 ret;
+    INT32 oldIndex = OsFutexKeyToIndex(oldFutexKey, flags);
     FutexNode *oldHeadNode = NULL;
-    INT32 oldIndex = oldFutexKey / OS_FUTEX_KEY_BASE;
     FutexHash *oldHashNode = &g_futexHash[oldIndex];
     FutexNode oldTempNode = {
         .key = oldFutexKey,
         .index = oldIndex,
-        .pid = LOS_GetCurrProcessID(),
+        .pid = (flags & FUTEX_PRIVATE) ? LOS_GetCurrProcessID() : OS_INVALID,
     };
 
     if (wakeNumber > 0) {
-        ret = OsFutexWakeTask(oldFutexKey, wakeNumber, &oldHeadNode, wakeAny);
+        ret = OsFutexWakeTask(oldFutexKey, flags, wakeNumber, &oldHeadNode, wakeAny);
         if ((ret != LOS_OK) || (oldHeadNode == NULL)) {
             return NULL;
         }
@@ -856,24 +907,32 @@ STATIC FutexNode *OsFutexRequeueRemoveOldKeyAndGetHead(UINTPTR oldFutexKey, INT3
         }
     }
 
-    OsFutexRequeueSplitTwoLists(oldHashNode, oldHeadNode, newFutexKey, requeueCount);
+    OsFutexRequeueSplitTwoLists(oldHashNode, oldHeadNode, flags, newFutexKey, requeueCount);
 
     return oldHeadNode;
 }
 
-STATIC INT32 OsFutexRequeueParamCheck(UINTPTR oldFutexKey, UINTPTR newFutexKey)
+STATIC INT32 OsFutexRequeueParamCheck(const UINT32 *oldUserVaddr, UINT32 flags, const UINT32 *newUserVaddr)
 {
-    if (oldFutexKey == newFutexKey) {
+    VADDR_T oldVaddr = (VADDR_T)(UINTPTR)oldUserVaddr;
+    VADDR_T newVaddr = (VADDR_T)(UINTPTR)newUserVaddr;
+
+    if (oldVaddr == newVaddr) {
         return LOS_EINVAL;
     }
 
-    if ((oldFutexKey % sizeof(INT32)) || (oldFutexKey < OS_FUTEX_KEY_BASE) || (oldFutexKey >= OS_FUTEX_KEY_MAX)) {
-        PRINT_ERR("Futex requeue param check failed! error old futex key: 0x%x\n", oldFutexKey);
+    if ((flags & (~FUTEX_PRIVATE)) != FUTEX_REQUEUE) {
+        PRINT_ERR("Futex requeue param check failed! error flags: 0x%x\n", flags);
         return LOS_EINVAL;
     }
 
-    if ((newFutexKey % sizeof(INT32)) || (newFutexKey < OS_FUTEX_KEY_BASE) || (newFutexKey >= OS_FUTEX_KEY_MAX)) {
-        PRINT_ERR("Futex requeue param check failed! error new futex key: 0x%x\n", newFutexKey);
+    if ((oldVaddr % sizeof(INT32)) || (oldVaddr < OS_FUTEX_KEY_BASE) || (oldVaddr >= OS_FUTEX_KEY_MAX)) {
+        PRINT_ERR("Futex requeue param check failed! error old userVaddr: 0x%x\n", oldUserVaddr);
+        return LOS_EINVAL;
+    }
+
+    if ((newVaddr % sizeof(INT32)) || (newVaddr < OS_FUTEX_KEY_BASE) || (newVaddr >= OS_FUTEX_KEY_MAX)) {
+        PRINT_ERR("Futex requeue param check failed! error new userVaddr: 0x%x\n", newUserVaddr);
         return LOS_EINVAL;
     }
 
@@ -883,25 +942,30 @@ STATIC INT32 OsFutexRequeueParamCheck(UINTPTR oldFutexKey, UINTPTR newFutexKey)
 INT32 OsFutexRequeue(const UINT32 *userVaddr, UINT32 flags, INT32 wakeNumber, INT32 count, const UINT32 *newUserVaddr)
 {
     INT32 ret;
-    UINTPTR oldFutexKey = (UINTPTR)userVaddr;
-    UINTPTR newFutexKey = (UINTPTR)newUserVaddr;
-    INT32 oldIndex = oldFutexKey / OS_FUTEX_KEY_BASE;
-    INT32 newIndex = newFutexKey / OS_FUTEX_KEY_BASE;
+    UINTPTR oldFutexKey;
+    UINTPTR newFutexKey;
+    INT32 oldIndex;
+    INT32 newIndex;
     FutexHash *oldHashNode = NULL;
     FutexHash *newHashNode = NULL;
     FutexNode *oldHeadNode = NULL;
     BOOL wakeAny = FALSE;
 
-    if (OsFutexRequeueParamCheck(oldFutexKey, newFutexKey)) {
+    if (OsFutexRequeueParamCheck(userVaddr, flags, newUserVaddr)) {
         return LOS_EINVAL;
     }
+
+    oldFutexKey = OsFutexFlagsToKey(userVaddr, flags);
+    newFutexKey = OsFutexFlagsToKey(newUserVaddr, flags);
+    oldIndex = OsFutexKeyToIndex(oldFutexKey, flags);
+    newIndex = OsFutexKeyToIndex(newFutexKey, flags);
 
     oldHashNode = &g_futexHash[oldIndex];
     if (OsFutexLock(&oldHashNode->listLock)) {
         return LOS_EINVAL;
     }
 
-    oldHeadNode = OsFutexRequeueRemoveOldKeyAndGetHead(oldFutexKey, wakeNumber, newFutexKey, count, &wakeAny);
+    oldHeadNode = OsFutexRequeueRemoveOldKeyAndGetHead(oldFutexKey, flags, wakeNumber, newFutexKey, count, &wakeAny);
     if (oldHeadNode == NULL) {
         (VOID)OsFutexUnlock(&oldHashNode->listLock);
         if (wakeAny == TRUE) {
@@ -936,9 +1000,5 @@ EXIT:
 
     return ret;
 }
-
-#ifdef __cplusplus
-#if __cplusplus
-}
 #endif
-#endif /* __cplusplus */
+

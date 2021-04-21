@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,10 +35,14 @@
 #include "los_typedef.h"
 #include "los_task.h"
 #include "los_mux.h"
+#include "los_signal.h"
+#include "fs/fs.h"
 #include "syscall.h"
+#include "sysinfo.h"
 #ifdef LOSCFG_KERNEL_DYNLOAD
 #include "los_exec_elf.h"
 #endif
+#include "sys/resource.h"
 #include "sys/times.h"
 #include "sys/utsname.h"
 #include "sys/shm.h"
@@ -51,7 +55,11 @@
 #ifdef LOSCFG_FS_VFS
 #include "sys/socket.h"
 #include "dirent.h"
+#include "fs/fs.h"
 #endif
+#include <sys/wait.h>
+#include "sys/resource.h"
+
 /*********************************************************
 https://blog.csdn.net/piyongduo3393/article/details/89378243
 
@@ -92,6 +100,7 @@ extern int SysSchedGetPriorityMax(int policy);
 extern int SysSchedRRGetInterval(int pid, struct timespec *tp);
 extern int SysWait(int pid, USER int *status, int options, void *rusage);
 extern int SysFork(void);
+extern int SysVfork(void);
 extern unsigned int SysGetPID(void);
 extern unsigned int SysGetPPID(void);
 extern int SysSetGroupID(unsigned int gid);
@@ -121,6 +130,8 @@ extern void SysUserExitGroup(int status);
 extern void SysThreadExit(int status);
 extern int SysFutex(const unsigned int *uAddr, unsigned int flags, int val,
                     unsigned int absTime, const unsigned int *newUserAddr);
+extern int SysSchedGetAffinity(int id, unsigned int *cpuset, int flag);
+extern int SysSchedSetAffinity(int id, const unsigned short cpuset, int flag);
 extern mqd_t SysMqOpen(const char *mqName, int openFlag, mode_t mode, struct mq_attr *attr);
 extern int SysMqClose(mqd_t personal);
 extern int SysMqGetSetAttr(mqd_t mqd, const struct mq_attr *new, struct mq_attr *old);
@@ -178,6 +189,7 @@ extern int SysShmDt(const void *shmaddr);
 
 /* misc */
 extern int SysUname(struct utsname *name);
+extern int SysInfo(struct sysinfo *info);
 
 /* time */
 extern int SysNanoSleep(const struct timespec *rqtp, struct timespec *rmtp);
@@ -206,7 +218,8 @@ extern int SysTimerSettime64(timer_t timerID, int flags, const struct itimerspec
 /* filesystem */
 #ifdef LOSCFG_FS_VFS
 typedef int (*PollFun)(struct pollfd *fds, nfds_t nfds, int timeout);
-extern int do_open(int dirfd, const char *path, int oflags, ...);
+extern int fp_open(char *fullpath, int oflags, mode_t mode);
+extern int do_open(int dirfd, const char *path, int oflags, mode_t mode);
 extern int do_unlink(int dirfd, const char *pathname);
 extern int do_mkdir(int dirfd, const char *pathname, mode_t mode);
 extern int do_rmdir(int dirfd, const char *pathname);
@@ -258,6 +271,7 @@ extern ssize_t SysWritev(int fd, const struct iovec *iov, int iovcnt);
 extern int SysPipe(int pipefd[2]); /* 2 : pipe fds for read and write */
 extern int SysFormat(const char *dev, int sectors, int option);
 extern int SysFstat64(int fd, struct stat64 *buf);
+extern int SysFstatat64(int fd, const char *restrict path, struct stat *restrict buf, int flag);
 extern int SysFcntl64(int fd, int cmd, void *arg);
 extern int SysPoll(struct pollfd *fds, nfds_t nfds, int timeout);
 extern int SysPrctl(int option, ...);
@@ -274,13 +288,15 @@ extern int SysUnlinkat(int dirfd, const char *pathname, int flag);
 extern int SysRenameat(int oldfd, const char *oldpath, int newdfd, const char *newpath);
 extern int SysFallocate(int fd, int mode, off_t offset, off_t len);
 extern int SysFallocate64(int fd, int mode, off64_t offset, off64_t len);
-extern ssize_t SysPreadv(int fd, const struct iovec *iov, int iovcnt, off_t offset);
-extern ssize_t SysPwritev(int fd, const struct iovec *iov, int iovcnt, off_t offset);
+extern ssize_t SysPreadv(int fd, const struct iovec *iov, int iovcnt, long loffset, long hoffset);
+extern ssize_t SysPwritev(int fd, const struct iovec *iov, int iovcnt, long loffset, long hoffset);
 extern void SysSync(void);
 extern int SysGetdents64(int fd, struct dirent *de_user, unsigned int count);
 extern int do_opendir(const char *path, int oflags);
 extern char *SysRealpath(const char *path, char *resolvedPath);
 extern int SysUmask(int mask);
 extern int SysShellExec(const char *msgName, const char *cmdString);
+extern int SysReboot(int magic, int magic2, int type);
+extern int SysGetrusage(int what, struct rusage *ru);
 #endif
 #endif /* _LOS_SYSCALL_H */

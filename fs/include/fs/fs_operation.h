@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -82,18 +82,7 @@ extern struct page_mapping *find_mapping(const char *path);
  *
  ****************************************************************************/
 
-extern int remove_mapping(const char *fullpath, const struct file *ex_filp);
-
-/****************************************************************************
- * Name: remove_mapping_nolock
- *
- * Description:
- *   This function is similar with the function "remove_mapping" above,
- *   except that this function do not protect global file list.
- *
- ****************************************************************************/
-
-extern int remove_mapping_nolock(const char *fullpath, const struct file *ex_filp);
+extern int remove_mapping(const char *fullpath);
 
 /****************************************************************************
  * Name: rename_mapping
@@ -113,7 +102,18 @@ extern void rename_mapping(const char *src, const char *dst);
  *
  ****************************************************************************/
 
-extern void dec_mapping(struct page_mapping *mapping);
+extern void dec_mapping_nolock(struct page_mapping *mapping);
+
+
+/****************************************************************************
+ * Name: update_file_path
+ *
+ * Description:
+ *   Update the path in file descriptors when do renaming.
+ *
+ ****************************************************************************/
+
+extern int update_file_path(const char *old_path, const char *new_path);
 
 /**
  * @ingroup  fs
@@ -317,7 +317,7 @@ extern int los_set_systime_status(BOOL b_status);
  *
  */
 
-FAR int fscheck(FAR const char *path);
+int fscheck(const char *path);
 
 #ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
 /**
@@ -347,7 +347,7 @@ FAR int fscheck(FAR const char *path);
  *
  */
 
-extern int virstatfs(FAR const char *path, FAR struct statfs *buf);
+extern int virstatfs(const char *path, struct statfs *buf);
 
 /**
  * @ingroup  fs
@@ -379,8 +379,9 @@ extern int virstatfs(FAR const char *path, FAR struct statfs *buf);
  * @see
  *
  */
-
+#ifdef VFS_IMPL_LATER
 int los_set_virpartparam(virpartinfo virtualinfo);
+#endif
 
 #endif
 
@@ -416,6 +417,7 @@ int los_set_virpartparam(virpartinfo virtualinfo);
  * @see None
  */
 
+struct IATTR;
 extern int chattr(const char *pathname, struct IATTR *attr);
 
 
