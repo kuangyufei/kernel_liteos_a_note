@@ -291,7 +291,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     }
 #endif
 
-    ret = OsSystemProcessCreate();
+    ret = OsSystemProcessCreate();//创建系统进程 即:2 和 0 进程
     if (ret != LOS_OK) {
         return ret;
     }

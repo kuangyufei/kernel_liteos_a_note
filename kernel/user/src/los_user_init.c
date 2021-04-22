@@ -64,7 +64,7 @@ LITE_USER_SEC_TEXT STATIC UINT32 sys_call3(UINT32 nbr, UINT32 parm1, UINT32 parm
 LITE_USER_SEC_ENTRY VOID OsUserInit(VOID *args)
 {
 #ifdef LOSCFG_KERNEL_DYNLOAD
-    sys_call3(__NR_execve, (UINTPTR)g_initPath, 0, 0);
+    sys_call3(__NR_execve, (UINTPTR)g_initPath, 0, 0);//发起系统调用,陷入内核态,对应 SysExecve ,加载elf运行
 #endif
     while (true) {
     }

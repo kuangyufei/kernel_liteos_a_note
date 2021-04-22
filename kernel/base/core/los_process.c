@@ -454,15 +454,16 @@ STATIC UINT32 OsProcessInit(VOID)
         LOS_ListTailInsert(&g_freeProcess, &g_processCBArray[index].pendList);//注意g_freeProcess挂的是pendList节点,所以使用要通过OS_PCB_FROM_PENDLIST找到进程实体.
     }
 
-    g_kernelIdleProcess = 0; /* 0: The idle process ID of the kernel-mode process is fixed at 0 */
-    LOS_ListDelete(&OS_PCB_FROM_PID(g_kernelIdleProcess)->pendList);
+    g_kernelIdleProcess = 0; /* 0: The idle process ID of the kernel-mode process is fixed at 0 *///内核态init进程,从名字可以看出来这是让cpu休息的进程.
+    LOS_ListDelete(&OS_PCB_FROM_PID(g_kernelIdleProcess)->pendList);//从空闲链表中摘掉
+    
     g_userInitProcess = 1; /* 1: The root process ID of the user-mode process is fixed at 1 *///用户态的根进程
-    LOS_ListDelete(&OS_PCB_FROM_PID(g_userInitProcess)->pendList);
+    LOS_ListDelete(&OS_PCB_FROM_PID(g_userInitProcess)->pendList);//从空闲链表中摘掉
 
     g_kernelInitProcess = 2; /* 2: The root process ID of the kernel-mode process is fixed at 2 *///内核态的根进程
-    LOS_ListDelete(&OS_PCB_FROM_PID(g_kernelInitProcess)->pendList);
+    LOS_ListDelete(&OS_PCB_FROM_PID(g_kernelInitProcess)->pendList);//从空闲链表中摘掉
 
-	//注意:这波骚操作之后,g_freeProcess链表上还有,0,3,4,...g_processMaxNum-1号进程.创建进程是从g_freeProcess上申请
+	//注意:这波骚操作之后,g_freeProcess链表上还有[3,g_processMaxNum-1]号进程.创建进程是从g_freeProcess上申请
 	//即下次申请到的将是0号进程,而 OsCreateIdleProcess 将占有0号进程.
 
     return LOS_OK;
@@ -737,7 +738,7 @@ EXIT:
     OsDeInitPCB(processCB);//删除进程控制块,归还内存
     return ret;
 }
-//初始化 2号进程,即内核态进程的老祖宗
+//创建2,0号进程,即内核态进程的老祖宗
 LITE_OS_SEC_TEXT_INIT UINT32 OsSystemProcessCreate(VOID)
 {
     UINT32 ret = OsProcessInit();
@@ -745,39 +746,39 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSystemProcessCreate(VOID)
         return ret;
     }
 
-    LosProcessCB *kerInitProcess = OS_PCB_FROM_PID(g_kernelInitProcess);
-    ret = OsProcessCreateInit(kerInitProcess, OS_KERNEL_MODE, "KProcess", 0);
+    LosProcessCB *kerInitProcess = OS_PCB_FROM_PID(g_kernelInitProcess);//获取进程池中2号实体
+    ret = OsProcessCreateInit(kerInitProcess, OS_KERNEL_MODE, "KProcess", 0);//创建内核态祖宗进程
     if (ret != LOS_OK) {
         return ret;
     }
 
-    kerInitProcess->processStatus &= ~OS_PROCESS_STATUS_INIT;
-    g_processGroup = kerInitProcess->group;
-    LOS_ListInit(&g_processGroup->groupList);
-    OsCurrProcessSet(kerInitProcess);
+    kerInitProcess->processStatus &= ~OS_PROCESS_STATUS_INIT;//去掉初始化标签
+    g_processGroup = kerInitProcess->group;//进程组ID就是2号进程本身
+    LOS_ListInit(&g_processGroup->groupList);//初始化进程组链表
+    OsCurrProcessSet(kerInitProcess);//设置为当前进程,注意当前进程是内核的视角,并不代表一旦设置就必须执行进程的任务.
 
-    ret = OsCreateResourceFreeTask();
+    ret = OsCreateResourceFreeTask();//创建资源回收任务
     if (ret != LOS_OK) {
         return ret;
     }
 
-    LosProcessCB *idleProcess = OS_PCB_FROM_PID(g_kernelIdleProcess);
-    ret = OsInitPCB(idleProcess, OS_KERNEL_MODE, OS_TASK_PRIORITY_LOWEST, "KIdle");
+    LosProcessCB *idleProcess = OS_PCB_FROM_PID(g_kernelIdleProcess);//获取进程池中0号实体
+    ret = OsInitPCB(idleProcess, OS_KERNEL_MODE, OS_TASK_PRIORITY_LOWEST, "KIdle");//创建内核态0号进程
     if (ret != LOS_OK) {
         return ret;
     }
-    idleProcess->parentProcessID = kerInitProcess->processID;
-    LOS_ListTailInsert(&kerInitProcess->childrenList, &idleProcess->siblingList);
-    idleProcess->group = kerInitProcess->group;
-    LOS_ListTailInsert(&kerInitProcess->group->processList, &idleProcess->subordinateGroupList);
-    idleProcess->user = kerInitProcess->user;
-    idleProcess->files = kerInitProcess->files;
+    idleProcess->parentProcessID = kerInitProcess->processID;//认2号进程为父,它可是长子.
+    LOS_ListTailInsert(&kerInitProcess->childrenList, &idleProcess->siblingList);//挂到内核态祖宗进程的子孙链接上
+    idleProcess->group = kerInitProcess->group;//和老祖宗一个进程组,注意是父子并不代表是朋友.
+    LOS_ListTailInsert(&kerInitProcess->group->processList, &idleProcess->subordinateGroupList);//挂到老祖宗的进程组链表上,进入了老祖宗的朋友圈.
+    idleProcess->user = kerInitProcess->user;//共享用户
+    idleProcess->files = kerInitProcess->files;//共享文件
 
-    ret = OsIdleTaskCreate();
+    ret = OsIdleTaskCreate();//创建cpu的idle任务,从此当前CPU OsPercpuGet()->idleTaskID 有了休息的地方.
     if (ret != LOS_OK) {
         return ret;
     }
-    idleProcess->threadGroupID = OsPercpuGet()->idleTaskID;
+    idleProcess->threadGroupID = OsPercpuGet()->idleTaskID;//设置进程的多线程组长
 
     return LOS_OK;
 }

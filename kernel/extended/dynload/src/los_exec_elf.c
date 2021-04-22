@@ -114,7 +114,7 @@ STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *
     loadInfo->fileName = kfileName;
     return LOS_OK;
 }
-
+//运行用户态进程
 INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *envp)
 {
     ELFLoadInfo loadInfo = { 0 };

@@ -400,7 +400,7 @@ OUT:
     }
     return ret;
 }
-
+//动态加载程序过程
 #ifdef LOSCFG_KERNEL_DYNLOAD
 int SysExecve(const char *fileName, char *const *argv, char *const *envp)
 {
