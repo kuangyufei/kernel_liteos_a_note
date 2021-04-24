@@ -44,21 +44,22 @@ extern "C" {
 #define LD_EI_NIDENT           16
 
 typedef struct {
-    UINT8       elfIdent[LD_EI_NIDENT]; /* Magic number and other info */
-    UINT16      elfType;                /* Object file type */
-    UINT16      elfMachine;             /* Architecture */
-    UINT32      elfVersion;             /* Object file version */
-    UINT32      elfEntry;               /* Entry point virtual address */
-    UINT32      elfPhoff;               /* Program header table file offset */
-    UINT32      elfShoff;               /* Section header table file offset */
-    UINT32      elfFlags;               /* Processor-specific flags */
-    UINT16      elfHeadSize;            /* ELF header size in bytes */
-    UINT16      elfPhEntSize;           /* Program header table entry size */
-    UINT16      elfPhNum;               /* Program header table entry count */
-    UINT16      elfShEntSize;           /* Section header table entry size */
-    UINT16      elfShNum;               /* Section header table entry count */
-    UINT16      elfShStrIndex;          /* Section header string table index */
+    UINT8       elfIdent[LD_EI_NIDENT]; /* Magic number and other info *///含前16个字节，又可细分成class、data、version等字段，具体含义不用太关心，只需知道前4个字节点包含”ELF”关键字，这样可以判断当前文件是否是ELF格式；
+    UINT16      elfType;                /* Object file type *///表示具体ELF类型，可重定位文件/可执行文件/共享库文件，显然这里是一个可执行文件；e_machine表示执行的机器平台，这里是x86_64；
+    UINT16      elfMachine;             /* Architecture *///表示cpu架构
+    UINT32      elfVersion;             /* Object file version *///表示文件版本号，这里的1表示初始版本号；
+    UINT32      elfEntry;               /* Entry point virtual address *///对应”Entry point address”，程序入口函数地址，通过进程虚拟地址空间地址(0x400440)表达；
+    UINT32      elfPhoff;               /* Program header table file offset *///对应“Start of program headers”，表示program header table在文件内的偏移位置，这里是从第64号字节(假设初始为0号字节)开始；
+    UINT32      elfShoff;               /* Section header table file offset *///对应”Start of section headers”，表示section header table在文件内的偏移位置，这里是从第4472号字节开始，靠近文件尾部；
+    UINT32      elfFlags;               /* Processor-specific flags *///表示与CPU处理器架构相关的信息，这里为零；
+    UINT16      elfHeadSize;            /* ELF header size in bytes *///对应”Size of this header”，表示本ELF header自身的长度，这里为64个字节，回看前面的e_phoff为64，说明ELF header后紧跟着program header table；
+    UINT16      elfPhEntSize;           /* Program header table entry size *///对应“Size of program headers”，表示program header table中每个元素的大小，这里为56个字节；
+    UINT16      elfPhNum;               /* Program header table entry count *///对应”Number of program headers”，表示program header table中元素个数，这里为9个；
+    UINT16      elfShEntSize;           /* Section header table entry size *///e_shentsize 对应”Size of section headers”，表示section header table中每个元素的大小，这里为64个字节；
+    UINT16      elfShNum;               /* Section header table entry count *///e_shnum 对应”Number of section headers”，表示section header table中元素的个数，这里为30个；
+    UINT16      elfShStrIndex;          /* Section header string table index *///e_shstrndx  对应”Section header string table index”，表示描述各section字符名称的string table在section header table中的下标，详见后文对string table的介绍。
 } LDElf32Ehdr;
+
 
 typedef struct {
     UINT8       elfIdent[LD_EI_NIDENT]; /* Magic number and other info */
@@ -220,17 +221,18 @@ typedef struct {
 
 /* Section header */
 typedef struct {
-    UINT32 shName;      /* Section name (string tbl index) */
-    UINT32 shType;      /* Section type */
-    UINT32 shFlags;     /* Section flags */
-    UINT32 shAddr;      /* Section virtual addr at execution */
-    UINT32 shOffset;    /* Section file offset */
-    UINT32 shSize;      /* Section size in bytes */
-    UINT32 shLink;      /* Link to another section */
-    UINT32 shInfo;      /* Additional section information */
-    UINT32 shAddrAlign; /* Section alignment */
-    UINT32 shEntSize;   /* Entry size if section holds table */
+    UINT32 shName;      /* Section name (string tbl index) *///表示每个区的名字
+    UINT32 shType;      /* Section type *///表示每个区的功能
+    UINT32 shFlags;     /* Section flags *///表示每个区的属性
+    UINT32 shAddr;      /* Section virtual addr at execution *///表示每个区的进程映射地址
+    UINT32 shOffset;    /* Section file offset *///表示文件内偏移
+    UINT32 shSize;      /* Section size in bytes *///表示区的大小
+    UINT32 shLink;      /* Link to another section *///Link和Info记录不同类型区的相关信息
+    UINT32 shInfo;      /* Additional section information *///Link和Info记录不同类型区的相关信息
+    UINT32 shAddrAlign; /* Section alignment *///表示区的对齐单位
+    UINT32 shEntSize;   /* Entry size if section holds table *///表示区中每个元素的大小(如果该区为一个数组的话，否则该值为0)
 } LDElf32Shdr;
+
 
 typedef struct {
     UINT32 shName;      /* Section name (string tbl index) */
@@ -278,13 +280,14 @@ typedef struct {
 
 /* Symbol table */
 typedef struct {
-    UINT32 stName;  /* Symbol table name (string tbl index) */
-    UINT32 stValue; /* Symbol table value */
-    UINT32 stSize;  /* Symbol table size */
-    UINT8 stInfo;   /* Symbol table type and binding */
+    UINT32 stName;  /* Symbol table name (string tbl index) *///表示符号对应的源码字符串，为对应String Table中的索引
+    UINT32 stValue; /* Symbol table value *///表示符号对应的数值
+    UINT32 stSize;  /* Symbol table size *///表示符号对应数值的空间占用大小
+    UINT8 stInfo;   /* Symbol table type and binding *///表示符号的相关信息 如符号类型(变量符号、函数符号)
     UINT8 stOther;  /* Symbol table visibility */
-    UINT16 stShndx; /* Section table index */
+    UINT16 stShndx; /* Section table index *///表示与该符号相关的区的索引,例如函数符号与对应的代码区相关
 } LDElf32Sym;
+
 
 typedef struct {
     UINT32 stName;  /* Symbol table name (string tbl index) */

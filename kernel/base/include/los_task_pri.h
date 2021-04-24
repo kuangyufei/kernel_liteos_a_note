@@ -301,7 +301,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 #define OS_TCB_NAME_LEN 32
 
 typedef struct {
-    VOID            *stackPointer;      /**< Task stack pointer */	//栈指针SP,任务当前执行栈的位置(用户栈和内核栈切换)
+    VOID            *stackPointer;      /**< Task stack pointer */	//内核栈指针位置(SP)
     UINT16          taskStatus;         /**< Task status */			//各种状态标签，可以拥有多种标签，按位标识
     UINT16          priority;           /**< Task priority */		//任务优先级[0:31],默认是31级
     UINT16          policy;				//任务的调度方式(三种 .. LOS_SCHED_RR )
