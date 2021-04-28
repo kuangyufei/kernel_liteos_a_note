@@ -1,7 +1,7 @@
 git add -A
-git commit -m  'ELF结构体注解
+git commit -m  '百篇博客.定期更新'
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
-    https://my.oschina.net/weharmony
+    https://weharmony.gitee.io/history.html
 '
 
 git push  origin master
