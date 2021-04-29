@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '发布鸿蒙内核源码分析.百篇博客内容.pdf
+git commit -m  '感谢 51 .c .h .o 的支持,继续努力 : )
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     https://weharmony.gitee.io/history.html
 '
