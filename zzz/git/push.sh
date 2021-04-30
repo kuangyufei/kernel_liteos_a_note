@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '感谢 51 .c .h .o 的支持,继续努力 : )
+git commit -m  '几点说明
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     https://weharmony.gitee.io/history.html
 '
