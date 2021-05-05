@@ -1,4 +1,4 @@
-[OpenHarmony开发者文档 | 同步最新鸿蒙官方文档 | OpenHarmony | HarmonyOS](http://openharmony.21cloudbox.com/) **[ < 国内访问](http://openharmony.21cloudbox.com/)[ | 国外访问 >](http://openharmony.github.com/)**
+[OpenHarmony开发者文档 | 同步最新鸿蒙官方文档 | OpenHarmony | HarmonyOS](https://openharmony.21cloudbox.com/) **[ < 国内访问](https://openharmony.21cloudbox.com/)[ | 国外访问 >](https://openharmony.github.com/)**
 
 [![在这里插入图片描述](https://gitee.com/weharmony/docs/raw/master/pic/other/io.png)](https://gitee.com/weharmony/kernel_liteos_a_note)
 
@@ -10,7 +10,7 @@
 
 * [kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note) 是在 开放原子开源基金会 旗下孵化项目 OpenHarmony 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) (鸿蒙内核项目)基础上给源码加上中文注解的版本.加注版与官方版本保持每月同步.
 
-* OpenHarmony开发者文档 | 同步最新鸿蒙官方文档 | 轻松高效搞定鸿蒙 [ < 国内访问](http://weharmony.gitee.io/history.html)[ | 国外访问 >](http://openharmony.21cloudbox.com/) 是对开放原子开源基金会旗下孵化项目 OpenHarmony 的文档 [docs](https://gitee.com/openharmony/docs) 做的静态站点导读,支持侧边栏,面包屑,从此非常方便的查看官方文档,大大提高学习和开发效率.
+* OpenHarmony开发者文档 | 同步最新鸿蒙官方文档 | 轻松高效搞定鸿蒙 [ < 国内访问](https://openharmony.21cloudbox.com/)[ | 国外访问 >](https://openharmony.github.com/) 是对开放原子开源基金会旗下孵化项目 OpenHarmony 的文档 [docs](https://gitee.com/openharmony/docs) 做的静态站点导读,支持侧边栏,面包屑,从此非常方便的查看官方文档,大大提高学习和开发效率.
 
 * [OpenHarmony全量代码仓库](https://gitee.com/weharmony/OpenHarmony) 是 开放原子开源基金会旗下孵化项目 OpenHarmony 的109个子项目的所有代码.鸿蒙官方是使用`repo`管理众多`git`项目,`repo`在`linux`下很方便,但在`windows`上谁用谁知道,使用会有相当的困难,所以将官方所有项目整合成一个.git工程,如此使用`git`方式便能下载整个鸿蒙系统源码,方便学习使用.本仓库与官方仓库保持同步.[OpenHarmony全量代码仓库](https://gitee.com/weharmony/OpenHarmony)已编译通过,
     ```
