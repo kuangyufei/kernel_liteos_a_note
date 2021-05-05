@@ -1,4 +1,4 @@
-**[>> 鸿蒙源码分析.工具文档.周周更新.OpenHarmony.HarmonyOS](http://weharmony.gitee.io/history.html) [ < gitee](http://weharmony.gitee.io/history.html)[ | github >](http://weharmony.github.io/history.html)**
+[OpenHarmony开发者文档 | 同步最新鸿蒙官方文档 | OpenHarmony | HarmonyOS](http://openharmony.21cloudbox.com/) **[ < 国内访问](http://openharmony.21cloudbox.com/)[ | 国外访问 >](http://openharmony.github.com/)**
 
 [![在这里插入图片描述](https://gitee.com/weharmony/docs/raw/master/pic/other/io.png)](https://gitee.com/weharmony/kernel_liteos_a_note)
 
@@ -8,13 +8,11 @@
 
 ### 几点说明
 
-* [kernel_liteos_a_note(本仓库)](https://gitee.com/weharmony/kernel_liteos_a_note) 是在 [开放原子开源基金会](https://www.openatom.org) 旗下孵化项目 [OpenHarmony](https://gitee.com/openharmony) 的 [kernel_liteos_a(鸿蒙内核项目)](https://gitee.com/openharmony/kernel_liteos_a) 基础上给源码加上中文注解的版本.加注版与官方版本保持月月同步.
+* [kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note) 是在 开放原子开源基金会 旗下孵化项目 OpenHarmony 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) (鸿蒙内核项目)基础上给源码加上中文注解的版本.加注版与官方版本保持每月同步.
 
-* 注解过程中整理的博客站点的更新速度如下:[ weharmony.gitee.io](http://weharmony.gitee.io) = [ weharmony.github.io](http://weharmony.gitee.io) > [ oschina ](https://my.oschina.net/weharmony) > [ 51cto  ](https://harmonyos.51cto.com/column/34) > [ csdn ](https://blog.csdn.net/kuangyufei)
+* OpenHarmony开发者文档 | 同步最新鸿蒙官方文档 | 轻松高效搞定鸿蒙 [ < 国内访问](http://weharmony.gitee.io/history.html)[ | 国外访问 >](http://openharmony.21cloudbox.com/) 是对开放原子开源基金会旗下孵化项目 OpenHarmony 的文档 [docs](https://gitee.com/openharmony/docs) 做的静态站点导读,支持侧边栏,面包屑,从此非常方便的查看官方文档,大大提高学习和开发效率.
 
-* [下载.鸿蒙源码分析.工具文档.周周更新 ](http://weharmony.gitee.io/history.html) [ < gitee](http://weharmony.gitee.io/history.html)[ | github >](http://weharmony.github.io/history.html)
-
-* [OpenHarmony全量代码仓库](https://gitee.com/weharmony/harmonyOS) 是[开放原子开源基金会](https://www.openatom.org) 旗下孵化项目 [OpenHarmony](https://gitee.com/openharmony) 的130+个子项目的所有代码.鸿蒙官方是使用`repo`管理众多`git`项目,`repo`在`linux`下很方便,但在`windows`上使用会有相当的困难,所以将官方所有项目整合成一个.git工程,如此使用`git`方式便能下载整个鸿蒙系统源码,方便学习使用.仓库也将每月与官方保持同步.[OpenHarmony全量代码仓库](https://gitee.com/weharmony/harmonyOS)已编译通过,
+* [OpenHarmony全量代码仓库](https://gitee.com/weharmony/OpenHarmony) 是 开放原子开源基金会旗下孵化项目 OpenHarmony 的109个子项目的所有代码.鸿蒙官方是使用`repo`管理众多`git`项目,`repo`在`linux`下很方便,但在`windows`上谁用谁知道,使用会有相当的困难,所以将官方所有项目整合成一个.git工程,如此使用`git`方式便能下载整个鸿蒙系统源码,方便学习使用.本仓库与官方仓库保持同步.[OpenHarmony全量代码仓库](https://gitee.com/weharmony/OpenHarmony)已编译通过,
     ```
     ....
     [OHOS INFO] [1587/1590] STAMP obj/test/xts/acts/build_lite/acts_generate_module_data.stamp
@@ -24,6 +22,10 @@
     [OHOS INFO] ipcamera_hispark_aries build success
     root@5e3abe332c5a:/home/harmony#
     ```
+* 博客站点更新速度:[ 国内](http://weharmony.gitee.io) = [ 国外](http://weharmony.gitee.io) > [ oschina ](https://my.oschina.net/weharmony) > [ 51cto  ](https://harmonyos.51cto.com/column/34) > [ csdn ](https://blog.csdn.net/kuangyufei) 
+  
+* 下载.鸿蒙源码分析.工具文档 [ < 国内](http://weharmony.gitee.io/history.html)[ | 国外 >](http://weharmony.github.io/history.html)
+      
 ### **为何要精读内核源码?**
 * 码农的学职生涯,都应精读一遍内核源码.以浇筑好计算机知识大厦的地基,地基纵深的坚固程度,很大程度能决定未来大厦能盖多高.那为何一定要精读细品呢?
 * 因为内核代码本身并不太多,都是浓缩的精华,精读是让各个知识点高频出现,不孤立成点状记忆,没有足够连接点的知识点是很容易忘的,点点成线,线面成体,连接越多,记得越牢,如此短时间内容易结成一张高浓度,高密度的系统化知识网,训练大脑肌肉记忆,驻入大脑直觉区,想抹都抹不掉,终生携带,随时调取.跟骑单车一样,一旦学会,即便多年不骑,照样跨上就走,游刃有余.

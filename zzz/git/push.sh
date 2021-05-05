@@ -1,7 +1,8 @@
 git add -A
-git commit -m  '几点说明
+git commit -m  '这也太酷了吧! >> https://openharmony.21cloudbox.com/
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
-    https://weharmony.gitee.io/history.html
+    https://openharmony.21cloudbox.com/
+    https://weharmony.gitee.io
 '
 
 git push  origin master
