@@ -462,7 +462,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListHeadInsertList(LOS_DL_LIST *ol
  * @par Dependency:
  * <ul><li>los_list.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//获取包含链表的结构体地址，接口的第一个入参表示的是链表中的某个节点，第二个入参是要获取的结构体名称，第三个入参是链表在该结构体中的名称
+ */	//获取包含链表的结构体地址，接口的第一个入参表示的是链表中的下一个节点，第二个入参是要获取的结构体名称，第三个入参是链表在该结构体中的名称
 #define LOS_DL_LIST_ENTRY(item, type, member) \
     ((type *)(VOID *)((CHAR *)(item) - LOS_OFF_SET_OF(type, member)))
 

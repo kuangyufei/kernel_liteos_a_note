@@ -1,4 +1,4 @@
-[OpenHarmony开发者文档 | 同步最新鸿蒙官方文档 | OpenHarmony | HarmonyOS](https://openharmony.21cloudbox.com/) **[ < 国内访问](https://openharmony.21cloudbox.com/)[ | 国外访问 >](https://openharmony.github.io/)**
+[将 OpenHarmony | 鸿蒙 研究到底](https://weharmony.gitee.io/) **[ < 国内](https://weharmony.gitee.io/)[ | 国外 >](https://weharmony.github.io/)**
 
 [![在这里插入图片描述](https://gitee.com/weharmony/docs/raw/master/pic/other/io.png)](https://weharmony.gitee.io)
 
@@ -10,11 +10,19 @@
 
 * [kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note) 是在 OpenHarmony 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) (鸿蒙轻内核项目)基础上给源码加上中文注解的版本.加注版与官方版本保持每月同步.
 
-* 注解分析地址: 国内:[ https://weharmony.gitee.io](https://weharmony.gitee.io) <=> 国外:[ https://weharmony.github.io](https://weharmony.github.io)   
+* 注解分析博客地址:
+  *  国内: [ https://weharmony.gitee.io/weharmony](https://weharmony.gitee.io/weharmony/weharmony) 
+  *  国外: [ https://weharmony.github.io/weharmony](https://weharmony.github.io/weharmony)   
   
-* 博客站点更新速度:[注解分析地址](https://weharmony.gitee.io) > [ oschina ](https://my.oschina.net/weharmony) > [ 51cto  ](https://harmonyos.51cto.com/column/34) > [ csdn ](https://blog.csdn.net/kuangyufei) 
+* 博客站点更新速度:
+  * [注解分析地址](https://weharmony.gitee.io/weharmony)
+  * [ oschina ](https://my.oschina.net/weharmony)
+  * [ 51cto  ](https://harmonyos.51cto.com/column/34) 
+  * [ csdn ](https://blog.csdn.net/kuangyufei) 
 
-* OpenHarmony开发者文档 [ < 国内访问](https://openharmony.21cloudbox.com/)[ | 国外访问 >](https://openharmony.github.io/) 是对官方文档 [docs](https://gitee.com/openharmony/docs) 做的非常炫酷的静态站点,支持侧边栏/面包屑/搜索,非常方便的查看官方文档,大大提高学习和开发效率.
+* OpenHarmony开发者文档是对官方文档 [docs](https://gitee.com/openharmony/docs) 做的非常炫酷的静态站点,支持侧边栏/面包屑/搜索/中英文,非常方便的查看官方文档,大大提高学习和开发效率. 
+  * 国内: [https://weharmony.gitee.io/openharmony](https://weharmony.gitee.io/openharmony)
+  * 国外: [https://weharmony.github.io/openharmony](https://weharmony.github.io/openharmony) 
 
 * [OpenHarmony全量代码仓库](https://gitee.com/weharmony/OpenHarmony) 是 OpenHarmony 的110+个子项目的所有代码. OpenHarmony 使用`repo`管理众多`git`项目,`repo`在`linux`下很方便,但在`windows`上谁用谁知道,使用会有相当的困难,所以将所有项目整合成一个.git工程,如此使用`git`便能下载整个鸿蒙系统源码,方便学习使用.与官方仓库保持每月同步.[OpenHarmony全量代码仓库](https://gitee.com/weharmony/OpenHarmony)已编译通过.
     ```
@@ -26,7 +34,9 @@
     [OHOS INFO] ipcamera_hispark_aries build success
     root@5e3abe332c5a:/home/harmony#
     ```
-* 下载.鸿蒙源码分析.工具文档 [ < 国内](https://weharmony.gitee.io/history/)[ | 国外 >](https://weharmony.github.io/history/)
+* 下载.鸿蒙源码分析.离线文档 
+  * 国内: [https://weharmony.gitee.io/history/](https://weharmony.gitee.io/history/)
+  * 国外: [https://weharmony.github.io/history/](https://weharmony.github.io/history/)
       
 ### **为何要精读内核源码?**
 * 码农的学职生涯,都应精读一遍内核源码.以浇筑好计算机知识大厦的地基,地基纵深的坚固程度,很大程度能决定未来大厦能盖多高.那为何一定要精读细品呢?
@@ -71,9 +81,8 @@
 * `2021/4/21` -- 官方优化了很多之前吐槽的地方,点赞.
 * `2020/9/16` -- 中文注解版起点
 ### **百篇博客.往期回顾**
-> 在加注过程中,整理出以下文章.内容立足源码,常以生活场景打比方尽可能多的将内核知识点置入某种场景,具有画面感,容易理解记忆.
-说别人能听得懂的话很重要! 百篇博客绝不是百度教条式的在说一堆诘屈聱牙的概念,那没什么意思.更希望让内核变得栩栩如生,倍感亲切.确实有难度,自不量力,但已经出发,回头已是不可能的了.:P
-与写代码有bug需不断debug一样,文章和注解内容会将错漏之处反复修正,持续更新,`.xx`代表修改的次数,精雕细琢,言简意赅,力求打造精品内容. 
+> 在加注过程中,整理出以下文章.内容立足源码,常以生活场景打比方尽可能多的将内核知识点置入某种场景,具有画面感,容易理解记忆.说别人能听得懂的话很重要! 百篇博客绝不是百度教条式的在说一堆诘屈聱牙的概念,那没什么意思.更希望让内核变得栩栩如生,倍感亲切.确实有难度,自不量力,但已经出发,回头已是不可能的了.:P
+与代码有bug需不断debug一样,文章和注解内容会存在不少错漏之处,但会反复修正,持续更新,`.xx`代表修改的次数,精雕细琢,言简意赅,力求打造精品内容. 
 
 * [v52.xx 鸿蒙内核源码分析(静态站点篇) | 五一哪也没去就干了这事 ](https://my.oschina.net/weharmony/blog/5042657) **[  | 51](https://harmonyos.51cto.com/posts/4312)[ .c](https://blog.csdn.net/kuangyufei/article/details/116517461)[  .h](https://weharmony.gitee.io/blog/52_静态站点篇.html)[  .o](https://my.oschina.net/weharmony)**
     

@@ -1,8 +1,8 @@
 git add -A
-git commit -m  '注解地址更新 >> https://weharmony.gitee.io/
+git commit -m  '调整 https://weharmony.gitee.io/ 内容
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
-    https://openharmony.21cloudbox.com/
-    https://weharmony.gitee.io
+    国内:https://weharmony.gitee.io
+    国外:https://weharmony.gitee.io
 '
 
 git push  origin master
