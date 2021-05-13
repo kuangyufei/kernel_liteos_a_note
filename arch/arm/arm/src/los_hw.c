@@ -72,13 +72,10 @@ VOID OsTaskEntrySetupLoopFrame(UINT32 arg0)
 //内核态任务运行栈初始化
 LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOID *topStack, BOOL initFlag)
 {
-    UINT32 index = 1;
-    TaskContext *taskContext = NULL;
-
     if (initFlag == TRUE) {
         OsStackInit(topStack, stackSize);
     }
-    taskContext = (TaskContext *)(((UINTPTR)topStack + stackSize) - sizeof(TaskContext));//上下文存放在栈的底部
+    TaskContext *taskContext = (TaskContext *)(((UINTPTR)topStack + stackSize) - sizeof(TaskContext));//上下文存放在栈的底部
 
     /* initialize the task context */ //初始化任务上下文
 #ifdef LOSCFG_GDB
@@ -87,23 +84,17 @@ LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOI
     taskContext->PC = (UINTPTR)OsTaskEntry;//内核态任务有统一的入口地址.
 #endif
     taskContext->LR = (UINTPTR)OsTaskExit;  /* LR should be kept, to distinguish it's THUMB or ARM instruction */
-    taskContext->resved = 0x0;
-    taskContext->R[0] = taskID;             /* R0 *///因为所有内核态的任务处理函数入口都是一样的,
-    //OsTaskEntry(UINT32 taskID)需要传递任务ID作为参数来检索调用哪个任务的处理函数.
-    taskContext->R[index++] = 0x01010101;   /* R1, 0x01010101 : reg initialed magic word */ //0x55
-    for (; index < GEN_REGS_NUM; index++) {//R2 - R12的初始化很有意思,为什么要这么做？
-        taskContext->R[index] = taskContext->R[index - 1] + taskContext->R[1]; /* R2 - R12 */
-    }//R[2]=R[2]<<1=0xAA
+    taskContext->R0 = taskID;               /* R0 */
 
 #ifdef LOSCFG_INTERWORK_THUMB // 16位模式
-    taskContext->regPSR = PSR_MODE_SVC_THUMB; /* CPSR (Enable IRQ and FIQ interrupts, THUMNB-mode) */
+    taskContext->regCPSR = PSR_MODE_SVC_THUMB; /* CPSR (Enable IRQ and FIQ interrupts, THUMNB-mode) */
 #else //用于设置CPSR寄存器
-    taskContext->regPSR = PSR_MODE_SVC_ARM;   /* CPSR (Enable IRQ and FIQ interrupts, ARM-mode) */
+    taskContext->regCPSR = PSR_MODE_SVC_ARM;   /* CPSR (Enable IRQ and FIQ interrupts, ARM-mode) */
 #endif
 
 #if !defined(LOSCFG_ARCH_FPU_DISABLE)
     /* 0xAAA0000000000000LL : float reg initialed magic word */
-    for (index = 0; index < FP_REGS_NUM; index++) {
+    for (UINT32 index = 0; index < FP_REGS_NUM; index++) {
         taskContext->D[index] = 0xAAA0000000000000LL + index; /* D0 - D31 */
     }
     taskContext->regFPSCR = 0;
@@ -113,35 +104,41 @@ LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOI
     return (VOID *)taskContext;
 }
 //把父任务上下文克隆给子任务
-LITE_OS_SEC_TEXT VOID OsUserCloneParentStack(LosTaskCB *childTaskCB, LosTaskCB *parentTaskCB)
+LITE_OS_SEC_TEXT VOID OsUserCloneParentStack(VOID *childStack, UINTPTR parentTopOfStack, UINT32 parentStackSize)
 {
-    TaskContext *context = (TaskContext *)childTaskCB->stackPointer;
-    VOID *cloneStack = (VOID *)(((UINTPTR)parentTaskCB->topOfStack + parentTaskCB->stackSize) - sizeof(TaskContext));
+    VOID *cloneStack = (VOID *)(((UINTPTR)parentTopOfStack + parentStackSize) - sizeof(TaskContext));
 	//cloneStack指向 TaskContext
-    LOS_ASSERT(parentTaskCB->taskStatus & OS_TASK_STATUS_RUNNING);//当前任务一定是正在运行的task
 
-    (VOID)memcpy_s(childTaskCB->stackPointer, sizeof(TaskContext), cloneStack, sizeof(TaskContext));//直接把任务上下文拷贝了一份
-    context->R[0] = 0;//R0寄存器为0,这个很重要, pid = fork()  pid == 0 是子进程返回.
+    (VOID)memcpy_s(childStack, sizeof(TaskContext), cloneStack, sizeof(TaskContext));//直接把任务上下文拷贝了一份
+    ((TaskContext *)childStack)->R0 = 0;//R0寄存器为0,这个很重要, pid = fork()  pid == 0 是子进程返回.
 }
 /*
 用户态运行栈初始化,此时上下文还在内核区
 
 */
-LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, TSK_ENTRY_FUNC taskEntry, UINTPTR stack)
+LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, UINTPTR taskEntry, UINTPTR stack)
 {
     LOS_ASSERT(context != NULL);
 
 #ifdef LOSCFG_INTERWORK_THUMB
-    context->regPSR = PSR_MODE_USR_THUMB;
+    context->regCPSR = PSR_MODE_USR_THUMB;
 #else
-    context->regPSR = PSR_MODE_USR_ARM;//工作模式:用户模式 + 工作状态:arm
+    context->regCPSR = PSR_MODE_USR_ARM;
 #endif
-    context->R[0] = stack;//将用户态栈指针保存到上下文R0处
-    context->SP = TRUNCATE(stack, LOSCFG_STACK_POINT_ALIGN_SIZE);//改变 上下文的SP值,指向用户栈空间
-    context->LR = 0;//保存子程序返回地址 例如 a call b ,在b中保存 a地址
+    context->R0 = stack;//将用户态栈指针保存到上下文R0处
+    context->USP = TRUNCATE(stack, LOSCFG_STACK_POINT_ALIGN_SIZE);//改变 上下文的SP值,指向用户栈空间
+    context->ULR = 0;//保存子程序返回地址 例如 a call b ,在b中保存 a地址
     context->PC = (UINTPTR)taskEntry;//入口函数,由外部传入,由上层应用指定,固然每个都不一样.
 }
 
+VOID OsInitSignalContext(VOID *sp, VOID *signalContext, UINTPTR sigHandler, UINT32 signo, UINT32 param)
+{
+    IrqContext *newSp = (IrqContext *)signalContext;
+    (VOID)memcpy_s(signalContext, sizeof(IrqContext), sp, sizeof(IrqContext));
+    newSp->PC = sigHandler;
+    newSp->R0 = signo;
+    newSp->R1 = param;
+}
 DEPRECATED VOID Dmb(VOID)
 {
     __asm__ __volatile__ ("dmb" : : : "memory");

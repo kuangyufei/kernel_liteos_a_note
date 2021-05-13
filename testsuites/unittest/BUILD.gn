@@ -1,0 +1,317 @@
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import("config.gni")
+
+local_flags_smoke = []
+local_flags_full = []
+if (board_name == "hispark_taurus") {
+  local_flags_smoke += [ "-DLOSCFG_USER_TEST_SMP" ]
+  local_flags_full += [ "-DLOSCFG_USER_TEST_SMP" ]
+}
+local_flags_smoke += [ "-DLOSCFG_USER_TEST_SMOKE" ]
+local_flags_full += [ "-DLOSCFG_USER_TEST_SMOKE" ]
+local_flags_full += [ "-DLOSCFG_USER_TEST_FULL" ]
+#local_flags_full += [ "-DLOSCFG_USER_TEST_PRESSURE" ]
+
+config("public_config_smk") {
+  cflags = [ "-fpermissive" ]
+  cflags += [
+    "-O2",
+    "-fbuiltin",
+    "-Wno-narrowing",
+  ]
+  cflags += local_flags_smoke
+  cflags_cc = cflags
+}
+
+config("public_config_full") {
+  cflags = [ "-fpermissive" ]
+  cflags += [
+    "-O2",
+    "-fbuiltin",
+    "-Wno-narrowing",
+  ]
+  cflags += local_flags_full
+  cflags_cc = cflags
+}
+
+group("unittest") {
+  deps = []
+  if (ohos_build_type == "debug") {
+    if (LOSCFG_USER_TEST_MISC == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "misc:liteos_a_misc_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "misc:liteos_a_misc_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_DRIVERS_HID == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "drivers/hid:liteos_a_drivers_hid_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "drivers/hid:liteos_a_drivers_hid_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_DRIVERS_STORAGE == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "drivers/storage:liteos_a_drivers_storage_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "drivers/storage:liteos_a_drivers_storage_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_DYNLOAD == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "dynload:liteos_a_dynload_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "dynload:liteos_a_dynload_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_EXC == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "exc:liteos_a_exc_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "exc:liteos_a_exc_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_FS_JFFS == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "fs:liteos_a_fs_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "fs:liteos_a_fs_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_FS_VFAT == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "fs/vfat2:liteos_a_fs_vfat_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "fs/vfat2:liteos_a_fs_vfat_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_IO == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "IO:liteos_a_io_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "IO:liteos_a_io_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_IPC == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "IPC:liteos_a_ipc_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "IPC:liteos_a_ipc_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_LITEIPC == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "liteipc:liteos_a_liteipc_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "liteipc:liteos_a_liteipc_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_MEM_SHM == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "mem/shm:liteos_a_mem_shm_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "mem/shm:liteos_a_mem_shm_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_MEM_VM == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "mem/vm:liteos_a_mem_vm_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "mem/vm:liteos_a_mem_vm_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_NET_NETDB == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "net/netdb:liteos_a_net_netdb_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "net/netdb:liteos_a_net_netdb_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_NET_RESOLV == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "net/resolv:liteos_a_net_resolv_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "net/resolv:liteos_a_net_resolv_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_NET_SOCKET == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "net/socket:liteos_a_net_socket_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "net/socket:liteos_a_net_socket_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_POSIX_MEM == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "posix/mem:liteos_a_posix_mem_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "posix/mem:liteos_a_posix_mem_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_POSIX_MQUEUE == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "posix/mqueue:liteos_a_posix_mqueue_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "posix/mqueue:liteos_a_posix_mqueue_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_POSIX_PTHREAD == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "posix/pthread:liteos_a_posix_pthread_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "posix/pthread:liteos_a_posix_pthread_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_MUTEX == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "process/mutex:liteos_a_mutex_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "process/mutex:liteos_a_mutex_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_PROCESS == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "process/process:liteos_a_process_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "process/process:liteos_a_process_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_PTHREAD == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "process/pthread:liteos_a_pthread_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "process/pthread:liteos_a_pthread_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_RWLOCK == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "process/rwlock:liteos_a_rwlock_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "process/rwlock:liteos_a_rwlock_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_SPINLOCK == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "process/spinlock:liteos_a_spinlock_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "process/spinlock:liteos_a_spinlock_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_SECURITY_REUGID == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "security/reugid:liteos_a_security_reugid_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "security/reugid:liteos_a_security_reugid_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_SECURITY_CAPABILITY == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "security/capability:liteos_a_security_capability_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "security/capability:liteos_a_security_capability_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_SECURITY_VID == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "security/vid:liteos_a_security_vid_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "security/vid:liteos_a_security_vid_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_UTIL == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "util:liteos_a_util_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "util:liteos_a_util_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_TIME_TIMER == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "time/timer:liteos_a_time_timer_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "time/timer:liteos_a_time_timer_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_TIME_CLOCK == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "time/clock:liteos_a_time_clock_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "time/clock:liteos_a_time_clock_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_SYS == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "sys:liteos_a_sys_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "sys:liteos_a_sys_unittest_door" ]
+      }
+    }
+    if (LOSCFG_USER_TEST_SIGNAL == true) {
+      if (LOSCFG_USER_TEST_FOR_ALL == true) {
+        deps += [ "signal:liteos_a_signal_unittest" ]
+      }
+      if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+        deps += [ "signal:liteos_a_signal_unittest_door" ]
+      }
+    }
+  }
+}

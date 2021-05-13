@@ -164,30 +164,6 @@ void clear_fd(int fd);
 extern char *rindex(const char *s, int c);
 
 /**
- * @ingroup  fs
- * @brief   list directory contents.
- *
- * @par Description:
- * Get the volume label of the FAT partition.
- *
- * @attention
- * <ul>
- * <li>The function support FAT filesystem only.</li>
- * <li>The label must allocated more than 11 charactors space first</li>
- * </ul>
- *
- * @param target   [IN]   Type #const char*  The file pathname.
- * @param label    [OUT]  Type #const char*  The string pointer transform the label massge back.
- *
- * @retval #int  Point the status which is successed or failed.
- *
- * @par Dependency:
- * <ul><li>fs.h: the header file that contains the API declaration.</li></ul>
- */
-
-int getlabel(const char *target, char *label);
-
-/**
  * @ingroup fs
  *
  * @par Description:
@@ -348,40 +324,6 @@ int fscheck(const char *path);
  */
 
 extern int virstatfs(const char *path, struct statfs *buf);
-
-/**
- * @ingroup  fs
- * @set the virtual partition information.
- *
- * @par Description:
- * The los_set_virpartparam() function use for set virtual partition parameter.
- * The parameter include virtual partition number, virtual partition percent, virtual partition name
- * and the partition path which need mount virtual partition.
- *
- * @attention
- * <ul>
- * <li>This function only support for FAT32.</li>
- * <li>This function only support for the virtual partition feature.</li>
- * <li>This function only can be used before mount function.</li>
- * <li>The function can be invoked once before umount partition.</li>
- * <li>Now support set single partition,the partition information will be replaced
- * if it used for set another partition name.</li>
- * <li>The function has no effert if virtual partition information is already in the partition.</li>
- * </ul>
- *
- * @param  virtualinfo  [IN] Type #virpartinfo   The struct which include virtual partition information.
- *
- * @retval #0      los_set_virpartparam success.
- * @retval #-1     los_set_virpartparam failed.
- *
- * @par Dependency:
- * <ul><li>fs.h: the header file that contains the API declaration.</li></ul>
- * @see
- *
- */
-#ifdef VFS_IMPL_LATER
-int los_set_virpartparam(virpartinfo virtualinfo);
-#endif
 
 #endif
 

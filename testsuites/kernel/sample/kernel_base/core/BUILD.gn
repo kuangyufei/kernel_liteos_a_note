@@ -1,0 +1,35 @@
+static_library("test_core") {
+
+    sources = [
+        "task/It_los_task.c",
+        "swtmr/It_los_swtmr.c",
+        "hwi/It_smp_hwi.c",
+        "hwi_nesting/It_hwi_nesting.c",
+    ]
+
+    if (LOSCFG_TEST_SMOKE) {
+        sources += [
+        "task/smoke/It_los_task_045.c",
+        "task/smoke/It_los_task_046.c",
+        "task/smoke/It_los_task_049.c",
+        "task/smoke/It_los_task_081.c",
+        "task/smoke/It_los_task_089.c",
+        "task/smoke/It_los_task_097.c",
+        "task/smoke/It_los_task_099.c",
+        "task/smoke/It_los_task_101.c",
+        "task/smoke/It_los_task_105.c",
+        "task/smoke/It_los_task_timeslice_001.c",
+        "swtmr/smoke/It_los_swtmr_053.c",
+        "swtmr/smoke/It_los_swtmr_058.c",
+        ]
+    }
+    include_dirs = [
+        "../../../include/",
+        "task",
+        "swtmr",
+        "hwi",
+        "hwi_nesting",
+    ]
+
+    cflags = [ "-Wno-error" ]
+}

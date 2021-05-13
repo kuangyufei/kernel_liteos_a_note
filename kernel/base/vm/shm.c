@@ -487,11 +487,6 @@ INT32 ShmGet(key_t key, size_t size, INT32 shmflg)
     INT32 shmid;
 
     SYSV_SHM_LOCK();
-    if (!((UINT32)shmflg & IPC_CREAT) &&
-        ((UINT32)shmflg & IPC_EXCL)) {
-        ret = -EINVAL;
-        goto ERROR;
-    }
 
     if (key == IPC_PRIVATE) {
         ret = ShmAllocSeg(key, size, shmflg);
@@ -506,6 +501,11 @@ INT32 ShmGet(key_t key, size_t size, INT32 shmflg)
             }
         } else {
             shmid = ret;
+            if (((UINT32)shmflg & IPC_CREAT) &&
+                ((UINT32)shmflg & IPC_EXCL)) {
+                ret = -EEXIST;
+                goto ERROR;
+            }
             ret = ShmPermCheck(ShmFindSeg(shmid), (UINT32)shmflg & ACCESSPERMS);
             if (ret != 0) {
                 ret = -ret;

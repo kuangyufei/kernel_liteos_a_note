@@ -29,16 +29,15 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "los_quick_start_pri.h"
-#include "bits/ioctl.h"
+#include "los_dev_quickstart.h"
 #include "fcntl.h"
 #include "linux/kernel.h"
+#include "los_process_pri.h"
 
-#define QUICKSTART_IOC_MAGIC    'T'
-#define QUICKSTART_INITSTEP2    _IO(QUICKSTART_IOC_MAGIC, 0)
-#define QUICKSTART_UNREGISTER   _IO(QUICKSTART_IOC_MAGIC, 1)
-#define QUICKSTART_NODE         "/dev/quickstart"
 
+EVENT_CB_S g_qsEvent;
+static SysteminitHook g_systemInitFunc[QS_STAGE_CNT] = {0};
+static char g_callOnce[QS_STAGE_CNT] = {0};
 
 static int QuickstartOpen(struct file *filep)
 {
@@ -50,19 +49,52 @@ static int QuickstartClose(struct file *filep)
     return 0;
 }
 
-static void SystemInitStep2(void)
+static int QuickstartNotify(unsigned int events)
 {
-    static int once = 0;
-    /* Only one call is allowed */
-    if (once != 0) {
-        return;
+    unsigned int pid = LOS_GetCurrProcessID();
+    /* 16:low 16 bits for eventMask, high 16 bits for pid */
+    unsigned int notifyEvent = (pid << 16) | events;
+    int ret = LOS_EventWrite((PEVENT_CB_S)&g_qsEvent, notifyEvent);
+    if (ret != 0) {
+        PRINT_ERR("%s,%d:0x%x\n", __FUNCTION__, __LINE__, ret);
+        ret = -EINVAL;
     }
-    once = 1;
+    return ret;
+}
 
-    unsigned int ret = OsSystemInitStep2();
-    if (ret != LOS_OK) {
-        PRINT_ERR("systemInitStep2 failed\n");
+static int QuickstartListen(unsigned long arg)
+{
+    QuickstartMask listenMask;
+    if (copy_from_user(&listenMask, (struct QuickstartMask __user *)arg, sizeof(QuickstartMask)) != LOS_OK) {
+        PRINT_ERR("%s,%d\n", __FUNCTION__, __LINE__);
+        return -EINVAL;
     }
+    /* 16:low 16 bits for eventMask, high 16 bits for pid */
+    unsigned int mask = (listenMask.pid << 16) | listenMask.events;
+    int ret = LOS_EventRead((PEVENT_CB_S)&g_qsEvent, mask, LOS_WAITMODE_AND | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
+    if (ret != mask) {
+        PRINT_ERR("%s,%d:0x%x\n", __FUNCTION__, __LINE__, ret);
+        ret = -EINVAL;
+    }
+    return ret;
+}
+
+void QuickstartHookRegister(LosSysteminitHook hooks)
+{
+    for (int i = 0; i < QS_STAGE_CNT; i++) {
+        g_systemInitFunc[i] = hooks.func[i];
+    }
+}
+
+static int QuickstartStageWorking(unsigned int level)
+{
+    if ((level < QS_STAGE_CNT) && (g_callOnce[level] == 0) && (g_systemInitFunc[level] != NULL)) {
+        g_callOnce[level] = 1;    /* 1: Already called */
+        g_systemInitFunc[level]();
+    } else {
+        PRINT_WARN("Trigger quickstart,but doing nothing!!\n");
+    }
+    return 0;
 }
 
 static int QuickstartDevUnregister(void)
@@ -72,18 +104,27 @@ static int QuickstartDevUnregister(void)
 
 static ssize_t QuickstartIoctl(struct file *filep, int cmd, unsigned long arg)
 {
-    switch (cmd) {
-        case QUICKSTART_INITSTEP2:
-            SystemInitStep2();
-            break;
-        case QUICKSTART_UNREGISTER:
-            QuickstartDevUnregister();
-            break;
+    ssize_t ret;
+    if (cmd == QUICKSTART_NOTIFY) {
+        return QuickstartNotify(arg);
+    }
 
+    if (OsGetUserInitProcessID() != LOS_GetCurrProcessID()) {
+        PRINT_ERR("Permission denios!\n");
+        return -EACCES;
+    }
+    switch (cmd) {
+        case QUICKSTART_UNREGISTER:
+            ret = QuickstartDevUnregister();
+            break;
+        case QUICKSTART_LISTEN:
+            ret = QuickstartListen(arg);
+            break;
         default:
+            ret = QuickstartStageWorking(cmd - QUICKSTART_STAGE(QS_STAGE1));  /* ioctl cmd converted to stage level */
             break;
     }
-    return 0;
+    return ret;
 }
 
 static const struct file_operations_vfs g_quickstartDevOps = {
@@ -100,8 +141,9 @@ static const struct file_operations_vfs g_quickstartDevOps = {
     NULL,      /* unlink */
 };
 
-int DevQuickStartRegister(void)
+int QuickstartDevRegister(void)
 {
-    return register_driver(QUICKSTART_NODE, &g_quickstartDevOps, 0666, 0); /* 0666: file mode */
+    LOS_EventInit(&g_qsEvent);
+    return register_driver(QUICKSTART_NODE, &g_quickstartDevOps, 0644, 0); /* 0644: file mode */
 }
 

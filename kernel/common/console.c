@@ -111,14 +111,7 @@ INT32 ConsoleTcGetAttr(INT32 fd, struct termios *termios)
     struct file *filep = NULL;
     CONSOLE_CB *consoleCB = NULL;
 
-    if ((fd >= STDIN_FILENO) && (fd <= STDERR_FILENO)) {
-        fd = ConsoleUpdateFd();
-        if (fd < STDIN_FILENO) {
-            return -EBADF;
-        }
-    }
-
-    int ret = fs_getfilep(fd, &filep);
+    INT32 ret = fs_getfilep(fd, &filep);
     if (ret < 0) {
         return -EPERM;
     }
@@ -128,7 +121,7 @@ INT32 ConsoleTcGetAttr(INT32 fd, struct termios *termios)
         return -EFAULT;
     }
 
-    termios->c_lflag = consoleCB->consoleTermios.c_lflag;
+    (VOID)memcpy_s(termios, sizeof(struct termios), &consoleCB->consoleTermios, sizeof(struct termios));
     return LOS_OK;
 }
 
@@ -138,14 +131,8 @@ INT32 ConsoleTcSetAttr(INT32 fd, INT32 actions, const struct termios *termios)
     CONSOLE_CB *consoleCB = NULL;
 
     (VOID)actions;
-    if ((fd >= STDIN_FILENO) && (fd <= STDERR_FILENO)) {
-        fd = ConsoleUpdateFd();
-        if (fd < STDIN_FILENO) {
-            return -EBADF;
-        }
-    }
 
-    int ret = fs_getfilep(fd, &filep);
+    INT32 ret = fs_getfilep(fd, &filep);
     if (ret < 0) {
         return -EPERM;
     }
@@ -154,7 +141,8 @@ INT32 ConsoleTcSetAttr(INT32 fd, INT32 actions, const struct termios *termios)
     if (consoleCB == NULL) {
         return -EFAULT;
     }
-    consoleCB->consoleTermios.c_lflag = termios->c_lflag;
+
+    (VOID)memcpy_s(&consoleCB->consoleTermios, sizeof(struct termios), termios, sizeof(struct termios));
     return LOS_OK;
 }
 
@@ -183,14 +171,13 @@ BOOL IsConsoleOccupied(const CONSOLE_CB *consoleCB)
 
 STATIC INT32 ConsoleCtrlCaptureLine(CONSOLE_CB *consoleCB)
 {
-    struct termios *consoleTermios = NULL;
+    struct termios consoleTermios;
     UINT32 intSave;
 
     LOS_SpinLockSave(&g_consoleSpin, &intSave);
-    consoleTermios = &consoleCB->consoleTermios;
-    (VOID)ConsoleTcGetAttr(consoleCB->fd, consoleTermios);
-    consoleTermios->c_lflag |= ICANON | ECHO;
-    (VOID)ConsoleTcSetAttr(consoleCB->fd, 0, consoleTermios);
+    (VOID)ConsoleTcGetAttr(consoleCB->fd, &consoleTermios);
+    consoleTermios.c_lflag |= ICANON | ECHO;
+    (VOID)ConsoleTcSetAttr(consoleCB->fd, 0, &consoleTermios);
     LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
 
     return LOS_OK;
@@ -198,14 +185,13 @@ STATIC INT32 ConsoleCtrlCaptureLine(CONSOLE_CB *consoleCB)
 
 STATIC INT32 ConsoleCtrlCaptureChar(CONSOLE_CB *consoleCB)
 {
-    struct termios *consoleTermios = NULL;
+    struct termios consoleTermios;
     UINT32 intSave;
 
     LOS_SpinLockSave(&g_consoleSpin, &intSave);
-    consoleTermios = &consoleCB->consoleTermios;
-    (VOID)ConsoleTcGetAttr(consoleCB->fd, consoleTermios);
-    consoleTermios->c_lflag &= ~(ICANON | ECHO);
-    (VOID)ConsoleTcSetAttr(consoleCB->fd, 0, consoleTermios);
+    (VOID)ConsoleTcGetAttr(consoleCB->fd, &consoleTermios);
+    consoleTermios.c_lflag &= ~(ICANON | ECHO);
+    (VOID)ConsoleTcSetAttr(consoleCB->fd, 0, &consoleTermios);
     LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
 
     return LOS_OK;
@@ -262,12 +248,12 @@ STATIC CONSOLE_CB *OsGetConsoleByDevice(const CHAR *deviceName)
         return NULL;
     }
 }
-//获取一个控制台ID 
+
 STATIC INT32 OsGetConsoleID(const CHAR *deviceName)
 {
     if ((deviceName != NULL) &&
         (strlen(deviceName) == strlen(SERIAL)) &&
-        (!strncmp(deviceName, SERIAL, strlen(SERIAL)))) {//
+        (!strncmp(deviceName, SERIAL, strlen(SERIAL)))) {
         return CONSOLE_SERIAL;
     }
 #ifdef LOSCFG_NET_TELNET
@@ -376,23 +362,23 @@ STATIC INLINE VOID UserEndOfRead(CONSOLE_CB *consoleCB, struct file *filep,
 }
 
 enum {
-    STAT_NOMAL_KEY,	//控制台上的普通按键,如 a,b,c键
-    STAT_ESC_KEY,	//退出键 0x1B esc 
-    STAT_MULTI_KEY	//组合键 例如 ctrl + s
+    STAT_NOMAL_KEY,
+    STAT_ESC_KEY,
+    STAT_MULTI_KEY
 };
-//shell 检查上下左右
+
 STATIC INT32 UserShellCheckUDRL(const CHAR ch, INT32 *lastTokenType)
 {
     INT32 ret = LOS_OK;
     if (ch == 0x1b) { /* 0x1b: ESC */
         *lastTokenType = STAT_ESC_KEY;
         return ret;
-    } else if (ch == 0x5b) { /* 0x5b: first Key combination */ //对应字符 0x5B = '['
+    } else if (ch == 0x5b) { /* 0x5b: first Key combination */
         if (*lastTokenType == STAT_ESC_KEY) {
             *lastTokenType = STAT_MULTI_KEY;
             return ret;
         }
-    } else if (ch == 0x41) { /* up */ 
+    } else if (ch == 0x41) { /* up */
         if (*lastTokenType == STAT_MULTI_KEY) {
             *lastTokenType = STAT_NOMAL_KEY;
             return ret;
@@ -449,6 +435,20 @@ STATIC VOID StoreReadChar(CONSOLE_CB *consoleCB, char ch, INT32 readcount)
             consoleCB->fifoIn++;
         }
     }
+}
+
+VOID KillPgrp()
+{
+    INT32 consoleId = -1;
+    LosProcessCB *process = OsCurrProcessGet();
+
+    if ((process->consoleID > CONSOLE_NUM -1 ) || (process->consoleID < 0)) {
+        return;
+    }
+
+    consoleId = process->consoleID;
+    CONSOLE_CB *consoleCB = g_console[consoleId];
+    (VOID)OsKillLock(consoleCB->pgrpId, SIGINT);
 }
 
 STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const struct file_operations_vfs *fops,
@@ -509,7 +509,7 @@ STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const stru
 
     return ret;
 }
-//读控制台数据 fops:封装了虚拟文件的操作方法
+
 INT32 FilepRead(struct file *filep, const struct file_operations_vfs *fops, CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -521,21 +521,21 @@ INT32 FilepRead(struct file *filep, const struct file_operations_vfs *fops, CHAR
      * and write data to buffer (filep is
      * corresponding to filep of /dev/console)
      */
-    ret = fops->read(filep, buffer, bufLen);//用buffer 将控制台上输入的信息接走
+    ret = fops->read(filep, buffer, bufLen);
     if (ret < 0) {
         return -EPERM;
     }
     return ret;
 }
-//写 /dev/console
+
 INT32 FilepWrite(struct file *filep, const struct file_operations_vfs *fops, const CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
     if (fops->write == NULL) {
         return -EFAULT;
     }
-	///dev/console
-    ret = fops->write(filep, buffer, bufLen);//将数据写到控制台
+
+    ret = fops->write(filep, buffer, bufLen);
     if (ret < 0) {
         return -EPERM;
     }
@@ -591,7 +591,7 @@ INT32 FilepPoll(struct file *filep, const struct file_operations_vfs *fops, poll
     }
     return ret;
 }
-//打开控制台
+
 STATIC INT32 ConsoleOpen(struct file *filep)
 {
     INT32 ret;
@@ -667,7 +667,7 @@ STATIC ssize_t DoRead(CONSOLE_CB *consoleCB, CHAR *buffer, size_t bufLen,
 
     return ret;
 }
-//控制台读数据
+
 STATIC ssize_t ConsoleRead(struct file *filep, CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -733,7 +733,7 @@ ERROUT:
     set_errno(-ret);
     return VFS_ERROR;
 }
-//写入buf
+
 STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
 {
     INT32 cnt;
@@ -829,6 +829,75 @@ ERROUT:
     return VFS_ERROR;
 }
 
+STATIC INT32 ConsoleSetSW(CONSOLE_CB *consoleCB, unsigned long arg)
+{
+    struct termios kerTermios;
+    UINT32 intSave;
+
+    if (LOS_ArchCopyFromUser(&kerTermios, (struct termios *)arg, sizeof(struct termios)) != 0) {
+        return -EFAULT;
+    }
+
+    LOS_SpinLockSave(&g_consoleSpin, &intSave);
+    (VOID)ConsoleTcSetAttr(consoleCB->fd, 0, &kerTermios);
+    LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
+    return LOS_OK;
+}
+
+#define DEFAULT_WINDOW_SIZE_COL 80
+#define DEFAULT_WINDOW_SIZE_ROW 24
+STATIC INT32 ConsoleGetWinSize(unsigned long arg)
+{
+    struct winsize kws = {
+        .ws_col = DEFAULT_WINDOW_SIZE_COL,
+        .ws_row = DEFAULT_WINDOW_SIZE_ROW
+    };
+
+    if(LOS_ArchCopyToUser((VOID *)arg, &kws, sizeof(struct winsize)) != 0) {
+        return -EFAULT;
+    } else {
+        return LOS_OK;
+    }
+}
+
+STATIC INT32 ConsoleGetTermios(unsigned long arg)
+{
+    struct file *filep = NULL;
+    CONSOLE_CB *consoleCB = NULL;
+
+    INT32 ret = fs_getfilep(0, &filep);
+    if (ret < 0) {
+        return -EPERM;
+    }
+
+    consoleCB = (CONSOLE_CB *)filep->f_priv;
+    if (consoleCB == NULL) {
+        return -EFAULT;
+    }
+
+    if(LOS_ArchCopyToUser((VOID *)arg, &consoleCB->consoleTermios, sizeof(struct termios)) != 0) {
+        return -EFAULT;
+    } else {
+        return LOS_OK;
+    }
+}
+
+INT32 ConsoleSetPgrp(CONSOLE_CB *consoleCB, unsigned long arg)
+{
+    if (LOS_ArchCopyFromUser(&consoleCB->pgrpId, (INT32 *)(UINTPTR)arg, sizeof(INT32)) != 0) {
+        return -EFAULT;
+    }
+    return LOS_OK;
+}
+
+INT32 ConsoleGetPgrp(CONSOLE_CB *consoleCB, unsigned long arg)
+{
+    if (LOS_ArchCopyToUser((VOID *)arg, &consoleCB->pgrpId, sizeof(INT32)) != 0) {
+        return -EFAULT;
+    }
+    return LOS_OK;
+}
+
 STATIC INT32 ConsoleIoctl(struct file *filep, INT32 cmd, unsigned long arg)
 {
     INT32 ret;
@@ -868,6 +937,21 @@ STATIC INT32 ConsoleIoctl(struct file *filep, INT32 cmd, unsigned long arg)
             break;
         case CONSOLE_CONTROL_REG_USERTASK:
             ret = ConsoleTaskReg(consoleCB->consoleID, arg);
+            break;
+        case TIOCGWINSZ:
+            ret = ConsoleGetWinSize(arg);
+            break;
+        case TCSETSW:
+            ret = ConsoleSetSW(consoleCB, arg);
+            break;
+        case TCGETS:
+            ret = ConsoleGetTermios(arg);
+            break;
+        case TIOCGPGRP:
+            ret = ConsoleGetPgrp(consoleCB, arg);
+            break;
+        case TIOCSPGRP:
+            ret = ConsoleSetPgrp(consoleCB, arg);
             break;
         default:
             if ((cmd == UART_CFG_ATTR || cmd == UART_CFG_PRIVATE)
@@ -914,8 +998,8 @@ ERROUT:
     return VFS_ERROR;
 }
 
-/* console device driver function structure *///控制台设备驱动程序功能结构体
-STATIC const struct file_operations_vfs g_consoleDevOps = {//实现VFS接口函数,对控制台进行操作
+/* console device driver function structure */
+STATIC const struct file_operations_vfs g_consoleDevOps = {
     .open = ConsoleOpen,   /* open */
     .close = ConsoleClose, /* close */
     .read = ConsoleRead,   /* read */
@@ -927,7 +1011,7 @@ STATIC const struct file_operations_vfs g_consoleDevOps = {//实现VFS接口函�
     .poll = ConsolePoll,
 #endif
 };
-//控制台条款初始化
+
 STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
 {
     struct termios consoleTermios;
@@ -940,6 +1024,7 @@ STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
         /* set console to have a buffer for user */
         (VOID)ConsoleTcGetAttr(consoleCB->fd, &consoleTermios);
         consoleTermios.c_lflag |= ICANON | ECHO;
+        consoleTermios.c_cc[VINTR] = 3; /* /003 for ^C */
         (VOID)ConsoleTcSetAttr(consoleCB->fd, 0, &consoleTermios);
     }
 #ifdef LOSCFG_NET_TELNET
@@ -950,6 +1035,7 @@ STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
         /* set console to have a buffer for user */
         (VOID)ConsoleTcGetAttr(consoleCB->fd, &consoleTermios);
         consoleTermios.c_lflag |= ICANON | ECHO;
+        consoleTermios.c_cc[VINTR] = 3; /* /003 for ^C */
         (VOID)ConsoleTcSetAttr(consoleCB->fd, 0, &consoleTermios);
     }
 #endif
@@ -1005,6 +1091,7 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
     INT32 ret;
     struct file *filep = NULL;
     struct Vnode *vnode = NULL;
+    struct file_operations_vfs *devOps = NULL;
 
     /* allocate memory for filep,in order to unchange the value of filep */
     filep = (struct file *)LOS_MemAlloc(m_aucSysMem0, sizeof(struct file));
@@ -1045,6 +1132,14 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
      * now we can operate /dev/console to operate /dev/ttyS0 through filep.
      */
      //使用filep连接控制台和uart，通过它可以找到uart驱动函数, 可以通过filep操作/dev/console
+    devOps = (struct file_operations_vfs *)((struct drv_data*)vnode->data)->ops;
+    if (devOps != NULL && devOps->open != NULL) {
+        (VOID)devOps->open(filep);
+    } else {
+        ret = ENOSYS;
+        goto ERROUT;
+    }
+
      //达到操作/dev/ttyS0的目的
     ret = register_driver(consoleCB->name, &g_consoleDevOps, DEFFILEMODE, filep);//注册字符设备驱动程序
     if (ret != LOS_OK) {
@@ -1163,6 +1258,7 @@ STATIC CONSOLE_CB *OsConsoleCBInit(UINT32 consoleID)
     (VOID)memset_s(consoleCB, sizeof(CONSOLE_CB), 0, sizeof(CONSOLE_CB));//清0
 
     consoleCB->consoleID = consoleID;//记录控制台ID
+    consoleCB->pgrpId = -1;
     consoleCB->shellEntryId = SHELL_ENTRYID_INVALID; /* initialize shellEntryId to an invalid value *///将shellEntryId初始化为无效值
     consoleCB->name = LOS_MemAlloc((VOID *)m_aucSysMem0, CONSOLE_NAMELEN);//控制台名称 不能多于16个字符
     if (consoleCB->name == NULL) {
@@ -1210,7 +1306,7 @@ STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
 
     ret = OsConsoleDevInit(consoleCB, deviceName);//控制台设备初始化
     if (ret != LOS_OK) {
-        PRINT_ERR("console OsConsoleDevInitlloc error. %d\n", ret);
+        PRINT_ERR("console OsConsoleDevInit error. %d\n", ret);
         goto ERR_WITH_SEM;
     }
 

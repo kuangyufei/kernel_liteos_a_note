@@ -34,9 +34,11 @@
 #ifdef LOSCFG_FS_VFS
 #include "fs/fs.h"
 #endif
+#ifdef LOSCFG_SHELL
+#include "shcmd.h"
+#endif
 
-
-#ifdef LOSCFG_SHELL_EXCINFO //异常信息开关
+#ifdef LOSCFG_SAVE_EXCINFO
 STATIC log_read_write_fn g_excInfoRW = NULL; /* the hook of read-writing exception information */	//读写异常信息的钩子函数
 STATIC CHAR *g_excInfoBuf = NULL;            /* pointer to the buffer for storing the exception information */	//指向存储异常信息的缓冲区的指针
 STATIC UINT32 g_excInfoIndex = 0xFFFFFFFF;   /* the index of the buffer for storing the exception information */	//用于存储异常信息的缓冲区的索引
@@ -162,6 +164,33 @@ VOID OsRecordExcInfoTime(VOID)
     WriteExcInfoToBuf("%s \n", nowTime);
 #endif
 }
+
+#ifdef LOSCFG_SHELL
+INT32 OsShellCmdReadExcInfo(INT32 argc, CHAR **argv)
+{
+    UINT32 recordSpace = GetRecordSpace();
+
+    (VOID)argc;
+    (VOID)argv;
+
+    CHAR *buf = (CHAR*)LOS_MemAlloc((void *)OS_SYS_MEM_ADDR, recordSpace + 1);
+    if (buf == NULL) {
+        return LOS_NOK;
+    }
+    (void)memset_s(buf, recordSpace + 1, 0, recordSpace + 1);
+
+    log_read_write_fn hook = GetExcInfoRW();
+    if (hook != NULL) {
+        hook(GetRecordAddr(), recordSpace, 1, buf);
+    }
+    PRINTK("%s\n", buf);
+    (VOID)LOS_MemFree((void *)OS_SYS_MEM_ADDR, buf);
+    buf = NULL;
+    return LOS_OK;
+}
+
+SHELLCMD_ENTRY(readExcInfo_shellcmd, CMD_TYPE_EX, "excInfo", 0, (CmdCallBackFunc)OsShellCmdReadExcInfo);
+#endif
 
 #endif
 

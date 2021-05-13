@@ -64,13 +64,6 @@ typedef struct {
 } ExcContext;
 #else
 typedef struct { //异常上下文,任务被中断需切换上下文,就是一种异常
-    UINT32 USP;     /**< User mode stack pointer */	//用户态下的栈指针
-    UINT32 ULR;     /**< User mode program returning address */	//用户态下程序返回地址
-    UINT32 regCPSR; /**< Current program status register (CPSR) */	//当前程序状态寄存器
-    UINT32 R0;      /**< Register R0 */
-    UINT32 R1;      /**< Register R1 */
-    UINT32 R2;      /**< Register R2 */
-    UINT32 R3;      /**< Register R3 */
     UINT32 R4;      /**< Register R4 */
     UINT32 R5;      /**< Register R5 */
     UINT32 R6;      /**< Register R6 */
@@ -79,10 +72,19 @@ typedef struct { //异常上下文,任务被中断需切换上下文,就是一�
     UINT32 R9;      /**< Register R9 */
     UINT32 R10;     /**< Register R10 */
     UINT32 R11;     /**< Register R11 */
-    UINT32 R12;     /**< Register R12 */
+
     UINT32 SP;      /**< Stack pointer */	//内核态栈指针
+    UINT32 reserved; /**< Reserved, multiplexing register */
+    UINT32 USP;
+    UINT32 ULR;
+    UINT32 R0;      /**< Register R0 */
+    UINT32 R1;      /**< Register R1 */
+    UINT32 R2;      /**< Register R2 */
+    UINT32 R3;      /**< Register R3 */
+    UINT32 R12;     /**< Register R12 */
     UINT32 LR;      /**< Program returning address. */	//用户态下程序返回地址
     UINT32 PC;      /**< PC pointer of the exceptional function */ //异常函数的程序计数器PC位置
+    UINT32 regCPSR;
 } ExcContext;
 #endif
 
@@ -183,7 +185,7 @@ extern UINT32 LOS_ExcRegHook(EXC_PROC_FUNC excHook);//注册异常处理钩子
  * los_exc.h: the header file that contains the API declaration.
  * @see None.
  */
-VOID LOS_Panic(const CHAR *fmt, ...) NORETURN;
+NORETURN VOID LOS_Panic(const CHAR *fmt, ...);
 
 /**
  * @ingroup los_exc

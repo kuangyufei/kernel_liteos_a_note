@@ -1,0 +1,21 @@
+static_library("test_cpup") {
+
+    sources = [
+        "It_extend_cpup.c",
+    ]
+
+    if (LOSCFG_TEST_SMOKE) {
+        sources += [
+            "smoke/It_extend_cpup_001.c",
+            "smoke/It_extend_cpup_002.c",
+        ]
+    }
+
+    include_dirs = [
+        "../../../include/",
+        "./",
+        "../../../../kernel/extended/include",
+    ]
+
+    cflags = [ "-Wno-error" ]
+}

@@ -64,6 +64,8 @@ typedef struct ProcessCB LosProcessCB;
 
 void files_refer(int fd);
 
+int files_close_internal(int fd, LosProcessCB *processCB);
+
 struct files_struct *dup_fd(struct files_struct *oldf);
 
 struct files_struct *alloc_files(void);

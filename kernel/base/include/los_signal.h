@@ -99,9 +99,6 @@ https://www.cnblogs.com/hoys/archive/2012/08/19/2646377.html
 #define LOS_BIT_CLR(val, bit) ((val) = (val) & ~(1ULL << (UINT32)(bit)))	//按位清除
 #define LOS_IS_BIT_SET(val, bit) (bool)((((val) >> (UINT32)(bit)) & 1ULL))	//位是否设置为1
 
-#define OS_SYSCALL_SET_CPSR(regs, cpsr) (*((unsigned long *)((UINTPTR)(regs) - 4)) = (cpsr))
-#define OS_SYSCALL_SET_SR(regs, cpsr) (*((unsigned long *)((UINTPTR)(regs))) = (cpsr))
-#define OS_SYSCALL_GET_CPSR(regs) (*((unsigned long *)((UINTPTR)(regs) - 4)))
 #define SIG_STOP_VISIT 1
 
 #define OS_KERNEL_KILL_PERMISSION 0U	//内核态 kill 权限
@@ -208,26 +205,6 @@ struct sq_queue_s {//信号队列
 };
 typedef struct sq_queue_s sq_queue_t;
 
-#define TASK_IRQ_CONTEXT \
-        unsigned int R0;     \
-        unsigned int R1;     \
-        unsigned int R2;     \
-        unsigned int R3;     \
-        unsigned int R12;    \
-        unsigned int USP;    \
-        unsigned int ULR;    \
-        unsigned int CPSR;   \
-        unsigned int PC;
-
-typedef struct {//中断上下文
-    TASK_IRQ_CONTEXT
-} TaskIrqDataSize;
-
-typedef struct {//信号切换上下文
-    TASK_IRQ_CONTEXT
-    unsigned int R7;	//存放系统调用的ID
-    unsigned int count;	//记录是否保存了任务上下文
-} sig_switch_context;
 
 typedef struct {//信号控制块(描述符)
     sigset_t sigFlag;		//不屏蔽的信号集
@@ -237,7 +214,8 @@ typedef struct {//信号控制块(描述符)
     LOS_DL_LIST waitList;	//等待链表,上面挂的是等待信号到来的任务, 请查找 OsTaskWait(&sigcb->waitList, timeout, TRUE)	理解						
     sigset_t sigwaitmask; /* Waiting for pending signals         */	//任务在等待哪些信号的到来
     siginfo_t sigunbinfo; /* Signal info when task unblocked     */	//任务解锁时的信号信息
-    sig_switch_context context;	//信号切换上下文, 用于保存切换现场, 比如发生系统调用时的返回,涉及同一个任务的两个栈进行切换							
+    void *sigContext;
+    unsigned int count;
 } sig_cb;
 
 #define SIGEV_THREAD_ID 4
@@ -253,8 +231,6 @@ int OsPthreadKill(UINT32 tid, int signo);
 int OsSigEmptySet(sigset_t *);
 int OsSigAddSet(sigset_t *, int);
 int OsSigIsMember(const sigset_t *, int);
-void OsSaveSignalContext(unsigned int *sp);
-void OsRestorSignalContext(unsigned int *sp);
 int OsKill(pid_t pid, int sig, int permission);
 int OsDispatch(pid_t pid, siginfo_t *info, int permission);
 int OsSigTimedWait(sigset_t *set, siginfo_t *info, unsigned int timeout);

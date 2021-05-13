@@ -44,19 +44,11 @@ extern "C" {
 extern UINTPTR __stack_startup;
 extern UINTPTR __stack_startup_top;
 #else
-extern UINTPTR __fiq_stack_top;
 extern UINTPTR __svc_stack_top;
-extern UINTPTR __abt_stack_top;
-extern UINTPTR __undef_stack_top;
 extern UINTPTR __exc_stack_top;
-extern UINTPTR __fiq_stack;
 extern UINTPTR __svc_stack;
-extern UINTPTR __abt_stack;
-extern UINTPTR __undef_stack;
 extern UINTPTR __exc_stack;
 #endif
-extern UINTPTR __irq_stack_top;
-extern UINTPTR __irq_stack;
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -90,12 +90,13 @@ typedef struct {
     UINT32 consoleID;	//控制台ID
     UINT32 consoleType;	//控制台类型
     UINT32 consoleSem;	//控制台信号量
-    UINT32 shellEntryId;//shell的入口ID
     UINT32 consoleMask;	//控制台掩码
     struct Vnode *devVnode;
     CHAR *name;	//名称
     INT32 fd;	//文件描述符
     UINT32 refCount;	//引用次数
+    UINT32 shellEntryId;
+    INT32 pgrpId;
     BOOL isNonBlock;	
 #ifdef LOSCFG_SHELL
     VOID *shellHandle;	//shell句柄,本质是 shell控制块 ShellCB
@@ -133,6 +134,7 @@ extern INT32 GetFilepOps(const struct file *filep, struct file **privFilep, cons
 extern VOID OsWaitConsoleSendTaskPend(UINT32 taskID);
 extern VOID OsWakeConsoleSendTask(VOID);
 #endif
+extern VOID KillPgrp(VOID);
 
 /* console ioctl */
 #define CONSOLE_IOC_MAGIC   'c'

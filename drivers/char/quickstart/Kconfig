@@ -1,0 +1,6 @@
+config DRIVERS_QUICKSTART
+    bool "Enable QUICKSTART"
+    default y
+    depends on DRIVERS && FS_VFS
+    help
+      Answer Y to enable LiteOS support quickstart frame dev.

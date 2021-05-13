@@ -34,8 +34,7 @@
 
 #include "los_base.h"
 #include "los_hw.h"
-#include "los_process_pri.h"
-#include "los_signal.h"
+
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
@@ -56,23 +55,44 @@ typedef struct { //参考OsTaskSchedule来理解
     UINT32 regFPSCR;       /* FPSCR */
     UINT32 regFPEXC;       /* FPEXC */
 #endif
-    UINT32 resved;          /* It's stack 8 aligned */
-    UINT32 regPSR;
-    UINT32 R[GEN_REGS_NUM]; /* R0-R12 */
-    UINT32 SP;              /* R13 */ //保存用户空间SP
-    UINT32 LR;              /* R14 */ //保存用户空间LR
-    UINT32 PC;              /* R15 */
+    UINT32 R4;
+    UINT32 R5;
+    UINT32 R6;
+    UINT32 R7;
+    UINT32 R8;
+    UINT32 R9;
+    UINT32 R10;
+    UINT32 R11;
+
+    /* It has the same structure as IrqContext */
+    UINT32 reserved2; /**< Multiplexing registers, used in interrupts and system calls but with different meanings */
+    UINT32 reserved1; /**< Multiplexing registers, used in interrupts and system calls but with different meanings */
+    UINT32 USP;       /**< User mode sp register */
+    UINT32 ULR;       /**< User mode lr register */
+    UINT32 R0;
+    UINT32 R1;
+    UINT32 R2;
+    UINT32 R3;
+    UINT32 R12;
+    UINT32 LR;
+    UINT32 PC;
+    UINT32 regCPSR;
 } TaskContext;
 
 typedef struct {//任务中断上下文
-#if !defined(LOSCFG_ARCH_FPU_DISABLE)
-    UINT64 D[FP_REGS_NUM]; /* D0-D31 */
-    UINT32 regFPSCR;       /* FPSCR */
-    UINT32 regFPEXC;       /* FPEXC */
-#endif
-    UINT32 resved;
-    TASK_IRQ_CONTEXT
-} TaskIrqContext;
+    UINT32 reserved2; /**< Multiplexing registers, used in interrupts and system calls but with different meanings */
+    UINT32 reserved1; /**< Multiplexing registers, used in interrupts and system calls but with different meanings */
+    UINT32 USP;       /**< User mode sp register */
+    UINT32 ULR;       /**< User mode lr register */
+    UINT32 R0;
+    UINT32 R1;
+    UINT32 R2;
+    UINT32 R3;
+    UINT32 R12;
+    UINT32 LR;
+    UINT32 PC;
+    UINT32 regCPSR;
+} IrqContext;
 
 /*
  * Description : task stack initialization
@@ -82,8 +102,9 @@ typedef struct {//任务中断上下文
  * Return      : pointer to the task context
  */
 extern VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOID *topStack, BOOL initFlag);
-extern VOID OsUserCloneParentStack(LosTaskCB *childTaskCB, LosTaskCB *parentTaskCB);
-extern VOID OsUserTaskStackInit(TaskContext *context, TSK_ENTRY_FUNC taskEntry, UINTPTR stack);
+extern VOID OsUserCloneParentStack(VOID *childStack, UINTPTR parentTopOfStask, UINT32 parentStackSize);
+extern VOID OsUserTaskStackInit(TaskContext *context, UINTPTR taskEntry, UINTPTR stack);
+extern VOID OsInitSignalContext(VOID *sp, VOID *signalContext, UINTPTR sigHandler, UINT32 signo, UINT32 param);
 extern void arm_clean_cache_range(UINTPTR start, UINTPTR end);
 extern void arm_inv_cache_range(UINTPTR start, UINTPTR end);
 

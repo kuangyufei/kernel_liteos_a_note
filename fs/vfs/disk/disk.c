@@ -1148,15 +1148,16 @@ ERROR_HANDLE:
 INT32 los_disk_cache_clear(INT32 drvID)
 {
     INT32 result;
+    los_part *part = get_part(drvID);
     los_disk *disk = NULL;
 
-    result = OsSdSync(drvID);
+    result = OsSdSync(part->disk_id);
     if (result != 0) {
-        PRINTK("[ERROR]disk cache clear failed!n");
+        PRINTK("[ERROR]disk_cache_clear SD sync failed!\n");
         return result;
     }
 
-    disk = get_disk(drvID);
+    disk = get_disk(part->disk_id);
     if (disk == NULL) {
         return -1;
     }

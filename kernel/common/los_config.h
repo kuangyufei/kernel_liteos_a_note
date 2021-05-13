@@ -249,6 +249,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
 #define LOSCFG_BASE_IPC_SEM_LIMIT 1024 //信号量的最大个数
 #endif
 
+#define OS_SEM_COUNT_MAX 0xFFFE
 /****************************** mutex module configuration ******************************/
 /**
  * @ingroup los_config
@@ -392,7 +393,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
 #endif
 
 /****************************** exception information  configuration ******************************/
-#ifdef LOSCFG_SHELL_EXCINFO	//异常信息开关
+#ifdef LOSCFG_SAVE_EXCINFO
 /**
  * @ingroup los_config
  * the size of space for recording exception information

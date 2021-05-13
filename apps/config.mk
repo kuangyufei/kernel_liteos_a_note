@@ -55,6 +55,6 @@ COMMON_INCLUDE := -I $(LITEOSTHIRDPARTY)/bounds_checking_function/include
 # alias variable config
 HIDE := @
 MAKE := make
-RM := -rm -rf
-CP := -cp -rf
-MV := -mv
+RM := rm -rf
+CP := cp -rf
+MV := mv -f

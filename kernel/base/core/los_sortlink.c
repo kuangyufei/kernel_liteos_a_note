@@ -55,8 +55,12 @@ STATIC INLINE VOID OsAddNode2SortLink(SortLinkAttribute *sortLinkHeader, SortLin
     }
 
     SortLinkList *listSorted = LOS_DL_LIST_ENTRY(head->pstNext, SortLinkList, sortLinkNode);
-    if (listSorted->responseTime >= sortList->responseTime) {
+    if (listSorted->responseTime > sortList->responseTime) {
         LOS_ListAdd(head, &sortList->sortLinkNode);
+        sortLinkHeader->nodeNum++;
+        return;
+    } else if (listSorted->responseTime == sortList->responseTime) {
+        LOS_ListAdd(head->pstNext, &sortList->sortLinkNode);
         sortLinkHeader->nodeNum++;
         return;
     }

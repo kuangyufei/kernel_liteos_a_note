@@ -1370,8 +1370,6 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
 //执行用户态任务, entry为入口函数 ,其中 创建好task,task上下文 等待调度真正执行, sp:栈指针 mapBase:栈底 mapSize:栈大小
 LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBase, UINT32 mapSize)
 {
-    LosTaskCB *taskCB = NULL;
-    TaskContext *taskContext = NULL;
     UINT32 intSave;
 
     if (entry == NULL) {
@@ -1386,15 +1384,16 @@ LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINT
         return LOS_NOK;
     }
 
+    LosTaskCB *taskCB = OsCurrTaskGet();
     SCHEDULER_LOCK(intSave);//拿自旋锁
-    taskCB = OsCurrTaskGet();//获取当前任务
 
     taskCB->userMapBase = mapBase;//用户态栈顶
     taskCB->userMapSize = mapSize;//用户态栈大小
     taskCB->taskEntry = (TSK_ENTRY_FUNC)entry;//任务的入口函数
 
-    taskContext = (TaskContext *)OsTaskStackInit(taskCB->taskID, taskCB->stackSize, (VOID *)taskCB->topOfStack, FALSE);//在内核栈中创建任务上下文
-    OsUserTaskStackInit(taskContext, taskCB->taskEntry, sp);//初始化用户栈,将内核栈中上下文的 context->R[0] = sp ,context->sp = sp
+    TaskContext *taskContext = (TaskContext *)OsTaskStackInit(taskCB->taskID, taskCB->stackSize,
+                                                              (VOID *)taskCB->topOfStack, FALSE);
+    OsUserTaskStackInit(taskContext, (UINTPTR)taskCB->taskEntry, sp);//初始化用户栈,将内核栈中上下文的 context->R[0] = sp ,context->sp = sp
     //这样做的目的是将用户栈SP保存到内核栈中,
     SCHEDULER_UNLOCK(intSave);//解锁
     return LOS_OK;
@@ -1577,7 +1576,7 @@ STATIC VOID OsInitCopyTaskParam(LosProcessCB *childProcessCB, const CHAR *name, 
 //拷贝一个Task过程
 STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR *name, UINTPTR entry, UINT32 size)
 {
-    LosTaskCB *childTaskCB = NULL;
+    LosTaskCB *runTask = OsCurrTaskGet();
     TSK_INIT_PARAM_S childPara = { 0 };
     UINT32 ret;
     UINT32 intSave;
@@ -1593,8 +1592,8 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
         return LOS_ENOMEM;
     }
 
-    childTaskCB = OS_TCB_FROM_TID(taskID);//通过taskId获取task实体
-    childTaskCB->taskStatus = OsCurrTaskGet()->taskStatus;//任务状态先同步,注意这里是赋值操作. ...01101001 
+    LosTaskCB *childTaskCB = OS_TCB_FROM_TID(taskID);
+    childTaskCB->taskStatus = runTask->taskStatus;//任务状态先同步,注意这里是赋值操作. ...01101001 
     if (childTaskCB->taskStatus & OS_TASK_STATUS_RUNNING) {//因只能有一个运行的task,所以如果一样要改4号位
         childTaskCB->taskStatus &= ~OS_TASK_STATUS_RUNNING;//将四号位清0 ,变成 ...01100001 
     } else {//非运行状态下会发生什么?
@@ -1607,7 +1606,7 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
 
     if (OsProcessIsUserMode(childProcessCB)) {//是否是用户进程
         SCHEDULER_LOCK(intSave);
-        OsUserCloneParentStack(childTaskCB, OsCurrTaskGet());//拷贝当前任务上下文给新的任务
+        OsUserCloneParentStack(childTaskCB->stackPointer, runTask->topOfStack, runTask->stackSize);//拷贝当前任务上下文给新的任务
         SCHEDULER_UNLOCK(intSave);
     }
     return LOS_OK;

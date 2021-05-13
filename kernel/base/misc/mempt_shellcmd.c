@@ -31,7 +31,7 @@
 
 #include "stdlib.h"
 #include "los_memory_pri.h"
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
 #include "los_excinfo_pri.h"
 #endif
 #ifdef LOSCFG_SHELL
@@ -64,7 +64,7 @@ VOID OsDumpMemByte(size_t length, UINTPTR addr)
     while (dataLen) {
         if (IS_ALIGNED(count, sizeof(CHAR *))) {
             PRINTK("\n 0x%lx :", alignAddr);
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
             WriteExcInfoToBuf("\n 0x%lx :", alignAddr);
 #endif
         }
@@ -73,7 +73,7 @@ VOID OsDumpMemByte(size_t length, UINTPTR addr)
 #else
         PRINTK("%0+8lx ", *alignAddr);
 #endif
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
 #ifdef __LP64__
         WriteExcInfoToBuf("0x%0+16x ", *alignAddr);
 #else
@@ -85,7 +85,7 @@ VOID OsDumpMemByte(size_t length, UINTPTR addr)
         count++;
     }
     PRINTK("\n");
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
     WriteExcInfoToBuf("\n");
 #endif
 
@@ -115,14 +115,14 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemCheck(INT32 argc, const CHAR *argv[])
 
     if (LOS_MemIntegrityCheck(m_aucSysMem1) == LOS_OK) {
         PRINTK("system memcheck over, all passed!\n");
-#ifdef LOSCFG_SHELL_EXCINFO //支持异常缓存时,写缓存
+#ifdef LOSCFG_SAVE_EXCINFO
         WriteExcInfoToBuf("system memcheck over, all passed!\n");
 #endif
     }
-#ifdef LOSCFG_EXC_INTERACTION 
+#ifdef LOSCFG_EXC_INTERACTION
     if (LOS_MemIntegrityCheck(m_aucSysMem0) == LOS_OK) {
         PRINTK("exc interaction memcheck over, all passed!\n");
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
         WriteExcInfoToBuf("exc interaction memcheck over, all passed!\n");
 #endif
     }

@@ -32,6 +32,7 @@
 #include "hm_liteipc.h"
 #include "linux/kernel.h"
 #include <fs/fs.h>
+#include "fs_file.h"
 #include "los_mp.h"
 #include "los_mux.h"
 #include "los_process_pri.h"
@@ -43,8 +44,8 @@
 #include "los_trace_frame.h"
 #endif
 #include "los_vm_map.h"
-#include "los_vm_phys.h"
 #include "los_vm_page.h"
+#include "los_vm_phys.h"
 #include "los_vm_lock.h"
 
 #define USE_TASKID_AS_HANDLE YES 	//使用任务ID作为句柄
@@ -656,9 +657,22 @@ LITE_OS_SEC_TEXT STATIC BOOL IsTaskAlive(UINT32 taskID)
     return TRUE;
 }
 
-LITE_OS_SEC_TEXT STATIC UINT32 HandleFd(SpecialObj *obj, BOOL isRollback)
+LITE_OS_SEC_TEXT STATIC UINT32 HandleFd(UINT32 processID, SpecialObj *obj, BOOL isRollback)
 {
-    /* now fd is not Isolated between processes, do nothing */
+    int ret;
+    if (isRollback == FALSE) {
+        ret = CopyFdToProc(obj->content.fd, processID);
+        if (ret < 0) {
+            return ret;
+        }
+        obj->content.fd = ret;
+    } else {
+        ret = CloseProcFd(obj->content.fd, processID);
+        if (ret < 0) {
+            return ret;
+        }
+    }
+
     return LOS_OK;
 }
 
@@ -719,7 +733,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleObj(UINT32 dstTid, SpecialObj *obj, BOOL is
     UINT32 processID = OS_TCB_FROM_TID(dstTid)->processID;
     switch (obj->type) {
         case OBJ_FD:
-            ret = HandleFd(obj, isRollback);
+            ret = HandleFd(processID, obj, isRollback);
             break;
         case OBJ_PTR:
             ret = HandlePtr(processID, obj, isRollback);

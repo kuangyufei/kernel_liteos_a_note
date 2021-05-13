@@ -1,4 +1,4 @@
-[将 OpenHarmony | 鸿蒙 研究到底](https://weharmony.gitee.io/) **[ < 国内](https://weharmony.gitee.io/)[ | 国外 >](https://weharmony.github.io/)**
+[将 HarmonyOS | 鸿蒙 研究到底](https://weharmony.gitee.io/) **[ < 国内](https://weharmony.gitee.io/)[ | 国外 >](https://weharmony.github.io/)**
 
 [![在这里插入图片描述](https://gitee.com/weharmony/docs/raw/master/pic/other/io.png)](https://weharmony.gitee.io)
 
@@ -6,12 +6,18 @@
 
 * [v13.xx 鸿蒙内核源码分析(源码注释篇) | 鸿蒙必定成功,也必然成功 ](https://my.oschina.net/u/3751245/blog/4686747) **[  | 51](https://harmonyos.51cto.com/column/34)[ .c](https://blog.csdn.net/kuangyufei/article/details/109251754)[  .h](https://weharmony.gitee.io/13_源码注释篇.html) [  .o](https://my.oschina.net/weharmony)**
 
+### **同步官方源码更新历史**
+* 每月同步一次更新
+* `2021/5/13` -- 本次官方对系统调用,任务切换,信号处理,异常接管,汇编文件,文件管理,shell 做了较大更新,代码结构更清晰,部分代码需重新加注.
+* `2021/4/21` -- 官方优化了很多之前吐槽的地方,点赞.
+* `2020/9/16` -- 中文注解版起点.
+
 ### 几点说明
 
 * [kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note) 是在 OpenHarmony 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) (鸿蒙轻内核项目)基础上给源码加上中文注解的版本.加注版与官方版本保持每月同步.
 
 * 注解分析博客地址:
-  *  国内: [ https://weharmony.gitee.io/weharmony](https://weharmony.gitee.io/weharmony/weharmony) 
+  *  国内: [ https://weharmony.gitee.io/weharmony](https://weharmony.gitee.io/weharmony) 
   *  国外: [ https://weharmony.github.io/weharmony](https://weharmony.github.io/weharmony)   
   
 * 博客站点更新速度:
@@ -76,10 +82,7 @@
 * 搜索 **`@note_good`** 是给源码点赞的地方
 ### **新增zzz目录**
 * 中文加注版比官方版无新增文件,只多了一个zzz的目录,里面放了一些文件,它与内核代码无关,大家可以忽略它,取名zzz是为了排在最后,减少对原有代码目录级的侵入,zzz的想法源于微信中名称为AAA的那帮朋友,你的微信里应该也有他们熟悉的身影吧 :|P
-### **同步官方源码历史**
-* 每月同步一次
-* `2021/4/21` -- 官方优化了很多之前吐槽的地方,点赞.
-* `2020/9/16` -- 中文注解版起点
+
 ### **百篇博客.往期回顾**
 > 在加注过程中,整理出以下文章.内容立足源码,常以生活场景打比方尽可能多的将内核知识点置入某种场景,具有画面感,容易理解记忆.说别人能听得懂的话很重要! 百篇博客绝不是百度教条式的在说一堆诘屈聱牙的概念,那没什么意思.更希望让内核变得栩栩如生,倍感亲切.确实有难度,自不量力,但已经出发,回头已是不可能的了.:P
 与代码有bug需不断debug一样,文章和注解内容会存在不少错漏之处,但会反复修正,持续更新,`.xx`代表修改的次数,精雕细琢,言简意赅,力求打造精品内容. 

@@ -34,6 +34,10 @@
 #include "fs/fd_table.h"
 #include "fs/file.h"
 #include "fs/fs.h"
+#include "mqueue.h"
+#ifdef LOSCFG_NET_LWIP_SACK
+#include "lwip/sockets.h"
+#endif
 
 static void FileTableLock(struct fd_table_s *fdt)
 {
@@ -247,7 +251,7 @@ int AllocLowestProcessFd(int minFd)
         return VFS_ERROR;
     }
 
-    // occupy the fd set
+    /* occupy the fd set */
     FD_SET(procFd, fdt->proc_fds);
     FileTableUnLock(fdt);
 
@@ -275,7 +279,7 @@ int AllocAndAssocProcessFd(int sysFd, int minFd)
         return VFS_ERROR;
     }
 
-    // occupy the fd set
+    /* occupy the fd set */
     FD_SET(procFd, fdt->proc_fds);
     fdt->ft_fds[procFd].sysFd = sysFd;
     FileTableUnLock(fdt);
@@ -303,3 +307,174 @@ int AllocAndAssocSystemFd(int procFd, int minFd)
     return sysFd;
 }
 
+static void FdRefer(int sysFd)
+{
+    if ((sysFd > STDERR_FILENO) && (sysFd < CONFIG_NFILE_DESCRIPTORS)) {
+        files_refer(sysFd);
+    }
+#if defined(LOSCFG_NET_LWIP_SACK)
+    if ((sysFd >= CONFIG_NFILE_DESCRIPTORS) && (sysFd < (CONFIG_NFILE_DESCRIPTORS + CONFIG_NSOCKET_DESCRIPTORS))) {
+        socks_refer(sysFd);
+    }
+#endif
+#if defined(LOSCFG_COMPAT_POSIX)
+    if ((sysFd >= MQUEUE_FD_OFFSET) && (sysFd < (MQUEUE_FD_OFFSET + CONFIG_NQUEUE_DESCRIPTORS))) {
+        mqueue_refer(sysFd);
+    }
+#endif
+}
+
+static void FdClose(int sysFd, unsigned int targetPid)
+{
+    UINT32 intSave;
+
+    if ((sysFd > STDERR_FILENO) && (sysFd < CONFIG_NFILE_DESCRIPTORS)) {
+        LosProcessCB *processCB = OS_PCB_FROM_PID(targetPid);
+        SCHEDULER_LOCK(intSave);
+        if (OsProcessIsInactive(processCB)) {
+            SCHEDULER_UNLOCK(intSave);
+            return;
+        }
+        SCHEDULER_UNLOCK(intSave);
+
+        files_close_internal(sysFd, processCB);
+    }
+#if defined(LOSCFG_NET_LWIP_SACK)
+    if ((sysFd >= CONFIG_NFILE_DESCRIPTORS) && (sysFd < (CONFIG_NFILE_DESCRIPTORS + CONFIG_NSOCKET_DESCRIPTORS))) {
+        socks_close(sysFd);
+    }
+#endif
+#if defined(LOSCFG_COMPAT_POSIX)
+    if ((sysFd >= MQUEUE_FD_OFFSET) && (sysFd < (MQUEUE_FD_OFFSET + CONFIG_NQUEUE_DESCRIPTORS))) {
+        mq_close((mqd_t)sysFd);
+    }
+#endif
+}
+
+static struct fd_table_s *GetProcessFTable(unsigned int pid, sem_t *semId)
+{
+    UINT32 intSave;
+    struct files_struct *procFiles = NULL;
+    LosProcessCB *processCB = OS_PCB_FROM_PID(pid);
+
+    SCHEDULER_LOCK(intSave);
+    if (OsProcessIsInactive(processCB)) {
+        SCHEDULER_UNLOCK(intSave);
+        return NULL;
+    }
+
+    procFiles = processCB->files;
+    if (procFiles == NULL || procFiles->fdt == NULL) {
+        SCHEDULER_UNLOCK(intSave);
+        return NULL;
+    }
+
+    *semId = procFiles->fdt->ft_sem;
+    SCHEDULER_UNLOCK(intSave);
+
+    return procFiles->fdt;
+}
+
+int CopyFdToProc(int fd, unsigned int targetPid)
+{
+#if !defined(LOSCFG_NET_LWIP_SACK) && !defined(LOSCFG_COMPAT_POSIX) && !defined(LOSCFG_FS_VFS)
+    return -ENOSYS;
+#else
+    int sysFd;
+    struct fd_table_s *fdt = NULL;
+    int procFd;
+    sem_t semId;
+
+    if (OS_PID_CHECK_INVALID(targetPid)) {
+        return -EINVAL;
+    }
+
+    sysFd = GetAssociatedSystemFd(fd);
+    if (sysFd < 0) {
+        return -EBADF;
+    }
+
+    FdRefer(sysFd);
+    fdt = GetProcessFTable(targetPid, &semId);
+    if (fdt == NULL || fdt->ft_fds == NULL) {
+        FdClose(sysFd, targetPid);
+        return -EPERM;
+    }
+
+    /* Take the semaphore (perhaps waiting) */
+    if (sem_wait(&semId) != 0) {
+        /* Target process changed */
+        FdClose(sysFd, targetPid);
+        return -ESRCH;
+    }
+
+    procFd = AssignProcessFd(fdt, 3);
+    if (procFd < 0) {
+        if (sem_post(&semId) == -1) {
+            PRINT_ERR("sem_post error, errno %d \n", get_errno());
+        }
+        FdClose(sysFd, targetPid);
+        return -EPERM;
+    }
+
+    /* occupy the fd set */
+    FD_SET(procFd, fdt->proc_fds);
+    fdt->ft_fds[procFd].sysFd = sysFd;
+    if (sem_post(&semId) == -1) {
+        PRINTK("sem_post error, errno %d \n", get_errno());
+    }
+
+    return procFd;
+#endif
+}
+
+int CloseProcFd(int procFd, unsigned int targetPid)
+{
+#if !defined(LOSCFG_NET_LWIP_SACK) && !defined(LOSCFG_COMPAT_POSIX) && !defined(LOSCFG_FS_VFS)
+    return -ENOSYS;
+#else
+    int sysFd;
+    struct fd_table_s *fdt = NULL;
+    sem_t semId;
+
+    if (OS_PID_CHECK_INVALID(targetPid)) {
+        return -EINVAL;
+    }
+
+    fdt = GetProcessFTable(targetPid, &semId);
+    if (fdt == NULL || fdt->ft_fds == NULL) {
+        return -EPERM;
+    }
+
+    /* Take the semaphore (perhaps waiting) */
+    if (sem_wait(&semId) != 0) {
+        /* Target process changed */
+        return -ESRCH;
+    }
+
+    if (!IsValidProcessFd(fdt, procFd)) {
+        if (sem_post(&semId) == -1) {
+            PRINTK("sem_post error, errno %d \n", get_errno());
+        }
+        return -EPERM;
+    }
+
+    sysFd = fdt->ft_fds[procFd].sysFd;
+    if (sysFd < 0) {
+        if (sem_post(&semId) == -1) {
+            PRINTK("sem_post error, errno %d \n", get_errno());
+        }
+        return -EPERM;
+    }
+
+    /* clean the fd set */
+    FD_CLR(procFd, fdt->proc_fds);
+    fdt->ft_fds[procFd].sysFd = -1;
+    if (sem_post(&semId) == -1) {
+        PRINTK("sem_post error, errno %d \n", get_errno());
+    }
+    FdClose(sysFd, targetPid);
+
+    return 0;
+#endif
+}

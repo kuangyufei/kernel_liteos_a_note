@@ -111,16 +111,16 @@ int VnodeLookup(const char *path, struct Vnode **vnode, uint32_t flags);
 int VnodeHold(void);
 int VnodeDrop(void);
 void VnodeRefDec(struct Vnode *vnode);
-int VnodeFreeIter(struct Vnode *vnode);
-int VnodeFreeAll(struct Mount *mnt);
+int VnodeFreeAll(const struct Mount *mnt);
 int VnodeHashInit(void);
 uint32_t VfsHashIndex(struct Vnode *vnode);
 int VfsHashGet(const struct Mount *mount, uint32_t hash, struct Vnode **vnode, VfsHashCmp *fun, void *arg);
 void VfsHashRemove(struct Vnode *vnode);
 int VfsHashInsert(struct Vnode *vnode, uint32_t hash);
 void ChangeRoot(struct Vnode *newRoot);
-BOOL VnodeInUseIter(struct Vnode *vnode);
+BOOL VnodeInUseIter(const struct Mount *mount);
 struct Vnode *VnodeGetRoot(void);
 void VnodeMemoryDump(void);
+int VnodeDestory(struct Vnode *vnode);
 
 #endif /* !_VNODE_H_ */

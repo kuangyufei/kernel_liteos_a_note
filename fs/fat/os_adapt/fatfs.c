@@ -93,8 +93,11 @@ int fatfs_2_vfs(int result)
 
         case FR_NO_FILE:
         case FR_NO_PATH:
-        case FR_NO_FILESYSTEM:
             status = ENOENT;
+            break;
+
+        case FR_NO_FILESYSTEM:
+            status = ENOTSUP;
             break;
 
         case FR_INVALID_NAME:
@@ -169,6 +172,19 @@ int fatfs_2_vfs(int result)
     }
 
     return status;
+}
+
+static bool fatfs_is_last_cluster(FATFS *fs, DWORD cclust)
+{
+    switch (fs->fs_type) {
+        case FS_FAT12:
+            return (cclust == FAT12_END_OF_CLUSTER);
+        case FS_FAT16:
+            return (cclust == FAT16_END_OF_CLUSTER);
+        case FS_FAT32:
+        default:
+            return (cclust == FAT32_END_OF_CLUSTER);
+    }
 }
 
 static int fatfs_sync(unsigned long mountflags, FATFS *fs)
@@ -300,6 +316,7 @@ int fatfs_lookup(struct Vnode *parent, const char *path, int len, struct Vnode *
             goto ERROR_UNLOCK;
         }
     } else {
+        vp->parent = parent;
         free(dfp); /* hash hit dfp is no needed */
     }
 
@@ -806,7 +823,7 @@ static FRESULT realloc_cluster(FILINFO *finfo, FFOBJID *obj, FSIZE_t size)
     if ((cclust == BAD_CLUSTER) || (cclust == DISK_ERROR)) {
         return FR_DISK_ERR;
     }
-    if (cclust != END_OF_FILE) { /* Remove extra cluster if existing */
+    if (!fatfs_is_last_cluster(obj->fs, cclust)) { /* Remove extra cluster if existing */
         result = remove_chain(obj, cclust, pclust);
         if (result != FR_OK) {
             return result;

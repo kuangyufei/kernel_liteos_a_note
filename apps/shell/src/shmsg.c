@@ -345,6 +345,10 @@ static void DoCmdExec(const char *cmdName, const char *cmdline, unsigned int len
                 exit(1);
             }
 
+            ret = tcsetpgrp(STDIN_FILENO, getpgrp());
+            if (ret != 0) {
+                printf("tcsetpgrp failed, pgrpid %d, errno %d\n", getpgrp(), errno);
+            }
             ret = execve((const char *)cmdParsed->paramArray[0], (char * const *)cmdParsed->paramArray, NULL);
             if (ret == -1) {
                 perror("execve");

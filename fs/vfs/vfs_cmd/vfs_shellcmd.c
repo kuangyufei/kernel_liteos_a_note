@@ -837,6 +837,10 @@ static int os_shell_cmd_do_rmdir(const char *pathname)
       return remove(pathname);
     }
   d = opendir(pathname);
+  if (d == NULL)
+    {
+      return -1;
+    }
   while (1)
     {
       dirent = readdir(d);

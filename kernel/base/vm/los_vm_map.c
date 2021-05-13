@@ -135,7 +135,6 @@ STATIC BOOL OsVmSpaceInitCommon(LosVmSpace *vmSpace, VADDR_T *virtTtb)
 {
     LOS_RbInitTree(&vmSpace->regionRbTree, OsRegionRbCmpKeyFn, OsRegionRbFreeFn, OsRegionRbGetKeyFn);//初始化虚拟存储空间-以红黑树组织方式
 
-    LOS_ListInit(&vmSpace->regions);//初始化虚拟存储区域-以双循环链表组织方式
     status_t retval = LOS_MuxInit(&vmSpace->regionMux, NULL);//初始化互斥量
     if (retval != LOS_OK) {
         VM_ERR("Create mutex for vm space failed, status: %d", retval);
@@ -240,34 +239,7 @@ STATIC BOOL OsVmSpaceParamCheck(LosVmSpace *vmSpace)//这么简单也要写个�
     }
     return TRUE;
 }
-//克隆共享线性区，输入老区，输出新区
-LosVmMapRegion *OsShareRegionClone(LosVmMapRegion *oldRegion)
-{
-    /* no need to create vm object */
-    LosVmMapRegion *newRegion = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmMapRegion));
-    if (newRegion == NULL) {
-        VM_ERR("malloc new region struct failed.");
-        return NULL;
-    }
 
-    /* todo: */
-    *newRegion = *oldRegion;
-    return newRegion;
-}
-//克隆私有线性区，输入旧区，输出新区
-LosVmMapRegion *OsPrivateRegionClone(LosVmMapRegion *oldRegion)
-{
-    /* need to create vm object */
-    LosVmMapRegion *newRegion = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmMapRegion));
-    if (newRegion == NULL) {
-        VM_ERR("malloc new region struct failed.");
-        return NULL;
-    }
-
-    /* todo: */
-    *newRegion = *oldRegion;
-    return newRegion;
-}
 //虚拟内存空间克隆，被用于fork进程
 STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace)
 {
@@ -847,11 +819,6 @@ STATUS_T OsIsRegionCanExpand(LosVmSpace *space, LosVmMapRegion *region, size_t s
 
     if ((space == NULL) || (region == NULL)) {
         return LOS_NOK;
-    }
-
-    /* if next node is head, then we can expand */
-    if (OsIsVmRegionEmpty(space) == TRUE) {
-        return LOS_OK;
     }
 
     nextRegion = (LosVmMapRegion *)LOS_RbSuccessorNode(&space->regionRbTree, &region->rbNode);

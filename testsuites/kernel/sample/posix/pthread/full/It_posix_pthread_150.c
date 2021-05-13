@@ -1,0 +1,98 @@
+/*
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this list of
+ * conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice, this list
+ * of conditions and the following disclaimer in the documentation and/or other materials
+ * provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors may be used
+ * to endorse or promote products derived from this software without specific prior written
+ * permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "It_posix_pthread.h"
+
+#ifdef __cplusplus
+#if __cplusplus
+extern "C" {
+#endif /* __cpluscplus */
+#endif /* __cpluscplus */
+
+static VOID *PthreadF01(VOID *argument)
+{
+    pthread_exit(0);
+
+    return NULL;
+}
+
+static UINT32 Testcase(VOID)
+{
+    pthread_t newTh;
+    _pthread_data *pthreadData;
+    INT32 ret;
+
+    pthreadData = pthread_get_data(newTh);
+    ICUNIT_ASSERT_EQUAL(pthreadData, NULL, pthreadData);
+
+    ret = pthread_create(&newTh, NULL, PthreadF01, NULL);
+    ICUNIT_ASSERT_EQUAL(ret, PTHREAD_NO_ERROR, ret);
+
+    pthreadData = pthread_get_data(newTh);
+    ICUNIT_ASSERT_EQUAL(pthreadData->state, PTHREAD_STATE_RUNNING, pthreadData->state);
+
+    /* Wait 'till the thread returns.
+     * The thread could have ended by the time we try to join, so
+     * don't worry about it, just so long as other errors don't
+     * occur. The point is to make sure the thread has ended execution. */
+    ret = pthread_join(newTh, NULL);
+    ICUNIT_ASSERT_EQUAL(ret, PTHREAD_NO_ERROR, ret);
+
+    pthreadData = pthread_get_data(newTh);
+    ICUNIT_ASSERT_EQUAL(pthreadData, NULL, pthreadData);
+
+    /* Detach the non-existant thread. */
+    ret = pthread_detach(newTh);
+    ICUNIT_ASSERT_EQUAL(ret, ESRCH, ret);
+
+    pthreadData = pthread_get_data(newTh);
+    ICUNIT_ASSERT_EQUAL(pthreadData, NULL, pthreadData);
+
+    ret = pthread_join(newTh, NULL);
+    ICUNIT_ASSERT_EQUAL(ret, ESRCH, ret);
+
+    /* Cleanup and cancel the thread */
+    ret = pthread_cancel(newTh);
+    ICUNIT_ASSERT_EQUAL(ret, ESRCH, ret);
+
+    return PTHREAD_NO_ERROR;
+}
+
+VOID ItPosixPthread150(VOID)
+{
+    TEST_ADD_CASE("ItPosixPthread150", Testcase, TEST_POSIX, TEST_PTHREAD, TEST_LEVEL2, TEST_FUNCTION);
+}
+
+#ifdef __cplusplus
+#if __cplusplus
+}
+#endif /* __cpluscplus */
+#endif /* __cpluscplus */

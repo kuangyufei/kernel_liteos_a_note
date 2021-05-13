@@ -50,17 +50,9 @@ ISB		指令同步隔离。最严格：它会清洗流水线，以保证所有它
 		行完毕之后，才执行它后面的指令。
 ******************************************************************************/
     .global __exc_stack_top @注意这个top并不是栈顶的意思,而是栈的地址高位,恰恰说的是栈底的位置
-    .global __irq_stack_top
-    .global __fiq_stack_top
     .global __svc_stack_top
-    .global __abt_stack_top
-    .global __undef_stack_top
     .global __exc_stack
-    .global __irq_stack
-    .global __fiq_stack
     .global __svc_stack
-    .global __abt_stack
-    .global __undef_stack
 
     .extern __bss_start
     .extern __bss_end
@@ -213,39 +205,18 @@ reloc_img_to_bottom_done:
 
 excstatck_loop:	@清除中断和异常堆栈，并设置魔法数字用于检查溢出
     /* clear out the interrupt and exception stack and set magic num to check the overflow */
-    ldr     r0, =__undef_stack 
+    ldr     r0, =__svc_stack
     ldr     r1, =__exc_stack_top
     bl      stack_init
 
-    STACK_MAGIC_SET __undef_stack, #OS_EXC_UNDEF_STACK_SIZE, OS_STACK_MAGIC_WORD
-    STACK_MAGIC_SET __abt_stack, #OS_EXC_ABT_STACK_SIZE, OS_STACK_MAGIC_WORD
-    STACK_MAGIC_SET __irq_stack, #OS_EXC_IRQ_STACK_SIZE, OS_STACK_MAGIC_WORD
-    STACK_MAGIC_SET __fiq_stack, #OS_EXC_FIQ_STACK_SIZE, OS_STACK_MAGIC_WORD
     STACK_MAGIC_SET __svc_stack, #OS_EXC_SVC_STACK_SIZE, OS_STACK_MAGIC_WORD
     STACK_MAGIC_SET __exc_stack, #OS_EXC_STACK_SIZE, OS_STACK_MAGIC_WORD
 
 excstatck_loop_done:
-warm_reset:	@初始化5大中断/异常环境
-    /* initialize interrupt/exception environments */
-    mov    r0, #(CPSR_IRQ_DISABLE |CPSR_FIQ_DISABLE|CPSR_IRQ_MODE) @将切到IRQ模式,并屏蔽IRQ和FIQ中断
-    msr    cpsr, r0 @执行切换计划,执行完成后CPU将切换到IRQ栈运行
-    EXC_SP_SET __irq_stack_top, #OS_EXC_IRQ_STACK_SIZE @设置IRQ的SP
-
-    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_UNDEF_MODE) @计划切到UNDEF模式,并屏蔽IRQ和FIQ中断
-    msr    cpsr, r0 @执行切换计划,执行完成后CPU将切换到UNDEF栈运行
-    EXC_SP_SET __undef_stack_top, #OS_EXC_UNDEF_STACK_SIZE	@设置UNDEF的SP
-
-    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_ABT_MODE) @同上
+warm_reset:
+    /* initialize CPSR (machine state register) */
+    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_SVC_MODE)
     msr    cpsr, r0
-    EXC_SP_SET __abt_stack_top, #OS_EXC_ABT_STACK_SIZE
-
-    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_FIQ_MODE) @同上
-    msr    cpsr, r0
-    EXC_SP_SET __fiq_stack_top, #OS_EXC_FIQ_STACK_SIZE
-
-    /* initialize CPSR (machine state register) */ @初始化CPSR(机器状态寄存器)
-    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_SVC_MODE) @计划切到SVC模式,并屏蔽IRQ和FIQ中断
-    msr    cpsr, r0 @执行切换计划,执行完成后CPU将切换到SVC栈运行
 
     /* Note: some functions in LIBGCC1 will cause a "restore from SPSR"!! */
     msr    spsr, r0 @保存程序状态寄存器值,用于后续的恢复
@@ -493,22 +464,6 @@ init_flag:
     */
     .section ".int_stack", "wa", %nobits
     .align  3
-
-__undef_stack:
-    .space OS_EXC_UNDEF_STACK_SIZE * CORE_NUM
-__undef_stack_top:
-
-__abt_stack:
-    .space OS_EXC_ABT_STACK_SIZE * CORE_NUM
-__abt_stack_top:
-
-__irq_stack:
-    .space OS_EXC_IRQ_STACK_SIZE * CORE_NUM
-__irq_stack_top:
-
-__fiq_stack:
-    .space OS_EXC_FIQ_STACK_SIZE * CORE_NUM
-__fiq_stack_top:
 
 __svc_stack:
     .space OS_EXC_SVC_STACK_SIZE * CORE_NUM

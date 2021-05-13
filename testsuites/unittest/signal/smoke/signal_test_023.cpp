@@ -1,0 +1,77 @@
+/*
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this list of
+ * conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice, this list
+ * of conditions and the following disclaimer in the documentation and/or other materials
+ * provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors may be used
+ * to endorse or promote products derived from this software without specific prior written
+ * permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+#include "it_test_signal.h"
+#include "signal.h"
+
+static void SigPrint(int signum)
+{
+    printf("Receive signal. Kill succeeds\n\n");
+}
+
+static int TestKill()
+{
+    int sig = SIGALRM;
+
+    void (*retSig)(int);
+    int retValue, status;
+
+    printf("new code \n");
+
+    int fpid = fork();
+    if (fpid == 0) {
+        printf("Set Signal\n\n");
+        retSig = signal(sig, SigPrint);
+        if (retSig == NULL) {
+            printf("retSig = null\n");
+            exit((int)retSig);
+        }
+
+        printf("Test Kill\n");
+        usleep(1000); // 1000, Used to calculate the delay time.
+        retValue = kill(getpid(), sig);
+        if (retValue != 0) {
+            printf("value != 0 \n");
+            exit(retValue);
+        }
+        exit(0);
+    }
+
+    retValue = waitpid(fpid, &status, 0);
+    ICUNIT_ASSERT_EQUAL(retValue, fpid, retValue);
+    ICUNIT_ASSERT_EQUAL(WEXITSTATUS(status), 0, WEXITSTATUS(status));
+
+    return 0;
+}
+
+void ItPosixSignal023(void)
+{
+    TEST_ADD_CASE(__FUNCTION__, TestKill, TEST_POSIX, TEST_SIGNAL, TEST_LEVEL0, TEST_FUNCTION);
+}

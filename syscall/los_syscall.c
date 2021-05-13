@@ -38,6 +38,7 @@
 #include "los_syscall.h"
 #include "los_task_pri.h"
 #include "los_process_pri.h"
+#include "los_hw_pri.h"
 #include "los_printf.h"
 #include "time.h"
 #include "utime.h"
@@ -101,21 +102,16 @@ regs:参数就是所有寄存器
 注意:本函数在用户态和内核态下都可能被调用到
 //MOV     R0, SP @获取SP值,R0将作为OsArmA32SyscallHandle的参数
 ******************************************************************/
-LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
+VOID OsArmA32SyscallHandle(TaskContext *regs)
 {
     UINT32 ret;
     UINT8 nArgs;
     UINTPTR handle;
-    UINT32 cmd = regs[REG_R7];//C7寄存器记录了触发了具体哪个系统调用
+    UINT32 cmd = regs->reserved2;
 	
     if (cmd >= SYS_CALL_NUM) {//系统调用的总数
         PRINT_ERR("Syscall ID: error %d !!!\n", cmd);
-        return regs;
-    }
-	//用户进程信号处理函数完成后的系统调用 svc 119 #__NR_sigreturn
-    if (cmd == __NR_sigreturn) {
-        OsRestorSignalContext(regs);//恢复信号上下文,回到用户栈运行.
-        return regs;
+        return;
     }
 
     handle = g_syscallHandle[cmd];//拿到系统调用的注册函数,类似 SysRead 
@@ -123,34 +119,28 @@ LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
     nArgs = (cmd & 1) ? (nArgs >> NARG_BITS) : (nArgs & NARG_MASK);//获取参数个数
     if ((handle == 0) || (nArgs > ARG_NUM_7)) {//系统调用必须有参数且参数不能大于8个
         PRINT_ERR("Unsupport syscall ID: %d nArgs: %d\n", cmd, nArgs);
-        regs[REG_R0] = -ENOSYS;
-        return regs;
+        regs->R0 = -ENOSYS;
+        return;
     }
 	//regs[0-6] 记录系统调用的参数,这也是由R7寄存器保存系统调用号的原因
     switch (nArgs) {//参数的个数 
         case ARG_NUM_0:
         case ARG_NUM_1:
-            ret = (*(SyscallFun1)handle)(regs[REG_R0]);//执行系统调用,类似 SysUnlink(pathname);
+            ret = (*(SyscallFun1)handle)(regs->R0);
             break;
-        case ARG_NUM_2://如何是两个参数的系统调用,这里传三个参数也没有问题,因被调用函数不会去取用R2值
+        case ARG_NUM_2:
         case ARG_NUM_3:
-            ret = (*(SyscallFun3)handle)(regs[REG_R0], regs[REG_R1], regs[REG_R2]);//类似 SysExecve(fileName, argv, envp);
+            ret = (*(SyscallFun3)handle)(regs->R0, regs->R1, regs->R2);
             break;
         case ARG_NUM_4:
         case ARG_NUM_5:
-            ret = (*(SyscallFun5)handle)(regs[REG_R0], regs[REG_R1], regs[REG_R2], regs[REG_R3],
-                                         regs[REG_R4]);
+            ret = (*(SyscallFun5)handle)(regs->R0, regs->R1, regs->R2, regs->R3, regs->R4);
             break;
-        default:	//7个参数的情况
-            ret = (*(SyscallFun7)handle)(regs[REG_R0], regs[REG_R1], regs[REG_R2], regs[REG_R3],
-                                         regs[REG_R4], regs[REG_R5], regs[REG_R6]);
+        default:
+            ret = (*(SyscallFun7)handle)(regs->R0, regs->R1, regs->R2, regs->R3, regs->R4, regs->R5, regs->R6);
     }
 
-    regs[REG_R0] = ret;//R0保存系统调用返回值
-    OsSaveSignalContext(regs);//如果有信号要处理,将改写sp,r0,r1寄存器,改变返回正常用户态路径,而先去执行信号处理程序.
+    regs->R0 = ret;
 
-    /* Return the last value of curent_regs.  This supports context switches on return from the exception.
-     * That capability is only used with the SYS_context_switch system call.
-     */
-    return regs;//返回寄存器的值
+    return;
 }

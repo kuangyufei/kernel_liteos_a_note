@@ -43,7 +43,7 @@
 #ifdef LOSCFG_KERNEL_CPUP
 #include "los_cpup_pri.h"
 #endif
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
 #include "los_excinfo_pri.h"
 #endif
 #include "los_process_pri.h"

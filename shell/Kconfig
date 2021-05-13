@@ -22,11 +22,4 @@ config SHELL_DMESG
     help
       Answer Y to enable LiteOS support shell dmesg.
 
-config SHELL_EXCINFO
-    bool "Enable Shell excInfo"
-    default n
-    depends on DEBUG_VERSION && SHELL
-    help
-      Answer Y to enable LiteOS support shell excInfo.
-
 endmenu

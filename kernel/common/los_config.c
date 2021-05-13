@@ -117,11 +117,6 @@
 #include "los_hilog.h"
 #endif
 
-#ifdef LOSCFG_QUICK_START
-#include "los_quick_start_pri.h"
-#endif
-
-
 STATIC SystemRebootFunc g_rebootHook = NULL;
 
 VOID OsSetRebootHook(SystemRebootFunc func)
@@ -379,7 +374,12 @@ STATIC UINT32 OsSystemInitTaskCreate(VOID)
     TSK_INIT_PARAM_S sysTask;
 
     (VOID)memset_s(&sysTask, sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
+#ifndef LOSCFG_ENABLE_KERNEL_TEST
     sysTask.pfnTaskEntry = (TSK_ENTRY_FUNC)SystemInit;//任务的入口函数，这个任务由外部提供比如..\vendor\hi3516dv300\module_init\src\system_init.c
+#else
+    extern void TestSystemInit(void);
+    sysTask.pfnTaskEntry = (TSK_ENTRY_FUNC)TestSystemInit;
+#endif
     sysTask.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;//16K
     sysTask.pcName = "SystemInit";//任务的名称
     sysTask.usTaskPrio = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;// 内核默认优先级为10 
@@ -390,13 +390,6 @@ STATIC UINT32 OsSystemInitTaskCreate(VOID)
     return LOS_TaskCreate(&taskID, &sysTask);//创建任务并加入就绪队列，并立即参与调度
 }
 
-#ifdef LOSCFG_QUICK_START
-UINT32 OsSystemInitStep2(VOID)
-{
-    SystemInit2();
-    return 0;
-}
-#endif
 
 UINT32 OsSystemInit(VOID)
 {

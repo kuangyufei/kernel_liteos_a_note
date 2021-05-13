@@ -30,6 +30,7 @@
  */
 
 #include "los_magickey.h"
+#include "console.h"
 #include "los_task_pri.h"
 
 
@@ -66,6 +67,11 @@ STATIC MagicKeyOp g_magicHelpOp = {	//快捷键帮助操作
     .magicKey = 0x1a /* ctrl + z */ //帮助键，输出相关魔法键简单介绍；
 };
 
+STATIC MagicKeyOp g_magicKillPgrp = {
+    .opHandler = KillPgrp,
+    .helpMsg = "Show all magic op key(ctrl+c) ",
+    .magicKey = 0x03 /* ctrl + c */
+};
 /*
  * NOTICE:Suggest don't use
  * ctrl+h/backspace=0x8,
@@ -81,7 +87,7 @@ STATIC MagicKeyOp *g_magicOpTable[MAGIC_KEY_NUM] = {
     &g_magicPanicOp,    /* ctrl + p */
     &g_magicTaskShowOp, /* ctrl + t */
     &g_magicHelpOp,     /* ctrl + z */
-    NULL                /* rserved */
+    &g_magicKillPgrp    /* ctrl + c */
 };
 
 STATIC VOID OsMagicHelp(VOID)//遍历一下 g_magicOpTable
@@ -131,6 +137,9 @@ INT32 CheckMagicKey(CHAR key)
             PRINTK("Magic key off\n");
         }
         return 1;
+    } else if (key == 0x03){ /* ctrl + c */
+        KillPgrp();
+        return 0;
     }
     if (magicKeySwitch != 0) {
         for (i = 0; g_magicOpTable[i] != NULL; ++i) {

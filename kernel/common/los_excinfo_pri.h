@@ -40,7 +40,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
 extern VOID SetExcInfoRW(log_read_write_fn func);
 extern log_read_write_fn GetExcInfoRW(VOID);
 extern VOID SetExcInfoBuf(CHAR *buf);

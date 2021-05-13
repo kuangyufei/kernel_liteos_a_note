@@ -34,7 +34,7 @@
 #include "los_printf_pri.h"
 #include "los_task_pri.h"
 #include "los_hw_pri.h"
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
 #include "los_excinfo_pri.h"
 #endif
 #ifdef LOSCFG_EXC_INTERACTION
@@ -160,11 +160,7 @@ IRQ 和 FIQ 之间的区别是对于 FIQ 你必须尽快处理你事情并离开
 IRQ 可以被 FIQ 所中断但 IRQ 不能中断 FIQ
 ******************************************************************************/                            
 STATIC const StackInfo g_excStack[] = {
-    { &__undef_stack, OS_EXC_UNDEF_STACK_SIZE, "udf_stack" },	//512 未定义的指令模式堆栈
-    { &__abt_stack,   OS_EXC_ABT_STACK_SIZE,   "abt_stack" },	//512 中止模式堆栈,用于数据中止,可以将处理程序设置为在触发异常终止时运行
-    { &__fiq_stack,   OS_EXC_FIQ_STACK_SIZE,   "fiq_stack" },	//64 FIQ中断模式堆栈.快速中断(FIQ)可能会在IRQ期间发生-它们就像优先级较高的IRQ.在FIQ中,FIQ和IRQ被禁用.
     { &__svc_stack,   OS_EXC_SVC_STACK_SIZE,   "svc_stack" },	//8K 主管模式堆栈.有些指令只能在SVC模式下运行 	
-    { &__irq_stack,   OS_EXC_IRQ_STACK_SIZE,   "irq_stack" },	//64 中断(IRQ)模式堆栈. 
     { &__exc_stack,   OS_EXC_STACK_SIZE,       "exc_stack" }	//4K 异常处理堆栈
 };
 //获取系统状态
@@ -245,18 +241,29 @@ STATIC INT32 OsDecodeDataFSR(UINT32 regDFSR)
 #ifdef LOSCFG_KERNEL_VM
 UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT32 fsr)
 {
-    PRINT_INFO("page fault entry!!!\n");
-    BOOL instruction_fault = FALSE;
+    BOOL instructionFault = FALSE;
     UINT32 pfFlags = 0;
     UINT32 fsrFlag;
     BOOL write = FALSE;
+    UINT32 ret;
 
-    if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) {//当前CPU core 
+    PRINT_INFO("page fault entry!!!\n");
+    if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) {
         return LOS_ERRNO_VM_NOT_FOUND;
     }
-
+#if defined(LOSCFG_KERNEL_SMP) && defined(LOSCFG_DEBUG_VERSION)
+    BOOL irqEnable = !(LOS_SpinHeld(&g_taskSpin) && (OsPercpuGet()->taskLockCnt != 0));
+    if (irqEnable) {
+        ArchIrqEnable();
+    } else {
+        PrintExcInfo("[ERR][%s] may be held scheduler lock when entering [%s]\n",
+                     OsCurrTaskGet()->taskName, __FUNCTION__);
+    }
+#else
+    ArchIrqEnable();
+#endif
     if (excType == OS_EXCEPT_PREFETCH_ABORT) {
-        instruction_fault = TRUE;
+        instructionFault = TRUE;
     } else {
         write = !!BIT_GET(fsr, WNR_BIT);
     }
@@ -274,13 +281,23 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
             BOOL user = (frame->regCPSR & CPSR_MODE_MASK) == CPSR_MODE_USR;
             pfFlags |= write ? VM_MAP_PF_FLAG_WRITE : 0;
             pfFlags |= user ? VM_MAP_PF_FLAG_USER : 0;
-            pfFlags |= instruction_fault ? VM_MAP_PF_FLAG_INSTRUCTION : 0;
+            pfFlags |= instructionFault ? VM_MAP_PF_FLAG_INSTRUCTION : 0;
             pfFlags |= VM_MAP_PF_FLAG_NOT_PRESENT;
-            return OsVmPageFaultHandler(far, pfFlags, frame);//缺页中断处理程序
+            ret = OsVmPageFaultHandler(far, pfFlags, frame);
+            break;
         }
         default:
-            return LOS_ERRNO_VM_NOT_FOUND;
+            ret = LOS_ERRNO_VM_NOT_FOUND;
+            break;
     }
+#if defined(LOSCFG_KERNEL_SMP) && defined(LOSCFG_DEBUG_VERSION)
+    if (irqEnable) {
+        ArchIrqDisable();
+    }
+#else
+    ArchIrqDisable();
+#endif
+    return ret;
 }
 #endif
 //异常类型
@@ -615,7 +632,7 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 #endif
 #endif
 
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
     OsProcessExitCodeCoreDumpSet(runProcess);
 #endif
     OsProcessExitCodeSignalSet(runProcess, SIGUSR2);
@@ -723,6 +740,7 @@ VOID BackTraceSub(UINTPTR regFP)
     UINTPTR backFP = regFP;
     UINT32 count = 0;
     VADDR_T kvaddr;
+    LosProcessCB *runProcess = OsCurrProcessGet();
 
     if (FindSuitableStack(regFP, &stackStart, &stackEnd, &kvaddr) == FALSE) {
         PrintExcInfo("traceback error fp = 0x%x\n", regFP);
@@ -761,11 +779,12 @@ VOID BackTraceSub(UINTPTR regFP)
 #ifdef LOSCFG_KERNEL_VM
         LosVmMapRegion *region = NULL;
         if (LOS_IsUserAddress((VADDR_T)backLR) == TRUE) {
-            region = LOS_RegionFind(OsCurrProcessGet()->vmSpace, (VADDR_T)backLR);
+            region = LOS_RegionFind(runProcess->vmSpace, (VADDR_T)backLR);
         }
         if (region != NULL) {
             PrintExcInfo("traceback %u -- lr = 0x%x    fp = 0x%x lr in %s --> 0x%x\n", count, backLR, backFP,
-                         OsGetRegionNameOrFilePath(region), backLR - region->range.base);
+                         OsGetRegionNameOrFilePath(region),
+                         backLR - OsGetTextRegionBase(region, runProcess));
             region = NULL;
         } else
 #endif
@@ -871,7 +890,7 @@ VOID OsTaskBackTrace(UINT32 taskID)//任务栈信息追溯
     }
     PRINTK("TaskName = %s\n", taskCB->taskName);
     PRINTK("TaskID = 0x%x\n", taskCB->taskID);
-    BackTrace(((TaskContext *)(taskCB->stackPointer))->R[11]); /* R11 : FP */
+    BackTrace(((TaskContext *)(taskCB->stackPointer))->R11); /* R11 : FP */
 }
 
 VOID OsBackTrace(VOID)
@@ -1128,6 +1147,22 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
     }
 }
 
+#ifdef LOSCFG_SAVE_EXCINFO
+STATIC VOID OsSysStateSave(UINT32 *intCount, UINT32 *lockCount)
+{
+    *intCount = g_intCount[ArchCurrCpuid()];
+    *lockCount = OsPercpuGet()->taskLockCnt;
+    g_intCount[ArchCurrCpuid()] = 0;
+    OsPercpuGet()->taskLockCnt = 0;
+}
+
+STATIC VOID OsSysStateRestore(UINT32 intCount, UINT32 lockCount)
+{
+    g_intCount[ArchCurrCpuid()] = intCount;
+    OsPercpuGet()->taskLockCnt = lockCount;
+}
+#endif
+
 /*
  * Description : EXC handler entry
  * Input       : excType    --- exc type
@@ -1135,6 +1170,10 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
  */
 LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 {
+#ifdef LOSCFG_SAVE_EXCINFO
+    UINT32 intCount;
+    UINT32 lockCount;
+#endif
     /* Task scheduling is not allowed during exception handling */
     OsPercpuGet()->taskLockCnt++;
 
@@ -1148,18 +1187,18 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
     OsAllCpuStatusOutput();//打印各CPU core的状态
 #endif
 
-#ifdef LOSCFG_SHELL_EXCINFO 
+#ifdef LOSCFG_SAVE_EXCINFO
     log_read_write_fn func = GetExcInfoRW();//获取异常信息读写函数,用于打印异常信息栈
 #endif
 
     if (g_excHook != NULL) {//全局异常钩子函数
         if (g_curNestCount[ArchCurrCpuid()] == 1) {//说明只有一个异常
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
             if (func != NULL) {
                 SetExcInfoIndex(0);
-                g_intCount[ArchCurrCpuid()] = 0;
+                OsSysStateSave(&intCount, &lockCount);
                 OsRecordExcInfoTime();
-                g_intCount[ArchCurrCpuid()] = 1;
+                OsSysStateRestore(intCount, lockCount);
             }
 #endif
             g_excHook(excType, excBufAddr, far, fsr);
@@ -1167,12 +1206,12 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
             OsCallStackInfo();//打印栈内容
         }
 
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
         if (func != NULL) {
             PrintExcInfo("Be sure flash space bigger than GetExcInfoIndex():0x%x\n", GetExcInfoIndex());
-            g_intCount[ArchCurrCpuid()] = 0;
+            OsSysStateSave(&intCount, &lockCount);
             func(GetRecordAddr(), GetRecordSpace(), 0, GetExcInfoBuf());
-            g_intCount[ArchCurrCpuid()] = 1;
+            OsSysStateRestore(intCount, lockCount);
         }
 #endif
     }

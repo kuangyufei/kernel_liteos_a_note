@@ -739,11 +739,8 @@ int mq_timedsend(mqd_t personal, const char *msg, size_t msgLen, unsigned int ms
 
     (VOID)pthread_mutex_lock(&g_mqueueMutex);
     privateMqPersonal = MqGetPrivDataBuff(personal);
-    if (privateMqPersonal == NULL) {
-        goto ERROUT_UNLOCK;
-    }
 
-    OS_MQ_GOTO_ERROUT_UNLOCK_IF(privateMqPersonal->mq_status != MQ_USE_MAGIC, EBADF);
+    OS_MQ_GOTO_ERROUT_UNLOCK_IF(privateMqPersonal == NULL || privateMqPersonal->mq_status != MQ_USE_MAGIC, EBADF);
 
     mqueueCB = privateMqPersonal->mq_posixdes;
     OS_MQ_GOTO_ERROUT_UNLOCK_IF(msgLen > (size_t)(mqueueCB->mqcb->queueSize - sizeof(UINT32)), EMSGSIZE);
@@ -786,10 +783,7 @@ ssize_t mq_timedreceive(mqd_t personal, char *msg, size_t msgLen, unsigned int *
 
     (VOID)pthread_mutex_lock(&g_mqueueMutex);
     privateMqPersonal = MqGetPrivDataBuff(personal);
-    if (privateMqPersonal == NULL) {
-        goto ERROUT_UNLOCK;
-    }
-    if (privateMqPersonal->mq_status != MQ_USE_MAGIC) {
+    if (privateMqPersonal == NULL || privateMqPersonal->mq_status != MQ_USE_MAGIC) {
         errno = EBADF;
         goto ERROUT_UNLOCK;
     }

@@ -55,7 +55,9 @@ extern "C" {
 #define FAT32_MAXSIZE          0x100000000
 #define BAD_CLUSTER            0x7FFFFFFF
 #define DISK_ERROR             0xFFFFFFFF
-#define END_OF_FILE            0x0FFFFFFF
+#define FAT12_END_OF_CLUSTER   0x00000FFF
+#define FAT16_END_OF_CLUSTER   0x0000FFFF
+#define FAT32_END_OF_CLUSTER   0x0FFFFFFF
 #define FAT_ERROR              (-1)
 
 /* MBR */

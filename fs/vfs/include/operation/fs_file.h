@@ -54,4 +54,8 @@ int CheckProcessFd(int procFd);
 
 void FreeProcessFd(int procFd);
 
+int CopyFdToProc(int fd, unsigned int targetPid);
+
+int CloseProcFd(int fd, unsigned int targetPid);
+
 #endif

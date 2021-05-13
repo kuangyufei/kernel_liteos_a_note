@@ -1,0 +1,39 @@
+static_library("test_ipc") {
+
+    sources = [
+        "sem/It_los_sem.c",
+        "event/It_los_event.c",
+        "mux/It_los_mux.c",
+        "queue/It_los_queue.c",
+    ]
+
+    if (LOSCFG_TEST_SMOKE) {
+        sources += [
+            "sem/smoke/It_los_sem_001.c",
+            "sem/smoke/It_los_sem_003.c",
+            "sem/smoke/It_los_sem_006.c",
+            "event/smoke/It_los_event_031.c",
+            "event/smoke/It_los_event_035.c",
+            "event/smoke/It_los_event_036.c",
+            "event/smoke/It_los_event_041.c",
+            "mux/smoke/It_los_mutex_001.c",
+            "mux/smoke/It_los_mutex_002.c",
+            "mux/smoke/It_los_mutex_003.c",
+            "mux/smoke/It_los_mutex_004.c",
+            "queue/smoke/It_los_queue_001.c",
+            "queue/smoke/It_los_queue_097.c",
+            "queue/smoke/It_los_queue_100.c",
+            "queue/smoke/It_los_queue_105.c",
+            "queue/smoke/It_los_queue_head_002.c",
+        ]
+    }
+    include_dirs = [
+        "../../../include/",
+        "sem",
+        "event",
+        "mux",
+        "queue",
+    ]
+
+    cflags = [ "-Wno-error" ]
+}

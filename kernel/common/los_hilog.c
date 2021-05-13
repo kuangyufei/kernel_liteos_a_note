@@ -39,7 +39,7 @@
 #include "los_vm_lock.h"
 #include "user_copy.h"
 //hilog是鸿蒙的一个用于输出的功能模块
-#define HILOG_BUFFER 1024 // 1K缓存, ring buf 方式管理
+#define HILOG_BUFFER 4096// 4K缓存, ring buf 方式管理
 #define DRIVER_MODE 0666 //权限 chmod 666
 #define HILOG_DRIVER "/dev/hilog" // 可以看出hilog是当一种字符设备来实现
 

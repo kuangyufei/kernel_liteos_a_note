@@ -44,13 +44,9 @@ static LosMux g_vnodeMux;
 static struct Vnode *g_rootVnode = NULL;
 static struct VnodeOps g_devfsOps;
 
-extern int g_coveredVnodeTop;
-extern struct Vnode *g_coveredVnodeList[100];
-
 #define ENTRY_TO_VNODE(ptr)  LOS_DL_LIST_ENTRY(ptr, struct Vnode, actFreeEntry)
 #define VNODE_LRU_COUNT      10
 #define DEV_VNODE_MODE       0755
-#define MAX_ITER_TIMES       10
 
 int VnodesInit(void)
 {
@@ -93,8 +89,6 @@ static struct Vnode *GetFromFreeList(void)
     return vnode;
 }
 
-extern struct Vnode *g_parentOfCoveredVnode;
-
 struct Vnode *VnodeReclaimLru(void)
 {
     struct Vnode *item = NULL;
@@ -103,8 +97,8 @@ struct Vnode *VnodeReclaimLru(void)
 
     LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &g_vnodeCurrList, struct Vnode, actFreeEntry) {
         if ((item->useCount > 0) ||
-            (item->flag & VNODE_FLAG_MOUNT_NEW) ||
-            (item->flag & VNODE_FLAG_MOUNT_ORIGIN)) {
+            (item->flag & VNODE_FLAG_MOUNT_ORIGIN) ||
+            (item->flag & VNODE_FLAG_MOUNT_NEW)) {
             continue;
         }
 
@@ -165,7 +159,6 @@ int VnodeAlloc(struct VnodeOps *vop, struct Vnode **newVnode)
     VnodeDrop();
 
     *newVnode = vnode;
-    PRINTK("%s-%d: vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, vnode, vnode->useCount, vnode->data);
 
     return LOS_OK;
 }
@@ -175,38 +168,21 @@ int VnodeFree(struct Vnode *vnode)
     if (vnode == NULL) {
         return LOS_OK;
     }
-    struct PathCache *item = NULL;
-    struct PathCache *nextItem = NULL;
 
     VnodeHold();
-    for (int i = 0; i < g_coveredVnodeTop; i++) {
-        if (vnode == g_coveredVnodeList[i]) {
-            PRINTK("%s-%d: reclaim mounted vnode. vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, vnode, vnode->useCount, vnode->data);
-        }
-    }
-    if (g_parentOfCoveredVnode == vnode) {
-        PRINTK("%s-%d: reclaim parent of mounted vnode. vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, vnode, vnode->useCount, vnode->data);
-    }
     if (vnode->useCount > 0) {
         VnodeDrop();
         return -EBUSY;
     }
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &vnode->childPathCaches, struct PathCache, childEntry) {
-        PathCacheFree(item);
-    }
 
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &vnode->parentPathCaches, struct PathCache, parentEntry) {
-        PathCacheFree(item);
-    }
-
+    VnodePathCacheFree(vnode);
     LOS_ListDelete(&(vnode->hashEntry));
+    LOS_ListDelete(&vnode->actFreeEntry);
 
     if (vnode->vop->Reclaim) {
         vnode->vop->Reclaim(vnode);
     }
 
-    PRINTK("%s-%d: vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, vnode, vnode->useCount, vnode->data);
-    LOS_ListDelete(&vnode->actFreeEntry);
     memset_s(vnode, sizeof(struct Vnode), 0, sizeof(struct Vnode));
     LOS_ListAdd(&g_vnodeFreeList, &vnode->actFreeEntry);
 
@@ -216,83 +192,35 @@ int VnodeFree(struct Vnode *vnode)
     return LOS_OK;
 }
 
-int VnodeFreeIter(struct Vnode *vnode)
+int VnodeFreeAll(const struct Mount *mount)
 {
-    struct Vnode *vp = NULL;
-    struct PathCache *item = NULL;
-    struct PathCache *nextItem = NULL;
+    struct Vnode *vnode = NULL;
+    struct Vnode *nextVnode = NULL;
     int ret;
 
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &vnode->childPathCaches, struct PathCache, childEntry) {
-        vp = item->childVnode;
-        if (vp == NULL) {
-            continue;
-        }
-        ret = VnodeFreeIter(vp);
-        if (ret != LOS_OK) {
-            return ret;
+    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(vnode, nextVnode, &g_vnodeCurrList, struct Vnode, actFreeEntry) {
+        if ((vnode->originMount == mount) && !(vnode->flag & VNODE_FLAG_MOUNT_NEW)) {
+            ret = VnodeFree(vnode);
+            if (ret != LOS_OK) {
+                return ret;
+            }
         }
     }
-    return VnodeFree(vnode);
+
+    return LOS_OK;
 }
 
-int VnodeFreeAll(struct Mount *mnt)
+BOOL VnodeInUseIter(const struct Mount *mount)
 {
-    struct Vnode *vp = NULL;
-    struct Vnode *mountptVnode = mnt->vnodeCovered;
-    struct PathCache *item = NULL;
-    struct PathCache *nextItem = NULL;
-    int ret;
+    struct Vnode *vnode = NULL;
 
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &mountptVnode->childPathCaches, struct PathCache, childEntry) {
-        vp = item->childVnode;
-        if (vp == NULL) {
-            continue;
-        }
-        ret = VnodeFreeIter(vp);
-        if (ret != LOS_OK) {
-            return ret;
+    LOS_DL_LIST_FOR_EACH_ENTRY(vnode, &g_vnodeCurrList, struct Vnode, actFreeEntry) {
+        if (vnode->originMount == mount) {
+            if ((vnode->useCount > 0) || (vnode->flag & VNODE_FLAG_MOUNT_ORIGIN)) {
+                return TRUE;
+            }
         }
     }
-    return 0;
-}
-
-static VOID VnodeIterDump(struct Vnode *vnode, int increase)
-{
-    static int count = 0;
-    LIST_ENTRY *list = &vnode->parentPathCaches;
-    struct PathCache *pathCache = LOS_DL_LIST_ENTRY(list->pstNext, struct PathCache, parentEntry);
-    count += increase;
-    if (count >= MAX_ITER_TIMES) {
-        PRINTK("########## Vnode In Use Iteration ##########\n");
-        PRINTK("Iteration times: %d\n", count);
-        PRINTK("%p -- %s --> %p\n", vnode->parent, pathCache->name, vnode);
-        PathCacheDump();
-    }
-}
-
-BOOL VnodeInUseIter(struct Vnode *vnode)
-{
-    struct Vnode *vp = NULL;
-    struct PathCache *item = NULL;
-    struct PathCache *nextItem = NULL;
-
-    VnodeIterDump(vnode, 1);
-    if (vnode->useCount > 0) {
-        VnodeIterDump(vnode, -1);
-        return TRUE;
-    }
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &vnode->childPathCaches, struct PathCache, childEntry) {
-        vp = item->childVnode;
-        if (vp == NULL) {
-            continue;
-        }
-        if (VnodeInUseIter(vp) == TRUE) {
-            VnodeIterDump(vnode, -1);
-            return TRUE;
-        }
-    }
-    VnodeIterDump(vnode, -1);
     return FALSE;
 }
 
@@ -350,7 +278,7 @@ static int PreProcess(const char *originPath, struct Vnode **startVnode, char **
 
 static struct Vnode *ConvertVnodeIfMounted(struct Vnode *vnode)
 {
-    if ((vnode == NULL) || !(vnode->flag & VNODE_FLAG_MOUNT_NEW)) {
+    if ((vnode == NULL) || !(vnode->flag & VNODE_FLAG_MOUNT_ORIGIN)) {
         return vnode;
     }
     return vnode->newMount->vnodeCovered;
@@ -502,7 +430,7 @@ static void ChangeRootInternal(struct Vnode *rootOld, char *dirname)
         mnt->vnodeBeCovered = nodeInFs;
 
         nodeInFs->newMount = mnt;
-        nodeInFs->flag |= VNODE_FLAG_MOUNT_NEW;
+        nodeInFs->flag |= VNODE_FLAG_MOUNT_ORIGIN;
 
         break;
     }
@@ -615,7 +543,7 @@ int VnodeDevInit()
         return -ENOMEM;
     }
     devMount->vnodeCovered = devNode;
-    devMount->vnodeBeCovered->flag |= VNODE_FLAG_MOUNT_NEW;
+    devMount->vnodeBeCovered->flag |= VNODE_FLAG_MOUNT_ORIGIN;
     return LOS_OK;
 }
 
@@ -683,8 +611,8 @@ void VnodeMemoryDump(void)
 
     LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &g_vnodeCurrList, struct Vnode, actFreeEntry) {
         if ((item->useCount > 0) ||
-            (item->flag & VNODE_FLAG_MOUNT_NEW) ||
-            (item->flag & VNODE_FLAG_MOUNT_ORIGIN)) {
+            (item->flag & VNODE_FLAG_MOUNT_ORIGIN) ||
+            (item->flag & VNODE_FLAG_MOUNT_NEW)) {
             continue;
         }
 
@@ -693,4 +621,28 @@ void VnodeMemoryDump(void)
 
     PRINTK("Vnode number = %d\n", vnodeCount);
     PRINTK("Vnode memory size = %d(B)\n", vnodeCount * sizeof(struct Vnode));
+}
+
+int VnodeDestory(struct Vnode *vnode)
+{
+    if (vnode == NULL || vnode->vop != &g_devfsOps) {
+        /* destory only support dev vnode */
+        return -EINVAL;
+    }
+
+    VnodeHold();
+    if (vnode->useCount > 0) {
+        VnodeDrop();
+        return -EBUSY;
+    }
+
+    VnodePathCacheFree(vnode);
+    LOS_ListDelete(&(vnode->hashEntry));
+    LOS_ListDelete(&vnode->actFreeEntry);
+
+    free(vnode->data);
+    free(vnode);
+    VnodeDrop();
+
+    return LOS_OK;
 }

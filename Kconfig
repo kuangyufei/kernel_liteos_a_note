@@ -173,6 +173,11 @@ config PLATFORM_DVFS
       Answer Y to enable LiteOS support dynamic voltage and frequency scaling feature for
       low power consumption.
 
+config SAVE_EXCINFO
+    bool "Enable Saving Exception Information"
+    default n
+    help
+      Answer Y to enable LiteOS support saving exception information to storage medium.
 config DEBUG_VERSION
     bool "Enable a Debug Version"
     default n
@@ -303,6 +308,7 @@ source "../../kernel/liteos_a/bsd/dev/usb/Kconfig"
 source "../../drivers/adapter/khdf/liteos/Kconfig"
 
 source "drivers/char/mem/Kconfig"
+source "drivers/char/quickstart/Kconfig"
 source "drivers/char/random/Kconfig"
 source "../../drivers/liteos/tzdriver/Kconfig"
 source "drivers/char/video/Kconfig"
@@ -312,6 +318,12 @@ endmenu
 
 menu "Security"
 source "../../kernel/liteos_a/security/Kconfig"
+endmenu
+
+menu "Test"
+config ENABLE_KERNEL_TEST
+    bool "Enable Kernel Test"
+    default n
 endmenu
 
 menu "Stack Smashing Protector (SSP) Compiler Feature"

@@ -654,7 +654,7 @@ STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam,
         taskCB->userArea = initParam->userParam.userArea;
         taskCB->userMapBase = initParam->userParam.userMapBase;
         taskCB->userMapSize = initParam->userParam.userMapSize;
-        OsUserTaskStackInit(taskCB->stackPointer, taskCB->taskEntry, initParam->userParam.userSP);//初始化用户态任务栈
+        OsUserTaskStackInit(taskCB->stackPointer, (UINTPTR)taskCB->taskEntry, initParam->userParam.userSP);//初始化用户态任务栈
         //这里要注意,任务的上下文是始终保存在内核栈空间,而用户态时运行在用户态栈空间.(context->SP = userSP 指向了用户态栈空间)
     }
 

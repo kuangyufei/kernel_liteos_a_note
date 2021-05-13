@@ -42,7 +42,7 @@
 #ifdef LOSCFG_SHELL_DMESG
 #include "dmesg_pri.h"
 #endif
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
 #include "los_excinfo_pri.h"
 #endif
 #include "los_exc_pri.h"
@@ -251,7 +251,7 @@ VOID PrintExcInfo(const CHAR *fmt, ...)
     va_start(ap, fmt);
     /* uart output without print-spinlock */
     OsVprintf(fmt, ap, EXC_OUTPUT);//异常信息打印主体函数
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
     WriteExcBufVa(fmt, ap);
 #endif
     va_end(ap);

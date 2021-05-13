@@ -49,7 +49,7 @@
 int main(int argc, char * const *argv)
 {
     int ret;
-    const char *shellPath = "/bin/shell";
+    const char *shellPath = "/bin/mksh";
 
 #ifdef LOSCFG_QUICK_START
     const char *samplePath = "/dev/shm/sample_quickstart";
@@ -74,6 +74,11 @@ int main(int argc, char * const *argv)
     if (ret < 0) {
         printf("Failed to fork for shell\n");
     } else if (ret == 0) {
+        ret = tcsetpgrp(STDIN_FILENO, getpgrp());
+        if (ret != 0) {
+            printf("tcsetpgrp failed, pgrpid %d, errno %d\n", getpgrp(), errno);
+            exit(0);
+        }
         (void)execve(shellPath, NULL, NULL);
         exit(0);
     }

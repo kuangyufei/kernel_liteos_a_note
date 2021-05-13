@@ -67,6 +67,7 @@ lite_subsystem("kernel") {
     }
   } else {
     deps = [ ":make" ]
+    deps += [ "//kernel/liteos_a/testsuites/unittest:unittest" ]
   }
 }
 

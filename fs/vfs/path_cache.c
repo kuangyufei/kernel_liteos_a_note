@@ -64,16 +64,18 @@ void PathCacheDump(void)
 void PathCacheMemoryDump(void)
 {
     int pathCacheNum = 0;
+    int nameSum = 0;
     for (int i = 0; i < LOSCFG_MAX_PATH_CACHE_SIZE; i++) {
         LIST_HEAD *dhead = &g_pathCacheHashEntrys[i];
         struct PathCache *dent = NULL;
 
         LOS_DL_LIST_FOR_EACH_ENTRY(dent, dhead, struct PathCache, hashEntry) {
             pathCacheNum++;
+            nameSum += dent->nameLen;
         }
     }
     PRINTK("pathCache number = %d\n", pathCacheNum);
-    PRINTK("pathCache memory size = %d(B)\n", pathCacheNum * sizeof(struct PathCache));
+    PRINTK("pathCache memory size = %d(B)\n", pathCacheNum * sizeof(struct PathCache) + nameSum);
 }
 
 static uint32_t NameHash(const char *name, int len, struct Vnode *dvp)
@@ -134,7 +136,6 @@ int PathCacheFree(struct PathCache *nc)
     LOS_ListDelete(&nc->hashEntry);
     LOS_ListDelete(&nc->parentEntry);
     LOS_ListDelete(&nc->childEntry);
-    free(nc->name);
     free(nc);
 
     return LOS_OK;

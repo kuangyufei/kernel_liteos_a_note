@@ -78,6 +78,7 @@ int format(const char *dev, int sectors, int option)
     }
     err = fatfs_mkfs(device, sectors, option);
     if (err < 0) {
+        VnodeDrop();
         set_errno(-err);
         return -1;
     }

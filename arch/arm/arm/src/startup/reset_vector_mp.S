@@ -37,17 +37,9 @@
 
 
     .global __exc_stack_top
-    .global __irq_stack_top
-    .global __fiq_stack_top
     .global __svc_stack_top
-    .global __abt_stack_top
-    .global __undef_stack_top
     .global __exc_stack
-    .global __irq_stack
-    .global __fiq_stack
     .global __svc_stack
-    .global __abt_stack
-    .global __undef_stack
 
     .extern __bss_start
     .extern __bss_end
@@ -114,9 +106,9 @@ __exception_handlers:@异常处理
     /* Startup code which will get the machine into supervisor mode */
     .global reset_vector
     .type   reset_vector,function
-#ifdef LOSCFG_QUICK_START
+#ifdef LOSCFG_BOOTENV_RAM
 __quickstart_args_start:
-    .fill 512,1,0
+    .fill LOSCFG_BOOTENV_RAMSIZE,1,0
 __quickstart_args_end:
 
 .global OsGetArgsAddr
@@ -222,35 +214,14 @@ reloc_img_to_bottom_done:
     bl      mmu_setup                           /* set up the mmu */@安装MMU
 #endif
     /* clear out the interrupt and exception stack and set magic num to check the overflow */
-    ldr     r0, =__undef_stack
+    ldr     r0, =__svc_stack
     ldr     r1, =__exc_stack_top
     bl      stack_init @初始化栈
 	@设置各个栈顶魔法数字
-    STACK_MAGIC_SET __undef_stack, #OS_EXC_UNDEF_STACK_SIZE, OS_STACK_MAGIC_WORD 
-    STACK_MAGIC_SET __abt_stack, #OS_EXC_ABT_STACK_SIZE, OS_STACK_MAGIC_WORD
-    STACK_MAGIC_SET __irq_stack, #OS_EXC_IRQ_STACK_SIZE, OS_STACK_MAGIC_WORD
-    STACK_MAGIC_SET __fiq_stack, #OS_EXC_FIQ_STACK_SIZE, OS_STACK_MAGIC_WORD
     STACK_MAGIC_SET __svc_stack, #OS_EXC_SVC_STACK_SIZE, OS_STACK_MAGIC_WORD
     STACK_MAGIC_SET __exc_stack, #OS_EXC_STACK_SIZE, OS_STACK_MAGIC_WORD
 
-warm_reset: @热启动,初始化CPU各异常工作模式环境
-    /* initialize interrupt/exception environments */
-    mov    r0, #(CPSR_IRQ_DISABLE |CPSR_FIQ_DISABLE|CPSR_IRQ_MODE)
-    msr    cpsr, r0 @设置为普通中断模式和栈
-    EXC_SP_SET __irq_stack_top, #OS_EXC_IRQ_STACK_SIZE
-
-    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_UNDEF_MODE)
-    msr    cpsr, r0 @设置为未定义模式和栈
-    EXC_SP_SET __undef_stack_top, #OS_EXC_UNDEF_STACK_SIZE
-
-    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_ABT_MODE)
-    msr    cpsr, r0 @设置为终止模式和栈
-    EXC_SP_SET __abt_stack_top, #OS_EXC_ABT_STACK_SIZE
-
-    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_FIQ_MODE)
-    msr    cpsr, r0 @设置为快中断模式和栈
-    EXC_SP_SET __fiq_stack_top, #OS_EXC_FIQ_STACK_SIZE
-
+warm_reset:
     /* initialize CPSR (machine state register) */
     mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_SVC_MODE)
     msr    cpsr, r0 @设置为管理模式和栈
@@ -500,22 +471,6 @@ init_flag:
     */
     .section ".int_stack", "wa", %nobits
     .align  3
-@六种特权模式申请对应的栈运行空间
-__undef_stack:
-    .space OS_EXC_UNDEF_STACK_SIZE * CORE_NUM 
-__undef_stack_top:
-
-__abt_stack:
-    .space OS_EXC_ABT_STACK_SIZE * CORE_NUM
-__abt_stack_top:
-
-__irq_stack:
-    .space OS_EXC_IRQ_STACK_SIZE * CORE_NUM //64
-__irq_stack_top:
-
-__fiq_stack:
-    .space OS_EXC_FIQ_STACK_SIZE * CORE_NUM
-__fiq_stack_top:
 
 __svc_stack:
     .space OS_EXC_SVC_STACK_SIZE * CORE_NUM

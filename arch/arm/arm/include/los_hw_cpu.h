@@ -192,6 +192,24 @@ STATIC INLINE UINT32 ArchIntUnlock(VOID)
     return intSave;
 }
 
+STATIC INLINE VOID ArchIrqDisable(VOID)
+{
+    __asm__ __volatile__(
+        "cpsid  i      "
+        :
+        :
+        : "memory", "cc");
+}
+
+STATIC INLINE VOID ArchIrqEnable(VOID)
+{
+    __asm__ __volatile__(
+        "cpsie  i      "
+        :
+        :
+        : "memory", "cc");
+}
+
 #else
 
 STATIC INLINE UINT32 ArchIntLock(VOID)
