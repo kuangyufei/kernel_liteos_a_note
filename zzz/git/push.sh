@@ -1,8 +1,8 @@
 git add -A
-git commit -m  '本次官方对系统调用,任务切换,信号处理,异常接管,汇编文件,文件管理,shell 做了较大更新,代码结构更清晰,部分代码需重新加注.
+git commit -m  '更新博客内容
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     国内:https://weharmony.gitee.io
-    国外:https://weharmony.gitee.io
+    国外:https://weharmony.github.io
 '
 
 git push  origin master
