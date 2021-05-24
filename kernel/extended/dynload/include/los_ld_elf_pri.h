@@ -42,24 +42,45 @@ extern "C" {
 
 /* Elf header */
 #define LD_EI_NIDENT           16
-
+/* 举例: shell elf 
+root@5e3abe332c5a:/home/harmony/out/hispark_aries/ipcamera_hispark_aries/bin# readelf -h shell
+ELF Header:
+  Magic:   7f 45 4c 46 01 01 01 00 00 00 00 00 00 00 00 00
+  Class:                             ELF32
+  Data:                              2's complement, little endian
+  Version:                           1 (current)
+  OS/ABI:                            UNIX - System V
+  ABI Version:                       0
+  Type:                              DYN (Shared object file)
+  Machine:                           ARM
+  Version:                           0x1
+  Entry point address:               0x1000
+  Start of program headers:          52 (bytes into file)
+  Start of section headers:          25268 (bytes into file)
+  Flags:                             0x5000200, Version5 EABI, soft-float ABI
+  Size of this header:               52 (bytes)
+  Size of program headers:           32 (bytes)
+  Number of program headers:         11
+  Size of section headers:           40 (bytes)
+  Number of section headers:         27
+  Section header string table index: 26
+*/
 typedef struct {
-    UINT8       elfIdent[LD_EI_NIDENT]; /* Magic number and other info *///含前16个字节，又可细分成class、data、version等字段，具体含义不用太关心，只需知道前4个字节点包含`ELF`关键字，这样可以判断当前文件是否是ELF格式
-    UINT16      elfType;                /* Object file type *///表示具体ELF类型，可重定位文件/可执行文件/共享库文件
+    UINT8       elfIdent[LD_EI_NIDENT]; /* Magic number and other info *///含前16个字节,又可细分成class、data、version等字段,具体含义不用太关心,只需知道前4个字节点包含`ELF`关键字,这样可以判断当前文件是否是ELF格式
+    UINT16      elfType;                /* Object file type *///表示具体ELF类型,可重定位文件/可执行文件/共享库文件
     UINT16      elfMachine;             /* Architecture *///表示cpu架构
     UINT32      elfVersion;             /* Object file version *///表示文件版本号
-    UINT32      elfEntry;               /* Entry point virtual address *///对应`Entry point address`，程序入口函数地址，通过进程虚拟地址空间地址表达
-    UINT32      elfPhoff;               /* Program header table file offset *///对应`Start of program headers`，表示program header table在文件内的偏移位置
-    UINT32      elfShoff;               /* Section header table file offset *///对应`Start of section headers`，表示section header table在文件内的偏移位置
+    UINT32      elfEntry;               /* Entry point virtual address *///对应`Entry point address`,程序入口函数地址,通过进程虚拟地址空间地址表达
+    UINT32      elfPhoff;               /* Program header table file offset *///对应`Start of program headers`,表示program header table在文件内的偏移位置
+    UINT32      elfShoff;               /* Section header table file offset *///对应`Start of section headers`,表示section header table在文件内的偏移位置
     UINT32      elfFlags;               /* Processor-specific flags *///表示与CPU处理器架构相关的信息
-    UINT16      elfHeadSize;            /* ELF header size in bytes *///对应`Size of this header`，表示本ELF header自身的长度
-    UINT16      elfPhEntSize;           /* Program header table entry size *///对应`Size of program headers`，表示program header table中每个元素的大小
-    UINT16      elfPhNum;               /* Program header table entry count *///对应`Number of program headers`，表示program header table中元素个数
-    UINT16      elfShEntSize;           /* Section header table entry size *///对应`Size of section headers`，表示section header table中每个元素的大小
-    UINT16      elfShNum;               /* Section header table entry count *///对应`Number of section headers`，表示section header table中元素的个数
-    UINT16      elfShStrIndex;          /* Section header string table index *///对应`Section header string table index`，表示描述各section字符名称的string table在section header table中的下标
+    UINT16      elfHeadSize;            /* ELF header size in bytes *///对应`Size of this header`,表示本ELF header自身的长度
+    UINT16      elfPhEntSize;           /* Program header table entry size *///对应`Size of program headers`,表示program header table中每个元素的大小
+    UINT16      elfPhNum;               /* Program header table entry count *///对应`Number of program headers`,表示program header table中元素个数
+    UINT16      elfShEntSize;           /* Section header table entry size *///对应`Size of section headers`,表示section header table中每个元素的大小
+    UINT16      elfShNum;               /* Section header table entry count *///对应`Number of section headers`,表示section header table中元素的个数
+    UINT16      elfShStrIndex;          /* Section header string table index *///对应`Section header string table index`,表示描述各section字符名称的string table在section header table中的下标
 } LDElf32Ehdr;
-
 
 
 typedef struct {
@@ -119,23 +140,23 @@ typedef struct {
 #define LD_ELF_DATA2MSB        2
 
 /* e_type */
-#define LD_ET_NONE             0
-#define LD_ET_REL              1
-#define LD_ET_EXEC             2
-#define LD_ET_DYN              3
-#define LD_ET_CORE             4
-#define LD_ET_LOPROC           0xff00
-#define LD_ET_HIPROC           0xffff
-
-/* e_machine */
-#define LD_EM_NONE             0     /* No machine */
-#define LD_EM_M32              1     /* AT&T WE 32100 */
-#define LD_EM_SPARC            2     /* SPARC */
-#define LD_EM_386              3     /* Intel 80386 */
-#define LD_EM_68K              4     /* Motorola 68000 */
-#define LD_EM_88K              5     /* Motorola 88000 */
-#define LD_EM_486              6     /* Intel 80486 */
-#define LD_EM_860              7     /* Intel 80860 */
+#define LD_ET_NONE             0	//未知文件类型
+#define LD_ET_REL              1	//可重定向文件(Relocatable file)：文件保存着代码和适当的数据,用来和其他的目标文件一起来创建一个可执行文件或者是一个共享目标文件.
+#define LD_ET_EXEC             2	//可执行文件(Executable file)：文件保存着一个用来执行的程序.（例如bash,gcc等）
+#define LD_ET_DYN              3	//共享目标文件, https://my.oschina.net/weharmony/blog/5055124     例如: ./bin/weharmony 
+#define LD_ET_CORE             4	//Core文件
+#define LD_ET_LOPROC           0xff00	//特定处理器文件扩展下边界
+#define LD_ET_HIPROC           0xffff	//特定处理器文件扩展上边界
+//ET_LOPROC ~ ET_HIPROC (0xff00 ~ 0xffff)这一范围内的文件类型是为特定处理器而保留的,如果需要为某种处理器专门设定文件格式,可以从这一范围内选取一个做为标识.
+/* e_machine */		//处理器体系结构
+#define LD_EM_NONE             0     /* No machine */				//未知体系结构
+#define LD_EM_M32              1     /* AT&T WE 32100 */			//AT&T WE 32100
+#define LD_EM_SPARC            2     /* SPARC */					//SPARC
+#define LD_EM_386              3     /* Intel 80386 */				//Intel Architecture
+#define LD_EM_68K              4     /* Motorola 68000 */			//Motorola 68000
+#define LD_EM_88K              5     /* Motorola 88000 */			//Motorola 88000
+#define LD_EM_486              6     /* Intel 80486 */				//Intel 80486
+#define LD_EM_860              7     /* Intel 80860 */				//Intel 80486
 #define LD_EM_MIPS             8     /* MIPS RS3000 Big-Endian */
 #define LD_EM_MIPS_RS4_BE      10    /* MIPS RS4000 Big-Endian */
 #define LD_EM_PPC_OLD          17    /* PowerPC - old */
@@ -148,7 +169,7 @@ typedef struct {
 #define LD_EM_NEC              36992 /* NEC 850 series */
 #define LD_EM_NEC_830          36    /* NEC 830 series */
 #define LD_EM_SC               58    /* SC */
-#define LD_EM_ARM              40    /* ARM  */
+#define LD_EM_ARM              40    /* ARM  */						//目前支持的方式
 #define LD_EM_XTENSA           0x5E  /* XTENSA */
 #define LD_EM_AARCH64          183   /* ARM AARCH64 */
 
@@ -158,7 +179,7 @@ typedef struct {
 #define  LD_EM_TYPE  LD_EM_ARM
 #endif
 
-/* e_flags */
+/* e_flags */	//此字段含有处理器特定的标志位.
 #define LD_EF_PPC_EMB          0x80000000
 
 #define LD_EF_MIPS_NOREORDER   0x00000001
@@ -167,14 +188,14 @@ typedef struct {
 #define LD_EF_MIPS_ARCH        0xf0000000
 #define LD_EF_MIPS_ARCH_MIPS_2 0x10000000
 #define LD_EF_MIPS_ARCH_MIPS_3 0x20000000
-
-#define LD_PT_NULL             0
-#define LD_PT_LOAD             1
-#define LD_PT_DYNAMIC          2
-#define LD_PT_INTERP           3
+//段类型
+#define LD_PT_NULL             0	//表明本程序头是未使用的,本程序头内的其它成员值均无意义.具有此种类型的程序头应该被忽略.
+#define LD_PT_LOAD             1	//此类型表明本程序头指向一个可装载的段.段的内容会被从文件中拷贝到内存中.如前所述,段在文件中的大小是p_filesz,在内存中的大小是p_memsz.如果p_memsz大于p_filesz,在内存中多出的存储空间应填0补充,也就是说,段在内存中可以比在文件中占用空间更大；而相反,p_filesz永远不应该比p_memsz大,因为这样的话,内存中就将无法完整地映射段的内容.在程序头表中,所有PT_LOAD类型的程序头按照p_vaddr的值做升序排列.
+#define LD_PT_DYNAMIC          2	//描述了动态加载段
+#define LD_PT_INTERP           3	//本段指向了一个以"null"结尾的字符串,这个字符串是一个ELF解析器的路径.这种段类型只对可执行程序有意义,当它出现在共享目标文件中时,是一个无意义的多余项.在一个ELF文件中它最多只能出现一次,而且必须出现在其它可装载段的表项之前
 #define LD_PT_NOTE             4
 #define LD_PT_SHLIB            5
-#define LD_PT_PHDR             6
+#define LD_PT_PHDR             6	//描述了program header table自身的信息
 #define LD_PT_GNU_STACK        0x6474e551
 
 /* e_version and EI_VERSION */
@@ -183,14 +204,14 @@ typedef struct {
 
 /* Program Header */
 typedef struct {
-    UINT32 type;     /* Segment type */
-    UINT32 offset;   /* Segment file offset */
-    UINT32 vAddr;    /* Segment virtual address */
-    UINT32 phyAddr;  /* Segment physical address */
-    UINT32 fileSize; /* Segment size in file */
-    UINT32 memSize;  /* Segment size in memory */
-    UINT32 flags;    /* Segment flags */
-    UINT32 align;    /* Segment alignment */
+    UINT32 type;     /* Segment type */	//段类型
+    UINT32 offset;   /* Segment file offset */		//此数据成员给出本段内容在文件中的位置,即段内容的开始位置相对于文件开头的偏移量.
+    UINT32 vAddr;    /* Segment virtual address */	//此数据成员给出本段内容的开始位置在进程空间中的虚拟地址.
+    UINT32 phyAddr;  /* Segment physical address */	//此数据成员给出本段内容的开始位置在进程空间中的物理地址.对于目前大多数现代操作系统而言,应用程序中段的物理地址事先是不可知的,所以目前这个成员多数情况下保留不用,或者被操作系统改作它用.
+    UINT32 fileSize; /* Segment size in file */		//此数据成员给出本段内容在文件中的大小,单位是字节,可以是0.
+    UINT32 memSize;  /* Segment size in memory */	//此数据成员给出本段内容在内容镜像中的大小,单位是字节,可以是0.
+    UINT32 flags;    /* Segment flags */			//此数据成员给出了本段内容的属性.
+    UINT32 align;    /* Segment alignment */		//对于可装载的段来说,其p_vaddr和p_offset的值至少要向内存页面大小对齐.
 } LDElf32Phdr;
 
 typedef struct {
@@ -231,7 +252,7 @@ typedef struct {
     UINT32 shLink;      /* Link to another section *///Link和Info记录不同类型区的相关信息
     UINT32 shInfo;      /* Additional section information *///Link和Info记录不同类型区的相关信息
     UINT32 shAddrAlign; /* Section alignment *///表示区的对齐单位
-    UINT32 shEntSize;   /* Entry size if section holds table *///表示区中每个元素的大小(如果该区为一个数组的话，否则该值为0)
+    UINT32 shEntSize;   /* Entry size if section holds table *///表示区中每个元素的大小(如果该区为一个数组的话,否则该值为0)
 } LDElf32Shdr;
 
 
@@ -281,7 +302,7 @@ typedef struct {
 
 /* Symbol table */
 typedef struct {
-    UINT32 stName;  /* Symbol table name (string tbl index) *///表示符号对应的源码字符串，为对应String Table中的索引
+    UINT32 stName;  /* Symbol table name (string tbl index) *///表示符号对应的源码字符串,为对应String Table中的索引
     UINT32 stValue; /* Symbol table value *///表示符号对应的数值
     UINT32 stSize;  /* Symbol table size *///表示符号对应数值的空间占用大小
     UINT8 stInfo;   /* Symbol table type and binding *///表示符号的相关信息 如符号类型(变量符号、函数符号)

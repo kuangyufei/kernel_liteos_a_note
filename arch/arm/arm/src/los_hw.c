@@ -130,14 +130,14 @@ LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, UINTPTR tas
     context->ULR = 0;//保存子程序返回地址 例如 a call b ,在b中保存 a地址
     context->PC = (UINTPTR)taskEntry;//入口函数,由外部传入,由上层应用指定,固然每个都不一样.
 }
-
+//初始化信号上下文
 VOID OsInitSignalContext(VOID *sp, VOID *signalContext, UINTPTR sigHandler, UINT32 signo, UINT32 param)
 {
     IrqContext *newSp = (IrqContext *)signalContext;
     (VOID)memcpy_s(signalContext, sizeof(IrqContext), sp, sizeof(IrqContext));
-    newSp->PC = sigHandler;
-    newSp->R0 = signo;
-    newSp->R1 = param;
+    newSp->PC = sigHandler; //信号处理函数
+    newSp->R0 = signo;		//sigHandler 参数一 
+    newSp->R1 = param;		//sigHandler 参数二 
 }
 DEPRECATED VOID Dmb(VOID)
 {

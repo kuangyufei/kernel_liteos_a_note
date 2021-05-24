@@ -402,6 +402,10 @@ OUT:
 }
 //动态加载程序过程
 #ifdef LOSCFG_KERNEL_DYNLOAD
+/*
+argv :参数数组 {"ls", "-al", "/etc/passwd", NULL};
+envp :环境变量数组 {"PATH=/bin", NULL}  
+*/
 int SysExecve(const char *fileName, char *const *argv, char *const *envp)
 {
     return LOS_DoExecveFile(fileName, argv, envp);

@@ -115,22 +115,23 @@ STATIC INT32 OsReadELFInfo(INT32 fd, UINT8 *buffer, size_t readSize, off_t offse
     }
     return LOS_OK;
 }
-
+//确实ELF头信息是否异常
 STATIC INT32 OsVerifyELFEhdr(const LD_ELF_EHDR *ehdr, UINT32 fileLen)
 {
     if (memcmp(ehdr->elfIdent, LD_ELFMAG, LD_SELFMAG) != 0) {
         PRINT_ERR("%s[%d], The file is not elf!\n", __FUNCTION__, __LINE__);
         return LOS_NOK;
     }
+	//必须为 LD_ET_EXEC 和 LD_ET_DYN 才可以被执行,
     if ((ehdr->elfType != LD_ET_EXEC) && (ehdr->elfType != LD_ET_DYN)) {
         PRINT_ERR("%s[%d], The type of file is not ET_EXEC or ET_DYN!\n", __FUNCTION__, __LINE__);
         return LOS_NOK;
     }
-    if (ehdr->elfMachine != LD_EM_ARM) {
+    if (ehdr->elfMachine != LD_EM_ARM) {//CPU架构,目前只支持arm系列
         PRINT_ERR("%s[%d], The type of machine is not EM_ARM!\n", __FUNCTION__, __LINE__);
         return LOS_NOK;
     }
-    if (ehdr->elfPhNum > ELF_PHDR_NUM_MAX) {
+    if (ehdr->elfPhNum > ELF_PHDR_NUM_MAX) {//程序头数量不能大于128个
         PRINT_ERR("%s[%d], The num of program header is out of limit\n", __FUNCTION__, __LINE__);
         return LOS_NOK;
     }
@@ -168,14 +169,14 @@ STATIC VOID OsLoadInit(ELFLoadInfo *loadInfo)
 {
 #ifdef LOSCFG_FS_VFS
     const struct files_struct *oldFiles = OsCurrProcessGet()->files;
-    loadInfo->oldFiles = (UINTPTR)create_files_snapshot(oldFiles);
+    loadInfo->oldFiles = (UINTPTR)create_files_snapshot(oldFiles);//为当前进程做文件镜像
 #else
     loadInfo->oldFiles = NULL;
 #endif
     loadInfo->execInfo.fd = INVALID_FD;
     loadInfo->interpInfo.fd = INVALID_FD;
 }
-
+//读 ELF头信息
 STATIC INT32 OsReadEhdr(const CHAR *fileName, ELFInfo *elfInfo, BOOL isExecFile)
 {
     INT32 ret;
@@ -200,13 +201,13 @@ STATIC INT32 OsReadEhdr(const CHAR *fileName, ELFInfo *elfInfo, BOOL isExecFile)
         }
     }
 #endif
-    ret = OsReadELFInfo(elfInfo->fd, (UINT8 *)&elfInfo->elfEhdr, sizeof(LD_ELF_EHDR), 0);
+    ret = OsReadELFInfo(elfInfo->fd, (UINT8 *)&elfInfo->elfEhdr, sizeof(LD_ELF_EHDR), 0);//读取ELF头部信息
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
         return -EIO;
     }
 
-    ret = OsVerifyELFEhdr(&elfInfo->elfEhdr, elfInfo->fileLen);
+    ret = OsVerifyELFEhdr(&elfInfo->elfEhdr, elfInfo->fileLen);//确认是否为有效的ELF文件
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
         return isExecFile ? -ENOEXEC : -ELIBBAD;
@@ -214,7 +215,7 @@ STATIC INT32 OsReadEhdr(const CHAR *fileName, ELFInfo *elfInfo, BOOL isExecFile)
 
     return LOS_OK;
 }
-
+//读程序头信息
 STATIC INT32 OsReadPhdrs(ELFInfo *elfInfo, BOOL isExecFile)
 {
     LD_ELF_EHDR *elfEhdr = &elfInfo->elfEhdr;
@@ -229,17 +230,17 @@ STATIC INT32 OsReadPhdrs(ELFInfo *elfInfo, BOOL isExecFile)
         goto OUT;
     }
 
-    size = sizeof(LD_ELF_PHDR) * elfEhdr->elfPhNum;
+    size = sizeof(LD_ELF_PHDR) * elfEhdr->elfPhNum;//计算所有程序头大小
     if ((elfEhdr->elfPhoff + size) > elfInfo->fileLen) {
         goto OUT;
     }
 
-    elfInfo->elfPhdr = LOS_MemAlloc(m_aucSysMem0, size);
+    elfInfo->elfPhdr = LOS_MemAlloc(m_aucSysMem0, size);//在内核空间分配内存保存ELF程序头
     if (elfInfo->elfPhdr == NULL) {
         PRINT_ERR("%s[%d], Failed to allocate for elfPhdr!\n", __FUNCTION__, __LINE__);
         return -ENOMEM;
     }
-
+	//读取所有程序头信息
     ret = OsReadELFInfo(elfInfo->fd, (UINT8 *)elfInfo->elfPhdr, size, elfEhdr->elfPhoff);
     if (ret != LOS_OK) {
         (VOID)LOS_MemFree(m_aucSysMem0, elfInfo->elfPhdr);
@@ -253,7 +254,7 @@ OUT:
     PRINT_ERR("%s[%d], elf file is bad!\n", __FUNCTION__, __LINE__);
     return isExecFile ? -ENOEXEC : -ELIBBAD;
 }
-
+//读取 INTERP段信息,描述了一个特殊内存段,该段内存记录了动态加载解析器的访问路径字符串.
 STATIC INT32 OsReadInterpInfo(ELFLoadInfo *loadInfo)
 {
     LD_ELF_PHDR *elfPhdr = loadInfo->execInfo.elfPhdr;
@@ -413,7 +414,7 @@ INT32 OsGetKernelVaddr(const LosVmSpace *space, VADDR_T vaddr, VADDR_T *kvaddr)
 
     return LOS_OK;
 }
-
+//设置.bss 区
 STATIC INT32 OsSetBss(const LD_ELF_PHDR *elfPhdr, INT32 fd, UINTPTR bssStart, UINT32 bssEnd, UINT32 elfProt)
 {
     UINTPTR bssPageStart, bssStartPageAlign, bssEndPageAlign;
@@ -878,7 +879,7 @@ STATIC INT32 OsMakeArgsStack(ELFLoadInfo *loadInfo, UINTPTR interpMapBase)
 
     return LOS_OK;
 }
-
+//加载段信息
 STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
 {
     LD_ELF_PHDR *elfPhdrTemp = loadInfo->execInfo.elfPhdr;
@@ -888,7 +889,7 @@ STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
     INT32 ret;
     loadInfo->loadAddr = 0;
 
-    if (loadInfo->execInfo.elfEhdr.elfType == LD_ET_DYN) {
+    if (loadInfo->execInfo.elfEhdr.elfType == LD_ET_DYN) {//共享目标文件
         loadBase = EXEC_MMAP_BASE + OsGetRndOffset(loadInfo);
         mapSize = OsGetAllocSize(elfPhdrTemp, loadInfo->execInfo.elfEhdr.elfPhNum);
         if (mapSize == 0) {
@@ -972,43 +973,43 @@ STATIC VOID OsDeInitFiles(ELFLoadInfo *loadInfo)
     delete_files_snapshot((struct files_struct *)loadInfo->oldFiles);
 #endif
 }
-
+//加载ELF格式文件
 INT32 OsLoadELFFile(ELFLoadInfo *loadInfo)
 {
     INT32 ret;
 
-    OsLoadInit(loadInfo);
+    OsLoadInit(loadInfo);//初始化加载信息
 
-    ret = OsReadEhdr(loadInfo->fileName, &loadInfo->execInfo, TRUE);
+    ret = OsReadEhdr(loadInfo->fileName, &loadInfo->execInfo, TRUE);//读ELF头信息
     if (ret != LOS_OK) {
         goto OUT;
     }
 
-    ret = OsReadPhdrs(&loadInfo->execInfo, TRUE);
+    ret = OsReadPhdrs(&loadInfo->execInfo, TRUE);//读ELF程序头信息,构建进程映像所需信息.
     if (ret != LOS_OK) {
         goto OUT;
     }
 
-    ret = OsReadInterpInfo(loadInfo);
+    ret = OsReadInterpInfo(loadInfo);//读取 .Interp 信息
     if (ret != LOS_OK) {
         goto OUT;
     }
 
-    ret = OsSetArgParams(loadInfo, loadInfo->argv, loadInfo->envp);
+    ret = OsSetArgParams(loadInfo, loadInfo->argv, loadInfo->envp);//设置外部参数内容
     if (ret != LOS_OK) {
         goto OUT;
     }
 
-    OsFlushAspace(loadInfo);
+    OsFlushAspace(loadInfo);//擦除空间
 
-    ret = OsLoadELFSegment(loadInfo);
+    ret = OsLoadELFSegment(loadInfo);//加载段信息
     if (ret != LOS_OK) {
         OsCurrProcessGet()->vmSpace = loadInfo->oldSpace;
         LOS_ArchMmuContextSwitch(&OsCurrProcessGet()->vmSpace->archMmu);
         goto OUT;
     }
 
-    OsDeInitLoadInfo(loadInfo);
+    OsDeInitLoadInfo(loadInfo);//析构加载信息
 
     return LOS_OK;
 

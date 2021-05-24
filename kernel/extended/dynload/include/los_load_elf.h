@@ -84,40 +84,40 @@ extern "C" {
 #define PF_R                                0x4
 #define PF_W                                0x2
 #define PF_X                                0x1
-
+//ELF信息结构体,
 typedef struct {
-    LD_ELF_EHDR  elfEhdr;
-    LD_ELF_PHDR  *elfPhdr;
-    UINT32       fileLen;
-    INT32        fd;
+    LD_ELF_EHDR  elfEhdr;	//ELF头信息
+    LD_ELF_PHDR  *elfPhdr;	//ELF程序头信息,也称段头信息
+    UINT32       fileLen;	//文件长度
+    INT32        fd;		//文件描述符
 } ELFInfo;
-
+//ELF加载信息
 typedef struct {
-    ELFInfo      execInfo;
+    ELFInfo      execInfo;//可执行文件信息
     ELFInfo      interpInfo;
-    const CHAR   *fileName;
-    CHAR         *execName;
-    INT32        argc;
-    INT32        envc;
-    CHAR *const  *argv;
-    CHAR *const  *envp;
-    UINTPTR      stackTop;
-    UINTPTR      stackTopMax;
-    UINTPTR      stackBase;
+    const CHAR   *fileName;//文件名称
+    CHAR         *execName;//程序名称
+    INT32        argc;	//参数个数
+    INT32        envc;	//环境变量个数
+    CHAR *const  *argv;	//参数数组
+    CHAR *const  *envp;	//环境变量数组
+    UINTPTR      stackTop;//栈顶
+    UINTPTR      stackTopMax;//栈最大上限
+    UINTPTR      stackBase;//栈底
     UINTPTR      stackParamBase;
     UINT32       stackSize;
     INT32        stackProt;
-    UINTPTR      loadAddr;
-    UINTPTR      elfEntry;
+    UINTPTR      loadAddr;	//加载地址
+    UINTPTR      elfEntry;	//入口地址
     UINTPTR      topOfMem;
     UINTPTR      oldFiles;
-    LosVmSpace   *newSpace;
-    LosVmSpace   *oldSpace;
+    LosVmSpace   *newSpace;//新虚拟空间
+    LosVmSpace   *oldSpace;//旧虚拟空间
 #ifdef LOSCFG_ASLR
     INT32        randomDevFD;
 #endif
 } ELFLoadInfo;
-
+//不超过用户空间顶部位置
 STATIC INLINE BOOL OsIsBadUserAddress(VADDR_T vaddr)
 {
     return (vaddr >= USER_STACK_TOP_MAX);

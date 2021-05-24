@@ -86,23 +86,23 @@ ERR_FILE:
     return -ENOENT;
 }
 #endif
-
+//拷贝用户参数至内核空间
 STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *kfileName, UINT32 maxSize)
 {
     UINT32 strLen;
     errno_t err;
 
-    if (LOS_IsUserAddress((VADDR_T)(UINTPTR)fileName)) {
-        err = LOS_StrncpyFromUser(kfileName, fileName, PATH_MAX + 1);
+    if (LOS_IsUserAddress((VADDR_T)(UINTPTR)fileName)) {//在用户空间
+        err = LOS_StrncpyFromUser(kfileName, fileName, PATH_MAX + 1);//拷贝至内核空间
         if (err == -EFAULT) {
             return err;
         } else if (err > PATH_MAX) {
             PRINT_ERR("%s[%d], filename len exceeds maxlen: %d\n", __FUNCTION__, __LINE__, PATH_MAX);
             return -ENAMETOOLONG;
         }
-    } else if (LOS_IsKernelAddress((VADDR_T)(UINTPTR)fileName)) {
+    } else if (LOS_IsKernelAddress((VADDR_T)(UINTPTR)fileName)) {//已经在内核空间
         strLen = strlen(fileName);
-        err = memcpy_s(kfileName, PATH_MAX, fileName, strLen);
+        err = memcpy_s(kfileName, PATH_MAX, fileName, strLen);//拷贝至内核空间
         if (err != EOK) {
             PRINT_ERR("%s[%d], Copy failed! err: %d\n", __FUNCTION__, __LINE__, err);
             return -EFAULT;
@@ -111,24 +111,24 @@ STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *
         return -EINVAL;
     }
 
-    loadInfo->fileName = kfileName;
+    loadInfo->fileName = kfileName;//文件名指向内核空间
     return LOS_OK;
 }
-//运行用户态进程
+//运行用户态进程 ELF格式,运行在内核态
 INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *envp)
 {
     ELFLoadInfo loadInfo = { 0 };
-    CHAR kfileName[PATH_MAX + 1] = { 0 };
+    CHAR kfileName[PATH_MAX + 1] = { 0 };//此时已陷入内核态,所以局部变量都在内核空间
     INT32 ret;
 #ifdef LOSCFG_SHELL
     CHAR buf[PATH_MAX + 1] = { 0 };
 #endif
-
+	//先判断参数地址是否来自用户空间
     if ((fileName == NULL) || ((argv != NULL) && !LOS_IsUserAddress((VADDR_T)(UINTPTR)argv)) ||
         ((envp != NULL) && !LOS_IsUserAddress((VADDR_T)(UINTPTR)envp))) {
         return -EINVAL;
     }
-    ret = OsCopyUserParam(&loadInfo, fileName, kfileName, PATH_MAX);
+    ret = OsCopyUserParam(&loadInfo, fileName, kfileName, PATH_MAX);//确保拷贝至内核空间
     if (ret != LOS_OK) {
         return ret;
     }
@@ -142,27 +142,27 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
     }
 #endif
 
-    loadInfo.newSpace = OsCreateUserVmSapce();
+    loadInfo.newSpace = OsCreateUserVmSapce();//创建用户虚拟空间
     if (loadInfo.newSpace == NULL) {
         PRINT_ERR("%s %d, failed to allocate new vm space\n", __FUNCTION__, __LINE__);
         return -ENOMEM;
     }
 
-    loadInfo.argv = argv;
-    loadInfo.envp = envp;
+    loadInfo.argv = argv;//参数数组
+    loadInfo.envp = envp;//环境数组
 
-    ret = OsLoadELFFile(&loadInfo);
+    ret = OsLoadELFFile(&loadInfo);//加载ELF文件
     if (ret != LOS_OK) {
         return ret;
     }
-
+	
     ret = OsExecRecycleAndInit(OsCurrProcessGet(), loadInfo.fileName, loadInfo.oldSpace, loadInfo.oldFiles);
     if (ret != LOS_OK) {
-        (VOID)LOS_VmSpaceFree(loadInfo.oldSpace);
+        (VOID)LOS_VmSpaceFree(loadInfo.oldSpace);//释放虚拟空间
         goto OUT;
     }
 
-    ret = OsExecve(&loadInfo);
+    ret = OsExecve(&loadInfo);//运行已加载ELF内容
     if (ret != LOS_OK) {
         goto OUT;
     }

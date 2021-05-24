@@ -203,7 +203,7 @@ BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)//用户空间的TT
 #endif
     return OsVmSpaceInitCommon(vmSpace, virtTtb);
 }
-//鸿蒙内核空间有两个(内核空间和内核堆空间),共用一张L1页表
+//创建用户进程空间
 LosVmSpace *OsCreateUserVmSapce(VOID)
 {
     BOOL retVal = FALSE;
