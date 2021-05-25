@@ -155,14 +155,14 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
     if (ret != LOS_OK) {
         return ret;
     }
-	
+	//对当前进程旧虚拟空间和文件进行回收
     ret = OsExecRecycleAndInit(OsCurrProcessGet(), loadInfo.fileName, loadInfo.oldSpace, loadInfo.oldFiles);
     if (ret != LOS_OK) {
         (VOID)LOS_VmSpaceFree(loadInfo.oldSpace);//释放虚拟空间
         goto OUT;
     }
 
-    ret = OsExecve(&loadInfo);//运行已加载ELF内容
+    ret = OsExecve(&loadInfo);//运行ELF内容
     if (ret != LOS_OK) {
         goto OUT;
     }

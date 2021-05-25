@@ -95,28 +95,43 @@ STATUS_T OsNamedMmapingPermCheck(struct file *filep, unsigned long flags, unsign
 
     return LOS_OK;
 }
-
+//匿名映射
 STATUS_T OsAnonMMap(LosVmMapRegion *region)
 {
     LOS_SetRegionTypeAnon(region);
     return LOS_OK;
 }
 /**************************************************
-系统调用|申请虚拟内存
+mmap基础概念:
+一种内存映射文件的方法，即将一个文件或者其它对象映射到进程的地址空间，实现文件磁盘地址和进程虚拟地址空间中一段虚拟地址的一一对映关系.
+实现这样的映射关系后，进程就可以采用指针的方式读写操作这一段内存，而系统会自动回写脏页面到对应的文件磁盘上，
+即完成了对文件的操作而不必再调用read,write等系统调用函数。相反，内核空间对这段区域的修改也直接反映用户空间，
+从而可以实现不同进程间的文件共享。
+
+https://www.cnblogs.com/huxiao-tee/p/4660352.html
+http://abcdxyzk.github.io/blog/2015/09/11/kernel-mm-mmap/
+
 参数		描述		
-addr	用来请求使用某个特定的虚拟内存地址。如果取NULL，结果地址就将自动分配（这是推荐的做法），
-		否则会降低程序的可移植性，因为不同系统的可用地址范围不一样。
-length	内存段的大小。
+addr	指向欲映射的内存起始地址，通常设为 NULL，代表让系统自动选定地址，映射成功后返回该地址。
+length	代表将文件中多大的部分映射到内存。
 prot	用于设置内存段的访问权限，有如下权限：
-		PROT_READ：允许读该内存段。
-		PROT_WRITE：允许写该内存段。
-		PROT_EXEC：允许执行该内存段。
-		PROT_NONE：不能访问。
+		PROT_EXEC 映射区域可被执行
+		PROT_READ 映射区域可被读取
+		PROT_WRITE 映射区域可被写入
+		PROT_NONE 映射区域不能存取
+		
 flags	控制程序对内存段的改变所造成的影响，有如下属性：
-		MAP_PRIVATE：内存段私有，对它的修改值仅对本进程有效。
-		MAP_SHARED：把对该内存段的修改保存到磁盘文件中。
-fd		打开的文件描述符。
-offset	以文件开始处的偏移量, 必须是分页大小的整数倍, 通常为0, 表示从文件头开始映射。
+		MAP_FIXED 如果参数start所指的地址无法成功建立映射时，则放弃映射，不对地址做修正。通常不鼓励用此旗标。
+		MAP_SHARED 对映射区域的写入数据会复制回文件内，而且允许其他映射该文件的进程共享。
+		MAP_PRIVATE 对映射区域的写入操作会产生一个映射文件的复制，即私人的“写入时复制”（copy on write）对此区域作的任何修改都不会写回原来的文件内容。
+		MAP_ANONYMOUS建立匿名映射。此时会忽略参数fd，不涉及文件，而且映射区域无法和其他进程共享。
+		MAP_DENYWRITE只允许对映射区域的写入操作，其他对文件直接写入的操作将会被拒绝。
+		MAP_LOCKED 将映射区域锁定住，这表示该区域不会被置换（swap）。
+
+fd:		要映射到内存中的文件描述符。如果使用匿名内存映射时，即flags中设置了MAP_ANONYMOUS，fd设为-1。
+		有些系统不支持匿名内存映射，则可以使用fopen打开/dev/zero文件，然后对该文件进行映射，可以同样达到匿名内存映射的效果。
+
+offset	文件映射的偏移量，通常设置为0，代表从文件最前方开始对应，offset必须是PAGE_SIZE的整数倍。
 成功返回：虚拟内存地址，这地址是页对齐。
 失败返回：(void *)-1。
 **************************************************/

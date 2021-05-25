@@ -193,9 +193,9 @@ typedef struct {
 #define LD_PT_LOAD             1	//此类型表明本程序头指向一个可装载的段.段的内容会被从文件中拷贝到内存中.如前所述,段在文件中的大小是p_filesz,在内存中的大小是p_memsz.如果p_memsz大于p_filesz,在内存中多出的存储空间应填0补充,也就是说,段在内存中可以比在文件中占用空间更大；而相反,p_filesz永远不应该比p_memsz大,因为这样的话,内存中就将无法完整地映射段的内容.在程序头表中,所有PT_LOAD类型的程序头按照p_vaddr的值做升序排列.
 #define LD_PT_DYNAMIC          2	//描述了动态加载段
 #define LD_PT_INTERP           3	//本段指向了一个以"null"结尾的字符串,这个字符串是一个ELF解析器的路径.这种段类型只对可执行程序有意义,当它出现在共享目标文件中时,是一个无意义的多余项.在一个ELF文件中它最多只能出现一次,而且必须出现在其它可装载段的表项之前
-#define LD_PT_NOTE             4
-#define LD_PT_SHLIB            5
-#define LD_PT_PHDR             6	//描述了program header table自身的信息
+#define LD_PT_NOTE             4	//本段指向了一个以"null"结尾的字符串,这个字符串包含一些附加的信息
+#define LD_PT_SHLIB            5	//该段类型是保留的,而且未定义语法.UNIX System V系统上的应用程序不会包含这种表项.
+#define LD_PT_PHDR             6	//此类型的程序头如果存在的话,它表明的是其自身所在的程序头表在文件或内存中的位置和大小.这样的段在文件中可以不存在,只有当所在程序头表所覆盖的段只是整个程序的一部分时,才会出现一次这种表项,而且这种表项一定出现在其它可装载段的表项之前.
 #define LD_PT_GNU_STACK        0x6474e551
 
 /* e_version and EI_VERSION */

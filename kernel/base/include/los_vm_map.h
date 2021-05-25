@@ -180,7 +180,7 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_FIXED                (1<<17)
 #define     VM_MAP_REGION_FLAG_FIXED_NOREPLACE      (1<<18)
 #define     VM_MAP_REGION_FLAG_INVALID              (1<<19) /* indicates that flags are not specified */
-
+//从外部权限标签转化为线性区权限标签
 STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned long flags)
 {
     UINT32 regionFlags = 0;

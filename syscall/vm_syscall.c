@@ -37,7 +37,7 @@
 #include "fs_file.h"
 
 
-//鸿蒙与Linux标准库的差异 https://gitee.com/openharmony/docs/blob/master/kernel/%E4%B8%8ELinux%E6%A0%87%E5%87%86%E5%BA%93%E7%9A%84%E5%B7%AE%E5%BC%82.md
+//鸿蒙与Linux标准库的差异 https://weharmony.gitee.io/zh-cn/device-dev/kernel/%E4%B8%8ELinux%E6%A0%87%E5%87%86%E5%BA%93%E7%9A%84%E5%B7%AE%E5%BC%82/
 /**************************************************
 系统调用|申请虚拟内存(分配线性地址区间)
 参数		描述		

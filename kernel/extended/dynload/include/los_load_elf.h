@@ -54,12 +54,12 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define INTERP_FULL_PATH                    "/lib/libc.so"
-#define INVALID_FD                          (-1)
-#define STRINGS_COUNT_MAX                   256
-#define ELF_PHDR_NUM_MAX                    128
-#define FILE_LENGTH_MAX                     0x1000000
-#define MEM_SIZE_MAX                        0x1000000
+#define INTERP_FULL_PATH                    "/lib/libc.so" //解析器路径
+#define INVALID_FD                          (-1)//无效文件描述符,用于初始值.
+#define STRINGS_COUNT_MAX                   256	//argv[], envp[]最大数量 
+#define ELF_PHDR_NUM_MAX                    128	//ELF最大段数量
+#define FILE_LENGTH_MAX                     0x1000000	//段占用的文件大小 最大1M
+#define MEM_SIZE_MAX                        0x1000000	//运行时占用进程空间内存大小最大1M
 
 #ifndef FILE_PATH_MAX
 #define FILE_PATH_MAX                       PATH_MAX
@@ -68,22 +68,22 @@ extern "C" {
 #define FILE_PATH_MIN                       2
 #endif
 
-#define USER_STACK_SIZE                     0x100000
-#define USER_PARAM_BYTE_MAX                 0x1000
-#define USER_STACK_TOP_MAX                  USER_ASPACE_TOP_MAX
+#define USER_STACK_SIZE                     0x100000	//用户空间栈大小 1M
+#define USER_PARAM_BYTE_MAX                 0x1000		//4K
+#define USER_STACK_TOP_MAX                  USER_ASPACE_TOP_MAX	//用户空间栈顶位置
 
-#define EXEC_MMAP_BASE                      0x02000000
+#define EXEC_MMAP_BASE                      0x02000000	//可执行文件分配基地址
 
 #ifdef LOSCFG_ASLR
 #define RANDOM_MASK                         ((((USER_ASPACE_TOP_MAX + GB - 1) & (-GB)) >> 3) - 1)
 #endif
 
-#define STACK_ALIGN_SIZE                    0x10
+#define STACK_ALIGN_SIZE                    0x10 	//栈对齐
 
-/* The permissions on sections in the program header. */
-#define PF_R                                0x4
-#define PF_W                                0x2
-#define PF_X                                0x1
+/* The permissions on sections in the program header. */ //对段的操作权限
+#define PF_R                                0x4		//只读
+#define PF_W                                0x2		//只写
+#define PF_X                                0x1		//可执行
 //ELF信息结构体,
 typedef struct {
     LD_ELF_EHDR  elfEhdr;	//ELF头信息
@@ -93,24 +93,24 @@ typedef struct {
 } ELFInfo;
 //ELF加载信息
 typedef struct {
-    ELFInfo      execInfo;//可执行文件信息
-    ELFInfo      interpInfo;
+    ELFInfo      execInfo;	//可执行文件信息
+    ELFInfo      interpInfo;//解析器文件信息 lib/libc.so
     const CHAR   *fileName;//文件名称
     CHAR         *execName;//程序名称
     INT32        argc;	//参数个数
     INT32        envc;	//环境变量个数
     CHAR *const  *argv;	//参数数组
     CHAR *const  *envp;	//环境变量数组
-    UINTPTR      stackTop;//栈顶
+    UINTPTR      stackTop;//栈底位置,递减满栈下,stackTop是高地址位
     UINTPTR      stackTopMax;//栈最大上限
-    UINTPTR      stackBase;//栈底
-    UINTPTR      stackParamBase;
-    UINT32       stackSize;
-    INT32        stackProt;
+    UINTPTR      stackBase;//栈顶位置
+    UINTPTR      stackParamBase;//栈参数空间,放置启动ELF时的外部参数,大小为 USER_PARAM_BYTE_MAX 4K
+    UINT32       stackSize;//栈大小
+    INT32        stackProt;//LD_PT_GNU_STACK栈的权限 ,例如(RW)
     UINTPTR      loadAddr;	//加载地址
-    UINTPTR      elfEntry;	//入口地址
-    UINTPTR      topOfMem;
-    UINTPTR      oldFiles;
+    UINTPTR      elfEntry;	//装载点地址 即: _start 函数地址
+    UINTPTR      topOfMem;	//虚拟空间顶部位置,loadInfo->topOfMem = loadInfo->stackTopMax - sizeof(UINTPTR);
+    UINTPTR      oldFiles;	//旧空间的文件映像
     LosVmSpace   *newSpace;//新虚拟空间
     LosVmSpace   *oldSpace;//旧虚拟空间
 #ifdef LOSCFG_ASLR

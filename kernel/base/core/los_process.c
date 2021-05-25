@@ -1351,7 +1351,7 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
     alloc_std_fd(OsCurrProcessGet()->files->fdt);
 #endif
 
-    OsSwtmrRecycle(processCB->processID);//定时器回收
+    OsSwtmrRecycle(processCB->processID);//回收定时器
     processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;
 
 #ifdef LOSCFG_SECURITY_VID
@@ -1363,7 +1363,7 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
 #endif
 
     processCB->processStatus &= ~OS_PROCESS_FLAG_EXIT;	//去掉进程退出标签
-    processCB->processStatus |= OS_PROCESS_FLAG_ALREADY_EXEC;//加上进程运行 elf标签
+    processCB->processStatus |= OS_PROCESS_FLAG_ALREADY_EXEC;//加上进程运行elf标签
 
     return LOS_OK;
 }

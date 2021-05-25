@@ -1562,8 +1562,8 @@ LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
 //任务退群并销毁,进入任务的回收链表之后再进入空闲链表,等着再次被分配使用.
 LITE_OS_SEC_TEXT VOID OsExecDestroyTaskGroup(VOID)
 {
-    OsTaskExitGroup(OS_PRO_EXIT_OK);//进程
-    OsTaskCBRecyleToFree();
+    OsTaskExitGroup(OS_PRO_EXIT_OK);//任务退出
+    OsTaskCBRecyleToFree();//回收任务资源
 }
 //暂停当前进程的所有任务
 LITE_OS_SEC_TEXT VOID OsProcessSuspendAllTask(VOID)

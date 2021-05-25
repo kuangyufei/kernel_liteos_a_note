@@ -69,7 +69,7 @@ extern "C" {
 //	|---------------------------|映射区结束位置 USER_MAP_BASE + USER_MAP_SIZE
 //	|	虚拟地址-物理地址映射区	|
 //	|							|
-//	|---------------------------|映射区开始位置 USER_MAP_BASE
+//	|---------------------------|映射区开始位置 USER_MAP_BASE = (USER_ASPACE_TOP_MAX >> 1)
 //	|							|
 //	|							|
 //	|			/\				|
@@ -99,7 +99,7 @@ extern "C" {
 
 #define USER_ASPACE_TOP_MAX         ((vaddr_t)(USER_ASPACE_BASE + USER_ASPACE_SIZE))//用户空间顶部位置
 #define USER_HEAP_BASE              ((vaddr_t)(USER_ASPACE_TOP_MAX >> 2))			//堆的开始地址
-#define USER_MAP_BASE               ((vaddr_t)(USER_ASPACE_TOP_MAX >> 1))			//用户映射区
+#define USER_MAP_BASE               ((vaddr_t)(USER_ASPACE_TOP_MAX >> 1))			//用户映射区开始地址
 #define USER_MAP_SIZE               ((vaddr_t)(USER_ASPACE_SIZE >> 3))				//用户空间映射大小 = 1/8 用户空间
 
 #ifndef PAGE_SIZE
