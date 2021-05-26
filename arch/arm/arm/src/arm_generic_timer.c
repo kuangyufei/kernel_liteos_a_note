@@ -130,7 +130,7 @@ LITE_OS_SEC_TEXT_INIT VOID HalClockInit(VOID)
 {
     UINT32 ret;
 
-    g_sysClock = HalClockFreqRead();
+    g_sysClock = HalClockFreqRead();//读取时钟源频率
     ret = LOS_HwiCreate(OS_TICK_INT_NUM, MIN_INTERRUPT_PRIORITY, 0, OsTickHandler, 0);
     if (ret != LOS_OK) {
         PRINT_ERR("%s, %d create tick irq failed, ret:0x%x\n", __FUNCTION__, __LINE__, ret);
@@ -148,7 +148,7 @@ LITE_OS_SEC_TEXT_INIT VOID HalClockStart(VOID)
 
     /* triggle the first tick */
     TimerCtlWrite(0);
-    TimerTvalWrite(OS_CYCLE_PER_TICK);
+    TimerTvalWrite(OS_CYCLE_PER_TICK);//递减计时器,使能tick中断,产生周期性tick
     TimerCtlWrite(1);
 }
 

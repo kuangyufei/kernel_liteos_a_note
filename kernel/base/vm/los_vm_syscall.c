@@ -188,7 +188,7 @@ VADDR_T LOS_MMap(VADDR_T vaddr, size_t len, unsigned prot, unsigned long flags, 
     if (status != LOS_OK) {
         LOS_RbDelNode(&vmSpace->regionRbTree, &newRegion->rbNode);//从红黑树和双循环链表中删除
         LOS_RegionFree(vmSpace, newRegion);//释放
-        resultVaddr = (VADDR_T)-ENOMEM;//linux错误代码含义 ENOMEM:内存溢出
+        resultVaddr = (VADDR_T)-ENOMEM;
         goto MMAP_DONE;
     }
 

@@ -511,7 +511,7 @@ STATIC INT32 OsMmapELFFile(INT32 fd, const LD_ELF_PHDR *elfPhdr, const LD_ELF_EH
         }
 
         if ((*loadBase == 0) && (elfEhdr->elfType == LD_ET_DYN)) {
-            *loadBase = mapAddr;
+            *loadBase = mapAddr;//改变装载基地址
         }
 		//.bss 的区分标识为 实际使用内存大小要大于文件大小,而且必是可写
         if ((elfPhdrTemp->memSize > elfPhdrTemp->fileSize) && (elfPhdrTemp->flags & PF_W)) {
@@ -902,7 +902,7 @@ STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
             return -EINVAL;
         }
     }
-	//先映射 ELF文件本身段
+	//先映射 ELF文件各段
     ret = OsMmapELFFile(loadInfo->execInfo.fd, loadInfo->execInfo.elfPhdr, &loadInfo->execInfo.elfEhdr,
                         &loadInfo->loadAddr, mapSize, &loadBase);
     if (ret != LOS_OK) {

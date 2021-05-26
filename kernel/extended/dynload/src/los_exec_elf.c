@@ -36,13 +36,13 @@
 #include "los_vm_phys.h"
 #include "los_vm_map.h"
 #include "los_vm_dump.h"
-
+//运行ELF
 STATIC INT32 OsExecve(const ELFLoadInfo *loadInfo)
 {
     if ((loadInfo == NULL) || (loadInfo->elfEntry == 0)) {
         return LOS_NOK;
     }
-
+	//任务运行的两个硬性要求:1.提供入口指令 2.运行栈空间.
     return OsExecStart((TSK_ENTRY_FUNC)(loadInfo->elfEntry), (UINTPTR)loadInfo->stackTop,
                        loadInfo->stackBase, loadInfo->stackSize);
 }

@@ -1379,18 +1379,18 @@ LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINT
     if ((sp == 0) || (LOS_Align(sp, LOSCFG_STACK_POINT_ALIGN_SIZE) != sp)) {//对齐
         return LOS_NOK;
     }
-
+	//注意 sp此时指向栈底,栈底地址要大于栈顶
     if ((mapBase == 0) || (mapSize == 0) || (sp <= mapBase) || (sp > (mapBase + mapSize))) {//参数检查
         return LOS_NOK;
     }
 
-    LosTaskCB *taskCB = OsCurrTaskGet();
+    LosTaskCB *taskCB = OsCurrTaskGet();//获取当前任务
     SCHEDULER_LOCK(intSave);//拿自旋锁
 
-    taskCB->userMapBase = mapBase;//用户态栈顶
-    taskCB->userMapSize = mapSize;//用户态栈大小
+    taskCB->userMapBase = mapBase;//用户态栈顶位置
+    taskCB->userMapSize = mapSize;//用户态栈
     taskCB->taskEntry = (TSK_ENTRY_FUNC)entry;//任务的入口函数
-
+	//初始化内核态栈
     TaskContext *taskContext = (TaskContext *)OsTaskStackInit(taskCB->taskID, taskCB->stackSize,
                                                               (VOID *)taskCB->topOfStack, FALSE);
     OsUserTaskStackInit(taskContext, (UINTPTR)taskCB->taskEntry, sp);//初始化用户栈,将内核栈中上下文的 context->R[0] = sp ,context->sp = sp

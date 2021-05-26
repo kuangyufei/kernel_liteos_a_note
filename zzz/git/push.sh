@@ -1,5 +1,5 @@
 git add -A
-git commit -m  'ELF加载过程代码注解
+git commit -m  'ELF mmap 映射过程
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     国内:https://weharmony.gitee.io
     国外:https://weharmony.github.io

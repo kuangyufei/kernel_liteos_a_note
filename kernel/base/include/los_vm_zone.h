@@ -100,6 +100,8 @@ extern "C" {
 
 #define EXC_INTERACT_MEM_SIZE   0x100000
 
+内核空间范围: 0x40000000 ~ 0xFFFFFFFF
+用户空间氛围: 0x00000000 ~ 0x3FFFFFFF
 
 cached地址和uncached地址的区别是
 对cached地址的访问是委托给CPU进行的，也就是说你的操作到底是提交给真正的外设或内存，还是转到CPU缓存，
@@ -129,27 +131,27 @@ cached地址和uncached地址的区别是
 #define _U32_C(X)  X##U
 #define U32_C(X)   _U32_C(X)
 
-#define KERNEL_VMM_BASE         U32_C(KERNEL_VADDR_BASE)
+#define KERNEL_VMM_BASE         U32_C(KERNEL_VADDR_BASE) //速度快,使用cache
 #define KERNEL_VMM_SIZE         U32_C(KERNEL_VADDR_SIZE)
 
 #define KERNEL_ASPACE_BASE      KERNEL_VMM_BASE //内核空间开始地址
 #define KERNEL_ASPACE_SIZE      KERNEL_VMM_SIZE //内核空间大小
 
 /* Uncached vmm aspace */
-#define UNCACHED_VMM_BASE       (KERNEL_VMM_BASE + KERNEL_VMM_SIZE)//未缓存虚拟空间基地址
+#define UNCACHED_VMM_BASE       (KERNEL_VMM_BASE + KERNEL_VMM_SIZE)//未缓存虚拟空间基地址,适用于DMA,LCD framebuf,
 #define UNCACHED_VMM_SIZE       DDR_MEM_SIZE //未缓存虚拟空间大小
 
 #define VMALLOC_START           (UNCACHED_VMM_BASE + UNCACHED_VMM_SIZE)//动态分配基地址
 #define VMALLOC_SIZE            0x08000000//128M
-
-#ifdef LOSCFG_KERNEL_MMU
-#define PERIPH_DEVICE_BASE      (VMALLOC_START + VMALLOC_SIZE)
+//UART,LCD,摄像头,I2C,中断控制器统称为外部设备
+#ifdef LOSCFG_KERNEL_MMU	//使用MMU时,只是虚拟地址不一样,但映射的物理设备空间一致.
+#define PERIPH_DEVICE_BASE      (VMALLOC_START + VMALLOC_SIZE)	//不使用buffer,cache
 #define PERIPH_DEVICE_SIZE      U32_C(PERIPH_PMM_SIZE)
-#define PERIPH_CACHED_BASE      (PERIPH_DEVICE_BASE + PERIPH_DEVICE_SIZE)
+#define PERIPH_CACHED_BASE      (PERIPH_DEVICE_BASE + PERIPH_DEVICE_SIZE)//使用cache但不用buffer
 #define PERIPH_CACHED_SIZE      U32_C(PERIPH_PMM_SIZE)
-#define PERIPH_UNCACHED_BASE    (PERIPH_CACHED_BASE + PERIPH_CACHED_SIZE)
+#define PERIPH_UNCACHED_BASE    (PERIPH_CACHED_BASE + PERIPH_CACHED_SIZE)//不使用cache但使用buffer
 #define PERIPH_UNCACHED_SIZE    U32_C(PERIPH_PMM_SIZE)
-#else
+#else	//不使用MMU时,外部设备空间地址一致.
 #define PERIPH_DEVICE_BASE      PERIPH_PMM_BASE
 #define PERIPH_DEVICE_SIZE      U32_C(PERIPH_PMM_SIZE)
 #define PERIPH_CACHED_BASE      PERIPH_PMM_BASE
