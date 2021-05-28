@@ -484,7 +484,7 @@ LITE_OS_SEC_TEXT VOID OsProcessCBRecyleToFree(VOID)
         }
         SCHEDULER_UNLOCK(intSave);
 
-        OsTaskCBRecyleToFree();//将任务从回收链表移到空闲链表,以便被分配再使用.
+        OsTaskCBRecycleToFree();
 
         SCHEDULER_LOCK(intSave);
         processCB->processStatus &= ~OS_PROCESS_FLAG_EXIT;//给进程撕掉退出标签,(可能进程并没有这个标签)
@@ -756,11 +756,6 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSystemProcessCreate(VOID)
     g_processGroup = kerInitProcess->group;//进程组ID就是2号进程本身
     LOS_ListInit(&g_processGroup->groupList);//初始化进程组链表
     OsCurrProcessSet(kerInitProcess);//设置为当前进程,注意当前进程是内核的视角,并不代表一旦设置就必须执行进程的任务.
-
-    ret = OsCreateResourceFreeTask();//创建资源回收任务
-    if (ret != LOS_OK) {
-        return ret;
-    }
 
     LosProcessCB *idleProcess = OS_PCB_FROM_PID(g_kernelIdleProcess);//获取进程池中0号实体
     ret = OsInitPCB(idleProcess, OS_KERNEL_MODE, OS_TASK_PRIORITY_LOWEST, "KIdle");//创建内核态0号进程
@@ -1561,10 +1556,10 @@ STATIC VOID OsInitCopyTaskParam(LosProcessCB *childProcessCB, const CHAR *name, 
         childPara->pfnTaskEntry = (TSK_ENTRY_FUNC)entry;//参数(sp)为内核态入口地址
         childPara->uwStackSize = size;//参数(size)为内核态栈大小
     }
-    childPara->pcName = (CHAR *)name;					//拷贝进程名字
-    childPara->policy = mainThread->policy;				//拷贝调度模式
-    childPara->usTaskPrio = mainThread->priority;		//拷贝优先级
-    childPara->processID = childProcessCB->processID;	//拷贝进程ID
+    childPara->pcName = (CHAR *)name;					//进程名字
+    childPara->policy = mainThread->policy;				//调度模式
+    childPara->usTaskPrio = mainThread->priority;		//优先级
+    childPara->processID = childProcessCB->processID;	//进程ID
     if (mainThread->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {
         childPara->uwResved = OS_TASK_FLAG_PTHREAD_JOIN;
     } else if (mainThread->taskStatus & OS_TASK_FLAG_DETACHED) {

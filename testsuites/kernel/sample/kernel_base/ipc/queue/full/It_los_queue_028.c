@@ -40,8 +40,8 @@ extern "C" {
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSP";
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSP";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
 
     ret = LOS_QueueWrite(QUEUE_EXISTED_NUM + 1, &buff1, 8, 0); // 8, Write the setting size of queue buffer.
     ICUNIT_ASSERT_EQUAL(ret, LOS_ERRNO_QUEUE_NOT_CREATE, ret);

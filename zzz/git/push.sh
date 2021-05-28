@@ -1,5 +1,5 @@
 git add -A
-git commit -m  'ELF mmap 映射过程
+git commit -m  '2021/5/28 同步官方源码 -- 本次官方改动不大,主要针对一些错误单词拼写纠正
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     国内:https://weharmony.gitee.io
     国外:https://weharmony.github.io

@@ -104,7 +104,7 @@ STATIC VOID SortQueueIndexArray(UINT32 *indexArray, UINT32 count)
     queueSortParam.buf = (CHAR *)g_queueDebugArray;
     queueSortParam.ipcDebugCBSize = sizeof(QueueDebugCB);
     queueSortParam.ipcDebugCBCnt = LOSCFG_BASE_IPC_SEM_LIMIT;
-    queueSortParam.sortElemOff = OFFSET_OF_FIELD(QueueDebugCB, lastAccessTime);
+    queueSortParam.sortElemOff = LOS_OFF_SET_OF(QueueDebugCB, lastAccessTime);
 
     if (count > 0) {
         SCHEDULER_LOCK(intSave);
@@ -126,7 +126,7 @@ STATIC VOID SortQueueIndexArray(UINT32 *indexArray, UINT32 count)
     }
     (VOID)LOS_MemFree((VOID *)OS_SYS_MEM_ADDR, indexArray);
 }
-//队列检�?
+
 VOID OsQueueCheck(VOID)
 {
     LosQueueCB queueNode = {0};

@@ -9,6 +9,7 @@ SECTIONS
         KEEP (*(.set_sysinit_set))
         __stop_set_sysinit_set = ABSOLUTE(.);
     } > ram
+
     .got ALIGN(0x4) : { *(.got.plt) *(.got) } > ram
 
     .gcc_except_table ALIGN (0x8) : { . = .; } > ram  .gcc_except_table : { KEEP(*(.gcc_except_table*)) }
@@ -53,6 +54,27 @@ SECTIONS
 
     .rodata ALIGN(0x1000) : {
         __rodata_start = .;
+        __kernel_init_level_0 = ABSOLUTE(.);
+        KEEP(*( SORT (.rodata.init.kernel.0.*)));
+        __kernel_init_level_1 = ABSOLUTE(.);
+        KEEP(*( SORT (.rodata.init.kernel.1.*)));
+        __kernel_init_level_2 = ABSOLUTE(.);
+        KEEP(*( SORT (.rodata.init.kernel.2.*)));
+        __kernel_init_level_3 = ABSOLUTE(.);
+        KEEP(*( SORT (.rodata.init.kernel.3.*)));
+        __kernel_init_level_4 = ABSOLUTE(.);
+        KEEP(*( SORT (.rodata.init.kernel.4.*)));
+        __kernel_init_level_5 = ABSOLUTE(.);
+        KEEP(*( SORT (.rodata.init.kernel.5.*)));
+        __kernel_init_level_6 = ABSOLUTE(.);
+        KEEP(*( SORT (.rodata.init.kernel.6.*)));
+        __kernel_init_level_7 = ABSOLUTE(.);
+        KEEP(*( SORT (.rodata.init.kernel.7.*)));
+        __kernel_init_level_8 = ABSOLUTE(.);
+        KEEP(*( SORT (.rodata.init.kernel.8.*)));
+        __kernel_init_level_9 = ABSOLUTE(.);
+        KEEP(*( SORT (.rodata.init.kernel.9.*)));
+        __kernel_init_level_10 = ABSOLUTE(.);
         *(.rodata .rodata.* .gnu.linkonce.r.*)
         __exc_table_start = .;
         KEEP(*(__exc_table))

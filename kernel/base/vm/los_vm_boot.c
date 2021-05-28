@@ -59,44 +59,27 @@ VOID *OsVmBootMemAlloc(size_t len)
     return (VOID *)ptr;
 }
 //整个系统内存初始化
-#ifdef LOSCFG_KERNEL_VM
 UINT32 OsSysMemInit(VOID)
 {
     STATUS_T ret;
 
+#ifdef LOSCFG_KERNEL_VM
     OsKSpaceInit();//内核空间初始化
+#endif
 
     ret = OsKHeapInit(OS_KHEAP_BLOCK_SIZE);// 内核堆空间初始化 512K   
     if (ret != LOS_OK) {
-        VM_ERR("OsKHeapInit fail");
+        VM_ERR("OsKHeapInit fail\n");
         return LOS_NOK;
     }
 
+#ifdef LOSCFG_KERNEL_VM
     OsVmPageStartup();// 物理内存初始化
     g_kHeapInited = TRUE;
     OsInitMappingStartUp();// 映射初始化
-
-#ifdef LOSCFG_KERNEL_SHM
-    ret = ShmInit();// 共享内存初始化
-    if (ret < 0) {
-        VM_ERR("ShmInit fail");  
-        return LOS_NOK;
-    }
-#endif
-    return LOS_OK;
-}
 #else
-UINT32 OsSysMemInit(VOID)
-{
-    STATUS_T ret;
-
-    ret = OsKHeapInit(OS_KHEAP_BLOCK_SIZE);
-    if (ret != LOS_OK) {
-        VM_ERR("OsKHeapInit fail");
-        return LOS_NOK;
-    }
     g_kHeapInited = TRUE;
+#endif
     return LOS_OK;
 }
-#endif
 

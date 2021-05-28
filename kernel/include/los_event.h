@@ -287,7 +287,7 @@ extern UINT32 LOS_EventWrite(PEVENT_CB_S eventCB, UINT32 events);
 
 /**
  * @ingroup los_event
- * @brief Clear the event occurring in a specified task.
+ * @brief Clear the event of the eventCB by a specified eventMask.
  *
  * @par Description:
  * <ul>
@@ -300,7 +300,7 @@ extern UINT32 LOS_EventWrite(PEVENT_CB_S eventCB, UINT32 events);
  * </ul>
  *
  * @param eventCB     [IN/OUT] Pointer to the event control block to be cleared.
- * @param events      [IN] Mask of the event to be cleared.
+ * @param eventMask   [IN] Mask of the event to be cleared.
  *
  * @retval #LOS_ERRNO_EVENT_PTR_NULL  Null pointer.
  * @retval #LOS_OK                    The event is successfully cleared.
@@ -308,7 +308,7 @@ extern UINT32 LOS_EventWrite(PEVENT_CB_S eventCB, UINT32 events);
  * <ul><li>los_event.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_EventPoll | LOS_EventRead | LOS_EventWrite
  */
-extern UINT32 LOS_EventClear(PEVENT_CB_S eventCB, UINT32 events);
+extern UINT32 LOS_EventClear(PEVENT_CB_S eventCB, UINT32 eventMask);
 
 /**
  * @ingroup los_event

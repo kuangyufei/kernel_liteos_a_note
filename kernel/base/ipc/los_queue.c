@@ -238,20 +238,20 @@ STATIC VOID OsQueueBufferOperate(LosQueueCB *queueCB, UINT32 operateType, VOID *
 {
     UINT8 *queueNode = NULL;
     UINT32 msgDataSize;
-    UINT16 queuePosion;
+    UINT16 queuePosition;
 
     /* get the queue position */ //先找到队列的位置
     switch (OS_QUEUE_OPERATE_GET(operateType)) {//获取操作类型
         case OS_QUEUE_READ_HEAD://从列队头开始读
-            queuePosion = queueCB->queueHead;//拿到头部位置
+            queuePosition = queueCB->queueHead;//拿到头部位置
             ((queueCB->queueHead + 1) == queueCB->queueLen) ? (queueCB->queueHead = 0) : (queueCB->queueHead++);//调整队列头部位置
             break;
         case OS_QUEUE_WRITE_HEAD://从列队头开始写
             (queueCB->queueHead == 0) ? (queueCB->queueHead = queueCB->queueLen - 1) : (--queueCB->queueHead);//调整队列头部位置
-            queuePosion = queueCB->queueHead;//拿到头部位置
+            queuePosition = queueCB->queueHead;//拿到头部位置
             break;
         case OS_QUEUE_WRITE_TAIL://从列队尾部开始写
-            queuePosion = queueCB->queueTail;//设置队列位置为尾部位置
+            queuePosition = queueCB->queueTail;//设置队列位置为尾部位置
             ((queueCB->queueTail + 1) == queueCB->queueLen) ? (queueCB->queueTail = 0) : (queueCB->queueTail++);//调整队列尾部位置
             break;
         default:  /* read tail, reserved. */
@@ -259,7 +259,7 @@ STATIC VOID OsQueueBufferOperate(LosQueueCB *queueCB, UINT32 operateType, VOID *
             return;
     }
 	//queueHandle是create队列时,由外界参数申请的一块内存. 用于copy 使用
-    queueNode = &(queueCB->queueHandle[(queuePosion * (queueCB->queueSize))]);//拿到队列节点
+    queueNode = &(queueCB->queueHandle[(queuePosition * (queueCB->queueSize))]);//拿到队列节点
 
     if (OS_QUEUE_IS_READ(operateType)) {//读操作处理,读队列分两步走
         if (memcpy_s(&msgDataSize, sizeof(UINT32), queueNode + queueCB->queueSize - sizeof(UINT32),

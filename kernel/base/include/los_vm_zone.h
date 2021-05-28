@@ -126,7 +126,6 @@ cached地址和uncached地址的区别是
 #define SYS_MEM_BASE            DDR_MEM_ADDR
 #define SYS_MEM_END             (SYS_MEM_BASE + SYS_MEM_SIZE_DEFAULT)
 
-#define EXC_INTERACT_MEM_SIZE   0x100000
 
 #define _U32_C(X)  X##U
 #define U32_C(X)   _U32_C(X)

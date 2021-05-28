@@ -435,7 +435,7 @@ int pthread_detach(pthread_t thread)
         /* Set state to detached and kick any joinees to make them return. */
         SCHEDULER_LOCK(intSave);
         if (!(detached->task->taskStatus & OS_TASK_STATUS_EXIT)) {
-            ret = OsTaskSetDeatchUnsafe(detached->task);
+            ret = OsTaskSetDetachUnsafe(detached->task);
             if (ret == ESRCH) {
                 ret = LOS_OK;
             } else if (ret == LOS_OK) {

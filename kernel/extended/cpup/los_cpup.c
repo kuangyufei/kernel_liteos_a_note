@@ -30,8 +30,9 @@
  */
 
 #include "los_cpup_pri.h"
-#include "los_process_pri.h"
 #include "los_base.h"
+#include "los_init.h"
+#include "los_process_pri.h"
 #include "los_swtmr.h"
 
 
@@ -134,13 +135,17 @@ LITE_OS_SEC_TEXT_INIT VOID OsCpupGuard(VOID)
     SCHEDULER_UNLOCK(intSave);
 }
 
-LITE_OS_SEC_TEXT_INIT VOID OsCpupGuardCreator(VOID)
+LITE_OS_SEC_TEXT_INIT UINT32 OsCpupGuardCreator(VOID)
 {
     (VOID)LOS_SwtmrCreate(LOSCFG_BASE_CORE_TICK_PER_SECOND, LOS_SWTMR_MODE_PERIOD,
                           (SWTMR_PROC_FUNC)OsCpupGuard, &cpupSwtmrID, 0);
 
     (VOID)LOS_SwtmrStart(cpupSwtmrID);
+
+    return LOS_OK;
 }
+
+LOS_MODULE_INIT(OsCpupGuardCreator, LOS_INIT_LEVEL_KMOD_TASK);
 
 /*
  * Description: initialization of CPUP
@@ -158,6 +163,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsCpupInit(VOID)
     size = cpupMaxNum * sizeof(OsIrqCpupCB);
     g_irqCpup = (OsIrqCpupCB *)LOS_MemAlloc(m_aucSysMem0, size);
     if (g_irqCpup == NULL) {
+        PRINT_ERR("OsCpupInit error\n");
         return LOS_ERRNO_CPUP_NO_MEMORY;
     }
 
@@ -170,6 +176,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsCpupInit(VOID)
     cpupInitFlg = 1;
     return LOS_OK;
 }
+
+LOS_MODULE_INIT(OsCpupInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
 
 STATIC VOID OsResetCpup(OsCpupBase *cpup, UINT64 cycle)
 {

@@ -40,7 +40,7 @@ extern "C" {
 static VOID HwiF01(VOID)
 {
     UINT32 ret;
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
 
     TEST_HwiClear(HWI_NUM_TEST);
 
@@ -59,7 +59,7 @@ EXIT:
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSP";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSP";
 
     g_testCount = 0;
 

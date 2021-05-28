@@ -41,43 +41,43 @@ static UINT32 Testcase(VOID)
 {
     UINT32 ret;
     UINT32 queueID;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "abc";
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "abc";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
     QUEUE_INFO_S queueInfo;
     UINT32 readSize;
 
-    ret = LOS_QueueCreate("Q1", 3, &queueID, 0, QUEUE_SHORT_BUFFER_LENTH); // 3, Set the queue length.
+    ret = LOS_QueueCreate("Q1", 3, &queueID, 0, QUEUE_SHORT_BUFFER_LENGTH); // 3, Set the queue length.
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    ret = LOS_QueueWriteCopy(queueID, &buff1, QUEUE_SHORT_BUFFER_LENTH, 0);
+    ret = LOS_QueueWriteCopy(queueID, &buff1, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
-    ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENTH, 0);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    ret = LOS_QueueWriteCopy(queueID, &buff1, QUEUE_SHORT_BUFFER_LENTH + PER_ADDED_VALUE, 0);
+    ret = LOS_QueueWriteCopy(queueID, &buff1, QUEUE_SHORT_BUFFER_LENGTH + PER_ADDED_VALUE, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_WRITE_SIZE_TOO_BIG, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
-    ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENTH, 0);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_ISEMPTY, ret, EXIT);
 
-    ret = LOS_QueueWrite(queueID, &buff1, QUEUE_SHORT_BUFFER_LENTH - 1, 0);
+    ret = LOS_QueueWrite(queueID, &buff1, QUEUE_SHORT_BUFFER_LENGTH - 1, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
-    ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENTH, 0);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
-    ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENTH, 0);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_ISEMPTY, ret, EXIT);
 
     ret = LOS_QueueWrite(queueID, &buff1, 0, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
     readSize = 0;
     ret = LOS_QueueReadCopy(queueID, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_READSIZE_IS_INVALID, ret, EXIT);

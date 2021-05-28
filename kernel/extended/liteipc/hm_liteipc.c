@@ -31,8 +31,9 @@
 
 #include "hm_liteipc.h"
 #include "linux/kernel.h"
-#include <fs/fs.h>
+#include "fs/fs.h"
 #include "fs_file.h"
+#include "los_init.h"
 #include "los_mp.h"
 #include "los_mux.h"
 #include "los_process_pri.h"
@@ -43,10 +44,10 @@
 #include "los_trace.h"
 #include "los_trace_frame.h"
 #endif
+#include "los_vm_lock.h"
 #include "los_vm_map.h"
 #include "los_vm_page.h"
 #include "los_vm_phys.h"
-#include "los_vm_lock.h"
 
 #define USE_TASKID_AS_HANDLE YES 	//使用任务ID作为句柄
 #define USE_MMAP YES				//
@@ -139,7 +140,7 @@ LITE_OS_SEC_TEXT STATIC VOID IpcTrace(IpcMsg *msg, UINT32 operation, UINT32 ipcS
 }
 #endif
 
-LITE_OS_SEC_TEXT_INIT UINT32 LiteIpcInit(VOID)
+LITE_OS_SEC_TEXT_INIT UINT32 OsLiteIpcInit(VOID)
 {
     UINT32 ret, i;
 #if (USE_TASKID_AS_HANDLE == YES)
@@ -167,6 +168,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 LiteIpcInit(VOID)
 #endif
     return ret;
 }
+
+LOS_MODULE_INIT(OsLiteIpcInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
 
 LITE_OS_SEC_TEXT STATIC int LiteIpcOpen(struct file *filep)
 {

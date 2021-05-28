@@ -29,16 +29,28 @@
 
 import("config.gni")
 
+local_flags = []
 local_flags_smoke = []
 local_flags_full = []
-if (board_name == "hispark_taurus") {
-  local_flags_smoke += [ "-DLOSCFG_USER_TEST_SMP" ]
-  local_flags_full += [ "-DLOSCFG_USER_TEST_SMP" ]
+if (LOSCFG_USER_TEST_SMP == "enable" || (LOSCFG_USER_TEST_SMP == "default" && board_name == "hispark_taurus")) {
+  local_flags = [ "-DLOSCFG_USER_TEST_SMP" ]
 }
 local_flags_smoke += [ "-DLOSCFG_USER_TEST_SMOKE" ]
 local_flags_full += [ "-DLOSCFG_USER_TEST_SMOKE" ]
 local_flags_full += [ "-DLOSCFG_USER_TEST_FULL" ]
 #local_flags_full += [ "-DLOSCFG_USER_TEST_PRESSURE" ]
+
+config("local_public_config") {
+  cflags = [ "-fpermissive" ]
+  cflags += [
+    "-O2",
+    "-fbuiltin",
+    "-Wno-narrowing",
+    "-fPIE",
+  ]
+  cflags += local_flags
+  cflags_cc = cflags
+}
 
 config("public_config_smk") {
   cflags = [ "-fpermissive" ]
@@ -46,8 +58,10 @@ config("public_config_smk") {
     "-O2",
     "-fbuiltin",
     "-Wno-narrowing",
+    "-fPIE",
   ]
   cflags += local_flags_smoke
+  cflags += local_flags
   cflags_cc = cflags
 }
 
@@ -57,8 +71,10 @@ config("public_config_full") {
     "-O2",
     "-fbuiltin",
     "-Wno-narrowing",
+    "-fPIE",
   ]
   cflags += local_flags_full
+  cflags += local_flags
   cflags_cc = cflags
 }
 

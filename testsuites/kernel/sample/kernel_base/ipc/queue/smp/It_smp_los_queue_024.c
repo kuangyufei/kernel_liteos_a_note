@@ -37,8 +37,8 @@ extern "C" {
 #endif /* __cpluscplus */
 
 
-static CHAR g_buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSP";
-static CHAR g_buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+static CHAR g_buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSP";
+static CHAR g_buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
 static VOID TaskF02(VOID)
 {
     UINT32 ret;

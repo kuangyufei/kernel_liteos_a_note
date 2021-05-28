@@ -56,8 +56,9 @@ Case B:
 #include "show.h"
 #include "shcmd.h"
 #include "securec.h"
-#include "unistd.h"
 #include "stdlib.h"
+#include "unistd.h"
+#include "los_init.h"
 #include "los_task.h"
 
 
@@ -766,5 +767,6 @@ ERR_OUT:
 }
 
 SHELLCMD_ENTRY(dmesg_shellcmd, CMD_TYPE_STD, "dmesg", XARGS, (CmdCallBackFunc)OsShellCmdDmesg);
+LOS_MODULE_INIT(OsDmesgInit, LOS_INIT_LEVEL_EARLIEST);
 
 #endif

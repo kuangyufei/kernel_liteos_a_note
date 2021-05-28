@@ -47,6 +47,7 @@ source_set("sources_smoke") {
     "smoke/liteipc_test_001.cpp",
     "smoke/liteipc_test_002.cpp",
   ]
+  configs += [ "..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }
@@ -54,6 +55,7 @@ source_set("sources_smoke") {
 source_set("sources_other") {
   sources = [
   ]
+  configs += [ "..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

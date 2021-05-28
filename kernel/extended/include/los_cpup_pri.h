@@ -63,7 +63,7 @@ typedef struct {
 } OsIrqCpupCB;
 
 extern UINT32 OsCpupInit(VOID);
-extern VOID OsCpupGuardCreator(VOID);
+extern UINT32 OsCpupGuardCreator(VOID);
 extern VOID OsCpupCycleEndStart(UINT32 runTaskID, UINT32 newTaskID);
 extern UINT32 OsGetAllTaskCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len);
 extern UINT32 OsGetAllProcessCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len);

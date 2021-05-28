@@ -40,7 +40,7 @@ extern "C" {
 static VOID TaskF01(VOID)
 {
     UINT32 ret;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSP";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSP";
 
     LOS_AtomicInc(&g_testCount);
 
@@ -56,7 +56,7 @@ EXIT:
 static VOID TaskF02(VOID)
 {
     UINT32 ret;
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
 
     LOS_AtomicInc(&g_testCount);
 

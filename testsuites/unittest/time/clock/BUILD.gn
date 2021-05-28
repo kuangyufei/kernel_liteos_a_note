@@ -54,6 +54,7 @@ source_set("sources_smoke") {
     "smoke/clock_test_011.cpp",
     "smoke/clock_test_012.cpp",
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }
@@ -62,6 +63,7 @@ source_set("sources_other") {
   sources = [
     "full/clock_test_010.cpp",
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

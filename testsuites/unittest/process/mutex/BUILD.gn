@@ -69,6 +69,7 @@ source_set("sources_smoke") {
     "smoke/pthread_mutex_test_024.cpp",
     "smoke/pthread_mutex_test_025.cpp",
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }
@@ -76,6 +77,7 @@ source_set("sources_smoke") {
 source_set("sources_other") {
   sources = [
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

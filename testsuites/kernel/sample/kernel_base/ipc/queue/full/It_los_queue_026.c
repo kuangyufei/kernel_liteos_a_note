@@ -40,8 +40,8 @@ extern "C" {
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "gjl";
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "gjl";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
 
     ret = LOS_QueueCreate("Q1", 3, &g_testQueueID01, 0, sizeof(UINTPTR)); // 3, Set the queue length.
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);

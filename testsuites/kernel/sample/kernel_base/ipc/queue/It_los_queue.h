@@ -41,8 +41,8 @@ extern "C" {
 #endif /* __cpluscplus */
 #endif /* __cpluscplus */
 
-#define QUEUE_SHORT_BUFFER_LENTH            12
-#define QUEUE_STANDARD_BUFFER_LENTH        50
+#define QUEUE_SHORT_BUFFER_LENGTH            12
+#define QUEUE_STANDARD_BUFFER_LENGTH        50
 #define QUEUE_BASE_NUM                        3
 #define QUEUE_BASE_MSGSIZE                8
 

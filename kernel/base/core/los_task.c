@@ -31,17 +31,21 @@
 
 #include "los_task_pri.h"
 #include "los_base_pri.h"
-#include "los_sem_pri.h"
 #include "los_event_pri.h"
-#include "los_mux_pri.h"
-#include "los_hw_pri.h"
 #include "los_exc.h"
+#include "los_hw_pri.h"
+#include "los_init.h"
 #include "los_memstat_pri.h"
 #include "los_mp.h"
-#include "los_spinlock.h"
-#include "los_percpu_pri.h"
+#include "los_mux_pri.h"
 #include "los_sched_pri.h"
+#include "los_sem_pri.h"
+#include "los_spinlock.h"
+#include "los_strncpy_from_user.h"
+#include "los_percpu_pri.h"
 #include "los_process_pri.h"
+#include "los_vm_map.h"
+#include "los_vm_syscall.h"
 
 #ifdef LOSCFG_KERNEL_CPUP
 #include "los_cpup_pri.h"
@@ -49,18 +53,12 @@
 #if (LOSCFG_BASE_CORE_SWTMR == YES)
 #include "los_swtmr_pri.h"
 #endif
-#ifdef LOSCFG_EXC_INTERACTION
-#include "los_exc_interaction_pri.h"
-#endif
 #if (LOSCFG_KERNEL_LITEIPC == YES)
 #include "hm_liteipc.h"
 #endif
-#include "los_strncpy_from_user.h"
-#include "los_vm_syscall.h"
 #ifdef LOSCFG_ENABLE_OOM_LOOP_TASK
 #include "los_oom.h"
 #endif
-#include "los_vm_map.h"
 
 
 /******************************************************************************
@@ -236,7 +234,7 @@ LITE_OS_SEC_TEXT UINT32 OsTaskJoinPendUnsafe(LosTaskCB *taskCB)
     return LOS_EINVAL;
 }
 //任务设置分离模式  Deatch和JOIN是一对有你没我的状态
-LITE_OS_SEC_TEXT UINT32 OsTaskSetDeatchUnsafe(LosTaskCB *taskCB)
+LITE_OS_SEC_TEXT UINT32 OsTaskSetDetachUnsafe(LosTaskCB *taskCB)
 {
     LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);//获取进程实体
     if (!(processCB->processStatus & OS_PROCESS_STATUS_RUNNING)) {//进程必须是运行状态
@@ -262,6 +260,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
 {
     UINT32 index;
     UINT32 size;
+    UINT32 ret;
 
     g_taskMaxNum = LOSCFG_BASE_CORE_TSK_LIMIT;//任务池中最多默认128个,可谓铁打的任务池流水的线程
     size = (g_taskMaxNum + 1) * sizeof(LosTaskCB);//计算需分配内存总大小
@@ -271,7 +270,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
      */
     g_taskCBArray = (LosTaskCB *)LOS_MemAlloc(m_aucSysMem0, size);//任务池常驻内存,不被释放
     if (g_taskCBArray == NULL) {
-        return LOS_ERRNO_TSK_NO_MEMORY;
+        ret = LOS_ERRNO_TSK_NO_MEMORY;
+        goto EXIT;
     }
     (VOID)memset_s(g_taskCBArray, size, 0, size);
 
@@ -287,9 +287,14 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
     LOS_TraceReg(LOS_TRACE_TASK, OsTaskTrace, LOS_TRACE_TASK_NAME, LOS_TRACE_ENABLE);
 #endif
 
-    return OsSchedInit();
-}
+    ret = OsSchedInit();
 
+EXIT:
+    if (ret != LOS_OK) {
+        PRINT_ERR("OsTaskInit error\n");
+    }
+    return ret;
+}
 //获取IdletaskId,每个CPU核都对Task进行了内部管理,做到真正的并行处理
 UINT32 OsGetIdleTaskId(VOID)
 {
@@ -316,7 +321,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
     ret = LOS_TaskCreateOnly(idleTaskID, &taskInitParam);
     LosTaskCB *idleTask = OS_TCB_FROM_TID(*idleTaskID);
     idleTask->taskStatus |= OS_TASK_FLAG_SYSTEM_TASK;
-    OsSchedSetIdleTaskSchedPartam(idleTask);
+    OsSchedSetIdleTaskSchedParam(idleTask);
 
     return ret;
 }
@@ -430,12 +435,6 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCreateParamCheck(const UINT32 *taskID,
         return LOS_ERRNO_TSK_PRIOR_ERROR;
     }
 
-#ifdef LOSCFG_EXC_INTERACTION 
-    if (!OsExcInteractionTaskCheck(initParam)) {
-        *pool = m_aucSysMem0;
-        poolSize = OS_EXC_INTERACTMEM_SIZE;
-    }
-#endif
     if (initParam->uwStackSize > poolSize) {//希望申请的栈大小不能大于总池子
         return LOS_ERRNO_TSK_STKSZ_TOO_LARGE;
     }
@@ -524,15 +523,10 @@ STATIC VOID OsTaskKernelResourcesToFree(UINT32 syncSignal, UINTPTR topOfStack)
 
     OsTaskSyncDestroy(syncSignal);
 
-#ifdef LOSCFG_EXC_INTERACTION
-    if (topOfStack < (UINTPTR)m_aucSysMem1) {
-        poolTmp = (VOID *)m_aucSysMem0;
-    }
-#endif
     (VOID)LOS_MemFree(poolTmp, (VOID *)topOfStack);
 }
 //从回收链表中回收任务到空闲链表
-LITE_OS_SEC_TEXT VOID OsTaskCBRecyleToFree()
+LITE_OS_SEC_TEXT VOID OsTaskCBRecycleToFree()
 {
     LosTaskCB *taskCB = NULL;
     UINT32 intSave;
@@ -1563,7 +1557,7 @@ LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
 LITE_OS_SEC_TEXT VOID OsExecDestroyTaskGroup(VOID)
 {
     OsTaskExitGroup(OS_PRO_EXIT_OK);//任务退出
-    OsTaskCBRecyleToFree();//回收任务资源
+    OsTaskCBRecycleToFree();
 }
 //暂停当前进程的所有任务
 LITE_OS_SEC_TEXT VOID OsProcessSuspendAllTask(VOID)
@@ -1655,7 +1649,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S
         return ret;
     }
 	//这里可看出一个任务有两个栈,内核态栈(内核指定栈大小)和用户态栈(用户指定栈大小)
-    initParam->uwStackSize = OS_USER_TASK_SYSCALL_SATCK_SIZE;//设置内核栈大小,即处理系统调用的栈(12K)      
+    initParam->uwStackSize = OS_USER_TASK_SYSCALL_STACK_SIZE;
     initParam->usTaskPrio = OS_TASK_PRIORITY_LOWEST;//设置最低优先级 31级
     initParam->policy = LOS_SCHED_RR;//调度方式为抢占式,注意鸿蒙不仅仅只支持抢占式调度方式
     if (processID == OS_INVALID_VALUE) {//外面没指定进程ID的处理
@@ -1753,7 +1747,7 @@ STATIC VOID OsResourceRecoveryTask(VOID)
         ret = LOS_EventRead(&g_resourceEvent, OS_RESOURCE_EVENT_MASK,
                             LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);//读取资源事件
         if (ret & (OS_RESOURCE_EVENT_FREE | OS_RESOURCE_EVENT_OOM)) {//收到资源释放或内存异常情况
-            OsTaskCBRecyleToFree();//回收任务到空闲任务池
+            OsTaskCBRecycleToFree();
             OsProcessCBRecyleToFree();//回收进程到空闲进程池
         }
 
@@ -1765,7 +1759,7 @@ STATIC VOID OsResourceRecoveryTask(VOID)
     }
 }
 //创建一个回收资源的任务
-LITE_OS_SEC_TEXT UINT32 OsCreateResourceFreeTask(VOID)
+LITE_OS_SEC_TEXT UINT32 OsResourceFreeTaskCreate(VOID)
 {
     UINT32 ret;
     UINT32 taskID;
@@ -1778,7 +1772,7 @@ LITE_OS_SEC_TEXT UINT32 OsCreateResourceFreeTask(VOID)
 
     (VOID)memset_s((VOID *)(&taskInitParam), sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
     taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)OsResourceRecoveryTask;//入口函数
-    taskInitParam.uwStackSize = OS_TASK_RESOURCE_STATCI_SIZE;// 4K
+    taskInitParam.uwStackSize = OS_TASK_RESOURCE_STATIC_SIZE;
     taskInitParam.pcName = "ResourcesTask";
     taskInitParam.usTaskPrio = OS_TASK_RESOURCE_FREE_PRIORITY;// 5 ,优先级很高
     ret = LOS_TaskCreate(&taskID, &taskInitParam);
@@ -1788,3 +1782,4 @@ LITE_OS_SEC_TEXT UINT32 OsCreateResourceFreeTask(VOID)
     return ret;
 }
 
+LOS_MODULE_INIT(OsResourceFreeTaskCreate, LOS_INIT_LEVEL_KMOD_TASK);

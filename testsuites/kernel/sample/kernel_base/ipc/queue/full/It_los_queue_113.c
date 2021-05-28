@@ -40,16 +40,16 @@ extern "C" {
 static VOID SwtmrF01(VOID)
 {
     UINT32 ret;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSP";
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSP";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
     UINT32 readSize;
 
     g_testCount++;
 
-    ret = LOS_QueueWriteCopy(g_testQueueID01, &buff1, QUEUE_SHORT_BUFFER_LENTH, 0);
+    ret = LOS_QueueWriteCopy(g_testQueueID01, &buff1, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    readSize = QUEUE_SHORT_BUFFER_LENTH;
+    readSize = QUEUE_SHORT_BUFFER_LENGTH;
     ret = LOS_QueueReadCopy(g_testQueueID01, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
@@ -64,14 +64,14 @@ static UINT32 Testcase(VOID)
 {
     UINT32 ret;
     UINT16 swTmrID;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSP";
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSP";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
     QUEUE_INFO_S queueInfo;
     UINT32 readSize;
 
     g_testCount = 0;
 
-    ret = LOS_QueueCreate("Q1", 3, &g_testQueueID01, 0, QUEUE_SHORT_BUFFER_LENTH); // 3, Set the queue length.
+    ret = LOS_QueueCreate("Q1", 3, &g_testQueueID01, 0, QUEUE_SHORT_BUFFER_LENGTH); // 3, Set the queue length.
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
     // 4, Timing duration of the software timer to be created.
@@ -86,7 +86,7 @@ static UINT32 Testcase(VOID)
 
     ICUNIT_GOTO_EQUAL(g_testCount, 2, g_testCount, EXIT); // 2, Here, assert that g_testCount is equal to 2.
 
-    readSize = QUEUE_SHORT_BUFFER_LENTH;
+    readSize = QUEUE_SHORT_BUFFER_LENGTH;
     ret = LOS_QueueReadCopy(g_testQueueID01, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_ISEMPTY, ret, EXIT);
 

@@ -48,6 +48,7 @@ source_set("sources_smoke") {
     "smoke/IO_test_010.cpp",
     "smoke/IO_test_013.cpp",
   ]
+  configs += [ "..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }
@@ -89,6 +90,7 @@ source_set("sources_other") {
     "full/IO_test_strncasecmp_l_001.cpp",
     "full/IO_test_strncasecmp_l_002.cpp",
   ]
+  configs += [ "..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

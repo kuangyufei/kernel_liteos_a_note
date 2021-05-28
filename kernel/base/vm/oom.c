@@ -31,6 +31,7 @@
 
 #include "sys_config.h"
 #include "los_oom.h"
+#include "los_init.h"
 #include "los_vm_dump.h"
 #include "los_vm_lock.h"
 #include "los_vm_phys.h"
@@ -245,5 +246,8 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OomTaskInit(VOID)
     return LOS_OK;
 #endif
 }
+
+LOS_MODULE_INIT(OomTaskInit, LOS_INIT_LEVEL_KMOD_TASK);
+
 #endif
 

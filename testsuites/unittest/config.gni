@@ -28,8 +28,13 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 LOSCFG_USER_TEST_FOR_DOOR = true
-LOSCFG_USER_TEST_FOR_ALL = true
+LOSCFG_USER_TEST_FOR_ALL = false
 LOSCFG_USER_TEST_PRESSURE = false
+
+# "default": depend on board_name
+# "enable": those testsuites testing for SMP is enable
+# "disable" those testsuites is disable
+LOSCFG_USER_TEST_SMP = "default"
 
 LOSCFG_USER_TEST_MISC = true
 LOSCFG_USER_TEST_DRIVERS_HID = true

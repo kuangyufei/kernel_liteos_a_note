@@ -42,8 +42,8 @@ static UINT32 Testcase(VOID)
     UINT32 ret;
     UINT32 index;
     UINT32 queueID[LOSCFG_BASE_IPC_QUEUE_CONFIG + 1];
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSP";
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSP";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
 
     UINT32 exsitedQueue = QUEUE_EXISTED_NUM;
     for (index = 0; index < LOSCFG_BASE_IPC_QUEUE_CONFIG - exsitedQueue; index++) {

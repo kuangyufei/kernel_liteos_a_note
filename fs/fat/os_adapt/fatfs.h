@@ -49,7 +49,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define MAX_LFNAME_LENTH       256
+#define MAX_LFNAME_LENGTH       256
 #define LABEL_LEN              12
 #define FAT_RESERVED_NUM       2
 #define FAT32_MAXSIZE          0x100000000

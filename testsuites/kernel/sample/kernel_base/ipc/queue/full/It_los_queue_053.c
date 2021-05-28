@@ -39,7 +39,7 @@ extern "C" {
 static VOID TaskF01(VOID)
 {
     UINT32 ret;
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
 
     g_testCount++;
 
@@ -60,7 +60,7 @@ EXIT:
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSP";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSP";
     TSK_INIT_PARAM_S task1 = { 0 };
 
     task1.pfnTaskEntry = (TSK_ENTRY_FUNC)TaskF01;

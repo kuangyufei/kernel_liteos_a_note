@@ -1141,6 +1141,9 @@ int fatfs_umount(struct Mount *mnt, struct Vnode **blkdriver)
 int fatfs_statfs(struct Mount *mnt, struct statfs *info)
 {
     FATFS *fs = (FATFS *)mnt->data;
+    DWORD nclst = 0;
+    FRESULT result = FR_OK;
+    int ret;
 
     info->f_type = MSDOS_SUPER_MAGIC;
 #if FF_MAX_SS != FF_MIN_SS
@@ -1149,8 +1152,17 @@ int fatfs_statfs(struct Mount *mnt, struct statfs *info)
     info->f_bsize = FF_MIN_SS * fs->csize;
 #endif
     info->f_blocks = fs->n_fatent;
+    ret = lock_fs(fs);
+    if (ret == FALSE) {
+        return -EBUSY;
+    }
+    /* free cluster is unavailable, update it */
+    if (fs->free_clst == DISK_ERROR) {
+        result = fat_count_free_entries(&nclst, fs);
+    }
     info->f_bfree = fs->free_clst;
     info->f_bavail = fs->free_clst;
+    unlock_fs(fs, result);
 
 #if FF_USE_LFN
     /* Maximum length of filenames */
@@ -1166,7 +1178,7 @@ int fatfs_statfs(struct Mount *mnt, struct statfs *info)
     info->f_ffree = 0;
     info->f_flags = mnt->mountFlags;
 
-    return 0;
+    return -fatfs_2_vfs(result);
 }
 
 static inline int GET_SECONDS(WORD ftime)

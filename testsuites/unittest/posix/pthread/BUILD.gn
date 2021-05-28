@@ -59,6 +59,7 @@ source_set("sources_smoke") {
     "smoke/It_posix_pthread_022.cpp",
     "smoke/It_posix_pthread_203.cpp",
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }
@@ -171,6 +172,7 @@ source_set("sources_other") {
     "full/It_posix_pthread_240.cpp",
     "full/It_posix_pthread_241.cpp",
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

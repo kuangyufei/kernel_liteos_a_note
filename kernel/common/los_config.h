@@ -249,7 +249,9 @@ extern UINT32 __heap_end;		// 堆区结束地址
 #define LOSCFG_BASE_IPC_SEM_LIMIT 1024 //信号量的最大个数
 #endif
 
+#ifndef OS_SEM_COUNT_MAX
 #define OS_SEM_COUNT_MAX 0xFFFE
+#endif
 /****************************** mutex module configuration ******************************/
 /**
  * @ingroup los_config
@@ -313,9 +315,6 @@ extern UINT32 __heap_end;		// 堆区结束地址
 
 
 /****************************** Memory module configuration **************************/
-#ifndef OS_EXC_INTERACTMEM_SIZE
-#define OS_EXC_INTERACTMEM_SIZE (EXC_INTERACT_MEM_SIZE) //0x100000 //1M
-#endif
 /**
  * @ingroup los_config
  * Starting address of the system memory
@@ -330,7 +329,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  */
 #ifndef OS_SYS_MEM_SIZE //系统动态内存池的大小（DDR自适应配置），以byte为单位,从bss段末尾至系统DDR末尾
 #define OS_SYS_MEM_SIZE \
-    ((OS_SYS_FUNC_ADDR_END) - ((OS_EXC_INTERACTMEM_SIZE + ((UINTPTR)&__bss_end) + (64 - 1)) & ~(64 - 1)))
+    ((OS_SYS_FUNC_ADDR_END) - (((UINTPTR)&__bss_end + (64 - 1)) & ~(64 - 1)))
 #endif
 
 /****************************** SMP module configuration **************************/
@@ -473,7 +472,6 @@ typedef VOID (*log_read_write_fn)(UINT32 startAddr, UINT32 space, UINT32 rwFlag,
 VOID LOS_ExcInfoRegHook(UINT32 startAddr, UINT32 space, CHAR *buf, log_read_write_fn hook);
 #endif
 
-extern VOID OsStart(VOID);
 extern INT32 OsMain(VOID);
 
 typedef VOID (*SystemRebootFunc)(VOID);

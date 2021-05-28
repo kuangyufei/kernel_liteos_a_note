@@ -753,7 +753,7 @@ VOID OsSchedTick(VOID)
     }
 }
 
-VOID OsSchedSetIdleTaskSchedPartam(LosTaskCB *idleTask)
+VOID OsSchedSetIdleTaskSchedParam(LosTaskCB *idleTask)
 {
     idleTask->policy = LOS_SCHED_IDLE;
     idleTask->initTimeSlice = OS_SCHED_FIFO_TIMEOUT;

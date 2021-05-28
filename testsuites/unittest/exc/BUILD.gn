@@ -49,6 +49,7 @@ source_set("sources_smoke") {
     "smoke/it_test_exc_004.cpp",
     "smoke/it_test_exc_005.cpp",
   ]
+  configs += [ "..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }
@@ -57,6 +58,7 @@ source_set("sources_other") {
   sources = [
     "full/it_test_fexecve_001.cpp",
   ]
+  configs += [ "..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

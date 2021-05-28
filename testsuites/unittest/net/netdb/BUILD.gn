@@ -53,6 +53,7 @@ source_set("sources_smoke") {
     "smoke/net_netdb_test_001.cpp",
     "smoke/net_netdb_test_013.cpp",
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }
@@ -80,6 +81,7 @@ source_set("sources_other") {
     "full/net_netdb_test_021.cpp",
     "full/net_netdb_test_022.cpp",
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

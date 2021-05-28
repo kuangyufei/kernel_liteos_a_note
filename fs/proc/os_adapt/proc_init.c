@@ -29,11 +29,12 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "internal.h"
-#include <stdio.h>
-#include <sys/mount.h>
 #include "proc_fs.h"
+#include "internal.h"
+#include "stdio.h"
+#include "sys/mount.h"
 #include "sys/stat.h"
+#include "los_init.h"
 
 #ifdef LOSCFG_FS_PROC
 
@@ -52,7 +53,7 @@ void ProcFsInit(void)
         PRINT_ERR("mount procfs err %d\n", ret);
         return;
     }
-    PRINTK("Mount procfs finished.\n");
+
     ProcMountsInit();
 #if defined(LOSCFG_SHELL_CMD_DEBUG) && defined(LOSCFG_KERNEL_VM)
     ProcVmmInit();
@@ -61,4 +62,7 @@ void ProcFsInit(void)
     ProcUptimeInit();
     ProcKernelTraceInit();
 }
+
+LOS_MODULE_INIT(ProcFsInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
+
 #endif

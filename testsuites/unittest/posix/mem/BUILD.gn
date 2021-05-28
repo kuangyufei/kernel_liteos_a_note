@@ -46,6 +46,7 @@ source_set("sources_smoke") {
     "smoke/It_posix_mem_001.cpp",
     "smoke/It_posix_mem_003.cpp",
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }
@@ -53,6 +54,7 @@ source_set("sources_smoke") {
 source_set("sources_other") {
   sources = [
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

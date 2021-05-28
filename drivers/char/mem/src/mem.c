@@ -32,7 +32,6 @@
 #include "fcntl.h"
 #include "linux/kernel.h"
 
-
 static int MemOpen(struct file *filep)
 {
     return 0;
@@ -99,4 +98,3 @@ int DevMemRegister(void)
 {
     return register_driver("/dev/mem", &g_memDevOps, 0666, 0); /* 0666: file mode */
 }
-

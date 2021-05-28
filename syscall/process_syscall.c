@@ -901,7 +901,7 @@ int SysUserThreadSetDeatch(unsigned int taskID)
         goto EXIT;
     }
 
-    ret = OsTaskSetDeatchUnsafe(taskCB);
+    ret = OsTaskSetDetachUnsafe(taskCB);
 
 EXIT:
     SCHEDULER_UNLOCK(intSave);

@@ -40,7 +40,7 @@ extern "C" {
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSP";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSP";
     CHAR buff2[9] = "";
 
     ret = LOS_QueueCreate("Q1", 3, &g_testQueueID01, 0, sizeof(UINTPTR)); // 3, Set the queue length.

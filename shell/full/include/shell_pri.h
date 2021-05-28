@@ -42,7 +42,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifdef LOSCFG_SHELL_LK
-extern VOID OsLkLoggerInit(const CHAR *str);
+extern UINT32 OsLkLoggerInit(VOID);
 #endif
 
 extern CmdItem g_shellcmd[];

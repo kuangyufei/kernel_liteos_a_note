@@ -134,11 +134,11 @@ EXIT:
 /* *
 * -@test IT_FS_FAT_676
 * -@tspec The function test for fallocate fallocate64
-* -@ttitle The function test for fallocate fallocate64 with the lenth is 2GB
+* -@ttitle The function test for fallocate fallocate64 with the length is 2GB
 * -@tprecon The filesystem module is open
 * -@tbrief
 1. use the open to create one file;
-2. use the function fallocate fallocate64 to apply the space with the lenth is 2GB;
+2. use the function fallocate fallocate64 to apply the space with the length is 2GB;
 3. close the file;
 4. remove the file.
 * -@texpect

@@ -40,8 +40,8 @@ static UINT32 Testcase(VOID)
 {
     UINT32 ret;
     UINT32 queueID;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSP";
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSP";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
     QUEUE_INFO_S queueInfo;
 
     ret = LOS_QueueCreate("Q1", 3, &queueID, 0, 8); // 3, Set the queue length; 8, Set the node size of the queue.

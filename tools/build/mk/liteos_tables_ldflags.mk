@@ -39,7 +39,6 @@
 #dynload_shellcmd.c -uldinit_shellcmd -ucall_shellcmd -ufindsym_shellcmd -ulddrop_shellcmd -umclose_shellcmd -umopen_shellcmd
 LITEOS_TABLES_KERNEL_LDFLAGS := \
     -utask_shellcmd \
-    -ug_usrVdsoDataPage\
     -uvm_shellcmd \
     -ucpup_shellcmd \
     -uhelp_shellcmd \
@@ -116,11 +115,17 @@ LITEOS_TABLES_EXTEND_LDFLAGS := \
     -uuart_config_shellcmd\
     -uusb_debug_shellcmd
 
+LITEOS_TABLES_KERNEL_INIT_LDFLAGS := \
+    -uOsTraceInit \
+    -ulos_vfs_init \
+    -uProcFsInit \
+    -uOsDriverRandomInit \
+    -uHieventInit
+
 LITEOS_TABLES_DRIVER_LDFLAGS := \
     -ui2c_init \
     -ugpio_init \
     -uregulator_init \
-    -uMtdInitList \
     -uhispi_init \
     -uhifmc100_init \
     -uhisfc350_init \
@@ -163,5 +168,6 @@ LITEOS_TABLES_LDFLAGS := \
     $(LITEOS_TABLES_TOOLS_LDFLAGS) \
     $(LITEOS_TABLES_EXTEND_LDFLAGS) \
     $(LITEOS_TABLES_FSMAP_LDFLAGS) \
-    $(LITEOS_TABLES_DRIVER_LDFLAGS)
+    $(LITEOS_TABLES_DRIVER_LDFLAGS) \
+    $(LITEOS_TABLES_KERNEL_INIT_LDFLAGS)
 

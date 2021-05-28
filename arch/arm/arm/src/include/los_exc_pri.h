@@ -40,11 +40,6 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-STATIC INLINE VOID OsSetCurrCpuSp(UINTPTR regSp)
-{
-    __asm__ __volatile__("mov sp, %0" :: "r"(regSp));//将参数设为 sp寄存器的值
-}
-
 #define OS_SYSTEM_NORMAL        0	//当前CPU都处于空闲状态
 #define OS_SYSTEM_EXC_CURR_CPU  1	//当前CPU处于异常状态
 #define OS_SYSTEM_EXC_OTHER_CPU 2	//其他CPU处于异常状态

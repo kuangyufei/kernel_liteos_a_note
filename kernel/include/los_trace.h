@@ -153,12 +153,12 @@ VOID LOS_Trace(TraceType traceType, ...);
  *
  * @param None.
  *
- * @retval None.
+ * @retval #LOS_OK      : The trace function is initialized successfully.
  * @par Dependency:
  * <ul><li>los_trace.h: the header file that contains the API declaration.</li></ul>
- * @see LOS_TraceInit
+ * @see OsTraceInit
  */
-VOID LOS_TraceInit(VOID);
+UINT32 OsTraceInit(VOID);
 
 /**
  * @ingroup los_trace

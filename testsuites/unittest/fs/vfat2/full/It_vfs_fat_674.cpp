@@ -122,11 +122,11 @@ EXIT:
 /* *
 * -@test IT_FS_FAT_674
 * -@tspec The function test for fallocate fallocate64
-* -@ttitle The function test for fallocate fallocate64 with the lenth smaller than write
+* -@ttitle The function test for fallocate fallocate64 with the length smaller than write
 * -@tprecon The filesystem module is open
 * -@tbrief
 1. use the open to create one file;
-2. use the function fallocate fallocate64 to apply the space with the lenth smaller than write;
+2. use the function fallocate fallocate64 to apply the space with the length smaller than write;
 3. close the file;
 4. remove the file.
 * -@texpect

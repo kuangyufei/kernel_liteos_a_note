@@ -41,18 +41,13 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-extern UINT32 OsMemSystemInit(UINTPTR memStart);
-extern STATUS_T OsKHeapInit(size_t size);
-
-#ifdef LOSCFG_EXC_INTERACTION
-extern UINT32 OsMemExcInteractionInit(UINTPTR memStart);
-#endif
-extern VOID OsDumpMemByte(size_t length, UINTPTR addr);
-
 #ifdef LOSCFG_MEM_LEAKCHECK
 extern VOID OsMemUsedNodeShow(VOID *pool);
 #endif
 
+extern UINT32 OsMemSystemInit(UINTPTR memStart);
+extern STATUS_T OsKHeapInit(size_t size);
+extern VOID OsDumpMemByte(size_t length, UINTPTR addr);
 extern VOID OsMemResetEndNode(VOID *pool, UINTPTR preAddr);
 extern UINT32 OsMemLargeNodeFree(const VOID *ptr);
 extern BOOL OsMemIsHeapNode(const VOID *ptr);

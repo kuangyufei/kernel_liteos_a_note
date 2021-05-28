@@ -42,7 +42,7 @@ extern "C" {
 #define __user
 #endif
 
-extern int HiLogDriverInit(void);
+extern int OsHiLogDriverInit(void);
 
 #ifdef __cplusplus
 #if __cplusplus

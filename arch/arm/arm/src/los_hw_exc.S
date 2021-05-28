@@ -249,6 +249,7 @@ _osKernelSVCHandler:
     MOV     R0, #0
     STR     R0, [SP, #0]
     STR     R0, [SP, #4]
+    STMFD   SP!, {R4-R11}
     MOV     R0, #OS_EXCEPT_SWI                               @ Set exception ID to OS_EXCEPT_SWI.
     B       _osExceptDispatch                                @ Branch to global exception handler.
 
@@ -270,9 +271,10 @@ _osExceptPrefetchAbortHdl: @预取异常处理
     MRC     P15, 0, R2, C6, C0, 2
     MRC     P15, 0, R3, C5, C0, 1
     STMFD   SP!, {R2-R3}                                     @ Save far and fsr
+    STMFD   SP!, {R4-R11}
 
 #ifdef LOSCFG_KERNEL_VM
-    LDR     R0, [SP, #(11 * 4)]
+    LDR     R0, [SP, #(19 * 4)]
     AND     R0, R0, #CPSR_MASK_MODE                          @ Interrupted mode
     CMP     R0, #CPSR_USER_MODE                              @ User mode
     BNE     _osKernelExceptPrefetchAbortHdl
@@ -311,6 +313,7 @@ _osExceptDataAbortHdl: @数据异常处理,缺页就属于数据异常
     MRC     P15, 0, R2, C6, C0, 0
     MRC     P15, 0, R3, C5, C0, 0
     STMFD   SP!, {R2-R3}                                     @ Save far and fsr
+    STMFD   SP!, {R4-R11}
 
 #ifdef LOSCFG_KERNEL_VM
     MOV    R1, SP
@@ -328,6 +331,7 @@ _osExceptDataAbortHdl: @数据异常处理,缺页就属于数据异常
 #endif
 #ifdef LOSCFG_KERNEL_VM
 _osExcPageFaultReturn:
+    LDMFD  SP!, {R4-R11}
     ADD    SP, SP, #(2 * 4)
     LDMFD  SP, {R13, R14}^
     ADD    SP, SP, #(2 * 4)                                  @ Jump reserved fileds
@@ -348,6 +352,7 @@ _osExceptAddrAbortHdl: @地址异常处理
     MOV     R2, #0
     MOV     R3, #0
     STMFD   SP!, {R2-R3}                                     @ far and fsr fields, are 0 under this anomaly
+    STMFD   SP!, {R4-R11}
     MOV     R0, #OS_EXCEPT_ADDR_ABORT                        @ Set exception ID to OS_EXCEPT_ADDR_ABORT.
 
     B       _osExceptDispatch                                @ Branch to global exception handler.
@@ -365,12 +370,12 @@ _osExceptFiqHdl: @快中断异常处理
     MOV     R2, #0
     MOV     R3, #0
     STMFD   SP!, {R2-R3}                                     @ far and fsr fields, are 0 under this anomaly
+    STMFD   SP!, {R4-R11}
 
 @ Description: Exception handler
 @ Parameter  : R0     Exception Type
 @ Regs Hold  : R3     Exception`s CPSR
 _osExceptDispatch:
-    STMFD   SP!, {R4-R11}
     LDR     R8, [SP, #(8 * 4)]                               @ Get far
     LDR     R9, [SP, #(9 * 4)]                               @ Get fsr
 
@@ -378,6 +383,13 @@ _osExceptDispatch:
     STR     R2, [SP, #(8 * 4)]                               @ Save svc sp
 
     MOV     R1, SP
+
+#ifdef LOSCFG_KERNEL_VM
+    LDR     R2, [SP, #(19 * 4)]                              @ Get CPSR
+    AND     R2, R2, #CPSR_MASK_MODE                          @ Interrupted mode
+    CMP     R2, #CPSR_USER_MODE                              @ User mode
+    BEQ     _osExceptionGetSP
+#endif
 
     EXC_SP_SET __exc_stack_top, OS_EXC_STACK_SIZE, R6, R7
 

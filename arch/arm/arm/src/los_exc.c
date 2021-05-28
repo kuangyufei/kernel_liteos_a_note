@@ -37,9 +37,6 @@
 #ifdef LOSCFG_SAVE_EXCINFO
 #include "los_excinfo_pri.h"
 #endif
-#ifdef LOSCFG_EXC_INTERACTION
-#include "los_exc_interaction_pri.h"
-#endif
 #include "los_sys_stack_pri.h"
 #include "los_stackinfo_pri.h"
 #ifdef LOSCFG_COREDUMP
@@ -256,8 +253,8 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
     if (irqEnable) {
         ArchIrqEnable();
     } else {
-        PrintExcInfo("[ERR][%s] may be held scheduler lock when entering [%s]\n",
-                     OsCurrTaskGet()->taskName, __FUNCTION__);
+        PrintExcInfo("[ERR][%s] may be held scheduler lock when entering [%s] on cpu [%u]\n",
+                     OsCurrTaskGet()->taskName, __FUNCTION__, ArchCurrCpuid());
     }
 #else
     ArchIrqEnable();
@@ -585,7 +582,7 @@ VOID OsDumpContextMem(const ExcContext *excBufAddr)
     }
 }
 //异常恢复,继续执行
-STATIC VOID OsExcRestore(UINTPTR taskStackPointer)
+STATIC VOID OsExcRestore(VOID)
 {
     UINT32 currCpuID = ArchCurrCpuid();		//获取当前CPU ID
 
@@ -596,8 +593,6 @@ STATIC VOID OsExcRestore(UINTPTR taskStackPointer)
     OsPercpuGet()->excFlag = CPU_RUNNING;
 #endif
     OsPercpuGet()->taskLockCnt = 0;
-
-    OsSetCurrCpuSp(taskStackPointer);//汇编设置当前CPU sp寄存器值
 }
 //用户态异常处理函数
 STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
@@ -624,8 +619,6 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 #endif
     runProcess->processStatus &= ~OS_PROCESS_FLAG_EXIT; //进程去掉退出标签,要接着执行
 
-    OsExcRestore(excBufAddr->SP);	//通过sp恢复
-
 #if (LOSCFG_KERNEL_SMP == YES)
 #ifdef LOSCFG_FS_VFS
     OsWakeConsoleSendTask();
@@ -636,6 +629,10 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
     OsProcessExitCodeCoreDumpSet(runProcess);
 #endif
     OsProcessExitCodeSignalSet(runProcess, SIGUSR2);
+
+    /* Exception handling All operations should be kept prior to that operation */
+    OsExcRestore();
+
     /* kill user exc process */
     LOS_Exit(OS_PRO_EXIT_OK);//进程退出
 
@@ -1027,7 +1024,7 @@ STATIC VOID OsWaitOtherCoresHandleExcEnd(UINT32 currCpuID)
     }
 }
 //检查所有CPU的状态
-STATIC VOID OsCheckAllCpuStatus(UINTPTR taskStackPointer)
+STATIC VOID OsCheckAllCpuStatus(VOID)
 {
     UINT32 currCpuID = ArchCurrCpuid();
     UINT32 ret, target;
@@ -1047,7 +1044,7 @@ STATIC VOID OsCheckAllCpuStatus(UINTPTR taskStackPointer)
     } else if (g_excFromUserMode[currCpuID] == TRUE) {//当前运行在用户态
         if (OsCurrProcessGet()->processID == g_currHandleExcPID) {
             LOS_SpinUnlock(&g_excSerializerSpin);
-            OsExcRestore(taskStackPointer);
+            OsExcRestore();
             while (1) {
                 ret = LOS_TaskSuspend(OsCurrTaskGet()->taskID);
                 PrintExcInfo("%s supend task :%u failed: 0x%x\n", __FUNCTION__, OsCurrTaskGet()->taskID, ret);
@@ -1075,12 +1072,11 @@ STATIC VOID OsCheckAllCpuStatus(UINTPTR taskStackPointer)
 }
 #endif
 
-STATIC VOID OsCheckCpuStatus(UINTPTR taskStackPointer)
+STATIC VOID OsCheckCpuStatus(VOID)
 {
 #if (LOSCFG_KERNEL_SMP == YES)
-    OsCheckAllCpuStatus(taskStackPointer);
+    OsCheckAllCpuStatus();
 #else
-    (VOID)taskStackPointer;
     g_currHandleExcCpuID = ArchCurrCpuid();
 #endif
 }
@@ -1101,7 +1097,7 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
         g_excFromUserMode[ArchCurrCpuid()] = FALSE;//当前CPU执行切到内核态
     }
 
-    OsCheckCpuStatus(excBufAddr->SP);//检查CPU的状态
+    OsCheckCpuStatus();
 
     if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {//为用户态时
         while (1) {
@@ -1215,9 +1211,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
         }
 #endif
     }
-#ifdef LOSCFG_EXC_INTERACTION
-    OsExcInteractionTaskKeep();
-#endif
+
 #ifdef LOSCFG_SHELL_CMD_DEBUG
     SystemRebootFunc rebootHook = OsGetRebootHook();
     if ((OsSystemExcIsReset() == TRUE) && (rebootHook != NULL)) {

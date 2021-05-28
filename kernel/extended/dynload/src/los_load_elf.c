@@ -456,7 +456,7 @@ STATIC INT32 OsSetBss(const LD_ELF_PHDR *elfPhdr, INT32 fd, UINTPTR bssStart, UI
 
     bssMapSize = bssEndPageAlign - bssStartPageAlign;
     if (bssMapSize > 0) {
-        stackFlags = MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS;
+        stackFlags = MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS;//私有/覆盖/匿名映射
         mapBase = (UINTPTR)LOS_MMap(bssStartPageAlign, bssMapSize, elfProt, stackFlags, -1, 0);//再建立映射关系
         if (!LOS_IsUserAddress((VADDR_T)mapBase)) {
             PRINT_ERR("%s[%d], Failed to map bss\n", __FUNCTION__, __LINE__);
@@ -489,7 +489,7 @@ STATIC INT32 OsMmapELFFile(INT32 fd, const LD_ELF_PHDR *elfPhdr, const LD_ELF_EH
         if ((elfProt & PROT_READ) == 0) {// LD_PT_LOAD 必有 R 属性
             return -ENOEXEC;
         }
-        elfFlags = MAP_PRIVATE | MAP_FIXED;//进程私有并覆盖方式
+        elfFlags = MAP_PRIVATE | MAP_FIXED;//进程私有并覆盖方式,非匿名即文件映射
         vAddr = elfPhdrTemp->vAddr;//虚拟地址
         if ((vAddr == 0) && (*loadBase == 0)) {//这种情况不用覆盖.
             elfFlags &= ~MAP_FIXED;
@@ -513,7 +513,7 @@ STATIC INT32 OsMmapELFFile(INT32 fd, const LD_ELF_PHDR *elfPhdr, const LD_ELF_EH
         if ((*loadBase == 0) && (elfEhdr->elfType == LD_ET_DYN)) {
             *loadBase = mapAddr;//改变装载基地址
         }
-		//.bss 的区分标识为 实际使用内存大小要大于文件大小,而且必是可写
+		//.bss 的区分标识为 实际使用内存大小要大于文件大小,而且必是可写,.bss采用匿名映射
         if ((elfPhdrTemp->memSize > elfPhdrTemp->fileSize) && (elfPhdrTemp->flags & PF_W)) {
             bssStart = mapAddr + ROUNDOFFSET(vAddr, PAGE_SIZE) + elfPhdrTemp->fileSize;//bss区开始位置
             bssEnd = mapAddr + ROUNDOFFSET(vAddr, PAGE_SIZE) + elfPhdrTemp->memSize;//bss区结束位置
@@ -868,7 +868,7 @@ STATIC INT32 OsMakeArgsStack(ELFLoadInfo *loadInfo, UINTPTR interpMapBase)
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_EXECFN, (UINTPTR)loadInfo->execName);
 
 #ifdef LOSCFG_KERNEL_VDSO
-    vdsoLoadAddr = OsLoadVdso(OsCurrProcessGet());
+    vdsoLoadAddr = OsVdsoLoad(OsCurrProcessGet());
     if (vdsoLoadAddr != 0) {
         AUX_VEC_ENTRY(auxVector, vecIndex, AUX_SYSINFO_EHDR, vdsoLoadAddr);
     }
@@ -919,7 +919,7 @@ STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
         loadInfo->elfEntry = loadInfo->interpInfo.elfEhdr.elfEntry + interpMapBase;//解析器的装载点为进程程序装载点
         loadInfo->execInfo.elfEhdr.elfEntry = loadInfo->execInfo.elfEhdr.elfEntry + loadBase;
     } else {
-        loadInfo->elfEntry = loadInfo->execInfo.elfEhdr.elfEntry;//程序装载点 "_start"
+        loadInfo->elfEntry = loadInfo->execInfo.elfEhdr.elfEntry;//直接用ELF头信息的程序装载点 "_start"
     }
 
     ret = OsMakeArgsStack(loadInfo, interpMapBase);//保存辅助向量

@@ -35,6 +35,7 @@
 #include "stdio.h"
 #include "time.h"
 #include "los_event.h"
+#include "los_tick.h"
 
 #include "securec.h"
 

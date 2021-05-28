@@ -34,6 +34,7 @@
 #include "fs/fs.h"
 #include "fs/fs_operation.h"
 #include "linux/spinlock.h"
+#include "los_init.h"
 #include "los_printf.h"
 #include "fs/mount.h"
 #include "fs/path_cache.h"
@@ -89,3 +90,5 @@ void los_vfs_init(void)
 #endif
     g_vfs_init = true;
 }
+
+LOS_MODULE_INIT(los_vfs_init, LOS_INIT_LEVEL_KMOD_BASIC);

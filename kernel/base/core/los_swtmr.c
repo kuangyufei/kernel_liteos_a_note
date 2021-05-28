@@ -30,11 +30,12 @@
  */
 
 #include "los_swtmr_pri.h"
-#include "los_sortlink_pri.h"
-#include "los_queue_pri.h"
-#include "los_task_pri.h"
+#include "los_init.h"
 #include "los_process_pri.h"
+#include "los_queue_pri.h"
 #include "los_sched_pri.h"
+#include "los_sortlink_pri.h"
+#include "los_task_pri.h"
 
 /******************************************************************************
 基本概念
@@ -177,7 +178,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
         size = sizeof(SWTMR_CTRL_S) * LOSCFG_BASE_CORE_SWTMR_LIMIT;//申请软时钟内存大小 
         swtmr = (SWTMR_CTRL_S *)LOS_MemAlloc(m_aucSysMem0, size); /* system resident resource */ //常驻内存
         if (swtmr == NULL) {
-            return LOS_ERRNO_SWTMR_NO_MEMORY;
+            ret = LOS_ERRNO_SWTMR_NO_MEMORY;
+            goto ERROR;
         }
 
         (VOID)memset_s(swtmr, size, 0, size);//清0
@@ -192,35 +194,43 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
 		//规划一片内存区域作为软时钟处理函数的静态内存池。
         g_swtmrHandlerPool = (UINT8 *)LOS_MemAlloc(m_aucSysMem1, swtmrHandlePoolSize); /* system resident resource *///常驻内存
         if (g_swtmrHandlerPool == NULL) {
-            return LOS_ERRNO_SWTMR_NO_MEMORY;
+            ret = LOS_ERRNO_SWTMR_NO_MEMORY;
+            goto ERROR;
         }
 
         ret = LOS_MemboxInit(g_swtmrHandlerPool, swtmrHandlePoolSize, sizeof(SwtmrHandlerItem));//初始化软时钟注册池
         if (ret != LOS_OK) {
-            return LOS_ERRNO_SWTMR_HANDLER_POOL_NO_MEM;
+            ret = LOS_ERRNO_SWTMR_HANDLER_POOL_NO_MEM;
+            goto ERROR;
         }
         ret = OsSchedSwtmrScanRegister((SchedScan)OsSwtmrScan);
         if (ret != LOS_OK) {
-            return ret;
+            goto ERROR;
         }
     }
 	//每个CPU都会创建一个属于自己的 OS_SWTMR_HANDLE_QUEUE_SIZE 的队列
     ret = LOS_QueueCreate(NULL, OS_SWTMR_HANDLE_QUEUE_SIZE, &g_percpu[cpuid].swtmrHandlerQueue, 0, sizeof(CHAR *));//为当前CPU core 创建软时钟队列 maxMsgSize:sizeof(CHAR *)
     if (ret != LOS_OK) {
-        return LOS_ERRNO_SWTMR_QUEUE_CREATE_FAILED;
+        ret = LOS_ERRNO_SWTMR_QUEUE_CREATE_FAILED;
+        goto ERROR;
     }
 
     ret = OsSwtmrTaskCreate();//每个CPU独自创建属于自己的软时钟任务,统一处理队列
     if (ret != LOS_OK) {
-        return LOS_ERRNO_SWTMR_TASK_CREATE_FAILED;
+        ret = LOS_ERRNO_SWTMR_TASK_CREATE_FAILED;
+        goto ERROR;
     }
 
     ret = OsSortLinkInit(&g_percpu[cpuid].swtmrSortLink);//每个CPU独自对自己软时钟链表排序初始化,为啥要排序因为每个定时器的时间不一样,鸿蒙把用时短的排在前面
     if (ret != LOS_OK) {
-        return LOS_ERRNO_SWTMR_SORTLINK_CREATE_FAILED;
+        ret = LOS_ERRNO_SWTMR_SORTLINK_CREATE_FAILED;
+        goto ERROR;
     }
 
     return LOS_OK;
+ERROR:
+    PRINT_ERR("OsSwtmrInit error! ret = %u\n", ret);
+    return ret;
 }
 
 /*

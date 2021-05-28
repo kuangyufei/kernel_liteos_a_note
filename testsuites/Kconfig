@@ -45,6 +45,5 @@ config TEST
     depends on KERNEL_TEST
 
 source "./kernel/Kconfig"
-source "./kernel/Kconfig_case"
 endmenu
 

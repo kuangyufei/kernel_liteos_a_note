@@ -50,6 +50,8 @@
 #include "los_swtmr_pri.h"
 #include "los_sys_pri.h"
 
+#define CPUCLOCK_PERTHREAD_MASK 4
+#define CPUCLOCK_ID_OFFSET 3
 
 /*
  * Do a time package defined return. This requires the error code
@@ -426,7 +428,6 @@ int clock_settime(clockid_t clockID, const struct timespec *tp)
         case CLOCK_BOOTTIME:
         case CLOCK_REALTIME_ALARM:
         case CLOCK_BOOTTIME_ALARM:
-        case CLOCK_SGI_CYCLE:
         case CLOCK_TAI:
         case CLOCK_THREAD_CPUTIME_ID:
             TIME_RETURN(ENOTSUP);
@@ -450,13 +451,82 @@ int clock_settime(clockid_t clockID, const struct timespec *tp)
     return settimeofday(&tv, NULL);
 }
 
+static int PthreadGetCputime(clockid_t clockID, struct timespec *ats)
+{
+    uint64_t runtime;
+    UINT32 intSave;
+    UINT32 tid = ((UINT32) ~((clockID) >> CPUCLOCK_ID_OFFSET));
+
+    if (OS_TID_CHECK_INVALID(tid)) {
+        return -ESRCH;
+    }
+    LosTaskCB *task = OsGetTaskCB(tid);
+
+    if (OsCurrTaskGet()->processID != task->processID) {
+        return -EINVAL;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    runtime = task->taskCpup.allTime;
+    SCHEDULER_UNLOCK(intSave);
+
+    ats->tv_sec = runtime / OS_SYS_NS_PER_SECOND;
+    ats->tv_nsec = runtime % OS_SYS_NS_PER_SECOND;
+
+    return 0;
+}
+
+static int ProcessGetCputime(clockid_t clockID, struct timespec *ats)
+{
+    UINT64 runtime;
+    UINT32 intSave;
+    const pid_t pid = ((pid_t) ~((clockID) >> CPUCLOCK_ID_OFFSET));
+    LosProcessCB *spcb = NULL;
+
+    if (OsProcessIDUserCheckInvalid(pid) || pid < 0) {
+        return -EINVAL;
+    }
+
+    spcb = OS_PCB_FROM_PID(pid);
+    if (OsProcessIsUnused(spcb)) {
+        return -EINVAL;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    runtime = spcb->processCpup.allTime;
+    SCHEDULER_UNLOCK(intSave);
+
+    ats->tv_sec = runtime / OS_SYS_NS_PER_SECOND;
+    ats->tv_nsec = runtime % OS_SYS_NS_PER_SECOND;
+
+    return 0;
+}
+
+static int GetCputime(clockid_t clockID, struct timespec *tp)
+{
+    int ret;
+
+    if (clockID >= 0) {
+        return -EINVAL;
+    }
+
+    if ((UINT32)clockID & CPUCLOCK_PERTHREAD_MASK) {
+        ret = PthreadGetCputime(clockID, tp);
+    } else {
+        ret = ProcessGetCputime(clockID, tp);
+    }
+
+    return ret;
+}
+
 int clock_gettime(clockid_t clockID, struct timespec *tp)
 {
     UINT32 intSave;
     struct timespec64 tmp = {0};
     struct timespec64 hwTime = {0};
+    int ret;
 
-    if ((clockID > MAX_CLOCKS) || (clockID < CLOCK_REALTIME)) {
+    if (clockID > MAX_CLOCKS) {
         goto ERROUT;
     }
 
@@ -493,11 +563,17 @@ int clock_gettime(clockid_t clockID, struct timespec *tp)
         case CLOCK_BOOTTIME:
         case CLOCK_REALTIME_ALARM:
         case CLOCK_BOOTTIME_ALARM:
-        case CLOCK_SGI_CYCLE:
         case CLOCK_TAI:
             TIME_RETURN(ENOTSUP);
         default:
-            goto ERROUT;
+            {
+#ifdef LOSCFG_KERNEL_CPUP
+                ret = GetCputime(clockID, tp);
+                TIME_RETURN(-ret);
+#else
+                TIME_RETURN(EINVAL);
+#endif
+            }
     }
 
     return 0;
@@ -506,8 +582,45 @@ ERROUT:
     TIME_RETURN(EINVAL);
 }
 
+static int CheckClock(const clockid_t clockID)
+{
+    int error = 0;
+    const pid_t pid = ((pid_t) ~((clockID) >> CPUCLOCK_ID_OFFSET));
+
+    if (!((UINT32)clockID & CPUCLOCK_PERTHREAD_MASK)) {
+        LosProcessCB *spcb = NULL;
+        if (OsProcessIDUserCheckInvalid(pid) || pid < 0) {
+            return -EINVAL;
+        }
+        spcb = OS_PCB_FROM_PID(pid);
+        if (OsProcessIsUnused(spcb)) {
+            error = -EINVAL;
+        }
+    } else {
+        error = -EINVAL;
+    }
+
+    return error;
+}
+
+static int CpuClockGetres(const clockid_t clockID, struct timespec *tp)
+{
+    if (clockID > 0) {
+        return -EINVAL;
+    }
+
+    int error = CheckClock(clockID);
+    if (!error) {
+        error = ProcessGetCputime(clockID, tp);
+    }
+
+    return error;
+}
+
 int clock_getres(clockid_t clockID, struct timespec *tp)
 {
+    int ret;
+
     if (tp == NULL) {
         TIME_RETURN(EINVAL);
     }
@@ -532,11 +645,17 @@ int clock_getres(clockid_t clockID, struct timespec *tp)
         case CLOCK_BOOTTIME:
         case CLOCK_REALTIME_ALARM:
         case CLOCK_BOOTTIME_ALARM:
-        case CLOCK_SGI_CYCLE:
         case CLOCK_TAI:
             TIME_RETURN(ENOTSUP);
         default:
+#ifdef LOSCFG_KERNEL_CPUP
+            {
+                ret = CpuClockGetres(clockID, tp);
+                TIME_RETURN(-ret);
+            }
+#else
             TIME_RETURN(EINVAL);
+#endif
     }
 
     TIME_RETURN(0);
@@ -559,7 +678,6 @@ int clock_nanosleep(clockid_t clk, int flags, const struct timespec *req, struct
         case CLOCK_BOOTTIME:
         case CLOCK_REALTIME_ALARM:
         case CLOCK_BOOTTIME_ALARM:
-        case CLOCK_SGI_CYCLE:
         case CLOCK_TAI:
             if (flags == 0 || flags == TIMER_ABSTIME) {
                 TIME_RETURN(ENOTSUP);
@@ -962,7 +1080,7 @@ int getitimer(int which, struct itimerval *value)
 }
 
 #ifdef LOSCFG_KERNEL_VDSO
-VOID OsGetVdsoTime(VdsoDataPage *vdsoDataPage)
+VOID OsVdsoTimeGet(VdsoDataPage *vdsoDataPage)
 {
     UINT32 intSave;
     struct timespec64 tmp = {0};

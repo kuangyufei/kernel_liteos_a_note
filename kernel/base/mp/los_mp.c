@@ -30,11 +30,11 @@
  */
 
 #include "los_mp.h"
-#include "los_task_pri.h"
+#include "los_init.h"
 #include "los_percpu_pri.h"
 #include "los_sched_pri.h"
 #include "los_swtmr.h"
-
+#include "los_task_pri.h"
 /*******************************************************	
 多CPU核的操作系统3种处理模式(SMP+AMP+BMP) 鸿蒙实现的是 SMP 的方式
 	非对称多处理（Asymmetric multiprocessing，AMP）每个CPU内核
@@ -122,6 +122,8 @@ UINT32 OsMpInit(VOID)
 
     return LOS_OK;
 }
+
+LOS_MODULE_INIT(OsMpInit, LOS_INIT_LEVEL_KMOD_TASK);
 
 #endif
 

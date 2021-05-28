@@ -91,21 +91,7 @@ VOID OsDumpMemByte(size_t length, UINTPTR addr)
 
     return;
 }
-/***************************************************************
-memcheck
-命令功能
-检查动态申请的内存块是否完整，是否存在内存越界造成节点损坏。
 
-命令格式
-memcheck
-
-参数说明
-无。
-
-使用指南
-当内存池所有节点完整时，输出"system memcheck over, all passed!"。
-当内存池存在节点不完整时，输出被损坏节点的内存块信息。
-***************************************************************/
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemCheck(INT32 argc, const CHAR *argv[])
 {
     if (argc > 0) {
@@ -119,27 +105,11 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemCheck(INT32 argc, const CHAR *argv[])
         WriteExcInfoToBuf("system memcheck over, all passed!\n");
 #endif
     }
-#ifdef LOSCFG_EXC_INTERACTION
-    if (LOS_MemIntegrityCheck(m_aucSysMem0) == LOS_OK) {
-        PRINTK("exc interaction memcheck over, all passed!\n");
-#ifdef LOSCFG_SAVE_EXCINFO
-        WriteExcInfoToBuf("exc interaction memcheck over, all passed!\n");
-#endif
-    }
-#endif
+
     return 0;
 }
 
 #ifdef LOSCFG_SHELL
-
-/*********************************************************
-
-	text    表示代码段大小。
-	data    表示数据段大小。
-	rodata  表示只读数据段大小。
-	bss 	表示未初始化全局变量占用内存大小。
-
-*********************************************************/
 LITE_OS_SEC_TEXT_MINOR STATIC VOID OsShellCmdSectionInfo(INT32 argc, const CHAR *argv[])
 {
     size_t textLen = &__text_end - &__text_start;
@@ -158,21 +128,9 @@ LITE_OS_SEC_TEXT_MINOR STATIC VOID OsShellCmdSectionInfo(INT32 argc, const CHAR 
         PRINTK("Mem:    %-9lu    %-10lu    %-10lu    %-10lu\n", textLen, dataLen, rodataLen, bssLen);
     }
 }
-/*********************************************************
 
-	total 	表示系统动态内存池总量。
-	used    表示已使用内存总量。
-	free    表示未被分配的内存大小。
-	heap    表示已分配堆大小。
-
-*********************************************************/
 LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OsShellCmdFreeInfo(INT32 argc, const CHAR *argv[])
 {
-#ifdef LOSCFG_EXC_INTERACTION
-    UINT32 memUsed0 = LOS_MemTotalUsedGet(m_aucSysMem0);
-    UINT32 totalMem0 = LOS_MemPoolSizeGet(m_aucSysMem0);
-    UINT32 freeMem0 = totalMem0 - memUsed0;
-#endif
     UINT32 memUsed = LOS_MemTotalUsedGet(m_aucSysMem1);
     UINT32 totalMem = LOS_MemPoolSizeGet(m_aucSysMem1);
     UINT32 freeMem = totalMem - memUsed;
@@ -195,90 +153,37 @@ LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OsShellCmdFreeInfo(INT32 argc, const CHAR *
     if ((argc == 0) ||
         ((argc == 1) && (strcmp(argv[0], "-k") == 0)) ||
         ((argc == 1) && (strcmp(argv[0], "-m") == 0))) {
-#ifdef LOSCFG_EXC_INTERACTION
-        PRINTK("\r\n***** Mem:system mem      Mem1:exception interaction mem *****\n");
-#endif
         PRINTK("\r\n        total        used          free          heap\n");
     }
 
     if ((argc == 1) && (strcmp(argv[0], "-k") == 0)) {
         PRINTK("Mem:    %-9u    %-10u    %-10u    %-10u\n", MEM_SIZE_TO_KB(totalMem), MEM_SIZE_TO_KB(memUsed),
                MEM_SIZE_TO_KB(freeMem), MEM_SIZE_TO_KB(memUsedHeap));
-#ifdef LOSCFG_EXC_INTERACTION
-        PRINTK("Mem1:   %-9u    %-10u    %-10u\n", MEM_SIZE_TO_KB(totalMem), MEM_SIZE_TO_KB(memUsed),
-               MEM_SIZE_TO_KB(freeMem));
-#endif
     } else if ((argc == 1) && (strcmp(argv[0], "-m") == 0)) {
         PRINTK("Mem:    %-9u    %-10u    %-10u    %-10u\n", MEM_SIZE_TO_MB(totalMem), MEM_SIZE_TO_MB(memUsed),
                MEM_SIZE_TO_MB(freeMem), MEM_SIZE_TO_MB(memUsedHeap));
-#ifdef LOSCFG_EXC_INTERACTION
-        PRINTK("Mem1:   %-9u    %-10u    %-10u\n", MEM_SIZE_TO_MB(totalMem), MEM_SIZE_TO_MB(memUsed),
-               MEM_SIZE_TO_MB(freeMem));
-#endif
     } else if (argc == 0) {
         PRINTK("Mem:    %-9u    %-10u    %-10u    %-10u\n", totalMem, memUsed, freeMem, memUsedHeap);
-#ifdef LOSCFG_EXC_INTERACTION
-        PRINTK("Mem1:   %-9u    %-10u    %-10u\n", totalMem0, memUsed0, freeMem0);
-#endif
     } else {
         PRINTK("\nUsage: free or free [-k/-m]\n");
         return OS_ERROR;
     }
     return 0;
 }
-/*************************************************************
-命令功能
-free命令可显示系统内存的使用情况，同时显示系统的text段、data段、rodata段、bss段大小。
 
-命令格式
-free [-k | -m]
-
-参数说明
-
-参数 参数说明 取值范围 
-
-无参数    以Byte为单位显示。N/A
--k	以KB为单位显示。N/A
--m	以MB为单位显示。N/A
-使用实例
-举例：分别输入free、free -k、free -m.
-*************************************************************/
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdFree(INT32 argc, const CHAR *argv[])
 {
     if (argc > 1) {
         PRINTK("\nUsage: free or free [-k/-m]\n");
         return OS_ERROR;
     }
-    if (OsShellCmdFreeInfo(argc, argv) != 0) {//剩余内存统计
+    if (OsShellCmdFreeInfo(argc, argv) != 0) {
         return OS_ERROR;
     }
-    OsShellCmdSectionInfo(argc, argv);//显示系统各段使用情况
+    OsShellCmdSectionInfo(argc, argv);
     return 0;
 }
-/*************************************************************
-命令功能
-uname命令用于显示当前操作系统的名称，版本创建时间，系统名称，版本信息等。
 
-命令格式
-uname [-a | -s | -t | -v | --help]
-
-参数说明
-
-
-参数		参数说明		
-无参数		默认显示操作系统名称。
--a		显示全部信息。
--t		显示版本创建的时间。
--s		显示操作系统名称。
--v		显示版本信息。
---help	显示uname指令格式提示。
-
-使用指南
-uname用于显示当前操作系统名称。语法uname -a | -t| -s| -v 描述uname 命令将正在使用的操作系统名写到标准输出中，这几个参数不能混合使用。
-
-使用实例
-举例：输入uname -a
-*************************************************************/
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdUname(INT32 argc, const CHAR *argv[])
 {
     if (argc == 0) {
@@ -324,22 +229,18 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemUsed(INT32 argc, const CHAR *argv[])
 
     OsMemUsedNodeShow(m_aucSysMem1);
 
-#ifdef LOSCFG_EXC_INTERACTION
-    PRINTK("\n exc interaction memory\n");
-    OsMemUsedNodeShow(m_aucSysMem0);
-#endif
     return 0;
 }
 #endif
 
 #ifdef LOSCFG_MEM_LEAKCHECK
-SHELLCMD_ENTRY(memused_shellcmd, CMD_TYPE_EX, "memused", 0, (CmdCallBackFunc)OsShellCmdMemUsed);//shell memused 命令静态注册方式
+SHELLCMD_ENTRY(memused_shellcmd, CMD_TYPE_EX, "memused", 0, (CmdCallBackFunc)OsShellCmdMemUsed);
 #endif
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(memcheck_shellcmd, CMD_TYPE_EX, "memcheck", 0, (CmdCallBackFunc)OsShellCmdMemCheck);//shell memcheck 命令静态注册方式
+SHELLCMD_ENTRY(memcheck_shellcmd, CMD_TYPE_EX, "memcheck", 0, (CmdCallBackFunc)OsShellCmdMemCheck);
 #endif
-SHELLCMD_ENTRY(free_shellcmd, CMD_TYPE_EX, "free", XARGS, (CmdCallBackFunc)OsShellCmdFree);//shell free 命令静态注册方式
-SHELLCMD_ENTRY(uname_shellcmd, CMD_TYPE_EX, "uname", XARGS, (CmdCallBackFunc)OsShellCmdUname);//shell uname命令静态注册方式
+SHELLCMD_ENTRY(free_shellcmd, CMD_TYPE_EX, "free", XARGS, (CmdCallBackFunc)OsShellCmdFree);
+SHELLCMD_ENTRY(uname_shellcmd, CMD_TYPE_EX, "uname", XARGS, (CmdCallBackFunc)OsShellCmdUname);
 #endif
 

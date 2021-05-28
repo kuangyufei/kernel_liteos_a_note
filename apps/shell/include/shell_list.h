@@ -350,31 +350,10 @@ static inline void SH_ListHeadInsertList(SH_List *oldList, SH_List *newList)
  * <li>None.</li>
  * </ul>
  *
- * @param type   [IN] Structure name.
- * @param field  [IN] Name of the field of which the offset is to be measured.
+ * @param type    [IN] Structure name.
+ * @param member  [IN] Name of the member of which the offset is to be measured.
  *
  * @retval Offset of the field to the structure address.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
- * @see
- */
-#define OFFSET_OF_FIELD(type, field) ((uintptr_t)&((type *)0)->field)
-
-/**
- * @ingroup shell_list
- * @brief Obtain the pointer to a doubly linked list in a structure.
- *
- * @par Description:
- * This API is used to obtain the pointer to a doubly linked list in a structure.
- * @attention
- * <ul>
- * <li>None.</li>
- * </ul>
- *
- * @param type    [IN] Structure name.
- * @param member  [IN] Member name of the doubly linked list in the structure.
- *
- * @retval Pointer to the doubly linked list in the structure.
  * @par Dependency:
  * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
  * @see

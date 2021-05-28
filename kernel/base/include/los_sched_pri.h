@@ -154,7 +154,7 @@ STATIC INLINE VOID OsCpuSchedUnlock(Percpu *cpu, UINT32 intSave)
 
 extern UINT32 OsSchedSetTickTimerType(UINT32 timerType);
 
-extern VOID OsSchedSetIdleTaskSchedPartam(LosTaskCB *idleTask);
+extern VOID OsSchedSetIdleTaskSchedParam(LosTaskCB *idleTask);
 
 extern UINT32 OsSchedSwtmrScanRegister(SchedScan func);
 

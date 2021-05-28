@@ -30,15 +30,16 @@
  */
 
 #include "shell_lk.h"
+#include "securec.h"
+#include "stdio.h"
+#include "stdlib.h"
+#include "unistd.h"
 #include "shcmd.h"
 #ifdef LOSCFG_SHELL_DMESG
 #include "dmesg_pri.h"
 #endif
+#include "los_init.h"
 #include "los_printf_pri.h"
-#include "unistd.h"
-#include "stdlib.h"
-#include "stdio.h"
-#include "securec.h"
 
 #ifdef LOSCFG_SHELL_LK
 
@@ -208,19 +209,21 @@ VOID LOS_LkRegHook(LK_FUNC hook)
     g_osLkHook = hook;
 }
 
-VOID OsLkLoggerInit(const CHAR *str)
+UINT32 OsLkLoggerInit(VOID)
 {
-    (VOID)str;
     (VOID)memset_s(&g_logger, sizeof(Logger), 0, sizeof(Logger));
     OsLkTraceLvSet(TRACE_DEFAULT);
     LOS_LkRegHook(OsLkDefaultFunc);
 #ifdef LOSCFG_SHELL_DMESG
     (VOID)LOS_DmesgLvSet(TRACE_DEFAULT);
 #endif
+    return LOS_OK;
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 SHELLCMD_ENTRY(log_shellcmd, CMD_TYPE_EX, "log", 1, (CmdCallBackFunc)CmdLog);
 #endif
+
+LOS_MODULE_INIT(OsLkLoggerInit, LOS_INIT_LEVEL_EARLIEST);
 
 #endif

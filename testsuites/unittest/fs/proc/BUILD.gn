@@ -44,6 +44,7 @@ sources_entry = [
 source_set("sources_smoke") {
   sources = [
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }
@@ -57,6 +58,7 @@ source_set("sources_other") {
     "full/It_vfs_proc_005.cpp",
     "full/It_vfs_proc_006.cpp",
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

@@ -39,8 +39,8 @@ extern "C" {
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSPtest";
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSPtest";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
 
     g_testQueueID01 = LOSCFG_BASE_IPC_QUEUE_CONFIG - 1;
 

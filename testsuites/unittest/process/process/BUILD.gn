@@ -118,6 +118,7 @@ source_set("sources_smoke") {
     "smp/process_test_smp_007.cpp",
     "smp/process_test_smp_008.cpp",
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }
@@ -125,6 +126,7 @@ source_set("sources_smoke") {
 source_set("sources_other") {
   sources = [
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

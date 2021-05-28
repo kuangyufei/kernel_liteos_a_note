@@ -41,8 +41,8 @@ static UINT32 Testcase(VOID)
 {
     UINT32 ret;
     UINT32 queueID;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "123";
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "123";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
     UINT32 readSize;
 
     ret = LOS_QueueCreate("Q1", 3, &queueID, 0, sizeof(UINTPTR)); // 3, Set the queue length.
@@ -51,7 +51,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_QueueWrite(queueID, &buff1, 8, 0); // 8, Write the setting size of queue buffer.
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
     readSize = sizeof(buff1);
     ret = LOS_QueueReadCopy(queueID, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
@@ -59,7 +59,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_QueueWrite(queueID, &buff1, 8, 0); // 8, Write the setting size of queue buffer.
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
     readSize = sizeof(buff1) + 1;
     ret = LOS_QueueReadCopy(queueID, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
@@ -67,7 +67,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_QueueWrite(queueID, &buff1, 8, 0); // 8, Write the setting size of queue buffer.
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
     readSize = sizeof(buff1);
     ret = LOS_QueueReadCopy(queueID, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
@@ -75,7 +75,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_QueueWrite(queueID, &buff1, 8, 0); // 8, Write the setting size of queue buffer.
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
     readSize = 0;
     ret = LOS_QueueReadCopy(queueID, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_READSIZE_IS_INVALID, ret, EXIT);

@@ -43,7 +43,7 @@ extern "C" {
 
 #define LITE_VDSO_DATAPAGE __attribute__((section(".data.vdso.datapage")))
 
-extern VOID OsGetVdsoTime(VdsoDataPage *);
+extern VOID OsVdsoTimeGet(VdsoDataPage *);
 
 extern CHAR __vdso_data_start;
 extern CHAR __vdso_text_start;

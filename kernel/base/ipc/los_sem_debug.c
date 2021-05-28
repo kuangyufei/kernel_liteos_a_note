@@ -129,7 +129,7 @@ STATIC VOID OsSemSort(UINT32 *semIndexArray, UINT32 usedCount)
     semSortParam.buf = (CHAR *)g_semDebugArray;
     semSortParam.ipcDebugCBSize = sizeof(SemDebugCB);
     semSortParam.ipcDebugCBCnt = LOSCFG_BASE_IPC_SEM_LIMIT;
-    semSortParam.sortElemOff = OFFSET_OF_FIELD(SemDebugCB, lastAccessTime);
+    semSortParam.sortElemOff = LOS_OFF_SET_OF(SemDebugCB, lastAccessTime);
 
     /* It will Print out ALL the Used Semaphore List. */
     PRINTK("Used Semaphore List: \n");

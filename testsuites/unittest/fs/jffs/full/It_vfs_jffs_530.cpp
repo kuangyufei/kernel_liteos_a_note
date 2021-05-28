@@ -48,7 +48,7 @@ static UINT32 Testcase(VOID)
         i++;
         strcat(pathname1, "t");
     }
-    ICUNIT_GOTO_EQUAL(strlen(pathname1), 255, strlen(pathname1), EXIT); // compare pathname lenth with 255
+    ICUNIT_GOTO_EQUAL(strlen(pathname1), 255, strlen(pathname1), EXIT); // compare pathname length with 255
     fd = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
     ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
 

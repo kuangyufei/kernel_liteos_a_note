@@ -34,6 +34,7 @@
 #include "fs/fs.h"
 #include "fs/file.h"
 #endif
+#include "los_init.h"
 #include "los_signal.h"
 #include "los_syscall.h"
 #include "los_task_pri.h"
@@ -82,7 +83,7 @@ static UINTPTR g_syscallHandle[SYS_CALL_NUM] = {0};	//系统调用入口函数�
 static UINT8 g_syscallNArgs[(SYS_CALL_NUM + 1) / NARG_PER_BYTE] = {0};//保存系统调用对应的参数数量
 
 //系统调用初始化,完成对系统调用的注册
-void SyscallHandleInit(void)
+void OsSyscallHandleInit(void)
 {
 #define SYSCALL_HAND_DEF(id, fun, rType, nArg)                                             \
     if ((id) < SYS_CALL_NUM) {                                                             \
@@ -94,6 +95,7 @@ void SyscallHandleInit(void)
 #undef SYSCALL_HAND_DEF
 }
 
+LOS_MODULE_INIT(OsSyscallHandleInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
 /* The SYSCALL ID is in R7 on entry.  Parameters follow in R0..R6 */
 /******************************************************************
 由汇编调用,见于 los_hw_exc.s    / BLX    OsArmA32SyscallHandle

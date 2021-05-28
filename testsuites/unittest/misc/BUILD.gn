@@ -50,6 +50,7 @@ source_set("sources_other") {
     "full/misc_test_012.cpp",
     "full/misc_test_013.cpp",
   ]
+  configs += [ "..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }
@@ -65,6 +66,7 @@ source_set("sources_smoke") {
     "smoke/misc_test_009.cpp",
     "smoke/misc_test_014.cpp",
   ]
+  configs += [ "..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

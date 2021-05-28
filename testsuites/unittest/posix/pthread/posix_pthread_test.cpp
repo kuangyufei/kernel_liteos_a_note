@@ -327,6 +327,17 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread022, TestSize.Level0)
     ItPosixPthread022(); // pthread_cancel
 }
 
+/* *
+ * @tc.name: IT_POSIX_PTHREAD_203
+ * @tc.desc: function for pthread concurrency
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(PosixPthreadTest, ItPosixPthread203, TestSize.Level0)
+{
+    ItPosixPthread203();
+}
+
 #endif
 
 #if defined(LOSCFG_USER_TEST_FULL)

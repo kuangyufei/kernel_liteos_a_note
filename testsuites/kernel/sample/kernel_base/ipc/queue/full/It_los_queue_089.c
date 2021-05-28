@@ -59,24 +59,24 @@ static UINT32 Testcase(VOID)
 
     for (j = 0; j < 100; j++) { // 100, The loop frequency.
         for (i = 0; i < 1000; i++) { // 1000, The loop frequency.
-            ret = LOS_QueueWrite(g_testQueueID01, filebuf, QUEUE_SHORT_BUFFER_LENTH, 0);
+            ret = LOS_QueueWrite(g_testQueueID01, filebuf, QUEUE_SHORT_BUFFER_LENGTH, 0);
             ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
         }
-        ret = LOS_QueueWrite(g_testQueueID01, filebuf, QUEUE_SHORT_BUFFER_LENTH, 0);
+        ret = LOS_QueueWrite(g_testQueueID01, filebuf, QUEUE_SHORT_BUFFER_LENGTH, 0);
         ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_ISFULL, ret, EXIT);
 
         for (i = 0; i < 1000; i++) { // 1000, The loop frequency.
             memset(readbuf, 0, 260); // 260, Read buf size.
-            ret = LOS_QueueRead(g_testQueueID01, readbuf, QUEUE_SHORT_BUFFER_LENTH, 0);
+            ret = LOS_QueueRead(g_testQueueID01, readbuf, QUEUE_SHORT_BUFFER_LENGTH, 0);
             ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
         }
-        ret = LOS_QueueRead(g_testQueueID01, readbuf, QUEUE_SHORT_BUFFER_LENTH, 0);
+        ret = LOS_QueueRead(g_testQueueID01, readbuf, QUEUE_SHORT_BUFFER_LENGTH, 0);
         ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_ISEMPTY, ret, EXIT);
     }
-    ret = LOS_QueueWrite(g_testQueueID01, filebuf, QUEUE_SHORT_BUFFER_LENTH, 0);
+    ret = LOS_QueueWrite(g_testQueueID01, filebuf, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    ret = LOS_QueueRead(g_testQueueID01, readbuf, QUEUE_SHORT_BUFFER_LENTH, 0);
+    ret = LOS_QueueRead(g_testQueueID01, readbuf, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
     ret = LOS_QueueInfoGet(g_testQueueID01, &queueInfo);
@@ -84,7 +84,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(queueInfo.usQueueLen, len, queueInfo.usQueueLen, EXIT);
     ICUNIT_GOTO_EQUAL(queueInfo.uwQueueID, g_testQueueID01, queueInfo.uwQueueID, EXIT);
 
-    ret = LOS_QueueRead(g_testQueueID01, readbuf, QUEUE_SHORT_BUFFER_LENTH, 0);
+    ret = LOS_QueueRead(g_testQueueID01, readbuf, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_ISEMPTY, ret, EXIT);
 
     ret = LOS_QueueDelete(g_testQueueID01);

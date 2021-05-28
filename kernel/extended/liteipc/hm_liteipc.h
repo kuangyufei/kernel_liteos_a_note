@@ -180,7 +180,7 @@ typedef struct {	//IPC消息内容回路,记录消息周期
 #define IPC_THREAD_STATUS_STOP         0x0008U
 
 /* init liteipc driver */
-extern UINT32 LiteIpcInit(VOID);
+extern UINT32 OsLiteIpcInit(VOID);
 
 /* init process liteipc memory pool */
 extern UINT32 LiteIpcPoolInit(ProcIpcInfo *ipcInfo);

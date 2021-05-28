@@ -43,9 +43,9 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-extern UINT32 OsInitVdso(VOID);
-extern vaddr_t OsLoadVdso(const LosProcessCB *);
-extern VOID OsUpdateVdsoTimeval(VOID);
+extern UINT32 OsVdsoInit(VOID);
+extern vaddr_t OsVdsoLoad(const LosProcessCB *);
+extern VOID OsVdsoTimevalUpdate(VOID);
 
 #ifdef __cplusplus
 #if __cplusplus

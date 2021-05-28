@@ -50,6 +50,7 @@ source_set("sources_smoke") {
     "smoke/timer_test_tzset_001.cpp",
     "smoke/timer_test_tzset_002.cpp",
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }
@@ -57,6 +58,7 @@ source_set("sources_smoke") {
 source_set("sources_other") {
   sources = [
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

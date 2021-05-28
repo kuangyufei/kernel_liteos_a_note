@@ -60,6 +60,7 @@ source_set("sources_smoke") {
     "smoke/It_posix_queue_208.cpp",
     "smoke/It_posix_queue_209.cpp",
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }
@@ -206,6 +207,7 @@ source_set("sources_other") {
     "full/It_posix_queue_203.cpp",
     "full/It_posix_queue_204.cpp",
   ]
+  configs += [ "../..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

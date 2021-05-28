@@ -59,7 +59,7 @@ extern VOID OsIncHwiFormCnt(UINT32 index);
 extern UINT32 OsGetHwiFormCnt(UINT32 index);
 extern CHAR *OsGetHwiFormName(UINT32 index);
 extern VOID OsInterrupt(UINT32 intNum);
-extern VOID SyscallHandleInit(VOID);
+extern VOID OsSyscallHandleInit(VOID);
 
 #ifdef __cplusplus
 #if __cplusplus

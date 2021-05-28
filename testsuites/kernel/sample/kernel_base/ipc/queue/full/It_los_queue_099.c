@@ -41,8 +41,8 @@ static UINT32 Testcase(VOID)
 {
     UINT32 ret;
     UINT32 queueID;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSP";
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSP";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
     QUEUE_INFO_S queueInfo;
     UINT32 readSize;
 
@@ -55,7 +55,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_QueueDelete(queueID);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
     readSize = 8; // 8, Read the setting size of queue buffer.
     ret = LOS_QueueReadCopy(queueID, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_NOT_CREATE, ret, EXIT);

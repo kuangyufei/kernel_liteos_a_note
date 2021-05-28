@@ -30,23 +30,23 @@
  */
 
 #include "los_trace_pri.h"
-#include "securec.h"
-#include "los_typedef.h"
-#include "los_task_pri.h"
 #include "ctype.h"
+#include "securec.h"
+#include "los_init.h"
+#include "los_task_pri.h"
+#include "los_typedef.h"
 
 #ifdef LOSCFG_SHELL
 #include "shcmd.h"
 #include "shell.h"
-#include "unistd.h"
 #include "stdlib.h"
+#include "unistd.h"
 #endif
 
-
 #ifndef LOSCFG_KERNEL_TRACE
-VOID LOS_TraceInit(VOID)
+UINT32 OsTraceInit(VOID)
 {
-    return;
+    return LOS_OK;
 }
 
 UINT32 LOS_TraceReg(TraceType traceType, WriteHook inHook, const CHAR *typeStr, TraceSwitch onOff)
@@ -112,7 +112,7 @@ STATIC UINT8 traceBufArray[LOS_TRACE_BUFFER_SIZE];
 STATIC TraceBufferCtl traceBufCtl;
 STATIC TraceHook traceFunc[LOS_TRACE_TYPE_MAX + 1];
 
-VOID LOS_TraceInit(VOID)
+UINT32 OsTraceInit(VOID)
 {
     UINT32 intSave;
 
@@ -129,6 +129,8 @@ VOID LOS_TraceInit(VOID)
     traceBufCtl.onOff = LOS_TRACE_ENABLE;
 
     TRACE_UNLOCK(intSave);
+
+    return LOS_OK;
 }
 
 UINT32 LOS_TraceReg(TraceType traceType, WriteHook inHook, const CHAR *typeStr, TraceSwitch onOff)
@@ -454,7 +456,7 @@ UINT32 OsShellCmdTraceSwitch(INT32 argc, const CHAR **argv)
         if (isdigit(argv[0][0]) != 0) {
             CHAR *endPtr = NULL;
             UINT32 traceType = strtoul(argv[0], &endPtr, 0);
-            if ((endPtr != NULL) || (*endPtr != 0)) {
+            if ((endPtr == NULL) || (*endPtr != 0)) {
                 PRINTK("Unknown option: %s\n", argv[0]);
                 goto TRACE_HELP;
             }
@@ -509,3 +511,4 @@ SHELLCMD_ENTRY(trace_shellcmd, CMD_TYPE_EX, "trace", 1, (CmdCallBackFunc)OsShell
 
 #endif
 
+LOS_MODULE_INIT(OsTraceInit, LOS_INIT_LEVEL_EARLIEST);

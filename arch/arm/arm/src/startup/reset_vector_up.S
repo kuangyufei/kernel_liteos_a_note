@@ -338,7 +338,7 @@ reset_platform:
     b      warm_reset 
 #else
     mov    r0, #0
-    mov    pc, r0   /* Jump to reset vector */
+    mov    pc, r0   // Jump to reset vector
 #endif
 cpu_start:	/* 启动次级CPU */
     bl     secondary_cpu_start @此处用了BL,说明执行完后要回到这里继续执行

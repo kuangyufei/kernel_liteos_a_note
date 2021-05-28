@@ -293,7 +293,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 #define LOSCFG_STACK_POINT_ALIGN_SIZE                       (sizeof(UINTPTR) * 2)
 #endif
 
-#define OS_TASK_RESOURCE_STATCI_SIZE    0x1000	//4K
+#define OS_TASK_RESOURCE_STATIC_SIZE    0x1000	//4K
 #define OS_TASK_RESOURCE_FREE_PRIORITY  5		//回收资源任务的优先级
 #define OS_RESOURCE_EVENT_MASK          0xFF	//资源事件的掩码
 #define OS_RESOURCE_EVENT_OOM           0x02	//内存溢出事件
@@ -456,7 +456,7 @@ STATIC INLINE BOOL OsTaskIsInactive(const LosTaskCB *taskCB)
 /* get task info */
 #define OS_ALL_TASK_MASK  0xFFFFFFFF
 
-extern UINT32 OsTaskSetDeatchUnsafe(LosTaskCB *taskCB);
+extern UINT32 OsTaskSetDetachUnsafe(LosTaskCB *taskCB);
 extern VOID OsTaskJoinPostUnsafe(LosTaskCB *taskCB);
 extern UINT32 OsTaskJoinPendUnsafe(LosTaskCB *taskCB);
 extern BOOL OsTaskCpuAffiSetUnsafe(UINT32 taskID, UINT16 newCpuAffiMask, UINT16 *oldCpuAffiMask);
@@ -479,14 +479,14 @@ extern VOID OsRunTaskToDelete(LosTaskCB *taskCB);
 extern UINT32 OsTaskSyncWait(const LosTaskCB *taskCB);
 extern UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam);
 extern INT32 OsSetTaskName(LosTaskCB *taskCB, const CHAR *name, BOOL setPName);
-extern VOID OsTaskCBRecyleToFree(VOID);
+extern VOID OsTaskCBRecycleToFree(VOID);
 extern VOID OsTaskExitGroup(UINT32 status);
 extern VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status);
 extern VOID OsExecDestroyTaskGroup(VOID);
 extern VOID OsProcessSuspendAllTask(VOID);
 extern UINT32 OsUserTaskOperatePermissionsCheck(LosTaskCB *taskCB);
 extern VOID OsWriteResourceEvent(UINT32 events);
-extern UINT32 OsCreateResourceFreeTask(VOID);
+extern UINT32 OsResourceFreeTaskCreate(VOID);
 
 #define OS_TASK_WAIT_ANYPROCESS (1 << 0U)
 #define OS_TASK_WAIT_PROCESS    (1 << 1U)

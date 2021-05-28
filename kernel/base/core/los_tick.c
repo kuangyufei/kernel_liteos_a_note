@@ -54,7 +54,7 @@ LITE_OS_SEC_TEXT VOID OsTickHandler(VOID)
 #endif
 
 #ifdef LOSCFG_KERNEL_VDSO
-    OsUpdateVdsoTimeval();
+    OsVdsoTimevalUpdate();
 #endif
 
 #if (LOSCFG_BASE_CORE_TICK_HW_TIME == YES)

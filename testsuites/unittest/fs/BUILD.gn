@@ -60,6 +60,7 @@ source_set("sources_smoke") {
     "jffs/smoke/It_vfs_jffs_535.cpp",
     "jffs/smoke/It_vfs_jffs_Dac_001.cpp",
   ]
+  configs += [ "..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }
@@ -791,6 +792,7 @@ source_set("sources_other") {
     "jffs/full/It_vfs_jffs_807.cpp",
     "jffs/full/It_vfs_jffs_808.cpp",
   ]
+  configs += [ "..:local_public_config" ]
   include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

@@ -39,8 +39,8 @@ extern "C" {
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSP";
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSP";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
 
     ret = LOS_QueueCreate("Q1", 3, &g_testQueueID01, 0, 8); // 3, Set the queue length; 8, Set the node size of the queue.
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);

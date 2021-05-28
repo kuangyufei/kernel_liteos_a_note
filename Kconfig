@@ -165,6 +165,7 @@ config THUMB
     default n
     help
       Answer Y to build thumb version.  This will make LiteOS smaller.
+
 config PLATFORM_DVFS
     bool "Enable Dvfs"
     default n
@@ -178,6 +179,7 @@ config SAVE_EXCINFO
     default n
     help
       Answer Y to enable LiteOS support saving exception information to storage medium.
+
 config DEBUG_VERSION
     bool "Enable a Debug Version"
     default n
@@ -226,14 +228,6 @@ config NET_LWIP_SACK_TFTP
     help
       Answer Y to enable LiteOS support tftp cmd and tftp tool.
 source "../../kernel/liteos_a/net/telnet/Kconfig"
-config EXC_INTERACTION
-    bool "Enable exc interaction"
-    default n
-    depends on SHELL
-    help
-      Answer Y to enable exception interaction for LiteOS, when the system enter exception, user can also interact with system by shell
-      command like readreg, writereg,task,hwi.
-
 config SCHED_DEBUG
     bool "Enable sched debug Feature"
     default n

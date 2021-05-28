@@ -41,20 +41,20 @@ static UINT32 Testcase(VOID)
 {
     UINT32 ret;
     UINT32 queueID;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSP";
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSP";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
     QUEUE_INFO_S queueInfo;
     UINT32 readSize;
 
     queueID = LOSCFG_BASE_IPC_QUEUE_CONFIG + 1;
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
     readSize = 8; // 8, Read the setting size of queue buffer.
     ret = LOS_QueueReadCopy(queueID, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_INVALID, ret, EXIT);
     ICUNIT_GOTO_EQUAL(readSize, 8, readSize, EXIT); // 8, Here, assert that g_testCount is equal to 8.
 
     queueID = LOSCFG_BASE_IPC_QUEUE_CONFIG;
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
 
     readSize = 8; // 8, Read the setting size of queue buffer.
     ret = LOS_QueueReadCopy(queueID, &buff2, &readSize, 0);
@@ -62,14 +62,14 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(readSize, 8, readSize, EXIT); // 8, Here, assert that g_testCount is equal to 8.
 
     queueID = LOSCFG_BASE_IPC_QUEUE_CONFIG - 1;
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
     readSize = 8; // 8, Read the setting size of queue buffer.
     ret = LOS_QueueReadCopy(queueID, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_NOT_CREATE, ret, EXIT);
     ICUNIT_GOTO_EQUAL(readSize, 8, readSize, EXIT); // 8, Here, assert that g_testCount is equal to 8.
 
     queueID = 0;
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
     readSize = 8; // 8, Read the setting size of queue buffer.
     ret = LOS_QueueReadCopy(queueID - 1, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_INVALID, ret, EXIT);

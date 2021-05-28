@@ -42,12 +42,12 @@ static UINT32 Testcase(VOID)
     UINT32 ret, i;
     UINT32 index;
     const UINT32 len = 1000; // 1000, Queue buffer length.
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSP";
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSP";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
     QUEUE_INFO_S queueInfo;
 
     // 1000, Set the queue length.
-    ret = LOS_QueueCreate("Q1", 1000, &g_testQueueID01, 0, QUEUE_SHORT_BUFFER_LENTH);
+    ret = LOS_QueueCreate("Q1", 1000, &g_testQueueID01, 0, QUEUE_SHORT_BUFFER_LENGTH);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
     ret = LOS_QueueInfoGet(g_testQueueID01, &queueInfo);
@@ -56,23 +56,23 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(queueInfo.uwQueueID, g_testQueueID01, queueInfo.uwQueueID, EXIT);
 
     for (i = 0; i < 1000; i++) { // 1000, Set the queue length.
-        ret = LOS_QueueWrite(g_testQueueID01, buff1, QUEUE_SHORT_BUFFER_LENTH, 0);
+        ret = LOS_QueueWrite(g_testQueueID01, buff1, QUEUE_SHORT_BUFFER_LENGTH, 0);
         ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
     }
-    ret = LOS_QueueWrite(g_testQueueID01, buff1, QUEUE_SHORT_BUFFER_LENTH, 0);
+    ret = LOS_QueueWrite(g_testQueueID01, buff1, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_ISFULL, ret, EXIT);
 
     for (i = 0; i < 1000; i++) { // 1000, Set the queue length.
-        ret = LOS_QueueRead(g_testQueueID01, buff2, QUEUE_SHORT_BUFFER_LENTH, 0);
+        ret = LOS_QueueRead(g_testQueueID01, buff2, QUEUE_SHORT_BUFFER_LENGTH, 0);
         ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
     }
-    ret = LOS_QueueRead(g_testQueueID01, buff2, QUEUE_SHORT_BUFFER_LENTH, 0);
+    ret = LOS_QueueRead(g_testQueueID01, buff2, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_ISEMPTY, ret, EXIT);
 
-    ret = LOS_QueueWrite(g_testQueueID01, buff1, QUEUE_SHORT_BUFFER_LENTH, 0);
+    ret = LOS_QueueWrite(g_testQueueID01, buff1, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    ret = LOS_QueueRead(g_testQueueID01, buff2, QUEUE_SHORT_BUFFER_LENTH, 0);
+    ret = LOS_QueueRead(g_testQueueID01, buff2, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
     ret = LOS_QueueInfoGet(g_testQueueID01, &queueInfo);
@@ -80,7 +80,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(queueInfo.usQueueLen, len, queueInfo.usQueueLen, EXIT);
     ICUNIT_GOTO_EQUAL(queueInfo.uwQueueID, g_testQueueID01, queueInfo.uwQueueID, EXIT);
 
-    ret = LOS_QueueRead(g_testQueueID01, buff2, QUEUE_SHORT_BUFFER_LENTH, 0);
+    ret = LOS_QueueRead(g_testQueueID01, buff2, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_ISEMPTY, ret, EXIT);
 
     ret = LOS_QueueDelete(g_testQueueID01);

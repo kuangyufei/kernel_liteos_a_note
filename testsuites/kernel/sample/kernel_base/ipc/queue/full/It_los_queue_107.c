@@ -41,32 +41,32 @@ static UINT32 Testcase(VOID)
 {
     UINT32 ret;
     UINT32 queueID;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "123";
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "123";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
     QUEUE_INFO_S queueInfo;
 
-    ret = LOS_QueueCreate("Q1", 3, &queueID, 0, QUEUE_SHORT_BUFFER_LENTH); // 3, Set the queue length.
+    ret = LOS_QueueCreate("Q1", 3, &queueID, 0, QUEUE_SHORT_BUFFER_LENGTH); // 3, Set the queue length.
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    ret = LOS_QueueWriteCopy(queueID, &buff1, QUEUE_SHORT_BUFFER_LENTH, 0xffffffff);
+    ret = LOS_QueueWriteCopy(queueID, &buff1, QUEUE_SHORT_BUFFER_LENGTH, 0xffffffff);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
-    ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENTH, 0);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    ret = LOS_QueueWriteCopy(queueID, &buff1, QUEUE_SHORT_BUFFER_LENTH, 0xffffffff + 1);
+    ret = LOS_QueueWriteCopy(queueID, &buff1, QUEUE_SHORT_BUFFER_LENGTH, 0xffffffff + 1);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
-    ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENTH, 0);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    ret = LOS_QueueWriteCopy(queueID, &buff1, QUEUE_SHORT_BUFFER_LENTH, 0xffffffff - 1);
+    ret = LOS_QueueWriteCopy(queueID, &buff1, QUEUE_SHORT_BUFFER_LENGTH, 0xffffffff - 1);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENTH);
-    ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENTH, 0);
+    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
     ret = LOS_QueueDelete(queueID);

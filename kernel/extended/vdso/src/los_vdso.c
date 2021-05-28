@@ -31,6 +31,7 @@
 
 #include "los_vdso_pri.h"
 #include "los_vdso_datapage.h"
+#include "los_init.h"
 #include "los_vm_map.h"
 #include "los_vm_lock.h"
 #include "los_vm_phys.h"
@@ -40,7 +41,7 @@ LITE_VDSO_DATAPAGE VdsoDataPage g_vdsoDataPage __attribute__((__used__));
 
 STATIC size_t g_vdsoSize;
 
-UINT32 OsInitVdso(VOID)
+UINT32 OsVdsoInit(VOID)
 {
     g_vdsoSize = &__vdso_text_end - &__vdso_data_start;
 
@@ -51,7 +52,9 @@ UINT32 OsInitVdso(VOID)
     return LOS_OK;
 }
 
-STATIC INT32 OsMapVdso(LosVmSpace *space, size_t len, PADDR_T paddr, VADDR_T vaddr, UINT32 flag)
+LOS_MODULE_INIT(OsVdsoInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
+
+STATIC INT32 OsVdsoMap(LosVmSpace *space, size_t len, PADDR_T paddr, VADDR_T vaddr, UINT32 flag)
 {
     STATUS_T ret;
 
@@ -68,7 +71,7 @@ STATIC INT32 OsMapVdso(LosVmSpace *space, size_t len, PADDR_T paddr, VADDR_T vad
     return LOS_OK;
 }
 
-vaddr_t OsLoadVdso(const LosProcessCB *processCB)
+vaddr_t OsVdsoLoad(const LosProcessCB *processCB)
 {
     INT32 ret = -1;
     LosVmMapRegion *vdsoRegion = NULL;
@@ -87,7 +90,7 @@ vaddr_t OsLoadVdso(const LosProcessCB *processCB)
     }
     vdsoRegion->regionFlags |= VM_MAP_REGION_FLAG_VDSO;
 
-    ret = OsMapVdso(processCB->vmSpace, g_vdsoSize, LOS_PaddrQuery((VOID *)(&__vdso_data_start)),
+    ret = OsVdsoMap(processCB->vmSpace, g_vdsoSize, LOS_PaddrQuery((VOID *)(&__vdso_data_start)),
                     vdsoRegion->range.base, flag);
     if (ret != LOS_OK) {
         ret = LOS_RegionFree(processCB->vmSpace, vdsoRegion);
@@ -105,23 +108,23 @@ LOCK_RELEASE:
     return 0;
 }
 
-STATIC VOID OsLockVdso(VdsoDataPage *vdsoDataPage)
+STATIC VOID LockVdsoDataPage(VdsoDataPage *vdsoDataPage)
 {
     vdsoDataPage->lockCount = 1;
     DMB;
 }
 
-STATIC VOID OsUnlockVdso(VdsoDataPage *vdsoDataPage)
+STATIC VOID UnlockVdsoDataPage(VdsoDataPage *vdsoDataPage)
 {
     DMB;
     vdsoDataPage->lockCount = 0;
 }
 
-VOID OsUpdateVdsoTimeval(VOID)
+VOID OsVdsoTimevalUpdate(VOID)
 {
     VdsoDataPage *kVdsoDataPage = (VdsoDataPage *)(&__vdso_data_start);
 
-    OsLockVdso(kVdsoDataPage);
-    OsGetVdsoTime(kVdsoDataPage);
-    OsUnlockVdso(kVdsoDataPage);
+    LockVdsoDataPage(kVdsoDataPage);
+    OsVdsoTimeGet(kVdsoDataPage);
+    UnlockVdsoDataPage(kVdsoDataPage);
 }

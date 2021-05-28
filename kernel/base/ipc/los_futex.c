@@ -30,12 +30,13 @@
  */
 
 #include "los_futex_pri.h"
-#include "los_process_pri.h"
-#include "los_hash.h"
-#include "los_sys_pri.h"
-#include "los_sched_pri.h"
-#include "los_mp.h"
 #include "los_exc.h"
+#include "los_hash.h"
+#include "los_init.h"
+#include "los_process_pri.h"
+#include "los_sched_pri.h"
+#include "los_sys_pri.h"
+#include "los_mp.h"
 #include "los_mux_pri.h"
 #include "user_copy.h"
 
@@ -99,6 +100,8 @@ UINT32 OsFutexInit(VOID)
 
     return LOS_OK;
 }
+
+LOS_MODULE_INIT(OsFutexInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
 
 #ifdef LOS_FUTEX_DEBUG
 STATIC VOID OsFutexShowTaskNodeAttr(const LOS_DL_LIST *futexList)

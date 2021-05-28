@@ -215,7 +215,7 @@ static FRESULT FatfsScanClear(INT vol)
     FRESULT ret;
     DIR dir;
     FILINFO fno;
-    CHAR path[MAX_LFNAME_LENTH];
+    CHAR path[MAX_LFNAME_LENGTH];
     INT num;
     INT res;
 
@@ -224,7 +224,7 @@ static FRESULT FatfsScanClear(INT vol)
 
     (void)memset_s(path, sizeof(path), 0, sizeof(path));
 
-    res = snprintf_s(path, MAX_LFNAME_LENTH, MAX_LFNAME_LENTH - 1, "%d:/", vol);
+    res = snprintf_s(path, MAX_LFNAME_LENGTH, MAX_LFNAME_LENGTH - 1, "%d:/", vol);
     if (res < 0) {
         return FR_INVALID_NAME;
     }
@@ -274,13 +274,13 @@ static FRESULT FatfsScanClear(INT vol)
 static FRESULT FatfsBuildEntry(FATFS *fat, INT vol)
 {
     UINT i;
-    CHAR path[MAX_LFNAME_LENTH];
+    CHAR path[MAX_LFNAME_LENGTH];
     FRESULT ret;
     DIR dir;
     INT res;
 
     for (i = 0; i < fat->vir_amount; i++) {
-        res = snprintf_s(path, MAX_LFNAME_LENTH, MAX_LFNAME_LENTH - 1, "%d:%s", vol, CHILDFS(fat, i)->namelabel);
+        res = snprintf_s(path, MAX_LFNAME_LENGTH, MAX_LFNAME_LENGTH - 1, "%d:%s", vol, CHILDFS(fat, i)->namelabel);
         if (res < 0) {
             return FR_INVALID_NAME;
         }
@@ -340,7 +340,7 @@ INT FatFsBindVirPart(void *handle, BYTE vol)
 {
     INT ret;
     FATFS *fat = (FATFS *)handle;
-    char path[MAX_LFNAME_LENTH] = {0};
+    char path[MAX_LFNAME_LENGTH] = {0};
 
     if (fat == NULL) {
         return -EINVAL;
@@ -413,7 +413,7 @@ INT FatFsMakeVirPart(void *handle, BYTE vol)
 {
     INT ret;
     FATFS *fat = (FATFS *)handle;
-    char path[MAX_LFNAME_LENTH] = {0};
+    char path[MAX_LFNAME_LENGTH] = {0};
 
     if (fat == NULL) {
         return -EINVAL;
@@ -443,7 +443,7 @@ INT FatFsMakeVirPart(void *handle, BYTE vol)
 
 INT fatfs_virstatfs_internel(struct Vnode *mountpt, const char *relpath, struct statfs *buf)
 {
-    char drive[MAX_LFNAME_LENTH];
+    char drive[MAX_LFNAME_LENGTH];
     DWORD freClust, allClust;
     FATFS *fat = NULL;
     INT result, vol;
@@ -462,7 +462,7 @@ INT fatfs_virstatfs_internel(struct Vnode *mountpt, const char *relpath, struct 
         return -ENOENT;
     }
 
-    if (strlen(relpath) > MAX_LFNAME_LENTH) {
+    if (strlen(relpath) > MAX_LFNAME_LENGTH) {
         return -EFAULT;
     }
 

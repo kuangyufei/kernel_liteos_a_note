@@ -57,8 +57,8 @@ static UINT32 Testcase(VOID)
     TSK_INIT_PARAM_S testTask;
 
     g_testCount = 0;
-    CHAR buff1[QUEUE_SHORT_BUFFER_LENTH] = "UniDSP";
-    CHAR buff2[QUEUE_SHORT_BUFFER_LENTH] = "";
+    CHAR buff1[QUEUE_SHORT_BUFFER_LENGTH] = "UniDSP";
+    CHAR buff2[QUEUE_SHORT_BUFFER_LENGTH] = "";
 
     ret = LOS_QueueCreate("Q1", 1, &g_testQueueID01, 0, 8); // 8, Set the maximum data length of the message queue.
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
