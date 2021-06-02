@@ -15,23 +15,17 @@
 
 ### 几点说明
 
-* [kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note) 是在 OpenHarmony 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) (鸿蒙轻内核项目)基础上给源码加上中文注解的版本.加注版与官方版本保持每月同步.
+* 百万汉字注解仓库：[kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note) 是在 OpenHarmony 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) (鸿蒙轻内核项目)基础上给源码加上中文注解的版本.加注版与官方最新源码保持同步.
 
-* 注解分析博客地址:
+* 百篇博客分析地址：
   *  国内: [ https://weharmony.gitee.io/weharmony](https://weharmony.gitee.io/weharmony) 
   *  国外: [ https://weharmony.github.io/weharmony](https://weharmony.github.io/weharmony)   
   
-* 博客站点更新速度:
-  * [注解分析地址](https://weharmony.gitee.io/weharmony)
-  * [ oschina ](https://my.oschina.net/weharmony)
-  * [ 51cto  ](https://harmonyos.51cto.com/column/34) 
-  * [ csdn ](https://blog.csdn.net/kuangyufei) 
-
-* OpenHarmony开发者文档是对官方文档 [docs](https://gitee.com/openharmony/docs) 做的非常炫酷的静态站点，支持侧边栏/面包屑/搜索/中英文，非常方便的查看官方文档，大大提高学习和开发效率. 
+* [OpenHarmony开发者文档](https://weharmony.gitee.io/openharmony) 是对官方文档 [docs](https://gitee.com/openharmony/docs) 做的非常炫酷的静态站点，支持侧边栏/面包屑/搜索/中英文，非常方便的查看官方文档，大大提高学习和开发效率. 
   * 国内: [https://weharmony.gitee.io/openharmony](https://weharmony.gitee.io/openharmony)
   * 国外: [https://weharmony.github.io/openharmony](https://weharmony.github.io/openharmony) 
 
-* [OpenHarmony全量代码仓库](https://gitee.com/weharmony/OpenHarmony) 是 OpenHarmony 的110+个子项目的所有代码. OpenHarmony 使用`repo`管理众多`git`项目，`repo`在`linux`下很方便，但在`windows`上谁用谁知道，使用会有相当的困难，所以将所有项目整合成一个.git工程，如此使用`git`便能下载整个鸿蒙系统源码，方便学习使用.与官方仓库保持每周同步.[OpenHarmony全量代码仓库](https://gitee.com/weharmony/OpenHarmony)已编译通过.
+* 鸿蒙全部源码仓库：[OpenHarmony](https://gitee.com/weharmony/OpenHarmony) 是HarmonyOS 110+个子项目的所有源码汇总. 因HarmonyOS使用`repo`管理众多`git`项目，`repo`在`linux`下很方便，但在`windows`上使用会有相当的困难，所以将所有子项目整合成一个.git工程，如此windows用户使用熟悉的`git`方式便能下载整个鸿蒙系统源码，方便学习使用.仓库与官方仓库保持同步.已编译通过.
     ```
     ....
     [OHOS INFO] [1587/1590] STAMP obj/test/xts/acts/build_lite/acts_generate_module_data.stamp
@@ -41,9 +35,11 @@
     [OHOS INFO] ipcamera_hispark_aries build success
     root@5e3abe332c5a:/home/harmony#
     ```
-* 下载.鸿蒙源码分析.离线文档 
-  * 国内: [https://weharmony.gitee.io/history/](https://weharmony.gitee.io/history/)
-  * 国外: [https://weharmony.github.io/history/](https://weharmony.github.io/history/)
+    
+*  [下载.鸿蒙源码分析.离线文档 < 国内](https://weharmony.gitee.io/history/)[ | 国外 > ](https://weharmony.github.io/history/)
+
+*  [ 加入兴趣小组.微信群聊  < 国内](https://weharmony.gitee.io/qun/)[ | 国外 > ](https://weharmony.github.io/qun/)
+
       
 ### **为何要精读内核源码?**
 * 码农的学职生涯，都应精读一遍内核源码.以浇筑好计算机知识大厦的地基，地基纵深的坚固程度，很大程度能决定未来大厦能盖多高.那为何一定要精读细品呢?
@@ -89,6 +85,8 @@
 
 与代码有bug需不断debug一样，文章和注解内容会存在不少错漏之处，请多包涵，但会反复修正，持续更新，`.xx`代表修改的次数，精雕细琢，言简意赅，力求打造精品内容。
 
+* [v57.xx 鸿蒙内核源码分析(编译过程篇) | 简单案例窥视GCC编译全过程 ](https://my.oschina.net/weharmony/blog/5064209) **[  | 51](https://harmonyos.51cto.com/posts/5032)[ .c](https://blog.csdn.net/kuangyufei/article/details/117419679)[  .h](https://weharmony.gitee.io/57_编译过程篇.html)[  .o](https://my.oschina.net/weharmony)**
+  
 * [v56.xx 鸿蒙内核源码分析(进程映像篇) | ELF是如何被加载运行的? ](https://my.oschina.net/weharmony/blog/5060359) **[  | 51](https://harmonyos.51cto.com/posts/4815)[ .c](https://blog.csdn.net/kuangyufei/article/details/117325933)[  .h](https://weharmony.gitee.io/56_进程映像篇.html)[  .o](https://my.oschina.net/weharmony)**
 
 * [v55.xx 鸿蒙内核源码分析(重定位篇) | 与国际接轨的对外部发言人 ](https://my.oschina.net/weharmony/blog/5055124) **[  | 51](https://harmonyos.51cto.com/posts/4519)[ .c](https://blog.csdn.net/kuangyufei/article/details/117110422)[  .h](https://weharmony.gitee.io/55_重定位篇.html)[  .o](https://my.oschina.net/weharmony)**
