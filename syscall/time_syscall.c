@@ -39,6 +39,7 @@
 #include "los_signal.h"
 #include "los_memory.h"
 #include "los_strncpy_from_user.h"
+#include "time_posix.h"
 
 #ifdef LOSCFG_FS_VFS
 int SysUtime(const char *path, const struct utimbuf *ptimes)
@@ -156,23 +157,23 @@ int SysGetiTimer(int which, struct itimerval *value)
     return ret;
 }
 
-int SysTimerCreate(clockid_t clockID, struct sigevent *evp, timer_t *timerID)
+int SysTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID)
 {
     int ret;
     timer_t stimerID;
-    struct sigevent sevp;
+    struct ksigevent ksevp;
 
     if (timerID == NULL) {
         errno = EINVAL;
         return -EINVAL;
     }
 
-    if (evp && LOS_ArchCopyFromUser(&sevp, evp, sizeof(struct sigevent))) {
+    if (evp && LOS_ArchCopyFromUser(&ksevp, evp, sizeof(struct ksigevent))) {
         errno = EFAULT;
         return -EFAULT;
     }
 
-    ret = timer_create(clockID, evp ? &sevp : NULL, &stimerID);
+    ret = OsTimerCreate(clockID, evp ? &ksevp : NULL, &stimerID);
     if (ret < 0) {
         return -get_errno();
     }

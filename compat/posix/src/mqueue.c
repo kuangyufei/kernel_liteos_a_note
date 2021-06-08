@@ -30,6 +30,7 @@
  */
 
 #include "mqueue.h"
+#ifdef LOSCFG_FS_VFS
 #include "fcntl.h"
 #include "pthread.h"
 #include "map_error.h"
@@ -831,3 +832,4 @@ ssize_t mq_receive(mqd_t personal, char *msg_ptr, size_t msg_len, unsigned int *
     return mq_timedreceive(personal, msg_ptr, msg_len, msg_prio, NULL);
 }
 
+#endif

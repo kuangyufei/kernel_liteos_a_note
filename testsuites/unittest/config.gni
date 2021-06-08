@@ -27,13 +27,19 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-LOSCFG_USER_TEST_FOR_DOOR = true
-LOSCFG_USER_TEST_FOR_ALL = false
-LOSCFG_USER_TEST_PRESSURE = false
+TEST_LEVEL_LOW = 1
+TEST_LEVEL_MIDDLE = 3
+TEST_LEVEL_HIGH = 5
+
+# 0: don`t generate
+# TEST_LEVEL_LOW: only generate xxx_unittest_door.bin (smoke)
+# TEST_LEVEL_MIDDLE: generate xxx_unittest_door.bin (smoke) & xxx_unittest.bin (smoke + full)
+# TEST_LEVEL_HIGH: generate xxx_unittest_door.bin (smoke) & xxx_unittest.bin (smoke + full) & xxx_unittest_pressure.bin (pressure)
+LOSCFG_USER_TEST_LEVEL = TEST_LEVEL_HIGH
 
 # "default": depend on board_name
 # "enable": those testsuites testing for SMP is enable
-# "disable" those testsuites is disable
+# "disable": those testsuites is disable
 LOSCFG_USER_TEST_SMP = "default"
 
 LOSCFG_USER_TEST_MISC = true
@@ -42,6 +48,7 @@ LOSCFG_USER_TEST_DRIVERS_STORAGE = true
 LOSCFG_USER_TEST_DYNLOAD = true
 LOSCFG_USER_TEST_EXC = true
 LOSCFG_USER_TEST_FS_JFFS = false
+LOSCFG_USER_TEST_FS_PROC = false
 LOSCFG_USER_TEST_FS_VFAT = false
 LOSCFG_USER_TEST_IO = true
 LOSCFG_USER_TEST_IPC = false

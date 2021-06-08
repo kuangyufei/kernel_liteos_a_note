@@ -42,6 +42,13 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+struct ksigevent {
+    union sigval sigev_value;
+    int sigev_signo;
+    int sigev_notify;
+    int sigev_tid;
+};
+
 /* internal functions */
 STATIC INLINE BOOL ValidTimeSpec(const struct timespec *tp)
 {
@@ -77,6 +84,8 @@ STATIC INLINE VOID OsTick2TimeSpec(struct timespec *tp, UINT32 tick)
     tp->tv_sec = (time_t)(ns / OS_SYS_NS_PER_SECOND);
     tp->tv_nsec = (long)(ns % OS_SYS_NS_PER_SECOND);
 }
+
+int OsTimerCreate(clockid_t, struct ksigevent *__restrict, timer_t *__restrict);
 
 #ifdef __cplusplus
 #if __cplusplus

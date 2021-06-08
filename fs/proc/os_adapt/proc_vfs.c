@@ -74,6 +74,51 @@ static int EntryMatch(const char *name, int len, const struct ProcDirEntry *pn)
     return !strncmp(name, pn->name, len);
 }
 
+int VfsProcfsTruncate(struct Vnode *pVnode, off_t len)
+{
+    return 0;
+}
+
+int VfsProcfsCreate(struct Vnode* parent, const char *name, int mode, struct Vnode **vnode)
+{
+    int ret;
+    struct Vnode *vp = NULL;
+    struct ProcDirEntry *curEntry = NULL;
+
+    struct ProcDirEntry *parentEntry = VnodeToEntry(parent);
+    if (parentEntry == NULL) {
+        return -ENODATA;
+    }
+
+    ret = VnodeAlloc(&g_procfsVops, &vp);
+    if (ret != 0) {
+        return -ENOMEM;
+    }
+
+    curEntry = ProcCreate(name, mode, parentEntry, NULL);
+    if (curEntry == NULL) {
+        VnodeFree(vp);
+        return -ENODATA;
+    }
+
+    vp->data = curEntry;
+    vp->type = curEntry->type;
+    if (vp->type == VNODE_TYPE_DIR) {
+        vp->mode = S_IFDIR | PROCFS_DEFAULT_MODE;
+    } else {
+        vp->mode = S_IFREG | PROCFS_DEFAULT_MODE;
+    }
+
+    vp->vop = parent->vop;
+    vp->fop = parent->fop;
+    vp->parent = parent;
+    vp->originMount = parent->originMount;
+
+    *vnode = vp;
+
+    return LOS_OK;
+}
+
 int VfsProcfsRead(struct file *filep, char *buffer, size_t buflen)
 {
     ssize_t size;
@@ -84,6 +129,21 @@ int VfsProcfsRead(struct file *filep, char *buffer, size_t buflen)
 
     entry = VnodeToEntry(filep->f_vnode);
     size = (ssize_t)ReadProcFile(entry, (void *)buffer, buflen);
+    filep->f_pos = entry->pf->fPos;
+
+    return size;
+}
+
+int VfsProcfsWrite(struct file *filep, const char *buffer, size_t buflen)
+{
+    ssize_t size;
+    struct ProcDirEntry *entry = NULL;
+    if ((filep == NULL) || (filep->f_vnode == NULL) || (buffer == NULL)) {
+        return -EINVAL;
+    }
+
+    entry = VnodeToEntry(filep->f_vnode);
+    size = (ssize_t)WriteProcFile(entry, (void *)buffer, buflen);
     filep->f_pos = entry->pf->fPos;
 
     return size;
@@ -288,11 +348,13 @@ static struct VnodeOps g_procfsVops = {
     .Getattr = VfsProcfsStat,
     .Readdir = VfsProcfsReaddir,
     .Opendir = VfsProcfsOpendir,
-    .Closedir = VfsProcfsClosedir
+    .Closedir = VfsProcfsClosedir,
+    .Truncate = VfsProcfsTruncate
 };
 
 static struct file_operations_vfs g_procfsFops = {
     .read = VfsProcfsRead,
+    .write = VfsProcfsWrite,
     .open = VfsProcfsOpen,
     .close = VfsProcfsClose
 };

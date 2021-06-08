@@ -1,5 +1,4 @@
-# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2021-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -27,55 +26,12 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import("//build/lite/config/test.gni")
-import("../config.gni")
+include $(LITEOSTOPDIR)/config.mk
 
-common_include_dirs = [
-  "//third_party/googletest/googletest/include",
-  "../common/include",
-  "../exc",
-]
+MODULE_NAME := $(notdir $(shell pwd))
 
-sources_entry = [
-  "../common/osTest.cpp",
-  "exc_test.cpp",
-]
+LOCAL_SRCS := $(wildcard $(LITEOSTHIRDPARTY)/NuttX/fs/romfs/*.c)
 
-sources_smoke = [
-  "smoke/it_test_exc_001.cpp",
-  "smoke/it_test_exc_002.cpp",
-  "smoke/it_test_exc_003.cpp",
-  "smoke/it_test_exc_004.cpp",
-  "smoke/it_test_exc_005.cpp",
-]
+LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
 
-sources_full = [
-  "full/it_test_fexecve_001.cpp",
-]
-
-if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
-  unittest("liteos_a_exc_unittest_door") {
-    output_extension = "bin"
-    output_dir = "$root_out_dir/test/unittest/kernel"
-    include_dirs = common_include_dirs
-    sources = sources_entry
-    sources += sources_smoke
-    sources_full = []
-    sources += sources_full
-    configs = [ "..:public_config_for_door" ]
-    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-  }
-}
-
-if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
-  unittest("liteos_a_exc_unittest") {
-    output_extension = "bin"
-    output_dir = "$root_out_dir/test/unittest/kernel"
-    include_dirs = common_include_dirs
-    sources = sources_entry
-    sources += sources_smoke
-    sources += sources_full
-    configs = [ "..:public_config_for_all" ]
-    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-  }
-}
+include $(MODULE)

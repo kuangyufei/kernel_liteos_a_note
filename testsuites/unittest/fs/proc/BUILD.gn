@@ -41,49 +41,41 @@ sources_entry = [
   "It_vfs_proc.cpp",
 ]
 
-source_set("sources_smoke") {
-  sources = [
-  ]
-  configs += [ "../..:local_public_config" ]
-  include_dirs = common_include_dirs
-  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-}
+sources_smoke = [
+]
 
-source_set("sources_other") {
-  sources = [
-    "full/It_vfs_proc_001.cpp",
-    "full/It_vfs_proc_002.cpp",
-    "full/It_vfs_proc_003.cpp",
-    "full/It_vfs_proc_004.cpp",
-    "full/It_vfs_proc_005.cpp",
-    "full/It_vfs_proc_006.cpp",
-  ]
-  configs += [ "../..:local_public_config" ]
-  include_dirs = common_include_dirs
-  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-}
+sources_full = [
+  "full/It_vfs_proc_001.cpp",
+  "full/It_vfs_proc_002.cpp",
+  "full/It_vfs_proc_003.cpp",
+  "full/It_vfs_proc_004.cpp",
+  "full/It_vfs_proc_005.cpp",
+  "full/It_vfs_proc_006.cpp",
+]
 
-if (LOSCFG_USER_TEST_FOR_ALL == true) {
-  unittest("liteos_a_fs_procfs_unittest") {
-    output_extension = "bin"
-    output_dir = "$root_out_dir/test/unittest/kernel"
-    include_dirs = common_include_dirs
-    sources = sources_entry
-    configs = [ "../..:public_config_full" ]
-    deps = []
-    deps += [ ":sources_smoke" ]
-    deps += [ ":sources_other" ]
-  }
-}
-
-if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
   unittest("liteos_a_fs_procfs_unittest_door") {
     output_extension = "bin"
     output_dir = "$root_out_dir/test/unittest/kernel"
     include_dirs = common_include_dirs
     sources = sources_entry
-    configs = [ "../..:public_config_smk" ]
-    deps = []
-    deps += [ ":sources_smoke" ]
+    sources += sources_smoke
+    sources_full = []
+    sources += sources_full
+    configs = [ "../..:public_config_for_door" ]
+    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
+  unittest("liteos_a_fs_procfs_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    sources += sources_smoke
+    sources += sources_full
+    configs = [ "../..:public_config_for_all" ]
+    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   }
 }

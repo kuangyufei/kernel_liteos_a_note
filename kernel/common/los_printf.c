@@ -85,6 +85,7 @@ STATIC VOID UartOutput(const CHAR *str, UINT32 len, BOOL isLock)
 #endif
 }
 //输出控制处理
+#ifdef LOSCFG_PLATFORM_CONSOLE
 STATIC VOID ConsoleOutput(const CHAR *str, UINT32 len)
 {
     ssize_t writen = 0;
@@ -100,6 +101,7 @@ STATIC VOID ConsoleOutput(const CHAR *str, UINT32 len)
         toWrite -= cnt;
     }
 }
+#endif
 
 VOID OutputControl(const CHAR *str, UINT32 len, OutputType type)
 {

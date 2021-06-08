@@ -214,9 +214,17 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  * @ingroup los_task
  * Flag that indicates the task property.
  *
+ * Kills the thread during process exit.
+ */
+#define OS_TASK_FLAG_EXIT_KILL       0x4000U
+
+/**
+ * @ingroup los_task
+ * Flag that indicates the task property.
+ *
  * Specifies the process creation task.
  */
-#define OS_TASK_FLAG_SPECIFIES_PROCESS 0x4000U
+#define OS_TASK_FLAG_SPECIFIES_PROCESS 0x0U
 
 /**
  * @ingroup los_task
@@ -451,47 +459,22 @@ STATIC INLINE BOOL OsTaskIsInactive(const LosTaskCB *taskCB)
     return FALSE;
 }
 
+STATIC INLINE BOOL OsTaskIsPending(const LosTaskCB *taskCB)
+{
+    if (taskCB->taskStatus & OS_TASK_STATUS_PENDING) {
+        return TRUE;
+    }
+
+    return FALSE;
+}
 #define OS_TID_CHECK_INVALID(taskID) ((UINT32)(taskID) >= g_taskMaxNum)//是否有无效的任务 > 128
 
 /* get task info */
 #define OS_ALL_TASK_MASK  0xFFFFFFFF
 
-extern UINT32 OsTaskSetDetachUnsafe(LosTaskCB *taskCB);
-extern VOID OsTaskJoinPostUnsafe(LosTaskCB *taskCB);
-extern UINT32 OsTaskJoinPendUnsafe(LosTaskCB *taskCB);
-extern BOOL OsTaskCpuAffiSetUnsafe(UINT32 taskID, UINT16 newCpuAffiMask, UINT16 *oldCpuAffiMask);
-extern VOID OsTaskSchedule(LosTaskCB *, LosTaskCB *);
-extern VOID OsTaskContextLoad(LosTaskCB *newTask);
-extern VOID OsIdleTask(VOID);
-extern UINT32 OsIdleTaskCreate(VOID);
-extern UINT32 OsTaskInit(VOID);
-extern UINT32 OsShellCmdDumpTask(INT32 argc, const CHAR **argv);
-extern UINT32 OsShellCmdTskInfoGet(UINT32 taskID, VOID *seqfile, UINT16 flag);
-extern LosTaskCB *OsGetMainTask(VOID);
-extern VOID OsSetMainTask(VOID);
-extern UINT32 OsGetIdleTaskId(VOID);
-extern VOID OsTaskEntry(UINT32 taskID);
-extern SortLinkAttribute *OsTaskSortLinkGet(VOID);
-extern VOID OsTaskProcSignal(VOID);
-extern UINT32 OsTaskDeleteUnsafe(LosTaskCB *taskCB, UINT32 status, UINT32 intSave);
-extern VOID OsTaskResourcesToFree(LosTaskCB *taskCB);
-extern VOID OsRunTaskToDelete(LosTaskCB *taskCB);
-extern UINT32 OsTaskSyncWait(const LosTaskCB *taskCB);
-extern UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam);
-extern INT32 OsSetTaskName(LosTaskCB *taskCB, const CHAR *name, BOOL setPName);
-extern VOID OsTaskCBRecycleToFree(VOID);
-extern VOID OsTaskExitGroup(UINT32 status);
-extern VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status);
-extern VOID OsExecDestroyTaskGroup(VOID);
-extern VOID OsProcessSuspendAllTask(VOID);
-extern UINT32 OsUserTaskOperatePermissionsCheck(LosTaskCB *taskCB);
-extern VOID OsWriteResourceEvent(UINT32 events);
-extern UINT32 OsResourceFreeTaskCreate(VOID);
-
 #define OS_TASK_WAIT_ANYPROCESS (1 << 0U)
 #define OS_TASK_WAIT_PROCESS    (1 << 1U)
 #define OS_TASK_WAIT_GID        (1 << 2U)
-#ifdef LOSCFG_DEBUG_VERSION
 #define OS_TASK_WAIT_SEM        (OS_TASK_WAIT_GID + 1)
 #define OS_TASK_WAIT_QUEUE      (OS_TASK_WAIT_SEM + 1)
 #define OS_TASK_WAIT_JOIN       (OS_TASK_WAIT_QUEUE + 1)
@@ -528,6 +511,41 @@ STATIC INLINE VOID OsTaskWakeClearPendMask(LosTaskCB *resumeTask)
 #endif
 }
 
+extern UINT32 OsTaskSetDetachUnsafe(LosTaskCB *taskCB);
+extern VOID OsTaskJoinPostUnsafe(LosTaskCB *taskCB);
+extern UINT32 OsTaskJoinPendUnsafe(LosTaskCB *taskCB);
+extern BOOL OsTaskCpuAffiSetUnsafe(UINT32 taskID, UINT16 newCpuAffiMask, UINT16 *oldCpuAffiMask);
+extern VOID OsTaskSchedule(LosTaskCB *, LosTaskCB *);
+extern VOID OsTaskContextLoad(LosTaskCB *newTask);
+extern VOID OsIdleTask(VOID);
+extern UINT32 OsIdleTaskCreate(VOID);
+extern UINT32 OsTaskInit(VOID);
+extern UINT32 OsShellCmdDumpTask(INT32 argc, const CHAR **argv);
+extern UINT32 OsShellCmdTskInfoGet(UINT32 taskID, VOID *seqfile, UINT16 flag);
+extern LosTaskCB *OsGetMainTask(VOID);
+extern VOID OsSetMainTask(VOID);
+extern UINT32 OsGetIdleTaskId(VOID);
+extern VOID OsTaskEntry(UINT32 taskID);
+extern SortLinkAttribute *OsTaskSortLinkGet(VOID);
+extern VOID OsTaskProcSignal(VOID);
+extern UINT32 OsTaskDeleteUnsafe(LosTaskCB *taskCB, UINT32 status, UINT32 intSave);
+extern VOID OsTaskResourcesToFree(LosTaskCB *taskCB);
+extern VOID OsRunTaskToDelete(LosTaskCB *taskCB);
+extern UINT32 OsTaskSyncWait(const LosTaskCB *taskCB);
+extern UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam);
+extern INT32 OsSetTaskName(LosTaskCB *taskCB, const CHAR *name, BOOL setPName);
+extern VOID OsTaskCBRecycleToFree(VOID);
+extern VOID OsTaskExitGroup(UINT32 status);
+extern VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status);
+extern VOID OsExecDestroyTaskGroup(VOID);
+extern UINT32 OsUserTaskOperatePermissionsCheck(LosTaskCB *taskCB);
+extern UINT32 OsUserProcessOperatePermissionsCheck(LosTaskCB *taskCB, UINT32 processID);
+extern INT32 OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info);
+extern VOID OsWriteResourceEvent(UINT32 events);
+extern VOID OsWriteResourceEventUnsafe(UINT32 events);
+extern UINT32 OsResourceFreeTaskCreate(VOID);
+
+#ifdef LOSCFG_DEBUG_VERSION
 STATIC INLINE VOID OsTraceTaskSchedule(LosTaskCB *newTask, LosTaskCB *runTask)
 {
     (VOID)newTask;
@@ -540,8 +558,6 @@ STATIC INLINE VOID OsTraceTaskSchedule(LosTaskCB *newTask, LosTaskCB *runTask)
 
 #else
 
-#define OsTaskWaitSetPendMask(mask, lockID, timeout)
-#define OsTaskWakeClearPendMask(taskCB)
 #define OsTraceTaskSchedule(newTask, runTask)
 
 #endif

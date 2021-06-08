@@ -449,7 +449,6 @@ extern UINT32 OsUserInitProcess(VOID);
 extern VOID OsTaskSchedQueueDequeue(LosTaskCB *taskCB, UINT16 status);
 extern VOID OsTaskSchedQueueEnqueue(LosTaskCB *taskCB, UINT16 status);
 extern INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size);
-extern VOID OsWaitSignalToWakeProcess(LosProcessCB *processCB);
 extern UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR *name,
                                    LosVmSpace *oldAspace, UINTPTR oldFiles);
 extern UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBase, UINT32 mapSize);
@@ -464,6 +463,7 @@ extern INT32 OsSetCurrProcessGroupID(UINT32 gid);
 extern UINT32 OsGetKernelInitProcessID(VOID);
 extern VOID OsSetSigHandler(UINTPTR addr);
 extern UINTPTR OsGetSigHandler(VOID);
+extern VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID);
 #ifdef __cplusplus
 #if __cplusplus
 }

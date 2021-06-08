@@ -36,9 +36,12 @@
 #include "los_task.h"
 #include "los_mux.h"
 #include "los_signal.h"
+#ifdef LOSCFG_FS_VFS
 #include "fs/fs.h"
+#endif
 #include "syscall.h"
 #include "sysinfo.h"
+#include "time_posix.h"
 #ifdef LOSCFG_KERNEL_DYNLOAD
 #include "los_exec_elf.h"
 #endif
@@ -48,7 +51,9 @@
 #include "sys/shm.h"
 #include "poll.h"
 #include "utime.h"
+#ifdef LOSCFG_COMPAT_POSIX
 #include "mqueue.h"
+#endif
 #include "time.h"
 #include "sys/time.h"
 #include "sys/stat.h"
@@ -132,6 +137,7 @@ extern int SysFutex(const unsigned int *uAddr, unsigned int flags, int val,
                     unsigned int absTime, const unsigned int *newUserAddr);
 extern int SysSchedGetAffinity(int id, unsigned int *cpuset, int flag);
 extern int SysSchedSetAffinity(int id, const unsigned short cpuset, int flag);
+#ifdef LOSCFG_COMPAT_POSIX
 extern mqd_t SysMqOpen(const char *mqName, int openFlag, mode_t mode, struct mq_attr *attr);
 extern int SysMqClose(mqd_t personal);
 extern int SysMqGetSetAttr(mqd_t mqd, const struct mq_attr *new, struct mq_attr *old);
@@ -141,6 +147,7 @@ extern int SysMqTimedSend(mqd_t personal, const char *msg, size_t msgLen, unsign
                           const struct timespec *absTimeout);
 extern ssize_t SysMqTimedReceive(mqd_t personal, char *msg, size_t msgLen, unsigned int *msgPrio,
                                  const struct timespec *absTimeout);
+#endif
 extern int SysSigAction(int sig, const sigaction_t *restrict sa, sigaction_t *restrict old, size_t sigsetsize);
 extern int SysSigprocMask(int how, const sigset_t_l *restrict set, sigset_t *restrict old, size_t sigsetsize);
 extern int SysKill(pid_t pid, int sig);
@@ -197,7 +204,7 @@ extern clock_t SysTimes(struct tms *buf);
 extern time_t SysTime(time_t *tloc);
 extern int SysSetiTimer(int which, const struct itimerval *value, struct itimerval *ovalue);
 extern int SysGetiTimer(int which, struct itimerval *value);
-extern int SysTimerCreate(clockid_t clockID, struct sigevent *evp, timer_t *timerID);
+extern int SysTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID);
 extern int SysTimerGettime(timer_t timerID, struct itimerspec *value);
 extern int SysTimerGetoverrun(timer_t timerID);
 extern int SysTimerDelete(timer_t timerID);

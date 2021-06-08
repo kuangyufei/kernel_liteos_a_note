@@ -44,6 +44,7 @@ ifneq ($(wildcard $(BUILD_DIR)),)
 else
 	$(HIDE)mkdir $(BUILD_DIR)
 	$(HIDE)$(CP) $(LITEOSTHIRDPARTY)/$(TOYBOX)/. $(BUILD_DIR)
+	$(HIDE)$(CP) -p $(LITEOSTHIRDPARTY)/$(TOYBOX)/porting/liteos_a/. $(BUILD_DIR)
 endif
 	$(HIDE)CFLAGS="-D_FORTIFY_SOURCE=2 -fstack-protector-strong --target=arm-liteos \
 	--sysroot=$(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/" CC="$(CC)" OUTNAME=$(OUTNAME) \

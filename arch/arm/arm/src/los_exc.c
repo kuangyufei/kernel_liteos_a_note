@@ -280,7 +280,9 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
             pfFlags |= user ? VM_MAP_PF_FLAG_USER : 0;
             pfFlags |= instructionFault ? VM_MAP_PF_FLAG_INSTRUCTION : 0;
             pfFlags |= VM_MAP_PF_FLAG_NOT_PRESENT;
+            OsSigIntLock();
             ret = OsVmPageFaultHandler(far, pfFlags, frame);
+            OsSigIntUnlock();
             break;
         }
         default:
@@ -597,7 +599,9 @@ STATIC VOID OsExcRestore(VOID)
 //用户态异常处理函数
 STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 {
+    UINT32 intSave;
     UINT32 currCpu = ArchCurrCpuid();
+    LosTaskCB *runTask = OsCurrTaskGet();
     LosProcessCB *runProcess = OsCurrProcessGet();
 
     if (g_excFromUserMode[ArchCurrCpuid()] == FALSE) {//内核态直接退出,不处理了.
@@ -625,15 +629,26 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 #endif
 #endif
 
+    SCHEDULER_LOCK(intSave);
 #ifdef LOSCFG_SAVE_EXCINFO
     OsProcessExitCodeCoreDumpSet(runProcess);
 #endif
     OsProcessExitCodeSignalSet(runProcess, SIGUSR2);
 
-    /* Exception handling All operations should be kept prior to that operation */
-    OsExcRestore();
+    /* An exception was raised by a task that is not the current main thread during the exit process of
+     * the current process.
+     */
+    if ((runProcess->processStatus & OS_PROCESS_FLAG_EXIT) && (runProcess->threadGroupID != runTask->taskID)) {
+        SCHEDULER_UNLOCK(intSave);
+        /* Exception handling All operations should be kept prior to that operation */
+        OsExcRestore();
+        OsTaskToExit(runTask, OS_PRO_EXIT_OK);
+    } else {
+        SCHEDULER_UNLOCK(intSave);
 
-    /* kill user exc process */
+        /* Exception handling All operations should be kept prior to that operation */
+        OsExcRestore();
+        /* kill user exc process */
     LOS_Exit(OS_PRO_EXIT_OK);//进程退出
 
     /* User mode exception handling failed , which normally does not exist */ //用户态的异常处理失败，通常情况下不会发生
@@ -737,7 +752,9 @@ VOID BackTraceSub(UINTPTR regFP)
     UINTPTR backFP = regFP;
     UINT32 count = 0;
     VADDR_T kvaddr;
+#ifdef LOSCFG_KERNEL_VM
     LosProcessCB *runProcess = OsCurrProcessGet();
+#endif
 
     if (FindSuitableStack(regFP, &stackStart, &stackEnd, &kvaddr) == FALSE) {
         PrintExcInfo("traceback error fp = 0x%x\n", regFP);
@@ -1006,7 +1023,6 @@ STATIC VOID WaitAllCpuStop(UINT32 cpuID)
 
 STATIC VOID OsWaitOtherCoresHandleExcEnd(UINT32 currCpuID)
 {
-    OsProcessSuspendAllTask();
     while (1) {
         LOS_SpinLock(&g_excSerializerSpin);
         if ((g_currHandleExcCpuID == INVALID_CPUID) || (g_currHandleExcCpuID == currCpuID)) {
@@ -1033,6 +1049,7 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
     LOCKDEP_CLEAR_LOCKS();
 
     LOS_SpinLock(&g_excSerializerSpin);
+    /* Only the current nuclear anomaly */
     if (g_currHandleExcCpuID == INVALID_CPUID) {
         g_currHandleExcCpuID = currCpuID;
         g_currHandleExcPID = OsCurrProcessGet()->processID;
@@ -1042,13 +1059,14 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
             HalIrqSendIpi(target, LOS_MP_IPI_HALT);//向目标CPU发送停止消息
         }
     } else if (g_excFromUserMode[currCpuID] == TRUE) {//当前运行在用户态
+        /* Both cores raise exceptions, and the current core is a user-mode exception.
+         * Both cores are abnormal and come from the same process
+         */
         if (OsCurrProcessGet()->processID == g_currHandleExcPID) {
             LOS_SpinUnlock(&g_excSerializerSpin);
             OsExcRestore();
-            while (1) {
-                ret = LOS_TaskSuspend(OsCurrTaskGet()->taskID);
-                PrintExcInfo("%s supend task :%u failed: 0x%x\n", __FUNCTION__, OsCurrTaskGet()->taskID, ret);
-            }
+            ret = LOS_TaskDelete(OsCurrTaskGet()->taskID);
+            LOS_Panic("%s supend task :%u failed: 0x%x\n", __FUNCTION__, OsCurrTaskGet()->taskID, ret);
         }
         LOS_SpinUnlock(&g_excSerializerSpin);
 
@@ -1083,10 +1101,6 @@ STATIC VOID OsCheckCpuStatus(VOID)
 //执行期间的优先处理 excBufAddr为CPU异常上下文，
 LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
-    UINT16 runCount;
-#endif
-
     if ((excBufAddr->regCPSR & CPSR_MASK_MODE) == CPSR_USER_MODE) {//用户模式下，访问地址不能出用户空间
         g_minAddr = USER_ASPACE_BASE;	//可访问地址范围的开始地址，
         g_maxAddr = USER_ASPACE_BASE + USER_ASPACE_SIZE;//地址范围的结束地址，就是用户空间
@@ -1098,22 +1112,6 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
     }
 
     OsCheckCpuStatus();
-
-    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {//为用户态时
-        while (1) {
-            OsProcessSuspendAllTask();//当前进程的所有任务挂起
-#if (LOSCFG_KERNEL_SMP == YES)//多核情况下的处理
-            LOS_SpinLock(&g_taskSpin);
-            runCount = OS_PROCESS_GET_RUNTASK_COUNT(OsCurrProcessGet()->processStatus);//获取正在运行的task数量，也就是并行数量
-            LOS_SpinUnlock(&g_taskSpin);
-            if (runCount == 1) {//直接跑到只剩下一个当前任务为止，其实就在等其他核的runtask跑完
-                break;
-            }
-#else
-            break;
-#endif
-        }
-    }
 
 #if (LOSCFG_KERNEL_SMP == YES)
 #ifdef LOSCFG_FS_VFS

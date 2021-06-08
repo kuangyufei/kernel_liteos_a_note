@@ -189,7 +189,7 @@ STATIC LosProcessCB *OsFindExitChildProcess(const LosProcessCB *processCB, INT32
     return NULL;
 }
 //唤醒等待wakePID结束的任务,
-STATIC INLINE VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID)
+VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID)
 {
     taskCB->waitID = wakePID;
     OsSchedTaskWake(taskCB);
@@ -421,7 +421,9 @@ STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
 
         processCB->processStatus |= OS_PROCESS_STATUS_ZOMBIES;//贴上僵死进程的标签
 
+#ifdef LOSCFG_KERNEL_VM
         (VOID)OsKill(processCB->parentProcessID, SIGCHLD, OS_KERNEL_KILL_PERMISSION);//以内核权限发送SIGCHLD(子进程退出)信号.
+#endif
         LOS_ListHeadInsert(&g_processRecyleList, &processCB->pendList);//将进程通过其阻塞节点挂入全局进程回收链表
         OsRunTaskToDelete(runTask);//删除正在运行的任务
         return;
@@ -766,8 +768,12 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSystemProcessCreate(VOID)
     LOS_ListTailInsert(&kerInitProcess->childrenList, &idleProcess->siblingList);//挂到内核态祖宗进程的子孙链接上
     idleProcess->group = kerInitProcess->group;//和老祖宗一个进程组,注意是父子并不代表是朋友.
     LOS_ListTailInsert(&kerInitProcess->group->processList, &idleProcess->subordinateGroupList);//挂到老祖宗的进程组链表上,进入了老祖宗的朋友圈.
+#ifdef LOSCFG_SECURITY_CAPABILITY
     idleProcess->user = kerInitProcess->user;//共享用户
+#endif
+#ifdef LOSCFG_FS_VFS
     idleProcess->files = kerInitProcess->files;//共享文件
+#endif
 
     ret = OsIdleTaskCreate();//创建cpu的idle任务,从此当前CPU OsPercpuGet()->idleTaskID 有了休息的地方.
     if (ret != LOS_OK) {
@@ -925,27 +931,7 @@ LITE_OS_SEC_TEXT INT32 LOS_GetProcessPriority(INT32 pid)
 {
     return OsGetProcessPriority(LOS_PRIO_PROCESS, pid);
 }
-//唤醒等待信号的进程
-LITE_OS_SEC_TEXT VOID OsWaitSignalToWakeProcess(LosProcessCB *processCB)
-{
-    LosTaskCB *taskCB = NULL;
 
-    if (processCB == NULL) {
-        return;
-    }
-
-    /* only suspend process can continue */
-    if (!(processCB->processStatus & OS_PROCESS_STATUS_PENDING)) {
-        return;
-    }
-
-    if (!LOS_ListEmpty(&processCB->waitList)) {//waitList链表不为空
-        taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&processCB->waitList));//从链表上摘下第一个task,通过节点获取task主体
-        OsWaitWakeTask(taskCB, OS_INVALID_VALUE);//唤醒这个task
-    }
-
-    return;
-}
 //将任务挂入进程的waitList链表,表示这个任务在等待某个进程的退出
 //当被等待进程退出时候会将自己挂到父进程的退出子进程链表和进程组的退出进程链表.
 STATIC VOID OsWaitInsertWaitListInOrder(LosTaskCB *runTask, LosProcessCB *processCB)
@@ -1816,6 +1802,17 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
 
 LITE_OS_SEC_TEXT VOID LOS_Exit(INT32 status)
 {
+    UINT32 intSave;
+
+    /* The exit of a kernel - state process must be kernel - state and all threads must actively exit */
+    LosProcessCB *processCB = OsCurrProcessGet();
+    SCHEDULER_LOCK(intSave);
+    if (!OsProcessIsUserMode(processCB) && (processCB->threadNumber != 1)) {
+        SCHEDULER_UNLOCK(intSave);
+        PRINT_ERR("Kernel-state processes with multiple threads are not allowed to exit directly\n");
+        return;
+    }
+    SCHEDULER_UNLOCK(intSave);
     OsTaskExitGroup((UINT32)status);
     OsProcessExit(OsCurrTaskGet(), (UINT32)status);
 }

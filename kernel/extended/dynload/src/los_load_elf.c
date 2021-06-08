@@ -115,7 +115,7 @@ STATIC INT32 OsReadELFInfo(INT32 fd, UINT8 *buffer, size_t readSize, off_t offse
     }
     return LOS_OK;
 }
-//确实ELF头信息是否异常
+//确认ELF头信息是否异常
 STATIC INT32 OsVerifyELFEhdr(const LD_ELF_EHDR *ehdr, UINT32 fileLen)
 {
     if (memcmp(ehdr->elfIdent, LD_ELFMAG, LD_SELFMAG) != 0) {

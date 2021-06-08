@@ -37,7 +37,9 @@
 #ifndef __LOS_VM_FILEMAP_H__
 #define __LOS_VM_FILEMAP_H__
 
+#ifdef LOSCFG_FS_VFS
 #include "fs/file.h"
+#endif
 #include "los_vm_map.h"
 #include "los_vm_page.h"
 #include "los_vm_common.h"

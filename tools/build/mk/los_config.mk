@@ -325,6 +325,11 @@ ifeq ($(LOSCFG_FS_RAMFS), y)
     LIB_SUBDIRS     += fs/ramfs
 endif
 
+ifeq ($(LOSCFG_FS_ROMFS), y)
+    LITEOS_BASELIB  += -lromfs
+    LIB_SUBDIRS     += fs/romfs
+endif
+
 ifeq ($(LOSCFG_FS_NFS), y)
     LITEOS_BASELIB  += -lnfs
     LIB_SUBDIRS     += fs/nfs

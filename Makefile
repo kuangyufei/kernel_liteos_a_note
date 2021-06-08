@@ -145,10 +145,9 @@ genconfig:$(MENUCONFIG_CONF)
 	$< --silentoldconfig $(KCONFIG_FILE_PATH)
 ##### menuconfig end #######
 
-$(LITEOS_MENUCONFIG_H):
-ifneq ($(LITEOS_MENUCONFIG_H), $(wildcard $(LITEOS_MENUCONFIG_H)))
+$(LITEOS_MENUCONFIG_H): .config
 	$(HIDE)$(MAKE) genconfig
-endif
+
 $(LITEOS_TARGET): $(__LIBS)
 	$(HIDE)touch $(LOSCFG_ENTRY_SRC)
 

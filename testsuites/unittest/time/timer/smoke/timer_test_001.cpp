@@ -42,7 +42,7 @@ static int g_sigHdlCnt;
 static int g_overRunCnt;
 static timer_t g_timerID;
 
-static void SigHandler(int sig)
+static void SigHandler01(int sig)
 {
     g_sigHdlCnt++;
     g_overRunCnt += timer_getoverrun(g_timerID);
@@ -52,7 +52,7 @@ static void SigHandler(int sig)
 static int TimerTest(void)
 {
     int interval = 3; // 3, seconds
-    timer_t timerid;
+    timer_t timerid01, timerid02;
     struct sigevent sev;
     struct itimerspec its;
     sigset_t mask;
@@ -60,7 +60,7 @@ static int TimerTest(void)
     int ret;
 
     sa.sa_flags = 0;
-    sa.sa_handler = SigHandler;
+    sa.sa_handler = SigHandler01;
     sigemptyset(&sa.sa_mask);
     ret = sigaction(SIG, &sa, nullptr);
     LogPrintln("sigaction %d: %d", SIG, ret);
@@ -76,12 +76,12 @@ static int TimerTest(void)
     /* Create the timer */
     sev.sigev_notify = SIGEV_SIGNAL;
     sev.sigev_signo = SIG;
-    sev.sigev_value.sival_ptr = &timerid;
-    ret = timer_create(CLOCKID, &sev, &timerid);
-    LogPrintln("timer_create %p: %d", timerid, ret);
+    sev.sigev_value.sival_ptr = &timerid01;
+    ret = timer_create(CLOCKID, &sev, &timerid01);
+    LogPrintln("timer_create %p: %d", timerid01, ret);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    g_timerID = timerid;
+    g_timerID = timerid01;
 
     /* Start the timer */
     its.it_value.tv_sec = 0;
@@ -89,23 +89,39 @@ static int TimerTest(void)
     its.it_interval.tv_sec = its.it_value.tv_sec;
     its.it_interval.tv_nsec = its.it_value.tv_nsec;
 
-    ret = timer_settime(timerid, 0, &its, nullptr);
-    LogPrintln("timer_settime %p: %d", timerid, ret);
+    ret = timer_settime(timerid01, 0, &its, nullptr);
+    LogPrintln("timer_settime %p: %d", timerid01, ret);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
+
+    /* Test of evp is NULL */
+    ret = timer_create(CLOCKID, NULL, &timerid02);
+    LogPrintln("timer_settime %p: %d", timerid02, ret);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+
+    its.it_value.tv_sec = 1;
+    its.it_value.tv_nsec = 0;
+    its.it_interval.tv_sec = its.it_value.tv_sec;
+    its.it_interval.tv_nsec = its.it_value.tv_nsec;
+
+    ret = timer_settime(timerid02, 0, &its, nullptr);
+    LogPrintln("timer_settime %p: %d", timerid02, ret);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+
+    sleep(6);
     /* Sleep for a while */
     LogPrintln("sleep %ds", interval);
     sleep(interval); // timer signal is blocked, this sleep should not be interrupted
     ICUNIT_ASSERT_EQUAL(g_sigHdlCnt, 0, g_sigHdlCnt);
 
     /* Get the timer's time */
-    ret = timer_gettime(timerid, &its);
-    LogPrintln("timer_gettime %p: %d", timerid, ret);
+    ret = timer_gettime(timerid01, &its);
+    LogPrintln("timer_gettime %p: %d", timerid01, ret);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     /* Get the timer's overruns */
-    ret = timer_getoverrun(timerid);
-    LogPrintln("timer_getoverrun %p: %d", timerid, ret);
+    ret = timer_getoverrun(timerid01);
+    LogPrintln("timer_getoverrun %p: %d", timerid01, ret);
     ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret); // before timer deliver, return value of timer_getoverrun is unspecified
 
     LogPrintln("unblock signal %d", SIG);
@@ -124,8 +140,12 @@ static int TimerTest(void)
     sleep(interval); // this sleep may be interrupted by the timer
     LogPrintln("sleep time over, g_sigHdlCnt = %d", g_sigHdlCnt);
 
-    ret = timer_delete(timerid);
-    LogPrintln("timer_delete %p %d", timerid, ret);
+    ret = timer_delete(timerid01);
+    LogPrintln("timer_delete %p %d", timerid01, ret);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+
+    ret = timer_delete(timerid02);
+    LogPrintln("timer_delete %p %d", timerid02, ret);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     ICUNIT_ASSERT_NOT_EQUAL(g_sigHdlCnt, 0, g_sigHdlCnt);

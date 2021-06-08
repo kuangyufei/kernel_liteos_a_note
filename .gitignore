@@ -3,8 +3,6 @@
 *.a
 *.so
 *.swp
-*.rej
-*.orig
 
 # IDE settings
 .vscode

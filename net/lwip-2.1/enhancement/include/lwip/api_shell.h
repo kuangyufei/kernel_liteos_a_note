@@ -6,15 +6,15 @@
  * are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice, this list of
- * conditions and the following disclaimer.
+ *    conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- * of conditions and the following disclaimer in the documentation and/or other materials
- * provided with the distribution.
+ *    of conditions and the following disclaimer in the documentation and/or other materials
+ *    provided with the distribution.
  *
  * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific prior written
- * permission.
+ *    to endorse or promote products derived from this software without specific prior written
+ *    permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
@@ -28,21 +28,34 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef TIME_TIMER_LT_TIMER_TEST_H
-#define TIME_TIMER_LT_TIMER_TEST_H
 
-#include <unistd.h>
-#include <signal.h>
-#include <time.h>
-#include <sys/time.h>
-#include "osTest.h"
+#ifndef LWIP_HDR_API_SHELL_H
+#define LWIP_HDR_API_SHELL_H
 
-void TimerTest001(void);
-void TimerTest002(void);
-void TimerTest003(void);
-void TimerTest004(void);
-void TimerTest005(void);
-void TIME_TEST_TZSET_001(void);
-void TIME_TEST_TZSET_002(void);
+#include "arch/cc.h"
+#include "lwip/opt.h"
 
-#endif /* TIME_TIMER_LT_TIMER_TEST_H */
+#if defined (__cplusplus) && __cplusplus
+extern "C" {
+#endif
+
+u32_t lwip_ifconfig(int argc, const char **argv);
+u32_t lwip_arp(int argc, const char **argv);
+u32_t osShellNetIfUp(int argc, const char **argv);
+u32_t osShellNetIfDown(int argc, const char **argv);
+u32_t osShellPing(int argc, const char **argv);
+u32_t osShellTftp(int argc, const char **argv);
+#if LWIP_SNTP
+u32_t osShellNtpdate(int argc, const char **argv);
+#endif
+#if LWIP_DNS
+u32_t osShellDns(int argc, const char **argv);
+#endif /* LWIP_DNS */
+u32_t osShellNetstat(int argc, const char **argv);
+void netstat_internal(void *ctx);
+
+#if defined (__cplusplus) && __cplusplus
+}
+#endif
+
+#endif /* LWIP_HDR_API_SHELL_H */

@@ -40,7 +40,9 @@
 #include "los_vm_shm_pri.h"
 #include "los_arch_mmu.h"
 #include "los_process_pri.h"
+#ifdef LOSCFG_FS_VFS
 #include "fs/fs.h"
+#endif
 #include "los_task.h"
 #include "los_memory_pri.h"
 #include "los_vm_boot.h"

@@ -48,65 +48,59 @@ sources_entry = [
     "net_netdb_test.cpp",
 ]
 
-source_set("sources_smoke") {
-  sources = [
-    "smoke/net_netdb_test_001.cpp",
-    "smoke/net_netdb_test_013.cpp",
-  ]
-  configs += [ "../..:local_public_config" ]
-  include_dirs = common_include_dirs
-  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-}
+sources_smoke = [
+  "smoke/net_netdb_test_001.cpp",
+  "smoke/net_netdb_test_013.cpp",
+]
 
-source_set("sources_other") {
-  sources = [
-    "full/net_netdb_test_002.cpp",
-    "full/net_netdb_test_003.cpp",
-    "full/net_netdb_test_004.cpp",
-    "full/net_netdb_test_005.cpp",
-    "full/net_netdb_test_006.cpp",
-    "full/net_netdb_test_007.cpp",
-    "full/net_netdb_test_008.cpp",
-    "full/net_netdb_test_009.cpp",
-    "full/net_netdb_test_010.cpp",
-    "full/net_netdb_test_011.cpp",
-    "full/net_netdb_test_012.cpp",
-    "full/net_netdb_test_014.cpp",
-    "full/net_netdb_test_015.cpp",
-    "full/net_netdb_test_016.cpp",
-    "full/net_netdb_test_017.cpp",
-    "full/net_netdb_test_018.cpp",
-    "full/net_netdb_test_019.cpp",
-    "full/net_netdb_test_020.cpp",
-    "full/net_netdb_test_021.cpp",
-    "full/net_netdb_test_022.cpp",
-  ]
-  configs += [ "../..:local_public_config" ]
-  include_dirs = common_include_dirs
-  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-}
+sources_full = [
+  "full/net_netdb_test_002.cpp",
+  "full/net_netdb_test_003.cpp",
+  "full/net_netdb_test_004.cpp",
+  "full/net_netdb_test_005.cpp",
+  "full/net_netdb_test_006.cpp",
+  "full/net_netdb_test_007.cpp",
+  "full/net_netdb_test_008.cpp",
+  "full/net_netdb_test_009.cpp",
+  "full/net_netdb_test_010.cpp",
+  "full/net_netdb_test_011.cpp",
+  "full/net_netdb_test_012.cpp",
+  "full/net_netdb_test_014.cpp",
+  "full/net_netdb_test_015.cpp",
+  "full/net_netdb_test_016.cpp",
+  "full/net_netdb_test_017.cpp",
+  "full/net_netdb_test_018.cpp",
+  "full/net_netdb_test_019.cpp",
+  "full/net_netdb_test_020.cpp",
+  "full/net_netdb_test_021.cpp",
+  "full/net_netdb_test_022.cpp",
+]
 
-unittest("liteos_a_net_netdb_unittest") {
-  output_extension = "bin"
-  output_dir = "$root_out_dir/test/unittest/kernel"
-  include_dirs = common_include_dirs
-  sources = sources_entry
-  configs = [ "../..:public_config_full" ]
-  configs += [ ":net_local_config" ]
-  deps = []
-  deps += [ ":sources_smoke" ]
-  deps += [ ":sources_other" ]
-}
-
-if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
   unittest("liteos_a_net_netdb_unittest_door") {
     output_extension = "bin"
     output_dir = "$root_out_dir/test/unittest/kernel"
     include_dirs = common_include_dirs
     sources = sources_entry
-    configs = [ "../..:public_config_smk" ]
+    sources += sources_smoke
+    sources_full = []
+    sources += sources_full
+    configs = [ "../..:public_config_for_door" ]
     configs += [ ":net_local_config" ]
-    deps = []
-    deps += [ ":sources_smoke" ]
+    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
+  unittest("liteos_a_net_netdb_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    sources += sources_full
+    sources += sources_smoke
+    configs = [ "../..:public_config_for_all" ]
+    configs += [ ":net_local_config" ]
+    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   }
 }

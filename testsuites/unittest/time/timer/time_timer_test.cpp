@@ -88,25 +88,14 @@ HWTEST_F(TimeTimerTest, TimerTest003, TestSize.Level0)
 }*/
 
 /* *
- * @tc.name: TIME_TEST_TZSET_001
- * @tc.desc: function for TIME_TEST_TZSET_001
+ * @tc.name: TimerTest005
+ * @tc.desc: function for timer_create SIGEV_THREAD.
  * @tc.type: FUNC
  * @tc.require: AR000EEMQ9
  */
-HWTEST_F(TimeTimerTest, TIME_TEST_TZSET_001, TestSize.Level0)
+HWTEST_F(TimeTimerTest, TimerTest005, TestSize.Level0)
 {
-    TIME_TEST_TZSET_001();
-}
-
-/* *
- * @tc.name: TIME_TEST_TZSET_002
- * @tc.desc: function for TimeTimerTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(TimeTimerTest, TIME_TEST_TZSET_002, TestSize.Level0)
-{
-    TIME_TEST_TZSET_002();
+    TimerTest005();
 }
 #endif
 } // namespace OHOS

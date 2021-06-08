@@ -42,6 +42,9 @@
 #include "los_process_pri.h"
 #include "los_vm_lock.h"
 
+#ifndef UNUSED
+#define UNUSED(x)          (VOID)x
+#endif
 
 #ifdef LOSCFG_KERNEL_VM
 

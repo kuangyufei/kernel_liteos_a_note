@@ -651,7 +651,7 @@ size_t LOS_PhysPagesFree(LOS_DL_LIST *list)
 #else
 VADDR_T *LOS_PaddrToKVaddr(PADDR_T paddr)
 {
-    if ((paddr < DDR_MEM_ADDR) || (paddr >= (DDR_MEM_ADDR + DDR_MEM_SIZE))) {
+    if ((paddr < DDR_MEM_ADDR) || (paddr >= ((PADDR_T)DDR_MEM_ADDR + DDR_MEM_SIZE))) {
         return NULL;
     }
 

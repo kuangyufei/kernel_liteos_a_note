@@ -125,6 +125,7 @@ VOID OsArmA32SyscallHandle(TaskContext *regs)
         return;
     }
 	//regs[0-6] 记录系统调用的参数,这也是由R7寄存器保存系统调用号的原因
+    OsSigIntLock();
     switch (nArgs) {//参数的个数 
         case ARG_NUM_0:
         case ARG_NUM_1:
@@ -143,6 +144,7 @@ VOID OsArmA32SyscallHandle(TaskContext *regs)
     }
 
     regs->R0 = ret;
+    OsSigIntUnlock();
 
     return;
 }

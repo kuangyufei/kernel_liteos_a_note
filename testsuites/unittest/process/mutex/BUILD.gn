@@ -41,68 +41,60 @@ sources_entry = [
   "process_mutex_test.cpp",
 ]
 
-source_set("sources_smoke") {
-  sources = [
-    "smoke/pthread_mutex_test_001.cpp",
-    "smoke/pthread_mutex_test_002.cpp",
-    "smoke/pthread_mutex_test_003.cpp",
-    "smoke/pthread_mutex_test_004.cpp",
-    "smoke/pthread_mutex_test_005.cpp",
-    "smoke/pthread_mutex_test_006.cpp",
-    "smoke/pthread_mutex_test_007.cpp",
-    "smoke/pthread_mutex_test_008.cpp",
-    "smoke/pthread_mutex_test_009.cpp",
-    "smoke/pthread_mutex_test_010.cpp",
-    "smoke/pthread_mutex_test_011.cpp",
-    "smoke/pthread_mutex_test_012.cpp",
-    "smoke/pthread_mutex_test_013.cpp",
-    "smoke/pthread_mutex_test_014.cpp",
-    "smoke/pthread_mutex_test_015.cpp",
-    "smoke/pthread_mutex_test_016.cpp",
-    "smoke/pthread_mutex_test_017.cpp",
-    "smoke/pthread_mutex_test_018.cpp",
-    "smoke/pthread_mutex_test_019.cpp",
-    "smoke/pthread_mutex_test_020.cpp",
-    "smoke/pthread_mutex_test_021.cpp",
-    "smoke/pthread_mutex_test_022.cpp",
-    "smoke/pthread_mutex_test_023.cpp",
-    "smoke/pthread_mutex_test_024.cpp",
-    "smoke/pthread_mutex_test_025.cpp",
-  ]
-  configs += [ "../..:local_public_config" ]
-  include_dirs = common_include_dirs
-  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-}
+sources_smoke = [
+  "smoke/pthread_mutex_test_001.cpp",
+  "smoke/pthread_mutex_test_002.cpp",
+  "smoke/pthread_mutex_test_003.cpp",
+  "smoke/pthread_mutex_test_004.cpp",
+  "smoke/pthread_mutex_test_005.cpp",
+  "smoke/pthread_mutex_test_006.cpp",
+  "smoke/pthread_mutex_test_007.cpp",
+  "smoke/pthread_mutex_test_008.cpp",
+  "smoke/pthread_mutex_test_009.cpp",
+  "smoke/pthread_mutex_test_010.cpp",
+  "smoke/pthread_mutex_test_011.cpp",
+  "smoke/pthread_mutex_test_012.cpp",
+  "smoke/pthread_mutex_test_013.cpp",
+  "smoke/pthread_mutex_test_014.cpp",
+  "smoke/pthread_mutex_test_015.cpp",
+  "smoke/pthread_mutex_test_016.cpp",
+  "smoke/pthread_mutex_test_017.cpp",
+  "smoke/pthread_mutex_test_018.cpp",
+  "smoke/pthread_mutex_test_019.cpp",
+  "smoke/pthread_mutex_test_020.cpp",
+  "smoke/pthread_mutex_test_021.cpp",
+  "smoke/pthread_mutex_test_022.cpp",
+  "smoke/pthread_mutex_test_023.cpp",
+  "smoke/pthread_mutex_test_024.cpp",
+  "smoke/pthread_mutex_test_025.cpp",
+]
 
-source_set("sources_other") {
-  sources = [
-  ]
-  configs += [ "../..:local_public_config" ]
-  include_dirs = common_include_dirs
-  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-}
+sources_full = [
+]
 
-if (LOSCFG_USER_TEST_FOR_ALL == true) {
-  unittest("liteos_a_mutex_unittest") {
-    output_extension = "bin"
-    output_dir = "$root_out_dir/test/unittest/kernel"
-    include_dirs = common_include_dirs
-    sources = sources_entry
-    configs = [ "../..:public_config_full" ]
-    deps = []
-    deps += [ ":sources_smoke" ]
-    deps += [ ":sources_other" ]
-  }
-}
-
-if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
   unittest("liteos_a_mutex_unittest_door") {
     output_extension = "bin"
     output_dir = "$root_out_dir/test/unittest/kernel"
     include_dirs = common_include_dirs
     sources = sources_entry
-    configs = [ "../..:public_config_smk" ]
-    deps = []
-    deps += [ ":sources_smoke" ]
+    sources += sources_smoke
+    sources_full = []
+    sources += sources_full
+    configs = [ "../..:public_config_for_door" ]
+    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
+  unittest("liteos_a_mutex_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    sources += sources_smoke
+    sources += sources_full
+    configs = [ "../..:public_config_for_all" ]
+    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   }
 }

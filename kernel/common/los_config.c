@@ -231,9 +231,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     if (ret != LOS_OK) {
         return ret;
     }
-#if (LOSCFG_KERNEL_SMP == 1)
-    release_secondary_cores();
-#endif
+
     OsInitCall(LOS_INIT_LEVEL_VM_COMPLETE);
 
     ret = OsIpcInit();
@@ -267,6 +265,10 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 
     OsInitCall(LOS_INIT_LEVEL_KMOD_EXTENDED);
 
+#if (LOSCFG_KERNEL_SMP == 1)
+    release_secondary_cores();
+#endif
+
     OsInitCall(LOS_INIT_LEVEL_KMOD_TASK);
 
 #ifdef LOS_INIT_STATISTICS
@@ -277,6 +279,13 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 
     return LOS_OK;
 }
+
+#ifndef LOSCFG_PLATFORM_ADAPT
+STATIC VOID SystemInit(VOID)
+{
+    PRINTK("dummy: *** %s ***\n", __FUNCTION__);
+}
+#endif
 
 STATIC UINT32 OsSystemInitTaskCreate(VOID)
 {

@@ -42,8 +42,9 @@
 #include "los_oom.h"
 #include "los_vm_dump.h"
 #include "los_process_pri.h"
+#ifdef LOSCFG_FS_VFS
 #include "fs/path_cache.h"
-
+#endif
 
 #ifdef LOSCFG_KERNEL_VM
 

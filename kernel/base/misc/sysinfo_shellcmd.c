@@ -34,6 +34,7 @@
 #include "los_sem_pri.h"
 #include "los_queue_pri.h"
 #include "los_swtmr_pri.h"
+#include "los_task_pri.h"
 
 #ifdef LOSCFG_SHELL
 #include "shcmd.h"

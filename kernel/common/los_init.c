@@ -62,7 +62,7 @@ STATIC VOID InitLevelCall(const CHAR *name, const UINT32 level, struct ModuleIni
     UINT64 startNsec, endNsec;
     UINT64 totalTime = 0;
     UINT64 singleTime = 0;
-    UINT32 ret;
+    UINT32 ret = LOS_OK;
 #endif
 
     if (ArchCurrCpuid() == 0) {
@@ -72,7 +72,7 @@ STATIC VOID InitLevelCall(const CHAR *name, const UINT32 level, struct ModuleIni
         g_initCurrentLevel = level;
         g_initCurrentModule = initLevelList[level];
    } else {
-        while (g_initCurrentLevel != level) {
+        while (g_initCurrentLevel < level) {
         }
     }
 
@@ -106,7 +106,7 @@ STATIC VOID InitLevelCall(const CHAR *name, const UINT32 level, struct ModuleIni
 #endif
     } while (1);
 
-    if (level >= LOS_INIT_LEVEL_VM_COMPLETE) {
+    if (level >= LOS_INIT_LEVEL_KMOD_TASK) {
         LOS_AtomicInc(&g_initCount);
         while ((LOS_AtomicRead(&g_initCount) % LOSCFG_KERNEL_CORE_NUM) != 0) {
         }

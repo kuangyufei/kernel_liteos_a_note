@@ -642,6 +642,7 @@ int VnodeDestory(struct Vnode *vnode)
 
     free(vnode->data);
     free(vnode);
+    g_totalVnodeSize--;
     VnodeDrop();
 
     return LOS_OK;

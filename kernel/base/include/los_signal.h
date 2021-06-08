@@ -214,6 +214,7 @@ typedef struct {//信号控制块(描述符)
     LOS_DL_LIST waitList;	//等待链表,上面挂的是等待信号到来的任务, 请查找 OsTaskWait(&sigcb->waitList, timeout, TRUE)	理解						
     sigset_t sigwaitmask; /* Waiting for pending signals         */	//任务在等待哪些信号的到来
     siginfo_t sigunbinfo; /* Signal info when task unblocked     */	//任务解锁时的信号信息
+    unsigned int sigIntLock;
     void *sigContext;
     unsigned int count;
 } sig_cb;
@@ -237,6 +238,9 @@ int OsSigTimedWait(sigset_t *set, siginfo_t *info, unsigned int timeout);
 int OsPause(void);
 int OsSigPending(sigset_t *set);
 int OsSigSuspend(const sigset_t *set);
+VOID OsSigIntLock(VOID);
+VOID OsSigIntUnlock(VOID);
+INT32 OsTaskKillUnsafe(UINT32 taskID, INT32 signo);
 
 #ifdef __cplusplus
 #if __cplusplus
