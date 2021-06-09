@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 开始文件系统注解,从 vnode 开始 ...
+git commit -m  ' 开始文件系统注解,mount mtd flash 注解
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     国内:https://weharmony.gitee.io
     国外:https://weharmony.github.io

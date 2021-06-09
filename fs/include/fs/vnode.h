@@ -92,12 +92,12 @@ struct Vnode {
     struct file_operations_vfs *fop;    /* file operations */	//虚拟 <--> 真实的文件系统操作
     void *data;                         /* private data */		//私有数据
     uint32_t flag;                      /* vnode flag */		//节点标签
-    LIST_ENTRY hashEntry;               /* list entry for bucket in hash table */ //挂入哈希表 g_vnodeHashEntrys
+    LIST_ENTRY hashEntry;               /* list entry for bucket in hash table */ //通过它挂入哈希表 g_vnodeHashEntrys[i], i:[0,g_vnodeHashMask]
     LIST_ENTRY actFreeEntry;            /* vnode active/free list entry */	//通过本节点挂到空闲链表和使用链表上
     struct Mount *originMount;          /* fs info about this vnode */ //关于这个节点的挂载信息
     struct Mount *newMount;             /* fs info about who mount on this vnode */	//挂载在这个节点上的文件系统
 };
-//
+//虚拟文件系统接口,具体的文件系统只需实现这些接口函数就完成了鸿蒙系统的接入.
 struct VnodeOps {
     int (*Create)(struct Vnode *parent, const char *name, int mode, struct Vnode **vnode);//创建
     int (*Lookup)(struct Vnode *parent, const char *name, int len, struct Vnode **vnode);//查询
@@ -119,7 +119,11 @@ struct VnodeOps {
     int (*Truncate64)(struct Vnode *vnode, off64_t len);//缩减或扩展大小
     int (*Fscheck)(struct Vnode *vnode, struct fs_dirent_s *dir);//检查功能
 };
-
+/*哈希比较指针函数,使用方法,例如:
+* int VfsHashGet(const struct Mount *mount, uint32_t hash, struct Vnode **vnode, VfsHashCmp *fn, void *arg)
+* VfsHashCmp *fn 等同于 int *fn, 此时 fn是个指针,指向了一个函数地址
+* fn(vnode,arg)就是调用这个函数,返回一个int类型的值
+*/
 typedef int VfsHashCmp(struct Vnode *vnode, void *arg);
 
 int VnodesInit(void);

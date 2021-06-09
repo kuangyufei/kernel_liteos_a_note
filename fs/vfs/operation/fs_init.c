@@ -57,6 +57,7 @@
 
 * https://weharmony.gitee.io/openharmony/zh-cn/device-dev/kernel/VFS.html
 */
+//只能调用一次，多次调用将会造成文件系统异常。
 void los_vfs_init(void)
 {
     uint retval;
@@ -65,25 +66,25 @@ void los_vfs_init(void)
         return;
     }
 
-#ifdef LOSCFG_FS_FAT_DISK
+#ifdef LOSCFG_FS_FAT_DISK //两个自旋锁
     spin_lock_init(&g_diskSpinlock);
     spin_lock_init(&g_diskFatBlockSpinlock);
 #endif
     files_initialize();
     files_initlist(&tg_filelist);
 
-    retval = VnodesInit();
+    retval = VnodesInit();//虚拟节点初始化
     if (retval != LOS_OK) {
         PRINT_ERR("los_vfs_init VnodeInit failed error %d\n", retval);
         return;
     }
 
-    retval = PathCacheInit();
+    retval = PathCacheInit();//路径缓存初始化
     if (retval != LOS_OK) {
         PRINT_ERR("los_vfs_init PathCacheInit failed error %d\n", retval);
         return;
     }
-    retval = VnodeHashInit();
+    retval = VnodeHashInit();//哈希列表初始化
     if (retval != LOS_OK) {
         PRINT_ERR("los_vfs_init VnodeHashInit failed error %d\n", retval);
         return;

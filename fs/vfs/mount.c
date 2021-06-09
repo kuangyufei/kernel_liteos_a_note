@@ -38,40 +38,46 @@
 #include "stdlib.h"
 #endif
 
-static LIST_HEAD *g_mountList = NULL;
-
+static LIST_HEAD *g_mountList = NULL;//装载链表,上面挂的是系统所有的装载设备
+/*	在内核MountAlloc只被VnodeDevInit调用,但真实情况下它还将被系统调用 mount()调用
+* int mount(const char *source, const char *target,
+          const char *filesystemtype, unsigned long mountflags,
+          const void *data)
+  mount见于..\code-2.0-canary\third_party\NuttX\fs\mount\fs_mount.c
+  vnodeBeCovered: /dev/mmcblk0 
+*/
 struct Mount* MountAlloc(struct Vnode* vnodeBeCovered, struct MountOps* fsop)
 {
-    struct Mount* mnt = (struct Mount*)zalloc(sizeof(struct Mount));
+    struct Mount* mnt = (struct Mount*)zalloc(sizeof(struct Mount));//申请一个mount结构体内存,小内存分配用 zalloc
     if (mnt == NULL) {
         PRINT_ERR("MountAlloc failed no memory!\n");
         return NULL;
     }
 
-    LOS_ListInit(&mnt->activeVnodeList);
-    LOS_ListInit(&mnt->vnodeList);
+    LOS_ListInit(&mnt->activeVnodeList);//初始化激活索引节点链表
+    LOS_ListInit(&mnt->vnodeList);//初始化索引节点链表
 
-    mnt->vnodeBeCovered = vnodeBeCovered;
-    vnodeBeCovered->newMount = mnt;
-#ifdef LOSCFG_DRIVERS_RANDOM
-    HiRandomHwInit();
-    (VOID)HiRandomHwGetInteger(&mnt->hashseed);
-    HiRandomHwDeinit();
+    mnt->vnodeBeCovered = vnodeBeCovered;//设备将装载到vnodeBeCovered节点上
+    vnodeBeCovered->newMount = mnt;//该节点不再是虚拟节点,而作为 设备结点
+#ifdef LOSCFG_DRIVERS_RANDOM	//随机值	驱动模块
+    HiRandomHwInit();//随机值初始化
+    (VOID)HiRandomHwGetInteger(&mnt->hashseed);//用于生成哈希种子
+    HiRandomHwDeinit();//随机值反初始化
 #else
-    mnt->hashseed = (uint32_t)random();
+    mnt->hashseed = (uint32_t)random(); //随机生成哈子种子
 #endif
     return mnt;
 }
-
+//获取装载链表
 LIST_HEAD* GetMountList()
 {
     if (g_mountList == NULL) {
-        g_mountList = zalloc(sizeof(LIST_HEAD));
+        g_mountList = zalloc(sizeof(LIST_HEAD));//分配内存, 小内存分配用 zalloc
         if (g_mountList == NULL) {
             PRINT_ERR("init mount list failed, no memory.");
             return NULL;
         }
-        LOS_ListInit(g_mountList);
+        LOS_ListInit(g_mountList);//初始化全局链表
     }
     return g_mountList;
 }

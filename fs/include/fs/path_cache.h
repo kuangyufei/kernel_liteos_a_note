@@ -35,8 +35,8 @@
 #include "fs/mount.h"
 #include "fs/vnode.h"
 
-struct PathCache {
-    struct Vnode *parentVnode;    /* vnode points to the cache */
+struct PathCache {//路径缓存
+    struct Vnode *parentVnode;    /* vnode points to the cache */	
     struct Vnode *childVnode;     /* vnode the cache points to */
     LIST_ENTRY parentEntry;       /* list entry for cache list in the parent vnode */
     LIST_ENTRY childEntry;        /* list entry for cache list in the child vnode */

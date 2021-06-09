@@ -47,9 +47,10 @@
 #define DRIVER_NAME_ADD_SIZE    3
 pthread_mutex_t g_mtdPartitionLock = PTHREAD_MUTEX_INITIALIZER;
 
+//通常在NorFlash上会选取jffs及jffs2文件系统
 static VOID YaffsLockInit(VOID) __attribute__((weakref("yaffsfs_OSInitialisation")));
 static VOID YaffsLockDeinit(VOID) __attribute__((weakref("yaffsfs_OsDestroy")));
-static INT32 Jffs2LockInit(VOID) __attribute__((weakref("Jffs2MutexCreate")));
+static INT32 Jffs2LockInit(VOID) __attribute__((weakref("Jffs2MutexCreate")));//弱引用 Jffs2MutexCreate
 static VOID Jffs2LockDeinit(VOID) __attribute__((weakref("Jffs2MutexDelete")));
 
 partition_param *g_nandPartParam = NULL;
@@ -57,7 +58,7 @@ partition_param *g_spinorPartParam = NULL;
 mtd_partition *g_spinorPartitionHead = NULL;
 mtd_partition *g_nandPartitionHead = NULL;
 
-#define RWE_RW_RW 0755
+#define RWE_RW_RW 0755 //文件读/写/执权限,chmod 755
 
 partition_param *GetNandPartParam(VOID)
 {
@@ -83,8 +84,8 @@ static VOID MtdNandParamAssign(partition_param *nandParam, const struct MtdDev *
      * you can change the NANDBLK_NAME or NANDCHR_NAME to NULL.
      */
     nandParam->flash_mtd = (struct MtdDev *)nandMtd;
-    nandParam->flash_ops = GetDevNandOps();
-    nandParam->char_ops = GetMtdCharFops();
+    nandParam->flash_ops = GetDevNandOps();	//获取块设备操作方法
+    nandParam->char_ops = GetMtdCharFops(); //获取字符设备操作方法
     nandParam->blockname = NANDBLK_NAME;
     nandParam->charname = NANDCHR_NAME;
     nandParam->partition_head = g_nandPartitionHead;
@@ -146,7 +147,7 @@ static VOID MtdNorParamAssign(partition_param *spinorParam, const struct MtdDev 
     spinorParam->charname = NULL;
 #endif
     spinorParam->partition_head = g_spinorPartitionHead;
-    spinorParam->block_size = spinorMtd->eraseSize;
+    spinorParam->block_size = spinorMtd->eraseSize;//4K, 读/写/擦除 的最小单位
 }
 
 static VOID MtdDeinitSpinorParam(VOID)
@@ -261,7 +262,7 @@ static INT32 AddParamCheck(UINT32 startAddr,
 
     return ENOERR;
 }
-
+//注册块设备,此函数之后设备将支持VFS访问
 static INT32 BlockDriverRegisterOperate(mtd_partition *newNode,
                                         const partition_param *param,
                                         UINT32 partitionNum)
@@ -283,7 +284,7 @@ static INT32 BlockDriverRegisterOperate(mtd_partition *newNode,
             newNode->blockdriver_name = NULL;
             return -ENAMETOOLONG;
         }
-
+		//在伪文件系统中注册块驱动程序,生成设备结点 inode
         ret = register_blockdriver(newNode->blockdriver_name, param->flash_ops,
             RWE_RW_RW, newNode);
         if (ret) {
@@ -297,7 +298,7 @@ static INT32 BlockDriverRegisterOperate(mtd_partition *newNode,
     }
     return ENOERR;
 }
-
+//注册字符设备,此函数之后设备将支持VFS访问
 static INT32 CharDriverRegisterOperate(mtd_partition *newNode,
                                        const partition_param *param,
                                        UINT32 partitionNum)
@@ -332,7 +333,7 @@ static INT32 CharDriverRegisterOperate(mtd_partition *newNode,
     }
     return ENOERR;
 }
-
+//注销块设备
 static INT32 BlockDriverUnregister(mtd_partition *node)
 {
     INT32 ret;
@@ -348,7 +349,7 @@ static INT32 BlockDriverUnregister(mtd_partition *node)
     }
     return ENOERR;
 }
-
+//注销字符设备
 static INT32 CharDriverUnregister(mtd_partition *node)
 {
     INT32 ret;

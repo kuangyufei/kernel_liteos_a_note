@@ -46,10 +46,10 @@ extern void lsfd(void);
 extern void set_sd_sync_fn(int (*sync_fn)(int));
 
 extern struct Vnode *files_get_openfile(int fd);
-
-#define READ_OP                 4
-#define WRITE_OP                2
-#define EXEC_OP                 1
+//访问模式
+#define READ_OP                 4	//读操作
+#define WRITE_OP                2	//写操作
+#define EXEC_OP                 1	//运行操作
 #define UGO_NUMS                3
 #define MODE_IXUGO              0111
 #define USER_MODE_SHIFT         6

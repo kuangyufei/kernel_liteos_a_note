@@ -279,16 +279,16 @@ static char *NextName(char *pos, uint8_t *len)
     *len = pos - name;
     return name;
 }
-
+//处理前的准备
 static int PreProcess(const char *originPath, struct Vnode **startVnode, char **path)
 {
     int ret;
     char *absolutePath = NULL;
-
+	//通过相对路径找到绝对路径
     ret = vfs_normalize_path(NULL, originPath, &absolutePath);
-    if (ret == LOS_OK) {
-        *startVnode = g_rootVnode;
-        *path = absolutePath;
+    if (ret == LOS_OK) {//成功
+        *startVnode = g_rootVnode;//根节点为开始节点
+        *path = absolutePath;//返回绝对路径
     }
 
     return ret;
@@ -324,7 +324,7 @@ static int ProcessVirtualVnode(struct Vnode *parent, uint32_t flags, struct Vnod
     }
     return ret;
 }
-
+//一级一级向下找
 static int Step(char **currentDir, struct Vnode **currentVnode, uint32_t flags)
 {
     int ret;
@@ -373,21 +373,21 @@ STEP_FINISH:
 
     return ret;
 }
-
+//查找节点
 int VnodeLookup(const char *path, struct Vnode **result, uint32_t flags)
 {
     struct Vnode *startVnode = NULL;
     char *normalizedPath = NULL;
 
 
-    int ret = PreProcess(path, &startVnode, &normalizedPath);
+    int ret = PreProcess(path, &startVnode, &normalizedPath);//找到根节点和绝对路径
     if (ret != LOS_OK) {
         PRINT_ERR("[VFS]lookup failed, invalid path=%s err = %d\n", path, ret);
         goto OUT_FREE_PATH;
     }
 
-    if (normalizedPath[0] == '/' && normalizedPath[1] == '\0') {
-        *result = g_rootVnode;
+    if (normalizedPath[0] == '/' && normalizedPath[1] == '\0') {//如果是根节点 
+        *result = g_rootVnode;//啥也不说了,还找啥呀,直接返回根节点
         free(normalizedPath);
         return LOS_OK;
     }
@@ -395,11 +395,11 @@ int VnodeLookup(const char *path, struct Vnode **result, uint32_t flags)
     char *currentDir = normalizedPath;
     struct Vnode *currentVnode = startVnode;
 
-    while (currentDir && *currentDir != '\0') {
-        ret = Step(&currentDir, &currentVnode, flags);
-        if (*currentDir == '\0') {
+    while (currentDir && *currentDir != '\0') {//循环一直找到结尾
+        ret = Step(&currentDir, &currentVnode, flags);//一级一级向下找
+        if (*currentDir == '\0') {//找到最后了,返回目标节点或父虚拟节点
             // return target or parent vnode as result
-            *result = currentVnode;
+            *result = currentVnode;//找到了
         } else if (VfsVnodePermissionCheck(currentVnode, EXEC_OP)) {
             ret = -EACCES;
             goto OUT_FREE_PATH;
@@ -517,23 +517,23 @@ int VnodeClosedir(struct Vnode *vnode, struct fs_dirent_s *dir)
     (void)dir;
     return LOS_OK;
 }
-
+//创建节点
 int VnodeCreate(struct Vnode *parent, const char *name, int mode, struct Vnode **vnode)
 {
     int ret;
     struct Vnode *newVnode = NULL;
 
-    ret = VnodeAlloc(NULL, &newVnode);
+    ret = VnodeAlloc(NULL, &newVnode);//分配一个节点
     if (ret != 0) {
         return -ENOMEM;
     }
 
-    newVnode->type = VNODE_TYPE_CHR;
-    newVnode->vop = parent->vop;
-    newVnode->fop = parent->fop;
-    newVnode->data = NULL;
-    newVnode->parent = parent;
-    newVnode->originMount = parent->originMount;
+    newVnode->type = VNODE_TYPE_CHR;//字符设备
+    newVnode->vop = parent->vop;//继承父节点 vop
+    newVnode->fop = parent->fop;//继承父节点 fop
+    newVnode->data = NULL;		//默认值
+    newVnode->parent = parent;	//指定父节点
+    newVnode->originMount = parent->originMount; //挂载点
     newVnode->uid = parent->uid;
     newVnode->gid = parent->gid;
     newVnode->mode = mode;
@@ -541,21 +541,21 @@ int VnodeCreate(struct Vnode *parent, const char *name, int mode, struct Vnode *
     *vnode = newVnode;
     return 0;
 }
-
+//设备初始化,设备结点：/dev目录下，对应一个设备，如/dev/mmcblk0
 int VnodeDevInit()
 {
     struct Vnode *devNode = NULL;
     struct Mount *devMount = NULL;
 
-    int retval = VnodeLookup("/dev", &devNode, V_CREATE | V_CACHE | V_DUMMY);
+    int retval = VnodeLookup("/dev", &devNode, V_CREATE | V_CACHE | V_DUMMY);//通过名称找到索引节点
     if (retval != LOS_OK) {
         PRINT_ERR("VnodeDevInit failed error %d\n", retval);
         return retval;
     }
-    devNode->mode = DEV_VNODE_MODE | S_IFDIR;
-    devNode->type = VNODE_TYPE_DIR;
+    devNode->mode = DEV_VNODE_MODE | S_IFDIR; // 40755(chmod 755)
+    devNode->type = VNODE_TYPE_DIR;	//设备根节点目录
 
-    devMount = MountAlloc(devNode, NULL);
+    devMount = MountAlloc(devNode, NULL);//分配一个mount节点
     if (devMount == NULL) {
         PRINT_ERR("VnodeDevInit failed mount point alloc failed.\n");
         return -ENOMEM;
@@ -610,7 +610,7 @@ int VnodeDevLookup(struct Vnode *parentVnode, const char *path, int len, struct 
     /* dev node must in pathCache. */
     return -ENOENT;
 }
-
+//虚拟设备 默认节点操作
 static struct VnodeOps g_devfsOps = {
     .Lookup = VnodeDevLookup,
     .Getattr = VnodeGetattr,

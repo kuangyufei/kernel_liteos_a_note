@@ -202,6 +202,8 @@ static int fatfs_sync(unsigned long mountflags, FATFS *fs)
 #endif
     return 0;
 }
+//哈希值比较函数,返回int
+//typedef int VfsHashCmp(struct Vnode *vnode, void *arg);
 int fatfs_hash_cmp(struct Vnode *vp, void *arg)
 {
     DIR_FILE *dfp_target = (DIR_FILE *)arg;
@@ -211,7 +213,7 @@ int fatfs_hash_cmp(struct Vnode *vp, void *arg)
               dfp_target->f_dir.dptr != dfp->f_dir.dptr ||
               dfp_target->fno.sclst != dfp->fno.sclst;
 }
-
+//生成hash值的过程
 static DWORD fatfs_hash(QWORD sect, DWORD dptr, DWORD sclst)
 {
     DWORD hash = FNV1_32_INIT;
@@ -236,7 +238,7 @@ static mode_t fatfs_get_mode(BYTE attribute, mode_t fs_mode)
     }
     return fs_mode;
 }
-
+// fat文件系统对 Lookup 接口的实现
 int fatfs_lookup(struct Vnode *parent, const char *path, int len, struct Vnode **vpp)
 {
     struct Vnode *vp = NULL;
