@@ -42,7 +42,7 @@
 #include "unistd.h"
 #include "fs/vfs_util.h"
 #include "fs/vnode.h"
-/*
+/********************************************************
 * VFS是Virtual File System（虚拟文件系统）的缩写，它不是一个实际的文件系统，而是一个异构文件系统之上的软件粘合层，
 * 为用户提供统一的类Unix文件操作接口。
 
@@ -56,9 +56,8 @@
 * 	统一调用（标准）。
 
 * https://weharmony.gitee.io/openharmony/zh-cn/device-dev/kernel/VFS.html
-*/
-//只能调用一次，多次调用将会造成文件系统异常。
-void los_vfs_init(void)
+********************************************************/
+void los_vfs_init(void)//只能调用一次，多次调用将会造成文件系统异常
 {
     uint retval;
     static bool g_vfs_init = false;
@@ -90,14 +89,14 @@ void los_vfs_init(void)
         return;
     }
 
-    retval = VnodeDevInit();
+    retval = VnodeDevInit();//设备节点初始化
     if (retval != LOS_OK) {
         PRINT_ERR("los_vfs_init VnodeDevInit failed error %d\n", retval);
         return;
     }
  
 #ifdef LOSCFG_KERNEL_VM
-    retval = init_file_mapping();
+    retval = init_file_mapping();//初始化文件映射
     if (retval != LOS_OK) {
         PRINT_ERR("Page cache file map init failed\n");
         return;

@@ -56,7 +56,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-
 struct VnodeOps fatfs_vops; /* forward define */
 struct file_operations_vfs fatfs_fops;
 
@@ -71,7 +70,7 @@ struct file_operations_vfs fatfs_fops;
 #define FTIME_DATE_OFFSET 16 /* date offset in dword */
 #define SEC_MULTIPLIER 2
 #define YEAR_OFFSET 80 /* Year start from 1980 in FATFS, while start from 1900 in struct tm */
-
+// 结果转化 fat 转 vfs
 int fatfs_2_vfs(int result)
 {
     int status = ENOERR;
@@ -452,7 +451,7 @@ ERROR_FREE:
 ERROR_EXIT:
     return -ret;
 }
-
+//打开 fat 格式文件
 int fatfs_open(struct file *filep)
 {
     struct Vnode *vp = filep->f_vnode;

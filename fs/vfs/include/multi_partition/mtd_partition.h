@@ -71,6 +71,13 @@ CFI Flash
     CFI接口＝JEDEC接口＝Parallel接口 = 并行接口
     特点在于支持的容量更大，读写速度更快。
     缺点由于拥有独立的数据线和地址总线，会浪费电路电子设计上的更多资源。
+    
+SPI Flash : 每次传输一个bit位的数据，传输速度慢，但是价格便宜，任意地址读数据，擦除按扇区进行
+CFI Flash : 每次传输一个字节 ，速度快，任意地址读数据，擦除按扇区进行
+Nand Flash：芯片操作是以“块”为基本单位.NAND闪存的块比较小，一般是8KB，然后每块又分成页，
+	页大小一般是512字节.要修改NandFlash芯片中一个字节，必须重写整个数据块，读和写都是按照扇区进行的。
+	
+参考:https://blog.csdn.net/zhejfl/article/details/78544796	
 ***************************************************************/
 
 #define SPIBLK_NAME  "/dev/spinorblk"	//nor spi flash 块设备
@@ -80,8 +87,6 @@ CFI Flash
 #define NANDCHR_NAME "/dev/nandchr"		//nand flash 字符设备
 
 /***************************************************************
-https://blog.csdn.net/lwj103862095/article/details/21545791
-
 MTD，Memory Technology Device即内存技术设备，在Linux内核中，引入MTD层为
 NOR FLASH和NAND FLASH设备提供统一接口。MTD将文件系统与底层FLASH存储器进行了隔离。
 
@@ -98,8 +103,8 @@ read、write API没有直接到块设备层，而是直接到文件系统层，�
 MTD设备既非块设备也不是字符设备，但可以同时提供字符设备和块设备接口来操作它。
 MTD设备通常可分为四层 
 这四层从上到下依次是：设备节点、MTD设备层、MTD原始设备层和硬件驱动层。
+参考: https://blog.csdn.net/lwj103862095/article/details/21545791
 ***************************************************************/
-
 typedef struct mtd_node {//通过mknod在/dev子目录下建立MTD块设备节点（主设备号为31）和MTD字符设备节点（主设备号为90） 
 	UINT32 start_block;	//开始块索引
     UINT32 end_block;	//结束块索引
@@ -113,7 +118,7 @@ typedef struct mtd_node {//通过mknod在/dev子目录下建立MTD块设备节�
     UINT32 user_num;		//使用数量
 } mtd_partition;
 
-typedef struct par_param {//分区参数描述符,一个分区既可支持按块访问也可以支持按字符访问,只要有驱动程序就可
+typedef struct par_param {//分区参数描述符,一个分区既可支持按块访问也可以支持按字符访问,只要有驱动程序就阔以
     mtd_partition *partition_head;	//首个分区,其他分区都挂在.node_info节点上
     struct MtdDev *flash_mtd;	//flash设备描述符,属于硬件驱动层
     const struct block_operations *flash_ops;	//块设备的操作方法

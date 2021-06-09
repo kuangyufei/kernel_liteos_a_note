@@ -48,15 +48,28 @@
 pthread_mutex_t g_mtdPartitionLock = PTHREAD_MUTEX_INITIALIZER;
 
 //通常在NorFlash上会选取jffs及jffs2文件系统
+/*
+* GCC使用__attribute__关键字来描述函数，变量和数据类型的属性，用于编译器对源代码的优化
+* 对外部目标文件的符号引用在目标文件被最终链接成可执行文件时，它们须要被正确决议，如果没有找到该符号的定义，
+链接器就会报符号未定义错误，这种被称为强引用（Strong Reference）。
+
+* 与之相对应还有一种弱引用（Weak Reference），在处理弱引用时，如果该符号有定义，则链接器将该符号的引用决议；
+如果该符号未被定义，则链接器对于该引用不报错。
+
+* 链接器处理强引用和弱引用的过程几乎一样，只是对于未定义的弱引用，链接器不认为它是一个错误。一般对于未定义的弱引用，
+链接器默认其为0，或者是一个特殊的值，以便于程序代码能够识别。
+* 在GCC中，我们可以通过使用"__attribute__((weakref("..."))"这个扩展关键字来声明对一个外部函数的引用为弱引用，
+参考: https://www.cnblogs.com/pengdonglin137/p/3615345.html
+*/
 static VOID YaffsLockInit(VOID) __attribute__((weakref("yaffsfs_OSInitialisation")));
 static VOID YaffsLockDeinit(VOID) __attribute__((weakref("yaffsfs_OsDestroy")));
 static INT32 Jffs2LockInit(VOID) __attribute__((weakref("Jffs2MutexCreate")));//弱引用 Jffs2MutexCreate
 static VOID Jffs2LockDeinit(VOID) __attribute__((weakref("Jffs2MutexDelete")));
 
-partition_param *g_nandPartParam = NULL;
-partition_param *g_spinorPartParam = NULL;
-mtd_partition *g_spinorPartitionHead = NULL;
-mtd_partition *g_nandPartitionHead = NULL;
+partition_param *g_nandPartParam = NULL;	//nand flash 分区参数
+partition_param *g_spinorPartParam = NULL;	//nor flash 分区参数
+mtd_partition *g_spinorPartitionHead = NULL;	//spi nor flash 首个分区
+mtd_partition *g_nandPartitionHead = NULL;		//nand flash 首个分区
 
 #define RWE_RW_RW 0755 //文件读/写/执权限,chmod 755
 
@@ -75,10 +88,10 @@ mtd_partition *GetSpinorPartitionHead(VOID)
     return g_spinorPartitionHead;
 }
 
-
+//nand flash 参数初始化,本函数只会被调用一次
 static VOID MtdNandParamAssign(partition_param *nandParam, const struct MtdDev *nandMtd)
 {
-    LOS_ListInit(&g_nandPartitionHead->node_info);
+    LOS_ListInit(&g_nandPartitionHead->node_info);//初始化全局链表
     /*
      * If the user do not want to use block mtd or char mtd ,
      * you can change the NANDBLK_NAME or NANDCHR_NAME to NULL.
@@ -86,19 +99,19 @@ static VOID MtdNandParamAssign(partition_param *nandParam, const struct MtdDev *
     nandParam->flash_mtd = (struct MtdDev *)nandMtd;
     nandParam->flash_ops = GetDevNandOps();	//获取块设备操作方法
     nandParam->char_ops = GetMtdCharFops(); //获取字符设备操作方法
-    nandParam->blockname = NANDBLK_NAME;
-    nandParam->charname = NANDCHR_NAME;
-    nandParam->partition_head = g_nandPartitionHead;
-    nandParam->block_size = nandMtd->eraseSize;
+    nandParam->blockname = NANDBLK_NAME;	// /dev/nandblk
+    nandParam->charname = NANDCHR_NAME;		// /dev/nandchr
+    nandParam->partition_head = g_nandPartitionHead;//头分区节点
+    nandParam->block_size = nandMtd->eraseSize;//4K
 }
-
+//反初始化
 static VOID MtdDeinitNandParam(VOID)
 {
     if (YaffsLockDeinit != NULL) {
         YaffsLockDeinit();
     }
 }
-
+//nand flash 初始化
 static partition_param *MtdInitNandParam(partition_param *nandParam)
 {
     struct MtdDev *nandMtd = GetMtd("nand");
@@ -107,7 +120,7 @@ static partition_param *MtdInitNandParam(partition_param *nandParam)
     }
     if (nandParam == NULL) {
         if (YaffsLockInit != NULL) {
-            YaffsLockInit();
+            YaffsLockInit(); //加锁
         }
         nandParam = (partition_param *)zalloc(sizeof(partition_param));
         if (nandParam == NULL) {
@@ -126,10 +139,10 @@ static partition_param *MtdInitNandParam(partition_param *nandParam)
 
     return nandParam;
 }
-
+//nor flash 初始化
 static VOID MtdNorParamAssign(partition_param *spinorParam, const struct MtdDev *spinorMtd)
 {
-    LOS_ListInit(&g_spinorPartitionHead->node_info);
+    LOS_ListInit(&g_spinorPartitionHead->node_info);//初始化全局链表
     /*
      * If the user do not want to use block mtd or char mtd ,
      * you can change the SPIBLK_NAME or SPICHR_NAME to NULL.
@@ -156,7 +169,7 @@ static VOID MtdDeinitSpinorParam(VOID)
         Jffs2LockDeinit();
     }
 }
-
+//spi nor flash 参数初始化
 static partition_param *MtdInitSpinorParam(partition_param *spinorParam)
 {
 #ifndef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
