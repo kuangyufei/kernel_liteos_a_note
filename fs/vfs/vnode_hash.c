@@ -123,7 +123,7 @@ void VfsHashRemove(struct Vnode *vnode)
     LOS_ListDelete(&vnode->hashEntry);
     (void)LOS_MuxUnlock(&g_vnodeHashMux);
 }
-
+//插入哈希表
 int VfsHashInsert(struct Vnode *vnode, uint32_t hash)
 {
     if (vnode == NULL) {

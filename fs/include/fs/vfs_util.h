@@ -33,8 +33,8 @@
 
 #include "los_list.h"
 
-typedef LOS_DL_LIST LIST_HEAD;
-typedef LOS_DL_LIST LIST_ENTRY;
+typedef LOS_DL_LIST LIST_HEAD;	//这是要向 linux学习吗? : ) 
+typedef LOS_DL_LIST LIST_ENTRY; 
 
 #define FNV1_32_INIT ((uint32_t) 33554467UL)
 #define FNV1_64_INIT ((uint64_t) 0xcbf29ce484222325ULL)
