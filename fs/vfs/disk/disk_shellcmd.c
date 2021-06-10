@@ -37,7 +37,25 @@
 #include "shcmd.h"
 #include "shell.h"
 #include "fs/path_cache.h"
+/*
+* partinfo命令用于查看系统识别的硬盘，SD卡多分区信息
+* 参数			参数说明				取值范围
+* dev_inodename	要查看的分区名字			合法的分区名
 
+* 使用实例: partinfo /dev/mmcblk0p0
+* 输出说明
+OHOS # partinfo /dev/mmcblk0p0
+
+partinfo:
+disk_id				:	0
+part_id in system	:	0
+part no in disk		:	0
+part no in mbr		:	1
+part filesystem		:	0C
+part dev name		:	mmcblk0p0
+part sec start		:	8192
+part sec count		:	31108096
+*/
 INT32 osShellCmdPartInfo(INT32 argc, const CHAR **argv)
 {
     struct Vnode *node = NULL;
@@ -45,7 +63,7 @@ INT32 osShellCmdPartInfo(INT32 argc, const CHAR **argv)
     const CHAR *str = "/dev";
     int ret;
 
-    if ((argc != 1) || (strncmp(argv[0], str, strlen(str)) != 0)) {
+    if ((argc != 1) || (strncmp(argv[0], str, strlen(str)) != 0)) {//参数必须是 /dev 开头
         PRINTK("Usage  :\n");
         PRINTK("        partinfo <dev_vnodename>\n");
         PRINTK("        dev_vnodename : the name of dev\n");
@@ -56,7 +74,7 @@ INT32 osShellCmdPartInfo(INT32 argc, const CHAR **argv)
         return -LOS_NOK;
     }
     VnodeHold();
-    ret = VnodeLookup(argv[0], &node, 0);
+    ret = VnodeLookup(argv[0], &node, 0);//通过设备名称找到索引节点
     if (ret < 0) {
         PRINT_ERR("no part found\n");
         VnodeDrop();
@@ -64,7 +82,7 @@ INT32 osShellCmdPartInfo(INT32 argc, const CHAR **argv)
         return -LOS_NOK;
     }
 
-    part = los_part_find(node);
+    part = los_part_find(node);//通过索引节点找到分区信息
     VnodeDrop();
     show_part(part);
 

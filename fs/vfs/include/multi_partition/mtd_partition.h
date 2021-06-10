@@ -87,7 +87,23 @@ Nand Flash：芯片操作是以“块”为基本单位.NAND闪存的块比较�
 #define NANDCHR_NAME "/dev/nandchr"		//nand flash 字符设备
 
 /***************************************************************
-MTD，Memory Technology Device即内存技术设备，在Linux内核中，引入MTD层为
+存储器技术设备（英语：Memory Technology Device，缩写为 MTD），是Linux系统中设备文件系统的一个类别，
+主要用于闪存的应用，是一种闪存转换层（Flash Translation Layer，FTL）。创造MTD子系统的主要目的是提供
+一个介于闪存硬件驱动程序与高端应用程序之间的抽象层。
+因为具备以下特性，所以 MTD 设备和硬盘相较之下，处理起来要复杂许多：
+
+* 具有 eraseblocks 的特微，而不是像硬盘一样使用集群。
+* eraseblocks (32KiB ~ 128KiB) 跟硬盘的 sector size（512 到 1024 bytes）比起来要大很多。
+* 操作上主要分作三个动作： 从 eraseblock 读取、写入 eraseblock 、还有就是清除 eraseblock 。
+* 坏掉的 eraseblocks 无法隐藏，需要软件加以处理。
+* eraseblocks 的寿命大约会在 104 到 105 的清除动作之后结束。
+像U盘、多媒体记忆卡（MMC）、SD卡、CF卡等其他流行的可移动存储器要和MTD区分开来，虽然它们也叫"flash"，但它们不是使用MTD技术的存储器[1]。
+
+[1] http://www.linux-mtd.infradead.org/faq/general.html#L_ext2_mtd
+http://www.linux-mtd.infradead.org/
+
+
+在Linux内核中，引入MTD层为
 NOR FLASH和NAND FLASH设备提供统一接口。MTD将文件系统与底层FLASH存储器进行了隔离。
 
 字符设备和块设备的区别在于前者只能被顺序读写，后者可以随机访问；同时，两者读写数据的基本单元不同。
@@ -109,9 +125,9 @@ typedef struct mtd_node {//通过mknod在/dev子目录下建立MTD块设备节�
 	UINT32 start_block;	//开始块索引
     UINT32 end_block;	//结束块索引
     UINT32 patitionnum;	//分区编号
-    CHAR *blockdriver_name;	//块设备驱动名称
-    CHAR *chardriver_name;	//字符设备驱动名称
-    CHAR *mountpoint_name;	//挂载点名称
+    CHAR *blockdriver_name;	//块设备驱动名称 例如: /dev/spinorblk0p0
+    CHAR *chardriver_name;	//字符设备驱动名称	例如: /dev/nandchr0p2
+    CHAR *mountpoint_name;	//挂载点名称	例如: /
     VOID *mtd_info; /* Driver used by a partition *///分区使用的驱动程序
     LOS_DL_LIST node_info;//双循环节点,挂在首个分区节点上
     LosMux lock;			//每个分区都有自己的互斥量

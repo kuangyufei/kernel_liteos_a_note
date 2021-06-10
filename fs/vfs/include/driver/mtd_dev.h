@@ -62,13 +62,13 @@ struct MtdNorDev {//一个block是4K，即:文件系统中1个块是由连续的
     unsigned long blockEnd;		//结束块索引
 };
 
-struct MtdDev {//flash描述符
+struct MtdDev {//flash MTD 层 描述符
     VOID *priv;
     UINT32 type;
 
     UINT64 size;
     UINT32 eraseSize;//4K, 跟PAGE_CACHE_SIZE对应
-
+	//三个主要动作
     int (*erase)(struct MtdDev *mtd, UINT64 start, UINT64 len, UINT64 *failAddr);//擦除flash操作
     int (*read)(struct MtdDev *mtd, UINT64 start, UINT64 len, const char *buf);//读操作
     int (*write)(struct MtdDev *mtd, UINT64 start, UINT64 len, const char *buf);//写操作

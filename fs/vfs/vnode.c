@@ -373,7 +373,7 @@ STEP_FINISH:
 
     return ret;
 }
-//查找节点
+//通过路径 查找索引节点.路径和节点是 N:1的关系, 硬链接 
 int VnodeLookup(const char *path, struct Vnode **result, uint32_t flags)
 {
     struct Vnode *startVnode = NULL;

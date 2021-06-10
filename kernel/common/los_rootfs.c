@@ -132,11 +132,11 @@ STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize)//在EMMC介
             PRINT_ERR("Failed to add mmc userdata partition!\n");
         }
         LOS_Msleep(10); /* waiting for device identification */
-        INT32 diskId = los_alloc_diskid_byname(node_name);
+        INT32 diskId = los_alloc_diskid_byname(node_name);//通过节点名称分配磁盘ID
         if (diskId < 0) {
             PRINT_ERR("Failed to alloc disk %s!\n", node_name);
             return NULL;
-        }
+        }//磁盘初始化
         if (los_disk_init(node_name, mmc_block_get_bops(block), (void *)block, diskId, emmc) != ENOERR) {
             PRINT_ERR("Failed to init emmc disk!\n");
             return NULL;

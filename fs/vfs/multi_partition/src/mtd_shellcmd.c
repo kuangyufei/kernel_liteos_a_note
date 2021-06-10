@@ -36,24 +36,39 @@
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 #include "shcmd.h"
+/***********************************************************
+*	partition命令用来查看flash分区信息
+*	partition [nand / spinor]
 
+参数		参数说明						取值范围
+nand	显示nand flash分区信息。			N/A
+spinor	显示spinor flash分区信息。			N/A
+
+partition命令用来查看flash分区信息。
+仅当使能yaffs文件系统时才可以查看nand flash分区信息，
+使能jffs或romfs文件系统时可以查看spinor flash分区信息。
+
+举例：partition spinor
+https://weharmony.gitee.io/openharmony/zh-cn/device-dev/kernel/partition.html
+*
+***********************************************************/
 INT32 osShellCmdPartitionShow(INT32 argc, const CHAR **argv)
 {
     mtd_partition *node = NULL;
     const CHAR *fs = NULL;
     partition_param *param = NULL;
 
-    if (argc != 1) {
+    if (argc != 1) {//只接受一个参数
         PRINT_ERR("partition [nand/spinor]\n");
         return -EPERM;
     } else {
         fs = argv[0];
     }
 
-    if (strcmp(fs, "nand") == 0) {
-        param = GetNandPartParam();
-    } else if (strcmp(fs, "spinor") == 0) {
-        param = GetSpinorPartParam();
+    if (strcmp(fs, "nand") == 0) { // #partition nand
+        param = GetNandPartParam(); //获取 nand flash 信息
+    } else if (strcmp(fs, "spinor") == 0) { // #partition spinor
+        param = GetSpinorPartParam(); //获取 spi nor flash 信息
     } else {
         PRINT_ERR("not supported!\n");
         return -EINVAL;

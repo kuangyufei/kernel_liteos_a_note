@@ -77,7 +77,7 @@ OpenHarmony内核支持硬盘多分区，可以在主分区以及逻辑分区上
 #define MBR_PRIMARY_PART_NUM 4
 #define JUMP_CODE "\xEB\xFE\x90"
 
-/* Partiton type */
+/* Partiton type */ //分区类型
 #define FAT12                  0x01 /* FAT12 as primary partition in first physical 32MB */
 #define FAT16                  0x04 /* FAT16 with less than 65536 sectors(32MB) */
 #define EXTENDED_PARTITION_CHS  0x05
@@ -87,13 +87,13 @@ OpenHarmony内核支持硬盘多分区，可以在主分区以及逻辑分区上
 #define EXTENDED_PARTITION_LBA 0x0F
 #define GPT_PROTECTIVE_MBR     0xEE
 
-/* volume boot record type */
+/* volume boot record type */ //卷引导记录类型
 #define VBR_FAT                0
 #define VBR_BS_NOT_FAT         2
 #define VBR_NOT_BS             3
 #define VBR_DISK_ERR           4
 
-/* Limit and boundary */
+/* Limit and boundary */	//限制和边界
 #define FAT_MAX_CLUSTER_SIZE     64  /* (sectors) */
 #define FAT32_MAX_CLUSTER_SIZE   128 /* (sectors) */
 #define FAT32_ENTRY_SIZE         4 /* (bytes) */
@@ -102,12 +102,12 @@ OpenHarmony内核支持硬盘多分区，可以在主分区以及逻辑分区上
 #define SFD_START_SECTOR         63
 #define MAX_BLOCK_SIZE         32768 /* (sectors) */
 
-/* Sector */
-#define FAT32_RESERVED_SECTOR  32
+/* Sector */ //扇区
+#define FAT32_RESERVED_SECTOR  32 
 #define FAT_RESERVED_SECTOR    1
 
 #define DIR_NAME_LEN           11
-#define DIR_READ_COUNT         7
+#define DIR_READ_COUNT         7 
 
 #define VOLUME_CHAR_LENGTH     4
 

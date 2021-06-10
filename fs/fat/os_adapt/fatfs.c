@@ -1606,7 +1606,7 @@ static int fatfs_erase(los_part *part, int option)
 
     return opt;
 }
-
+//设置FAT分区信息
 static int fatfs_set_part_info(los_part *part)
 {
     los_disk *disk = NULL;
@@ -1623,16 +1623,16 @@ static int fatfs_set_part_info(los_part *part)
         if (buf == NULL) {
             return -ENOMEM;
         }
-        (void)memset_s(buf, disk->sector_size, 0, disk->sector_size);
+        (void)memset_s(buf, disk->sector_size, 0, disk->sector_size);//第一个扇区是描述磁盘信息
         ret = los_disk_read(part->disk_id, buf, 0, 1, TRUE); /* TRUE when not reading large data */
         if (ret < 0) {
             free(buf);
             return -EIO;
         }
-        part->sector_start = LD_DWORD_DISK(&buf[PAR_OFFSET + PAR_START_OFFSET]);
-        part->sector_count = LD_DWORD_DISK(&buf[PAR_OFFSET + PAR_COUNT_OFFSET]);
-        part->part_no_mbr = 1;
-        part->filesystem_type = buf[PAR_OFFSET + PAR_TYPE_OFFSET];
+        part->sector_start = LD_DWORD_DISK(&buf[PAR_OFFSET + PAR_START_OFFSET]);//开始扇区
+        part->sector_count = LD_DWORD_DISK(&buf[PAR_OFFSET + PAR_COUNT_OFFSET]);//扇区大小
+        part->part_no_mbr = 1;	//主分区编号
+        part->filesystem_type = buf[PAR_OFFSET + PAR_TYPE_OFFSET]; //文件系统类型
 
         free(buf);
     }
@@ -1891,7 +1891,7 @@ ERROR_UNLOCK:
 ERROR_OUT:
     return -fatfs_2_vfs(result);
 }
-
+//回收节点
 int fatfs_reclaim(struct Vnode *vp)
 {
     free(vp->data);
