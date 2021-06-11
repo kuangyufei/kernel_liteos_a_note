@@ -78,11 +78,11 @@ GPT，即Globally Unique Identifier Partition Table Format，全局唯一标识�
 
 ***********************************************/
 #define SYS_MAX_DISK                5	//最大支持磁盘数量
-#define MAX_DIVIDE_PART_PER_DISK    16	//磁盘最大支持逻辑分区数
-#define MAX_PRIMARY_PART_PER_DISK   4	//磁盘最大支持主分区数
+#define MAX_DIVIDE_PART_PER_DISK    16	//每个磁盘最大支持逻辑分区数
+#define MAX_PRIMARY_PART_PER_DISK   4	//每个磁盘最大支持主分区数
 #define SYS_MAX_PART                (SYS_MAX_DISK * MAX_DIVIDE_PART_PER_DISK)	//系统最大支持分区数,80个分区
 #define DISK_NAME                   255	//磁盘名称长度上限
-#define DISK_MAX_SECTOR_SIZE        512	//扇区大小,字节
+#define DISK_MAX_SECTOR_SIZE        512	//扇区大小,最小不能小于 512
 
 
 #define PAR_OFFSET           446     /* MBR: Partition table offset (2) */
@@ -98,7 +98,7 @@ GPT，即Globally Unique Identifier Partition Table Format，全局唯一标识�
 #define PAR_TABLE_SIZE       16
 #define EXTENDED_PAR         0x0F 	//扩展分区
 #define EXTENDED_8G          0x05	//
-#define EMMC                 0xEC	//eMMC=NAND闪存+闪存控制芯片+标准接口封装
+#define EMMC                 0xEC	//eMMC=NAND闪存+闪存控制芯片+标准接口封装 https://www.huaweicloud.com/articles/bcdefd0d9da5de83d513123ef3aabcf0.html
 #define OTHERS               0x01    /* sdcard or umass */
 
 #define BS_FS_TYPE_MASK      0xFFFFFF
@@ -243,15 +243,15 @@ struct partition_info {//分区信息
 };
 
 
-struct disk_divide_info {//磁盘分区描述符,
-    UINT64 sector_count;	//扇区数量
+struct disk_divide_info {//每个磁盘分区总信息
+    UINT64 sector_count;	//磁盘扇区总大小
     UINT32 sector_size;		//扇区大小,一般是512字节
-    UINT32 part_count;		//分区数量 需 < MAX_DIVIDE_PART_PER_DISK + MAX_PRIMARY_PART_PER_DISK
+    UINT32 part_count;		//当前分区数量 需 < MAX_DIVIDE_PART_PER_DISK + MAX_PRIMARY_PART_PER_DISK
     /*
      * The primary partition place should be reversed and set to 0 in case all the partitions are
      * logical partition (maximum 16 currently). So the maximum part number should be 4 + 16.
      */ //如果所有分区都是逻辑分区（目前最多16个），则主分区位置应颠倒并设置为0。所以最大分区号应该是4+16。
-    struct partition_info part[MAX_DIVIDE_PART_PER_DISK + MAX_PRIMARY_PART_PER_DISK];//分区数组,记录每个分区的详细情况
+    struct partition_info part[MAX_DIVIDE_PART_PER_DISK + MAX_PRIMARY_PART_PER_DISK];//分区数组,记录每个分区的详细情况,默认20个
 };
 
 /**

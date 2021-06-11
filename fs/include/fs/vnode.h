@@ -37,8 +37,8 @@
 #include "fs/vfs_util.h"
 #include "fs/path_cache.h"
 
-#define VNODE_FLAG_MOUNT_NEW 1
-#define VNODE_FLAG_MOUNT_ORIGIN 2
+#define VNODE_FLAG_MOUNT_NEW 1		//新装载点
+#define VNODE_FLAG_MOUNT_ORIGIN 2	//原装载点
 #define DEV_PATH_LEN 5
 /******************************************************************
 Linux 链接分两种，一种被称为硬链接（Hard Link），另一种被称为符号链接（Symbolic Link）。默认情况下，ln 命令产生硬链接。
@@ -108,7 +108,7 @@ struct Vnode {
     struct Vnode *parent;               /* parent vnode */	//父节点
     struct VnodeOps *vop;               /* vnode operations */	//节点虚拟操作
     struct file_operations_vfs *fop;    /* file operations */	//虚拟 <--> 真实的文件系统操作
-    void *data;                         /* private data */		//私有数据
+    void *data;                         /* private data */		//私有数据 (drv_data)
     uint32_t flag;                      /* vnode flag */		//节点标签
     LIST_ENTRY hashEntry;               /* list entry for bucket in hash table */ //通过它挂入哈希表 g_vnodeHashEntrys[i], i:[0,g_vnodeHashMask]
     LIST_ENTRY actFreeEntry;            /* vnode active/free list entry */	//通过本节点挂到空闲链表和使用链表上

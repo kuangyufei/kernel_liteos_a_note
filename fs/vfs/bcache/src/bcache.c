@@ -77,9 +77,9 @@ VOID BcacheAnalyse(UINT32 level)
 #endif
 }
 
-#ifdef LOSCFG_FS_FAT_CACHE_SYNC_THREAD
+#ifdef LOSCFG_FS_FAT_CACHE_SYNC_THREAD //
 
-UINT32 g_syncThreadPrio = CONFIG_FS_FAT_SYNC_THREAD_PRIO;
+UINT32 g_syncThreadPrio = CONFIG_FS_FAT_SYNC_THREAD_PRIO; //同步任务优先级
 UINT32 g_dirtyRatio = CONFIG_FS_FAT_DIRTY_RATIO;
 UINT32 g_syncInterval = CONFIG_FS_FAT_SYNC_INTERVAL;
 
@@ -89,12 +89,12 @@ VOID LOS_SetDirtyRatioThreshold(UINT32 dirtyRatio)
         g_dirtyRatio = dirtyRatio;
     }
 }
-
+//设置同步间隔,5秒
 VOID LOS_SetSyncThreadInterval(UINT32 interval)
 {
     g_syncInterval = interval;
 }
-
+//设置同步任务优先级,10
 INT32 LOS_SetSyncThreadPrio(UINT32 prio, const CHAR *name)
 {
     INT32 ret = VFS_ERROR;
@@ -948,7 +948,7 @@ INT32 BlockCacheWrite(OsBcache *bc, const UINT8 *buf, UINT32 *len, UINT64 sector
     *len -= size;
     return ret;
 }
-
+//块缓存同步
 INT32 BlockCacheSync(OsBcache *bc)
 {
     return BcacheSync(bc);
@@ -1034,7 +1034,7 @@ static VOID BcacheSyncThread(UINT32 id)
         msleep(g_syncInterval);
     }
 }
-
+//块缓存同步任务初始化,开了个内核任务.
 VOID BcacheSyncThreadInit(OsBcache *bc, INT32 id)
 {
     UINT32 ret;
@@ -1044,7 +1044,7 @@ VOID BcacheSyncThreadInit(OsBcache *bc, INT32 id)
     appTask.pfnTaskEntry = (TSK_ENTRY_FUNC)BcacheSyncThread;
     appTask.uwStackSize = BCACHE_STATCK_SIZE;
     appTask.pcName = "bcache_sync_task";
-    appTask.usTaskPrio = g_syncThreadPrio;
+    appTask.usTaskPrio = g_syncThreadPrio;//任务优先级
     appTask.auwArgs[0] = (UINTPTR)id;
     appTask.uwResved = LOS_TASK_STATUS_DETACHED;
     ret = LOS_TaskCreate(&bc->syncTaskId, &appTask);

@@ -41,8 +41,7 @@
 #ifdef LOSCFG_DRIVERS_MMC
 #include "mmc/block.h"
 #endif
-
-
+//磁盘的最小单位就是扇区
 los_disk g_sysDisk[SYS_MAX_DISK];//支持挂载的磁盘总数量 5个
 los_part g_sysPart[SYS_MAX_PART];//支持磁盘的分区总数量 5*16,每个磁盘最大分16个区
 
@@ -365,16 +364,16 @@ static INT32 DiskDivide(los_disk *disk, struct disk_divide_info *info)
     UINT32 i;
     INT32 ret;
 
-    disk->type = info->part[0].type;
-    for (i = 0; i < info->part_count; i++) {
-        if (info->sector_count < info->part[i].sector_start) {
+    disk->type = info->part[0].type;// 类型一般为 EMMC
+    for (i = 0; i < info->part_count; i++) {//遍历分区列表
+        if (info->sector_count < info->part[i].sector_start) {//总扇区都已经被分完
             return VFS_ERROR;
         }
-        if (info->part[i].sector_count > (info->sector_count - info->part[i].sector_start)) {
+        if (info->part[i].sector_count > (info->sector_count - info->part[i].sector_start)) {//边界检测
             PRINT_ERR("Part[%u] sector_start:%llu, sector_count:%llu, exceed emmc sector_count:%llu.\n", i,
                       info->part[i].sector_start, info->part[i].sector_count,
                       (info->sector_count - info->part[i].sector_start));
-            info->part[i].sector_count = info->sector_count - info->part[i].sector_start;
+            info->part[i].sector_count = info->sector_count - info->part[i].sector_start;//改变区的扇区数量
             PRINT_ERR("Part[%u] sector_count change to %llu.\n", i, info->part[i].sector_count);
 
             ret = DiskAddPart(disk, info->part[i].sector_start, info->part[i].sector_count, TRUE);
@@ -746,13 +745,13 @@ INT32 DiskPartitionRegister(los_disk *disk)
     UINT32 i, partSize;
     los_part *part = NULL;
     struct disk_divide_info parInfo;
-
+	//填充disk_divide_info结构体设置分区信息
     /* Fill disk_divide_info structure to set partition's infomation. */
     (VOID)memset_s(parInfo.part, sizeof(parInfo.part), 0, sizeof(parInfo.part));
-    partSize = sizeof(parInfo.part) / sizeof(parInfo.part[0]);
+    partSize = sizeof(parInfo.part) / sizeof(parInfo.part[0]);//获取分区数量
 
-    parInfo.sector_size = disk->sector_size;
-    parInfo.sector_count = disk->sector_count;
+    parInfo.sector_size = disk->sector_size;//磁盘扇区大小给分区信息
+    parInfo.sector_count = disk->sector_count;//扇区大小
     count = DiskPartitionRecognition(disk->dev, &parInfo);
     if (count == VFS_ERROR) {
         part = get_part(DiskAddPart(disk, 0, disk->sector_count, FALSE));
@@ -1234,7 +1233,7 @@ static VOID DiskCacheDeinit(los_disk *disk)
     }
 }
 #endif
-
+//磁盘结构体初始化,初始化 los_disk 结构体
 static VOID DiskStructInit(const CHAR *diskName, INT32 diskID, const struct geometry *diskInfo,
                            struct Vnode *blkDriver, los_disk *disk)
 {
@@ -1335,12 +1334,12 @@ static INT32 DiskDeinit(los_disk *disk)
 
     return ENOERR;
 }
-
+//磁盘初始化
 static VOID OsDiskInitSub(const CHAR *diskName, INT32 diskID, los_disk *disk,
                           struct geometry *diskInfo, struct Vnode *blkDriver)
 {
     pthread_mutexattr_t attr;
-#ifdef LOSCFG_FS_FAT_CACHE
+#ifdef LOSCFG_FS_FAT_CACHE //使能FAT缓存
     OsBcache *bc = DiskCacheInit((UINT32)diskID, diskInfo, blkDriver);
     disk->bcache = bc;
 #endif
@@ -1364,7 +1363,7 @@ INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
         (disk->disk_status != STAT_UNREADY) || (strlen(diskName) > DISK_NAME)) {
         return VFS_ERROR;
     }
-	//注册驱动
+	//注册块设备驱动,因磁盘是块设备
     if (register_blockdriver(diskName, bops, RWE_RW_RW, priv) != 0) {
         PRINT_ERR("disk_init : register %s fail!\n", diskName);
         return VFS_ERROR;
@@ -1379,17 +1378,17 @@ INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
         goto DISK_FIND_ERROR;
     }
     struct block_operations *bops2 = (struct block_operations *)((struct drv_data *)blkDriver->data)->ops;
-
+	//块操作,块是文件系统层面的概念,块（Block）是文件系统存取数据的最小单位，一般大小是4KB
     if ((bops2 == NULL) || (bops2->geometry == NULL) ||
-        (bops2->geometry(blkDriver, &diskInfo) != 0)) {
+        (bops2->geometry(blkDriver, &diskInfo) != 0)) {//geometry 就是 CHS
         goto DISK_BLKDRIVER_ERROR;
     }
 
-    if (diskInfo.geo_sectorsize < DISK_MAX_SECTOR_SIZE) {
+    if (diskInfo.geo_sectorsize < DISK_MAX_SECTOR_SIZE) {//验证扇区大小
         goto DISK_BLKDRIVER_ERROR;
     }
 
-    OsDiskInitSub(diskName, diskID, disk, &diskInfo, blkDriver);
+    OsDiskInitSub(diskName, diskID, disk, &diskInfo, blkDriver);//初始化磁盘描述符
     VnodeDrop();
     if (DiskDivideAndPartitionRegister(info, disk) != ENOERR) {
         (VOID)DiskDeinit(disk);
@@ -1397,8 +1396,8 @@ INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
     }
 
     disk->disk_status = STAT_INUSED;//磁盘状态变成使用中
-    if (info != NULL) {
-        disk->type = EMMC;
+    if (info != NULL) {//https://www.huaweicloud.com/articles/bcdefd0d9da5de83d513123ef3aabcf0.html
+        disk->type = EMMC;//eMMC 是 embedded MultiMediaCard 的简称
     } else {
         disk->type = OTHERS;
     }
@@ -1408,10 +1407,10 @@ DISK_BLKDRIVER_ERROR:
     PRINT_ERR("disk_init : register %s ok but get disk info fail!\n", diskName);
     VnodeDrop();
 DISK_FIND_ERROR:
-    (VOID)unregister_blockdriver(diskName);
+    (VOID)unregister_blockdriver(diskName);//注销块设备驱动
     return VFS_ERROR;
 }
-
+//磁盘反初始化
 INT32 los_disk_deinit(INT32 diskID)
 {
     los_disk *disk = get_disk(diskID);
@@ -1426,12 +1425,12 @@ INT32 los_disk_deinit(INT32 diskID)
         return -EINVAL;
     }
 
-    disk->disk_status = STAT_UNREADY;
+    disk->disk_status = STAT_UNREADY;//未格式化状态
     DISK_UNLOCK(&disk->disk_mutex);
 
     return DiskDeinit(disk);
 }
-
+//磁盘同步,同步指的是缓存同步
 INT32 los_disk_sync(INT32 drvID)
 {
     INT32 ret = ENOERR;
@@ -1590,7 +1589,7 @@ INT32 los_part_access(const CHAR *dev, mode_t mode)
 
     return ENOERR;
 }
-
+//设置分区名称
 INT32 SetDiskPartName(los_part *part, const CHAR *src)
 {
     size_t len;
@@ -1615,7 +1614,7 @@ INT32 SetDiskPartName(los_part *part, const CHAR *src)
         goto ERROR_HANDLE;
     }
 
-    part->part_name = (CHAR *)zalloc(len + 1);
+    part->part_name = (CHAR *)zalloc(len + 1);//分区名称内存需来自内核空间
     if (part->part_name == NULL) {
         PRINT_ERR("%s[%d] zalloc failure\n", __FUNCTION__, __LINE__);
         goto ERROR_HANDLE;
@@ -1634,7 +1633,11 @@ ERROR_HANDLE:
     DISK_UNLOCK(&disk->disk_mutex);
     return VFS_ERROR;
 }
-
+/************************************************************** 
+*  添加 MMC分区
+*  MMC， 是一种闪存卡（Flash Memory Card）标准，它定义了 MMC 的架构以及访问　Flash Memory 的接口和协议。
+*  而eMMC 则是对 MMC 的一个拓展，以满足更高标准的性能、成本、体积、稳定、易用等的需求。
+***************************************************************/
 INT32 add_mmc_partition(struct disk_divide_info *info, size_t sectorStart, size_t sectorCount)
 {
     UINT32 index, i;
@@ -1642,26 +1645,26 @@ INT32 add_mmc_partition(struct disk_divide_info *info, size_t sectorStart, size_
     if (info == NULL) {
         return VFS_ERROR;
     }
-
+	//磁盘判断
     if ((info->part_count >= MAX_DIVIDE_PART_PER_DISK) || (sectorCount == 0)) {
         return VFS_ERROR;
     }
-
+	//扇区判断
     if ((sectorCount > info->sector_count) || ((info->sector_count - sectorCount) < sectorStart)) {
         return VFS_ERROR;
     }
 
     index = info->part_count;
-    for (i = 0; i < index; i++) {
+    for (i = 0; i < index; i++) {//验证目的是确保分区的顺序,扇区顺序从小到大排列
         if (sectorStart < (info->part[i].sector_start + info->part[i].sector_count)) {
             return VFS_ERROR;
         }
     }
 
-    info->part[index].sector_start = sectorStart;
-    info->part[index].sector_count = sectorCount;
-    info->part[index].type = EMMC;
-    info->part_count++;
+    info->part[index].sector_start = sectorStart;//开始扇区
+    info->part[index].sector_count = sectorCount;//扇区总数
+    info->part[index].type = EMMC;//分区类型
+    info->part_count++;//分区数量增加,鸿蒙分区数量上限默认是80个.
 
     return ENOERR;
 }
@@ -1677,20 +1680,20 @@ VOID show_part(los_part *part)
     PRINTK("disk id          : %u\n", part->disk_id);
     PRINTK("part_id in system: %u\n", part->part_id);
     PRINTK("part no in disk  : %u\n", part->part_no_disk);
-    PRINTK("part no in mbr   : %u\n", part->part_no_mbr);
+    PRINTK("part no in mbr   : %u\n", part->part_no_mbr);//主分区
     PRINTK("part filesystem  : %02X\n", part->filesystem_type);
     PRINTK("part sec start   : %llu\n", part->sector_start);
     PRINTK("part sec count   : %llu\n", part->sector_count);
 }
-
+//通过磁盘ID 擦除磁盘信息
 INT32 EraseDiskByID(UINT32 diskID, size_t startSector, UINT32 sectors)
 {
     INT32 ret = VFS_ERROR;
-#ifdef LOSCFG_DRIVERS_MMC
-    los_disk *disk = get_disk((INT32)diskID);
+#ifdef LOSCFG_DRIVERS_MMC	//使能MMC
+    los_disk *disk = get_disk((INT32)diskID);//找到磁盘信息
     if (disk != NULL) {
-        ret = do_mmc_erase(diskID, startSector, sectors);
-    }
+        ret = do_mmc_erase(diskID, startSector, sectors);//执行擦除动作,
+    }//..\code-2.0-canary\device\hisilicon\third_party\uboot\u-boot-2020.01\cmd\mmc.c
 #endif
 
     return ret;

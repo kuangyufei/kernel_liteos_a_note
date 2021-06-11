@@ -209,16 +209,16 @@ int VnodeFree(struct Vnode *vnode)
 
     return LOS_OK;
 }
-
+//释放mount下所有的索引节点
 int VnodeFreeAll(const struct Mount *mount)
 {
     struct Vnode *vnode = NULL;
     struct Vnode *nextVnode = NULL;
     int ret;
 
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(vnode, nextVnode, &g_vnodeCurrList, struct Vnode, actFreeEntry) {
-        if ((vnode->originMount == mount) && !(vnode->flag & VNODE_FLAG_MOUNT_NEW)) {
-            ret = VnodeFree(vnode);
+    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(vnode, nextVnode, &g_vnodeCurrList, struct Vnode, actFreeEntry) {//遍历当前链表
+        if ((vnode->originMount == mount) && !(vnode->flag & VNODE_FLAG_MOUNT_NEW)) {//找到装载点,且这个装载点没有被新使用
+            ret = VnodeFree(vnode);//释放节点,@note_thinking 是不是树杈被释放后,树叶也默认被释放了?
             if (ret != LOS_OK) {
                 return ret;
             }
@@ -227,21 +227,21 @@ int VnodeFreeAll(const struct Mount *mount)
 
     return LOS_OK;
 }
-
+//mount是否正在被某个索引节点使用
 BOOL VnodeInUseIter(const struct Mount *mount)
 {
     struct Vnode *vnode = NULL;
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(vnode, &g_vnodeCurrList, struct Vnode, actFreeEntry) {
-        if (vnode->originMount == mount) {
-            if ((vnode->useCount > 0) || (vnode->flag & VNODE_FLAG_MOUNT_ORIGIN)) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(vnode, &g_vnodeCurrList, struct Vnode, actFreeEntry) {//遍历正在被使用的索引节点链表
+        if (vnode->originMount == mount) {//找到一致挂载点
+            if ((vnode->useCount > 0) || (vnode->flag & VNODE_FLAG_MOUNT_ORIGIN)) {//还在被使用
                 return TRUE;
             }
         }
     }
     return FALSE;
 }
-
+//拿锁,封装互斥量
 int VnodeHold()
 {
     int ret = LOS_MuxLock(&g_vnodeMux, LOS_WAIT_FOREVER);
@@ -250,7 +250,7 @@ int VnodeHold()
     }
     return ret;
 }
-
+//归还锁
 int VnodeDrop()
 {
     int ret = LOS_MuxUnlock(&g_vnodeMux);
@@ -301,7 +301,7 @@ static struct Vnode *ConvertVnodeIfMounted(struct Vnode *vnode)
     }
     return vnode->newMount->vnodeCovered;
 }
-
+//刷新虚拟节点
 static void RefreshLRU(struct Vnode *vnode)
 {
     if (vnode == NULL || (vnode->type != VNODE_TYPE_REG && vnode->type != VNODE_TYPE_DIR) ||

@@ -33,7 +33,7 @@
 
 #include "los_list.h"
 
-typedef LOS_DL_LIST LIST_HEAD;	//这是要向 linux学习吗? : ) 
+typedef LOS_DL_LIST LIST_HEAD;	//这是要向 linux看齐吗? : ) 
 typedef LOS_DL_LIST LIST_ENTRY; 
 
 #define FNV1_32_INIT ((uint32_t) 33554467UL)
@@ -42,9 +42,9 @@ typedef LOS_DL_LIST LIST_ENTRY;
 #define FNV_32_PRIME ((uint32_t) 0x01000193UL)
 #define FNV_64_PRIME ((uint64_t) 0x100000001b3ULL)
 
-#define V_CREATE     0x0001
-#define V_CACHE      0x0002
-#define V_DUMMY      0x0004
+#define V_CREATE     0x0001	//创建标签
+#define V_CACHE      0x0002	//缓存标签
+#define V_DUMMY      0x0004 //虚拟标签
 
 
 static __inline uint32_t fnv_32_buf(const void *buf, size_t len, uint32_t hval)

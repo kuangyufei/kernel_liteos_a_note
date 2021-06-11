@@ -40,20 +40,20 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+//禁用 posix mqueue inode 配置
 #define CONFIG_DISABLE_MQUEUE   // disable posix mqueue inode configure
 
-/* file system configur */
+/* file system configure */ //文件系统配置
 
 #define CONFIG_FS_WRITABLE      // enable file system can be written
 #define CONFIG_FS_READABLE      // enable file system can be read
 #define CONFIG_DEBUG_FS         // enable vfs debug function
 
 
-/* fatfs cache configur */
+/* fatfs cache configure */
 /* config block size for fat file system, only can be 0,32,64,128,256,512,1024 */
-#define CONFIG_FS_FAT_SECTOR_PER_BLOCK  64
-
+#define CONFIG_FS_FAT_SECTOR_PER_BLOCK  64 //块（Block）是文件系统存取数据的最小单位 
+//64个512扇区,即 32K
 /* config block num for fat file system */
 #define CONFIG_FS_FAT_READ_NUMS         7
 #define CONFIG_FS_FAT_BLOCK_NUMS        28
@@ -69,8 +69,8 @@ extern "C" {
 #define CONFIG_FS_FAT_DIRTY_RATIO      60
 
 /* config time interval of sync thread for fat file system, in milliseconds */
-
-#define CONFIG_FS_FAT_SYNC_INTERVAL    5000
+//配置 FAT 文件系统同步线程的时间间隔，单位为毫秒
+#define CONFIG_FS_FAT_SYNC_INTERVAL    5000 //5秒钟
 #endif
 
 #define CONFIG_FS_FLASH_BLOCK_NUM 1
