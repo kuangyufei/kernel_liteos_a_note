@@ -7,7 +7,7 @@ git commit -m  ' 注解 NuttX 文件系统
     国外:https://weharmony.github.io
 '
 
-git push  origin master
+git push git@gitee.com:weharmony/third_party_NuttX.git master
 #git push  gitee_origin master
 #git push  github_origin master
 #git push  coding_origin master
