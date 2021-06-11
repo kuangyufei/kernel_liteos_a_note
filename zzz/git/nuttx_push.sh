@@ -1,4 +1,4 @@
-cd E:\harmony\third_party\third_party_NuttX
+cd E:\\harmony\\third_party\\third_party_NuttX
 
 git add -A
 git commit -m  ' 注解 NuttX 文件系统

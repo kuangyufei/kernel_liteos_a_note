@@ -84,27 +84,43 @@ GPT，即Globally Unique Identifier Partition Table Format，全局唯一标识�
 #define DISK_NAME                   255	//磁盘名称长度上限
 #define DISK_MAX_SECTOR_SIZE        512	//扇区大小,最小不能小于 512
 
+/***********************************************
+MBR扇区由三部分构成：
+第一部分是446字节的引导代码，也就是上面提到的MBR；
+第二部分是DPT（Disk Partition Table，硬盘分区表），包含4个表项，每个表项16字节，共占用64字节；446 + 64 = 510;
+	分区引导扇区也称DBR（DOS BOOT RECORD）在对硬盘分区之后，每一个分区均有一个DBR与之对应。DBR位于每个分区的第一个扇区，大小为512字节。
+	DBR装入内存后，即开始执行该引导程序段，其主要功能是完成操作系统的自举并将控制权交给操作系统。
+	每个分区都有引导扇区，但只有被设为活动分区才会被MBR装的DBR入内存运行,所谓的活动分区就是大家理解的主分区 C盘这类的概念,可以被引导启动.
+第三部分从510开始,是2个字节的结束标志，0x55AA.
+EBR（Extended Boot Record）是与MBR相对应的一个概念。前边已经讲过，MBR里有一个DPT(Disk Partition Table，磁盘分区表)的区域，
+它一共是64字节，按每16个字节作为一个分区表项，它最多只能容纳4个分区。能够在MBR的DPT里进行说明的分区称为主分区。
+如果我们想分区多于4个的时候，MBR的DPT里就会容纳不下来，于是微软就想出了另一个解决方案，
+在MBR里，只放不多于三个主分区，剩下的分区，则由与MBR结构很相像的另一种分区结构（EBR，也就是扩展分区引导记录）进行说明。
+一个EBR不够用时，可以增加另一个EBR，如此像一根链条一样地接下去，直到够用为止。
 
-#define PAR_OFFSET           446     /* MBR: Partition table offset (2) */
-#define BS_SIG55AA           510     /* Signature word (2) */
-#define BS_FILSYSTEMTYPE32   82      /* File system type (1) */
-#define BS_JMPBOOT           0       /* x86 jump instruction (3-byte) */
-#define BS_FILSYSTYPE        0x36    /* File system type (2) */
-#define BS_SIG55AA_VALUE     0xAA55
+https://blog.csdn.net/Hilavergil/article/details/79270379
+***********************************************/
+//MBR格式解析
+#define PAR_OFFSET           446     /* MBR: Partition table offset (2) *///记录分区表的位置
+#define BS_SIG55AA           510     /* Signature word (2) */ //引导记录签名 
+#define BS_FILSYSTEMTYPE32   82      /* File system type (1) */ //文件系统类型
+#define BS_JMPBOOT           0       /* x86 jump instruction (3-byte) *///x86跳转指令,跳转到引导程序.
+#define BS_FILSYSTYPE        0x36    /* File system type (2) */ //文件系统类型
+#define BS_SIG55AA_VALUE     0xAA55	 //可理解为 MBR[BS_SIG55AA]上必须是 0xAA55
 
-#define PAR_TYPE_OFFSET      4
-#define PAR_START_OFFSET     8
-#define PAR_COUNT_OFFSET     12
-#define PAR_TABLE_SIZE       16
-#define EXTENDED_PAR         0x0F 	//扩展分区
-#define EXTENDED_8G          0x05	//
+#define PAR_TYPE_OFFSET      4	//分区类型偏移,即 MBR[446 + 4]位置是分区的类型,一般为主分区,但可能是扩展分区.
+#define PAR_START_OFFSET     8	//分区开始偏移,即 MBR[446 + 8]位置是分区的开始扇区号
+#define PAR_COUNT_OFFSET     12	//分区数量,即 MBR[446 + 12]位置是分区的总扇区数量
+#define PAR_TABLE_SIZE       16	//分区表大小,每个表项16字节
+#define EXTENDED_PAR         0x0F 	//分区类型,类型:扩展分区
+#define EXTENDED_8G          0x05	//也是分区类型,类型:扩展分区
 #define EMMC                 0xEC	//eMMC=NAND闪存+闪存控制芯片+标准接口封装 https://www.huaweicloud.com/articles/bcdefd0d9da5de83d513123ef3aabcf0.html
 #define OTHERS               0x01    /* sdcard or umass */
 
-#define BS_FS_TYPE_MASK      0xFFFFFF
-#define BS_FS_TYPE_VALUE     0x544146
-#define BS_FS_TYPE_FAT       0x0B
-#define BS_FS_TYPE_NTFS      0x07
+#define BS_FS_TYPE_MASK      0xFFFFFF	//掩码
+#define BS_FS_TYPE_VALUE     0x544146	//文件系统类型
+#define BS_FS_TYPE_FAT       0x0B		//FAT格式文件系统
+#define BS_FS_TYPE_NTFS      0x07		//NTFS格式文件系统
 
 #define FIRST_BYTE       1
 #define SECOND_BYTE      2
@@ -128,10 +144,10 @@ GPT，即Globally Unique Identifier Partition Table Format，全局唯一标识�
                               !strncmp(&(ptr)[BS_FILSYSTYPE], "FAT", strlen("FAT")) || \
                               !strncmp(&(ptr)[BS_JMPBOOT], "\xEB\x52\x90" "NTFS    ",  \
                                        strlen("\xEB\x52\x90" "NTFS    ")))
-
-#define PARTION_MODE_BTYE    (PAR_OFFSET + PAR_TYPE_OFFSET) /* 0xEE: GPT(GUID), else: MBR */
-#define PARTION_MODE_GPT     0xEE /* 0xEE: GPT(GUID), else: MBR */
-#define SIGNATURE_OFFSET     0    /* The offset of GPT partition header signature */
+//GPT格式解析
+#define PARTION_MODE_BTYE    (PAR_OFFSET + PAR_TYPE_OFFSET) /* 0xEE: GPT(GUID), else: MBR */ //两种分区模式
+#define PARTION_MODE_GPT     0xEE /* 0xEE: GPT(GUID), else: MBR */ //GPT和MBR
+#define SIGNATURE_OFFSET     0    /* The offset of GPT partition header signature */ 
 #define SIGNATURE_LEN        8    /* The length of GPT signature */
 #define HEADER_SIZE_OFFSET   12   /* The offset of GPT header size */
 #define TABLE_SIZE_OFFSET    84   /* The offset of GPT table size */
