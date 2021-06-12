@@ -108,7 +108,7 @@ struct Vnode {
     struct Vnode *parent;               /* parent vnode */	//父节点
     struct VnodeOps *vop;               /* vnode operations */	//节点虚拟操作
     struct file_operations_vfs *fop;    /* file operations */	//虚拟 <--> 真实的文件系统操作
-    void *data;                         /* private data */		//私有数据 (drv_data)
+    void *data;                         /* private data */		//私有数据 (drv_data),在 ( register_blockdriver | register_driver )中分配内存
     uint32_t flag;                      /* vnode flag */		//节点标签
     LIST_ENTRY hashEntry;               /* list entry for bucket in hash table */ //通过它挂入哈希表 g_vnodeHashEntrys[i], i:[0,g_vnodeHashMask]
     LIST_ENTRY actFreeEntry;            /* vnode active/free list entry */	//通过本节点挂到空闲链表和使用链表上

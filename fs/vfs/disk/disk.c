@@ -296,7 +296,7 @@ static los_part *DiskPartAllocate(struct Vnode *dev, UINT64 start, UINT64 count)
             part->sector_start = start;//开始扇区
             part->sector_count = count;//扇区总大小
             part->part_name = NULL;	   //分区名称,暂无
-            LOS_ListInit(&part->list);	//初始化链表节点,将通过它挂入全局分区链表.
+            LOS_ListInit(&part->list);	//初始化链表节点,将通过它挂入磁盘分区链表上(los_disk->head).
 
             return part; //就这个分区了.
         }
@@ -308,11 +308,11 @@ static los_part *DiskPartAllocate(struct Vnode *dev, UINT64 start, UINT64 count)
 //清空分区信息
 static VOID DiskPartRelease(los_part *part)
 {
-    part->dev = NULL;//
-    part->part_no_disk = 0;
-    part->part_no_mbr = 0;
+    part->dev = NULL;//全局释放这步最关键,因为 DiskPartAllocate 中是通过它来判断是否全局分区项已被占用
+    part->part_no_disk = 0; //复位归0
+    part->part_no_mbr = 0;	//复位归0
     if (part->part_name != NULL) {
-        free(part->part_name);
+        free(part->part_name);//分区名称是内核内存分配的,所以要单独释放.
         part->part_name = NULL;
     }
 }
@@ -345,13 +345,13 @@ static INT32 DiskAddPart(los_disk *disk, UINT64 sectorStart, UINT64 sectorCount,
 	//devName = /dev/mmcblk0p2 代表的是 0号磁盘的2号分区
 
     diskDev = disk->dev;
-    if (IsValidPart == TRUE) {
+    if (IsValidPart == TRUE) {//有效分区处理
         ret = snprintf_s(devName, sizeof(devName), sizeof(devName) - 1, "%s%c%u",
                          ((disk->disk_name == NULL) ? "null" : disk->disk_name), 'p', disk->part_count);
         if (ret < 0) {
             return VFS_ERROR;
         }
-		//注册块设备驱动
+		//为节点注册块设备驱动,目的是从此可以通过块操作访问私有数据
         if (register_blockdriver(devName, ((struct drv_data *)diskDev->data)->ops,
                                  RWE_RW_RW, ((struct drv_data *)diskDev->data)->priv)) {
             PRINT_ERR("DiskAddPart : register %s fail!\n", devName);
@@ -365,13 +365,13 @@ static INT32 DiskAddPart(los_disk *disk, UINT64 sectorStart, UINT64 sectorCount,
             PRINT_ERR("DiskAddPart : find %s fail!\n", devName);
             return VFS_ERROR;
         }
-        part = DiskPartAllocate(partDev, sectorStart, sectorCount);//分配一个扇区
+        part = DiskPartAllocate(partDev, sectorStart, sectorCount);//从全局分区池中分配分区项
         VnodeDrop();
         if (part == NULL) {
             (VOID)unregister_blockdriver(devName);
             return VFS_ERROR;
         }
-    } else {
+    } else { //无效的分区也分配一个? @note_why 
         part = DiskPartAllocate(diskDev, sectorStart, sectorCount);
         if (part == NULL) {
             return VFS_ERROR;
@@ -421,12 +421,12 @@ static CHAR GPTPartitionTypeRecognition(const CHAR *parBuf)
 {
     const CHAR *buf = parBuf;
     const CHAR *fsType = "FAT";
-    const CHAR *str = "\xEB\x52\x90" "NTFS    "; /* NTFS Boot entry point */ //NTFS 引导入口点
+    const CHAR *str = "\xEB\x52\x90" "NTFS    "; /* NTFS Boot entry point */ //NTFS 引导入口点 
 
     if (((LD_DWORD_DISK(&buf[BS_FILSYSTEMTYPE32]) & BS_FS_TYPE_MASK) == BS_FS_TYPE_VALUE) ||
-        (strncmp(&buf[BS_FILSYSTYPE], fsType, strlen(fsType)) == 0)) {
+        (strncmp(&buf[BS_FILSYSTYPE], fsType, strlen(fsType)) == 0)) {//识别FAT的方法
         return BS_FS_TYPE_FAT;
-    } else if (strncmp(&buf[BS_JMPBOOT], str, strlen(str)) == 0) {
+    } else if (strncmp(&buf[BS_JMPBOOT], str, strlen(str)) == 0) {//识别NTFS的方法
         return BS_FS_TYPE_NTFS;
     }
 
@@ -463,7 +463,7 @@ static INT32 GPTInfoGet(struct Vnode *blkDrv, CHAR *gptBuf)
     INT32 ret;
 	//获取驱动程序
     struct block_operations *bops = (struct block_operations *)((struct drv_data *)blkDrv->data)->ops;
-	//从第一个扇区,从这可以看出 GPT是兼容 MBR的,因为 MBR的内容是放在 0 扇区的.
+	//从第一个扇区,从这可以看出 GPT是兼容 MBR的,因为 MBR的内容是放在 0 扇区.
     ret = bops->read(blkDrv, (UINT8 *)gptBuf, 1, 1); /* Read the device first sector */
     if (ret != 1) { /* Read failed */
         PRINT_ERR("%s %d\n", __FUNCTION__, __LINE__);
@@ -477,22 +477,22 @@ static INT32 GPTInfoGet(struct Vnode *blkDrv, CHAR *gptBuf)
 
     return ENOERR;
 }
-
+//解析GPT分区内容
 static INT32 OsGPTPartitionRecognitionSub(struct disk_divide_info *info, const CHAR *partitionBuf,
                                           UINT32 *partitionCount, UINT64 partitionStart, UINT64 partitionEnd)
 {
     CHAR partitionType;
 
     if (VERIFY_FS(partitionBuf)) {
-        partitionType = GPTPartitionTypeRecognition(partitionBuf);
+        partitionType = GPTPartitionTypeRecognition(partitionBuf);//文件系统类型,支持FAT和NTFS
         if (partitionType) {
             if (*partitionCount >= MAX_DIVIDE_PART_PER_DISK) {
                 return VFS_ERROR;
             }
-            info->part[*partitionCount].type = partitionType;
-            info->part[*partitionCount].sector_start = partitionStart;
-            info->part[*partitionCount].sector_count = (partitionEnd - partitionStart) + 1;
-            (*partitionCount)++;
+            info->part[*partitionCount].type = partitionType;//文件系统
+            info->part[*partitionCount].sector_start = partitionStart;//开始扇区
+            info->part[*partitionCount].sector_count = (partitionEnd - partitionStart) + 1;//扇区总数
+            (*partitionCount)++;//磁盘扇区数量增加
         } else {
             PRINT_ERR("The partition type is not allowed to use!\n");
         }
@@ -501,7 +501,7 @@ static INT32 OsGPTPartitionRecognitionSub(struct disk_divide_info *info, const C
     }
     return ENOERR;
 }
-
+//识别GPT分区内容
 static INT32 OsGPTPartitionRecognition(struct Vnode *blkDrv, struct disk_divide_info *info,
                                        const CHAR *gptBuf, CHAR *partitionBuf, UINT32 *partitionCount)
 {
@@ -511,7 +511,7 @@ static INT32 OsGPTPartitionRecognition(struct Vnode *blkDrv, struct disk_divide_
     struct block_operations *bops = NULL;
 
     for (j = 0; j < PAR_ENTRY_NUM_PER_SECTOR; j++) {
-        if (!VERITY_AVAILABLE_PAR(&gptBuf[j * TABLE_SIZE])) {
+        if (!VERITY_AVAILABLE_PAR(&gptBuf[j * TABLE_SIZE])) {//ESP 和 MSR 分区
             PRINTK("The partition type is ESP or MSR!\n");
             continue;
         }
@@ -520,8 +520,8 @@ static INT32 OsGPTPartitionRecognition(struct Vnode *blkDrv, struct disk_divide_
             return VFS_ERROR;
         }
 
-        partitionStart = LD_QWORD_DISK(&gptBuf[(j * TABLE_SIZE) + GPT_PAR_START_OFFSET]);
-        partitionEnd = LD_QWORD_DISK(&gptBuf[(j * TABLE_SIZE) + GPT_PAR_END_OFFSET]);
+        partitionStart = LD_QWORD_DISK(&gptBuf[(j * TABLE_SIZE) + GPT_PAR_START_OFFSET]);//读取开始扇区
+        partitionEnd = LD_QWORD_DISK(&gptBuf[(j * TABLE_SIZE) + GPT_PAR_END_OFFSET]);//读取结束扇区
         if ((partitionStart >= partitionEnd) || (partitionEnd > info->sector_count)) {
             PRINT_ERR("GPT partition %u recognition failed : partitionStart = %llu, partitionEnd = %llu\n",
                       j, partitionStart, partitionEnd);
@@ -532,7 +532,7 @@ static INT32 OsGPTPartitionRecognition(struct Vnode *blkDrv, struct disk_divide_
 
         bops = (struct block_operations *)((struct drv_data *)blkDrv->data)->ops;
 
-        ret = bops->read(blkDrv, (UINT8 *)partitionBuf, partitionStart, 1);
+        ret = bops->read(blkDrv, (UINT8 *)partitionBuf, partitionStart, 1);//读取扇区内容
         if (ret != 1) { /* read failed */
             PRINT_ERR("%s %d\n", __FUNCTION__, __LINE__);
             return -EIO;
@@ -560,7 +560,7 @@ static INT32 DiskGPTPartitionRecognition(struct Vnode *blkDrv, struct disk_divid
         return ret;
     }
 
-    ret = GPTInfoGet(blkDrv, gptBuf);
+    ret = GPTInfoGet(blkDrv, gptBuf);//获取GDT类型的引导扇区信息
     if (ret < 0) {
         goto OUT_WITH_MEM;
     }
@@ -614,7 +614,7 @@ static INT32 OsMBRInfoGet(struct Vnode *blkDrv, CHAR *mbrBuf)
     }
 
     /* Check boot record signature. *///检查引导记录签名
-    if (LD_WORD_DISK(&mbrBuf[BS_SIG55AA]) != BS_SIG55AA_VALUE) {
+    if (LD_WORD_DISK(&mbrBuf[BS_SIG55AA]) != BS_SIG55AA_VALUE) {//高低换位
         return VFS_ERROR;
     }
 
@@ -626,14 +626,14 @@ static INT32 OsEBRInfoGet(struct Vnode *blkDrv, const struct disk_divide_info *i
 {
     INT32 ret;
 
-    if (VERIFY_FS(mbrBuf)) {
+    if (VERIFY_FS(mbrBuf)) {//确认是个文件系统的引导扇区,因为紧接着要去读这个扇区内容,所以先判断有没有这个扇区.
         if (info->sector_count <= LD_DWORD_DISK(&mbrBuf[PAR_OFFSET + PAR_START_OFFSET])) {
             return VFS_ERROR;
         }
-
+		//获取块设备驱动程序
         struct block_operations *bops = (struct block_operations *)((struct drv_data *)blkDrv->data)->ops;
-        ret = bops->read(blkDrv, (UINT8 *)ebrBuf, LD_DWORD_DISK(&mbrBuf[PAR_OFFSET + PAR_START_OFFSET]), 1);
-        if ((ret != 1) || (!VERIFY_FS(ebrBuf))) { /* read failed */
+        ret = bops->read(blkDrv, (UINT8 *)ebrBuf, LD_DWORD_DISK(&mbrBuf[PAR_OFFSET + PAR_START_OFFSET]), 1);//读取某个扇区信息
+        if ((ret != 1) || (!VERIFY_FS(ebrBuf))) { /* read failed */ //这里同样要确认下读出来的扇区是文件系统的引导扇区
             PRINT_ERR("OsEBRInfoGet, verify_fs error, ret = %d\n", ret);
             return -EIO;
         }
@@ -668,7 +668,7 @@ static INT32 OsPrimaryPartitionRecognition(const CHAR *mbrBuf, struct disk_divid
 
     return extendedFlag;//返回是否为扩展分区标签
 }
-//识别逻辑分区,也叫扩展分区
+//识别扩展分区
 static INT32 OsLogicalPartitionRecognition(struct Vnode *blkDrv, struct disk_divide_info *info,
                                            UINT32 extendedAddress, CHAR *ebrBuf, INT32 mbrCount)
 {
@@ -677,7 +677,7 @@ static INT32 OsLogicalPartitionRecognition(struct Vnode *blkDrv, struct disk_div
     CHAR ebrPartitionType;
     INT32 ebrCount = 0;
 
-    do {
+    do {//循环读取一个个扩展分区信息
         (VOID)memset_s(ebrBuf, info->sector_size, 0, info->sector_size);
         if (((UINT64)(extendedAddress) + extendedOffset) >= info->sector_count) {
             PRINT_ERR("extended partition is out of disk range: extendedAddress = %u, extendedOffset = %u\n",
@@ -685,14 +685,14 @@ static INT32 OsLogicalPartitionRecognition(struct Vnode *blkDrv, struct disk_div
             break;
         }
         struct block_operations *bops = (struct block_operations *)((struct drv_data *)blkDrv->data)->ops;
-        ret = bops->read(blkDrv, (UINT8 *)ebrBuf, extendedAddress + extendedOffset, 1);
+        ret = bops->read(blkDrv, (UINT8 *)ebrBuf, extendedAddress + extendedOffset, 1);//读取扇区
         if (ret != 1) { /* read failed */
             PRINT_ERR("driver read return error: %d, extendedAddress = %u, extendedOffset = %u\n", ret,
                       extendedAddress, extendedOffset);
             return -EIO;
         }
-        ebrPartitionType = ebrBuf[PAR_OFFSET + PAR_TYPE_OFFSET];
-        if (ebrPartitionType && ((mbrCount + ebrCount) < MAX_DIVIDE_PART_PER_DISK)) {
+        ebrPartitionType = ebrBuf[PAR_OFFSET + PAR_TYPE_OFFSET];//读取分区类型
+        if (ebrPartitionType && ((mbrCount + ebrCount) < MAX_DIVIDE_PART_PER_DISK)) {//填充分区信息
             info->part[MAX_PRIMARY_PART_PER_DISK + ebrCount].type = ebrPartitionType;
             info->part[MAX_PRIMARY_PART_PER_DISK + ebrCount].sector_start = extendedAddress + extendedOffset +
                                                                             LD_DWORD_DISK(&ebrBuf[PAR_OFFSET +
@@ -701,9 +701,9 @@ static INT32 OsLogicalPartitionRecognition(struct Vnode *blkDrv, struct disk_div
                                                                                                   PAR_COUNT_OFFSET]);
             ebrCount++;//扩展分区的数量
         }
-        extendedOffset = LD_DWORD_DISK(&ebrBuf[PAR_OFFSET + PAR_START_OFFSET + PAR_TABLE_SIZE]);
+        extendedOffset = LD_DWORD_DISK(&ebrBuf[PAR_OFFSET + PAR_START_OFFSET + PAR_TABLE_SIZE]);//继续下一个分区
     } while ((ebrBuf[PAR_OFFSET + PAR_TYPE_OFFSET + PAR_TABLE_SIZE] != 0) &&
-             ((mbrCount + ebrCount) < MAX_DIVIDE_PART_PER_DISK));
+             ((mbrCount + ebrCount) < MAX_DIVIDE_PART_PER_DISK));//结束条件1.读完分区表 2.总分区数超了 
 
     return ebrCount;
 }
@@ -739,21 +739,21 @@ static INT32 DiskPartitionRecognition(struct Vnode *blkDrv, struct disk_divide_i
     }
 
     /* The partition type is GPT */
-    if (mbrBuf[PARTION_MODE_BTYE] == (CHAR)PARTION_MODE_GPT) {
-        ret = DiskGPTPartitionRecognition(blkDrv, info);
+    if (mbrBuf[PARTION_MODE_BTYE] == (CHAR)PARTION_MODE_GPT) {//如果采用了GPT的分区方式 0xEE
+        ret = DiskGPTPartitionRecognition(blkDrv, info);//用GPT方式解析分区信息
         goto OUT_WITH_MEM;
     }
 
-    ret = OsEBRInfoGet(blkDrv, info, ebrBuf, mbrBuf);
-    if (ret < 0) {
+    ret = OsEBRInfoGet(blkDrv, info, ebrBuf, mbrBuf);//获取扩展分区信息
+    if (ret < 0) {//4个分区表中不一定会有扩展分区
         ret = 0; /* no mbr */
         goto OUT_WITH_MEM;
     }
 
-    extendedFlag = OsPrimaryPartitionRecognition(mbrBuf, info, &extendedPos, &mbrCount);
-    if (extendedFlag) {
-        extendedAddress = LD_DWORD_DISK(&mbrBuf[PAR_OFFSET + PAR_START_OFFSET + (extendedPos * PAR_TABLE_SIZE)]);
-        ret = OsLogicalPartitionRecognition(blkDrv, info, extendedAddress, ebrBuf, mbrCount);
+    extendedFlag = OsPrimaryPartitionRecognition(mbrBuf, info, &extendedPos, &mbrCount);//解析主分区信息
+    if (extendedFlag) {//如果有扩展分区
+        extendedAddress = LD_DWORD_DISK(&mbrBuf[PAR_OFFSET + PAR_START_OFFSET + (extendedPos * PAR_TABLE_SIZE)]);//逻辑分区开始解析位置
+        ret = OsLogicalPartitionRecognition(blkDrv, info, extendedAddress, ebrBuf, mbrCount);//解析逻辑分区
         if (ret <= 0) {
             goto OUT_WITH_MEM;
         }
@@ -775,25 +775,25 @@ INT32 DiskPartitionRegister(los_disk *disk)
 	//填充disk_divide_info结构体设置分区信息
     /* Fill disk_divide_info structure to set partition's infomation. */
     (VOID)memset_s(parInfo.part, sizeof(parInfo.part), 0, sizeof(parInfo.part));
-    partSize = sizeof(parInfo.part) / sizeof(parInfo.part[0]);//获取分区数量
-
-    parInfo.sector_size = disk->sector_size;//磁盘扇区大小给分区信息
-    parInfo.sector_count = disk->sector_count;//扇区大小
-    count = DiskPartitionRecognition(disk->dev, &parInfo);
-    if (count == VFS_ERROR) {
-        part = get_part(DiskAddPart(disk, 0, disk->sector_count, FALSE));
+    partSize = sizeof(parInfo.part) / sizeof(parInfo.part[0]);//获取能分区的最大数量
+    parInfo.sector_size = disk->sector_size;//磁盘扇区大小,这是固定的,不管什么分区,扇区大小是不变的(512字节)
+    parInfo.sector_count = disk->sector_count;//扇区数量,注意:这里只是默认的值,最终的值来源于读取的MBR或EBR内容
+    //即每个分区的扇区大小和总数量是可以不一样的.
+    count = DiskPartitionRecognition(disk->dev, &parInfo);//有了分区信息就阔以开始解析了
+    if (count == VFS_ERROR) {//分区表错误, @note_thinking 直接返回就行了,做 get_part 没意义了吧
+        part = get_part(DiskAddPart(disk, 0, disk->sector_count, FALSE));//
         if (part == NULL) {
             return VFS_ERROR;
         }
-        part->part_no_mbr = 0;
+        part->part_no_mbr = 0;//打印磁盘没有一个可用的分区表
         PRINTK("Disk %s doesn't contain a valid partition table.\n", disk->disk_name);
         return ENOERR;
     } else if (count < 0) {
         return VFS_ERROR;
     }
 
-    parInfo.part_count = count;
-    if (count == 0) {
+    parInfo.part_count = count;//保存分区数量
+    if (count == 0) { //整个函数写的很怪,建议重写 @note_thinking
         part = get_part(DiskAddPart(disk, 0, disk->sector_count, TRUE));
         if (part == NULL) {
             return VFS_ERROR;
@@ -804,7 +804,7 @@ INT32 DiskPartitionRegister(los_disk *disk)
         return ENOERR;
     }
 
-    for (i = 0; i < partSize; i++) {
+    for (i = 0; i < partSize; i++) {//磁盘的分区是解析出来了,接着要纳入全局统一管理了.
         /* Read the disk_divide_info structure to get partition's infomation. */
         if ((parInfo.part[i].type != 0) && (parInfo.part[i].type != EXTENDED_PAR) &&
             (parInfo.part[i].type != EXTENDED_8G)) {
@@ -812,8 +812,8 @@ INT32 DiskPartitionRegister(los_disk *disk)
             if (part == NULL) {
                 return VFS_ERROR;
             }
-            part->part_no_mbr = i + 1;
-            part->filesystem_type = parInfo.part[i].type;
+            part->part_no_mbr = i + 1;//全局记录 第几个主引导分区
+            part->filesystem_type = parInfo.part[i].type;//全局记录 文件系统类型
         }
     }
 
@@ -1313,7 +1313,7 @@ static INT32 DiskDivideAndPartitionRegister(struct disk_divide_info *info, los_d
     }
     return ENOERR;
 }
-
+//磁盘反初始化
 static INT32 DiskDeinit(los_disk *disk)
 {
     los_part *part = NULL;
@@ -1330,11 +1330,11 @@ static INT32 DiskDeinit(los_disk *disk)
             if (ret < 0) {
                 return -ENAMETOOLONG;
             }
-            DiskPartDelFromDisk(disk, part);
-            (VOID)unregister_blockdriver(devName);
-            DiskPartRelease(part);
+            DiskPartDelFromDisk(disk, part);//从磁盘删除分区
+            (VOID)unregister_blockdriver(devName);//注销块驱动程序
+            DiskPartRelease(part);//释放分区信息
 
-            part = LOS_DL_LIST_ENTRY(disk->head.pstNext, los_part, list);
+            part = LOS_DL_LIST_ENTRY(disk->head.pstNext, los_part, list);//下一个分区内容
         }
     }
 
@@ -1704,13 +1704,13 @@ VOID show_part(los_part *part)
     }
 
     PRINTK("\npart info :\n");
-    PRINTK("disk id          : %u\n", part->disk_id);
-    PRINTK("part_id in system: %u\n", part->part_id);
-    PRINTK("part no in disk  : %u\n", part->part_no_disk);
-    PRINTK("part no in mbr   : %u\n", part->part_no_mbr);//主分区
-    PRINTK("part filesystem  : %02X\n", part->filesystem_type);
-    PRINTK("part sec start   : %llu\n", part->sector_start);
-    PRINTK("part sec count   : %llu\n", part->sector_count);
+    PRINTK("disk id          : %u\n", part->disk_id);	//磁盘ID
+    PRINTK("part_id in system: %u\n", part->part_id);	//在整个系统的分区ID
+    PRINTK("part no in disk  : %u\n", part->part_no_disk);//在磁盘分区的ID
+    PRINTK("part no in mbr   : %u\n", part->part_no_mbr);//主分区ID
+    PRINTK("part filesystem  : %02X\n", part->filesystem_type);//文件系统(FAT | NTFS)
+    PRINTK("part sec start   : %llu\n", part->sector_start);//开始扇区
+    PRINTK("part sec count   : %llu\n", part->sector_count);//扇区大小
 }
 //通过磁盘ID 擦除磁盘信息
 INT32 EraseDiskByID(UINT32 diskID, size_t startSector, UINT32 sectors)

@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '对两种磁盘的组织方式 GPT/MBR 的注解
+git commit -m  '完成对磁盘分区模块的注解
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     国内:https://weharmony.gitee.io
     国外:https://weharmony.github.io

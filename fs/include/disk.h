@@ -128,46 +128,66 @@ https://blog.csdn.net/Hilavergil/article/details/79270379
 #define FOURTH_BYTE      4
 
 #define BIT_FOR_BYTE     8
-
+//高低位互换函数(16位), 0x0102 - > 变成 0x0201
 #define LD_WORD_DISK(ptr)    (UINT16)(((UINT16)*((UINT8 *)(ptr) + FIRST_BYTE) << (BIT_FOR_BYTE * FIRST_BYTE)) | \
                                       (UINT16)*(UINT8 *)(ptr))
+//高低位互换函数(32位), 0x01020304 - > 变成 0x04030201                                      
 #define LD_DWORD_DISK(ptr)   (UINT32)(((UINT32)*((UINT8 *)(ptr) + THIRD_BYTE) << (BIT_FOR_BYTE * THIRD_BYTE)) |   \
                                       ((UINT32)*((UINT8 *)(ptr) + SECOND_BYTE) << (BIT_FOR_BYTE * SECOND_BYTE)) | \
                                       ((UINT16)*((UINT8 *)(ptr) + FIRST_BYTE) << (BIT_FOR_BYTE * FIRST_BYTE)) |   \
                                       (*(UINT8 *)(ptr)))
-
+//高低位互换函数(64位), 0x01..08 - > 变成 0x08...01
 #define LD_QWORD_DISK(ptr)   ((UINT64)(((UINT64)LD_DWORD_DISK(&(ptr)[FOURTH_BYTE]) << (BIT_FOR_BYTE * FOURTH_BYTE)) | \
                               LD_DWORD_DISK(ptr)))
-
-/* Check VBR string, including FAT, NTFS */
+//每个分区的引导记录（VBR）
+/* Check VBR string, including FAT, NTFS */ //确认文件系统
 #define VERIFY_FS(ptr)       (((LD_DWORD_DISK(&(ptr)[BS_FILSYSTEMTYPE32]) & BS_FS_TYPE_MASK) == BS_FS_TYPE_VALUE) || \
                               !strncmp(&(ptr)[BS_FILSYSTYPE], "FAT", strlen("FAT")) || \
                               !strncmp(&(ptr)[BS_JMPBOOT], "\xEB\x52\x90" "NTFS    ",  \
                                        strlen("\xEB\x52\x90" "NTFS    ")))
+//开头 EB5290 代表是 NTFS文件系统,ptr[36]开始为"FAT"代表 FAT文件系统
+//https://www.jianshu.com/p/1be47267b98b
 //GPT格式解析
 #define PARTION_MODE_BTYE    (PAR_OFFSET + PAR_TYPE_OFFSET) /* 0xEE: GPT(GUID), else: MBR */ //两种分区模式
 #define PARTION_MODE_GPT     0xEE /* 0xEE: GPT(GUID), else: MBR */ //GPT和MBR
-#define SIGNATURE_OFFSET     0    /* The offset of GPT partition header signature */ 
-#define SIGNATURE_LEN        8    /* The length of GPT signature */
-#define HEADER_SIZE_OFFSET   12   /* The offset of GPT header size */
-#define TABLE_SIZE_OFFSET    84   /* The offset of GPT table size */
-#define TABLE_NUM_OFFSET     80   /* The number of GPT table */
+#define SIGNATURE_OFFSET     0    /* The offset of GPT partition header signature */ //从这个位置读取分区表头签名
+#define SIGNATURE_LEN        8    /* The length of GPT signature *///分区表签名的长度,占8个字节
+#define HEADER_SIZE_OFFSET   12   /* The offset of GPT header size *///从这个位置读取分区表头大小
+#define TABLE_SIZE_OFFSET    84   /* The offset of GPT table size *///从这个位置读取分区表大小
+#define TABLE_NUM_OFFSET     80   /* The number of GPT table */	//从这个位置读取分区表数量
 #define TABLE_START_SECTOR   2
 #define TABLE_MAX_NUM        128
 #define TABLE_SIZE           128
-#define GPT_PAR_START_OFFSET      32
+#define GPT_PAR_START_OFFSET      32	//开始扇区偏移位置
 #define GPT_PAR_END_OFFSET        40
-#define PAR_ENTRY_NUM_PER_SECTOR  4
+#define PAR_ENTRY_NUM_PER_SECTOR  4	//每个扇区分区项目数量
 #define HEADER_SIZE_MASK          0xFFFFFFFF
 #define HEADER_SIZE               0x5C
 #define HARD_DISK_GUID_OFFSET     56
-#define HARD_DISK_GUID_FOR_ESP    0x0020004900460045
-#define HARD_DISK_GUID_FOR_MSP    0x007200630069004D
+#define HARD_DISK_GUID_FOR_ESP    0x0020004900460045 
+#define HARD_DISK_GUID_FOR_MSP    0x007200630069004D //@note_thinking 是否写错了,应该是 MSR
 #define PAR_VALID_OFFSET0         0
 #define PAR_VALID_OFFSET1         4
 #define PAR_VALID_OFFSET2         8
 #define PAR_VALID_OFFSET3         12
+/*
+一、esp即EFI系统分区
 
+1、全称EFI system partition，简写为ESP。ESP虽然是一个FAT16或FAT32格式的物理分区，但是其分区标识是EF(十六进制) 
+而非常规的0E或0C；因此，该分区在 Windows 操作系统下一般是不可见的。支持EFI模式的电脑需要从ESP启动系统，EFI固件
+可从ESP加载EFI启动程序和应用程序。
+2、ESP是一个独立于操作系统之外的分区，操作系统被引导之后，就不再依赖它。这使得ESP非常适合用来存储那些系统级的
+维护性的工具和数据，比如：引导管理程序、驱动程序、系统维护工具、系统备份等，甚至可以在ESP里安装一个特殊的操作系统；
+3、ESP也可以看做是一个安全的隐藏的分区，可以把引导管理程序、系统维护工具、系统恢复工具及镜像等放到ESP，可以自己
+打造“一键恢复系统”。而且，不仅可以自己进行DIY，还要更方便、更通用；
+
+二、msr分区是保留分区
+
+1、windows不会向msr分区建立文件系统或者写数据，而是为了调整分区结构而保留的分区。在Win8以上系统更新时，会检测msr分区。
+msr分区本质上就是写在分区表上面的【未分配空间】，目的是微软不想让别人乱动；
+2、msr分区的用途是防止将一块GPT磁盘接到老系统中，被当作未格式化的空硬盘而继续操作（例如重新格式化）导致数据丢失。
+GPT磁盘上有了这个分区，当把它接入XP等老系统中，会提示无法识别的磁盘，也无法进一步操作；
+*/
 #define VERIFY_GPT(ptr) ((!strncmp(&(ptr)[SIGNATURE_OFFSET], "EFI PART", SIGNATURE_LEN)) && \
                          ((LD_DWORD_DISK(&(ptr)[HEADER_SIZE_OFFSET]) & HEADER_SIZE_MASK) == HEADER_SIZE))
 
@@ -255,14 +275,14 @@ typedef struct _los_part_ {//分区描述符
 struct partition_info {//分区信息
     UINT8 type;	//分区类型,是主分区还是扩展分区
     UINT64 sector_start;//开始扇区位置
-    UINT64 sector_count;//扇区大小
+    UINT64 sector_count;//扇区总数量
 };
 
 
 struct disk_divide_info {//每个磁盘分区总信息
     UINT64 sector_count;	//磁盘扇区总大小
     UINT32 sector_size;		//扇区大小,一般是512字节
-    UINT32 part_count;		//当前分区数量 需 < MAX_DIVIDE_PART_PER_DISK + MAX_PRIMARY_PART_PER_DISK
+    UINT32 part_count;		//磁盘真实的分区数量 需 < MAX_DIVIDE_PART_PER_DISK + MAX_PRIMARY_PART_PER_DISK
     /*
      * The primary partition place should be reversed and set to 0 in case all the partitions are
      * logical partition (maximum 16 currently). So the maximum part number should be 4 + 16.
