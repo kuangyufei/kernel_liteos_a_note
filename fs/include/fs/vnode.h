@@ -106,8 +106,8 @@ struct Vnode {
     LIST_HEAD parentPathCaches;         /* pathCaches point to parents */	//指向父级路径缓存,上面的都是当了爸爸节点
     LIST_HEAD childPathCaches;          /* pathCaches point to children */	//指向子级路径缓存,上面都是当了别人儿子的节点
     struct Vnode *parent;               /* parent vnode */	//父节点
-    struct VnodeOps *vop;               /* vnode operations */	//节点虚拟操作
-    struct file_operations_vfs *fop;    /* file operations */	//虚拟 <--> 真实的文件系统操作
+    struct VnodeOps *vop;               /* vnode operations */	//以 Vnode 方式访问数据(接口实现|驱动程序)
+    struct file_operations_vfs *fop;    /* file operations */	//以 File 方式访问数据(接口实现|驱动程序)
     void *data;                         /* private data */		//私有数据 (drv_data),在 ( register_blockdriver | register_driver )中分配内存
     uint32_t flag;                      /* vnode flag */		//节点标签
     LIST_ENTRY hashEntry;               /* list entry for bucket in hash table */ //通过它挂入哈希表 g_vnodeHashEntrys[i], i:[0,g_vnodeHashMask]
@@ -115,7 +115,10 @@ struct Vnode {
     struct Mount *originMount;          /* fs info about this vnode */ //关于这个节点的挂载信息
     struct Mount *newMount;             /* fs info about who mount on this vnode */	//挂载在这个节点上的文件系统
 };
-//虚拟文件系统接口,具体的文件系统只需实现这些接口函数就完成了鸿蒙系统的接入.
+/*
+	虚拟文件系统接口,具体的文件系统只需实现这些接口函数就完成了鸿蒙系统的接入.
+	VnodeOps 系列函数是基于索引节点的操作.
+*/
 struct VnodeOps {
     int (*Create)(struct Vnode *parent, const char *name, int mode, struct Vnode **vnode);//创建
     int (*Lookup)(struct Vnode *parent, const char *name, int len, struct Vnode **vnode);//查询

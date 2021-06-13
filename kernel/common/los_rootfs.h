@@ -80,7 +80,7 @@ VFS是一种机制、是每一种文件系统都必须按照这个机制去实�
 #define ROOTFS_FLASH_SIZE       0xa00000 //根文件系统大小 10M
 #endif
 
-#ifdef LOSCFG_STORAGE_SPINOR
+#ifdef LOSCFG_STORAGE_SPINOR //外部开关定 使用哪种flash
 #define FLASH_TYPE              "spinor" //flash类型
 #define FLASH_DEV_NAME          "/dev/spinorblk0" //根文件系统路径
 #elif defined(LOSCFG_STORAGE_SPINAND)

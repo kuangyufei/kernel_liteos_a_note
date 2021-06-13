@@ -130,15 +130,15 @@ typedef struct mtd_node {//通过mknod在/dev子目录下建立MTD块设备节�
     CHAR *mountpoint_name;	//挂载点名称	例如: /
     VOID *mtd_info; /* Driver used by a partition *///分区使用的驱动程序
     LOS_DL_LIST node_info;//双循环节点,挂在首个分区节点上
-    LosMux lock;			//每个分区都有自己的互斥量
+    LosMux lock;			//每个分区都有自己的互斥锁
     UINT32 user_num;		//使用数量
 } mtd_partition;
 
 typedef struct par_param {//分区参数描述符,一个分区既可支持按块访问也可以支持按字符访问,只要有驱动程序就阔以
     mtd_partition *partition_head;	//首个分区,其他分区都挂在.node_info节点上
     struct MtdDev *flash_mtd;	//flash设备描述符,属于硬件驱动层
-    const struct block_operations *flash_ops;	//块设备的操作方法
-    const struct file_operations_vfs *char_ops;	//字符设备的操作方法
+    const struct block_operations *flash_ops;	//块方式的操作数据
+    const struct file_operations_vfs *char_ops;	//字符方式的操作数据
     CHAR *blockname;	//块设备名称
     CHAR *charname;		//字符设备名称
     UINT32 block_size;	//块单位(4K),对文件系统而言是按块读取数据,方便和内存页置换

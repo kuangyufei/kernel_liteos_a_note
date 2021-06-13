@@ -49,7 +49,7 @@ partition命令用来查看flash分区信息。
 使能jffs或romfs文件系统时可以查看spinor flash分区信息。
 
 举例：partition spinor
-https://weharmony.gitee.io/openharmony/zh-cn/device-dev/kernel/partition.html
+https://weharmony.github.io/openharmony/zh-cn/device-dev/kernel/partition.html
 *
 ***********************************************************/
 INT32 osShellCmdPartitionShow(INT32 argc, const CHAR **argv)

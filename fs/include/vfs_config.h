@@ -45,12 +45,12 @@ extern "C" {
 
 /* file system configure */ //文件系统配置
 
-#define CONFIG_FS_WRITABLE      // enable file system can be written
-#define CONFIG_FS_READABLE      // enable file system can be read
-#define CONFIG_DEBUG_FS         // enable vfs debug function
+#define CONFIG_FS_WRITABLE      // enable file system can be written 使能文件系统可写
+#define CONFIG_FS_READABLE      // enable file system can be read	使能文件系统可读
+#define CONFIG_DEBUG_FS         // enable vfs debug function	使能文件系统可调试
 
 
-/* fatfs cache configure */
+/* fatfs cache configure */ //fatfs缓存配置
 /* config block size for fat file system, only can be 0,32,64,128,256,512,1024 */
 #define CONFIG_FS_FAT_SECTOR_PER_BLOCK  64 //块（Block）是文件系统存取数据的最小单位 
 //64个512扇区,即 32K
@@ -62,7 +62,7 @@ extern "C" {
 
 /* config the priority of sync task */
 
-#define CONFIG_FS_FAT_SYNC_THREAD_PRIO 10
+#define CONFIG_FS_FAT_SYNC_THREAD_PRIO 10 //配置同步任务的优先级
 
 /* config dirty ratio of bcache for fat file system */
 
@@ -95,21 +95,22 @@ extern "C" {
 
 /* net configure */
 
-#ifdef LOSCFG_NET_LWIP_SACK             // enable socket and net function
+#ifdef LOSCFG_NET_LWIP_SACK             // enable socket and net function 使能网络功能
 #include "lwip/lwipopts.h"
-#define CONFIG_NSOCKET_DESCRIPTORS  LWIP_CONFIG_NUM_SOCKETS  // max numbers of socket descriptor
+#define CONFIG_NSOCKET_DESCRIPTORS  LWIP_CONFIG_NUM_SOCKETS  // max numbers of socket descriptor 套接字描述符的最大数量
 
 /* max numbers of other descriptors except socket descriptors */
-
-#define CONFIG_NFILE_DESCRIPTORS    512
-#define CONFIG_NET_SENDFILE         1   // enable sendfile function
-#define CONFIG_NET_TCP              1   // enable sendfile and send function
+//除套接字描述符外的其他描述符的最大数量
+#define CONFIG_NFILE_DESCRIPTORS    512	// 系统文件描述符数量
+#define CONFIG_NET_SENDFILE         1   // enable sendfile function //因打开网络开关,所以同时也打开发送文件开关
+#define CONFIG_NET_TCP              1   // enable sendfile and send function //使能 发送文件和数据功能
 #else
-#define CONFIG_NSOCKET_DESCRIPTORS  0
-#define CONFIG_NFILE_DESCRIPTORS    512
-#define CONFIG_NET_SENDFILE         0   // disable sendfile function
-#define CONFIG_NET_TCP              0   // disable sendfile and send function
+#define CONFIG_NSOCKET_DESCRIPTORS  0	// 关闭网络开关,当然NFS的数量为0,鸿蒙和LINUX一样,一切皆为文件,而是文件就需要文件描述符(FD)
+#define CONFIG_NFILE_DESCRIPTORS    512 // 系统文件描述符数量
+#define CONFIG_NET_SENDFILE         0   // disable sendfile function //禁用发送文件功能
+#define CONFIG_NET_TCP              0   // disable sendfile and send function //禁用sendfile和send函数功能
 #endif
+
 
 #define NR_OPEN_DEFAULT CONFIG_NFILE_DESCRIPTORS
 

@@ -42,7 +42,7 @@ static int g_totalVnodeSize = 0;        /* total vnode size */	//总节点数量
 
 static LosMux g_vnodeMux;	//操作链表互斥量			
 static struct Vnode *g_rootVnode = NULL;//根节点
-static struct VnodeOps g_devfsOps;//节点操作
+static struct VnodeOps g_devfsOps;//虚拟设备节点操作
 
 #define ENTRY_TO_VNODE(ptr)  LOS_DL_LIST_ENTRY(ptr, struct Vnode, actFreeEntry) //通过局部(actFreeEntry)找到整体(Vnode)
 #define VNODE_LRU_COUNT      10		//最多回收数量
@@ -259,7 +259,7 @@ int VnodeDrop()
     }
     return ret;
 }
-
+//
 static char *NextName(char *pos, uint8_t *len)
 {
     char *name = NULL;
@@ -332,10 +332,10 @@ static int Step(char **currentDir, struct Vnode **currentVnode, uint32_t flags)
     struct Vnode *nextVnode = NULL;
     char *nextDir = NULL;
 
-    if ((*currentVnode)->type != VNODE_TYPE_DIR) {
+    if ((*currentVnode)->type != VNODE_TYPE_DIR) {//必须是目录节点
         return -ENOTDIR;
     }
-    nextDir = NextName(*currentDir, &len);
+    nextDir = NextName(*currentDir, &len);//
     if (nextDir == NULL) {
         *currentDir = NULL;
         return LOS_OK;
@@ -418,7 +418,7 @@ OUT_FREE_PATH:
 
     return ret;
 }
-
+//根节点内部改变
 static void ChangeRootInternal(struct Vnode *rootOld, char *dirname)
 {
     int ret;
@@ -428,7 +428,7 @@ static void ChangeRootInternal(struct Vnode *rootOld, char *dirname)
     struct Vnode *nodeInFs = NULL;
     struct PathCache *item = NULL;
     struct PathCache *nextItem = NULL;
-
+	//遍历参数节点孩子节点
     LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &rootOld->childPathCaches, struct PathCache, childEntry) {
         name = item->name;
         node = item->childVnode;
@@ -453,7 +453,7 @@ static void ChangeRootInternal(struct Vnode *rootOld, char *dirname)
         break;
     }
 }
-
+//改变根节点
 void ChangeRoot(struct Vnode *rootNew)
 {
     struct Vnode *rootOld = g_rootVnode;
@@ -527,15 +527,15 @@ int VnodeCreate(struct Vnode *parent, const char *name, int mode, struct Vnode *
     if (ret != 0) {
         return -ENOMEM;
     }
-
-    newVnode->type = VNODE_TYPE_CHR;//字符设备
-    newVnode->vop = parent->vop;//继承父节点 vop
-    newVnode->fop = parent->fop;//继承父节点 fop
+	//继承老爹的基因.
+    newVnode->type = VNODE_TYPE_CHR;//默认是字符设备
+    newVnode->vop = parent->vop;//继承父节点 vop 驱动程序(也叫接口实现)
+    newVnode->fop = parent->fop;//继承父节点 fop	驱动程序(也叫接口实现)
     newVnode->data = NULL;		//默认值
     newVnode->parent = parent;	//指定父节点
-    newVnode->originMount = parent->originMount; //挂载点
-    newVnode->uid = parent->uid;
-    newVnode->gid = parent->gid;
+    newVnode->originMount = parent->originMount; //继承父节点挂载信息
+    newVnode->uid = parent->uid;	//用户ID
+    newVnode->gid = parent->gid;	//用户组ID
     newVnode->mode = mode;
 
     *vnode = newVnode;
@@ -564,7 +564,7 @@ int VnodeDevInit()
     devMount->vnodeBeCovered->flag |= VNODE_FLAG_MOUNT_ORIGIN;
     return LOS_OK;
 }
-
+//buf 接走 vnode 属性
 int VnodeGetattr(struct Vnode *vnode, struct stat *buf)
 {
     (void)memset_s(buf, sizeof(struct stat), 0, sizeof(struct stat));
@@ -620,21 +620,21 @@ static struct VnodeOps g_devfsOps = {
     .Create = VnodeCreate,
     .Chattr = VnodeChattr,
 };
-
+//打印索引节点综合信息,总数和内存使用情况
 void VnodeMemoryDump(void)
 {
     struct Vnode *item = NULL;
     struct Vnode *nextItem = NULL;
     int vnodeCount = 0;
-
+	//遍历链表
     LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &g_vnodeCurrList, struct Vnode, actFreeEntry) {
         if ((item->useCount > 0) ||
             (item->flag & VNODE_FLAG_MOUNT_ORIGIN) ||
-            (item->flag & VNODE_FLAG_MOUNT_NEW)) {
+            (item->flag & VNODE_FLAG_MOUNT_NEW)) {//有效节点
             continue;
         }
 
-        vnodeCount++;
+        vnodeCount++;//统计数量
     }
 
     PRINTK("Vnode number = %d\n", vnodeCount);
@@ -643,25 +643,25 @@ void VnodeMemoryDump(void)
 
 int VnodeDestory(struct Vnode *vnode)
 {
-    if (vnode == NULL || vnode->vop != &g_devfsOps) {
+    if (vnode == NULL || vnode->vop != &g_devfsOps) {//destroy 仅支持 dev vnode
         /* destory only support dev vnode */
         return -EINVAL;
     }
 
-    VnodeHold();
+    VnodeHold();//加锁
     if (vnode->useCount > 0) {
         VnodeDrop();
         return -EBUSY;
     }
 
-    VnodePathCacheFree(vnode);
-    LOS_ListDelete(&(vnode->hashEntry));
-    LOS_ListDelete(&vnode->actFreeEntry);
+    VnodePathCacheFree(vnode);//从缓存中清除
+    LOS_ListDelete(&(vnode->hashEntry));//从哈希数组链表中抹干净
+    LOS_ListDelete(&vnode->actFreeEntry);//从使用链表中抹干净
 
-    free(vnode->data);
-    free(vnode);
-    g_totalVnodeSize--;
-    VnodeDrop();
+    free(vnode->data);//释放私有数据内存
+    free(vnode);//释放节点本身占用的内存
+    g_totalVnodeSize--;//全局节点减少
+    VnodeDrop();//释放锁
 
     return LOS_OK;
 }

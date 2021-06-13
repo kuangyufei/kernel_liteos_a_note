@@ -334,7 +334,7 @@ ERROR_FREE:
 ERROR_EXIT:
     return -ret;
 }
-
+//创建 fat vnode 节点
 int fatfs_create(struct Vnode *parent, const char *name, int mode, struct Vnode **vpp)
 {
     struct Vnode *vp = NULL;
@@ -2064,7 +2064,7 @@ ERROR_WITH_DIR:
     fatfs_closedir(vp, dir);
     return -fatfs_2_vfs(result);
 }
-
+//fatfs 实现 vfs 接口层
 struct VnodeOps fatfs_vops = {
     /* file ops */
     .Getattr = fatfs_stat,

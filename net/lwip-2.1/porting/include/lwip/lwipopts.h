@@ -194,7 +194,7 @@
 #define MEMP_NUM_SYS_TIMEOUT            (LWIP_NUM_SYS_TIMEOUT_INTERNAL + (LWIP_IPV6 * LWIP_IPV6_DHCP6))
 
 #undef DEFAULT_ACCEPTMBOX_SIZE
-#define DEFAULT_ACCEPTMBOX_SIZE         LWIP_CONFIG_NUM_SOCKETS
+#define DEFAULT_ACCEPTMBOX_SIZE         LWIP_CONFIG_NUM_SOCKETS //
 
 #undef TCP_MSS
 #define TCP_MSS                         (IP_FRAG_MAX_MTU - 20 - 20)
@@ -212,7 +212,7 @@
 
 // Options for old lwipopts.h
 #define IP_FRAG_MAX_MTU                 1500
-#define LWIP_CONFIG_NUM_SOCKETS         128
+#define LWIP_CONFIG_NUM_SOCKETS         128	//socket链接数量
 #define IP_REASS_MAX_MEM_SIZE           (MEM_SIZE / 4)
 
 // Options for enhancement code, same for old lwipopts.h

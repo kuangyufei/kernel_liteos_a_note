@@ -152,8 +152,8 @@ STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSi
 
 #if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND)
     INT32 ret;
-    if (strcmp(rootType, "flash") == 0) {
-        ret = add_mtd_partition(FLASH_TYPE, rootAddr, rootSize, 0);
+    if (strcmp(rootType, "flash") == 0) { //flash模式启动
+        ret = add_mtd_partition(FLASH_TYPE, rootAddr, rootSize, 0);//增加MTD分区
         if (ret != LOS_OK) {
             PRINT_ERR("Failed to add spinor/spinand root partition!\n");
         } else {
@@ -167,13 +167,13 @@ STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSi
 #endif
 
 #ifdef LOSCFG_DRIVERS_USB_MASS_STORAGE
-    if (strcmp(rootType, "usb") == 0) {
+    if (strcmp(rootType, "usb") == 0) {//usb模式启动
         rootDev = "/dev/sda";
     } else
 #endif
 
 #ifdef LOSCFG_DRIVERS_SD
-    if (strcmp(rootType, "sdcard") == 0) {
+    if (strcmp(rootType, "sdcard") == 0) {//sd卡模式启动
         los_disk *sdDisk = GetMmcDisk(OTHERS);
         if (sdDisk == NULL) {
             PRINT_ERR("Get sdcard failed!\n");
@@ -184,7 +184,7 @@ STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSi
 #endif
 
 #ifdef LOSCFG_STORAGE_EMMC
-    if (strcmp(rootType, "emmc") == 0) {
+    if (strcmp(rootType, "emmc") == 0) {//磁盘启动
         rootDev = AddEmmcRootfsPart(rootAddr, rootSize);
     } else
 #endif
@@ -376,7 +376,7 @@ STATIC INT32 MatchRootInfo(CHAR *p, CHAR **rootType, CHAR **fsType, INT32 *rootA
 
     return LOS_OK;
 }
-
+//获取根类型
 STATIC INT32 GetRootType(CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 *rootSize)
 {
     CHAR *args = NULL;
@@ -462,7 +462,7 @@ STATIC VOID OsMountUserdata(const CHAR *fsType)//mount emmc /userdata
     return;
 }
 #endif
-
+//挂载根文件系统和用户文件系统
 STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
 {
     INT32 ret;
@@ -532,7 +532,7 @@ INT32 OsMountRootfs(VOID)
     CHAR *fsType = NULL;
     const CHAR *rootDev = NULL;
 
-#ifdef LOSCFG_SECURITY_BOOT
+#ifdef LOSCFG_SECURITY_BOOT	//使能安全启动
     rootType = strdup(ROOTFS_ROOT_TYPE);
     fsType = strdup(ROOTFS_FS_TYPE);
     rootAddr = ROOTFS_FLASH_ADDR;
@@ -546,7 +546,7 @@ INT32 OsMountRootfs(VOID)
     rootSize = (rootSize >= 0) ? rootSize : ROOTFS_FLASH_SIZE;
 #endif
 
-    rootDev = GetDevName(rootType, rootAddr, rootSize);//获取根设备 /dev/***
+    rootDev = GetDevName(rootType, rootAddr, rootSize);//
     if (rootDev != NULL) {
         ret = OsMountRootfsAndUserfs(rootDev, fsType);//将根设备挂到 /下， 
         if (ret != LOS_OK) {

@@ -1549,7 +1549,7 @@ BOOL is_nonblock(const CONSOLE_CB *consoleCB)
     }
     return consoleCB->isNonBlock;
 }
-
+//控制台更新FD
 INT32 ConsoleUpdateFd(VOID)
 {
     INT32 consoleID;

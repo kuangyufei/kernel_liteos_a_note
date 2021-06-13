@@ -661,7 +661,7 @@ char *realpath(const char *path, char *resolved_path)
     }
     return resolved_path;
 }
-
+//查看FD
 void lsfd(void)
 {
     struct filelist *f_list = NULL;
@@ -679,7 +679,7 @@ void lsfd(void)
     }
 
     while (i < CONFIG_NFILE_DESCRIPTORS) {
-        node = files_get_openfile(i);
+        node = files_get_openfile(i);//bitmap对应位 为 1的
         if (node) {
             PRINTK("%5d   %s\n", i, f_list->fl_files[i].f_path);
         }

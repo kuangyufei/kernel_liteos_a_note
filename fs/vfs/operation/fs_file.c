@@ -38,7 +38,7 @@
 #ifdef LOSCFG_NET_LWIP_SACK
 #include "lwip/sockets.h"
 #endif
-
+//对进程文件表操作上锁
 static void FileTableLock(struct fd_table_s *fdt)
 {
     /* Take the semaphore (perhaps waiting) */
@@ -50,7 +50,7 @@ static void FileTableLock(struct fd_table_s *fdt)
         LOS_ASSERT(errno == EINTR);
     }
 }
-
+//对进程文件表操作解锁
 static void FileTableUnLock(struct fd_table_s *fdt)
 {
     int ret = sem_post(&fdt->ft_sem);
@@ -58,7 +58,7 @@ static void FileTableUnLock(struct fd_table_s *fdt)
         PRINTK("sem_post error, errno %d \n", get_errno());
     }
 }
-
+//分配进程描述符
 static int AssignProcessFd(const struct fd_table_s *fdt, int minFd)
 {
     if (fdt == NULL) {
@@ -69,7 +69,7 @@ static int AssignProcessFd(const struct fd_table_s *fdt, int minFd)
         set_errno(EINVAL);
         return VFS_ERROR;
     }
-
+	//从表中搜索未使用的 fd
     /* search unused fd from table */
     for (int i = minFd; i < fdt->max_fds; i++) {
         if (!FD_ISSET(i, fdt->proc_fds)) {
@@ -79,17 +79,17 @@ static int AssignProcessFd(const struct fd_table_s *fdt, int minFd)
     set_errno(EMFILE);
     return VFS_ERROR;
 }
-
+//获取进程文件描述符表
 static struct fd_table_s *GetFdTable(void)
 {
     struct fd_table_s *fdt = NULL;
-    struct files_struct *procFiles = OsCurrProcessGet()->files;
+    struct files_struct *procFiles = OsCurrProcessGet()->files;//当前进程文件管理器
 
     if (procFiles == NULL) {
         return NULL;
     }
 
-    fdt = procFiles->fdt;
+    fdt = procFiles->fdt;//进程文件表
     if ((fdt == NULL) || (fdt->ft_fds == NULL)) {
         return NULL;
     }
@@ -135,7 +135,7 @@ int CheckProcessFd(int procFd)
 
     return OK;
 }
-
+//获取绑定的系统描述符
 int GetAssociatedSystemFd(int procFd)
 {
     struct fd_table_s *fdt = GetFdTable();
@@ -224,12 +224,12 @@ int DisassociateProcessFd(int procFd)
 
     return sysFd;
 }
-
+//分配文件描述符
 int AllocProcessFd(void)
 {
     return AllocLowestProcessFd(MIN_START_FD);
 }
-
+//分配文件描述符,从3号开始
 int AllocLowestProcessFd(int minFd)
 {
     struct fd_table_s *fdt = GetFdTable();
@@ -237,7 +237,7 @@ int AllocLowestProcessFd(int minFd)
     if (fdt == NULL) {
         return VFS_ERROR;
     }
-
+	//minFd 应该是一个正数，并且 0,1,2 已经分配给 stdin,stdout,stderr
     /* minFd should be a positive number,and 0,1,2 had be distributed to stdin,stdout,stderr */
     if (minFd < MIN_START_FD) {
         minFd = MIN_START_FD;
@@ -257,7 +257,7 @@ int AllocLowestProcessFd(int minFd)
 
     return procFd;
 }
-
+//分配和绑定进程描述符
 int AllocAndAssocProcessFd(int sysFd, int minFd)
 {
     struct fd_table_s *fdt = GetFdTable();
@@ -286,22 +286,22 @@ int AllocAndAssocProcessFd(int sysFd, int minFd)
 
     return procFd;
 }
-
+//分配和绑定系统描述符
 int AllocAndAssocSystemFd(int procFd, int minFd)
 {
-    struct fd_table_s *fdt = GetFdTable();
+    struct fd_table_s *fdt = GetFdTable();//获取当前进程文件表
 
     if (!IsValidProcessFd(fdt, procFd)) {
         return VFS_ERROR;
     }
 
-    int sysFd = alloc_fd(minFd);
+    int sysFd = alloc_fd(minFd);//1.分配一个系统描述符,从全局文件描述符 tg_filelist 表中分配
     if (sysFd < 0) {
         return VFS_ERROR;
     }
 
     FileTableLock(fdt);
-    fdt->ft_fds[procFd].sysFd = sysFd;
+    fdt->ft_fds[procFd].sysFd = sysFd;//2.将进程描述符和系统描述符绑定
     FileTableUnLock(fdt);
 
     return sysFd;

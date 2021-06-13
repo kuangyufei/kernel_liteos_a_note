@@ -1550,7 +1550,7 @@ int osShellCmdSync(int argc, const char **argv)
 }
 /*****************************************************************
 命令功能
-lsfd命令用来显示当前已经打开的文件描述符及对应的文件名。
+lsfd命令用来显示当前已经打开的系统文件描述符及对应的文件名。
 
 命令格式
 lsfd
@@ -1559,7 +1559,13 @@ lsfd
 lsfd命令显示当前已经打开文件的fd号以及文件的名字。
 
 使用实例
-举例：输入lsfd
+举例：输入lsfd,注意这里并不显示 (0 ~ 2)号
+OHOS #lsfd
+	fd	filename
+	3	/dev/console1
+	4	/dev/spidev1.0
+	5	/bin/init
+	6	/bin/shell
 *****************************************************************/
 int osShellCmdLsfd(int argc, const char **argv)
 {
