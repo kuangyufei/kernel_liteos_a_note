@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '对 file ,fd rootfs 模块的注解
+git commit -m  '理解 进程文件描述符 和 系统文件描述 是理解FD的关键.
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     国内:https://weharmony.gitee.io
     国外:https://weharmony.github.io

@@ -122,7 +122,7 @@ typedef struct ProcessCB {
 #ifdef LOSCFG_DRIVERS_TZDRIVER
     struct file         *execFile;     /**< Exec bin of the process */
 #endif
-    mode_t umask;
+    mode_t umask;//umask(user file-creatiopn mode mask)为用户文件创建掩码，是创建文件或文件夹时默认权限的基础。
 #ifdef LOSCFG_KERNEL_CPUP
     OsCpupBase           processCpup; /**< Process cpu usage */
 #endif
@@ -422,25 +422,25 @@ STATIC INLINE User *OsCurrUserGet(VOID)//获取当前进程的所属用户
 /*
  * Wait for any child process to finish
  */
-#define OS_PROCESS_WAIT_ANY OS_TASK_WAIT_ANYPROCESS
+#define OS_PROCESS_WAIT_ANY OS_TASK_WAIT_ANYPROCESS //等待任意子进程完成
 
 /*
  * Wait for the child process specified by the pid to finish
  */
-#define OS_PROCESS_WAIT_PRO OS_TASK_WAIT_PROCESS
+#define OS_PROCESS_WAIT_PRO OS_TASK_WAIT_PROCESS //等待pid指定的子进程完成
 
 /*
  * Waits for any child process in the specified process group to finish.
  */
-#define OS_PROCESS_WAIT_GID OS_TASK_WAIT_GID
+#define OS_PROCESS_WAIT_GID OS_TASK_WAIT_GID //等待指定进程组中的任意子进程完成
 
 #define OS_PROCESS_INFO_ALL 1
-#define OS_PROCESS_DEFAULT_UMASK 0022
-
+#define OS_PROCESS_DEFAULT_UMASK 0022 //系统默认的用户掩码(umask),大多数的Linux系统的默认掩码为022。
+//用户掩码的作用是用户在创建文件时从文件的默认权限中去除掩码中的权限。所以文件创建之后的权限实际为:创建文件的权限为：0666-0022=0644。创建文件夹的权限为：0777-0022=0755
 extern UINTPTR __user_init_entry;	// 第一个用户态任务的入口地址 查看 LITE_USER_SEC_ENTRY
 extern UINTPTR __user_init_bss;		// 查看 LITE_USER_SEC_BSS
-extern UINTPTR __user_init_end;		//
-extern UINTPTR __user_init_load_addr;
+extern UINTPTR __user_init_end;		// 用户空间结束虚拟地址
+extern UINTPTR __user_init_load_addr;//用户空间加载地址
 extern UINT32 OsSystemProcessCreate(VOID);
 extern VOID OsProcessCBRecyleToFree(VOID);
 extern VOID OsProcessResourcesToFree(LosProcessCB *processCB);

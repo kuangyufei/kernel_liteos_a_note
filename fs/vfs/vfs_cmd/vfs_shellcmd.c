@@ -665,7 +665,7 @@ static inline void print_statfs_usage(void)
 }
 /*****************************************************************
 命令功能
-statfs命令用来打印文件系统的信息，如该文件系统类型、总大小、可用大小等信息。
+statfs 命令用来打印文件系统的信息，如该文件系统类型、总大小、可用大小等信息。
 命令格式
 statfs [directory]
 参数说明
@@ -695,7 +695,7 @@ int osShellCmdStatfs(int argc, const char **argv)
   result = vfs_normalize_path(shell_working_directory, filename, &fullpath);
   ERROR_OUT_IF(result < 0, set_err(-result, "statfs error"), return -1);
 
-  result = statfs(fullpath, &sfs);
+  result = statfs(fullpath, &sfs);//命令实现体
   free(fullpath);
 
   if (result != 0 || sfs.f_type == 0)

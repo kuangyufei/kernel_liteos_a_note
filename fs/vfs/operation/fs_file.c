@@ -107,10 +107,10 @@ static bool IsValidProcessFd(struct fd_table_s *fdt, int procFd)
     }
     return true;
 }
-
+//参数进程FD和参数系统FD进行绑定(关联)
 void AssociateSystemFd(int procFd, int sysFd)
 {
-    struct fd_table_s *fdt = GetFdTable();
+    struct fd_table_s *fdt = GetFdTable();//获取当前进程FD表
 
     if (!IsValidProcessFd(fdt, procFd)) {
         return;
@@ -121,7 +121,7 @@ void AssociateSystemFd(int procFd, int sysFd)
     }
 
     FileTableLock(fdt);
-    fdt->ft_fds[procFd].sysFd = sysFd;
+    fdt->ft_fds[procFd].sysFd = sysFd;//绑定
     FileTableUnLock(fdt);
 }
 
@@ -149,7 +149,7 @@ int GetAssociatedSystemFd(int procFd)
         FileTableUnLock(fdt);
         return VFS_ERROR;
     }
-    int sysFd = fdt->ft_fds[procFd].sysFd;
+    int sysFd = fdt->ft_fds[procFd].sysFd;//进程FD捆绑系统FD
     FileTableUnLock(fdt);
 
     return sysFd;
@@ -160,35 +160,40 @@ int GetAssociatedSystemFd(int procFd)
  * 2.procFd is not allocated, we occupy it immediately.
  * 3.procFd is in open(), close(), dup() process, we return EBUSY immediately.
  */
-int AllocSpecifiedProcessFd(int procFd)
+/* 占用procFd，有三种情况：
+* 1.procFd 已经关联，我们需要将 procFd 与相关的 sysfd 解除关联。
+* 2.procFd 未分配，我们立即占用。
+* 3.procFd在open()、close()、dup()过程中，我们立即返回EBUSY。
+*/
+int AllocSpecifiedProcessFd(int procFd)//分配指定的进程Fd
 {
-    struct fd_table_s *fdt = GetFdTable();
+    struct fd_table_s *fdt = GetFdTable();//获取进程FD表
 
     if (!IsValidProcessFd(fdt, procFd)) {
         return -EBADF;
     }
 
     FileTableLock(fdt);
-    if (fdt->ft_fds[procFd].sysFd >= 0) {
+    if (fdt->ft_fds[procFd].sysFd >= 0) {//第一种情况
         /* Disassociate procFd */
-        fdt->ft_fds[procFd].sysFd = -1;
+        fdt->ft_fds[procFd].sysFd = -1;//解除关联
         FileTableUnLock(fdt);
         return OK;
     }
 
-    if (FD_ISSET(procFd, fdt->proc_fds)) {
+    if (FD_ISSET(procFd, fdt->proc_fds)) {//还在使用中
         /* procFd in race condition */
         FileTableUnLock(fdt);
         return -EBUSY;
-    } else {
+    } else {//未分配情况
         /* Unused procFd */
-        FD_SET(procFd, fdt->proc_fds);
+        FD_SET(procFd, fdt->proc_fds);//立即占用
     }
 
     FileTableUnLock(fdt);
     return OK;
 }
-
+//是否进程文件描述符
 void FreeProcessFd(int procFd)
 {
     struct fd_table_s *fdt = GetFdTable();
@@ -198,11 +203,11 @@ void FreeProcessFd(int procFd)
     }
 
     FileTableLock(fdt);
-    FD_CLR(procFd, fdt->proc_fds);
-    fdt->ft_fds[procFd].sysFd = -1;
+    FD_CLR(procFd, fdt->proc_fds);	//相应位清0
+    fdt->ft_fds[procFd].sysFd = -1;	//解绑系统文件描述符
     FileTableUnLock(fdt);
 }
-
+//解绑系统文件描述符,返回系统文件描述符
 int DisassociateProcessFd(int procFd)
 {
     struct fd_table_s *fdt = GetFdTable();
@@ -212,13 +217,13 @@ int DisassociateProcessFd(int procFd)
     }
 
     FileTableLock(fdt);
-    if (fdt->ft_fds[procFd].sysFd < 0) {
+    if (fdt->ft_fds[procFd].sysFd < 0) {//无系统文件描述符
         FileTableUnLock(fdt);
-        return VFS_ERROR;
+        return VFS_ERROR;//解绑失败
     }
-    int sysFd = fdt->ft_fds[procFd].sysFd;
-    if (procFd >= MIN_START_FD) {
-        fdt->ft_fds[procFd].sysFd = -1;
+    int sysFd = fdt->ft_fds[procFd].sysFd;//存在绑定关系
+    if (procFd >= MIN_START_FD) {//必须大于2
+        fdt->ft_fds[procFd].sysFd = -1;//解绑
     }
     FileTableUnLock(fdt);
 
@@ -252,7 +257,7 @@ int AllocLowestProcessFd(int minFd)
     }
 
     /* occupy the fd set */
-    FD_SET(procFd, fdt->proc_fds);
+    FD_SET(procFd, fdt->proc_fds);//占用该进程文件描述符
     FileTableUnLock(fdt);
 
     return procFd;
@@ -306,30 +311,30 @@ int AllocAndAssocSystemFd(int procFd, int minFd)
 
     return sysFd;
 }
-
+//进程FD引用数改变
 static void FdRefer(int sysFd)
 {
     if ((sysFd > STDERR_FILENO) && (sysFd < CONFIG_NFILE_DESCRIPTORS)) {
-        files_refer(sysFd);
+        files_refer(sysFd);//增加系统FD引用次数
     }
 #if defined(LOSCFG_NET_LWIP_SACK)
     if ((sysFd >= CONFIG_NFILE_DESCRIPTORS) && (sysFd < (CONFIG_NFILE_DESCRIPTORS + CONFIG_NSOCKET_DESCRIPTORS))) {
-        socks_refer(sysFd);
+        socks_refer(sysFd);//增加socket引用次数
     }
 #endif
 #if defined(LOSCFG_COMPAT_POSIX)
     if ((sysFd >= MQUEUE_FD_OFFSET) && (sysFd < (MQUEUE_FD_OFFSET + CONFIG_NQUEUE_DESCRIPTORS))) {
-        mqueue_refer(sysFd);
+        mqueue_refer(sysFd);//增加mqpersonal引用次数
     }
 #endif
 }
-
+//关闭FD
 static void FdClose(int sysFd, unsigned int targetPid)
 {
     UINT32 intSave;
 
     if ((sysFd > STDERR_FILENO) && (sysFd < CONFIG_NFILE_DESCRIPTORS)) {
-        LosProcessCB *processCB = OS_PCB_FROM_PID(targetPid);
+        LosProcessCB *processCB = OS_PCB_FROM_PID(targetPid);//获取目标进程
         SCHEDULER_LOCK(intSave);
         if (OsProcessIsInactive(processCB)) {
             SCHEDULER_UNLOCK(intSave);
@@ -337,20 +342,20 @@ static void FdClose(int sysFd, unsigned int targetPid)
         }
         SCHEDULER_UNLOCK(intSave);
 
-        files_close_internal(sysFd, processCB);
+        files_close_internal(sysFd, processCB);//减少文件引用数(进程和系统的两个引用数)
     }
 #if defined(LOSCFG_NET_LWIP_SACK)
     if ((sysFd >= CONFIG_NFILE_DESCRIPTORS) && (sysFd < (CONFIG_NFILE_DESCRIPTORS + CONFIG_NSOCKET_DESCRIPTORS))) {
-        socks_close(sysFd);
+        socks_close(sysFd);//减少sockert引用数
     }
 #endif
 #if defined(LOSCFG_COMPAT_POSIX)
     if ((sysFd >= MQUEUE_FD_OFFSET) && (sysFd < (MQUEUE_FD_OFFSET + CONFIG_NQUEUE_DESCRIPTORS))) {
-        mq_close((mqd_t)sysFd);
+        mq_close((mqd_t)sysFd);//减少mqpersonal引用数
     }
 #endif
 }
-
+//获取参数进程FD表
 static struct fd_table_s *GetProcessFTable(unsigned int pid, sem_t *semId)
 {
     UINT32 intSave;
@@ -358,7 +363,7 @@ static struct fd_table_s *GetProcessFTable(unsigned int pid, sem_t *semId)
     LosProcessCB *processCB = OS_PCB_FROM_PID(pid);
 
     SCHEDULER_LOCK(intSave);
-    if (OsProcessIsInactive(processCB)) {
+    if (OsProcessIsInactive(processCB)) {//参数进程必须处于激活状态
         SCHEDULER_UNLOCK(intSave);
         return NULL;
     }
@@ -374,7 +379,7 @@ static struct fd_table_s *GetProcessFTable(unsigned int pid, sem_t *semId)
 
     return procFiles->fdt;
 }
-
+//拷贝一个进程FD给指定的进程
 int CopyFdToProc(int fd, unsigned int targetPid)
 {
 #if !defined(LOSCFG_NET_LWIP_SACK) && !defined(LOSCFG_COMPAT_POSIX) && !defined(LOSCFG_FS_VFS)
@@ -389,13 +394,13 @@ int CopyFdToProc(int fd, unsigned int targetPid)
         return -EINVAL;
     }
 
-    sysFd = GetAssociatedSystemFd(fd);
+    sysFd = GetAssociatedSystemFd(fd);//找到当前进程FD绑定的系统FD
     if (sysFd < 0) {
         return -EBADF;
     }
 
-    FdRefer(sysFd);
-    fdt = GetProcessFTable(targetPid, &semId);
+    FdRefer(sysFd);//引用数要增加了.
+    fdt = GetProcessFTable(targetPid, &semId);//获取目标进程的FD表
     if (fdt == NULL || fdt->ft_fds == NULL) {
         FdClose(sysFd, targetPid);
         return -EPERM;
@@ -408,7 +413,7 @@ int CopyFdToProc(int fd, unsigned int targetPid)
         return -ESRCH;
     }
 
-    procFd = AssignProcessFd(fdt, 3);
+    procFd = AssignProcessFd(fdt, 3);//从目标进程FD表中分配一个FD出来,注意这个FD编号不一定和当前进程的编号相同,但他们都将绑定在同一个系统FD上
     if (procFd < 0) {
         if (sem_post(&semId) == -1) {
             PRINT_ERR("sem_post error, errno %d \n", get_errno());
@@ -418,8 +423,8 @@ int CopyFdToProc(int fd, unsigned int targetPid)
     }
 
     /* occupy the fd set */
-    FD_SET(procFd, fdt->proc_fds);
-    fdt->ft_fds[procFd].sysFd = sysFd;
+    FD_SET(procFd, fdt->proc_fds);//申请到了等啥呀,赶紧占用这个FD
+    fdt->ft_fds[procFd].sysFd = sysFd;//绑定,这句话代表的意思是有两个进程的FD都帮到同一个系统FD上
     if (sem_post(&semId) == -1) {
         PRINTK("sem_post error, errno %d \n", get_errno());
     }
@@ -427,7 +432,7 @@ int CopyFdToProc(int fd, unsigned int targetPid)
     return procFd;
 #endif
 }
-
+//关闭进程FD
 int CloseProcFd(int procFd, unsigned int targetPid)
 {
 #if !defined(LOSCFG_NET_LWIP_SACK) && !defined(LOSCFG_COMPAT_POSIX) && !defined(LOSCFG_FS_VFS)
@@ -441,7 +446,7 @@ int CloseProcFd(int procFd, unsigned int targetPid)
         return -EINVAL;
     }
 
-    fdt = GetProcessFTable(targetPid, &semId);
+    fdt = GetProcessFTable(targetPid, &semId);//获取进程文件描述表
     if (fdt == NULL || fdt->ft_fds == NULL) {
         return -EPERM;
     }
@@ -459,7 +464,7 @@ int CloseProcFd(int procFd, unsigned int targetPid)
         return -EPERM;
     }
 
-    sysFd = fdt->ft_fds[procFd].sysFd;
+    sysFd = fdt->ft_fds[procFd].sysFd;//获取参数进程描述符绑定的系统文件描述符
     if (sysFd < 0) {
         if (sem_post(&semId) == -1) {
             PRINTK("sem_post error, errno %d \n", get_errno());
@@ -468,12 +473,12 @@ int CloseProcFd(int procFd, unsigned int targetPid)
     }
 
     /* clean the fd set */
-    FD_CLR(procFd, fdt->proc_fds);
-    fdt->ft_fds[procFd].sysFd = -1;
+    FD_CLR(procFd, fdt->proc_fds);//进程FD重置
+    fdt->ft_fds[procFd].sysFd = -1;//解绑
     if (sem_post(&semId) == -1) {
         PRINTK("sem_post error, errno %d \n", get_errno());
     }
-    FdClose(sysFd, targetPid);
+    FdClose(sysFd, targetPid);//注意这个操作只是让对应的引用数量减少
 
     return 0;
 #endif

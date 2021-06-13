@@ -61,7 +61,7 @@ struct Mount {//装载
 struct MountOps {
     int (*Mount)(struct Mount *mount, struct Vnode *vnode, const void *data);//装载
     int (*Unmount)(struct Mount *mount, struct Vnode **blkdriver);//卸载
-    int (*Statfs)(struct Mount *mount, struct statfs *sbp);//状态
+    int (*Statfs)(struct Mount *mount, struct statfs *sbp);//统计文件系统的信息，如该文件系统类型、总大小、可用大小等信息
 };
 
 struct Mount* MountAlloc(struct Vnode* vnode, struct MountOps* mop);

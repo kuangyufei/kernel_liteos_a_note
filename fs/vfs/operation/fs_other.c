@@ -56,7 +56,7 @@ int fstat(int fd, struct stat *buf)
         return VFS_ERROR;
     }
 
-    return stat(filep->f_path, buf);
+    return stat(filep->f_path, buf);//统计
 }
 
 int fstat64(int fd, struct stat64 *buf)
@@ -681,18 +681,18 @@ void lsfd(void)
     while (i < CONFIG_NFILE_DESCRIPTORS) {
         node = files_get_openfile(i);//bitmap对应位 为 1的
         if (node) {
-            PRINTK("%5d   %s\n", i, f_list->fl_files[i].f_path);
+            PRINTK("%5d   %s\n", i, f_list->fl_files[i].f_path);//打印fd 和 路径
         }
         i++;
     }
     (void)sem_post(&f_list->fl_sem);
 }
-
+//获取用户创建文件掩码
 mode_t GetUmask(void)
 {
     return OsCurrProcessGet()->umask;
 }
-
+//给当前进程设置系统创建文件掩码,并返回进程旧掩码
 mode_t SysUmask(mode_t mask)
 {
     UINT32 intSave;

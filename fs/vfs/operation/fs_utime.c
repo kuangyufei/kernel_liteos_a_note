@@ -45,7 +45,7 @@
 /****************************************************************************
  * Global Functions
  ****************************************************************************/
-
+//更新时间
 int utime(const char *path, const struct utimbuf *ptimes)
 {
     int ret;
@@ -54,7 +54,7 @@ int utime(const char *path, const struct utimbuf *ptimes)
     time_t cur_sec;
     struct IATTR attr = {0};
 
-    /* Sanity checks */
+    /* Sanity checks *///健全性检查
 
 
     if (path == NULL) {
@@ -66,7 +66,7 @@ int utime(const char *path, const struct utimbuf *ptimes)
         ret = -ENOENT;
         goto errout;
     }
-
+	//找到绝对路径
     ret = vfs_normalize_path((const char *)NULL, path, &fullpath);
     if (ret < 0) {
         goto errout;
@@ -74,24 +74,24 @@ int utime(const char *path, const struct utimbuf *ptimes)
 
     /* Get the vnode for this file */
     VnodeHold();
-    ret = VnodeLookup(fullpath, &vnode, 0);
+    ret = VnodeLookup(fullpath, &vnode, 0);//找到vnode节点
     if (ret != LOS_OK) {
         VnodeDrop();
         goto errout_with_path;
     }
 
-    if (vnode->vop && vnode->vop->Chattr) {
-        if (ptimes == NULL) {
+    if (vnode->vop && vnode->vop->Chattr) {//验证接口都已经实现
+        if (ptimes == NULL) {//参数没有给时间
             /* get current seconds */
-            cur_sec = time(NULL);
-            attr.attr_chg_atime = cur_sec;
-            attr.attr_chg_mtime = cur_sec;
-        } else {
-            attr.attr_chg_atime = ptimes->actime;
+            cur_sec = time(NULL);//获取当前秒
+            attr.attr_chg_atime = cur_sec;//更新访问时间
+            attr.attr_chg_mtime = cur_sec;//更新修改时间
+        } else {//采用参数时间
+            attr.attr_chg_atime = ptimes->actime;//更新访问时间
             attr.attr_chg_mtime = ptimes->modtime;
         }
-        attr.attr_chg_valid = CHG_ATIME | CHG_MTIME;
-        ret = vnode->vop->Chattr(vnode, &attr);
+        attr.attr_chg_valid = CHG_ATIME | CHG_MTIME;//更新了两个时间
+        ret = vnode->vop->Chattr(vnode, &attr);//调用接口更新数据
         if (ret != OK) {
             VnodeDrop();
             goto errout_with_path;
