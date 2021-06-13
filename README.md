@@ -1,6 +1,6 @@
-[OpenHarmony | 鸿蒙研究站 | WeHarmony](https://weharmony.gitee.io/) **[ < 国内](https://weharmony.gitee.io/)[ | 国外 >](https://weharmony.github.io/)**
+[OpenHarmony | 鸿蒙研究站 | WeHarmony](https://openharmony.github.io/) **[ < 国内](https://openharmony.github.io/)[ | 国外 >](https://weharmony.github.io/)**
 
-[![在这里插入图片描述](https://gitee.com/weharmony/docs/raw/master/pic/other/io.png)](https://weharmony.gitee.io)
+[![在这里插入图片描述](https://gitee.com/weharmony/docs/raw/master/pic/other/io.png)](https://openharmony.github.io/)
 
 百篇博客系列篇.本篇为:
 
@@ -19,16 +19,16 @@
 * 百万汉字注解仓库：[kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note) 是在 OpenHarmony 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) (鸿蒙轻内核项目)基础上给源码加上中文注解的版本.加注版与官方最新源码保持同步.
 
 * 百篇博客分析地址：
-  *  国内: [ https://weharmony.gitee.io/weharmony](https://weharmony.gitee.io/weharmony) 
+  *  国内: [ https://weharmony.21cloudbox.com/weharmony](https://weharmony.21cloudbox.com/weharmony)   
   *  国外: [ https://weharmony.github.io/weharmony](https://weharmony.github.io/weharmony)   
   
-* [OpenHarmony开发者文档](https://weharmony.gitee.io/openharmony) 是对官方文档 [docs](https://gitee.com/openharmony/docs) 做的非常炫酷的静态站点，支持侧边栏/面包屑/搜索/中英文，非常方便的查看官方文档，大大提高学习和开发效率. 
-  * 国内: [https://weharmony.gitee.io/openharmony](https://weharmony.gitee.io/openharmony)
+* [OpenHarmony开发者文档](https://weharmony.github.io/openharmony) 是对官方文档 [docs](https://gitee.com/openharmony/docs) 做的非常炫酷的静态站点，支持侧边栏/面包屑/搜索/中英文，非常方便的查看官方文档，大大提高学习和开发效率. 
+  * 国内: [https://weharmony.21cloudbox.com/openharmony](https://weharmony.21cloudbox.com/openharmony) 
   * 国外: [https://weharmony.github.io/openharmony](https://weharmony.github.io/openharmony) 
     
-*  [下载.鸿蒙源码分析.离线文档 < 国内](https://weharmony.gitee.io/history/)[ | 国外 > ](https://weharmony.github.io/history/)
+*  [下载.鸿蒙源码分析.离线文档 < 国内](https://weharmony.21cloudbox.com/history.html)[ | 国外 > ](https://weharmony.github.io/history.html)
 
-*  [加入兴趣小组.微信群聊  < 国内](https://weharmony.gitee.io/qun/)[ | 国外 > ](https://weharmony.github.io/qun/)
+*  [加入兴趣小组.微信群聊  < 国内](https://weharmony.21cloudbox.com/qun.html)[ | 国外 > ](https://weharmony.github.io/qun.html)
 
       
 ### **为何要精读内核源码?**
@@ -68,7 +68,7 @@
 * 搜索 **`@note_#if0`** 是由第三方项目提供不在内核源码中定义的极为重要结构体，为方便理解而添加的。
 * 搜索 **`@note_good`** 是给源码点赞的地方
 ### **新增zzz目录**
-* 中文加注版比官方版无新增文件，只多了一个zzz的目录，里面放了一些文件，它与内核代码无关，大家可以忽略它，取名zzz是为了排在最后，减少对原有代码目录级的侵入，zzz的想法源于微信中名称为AAA的那帮朋友，你的微信里应该也有他们熟悉的身影吧 :|P
+* 中文加注版比官方版无新增文件，只多了一个zzz的目录，里面放了一些图片/文件/工具，它与内核代码无关，大家可以忽略它，取名zzz是为了排在最后，减少对原有代码目录级的侵入，zzz的想法源于微信中名称为AAA的那帮朋友，你的微信里应该也有他们熟悉的身影吧 :|P
 
 ### **百篇博客.往期回顾**
 在加注过程中，整理出以下文章。内容立足源码，常以生活场景打比方尽可能多的将内核知识点置入某种场景，具有画面感，容易理解记忆。说别人能听得懂的话很重要! 百篇博客绝不是百度教条式的在说一堆诘屈聱牙的概念，那没什么意思。更希望让内核变得栩栩如生，倍感亲切.确实有难度，自不量力，但已经出发，回头已是不可能的了。　:P
