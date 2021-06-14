@@ -223,7 +223,7 @@ cat用于显示文本文件的内容。
 使用实例
 举例：cat harmony.txt
 *******************************************************/
-int osShellCmdDoCatShow(UINTPTR arg)
+int osShellCmdDoCatShow(UINTPTR arg) //shellcmd_cat 任务实现
 {
   int ret = 0;
   char buf[CAT_BUF_SIZE];
@@ -233,7 +233,7 @@ int osShellCmdDoCatShow(UINTPTR arg)
   FILE *ini = NULL;
 
   (void)pthread_mutex_lock(&g_mutex_cat);
-  ini = fopen(fullpath, "r");
+  ini = fopen(fullpath, "r");//打开文件
   if (ini == NULL)
     {
       ret = -1;
@@ -244,7 +244,7 @@ int osShellCmdDoCatShow(UINTPTR arg)
   do
     {
       (void)memset_s(buf, sizeof(buf), 0, CAT_BUF_SIZE);
-      size = fread(buf, 1, CAT_BUF_SIZE, ini);
+      size = fread(buf, 1, CAT_BUF_SIZE, ini); //读取文件内容
       if ((int)size < 0)
         {
           ret = -1;
@@ -291,7 +291,7 @@ int osShellCmdCat(int argc, const char **argv)
   unsigned int ca_task;
   struct Vnode *vnode = NULL;
   TSK_INIT_PARAM_S init_param;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();
+  char *shell_working_directory = OsShellGetWorkingDirtectory();//显示当前目录 pwd
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -299,7 +299,7 @@ int osShellCmdCat(int argc, const char **argv)
 
   ERROR_OUT_IF(argc != 1, PRINTK("cat [FILE]\n"), return -1);
 
-  ret = vfs_normalize_path(shell_working_directory, argv[0], &fullpath);
+  ret = vfs_normalize_path(shell_working_directory, argv[0], &fullpath);//由相对路径获取绝对路径
   ERROR_OUT_IF(ret < 0, set_err(-ret, "cat error"), return -1);
 
   VnodeHold();
@@ -323,14 +323,14 @@ int osShellCmdCat(int argc, const char **argv)
   VnodeDrop();
   (void)memset_s(&init_param, sizeof(init_param), 0, sizeof(TSK_INIT_PARAM_S));
   init_param.pfnTaskEntry = (TSK_ENTRY_FUNC)osShellCmdDoCatShow;
-  init_param.usTaskPrio   = CAT_TASK_PRIORITY;
-  init_param.auwArgs[0]   = (UINTPTR)fullpath;
-  init_param.uwStackSize  = CAT_TASK_STACK_SIZE;
-  init_param.pcName       = "shellcmd_cat";
+  init_param.usTaskPrio   = CAT_TASK_PRIORITY;	//优先级10
+  init_param.auwArgs[0]   = (UINTPTR)fullpath;	//入口参数
+  init_param.uwStackSize  = CAT_TASK_STACK_SIZE;//内核栈大小
+  init_param.pcName       = "shellcmd_cat";	//任务名称
   init_param.uwResved     = LOS_TASK_STATUS_DETACHED | OS_TASK_FLAG_SPECIFIES_PROCESS;
-  init_param.processID    = 2; /* 2: kProcess */
+  init_param.processID    = 2; /* 2: kProcess */ //内核任务
 
-  ret = (int)LOS_TaskCreate(&ca_task, &init_param);
+  ret = (int)LOS_TaskCreate(&ca_task, &init_param);//创建任务显示cat内容
 
   if (ret != LOS_OK)
     {

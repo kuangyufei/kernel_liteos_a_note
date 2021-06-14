@@ -37,7 +37,7 @@
 #define MSEC_TO_NSEC        1000000
 #define SEC_TO_MSEC         1000
 #define DECIMAL_TO_PERCENT  100
-
+//cat /proc/uptime 的实现函数
 static int UptimeProcFill(struct SeqBuf *seqBuf, void *v)
 {
     struct timespec curtime = {0, 0};
@@ -69,9 +69,9 @@ static int UptimeProcFill(struct SeqBuf *seqBuf, void *v)
 #endif
     return 0;
 }
-
+//替换了 read 接口的实现
 static const struct ProcFileOperations UPTIME_PROC_FOPS = {
-    .read       = UptimeProcFill,
+    .read       = UptimeProcFill,//读取接口的实现
 };
 
 void ProcUptimeInit(void)

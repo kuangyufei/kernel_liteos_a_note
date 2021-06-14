@@ -87,17 +87,17 @@ int OsShellCmdWriteProc(int argc, char **argv)
     char realPath[PATH_MAX] = {'\0'};
     const char *rootProcDir = "/proc/";
 
-    if (argc == WRITEPROC_ARGC) {
-        value = argv[0];
-        path = argv[2];
+    if (argc == WRITEPROC_ARGC) {//argv[0] = ">>"
+        value = argv[0];//test
+        path = argv[2];///proc/uptime
         len = strlen(value) + 1;  /* +1:add the \0 */
-        if (strncmp(argv[1], ">>", strlen(">>")) == 0) {
+        if (strncmp(argv[1], ">>", strlen(">>")) == 0) { //  第二个参数必须得是 >>
             if ((realpath(path, realPath) == NULL) || (strncmp(realPath, rootProcDir, strlen(rootProcDir)) != 0)) {
                 PRINT_ERR("No such file or directory\n");
                 return PROC_ERROR;
             }
 
-            handle = OpenProcFile(realPath, O_TRUNC);
+            handle = OpenProcFile(realPath, O_TRUNC);//打开 proc 文件
             if (handle == NULL) {
                 PRINT_ERR("No such file or directory\n");
                 return PROC_ERROR;

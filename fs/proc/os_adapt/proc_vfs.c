@@ -41,8 +41,8 @@
 
 #define PROCFS_DEFAULT_MODE 0555
 
-#ifdef LOSCFG_FS_PROC
-static struct VnodeOps g_procfsVops;
+#ifdef LOSCFG_FS_PROC //使能 /proc 功能
+static struct VnodeOps g_procfsVops; // proc 文件系统
 static struct file_operations_vfs g_procfsFops;
 
 static struct ProcDirEntry *VnodeToEntry(struct Vnode *node)
@@ -177,7 +177,7 @@ int VfsProcfsLookup(struct Vnode *parent, const char *name, int len, struct Vnod
     (*vpp)->parent = parent;
     return LOS_OK;
 }
-
+//装载实现,将mount挂到vnode节点上 
 int VfsProcfsMount(struct Mount *mnt, struct Vnode *device, const void *data)
 {
     struct Vnode *vp = NULL;
@@ -193,7 +193,7 @@ int VfsProcfsMount(struct Mount *mnt, struct Vnode *device, const void *data)
 
     struct ProcDirEntry *root = GetProcRootEntry();
     vp->data = root;
-    vp->originMount = mnt;
+    vp->originMount = mnt;//绑定mount
     vp->fop = &g_procfsFops;
     mnt->data = NULL;
     mnt->vnodeCovered = vp;
@@ -272,7 +272,7 @@ int VfsProcfsReaddir(struct Vnode *node, struct fs_dirent_s *dir)
 
     return i;
 }
-
+//proc 打开目录
 int VfsProcfsOpendir(struct Vnode *node,  struct fs_dirent_s *dir)
 {
     struct ProcDirEntry *pde = VnodeToEntry(node);
@@ -284,7 +284,7 @@ int VfsProcfsOpendir(struct Vnode *node,  struct fs_dirent_s *dir)
 
     return LOS_OK;
 }
-
+//proc 打开文件
 int VfsProcfsOpen(struct file *filep)
 {
     if (filep == NULL) {
@@ -323,7 +323,7 @@ int VfsProcfsClose(struct file *filep)
 
     return result;
 }
-
+//统计信息接口,简单实现
 int VfsProcfsStatfs(struct Mount *mnt, struct statfs *buf)
 {
     (void)memset_s(buf, sizeof(struct statfs), 0, sizeof(struct statfs));
@@ -336,14 +336,14 @@ int VfsProcfsClosedir(struct Vnode *vp, struct fs_dirent_s *dir)
 {
     return LOS_OK;
 }
-
+// proc 对 MountOps 接口实现
 const struct MountOps procfs_operations = {
-    .Mount = VfsProcfsMount,
+    .Mount = VfsProcfsMount,//装载
     .Unmount = NULL,
-    .Statfs = VfsProcfsStatfs,
+    .Statfs = VfsProcfsStatfs,//统计信息
 };
-
-static struct VnodeOps g_procfsVops = {
+// proc 对 VnodeOps 接口实现
+static struct VnodeOps g_procfsVops = { 
     .Lookup = VfsProcfsLookup,
     .Getattr = VfsProcfsStat,
     .Readdir = VfsProcfsReaddir,
@@ -351,13 +351,13 @@ static struct VnodeOps g_procfsVops = {
     .Closedir = VfsProcfsClosedir,
     .Truncate = VfsProcfsTruncate
 };
-
+// proc 对 file_operations_vfs 接口实现
 static struct file_operations_vfs g_procfsFops = {
-    .read = VfsProcfsRead,
-    .write = VfsProcfsWrite,
-    .open = VfsProcfsOpen,
-    .close = VfsProcfsClose
+    .read = VfsProcfsRead,	// 最终调用 ProcFileOperations -> read
+    .write = VfsProcfsWrite,// 最终调用 ProcFileOperations -> write
+    .open = VfsProcfsOpen,	// 最终调用 ProcFileOperations -> open
+    .close = VfsProcfsClose	// 最终调用 ProcFileOperations -> release
 };
-
+//文件系统注册入口
 FSMAP_ENTRY(procfs_fsmap, "procfs", procfs_operations, FALSE, FALSE);
 #endif

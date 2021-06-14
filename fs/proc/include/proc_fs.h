@@ -88,13 +88,13 @@ struct ProcFileOperations {
 };
 //proc 目录/文件项, @notethinking 直接叫 ProcEntry不香吗 ?
 struct ProcDirEntry {
-    mode_t mode;
-    int flags;
-    const struct ProcFileOperations *procFileOps;
-    struct ProcFile *pf;
+    mode_t mode;	//模式(读|写...)
+    int flags;	//标签
+    const struct ProcFileOperations *procFileOps;//驱动程序
+    struct ProcFile *pf;//文件指针
     struct ProcDirEntry *next, *parent, *subdir;//当前目录项的关系项
     void *data;
-    atomic_t count; /* open file count */
+    atomic_t count; /* open file count */ //打开文件的数量
     spinlock_t pdeUnloadLock;
 
     int nameLen;

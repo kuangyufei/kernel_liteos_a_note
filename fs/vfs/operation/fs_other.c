@@ -623,7 +623,7 @@ void ls(const char *pathname)
     return;
 }
 
-
+//
 char *realpath(const char *path, char *resolved_path)
 {
     int ret, result;
@@ -637,7 +637,7 @@ char *realpath(const char *path, char *resolved_path)
         return NULL;
     }
 
-    result = stat(new_path, &buf);
+    result = stat(new_path, &buf);//获取统计信息,即属性信息
 
     if (resolved_path == NULL) {
         if (result != ENOERR) {

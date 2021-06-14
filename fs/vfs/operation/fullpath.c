@@ -241,7 +241,7 @@ static char *vfs_normalize_fullpath(const char *directory, const char *filename,
 
     return fullpath;
 }
-//通过目录和文件名找(绝对)路径
+//虚拟文件系统 | 标准化路径
 int vfs_normalize_path(const char *directory, const char *filename, char **pathname)
 {
     char *fullpath = NULL;

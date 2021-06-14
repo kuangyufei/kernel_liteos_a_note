@@ -200,13 +200,13 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is system-level task, like idle, swtmr and etc.
  */
-#define OS_TASK_FLAG_SYSTEM_TASK    0x1000U
+#define OS_TASK_FLAG_SYSTEM_TASK    0x1000U	//系统任务
 
 /**
  * @ingroup los_task
  * Flag that indicates the task property.
  *
- * The task is no-delete system task, like resourceTask.
+ * The task is no-delete system task, like resourceTask. //该任务是不可删除的系统任务，如资源回收任务
  */
 #define OS_TASK_FLAG_NO_DELETE    0x2000U
 
@@ -216,7 +216,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * Kills the thread during process exit.
  */
-#define OS_TASK_FLAG_EXIT_KILL       0x4000U
+#define OS_TASK_FLAG_EXIT_KILL       0x4000U //在进程退出期间一同被干掉的任务
 
 /**
  * @ingroup los_task
@@ -224,14 +224,14 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * Specifies the process creation task.
  */
-#define OS_TASK_FLAG_SPECIFIES_PROCESS 0x0U
+#define OS_TASK_FLAG_SPECIFIES_PROCESS 0x0U //创建指定任务 例如: cat weharmony.net 实现 
 
 /**
  * @ingroup los_task
  * Boundary on which the stack size is aligned.
  *
  */
-#define OS_TASK_STACK_SIZE_ALIGN    16U
+#define OS_TASK_STACK_SIZE_ALIGN    16U //堆栈大小对齐的边界
 
 /**
  * @ingroup los_task
@@ -243,7 +243,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 /**
  * @ingroup los_task
  * Number of usable task priorities.
- */
+ */	//可用任务优先级的数量
 #define OS_TSK_PRINUM               (OS_TASK_PRIORITY_LOWEST - OS_TASK_PRIORITY_HIGHEST + 1)
 
 /**

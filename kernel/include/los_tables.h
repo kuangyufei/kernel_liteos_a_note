@@ -39,6 +39,9 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
+/*
+HAL层主要功能是实现轻OpenHarmony与芯片的解耦，
+*/
 
 #ifndef LOS_HAL_TABLE_BEGIN
 #define LOS_HAL_TABLE_BEGIN(label, name)                                     \

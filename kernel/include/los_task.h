@@ -59,7 +59,7 @@ extern "C" {
  *
  * The task is automatically deleted.
  */
-#define LOS_TASK_STATUS_DETACHED                0x0800U
+#define LOS_TASK_STATUS_DETACHED                0x0800U //任务被自动删除
 
 /**
  * @ingroup los_task

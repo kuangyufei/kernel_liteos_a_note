@@ -92,7 +92,7 @@ static struct ProcDirEntry *ProcFindNode(struct ProcDirEntry *parent, const char
  * return: the file of handle
  * add by ll
  */
-struct ProcDirEntry *ProcFindEntry(const char *path)
+struct ProcDirEntry *ProcFindEntry(const char *path)//查看内容项
 {
     struct ProcDirEntry *pn = NULL;
     int isfoundsub;
@@ -162,7 +162,7 @@ struct ProcDirEntry *ProcFindEntry(const char *path)
     spin_unlock(&procfsLock);
     return NULL;
 }
-
+//检查 proc名称有效性
 static int CheckProcName(const char *name, struct ProcDirEntry **parent, const char **lastName)
 {
     struct ProcDirEntry *pn = *parent;
@@ -198,7 +198,7 @@ static int CheckProcName(const char *name, struct ProcDirEntry **parent, const c
 
     return 0;
 }
-
+//分配 proc 节点
 static struct ProcDirEntry *ProcAllocNode(struct ProcDirEntry **parent, const char *name, mode_t mode)
 {
     struct ProcDirEntry *pn = NULL;
@@ -220,8 +220,8 @@ static struct ProcDirEntry *ProcAllocNode(struct ProcDirEntry **parent, const ch
     if ((S_ISDIR((*parent)->mode) == 0) || (strchr(lastName, '/'))) {
         return pn;
     }
-
-    pn = (struct ProcDirEntry *)malloc(sizeof(struct ProcDirEntry));
+	//开始各种造初始数据
+    pn = (struct ProcDirEntry *)malloc(sizeof(struct ProcDirEntry));//从内核分配内存
     if (pn == NULL) {
         return NULL;
     }
@@ -230,7 +230,7 @@ static struct ProcDirEntry *ProcAllocNode(struct ProcDirEntry **parent, const ch
         mode |= S_IRUSR | S_IRGRP | S_IROTH;
     }
 
-    (void)memset_s(pn, sizeof(struct ProcDirEntry), 0, sizeof(struct ProcDirEntry));
+    (void)memset_s(pn, sizeof(struct ProcDirEntry), 0, sizeof(struct ProcDirEntry));//初始化内存
     pn->nameLen = strlen(lastName);
     pn->mode = mode;
     ret = memcpy_s(pn->name, sizeof(pn->name), lastName, strlen(lastName) + 1);
@@ -253,7 +253,7 @@ static struct ProcDirEntry *ProcAllocNode(struct ProcDirEntry **parent, const ch
         return NULL;
     }
 
-    atomic_set(&pn->count, 1);
+    atomic_set(&pn->count, 1);//默认有一个引用
     spin_lock_init(&pn->pdeUnloadLock);
     return pn;
 }
@@ -315,14 +315,14 @@ static void ProcDetachNode(struct ProcDirEntry *pn)
     }
     pn->parent = NULL;
 }
-
+//在参数 parent 下创建目录
 static struct ProcDirEntry *ProcCreateDir(struct ProcDirEntry *parent, const char *name,
                                           const struct ProcFileOperations *procFileOps, mode_t mode)
 {
     struct ProcDirEntry *pn = NULL;
     int ret;
 
-    pn = ProcAllocNode(&parent, name, S_IFDIR | mode);
+    pn = ProcAllocNode(&parent, name, S_IFDIR | mode);//分配一个节点
     if (pn == NULL) {
         return pn;
     }
@@ -337,20 +337,20 @@ static struct ProcDirEntry *ProcCreateDir(struct ProcDirEntry *parent, const cha
 
     return pn;
 }
-
+//创建文件项
 static struct ProcDirEntry *ProcCreateFile(struct ProcDirEntry *parent, const char *name,
                                            const struct ProcFileOperations *procFileOps, mode_t mode)
 {
     struct ProcDirEntry *pn = NULL;
     int ret;
 
-    pn = ProcAllocNode(&parent, name, S_IFREG | mode);
+    pn = ProcAllocNode(&parent, name, S_IFREG | mode);//分配一个节点,S_IFREG代表是文件类型
     if (pn == NULL) {
         return pn;
     }
 
-    pn->procFileOps = procFileOps;
-    pn->type = VNODE_TYPE_REG;
+    pn->procFileOps = procFileOps;//驱动程序
+    pn->type = VNODE_TYPE_REG;	//文件类型
     ret = ProcAddNode(parent, pn);
     if (ret != 0) {
         free(pn->pf);
@@ -366,9 +366,9 @@ struct ProcDirEntry *CreateProcEntry(const char *name, mode_t mode, struct ProcD
     struct ProcDirEntry *pde = NULL;
 
     if (S_ISDIR(mode)) {//目录模式 0
-        pde = ProcCreateDir(parent, name, NULL, mode);
+        pde = ProcCreateDir(parent, name, NULL, mode);//无驱动程序
     } else {
-        pde = ProcCreateFile(parent, name, NULL, mode);
+        pde = ProcCreateFile(parent, name, NULL, mode);//无驱动程序
     }
     return pde;
 }
@@ -440,7 +440,7 @@ struct ProcDirEntry *ProcMkdir(const char *name, struct ProcDirEntry *parent)
 {
     return ProcCreateDir(parent, name, NULL, 0);
 }
-
+//创建数据
 struct ProcDirEntry *ProcCreateData(const char *name, mode_t mode, struct ProcDirEntry *parent,
                                     const struct ProcFileOperations *procFileOps, void *data)
 {
@@ -499,7 +499,7 @@ static int GetNextDir(struct ProcDirEntry *pn, void *buf, size_t len)
     pn->pf->fPos++;
     return ENOERR;
 }
-
+//打开 pro 
 int ProcOpen(struct ProcFile *procFile)
 {
     if (procFile == NULL) {
@@ -509,7 +509,7 @@ int ProcOpen(struct ProcFile *procFile)
         return OK;
     }
 
-    struct SeqBuf *buf = LosBufCreat();
+    struct SeqBuf *buf = LosBufCreat();//创建一个 seq buf
     if (buf == NULL) {
         return PROC_ERROR;
     }
@@ -597,7 +597,7 @@ int ReadProcFile(struct ProcDirEntry *pde, void *buf, size_t len)
     }
     return result;
 }
-
+//写 proc 文件
 int WriteProcFile(struct ProcDirEntry *pde, const void *buf, size_t len)
 {
     int result = -EPERM;
@@ -618,7 +618,7 @@ int WriteProcFile(struct ProcDirEntry *pde, const void *buf, size_t len)
 
     return result;
 }
-
+// seek proc 文件
 loff_t LseekProcFile(struct ProcDirEntry *pde, loff_t offset, int whence)
 {
     if (pde == NULL || pde->pf == NULL) {
