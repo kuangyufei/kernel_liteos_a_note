@@ -49,7 +49,33 @@
 #include "proc_fs.h"
 
 #define WRITEPROC_ARGC  3
+/*****************************************************************
+鸿蒙内核提供了一种通过 /proc 文件系统，在运行时访问内核内部数据结构、改变内核设置的机制。
+proc文件系统是一个伪文件系统，它只存在内存当中，而不占用外存空间。它以文件系统的方式为
+访问系统内核数据的操作提供接口。
+用户和应用程序可以通过proc得到系统的信息，并可以改变内核的某些参数。由于系统的信息，
+如进程，是动态改变的，所以用户或应用程序读取proc文件时，proc文件系统是动态从系统内核读出
+所需信息并提交的。
 
+proc fs支持传入字符串参数，需要每个文件实现自己的写方法。
+命令格式
+writeproc <data> >> /proc/<filename>
+
+参数说明
+参数			参数说明		
+data		要输入的字符串，以空格为结束符，如需输入空格，请用""包裹。
+filename	data要传入的proc文件。
+
+proc文件实现自身的write函数，调用writeproc命令后会将入参传入write函数。
+	注意:procfs暂不支持多线程访问
+	
+OHOS # writeproc test >> /proc/uptime
+
+[INFO]write buf is: test
+test >> /proc/uptime
+ 说明： uptime proc文件临时实现write函数，INFO日志为实现的测试函数打印的日志。
+
+*****************************************************************/
 int OsShellCmdWriteProc(int argc, char **argv)
 {
     int i;

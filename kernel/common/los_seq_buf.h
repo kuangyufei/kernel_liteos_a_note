@@ -41,13 +41,13 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define SEQBUF_PAGE_SIZE  4096
-#define SEQBUF_LIMIT_SIZE (256 * SEQBUF_PAGE_SIZE)
-
+#define SEQBUF_PAGE_SIZE  4096	//4K 一页
+#define SEQBUF_LIMIT_SIZE (256 * SEQBUF_PAGE_SIZE) //缓冲区最大空间为1M
+//序列化BUF
 struct SeqBuf {
-    char *buf;
-    size_t size;
-    size_t count;
+    char *buf;	//内容
+    size_t size;//buf大小
+    size_t count;//当前位置
     void *private;
 };
 

@@ -37,15 +37,15 @@
 
 #include "fs/file.h"
 #include "internal.h"
-
+//显示文件系统类型,将被作为回调函数回调
 static int ShowType(const char *mountPoint, struct statfs *statBuf, void *arg)
 {
     struct SeqBuf *seqBuf = (struct SeqBuf *)arg;
     char *type = NULL;
     char *name = NULL;
 
-    switch (statBuf->f_type) {
-        case PROCFS_MAGIC:
+    switch (statBuf->f_type) {//目前鸿蒙支持的文件系统
+        case PROCFS_MAGIC:	
             type = "proc";
             name = "proc";
             break;
@@ -72,12 +72,12 @@ static int ShowType(const char *mountPoint, struct statfs *statBuf, void *arg)
         default:
             return 0;
     }
-
-    (void)LosBufPrintf(seqBuf, "%s %s %s\n", name, mountPoint, type);
+	
+    (void)LosBufPrintf(seqBuf, "%s %s %s\n", name, mountPoint, type);//打印到 seqBuf 中,即 arg中
 
     return 0;
 }
-
+// 读取 mount 接口实现
 static int MountsProcFill(struct SeqBuf *m, void *v)
 {
     foreach_mountpoint_t handler = ShowType;
@@ -85,7 +85,7 @@ static int MountsProcFill(struct SeqBuf *m, void *v)
 
     return 0;
 }
-
+//实现 操作proc file 接口,也可理解为驱动程序不同
 static const struct ProcFileOperations MOUNTS_PROC_FOPS = {
     .read = MountsProcFill,
 };

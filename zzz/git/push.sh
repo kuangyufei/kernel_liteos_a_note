@@ -1,7 +1,7 @@
 git add -A
-git commit -m  '理解 进程文件描述符 和 系统文件描述 是理解FD的关键.
+git commit -m  '鸿蒙对 /proc 的实现很有意思,/proc被称为伪文件系统,或内存文件系统
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
-    国内:https://weharmony.gitee.io
+    国内:https://weharmony.21cloudbox.com
     国外:https://weharmony.github.io
 '
 

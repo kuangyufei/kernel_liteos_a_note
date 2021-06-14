@@ -36,31 +36,31 @@
 #include "sys/stat.h"
 #include "los_init.h"
 
-#ifdef LOSCFG_FS_PROC
-
+#ifdef LOSCFG_FS_PROC //使能 PROC 模块
+//pro file 初始化
 void ProcFsInit(void)
 {
     int ret;
 
-    ret = mkdir(PROCFS_MOUNT_POINT, 0);
+    ret = mkdir(PROCFS_MOUNT_POINT, 0);//创建 "/proc"
     if (ret < 0) {
         PRINT_ERR("failed to mkdir %s, errno = %d\n", PROCFS_MOUNT_POINT, get_errno());
         return;
     }
-
+	//装载文件系统
     ret = mount(NULL, PROCFS_MOUNT_POINT, "procfs", 0, NULL);
     if (ret) {
         PRINT_ERR("mount procfs err %d\n", ret);
         return;
     }
 
-    ProcMountsInit();
+    ProcMountsInit();//初始化 /pro/mounts
 #if defined(LOSCFG_SHELL_CMD_DEBUG) && defined(LOSCFG_KERNEL_VM)
-    ProcVmmInit();
+    ProcVmmInit();//初始化 /pro/vmm
 #endif
-    ProcProcessInit();
-    ProcUptimeInit();
-    ProcKernelTraceInit();
+    ProcProcessInit();//初始化 /pro/process
+    ProcUptimeInit();//初始化 /pro/uptime
+    ProcKernelTraceInit();//初始化 /pro/ktrace
 }
 
 LOS_MODULE_INIT(ProcFsInit, LOS_INIT_LEVEL_KMOD_EXTENDED);

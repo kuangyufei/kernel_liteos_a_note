@@ -40,7 +40,7 @@
 #include "los_process_pri.h"
 
 #ifdef LOSCFG_KERNEL_VM
-
+//获取虚拟内存内核相关的信息,用这个方法去窥视内核是个很好的办法,精读本函数的过程是理解虚拟内存实现的过程
 STATIC VOID OsVmDumpSeqSpaces(struct SeqBuf *seqBuf)
 {
     LosVmSpace *space = NULL;
@@ -89,7 +89,7 @@ STATIC VOID OsVmDumpSeqSpaces(struct SeqBuf *seqBuf)
     }
     (VOID)LOS_MuxRelease(aspaceListMux);
 }
-
+// .read 接口的现实
 static int VmmProcFill(struct SeqBuf *m, void *v)
 {
     (void)v;
@@ -97,21 +97,21 @@ static int VmmProcFill(struct SeqBuf *m, void *v)
 
     return 0;
 }
-
+//实现 操作proc file 接口,也可理解为驱动程序不同
 static const struct ProcFileOperations VMM_PROC_FOPS = {
     .write      = NULL,
     .read       = VmmProcFill,
 };
-
+//初始化 虚拟内存 内容信息 
 void ProcVmmInit(void)
 {
-    struct ProcDirEntry *pde = CreateProcEntry("vmm", 0, NULL);
+    struct ProcDirEntry *pde = CreateProcEntry("vmm", 0, NULL);//创建目录
     if (pde == NULL) {
         PRINT_ERR("create /proc/vmm error!\n");
         return;
     }
 
-    pde->procFileOps = &VMM_PROC_FOPS;
+    pde->procFileOps = &VMM_PROC_FOPS;//每个目录的驱动程序都不一样
 }
 #endif
 #endif

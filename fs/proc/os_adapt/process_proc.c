@@ -33,18 +33,18 @@
 #include <sys/mount.h>
 #include "proc_fs.h"
 #include "los_process_pri.h"
-
+//这个太牛了,直接读 taskinfo,注意 SeqBuf 的第一个参数是 char* buf
 static int ProcessProcFill(struct SeqBuf *m, void *v)
 {
     (void)v;
     (void)OsShellCmdTskInfoGet(OS_ALL_TASK_MASK, m, OS_PROCESS_INFO_ALL);
     return 0;
 }
-
+// 对 /proc/process 各种骚操作,只能读
 static const struct ProcFileOperations PROCESS_PROC_FOPS = {
-    .read       = ProcessProcFill,
+    .read       = ProcessProcFill,//读取操作
 };
-
+//创建进程相关信息 /proc/process
 void ProcProcessInit(void)
 {
     struct ProcDirEntry *pde = CreateProcEntry("process", 0, NULL);

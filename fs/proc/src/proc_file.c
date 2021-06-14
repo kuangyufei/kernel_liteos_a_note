@@ -39,25 +39,25 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define PROC_ROOTDIR_NAMELEN   5
 #define PROC_INUSE             2
-
-DEFINE_SPINLOCK(procfsLock);
-bool procfsInit = false;
+//定义自旋锁,说明 procfs不支持多线程访问
+DEFINE_SPINLOCK(procfsLock);//定义profs 自旋锁
+bool procfsInit = false;	//是否初始化了profs
 
 static struct ProcFile g_procPf = {
     .fPos       = 0,
 };
 
-static struct ProcDirEntry g_procRootDirEntry = {
+static struct ProcDirEntry g_procRootDirEntry = { //proc 根部 即 /proc
     .nameLen     = 5,
-    .mode        = S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH,
+    .mode        = S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH,//(04555)
     .count       = ATOMIC_INIT(1),
-    .procFileOps = NULL,
-    .parent      = &g_procRootDirEntry,
-    .name        = "/proc",
-    .subdir      = NULL,
-    .next        = NULL,
-    .pf          = &g_procPf,
-    .type        = VNODE_TYPE_DIR,
+    .procFileOps = NULL,//对根节点无操作需求
+    .parent      = &g_procRootDirEntry,//自己当爹又当儿
+    .name        = "/proc", 
+    .subdir      = NULL,	//暂无,后续必有子
+    .next        = NULL,	//暂无.后续必有续
+    .pf          = &g_procPf,		//全局PRO文件	
+    .type        = VNODE_TYPE_DIR,	//是个目录
 };
 
 int ProcMatch(unsigned int len, const char *name, struct ProcDirEntry *pn)
@@ -360,12 +360,12 @@ static struct ProcDirEntry *ProcCreateFile(struct ProcDirEntry *parent, const ch
 
     return pn;
 }
-
+//创建 pro (目录/文件)项
 struct ProcDirEntry *CreateProcEntry(const char *name, mode_t mode, struct ProcDirEntry *parent)
 {
     struct ProcDirEntry *pde = NULL;
 
-    if (S_ISDIR(mode)) {
+    if (S_ISDIR(mode)) {//目录模式 0
         pde = ProcCreateDir(parent, name, NULL, mode);
     } else {
         pde = ProcCreateFile(parent, name, NULL, mode);

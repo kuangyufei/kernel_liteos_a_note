@@ -31,8 +31,10 @@
 
 #include "los_seq_buf.h"
 #include <stdlib.h>
-
-static int ExpandSeqBuf(struct SeqBuf *seqBuf, size_t oldCount)
+/*
+	Sequential buffer 顺序缓存区 实现
+*/
+static int ExpandSeqBuf(struct SeqBuf *seqBuf, size_t oldCount)//扩展buf
 {
     char *newBuf = NULL;
     int ret;
@@ -45,21 +47,21 @@ static int ExpandSeqBuf(struct SeqBuf *seqBuf, size_t oldCount)
         goto EXPAND_FAILED;
     }
 
-    newBuf = (char*)malloc(seqBuf->size <<= 1);
+    newBuf = (char*)malloc(seqBuf->size <<= 1);//将现有buf扩大一倍
     if (newBuf == NULL) {
         goto EXPAND_FAILED;
     }
     (void)memset_s(newBuf + oldCount, seqBuf->size - oldCount, 0, seqBuf->size - oldCount);
-
-    ret = memcpy_s(newBuf, seqBuf->size, seqBuf->buf, oldCount);
+	//memset_s 注意 oldCount 位置,因为 newBuf头部要被旧buf覆盖,所以只set后部分
+    ret = memcpy_s(newBuf, seqBuf->size, seqBuf->buf, oldCount);//拷贝旧buf数据到新buf,注意 oldCount 位置
     if (ret != LOS_OK) {
         free(newBuf);
         goto EXPAND_FAILED;
     }
-    seqBuf->count = oldCount;
+    seqBuf->count = oldCount;//目前偏移量,可理解为seek 
 
-    free(seqBuf->buf);
-    seqBuf->buf = newBuf;
+    free(seqBuf->buf);//释放原有的buf
+    seqBuf->buf = newBuf;//采用新的buf
 
     return LOS_OK;
 EXPAND_FAILED:
@@ -70,7 +72,7 @@ EXPAND_FAILED:
 
     return -LOS_NOK;
 }
-
+//创建seq buf
 struct SeqBuf *LosBufCreat(void)
 {
     struct SeqBuf *seqBuf = NULL;
@@ -84,7 +86,7 @@ struct SeqBuf *LosBufCreat(void)
 
     return seqBuf;
 }
-
+//真正写 buf 函数,调整 size/count的值,count可理解为偏移位
 int LosBufVprintf(struct SeqBuf *seqBuf, const char *fmt, va_list argList)
 {
     bool needreprintf = FALSE;
@@ -109,10 +111,10 @@ int LosBufVprintf(struct SeqBuf *seqBuf, const char *fmt, va_list argList)
                              seqBuf->size - seqBuf->count - 1, fmt, argList);
         if (bufLen >= 0) {
             /* succeed write. */
-            seqBuf->count += bufLen;
+            seqBuf->count += bufLen;//成功写入,count要增长
             return 0;
         }
-        if (seqBuf->buf[seqBuf->count] == '\0') {
+        if (seqBuf->buf[seqBuf->count] == '\0') {//这里没看懂,为啥要有这个判断, @note_thinking
             free(seqBuf->buf);
             seqBuf->buf = NULL;
             break;
@@ -127,19 +129,19 @@ int LosBufVprintf(struct SeqBuf *seqBuf, const char *fmt, va_list argList)
 
     return -LOS_NOK;
 }
-
+//支持可变参数 写 buf
 int LosBufPrintf(struct SeqBuf *seqBuf, const char *fmt, ...)
 {
     va_list argList;
     int ret;
 
-    va_start(argList, fmt);
+    va_start(argList, fmt);//可变参数的实现,有点意思.
     ret = LosBufVprintf(seqBuf, fmt, argList);
     va_end(argList);
 
     return ret;
 }
-
+//释放 seq buf
 int LosBufRelease(struct SeqBuf *seqBuf)
 {
     if (seqBuf == NULL) {

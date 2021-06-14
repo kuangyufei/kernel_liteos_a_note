@@ -78,7 +78,7 @@ typedef unsigned short fmode_t;
 #define FMODE_READ        ((fmode_t)0x1)
 
 struct ProcFile;
-
+//操作pro file的抽象接口,proc本质是个内存文件系统, 
 struct ProcFileOperations {
     char *name;
     ssize_t (*write)(struct ProcFile *pf, const char *buf, size_t count, loff_t *ppos);
@@ -86,32 +86,32 @@ struct ProcFileOperations {
     int (*release)(struct Vnode *vnode, struct ProcFile *pf);
     int (*read)(struct SeqBuf *m, void *v);
 };
-
+//proc 目录/文件项, @notethinking 直接叫 ProcEntry不香吗 ?
 struct ProcDirEntry {
     mode_t mode;
     int flags;
     const struct ProcFileOperations *procFileOps;
     struct ProcFile *pf;
-    struct ProcDirEntry *next, *parent, *subdir;
+    struct ProcDirEntry *next, *parent, *subdir;//当前目录项的关系项
     void *data;
     atomic_t count; /* open file count */
     spinlock_t pdeUnloadLock;
 
     int nameLen;
-    struct ProcDirEntry *pdirCurrent;
+    struct ProcDirEntry *pdirCurrent;//当前目录
     char name[NAME_MAX];
-    enum VnodeType type;
+    enum VnodeType type;	//节点类型
 };
-
+//Proc文件结构体,对标 FILE 结构体
 struct ProcFile {
-    fmode_t fMode;
-    spinlock_t fLock;
-    atomic_t fCount;
-    struct SeqBuf *sbuf;
-    struct ProcDirEntry *pPDE;
-    unsigned long long fVersion;
-    loff_t fPos;
-    char name[NAME_MAX];
+    fmode_t fMode;		//操作文件的模式
+    spinlock_t fLock;	//自旋锁
+    atomic_t fCount;	//原子操作
+    struct SeqBuf *sbuf;//序列号BUF
+    struct ProcDirEntry *pPDE;//目录项
+    unsigned long long fVersion;//版本号
+    loff_t fPos;	//文件操作偏移位
+    char name[NAME_MAX];//文件名
 };
 
 struct ProcStat {
