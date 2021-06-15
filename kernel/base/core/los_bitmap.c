@@ -31,7 +31,7 @@
 
 #include "los_bitmap.h"
 #include "los_printf.h"
-#include "los_toolchain.h"
+#include "los_toolchain.h" //GCC 编译器的内置函数
 
 
 /******************************************************************************
@@ -44,7 +44,7 @@
 	为1的最高位和最低位的功能。用户也可以对系统的寄存器进行位操作。
 
 参考
-	https://gitee.com/LiteOS/LiteOS/blob/master/doc/Huawei_LiteOS_Kernel_Developer_Guide_zh.md#setup
+	https://www.geeksforgeeks.org/builtin-functions-gcc-compiler/
 ******************************************************************************/
 #define OS_BITMAP_MASK 0x1FU //
 #define OS_BITMAP_WORD_MASK ~0UL
@@ -73,28 +73,27 @@ VOID LOS_BitmapClr(UINT32 *bitmap, UINT16 pos)
     *bitmap &= ~(1U << (pos & OS_BITMAP_MASK));//在对应位上置0
 }
 /********************************************************
-杂项算术指令
-CLZ 用于计算操作数最高端0的个数，这条指令主要用于一下两个场合
-　　计算操作数规范化（使其最高位为1）时需要左移的位数
-　　确定一个优先级掩码中最高优先级
+CLZ 用于计算操作数最高端0的个数，这条指令主要用于以下两个场合
+　　1.计算操作数规范化（使其最高位为1）时需要左移的位数
+　　2.确定一个优先级掩码中最高优先级
 ********************************************************/
-//获取状态字中为1的最高位 例如: 00110110 返回 5
+//获取参数位图中最高位为1的索引位 例如: 00110110 返回 5
 UINT16 LOS_HighBitGet(UINT32 bitmap)
 {
     if (bitmap == 0) {
         return LOS_INVALID_BIT_INDEX;
     }
 
-    return (OS_BITMAP_MASK - CLZ(bitmap));
+    return (OS_BITMAP_MASK - CLZ(bitmap));//CLZ = count leading zeros 用于计算整数的前导零
 }
-//获取状态字中为1的最低位， 例如: 00110110 返回 2
+//获取参数位图中最低位为1的索引位， 例如: 00110110 返回 1
 UINT16 LOS_LowBitGet(UINT32 bitmap)
 {
     if (bitmap == 0) {
         return LOS_INVALID_BIT_INDEX;
     }
 
-    return CTZ(bitmap);//
+    return CTZ(bitmap);// CTZ = count trailing zeros 用于计算给定整数的尾随零
 }
 //从start位置开始设置numsSet个bit位 置1 
 VOID LOS_BitmapSetNBits(UINTPTR *bitmap, UINT32 start, UINT32 numsSet)

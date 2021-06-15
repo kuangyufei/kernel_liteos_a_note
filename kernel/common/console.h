@@ -74,16 +74,16 @@ TTY 是 Teletype 或 Teletypewriter 的缩写，字符设备的通称,原来是�
 #define CONSOLE_NAMELEN 16
 #define CONSOLE_RD_BLOCK               1
 #define CONSOLE_RD_NONBLOCK            0
-#define CONSOLE_SHELL_KEY_EVENT        0x112
-#define CONSOLE_SHELL_EXITED           0x400
-#define CONSOLE_FIFO_SIZE              0x400
+#define CONSOLE_SHELL_KEY_EVENT        0x112	//shell 键盘事件
+#define CONSOLE_SHELL_EXITED           0x400	//shell 退出事件
+#define CONSOLE_FIFO_SIZE              0x400	//1K
 #define CONSOLE_NUM                    2
 
 #define CONSOLE_CIRCBUF_SIZE 0x400
 
-typedef struct {
+typedef struct {//发送环形buf控制块,通过事件发送
     CirBuf cirBufCB;        /* Circular buffer CB */ //循环缓冲控制块
-    EVENT_CB_S sendEvent;   /* Inform telnet send task */ //通知telnet发送任务
+    EVENT_CB_S sendEvent;   /* Inform telnet send task */ //通知telnet发送任务事件
 } CirBufSendCB;
 //控制台控制块(描述符)
 typedef struct {
@@ -91,22 +91,24 @@ typedef struct {
     UINT32 consoleType;	//控制台类型
     UINT32 consoleSem;	//控制台信号量
     UINT32 consoleMask;	//控制台掩码
-    struct Vnode *devVnode;
+    struct Vnode *devVnode;	//索引节点
     CHAR *name;	//名称
     INT32 fd;	//文件描述符
     UINT32 refCount;	//引用次数
-    UINT32 shellEntryId;
-    INT32 pgrpId;
-    BOOL isNonBlock;	
+    UINT32 shellEntryId;//shell 入口ID,一般为任务ID
+    INT32 pgrpId;	//进程组ID
+    BOOL isNonBlock;		
 #ifdef LOSCFG_SHELL
     VOID *shellHandle;	//shell句柄,本质是 shell控制块 ShellCB
 #endif
     UINT32 sendTaskID;	//发送任务ID
-    CirBufSendCB *cirBufSendCB;	//循环缓冲描述符
-    UINT8 fifo[CONSOLE_FIFO_SIZE];
-    UINT32 fifoOut;
-    UINT32 fifoIn;
-    UINT32 currentLen;
+    /*--以下为 一家子 start---------*/
+    CirBufSendCB *cirBufSendCB;	//循环缓冲发送控制块
+    UINT8 fifo[CONSOLE_FIFO_SIZE]; //控制台缓冲区大小 1K
+    UINT32 fifoOut;	//对fifo的标记,输出位置
+    UINT32 fifoIn;	//对fifo的标记,输入位置
+    UINT32 currentLen;	//当前fifo位置
+    /*---以上为 一家子 end-------*/
     struct termios consoleTermios; //控制台条款
 } CONSOLE_CB;
 

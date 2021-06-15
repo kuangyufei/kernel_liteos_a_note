@@ -364,7 +364,7 @@ typedef struct {
     LOS_DL_LIST     lockList;           /**< Hold the lock list */	//拿到了哪些锁链表
     UINTPTR         waitID;             /**< Wait for the PID or GID of the child process */
     UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
-                                             a specific child process, or any child process */  //以什么样的方式等待子进程结束(OS_PROCESS_WAIT_PRO,..)
+                                             a specific child process, or any child process */  //以什么样的方式等待子进程结束(OS_TASK_WAIT_PROCESS | OS_TASK_WAIT_GID | ..)
 #if (LOSCFG_KERNEL_LITEIPC == YES)
     UINT32          ipcStatus;			//IPC状态
     LOS_DL_LIST     msgListHead;		//消息队列头结点,上面挂的都是任务要读的消息
@@ -472,19 +472,20 @@ STATIC INLINE BOOL OsTaskIsPending(const LosTaskCB *taskCB)
 /* get task info */
 #define OS_ALL_TASK_MASK  0xFFFFFFFF
 
-#define OS_TASK_WAIT_ANYPROCESS (1 << 0U)
-#define OS_TASK_WAIT_PROCESS    (1 << 1U)
-#define OS_TASK_WAIT_GID        (1 << 2U)
-#define OS_TASK_WAIT_SEM        (OS_TASK_WAIT_GID + 1)
-#define OS_TASK_WAIT_QUEUE      (OS_TASK_WAIT_SEM + 1)
-#define OS_TASK_WAIT_JOIN       (OS_TASK_WAIT_QUEUE + 1)
-#define OS_TASK_WAIT_SIGNAL     (OS_TASK_WAIT_JOIN + 1)
-#define OS_TASK_WAIT_LITEIPC    (OS_TASK_WAIT_SIGNAL + 1)
-#define OS_TASK_WAIT_MUTEX      (OS_TASK_WAIT_LITEIPC + 1)
-#define OS_TASK_WAIT_FUTEX      (OS_TASK_WAIT_MUTEX + 1)
-#define OS_TASK_WAIT_EVENT      (OS_TASK_WAIT_FUTEX + 1)
-#define OS_TASK_WAIT_COMPLETE   (OS_TASK_WAIT_EVENT + 1)
+#define OS_TASK_WAIT_ANYPROCESS (1 << 0U)					//任务等待任何进程出现
+#define OS_TASK_WAIT_PROCESS    (1 << 1U)					//任务等待进程出现
+#define OS_TASK_WAIT_GID        (1 << 2U)					//任务等待组ID
+#define OS_TASK_WAIT_SEM        (OS_TASK_WAIT_GID + 1)		//任务等待信号量发生
+#define OS_TASK_WAIT_QUEUE      (OS_TASK_WAIT_SEM + 1)		//任务等待队列到来
+#define OS_TASK_WAIT_JOIN       (OS_TASK_WAIT_QUEUE + 1)	//任务等待
+#define OS_TASK_WAIT_SIGNAL     (OS_TASK_WAIT_JOIN + 1) 	//任务等待信号的到来
+#define OS_TASK_WAIT_LITEIPC    (OS_TASK_WAIT_SIGNAL + 1)	//任务等待liteipc到来
+#define OS_TASK_WAIT_MUTEX      (OS_TASK_WAIT_LITEIPC + 1)	//任务等待MUTEX到来
+#define OS_TASK_WAIT_FUTEX      (OS_TASK_WAIT_MUTEX + 1)	//任务等待FUTEX到来
+#define OS_TASK_WAIT_EVENT      (OS_TASK_WAIT_FUTEX + 1) 	//任务等待事件发生
+#define OS_TASK_WAIT_COMPLETE   (OS_TASK_WAIT_EVENT + 1)	//任务等待完成
 
+//设置事件阻塞掩码,即设置任务的等待事件.
 STATIC INLINE VOID OsTaskWaitSetPendMask(UINT16 mask, UINTPTR lockID, UINT32 timeout)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
@@ -499,7 +500,7 @@ STATIC INLINE VOID OsTaskWaitSetPendMask(UINT16 mask, UINTPTR lockID, UINT32 tim
     LOS_Trace(LOS_TRACE_TASK, runTask->taskEntry, status, mask, lockID);
 #endif
 }
-
+//清除事件阻塞掩码,即任务不再等待任何事件.
 STATIC INLINE VOID OsTaskWakeClearPendMask(LosTaskCB *resumeTask)
 {
     resumeTask->waitID = 0;

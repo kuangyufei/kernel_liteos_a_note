@@ -185,8 +185,8 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadImp(PEVENT_CB_S eventCB, UINT32 eventM
             return LOS_ERRNO_EVENT_READ_IN_LOCK;
         }
 
-        runTask->eventMask = eventMask;
-        runTask->eventMode = mode;
+        runTask->eventMask = eventMask;//等待事件
+        runTask->eventMode = mode;	//事件模式
         runTask->taskEvent = eventCB;//事件控制块
         OsTaskWaitSetPendMask(OS_TASK_WAIT_EVENT, eventMask, timeout);
         ret = OsSchedTaskWait(&eventCB->stEventList, timeout, TRUE);

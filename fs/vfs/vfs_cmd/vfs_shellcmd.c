@@ -254,7 +254,7 @@ int osShellCmdDoCatShow(UINTPTR arg) //shellcmd_cat 任务实现
 
       for (toWrite = size, writen = 0; toWrite > 0;)
         {
-          cnt = write(1, buf + writen, toWrite);
+          cnt = write(1, buf + writen, toWrite);//stdout:1 标准输出文件
           if (cnt == 0)
             {
               /* avoid task-starvation */

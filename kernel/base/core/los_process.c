@@ -1842,7 +1842,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_GetSystemProcessMaximum(VOID)
 //获取用户态进程的根进程,所有用户进程都是g_processCBArray[g_userInitProcess] fork来的
 LITE_OS_SEC_TEXT UINT32 OsGetUserInitProcessID(VOID)
 {
-    return g_userInitProcess;
+    return g_userInitProcess;//用户态根进程 序号为 1
 }
 
 LITE_OS_SEC_TEXT UINT32 OsGetKernelInitProcessID(VOID)

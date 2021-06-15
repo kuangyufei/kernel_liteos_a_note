@@ -47,7 +47,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-/* for ARM Compiler */
+/* for ARM Compiler */ //GCC 编译器的内置函数
 #if defined ( __CC_ARM )
 #ifndef ASM
 #define ASM                                         __asm
@@ -148,7 +148,7 @@ extern "C" {
 #endif
 
 #ifndef CTZ
-#define CTZ(value)                                  (__builtin_ctz(value))
+#define CTZ(value)                                  (__builtin_ctz(value)) 
 #endif
 
 #ifndef NORETURN

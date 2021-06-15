@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '鸿蒙对 /proc 的实现很有意思,/proc被称为伪文件系统,或内存文件系统
+git commit -m  '对控制台(console)实现注解
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     国内:https://weharmony.21cloudbox.com
     国外:https://weharmony.github.io

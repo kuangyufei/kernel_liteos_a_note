@@ -357,7 +357,7 @@ STATIC VOID OsShellCmdTaskWaterLineGet(const LosTaskCB *allTaskArray)
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 #define OS_PEND_REASON_MAX_LEN 20
-
+//shell检查任务等待标记
 STATIC CHAR *OsShellCheckTaskWaitFlag(const LosTaskCB *taskCB, UINTPTR *lockID)
 {
     *lockID = taskCB->waitID;

@@ -56,20 +56,27 @@
 #define UART_IOC_MAGIC   'u'
 #define UART_CFG_ATTR    _IOW(UART_IOC_MAGIC, 5, int)
 #define UART_CFG_PRIVATE    _IOW(UART_IOC_MAGIC, 6, int)
-/* Inter-module variable */
+/* 直接写在数据区的变量
+#ifdef LOSCFG_QUICK_START
+__attribute__ ((section(".data"))) UINT32 g_uart_fputc_en = 0;
+#else
+__attribute__ ((section(".data"))) UINT32 g_uart_fputc_en = 1;
+#endif
+*/
+/* Inter-module variable */ //模块间变量
 extern UINT32 g_uart_fputc_en;
 STATIC UINT32 ConsoleSendTask(UINTPTR param);
 
-STATIC UINT8 g_taskConsoleIDArray[LOSCFG_BASE_CORE_TSK_LIMIT];//task 控制台数组,同步task数量,理论上每个task都可以有一个自己的控制台
-STATIC SPIN_LOCK_INIT(g_consoleSpin);
+STATIC UINT8 g_taskConsoleIDArray[LOSCFG_BASE_CORE_TSK_LIMIT];//task 控制台ID池,同步task数量,理论上每个task都可以有一个自己的控制台
+STATIC SPIN_LOCK_INIT(g_consoleSpin);//初始化控制台自旋锁
 
-#define SHELL_ENTRYID_INVALID     0xFFFFFFFF
+#define SHELL_ENTRYID_INVALID     0xFFFFFFFF	//默认值,SHELL_ENTRYID 一般为 任务ID
 #define SHELL_TASK_PRIORITY       9		//shell 的优先级为 9
 #define CONSOLE_CIRBUF_EVENT      0x02U	//控制台循环buffer事件	
 #define CONSOLE_SEND_TASK_EXIT    0x04U	//控制台发送任务退出事件
 #define CONSOLE_SEND_TASK_RUNNING 0x10U	//控制台发送任务正在执行事件
 
-CONSOLE_CB *g_console[CONSOLE_NUM];//控制台全局变量 默认为 2
+CONSOLE_CB *g_console[CONSOLE_NUM];//控制台全局变量,控制台是共用的, 默认为 2个
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 /*
@@ -77,6 +84,11 @@ CONSOLE_CB *g_console[CONSOLE_NUM];//控制台全局变量 默认为 2
  * then store uart driver function in *filepOps
  * and store filep of /dev/console in *privFilep.
  */
+/*
+* 获取/dev/console的uart驱动函数和filep，
+* 然后将 uart 驱动函数存储在 *filepOps 中
+* 并将 /dev/console 的文件存储在 *privFilep 中。
+*/
 INT32 GetFilepOps(const struct file *filep, struct file **privFilep, const struct file_operations_vfs **filepOps)
 {
     INT32 ret;
@@ -85,10 +97,10 @@ INT32 GetFilepOps(const struct file *filep, struct file **privFilep, const struc
         ret = EINVAL;
         goto ERROUT;
     }
-
+	//通过 is_private 查找控制台设备的文件（现在是 *privFile）
     /* to find console device's filep(now it is *privFilep) throught i_private */
     struct drv_data *drv = (struct drv_data *)filep->f_vnode->data;
-    *privFilep = (struct file *)drv->priv;
+    *privFilep = (struct file *)drv->priv;// file
     if (((*privFilep)->f_vnode == NULL) || ((*privFilep)->f_vnode->data == NULL)) {
         ret = EINVAL;
         goto ERROUT;
@@ -98,7 +110,7 @@ INT32 GetFilepOps(const struct file *filep, struct file **privFilep, const struc
 
     drv = (struct drv_data *)(*privFilep)->f_vnode->data;
 
-    *filepOps = (const struct file_operations_vfs *)drv->ops;
+    *filepOps = (const struct file_operations_vfs *)drv->ops;//拿到串口驱动程序
 
     return ENOERR;
 ERROUT:
@@ -248,24 +260,24 @@ STATIC CONSOLE_CB *OsGetConsoleByDevice(const CHAR *deviceName)
         return NULL;
     }
 }
-
+//获取控制台ID,(/dev/serial = 1, /dev/telnet = 2)
 STATIC INT32 OsGetConsoleID(const CHAR *deviceName)
 {
     if ((deviceName != NULL) &&
         (strlen(deviceName) == strlen(SERIAL)) &&
         (!strncmp(deviceName, SERIAL, strlen(SERIAL)))) {
-        return CONSOLE_SERIAL;
+        return CONSOLE_SERIAL;//1
     }
 #ifdef LOSCFG_NET_TELNET
     else if ((deviceName != NULL) &&
              (strlen(deviceName) == strlen(TELNET)) &&
              (!strncmp(deviceName, TELNET, strlen(TELNET)))) {
-        return CONSOLE_TELNET;
+        return CONSOLE_TELNET;//2
     }
 #endif
     return -1;
 }
-
+//通过路径找到控制台ID
 STATIC INT32 OsConsoleFullpathToID(const CHAR *fullpath)
 {
 #define CONSOLE_SERIAL_1 "/dev/console1"
@@ -329,14 +341,14 @@ STATIC INT32 ConsoleReadFifo(CHAR *buffer, CONSOLE_CB *console, size_t bufLen)
     ConsoleFifoLenUpdate(console);
     return (INT32)readNum;
 }
-
+//
 INT32 FilepOpen(struct file *filep, const struct file_operations_vfs *fops)
 {
     INT32 ret;
     if (fops->open == NULL) {
         return -EFAULT;
     }
-
+	//使用 uart open函数打开filep（filep是对应 /dev/console 的 filep)
     /*
      * adopt uart open function to open filep (filep is
      * corresponding to filep of /dev/console)
@@ -591,7 +603,7 @@ INT32 FilepPoll(struct file *filep, const struct file_operations_vfs *fops, poll
     }
     return ret;
 }
-
+//对 file_operations_vfs->open 的实现函数,也就是说这是 打开控制台的实体函数.
 STATIC INT32 ConsoleOpen(struct file *filep)
 {
     INT32 ret;
@@ -599,19 +611,19 @@ STATIC INT32 ConsoleOpen(struct file *filep)
     struct file *privFilep = NULL;
     const struct file_operations_vfs *fileOps = NULL;
 
-    consoleID = (UINT32)OsConsoleFullpathToID(filep->f_path);
+    consoleID = (UINT32)OsConsoleFullpathToID(filep->f_path);//先找到控制台ID返回 (1,2,-1)
     if (consoleID == (UINT32)-1) {
         ret = EPERM;
         goto ERROUT;
     }
-    filep->f_priv = g_console[consoleID - 1];
+    filep->f_priv = g_console[consoleID - 1]; //f_priv 每种文件系统对应结构体都同,所以是void的类型,如一张白纸,画什么模块自己定
 
-    ret = GetFilepOps(filep, &privFilep, &fileOps);
+    ret = GetFilepOps(filep, &privFilep, &fileOps);//获取文件系统的驱动程序
     if (ret != ENOERR) {
         ret = EINVAL;
         goto ERROUT;
     }
-    ret = FilepOpen(privFilep, fileOps);
+    ret = FilepOpen(privFilep, fileOps);//打开文件,其实调用的是 串口底层驱动程序  
     if (ret < 0) {
         ret = EPERM;
         goto ERROUT;
@@ -769,7 +781,7 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
 
     return writen;
 }
-
+//
 STATIC ssize_t ConsoleWrite(struct file *filep, const CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -998,7 +1010,7 @@ ERROUT:
     return VFS_ERROR;
 }
 
-/* console device driver function structure */
+/* console device driver function structure */ //控制台设备驱动程序,对统一的vfs接口的实现
 STATIC const struct file_operations_vfs g_consoleDevOps = {
     .open = ConsoleOpen,   /* open */
     .close = ConsoleClose, /* close */
@@ -1218,14 +1230,14 @@ STATIC UINT32 OsConsoleBufInit(CONSOLE_CB *consoleCB)
         return LOS_NOK;
     }
 
-    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ConsoleSendTask;//
+    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ConsoleSendTask;//控制台发送任务入口函数
     initParam.usTaskPrio   = SHELL_TASK_PRIORITY;	//优先级9
-    initParam.auwArgs[0]   = (UINTPTR)consoleCB;
+    initParam.auwArgs[0]   = (UINTPTR)consoleCB;	//入口函数的参数
     initParam.uwStackSize  = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;	//16K
     if (consoleCB->consoleID == CONSOLE_SERIAL) {//控制台的两种方式
-        initParam.pcName   = "SendToSer"; 
+        initParam.pcName   = "SendToSer";	//发送数据到串口 
     } else {
-        initParam.pcName   = "SendToTelnet";
+        initParam.pcName   = "SendToTelnet";//发送数据到远程登录
     }
     initParam.uwResved     = LOS_TASK_STATUS_DETACHED; //使用任务分离模式
 
@@ -1234,13 +1246,13 @@ STATIC UINT32 OsConsoleBufInit(CONSOLE_CB *consoleCB)
         ConsoleCirBufDelete(consoleCB->cirBufSendCB);//释放循环buf
         consoleCB->cirBufSendCB = NULL;//置NULL
         return LOS_NOK;
-    }
+    }//永久等待读取 CONSOLE_SEND_TASK_RUNNING 事件,CONSOLE_SEND_TASK_RUNNING 由 ConsoleSendTask 发出.
     (VOID)LOS_EventRead(&consoleCB->cirBufSendCB->sendEvent, CONSOLE_SEND_TASK_RUNNING,
-                        LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);//读取事件
+                        LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
 
     return LOS_OK;
 }
-
+//控制台buf去初始化
 STATIC VOID OsConsoleBufDeinit(CONSOLE_CB *consoleCB)
 {
     CirBufSendCB *cirBufSendCB = consoleCB->cirBufSendCB;
@@ -1310,7 +1322,7 @@ STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
         goto ERR_WITH_SEM;
     }
 
-    ret = OsConsoleFileInit(consoleCB);//控制台文件初始化
+    ret = OsConsoleFileInit(consoleCB);	//控制台文件初始化
     if (ret != LOS_OK) {
         PRINT_ERR("console OsConsoleFileInit error. %d\n", ret);
         goto ERR_WITH_DEV;
@@ -1320,7 +1332,7 @@ STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
     return consoleCB;
 
 ERR_WITH_DEV:
-    ret = (INT32)OsConsoleDevDeinit(consoleCB);//控制台设备取消初始化
+    ret = (INT32)OsConsoleDevDeinit(consoleCB);//控制台设备去初始化
     if (ret != LOS_OK) {
         PRINT_ERR("OsConsoleDevDeinit failed!\n");
     }
@@ -1332,7 +1344,7 @@ ERR_WITH_NAME:
     OsConsoleCBDeinit(consoleCB);//控制块取消初始化
     return NULL;
 }
-
+//删除控制台
 STATIC UINT32 OsConsoleDelete(CONSOLE_CB *consoleCB)
 {
     UINT32 ret;
@@ -1361,7 +1373,7 @@ INT32 system_console_init(const CHAR *deviceName)//deviceName: /dev/serial /dev/
     UINT32 intSave;
     CONSOLE_CB *consoleCB = NULL;
 
-    consoleID = OsGetConsoleID(deviceName);//获取控制台ID CONSOLE_SERIAL,CONSOLE_TELNET ,-1三种方式
+    consoleID = OsGetConsoleID(deviceName);//获取控制台ID 返回[ CONSOLE_SERIAL(1) | CONSOLE_TELNET(2) | -1 ]三种结果
     if (consoleID == -1) {
         PRINT_ERR("device is full.\n");
         return VFS_ERROR;
@@ -1467,18 +1479,18 @@ BOOL ConsoleEnable(VOID)
 
     return FALSE;
 }
-
+//任务注册控制台,每个任务都有属于自己的控制台
 INT32 ConsoleTaskReg(INT32 consoleID, UINT32 taskID)
 {
     if (g_console[consoleID - 1]->shellEntryId == SHELL_ENTRYID_INVALID) {
-        g_console[consoleID - 1]->shellEntryId = taskID;
-        (VOID)OsSetCurrProcessGroupID(OsGetUserInitProcessID());
+        g_console[consoleID - 1]->shellEntryId = taskID;	//ID捆绑
+        (VOID)OsSetCurrProcessGroupID(OsGetUserInitProcessID());// @notethinking 为何要在此处设置当前进程的组ID?
         return LOS_OK;
     }
 
     return LOS_NOK;
 }
-
+//无锁方式设置串口
 BOOL SetSerialNonBlock(const CONSOLE_CB *consoleCB)
 {
     INT32 ret;
@@ -1494,7 +1506,7 @@ BOOL SetSerialNonBlock(const CONSOLE_CB *consoleCB)
 
     return TRUE;
 }
-
+//锁方式设置串口
 BOOL SetSerialBlock(const CONSOLE_CB *consoleCB)
 {
     INT32 ret;
@@ -1510,7 +1522,7 @@ BOOL SetSerialBlock(const CONSOLE_CB *consoleCB)
 
     return FALSE;
 }
-
+//无锁方式设置远程登录
 BOOL SetTelnetNonBlock(const CONSOLE_CB *consoleCB)
 {
     INT32 ret;
@@ -1525,7 +1537,7 @@ BOOL SetTelnetNonBlock(const CONSOLE_CB *consoleCB)
     }
     return TRUE;
 }
-
+//锁方式设置远程登录
 BOOL SetTelnetBlock(const CONSOLE_CB *consoleCB)
 {
     INT32 ret;
@@ -1555,7 +1567,7 @@ INT32 ConsoleUpdateFd(VOID)
     INT32 consoleID;
 
     if (OsCurrTaskGet() != NULL) {
-        consoleID = g_taskConsoleIDArray[(OsCurrTaskGet())->taskID];
+        consoleID = g_taskConsoleIDArray[(OsCurrTaskGet())->taskID];//获取当前任务的控制台 (1,2,-1)
     } else {
         return -1;
     }
@@ -1644,7 +1656,7 @@ STATIC UINT32 ConsoleSendTask(UINTPTR param)
 
     (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_SEND_TASK_RUNNING);//发送一个控制台任务正在运行的事件
 
-    while (1) {
+    while (1) {//读取 CONSOLE_CIRBUF_EVENT | CONSOLE_SEND_TASK_EXIT 这两个事件
         ret = LOS_EventRead(&cirBufSendCB->sendEvent, CONSOLE_CIRBUF_EVENT | CONSOLE_SEND_TASK_EXIT,
                             LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);//读取循环buf或任务退出的事件
         if (ret == CONSOLE_CIRBUF_EVENT) {//控制台循环buf事件发生
@@ -1664,7 +1676,7 @@ STATIC UINT32 ConsoleSendTask(UINTPTR param)
 
             (VOID)WriteToTerminal(consoleCB, buf, size);//将buf数据写到控制台终端设备
             (VOID)LOS_MemFree(m_aucSysMem1, buf);//清除buf
-        } else if (ret == CONSOLE_SEND_TASK_EXIT) {//收到任务退出的事件
+        } else if (ret == CONSOLE_SEND_TASK_EXIT) {//收到任务退出的事件, 由 OsConsoleBufDeinit 发出事件.
             break;//退出循环
         }
     }
