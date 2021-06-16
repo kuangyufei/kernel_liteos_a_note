@@ -165,7 +165,7 @@ LosTaskCB *OsGetMainTask()
 VOID OsSetMainTask()
 {
     UINT32 i;
-    CHAR *name = "osMain";
+    CHAR *name = "osMain";//任务名称
 
 	//为每个CPU core 设置mainTask
     for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {

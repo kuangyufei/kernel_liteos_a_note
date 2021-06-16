@@ -361,7 +361,7 @@ typedef struct {
     UINT32          processID;          /**< Which belong process *///所属进程ID
     FutexNode       futex;				//实现快锁功能
     LOS_DL_LIST     joinList;           /**< join list */ //联结链表,允许任务之间相互释放彼此
-    LOS_DL_LIST     lockList;           /**< Hold the lock list */	//拿到了哪些锁链表
+    LOS_DL_LIST     lockList;           /**< Hold the lock list */	//该链表上挂的都是已持有的锁
     UINTPTR         waitID;             /**< Wait for the PID or GID of the child process */
     UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
                                              a specific child process, or any child process */  //以什么样的方式等待子进程结束(OS_TASK_WAIT_PROCESS | OS_TASK_WAIT_GID | ..)

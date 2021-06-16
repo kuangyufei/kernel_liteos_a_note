@@ -54,7 +54,7 @@ typedef struct {
     UINT32 remain;		//剩余多少
     SPIN_LOCK_S lock;	//自旋锁
     CirBufStatus status;//两种状态
-    CHAR *fifo;			//顺序buffer
+    CHAR *fifo;			//顺序buffer ,1K
 } CirBuf;
 //锁循环buf
 STATIC INLINE VOID LOS_CirBufLock(CirBuf *cirbufCB, UINT32 *intSave)

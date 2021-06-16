@@ -222,7 +222,7 @@ UINT32 LOS_CirBufInit(CirBuf *cirbufCB, CHAR *fifo, UINT32 size)
     cirbufCB->size = size;	//记录size
     cirbufCB->remain = size;//剩余size
     cirbufCB->status = CBUF_USED;//标记为已使用
-    cirbufCB->fifo = fifo;	//顺序buf
+    cirbufCB->fifo = fifo;	//顺序buf ,这1K buf 是循环利用
 
     return LOS_OK;
 }

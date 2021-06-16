@@ -117,7 +117,7 @@ ERROUT:
     set_errno(ret);
     return VFS_ERROR;
 }
-
+//获取控制台 模式值 
 INT32 ConsoleTcGetAttr(INT32 fd, struct termios *termios)
 {
     struct file *filep = NULL;
@@ -136,7 +136,7 @@ INT32 ConsoleTcGetAttr(INT32 fd, struct termios *termios)
     (VOID)memcpy_s(termios, sizeof(struct termios), &consoleCB->consoleTermios, sizeof(struct termios));
     return LOS_OK;
 }
-
+//设置控制台 模式值 
 INT32 ConsoleTcSetAttr(INT32 fd, INT32 actions, const struct termios *termios)
 {
     struct file *filep = NULL;
@@ -1023,11 +1023,15 @@ STATIC const struct file_operations_vfs g_consoleDevOps = {
     .poll = ConsolePoll,
 #endif
 };
-
+/*
+termios 结构是在POSIX规范中定义的标准接口，它类似于系统V中的termio接口，
+通过设置termios类型的数据结构中的值和使用一小组函数调用，你就可以对终端接口进行控制。
+*/
 STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
 {
     struct termios consoleTermios;
-
+//c_cc[VINTR] 默认对应的控制符是^C，作用是清空输入和输出队列的数据并且向tty设备的前台进程组中的
+//每一个程序发送一个SIGINT信号，对SIGINT信号没有定义处理程序的进程会马上退出。
     if ((deviceName != NULL) &&
         (strlen(deviceName) == strlen(SERIAL)) &&
         (!strncmp(deviceName, SERIAL, strlen(SERIAL)))) {
@@ -1035,8 +1039,8 @@ STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
 
         /* set console to have a buffer for user */
         (VOID)ConsoleTcGetAttr(consoleCB->fd, &consoleTermios);
-        consoleTermios.c_lflag |= ICANON | ECHO;
-        consoleTermios.c_cc[VINTR] = 3; /* /003 for ^C */
+        consoleTermios.c_lflag |= ICANON | ECHO;//控制模式标志 ICANON:使用标准输入模式 ECHO:显示输入字符
+        consoleTermios.c_cc[VINTR] = 3; /* /003 for ^C */ //控制字符 
         (VOID)ConsoleTcSetAttr(consoleCB->fd, 0, &consoleTermios);
     }
 #ifdef LOSCFG_NET_TELNET
@@ -1046,8 +1050,8 @@ STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
         consoleCB->isNonBlock = SetTelnetBlock(consoleCB);
         /* set console to have a buffer for user */
         (VOID)ConsoleTcGetAttr(consoleCB->fd, &consoleTermios);
-        consoleTermios.c_lflag |= ICANON | ECHO;
-        consoleTermios.c_cc[VINTR] = 3; /* /003 for ^C */
+        consoleTermios.c_lflag |= ICANON | ECHO;//控制模式标志 ICANON:使用标准输入模式 ECHO:显示输入字符
+        consoleTermios.c_cc[VINTR] = 3; /* /003 for ^C */ //控制字符
         (VOID)ConsoleTcSetAttr(consoleCB->fd, 0, &consoleTermios);
     }
 #endif
@@ -1071,20 +1075,20 @@ STATIC INT32 OsConsoleFileInit(CONSOLE_CB *consoleCB)
         ret = EACCES;
         goto ERROUT_WITH_FULLPATH;
     }
-
+	//分配一个系统文件描述符
     consoleCB->fd = files_allocate(vnode, O_RDWR, (off_t)0, consoleCB, STDERR_FILENO + 1);
     if (consoleCB->fd < 0) {
         ret = EMFILE;
         goto ERROUT_WITH_FULLPATH;
     }
 
-    ret = fs_getfilep(consoleCB->fd, &filep);
+    ret = fs_getfilep(consoleCB->fd, &filep);//通过描述符拿到 file
     if (ret < 0) {
         ret = EPERM;
         goto ERROUT_WITH_FULLPATH;
     }
     filep->f_path = fullpath;
-    filep->ops = (struct file_operations_vfs *)((struct drv_data *)vnode->data)->ops;
+    filep->ops = (struct file_operations_vfs *)((struct drv_data *)vnode->data)->ops;//关系驱动程序
     VnodeDrop();
     return LOS_OK;
 
@@ -1113,7 +1117,7 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
     }
 
     VnodeHold();
-    ret = VnodeLookup(deviceName, &vnode, V_DUMMY);
+    ret = VnodeLookup(deviceName, &vnode, V_DUMMY);	//找到对应 vnode节点
     VnodeDrop(); // not correct, but can't fix perfectly here
     if (ret != LOS_OK) {
         ret = EACCES;
@@ -1121,7 +1125,7 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
         goto ERROUT;
     }
 
-    consoleCB->devVnode = vnode;
+    consoleCB->devVnode = vnode;//关联vnode节点
 
     /*
      * initialize the console filep which is associated with /dev/console,
@@ -1134,17 +1138,17 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
      /dev/console的console inod，就可以像操作/dev/ttyS0的uart0 filep一样操作控制台的filep
      */
     (VOID)memset_s(filep, sizeof(struct file), 0, sizeof(struct file));
-    filep->f_oflags = O_RDWR;
-    filep->f_pos = 0;
-    filep->f_vnode = vnode;
-    filep->f_path = NULL;
-    filep->f_priv = NULL;
+    filep->f_oflags = O_RDWR;	//读写模式
+    filep->f_pos = 0;	//偏移位置,默认为0
+    filep->f_vnode = vnode;	//节点关联
+    filep->f_path = NULL;	//
+    filep->f_priv = NULL;	//
     /*
      * Use filep to connect console and uart, we can find uart driver function throught filep.
      * now we can operate /dev/console to operate /dev/ttyS0 through filep.
      */
      //使用filep连接控制台和uart，通过它可以找到uart驱动函数, 可以通过filep操作/dev/console
-    devOps = (struct file_operations_vfs *)((struct drv_data*)vnode->data)->ops;
+    devOps = (struct file_operations_vfs *)((struct drv_data*)vnode->data)->ops;//获取默认驱动程序
     if (devOps != NULL && devOps->open != NULL) {
         (VOID)devOps->open(filep);
     } else {
@@ -1152,7 +1156,7 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
         goto ERROUT;
     }
 
-     //达到操作/dev/ttyS0的目的
+    //更新驱动程序,其中再次对 达到操作/dev/ttyS0的目的
     ret = register_driver(consoleCB->name, &g_consoleDevOps, DEFFILEMODE, filep);//注册字符设备驱动程序
     if (ret != LOS_OK) {
         goto ERROUT;
@@ -1168,10 +1172,10 @@ ERROUT:
     set_errno(ret);
     return LOS_NOK;
 }
-
+//控制台设备去初始化
 STATIC UINT32 OsConsoleDevDeinit(const CONSOLE_CB *consoleCB)
 {
-    return unregister_driver(consoleCB->name);
+    return unregister_driver(consoleCB->name);//注销驱动
 }
 
 //创建一个控制台循环buf
@@ -1188,14 +1192,14 @@ STATIC CirBufSendCB *ConsoleCirBufCreate(VOID)
     }
     (VOID)memset_s(cirBufSendCB, sizeof(CirBufSendCB), 0, sizeof(CirBufSendCB));
 
-    fifo = (CHAR *)LOS_MemAlloc(m_aucSysMem0, CONSOLE_CIRCBUF_SIZE);
+    fifo = (CHAR *)LOS_MemAlloc(m_aucSysMem0, CONSOLE_CIRCBUF_SIZE);//分配FIFO buf 1K 
     if (fifo == NULL) {
         goto ERROR_WITH_SENDCB;
     }
     (VOID)memset_s(fifo, CONSOLE_CIRCBUF_SIZE, 0, CONSOLE_CIRCBUF_SIZE);
 
     cirBufCB = &cirBufSendCB->cirBufCB;
-    ret = LOS_CirBufInit(cirBufCB, fifo, CONSOLE_CIRCBUF_SIZE);
+    ret = LOS_CirBufInit(cirBufCB, fifo, CONSOLE_CIRCBUF_SIZE);//环形BUF初始化
     if (ret != LOS_OK) {
         goto ERROR_WITH_FIFO;
     }
@@ -1304,7 +1308,7 @@ STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
         goto ERR_WITH_NAME;
     }
 
-    ret = (INT32)OsConsoleBufInit(consoleCB);//控制台buf初始化
+    ret = (INT32)OsConsoleBufInit(consoleCB);//控制台buf初始化,创建 ConsoleSendTask 任务
     if (ret != LOS_OK) {
         PRINT_ERR("console OsConsoleBufInit error. %d\n", ret);
         goto ERR_WITH_NAME;
@@ -1316,19 +1320,19 @@ STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
         goto ERR_WITH_BUF;
     }
 
-    ret = OsConsoleDevInit(consoleCB, deviceName);//控制台设备初始化
-    if (ret != LOS_OK) {
+    ret = OsConsoleDevInit(consoleCB, deviceName);//控制台设备初始化,注意这步要在 OsConsoleFileInit 的前面.
+    if (ret != LOS_OK) {//先注册驱动程序
         PRINT_ERR("console OsConsoleDevInit error. %d\n", ret);
         goto ERR_WITH_SEM;
     }
 
-    ret = OsConsoleFileInit(consoleCB);	//控制台文件初始化
+    ret = OsConsoleFileInit(consoleCB);	//控制台文件初始化,其中file要绑定驱动程序
     if (ret != LOS_OK) {
         PRINT_ERR("console OsConsoleFileInit error. %d\n", ret);
         goto ERR_WITH_DEV;
     }
 
-    OsConsoleTermiosInit(consoleCB, deviceName);//控制台条款初始化
+    OsConsoleTermiosInit(consoleCB, deviceName);//控制台术语/控制初始化
     return consoleCB;
 
 ERR_WITH_DEV:
@@ -1349,16 +1353,16 @@ STATIC UINT32 OsConsoleDelete(CONSOLE_CB *consoleCB)
 {
     UINT32 ret;
 
-    (VOID)files_close(consoleCB->fd);
-    ret = OsConsoleDevDeinit(consoleCB);
+    (VOID)files_close(consoleCB->fd);//回收系统文件句柄
+    ret = OsConsoleDevDeinit(consoleCB);//注销驱动程序
     if (ret != LOS_OK) {
         PRINT_ERR("OsConsoleDevDeinit failed!\n");
     }
-    OsConsoleBufDeinit((CONSOLE_CB *)consoleCB);
-    (VOID)LOS_SemDelete(consoleCB->consoleSem);
-    (VOID)LOS_MemFree(m_aucSysMem0, consoleCB->name);
+    OsConsoleBufDeinit((CONSOLE_CB *)consoleCB);//回收环形缓存区
+    (VOID)LOS_SemDelete(consoleCB->consoleSem);//删除信号量
+    (VOID)LOS_MemFree(m_aucSysMem0, consoleCB->name);//回收控制台名称,此名称占用内核内存
     consoleCB->name = NULL;
-    (VOID)LOS_MemFree(m_aucSysMem0, consoleCB);
+    (VOID)LOS_MemFree(m_aucSysMem0, consoleCB);//回收控制块本身占用的内存
 
     return ret;
 }
@@ -1686,7 +1690,7 @@ STATIC UINT32 ConsoleSendTask(UINTPTR param)
 }
 
 #if (LOSCFG_KERNEL_SMP == YES)//多处理器情况下
-VOID OsWaitConsoleSendTaskPend(UINT32 taskID)//等待控制台任务结束
+VOID OsWaitConsoleSendTaskPend(UINT32 taskID)//等待控制台发送任务结束
 {
     UINT32 i;
     CONSOLE_CB *console = NULL;

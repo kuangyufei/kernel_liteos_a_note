@@ -333,6 +333,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
 #endif
 
 /****************************** SMP module configuration **************************/
+//http://www.gotw.ca/publications/concurrency-ddj.htm 免费午餐结束了:软件并发的根本转变
 #ifndef LOSCFG_KERNEL_SMP
 #define LOSCFG_KERNEL_SMP                               NO //SMP指对称多处理（Symmetrical Multi-Processing）,多核时要设为 YES
 #endif

@@ -71,9 +71,9 @@ extern VOID release_secondary_cores(VOID);
 
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 EarliestInit(VOID)
 {
-    /* Must be placed at the beginning of the boot process */
-    OsSetMainTask();
-    OsCurrTaskSet(OsGetMainTask());
+    /* Must be placed at the beginning of the boot process *///必须放在启动过程的开头
+    OsSetMainTask();//为每个CPU核设置临时主任务
+    OsCurrTaskSet(OsGetMainTask());//设置当前任务
 
     g_sysClock = OS_SYS_CLOCK;
     g_tickPerSecond =  LOSCFG_BASE_CORE_TICK_PER_SECOND;
@@ -185,7 +185,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsSystemInfo(VOID)
                   HalIrqVersion(), __DATE__, __TIME__,\
                   KERNEL_NAME, KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE, buildType);
 }
-
+//由汇编调用,鸿蒙C语言层级的入口点 
 LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 {
     UINT32 ret;
@@ -193,7 +193,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     UINT64 startNsec, endNsec, durationUsec;
 #endif
 
-    ret = EarliestInit();
+    ret = EarliestInit();//鸿蒙初开，天地混沌
     if (ret != LOS_OK) {
         return ret;
     }
@@ -220,21 +220,21 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     startNsec = LOS_CurrNanosec();
 #endif
 
-    ret = OsTaskInit();
+    ret = OsTaskInit();//任务池初始化
     if (ret != LOS_OK) {
         return ret;
     }
 
     OsInitCall(LOS_INIT_LEVEL_KMOD_PREVM);
 
-    ret = OsSysMemInit();
+    ret = OsSysMemInit();//系统内存初始化
     if (ret != LOS_OK) {
         return ret;
     }
 
     OsInitCall(LOS_INIT_LEVEL_VM_COMPLETE);
 
-    ret = OsIpcInit();
+    ret = OsIpcInit();//进程间通讯模块初始化
     if (ret != LOS_OK) {
         return ret;
     }
@@ -286,7 +286,7 @@ STATIC VOID SystemInit(VOID)
     PRINTK("dummy: *** %s ***\n", __FUNCTION__);
 }
 #endif
-
+//创建系统初始任务并申请调度
 STATIC UINT32 OsSystemInitTaskCreate(VOID)
 {
     UINT32 taskID;
@@ -309,7 +309,7 @@ STATIC UINT32 OsSystemInitTaskCreate(VOID)
     return LOS_TaskCreate(&taskID, &sysTask);
 }
 
-
+//系统任务初始化
 UINT32 OsSystemInit(VOID)
 {
     UINT32 ret;
@@ -322,4 +322,4 @@ UINT32 OsSystemInit(VOID)
     return 0;
 }
 
-LOS_MODULE_INIT(OsSystemInit, LOS_INIT_LEVEL_KMOD_TASK);
+LOS_MODULE_INIT(OsSystemInit, LOS_INIT_LEVEL_KMOD_TASK);//模块初始化

@@ -208,7 +208,7 @@ STATIC const struct file_operations_vfs g_serialDevOps = {
 #endif
     NULL,
 };
-
+//虚拟串口初始化
 INT32 virtual_serial_init(const CHAR *deviceName)
 {
     INT32 ret;

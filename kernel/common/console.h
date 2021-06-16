@@ -79,7 +79,7 @@ TTY 是 Teletype 或 Teletypewriter 的缩写，字符设备的通称,原来是�
 #define CONSOLE_FIFO_SIZE              0x400	//1K
 #define CONSOLE_NUM                    2
 
-#define CONSOLE_CIRCBUF_SIZE 0x400
+#define CONSOLE_CIRCBUF_SIZE 0x400	//大小 1K
 
 typedef struct {//发送环形buf控制块,通过事件发送
     CirBuf cirBufCB;        /* Circular buffer CB */ //循环缓冲控制块
@@ -109,9 +109,18 @@ typedef struct {
     UINT32 fifoIn;	//对fifo的标记,输入位置
     UINT32 currentLen;	//当前fifo位置
     /*---以上为 一家子 end-------*/
-    struct termios consoleTermios; //控制台条款
+    struct termios consoleTermios; //控制台术语
 } CONSOLE_CB;
-
+/*
+termios 结构是在POSIX规范中定义的标准接口，它类似于系统V中的termio接口，通过设置termios类型的数据结构中的值和使用一小组函数调用，
+你就可以对终端接口进行控制。可以被调整来影响终端的值按照不同的模式被分为如下几组：
+1.输入模式
+2.输出模式
+3.控制模式
+4.本地模式
+5.特殊控制模式
+https://blog.csdn.net/wumenglu1018/article/details/53098794
+*/
 extern INT32 system_console_init(const CHAR *deviceName);
 extern INT32 system_console_deinit(const CHAR *deviceName);
 extern BOOL SetSerialNonBlock(const CONSOLE_CB *consoleCB);

@@ -33,20 +33,20 @@
 #define _LOS_INIT_H
 
 #include "los_init_info.h"
-
+//内核模块初始化级别
 /**
  * Kernel Module Init Level
  */
-#define LOS_INIT_LEVEL_EARLIEST                     0
-#define LOS_INIT_LEVEL_ARCH_EARLY                   1
-#define LOS_INIT_LEVEL_PLATFORM_EARLY               2
-#define LOS_INIT_LEVEL_KMOD_PREVM                   3
-#define LOS_INIT_LEVEL_VM_COMPLETE                  4
-#define LOS_INIT_LEVEL_ARCH                         5
-#define LOS_INIT_LEVEL_PLATFORM                     6
-#define LOS_INIT_LEVEL_KMOD_BASIC                   7
-#define LOS_INIT_LEVEL_KMOD_EXTENDED                8
-#define LOS_INIT_LEVEL_KMOD_TASK                    9
+#define LOS_INIT_LEVEL_EARLIEST                     0	//最早级
+#define LOS_INIT_LEVEL_ARCH_EARLY                   1	//架构早期
+#define LOS_INIT_LEVEL_PLATFORM_EARLY               2	//平台早期
+#define LOS_INIT_LEVEL_KMOD_PREVM                   3	//内存模块即将开始
+#define LOS_INIT_LEVEL_VM_COMPLETE                  4	//内存模块完成
+#define LOS_INIT_LEVEL_ARCH                         5	// 架构级
+#define LOS_INIT_LEVEL_PLATFORM                     6	// 平台级
+#define LOS_INIT_LEVEL_KMOD_BASIC                   7	// 基础级
+#define LOS_INIT_LEVEL_KMOD_EXTENDED                8	//
+#define LOS_INIT_LEVEL_KMOD_TASK                    9	//任务级
 #define LOS_INIT_LEVEL_FINISH                       10
 
 /**
@@ -72,7 +72,7 @@
  * @par Dependency:
  * <ul><li>los_init.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ */ //将启动模块注册到启动过程
 #define LOS_MODULE_INIT(_hook, _level)                  OS_INIT_HOOK_REG(kernel, _hook, _level)
 
 #endif /* _LOS_INIT_H */

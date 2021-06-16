@@ -51,7 +51,7 @@ static ssize_t MemWrite(FAR struct file *filep, FAR const char *buffer, size_t b
 {
     return 0;
 }
-
+//文件和线性区的映射关系
 static ssize_t MemMap(FAR struct file *filep, FAR LosVmMapRegion *region)
 {
 #ifdef LOSCFG_KERNEL_VM
@@ -69,7 +69,7 @@ static ssize_t MemMap(FAR struct file *filep, FAR LosVmMapRegion *region)
 
     if (space == NULL) {
         return -EAGAIN;
-    }
+    }//映射
     if (LOS_ArchMmuMap(&space->archMmu, vaddr, paddr, size >> PAGE_SHIFT, region->regionFlags) <= 0) {
         return -EAGAIN;
     }
@@ -79,7 +79,7 @@ static ssize_t MemMap(FAR struct file *filep, FAR LosVmMapRegion *region)
 #endif
     return 0;
 }
-
+// vfs 接口实现
 static const struct file_operations_vfs g_memDevOps = {
     MemOpen,  /* open */
     MemClose, /* close */
@@ -93,7 +93,7 @@ static const struct file_operations_vfs g_memDevOps = {
 #endif
     NULL,      /* unlink */
 };
-
+// 注册访问 /dev/mem 的驱动程序
 int DevMemRegister(void)
 {
     return register_driver("/dev/mem", &g_memDevOps, 0666, 0); /* 0666: file mode */
