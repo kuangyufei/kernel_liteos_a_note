@@ -77,21 +77,21 @@ STATIC INT32 g_alignSize = 0;
 #define VFAT_STORAGE_MOUNT_DIR_MODE 0777
 #define DEFAULT_STORAGE_MOUNT_DIR_MODE 0755
 
-#ifdef LOSCFG_DRIVERS_MMC
-los_disk *GetMmcDisk(UINT8 type)
+#ifdef LOSCFG_DRIVERS_MMC //mmc代表的是磁盘
+los_disk *GetMmcDisk(UINT8 type)//type值( EMMC | 
 {
     const CHAR *mmcDevHead = "/dev/mmcblk";
 
-    for (INT32 diskId = 0; diskId < SYS_MAX_DISK; diskId++) {
+    for (INT32 diskId = 0; diskId < SYS_MAX_DISK; diskId++) {//默认最大支持5块磁盘
         los_disk *disk = get_disk(diskId);
         if (disk == NULL) {
             continue;
         } else if (disk->disk_name == NULL) {
             continue;
-        } else if (strncmp(disk->disk_name, mmcDevHead, strlen(mmcDevHead))) {
+        } else if (strncmp(disk->disk_name, mmcDevHead, strlen(mmcDevHead))) {//例如 /dev/mmcblk0p2 就符合要求
             continue;
         } else {
-            if (disk->type == type) {
+            if (disk->type == type) {//
                 return disk;
             }
         }
@@ -237,7 +237,7 @@ STATIC INT32 GetArgs(CHAR **args)
     }
 
 #ifdef LOSCFG_STORAGE_EMMC
-    g_emmcDisk = GetMmcDisk(EMMC);
+    g_emmcDisk = GetMmcDisk(EMMC);//获取磁盘信息
     if (g_emmcDisk == NULL) {
         PRINT_ERR("Get EMMC disk failed!\n");
         goto ERROUT;
@@ -422,12 +422,12 @@ ERROUT:
 #endif
 
 #ifdef LOSCFG_STORAGE_EMMC
-STATIC VOID OsMountUserdata(const CHAR *fsType)//mount emmc /userdata
+STATIC VOID OsMountUserdata(const CHAR *fsType)//mount emmc /userdata 用户数据目录
 {
     INT32 ret;
     INT32 err;
     const CHAR *userdataDir = "/userdata";
-    ret = mkdir(userdataDir, VFAT_STORAGE_MOUNT_DIR_MODE);
+    ret = mkdir(userdataDir, VFAT_STORAGE_MOUNT_DIR_MODE);//创建/userdata 目录
     if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
         PRINT_ERR("Failed to mkdir /userdata, errno %d: %s\n", err, strerror(err));
         return;

@@ -39,7 +39,7 @@ https://blog.csdn.net/tankai19880619/article/details/12093239
 等都以文件被对待；他们具体的类型及其操作不同，但需要向上层提供统一的操作接口。 
 虚拟文件系统VFS就是内核中的一个软件层，向上给用户空间程序提供文件系统操作接口；
 向下允许不同的文件系统共存。所以，所有实际文件系统都必须实现VFS的结构封装。
-系统中任何文件系统的挂载必须满足两个条件：挂载点和文件系统。
+系统中任何文件系统的支持必须满足两个条件：挂载点和文件系统。
 
 rootfs是基于内存的文件系统，所有操作都在内存中完成；也没有实际的存储设备，所以不需要设备驱动程序的参与.
 只在启动阶段使用rootfs文件系统，当磁盘驱动程序和磁盘文件系统成功加载后，系统会将系统根目录从rootfs切换
@@ -59,12 +59,12 @@ VFS是一种机制、是每一种文件系统都必须按照这个机制去实�
 #define COMMAND_LINE_ADDR       LOSCFG_BOOTENV_ADDR * BYTES_PER_KBYTE
 #define COMMAND_LINE_SIZE       1024
 
-#ifdef LOSCFG_STORAGE_SPINOR
+#ifdef LOSCFG_STORAGE_SPINOR	//spi nor flash
 #define ROOTFS_ROOT_TYPE        "flash"	//根文件系统存放在nor flash上
 #define ROOTFS_FS_TYPE          "jffs2" //Journalling Flash File System（闪存设备日志型文件系统，JFFS）,一般用于nor flash的文件系统
-#elif defined(LOSCFG_STORAGE_SPINAND)
-#define ROOTFS_ROOT_TYPE        "nand"
-#define ROOTFS_FS_TYPE          "yaffs2"
+#elif defined(LOSCFG_STORAGE_SPINAND)// nand flash
+#define ROOTFS_ROOT_TYPE        "nand"	//在nand flash上制作根文件系统
+#define ROOTFS_FS_TYPE          "yaffs2"//文件系统格式选用 yaffs2
 #endif
 
 #ifdef LOSCFG_STORAGE_EMMC
@@ -82,10 +82,10 @@ VFS是一种机制、是每一种文件系统都必须按照这个机制去实�
 
 #ifdef LOSCFG_STORAGE_SPINOR //外部开关定 使用哪种flash
 #define FLASH_TYPE              "spinor" //flash类型
-#define FLASH_DEV_NAME          "/dev/spinorblk0" //根文件系统路径
+#define FLASH_DEV_NAME          "/dev/spinorblk0" //设备名称
 #elif defined(LOSCFG_STORAGE_SPINAND)
 #define FLASH_TYPE              "nand"
-#define FLASH_DEV_NAME          "/dev/nandblk0"
+#define FLASH_DEV_NAME          "/dev/nandblk0"	//设备名称
 #endif
 //扇区是对硬盘而言，而块是对文件系统而言
 #define EMMC_SEC_SIZE           512	//扇区大小,按512个字节,按扇区对齐

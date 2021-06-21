@@ -263,7 +263,7 @@ static INT32 AddParamCheck(UINT32 startAddr,
     if (startBlk > endBlk) {
         return -EINVAL;
     }
-    LOS_DL_LIST_FOR_EACH_ENTRY(node, &param->partition_head->node_info, mtd_partition, node_info) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(node, &param->partition_head->node_info, mtd_partition, node_info) {//遍历分区节点
         if ((node->start_block != 0) && (node->patitionnum == partitionNum)) {
             return -EINVAL;
         }
@@ -445,7 +445,7 @@ ERROR_OUT:
     (VOID)pthread_mutex_unlock(&g_mtdPartitionLock);
     return ret;
 }
-
+//检查分区参数
 static INT32 DeleteParamCheck(UINT32 partitionNum,
                               const CHAR *type,
                               partition_param **param)
@@ -465,17 +465,17 @@ static INT32 DeleteParamCheck(UINT32 partitionNum,
     }
     return ENOERR;
 }
-
+//删除分区驱动程序,注意每个分区的文件系统都可以不一样,驱动程序也都不同
 static INT32 DeletePartitionUnregister(mtd_partition *node)
 {
     INT32 ret;
 
-    ret = BlockDriverUnregister(node);
+    ret = BlockDriverUnregister(node);//注销块设备驱动程序
     if (ret == -EBUSY) {
         return ret;
     }
 
-    ret = CharDriverUnregister(node);
+    ret = CharDriverUnregister(node);//注销字符设备驱动程序
     if (ret == -EBUSY) {
         return ret;
     }

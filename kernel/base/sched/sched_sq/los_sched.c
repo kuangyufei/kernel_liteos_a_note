@@ -59,22 +59,22 @@
 #define OS_SCHED_TIME_SLICES_DIFF  (OS_SCHED_TIME_SLICES_MAX - OS_SCHED_TIME_SLICES_MIN)
 #define OS_SCHED_READY_MAX         30
 #define OS_TIME_SLICE_MIN          (INT32)((50 * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE) /* 50us */
-#define OS_SCHED_MAX_RESPONSE_TIME (UINT64)(OS_64BIT_MAX - 1U)
+#define OS_SCHED_MAX_RESPONSE_TIME (UINT64)(OS_64BIT_MAX - 1U)	//调度最大响应时间
 
-typedef struct {
-    LOS_DL_LIST priQueueList[OS_PRIORITY_QUEUE_NUM];
-    UINT32      readyTasks[OS_PRIORITY_QUEUE_NUM];
-    UINT32      queueBitmap;
+typedef struct {//进程调度队列
+    LOS_DL_LIST priQueueList[OS_PRIORITY_QUEUE_NUM];//各优先级任务调度队列,默认32级
+    UINT32      readyTasks[OS_PRIORITY_QUEUE_NUM];//各优先级就绪任务个数
+    UINT32      queueBitmap;//任务优先级调度位图
 } SchedQueue;
 
-typedef struct {
-    SchedQueue queueList[OS_PRIORITY_QUEUE_NUM];
-    UINT32     queueBitmap;
-    SchedScan  taskScan;
-    SchedScan  swtmrScan;
+typedef struct {//调度器
+    SchedQueue queueList[OS_PRIORITY_QUEUE_NUM];//进程优先级调度队列,默认32级
+    UINT32     queueBitmap;//进程优先级调度位图
+    SchedScan  taskScan;//函数指针,扫描任务
+    SchedScan  swtmrScan;//函数指针,扫描定时器
 } Sched;
 
-STATIC Sched *g_sched = NULL;
+STATIC Sched *g_sched = NULL;//全局调度器
 STATIC UINT64 g_schedTickMaxResponseTime;
 UINT64 g_sysSchedStartTime = 0;
 
@@ -770,39 +770,39 @@ UINT32 OsSchedSwtmrScanRegister(SchedScan func)
     g_sched->swtmrScan = func;
     return LOS_OK;
 }
-
+//调度初始化
 UINT32 OsSchedInit(VOID)
 {
     UINT16 index, pri;
     UINT32 ret;
 
-    g_sched = (Sched *)LOS_MemAlloc(m_aucSysMem0, sizeof(Sched));
+    g_sched = (Sched *)LOS_MemAlloc(m_aucSysMem0, sizeof(Sched));//分配调度器内存
     if (g_sched == NULL) {
         return LOS_ERRNO_TSK_NO_MEMORY;
     }
 
     (VOID)memset_s(g_sched, sizeof(Sched), 0, sizeof(Sched));
 
-    for (index = 0; index < OS_PRIORITY_QUEUE_NUM; index++) {
+    for (index = 0; index < OS_PRIORITY_QUEUE_NUM; index++) {//初始化进程优先级队列
         SchedQueue *queueList = &g_sched->queueList[index];
-        LOS_DL_LIST *priList = &queueList->priQueueList[0];
+        LOS_DL_LIST *priList = &queueList->priQueueList[0];//每个进程优先级都有同样的任务优先级链表
         for (pri = 0; pri < OS_PRIORITY_QUEUE_NUM; pri++) {
-            LOS_ListInit(&priList[pri]);
+            LOS_ListInit(&priList[pri]);//初始化任务优先级链表节点
         }
     }
 
-    for (index = 0; index < LOSCFG_KERNEL_CORE_NUM; index++) {
-        Percpu *cpu = OsPercpuGetByID(index);
-        ret = OsSortLinkInit(&cpu->taskSortLink);
+    for (index = 0; index < LOSCFG_KERNEL_CORE_NUM; index++) {//初始化每个CPU核
+        Percpu *cpu = OsPercpuGetByID(index);//获取某个CPU信息
+        ret = OsSortLinkInit(&cpu->taskSortLink);//初始化任务排序链表
         if (ret != LOS_OK) {
             return LOS_ERRNO_TSK_NO_MEMORY;
         }
         cpu->responseTime = OS_SCHED_MAX_RESPONSE_TIME;
-        LOS_SpinInit(&cpu->taskSortLinkSpin);
-        LOS_SpinInit(&cpu->swtmrSortLinkSpin);
+        LOS_SpinInit(&cpu->taskSortLinkSpin);//自旋锁初始化
+        LOS_SpinInit(&cpu->swtmrSortLinkSpin);//操作具体CPU核定时器排序链表
     }
 
-    g_sched->taskScan = OsSchedScanTimerList;
+    g_sched->taskScan = OsSchedScanTimerList;//
 
 #ifdef LOSCFG_SCHED_TICK_DEBUG
     ret = OsSchedDebugInit();

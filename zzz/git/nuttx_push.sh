@@ -1,7 +1,7 @@
 cd E:\\harmony\\third_party\\third_party_NuttX
 
 git add -A
-git commit -m  ' 注解 NuttX 文件系统
+git commit -m  ' 块设备驱动，字符设备驱动注解
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     国内:https://weharmony.gitee.io
     国外:https://weharmony.github.io

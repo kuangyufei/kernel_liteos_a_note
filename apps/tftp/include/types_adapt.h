@@ -75,7 +75,7 @@
 #define lwip_recvfrom recvfrom
 
 #define IPADDR_NONE INADDR_NONE
-#define DEFFILEMODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
+#define DEFFILEMODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH) //对应就是 chmod = 666
 
 #define SHELLCMD_ENTRY(l, cmdType, cmdKey, paraNum, cmdHook)    \
 int main(int argc, const char **argv)                           \

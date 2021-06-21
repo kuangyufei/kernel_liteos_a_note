@@ -49,20 +49,20 @@
 #else
 #define STORAGE_TYPE            "emmc"
 #endif
-
+//分区信息
 struct PartitionInfo {
-    const CHAR   *partName;
-    const CHAR   *cmdlineArgName;
+    const CHAR   *partName;			//分区名称
+    const CHAR   *cmdlineArgName;	//命令行参数名称
     const CHAR   *storageTypeArgName;
-    CHAR         *storageType;
+    CHAR         *storageType;	
     const CHAR   *fsTypeArgName;
-    CHAR         *fsType;
+    CHAR         *fsType;		//文件系统类型
     const CHAR   *addrArgName;
-    INT32        startAddr;
+    INT32        startAddr;		
     const CHAR   *partSizeArgName;
     INT32        partSize;
     CHAR         *devName;
-    UINT32       partNum;
+    UINT32       partNum;		//分区编号
 };
 
 INT32 GetPartitionInfo(struct PartitionInfo *partInfo);

@@ -39,17 +39,33 @@
 #endif
 
 #include "fs/path_cache.h"
+/*
+UART 简介
+UART（Universal Asynchronous Receiver/Transmitter）通用异步收发传输器，UART 作为异步串口通信协议的一种，
+工作原理是将传输数据的每个字符一位接一位地传输。是在应用程序开发过程中使用频率最高的数据总线。
+UART 串口的特点是将数据一位一位地顺序传送，只要 2 根传输线就可以实现双向通信，一根线发送数据的同时用另一根线接收数据。
+UART 串口通信有几个重要的参数，分别是波特率、起始位、数据位、停止位和奇偶检验位，对于两个使用 UART 串口通信的端口，
+这些参数必须匹配，否则通信将无法正常完成。
 
+-----------------------------------------------------------------
++起始位	+ 数据位(D0-D7) + 奇偶校验位 + 停止位 +	
+-----------------------------------------------------------------
+起始位：表示数据传输的开始，电平逻辑为 “0” 。
+数据位：可能值有 5、6、7、8、9，表示传输这几个 bit 位数据。一般取值为 8，因为一个 ASCII 字符值为 8 位。
+奇偶校验位：用于接收方对接收到的数据进行校验，校验 “1” 的位数为偶数(偶校验)或奇数(奇校验)，以此来校验数据传送的正确性，使用时不需要此位也可以。
+停止位： 表示一帧数据的结束。电平逻辑为 “1”。
+波特率：串口通信时的速率，它用单位时间内传输的二进制代码的有效位(bit)数来表示，其单位为每秒比特数 bit/s(bps)。常见的波特率值有 4800、9600、14400、38400、115200等，数值越大数据传输的越快，波特率为 115200 表示每秒钟传输 115200 位数据。
+*/
 
 STATIC volatile UINT32 g_serialType = 0;
 STATIC struct file g_serialFilep;
 
-
+//获取串口类型
 UINT32 SerialTypeGet(VOID)
 {
     return g_serialType;
 }
-
+//设置串口类型
 STATIC VOID SerialTypeSet(const CHAR *deviceName)
 {
     if (!strncmp(deviceName, SERIAL_UARTDEV, strlen(SERIAL_UARTDEV))) {
@@ -58,7 +74,7 @@ STATIC VOID SerialTypeSet(const CHAR *deviceName)
         g_serialType = SERIAL_TYPE_USBTTY_DEV;
     }
 }
-
+//打开串口设备
 STATIC INT32 SerialOpen(struct file *filep)
 {
     INT32 ret;
@@ -86,7 +102,7 @@ ERROUT:
     set_errno(ret);
     return VFS_ERROR;
 }
-
+//关闭串口设备
 STATIC INT32 SerialClose(struct file *filep)
 {
     (VOID)filep;
@@ -102,7 +118,7 @@ STATIC INT32 SerialClose(struct file *filep)
 
     return ENOERR;
 }
-
+//读取串口数据
 STATIC ssize_t SerialRead(struct file *filep, CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -125,8 +141,8 @@ ERROUT:
     set_errno(-ret);
     return VFS_ERROR;
 }
-
-/* Note: do not add print function in this module! */
+//写入串口数据
+/* Note: do not add print function in this module! */ //注意：请勿在本模块中添加打印功能！
 STATIC ssize_t SerialWrite(struct file *filep,  const CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -149,7 +165,7 @@ ERROUT:
     set_errno(-ret);
     return VFS_ERROR;
 }
-
+//控制串口设备
 STATIC INT32 SerialIoctl(struct file *filep, INT32 cmd, unsigned long arg)
 {
     INT32 ret;
@@ -194,7 +210,7 @@ ERROUT:
     set_errno(-ret);
     return VFS_ERROR;
 }
-
+//串口 对 VFS 接口实现
 STATIC const struct file_operations_vfs g_serialDevOps = {
     SerialOpen,  /* open */
     SerialClose, /* close */
@@ -208,7 +224,7 @@ STATIC const struct file_operations_vfs g_serialDevOps = {
 #endif
     NULL,
 };
-//虚拟串口初始化
+//虚拟串口初始化,注册驱动程序
 INT32 virtual_serial_init(const CHAR *deviceName)
 {
     INT32 ret;
@@ -233,13 +249,13 @@ INT32 virtual_serial_init(const CHAR *deviceName)
     g_serialFilep.f_vnode = vnode;
     g_serialFilep.ops = ((struct drv_data *)vnode->data)->ops;
 
-    if (g_serialFilep.ops->open != NULL) {
+    if (g_serialFilep.ops->open != NULL) {//用于检测是否有默认的驱动程序
         (VOID)g_serialFilep.ops->open(&g_serialFilep);
     } else {
         ret = EFAULT;
         PRINTK("virtual_serial_init %s open is NULL\n", deviceName);
         goto ERROUT;
-    }
+    }//这是真正的注册串口的驱动程序
     (VOID)register_driver(SERIAL, &g_serialDevOps, DEFFILEMODE, &g_serialFilep);
 
     VnodeDrop();
@@ -250,7 +266,7 @@ ERROUT:
     set_errno(ret);
     return VFS_ERROR;
 }
-
+//串口设备去初始化,其实就是注销驱动程序
 INT32 virtual_serial_deinit(VOID)
 {
     return unregister_driver(SERIAL);

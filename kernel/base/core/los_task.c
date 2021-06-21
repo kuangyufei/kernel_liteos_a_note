@@ -288,7 +288,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
     LOS_TraceReg(LOS_TRACE_TASK, OsTaskTrace, LOS_TRACE_TASK_NAME, LOS_TRACE_ENABLE);
 #endif
 
-    ret = OsSchedInit();
+    ret = OsSchedInit();//调度器初始化
 
 EXIT:
     if (ret != LOS_OK) {
