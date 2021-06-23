@@ -313,13 +313,13 @@ typedef struct {
     UINT16          taskStatus;         /**< Task status */			//各种状态标签，可以拥有多种标签，按位标识
     UINT16          priority;           /**< Task priority */		//任务优先级[0:31],默认是31级
     UINT16          policy;				//任务的调度方式(三种 .. LOS_SCHED_RR )
-    UINT64          startTime;          /**< The start time of each phase of task */
-    UINT64          irqStartTime;       /**< Interrupt start time */
-    UINT32          irqUsedTime;        /**< Interrupt consumption time */
-    UINT32          initTimeSlice;      /**< Task init time slice */
-    INT32           timeSlice;          /**< Task remaining time slice */
-    UINT32          waitTimes;          /**< Task delay time, tick number */
-    SortLinkList    sortList;           /**< Task sortlink node */
+    UINT64          startTime;          /**< The start time of each phase of task *///任务开始时间
+    UINT64          irqStartTime;       /**< Interrupt start time *///任务中断开始时间
+    UINT32          irqUsedTime;        /**< Interrupt consumption time *///任务中断恢复时间
+    UINT32          initTimeSlice;      /**< Task init time slice *///任务初始的时间片
+    INT32           timeSlice;          /**< Task remaining time slice *///任务剩余时间片
+    UINT32          waitTimes;          /**< Task delay time, tick number *///设置任务调度延期时间
+    SortLinkList    sortList;           /**< Task sortlink node */	//任务排序链表节点
     UINT32          stackSize;          /**< Task stack size */		//内核态栈大小,内存来自内核空间
     UINTPTR         topOfStack;         /**< Task stack top */		//内核态栈顶 bottom = top + size
     UINT32          taskID;             /**< Task ID */				//任务ID，任务池本质是一个大数组，ID就是数组的索引，默认 < 128

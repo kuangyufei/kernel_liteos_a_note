@@ -42,16 +42,16 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-typedef enum {
-    OS_SORT_LINK_TASK = 1,
-    OS_SORT_LINK_SWTMR = 2,
+typedef enum {//因为任务和定时器都是吃CPU的,让CPU不停工作的主要就是这两宝贝.
+    OS_SORT_LINK_TASK = 1,	//任务排序
+    OS_SORT_LINK_SWTMR = 2,	//定时器排序
 } SortLinkType;
 
 typedef struct {
-    LOS_DL_LIST sortLinkNode;
-    UINT64      responseTime;
+    LOS_DL_LIST sortLinkNode;//任务排序链表,注意上面挂的是一个个等待的任务
+    UINT64      responseTime;//响应时间
 #if (LOSCFG_KERNEL_SMP == YES)
-    UINT32      cpuid;
+    UINT32      cpuid;//需要哪个CPU处理
 #endif
 } SortLinkList;
 

@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '对mtd,disk,filemap注解 
+git commit -m  '因同步官方代码,导致调度过程部分需重新加注.调度部分目前代码结构很清晰,将调度和进程,任务彻底剥离开. 
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     国内:https://weharmony.21cloudbox.com
     国外:https://weharmony.github.io

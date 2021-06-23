@@ -49,14 +49,14 @@ extern UINT32 g_taskScheduled;
 typedef BOOL (*SchedScan)(VOID);
 
 extern UINT64 g_sysSchedStartTime;
-
+//获取当前调度经历了多少个时间周期
 STATIC INLINE UINT64 OsGerCurrSchedTimeCycle(VOID)
 {
     if (g_sysSchedStartTime == 0) {
         return g_sysSchedStartTime;
     }
 
-    return (HalClockGetCycles() - g_sysSchedStartTime);
+    return (HalClockGetCycles() - g_sysSchedStartTime);//经历周期数
 }
 
 STATIC INLINE VOID OsSchedIrqUpdateUsedTime(VOID)

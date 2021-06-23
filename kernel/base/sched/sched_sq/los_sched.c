@@ -76,7 +76,7 @@ typedef struct {//调度器
 
 STATIC Sched *g_sched = NULL;//全局调度器
 STATIC UINT64 g_schedTickMaxResponseTime;
-UINT64 g_sysSchedStartTime = 0;
+UINT64 g_sysSchedStartTime = 0;//系统调度开始时间,这个时间指的是周期
 
 #ifdef LOSCFG_SCHED_TICK_DEBUG
 #define OS_SCHED_DEBUG_DATA_NUM  1000
@@ -249,14 +249,14 @@ UINT32 OsSchedSetTickTimerType(UINT32 timerType)
 
     return LOS_OK;
 }
-
+//设置调度开始时间
 STATIC VOID OsSchedSetStartTime(UINT64 currCycle)
 {
-    if (g_sysSchedStartTime == 0) {
+    if (g_sysSchedStartTime == 0) {//说明只能设置一次.
         g_sysSchedStartTime = currCycle;
     }
 }
-
+//升级时间片
 STATIC INLINE VOID OsTimeSliceUpdate(LosTaskCB *taskCB, UINT64 currTime)
 {
     LOS_ASSERT(currTime >= taskCB->startTime);
@@ -464,12 +464,12 @@ STATIC INLINE VOID OsSchedWakePendTimeTask(UINT64 currTime, LosTaskCB *taskCB, B
 
     LOS_SpinUnlock(&g_taskSpin);
 }
-
+//扫描那些处于等待状态的任务是否时间到了
 STATIC INLINE BOOL OsSchedScanTimerList(VOID)
 {
     Percpu *cpu = OsPercpuGet();
     BOOL needSchedule = FALSE;
-    SortLinkAttribute *taskSortLink = &OsPercpuGet()->taskSortLink;
+    SortLinkAttribute *taskSortLink = &OsPercpuGet()->taskSortLink;//获取本CPU核上挂的所有等待的任务排序链表
     LOS_DL_LIST *listObject = &taskSortLink->sortLink;
     /*
      * When task is pended with timeout, the task block is on the timeout sortlink
@@ -486,9 +486,9 @@ STATIC INLINE BOOL OsSchedScanTimerList(VOID)
         return needSchedule;
     }
 
-    SortLinkList *sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-    UINT64 currTime = OsGerCurrSchedTimeCycle();
-    while (sortList->responseTime <= currTime) {
+    SortLinkList *sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);//获取每个优先级上的任务链表头节点
+    UINT64 currTime = OsGerCurrSchedTimeCycle();//获取当前时钟周期
+    while (sortList->responseTime <= currTime) {//
         LosTaskCB *taskCB = LOS_DL_LIST_ENTRY(sortList, LosTaskCB, sortList);
         OsDeleteNodeSortLink(taskSortLink, &taskCB->sortList);
         LOS_SpinUnlock(&cpu->taskSortLinkSpin);
@@ -617,42 +617,42 @@ VOID OsSchedTaskExit(LosTaskCB *taskCB)
         taskCB->taskStatus &= ~(OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME);
     }
 }
-
+//通过本函数可以看出 yield 的真正含义是主动让出CPU,当它自己还是在就绪队列中,跑末位去排队了.像个活雷锋.
 VOID OsSchedYield(VOID)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
 
-    runTask->timeSlice = 0;
+    runTask->timeSlice = 0;//时间片变成0,代表主动让出运行时间.
 
-    runTask->startTime = OsGerCurrSchedTimeCycle();
-    OsSchedTaskEnQueue(runTask);
-    OsSchedResched();
+    runTask->startTime = OsGerCurrSchedTimeCycle();//重新设置任务开始周期
+    OsSchedTaskEnQueue(runTask);//跑队列尾部排队
+    OsSchedResched();//发起调度
 }
-
+//延期调度
 VOID OsSchedDelay(LosTaskCB *runTask, UINT32 tick)
 {
-    OsSchedTaskDeQueue(runTask);
-    runTask->taskStatus |= OS_TASK_STATUS_DELAY;
-    runTask->waitTimes = tick;
+    OsSchedTaskDeQueue(runTask);//将任务从就绪队列中删除
+    runTask->taskStatus |= OS_TASK_STATUS_DELAY;//任务状态改成延期
+    runTask->waitTimes = tick;//延期节拍数
 
-    OsSchedResched();
+    OsSchedResched();//既然本任务延期,就需要发起新的调度.
 }
-
+//任务进入等待链表
 UINT32 OsSchedTaskWait(LOS_DL_LIST *list, UINT32 ticks, BOOL needSched)
 {
-    LosTaskCB *runTask = OsCurrTaskGet();
-    OsSchedTaskDeQueue(runTask);
+    LosTaskCB *runTask = OsCurrTaskGet();//获取当前任务
+    OsSchedTaskDeQueue(runTask);//将任务从就绪队列中删除
 
-    runTask->taskStatus |= OS_TASK_STATUS_PENDING;
-    LOS_ListTailInsert(list, &runTask->pendList);
+    runTask->taskStatus |= OS_TASK_STATUS_PENDING;//任务状态改成阻塞
+    LOS_ListTailInsert(list, &runTask->pendList);//挂入阻塞链表
 
-    if (ticks != LOS_WAIT_FOREVER) {
-        runTask->taskStatus |= OS_TASK_STATUS_PEND_TIME;
-        runTask->waitTimes = ticks;
+    if (ticks != LOS_WAIT_FOREVER) {//如果不是永久的等待
+        runTask->taskStatus |= OS_TASK_STATUS_PEND_TIME;//标记为有时间的阻塞
+        runTask->waitTimes = ticks;//要阻塞多久
     }
 
-    if (needSched == TRUE) {
-        OsSchedResched();
+    if (needSched == TRUE) {//是否需要调度
+        OsSchedResched();//申请调度,将切换任务上下文
         if (runTask->taskStatus & OS_TASK_STATUS_TIMEOUT) {
             runTask->taskStatus &= ~OS_TASK_STATUS_TIMEOUT;
             return LOS_ERRNO_TSK_TIMEOUT;
@@ -661,7 +661,7 @@ UINT32 OsSchedTaskWait(LOS_DL_LIST *list, UINT32 ticks, BOOL needSched)
 
     return LOS_OK;
 }
-
+//任务从等待链表中恢复,并从链表中摘除.
 VOID OsSchedTaskWake(LosTaskCB *resumedTask)
 {
     LOS_ListDelete(&resumedTask->pendList);
@@ -707,7 +707,7 @@ BOOL OsSchedModifyTaskSchedParam(LosTaskCB *taskCB, UINT16 policy, UINT16 priori
 
     return FALSE;
 }
-
+//修改进程调度参数
 BOOL OsSchedModifyProcessSchedParam(LosProcessCB *processCB, UINT16 policy, UINT16 priority)
 {
     LosTaskCB *taskCB = NULL;
@@ -802,7 +802,7 @@ UINT32 OsSchedInit(VOID)
         LOS_SpinInit(&cpu->swtmrSortLinkSpin);//操作具体CPU核定时器排序链表
     }
 
-    g_sched->taskScan = OsSchedScanTimerList;//
+    g_sched->taskScan = OsSchedScanTimerList;//扫描那些处于等待状态的任务是否时间到了
 
 #ifdef LOSCFG_SCHED_TICK_DEBUG
     ret = OsSchedDebugInit();
@@ -849,32 +849,32 @@ FIND_TASK:
     OsSchedDeTaskQueue(newTask, OS_PCB_FROM_PID(newTask->processID));
     return newTask;
 }
-//开始调度,每个CPU核都会执行这个函数一次.
+//CPU的调度开始,每个CPU核都会执行这个函数一次.
 VOID OsSchedStart(VOID)
 {
-    UINT32 cpuid = ArchCurrCpuid();
+    UINT32 cpuid = ArchCurrCpuid();//从系统寄存器上获取当前执行的CPU核编号
     UINT32 intSave;
 
     SCHEDULER_LOCK(intSave);
 
-    OsTickStart();
+    OsTickStart();//开始了属于本核的tick 
 
-    LosTaskCB *newTask = OsGetTopTask();
-    LosProcessCB *newProcess = OS_PCB_FROM_PID(newTask->processID);
+    LosTaskCB *newTask = OsGetTopTask();//拿一个优先级最高的任务
+    LosProcessCB *newProcess = OS_PCB_FROM_PID(newTask->processID);//获取该任务的进程实体
 
-    newTask->taskStatus |= OS_TASK_STATUS_RUNNING;
+    newTask->taskStatus |= OS_TASK_STATUS_RUNNING;//变成运行状态,注意此时该任务还没真正的运行
     newProcess->processStatus |= OS_PROCESS_STATUS_RUNNING;
-    newProcess->processStatus = OS_PROCESS_RUNTASK_COUNT_ADD(newProcess->processStatus);
+    newProcess->processStatus = OS_PROCESS_RUNTASK_COUNT_ADD(newProcess->processStatus);//当前任务的数量也增加一个
 
-    OsSchedSetStartTime(HalClockGetCycles());
+    OsSchedSetStartTime(HalClockGetCycles());//设置调度开始时间
     newTask->startTime = OsGerCurrSchedTimeCycle();
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#if (LOSCFG_KERNEL_SMP == YES)//注意：需要设置当前cpu，以防第一个任务删除可能会失败，因为此标志与实际当前 cpu 不匹配。
     /*
      * attention: current cpu needs to be set, in case first task deletion
      * may fail because this flag mismatch with the real current cpu.
      */
-    newTask->currCpu = cpuid;
+    newTask->currCpu = cpuid;//设置当前CPU,确保第一个任务由本CPU核执行
 #endif
 
     OsCurrTaskSet((VOID *)newTask);
