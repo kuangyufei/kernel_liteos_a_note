@@ -114,7 +114,7 @@ struct VmMapRegion {//线性区描述符,内核通过线性区管理虚拟地址
     UINT8               forkFlags;      /**< vm space fork flags: COPY, ZERO, */	//fork的方式
     UINT8               regionType;     /**< vm region type: ANON, FILE, DEV */	//映射类型是匿名,文件,还是设备,所谓匿名可理解为内存映射
     union {
-        struct VmRegionFile {//
+        struct VmRegionFile {//文件映射
             unsigned int fileMagic;//具有特殊文件格式的文件,魔法数字.例如 stack top 的魔法数字为 0xCCCCCCCC
             struct file *file;		//文件指针
             const LosVmFileOps *vmFOps;//文件处理各操作接口
@@ -122,7 +122,7 @@ struct VmMapRegion {//线性区描述符,内核通过线性区管理虚拟地址
         struct VmRegionAnon {//匿名映射可理解为就是物理内存
             LOS_DL_LIST  node;          /**< region LosVmPage list */ 	//线性区虚拟页链表
         } ra;
-        struct VmRegionDev {
+        struct VmRegionDev {//设备映射
             LOS_DL_LIST  node;          /**< region LosVmPage list */	//线性区虚拟页链表
             const LosVmFileOps *vmFOps; //设备也是一种文件
         } rd;
@@ -238,7 +238,7 @@ STATIC INLINE VOID LOS_SetRegionTypeFile(LosVmMapRegion* region)
 {
     region->regionType = VM_MAP_REGION_TYPE_FILE;
 }
-//是否为设备映射线性区
+//是否为设备映射线性区 /dev/...
 STATIC INLINE BOOL LOS_IsRegionTypeDev(LosVmMapRegion* region)
 {
     return region->regionType == VM_MAP_REGION_TYPE_DEV;

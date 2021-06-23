@@ -511,4 +511,4 @@ SHELLCMD_ENTRY(trace_shellcmd, CMD_TYPE_EX, "trace", 1, (CmdCallBackFunc)OsShell
 
 #endif
 
-LOS_MODULE_INIT(OsTraceInit, LOS_INIT_LEVEL_EARLIEST);
+LOS_MODULE_INIT(OsTraceInit, LOS_INIT_LEVEL_EARLIEST);//跟踪初始化

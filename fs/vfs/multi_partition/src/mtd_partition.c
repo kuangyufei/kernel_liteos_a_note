@@ -384,6 +384,13 @@ static INT32 CharDriverUnregister(mtd_partition *node)
  * Attention: both startAddr and length should be aligned with block size.
  * If not, the actual start address and length won't be what you expected.
  *///注意：startAddr 和length 都应该与block size 对齐。如果不是，实际的起始地址和长度将不是你所期望的
+ /*
+add_mtd_partition函数有四个参数，
+	第一个参数表示介质，有“nand”和“spinor”两种，JFFS2分区在“spinor”上使用，而“nand”是提供给YAFFS2使用的。
+	第二个参数表示起始地址，
+	第三个参数表示分区大小，这两个参数都以16进制的形式传入。
+	最后一个参数表示分区号，有效值为0~19
+ */
 INT32 add_mtd_partition(const CHAR *type, UINT32 startAddr,
                         UINT32 length, UINT32 partitionNum)
 {
@@ -428,7 +435,7 @@ INT32 add_mtd_partition(const CHAR *type, UINT32 startAddr,
         goto ERROR_OUT2;
     }
 
-    LOS_ListTailInsert(&param->partition_head->node_info, &newNode->node_info);//挂到全局链表上
+    LOS_ListTailInsert(&param->partition_head->node_info, &newNode->node_info);//挂到全局分区链表上
     (VOID)LOS_MuxInit(&newNode->lock, NULL);//初始化锁,每个分区节点都有自己的互斥锁
 
     ret = pthread_mutex_unlock(&g_mtdPartitionLock);

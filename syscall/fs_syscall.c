@@ -1320,7 +1320,7 @@ int SysFsync(int fd)
     }
     return ret;
 }
-//从文件读入数据到缓冲数组中
+//通过FD读入数据到缓冲数组中,fd为进程描述符
 ssize_t SysReadv(int fd, const struct iovec *iov, int iovcnt)
 {
     int ret;
@@ -1328,7 +1328,7 @@ ssize_t SysReadv(int fd, const struct iovec *iov, int iovcnt)
     struct iovec *iovRet = NULL;
 
     /* Process fd convert to system global fd */
-    fd = GetAssociatedSystemFd(fd);
+    fd = GetAssociatedSystemFd(fd);//进程FD转成系统FD
     if ((iov == NULL) || (iovcnt <= 0) || (iovcnt > IOV_MAX)) {
         ret = vfs_readv(fd, iov, iovcnt, NULL);
         return -get_errno();

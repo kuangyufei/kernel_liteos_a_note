@@ -247,7 +247,7 @@ typedef struct _los_disk_ {	//磁盘描述符
     UINT8 type;				//flash的类型 例如:EMMC
     CHAR *disk_name;		//设备名称,通过名称创建一个磁盘,los_alloc_diskid_byname
     LOS_DL_LIST head;       /* link head of all the partitions */ //双向链表上挂所有分区(los_part->list)
-    struct pthread_mutex disk_mutex;
+    struct pthread_mutex disk_mutex;//磁盘互斥锁, @notewhy 为什么不锁分区而锁磁盘 ?
 } los_disk;
 
 
@@ -258,7 +258,7 @@ typedef struct _los_part_ {//分区描述符
     UINT32 part_no_mbr : 5;  /* partition number in the mbr */	  //硬盘主引导记录（即Master Boot Record，一般简称为MBR），主分区数量	
     UINT32 reserved : 3;	////保留，注意 disk_id|part_id|part_no_disk|part_no_mbr|reserved 共用一个UINT32
     UINT8 filesystem_type;   /* filesystem used in the partition */ //文件系统类型
-    UINT8 type;				//flash的类型 例如:EMMC
+    UINT8 type;				//介质类型 例如:EMMC
     struct inode *dev;      /* dev devices used in the partition */ //分区中使用的索引节点
     CHAR *part_name;		//区名称
     UINT64 sector_start;     /* //开始扇区编号

@@ -1088,7 +1088,7 @@ STATIC INT32 OsConsoleFileInit(CONSOLE_CB *consoleCB)
         goto ERROUT_WITH_FULLPATH;
     }
     filep->f_path = fullpath;
-    filep->ops = (struct file_operations_vfs *)((struct drv_data *)vnode->data)->ops;//关系驱动程序
+    filep->ops = (struct file_operations_vfs *)((struct drv_data *)vnode->data)->ops;//关联驱动程序
     VnodeDrop();
     return LOS_OK;
 

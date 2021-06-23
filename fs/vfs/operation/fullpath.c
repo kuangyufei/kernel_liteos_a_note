@@ -214,14 +214,14 @@ static char *vfs_normalize_fullpath(const char *directory, const char *filename,
 {
     char *fullpath = NULL;
 
-    if (filename[0] != '/') {
+    if (filename[0] != '/') {//不是绝对路径
         /* not a absolute path */
 
         fullpath = vfs_not_absolute_path(directory, filename, pathname, namelen);
         if (fullpath == NULL) {
             return (char *)NULL;
         }
-    } else {
+    } else {//如果是绝对路径
         /* it's a absolute path, use it directly */
 
         fullpath = strdup(filename); /* copy string */
@@ -241,7 +241,7 @@ static char *vfs_normalize_fullpath(const char *directory, const char *filename,
 
     return fullpath;
 }
-//虚拟文件系统 | 标准化路径
+//虚拟文件系统 | 获取文件绝对路径
 int vfs_normalize_path(const char *directory, const char *filename, char **pathname)
 {
     char *fullpath = NULL;

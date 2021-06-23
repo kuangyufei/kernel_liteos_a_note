@@ -70,7 +70,7 @@ TTY 是 Teletype 或 Teletypewriter 的缩写，字符设备的通称,原来是�
 /dev/console是一个虚拟的tty，在鸿蒙它映射到真正的dev/ttyS0(UART0)上
 能直接显示系统消息的那个终端称为控制台，其他的则称为终端
 **********************************************************/
-#define CONSOLE  "/dev/console"
+#define CONSOLE  "/dev/console"	
 #define CONSOLE_NAMELEN 16
 #define CONSOLE_RD_BLOCK               1
 #define CONSOLE_RD_NONBLOCK            0

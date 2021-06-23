@@ -41,6 +41,7 @@
 #include "los_init.h"
 #include "los_printf_pri.h"
 
+//LK 注者的理解是 log kernel(内核日志)
 #ifdef LOSCFG_SHELL_LK
 
 typedef enum {//模块等级
@@ -201,7 +202,7 @@ STATIC INLINE VOID OsLogCycleRecord(INT32 level)//日志循环记录
     }
 }
 #endif
-//默认打印函数,用于回调函数
+//内核打印函数,在LOS_LkPrint中回调
 VOID OsLkDefaultFunc(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, va_list ap)
 {
     if (level > OsLkTraceLvGet()) {
@@ -238,7 +239,7 @@ UINT32 OsLkLoggerInit(VOID)
 {
     (VOID)memset_s(&g_logger, sizeof(Logger), 0, sizeof(Logger));
     OsLkTraceLvSet(TRACE_DEFAULT);
-    LOS_LkRegHook(OsLkDefaultFunc);
+    LOS_LkRegHook(OsLkDefaultFunc);//注册钩子函数,将在 LOS_LkPrint中回调钩子
 #ifdef LOSCFG_SHELL_DMESG
     (VOID)LOS_DmesgLvSet(TRACE_DEFAULT);
 #endif

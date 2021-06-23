@@ -738,7 +738,7 @@ int osShellCmdTouch(int argc, const char **argv)
   filename = argv[0];
   ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);
   ERROR_OUT_IF(ret < 0, set_err(-ret, "touch error"), return -1);
-
+  //如果没有就创建文件方式 
   fd = open(fullpath, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   free(fullpath);
   if (fd == -1)

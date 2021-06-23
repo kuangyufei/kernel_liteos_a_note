@@ -488,14 +488,14 @@ VOID OsFileCacheRemove(struct page_mapping *mapping)
         OsDoFlushDirtyPage(fpage);//遍历脏页链表,一页一页处理
     }
 }
-
+//虚拟内存文件操作实现类
 LosVmFileOps g_commVmOps = {//
     .open = NULL,
     .close = NULL,
     .fault = OsVmmFileFault, //缺页中断处理
     .remove = OsVmmFileRemove,//删除页
 };
-
+//文件映射
 INT32 OsVfsFileMmap(struct file *filep, LosVmMapRegion *region)
 {
     region->unTypeData.rf.vmFOps = &g_commVmOps;//文件操作
@@ -504,7 +504,7 @@ INT32 OsVfsFileMmap(struct file *filep, LosVmMapRegion *region)
     return ENOERR;
 }
 /******************************************************************************
- 有名映射,跟匿名映射相对应
+ 有名映射,可理解为文件映射,跟匿名映射相对应
  参数filep是广义的文件,在鸿蒙内核,目录/普通文件/字符设备/块设备/网络套接字/管道/链接 都是文件
 ******************************************************************************/
 STATUS_T OsNamedMMap(struct file *filep, LosVmMapRegion *region)
@@ -519,10 +519,10 @@ STATUS_T OsNamedMMap(struct file *filep, LosVmMapRegion *region)
     }
 
     if (filep->ops != NULL && filep->ops->mmap != NULL) {
-        if (vnode->type == VNODE_TYPE_CHR || vnode->type == VNODE_TYPE_BLK) {
-            LOS_SetRegionTypeDev(region);
+        if (vnode->type == VNODE_TYPE_CHR || vnode->type == VNODE_TYPE_BLK) {//块设备或者字符设备 /dev/..
+            LOS_SetRegionTypeDev(region);//设置为设备类型 
         } else {
-            LOS_SetRegionTypeFile(region);
+            LOS_SetRegionTypeFile(region);//设置为文件类型
         }
         int ret = filep->ops->mmap(filep, region);
         if (ret != LOS_OK) {

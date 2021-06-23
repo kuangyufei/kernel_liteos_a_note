@@ -79,8 +79,8 @@ enum VnodeType {//节点类型
     VNODE_TYPE_UNKNOWN,       /* unknown type */	//未知类型
     VNODE_TYPE_REG,           /* regular file */	//正则文件(普通文件)
     VNODE_TYPE_DIR,           /* directory */		//目录
-    VNODE_TYPE_BLK,           /* block device */	//块设备
-    VNODE_TYPE_CHR,           /* char device */		//字符设备
+    VNODE_TYPE_BLK,           /* block device */	//块设备驱动
+    VNODE_TYPE_CHR,           /* char device */		//字符设备驱动
     VNODE_TYPE_BCHR,          /* block char mix device *///块和字符设备混合
     VNODE_TYPE_FIFO,          /* pipe */			//管道文件
     VNODE_TYPE_LNK,           /* link */			//链接,这里的链接指的是上层硬链接概念
@@ -95,6 +95,9 @@ struct IATTR;
 * 这里顺便说一下目录文件的"链接数"。创建目录时，默认会生成两个目录项："."和".."。前者的inode号码就是当前目录的inode号码，
 	等同于当前目录的"硬链接"；后者的inode号码就是当前目录的父目录的inode号码，等同于父目录的"硬链接"。
 	所以，任何一个目录的"硬链接"总数，总是等于2加上它的子目录总数（含隐藏目录）
+	
+由于 vnode 是对所有设备的一个抽象，因此不同类型的设备，他们的操作方法也不一样，
+因此 vop ,fop 都是接口, data 因设备不同而不同.
 */
 struct Vnode {
     enum VnodeType type;                /* vnode type */	//节点类型
@@ -106,9 +109,9 @@ struct Vnode {
     LIST_HEAD parentPathCaches;         /* pathCaches point to parents */	//指向父级路径缓存,上面的都是当了爸爸节点
     LIST_HEAD childPathCaches;          /* pathCaches point to children */	//指向子级路径缓存,上面都是当了别人儿子的节点
     struct Vnode *parent;               /* parent vnode */	//父节点
-    struct VnodeOps *vop;               /* vnode operations */	//以 Vnode 方式访问数据(接口实现|驱动程序)
-    struct file_operations_vfs *fop;    /* file operations */	//以 File 方式访问数据(接口实现|驱动程序)
-    void *data;                         /* private data */		//私有数据 (drv_data),在 ( register_blockdriver | register_driver )中分配内存
+    struct VnodeOps *vop;               /* vnode operations */	//以 Vnode 方式操作数据(接口实现|驱动程序)
+    struct file_operations_vfs *fop;    /* file operations */	//以 file 方式操作数据(接口实现|驱动程序)
+    void *data;                         /* private data */		//指向每种具体设备私有的成员，例如 ( drv_data | nfsnode | ....)
     uint32_t flag;                      /* vnode flag */		//节点标签
     LIST_ENTRY hashEntry;               /* list entry for bucket in hash table */ //通过它挂入哈希表 g_vnodeHashEntrys[i], i:[0,g_vnodeHashMask]
     LIST_ENTRY actFreeEntry;            /* vnode active/free list entry */	//通过本节点挂到空闲链表和使用链表上

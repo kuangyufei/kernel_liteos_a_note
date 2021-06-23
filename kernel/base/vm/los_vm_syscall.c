@@ -306,7 +306,7 @@ int LOS_DoMprotect(VADDR_T vaddr, size_t len, unsigned long prot)
     int ret;
 
     (VOID)LOS_MuxAcquire(&space->regionMux);
-    region = LOS_RegionFind(space, vaddr);
+    region = LOS_RegionFind(space, vaddr);//通过虚拟地址找到线性区
     if (!IS_ALIGNED(vaddr, PAGE_SIZE) || (region == NULL) || (vaddr > vaddr + len)) {
         ret = -EINVAL;
         goto OUT_MPROTECT;
@@ -316,12 +316,12 @@ int LOS_DoMprotect(VADDR_T vaddr, size_t len, unsigned long prot)
         ret = -EINVAL;
         goto OUT_MPROTECT;
     }
-
+	//如果是堆区或VDSO区,说明区内容是不能修改的
     if ((region->regionFlags & VM_MAP_REGION_FLAG_VDSO) || (region->regionFlags & VM_MAP_REGION_FLAG_HEAP)) {
         ret = -EPERM;
         goto OUT_MPROTECT;
     }
-
+	//如果是共享文件,说明内容也不能修改
     if (LOS_IsRegionTypeFile(region) && (region->regionFlags & VM_MAP_REGION_FLAG_SHARED)) {
         if (!OsProtMprotectPermCheck(prot, region)) {
             ret = -EACCES;
@@ -330,14 +330,14 @@ int LOS_DoMprotect(VADDR_T vaddr, size_t len, unsigned long prot)
     }
     len = LOS_Align(len, PAGE_SIZE);
     /* can't operation cross region */
-    if (region->range.base + region->range.size < vaddr + len) {
+    if (region->range.base + region->range.size < vaddr + len) {//判断范围,不能跨区域操作
         ret = -EINVAL;
         goto OUT_MPROTECT;
     }
 
     /* if only move some part of region, we need to split first */
-    if (region->range.size > len) {
-        OsVmRegionAdjust(space, vaddr, len);
+    if (region->range.size > len) {//如果只修改部分区域，我们需要先拆分区
+        OsVmRegionAdjust(space, vaddr, len);//调整下线性区范围
     }
 
     vmFlags = OsCvtProtFlagsToRegionFlags(prot, 0);//转换FLAGS

@@ -852,8 +852,8 @@ INT32 los_disk_read(INT32 drvID, VOID *buf, UINT64 sector, UINT32 count, BOOL us
             goto ERROR_HANDLE;
         }
         len = disk->bcache->sectorSize * count;
-        /* useRead should be FALSE when reading large contiguous data */
-        result = BlockCacheRead(disk->bcache, (UINT8 *)buf, &len, sector, useRead);
+        /* useRead should be FALSE when reading large contiguous data *///读取大量连续数据时，useRead 应为 FALSE
+        result = BlockCacheRead(disk->bcache, (UINT8 *)buf, &len, sector, useRead);//从缓存区里读
         if (result != ENOERR) {
             PRINT_ERR("los_disk_read read err = %d, sector = %llu, len = %u\n", result, sector, len);
         }
@@ -862,9 +862,9 @@ INT32 los_disk_read(INT32 drvID, VOID *buf, UINT64 sector, UINT32 count, BOOL us
     if (disk->dev == NULL) {
         goto ERROR_HANDLE;
     }
-    struct block_operations *bops = (struct block_operations *)((struct drv_data *)disk->dev->data)->ops;
+    struct block_operations *bops = (struct block_operations *)((struct drv_data *)disk->dev->data)->ops;//获取块操作数据方式
     if ((bops != NULL) && (bops->read != NULL)) {
-        result = bops->read(disk->dev, (UINT8 *)buf, sector, count);
+        result = bops->read(disk->dev, (UINT8 *)buf, sector, count);//读取绝对扇区内容至buf
         if (result == (INT32)count) {
             result = ENOERR;
         }
@@ -884,7 +884,7 @@ ERROR_HANDLE:
     DISK_UNLOCK(&disk->disk_mutex);
     return VFS_ERROR;
 }
-
+//将buf内容写到指定扇区,
 INT32 los_disk_write(INT32 drvID, const VOID *buf, UINT64 sector, UINT32 count)
 {
 #ifdef LOSCFG_FS_FAT_CACHE
@@ -916,15 +916,15 @@ INT32 los_disk_write(INT32 drvID, const VOID *buf, UINT64 sector, UINT32 count)
             goto ERROR_HANDLE;
         }
         len = disk->bcache->sectorSize * count;
-        result = BlockCacheWrite(disk->bcache, (const UINT8 *)buf, &len, sector);
+        result = BlockCacheWrite(disk->bcache, (const UINT8 *)buf, &len, sector);//写入缓存,后续由缓存同步至磁盘
         if (result != ENOERR) {
             PRINT_ERR("los_disk_write write err = %d, sector = %llu, len = %u\n", result, sector, len);
         }
     } else {
-#endif
+#endif//无缓存情况下获取操作块实现函数指针结构体
     struct block_operations *bops = (struct block_operations *)((struct drv_data *)disk->dev->data)->ops;
     if ((disk->dev != NULL) && (bops != NULL) && (bops->write != NULL)) {
-        result = bops->write(disk->dev, (UINT8 *)buf, sector, count);
+        result = bops->write(disk->dev, (UINT8 *)buf, sector, count);//真正的写磁盘
         if (result == (INT32)count) {
             result = ENOERR;
         }
@@ -997,10 +997,10 @@ ERROR_HANDLE:
     DISK_UNLOCK(&disk->disk_mutex);
     return VFS_ERROR;
 }
-
+//读分区上扇区内容
 INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count, BOOL useRead)
 {
-    const los_part *part = get_part(pt);
+    const los_part *part = get_part(pt);//先拿到分区信息
     los_disk *disk = NULL;
     INT32 ret;
 
@@ -1008,24 +1008,24 @@ INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count, BOOL useRe
         return VFS_ERROR;
     }
 
-    disk = get_disk((INT32)part->disk_id);
+    disk = get_disk((INT32)part->disk_id);//再拿到磁盘信息
     if (disk == NULL) {
         return VFS_ERROR;
     }
 
-    DISK_LOCK(&disk->disk_mutex);
+    DISK_LOCK(&disk->disk_mutex);//锁磁盘
     if ((part->dev == NULL) || (disk->disk_status != STAT_INUSED)) {
         goto ERROR_HANDLE;
     }
 
-    if (count > part->sector_count) {
+    if (count > part->sector_count) {//不能超过分区总扇区数量
         PRINT_ERR("los_part_read failed, invaild count, count = %u\n", count);
         goto ERROR_HANDLE;
     }
 
     /* Read from absolute sector. */
-    if (part->type == EMMC) {
-        if ((disk->sector_count - part->sector_start) > sector) {
+    if (part->type == EMMC) {//如果分区类型是磁盘介质
+        if ((disk->sector_count - part->sector_start) > sector) {//从绝对扇区读取
             sector += part->sector_start;
         } else {
             PRINT_ERR("los_part_read failed, invaild sector, sector = %llu\n", sector);
@@ -1033,13 +1033,13 @@ INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count, BOOL useRe
         }
     }
 
-    if ((sector >= GetFirstPartStart(part)) &&
+    if ((sector >= GetFirstPartStart(part)) &&	//扇区范围判断
         (((sector + count) > (part->sector_start + part->sector_count)) || (sector < part->sector_start))) {
         PRINT_ERR("los_part_read error, sector = %llu, count = %u, part->sector_start = %llu, "
                   "part->sector_count = %llu\n", sector, count, part->sector_start, part->sector_count);
         goto ERROR_HANDLE;
     }
-
+	//读取大量连续数据时，useRead 应为 FALSE
     /* useRead should be FALSE when reading large contiguous data */
     ret = los_disk_read((INT32)part->disk_id, buf, sector, count, useRead);
     if (ret < 0) {
@@ -1053,7 +1053,7 @@ ERROR_HANDLE:
     DISK_UNLOCK(&disk->disk_mutex);
     return VFS_ERROR;
 }
-
+//将数据写入指定分区的指定扇区
 INT32 los_part_write(INT32 pt, const VOID *buf, UINT64 sector, UINT32 count)
 {
     const los_part *part = get_part(pt);
@@ -1095,8 +1095,8 @@ INT32 los_part_write(INT32 pt, const VOID *buf, UINT64 sector, UINT32 count)
                   "part->sector_count = %llu\n", sector, count, part->sector_start, part->sector_count);
         goto ERROR_HANDLE;
     }
-
-    ret = los_disk_write((INT32)part->disk_id, buf, sector, count);
+	//sector已变成磁盘绝对扇区
+    ret = los_disk_write((INT32)part->disk_id, buf, sector, count);//直接写入磁盘,
     if (ret < 0) {
         goto ERROR_HANDLE;
     }

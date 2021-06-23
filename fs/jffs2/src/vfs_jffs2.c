@@ -53,17 +53,41 @@
 
 #include "os-linux.h"
 #include "jffs2/nodelist.h"
+/*************************************************************
+JFFS2 直接在闪存上提供文件系统，而不是模拟块设备。
+JFFS2是Journalling Flash File System Version 2（日志文件系统）的缩写，是MTD设备上实现的日志型文件系统。
+JFFS2主要应用于NOR FLASH，其特点是：可读写、支持数据压缩、提供了崩溃/掉电安全保护、提供“写平衡”支持等。
 
+闪存与磁盘介质有许多差异，因此直接将磁盘文件系统运行在闪存上存在性能和安全性上的不足。
+为解决这一问题，需要实现一个特别针对闪存的文件系统，JFFS2就是这样一种文件系统。
+
+OpenHarmony内核的JFFS2主要应用于对NOR Flash闪存的文件管理，并且支持多分区。
+
+添加JFFS2分区
+
+调用 add_mtd_partition 函数添加JFFS2分区，该函数会自动为设备节点命名，对于JFFS2，其命名规则是“/dev/spinorblk”加上分区号。
+
+add_mtd_partition函数有四个参数，第一个参数表示介质，有“nand”和“spinor”两种，
+JFFS2分区在“spinor”上使用，而“nand”是提供给YAFFS2使用的。
+
+第二个参数表示起始地址，第三个参数表示分区大小，这两个参数都以16进制的形式传入。
+
+最后一个参数表示分区号，有效值为0~19。
+
+
+
+
+*************************************************************/
 #ifdef LOSCFG_FS_JFFS
 
 /* forward define */
-struct VnodeOps g_jffs2Vops;
-struct file_operations_vfs g_jffs2Fops;
+struct VnodeOps g_jffs2Vops;//vnode操作接口实现
+struct file_operations_vfs g_jffs2Fops;//vfs接口实现
 
-static LosMux g_jffs2FsLock;  /* lock for all jffs2 ops */
+static LosMux g_jffs2FsLock;  /* lock for all jffs2 ops *///操作 jffs2文件系统锁
 
 static pthread_mutex_t g_jffs2NodeLock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
-struct Vnode *g_jffs2PartList[CONFIG_MTD_PATTITION_NUM];
+struct Vnode *g_jffs2PartList[CONFIG_MTD_PATTITION_NUM];//分区列表
 
 static void Jffs2SetVtype(struct jffs2_inode *node, struct Vnode *pVnode)
 {
@@ -775,8 +799,8 @@ void Jffs2MutexDelete(void)
     (void)LOS_MuxDestroy(&g_jffs2FsLock);
 }
 
-const struct MountOps jffs_operations = {
-    .Mount = VfsJffs2Bind,
+const struct MountOps jffs_operations = {//jffs对mount接口实现
+    .Mount = VfsJffs2Bind,	//mount()函数实现设备节点和挂载点的挂载。
     .Unmount = VfsJffs2Unbind,
     .Statfs = VfsJffs2Statfs,
 };
@@ -808,7 +832,7 @@ struct file_operations_vfs g_jffs2Fops = {
     .fsync = VfsJffs2Fsync,
 };
 
-
+//文件系统与内存的映射
 FSMAP_ENTRY(jffs_fsmap, "jffs2", jffs_operations, TRUE, TRUE);
 
 #endif

@@ -715,14 +715,14 @@ STATIC LosVmMapRegion *OsVmRegionSplit(LosVmMapRegion *oldRegion, VADDR_T newReg
 #endif
     return newRegion;
 }
-
+//对线性区进行调整
 STATUS_T OsVmRegionAdjust(LosVmSpace *space, VADDR_T newRegionStart, size_t size)
 {
     LosVmMapRegion *region = NULL;
     VADDR_T nextRegionBase = newRegionStart + size;
     LosVmMapRegion *newRegion = NULL;
 
-    region = LOS_RegionFind(space, newRegionStart);
+    region = LOS_RegionFind(space, newRegionStart);//先找到线性区
     if ((region != NULL) && (newRegionStart > region->range.base)) {
         newRegion = OsVmRegionSplit(region, newRegionStart);
         if (newRegion == NULL) {
