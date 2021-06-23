@@ -82,7 +82,7 @@ typedef UINT32 (*SyscallFun7)(UINT32, UINT32, UINT32, UINT32, UINT32, UINT32, UI
 static UINTPTR g_syscallHandle[SYS_CALL_NUM] = {0};	//系统调用入口函数注册
 static UINT8 g_syscallNArgs[(SYS_CALL_NUM + 1) / NARG_PER_BYTE] = {0};//保存系统调用对应的参数数量
 
-//系统调用初始化,完成对系统调用的注册
+//系统调用初始化,完成对系统调用的注册,将系统调用添加到全局变量中 g_syscallHandle,g_syscallNArgs
 void OsSyscallHandleInit(void)
 {
 #define SYSCALL_HAND_DEF(id, fun, rType, nArg)                                             \
@@ -95,7 +95,7 @@ void OsSyscallHandleInit(void)
 #undef SYSCALL_HAND_DEF
 }
 
-LOS_MODULE_INIT(OsSyscallHandleInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
+LOS_MODULE_INIT(OsSyscallHandleInit, LOS_INIT_LEVEL_KMOD_EXTENDED);//注册系统调用模块
 /* The SYSCALL ID is in R7 on entry.  Parameters follow in R0..R6 */
 /******************************************************************
 由汇编调用,见于 los_hw_exc.s    / BLX    OsArmA32SyscallHandle
@@ -125,7 +125,7 @@ VOID OsArmA32SyscallHandle(TaskContext *regs)
         return;
     }
 	//regs[0-6] 记录系统调用的参数,这也是由R7寄存器保存系统调用号的原因
-    OsSigIntLock();
+    OsSigIntLock();//禁止响应信号
     switch (nArgs) {//参数的个数 
         case ARG_NUM_0:
         case ARG_NUM_1:
@@ -143,8 +143,8 @@ VOID OsArmA32SyscallHandle(TaskContext *regs)
             ret = (*(SyscallFun7)handle)(regs->R0, regs->R1, regs->R2, regs->R3, regs->R4, regs->R5, regs->R6);
     }
 
-    regs->R0 = ret;
-    OsSigIntUnlock();
+    regs->R0 = ret;//系统返回值,保存在R0寄存器
+    OsSigIntUnlock();//打开响应信号
 
     return;
 }

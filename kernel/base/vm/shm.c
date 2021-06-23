@@ -179,9 +179,9 @@ ERROR:
     VM_ERR("ShmInit fail\n");
     return LOS_NOK;
 }
-//共享内存反初始化
-LOS_MODULE_INIT(ShmInit, LOS_INIT_LEVEL_VM_COMPLETE);
 
+LOS_MODULE_INIT(ShmInit, LOS_INIT_LEVEL_VM_COMPLETE);//共享内存模块初始化
+//共享内存反初始化
 UINT32 ShmDeinit(VOID)
 {
     UINT32 ret;

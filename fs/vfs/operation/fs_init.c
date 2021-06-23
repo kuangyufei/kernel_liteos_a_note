@@ -105,4 +105,4 @@ void los_vfs_init(void)//只能调用一次，多次调用将会造成文件系�
     g_vfs_init = true;
 }
 
-LOS_MODULE_INIT(los_vfs_init, LOS_INIT_LEVEL_KMOD_BASIC);
+LOS_MODULE_INIT(los_vfs_init, LOS_INIT_LEVEL_KMOD_BASIC);//文件模块初始化

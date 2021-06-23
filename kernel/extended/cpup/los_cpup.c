@@ -38,7 +38,7 @@
 
 #ifdef LOSCFG_KERNEL_CPUP
 
-LITE_OS_SEC_BSS STATIC UINT16 cpupSwtmrID;
+LITE_OS_SEC_BSS STATIC UINT16 cpupSwtmrID;	//监测CPU使用情况定时器s
 LITE_OS_SEC_BSS STATIC UINT16 cpupInitFlg = 0;
 LITE_OS_SEC_BSS OsIrqCpupCB *g_irqCpup = NULL;
 LITE_OS_SEC_BSS STATIC UINT16 cpupMaxNum;
@@ -59,7 +59,7 @@ LITE_OS_SEC_BSS STATIC UINT64 cpupIntTimeStart[LOSCFG_KERNEL_CORE_NUM];
 
 #define CPUP_PRE_POS(pos) (((pos) == 0) ? (OS_CPUP_HISTORY_RECORD_NUM - 1) : ((pos) - 1))
 #define CPUP_POST_POS(pos) (((pos) == (OS_CPUP_HISTORY_RECORD_NUM - 1)) ? 0 : ((pos) + 1))
-
+//获取CPU周期
 STATIC UINT64 OsGetCpuCycle(VOID)
 {
     UINT32 high;
@@ -134,7 +134,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsCpupGuard(VOID)
 
     SCHEDULER_UNLOCK(intSave);
 }
-
+//创建cpu使用统计定时器
 LITE_OS_SEC_TEXT_INIT UINT32 OsCpupGuardCreator(VOID)
 {
     (VOID)LOS_SwtmrCreate(LOSCFG_BASE_CORE_TICK_PER_SECOND, LOS_SWTMR_MODE_PERIOD,

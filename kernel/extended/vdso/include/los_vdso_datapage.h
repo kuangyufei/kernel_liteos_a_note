@@ -40,14 +40,14 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-typedef struct {
+typedef struct {//Vdso数据页结构体
     /* Timeval */
     INT64 realTimeSec;
     INT64 realTimeNsec;
     INT64 monoTimeSec;
     INT64 monoTimeNsec;
     /* lock DataPage  0:Unlock State  1:Lock State */
-    UINT64 lockCount;
+    UINT64 lockCount;//数据页被锁数量
 } VdsoDataPage;
 
 #define ELF_HEAD "\177ELF"

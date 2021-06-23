@@ -42,7 +42,6 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
 extern UINT32 OsVdsoInit(VOID);
 extern vaddr_t OsVdsoLoad(const LosProcessCB *);
 extern VOID OsVdsoTimevalUpdate(VOID);

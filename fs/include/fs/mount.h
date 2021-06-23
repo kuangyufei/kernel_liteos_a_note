@@ -52,7 +52,7 @@ struct Mount {//装载
     int vnodeSize;                     /* size of vnode list */	//节点数量
     LIST_HEAD activeVnodeList;         /* list of active vnodes */	//激活的节点链表
     int activeVnodeSize;               /* szie of active vnodes list *///激活的节点数量
-    void *data;                        /* private data */	//私有数据
+    void *data;                        /* private data */	//私有数据,可使用这个成员作为一个指向它们自己内部数据的指针
     uint32_t hashseed;                 /* Random seed for vfs hash */ //vfs 哈希随机种子
     unsigned long mountFlags;          /* Flags for mount */	//装载标签
     char pathName[PATH_MAX];           /* path name of mount point */	//装载点路径名称

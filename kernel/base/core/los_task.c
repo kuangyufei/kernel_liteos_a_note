@@ -1776,4 +1776,4 @@ LITE_OS_SEC_TEXT UINT32 OsResourceFreeTaskCreate(VOID)
     return ret;
 }
 
-LOS_MODULE_INIT(OsResourceFreeTaskCreate, LOS_INIT_LEVEL_KMOD_TASK);
+LOS_MODULE_INIT(OsResourceFreeTaskCreate, LOS_INIT_LEVEL_KMOD_TASK);//资源回收任务初始化

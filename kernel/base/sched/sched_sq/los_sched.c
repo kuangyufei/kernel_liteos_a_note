@@ -812,7 +812,7 @@ UINT32 OsSchedInit(VOID)
 #endif
     return LOS_OK;
 }
-
+//获取优先级最高的任务
 STATIC LosTaskCB *OsGetTopTask(VOID)
 {
     UINT32 priority, processPriority;
@@ -849,7 +849,7 @@ FIND_TASK:
     OsSchedDeTaskQueue(newTask, OS_PCB_FROM_PID(newTask->processID));
     return newTask;
 }
-
+//开始调度,每个CPU核都会执行这个函数一次.
 VOID OsSchedStart(VOID)
 {
     UINT32 cpuid = ArchCurrCpuid();

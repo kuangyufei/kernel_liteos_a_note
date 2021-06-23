@@ -133,11 +133,11 @@ STATIC const long long g_adjPacement = (((LOSCFG_BASE_CORE_ADJ_PER_SECOND * SCHE
                                         LOSCFG_BASE_CORE_TICK_PER_SECOND) * OS_SYS_NS_PER_US);
 
 /* accumulative time delta from continuous modify, such as adjtime */
-STATIC struct timespec64 g_accDeltaFromAdj;
+STATIC struct timespec64 g_accDeltaFromAdj;//连续修改的累积时间增量，例如 adjtime
 /* accumulative time delta from discontinuous modify, such as settimeofday */
-STATIC struct timespec64 g_accDeltaFromSet;
+STATIC struct timespec64 g_accDeltaFromSet;//来自不连续修改的累积时间增量，例如 settimeofday
 
-VOID OsAdjTime(VOID)
+VOID OsAdjTime(VOID)//时间调整
 {
     UINT32 intSave;
 
@@ -272,12 +272,12 @@ STATIC INLINE struct timespec64 OsTimeSpecSub(const struct timespec64 t1, const 
 
     return ret;
 }
-
+//获取硬件时间
 STATIC VOID OsGetHwTime(struct timespec64 *hwTime)
 {
     UINT64 nowNsec;
 
-    nowNsec = LOS_CurrNanosec();
+    nowNsec = LOS_CurrNanosec();//当前纳秒
     hwTime->tv_sec = nowNsec / OS_SYS_NS_PER_SECOND;
     hwTime->tv_nsec = nowNsec - hwTime->tv_sec * OS_SYS_NS_PER_SECOND;
 }
@@ -1096,7 +1096,7 @@ int getitimer(int which, struct itimerval *value)
 }
 
 #ifdef LOSCFG_KERNEL_VDSO
-VOID OsVdsoTimeGet(VdsoDataPage *vdsoDataPage)
+VOID OsVdsoTimeGet(VdsoDataPage *vdsoDataPage)//获取数据页信息
 {
     UINT32 intSave;
     struct timespec64 tmp = {0};
@@ -1109,11 +1109,11 @@ VOID OsVdsoTimeGet(VdsoDataPage *vdsoDataPage)
     OsGetHwTime(&hwTime);
 
     LOS_SpinLockSave(&g_timeSpin, &intSave);
-    tmp = OsTimeSpecAdd(hwTime, g_accDeltaFromAdj);
+    tmp = OsTimeSpecAdd(hwTime, g_accDeltaFromAdj);//添加时间
     vdsoDataPage->monoTimeSec = tmp.tv_sec;
     vdsoDataPage->monoTimeNsec = tmp.tv_nsec;
 
-    tmp = OsTimeSpecAdd(tmp, g_accDeltaFromSet);
+    tmp = OsTimeSpecAdd(tmp, g_accDeltaFromSet);//添加时间
     vdsoDataPage->realTimeSec = tmp.tv_sec;
     vdsoDataPage->realTimeNsec = tmp.tv_nsec;
     LOS_SpinUnlockRestore(&g_timeSpin, intSave);

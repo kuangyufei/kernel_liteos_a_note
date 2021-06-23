@@ -123,7 +123,7 @@ UINT32 OsMpInit(VOID)
     return LOS_OK;
 }
 
-LOS_MODULE_INIT(OsMpInit, LOS_INIT_LEVEL_KMOD_TASK);
+LOS_MODULE_INIT(OsMpInit, LOS_INIT_LEVEL_KMOD_TASK);//多处理器模块初始化
 
 #endif
 

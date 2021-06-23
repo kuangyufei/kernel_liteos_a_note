@@ -144,12 +144,12 @@ static int HiLogBufferCopy(unsigned char *dst, unsigned dstLen, unsigned char *s
     }
     return retval;
 }
-
+//读取ring buffer
 static int HiLogReadRingBuffer(unsigned char *buffer, size_t bufLen)
 {
     size_t retval;
     size_t bufLeft = HILOG_BUFFER - g_hiLogDev.headOffset;
-    if (bufLeft > bufLen) {
+    if (bufLeft > bufLen) {//计算出读取方向
         retval = HiLogBufferCopy(buffer, bufLen, HiLogBufferHead(), bufLen);
     } else {
         retval = HiLogBufferCopy(buffer, bufLen, HiLogBufferHead(), bufLeft);
@@ -336,4 +336,4 @@ int OsHiLogDriverInit(VOID)
     return register_driver(HILOG_DRIVER, &g_hilogFops, DRIVER_MODE, NULL);//注册字符设备驱动程序,生成inode节点
 }
 
-LOS_MODULE_INIT(OsHiLogDriverInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
+LOS_MODULE_INIT(OsHiLogDriverInit, LOS_INIT_LEVEL_KMOD_EXTENDED);//日志模块初始化

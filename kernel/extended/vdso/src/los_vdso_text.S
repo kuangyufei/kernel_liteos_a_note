@@ -27,8 +27,8 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+ */ 
     .globl __vdso_text_start
     .section .data.vdso.text
-__vdso_text_start:
-    .incbin "../usr/OHOS-vdso.so"
+__vdso_text_start: @vdso代码段入口
+    .incbin "../usr/OHOS-vdso.so" @ include bin的意思

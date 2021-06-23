@@ -69,9 +69,9 @@ LITE_OS_SEC_BSS STATIC SPIN_LOCK_INIT(g_dmesgSpin);
 STATIC DmesgInfo *g_dmesgInfo = NULL;
 STATIC UINT32 g_logBufSize = 0;
 STATIC VOID *g_mallocAddr = NULL;
-STATIC UINT32 g_dmesgLogLevel = 3;
-STATIC UINT32 g_consoleLock = 0;
-STATIC UINT32 g_uartLock = 0;
+STATIC UINT32 g_dmesgLogLevel = 3;//日志等级
+STATIC UINT32 g_consoleLock = 0;//用于关闭和打开控制台
+STATIC UINT32 g_uartLock = 0;//用于关闭和打开串口
 STATIC const CHAR *g_levelString[] = {
     "EMG",
     "COMMON",
@@ -80,22 +80,22 @@ STATIC const CHAR *g_levelString[] = {
     "INFO",
     "DEBUG"
 };
-
+//关闭控制台
 STATIC VOID OsLockConsole(VOID)
 {
     g_consoleLock = 1;
 }
-
+//打开控制台
 STATIC VOID OsUnlockConsole(VOID)
 {
     g_consoleLock = 0;
 }
-
+//关闭串口
 STATIC VOID OsLockUart(VOID)
 {
     g_uartLock = 1;
 }
-
+//打开串口
 STATIC VOID OsUnlockUart(VOID)
 {
     g_uartLock = 0;
@@ -300,7 +300,7 @@ UINT32 OsCheckUartLock(VOID)
 {
     return g_uartLock;
 }
-
+//初始化 dmesg
 UINT32 OsDmesgInit(VOID)
 {
     CHAR* buffer = NULL;
@@ -708,7 +708,26 @@ INT32 LOS_DmesgToFile(CHAR *filename)
 }
 #endif
 
+}
+/*************************************************************
+dmesg全称是display message (or display driver)，即显示信息。
 
+dmesg命令用于控制内核dmesg缓存区
+dmesg命令用于显示开机信息
+该命令依赖于LOSCFG_SHELL_DMESG，使用时通过menuconfig在配置项中开启"Enable Shell dmesg"：
+
+Debug ---> Enable a Debug Version ---> Enable Shell ---> Enable Shell dmesg
+
+dmesg参数缺省时，默认打印缓存区内容。
+
+各“ - ”选项不能混合使用。
+
+写入文件需确保已挂载文件系统。
+关闭串口打印会影响shell使用，建议先连接telnet再尝试关闭串口。
+
+dmesg > /usr/dmesg.log。
+
+**************************************************************/
 INT32 OsShellCmdDmesg(INT32 argc, const CHAR **argv)
 {
     if (argc == 1) {
@@ -720,24 +739,24 @@ INT32 OsShellCmdDmesg(INT32 argc, const CHAR **argv)
             goto ERR_OUT;
         }
 
-        if (!strcmp(argv[1], "-c")) {
+        if (!strcmp(argv[1], "-c")) {//打印缓存区内容并清空缓存区
             PRINTK("\n");
-            OsLogShow();
+            OsLogShow();//打印缓存区内容
             LOS_DmesgClear();
             return LOS_OK;
-        } else if (!strcmp(argv[1], "-C")) {
+        } else if (!strcmp(argv[1], "-C")) {//清空缓存区。
             LOS_DmesgClear();
             return LOS_OK;
-        } else if (!strcmp(argv[1], "-D")) {
+        } else if (!strcmp(argv[1], "-D")) {//关闭控制台打印。
             OsLockConsole();
             return LOS_OK;
-        } else if (!strcmp(argv[1], "-E")) {
+        } else if (!strcmp(argv[1], "-E")) {///开启控制台打印。
             OsUnlockConsole();
             return LOS_OK;
-        } else if (!strcmp(argv[1], "-L")) {
+        } else if (!strcmp(argv[1], "-L")) {//关闭串口打印
             OsLockUart();
             return LOS_OK;
-        } else if (!strcmp(argv[1], "-U")) {
+        } else if (!strcmp(argv[1], "-U")) {//开启串口打印
             OsUnlockUart();
             return LOS_OK;
         }
@@ -746,7 +765,7 @@ INT32 OsShellCmdDmesg(INT32 argc, const CHAR **argv)
             goto ERR_OUT;
         }
 
-        if (!strcmp(argv[1], ">")) {
+        if (!strcmp(argv[1], ">")) {//将缓存区内容写入文件
             if (LOS_DmesgToFile((CHAR *)argv[2]) < 0) { /* 2:index of parameters */
                 PRINTK("Dmesg write log to %s fail \n", argv[2]); /* 2:index of parameters */
                 return -1;
@@ -754,9 +773,9 @@ INT32 OsShellCmdDmesg(INT32 argc, const CHAR **argv)
                 PRINTK("Dmesg write log to %s success \n", argv[2]); /* 2:index of parameters */
                 return LOS_OK;
             }
-        } else if (!strcmp(argv[1], "-l")) {
+        } else if (!strcmp(argv[1], "-l")) {//设置缓存等级
             return OsDmesgLvSet(argv[2]); /* 2:index of parameters */
-        } else if (!strcmp(argv[1], "-s")) {
+        } else if (!strcmp(argv[1], "-s")) {//设置缓存区大小 size是要设置的大小
             return OsDmesgMemSizeSet(argv[2]); /* 2:index of parameters */
         }
     }
@@ -764,9 +783,8 @@ INT32 OsShellCmdDmesg(INT32 argc, const CHAR **argv)
 ERR_OUT:
     PRINTK("dmesg: invalid option or parameter.\n");
     return -1;
-}
 
 SHELLCMD_ENTRY(dmesg_shellcmd, CMD_TYPE_STD, "dmesg", XARGS, (CmdCallBackFunc)OsShellCmdDmesg);
-LOS_MODULE_INIT(OsDmesgInit, LOS_INIT_LEVEL_EARLIEST);
+LOS_MODULE_INIT(OsDmesgInit, LOS_INIT_LEVEL_EARLIEST);//在非常早期调用
 
 #endif
