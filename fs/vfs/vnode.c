@@ -42,7 +42,25 @@ static int g_totalVnodeSize = 0;        /* total vnode size */	//总节点数量
 
 static LosMux g_vnodeMux;	//操作链表互斥量			
 static struct Vnode *g_rootVnode = NULL;//根节点
-static struct VnodeOps g_devfsOps;//虚拟设备节点操作
+static struct VnodeOps g_devfsOps;//设备文件系统节点操作
+/*********************************************************
+linux下有专门的文件系统(devfs | sysfs)用来对设备进行管理,鸿蒙目前只支持 devfs方式
+devfs和sysfs都是和proc一样，是一个虚拟的文件系统，提供了一种类似于文件的方法来管理位于/dev目录下的所有设备，
+/dev目录下的每一个文件都对应的是一个设备，至于当前该设备存在与否不重要，先把坑位占了.
+
+devfs:设备文件系统
+提供类似于文件的方法来管理位于/dev目录下的设备
+1.根目录/dev
+	设备文件创建
+	创建根文件系统时创建基本的，比如console，tty*等等
+	设备驱动加载时创建相应的设备文件
+2.特殊设备文件
+	/dev/console
+	/dev/null /dev/zero ：黑洞文件
+3.缺点
+	不确定的设备映射，有时一个设备映射的设备文件可能不同，假如挂载的u盘可能对应sda也可能对应sdb
+	没有足够的主/辅设备号，当设备过多的时候，显然会成为一个问题
+**********************************************************/
 
 #define ENTRY_TO_VNODE(ptr)  LOS_DL_LIST_ENTRY(ptr, struct Vnode, actFreeEntry) //通过局部(actFreeEntry)找到整体(Vnode)
 #define VNODE_LRU_COUNT      10		//最多回收数量
@@ -75,7 +93,7 @@ int VnodesInit(void)
     }
 
     LOS_ListInit(&g_vnodeFreeList);		//初始化空闲的节点链表
-    LOS_ListInit(&g_vnodeVirtualList);	//初始化虚拟设备节点链表
+    LOS_ListInit(&g_vnodeVirtualList);	//初始化虚拟节点链表
     LOS_ListInit(&g_vnodeCurrList);		//初始化当前(已在使用)的节点链表
     retval = VnodeAlloc(NULL, &g_rootVnode);//分配根节点
     if (retval != LOS_OK) {
@@ -139,7 +157,7 @@ struct Vnode *VnodeReclaimLru(void)
     }
     return item;
 }
-//申请分配一个 vnode 节点
+//申请分配一个 vnode 节点,vop为操作节点的驱动程序
 int VnodeAlloc(struct VnodeOps *vop, struct Vnode **newVnode)
 {
     struct Vnode* vnode = NULL;

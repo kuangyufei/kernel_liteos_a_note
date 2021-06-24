@@ -372,7 +372,7 @@ struct ProcDirEntry *CreateProcEntry(const char *name, mode_t mode, struct ProcD
     }
     return pde;
 }
-
+//释放proc
 static void FreeProcEntry(struct ProcDirEntry *entry)
 {
     if (entry == NULL) {
@@ -384,7 +384,7 @@ static void FreeProcEntry(struct ProcDirEntry *entry)
     }
     free(entry);
 }
-
+//释放
 void ProcFreeEntry(struct ProcDirEntry *pn)
 {
     if (atomic_dec_and_test(&pn->count))

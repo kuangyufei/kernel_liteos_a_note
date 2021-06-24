@@ -166,7 +166,13 @@ STATIC INLINE INT32 LOS_AtomicAdd(Atomic *v, INT32 addVal)
                              : "r"(v), "r"(addVal)
                              : "cc");
     } while (__builtin_expect(status != 0, 0));
-
+	/****************************************************
+	__builtin_expect是结束循环的判断语句，将最有可能执行的分支告诉编译器。
+	这个指令的写法为：__builtin_expect(EXP， N)。
+	意思是：EXP==N 的概率很大。
+	综合理解__builtin_expect(status != 0， 0)
+	说的是status = 0 的可能性很大，不成功就会重新来一遍，直到strex更新成(status == 0)为止.
+	****************************************************/
     return val;
 }
 

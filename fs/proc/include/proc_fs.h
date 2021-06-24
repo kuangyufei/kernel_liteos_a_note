@@ -78,7 +78,7 @@ typedef unsigned short fmode_t;
 #define FMODE_READ        ((fmode_t)0x1)
 
 struct ProcFile;
-//操作pro file的抽象接口,proc本质是个内存文件系统, 
+//真正最后能操作pro file的接口,proc本质是个内存文件系统, vfs - > ProcFileOperations
 struct ProcFileOperations {
     char *name;
     ssize_t (*write)(struct ProcFile *pf, const char *buf, size_t count, loff_t *ppos);
@@ -87,10 +87,10 @@ struct ProcFileOperations {
     int (*read)(struct SeqBuf *m, void *v);
 };
 //proc 目录/文件项, @notethinking 直接叫 ProcEntry不香吗 ?
-struct ProcDirEntry {
+struct ProcDirEntry {//这才是能操作 /proc的 真正结构体
     mode_t mode;	//模式(读|写...)
     int flags;	//标签
-    const struct ProcFileOperations *procFileOps;//驱动程序
+    const struct ProcFileOperations *procFileOps;//驱动程序,每个 /proc 下目录的驱动程序都不一样
     struct ProcFile *pf;//文件指针
     struct ProcDirEntry *next, *parent, *subdir;//当前目录项的关系项
     void *data;

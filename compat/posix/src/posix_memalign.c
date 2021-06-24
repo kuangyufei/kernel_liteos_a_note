@@ -32,7 +32,7 @@
 #include "los_typedef.h"
 #include "los_memory.h"
 
-
+//支持posix方式内存对齐
 int posix_memalign(void **memAddr, size_t alignment, size_t size)
 {
     if ((alignment == 0) || ((alignment & (alignment - 1)) != 0) || ((alignment % sizeof(void *)) != 0)) {

@@ -263,7 +263,7 @@ int VfsJffs2Lookup(struct Vnode *parentVnode, const char *path, int len, struct 
     LOS_MuxUnlock(&g_jffs2FsLock);
     return 0;
 }
-
+//创建一个jffs2 索引节点
 int VfsJffs2Create(struct Vnode *parentVnode, const char *path, int mode, struct Vnode **ppVnode)
 {
     int ret;
@@ -804,7 +804,7 @@ const struct MountOps jffs_operations = {//jffs对mount接口实现
     .Unmount = VfsJffs2Unbind,
     .Statfs = VfsJffs2Statfs,
 };
-
+//jffs2 节点视角的操作实现
 struct VnodeOps g_jffs2Vops = {
     .Lookup = VfsJffs2Lookup,
     .Create = VfsJffs2Create,
@@ -822,7 +822,7 @@ struct VnodeOps g_jffs2Vops = {
     .Truncate = VfsJffs2Truncate,
     .Truncate64 = VfsJffs2Truncate64,
 };
-
+//jffs2 文件视角的操作实现
 struct file_operations_vfs g_jffs2Fops = {
     .read = VfsJffs2Read,
     .write = VfsJffs2Write,

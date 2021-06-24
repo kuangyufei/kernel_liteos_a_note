@@ -49,10 +49,10 @@ extern "C" {
  * Thread control data structure
  * Per-thread information needed by POSIX
  */
-typedef struct {
-    pthread_attr_t      attr; /* Current thread attributes */
-    pthread_t           id; /* My thread ID */
-    LosTaskCB           *task; /* pointer to Huawei LiteOS thread object */
+typedef struct { //线程控制块
+    pthread_attr_t      attr; /* Current thread attributes *///线程属性
+    pthread_t           id; /* My thread ID *///线程ID
+    LosTaskCB           *task; /* pointer to Huawei LiteOS thread object */// 指向liteos的任务
     CHAR                name[PTHREAD_DATA_NAME_MAX]; /* name string for debugging */
     UINT8               state; /* Thread state */
     UINT8               cancelstate; /* Cancel state of thread */

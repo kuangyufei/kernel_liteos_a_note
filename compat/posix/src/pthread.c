@@ -38,12 +38,13 @@
 #include "los_process_pri.h"
 #include "los_sched_pri.h"
 
+// 本文件实现 liteos task 适配 pthread 
 
 /*
  * Array of pthread control structures. A pthread_t object is
  * "just" an index into this array.
  */
-STATIC _pthread_data g_pthreadData[LOSCFG_BASE_CORE_TSK_LIMIT + 1];
+STATIC _pthread_data g_pthreadData[LOSCFG_BASE_CORE_TSK_LIMIT + 1];//
 
 /* Count of number of threads that have exited and not been reaped. */
 STATIC INT32 g_pthreadsExited = 0;
@@ -58,14 +59,14 @@ UINTPTR g_pthreadCanceledDummyVar;
  * Private version of pthread_self() that returns a pointer to our internal
  * control structure.
  */
-_pthread_data *pthread_get_self_data(void)
+_pthread_data *pthread_get_self_data(void)//获取当前线程信息
 {
-    UINT32 runningTaskPID = ((LosTaskCB *)(OsCurrTaskGet()))->taskID;
+    UINT32 runningTaskPID = ((LosTaskCB *)(OsCurrTaskGet()))->taskID;//当前线程
     _pthread_data *data = &g_pthreadData[runningTaskPID];
 
     return data;
 }
-
+//获取线程控制块
 _pthread_data *pthread_get_data(pthread_t id)
 {
     _pthread_data *data = NULL;
@@ -136,7 +137,7 @@ STATIC VOID PthreadReap(VOID)
         }
     }
 }
-
+//设置线程的属性
 STATIC VOID SetPthreadAttr(const _pthread_data *self, const pthread_attr_t *attr, pthread_attr_t *outAttr)
 {
     /*
@@ -184,7 +185,7 @@ STATIC VOID SetPthreadDataAttr(const pthread_attr_t *userAttr, const pthread_t t
     created->stackmem     = taskCB->topOfStack;
     created->thread_data  = NULL;
 }
-
+//线程控制块初始化
 STATIC UINT32 InitPthreadData(pthread_t threadID, pthread_attr_t *userAttr,
                               const CHAR name[], size_t len)
 {
@@ -198,7 +199,7 @@ STATIC UINT32 InitPthreadData(pthread_t threadID, pthread_attr_t *userAttr,
         PRINT_ERR("%s: %d, err: %d\n", __FUNCTION__, __LINE__, err);
         return LOS_NOK;
     }
-    userAttr->stacksize   = taskCB->stackSize;
+    userAttr->stacksize   = taskCB->stackSize;//内核栈大小
     err = OsSetTaskName(taskCB, created->name, FALSE);
     if (err != LOS_OK) {
         PRINT_ERR("%s: %d, err: %d\n", __FUNCTION__, __LINE__, err);
@@ -206,7 +207,7 @@ STATIC UINT32 InitPthreadData(pthread_t threadID, pthread_attr_t *userAttr,
     }
 #if (LOSCFG_KERNEL_SMP == YES)
     if (userAttr->cpuset.__bits[0] > 0) {
-        taskCB->cpuAffiMask = (UINT16)userAttr->cpuset.__bits[0];
+        taskCB->cpuAffiMask = (UINT16)userAttr->cpuset.__bits[0];//CPU亲和力掩码
     }
 #endif
 
@@ -456,7 +457,7 @@ int pthread_detach(pthread_t thread)
 
     return ret;
 }
-
+//设置调度参数
 int pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *param)
 {
     _pthread_data *data = NULL;
@@ -747,7 +748,7 @@ void pthread_testcancel(void)
 }
 
 /* Get current thread id. */
-pthread_t pthread_self(void)
+pthread_t pthread_self(void)//获取当前线程ID
 {
     _pthread_data *data = pthread_get_self_data();
 

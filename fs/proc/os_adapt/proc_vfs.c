@@ -40,28 +40,42 @@
 #include "internal.h"
 
 #define PROCFS_DEFAULT_MODE 0555
+/******************************************************************
+鸿蒙的/proc目录是一种文件系统，即proc文件系统。与其它常见的文件系统不同的是，/proc是一种伪文件系统（也即虚拟文件系统），
+存储的是当前内核运行状态的一系列特殊文件，用户可以通过这些文件查看有关系统硬件及当前正在运行进程的信息，
+甚至可以通过更改其中某些文件来改变内核的运行状态。
 
+基于/proc文件系统如上所述的特殊性，其内的文件也常被称作虚拟文件，并具有一些独特的特点。
+例如，其中有些文件虽然使用查看命令查看时会返回大量信息，但文件本身的大小却会显示为0字节。
+此外，这些特殊文件中大多数文件的时间及日期属性通常为当前系统时间和日期，这跟它们随时会被刷新（存储于RAM中）有关。
+
+为了查看及使用上的方便，这些文件通常会按照相关性进行分类存储于不同的目录甚至子目录中，
+如/proc/mounts 目录中存储的就是当前系统上所有装载点的相关信息，
+
+大多数虚拟文件可以使用文件查看命令如cat、more或者less进行查看，有些文件信息表述的内容可以一目了然，
+*******************************************************************/
 #ifdef LOSCFG_FS_PROC //使能 /proc 功能
 static struct VnodeOps g_procfsVops; // proc 文件系统
 static struct file_operations_vfs g_procfsFops;
 
+//通过节点获取私有内存对象,注意要充分理解 node->data 的作用,那是个可以通天的神奇变量. 
 static struct ProcDirEntry *VnodeToEntry(struct Vnode *node)
 {
     return (struct ProcDirEntry *)(node->data);
 }
-
+//创建节点,绑定实体对象
 static struct Vnode *EntryToVnode(struct ProcDirEntry *entry)
 {
     struct Vnode *node = NULL;
 
-    (void)VnodeAlloc(&g_procfsVops, &node);
-    node->fop = &g_procfsFops;
-    node->data = entry;
-    node->type = entry->type;
-    if (node->type == VNODE_TYPE_DIR) {
-        node->mode = S_IFDIR | PROCFS_DEFAULT_MODE;
+    (void)VnodeAlloc(&g_procfsVops, &node);//申请一个 vnode节点,并设置操作节点的实现函数
+    node->fop = &g_procfsFops;//设置文件操作系列函数
+    node->data = entry;//绑定实体
+    node->type = entry->type;//实体类型 (文件|目录)
+    if (node->type == VNODE_TYPE_DIR) {//文件类型
+        node->mode = S_IFDIR | PROCFS_DEFAULT_MODE;//给节点增加目录标签
     } else {
-        node->mode = S_IFREG | PROCFS_DEFAULT_MODE;
+        node->mode = S_IFREG | PROCFS_DEFAULT_MODE;//给节点增加文件标签
     }
     return node;
 }
@@ -78,7 +92,7 @@ int VfsProcfsTruncate(struct Vnode *pVnode, off_t len)
 {
     return 0;
 }
-
+//创建vnode节点,并绑定私有内容项
 int VfsProcfsCreate(struct Vnode* parent, const char *name, int mode, struct Vnode **vnode)
 {
     int ret;
@@ -177,16 +191,16 @@ int VfsProcfsLookup(struct Vnode *parent, const char *name, int len, struct Vnod
     (*vpp)->parent = parent;
     return LOS_OK;
 }
-//装载实现,将mount挂到vnode节点上 
+//装载实现,找个vnode节点挂上去 
 int VfsProcfsMount(struct Mount *mnt, struct Vnode *device, const void *data)
 {
     struct Vnode *vp = NULL;
     int ret;
 
     spin_lock_init(&procfsLock);
-    procfsInit = true;
+    procfsInit = true;		//已初始化 /proc 模块
 
-    ret = VnodeAlloc(&g_procfsVops, &vp);
+    ret = VnodeAlloc(&g_procfsVops, &vp);//分配一个节点
     if (ret != 0) {
         return -ENOMEM;
     }
@@ -198,10 +212,10 @@ int VfsProcfsMount(struct Mount *mnt, struct Vnode *device, const void *data)
     mnt->data = NULL;
     mnt->vnodeCovered = vp;
     vp->type = root->type;
-    if (vp->type == VNODE_TYPE_DIR) {
-        vp->mode = S_IFDIR | PROCFS_DEFAULT_MODE;
+    if (vp->type == VNODE_TYPE_DIR) {//目录节点
+        vp->mode = S_IFDIR | PROCFS_DEFAULT_MODE;//贴上目录标签
     } else {
-        vp->mode = S_IFREG | PROCFS_DEFAULT_MODE;
+        vp->mode = S_IFREG | PROCFS_DEFAULT_MODE;//贴上文件标签
     }
 
     return LOS_OK;
@@ -290,8 +304,8 @@ int VfsProcfsOpen(struct file *filep)
     if (filep == NULL) {
         return -EINVAL;
     }
-    struct Vnode *node = filep->f_vnode;
-    struct ProcDirEntry *pde = VnodeToEntry(node);
+    struct Vnode *node = filep->f_vnode;//找到vnode节点
+    struct ProcDirEntry *pde = VnodeToEntry(node);//拿到私有数据(内存对象)
     if (ProcOpen(pde->pf) != OK) {
         return -ENOMEM;
     }

@@ -30,15 +30,33 @@
  */
 
 #include "pthread.h"
+/****************************************************************************
+当 pthread_mutex_lock() 返回时，该互斥锁已被锁定。调用线程是该互斥锁的属主。
+如果该互斥锁已被另一个线程锁定和拥有，则调用线程将阻塞，直到该互斥锁变为可用为止。
 
+如果互斥锁类型为 PTHREAD_MUTEX_NORMAL，则不提供死锁检测。尝试重新锁定互斥锁会导致死锁。
+如果某个线程尝试解除锁定的互斥锁不是由该线程锁定或未锁定，则将产生不确定的行为。
 
-int pthread_mutexattr_init(pthread_mutexattr_t *attr)
-{
+如果互斥锁类型为 PTHREAD_MUTEX_ERRORCHECK，则会提供错误检查。如果某个线程尝试重新锁定的互斥锁已经由该线程锁定，
+则将返回错误。如果某个线程尝试解除锁定的互斥锁不是由该线程锁定或者未锁定，则将返回错误。
+
+如果互斥锁类型为 PTHREAD_MUTEX_RECURSIVE，则该互斥锁会保留锁定计数这一概念。线程首次成功获取互斥锁时，
+锁定计数会设置为 1。线程每重新锁定该互斥锁一次，锁定计数就增加 1。线程每解除锁定该互斥锁一次，锁定计数就减小 1。 锁定计数达到 0 时，该互斥锁即可供其他线程获取。如果某个线程尝试解除锁定的互斥锁不是由该线程锁定或者未锁定，则将返回错误。
+
+如果互斥锁类型是 PTHREAD_MUTEX_DEFAULT，则尝试以递归方式锁定该互斥锁将产生不确定的行为。
+对于不是由调用线程锁定的互斥锁，如果尝试解除对它的锁定，则会产生不确定的行为。如果尝试解除锁定尚未锁定的互斥锁，
+则会产生不确定的行为。
+参考链接: https://docs.oracle.com/cd/E19253-01/819-7051/sync-12/index.html
+
+本文件是对鸿蒙轻内核互斥锁的封装
+****************************************************************************/
+int pthread_mutexattr_init(pthread_mutexattr_t *attr)//初始化互斥锁 
+{//如果互斥锁已初始化，则它会处于未锁定状态。互斥锁可以位于进程之间共享的内存中或者某个进程的专用内存中。
     unsigned int ret = LOS_MuxAttrInit(attr);
     if (ret != LOS_OK) {
         return (int)ret;
     }
-
+//当其他线程正在使用某个互斥锁时，请勿重新初始化或销毁该互斥锁。如果任一操作没有正确完成，将会导致程序失败。如果要重新初始化或销毁某个互斥锁，则应用程序必须确保当前未使用该互斥锁。
 #if defined POSIX_MUTEX_DEFAULT_INHERIT
     attr->protocol    = PTHREAD_PRIO_INHERIT;
 #elif defined POSIX_MUTEX_DEFAULT_PROTECT
@@ -97,7 +115,7 @@ int pthread_mutexattr_settype(pthread_mutexattr_t *attr, int type)
 
 /* Initialize mutex. If mutexAttr is NULL, use default attributes. */
 int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *mutexAttr)
-{
+{//初始化互斥锁。 如果 mutexAttr 为 NULL，则使用默认属性。
     unsigned int ret = LOS_MuxInit(mutex, mutexAttr);
     if ((ret == LOS_OK) && (mutexAttr == NULL)) {
 #if defined POSIX_MUTEX_DEFAULT_INHERIT

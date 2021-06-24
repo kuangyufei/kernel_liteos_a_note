@@ -320,7 +320,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Starting address of the system memory
  */
 #ifndef OS_SYS_MEM_ADDR
-#define OS_SYS_MEM_ADDR                        (&m_aucSysMem1[0])//系统动态内存起始地址
+#define OS_SYS_MEM_ADDR                        (&m_aucSysMem1[0])//系统内存起始地址
 #endif
 
 /**

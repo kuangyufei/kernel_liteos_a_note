@@ -35,7 +35,24 @@
 #include "time_posix.h"
 #include "los_atomic.h"
 #include "los_event_pri.h"
+/************************************************************
+条件变量属性
 
+使用条件变量可以以原子方式阻塞线程，直到某个特定条件为真为止。条件变量始终与互斥锁一起使用。
+使用条件变量，线程可以以原子方式阻塞，直到满足某个条件为止。对条件的测试是在互斥锁（互斥）的保护下进行的。
+如果条件为假，线程通常会基于条件变量阻塞，并以原子方式释放等待条件变化的互斥锁。如果另一个线程更改了条件，
+该线程可能会向相关的条件变量发出信号，从而使一个或多个等待的线程执行以下操作：
+	唤醒
+	再次获取互斥锁
+	重新评估条件
+在以下情况下，条件变量可用于在进程之间同步线程：
+	线程是在可以写入的内存中分配的
+	内存由协作进程共享
+调度策略可确定唤醒阻塞线程的方式。对于缺省值 SCHED_OTHER，将按优先级顺序唤醒线程。
+
+https://docs.oracle.com/cd/E19253-01/819-7051/sync-13528/index.html
+https://docs.oracle.com/cd/E19253-01/819-7051/6n919hpai/index.html#sync-59145
+************************************************************/
 
 #define BROADCAST_EVENT     1
 #define COND_COUNTER_STEP   0x0004U
@@ -50,25 +67,25 @@ STATIC INLINE INT32 CondInitCheck(const pthread_cond_t *cond)
     }
     return 0;
 }
-
+//获取条件变量的范围  
 int pthread_condattr_getpshared(const pthread_condattr_t *attr, int *shared)
 {
     if ((attr == NULL) || (shared == NULL)) {
         return EINVAL;
     }
 
-    *shared = PTHREAD_PROCESS_PRIVATE;
+    *shared = PTHREAD_PROCESS_PRIVATE;// PTHREAD_PROCESS_PRIVATE，则仅有那些由同一个进程创建的线程才能够处理该互斥锁。
 
     return 0;
 }
-
+//设置条件变量的范围  
 int pthread_condattr_setpshared(pthread_condattr_t *attr, int shared)
 {
     (VOID)attr;
     if ((shared != PTHREAD_PROCESS_PRIVATE) && (shared != PTHREAD_PROCESS_SHARED)) {
         return EINVAL;
     }
-
+//如果 pshared 属性在共享内存中设置为 PTHREAD_PROCESS_SHARED，则其所创建的条件变量可以在多个进程中的线程之间共享。
     if (shared != PTHREAD_PROCESS_PRIVATE) {
         return ENOSYS;
     }
@@ -115,7 +132,7 @@ int pthread_cond_destroy(pthread_cond_t *cond)
     cond->mutex = NULL;
     return ENOERR;
 }
-
+//条件变量初始化
 int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
 {
     int ret = ENOERR;
@@ -154,7 +171,7 @@ STATIC VOID PthreadCondValueModify(pthread_cond_t *cond)
         }
     }
 }
-
+//解除阻塞所有线程 
 int pthread_cond_broadcast(pthread_cond_t *cond)
 {
     int ret = ENOERR;
@@ -170,14 +187,14 @@ int pthread_cond_broadcast(pthread_cond_t *cond)
 
         PthreadCondValueModify(cond);
 
-        (VOID)LOS_EventWrite(&(cond->event), BROADCAST_EVENT);
+        (VOID)LOS_EventWrite(&(cond->event), BROADCAST_EVENT);//写事件
         return ret;
     }
     (VOID)pthread_mutex_unlock(cond->mutex);
 
     return ret;
 }
-
+//解除阻塞一个线程
 int pthread_cond_signal(pthread_cond_t *cond)
 {
     int ret = ENOERR;
@@ -191,7 +208,7 @@ int pthread_cond_signal(pthread_cond_t *cond)
         cond->count--;
         (VOID)pthread_mutex_unlock(cond->mutex);
         PthreadCondValueModify(cond);
-        (VOID)OsEventWriteOnce(&(cond->event), 0x01);
+        (VOID)OsEventWriteOnce(&(cond->event), 0x01);//只写一次,也就是解除一个线程的阻塞
 
         return ret;
     }
@@ -245,7 +262,7 @@ STATIC INT32 ProcessReturnVal(pthread_cond_t *cond, INT32 val)
     }
     return ret;
 }
-
+//在指定的时间之前阻塞,函数会一直阻塞，直到该条件获得信号，或者最后一个参数所指定的时间已过为止。
 int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
                            const struct timespec *absTime)
 {
@@ -296,7 +313,7 @@ int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
     pthread_testcancel();
     return ret;
 }
-
+//基于条件变量阻塞,阻塞的线程可以通过 pthread_cond_signal() 或 pthread_cond_broadcast() 唤醒
 int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
     int ret;

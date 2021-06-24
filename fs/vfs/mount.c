@@ -79,5 +79,5 @@ LIST_HEAD* GetMountList()
         }
         LOS_ListInit(g_mountList);//初始化全局链表
     }
-    return g_mountList;
+    return g_mountList;//所有文件系统的挂载信息
 }

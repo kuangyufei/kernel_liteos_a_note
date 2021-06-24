@@ -2064,7 +2064,7 @@ ERROR_WITH_DIR:
     fatfs_closedir(vp, dir);
     return -fatfs_2_vfs(result);
 }
-//fatfs 实现 vfs 接口层
+//fatfs 实现vnode接口
 struct VnodeOps fatfs_vops = {
     /* file ops */
     .Getattr = fatfs_stat,
@@ -2105,6 +2105,6 @@ struct file_operations_vfs fatfs_fops = {
     .ioctl = fatfs_ioctl,
 };
 
-FSMAP_ENTRY(fat_fsmap, "vfat", fatfs_mops, FALSE, TRUE);
+FSMAP_ENTRY(fat_fsmap, "vfat", fatfs_mops, FALSE, TRUE);//注册文件映射
 
 #endif /* LOSCFG_FS_FAT */

@@ -47,7 +47,7 @@ static const struct ProcFileOperations PROCESS_PROC_FOPS = {
 //创建进程相关信息 /proc/process
 void ProcProcessInit(void)
 {
-    struct ProcDirEntry *pde = CreateProcEntry("process", 0, NULL);
+    struct ProcDirEntry *pde = CreateProcEntry("process", 0, NULL);//创建 /proc/process
     if (pde == NULL) {
         PRINT_ERR("create /proc/process error!\n");
         return;

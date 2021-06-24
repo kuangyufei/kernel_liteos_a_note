@@ -48,19 +48,19 @@ void ProcFsInit(void)
         return;
     }
 	//装载文件系统
-    ret = mount(NULL, PROCFS_MOUNT_POINT, "procfs", 0, NULL);
+    ret = mount(NULL, PROCFS_MOUNT_POINT, "procfs", 0, NULL);//将null 挂到 /proc 上
     if (ret) {
         PRINT_ERR("mount procfs err %d\n", ret);
         return;
     }
 
-    ProcMountsInit();//初始化 /pro/mounts
+    ProcMountsInit();//初始化 /proc/mounts
 #if defined(LOSCFG_SHELL_CMD_DEBUG) && defined(LOSCFG_KERNEL_VM)
-    ProcVmmInit();//初始化 /pro/vmm
+    ProcVmmInit();//初始化 /proc/vmm
 #endif
-    ProcProcessInit();//初始化 /pro/process
-    ProcUptimeInit();//初始化 /pro/uptime
-    ProcKernelTraceInit();//初始化 /pro/ktrace
+    ProcProcessInit();//初始化 /proc/process
+    ProcUptimeInit();//初始化 /proc/uptime
+    ProcKernelTraceInit();//初始化 /proc/ktrace
 }
 
 LOS_MODULE_INIT(ProcFsInit, LOS_INIT_LEVEL_KMOD_EXTENDED);

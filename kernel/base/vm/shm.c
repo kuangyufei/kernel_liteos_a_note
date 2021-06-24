@@ -887,7 +887,7 @@ STATIC VOID OsShmCmdUsage(VOID)
            "\t-r [shmid],    Recycle the specified shared memory about shmid\n"
            "\t-h | --help,   print shm command usage\n");
 }
-
+//共享内存
 UINT32 OsShellCmdShm(INT32 argc, const CHAR *argv[])
 {
     INT32 shmid;

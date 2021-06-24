@@ -59,6 +59,7 @@ int sched_get_priority_max(int policy)
 /*
  * This API is Linux-specific, not conforming to POSIX.
  */
+ //此 API 是 Linux 特定的，不符合 POSIX
 int sched_setaffinity(pid_t pid, size_t set_size, const cpu_set_t* set)
 {
 #if (LOSCFG_KERNEL_SMP == YES)

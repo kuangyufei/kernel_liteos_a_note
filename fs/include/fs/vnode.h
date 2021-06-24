@@ -41,6 +41,8 @@
 #define VNODE_FLAG_MOUNT_ORIGIN 2	//原装载点
 #define DEV_PATH_LEN 5
 /******************************************************************
+Linux系统使用struct inode作为数据结构名称。BSD派生的系统，使用vnode名称，其中v表示“virtual file system”
+
 Linux 链接分两种，一种被称为硬链接（Hard Link），另一种被称为符号链接（Symbolic Link）。默认情况下，ln 命令产生硬链接。
 
 硬连接
@@ -79,8 +81,8 @@ enum VnodeType {//节点类型
     VNODE_TYPE_UNKNOWN,       /* unknown type */	//未知类型
     VNODE_TYPE_REG,           /* regular file */	//正则文件(普通文件)
     VNODE_TYPE_DIR,           /* directory */		//目录
-    VNODE_TYPE_BLK,           /* block device */	//块设备驱动
-    VNODE_TYPE_CHR,           /* char device */		//字符设备驱动
+    VNODE_TYPE_BLK,           /* block device */	//块设备
+    VNODE_TYPE_CHR,           /* char device */		//字符设备
     VNODE_TYPE_BCHR,          /* block char mix device *///块和字符设备混合
     VNODE_TYPE_FIFO,          /* pipe */			//管道文件
     VNODE_TYPE_LNK,           /* link */			//链接,这里的链接指的是上层硬链接概念
@@ -100,7 +102,7 @@ struct IATTR;
 因此 vop ,fop 都是接口, data 因设备不同而不同.
 */
 struct Vnode {
-    enum VnodeType type;                /* vnode type */	//节点类型
+    enum VnodeType type;                /* vnode type */	//节点类型 (文件|目录|链接...)
     int useCount;                       /* ref count of users *///节点引用(链接)数，即有多少文件名指向这个vnode,即上层理解的硬链接数   
     uint32_t hash;                      /* vnode hash */	//节点哈希值
     uint uid;                           /* uid for dac */	//DAC用户ID
@@ -119,22 +121,29 @@ struct Vnode {
     struct Mount *newMount;             /* fs info about who mount on this vnode */	//挂载在这个节点上的文件系统
 };
 /*
-	虚拟文件系统接口,具体的文件系统只需实现这些接口函数就完成了鸿蒙系统的接入.
-	VnodeOps 系列函数是基于索引节点的操作.
+	虚拟节点操作接口,具体的文件系统只需实现这些接口函数来操作vnode.
+	VnodeOps 系列函数是对节点本身的操作.
 */
 struct VnodeOps {
-    int (*Create)(struct Vnode *parent, const char *name, int mode, struct Vnode **vnode);//创建
-    int (*Lookup)(struct Vnode *parent, const char *name, int len, struct Vnode **vnode);//查询
-    int (*Open)(struct Vnode *vnode, int fd, int mode, int flags);//打开
-    int (*Close)(struct Vnode *vnode);//关闭
-    int (*Reclaim)(struct Vnode *vnode);//回收
-    int (*Unlink)(struct Vnode *parent, struct Vnode *vnode, char *fileName);//取消链接
-    int (*Rmdir)(struct Vnode *parent, struct Vnode *vnode, char *dirName);//删除目录
-    int (*Mkdir)(struct Vnode *parent, const char *dirName, mode_t mode, struct Vnode **vnode);//创建目录
-    int (*Readdir)(struct Vnode *vnode, struct fs_dirent_s *dir);//读目录
-    int (*Opendir)(struct Vnode *vnode, struct fs_dirent_s *dir);//打开目录
-    int (*Rewinddir)(struct Vnode *vnode, struct fs_dirent_s *dir);//定位目录函数
-    int (*Closedir)(struct Vnode *vnode, struct fs_dirent_s *dir);//关闭目录
+    int (*Create)(struct Vnode *parent, const char *name, int mode, struct Vnode **vnode);//创建节点
+    int (*Lookup)(struct Vnode *parent, const char *name, int len, struct Vnode **vnode);//查询节点
+    int (*Open)(struct Vnode *vnode, int fd, int mode, int flags);//打开节点
+    int (*Close)(struct Vnode *vnode);//关闭节点
+    int (*Reclaim)(struct Vnode *vnode);//回收节点
+    int (*Unlink)(struct Vnode *parent, struct Vnode *vnode, char *fileName);//取消硬链接
+    int (*Rmdir)(struct Vnode *parent, struct Vnode *vnode, char *dirName);//删除目录节点
+    int (*Mkdir)(struct Vnode *parent, const char *dirName, mode_t mode, struct Vnode **vnode);//创建目录节点
+    /*
+    创建一个目录时，实际做了3件事：在其“父目录文件”中增加一个条目；分配一个inode；再分配一个存储块，
+    用来保存当前被创建目录包含的文件与子目录。被创建的“目录文件”中自动生成两个子目录的条目，名称分别是：“.”和“..”。
+    前者与该目录具有相同的inode号码，因此是该目录的一个“硬链接”。后者的inode号码就是该目录的父目录的inode号码。
+    所以，任何一个目录的"硬链接"总数，总是等于它的子目录总数（含隐藏目录）加2。即每个“子目录文件”中的“..”条目，
+    加上它自身的“目录文件”中的“.”条目，再加上“父目录文件”中的对应该目录的条目。
+    */
+    int (*Readdir)(struct Vnode *vnode, struct fs_dirent_s *dir);//读目录节点
+    int (*Opendir)(struct Vnode *vnode, struct fs_dirent_s *dir);//打开目录节点
+    int (*Rewinddir)(struct Vnode *vnode, struct fs_dirent_s *dir);//定位目录节点
+    int (*Closedir)(struct Vnode *vnode, struct fs_dirent_s *dir);//关闭目录节点
     int (*Getattr)(struct Vnode *vnode, struct stat *st);//获取节点属性
     int (*Setattr)(struct Vnode *vnode, struct stat *st);//设置节点属性
     int (*Chattr)(struct Vnode *vnode, struct IATTR *attr);//改变节点属性(change attr)

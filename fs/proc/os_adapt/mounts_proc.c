@@ -37,7 +37,7 @@
 
 #include "fs/file.h"
 #include "internal.h"
-//显示文件系统类型,将被作为回调函数回调
+//显示文件系统类型,将被作为回调函数回调           cat /proc/mounts 显示的每项内容
 static int ShowType(const char *mountPoint, struct statfs *statBuf, void *arg)
 {
     struct SeqBuf *seqBuf = (struct SeqBuf *)arg;
@@ -45,20 +45,20 @@ static int ShowType(const char *mountPoint, struct statfs *statBuf, void *arg)
     char *name = NULL;
 
     switch (statBuf->f_type) {//目前鸿蒙支持的文件系统
-        case PROCFS_MAGIC:	
+        case PROCFS_MAGIC:	//虚拟文件系统，通过它可以使鸿蒙在内核空间和用户空间之间进行通信
             type = "proc";
             name = "proc";
             break;
         case JFFS2_SUPER_MAGIC:
-            type = "jffs2";
+            type = "jffs2";	//基于 nor flash的文件系统
             name = "jffs2";
             break;
-        case NFS_SUPER_MAGIC:
+        case NFS_SUPER_MAGIC://网络文件系统
             type = "nfs";
             name = "nfs";
             break;
-        case TMPFS_MAGIC:
-            type = "tmpfs";
+        case TMPFS_MAGIC://tmpfs /mnt/wsl  windows10的 wsl 实现是 tmpfs方式
+            type = "tmpfs";	//内存文件系统
             name = "tmpfs";
             break;
         case MSDOS_SUPER_MAGIC:
@@ -87,7 +87,7 @@ static int MountsProcFill(struct SeqBuf *m, void *v)
 }
 //实现 操作proc file 接口,也可理解为驱动程序不同
 static const struct ProcFileOperations MOUNTS_PROC_FOPS = {
-    .read = MountsProcFill,
+    .read = MountsProcFill,// /proc/mounts 只能被读取
 };
 
 void ProcMountsInit(void)
@@ -98,6 +98,6 @@ void ProcMountsInit(void)
         return;
     }
 
-    pde->procFileOps = &MOUNTS_PROC_FOPS;
+    pde->procFileOps = &MOUNTS_PROC_FOPS;//操作 /proc/mounts 的具体实现
 }
 

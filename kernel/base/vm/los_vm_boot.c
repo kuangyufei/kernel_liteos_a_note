@@ -48,7 +48,7 @@ VOID *OsVmBootMemAlloc(size_t len)
 {
     UINTPTR ptr;
 
-    if (g_kHeapInited) {//@note_why 在什么时候会变成true,没找到代码
+    if (g_kHeapInited) {
         VM_ERR("kernel heap has been initialized, do not to use boot memory allocation!");
         return NULL;
     }
@@ -78,7 +78,7 @@ UINT32 OsSysMemInit(VOID)
     g_kHeapInited = TRUE;
     OsInitMappingStartUp();// 映射初始化
 #else
-    g_kHeapInited = TRUE;
+    g_kHeapInited = TRUE;//堆区完成初始化
 #endif
     return LOS_OK;
 }
