@@ -84,7 +84,7 @@ int SysInfo(struct sysinfo *info)
     }
     return 0;
 }
-
+//重启系统
 int SysReboot(int magic, int magic2, int type)
 {
     (void)magic;

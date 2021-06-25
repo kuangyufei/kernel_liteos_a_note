@@ -39,7 +39,7 @@
 #define CAPABILITY_GET_CAP_MASK(x)      (1 << ((x) & 31))
 #define CAPABILITY_MAX                  31
 #define VALID_CAPS(a, b)                (((a) & (~(b))) != 0)
-
+//是否允许访问
 BOOL IsCapPermit(UINT32 capIndex)
 {
     UINT32 capability = OsCurrProcessGet()->capability;
@@ -50,12 +50,12 @@ BOOL IsCapPermit(UINT32 capIndex)
 
     return (capability & (CAPABILITY_GET_CAP_MASK(capIndex)));
 }
-
+//初始化进程安全能力
 VOID OsInitCapability(LosProcessCB *processCB)
 {
     processCB->capability = CAPABILITY_INIT_STAT;
 }
-
+//进程间安全能力的拷贝
 VOID OsCopyCapability(LosProcessCB *from, LosProcessCB *to)
 {
     UINT32 intSave;
@@ -64,27 +64,27 @@ VOID OsCopyCapability(LosProcessCB *from, LosProcessCB *to)
     to->capability = from->capability;
     SCHEDULER_UNLOCK(intSave);
 }
-
+//为进程设置权限项
 UINT32 SysCapSet(UINT32 caps)
 {
     UINT32 intSave;
 
     SCHEDULER_LOCK(intSave);
-    if (!IsCapPermit(CAP_CAPSET)) {
+    if (!IsCapPermit(CAP_CAPSET)) {//先检查进程是否有权限
         SCHEDULER_UNLOCK(intSave);
         return -EPERM;
     }
 
-    if (VALID_CAPS(caps, OsCurrProcessGet()->capability)) {
+    if (VALID_CAPS(caps, OsCurrProcessGet()->capability)) {//验证参数有效性
         SCHEDULER_UNLOCK(intSave);
         return -EPERM;
     }
 
-    OsCurrProcessGet()->capability = caps;
+    OsCurrProcessGet()->capability = caps;//改变当前进程的权限集,相当于自己给自己加减权限
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
-
+//获取参数进程的权限集
 UINT32 SysCapGet(pid_t pid, UINT32 *caps)
 {
     UINT32 intSave;
@@ -109,8 +109,8 @@ UINT32 SysCapGet(pid_t pid, UINT32 *caps)
 
     kCaps = processCB->capability;
     SCHEDULER_UNLOCK(intSave);
-
-    if (LOS_ArchCopyToUser(caps, &kCaps, sizeof(UINT32)) != LOS_OK) {
+	//@note_thinking 感觉这里可以不用 LOS_ArchCopyToUser 直接返回kCaps
+    if (LOS_ArchCopyToUser(caps, &kCaps, sizeof(UINT32)) != LOS_OK) {//内核空间向用户空间拷贝 
         return -EFAULT;
     }
 

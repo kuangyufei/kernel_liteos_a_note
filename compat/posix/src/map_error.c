@@ -34,7 +34,7 @@
 #include "los_sem.h"
 #include "los_task.h"
 
-
+//错误适配
 int map_errno(UINT32 err)
 {
     if (err == LOS_OK) {

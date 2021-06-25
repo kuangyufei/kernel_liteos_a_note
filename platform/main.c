@@ -154,7 +154,7 @@ LITE_OS_SEC_TEXT_INIT INT32 main(VOID)//由主CPU执行,默认0号CPU 为主CPU
 
     CPU_MAP_SET(0, OsHwIDGet());//设置CPU映射,参数0 代表0号CPU
 
-    OsSchedStart();
+    OsSchedStart();//调度开始
 
     while (1) {
         __asm volatile("wfi");//WFI: wait for Interrupt 等待中断，即下一次中断发生前都在此hold住不干活
