@@ -1,13 +1,13 @@
-cd E:\\harmony\\third_party\\third_party_NuttX
+cd E:\harmony\third_party\third_party_lwip
 
 git add -A
-git commit -m  ' 块设备驱动，字符设备驱动注解
+git commit -m  'lwip协议栈注解
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     国内:https://weharmonyos.com
     国外:https://weharmony.github.io
 '
 
-git push git@gitee.com:weharmony/third_party_NuttX.git master
+git push git@gitee.com:weharmony/third_party_lwip.git master
 #git push  gitee_origin master
 #git push  github_origin master
 #git push  coding_origin master
