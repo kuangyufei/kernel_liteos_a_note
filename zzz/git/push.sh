@@ -1,8 +1,10 @@
 git add -A
-git commit -m  'socket 相关代码注解. 
+git commit -m  '开始注解与内核相关联的两个项目(lwip协议栈和NuttX文件系统). 
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
-    国内:https://weharmony.21cloudbox.com
-    国外:https://weharmony.github.io
+    博客输出站点(国内):https://weharmonyos.com 或 http://8.134.122.205
+    博客输出站点(国外):https://weharmony.github.io
+    注解文件系统:https://gitee.com/weharmony/third_party_NuttX
+    注解协议栈:https://gitee.com/weharmony/third_party_lwip
 '
 
 git push  origin master

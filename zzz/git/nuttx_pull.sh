@@ -1,4 +1,4 @@
-cd E:\harmony\third_party\third_party_NuttX
+cd E:\\harmony\\third_party\\third_party_NuttX
 #git fetch
 git pull origin master
 
