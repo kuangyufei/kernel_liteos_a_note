@@ -32,6 +32,7 @@
 #include <lwip/sockets.h>
 #include <lwip/priv/tcpip_priv.h>
 #include <lwip/fixme.h>
+//https://blog.csdn.net/zhaozhiyuan111/article/details/79197692
 
 #if LWIP_ENABLE_NET_CAPABILITY
 #include "capability_type.h"
@@ -136,15 +137,15 @@ static int lwip_socket_wrap(int domain, int type, int protocol)
 #endif
     return lwip_socket2(domain, type, protocol);
 }
-
+//设置选项
 static int lwip_setsockopt_wrap(int s, int level, int optname, const void *optval, socklen_t optlen)
 {
 #if LWIP_ENABLE_NET_CAPABILITY
     if (level == SOL_SOCKET) {
         switch (optname) {
 #if LWIP_ENABLE_CAP_NET_BROADCAST
-            case SO_BROADCAST:
-                if (!IsCapPermit(CAP_NET_BROADCAST)) {
+            case SO_BROADCAST:	//广播消息
+                if (!IsCapPermit(CAP_NET_BROADCAST)) {//鉴权,是否广播权限
                     set_errno(EPERM);
                     return -1;
                 }

@@ -64,8 +64,8 @@ extern "C" {
 #define NETIF_NAMESIZE IFNAMSIZ
 
 #define LOOPBACK_IF         0 // 772
-#define ETHERNET_DRIVER_IF  1
-#define WIFI_DRIVER_IF      801
+#define ETHERNET_DRIVER_IF  1	//以太网驱动接口
+#define WIFI_DRIVER_IF      801	//WIFI驱动接口
 
 err_t driverif_init(struct netif *netif);
 void driverif_input(struct netif *netif, struct pbuf *p);

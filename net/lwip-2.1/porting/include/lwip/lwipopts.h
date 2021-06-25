@@ -80,11 +80,11 @@
 
 
 // Options only in new opt.h
-#define LWIP_SOCKET_SELECT              0
-#define LWIP_SOCKET_POLL                1
+#define LWIP_SOCKET_SELECT              0	//select 方式
+#define LWIP_SOCKET_POLL                1	//poll方式
 
 
-// Options in old opt.h that differs from new opt.h
+// Options in old opt.h that differs from new opt.h //旧 opt.h 中与新 opt.h 不同的选项
 #define MEM_ALIGNMENT                   __SIZEOF_POINTER__
 #define MEMP_NUM_NETDB                  8
 #define IP_REASS_MAXAGE                 3
@@ -116,7 +116,7 @@
 #define LWIP_IPV6_DHCP6_STATEFUL        1
 
 
-// Options in old lwipopts.h
+// Options in old lwipopts.h //旧 opt.h 中的选项
 #define ARP_QUEUEING                    1
 #define DEFAULT_ACCEPTMBOX_SIZE         32
 #define DEFAULT_RAW_RECVMBOX_SIZE       128
@@ -159,12 +159,12 @@
 #define PBUF_POOL_BUFSIZE               1550
 #define PBUF_POOL_SIZE                  64
 #define SO_REUSE                        1
-#define TCPIP_MBOX_SIZE                 512
-#define TCPIP_THREAD_PRIO               5
-#define TCPIP_THREAD_STACKSIZE          0x6000
+#define TCPIP_MBOX_SIZE                 512		//队列长度
+#define TCPIP_THREAD_PRIO               5		//lwip相关线程优先级 5 ,和资源回收任务优先级一样
+#define TCPIP_THREAD_STACKSIZE          0x6000	//线程内核栈大小 24K
 #define TCP_MAXRTX                      64
 #define TCP_MSS                         1400
-#define TCP_SND_BUF                     65535
+#define TCP_SND_BUF                     65535	//发送buf大小 64K
 #define TCP_SND_QUEUELEN                (8 * TCP_SND_BUF) / TCP_MSS
 #define TCP_TTL                         255
 #define TCP_WND                         32768
@@ -217,8 +217,8 @@
 
 // Options for enhancement code, same for old lwipopts.h
 #define LWIP_NETIF_PROMISC              1
-#define LWIP_DHCPS                      1
-#define LWIP_ENABLE_NET_CAPABILITY      1
-#define LWIP_ENABLE_CAP_NET_BROADCAST   0
+#define LWIP_DHCPS                      1	
+#define LWIP_ENABLE_NET_CAPABILITY      1	//网络开关
+#define LWIP_ENABLE_CAP_NET_BROADCAST   0	//广播开关
 
 #endif /* _LWIP_PORTING_LWIPOPTS_H_ */

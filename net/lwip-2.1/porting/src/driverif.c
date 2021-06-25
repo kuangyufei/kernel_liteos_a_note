@@ -240,7 +240,7 @@ driverif_input(struct netif *netif, struct pbuf *p)
  *         any other err_t on error
  */
 err_t
-driverif_init(struct netif *netif)
+driverif_init(struct netif *netif)//网络接口驱动层初始化
 {
     u16_t link_layer_type;
 
@@ -263,7 +263,7 @@ driverif_init(struct netif *netif)
 
 #if LWIP_NETIF_HOSTNAME
     /* Initialize interface hostname */
-    netif->hostname = LWIP_NETIF_HOSTNAME_DEFAULT;
+    netif->hostname = LWIP_NETIF_HOSTNAME_DEFAULT;//初始化主机名
 #endif /* LWIP_NETIF_HOSTNAME */
 
     /*

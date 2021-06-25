@@ -38,7 +38,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+//移值lwip对相关结构体的封装
 
 /**
  * Mutex

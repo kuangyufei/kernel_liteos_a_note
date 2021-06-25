@@ -40,15 +40,15 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-struct los_eth_driver {
-    void* driver_context;
-    struct netif ac_if;
+struct los_eth_driver {//以太网驱动
+    void* driver_context;//驱动上下文
+    struct netif ac_if;	
 };
 
-struct los_eth_funs {
-    void (*init)(struct los_eth_driver *drv, unsigned char *mac_addr);
-    void (*recv)(struct los_eth_driver *drv, int len);
-    void (*send_complete)(struct los_eth_driver *drv, unsigned int key, int state);
+struct los_eth_funs {//以太网功能接口
+    void (*init)(struct los_eth_driver *drv, unsigned char *mac_addr);//初始化
+    void (*recv)(struct los_eth_driver *drv, int len);//接收数据
+    void (*send_complete)(struct los_eth_driver *drv, unsigned int key, int state);//发送数据
 };
 
 #ifdef __cplusplus

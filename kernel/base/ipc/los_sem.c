@@ -178,7 +178,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSemCreate(UINT16 count, UINT16 maxCount, UINT32 *
 ERR_HANDLER:
     OS_RETURN_ERROR_P2(errLine, errNo);
 }
-//对外接口 创建信号 
+//对外接口 创建信号量 
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_SemCreate(UINT16 count, UINT32 *semHandle)
 {
     return OsSemCreate(count, OS_SEM_COUNT_MAX, semHandle);

@@ -40,6 +40,8 @@
 #include <los_mux.h>
 #include <los_spinlock.h>
 
+//移值lwip 需实现的外部接口.
+
 #if (LOSCFG_KERNEL_SMP == YES)
 SPIN_LOCK_INIT(arch_protect_spin);
 static u32_t lwprot_thread = LOS_ERRNO_TSK_ID_INVALID;
@@ -51,7 +53,7 @@ static int lwprot_count = 0;
 /**
  * Thread and System misc
  */
-
+//在liteos上实现移值lwip的所需的创建线程接口
 sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, int stackSize, int prio)
 {
     UINT32 taskID = LOS_ERRNO_TSK_ID_INVALID;
@@ -60,8 +62,8 @@ sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, 
 
     /* Create host Task */
     task.pfnTaskEntry = (TSK_ENTRY_FUNC)thread;
-    task.uwStackSize = stackSize;
-    task.pcName = (char *)name;
+    task.uwStackSize = stackSize;//内核栈大小
+    task.pcName = (char *)name;//任务名称
     task.usTaskPrio = prio;
     task.auwArgs[0] = (UINTPTR)arg;
     task.uwResved = LOS_TASK_STATUS_DETACHED;
@@ -145,11 +147,11 @@ void sys_arch_unprotect(sys_prot_t pval)
 /**
  * MessageBox
  */
-
+//创建消息盒子队列
 err_t sys_mbox_new(sys_mbox_t *mbox, int size)
 {
     CHAR qName[] = "lwIP";
-    UINT32 ret = LOS_QueueCreate(qName, (UINT16)size, mbox, 0, sizeof(void *));
+    UINT32 ret = LOS_QueueCreate(qName, (UINT16)size, mbox, 0, sizeof(void *));//创建一个队列 "lwip"
     switch (ret) {
         case LOS_OK:
             return ERR_OK;
@@ -162,7 +164,7 @@ err_t sys_mbox_new(sys_mbox_t *mbox, int size)
     LWIP_DEBUGF(SYS_DEBUG, ("%s: LOS_QueueCreate error %u\n", __FUNCTION__, ret));
     return ERR_ARG;
 }
-
+//发送消息,参数2不能为空,直到发送成功为止
 void sys_mbox_post(sys_mbox_t *mbox, void *msg)
 {
     /* Caution: the second parameter is NOT &msg */
@@ -171,7 +173,7 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
         LWIP_DEBUGF(SYS_DEBUG, ("%s: LOS_QueueWrite error %u\n", __FUNCTION__, ret));
     }
 }
-
+//尝试发送消息
 err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
 {
     /* Caution: the second parameter is NOT &msg */
@@ -189,7 +191,7 @@ err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
 }
 
 err_t sys_mbox_trypost_fromisr(sys_mbox_t *mbox, void *msg);
-
+//读消息
 u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeoutMs)
 {
     void *ignore = 0; /* if msg==NULL, the fetched msg should be dropped */
@@ -207,7 +209,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeoutMs)
     LWIP_DEBUGF(SYS_DEBUG, ("%s: LOS_QueueRead error %u\n", __FUNCTION__, ret));
     return SYS_ARCH_TIMEOUT; /* Errors should be treated as timeout */
 }
-
+//尝试都消息
 u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
 {
     void *ignore = 0; /* if msg==NULL, the fetched msg should be dropped */
@@ -225,12 +227,12 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
     LWIP_DEBUGF(SYS_DEBUG, ("%s: LOS_QueueRead error %u\n", __FUNCTION__, ret));
     return SYS_MBOX_EMPTY; /* Errors should be treated as timeout */
 }
-
+//删除队列
 void sys_mbox_free(sys_mbox_t *mbox)
 {
     (void)LOS_QueueDelete(*mbox);
 }
-
+//队列是否有效
 int sys_mbox_valid(sys_mbox_t *mbox)
 {
     QUEUE_INFO_S queueInfo;
@@ -246,7 +248,7 @@ void sys_mbox_set_invalid(sys_mbox_t *mbox)
 /**
  * Semaphore
  */
-
+//创建信号量
 err_t sys_sem_new(sys_sem_t *sem, u8_t count)
 {
     UINT32 ret = LOS_SemCreate(count, sem);
