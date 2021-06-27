@@ -36,6 +36,8 @@
 #include <unistd.h>
 
 #include "fs/dirent_fs.h"
+#include "fs/mount.h"
+#include "fs/fs.h"
 #include "los_tables.h"
 #include "internal.h"
 
@@ -72,11 +74,9 @@ static struct Vnode *EntryToVnode(struct ProcDirEntry *entry)
     node->fop = &g_procfsFops;//设置文件操作系列函数
     node->data = entry;//绑定实体
     node->type = entry->type;//实体类型 (文件|目录)
-    if (node->type == VNODE_TYPE_DIR) {//文件类型
-        node->mode = S_IFDIR | PROCFS_DEFAULT_MODE;//给节点增加目录标签
-    } else {
-        node->mode = S_IFREG | PROCFS_DEFAULT_MODE;//给节点增加文件标签
-    }
+    node->uid = entry->uid;
+    node->gid = entry->gid;
+    node->mode = entry->mode;
     return node;
 }
 

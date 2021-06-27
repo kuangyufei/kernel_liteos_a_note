@@ -32,8 +32,6 @@
 #ifndef ZPFS_VFS_ZPFS_H
 #define ZPFS_VFS_ZPFS_H
 
-#include <fs/fs.h>
-
 #include "compiler.h"
 #include "los_base.h"
 #include "los_typedef.h"

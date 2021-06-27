@@ -102,6 +102,8 @@ constexpr const char* JFFS_BASE_DIR = "/";
 #define JFFS_PATH_NAME0 "/storage/test"
 #define JFFS_PATH_NAME01 "/storage/test1"
 #define JFFS_PATH_NAME02 "/storage/test2"
+#define JFFS_PATH_NAME03 "/storage/test3"
+#define JFFS_PATH_NAME04 "/storage/test4"
 #define JFFS_PATH_NAME00 "/storage/test/test00"
 #define JFFS_PATH_NAME11 "/storage/test1/test11"
 #define JFFS_PATH_NAME22 "/storage/test2/test22"
@@ -948,6 +950,18 @@ VOID ItFsJffsLSFD_004(VOID);
 VOID ItFsJffsLSFD_005(VOID);
 VOID ItFsJffsLSFD_006(VOID);
 VOID ItFsJffsLSFD_007(VOID);
+
+VOID ItFsTestLink001(VOID);
+VOID ItFsTestLink002(VOID);
+VOID ItFsTestLink003(VOID);
+VOID ItFsTestLinkat001(VOID);
+VOID ItFsTestLinkat002(VOID);
+VOID ItFsTestLinkat003(VOID);
+VOID ItFsTestReadlink001(VOID);
+VOID ItFsTestSymlink001(VOID);
+VOID ItFsTestSymlink002(VOID);
+VOID ItFsTestSymlink003(VOID);
+VOID ItFsTestSymlinkat001(VOID);
 #endif
 
 #if defined(LOSCFG_USER_TESTSUIT_SHELL)

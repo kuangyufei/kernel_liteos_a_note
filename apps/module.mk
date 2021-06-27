@@ -46,7 +46,5 @@ endif
 #only enable for qemu now
 ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
 APP_SUBDIRS += mksh
-ifeq ($(WHEN_TOYBOX_IS_READY), y)
 APP_SUBDIRS += toybox
-endif
 endif

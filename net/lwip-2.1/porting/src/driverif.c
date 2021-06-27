@@ -247,7 +247,7 @@ driverif_init(struct netif *netif)//网络接口驱动层初始化
     if (netif == NULL) {
         return ERR_IF;
     }
-    link_layer_type = netif->link_layer_type;//链路层类型
+    link_layer_type = netif->link_layer_type;//链路层类�?
     LWIP_ERROR("driverif_init : invalid link_layer_type in netif", \
     ((link_layer_type == ETHERNET_DRIVER_IF) || (link_layer_type == WIFI_DRIVER_IF)), \
     return ERR_IF);
@@ -274,11 +274,13 @@ driverif_init(struct netif *netif)//网络接口驱动层初始化
     NETIF_INIT_SNMP(netif, snmp_ifType_ethernet_csmacd, LINK_SPEED_OF_YOUR_NETIF_IN_BPS);
 
     netif->output = etharp_output;//该函数接收来自TCP/IP层的数据
-    netif->linkoutput = driverif_output;//该函数实现底层数据包的发送
-    /* init the netif's full name */
+    netif->linkoutput = driverif_output;//该函数实现底层数据包的发�?
+  
+  /* init the netif's full name */
     driverif_init_ifname(netif);//初始化链路接口层名称
 
-    /* maximum transfer unit */
+  
+  /* maximum transfer unit */
     netif->mtu = IP_FRAG_MAX_MTU;
 
     /* device capabilities */
@@ -309,13 +311,9 @@ driverif_init(struct netif *netif)//网络接口驱动层初始化
                    #endif
                    NETIF_FLAG_LINK_UP;
 
-				#if
-				 DRIVER_STATUS_CHECK
-   
-				 netif->waketime = -1;
-				#endif /* DRIVER_STATUS_CHECK */
-   
- LWIP_DEBUGF(DRIVERIF_DEBUG, ("driverif_init : Initialized netif 0x%p\n", (void *)netif));
+#if DRIVER_STATUS_CHECK
+    netif->waketime = -1;
+#endif /* DRIVER_STATUS_CHECK */
+    LWIP_DEBUGF(DRIVERIF_DEBUG, ("driverif_init : Initialized netif 0x%p\n", (void *)netif));
     return ERR_OK;
 }
-   

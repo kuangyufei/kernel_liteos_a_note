@@ -35,7 +35,7 @@
 #include "pthread.h"
 #include "linux/rbtree.h"
 #include "los_list.h"
-#include "fs/vnode.h"
+#include "vnode.h"
 
 #ifdef __cplusplus
 #if __cplusplus

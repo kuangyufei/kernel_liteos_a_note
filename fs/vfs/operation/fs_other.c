@@ -29,7 +29,6 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "fs_other.h"
 #include "errno.h"
 #include "stdlib.h"
 #include "string.h"
@@ -39,12 +38,12 @@
 #include "sys/stat.h"
 #include "sys/prctl.h"
 #include "fs/fd_table.h"
-#include "fs/fs.h"
+#include "fs/file.h"
 #include "linux/spinlock.h"
 #include "los_process_pri.h"
 #include "los_task_pri.h"
 #include "capability_api.h"
-#include "fs/vnode.h"
+#include "vnode.h"
 
 #define MAX_DIR_ENT 1024
 int fstat(int fd, struct stat *buf)
@@ -484,7 +483,13 @@ static void PrintFileInfo64(const struct stat64 *stat64Info, const char *name)
         str[i][UGO_NUMS - 1] = (mode & EXEC_OP) ? 'x' : '-';
     }
 
-    dirFlag = (S_ISDIR(stat64Info->st_mode)) ? 'd' : '-';
+    if (S_ISDIR(stat64Info->st_mode)) {
+        dirFlag = 'd';
+    } else if (S_ISLNK(stat64Info->st_mode)) {
+        dirFlag = 'l';
+    } else {
+        dirFlag = '-';
+    }
 
     PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s\n", dirFlag,
            str[0], str[1], str[UGO_NUMS - 1], stat64Info->st_size, stat64Info->st_uid, stat64Info->st_gid, name);
@@ -504,7 +509,13 @@ static void PrintFileInfo(const struct stat *statInfo, const char *name)
         str[i][UGO_NUMS - 1] = (mode & EXEC_OP) ? 'x' : '-';
     }
 
-    dirFlag = (S_ISDIR(statInfo->st_mode)) ? 'd' : '-';
+    if (S_ISDIR(statInfo->st_mode)) {
+        dirFlag = 'd';
+    } else if (S_ISLNK(statInfo->st_mode)) {
+        dirFlag = 'l';
+    } else {
+        dirFlag = '-';
+    }
 
     PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s\n", dirFlag,
            str[0], str[1], str[UGO_NUMS - 1], statInfo->st_size, statInfo->st_uid, statInfo->st_gid, name);

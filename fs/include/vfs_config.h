@@ -41,6 +41,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 //禁用 posix mqueue inode 配置
+#define PATH_MAX 256
 #define CONFIG_DISABLE_MQUEUE   // disable posix mqueue inode configure
 
 /* file system configure */ //文件系统配置
@@ -75,6 +76,7 @@ extern "C" {
 
 #define CONFIG_FS_FLASH_BLOCK_NUM 1
 
+#define CONFIG_FS_MAX_LNK_CNT 40
 /* nfs configure */
 
 #define CONFIG_NFS_MACHINE_NAME "IPC"   // nfs device name is IPC
@@ -86,6 +88,7 @@ extern "C" {
 #define CONFIG_NFILE_STREAMS        1   // enable file stream
 #define CONFIG_STDIO_BUFFER_SIZE    0
 #define CONFIG_NUNGET_CHARS         0
+#define MIN_START_FD 3 // 0,1,2 are used for stdin,stdout,stderr respectively
 
 #define FD_SET_TOTAL_SIZE               (FD_SETSIZE + CONFIG_NEXPANED_DESCRIPTORS)
 #define FD_SETSIZE                      (CONFIG_NFILE_DESCRIPTORS + CONFIG_NSOCKET_DESCRIPTORS)
@@ -125,6 +128,12 @@ extern "C" {
 /* directory configure */
 
 #define VFS_USING_WORKDIR               // enable current working directory
+
+/* permission configure */
+#define DEFAULT_DIR_MODE        0777
+#define DEFAULT_FILE_MODE       0666
+
+#define MAX_DIRENT_NUM 14 // 14 means 4096 length buffer can store 14 dirent, see struct DIR
 
 #ifdef __cplusplus
 #if __cplusplus

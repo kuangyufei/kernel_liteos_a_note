@@ -36,13 +36,13 @@
 #include "lt_timer_test.h"
 #include <stdlib.h>
 
-static UINT32 testcase1(VOID)
+static UINT32 testcase(VOID)
 {
     time_t td;
     int ret = 0;
 
     errno = 0;
-    ret = putenv("TZ=GMT-100");
+    ret = putenv((char *) "TZ=GMT-100");
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     tzset();
 
@@ -56,11 +56,6 @@ static UINT32 testcase1(VOID)
     return LOS_OK;
 OUT:
     return LOS_NOK;
-}
-
-static UINT32 testcase(VOID)
-{
-    testcase1();
 }
 
 void TIME_TEST_TZSET_002(void)

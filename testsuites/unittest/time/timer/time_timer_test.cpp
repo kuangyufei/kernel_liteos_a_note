@@ -97,5 +97,27 @@ HWTEST_F(TimeTimerTest, TimerTest005, TestSize.Level0)
 {
     TimerTest005();
 }
+
+/* *
+ * @tc.name: TIME_TEST_TZSET_001
+ * @tc.desc: function for TIME_TEST_TZSET_001
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(TimeTimerTest, TIME_TEST_TZSET_001, TestSize.Level0)
+{
+    TIME_TEST_TZSET_001();
+}
+
+/* *
+ * @tc.name: TIME_TEST_TZSET_002
+ * @tc.desc: function for TimeTimerTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(TimeTimerTest, TIME_TEST_TZSET_002, TestSize.Level0)
+{
+    TIME_TEST_TZSET_002();
+}
 #endif
 } // namespace OHOS

@@ -32,6 +32,7 @@
 #include "los_random.h"
 #include "fcntl.h"
 #include "linux/kernel.h"
+#include "fs/driver.h"
 
 
 static unsigned long g_randomMax =  0x7FFFFFFF;
@@ -91,7 +92,7 @@ ssize_t RanRead(struct file *filep, char *buffer, size_t buflen)
     return (buflen - len); /* return a successful len */
 }
 
-static ssize_t RanMap(FAR struct file *filep, FAR LosVmMapRegion *region)
+static ssize_t RanMap(struct file *filep, LosVmMapRegion *region)
 {
     PRINTK("%s %d, mmap is not support\n", __FUNCTION__, __LINE__);
     return 0;

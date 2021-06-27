@@ -33,6 +33,7 @@
 #include "fcntl.h"
 #include "hisoc/random.h"
 #include "linux/kernel.h"
+#include "fs/driver.h"
 
 static RandomOperations g_randomOp;
 void RandomOperationsInit(const RandomOperations *r)
@@ -89,7 +90,7 @@ static ssize_t RandomHwRead(struct file *filep, char *buffer, size_t buflen)
     return ret;
 }
 
-static ssize_t RandomMap(FAR struct file *filep, FAR LosVmMapRegion *region)
+static ssize_t RandomMap(struct file *filep, LosVmMapRegion *region)
 {
     PRINTK("%s %d, mmap is not support\n", __FUNCTION__, __LINE__);
     return 0;

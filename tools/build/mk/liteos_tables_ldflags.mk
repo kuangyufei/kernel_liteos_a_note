@@ -113,7 +113,8 @@ LITEOS_TABLES_EXTEND_LDFLAGS := \
     -ui2c_read_shellcmd \
     -ussp_read_shellcmd \
     -uuart_config_shellcmd\
-    -uusb_debug_shellcmd
+    -uusb_debug_shellcmd \
+    -uOsPmInit
 
 LITEOS_TABLES_KERNEL_INIT_LDFLAGS := \
     -uOsTraceInit \

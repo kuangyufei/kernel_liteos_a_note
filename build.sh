@@ -38,22 +38,22 @@ outdir="../..$3/test_info/gen/kernel/test"
 if [ "$5" = "tee" ]; then
     tee="_tee"
 fi
-productName="$(basename $7)"
-source="tools/build/config/${productName}_release.config"
+product_name="$(basename $7)"
+source="tools/build/config/${product_name}_release.config"
 if [ "$2" = "clang" ]; then
     if [ "$4" = "debug" ]; then
-        config_file="${productName}_$2$tee.config"
+        config_file="${product_name}_$2$tee.config"
         source="tools/build/config/debug/$config_file"
     else
-        config_file="${productName}_$2_release$tee.config"
+        config_file="${product_name}_$2_release$tee.config"
         source="tools/build/config/$config_file"
     fi
 elif [ "$2" = "gcc" ]; then
     if [ "$4" = "debug" ]; then
-        config_file="${productName}_debug_shell$tee.config"
+        config_file="${product_name}_debug_shell$tee.config"
         source="tools/build/config/$config_file"
     else
-        config_file="${productName}_release$tee.config"
+        config_file="${product_name}_release$tee.config"
         source="tools/build/config/$config_file"
     fi
 fi

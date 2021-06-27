@@ -37,7 +37,8 @@ VDSO_INCLUDE := -I $(LITEOSTOPDIR)/kernel/extended/vdso/include \
                 -I $(LITEOSTOPDIR)/kernel/common \
                 -I $(LITEOSTOPDIR)/bsd/compat/linuxkpi/include
 
-VDSO_CCFLAGS := -nostdlib -fPIC $(LITEOS_SSP) $(LITEOS_CORE_COPTS) $(WARNING_AS_ERROR) $(LITEOS_COPTS_OPTMIZE)
+VDSO_CCFLAGS := -nostdlib -fPIC -fno-common -fno-strict-aliasing \
+                $(LITEOS_SSP) $(LITEOS_CORE_COPTS) $(WARNING_AS_ERROR) $(LITEOS_COPTS_OPTMIZE)
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 VDSO_CCFLAGS += $(LLVM_EXTRA_OPTS) --sysroot=$(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/
 endif

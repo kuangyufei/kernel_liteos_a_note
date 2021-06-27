@@ -59,7 +59,6 @@ sources_smoke = [
   "smoke/pthread_mutex_test_015.cpp",
   "smoke/pthread_mutex_test_016.cpp",
   "smoke/pthread_mutex_test_017.cpp",
-  "smoke/pthread_mutex_test_018.cpp",
   "smoke/pthread_mutex_test_019.cpp",
   "smoke/pthread_mutex_test_020.cpp",
   "smoke/pthread_mutex_test_021.cpp",
@@ -70,6 +69,7 @@ sources_smoke = [
 ]
 
 sources_full = [
+  "full/pthread_mutex_test_018.cpp",
 ]
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {

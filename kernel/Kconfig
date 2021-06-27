@@ -89,6 +89,13 @@ config KERNEL_DYNLOAD
     help
       If you wish to build LiteOS with support for dynamic load.
 
+config KERNEL_PM
+    bool "Enable Power Management"
+    default y
+    depends on KERNEL_EXTKERNEL
+    help
+      If you wish to build LiteOS with support for power management.
+
 config ASLR
     bool "Enable Address Space Layout Randomization"
     default n

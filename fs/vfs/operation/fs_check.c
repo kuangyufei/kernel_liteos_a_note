@@ -42,7 +42,7 @@
 #include "sys/stat.h"
 #include "sys/prctl.h"
 #include "fs/dirent_fs.h"
-#include "fs/vnode.h"
+#include "vnode.h"
 
 /****************************************************************************
  * Name: fscheck

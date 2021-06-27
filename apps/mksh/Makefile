@@ -38,10 +38,11 @@ BUILD_DIR := $(MKSH_DIR)/build
 BUILD_LOG := $(MKSH_DIR)/build.log
 TARGET_OS := OpenHarmony
 
-LOCAL_CFLAGS := -flto -fdata-sections -ffunction-sections -O2 -fstack-protector-strong -D_FORTIFY_SOURCE=2 -mcpu=cortex-a7 -mfloat-abi=softfp -mfpu=neon-vfpv4
+LOCAL_CFLAGS := -flto -fdata-sections -ffunction-sections -Oz -fstack-protector-strong -D_FORTIFY_SOURCE=2 -mcpu=cortex-a7 -mfloat-abi=softfp -mfpu=neon-vfpv4
 LOCAL_CFLAGS += --target=arm-liteos --sysroot=$(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/
 LOCAL_CFLAGS += -DMKSH_DISABLE_TTY_WARNING -DMKSH_SMALL=1 -DMKSH_ASSUME_UTF8=1 -DMKSH_SMALL_BUT_FAST=0 -DMKSH_S_NOVI=1 -DHAVE_CAN_FSTACKPROTECTORSTRONG=1
 LOCAL_CFLAGS += -DMKSH_LESS_CMDLINE_EDITING -DMKSH_LESS_BUILDINS -DMKSH_NO_INITCOMS -DADAPT_FOR_LITEOS_A
+LOCAL_LDFLAGS := -Wl,--gc-sections -flto -O2
 
 all:$(MKSH)
 
@@ -54,7 +55,7 @@ else
 	$(HIDE)mkdir -p $(BUILD_DIR)
 	$(HIDE)$(CP) $(LITEOSTHIRDPARTY)/$(MKSH)/. $(BUILD_DIR)
 	$(HIDE)chmod +x $(BUILD_DIR)/Build.sh
-	$(HIDE)cd $(BUILD_DIR) && CC=$(CC) TARGET_OS=$(TARGET_OS) CFLAGS="$(LOCAL_CFLAGS)" LDFLAGS="$(LDFLAGS)" ./Build.sh -r > $(BUILD_LOG) 2>&1
+	$(HIDE)cd $(BUILD_DIR) && CC=$(CC) TARGET_OS=$(TARGET_OS) CFLAGS="$(LOCAL_CFLAGS)" LDFLAGS="$(LOCAL_LDFLAGS)" ./Build.sh -r > $(BUILD_LOG) 2>&1
 endif
 	$(HIDE)$(CP) -rf $(BUILD_DIR)/$(MKSH) .
 	$(HIDE)$(STRIP) $(MKSH)

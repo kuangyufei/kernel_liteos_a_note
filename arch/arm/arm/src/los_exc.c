@@ -650,6 +650,7 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
         OsExcRestore();
         /* kill user exc process */
     LOS_Exit(OS_PRO_EXIT_OK);//进程退出
+    }
 
     /* User mode exception handling failed , which normally does not exist */ //用户态的异常处理失败，通常情况下不会发生
     g_curNestCount[currCpu]++;

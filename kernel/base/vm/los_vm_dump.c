@@ -37,7 +37,7 @@
 #include "los_vm_dump.h"
 #include "los_mmu_descriptor_v6.h"
 #ifdef LOSCFG_FS_VFS
-#include "fs/fs.h"
+#include "fs/file.h"
 #endif
 #include "los_printf.h"
 #include "los_vm_page.h"

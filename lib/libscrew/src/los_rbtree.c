@@ -132,7 +132,7 @@ STATIC VOID OsRbInsertNodeFixup(LosRbTree *pstTree, VOID *pstData)
     LosRbNode *pstY = NULL;
     LosRbNode *pstX = NULL;
 
-    /* begin: for earse pc-lint warning */
+    /* begin: for erase pc-lint warning */
     if ((NULL == pstTree) || (NULL == pstData)) {
         return;
     }
@@ -271,7 +271,7 @@ STATIC VOID OsRbDeleteNode(LosRbTree *pstTree, VOID *pstData)
     LosRbNode *pstZ = NULL;
     LOS_DL_LIST *pstNode = NULL;
 
-    /* begin: for earse pc-lint warning */
+    /* begin: for erase pc-lint warning */
     if ((NULL == pstTree) || (NULL == pstData)) {
         return;
     }
@@ -305,14 +305,14 @@ STATIC VOID OsRbDeleteNode(LosRbTree *pstTree, VOID *pstData)
 
     if ((pstNilT == pstZ->pstLeft) || (pstNilT == pstZ->pstRight)) {
         pstChild = ((pstNilT != pstZ->pstLeft) ? pstZ->pstLeft : pstZ->pstRight);
-        if (NULL == pstChild) { /* Edit by r60958 for coverrity */
+        if (NULL == pstChild) { /* Edit by r60958 for Coverity */
             return;
         }
 
         pstChild->pstParent = pstZ->pstParent;
 
         if (pstNilT == pstZ->pstParent) {
-            /* if we arrive here, pastTree is no NULL, so we can close pclint warning */
+            /* if we arrive here, pstTree is no NULL, so we can close pclint warning */
             /*lint -e613 */
             /*lint -e831 */
             pstTree->pstRoot = pstChild;
@@ -330,7 +330,7 @@ STATIC VOID OsRbDeleteNode(LosRbTree *pstTree, VOID *pstData)
             OsRbDeleteNodeFixup(pstTree, pstChild);
         }
 
-        /* re-initalize the pstZ */
+        /* re-initialize the pstZ */
         pstZ->lColor = LOS_RB_RED;
         pstZ->pstLeft = pstZ->pstRight = pstZ->pstParent = pstNilT;
 
@@ -352,7 +352,7 @@ STATIC VOID OsRbDeleteNode(LosRbTree *pstTree, VOID *pstData)
 
     /* Because left is nilT, so child must be right. */
     pstChild = pstZ->pstRight;
-    if (NULL == pstChild) { /* Edit by r60958 for coverrity */
+    if (NULL == pstChild) { /* Edit by r60958 for Coverity */
         return;
     }
 
@@ -363,7 +363,7 @@ STATIC VOID OsRbDeleteNode(LosRbTree *pstTree, VOID *pstData)
 
     if (pstNilT == pstZ->pstParent) {
         /* In fact, we never go here. */
-        /* if we arrive here, pastTree is no NULL, so we can close pclint warning */
+        /* if we arrive here, pstTree is no NULL, so we can close pclint warning */
         /*lint -e613 */
         /*lint -e831 */
         pstTree->pstRoot = pstChild;
@@ -384,7 +384,7 @@ STATIC VOID OsRbDeleteNode(LosRbTree *pstTree, VOID *pstData)
     pstZ->pstLeft = pstDel->pstLeft;
 
     if (pstNilT == pstDel->pstParent) {
-        /* if we arrive here, pastTree is no NULL, so we can close pclint warning */
+        /* if we arrive here, pstTree is no NULL, so we can close pclint warning */
         /*lint -e613 */
         /*lint -e831 */
         pstTree->pstRoot = pstZ;
@@ -405,7 +405,7 @@ STATIC VOID OsRbDeleteNode(LosRbTree *pstTree, VOID *pstData)
         OsRbDeleteNodeFixup(pstTree, pstChild);
     }
 
-    /* re-initalize the pstDel */
+    /* re-initialize the pstDel */
     pstDel->lColor = LOS_RB_RED;
     pstDel->pstLeft = pstDel->pstRight = pstDel->pstParent = pstNilT;
     return;
@@ -614,7 +614,7 @@ VOID *LOS_RbSuccessorNode(LosRbTree *pstTree, VOID *pstData)
     LosRbNode *pstNilT = NULL;
     LosRbNode *pstNode = NULL;
 
-    /* begin: for earse pc_lint warning */
+    /* begin: for erase pc_lint warning */
     if (NULL == pstTree) {
         return NULL;
     }
@@ -631,7 +631,7 @@ VOID *LOS_RbSuccessorNode(LosRbTree *pstTree, VOID *pstData)
         return NULL;
     }
 
-    /* if we arrive here, pastTree is no NULL, so we can close pclint warning */
+    /* if we arrive here, pstTree is no NULL, so we can close pclint warning */
     /*lint -e613 */
     /*lint -e831 */
     pstNilT = &(pstTree->stNilT);

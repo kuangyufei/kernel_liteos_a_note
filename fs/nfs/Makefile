@@ -32,6 +32,7 @@ include $(LITEOSTOPDIR)/config.mk
 MODULE_NAME := $(notdir $(shell pwd))
 
 LOCAL_SRCS := $(wildcard $(LITEOSTHIRDPARTY)/NuttX/fs/nfs/*.c)
+LOCAL_INCLUDE := -I $(wildcard $(LITEOSTHIRDPARTY)/NuttX/include)
 
 LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
 

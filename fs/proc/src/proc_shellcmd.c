@@ -45,7 +45,6 @@
 #include "shcmd.h"
 #include "proc_file.h"
 #include "dirent.h"
-#include "fs/fs.h"
 #include "proc_fs.h"
 
 #define WRITEPROC_ARGC  3

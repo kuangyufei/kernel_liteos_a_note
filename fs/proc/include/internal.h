@@ -45,6 +45,8 @@ extern "C" {
 extern spinlock_t procfsLock;
 extern bool procfsInit;
 
+void ProcPmInit(void);
+
 void ProcVmmInit(void);
 
 void ProcProcessInit(void);
@@ -62,6 +64,10 @@ extern int ProcStat(const char *file, struct ProcStat *buf);
 extern void ProcMountsInit(void);
 
 extern void ProcUptimeInit(void);
+
+extern void ProcFsCacheInit(void);
+
+extern void ProcFdInit(void);
 
 #ifdef __cplusplus
 #if __cplusplus

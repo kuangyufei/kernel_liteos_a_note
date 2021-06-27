@@ -131,7 +131,6 @@ struct VmMapRegion {//线性区描述符,内核通过线性区管理虚拟地址
 
 typedef struct VmSpace {
     LOS_DL_LIST         node;           /**< vm space dl list */	//节点,通过它挂到全局虚拟空间 g_vmSpaceList 链表上
-    LOS_DL_LIST         regions;        /**< region dl list */		//双循环链表方式管理本空间各个线性区
     LosRbTree           regionRbTree;   /**< region red-black tree root */	//采用红黑树方式管理本空间各个线性区
     LosMux              regionMux;      /**< region list mutex lock */	//虚拟空间的互斥锁
     VADDR_T             base;           /**< vm space base addr */		//虚拟空间的基地址,常用于判断地址是否在内核还是用户空间
@@ -312,7 +311,7 @@ STATUS_T LOS_RegionFree(LosVmSpace *space, LosVmMapRegion *region);
 STATUS_T LOS_VmSpaceFree(LosVmSpace *space);
 STATUS_T LOS_VaddrToPaddrMmap(LosVmSpace *space, VADDR_T vaddr, PADDR_T paddr, size_t len, UINT32 flags);
 BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb);
-LosVmSpace *OsCreateUserVmSapce(VOID);
+LosVmSpace *OsCreateUserVmSpace(VOID);
 STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace);
 STATUS_T LOS_UserSpaceVmAlloc(LosVmSpace *space, size_t size, VOID **ptr, UINT8 align_log2, UINT32 regionFlags);
 LosMux *OsGVmSpaceMuxGet(VOID);

@@ -46,7 +46,8 @@
 
 #include "fs/dirent_fs.h"
 #include "fs/fs.h"
-#include "fs/vnode.h"
+#include "fs/driver.h"
+#include "vnode.h"
 #include "mtd_list.h"
 #include "mtd_partition.h"
 #include "jffs2_hash.h"
@@ -97,6 +98,9 @@ static void Jffs2SetVtype(struct jffs2_inode *node, struct Vnode *pVnode)
             break;
         case S_IFDIR:
             pVnode->type = VNODE_TYPE_DIR;
+            break;
+        case S_IFLNK:
+            pVnode->type = VNODE_TYPE_LNK;
             break;
         default:
             pVnode->type = VNODE_TYPE_UNKNOWN;
@@ -154,7 +158,6 @@ int VfsJffs2Bind(struct Mount *mnt, struct Vnode *blkDriver, const void *data)
         LOS_MuxUnlock(&g_jffs2FsLock);
         goto ERROR_WITH_VNODE;
     }
-    rootNode->i_vnode = pv;
     pv->type = VNODE_TYPE_DIR;
     pv->data = (void *)rootNode;
     pv->originMount = mnt;
@@ -221,18 +224,15 @@ int VfsJffs2Lookup(struct Vnode *parentVnode, const char *path, int len, struct 
         return -ENOENT;
     }
 
-    if (node->i_vnode) {
-        *ppVnode = node->i_vnode;
-        (void)VfsHashGet(parentVnode->originMount, node->i_ino, &newVnode, NULL, NULL);
-        LOS_MuxUnlock(&g_jffs2FsLock);
-        if (newVnode) {
-            if (newVnode->data == NULL) {
-                LOS_Panic("#####VfsHashGet error#####\n");
-            }
-            newVnode->parent = parentVnode;
-            *ppVnode = newVnode;
-            return 0;
-        }
+    (void)VfsHashGet(parentVnode->originMount, node->i_ino, &newVnode, NULL, NULL);
+    LOS_MuxUnlock(&g_jffs2FsLock);
+    if (newVnode) {
+        if (newVnode->data == NULL) {
+            LOS_Panic("#####VfsHashGet error#####\n");
+         }
+        newVnode->parent = parentVnode;
+        *ppVnode = newVnode;
+        return 0;
     }
     ret = VnodeAlloc(&g_jffs2Vops, &newVnode);
     if (ret != 0) {
@@ -243,11 +243,6 @@ int VfsJffs2Lookup(struct Vnode *parentVnode, const char *path, int len, struct 
     }
 
     Jffs2SetVtype(node, newVnode);
-    node->i_vnode = newVnode;
-    if (&g_jffs2Vops != parentVnode->vop) {
-        LOS_Panic("jffs2 vop failed");
-    }
-    newVnode->vop = parentVnode->vop;
     newVnode->fop = parentVnode->fop;
     newVnode->data = node;
     newVnode->parent = parentVnode;
@@ -284,11 +279,6 @@ int VfsJffs2Create(struct Vnode *parentVnode, const char *path, int mode, struct
     }
 
     newVnode->type = VNODE_TYPE_REG;
-    newNode->i_vnode = newVnode;
-    newVnode->vop = parentVnode->vop;
-    if (&g_jffs2Vops != parentVnode->vop) {
-        LOS_Panic("jffs2 vop failed");
-    }
     newVnode->fop = parentVnode->fop;
     newVnode->data = newNode;
     newVnode->parent = parentVnode;
@@ -551,17 +541,12 @@ int VfsJffs2Mkdir(struct Vnode *parentNode, const char *dirName, mode_t mode, st
 
     ret = jffs2_mkdir((struct jffs2_inode *)parentNode->data, (const unsigned char *)dirName, mode, &node);
     if (ret != 0) {
-        VnodeFree(newVnode);
         LOS_MuxUnlock(&g_jffs2FsLock);
+        VnodeFree(newVnode);
         return ret;
     }
 
     newVnode->type = VNODE_TYPE_DIR;
-    node->i_vnode = newVnode;
-    newVnode->vop = parentNode->vop;
-    if (&g_jffs2Vops != parentNode->vop) {
-        LOS_Panic("jffs2 vop failed");
-    }
     newVnode->fop = parentNode->fop;
     newVnode->data = node;
     newVnode->parent = parentNode;
@@ -627,9 +612,11 @@ int VfsJffs2Chattr(struct Vnode *pVnode, struct IATTR *attr)
     return ret;
 }
 
-int VfsJffs2Rmdir(struct Vnode *parentVnode, struct Vnode *targetVnode, char *path)
+int VfsJffs2Rmdir(struct Vnode *parentVnode, struct Vnode *targetVnode, const char *path)
 {
     int ret;
+    struct jffs2_inode *parentInode = (struct jffs2_inode *)parentVnode->data;
+    struct jffs2_inode *targetInode = (struct jffs2_inode *)targetVnode->data;
 
     if (!parentVnode || !targetVnode) {
         return -EINVAL;
@@ -637,16 +624,125 @@ int VfsJffs2Rmdir(struct Vnode *parentVnode, struct Vnode *targetVnode, char *pa
 
     LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
 
-    ret = jffs2_rmdir((struct jffs2_inode *)parentVnode->data, (struct jffs2_inode *)targetVnode->data,
-                      (const unsigned char *)path);
+    ret = jffs2_rmdir(parentInode, targetInode, (const unsigned char *)path);
+
+    if (ret == 0) {
+        (void)jffs2_iput(targetInode);
+    }
 
     LOS_MuxUnlock(&g_jffs2FsLock);
     return ret;
 }
 
-int VfsJffs2Unlink(struct Vnode *parentVnode, struct Vnode *targetVnode, char *path)
+int VfsJffs2Link(struct Vnode *oldVnode, struct Vnode *newParentVnode, struct Vnode **newVnode, const char *newName)
 {
     int ret;
+    struct jffs2_inode *oldInode = oldVnode->data;
+    struct jffs2_inode *newParentInode = newParentVnode->data;
+    struct Vnode *pVnode = NULL;
+
+    ret = VnodeAlloc(&g_jffs2Vops, &pVnode);
+    if (ret != 0) {
+        return -ENOMEM;
+    }
+
+    LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
+    ret = jffs2_link(oldInode, newParentInode, (const unsigned char *)newName);
+    if (ret != 0) {
+        LOS_MuxUnlock(&g_jffs2FsLock);
+        VnodeFree(pVnode);
+        return ret;
+    }
+
+    pVnode->type = VNODE_TYPE_REG;
+    pVnode->fop = &g_jffs2Fops;
+    pVnode->parent = newParentVnode;
+    pVnode->originMount = newParentVnode->originMount;
+    pVnode->data = oldInode;
+    pVnode->uid = oldVnode->uid;
+    pVnode->gid = oldVnode->gid;
+    pVnode->mode = oldVnode->mode;
+
+    *newVnode = pVnode;
+    (void)VfsHashInsert(*newVnode, oldInode->i_ino);
+
+    LOS_MuxUnlock(&g_jffs2FsLock);
+    return ret;
+}
+
+int VfsJffs2Symlink(struct Vnode *parentVnode, struct Vnode **newVnode, const char *path, const char *target)
+{
+    int ret;
+    struct jffs2_inode *inode = NULL;
+    struct Vnode *pVnode = NULL;
+
+    ret = VnodeAlloc(&g_jffs2Vops, &pVnode);
+    if (ret != 0) {
+        return -ENOMEM;
+    }
+
+    LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
+    ret = jffs2_symlink((struct jffs2_inode *)parentVnode->data, &inode, (const unsigned char *)path, target);
+    if (ret != 0) {
+        LOS_MuxUnlock(&g_jffs2FsLock);
+        VnodeFree(pVnode);
+        return ret;
+    }
+
+    pVnode->type = VNODE_TYPE_LNK;
+    pVnode->fop = &g_jffs2Fops;
+    pVnode->parent = parentVnode;
+    pVnode->originMount = parentVnode->originMount;
+    pVnode->data = inode;
+    pVnode->uid = inode->i_uid;
+    pVnode->gid = inode->i_gid;
+    pVnode->mode = inode->i_mode;
+
+    *newVnode = pVnode;
+    (void)VfsHashInsert(*newVnode, inode->i_ino);
+
+    LOS_MuxUnlock(&g_jffs2FsLock);
+    return ret;
+}
+
+ssize_t VfsJffs2Readlink(struct Vnode *vnode, char *buffer, size_t bufLen)
+{
+    ssize_t ret = 0;
+    struct jffs2_inode *inode = NULL;
+    struct jffs2_inode_info *f = NULL;
+    ssize_t targetLen;
+    ssize_t cnt;
+
+    LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
+
+    inode = (struct jffs2_inode *)vnode->data;
+    f = JFFS2_INODE_INFO(inode);
+    targetLen = strlen((const char *)f->target);
+    if (bufLen == 0) {
+        LOS_MuxUnlock(&g_jffs2FsLock);
+        return 0;
+    }
+
+    cnt = (bufLen - 1) < targetLen ? (bufLen - 1) : targetLen;
+    if (LOS_CopyFromKernel(buffer, bufLen, (const char *)f->target, cnt) != 0) {
+        cnt = 0;
+        ret = -EFAULT;
+    }
+    buffer[cnt] = '\0';
+
+    LOS_MuxUnlock(&g_jffs2FsLock);
+    if (ret < 0) {
+        return ret;
+    }
+
+    return cnt;
+}
+
+int VfsJffs2Unlink(struct Vnode *parentVnode, struct Vnode *targetVnode, const char *path)
+{
+    int ret;
+    struct jffs2_inode *parentInode = (struct jffs2_inode *)parentVnode->data;
+    struct jffs2_inode *targetInode = (struct jffs2_inode *)targetVnode->data;
 
     if (!parentVnode || !targetVnode) {
         PRINTK("%s-%d parentVnode=%x, targetVnode=%x\n", __FUNCTION__, __LINE__, parentVnode, targetVnode);
@@ -655,8 +751,11 @@ int VfsJffs2Unlink(struct Vnode *parentVnode, struct Vnode *targetVnode, char *p
 
     LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
 
-    ret = jffs2_unlink((struct jffs2_inode *)parentVnode->data, (struct jffs2_inode *)targetVnode->data,
-                       (const unsigned char *)path);
+    ret = jffs2_unlink(parentInode, targetInode, (const unsigned char *)path);
+
+    if (ret == 0) {
+        (void)jffs2_iput(targetInode);
+    }
 
     LOS_MuxUnlock(&g_jffs2FsLock);
     return ret;
@@ -688,8 +787,6 @@ int VfsJffs2Rename(struct Vnode *fromVnode, struct Vnode *toParentVnode, const c
     fromNode = (struct jffs2_inode *)fromVnode->data;
     ret = jffs2_rename((struct jffs2_inode *)fromParentVnode->data, fromNode,
         (const unsigned char *)fromName, (struct jffs2_inode *)toParentVnode->data, (const unsigned char *)toName);
-    /* Careful with this: we can safely free the fromVnode AND toVnode but not fromNode, so reset the i_vnode field OR
-       it will be a jungle field. With a new lookup process, we'll allocate a new vnode for it. */
     fromVnode->parent = toParentVnode;
     LOS_MuxUnlock(&g_jffs2FsLock);
 
@@ -710,6 +807,7 @@ int VfsJffs2Stat(struct Vnode *pVnode, struct stat *buf)
     switch (node->i_mode & S_IFMT) {
         case S_IFREG:
         case S_IFDIR:
+        case S_IFLNK:
             buf->st_mode = node->i_mode;
             break;
 
@@ -737,22 +835,7 @@ int VfsJffs2Stat(struct Vnode *pVnode, struct stat *buf)
 
 int VfsJffs2Reclaim(struct Vnode *pVnode)
 {
-    int ret;
-    struct jffs2_inode *node = NULL;
-
-    LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
-
-    node = pVnode->data;
-    if (node == NULL) {
-        return LOS_OK;
-    }
-
-    node->i_vnode = NULL;
-    ret = jffs2_iput(node);
-
-    LOS_MuxUnlock(&g_jffs2FsLock);
-
-    return ret;
+    return 0;
 }
 
 int VfsJffs2Statfs(struct Mount *mnt, struct statfs *buf)
@@ -821,6 +904,9 @@ struct VnodeOps g_jffs2Vops = {
     .Reclaim = VfsJffs2Reclaim,
     .Truncate = VfsJffs2Truncate,
     .Truncate64 = VfsJffs2Truncate64,
+    .Link = VfsJffs2Link,
+    .Symlink = VfsJffs2Symlink,
+    .Readlink = VfsJffs2Readlink,
 };
 //jffs2 文件视角的操作实现
 struct file_operations_vfs g_jffs2Fops = {

@@ -142,7 +142,7 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
     }
 #endif
 
-    loadInfo.newSpace = OsCreateUserVmSapce();//创建用户虚拟空间
+    loadInfo.newSpace = OsCreateUserVmSpace();
     if (loadInfo.newSpace == NULL) {
         PRINT_ERR("%s %d, failed to allocate new vm space\n", __FUNCTION__, __LINE__);
         return -ENOMEM;

@@ -779,6 +779,17 @@ sources_full = [
   "jffs/full/It_vfs_jffs_701.cpp",
   "jffs/full/It_vfs_jffs_807.cpp",
   "jffs/full/It_vfs_jffs_808.cpp",
+  "jffs/full/It_vfs_test_link_001.cpp",
+  "jffs/full/It_vfs_test_link_002.cpp",
+  "jffs/full/It_vfs_test_link_003.cpp",
+  "jffs/full/It_vfs_test_linkat_001.cpp",
+  "jffs/full/It_vfs_test_linkat_002.cpp",
+  "jffs/full/It_vfs_test_linkat_003.cpp",
+  "jffs/full/It_vfs_test_readlink_001.cpp",
+  "jffs/full/It_vfs_test_symlink_001.cpp",
+  "jffs/full/It_vfs_test_symlink_002.cpp",
+  "jffs/full/It_vfs_test_symlink_003.cpp",
+  "jffs/full/It_vfs_test_symlinkat_001.cpp",
 ]
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {

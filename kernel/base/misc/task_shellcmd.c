@@ -49,7 +49,7 @@
 #include "los_process_pri.h"
 #include "los_vm_dump.h"
 #ifdef LOSCFG_FS_VFS
-#include "fs/fs.h"
+#include "fs/file.h"
 #endif
 #include "los_sched_pri.h"
 
@@ -357,7 +357,7 @@ STATIC VOID OsShellCmdTaskWaterLineGet(const LosTaskCB *allTaskArray)
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 #define OS_PEND_REASON_MAX_LEN 20
-//shell检查任务等待标记
+//shell检查任务等待标�?
 STATIC CHAR *OsShellCheckTaskWaitFlag(const LosTaskCB *taskCB, UINTPTR *lockID)
 {
     *lockID = taskCB->waitID;

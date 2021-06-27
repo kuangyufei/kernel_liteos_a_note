@@ -43,10 +43,10 @@ sources_entry = [
 
 sources_smoke = [
   "smoke/pthread_rwlock_test_001.cpp",
-  "smoke/pthread_rwlock_test_002.cpp",
 ]
 
 sources_full = [
+  "full/pthread_rwlock_test_002.cpp",
 ]
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {

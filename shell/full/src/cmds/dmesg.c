@@ -708,7 +708,6 @@ INT32 LOS_DmesgToFile(CHAR *filename)
 }
 #endif
 
-}
 /*************************************************************
 dmesg全称是display message (or display driver)，即显示信息。
 
@@ -783,6 +782,7 @@ INT32 OsShellCmdDmesg(INT32 argc, const CHAR **argv)
 ERR_OUT:
     PRINTK("dmesg: invalid option or parameter.\n");
     return -1;
+}
 
 SHELLCMD_ENTRY(dmesg_shellcmd, CMD_TYPE_STD, "dmesg", XARGS, (CmdCallBackFunc)OsShellCmdDmesg);
 LOS_MODULE_INIT(OsDmesgInit, LOS_INIT_LEVEL_EARLIEST);//在非常早期调用

@@ -57,7 +57,7 @@ static VOID HwiF01(VOID)
 {
     UINT32 ret;
     ret = LOS_EventDestroy(&g_event);
-    ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_ERRNO_EVENT_SHOULD_NOT_DESTORY, ret);
+    ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_ERRNO_EVENT_SHOULD_NOT_DESTROY, ret);
     TestDumpCpuid();
     LOS_AtomicInc(&g_testCount);
     return;

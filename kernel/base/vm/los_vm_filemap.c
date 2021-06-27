@@ -41,11 +41,29 @@
 #include "los_vm_fault.h"
 #include "los_process_pri.h"
 #include "los_vm_lock.h"
+#include "vnode.h"
 
 #ifndef UNUSED
 #define UNUSED(x)          (VOID)x
 #endif
 
+#ifdef LOSCFG_DEBUG_VERSION
+static int g_totalPageCacheTry = 0;
+static int g_totalPageCacheHit = 0;
+#define TRACE_TRY_CACHE() do { g_totalPageCacheTry++; } while (0)
+#define TRACE_HIT_CACHE() do { g_totalPageCacheHit++; } while (0)
+
+VOID ResetPageCacheHitInfo(int *try, int *hit)
+{
+    *try = g_totalPageCacheTry;
+    *hit = g_totalPageCacheHit;
+    g_totalPageCacheHit = 0;
+    g_totalPageCacheTry = 0;
+}
+#else
+#define TRACE_TRY_CACHE()
+#define TRACE_HIT_CACHE()
+#endif
 #ifdef LOSCFG_KERNEL_VM
 
 /**************************************************************************************************
@@ -377,7 +395,9 @@ INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
     /* get or create a new cache node */
     LOS_SpinLockSave(&mapping->list_lock, &intSave);
     fpage = OsFindGetEntry(mapping, vmf->pgoff);//获取文件页
+    TRACE_TRY_CACHE();
     if (fpage != NULL) {//找到了,说明该页已经在页高速缓存中
+        TRACE_HIT_CACHE();
         OsPageRefIncLocked(fpage);
     } else {//真的缺页了,页高速缓存中没找到
         fpage = OsPageCacheAlloc(mapping, vmf->pgoff);//分配一个文件页，将数据初始化好，包括vmpage(物理页框)

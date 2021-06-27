@@ -41,7 +41,7 @@
 #include "los_arch_mmu.h"
 #include "los_process_pri.h"
 #ifdef LOSCFG_FS_VFS
-#include "fs/fs.h"
+#include "fs/file.h"
 #endif
 #include "los_task.h"
 #include "los_memory_pri.h"
@@ -206,7 +206,7 @@ BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)//用户空间的TT
     return OsVmSpaceInitCommon(vmSpace, virtTtb);
 }
 //创建用户进程空间
-LosVmSpace *OsCreateUserVmSapce(VOID)
+LosVmSpace *OsCreateUserVmSpace(VOID)
 {
     BOOL retVal = FALSE;
 

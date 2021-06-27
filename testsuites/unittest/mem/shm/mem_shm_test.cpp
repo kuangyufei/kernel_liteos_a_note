@@ -41,7 +41,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
-#if defined(LOSCFG_USER_TEST_SMOKE)
+#if defined(LOSCFG_USER_TEST_FULL)
 /* *
  * @tc.name: it_test_shm_001
  * @tc.desc: function for MemShmTest
@@ -151,7 +151,9 @@ HWTEST_F(MemShmTest, ItTestShm010, TestSize.Level0)
 {
     ItTestShm010();
 }
+#endif
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: it_test_shm_011
  * @tc.desc: function for MemShmTest

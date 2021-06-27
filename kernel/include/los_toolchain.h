@@ -47,6 +47,13 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#ifndef UNUSED
+#define UNUSED(var)    \
+        do {           \
+            (void)var; \
+        } while (0)
+#endif
+
 /* for ARM Compiler */ //GCC 编译器的内置函数
 #if defined ( __CC_ARM )
 #ifndef ASM
@@ -148,7 +155,7 @@ extern "C" {
 #endif
 
 #ifndef CTZ
-#define CTZ(value)                                  (__builtin_ctz(value)) 
+#define CTZ(value)                                  (__builtin_ctz(value))
 #endif
 
 #ifndef NORETURN

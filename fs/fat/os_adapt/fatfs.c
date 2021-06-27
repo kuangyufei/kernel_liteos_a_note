@@ -32,15 +32,13 @@
 #include "fatfs.h"
 #ifdef LOSCFG_FS_FAT
 #include "ff.h"
-#include "fs/vfs_util.h"
 #include "disk_pri.h"
 #include "diskio.h"
 #include "fs/fs.h"
 #include "fs/dirent_fs.h"
-#include "fs_other.h"
 #include "fs/mount.h"
-#include "fs/vnode.h"
-#include "fs/path_cache.h"
+#include "vnode.h"
+#include "path_cache.h"
 #ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
 #include "virpartff.h"
 #include "errcode_fat.h"
@@ -55,6 +53,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include "los_hash.h"
+
 
 struct VnodeOps fatfs_vops; /* forward define */
 struct file_operations_vfs fatfs_fops;
@@ -215,10 +215,10 @@ int fatfs_hash_cmp(struct Vnode *vp, void *arg)
 //生成hash值的过程
 static DWORD fatfs_hash(QWORD sect, DWORD dptr, DWORD sclst)
 {
-    DWORD hash = FNV1_32_INIT;
-    hash = fnv_32_buf(&sect, sizeof(QWORD), hash);
-    hash = fnv_32_buf(&dptr, sizeof(DWORD), hash);
-    hash = fnv_32_buf(&sclst, sizeof(DWORD), hash);
+    DWORD hash = FNV1_32A_INIT;
+    hash = LOS_HashFNV32aBuf(&sect, sizeof(QWORD), hash);
+    hash = LOS_HashFNV32aBuf(&dptr, sizeof(DWORD), hash);
+    hash = LOS_HashFNV32aBuf(&sclst, sizeof(DWORD), hash);
 
     return hash;
 }
@@ -232,10 +232,260 @@ static mode_t fatfs_get_mode(BYTE attribute, mode_t fs_mode)
     fs_mode &= ~mask;
     if (attribute & AM_DIR) {
         fs_mode |= S_IFDIR;
+    } else if (attribute & AM_LNK) {
+        fs_mode |= S_IFLNK;
     } else {
         fs_mode |= S_IFREG;
     }
     return fs_mode;
+}
+
+static enum VnodeType fatfstype_2_vnodetype(BYTE type) {
+    switch (type) {
+        case AM_ARC:
+            return VNODE_TYPE_REG;
+        case AM_DIR:
+            return VNODE_TYPE_DIR;
+        case AM_LNK:
+            return VNODE_TYPE_LNK;
+        default:
+            return VNODE_TYPE_UNKNOWN;
+    }
+}
+
+#define DIR_SIZE 32
+static FRESULT init_cluster(DIR_FILE *pdfp, DIR *dp_new, FATFS *fs, int type, const char *target, DWORD *clust)
+{
+    FRESULT result;
+    BYTE *dir = NULL;
+    QWORD sect;
+    DWORD pclust;
+    UINT n;
+
+    /* Allocate a new cluster */
+    *clust = create_chain(&(dp_new->obj), 0);
+    if (*clust == 0) {
+        return FR_NO_SPACE_LEFT;
+    }
+    if (*clust == 1 || *clust == DISK_ERROR) {
+        return FR_DISK_ERR;
+    }
+
+    result = sync_window(fs); /* Flush FAT */
+    if (result != FR_OK) {
+        remove_chain(&(dp_new->obj), *clust, 0);
+        return result;
+    }
+
+    /* Initialize the new cluster */
+#ifndef LOSCFG_FS_FAT_VIRTUAL_PARTITION
+    dir = fs->win;
+#else
+    dir = PARENTFS(fs)->win;
+#endif
+
+    sect = clst2sect(fs, *clust);
+    mem_set(dir, 0, SS(fs));
+    if (type == AM_LNK && target) {
+        /* Write target to symlink */
+        strcpy_s((char *)dir, SS(fs), target);
+    } else {
+        /* Write the dir cluster */
+        mem_set(dir, 0, SS(fs));
+        mem_set(dir + DIR_Name, ' ', 11); /* Create "." entry */
+        dir[DIR_Name] = '.';
+        dir[DIR_Attr] = AM_DIR;
+        st_clust(fs, dir, *clust);
+        mem_cpy(dir + DIR_SIZE, dir, DIR_SIZE); /* Create ".." entry */
+        dir[DIR_SIZE + 1] = '.'; /* Add extra "." */
+        pclust = pdfp->fno.sclst;
+        if (fs->fs_type == FS_FAT32 && pclust == fs->dirbase) {
+            pclust = 0;
+        }
+        st_clust(fs, dir + DIR_SIZE, pclust);
+    }
+
+#ifndef LOSCFG_FS_FAT_VIRTUAL_PARTITION
+    fs->winsect = sect++;
+    fs->wflag = 1;
+#else
+    PARENTFS(fs)->winsect = sect++;
+    PARENTFS(fs)->wflag = 1;
+#endif
+    result = sync_window(fs);
+    if (result != FR_OK) {
+        remove_chain(&(dp_new->obj), *clust, 0);
+        return result;
+    }
+
+    /* Rest of directory cluster should set to be zero */
+    if (type == AM_DIR) {
+        mem_set(dir, 0, SS(fs));
+        for (n = fs->csize - 1; n > 0; n--) {
+#ifndef LOSCFG_FS_FAT_VIRTUAL_PARTITION
+            fs->winsect = sect++;
+            fs->wflag = 1;
+#else
+            PARENTFS(fs)->winsect = sect++;
+            PARENTFS(fs)->wflag = 1;
+#endif
+            result = sync_window(fs);
+            if (result != FR_OK) {
+                remove_chain(&(dp_new->obj), *clust, 0);
+                return result;
+            }
+        }
+    }
+
+    return FR_OK;
+}
+
+static int fatfs_create_obj(struct Vnode *parent, const char *name, int mode, struct Vnode **vpp, BYTE type, const char *target)
+{
+    struct Vnode *vp = NULL;
+    FATFS *fs = (FATFS *)parent->originMount->data;
+    DIR_FILE *dfp = (DIR_FILE *)parent->data;
+    FILINFO *finfo = &(dfp->fno);
+    DIR_FILE *dfp_new = NULL;
+    FILINFO *finfo_new = NULL;
+    DIR *dp_new = NULL;
+    QWORD time;
+    DWORD hash;
+    DWORD clust = 0;
+    FRESULT result;
+    int ret;
+
+    if ((type != AM_ARC) && (type != AM_DIR) && (type != AM_LNK)) {
+        result = FR_INVALID_NAME;
+        goto ERROR_EXIT;
+    }
+
+    dfp_new = (DIR_FILE *)zalloc(sizeof(DIR_FILE));
+    if (dfp_new == NULL) {
+        result = FR_NOT_ENOUGH_CORE;
+        goto ERROR_EXIT;
+    }
+
+    ret = lock_fs(fs);
+    if (ret == FALSE) { /* lock failed */
+        result = FR_TIMEOUT;
+        goto ERROR_FREE;
+    }
+
+    if (finfo->fattrib & AM_ARC || finfo->fattrib & AM_LNK) {
+        result = FR_NO_DIR;
+        goto ERROR_UNLOCK;
+    }
+
+    finfo_new = &(dfp_new->fno);
+    LOS_ListInit(&finfo_new->fp_list);
+    dp_new = &(dfp_new->f_dir);
+    dp_new->obj.fs = fs;
+    dp_new->obj.sclust = finfo->sclst;
+
+    DEF_NAMBUF;
+    INIT_NAMBUF(fs);
+
+    result = create_name(dp_new, &name);
+    if (result != FR_OK) {
+        goto ERROR_UNLOCK;
+    }
+
+    result = dir_find(dp_new);
+    if (result == FR_OK) {
+        result = FR_EXIST;
+        goto ERROR_UNLOCK;
+    }
+
+    if (type == AM_DIR || type == AM_LNK) {
+        result = init_cluster(dfp, dp_new, fs, type, target, &clust);
+        if (result != FR_OK) {
+            goto ERROR_UNLOCK;
+        }
+    }
+
+    result = dir_register(dp_new);
+    if (result != FR_OK) {
+        goto ERROR_REMOVE_CHAIN;
+    }
+
+    /* Set the directory entry attribute */
+    if (time_status == SYSTEM_TIME_ENABLE) {
+        time = GET_FATTIME();
+    } else {
+        time = 0;
+    }
+    st_dword(dp_new->dir + DIR_CrtTime, time);
+    st_dword(dp_new->dir + DIR_ModTime, time);
+    st_word(dp_new->dir + DIR_LstAccDate, time >> FTIME_DATE_OFFSET);
+    dp_new->dir[DIR_Attr] = type;
+    if (((DWORD)mode & S_IWUSR) == 0) {
+        dp_new->dir[DIR_Attr] |= AM_RDO;
+    }
+    st_clust(fs, dp_new->dir, clust);
+    if (type == AM_ARC) {
+        st_dword(dp_new->dir + DIR_FileSize, 0);
+    } else if (type == AM_LNK) {
+        st_dword(dp_new->dir + DIR_FileSize, strlen(target));
+    }
+
+#ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
+    PARENTFS(fs)->wflag = 1;
+#else
+    fs->wflag = 1;
+#endif
+    result = sync_fs(fs);
+    if (result != FR_OK) {
+        goto ERROR_REMOVE_CHAIN;
+    }
+    result = dir_read(dp_new, 0);
+    if (result != FR_OK) {
+        goto ERROR_REMOVE_CHAIN;
+    }
+    dp_new->blk_ofs = dir_ofs(dp_new);
+    get_fileinfo(dp_new, finfo_new);
+    if (type == AM_ARC) {
+        dp_new->obj.objsize = 0;
+    } else if (type == AM_LNK) {
+        dp_new->obj.objsize = strlen(target);
+    }
+
+    ret = VnodeAlloc(&fatfs_vops, &vp);
+    if (ret != 0) {
+        result = FR_NOT_ENOUGH_CORE;
+        goto ERROR_REMOVE_CHAIN;
+    }
+
+    vp->parent = parent;
+    vp->fop = &fatfs_fops;
+    vp->data = dfp_new;
+    vp->originMount = parent->originMount;
+    vp->uid = fs->fs_uid;
+    vp->gid = fs->fs_gid;
+    vp->mode = fatfs_get_mode(finfo_new->fattrib, fs->fs_mode);
+    vp->type = fatfstype_2_vnodetype(type);
+
+    hash = fatfs_hash(dp_new->sect, dp_new->dptr, finfo_new->sclst);
+    ret = VfsHashInsert(vp, hash);
+    if (ret != 0) {
+        result = FR_NOT_ENOUGH_CORE;
+        goto ERROR_REMOVE_CHAIN;
+    }
+    *vpp = vp;
+
+    unlock_fs(fs, FR_OK);
+    FREE_NAMBUF();
+    return fatfs_sync(parent->originMount->mountFlags, fs);
+
+ERROR_REMOVE_CHAIN:
+    remove_chain(&(dp_new->obj), clust, 0);
+ERROR_UNLOCK:
+    unlock_fs(fs, result);
+    FREE_NAMBUF();
+ERROR_FREE:
+    free(dfp_new);
+ERROR_EXIT:
+    return -fatfs_2_vfs(result);
 }
 // fat文件系统对 Lookup 接口的实现
 int fatfs_lookup(struct Vnode *parent, const char *path, int len, struct Vnode **vpp)
@@ -337,120 +587,9 @@ ERROR_EXIT:
 //创建 fat vnode 节点
 int fatfs_create(struct Vnode *parent, const char *name, int mode, struct Vnode **vpp)
 {
-    struct Vnode *vp = NULL;
-    FATFS *fs = (FATFS *)parent->originMount->data;
-    DIR_FILE *dfp;
-    DIR *dp = NULL;
-    FILINFO *finfo = NULL;
-    QWORD time;
-    DWORD hash;
-    FRESULT result;
-    int ret;
-
-    dfp = (DIR_FILE *)zalloc(sizeof(DIR_FILE));
-    if (dfp == NULL) {
-        ret = ENOMEM;
-        goto ERROR_EXIT;
-    }
-    ret = lock_fs(fs);
-    if (ret == FALSE) { /* lock failed */
-        ret = EBUSY;
-        goto ERROR_FREE;
-    }
-
-    finfo = &(dfp->fno);
-    LOS_ListInit(&finfo->fp_list);
-    dp = &(dfp->f_dir);
-    dp->obj.fs = fs;
-    dp->obj.sclust = ((DIR_FILE *)(parent->data))->fno.sclst;
-
-    DEF_NAMBUF;
-    INIT_NAMBUF(fs);
-    result = create_name(dp, &name);
-    if (result != FR_OK) {
-        ret = fatfs_2_vfs(result);
-        goto ERROR_UNLOCK;
-    }
-    result = dir_find(dp);
-    if (result == FR_OK) {
-        ret = EEXIST;
-        goto ERROR_UNLOCK;
-    }
-    result = dir_register(dp);
-    if (result != FR_OK) {
-        ret = fatfs_2_vfs(result);
-        goto ERROR_UNLOCK;
-    }
-    /* Set the directory entry attribute */
-    if (time_status == SYSTEM_TIME_ENABLE) {
-        time = GET_FATTIME();
-    } else {
-        time = 0;
-    }
-    st_dword(dp->dir + DIR_CrtTime, time);
-    st_dword(dp->dir + DIR_ModTime, time);
-    st_word(dp->dir + DIR_LstAccDate, time >> FTIME_DATE_OFFSET);
-    dp->dir[DIR_Attr] = AM_ARC;
-    if (((DWORD)mode & S_IWUSR) == 0) {
-        dp->dir[DIR_Attr] |= AM_RDO;
-    }
-    st_clust(fs, dp->dir, 0);
-    st_dword(dp->dir + DIR_FileSize, 0);
-
-#ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
-    PARENTFS(fs)->wflag = 1;
-#else
-    fs->wflag = 1;
-#endif
-    result = sync_fs(fs);
-    if (result != FR_OK) {
-        ret = fatfs_2_vfs(result);
-        goto ERROR_UNLOCK;
-    }
-    result = dir_read(dp, 0);
-    if (result != FR_OK) {
-        ret = fatfs_2_vfs(result);
-        goto ERROR_UNLOCK;
-    }
-    dp->blk_ofs = dir_ofs(dp);
-    get_fileinfo(dp, finfo);
-    dp->obj.objsize = 0;
-
-    ret = VnodeAlloc(&fatfs_vops, &vp);
-    if (ret != 0) {
-        ret = ENOMEM;
-        goto ERROR_UNLOCK;
-    }
-
-    vp->parent = parent;
-    vp->fop = &fatfs_fops;
-    vp->data = dfp;
-    vp->originMount = parent->originMount;
-    vp->uid = fs->fs_uid;
-    vp->gid = fs->fs_gid;
-    vp->mode = fatfs_get_mode(finfo->fattrib, fs->fs_mode);
-    vp->type = VNODE_TYPE_REG;
-
-    hash = fatfs_hash(dp->sect, dp->dptr, finfo->sclst);
-    ret = VfsHashInsert(vp, hash);
-    if (ret != 0) {
-        ret = EINVAL;
-        goto ERROR_UNLOCK;
-    }
-    *vpp = vp;
-
-    unlock_fs(fs, result);
-    FREE_NAMBUF();
-    return fatfs_sync(parent->originMount->mountFlags, fs);
-
-ERROR_UNLOCK:
-    unlock_fs(fs, result);
-    FREE_NAMBUF();
-ERROR_FREE:
-    free(dfp);
-ERROR_EXIT:
-    return -ret;
+    return fatfs_create_obj(parent, name, mode, vpp, AM_ARC, NULL);
 }
+
 //打开 fat 格式文件
 int fatfs_open(struct file *filep)
 {
@@ -470,7 +609,7 @@ int fatfs_open(struct file *filep)
     ret = lock_fs(fs);
     if (ret == FALSE) {
         ret = EBUSY;
-        goto ERROR_EXIT;
+        goto ERROR_FREE;
     }
 
     fp->dir_sect = dp->sect;
@@ -489,7 +628,7 @@ int fatfs_open(struct file *filep)
     fp->buf = (BYTE*) ff_memalloc(SS(fs));
     if (fp->buf == NULL) {
         ret = ENOMEM;
-        goto ERROR_FREE;
+        goto ERROR_UNLOCK;
     }
     LOS_ListAdd(&finfo->fp_list, &fp->fp_entry);
     unlock_fs(fs, FR_OK);
@@ -497,8 +636,9 @@ int fatfs_open(struct file *filep)
     filep->f_priv = fp;
     return fatfs_sync(vp->originMount->mountFlags, fs);
 
-ERROR_FREE:
+ERROR_UNLOCK:
     unlock_fs(fs, FR_OK);
+ERROR_FREE:
     free(fp);
 ERROR_EXIT:
     return -ret;
@@ -1691,153 +1831,10 @@ int fatfs_mkfs (struct Vnode *device, int sectors, int option)
 
 int fatfs_mkdir(struct Vnode *parent, const char *name, mode_t mode, struct Vnode **vpp)
 {
-    struct Vnode *vp = NULL;
-    FATFS *fs =  (FATFS *)parent->originMount->data;
-    DIR_FILE *dfp = (DIR_FILE *)parent->data;
-    FILINFO *finfo = &(dfp->fno);
-    DIR_FILE *dfp_new = NULL;
-    QWORD sect;
-    DWORD clust;
-    BYTE *dir = NULL;
-    DWORD hash;
-    FRESULT result = FR_OK;
-    int ret;
-    UINT n;
-
-    ret = lock_fs(fs);
-    if (ret == FALSE) {
-        result = FR_TIMEOUT;
-        goto ERROR_OUT;
-    }
-    if (finfo->fattrib & AM_ARC) {
-        result = FR_NO_DIR;
-        goto ERROR_UNLOCK;
-    }
-    DEF_NAMBUF;
-    INIT_NAMBUF(fs);
-
-    dfp_new = (DIR_FILE *)zalloc(sizeof(DIR_FILE));
-    if (dfp_new == NULL) {
-        result = FR_NOT_ENOUGH_CORE;
-        goto ERROR_UNLOCK;
-    }
-    LOS_ListInit(&(dfp_new->fno.fp_list));
-    dfp_new->f_dir.obj.sclust = finfo->sclst;
-    dfp_new->f_dir.obj.fs = fs;
-    result = create_name(&(dfp_new->f_dir), &name);
-    if (result != FR_OK) {
-        goto ERROR_FREE;
-    }
-    result = dir_find(&(dfp_new->f_dir));
-    if (result == FR_OK) {
-        result = FR_EXIST;
-        goto ERROR_FREE;
-    }
-    /* Allocate new chain for directory */
-    clust = create_chain(&(dfp_new->f_dir.obj), 0);
-    if (clust == 0) {
-        result = FR_NO_SPACE_LEFT;
-        goto ERROR_FREE;
-    }
-    if (clust == 1 || clust == DISK_ERROR) {
-        result = FR_DISK_ERR;
-        goto ERROR_FREE;
-    }
-    result = sync_window(fs); /* Flush FAT */
-    if (result != FR_OK) {
-        goto ERROR_REMOVE_CHAIN;
-    }
-    /* Initialize the new directory */
-#ifndef LOSCFG_FS_FAT_VIRTUAL_PARTITION
-    dir = fs->win;
-#else
-    dir = PARENTFS(fs)->win;
-#endif
-
-    sect = clst2sect(fs, clust);
-    mem_set(dir, 0, SS(fs));
-    for (n = fs->csize; n > 0; n--) {    /* Write zero to directory */
-#ifndef LOSCFG_FS_FAT_VIRTUAL_PARTITION
-        fs->winsect = sect++;
-        fs->wflag = 1;
-#else
-        PARENTFS(fs)->winsect = sect++;
-        PARENTFS(fs)->wflag = 1;
-        result = sync_window(fs);
-        if (result != FR_OK) break;
-#endif
-    }
-
-    if (result != FR_OK) {
-        goto ERROR_REMOVE_CHAIN;
-    }
-    result = dir_register(&(dfp_new->f_dir));
-    if (result != FR_OK) {
-        goto ERROR_REMOVE_CHAIN;
-    }
-    dir = dfp_new->f_dir.dir;
-    st_dword(dir + DIR_ModTime, 0); /* Set the time */
-    st_clust(fs, dir, clust); /* Set the start cluster */
-    dir[DIR_Attr] = AM_DIR; /* Set the attrib */
-    if ((mode & S_IWUSR) == 0) {
-        dir[DIR_Attr] |= AM_RDO;
-    }
-#ifndef LOSCFG_FS_FAT_VIRTUAL_PARTITION
-    fs->wflag = 1;
-#else
-    PARENTFS(fs)->wflag = 1;
-#endif
-    result = sync_fs(fs);
-    if (result != FR_OK) {
-        goto ERROR_REMOVE_CHAIN;
-    }
-
-    /* Set the FILINFO struct */
-    result = dir_read(&(dfp_new->f_dir), 0);
-    if (result != FR_OK) {
-        goto ERROR_REMOVE_CHAIN;
-    }
-    dfp_new->f_dir.blk_ofs = dir_ofs(&(dfp_new->f_dir));
-    get_fileinfo(&(dfp_new->f_dir), &(dfp_new->fno));
-
-    ret = VnodeAlloc(&fatfs_vops, &vp);
-    if (ret != 0) {
-        result = FR_NOT_ENOUGH_CORE;
-        goto ERROR_REMOVE_CHAIN;
-    }
-    vp->parent = parent;
-    vp->fop = &fatfs_fops;
-    vp->data = dfp_new;
-    vp->originMount = parent->originMount;
-    vp->uid = fs->fs_uid;
-    vp->gid = fs->fs_gid;
-    vp->mode = fatfs_get_mode(dfp_new->fno.fattrib, fs->fs_mode);
-    vp->type = VNODE_TYPE_DIR;
-
-    hash = fatfs_hash(dfp_new->f_dir.sect, dfp_new->f_dir.dptr, dfp_new->fno.sclst);
-    ret = VfsHashInsert(vp, hash);
-    if (ret != 0) {
-        result = FR_NOT_ENOUGH_CORE;
-        goto ERROR_REMOVE_CHAIN;
-    }
-
-    unlock_fs(fs, FR_OK);
-    FREE_NAMBUF();
-    *vpp = vp;
-    return fatfs_sync(vp->originMount->mountFlags, fs);
-
-ERROR_REMOVE_CHAIN:
-    remove_chain(&(dfp_new->f_dir.obj), clust, 0);
-ERROR_FREE:
-    free(dfp_new);
-ERROR_UNLOCK:
-    unlock_fs(fs, result);
-    FREE_NAMBUF();
-ERROR_OUT:
-    return -fatfs_2_vfs(result);
+    return fatfs_create_obj(parent, name, mode, vpp, AM_DIR, NULL);
 }
 
-int fatfs_rmdir(struct Vnode *parent, struct Vnode *vp, char *name)
+int fatfs_rmdir(struct Vnode *parent, struct Vnode *vp, const char *name)
 {
     FATFS *fs = (FATFS *)vp->originMount->data;
     DIR_FILE *dfp = (DIR_FILE *)vp->data;
@@ -1899,7 +1896,7 @@ int fatfs_reclaim(struct Vnode *vp)
     return 0;
 }
 
-int fatfs_unlink(struct Vnode *parent, struct Vnode *vp, char *name)
+int fatfs_unlink(struct Vnode *parent, struct Vnode *vp, const char *name)
 {
     FATFS *fs = (FATFS *)vp->originMount->data;
     DIR_FILE *dfp = (DIR_FILE *)vp->data;
@@ -2064,6 +2061,56 @@ ERROR_WITH_DIR:
     fatfs_closedir(vp, dir);
     return -fatfs_2_vfs(result);
 }
+int fatfs_symlink(struct Vnode *parentVnode, struct Vnode **newVnode, const char *path, const char *target)
+{
+    return fatfs_create_obj(parentVnode, path, 0, newVnode, AM_LNK, target);
+}
+
+ssize_t fatfs_readlink(struct Vnode *vnode, char *buffer, size_t bufLen)
+{
+    int ret;
+    FRESULT res = FR_OK;
+    DWORD clust;
+    QWORD sect;
+    DIR_FILE *dfp = (DIR_FILE *)(vnode->data);
+    DIR *dp = &(dfp->f_dir);
+    FATFS *fs = dp->obj.fs;
+    FILINFO *finfo = &(dfp->fno);
+    size_t targetLen = finfo->fsize;
+    size_t cnt;
+
+    ret = lock_fs(fs);
+    if (ret == FALSE) {
+        return -EBUSY;
+    }
+
+    clust = finfo->sclst;
+    sect = clst2sect(fs, clust);    /* Get current sector */
+    if (sect == 0) {
+        res = FR_DISK_ERR;
+        goto ERROUT;
+    }
+
+    if (move_window(fs, sect) != FR_OK) {
+        res = FR_DISK_ERR;
+        goto ERROUT;
+    }
+
+    cnt = (bufLen - 1) < targetLen ? (bufLen - 1) : targetLen;
+    ret = LOS_CopyFromKernel(buffer, bufLen, fs->win, cnt);
+    if (ret != EOK) {
+        res = FR_INVALID_PARAMETER;
+        goto ERROUT;
+    }
+    buffer[cnt] = '\0';
+
+    unlock_fs(fs, FR_OK);
+    return cnt;
+
+ERROUT:
+    unlock_fs(fs, res);
+    return -fatfs_2_vfs(res);
+}
 //fatfs 实现vnode接口
 struct VnodeOps fatfs_vops = {
     /* file ops */
@@ -2084,6 +2131,8 @@ struct VnodeOps fatfs_vops = {
     .Mkdir = fatfs_mkdir,
     .Rmdir = fatfs_rmdir,
     .Fscheck = fatfs_fscheck,
+    .Symlink = fatfs_symlink,
+    .Readlink = fatfs_readlink,
 };
 
 struct MountOps fatfs_mops = {

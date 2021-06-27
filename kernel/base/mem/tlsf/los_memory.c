@@ -1595,10 +1595,12 @@ STATIC VOID OsMemPoolHeadCheck(const struct OsMemPoolHead *pool)
                 flag = 1;
                 PRINT_ERR("FreeListIndex: %u, node: %#x, bNode: %#x, prev: %#x, next: %#x\n",
                           index, tmpNode, tmpNode->header.ptr.prev, tmpNode->prev, tmpNode->next);
+                goto OUT;
             }
         }
     }
 
+OUT:
     if (flag) {
         PRINTK("mem pool info: poolAddr: %#x, poolSize: 0x%x\n", pool, pool->info.totalSize);
 #if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)

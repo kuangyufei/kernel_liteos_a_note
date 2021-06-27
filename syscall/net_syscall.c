@@ -31,8 +31,7 @@
 
 #include "syscall_pub.h"
 #include "stdlib.h"
-#include "fs_file.h"
-#include "fs/fs.h"
+#include "fs/file.h"
 #include "los_process_pri.h"
 #include "los_signal.h"
 #include "los_syscall.h"

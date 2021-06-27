@@ -29,9 +29,8 @@
  */
 
 #include "fs/mount.h"
-#include "fs/vfs_util.h"
-#include "fs/path_cache.h"
-#include "fs/vnode.h"
+#include "path_cache.h"
+#include "vnode.h"
 #ifdef LOSCFG_DRIVERS_RANDOM
 #include "hisoc/random.h"
 #else

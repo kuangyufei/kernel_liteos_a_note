@@ -145,17 +145,6 @@ HWTEST_F(PosixMqueueTest, ItPosixQueue053, TestSize.Level0)
 }
 
 /* *
- * @tc.name: IT_POSIX_QUEUE_144
- * @tc.desc: function for PosixMqueueTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(PosixMqueueTest, ItPosixQueue144, TestSize.Level0)
-{
-    ItPosixQueue144();
-}
-
-/* *
  * @tc.name: IT_POSIX_QUEUE_028
  * @tc.desc: function for PosixMqueueTest
  * @tc.type: FUNC
@@ -1089,15 +1078,16 @@ HWTEST_F(PosixMqueueTest, ItPosixQueue130, TestSize.Level0)
     ItPosixQueue130();
 }
 
-/**
- * @tc.name: IT_POSIX_QUEUE_133
+/* *
+ * @tc.name: IT_POSIX_QUEUE_144
  * @tc.desc: function for PosixMqueueTest
  * @tc.type: FUNC
  * @tc.require: AR000EEMQ9
  */
-/*
-
-*/
+HWTEST_F(PosixMqueueTest, ItPosixQueue144, TestSize.Level0)
+{
+    ItPosixQueue144();
+}
 
 /**
  * @tc.name: IT_POSIX_QUEUE_147

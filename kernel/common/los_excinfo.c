@@ -31,9 +31,6 @@
 
 #include "los_base.h"
 #include "los_hwi.h"
-#ifdef LOSCFG_FS_VFS
-#include "fs/fs.h"
-#endif
 #ifdef LOSCFG_SHELL
 #include "shcmd.h"
 #endif

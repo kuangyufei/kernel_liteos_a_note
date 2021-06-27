@@ -599,7 +599,7 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, c
 
 #ifdef LOSCFG_KERNEL_VM
     if (OsProcessIsUserMode(processCB)) {
-        processCB->vmSpace = OsCreateUserVmSapce();
+        processCB->vmSpace = OsCreateUserVmSpace();
         if (processCB->vmSpace == NULL) {
             processCB->processStatus = OS_PROCESS_FLAG_UNUSED;
             return LOS_ENOMEM;
@@ -1816,6 +1816,51 @@ LITE_OS_SEC_TEXT VOID LOS_Exit(INT32 status)
     OsTaskExitGroup((UINT32)status);
     OsProcessExit(OsCurrTaskGet(), (UINT32)status);
 }
+LITE_OS_SEC_TEXT INT32 LOS_GetUsedPIDList(UINT32 *pidList, INT32 pidMaxNum)
+{
+    LosProcessCB *pcb = NULL;
+    INT32 num = 0;
+    UINT32 intSave;
+    UINT32 pid = 1;
+
+    if (pidList == NULL) {
+        return 0;
+    }
+    SCHEDULER_LOCK(intSave);
+    while (OsProcessIDUserCheckInvalid(pid) == false) {
+        pcb = OS_PCB_FROM_PID(pid);
+        pid++;
+        if (OsProcessIsUnused(pcb)) {
+            continue;
+        }
+        pidList[num] = pcb->processID;
+        num++;
+        if (num >= pidMaxNum) {
+            break;
+        }
+    }
+    SCHEDULER_UNLOCK(intSave);
+    return num;
+}
+
+#ifdef LOSCFG_FS_VFS
+LITE_OS_SEC_TEXT struct fd_table_s *LOS_GetFdTable(UINT32 pid)
+{
+    LosProcessCB *pcb = NULL;
+    struct files_struct *files = NULL;
+
+    if (OS_PID_CHECK_INVALID(pid)) {
+        return NULL;
+    }
+    pcb = OS_PCB_FROM_PID(pid);
+    files = pcb->files;
+    if (files == NULL) {
+        return NULL;
+    }
+
+    return files->fdt;
+}
+#endif
 
 LITE_OS_SEC_TEXT UINT32 LOS_GetCurrProcessID(VOID)
 {

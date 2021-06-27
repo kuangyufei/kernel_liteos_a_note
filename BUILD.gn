@@ -79,5 +79,5 @@ build_ext_component("make") {
   }
   prebuilts = "sh build.sh ${board_name} ${ohos_build_compiler} ${root_build_dir} ${ohos_build_type} ${tee_enable} \"${device_company}\" \"${product_path}\""
   outdir = rebase_path(get_path_info(".", "out_dir"))
-  command = "make clean OUTDIR=$outdir && make rootfs VERSION=\"${ohos_version}\" -j 16 OUTDIR=$outdir"
+  command = "make clean OUTDIR=$outdir PRODUCT_PATH=\"${product_path}\" && make rootfs VERSION=\"${ohos_version}\" PRODUCT_PATH=\"${product_path}\" -j 16 OUTDIR=$outdir"
 }

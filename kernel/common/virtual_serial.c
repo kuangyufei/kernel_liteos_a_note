@@ -36,9 +36,9 @@
 #endif
 #ifdef LOSCFG_FS_VFS
 #include "console.h"
+#include "fs/driver.h"
 #endif
 
-#include "fs/path_cache.h"
 /*
 UART 简介
 UART（Universal Asynchronous Receiver/Transmitter）通用异步收发传输器，UART 作为异步串口通信协议的一种，

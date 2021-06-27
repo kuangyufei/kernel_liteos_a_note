@@ -160,6 +160,10 @@ typedef size_t             BOOL;
 #define LOS_EACCES         13
 #endif
 
+#ifndef LOS_EFAULT
+#define LOS_EFAULT         14
+#endif
+
 #ifndef LOS_EBUSY
 #define LOS_EBUSY          16
 #endif

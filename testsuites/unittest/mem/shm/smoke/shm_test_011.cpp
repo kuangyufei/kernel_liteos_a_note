@@ -49,6 +49,8 @@ static int Testcase(void)
             exit(1);
         }
         *shared = 2;
+        ret = shmdt(shared);
+        ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);
         exit(0);
     } else {
         usleep(20000);
@@ -59,12 +61,13 @@ static int Testcase(void)
 
         ret = shmdt(shared);
         ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);
-        ret = shmctl(shmid, IPC_RMID, NULL);
-        ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);
 
         wait(&status);
         status = WEXITSTATUS(status);
         ICUNIT_ASSERT_EQUAL(status, 0, status);
+
+        ret = shmctl(shmid, IPC_RMID, NULL);
+        ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);
     }
 
     return 0;

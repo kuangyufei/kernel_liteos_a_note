@@ -33,7 +33,8 @@
 #include "fcntl.h"
 #include "linux/kernel.h"
 #include "los_process_pri.h"
-#include "fs/fs.h"
+#include "fs/file.h"
+#include "fs/driver.h"
 
 EVENT_CB_S g_qsEvent;
 static SysteminitHook g_systemInitFunc[QS_STAGE_CNT] = {0};

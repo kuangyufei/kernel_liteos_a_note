@@ -81,7 +81,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_NOT_EQUAL((ret & OS_TASK_STATUS_PEND), 0, ret, EXIT);
 
     ret = LOS_EventDestroy(&g_event);
-    ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_EVENT_SHOULD_NOT_DESTORY, ret, EXIT);
+    ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_EVENT_SHOULD_NOT_DESTROY, ret, EXIT);
     ICUNIT_GOTO_EQUAL(g_testCount, 1, g_testCount, EXIT);
 
 EXIT:

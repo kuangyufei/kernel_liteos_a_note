@@ -34,8 +34,6 @@
 
 #include "los_config.h"
 #include "linux/wait.h"
-#include "fs/fs.h"
-#include "fs_poll_pri.h"
 
 #ifdef __cplusplus
 #if __cplusplus

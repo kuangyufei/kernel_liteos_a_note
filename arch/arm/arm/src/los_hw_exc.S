@@ -182,6 +182,7 @@ _osExceptUndefInstrHdl:@出现未定义的指令处理
     MOV     R2, #0
     MOV     R3, #0
     STMFD   SP!, {R2-R3}                                      @ far and fsr fields, are 0 under this anomaly
+    STMFD   SP!, {R4-R11}
 
     MOV     R0, #OS_EXCEPT_UNDEF_INSTR                        @ Set exception ID to OS_EXCEPT_UNDEF_INSTR.
 
@@ -332,6 +333,14 @@ _osExceptDataAbortHdl: @数据异常处理,缺页就属于数据异常
 #ifdef LOSCFG_KERNEL_VM
 _osExcPageFaultReturn:
     LDMFD  SP!, {R4-R11}
+
+    MOV     R0, SP
+    STR     R7, [SP, #0]
+    SUB     SP, SP, #(12 * 4)                                @ sp - sizeof(IrqContext), reserved for signal
+    MOV     R1, SP
+    BLX     OsSaveSignalContext
+    MOV     SP, R0
+
     ADD    SP, SP, #(2 * 4)
     LDMFD  SP, {R13, R14}^
     ADD    SP, SP, #(2 * 4)                                  @ Jump reserved fileds

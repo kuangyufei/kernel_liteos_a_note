@@ -1469,6 +1469,51 @@ static err_t lwip_do_ioctl_impl(struct tcpip_api_call_data *call)
 
 #include "los_vm_map.h"
 #include "user_copy.h"
+static int do_ioctl_SIOCGIFCONF(int sockfd, long cmd, void *argp)
+{
+    int nbytes;
+    struct ifconf ifc;
+    char *buf_bak = NULL;
+    int ret;
+
+    if (LOS_ArchCopyFromUser(&ifc, argp, sizeof(struct ifconf)) != 0) {
+        set_errno(EFAULT);
+        return -1;
+    }
+    nbytes = ifc.ifc_len;
+    if (nbytes < 0) {
+        set_errno(EINVAL);
+        return -1;
+    }
+    buf_bak = ifc.ifc_buf;
+    if (!LOS_IsUserAddress((VADDR_T)(uintptr_t)buf_bak)) {
+        set_errno(EFAULT);
+        return -1;
+    }
+    ifc.ifc_buf = malloc(nbytes);
+    if (ifc.ifc_buf == NULL) {
+        set_errno(ENOMEM);
+        return -1;
+    }
+    (void)memset_s(ifc.ifc_buf, nbytes, 0, nbytes);
+
+    ret = lwip_ioctl(sockfd, cmd, &ifc);
+    if (ret == 0) {
+        if (LOS_ArchCopyToUser(buf_bak, ifc.ifc_buf, nbytes) != 0) {
+            set_errno(EFAULT);
+            ret = -1;
+        }
+    }
+
+    free(ifc.ifc_buf);
+    ifc.ifc_buf = buf_bak;
+    if (LOS_ArchCopyToUser(argp, &ifc, sizeof(struct ifconf)) != 0) {
+        set_errno(EFAULT);
+        ret = -1;
+    }
+    return ret;
+}
+
 int socks_ioctl(int sockfd, long cmd, void *argp)
 {
     void *argpbak = argp;
@@ -1484,11 +1529,12 @@ int socks_ioctl(int sockfd, long cmd, void *argp)
             case SIOCADDRT:
                 nbytes = sizeof(struct rtentry);
                 break;
+            case SIOCGIFCONF:
+                return do_ioctl_SIOCGIFCONF(sockfd, cmd, argp);
             case SIOCSIPV6DAD:
             case SIOCGIPV6DAD:
             case SIOCSIPV6DPCTD:
             case SIOCGIPV6DPCTD:
-            case SIOCGIFCONF:
             case SIOCGIFADDR:
             case SIOCSIFADDR:
             case SIOCDIFADDR:

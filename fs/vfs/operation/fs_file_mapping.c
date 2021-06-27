@@ -30,7 +30,7 @@
  */
 
 #include "fs/file.h"
-#include "fs/fs.h"
+#include "fs/file.h"
 #include "fs/fs_operation.h"
 #include "unistd.h"
 #include "los_mux.h"
@@ -42,7 +42,7 @@
 
 static struct file_map g_file_mapping = {0};//用于挂载所有文件的file_map
 
-#if 0 //@note_#if0
+#if 0 
 定义见于 ..\third_party\NuttX\include\nuttx\fs\fs.h
 typedef volatile INT32 Atomic;
 //page_mapping描述的是一个文件在内存中被映射了多少页,<文件,文件页的关系>
@@ -95,7 +95,7 @@ uint init_file_mapping()
 
     LOS_ListInit(&g_file_mapping.head);//初始化全局文件映射节点，所有文件的映射都将g_file_mapping.head挂在链表上
 
-    ret = LOS_MuxInit(&g_file_mapping.lock, NULL);;//初始化文件映射互斥锁
+    ret = LOS_MuxInit(&g_file_mapping.lock, NULL);//初始化文件映射互斥锁
     if (ret != LOS_OK) {
         PRINT_ERR("Create mutex for file map of page cache failed, (ret=%u)\n", ret);
     }
@@ -327,11 +327,34 @@ int update_file_path(const char *old_path, const char *new_path)
             continue;
         }
         int len = strlen(new_path) + 1;
-        filp->f_path = zalloc(len);
-        strncpy_s(filp->f_path, strlen(new_path) + 1, new_path, len);
+        char *tmp_path = LOS_MemAlloc(m_aucSysMem0, len);
+        if (tmp_path == NULL) {
+            PRINT_ERR("%s-%d: Mem alloc failed, path length(%d)\n", __FUNCTION__, __LINE__, len);
+            ret = VFS_ERROR;
+            goto out;
+        }
+        ret = strncpy_s(tmp_path, strlen(new_path) + 1, new_path, len);
+        if (ret != 0) {
+            (VOID)LOS_MemFree(m_aucSysMem0, tmp_path);
+            PRINT_ERR("%s-%d: strcpy failed.\n", __FUNCTION__, __LINE__);
+            ret = VFS_ERROR;
+            goto out;
+        }
+        free(filp->f_path);
+        filp->f_path = tmp_path;
     }
+    ret = LOS_OK;
+
+out:
     (VOID)LOS_MuxUnlock(&g_file_mapping.lock);
     (void)sem_post(&f_list->fl_sem);
-    return LOS_OK;
+    return ret;
 }
+
+#ifdef LOSCFG_DEBUG_VERSION
+struct file_map* GetFileMappingList(void)
+{
+    return &g_file_mapping;
+}
+#endif
 #endif

@@ -32,7 +32,7 @@
 #ifndef FS_OPERATION_H
 #define FS_OPERATION_H
 
-#include "fs/fs.h"
+#include "fs/file.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -268,64 +268,6 @@ extern void ls(const char *pathname);
  */
 
 extern int los_set_systime_status(BOOL b_status);
-
-/**
- * @ingroup  fs
- * @check the three latest files in path
- *
- * @par Description:
- * The fscheck() function check the latest three files in path and subdirectories.
- * The function will fix the FAT when the file size info of directory is not matched with FAT.
- *
- * @attention
- * <ul>
- * <li>This function only support for FAT32.</li>
- * </ul>
- *
- * @param  path     [IN] Type #const char *   The path of the directory to be checked.
- *
- * @retval #0      truncate success.
- * @retval #-1     truncate failed.
- *
- * @par Dependency:
- * <ul><li>fs.h: the header file that contains the API declaration.</li></ul>
- * @see
- *
- */
-
-int fscheck(const char *path);
-
-#ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
-/**
- * @ingroup  fs
- * @get the virtual partitions' or free space information in virtual parition feature.
- *
- * @par Description:
- * The virstatfs() function returns the information about the a virtual partition or the free space
- * outside the virtual partition.
- *
- * @attention
- * <ul>
- * <li>This function only support for FAT32.</li>
- * <li>This function only support for the virtual partition feature.</li>
- * <li>The parameter 'buf' need to be allocate enough memeory space outside the function first.</li>
- * </ul>
- *
- * @param  path     [IN]  Type #const char *   The path which virtual partition or free space to be checked.
- * @param  buf      [OUT] Type #struct statfs *   The statfs buffer saving the information.
- *
- * @retval #0      virstatfs success.
- * @retval #-1     virstatfs failed.
- *
- * @par Dependency:
- * <ul><li>fs.h: the header file that contains the API declaration.</li></ul>
- * @see
- *
- */
-
-extern int virstatfs(const char *path, struct statfs *buf);
-
-#endif
 
 /**
  * @ingroup fs

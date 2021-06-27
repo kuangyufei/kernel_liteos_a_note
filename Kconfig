@@ -42,11 +42,9 @@ choice
 
 config COMPILER_HIMIX_32
     bool "arm-linux-ohoseabi"
-    depends on PLATFORM_HI3518EV300 || PLATFORM_HI3516DV300 || PLATFORM_QEMU_ARM_VIRT_CA7
 
 config COMPILER_CLANG_LLVM
     bool "clang-llvm"
-    depends on PLATFORM_HI3518EV300 || PLATFORM_HI3516DV300 || PLATFORM_QEMU_ARM_VIRT_CA7
 
 endchoice
 endmenu
@@ -281,13 +279,6 @@ config VM_OVERLAP_CHECK
     depends on DEBUG_VERSION && MEM_DEBUG
     help
       Answer Y to enable vm overlap check.
-
-config NULL_ADDRESS_PROTECT
-    bool "Enable NULL Address protect"
-    default n
-    depends on (PLATFORM_HI3518EV200 || PLATFORM_HI3516CV300 || PLATFORM_HI3518EV300 || PLATFORM_HI3516DV300 || PLATFORM_QEMU_ARM_VIRT_CA7) && DEBUG_VERSION
-    help
-      Answer Y to set mem address 0~1M prohibit to access, read or write will trigger exception.
 
 endmenu
 

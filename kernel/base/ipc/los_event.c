@@ -331,7 +331,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventDestroy(PEVENT_CB_S eventCB)
     SCHEDULER_LOCK(intSave);
     if (!LOS_ListEmpty(&eventCB->stEventList)) {
         SCHEDULER_UNLOCK(intSave);
-        return LOS_ERRNO_EVENT_SHOULD_NOT_DESTORY;
+        return LOS_ERRNO_EVENT_SHOULD_NOT_DESTROY;
     }
 
     eventCB->uwEventID = 0;

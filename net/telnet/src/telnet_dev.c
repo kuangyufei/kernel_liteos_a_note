@@ -47,7 +47,7 @@
 #include "lwip/sockets.h"
 #include "telnet_pri.h"
 
-#include "fs/vnode.h"
+#include "fs/driver.h"
 
 /* event: there are more commands left in the FIFO to run */
 #define TELNET_EVENT_MORE_CMD   0x01

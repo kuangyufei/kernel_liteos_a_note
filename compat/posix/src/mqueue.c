@@ -38,7 +38,7 @@
 #include "los_memory.h"
 #include "los_vm_map.h"
 #include "los_process_pri.h"
-#include "fs_file.h"
+#include "fs/file.h"
 #include "user_copy.h"
 
 

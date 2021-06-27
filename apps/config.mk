@@ -37,7 +37,7 @@ LIBSOUT := $(OBJOUT)/libs
 IMGOUT  := $(OUT)
 
 # common flags config
-BASE_OPTS := -ffunction-sections -fdata-sections -fno-omit-frame-pointer -D_GNU_SOURCE \
+BASE_OPTS := -ffunction-sections -fdata-sections -fno-omit-frame-pointer -fno-common -fno-strict-aliasing -D_GNU_SOURCE \
              $(LITEOS_SSP) $(LITEOS_CORE_COPTS) $(WARNING_AS_ERROR) $(LLVM_EXTRA_OPTS) $(LITEOS_GCOV_OPTS)
 
 CFLAGS := -std=c99 -fno-exceptions $(BASE_OPTS) $(LITEOS_COPTS_OPTMIZE)

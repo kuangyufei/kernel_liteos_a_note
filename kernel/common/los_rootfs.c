@@ -35,7 +35,6 @@
 #include "mtd_partition.h"
 #endif
 #ifdef LOSCFG_DRIVERS_MMC
-#include "mmc/block.h"
 #include "disk.h"
 #endif
 #include "sys/mount.h"
@@ -43,13 +42,14 @@
 #include "los_rootfs.h"
 #endif
 #include "mtd_list.h"
-#include "fs/path_cache.h"
+#include "fs/driver.h"
 
 #ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
 #include "mtd_partition.h"
 #include "cfiflash.h"
 #define DEV_STORAGE_PATH        "/dev/cfiflash1"
 #define SECOND_MTD_PART_NUM 1
+#define STORAGE_SIZE 0x1400000
 #endif
 
 #ifdef LOSCFG_STORAGE_SPINOR
@@ -102,25 +102,29 @@ los_disk *GetMmcDisk(UINT8 type)//type值( EMMC |
 #endif
 
 #ifdef LOSCFG_STORAGE_EMMC
-STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize)//在EMMC介质上增加一个根文件系统分区
-{
+struct disk_divide_info *StorageBlockGetEmmc(void);
+struct block_operations *StorageBlockGetMmcOps(void);
+char *StorageBlockGetEmmcNodeName(void *block);
+
+STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize, INT32 userAddr, INT32 userSize)
+{//在EMMC介质上增加一个根文件系统分区
     INT32 ret;
 
-    struct mmc_block *block = (struct mmc_block *)((struct drv_data *)g_emmcDisk->dev->data)->priv;
-    const char *node_name = mmc_block_get_node_name(block);
+    void *block = ((struct drv_data *)g_emmcDisk->dev->data)->priv;
+    const char *node_name = StorageBlockGetEmmcNodeName(block);
     if (los_disk_deinit(g_emmcDisk->disk_id) != ENOERR) {
         PRINT_ERR("Failed to deinit emmc disk!\n");
         return NULL;
     }
 
-    struct disk_divide_info *emmc = get_emmc();//获取emmc,将完善其分区信息
+    struct disk_divide_info *emmc = StorageBlockGetEmmc();
     ret = add_mmc_partition(emmc, rootAddr / EMMC_SEC_SIZE, rootSize / EMMC_SEC_SIZE);
     if (ret != LOS_OK) {
         PRINT_ERR("Failed to add mmc root partition!\n");
         return NULL;
     } else {
-        UINT64 storageStartCnt = (rootAddr + rootSize) / EMMC_SEC_SIZE;
-        UINT64 storageSizeCnt = STORAGE_SIZE / EMMC_SEC_SIZE;
+        UINT64 storageStartCnt = userAddr / EMMC_SEC_SIZE;
+        UINT64 storageSizeCnt = userSize / EMMC_SEC_SIZE;
         UINT64 userdataStartCnt = storageStartCnt + storageSizeCnt;
         UINT64 userdataSizeCnt = g_emmcDisk->sector_count - userdataStartCnt;
         ret = add_mmc_partition(emmc, storageStartCnt, storageSizeCnt);
@@ -137,7 +141,7 @@ STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize)//在EMMC介
             PRINT_ERR("Failed to alloc disk %s!\n", node_name);
             return NULL;
         }//磁盘初始化
-        if (los_disk_init(node_name, mmc_block_get_bops(block), (void *)block, diskId, emmc) != ENOERR) {
+        if (los_disk_init(node_name, StorageBlockGetMmcOps(), block, diskId, emmc) != ENOERR) {
             PRINT_ERR("Failed to init emmc disk!\n");
             return NULL;
         }
@@ -146,7 +150,7 @@ STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize)//在EMMC介
 }
 #endif
 //系统可以有多个根文件系统并存,可放在 USB,SD卡,flash上
-STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSize)
+STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSize, INT32 userAddr, INT32 userSize)
 {
     const CHAR *rootDev = NULL;
 
@@ -158,7 +162,7 @@ STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSi
             PRINT_ERR("Failed to add spinor/spinand root partition!\n");
         } else {
             rootDev = FLASH_DEV_NAME;
-            ret = add_mtd_partition(FLASH_TYPE, (rootAddr + rootSize), STORAGE_SIZE, SECOND_MTD_PART_NUM);
+            ret = add_mtd_partition(FLASH_TYPE, userAddr, userSize, SECOND_MTD_PART_NUM);
             if (ret != LOS_OK) {
                 PRINT_ERR("Failed to add spinor/spinand storage partition!\n");
             }
@@ -185,7 +189,7 @@ STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSi
 
 #ifdef LOSCFG_STORAGE_EMMC
     if (strcmp(rootType, "emmc") == 0) {//磁盘启动
-        rootDev = AddEmmcRootfsPart(rootAddr, rootSize);
+        rootDev = AddEmmcRootfsPart(rootAddr, rootSize, userAddr, userSize);
     } else
 #endif
 
@@ -337,12 +341,14 @@ ERROUT:
     return LOS_NOK;
 }
 //匹配根文件系统信息
-STATIC INT32 MatchRootInfo(CHAR *p, CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 *rootSize)
+STATIC INT32 MatchRootInfo(CHAR *p, CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 *rootSize, INT32 *userAddr, INT32 *userSize)
 {
     const CHAR *rootName = "root=";
     const CHAR *fsName = "fstype=";
     const CHAR *rootAddrName = "rootaddr=";
     const CHAR *rootSizeName = "rootsize=";
+    const CHAR *userAddrName = "useraddr=";
+    const CHAR *userSizeName = "usersize=";
 
     if ((*rootType == NULL) && (strncmp(p, rootName, strlen(rootName)) == 0)) {
         *rootType = strdup(p + strlen(rootName));
@@ -374,10 +380,24 @@ STATIC INT32 MatchRootInfo(CHAR *p, CHAR **rootType, CHAR **fsType, INT32 *rootA
         }
     }
 
+    if (*userAddr < 0) {
+        if (MatchRootPos(p, userAddrName, userAddr) != LOS_OK) {
+            return LOS_NOK;
+        } else if (*userAddr >= 0) {
+            return LOS_OK;
+        }
+    }
+
+    if (*userSize < 0) {
+        if (MatchRootPos(p, userSizeName, userSize) != LOS_OK) {
+            return LOS_NOK;
+        }
+    }
+
     return LOS_OK;
 }
 //获取根类型
-STATIC INT32 GetRootType(CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 *rootSize)
+STATIC INT32 GetRootType(CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 *rootSize, INT32 *userAddr, INT32 *userSize)
 {
     CHAR *args = NULL;
     CHAR *p = NULL;
@@ -392,7 +412,7 @@ STATIC INT32 GetRootType(CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 
 #endif
     p = strsep(&args, " ");
     while (p != NULL) {
-        if (MatchRootInfo(p, rootType, fsType, rootAddr, rootSize) != LOS_OK) {
+        if (MatchRootInfo(p, rootType, fsType, rootAddr, rootSize, userAddr, userSize) != LOS_OK) {
             goto ERROUT;
         }
         p = strsep(&args, " ");
@@ -528,6 +548,8 @@ INT32 OsMountRootfs(VOID)
     INT32 err;
     INT32 rootAddr = -1;
     INT32 rootSize = -1;
+    INT32 userAddr = -1;
+    INT32 userSize = -1;
     CHAR *rootType = NULL;
     CHAR *fsType = NULL;
     const CHAR *rootDev = NULL;
@@ -538,15 +560,17 @@ INT32 OsMountRootfs(VOID)
     rootAddr = ROOTFS_FLASH_ADDR;
     rootSize = ROOTFS_FLASH_SIZE;
 #else
-    ret = GetRootType(&rootType, &fsType, &rootAddr, &rootSize);
+    ret = GetRootType(&rootType, &fsType, &rootAddr, &rootSize, &userAddr, &userSize);
     if (ret != LOS_OK) {
         return ret;
     }
     rootAddr = (rootAddr >= 0) ? rootAddr : ROOTFS_FLASH_ADDR;
     rootSize = (rootSize >= 0) ? rootSize : ROOTFS_FLASH_SIZE;
 #endif
+    userAddr = (userAddr >= 0) ? userAddr : rootAddr + rootSize;
+    userSize = (userSize >= 0) ? userSize : STORAGE_SIZE;
 
-    rootDev = GetDevName(rootType, rootAddr, rootSize);//
+    rootDev = GetDevName(rootType, rootAddr, rootSize, userAddr, userSize);
     if (rootDev != NULL) {
         ret = OsMountRootfsAndUserfs(rootDev, fsType);//将根设备挂到 /下， 
         if (ret != LOS_OK) {

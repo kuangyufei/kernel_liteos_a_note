@@ -40,6 +40,7 @@
 #ifdef LOSCFG_FS_PROC
 #include "linux/spinlock.h"
 #include "asm/atomic.h"
+#include "vnode.h"
 #include "fs/file.h"
 #include "los_seq_buf.h"
 
@@ -88,6 +89,8 @@ struct ProcFileOperations {
 };
 //proc 目录/文件项, @notethinking 直接叫 ProcEntry不香吗 ?
 struct ProcDirEntry {//这才是能操作 /proc的 真正结构体
+    uint uid;
+    uint gid;
     mode_t mode;	//模式(读|写...)
     int flags;	//标签
     const struct ProcFileOperations *procFileOps;//驱动程序,每个 /proc 下目录的驱动程序都不一样

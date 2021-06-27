@@ -52,7 +52,9 @@ HWTEST_F(ProcessRwlockTest, ItTestPthreadRwlock001, TestSize.Level0)
 {
     ItTestPthreadRwlock001();
 }
+#endif
 
+#if defined(LOSCFG_USER_TEST_FULL)
 /* *
  * @tc.name: it_test_pthread_rwlock_002
  * @tc.desc: function for ProcessRwlockTest

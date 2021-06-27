@@ -35,45 +35,42 @@
 #include <sys/mount.h>
 #include <sys/statfs.h>
 
-#include "fs/file.h"
+#include "fs/mount.h"
 #include "internal.h"
 //显示文件系统类型,将被作为回调函数回调           cat /proc/mounts 显示的每项内容
-static int ShowType(const char *mountPoint, struct statfs *statBuf, void *arg)
+static int ShowType(const char *devPoint, const char *mountPoint, struct statfs *statBuf, void *arg)
 {
     struct SeqBuf *seqBuf = (struct SeqBuf *)arg;
     char *type = NULL;
-    char *name = NULL;
 
     switch (statBuf->f_type) {//目前鸿蒙支持的文件系统
         case PROCFS_MAGIC:	//虚拟文件系统，通过它可以使鸿蒙在内核空间和用户空间之间进行通信
             type = "proc";
-            name = "proc";
             break;
         case JFFS2_SUPER_MAGIC:
             type = "jffs2";	//基于 nor flash的文件系统
-            name = "jffs2";
             break;
         case NFS_SUPER_MAGIC://网络文件系统
             type = "nfs";
-            name = "nfs";
             break;
         case TMPFS_MAGIC://tmpfs /mnt/wsl  windows10的 wsl 实现是 tmpfs方式
             type = "tmpfs";	//内存文件系统
-            name = "tmpfs";
             break;
         case MSDOS_SUPER_MAGIC:
             type = "vfat";
-            name = "fat";
             break;
         case ZPFS_MAGIC:
             type = "zpfs";
-            name = "zpfs";
             break;
         default:
             return 0;
     }
-	
-    (void)LosBufPrintf(seqBuf, "%s %s %s\n", name, mountPoint, type);//打印到 seqBuf 中,即 arg中
+
+    if (strlen(devPoint) == 0) {
+        (void)LosBufPrintf(seqBuf, "%s %s %s %s %d %d\n", type, mountPoint, type, "()", 0, 0);
+    } else {
+        (void)LosBufPrintf(seqBuf, "%s %s %s %s %d %d\n", devPoint, mountPoint, type, "()", 0, 0);
+    }
 
     return 0;
 }

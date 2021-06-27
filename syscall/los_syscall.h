@@ -32,13 +32,11 @@
 #ifndef _LOS_SYSCALL_H
 #define _LOS_SYSCALL_H
 
+#include <sys/statfs.h>
 #include "los_typedef.h"
 #include "los_task.h"
 #include "los_mux.h"
 #include "los_signal.h"
-#ifdef LOSCFG_FS_VFS
-#include "fs/fs.h"
-#endif
 #include "syscall.h"
 #include "sysinfo.h"
 #include "time_posix.h"
@@ -60,11 +58,11 @@
 #ifdef LOSCFG_FS_VFS
 #include "sys/socket.h"
 #include "dirent.h"
-#include "fs/fs.h"
+#include "fs/file.h"
 #endif
 #include <sys/wait.h>
 #include "sys/resource.h"
-
+#include "vnode.h"
 /*********************************************************
 https://blog.csdn.net/piyongduo3393/article/details/89378243
 
@@ -243,6 +241,12 @@ extern ssize_t SysRead(int fd, void *buf, size_t nbytes);
 extern ssize_t SysWrite(int fd, const void *buf, size_t nbytes);
 extern int SysOpen(const char *path, int oflags, ...);
 extern int SysCreat(const char *pathname, mode_t mode);
+extern int SysLink(const char *path1, const char *path2);
+extern ssize_t SysReadlink(const char *pathname, char *buf, size_t bufsize);
+extern int SysSymlink(const char *target, const char *linkpath);
+extern int SysLinkat(int olddirfd, const char *oldpath, int newdirfd, const char *newpath, int flags);
+extern int SysSymlinkat(const char *target, int dirfd, const char *linkpath);
+extern ssize_t SysReadlinkat(int dirfd, const char *pathname, char *buf, size_t bufsize);
 extern int SysUnlink( const char *pathname);
 extern int SysExecve(const char *fileName, char *const *argv, char *const *envp);
 extern int SysChdir(const char *path);

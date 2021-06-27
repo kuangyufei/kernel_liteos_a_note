@@ -47,10 +47,8 @@
 #include "los_exc_pri.h"
 #include "los_process_pri.h"
 #include "los_sched_pri.h"
-#include "fs/path_cache.h"
-#include "fs/vfs_util.h"
 #include "user_copy.h"
-#include "fs/vnode.h"
+#include "fs/driver.h"
 
 #define EACH_CHAR 1
 #define UART_IOC_MAGIC   'u'
@@ -183,7 +181,7 @@ BOOL IsConsoleOccupied(const CONSOLE_CB *consoleCB)
 
 STATIC INT32 ConsoleCtrlCaptureLine(CONSOLE_CB *consoleCB)
 {
-    struct termios consoleTermios;
+    struct termios consoleTermios = {0};
     UINT32 intSave;
 
     LOS_SpinLockSave(&g_consoleSpin, &intSave);
@@ -197,7 +195,7 @@ STATIC INT32 ConsoleCtrlCaptureLine(CONSOLE_CB *consoleCB)
 
 STATIC INT32 ConsoleCtrlCaptureChar(CONSOLE_CB *consoleCB)
 {
-    struct termios consoleTermios;
+    struct termios consoleTermios = {0};
     UINT32 intSave;
 
     LOS_SpinLockSave(&g_consoleSpin, &intSave);
@@ -865,11 +863,10 @@ STATIC INT32 ConsoleGetWinSize(unsigned long arg)
         .ws_row = DEFAULT_WINDOW_SIZE_ROW
     };
 
-    if(LOS_ArchCopyToUser((VOID *)arg, &kws, sizeof(struct winsize)) != 0) {
+    if (LOS_CopyFromKernel((VOID *)arg, sizeof(struct winsize), &kws, sizeof(struct winsize)) != 0) {
         return -EFAULT;
-    } else {
-        return LOS_OK;
     }
+    return LOS_OK;
 }
 
 STATIC INT32 ConsoleGetTermios(unsigned long arg)
@@ -1029,7 +1026,7 @@ termios 结构是在POSIX规范中定义的标准接口，它类似于系统V中
 */
 STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
 {
-    struct termios consoleTermios;
+    struct termios consoleTermios = {0};
 //c_cc[VINTR] 默认对应的控制符是^C，作用是清空输入和输出队列的数据并且向tty设备的前台进程组中的
 //每一个程序发送一个SIGINT信号，对SIGINT信号没有定义处理程序的进程会马上退出。
     if ((deviceName != NULL) &&

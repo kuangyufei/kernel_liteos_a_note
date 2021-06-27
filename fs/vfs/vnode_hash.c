@@ -29,7 +29,8 @@
  */
 
 #include "los_mux.h"
-#include "fs/vnode.h"
+#include "vnode.h"
+#include "fs/mount.h"
 
 
 #define VNODE_HASH_BUCKETS 128

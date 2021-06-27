@@ -84,7 +84,6 @@ int bind(int s, const struct sockaddr *name, socklen_t namelen)
     }
     return lwip_bind(s, name, namelen);
 }
-}
 /***************************************************************
 该函数的行为依赖于how的值 
 	SHUT_RD：值为0，关闭连接的读这一半。 

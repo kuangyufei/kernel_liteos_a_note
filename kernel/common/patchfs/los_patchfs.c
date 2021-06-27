@@ -32,7 +32,7 @@
 #include "los_partition_utils.h"
 
 #include "sys/mount.h"
-#include "fs/vnode.h"
+#include "vnode.h"
 
 #ifdef LOSCFG_PLATFORM_PATCHFS
 

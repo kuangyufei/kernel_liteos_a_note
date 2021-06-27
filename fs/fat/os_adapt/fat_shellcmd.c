@@ -37,7 +37,6 @@
 #include "errno.h"
 #include "shcmd.h"
 #include "shell.h"
-#include "fs/fs.h"
 #include "fatfs.h"
 
 int osShellCmdFormat(int argc, char **argv)
@@ -77,45 +76,5 @@ int osShellCmdFormat(int argc, char **argv)
     return 0;
 }
 
-#ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
-int osShellCmdVirstatfs(int argc, char** argv)
-{
-    struct statfs sfs;
-    unsigned long long totalSize, freeSize;
-    int result;
-    (void)memset_s(&sfs, sizeof(sfs), 0, sizeof(sfs));
-    if (argc != 1) {
-        perror("virstatfs error");
-        PRINTK("Usage :\n");
-        PRINTK("        virstatfs <virtual_entry>\n");
-        PRINTK("        virtual_entry     :   the path of the virtual partition entry\n");
-        PRINTK("Example:\n");
-        PRINTK("        virstatfs /mnt/sd/virpart0\n");
-        return FAT_ERROR;
-    }
-
-    result = virstatfs(argv[0], &sfs);
-    if (result < 0) {
-        set_errno(-result);
-        perror("virstatfs failed");
-        return FAT_ERROR;
-    }
-    totalSize  = (unsigned long long)sfs.f_bsize * sfs.f_blocks;
-    freeSize   = (unsigned long long)sfs.f_bsize * sfs.f_bfree;
-
-    PRINTK("Virtual partition \"%s\" Info:\n", argv[0]);
-    PRINTK(" f_type         = %d\n cluster_size   = %d\n total_clusters = 0x%llx\n ",
-           sfs.f_type, sfs.f_bsize, sfs.f_blocks);
-    PRINTK("free_clusters  = 0x%llx\n avail_clusters = 0x%llx\n f_namelen      = %d\n",
-           sfs.f_bfree, sfs.f_bavail, sfs.f_namelen);
-    PRINTK("\n%s\n total size: %4llu Bytes\n free  size: %4llu Bytes\n", argv[0], totalSize, freeSize);
-
-    return 0;
-}
-#endif
-
-#if defined(LOSCFG_FS_FAT_VIRTUAL_PARTITION) && defined(LOSCFG_SHELL_CMD_DEBUG)
-    SHELLCMD_ENTRY(virstatfs_shellcmd, CMD_TYPE_EX, "virstatfs", XARGS, (CmdCallBackFunc)osShellCmdVirstatfs);
-#endif
 SHELLCMD_ENTRY(format_shellcmd, CMD_TYPE_EX, "format", XARGS, (CmdCallBackFunc)osShellCmdFormat);
 #endif

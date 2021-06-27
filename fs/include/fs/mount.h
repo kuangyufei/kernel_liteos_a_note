@@ -31,11 +31,12 @@
 #ifndef _MOUNT_H_
 #define _MOUNT_H_
 
-#include "los_mux.h"
-#include "fs/vfs_util.h"
-#include "fs/vnode.h"
 #include <sys/stat.h>
-#include <limits.h>
+#include <sys/statfs.h>
+#include "vnode.h"
+
+#define MS_RDONLY 1
+#define MS_NOSYNC 2
 
 struct MountOps;
 /* 将一个设备（通常是存储设备）挂接到一个已存在的目录上,操作系统将所有的设备都看作文件，
@@ -56,6 +57,7 @@ struct Mount {//装载
     uint32_t hashseed;                 /* Random seed for vfs hash */ //vfs 哈希随机种子
     unsigned long mountFlags;          /* Flags for mount */	//装载标签
     char pathName[PATH_MAX];           /* path name of mount point */	//装载点路径名称
+    char devName[PATH_MAX];            /* path name of dev point */
 };
 //装载操作
 struct MountOps {
@@ -64,6 +66,11 @@ struct MountOps {
     int (*Statfs)(struct Mount *mount, struct statfs *sbp);//统计文件系统的信息，如该文件系统类型、总大小、可用大小等信息
 };
 
+typedef int (*foreach_mountpoint_t)(const char *devpoint,
+                                    const char *mountpoint,
+                                    struct statfs *statbuf,
+                                    void *arg);
 struct Mount* MountAlloc(struct Vnode* vnode, struct MountOps* mop);
 LIST_HEAD* GetMountList(void);
+int foreach_mountpoint(foreach_mountpoint_t handler, void *arg);
 #endif

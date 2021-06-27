@@ -31,7 +31,7 @@
 
 #define _GNU_SOURCE
 #ifdef LOSCFG_FS_VFS
-#include "fs/fs.h"
+#include "fs/file.h"
 #include "fs/file.h"
 #endif
 #include "los_init.h"

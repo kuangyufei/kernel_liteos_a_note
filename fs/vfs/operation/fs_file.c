@@ -29,11 +29,9 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "fs_file.h"
+#include "fs/file.h"
 #include "los_process_pri.h"
 #include "fs/fd_table.h"
-#include "fs/file.h"
-#include "fs/fs.h"
 #include "mqueue.h"
 #ifdef LOSCFG_NET_LWIP_SACK
 #include "lwip/sockets.h"

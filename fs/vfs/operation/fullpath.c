@@ -214,14 +214,14 @@ static char *vfs_normalize_fullpath(const char *directory, const char *filename,
 {
     char *fullpath = NULL;
 
-    if (filename[0] != '/') {//不是绝对路径
+    if (filename[0] != '/') {
         /* not a absolute path */
 
         fullpath = vfs_not_absolute_path(directory, filename, pathname, namelen);
         if (fullpath == NULL) {
             return (char *)NULL;
         }
-    } else {//如果是绝对路径
+    } else {
         /* it's a absolute path, use it directly */
 
         fullpath = strdup(filename); /* copy string */
@@ -241,18 +241,18 @@ static char *vfs_normalize_fullpath(const char *directory, const char *filename,
 
     return fullpath;
 }
-//虚拟文件系统 | 获取文件绝对路径
+
 int vfs_normalize_path(const char *directory, const char *filename, char **pathname)
 {
     char *fullpath = NULL;
     int namelen;
-#ifdef VFS_USING_WORKDIR //使能当前工作目录
+#ifdef VFS_USING_WORKDIR
     UINTPTR lock_flags;
-    LosProcessCB *curr = OsCurrProcessGet(); //获取当前进程
-    BOOL dir_flags = (directory == NULL) ? TRUE : FALSE;//是否为目录
+    LosProcessCB *curr = OsCurrProcessGet();
+    BOOL dir_flags = (directory == NULL) ? TRUE : FALSE;
 #endif
 
-    namelen = vfs_normalize_path_parame_check(filename, pathname);//参数检查
+    namelen = vfs_normalize_path_parame_check(filename, pathname);
     if (namelen < 0) {
         return namelen;
     }
@@ -260,8 +260,8 @@ int vfs_normalize_path(const char *directory, const char *filename, char **pathn
 #ifdef VFS_USING_WORKDIR
     if (directory == NULL)
       {
-        spin_lock_irqsave(&curr->files->workdir_lock, lock_flags);//对工作目录加锁
-        directory = curr->files->workdir;//获取工作目录 ,pwd
+        spin_lock_irqsave(&curr->files->workdir_lock, lock_flags);
+        directory = curr->files->workdir;
       }
 #else
     if ((directory == NULL) && (filename[0] != '/')) {
@@ -277,17 +277,17 @@ int vfs_normalize_path(const char *directory, const char *filename, char **pathn
 #ifdef VFS_USING_WORKDIR
         if (dir_flags == TRUE)
           {
-            spin_unlock_irqrestore(&curr->files->workdir_lock, lock_flags);//对工作目录解锁
+            spin_unlock_irqrestore(&curr->files->workdir_lock, lock_flags);
           }
 #endif
         return -ENAMETOOLONG;
     }
 
-    fullpath = vfs_normalize_fullpath(directory, filename, pathname, namelen);//获取整个路径(绝对)
+    fullpath = vfs_normalize_fullpath(directory, filename, pathname, namelen);
 #ifdef VFS_USING_WORKDIR
     if (dir_flags == TRUE)
       {
-        spin_unlock_irqrestore(&curr->files->workdir_lock, lock_flags);//对工作目录解锁
+        spin_unlock_irqrestore(&curr->files->workdir_lock, lock_flags);
       }
 #endif
     if (fullpath == NULL) {
@@ -313,7 +313,7 @@ int vfs_normalize_pathat(int dirfd, const char *filename, char **pathname)
     char *fullpath = NULL;
     int ret = 0;
 
-    ret = get_path_from_fd(dirfd, &relativeoldpath);//通过FD找到路径
+    ret = get_path_from_fd(dirfd, &relativeoldpath);
     if (ret < 0) {
         return ret;
     }

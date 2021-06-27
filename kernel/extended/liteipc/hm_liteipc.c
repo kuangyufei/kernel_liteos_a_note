@@ -31,8 +31,8 @@
 
 #include "hm_liteipc.h"
 #include "linux/kernel.h"
-#include "fs/fs.h"
-#include "fs_file.h"
+#include "fs/file.h"
+#include "fs/driver.h"
 #include "los_init.h"
 #include "los_mp.h"
 #include "los_mux.h"
@@ -70,11 +70,11 @@ typedef struct {//IPC使用节点
     VOID *ptr;
 } IpcUsedNode;
 
-LosMux g_serviceHandleMapMux;
+STATIC LosMux g_serviceHandleMapMux;
 #if (USE_TASKID_AS_HANDLE == YES)// @note_why 前缀cms是何意思? 猜测是Content Management System(内容管理系统)
-HandleInfo g_cmsTask; //任务句柄消息
+STATIC HandleInfo g_cmsTask;
 #else
-HandleInfo g_serviceHandleMap[MAX_SERVICE_NUM];//服务句柄数组,默认等于任务数 128
+STATIC HandleInfo g_serviceHandleMap[MAX_SERVICE_NUM];
 #endif
 STATIC LOS_DL_LIST g_ipcPendlist;//阻塞链表,上面挂等待读/写消息的任务LosTaskCB
 STATIC LOS_DL_LIST g_ipcUsedNodelist[LOSCFG_BASE_CORE_PROCESS_LIMIT];//每个进程使用的IPC节点链表情况,上面挂IpcUsedNode节点
@@ -408,41 +408,44 @@ LITE_OS_SEC_TEXT STATIC UINT32 GetTid(UINT32 serviceHandle, UINT32 *taskID)
     if (serviceHandle >= MAX_SERVICE_NUM) {
         return -EINVAL;
     }
+    (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
 #if (USE_TASKID_AS_HANDLE == YES)
     *taskID = serviceHandle ? serviceHandle : g_cmsTask.taskID;
+    (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
     return LOS_OK;
 #else
     if (g_serviceHandleMap[serviceHandle].status == HANDLE_REGISTED) {
         *taskID = g_serviceHandleMap[serviceHandle].taskID;
+        (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
         return LOS_OK;
     }
+    (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
     return -EINVAL;
 #endif
 }
 
 LITE_OS_SEC_TEXT STATIC UINT32 GenerateServiceHandle(UINT32 taskID, HandleStatus status, UINT32 *serviceHandle)
 {
+    (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
 #if (USE_TASKID_AS_HANDLE == YES)
     *serviceHandle = taskID ? taskID : LOS_CurTaskIDGet(); /* if taskID is 0, return curTaskID */
-    if (*serviceHandle == g_cmsTask.taskID) {
-        return -EINVAL;
+    if (*serviceHandle != g_cmsTask.taskID) {
+        (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
+        return LOS_OK;
     }
-    return LOS_OK;
 #else
-    UINT32 i;
-    (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
-    for (i = 1; i < MAX_SERVICE_NUM; i++) {
+    for (UINT32 i = 1; i < MAX_SERVICE_NUM; i++) {
         if (g_serviceHandleMap[i].status == HANDLE_NOT_USED) {
             g_serviceHandleMap[i].taskID = taskID;
             g_serviceHandleMap[i].status = status;
             *serviceHandle = i;
-            (VOID)LOS_MuxUnLock(&g_serviceHandleMapMux);
+            (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
             return LOS_OK;
         }
     }
+#endif
     (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
     return -EINVAL;
-#endif
 }
 
 LITE_OS_SEC_TEXT STATIC VOID RefreshServiceHandle(UINT32 serviceHandle, UINT32 result)
@@ -627,21 +630,29 @@ LITE_OS_SEC_TEXT STATIC UINT32 SetCms(UINTPTR maxMsgSize)
 //是否注册了CMS服务
 LITE_OS_SEC_TEXT STATIC BOOL IsCmsSet(VOID)
 {
+    BOOL ret;
+    (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
 #if (USE_TASKID_AS_HANDLE == YES)
-    return g_cmsTask.status == HANDLE_REGISTED;
+    ret = g_cmsTask.status == HANDLE_REGISTED;
 #else
-    return g_serviceHandleMap[0].status == HANDLE_REGISTED;
+    ret = g_serviceHandleMap[0].status == HANDLE_REGISTED;
 #endif
+    (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
+    return ret;
 }
 
 LITE_OS_SEC_TEXT STATIC BOOL IsCmsTask(UINT32 taskID)
 {
+    BOOL ret;
+    (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
 #if (USE_TASKID_AS_HANDLE == YES)
-    return IsCmsSet() ? (OS_TCB_FROM_TID(taskID)->processID == OS_TCB_FROM_TID(g_cmsTask.taskID)->processID) : FALSE;
+    ret = IsCmsSet() ? (OS_TCB_FROM_TID(taskID)->processID == OS_TCB_FROM_TID(g_cmsTask.taskID)->processID) : FALSE;
 #else
-    return IsCmsSet() ? (OS_TCB_FROM_TID(taskID)->processID ==
+    ret = IsCmsSet() ? (OS_TCB_FROM_TID(taskID)->processID ==
         OS_TCB_FROM_TID(g_serviceHandleMap[0].taskID)->processID) : FALSE;
 #endif
+    (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
+    return ret;
 }
 
 LITE_OS_SEC_TEXT STATIC BOOL IsTaskAlive(UINT32 taskID)
@@ -816,9 +827,12 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckMsgSize(IpcMsg *msg)
             totalSize += obj->content.ptr.buffSz;
         }
     }
+    (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
     if (totalSize > g_cmsTask.maxMsgSize) {
+        (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
         return -EINVAL;
     }
+    (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
     return LOS_OK;
 }
 
@@ -1200,7 +1214,9 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleCmsCmd(CmsCmdContent *content)
             if (ret == LOS_OK) {
                 ret = copy_to_user((void *)content, (const void *)(&localContent), sizeof(CmsCmdContent));
             }
+            (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
             AddServiceAccess(g_cmsTask.taskID, localContent.serviceHandle);
+            (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
             break;
         case CMS_REMOVE_HANDLE:
             if (localContent.serviceHandle >= MAX_SERVICE_NUM) {

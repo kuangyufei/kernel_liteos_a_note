@@ -1,5 +1,5 @@
 git add -A
-git commit -m  '开始注解与内核相关联的两个项目(lwip协议栈和NuttX文件系统). 
+git commit -m  ' 同步官方代码 `2021/6/27` -- 本次官方对文件系统/设备驱动改动较大,目录结构进行了重新整理. 
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     博客输出站点(国内):https://weharmonyos.com 或 http://8.134.122.205
     博客输出站点(国外):https://weharmony.github.io

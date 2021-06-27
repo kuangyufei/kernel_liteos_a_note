@@ -33,7 +33,7 @@
 #define _FATFS_H
 
 #include "ff.h"
-#include "fs/fs.h"
+#include "fs/file.h"
 #include "disk.h"
 #include "unistd.h"
 #include "string.h"
@@ -120,6 +120,11 @@ OpenHarmony内核支持硬盘多分区，可以在主分区以及逻辑分区上
 #define FDEBUG(...)
 #endif
 
+/* Format options (3rd argument of format) */
+#define FMT_FAT      0x01
+#define FMT_FAT32    0x02
+#define FMT_ANY      0x07
+#define FMT_ERASE    0x08
 int fatfs_2_vfs(int result);
 int fatfs_lookup(struct Vnode *parent, const char *name, int len, struct Vnode **vpp);
 int fatfs_create(struct Vnode *parent, const char *name, int mode, struct Vnode **vpp);
@@ -144,8 +149,8 @@ int fatfs_closedir(struct Vnode *vnode, struct fs_dirent_s *dir);
 int fatfs_rename(struct Vnode *oldvnode, struct Vnode *newparent, const char *oldname, const char *newname);
 int fatfs_mkfs (struct Vnode *device, int sectors, int option);
 int fatfs_mkdir(struct Vnode *parent, const char *name, mode_t mode, struct Vnode **vpp);
-int fatfs_rmdir(struct Vnode *parent, struct Vnode *vp, char *name);
-int fatfs_unlink(struct Vnode *parent, struct Vnode *vp, char *name);
+int fatfs_rmdir(struct Vnode *parent, struct Vnode *vp, const char *name);
+int fatfs_unlink(struct Vnode *parent, struct Vnode *vp, const char *name);
 int fatfs_ioctl(struct file *filep, int req, unsigned long arg);
 int fatfs_fscheck(struct Vnode* vnode, struct fs_dirent_s *dir);
 

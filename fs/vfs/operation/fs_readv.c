@@ -34,7 +34,7 @@
 #include "unistd.h"
 #include "string.h"
 #include "stdlib.h"
-#include "fs/fs.h"
+#include "fs/file.h"
 #include "user_copy.h"
 #include "stdio.h"
 #include "limits.h"

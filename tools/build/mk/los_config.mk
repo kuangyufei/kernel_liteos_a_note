@@ -219,6 +219,13 @@ ifeq ($(LOSCFG_KERNEL_PIPE), y)
     LIB_SUBDIRS           += kernel/extended/pipes
     LITEOS_PIPE_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/pipes
 endif
+
+ifeq ($(LOSCFG_KERNEL_PM), y)
+    LITEOS_BASELIB        += -lpower
+    LIB_SUBDIRS           += kernel/extended/power
+    LITEOS_PIPE_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/power
+endif
+
 ################################### Kernel Option End ################################
 
 #################################### Lib Option Begin ###############################
@@ -229,10 +236,8 @@ ifeq ($(LOSCFG_LIB_LIBC), y)
     LITEOS_BASELIB  += -lc -lsec
     LITEOS_LIBC_INCLUDE   += \
         $(LITEOS_LIBSCREW_INCLUDE) \
-        -I $(LITEOSTOPDIR)/lib/libc/musl/include \
-        -I $(LITEOSTOPDIR)/lib/libc/musl/obj/include \
-        -I $(LITEOSTOPDIR)/lib/libc/musl/arch/arm \
-        -I $(LITEOSTOPDIR)/lib/libc/musl/arch/generic \
+        -I $(LITEOSTOPDIR)/lib/libc/include \
+        -I $(LITEOSTHIRDPARTY)/musl/porting/liteos_a/kernel/include \
         -I $(LITEOSTHIRDPARTY)/bounds_checking_function/include
 endif
 
@@ -286,14 +291,14 @@ ifeq ($(LOSCFG_FS_VFS), y)
     LITEOS_BASELIB += -lvfs -lmulti_partition
 ifeq ($(LOSCFG_FS_VFS_BLOCK_DEVICE), y)
     LITEOS_BASELIB += -lbch
-    LIB_SUBDIRS       += fs/vfs fs/vfs/bch
+    LIB_SUBDIRS       += $(LITEOSTOPDIR)/drivers/char/bch
 endif
-    LIB_SUBDIRS       += fs/vfs fs/vfs/multi_partition
-    LITEOS_VFS_INCLUDE   += -I $(LITEOSTOPDIR)/fs/include
-    LITEOS_VFS_INCLUDE   += -I $(LITEOSTOPDIR)/fs/vfs/include/driver
+    LIB_SUBDIRS       += fs/vfs drivers/mtd/multi_partition
+    LITEOS_VFS_INCLUDE   += -I $(LITEOSTOPDIR)/fs/include \
+                            -I $(LITEOSTOPDIR)/fs/vfs/include
     LITEOS_VFS_INCLUDE   += -I $(LITEOSTOPDIR)/fs/vfs/include/operation
-    LITEOS_VFS_MTD_INCLUDE := -I $(LITEOSTOPDIR)/fs/vfs/include/multi_partition
-    LITEOS_VFS_DISK_INCLUDE := -I $(LITEOSTOPDIR)/fs/vfs/include/disk
+    LITEOS_VFS_MTD_INCLUDE := -I $(LITEOSTOPDIR)/drivers/mtd/multi_partition/include
+    LITEOS_VFS_DISK_INCLUDE := -I $(LITEOSTOPDIR)/drivers/block/disk/include
 endif
 
 ifeq ($(LOSCFG_FS_FAT), y)
@@ -310,7 +315,7 @@ endif
 
 ifeq ($(LOSCFG_FS_FAT_DISK), y)
     LITEOS_BASELIB += -ldisk
-    LIB_SUBDIRS += fs/vfs/disk
+    LIB_SUBDIRS += $(LITEOSTOPDIR)/drivers/block/disk
 endif
 
 ifeq ($(LOSCFG_FS_FAT_CACHE), y)
@@ -367,13 +372,13 @@ ifeq ($(LOSCFG_NET_LWIP_SACK_2_1), y)
 
     LITEOS_CMACRO     +=  $(LWIP_MACROS)
 else ifeq ($(LOSCFG_NET_LWIP_SACK_2_0), y)
-    LWIPDIR := $(LITEOSTHIRDPARTY)/lwip_enhanced
+    LWIPDIR := $(LITEOSTHIRDPARTY)/lwip_enhanced/src
     LITEOS_BASELIB += -llwip
     LIB_SUBDIRS       += $(LWIPDIR)
     LITEOS_LWIP_SACK_INCLUDE   += \
         -I $(LWIPDIR)/include \
         -I $(LITEOSTOPDIR)/net/mac
-    LWIP_MACROS += -DLWIP_CONFIG_FILE=\"lwip/lwipopts.h\"
+    LWIP_MACROS += -DLWIP_CONFIG_FILE=\"lwip/lwipopts.h\" -DLWIP_LITEOS_A_COMPAT
     LITEOS_CMACRO     +=  $(LWIP_MACROS)
 else
     $(error "unknown lwip version")
@@ -455,14 +460,7 @@ ifeq ($(LOSCFG_COMPILE_DEBUG), y)
     LITEOS_COPTS_OPTION  = -g -gdwarf-2
 else
     ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-        ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
-                # WORKAROUND: Disable LTO to avoid undefined __stack_chk_guard
-                #             problem. "externally_visible" attribute could be
-                #             a fix for that but it is not known to our LLVM.
-                LITEOS_COPTS_OPTMIZE = -Oz #-flto
-        else
-                LITEOS_COPTS_OPTMIZE = -Oz -flto
-        endif
+        LITEOS_COPTS_OPTMIZE = -Oz -flto
     else
         LITEOS_COPTS_OPTMIZE = -O2
     endif
@@ -490,10 +488,6 @@ endif
 
 ifeq ($(LOSCFG_3RDPARTY), y)
     -include $(LITEOSTOPDIR)/3rdParty/3rdParty.mk
-endif
-
-ifeq ($(LOSCFG_NULL_ADDRESS_PROTECT), y)
-    LITEOS_CMACRO += -DLOSCFG_NULL_ADDRESS_PROTECT
 endif
 
 ifeq ($(LOSCFG_KERNEL_SYSCALL), y)
@@ -596,7 +590,6 @@ LITEOS_CXXINCLUDE += \
     -I $(LITEOS_COMPILER_CXX_PATH)/c++/$(VERSION_NUM)/ext \
     -I $(LITEOS_COMPILER_CXX_PATH)/c++/$(VERSION_NUM)/backward \
     -I $(LITEOSTOPDIR)/compat/posix/include \
-    -I $(LITEOSTOPDIR)/lib/libc/musl/include \
     -I $(LITEOSTOPDIR)/fs/include \
     -I $(LITEOSTOPDIR)/kernel/include \
     $(LITEOS_LIBC_INCLUDE)

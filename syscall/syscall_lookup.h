@@ -37,6 +37,9 @@ SYSCALL_HAND_DEF(__NR_write, SysWrite, ssize_t, ARG_NUM_3)
 SYSCALL_HAND_DEF(__NR_open, SysOpen, int, ARG_NUM_7)
 SYSCALL_HAND_DEF(__NR_close, SysClose, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_creat, SysCreat, int, ARG_NUM_2)
+SYSCALL_HAND_DEF(__NR_link, SysLink, int, ARG_NUM_2)
+SYSCALL_HAND_DEF(__NR_readlink, SysReadlink, ssize_t, ARG_NUM_3)
+SYSCALL_HAND_DEF(__NR_symlink, SysSymlink, int, ARG_NUM_2)
 SYSCALL_HAND_DEF(__NR_unlink, SysUnlink, int, ARG_NUM_1)
 
 #ifdef LOSCFG_KERNEL_DYNLOAD
@@ -96,6 +99,9 @@ SYSCALL_HAND_DEF(__NR_getdents64, SysGetdents64, int, ARG_NUM_3)
 SYSCALL_HAND_DEF(__NR_format, SysFormat, int, ARG_NUM_3)
 #endif
 
+SYSCALL_HAND_DEF(__NR_linkat, SysLinkat, int, ARG_NUM_5)
+SYSCALL_HAND_DEF(__NR_symlinkat, SysSymlinkat, int, ARG_NUM_3)
+SYSCALL_HAND_DEF(__NR_readlinkat, SysReadlinkat, ssize_t, ARG_NUM_4)
 SYSCALL_HAND_DEF(__NR_unlinkat, SysUnlinkat, int, ARG_NUM_3)
 SYSCALL_HAND_DEF(__NR_renameat, SysRenameat, int, ARG_NUM_4)
 SYSCALL_HAND_DEF(__NR_openat, SysOpenat, int, ARG_NUM_7)

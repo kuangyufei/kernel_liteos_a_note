@@ -36,10 +36,11 @@
 #include "capability_api.h"
 #include "errno.h"
 #include "fs/fs_operation.h"
-#include "fs/fs.h"
+#include "fs/file.h"
 #include "string.h"
 #include "stdlib.h"
 #include "sys/stat.h"
+#include "vnode.h"
 
 /****************************************************************************
  * Static Functions

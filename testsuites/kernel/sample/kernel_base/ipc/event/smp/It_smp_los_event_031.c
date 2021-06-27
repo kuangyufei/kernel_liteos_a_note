@@ -107,7 +107,7 @@ static UINT32 Testcase(VOID)
 
         ICUNIT_GOTO_EQUAL(g_testCount, 4, g_testCount, EXIT); // 4, Here, assert that g_testCount is equal to 4.
 
-        if ((g_ret != LOS_OK) && (g_ret != LOS_ERRNO_EVENT_SHOULD_NOT_DESTORY)) {
+        if ((g_ret != LOS_OK) && (g_ret != LOS_ERRNO_EVENT_SHOULD_NOT_DESTROY)) {
             ICUNIT_GOTO_EQUAL(1, 0, g_ret, EXIT);
         }
 

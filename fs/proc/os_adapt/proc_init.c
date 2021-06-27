@@ -38,6 +38,8 @@
 
 #ifdef LOSCFG_FS_PROC //使能 PROC 模块
 //pro file 初始化
+#define PROCFS_MOUNT_POINT  "/proc"
+#define PROCFS_MOUNT_POINT_SIZE (sizeof(PROCFS_MOUNT_POINT) - 1)
 void ProcFsInit(void)
 {
     int ret;
@@ -61,6 +63,11 @@ void ProcFsInit(void)
     ProcProcessInit();//初始化 /proc/process
     ProcUptimeInit();//初始化 /proc/uptime
     ProcKernelTraceInit();//初始化 /proc/ktrace
+    ProcFsCacheInit();
+    ProcFdInit();
+#ifdef LOSCFG_KERNEL_PM
+    ProcPmInit();
+#endif
 }
 
 LOS_MODULE_INIT(ProcFsInit, LOS_INIT_LEVEL_KMOD_EXTENDED);

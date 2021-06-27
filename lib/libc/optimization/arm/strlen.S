@@ -1,1 +1,0 @@
-../../../../../../third_party/optimized-routines/string/arm/strlen-armv6t2.S

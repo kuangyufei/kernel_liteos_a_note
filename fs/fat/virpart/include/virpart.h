@@ -32,8 +32,18 @@
 #ifndef _VIRPART_H
 #define _VIRPART_H
 
-#include "ff.h"
+#include "integer.h"
 #include "disk.h"
+
+#define _MAX_ENTRYLENGTH  16                                       /* MAX virtual partition name length */
+#define _MAX_VIRVOLUMES   5                                        /* MAX virtual partition number */
+typedef struct virtual_partition_info
+{
+  char *devpartpath;                                             /* need set virtual partition, e.g. /dev/mmcblk0p0 */
+  int  virpartnum;                                               /* virtual partition numbers, MAX number is 5 */
+  double virpartpercent[_MAX_VIRVOLUMES];                        /* every virtual partition percent,e.g 0.6,0.3,0.1 */
+  char virpartname[_MAX_VIRVOLUMES][_MAX_ENTRYLENGTH + 1];       /* every virtual partition name, MAX length is 16 */
+} virpartinfo;
 
 extern char g_devPartName[DISK_NAME + 1];
 

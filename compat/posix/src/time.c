@@ -135,7 +135,7 @@ STATIC const long long g_adjPacement = (((LOSCFG_BASE_CORE_ADJ_PER_SECOND * SCHE
 /* accumulative time delta from continuous modify, such as adjtime */
 STATIC struct timespec64 g_accDeltaFromAdj;//连续修改的累积时间增量，例如 adjtime
 /* accumulative time delta from discontinuous modify, such as settimeofday */
-STATIC struct timespec64 g_accDeltaFromSet;//来自不连续修改的累积时间增量，例如 settimeofday
+STATIC struct timespec64 g_accDeltaFromSet;//来自不连续修改的累积时间增量，例�?settimeofday
 
 VOID OsAdjTime(VOID)//时间调整
 {
@@ -459,7 +459,7 @@ static int PthreadGetCputime(clockid_t clockID, struct timespec *ats)
     UINT32 tid = ((UINT32) ~((clockID) >> CPUCLOCK_ID_OFFSET));
 
     if (OS_TID_CHECK_INVALID(tid)) {
-        return -ESRCH;
+        return -EINVAL;
     }
     LosTaskCB *task = OsGetTaskCB(tid);
 
@@ -1096,7 +1096,7 @@ int getitimer(int which, struct itimerval *value)
 }
 
 #ifdef LOSCFG_KERNEL_VDSO
-VOID OsVdsoTimeGet(VdsoDataPage *vdsoDataPage)//获取数据页信息
+VOID OsVdsoTimeGet(VdsoDataPage *vdsoDataPage)
 {
     UINT32 intSave;
     struct timespec64 tmp = {0};

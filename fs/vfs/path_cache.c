@@ -28,15 +28,32 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "fs/path_cache.h"
+#include "path_cache.h"
 #include "los_config.h"
+#include "los_hash.h"
 #include "stdlib.h"
 #include "limits.h"
-#include "fs/vfs_util.h"
-#include "fs/vnode.h"
+#include "vnode.h"
 
 #define PATH_CACHE_HASH_MASK (LOSCFG_MAX_PATH_CACHE_SIZE - 1)
 LIST_HEAD g_pathCacheHashEntrys[LOSCFG_MAX_PATH_CACHE_SIZE];
+#ifdef LOSCFG_DEBUG_VERSION
+static int g_totalPathCacheHit = 0;
+static int g_totalPathCacheTry = 0;
+#define TRACE_TRY_CACHE() do { g_totalPathCacheTry++; } while (0)
+#define TRACE_HIT_CACHE(pc) do { pc->hit++; g_totalPathCacheHit++; } while (0)
+
+void ResetPathCacheHitInfo(int *hit, int *try)
+{
+    *hit = g_totalPathCacheHit;
+    *try = g_totalPathCacheTry;
+    g_totalPathCacheHit = 0;
+    g_totalPathCacheTry = 0;
+}
+#else
+#define TRACE_TRY_CACHE()
+#define TRACE_HIT_CACHE(pc)
+#endif
 //路径缓存初始化
 int PathCacheInit(void)
 {
@@ -50,12 +67,12 @@ void PathCacheDump(void)
 {
     PRINTK("-------->pathCache dump in\n");
     for (int i = 0; i < LOSCFG_MAX_PATH_CACHE_SIZE; i++) {
-        struct PathCache *nc = NULL;
+        struct PathCache *pc = NULL;
         LIST_HEAD *nhead = &g_pathCacheHashEntrys[i];
 
-        LOS_DL_LIST_FOR_EACH_ENTRY(nc, nhead, struct PathCache, hashEntry) {
+        LOS_DL_LIST_FOR_EACH_ENTRY(pc, nhead, struct PathCache, hashEntry) {
             PRINTK("    pathCache dump hash %d item %s %p %p %d\n", i,
-                nc->name, nc->parentVnode, nc->childVnode, nc->nameLen);
+                pc->name, pc->parentVnode, pc->childVnode, pc->nameLen);
         }
     }
     PRINTK("-------->pathCache dump out\n");
@@ -81,8 +98,8 @@ void PathCacheMemoryDump(void)
 static uint32_t NameHash(const char *name, int len, struct Vnode *dvp)
 {
     uint32_t hash;
-    hash = fnv_32_buf(name, len, FNV1_32_INIT);
-    hash = fnv_32_buf(&dvp, sizeof(dvp), hash);
+    hash = LOS_HashFNV32aBuf(name, len, FNV1_32A_INIT);
+    hash = LOS_HashFNV32aBuf(&dvp, sizeof(struct Vnode *), hash);
     return hash;
 }
 
@@ -94,7 +111,7 @@ static void PathCacheInsert(struct Vnode *parent, struct PathCache *cache, const
 
 struct PathCache *PathCacheAlloc(struct Vnode *parent, struct Vnode *vnode, const char *name, uint8_t len)
 {
-    struct PathCache *nc = NULL;
+    struct PathCache *pc = NULL;
     size_t pathCacheSize;
     int ret;
 
@@ -103,76 +120,55 @@ struct PathCache *PathCacheAlloc(struct Vnode *parent, struct Vnode *vnode, cons
     }
     pathCacheSize = sizeof(struct PathCache) + len + 1;
 
-    nc = (struct PathCache*)zalloc(pathCacheSize);
-    if (nc == NULL) {
+    pc = (struct PathCache*)zalloc(pathCacheSize);
+    if (pc == NULL) {
         PRINT_ERR("pathCache alloc failed, no memory!\n");
         return NULL;
     }
 
-    ret = strncpy_s(nc->name, len + 1, name, len);
+    ret = strncpy_s(pc->name, len + 1, name, len);
     if (ret != LOS_OK) {
         return NULL;
     }
 
-    nc->parentVnode = parent;
-    nc->nameLen = len;
-    nc->childVnode = vnode;
+    pc->parentVnode = parent;
+    pc->nameLen = len;
+    pc->childVnode = vnode;
 
-    LOS_ListAdd((&(parent->childPathCaches)), (&(nc->childEntry)));
-    LOS_ListAdd((&(vnode->parentPathCaches)), (&(nc->parentEntry)));
+    LOS_ListAdd((&(parent->childPathCaches)), (&(pc->childEntry)));
+    LOS_ListAdd((&(vnode->parentPathCaches)), (&(pc->parentEntry)));
 
-    PathCacheInsert(parent, nc, name, len);
+    PathCacheInsert(parent, pc, name, len);
 
-    return nc;
+    return pc;
 }
 
-int PathCacheFree(struct PathCache *nc)
+int PathCacheFree(struct PathCache *pc)
 {
-    if (nc == NULL) {
+    if (pc == NULL) {
         PRINT_ERR("pathCache free: invalid pathCache\n");
         return -ENOENT;
     }
 
-    LOS_ListDelete(&nc->hashEntry);
-    LOS_ListDelete(&nc->parentEntry);
-    LOS_ListDelete(&nc->childEntry);
-    free(nc);
-
-    return LOS_OK;
-}
-
-/* alloc an empty node and awlays add it to path_cache.cache */
-int PathCacheAllocDummy(struct Vnode *parent, struct Vnode **vnode, const char *name, uint8_t len)
-{
-    int ret;
-    struct PathCache *dt = NULL;
-
-    ret = VnodeAlloc(NULL, vnode);
-    if (ret != LOS_OK) {
-        PRINT_ERR("pathCache alloc vnode %s failed\n", name);
-        return -ENOENT;
-    }
-
-    dt = PathCacheAlloc(parent, *vnode, name, len);
-    if (dt == NULL) {
-        PRINT_ERR("pathCache alloc pathCache %s failed\n", name);
-        VnodeFree(*vnode);
-        *vnode = NULL;
-        return -ENOENT;
-    }
+    LOS_ListDelete(&pc->hashEntry);
+    LOS_ListDelete(&pc->parentEntry);
+    LOS_ListDelete(&pc->childEntry);
+    free(pc);
 
     return LOS_OK;
 }
 
 int PathCacheLookup(struct Vnode *parent, const char *name, int len, struct Vnode **vnode)
 {
-    struct PathCache *nc = NULL;
+    struct PathCache *pc = NULL;
     int hash = NameHash(name, len, parent) & PATH_CACHE_HASH_MASK;
     LIST_HEAD *dhead = &g_pathCacheHashEntrys[hash];
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(nc, dhead, struct PathCache, hashEntry) {
-        if (nc->parentVnode == parent && nc->nameLen == len && !strncmp(nc->name, name, len)) {
-            *vnode = nc->childVnode;
+    TRACE_TRY_CACHE();
+    LOS_DL_LIST_FOR_EACH_ENTRY(pc, dhead, struct PathCache, hashEntry) {
+        if (pc->parentVnode == parent && pc->nameLen == len && !strncmp(pc->name, name, len)) {
+            *vnode = pc->childVnode;
+            TRACE_HIT_CACHE(pc);
             return LOS_OK;
         }
     }
@@ -206,4 +202,9 @@ void VnodePathCacheFree(struct Vnode *vnode)
     }
     FreeParentPathCache(vnode);
     FreeChildPathCache(vnode);
+}
+
+LIST_HEAD* GetPathCacheList()
+{
+    return g_pathCacheHashEntrys;
 }

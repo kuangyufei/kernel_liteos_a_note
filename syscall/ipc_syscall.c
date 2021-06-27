@@ -37,7 +37,7 @@
 #include "user_copy.h"
 #include "los_signal.h"
 #include "los_strncpy_from_user.h"
-#include "fs_file.h"
+#include "fs/file.h"
 
 #define MQUEUE_FD_U2K(id) \
     do { \

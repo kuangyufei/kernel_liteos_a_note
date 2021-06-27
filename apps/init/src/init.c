@@ -49,6 +49,7 @@
 int main(int argc, char * const *argv)
 {
     int ret;
+    pid_t gid;
     const char *shellPath = "/bin/mksh";
 
 #ifdef LOSCFG_QUICK_START
@@ -74,9 +75,14 @@ int main(int argc, char * const *argv)
     if (ret < 0) {
         printf("Failed to fork for shell\n");
     } else if (ret == 0) {
-        ret = tcsetpgrp(STDIN_FILENO, getpgrp());
+        gid = getpgrp();
+        if (gid < 0) {
+            printf("get group id failed, pgrpid %d, errno %d\n", gid, errno);
+            exit(0);
+        }
+        ret = tcsetpgrp(STDIN_FILENO, gid);
         if (ret != 0) {
-            printf("tcsetpgrp failed, pgrpid %d, errno %d\n", getpgrp(), errno);
+            printf("tcsetpgrp failed, errno %d\n", errno);
             exit(0);
         }
         (void)execve(shellPath, NULL, NULL);

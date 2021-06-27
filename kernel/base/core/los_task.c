@@ -1547,7 +1547,8 @@ LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
     LOS_DL_LIST *head = list;
     do {
         LosTaskCB *taskCB = LOS_DL_LIST_ENTRY(list->pstNext, LosTaskCB, threadList);
-        if ((taskCB->taskStatus & (OS_TASK_STATUS_INIT | OS_TASK_STATUS_EXIT)) &&
+        if ((taskCB->taskStatus & (OS_TASK_STATUS_INIT | OS_TASK_STATUS_EXIT) ||
+            ((taskCB->taskStatus & OS_TASK_STATUS_READY) && !taskCB->sig.sigIntLock)) &&
             !(taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {
             OsTaskDeleteInactive(processCB, taskCB);
         } else {

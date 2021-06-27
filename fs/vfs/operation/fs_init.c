@@ -31,17 +31,16 @@
 
 #include "disk_pri.h"
 #include "fcntl.h"
-#include "fs/fs.h"
+#include "fs/file.h"
 #include "fs/fs_operation.h"
 #include "linux/spinlock.h"
 #include "los_init.h"
 #include "los_printf.h"
 #include "fs/mount.h"
-#include "fs/path_cache.h"
+#include "path_cache.h"
 #include "sys/statfs.h"
 #include "unistd.h"
-#include "fs/vfs_util.h"
-#include "fs/vnode.h"
+#include "vnode.h"
 /********************************************************
 * VFS是Virtual File System（虚拟文件系统）的缩写，它不是一个实际的文件系统，而是一个异构文件系统之上的软件粘合层，
 * 为用户提供统一的类Unix文件操作接口。

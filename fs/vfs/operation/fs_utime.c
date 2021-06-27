@@ -36,11 +36,10 @@
 #include "errno.h"
 #include "vfs_config.h"
 #include "sys/stat.h"
-#include "fs/vnode.h"
+#include "vnode.h"
 #include "string.h"
 #include "stdlib.h"
 #include "utime.h"
-#include "fs_other.h"
 
 /****************************************************************************
  * Global Functions

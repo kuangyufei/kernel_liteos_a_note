@@ -70,7 +70,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
     ret = LOS_EventDestroy(&g_event);
-    ICUNIT_ASSERT_EQUAL(ret, LOS_ERRNO_EVENT_SHOULD_NOT_DESTORY, ret);
+    ICUNIT_ASSERT_EQUAL(ret, LOS_ERRNO_EVENT_SHOULD_NOT_DESTROY, ret);
 
     ICUNIT_GOTO_EQUAL(g_testCount, 1, g_testCount, EXIT);
 

@@ -239,17 +239,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex017, TestSize.Level0)
 
 #ifndef LOSCFG_USER_TEST_SMP
 /* *
- * @tc.name: it_test_pthread_mutex_018
- * @tc.desc: function for ProcessMutexTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessMutexTest, ItTestPthreadMutex018, TestSize.Level0)
-{
-    ItTestPthreadMutex018();
-}
-
-/* *
  * @tc.name: it_test_pthread_mutex_019
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
@@ -293,5 +282,20 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex022, TestSize.Level0)
 {
     ItTestPthreadMutex022();
 }
+#endif
+
+#if defined(LOSCFG_USER_TEST_FULL)
+#ifndef LOSCFG_USER_TEST_SMP
+/* *
+ * @tc.name: it_test_pthread_mutex_018
+ * @tc.desc: function for ProcessMutexTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessMutexTest, ItTestPthreadMutex018, TestSize.Level0)
+{
+    ItTestPthreadMutex018();
+}
+#endif
 #endif
 } // namespace OHOS

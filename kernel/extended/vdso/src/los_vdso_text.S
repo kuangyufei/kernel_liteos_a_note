@@ -31,4 +31,4 @@
     .globl __vdso_text_start
     .section .data.vdso.text
 __vdso_text_start: @vdso代码段入口
-    .incbin "../usr/OHOS-vdso.so" @ include bin的意思
+    .incbin "../usr/OHOS-vdso.so" @ include bin的意思

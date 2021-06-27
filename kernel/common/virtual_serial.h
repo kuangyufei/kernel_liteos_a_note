@@ -33,9 +33,7 @@
 #define _VIRTUAL_SERIAL_H
 
 #include "los_config.h"
-#ifdef LOSCFG_FS_VFS
-#include "fs/fs.h"
-#endif
+#include "fs/file.h"
 #if defined(LOSCFG_DRIVERS_USB_SERIAL_GADGET) || defined(LOSCFG_DRIVERS_USB_ETH_SER_GADGET)
 #include "implementation/usb_api_pri.h"
 #endif

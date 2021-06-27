@@ -219,28 +219,6 @@ HWTEST_F(SignalTest, ItPosixPipe002, TestSize.Level0)
 }
 
 /* *
- * @tc.name: ItPosixPipe005
- * @tc.desc: function for SignalTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(SignalTest, ItPosixPipe005, TestSize.Level0)
-{
-    ItPosixPipe005();
-}
-
-/* *
- * @tc.name: ItPosixPipe006
- * @tc.desc: function for SignalTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(SignalTest, ItPosixPipe006, TestSize.Level0)
-{
-    ItPosixPipe006();
-}
-
-/* *
  * @tc.name: ItPosixMkfifo002
  * @tc.desc: function for SignalTest
  * @tc.type: FUNC
@@ -647,6 +625,28 @@ HWTEST_F(SignalTest, ItPosixPipe001, TestSize.Level0)
 HWTEST_F(SignalTest, ItPosixPipe003, TestSize.Level0)
 {
     ItPosixPipe003();
+}
+
+/* *
+ * @tc.name: ItPosixPipe005
+ * @tc.desc: function for SignalTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(SignalTest, ItPosixPipe005, TestSize.Level0)
+{
+    ItPosixPipe005();
+}
+
+/* *
+ * @tc.name: ItPosixPipe006
+ * @tc.desc: function for SignalTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(SignalTest, ItPosixPipe006, TestSize.Level0)
+{
+    ItPosixPipe006();
 }
 
 #endif

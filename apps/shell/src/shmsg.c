@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -71,7 +71,7 @@ char *GetCmdline(ShellCB *shellCB)
 
     return cmdNode->cmdString;
 }
-//保存 cmd 历史记录
+
 static void ShellSaveHistoryCmd(char *string, ShellCB *shellCB)
 {
     CmdKeyLink *cmdHistory = shellCB->cmdHistoryKeyLink;
@@ -333,6 +333,7 @@ static void DoCmdExec(const char *cmdName, const char *cmdline, unsigned int len
 {
     int ret;
     pid_t forkPid;
+    pid_t gid;
 
     if (strncmp(cmdline, SHELL_EXEC_COMMAND, SHELL_EXEC_COMMAND_BYTES) == 0) {
         forkPid = fork();
@@ -345,10 +346,16 @@ static void DoCmdExec(const char *cmdName, const char *cmdline, unsigned int len
                 exit(1);
             }
 
-            ret = tcsetpgrp(STDIN_FILENO, getpgrp());
-            if (ret != 0) {
-                printf("tcsetpgrp failed, pgrpid %d, errno %d\n", getpgrp(), errno);
+            gid = getpgrp();
+            if (gid < 0) {
+                printf("get group id failed, pgrpid %d, errno %d\n", gid, errno);
             }
+
+            ret = tcsetpgrp(STDIN_FILENO, gid);
+            if (ret != 0) {
+                printf("tcsetpgrp failed, errno %d\n", errno);
+            }
+
             ret = execve((const char *)cmdParsed->paramArray[0], (char * const *)cmdParsed->paramArray, NULL);
             if (ret == -1) {
                 perror("execve");
@@ -547,26 +554,26 @@ void *ShellTask(void *argv)
 
     return NULL;
 }
-//shell 任务的初始化 参数为shell控制块, shell对内核来说本质就是一个task(线程) ,任务优先级为 9
+
 int ShellTaskInit(ShellCB *shellCB)
 {
     unsigned int ret;
-    size_t stackSize = SHELL_TASK_STACKSIZE;// 0x3000 = 12K
+    size_t stackSize = SHELL_TASK_STACKSIZE;
     void *arg = NULL;
-    pthread_attr_t attr;	// posix 线程属性
+    pthread_attr_t attr;
 
     if (shellCB == NULL) {
         return SH_NOK;
     }
 
-    ret = pthread_attr_init(&attr);//posix 线程属性的初始化
+    ret = pthread_attr_init(&attr);
     if (ret != SH_OK) {
         return SH_NOK;
     }
 
-    pthread_attr_setstacksize(&attr, stackSize);//设置线程栈大小
+    pthread_attr_setstacksize(&attr, stackSize);
     arg = (void *)shellCB;
-    ret = pthread_create(&shellCB->shellTaskHandle, &attr, &ShellTask, arg);//通过posix创建shell task
+    ret = pthread_create(&shellCB->shellTaskHandle, &attr, &ShellTask, arg);
     if (ret != SH_OK) {
         return SH_NOK;
     }

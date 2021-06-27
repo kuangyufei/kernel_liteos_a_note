@@ -42,23 +42,23 @@ sources_entry = [
 ]
 
 sources_smoke = [
-  "smoke/shm_test_001.cpp",
-  "smoke/shm_test_002.cpp",
-  "smoke/shm_test_003.cpp",
-  "smoke/shm_test_004.cpp",
-  "smoke/shm_test_005.cpp",
-  "smoke/shm_test_006.cpp",
-  "smoke/shm_test_007.cpp",
-  "smoke/shm_test_008.cpp",
-  "smoke/shm_test_009.cpp",
-  "smoke/shm_test_010.cpp",
   "smoke/shm_test_011.cpp",
-  "smoke/shm_test_012.cpp",
-  "smoke/shm_test_013.cpp",
-  "smoke/shm_test_014.cpp",
 ]
 
 sources_full = [
+  "full/shm_test_001.cpp",
+  "full/shm_test_002.cpp",
+  "full/shm_test_003.cpp",
+  "full/shm_test_004.cpp",
+  "full/shm_test_005.cpp",
+  "full/shm_test_006.cpp",
+  "full/shm_test_007.cpp",
+  "full/shm_test_008.cpp",
+  "full/shm_test_009.cpp",
+  "full/shm_test_010.cpp",
+  "full/shm_test_012.cpp",
+  "full/shm_test_013.cpp",
+  "full/shm_test_014.cpp",
 ]
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {

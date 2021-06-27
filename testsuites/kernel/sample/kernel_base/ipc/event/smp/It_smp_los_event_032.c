@@ -105,7 +105,7 @@ static UINT32 Testcase(void)
         if ((g_ret1 == 0x11) && (g_ret2 == LOS_OK) && (g_ret3 == LOS_OK)) { // pend-post-del ///post-pend-del
         } else if ((g_ret1 == 0x11) && (g_ret2 == LOS_OK) && (g_ret3 == LOS_OK)) { // del-pend-post//del-post-pend
         } else if ((g_ret1 == 0x11) && (g_ret2 == LOS_OK) &&
-            (g_ret3 == LOS_ERRNO_EVENT_SHOULD_NOT_DESTORY)) { // pend-delete-post
+            (g_ret3 == LOS_ERRNO_EVENT_SHOULD_NOT_DESTROY)) { // pend-delete-post
         } else if ((g_ret1 == 0xff) && (g_ret2 == LOS_OK) && (g_ret3 == LOS_OK)) { // post-del-pend
             LOS_TaskDelete(g_szId[0]);                                             // delete the pend task
         } else if ((g_ret1 == 0x00) && (g_ret2 == LOS_OK) && (g_ret3 == LOS_OK)) {

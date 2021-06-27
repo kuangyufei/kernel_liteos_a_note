@@ -32,7 +32,7 @@
 #include "los_load_elf.h"
 #include "fcntl.h"
 #include "fs/fd_table.h"
-#include "fs_file.h"
+#include "fs/file.h"
 #include "los_config.h"
 #include "los_vm_map.h"
 #include "los_vm_syscall.h"

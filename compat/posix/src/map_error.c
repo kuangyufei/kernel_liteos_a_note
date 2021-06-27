@@ -91,7 +91,7 @@ int map_errno(UINT32 err)
             errno = ENOMEM;
             break;
         case LOS_ERRNO_SEM_PENDED:
-        case LOS_ERRNO_EVENT_SHOULD_NOT_DESTORY:
+        case LOS_ERRNO_EVENT_SHOULD_NOT_DESTROY:
             errno = EBUSY;
             break;
         case LOS_ERRNO_SEM_PEND_IN_LOCK:

@@ -64,11 +64,13 @@ $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_statfs.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_truncate.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_truncate64.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_unlink.c \
+$(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_link.c \
+$(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_readlink.c \
+$(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_symlink.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_write.c \
 $(wildcard operation/*.c) \
 \
 $(LITEOSTHIRDPARTY)/NuttX/fs/inode/fs_files.c \
-$(LITEOSTHIRDPARTY)/NuttX/fs/inode/fs_inode.c \
 \
 $(LITEOSTHIRDPARTY)/NuttX/fs/dirent/fs_closedir.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/dirent/fs_opendir.c \
@@ -81,7 +83,6 @@ $(LITEOSTHIRDPARTY)/NuttX/fs/mount/fs_mount.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/mount/fs_umount.c \
 \
 $(LITEOSTHIRDPARTY)/NuttX/fs/driver/fs_blockproxy.c \
-$(LITEOSTHIRDPARTY)/NuttX/fs/driver/fs_devsyslog.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/mount/fs_foreachmountpoint.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/driver/fs_findblockdriver.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/driver/fs_openblockdriver.c \
@@ -96,11 +97,10 @@ $(wildcard vfs_cmd/*.c)
 LOCAL_INCLUDE := \
 	-I $(LITEOSTOPDIR)/fs/vfs/include \
 	-I $(LITEOSTOPDIR)/fs/vfs/include/bcache\
-	-I $(LITEOSTOPDIR)/fs/vfs/include/disk\
-	-I $(LITEOSTOPDIR)/fs/vfs/include/driver\
-	-I $(LITEOSTOPDIR)/fs/vfs/include/multi_partition\
+	-I $(LITEOSTOPDIR)/drivers/block/disk/include\
+	-I $(LITEOSTOPDIR)/drivers/char/bch/include\
+	-I $(LITEOSTOPDIR)/drivers/mtd/multi_partition/include\
 	-I $(LITEOSTOPDIR)/fs/vfs/include/operation\
-	-I $(LITEOSTOPDIR)/fs/include/inode\
 	-I $(LITEOSTOPDIR)/syscall\
 
 ifeq ($(LOSCFG_FS_FAT), y)

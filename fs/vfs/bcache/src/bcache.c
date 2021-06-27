@@ -34,7 +34,6 @@
 #include "stdlib.h"
 #include "linux/delay.h"
 #include "disk_pri.h"
-#include "fs_other.h"
 #include "user_copy.h"
 
 #undef HALARC_ALIGNMENT

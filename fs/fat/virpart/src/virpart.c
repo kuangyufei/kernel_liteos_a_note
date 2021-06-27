@@ -34,14 +34,15 @@
 #include "fatfs.h"
 #include "errcode_fat.h"
 #include "disk.h"
+#include "fs/mount.h"
 
 #ifdef LOSCFG_FS_FAT_CACHE
 #include "bcache.h"
 #endif
 
-#ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
-
 #include "virpartff.h"
+
+#ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
 
 char g_devPartName[DISK_NAME + 1] = {0};
 

@@ -353,7 +353,7 @@ INT32 JffsFixWrite(CHAR *path, INT64 fileSize, INT32 writeSize, INT32 interfaceT
     gettimeofday(&testTime2, 0);
     perTime = (testTime2.tv_sec - testTime1.tv_sec) * USECS_PER_SEC + (testTime2.tv_usec - testTime1.tv_usec);
 
-    printf("fix_Write TaskID:%3d,sucess to fclose the %s ,task:%lld ms,\n", taskId, path, MSECS_PER_SEC / MSECS_PER_SEC);
+    printf("fix_Write TaskID:%3d,sucess to fclose the %s ,task:%d ms,\n", taskId, path, MSECS_PER_SEC / MSECS_PER_SEC);
 
     free(writeBuf);
 
@@ -6818,6 +6818,61 @@ HWTEST_F(VfsJffsTest, ItFsJffs807, TestSize.Level0)
 HWTEST_F(VfsJffsTest, ItFsJffs808, TestSize.Level0)
 {
     ItFsJffs808();
+}
+
+HWTEST_F(VfsJffsTest, ItFsTestLink001, TestSize.Level0)
+{
+    ItFsTestLink001();
+}
+
+HWTEST_F(VfsJffsTest, ItFsTestLink002, TestSize.Level0)
+{
+    ItFsTestLink002();
+}
+
+HWTEST_F(VfsJffsTest, ItFsTestLink003, TestSize.Level0)
+{
+    ItFsTestLink003();
+}
+
+HWTEST_F(VfsJffsTest, ItFsTestLinkat001, TestSize.Level0)
+{
+    ItFsTestLinkat001();
+}
+
+HWTEST_F(VfsJffsTest, ItFsTestLinkat002, TestSize.Level0)
+{
+    ItFsTestLinkat002();
+}
+
+HWTEST_F(VfsJffsTest, ItFsTestLinkat003, TestSize.Level0)
+{
+    ItFsTestLinkat003();
+}
+
+HWTEST_F(VfsJffsTest, ItFsTestReadlink001, TestSize.Level0)
+{
+    ItFsTestReadlink001();
+}
+
+HWTEST_F(VfsJffsTest, ItFsTestSymlink001, TestSize.Level0)
+{
+    ItFsTestSymlink001();
+}
+
+HWTEST_F(VfsJffsTest, ItFsTestSymlink002, TestSize.Level0)
+{
+    ItFsTestSymlink002();
+}
+
+HWTEST_F(VfsJffsTest, ItFsTestSymlink003, TestSize.Level0)
+{
+    ItFsTestSymlink003();
+}
+
+HWTEST_F(VfsJffsTest, ItFsTestSymlinkat001, TestSize.Level0)
+{
+    ItFsTestSymlinkat001();
 }
 
 #endif

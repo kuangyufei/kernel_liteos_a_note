@@ -31,6 +31,7 @@
 
 #include "fcntl.h"
 #include "linux/kernel.h"
+#include "fs/driver.h"
 
 static int MemOpen(struct file *filep)
 {
@@ -42,17 +43,17 @@ static int MemClose(struct file *filep)
     return 0;
 }
 
-static ssize_t MemRead(FAR struct file *filep, FAR char *buffer, size_t buflen)
+static ssize_t MemRead(struct file *filep, char *buffer, size_t buflen)
 {
     return 0;
 }
 
-static ssize_t MemWrite(FAR struct file *filep, FAR const char *buffer, size_t buflen)
+static ssize_t MemWrite(struct file *filep, const char *buffer, size_t buflen)
 {
     return 0;
 }
 //文件和线性区的映射关系
-static ssize_t MemMap(FAR struct file *filep, FAR LosVmMapRegion *region)
+static ssize_t MemMap(struct file *filep, LosVmMapRegion *region)
 {
 #ifdef LOSCFG_KERNEL_VM
     size_t size = region->range.size;
