@@ -35,8 +35,13 @@
 #include "linux/kernel.h"
 #include "fs/driver.h"
 
+/*****************************************************************
+	硬件随机数发生器，
+	/dev/urandom在类UNIX系统中是一个特殊的设备文件，可以用作随机数发生器或伪随机数发生器。
+
+*****************************************************************/
 static RandomOperations g_randomOp;
-void RandomOperationsInit(const RandomOperations *r)
+void RandomOperationsInit(const RandomOperations *r)//随机数操作集初始化
 {
     if (r != NULL) {
         (void)memcpy_s(&g_randomOp, sizeof(RandomOperations), r, sizeof(RandomOperations));

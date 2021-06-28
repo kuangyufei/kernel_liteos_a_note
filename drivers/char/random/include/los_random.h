@@ -47,7 +47,7 @@ extern "C" {
 int DevRandomRegister(void);
 int DevUrandomRegister(void);
 
-typedef struct {
+typedef struct {//随机数操作集
     int (*support)(void); /* Whether hard random numbers are supported */
     void (*init)(void);   /* Initializing the hard random number generator */
     void (*deinit)(void); /* Deinitializing the hard random number generator */

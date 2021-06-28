@@ -76,19 +76,20 @@ typedef LOS_DL_LIST LIST_ENTRY;
 #define CHG_MTIME 32
 #define CHG_CTIME 64
 
-struct IATTR
+struct IATTR //此结构用于记录 vnode 的属性
 {
   /* This structure is used for record vnode attr. */
-  unsigned int attr_chg_valid;
-  unsigned int attr_chg_flags;
-  unsigned attr_chg_mode;
-  unsigned attr_chg_uid;
-  unsigned attr_chg_gid;
-  unsigned attr_chg_size;
-  unsigned attr_chg_atime;
-  unsigned attr_chg_mtime;
-  unsigned attr_chg_ctime;
+  unsigned int attr_chg_valid;//节点改变有效性 (CHG_MODE | CHG_UID | ... )
+  unsigned int attr_chg_flags;//额外的系统与用户标志（flag），用来保护该文件
+  unsigned attr_chg_mode;	//确定了文件的类型，以及它的所有者、它的group、其它用户访问此文件的权限 (S_IWUSR | ...)
+  unsigned attr_chg_uid;	//用户ID
+  unsigned attr_chg_gid;	//组ID
+  unsigned attr_chg_size;	//节点大小
+  unsigned attr_chg_atime;	//节点最近访问时间
+  unsigned attr_chg_mtime;	//节点对应的文件内容被修改时间
+  unsigned attr_chg_ctime;	//节点自身被修改时间
 };
+
 
 /******************************************************************
 Linux系统使用struct inode作为数据结构名称。BSD派生的系统，使用vnode名称，其中v表示“virtual file system”

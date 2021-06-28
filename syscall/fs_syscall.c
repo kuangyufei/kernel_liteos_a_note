@@ -274,26 +274,26 @@ int SysOpen(const char *path, int oflags, ...)
         }
     }
 
-    procFd = AllocProcessFd();
+    procFd = AllocProcessFd();//分配进程描述符
     if (procFd < 0) {
         ret = -EMFILE;
         goto ERROUT;
     }
 
-    if ((unsigned int)oflags & O_DIRECTORY) {
-        ret = do_opendir(pathRet, oflags);
+    if ((unsigned int)oflags & O_DIRECTORY) {//目录标签
+        ret = do_opendir(pathRet, oflags);//打开目录
     } else {
 
 #ifdef LOSCFG_FILE_MODE //文件权限开关
     va_list ap;
 
     va_start(ap, oflags);
-    mode = va_arg(ap, int);
+    mode = va_arg(ap, int);//可变参数读取mode值
     va_end(ap);
 #endif
 //当fd参数的值是AT_FDCWD，并且path参数是一个相对路径名，fstatat会计算相对于当前目录的path参数。
 //如果path是一个绝对路径，fd参数就会被忽略
-        ret = do_open(AT_FDCWD, pathRet, oflags, mode);
+        ret = do_open(AT_FDCWD, pathRet, oflags, mode);//打开文件,返回系统描述符
     }
 
     if (ret < 0) {
@@ -301,18 +301,18 @@ int SysOpen(const char *path, int oflags, ...)
         goto ERROUT;
     }
 
-    AssociateSystemFd(procFd, ret);
+    AssociateSystemFd(procFd, ret);//进程<->系统描述符 关联/绑定
     if (pathRet != NULL) {
         LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
     }
-    return procFd;
+    return procFd;//返回进程描述符
 
 ERROUT:
     if (ret >= 0) {
         AssociateSystemFd(procFd, ret);//进程FD 关联 系统FD
         ret = procFd;//正常情况下返回的是进程Fd
     } else {
-        FreeProcessFd(procFd);
+        FreeProcessFd(procFd);//
     }
 ERROUT_PATH_FREE:
     if (pathRet != NULL) {

@@ -37,7 +37,7 @@
 #include "mqueue.h"
 #include "semaphore.h"
 
-
+//杂项
 /*
  * Supply some suitable values for constants that may not be present
  * in all configurations.
@@ -134,7 +134,7 @@ long sysconf(int name)
             return -1;
     }
 }
-
+//获取进程ID ? @note_thinking 这里取taskID 不对吧,
 pid_t getpid(void)
 {
     return ((LosTaskCB *)(OsCurrTaskGet()))->taskID;

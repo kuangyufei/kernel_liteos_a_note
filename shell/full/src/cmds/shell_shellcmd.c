@@ -31,6 +31,20 @@
 
 #include "shcmd.h"
 
+/*
+help命令用于显示当前操作系统内所有操作指令
+
+OHOS # help
+*******************shell commands:*************************
+
+arp           cat           cd            chgrp         chmod         chown         cp            cpup          
+date          dhclient      dmesg         dns           format        free          help          hwi           
+ifconfig      ipdebug       kill          log           ls            lsfd          memcheck      mkdir         
+mount         netstat       oom           partinfo      partition     ping          ping6         pwd           
+reset         rm            rmdir         sem           statfs        su            swtmr         sync          
+systeminfo    task          telnet        tftp          touch         umount        uname         watch         
+writeproc     
+*/
 UINT32 OsShellCmdHelp(UINT32 argc, const CHAR **argv)
 {
     UINT32 loop = 0;
@@ -44,7 +58,7 @@ UINT32 OsShellCmdHelp(UINT32 argc, const CHAR **argv)
     }
 
     PRINTK("*******************shell commands:*************************\n");
-    LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(cmdInfo->cmdList.list), CmdItemNode, list) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(cmdInfo->cmdList.list), CmdItemNode, list) {//遍历命令链表
         if ((loop & (8 - 1)) == 0) { /* 8 - 1:just align print */
             PRINTK("\n");
         }

@@ -35,9 +35,9 @@
 
 LIST_HEAD g_vnodeFreeList;              /* free vnodes list */	//空闲节点链表
 LIST_HEAD g_vnodeVirtualList;           /* dev vnodes list */	//虚拟设备节点链表,暂无实际的文件系统
-LIST_HEAD g_vnodeActiveList;              /* inuse vnodes list */
+LIST_HEAD g_vnodeActiveList;            /* inuse vnodes list */	//正在使用的虚拟节点链表
 static int g_freeVnodeSize = 0;         /* system free vnodes size */	//剩余节点数量
-static int g_totalVnodeSize = 0;        /* total vnode size */	//总节点数量
+static int g_totalVnodeSize = 0;        /* total vnode size */	//已分配的总节点数量
 
 static LosMux g_vnodeMux;	//操作链表互斥量			
 static struct Vnode *g_rootVnode = NULL;//根节点
@@ -93,7 +93,7 @@ int VnodesInit(void)
 
     LOS_ListInit(&g_vnodeFreeList);		//初始化空闲的节点链表
     LOS_ListInit(&g_vnodeVirtualList);	//初始化虚拟节点链表
-    LOS_ListInit(&g_vnodeActiveList);
+    LOS_ListInit(&g_vnodeActiveList);	//初始化活动虚拟节点链表
     retval = VnodeAlloc(NULL, &g_rootVnode);//分配根节点
     if (retval != LOS_OK) {
         PRINT_ERR("VnodeInit failed error %d\n", retval);
@@ -214,21 +214,20 @@ int VnodeFree(struct Vnode *vnode)
     LOS_ListDelete(&(vnode->hashEntry));//将自己从当前哈希链表上摘出来,此时vnode通过hashEntry挂在 g_vnodeHashEntrys
     LOS_ListDelete(&vnode->actFreeEntry);//将自己从当前链表摘出来,此时vnode通过actFreeEntry挂在 g_vnodeCurrList
 
-    if (vnode->vop->Reclaim) {
-        vnode->vop->Reclaim(vnode);
+    if (vnode->vop->Reclaim) {//资源的回收操作
+        vnode->vop->Reclaim(vnode);//先回收资源
     }
 
-    if (vnode->vop == &g_devfsOps) {
+    if (vnode->vop == &g_devfsOps) {//对于设备文件系统的回收
         /* for dev vnode, just free it */
-        free(vnode->data);
+        free(vnode->data);//
         free(vnode);
         g_totalVnodeSize--;
     } else {
         /* for normal vnode, reclaim it to g_VnodeFreeList */
-    memset_s(vnode, sizeof(struct Vnode), 0, sizeof(struct Vnode));
-    LOS_ListAdd(&g_vnodeFreeList, &vnode->actFreeEntry);//通过 actFreeEntry链表节点挂到 空闲链表上. 
-
-    g_freeVnodeSize++;
+    	memset_s(vnode, sizeof(struct Vnode), 0, sizeof(struct Vnode));//节点再利用
+    	LOS_ListAdd(&g_vnodeFreeList, &vnode->actFreeEntry);//actFreeEntry换个地方挂,从活动链接换到空闲链表上. 
+    	g_freeVnodeSize++;//空闲链表节点数量增加
     }
     VnodeDrop();//释放互斥锁
 
@@ -257,7 +256,7 @@ BOOL VnodeInUseIter(const struct Mount *mount)
 {
     struct Vnode *vnode = NULL;
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(vnode, &g_vnodeActiveList, struct Vnode, actFreeEntry) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(vnode, &g_vnodeActiveList, struct Vnode, actFreeEntry) {//遍历活动链表
         if (vnode->originMount == mount) {//找到一致挂载点
             if ((vnode->useCount > 0) || (vnode->flag & VNODE_FLAG_MOUNT_ORIGIN)) {//还在被使用
                 return TRUE;
@@ -632,7 +631,7 @@ int VnodeDevLookup(struct Vnode *parentVnode, const char *path, int len, struct 
     /* dev node must in pathCache. */
     return -ENOENT;
 }
-//虚拟设备 默认节点操作
+//设备文件系统节点操作
 static struct VnodeOps g_devfsOps = {
     .Lookup = VnodeDevLookup,
     .Getattr = VnodeGetattr,

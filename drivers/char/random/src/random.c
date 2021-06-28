@@ -33,10 +33,14 @@
 #include "fcntl.h"
 #include "linux/kernel.h"
 #include "fs/driver.h"
+/*****************************************************************
+	/dev/random在类UNIX系统中是一个特殊的设备文件，可以用作随机数发生器或伪随机数发生器。
 
+*****************************************************************/
 
-static unsigned long g_randomMax =  0x7FFFFFFF;
+static unsigned long g_randomMax =  0x7FFFFFFF;//随机数范围
 
+//生成随机数
 static long DoRand(unsigned long *value)
 {
     long quotient, remainder, t;
@@ -54,8 +58,8 @@ static unsigned long g_seed = 1;
 
 int RanOpen(struct file *filep)
 {
-    g_seed = (unsigned long)(LOS_CurrNanosec() & 0xffffffff);
-    return 0;
+    g_seed = (unsigned long)(LOS_CurrNanosec() & 0xffffffff);//取当前纳秒数
+    return 0;//返回成功,目的是为了给g_seed取赋值
 }
 
 static int RanClose(struct file *filep)
@@ -111,7 +115,7 @@ static const struct file_operations_vfs g_ranDevOps = {
 #endif
     NULL,      /* unlink */
 };
-
+//注册生成随机数驱动
 int DevRandomRegister(void)
 {
     return register_driver("/dev/random", &g_ranDevOps, 0666, 0); /* 0666: file mode */

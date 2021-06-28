@@ -104,11 +104,11 @@ static int QuickstartDevUnlink(struct Vnode *node)
     (void)node;
     return unregister_driver(QUICKSTART_NODE);
 }
-
+//快速开始控制器
 static ssize_t QuickstartIoctl(struct file *filep, int cmd, unsigned long arg)
 {
     ssize_t ret;
-    if (cmd == QUICKSTART_NOTIFY) {
+    if (cmd == QUICKSTART_NOTIFY) {//通知模式
         return QuickstartNotify(arg);
     }
 
@@ -117,7 +117,7 @@ static ssize_t QuickstartIoctl(struct file *filep, int cmd, unsigned long arg)
         return -EACCES;
     }
     switch (cmd) {
-        case QUICKSTART_LISTEN:
+        case QUICKSTART_LISTEN://监听模式
             ret = QuickstartListen(arg);
             break;
         default:
@@ -136,7 +136,7 @@ static const struct file_operations_vfs g_quickstartDevOps = {
 
 int QuickstartDevRegister(void)
 {
-    LOS_EventInit(&g_qsEvent);
+    LOS_EventInit(&g_qsEvent);//初始化 g_qsEvent
     return register_driver(QUICKSTART_NODE, &g_quickstartDevOps, 0644, 0); /* 0644: file mode */
 }
 
