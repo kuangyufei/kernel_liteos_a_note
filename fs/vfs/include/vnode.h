@@ -151,20 +151,22 @@ struct IATTR;
 	
 由于 vnode 是对所有设备的一个抽象，因此不同类型的设备，他们的操作方法也不一样，
 因此 vop ,fop 都是接口, data 因设备不同而不同.
+
+如果底层是磁盘存储，Inode结构会保存到磁盘。当需要时从磁盘读取到内存中进行缓存。
 */
-struct Vnode {
+struct Vnode {//vnode并不包含文件名,因为 vnode和文件名是 1:N 的关系
     enum VnodeType type;                /* vnode type */	//节点类型 (文件|目录|链接...)
     int useCount;                       /* ref count of users *///节点引用(链接)数，即有多少文件名指向这个vnode,即上层理解的硬链接数   
     uint32_t hash;                      /* vnode hash */	//节点哈希值
-    uint uid;                           /* uid for dac */	//DAC用户ID
-    uint gid;                           /* gid for dac */	//DAC用户组ID
-    mode_t mode;                        /* mode for dac */	//DAC的模式
+    uint uid;                           /* uid for dac */	//文件拥有者的User ID
+    uint gid;                           /* gid for dac */	//文件的Group ID
+    mode_t mode;                        /* mode for dac */	//chmod 文件的读、写、执行权限
     LIST_HEAD parentPathCaches;         /* pathCaches point to parents */	//指向父级路径缓存,上面的都是当了爸爸节点
     LIST_HEAD childPathCaches;          /* pathCaches point to children */	//指向子级路径缓存,上面都是当了别人儿子的节点
     struct Vnode *parent;               /* parent vnode */	//父节点
     struct VnodeOps *vop;               /* vnode operations */	//以 Vnode 方式操作数据(接口实现|驱动程序)
     struct file_operations_vfs *fop;    /* file operations */	//以 file 方式操作数据(接口实现|驱动程序)
-    void *data;                         /* private data */		//指向每种具体设备私有的成员，例如 ( drv_data | nfsnode | ....)
+    void *data;                         /* private data */		//文件数据block的位置,指向每种具体设备私有的成员，例如 ( drv_data | nfsnode | ....)
     uint32_t flag;                      /* vnode flag */		//节点标签
     LIST_ENTRY hashEntry;               /* list entry for bucket in hash table */ //通过它挂入哈希表 g_vnodeHashEntrys[i], i:[0,g_vnodeHashMask]
     LIST_ENTRY actFreeEntry;            /* vnode active/free list entry */	//通过本节点挂到空闲链表和使用链表上
@@ -178,6 +180,7 @@ struct Vnode {
 struct VnodeOps {
     int (*Create)(struct Vnode *parent, const char *name, int mode, struct Vnode **vnode);//创建节点
     int (*Lookup)(struct Vnode *parent, const char *name, int len, struct Vnode **vnode);//查询节点
+    //Lookup向底层文件系统查找获取inode信息
     int (*Open)(struct Vnode *vnode, int fd, int mode, int flags);//打开节点
     int (*Close)(struct Vnode *vnode);//关闭节点
     int (*Reclaim)(struct Vnode *vnode);//回收节点

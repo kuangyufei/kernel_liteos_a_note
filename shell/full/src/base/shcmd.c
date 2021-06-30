@@ -44,7 +44,7 @@
 #define SHELL_INIT_MAGIC_FLAG 0xABABABAB
 #define CTRL_C 0x03 /* 0x03: ctrl+c ASCII */
 
-STATIC CmdModInfo g_cmdInfo;
+STATIC CmdModInfo g_cmdInfo;//命令模块信息,上面挂了所有的命令项目
 
 LOS_HAL_TABLE_BEGIN(g_shellcmd, shellcmd);
 LOS_HAL_TABLE_END(g_shellcmdEnd, shellcmd);
@@ -494,7 +494,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdKeyShift(const CHAR *cmdKey, CHAR *cmdOut, UI
 
     return LOS_OK;
 }
-
+//类型变量命名,必须是数字字母下划线,首字母不能是数字
 LITE_OS_SEC_TEXT_MINOR BOOL OsCmdKeyCheck(const CHAR *cmdKey)
 {
     const CHAR *temp = cmdKey;
@@ -733,7 +733,7 @@ END:
     (VOID)pthread_mutex_unlock(&shellCB->historyMutex);
     return;
 }
-
+//执行命令,shell是运行程序的程序.
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdExec(CmdParsed *cmdParsed, CHAR *cmdStr)
 {
     UINT32 ret;
@@ -746,7 +746,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdExec(CmdParsed *cmdParsed, CHAR *cmdStr)
         return (UINT32)OS_ERROR;
     }
 
-    ret = OsCmdParse(cmdStr, cmdParsed);
+    ret = OsCmdParse(cmdStr, cmdParsed);//解析命令
     if (ret != LOS_OK) {
         goto OUT;
     }
@@ -762,7 +762,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdExec(CmdParsed *cmdParsed, CHAR *cmdStr)
     }
 
     ret = OS_ERROR;
-    if (cmdHook != NULL) {
+    if (cmdHook != NULL) {//执行命令,即回调函数
         ret = (cmdHook)(cmdParsed->paramCnt, (const CHAR **)cmdParsed->paramArray);
     }
 
@@ -776,26 +776,26 @@ OUT:
 
     return (UINT32)ret;
 }
-
+//命令初始化
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdInit(VOID)
 {
     UINT32 ret;
-    LOS_ListInit(&(g_cmdInfo.cmdList.list));
-    g_cmdInfo.listNum = 0;
-    g_cmdInfo.initMagicFlag = SHELL_INIT_MAGIC_FLAG;
-    ret = LOS_MuxInit(&g_cmdInfo.muxLock, NULL);
+    LOS_ListInit(&(g_cmdInfo.cmdList.list));//初始化双向链表
+    g_cmdInfo.listNum = 0;	//命令数量
+    g_cmdInfo.initMagicFlag = SHELL_INIT_MAGIC_FLAG;//魔法数字
+    ret = LOS_MuxInit(&g_cmdInfo.muxLock, NULL);//初始化互斥量,确保链表安全访问
     if (ret != LOS_OK) {
         PRINT_ERR("Create mutex for shell cmd info failed\n");
         return OS_ERROR;
     }
     return LOS_OK;
 }
-
+//创建一个命令项
 STATIC UINT32 OsCmdItemCreate(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNum, CmdCallBackFunc cmdProc)
 {
     CmdItem *cmdItem = NULL;
     CmdItemNode *cmdItemNode = NULL;
-
+	//1.构造命令节点过程
     cmdItem = (CmdItem *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdItem));
     if (cmdItem == NULL) {
         return OS_ERRNO_SHELL_CMDREG_MEMALLOC_ERROR;
@@ -813,28 +813,28 @@ STATIC UINT32 OsCmdItemCreate(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNu
     cmdItemNode->cmd->paraNum = paraNum;
     cmdItemNode->cmd->cmdType = cmdType;
     cmdItemNode->cmd->cmdKey = cmdKey;
-
+	//2.完成构造后挂入全局链表
     (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);
-    OsCmdAscendingInsert(cmdItemNode);
-    g_cmdInfo.listNum++;
+    OsCmdAscendingInsert(cmdItemNode);//按升序方式插入
+    g_cmdInfo.listNum++;//命令总数增加
     (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
 
     return LOS_OK;
 }
 
-/* open API */
+/* open API */ //注册命令至全局
 LITE_OS_SEC_TEXT_MINOR UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNum, CmdCallBackFunc cmdProc)
 {
     CmdItemNode *cmdItemNode = NULL;
 
-    (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);
-    if (g_cmdInfo.initMagicFlag != SHELL_INIT_MAGIC_FLAG) {
+    (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);//1.确保先拿到锁
+    if (g_cmdInfo.initMagicFlag != SHELL_INIT_MAGIC_FLAG) {	//验证全局变量的有效性
         (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
         PRINT_ERR("[%s] shell is not yet initialized!\n", __FUNCTION__);
         return OS_ERRNO_SHELL_NOT_INIT;
     }
     (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
-
+	//2.参数检查
     if ((cmdProc == NULL) || (cmdKey == NULL) ||
         (cmdType >= CMD_TYPE_BUTT) || (strlen(cmdKey) >= CMD_KEY_LEN) || !strlen(cmdKey)) {
         return OS_ERRNO_SHELL_CMDREG_PARA_ERROR;
@@ -845,11 +845,11 @@ LITE_OS_SEC_TEXT_MINOR UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT
             return OS_ERRNO_SHELL_CMDREG_PARA_ERROR;
         }
     }
-
+	//3.按键检查
     if (OsCmdKeyCheck(cmdKey) != TRUE) {
         return OS_ERRNO_SHELL_CMDREG_CMD_ERROR;
     }
-
+	//4.遍历链表节点,验证是否命令存在
     (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);
     LOS_DL_LIST_FOR_EACH_ENTRY(cmdItemNode, &(g_cmdInfo.cmdList.list), CmdItemNode, list) {
         if ((cmdType == cmdItemNode->cmd->cmdType) &&
@@ -860,7 +860,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT
         }
     }
     (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
-
+	//5.正式创建命令,挂入链表
     return OsCmdItemCreate(cmdType, cmdKey, paraNum, cmdProc);
 }
 

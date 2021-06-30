@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 因同步导致的注解覆盖还原. 
+git commit -m  ' http://weharmonyos.com 上线 
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     博客输出站点(国内):https://weharmonyos.com 或 http://8.134.122.205
     博客输出站点(国外):https://weharmony.github.io

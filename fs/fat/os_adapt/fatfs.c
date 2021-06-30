@@ -239,7 +239,7 @@ static mode_t fatfs_get_mode(BYTE attribute, mode_t fs_mode)
     }
     return fs_mode;
 }
-
+//类型转换
 static enum VnodeType fatfstype_2_vnodetype(BYTE type) {
     switch (type) {
         case AM_ARC:
@@ -355,7 +355,7 @@ static int fatfs_create_obj(struct Vnode *parent, const char *name, int mode, st
     FRESULT result;
     int ret;
 
-    if ((type != AM_ARC) && (type != AM_DIR) && (type != AM_LNK)) {
+    if ((type != AM_ARC) && (type != AM_DIR) && (type != AM_LNK)) {//文件类型
         result = FR_INVALID_NAME;
         goto ERROR_EXIT;
     }

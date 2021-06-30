@@ -72,7 +72,7 @@ https://www.cnblogs.com/hoys/archive/2012/08/19/2646377.html
 #define SIGUSR2   12	//用户自定义信号2
 #define SIGPIPE   13	//向某个非读管道中写入数据 
 #define SIGALRM   14	//由alarm(2)发出的信号,默认行为为进程终止
-#define SIGTERM   15	//终止信号
+#define SIGTERM   15	//终止信号, kill不带参数时默认发送这个信号
 #define SIGSTKFLT 16	//栈溢出
 #define SIGCHLD   17	//子进程结束信号
 #define SIGCONT   18	//进程继续（曾被停止的进程）

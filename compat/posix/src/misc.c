@@ -49,6 +49,7 @@
     case (name):                    \
         return (val)
 
+//uname命令用于显示当前操作系统的名称，版本创建时间，系统名称，版本信息等
 int uname(struct utsname *name)
 {
     INT32 ret;

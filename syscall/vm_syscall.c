@@ -100,7 +100,7 @@ int SysMprotect(void *vaddr, size_t len, int prot)
     return LOS_DoMprotect((uintptr_t)vaddr, len, (unsigned long)prot);
 }
 /**************************************************
-
+brk也是申请堆内存的一种方式,一般小于 128K 会使用它
 **************************************************/
 void *SysBrk(void *addr)
 {

@@ -74,10 +74,6 @@ JFFS2分区在“spinor”上使用，而“nand”是提供给YAFFS2使用的�
 第二个参数表示起始地址，第三个参数表示分区大小，这两个参数都以16进制的形式传入。
 
 最后一个参数表示分区号，有效值为0~19。
-
-
-
-
 *************************************************************/
 #ifdef LOSCFG_FS_JFFS
 
@@ -88,8 +84,8 @@ struct file_operations_vfs g_jffs2Fops;//vfs接口实现
 static LosMux g_jffs2FsLock;  /* lock for all jffs2 ops *///操作 jffs2文件系统锁
 
 static pthread_mutex_t g_jffs2NodeLock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
-struct Vnode *g_jffs2PartList[CONFIG_MTD_PATTITION_NUM];//分区列表
-
+struct Vnode *g_jffs2PartList[CONFIG_MTD_PATTITION_NUM];//jffs2 分区列表
+//设置vnode节点的文件类型
 static void Jffs2SetVtype(struct jffs2_inode *node, struct Vnode *pVnode)
 {
     switch (node->i_mode & S_IFMT) {
@@ -217,7 +213,7 @@ int VfsJffs2Lookup(struct Vnode *parentVnode, const char *path, int len, struct 
 
     LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
 
-    parentNode = (struct jffs2_inode *)parentVnode->data;
+    parentNode = (struct jffs2_inode *)parentVnode->data;//获取私有数据
     node = jffs2_lookup(parentNode, (const unsigned char *)path, len);
     if (!node) {
         LOS_MuxUnlock(&g_jffs2FsLock);

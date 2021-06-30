@@ -50,24 +50,24 @@ extern "C" {
 
 typedef BOOL (*CmdVerifyTransID)(UINT32 transID);
 
-typedef struct {
+typedef struct {//命令项
     CmdType cmdType;
-    const CHAR *cmdKey;
-    UINT32 paraNum;
-    CmdCallBackFunc cmdHook;
+    const CHAR *cmdKey;	//按键
+    UINT32 paraNum;	//参数个数
+    CmdCallBackFunc cmdHook;	//回调函数
 } CmdItem;
 
-typedef struct {
+typedef struct {	//命令节点
     LOS_DL_LIST list;
     CmdItem *cmd;
 } CmdItemNode;
 
 /* global info for shell module */
-typedef struct {
+typedef struct {//shell 模块的全局信息
     CmdItemNode cmdList;
-    UINT32 listNum;
-    UINT32 initMagicFlag;
-    LosMux muxLock;
+    UINT32 listNum;//节点数量
+    UINT32 initMagicFlag;//初始魔法标签 0xABABABAB
+    LosMux muxLock;	//操作链表互斥锁
     CmdVerifyTransID transIdHook;
 } CmdModInfo;
 

@@ -202,13 +202,13 @@ LITE_OS_SEC_TEXT_MINOR VOID ShellCmdLineParse(CHAR c, pf_OUTPUT outputFunc, Shel
 
     shellCB->shellKeyType = STAT_NOMAL_KEY;
 }
-
+//获取shell消息类型
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellMsgTypeGet(CmdParsed *cmdParsed, const CHAR *cmdType)
 {
     CmdItemNode *curCmdItem = (CmdItemNode *)NULL;
     UINT32 len;
     UINT32 minLen;
-    CmdModInfo *cmdInfo = OsCmdInfoGet();
+    CmdModInfo *cmdInfo = OsCmdInfoGet();//获取全局变量
 
     if ((cmdParsed == NULL) || (cmdType == NULL)) {
         return OS_INVALID;
@@ -217,7 +217,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellMsgTypeGet(CmdParsed *cmdParsed, const CHAR *
     len = strlen(cmdType);
     LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(cmdInfo->cmdList.list), CmdItemNode, list) {
         if ((len == strlen(curCmdItem->cmd->cmdKey)) &&
-            (strncmp((CHAR *)(curCmdItem->cmd->cmdKey), cmdType, len) == 0)) {
+            (strncmp((CHAR *)(curCmdItem->cmd->cmdKey), cmdType, len) == 0)) {//先比较
             minLen = (len < CMD_KEY_LEN) ? len : CMD_KEY_LEN;
             (VOID)memcpy_s((CHAR *)(cmdParsed->cmdKeyword), CMD_KEY_LEN, cmdType, minLen);
             cmdParsed->cmdType = curCmdItem->cmd->cmdType;
