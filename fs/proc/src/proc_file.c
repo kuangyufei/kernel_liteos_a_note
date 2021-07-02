@@ -315,18 +315,18 @@ static void ProcDetachNode(struct ProcDirEntry *pn)
     }
     pn->parent = NULL;
 }
-//在参数 parent 下创建目录
+// /proc文件系统创建目录的方式
 static struct ProcDirEntry *ProcCreateDir(struct ProcDirEntry *parent, const char *name,
                                           const struct ProcFileOperations *procFileOps, mode_t mode)
 {
     struct ProcDirEntry *pn = NULL;
     int ret;
 
-    pn = ProcAllocNode(&parent, name, S_IFDIR | mode);//分配一个节点
+    pn = ProcAllocNode(&parent, name, S_IFDIR | mode);//1.先创造一个数据项 ProcDirEntry
     if (pn == NULL) {
         return pn;
     }
-    pn->procFileOps = procFileOps;
+    pn->procFileOps = procFileOps;//绑定数据项的文件系统
     pn->type = VNODE_TYPE_DIR;
     ret = ProcAddNode(parent, pn);
     if (ret != 0) {

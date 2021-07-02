@@ -94,12 +94,11 @@ struct ProcDirEntry {//这才是能操作 /proc的 真正结构体
     mode_t mode;	//模式(读|写...)
     int flags;	//标签
     const struct ProcFileOperations *procFileOps;//驱动程序,每个 /proc 下目录的驱动程序都不一样
-    struct ProcFile *pf;//文件指针
+    struct ProcFile *pf;//proc文件指针
     struct ProcDirEntry *next, *parent, *subdir;//当前目录项的关系项
     void *data;
     atomic_t count; /* open file count */ //打开文件的数量
     spinlock_t pdeUnloadLock;
-
     int nameLen;
     struct ProcDirEntry *pdirCurrent;//当前目录
     char name[NAME_MAX];

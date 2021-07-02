@@ -65,21 +65,21 @@ static struct ProcDirEntry *VnodeToEntry(struct Vnode *node)
 {
     return (struct ProcDirEntry *)(node->data);
 }
-//创建节点,绑定实体对象
+//创建节点,通过实体对象转成vnode节点,如此达到统一管理的目的.
 static struct Vnode *EntryToVnode(struct ProcDirEntry *entry)
 {
     struct Vnode *node = NULL;
 
-    (void)VnodeAlloc(&g_procfsVops, &node);//申请一个 vnode节点,并设置操作节点的实现函数
+    (void)VnodeAlloc(&g_procfsVops, &node);//申请一个 vnode节点,并设置节点操作
     node->fop = &g_procfsFops;//设置文件操作系列函数
     node->data = entry;//绑定实体
     node->type = entry->type;//实体类型 (文件|目录)
-    node->uid = entry->uid;
-    node->gid = entry->gid;
-    node->mode = entry->mode;
+    node->uid = entry->uid;	//用户ID
+    node->gid = entry->gid;	//组ID
+    node->mode = entry->mode;//读/写/执行模式
     return node;
 }
-
+//实体匹配,通过名称匹配
 static int EntryMatch(const char *name, int len, const struct ProcDirEntry *pn)
 {
     if (len != pn->nameLen) {
@@ -187,7 +187,7 @@ int VfsProcfsLookup(struct Vnode *parent, const char *name, int len, struct Vnod
     if ((*vpp) == NULL) {
         return -ENOMEM;
     }
-    (*vpp)->originMount = parent->originMount;
+    (*vpp)->originMount = parent->originMount;//继承挂载信息
     (*vpp)->parent = parent;
     return LOS_OK;
 }
@@ -208,7 +208,7 @@ int VfsProcfsMount(struct Mount *mnt, struct Vnode *device, const void *data)
     struct ProcDirEntry *root = GetProcRootEntry();
     vp->data = root;
     vp->originMount = mnt;//绑定mount
-    vp->fop = &g_procfsFops;
+    vp->fop = &g_procfsFops;//指定文件系统
     mnt->data = NULL;
     mnt->vnodeCovered = vp;
     vp->type = root->type;
@@ -356,7 +356,7 @@ const struct MountOps procfs_operations = {
     .Unmount = NULL,
     .Statfs = VfsProcfsStatfs,//统计信息
 };
-// proc 对 VnodeOps 接口实现
+// proc 对 VnodeOps 接口实现,暂没有实现创建节点的功能.
 static struct VnodeOps g_procfsVops = { 
     .Lookup = VfsProcfsLookup,
     .Getattr = VfsProcfsStat,

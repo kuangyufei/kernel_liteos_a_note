@@ -164,13 +164,13 @@ struct Vnode {//vnode并不包含文件名,因为 vnode和文件名是 1:N 的�
     LIST_HEAD parentPathCaches;         /* pathCaches point to parents */	//指向父级路径缓存,上面的都是当了爸爸节点
     LIST_HEAD childPathCaches;          /* pathCaches point to children */	//指向子级路径缓存,上面都是当了别人儿子的节点
     struct Vnode *parent;               /* parent vnode */	//父节点
-    struct VnodeOps *vop;               /* vnode operations */	//以 Vnode 方式操作数据(接口实现|驱动程序)
-    struct file_operations_vfs *fop;    /* file operations */	//以 file 方式操作数据(接口实现|驱动程序)
+    struct VnodeOps *vop;               /* vnode operations */	//相当于指定操作Vnode方式 (接口实现|驱动程序)
+    struct file_operations_vfs *fop;    /* file operations */	//相当于指定文件系统
     void *data;                         /* private data */		//文件数据block的位置,指向每种具体设备私有的成员，例如 ( drv_data | nfsnode | ....)
     uint32_t flag;                      /* vnode flag */		//节点标签
     LIST_ENTRY hashEntry;               /* list entry for bucket in hash table */ //通过它挂入哈希表 g_vnodeHashEntrys[i], i:[0,g_vnodeHashMask]
     LIST_ENTRY actFreeEntry;            /* vnode active/free list entry */	//通过本节点挂到空闲链表和使用链表上
-    struct Mount *originMount;          /* fs info about this vnode */ //关于这个节点的挂载信息
+    struct Mount *originMount;          /* fs info about this vnode */ //节点的挂载信息
     struct Mount *newMount;             /* fs info about who mount on this vnode */	//挂载在这个节点上的文件系统
 };
 /*

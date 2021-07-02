@@ -1084,7 +1084,7 @@ static int fat_bind_check(struct Vnode *blk_driver, los_part **partition)
     *partition = part;
     return 0;
 }
-
+//fat将分区文件系统挂载 举例: mount /dev/mmcblk0p0 /bin1/vs/sd vfat
 int fatfs_mount(struct Mount *mnt, struct Vnode *blk_device, const void *data)
 {
     struct Vnode *vp = NULL;
@@ -1097,7 +1097,7 @@ int fatfs_mount(struct Mount *mnt, struct Vnode *blk_device, const void *data)
     FRESULT result;
     int ret;
 
-    ret = fat_bind_check(blk_device, &part);
+    ret = fat_bind_check(blk_device, &part);//通过节点获取分区信息
     if (ret != 0) {
         goto ERROR_EXIT;
     }
@@ -2129,7 +2129,7 @@ ERROUT:
     unlock_fs(fs, res);
     return -fatfs_2_vfs(res);
 }
-//fatfs 实现vnode接口
+//fat 文件系统 vnode实现
 struct VnodeOps fatfs_vops = {
     /* file ops */
     .Getattr = fatfs_stat,
@@ -2152,13 +2152,13 @@ struct VnodeOps fatfs_vops = {
     .Symlink = fatfs_symlink,
     .Readlink = fatfs_readlink,
 };
-
+//fat 文件系统 挂载实现
 struct MountOps fatfs_mops = {
     .Mount = fatfs_mount,
     .Unmount = fatfs_umount,
     .Statfs = fatfs_statfs,
 };
-
+//fat 文件系统 文件操作实现
 struct file_operations_vfs fatfs_fops = {
     .open = fatfs_open,
     .read = fatfs_read,

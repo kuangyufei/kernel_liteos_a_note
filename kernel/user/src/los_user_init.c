@@ -36,6 +36,8 @@
 
 #define SYS_CALL_VALUE 0x900001
 
+//加载init进程
+
 #ifdef LOSCFG_QUICK_START
 LITE_USER_SEC_RODATA STATIC CHAR *g_initPath = "/dev/shm/init";
 #else
