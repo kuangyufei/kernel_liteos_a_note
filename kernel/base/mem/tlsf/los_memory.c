@@ -42,6 +42,14 @@
 #include "los_trace.h"
 #endif
 
+/**************************************************************
+内存信息包括内存池大小、内存使用量、剩余内存大小、最大空闲内存、内存水线、内存节点数统计、碎片率等。
+
+内存水线：即内存池的最大使用量，每次申请和释放时，都会更新水线值，实际业务可根据该值，优化内存池大小；
+碎片率：衡量内存池的碎片化程度，碎片率高表现为内存池剩余内存很多，但是最大空闲内存块很小，可以用公式（fragment=100-最大空闲内存块大小/剩余内存大小）来度量；
+
+**************************************************************/
+
 
 /* Used to cut non-essential functions. */
 #define OS_MEM_FREE_BY_TASKID   0
@@ -56,8 +64,8 @@
 /* column num of the output info of mem node */
 #define OS_MEM_COLUMN_NUM       8
 
-UINT8 *m_aucSysMem0 = NULL;
-UINT8 *m_aucSysMem1 = NULL;
+UINT8 *m_aucSysMem0 = NULL;	//异常交互动态内存池地址的起始地址，当不支持异常交互特性时，m_aucSysMem0等于m_aucSysMem1。
+UINT8 *m_aucSysMem1 = NULL;	//系统动态内存池地址的起始地址
 
 #ifdef LOSCFG_MEM_MUL_POOL
 VOID *g_poolHead = NULL;
@@ -1798,9 +1806,9 @@ STATIC INLINE VOID OsMemInfoGet(struct OsMemPoolHead *poolInfo, struct OsMemNode
     poolStatus->usedNodeNum += usedNodeNum;
     poolStatus->freeNodeNum += freeNodeNum;
 }
-
+//内存水线获取：调用LOS_MemInfoGet接口，第1个参数是内存池首地址，第2个参数是LOS_MEM_POOL_STATUS类型的句柄，其中字段usageWaterLine即水线值
 UINT32 LOS_MemInfoGet(VOID *pool, LOS_MEM_POOL_STATUS *poolStatus)
-{
+{//内存碎片率计算：同样调用LOS_MemInfoGet接口，可以获取内存池的剩余内存大小和最大空闲内存块大小，然后根据公式（fragment=100-最大空闲内存块大小/剩余内存大小）得出此时的动态内存池碎片率。
     struct OsMemPoolHead *poolInfo = pool;
 
     if (poolStatus == NULL) {
@@ -1926,7 +1934,7 @@ UINT32 LOS_MemFreeNodeShow(VOID *pool)
 
     return LOS_OK;
 }
-
+//内核空间动态内存(堆内存)初始化
 STATUS_T OsKHeapInit(size_t size)
 {
     STATUS_T ret;

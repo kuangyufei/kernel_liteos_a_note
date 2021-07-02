@@ -160,7 +160,7 @@ int pthread_attr_getschedpolicy(const pthread_attr_t *attr, int *policy)
 
     return ENOERR;
 }
-//设置调度参数,调度参数是在 param 结构中定义的。仅支持优先级参数。新创建的线程使用此优先级运行。
+//设置线程属性对象的调度参数属性,调度参数是在 param 结构中定义的。仅支持优先级参数。新创建的线程使用此优先级运行。
 int pthread_attr_setschedparam(pthread_attr_t *attr, const struct sched_param *param)
 {
     if ((attr == NULL) || (param == NULL)) {
@@ -173,7 +173,7 @@ int pthread_attr_setschedparam(pthread_attr_t *attr, const struct sched_param *p
 
     return ENOERR;
 }
-//获取调度参数
+//获取线程属性对象的调度参数属性
 int pthread_attr_getschedparam(const pthread_attr_t *attr, struct sched_param *param)
 {
     if ((attr == NULL) || (param == NULL)) {

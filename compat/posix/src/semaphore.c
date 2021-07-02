@@ -34,7 +34,7 @@
 #include "map_error.h"
 #include "time_posix.h"
 
-
+//创建并初始化一个无名信号量
 /* Initialize semaphore to value, shared is not supported in Huawei LiteOS. */
 int sem_init(sem_t *sem, int shared, unsigned int value)//初始化信号量，Huawei LiteOS 不支持共享
 {
@@ -56,7 +56,7 @@ int sem_init(sem_t *sem, int shared, unsigned int value)//初始化信号量，H
 
     return 0;
 }
-
+//销毁指定的无名信号量
 int sem_destroy(sem_t *sem)
 {
     UINT32 ret;
@@ -72,7 +72,7 @@ int sem_destroy(sem_t *sem)
     }
     return 0;
 }
-
+//获取信号量
 /* Decrement value if >0 or wait for a post. */
 int sem_wait(sem_t *sem)
 {
@@ -90,7 +90,7 @@ int sem_wait(sem_t *sem)
         return -1;
     }
 }
-
+//尝试获取信号量
 /* Decrement value if >0, return -1 if not. */
 int sem_trywait(sem_t *sem)
 {
@@ -111,7 +111,7 @@ int sem_trywait(sem_t *sem)
         return -1;
     }
 }
-
+//设置获取信号量时间,时间到了不管是否获取也返回.
 int sem_timedwait(sem_t *sem, const struct timespec *timeout)
 {
     UINT32 ret;
@@ -135,7 +135,7 @@ int sem_timedwait(sem_t *sem, const struct timespec *timeout)
         return -1;
     }
 }
-
+//增加信号量计数
 int sem_post(sem_t *sem)
 {
     UINT32 ret;

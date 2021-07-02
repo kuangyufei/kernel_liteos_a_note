@@ -102,7 +102,7 @@
 	要查看调用栈信息，必须添加编译选项宏-fno-omit-frame-pointer支持stack frame，否则编译时FP寄存器是关闭的。
 
 参考
-	https://gitee.com/LiteOS/LiteOS/blob/master/doc/Huawei_LiteOS_Kernel_Developer_Guide_zh.md
+	http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/%E7%94%A8%E6%88%B7%E6%80%81%E5%BC%82%E5%B8%B8%E4%BF%A1%E6%81%AF%E8%AF%B4%E6%98%8E.html
 ******************************************************************************/
 #define INVALID_CPUID  0xFFFF
 #define OS_EXC_VMM_NO_REGION  0x0U
@@ -1121,7 +1121,7 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 #endif
 #endif
 }
-
+//异常信息头部打印
 LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
 {
 #ifdef LOSCFG_KERNEL_VM
@@ -1134,11 +1134,11 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
             LOS_DumpMemRegion(vaddr);
         }
 #endif
-        PrintExcInfo("##################excFrom: User!####################\n");
+        PrintExcInfo("##################excFrom: User!####################\n");//用户态异常信息说明
     } else
 #endif
     {
-        PrintExcInfo("##################excFrom: kernel!###################\n");
+        PrintExcInfo("##################excFrom: kernel!###################\n");//内核态异常信息说明
     }
 }
 
@@ -1164,7 +1164,7 @@ STATIC VOID OsSysStateRestore(UINT32 intCount, UINT32 lockCount)
  *               excBufAddr --- address of EXC buf
  */
 LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
-{
+{//异常信息处理入口
 #ifdef LOSCFG_SAVE_EXCINFO
     UINT32 intCount;
     UINT32 lockCount;
@@ -1176,7 +1176,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
 
     OsExcPriorDisposal(excBufAddr);
 
-    OsPrintExcHead(far);
+    OsPrintExcHead(far);//打印异常信息头部信息 ##################excFrom: User!####################
 
 #if (LOSCFG_KERNEL_SMP == YES)
     OsAllCpuStatusOutput();//打印各CPU core的状态

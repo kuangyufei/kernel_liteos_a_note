@@ -69,13 +69,13 @@ extern "C" {
  * The start address of exc interaction dynamic memory pool address, when the exc
  * interaction feature not support, m_aucSysMem0 equals to m_aucSysMem1.
  */
-extern UINT8 *m_aucSysMem0;
+extern UINT8 *m_aucSysMem0;//异常交互动态内存池地址的起始地址，当不支持异常交互特性时，m_aucSysMem0等于m_aucSysMem1。
 
 /**
  * @ingroup los_memory
  * The start address of system dynamic memory pool address.
  */
-extern UINT8 *m_aucSysMem1;
+extern UINT8 *m_aucSysMem1;//系统动态内存池地址的起始地址
 
 /**
  * @ingroup los_memory
@@ -135,14 +135,14 @@ extern UINT32 LOS_MemPoolList(VOID);
  * @ingroup los_memory
  * Memory pool extern information structure
  */
-typedef struct {
-    UINT32 totalUsedSize;
-    UINT32 totalFreeSize;
-    UINT32 maxFreeNodeSize;
-    UINT32 usedNodeNum;
-    UINT32 freeNodeNum;
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
-    UINT32 usageWaterLine;
+typedef struct {//内存池外部信息结构
+    UINT32 totalUsedSize;	// 内存池的内存使用量
+    UINT32 totalFreeSize;	// 内存池的剩余内存大小
+    UINT32 maxFreeNodeSize;	// 内存池的最大空闲内存块大小
+    UINT32 usedNodeNum;		// 内存池的非空闲内存块个数
+    UINT32 freeNodeNum;		// 内存池的空闲内存块个数
+#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)// 默认打开，如需关闭，在target_config.h中将该宏设置为0
+    UINT32 usageWaterLine;	// 内存池的水线值
 #endif
 } LOS_MEM_POOL_STATUS;
 

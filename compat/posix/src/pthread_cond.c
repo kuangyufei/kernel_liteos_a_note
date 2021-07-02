@@ -92,7 +92,7 @@ int pthread_condattr_setpshared(pthread_condattr_t *attr, int shared)
 
     return 0;
 }
-
+//销毁条件变量属性对象
 int pthread_condattr_destroy(pthread_condattr_t *attr)
 {
     if (attr == NULL) {
@@ -101,7 +101,7 @@ int pthread_condattr_destroy(pthread_condattr_t *attr)
 
     return 0;
 }
-
+//初始化条件变量属性对象
 int pthread_condattr_init(pthread_condattr_t *attr)
 {
     if (attr == NULL) {
@@ -110,7 +110,7 @@ int pthread_condattr_init(pthread_condattr_t *attr)
 
     return 0;
 }
-
+//销毁条件变量
 int pthread_cond_destroy(pthread_cond_t *cond)
 {
     if (cond == NULL) {
@@ -132,7 +132,7 @@ int pthread_cond_destroy(pthread_cond_t *cond)
     cond->mutex = NULL;
     return ENOERR;
 }
-//条件变量初始化
+//初始化条件变量
 int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
 {
     int ret = ENOERR;
@@ -171,7 +171,7 @@ STATIC VOID PthreadCondValueModify(pthread_cond_t *cond)
         }
     }
 }
-//解除阻塞所有线程 
+//解除若干已被等待条件阻塞的线程 
 int pthread_cond_broadcast(pthread_cond_t *cond)
 {
     int ret = ENOERR;
@@ -194,7 +194,7 @@ int pthread_cond_broadcast(pthread_cond_t *cond)
 
     return ret;
 }
-//解除阻塞一个线程
+//解除被阻塞的线程
 int pthread_cond_signal(pthread_cond_t *cond)
 {
     int ret = ENOERR;
@@ -262,7 +262,7 @@ STATIC INT32 ProcessReturnVal(pthread_cond_t *cond, INT32 val)
     }
     return ret;
 }
-//在指定的时间之前阻塞,函数会一直阻塞，直到该条件获得信号，或者最后一个参数所指定的时间已过为止。
+//等待条件 在指定的时间之前阻塞,函数会一直阻塞，直到该条件获得信号，或者最后一个参数所指定的时间已过为止。
 int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
                            const struct timespec *absTime)
 {

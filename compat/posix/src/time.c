@@ -555,7 +555,7 @@ static int CpuClockGetres(const clockid_t clockID, struct timespec *tp)
     return error;
 }
 #endif
-
+//获取时钟的时间
 int clock_gettime(clockid_t clockID, struct timespec *tp)
 {
     UINT32 intSave;
@@ -744,7 +744,7 @@ EXIT:
     PRINT_ERR("Dsipatch signals failed!, ret: %d\r\n", ret);
     return;
 }
-
+//为进程创建计时器
 int OsTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID)
 {
     UINT32 ret;
@@ -799,7 +799,7 @@ int OsTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID)
     *timerID = (timer_t)(UINTPTR)swtmrID;
     return 0;
 }
-
+//为进程删除计时器
 int timer_delete(timer_t timerID)
 {
     UINT16 swtmrID = (UINT16)(UINTPTR)timerID;
@@ -829,7 +829,7 @@ ERROUT:
     errno = EINVAL;
     return -1;
 }
-
+//为进程设置计时器
 int timer_settime(timer_t timerID, int flags,
                   const struct itimerspec *value,   /* new value */
                   struct itimerspec *oldValue)      /* old value to return, always 0 */
@@ -959,12 +959,12 @@ STATIC INT32 DoNanoSleep(UINT64 useconds)
     }
     return -1;
 }
-
+//休眠（微秒单位
 int usleep(unsigned useconds)
 {
     return DoNanoSleep((UINT64)useconds);
 }
-
+//暂停当前线程直到指定的时间到达
 int nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
 {
     UINT64 useconds;

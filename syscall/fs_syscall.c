@@ -1218,7 +1218,7 @@ int SysFtruncate(int fd, off_t length)
     }
     return ret;
 }
-//获取文件系统信息
+//获取指定路径下文件的文件系统信息
 int SysStatfs(const char *path, struct statfs *buf)
 {
     int ret;

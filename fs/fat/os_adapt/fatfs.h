@@ -48,20 +48,7 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-/***************************************************
-FAT文件系统是File Allocation Table（文件配置表）的简称，FAT文件系统有FAT12、FAT16、FAT32。
-FAT文件系统将硬盘分为MBR区、DBR区、FAT区、DIR区、DATA区等5个区域。
 
-FAT文件系统支持多种介质，特别在可移动存储介质（U盘、SD卡、移动硬盘等）上广泛使用。
-可以使嵌入式设备和Windows、Linux等桌面系统保持很好的兼容性，方便用户管理操作文件。
-
-OpenHarmony内核的FAT文件系统具有代码量和资源占用小、可裁切、支持多种物理介质等特性，
-并且与Windows、Linux等系统保持兼容，支持多设备、多分区识别等功能。
-
-OpenHarmony内核支持硬盘多分区，可以在主分区以及逻辑分区上创建FAT文件系统。
-同时OpenHarmony内核也可以识别出硬盘上其他类型的文件系统。
-
-***************************************************/
 #define MAX_LFNAME_LENGTH       256
 #define LABEL_LEN              12
 #define FAT_RESERVED_NUM       2
