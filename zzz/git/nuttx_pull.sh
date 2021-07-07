@@ -1,4 +1,5 @@
-cd E:\\harmony\\third_party\\third_party_NuttX
+### 注解 third_party_NuttX 源码
+cd ../../../../third_party/Nuttx
 #git fetch
 git pull origin master
 

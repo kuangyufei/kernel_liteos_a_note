@@ -64,7 +64,7 @@ typedef struct {
 #define QUICKSTART_LISTEN       _IOR(QUICKSTART_IOC_MAGIC, QS_LISTEN, QuickstartListenArgs)
 #define QUICKSTART_STAGE(x)     _IO(QUICKSTART_IOC_MAGIC, (x))
 
-#define QUICKSTART_NODE         "/dev/quickstart"
+#define QUICKSTART_NODE         "/dev/quickstart" 
 
 #define QS_STAGE_CNT            (QS_STAGE_LIMIT - QS_STAGE1)
 

@@ -1,4 +1,5 @@
-cd E:\\harmony\\third_party\\third_party_lwip
+### 注解 third_party_lwip 源码
+cd ../../../../third_party/lwip
 #git fetch
 git pull origin master
 

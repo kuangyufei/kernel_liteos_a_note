@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 参考 http://weharmonyos.com 官方文档完善注解 
+git commit -m  ' 上传获取内核依赖项目的脚本 
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     博客输出站点(国内):http://weharmonyos.com 或 http://8.134.122.205
     博客输出站点(国外):https://weharmony.github.io
