@@ -1,4 +1,6 @@
 ### 精度内核源码,需其他项目源码配合,拉取 device 目录下代码,目录关系如下
+#   - build 
+#       | - lite
 #   - device 
 #       | - hisilicon
 #       | - qemu

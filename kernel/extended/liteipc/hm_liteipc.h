@@ -165,7 +165,7 @@ typedef struct {	//IPC 内容节点
 
 #define SEND (1 << 0)	//发送
 #define RECV (1 << 1)	//接收
-#define BUFF_FREE (1 << 2)
+#define BUFF_FREE (1 << 2) //空闲状态
 
 typedef struct {	//IPC消息内容回路,记录消息周期
     UINT32               flag;      /**< size of writeData */ //IPC标签 (SEND,RECV,BUFF_FREE)
