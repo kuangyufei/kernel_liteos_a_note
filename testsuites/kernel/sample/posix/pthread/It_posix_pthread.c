@@ -251,7 +251,7 @@ VOID ItSuitePosixPthread()
     ItPosixPthread044();
     ItPosixPthread045();
     ItPosixPthread046();
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     ItPosixPthread047(); // pthread preemption, may not happen on smp
 #endif
     ItPosixPthread048();

@@ -107,7 +107,7 @@ VOID ItSuiteLosMux(void)
     ItLosMux043();
 #endif
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     ItSmpLosMux001();
     ItSmpLosMux002();
     ItSmpLosMux003();
@@ -143,7 +143,7 @@ VOID ItSuiteLosMux(void)
     ItSmpLosMux2029();
 #endif
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     HalIrqSetAffinity(HWI_NUM_TEST, 1);
     HalIrqSetAffinity(HWI_NUM_TEST1, 1);
 #endif

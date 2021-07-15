@@ -62,7 +62,7 @@ void ItSuiteLosTask(void)
     ItLosTask105();
     ItLosTask099();
     ItLosTaskTimeslice001();
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     // reserved 20 for smoke test
     ItSmpLosTask001(); /* Task Affinity */
     ItSmpLosTask002(); /* Task Deletion Across Cores */
@@ -137,7 +137,7 @@ void ItSuiteLosTask(void)
     ItLosTask072();
     ItLosTask073();
     ItLosTask074();
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     ItLosTask075();
 #endif
     ItLosTask076();
@@ -193,7 +193,7 @@ void ItSuiteLosTask(void)
     ItLosTaskTimeslice002();
     ItLosTaskTimeslice003();
     ItLosTaskTimeslice004();
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #ifndef LOSCFG_ARCH_FPU_DISABLE
 
     ItSmpLosFloatSwitch001();
@@ -290,7 +290,7 @@ void ItSuiteLosTask(void)
     ItSmpLosTask112();
     ItSmpLosTask114();
     ItSmpLosTask115();
-#if (LOSCFG_KERNEL_SMP_TASK_SYNC == NO)
+#ifndef LOSCFG_KERNEL_SMP_TASK_SYNC
     ItSmpLosTask117();
 #endif
     ItSmpLosTask126();
@@ -325,7 +325,7 @@ void ItSuiteLosTask(void)
 #endif
 #endif
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     HalIrqSetAffinity(HWI_NUM_TEST, 1);
     HalIrqSetAffinity(HWI_NUM_TEST1, 1);
     HalIrqSetAffinity(HWI_NUM_TEST3, 1);

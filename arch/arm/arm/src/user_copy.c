@@ -31,6 +31,7 @@
 
 #include "user_copy.h"
 #include "arm_user_copy.h"
+#include "arm_user_clear.h"
 #include "securec.h"
 #include "los_memory.h"
 #include "los_vm_map.h"
@@ -105,15 +106,9 @@ INT32 LOS_UserMemClear(unsigned char *buf, UINT32 len)
     if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buf, len)) {//[buf,buf+len] 不在用户空间
         (VOID)memset_s(buf, len, 0, len);//清0
     } else {//在用户空间
-        unsigned char *tmp = (unsigned char *)LOS_MemAlloc(OS_SYS_MEM_ADDR, len);//1.在内核申请内存
-        if (tmp == NULL) {
-            return -ENOMEM;
+        if (_arm_clear_user(buf, len)) {
+            return -EFAULT;
         }
-        (VOID)memset_s(tmp, len, 0, len);//2.清0
-        if (_arm_user_copy(buf, tmp, len) != 0) {//这个清空有点意思，此时内核空间清0了，再将0拷贝至用户空间
-            ret = -EFAULT;						 // @note_why 不能直接将用户空间清0吗？非要这么绕一圈 
-        }
-        LOS_MemFree(OS_SYS_MEM_ADDR, tmp);//释放内核空间
     }
     return ret;
 }

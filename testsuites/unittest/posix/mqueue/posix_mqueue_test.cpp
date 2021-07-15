@@ -257,7 +257,7 @@ HWTEST_F(PosixMqueueTest, ItPosixQueue016, TestSize.Level0)
     ItPosixQueue016();
 }
 
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
 /**
  * @tc.name: IT_POSIX_QUEUE_113
  * @tc.desc: function for PosixMqueueTest

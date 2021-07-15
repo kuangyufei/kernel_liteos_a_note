@@ -45,7 +45,9 @@
 #include "los_cpup_pri.h"
 #endif
 
+#ifdef LOSCFG_KERNEL_TRACE
 #include "los_trace.h"
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -341,14 +343,14 @@ typedef struct {
     INT32           errorNo;            /**< Error Num */
     UINT32          signal;             /**< Task signal */ //任务信号类型,(SIGNAL_NONE,SIGNAL_KILL,SIGNAL_SUSPEND,SIGNAL_AFFI)
     sig_cb          sig;				//信号控制块，用于异步通信,类似于 linux singal模块
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     UINT16          currCpu;            /**< CPU core number of this task is running on */	//正在运行此任务的CPU内核号
     UINT16          lastCpu;            /**< CPU core number of this task is running on last time */ //上次运行此任务的CPU内核号
     UINT16          cpuAffiMask;        /**< CPU affinity mask, support up to 16 cores */	//CPU亲和力掩码，最多支持16核，亲和力很重要，多核情况下尽量一个任务在一个CPU核上运行，提高效率
-#if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)
+#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
     UINT32          syncSignal;         /**< Synchronization for signal handling */	//用于CPU之间 同步信号
 #endif
-#if (LOSCFG_KERNEL_SMP_LOCKDEP == YES)	//死锁检测开关
+#ifdef LOSCFG_KERNEL_SMP_LOCKDEP //死锁检测开关
     LockDep         lockDep;
 #endif
 #endif
@@ -365,7 +367,7 @@ typedef struct {
     UINTPTR         waitID;             /**< Wait for the PID or GID of the child process */
     UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
                                              a specific child process, or any child process */  //以什么样的方式等待子进程结束(OS_TASK_WAIT_PROCESS | OS_TASK_WAIT_GID | ..)
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
     UINT32          ipcStatus;			//IPC状态
     LOS_DL_LIST     msgListHead;		//消息队列头结点,上面挂的都是任务要读的消息
     BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];//访问图,指的是task之间是否能访问的标识,LOSCFG_BASE_CORE_TSK_LIMIT 为任务池总数
@@ -467,6 +469,16 @@ STATIC INLINE BOOL OsTaskIsPending(const LosTaskCB *taskCB)
 
     return FALSE;
 }
+
+STATIC INLINE BOOL OsTaskIsKilled(const LosTaskCB *taskCB)
+{
+    if (taskCB->taskStatus & OS_TASK_FLAG_EXIT_KILL) {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 #define OS_TID_CHECK_INVALID(taskID) ((UINT32)(taskID) >= g_taskMaxNum)//是否有无效的任务 > 128
 
 /* get task info */

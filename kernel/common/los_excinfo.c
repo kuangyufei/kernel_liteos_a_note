@@ -34,6 +34,10 @@
 #ifdef LOSCFG_SHELL
 #include "shcmd.h"
 #endif
+#ifdef LOSCFG_FS_VFS
+#include "fs/fs.h"
+#include "fs/fs_operation.h"
+#endif
 
 #ifdef LOSCFG_SAVE_EXCINFO
 STATIC log_read_write_fn g_excInfoRW = NULL; /* the hook of read-writing exception information */	//读写异常信息的钩子函数

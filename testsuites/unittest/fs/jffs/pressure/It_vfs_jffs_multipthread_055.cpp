@@ -68,7 +68,6 @@ static VOID *MutiJffs05502(void *arg)
     dprintf(" start muti_jffs_055_02  1 \n");
 
     strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/test_55");
-    ICUNIT_GOTO_EQUAL(g_TestCnt, 0, g_TestCnt, EXIT);
     fd = open(pathname, O_WRONLY | O_CREAT, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
 

@@ -162,7 +162,7 @@ UINT32 LosTaskDelay(UINT32 tick)
 
 VOID TestExtraTaskDelay(UINT32 uwTick)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     // trigger task schedule may occor on another core
     // needs adding delay and checking status later
     LosTaskDelay(uwTick);
@@ -212,6 +212,13 @@ VOID TestAssertBusyTaskDelay(UINT32 timeout, UINT32 flag)
             break;
         }
         Wfi();
+    }
+}
+
+VOID TestAssertWaitDelay(UINT32 *testCount, UINT32 flag)
+{
+    while (*testCount != flag) {
+    usleep(1);
     }
 }
 

@@ -49,7 +49,7 @@ int pthread_attr_init(pthread_attr_t *attr)
     attr->stacksize_set               = 1;//已设置内核栈大小
     attr->stacksize                   = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;//默认16K
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     attr->cpuset.__bits[0] = 0;
 #endif
 
@@ -243,7 +243,7 @@ int pthread_attr_getstacksize(const pthread_attr_t *attr, size_t *stackSize)
  *///cpu集可以认为是一个掩码，每个设置的位都对应一个可以合法调度的 cpu，而未设置的位则对应一个不可调度的 CPU。
 int pthread_attr_setaffinity_np(pthread_attr_t* attr, size_t cpusetsize, const cpu_set_t* cpuset)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     if (attr == NULL) {
         return EINVAL;
     }
@@ -268,7 +268,7 @@ int pthread_attr_setaffinity_np(pthread_attr_t* attr, size_t cpusetsize, const c
  */
 int pthread_attr_getaffinity_np(const pthread_attr_t* attr, size_t cpusetsize, cpu_set_t* cpuset)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     if ((attr == NULL) || (cpuset == NULL) || (cpusetsize != sizeof(cpu_set_t))) {
         return EINVAL;
     }

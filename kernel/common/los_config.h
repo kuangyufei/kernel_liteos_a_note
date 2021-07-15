@@ -116,7 +116,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * External configuration item for timer tailoring
  */
 #ifndef LOSCFG_BASE_CORE_TICK_HW_TIME
-#define LOSCFG_BASE_CORE_TICK_HW_TIME NO //定时器裁剪的外部配置项
+#undef LOSCFG_BASE_CORE_TICK_HW_TIME //定时器裁剪的外部配置项
 #endif
 
 /****************************** Hardware interrupt module configuration ******************************/
@@ -125,7 +125,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Configuration item for hardware interrupt tailoring 
  */
 #ifndef LOSCFG_PLATFORM_HWI	//硬件中断裁剪配置项
-#define LOSCFG_PLATFORM_HWI YES
+#define LOSCFG_PLATFORM_HWI
 #endif
 
 /**
@@ -221,15 +221,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Configuration item for task (stack) monitoring module tailoring
  */
 #ifndef LOSCFG_BASE_CORE_TSK_MONITOR //任务（栈）监控模块裁剪配置项
-#define LOSCFG_BASE_CORE_TSK_MONITOR YES
-#endif
-
-/**
- * @ingroup los_config
- * Configuration item for task perf task filter hook
- */
-#ifndef OS_PERF_TSK_FILTER
-#define OS_PERF_TSK_FILTER NO
+#define LOSCFG_BASE_CORE_TSK_MONITOR
 #endif
 
 /****************************** Semaphore module configuration ******************************/
@@ -238,7 +230,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Configuration item for semaphore module tailoring
  */
 #ifndef LOSCFG_BASE_IPC_SEM
-#define LOSCFG_BASE_IPC_SEM YES	//信号量支持
+#define LOSCFG_BASE_IPC_SEM //信号量支持
 #endif
 
 /**
@@ -249,16 +241,20 @@ extern UINT32 __heap_end;		// 堆区结束地址
 #define LOSCFG_BASE_IPC_SEM_LIMIT 1024 //信号量的最大个数
 #endif
 
+/**
+ * @ingroup los_config
+ * Maximum number of semaphores.
+ */
 #ifndef OS_SEM_COUNT_MAX
 #define OS_SEM_COUNT_MAX 0xFFFE
 #endif
-/****************************** mutex module configuration ******************************/
+/****************************** Mutex module configuration ******************************/
 /**
  * @ingroup los_config
  * Configuration item for mutex module tailoring
  */
 #ifndef LOSCFG_BASE_IPC_MUX
-#define LOSCFG_BASE_IPC_MUX YES	//互斥量的支持
+#define LOSCFG_BASE_IPC_MUX
 #endif
 
 /****************************** Queue module configuration ********************************/
@@ -267,7 +263,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Configuration item for queue module tailoring
  */
 #ifndef LOSCFG_BASE_IPC_QUEUE
-#define LOSCFG_BASE_IPC_QUEUE YES //是否支持IPC队列?
+#define LOSCFG_BASE_IPC_QUEUE
 #endif
 
 /**
@@ -278,14 +274,20 @@ extern UINT32 __heap_end;		// 堆区结束地址
 #define LOSCFG_BASE_IPC_QUEUE_LIMIT 1024 //队列个数
 #endif
 /****************************** Software timer module configuration **************************/
-#if (LOSCFG_BASE_IPC_QUEUE == YES) //软时钟模块需打开IPC队列
+#ifdef LOSCFG_BASE_IPC_QUEUE
 
 /**
  * @ingroup los_config
  * Configuration item for software timer module tailoring
  */
-#ifndef LOSCFG_BASE_CORE_SWTMR
-#define LOSCFG_BASE_CORE_SWTMR YES //是否支持软时钟?
+#ifndef LOSCFG_BASE_CORE_SWTMR_ENABLE
+#define LOSCFG_BASE_CORE_SWTMR_ENABLE
+#endif
+
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
+#define LOSCFG_BASE_CORE_SWTMR 1
+#else
+#define LOSCFG_BASE_CORE_SWTMR 0
 #endif
 
 /**
@@ -334,23 +336,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
 
 /****************************** SMP module configuration **************************/
 //http://www.gotw.ca/publications/concurrency-ddj.htm 免费午餐结束了:软件并发的根本转变
-#ifndef LOSCFG_KERNEL_SMP
-#define LOSCFG_KERNEL_SMP                               NO //SMP指对称多处理（Symmetrical Multi-Processing）,多核时要设为 YES
-#endif
-
-#ifndef LOSCFG_KERNEL_SMP_LOCKDEP
-#define LOSCFG_KERNEL_SMP_LOCKDEP                       NO //死锁检测模块 Lockdep
-#endif
-
-#ifndef LOSCFG_KERNEL_SMP_TASK_SYNC
-#define LOSCFG_KERNEL_SMP_TASK_SYNC                     NO //任务同步
-#endif
-
-#ifndef LOSCFG_KERNEL_SCHED_STATISTICS
-#define LOSCFG_KERNEL_SCHED_STATISTICS                  NO //对任务调度的统计
-#endif
-
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #define LOSCFG_KERNEL_CORE_NUM                          LOSCFG_KERNEL_SMP_CORE_NUM //多核情况下支持的CPU核数
 #else
 #define LOSCFG_KERNEL_CORE_NUM                          1	//单核配置
@@ -387,12 +373,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
 #define VERSION_NUM(a, b, c, d) (((a) << 24) | ((b) << 16) | (c) << 8 | (d))
 #define KERNEL_OPEN_VERSION_NUM VERSION_NUM(KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE)
 
-/****************************** Dynamic loading module configuration **************************/
-#ifndef OS_AUTOINIT_DYNLOADER
-#define OS_AUTOINIT_DYNLOADER YES	//是否支持动态加载ELF运行
-#endif
-
-/****************************** exception information  configuration ******************************/
+/****************************** Exception information configuration ******************************/
 #ifdef LOSCFG_SAVE_EXCINFO
 /**
  * @ingroup los_config

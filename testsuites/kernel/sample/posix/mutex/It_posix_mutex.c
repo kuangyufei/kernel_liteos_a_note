@@ -119,7 +119,7 @@ VOID ItSuitePosixMutex(void)
     ItPosixMux072();
     ItPosixMux073();
     ItPosixMux074();
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     ItPosixMux075();
 #endif
     ItPosixMux076();

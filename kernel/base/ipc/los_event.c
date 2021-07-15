@@ -35,7 +35,7 @@
 #include "los_mp.h"
 #include "los_percpu_pri.h"
 #include "los_sched_pri.h"
-#if (LOSCFG_BASE_CORE_SWTMR == YES)
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
 #include "los_exc.h"
 #endif
 

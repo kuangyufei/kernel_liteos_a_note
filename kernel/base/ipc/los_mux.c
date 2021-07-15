@@ -88,7 +88,7 @@
 	互斥锁不支持多个相同优先级任务翻转的场景。
 ******************************************************************************/
 
-#if (LOSCFG_BASE_IPC_MUX == YES)
+#ifdef LOSCFG_BASE_IPC_MUX
 #define MUTEXATTR_TYPE_MASK 0x0FU
 //互斥属性初始化
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrInit(LosMuxAttr *attr)

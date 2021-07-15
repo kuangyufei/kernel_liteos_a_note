@@ -40,7 +40,7 @@ static UINT32 Testcase(VOID)
     CHAR *pfd = NULL;
 
     ret = chdir(pathname1);
-    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
+    ICUNIT_GOTO_NOT_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT);
 
     pfd = mktemp(tempFile);
     ICUNIT_GOTO_NOT_EQUAL(pfd, NULL, pfd, EXIT1);

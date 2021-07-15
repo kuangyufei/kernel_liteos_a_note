@@ -8,6 +8,7 @@
 
 ### **同步官方源码历史**
 * 每月至少同步一次
+* `2021/7/15` -- 本次官方改动不大,新增blackbox,hidumper,对一些宏(LOSCFG_KERNEL_SMP ..)规范化使用 
 * `2021/6/27` -- 本次官方对文件系统/设备驱动改动较大,目录结构进行了重新整理.
 * `2021/6/08` -- 本次官方对编译构建,任务,信号模块有较大的改动.
 * `2021/5/28` -- 本次官方改动不大,主要针对一些错误单词拼写纠正.
@@ -90,7 +91,7 @@
     
 * [v51.xx 鸿蒙内核源码分析(ELF格式篇) | 应用程序入口并不是main ](https://my.oschina.net/weharmony/blog/5030288) **[  | 51](https://harmonyos.51cto.com/column/34)[ .c](https://blog.csdn.net/kuangyufei/article/details/116097977)[  .h](http://weharmonyos.com/blog/51_ELF格式篇.html)[  .o](https://my.oschina.net/weharmony)** 
   
-* [v50.xx 鸿蒙内核源码分析(编译环境篇) | 编译鸿蒙看这篇或许真的够了 ](https://my.oschina.net/weharmony/blog/5028613) **[  | 51](https://harmonyos.51cto.com/column/34)[ .c](https://blog.csdn.net/kuangyufei/article/details/116042551)[  .h](http://weharmonyos.com/blog/50_编译环境篇.html) [  .o](https://my.oschina.net/weharmony)** 
+* [v50.xx 鸿蒙内核源码分析(编译环境篇) | 编译鸿蒙防掉坑指南 ](https://my.oschina.net/weharmony/blog/5028613) **[  | 51](https://harmonyos.51cto.com/column/34)[ .c](https://blog.csdn.net/kuangyufei/article/details/116042551)[  .h](http://weharmonyos.com/blog/50_编译环境篇.html) [  .o](https://my.oschina.net/weharmony)** 
   
 * [v49.xx 鸿蒙内核源码分析(信号消费篇) | 谁让CPU连续四次换栈运行 ](https://my.oschina.net/weharmony/blog/5027224) **[  | 51](https://harmonyos.51cto.com/column/34)[ .c](https://blog.csdn.net/kuangyufei/article/details/115958293)[  .h](http://weharmonyos.com/blog/49_信号消费篇.html) [  .o](https://my.oschina.net/weharmony)** 
 

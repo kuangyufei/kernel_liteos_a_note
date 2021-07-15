@@ -33,7 +33,8 @@
 
 static UINT32 TestCase(VOID)
 {
-    INT32 ret, i;
+    INT32 ret;
+    INT32 i = 0;
     INT32 scandirCount = 0;
     CHAR pathname1[JFFS_STANDARD_NAME_LENGTH] = { JFFS_PATH_NAME0 };
     CHAR pathname2[JFFS_NAME_LIMITTED_SIZE] = "";
@@ -52,7 +53,6 @@ static UINT32 TestCase(VOID)
     memset_s(pathname2, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
     memset_s(pathname3, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
     strcat_s(pathname6, JFFS_NAME_LIMITTED_SIZE, "/");
-
     // PATH_MAX test. The dirname has occupied 14 bytes.
     while (i < 241) { // loop times: 241
         i++;

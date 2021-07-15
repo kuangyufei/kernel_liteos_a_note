@@ -119,9 +119,21 @@ UINT32 OsShellCmdSwtmrCntGet(VOID)
 LITE_OS_SEC_TEXT_MINOR VOID OsShellCmdSystemInfoGet(VOID)
 {
     UINT8 isTaskEnable  = YES;
-    UINT8 isSemEnable   = LOSCFG_BASE_IPC_SEM;
-    UINT8 isQueueEnable = LOSCFG_BASE_IPC_QUEUE;
-    UINT8 isSwtmrEnable = LOSCFG_BASE_CORE_SWTMR;
+#ifdef LOSCFG_BASE_IPC_SEM
+    UINT8 isSemEnable   = YES;
+#else
+    UINT8 isSemEnable   = NO;
+#endif
+#ifdef LOSCFG_BASE_IPC_QUEUE
+    UINT8 isQueueEnable = YES;
+#else
+    UINT8 isQueueEnable = NO;
+#endif
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
+    UINT8 isSwtmrEnable = YES;
+#else
+    UINT8 isSwtmrEnable = NO;
+#endif
 //模块名称	当前使用量 最大可用量              	   模块是否开启 
     PRINTK("\n   Module    Used      Total     Enabled\n");
     PRINTK("--------------------------------------------\n");

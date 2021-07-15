@@ -256,7 +256,7 @@ VOID ItLosQueueDebug001(void);
 #endif
 #endif
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 VOID ItSmpLosQueue001(VOID);
 VOID ItSmpLosQueue002(VOID);
 VOID ItSmpLosQueue003(VOID);

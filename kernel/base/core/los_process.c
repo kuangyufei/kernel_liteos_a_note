@@ -193,7 +193,7 @@ VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID)
 {
     taskCB->waitID = wakePID;
     OsSchedTaskWake(taskCB);
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     LOS_MpSchedule(OS_MP_CPU_ALL);//向所有cpu发送调度指令
 #endif
 }
@@ -322,7 +322,7 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
     }
 #endif
 
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
     if (OsProcessIsUserMode(processCB)) {//用户进程
         LiteIpcPoolDelete(&(processCB->ipcInfo));//删除进程对lite IPC的开销
         (VOID)memset_s(&(processCB->ipcInfo), sizeof(ProcIpcInfo), 0, sizeof(ProcIpcInfo));
@@ -702,7 +702,7 @@ STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const C
         goto EXIT;
     }
 
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
     if (OsProcessIsUserMode(processCB)) {//是否在用户模式
         ret = LiteIpcPoolInit(&(processCB->ipcInfo));//IPC池初始化
         if (ret != LOS_OK) {//异常处理
@@ -1316,7 +1316,7 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
         return ret;
     }
 
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
     ret = LiteIpcPoolInit(&(processCB->ipcInfo));
     if (ret != LOS_OK) {
         return LOS_NOK;
@@ -1714,7 +1714,7 @@ STATIC UINT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProce
         return ret;
     }
 
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
     if (OsProcessIsUserMode(child)) {//用户模式下
         ret = LiteIpcPoolReInit(&child->ipcInfo, (const ProcIpcInfo *)(&run->ipcInfo));//重新初始化IPC池
         if (ret != LOS_OK) {

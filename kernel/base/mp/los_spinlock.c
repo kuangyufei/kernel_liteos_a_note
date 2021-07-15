@@ -30,7 +30,7 @@
  */
 
 #include "los_spinlock.h"
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #include "los_sched_pri.h"
 
 

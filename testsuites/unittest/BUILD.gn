@@ -81,13 +81,13 @@ group("unittest") {
     }
     if (LOSCFG_USER_TEST_FS_VFAT == true) {
       if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
-        deps += [ "fs/vfat2:liteos_a_fs_vfat_unittest_door" ]
+        deps += [ "fs/vfat:liteos_a_fs_vfat_unittest_door" ]
       }
       if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
-        deps += [ "fs/vfat2:liteos_a_fs_vfat_unittest" ]
+        deps += [ "fs/vfat:liteos_a_fs_vfat_unittest" ]
       }
       if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_HIGH) {
-        deps += [ "fs/vfat2:liteos_a_fs_vfat_unittest_pressure" ]
+        deps += [ "fs/vfat:liteos_a_fs_vfat_unittest_pressure" ]
       }
     }
     if (LOSCFG_USER_TEST_FS_PROC == true) {

@@ -30,44 +30,65 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 set -e
 
-echo "sh param:$1,$2,$3,$4,$5,$6,$7"
-destination=".config"
-config_file=""
-tee=""
-outdir="../..$3/test_info/gen/kernel/test"
-if [ "$5" = "tee" ]; then
-    tee="_tee"
-fi
-product_name="$(basename $7)"
-source="tools/build/config/${product_name}_release.config"
-if [ "$2" = "clang" ]; then
-    if [ "$4" = "debug" ]; then
-        config_file="${product_name}_$2$tee.config"
-        source="tools/build/config/debug/$config_file"
-    else
-        config_file="${product_name}_$2_release$tee.config"
-        source="tools/build/config/$config_file"
-    fi
-elif [ "$2" = "gcc" ]; then
-    if [ "$4" = "debug" ]; then
-        config_file="${product_name}_debug_shell$tee.config"
-        source="tools/build/config/$config_file"
-    else
-        config_file="${product_name}_release$tee.config"
-        source="tools/build/config/$config_file"
-    fi
-fi
-if [ -d "./out" ]; then
-    rm -rf ./out
-fi
-if [ -f "$destination" ]; then
-    rm -rf $destination
-fi
-if [ ! -f "$source" ]; then
-    source="$7/config/sys/$config_file"
-fi
-cp $source $destination
+board_name=${1}
+ohos_build_compiler=${2}
+root_build_dir=${3}
+ohos_build_type=${4}
+tee_enable=${5}
+device_company=${6}
+product_path=${7}
+outdir=${8}
+ohos_version=${9}
+sysroot_path=${10}
+arch_cflags=${11}
+device_path=${12}
 
-mkdir -p $outdir
-cp kernel_test.sources $outdir
+echo "${board_name}" "${device_company}"
+echo "sh param:" "$@"
 
+function main() {
+    destination=".config"
+    tee=""
+    if [ "${tee_enable}" = "true" ]; then
+        tee="_tee"
+    fi
+
+    config_file="${product_path}/config/${ohos_build_type}${tee}.config"
+    if [ -f "${config_file}" ]; then
+        cp "${config_file}" "${destination}"
+        return
+    fi
+
+    product_name=$(basename "${product_path}")
+    config_file="${product_name}_release.config"
+    if [ "${ohos_build_compiler}" = "clang" ]; then
+        if [ "${ohos_build_type}" = "debug" ]; then
+            config_file="debug/${product_name}_${ohos_build_compiler}${tee}.config"
+        else
+            config_file="${product_name}_${ohos_build_compiler}_release${tee}.config"
+        fi
+    elif [ "${ohos_build_compiler}" = "gcc" ]; then
+        if [ "${ohos_build_type}" = "debug" ]; then
+            config_file="${product_name}_debug_shell${tee}.config"
+        else
+            config_file="${product_name}_release${tee}.config"
+        fi
+    fi
+    cp "tools/build/config/${config_file}" "${destination}"
+}
+
+if [ "x" != "x${sysroot_path}" ]; then
+    export SYSROOT_PATH=${sysroot_path}
+fi
+
+if [ "x" != "x${arch_cflags}" ]; then
+    export ARCH_CFLAGS="${arch_cflags}"
+fi
+
+export OUTDIR="${outdir}"
+export PRODUCT_PATH="${product_path}"
+export DEVICE_PATH="${device_path}"
+
+main && \
+make clean && \
+make -j rootfs VERSION="${ohos_version}"

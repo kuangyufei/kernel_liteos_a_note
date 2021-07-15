@@ -38,11 +38,11 @@ BUILD_DIR := $(MKSH_DIR)/build
 BUILD_LOG := $(MKSH_DIR)/build.log
 TARGET_OS := OpenHarmony
 
-LOCAL_CFLAGS := -flto -fdata-sections -ffunction-sections -Oz -fstack-protector-strong -D_FORTIFY_SOURCE=2 -mcpu=cortex-a7 -mfloat-abi=softfp -mfpu=neon-vfpv4
-LOCAL_CFLAGS += --target=arm-liteos --sysroot=$(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/
+LOCAL_CFLAGS := -flto -fdata-sections -ffunction-sections -Oz -fstack-protector-strong -D_FORTIFY_SOURCE=2
+LOCAL_CFLAGS += --target=$(LLVM_TARGET) $(LLVM_SYSROOT)
 LOCAL_CFLAGS += -DMKSH_DISABLE_TTY_WARNING -DMKSH_SMALL=1 -DMKSH_ASSUME_UTF8=1 -DMKSH_SMALL_BUT_FAST=0 -DMKSH_S_NOVI=1 -DHAVE_CAN_FSTACKPROTECTORSTRONG=1
 LOCAL_CFLAGS += -DMKSH_LESS_CMDLINE_EDITING -DMKSH_LESS_BUILDINS -DMKSH_NO_INITCOMS -DADAPT_FOR_LITEOS_A
-LOCAL_LDFLAGS := -Wl,--gc-sections -flto -O2
+LOCAL_LDFLAGS := -Wl,--gc-sections -flto -O2 --target=$(LLVM_TARGET) $(LLVM_SYSROOT)
 
 all:$(MKSH)
 

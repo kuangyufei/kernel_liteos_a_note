@@ -85,12 +85,18 @@ STATIC UINT32 *taskWaterLine = NULL;
 #define OS_TASK_ALL_INFO_LEN      (g_taskMaxNum * (sizeof(LosTaskCB) + sizeof(UINT32)))
 
 #ifdef LOSCFG_FS_VFS
+#if defined(LOSCFG_BLACKBOX) && defined(LOSCFG_SAVE_EXCINFO)
+#define SaveExcInfo(arg, ...) WriteExcInfoToBuf(arg, ##__VA_ARGS__)
+#else
+#define SaveExcInfo(arg, ...)
+#endif
 #define PROCESS_INFO_SHOW(seqBuf, arg...) do {              \
     if (seqBuf != NULL) {                                   \
         (void)LosBufPrintf((struct SeqBuf *)seqBuf, ##arg); \
     } else {                                                 \
         PRINTK(arg);                                         \
     }                                                        \
+    SaveExcInfo(arg);                                        \
 } while (0)
 #else
 #define PROCESS_INFO_SHOW(seqBuf, arg...) PRINTK(arg)
@@ -428,7 +434,7 @@ EXIT:
 STATIC VOID OsShellCmdTskInfoTitle(VOID *seqBuf, UINT16 flag)
 {
     PROCESS_INFO_SHOW(seqBuf, "\r\n  TID  PID ");
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     PROCESS_INFO_SHOW(seqBuf, "Affi CPU  ");
 #endif
     PROCESS_INFO_SHOW(seqBuf, "     Status StackSize WaterLine ");
@@ -456,7 +462,7 @@ STATIC INLINE VOID OsShellTskInfoData(const LosTaskCB *taskCB, VOID *seqBuf, UIN
 #endif
     PROCESS_INFO_SHOW(seqBuf, " %4u%5u", taskCB->taskID, taskCB->processID);
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     PROCESS_INFO_SHOW(seqBuf, "%#5x%4d ", taskCB->cpuAffiMask, (INT16)(taskCB->currCpu));
 #endif
 

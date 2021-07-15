@@ -75,6 +75,8 @@ static UINT32 TestCase(VOID)
         len = write(fd[index], bufW, strlen(bufW));
         if (len <= 0) {
             flag = 1;
+            ret = close(fd[index]);
+            ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT2);
             break;
         }
 

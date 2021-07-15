@@ -51,7 +51,7 @@ static UINT32 Testcase(void)
     task1.uwStackSize = TASK_STACK_SIZE_TEST;
     task1.pcName = "Tsk018A";
     task1.usTaskPrio = OS_TASK_PRIORITY_LOWEST;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     g_testCount = 0;

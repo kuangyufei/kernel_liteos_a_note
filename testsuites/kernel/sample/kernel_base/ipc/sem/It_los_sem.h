@@ -102,7 +102,7 @@ VOID ItLosSem043(void);
 VOID ItLosSem044(void);
 #endif
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 VOID ItSmpLosSem001(VOID);
 VOID ItSmpLosSem002(VOID);
 VOID ItSmpLosSem003(VOID);

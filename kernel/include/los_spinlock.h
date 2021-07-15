@@ -49,14 +49,14 @@ extern INT32 ArchSpinTrylock(size_t *lock);
 
 typedef struct Spinlock {
     size_t      rawLock;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     UINT32      cpuid;
     VOID        *owner;
     const CHAR  *name;
 #endif
 } SPIN_LOCK_S;
 
-#if (LOSCFG_KERNEL_SMP_LOCKDEP == YES)
+#ifdef LOSCFG_KERNEL_SMP_LOCKDEP
 #define LOCKDEP_CHECK_IN(lock)  OsLockDepCheckIn(lock)
 #define LOCKDEP_RECORD(lock)    OsLockDepRecord(lock)
 #define LOCKDEP_CHECK_OUT(lock) OsLockDepCheckOut(lock)
@@ -68,7 +68,7 @@ typedef struct Spinlock {
 #define LOCKDEP_CLEAR_LOCKS()
 #endif
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #define SPINLOCK_OWNER_INIT     NULL
 
 #define SPIN_LOCK_INITIALIZER(lockName) \

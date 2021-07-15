@@ -106,7 +106,7 @@ static UINT32 Testcase(VOID)
     uret = LOS_HwiCreate(HWI_NUM_TEST1, 1, 0, (HWI_PROC_FUNC)HwiF02, 0);
     ICUNIT_GOTO_EQUAL(uret, MQUEUE_NO_ERROR, uret, EXIT);
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     HalIrqSetAffinity(HWI_NUM_TEST1, CPUID_TO_AFFI_MASK(ArchCurrCpuid()));
 #endif
 
@@ -117,7 +117,7 @@ static UINT32 Testcase(VOID)
     uret = LOS_HwiCreate(HWI_NUM_TEST, 1, 0, (HWI_PROC_FUNC)HwiF01, 0);
     ICUNIT_GOTO_EQUAL(uret, MQUEUE_NO_ERROR, uret, EXIT1);
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     HalIrqSetAffinity(HWI_NUM_TEST, CPUID_TO_AFFI_MASK(ArchCurrCpuid()));
 #endif
 

@@ -54,7 +54,7 @@ SGI:软件触发中断(Software Generated Interrupt)。在arm处理器中，
 	SGI共有16个,硬件中断号分别为ID0~ID15。它通常用于多核间通讯。
 ********************************************************/
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 //给参数CPU发送调度信号
 VOID LOS_MpSchedule(UINT32 target)//target每位对应CPU core 
 {

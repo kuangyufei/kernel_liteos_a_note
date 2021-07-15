@@ -32,9 +32,9 @@
 #include <sys/statfs.h>
 #include <sys/mount.h>
 #include "proc_fs.h"
-#include "los_trace.h"
 
 #ifdef LOSCFG_KERNEL_TRACE
+#include "los_trace.h"
 static int KernelTraceProcFill(struct SeqBuf *m, void *v)
 {
     (void)v;

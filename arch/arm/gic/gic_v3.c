@@ -48,7 +48,7 @@ STATIC INLINE UINT64 MpidrToAffinity(UINT64 mpidr)
             (MPIDR_AFF_LEVEL(mpidr, 0)));
 }
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 
 STATIC UINT32 NextCpu(UINT32 cpu, UINT32 cpuMask)
 {
@@ -399,7 +399,7 @@ VOID HalIrqInit(VOID)
 
     HalIrqInitPercpu();
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     /* register inter-processor interrupt */
     LOS_HwiCreate(LOS_MP_IPI_WAKEUP, 0xa0, 0, OsMpWakeHandler, 0);
     LOS_HwiCreate(LOS_MP_IPI_SCHEDULE, 0xa0, 0, OsMpScheduleHandler, 0);

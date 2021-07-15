@@ -628,6 +628,17 @@ HWTEST_F(SignalTest, ItPosixPipe003, TestSize.Level0)
 }
 
 /* *
+ * @tc.name: ItPosixPipe004
+ * @tc.desc: function for SignalTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(SignalTest, ItPosixPipe004, TestSize.Level0)
+{
+    ItPosixPipe004();
+}
+
+/* *
  * @tc.name: ItPosixPipe005
  * @tc.desc: function for SignalTest
  * @tc.type: FUNC

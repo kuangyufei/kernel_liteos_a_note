@@ -28,6 +28,7 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include "sys/shm.h"
 #include "it_test_signal.h"
 #include "signal.h"
 
@@ -41,57 +42,58 @@ static int PipecommonWrite()
     int pipefd[2]; // 2, array subscript
     pid_t pid;
     int retValue = -1;
-    retValue = pipe(pipefd);
-    ICUNIT_ASSERT_EQUAL(retValue, 0, retValue);
-
-    signal(SIGPIPE, SigPrint);
-
+    int *sharedflag = NULL;
+    int shmid;
     int *readFd = &pipefd[0];
     int *writeFd = &pipefd[1];
-
     char sentence[] = "Hello World";
     char readbuffer[100];
     int status, ret;
+
+    retValue = pipe(pipefd);
+    ICUNIT_ASSERT_EQUAL(retValue, 0, retValue);
+    if (signal(SIGPIPE, SigPrint) == SIG_ERR) {
+        printf("signal error\n");
+    }
+
+    shmid = shmget((key_t)IPC_PRIVATE, sizeof(int), 0666 | IPC_CREAT); // 0666 the authority of the shm
+    ICUNIT_ASSERT_NOT_EQUAL(shmid, -1, shmid);
+    sharedflag = (int *)shmat(shmid, NULL, 0);
+    *sharedflag = 0;
 
     pid = fork();
     if (pid == -1) {
         printf("Fork Error!\n");
         return -1;
     } else if (pid == 0) {
-        for (int i = 0; i < 3; i++) { // 3, Number of cycles
-            close(*readFd);
-            retValue = write(*writeFd, sentence, strlen(sentence) + 1);
-
-            if (i == 0) {
-                if (retValue != strlen(sentence) + 1) {
-                    exit(retValue);
-                }
-            } else {
-                if (retValue != -1) {
-                    exit(retValue);
-                }
-                if (errno != EPIPE) {
-                    exit(errno);
-                }
-            }
-            usleep(150000); // 150000, Used to calculate the delay time.
+        sharedflag = (int *)shmat(shmid, NULL, 0);
+        close(*readFd);
+        retValue = write(*writeFd, sentence, strlen(sentence) + 1);
+        ICUNIT_ASSERT_EQUAL(retValue, strlen(sentence) + 1, retValue);
+        *sharedflag = 1;
+        // 2 waitting for the father process close the pipe's read port
+        while (*sharedflag != 2) {
+            usleep(1);
         }
+        retValue = write(*writeFd, sentence, strlen(sentence) + 1);
+        ICUNIT_ASSERT_EQUAL(retValue, -1, retValue);
+        ICUNIT_ASSERT_EQUAL(errno, EPIPE, errno);
         exit(0);
     } else {
-        usleep(10000); // 10000, Used to calculate the delay time.
-        for (int i = 0; i < 3; i++) { // 3, Number of cycles
-            close(*readFd);
+        close(*writeFd);
+        // 1 waitting for the sub process has written the sentence first
+        while (*sharedflag != 1) {
+            usleep(1);
         }
+        close(*readFd);
+        // 2 father process close the pipe's read port
+        *sharedflag = 2;
         ret = waitpid(pid, &status, 0);
         ICUNIT_ASSERT_EQUAL(ret, pid, ret);
         ICUNIT_ASSERT_EQUAL(WEXITSTATUS(status), 0, WEXITSTATUS(status));
     }
-
-    close(*readFd);
-    close(*writeFd);
     return 0;
 }
-
 
 void ItPosixPipe005(void)
 {

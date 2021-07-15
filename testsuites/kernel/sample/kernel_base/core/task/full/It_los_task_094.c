@@ -82,7 +82,7 @@ static UINT32 Testcase(void)
     // 0xffff, initializes the args. this parameter has no special meaning.
     task1.auwArgs[0] = 0xffff;
     task1.processID = LOS_GetCurrProcessID();
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     g_testCount = 0;
@@ -104,7 +104,7 @@ static UINT32 Testcase(void)
     // 3, It is used to calculate a priority relative to TASK_PRIO_TEST_TASK.
     task1.usTaskPrio = TASK_PRIO_TEST_TASK - 3;
     task1.processID = LOS_GetCurrProcessID();
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     task1.processID = LOS_GetCurrProcessID();
@@ -129,7 +129,7 @@ static UINT32 Testcase(void)
     // 4, It is used to calculate a priority relative to TASK_PRIO_TEST_TASK.
     task1.usTaskPrio = TASK_PRIO_TEST_TASK - 4;
     task1.processID = LOS_GetCurrProcessID();
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     task1.processID = LOS_GetCurrProcessID();

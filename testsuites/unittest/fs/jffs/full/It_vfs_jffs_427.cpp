@@ -105,12 +105,12 @@ static UINT32 Testcase(VOID)
     memset(bufW2, 0, JFFS_SHORT_ARRAY_LENGTH + 1);
 
     off = lseek(fd3, 0, SEEK_SET);
-    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT6);
+    ICUNIT_GOTO_EQUAL(off, JFFS_NO_ERROR, off, EXIT6);
 
     g_jffsIov[0].iov_base = bufW1;
-    g_jffsIov[0].iov_len = 0xffff;
+    g_jffsIov[0].iov_len = JFFS_SHORT_ARRAY_LENGTH;
     g_jffsIov[1].iov_base = bufW2;
-    g_jffsIov[1].iov_len = 0xffff;
+    g_jffsIov[1].iov_len = JFFS_SHORT_ARRAY_LENGTH;
 
     lenV = readv(fd3, g_jffsIov, 2); // reads 2 buffers from the fd
     ICUNIT_GOTO_EQUAL(lenV, 20, lenV, EXIT6); // compare ret lenV to target 20 lenV

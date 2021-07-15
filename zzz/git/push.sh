@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 开始注解编译过程子系统 
+git commit -m  ' `2021/7/15` -- 本次官方改动不大,新增blackbox,hidumper,对一些宏(LOSCFG_KERNEL_SMP ..)规范化使用  
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     博客输出站点(国内):http://weharmonyos.com
     博客输出站点(国外):https://weharmony.github.io

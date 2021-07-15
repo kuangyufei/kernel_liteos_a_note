@@ -39,7 +39,7 @@ static UINT32 Testcase(VOID)
     fd_set reads;
     ret = pipe(pipeFd);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
-    ret = write(pipeFd[1], "hello world", TAR_STR_LEN);
+    ret = write(pipeFd[1], "Hello World", TAR_STR_LEN);
     printf("write first status: %d\n", ret);
     ICUNIT_GOTO_EQUAL(ret, TAR_STR_LEN, ret, EXIT);
     FD_ZERO(&reads);

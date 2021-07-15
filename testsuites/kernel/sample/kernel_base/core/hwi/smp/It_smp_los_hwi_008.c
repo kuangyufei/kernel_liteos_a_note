@@ -36,7 +36,7 @@
 extern "C" {
 #endif /* __cpluscplus */
 #endif /* __cpluscplus */
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 
 static UINT32 g_ret = 0;
 static VOID HwiF01(void)

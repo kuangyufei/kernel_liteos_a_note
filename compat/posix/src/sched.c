@@ -62,7 +62,7 @@ int sched_get_priority_max(int policy)
  //此 API 是 Linux 特定的，不符合 POSIX
 int sched_setaffinity(pid_t pid, size_t set_size, const cpu_set_t* set)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     UINT32 taskID = (UINT32)pid;
     UINT32 ret;
 
@@ -94,7 +94,7 @@ int sched_setaffinity(pid_t pid, size_t set_size, const cpu_set_t* set)
  */
 int sched_getaffinity(pid_t pid, size_t set_size, cpu_set_t* set)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     UINT32 taskID = (UINT32)pid;
     UINT16 cpuAffiMask;
 

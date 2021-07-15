@@ -60,12 +60,12 @@ static VOID TaskF02(void)
     LOS_TaskLock();
     ret = LOS_SemPost(g_semID);
     ICUNIT_TRACK_EQUAL(ret, LOS_OK, ret);
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     ICUNIT_TRACK_EQUAL(g_testCount, 1, g_testCount);
 #endif
 
     LOS_TaskUnlock();
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     ICUNIT_TRACK_EQUAL(g_testCount, 1, g_testCount);
 #endif
     g_testCount++;

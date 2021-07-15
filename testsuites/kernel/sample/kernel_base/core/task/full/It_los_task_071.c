@@ -54,7 +54,7 @@ static UINT32 Testcase(void)
     task1.pcName = "Tsk071A";
     task1.usTaskPrio = TASK_PRIO_TEST_TASK - 1;
     task1.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     g_testCount = 0;

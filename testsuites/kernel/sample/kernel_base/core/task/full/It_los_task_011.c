@@ -61,7 +61,7 @@ static UINT32 Testcase(void)
     ret = LOS_TaskCreate(&g_testTaskID01, &task1);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     /* Wait TaskF01 to start */
     while (g_testCount == 0) {
     }

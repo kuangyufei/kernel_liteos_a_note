@@ -38,7 +38,7 @@
 #include "pthread.h"
 
 #include "los_printf.h"
-#if (LOSCFG_BASE_CORE_SWTMR == YES)
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
 #include "los_swtmr_pri.h"
 #endif
 #include "los_sched_pri.h"
@@ -265,7 +265,7 @@ STATIC ssize_t TelnetWrite(struct file *file, const CHAR *buf, const size_t bufL
     }
 
     if (telnetDev->clientFd != 0) {
-#if (LOSCFG_BASE_CORE_SWTMR == YES)
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
          /* DO NOT call blocking API in software timer task */
         if (((LosTaskCB*)OsCurrTaskGet())->taskEntry == (TSK_ENTRY_FUNC)OsSwtmrTask) {
             TelnetUnlock();

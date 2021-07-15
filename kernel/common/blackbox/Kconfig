@@ -1,0 +1,10 @@
+config BLACKBOX
+    bool "Enable BlackBox"
+    default n
+    help
+      Answer Y to enable LiteOS support blackbox
+
+config LOG_ROOT_PATH
+    string "unknown"
+    help
+      define the default log path of blackbox

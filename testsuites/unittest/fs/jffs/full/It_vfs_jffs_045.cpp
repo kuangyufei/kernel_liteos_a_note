@@ -55,7 +55,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_NOT_EQUAL(fd1, -1, fd1, EXIT3);
 
     len = read(fd1, readbuf, JFFS_STANDARD_NAME_LENGTH);
-    ICUNIT_GOTO_EQUAL(len, 0, len, EXIT3);
+    ICUNIT_GOTO_EQUAL(len, 10, len, EXIT3); // 10 means read size
 
     len = write(fd1, "abcde", 6); // 6 means write len
     ICUNIT_GOTO_EQUAL(len, 6, len, EXIT3);

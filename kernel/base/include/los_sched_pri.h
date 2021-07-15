@@ -114,7 +114,7 @@ STATIC INLINE BOOL OsPreemptableInSched(VOID)
 {
     BOOL preemptable = FALSE;
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     /*
      * For smp systems, schedule must hold the task spinlock, and this counter
      * will increase by 1 in that case.

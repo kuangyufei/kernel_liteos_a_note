@@ -88,7 +88,7 @@ static UINT32 Testcase(void)
     task1.uwResved = LOS_TASK_STATUS_DETACHED;
     // 0xffff, initializes the args. this parameter has no special meaning.
     task1.auwArgs[0] = 0xffff;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
 

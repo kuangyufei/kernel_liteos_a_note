@@ -98,8 +98,9 @@ static VOID *PthreadF01(void *arg)
         testSpeed);
 
     return NULL;
-EXIT:
+EXIT1:
     close(g_jffsFd);
+EXIT:
     return NULL;
 }
 

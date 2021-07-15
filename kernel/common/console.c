@@ -449,7 +449,7 @@ STATIC VOID StoreReadChar(CONSOLE_CB *consoleCB, char ch, INT32 readcount)
 
 VOID KillPgrp()
 {
-    INT32 consoleId = -1;
+    INT32 consoleId;
     LosProcessCB *process = OsCurrProcessGet();
 
     if ((process->consoleID > CONSOLE_NUM -1 ) || (process->consoleID < 0)) {
@@ -1686,7 +1686,7 @@ STATIC UINT32 ConsoleSendTask(UINTPTR param)
     return LOS_OK;
 }
 
-#if (LOSCFG_KERNEL_SMP == YES)//多处理器情况下
+#ifdef LOSCFG_KERNEL_SMP
 VOID OsWaitConsoleSendTaskPend(UINT32 taskID)//等待控制台发送任务结束
 {
     UINT32 i;

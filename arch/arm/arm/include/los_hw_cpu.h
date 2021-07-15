@@ -148,7 +148,7 @@ STATIC INLINE VOID ArchCurrUserTaskSet(UINTPTR val)
 */
 STATIC INLINE UINT32 ArchCurrCpuid(VOID)
 {
-#if (LOSCFG_KERNEL_SMP == YES)//CPU多核情况
+#ifdef LOSCFG_KERNEL_SMP
     return ARM_SYSREG_READ(MPIDR) & MPIDR_CPUID_MASK;
 #else//ARM架构通过MPIDR(Multiprocessor Affinity Register)寄存器给每个CPU指定一个逻辑地址。
     return 0;

@@ -62,7 +62,7 @@ static UINT32 Testcase(void)
     LOS_TaskDelay(2); // 2, set delay time.
     ret = LOS_TaskDelete(testid);
 
-#if (LOSCFG_KERNEL_SMP_TASK_SYNC == NO)
+#ifndef LOSCFG_KERNEL_SMP_TASK_SYNC
     /* delay and check */
     LOS_TaskDelay(10); // 10, set delay time.
 #endif

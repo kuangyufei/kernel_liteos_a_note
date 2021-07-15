@@ -121,7 +121,7 @@ CXX_PATH  = $(LITEOSTOPDIR)/lib/cxxstl
 JFFS_PATH  = $(LITEOSTOPDIR)/fs/jffs2
 LITEOS_SCRIPTPATH ?= $(LITEOSTOPDIR)/tools/scripts
 LITEOS_LIB_BIGODIR  = $(OUT)/lib/obj
-LITEOS_MENUCONFIG_H = $(LITEOSTOPDIR)/include/generated/autoconf.h
+LITEOS_MENUCONFIG_H = $(LITEOSTOPDIR)/config.h
 LOSCFG_ENTRY_SRC    = $(LITEOSTOPDIR)/kernel/common/los_config.c
 
 ### include variable
@@ -185,12 +185,6 @@ ifeq ($(LOSCFG_KERNEL_CPUP), y)
     LITEOS_CPUP_INCLUDE := -I $(LITEOSTOPDIR)/kernel/extended/cpup
 endif
 
-ifeq ($(LOSCFG_KERNEL_SCHED_STATISTICS), y)
-    LITEOS_CMACRO += -DLOSCFG_KERNEL_SCHED_STATISTICS=1
-else
-    LITEOS_CMACRO += -DLOSCFG_KERNEL_SCHED_STATISTICS=0
-endif
-
 ifeq ($(LOSCFG_KERNEL_DYNLOAD), y)
     LITEOS_BASELIB   += -ldynload
     LIB_SUBDIRS      += kernel/extended/dynload
@@ -204,9 +198,11 @@ ifeq ($(LOSCFG_KERNEL_VDSO), y)
     LITEOS_VDSO_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/vdso/include
 endif
 
+ifeq ($(LOSCFG_KERNEL_TRACE), y)
     LITEOS_BASELIB += -ltrace
     LIB_SUBDIRS       += kernel/extended/trace
     LITEOS_TRACE_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/trace
+endif
 
 ifeq ($(LOSCFG_KERNEL_LITEIPC), y)
     LITEOS_BASELIB     += -lliteipc
@@ -447,6 +443,16 @@ ifeq ($(LOSCFG_BASE_CORE_HILOG), y)
     LITEOS_HILOG_INCLUDE  += -I $(LITEOSTOPDIR)/../../base/hiviewdfx/hilog_lite/interfaces/native/kits/hilog
     LITEOS_CMACRO += -DLOSCFG_BASE_CORE_HILOG
 endif
+ifeq ($(LOSCFG_BLACKBOX), y)
+    LITEOS_BASELIB     += -lblackbox
+    LIB_SUBDIRS           += $(LITEOSTOPDIR)/kernel/common/blackbox
+    LITEOS_BLACKBOX_INCLUDE  += -I $(LITEOSTOPDIR)/kernel/common/blackbox
+endif
+ifeq ($(LOSCFG_HIDUMPER), y)
+    LITEOS_BASELIB     += -lhidumper
+    LIB_SUBDIRS           += $(LITEOSTOPDIR)/kernel/common/hidumper
+    LITEOS_HIDUMPER_INCLUDE  += -I $(LITEOSTOPDIR)/kernel/common/hidumper
+endif
 ############################## Dfx Option End #######################################
 
 ############################# Tools && Debug Option Begin ##############################
@@ -643,7 +649,9 @@ LITEOS_DRIVERS_INCLUDE     := $(LITEOS_CELLWISE_INCLUDE)   $(LITEOS_GPIO_INCLUDE
                               $(LITEOS_DRIVERS_HDF_INCLUDE) $(LITEOS_TZDRIVER_INCLUDE) \
                               $(LITEOS_HIEVENT_INCLUDE)    $(LITEOS_DEV_MEM_INCLUDE) \
                               $(LITEOS_DEV_QUICKSTART_INCLUDE)
-LITEOS_DFX_INCLUDE    := $(LITEOS_HILOG_INCLUDE)
+LITEOS_DFX_INCLUDE    := $(LITEOS_HILOG_INCLUDE) \
+                         $(LITEOS_BLACKBOX_INCLUDE) \
+                         $(LITEOS_HIDUMPER_INCLUDE)
 
 LITEOS_SECURITY_INCLUDE    := $(LITEOS_SECURITY_CAP_INC) $(LITEOS_SECURITY_VID_INC)
 LOSCFG_TOOLS_DEBUG_INCLUDE := $(LITEOS_SHELL_INCLUDE)  $(LITEOS_UART_INCLUDE) \
@@ -672,7 +680,7 @@ LITEOS_COPTS_EXTRA_INTERWORK := $(LITEOS_COPTS_EXTRA)
 endif
 
 # kernel configuration macros
-LITEOS_CMACRO     += -imacros $(LITEOS_MENUCONFIG_H)
+LITEOS_CMACRO     += -imacros "$(LITEOS_MENUCONFIG_H)"
 
 ifneq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 LITEOS_LD_OPTS += -nostartfiles

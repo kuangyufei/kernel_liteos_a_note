@@ -72,7 +72,7 @@ static UINT32 Testcase(VOID)
     task1.pcName = "TestCpupTsk1";
     task1.usTaskPrio = TASK_PRIO_TEST - 2; // 2, used to calculate the task priority.
     task1.uwResved = TASK_STATUS_UNDETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     g_cpupTestCount = 0;

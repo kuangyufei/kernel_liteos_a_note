@@ -38,7 +38,7 @@ extern "C" {
 #endif /* __cpluscplus */
 VOID ItSuiteSmpHwi(VOID)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     ItSmpLosHwi001();
     ItSmpLosHwi002();
     ItSmpLosHwi003();
@@ -84,7 +84,7 @@ VOID ItSuiteSmpHwi(VOID)
     ItSmpLosHwiNest007();
     ItSmpLosHwiNest008();
 #endif
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     HalIrqSetAffinity(HWI_NUM_TEST, 1);
     HalIrqSetAffinity(HWI_NUM_TEST1, 1);
     HalIrqSetAffinity(HWI_NUM_TEST2, 1);

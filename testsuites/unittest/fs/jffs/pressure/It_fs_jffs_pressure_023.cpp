@@ -38,6 +38,7 @@ static UINT32 TestCase(VOID)
     INT32 i = 0;
     INT32 j = 0;
     INT32 k = JFFS_SHORT_ARRAY_LENGTH;
+    INT32 jffsPressureCycles = 4;  // write size 4 * 1024 * 1024
     signed long long offset;
 
     CHAR filebuf[FILE_BUF_SIZE] =
@@ -101,11 +102,11 @@ static UINT32 TestCase(VOID)
     fd = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT2);
 
-    for (j = 0; j < JFFS_PRESSURE_CYCLES; j++) {
+    for (j = 0; j < jffsPressureCycles; j++) {
         off = lseek(fd, 0, SEEK_SET);
         ICUNIT_GOTO_EQUAL(off, 0, off, EXIT2);
 
-        for (i = 0; i < JFFS_PRESSURE_CYCLES; i++) {
+        for (i = 0; i < jffsPressureCycles; i++) {
             ret = write(fd, bufW, strlen(bufW));
             printf("cnt=%d %d\n", i, j);
             ICUNIT_GOTO_EQUAL(ret, BYTES_PER_MBYTE, ret, EXIT2);
@@ -115,8 +116,8 @@ static UINT32 TestCase(VOID)
         }
         ret = stat(pathname1, &statfile);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT2);
-        // file size: 10 * 1024 * 1024
-        ICUNIT_GOTO_EQUAL(statfile.st_size, 10 * 1024 * 1024, statfile.st_size, EXIT2);
+        // file size: 4 * 1024 * 1024
+        ICUNIT_GOTO_EQUAL(statfile.st_size, 4 * 1024 * 1024, statfile.st_size, EXIT2);
     }
 
     ret = close(fd);

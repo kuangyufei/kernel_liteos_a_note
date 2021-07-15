@@ -33,7 +33,7 @@
 
 
 // 文件作用:统计多CPU core下运行情况,打开开关必然消耗大量的性能
-#if (LOSCFG_KERNEL_SCHED_STATISTICS == YES)
+#ifdef LOSCFG_KERNEL_SCHED_STATISTICS
 #define HIGHTASKPRI           16 //界定高优先级任务的标准 
 #define NS_PER_MS             1000000
 #define DECIMAL_TO_PERCENTAGE 100
@@ -213,7 +213,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellMpStaticStart(VOID)
     for (loop = 0; loop < g_taskMaxNum; loop++) {
         taskCB = (((LosTaskCB *)g_taskCBArray) + loop);
         if (taskCB->taskStatus & OS_TASK_STATUS_RUNNING) {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
             cpuid = taskCB->currCpu;
 #endif
             if ((UINT32)(OS_TASK_INVALID_CPUID) == cpuid) {
@@ -294,7 +294,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellMpStaticStop(VOID)
     for (loop = 0; loop < g_taskMaxNum; loop++) {
         taskCB = (((LosTaskCB *)g_taskCBArray) + loop);
         if (taskCB->taskStatus & OS_TASK_STATUS_RUNNING) {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
             cpuid = taskCB->currCpu;
 #endif
             if (cpuid == (UINT32)(OS_TASK_INVALID_CPUID)) {

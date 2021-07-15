@@ -417,41 +417,19 @@ INT32 OsGetKernelVaddr(const LosVmSpace *space, VADDR_T vaddr, VADDR_T *kvaddr)
 //设置.bss 区
 STATIC INT32 OsSetBss(const LD_ELF_PHDR *elfPhdr, INT32 fd, UINTPTR bssStart, UINT32 bssEnd, UINT32 elfProt)
 {
-    UINTPTR bssPageStart, bssStartPageAlign, bssEndPageAlign;
+    UINTPTR bssStartPageAlign, bssEndPageAlign;
     UINTPTR mapBase;
-    UINT32 offset, size;
     UINT32 bssMapSize;
     INT32 stackFlags;
     INT32 ret;
-    vaddr_t kvaddr = 0;
 
-    bssPageStart = ROUNDDOWN(bssStart, PAGE_SIZE);//bss区开始页位置
     bssStartPageAlign = ROUNDUP(bssStart, PAGE_SIZE);
     bssEndPageAlign = ROUNDUP(bssEnd, PAGE_SIZE);
-    ret = LOS_UnMMap(bssPageStart, (bssEndPageAlign - bssPageStart));//先解除映射关系
-    if ((ret != LOS_OK) && (bssPageStart != 0)) {
-        PRINT_ERR("%s[%d], Failed to unmap a region, vaddr: %#x!\n", __FUNCTION__, __LINE__, bssPageStart);
-    }
-	//再分配空间,bss虽在文件中不占用空间,但要占用实际的内存空间
-    ret = LOS_UserSpaceVmAlloc(OsCurrProcessGet()->vmSpace, PAGE_SIZE, (VOID **)&bssPageStart,
-                               0, OsCvtProtFlagsToRegionFlags(elfProt, MAP_FIXED));
-    if (ret != LOS_OK) {
-        PRINT_ERR("%s[%d], Failed to do vmm alloc!\n", __FUNCTION__, __LINE__);
-        return -ENOMEM;
-    }
-    ret = OsGetKernelVaddr(OsCurrProcessGet()->vmSpace, bssPageStart, &kvaddr);
-    if (ret != LOS_OK) {
-        PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
-        return -EFAULT;
-    }
-    (VOID)memset_s((VOID *)(UINTPTR)kvaddr, PAGE_SIZE, 0, PAGE_SIZE);
 
-    offset = ROUNDDOWN(elfPhdr->offset + elfPhdr->fileSize, PAGE_SIZE);
-    size = ROUNDOFFSET(elfPhdr->offset + elfPhdr->fileSize, PAGE_SIZE);
-    ret = OsReadELFInfo(fd, (UINT8 *)(UINTPTR)kvaddr, size, offset);
-    if (ret != LOS_OK) {
-        PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
-        return -EIO;
+    ret = LOS_UserMemClear((VOID *)bssStart, PAGE_SIZE - ROUNDOFFSET(bssStart, PAGE_SIZE));
+    if (ret != 0) {
+        PRINT_ERR("%s[%d], Failed to clear bss\n", __FUNCTION__, __LINE__);
+        return -EFAULT;
     }
 
     bssMapSize = bssEndPageAlign - bssStartPageAlign;

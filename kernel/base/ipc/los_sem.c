@@ -92,7 +92,7 @@
 	由于中断不能被阻塞，因此不能在中断中使用阻塞模式申请信号量。
 ******************************************************************************/
 
-#if (LOSCFG_BASE_IPC_SEM == YES)
+#ifdef LOSCFG_BASE_IPC_SEM
 
 #if (LOSCFG_BASE_IPC_SEM_LIMIT <= 0)
 #error "sem maxnum cannot be zero"

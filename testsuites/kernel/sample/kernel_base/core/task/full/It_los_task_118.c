@@ -85,7 +85,7 @@ static void TaskF01(void)
 
     ret = LOS_HwiCreate(HWI_NUM_TEST, hwiPrio, mode, (HWI_PROC_FUNC)HwiF01, arg);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     HalIrqSetAffinity(HWI_NUM_TEST, CPUID_TO_AFFI_MASK(ArchCurrCpuid()));
 #endif
 
@@ -136,7 +136,7 @@ static UINT32 Testcase(void)
     // 2, It is used to calculate a priority relative to TASK_PRIO_TEST_TASK.
     task1.usTaskPrio = TASK_PRIO_TEST_TASK - 2;
     task1.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     ret = LOS_TaskCreate(&g_testTaskID01, &task1);
@@ -149,7 +149,7 @@ static UINT32 Testcase(void)
     // 2, It is used to calculate a priority relative to TASK_PRIO_TEST_TASK.
     task1.usTaskPrio = TASK_PRIO_TEST_TASK - 2;
     task1.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     ret = LOS_TaskCreate(&g_testTaskID02, &task1);

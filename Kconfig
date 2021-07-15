@@ -52,15 +52,19 @@ endmenu
 menu "Platform"
 
 ######################### config options of bsp #####################
-source "../../kernel/liteos_a/platform/Kconfig"
+source "platform/Kconfig"
 
 ######################### config options of cpu arch ################
-source "../../kernel/liteos_a/arch/Kconfig"
+source "arch/Kconfig"
 
 ######################### config options of rootfs #####################
-source "../../kernel/liteos_a/kernel/common/Kconfig"
+source "kernel/common/Kconfig"
 ######################### config options of patchfs #####################
-source "../../kernel/liteos_a/kernel/common/patchfs/Kconfig"
+source "kernel/common/patchfs/Kconfig"
+######################### config options of blackbox #####################
+source "kernel/common/blackbox/Kconfig"
+######################### config options of hidumper #####################
+source "kernel/common/hidumper/Kconfig"
 
 config QUICK_START
     bool "Enable QUICK_START"
@@ -71,27 +75,24 @@ config QUICK_START
 endmenu
 
 ######################### config options of kernel #####################
-source "../../kernel/liteos_a/kernel/Kconfig"
+source "kernel/Kconfig"
 ######################### config options of lib ########################
-source "../../kernel/liteos_a/lib/Kconfig"
+source "lib/Kconfig"
 ######################### config options of compatibility ##############
 menu "Compat"
-source "../../kernel/liteos_a/compat/posix/Kconfig"
-source "../../kernel/liteos_a/bsd/Kconfig"
+source "compat/posix/Kconfig"
+source "bsd/Kconfig"
 endmenu
-
-######################### config options of framework ##################
-#source "../../frameworks/m2mcomm/Kconfig"
 
 ######################## config options of filesystem ##################
 menu "FileSystem"
-source "../../kernel/liteos_a/fs/vfs/Kconfig"
-source "../../kernel/liteos_a/fs/fat/Kconfig"
-source "../../kernel/liteos_a/fs/ramfs/Kconfig"
-source "../../kernel/liteos_a/fs/romfs/Kconfig"
-source "../../kernel/liteos_a/fs/nfs/Kconfig"
-source "../../kernel/liteos_a/fs/proc/Kconfig"
-source "../../kernel/liteos_a/fs/jffs2/Kconfig"
+source "fs/vfs/Kconfig"
+source "fs/fat/Kconfig"
+source "fs/ramfs/Kconfig"
+source "fs/romfs/Kconfig"
+source "fs/nfs/Kconfig"
+source "fs/proc/Kconfig"
+source "fs/jffs2/Kconfig"
 config ENABLE_READ_BUFFER
     bool "Enable read buffer Option"
     default n
@@ -117,7 +118,7 @@ config MAX_PATH_CACHE_SIZE
 endmenu
 
 ######################## config options of net ############################
-source "../../kernel/liteos_a/net/Kconfig"
+source "net/Kconfig"
 
 ######################## config options of debug ########################
 menu "Debug"
@@ -219,14 +220,14 @@ config DEBUG_SEMAPHORE
     help
       Answer Y to enable debug semaphore.
 
-source "../../kernel/liteos_a/shell/Kconfig"
+source "shell/Kconfig"
 config NET_LWIP_SACK_TFTP
     bool "Enable Tftp"
     default y
     depends on SHELL && NET_LWIP_SACK && DEBUG_VERSION
     help
       Answer Y to enable LiteOS support tftp cmd and tftp tool.
-source "../../kernel/liteos_a/net/telnet/Kconfig"
+source "net/telnet/Kconfig"
 config SCHED_DEBUG
     bool "Enable sched debug Feature"
     default n
@@ -265,7 +266,7 @@ config MEM_LEAKCHECK
     help
       Answer Y to enable record the LR of Function call stack of Mem operation, it can check the mem leak through the infomations of mem node.
 config BASE_MEM_NODE_INTEGRITY_CHECK
-    bool "Enable integrity check or not "
+    bool "Enable integrity check or not"
     default n
     depends on DEBUG_VERSION && MEM_DEBUG
 config MEM_WATERLINE
@@ -290,20 +291,25 @@ config DRIVERS
     help
       Answer Y to enable LiteOS support driver.
 
-source "../../kernel/liteos_a/bsd/dev/usb/Kconfig"
+source "bsd/dev/usb/Kconfig"
 source "../../drivers/adapter/khdf/liteos/Kconfig"
+
+# Device driver Kconfig import
+osource "$(DEVICE_PATH)/Kconfig"
+osource "$(DEVICE_PATH)/config/Kconfig"
 
 source "drivers/char/mem/Kconfig"
 source "drivers/char/quickstart/Kconfig"
 source "drivers/char/random/Kconfig"
-source "../../drivers/liteos/tzdriver/Kconfig"
 source "drivers/char/video/Kconfig"
+
+source "../../drivers/liteos/tzdriver/Kconfig"
 source "../../drivers/liteos/hievent/Kconfig"
 
 endmenu
 
 menu "Security"
-source "../../kernel/liteos_a/security/Kconfig"
+source "security/Kconfig"
 endmenu
 
 menu "Test"

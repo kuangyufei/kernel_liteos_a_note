@@ -44,7 +44,7 @@ CFLAGS := -std=c99 -fno-exceptions $(BASE_OPTS) $(LITEOS_COPTS_OPTMIZE)
 CXXFLAGS := -std=c++11 -fexceptions -fpermissive -frtti $(BASE_OPTS) $(LITEOS_COPTS_OPTMIZE)
 LDCFLAGS  := -lc
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LLVM_SYSROOT := --sysroot=$(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/
+LLVM_SYSROOT := --sysroot=$(SYSROOT_PATH) $(ARCH_CFLAGS)
 LDCXXFLGS := -lc++ -lc++abi -lc
 else
 BASE_OPTS += -Wl,-z,relro,-z,now

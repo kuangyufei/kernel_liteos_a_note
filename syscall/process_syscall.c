@@ -1037,7 +1037,7 @@ int SysSchedGetAffinity(int id, unsigned int *cpuset, int flag)
         }
     }
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     cpuAffiMask = (unsigned int)OS_TCB_FROM_TID(taskID)->cpuAffiMask;
 #else
     cpuAffiMask = 1;

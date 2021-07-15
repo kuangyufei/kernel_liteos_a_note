@@ -48,7 +48,7 @@ VOID ItSuiteVfsProc(VOID)
 #endif
 
 #if defined(LOSCFG_USER_TEST_PRESSURE)
-#if(LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
 #endif
 #endif
 }

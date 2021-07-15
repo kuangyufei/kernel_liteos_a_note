@@ -40,7 +40,7 @@ extern "C" {
 
 VOID ItSuiteLosQueue(VOID)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     ItSmpLosQueue001();
     ItSmpLosQueue002();
     ItSmpLosQueue003();
@@ -101,7 +101,7 @@ VOID ItSuiteLosQueue(VOID)
     ItLosQueue018();
     ItLosQueue019();
     ItLosQueue020();
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     ItLosQueue021();
 #endif
     ItLosQueue022();
@@ -228,7 +228,7 @@ VOID ItSuiteLosQueue(VOID)
     ItLosQueueHead042();
 #endif
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     HalIrqSetAffinity(HWI_NUM_TEST, 1);
 #endif
 }

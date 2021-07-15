@@ -43,7 +43,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 typedef enum {
     CPU_RUNNING = 0,   /* cpu is running */ 	//CPU正在运行状态
     CPU_HALT,          /* cpu in the halt */	//CPU处于暂停状态
@@ -68,7 +68,7 @@ typedef struct {//内核对cpu的描述
     UINT32 swtmrHandlerQueue;                   /* software timer timeout queue id */	//软时钟超时队列句柄
     UINT32 swtmrTaskID;                         /* software timer task id */	//软时钟任务ID
     UINT32 schedFlag;                           /* pending scheduler flag */	//调度标识 INT_NO_RESCH INT_PEND_RESCH
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     UINT32            excFlag;               /* cpu halt or exc flag *///cpu 停止或 异常 标志
 #endif
 } Percpu;

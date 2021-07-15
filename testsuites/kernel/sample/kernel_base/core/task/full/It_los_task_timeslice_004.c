@@ -131,7 +131,7 @@ static UINT32 Testcase(void)
     task.uwStackSize = TASK_STACK_SIZE_TEST * 3;
     task.usTaskPrio = TASK_PRIO_TEST_TASK - 1;
     task.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
 
@@ -143,7 +143,7 @@ static UINT32 Testcase(void)
     task.uwStackSize = TASK_STACK_SIZE_TEST;
     task.usTaskPrio = TASK_PRIO_TEST_TASK - 1;
     task.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
 

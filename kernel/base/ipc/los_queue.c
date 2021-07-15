@@ -83,7 +83,7 @@
 队列错误码
 	对存在失败可能性的操作返回对应的错误码，以便快速定位错误原因。	
 ******************************************************************************/
-#if (LOSCFG_BASE_IPC_QUEUE == YES)
+#ifdef LOSCFG_BASE_IPC_QUEUE
 #if (LOSCFG_BASE_IPC_QUEUE_LIMIT <= 0)
 #error "queue maxnum cannot be zero"
 #endif /* LOSCFG_BASE_IPC_QUEUE_LIMIT <= 0 */

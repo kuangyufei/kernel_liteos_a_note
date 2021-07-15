@@ -96,7 +96,7 @@ extern "C" {
         testTask.uwResved = LOS_TASK_STATUS_DETACHED;              \
     } while (0);
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #define TEST_TASK_PARAM_INIT_AFFI(testTask, task_name, entry, prio, affi) \
     TEST_TASK_PARAM_INIT(testTask, task_name, entry, prio)                \
     testTask.usCpuAffiMask = affi;

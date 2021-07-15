@@ -99,7 +99,7 @@ VOID ItSuiteExtendCpup(VOID)
     ItExtendCpup010();
 #endif
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     ItSmpExtendCpup001();
     ItSmpExtendCpup002();
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ

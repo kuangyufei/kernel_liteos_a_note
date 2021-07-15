@@ -75,7 +75,7 @@ static VOID TaskC3Func(VOID)
     task1.pcName = "TaskD";
     task1.uwStackSize = TASK_STACK_SIZE_TEST;
     task1.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     ret = LOS_TaskCreate(&g_testTaskID04, &task1);
@@ -130,7 +130,7 @@ static VOID TaskA3Func(VOID)
     task1.pcName = "TaskB";
     task1.uwStackSize = TASK_STACK_SIZE_TEST;
     task1.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     ret = LOS_TaskCreate(&g_testTaskID02, &task1);
@@ -141,7 +141,7 @@ static VOID TaskA3Func(VOID)
     task2.pcName = "TaskC";
     task2.uwStackSize = TASK_STACK_SIZE_TEST;
     task2.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task2.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     ret = LOS_TaskCreate(&g_testTaskID03, &task2);
@@ -178,7 +178,7 @@ static UINT32 Testcase(VOID)
     task.pcName = "TaskA";
     task.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
     task.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     ret = LOS_TaskCreate(&g_testTaskID01, &task);

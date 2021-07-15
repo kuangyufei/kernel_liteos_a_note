@@ -49,7 +49,7 @@ extern VOID HalIrqClear(UINT32 vector);
 extern CHAR *HalIrqVersion(VOID);
 extern UINT32 HalCurIrqGet(VOID);
 extern UINT32 HalIrqSetPrio(UINT32 vector, UINT8 priority);
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 extern VOID HalIrqSendIpi(UINT32 target, UINT32 ipi);
 extern VOID HalIrqSetAffinity(UINT32 vector, UINT32 cpuMask);
 #endif

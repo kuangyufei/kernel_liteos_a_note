@@ -155,7 +155,7 @@ struct OsMemPoolInfo {
     VOID *pool;
     UINT32 totalSize;
     UINT32 attr;
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
+#ifdef LOSCFG_MEM_WATERLINE
     UINT32 waterLine;   /* Maximum usage size in a memory pool */
     UINT32 curUsedSize; /* Current usage size in a memory pool */
 #endif
@@ -238,7 +238,7 @@ STATIC INLINE VOID OsMemNodeSetTaskID(struct OsMemUsedNodeHead *node)
 }
 #endif
 
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
+#ifdef LOSCFG_MEM_WATERLINE
 STATIC INLINE VOID OsMemWaterUsedRecord(struct OsMemPoolHead *pool, UINT32 size)
 {
     pool->info.curUsedSize += size;

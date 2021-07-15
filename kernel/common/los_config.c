@@ -65,7 +65,7 @@ SystemRebootFunc OsGetRebootHook(VOID)
 
 extern UINT32 OsSystemInit(VOID);
 extern VOID SystemInit(VOID);
-#if (LOSCFG_KERNEL_SMP == 1)
+#ifdef LOSCFG_KERNEL_SMP
 extern VOID release_secondary_cores(VOID);
 #endif
 
@@ -83,14 +83,14 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 EarliestInit(VOID)
 
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 ArchEarlyInit(VOID)
 {
-    UINT32 ret = LOS_OK;
+    UINT32 ret;
 
     /* set system counter freq */
 #ifndef LOSCFG_TEE_ENABLE
     HalClockFreqWrite(OS_SYS_CLOCK);
 #endif
 
-#if (LOSCFG_PLATFORM_HWI == 1)
+#ifdef LOSCFG_PLATFORM_HWI
     OsHwiInit();
 #endif
 
@@ -118,7 +118,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsIpcInit(VOID)
 {
     UINT32 ret;
 
-#if (LOSCFG_BASE_IPC_SEM == 1)
+#ifdef LOSCFG_BASE_IPC_SEM
     ret = OsSemInit();
     if (ret != LOS_OK) {
         PRINT_ERR("OsSemInit error\n");
@@ -126,7 +126,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsIpcInit(VOID)
     }
 #endif
 
-#if (LOSCFG_BASE_IPC_QUEUE == 1)
+#ifdef LOSCFG_BASE_IPC_QUEUE
     ret = OsQueueInit();
     if (ret != LOS_OK) {
         PRINT_ERR("OsQueueInit error\n");
@@ -151,7 +151,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 PlatformInit(VOID)
 
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 KModInit(VOID)
 {
-#if (LOSCFG_BASE_CORE_SWTMR == 1)
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
     OsSwtmrInit();
 #endif
     return LOS_OK;
@@ -167,7 +167,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsSystemInfo(VOID)
 
     PRINT_RELEASE("\n******************Welcome******************\n\n"
                   "Processor   : %s"
-#if (LOSCFG_KERNEL_SMP == 1)
+#ifdef LOSCFG_KERNEL_SMP
                   " * %d\n"
                   "Run Mode    : SMP\n"
 #else
@@ -179,7 +179,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsSystemInfo(VOID)
                   "Kernel      : %s %d.%d.%d.%d/%s\n"
                   "\n*******************************************\n",
                   LOS_CpuInfo(),
-#if (LOSCFG_KERNEL_SMP == 1)
+#ifdef LOSCFG_KERNEL_SMP
                   LOSCFG_KERNEL_SMP_CORE_NUM,
 #endif
                   HalIrqVersion(), __DATE__, __TIME__,\
@@ -265,7 +265,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 
     OsInitCall(LOS_INIT_LEVEL_KMOD_EXTENDED);
 
-#if (LOSCFG_KERNEL_SMP == 1)
+#ifdef LOSCFG_KERNEL_SMP
     release_secondary_cores();
 #endif
 
@@ -303,7 +303,7 @@ STATIC UINT32 OsSystemInitTaskCreate(VOID)
     sysTask.pcName = "SystemInit";
     sysTask.usTaskPrio = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;
     sysTask.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == 1)
+#ifdef LOSCFG_KERNEL_SMP
     sysTask.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     return LOS_TaskCreate(&taskID, &sysTask);

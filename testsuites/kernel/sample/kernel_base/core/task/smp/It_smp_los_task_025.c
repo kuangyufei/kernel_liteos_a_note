@@ -95,7 +95,7 @@ static UINT32 Testcase(void)
     g_itTestResult = LOS_NOK;
 
     LOS_TaskLock();
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     currCpuid = (ArchCurrCpuid() + 1) % LOSCFG_KERNEL_CORE_NUM;
 #endif
 

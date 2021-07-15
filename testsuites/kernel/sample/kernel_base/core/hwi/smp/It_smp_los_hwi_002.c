@@ -36,7 +36,7 @@
 extern "C" {
 #endif /* __cpluscplus */
 #endif /* __cpluscplus */
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 static VOID HwiF01(void)
 {
     LOS_AtomicInc(&g_testCount);

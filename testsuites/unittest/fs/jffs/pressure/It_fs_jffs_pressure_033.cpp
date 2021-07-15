@@ -170,7 +170,7 @@ static VOID *PthreadF02(void *arg)
     CHAR *bufR = NULL;
     CHAR *bufW = NULL;
     off_t off;
-    INT32 bufRSize = 6075; // 6075: read length
+    INT32 bufRSize = 6074; // 6074: read length
 
     ret = pthread_mutex_lock(&g_jffs2GlobalLock1);
     printf("[%d] Thread2 Start frist get lock\n", __LINE__);

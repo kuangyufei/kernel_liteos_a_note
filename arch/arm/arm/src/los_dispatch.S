@@ -242,6 +242,7 @@ OsIrqHandler:
     POP_FPU_REGS R0
     LDR   R4, [SP, #0]
 
+#ifdef LOSCFG_KERNEL_VM
     /* Obtain the CPSR to determine the mode the system is in when the interrupt is triggered */
     LDR     R3, [SP, #(11 * 4)]
     AND     R1, R3, #CPSR_MASK_MODE
@@ -256,6 +257,7 @@ OsIrqHandler:
     BLX     OsSaveSignalContext
     MOV     SP, R0
 1:
+#endif
     ADD     SP, SP, #(2 * 4)
     /* load user sp and lr, and jump cpsr */
     LDMFD   SP, {R13, R14}^

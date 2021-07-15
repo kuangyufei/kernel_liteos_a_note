@@ -51,10 +51,10 @@
 #ifdef LOSCFG_KERNEL_CPUP
 #include "los_cpup_pri.h"
 #endif
-#if (LOSCFG_BASE_CORE_SWTMR == YES)
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
 #include "los_swtmr_pri.h"
 #endif
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
 #include "hm_liteipc.h"
 #endif
 #ifdef LOSCFG_ENABLE_OOM_LOOP_TASK
@@ -172,7 +172,7 @@ VOID OsSetMainTask()
         g_mainTask[i].taskStatus = OS_TASK_STATUS_UNUSED;
         g_mainTask[i].taskID = LOSCFG_BASE_CORE_TSK_LIMIT;//128
         g_mainTask[i].priority = OS_TASK_PRIORITY_LOWEST;//31
-#if (LOSCFG_KERNEL_SMP_LOCKDEP == YES)
+#ifdef LOSCFG_KERNEL_SMP_LOCKDEP
         g_mainTask[i].lockDep.lockDepth = 0;
         g_mainTask[i].lockDep.waitLock = NULL;
 #endif
@@ -284,7 +284,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
         LOS_ListTailInsert(&g_losFreeTask, &g_taskCBArray[index].pendList);//通过pendList节点插入空闲任务列表 
     }//注意:这里挂的是pendList节点,所以取TCB也要通过 OS_TCB_FROM_PENDLIST 取.
 
-#if (LOSCFG_KERNEL_TRACE == YES)
+#ifdef LOSCFG_KERNEL_TRACE
     LOS_TraceReg(LOS_TRACE_TASK, OsTaskTrace, LOS_TRACE_TASK_NAME, LOS_TRACE_ENABLE);
 #endif
 
@@ -316,7 +316,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
     taskInitParam.pcName = "Idle";//任务名称 叫pcName有点怪怪的,不能换个撒
     taskInitParam.usTaskPrio = OS_TASK_PRIORITY_LOWEST;//默认最低优先级 31
     taskInitParam.processID = OsGetIdleProcessID();
-#if (LOSCFG_KERNEL_SMP == YES)//CPU多核情况
+#ifdef LOSCFG_KERNEL_SMP
     taskInitParam.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());//每个idle任务只在单独的cpu上运行
 #endif
     ret = LOS_TaskCreateOnly(idleTaskID, &taskInitParam);
@@ -457,7 +457,7 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskStackAlloc(VOID **topStack, UINT32 stack
 //创建任务同步信号
 STATIC INLINE UINT32 OsTaskSyncCreate(LosTaskCB *taskCB)
 {
-#if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)//CPU多核情况下任务同步宏是否开启
+#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
     UINT32 ret = LOS_SemCreate(0, &taskCB->syncSignal);//创建一个syncSignal信号量
     if (ret != LOS_OK) {
         return LOS_ERRNO_TSK_MP_SYNC_RESOURCE;
@@ -470,7 +470,7 @@ STATIC INLINE UINT32 OsTaskSyncCreate(LosTaskCB *taskCB)
 //删除任务同步信号
 STATIC INLINE VOID OsTaskSyncDestroy(UINT32 syncSignal)
 {
-#if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)
+#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
     (VOID)LOS_SemDelete(syncSignal);
 #else
     (VOID)syncSignal;
@@ -484,7 +484,7 @@ B --回一个syncSignal-- > A
 *******************************************/
 LITE_OS_SEC_TEXT UINT32 OsTaskSyncWait(const LosTaskCB *taskCB)
 {
-#if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)
+#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
     UINT32 ret = LOS_OK;
 
     LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));
@@ -509,7 +509,7 @@ LITE_OS_SEC_TEXT UINT32 OsTaskSyncWait(const LosTaskCB *taskCB)
 //任务同步唤醒
 STATIC INLINE VOID OsTaskSyncWake(const LosTaskCB *taskCB)
 {
-#if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)
+#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
     (VOID)OsSemPostUnsafe(taskCB->syncSignal, NULL);//唤醒一个挂在信号量链表上的阻塞任务
 #else
     (VOID)taskCB;
@@ -566,7 +566,7 @@ LITE_OS_SEC_TEXT VOID OsTaskResourcesToFree(LosTaskCB *taskCB)
                       processCB->processID, taskCB->taskID, mapBase, mapSize, ret);
         }
 
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
         LiteIpcRemoveServiceHandle(taskCB);
 #endif
     }
@@ -575,7 +575,7 @@ LITE_OS_SEC_TEXT VOID OsTaskResourcesToFree(LosTaskCB *taskCB)
     if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {
         topOfStack = taskCB->topOfStack;
         taskCB->topOfStack = 0;
-#if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)
+#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
         syncSignal = taskCB->syncSignal;
         taskCB->syncSignal = LOSCFG_BASE_IPC_SEM_LIMIT;
 #endif
@@ -604,12 +604,12 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskCBInitBase(LosTaskCB *taskCB,
     taskCB->taskEntry    = initParam->pfnTaskEntry;
     taskCB->signal       = SIGNAL_NONE;
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     taskCB->currCpu      = OS_TASK_INVALID_CPUID;
     taskCB->cpuAffiMask  = (initParam->usCpuAffiMask) ?
                             initParam->usCpuAffiMask : LOSCFG_KERNEL_CPU_MASK;
 #endif
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
     LOS_ListInit(&(taskCB->msgListHead));//初始化 liteipc的消息链表 
 #endif
     taskCB->policy = (initParam->policy == LOS_SCHED_FIFO) ? LOS_SCHED_FIFO : LOS_SCHED_RR;//调度模式
@@ -737,7 +737,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *taskID, TSK_INIT_PARAM_S
 LOS_ERREND_TCB_INIT:
     (VOID)LOS_MemFree(pool, topStack);
 LOS_ERREND_REWIND_SYNC:
-#if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)
+#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
     OsTaskSyncDestroy(taskCB->syncSignal);
 #endif
 LOS_ERREND_REWIND_TCB:
@@ -852,7 +852,7 @@ LITE_OS_SEC_TEXT_INIT STATIC BOOL OsTaskSuspendCheckOnRun(LosTaskCB *taskCB, UIN
     /* init default out return value */
     *ret = LOS_OK;
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     /* ASYNCHRONIZED. No need to do task lock checking */
     if (taskCB->currCpu != ArchCurrCpuid()) {//跨CPU核的情况
         taskCB->signal = SIGNAL_SUSPEND;
@@ -998,7 +998,7 @@ STATIC BOOL OsRunTaskToDeleteCheckOnRun(LosTaskCB *taskCB, UINT32 *ret)
     /* init default out return value */
     *ret = LOS_OK;
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     /* ASYNCHRONIZED. No need to do task lock checking *///异步操作,不需要进行任务锁检查
     if (taskCB->currCpu != ArchCurrCpuid()) {//任务运行在其他CPU,跨核心执行删除
         /*
@@ -1083,7 +1083,7 @@ LITE_OS_SEC_TEXT UINT32 OsTaskDeleteUnsafe(LosTaskCB *taskCB, UINT32 status, UIN
         SCHEDULER_LOCK(intSave);
     }
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     LOS_ASSERT(OsPercpuGet()->taskLockCnt == 1);
 #else
     LOS_ASSERT(OsPercpuGet()->taskLockCnt == 0);
@@ -1325,7 +1325,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskInfoGet(UINT32 taskID, TSK_INFO_S *taskInf
 //CPU亲和性（affinity）将任务绑在指定CPU上,用于多核CPU情况,（该函数仅在SMP模式下支持）
 LITE_OS_SEC_TEXT BOOL OsTaskCpuAffiSetUnsafe(UINT32 taskID, UINT16 newCpuAffiMask, UINT16 *oldCpuAffiMask)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     LosTaskCB *taskCB = OS_TCB_FROM_TID(taskID);
 
     taskCB->cpuAffiMask = newCpuAffiMask;
@@ -1377,7 +1377,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskCpuAffiSet(UINT32 taskID, UINT16 cpuAffiMa
 //查询任务被绑在哪个CPU上
 LITE_OS_SEC_TEXT_MINOR UINT16 LOS_TaskCpuAffiGet(UINT32 taskID)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #define INVALID_CPU_AFFI_MASK   0
     LosTaskCB *taskCB = NULL;
     UINT16 cpuAffiMask;
@@ -1441,7 +1441,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsTaskProcSignal(VOID)
 
         /* suspend killed task may fail, ignore the result */
         (VOID)LOS_TaskSuspend(runTask->taskID);
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     } else if (runTask->signal & SIGNAL_AFFI) {//意思是下次调度其他cpu要媾和你
         runTask->signal &= ~SIGNAL_AFFI;//任务贴上被其他CPU媾和的标签
 
@@ -1501,13 +1501,14 @@ STATIC VOID OsExitGroupActiveTaskKilled(LosProcessCB *processCB, LosTaskCB *task
     INT32 ret;
 
     taskCB->taskStatus |= OS_TASK_FLAG_EXIT_KILL;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     /* The other core that the thread is running on and is currently running in a non-system call */
     if (!taskCB->sig.sigIntLock && (taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {
         taskCB->signal = SIGNAL_KILL;
         LOS_MpSchedule(taskCB->currCpu);
     } else
 #endif
+#ifdef LOSCFG_KERNEL_VM
     {
         ret = OsTaskKillUnsafe(taskCB->taskID, SIGKILL);
         if (ret != LOS_OK) {
@@ -1515,6 +1516,7 @@ STATIC VOID OsExitGroupActiveTaskKilled(LosProcessCB *processCB, LosTaskCB *task
                       taskCB->processID, OsCurrTaskGet()->taskID, taskCB->taskID, ret);
         }
     }
+#endif
 
     if (!(taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN)) {
         taskCB->taskStatus |= OS_TASK_FLAG_PTHREAD_JOIN;

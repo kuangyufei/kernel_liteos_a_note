@@ -46,8 +46,8 @@ else
 	$(HIDE)$(CP) $(LITEOSTHIRDPARTY)/$(TOYBOX)/. $(BUILD_DIR)
 	$(HIDE)$(CP) -p $(LITEOSTHIRDPARTY)/$(TOYBOX)/porting/liteos_a/. $(BUILD_DIR)
 endif
-	$(HIDE)CFLAGS="-D_FORTIFY_SOURCE=2 -fstack-protector-strong --target=arm-liteos \
-	--sysroot=$(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/" CC="$(CC)" OUTNAME=$(OUTNAME) \
+	$(HIDE)CFLAGS="-D_FORTIFY_SOURCE=2 -fstack-protector-strong --target=$(LLVM_TARGET) $(LLVM_SYSROOT)" CC="$(CC)" OUTNAME=$(OUTNAME) \
+	LDFLAGS="--target=$(LLVM_TARGET) $(LLVM_SYSROOT)" \
 	make -C $(BUILD_DIR) toybox -j> $(BUILD_LOG) 2>&1
 	$(HIDE)$(CP) $(BUILD_DIR)/$(TOYBOX) .
 	$(HIDE)$(STRIP) $(TOYBOX)

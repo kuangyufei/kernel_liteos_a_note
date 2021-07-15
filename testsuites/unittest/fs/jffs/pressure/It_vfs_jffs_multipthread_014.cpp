@@ -30,7 +30,7 @@
  */
 
 #include "It_vfs_jffs.h"
-static INT32 g_testNum = 20;
+static INT32 g_testNum = 2;
 
 static VOID *PthreadF01(void *arg)
 {

@@ -82,22 +82,38 @@ static int TestChild(VOID)
     capheader.pid = INVAILD_PID;
     ret = capget(&capheader, &capdatac[0]);
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
+    errno = 0;
     capheader.pid = 3;
-    ret = capget(&capheader, &capdatac[0]);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    printf("e %d,p %d\n", capdatac[0].effective, capdatac[0].permitted);
+    kill(capheader.pid, 0);
+    if (errno != ESRCH) {
+        ret = capget(&capheader, &capdatac[0]);
+        ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+        printf("e %d,p %d\n", capdatac[0].effective, capdatac[0].permitted);
+    }
+    errno = 0;
     capheader.pid = 4;
-    ret = capget(&capheader, &capdatac[0]);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    printf("e %d,p %d\n", capdatac[0].effective, capdatac[0].permitted);
+    kill(capheader.pid, 0);
+    if (errno != ESRCH) {
+        ret = capget(&capheader, &capdatac[0]);
+        ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+        printf("e %d,p %d\n", capdatac[0].effective, capdatac[0].permitted);
+    }
+    errno = 0;
     capheader.pid = 5;
-    ret = capget(&capheader, &capdatac[0]);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    printf("e %d,p %d\n", capdatac[0].effective, capdatac[0].permitted);
+    kill(capheader.pid, 0);
+    if (errno != ESRCH) {
+        ret = capget(&capheader, &capdatac[0]);
+        ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+        printf("e %d,p %d\n", capdatac[0].effective, capdatac[0].permitted);
+    }
+    errno = 0;
     capheader.pid = 6;
-    ret = capget(&capheader, &capdatac[0]);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    printf("e %d,p %d\n", capdatac[0].effective, capdatac[0].permitted);
+    kill(capheader.pid, 0);
+    if (errno != ESRCH) {
+        ret = capget(&capheader, &capdatac[0]);
+        ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+        printf("e %d,p %d\n", capdatac[0].effective, capdatac[0].permitted);
+    }
     capheader.pid = 0;
 
     int pid = fork();

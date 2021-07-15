@@ -57,7 +57,7 @@ LITE_OS_SEC_TEXT VOID OsTickHandler(VOID)
     OsVdsoTimevalUpdate();
 #endif
 
-#if (LOSCFG_BASE_CORE_TICK_HW_TIME == YES)
+#ifdef LOSCFG_BASE_CORE_TICK_HW_TIME
     HalClockIrqClear(); /* diff from every platform */
 #endif
 

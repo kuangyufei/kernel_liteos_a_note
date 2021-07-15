@@ -48,7 +48,7 @@ static UINT32 TestCase(VOID)
     ICUNIT_GOTO_NOT_EQUAL(pret, NULL, pret, EXIT);
     ICUNIT_GOTO_STRING_EQUAL(buf, JFFS_PATH_NAME0, buf, EXIT);
 
-    pret = getcwd(buf, JFFS_STANDARD_NAME_LENGTH);
+    pret = getcwd(buf, 5); // 5 is less than path length
     ICUNIT_GOTO_EQUAL(pret, NULL, pret, EXIT);
     ICUNIT_GOTO_EQUAL(errno, ERANGE, errno, EXIT);
 

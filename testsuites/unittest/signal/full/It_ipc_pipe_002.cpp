@@ -29,28 +29,41 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "it_test_signal.h"
-
+#include "sys/shm.h"
 
 static UINT32 Testcase(VOID)
 {
     int pipeFd[2], ret, spid; // 2, pipe return 2 file descripter
     char buffer[20];          // 20, target buffer size
+    int *sharedflag = NULL;
+    int shmid;
+    
     ret = pipe(pipeFd);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
+    shmid = shmget((key_t)IPC_PRIVATE, sizeof(int), 0666 | IPC_CREAT); // 0666 the authority of the shm
+    ICUNIT_ASSERT_NOT_EQUAL(shmid, -1, shmid);
+    sharedflag = (int *)shmat(shmid, NULL, 0);
+    *sharedflag = 0;
+
     spid = fork();
     ICUNIT_GOTO_NOT_EQUAL(spid, -1, spid, EXIT1);
     if (spid == 0) {
+        sharedflag = (int *)shmat(shmid, NULL, 0);
         close(pipeFd[0]);
-        sleep(10); // 10, sleep 10 second.
         ret = write(pipeFd[1], "hello world", 12); // 12, "hello world" length and '\0'
         printf("write first status: %d\n", ret);
         if (ret != 12) { // 12, "hello world" length and '\0'
             exit(11);    // 11, the value of son process unexpect exit, convenient to debug
         }
+        *sharedflag = 1;
         close(pipeFd[1]);
         exit(RED_FLAG);
     }
     close(pipeFd[1]);
+    // waitting for the sub process has written the sentence
+    while (*sharedflag != 1) {
+        usleep(1);
+    }
     ret = read(pipeFd[0], buffer, 12);     // 12, "hello world" length and '\0'
     ICUNIT_GOTO_EQUAL(ret, 12, ret, EXIT); // 12, "hello world" length and '\0'
     ret = strcmp(buffer, "hello world");

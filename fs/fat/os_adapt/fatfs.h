@@ -112,6 +112,9 @@ extern "C" {
 #define FMT_FAT32    0x02
 #define FMT_ANY      0x07
 #define FMT_ERASE    0x08
+
+extern char FatLabel[LABEL_LEN];
+
 int fatfs_2_vfs(int result);
 int fatfs_lookup(struct Vnode *parent, const char *name, int len, struct Vnode **vpp);
 int fatfs_create(struct Vnode *parent, const char *name, int mode, struct Vnode **vpp);

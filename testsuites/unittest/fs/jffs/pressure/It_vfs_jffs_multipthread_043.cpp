@@ -45,7 +45,7 @@ static VOID *PthreadF01(void *arg)
     CHAR writebuf[20] = "0123456789";
     CHAR *bufW = NULL;
     struct stat statbuf;
-    INT32 bufWLen = BYTES_PER_MBYTE;
+    INT32 bufWLen = 256 * BYTES_PER_KBYTE; // 256 KB
 
     flag = 0;
     bufW = (CHAR *)malloc(bufWLen + 1);
@@ -158,7 +158,7 @@ static VOID *PthreadF02(void *arg)
     CHAR writebuf[20] = "0123456789";
     CHAR *bufW = NULL;
     struct stat statbuf;
-    INT32 bufWLen = BYTES_PER_MBYTE;
+    INT32 bufWLen = 256 * BYTES_PER_KBYTE; // 256 KB
 
     flag = 0;
     bufW = (CHAR *)malloc(bufWLen + 1);
@@ -270,7 +270,7 @@ static VOID *PthreadF03(void *arg)
     CHAR writebuf[20] = "0123456789";
     CHAR *bufW = NULL;
     struct stat statbuf;
-    INT32 bufWLen = BYTES_PER_MBYTE;
+    INT32 bufWLen = 256 * BYTES_PER_KBYTE; // 256 KB
 
     flag = 0;
     bufW = (CHAR *)malloc(bufWLen + 1);

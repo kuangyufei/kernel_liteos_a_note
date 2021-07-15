@@ -199,6 +199,9 @@ STATIC INLINE VOID OsFutexReplaceQueueListHeadNode(FutexNode *oldHeadNode, Futex
     LOS_DL_LIST *futexList = oldHeadNode->futexList.pstPrev;
     LOS_ListDelete(&oldHeadNode->futexList);
     LOS_ListHeadInsert(futexList, &newHeadNode->futexList);
+    if ((newHeadNode->queueList.pstNext == NULL) || (newHeadNode->queueList.pstPrev == NULL)) {
+        LOS_ListInit(&newHeadNode->queueList);
+    }
 }
 
 STATIC INLINE VOID OsFutexDeleteKeyFromFutexList(FutexNode *node)
@@ -797,6 +800,7 @@ EXIT_UNLOCK_ERR:
 
 STATIC INT32 OsFutexRequeueInsertNewKey(UINTPTR newFutexKey, INT32 newIndex, FutexNode *oldHeadNode)
 {
+    BOOL queueListIsEmpty = FALSE;
     INT32 ret;
     UINT32 intSave;
     LosTaskCB *task = NULL;
@@ -817,25 +821,33 @@ STATIC INT32 OsFutexRequeueInsertNewKey(UINTPTR newFutexKey, INT32 newIndex, Fut
         nextNode = OS_FUTEX_FROM_QUEUELIST(queueList);
         SCHEDULER_LOCK(intSave);
         if (LOS_ListEmpty(&nextNode->pendList)) {
-            queueList = queueList->pstNext;
+            if (LOS_ListEmpty(queueList)) {
+                queueListIsEmpty = TRUE;
+            } else {
+                queueList = queueList->pstNext;
+            }
             OsFutexDeinitFutexNode(nextNode);
             SCHEDULER_UNLOCK(intSave);
-            if (queueList->pstNext != NULL) {
-                continue;
-            } else {
+            if (queueListIsEmpty) {
                 return LOS_OK;
             }
+
+            continue;
         }
 
         task = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(nextNode->pendList)));
-        queueList = queueList->pstNext;
+        if (LOS_ListEmpty(queueList)) {
+            queueListIsEmpty = TRUE;
+        } else {
+            queueList = queueList->pstNext;
+        }
         LOS_ListDelete(&nextNode->queueList);
         ret = OsFutexInsertTasktoPendList(&newHeadNode, nextNode, task);
         SCHEDULER_UNLOCK(intSave);
         if (ret != LOS_OK) {
             PRINT_ERR("Futex requeue insert new key failed!\n");
         }
-    } while (queueList->pstNext != NULL);
+    } while (!queueListIsEmpty);
 
     return LOS_OK;
 }

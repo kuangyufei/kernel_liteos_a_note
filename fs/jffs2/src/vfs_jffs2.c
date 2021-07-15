@@ -343,7 +343,7 @@ ssize_t VfsJffs2Write(struct file *filep, const char *buffer, size_t bufLen)
     c = JFFS2_SB_INFO(node->i_sb);
     pos = filep->f_pos;
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     struct super_block *sb = node->i_sb;
     UINT16 gcCpuMask = LOS_TaskCpuAffiGet(sb->s_gc_thread);
     UINT32 curTaskId = LOS_CurTaskIDGet();

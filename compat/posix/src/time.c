@@ -456,7 +456,7 @@ static int PthreadGetCputime(clockid_t clockID, struct timespec *ats)
 {
     uint64_t runtime;
     UINT32 intSave;
-    UINT32 tid = ((UINT32) ~((clockID) >> CPUCLOCK_ID_OFFSET));
+    UINT32 tid = ((UINT32) ~((UINT32)(clockID) >> CPUCLOCK_ID_OFFSET));
 
     if (OS_TID_CHECK_INVALID(tid)) {
         return -EINVAL;
@@ -481,7 +481,7 @@ static int ProcessGetCputime(clockid_t clockID, struct timespec *ats)
 {
     UINT64 runtime;
     UINT32 intSave;
-    const pid_t pid = ((pid_t) ~((clockID) >> CPUCLOCK_ID_OFFSET));
+    const pid_t pid = ((pid_t) ~((UINT32)(clockID) >> CPUCLOCK_ID_OFFSET));
     LosProcessCB *spcb = NULL;
 
     if (OsProcessIDUserCheckInvalid(pid) || pid < 0) {
@@ -523,7 +523,7 @@ static int GetCputime(clockid_t clockID, struct timespec *tp)
 static int CheckClock(const clockid_t clockID)
 {
     int error = 0;
-    const pid_t pid = ((pid_t) ~((clockID) >> CPUCLOCK_ID_OFFSET));
+    const pid_t pid = ((pid_t) ~((UINT32)(clockID) >> CPUCLOCK_ID_OFFSET));
 
     if (!((UINT32)clockID & CPUCLOCK_PERTHREAD_MASK)) {
         LosProcessCB *spcb = NULL;
@@ -555,7 +555,6 @@ static int CpuClockGetres(const clockid_t clockID, struct timespec *tp)
     return error;
 }
 #endif
-//获取时钟的时间
 int clock_gettime(clockid_t clockID, struct timespec *tp)
 {
     UINT32 intSave;
@@ -959,12 +958,12 @@ STATIC INT32 DoNanoSleep(UINT64 useconds)
     }
     return -1;
 }
-//休眠（微秒单位
+
 int usleep(unsigned useconds)
 {
     return DoNanoSleep((UINT64)useconds);
 }
-//暂停当前线程直到指定的时间到达
+
 int nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
 {
     UINT64 useconds;

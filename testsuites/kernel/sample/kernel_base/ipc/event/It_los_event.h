@@ -151,7 +151,7 @@ extern VOID ItLosEvent017(VOID);
 extern VOID ItLosEvent034(VOID);
 #endif
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 VOID ItSmpLosEvent001(VOID);
 VOID ItSmpLosEvent002(VOID);
 VOID ItSmpLosEvent003(VOID);

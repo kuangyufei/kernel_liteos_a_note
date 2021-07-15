@@ -1,0 +1,5 @@
+config HIDUMPER
+    bool "Enable hidumper"
+    default n
+    help
+      Answer Y to enable LiteOS support hidumper

@@ -62,7 +62,9 @@
 #endif
 #include <sys/wait.h>
 #include "sys/resource.h"
+#ifdef LOSCFG_FS_VFS
 #include "vnode.h"
+#endif
 /*********************************************************
 https://blog.csdn.net/piyongduo3393/article/details/89378243
 

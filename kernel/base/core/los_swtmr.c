@@ -99,7 +99,7 @@
 ******************************************************************************/
 
 
-#if (LOSCFG_BASE_CORE_SWTMR == YES)
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
 #if (LOSCFG_BASE_CORE_SWTMR_LIMIT <= 0)
 #error "swtmr maxnum cannot be zero"
 #endif /* LOSCFG_BASE_CORE_SWTMR_LIMIT <= 0 */
@@ -145,7 +145,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrTaskCreate(VOID)
     swtmrTask.pcName = "Swt_Task";//任务名称
     swtmrTask.usTaskPrio = 0;//哇塞! 逮到一个最高优先级的任务 @note_thinking 这里应该用 OS_TASK_PRIORITY_HIGHEST 表示
     swtmrTask.uwResved = LOS_TASK_STATUS_DETACHED;//分离模式
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     swtmrTask.usCpuAffiMask   = CPUID_TO_AFFI_MASK(cpuid);//交给当前CPU执行这个任务
 #endif
     ret = LOS_TaskCreate(&swtmrTaskID, &swtmrTask);//创建任务并申请调度

@@ -44,7 +44,7 @@ static UINT32 TestCase(VOID)
     CHAR readbuf[JFFS_STANDARD_NAME_LENGTH] = "liteos";
     CHAR bufname[JFFS_STANDARD_NAME_LENGTH] = "123";
     CHAR pathname1[JFFS_STANDARD_NAME_LENGTH] = { JFFS_PATH_NAME0 };
-    CHAR pathname2[JFFS_STANDARD_NAME_LENGTH] = { JFFS_PATH_NAME0 };
+    CHAR pathname2[JFFS_NAME_LIMITTED_SIZE] = { JFFS_PATH_NAME0 };
     CHAR pathname3[JFFS_SHORT_ARRAY_LENGTH][JFFS_NAME_LIMITTED_SIZE] = {0};
     CHAR pathname4[JFFS_SHORT_ARRAY_LENGTH][JFFS_NAME_LIMITTED_SIZE] = {0};
     CHAR pathname5[JFFS_SHORT_ARRAY_LENGTH][JFFS_NAME_LIMITTED_SIZE] = {0};
@@ -67,7 +67,8 @@ static UINT32 TestCase(VOID)
 
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
         snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/test%d", i);
-        strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, bufname);
+        strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, bufname);
+
         strcpy_s(pathname3[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
 
         ret = mkdir(pathname3[i], HIGHEST_AUTHORITY);

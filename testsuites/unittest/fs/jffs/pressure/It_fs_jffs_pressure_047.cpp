@@ -34,7 +34,7 @@
 static VOID *PthreadF01(void *arg)
 {
     INT32 ret, len;
-    UINT32 writeSize = JFFS_PRESSURE_W_R_SIZE2;
+    UINT32 writeSize = JFFS_PRESSURE_W_R_SIZE1;
     CHAR pathname1[JFFS_STANDARD_NAME_LENGTH] = { JFFS_PATH_NAME0 };
     CHAR writebuf[JFFS_STANDARD_NAME_LENGTH] = "0123456789";
     CHAR *writeBuf = NULL;
@@ -66,7 +66,7 @@ static VOID *PthreadF01(void *arg)
     printf("[%d]lseek64 off64:%lld Fd:%d \n", __LINE__, off64, g_jffsFd);
     ICUNIT_GOTO_EQUAL(statbuf1.st_size, off64, statbuf1.st_size, EXIT1);
 
-    len = write(g_jffsFd, writebuf, strlen(writebuf));
+    len = write(g_jffsFd, writeBuf, strlen(writeBuf));
     printf("[%d]lseek64 len:%d Fd:%d, errno:%d\n", __LINE__, len, g_jffsFd, errno);
     ICUNIT_GOTO_EQUAL(len, JFFS_IS_ERROR, len, EXIT1);
     ICUNIT_GOTO_EQUAL(errno, ENOSPC, errno, EXIT1);

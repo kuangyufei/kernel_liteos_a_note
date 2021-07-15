@@ -38,7 +38,7 @@ extern "C" {
 #endif /* __cpluscplus */
 
 #ifndef LOSCFG_ARCH_FPU_DISABLE
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 static UINT32 g_targetCpuid;
 
 static void HwiF01(UINT32 arg)

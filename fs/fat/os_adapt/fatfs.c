@@ -258,7 +258,8 @@ static mode_t fatfs_get_mode(BYTE attribute, mode_t fs_mode)
     return fs_mode;
 }
 //类型转换
-static enum VnodeType fatfstype_2_vnodetype(BYTE type) {
+static enum VnodeType fatfstype_2_vnodetype(BYTE type) 
+{
     switch (type) {
         case AM_ARC:
             return VNODE_TYPE_REG;
@@ -306,7 +307,7 @@ static FRESULT init_cluster(DIR_FILE *pdfp, DIR *dp_new, FATFS *fs, int type, co
     mem_set(dir, 0, SS(fs));
     if (type == AM_LNK && target) {
         /* Write target to symlink */
-        strcpy_s((char *)dir, SS(fs), target);
+        (void)strcpy_s((char *)dir, SS(fs), target);
     } else {
         /* Write the dir cluster */
         mem_set(dir, 0, SS(fs));
@@ -1797,6 +1798,45 @@ static int fatfs_set_part_info(los_part *part)
     return 0;
 }
 
+static FRESULT fatfs_setlabel(los_part *part)
+{
+    QWORD start_sector = 0;
+    BYTE fmt = 0;
+    FATFS fs;
+    FRESULT result;
+
+#ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
+    fs.vir_flag = FS_PARENT;
+    fs.parent_fs = &fs;
+    fs.vir_amount = DISK_ERROR;
+    fs.vir_avail = FS_VIRDISABLE;
+#endif
+    if (disk_ioctl(fs.pdrv, GET_SECTOR_SIZE, &(fs.ssize)) != RES_OK) {
+        return -EIO;
+    }
+    fs.win = (BYTE *)ff_memalloc(fs.ssize);
+    if (fs.win == NULL) {
+        return -ENOMEM;
+    }
+
+    result = find_fat_partition(&fs, part, &fmt, &start_sector);
+    if (result != FR_OK) {
+        free(fs.win);
+        return -fatfs_2_vfs(result);
+    }
+
+    result = init_fatobj(&fs, fmt, start_sector);
+    if (result != FR_OK) {
+        free(fs.win);
+        return -fatfs_2_vfs(result);
+    }
+
+    result = set_volumn_label(&fs, FatLabel);
+    free(fs.win);
+
+    return result;
+}
+
 int fatfs_mkfs (struct Vnode *device, int sectors, int option)
 {
     BYTE *work_buff = NULL;
@@ -1832,19 +1872,22 @@ int fatfs_mkfs (struct Vnode *device, int sectors, int option)
         return -fatfs_2_vfs(result);
     }
 
+    result = fatfs_setlabel(part);
+    if (result == FR_OK) {
 #ifdef LOSCFG_FS_FAT_CACHE
-    ret = OsSdSync(part->disk_id);
-    if (ret != 0) {
-        return -EIO;
-    }
+        ret = OsSdSync(part->disk_id);
+        if (ret != 0) {
+            return -EIO;
+        }
 #endif
+    }
 
     ret = fatfs_set_part_info(part);
     if (ret != 0) {
         return -EIO;
     }
 
-    return 0;
+    return -fatfs_2_vfs(result);
 }
 
 int fatfs_mkdir(struct Vnode *parent, const char *name, mode_t mode, struct Vnode **vpp)

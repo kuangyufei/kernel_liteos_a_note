@@ -127,7 +127,7 @@ STATIC Percpu *OsFindIdleCpu(UINT16 *ildeCpuID)
     Percpu *idleCpu = OsPercpuGetByID(0);
     *ildeCpuID = 0;
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     UINT16 cpuID = 1;
     UINT32 nodeNum = idleCpu->taskSortLink.nodeNum + idleCpu->swtmrSortLink.nodeNum;
 
@@ -174,7 +174,7 @@ VOID OsAdd2SortLink(SortLinkList *node, UINT64 startTime, UINT32 waitTicks, Sort
     LOS_SpinLockSave(spinLock, &intSave);
     SET_SORTLIST_VALUE(node, startTime + (UINT64)waitTicks * OS_CYCLE_PER_TICK);
     OsAddNode2SortLink(sortLinkHeader, node);
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     node->cpuid = idleCpu;
     if (idleCpu != ArchCurrCpuid()) {
         LOS_MpSchedule(CPUID_TO_AFFI_MASK(idleCpu));
@@ -186,7 +186,7 @@ VOID OsAdd2SortLink(SortLinkList *node, UINT64 startTime, UINT32 waitTicks, Sort
 VOID OsDeleteSortLink(SortLinkList *node, SortLinkType type)
 {
     UINT32 intSave;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     Percpu *cpu = OsPercpuGetByID(node->cpuid);
 #else
     Percpu *cpu = OsPercpuGetByID(0);

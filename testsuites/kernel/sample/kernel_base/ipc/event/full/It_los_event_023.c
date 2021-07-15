@@ -61,7 +61,7 @@ static VOID TaskF01(VOID)
     ICUNIT_GOTO_EQUAL(ret, g_event.uwEventID, ret, EXIT);
     ICUNIT_ASSERT_EQUAL_VOID(ret, 0x11, ret);
 
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     ICUNIT_GOTO_EQUAL(g_testCount, 5, g_testCount, EXIT);  // 5, Here, assert that g_testCount is equal to 5.
 #endif
     g_testCount++;
@@ -80,7 +80,7 @@ static VOID TaskF02(VOID)
     ICUNIT_GOTO_EQUAL(ret, g_event.uwEventID, ret, EXIT);
     ICUNIT_ASSERT_EQUAL_VOID(ret, 0x11, ret);
 
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     ICUNIT_GOTO_EQUAL(g_testCount, 6, g_testCount, EXIT); // 6, Here, assert that g_testCount is equal to 6.
 #endif
     g_testCount++;
@@ -121,7 +121,7 @@ static UINT32 Testcase(VOID)
 
     ret = LOS_HwiCreate(HWI_NUM_TEST, 0, 0, HwiF01, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     HalIrqSetAffinity(HWI_NUM_TEST, CPUID_TO_AFFI_MASK(ArchCurrCpuid()));
 #endif
 

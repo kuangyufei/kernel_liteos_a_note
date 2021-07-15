@@ -37,7 +37,7 @@
 #include "los_exc.h"
 
 
-#if (LOSCFG_KERNEL_SMP_LOCKDEP == YES)
+#ifdef LOSCFG_KERNEL_SMP_LOCKDEP
 
 #define LOCKDEP_GET_NAME(lockDep, index)    (((SPIN_LOCK_S *)((lockDep)->heldLocks[(index)].lockPtr))->name)
 #define LOCKDEP_GET_ADDR(lockDep, index)    ((lockDep)->heldLocks[(index)].lockAddr)

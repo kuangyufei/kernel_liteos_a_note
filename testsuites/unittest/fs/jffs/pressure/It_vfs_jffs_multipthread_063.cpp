@@ -67,7 +67,6 @@ static VOID *MutiJffs06302(void *arg)
 
     dprintf(" start muti_jffs_063_02  1 \n");
     strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/test_63");
-    ICUNIT_GOTO_EQUAL(g_TestCnt, 0, g_TestCnt, EXIT);
 
     umount(pathname);
 

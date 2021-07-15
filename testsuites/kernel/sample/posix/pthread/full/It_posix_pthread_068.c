@@ -74,7 +74,7 @@ static VOID *PthreadF01(VOID *argument)
     ret = pthread_create(&g_newTh2, &attr, PthreadF02, NULL);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     while (g_testCount < 2) { // 2, delay until g_testCount is equal to 2.
         TestBusyTaskDelay(1);
     }

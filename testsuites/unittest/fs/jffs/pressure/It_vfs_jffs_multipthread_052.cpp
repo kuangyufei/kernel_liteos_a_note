@@ -71,8 +71,6 @@ static VOID *MutiJffs05202(void *arg)
 
     strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/test_52");
 
-    ICUNIT_GOTO_EQUAL(g_TestCnt, 0, g_TestCnt, EXIT);
-
     // file size: 1024, write size: 1024
     ret = JffsMultiWrite(pathname, 1024, 1024, O_RDWR | O_CREAT, JFFS_WR_TYPE_TEST);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);

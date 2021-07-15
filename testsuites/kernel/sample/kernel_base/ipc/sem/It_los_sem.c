@@ -39,7 +39,7 @@ extern "C" {
 
 VOID ItSuiteLosSem(void)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     /* fixed */
     ItSmpLosSem008();
     ItSmpLosSem022();
@@ -114,7 +114,7 @@ VOID ItSuiteLosSem(void)
     ItLosSem036();
     ItLosSem037();
     ItLosSem038();
-#if (LOSCFG_KERNEL_SMP_TASK_SYNC != YES)
+#ifndef LOSCFG_KERNEL_SMP_TASK_SYNC
     // LOSCFG_KERNEL_SMP_TASK_SYNC is opened ,create task success is depend on created semaphore successed;
     ItLosSem039();
     ItLosSem040();
@@ -134,7 +134,7 @@ VOID ItSuiteLosSem(void)
     ItLosSem024();
     ItLosSem030();
     ItLosSem032();
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     ItLosSem033();
 #endif
     LltLosSem001();
@@ -153,7 +153,7 @@ VOID ItSuiteLosSem(void)
 #endif
 #endif
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     HalIrqSetAffinity(HWI_NUM_TEST, 1);
 #endif
 }

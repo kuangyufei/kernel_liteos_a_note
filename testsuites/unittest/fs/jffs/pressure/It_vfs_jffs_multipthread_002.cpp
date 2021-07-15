@@ -40,6 +40,7 @@ static VOID *PthreadF01(void *arg)
     INT32 i = 0;
     INT32 j = 0;
     INT32 k = JFFS_SHORT_ARRAY_LENGTH;
+    INT32 jffsMaxCycles = 1; // 1 means 1 * 1024 * 1024 byte size
     CHAR filebuf[FILE_BUF_SIZE] =
         "abcdeabcde0123456789abcedfghij9876543210abcdeabcde0123456789abcedfghij9876543210abcdeabcde0123"
         "456789abcedfghij9876543210abcdeabcde0123456789abcedfghij9876543210abcdeabcde0123456789abcedfgh"
@@ -87,7 +88,7 @@ static VOID *PthreadF01(void *arg)
 
     strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/004.txt"); //  /storage/test/004.txt
     fd1 = open(pathname2, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
-    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT2);
+    ICUNIT_GOTO_NOT_EQUAL(fd1, JFFS_IS_ERROR, fd1, EXIT2);
 
     len = write(fd1, writebuf, strlen(writebuf));
     ICUNIT_GOTO_EQUAL(len, strlen(writebuf), len, EXIT2);
@@ -112,7 +113,7 @@ static VOID *PthreadF01(void *arg)
     off = lseek(fd, 0, SEEK_SET);
     ICUNIT_GOTO_EQUAL(off, JFFS_NO_ERROR, off, EXIT2);
 
-    for (i = 0; i < JFFS_MAX_CYCLES; i++) {
+    for (i = 0; i < jffsMaxCycles; i++) {
         ret = write(fd, bufW, strlen(bufW));
         ICUNIT_GOTO_EQUAL(ret, BYTES_PER_MBYTE, ret, EXIT2);
 
@@ -131,8 +132,8 @@ static VOID *PthreadF01(void *arg)
 
     ret = stat(pathname1, &statfile);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT2);
-    // 5 * 1024 * 1024: filesize
-    ICUNIT_GOTO_EQUAL(statfile.st_size, 5 * 1024 * 1024, statfile.st_size, EXIT2);
+    // 1 * 1024 * 1024: filesize
+    ICUNIT_GOTO_EQUAL(statfile.st_size, 1 * 1024 * 1024, statfile.st_size, EXIT2);
 
     ret = close(fd);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT2);
@@ -167,6 +168,7 @@ static VOID *PthreadF02(void *arg)
     INT32 i = 0;
     INT32 j = 0;
     INT32 k = JFFS_SHORT_ARRAY_LENGTH;
+    INT32 jffsMaxCycles = 1; // 1 means 1 * 1024 * 1024 byte size
     CHAR filebuf[FILE_BUF_SIZE] =
         "abcdeabcde0123456789abcedfghij9876543210abcdeabcde0123456789abcedfghij9876543210abcdeabcde0123"
         "456789abcedfghij9876543210abcdeabcde0123456789abcedfghij9876543210abcdeabcde0123456789abcedfgh"
@@ -213,7 +215,7 @@ static VOID *PthreadF02(void *arg)
 
     strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/005.txt");
     fd1 = open(pathname2, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
-    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT2);
+    ICUNIT_GOTO_NOT_EQUAL(fd1, JFFS_IS_ERROR, fd1, EXIT2);
 
     len = write(fd1, writebuf, strlen(writebuf));
     ICUNIT_GOTO_EQUAL(len, strlen(writebuf), len, EXIT2);
@@ -238,7 +240,7 @@ static VOID *PthreadF02(void *arg)
     off = lseek(fd, 0, SEEK_SET);
     ICUNIT_GOTO_EQUAL(off, JFFS_NO_ERROR, off, EXIT2);
 
-    for (i = 0; i < JFFS_MAX_CYCLES; i++) {
+    for (i = 0; i < jffsMaxCycles; i++) {
         ret = write(fd, bufW, strlen(bufW));
         ICUNIT_GOTO_EQUAL(ret, BYTES_PER_MBYTE, ret, EXIT2);
 
@@ -257,8 +259,8 @@ static VOID *PthreadF02(void *arg)
 
     ret = stat(pathname1, &statfile);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT2);
-    // 5 * 1024 * 1024: filesize
-    ICUNIT_GOTO_EQUAL(statfile.st_size, 5 * 1024 * 1024, statfile.st_size, EXIT2);
+    // 1 * 1024 * 1024: filesize
+    ICUNIT_GOTO_EQUAL(statfile.st_size, 1 * 1024 * 1024, statfile.st_size, EXIT2);
 
     ret = close(fd);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT2);
@@ -293,6 +295,7 @@ static VOID *PthreadF03(void *arg)
     INT32 i = 0;
     INT32 j = 0;
     INT32 k = JFFS_SHORT_ARRAY_LENGTH;
+    INT32 jffsMaxCycles = 1; // 1 means 1 * 1024 * 1024 byte size
     CHAR filebuf[FILE_BUF_SIZE] =
         "abcdeabcde0123456789abcedfghij9876543210abcdeabcde0123456789abcedfghij9876543210abcdeabcde0123"
         "456789abcedfghij9876543210abcdeabcde0123456789abcedfghij9876543210abcdeabcde0123456789abcedfgh"
@@ -339,7 +342,7 @@ static VOID *PthreadF03(void *arg)
 
     strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/006.txt");
     fd1 = open(pathname2, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
-    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT2);
+    ICUNIT_GOTO_NOT_EQUAL(fd1, JFFS_IS_ERROR, fd1, EXIT2);
 
     len = write(fd1, writebuf, strlen(writebuf));
     ICUNIT_GOTO_EQUAL(len, strlen(writebuf), len, EXIT2);
@@ -364,7 +367,7 @@ static VOID *PthreadF03(void *arg)
     off = lseek(fd, 0, SEEK_SET);
     ICUNIT_GOTO_EQUAL(off, JFFS_NO_ERROR, off, EXIT2);
 
-    for (i = 0; i < JFFS_MAX_CYCLES; i++) {
+    for (i = 0; i < jffsMaxCycles; i++) {
         ret = write(fd, bufW, strlen(bufW));
         ICUNIT_GOTO_EQUAL(ret, BYTES_PER_MBYTE, ret, EXIT2);
 
@@ -383,8 +386,8 @@ static VOID *PthreadF03(void *arg)
 
     ret = stat(pathname1, &statfile);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT2);
-    // 5 * 1024 * 1024: filesize
-    ICUNIT_GOTO_EQUAL(statfile.st_size, 5 * 1024 * 1024, statfile.st_size, EXIT2);
+    // 1 * 1024 * 1024: filesize
+    ICUNIT_GOTO_EQUAL(statfile.st_size, 1 * 1024 * 1024, statfile.st_size, EXIT2);
 
     ret = close(fd);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT2);

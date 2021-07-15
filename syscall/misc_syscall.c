@@ -35,7 +35,6 @@
 #include "sys/resource.h"
 #include "sys/times.h"
 #include "sys/utsname.h"
-#include "time.h"
 #include "capability_type.h"
 #include "capability_api.h"
 #include "los_process_pri.h"

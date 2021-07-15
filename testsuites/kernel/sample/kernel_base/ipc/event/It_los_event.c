@@ -39,7 +39,7 @@ extern "C" {
 
 VOID ItSuiteLosEvent(VOID)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     ItSmpLosEvent001();
     ItSmpLosEvent002();
     ItSmpLosEvent003();
@@ -107,7 +107,7 @@ VOID ItSuiteLosEvent(VOID)
     ItLosEvent023();
     ItLosEvent024();
     ItLosEvent025();
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     ItLosEvent026();
 #endif
     ItLosEvent027();
@@ -117,7 +117,7 @@ VOID ItSuiteLosEvent(VOID)
     ItLosEvent033(); // /
     ItLosEvent037();
     ItLosEvent038();
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     ItLosEvent039();
 #endif
     ItLosEvent040();
@@ -134,7 +134,7 @@ VOID ItSuiteLosEvent(VOID)
     ItLosEvent017();
     ItLosEvent034();
 #endif
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     HalIrqSetAffinity(HWI_NUM_TEST, 1);
 #endif
 }

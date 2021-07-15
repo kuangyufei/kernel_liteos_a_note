@@ -47,7 +47,7 @@ static VOID *PthreadF01(void *arg)
     DIR *dirbuf[100] = {NULL};
     struct stat buf1 = { 0 };
     struct stat buf2 = { 0 };
-    INT32 bufWLen = BYTES_PER_MBYTE;
+    INT32 bufWLen = 128 * BYTES_PER_KBYTE; // 128 KB
 
     flag = 0;
     bufW = (CHAR *)malloc(bufWLen + 1);
@@ -150,7 +150,7 @@ static VOID *PthreadF02(void *arg)
     DIR *dirbuf[100] = {NULL};
     struct stat buf1 = { 0 };
     struct stat buf2 = { 0 };
-    INT32 bufWLen = BYTES_PER_MBYTE;
+    INT32 bufWLen = 128 * BYTES_PER_KBYTE; // 128 KB
 
     flag = 0;
     bufW = (CHAR *)malloc(bufWLen + 1);
@@ -256,7 +256,7 @@ static VOID *PthreadF03(void *arg)
     DIR *dirbuf[100] = {NULL};
     struct stat buf1 = { 0 };
     struct stat buf2 = { 0 };
-    INT32 bufWLen = BYTES_PER_MBYTE;
+    INT32 bufWLen = 128 * BYTES_PER_KBYTE; // 128 KB
 
     flag = 0;
     bufW = (CHAR *)malloc(bufWLen + 1);

@@ -57,7 +57,7 @@ static void TaskF01(void)
 
     ret = LOS_HwiCreate(HWI_NUM_TEST, 1, 0, HwiF01, 0);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_OK, ret);
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     HalIrqSetAffinity(HWI_NUM_TEST, CPUID_TO_AFFI_MASK(ArchCurrCpuid()));
 #endif
 
@@ -78,7 +78,7 @@ static UINT32 Testcase(void)
     task1.pcName = "Tsk053A";
     task1.usTaskPrio = TASK_PRIO_TEST_TASK - 1;
     task1.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
 

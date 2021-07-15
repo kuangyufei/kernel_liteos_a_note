@@ -48,7 +48,7 @@ static VOID *PthreadF01(void *arg)
         "456789abcedfghij9876543210abcdeabcde0123456789abcedfghij9876543210abcdeabcde0123456789abcedfgh"
         "ij9876543210abcdeabcde0123456789abcedfghij9876543210lalalalalalalala";
     CHAR *bufW = NULL;
-    INT32 bufWLen = 256 * BYTES_PER_KBYTE; // 256 KB
+    INT32 bufWLen = 4 * BYTES_PER_KBYTE; // 4 KB
 
     flag = 0;
     bufW = (CHAR *)malloc(BYTES_PER_MBYTE + 1);
@@ -224,7 +224,7 @@ static VOID *PthreadF02(void *arg)
         "456789abcedfghij9876543210abcdeabcde0123456789abcedfghij9876543210abcdeabcde0123456789abcedfgh"
         "ij9876543210abcdeabcde0123456789abcedfghij9876543210lalalalalalalala";
     CHAR *bufW = NULL;
-    INT32 bufWLen = 256 * BYTES_PER_KBYTE; // 256 KB
+    INT32 bufWLen = 4 * BYTES_PER_KBYTE; // 4 KB
 
     flag = 0;
     bufW = (CHAR *)malloc(BYTES_PER_MBYTE + 1);
@@ -400,7 +400,7 @@ static VOID *PthreadF03(void *arg)
         "456789abcedfghij9876543210abcdeabcde0123456789abcedfghij9876543210abcdeabcde0123456789abcedfgh"
         "ij9876543210abcdeabcde0123456789abcedfghij9876543210lalalalalalalala";
     CHAR *bufW = NULL;
-    INT32 bufWLen = 256 * BYTES_PER_KBYTE; // 256 KB
+    INT32 bufWLen = 4 * BYTES_PER_KBYTE; // 4 KB
 
     flag = 0;
     bufW = (CHAR *)malloc(BYTES_PER_MBYTE + 1);

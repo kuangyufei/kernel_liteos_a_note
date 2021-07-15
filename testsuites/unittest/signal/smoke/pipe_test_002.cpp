@@ -31,6 +31,7 @@
 #include "it_test_signal.h"
 #include "signal.h"
 #include "fcntl.h"
+#include "sys/shm.h"
 
 static int TestPipeMultiProcess()
 {
@@ -42,45 +43,61 @@ static int TestPipeMultiProcess()
 
     int *readFd = &pipefd[0];
     int *writeFd = &pipefd[1];
-
-    char readbuffer[100];
+    char readbuffer[100] = {0};
     int status, ret;
     int totalNum = 3;
+    int *sharedflag = NULL;
+    int shmid;
 
     int flag = fcntl(*readFd, F_GETFL);
     fcntl(*readFd, F_SETFL, flag | O_NONBLOCK);
+    shmid = shmget((key_t)IPC_PRIVATE, sizeof(int), 0666 | IPC_CREAT); // 0666 the authority of the shm
+    ICUNIT_ASSERT_NOT_EQUAL(shmid, -1, shmid);
+    sharedflag = (int *)shmat(shmid, NULL, 0);
+    *sharedflag = 0;
 
     pid = fork();
     if (pid == -1) {
         printf("Fork Error!\n");
         return -1;
     } else if (pid == 0) {
+        sharedflag = (int *)shmat(shmid, NULL, 0);
+        close(pipefd[0]);
         for (int i = 0; i < totalNum; i++) {
             errno = 0;
             char sentence1[15] = "Hello World";
-            char a[4] = {0};
+            char a[2] = {0};
             sprintf(a, "%d", i);
             strcat(sentence1, a);
             int ret = write(*writeFd, sentence1, strlen(sentence1) + 1);
+            ICUNIT_ASSERT_EQUAL(ret, strlen(sentence1) + 1, ret);
             usleep(10000); // 10000, Used to calculate the delay time.
         }
+        *sharedflag = 1;
+        ret = close(pipefd[1]);
+        ICUNIT_ASSERT_EQUAL(ret, 0, ret);
         exit(0);
     } else {
+        close(pipefd[1]);
+        // waitting for the sub process has written the sentence first
+        while (*sharedflag != 1) {
+            usleep(1);
+        }
         for (int i = 0; i < totalNum; i++) {
             printf("read\n");
             char sentence1[15] = "Hello World";
-            char a[4] = {0};
+            char a[2] = {0};
+            sprintf(a, "%d", i);
+            strcat(sentence1, a);
             memset(readbuffer, 0, sizeof(readbuffer));
-            retValue = read(*readFd, readbuffer, sizeof(readbuffer));
-            printf("Receive %d bytes data : %s,%d\n", retValue, readbuffer, errno);
-            ICUNIT_ASSERT_SIZE_STRING_EQUAL(readbuffer, readbuffer, strlen(sentence1), errno);
+            retValue = read(*readFd, readbuffer, strlen(sentence1) + 1);
+            printf("Receive %d bytes data : %s, errno : %d\n", retValue, readbuffer, errno);
+            ICUNIT_ASSERT_SIZE_STRING_EQUAL(readbuffer, sentence1, strlen(sentence1), errno);
         }
     }
     ret = waitpid(pid, &status, 0);
     ICUNIT_ASSERT_EQUAL(ret, pid, ret);
     ret = close(pipefd[0]);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    ret = close(pipefd[1]);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     return 0;

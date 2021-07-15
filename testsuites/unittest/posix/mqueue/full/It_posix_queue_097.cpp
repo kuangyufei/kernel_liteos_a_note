@@ -107,9 +107,6 @@ static UINT32 Testcase(VOID)
     ret = pthread_create(&newTh, &attr1, PthreadF01, NULL);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
 
-    LosTaskDelay(1);
-    ICUNIT_GOTO_EQUAL(g_testCount, 1, g_testCount, EXIT1);
-
     ret = PosixPthreadInit(&attr1, MQUEUE_PTHREAD_PRIORITY_TEST2);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
 
@@ -119,7 +116,7 @@ static UINT32 Testcase(VOID)
     ret = LosTaskDelay(10); // 10, Set delay time.
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
 
-    ICUNIT_GOTO_EQUAL(g_testCount, 4, g_testCount, EXIT2); // 4, Here, assert the g_testCount.
+    TestAssertWaitDelay(&g_testCount, 4); // 4, Here, assert the g_testCount.
 
     ret = PosixPthreadDestroy(&attr1, newTh2);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);

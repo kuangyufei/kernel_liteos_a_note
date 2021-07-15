@@ -33,7 +33,8 @@
 
 static UINT32 TestCase(VOID)
 {
-    INT32 ret, i;
+    INT32 ret;
+    INT32 i = 0;
     INT32 fd = -1;
     INT32 scandirCount = 0;
     CHAR pathname1[JFFS_STANDARD_NAME_LENGTH] = { JFFS_MAIN_DIR0 };
@@ -82,7 +83,7 @@ static UINT32 TestCase(VOID)
     ICUNIT_GOTO_EQUAL(strlen(pathname3), 256, strlen(pathname3), EXIT); // pathname length: 256
     fd = open(pathname3, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(fd, -1, fd, EXIT1);
-    ICUNIT_GOTO_EQUAL(errno, ENAMETOOLONG, errno, EXIT2);
+    ICUNIT_GOTO_EQUAL(errno, EINVAL, errno, EXIT2);
     ret = chdir("/");
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT2);
 

@@ -59,7 +59,7 @@ static UINT32 Testcase(VOID)
     task.uwStackSize = TASK_STACK_SIZE_TEST;
     task.usTaskPrio = TASK_PRIO_TEST - 1;
     task.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     g_testCount = 0;

@@ -69,7 +69,6 @@ static VOID *MutiJffs05602(void *arg)
 
     strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/test_56");
     strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/test_56_rename");
-    ICUNIT_GOTO_EQUAL(g_TestCnt, 0, g_TestCnt, EXIT);
 
     rename(pathname, pathname1);
 

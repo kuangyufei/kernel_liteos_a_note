@@ -47,22 +47,17 @@ ROOTFS = rootfs
 
 LITEOS_TARGET = liteos
 LITEOS_LIBS_TARGET = libs_target
-LITEOS_MENUCONFIG_H = $(LITEOSTOPDIR)/include/generated/autoconf.h
 LITEOS_PLATFORM_BASE = $(LITEOSTOPDIR)/platform
 
 export CONFIG_=LOSCFG_
-MENUCONFIG_PATH = $(LITEOSTOPDIR)/tools/menuconfig
-KCONFIG_FILE_PATH = $(LITEOSTOPDIR)/Kconfig
-
-ifeq ($(OS), Linux)
-MENUCONFIG_MCONF := $(MENUCONFIG_PATH)/mconf
-MENUCONFIG_CONF := $(MENUCONFIG_PATH)/conf
-else
-MENUCONFIG_MCONF := $(MENUCONFIG_PATH)/kconfig-mconf.exe
-MENUCONFIG_CONF := $(MENUCONFIG_PATH)/kconfig-conf.exe
+ifeq ($(PRODUCT_PATH),)
+export PRODUCT_PATH=$(LITEOSTOPDIR)/../../device/hisilicon/drivers
 endif
 
-$(shell env CONFIG_=$(CONFIG_) $(MENUCONFIG_CONF) -s --olddefconfig $(KCONFIG_FILE_PATH))
+ifeq ($(shell which menuconfig),)
+$(shell pip install --user kconfiglib >/dev/null)
+endif
+$(shell env CONFIG_=$(CONFIG_) PRODUCT_PATH=$(PRODUCT_PATH) olddefconfig >/dev/null)
 
 -include $(LITEOSTOPDIR)/tools/build/config.mk
 
@@ -81,6 +76,9 @@ endif
 ROOTFS_DIR = $(OUT)/rootfs
 ROOTFS_ZIP = $(OUT)/rootfs.zip
 VERSION =
+
+SYSROOT_PATH ?= $(LITEOSTOPDIR)/../../prebuilts/lite/sysroot
+export SYSROOT_PATH
 
 all: $(OUT) $(BUILD) $(LITEOS_TARGET) $(APPS)
 lib: $(OUT) $(BUILD) $(LITEOS_LIBS_TARGET)
@@ -113,6 +111,15 @@ else
 	$(HIDE)$(SCRIPTS_PATH)/mklibversion.sh
 endif
 
+##### make sysroot #####
+sysroot:
+ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
+ifeq ($(wildcard $(SYSROOT_PATH)/usr/include/$(LLVM_TARGET)/),)
+	$(HIDE)$(MAKE) -C $(SYSROOT_PATH)/build TARGETS=liteos_a_user
+endif
+	$(HIDE)echo "sysroot:" $(abspath $(SYSROOT_PATH))
+endif
+
 ##### make dynload #####
 -include $(LITEOS_MK_PATH)/dynload.mk
 
@@ -129,26 +136,21 @@ $(OUT): $(LITEOS_MENUCONFIG_H)
 $(BUILD):
 	$(HIDE)mkdir -p $(BUILD)
 
-$(LITEOS_LIBS_TARGET): $(__LIBS)
+$(LITEOS_LIBS_TARGET): $(__LIBS) sysroot
 	$(HIDE)for dir in $(LIB_SUBDIRS); \
 		do $(MAKE) -C $$dir all || exit 1; \
 	done
 	$(HIDE)echo "=============== make lib done  ==============="
 
 ##### make menuconfig #####
-menuconfig:$(MENUCONFIG_MCONF)
-	$< $(KCONFIG_FILE_PATH)
-
-genconfig:$(MENUCONFIG_CONF)
-	$(HIDE)mkdir -p include/config include/generated
-	$< --olddefconfig $(KCONFIG_FILE_PATH)
-	$< --silentoldconfig $(KCONFIG_FILE_PATH)
+menuconfig:
+	$(HIDE)menuconfig
 ##### menuconfig end #######
 
 $(LITEOS_MENUCONFIG_H): .config
-	$(HIDE)$(MAKE) genconfig
+	$(HIDE)genconfig
 
-$(LITEOS_TARGET): $(__LIBS)
+$(LITEOS_TARGET): $(__LIBS) sysroot
 	$(HIDE)touch $(LOSCFG_ENTRY_SRC)
 
 	$(HIDE)for dir in $(LITEOS_SUBDIRS); \
@@ -162,14 +164,14 @@ $(LITEOS_TARGET): $(__LIBS)
 	$(OBJDUMP) -d $(OUT)/$@ >$(OUT)/$@.asm
 #	$(NM) -S --size-sort $(OUT)/$@ >$(OUT)/$@.size
 
-$(APPS): $(LITEOS_TARGET)
+$(APPS): $(LITEOS_TARGET) sysroot
 	$(HIDE)$(MAKE) -C apps all
 
 prepare:
 	$(HIDE)mkdir -p $(OUT)/musl
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-	$(HIDE)cp -f $(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/usr/lib/$(LLVM_TARGET)/a7_softfp_neon-vfpv4/libc.so $(OUT)/musl
-	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/lib/$(LLVM_TARGET)/c++/a7_softfp_neon-vfpv4/libc++.so $(OUT)/musl
+	$(HIDE)cp -f $$($(CC) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CFLAGS) -print-file-name=libc.so) $(OUT)/musl
+	$(HIDE)cp -f $$($(GPP) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CXXFLAGS) -print-file-name=libc++.so) $(OUT)/musl
 else
 	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/target/usr/lib/libc.so $(OUT)/musl
 	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/arm-linux-musleabi/lib/libstdc++.so.6 $(OUT)/musl
@@ -211,10 +213,11 @@ update_all_config:
 	$(HIDE)shopt -s globstar && for f in tools/build/config/**/*.config ; \
 		do \
 			echo updating $$f; \
-			test -f $$f && cp $$f .config && $(MENUCONFIG_CONF) -s --olddefconfig $(KCONFIG_FILE_PATH) && $(MENUCONFIG_CONF) --savedefconfig $$f $(KCONFIG_FILE_PATH); \
+			test -f $$f && cp $$f .config && olddefconfig && savedefconfig --out $$f; \
 		done
 
-%.config:
-	$(HIDE)test -f tools/build/config/$@ && cp tools/build/config/$@ .config && $(MENUCONFIG_MCONF) $(KCONFIG_FILE_PATH) && $(MENUCONFIG_CONF) --savedefconfig tools/build/config/$@ $(KCONFIG_FILE_PATH)
+update_config:
+	$(HIDE)test -f "$(CONFIG)" && cp "$(CONFIG)" .config && menuconfig && savedefconfig --out "$(CONFIG)"
 
-.PHONY: all lib clean cleanall $(LITEOS_TARGET) debug release help update_all_config
+.PHONY: all lib clean cleanall $(LITEOS_TARGET) debug release help update_all_config update_config
+.PHONY: prepare sysroot cleanrootfs $(ROOTFS) $(ROOTFSDIR) $(APPS) menuconfig $(LITEOS_LIBS_TARGET) $(__LIBS) $(OUT)

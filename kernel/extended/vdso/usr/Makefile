@@ -40,7 +40,7 @@ VDSO_INCLUDE := -I $(LITEOSTOPDIR)/kernel/extended/vdso/include \
 VDSO_CCFLAGS := -nostdlib -fPIC -fno-common -fno-strict-aliasing \
                 $(LITEOS_SSP) $(LITEOS_CORE_COPTS) $(WARNING_AS_ERROR) $(LITEOS_COPTS_OPTMIZE)
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-VDSO_CCFLAGS += $(LLVM_EXTRA_OPTS) --sysroot=$(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/
+VDSO_CCFLAGS += $(LLVM_EXTRA_OPTS) --sysroot=$(SYSROOT_PATH)
 endif
 
 VDSO_LDFLAGS := -shared -s -Bsymbolic -T los_vdso.ld

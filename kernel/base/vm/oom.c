@@ -37,7 +37,7 @@
 #include "los_vm_phys.h"
 #include "los_vm_filemap.h"
 #include "los_process_pri.h"
-#if (LOSCFG_BASE_CORE_SWTMR == YES)
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
 #include "los_swtmr_pri.h"
 #endif
 
@@ -55,12 +55,12 @@ LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomScoreProcess(LosProcessCB *candidateProc
 {
     UINT32 actualPm;
 
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     (VOID)LOS_MuxAcquire(&candidateProcess->vmSpace->regionMux);
 #endif
     /* we only consider actual physical memory here. */ //只考虑实际的物理内存
     OsUProcessPmUsage(candidateProcess->vmSpace, NULL, &actualPm);
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     (VOID)LOS_MuxRelease(&candidateProcess->vmSpace->regionMux);
 #endif
     return actualPm;

@@ -59,7 +59,7 @@ static void TaskF01(void)
     task1.pcName = "Tsk068B";
     task1.usTaskPrio = TASK_PRIO_TEST_TASK - 1;
     task1.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 0, g_testCount);
@@ -85,7 +85,7 @@ static UINT32 Testcase(void)
     // 3, It is used to calculate a priority relative to TASK_PRIO_TEST_TASK.
     task1.usTaskPrio = TASK_PRIO_TEST_TASK - 3;
     task1.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     g_testCount = 0;

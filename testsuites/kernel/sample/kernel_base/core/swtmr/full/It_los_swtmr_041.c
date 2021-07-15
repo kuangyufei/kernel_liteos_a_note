@@ -95,7 +95,7 @@ static UINT32 Testcase(VOID)
 
     ret = TEST_HwiCreate(HWI_NUM_TEST, hwiPrio, hwiMode, (HWI_PROC_FUNC)SwtmrF01, (HwiIrqParam *)arg);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT5);
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     HalIrqSetAffinity(HWI_NUM_TEST, CPUID_TO_AFFI_MASK(ArchCurrCpuid()));
 #endif
 

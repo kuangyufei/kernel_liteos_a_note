@@ -44,7 +44,7 @@ static VOID TaskF02(void)
     g_testCount++;
     ret = LOS_SemPend(g_semID, LOS_WAIT_FOREVER);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_OK, ret);
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     ICUNIT_TRACK_EQUAL(g_testCount, 2, g_testCount); // 2, Here, assert that g_testCount is equal to
 #endif
     g_testCount++;
@@ -61,7 +61,7 @@ static VOID TaskF01(void)
 
     ret = LOS_SemPend(g_semID, LOS_WAIT_FOREVER);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_OK, ret);
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     ICUNIT_TRACK_EQUAL(g_testCount, 3, g_testCount); // 3, Here, assert that g_testCount is equal to
 #endif
     g_testCount++;

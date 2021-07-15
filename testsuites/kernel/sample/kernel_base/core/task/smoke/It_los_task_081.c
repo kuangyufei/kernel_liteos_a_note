@@ -105,7 +105,7 @@ static UINT32 Testcase(void)
     task1.pcName = "Tsk081A";
     // 2, It is used to calculate a priority relative to TASK_PRIO_TEST_TASK.
     task1.usTaskPrio = TASK_PRIO_TEST_TASK - 2;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     g_testCount = 0;

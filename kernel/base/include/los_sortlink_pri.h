@@ -50,7 +50,7 @@ typedef enum {//因为任务和定时器都是吃CPU的,让CPU不停工作的主
 typedef struct {
     LOS_DL_LIST sortLinkNode;//任务排序链表,注意上面挂的是一个个等待的任务
     UINT64      responseTime;//响应时间
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     UINT32      cpuid;//需要哪个CPU处理
 #endif
 } SortLinkList;

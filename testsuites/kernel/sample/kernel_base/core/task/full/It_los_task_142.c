@@ -73,7 +73,7 @@ static UINT32 Testcase(void)
     ret = LOS_HwiCreate(HWI_NUM_TEST3, hwiPrio, mode, (HWI_PROC_FUNC)ItHwi, arg);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     HalIrqSetAffinity(HWI_NUM_TEST3, ArchCurrCpuid() + 1); // curret cpu
 #endif
     float d1 = 100.0f;

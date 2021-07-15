@@ -522,7 +522,7 @@ extern void ICunitSaveErr(iiUINT32 line, iiUINT32 retCode);
     } while (0)
 #endif
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 extern SPIN_LOCK_S g_testSuitSpin;
 #define TESTSUIT_LOCK(state) LOS_SpinLockSave(&g_testSuitSpin, &(state))
 #define TESTSUIT_UNLOCK(state) LOS_SpinUnlockRestore(&g_testSuitSpin, state)

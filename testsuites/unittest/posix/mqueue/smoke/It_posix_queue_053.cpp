@@ -37,10 +37,7 @@ static VOID *PthreadF01(VOID *argument)
 
     g_testCount = 1;
 
-    ret = LosTaskDelay(5); // 5, Set the timeout of task delay;
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
-
-    ICUNIT_GOTO_EQUAL(g_testCount, 3, g_testCount, EXIT); // 3, Here, assert the g_testCount.
+    TestAssertWaitDelay(&g_testCount, 3); // 3, Here, assert the g_testCount.
 
     ret = mq_send(g_gqueue, msgptr, strlen(msgptr), 0);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
@@ -105,8 +102,7 @@ static UINT32 Testcase(VOID)
     ret = pthread_create(&newTh1, &attr1, PthreadF01, NULL);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
 
-    LosTaskDelay(1);
-    ICUNIT_GOTO_EQUAL(g_testCount, 1, g_testCount, EXIT1);
+    TestAssertWaitDelay(&g_testCount, 1);
 
     ret = PosixPthreadInit(&attr1, MQUEUE_PTHREAD_PRIORITY_TEST2);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
@@ -121,7 +117,7 @@ static UINT32 Testcase(VOID)
 #endif
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
 
-    ICUNIT_GOTO_EQUAL(g_testCount, 4, g_testCount, EXIT2); // 4, Here, assert the g_testCount.
+    TestAssertWaitDelay(&g_testCount, 4); // 4, Here, assert the g_testCount.
 
     ret = PosixPthreadDestroy(&attr1, newTh2);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);

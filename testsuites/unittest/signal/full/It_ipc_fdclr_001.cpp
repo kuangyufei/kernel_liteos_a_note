@@ -46,7 +46,7 @@ static UINT32 Testcase(VOID)
         ret = pipe(pipeFd[i]);
         ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
         fdmax = pipeFd[i][1] > fdmax ? pipeFd[i][1] : fdmax;
-        ret = write(pipeFd[i][1], "hello world", TAR_STR_LEN);
+        ret = write(pipeFd[i][1], "aloha world", TAR_STR_LEN);
         printf("write first status: %d\n", ret);
         ICUNIT_GOTO_EQUAL(ret, TAR_STR_LEN, ret, EXIT);
     }

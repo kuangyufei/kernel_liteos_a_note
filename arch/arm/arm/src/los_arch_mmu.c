@@ -219,7 +219,7 @@ STATIC UINT32 OsCvtSecCacheFlagsToMMUFlags(UINT32 flags)
     switch (flags & VM_MAP_REGION_FLAG_CACHE_MASK) {
         case VM_MAP_REGION_FLAG_CACHED:
             mmuFlags |= MMU_DESCRIPTOR_L1_TYPE_NORMAL_WRITE_BACK_ALLOCATE;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
             mmuFlags |= MMU_DESCRIPTOR_L1_SECTION_SHAREABLE;
 #endif
             break;
@@ -552,7 +552,7 @@ STATIC UINT32 OsCvtPte2CacheFlagsToMMUFlags(UINT32 flags)
 
     switch (flags & VM_MAP_REGION_FLAG_CACHE_MASK) {
         case VM_MAP_REGION_FLAG_CACHED:
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
             mmuFlags |= MMU_DESCRIPTOR_L2_SHAREABLE;
 #endif
             mmuFlags |= MMU_DESCRIPTOR_L2_TYPE_NORMAL_WRITE_BACK_ALLOCATE;

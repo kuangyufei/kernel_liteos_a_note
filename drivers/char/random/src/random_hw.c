@@ -70,7 +70,7 @@ static int RandomHwClose(struct file *filep)
 
 static int RandomHwIoctl(struct file *filep, int cmd, unsigned long arg)
 {
-    int ret;
+    int ret = -1;
 
     switch (cmd) {
         default:
@@ -82,7 +82,7 @@ static int RandomHwIoctl(struct file *filep, int cmd, unsigned long arg)
 
 static ssize_t RandomHwRead(struct file *filep, char *buffer, size_t buflen)
 {
-    int ret;
+    int ret = -1;
 
     if (g_randomOp.read != NULL) {
         ret = g_randomOp.read(buffer, buflen);

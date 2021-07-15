@@ -36,7 +36,7 @@
 extern "C" {
 #endif /* __cpluscplus */
 #endif /* __cpluscplus */
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 static UINT32 g_targetCpuid;
 
 static UINT32 g_szId[LOSCFG_KERNEL_CORE_NUM] = {0};

@@ -983,9 +983,19 @@ INT32 JffsStatfsPrintf(struct statfs buf)
 
 using namespace testing::ext;
 namespace OHOS {
+#if defined(LOSCFG_USER_TEST_PRESSURE)
+pthread_mutexattr_t mutex;
+#endif
 class VfsJffsTest : public testing::Test {
 public:
-    static void SetUpTestCase(void) {}
+    static void SetUpTestCase(void)
+    {
+#if defined(LOSCFG_USER_TEST_PRESSURE)
+        pthread_mutexattr_settype(&mutex, PTHREAD_MUTEX_NORMAL);
+        pthread_mutex_init(&g_jffs2GlobalLock1, &mutex);
+        pthread_mutex_init(&g_jffs2GlobalLock2, &mutex);
+#endif
+    }
     static void TearDownTestCase(void) {}
 };
 #if defined(LOSCFG_USER_TEST_FULL)
@@ -7001,10 +7011,6 @@ HWTEST_F(VfsJffsTest, ItFsJffs535, TestSize.Level0)
 #endif
 
 #if defined(LOSCFG_USER_TEST_PRESSURE)
-pthreadMutexattrT mutex;
-PthreadMutexattrSettype(&mutex, PTHREAD_MUTEX_NORMAL);
-PthreadMutexInit(&g_jffs2GlobalLock1, &mutex);
-PthreadMutexInit(&g_jffs2GlobalLock2, &mutex);
 /* *
  * @tc.name: ItFsJffsPRESSURE_001
  * @tc.desc: function for VfsJffsTest
@@ -8479,17 +8485,6 @@ HWTEST_F(VfsJffsTest, ItFsJffsPerformance005, TestSize.Level0)
 HWTEST_F(VfsJffsTest, ItFsJffsPerformance006, TestSize.Level0)
 {
     ItFsJffsPerformance006();
-}
-
-/* *
- * @tc.name: ItFsJffsPERFORMANCE_007
- * @tc.desc: function for VfsJffsTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(VfsJffsTest, ItFsJffsPerformance007, TestSize.Level0)
-{
-    ItFsJffsPerformance007();
 }
 
 /* *

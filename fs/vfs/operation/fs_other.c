@@ -35,7 +35,9 @@
 #include "dirent.h"
 #include "unistd.h"
 #include "sys/select.h"
+#include "sys/mount.h"
 #include "sys/stat.h"
+#include "sys/statfs.h"
 #include "sys/prctl.h"
 #include "fs/fd_table.h"
 #include "fs/file.h"
@@ -256,30 +258,70 @@ char *getcwd(char *buf, size_t n)
 
 int chmod(const char *path, mode_t mode)
 {
-    int result;
-    struct stat buf;
+    struct IATTR attr = {0};
+    attr.attr_chg_mode = mode;
+    attr.attr_chg_valid = CHG_MODE; /* change mode */
+    int ret;
 
-    result = stat(path, &buf);
-    if (result != ENOERR) {
+    ret = chattr(path, &attr);
+    if (ret < 0) {
         return VFS_ERROR;
     }
 
-    /* no access/permission control for files now, just return OK if stat is okay*/
+    return OK;
+}
+
+int chown(const char *pathname, uid_t owner, gid_t group)
+{
+    struct IATTR attr = {0};
+    attr.attr_chg_valid = 0;
+    int ret;
+
+    if (owner != (uid_t)-1) {
+        attr.attr_chg_uid = owner;
+        attr.attr_chg_valid |= CHG_UID;
+    }
+    if (group != (gid_t)-1) {
+        attr.attr_chg_gid = group;
+        attr.attr_chg_valid |= CHG_GID;
+    }
+    ret = chattr(pathname, &attr);
+    if (ret < 0) {
+        return VFS_ERROR;
+    }
+
     return OK;
 }
 
 int access(const char *path, int amode)
 {
-    int result;
+    int ret;
     struct stat buf;
+    struct statfs fsBuf;
 
-    result = stat(path, &buf);
+    ret = statfs(path, &fsBuf);
+    if (ret != 0) {
+        if (get_errno() != ENOSYS) {
+            return VFS_ERROR;
+        }
+        /* dev has no statfs ops, need devfs to handle this in feature */
+    }
 
-    if (result != ENOERR) {
+    if ((fsBuf.f_flags & MS_RDONLY) && ((unsigned int)amode & W_OK)) {
+        set_errno(EROFS);
         return VFS_ERROR;
     }
 
-    /* no access/permission control for files now, just return OK if stat is okay*/
+    ret = stat(path, &buf);
+    if (ret != 0) {
+        return VFS_ERROR;
+    }
+
+    if (VfsPermissionCheck(buf.st_uid, buf.st_gid, buf.st_mode, amode)) {
+        set_errno(EACCES);
+        return VFS_ERROR;
+    }
+
     return OK;
 }
 

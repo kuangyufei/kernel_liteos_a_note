@@ -18,7 +18,7 @@ LOCAL_SRCS = $(wildcard $(addprefix $(MUSLPORTINGDIR)/,$(MUSLPORTING_SRCS)))
 LOCAL_SRCS := $(filter-out $(subst $(MUSLPORTINGDIR),$(MUSLDIR),$(LOCAL_SRCS)),$(addprefix $(MUSLDIR)/,$(MUSL_SRCS)) $(LOCAL_SRCS))
 
 ifeq ($(LOSCFG_ARCH_ARM_VER), "armv7-a")
-LOCAL_SRCS := $(filter-out $(addprefix $(MUSLDIR)/src/string/,memchr.c memcpy.c strcmp.c strcpy.c strlen.c), $(LOCAL_SRCS))
+LOCAL_SRCS := $(filter-out $(addprefix $(MUSLPORTINGDIR)/src/string/,memchr.c memcpy.c strcmp.c strcpy.c strlen.c), $(LOCAL_SRCS))
 LOCAL_SRCS += \
 	$(OPTRTDIR)/string/arm/memchr.S \
 	$(OPTRTDIR)/string/arm/memcpy.S \

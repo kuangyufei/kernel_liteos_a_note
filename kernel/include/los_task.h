@@ -498,7 +498,7 @@ typedef struct tagTskInitParam {//Task的初始化参数
     UINTPTR         auwArgs[4];    /**< Task parameters, of which the maximum number is four */	//入口函数的参数,最多四个
     UINT32          uwStackSize;   /**< Task stack size */	//内核栈大小
     CHAR            *pcName;       /**< Task name */		//任务名称
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     UINT16          usCpuAffiMask; /**< Task cpu affinity mask         */	//任务cpu亲和力掩码
 #endif
     UINT32          uwResved;      /**< It is automatically deleted if set to LOS_TASK_STATUS_DETACHED.

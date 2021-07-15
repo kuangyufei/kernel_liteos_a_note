@@ -141,7 +141,7 @@ extern INT32 FilepWrite(struct file *filep, const struct file_operations_vfs *fo
 extern INT32 FilepPoll(struct file *filep, const struct file_operations_vfs *fops, poll_table *fds);
 extern INT32 FilepIoctl(struct file *filep, const struct file_operations_vfs *fops, INT32 cmd, unsigned long arg);
 extern INT32 GetFilepOps(const struct file *filep, struct file **privFilep, const struct file_operations_vfs **fops);
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 extern VOID OsWaitConsoleSendTaskPend(UINT32 taskID);
 extern VOID OsWakeConsoleSendTask(VOID);
 #endif

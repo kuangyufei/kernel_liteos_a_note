@@ -50,7 +50,7 @@ extern "C" {
 
 #define ARRAY_SIZE 2
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_testSuitSpin);
 #endif
 
@@ -125,13 +125,13 @@ u_long ICunitRand(void)
 
 void ICunitSaveErr(iiUINT32 line, iiUINT32 retCode)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     UINT32 intSave;
     TESTSUIT_LOCK(intSave);
 #endif
     g_iCunitErrCode = ((g_iCunitErrCode == 0) && (g_iCunitErrLineNo == 0)) ? (iiUINT32)retCode : g_iCunitErrCode;
     g_iCunitErrLineNo = (g_iCunitErrLineNo == 0) ? line : g_iCunitErrLineNo;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     TESTSUIT_UNLOCK(intSave);
 #endif
 }
@@ -184,7 +184,7 @@ iUINT32 ICunitAddCase(const iCHAR *caseName, CASE_FUNCTION caseFunc, iUINT16 tes
 UINT32 g_cunitInitFlag = 0;
 iUINT32 ICunitInit(void)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     if (LOS_AtomicCmpXchg32bits(&g_cunitInitFlag, 1, 0)) {
         PRINTK("other core already done iCunitInit\n");
         return (iUINT32)ICUNIT_SUCCESS;

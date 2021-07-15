@@ -40,7 +40,7 @@
 #include "los_sched_pri.h"
 #include "los_spinlock.h"
 #include "los_task_pri.h"
-#if (LOSCFG_KERNEL_TRACE == YES)
+#ifdef LOSCFG_KERNEL_TRACE
 #include "los_trace.h"
 #include "los_trace_frame.h"
 #endif
@@ -100,7 +100,7 @@ STATIC const struct file_operations_vfs g_liteIpcFops = {
     .mmap = LiteIpcMmap,   /* mmap */
 };
 
-#if (LOSCFG_KERNEL_TRACE == YES)
+#ifdef LOSCFG_KERNEL_TRACE
 typedef enum {
     WRITE,
     WRITE_DROP,
@@ -108,6 +108,7 @@ typedef enum {
     READ,
     READ_DROP,
     READ_TIMEOUT,
+    KILL,
     OPERATION_NUM
 } IpcOpertion;
 
@@ -160,7 +161,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsLiteIpcInit(VOID)
     for (i = 0; i < LOSCFG_BASE_CORE_PROCESS_LIMIT; i++) {
         LOS_ListInit(&(g_ipcUsedNodelist[i]));
     }
-#if (LOSCFG_KERNEL_TRACE == YES)
+#ifdef LOSCFG_KERNEL_TRACE
     ret = LOS_TraceReg(LOS_TRACE_IPC, OsIpcTrace, LOS_TRACE_IPC_NAME, LOS_TRACE_ENABLE);
     if (ret != LOS_OK) {
         PRINT_ERR("liteipc LOS_TraceReg failed:%d\n", ret);
@@ -939,7 +940,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
             }
 #if (USE_TIMESTAMP == YES)
             if (now > msg->timestamp + LITEIPC_TIMEOUT_NS) {
-#if (LOSCFG_KERNEL_TRACE == YES)
+#ifdef LOSCFG_KERNEL_TRACE
                 IpcTrace(msg, WRITE_DROP, 0, msg->type);
 #endif
                 PRINT_ERR("A timeout reply, request timestamp:%lld, now:%lld\n", msg->timestamp, now);
@@ -997,7 +998,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcWrite(IpcContent *content)
     SCHEDULER_LOCK(intSave);
     LosTaskCB *tcb = OS_TCB_FROM_TID(dstTid);//找到目标任务ID,需要哪些任务去读
     LOS_ListTailInsert(&(tcb->msgListHead), &(buf->listNode));//从尾部挂入任务的消息链表
-#if (LOSCFG_KERNEL_TRACE == YES)
+#ifdef LOSCFG_KERNEL_TRACE
     IpcTrace(&buf->msg, WRITE, tcb->ipcStatus, buf->msg.type);
 #endif
     if (tcb->ipcStatus & IPC_THREAD_STATUS_PEND) {
@@ -1057,13 +1058,13 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckRecievedMsg(IpcListNode *node, IpcContent *c
             ret =  -EINVAL;
     }
     if (ret != LOS_OK) {
-#if (LOSCFG_KERNEL_TRACE == YES)
+#ifdef LOSCFG_KERNEL_TRACE
         IpcTrace(&node->msg, READ_DROP, tcb->ipcStatus, node->msg.type);
 #endif
         (VOID)HandleSpecialObjects(LOS_CurTaskIDGet(), node, TRUE);
         (VOID)LiteIpcNodeFree(LOS_GetCurrProcessID(), (VOID *)node);
     } else {
-#if (LOSCFG_KERNEL_TRACE == YES)
+#ifdef LOSCFG_KERNEL_TRACE
         IpcTrace(&node->msg, READ, tcb->ipcStatus, node->msg.type);
 #endif
     }
@@ -1085,18 +1086,26 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcRead(IpcContent *content)
     do {
         SCHEDULER_LOCK(intSave);
         if (LOS_ListEmpty(listHead)) {
-#if (LOSCFG_KERNEL_TRACE == YES)
+#ifdef LOSCFG_KERNEL_TRACE
             IpcTrace(NULL, TRY_READ, tcb->ipcStatus, syncFlag ? MT_REPLY : MT_REQUEST);
 #endif
             tcb->ipcStatus |= IPC_THREAD_STATUS_PEND;
             OsTaskWaitSetPendMask(OS_TASK_WAIT_LITEIPC, OS_INVALID_VALUE, timeout);
             ret = OsSchedTaskWait(&g_ipcPendlist, timeout, TRUE);
             if (ret == LOS_ERRNO_TSK_TIMEOUT) {
-#if (LOSCFG_KERNEL_TRACE == YES)
+#ifdef LOSCFG_KERNEL_TRACE
                 IpcTrace(NULL, READ_TIMEOUT, tcb->ipcStatus, syncFlag ? MT_REPLY : MT_REQUEST);
 #endif
                 SCHEDULER_UNLOCK(intSave);
                 return -ETIME;
+            }
+
+            if (OsTaskIsKilled(tcb)) {
+#if (LOSCFG_KERNEL_TRACE == YES)
+                IpcTrace(NULL, KILL, tcb->ipcStatus, syncFlag ? MT_REPLY : MT_REQUEST);
+#endif
+                SCHEDULER_UNLOCK(intSave);
+                return -ERFKILL;
             }
 
             SCHEDULER_UNLOCK(intSave);
@@ -1178,7 +1187,7 @@ BUFFER_FREE:
     if ((content->flag & RECV) == RECV) {
         ret = LiteIpcRead(content);
         if (ret != LOS_OK) {
-            PRINT_ERR("LiteIpcRead failed\n");
+            PRINT_ERR("LiteIpcRead failed ERROR: %d\n", (INT32)ret);
             return ret;
         }
         UINT32 offset = LOS_OFF_SET_OF(IpcContent, inMsg);

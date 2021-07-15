@@ -53,7 +53,7 @@ VOID ItSuiteLosSwtmr(VOID)
     ItLosSwtmr053();
     ItLosSwtmr058();
 #endif
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     ItSmpLosSwtmr001(); /* Concurrent Multi-core */
     ItSmpLosSwtmr002(); /* Stop Across Cores */
     ItSmpLosSwtmr003();

@@ -87,7 +87,7 @@ static VOID TaskMisc10Func(VOID)
     task1.pcName = "TaskService_5";
     task1.uwStackSize = LOS_TASK_MIN_STACK_SIZE;
     task1.uwResved = 0;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
 
@@ -118,7 +118,7 @@ static UINT32 Testcase(VOID)
     task.pcName = "TaskMisc_10";
     task.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
     task.uwResved = 0;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
 
@@ -132,7 +132,7 @@ static UINT32 Testcase(VOID)
     task.pcName = "TaskFe_4";
     task.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
     task.uwResved = 0;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     task.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
 

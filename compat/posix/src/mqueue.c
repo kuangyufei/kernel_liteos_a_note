@@ -577,7 +577,7 @@ OUT_UNLOCK:
     (VOID)pthread_mutex_unlock(&g_mqueueMutex);
     return ret;
 }
-//获取描述符指定的消息队列属性
+
 int OsMqGetAttr(mqd_t personal, struct mq_attr *mqAttr)
 {
     struct mqarray *mqueueCB = NULL;
@@ -608,7 +608,7 @@ int OsMqGetAttr(mqd_t personal, struct mq_attr *mqAttr)
     (VOID)pthread_mutex_unlock(&g_mqueueMutex);
     return 0;
 }
-//设置描述符指定的消息队列属性
+
 int OsMqSetAttr(mqd_t personal, const struct mq_attr *mqSetAttr, struct mq_attr *mqOldAttr)
 {
     struct mqpersonal *privateMqPersonal = NULL;
@@ -729,7 +729,7 @@ STATIC INLINE BOOL MqParamCheck(mqd_t personal, const char *msg, size_t msgLen)
     }
 int mq_timedsend(mqd_t personal, const char *msg, size_t msgLen, unsigned int msgPrio,
                  const struct timespec *absTimeout)
-{//此API用于在预定时间将具有指定内容和长度的消息放入具有描述符的消息队列中
+{
     UINT32 mqueueID, err;
     UINT64 absTicks;
     struct mqarray *mqueueCB = NULL;
@@ -764,7 +764,7 @@ ERROUT_UNLOCK:
 ERROUT:
     return -1;
 }
-//此API用于从具有指定描述符的消息队列消息中获取具有指定消息内容和长度的消息
+
 ssize_t mq_timedreceive(mqd_t personal, char *msg, size_t msgLen, unsigned int *msgPrio,
                         const struct timespec *absTimeout)
 {
@@ -820,13 +820,13 @@ ERROUT_UNLOCK:
 ERROUT:
     return -1;
 }
-//此API用于将具有指定内容和长度的消息放入具有指定描述符的消息队列中
+
 /* not support the prio */
 int mq_send(mqd_t personal, const char *msg_ptr, size_t msg_len, unsigned int msg_prio)
 {
     return mq_timedsend(personal, msg_ptr, msg_len, msg_prio, NULL);
 }
-//此API用于从具有指定描述符的消息队列中删除最老的消息，并将其放入msg_ptr所指向的缓冲区中
+
 ssize_t mq_receive(mqd_t personal, char *msg_ptr, size_t msg_len, unsigned int *msg_prio)
 {
     return mq_timedreceive(personal, msg_ptr, msg_len, msg_prio, NULL);

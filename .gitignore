@@ -16,9 +16,9 @@ cscope*
 tags
 
 # Menuconfig temp files
-/include/config
-/include/generated
-.config*
+/config.h
+.config
+.config.old
 
 # Build temp files
 /platform/board.ld

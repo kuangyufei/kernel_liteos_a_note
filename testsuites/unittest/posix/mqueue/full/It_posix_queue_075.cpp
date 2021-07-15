@@ -29,6 +29,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "It_posix_queue.h"
+static int g_testFlag = 0;
 
 static VOID *PthreadF01(VOID *arg)
 {
@@ -37,12 +38,12 @@ static VOID *PthreadF01(VOID *arg)
     CHAR msgrcd[MQUEUE_STANDARD_NAME_LENGTH] = {0};
     struct timespec ts = { 0 };
     ts.tv_sec = 0xffff;
-
     for (i = 0; i < MQUEUE_STANDARD_NAME_LENGTH * 2; i++) { // 2, The loop frequency name length.
         ret = mq_timedreceive(g_gqueue, msgrcd, MQUEUE_STANDARD_NAME_LENGTH, NULL, &ts);
         ICUNIT_GOTO_EQUAL(ret, MQUEUE_SHORT_ARRAY_LENGTH, ret, EXIT);
         ICUNIT_GOTO_STRING_EQUAL(msgrcd, MQUEUE_SEND_STRING_TEST, msgrcd, EXIT);
     }
+    g_testFlag = 0; // 0 means the sub thread has executed
     return NULL;
 EXIT:
     return NULL;
@@ -62,6 +63,7 @@ static UINT32 Testcase(VOID)
     attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     attr.mq_maxmsg = MQUEUE_STANDARD_NAME_LENGTH;
 
+    g_testFlag = 1; // 1 initialize the flag
     LOS_TaskLock();
     snprintf(mqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq075_%d", LosCurTaskIDGet());
 
@@ -85,7 +87,10 @@ static UINT32 Testcase(VOID)
         ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
     }
 
-    TestExtraTaskDelay(10); // 10, Set delay time.
+    // waitting for the flag is 0, means the sub thread has executed
+    while (g_testFlag) {
+        usleep(1);
+    }
 
     ret = mq_close(g_gqueue);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);

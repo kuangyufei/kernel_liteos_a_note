@@ -15,7 +15,7 @@ config DRIVERS_USB_HOST_DRIVER
 choice
     depends on DRIVERS_USB_HOST_DRIVER
     prompt "USB HCD"
-    default y
+    default DRIVERS_USB_HOST_EHCI
     help
       Enable EHCI for USB 2.0.
       Enable XHCI for USB 3.0

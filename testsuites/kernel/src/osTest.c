@@ -259,7 +259,7 @@ void TestHwiTrigger(unsigned int irq)
 
 VOID TestExtraTaskDelay(UINT32 tick)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     // trigger task schedule may occor on another core
     // needs adding delay and checking status later
     LOS_TaskDelay(tick);
@@ -327,7 +327,7 @@ VOID TestTestHwiDelete(unsigned int irq, VOID *devId)
 
 VOID TestDumpCpuid(VOID)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     PRINT_DEBUG("%d,cpuid = %d\n", LOS_CurTaskIDGet(), ArchCurrCpuid());
 #endif
     return;
@@ -530,7 +530,7 @@ void TestSystemInit(void)
 
     testProcess = OS_PCB_FROM_PID(pid);
     g_testTskHandle = testProcess->threadGroupID;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     ((LosTaskCB *)OS_TCB_FROM_TID(g_testTskHandle))->cpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
 }

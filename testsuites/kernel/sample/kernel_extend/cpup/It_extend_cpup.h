@@ -116,7 +116,7 @@ VOID ItExtendCpup009(VOID);
 VOID ItExtendCpup010(VOID);
 #endif
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 VOID ItSmpExtendCpup001(VOID);
 VOID ItSmpExtendCpup002(VOID);
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ

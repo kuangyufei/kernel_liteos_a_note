@@ -217,7 +217,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellMsgTypeGet(CmdParsed *cmdParsed, const CHAR *
     len = strlen(cmdType);
     LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(cmdInfo->cmdList.list), CmdItemNode, list) {
         if ((len == strlen(curCmdItem->cmd->cmdKey)) &&
-            (strncmp((CHAR *)(curCmdItem->cmd->cmdKey), cmdType, len) == 0)) {//先比较
+            (strncmp((CHAR *)(curCmdItem->cmd->cmdKey), cmdType, len) == 0)) {
             minLen = (len < CMD_KEY_LEN) ? len : CMD_KEY_LEN;
             (VOID)memcpy_s((CHAR *)(cmdParsed->cmdKeyword), CMD_KEY_LEN, cmdType, minLen);
             cmdParsed->cmdType = curCmdItem->cmd->cmdType;

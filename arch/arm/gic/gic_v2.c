@@ -40,7 +40,7 @@ STATIC_ASSERT(OS_USER_HWI_MAX <= 1020, "hwi max is too large!");
 
 STATIC UINT32 g_curIrqNum = 0;
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 /*
  * filter description
  *   0b00: forward to the cpu interfaces specified in cpu_mask
@@ -144,7 +144,7 @@ VOID HalIrqInit(VOID)
     /* enable gic distributor control */
     GIC_REG_32(GICD_CTLR) = 1;
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     /* register inter-processor interrupt */
     (VOID)LOS_HwiCreate(LOS_MP_IPI_WAKEUP, 0xa0, 0, OsMpWakeHandler, 0);
     (VOID)LOS_HwiCreate(LOS_MP_IPI_SCHEDULE, 0xa0, 0, OsMpScheduleHandler, 0);

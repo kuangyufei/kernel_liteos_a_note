@@ -38,7 +38,7 @@ extern "C" {
 #endif /* __cpluscplus */
 #endif /* __cpluscplus */
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 static UINT32 g_ret1, g_ret2, g_ret3;
 static UINT32 g_szId[3] = {0};
 

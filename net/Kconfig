@@ -17,7 +17,7 @@ config NET_LWIP_SACK
 choice
     depends on NET_LWIP_SACK
     prompt "Lwipsack"
-    default y
+    default NET_LWIP_SACK_2_1
     help
       Enable Lwipsack for 2.x
 

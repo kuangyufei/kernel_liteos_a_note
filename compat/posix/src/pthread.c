@@ -205,7 +205,7 @@ STATIC UINT32 InitPthreadData(pthread_t threadID, pthread_attr_t *userAttr,
         PRINT_ERR("%s: %d, err: %d\n", __FUNCTION__, __LINE__, err);
         return LOS_NOK;
     }
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     if (userAttr->cpuset.__bits[0] > 0) {
         taskCB->cpuAffiMask = (UINT16)userAttr->cpuset.__bits[0];//CPU亲和力掩码
     }

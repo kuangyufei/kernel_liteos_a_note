@@ -77,19 +77,6 @@ extern UINT8 *m_aucSysMem0;//异常交互动态内存池地址的起始地址，
  */
 extern UINT8 *m_aucSysMem1;//系统动态内存池地址的起始地址
 
-/**
- * @ingroup los_memory
- * The memory Maximum memory usage statistics.
- * @attention
- * <ul> <li>If running as debug mode, it will affect the performance of memory malloc and free.</li>
- * <li> OS_MEM_WATERLINE=YES: open the function for Maximum memory usage statistics </li>
- * <li> OS_MEM_WATERLINE=NO: close the function for Maximum memory usage statistics, it set to NO as usual </li>
- * </ul>
- */
-#ifdef LOSCFG_MEM_WATERLINE
-#define OS_MEM_WATERLINE YES
-#endif
-
 #ifdef LOSCFG_MEM_MUL_POOL
 /**
  * @ingroup los_memory
@@ -141,7 +128,7 @@ typedef struct {//内存池外部信息结构
     UINT32 maxFreeNodeSize;	// 内存池的最大空闲内存块大小
     UINT32 usedNodeNum;		// 内存池的非空闲内存块个数
     UINT32 freeNodeNum;		// 内存池的空闲内存块个数
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)// 默认打开，如需关闭，在target_config.h中将该宏设置为0
+#ifdef LOSCFG_MEM_WATERLINE
     UINT32 usageWaterLine;	// 内存池的水线值
 #endif
 } LOS_MEM_POOL_STATUS;

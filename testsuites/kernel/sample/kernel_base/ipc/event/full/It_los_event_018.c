@@ -46,7 +46,7 @@ static VOID TaskF02(VOID)
 
     ret = LOS_EventWrite(&g_event, 0x10);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
-#if (LOSCFG_KERNEL_SMP != YES)
+#ifndef LOSCFG_KERNEL_SMP
     ICUNIT_GOTO_EQUAL(g_testCount, 4, g_testCount, EXIT); // 4, Here, assert that g_testCount is equal to 4.
 #endif
     g_testCount++;

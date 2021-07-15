@@ -39,7 +39,7 @@
 #endif
 #include "los_hw_tick_pri.h"
 #include "los_tick_pri.h"
-#if (LOSCFG_BASE_CORE_TSK_MONITOR == YES)
+#ifdef LOSCFG_BASE_CORE_TSK_MONITOR
 #include "los_stackinfo_pri.h"
 #endif
 #include "los_mp.h"
@@ -443,7 +443,7 @@ STATIC INLINE VOID OsSchedWakePendTimeTask(UINT64 currTime, LosTaskCB *taskCB, B
     if (tempStatus & (OS_TASK_STATUS_PENDING | OS_TASK_STATUS_DELAY)) {
         taskCB->taskStatus &= ~(OS_TASK_STATUS_PENDING | OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY);
         if (tempStatus & OS_TASK_STATUS_PENDING) {
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
             taskCB->ipcStatus &= ~IPC_THREAD_STATUS_PEND;
 #endif
             taskCB->taskStatus |= OS_TASK_STATUS_TIMEOUT;
@@ -819,7 +819,7 @@ STATIC LosTaskCB *OsGetTopTask(VOID)
     UINT32 bitmap;
     LosTaskCB *newTask = NULL;
     UINT32 processBitmap = g_sched->queueBitmap;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     UINT32 cpuid = ArchCurrCpuid();
 #endif
 
@@ -830,11 +830,11 @@ STATIC LosTaskCB *OsGetTopTask(VOID)
             while (bitmap) {
                 priority = CLZ(bitmap);
                 LOS_DL_LIST_FOR_EACH_ENTRY(newTask, &queueList->priQueueList[priority], LosTaskCB, pendList) {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
                     if (newTask->cpuAffiMask & (1U << cpuid)) {
 #endif
                         goto FIND_TASK;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
                     }
 #endif
                 }
@@ -869,7 +869,7 @@ VOID OsSchedStart(VOID)
     OsSchedSetStartTime(HalClockGetCycles());//设置调度开始时间
     newTask->startTime = OsGerCurrSchedTimeCycle();
 
-#if (LOSCFG_KERNEL_SMP == YES)//注意：需要设置当前cpu，以防第一个任务删除可能会失败，因为此标志与实际当前 cpu 不匹配。
+#ifdef LOSCFG_KERNEL_SMP //注意：需要设置当前cpu，以防第一个任务删除可能会失败，因为此标志与实际当前 cpu 不匹配。
     /*
      * attention: current cpu needs to be set, in case first task deletion
      * may fail because this flag mismatch with the real current cpu.
@@ -889,7 +889,7 @@ VOID OsSchedStart(VOID)
     OsTaskContextLoad(newTask);
 }
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 VOID OsSchedToUserReleaseLock(VOID)
 {
     /* The scheduling lock needs to be released before returning to user mode */
@@ -900,7 +900,7 @@ VOID OsSchedToUserReleaseLock(VOID)
 }
 #endif
 
-#if (LOSCFG_BASE_CORE_TSK_MONITOR == YES)
+#ifdef LOSCFG_BASE_CORE_TSK_MONITOR
 STATIC VOID OsTaskStackCheck(LosTaskCB *runTask, LosTaskCB *newTask)
 {
     if (!OS_STACK_MAGIC_CHECK(runTask->topOfStack)) {
@@ -917,7 +917,7 @@ STATIC VOID OsTaskStackCheck(LosTaskCB *runTask, LosTaskCB *newTask)
 
 STATIC INLINE VOID OsSchedSwitchCheck(LosTaskCB *runTask, LosTaskCB *newTask)
 {
-#if (LOSCFG_BASE_CORE_TSK_MONITOR == YES)
+#ifdef LOSCFG_BASE_CORE_TSK_MONITOR
     OsTaskStackCheck(runTask, newTask);
 #endif /* LOSCFG_BASE_CORE_TSK_MONITOR == YES */
 
@@ -955,7 +955,7 @@ STATIC VOID OsSchedTaskSwicth(LosTaskCB *runTask, LosTaskCB *newTask)
     runTask->taskStatus &= ~OS_TASK_STATUS_RUNNING;
     newTask->taskStatus |= OS_TASK_STATUS_RUNNING;
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     /* mask new running task's owner processor */
     runTask->currCpu = OS_TASK_INVALID_CPUID;
     newTask->currCpu = ArchCurrCpuid();
@@ -1043,7 +1043,7 @@ VOID OsSchedIrqEndCheckNeedSched(VOID)
 VOID OsSchedResched(VOID)
 {
     LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     LOS_ASSERT(OsPercpuGet()->taskLockCnt == 1);
 #else
     LOS_ASSERT(OsPercpuGet()->taskLockCnt == 0);

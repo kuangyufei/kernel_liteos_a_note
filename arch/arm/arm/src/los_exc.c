@@ -38,7 +38,6 @@
 #include "los_excinfo_pri.h"
 #endif
 #include "los_sys_stack_pri.h"
-#include "los_stackinfo_pri.h"
 #ifdef LOSCFG_COREDUMP
 #include "los_coredump.h"
 #endif
@@ -104,6 +103,10 @@
 参考
 	http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/%E7%94%A8%E6%88%B7%E6%80%81%E5%BC%82%E5%B8%B8%E4%BF%A1%E6%81%AF%E8%AF%B4%E6%98%8E.html
 ******************************************************************************/
+#ifdef LOSCFG_BLACKBOX
+#include "los_blackbox.h"
+#endif
+
 #define INVALID_CPUID  0xFFFF
 #define OS_EXC_VMM_NO_REGION  0x0U
 #define OS_EXC_VMM_ALL_REGION 0x1U
@@ -115,7 +118,7 @@ VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr);
 UINT32 g_curNestCount[LOSCFG_KERNEL_CORE_NUM] = { 0 };//记录当前嵌套异常的数量
 BOOL g_excFromUserMode[LOSCFG_KERNEL_CORE_NUM];//记录CPU core 异常来自用户态还是内核态 TRUE为用户态,默认为内核态
 STATIC EXC_PROC_FUNC g_excHook = (EXC_PROC_FUNC)OsExcHook;//全局异常处理钩子
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 STATIC SPIN_LOCK_INIT(g_excSerializerSpin);//初始化异常系列化自旋锁
 STATIC UINT32 g_currHandleExcPID = OS_INVALID_VALUE;
 STATIC UINT32 g_nextExcWaitCpu = INVALID_CPUID;
@@ -591,7 +594,7 @@ STATIC VOID OsExcRestore(VOID)
     g_excFromUserMode[currCpuID] = FALSE;	//CPU内核态运行
     g_intCount[currCpuID] = 0;				//CPU对应的中断数量清0
     g_curNestCount[currCpuID] = 0;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     OsPercpuGet()->excFlag = CPU_RUNNING;
 #endif
     OsPercpuGet()->taskLockCnt = 0;
@@ -608,7 +611,7 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
         return;
     }
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     LOS_SpinLock(&g_excSerializerSpin);
     if (g_nextExcWaitCpu != INVALID_CPUID) {
         g_currHandleExcCpuID = g_nextExcWaitCpu;
@@ -623,12 +626,15 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 #endif
     runProcess->processStatus &= ~OS_PROCESS_FLAG_EXIT; //进程去掉退出标签,要接着执行
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #ifdef LOSCFG_FS_VFS
     OsWakeConsoleSendTask();
 #endif
 #endif
 
+#ifdef LOSCFG_BLACKBOX
+    BBoxNotifyError("USER_CRASH", MODULE_SYSTEM, "Crash in user", 0);
+#endif
     SCHEDULER_LOCK(intSave);
 #ifdef LOSCFG_SAVE_EXCINFO
     OsProcessExitCodeCoreDumpSet(runProcess);
@@ -975,7 +981,7 @@ VOID OsDataAbortExcHandleEntry(ExcContext *excBufAddr)
 #endif /* __LINUX_ARM_ARCH__ */
 #endif /* LOSCFG_GDB */
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #define EXC_WAIT_INTER 50U		//异常等待间隔时间
 #define EXC_WAIT_TIME  2000U	//异常等待时间
 //打印所有CPU的状态信息
@@ -1073,7 +1079,7 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
 
         OsWaitOtherCoresHandleExcEnd(currCpuID);
     } else {
-        if (g_excFromUserMode[g_currHandleExcCpuID] == TRUE) {
+        if ((g_currHandleExcCpuID < LOSCFG_KERNEL_CORE_NUM) && (g_excFromUserMode[g_currHandleExcCpuID] == TRUE)) {
             g_currHandleExcCpuID = currCpuID;
             LOS_SpinUnlock(&g_excSerializerSpin);
             target = (UINT32)(OS_MP_CPU_ALL & ~CPUID_TO_AFFI_MASK(currCpuID));
@@ -1093,7 +1099,7 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
 
 STATIC VOID OsCheckCpuStatus(VOID)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     OsCheckAllCpuStatus();
 #else
     g_currHandleExcCpuID = ArchCurrCpuid();
@@ -1114,7 +1120,7 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 
     OsCheckCpuStatus();
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #ifdef LOSCFG_FS_VFS
     /* Wait for the end of the Console task to avoid multicore printing code */ 
     OsWaitConsoleSendTaskPend(OsCurrTaskGet()->taskID);//等待控制台任务结束，以避免多核打印代码
@@ -1124,6 +1130,11 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 //异常信息头部打印
 LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
 {
+#ifdef LOSCFG_BLACKBOX
+#ifdef LOSCFG_SAVE_EXCINFO
+    SetExcInfoIndex(0);
+#endif
+#endif
 #ifdef LOSCFG_KERNEL_VM
     /* You are not allowed to add any other print information before this exception information */
     if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
@@ -1178,7 +1189,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
 
     OsPrintExcHead(far);//打印异常信息头部信息 ##################excFrom: User!####################
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     OsAllCpuStatusOutput();//打印各CPU core的状态
 #endif
 
@@ -1190,7 +1201,9 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
         if (g_curNestCount[ArchCurrCpuid()] == 1) {//说明只有一个异常
 #ifdef LOSCFG_SAVE_EXCINFO
             if (func != NULL) {
+#ifndef LOSCFG_BLACKBOX
                 SetExcInfoIndex(0);
+#endif
                 OsSysStateSave(&intCount, &lockCount);
                 OsRecordExcInfoTime();
                 OsSysStateRestore(intCount, lockCount);
@@ -1218,6 +1231,9 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
         rebootHook();
     }
 #endif
+#ifdef LOSCFG_BLACKBOX
+    BBoxNotifyError(EVENT_PANIC, MODULE_SYSTEM, "Crash in kernel", 1);
+#endif
     while (1) {}
 }
 
@@ -1232,7 +1248,7 @@ __attribute__((noinline)) VOID LOS_Panic(const CHAR *fmt, ...)
 }
 
 /* stack protector */
-UINT32 __stack_chk_guard = 0xd00a0dff;
+USED UINT32 __stack_chk_guard = 0xd00a0dff;
 
 VOID __stack_chk_fail(VOID)
 {
