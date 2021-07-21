@@ -1,14 +1,14 @@
-[OpenHarmony | 鸿蒙研究站 | WeHarmony](http://weharmonyos.com/) **[ < 国内](http://weharmonyos.com/)[ | 国外 >](https://weharmony.github.io/)**
+[OpenHarmony | 鸿蒙研究站 | WeHarmony](http://weharmonyos.com/) **[ < 国内](http://weharmonyos.com/)[ | 国外 >](http://weharmonyos.com/)**
 
 [![在这里插入图片描述](https://gitee.com/weharmony/docs/raw/master/pic/other/io.png)](http://weharmonyos.com/)
 
 百篇博客系列篇.本篇为:
 
-* [v13.xx 鸿蒙内核源码分析(源码注释篇) | 鸿蒙必定成功，也必然成功 ](https://my.oschina.net/u/3751245/blog/4686747) **[  | 51](https://harmonyos.51cto.com/posts/4049)[ .c](https://blog.csdn.net/kuangyufei/article/details/109251754)[  .h](https://weharmony.gitee.io/13_源码注释篇.html) [  .o](https://my.oschina.net/weharmony)**
+* [v13.xx 鸿蒙内核源码分析(源码注释篇) | 鸿蒙必定成功，也必然成功 ](https://my.oschina.net/u/3751245/blog/4686747) **[  | 51](https://harmonyos.51cto.com/posts/4049)[ .c](https://blog.csdn.net/kuangyufei/article/details/109251754)[  .h](http://weharmonyos.com/13_源码注释篇.html) [  .o](https://my.oschina.net/weharmony)**
 
 ### **同步官方源码历史**
 * 每月至少同步一次
-* `2021/7/15` -- 本次官方改动不大,新增blackbox,hidumper,对一些宏(LOSCFG_KERNEL_SMP ..)规范化使用 
+* `2021/7/15` -- 本次官方改动不大,新增 `blackbox`,`hidumper`,对一些宏(`LOSCFG_KERNEL_SMP` ..)规范化使用 
 * `2021/6/27` -- 本次官方对文件系统/设备驱动改动较大,目录结构进行了重新整理.
 * `2021/6/08` -- 本次官方对编译构建,任务,信号模块有较大的改动.
 * `2021/5/28` -- 本次官方改动不大,主要针对一些错误单词拼写纠正.
@@ -22,15 +22,15 @@
 
 * 百篇博客分析地址：
   *  国内: [ http://weharmonyos.com/weharmony](http://weharmonyos.com/weharmony)   
-  *  国外: [ https://weharmony.github.io/weharmony](https://weharmony.github.io/weharmony)   
+  *  国外: [ http://weharmonyos.com/weharmony](http://weharmonyos.com/weharmony)   
   
 * [OpenHarmony开发者文档](http://weharmonyos.com/openharmony) 是对官方文档 [docs](https://gitee.com/openharmony/docs) 做的非常炫酷的静态站点，支持侧边栏/面包屑/搜索/中英文，非常方便的查看官方文档，大大提高学习和开发效率. 
   * 国内: [http://weharmonyos.com/openharmony](http://weharmonyos.com/openharmony) 
-  * 国外: [https://weharmony.github.io/openharmony](https://weharmony.github.io/openharmony) 
+  * 国外: [http://weharmonyos.com/openharmony](http://weharmonyos.com/openharmony) 
     
-*  [下载.鸿蒙源码分析.离线文档 < 国内](http://weharmonyos.com/history.html)[ | 国外 > ](https://weharmony.github.io/history.html)
+*  [下载.鸿蒙源码分析.离线文档 < 国内](http://weharmonyos.com/history.html)[ | 国外 > ](http://weharmonyos.com/history.html)
 
-*  [加入兴趣小组.微信群聊  < 国内](http://weharmonyos.com/qun.html)[ | 国外 > ](https://weharmony.github.io/qun.html)
+*  [加入兴趣小组.微信群聊  < 国内](http://weharmonyos.com/qun.html)[ | 国外 > ](http://weharmonyos.com/qun.html)
 
       
 ### **为何要精读内核源码?**
@@ -77,21 +77,29 @@
 
 与代码有bug需不断debug一样，文章和注解内容会存在不少错漏之处，请多包涵，但会反复修正，持续更新，`.xx`代表修改的次数，精雕细琢，言简意赅，力求打造精品内容。
 
-* [v57.xx 鸿蒙内核源码分析(编译过程篇) | 简单案例窥视GCC编译全过程 ](https://my.oschina.net/weharmony/blog/5064209) **[  | 51](https://harmonyos.51cto.com/posts/5032)[ .c](https://blog.csdn.net/kuangyufei/article/details/117419679)[  .h](http://weharmonyos.com/57_编译过程篇.html)[ .o](https://my.oschina.net/weharmony)**
-  
-* [v56.xx 鸿蒙内核源码分析(进程映像篇) | ELF是如何被加载运行的? ](https://my.oschina.net/weharmony/blog/5060359) **[  | 51](https://harmonyos.51cto.com/posts/4815)[ .c](https://blog.csdn.net/kuangyufei/article/details/117325933)[  .h](http://weharmonyos.com/56_进程映像篇.html)[ .o](https://my.oschina.net/weharmony)**
+* [v61.xx 鸿蒙内核源码分析(ninja应用篇) | 简单而快速的构建系统 ](https://my.oschina.net/weharmony/blog/5139034) **[  | 51](https://harmonyos.51cto.com/posts/7328)[ .c](https://blog.csdn.net/kuangyufei/article/details/118970589)[  .h](http://weharmonyos.com/blog/60_ninja应用篇.html)[ .o](https://my.oschina.net/weharmony)**
 
-* [v55.xx 鸿蒙内核源码分析(重定位篇) | 与国际接轨的对外部发言人 ](https://my.oschina.net/weharmony/blog/5055124) **[  | 51](https://harmonyos.51cto.com/posts/4519)[ .c](https://blog.csdn.net/kuangyufei/article/details/117110422)[  .h](http://weharmonyos.com/55_重定位篇.html)[  .o](https://my.oschina.net/weharmony)**
-  
-* [v54.xx 鸿蒙内核源码分析(静态链接篇) | 完整小项目看透静态链接过程 ](https://my.oschina.net/weharmony/blog/5049918) **[  | 51](https://harmonyos.51cto.com/posts/4430)[ .c](https://blog.csdn.net/kuangyufei/article/details/116835578)[  .h](http://weharmonyos.com/54_静态链接篇.html)[  .o](https://my.oschina.net/weharmony)**
+* [v60.xx 鸿蒙内核源码分析(gn应用篇) | gn语法及在鸿蒙的使用 ](https://my.oschina.net/weharmony/blog/5137565) **[  | 51](https://harmonyos.51cto.com/posts/7310)[ .c](https://blog.csdn.net/kuangyufei/article/details/118932416)[  .h](http://weharmonyos.com/blog/60_gn应用篇.html)[ .o](https://my.oschina.net/weharmony)**
 
-* [v53.xx 鸿蒙内核源码分析(ELF解析篇) | 你要忘了她姐俩你就不是银 ](https://my.oschina.net/weharmony/blog/5048746) **[  | 51](https://harmonyos.51cto.com/posts/4413)[ .c](https://blog.csdn.net/kuangyufei/article/details/116781446)[  .h](http://weharmonyos.com/53_ELF解析篇.html)[  .o](https://my.oschina.net/weharmony)**
+* [v59.xx 鸿蒙内核源码分析(构建工具篇) | 顺瓜摸藤调试鸿蒙构建过程 ](https://my.oschina.net/weharmony/blog/5135157) **[  | 51](https://harmonyos.51cto.com/posts/7287)[ .c](https://blog.csdn.net/kuangyufei/article/details/118878233)[  .h](http://weharmonyos.com/blog/59_构建工具篇.html)[ .o](https://my.oschina.net/weharmony)**
+
+* [v58.xx 鸿蒙内核源码分析(环境脚本篇) | 有了它编译鸿蒙好简单 ](https://my.oschina.net/weharmony/blog/5132725) **[  | 51](https://harmonyos.51cto.com/posts/7248)[ .c](https://blog.csdn.net/kuangyufei/article/details/118765692)[  .h](http://weharmonyos.com/blog/58_编译脚本篇.html)[ .o](https://my.oschina.net/weharmony)**
+
+* [v57.xx 鸿蒙内核源码分析(编译过程篇) | 简单案例窥视GCC编译全过程 ](https://my.oschina.net/weharmony/blog/5064209) **[  | 51](https://harmonyos.51cto.com/posts/5032)[ .c](https://blog.csdn.net/kuangyufei/article/details/117419679)[  .h](http://weharmonyos.com/blog/57_编译过程篇.html)[ .o](https://my.oschina.net/weharmony)**
+  
+* [v56.xx 鸿蒙内核源码分析(进程映像篇) | ELF是如何被加载运行的? ](https://my.oschina.net/weharmony/blog/5060359) **[  | 51](https://harmonyos.51cto.com/posts/4815)[ .c](https://blog.csdn.net/kuangyufei/article/details/117325933)[  .h](http://weharmonyos.com/blog/56_进程映像篇.html)[ .o](https://my.oschina.net/weharmony)**
+
+* [v55.xx 鸿蒙内核源码分析(重定位篇) | 与国际接轨的对外部发言人 ](https://my.oschina.net/weharmony/blog/5055124) **[  | 51](https://harmonyos.51cto.com/posts/4519)[ .c](https://blog.csdn.net/kuangyufei/article/details/117110422)[  .h](http://weharmonyos.com/blog/55_重定位篇.html)[  .o](https://my.oschina.net/weharmony)**
+  
+* [v54.xx 鸿蒙内核源码分析(静态链接篇) | 完整小项目看透静态链接过程 ](https://my.oschina.net/weharmony/blog/5049918) **[  | 51](https://harmonyos.51cto.com/posts/4430)[ .c](https://blog.csdn.net/kuangyufei/article/details/116835578)[  .h](http://weharmonyos.com/blog/54_静态链接篇.html)[  .o](https://my.oschina.net/weharmony)**
+
+* [v53.xx 鸿蒙内核源码分析(ELF解析篇) | 你要忘了她姐俩你就不是银 ](https://my.oschina.net/weharmony/blog/5048746) **[  | 51](https://harmonyos.51cto.com/posts/4413)[ .c](https://blog.csdn.net/kuangyufei/article/details/116781446)[  .h](http://weharmonyos.com/blog/53_ELF解析篇.html)[  .o](https://my.oschina.net/weharmony)**
   
 * [v52.xx 鸿蒙内核源码分析(静态站点篇) | 五一哪也没去就干了这事 ](https://my.oschina.net/weharmony/blog/5042657) **[  | 51](https://harmonyos.51cto.com/posts/4312)[ .c](https://blog.csdn.net/kuangyufei/article/details/116517461)[  .h](http://weharmonyos.com/blog/52_静态站点篇.html)[  .o](https://my.oschina.net/weharmony)**
     
 * [v51.xx 鸿蒙内核源码分析(ELF格式篇) | 应用程序入口并不是main ](https://my.oschina.net/weharmony/blog/5030288) **[  | 51](https://harmonyos.51cto.com/column/34)[ .c](https://blog.csdn.net/kuangyufei/article/details/116097977)[  .h](http://weharmonyos.com/blog/51_ELF格式篇.html)[  .o](https://my.oschina.net/weharmony)** 
   
-* [v50.xx 鸿蒙内核源码分析(编译环境篇) | 编译鸿蒙防掉坑指南 ](https://my.oschina.net/weharmony/blog/5028613) **[  | 51](https://harmonyos.51cto.com/column/34)[ .c](https://blog.csdn.net/kuangyufei/article/details/116042551)[  .h](http://weharmonyos.com/blog/50_编译环境篇.html) [  .o](https://my.oschina.net/weharmony)** 
+* [v50.xx 鸿蒙内核源码分析(编译环境篇) | docker编译鸿蒙真的很香 ](https://my.oschina.net/weharmony/blog/5028613) **[  | 51](https://harmonyos.51cto.com/column/34)[ .c](https://blog.csdn.net/kuangyufei/article/details/116042551)[  .h](http://weharmonyos.com/blog/50_编译环境篇.html) [  .o](https://my.oschina.net/weharmony)** 
   
 * [v49.xx 鸿蒙内核源码分析(信号消费篇) | 谁让CPU连续四次换栈运行 ](https://my.oschina.net/weharmony/blog/5027224) **[  | 51](https://harmonyos.51cto.com/column/34)[ .c](https://blog.csdn.net/kuangyufei/article/details/115958293)[  .h](http://weharmonyos.com/blog/49_信号消费篇.html) [  .o](https://my.oschina.net/weharmony)** 
 
