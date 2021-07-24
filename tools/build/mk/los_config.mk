@@ -118,11 +118,11 @@ endif
 BUILD  = $(OUT)/obj
 MK_PATH  = $(LITEOSTOPDIR)/tools/build/mk
 CXX_PATH  = $(LITEOSTOPDIR)/lib/cxxstl
-JFFS_PATH  = $(LITEOSTOPDIR)/fs/jffs2
+JFFS_PATH  = $(LITEOSTOPDIR)/fs/jffs2   #jffs2文件系统目录
 LITEOS_SCRIPTPATH ?= $(LITEOSTOPDIR)/tools/scripts
 LITEOS_LIB_BIGODIR  = $(OUT)/lib/obj
 LITEOS_MENUCONFIG_H = $(LITEOSTOPDIR)/config.h
-LOSCFG_ENTRY_SRC    = $(LITEOSTOPDIR)/kernel/common/los_config.c
+LOSCFG_ENTRY_SRC    = $(LITEOSTOPDIR)/kernel/common/los_config.c    #内核配置文件
 
 ### include variable
 MODULE = $(MK_PATH)/module.mk

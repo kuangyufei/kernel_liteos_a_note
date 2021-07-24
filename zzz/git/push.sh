@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 增加编译构建博客  
+git commit -m  ' 注解根文件系统制作过程  
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     博客输出站点(国内):http://weharmonyos.com
     博客输出站点(国外):https://weharmony.github.io

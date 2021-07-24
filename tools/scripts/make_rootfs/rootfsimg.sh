@@ -34,8 +34,8 @@ system=$(uname -s)
 ROOTFS_DIR=$1
 FSTYPE=$2
 ROOTFS_IMG=${ROOTFS_DIR}"_"${FSTYPE}".img"
-JFFS2_TOOL=mkfs.jffs2
-WIN_JFFS2_TOOL=mkfs.jffs2.exe
+JFFS2_TOOL=mkfs.jffs2 #linux 下 制作 jffs2镜像文件的工具
+WIN_JFFS2_TOOL=mkfs.jffs2.exe #windows 下 制作 jffs2镜像文件的工具
 YAFFS2_TOOL=mkyaffs2image100
 VFAT_TOOL=mkfs.vfat
 ROMFS_TOOL=genromfs
@@ -50,19 +50,19 @@ fi
 return 0
 }
 
-chmod -R 755 ${ROOTFS_DIR}
+chmod -R 755 ${ROOTFS_DIR}  
 if [ -f "${ROOTFS_DIR}/bin/init" ]; then
-    chmod 700 ${ROOTFS_DIR}/bin/init 2> /dev/null
+    chmod 700 ${ROOTFS_DIR}/bin/init 2> /dev/null #标准错误输出重定向到空设备文件
 fi
 if [ -f "${ROOTFS_DIR}/bin/shell" ]; then
     chmod 700 ${ROOTFS_DIR}/bin/shell 2> /dev/null
 fi
-
+# http://manpages.ubuntu.com/manpages/trusty/man1/mkfs.jffs2.1.html
 if [ "${FSTYPE}" = "jffs2" ]; then
     if [ "${system}" != "Linux" ] ; then
         tool_check ${WIN_JFFS2_TOOL}
         ${WIN_JFFS2_TOOL} -q -o ${ROOTFS_IMG} -d ${ROOTFS_DIR} --pagesize=4096
-    else
+    else #Linux + jffs2 执行这里
         tool_check ${JFFS2_TOOL}
         ${JFFS2_TOOL} -q -o ${ROOTFS_IMG} -d ${ROOTFS_DIR} --pagesize=4096
     fi

@@ -27,18 +27,18 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-LITEOSTOPDIR := $(shell if [ "$$PWD" != "" ]; then echo $$PWD; else pwd; fi)
+LITEOSTOPDIR := $(shell if [ "$$PWD" != "" ]; then echo $$PWD; else pwd; fi)	#获取当前目录
 export OS=$(shell uname -s)
 ifneq ($(OS), Linux)
 LITEOSTOPDIR := $(shell dirname $(subst \,/,$(LITEOSTOPDIR))/./)
 endif
 
-LITEOSTHIRDPARTY := $(LITEOSTOPDIR)/../../third_party
+LITEOSTHIRDPARTY := $(LITEOSTOPDIR)/../../third_party #找到 third_party 目录
 
 export LITEOSTOPDIR
 export LITEOSTHIRDPARTY
 
-RM = -rm -rf
+RM = -rm -rf	#宏定义
 MAKE = make
 __LIBS = libs
 APPS = apps
@@ -51,7 +51,7 @@ LITEOS_PLATFORM_BASE = $(LITEOSTOPDIR)/platform
 
 export CONFIG_=LOSCFG_
 ifeq ($(PRODUCT_PATH),)
-export PRODUCT_PATH=$(LITEOSTOPDIR)/../../device/hisilicon/drivers
+export PRODUCT_PATH=$(LITEOSTOPDIR)/../../device/hisilicon/drivers	#找到 device 目录
 endif
 
 ifeq ($(shell which menuconfig),)
@@ -59,7 +59,7 @@ $(shell pip install --user kconfiglib >/dev/null)
 endif
 $(shell env CONFIG_=$(CONFIG_) PRODUCT_PATH=$(PRODUCT_PATH) olddefconfig >/dev/null)
 
--include $(LITEOSTOPDIR)/tools/build/config.mk
+-include $(LITEOSTOPDIR)/tools/build/config.mk #定义了各种变量 
 
 ifeq ($(LOSCFG_STORAGE_SPINOR), y)
 FSTYPE = jffs2
@@ -125,10 +125,10 @@ endif
 
 #-----need move when make version-----#
 ##### make lib #####
-$(__LIBS): $(OUT) $(CXX_INCLUDE)
+$(__LIBS): $(OUT) $(CXX_INCLUDE)	#编译库文件
 
 $(OUT): $(LITEOS_MENUCONFIG_H)
-	$(HIDE)mkdir -p $(OUT)/lib
+	$(HIDE)mkdir -p $(OUT)/lib	#创建 ../lib 目录 , 将生成 *.a 文件 ,
 	$(HIDE)$(CC) -I$(LITEOSTOPDIR)/kernel/base/include -I$(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) \
 		-I$(LITEOS_PLATFORM_BASE)/include -imacros $< -E $(LITEOS_PLATFORM_BASE)/board.ld.S \
 		-o $(LITEOS_PLATFORM_BASE)/board.ld -P
@@ -149,29 +149,29 @@ menuconfig:
 
 $(LITEOS_MENUCONFIG_H): .config
 	$(HIDE)genconfig
-
+#编译内核的各个目标文件
 $(LITEOS_TARGET): $(__LIBS) sysroot
 	$(HIDE)touch $(LOSCFG_ENTRY_SRC)
-
+	#逐个编译子目录中的 makefile
 	$(HIDE)for dir in $(LITEOS_SUBDIRS); \
 	do $(MAKE) -C $$dir all || exit 1; \
 	done
-
+	# 生成 liteos.map
 	$(LD) $(LITEOS_LDFLAGS) $(LITEOS_TABLES_LDFLAGS) $(LITEOS_DYNLDFLAGS) -Map=$(OUT)/$@.map -o $(OUT)/$@ --start-group $(LITEOS_LIBDEP) --end-group
 #	$(SIZE) -t --common $(OUT)/lib/*.a >$(OUT)/$@.objsize
-	$(OBJCOPY) -O binary $(OUT)/$@ $(LITEOS_TARGET_DIR)/$@.bin
-	$(OBJDUMP) -t $(OUT)/$@ |sort >$(OUT)/$@.sym.sorted
-	$(OBJDUMP) -d $(OUT)/$@ >$(OUT)/$@.asm
+	$(OBJCOPY) -O binary $(OUT)/$@ $(LITEOS_TARGET_DIR)/$@.bin #生成 liteos.bin 文件
+	$(OBJDUMP) -t $(OUT)/$@ |sort >$(OUT)/$@.sym.sorted	#生成 liteos.sym.sorted 文件
+	$(OBJDUMP) -d $(OUT)/$@ >$(OUT)/$@.asm # 生成 liteos.asm文件
 #	$(NM) -S --size-sort $(OUT)/$@ >$(OUT)/$@.size
+# 编译多个应用程序
+$(APPS): $(LITEOS_TARGET) sysroot #依赖于 LITEOS_TARGET , sysroot
+	$(HIDE)$(MAKE) -C apps all	#执行apps目录下Makefile 的all目标, -C代表进入apps目录,
 
-$(APPS): $(LITEOS_TARGET) sysroot
-	$(HIDE)$(MAKE) -C apps all
-
-prepare:
+prepare:	#准备工作,创建 musl 目录,用于拷贝 c/c++ .so库
 	$(HIDE)mkdir -p $(OUT)/musl
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-	$(HIDE)cp -f $$($(CC) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CFLAGS) -print-file-name=libc.so) $(OUT)/musl
-	$(HIDE)cp -f $$($(GPP) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CXXFLAGS) -print-file-name=libc++.so) $(OUT)/musl
+ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y) #使用clang-9 ,鸿蒙默认用这个编译
+	$(HIDE)cp -f $$($(CC) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CFLAGS) -print-file-name=libc.so) $(OUT)/musl #将C库复制到musl目录下
+	$(HIDE)cp -f $$($(GPP) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CXXFLAGS) -print-file-name=libc++.so) $(OUT)/musl #将C++库复制到musl目录下
 else
 	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/target/usr/lib/libc.so $(OUT)/musl
 	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/arm-linux-musleabi/lib/libstdc++.so.6 $(OUT)/musl
@@ -179,16 +179,17 @@ else
 	$(STRIP) $(OUT)/musl/*
 endif
 
-$(ROOTFSDIR): prepare $(APPS)
+$(ROOTFSDIR): prepare $(APPS)	#依赖于 prepare ,APPS
 	$(HIDE)$(MAKE) clean -C apps
 	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/rootfsdir.sh $(OUT)/bin $(OUT)/musl $(ROOTFS_DIR) $(LITEOS_TARGET_DIR)
 ifneq ($(VERSION),)
 	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/releaseinfo.sh "$(VERSION)" $(ROOTFS_DIR) $(LITEOS_TARGET_DIR)
 endif
 
-$(ROOTFS): $(ROOTFSDIR)
-	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/rootfsimg.sh $(ROOTFS_DIR) $(FSTYPE)
-	$(HIDE)cd $(ROOTFS_DIR)/.. && zip -r $(ROOTFS_ZIP) $(ROOTFS)
+#例如:执行 make rootfs FSTYPE=jffs2 一切从这里开始
+$(ROOTFS): $(ROOTFSDIR)	#依赖于 ROOTFSDIR
+	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/rootfsimg.sh $(ROOTFS_DIR) $(FSTYPE)	#制作镜像文件
+	$(HIDE)cd $(ROOTFS_DIR)/.. && zip -r $(ROOTFS_ZIP) $(ROOTFS)	#打rootfs.zip包
 
 clean:
 	$(HIDE)for dir in $(LITEOS_SUBDIRS); \

@@ -13,6 +13,6 @@
 ### 
 cd ../../../../
 mkdir build
-git clone git@gitee.com:weharmony/build_lite.git build/lite
+git clone git@gitee.com:weharmony/build_lite_note.git build/lite
 
 cd -
