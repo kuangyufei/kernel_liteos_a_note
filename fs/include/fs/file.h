@@ -102,36 +102,38 @@ extern struct filelist tg_filelist;
 /* This structure is provided by devices when they are registered with the
  * system.  It is used to call back to perform device specific operations.
  */
-
-struct file_operations_vfs
+//该结构由设备在向系统注册时提供,它用于回调以执行特定于设备的操作。
+struct file_operations_vfs //vfs 文件操作接口,字符操作数据,各文件系统/设备需要实现这些接口
 {
   /* The device driver open method differs from the mountpoint open method */
-
-  int     (*open)(struct file *filep);
-
+  //设备驱动打开方式与挂载点打开方式不同
+  int     (*open)(struct file *filep);	//打开文件
+  //通过文件名打开文件，实际上是分成三步实现：首先，操作系统找到这个文件名对应的inode号码；
+  //其次，通过inode号码，获取inode信息；最后，根据inode信息，找到文件数据所在的block，读出数据。
   /* The following methods must be identical in signature and position because
    * the struct file_operations and struct mountp_operations are treated like
    * unions.
-   */
-
-  int     (*close)(struct file *filep);
-  ssize_t (*read)(struct file *filep, char *buffer, size_t buflen);
-  ssize_t (*write)(struct file *filep, const char *buffer, size_t buflen);
-  off_t   (*seek)(struct file *filep, off_t offset, int whence);
-  int     (*ioctl)(struct file *filep, int cmd, unsigned long arg);
-  int     (*mmap)(struct file* filep, struct VmMapRegion *region);
+   *///@note_thinking 没明白
+  //以下方法的签名和位置必须相同，因为 struct file_operations 和 struct mountp_operations 被视为联合
+  int     (*close)(struct file *filep);	//关闭文件
+  ssize_t (*read)(struct file *filep, char *buffer, size_t buflen);	//读文件
+  ssize_t (*write)(struct file *filep, const char *buffer, size_t buflen);//写文件
+  off_t   (*seek)(struct file *filep, off_t offset, int whence);//寻找,检索 文件
+  int     (*ioctl)(struct file *filep, int cmd, unsigned long arg);//对文件的控制命令
+  int     (*mmap)(struct file* filep, struct VmMapRegion *region);//内存映射实现<文件/设备 - 线性区的映射>
   /* The two structures need not be common after this point */
 
 #ifndef CONFIG_DISABLE_POLL
-  int     (*poll)(struct file *filep, poll_table *fds);
+  int     (*poll)(struct file *filep, poll_table *fds);	//轮询接口
 #endif
-  int     (*stat)(struct file *filep, struct stat* st);
+  int     (*stat)(struct file *filep, struct stat* st);	//统计接口
   int     (*fallocate)(struct file* filep, int mode, off_t offset, off_t len);
   int     (*fallocate64)(struct file *filep, int mode, off64_t offset, off64_t len);
   int     (*fsync)(struct file *filep);
   ssize_t (*readpage)(struct file *filep, char *buffer, size_t buflen);
   int     (*unlink)(struct Vnode *vnode);
 };
+
 
 /* file mapped in VMM pages */
 struct page_mapping {

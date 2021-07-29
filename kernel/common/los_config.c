@@ -239,12 +239,12 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
         return ret;
     }
 
-    ret = OsSystemProcessCreate();
+    ret = OsSystemProcessCreate();//创建系统进程 
     if (ret != LOS_OK) {
         return ret;
     }
 
-    ret = ArchInit();
+    ret = ArchInit();	//MMU架构初始化
     if (ret != LOS_OK) {
         return ret;
     }

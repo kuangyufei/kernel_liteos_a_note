@@ -1,5 +1,3 @@
-[OpenHarmony | 鸿蒙研究站 | WeHarmony](http://weharmonyos.com/) **[ < 国内](http://weharmonyos.com/)[ | 国外 >](http://weharmonyos.com/)**
-
 [![在这里插入图片描述](https://gitee.com/weharmony/docs/raw/master/pic/other/io.png)](http://weharmonyos.com/)
 
 百篇博客系列篇.本篇为:
@@ -8,7 +6,7 @@
 
 ### **同步官方源码历史**
 * 每月至少同步一次
-* `2021/7/15` -- 本次官方改动不大,新增 `blackbox`,`hidumper`,对一些宏(`LOSCFG_KERNEL_SMP` ..)规范化使用 
+* `2021/7/15` -- 本次官方改动不大,新增blackbox,hidumper,对一些宏(LOSCFG_KERNEL_SMP ..)规范化使用 
 * `2021/6/27` -- 本次官方对文件系统/设备驱动改动较大,目录结构进行了重新整理.
 * `2021/6/08` -- 本次官方对编译构建,任务,信号模块有较大的改动.
 * `2021/5/28` -- 本次官方改动不大,主要针对一些错误单词拼写纠正.
@@ -22,11 +20,11 @@
 
 * 百篇博客分析地址：
   *  国内: [ http://weharmonyos.com/weharmony](http://weharmonyos.com/weharmony)   
-  *  国外: [ http://weharmonyos.com/weharmony](http://weharmonyos.com/weharmony)   
+  *  国外: [ https://weharmony.github.io/weharmony](http://weharmonyos.com/weharmony)   
   
 * [OpenHarmony开发者文档](http://weharmonyos.com/openharmony) 是对官方文档 [docs](https://gitee.com/openharmony/docs) 做的非常炫酷的静态站点，支持侧边栏/面包屑/搜索/中英文，非常方便的查看官方文档，大大提高学习和开发效率. 
   * 国内: [http://weharmonyos.com/openharmony](http://weharmonyos.com/openharmony) 
-  * 国外: [http://weharmonyos.com/openharmony](http://weharmonyos.com/openharmony) 
+  * 国外: [https://weharmony.github.io/openharmony](http://weharmonyos.com/openharmony) 
     
 *  [下载.鸿蒙源码分析.离线文档 < 国内](http://weharmonyos.com/history.html)[ | 国外 > ](http://weharmonyos.com/history.html)
 
@@ -77,13 +75,15 @@
 
 与代码有bug需不断debug一样，文章和注解内容会存在不少错漏之处，请多包涵，但会反复修正，持续更新，`.xx`代表修改的次数，精雕细琢，言简意赅，力求打造精品内容。
 
-* [v61.xx 鸿蒙内核源码分析(ninja应用篇) | 简单而快速的构建系统 ](https://my.oschina.net/weharmony/blog/5139034) **[  | 51](https://harmonyos.51cto.com/posts/7328)[ .c](https://blog.csdn.net/kuangyufei/article/details/118970589)[  .h](http://weharmonyos.com/blog/60_ninja应用篇.html)[ .o](https://my.oschina.net/weharmony)**
+* [v62.xx 鸿蒙内核源码分析(文件概念篇) | 为什么说一切皆是文件 ](https://my.oschina.net/weharmony/blog/5152858) **[  | 51](https://harmonyos.51cto.com/posts/7460)[ .c](https://blog.csdn.net/kuangyufei/article/details/119217155)[  .h](http://weharmonyos.com/blog/62_文件概念篇.html)[ .o](https://my.oschina.net/weharmony)**
+
+* [v61.xx 鸿蒙内核源码分析(忍者ninja篇) | 都忍者了能不快吗 ](https://my.oschina.net/weharmony/blog/5139034) **[  | 51](https://harmonyos.51cto.com/posts/7328)[ .c](https://blog.csdn.net/kuangyufei/article/details/118970589)[  .h](http://weharmonyos.com/blog/61_忍者ninja篇.html)[ .o](https://my.oschina.net/weharmony)**
 
 * [v60.xx 鸿蒙内核源码分析(gn应用篇) | gn语法及在鸿蒙的使用 ](https://my.oschina.net/weharmony/blog/5137565) **[  | 51](https://harmonyos.51cto.com/posts/7310)[ .c](https://blog.csdn.net/kuangyufei/article/details/118932416)[  .h](http://weharmonyos.com/blog/60_gn应用篇.html)[ .o](https://my.oschina.net/weharmony)**
 
 * [v59.xx 鸿蒙内核源码分析(构建工具篇) | 顺瓜摸藤调试鸿蒙构建过程 ](https://my.oschina.net/weharmony/blog/5135157) **[  | 51](https://harmonyos.51cto.com/posts/7287)[ .c](https://blog.csdn.net/kuangyufei/article/details/118878233)[  .h](http://weharmonyos.com/blog/59_构建工具篇.html)[ .o](https://my.oschina.net/weharmony)**
 
-* [v58.xx 鸿蒙内核源码分析(环境脚本篇) | 有了它编译鸿蒙好简单 ](https://my.oschina.net/weharmony/blog/5132725) **[  | 51](https://harmonyos.51cto.com/posts/7248)[ .c](https://blog.csdn.net/kuangyufei/article/details/118765692)[  .h](http://weharmonyos.com/blog/58_编译脚本篇.html)[ .o](https://my.oschina.net/weharmony)**
+* [v58.xx 鸿蒙内核源码分析(环境脚本篇) | 编译鸿蒙原来如此简单 ](https://my.oschina.net/weharmony/blog/5132725) **[  | 51](https://harmonyos.51cto.com/posts/7248)[ .c](https://blog.csdn.net/kuangyufei/article/details/118765692)[  .h](http://weharmonyos.com/blog/58_编译脚本篇.html)[ .o](https://my.oschina.net/weharmony)**
 
 * [v57.xx 鸿蒙内核源码分析(编译过程篇) | 简单案例窥视GCC编译全过程 ](https://my.oschina.net/weharmony/blog/5064209) **[  | 51](https://harmonyos.51cto.com/posts/5032)[ .c](https://blog.csdn.net/kuangyufei/article/details/117419679)[  .h](http://weharmonyos.com/blog/57_编译过程篇.html)[ .o](https://my.oschina.net/weharmony)**
   

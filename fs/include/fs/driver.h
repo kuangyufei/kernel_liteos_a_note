@@ -46,16 +46,35 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
+/****************************************************************
+geometry应该翻译为几何数据，其实就是指的CHS(Cylinder、Head、Sector/Track)
+C-Cylinder柱面数表示硬盘每面盘片上有几条磁道，编号从0开始，最大为1023，表示有1024个磁道(用10个二进制位存储)
+H-Head磁头数表示硬盘总共有几个磁头，也就是几面盘片，编号从0开始，最大为255，表示有256个磁头(用8个二进制位存储)；
+S-Sector/Track扇区数表示每条磁道上有几个扇区，编号从1开始，最大为63，表示63个扇区(用6个二进制位存储)，
+	每个扇区512字节，它是硬盘的最小存储单位。
+	
+我们可以算一下：1024个柱面×63个扇区×256个磁头×512byte=8455716864byte。即通常的8.4GB(实际上应该是7.8GB左右)限制。
+实际上磁头数通常只用到255个(由汇编语言的寻址寄存器决定),即使把这3个字节按线性寻址，依然力不从心。
+当然现在的硬盘早就超过8.4GB了。
+从大到小
+H-Head（磁头）---》C-Cylinder（柱面数或者磁道数，即每个磁头的磁道数）------》S-Sector/Track（扇区，也就是每个磁道有多少扇区）--------》扇区大小（512bit）磁盘空间
+
+Geometry:
+Cylinder Number - 1020 (0-1024)
+Head Number - 16 (0-256)
+Sector Number - 63 (1-64)
+
+*****************************************************************/
 
 /* This structure provides information about the state of a block driver */
 
 struct geometry
 {
-  bool               geo_available;    /* true: The device is available */
-  bool               geo_mediachanged; /* true: The media has changed since last query */
-  bool               geo_writeenabled; /* true: It is okay to write to this device */
-  unsigned long long geo_nsectors;     /* Number of sectors on the device */
-  size_t             geo_sectorsize;   /* Size of one sector */
+  bool               geo_available;    /* true: The device is available *///设备是否有效
+  bool               geo_mediachanged; /* true: The media has changed since last query *///自上次查询以来媒体已更改
+  bool               geo_writeenabled; /* true: It is okay to write to this device *///是否可写
+  unsigned long long geo_nsectors;     /* Number of sectors on the device *///扇区的数量
+  size_t             geo_sectorsize;   /* Size of one sector *///扇区的大小
 };
 
 /* This structure is provided by block devices when they register with the
@@ -64,7 +83,8 @@ struct geometry
  * that it deals in struct Vnode vs. struct filep.
  */
 
-struct block_operations
+//块驱动操作方式,以 vnode方式操作
+struct block_operations //块操作接口类,块是文件系统层面的概念,块（Block）是文件系统存取数据的最小单位，一般大小是4KB
 {
   int     (*open)(struct Vnode *vnode);
   int     (*close)(struct Vnode *vnode);
@@ -77,11 +97,13 @@ struct block_operations
   int     (*unlink)(struct Vnode *vnode);
 };
 
+//该结构由文件系统提供，用于描述挂载点。请注意，此结构与 file_operations 的不同之处仅在于 open 方法的形式。
+//打开文件后，它可以作为 struct file_operations 或 struct mountpt_operations 访问
 struct drv_data
 {
-  const void *ops;
-  mode_t mode;
-  void *priv;
+  const void *ops;	//驱动程序 ( block_operations | file_operations_vfs | ... )
+  mode_t mode;		//RWE_RW_RW  0755
+  void *priv;		//私有数据域 (struct file)
 };
 
 /****************************************************************************
