@@ -356,9 +356,14 @@ int SysNanoSleep(const struct timespec *rqtp, struct timespec *rmtp)
 {
     int ret;
     struct timespec srqtp;
-    struct timespec srmtp = { 0 };
+    struct timespec srmtp;
 
     if (!rqtp || LOS_ArchCopyFromUser(&srqtp, rqtp, sizeof(struct timespec))) {
+        errno = EFAULT;
+        return -EFAULT;
+    }
+
+    if (rmtp && LOS_ArchCopyFromUser(&srmtp, rmtp, sizeof(struct timespec))) {
         errno = EFAULT;
         return -EFAULT;
     }

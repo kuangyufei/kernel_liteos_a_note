@@ -34,7 +34,7 @@ VDSO_SO = OHOS-vdso
 VDSO_SRCS := los_vdso_sys.c
 VDSO_INCLUDE := -I $(LITEOSTOPDIR)/kernel/extended/vdso/include \
                 -I $(LITEOSTOPDIR)/kernel/include \
-                -I $(LITEOSTOPDIR)/kernel/common \
+                -I $(LITEOSTOPDIR)/platform \
                 -I $(LITEOSTOPDIR)/bsd/compat/linuxkpi/include
 
 VDSO_CCFLAGS := -nostdlib -fPIC -fno-common -fno-strict-aliasing \

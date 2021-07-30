@@ -805,6 +805,7 @@ INT32 ShmDt(const VOID *shmaddr)
     /* remove it from aspace */
     LOS_RbDelNode(&space->regionRbTree, &region->rbNode);//从红黑树和链表中摘除节点
     LOS_ArchMmuUnmap(&space->archMmu, region->range.base, region->range.size >> PAGE_SHIFT);//解除线性区的映射
+    (VOID)LOS_MuxRelease(&space->regionMux);
     /* free it */
     free(region);//释放线性区所占内存池中的内存
 
@@ -813,7 +814,7 @@ INT32 ShmDt(const VOID *shmaddr)
     if (seg == NULL) {
         ret = EINVAL;
         SYSV_SHM_UNLOCK();
-        goto ERROR_WITH_LOCK;
+        goto ERROR;
     }
 
     ShmPagesRefDec(seg);//页面引用数 --
@@ -827,7 +828,7 @@ INT32 ShmDt(const VOID *shmaddr)
     seg->ds.shm_lpid = LOS_GetCurrProcessID();//记录操作进程ID
     }
     SYSV_SHM_UNLOCK();
-    (VOID)LOS_MuxRelease(&space->regionMux);
+
     return 0;
 
 ERROR_WITH_LOCK:

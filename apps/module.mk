@@ -33,6 +33,8 @@ APP_SUBDIRS :=	#记录子目录变量,用于编译
 
 ifeq ($(LOSCFG_SHELL), y)
 APP_SUBDIRS += shell #添加 shell 子目录
+APP_SUBDIRS += mksh	
+APP_SUBDIRS += toybox
 endif
 
 ifeq ($(LOSCFG_USER_INIT_DEBUG), y)
@@ -41,12 +43,4 @@ endif
 
 ifeq ($(LOSCFG_NET_LWIP_SACK_TFTP), y)
 APP_SUBDIRS += tftp	#添加 tftp 子目录
-endif
-
-#only enable for qemu now
-ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
-ifeq ($(LOSCFG_SHELL), y)
-APP_SUBDIRS += mksh	#添加 mksh 子目录
-APP_SUBDIRS += toybox	#添加 toybox 子目录
-endif
 endif

@@ -60,3 +60,68 @@ void *DupUserMem(const void *ptr, size_t len, int needCopy)
 
     return p;
 }
+
+int GetFullpath(int fd, const char *path, char **fullpath)
+{
+    int ret = 0;
+    char *pathRet = NULL;
+    struct file *file = NULL;
+    struct stat bufRet = {0};
+
+    if (path != NULL) {
+        ret = UserPathCopy(path, &pathRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
+
+    if ((pathRet != NULL) && (*pathRet == '/')) {
+        *fullpath = pathRet;
+        pathRet = NULL;
+    } else {
+        if (fd != AT_FDCWD) {
+            /* Process fd convert to system global fd */
+            fd = GetAssociatedSystemFd(fd);
+        }
+        ret = fs_getfilep(fd, &file);
+        if (file) {
+            ret = stat(file->f_path, &bufRet);
+            if (!ret) {
+                if (!S_ISDIR(bufRet.st_mode)) {
+                    set_errno(ENOTDIR);
+                    ret = -ENOTDIR;
+                    goto OUT;
+                }
+            }
+        }
+        ret = vfs_normalize_pathat(fd, pathRet, fullpath);
+    }
+
+OUT:
+    PointerFree(pathRet);
+    return ret;
+}
+
+int UserPathCopy(const char *userPath, char **pathBuf)
+{
+    int ret;
+
+    *pathBuf = (char *)LOS_MemAlloc(OS_SYS_MEM_ADDR, PATH_MAX + 1);
+    if (*pathBuf == NULL) {
+        return -ENOMEM;
+    }
+
+    ret = LOS_StrncpyFromUser(*pathBuf, userPath, PATH_MAX + 1);
+    if (ret < 0) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, *pathBuf);
+        *pathBuf = NULL;
+        return ret;
+    } else if (ret > PATH_MAX) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, *pathBuf);
+        *pathBuf = NULL;
+        return -ENAMETOOLONG;
+    }
+    (*pathBuf)[ret] = '\0';
+
+    return 0;
+}

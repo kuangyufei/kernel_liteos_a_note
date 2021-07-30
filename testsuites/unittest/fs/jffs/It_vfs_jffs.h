@@ -962,6 +962,9 @@ VOID ItFsTestSymlink001(VOID);
 VOID ItFsTestSymlink002(VOID);
 VOID ItFsTestSymlink003(VOID);
 VOID ItFsTestSymlinkat001(VOID);
+VOID ItFsTestMountRdonly001(VOID);
+VOID ItFsTestMountRdonly002(VOID);
+VOID ItFsTestMountRdonly003(VOID);
 #endif
 
 #if defined(LOSCFG_USER_TESTSUIT_SHELL)

@@ -1,0 +1,154 @@
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import("//kernel/liteos_a/liteos.gni")
+
+module_switch = defined(LOSCFG_DRIVERS_USB)
+module_name = "usb_base"
+kernel_module(module_name) {
+  sources = [
+    "implementation/bsd_busspace.c",
+    "implementation/bsd_kernel.c",
+    "implementation/usb_btree.c",
+    "implementation/usb_busdma_loader.c",
+    "implementation/usb_init.c",
+    "implementation/usb_version.c",
+    "usb_debug.c",
+  ]
+
+  if (defined(LOSCFG_DRIVERS_USB)) {
+    sources += [
+      "controller/usb_controller.c",
+      "quirk/usb_quirk.c",
+      "usb_dev.c",
+      "usb_device.c",
+      "usb_dynamic.c",
+      "usb_error.c",
+      "usb_generic.c",
+      "usb_handle_request.c",
+      "usb_hub.c",
+      "usb_if.c",
+      "usb_lookup.c",
+      "usb_mbuf.c",
+      "usb_parse.c",
+      "usb_process.c",
+      "usb_request.c",
+      "usb_transfer.c",
+      "usb_util.c",
+    ]
+  }
+
+  if (defined(LOSCFG_DRIVERS_USB_4G_MODEM)) {
+    sources += [ "net/if_cdce.c" ]
+  }
+
+  if (defined(LOSCFG_DRIVERS_USB_ETHERNET)) {
+    sources += [
+      "net/if_axe.c",
+      "net/if_axge.c",
+    ]
+  }
+
+  if (defined(LOSCFG_DRIVERS_USB_RNDIS_HOST)) {
+    sources += [ "net/if_urndis.c" ]
+  }
+
+  if (defined(LOSCFG_DRIVERS_USB_4G_MODEM) ||
+      defined(LOSCFG_DRIVERS_USB_ETHERNET) ||
+      defined(LOSCFG_DRIVERS_USB_RNDIS_HOST)) {
+    sources += [
+      "net/usb_eth_drv.c",
+      "net/usb_ethernet.c",
+    ]
+  }
+
+  if (defined(LOSCFG_DRIVERS_USB_4G_MODEM) ||
+      defined(LOSCFG_DRIVERS_USB_SERIAL)) {
+    sources += [
+      "serial/u3g.c",
+      "serial/usb_serial.c",
+    ]
+  }
+
+  if (defined(LOSCFG_DRIVERS_USB_HOST_EHCI)) {
+    sources += [
+      "controller/ehci.c",
+      "controller/ehci_pci.c",
+    ]
+  }
+
+  if (defined(LOSCFG_DRIVERS_USB_HOST_XHCI) ||
+      defined(LOSCFG_DRIVERS_USB_HOST_XHCI_FOR_PORT2)) {
+    sources += [
+      "controller/xhci.c",
+      "controller/xhci_pci.c",
+    ]
+  }
+
+  if (defined(LOSCFG_DRIVERS_USB_WIRELESS)) {
+    sources += [ "linux_usb.c" ]
+  }
+
+  if (defined(LOSCFG_DRIVERS_USB_MASS_STORAGE)) {
+    sources += [ "storage/umass.c" ]
+  }
+
+  if (defined(LOSCFG_DRIVERS_USB_HID_CLASS) &&
+      defined(LOSCFG_DRIVERS_HDF_INPUT)) {
+    sources += [
+      "input/uhid.c",
+      "usb_hid.c",
+    ]
+
+    include_dirs = [
+      "//drivers/framework/model/input/driver",
+      "//drivers/framework/include/core",
+      "//drivers/framework/core/common/include/host",
+      "//drivers/framework/utils",
+      "//drivers/framework/osal",
+      "//drivers/framework/ability/sbuf/include",
+      "//drivers/framework/include/osal",
+    ]
+  }
+
+  configs += [
+    "$HDFTOPDIR:hdf_config"
+  ]
+
+  public_configs = [ ":public" ]
+}
+
+group("usb") {
+  public_deps = [ ":$module_name" ]
+}
+
+config("public") {
+  include_dirs = [ "." ]
+  include_dirs += [ "$LITEOSTHIRDPARTY/FreeBSD/sys/dev/evdev" ]
+}

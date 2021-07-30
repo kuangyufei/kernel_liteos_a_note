@@ -122,10 +122,10 @@ STATIC INLINE UINT64 OsGetSortLinkNextExpireTime(SortLinkAttribute *sortHeader, 
     return expirTime;
 }
 
-STATIC Percpu *OsFindIdleCpu(UINT16 *ildeCpuID)
+STATIC Percpu *OsFindIdleCpu(UINT16 *idleCpuID)
 {
     Percpu *idleCpu = OsPercpuGetByID(0);
-    *ildeCpuID = 0;
+    *idleCpuID = 0;
 
 #ifdef LOSCFG_KERNEL_SMP
     UINT16 cpuID = 1;
@@ -136,7 +136,7 @@ STATIC Percpu *OsFindIdleCpu(UINT16 *ildeCpuID)
         UINT32 temp = cpu->taskSortLink.nodeNum + cpu->swtmrSortLink.nodeNum;
         if (nodeNum > temp) {
             idleCpu = cpu;
-            *ildeCpuID = cpuID;
+            *idleCpuID = cpuID;
         }
 
         cpuID++;

@@ -1,6 +1,14 @@
 config  COMPAT_BSD
     bool "Enable FreeBSD"
     default y
+    select COMPAT_LINUXKPI
 
     help
       Answer Y to enable LiteOS support FreeBSD.
+
+config  COMPAT_LINUXKPI
+    bool "Enable linuxkpi" if COMPAT_BSD
+    default y
+
+    help
+      Answer Y to enable LiteOS support compatible layer for linuxkpi.

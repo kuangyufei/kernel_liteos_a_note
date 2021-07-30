@@ -65,7 +65,7 @@
 ******************************************************************************/
 LITE_OS_SEC_BSS LosProcessCB *g_processCBArray = NULL; // 进程池数组
 LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_freeProcess;// 空闲状态下的进程链表, .个人觉得应该取名为 g_freeProcessList  @note_thinking
-LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_processRecyleList;// 需要回收的进程列表
+LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_processRecycleList;// 需要回收的进程列表
 LITE_OS_SEC_BSS UINT32 g_userInitProcess = OS_INVALID_VALUE;// 用户态的初始init进程,用户态下其他进程由它 fork
 LITE_OS_SEC_BSS UINT32 g_kernelInitProcess = OS_INVALID_VALUE;// 内核态初始Kprocess进程,内核态下其他进程由它 fork
 LITE_OS_SEC_BSS UINT32 g_kernelIdleProcess = OS_INVALID_VALUE;// 内核态idle进程,由Kprocess fork
@@ -341,9 +341,9 @@ LITE_OS_SEC_TEXT STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, Proc
 
     LOS_ListDelete(&childCB->pendList);//将自己从阻塞链表上摘除，注意有很多原因引起阻塞，pendList挂在哪里就以为这属于哪类阻塞
     if (childCB->processStatus & OS_PROCESS_FLAG_EXIT) {//如果有退出标签
-        LOS_ListHeadInsert(&g_processRecyleList, &childCB->pendList);//从头部插入，注意g_processRecyleList挂的是pendList节点,所以要通过OS_PCB_FROM_PENDLIST找.
+        LOS_ListHeadInsert(&g_processRecycleList, &childCB->pendList);//从头部插入，注意g_processRecyleList挂的是pendList节点,所以要通过OS_PCB_FROM_PENDLIST找.
     } else if (childCB->processStatus & OS_PROCESS_FLAG_GROUP_LEADER) {//如果是进程组的组长
-        LOS_ListTailInsert(&g_processRecyleList, &childCB->pendList);//从尾部插入，意思就是组长尽量最后一个处理
+        LOS_ListTailInsert(&g_processRecycleList, &childCB->pendList);//从尾部插入，意思就是组长尽量最后一个处理
     } else {
         OsInsertPCBToFreeList(childCB);//直接插到freeList中去，可用于重新分配了。
     }
@@ -424,7 +424,7 @@ STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
 #ifdef LOSCFG_KERNEL_VM
         (VOID)OsKill(processCB->parentProcessID, SIGCHLD, OS_KERNEL_KILL_PERMISSION);//以内核权限发送SIGCHLD(子进程退出)信号.
 #endif
-        LOS_ListHeadInsert(&g_processRecyleList, &processCB->pendList);//将进程通过其阻塞节点挂入全局进程回收链表
+        LOS_ListHeadInsert(&g_processRecycleList, &processCB->pendList);//将进程通过其阻塞节点挂入全局进程回收链表
         OsRunTaskToDelete(runTask);//删除正在运行的任务
         return;
     }
@@ -448,7 +448,7 @@ STATIC UINT32 OsProcessInit(VOID)
     (VOID)memset_s(g_processCBArray, size, 0, size);//安全方式重置清0
 
     LOS_ListInit(&g_freeProcess);//进程空闲链表初始化，创建一个进程时从g_freeProcess中申请一个进程描述符使用
-    LOS_ListInit(&g_processRecyleList);//进程回收链表初始化,回收完成后进入g_freeProcess等待再次被申请使用
+    LOS_ListInit(&g_processRecycleList);//进程回收链表初始化,回收完成后进入g_freeProcess等待再次被申请使用
 
     for (index = 0; index < g_processMaxNum; index++) {//进程池循环创建
         g_processCBArray[index].processID = index;//进程ID[0-g_processMaxNum-1]赋值
@@ -472,14 +472,14 @@ STATIC UINT32 OsProcessInit(VOID)
 }
 
 //进程回收再利用过程
-LITE_OS_SEC_TEXT VOID OsProcessCBRecyleToFree(VOID)
+LITE_OS_SEC_TEXT VOID OsProcessCBRecycleToFree(VOID)
 {
     UINT32 intSave;
     LosProcessCB *processCB = NULL;
 
     SCHEDULER_LOCK(intSave);
-    while (!LOS_ListEmpty(&g_processRecyleList)) {//循环任务回收链表,直到为空
-        processCB = OS_PCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_processRecyleList));//找到回收链表中第一个进程实体
+    while (!LOS_ListEmpty(&g_processRecycleList)) {//循环任务回收链表,直到为空
+        processCB = OS_PCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_processRecycleList));//找到回收链表中第一个进程实体
         //OS_PCB_FROM_PENDLIST 代表的是通过pendlist节点找到 PCB实体,因为g_processRecyleList上面挂的是pendlist节点位置
         if (!(processCB->processStatus & OS_PROCESS_FLAG_EXIT)) {//进程没有退出标签
             break;
@@ -503,7 +503,7 @@ LITE_OS_SEC_TEXT VOID OsProcessCBRecyleToFree(VOID)
         LOS_ListDelete(&processCB->pendList);//将进程从进程链表上摘除
         if ((processCB->processStatus & OS_PROCESS_FLAG_GROUP_LEADER) ||//如果进程是进程组组长或者处于僵死状态
             (processCB->processStatus & OS_PROCESS_STATUS_ZOMBIES)) {
-            LOS_ListTailInsert(&g_processRecyleList, &processCB->pendList);//将进程挂到进程回收链表上,因为组长不能走啊
+            LOS_ListTailInsert(&g_processRecycleList, &processCB->pendList);//将进程挂到进程回收链表上,因为组长不能走啊
         } else {
             /* Clear the bottom 4 bits of process status */
             OsInsertPCBToFreeList(processCB);//进程回到可分配池中,再分配利用
@@ -542,7 +542,7 @@ STATIC VOID OsDeInitPCB(LosProcessCB *processCB)
 
     processCB->processStatus &= ~OS_PROCESS_STATUS_INIT;//设置进程状态为非初始化
     processCB->processStatus |= OS_PROCESS_FLAG_EXIT;	//设置进程状态为退出
-    LOS_ListHeadInsert(&g_processRecyleList, &processCB->pendList);//
+    LOS_ListHeadInsert(&g_processRecycleList, &processCB->pendList);
     SCHEDULER_UNLOCK(intSave);
 
     (VOID)LOS_MemFree(m_aucSysMem1, group);//释放内存
@@ -1024,7 +1024,7 @@ WAIT_BACK:
     return LOS_OK;
 }
 //等待回收孩子进程 @note_thinking 这样写Porcess不太好吧
-STATIC UINT32 OsWaitRecycleChildPorcess(const LosProcessCB *childCB, UINT32 intSave, INT32 *status)
+STATIC UINT32 OsWaitRecycleChildProcess(const LosProcessCB *childCB, UINT32 intSave, INT32 *status)
 {
     ProcessGroup *group = NULL;
     UINT32 pid = childCB->processID;
@@ -1100,7 +1100,7 @@ LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, V
     }
 
     if (childCB != NULL) {//找到了进程
-        return (INT32)OsWaitRecycleChildPorcess(childCB, intSave, status);
+        return (INT32)OsWaitRecycleChildProcess(childCB, intSave, status);
     }
 	//没有找到,看是否要返回还是去做个登记
     if ((options & LOS_WAIT_WNOHANG) != 0) {//有LOS_WAIT_WNOHANG标签
@@ -1124,7 +1124,7 @@ LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, V
         goto ERROR;
     }
 	//回收僵死进程
-    return (INT32)OsWaitRecycleChildPorcess(childCB, intSave, status);
+    return (INT32)OsWaitRecycleChildProcess(childCB, intSave, status);
 
 ERROR:
     SCHEDULER_UNLOCK(intSave);

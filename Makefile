@@ -51,13 +51,22 @@ LITEOS_PLATFORM_BASE = $(LITEOSTOPDIR)/platform
 
 export CONFIG_=LOSCFG_
 ifeq ($(PRODUCT_PATH),)
-export PRODUCT_PATH=$(LITEOSTOPDIR)/../../device/hisilicon/drivers	#找到 device 目录
+export PRODUCT_PATH=$(shell hb env|grep "product path:"|sed 's/.*: //g')
+endif
+ifeq ($(DEVICE_PATH),)
+export DEVICE_PATH=$(shell hb env|grep "device path:"|sed 's/.*: //g')
 endif
 
-ifeq ($(shell which menuconfig),)
-$(shell pip install --user kconfiglib >/dev/null)
+ifeq ($(TEE:1=y),y)
+tee = _tee
 endif
-$(shell env CONFIG_=$(CONFIG_) PRODUCT_PATH=$(PRODUCT_PATH) olddefconfig >/dev/null)
+ifeq ($(RELEASE:1=y),y)
+CONFIG ?= $(PRODUCT_PATH)/config/release$(tee).config
+else
+CONFIG ?= $(PRODUCT_PATH)/config/debug$(tee).config
+endif
+
+$(shell env CONFIG_=$(CONFIG_) DEVICE_PATH=$(DEVICE_PATH) olddefconfig >/dev/null)
 
 -include $(LITEOSTOPDIR)/tools/build/config.mk #定义了各种变量 
 
@@ -218,7 +227,7 @@ update_all_config:
 		done
 
 update_config:
-	$(HIDE)test -f "$(CONFIG)" && cp "$(CONFIG)" .config && menuconfig && savedefconfig --out "$(CONFIG)"
+	$(HIDE)test -f "$(CONFIG)" && cp -v "$(CONFIG)" .config && menuconfig && savedefconfig --out "$(CONFIG)"
 
 .PHONY: all lib clean cleanall $(LITEOS_TARGET) debug release help update_all_config update_config
 .PHONY: prepare sysroot cleanrootfs $(ROOTFS) $(ROOTFSDIR) $(APPS) menuconfig $(LITEOS_LIBS_TARGET) $(__LIBS) $(OUT)

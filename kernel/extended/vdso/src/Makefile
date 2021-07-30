@@ -35,6 +35,6 @@ LOCAL_SRCS := $(wildcard *.c) $(wildcard *.S)
 
 LOCAL_INCLUDE := -I $(LITEOSTOPDIR)/kernel/base/include -I $(LITEOSTOPDIR)/kernel/extended/include -I $(LITEOSTOPDIR)/kernel/extended/vdso/include
 
-LOCAL_FLAGS := $(LOCAL_INCLUDE)
+LOCAL_FLAGS := $(LOCAL_INCLUDE) -DOHOS_VDSO_SO=\"../usr/OHOS-vdso.so\"
 
 include $(MODULE)

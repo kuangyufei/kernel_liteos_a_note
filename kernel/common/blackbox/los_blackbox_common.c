@@ -78,6 +78,7 @@ int FullWriteFile(const char *filePath, const char *buf, size_t bufSize, int isA
         totalToWrite -= writeThisTime;
         totalWrite += writeThisTime;
     }
+    (void)fsync(fd);
     (void)close(fd);
 
     return (totalWrite == (int)bufSize) ? 0 : -1;

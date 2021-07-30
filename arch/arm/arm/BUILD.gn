@@ -1,0 +1,82 @@
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import("//kernel/liteos_a/liteos.gni")
+
+module_name = LOSCFG_ARCH_CPU
+kernel_module(module_name) {
+  sources = [
+    "src/arm_generic_timer.c",
+    "src/clear_user.S",
+    "src/hw_user_get.S",
+    "src/hw_user_put.S",
+    "src/jmp.S",
+    "src/los_arch_mmu.c",
+    "src/los_asid.c",
+    "src/los_dispatch.S",
+    "src/los_exc.c",
+    "src/los_hw.c",
+    "src/los_hw_exc.S",
+    "src/los_hw_runstop.S",
+    "src/los_hw_tick.c",
+    "src/los_hwi.c",
+    "src/strncpy_from_user.c",
+    "src/strnlen_user.c",
+    "src/user_copy.c",
+  ]
+
+  if (LOSCFG_ARCH_ARM_VER == "armv7-a") {
+    sources += [ "src/armv7a/cache.S" ]
+  }
+
+  if (defined(LOSCFG_KERNEL_SMP)) {
+    sources += [ "src/startup/reset_vector_mp.S" ]
+  } else {
+    sources += [ "src/startup/reset_vector_up.S" ]
+  }
+
+  include_dirs = [ "src/include" ]
+
+  if (defined(LOSCFG_GDB)) {
+    configs += [ "$LITEOSTOPDIR:as_objs_libc_flags" ]
+  }
+
+  public_configs = [ ":public" ]
+}
+
+group("arm") {
+  public_deps = [ ":$module_name" ]
+}
+
+config("public") {
+  include_dirs = [
+    "include",
+    "src/include",
+  ]
+}

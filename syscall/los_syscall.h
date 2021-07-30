@@ -55,6 +55,7 @@
 #include "time.h"
 #include "sys/time.h"
 #include "sys/stat.h"
+#include "sys/kstat.h"
 #ifdef LOSCFG_FS_VFS
 #include "sys/socket.h"
 #include "dirent.h"
@@ -252,7 +253,11 @@ extern ssize_t SysReadlinkat(int dirfd, const char *pathname, char *buf, size_t 
 extern int SysUnlink( const char *pathname);
 extern int SysExecve(const char *fileName, char *const *argv, char *const *envp);
 extern int SysChdir(const char *path);
+extern int SysUtimensat(int fd, const char *path, struct timespec times[2], int flag);
+extern int SysFchmodat(int fd, const char *path, mode_t mode, int flag);
 extern int SysChmod(const char *path, mode_t mode);
+extern int SysFchownat(int fd, const char *path, uid_t owner, gid_t group, int flag);
+extern int SysFchown(int fd, uid_t owner, gid_t group);
 extern int SysChown(const char *pathname, uid_t owner, gid_t group);
 extern off_t SysLseek(int fd, off_t offset, int whence);
 extern off64_t SysLseek64(int fd, int offsetHigh, int offsetLow, off64_t *result, int whence);
@@ -260,6 +265,7 @@ extern int SysMount(const char *source, const char *target, const char *filesyst
                     const void *data);
 extern int SysUmount(const char *target);
 extern int SysAccess(const char *path, int amode);
+extern int SysFaccessat(int fd, const char *filename, int amode, int flag);
 extern int SysRename(const char *oldpath, const char *newpath);
 extern int SysMkdir(const char *pathname, mode_t mode);
 extern int SysRmdir(const char *pathname);
@@ -274,8 +280,8 @@ extern int SysFtruncate(int fd, off_t length);
 extern int SysStatfs(const char *path, struct statfs *buf);
 extern int SysStatfs64(const char *path, size_t sz, struct statfs *buf);
 
-extern int SysStat(const char *path, struct stat *buf);
-extern int SysLstat(const char *path, struct stat *buffer);
+extern int SysStat(const char *path, struct kstat *buf);
+extern int SysLstat(const char *path, struct kstat *buffer);
 extern int SysFstat(int fildes, struct stat *buf);
 extern int SysStatx(int fd, const char *restrict path, int flag, unsigned mask, struct statx *restrict stx);
 extern int SysFsync(int fd);

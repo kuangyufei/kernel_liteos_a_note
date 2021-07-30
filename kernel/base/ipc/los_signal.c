@@ -710,6 +710,7 @@ VOID *OsRestorSignalContext(VOID *sp)
 
     LosProcessCB *process = OsCurrProcessGet();
     VOID *saveContext = sigcb->sigContext;
+    sigcb->sigContext = NULL;
     sigcb->count--;
     process->sigShare = 0;	//回到用户态,信号共享清0
     OsProcessExitCodeSignalClear(process);//清空进程退出码

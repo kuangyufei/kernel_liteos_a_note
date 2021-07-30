@@ -31,7 +31,7 @@ include $(LITEOSTOPDIR)/config.mk
 
 MODULE_NAME := rootfs
 
-LOCAL_SRCS := $(wildcard los_rootfs.c)
+LOCAL_SRCS := $(wildcard los_rootfs.c los_bootargs.c)
 
 LOCAL_INCLUDE := \
     -I $(LITEOSTOPDIR)/kernel/common \

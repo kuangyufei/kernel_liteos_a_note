@@ -6885,6 +6885,21 @@ HWTEST_F(VfsJffsTest, ItFsTestSymlinkat001, TestSize.Level0)
     ItFsTestSymlinkat001();
 }
 
+HWTEST_F(VfsJffsTest, ItFsTestMountRdonly001, TestSize.Level0)
+{
+    ItFsTestMountRdonly001();
+}
+
+HWTEST_F(VfsJffsTest, ItFsTestMountRdonly002, TestSize.Level0)
+{
+    ItFsTestMountRdonly002();
+}
+
+HWTEST_F(VfsJffsTest, ItFsTestMountRdonly003, TestSize.Level0)
+{
+    ItFsTestMountRdonly003();
+}
+
 #endif
 #if defined(LOSCFG_USER_TEST_SMOKE)
 /* *

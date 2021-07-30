@@ -854,7 +854,7 @@ STATIC INT32 ConsoleSetSW(CONSOLE_CB *consoleCB, unsigned long arg)
     return LOS_OK;
 }
 
-#define DEFAULT_WINDOW_SIZE_COL 80
+#define DEFAULT_WINDOW_SIZE_COL 400
 #define DEFAULT_WINDOW_SIZE_ROW 24
 STATIC INT32 ConsoleGetWinSize(unsigned long arg)
 {

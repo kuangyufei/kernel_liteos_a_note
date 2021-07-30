@@ -1,5 +1,3 @@
-#!/bin/bash
-#
 # Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
 # Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
@@ -28,12 +26,32 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-set -e
 
-BIN_DIR=$1
-LIB_DIR=$2
-ROOTFS_DIR=$3
-FSTYPE=$4
-CUR_DIR=$(dirname $(readlink -f "$0"))
-. ${CUR_DIR}/rootfsdir.sh ${BIN_DIR} ${LIB_DIR} ${ROOTFS_DIR}
-. ${CUR_DIR}/rootfsimg.sh ${ROOTFS_DIR} ${FSTYPE}
+import("//kernel/liteos_a/liteos.gni")
+
+module_switch = defined(LOSCFG_COMPAT_BSD)
+module_name = get_path_info(rebase_path("."), "name")
+kernel_module(module_name) {
+  sources = [
+    "src/adp.c",
+    "src/linux_completion.c",
+    "src/linux_interrupt.c",
+    "src/linux_sched.c",
+    "src/linux_semaphore.c",
+    "src/linux_timer.c",
+    "src/linux_wakelock.c",
+    "src/linux_workqueue.c",
+    "src/prctl.c",
+    "src/tzdst.c",
+  ]
+
+  if (defined(LOSCFG_HRTIMER_ENABLE)) {
+    sources += [ "src/linux_hrtimer.c" ]
+  }
+
+  public_configs = [ ":public" ]
+}
+
+config("public") {
+  include_dirs = [ "include" ]
+}

@@ -725,6 +725,9 @@ INT32 los_alloc_diskid_byname(const CHAR *diskName);
  */
 INT32 los_get_diskid_byname(const CHAR *diskName);
 
+
+los_disk *los_get_mmcdisk_bytype(UINT8 type);
+
 #ifdef __cplusplus
 #if __cplusplus
 }

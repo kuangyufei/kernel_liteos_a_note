@@ -67,11 +67,6 @@ STATIC MagicKeyOp g_magicHelpOp = {	//快捷键帮助操作
     .magicKey = 0x1a /* ctrl + z */ //帮助键，输出相关魔法键简单介绍；
 };
 
-STATIC MagicKeyOp g_magicKillPgrp = {
-    .opHandler = KillPgrp,
-    .helpMsg = "Show all magic op key(ctrl+c) ",
-    .magicKey = 0x03 /* ctrl + c */
-};
 /*
  * NOTICE:Suggest don't use
  * ctrl+h/backspace=0x8,
@@ -87,7 +82,7 @@ STATIC MagicKeyOp *g_magicOpTable[MAGIC_KEY_NUM] = {
     &g_magicPanicOp,    /* ctrl + p */
     &g_magicTaskShowOp, /* ctrl + t */
     &g_magicHelpOp,     /* ctrl + z */
-    &g_magicKillPgrp    /* ctrl + c */
+    NULL
 };
 
 STATIC VOID OsMagicHelp(VOID)//遍历一下 g_magicOpTable
@@ -129,7 +124,11 @@ INT32 CheckMagicKey(CHAR key)
 #ifdef LOSCFG_ENABLE_MAGICKEY //魔法键开关
     INT32 i;
     STATIC UINT32 magicKeySwitch = 0;
-    if (key == 0x12) { /* ctrl + r */ //用0x12 打开和关闭魔法键检测功能
+
+    if (key == 0x03) { /* ctrl + c */
+        KillPgrp();
+        return 0;
+    } else if (key == 0x12) { /* ctrl + r */
         magicKeySwitch = ~magicKeySwitch;
         if (magicKeySwitch != 0) {
             PRINTK("Magic key on\n");
@@ -137,9 +136,6 @@ INT32 CheckMagicKey(CHAR key)
             PRINTK("Magic key off\n");
         }
         return 1;
-    } else if (key == 0x03){ /* ctrl + c */
-        KillPgrp();
-        return 0;
     }
     if (magicKeySwitch != 0) {
         for (i = 0; i < MAGIC_KEY_NUM; i++) {

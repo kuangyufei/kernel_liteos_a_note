@@ -30,22 +30,30 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 set -e
 
-BIN_DIR=$1  #放置 hb build 后生成的各种应用 bin目录
-LIB_DIR=$2  #musl/*.so
-ROOTFS_DIR=$3
-OUT_DIR=$4
-#创建根文件系统的各种目录
+OUT=$1
+ROOTFS_DIR=$2
+OUT_DIR=$3
+BIN_DIR=${OUT}/bin
+LIB_DIR=${OUT}/musl
+ETC_DIR=${OUT}/etc
+NEED_COPYTO_OUTDIR=(shell toybox mksh tftp)
+
 mkdir -p ${ROOTFS_DIR}/bin ${ROOTFS_DIR}/lib ${ROOTFS_DIR}/usr/bin ${ROOTFS_DIR}/usr/lib ${ROOTFS_DIR}/etc \
 ${ROOTFS_DIR}/app ${ROOTFS_DIR}/data ${ROOTFS_DIR}/proc ${ROOTFS_DIR}/dev ${ROOTFS_DIR}/data/system ${ROOTFS_DIR}/data/system/param \
-${ROOTFS_DIR}/system ${ROOTFS_DIR}/system/internal ${ROOTFS_DIR}/system/external ${OUT_DIR}/bin ${OUT_DIR}/libs
+${ROOTFS_DIR}/system ${ROOTFS_DIR}/system/internal ${ROOTFS_DIR}/system/external ${OUT_DIR}/bin ${OUT_DIR}/libs ${OUT_DIR}/etc
 if [ -d "${BIN_DIR}" ] && [ "$(ls -A "${BIN_DIR}")" != "" ]; then
     cp -f ${BIN_DIR}/* ${ROOTFS_DIR}/bin
-    if [ -e ${BIN_DIR}/shell ] && [ "${BIN_DIR}/shell" != "${OUT_DIR}/bin/shell" ]; then
-        cp -f ${BIN_DIR}/shell ${OUT_DIR}/bin/shell #拷贝 shell 到根文件系统的 /bin下
-    fi
-    if [ -e ${BIN_DIR}/tftp ] && [ "${BIN_DIR}/tftp" != "${OUT_DIR}/bin/tftp" ]; then
-        cp -f ${BIN_DIR}/tftp ${OUT_DIR}/bin/tftp   #拷贝 tftp 到根文件系统的 /bin下
-    fi
+    for el in ${NEED_COPYTO_OUTDIR[@]}
+    do
+        if [ -e ${BIN_DIR}/$el ] && [ "${BIN_DIR}/$el" != "${OUT_DIR}/bin/$el" ]; then
+            cp -f ${BIN_DIR}/$el ${OUT_DIR}/bin/$el
+        fi
+    done
 fi
-cp -f ${LIB_DIR}/* ${ROOTFS_DIR}/lib    #将c/c++ .so 库拷贝到根文件系统的 /lib 
+cp -f ${LIB_DIR}/* ${ROOTFS_DIR}/lib
 cp -f ${LIB_DIR}/* ${OUT_DIR}/libs
+
+if [ -e ${ETC_DIR} ]; then
+cp -f ${ETC_DIR}/.mkshrc ${ROOTFS_DIR}/etc
+cp -f ${ETC_DIR}/.mkshrc ${OUT_DIR}/etc
+fi

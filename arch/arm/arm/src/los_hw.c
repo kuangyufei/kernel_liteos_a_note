@@ -106,9 +106,16 @@ LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOI
 //把父任务上下文克隆给子任务
 LITE_OS_SEC_TEXT VOID OsUserCloneParentStack(VOID *childStack, UINTPTR parentTopOfStack, UINT32 parentStackSize)
 {
-    VOID *cloneStack = (VOID *)(((UINTPTR)parentTopOfStack + parentStackSize) - sizeof(TaskContext));
-	//cloneStack指向 TaskContext
+    LosTaskCB *task = OsCurrTaskGet();
+    sig_cb *sigcb = &task->sig;
+    VOID *cloneStack = NULL;
 
+    if (sigcb->sigContext != NULL) {
+        cloneStack = (VOID *)((UINTPTR)sigcb->sigContext - sizeof(TaskContext));
+    } else {
+        cloneStack = (VOID *)(((UINTPTR)parentTopOfStack + parentStackSize) - sizeof(TaskContext));
+	//cloneStack指向 TaskContext
+    }
     (VOID)memcpy_s(childStack, sizeof(TaskContext), cloneStack, sizeof(TaskContext));//直接把任务上下文拷贝了一份
     ((TaskContext *)childStack)->R0 = 0;//R0寄存器为0,这个很重要, pid = fork()  pid == 0 是子进程返回.
 }

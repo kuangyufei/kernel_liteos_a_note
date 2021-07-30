@@ -27,7 +27,10 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-static_library("base") {
+import("//kernel/liteos_a/liteos.gni")
+
+module_name = get_path_info(rebase_path("."), "name")
+kernel_module(module_name) {
   sources = [
     "core/los_bitmap.c",
     "core/los_process.c",
@@ -36,22 +39,24 @@ static_library("base") {
     "core/los_sys.c",
     "core/los_task.c",
     "core/los_tick.c",
-    "core/los_timeslice.c",
     "ipc/los_event.c",
+    "ipc/los_futex.c",
     "ipc/los_ipcdebug.c",
     "ipc/los_mux.c",
-    "ipc/los_mux_debug.c",
     "ipc/los_queue.c",
     "ipc/los_queue_debug.c",
+    "ipc/los_rwlock.c",
     "ipc/los_sem.c",
     "ipc/los_sem_debug.c",
-    "mem/bestfit/los_memory.c",
-    "mem/bestfit/los_multipledlinkhead.c",
+    "ipc/los_signal.c",
     "mem/common/los_memstat.c",
     "mem/membox/los_membox.c",
+    "mem/tlsf/los_memory.c",
+    "misc/kill_shellcmd.c",
     "misc/los_misc.c",
     "misc/los_stackinfo.c",
     "misc/mempt_shellcmd.c",
+    "misc/panic_shellcmd.c",
     "misc/swtmr_shellcmd.c",
     "misc/sysinfo_shellcmd.c",
     "misc/task_shellcmd.c",
@@ -59,22 +64,33 @@ static_library("base") {
     "mp/los_lockdep.c",
     "mp/los_mp.c",
     "mp/los_percpu.c",
+    "mp/los_spinlock.c",
     "mp/los_stat.c",
     "om/los_err.c",
-    "sched/sched_sq/los_priqueue.c",
     "sched/sched_sq/los_sched.c",
-    "vm/filemap.c",
-    "vm/pmm.c",
-    "vm/vm.c",
-    "vm/vmm.c",
+    "vm/los_vm_boot.c",
+    "vm/los_vm_dump.c",
+    "vm/los_vm_fault.c",
+    "vm/los_vm_filemap.c",
+    "vm/los_vm_iomap.c",
+    "vm/los_vm_map.c",
+    "vm/los_vm_page.c",
+    "vm/los_vm_phys.c",
+    "vm/los_vm_scan.c",
+    "vm/los_vm_syscall.c",
+    "vm/oom.c",
+    "vm/shm.c",
   ]
 
-  include_dirs = [
-    "include",
-    "../extended/include",
-    "../extended/vdso/include",
-    "../extended/dynload/include",
-    "../include",
-    "mem",
-  ]
+  if (defined(LOSCFG_SHELL_CMD_DEBUG)) {
+    configs += [
+      "$HDFTOPDIR:hdf_config"
+    ]
+  }
+
+  public_configs = [ ":public" ]
+}
+
+config("public") {
+  include_dirs = [ "include" ]
 }

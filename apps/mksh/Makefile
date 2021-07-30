@@ -34,6 +34,7 @@ LITEOSTOPDIR = $(MKSH_DIR)/../../
 include $(MKSH_DIR)/../config.mk
 
 APPS_OUT := $(OUT)/bin
+ETC_OUT := $(OUT)/etc
 BUILD_DIR := $(MKSH_DIR)/build
 BUILD_LOG := $(MKSH_DIR)/build.log
 TARGET_OS := OpenHarmony
@@ -61,6 +62,8 @@ endif
 	$(HIDE)$(STRIP) $(MKSH)
 	$(HIDE)mkdir -p $(APPS_OUT)
 	$(HIDE)$(CP) $(MKSH) $(APPS_OUT)
+	$(HIDE)mkdir -p $(ETC_OUT)
+	$(HIDE)$(CP) -rf $(BUILD_DIR)/.mkshrc $(ETC_OUT)/
 
 clean:
 	$(HIDE)$(RM) $(MKSH) $(BUILD_DIR) $(BUILD_LOG)

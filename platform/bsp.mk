@@ -49,7 +49,8 @@ PLATFORM_BSP_BASE := $(LITEOSTOPDIR)/platform
 
 PLATFORM_INCLUDE := -I $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) \
                     -I $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH)/include \
-                    -I $(PLATFORM_BSP_BASE)/../kernel/common \
+                    -I $(PLATFORM_BSP_BASE)/../kernel/common/rootfs \
+                    -I $(PLATFORM_BSP_BASE) \
                     -I $(PLATFORM_BSP_BASE)/../../../drivers/liteos/platform/pm \
                     -I $(PLATFORM_BSP_BASE)/hw/include \
                     -I $(PLATFORM_BSP_BASE)/include

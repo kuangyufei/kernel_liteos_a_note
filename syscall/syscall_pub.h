@@ -36,9 +36,14 @@
 #include "los_vm_lock.h"
 #include "los_vm_map.h"
 #include "user_copy.h"
+#include "fs/fs.h"
+#include "fcntl.h"
+#include "los_strncpy_from_user.h"
 
 extern int CheckRegion(const LosVmSpace *space, VADDR_T ptr, size_t len);
 extern void *DupUserMem(const void *ptr, size_t len, int needCopy);
+extern int GetFullpath(int fd, const char *path, char **fullpath);
+extern int UserPathCopy(const char *userPath, char **pathBuf);
 
 #define CHECK_ASPACE(ptr, len, ...) \
     do { \

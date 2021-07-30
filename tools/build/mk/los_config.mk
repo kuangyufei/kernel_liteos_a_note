@@ -27,7 +27,12 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
--include $(LITEOSTOPDIR)/.config
+CONFIG_FILE ?= $(LITEOSTOPDIR)/.config
+-include $(CONFIG_FILE)
+LOSCFG_BOARD_CONFIG_PATH := $(LOSCFG_BOARD_CONFIG_PATH:"%"=%)
+ifeq ($(wildcard $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) $(LOSCFG_BOARD_CONFIG_PATH)),)
+LOSCFG_BOARD_CONFIG_PATH := $(LOSCFG_BOARD_CONFIG_PATH:%/config/board=%/board)
+endif
 ifeq ($(LOSCFG_COMPILER_HIMIX_32), y)
 CROSS_COMPILE := arm-linux-ohoseabi-
 else ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
@@ -118,11 +123,11 @@ endif
 BUILD  = $(OUT)/obj
 MK_PATH  = $(LITEOSTOPDIR)/tools/build/mk
 CXX_PATH  = $(LITEOSTOPDIR)/lib/cxxstl
-JFFS_PATH  = $(LITEOSTOPDIR)/fs/jffs2   #jffs2文件系统目录
+JFFS_PATH  = $(LITEOSTOPDIR)/fs/jffs2
 LITEOS_SCRIPTPATH ?= $(LITEOSTOPDIR)/tools/scripts
 LITEOS_LIB_BIGODIR  = $(OUT)/lib/obj
-LITEOS_MENUCONFIG_H = $(LITEOSTOPDIR)/config.h
-LOSCFG_ENTRY_SRC    = $(LITEOSTOPDIR)/kernel/common/los_config.c    #内核配置文件
+LITEOS_MENUCONFIG_H ?= $(LITEOSTOPDIR)/config.h
+LOSCFG_ENTRY_SRC    = $(LITEOSTOPDIR)/platform/los_config.c
 
 ### include variable
 MODULE = $(MK_PATH)/module.mk
@@ -158,7 +163,7 @@ include $(LITEOSTOPDIR)/platform/bsp.mk
 
 ifeq ($(LOSCFG_PLATFORM_ROOTFS), y)
     LITEOS_BASELIB  += -lrootfs
-    LIB_SUBDIRS     += $(LITEOSTOPDIR)/kernel/common
+    LIB_SUBDIRS     += $(LITEOSTOPDIR)/kernel/common/rootfs
 endif
 
 ifeq ($(LOSCFG_PLATFORM_PATCHFS), y)
@@ -703,7 +708,8 @@ endif
 # temporary
 LITEOS_PLATFORM_INCLUDE += \
         -I $(LITEOSTOPDIR)/kernel/base/include \
-        -I $(LITEOSTOPDIR)/kernel/extended/include
+        -I $(LITEOSTOPDIR)/kernel/extended/cpup \
+        -I $(LITEOSTOPDIR)/kernel/extended/trace
 
 LITEOS_CXXINCLUDE += \
         $(LITEOS_NET_INCLUDE) \

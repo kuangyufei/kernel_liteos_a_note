@@ -37,9 +37,11 @@
 #include "vfs_config.h"
 #include "sys/stat.h"
 #include "vnode.h"
+#include "fs/mount.h"
 #include "string.h"
 #include "stdlib.h"
 #include "utime.h"
+#include <fcntl.h>
 
 /****************************************************************************
  * Global Functions
@@ -76,6 +78,12 @@ int utime(const char *path, const struct utimbuf *ptimes)
     ret = VnodeLookup(fullpath, &vnode, 0);//找到vnode节点
     if (ret != LOS_OK) {
         VnodeDrop();
+        goto errout_with_path;
+    }
+
+    if ((vnode->originMount) && (vnode->originMount->mountFlags & MS_RDONLY)) {
+        VnodeDrop();
+        ret = -EROFS;
         goto errout_with_path;
     }
 

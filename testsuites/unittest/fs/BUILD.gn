@@ -790,6 +790,9 @@ sources_full = [
   "jffs/full/It_vfs_test_symlink_002.cpp",
   "jffs/full/It_vfs_test_symlink_003.cpp",
   "jffs/full/It_vfs_test_symlinkat_001.cpp",
+  "jffs/full/It_vfs_test_mount_rdonly_001.cpp",
+  "jffs/full/It_vfs_test_mount_rdonly_002.cpp",
+  "jffs/full/It_vfs_test_mount_rdonly_003.cpp",
 ]
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {

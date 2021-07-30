@@ -52,52 +52,53 @@ rootfs的特点:
 VFS是一种机制、是每一种文件系统都必须按照这个机制去实现的一种规范；
 而rootfs仅仅是符合VFS规范的而且又具有如上3个特点的一个文件系统。
 **********************************************/
+#include "los_typedef.h"
 
-#define BYTES_PER_MBYTE         0x100000	//1M = 1024 * 1024
-#define BYTES_PER_KBYTE         0x400		//1K = 1024
-
-#define COMMAND_LINE_ADDR       LOSCFG_BOOTENV_ADDR * BYTES_PER_KBYTE
-#define COMMAND_LINE_SIZE       1024
-
-#ifdef LOSCFG_STORAGE_SPINOR	//spi nor flash
-#define ROOTFS_ROOT_TYPE        "flash"	//根文件系统存放在nor flash上
-#define ROOTFS_FS_TYPE          "jffs2" //Journalling Flash File System（闪存设备日志型文件系统，JFFS）,一般用于nor flash的文件系统
-#elif defined(LOSCFG_STORAGE_SPINAND)// nand flash
-#define ROOTFS_ROOT_TYPE        "nand"	//在nand flash上制作根文件系统
-#define ROOTFS_FS_TYPE          "yaffs2"//文件系统格式选用 yaffs2
-#endif
-
+#define ROOT_DIR_NAME           "/"
+#define STORAGE_DIR_NAME        "/storage"
 #ifdef LOSCFG_STORAGE_EMMC
-#define ROOTFS_ROOT_TYPE        "emmc"	//eMMC=NAND闪存+闪存控制芯片+标准接口封装 https://blog.csdn.net/xjw1874/article/details/81505967
-#define ROOTFS_FS_TYPE          "vfat" 	//即FAT32,采用32位的文件分配表，支持最大分区128GB，最大文件4GB 
+#define USERDATA_DIR_NAME       "/userdata"
 #endif
-
-#ifdef LOSCFG_TEE_ENABLE	//TEE(Trust Execution Environment)，可信执行环境,和REE(Rich Execution Environment)相对应
-#define ROOTFS_FLASH_ADDR       0x600000
-#define ROOTFS_FLASH_SIZE       0x800000
-#else
-#define ROOTFS_FLASH_ADDR       0x400000 //根文件系统地址
-#define ROOTFS_FLASH_SIZE       0xa00000 //根文件系统大小 10M
-#endif
+#define DEFAULT_MOUNT_DIR_MODE  0755
+#define DEFAULT_MOUNT_DATA      NULL
 
 #ifdef LOSCFG_STORAGE_SPINOR //外部开关定 使用哪种flash
 #define FLASH_TYPE              "spinor" //flash类型
-#define FLASH_DEV_NAME          "/dev/spinorblk0" //设备名称
+#define ROOT_DEV_NAME          "/dev/spinorblk0" //设备名称
+#define USER_DEV_NAME           "/dev/spinorblk2"
+#define ROOTFS_ADDR             0x600000
+#define ROOTFS_SIZE             0x800000
+#define USERFS_SIZE             0x80000
 #elif defined(LOSCFG_STORAGE_SPINAND)
 #define FLASH_TYPE              "nand"
-#define FLASH_DEV_NAME          "/dev/nandblk0"	//设备名称
+#define ROOT_DEV_NAME          "/dev/nandblk0"	//设备名称
+#define USER_DEV_NAME           "/dev/nandblk2"
+#define ROOTFS_ADDR             0x600000
+#define ROOTFS_SIZE             0x800000
+#define USERFS_SIZE             0x80000
+#elif defined (LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)
+#define ROOT_DEV_NAME           "/dev/cfiflash0"
+#define USER_DEV_NAME           "/dev/cfiflash2"
+#define ROOTFS_ADDR             CFIFLASH_ROOT_ADDR
+#define ROOTFS_SIZE             0x1B00000
+#define USERFS_SIZE             (CFIFLASH_CAPACITY - ROOTFS_ADDR - ROOTFS_SIZE)
+#elif defined (LOSCFG_STORAGE_EMMC)
+#define ROOT_DEV_NAME           "/dev/mmcblk0p0"
+#define USER_DEV_NAME           "/dev/mmcblk0p1"
+#define USERDATA_DEV_NAME       "/dev/mmcblk0p2"
+#define ROOTFS_ADDR             0xA00000
+#define ROOTFS_SIZE             0x1400000
+#define USERFS_SIZE             0x3200000
+#ifdef DEFAULT_MOUNT_DIR_MODE
+#undef DEFAULT_MOUNT_DIR_MODE
 #endif
-//扇区是对硬盘而言，而块是对文件系统而言
-#define EMMC_SEC_SIZE           512	//扇区大小,按512个字节,按扇区对齐
-
-#define DEC_NUMBER_STRING       "0123456789"
-#define HEX_NUMBER_STRING       "0123456789abcdefABCDEF"
+#ifdef DEFAULT_MOUNT_DATA
+#undef DEFAULT_MOUNT_DATA
+#endif
+#define DEFAULT_MOUNT_DIR_MODE  0777
+#define DEFAULT_MOUNT_DATA      "umask=000"
+#endif
 
 INT32 OsMountRootfs(VOID);
-VOID OsSetCmdLineAddr(UINT64 addr);
-UINT64 OsGetCmdLineAddr(VOID);
 
-#ifdef LOSCFG_BOOTENV_RAM
-CHAR *OsGetArgsAddr(VOID);
-#endif
 #endif /* _LOS_ROOTFS_H */

@@ -27,30 +27,23 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import("//build/lite/config/component/lite_component.gni")
+import("//kernel/liteos_a/liteos.gni")
 
-lite_component("kernel") {
-  features = [
+group("kernel") {
+  deps = [
     "base",
-    "syscall",
+    "common",
+    "extended",
     "user",
   ]
-  if (LOSCFG_KERNEL_CPUP) {
-    features += [ "extended/cpup" ]
-  }
-  if (LOSCFG_KERNEL_MPU) {
-    features += [ "extended/mpu" ]
-  }
-  if (LOSCFG_KERNEL_CPPSUPPORT) {
-    features += [ "extended/cppsupport" ]
-  }
-  if (LOSCFG_KERNEL_DYNLOAD) {
-    features += [ "extended/dynload" ]
-  }
-  if (LOSCFG_KERNEL_TRACE) {
-    features += [ "extended/trace" ]
-  }
-  if (LOSCFG_KERNEL_VDSO) {
-    features += [ "extended/vdso" ]
-  }
+}
+
+config("public") {
+  include_dirs = [ "include" ]
+  configs = [
+    "base:public",
+    "common:public",
+    "extended:public",
+    "user:public",
+  ]
 }

@@ -442,7 +442,7 @@ extern UINTPTR __user_init_bss;		// 查看 LITE_USER_SEC_BSS
 extern UINTPTR __user_init_end;		// 用户空间结束虚拟地址
 extern UINTPTR __user_init_load_addr;//用户空间加载地址
 extern UINT32 OsSystemProcessCreate(VOID);
-extern VOID OsProcessCBRecyleToFree(VOID);
+extern VOID OsProcessCBRecycleToFree(VOID);
 extern VOID OsProcessResourcesToFree(LosProcessCB *processCB);
 extern VOID OsProcessExit(LosTaskCB *runTask, INT32 status);
 extern UINT32 OsUserInitProcess(VOID);

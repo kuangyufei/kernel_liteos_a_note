@@ -29,11 +29,13 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "syscall_pub.h"
 #ifdef LOSCFG_FS_VFS
 #include "errno.h"
 #include "unistd.h"
 #include "fs/fd_table.h"
 #include "fs/file.h"
+#include "fs/fs.h"
 #include "fs/fs_operation.h"
 #include "sys/mount.h"
 #include "los_task_pri.h"
@@ -56,28 +58,77 @@
 #include "sys/statfs.h"
 //拷贝用户空间路径到内核空间
 #define HIGH_SHIFT_BIT 32
-static int UserPathCopy(const char *userPath, char **pathBuf)
+#define TIMESPEC_TIMES_NUM  2
+
+static int CheckNewAttrTime(struct IATTR *attr, struct timespec times[TIMESPEC_TIMES_NUM])
+{
+    int ret = ENOERR;
+    struct timespec stp = {0};
+
+    if (times) {
+        if (times[0].tv_nsec == UTIME_OMIT) {
+            attr->attr_chg_valid &= ~CHG_ATIME;
+        } else if (times[0].tv_nsec == UTIME_NOW) {
+            ret = clock_gettime(CLOCK_REALTIME, &stp);
+            if (ret < 0) {
+                return -get_errno();
+            }
+            attr->attr_chg_atime = (unsigned int)stp.tv_sec;
+            attr->attr_chg_valid |= CHG_ATIME;
+        } else {
+            attr->attr_chg_atime = (unsigned int)times[0].tv_sec;
+            attr->attr_chg_valid |= CHG_ATIME;
+        }
+
+        if (times[1].tv_nsec == UTIME_OMIT) {
+            attr->attr_chg_valid &= ~CHG_MTIME;
+        } else if (times[1].tv_nsec == UTIME_NOW) {
+            ret = clock_gettime(CLOCK_REALTIME, &stp);
+            if (ret < 0) {
+                return -get_errno();
+            }
+            attr->attr_chg_mtime = (unsigned int)stp.tv_sec;
+            attr->attr_chg_valid |= CHG_MTIME;
+        } else {
+            attr->attr_chg_mtime = (unsigned int)times[1].tv_sec;
+            attr->attr_chg_valid |= CHG_MTIME;
+        }
+    } else {
+        ret = clock_gettime(CLOCK_REALTIME, &stp);
+        if (ret < 0) {
+            return -get_errno();
+        }
+        attr->attr_chg_atime = (unsigned int)stp.tv_sec;
+        attr->attr_chg_mtime = (unsigned int)stp.tv_sec;
+        attr->attr_chg_valid |= CHG_ATIME;
+        attr->attr_chg_valid |= CHG_MTIME;
+    }
+
+    return ret;
+}
+
+static int GetFullpathNull(int fd, const char *path, char **filePath)
 {
     int ret;
+    char *fullPath = NULL;
+    struct file *file = NULL;
 
-    *pathBuf = (char *)LOS_MemAlloc(OS_SYS_MEM_ADDR, PATH_MAX + 1);//
-    if (*pathBuf == NULL) {
-        return -ENOMEM;
+    if ((fd != AT_FDCWD) && (path == NULL)) {
+        fd = GetAssociatedSystemFd(fd);
+        ret = fs_getfilep(fd, &file);
+        if (ret < 0) {
+            return -get_errno();
+        }
+        fullPath = file->f_path;
+    } else {
+        ret = GetFullpath(fd, path, &fullPath);
+        if (ret < 0) {
+            return ret;
+        }
     }
 
-    ret = LOS_StrncpyFromUser(*pathBuf, userPath, PATH_MAX + 1);
-    if (ret < 0) {
-        (void)LOS_MemFree(OS_SYS_MEM_ADDR, *pathBuf);
-        *pathBuf = NULL;
-        return ret;
-    } else if (ret > PATH_MAX) {
-        (void)LOS_MemFree(OS_SYS_MEM_ADDR, *pathBuf);
-        *pathBuf = NULL;
-        return -ENAMETOOLONG;
-    }
-    (*pathBuf)[ret] = '\0';
-
-    return 0;
+    *filePath = fullPath;
+    return ret;
 }
 //用户空间 io向量地址范围检查
 static int UserIovItemCheck(const struct iovec *iov, const int iovcnt)
@@ -1264,7 +1315,7 @@ OUT:
     return ret;
 }
 //获取文件状态信息
-int SysStat(const char *path, struct stat *buf)
+int SysStat(const char *path, struct kstat *buf)
 {
     int ret;
     char *pathRet = NULL;
@@ -1283,7 +1334,7 @@ int SysStat(const char *path, struct stat *buf)
         goto OUT;
     }
 
-    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct stat));
+    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct kstat));
     if (ret != 0) {
         ret = -EFAULT;
     }
@@ -1295,7 +1346,7 @@ OUT:
     return ret;
 }
 //参见SysStat
-int SysLstat(const char *path, struct stat *buffer)
+int SysLstat(const char *path, struct kstat *buffer)
 {
     int ret;
     char *pathRet = NULL;
@@ -1314,7 +1365,7 @@ int SysLstat(const char *path, struct stat *buffer)
         goto OUT;
     }
 
-    ret = LOS_ArchCopyToUser(buffer, &bufRet, sizeof(struct stat));
+    ret = LOS_ArchCopyToUser(buffer, &bufRet, sizeof(struct kstat));
     if (ret != 0) {
         ret = -EFAULT;
     }
@@ -2182,6 +2233,37 @@ OUT:
     return result;
 }
 
+int SysUtimensat(int fd, const char *path, struct timespec times[TIMESPEC_TIMES_NUM], int flag)
+{
+    int ret;
+    int timeLen;
+    struct IATTR attr = {0};
+    char *filePath = NULL;
+
+    timeLen = TIMESPEC_TIMES_NUM * sizeof(struct timespec);
+    CHECK_ASPACE(times, timeLen);
+    DUP_FROM_USER(times, timeLen);
+    ret = CheckNewAttrTime(&attr, times);
+    FREE_DUP(times);
+    if (ret < 0) {
+        goto OUT;
+    }
+
+    ret = GetFullpathNull(fd, path, &filePath);
+    if (ret < 0) {
+        goto OUT;
+    }
+
+    ret = chattr(filePath, &attr);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+OUT:
+    PointerFree(filePath);
+    return ret;
+}
+
 int SysChmod(const char *pathname, mode_t mode)
 {
     int ret;
@@ -2203,6 +2285,112 @@ OUT:
     if (pathRet != NULL) {
         (void)LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
     }
+    return ret;
+}
+
+int SysFchmodat(int fd, const char *path, mode_t mode, int flag)
+{
+    int ret;
+    char *pathRet = NULL;
+    char *fullpath = NULL;
+    struct IATTR attr = {
+        .attr_chg_mode = mode,
+        .attr_chg_valid = CHG_MODE,
+    };
+
+    if (path != NULL) {
+        ret = UserPathCopy(path, &pathRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
+
+    if (fd != AT_FDCWD) {
+        /* Process fd convert to system global fd */
+        fd = GetAssociatedSystemFd(fd);
+    }
+
+    ret = vfs_normalize_pathat(fd, pathRet, &fullpath);
+    if (ret < 0) {
+        goto OUT;
+    }
+
+    ret = chattr(fullpath, &attr);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+OUT:
+    PointerFree(pathRet);
+    PointerFree(fullpath);
+
+    return ret;
+}
+
+int SysFchownat(int fd, const char *path, uid_t owner, gid_t group, int flag)
+{
+    int ret;
+    char *fullpath = NULL;
+    struct IATTR attr = {
+        .attr_chg_valid = 0,
+    };
+
+    ret = GetFullpath(fd, path, &fullpath);
+    if (ret < 0) {
+        goto OUT;
+    }
+
+    if (owner != (uid_t)-1) {
+        attr.attr_chg_uid = owner;
+        attr.attr_chg_valid |= CHG_UID;
+    }
+    if (group != (gid_t)-1) {
+        attr.attr_chg_gid = group;
+        attr.attr_chg_valid |= CHG_GID;
+    }
+
+    ret = chattr(fullpath, &attr);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+OUT:
+    PointerFree(fullpath);
+
+    return ret;
+}
+
+int SysFchown(int fd, uid_t owner, gid_t group)
+{
+    int ret;
+    int sysFd;
+    struct IATTR attr = {0};
+    attr.attr_chg_valid = 0;
+    struct file *file = NULL;
+
+    sysFd = GetAssociatedSystemFd(fd);
+    if (sysFd < 0) {
+        return -EBADF;
+    }
+
+    ret = fs_getfilep(sysFd, &file);
+    if (ret < 0) {
+        return -get_errno();
+    }
+
+    if (owner != (uid_t)-1) {
+        attr.attr_chg_uid = owner;
+        attr.attr_chg_valid |= CHG_UID;
+    }
+    if (group != (gid_t)-1) {
+        attr.attr_chg_gid = group;
+        attr.attr_chg_valid |= CHG_GID;
+    }
+    ret = chattr(file->f_path, &attr);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
     return ret;
 }
 
@@ -2274,6 +2462,45 @@ OUT:
     if (fullpath != NULL) {
         free(fullpath);
     }
+    return ret;
+}
+
+int SysFaccessat(int fd, const char *filename, int amode, int flag)
+{
+    int ret;
+    struct stat buf;
+    struct statfs fsBuf;
+    char *fullDirectory = NULL;
+
+    ret = GetFullpath(fd, filename, &fullDirectory);
+    if (ret < 0) {
+        goto OUT;
+    }
+
+    ret = statfs(fullDirectory, &fsBuf);
+    if (ret != 0) {
+        ret = -get_errno();
+        goto OUT;
+    }
+
+    if ((fsBuf.f_flags & MS_RDONLY) && ((unsigned int)amode & W_OK)) {
+        ret = -EROFS;
+        goto OUT;
+    }
+
+    ret = stat(fullDirectory, &buf);
+    if (ret != 0) {
+        ret = -get_errno();
+        goto OUT;
+    }
+
+    if (VfsPermissionCheck(buf.st_uid, buf.st_gid, buf.st_mode, amode)) {
+        ret = -EACCES;
+    }
+
+OUT:
+    PointerFree(fullDirectory);
+
     return ret;
 }
 #endif

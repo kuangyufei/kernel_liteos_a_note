@@ -41,6 +41,8 @@
 #include "stdlib.h"
 #include "sys/stat.h"
 #include "vnode.h"
+#include "fs/mount.h"
+#include <fcntl.h>
 
 /****************************************************************************
  * Static Functions
@@ -66,6 +68,11 @@ int chattr(const char *pathname, struct IATTR *attr)
     VnodeHold();
     ret = VnodeLookup(pathname, &vnode, 0);
     if (ret != LOS_OK) {
+        goto errout_with_lock;
+    }
+
+    if ((vnode->originMount) && (vnode->originMount->mountFlags & MS_RDONLY)) {
+        ret = -EROFS;
         goto errout_with_lock;
     }
 

@@ -27,21 +27,29 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-static_library("fs_proc") {
+import("//kernel/liteos_a/liteos.gni")
+
+module_switch = defined(LOSCFG_FS_PROC)
+module_name = get_path_info(rebase_path("."), "name")
+kernel_module(module_name) {
   sources = [
+    "os_adapt/fd_proc.c",
+    "os_adapt/fs_cache_proc.c",
+    "os_adapt/kernel_trace_proc.c",
+    "os_adapt/mounts_proc.c",
+    "os_adapt/power_proc.c",
     "os_adapt/proc_init.c",
-    "os_adapt/vfs_proc.c",
+    "os_adapt/proc_vfs.c",
+    "os_adapt/process_proc.c",
+    "os_adapt/uptime_proc.c",
+    "os_adapt/vmm_proc.c",
+    "src/proc_file.c",
     "src/proc_shellcmd.c",
-    "src/pseudofs.c",
-    "src/seq_file.c",
   ]
 
-  include_dirs = [ "include" ]
+  public_configs = [ ":public" ]
+}
 
-  if (LOSCFG_LLTREPORT) {
-    cflags += [
-      "-fprofile-arcs",
-      "-ftest-coverage",
-    ]
-  }
+config("public") {
+  include_dirs = [ "include" ]
 }

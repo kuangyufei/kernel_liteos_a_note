@@ -214,6 +214,22 @@ INT32 los_get_diskid_byname(const CHAR *diskName)
     return diskID;
 }
 
+los_disk *los_get_mmcdisk_bytype(UINT8 type)
+{
+    const CHAR *mmcDevHead = "/dev/mmcblk";
+
+    for (INT32 diskId = 0; diskId < SYS_MAX_DISK; diskId++) {
+        los_disk *disk = get_disk(diskId);
+        if (disk == NULL) {
+            continue;
+        } else if ((disk->type == type) && (strncmp(disk->disk_name, mmcDevHead, strlen(mmcDevHead)) == 0)) {
+            return disk;
+        }
+    }
+    PRINT_ERR("Cannot find the mmc disk!\n");
+    return NULL;
+}
+
 VOID OsSetUsbStatus(UINT32 diskID)
 {
     if (diskID < SYS_MAX_DISK) {

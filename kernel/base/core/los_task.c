@@ -140,7 +140,7 @@
 
 LITE_OS_SEC_BSS LosTaskCB    *g_taskCBArray;//任务池 128个
 LITE_OS_SEC_BSS LOS_DL_LIST  g_losFreeTask;//空闲任务链表
-LITE_OS_SEC_BSS LOS_DL_LIST  g_taskRecyleList;//回收任务链表
+LITE_OS_SEC_BSS LOS_DL_LIST  g_taskRecycleList;//回收任务链表
 LITE_OS_SEC_BSS UINT32       g_taskMaxNum;//任务最大个数
 LITE_OS_SEC_BSS UINT32       g_taskScheduled; /* one bit for each cores *///任务调度器,每个CPU都有对应位 
 LITE_OS_SEC_BSS EVENT_CB_S   g_resourceEvent;//资源的事件
@@ -277,7 +277,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
     (VOID)memset_s(g_taskCBArray, size, 0, size);
 
     LOS_ListInit(&g_losFreeTask);//初始化空闲任务链表
-    LOS_ListInit(&g_taskRecyleList);//初始化回收任务链表
+    LOS_ListInit(&g_taskRecycleList);//初始化回收任务链表
     for (index = 0; index < g_taskMaxNum; index++) {//任务挨个初始化
         g_taskCBArray[index].taskStatus = OS_TASK_STATUS_UNUSED;//默认未使用,干净.
         g_taskCBArray[index].taskID = index;//任务ID [0 ~ g_taskMaxNum - 1]
@@ -531,8 +531,8 @@ LITE_OS_SEC_TEXT VOID OsTaskCBRecycleToFree()
     UINT32 intSave;
 
     SCHEDULER_LOCK(intSave);
-    while (!LOS_ListEmpty(&g_taskRecyleList)) {//不空就一个一个回收任务
-        taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_taskRecyleList));//取出第一个待回收任务
+    while (!LOS_ListEmpty(&g_taskRecycleList)) {//不空就一个一个回收任务
+        taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_taskRecycleList));//取出第一个待回收任务
         LOS_ListDelete(&taskCB->pendList);//从回收链表上将自己摘除
         SCHEDULER_UNLOCK(intSave);
 
@@ -969,7 +969,7 @@ LITE_OS_SEC_TEXT VOID OsRunTaskToDelete(LosTaskCB *runTask)
 
     LOS_ListDelete(&runTask->threadList);//从进程的线程链表中将自己摘除
     processCB->threadNumber--;//进程的活动task --，注意进程还有一个记录总task的变量 processCB->threadCount
-    LOS_ListTailInsert(&g_taskRecyleList, &runTask->pendList);//将task插入回收链表，等待回收资源再利用
+    LOS_ListTailInsert(&g_taskRecycleList, &runTask->pendList);//将task插入回收链表，等待回收资源再利用
     OsEventWriteUnsafe(&g_resourceEvent, OS_RESOURCE_EVENT_FREE, FALSE, NULL);//发送释放资源的事件,事件由 OsResourceRecoveryTask 消费
 
     OsSchedResched();//申请调度
@@ -1051,7 +1051,7 @@ STATIC VOID OsTaskDeleteInactive(LosProcessCB *processCB, LosTaskCB *taskCB)
 
     LOS_ListDelete(&taskCB->threadList);
     processCB->threadNumber--;
-    LOS_ListTailInsert(&g_taskRecyleList, &taskCB->pendList);
+    LOS_ListTailInsert(&g_taskRecycleList, &taskCB->pendList);
     return;
 }
 //以不安全的方式删除参数任务
@@ -1745,7 +1745,7 @@ STATIC VOID OsResourceRecoveryTask(VOID)
                             LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);//读取资源事件
         if (ret & (OS_RESOURCE_EVENT_FREE | OS_RESOURCE_EVENT_OOM)) {//收到资源释放或内存异常情况
             OsTaskCBRecycleToFree();
-            OsProcessCBRecyleToFree();//回收进程到空闲进程池
+            OsProcessCBRecycleToFree();//回收进程到空闲进程池
         }
 
 #ifdef LOSCFG_ENABLE_OOM_LOOP_TASK //内存溢出监测任务开关

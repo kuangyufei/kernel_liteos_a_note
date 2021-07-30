@@ -35,7 +35,6 @@
 #include "shell.h"
 #endif
 #include "los_swtmr_pri.h"
-#include "watchdog_if.h"
 
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
@@ -46,6 +45,7 @@ LITE_OS_SEC_TEXT_MINOR BOOL OsSystemExcIsReset(VOID)
     return systemExcReset;
 }
 #ifdef LOSCFG_DRIVERS_HDF_PLATFORM_WATCHDOG
+#include "watchdog_if.h"
 
 #define WATCHDOG_TIMER_INTERVAL 5 // 5 seconds
 #define WATCHDOG_TIMER_INTERVAL_HALF (WATCHDOG_TIMER_INTERVAL / 2)
