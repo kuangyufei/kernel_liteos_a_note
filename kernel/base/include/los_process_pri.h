@@ -45,6 +45,7 @@
 #ifdef LOSCFG_SECURITY_VID
 #include "vid_type.h"
 #endif
+#include "sys/resource.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -126,6 +127,7 @@ typedef struct ProcessCB {
 #ifdef LOSCFG_KERNEL_CPUP
     OsCpupBase           processCpup; /**< Process cpu usage */
 #endif
+    struct rlimit        pl_rlimit[RLIM_NLIMITS];
 } LosProcessCB;
 
 #define CLONE_VM       0x00000100	//子进程与父进程运行于相同的内存空间
@@ -170,7 +172,7 @@ typedef struct ProcessCB {
  * @ingroup los_process
  * Flag that indicates the process or process control block status.
  *
- * The process is pend
+ * The process is pending
  */
 #define OS_PROCESS_STATUS_PENDING       0x0080U
 

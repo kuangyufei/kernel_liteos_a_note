@@ -1,89 +1,117 @@
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 static_library("test_posix") {
+  sources = [
+    "mem/It_posix_mem.c",
+    "mqueue/It_posix_queue.c",
+    "mutex/It_posix_mutex.c",
+    "pthread/It_posix_pthread.c",
+    "sched/It_posix_sched.c",
+    "sem/It_posix_sem.c",
+    "smp/It_posix_smp.c",
+    "smp/It_posix_smp_001.c",
+    "smp/It_posix_smp_002.c",
+    "smp/It_posix_smp_003.c",
+    "smp/It_posix_smp_004.c",
+    "smp/It_posix_smp_005.c",
+    "smp/It_posix_smp_006.c",
+    "smp/It_posix_smp_007.c",
+    "smp/It_posix_smp_008.c",
+    "smp/It_posix_smp_009.c",
+    "smp/It_posix_smp_010.c",
+    "smp/It_posix_smp_011.c",
+    "smp/It_posix_smp_012.c",
+    "smp/It_posix_smp_013.c",
+    "smp/It_posix_smp_014.c",
+    "smp/It_posix_smp_015.c",
+    "smp/It_posix_smp_016.c",
+    "smp/It_posix_smp_017.c",
+    "smp/It_posix_smp_018.c",
+    "swtmr/It_posix_swtmr.c",
+  ]
 
-    sources = [
-        "mqueue/It_posix_queue.c",
-        "mutex/It_posix_mutex.c",
-        "sem/It_posix_sem.c",
-        "pthread/It_posix_pthread.c",
-        "swtmr/It_posix_swtmr.c",
-        "sched/It_posix_sched.c",
-        "mem/It_posix_mem.c",
-        "smp/It_posix_smp_001.c",
-        "smp/It_posix_smp_002.c",
-        "smp/It_posix_smp_003.c",
-        "smp/It_posix_smp_004.c",
-        "smp/It_posix_smp_005.c",
-        "smp/It_posix_smp_006.c",
-        "smp/It_posix_smp_007.c",
-        "smp/It_posix_smp_008.c",
-        "smp/It_posix_smp_009.c",
-        "smp/It_posix_smp_010.c",
-        "smp/It_posix_smp_011.c",
-        "smp/It_posix_smp_012.c",
-        "smp/It_posix_smp_013.c",
-        "smp/It_posix_smp_014.c",
-        "smp/It_posix_smp_015.c",
-        "smp/It_posix_smp_016.c",
-        "smp/It_posix_smp_017.c",
-        "smp/It_posix_smp_018.c",
-        "smp/It_posix_smp.c",
+  if (LOSCFG_TEST_SMOKE) {
+    sources += [
+      "mem/smoke/It_posix_mem_001.c",
+      "mem/smoke/It_posix_mem_002.c",
+      "mem/smoke/It_posix_mem_003.c",
+      "mqueue/smoke/It_posix_queue_001.c",
+      "mqueue/smoke/It_posix_queue_003.c",
+      "mqueue/smoke/It_posix_queue_028.c",
+      "mqueue/smoke/It_posix_queue_062.c",
+      "mutex/smoke/It_posix_mutex_001.c",
+      "mutex/smoke/It_posix_mutex_007.c",
+      "mutex/smoke/It_posix_mutex_012.c",
+      "mutex/smoke/It_posix_mutex_015.c",
+      "mutex/smoke/It_posix_mutex_016.c",
+      "mutex/smoke/It_posix_mutex_019.c",
+      "mutex/smoke/It_posix_mutex_020.c",
+      "pthread/smoke/It_posix_pthread_003.c",
+      "pthread/smoke/It_posix_pthread_004.c",
+      "pthread/smoke/It_posix_pthread_005.c",
+      "pthread/smoke/It_posix_pthread_006.c",
+      "pthread/smoke/It_posix_pthread_009.c",
+      "pthread/smoke/It_posix_pthread_018.c",
+      "pthread/smoke/It_posix_pthread_019.c",
+      "pthread/smoke/It_posix_pthread_020.c",
+      "pthread/smoke/It_posix_pthread_021.c",
+      "pthread/smoke/It_posix_pthread_022.c",
+      "sem/smoke/It_posix_sem_001.c",
+      "sem/smoke/It_posix_sem_002.c",
+      "swtmr/smoke/It_posix_swtmr_001.c",
+      "swtmr/smoke/It_posix_swtmr_013.c",
+      "swtmr/smoke/It_posix_swtmr_046.c",
+      "swtmr/smoke/It_posix_swtmr_047.c",
+      "swtmr/smoke/It_posix_swtmr_049.c",
+      "swtmr/smoke/It_posix_swtmr_055.c",
+      "swtmr/smoke/It_posix_swtmr_065.c",
+      "swtmr/smoke/It_posix_swtmr_067.c",
+      "swtmr/smoke/It_posix_swtmr_101.c",
+      "swtmr/smoke/It_posix_swtmr_103.c",
+      "swtmr/smoke/It_posix_swtmr_105.c",
+      "swtmr/smoke/It_posix_swtmr_106.c",
     ]
+  }
 
-    if (LOSCFG_TEST_SMOKE) {
-        sources += [
-            "mqueue/smoke/It_posix_queue_001.c",
-            "mqueue/smoke/It_posix_queue_003.c",
-            "mqueue/smoke/It_posix_queue_028.c",
-            "mqueue/smoke/It_posix_queue_062.c",
-            "mutex/smoke/It_posix_mutex_001.c",
-            "mutex/smoke/It_posix_mutex_007.c",
-            "mutex/smoke/It_posix_mutex_012.c",
-            "mutex/smoke/It_posix_mutex_015.c",
-            "mutex/smoke/It_posix_mutex_016.c",
-            "mutex/smoke/It_posix_mutex_019.c",
-            "mutex/smoke/It_posix_mutex_020.c",
-            "sem/smoke/It_posix_sem_001.c",
-            "sem/smoke/It_posix_sem_002.c",
-            "pthread/smoke/It_posix_pthread_003.c",
-            "pthread/smoke/It_posix_pthread_004.c",
-            "pthread/smoke/It_posix_pthread_005.c",
-            "pthread/smoke/It_posix_pthread_006.c",
-            "pthread/smoke/It_posix_pthread_009.c",
-            "pthread/smoke/It_posix_pthread_018.c",
-            "pthread/smoke/It_posix_pthread_019.c",
-            "pthread/smoke/It_posix_pthread_020.c",
-            "pthread/smoke/It_posix_pthread_021.c",
-            "pthread/smoke/It_posix_pthread_022.c",
-            "swtmr/smoke/It_posix_swtmr_001.c",
-            "swtmr/smoke/It_posix_swtmr_013.c",
-            "swtmr/smoke/It_posix_swtmr_046.c",
-            "swtmr/smoke/It_posix_swtmr_047.c",
-            "swtmr/smoke/It_posix_swtmr_049.c",
-            "swtmr/smoke/It_posix_swtmr_055.c",
-            "swtmr/smoke/It_posix_swtmr_065.c",
-            "swtmr/smoke/It_posix_swtmr_067.c",
-            "swtmr/smoke/It_posix_swtmr_101.c",
-            "swtmr/smoke/It_posix_swtmr_103.c",
-            "swtmr/smoke/It_posix_swtmr_105.c",
-            "swtmr/smoke/It_posix_swtmr_106.c",
-            "mem/smoke/It_posix_mem_001.c",
-            "mem/smoke/It_posix_mem_002.c",
-            "mem/smoke/It_posix_mem_003.c",
-        ]
-    }
+  include_dirs = [
+    "../../../compat/posix/src",
+    "../../include",
+    "mem",
+    "mqueue",
+    "mutex",
+    "pthread",
+    "sched",
+    "sem",
+    "smp",
+    "swtmr",
+  ]
 
-    include_dirs = [
-        "../../../compat/posix/src",
-        "../../include",
-        "mem",
-        "mqueue",
-        "mutex",
-        "pthread",
-        "sched",
-        "sem",
-        "smp",
-        "swtmr",
-    ]
-
-    cflags = [ "-Wno-error" ]
+  cflags = [ "-Wno-error" ]
 }

@@ -51,7 +51,8 @@
 
 #define USE_TASKID_AS_HANDLE YES 	//使用任务ID作为句柄
 #define USE_MMAP YES				//
-#define IPC_MSG_DATA_SZ_MAX 1024	//最大的消息内容 1K ,posix最大消息内容 64个字节
+#define IPC_IO_DATA_MAX 8192UL	//最大的消息内容 8K ,posix最大消息内容 64个字节
+#define IPC_MSG_DATA_SZ_MAX (IPC_IO_DATA_MAX * sizeof(SpecialObj) / (sizeof(SpecialObj) + sizeof(size_t)))
 #define IPC_MSG_OBJECT_NUM_MAX (IPC_MSG_DATA_SZ_MAX / sizeof(SpecialObj))
 
 #define LITE_IPC_POOL_NAME "liteipc"	//ipc池名称

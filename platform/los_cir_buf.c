@@ -110,7 +110,7 @@ STATIC UINT32 OsCirBufWriteLoop(CirBuf *cirbufCB, const CHAR *buf, UINT32 size)
 //写入数据到循环buf区
 UINT32 LOS_CirBufWrite(CirBuf *cirbufCB, const CHAR *buf, UINT32 size)
 {
-    UINT32 cpSize = 0;
+    UINT32 cpSize;
 
     if ((cirbufCB == NULL) || (buf == NULL) || (size == 0)) {
         return 0;

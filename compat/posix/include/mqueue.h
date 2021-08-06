@@ -81,6 +81,11 @@ typedef union send_receive_t {
     short data;
 } mode_s;
 
+struct mqnotify {
+    pid_t pid;
+    struct sigevent notify;
+};
+
 /* TYPE DEFINITIONS */
 struct mqarray {
     UINT32 mq_id : 31;
@@ -91,6 +96,7 @@ struct mqarray {
     uid_t euid; /* euid of mqueue */
     gid_t egid; /* egid of mqueue */
     fd_set mq_fdset; /* mqueue sysFd bit map */
+    struct mqnotify mq_notify;
     LosQueueCB *mqcb;
     struct mqpersonal *mq_personal;
 };
@@ -418,6 +424,7 @@ extern ssize_t mq_timedreceive(mqd_t personal, char *msg, size_t msgLen,
                                unsigned int *msgPrio, const struct timespec *absTimeout);
 
 extern void mqueue_refer(int sysFd);
+extern int OsMqNotify(mqd_t personal, const struct sigevent *sigev);
 
 #ifdef __cplusplus
 #if __cplusplus

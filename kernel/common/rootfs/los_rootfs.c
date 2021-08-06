@@ -97,7 +97,7 @@ STATIC INT32 AddEmmcParts(INT32 rootAddr, INT32 rootSize, INT32 userAddr, INT32 
         return LOS_NOK;
     }
 
-    LOS_Msleep(10); /* waiting for device identification */
+    LOS_Msleep(10); /* 100, sleep time. waiting for device identification */
 
     INT32 diskId = los_alloc_diskid_byname(node_name);
     if (diskId < 0) {
@@ -156,11 +156,12 @@ STATIC INT32 AddPartitions(CHAR *dev, UINT64 rootAddr, UINT64 rootSize, UINT64 u
 }
 
 
-STATIC INT32 ParseRootArgs(CHAR **dev, CHAR **fstype, UINT64 *rootAddr, UINT64 *rootSize, UINT32 *mountFlags) {
+STATIC INT32 ParseRootArgs(CHAR **dev, CHAR **fstype, UINT64 *rootAddr, UINT64 *rootSize, UINT32 *mountFlags)
+{
     INT32 ret;
-    CHAR *rootAddrStr;
-    CHAR *rootSizeStr;
-    CHAR *rwTag;
+    CHAR *rootAddrStr = NULL;
+    CHAR *rootSizeStr = NULL;
+    CHAR *rwTag = NULL;
 
     ret = LOS_GetArgValue("root", dev);
     if (ret != LOS_OK) {
@@ -187,7 +188,7 @@ STATIC INT32 ParseRootArgs(CHAR **dev, CHAR **fstype, UINT64 *rootAddr, UINT64 *
     } else {
         *rootSize = LOS_SizeStrToNum(rootSizeStr);
     }
-    
+
     ret = LOS_GetArgValue("ro", &rwTag);
     if (ret == LOS_OK) {
         *mountFlags = MS_RDONLY;
@@ -198,10 +199,11 @@ STATIC INT32 ParseRootArgs(CHAR **dev, CHAR **fstype, UINT64 *rootAddr, UINT64 *
     return LOS_OK;
 }
 
-STATIC INT32 ParseUserArgs(UINT64 rootAddr, UINT64 rootSize, UINT64 *userAddr, UINT64 *userSize) {
+STATIC INT32 ParseUserArgs(UINT64 rootAddr, UINT64 rootSize, UINT64 *userAddr, UINT64 *userSize)
+{
     INT32 ret;
-    CHAR *userAddrStr;
-    CHAR *userSizeStr;
+    CHAR *userAddrStr = NULL;
+    CHAR *userSizeStr = NULL;
 
     ret = LOS_GetArgValue("useraddr", &userAddrStr);
     if (ret != LOS_OK) {
@@ -220,7 +222,8 @@ STATIC INT32 ParseUserArgs(UINT64 rootAddr, UINT64 rootSize, UINT64 *userAddr, U
     return LOS_OK;
 }
 
-STATIC INT32 MountPartitions(CHAR *fsType, UINT32 mountFlags) {
+STATIC INT32 MountPartitions(CHAR *fsType, UINT32 mountFlags)
+{
     INT32 ret;
     INT32 err;
 
@@ -275,7 +278,8 @@ STATIC INT32 MountPartitions(CHAR *fsType, UINT32 mountFlags) {
     return LOS_OK;
 }
 
-STATIC INT32 CheckValidation(UINT64 rootAddr, UINT64 rootSize, UINT64 userAddr, UINT64 userSize) {
+STATIC INT32 CheckValidation(UINT64 rootAddr, UINT64 rootSize, UINT64 userAddr, UINT64 userSize)
+{
     UINT64 alignSize = LOS_GetAlignsize();
 
     if (alignSize == 0) {
@@ -291,10 +295,11 @@ STATIC INT32 CheckValidation(UINT64 rootAddr, UINT64 rootSize, UINT64 userAddr, 
     return LOS_OK;
 }
 
-INT32 OsMountRootfs() {
+INT32 OsMountRootfs()
+{
     INT32 ret;
-    CHAR *dev;
-    CHAR *fstype;
+    CHAR *dev = NULL;
+    CHAR *fstype = NULL;
     UINT64 rootAddr;
     UINT64 rootSize;
     UINT64 userAddr;

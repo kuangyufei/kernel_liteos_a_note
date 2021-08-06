@@ -76,8 +76,7 @@ typedef LOS_DL_LIST LIST_ENTRY;
 #define CHG_MTIME 32
 #define CHG_CTIME 64
 
-struct IATTR //此结构用于记录 vnode 的属性
-{
+struct IATTR { //此结构用于记录 vnode 的属性
   /* This structure is used for record vnode attr. */
   unsigned int attr_chg_valid;//节点改变有效性 (CHG_MODE | CHG_UID | ... )
   unsigned int attr_chg_flags;//额外的系统与用户标志（flag），用来保护该文件
@@ -170,8 +169,8 @@ struct Vnode {//vnode并不包含文件名,因为 vnode和文件名是 1:N 的�
     uint32_t flag;                      /* vnode flag */		//节点标签
     LIST_ENTRY hashEntry;               /* list entry for bucket in hash table */ //通过它挂入哈希表 g_vnodeHashEntrys[i], i:[0,g_vnodeHashMask]
     LIST_ENTRY actFreeEntry;            /* vnode active/free list entry */	//通过本节点挂到空闲链表和使用链表上
-    struct Mount *originMount;          /* fs info about this vnode */ //节点的挂载信息
-    struct Mount *newMount;             /* fs info about who mount on this vnode */	//挂载在这个节点上的文件系统
+    struct Mount *originMount;          /* fs info about this vnode */ //自己所在的文件系统挂载信息
+    struct Mount *newMount;             /* fs info about who mount on this vnode */	//其他挂载在这个节点上文件系统信息
 };
 /*
 	虚拟节点操作接口,具体的文件系统只需实现这些接口函数来操作vnode.

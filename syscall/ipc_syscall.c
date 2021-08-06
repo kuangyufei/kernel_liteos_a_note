@@ -99,9 +99,22 @@ mqd_t SysMqOpen(const char *mqName, int openFlag, mode_t mode, struct mq_attr *a
 int SysMqClose(mqd_t personal)
 {
     int ret;
+    int ufd = (INTPTR)personal;
 
     MQUEUE_FD_U2K(personal);
     ret = mq_close(personal);
+    if (ret < 0) {
+        return -get_errno();
+    }
+    FreeProcessFd(ufd);
+    return ret;
+}
+int SysMqNotify(mqd_t personal, const struct sigevent *sigev)
+{
+    int ret;
+
+    MQUEUE_FD_U2K(personal);
+    ret = OsMqNotify(personal, sigev);
     if (ret < 0) {
         return -get_errno();
     }

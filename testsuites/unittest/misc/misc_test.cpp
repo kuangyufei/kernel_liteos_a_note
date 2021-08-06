@@ -128,10 +128,32 @@ HWTEST_F(MiscTest, ItTestMisc006, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: AR000EEMQ9
  */
-/*HWTEST_F(MiscTest, ItTestMisc007, TestSize.Level0)
+HWTEST_F(MiscTest, ItTestMisc007, TestSize.Level0)
 {
     ItTestMisc007();
-}*/
+}
+
+/* *
+ * @tc.name: IT_TEST_MISC_008
+ * @tc.desc: function for MiscTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(MiscTest, ItTestMisc008, TestSize.Level0)
+{
+    ItTestMisc008();
+}
+
+/* *
+ * @tc.name: IT_TEST_MISC_009
+ * @tc.desc: function for MiscTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(MiscTest, ItTestMisc009, TestSize.Level0)
+{
+    ItTestMisc009();
+}
 
 /* *
  * @tc.name: IT_TEST_MISC_010
@@ -154,6 +176,17 @@ HWTEST_F(MiscTest, ItTestMisc006, TestSize.Level0)
 {
     ItTestMisc011();
 }*/
+
+/* *
+ * @tc.name: IT_TEST_MISC_012
+ * @tc.desc: function for MiscTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(MiscTest, ItTestMisc012, TestSize.Level0)
+{
+    ItTestMisc012();
+}
 
 /* *
  * @tc.name: IT_TEST_MISC_013

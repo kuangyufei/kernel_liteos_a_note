@@ -80,31 +80,37 @@ static void FormatErrorInfo(struct ErrorInfo *info,
     }
 
     (void)memset_s(info, sizeof(*info), 0, sizeof(*info));
-    (void)strncpy_s(info->event, sizeof(info->event), event, Min(strlen(event), sizeof(info->event) - 1));
-    (void)strncpy_s(info->module, sizeof(info->module), module, Min(strlen(module), sizeof(info->module) - 1));
-    (void)strncpy_s(info->errorDesc, sizeof(info->errorDesc), errorDesc,
-        Min(strlen(errorDesc), sizeof(info->errorDesc) - 1));
+    if (strncpy_s(info->event, sizeof(info->event), event, Min(strlen(event), sizeof(info->event) - 1)) != EOK) {
+        BBOX_PRINT_ERR("info->event is not enough or strncpy_s failed!\n");
+    }
+    if (strncpy_s(info->module, sizeof(info->module), module, Min(strlen(module), sizeof(info->module) - 1)) != EOK) {
+        BBOX_PRINT_ERR("info->module is not enough or strncpy_s failed!\n");
+    }
+    if (strncpy_s(info->errorDesc, sizeof(info->errorDesc), errorDesc,
+        Min(strlen(errorDesc), sizeof(info->errorDesc) - 1)) != EOK) {
+        BBOX_PRINT_ERR("info->errorDesc is not enough or strncpy_s failed!\n");
+    }
 }
 
 #ifdef LOSCFG_FS_VFS
 static void WaitForLogPart(void)
 {
-    BBOX_PRINT_INFO("wait for log part [%s] begin!\n", LOSCFG_LOG_ROOT_PATH);
+    BBOX_PRINT_INFO("wait for log part [%s] begin!\n", LOSCFG_BLACKBOX_LOG_PART_MOUNT_POINT);
     while (!IsLogPartReady()) {
         LOS_Msleep(LOG_PART_WAIT_TIME);
     }
-    BBOX_PRINT_INFO("wait for log part [%s] end!\n", LOSCFG_LOG_ROOT_PATH);
+    BBOX_PRINT_INFO("wait for log part [%s] end!\n", LOSCFG_BLACKBOX_LOG_PART_MOUNT_POINT);
 }
 #else
 static void WaitForLogPart(void)
 {
     int i = 0;
 
-    BBOX_PRINT_INFO("wait for log part [%s] begin!\n", LOSCFG_LOG_ROOT_PATH);
+    BBOX_PRINT_INFO("wait for log part [%s] begin!\n", LOSCFG_BLACKBOX_LOG_PART_MOUNT_POINT);
     while (i++ < LOG_WAIT_TIMES) {
         LOS_Msleep(LOG_PART_WAIT_TIME);
     }
-    BBOX_PRINT_INFO("wait for log part [%s] end!\n", LOSCFG_LOG_ROOT_PATH);
+    BBOX_PRINT_INFO("wait for log part [%s] end!\n", LOSCFG_BLACKBOX_LOG_PART_MOUNT_POINT);
 }
 #endif
 
@@ -139,7 +145,7 @@ static void InvokeModuleOps(struct ErrorInfo *info, BBoxOps *ops)
 
     if (ops->ops.Dump != NULL) {
         BBOX_PRINT_INFO("[%s] starts dumping log!\n", ops->ops.module);
-        ops->ops.Dump(LOSCFG_LOG_ROOT_PATH, info);
+        ops->ops.Dump(LOSCFG_BLACKBOX_LOG_ROOT_PATH, info);
         BBOX_PRINT_INFO("[%s] ends dumping log!\n", ops->ops.module);
     }
     if (ops->ops.Reset != NULL) {
@@ -165,7 +171,12 @@ static void SaveLastLog(const char *logDir)
         (void)LOS_MemFree(m_aucSysMem1, info);
         return;
     }
-
+    if (CreateLogDir(LOSCFG_BLACKBOX_LOG_ROOT_PATH) != 0) {
+        (void)LOS_SemPost(g_opsListSem);
+        (void)LOS_MemFree(m_aucSysMem1, info);
+        BBOX_PRINT_ERR("Create log dir [%s] failed!\n", LOSCFG_BLACKBOX_LOG_ROOT_PATH);
+        return;
+    }
     LOS_DL_LIST_FOR_EACH_ENTRY(ops, &g_opsList, BBoxOps, opsList) {
         if (ops == NULL) {
             BBOX_PRINT_ERR("ops: NULL, please check it!\n");
@@ -214,6 +225,11 @@ static void SaveLogWithoutReset(struct ErrorInfo *info)
     }
     if (!FindModuleOps(info, &ops)) {
         (void)LOS_SemPost(g_opsListSem);
+        return;
+    }
+    if (CreateLogDir(LOSCFG_BLACKBOX_LOG_ROOT_PATH) != 0) {
+        (void)LOS_SemPost(g_opsListSem);
+        BBOX_PRINT_ERR("Create log dir [%s] failed!\n", LOSCFG_BLACKBOX_LOG_ROOT_PATH);
         return;
     }
     if (ops->ops.Dump == NULL && ops->ops.Reset == NULL) {
@@ -341,7 +357,11 @@ int BBoxRegisterModuleOps(struct ModuleOps *ops)
         return -1;
     }
     (void)memset_s(newOps, sizeof(*newOps), 0, sizeof(*newOps));
-    (void)memcpy_s(&newOps->ops, sizeof(newOps->ops), ops, sizeof(*ops));
+    if (memcpy_s(&newOps->ops, sizeof(newOps->ops), ops, sizeof(*ops)) != EOK) {
+        BBOX_PRINT_ERR("newOps->ops is not enough or memcpy_s failed!\n");
+        (void)LOS_MemFree(m_aucSysMem1, newOps);
+        return -1;
+    }
     if (LOS_SemPend(g_opsListSem, LOS_WAIT_FOREVER) != LOS_OK) {
         BBOX_PRINT_ERR("Request g_opsListSem failed!\n");
         (void)LOS_MemFree(m_aucSysMem1, newOps);
@@ -430,7 +450,7 @@ int OsBBoxDriverInit(void)
     }
     (void)memset_s(g_tempErrInfo, sizeof(*g_tempErrInfo), 0, sizeof(*g_tempErrInfo));
     (void)memset_s(&taskParam, sizeof(taskParam), 0, sizeof(taskParam));
-    taskParam.auwArgs[0] = (UINTPTR)LOSCFG_LOG_ROOT_PATH;
+    taskParam.auwArgs[0] = (UINTPTR)LOSCFG_BLACKBOX_LOG_ROOT_PATH;
     taskParam.pfnTaskEntry = (TSK_ENTRY_FUNC)SaveErrorLog;
     taskParam.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
     taskParam.pcName = "SaveErrorLog";

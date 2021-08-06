@@ -61,7 +61,7 @@ STATIC VOID InitLevelCall(const CHAR *name, const UINT32 level, struct ModuleIni
 #ifdef LOS_INIT_DEBUG
     UINT64 startNsec, endNsec;
     UINT64 totalTime = 0;
-    UINT64 singleTime = 0;
+    UINT64 singleTime;
     UINT32 ret = LOS_OK;
 #endif
 

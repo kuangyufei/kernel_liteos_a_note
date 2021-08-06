@@ -8,9 +8,9 @@
 ### 几点说明
 
 * **[kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note) | 中文注解鸿蒙内核** 
-
+  
   是在 `OpenHarmony` 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) 基础上给内核源码加上中文注解的版本.加注版与官方源码按月保持同步,同步历史如下:
-  * `2021/7/30` -- 主要对各目录增加了`BUILD.gn`文件 
+  * `2021/8/06` -- 主要对各目录增加了`BUILD.gn`文件 
   * `2021/7/15` -- 改动不大,新增`blackbox`,`hidumper`,对一些宏规范化使用 
   * `2021/6/27` -- 对文件系统/设备驱动改动较大,目录结构进行了重新整理
   * `2021/6/08` -- 对编译构建,任务,信号模块有较大的改动
@@ -34,6 +34,8 @@
   * **[文件系统 | NuttX](https://gitee.com/weharmony/third_party_NuttX)** 
   * **[标准库 | musl](https://gitee.com/weharmony/third_party_musl)** 
 
+
+      
 ### **为何要精读内核源码?**
 * 码农的学职生涯，都应精读一遍内核源码。以浇筑好计算机知识大厦的地基，地基纵深的坚固程度，很大程度能决定未来大厦能盖多高。那为何一定要精读细品呢?
 * 因为内核代码本身并不太多，都是浓缩的精华，精读是让各个知识点高频出现，不孤立成点状记忆，没有足够连接点的知识点是很容易忘的，点点成线，线面成体，连接越多，记得越牢，如此短时间内容易结成一张高浓度，高密度的系统化知识网，训练大脑肌肉记忆，驻入大脑直觉区，想抹都抹不掉，终生携带，随时调取。跟骑单车一样，一旦学会，即便多年不骑，照样跨上就走，游刃有余。
@@ -119,7 +121,10 @@
 
 与代码有bug需不断debug一样，文章和注解内容会存在不少错漏之处，请多包涵，但会反复修正，持续更新，`.xx`代表修改的次数，精雕细琢，言简意赅，力求打造精品内容。
 
-* [v62.xx 鸿蒙内核源码分析(文件概念篇) | 为什么说一切皆是文件 ](https://my.oschina.net/weharmony/blog/5152858) **[  | 51](https://harmonyos.51cto.com/posts/7460)[ .c](https://blog.csdn.net/kuangyufei/article/details/119217155)[  .h](http://weharmonyos.com/blog/62_文件概念篇.html)[ .o](https://my.oschina.net/weharmony)**
+* [v63.xx 鸿蒙内核源码分析(文件系统篇) | 用图书管理说文件系统 ](https://my.oschina.net/weharmony/blog/5165752) **[  | 51](https://harmonyos.51cto.com/posts/7609)[ .c](https://blog.csdn.net/kuangyufei/article/details/119217155)[  .h](http://weharmonyos.com/blog/63_文件系统篇.html)[ .o](https://my.oschina.net/weharmony)**
+
+
+* [v62.xx 鸿蒙内核源码分析(文件概念篇) | 为什么说一切皆是文件 ](https://my.oschina.net/weharmony/blog/5152858) **[  | 51](https://harmonyos.51cto.com/posts/7460)[ .c](https://blog.csdn.net/kuangyufei/article/details/119425132)[  .h](http://weharmonyos.com/blog/62_文件概念篇.html)[ .o](https://my.oschina.net/weharmony)**
 
 * [v61.xx 鸿蒙内核源码分析(忍者ninja篇) | 都忍者了能不快吗 ](https://my.oschina.net/weharmony/blog/5139034) **[  | 51](https://harmonyos.51cto.com/posts/7328)[ .c](https://blog.csdn.net/kuangyufei/article/details/118970589)[  .h](http://weharmonyos.com/blog/61_忍者ninja篇.html)[ .o](https://my.oschina.net/weharmony)**
 

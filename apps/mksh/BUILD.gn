@@ -34,7 +34,62 @@ group("mksh") {
   deps = [ ":build_mksh" ]
 }
 
+copy("copy_mksh_src") {
+  sources = [ "$LITEOSTHIRDPARTY/mksh" ]
+  outputs = [ "$target_out_dir/mksh_build" ]
+}
+
 build_ext_component("build_mksh") {
-  exec_path = rebase_path(target_out_dir)
-  command = "make -C $LITEOSTHIRDPARTY/mksh"
+  deps = [ ":copy_mksh_src" ]
+  deps += [ "//prebuilts/lite/sysroot" ]
+  exec_path = rebase_path("$target_out_dir/mksh_build")
+
+  cflags = [
+    "-flto",
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-Oz",
+    "-fstack-protector-strong",
+    "-D_FORTIFY_SOURCE=2",
+    "-DMKSH_DISABLE_TTY_WARNING",
+    "-DMKSH_SMALL=1",
+    "-DMKSH_ASSUME_UTF8=1",
+    "-DMKSH_SMALL_BUT_FAST=0",
+    "-DMKSH_S_NOVI=1",
+    "-DHAVE_CAN_FSTACKPROTECTORSTRONG=1",
+    "-DMKSH_LESS_CMDLINE_EDITING",
+    "-DMKSH_LESS_BUILDINS",
+    "-DMKSH_NO_INITCOMS",
+    "-DADAPT_FOR_LITEOS_A",
+  ]
+  cflags = string_join(" ", cflags)
+
+  extra_flags = string_join(" ", target_arch_cflags)
+  if (ohos_build_compiler == "clang") {
+    extra_flags += " --target=$target_triple"
+    extra_flags += " --sysroot=" + rebase_path(ohos_current_sysroot)
+  }
+
+  command = "rm -rf .git && env"
+  command += " CC=\"$ohos_current_cc_command\""
+  command += " TARGET_OS=OpenHarmony"
+  command += " CFLAGS=\"$cflags $extra_flags\""
+  command += " LDFLAGS=\"-Wl,--gc-sections -flto -O2\""
+  command += " sh ./Build.sh -r"
+
+  # copy mksh and .mkshrc to out dir
+  command += " && mkdir -p "
+  command += rebase_path("$root_out_dir/bin", exec_path)
+  command += " && install -D mksh "
+  command += rebase_path("$root_out_dir/unstripped/bin/mksh", exec_path)
+  command += " && $ohos_current_strip_command mksh -o "
+  command += rebase_path("$root_out_dir/bin/mksh", exec_path)
+  command += " && install -D .mkshrc "
+  command += rebase_path("$root_out_dir/etc/.mkshrc", exec_path)
+
+  outputs = [
+    "$root_out_dir/unstripped/bin/mksh",
+    "$root_out_dir/bin/mksh",
+    "$root_out_dir/etc/.mkshrc",
+  ]
 }

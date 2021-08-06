@@ -53,7 +53,7 @@ function main() {
         tee="_tee"
     fi
 
-    config_file="${product_path}/config/${ohos_build_type}${tee}.config"
+    config_file="${product_path}/kernel_configs/${ohos_build_type}${tee}.config"
     if [ -f "${config_file}" ]; then
         cp "${config_file}" "${destination}"
         return

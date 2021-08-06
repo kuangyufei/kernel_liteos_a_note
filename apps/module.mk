@@ -33,8 +33,8 @@ APP_SUBDIRS :=	#记录子目录变量,用于编译
 
 ifeq ($(LOSCFG_SHELL), y)
 APP_SUBDIRS += shell #添加 shell 子目录
-APP_SUBDIRS += mksh	
-APP_SUBDIRS += toybox
+#APP_SUBDIRS += mksh
+#APP_SUBDIRS += toybox
 endif
 
 ifeq ($(LOSCFG_USER_INIT_DEBUG), y)

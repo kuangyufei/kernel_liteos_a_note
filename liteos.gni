@@ -1,5 +1,3 @@
-#!/bin/bash
-#
 # Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
 # Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
@@ -29,4 +27,38 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-./mkfs.jffs2  -s 0x1000 -e 0x10000 -p 0x100000 -d rootfs/ -o rootfs_64k.jffs2
+import("$root_out_dir/config.gni")
+
+LITEOSTOPDIR = "//kernel/liteos_a"
+LITEOSTHIRDPARTY = "//third_party"
+HDFTOPDIR = "//drivers/adapter/khdf/liteos"
+
+template("kernel_module") {
+  if (defined(invoker.module_switch) && !invoker.module_switch) {
+    group(target_name) {
+      not_needed(invoker, "*")
+    }
+  } else {
+    source_set(target_name) {
+      forward_variables_from(invoker, "*")
+    }
+  }
+}
+
+template("config") {
+  config(target_name) {
+    if (defined(invoker.module_switch) && !invoker.module_switch && target_name == "public") {
+      not_needed(invoker, "*")
+      forward_variables_from(invoker, [ "configs" ])
+    } else {
+      forward_variables_from(invoker, "*")
+    }
+  }
+}
+
+set_defaults("kernel_module") {
+  configs = [
+    "$LITEOSTOPDIR:public",
+    "$LITEOSTOPDIR:los_config",
+  ]
+}

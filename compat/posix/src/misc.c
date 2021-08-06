@@ -30,14 +30,16 @@
  */
 
 #include "sys/types.h"
+#include "sys/resource.h"
 #include "unistd.h"
 #include "stdio.h"
 #include "pthread.h"
 #include "sys/utsname.h"
 #include "mqueue.h"
 #include "semaphore.h"
+#include "los_process_pri.h"
 #include "los_hw.h"
-//杂项
+
 /*
  * Supply some suitable values for constants that may not be present
  * in all configurations.
@@ -57,17 +59,17 @@ int uname(struct utsname *name)
     if (name == NULL) {
         return -EFAULT;
     }
-    (VOID)strncpy_s(name->sysname, sizeof(name->sysname), KERNEL_NAME, strlen(KERNEL_NAME) + 1);
-    (VOID)strncpy_s(name->nodename, sizeof(name->nodename), "hisilicon", strlen("hisilicon") + 1);
-    ret = snprintf_s(name->version, sizeof(name->version), sizeof(name->version) - 1, "%s %u.%u.%u.%u %s %s",
+    (VOID)strcpy_s(name->sysname, sizeof(name->sysname), KERNEL_NAME);
+    (VOID)strcpy_s(name->nodename, sizeof(name->nodename), "hisilicon");
+    ret = sprintf_s(name->version, sizeof(name->version), "%s %u.%u.%u.%u %s %s",
                      KERNEL_NAME, KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE, __DATE__, __TIME__);
     if (ret < 0) {
         return -EIO;
     }
 
     cpuInfo = LOS_CpuInfo();
-    (VOID)strncpy_s(name->machine, sizeof(name->machine), cpuInfo, sizeof(name->machine));
-    ret = snprintf_s(name->release, sizeof(name->release), sizeof(name->release) - 1, "%u.%u.%u.%u",
+    (VOID)strcpy_s(name->machine, sizeof(name->machine), cpuInfo);
+    ret = sprintf_s(name->release, sizeof(name->release), "%u.%u.%u.%u",
                      KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE);
     if (ret < 0) {
         return -EIO;
@@ -144,9 +146,53 @@ long sysconf(int name)
             return -1;
     }
 }
-//获取进程ID ? @note_thinking 这里取taskID 不对吧,
+
 pid_t getpid(void)
 {
     return ((LosTaskCB *)(OsCurrTaskGet()))->taskID;
 }
 
+int getrlimit(int resource, struct rlimit *rlim)
+{
+    LosProcessCB *pcb = OsCurrProcessGet();
+
+    switch (resource) {
+        case RLIMIT_NOFILE:
+        case RLIMIT_FSIZE:
+            break;
+        default:
+            return -EINVAL;
+    }
+    rlim->rlim_cur = pcb->pl_rlimit[resource].rlim_cur;
+    rlim->rlim_max = pcb->pl_rlimit[resource].rlim_max;
+
+    return 0;
+}
+
+#define FSIZE_RLIMIT 0XFFFFFFFF
+int setrlimit(int resource, const struct rlimit *rlim)
+{
+    LosProcessCB *pcb = OsCurrProcessGet();
+
+    if (rlim->rlim_cur > rlim->rlim_max) {
+        return -EINVAL;
+    }
+    switch (resource) {
+        case RLIMIT_NOFILE:
+            if (rlim->rlim_max > NR_OPEN_DEFAULT) {
+                return -EPERM;
+            }
+            break;
+        case RLIMIT_FSIZE:
+            if (rlim->rlim_max > FSIZE_RLIMIT) {
+                return -EPERM;
+            }
+            break;
+        default:
+            return -EINVAL;
+    }
+    pcb->pl_rlimit[resource].rlim_cur = rlim->rlim_cur;
+    pcb->pl_rlimit[resource].rlim_max = rlim->rlim_max;
+
+    return 0;
+}

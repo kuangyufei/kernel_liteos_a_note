@@ -120,11 +120,6 @@ VOID ItPosixQueue001(VOID);
 VOID ItPosixQueue003(VOID);
 VOID ItPosixQueue028(VOID);
 VOID ItPosixQueue062(VOID);
-VOID ItPosixQueue205(VOID);
-VOID ItPosixQueue206(VOID);
-VOID ItPosixQueue207(VOID);
-VOID ItPosixQueue208(VOID);
-VOID ItPosixQueue209(VOID);
 VOID ItPosixQueue053(VOID);
 VOID ItPosixQueue144(VOID);
 #endif
@@ -274,5 +269,10 @@ VOID ItPosixQueue202(VOID);
 VOID ItPosixQueue203(VOID);
 VOID ItPosixQueue204(VOID);
 
+VOID ItPosixQueue205(VOID);
+VOID ItPosixQueue206(VOID);
+VOID ItPosixQueue207(VOID);
+VOID ItPosixQueue208(VOID);
+VOID ItPosixQueue209(VOID);
 #endif
 #endif

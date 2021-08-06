@@ -50,7 +50,6 @@ endif
 	LDFLAGS="--target=$(LLVM_TARGET) $(LLVM_SYSROOT)" \
 	make -C $(BUILD_DIR) toybox -j> $(BUILD_LOG) 2>&1
 	$(HIDE)$(CP) $(BUILD_DIR)/$(TOYBOX) .
-	$(HIDE)$(STRIP) $(TOYBOX)
 	$(HIDE)mkdir -p $(APPS_OUT)
 	$(HIDE)$(CP) $(TOYBOX) $(APPS_OUT)
 

@@ -682,6 +682,9 @@ LITE_OS_SEC_TEXT LosTaskCB *OsGetFreeTaskCB(VOID)
     if (LOS_ListEmpty(&g_losFreeTask)) {//全局空闲task为空
         SCHEDULER_UNLOCK(intSave);
         PRINT_ERR("No idle TCB in the system!\n");
+#ifdef LOSCFG_DEBUG_VERSION
+	(VOID)OsShellCmdTskInfoGet(OS_ALL_TASK_MASK, NULL, OS_PROCESS_INFO_ALL);
+#endif
         return NULL;
     }
 

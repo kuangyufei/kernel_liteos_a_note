@@ -50,6 +50,7 @@ extern "C" {
 
 int FullWriteFile(const char *filePath, const char *buf, size_t bufSize, int isAppend);
 int SaveBasicErrorInfo(const char *filePath, struct ErrorInfo *info);
+int CreateLogDir(const char *dirPath);
 bool IsLogPartReady(void);
 
 #ifdef __cplusplus

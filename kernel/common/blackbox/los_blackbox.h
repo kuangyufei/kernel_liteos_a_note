@@ -44,11 +44,8 @@ extern "C" {
 #define EVENT_MAX_LEN         32
 #define MODULE_MAX_LEN        32
 #define ERROR_DESC_MAX_LEN    512
-#ifndef LOSCFG_LOG_ROOT_PATH
-#define LOSCFG_LOG_ROOT_PATH "/storage/data/log"
-#endif
-#define KERNEL_FAULT_LOG_PATH LOSCFG_LOG_ROOT_PATH "/kernel_fault.log"
-#define USER_FAULT_LOG_PATH   LOSCFG_LOG_ROOT_PATH "/user_fault.log"
+#define KERNEL_FAULT_LOG_PATH LOSCFG_BLACKBOX_LOG_ROOT_PATH "/kernel_fault.log"
+#define USER_FAULT_LOG_PATH   LOSCFG_BLACKBOX_LOG_ROOT_PATH "/user_fault.log"
 
 #define MODULE_SYSTEM         "SYSTEM"
 #define EVENT_SYSREBOOT       "SYSREBOOT"

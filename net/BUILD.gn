@@ -30,15 +30,19 @@
 import("//kernel/liteos_a/liteos.gni")
 
 group("net") {
-  deps = [
-    "lwip-2.1",
-    "telnet",
-  ]
+  deps = [ "telnet" ]
+  if (defined(LOSCFG_NET_LWIP_SACK_2_0)) {
+    deps += [ "$LITEOSTHIRDPARTY/lwip_enhanced/src" ]
+  } else if (defined(LOSCFG_NET_LWIP_SACK_2_1)) {
+    deps += [ "lwip-2.1" ]
+  }
 }
 
 config("public") {
-  configs = [
-    "lwip-2.1:public",
-    "telnet:public",
-  ]
+  configs = [ "telnet:public" ]
+  if (defined(LOSCFG_NET_LWIP_SACK_2_0)) {
+    configs += [ "$LITEOSTHIRDPARTY/lwip_enhanced/src:public" ]
+  } else if (defined(LOSCFG_NET_LWIP_SACK_2_1)) {
+    configs += [ "lwip-2.1:public" ]
+  }
 }

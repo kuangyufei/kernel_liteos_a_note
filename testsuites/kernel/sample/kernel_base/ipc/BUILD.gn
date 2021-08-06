@@ -1,39 +1,67 @@
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 static_library("test_ipc") {
+  sources = [
+    "event/It_los_event.c",
+    "mux/It_los_mux.c",
+    "queue/It_los_queue.c",
+    "sem/It_los_sem.c",
+  ]
 
-    sources = [
-        "sem/It_los_sem.c",
-        "event/It_los_event.c",
-        "mux/It_los_mux.c",
-        "queue/It_los_queue.c",
+  if (LOSCFG_TEST_SMOKE) {
+    sources += [
+      "event/smoke/It_los_event_031.c",
+      "event/smoke/It_los_event_035.c",
+      "event/smoke/It_los_event_036.c",
+      "event/smoke/It_los_event_041.c",
+      "mux/smoke/It_los_mutex_001.c",
+      "mux/smoke/It_los_mutex_002.c",
+      "mux/smoke/It_los_mutex_003.c",
+      "mux/smoke/It_los_mutex_004.c",
+      "queue/smoke/It_los_queue_001.c",
+      "queue/smoke/It_los_queue_097.c",
+      "queue/smoke/It_los_queue_100.c",
+      "queue/smoke/It_los_queue_105.c",
+      "queue/smoke/It_los_queue_head_002.c",
+      "sem/smoke/It_los_sem_001.c",
+      "sem/smoke/It_los_sem_003.c",
+      "sem/smoke/It_los_sem_006.c",
     ]
+  }
+  include_dirs = [
+    "../../../include/",
+    "sem",
+    "event",
+    "mux",
+    "queue",
+  ]
 
-    if (LOSCFG_TEST_SMOKE) {
-        sources += [
-            "sem/smoke/It_los_sem_001.c",
-            "sem/smoke/It_los_sem_003.c",
-            "sem/smoke/It_los_sem_006.c",
-            "event/smoke/It_los_event_031.c",
-            "event/smoke/It_los_event_035.c",
-            "event/smoke/It_los_event_036.c",
-            "event/smoke/It_los_event_041.c",
-            "mux/smoke/It_los_mutex_001.c",
-            "mux/smoke/It_los_mutex_002.c",
-            "mux/smoke/It_los_mutex_003.c",
-            "mux/smoke/It_los_mutex_004.c",
-            "queue/smoke/It_los_queue_001.c",
-            "queue/smoke/It_los_queue_097.c",
-            "queue/smoke/It_los_queue_100.c",
-            "queue/smoke/It_los_queue_105.c",
-            "queue/smoke/It_los_queue_head_002.c",
-        ]
-    }
-    include_dirs = [
-        "../../../include/",
-        "sem",
-        "event",
-        "mux",
-        "queue",
-    ]
-
-    cflags = [ "-Wno-error" ]
+  cflags = [ "-Wno-error" ]
 }

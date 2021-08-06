@@ -61,9 +61,9 @@ ifeq ($(TEE:1=y),y)
 tee = _tee
 endif
 ifeq ($(RELEASE:1=y),y)
-CONFIG ?= $(PRODUCT_PATH)/config/release$(tee).config
+CONFIG ?= $(PRODUCT_PATH)/kernel_configs/release$(tee).config
 else
-CONFIG ?= $(PRODUCT_PATH)/config/debug$(tee).config
+CONFIG ?= $(PRODUCT_PATH)/kernel_configs/debug$(tee).config
 endif
 
 $(shell env CONFIG_=$(CONFIG_) DEVICE_PATH=$(DEVICE_PATH) olddefconfig >/dev/null)
@@ -152,8 +152,9 @@ $(LITEOS_LIBS_TARGET): $(__LIBS) sysroot
 	$(HIDE)echo "=============== make lib done  ==============="
 
 ##### make menuconfig #####
-menuconfig:
-	$(HIDE)menuconfig
+KCONFIG_CMDS = $(notdir $(wildcard $(dir $(shell which menuconfig))*config))
+$(KCONFIG_CMDS):
+	$(HIDE)$@ $(args)
 ##### menuconfig end #######
 
 $(LITEOS_MENUCONFIG_H): .config
@@ -230,4 +231,4 @@ update_config:
 	$(HIDE)test -f "$(CONFIG)" && cp -v "$(CONFIG)" .config && menuconfig && savedefconfig --out "$(CONFIG)"
 
 .PHONY: all lib clean cleanall $(LITEOS_TARGET) debug release help update_all_config update_config
-.PHONY: prepare sysroot cleanrootfs $(ROOTFS) $(ROOTFSDIR) $(APPS) menuconfig $(LITEOS_LIBS_TARGET) $(__LIBS) $(OUT)
+.PHONY: prepare sysroot cleanrootfs $(ROOTFS) $(ROOTFSDIR) $(APPS) $(KCONFIG_CMDS) $(LITEOS_LIBS_TARGET) $(__LIBS) $(OUT)

@@ -611,12 +611,15 @@ int VfsJffs2Chattr(struct Vnode *pVnode, struct IATTR *attr)
 int VfsJffs2Rmdir(struct Vnode *parentVnode, struct Vnode *targetVnode, const char *path)
 {
     int ret;
-    struct jffs2_inode *parentInode = (struct jffs2_inode *)parentVnode->data;
-    struct jffs2_inode *targetInode = (struct jffs2_inode *)targetVnode->data;
+    struct jffs2_inode *parentInode = NULL;
+    struct jffs2_inode *targetInode = NULL;
 
     if (!parentVnode || !targetVnode) {
         return -EINVAL;
     }
+
+    parentInode = (struct jffs2_inode *)parentVnode->data;
+    targetInode = (struct jffs2_inode *)targetVnode->data;
 
     LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
 

@@ -36,15 +36,22 @@
 #endif
 #ifdef LOSCFG_FS_VFS
 #include "fs/fs.h"
+#include "fs/mount.h"
 #endif
 #include "securec.h"
 #include "los_memory.h"
 
 /* ------------ local macroes ------------ */
+#ifdef LOSCFG_FS_VFS
+#define BBOX_DIR_MODE 0777
+#endif
+
 /* ------------ local prototypes ------------ */
 /* ------------ local function declarations ------------ */
 /* ------------ global function declarations ------------ */
 /* ------------ local variables ------------ */
+static bool g_isLogPartReady = FALSE;
+
 /* ------------ function definitions ------------ */
 int FullWriteFile(const char *filePath, const char *buf, size_t bufSize, int isAppend)
 {
@@ -59,7 +66,7 @@ int FullWriteFile(const char *filePath, const char *buf, size_t bufSize, int isA
     }
 
     if (!IsLogPartReady()) {
-        BBOX_PRINT_ERR("log path [%s] isn't ready to be written!\n", LOSCFG_LOG_ROOT_PATH);
+        BBOX_PRINT_ERR("log path [%s] isn't ready to be written!\n", LOSCFG_BLACKBOX_LOG_ROOT_PATH);
         return -1;
     }
     fd = open(filePath, O_CREAT | O_RDWR | (isAppend ? O_APPEND : O_TRUNC), 0644);
@@ -106,23 +113,107 @@ int SaveBasicErrorInfo(const char *filePath, struct ErrorInfo *info)
         return -1;
     }
     (void)memset_s(buf, ERROR_INFO_MAX_LEN, 0, ERROR_INFO_MAX_LEN);
-    (void)snprintf_s(buf, ERROR_INFO_MAX_LEN, ERROR_INFO_MAX_LEN - 1,
-        ERROR_INFO_HEADER_FORMAT, info->event, info->module, info->errorDesc);
-    *(buf + ERROR_INFO_MAX_LEN - 1) = '\0';
-    (void)FullWriteFile(filePath, buf, strlen(buf), 0);
+    if (snprintf_s(buf, ERROR_INFO_MAX_LEN, ERROR_INFO_MAX_LEN - 1,
+        ERROR_INFO_HEADER_FORMAT, info->event, info->module, info->errorDesc) != -1) {
+        *(buf + ERROR_INFO_MAX_LEN - 1) = '\0';
+        (void)FullWriteFile(filePath, buf, strlen(buf), 0);
+    } else {
+        BBOX_PRINT_ERR("buf is not enough or snprintf_s failed!\n");
+    }
+
     (void)LOS_MemFree(m_aucSysMem1, buf);
 
     return 0;
 }
 
 #ifdef LOSCFG_FS_VFS
+static int IsLogPartMounted(const char *devPoint, const char *mountPoint, struct statfs *statBuf, void *arg)
+{
+    (void)devPoint;
+    (void)statBuf;
+    (void)arg;
+    if (mountPoint != NULL && arg != NULL) {
+        if (strcmp(mountPoint, (char *)arg) == 0) {
+            g_isLogPartReady = TRUE;
+        }
+    }
+    return 0;
+}
+
 bool IsLogPartReady(void)
 {
-    return access(LOSCFG_LOG_ROOT_PATH, W_OK) == 0;
+    if (!g_isLogPartReady) {
+        (void)foreach_mountpoint((foreach_mountpoint_t)IsLogPartMounted, LOSCFG_BLACKBOX_LOG_PART_MOUNT_POINT);
+    }
+    return g_isLogPartReady;
 }
 #else
 bool IsLogPartReady(void)
 {
     return TRUE;
+}
+#endif
+
+#ifdef LOSCFG_FS_VFS
+int CreateNewDir(const char *dirPath)
+{
+    int ret;
+
+    if (dirPath == NULL) {
+        BBOX_PRINT_ERR("dirPath is NULL!\n");
+        return -1;
+    }
+
+    ret = access(dirPath, 0);
+    if (ret == 0) {
+        return 0;
+    }
+    ret = mkdir(dirPath, BBOX_DIR_MODE);
+    if (ret != 0) {
+        BBOX_PRINT_ERR("mkdir [%s] failed!\n", dirPath);
+        return -1;
+    }
+
+    return 0;
+}
+
+int CreateLogDir(const char *dirPath)
+{
+    const char *temp = dirPath;
+    char curPath[PATH_MAX_LEN];
+    int idx = 0;
+
+    if (dirPath == NULL) {
+        BBOX_PRINT_ERR("dirPath is NULL!\n");
+        return -1;
+    }
+    if (*dirPath != '/') {
+        BBOX_PRINT_ERR("Invalid dirPath: %s\n", dirPath);
+        return -1;
+    }
+    (void)memset_s(curPath, sizeof(curPath), 0, sizeof(curPath));
+    curPath[idx++] = *dirPath++;
+    while (*dirPath != '\0' && idx < sizeof(curPath)) {
+        if (*dirPath == '/') {
+            if (CreateNewDir(curPath) != 0) {
+                return -1;
+            }
+        }
+        curPath[idx] = *dirPath;
+        dirPath++;
+        idx++;
+    }
+    if (*dirPath != '\0') {
+        BBOX_PRINT_ERR("dirPath [%s] is too long!\n", temp);
+        return -1;
+    }
+
+    return CreateNewDir(curPath);
+}
+#else
+int CreateLogDir(const char *dirPath)
+{
+    (void)dirPath;
+    return -1;
 }
 #endif

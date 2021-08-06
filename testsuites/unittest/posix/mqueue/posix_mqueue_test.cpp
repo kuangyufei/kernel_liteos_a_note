@@ -1354,6 +1354,63 @@ HWTEST_F(PosixMqueueTest, ItPosixQueue204, TestSize.Level0)
 {
     ItPosixQueue204();
 }
+
 #endif
+
+/**
+ * @tc.name: IT_POSIX_QUEUE_205
+ * @tc.desc: function for mq_notify:Set sigev_notify to SIGEV_NONE
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(PosixMqueueTest, ItPosixQueue205, TestSize.Level0)
+{
+    ItPosixQueue205();
+}
+
+/**
+ * @tc.name: IT_POSIX_QUEUE_206
+ * @tc.desc: function for mq_notify:The function returns a failure and the error code is verified.
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(PosixMqueueTest, ItPosixQueue206, TestSize.Level0)
+{
+    ItPosixQueue206();
+}
+
+/**
+ * @tc.name: IT_POSIX_QUEUE_207
+ * @tc.desc: function for mq_notify:Set sigev_notify to SIGEV_NONE
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(PosixMqueueTest, ItPosixQueue207, TestSize.Level0)
+{
+    ItPosixQueue207();
+}
+
+/**
+ * @tc.name: IT_POSIX_QUEUE_208
+ * @tc.desc: function for mq_notify:The message queue is not empty.
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(PosixMqueueTest, ItPosixQueue208, TestSize.Level0)
+{
+    ItPosixQueue208();
+}
+
+/**
+ * @tc.name: IT_POSIX_QUEUE_209
+ * @tc.desc: function for mq_notify:The message queue has waiters.
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ **/
+HWTEST_F(PosixMqueueTest, ItPosixQueue209, TestSize.Level0)
+{
+    ItPosixQueue209();
+}
+
 #endif
 } // namespace OHOS

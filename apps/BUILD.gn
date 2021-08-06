@@ -35,13 +35,13 @@ group("apps") {
   if (defined(LOSCFG_SHELL)) {
     deps += [
       "shell",
-      #"mksh",
-      #"toybox",
+      "mksh",
+      "toybox",
     ]
   }
 
   if (defined(LOSCFG_USER_INIT_DEBUG)) {
-    #deps += [ "init" ]
+    deps += [ "init" ]
   }
 
   if (defined(LOSCFG_NET_LWIP_SACK_TFTP)) {

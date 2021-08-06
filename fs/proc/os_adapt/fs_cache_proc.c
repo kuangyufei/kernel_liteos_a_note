@@ -40,7 +40,8 @@
 #define CLEAR_PATH_CACHE "clear pathcache"
 #define CLEAR_PAGE_CACHE "clear pagecache"
 
-static char* VnodeTypeToStr(enum VnodeType type) {
+static char* VnodeTypeToStr(enum VnodeType type)
+{
     switch (type) {
         case VNODE_TYPE_UNKNOWN:
             return "UKN";
@@ -135,9 +136,9 @@ static int PageCacheMapProcess(struct SeqBuf *buf)
 
 static int FsCacheInfoFill(struct SeqBuf *buf, void *arg)
 {
-    int vnodeFree= 0;
-    int vnodeActive= 0;
-    int vnodeVirtual= 0;
+    int vnodeFree = 0;
+    int vnodeActive = 0;
+    int vnodeVirtual = 0;
     int vnodeTotal = 0;
 
     int pathCacheTotal = 0;

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2019-2021, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,6 +28,7 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 #include "It_fs_jffs.h"
 #include <fcntl.h>
 #include "sys/stat.h"

@@ -468,6 +468,8 @@ static int fatfs_create_obj(struct Vnode *parent, const char *name, int mode, st
         dp_new->obj.objsize = 0;
     } else if (type == AM_LNK) {
         dp_new->obj.objsize = strlen(target);
+    } else {
+        finfo_new->fsize = fs->csize * SS(fs);
     }
 
     ret = VnodeAlloc(&fatfs_vops, &vp);
@@ -577,6 +579,7 @@ int fatfs_lookup(struct Vnode *parent, const char *path, int len, struct Vnode *
         vp->mode = fatfs_get_mode(finfo->fattrib, fs->fs_mode);
         if (finfo->fattrib & AM_DIR) {
             vp->type = VNODE_TYPE_DIR;
+            finfo->fsize = fs->csize * SS(fs);
         } else {
             vp->type = VNODE_TYPE_REG;
         }
@@ -1202,6 +1205,7 @@ int fatfs_mount(struct Mount *mnt, struct Vnode *blk_device, const void *data)
     dfp->fno.ftime = 0;
     dfp->fno.fattrib = AM_DIR;
     dfp->fno.sclst = 0;
+    dfp->fno.fsize = fs->csize * SS(fs);
     dfp->fno.fname[0] = '/'; /* Mark as root dir */
     dfp->fno.fname[1] = '\0';
     LOS_ListInit(&(dfp->fno.fp_list));
@@ -1433,7 +1437,11 @@ int fatfs_stat(struct Vnode *vp, struct stat* sp)
     sp->st_gid = fs->fs_gid;
     sp->st_size = finfo->fsize;
     sp->st_blksize = fs->csize * SS(fs);
-    sp->st_blocks = finfo->fsize ? ((finfo->fsize - 1) / SS(fs) / fs->csize + 1) : 0;
+    if (finfo->fattrib & AM_ARC) {
+        sp->st_blocks = finfo->fsize ? ((finfo->fsize - 1) / SS(fs) / fs->csize + 1) : 0;
+    } else {
+        sp->st_blocks = fs->csize;
+    }
     time = fattime_transfer(finfo->fdate, finfo->ftime);
     sp->st_mtime = time;
 

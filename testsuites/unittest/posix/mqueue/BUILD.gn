@@ -52,11 +52,6 @@ sources_smoke = [
   "smoke/It_posix_queue_028.cpp",
   "smoke/It_posix_queue_053.cpp",
   "smoke/It_posix_queue_062.cpp",
-  "smoke/It_posix_queue_205.cpp",
-  "smoke/It_posix_queue_206.cpp",
-  "smoke/It_posix_queue_207.cpp",
-  "smoke/It_posix_queue_208.cpp",
-  "smoke/It_posix_queue_209.cpp",
 ]
 
 sources_full = [
@@ -200,6 +195,11 @@ sources_full = [
   "full/It_posix_queue_202.cpp",
   "full/It_posix_queue_203.cpp",
   "full/It_posix_queue_204.cpp",
+  "full/It_posix_queue_205.cpp",
+  "full/It_posix_queue_206.cpp",
+  "full/It_posix_queue_207.cpp",
+  "full/It_posix_queue_208.cpp",
+  "full/It_posix_queue_209.cpp",
 ]
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {

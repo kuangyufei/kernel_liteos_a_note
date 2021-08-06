@@ -44,6 +44,8 @@ sources_entry = [
 sources_full = [
   "full/misc_test_006.cpp",
   "full/misc_test_007.cpp",
+  "full/misc_test_008.cpp",
+  "full/misc_test_009.cpp",
   "full/misc_test_010.cpp",
   "full/misc_test_011.cpp",
   "full/misc_test_012.cpp",
@@ -56,8 +58,6 @@ sources_smoke = [
   "smoke/misc_test_003.cpp",
   "smoke/misc_test_004.cpp",
   "smoke/misc_test_005.cpp",
-  "smoke/misc_test_008.cpp",
-  "smoke/misc_test_009.cpp",
   "smoke/misc_test_014.cpp",
 ]
 

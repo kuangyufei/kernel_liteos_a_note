@@ -34,7 +34,47 @@ group("toybox") {
   deps = [ ":build_toybox" ]
 }
 
+copy("copy_toybox_src") {
+  sources = [ "$LITEOSTHIRDPARTY/toybox" ]
+  outputs = [ "$target_out_dir/toybox_build" ]
+}
+
+copy("copy_toybox_config") {
+  deps = [ ":copy_toybox_src" ]
+  sources = [ "liteos_a_custom.config" ]
+  outputs = [ "$target_out_dir/{{source_file_part}}" ]
+}
+
 build_ext_component("build_toybox") {
-  exec_path = rebase_path(target_out_dir)
-  command = "make -C $LITEOSTHIRDPARTY/toybox"
+  deps = [ ":copy_toybox_src", ":copy_toybox_config" ]
+  deps += [ "//prebuilts/lite/sysroot" ]
+  exec_path = rebase_path("$target_out_dir/toybox_build")
+
+  cflags = [
+    "-fstack-protector-strong",
+    "-D_FORTIFY_SOURCE=2",
+  ]
+  cflags = string_join(" ", cflags)
+
+  extra_flags = string_join(" ", target_arch_cflags)
+  if (ohos_build_compiler == "clang") {
+    extra_flags += " --target=$target_triple"
+    extra_flags += " --sysroot=" + rebase_path(ohos_current_sysroot)
+  }
+
+  command = "rm -rf .git && cp -rfp porting/liteos_a/. . && env"
+  command += " CC=\"$ohos_current_cc_command\""
+  command += " STRIP=\"$ohos_current_strip_command\""
+  command += " OUTNAME=toybox"
+  command += " CFLAGS=\"$cflags $extra_flags\""
+  command += " make toybox"
+  command += " && install -D toybox "
+  command += rebase_path("$root_out_dir/bin/toybox", exec_path)
+  command += " && install -D generated/unstripped/toybox "
+  command += rebase_path("$root_out_dir/unstripped/bin/toybox", exec_path)
+
+  outputs = [
+    "$root_out_dir/unstripped/bin/toybox",
+    "$root_out_dir/bin/toybox",
+  ]
 }

@@ -421,6 +421,7 @@ int VnodeLookup(const char *path, struct Vnode **result, uint32_t flags)
         if (currentDir == NULL || *currentDir == '\0') {
             // return target or parent vnode as result
             *result = currentVnode;
+            goto OUT_FREE_PATH;
         } else if (VfsVnodePermissionCheck(currentVnode, EXEC_OP)) {
             ret = -EACCES;
             goto OUT_FREE_PATH;

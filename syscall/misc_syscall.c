@@ -44,6 +44,10 @@
 #include "shmsg.h"
 #endif
 #include "user_copy.h"
+#include "los_strncpy_from_user.h"
+#include "capability_type.h"
+#include "capability_api.h"
+#include "unistd.h"
 
 //这里放的是一些不好归类(或称杂项)的系统调用
 
@@ -194,3 +198,50 @@ int SysGetrusage(int what, struct rusage *ru)
     return 0;
 }
 
+long SysSysconf(int name)
+{
+    long ret;
+
+    ret = sysconf(name);
+    if (ret == -1) {
+        return -get_errno();
+    }
+
+    return ret;
+}
+
+int SysUgetrlimit(int resource, unsigned long long k_rlim[2])
+{
+    int ret;
+    struct rlimit lim;
+
+    ret = getrlimit(resource, &lim);
+    if (ret < 0) {
+        return ret;
+    }
+
+    ret = LOS_ArchCopyToUser(k_rlim, &lim, sizeof(struct rlimit));
+    if (ret != 0) {
+        return -EFAULT;
+    }
+
+    return ret;
+}
+
+int SysSetrlimit(int resource, unsigned long long k_rlim[2])
+{
+    int ret;
+    struct rlimit lim;
+
+	if(!IsCapPermit(CAP_CAPSET)) {
+        return -EPERM;
+    }
+
+    ret = LOS_ArchCopyFromUser(&lim, k_rlim, sizeof(struct rlimit));
+    if (ret != 0) {
+        return -EFAULT;
+    }
+    ret = setrlimit(resource, &lim);
+
+    return ret;
+}

@@ -120,6 +120,7 @@ STATIC INT32 DoMqueueDelete(struct mqarray *mqueueCB)
     mqueueCB->mode_data.data = 0;
     mqueueCB->euid = -1;
     mqueueCB->egid = -1;
+    mqueueCB->mq_notify.pid = 0;
 
     ret = LOS_QueueDelete(mqueueCB->mq_id);
     switch (ret) {
@@ -204,6 +205,7 @@ STATIC struct mqpersonal *DoMqueueCreate(const struct mq_attr *attr, const CHAR 
     mqueueCB->mq_personal->mq_flags = (INT32)((UINT32)openFlag | ((UINT32)attr->mq_flags & (UINT32)FNONBLOCK));
     mqueueCB->mq_personal->mq_mode = mode;
     mqueueCB->mq_personal->mq_refcount = 0;
+    mqueueCB->mq_notify.pid = 0;
 
     return mqueueCB->mq_personal;
 ERROUT:
@@ -717,6 +719,35 @@ STATIC INLINE BOOL MqParamCheck(mqd_t personal, const char *msg, size_t msgLen)
     return TRUE;
 }
 
+/*
+ * Send realtime a signal to process which registered itself
+ * successfully by mq_notify.
+ */
+static void MqSendNotify(struct mqarray *mqueueCB)
+{
+    struct mqnotify *mqnotify = &mqueueCB->mq_notify;
+
+    if ((mqnotify->pid) && (mqueueCB->mqcb->readWriteableCnt[OS_QUEUE_READ] == 0)) {
+        siginfo_t info;
+
+        switch (mqnotify->notify.sigev_notify) {
+            case SIGEV_SIGNAL:
+                /* sends signal */
+                /* Create the siginfo structure */
+                info.si_signo = mqnotify->notify.sigev_signo;
+                info.si_code = SI_MESGQ;
+                info.si_value = mqnotify->notify.sigev_value;
+                OsDispatch(mqnotify->pid, &info, OS_USER_KILL_PERMISSION);
+                break;
+            case SIGEV_NONE:
+            default:
+                break;
+        }
+        /* after notification unregisters process */
+        mqnotify->pid = 0;
+    }
+}
+
 #define OS_MQ_GOTO_ERROUT_UNLOCK_IF(expr, errcode) \
     if (expr) {                        \
         errno = errcode;                 \
@@ -753,6 +784,10 @@ int mq_timedsend(mqd_t personal, const char *msg, size_t msgLen, unsigned int ms
     OS_MQ_GOTO_ERROUT_UNLOCK_IF(ConvertTimeout(privateMqPersonal->mq_flags, absTimeout, &absTicks) == -1, errno);
     mqueueID = mqueueCB->mq_id;
     (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+
+    if (LOS_ListEmpty(&mqueueCB->mqcb->readWriteList[OS_QUEUE_READ])) {
+        MqSendNotify(mqueueCB);
+    }
 
     err = LOS_QueueWriteCopy(mqueueID, (VOID *)msg, (UINT32)msgLen, (UINT32)absTicks);
     if (map_errno(err) != ENOERR) {
@@ -832,4 +867,82 @@ ssize_t mq_receive(mqd_t personal, char *msg_ptr, size_t msg_len, unsigned int *
     return mq_timedreceive(personal, msg_ptr, msg_len, msg_prio, NULL);
 }
 
+STATIC INLINE BOOL MqNotifyParamCheck(mqd_t personal, const struct sigevent *sigev)
+{
+    if (personal < 0) {
+        errno = EBADF;
+        goto ERROUT;
+    }
+
+    if (sigev != NULL) {
+        if (sigev->sigev_notify != SIGEV_NONE && sigev->sigev_notify != SIGEV_SIGNAL) {
+            errno = EINVAL;
+            goto ERROUT;
+        }
+        if (sigev->sigev_notify == SIGEV_SIGNAL && !GOOD_SIGNO(sigev->sigev_signo)) {
+            errno = EINVAL;
+            goto ERROUT;
+        }
+    }
+
+    return TRUE;
+ERROUT:
+    return FALSE;
+}
+
+int OsMqNotify(mqd_t personal, const struct sigevent *sigev)
+{
+    struct mqarray *mqueueCB = NULL;
+    struct mqnotify *mqnotify = NULL;
+    struct mqpersonal *privateMqPersonal = NULL;
+
+    if (!MqNotifyParamCheck(personal, sigev)) {
+        goto ERROUT;
+    }
+
+    (VOID)pthread_mutex_lock(&g_mqueueMutex);
+    privateMqPersonal = MqGetPrivDataBuff(personal);
+    if (privateMqPersonal == NULL) {
+        goto OUT_UNLOCK;
+    }
+
+    if (privateMqPersonal->mq_status != MQ_USE_MAGIC) {
+        errno = EBADF;
+        goto OUT_UNLOCK;
+    }
+
+    mqueueCB = privateMqPersonal->mq_posixdes;
+    mqnotify = &mqueueCB->mq_notify;
+
+    if (sigev == NULL) {
+        if (mqnotify->pid == LOS_GetCurrProcessID()) {
+            mqnotify->pid = 0;
+        }
+    } else if (mqnotify->pid != 0) {
+        errno = EBUSY;
+        goto OUT_UNLOCK;
+    } else {
+        switch (sigev->sigev_notify) {
+            case SIGEV_NONE:
+                mqnotify->notify.sigev_notify = SIGEV_NONE;
+                break;
+            case SIGEV_SIGNAL:
+                mqnotify->notify.sigev_signo = sigev->sigev_signo;
+                mqnotify->notify.sigev_value = sigev->sigev_value;
+                mqnotify->notify.sigev_notify = SIGEV_SIGNAL;
+                break;
+            default:
+                break;
+        }
+
+        mqnotify->pid = LOS_GetCurrProcessID();
+    }
+
+    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    return 0;
+OUT_UNLOCK:
+    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+ERROUT:
+    return -1;
+}
 #endif

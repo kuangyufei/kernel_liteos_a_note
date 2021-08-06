@@ -4,7 +4,31 @@ config BLACKBOX
     help
       Answer Y to enable LiteOS support blackbox
 
-config LOG_ROOT_PATH
+config BLACKBOX_LOG_PART_MOUNT_POINT
     string "unknown"
+    default "/storage"
+    depends on BLACKBOX
     help
-      define the default log path of blackbox
+      Define the default log part representative of blackbox
+
+config BLACKBOX_LOG_ROOT_PATH
+    string "unknown"
+    default "/storage/data/log"
+    depends on BLACKBOX
+    help
+      Define the default log path of blackbox
+
+config BLACKBOX_RESERVE_MEM_ADDR
+    int "The address of the reserve mem for blackbox in hex"
+    default 0
+    depends on BLACKBOX
+    help
+      Define the address of the reserve mem for blackbox in hex.
+
+config BLACKBOX_LOG_SIZE
+    int "The size of log saved by blackbox  in hex"
+    range 1024 1048576
+    default 65536
+    depends on BLACKBOX
+    help
+      Define the size of log saved by blackbox in decimal.

@@ -58,7 +58,7 @@ source "platform/Kconfig"
 source "arch/Kconfig"
 
 ######################### config options of rootfs #####################
-source "kernel/common/Kconfig"
+source "kernel/common/rootfs/Kconfig"
 ######################### config options of patchfs #####################
 source "kernel/common/patchfs/Kconfig"
 ######################### config options of blackbox #####################
@@ -93,6 +93,7 @@ source "fs/romfs/Kconfig"
 source "fs/nfs/Kconfig"
 source "fs/proc/Kconfig"
 source "fs/jffs2/Kconfig"
+source "fs/zpfs/Kconfig"
 config ENABLE_READ_BUFFER
     bool "Enable read buffer Option"
     default n
@@ -163,8 +164,15 @@ config ENABLE_MAGICKEY
 config THUMB
     bool "Enable Thumb"
     default n
+    select INTERWORK_THUMB
     help
       Answer Y to build thumb version.  This will make LiteOS smaller.
+
+config INTERWORK_THUMB
+    bool "Enable interwork Thumb" if THUMB
+    default n
+    help
+      Answer Y to enable interwork thumb.
 
 config PLATFORM_DVFS
     bool "Enable Dvfs"
@@ -295,8 +303,7 @@ source "bsd/dev/usb/Kconfig"
 source "../../drivers/adapter/khdf/liteos/Kconfig"
 
 # Device driver Kconfig import
-osource "$(DEVICE_PATH)/Kconfig"
-osource "$(DEVICE_PATH)/config/Kconfig"
+osource "$(DEVICE_PATH)/drivers/Kconfig"
 
 source "drivers/char/mem/Kconfig"
 source "drivers/char/quickstart/Kconfig"

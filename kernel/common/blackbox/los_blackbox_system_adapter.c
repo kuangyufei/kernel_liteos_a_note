@@ -44,14 +44,13 @@
 #include "los_hw.h"
 #include "los_init.h"
 #include "los_memory.h"
-#include "los_vm_phys.h"
 #include "los_vm_common.h"
+#include "los_vm_phys.h"
+#include "los_vm_zone.h"
 #include "securec.h"
 
 /* ------------ local macroes ------------ */
-#define MEM_OVERLAP_COUNT 50
 #define LOG_FLAG "GOODLOG"
-#define FAULT_LOG_SIZE 0x4000 /* 16KB */
 
 /* ------------ local prototypes ------------ */
 struct FaultLogInfo {
@@ -86,7 +85,7 @@ static void RegisterExcInfoHook(void)
 {
     if (g_logBuffer != NULL) {
 #ifdef LOSCFG_SAVE_EXCINFO
-        LOS_ExcInfoRegHook(0, FAULT_LOG_SIZE - sizeof(struct FaultLogInfo),
+        LOS_ExcInfoRegHook(0, LOSCFG_BLACKBOX_LOG_SIZE - sizeof(struct FaultLogInfo),
             g_logBuffer + sizeof(struct FaultLogInfo), WriteExcFile);
 #endif
     } else {
@@ -96,18 +95,20 @@ static void RegisterExcInfoHook(void)
 
 static int AllocLogBuffer(void)
 {
-    int i = 0;
-    size_t nPages = ROUNDUP(FAULT_LOG_SIZE, PAGE_SIZE) >> PAGE_SHIFT;
-    void *tempBuffer[MEM_OVERLAP_COUNT] = { NULL };
+    if (LOSCFG_BLACKBOX_LOG_SIZE < sizeof(struct FaultLogInfo)) {
+        BBOX_PRINT_ERR("LOSCFG_BLACKBOX_LOG_SIZE [%d] is too short, it must be >= %u\n",
+            LOSCFG_BLACKBOX_LOG_SIZE, sizeof(struct FaultLogInfo));
+        return -1;
+    }
 
-    for (i = 0; i < MEM_OVERLAP_COUNT; i++) {
-        tempBuffer[i] = LOS_PhysPagesAllocContiguous(nPages);
-    }
-    for (i = 0; i < (MEM_OVERLAP_COUNT - 1); i++) {
-        LOS_PhysPagesFreeContiguous(tempBuffer[i], nPages);
-    }
-    g_logBuffer = tempBuffer[i];
-    BBOX_PRINT_INFO("g_logBuffer: %p for blackbox!\n", g_logBuffer);
+    /*
+     * The physical memory pointed to by LOSCFG_BLACKBOX_RESERVE_MEM_ADDR is
+     * exclusive to blackbox and cannot be occupied by other modules during
+     * system running and cannot overlap with the memory area of other systems
+     * during startup.
+     */
+    g_logBuffer = (char *)MEM_CACHED_ADDR(LOSCFG_BLACKBOX_RESERVE_MEM_ADDR);
+    BBOX_PRINT_INFO("g_logBuffer: %p, len: 0x%x for blackbox!\n", g_logBuffer, (UINT32)LOSCFG_BLACKBOX_LOG_SIZE);
 
     return (g_logBuffer != NULL) ? 0 : -1;
 }
@@ -135,11 +136,11 @@ static void Dump(const char *logDir, struct ErrorInfo *info)
 #endif
         (void)memcpy_s(&pLogInfo->flag, sizeof(pLogInfo->flag), LOG_FLAG, strlen(LOG_FLAG));
         (void)memcpy_s(&pLogInfo->info, sizeof(pLogInfo->info), info, sizeof(*info));
-        DCacheFlushRange((UINTPTR)g_logBuffer, (UINTPTR)(g_logBuffer + FAULT_LOG_SIZE));
+        DCacheFlushRange((UINTPTR)g_logBuffer, (UINTPTR)(g_logBuffer + LOSCFG_BLACKBOX_LOG_SIZE));
     } else {
 #ifdef LOSCFG_SAVE_EXCINFO
         SaveFaultLog(USER_FAULT_LOG_PATH, g_logBuffer + sizeof(struct FaultLogInfo),
-            Min(FAULT_LOG_SIZE - sizeof(struct FaultLogInfo), GetExcInfoIndex()), info);
+            Min(LOSCFG_BLACKBOX_LOG_SIZE - sizeof(struct FaultLogInfo), GetExcInfoIndex()), info);
 #else
         SaveFaultLog(USER_FAULT_LOG_PATH, g_logBuffer + sizeof(struct FaultLogInfo), 0, info);
 #endif
@@ -199,9 +200,9 @@ static int SaveLastLog(const char *logDir, struct ErrorInfo *info)
     pLogInfo = (struct FaultLogInfo *)g_logBuffer;
     if (memcmp(pLogInfo->flag, LOG_FLAG, strlen(LOG_FLAG)) == 0) {
         SaveFaultLog(KERNEL_FAULT_LOG_PATH, g_logBuffer + sizeof(*pLogInfo),
-            Min(FAULT_LOG_SIZE - sizeof(*pLogInfo), pLogInfo->len), info);
+            Min(LOSCFG_BLACKBOX_LOG_SIZE - sizeof(*pLogInfo), pLogInfo->len), info);
     }
-    (void)memset_s(g_logBuffer, FAULT_LOG_SIZE, 0, FAULT_LOG_SIZE);
+    (void)memset_s(g_logBuffer, LOSCFG_BLACKBOX_LOG_SIZE, 0, LOSCFG_BLACKBOX_LOG_SIZE);
     BBOX_PRINT_INFO("[%s] starts uploading event [%s]\n", info->module, info->event);
     (void)UploadEventByFile(KERNEL_FAULT_LOG_PATH);
     BBOX_PRINT_INFO("[%s] ends uploading event [%s]\n", info->module, info->event);
@@ -248,7 +249,6 @@ int OsBBoxSystemAdapterInit(void)
         RegisterExcInfoHook();
         if (BBoxRegisterModuleOps(&ops) != 0) {
             BBOX_PRINT_ERR("BBoxRegisterModuleOps failed!\n");
-            LOS_PhysPagesFreeContiguous(g_logBuffer, ROUNDUP(FAULT_LOG_SIZE, PAGE_SIZE) >> PAGE_SHIFT);
             g_logBuffer = NULL;
             return LOS_NOK;
         }
