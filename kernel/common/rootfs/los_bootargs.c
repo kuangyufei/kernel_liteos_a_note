@@ -47,7 +47,7 @@
 STATIC CHAR *g_cmdLine = NULL;
 STATIC UINT64 g_alignSize = 0;
 STATIC struct BootArgs g_bootArgs[MAX_ARGS_NUM] = {0};
-
+//读取环境变量bootcmd 来启动内核
 INT32 LOS_GetCmdLine()
 {
     int ret;
@@ -59,40 +59,40 @@ INT32 LOS_GetCmdLine()
     }
 
 #ifdef LOSCFG_STORAGE_EMMC
-    los_disk *emmcDisk = los_get_mmcdisk_bytype(EMMC);
+    los_disk *emmcDisk = los_get_mmcdisk_bytype(EMMC); //获取硬盘信息
     if (emmcDisk == NULL) {
         PRINT_ERR("Get EMMC disk failed!\n");
         goto ERROUT;
     }
     g_alignSize = EMMC_SEC_SIZE;
     ret = los_disk_read(emmcDisk->disk_id, g_cmdLine, COMMAND_LINE_ADDR / EMMC_SEC_SIZE,
-                        COMMAND_LINE_SIZE / EMMC_SEC_SIZE, TRUE);
+                        COMMAND_LINE_SIZE / EMMC_SEC_SIZE, TRUE);//读取命令行内容
     if (ret == 0) {
         return LOS_OK;
     }
 #endif
 
 #ifdef LOSCFG_STORAGE_SPINOR
-    struct MtdDev *mtd = GetMtd("spinor");
+    struct MtdDev *mtd = GetMtd("spinor");//获取flash描述信息
     if (mtd == NULL) {
         PRINT_ERR("Get spinor mtd failed!\n");
         goto ERROUT;
     }
     g_alignSize = mtd->eraseSize;
-    ret = mtd->read(mtd, COMMAND_LINE_ADDR, COMMAND_LINE_SIZE, g_cmdLine);
+    ret = mtd->read(mtd, COMMAND_LINE_ADDR, COMMAND_LINE_SIZE, g_cmdLine);//读取spinor下的命令行内容
     if (ret == COMMAND_LINE_SIZE) {
         return LOS_OK;
     }
 #endif
 
 #ifdef LOSCFG_STORAGE_SPINAND
-    struct MtdDev *mtd = GetMtd("nand");
+    struct MtdDev *mtd = GetMtd("nand");//获取flash描述信息
     if (mtd == NULL) {
         PRINT_ERR("Get nand mtd failed!\n");
         goto ERROUT;
     }
     g_alignSize = mtd->eraseSize;
-    ret = mtd->read(mtd, COMMAND_LINE_ADDR, COMMAND_LINE_SIZE, g_cmdLine);
+    ret = mtd->read(mtd, COMMAND_LINE_ADDR, COMMAND_LINE_SIZE, g_cmdLine);//读取nand下的命令行内容
     if (ret == COMMAND_LINE_SIZE) {
         return LOS_OK;
     }
@@ -125,7 +125,7 @@ VOID LOS_FreeCmdLine()
         g_cmdLine = NULL;
     }
 }
-
+//获取boot参数
 STATIC INT32 GetBootargs(CHAR **args)
 {
 #ifdef LOSCFG_BOOTENV_RAM
@@ -154,7 +154,7 @@ STATIC INT32 GetBootargs(CHAR **args)
     return LOS_NOK;
 #endif
 }
-
+//解析boot参数
 INT32 LOS_ParseBootargs()
 {
     INT32 idx = 0;

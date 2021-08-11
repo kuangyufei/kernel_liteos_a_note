@@ -191,7 +191,7 @@ int VfsProcfsLookup(struct Vnode *parent, const char *name, int len, struct Vnod
     (*vpp)->parent = parent;
     return LOS_OK;
 }
-//装载实现,找个vnode节点挂上去 
+//挂s载实现,找个vnode节点挂上去 
 int VfsProcfsMount(struct Mount *mnt, struct Vnode *device, const void *data)
 {
     struct Vnode *vp = NULL;

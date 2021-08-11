@@ -41,7 +41,7 @@ static int g_totalVnodeSize = 0;        /* total vnode size */	//已分配的总
 
 static LosMux g_vnodeMux;	//操作链表互斥量			
 static struct Vnode *g_rootVnode = NULL;//根节点
-static struct VnodeOps g_devfsOps;//设备文件系统节点操作
+static struct VnodeOps g_devfsOps;//设备文件节点操作
 /*********************************************************
 linux下有专门的文件系统(devfs | sysfs)用来对设备进行管理,鸿蒙目前只支持 devfs方式
 devfs和sysfs都是和proc一样，是一个虚拟的文件系统，提供了一种类似于文件的方法来管理位于/dev目录下的所有设备，
@@ -218,7 +218,7 @@ int VnodeFree(struct Vnode *vnode)
         vnode->vop->Reclaim(vnode);//先回收资源
     }
 
-    if (vnode->vop == &g_devfsOps) {//对于设备文件系统的回收
+    if (vnode->vop == &g_devfsOps) {//对设备文件的回收
         /* for dev vnode, just free it */
         free(vnode->data);//
         free(vnode);

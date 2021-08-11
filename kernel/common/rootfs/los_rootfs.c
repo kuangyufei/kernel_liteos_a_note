@@ -114,7 +114,7 @@ STATIC INT32 AddEmmcParts(INT32 rootAddr, INT32 rootSize, INT32 userAddr, INT32 
 }
 #endif
 
-
+//增加一个分区
 STATIC INT32 AddPartitions(CHAR *dev, UINT64 rootAddr, UINT64 rootSize, UINT64 userAddr, UINT64 userSize)
 {
 #ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
@@ -129,7 +129,7 @@ STATIC INT32 AddPartitions(CHAR *dev, UINT64 rootAddr, UINT64 rootSize, UINT64 u
     INT32 blk0 = 0;
     INT32 blk2 = 2;
     if (strcmp(dev, "flash") == 0 || strcmp(dev, FLASH_TYPE) == 0) {
-        ret = add_mtd_partition(FLASH_TYPE, rootAddr, rootSize, blk0);
+        ret = add_mtd_partition(FLASH_TYPE, rootAddr, rootSize, blk0);//增加一个MTD分区
         if (ret != LOS_OK) {
             PRINT_ERR("Failed to add mtd root partition!\n");
             return LOS_NOK;
@@ -155,33 +155,33 @@ STATIC INT32 AddPartitions(CHAR *dev, UINT64 rootAddr, UINT64 rootSize, UINT64 u
     return LOS_NOK;
 }
 
-
+//获取根文件系统参数
 STATIC INT32 ParseRootArgs(CHAR **dev, CHAR **fstype, UINT64 *rootAddr, UINT64 *rootSize, UINT32 *mountFlags)
 {
     INT32 ret;
     CHAR *rootAddrStr = NULL;
     CHAR *rootSizeStr = NULL;
     CHAR *rwTag = NULL;
-
-    ret = LOS_GetArgValue("root", dev);
+	//获取文件系统放在哪种设备上
+    ret = LOS_GetArgValue("root", dev);//root = flash | mmc | 
     if (ret != LOS_OK) {
         PRINT_ERR("Cannot find root!");
         return ret;
     }
-
+	//获取文件系统类型
     ret = LOS_GetArgValue("fstype", fstype);
     if (ret != LOS_OK) {
         PRINT_ERR("Cannot find fstype!");
         return ret;
     }
-
+	//获取内核地址空间开始位置
     ret = LOS_GetArgValue("rootaddr", &rootAddrStr);
     if (ret != LOS_OK) {
         *rootAddr = ROOTFS_ADDR;
     } else {
         *rootAddr = LOS_SizeStrToNum(rootAddrStr);
     }
-
+	//获取内核地址空间大小
     ret = LOS_GetArgValue("rootsize", &rootSizeStr);
     if (ret != LOS_OK) {
         *rootSize = ROOTFS_SIZE;
@@ -221,14 +221,14 @@ STATIC INT32 ParseUserArgs(UINT64 rootAddr, UINT64 rootSize, UINT64 *userAddr, U
 
     return LOS_OK;
 }
-
+//挂载分区,即挂载 "/","/storage"
 STATIC INT32 MountPartitions(CHAR *fsType, UINT32 mountFlags)
 {
     INT32 ret;
     INT32 err;
 
     /* Mount rootfs */
-    ret = mount(ROOT_DEV_NAME, ROOT_DIR_NAME, fsType, mountFlags, NULL);
+    ret = mount(ROOT_DEV_NAME, ROOT_DIR_NAME, fsType, mountFlags, NULL);//挂载根文件系统
     if (ret != LOS_OK) {
         err = get_errno();
         PRINT_ERR("Failed to mount %s, rootDev %s, errno %d: %s\n", ROOT_DIR_NAME, ROOT_DEV_NAME, err, strerror(err));
@@ -236,13 +236,13 @@ STATIC INT32 MountPartitions(CHAR *fsType, UINT32 mountFlags)
     }
 
     /* Mount userfs */
-    ret = mkdir(STORAGE_DIR_NAME, DEFAULT_MOUNT_DIR_MODE);
+    ret = mkdir(STORAGE_DIR_NAME, DEFAULT_MOUNT_DIR_MODE);//创建目录"/storage"
     if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
         PRINT_ERR("Failed to mkdir %s, errno %d: %s\n", STORAGE_DIR_NAME, err, strerror(err));
         return ret;
     }
 
-    ret = mount(USER_DEV_NAME, STORAGE_DIR_NAME, fsType, 0, DEFAULT_MOUNT_DATA);
+    ret = mount(USER_DEV_NAME, STORAGE_DIR_NAME, fsType, 0, DEFAULT_MOUNT_DATA);//挂载用户数据文件系统
     if (ret != LOS_OK) {
         err = get_errno();
         PRINT_ERR("Failed to mount %s, errno %d: %s\n", STORAGE_DIR_NAME, err, strerror(err));
@@ -251,13 +251,13 @@ STATIC INT32 MountPartitions(CHAR *fsType, UINT32 mountFlags)
 
 #ifdef LOSCFG_STORAGE_EMMC
     /* Mount userdata */
-    ret = mkdir(USERDATA_DIR_NAME, DEFAULT_MOUNT_DIR_MODE);
+    ret = mkdir(USERDATA_DIR_NAME, DEFAULT_MOUNT_DIR_MODE);//创建目录"/userdata"
     if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
         PRINT_ERR("Failed to mkdir %s, errno %d: %s\n", USERDATA_DIR_NAME, err, strerror(err));
         return ret;
     }
 
-    ret = mount(USERDATA_DEV_NAME, USERDATA_DIR_NAME, fsType, 0, DEFAULT_MOUNT_DATA);
+    ret = mount(USERDATA_DEV_NAME, USERDATA_DIR_NAME, fsType, 0, DEFAULT_MOUNT_DATA);//挂载用户数据文件系统
     if ((ret != LOS_OK) && ((err = get_errno()) == ENOTSUP)) {
         ret = format(USERDATA_DEV_NAME, 0, FM_FAT32);
         if (ret != LOS_OK) {
@@ -294,7 +294,7 @@ STATIC INT32 CheckValidation(UINT64 rootAddr, UINT64 rootSize, UINT64 userAddr, 
 
     return LOS_OK;
 }
-
+//挂载根文件系统 由 SystemInit 调用
 INT32 OsMountRootfs()
 {
     INT32 ret;
@@ -305,27 +305,27 @@ INT32 OsMountRootfs()
     UINT64 userAddr;
     UINT64 userSize;
     UINT32 mountFlags;
-
+	//获取根文件系统s参数
     ret = ParseRootArgs(&dev, &fstype, &rootAddr, &rootSize, &mountFlags);
     if (ret != LOS_OK) {
         return ret;
     }
-
+	//获取用户文件参数
     ret = ParseUserArgs(rootAddr, rootSize, &userAddr, &userSize);
     if (ret != LOS_OK) {
         return ret;
     }
-
+	//检查内核和用户空间的有效性
     ret = CheckValidation(rootAddr, rootSize, userAddr, userSize);
     if (ret != LOS_OK) {
         return ret;
     }
-
+	//添加分区
     ret = AddPartitions(dev, rootAddr, rootSize, userAddr, userSize);
     if (ret != LOS_OK) {
         return ret;
     }
-
+	//挂载分区,即挂载 `/`
     ret = MountPartitions(fstype, mountFlags);
     if (ret != LOS_OK) {
         return ret;

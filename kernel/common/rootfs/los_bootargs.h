@@ -43,7 +43,7 @@
 #define EMMC_SEC_SIZE           512
 #endif
 
-struct BootArgs {
+struct BootArgs {//模式 | foo=bar
     CHAR *argName;
     CHAR *argValue;
 };

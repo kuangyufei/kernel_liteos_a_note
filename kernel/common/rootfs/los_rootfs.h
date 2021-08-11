@@ -64,7 +64,7 @@ VFS是一种机制、是每一种文件系统都必须按照这个机制去实�
 
 #ifdef LOSCFG_STORAGE_SPINOR //外部开关定 使用哪种flash
 #define FLASH_TYPE              "spinor" //flash类型
-#define ROOT_DEV_NAME          "/dev/spinorblk0" //设备名称
+#define ROOT_DEV_NAME          "/dev/spinorblk0" //根设备名称,将挂载到 `/` 目录下
 #define USER_DEV_NAME           "/dev/spinorblk2"
 #define ROOTFS_ADDR             0x600000
 #define ROOTFS_SIZE             0x800000

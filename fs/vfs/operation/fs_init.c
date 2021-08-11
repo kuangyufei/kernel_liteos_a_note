@@ -71,7 +71,7 @@ void los_vfs_init(void)//只能调用一次，多次调用将会造成文件系�
     files_initialize();
     files_initlist(&tg_filelist);
 
-    retval = VnodesInit();//虚拟节点初始化
+    retval = VnodesInit();//索引节点初始化
     if (retval != LOS_OK) {
         PRINT_ERR("los_vfs_init VnodeInit failed error %d\n", retval);
         return;
