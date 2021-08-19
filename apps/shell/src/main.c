@@ -35,7 +35,7 @@
 #include "semaphore.h"
 #include "securec.h"
 #include "unistd.h"
-
+#include <sys/syscall.h>
 
 ShellCB *g_shellCB = NULL;
 
@@ -88,10 +88,43 @@ OUT:
     return ret;
 }
 
-int main()
+static int DoShellExec(char **argv)
+{
+    int i, j;
+    int len = 0;
+    int ret = SH_NOK;
+    char *cmdLine = NULL;
+
+    for (i = 0; argv[i]; i++) {
+        len += strlen(argv[i]);
+    }
+    len += i + 1;
+    cmdLine = (char *)malloc(len);
+    if (!cmdLine) {
+        return ret;
+    }
+    memset_s(cmdLine, len, 0, len);
+
+    for(j = 0; j < i; j++) {
+        strcat_s(cmdLine, len,  argv[j]);
+        strcat_s(cmdLine, len, " ");
+    }
+
+    cmdLine[len - 2] = '\0';
+    ret = syscall(__NR_shellexec, argv[0], cmdLine);
+    free(cmdLine);
+    return ret;
+}
+
+int main(int argc, char **argv)
 {
     int ret = SH_NOK;
     ShellCB *shellCB = NULL;
+
+    if (!strcmp(argv[0], "shell") && argv[1]) {
+        ret = DoShellExec(argv + 1);
+        return ret;
+    }
 
     setbuf(stdout, NULL);
 

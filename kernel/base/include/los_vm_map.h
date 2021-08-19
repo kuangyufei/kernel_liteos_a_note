@@ -313,7 +313,6 @@ STATUS_T LOS_VaddrToPaddrMmap(LosVmSpace *space, VADDR_T vaddr, PADDR_T paddr, s
 BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb);
 LosVmSpace *OsCreateUserVmSpace(VOID);
 STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace);
-STATUS_T LOS_UserSpaceVmAlloc(LosVmSpace *space, size_t size, VOID **ptr, UINT8 align_log2, UINT32 regionFlags);
 LosMux *OsGVmSpaceMuxGet(VOID);
 STATUS_T OsUnMMap(LosVmSpace *space, VADDR_T addr, size_t size);
 /**

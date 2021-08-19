@@ -27,35 +27,52 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-LITEOSTOPDIR := $(shell if [ "$$PWD" != "" ]; then echo $$PWD; else pwd; fi)	#获取当前目录
-export OS=$(shell uname -s)
-ifneq ($(OS), Linux)
-LITEOSTOPDIR := $(shell dirname $(subst \,/,$(LITEOSTOPDIR))/./)
-endif
-
-LITEOSTHIRDPARTY := $(LITEOSTOPDIR)/../../third_party #找到 third_party 目录
+LITEOSTOPDIR := $(realpath $(dir $(firstword $(MAKEFILE_LIST))))
+LITEOSTHIRDPARTY := $(LITEOSTOPDIR)/../../third_party
 
 export LITEOSTOPDIR
 export LITEOSTHIRDPARTY
 
-RM = -rm -rf	#宏定义
-MAKE = make
-__LIBS = libs
 APPS = apps
-ROOTFSDIR = rootfsdir
 ROOTFS = rootfs
-
 LITEOS_TARGET = liteos
-LITEOS_LIBS_TARGET = libs_target
-LITEOS_PLATFORM_BASE = $(LITEOSTOPDIR)/platform
+LITEOS_LIBS_TARGET = libs
+
+# by the following eval, we would got some variables like these:
+#	ohos_root_path=/xx
+#	ohos_board=hispark_taurus
+#	ohos_kernel=liteos_a
+#	ohos_product=ipcamera_hispark_taurus
+#	ohos_product_path=/xx/vendor/hisilicon/hispark_taurus
+#	ohos_device_path=/xx/device/hisilicon/hispark_taurus/sdk_liteos
+ohos_kernel ?= liteos_a
+$(foreach line,$(shell hb env | sed 's/\[OHOS INFO\]/ohos/g;s/ /_/g;s/:_/=/g' || true),$(eval $(line)))
+
+ifneq ($(ohos_kernel),liteos_a)
+$(error The selected product ($(ohos_product)) is not a liteos_a kernel type product)
+endif
 
 export CONFIG_=LOSCFG_
+export srctree=$(LITEOSTOPDIR)
+
+SYSROOT_PATH ?= $(LITEOSTOPDIR)/../../prebuilts/lite/sysroot
+export SYSROOT_PATH
+
+LITEOS_MENUCONFIG_H ?= $(LITEOSTOPDIR)/config.h
+export LITEOS_MENUCONFIG_H
+
+CONFIG_FILE ?= $(LITEOSTOPDIR)/.config
+export CONFIG_FILE
+
 ifeq ($(PRODUCT_PATH),)
-export PRODUCT_PATH=$(shell hb env|grep "product path:"|sed 's/.*: //g')
+PRODUCT_PATH:=$(ohos_product_path)
 endif
+export PRODUCT_PATH
+
 ifeq ($(DEVICE_PATH),)
-export DEVICE_PATH=$(shell hb env|grep "device path:"|sed 's/.*: //g')
+DEVICE_PATH:=$(ohos_device_path)
 endif
+export DEVICE_PATH
 
 ifeq ($(TEE:1=y),y)
 tee = _tee
@@ -66,9 +83,10 @@ else
 CONFIG ?= $(PRODUCT_PATH)/kernel_configs/debug$(tee).config
 endif
 
-$(shell env CONFIG_=$(CONFIG_) DEVICE_PATH=$(DEVICE_PATH) olddefconfig >/dev/null)
+KCONFIG_CONFIG ?= $(CONFIG)
+export KCONFIG_CONFIG
 
--include $(LITEOSTOPDIR)/tools/build/config.mk #定义了各种变量 
+-include $(LITEOSTOPDIR)/tools/build/config.mk
 
 ifeq ($(LOSCFG_STORAGE_SPINOR), y)
 FSTYPE = jffs2
@@ -86,41 +104,36 @@ ROOTFS_DIR = $(OUT)/rootfs
 ROOTFS_ZIP = $(OUT)/rootfs.zip
 VERSION =
 
-SYSROOT_PATH ?= $(LITEOSTOPDIR)/../../prebuilts/lite/sysroot
-export SYSROOT_PATH
+define HELP =
+-------------------------------------------------------
+Usage: make [TARGET]... [PARAMETER=VALUE]...
 
-all: $(OUT) $(BUILD) $(LITEOS_TARGET) $(APPS)
-lib: $(OUT) $(BUILD) $(LITEOS_LIBS_TARGET)
+Targets:
+    help:       display this help and exit
+    clean:      clean compiled objects
+    cleanall:   clean all build outputs
+    all:        make liteos kernel image and rootfs image (Default target)
+    rootfs:     make a original rootfs image
+    $(LITEOS_LIBS_TARGET):       compile all kernel modules (libraries)
+    $(LITEOS_TARGET):     make liteos kernel image
+    update_config:  update product kernel config (use menuconfig)
+    test:       make the testsuits_app and put it into the rootfs dir
+    test_apps:  make a rootfs img with the testsuits_app in it
+
+Parameters:
+    FSTYPE:     value should be one of (jffs2 vfat yaffs2)
+    TEE:        boolean value(1 or y for true), enable tee
+    RELEASE:    boolean value(1 or y for true), build release version
+    CONFIG:     kernel config file to be use
+-------------------------------------------------------
+endef
+export HELP
+
+all: $(LITEOS_TARGET) $(ROOTFS)
 
 help:
-	$(HIDE)echo "-------------------------------------------------------"
-	$(HIDE)echo "1.====make help:    get help infomation of make"
-	$(HIDE)echo "2.====make:         make a debug version based the .config"
-	$(HIDE)echo "3.====make debug:   make a debug version based the .config"
-	$(HIDE)echo "4.====make release: make a release version for all platform"
-	$(HIDE)echo "5.====make release PLATFORM=xxx:  make a release version only for platform xxx"
-	$(HIDE)echo "6.====make rootfsdir: make a original rootfs dir"
-	$(HIDE)echo "7.====make rootfs FSTYPE=***: make a original rootfs img"
-	$(HIDE)echo "8.====make test: make the testsuits_app and put it into the rootfs dir"
-	$(HIDE)echo "9.====make test_apps FSTYPE=***: make a rootfs img with the testsuits_app in it"
-	$(HIDE)echo "xxx should be one of (hi3516cv300 hi3516ev200 hi3556av100/cortex-a53_aarch32 hi3559av100/cortex-a53_aarch64)"
-	$(HIDE)echo "*** should be one of (jffs2)"
-	$(HIDE)echo "-------------------------------------------------------"
+	$(HIDE)echo "$$HELP"
 
-debug:
-	$(HIDE)echo "=============== make a debug version  ==============="
-	$(HIDE) $(MAKE) all
-
-release:
-ifneq ($(PLATFORM),)
-	$(HIDE)echo "=============== make a release version for platform $(PLATFORM) ==============="
-	$(HIDE)$(SCRIPTS_PATH)/mklibversion.sh $(PLATFORM)
-else
-	$(HIDE)echo "================make a release version for all platform ==============="
-	$(HIDE)$(SCRIPTS_PATH)/mklibversion.sh
-endif
-
-##### make sysroot #####
 sysroot:
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 ifeq ($(wildcard $(SYSROOT_PATH)/usr/include/$(LLVM_TARGET)/),)
@@ -129,106 +142,74 @@ endif
 	$(HIDE)echo "sysroot:" $(abspath $(SYSROOT_PATH))
 endif
 
-##### make dynload #####
--include $(LITEOS_MK_PATH)/dynload.mk
-
-#-----need move when make version-----#
-##### make lib #####
-$(__LIBS): $(OUT) $(CXX_INCLUDE)	#编译库文件
-
-$(OUT): $(LITEOS_MENUCONFIG_H)
-	$(HIDE)mkdir -p $(OUT)/lib	#创建 ../lib 目录 , 将生成 *.a 文件 ,
-	$(HIDE)$(CC) -I$(LITEOSTOPDIR)/kernel/base/include -I$(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) \
-		-I$(LITEOS_PLATFORM_BASE)/include -imacros $< -E $(LITEOS_PLATFORM_BASE)/board.ld.S \
-		-o $(LITEOS_PLATFORM_BASE)/board.ld -P
-
-$(BUILD):
-	$(HIDE)mkdir -p $(BUILD)
-
-$(LITEOS_LIBS_TARGET): $(__LIBS) sysroot
-	$(HIDE)for dir in $(LIB_SUBDIRS); \
-		do $(MAKE) -C $$dir all || exit 1; \
-	done
-	$(HIDE)echo "=============== make lib done  ==============="
-
-##### make menuconfig #####
-KCONFIG_CMDS = $(notdir $(wildcard $(dir $(shell which menuconfig))*config))
+KCONFIG_CMDS := $(notdir $(wildcard $(dir $(shell which menuconfig))*config))
 $(KCONFIG_CMDS):
 	$(HIDE)$@ $(args)
-##### menuconfig end #######
 
-$(LITEOS_MENUCONFIG_H): .config
-	$(HIDE)genconfig
-#编译内核的各个目标文件
-$(LITEOS_TARGET): $(__LIBS) sysroot
-	$(HIDE)touch $(LOSCFG_ENTRY_SRC)
-	#逐个编译子目录中的 makefile
-	$(HIDE)for dir in $(LITEOS_SUBDIRS); \
-	do $(MAKE) -C $$dir all || exit 1; \
-	done
-	# 生成 liteos.map
-	$(LD) $(LITEOS_LDFLAGS) $(LITEOS_TABLES_LDFLAGS) $(LITEOS_DYNLDFLAGS) -Map=$(OUT)/$@.map -o $(OUT)/$@ --start-group $(LITEOS_LIBDEP) --end-group
-#	$(SIZE) -t --common $(OUT)/lib/*.a >$(OUT)/$@.objsize
-	$(OBJCOPY) -O binary $(OUT)/$@ $(LITEOS_TARGET_DIR)/$@.bin #生成 liteos.bin 文件
-	$(OBJDUMP) -t $(OUT)/$@ |sort >$(OUT)/$@.sym.sorted	#生成 liteos.sym.sorted 文件
-	$(OBJDUMP) -d $(OUT)/$@ >$(OUT)/$@.asm # 生成 liteos.asm文件
-#	$(NM) -S --size-sort $(OUT)/$@ >$(OUT)/$@.size
-# 编译多个应用程序
-$(APPS): $(LITEOS_TARGET) sysroot #依赖于 LITEOS_TARGET , sysroot
-	$(HIDE)$(MAKE) -C apps all	#执行apps目录下Makefile 的all目标, -C代表进入apps目录,
-
-prepare:	#准备工作,创建 musl 目录,用于拷贝 c/c++ .so库
-	$(HIDE)mkdir -p $(OUT)/musl
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y) #使用clang-9 ,鸿蒙默认用这个编译
-	$(HIDE)cp -f $$($(CC) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CFLAGS) -print-file-name=libc.so) $(OUT)/musl #将C库复制到musl目录下
-	$(HIDE)cp -f $$($(GPP) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CXXFLAGS) -print-file-name=libc++.so) $(OUT)/musl #将C++库复制到musl目录下
-else
-	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/target/usr/lib/libc.so $(OUT)/musl
-	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/arm-linux-musleabi/lib/libstdc++.so.6 $(OUT)/musl
-	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/arm-linux-musleabi/lib/libgcc_s.so.1 $(OUT)/musl
-	$(STRIP) $(OUT)/musl/*
-endif
-
-$(ROOTFSDIR): prepare $(APPS)	#依赖于 prepare ,APPS
-	$(HIDE)$(MAKE) clean -C apps
-	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/rootfsdir.sh $(OUT)/bin $(OUT)/musl $(ROOTFS_DIR) $(LITEOS_TARGET_DIR)
-ifneq ($(VERSION),)
-	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/releaseinfo.sh "$(VERSION)" $(ROOTFS_DIR) $(LITEOS_TARGET_DIR)
-endif
-
-#例如:执行 make rootfs FSTYPE=jffs2 一切从这里开始
-$(ROOTFS): $(ROOTFSDIR)	#依赖于 ROOTFSDIR
-	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/rootfsimg.sh $(ROOTFS_DIR) $(FSTYPE)	#制作镜像文件
-	$(HIDE)cd $(ROOTFS_DIR)/.. && zip -r $(ROOTFS_ZIP) $(ROOTFS)	#打rootfs.zip包
-
-clean:
-	$(HIDE)for dir in $(LITEOS_SUBDIRS); \
-		do $(MAKE) -C $$dir clean|| exit 1; \
-	done
-	$(HIDE)$(MAKE) -C apps clean
-	$(HIDE)$(RM) $(__OBJS) $(LITEOS_TARGET) $(BUILD) $(LITEOS_MENUCONFIG_H) *.bak *~
-	$(HIDE)$(RM) include/config include/generated
-	$(HIDE)$(MAKE) cleanrootfs
-	$(HIDE)echo "clean $(LITEOS_PLATFORM) finish"
-
-cleanall: clean
-	$(HIDE)$(RM) $(LITEOSTOPDIR)/out $(LITEOS_PLATFORM_BASE)/board.ld
-	$(HIDE)echo "clean all done"
-
-cleanrootfs:
-	$(HIDE)$(RM) $(OUT)/rootfs
-	$(HIDE)$(RM) $(OUT)/rootfs.zip
-	$(HIDE)$(RM) $(OUT)/rootfs.img
-
-update_all_config:
-	$(HIDE)shopt -s globstar && for f in tools/build/config/**/*.config ; \
-		do \
-			echo updating $$f; \
-			test -f $$f && cp $$f .config && olddefconfig && savedefconfig --out $$f; \
-		done
+$(LITEOS_MENUCONFIG_H) $(CONFIG_FILE): $(KCONFIG_CONFIG)
+	$(HIDE)genconfig --config-out $(CONFIG_FILE) --header-path $(LITEOS_MENUCONFIG_H) $(args)
 
 update_config:
 	$(HIDE)test -f "$(CONFIG)" && cp -v "$(CONFIG)" .config && menuconfig && savedefconfig --out "$(CONFIG)"
 
-.PHONY: all lib clean cleanall $(LITEOS_TARGET) debug release help update_all_config update_config
-.PHONY: prepare sysroot cleanrootfs $(ROOTFS) $(ROOTFSDIR) $(APPS) $(KCONFIG_CMDS) $(LITEOS_LIBS_TARGET) $(__LIBS) $(OUT)
+prepare: $(LITEOS_MENUCONFIG_H)
+	$(HIDE)mkdir -p $(OUT)/musl $(OUT)/lib $(BUILD)
+
+$(LITEOS_LIBS_TARGET): prepare
+	$(HIDE)touch $(LOSCFG_ENTRY_SRC)
+	$(HIDE)for dir in $(LITEOS_SUBDIRS); do $(MAKE) -C $$dir all || exit 1; done
+
+$(LITEOS_TARGET): $(OUT)/$(LITEOS_TARGET)
+$(LITEOS_TARGET): $(OUT)/$(LITEOS_TARGET).map
+#$(LITEOS_TARGET): $(OUT)/$(LITEOS_TARGET).objsize
+$(LITEOS_TARGET): $(LITEOS_TARGET_DIR)/$(LITEOS_TARGET).bin
+$(LITEOS_TARGET): $(OUT)/$(LITEOS_TARGET).sym.sorted
+$(LITEOS_TARGET): $(OUT)/$(LITEOS_TARGET).asm
+#$(LITEOS_TARGET): $(OUT)/$(LITEOS_TARGET).size
+
+$(OUT)/$(LITEOS_TARGET): $(LITEOS_LIBS_TARGET)
+	$(LD) $(LITEOS_LDFLAGS) $(LITEOS_TABLES_LDFLAGS) -Map=$@.map -o $@ --start-group $(LITEOS_LIBDEP) --end-group
+$(OUT)/$(LITEOS_TARGET).map: $(OUT)/$(LITEOS_TARGET)
+$(OUT)/$(LITEOS_TARGET).objsize: $(LITEOS_LIBS_TARGET)
+	$(SIZE) -t --common $(OUT)/lib/*.a >$@
+$(LITEOS_TARGET_DIR)/$(LITEOS_TARGET).bin: $(OUT)/$(LITEOS_TARGET)
+	$(OBJCOPY) -O binary $< $@
+$(OUT)/$(LITEOS_TARGET).sym.sorted: $(OUT)/$(LITEOS_TARGET)
+	$(OBJDUMP) -t $< |sort >$@
+$(OUT)/$(LITEOS_TARGET).asm: $(OUT)/$(LITEOS_TARGET)
+	$(OBJDUMP) -d $< >$@
+$(OUT)/$(LITEOS_TARGET).size: $(OUT)/$(LITEOS_TARGET)
+	$(NM) -S --size-sort $< >$@
+
+$(APPS): prepare
+	$(HIDE)$(MAKE) -C apps all
+
+$(ROOTFS): $(APPS)
+ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
+	$(HIDE)cp -fp $$($(CC) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CFLAGS) -print-file-name=libc.so) $(OUT)/musl
+	$(HIDE)cp -fp $$($(GPP) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CXXFLAGS) -print-file-name=libc++.so) $(OUT)/musl
+else
+	$(HIDE)cp -fp $$($(CC) $(LITEOS_CFLAGS) -print-file-name=libc.so) $(OUT)/musl
+	$(HIDE)cp -fp $$($(CC) $(LITEOS_CFLAGS) -print-file-name=libgcc_s.so.1) $(OUT)/musl
+	$(HIDE)cp -fp $$($(GPP) $(LITEOS_CXXFLAGS) -print-file-name=libstdc++.so.6) $(OUT)/musl
+endif
+	$(STRIP) $(OUT)/musl/*
+	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/rootfsdir.sh $(OUT) $(ROOTFS_DIR) $(LITEOS_TARGET_DIR)
+ifneq ($(VERSION),)
+	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/releaseinfo.sh "$(VERSION)" $(ROOTFS_DIR) $(LITEOS_TARGET_DIR)
+endif
+	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/rootfsimg.sh $(ROOTFS_DIR) $(FSTYPE)
+	$(HIDE)cd $(ROOTFS_DIR)/.. && zip -r $(ROOTFS_ZIP) $(ROOTFS)
+
+clean:
+	$(HIDE)for dir in $(LITEOS_SUBDIRS); do $(MAKE) -C $$dir clean || exit 1; done
+	$(HIDE)$(MAKE) -C apps clean
+	$(HIDE)$(RM) $(LITEOS_MENUCONFIG_H) $(CONFIG_FILE)
+	$(HIDE)echo "clean $(LOSCFG_PLATFORM) finish"
+
+cleanall: clean
+	$(HIDE)$(RM) $(LITEOSTOPDIR)/out
+	$(HIDE)echo "clean all done"
+
+.PHONY: all clean cleanall prepare sysroot help update_config
+.PHONY: $(LITEOS_TARGET) $(ROOTFS) $(APPS) $(KCONFIG_CMDS) $(LITEOS_LIBS_TARGET)

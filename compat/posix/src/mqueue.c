@@ -49,6 +49,7 @@
 #endif
 
 /* GLOBALS */
+STATIC fd_set g_queueFdSet;
 STATIC struct mqarray g_queueTable[LOSCFG_BASE_IPC_QUEUE_LIMIT];
 STATIC pthread_mutex_t g_mqueueMutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 STATIC struct mqpersonal *g_mqPrivBuf[MAX_MQ_FD];
@@ -247,6 +248,44 @@ ERROUT:
     return (struct mqpersonal *)-1;
 }
 
+STATIC INT32 DoMqueueClose(struct mqpersonal *privateMqPersonal)
+{
+    struct mqarray *mqueueCB = NULL;
+    struct mqpersonal *tmp = NULL;
+
+    mqueueCB = privateMqPersonal->mq_posixdes;
+    if (mqueueCB == NULL || mqueueCB->mq_personal == NULL) {
+        errno = EBADF;
+        return LOS_NOK;
+    }
+
+    /* find the personal and remove */
+    if (mqueueCB->mq_personal == privateMqPersonal) {
+        mqueueCB->mq_personal = privateMqPersonal->mq_next;
+    } else {
+        for (tmp = mqueueCB->mq_personal; tmp->mq_next != NULL; tmp = tmp->mq_next) {
+            if (tmp->mq_next == privateMqPersonal) {
+                break;
+            }
+        }
+        if (tmp->mq_next == NULL) {
+            errno = EBADF;
+            return LOS_NOK;
+        }
+        tmp->mq_next = privateMqPersonal->mq_next;
+    }
+    /* flag no use */
+    privateMqPersonal->mq_status = 0;
+
+    /* free the personal */
+    (VOID)LOS_MemFree(OS_SYS_MEM_ADDR, privateMqPersonal);
+
+    if ((mqueueCB->unlinkflag == TRUE) && (mqueueCB->mq_personal == NULL)) {
+        return DoMqueueDelete(mqueueCB);
+    }
+    return LOS_OK;
+}
+
 /* Translate a sysFd into privateMqPersonal */
 STATIC struct mqpersonal *MqGetPrivDataBuff(mqd_t personal)
 {
@@ -272,29 +311,24 @@ STATIC struct mqpersonal *MqGetPrivDataBuff(mqd_t personal)
 STATIC INT32 MqAllocSysFd(int maxfdp, struct mqpersonal *privateMqPersonal)
 {
     INT32 i;
-    struct mqarray *mqueueCB = privateMqPersonal->mq_posixdes;
-    fd_set *fdset = &mqueueCB->mq_fdset;
+    fd_set *fdset = &g_queueFdSet;
     for (i = 0; i < maxfdp; i++) {
         /* sysFd: used bit setting, and get the index of swtmrID buffer */
-        if (!(fdset && FD_ISSET(i + MQUEUE_FD_OFFSET, fdset))) {
+        if (fdset && !(FD_ISSET(i + MQUEUE_FD_OFFSET, fdset))) {
             FD_SET(i + MQUEUE_FD_OFFSET, fdset);
             if (!g_mqPrivBuf[i]) {
-                g_mqPrivBuf[i] = mqueueCB->mq_personal;
+                g_mqPrivBuf[i] = privateMqPersonal;
                 return i + MQUEUE_FD_OFFSET;
             }
         }
     }
-    /* there are no more mq sysFd to use, free the personal */
-    LOS_MemFree(OS_SYS_MEM_ADDR, privateMqPersonal);
-    privateMqPersonal = NULL;
-    mqueueCB->mq_personal = NULL;
     return -1;
 }
 
-STATIC VOID MqFreeSysFd(struct mqarray *mqueueCB, mqd_t personal)
+STATIC VOID MqFreeSysFd(mqd_t personal)
 {
     INT32 sysFd = (INT32)personal;
-    fd_set *fdset = &mqueueCB->mq_fdset;
+    fd_set *fdset = &g_queueFdSet;
     if (fdset && FD_ISSET(sysFd, fdset)) {
         FD_CLR(sysFd, fdset);
         g_mqPrivBuf[sysFd - MQUEUE_FD_OFFSET] = NULL;
@@ -302,7 +336,7 @@ STATIC VOID MqFreeSysFd(struct mqarray *mqueueCB, mqd_t personal)
 }
 
 /* Mqueue fd reference count */
-void mqueue_refer(int sysFd)
+void MqueueRefer(int sysFd)
 {
     struct mqarray *mqueueCB = NULL;
     struct mqpersonal *privateMqPersonal = NULL;
@@ -317,10 +351,11 @@ void mqueue_refer(int sysFd)
     if (mqueueCB == NULL) {
         goto OUT_UNLOCK;
     }
+
     privateMqPersonal->mq_refcount++;
-    mqueueCB->unlink_ref++;
 OUT_UNLOCK:
     (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    return;
 }
 
 STATIC INT32 MqTryClose(struct mqpersonal *privateMqPersonal)
@@ -336,15 +371,6 @@ STATIC INT32 MqTryClose(struct mqpersonal *privateMqPersonal)
         return TRUE;
     }
     privateMqPersonal->mq_refcount--;
-    return FALSE;
-}
-
-STATIC INT32 MqTryUnlink(struct mqarray *mqueueCB)
-{
-    if (mqueueCB->unlink_ref == 0) {
-        return TRUE;
-    }
-    mqueueCB->unlink_ref--;
     return FALSE;
 }
 
@@ -494,6 +520,9 @@ mqd_t mq_open(const char *mqName, int openFlag, ...)
         }
         /* Set mode data bit ,just for the first node */
         if (MqueueModeAnalysisSet(privateMqPersonal)) {
+            if ((INT32)(UINTPTR)privateMqPersonal > 0) {
+                (VOID)DoMqueueClose(privateMqPersonal);
+            }
             goto OUT;
         }
     } else {
@@ -502,15 +531,18 @@ mqd_t mq_open(const char *mqName, int openFlag, ...)
         }
         privateMqPersonal = DoMqueueOpen(mqueueCB, openFlag);
     }
-OUT:
+
     if ((INT32)(UINTPTR)privateMqPersonal > 0) {
         /* alloc sysFd */
         sysFd = MqAllocSysFd(MAX_MQ_FD, privateMqPersonal);
         if (sysFd == -1) {
+            /* there are no more mq sysFd to use, close the personal */
+            (VOID)DoMqueueClose(privateMqPersonal);
             errno = ENFILE;
         }
         mqFd = (mqd_t)sysFd;
     }
+OUT:
     (VOID)pthread_mutex_unlock(&g_mqueueMutex);
     return mqFd;
 }
@@ -518,9 +550,7 @@ OUT:
 int mq_close(mqd_t personal)
 {
     INT32 ret = -1;
-    struct mqarray *mqueueCB = NULL;
     struct mqpersonal *privateMqPersonal = NULL;
-    struct mqpersonal *tmp = NULL;
 
     (VOID)pthread_mutex_lock(&g_mqueueMutex);
 
@@ -534,47 +564,18 @@ int mq_close(mqd_t personal)
         errno = EBADF;
         goto OUT_UNLOCK;
     }
-    /* there have other thread used the fd */
+
     if (!MqTryClose(privateMqPersonal)) {
         ret = 0;
         goto OUT_UNLOCK;
     }
-    mqueueCB = privateMqPersonal->mq_posixdes;
-    if (mqueueCB->mq_personal == NULL) {
-        errno = EBADF;
+
+    ret = DoMqueueClose(privateMqPersonal);
+    if (ret < 0) {
         goto OUT_UNLOCK;
     }
+    MqFreeSysFd(personal);
 
-    /* find the personal and remove */
-    if (mqueueCB->mq_personal == privateMqPersonal) {
-        mqueueCB->mq_personal = privateMqPersonal->mq_next;
-    } else {
-        for (tmp = mqueueCB->mq_personal; tmp->mq_next != NULL; tmp = tmp->mq_next) {
-            if (tmp->mq_next == privateMqPersonal) {
-                break;
-            }
-        }
-        if (tmp->mq_next == NULL) {
-            errno = EBADF;
-            goto OUT_UNLOCK;
-        }
-        tmp->mq_next = privateMqPersonal->mq_next;
-    }
-    /* flag no use */
-    privateMqPersonal->mq_status = 0;
-    MqFreeSysFd(mqueueCB, personal);
-
-    /* free the personal */
-    ret = LOS_MemFree(OS_SYS_MEM_ADDR, privateMqPersonal);
-    if (ret != LOS_OK) {
-        errno = EFAULT;
-        ret = -1;
-        goto OUT_UNLOCK;
-    }
-
-    if ((mqueueCB->unlinkflag == TRUE) && (mqueueCB->mq_personal == NULL)) {
-        ret = DoMqueueDelete(mqueueCB);
-    }
 OUT_UNLOCK:
     (VOID)pthread_mutex_unlock(&g_mqueueMutex);
     return ret;
@@ -667,10 +668,7 @@ int mq_unlink(const char *mqName)
         errno = ENOENT;
         goto ERROUT_UNLOCK;
     }
-    if (!MqTryUnlink(mqueueCB)) {
-        (VOID)pthread_mutex_unlock(&g_mqueueMutex);
-        return 0;
-    }
+
     if (mqueueCB->mq_personal != NULL) {
         mqueueCB->unlinkflag = TRUE;
     } else if (mqueueCB->unlink_ref == 0) {

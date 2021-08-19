@@ -33,11 +33,13 @@
 #include "fcntl.h"
 #include "fs/fd_table.h"
 #include "fs/file.h"
+#include "fs/fs_operation.h"
 #include "los_config.h"
 #include "los_vm_map.h"
 #include "los_vm_syscall.h"
 #include "los_vm_phys.h"
 #include "los_vm_dump.h"
+#include "los_vm_lock.h"
 #ifdef LOSCFG_KERNEL_VDSO
 #include "los_vdso.h"
 #endif
@@ -53,6 +55,10 @@ static int OsELFOpen(const CHAR *fileName, INT32 oflags)
     procFd = AllocProcessFd();
     if (procFd < 0) {
         return -EMFILE;
+    }
+
+    if (oflags & O_CLOEXEC) {
+        SetCloexecFlag(procFd);
     }
 
     ret = open(fileName, oflags);
@@ -186,7 +192,7 @@ STATIC INT32 OsReadEhdr(const CHAR *fileName, ELFInfo *elfInfo, BOOL isExecFile)
         return -ENOENT;
     }
 
-    ret = OsELFOpen(fileName, O_RDONLY | O_EXECVE);
+    ret = OsELFOpen(fileName, O_RDONLY | O_EXECVE | O_CLOEXEC);
     if (ret < 0) {
         PRINT_ERR("%s[%d], Failed to open ELF file: %s!\n", __FUNCTION__, __LINE__, fileName);
         return ret;
@@ -710,12 +716,54 @@ STATIC VOID OsGetStackProt(ELFLoadInfo *loadInfo)
         }
     }
 }
+
+STATIC UINT32 OsStackAlloc(LosVmSpace *space, VADDR_T vaddr, UINT32 vsize, UINT32 psize, UINT32 regionFlags)
+{
+    LosVmPage *vmPage = NULL;
+    VADDR_T *kvaddr = NULL;
+    LosVmMapRegion *region = NULL;
+    VADDR_T vaddrTemp;
+    PADDR_T paddrTemp;
+    UINT32 len;
+
+    (VOID)LOS_MuxAcquire(&space->regionMux);
+    kvaddr = LOS_PhysPagesAllocContiguous(psize >> PAGE_SHIFT);
+    if (kvaddr == NULL) {
+        goto OUT;
+    }
+
+    region = LOS_RegionAlloc(space, vaddr, vsize, regionFlags | VM_MAP_REGION_FLAG_FIXED, 0);
+    if (region == NULL) {
+        goto PFREE;
+    }
+
+    len = psize;
+    vaddrTemp = region->range.base + vsize - psize;
+    paddrTemp = LOS_PaddrQuery(kvaddr);
+    while (len > 0) {
+        vmPage = LOS_VmPageGet(paddrTemp);
+        LOS_AtomicInc(&vmPage->refCounts);
+
+        (VOID)LOS_ArchMmuMap(&space->archMmu, vaddrTemp, paddrTemp, 1, region->regionFlags);
+
+        paddrTemp += PAGE_SIZE;
+        vaddrTemp += PAGE_SIZE;
+        len -= PAGE_SIZE;
+    }
+    (VOID)LOS_MuxRelease(&space->regionMux);
+    return LOS_OK;
+
+PFREE:
+    (VOID)LOS_PhysPagesFreeContiguous(kvaddr, psize >> PAGE_SHIFT);
+OUT:
+    (VOID)LOS_MuxRelease(&space->regionMux);
+    return LOS_NOK;
+}
 //设置命令行参数
 STATIC INT32 OsSetArgParams(ELFLoadInfo *loadInfo, CHAR *const *argv, CHAR *const *envp)
 {
     UINT32 vmFlags;
     INT32 ret;
-    status_t status;
 
 #ifdef LOSCFG_ASLR
     loadInfo->randomDevFD = open("/dev/urandom", O_RDONLY);
@@ -734,10 +782,10 @@ STATIC INT32 OsSetArgParams(ELFLoadInfo *loadInfo, CHAR *const *argv, CHAR *cons
     loadInfo->stackParamBase = loadInfo->stackTopMax - USER_PARAM_BYTE_MAX;
     vmFlags = OsCvtProtFlagsToRegionFlags(loadInfo->stackProt, MAP_FIXED);//权限转化
     vmFlags |= VM_MAP_REGION_FLAG_STACK;//栈区标识
-    status = LOS_UserSpaceVmAlloc((VOID *)loadInfo->newSpace, USER_PARAM_BYTE_MAX,
-                                  (VOID **)&loadInfo->stackParamBase, 0, vmFlags);//从用户空间中 申请USER_PARAM_BYTE_MAX的空间
-    if (status != LOS_OK) {
-        PRINT_ERR("%s[%d], Failed to create user stack! status: %d\n", __FUNCTION__, __LINE__, status);
+    ret = OsStackAlloc((VOID *)loadInfo->newSpace, loadInfo->stackBase, USER_STACK_SIZE,
+                       USER_PARAM_BYTE_MAX, vmFlags);
+    if (ret != LOS_OK) {
+        PRINT_ERR("%s[%d], Failed to alloc memory for user stack!\n", __FUNCTION__, __LINE__);
         return -ENOMEM;
     }
     loadInfo->topOfMem = loadInfo->stackTopMax - sizeof(UINTPTR);//虚拟空间顶部位置
@@ -768,10 +816,8 @@ STATIC INT32 OsPutParamToStack(ELFLoadInfo *loadInfo, const UINTPTR *auxVecInfo,
     UINTPTR argStart = loadInfo->topOfMem;
     UINTPTR *topMem = (UINTPTR *)ROUNDDOWN(loadInfo->topOfMem, sizeof(UINTPTR));
     UINTPTR *argsPtr = NULL;
-    UINTPTR stackBase;
     INT32 items = (loadInfo->argc + 1) + (loadInfo->envc + 1) + 1;
     size_t size;
-    INT32 stackFlags;
 
     loadInfo->topOfMem = ROUNDDOWN((UINTPTR)(topMem - vecIndex - items), STACK_ALIGN_SIZE);
     argsPtr = (UINTPTR *)loadInfo->topOfMem;
@@ -798,17 +844,6 @@ STATIC INT32 OsPutParamToStack(ELFLoadInfo *loadInfo, const UINTPTR *auxVecInfo,
     if (size != 0) {
         PRINT_ERR("%s[%d], Failed to copy strings! Bytes not copied: %d\n", __FUNCTION__, __LINE__, size);
         return -EFAULT;
-    }
-
-    if ((loadInfo->stackSize - USER_PARAM_BYTE_MAX) > 0) {
-        /* mmap an external region for user stack */
-        stackFlags = MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS;
-        stackBase = (UINTPTR)LOS_MMap(loadInfo->stackBase, (loadInfo->stackSize - USER_PARAM_BYTE_MAX),
-                                      loadInfo->stackProt, stackFlags, -1, 0);
-        if (!LOS_IsUserAddress((VADDR_T)stackBase)) {
-            PRINT_ERR("%s[%d], Failed to map user stack\n", __FUNCTION__, __LINE__);
-            return -ENOMEM;
-        }
     }
 
     return LOS_OK;

@@ -460,8 +460,10 @@ void sync(void)
       {
         (void)sd_sync_fn(0);
         (void)sd_sync_fn(1);
+        return;
       }
 #endif
+    PRINT_ERR("Unsupport syscall %s\n", __FUNCTION__);
 }
 
 static char *ls_get_fullpath(const char *path, struct dirent *pdirent)

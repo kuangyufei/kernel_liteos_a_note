@@ -5,7 +5,7 @@ config PLATFORM
     default "virt"            if PLATFORM_QEMU_ARM_VIRT_CA7
 
 config PRODUCT_NAME
-    string "unknown"
+    string "product name"
     default "ipcamera_hi3516dv300_liteos" if PRODUCT_IPCAMERA_HI3516DV300_LITEOS
     default "ipcamera_hi3518ev300_liteos" if PRODUCT_IPCAMERA_HI3518EV300_LITEOS
     default "hispark_taurus" if PRODUCT_HISPARK_TAURUS
@@ -13,7 +13,7 @@ config PRODUCT_NAME
     default "arm_virt" if PRODUCT_QEMU_ARM
 
 config DEVICE_COMPANY
-    string "unknown"
+    string "vendor name"
     default "hisilicon" if PLATFORM_HI3516DV300
     default "hisilicon" if PLATFORM_HI3518EV300
     default "qemu" if PLATFORM_QEMU_ARM_VIRT_CA7
@@ -22,11 +22,11 @@ choice
     prompt "Chip"
     default PLATFORM_HI3516DV300
     help
-      IPC has several chips:
-      hi3516dv300
-      hi3518ev300
+      IP Camera has several chips:
+       - hi3516dv300
+       - hi3518ev300
       Qemu ARM Virt variants (based on different CPU types):
-      qemu_arm_virt_ca7
+       - qemu_arm_virt_ca7
 
 config PLATFORM_HI3516DV300
     bool "hi3516dv300"

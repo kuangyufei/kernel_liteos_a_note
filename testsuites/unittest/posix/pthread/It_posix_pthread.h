@@ -253,7 +253,6 @@ VOID ItPosixPthread019(VOID);
 VOID ItPosixPthread020(VOID);
 VOID ItPosixPthread021(VOID);
 VOID ItPosixPthread022(VOID);
-VOID ItPosixPthread203(VOID);
 #endif
 
 #if defined(LOSCFG_USER_TEST_FULL)
@@ -371,6 +370,7 @@ VOID ItPosixPthread194(VOID);
 VOID IT_POSIX_PTHREAD_197(VOID);
 VOID IT_POSIX_PTHREAD_198(VOID);
 VOID ItPosixPthread200(VOID);
+VOID ItPosixPthread203(VOID);
 VOID ItPosixPthread204(VOID);
 VOID ItPosixPthread205(VOID);
 VOID ItPosixPthread206(VOID);

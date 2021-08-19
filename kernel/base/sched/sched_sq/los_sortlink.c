@@ -36,7 +36,6 @@
 #include "los_sched_pri.h"
 #include "los_mp.h"
 
-
 UINT32 OsSortLinkInit(SortLinkAttribute *sortLinkHeader)
 {
     LOS_ListInit(&sortLinkHeader->sortLink);
@@ -87,39 +86,19 @@ VOID OsDeleteNodeSortLink(SortLinkAttribute *sortLinkHeader, SortLinkList *sortL
 
 STATIC INLINE UINT64 OsGetSortLinkNextExpireTime(SortLinkAttribute *sortHeader, UINT64 startTime)
 {
-    UINT64 expirTime = 0;
-    UINT64 nextExpirTime = 0;
     LOS_DL_LIST *head = &sortHeader->sortLink;
     LOS_DL_LIST *list = head->pstNext;
 
     if (LOS_ListEmpty(head)) {
-        return (UINT64)-1;
+        return OS_SCHED_MAX_RESPONSE_TIME - OS_TICK_RESPONSE_PRECISION;
     }
 
-    do {
-        SortLinkList *listSorted = LOS_DL_LIST_ENTRY(list, SortLinkList, sortLinkNode);
-        if (listSorted->responseTime <= startTime) {
-            expirTime = startTime;
-            list = list->pstNext;
-        } else {
-            nextExpirTime = listSorted->responseTime;
-            break;
-        }
-    } while (list != head);
-
-    if (expirTime == 0) {
-        return nextExpirTime;
+    SortLinkList *listSorted = LOS_DL_LIST_ENTRY(list, SortLinkList, sortLinkNode);
+    if (listSorted->responseTime <= (startTime + OS_TICK_RESPONSE_PRECISION)) {
+        return startTime + OS_TICK_RESPONSE_PRECISION;
     }
 
-    if (nextExpirTime == 0) {
-        return expirTime;
-    }
-
-    if ((nextExpirTime - expirTime) <= OS_US_PER_TICK) {
-        return nextExpirTime;
-    }
-
-    return expirTime;
+    return listSorted->responseTime;
 }
 
 STATIC Percpu *OsFindIdleCpu(UINT16 *idleCpuID)
@@ -231,7 +210,7 @@ UINT64 OsGetNextExpireTime(UINT64 startTime)
 
 UINT32 OsSortLinkGetTargetExpireTime(const SortLinkList *targetSortList)
 {
-    UINT64 currTimes = OsGerCurrSchedTimeCycle();
+    UINT64 currTimes = OsGetCurrSchedTimeCycle();
     if (currTimes >= targetSortList->responseTime) {
         return 0;
     }

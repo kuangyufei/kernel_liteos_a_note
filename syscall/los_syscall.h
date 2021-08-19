@@ -256,6 +256,7 @@ extern int SysExecve(const char *fileName, char *const *argv, char *const *envp)
 extern int SysChdir(const char *path);
 extern int SysUtimensat(int fd, const char *path, struct timespec times[2], int flag);
 extern int SysFchmodat(int fd, const char *path, mode_t mode, int flag);
+extern int SysFchmod(int fd, mode_t mode);
 extern int SysChmod(const char *path, mode_t mode);
 extern int SysFchownat(int fd, const char *path, uid_t owner, gid_t group, int flag);
 extern int SysFchown(int fd, uid_t owner, gid_t group);
@@ -280,6 +281,8 @@ extern int SysTruncate(const char *path, off_t length);
 extern int SysFtruncate(int fd, off_t length);
 extern int SysStatfs(const char *path, struct statfs *buf);
 extern int SysStatfs64(const char *path, size_t sz, struct statfs *buf);
+extern int SysFstatfs(int fd, struct statfs *buf);
+extern int SysFstatfs64(int fd, size_t sz, struct statfs *buf);
 
 extern int SysStat(const char *path, struct kstat *buf);
 extern int SysLstat(const char *path, struct kstat *buffer);

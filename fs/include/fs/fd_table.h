@@ -79,6 +79,7 @@ struct fd_table_s {//进程fd表结构体
     unsigned int max_fds;//一个进程能打开的最大文件数量, 一般是 512 + 128 个,512指普通文件, 128指网络文件
     struct file_table_s *ft_fds; /* process fd array associate with system fd *///系统分配给进程的FD数组 ,fd 默认是 -1
     fd_set *proc_fds;	//进程fd管理位,用bitmap管理FD使用情况,默认打开了 0,1,2	       (stdin,stdout,stderr)
+    fd_set *cloexec_fds;
     sem_t ft_sem; /* manage access to the file table */ //管理对文件表的访问的信号量
 };
 //注:系统描述符的使用情况也是用bitmap管理见于 ..\third_party\third_party_NuttX\fs\inode\fs_files.c
@@ -106,7 +107,7 @@ struct files_struct *dup_fd(struct files_struct *oldf);
 //为进程分配文件管理器，其中包含fd总数，(0,1,2)默认给了stdin,stdout,stderr
 struct files_struct *alloc_files(void);
 //删除参数进程的文件管理器
-void delete_files(LosProcessCB *processCB, struct files_struct *files);
+void delete_files(struct files_struct *files);
 //创建文件管理器快照，所谓快照就是一份拷贝
 struct files_struct *create_files_snapshot(const struct files_struct *oldf);
 //删除文件管理器快照
@@ -115,4 +116,10 @@ void delete_files_snapshot(struct files_struct *files);
 int alloc_fd(int minfd);
 
 void alloc_std_fd(struct fd_table_s *fdt);
+
+void FileTableLock(struct fd_table_s *fdt);
+
+void FileTableUnLock(struct fd_table_s *fdt);
+
+struct fd_table_s *GetFdTable(void);
 #endif

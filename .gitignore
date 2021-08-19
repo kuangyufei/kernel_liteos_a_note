@@ -17,9 +17,9 @@ tags
 
 # Menuconfig temp files
 /config.h
-.config
-.config.old
+/defconfig
+/.config
+/.config.old
 
 # Build temp files
-/platform/board.ld
 /out

@@ -207,6 +207,12 @@ sources_pressure = [
 ]
 
 sources_full = [
+  "jffs/full/it_test_fs_jffs_001.cpp",
+  "jffs/full/it_test_fs_jffs_002.cpp",
+  "jffs/full/it_test_fs_jffs_003.cpp",
+  "jffs/full/it_test_fs_jffs_004.cpp",
+  "jffs/full/it_test_fs_jffs_102.cpp",
+  "jffs/full/it_test_fs_jffs_103.cpp",
   "jffs/full/It_jffs_001.cpp",
   "jffs/full/It_jffs_002.cpp",
   "jffs/full/It_jffs_003.cpp",

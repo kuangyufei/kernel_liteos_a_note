@@ -43,8 +43,6 @@ USB_SRC     :=
 
 LITEOS_BASELIB       += -lbsp
 
-LITEOS_PLATFORM      := $(subst $\",,$(LOSCFG_PLATFORM))
-
 PLATFORM_BSP_BASE := $(LITEOSTOPDIR)/platform
 
 PLATFORM_INCLUDE := -I $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) \
@@ -55,10 +53,5 @@ PLATFORM_INCLUDE := -I $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) \
                     -I $(PLATFORM_BSP_BASE)/hw/include \
                     -I $(PLATFORM_BSP_BASE)/include
 
-#
-#-include $(LITEOSTOPDIR)/platform/bsp/board/$(LITEOS_PLATFORM)/board.mk
-#
-
 LIB_SUBDIRS             += $(PLATFORM_BSP_BASE)
 LITEOS_PLATFORM_INCLUDE += $(PLATFORM_INCLUDE)
-LITEOS_CXXINCLUDE       += $(PLATFORM_INCLUDE)

@@ -28,10 +28,8 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 include $(LITEOSTOPDIR)/config.mk
-OBJOUT := $(OUT)/obj/kernel/user
 
 MODULE_NAME := userinit
-LIBA := $(OUT)/lib/lib$(MODULE_NAME).O
 
 LOCAL_INCLUDE := \
     -I $(LITEOSTOPDIR)/kernel/base/include\
@@ -49,27 +47,19 @@ LOCAL_INCLUDE := \
 LOCAL_SRCS := $(wildcard src/*.c) \
               $(wildcard src/*.S)
 
-LOCAL_CSRCS := $(filter %.c,$(LOCAL_SRCS))
-LOCAL_ASMSRCS := $(filter %.S,$(LOCAL_SRCS))
-
-LOCAL_COBJS := $(patsubst %.c,$(OBJOUT)/%.o,$(LOCAL_CSRCS))
-LOCAL_ASMOBJS := $(patsubst %.S,$(OBJOUT)/%.o,$(LOCAL_ASMSRCS))
-LOCAL_OBJS := $(LOCAL_COBJS) $(LOCAL_ASMOBJS)
-
 LOCAL_FLAGS :=  $(LOCAL_INCLUDE)
 
-all : $(LIBA)
+include $(MODULE)
 
-$(LOCAL_COBJS): $(OBJOUT)/%.o: %.c
-	$(HIDE)$(OBJ_MKDIR)
-	$(HIDE)$(CC) $(LITEOS_CFLAGS) $(LOCAL_FLAGS) $(LOCAL_CFLAGS) -c $< -o $@
+LIBO := $(OUT)/lib/lib$(MODULE_NAME).O
 
-$(LOCAL_ASMOBJS): $(OBJOUT)/%.o: %.S
-	$(HIDE)$(OBJ_MKDIR)
-	$(HIDE)$(CC) $(LITEOS_CFLAGS) $(LOCAL_FLAGS) $(LOCAL_ASFLAGS) -c $< -o $@
+$(LIBO): $(LIBA)
+	$(HIDE) $(LD) -r -o $@ --whole-archive $< --no-whole-archive
+	$(HIDE) $(RM) $<
 
-$(LIBA): $(LOCAL_OBJS)
-	$(HIDE) $(LD) -r -o $@ $^
+clean2:
+	$(HIDE) $(RM) $(LIBO)
 
-clean:
-	$(HIDE) rm -rf $(LOCAL_OBJS) $(LIBA)
+all: $(LIBO)
+clean: clean2
+.PHONY: clean2

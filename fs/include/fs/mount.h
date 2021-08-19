@@ -63,6 +63,7 @@ struct Mount {
     const struct MountOps *ops;        /* operations of mount */ //挂载操作函数	
     struct Vnode *vnodeBeCovered;      /* vnode we mounted on */ //要被挂载的节点 即 /bin1/vs/sd 对应的 vnode节点
     struct Vnode *vnodeCovered;        /* syncer vnode */		 //要挂载的节点	即/dev/mmcblk0p0 对应的 vnode节点
+    struct Vnode *vnodeDev;            /* dev vnode */
     LIST_HEAD vnodeList;               /* list of vnodes */		//链表表头
     int vnodeSize;                     /* size of vnode list */	//节点数量
     LIST_HEAD activeVnodeList;         /* list of active vnodes */	//激活的节点链表
@@ -87,4 +88,5 @@ typedef int (*foreach_mountpoint_t)(const char *devpoint,
 struct Mount* MountAlloc(struct Vnode* vnode, struct MountOps* mop);
 LIST_HEAD* GetMountList(void);
 int foreach_mountpoint(foreach_mountpoint_t handler, void *arg);
+int ForceUmountDev(struct Vnode *dev);
 #endif

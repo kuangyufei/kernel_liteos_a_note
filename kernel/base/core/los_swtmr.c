@@ -237,10 +237,9 @@ ERROR:
  * Description: Start Software Timer
  * Input      : swtmr --- Need to start software timer
  */ //开始定时器
-LITE_OS_SEC_TEXT VOID OsSwtmrStart(SWTMR_CTRL_S *swtmr)
+LITE_OS_SEC_TEXT VOID OsSwtmrStart(UINT64 currTime, SWTMR_CTRL_S *swtmr)
 {
     UINT32 ticks;
-    UINT64 currTime = OsGerCurrSchedTimeCycle();
 
     if ((swtmr->uwOverrun == 0) && ((swtmr->ucMode == LOS_SWTMR_MODE_ONCE) ||
         (swtmr->ucMode == LOS_SWTMR_MODE_OPP) ||
@@ -251,10 +250,8 @@ LITE_OS_SEC_TEXT VOID OsSwtmrStart(SWTMR_CTRL_S *swtmr)
     }
     swtmr->ucState = OS_SWTMR_STATUS_TICKING;
 
-    OsAdd2SortLink(&swtmr->stSortList, currTime, ticks, OS_SORT_LINK_SWTMR);
-    if (OS_SCHEDULER_ACTIVE) {
-        OsSchedUpdateExpireTime(currTime);
-    }
+    OsAdd2SortLink(&swtmr->stSortList, swtmr->startTime, ticks, OS_SORT_LINK_SWTMR);
+    OsSchedUpdateExpireTime(currTime);
     return;
 }
 
@@ -270,7 +267,7 @@ STATIC INLINE VOID OsSwtmrDelete(SWTMR_CTRL_S *swtmr)
     swtmr->uwOwnerPid = 0;//谁拥有这个定时器? 是 0号进程, 0号进程出来了,竟然是虚拟的一个进程.用于这类缓冲使用.
 }
 
-STATIC INLINE VOID OsWakePendTimeSwtmr(Percpu *cpu, SWTMR_CTRL_S *swtmr)
+STATIC INLINE VOID OsWakePendTimeSwtmr(Percpu *cpu, UINT64 currTime, SWTMR_CTRL_S *swtmr)
 {
     LOS_SpinLock(&g_swtmrSpin);
     SwtmrHandlerItemPtr swtmrHandler = (SwtmrHandlerItemPtr)LOS_MemboxAlloc(g_swtmrHandlerPool);
@@ -295,7 +292,7 @@ STATIC INLINE VOID OsWakePendTimeSwtmr(Percpu *cpu, SWTMR_CTRL_S *swtmr)
         swtmr->ucState = OS_SWTMR_STATUS_CREATED;
     } else {
         swtmr->uwOverrun++;
-        OsSwtmrStart(swtmr);
+        OsSwtmrStart(currTime, swtmr);
     }
 
     LOS_SpinUnlock(&g_swtmrSpin);
@@ -322,15 +319,15 @@ LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)//扫描定时器,如果碰到超时的,�
     }
     SortLinkList *sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
 
-    UINT64 currTime = OsGerCurrSchedTimeCycle();
+    UINT64 currTime = OsGetCurrSchedTimeCycle();
     while (sortList->responseTime <= currTime) {
         sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-        OsDeleteNodeSortLink(swtmrSortLink, sortList);
-
         SWTMR_CTRL_S *swtmr = LOS_DL_LIST_ENTRY(sortList, SWTMR_CTRL_S, stSortList);
+        swtmr->startTime = GET_SORTLIST_VALUE(sortList);
+        OsDeleteNodeSortLink(swtmrSortLink, sortList);
         LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
 
-        OsWakePendTimeSwtmr(cpu, swtmr);
+        OsWakePendTimeSwtmr(cpu, currTime, swtmr);
 
         LOS_SpinLock(&cpu->swtmrSortLinkSpin);
         if (LOS_ListEmpty(listObject)) {
@@ -363,9 +360,7 @@ LITE_OS_SEC_TEXT STATIC VOID OsSwtmrStop(SWTMR_CTRL_S *swtmr)
     swtmr->ucState = OS_SWTMR_STATUS_CREATED;
     swtmr->uwOverrun = 0;
 
-    if (OS_SCHEDULER_ACTIVE) {
-        OsSchedUpdateExpireTime(OsGerCurrSchedTimeCycle());
-    }
+    OsSchedUpdateExpireTime(OsGetCurrSchedTimeCycle());
 }
 
 /*
@@ -461,7 +456,8 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStart(UINT16 swtmrID)
             OsSwtmrStop(swtmr);//先停止定时器,注意这里没有break;,在OsSwtmrStop中状态将会回到了OS_SWTMR_STATUS_CREATED 接下来就是执行启动了
             /* fall-through */
         case OS_SWTMR_STATUS_CREATED://已经创建好了
-            OsSwtmrStart(swtmr);//启动定时器
+            swtmr->startTime = OsGetCurrSchedTimeCycle();
+            OsSwtmrStart(swtmr->startTime, swtmr);
             break;
         default:
             ret = LOS_ERRNO_SWTMR_STATUS_INVALID;

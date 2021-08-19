@@ -297,5 +297,38 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex018, TestSize.Level0)
     ItTestPthreadMutex018();
 }
 #endif
+
+/* *
+ * @tc.name: it_test_pthread_mutex_023
+ * @tc.desc: function for test mutexattr robust
+ * @tc.type: FUNC
+ * @tc.require: AR000E0QAB
+ */
+HWTEST_F(ProcessMutexTest, ItTestPthreadMutex023, TestSize.Level0)
+{
+    ItTestPthreadMutex023();
+}
+
+/* *
+ * @tc.name: it_test_pthread_mutex_024
+ * @tc.desc: function for test mutexattr robust:error return value
+ * @tc.type: FUNC
+ * @tc.require: AR000E0QAB
+ */
+HWTEST_F(ProcessMutexTest, ItTestPthreadMutex024, TestSize.Level0)
+{
+    ItTestPthreadMutex024();
+}
+
+/* *
+ * @tc.name: it_test_pthread_mutex_025
+ * @tc.desc: test mutexattr robust:robustness product deadlock is not set
+ * @tc.type: FUNC
+ * @tc.require: AR000E0QAB
+ */
+HWTEST_F(ProcessMutexTest, ItTestPthreadMutex025, TestSize.Level0)
+{
+    ItTestPthreadMutex025();
+}
 #endif
 } // namespace OHOS

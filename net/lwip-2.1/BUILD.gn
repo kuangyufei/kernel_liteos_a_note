@@ -57,7 +57,3 @@ config("public") {
   include_dirs += LWIP_PORTING_INCLUDE_DIRS
   include_dirs += LWIP_INCLUDE_DIRS
 }
-
-group("lwip-2.1") {
-  public_deps = [ ":$module_name" ]
-}

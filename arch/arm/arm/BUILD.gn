@@ -70,10 +70,6 @@ kernel_module(module_name) {
   public_configs = [ ":public" ]
 }
 
-group("arm") {
-  public_deps = [ ":$module_name" ]
-}
-
 config("public") {
   include_dirs = [
     "include",

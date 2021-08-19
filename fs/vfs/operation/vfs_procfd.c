@@ -37,7 +37,7 @@
 #include "lwip/sockets.h"
 #endif
 //对进程文件表操作上锁
-static void FileTableLock(struct fd_table_s *fdt)
+void FileTableLock(struct fd_table_s *fdt)
 {
     /* Take the semaphore (perhaps waiting) */
     while (sem_wait(&fdt->ft_sem) != 0) {
@@ -49,7 +49,7 @@ static void FileTableLock(struct fd_table_s *fdt)
     }
 }
 //对进程文件表操作解锁
-static void FileTableUnLock(struct fd_table_s *fdt)
+void FileTableUnLock(struct fd_table_s *fdt)
 {
     int ret = sem_post(&fdt->ft_sem);
     if (ret == -1) {
@@ -78,7 +78,7 @@ static int AssignProcessFd(const struct fd_table_s *fdt, int minFd)
     return VFS_ERROR;
 }
 //获取进程文件描述符表
-static struct fd_table_s *GetFdTable(void)
+struct fd_table_s *GetFdTable(void)
 {
     struct fd_table_s *fdt = NULL;
     struct files_struct *procFiles = OsCurrProcessGet()->files;//当前进程文件管理器
@@ -202,6 +202,7 @@ void FreeProcessFd(int procFd)
 
     FileTableLock(fdt);
     FD_CLR(procFd, fdt->proc_fds);	//相应位清0
+    FD_CLR(procFd, fdt->cloexec_fds);
     fdt->ft_fds[procFd].sysFd = -1;	//解绑系统文件描述符
     FileTableUnLock(fdt);
 }
@@ -322,7 +323,7 @@ static void FdRefer(int sysFd)
 #endif
 #if defined(LOSCFG_COMPAT_POSIX)
     if ((sysFd >= MQUEUE_FD_OFFSET) && (sysFd < (MQUEUE_FD_OFFSET + CONFIG_NQUEUE_DESCRIPTORS))) {
-        mqueue_refer(sysFd);//增加mqpersonal引用次数
+        MqueueRefer(sysFd);
     }
 #endif
 }
@@ -472,6 +473,7 @@ int CloseProcFd(int procFd, unsigned int targetPid)
 
     /* clean the fd set */
     FD_CLR(procFd, fdt->proc_fds);//进程FD重置
+    FD_CLR(procFd, fdt->cloexec_fds);
     fdt->ft_fds[procFd].sysFd = -1;//解绑
     if (sem_post(&semId) == -1) {
         PRINTK("sem_post error, errno %d \n", get_errno());

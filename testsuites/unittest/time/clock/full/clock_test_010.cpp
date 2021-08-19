@@ -64,12 +64,12 @@ static int SleepTest(int64_t expectTime)
     LogPrintln("slept time (expected --> actual): %" PRId64 "ns --> %" PRId64 "ns, delta: %" PRId64 "ns\n", expectTime,
         escapeTime, escapeTime - expectTime);
 
-    g_failCnt += (escapeTime < expectTime || (escapeTime - expectTime) >= 20000000); // 20000000, 2 ticks.
+    g_failCnt += (escapeTime < expectTime);
 
     return 0;
 }
 
-static int ClockTest(void)
+static void *ClockTestThread(void *arg)
 {
     (void)SleepTest(0);
     (void)SleepTest(2); // 2, ns.
@@ -84,6 +84,27 @@ static int ClockTest(void)
     (void)SleepTest(10e6 + 1); // 10ms+1ns
     (void)SleepTest(25e6);     // 25ms
     (void)SleepTest(1e9);      // 1s
+
+    return NULL;
+}
+
+static int ClockTest(void)
+{
+    int ret;
+    pthread_t thread;
+    struct sched_param param = { 0 };
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+
+    pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+    pthread_attr_setschedparam(&attr, &param);
+
+    ret = pthread_create(&thread, &attr, ClockTestThread, NULL);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+
+    ret = pthread_join(thread, NULL);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+
     ICUNIT_ASSERT_EQUAL(g_failCnt, 0, g_failCnt);
     return 0;
 }

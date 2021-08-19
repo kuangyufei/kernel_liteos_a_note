@@ -993,73 +993,7 @@ STATUS_T LOS_VaddrToPaddrMmap(LosVmSpace *space, VADDR_T vaddr, PADDR_T paddr, s
     }
     return LOS_OK;
 }
-//对外接口|用户空间申请堆内存
-STATUS_T LOS_UserSpaceVmAlloc(LosVmSpace *space, size_t size, VOID **ptr, UINT8 align_log2, UINT32 regionFlags)
-{
-    STATUS_T err = LOS_OK;
-    VADDR_T vaddr = 0;
-    size_t sizeCount;
-    size_t count;
-    LosVmPage *vmPage = NULL;
-    VADDR_T vaddrTemp;
-    PADDR_T paddrTemp;
-    LosVmMapRegion *region = NULL;
 
-    size = ROUNDUP(size, PAGE_SIZE);
-    if (size == 0) {
-        return LOS_ERRNO_VM_INVALID_ARGS;
-    }
-    sizeCount = (size >> PAGE_SHIFT);
-
-    /* if they're asking for a specific spot, copy the address */
-    if (ptr != NULL) {
-        vaddr = (VADDR_T)(UINTPTR)*ptr;
-    }
-    /* allocate physical memory up front, in case it cant be satisfied */
-    /* allocate a random pile of pages */
-    LOS_DL_LIST_HEAD(pageList);
-
-    (VOID)LOS_MuxAcquire(&space->regionMux);
-    count = LOS_PhysPagesAlloc(sizeCount, &pageList);//由伙伴算法分配物理页面
-    if (count < sizeCount) {
-        VM_ERR("failed to allocate enough pages (ask %zu, got %zu)", sizeCount, count);
-        err = LOS_ERRNO_VM_NO_MEMORY;
-        goto MEMORY_ALLOC_FAIL;
-    }
-
-    /* allocate a region and put it in the aspace list */
-    region = LOS_RegionAlloc(space, vaddr, size, regionFlags, 0);//分配一个线性区，并挂入空间中
-    if (!region) {
-        err = LOS_ERRNO_VM_NO_MEMORY;
-        VM_ERR("failed to allocate region, vaddr: %#x, size: %#x, space: %#x", vaddr, size, space);
-        goto MEMORY_ALLOC_FAIL;
-    }
-
-    /* return the vaddr if requested */
-    if (ptr != NULL) {
-        *ptr = (VOID *)(UINTPTR)region->range.base;
-    }
-
-    /* map all of the pages */
-    vaddrTemp = region->range.base;
-    while ((vmPage = LOS_ListRemoveHeadType(&pageList, LosVmPage, node))) {
-        paddrTemp = vmPage->physAddr;
-        LOS_AtomicInc(&vmPage->refCounts);
-        err = LOS_ArchMmuMap(&space->archMmu, vaddrTemp, paddrTemp, 1, regionFlags);
-        if (err != 1) {
-            LOS_Panic("%s %d, LOS_ArchMmuMap failed!, err: %d\n", __FUNCTION__, __LINE__, err);
-        }
-        vaddrTemp += PAGE_SIZE;
-    }
-    err = LOS_OK;
-    goto VMM_ALLOC_SUCCEED;
-
-MEMORY_ALLOC_FAIL:
-    (VOID)LOS_PhysPagesFree(&pageList);
-VMM_ALLOC_SUCCEED:
-    (VOID)LOS_MuxRelease(&space->regionMux);
-    return err;
-}
 //对外接口|申请内核堆空间内存
 VOID *LOS_VMalloc(size_t size)//从g_vMallocSpace中申请物理内存
 {

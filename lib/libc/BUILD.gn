@@ -60,6 +60,13 @@ kernel_module(module_name) {
       "$OPTRTDIR/string/arm/strcmp.S",
       "$OPTRTDIR/string/arm/strcpy.c",
       "$OPTRTDIR/string/arm/strlen-armv6t2.S",
+      "src/arch/arm/memset.S",
+      "src/arch/arm/memcmp.S",
+    ]
+  } else {
+    sources += [
+      "src/memset.c",
+      "src/memcmp.c",
     ]
   }
 

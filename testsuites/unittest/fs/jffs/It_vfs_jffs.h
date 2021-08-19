@@ -96,6 +96,7 @@ constexpr const char* JFFS_CHINESE_NAME1 = "���Ϻ�";
 constexpr const char* JFFS_BASE_DIR = "/";
 #endif
 
+#define JFFS_FILE_MODE  0755
 #define JFFS_MAIN_DIR0 "/storage"
 #define JFFS_MOUNT_DIR0 "/storage"
 #define JFFS_MAIN_DIR1 "/storage1"
@@ -266,6 +267,12 @@ VOID ItFsJffs535(VOID);
 #endif
 
 #if defined(LOSCFG_USER_TEST_FULL)
+void ItTestFsJffs001(void);
+void ItTestFsJffs002(void);
+void ItTestFsJffs003(void);
+void ItTestFsJffs004(void);
+void ItTestFsJffs102(void);
+void ItTestFsJffs103(void);
 VOID ItJffs001(VOID);
 VOID ItJffs002(VOID);
 VOID ItJffs003(VOID);

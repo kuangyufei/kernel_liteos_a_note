@@ -28,11 +28,14 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "It_fs_jffs.h"
+#include "It_vfs_jffs.h"
 
-#define FILEPATH  "/storage/test.txt"
+#define FILEPATH  "/storage/testfdopen.txt"
+#define TESTFILE  "/storage/testfopen"
+#define MAXFD  512
+#define MINFD 8
 
-static int TestCase(void)
+static int TestCase0(void)
 {
     FILE *fp = NULL;
     int fd = -1;
@@ -40,7 +43,7 @@ static int TestCase(void)
     char rdbuf[10U] = {0};
     int ret = -1;
 
-    fd = open(FILEPATH, O_RDWR | O_EXCL | O_CREAT, JFFS_FILE_MODE);
+    fd = open(FILEPATH, O_RDWR);
     ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
 
     /* r+ */
@@ -58,11 +61,12 @@ static int TestCase(void)
 
     ret = fclose(fp);
     ICUNIT_GOTO_NOT_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT);
+    fp = NULL;
 
+    /* a+ /appen + rw */
     fd = open(FILEPATH, O_RDWR);
     ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
 
-    /* a+ */
     fp = fdopen(fd, "a+");
     ICUNIT_GOTO_NOT_EQUAL(fp, JFFS_TO_NULL, fp, EXIT);
 
@@ -77,14 +81,135 @@ static int TestCase(void)
 
     ret = fclose(fp);
     ICUNIT_GOTO_NOT_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT);
+    fp = NULL;
 
-    ret = remove(FILEPATH);
+    /* r / only read */
+    fd = open(FILEPATH, O_RDWR);
+    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
+
+    fp = fdopen(fd, "r");
+    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_TO_NULL, fd, EXIT);
+
+    ret = fwrite(buf, 10u, 1, fp);
+    ICUNIT_GOTO_NOT_EQUAL(ret, 1, ret, EXIT);
+
+    ret = fclose(fp);
     ICUNIT_GOTO_NOT_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT);
+    fp = NULL;
+
+    /* w / only write */
+    fd = open(FILEPATH, O_RDWR);
+    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
+
+    fp = fdopen(fd, "w");
+    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_TO_NULL, fd, EXIT);
+
+    ret = fread(rdbuf, 10u, 1, fp);
+    ICUNIT_GOTO_NOT_EQUAL(ret, 1, ret, EXIT);
+
+    ret = fclose(fp);
+    ICUNIT_GOTO_NOT_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT);
+    fp = NULL;
+
+    /* w+ */
+    fd = open(FILEPATH, O_RDWR);
+    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
+
+    fp = fdopen(fd, "w+");
+    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_TO_NULL, fd, EXIT);
+
+    ret = fwrite(buf, 10u, 1, fp);
+    ICUNIT_GOTO_NOT_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT);
+
+    ret = fseek(fp, 0, SEEK_SET);
+    ICUNIT_GOTO_NOT_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT);
+
+    ret = fread(rdbuf, 10u, 1, fp);
+    ICUNIT_GOTO_NOT_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT);
+
+    ret = fclose(fp);
+    ICUNIT_GOTO_NOT_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT);
+    fp = NULL;
+
+    /* a */
+    fd = open(FILEPATH, O_WRONLY);
+    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
+
+    fp = fdopen(fd, "a");
+    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_TO_NULL, fd, EXIT);
+
+    ret = fwrite(buf, 10u, 1, fp);
+    ICUNIT_GOTO_NOT_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT);
+
+    ret = fseek(fp, 0, SEEK_SET);
+    ICUNIT_GOTO_NOT_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT);
+
+    ret = fread(rdbuf, 10u, 1, fp);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
+
+    ret = fclose(fp);
 
     return JFFS_NO_ERROR;
 
 EXIT:
-    fclose(fp);
+    if(fp != NULL) {
+        fclose(fp);
+    } else {
+        remove(FILEPATH);
+    }
+
+    return JFFS_IS_ERROR;
+}
+
+/* error */
+static int TestCase1(void)
+{
+    FILE *fp = NULL;
+    int fd = -1;
+    int errFd = -1;
+    int i = 0;
+
+    fd = open(FILEPATH, O_RDWR, JFFS_FILE_MODE);
+    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
+
+    /* EIVNAL */
+    fp = fdopen(fd, "hello");
+    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_TO_NULL, fd, EXIT);
+    ICUNIT_GOTO_EQUAL(errno, EINVAL, errno, EXIT);
+
+    close(fd);
+    remove(TESTFILE);
+
+    return JFFS_NO_ERROR;
+
+EXIT:
+    close(fd);
+    remove(TESTFILE);
+
+    return JFFS_IS_ERROR;
+}
+
+static int TestCase(void)
+{
+    int ret = -1;
+    int fd = -1;
+
+    fd = open(FILEPATH, O_RDWR | O_EXCL | O_CREAT, JFFS_FILE_MODE);
+    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
+
+    ret = TestCase0();
+    ICUNIT_GOTO_EQUAL(ret, JFFS_TO_NULL, ret, EXIT);
+
+    ret = TestCase1();
+    ICUNIT_GOTO_EQUAL(ret, JFFS_TO_NULL, ret, EXIT);
+
+    close(fd);
+    remove(FILEPATH);
+
+    return JFFS_NO_ERROR;
+
+EXIT:
+    close(fd);
     remove(FILEPATH);
 
     return JFFS_IS_ERROR;

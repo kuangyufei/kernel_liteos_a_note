@@ -82,7 +82,6 @@ STATIC INT32 OsGetRealPath(const CHAR *fileName, CHAR *buf, UINT32 maxLen)
     return LOS_OK;
 
 ERR_FILE:
-    PRINT_ERR("No such file or directory: %s\n", fileName);
     return -ENOENT;
 }
 #endif

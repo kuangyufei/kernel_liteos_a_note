@@ -95,7 +95,6 @@ struct mqarray {
     mode_s mode_data; /* mode data of mqueue */
     uid_t euid; /* euid of mqueue */
     gid_t egid; /* egid of mqueue */
-    fd_set mq_fdset; /* mqueue sysFd bit map */
     struct mqnotify mq_notify;
     LosQueueCB *mqcb;
     struct mqpersonal *mq_personal;
@@ -423,7 +422,7 @@ extern int mq_timedsend(mqd_t personal, const char *msg, size_t msgLen,
 extern ssize_t mq_timedreceive(mqd_t personal, char *msg, size_t msgLen,
                                unsigned int *msgPrio, const struct timespec *absTimeout);
 
-extern void mqueue_refer(int sysFd);
+extern void MqueueRefer(int sysFd);
 extern int OsMqNotify(mqd_t personal, const struct sigevent *sigev);
 
 #ifdef __cplusplus

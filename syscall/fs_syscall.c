@@ -52,7 +52,6 @@
 #include "los_vm_map.h"
 #include "los_memory.h"
 #include "los_strncpy_from_user.h"
-#include "fs/file.h"
 #include "capability_type.h"
 #include "capability_api.h"
 #include "sys/statfs.h"
@@ -228,29 +227,7 @@ static int UserPoll(struct pollfd *fds, nfds_t nfds, int timeout)
     free(pollFds);
     return ret;
 }
-//复杂一个文件描述符
-static int FcntlDupFd(int sysfd, void *arg)
-{
-    int leastFd = (intptr_t)arg;
 
-    if ((sysfd < 0) || (sysfd >= CONFIG_NFILE_DESCRIPTORS)) {
-        return -EBADF;
-    }
-
-    if (CheckProcessFd(leastFd) != OK) {
-        return -EINVAL;
-    }
-
-    int procFd = AllocLowestProcessFd(leastFd);
-    if (procFd < 0) {
-        return -EMFILE;
-    }
-
-    files_refer(sysfd);
-    AssociateSystemFd(procFd, sysfd);
-
-    return procFd;
-}
 //关闭文件句柄
 int SysClose(int fd)
 {
@@ -302,9 +279,8 @@ ssize_t SysWrite(int fd, const void *buf, size_t nbytes)
     }
 
     /* Process fd convert to system global fd */
-    fd = GetAssociatedSystemFd(fd);
-
-    ret = write(fd, buf, nbytes);
+    int sysfd = GetAssociatedSystemFd(fd);
+    ret = write(sysfd, buf, nbytes);
     if (ret < 0) {
         return -get_errno();
     }
@@ -321,7 +297,7 @@ int SysOpen(const char *path, int oflags, ...)
     if (path != NULL) {
         ret = UserPathCopy(path, &pathRet);
         if (ret != 0) {
-            goto ERROUT_PATH_FREE;
+            return ret;
         }
     }
 
@@ -329,6 +305,10 @@ int SysOpen(const char *path, int oflags, ...)
     if (procFd < 0) {
         ret = -EMFILE;
         goto ERROUT;
+    }
+
+    if (oflags & O_CLOEXEC) {
+        SetCloexecFlag(procFd);
     }
 
     if ((unsigned int)oflags & O_DIRECTORY) {//目录标签
@@ -359,17 +339,12 @@ int SysOpen(const char *path, int oflags, ...)
     return procFd;//返回进程描述符
 
 ERROUT:
-    if (ret >= 0) {
-        AssociateSystemFd(procFd, ret);//进程FD 关联 系统FD
-        ret = procFd;//正常情况下返回的是进程Fd
-    } else {
-        FreeProcessFd(procFd);//
-    }
-ERROUT_PATH_FREE:
     if (pathRet != NULL) {
-        LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
     }
-
+    if (procFd >= 0) {
+        FreeProcessFd(procFd);
+    }
     return ret;
 }
 /************************************************
@@ -965,12 +940,13 @@ int SysIoctl(int fd, int req, void *arg)
 int SysFcntl(int fd, int cmd, void *arg)
 {
     /* Process fd convert to system global fd */
-    fd = GetAssociatedSystemFd(fd);
+    int sysfd = GetAssociatedSystemFd(fd);
 
-    if (cmd == F_DUPFD) {
-        return FcntlDupFd(fd, arg);
+    int ret = VfsFcntl(fd, cmd, arg);
+    if (ret == CONTINE_NUTTX_FCNTL) {
+        ret = fcntl(sysfd, cmd, arg);
     }
-    int ret = fcntl(fd, cmd, arg);
+
     if (ret < 0) {
         return -get_errno();
     }
@@ -1069,6 +1045,9 @@ int SysDup2(int fd1, int fd2)
 
     files_refer(sysfd1);
     AssociateSystemFd(fd2, sysfd1);
+
+    /* if fd1 is not equal to fd2, the FD_CLOEXEC flag associated with fd2 shall be cleared */
+    ClearCloexecFlag(fd2);
     return fd2;
 }
 //select()参数检查
@@ -1480,9 +1459,9 @@ ssize_t SysWritev(int fd, const struct iovec *iov, int iovcnt)
     struct iovec *iovRet = NULL;
 
     /* Process fd convert to system global fd */
-    fd = GetAssociatedSystemFd(fd);
+    int sysfd = GetAssociatedSystemFd(fd);
     if ((iov == NULL) || (iovcnt <= 0) || (iovcnt > IOV_MAX)) {
-        ret = writev(fd, iov, iovcnt);
+        ret = writev(sysfd, iov, iovcnt);
         return -get_errno();
     }
 
@@ -1496,7 +1475,7 @@ ssize_t SysWritev(int fd, const struct iovec *iov, int iovcnt)
         goto OUT_FREE;
     }
 
-    ret = writev(fd, iovRet, valid_iovcnt);
+    ret = writev(sysfd, iovRet, valid_iovcnt);
     if (ret < 0) {
         ret = -get_errno();
     }
@@ -1757,6 +1736,10 @@ int SysOpenat(int dirfd, const char *path, int oflags, ...)
     if (procFd < 0) {
         ret = -EMFILE;
         goto ERROUT;
+    }
+
+    if (oflags & O_CLOEXEC) {
+        SetCloexecFlag(procFd);
     }
 
     if (dirfd != AT_FDCWD) {
@@ -2153,13 +2136,13 @@ int SysFstat64(int fd, struct stat64 *buf)
 int SysFcntl64(int fd, int cmd, void *arg)
 {
     /* Process fd convert to system global fd */
-    fd = GetAssociatedSystemFd(fd);
+    int sysfd = GetAssociatedSystemFd(fd);
 
-    if (cmd == F_DUPFD) {
-        return FcntlDupFd(fd, arg);
+    int ret = VfsFcntl(fd, cmd, arg);
+    if (ret == CONTINE_NUTTX_FCNTL) {
+        ret = fcntl64(sysfd, cmd, arg);
     }
 
-    int ret = fcntl64(fd, cmd, arg);
     if (ret < 0) {
         return -get_errno();
     }
@@ -2323,6 +2306,34 @@ int SysFchmodat(int fd, const char *path, mode_t mode, int flag)
 OUT:
     PointerFree(pathRet);
     PointerFree(fullpath);
+
+    return ret;
+}
+
+int SysFchmod(int fd, mode_t mode)
+{
+    int ret;
+    int sysFd;
+    struct IATTR attr = {
+        .attr_chg_mode = mode,
+        .attr_chg_valid = CHG_MODE, /* change mode */
+    };
+    struct file *file = NULL;
+
+    sysFd = GetAssociatedSystemFd(fd);
+    if (sysFd < 0) {
+        return -EBADF;
+    }
+
+    ret = fs_getfilep(sysFd, &file);
+    if (ret < 0) {
+        return -get_errno();
+    }
+
+    ret = chattr(file->f_path, &attr);
+    if (ret < 0) {
+        return -get_errno();
+    }
 
     return ret;
 }
@@ -2500,6 +2511,49 @@ int SysFaccessat(int fd, const char *filename, int amode, int flag)
 
 OUT:
     PointerFree(fullDirectory);
+
+    return ret;
+}
+
+int SysFstatfs(int fd, struct statfs *buf)
+{
+    int ret;
+    struct file *filep = NULL;
+    struct statfs bufRet = {0};
+
+    /* Process fd convert to system global fd */
+    fd = GetAssociatedSystemFd(fd);
+
+    ret = fs_getfilep(fd, &filep);
+    if (ret < 0) {
+        ret = -get_errno();
+        return ret;
+    }
+
+    ret = statfs(filep->f_path, &bufRet);
+    if (ret < 0) {
+        ret = -get_errno();
+        return ret;
+    }
+
+    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct statfs));
+    if (ret != 0) {
+        ret = -EFAULT;
+    }
+
+    return ret;
+}
+
+int SysFstatfs64(int fd, size_t sz, struct statfs *buf)
+{
+    int ret = 0;
+
+    if (sz != sizeof(struct statfs)) {
+        ret = -EINVAL;
+        return ret;
+    }
+
+    ret = SysFstatfs(fd, buf);
 
     return ret;
 }

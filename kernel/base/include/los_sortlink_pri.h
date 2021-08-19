@@ -62,6 +62,7 @@ typedef struct {
 
 #define OS_SORT_LINK_INVALID_TIME ((UINT64)-1)
 #define SET_SORTLIST_VALUE(sortList, value) (((SortLinkList *)(sortList))->responseTime = (value))
+#define GET_SORTLIST_VALUE(sortList) (((SortLinkList *)(sortList))->responseTime)
 
 extern UINT64 OsGetNextExpireTime(UINT64 startTime);
 extern UINT32 OsSortLinkInit(SortLinkAttribute *sortLinkHeader);

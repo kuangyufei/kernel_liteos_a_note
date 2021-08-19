@@ -170,6 +170,9 @@ int getrlimit(int resource, struct rlimit *rlim)
 }
 
 #define FSIZE_RLIMIT 0XFFFFFFFF
+#ifndef NR_OPEN_DEFAULT
+#define NR_OPEN_DEFAULT 1024
+#endif
 int setrlimit(int resource, const struct rlimit *rlim)
 {
     LosProcessCB *pcb = OsCurrProcessGet();

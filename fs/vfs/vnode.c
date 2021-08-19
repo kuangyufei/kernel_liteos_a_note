@@ -403,7 +403,6 @@ int VnodeLookup(const char *path, struct Vnode **result, uint32_t flags)
 
     int ret = PreProcess(path, &startVnode, &normalizedPath);//找到根节点和绝对路径
     if (ret != LOS_OK) {
-        PRINT_ERR("[VFS]lookup failed, invalid path=%s err = %d\n", path, ret);
         goto OUT_FREE_PATH;
     }
 

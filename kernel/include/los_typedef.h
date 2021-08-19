@@ -188,6 +188,7 @@ typedef size_t             BOOL;
 #define OS_ERROR           (UINT32)(-1)
 #define OS_INVALID         (UINT32)(-1)
 #define OS_INVALID_VALUE   ((UINT32)0xFFFFFFFF)
+#define OS_64BIT_MAX       0xFFFFFFFFFFFFFFFFULL
 
 #define asm __asm
 #ifdef typeof

@@ -54,6 +54,9 @@ LITE_OS_SEC_DATA_MINOR STATIC CHAR g_shellSwtmrStatus[][SWTMR_STRLEN] = {
 
 STATIC VOID OsPrintSwtmrMsg(const SWTMR_CTRL_S *swtmr)
 {
+    UINT32 ticks = 0;
+    (VOID)LOS_SwtmrTimeGet(swtmr->usTimerID, &ticks);
+
     PRINTK("0x%08x  "
            "%-7s  "
            "%-6s   "
@@ -65,7 +68,7 @@ STATIC VOID OsPrintSwtmrMsg(const SWTMR_CTRL_S *swtmr)
            g_shellSwtmrStatus[swtmr->ucState],	//软件定时器状态,状态可能为："UnUsed", "Created", "Ticking"。
            g_shellSwtmrMode[swtmr->ucMode],		//软件定时器模式。模式可能为："Once", "Period", "NSD（单次定时器，定时结束后不会自动删除）"
            swtmr->uwInterval,	//软件定时器使用的Tick数。
-           swtmr->uwCount,		//软件定时器已经工作的次数。
+           ticks,
            swtmr->uwArg,		//传入的参数。
            swtmr->pfnHandler);	//回调函数的地址。
 }

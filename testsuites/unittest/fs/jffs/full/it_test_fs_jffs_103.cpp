@@ -28,8 +28,7 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#include "It_fs_jffs.h"
+#include "It_vfs_jffs.h"
 
 #define TEST_STRLEN 30
 
@@ -41,6 +40,8 @@ static int TestCase(void)
     CHAR pathname0[TEST_STRLEN] = JFFS_PATH_NAME0;
     CHAR pathname1[TEST_STRLEN] = JFFS_PATH_NAME0;
     CHAR pathname2[TEST_STRLEN] = JFFS_PATH_NAME0;
+    CHAR pathname3[TEST_STRLEN] = JFFS_PATH_NAME01;
+    CHAR filebuf[256] =  "abcdeab89abcedcde01234567fghij9876543210abcdeabc89abcedfghde0123456710abcdeabcde012876543289abcedfghij987654345673210abcdeabcde0123456789abcedfghij9876543210abcdeabcde0123456789abcedfg10abcdeahij9876543289abcedfghlbcde01234567I0lalalalalalalal";
     struct stat info = {0};
 
     ret = mkdir(pathname0, 0777);
@@ -60,16 +61,54 @@ static int TestCase(void)
     dirfd = open(pathname0, O_DIRECTORY);
     ICUNIT_GOTO_NOT_EQUAL(dirfd, JFFS_IS_ERROR, dirfd, EXIT);
 
-    ret = fchmodat(fd, "test1", S_IREAD, 0);
+    /* ENAMETOOLONG */
+    ret = fchmodat(dirfd, filebuf, S_IREAD, 0);
+    ret = errno;
+    ICUNIT_GOTO_EQUAL(ret, ENAMETOOLONG, ret, EXIT);
+
+    /* ENOENT */
+    ret = fchmodat(-1, "test1", S_IREAD, 0);
+    ret = errno;
+    ICUNIT_GOTO_EQUAL(ret, ENOENT, ret, EXIT);
+
+    /* EINVAL */
+    ret = fchmodat(dirfd, NULL, S_IREAD, 0);
+    ret = errno;
+    ICUNIT_GOTO_EQUAL(ret, EINVAL, ret, EXIT);
+
+    /* absolute path */
+    ret = fchmodat(0, pathname1, S_IRUSR | S_IWUSR | S_IXUSR, 0);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
-
     stat(pathname1, &info);
-    ret = info.st_mode & S_IREAD;
-    ICUNIT_GOTO_NOT_EQUAL(ret, 0, ret, EXIT);
+    ret = info.st_mode & (S_IRUSR | S_IWUSR | S_IXUSR);
+    ICUNIT_GOTO_EQUAL(ret, (S_IRUSR | S_IWUSR | S_IXUSR), ret, EXIT);
 
+    /* S_IRUSR | S_IWUSR | S_IXUSR */
+    ret = fchmodat(dirfd, "test1", S_IRUSR | S_IWUSR | S_IXUSR, 0);
+    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
+    stat(pathname1, &info);
+    ret = info.st_mode & (S_IRUSR | S_IWUSR | S_IXUSR);
+    ICUNIT_GOTO_EQUAL(ret, (S_IRUSR | S_IWUSR | S_IXUSR), ret, EXIT);
+
+    /* AT_FDCWD */
+    ret = fchmodat(AT_FDCWD, "test/test1", S_IRUSR | S_IWUSR | S_IXUSR, 0);
+    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
+    stat(pathname1, &info);
+    ret = info.st_mode & (S_IRUSR | S_IWUSR | S_IXUSR);
+    ICUNIT_GOTO_EQUAL(ret, (S_IRUSR | S_IWUSR | S_IXUSR), ret, EXIT);
     ret = close(dirfd);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
+    /* ENOTDIR */
+    dirfd = open(pathname3, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, 0777);
+    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
+    ret = fchmodat(dirfd, "test1", S_IROTH | S_IWOTH | S_IXOTH, 0);
+    ret = errno;
+    ICUNIT_GOTO_EQUAL(ret, ENOTDIR, ret, EXIT);
+    ret = close(dirfd);
+    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
+    ret = remove(pathname3);
+    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
     ret = rmdir(pathname1);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
@@ -85,17 +124,15 @@ static int TestCase(void)
 
     stat(pathname2, &info);
     ret = info.st_mode & (S_IRUSR | S_IRGRP | S_IROTH);
-    ICUNIT_GOTO_NOT_EQUAL(ret, 0, ret, EXIT);
-
+    ICUNIT_GOTO_EQUAL(ret, (S_IRUSR | S_IRGRP | S_IROTH), ret, EXIT);
     ret = close(fd);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    ret = fchmodat(dirfd, "test.txt", S_IREAD, 0);
-    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
-
+    ret = fchmodat(dirfd, "test.txt", S_IRUSR | S_IWUSR | S_IXUSR, 0);
+    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
     stat(pathname2, &info);
-    ret = info.st_mode & S_IREAD;
-    ICUNIT_GOTO_NOT_EQUAL(ret, 0, ret, EXIT);
+    ret = info.st_mode & (S_IRUSR | S_IWUSR | S_IXUSR);
+    ICUNIT_GOTO_EQUAL(ret, (S_IRUSR | S_IWUSR | S_IXUSR), ret, EXIT);
 
     ret = close(dirfd);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
@@ -114,6 +151,7 @@ EXIT1:
         close(fd);
     }
 EXIT:
+    remove(pathname3);
     remove(pathname2);
     remove(pathname1);
     remove(pathname0);

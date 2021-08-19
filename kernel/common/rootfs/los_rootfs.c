@@ -305,7 +305,7 @@ INT32 OsMountRootfs()
     UINT64 userAddr;
     UINT64 userSize;
     UINT32 mountFlags;
-	//获取根文件系统s参数
+	//获取根文件系统参数
     ret = ParseRootArgs(&dev, &fstype, &rootAddr, &rootSize, &mountFlags);
     if (ret != LOS_OK) {
         return ret;
@@ -320,7 +320,7 @@ INT32 OsMountRootfs()
     if (ret != LOS_OK) {
         return ret;
     }
-	//添加分区
+	//添加分区,注册驱动
     ret = AddPartitions(dev, rootAddr, rootSize, userAddr, userSize);
     if (ret != LOS_OK) {
         return ret;

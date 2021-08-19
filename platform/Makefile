@@ -61,10 +61,22 @@ LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/kernel/extended/vdso/include
 endif
 
 ALL_ASSRCS := $(wildcard *.S)
-ASSRCS := $(subst board.ld.S,,$(ALL_ASSRCS))
+ASSRCS := $(filter-out board.ld.S,$(ALL_ASSRCS))
 
 LOCAL_SRCS += $(ASSRCS)
 
 LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
+
+BOARD_LD = $(OUT)/lib/board.ld
+$(BOARD_LD): board.ld.S $(LITEOS_MENUCONFIG_H)
+	$(HIDE)$(CC) -I$(LITEOSTOPDIR)/kernel/base/include -I$(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) -I. \
+		-imacros $(LITEOS_MENUCONFIG_H) -P -E $< -o $@
+
+.PHONY: rm_board_ld
+rm_board_ld:
+	$(HIDE)$(RM) $(BOARD_LD)
+
+all: $(BOARD_LD)
+clean: rm_board_ld
 
 include $(MODULE)

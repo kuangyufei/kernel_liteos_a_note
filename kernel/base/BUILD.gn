@@ -34,7 +34,6 @@ kernel_module(module_name) {
   sources = [
     "core/los_bitmap.c",
     "core/los_process.c",
-    "core/los_sortlink.c",
     "core/los_swtmr.c",
     "core/los_sys.c",
     "core/los_task.c",
@@ -68,6 +67,7 @@ kernel_module(module_name) {
     "mp/los_stat.c",
     "om/los_err.c",
     "sched/sched_sq/los_sched.c",
+    "sched/sched_sq/los_sortlink.c",
     "vm/los_vm_boot.c",
     "vm/los_vm_dump.c",
     "vm/los_vm_fault.c",
@@ -83,9 +83,7 @@ kernel_module(module_name) {
   ]
 
   if (defined(LOSCFG_SHELL_CMD_DEBUG)) {
-    configs += [
-      "$HDFTOPDIR:hdf_config"
-    ]
+    configs += [ "$HDFTOPDIR:hdf_config" ]
   }
 
   public_configs = [ ":public" ]

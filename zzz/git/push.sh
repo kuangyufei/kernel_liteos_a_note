@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 注解根文件系统  
+git commit -m  ' 同步官方源码,各模块都有改动,尤其文件系统.  
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     博客输出站点(国内):http://weharmonyos.com
     博客输出站点(国外):https://openharmony.github.io

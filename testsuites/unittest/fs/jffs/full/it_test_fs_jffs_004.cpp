@@ -28,11 +28,14 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "It_fs_jffs.h"
+#include "It_vfs_jffs.h"
 
 #define MOUNT_FILEPATH "/storage/mounts"
+#define TESTFILE "/storage/hellomnt"
+#define MAXFD 512
+#define MINFD 8
 
-static int TestCase(void)
+static int TestCase0(void)
 {
     CHAR pathname1[JFFS_STANDARD_NAME_LENGTH] = MOUNT_FILEPATH;
     struct mntent *mnt = NULL;
@@ -65,8 +68,51 @@ static int TestCase(void)
     ICUNIT_GOTO_EQUAL(mnt->mnt_freq, mountsData.mnt_freq, mnt.mnt_freq, EXIT);
     ICUNIT_GOTO_EQUAL(mnt->mnt_passno, mountsData.mnt_passno, mnt.mnt_passno, EXIT);
 
+    endmntent(fp);
+    return JFFS_NO_ERROR;
+
 EXIT:
     endmntent(fp);
+    return JFFS_IS_ERROR;
+}
+
+static int TestCase1(void)
+{
+    int ret = -1;
+    FILE *fp = NULL;
+    int i = 0;
+    int fd =-1;
+    /* EINVAL */
+    fp = setmntent(MOUNT_FILEPATH, "+r");
+    ICUNIT_GOTO_EQUAL(fp, NULL, fp, EXIT);
+    ICUNIT_GOTO_EQUAL(errno, EINVAL, fp, EXIT);
+
+    /* EISDIR */
+    fp = setmntent("./", "r+");
+    ICUNIT_GOTO_EQUAL(fp, NULL, fp, EXIT);
+    ICUNIT_GOTO_EQUAL(errno, EISDIR, fp, EXIT);
+    /* ENOENT */
+    fp = setmntent("/storage/testmnt", "r+");
+    ICUNIT_GOTO_EQUAL(fp, NULL, fp, EXIT);
+    ICUNIT_GOTO_EQUAL(errno, ENOENT, fp, EXIT);
+    remove(TESTFILE);
+
+    return JFFS_NO_ERROR;
+EXIT:
+    remove(TESTFILE);
+    return JFFS_IS_ERROR;
+}
+
+static int TestCase(void)
+{
+    int ret = -1;
+    ret = TestCase0();
+    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
+    ret = TestCase1();
+    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
+
+    return JFFS_NO_ERROR;
+EXIT:
     return JFFS_IS_ERROR;
 }
 

@@ -648,7 +648,7 @@ INT32 OsFutexWait(const UINT32 *userVaddr, UINT32 flags, UINT32 val, UINT32 absT
         return ret;
     }
     if (absTime != LOS_WAIT_FOREVER) {
-        timeOut = OsUS2Tick(absTime);
+        timeOut = OsNS2Tick((UINT64)absTime * OS_SYS_NS_PER_US);
     }
 
     return OsFutexWaitTask(userVaddr, flags, val, timeOut);

@@ -75,7 +75,7 @@ static void FillFdInfo(struct SeqBuf *seqBuf, struct filelist *fileList, unsigne
             }
 
             if (hasPrivilege) {
-                (void)LosBufPrintf(seqBuf, "%u\t%d\t%d\t%s\n", pid, fd, sysFd, name);
+                (void)LosBufPrintf(seqBuf, "%u\t%d\t%6d <%d>\t%s\n", pid, fd, sysFd, filp->f_refcount, name);
             } else {
                 (void)LosBufPrintf(seqBuf, "%u\t%d\t%s\n", pid, fd, name);
             }
@@ -101,7 +101,7 @@ static int FdProcFill(struct SeqBuf *seqBuf, void *v)
         }
         pidNum = LOS_GetUsedPIDList(pidList, pidMaxNum);
         hasPrivilege = true;
-        (void)LosBufPrintf(seqBuf, "Pid\tFd\tSysFd\tName\n");
+        (void)LosBufPrintf(seqBuf, "%s\t%s\t%6s %s\t%s\n", "Pid", "Fd", "SysFd", "<ref>", "Name");
     } else {
         pidNum = 1;
         pidList = (unsigned int *)malloc(pidNum * sizeof(unsigned int));

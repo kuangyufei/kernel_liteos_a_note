@@ -99,6 +99,22 @@ extern UINT32 __heap_end;		// 堆区结束地址
 
 /**
  * @ingroup los_config
+ * Minimum response error accuracy of tick interrupts, number of ticks in one second
+ */
+#ifndef LOSCFG_BASE_CORE_TICK_PER_SECOND_MINI
+#define LOSCFG_BASE_CORE_TICK_PER_SECOND_MINI  1000UL  /* 1ms */
+#endif
+
+#if (LOSCFG_BASE_CORE_TICK_PER_SECOND > LOSCFG_BASE_CORE_TICK_PER_SECOND_MINI)
+    #error "LOSCFG_BASE_CORE_TICK_PER_SECOND_MINI must be greater than LOSCFG_BASE_CORE_TICK_PER_SECOND"
+#endif
+
+#if (LOSCFG_BASE_CORE_TICK_PER_SECOND_MINI > 1000UL)
+    #error "LOSCFG_BASE_CORE_TICK_PER_SECOND_MINI must be less than or equal to 1000"
+#endif
+
+/**
+ * @ingroup los_config
  * Microseconds of adjtime in one second
  */
 #ifndef LOSCFG_BASE_CORE_ADJ_PER_SECOND

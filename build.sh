@@ -46,8 +46,8 @@ device_path=${12}
 echo "${board_name}" "${device_company}"
 echo "sh param:" "$@"
 
+destination="defconfig"
 function main() {
-    destination=".config"
     tee=""
     if [ "${tee_enable}" = "true" ]; then
         tee="_tee"
@@ -85,10 +85,12 @@ if [ "x" != "x${arch_cflags}" ]; then
     export ARCH_CFLAGS="${arch_cflags}"
 fi
 
-export OUTDIR="${outdir}"
 export PRODUCT_PATH="${product_path}"
 export DEVICE_PATH="${device_path}"
 
+OUTDIR="${outdir}"
+CONFIG="$(realpath ${destination})"
+
 main && \
-make clean && \
-make -j rootfs VERSION="${ohos_version}"
+make clean CONFIG="$CONFIG" OUTDIR="$OUTDIR" && \
+make -j all VERSION="${ohos_version}" CONFIG="$CONFIG" OUTDIR="$OUTDIR"

@@ -39,6 +39,7 @@
 #include "asm/page.h"
 #ifdef LOSCFG_FS_VFS
 #include "fs/fd_table.h"
+#include "fs/fs_operation.h"
 #endif
 #include "time.h"
 #include "user_copy.h"
@@ -300,7 +301,7 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 
 #ifdef LOSCFG_FS_VFS
     if (OsProcessIsUserMode(processCB)) {//用户进程
-        delete_files(processCB, processCB->files);//删除与用户进程相关的文件
+        delete_files(processCB->files);
     }
     processCB->files = NULL;
 #endif
@@ -1328,8 +1329,8 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
 
     LOS_VmSpaceFree(oldSpace);
 #ifdef LOSCFG_FS_VFS
-    delete_files(OsCurrProcessGet(), (struct files_struct *)oldFiles);//删除进程文件管理器快照
-    alloc_std_fd(OsCurrProcessGet()->files->fdt);
+    CloseOnExec((struct files_struct *)oldFiles);
+    delete_files_snapshot((struct files_struct *)oldFiles);
 #endif
 
     OsSwtmrRecycle(processCB->processID);//回收定时器

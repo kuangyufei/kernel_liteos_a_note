@@ -33,6 +33,7 @@
 #define FS_OPERATION_H
 
 #include "fs/file.h"
+#include "fs/fd_table.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -136,6 +137,11 @@ extern int update_file_path(const char *old_path, const char *new_path);
  */
 
 void los_vfs_init(void);
+
+void CloseOnExec(struct files_struct *files);
+void SetCloexecFlag(int procFd);
+bool CheckCloexecFlag(int procFd);
+void ClearCloexecFlag(int procFd);
 
 void clear_fd(int fd);
 
@@ -304,7 +310,23 @@ extern int los_set_systime_status(BOOL b_status);
 struct IATTR;
 extern int chattr(const char *pathname, struct IATTR *attr);
 
+#define CONTINE_NUTTX_FCNTL 0XFF0F
+/**
+ * @ingroup fs
+ *
+ * @par Description:
+ * The VfsFcntl function shall manipulate file descriptor.
+ *
+ * @retval #0  On success.
+ * @retval #-1 On failure with errno set.
+ * @retval CONTINE_NUTTX_FCNTL doesn't support some cmds in VfsFcntl, needs to continue going through Nuttx vfs operation.</li>
+ *
+ * @par Dependency:
+ * <ul><li>fs.h</li></ul>
+ * @see None
+ */
 
+extern int VfsFcntl(int fd, int cmd, ...);
 /**
  * @ingroup fs
  *

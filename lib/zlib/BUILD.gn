@@ -56,7 +56,3 @@ kernel_module(module_name) {
 config("public") {
   include_dirs = [ "$LITEOSTHIRDPARTY/zlib" ]
 }
-
-group("zlib") {
-  public_deps = [ ":$module_name" ]
-}

@@ -121,9 +121,10 @@ extern "C" {
 
 /**
  * @ingroup los_sys
- * Convert microseconds to Ticks.
+ * Convert nanoseconds to Ticks.
  */
-extern UINT32 OsUS2Tick(UINT64 microsec);
+extern UINT32 OsNS2Tick(UINT64 nanoseconds);
+
 #ifdef __cplusplus
 #if __cplusplus
 }

@@ -38,6 +38,13 @@ BUILD_DIR := $(TOYBOX_DIR)/build
 BUILD_LOG := $(TOYBOX_DIR)/build.log
 OUTNAME := $(TOYBOX)
 
+CFLAGS := -D_FORTIFY_SOURCE=2 -fstack-protector-strong
+LDFLAGS :=
+ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
+CFLAGS += --target=$(LLVM_TARGET) $(LLVM_SYSROOT)
+LDFLAGS += --target=$(LLVM_TARGET) $(LLVM_SYSROOT)
+endif
+
 $(TOYBOX):
 ifneq ($(wildcard $(BUILD_DIR)),)
 	$(HIDE)echo "not clean, rebuilding now";
@@ -46,12 +53,14 @@ else
 	$(HIDE)$(CP) $(LITEOSTHIRDPARTY)/$(TOYBOX)/. $(BUILD_DIR)
 	$(HIDE)$(CP) -p $(LITEOSTHIRDPARTY)/$(TOYBOX)/porting/liteos_a/. $(BUILD_DIR)
 endif
-	$(HIDE)CFLAGS="-D_FORTIFY_SOURCE=2 -fstack-protector-strong --target=$(LLVM_TARGET) $(LLVM_SYSROOT)" CC="$(CC)" OUTNAME=$(OUTNAME) \
-	LDFLAGS="--target=$(LLVM_TARGET) $(LLVM_SYSROOT)" \
+
+	$(HIDE)CFLAGS="$(CFLAGS)" CC="$(CC)" OUTNAME="$(OUTNAME)" \
+	LDFLAGS="$(LDFLAGS)" STRIP="$(STRIP)" \
 	make -C $(BUILD_DIR) toybox -j> $(BUILD_LOG) 2>&1
 	$(HIDE)$(CP) $(BUILD_DIR)/$(TOYBOX) .
 	$(HIDE)mkdir -p $(APPS_OUT)
 	$(HIDE)$(CP) $(TOYBOX) $(APPS_OUT)
+	$(HIDE)$(RM) $(BUILD_DIR) $(BUILD_LOG)
 
 clean:
 	$(HIDE)$(RM) $(TOYBOX) $(BUILD_DIR) $(BUILD_LOG)

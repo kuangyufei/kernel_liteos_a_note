@@ -30,5 +30,5 @@
  */
     .globl __vdso_text_start
     .section .data.vdso.text
-__vdso_text_start: @vdso代码段入口
+__vdso_text_start:
     .incbin OHOS_VDSO_SO

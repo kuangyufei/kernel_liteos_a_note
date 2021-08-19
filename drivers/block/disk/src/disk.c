@@ -1451,10 +1451,13 @@ DISK_FIND_ERROR:
 //磁盘反初始化
 INT32 los_disk_deinit(INT32 diskID)
 {
+    int ret;
     los_disk *disk = get_disk(diskID);
     if (disk == NULL) {
         return -EINVAL;
     }
+    ret = ForceUmountDev(disk->dev);
+    PRINTK("warning: %s lost, force umount ret = %d\n", disk->disk_name, ret);
 
     DISK_LOCK(&disk->disk_mutex);
 

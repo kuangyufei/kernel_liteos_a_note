@@ -45,30 +45,34 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#define OS_SCHED_MINI_PERIOD       (OS_SYS_CLOCK / LOSCFG_BASE_CORE_TICK_PER_SECOND_MINI)
+#define OS_TICK_RESPONSE_PRECISION (UINT32)((OS_SCHED_MINI_PERIOD * 75) / 100)
+#define OS_SCHED_MAX_RESPONSE_TIME (UINT64)(((UINT64)-1) - 1U)
+
 extern UINT32 g_taskScheduled;
 typedef BOOL (*SchedScan)(VOID);
 
 extern UINT64 g_sysSchedStartTime;
 //获取当前调度经历了多少个时间周期
-STATIC INLINE UINT64 OsGerCurrSchedTimeCycle(VOID)
+STATIC INLINE UINT64 OsGetCurrSchedTimeCycle(VOID)
 {
-    if (g_sysSchedStartTime == 0) {
-        return g_sysSchedStartTime;
+    if (g_sysSchedStartTime != OS_64BIT_MAX) {
+        return (HalClockGetCycles() - g_sysSchedStartTime);
     }
 
-    return (HalClockGetCycles() - g_sysSchedStartTime);//经历周期数
+    return 0;
 }
 
 STATIC INLINE VOID OsSchedIrqUpdateUsedTime(VOID)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
-    runTask->irqUsedTime = OsGerCurrSchedTimeCycle() - runTask->irqStartTime;
+    runTask->irqUsedTime = OsGetCurrSchedTimeCycle() - runTask->irqStartTime;
 }
 
 STATIC INLINE VOID OsSchedIrqStartTime(VOID)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
-    runTask->irqStartTime = OsGerCurrSchedTimeCycle();
+    runTask->irqStartTime = OsGetCurrSchedTimeCycle();
 }
 
 /*
@@ -86,8 +90,9 @@ STATIC INLINE VOID OsSchedIrqStartTime(VOID)
 #define OS_SCHEDULER_ACTIVE (g_taskScheduled & (1U << ArchCurrCpuid()))//用于判断当前cpu是否可调度
 
 typedef enum {
-    INT_NO_RESCH = 0,   /* no needs to schedule */
-    INT_PEND_RESCH,     /* pending schedule flag */
+    INT_NO_RESCH = 0x0,   /* no needs to schedule */
+    INT_PEND_RESCH = 0x1, /* pending schedule flag */
+    INT_PEND_TICK = 0x2,  /* pending tick */
 } SchedFlag;
 
 /* Check if preemptable with counter flag */
@@ -104,7 +109,7 @@ STATIC INLINE BOOL OsPreemptable(VOID)//是否可抢占
     BOOL preemptable = (OsPercpuGet()->taskLockCnt == 0);
     if (!preemptable) {
         /* Set schedule flag if preemption is disabled */
-        OsPercpuGet()->schedFlag = INT_PEND_RESCH;//如果禁用抢占，则设置调度标志
+        OsPercpuGet()->schedFlag |= INT_PEND_RESCH;
     }
     LOS_IntRestore(intSave);//手动恢复中断
     return preemptable;
@@ -126,7 +131,7 @@ STATIC INLINE BOOL OsPreemptableInSched(VOID)
 #endif
     if (!preemptable) {
         /* Set schedule flag if preemption is disabled */
-        OsPercpuGet()->schedFlag = INT_PEND_RESCH;//重新调度
+        OsPercpuGet()->schedFlag |= INT_PEND_RESCH;
     }
 
     return preemptable;
@@ -141,8 +146,8 @@ STATIC INLINE VOID OsCpuSchedUnlock(Percpu *cpu, UINT32 intSave)
 {
     if (cpu->taskLockCnt > 0) {
         cpu->taskLockCnt--;
-        if ((cpu->taskLockCnt == 0) && (cpu->schedFlag == INT_PEND_RESCH) && OS_SCHEDULER_ACTIVE) {
-            cpu->schedFlag = INT_NO_RESCH;
+        if ((cpu->taskLockCnt == 0) && (cpu->schedFlag & INT_PEND_RESCH) && OS_SCHEDULER_ACTIVE) {
+            cpu->schedFlag &= ~INT_PEND_RESCH;
             LOS_IntRestore(intSave);
             LOS_Schedule();
             return;

@@ -276,6 +276,7 @@ typedef struct tagSwTmrCtrl {//软件定时器控制块
                              that handles software timer timeout is called */
     SWTMR_PROC_FUNC pfnHandler; /**< Callback function that handles software timer timeout */	//处理软件计时器超时的回调函数
     UINT32          uwOwnerPid; /** Owner of this software timer */	//软件定时器所属进程ID号
+    UINT64 startTime;  /**< Software timer start time */
 } SWTMR_CTRL_S;//变量前缀 uc:UINT8  us:UINT16 uw:UINT32 代表的意思
 
 /**

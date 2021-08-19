@@ -60,6 +60,7 @@ typedef struct {//内核对cpu的描述
     SortLinkAttribute swtmrSortLink;         /* swtmr sort link */	//挂还没到时间的定时器
     SPIN_LOCK_S       swtmrSortLinkSpin;     /* swtmr sort link spin lock *///操作swtmrSortLink链表的自旋锁
     UINT64            responseTime;          /* Response time for current nuclear Tick interrupts *///当前CPU核 Tick 中断的响应时间
+    UINT64            tickStartTime;         /* The time when the tick interrupt starts processing */
     UINT32            responseID;            /* The response ID of the current nuclear TICK interrupt *///当前CPU核TICK中断的响应ID
     UINTPTR           runProcess;            /* The address of the process control block pointer to which
                                                 the current kernel is running *///当前进程控制块地址

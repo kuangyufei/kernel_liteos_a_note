@@ -452,15 +452,30 @@ int clock_settime(clockid_t clockID, const struct timespec *tp)
 }
 
 #ifdef LOSCFG_KERNEL_CPUP
+inline UINT32 GetTidFromClockID(clockid_t clockID)
+{
+    // In musl/src/thread/pthread_getcpuclockid.c, we know 'clockid = (-tid - 1) * 8 + 6' 
+    UINT32 tid = -(clockID - 6) / 8 - 1; // 6 8 1 inverse operation from clockID to tid
+    return tid;
+}
+
+inline const pid_t GetPidFromClockID(clockid_t clockID)
+{
+    // In musl/src/time/clock_getcpuclockid.c, we know 'clockid = (-pid - 1) * 8 + 2'
+    const pid_t pid = -(clockID - 2) / 8 - 1; // 2 8 1 inverse operation from clockID to pid
+    return pid;
+}
+
 static int PthreadGetCputime(clockid_t clockID, struct timespec *ats)
 {
     uint64_t runtime;
     UINT32 intSave;
-    UINT32 tid = ((UINT32) ~((UINT32)(clockID) >> CPUCLOCK_ID_OFFSET));
+    UINT32 tid = GetTidFromClockID(clockID);
 
     if (OS_TID_CHECK_INVALID(tid)) {
         return -EINVAL;
     }
+
     LosTaskCB *task = OsGetTaskCB(tid);
 
     if (OsCurrTaskGet()->processID != task->processID) {
@@ -481,7 +496,7 @@ static int ProcessGetCputime(clockid_t clockID, struct timespec *ats)
 {
     UINT64 runtime;
     UINT32 intSave;
-    const pid_t pid = ((pid_t) ~((UINT32)(clockID) >> CPUCLOCK_ID_OFFSET));
+    const pid_t pid = GetPidFromClockID(clockID);
     LosProcessCB *spcb = NULL;
 
     if (OsProcessIDUserCheckInvalid(pid) || pid < 0) {
@@ -523,7 +538,7 @@ static int GetCputime(clockid_t clockID, struct timespec *tp)
 static int CheckClock(const clockid_t clockID)
 {
     int error = 0;
-    const pid_t pid = ((pid_t) ~((UINT32)(clockID) >> CPUCLOCK_ID_OFFSET));
+    const pid_t pid = GetPidFromClockID(clockID);
 
     if (!((UINT32)clockID & CPUCLOCK_PERTHREAD_MASK)) {
         LosProcessCB *spcb = NULL;
@@ -948,11 +963,11 @@ int timer_getoverrun(timer_t timerID)
     return (overRun > DELAYTIMER_MAX) ? DELAYTIMER_MAX : overRun;
 }
 
-STATIC INT32 DoNanoSleep(UINT64 useconds)
+STATIC INT32 DoNanoSleep(UINT64 nanoseconds)
 {
     UINT32 ret;
 
-    ret = LOS_TaskDelay(OsUS2Tick(useconds));
+    ret = LOS_TaskDelay(OsNS2Tick(nanoseconds));
     if (ret == LOS_OK || ret == LOS_ERRNO_TSK_YIELD_NOT_ENOUGH_TASK) {
         return 0;
     }
@@ -961,12 +976,12 @@ STATIC INT32 DoNanoSleep(UINT64 useconds)
 
 int usleep(unsigned useconds)
 {
-    return DoNanoSleep((UINT64)useconds);
+    return DoNanoSleep((UINT64)useconds * OS_SYS_NS_PER_US);
 }
 
 int nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
 {
-    UINT64 useconds;
+    UINT64 nanoseconds;
     INT32 ret = -1;
 
     (VOID)rmtp;
@@ -977,14 +992,14 @@ int nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
         return ret;
     }
 
-    useconds = (UINT64)rqtp->tv_sec * OS_SYS_US_PER_SECOND + rqtp->tv_nsec / OS_SYS_NS_PER_US;
+    nanoseconds = (UINT64)rqtp->tv_sec * OS_SYS_NS_PER_SECOND + rqtp->tv_nsec;
 
-    return DoNanoSleep(useconds);
+    return DoNanoSleep(nanoseconds);
 }
 
 unsigned int sleep(unsigned int seconds)
 {
-    return DoNanoSleep((UINT64)seconds * OS_SYS_US_PER_SECOND);
+    return DoNanoSleep((UINT64)seconds * OS_SYS_NS_PER_SECOND);
 }
 
 double difftime(time_t time2, time_t time1)
@@ -1108,11 +1123,11 @@ VOID OsVdsoTimeGet(VdsoDataPage *vdsoDataPage)
     OsGetHwTime(&hwTime);
 
     LOS_SpinLockSave(&g_timeSpin, &intSave);
-    tmp = OsTimeSpecAdd(hwTime, g_accDeltaFromAdj);//添加时间
+    tmp = OsTimeSpecAdd(hwTime, g_accDeltaFromAdj);
     vdsoDataPage->monoTimeSec = tmp.tv_sec;
     vdsoDataPage->monoTimeNsec = tmp.tv_nsec;
 
-    tmp = OsTimeSpecAdd(tmp, g_accDeltaFromSet);//添加时间
+    tmp = OsTimeSpecAdd(tmp, g_accDeltaFromSet);
     vdsoDataPage->realTimeSec = tmp.tv_sec;
     vdsoDataPage->realTimeNsec = tmp.tv_nsec;
     LOS_SpinUnlockRestore(&g_timeSpin, intSave);

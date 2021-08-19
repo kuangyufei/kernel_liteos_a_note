@@ -56,7 +56,6 @@ sources_smoke = [
   "smoke/It_posix_pthread_020.cpp",
   "smoke/It_posix_pthread_021.cpp",
   "smoke/It_posix_pthread_022.cpp",
-  "smoke/It_posix_pthread_203.cpp",
 ]
 
 sources_full = [
@@ -149,6 +148,7 @@ sources_full = [
   "full/It_posix_pthread_193.cpp",
   "full/It_posix_pthread_194.cpp",
   "full/It_posix_pthread_200.cpp",
+  "full/It_posix_pthread_203.cpp",
   "full/It_posix_pthread_204.cpp",
   "full/It_posix_pthread_205.cpp",
   "full/It_posix_pthread_206.cpp",

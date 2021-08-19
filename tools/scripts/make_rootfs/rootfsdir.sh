@@ -46,14 +46,14 @@ if [ -d "${BIN_DIR}" ] && [ "$(ls -A "${BIN_DIR}")" != "" ]; then
     for el in ${NEED_COPYTO_OUTDIR[@]}
     do
         if [ -e ${BIN_DIR}/$el ] && [ "${BIN_DIR}/$el" != "${OUT_DIR}/bin/$el" ]; then
-            cp -f ${BIN_DIR}/$el ${OUT_DIR}/bin/$el
+            cp -u ${BIN_DIR}/$el ${OUT_DIR}/bin/$el
         fi
     done
 fi
 cp -f ${LIB_DIR}/* ${ROOTFS_DIR}/lib
-cp -f ${LIB_DIR}/* ${OUT_DIR}/libs
+cp -u ${LIB_DIR}/* ${OUT_DIR}/libs
 
-if [ -e ${ETC_DIR} ]; then
+if [ -e ${ETC_DIR}/.mkshrc ]; then
 cp -f ${ETC_DIR}/.mkshrc ${ROOTFS_DIR}/etc
-cp -f ${ETC_DIR}/.mkshrc ${OUT_DIR}/etc
+cp -u ${ETC_DIR}/.mkshrc ${OUT_DIR}/etc
 fi

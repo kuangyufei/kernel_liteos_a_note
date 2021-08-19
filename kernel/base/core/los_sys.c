@@ -69,7 +69,7 @@
 //获取自系统启动以来的Tick数
 LITE_OS_SEC_TEXT_MINOR UINT64 LOS_TickCountGet(VOID)
 {
-    return OsGerCurrSchedTimeCycle() / OS_CYCLE_PER_TICK;
+    return OsGetCurrSchedTimeCycle() / OS_CYCLE_PER_TICK;
 }
 //每个Tick多少Cycle数
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_CyclePerTickGet(VOID)
@@ -91,11 +91,11 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_Tick2MS(UINT32 tick)
     return ((UINT64)tick * OS_SYS_MS_PER_SECOND) / LOSCFG_BASE_CORE_TICK_PER_SECOND;
 }
 
-LITE_OS_SEC_TEXT_MINOR UINT32 OsUS2Tick(UINT64 microsec)
+LITE_OS_SEC_TEXT_MINOR UINT32 OsNS2Tick(UINT64 nanoseconds)
 {
-    const UINT32 usPerTick = OS_SYS_US_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND;
+    const UINT32 nsPerTick = OS_SYS_NS_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND;
 
-    UINT64 ticks = (microsec + usPerTick - 1) / usPerTick;
+    UINT64 ticks = (nanoseconds + nsPerTick - 1) / nsPerTick;
     if (ticks > OS_MAX_VALUE) {
         ticks = OS_MAX_VALUE;
     }

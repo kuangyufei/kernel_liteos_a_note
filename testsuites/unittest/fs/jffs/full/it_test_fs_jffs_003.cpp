@@ -28,12 +28,13 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "It_fs_jffs.h"
+#include "It_vfs_jffs.h"
 
 #define DIRPATH1  "/storage/test1"
 #define DIRPATH2  "/storage/test2"
+#define TEST_MAXPATHLEN  4098
 
-static int TestCase(void)
+static int TestCase0(void)
 {
     INT32 ret = -1;
     INT32 dirFd = -1;
@@ -88,6 +89,46 @@ EXIT2:
 EXIT:
     rmdir(DIRPATH2);
     return JFFS_NO_ERROR;
+}
+
+static int TestCase1(void)
+{
+    int ret = -1;
+    char pathName[TEST_MAXPATHLEN] = {0};
+    int errFd = -1;
+    /* ENAMETOOLONG */
+    ret = memset_s(pathName, TEST_MAXPATHLEN, 1, TEST_MAXPATHLEN);
+    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
+    ret = renameat(AT_FDCWD, pathName, AT_FDCWD, pathName);
+    ICUNIT_GOTO_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT);
+    ICUNIT_GOTO_EQUAL(errno, ENAMETOOLONG, ret, EXIT);
+    /* EINVAL */
+    ret = renameat(AT_FDCWD, "\0", AT_FDCWD, "\0");
+    ICUNIT_GOTO_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT);
+    ICUNIT_GOTO_EQUAL(errno, EINVAL, errno, EXIT);
+    /* ENOENT */
+    ret = renameat(errFd, "/storage/test.txt", errFd, "/storage/test1.txt");
+    ICUNIT_GOTO_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT);
+    ICUNIT_GOTO_EQUAL(errno, ENOENT, ret, EXIT);
+
+    return JFFS_NO_ERROR;
+
+EXIT:
+    return JFFS_IS_ERROR;
+}
+
+static int TestCase(void)
+{
+    int ret = -1;
+    ret = TestCase0();
+    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
+    ret = TestCase1();
+    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
+
+    return JFFS_NO_ERROR;
+
+EXIT:
+    return JFFS_IS_ERROR;
 }
 
 void ItTestFsJffs003(void)

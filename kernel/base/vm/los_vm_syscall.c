@@ -296,8 +296,29 @@ REGION_ALLOC_FAILED:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return ret;
 }
+
+STATIC UINT32 OsInheritOldRegionName(UINT32 oldRegionFlags)
+{
+    UINT32 vmFlags = 0;
+
+    if (oldRegionFlags & VM_MAP_REGION_FLAG_HEAP) {
+        vmFlags |= VM_MAP_REGION_FLAG_HEAP;
+    } else if (oldRegionFlags & VM_MAP_REGION_FLAG_STACK) {
+        vmFlags |= VM_MAP_REGION_FLAG_STACK;
+    } else if (oldRegionFlags & VM_MAP_REGION_FLAG_TEXT) {
+        vmFlags |= VM_MAP_REGION_FLAG_TEXT;
+    } else if (oldRegionFlags & VM_MAP_REGION_FLAG_VDSO) {
+        vmFlags |= VM_MAP_REGION_FLAG_VDSO;
+    } else if (oldRegionFlags & VM_MAP_REGION_FLAG_MMAP) {
+        vmFlags |= VM_MAP_REGION_FLAG_MMAP;
+    } else if (oldRegionFlags & VM_MAP_REGION_FLAG_SHM) {
+        vmFlags |= VM_MAP_REGION_FLAG_SHM;
+    }
+
+    return vmFlags;
+}
 //修改内存段的访问权限
-int LOS_DoMprotect(VADDR_T vaddr, size_t len, unsigned long prot)
+INT32 LOS_DoMprotect(VADDR_T vaddr, size_t len, unsigned long prot)
 {
     LosVmSpace *space = OsCurrProcessGet()->vmSpace;
     LosVmMapRegion *region = NULL;
@@ -330,7 +351,7 @@ int LOS_DoMprotect(VADDR_T vaddr, size_t len, unsigned long prot)
     }
     len = LOS_Align(len, PAGE_SIZE);
     /* can't operation cross region */
-    if (region->range.base + region->range.size < vaddr + len) {//判断范围,不能跨区域操作
+    if ((region->range.base + region->range.size) < (vaddr + len)) {
         ret = -EINVAL;
         goto OUT_MPROTECT;
     }
@@ -342,6 +363,7 @@ int LOS_DoMprotect(VADDR_T vaddr, size_t len, unsigned long prot)
 
     vmFlags = OsCvtProtFlagsToRegionFlags(prot, 0);//转换FLAGS
     vmFlags |= (region->regionFlags & VM_MAP_REGION_FLAG_SHARED) ? VM_MAP_REGION_FLAG_SHARED : 0;
+    vmFlags |= OsInheritOldRegionName(region->regionFlags);
     region = LOS_RegionFind(space, vaddr);
     if (region == NULL) {
         ret = -ENOMEM;

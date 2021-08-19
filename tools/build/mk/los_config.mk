@@ -54,7 +54,7 @@ OBJ_MKDIR = if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 RM = -rm -rf
 ECHO = echo
 ifeq ($(OS),)
-OS = $(shell uname -s)
+OS := $(shell uname -s)
 export OS
 endif
 COMPILE_NAME := $(patsubst %-,%,$(CROSS_COMPILE))
@@ -98,21 +98,15 @@ LITEOS_CXXFLAGS :=
 LITEOS_BASELIB :=
 LITEOS_LIBDEP :=
 ## directory ##
-LIB_BIGODIR :=
 LIB_SUBDIRS :=
-##compiler##
-LITEOS_COMPILER_CXX_PATH :=
-LITEOS_COMPILER_CXXLIB_PATH :=
-LITEOS_COMPILER_GCCLIB_PATH  :=
-LITEOS_COMPILER_GCC_INCLUDE  :=
-LITEOS_DRIVERS_BASE_PATH :=
 
 ## variable define ##
 ifeq ($(LITEOSTHIRDPARTY),)
 LITEOSTHIRDPARTY := $(LITEOSTOPDIR)/../../third_party
 endif
+LITEOS_PLATFORM := $(LOSCFG_PLATFORM:"%"=%)
 ifeq ($(OUTDIR),)
-OUT  = $(LITEOSTOPDIR)/out/$(LITEOS_PLATFORM)
+OUT = $(LITEOSTOPDIR)/out/$(LITEOS_PLATFORM)
 LITEOS_TARGET_DIR = $(OUT)
 KERNEL_COMPILE_ONLY = y
 else
@@ -125,27 +119,12 @@ MK_PATH  = $(LITEOSTOPDIR)/tools/build/mk
 CXX_PATH  = $(LITEOSTOPDIR)/lib/cxxstl
 JFFS_PATH  = $(LITEOSTOPDIR)/fs/jffs2
 LITEOS_SCRIPTPATH ?= $(LITEOSTOPDIR)/tools/scripts
-LITEOS_LIB_BIGODIR  = $(OUT)/lib/obj
 LITEOS_MENUCONFIG_H ?= $(LITEOSTOPDIR)/config.h
 LOSCFG_ENTRY_SRC    = $(LITEOSTOPDIR)/platform/los_config.c
 
 ### include variable
 MODULE = $(MK_PATH)/module.mk
-ifeq ($(LOSCFG_COMPILER_HIMIX_32), y)
-LITEOS_CMACRO      += -D__COMPILER_HUAWEILITEOS__
-else ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LITEOS_CMACRO      += -D__COMPILER_HUAWEILITEOS__
-else ifeq ($(LOSCFG_COMPILER_HCC_64), y)
-LITEOS_CMACRO      += -D__COMPILER_HUAWEILITEOS__
-endif
 LITEOS_CMACRO      += -D__LITEOS__ -DSECUREC_IN_KERNEL=0
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LITEOS_BASELIB     += -lclang_rt.builtins
-LITEOS_BASELIB     += -lunwind --no-dependent-libraries
-else
-LITEOS_BASELIB     += -lgcc
-LITEOS_BASELIB     += -lgcc_eh
-endif
 AS_OBJS_LIBC_FLAGS  = -D__ASSEMBLY__
 
 ifeq ($(LOSCFG_QUICK_START), y)
@@ -231,14 +210,15 @@ endif
 
 #################################### Lib Option Begin ###############################
 ifeq ($(LOSCFG_LIB_LIBC), y)
-    LIB_SUBDIRS        += lib/libc
-    LIB_SUBDIRS        += lib/libsec
-
-    LITEOS_BASELIB  += -lc -lsec
+    LIB_SUBDIRS           += lib/libc
+    LITEOS_BASELIB        += -lc
     LITEOS_LIBC_INCLUDE   += \
-        $(LITEOS_LIBSCREW_INCLUDE) \
         -I $(LITEOSTOPDIR)/lib/libc/include \
         -I $(LITEOSTHIRDPARTY)/musl/porting/liteos_a/kernel/include \
+
+    LIB_SUBDIRS           += lib/libsec
+    LITEOS_BASELIB        += -lsec
+    LITEOS_LIBC_INCLUDE   += \
         -I $(LITEOSTHIRDPARTY)/bounds_checking_function/include
 endif
 
@@ -247,13 +227,7 @@ endif
     LITEOS_LIBSCREW_INCLUDE += -I $(LITEOSTOPDIR)/lib/libscrew/include
 
 ifeq ($(LOSCFG_KERNEL_CPPSUPPORT), y)
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-    LITEOS_BASELIB += -lc++ -lc++abi
     LITEOS_BASELIB += -lcppsupport
-else
-    LITEOS_BASELIB += -lsupc++
-    LITEOS_BASELIB += -lcppsupport -lstdc++
-endif
     LIB_SUBDIRS       += kernel/extended/cppsupport
     LITEOS_CPPSUPPORT_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/cppsupport
 endif
@@ -551,10 +525,6 @@ OBJDUMP = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)objdump
 SIZE = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)size
 NM = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)nm
 STRIP = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)strip
-
-VERSION_NUM := v1
-LITEOS_COMPILER_CXX_PATH = $(LITEOS_COMPILER_PATH)/include
-
 LLVM_TARGET := arm-liteos
 LLVM_EXTRA_OPTS := -target $(LLVM_TARGET) -fms-extensions -Wno-address-of-packed-member
 LLVM_EXTRA_LD_OPTS := -fuse-ld=lld --rtlib=compiler-rt
@@ -573,55 +543,8 @@ OBJDUMP = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)objdump
 SIZE = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)size
 NM = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)nm
 STRIP = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)strip
-
-ifeq ($(VERSION_NUM),)
-VERSION_NUM := $(shell $(CC) -dumpversion)
-export VERSION_NUM
 endif
 
-LITEOS_COMPILER_CXX_PATH = $(LITEOS_COMPILER_PATH)/$(COMPILE_NAME)/include
-endif
-
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LITEOS_COMPILER_CXXLIB_PATH = $(LITEOS_COMPILER_PATH)/lib/$(LLVM_TARGET)/c++/a7_softfp_neon-vfpv4
-LITEOS_COMPILER_GCCLIB_PATH = $(LITEOS_COMPILER_PATH)/lib/clang/current/lib/$(LLVM_TARGET)/a7_softfp_neon-vfpv4
-LITEOS_COMPILER_GCC_INCLUDE = -I $(LITEOS_COMPILER_PATH)/lib/clang/current/include
-else ifeq ($(LOSCFG_COMPILER_HIMIX_32), y)
-LITEOS_COMPILER_CXXLIB_PATH = $(LITEOS_COMPILER_PATH)/$(COMPILE_NAME)/lib
-LITEOS_COMPILER_GCCLIB_PATH = $(LITEOS_COMPILER_PATH)/lib/gcc/$(COMPILE_NAME)/$(VERSION_NUM)
-LITEOS_COMPILER_GCC_INCLUDE = -I $(LITEOS_COMPILER_PATH)/lib/gcc/arm-linux-ohoseabi/$(VERSION_NUM)/include
-else ifeq ($(LOSCFG_COMPILER_HCC_64), y)
-LITEOS_COMPILER_CXXLIB_PATH = $(LITEOS_COMPILER_PATH)/$(COMPILE_NAME)/lib64
-LITEOS_COMPILER_GCCLIB_PATH = $(LITEOS_COMPILER_PATH)/lib64/gcc/$(COMPILE_NAME)/$(VERSION_NUM)
-LITEOS_COMPILER_GCC_INCLUDE = -I $(LITEOS_COMPILER_PATH)/lib64/gcc/aarch64-linux-gnu/$(VERSION_NUM)/include
-endif
-
-LITEOS_CXXINCLUDE += \
-    -I $(LITEOS_COMPILER_CXX_PATH)/c++/$(VERSION_NUM) \
-    -I $(LITEOS_COMPILER_CXX_PATH)/c++/$(VERSION_NUM)/ext \
-    -I $(LITEOS_COMPILER_CXX_PATH)/c++/$(VERSION_NUM)/backward \
-    -I $(LITEOSTOPDIR)/compat/posix/include \
-    -I $(LITEOSTOPDIR)/fs/include \
-    -I $(LITEOSTOPDIR)/kernel/include \
-    $(LITEOS_LIBC_INCLUDE)
-
-ifneq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LITEOS_CXXINCLUDE +=  -I $(LITEOS_COMPILER_CXX_PATH)/c++/$(VERSION_NUM)/backward
-endif
-
-ifeq ($(LOSCFG_COMPILER_HIMIX_32), y)
-    LITEOS_CXXINCLUDE += \
-        -I $(LITEOS_COMPILER_CXX_PATH)/c++/$(VERSION_NUM)/arm-linux-ohoseabi
-    LITEOS_CXXMACRO   += -DLOSCFG_KERNEL_CPP_EXCEPTIONS_SUPPORT
-    LITEOS_CMACRO     += -DLOSCFG_KERNEL_CPP_EXCEPTIONS_SUPPORT
-else ifeq ($(LOSCFG_COMPILER_HCC_64), y)
-    LITEOS_CXXINCLUDE += \
-        -I $(LITEOS_COMPILER_CXX_PATH)/c++/$(VERSION_NUM)/aarch64-linux-gnu
-    LITEOS_CXXMACRO   += -DLOSCFG_KERNEL_CPP_EXCEPTIONS_SUPPORT
-    LITEOS_CMACRO     += -DLOSCFG_KERNEL_CPP_EXCEPTIONS_SUPPORT
-endif
-
-LITEOS_CXXINCLUDE +=  $(LITEOS_COMPILER_GCC_INCLUDE)
 FP = -fno-omit-frame-pointer
 LITEOS_CXXOPTS_BASE  += -std=c++11 -nostdlib -nostdinc -nostdinc++ -fexceptions -fpermissive -fno-use-cxa-atexit \
                         -fno-builtin -frtti -fno-pic -Winvalid-pch $(WARNING_AS_ERROR) $(LLVM_EXTRA_OPTS) $(FP)
@@ -638,9 +561,8 @@ LITEOS_FS_INCLUDE          := $(LITEOS_VFS_INCLUDE)        $(LITEOS_FAT_CACHE_IN
                               $(LITEOS_PROC_INCLUDE)       $(LITEOS_FAT_VIRPART_INCLUDE) \
                               $(LITEOS_FAT_INCLUDE)
 LITEOS_NET_INCLUDE         := $(LITEOS_LWIP_SACK_INCLUDE)
-LITEOS_LIB_INCLUDE       := $(LITEOS_LIBC_INCLUDE)       $(LITEOS_LIBM_INCLUDE) \
-                              $(LITEOS_ZLIB_INCLUDE)       $(LITEOS_COMPILER_GCC_INCLUDE) \
-                              $(LITEOS_LIBSCREW_INCLUDE)
+LITEOS_LIB_INCLUDE         := $(LITEOS_LIBC_INCLUDE)       $(LITEOS_LIBM_INCLUDE) \
+                              $(LITEOS_ZLIB_INCLUDE)       $(LITEOS_LIBSCREW_INCLUDE)
 LITEOS_DRIVERS_INCLUDE     := $(LITEOS_CELLWISE_INCLUDE)   $(LITEOS_GPIO_INCLUDE) \
                               $(LITEOS_HIDMAC_INCLUDE)     $(LITEOS_HIETH_SF_INCLUDE) \
                               $(LITEOS_HIGMAC_INCLUDE)     $(LITEOS_I2C_INCLUDE) \
@@ -692,8 +614,7 @@ LITEOS_LD_OPTS += -nostartfiles
 endif
 LITEOS_LD_OPTS += -static --gc-sections
 LITEOS_LD_OPTS += $(LITEOS_DYNLOADOPTS)
-LITEOS_LD_PATH += -L$(LITEOS_SCRIPTPATH)/ld -L$(LITEOSTOPDIR)/platform -L$(OUT)/lib -L$(LITEOS_LIB_BIGODIR) -L$(LITEOSTOPDIR)/tools/build
-LITEOS_LD_PATH += -L$(LITEOS_COMPILER_GCCLIB_PATH) -L$(LITEOS_COMPILER_CXXLIB_PATH)
+LITEOS_LD_PATH += -L$(OUT)/lib
 ifeq ($(LOSCFG_VENDOR) ,y)
 LITEOS_LD_PATH +=  -L$(OUT)/lib/rdk -L$(OUT)/lib/sdk \
                    -L$(OUT)/lib/main_server
@@ -705,15 +626,24 @@ else
 LITEOS_LD_SCRIPT := -T$(LITEOSTOPDIR)/tools/build/liteos.ld
 endif
 
+##compiler##
+ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
+_CC = $(CC) $(LLVM_EXTRA_OPTS) $(LLVM_EXTRA_LD_OPTS) $(LITEOS_CORE_COPTS)
+LITEOS_BASELIB     += $(shell $(_CC) "-print-file-name=libunwind.a") --no-dependent-libraries
+else
+_CC = $(CC) $(LITEOS_CORE_COPTS)
+LITEOS_BASELIB     += $(shell $(_CC) "-print-file-name=libgcc_eh.a")
+endif
+LITEOS_BASELIB     += $(shell $(_CC) "-print-libgcc-file-name")
+LITEOS_LIB_INCLUDE += -isystem $(shell $(_CC) "-print-file-name=include")
+
 # temporary
 LITEOS_PLATFORM_INCLUDE += \
         -I $(LITEOSTOPDIR)/kernel/base/include \
         -I $(LITEOSTOPDIR)/kernel/extended/cpup \
         -I $(LITEOSTOPDIR)/kernel/extended/trace
 
-LITEOS_CXXINCLUDE += \
-        $(LITEOS_NET_INCLUDE) \
-        -I $(LITEOSTOPDIR)/kernel/base/include
+LITEOS_CXXINCLUDE = $(LITEOS_INCLUDE)
 
 LITEOS_COPTS_NODEBUG    := $(LITEOS_NODEBUG) $(LITEOS_COPTS_BASE) $(LITEOS_COPTS_EXTRA)
 LITEOS_COPTS_INTERWORK  := $(LITEOS_INTERWORK) $(LITEOS_COPTS_BASE) $(LITEOS_COPTS_EXTRA_INTERWORK)
