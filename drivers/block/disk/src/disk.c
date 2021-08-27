@@ -1401,7 +1401,7 @@ INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
         (disk->disk_status != STAT_UNREADY) || (strlen(diskName) > DISK_NAME)) {
         return VFS_ERROR;
     }
-	//注册块设备驱动,因磁盘是块设备
+	//注册块设备驱动,设备驱动程序由设备提供
     if (register_blockdriver(diskName, bops, RWE_RW_RW, priv) != 0) {
         PRINT_ERR("disk_init : register %s fail!\n", diskName);
         return VFS_ERROR;

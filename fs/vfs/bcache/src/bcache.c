@@ -114,8 +114,8 @@ INT32 LOS_SetSyncThreadPrio(UINT32 prio, const CHAR *name)
     }
 
     /* If the name is not NULL, it shall return an error if can't find the disk corresponding to name. */
-    diskID = los_get_diskid_byname(name);
-    disk = get_disk(diskID);
+    diskID = los_get_diskid_byname(name);//获取磁盘ID
+    disk = get_disk(diskID);//获取磁盘信息
     if (disk == NULL) {
         return ret;
     }
@@ -125,7 +125,7 @@ INT32 LOS_SetSyncThreadPrio(UINT32 prio, const CHAR *name)
         return ret;
     }
     if ((disk->disk_status == STAT_INUSED) && (disk->bcache != NULL)) {
-        ret = LOS_TaskPriSet(disk->bcache->syncTaskId, prio);
+        ret = LOS_TaskPriSet(disk->bcache->syncTaskId, prio);//设置任务优先级
     }
     if (pthread_mutex_unlock(&disk->disk_mutex) != ENOERR) {
         PRINT_ERR("%s %d, mutex unlock fail!\n", __FUNCTION__, __LINE__);
@@ -134,7 +134,7 @@ INT32 LOS_SetSyncThreadPrio(UINT32 prio, const CHAR *name)
     return ret;
 }
 #endif
-
+//红黑树找块
 static OsBcacheBlock *RbFindBlock(const OsBcache *bc, UINT64 num)
 {
     OsBcacheBlock *block = NULL;
@@ -148,7 +148,7 @@ static OsBcacheBlock *RbFindBlock(const OsBcache *bc, UINT64 num)
     }
     return NULL;
 }
-
+//添加缓存块
 static VOID RbAddBlock(OsBcache *bc, OsBcacheBlock *block)
 {
     struct rb_node *node = bc->rbRoot.rb_node;
@@ -169,18 +169,18 @@ static VOID RbAddBlock(OsBcache *bc, OsBcacheBlock *block)
     }
     rb_insert_color(&block->rbNode, &bc->rbRoot);
 }
-
+//删除红黑树块
 static inline VOID RbDelBlock(OsBcache *bc, OsBcacheBlock *block)
 {
     rb_erase(&block->rbNode, &bc->rbRoot);
 }
-
+//删除红黑树块
 static inline VOID ListMoveBlockToHead(OsBcache *bc, OsBcacheBlock *block)
 {
     LOS_ListDelete(&block->listNode);
     LOS_ListAdd(&bc->listHead, &block->listNode);
 }
-
+//释放块
 static inline VOID FreeBlock(OsBcache *bc, OsBcacheBlock *block)
 {
     block->used = FALSE;
@@ -712,7 +712,7 @@ INT32 BcacheClearCache(OsBcache *bc)
     }
     return 0;
 }
-
+//块设备缓存初始化
 static INT32 BcacheInitCache(OsBcache *bc,
                              UINT8 *memStart,
                              UINT32 memSize,
@@ -773,7 +773,7 @@ static INT32 BcacheInitCache(OsBcache *bc,
 
     return ENOERR;
 }
-
+//读块设备数据
 static INT32 DrvBread(struct Vnode *priv, UINT8 *buf, UINT32 len, UINT64 pos)
 {
     struct block_operations *bops = (struct block_operations *)((struct drv_data *)priv->data)->ops;
@@ -785,7 +785,7 @@ static INT32 DrvBread(struct Vnode *priv, UINT8 *buf, UINT32 len, UINT64 pos)
     }
     return ENOERR;
 }
-
+//写块设备数据
 static INT32 DrvBwrite(struct Vnode *priv, const UINT8 *buf, UINT32 len, UINT64 pos)
 {
     struct block_operations *bops = (struct block_operations *)((struct drv_data *)priv->data)->ops;
@@ -796,7 +796,7 @@ static INT32 DrvBwrite(struct Vnode *priv, const UINT8 *buf, UINT32 len, UINT64 
     }
     return ENOERR;
 }
-
+//初始化块设备
 INT32 BlockCacheDrvCreate(VOID *handle,
                           UINT8 *memStart,
                           UINT32 memSize,
@@ -805,8 +805,8 @@ INT32 BlockCacheDrvCreate(VOID *handle,
 {
     INT32 ret;
     bc->priv = handle;
-    bc->breadFun = DrvBread;
-    bc->bwriteFun = DrvBwrite;
+    bc->breadFun = DrvBread;	//设置读块设备函数
+    bc->bwriteFun = DrvBwrite;	//设置写块设备函数
 
     ret = BcacheInitCache(bc, memStart, memSize, blockSize);
     if (ret != ENOERR) {
@@ -820,7 +820,7 @@ INT32 BlockCacheDrvCreate(VOID *handle,
 
     return ENOERR;
 }
-
+//读块设备缓存
 INT32 BlockCacheRead(OsBcache *bc, UINT8 *buf, UINT32 *len, UINT64 sector, BOOL useRead)
 {
     OsBcacheBlock *block = NULL;
@@ -888,7 +888,7 @@ INT32 BlockCacheRead(OsBcache *bc, UINT8 *buf, UINT32 *len, UINT64 sector, BOOL 
     *len -= size;
     return ret;
 }
-
+//写块设备缓存
 INT32 BlockCacheWrite(OsBcache *bc, const UINT8 *buf, UINT32 *len, UINT64 sector)
 {
     OsBcacheBlock *block = NULL;

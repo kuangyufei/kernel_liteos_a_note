@@ -94,7 +94,7 @@ static const struct file_operations_vfs g_memDevOps = {
 #endif
     NULL,      /* unlink */
 };
-// 注册访问 /dev/mem 的驱动程序
+// 注册/dev/mem 的驱动程序
 int DevMemRegister(void)
 {
     return register_driver("/dev/mem", &g_memDevOps, 0666, 0); /* 0666: file mode */
