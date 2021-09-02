@@ -75,7 +75,7 @@ static void FillFdInfo(struct SeqBuf *seqBuf, struct filelist *fileList, unsigne
             }
 
             if (hasPrivilege) {
-                (void)LosBufPrintf(seqBuf, "%u\t%d\t%6d <%d>\t%s\n", pid, fd, sysFd, filp->f_refcount, name);
+                (void)LosBufPrintf(seqBuf, "%u\t%d\t%6d <%d>\t%s\n", pid, fd, sysFd, filp ? filp->f_refcount : 1, name);
             } else {
                 (void)LosBufPrintf(seqBuf, "%u\t%d\t%s\n", pid, fd, name);
             }

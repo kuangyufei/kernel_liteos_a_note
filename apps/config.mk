@@ -27,30 +27,18 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# common dir config
 include $(LITEOSTOPDIR)/config.mk
 
-# output dir config
-OBJOUT := $(APPSTOPDIR)/out
-APPSOUT := $(OBJOUT)/apps
-LIBSOUT := $(OBJOUT)/libs
-IMGOUT  := $(OUT)
-
 # common flags config
-BASE_OPTS := -ffunction-sections -fdata-sections -fno-omit-frame-pointer -fno-common -fno-strict-aliasing -D_GNU_SOURCE \
-             $(LITEOS_SSP) $(LITEOS_CORE_COPTS) $(WARNING_AS_ERROR) $(LLVM_EXTRA_OPTS) $(LITEOS_GCOV_OPTS)
+BASE_OPTS := -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE $(LITEOS_GCOV_OPTS)
 
-CFLAGS := -std=c99 -fno-exceptions $(BASE_OPTS) $(LITEOS_COPTS_OPTMIZE)
-CXXFLAGS := -std=c++11 -fexceptions -fpermissive -frtti $(BASE_OPTS) $(LITEOS_COPTS_OPTMIZE)
-LDCFLAGS  := -lc
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LLVM_SYSROOT := --sysroot=$(SYSROOT_PATH) $(ARCH_CFLAGS)
-LDCXXFLGS := -lc++ -lc++abi -lc
-else
-BASE_OPTS += -Wl,-z,relro,-z,now
-LDCXXFLGS := -lstdc++ -lsupc++ -lc
-endif
-COMMON_INCLUDE := -I $(LITEOSTHIRDPARTY)/bounds_checking_function/include
+ASFLAGS   :=
+CFLAGS    := $(LITEOS_COPTS) $(BASE_OPTS) -fPIE
+CXXFLAGS  := $(LITEOS_CXXOPTS) $(BASE_OPTS) -fPIE
+LDFLAGS   := $(LITEOS_CORE_COPTS) -pie -Wl,-z,relro,-z,now -O2
+
+CFLAGS    := $(filter-out -fno-pic -fno-builtin -nostdinc -nostdlib,$(CFLAGS))
+CXXFLAGS  := $(filter-out -fno-pic -fno-builtin -nostdinc -nostdlib -nostdinc++,$(CXXFLAGS))
 
 # alias variable config
 HIDE := @
@@ -58,3 +46,35 @@ MAKE := make
 RM := rm -rf
 CP := cp -rf
 MV := mv -f
+
+APP := $(APPSTOPDIR)/app.mk
+
+##build modules config##
+APP_SUBDIRS :=
+
+ifeq ($(LOSCFG_SHELL), y)
+APP_SUBDIRS += shell
+APP_SUBDIRS += mksh
+APP_SUBDIRS += toybox
+endif
+
+ifeq ($(LOSCFG_USER_INIT_DEBUG), y)
+APP_SUBDIRS += init
+endif
+
+ifeq ($(LOSCFG_NET_LWIP_SACK_TFTP), y)
+APP_SUBDIRS += tftp
+endif
+
+ifeq ($(LOSCFG_DRIVERS_TRACE), y)
+APP_SUBDIRS += trace
+endif
+
+# clear all local variables
+LOCAL_FLAGS    :=
+LOCAL_CFLAGS   :=
+LOCAL_CPPFLAGS :=
+LOCAL_ASFLAGS  :=
+LOCAL_SRCS     :=
+LOCAL_CHS      :=
+LOCAL_CPPHS    :=

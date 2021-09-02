@@ -36,6 +36,7 @@
 #include "los_sys_pri.h"
 #include "los_futex_pri.h"
 #include "los_mp.h"
+#include "sys/wait.h"
 #include "user_copy.h"
 #include "time.h"
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -300,6 +301,42 @@ int SysWait(int pid, USER int *status, int options, void *rusage)
     (void)rusage;
 
     return LOS_Wait(pid, status, (unsigned int)options, NULL);
+}
+
+int SysWaitid(idtype_t type, int pid, USER siginfo_t *info, int options, void *rusage)
+{
+    (void)rusage;
+    int ret;
+    int truepid = 0;
+
+    switch (type) {
+        case P_ALL:
+            /* Wait for any child; id is ignored. */
+            truepid = -1;
+            break;
+        case P_PID:
+            /* Wait for the child whose process ID matches id */
+            if (pid <= 0) {
+                return -EINVAL;
+            }
+            truepid = pid;
+            break;
+        case P_PGID:
+            /* Wait for any child whose process group ID matches id */
+            if (pid <= 1) {
+                return -EINVAL;
+            }
+            truepid = -pid;
+            break;
+        default:
+            return -EINVAL;
+    }
+
+    ret = LOS_Waitid(truepid, info, (unsigned int)options, NULL);
+    if (ret > 0) {
+        ret = 0;
+    }
+    return ret;
 }
 
 int SysFork(void)

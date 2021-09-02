@@ -36,7 +36,7 @@
 #include "los_spinlock.h"
 #include "los_mp.h"
 #include "los_percpu_pri.h"
-
+#include "los_hook.h"
 /******************************************************************************
 基本概念
 	队列又称消息队列，是一种常用于任务间通信的数据结构。队列接收来自任务或中断的
@@ -182,6 +182,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueCreate(CHAR *queueName, UINT16 len, UINT32
     SCHEDULER_UNLOCK(intSave);
 
     *queueID = queueCB->queueID;//带走队列ID
+    OsHookCall(LOS_HOOK_TYPE_QUEUE_CREATE, queueCB);
     return LOS_OK;
 }
 //读队列参数检查
@@ -312,6 +313,7 @@ UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT
     UINT32 ret;
     UINT32 readWrite = OS_QUEUE_READ_WRITE_GET(operateType);//获取读/写操作标识
     UINT32 intSave;
+    OsHookCall(LOS_HOOK_TYPE_QUEUE_READ, (LosQueueCB *)GET_QUEUE_HANDLE(queueID), operateType, *bufferSize, timeout);
 
     SCHEDULER_LOCK(intSave);
     queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);//获取对应的队列控制块
@@ -501,7 +503,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueDelete(UINT32 queueID)
 
     LOS_ListTailInsert(&g_freeQueueList, &queueCB->readWriteList[OS_QUEUE_WRITE]);//回收，将节点挂入可分配链表,等待重新被分配再利用
     SCHEDULER_UNLOCK(intSave);									
-
+    OsHookCall(LOS_HOOK_TYPE_QUEUE_DELETE, queueCB);
     ret = LOS_MemFree(m_aucSysMem1, (VOID *)queue);//释放队列句柄
     return ret;
 

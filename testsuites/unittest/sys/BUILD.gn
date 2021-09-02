@@ -42,7 +42,6 @@ sources_entry = [
 ]
 
 sources_smoke = [
-  "smoke/sys_test_001.cpp",
   "smoke/sys_test_004.cpp",
   "smoke/sys_test_005.cpp",
   "smoke/sys_test_006.cpp",
@@ -56,23 +55,24 @@ sources_smoke = [
   "smoke/sys_test_015.cpp",
   "smoke/sys_test_016.cpp",
   "smoke/sys_test_017.cpp",
-  "smoke/sys_test_018.cpp",
-  "smoke/sys_test_019.cpp",
-  "smoke/sys_test_020.cpp",
-  "smoke/sys_test_021.cpp",
-  "smoke/sys_test_022.cpp",
-  "smoke/sys_test_023.cpp",
-  "smoke/sys_test_024.cpp",
-  "smoke/sys_test_025.cpp",
-  "smoke/sys_test_026.cpp",
-  "smoke/sys_test_027.cpp",
-  "smoke/sys_test_028.cpp",
   "smoke/sys_test_029.cpp",
   "smoke/sys_test_030.cpp",
   "smoke/sys_test_031.cpp",
 ]
 
 sources_full = [
+  "full/sys_test_001.cpp",
+  "full/sys_test_018.cpp",
+  "full/sys_test_019.cpp",
+  "full/sys_test_020.cpp",
+  "full/sys_test_021.cpp",
+  "full/sys_test_022.cpp",
+  "full/sys_test_023.cpp",
+  "full/sys_test_024.cpp",
+  "full/sys_test_025.cpp",
+  "full/sys_test_026.cpp",
+  "full/sys_test_027.cpp",
+  "full/sys_test_028.cpp",
 ]
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {

@@ -1,0 +1,6 @@
+config DRIVERS_TRACE
+    bool "Enable TRACE DRIVER"
+    default y
+    depends on DRIVERS && FS_VFS && KERNEL_TRACE
+    help
+      Answer Y to enable LiteOS support trace in userspace.

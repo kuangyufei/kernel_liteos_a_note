@@ -27,51 +27,19 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-ROOT_DIR := $(dir $(shell pwd))/tftp/
+include $(APPSTOPDIR)/config.mk
 
-ifeq ($(APPSTOPDIR), )
-APPSTOPDIR := $(shell pwd)/../
-LITEOSTOPDIR = $(APPSTOPDIR)/../
-endif
-include $(ROOT_DIR)/../config.mk
-APPS_OUT := $(OUT)/bin
+APP_NAME := $(notdir $(shell pwd))
 
 SECUREC_DIR := $(LITEOSTHIRDPARTY)/bounds_checking_function
 
 LOCAL_SRCS = $(wildcard src/*.c)
-LOCAL_SRCS += $(wildcard $(SECUREC_DIR)/src/strncpy_s.c)
-LOCAL_SRCS += $(wildcard $(SECUREC_DIR)/src/memcpy_s.c)
-LOCAL_SRCS += $(wildcard $(SECUREC_DIR)/src/memset_s.c)
-LOCAL_SRCS += $(wildcard $(SECUREC_DIR)/src/strncat_s.c)
-LOCAL_OBJ := $(LOCAL_SRCS:.c=.o)
+LOCAL_SRCS += $(wildcard $(SECUREC_DIR)/src/*.c)
 
 LOCAL_INCLUDE := \
-	-I $(ROOT_DIR)/include/ \
-	-I $(SECUREC_DIR)/include/\
+	-I include \
+	-I $(SECUREC_DIR)/include
 
-LOCAL_FLAGS += $(CFLAGS)
+LOCAL_FLAGS += $(LOCAL_INCLUDE)
 
-LDPATH := -L$(ROOT_DIR)/
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LOCAL_FLAGS += -Wno-shift-op-parentheses -Wno-bitwise-op-parentheses $(LLVM_SYSROOT)
-LDCFLAGS += $(LLVM_EXTRA_LD_OPTS) $(LLVM_SYSROOT)
-endif
-
-TARGETNAME := tftp
-
-all: $(TARGETNAME)
-
-$(LOCAL_OBJ): %.o : %.c
-	$(HIDE) $(CC) $(LOCAL_FLAGS) -fPIE $(LOCAL_INCLUDE) -c $< -o $@
-
-$(TARGETNAME): $(LOCAL_OBJ)
-	$(HIDE) $(CC) -pie -s $(LDPATH) $(BASE_OPTS) -o $(TARGETNAME) $^ $(LDCFLAGS)
-	$(HIDE) mkdir -p $(APPS_OUT)
-	$(HIDE) $(MV) $(TARGETNAME) $(APPS_OUT)
-	$(HIDE) $(RM) $(LOCAL_OBJ)
-
-clean:
-	$(HIDE) $(RM) $(LOCAL_OBJ)
-	$(HIDE) $(RM) $(TARGETNAME)
-
-.PHONY: all $(TARGETNAME) clean
+include $(APP)

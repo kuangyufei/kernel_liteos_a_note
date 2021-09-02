@@ -31,17 +31,10 @@ import("//kernel/liteos_a/liteos.gni")
 
 group("arm") {
   deps = [ "gic" ]
-  if (defined(LOSCFG_ARCH_ARM_AARCH32)) {
-    deps += [ "arm" ]
-  }
+  deps += [ ARCH ]
 }
 
 config("public") {
   include_dirs = [ "include" ]
-  configs = []
-  if (defined(LOSCFG_ARCH_ARM_AARCH32)) {
-    configs += [ "arm:public" ]
-  } else if (defined(LOSCFG_ARCH_ARM_AARCH64)) {
-    configs += [ "aarch64:public" ]
-  }
+  configs = [ "$ARCH:public" ]
 }

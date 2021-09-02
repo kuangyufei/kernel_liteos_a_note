@@ -33,7 +33,9 @@ module_switch = defined(LOSCFG_FS_ZPFS)
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
   sources = [
-    "vfs_zpfs.c",
-    "zpfs.c",
+    "src/vfs_zpfs.c",
+    "src/zpfs.c",
   ]
+
+  include_dirs = [ "include" ]
 }

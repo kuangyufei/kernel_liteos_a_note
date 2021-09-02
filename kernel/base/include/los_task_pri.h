@@ -45,10 +45,6 @@
 #include "los_cpup_pri.h"
 #endif
 
-#ifdef LOSCFG_KERNEL_TRACE
-#include "los_trace.h"
-#endif
-
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
@@ -504,24 +500,13 @@ STATIC INLINE VOID OsTaskWaitSetPendMask(UINT16 mask, UINTPTR lockID, UINT32 tim
     runTask->waitID = lockID;
     runTask->waitFlag = mask;
     (VOID)timeout;
-#ifdef LOSCFG_KERNEL_TRACE
-    UINT16 status = OS_TASK_STATUS_PENDING;
-    if (timeout != LOS_WAIT_FOREVER) {
-        status |= OS_TASK_STATUS_PEND_TIME;
-    }
-    LOS_Trace(LOS_TRACE_TASK, runTask->taskEntry, status, mask, lockID);
-#endif
 }
+
 //清除事件阻塞掩码,即任务不再等待任何事件.
 STATIC INLINE VOID OsTaskWakeClearPendMask(LosTaskCB *resumeTask)
 {
     resumeTask->waitID = 0;
     resumeTask->waitFlag = 0;
-#ifdef LOSCFG_KERNEL_TRACE
-    LosTaskCB *runTask = OsCurrTaskGet();
-    LOS_Trace(LOS_TRACE_TASK, resumeTask->taskEntry, (UINT16)OS_TASK_STATUS_READY,
-              runTask->taskStatus, runTask->taskEntry);
-#endif
 }
 
 extern UINT32 OsTaskSetDetachUnsafe(LosTaskCB *taskCB);
@@ -557,23 +542,6 @@ extern INT32 OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info);
 extern VOID OsWriteResourceEvent(UINT32 events);
 extern VOID OsWriteResourceEventUnsafe(UINT32 events);
 extern UINT32 OsResourceFreeTaskCreate(VOID);
-
-#ifdef LOSCFG_DEBUG_VERSION
-STATIC INLINE VOID OsTraceTaskSchedule(LosTaskCB *newTask, LosTaskCB *runTask)
-{
-    (VOID)newTask;
-    (VOID)runTask;
-#ifdef LOSCFG_KERNEL_TRACE
-    LOS_Trace(LOS_TRACE_TASK, newTask->taskEntry, (UINT16)OS_TASK_STATUS_RUNNING,
-              runTask->taskStatus, runTask->taskEntry);
-#endif
-}
-
-#else
-
-#define OsTraceTaskSchedule(newTask, runTask)
-
-#endif
 
 #ifdef __cplusplus
 #if __cplusplus

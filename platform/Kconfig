@@ -45,7 +45,7 @@ config PLATFORM_QEMU_ARM_VIRT_CA7
 endchoice
 
 choice
-    prompt "Porduct"
+    prompt "Product"
     help
       Select your target board.
 
@@ -64,15 +64,15 @@ config PRODUCT_QEMU_ARM
 endchoice
 
 config BOARD_CONFIG_PATH
-    string "BOARD CONFIG PATH"
+    string "Board config path"
     default "config/board"
 
 config TEE_ENABLE
-    bool "ENABLE TEE"
+    bool "Enable TEE"
     default n
     depends on PLATFORM_HI3516DV300
     help
-        ENABLE teeos in platform
+        Enable teeos in platform
 
 config HRTIMER_ENABLE
     bool "HR TIMER enable"

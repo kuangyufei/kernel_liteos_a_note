@@ -49,6 +49,7 @@ kernel_module(module_name) {
     "src/strncpy_from_user.c",
     "src/strnlen_user.c",
     "src/user_copy.c",
+    "src/smp.c",
   ]
 
   if (LOSCFG_ARCH_ARM_VER == "armv7-a") {

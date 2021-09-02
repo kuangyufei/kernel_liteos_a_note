@@ -34,12 +34,32 @@ module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
   sources = [
     "los_trace.c",
-    "los_trace_frame.c",
+    "cnv/trace_cnv.c",
   ]
 
-  public_configs = [ ":public" ]
-}
+  include_dirs = [
+    ".",
+    "cnv",
+    "pipeline",
+  ]
 
-config("public") {
-  include_dirs = [ "." ]
+  if (defined(LOSCFG_RECORDER_MODE_OFFLINE)){
+    sources += [ "trace_offline.c" ]
+  }
+
+  if (defined(LOSCFG_RECORDER_MODE_ONLINE)){
+    sources += [ "trace_online.c" ]
+  }
+
+  if (defined(LOSCFG_TRACE_CLIENT_INTERACT)) {
+    sources += [
+      "pipeline/trace_pipeline.c",
+      "pipeline/trace_tlv.c",
+    ]
+  }
+
+  if (defined(LOSCFG_TRACE_PIPELINE_SERIAL)) {
+    sources += [ "pipeline/serial/trace_pipeline_serial.c" ]
+    include_dirs += [ "pipeline/serial" ]
+  }
 }

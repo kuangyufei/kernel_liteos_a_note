@@ -37,11 +37,7 @@
 #include "los_vm_boot.h"
 #include "los_vm_filemap.h"
 #include "los_task_pri.h"
-#ifdef LOSCFG_KERNEL_TRACE
-#include "los_trace_frame.h"
-#include "los_trace.h"
-#endif
-
+#include "los_hook.h"
 /**************************************************************
 内存信息包括内存池大小、内存使用量、剩余内存大小、最大空闲内存、内存水线、内存节点数统计、碎片率等。
 
@@ -873,11 +869,7 @@ UINT32 LOS_MemInit(VOID *pool, UINT32 size)
     }
 #endif
 
-#ifdef LOSCFG_KERNEL_TRACE
-    LOS_TraceReg(LOS_TRACE_MEM_TIME, OsMemTimeTrace, LOS_TRACE_MEM_TIME_NAME, LOS_TRACE_ENABLE);
-    LOS_TraceReg(LOS_TRACE_MEM_INFO, OsMemInfoTrace, LOS_TRACE_MEM_INFO_NAME, LOS_TRACE_ENABLE);
-#endif
-
+    OsHookCall(LOS_HOOK_TYPE_MEM_INIT, pool, size);
     return LOS_OK;
 }
 
@@ -894,11 +886,7 @@ UINT32 LOS_MemDeInit(VOID *pool)
 
     OsMemPoolDeinit(pool);
 
-#ifdef LOSCFG_KERNEL_TRACE
-    LOS_TraceUnreg(LOS_TRACE_MEM_TIME);
-    LOS_TraceUnreg(LOS_TRACE_MEM_INFO);
-#endif
-
+    OsHookCall(LOS_HOOK_TYPE_MEM_DEINIT, pool);
     return LOS_OK;
 }
 
@@ -966,10 +954,6 @@ retry:
 
 VOID *LOS_MemAlloc(VOID *pool, UINT32 size)
 {
-#ifdef LOSCFG_KERNEL_TRACE
-    UINT64 start = HalClockGetCycles();
-#endif
-
     if ((pool == NULL) || (size == 0)) {
         return (size > 0) ? OsVmBootMemAlloc(size) : NULL;
     }
@@ -991,28 +975,12 @@ VOID *LOS_MemAlloc(VOID *pool, UINT32 size)
         MEM_UNLOCK(poolHead, intSave);
     } while (0);
 
-#ifdef LOSCFG_KERNEL_TRACE
-    UINT64 end = HalClockGetCycles();
-    UINT32 timeUsed = MEM_TRACE_CYCLE_TO_US(end - start);
-    LOS_Trace(LOS_TRACE_MEM_TIME, (UINTPTR)pool & MEM_POOL_ADDR_MASK, MEM_TRACE_MALLOC, timeUsed);
-
-    LOS_MEM_POOL_STATUS poolStatus = {0};
-    (VOID)LOS_MemInfoGet(pool, &poolStatus);
-    UINT8 fragment = 100 - poolStatus.maxFreeNodeSize * 100 / poolStatus.totalFreeSize; /* 100: percent denominator. */
-    UINT8 usage = LOS_MemTotalUsedGet(pool) * 100 / LOS_MemPoolSizeGet(pool); /* 100: percent denominator. */
-    LOS_Trace(LOS_TRACE_MEM_INFO, (UINTPTR)pool & MEM_POOL_ADDR_MASK, fragment, usage, poolStatus.totalFreeSize,
-              poolStatus.maxFreeNodeSize, poolStatus.usedNodeNum, poolStatus.freeNodeNum);
-#endif
-
+    OsHookCall(LOS_HOOK_TYPE_MEM_ALLOC, pool, ptr, size);
     return ptr;
 }
 
 VOID *LOS_MemAllocAlign(VOID *pool, UINT32 size, UINT32 boundary)
 {
-#ifdef LOSCFG_KERNEL_TRACE
-    UINT64 start = HalClockGetCycles();
-#endif
-
     UINT32 gapSize;
 
     if ((pool == NULL) || (size == 0) || (boundary == 0) || !OS_MEM_IS_POW_TWO(boundary) ||
@@ -1061,12 +1029,7 @@ VOID *LOS_MemAllocAlign(VOID *pool, UINT32 size, UINT32 boundary)
         ptr = alignedPtr;
     } while (0);
 
-#ifdef LOSCFG_KERNEL_TRACE
-    UINT64 end = HalClockGetCycles();
-    UINT32 timeUsed = MEM_TRACE_CYCLE_TO_US(end - start);
-    LOS_Trace(LOS_TRACE_MEM_TIME, (UINTPTR)pool & MEM_POOL_ADDR_MASK, MEM_TRACE_MEMALIGN, timeUsed);
-#endif
-
+    OsHookCall(LOS_HOOK_TYPE_MEM_ALLOCALIGN, pool, ptr, size, boundary);
     return ptr;
 }
 
@@ -1217,14 +1180,11 @@ STATIC INLINE UINT32 OsMemFree(struct OsMemPoolHead *pool, struct OsMemNodeHead 
 
 UINT32 LOS_MemFree(VOID *pool, VOID *ptr)
 {
-#ifdef LOSCFG_KERNEL_TRACE
-    UINT64 start = HalClockGetCycles();
-#endif
-
     if ((pool == NULL) || (ptr == NULL) || !OS_MEM_IS_ALIGNED(pool, sizeof(VOID *)) ||
         !OS_MEM_IS_ALIGNED(ptr, sizeof(VOID *))) {
         return LOS_NOK;
     }
+    OsHookCall(LOS_HOOK_TYPE_MEM_FREE, pool, ptr);
 
     UINT32 ret = LOS_NOK;
     struct OsMemPoolHead *poolHead = (struct OsMemPoolHead *)pool;
@@ -1252,12 +1212,6 @@ UINT32 LOS_MemFree(VOID *pool, VOID *ptr)
         ret = OsMemFree(poolHead, node);
         MEM_UNLOCK(poolHead, intSave);
     } while (0);
-
-#ifdef LOSCFG_KERNEL_TRACE
-    UINT64 end = HalClockGetCycles();
-    UINT32 timeUsed = MEM_TRACE_CYCLE_TO_US(end - start);
-    LOS_Trace(LOS_TRACE_MEM_TIME, (UINTPTR)pool & MEM_POOL_ADDR_MASK, MEM_TRACE_FREE, timeUsed);
-#endif
 
     return ret;
 }
@@ -1353,14 +1307,10 @@ STATIC INLINE VOID *OsMemRealloc(struct OsMemPoolHead *pool, const VOID *ptr,
 
 VOID *LOS_MemRealloc(VOID *pool, VOID *ptr, UINT32 size)
 {
-#ifdef LOSCFG_KERNEL_TRACE
-    UINT64 start = HalClockGetCycles();
-#endif
-
     if ((pool == NULL) || OS_MEM_NODE_GET_USED_FLAG(size) || OS_MEM_NODE_GET_ALIGNED_FLAG(size)) {
         return NULL;
     }
-
+    OsHookCall(LOS_HOOK_TYPE_MEM_REALLOC, pool, ptr, size);
     if (size < OS_MEM_MIN_ALLOC_SIZE) {
         size = OS_MEM_MIN_ALLOC_SIZE;
     }
@@ -1394,12 +1344,6 @@ VOID *LOS_MemRealloc(VOID *pool, VOID *ptr, UINT32 size)
         newPtr = OsMemRealloc(pool, ptr, node, size, intSave);
     } while (0);
     MEM_UNLOCK(poolHead, intSave);
-
-#ifdef LOSCFG_KERNEL_TRACE
-    UINT64 end = HalClockGetCycles();
-    UINT32 timeUsed = MEM_TRACE_CYCLE_TO_US(end - start);
-    LOS_Trace(LOS_TRACE_MEM_TIME, (UINTPTR)pool & MEM_POOL_ADDR_MASK, MEM_TRACE_REALLOC, timeUsed);
-#endif
 
     return newPtr;
 }

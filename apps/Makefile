@@ -27,26 +27,21 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-LITEOSTOPDIR := $(shell pwd)/../
+APPSTOPDIR := $(shell pwd)
+LITEOSTOPDIR ?= $(APPSTOPDIR)/..
+export LITEOSTOPDIR
+export APPSTOPDIR
 
-include $(LITEOSTOPDIR)/.config
-include ./config.mk
-include ./module.mk
+include $(APPSTOPDIR)/config.mk
 
-HIDE := @
-APPS := app
-
-all: $(APPS)
-
-# Make
-$(APPS): 
-ifneq ($(APP_SUBDIRS), ) #进入子目录下,执行 make命令,APP_SUBDIRS由 module.mk 指定
-	$(HIDE) for dir in $(APP_SUBDIRS); do $(MAKE) -C $$dir || exit 1; done
+all:
+ifneq ($(APP_SUBDIRS), )
+	$(HIDE) for dir in $(APP_SUBDIRS); do $(MAKE) -C $$dir all || exit 1; done
 endif
 
 clean:
-ifneq ($(APP_SUBDIRS), ) #进入子目录下,执行 make clean 命令
-	$(HIDE) for dir in $(APP_SUBDIRS); do $(MAKE) -C $$dir clean; done
+ifneq ($(APP_SUBDIRS), )
+	$(HIDE) for dir in $(APP_SUBDIRS); do $(MAKE) -C $$dir clean || exit 1; done
 endif
 
-.PHONY: all $(APPS) clean
+.PHONY: all clean

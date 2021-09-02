@@ -32,6 +32,7 @@ import("//build/lite/config/component/lite_component.gni")
 declare_args() {
   tee_enable = false
   liteos_name = "OHOS_Image"
+  liteos_skip_make = false
 }
 
 cmd = "if [ -f $device_path/BUILD.gn ]; then echo true; else echo false; fi"
@@ -44,30 +45,7 @@ if (tee_enable) {
   tee = "_tee"
 }
 
-productName = get_path_info(product_path, "file")
-config_file = "${productName}_release.config"
-if (ohos_build_compiler == "clang") {
-  if (ohos_build_type == "debug") {
-    config_file = "debug/${productName}_${ohos_build_compiler}${tee}.config"
-  } else {
-    config_file = "${productName}_${ohos_build_compiler}_release${tee}.config"
-  }
-} else if (ohos_build_compiler == "gcc") {
-  if (ohos_build_type == "debug") {
-    config_file = "${productName}_debug_shell${tee}.config"
-  } else {
-    config_file = "${productName}_release${tee}.config"
-  }
-}
-
-liteos_config_file = rebase_path("tools/build/config/$config_file")
-
-# we prefer use product specified config file
-f = "$product_path/kernel_configs/${ohos_build_type}${tee}.config"
-if (exec_script("//build/lite/run_shell_cmd.py", [ "if [ -f $f ]; then echo true; else echo false; fi" ], "value")) {
-  liteos_config_file = f
-}
-
+liteos_config_file = "$product_path/kernel_configs/${ohos_build_type}${tee}.config"
 print("liteos_config_file:", liteos_config_file)
 
 exec_script("//build/lite/run_shell_cmd.py",
@@ -83,9 +61,13 @@ exec_script("//build/lite/run_shell_cmd.py",
               " --file-list kconfig_files.txt" +
               " --env-list kconfig_env.txt" +
               " --config-out config.gni",
-            ])
+            ], "", [ liteos_config_file ])
 
 import("liteos.gni")
+
+assert(ARCH != "", "ARCH not set!")
+assert(ARCH == arch, "ARCH not match! details: $ARCH != $arch")
+assert(tee_enable == defined(LOSCFG_TEE_ENABLE), "TEE switch not match!")
 
 generate_notice_file("kernel_notice_file") {
   module_name = "kernel"
@@ -125,6 +107,19 @@ config("arch_config") {
   cflags = liteos_arch_cflags
   asmflags = cflags
   ldflags = cflags
+  if (defined(LOSCFG_ARCH_ARM_AARCH32)) {
+    if (!defined(LOSCFG_COMPILER_CLANG_LLVM)) {
+      cflags += ["-mthumb-interwork"]
+    }
+  }
+  if (defined(LOSCFG_THUMB)) {
+    cflags += [ "-mthumb" ]
+    if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
+      cflags += [ "-mimplicit-it=thumb" ]
+    } else {
+      cflags += [ "-Wa,-mimplicit-it=thumb" ]
+    }
+  }
 }
 
 config("as_objs_libc_flags") {
@@ -140,13 +135,180 @@ config("as_objs_libc_flags") {
   }
 }
 
-config("std_include") {
+config("stdinc_config") {
   std_include = exec_script("//build/lite/run_shell_cmd.py", [ "$cc -print-file-name=include" ], "trim string")
   cflags = [
     "-isystem",
     std_include,
   ]
+  cflags += [ "-nostdinc" ]
   asmflags = cflags
+}
+
+config("ssp_config") {
+  cflags = []
+  if (defined(LOSCFG_CC_STACKPROTECTOR_ALL)) {
+    cflags += [ "-fstack-protector-all" ]
+  } else if (defined(LOSCFG_CC_STACKPROTECTOR_STRONG)) {
+    cflags += [ "-fstack-protector-strong" ]
+  } else if (defined(LOSCFG_CC_STACKPROTECTOR)) {
+    cflags += [
+      "-fstack-protector",
+      "--param",
+      "ssp-buffer-size=4",
+    ]
+  } else {
+    cflags += [ "-fno-stack-protector" ]
+  }
+  asmflags = cflags
+}
+
+config("optimize_config") {
+  cflags = []
+  if (defined(LOSCFG_COMPILE_DEBUG)) {
+    cflags += [
+      "-g",
+      "-gdwarf-2",
+    ]
+    optimization_cflag = "-O0"
+  }
+  if (defined(LOSCFG_COMPILE_OPTIMIZE)) {
+    optimization_cflag = "-O2"
+  }
+  if (defined(LOSCFG_COMPILE_OPTIMIZE_SIZE)) {
+    if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
+      optimization_cflag = "-Oz"
+    } else {
+      optimization_cflag = "-Os"
+    }
+  }
+  if (defined(LOSCFG_COMPILE_LTO)) {
+    if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
+      cflags += [ "-flto=thin" ]
+    } else {
+      cflags += [ "-flto" ]
+    }
+  }
+  cflags += [ optimization_cflag ]
+  asmflags = cflags
+}
+
+config("kconfig_config") {
+  cflags = [
+    "-imacros",
+    "$LITEOS_MENUCONFIG_H",
+  ]
+  asmflags = cflags
+}
+
+config("warn_config") {
+  cflags = [
+    "-Wall",
+    "-Werror",
+    "-Wpointer-arith",
+    "-Wstrict-prototypes",
+    "-Winvalid-pch",
+    "-Wno-address-of-packed-member",
+  ]
+  asmflags = cflags
+}
+
+config("dialect_config") {
+  cflags_c = [ "-std=c99" ]
+  cflags_cc = [ "-std=c++11" ]
+}
+
+config("misc_config") {
+  defines = [ "__LITEOS__" ]
+  if (!defined(LOSCFG_DEBUG_VERSION)) {
+    defines += [ "NDEBUG" ]
+  }
+
+  cflags = [
+    "-fno-pic",
+    "-fno-builtin",
+    "-fms-extensions",
+    "-fno-strict-aliasing",
+    "-fno-common",
+    "-fsigned-char",
+    "-ffunction-sections",
+    "-fdata-sections",
+    "-fno-exceptions",
+    "-fno-omit-frame-pointer",
+    "-fno-short-enums",
+    "-mno-unaligned-access",
+  ]
+
+  if (!defined(LOSCFG_COMPILER_CLANG_LLVM)) {
+    cflags += [ "-fno-aggressive-loop-optimizations" ]
+  }
+
+  asmflags = cflags
+}
+
+config("los_config") {
+  configs = [
+    ":arch_config",
+    ":kconfig_config",
+    ":stdinc_config",
+    ":dialect_config",
+    ":optimize_config",
+    ":ssp_config",
+    ":warn_config",
+    ":misc_config",
+  ]
+}
+
+executable("liteos") {
+  configs = [] # clear default configs
+  configs += [ ":arch_config" ]
+  configs += [ ":public" ]
+
+  ldflags = [
+    "-static",
+    "-nostdlib",
+    "-Wl,--gc-sections",
+    "-Wl,-Map=$liteos_name.map",
+    "-Wl,--no-eh-frame-hdr",
+  ]
+
+  libgcc = exec_script("//build/lite/run_shell_cmd.py", [ "$cc -print-libgcc-file-name" ], "trim string")
+  libs = [ libgcc ]
+  if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
+    ldflags += [ "-Wl,-T" + rebase_path("tools/build/liteos_llvm.ld", root_build_dir) ]
+    inputs = [ "tools/build/liteos_llvm.ld" ]
+  } else {
+    ldflags += [ "-Wl,-T" + rebase_path("tools/build/liteos.ld", root_build_dir) ]
+    ldflags += [ "-Wl,-nostartfiles" ]
+    inputs = [ "tools/build/liteos.ld" ]
+  }
+
+  inputs += [ "$root_out_dir/board.ld" ]
+
+  output_dir = target_out_dir
+
+  deps = [
+    "platform:copy_board.ld",
+    ":modules",
+  ]
+}
+
+copy("copy_liteos") {
+  deps = [ ":liteos" ]
+  sources = [ "$target_out_dir/unstripped/bin/liteos" ]
+  outputs = [ "$root_out_dir/$liteos_name" ]
+}
+
+build_ext_component("build_kernel_image") {
+  deps = [ ":copy_liteos" ]
+  exec_path = rebase_path(root_out_dir)
+
+  objcopy = "${compile_prefix}objcopy$toolchain_cmd_suffix"
+  objdump = "${compile_prefix}objdump$toolchain_cmd_suffix"
+
+  command = "$objcopy -O binary $liteos_name $liteos_name.bin"
+  command += " && sh -c '$objdump -t $liteos_name | sort >$liteos_name.sym.sorted'"
+  command += " && sh -c '$objdump -d $liteos_name >$liteos_name.asm'"
 }
 
 config("public") {
@@ -174,156 +336,6 @@ config("public") {
   }
 }
 
-config("los_nostdinc") {
-  cflags = [ "-nostdinc" ]
-}
-
-config("los_nostdlib") {
-  ldflags = [ "-nostdlib" ]
-}
-
-config("los_common") {
-  cflags = [
-    "-imacros",
-    "$LITEOS_MENUCONFIG_H",
-  ]
-
-  defines = [ "__LITEOS__" ]
-
-  cflags_c = [ "-std=c99" ]
-
-  cflags += [
-    "-fno-pic",
-    "-fno-builtin",
-    "-Wall",
-    "-Werror",
-    "-fms-extensions",
-    "-Wno-address-of-packed-member",
-    "-fno-strict-aliasing",
-    "-fno-common",
-    "-fsigned-char",
-    "-Wpointer-arith",
-    "-Wstrict-prototypes",
-    "-Winvalid-pch",
-    "-ffunction-sections",
-    "-fdata-sections",
-    "-fno-exceptions",
-    "-fno-omit-frame-pointer",
-    "-fno-short-enums",
-  ]
-
-  if (defined(LOSCFG_QUICK_START)) {
-    cflags -= [ "-Werror" ]
-  }
-
-  if (defined(LOSCFG_COMPILE_DEBUG)) {
-    cflags += [
-      "-O0",
-      "-g",
-      "-gdwarf-2",
-    ]
-  } else {
-    if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
-      cflags += [
-        "-Oz",
-        "-flto",
-      ]
-    } else {
-      cflags += [ "-O2" ]
-    }
-  }
-
-  if (defined(LOSCFG_CC_STACKPROTECTOR_ALL)) {
-    cflags += [ "-fstack-protector-all" ]
-  } else if (defined(LOSCFG_CC_STACKPROTECTOR_STRONG)) {
-    cflags += [ "-fstack-protector-strong" ]
-  } else if (defined(LOSCFG_CC_STACKPROTECTOR)) {
-    cflags += [
-      "-fstack-protector",
-      "--param",
-      "ssp-buffer-size=4",
-    ]
-  } else {
-    cflags += [ "-fno-stack-protector" ]
-  }
-
-  if (!defined(LOSCFG_COMPILER_CLANG_LLVM)) {
-    cflags += [ "-fno-aggressive-loop-optimizations" ]
-    if (!defined(LOSCFG_ARCH_ARM_AARCH64)) {
-      cflags += [
-        "-mno-unaligned-access",
-        "-mthumb-interwork",
-      ]
-    }
-  }
-
-  if (defined(LOSCFG_THUMB)) {
-    cflags += [
-      "-mthumb",
-      "-Wa,-mimplicit-it=thumb",
-    ]
-  }
-
-  asmflags = cflags
-}
-
-config("los_config") {
-  configs = [
-    ":los_common",
-    ":arch_config",
-    ":los_nostdinc",
-    ":los_nostdlib",
-    ":std_include",
-  ]
-}
-
-executable("liteos") {
-  configs = [] # clear default configs
-  configs += [ ":los_config" ]
-  configs += [ ":public" ]
-
-  ldflags = [
-    "-static",
-    "-Wl,--gc-sections",
-    "-Wl,-Map=$liteos_name.map",
-    "-Wl,--no-eh-frame-hdr",
-  ]
-
-  libgcc = exec_script("//build/lite/run_shell_cmd.py", [ "$cc -print-libgcc-file-name" ], "trim string")
-  libs = [ libgcc ]
-  if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
-    ldflags += [ "-Wl,-T" + rebase_path("tools/build/liteos_llvm.ld", root_build_dir) ]
-  } else {
-    ldflags += [ "-Wl,-T" + rebase_path("tools/build/liteos.ld", root_build_dir) ]
-    ldflags += [ "-Wl,-nostartfiles" ]
-  }
-
-  output_dir = target_out_dir
-  output_name = liteos_name
-
-  deps = [
-    ":modules",
-  ]
-}
-
-copy("copy_liteos") {
-  deps = [ ":liteos" ]
-  sources = [ "$target_out_dir/unstripped/bin/$liteos_name" ]
-  outputs = [ "$root_out_dir/{{source_file_part}}" ]
-}
-
-build_ext_component("build_kernel_image") {
-  deps = [ ":copy_liteos" ]
-  exec_path = rebase_path(root_out_dir)
-
-  objcopy = "${compile_prefix}objcopy$toolchain_cmd_suffix"
-  objdump = "${compile_prefix}objdump$toolchain_cmd_suffix"
-
-  command = "$objcopy -O binary $liteos_name $liteos_name.bin"
-  command += " && sh -c '$objdump -t $liteos_name | sort >$liteos_name.sym.sorted'"
-  command += " && sh -c '$objdump -d $liteos_name >$liteos_name.asm'"
-}
-
 group("modules") {
   deps = [
     "arch",
@@ -341,7 +353,7 @@ group("modules") {
   ]
 
   deps += [
-    "$HDFTOPDIR",
+    HDFTOPDIR,
     "//drivers/liteos",
   ]
 
@@ -372,10 +384,14 @@ group("liteos_a") {
 
 build_ext_component("make") {
   exec_path = rebase_path(".", root_build_dir)
-  outdir = rebase_path(get_path_info(".", "out_dir"))
+  outdir = rebase_path("$target_out_dir/${target_name}_out")
   sysroot_path = rebase_path(ohos_current_sysroot)
   arch_cflags = string_join(" ", target_arch_cflags)
-  command = "./build.sh ${board_name} ${ohos_build_compiler} ${root_build_dir} ${ohos_build_type} \"${tee_enable}\""
-  command += " \"${device_company}\" \"${product_path}\" $outdir \"${ohos_version}\" ${sysroot_path} \"${arch_cflags}\""
-  command += " \"${device_path}\""
+  command = "./build.sh \"$board_name\" \"$ohos_build_compiler\" \"$root_build_dir\" \"$ohos_build_type\" \"$tee_enable\""
+  command += " \"$device_company\" \"$product_path\" \"$outdir\" \"$ohos_version\" \"$sysroot_path\" \"$arch_cflags\""
+  command += " \"$device_path\" \"$compile_prefix\" \"$liteos_config_file\""
+  if (liteos_skip_make) {
+    print("build_ext_component \"$target_name\" skipped:", command)
+    command = "true"
+  }
 }

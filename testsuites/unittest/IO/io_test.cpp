@@ -94,6 +94,28 @@ HWTEST_F(IoTest, ItTestIo013, TestSize.Level0)
 
 #if defined(LOSCFG_USER_TEST_FULL)
 /* *
+ * @tc.name: IO_TEST_PPOLL_001
+ * @tc.desc: function for IoTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(IoTest, IO_TEST_PPOLL_001, TestSize.Level0)
+{
+    IO_TEST_PPOLL_001();
+}
+
+/* *
+ * @tc.name: IO_TEST_PPOLL_002
+ * @tc.desc: function for IoTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(IoTest, IO_TEST_PPOLL_002, TestSize.Level0)
+{
+    IO_TEST_PPOLL_002();
+}
+
+/* *
  * @tc.name: IT_STDLIB_POLL_002
  * @tc.desc: function for IoTest
  * @tc.type: FUNC

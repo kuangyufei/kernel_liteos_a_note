@@ -47,6 +47,7 @@
 #include "los_vm_map.h"
 #include "los_vm_syscall.h"
 #include "los_signal.h"
+#include "los_hook.h"
 
 #ifdef LOSCFG_KERNEL_CPUP
 #include "los_cpup_pri.h"
@@ -283,10 +284,6 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
         g_taskCBArray[index].taskID = index;//任务ID [0 ~ g_taskMaxNum - 1]
         LOS_ListTailInsert(&g_losFreeTask, &g_taskCBArray[index].pendList);//通过pendList节点插入空闲任务列表 
     }//注意:这里挂的是pendList节点,所以取TCB也要通过 OS_TCB_FROM_PENDLIST 取.
-
-#ifdef LOSCFG_KERNEL_TRACE
-    LOS_TraceReg(LOS_TRACE_TASK, OsTaskTrace, LOS_TRACE_TASK_NAME, LOS_TRACE_ENABLE);
-#endif
 
     ret = OsSchedInit();//调度器初始化
 
@@ -735,6 +732,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *taskID, TSK_INIT_PARAM_S
     }
 
     *taskID = taskCB->taskID;
+    OsHookCall(LOS_HOOK_TYPE_TASK_CREATE, taskCB);
     return LOS_OK;
 
 LOS_ERREND_TCB_INIT:
@@ -903,7 +901,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsTaskSuspend(LosTaskCB *taskCB)
     }
 
     taskCB->taskStatus |= OS_TASK_STATUS_SUSPENDED;
-
+    OsHookCall(LOS_HOOK_TYPE_MOVEDTASKTOSUSPENDEDLIST, taskCB);
     if (taskCB == OsCurrTaskGet()) {
         OsSchedResched();
     }
@@ -1079,7 +1077,7 @@ LITE_OS_SEC_TEXT UINT32 OsTaskDeleteUnsafe(LosTaskCB *taskCB, UINT32 status, UIN
         OsWriteResourceEvent(OS_RESOURCE_EVENT_FREE);//写一个资源释放事件,资源回收任务会收到事件,并回收任务的资源.
         return errRet;//消费OS_RESOURCE_EVENT_FREE事件可见于 OsResourceRecoveryTask 的处理
     }
-
+    OsHookCall(LOS_HOOK_TYPE_TASK_DELETE, taskCB);
     if (mode == OS_USER_MODE) { //用户态模式
         SCHEDULER_UNLOCK(intSave);//先释放锁
         OsTaskResourcesToFree(taskCB);//释放任务资源
@@ -1163,13 +1161,14 @@ LITE_OS_SEC_TEXT UINT32 LOS_TaskDelay(UINT32 tick)
     if (!OsPreemptable()) {
         return LOS_ERRNO_TSK_DELAY_IN_LOCK;
     }
-
+    OsHookCall(LOS_HOOK_TYPE_TASK_DELAY, tick);
     if (tick == 0) {
         return LOS_TaskYield();
     }
 
     SCHEDULER_LOCK(intSave);
     OsSchedDelay(runTask, tick);
+    OsHookCall(LOS_HOOK_TYPE_MOVEDTASKTODELAYEDLIST, runTask);
     SCHEDULER_UNLOCK(intSave);
 
     return LOS_OK;

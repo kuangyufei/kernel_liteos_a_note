@@ -39,24 +39,14 @@ shared_library("OHOS-vdso") {
     "$LITEOSTOPDIR/bsd/compat/linuxkpi/include",
   ]
 
-  cflags = [
-    "-fPIC",
-    "-fno-common",
-    "-fno-strict-aliasing",
-  ]
-
-  configs = []
-  configs += [ "$LITEOSTOPDIR:los_common" ]
-  configs += [ "$LITEOSTOPDIR:los_nostdlib" ]
-  configs += [ "$LITEOSTOPDIR:arch_config" ]
-
-  defines = [ "_XOPEN_SOURCE=700" ]
+  configs -= [ "//build/lite/config:security" ]
 
   ldflags = [
-    "-Wl,-s",
+    "-nostdlib",
     "-Wl,-Bsymbolic",
     "-Wl,-T" + rebase_path("los_vdso.ld", root_build_dir),
   ]
 
+  inputs = [ "los_vdso.ld" ]
   output_dir = target_out_dir
 }

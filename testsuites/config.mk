@@ -28,12 +28,9 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
--include $(LITEOSTOPDIR)/tools/build/config.mk
--include $(LITEOSTESTTOPDIR)/build/los_test_config.mk
-LITEOS_CFLAGS += -I $(LITEOSTOPDIR)/lib/libc/musl/include \
-    -I $(LITEOSTOPDIR)/lib/libc/musl/obj/include \
-    -I $(LITEOSTOPDIR)/lib/libc/musl/arch/arm \
-    -I $(LITEOSTOPDIR)/lib/libc/musl/arch/generic \
+include $(LITEOSTOPDIR)/config.mk
+include $(LITEOSTESTTOPDIR)/build/los_test_config.mk
+LITEOS_CFLAGS += \
     -I $(LITEOSTHIRDPARTY)/bounds_checking_function/include \
     -I $(LITEOSTOPDIR)/security/cap/ \
     -I $(LITEOSTOPDIR)/security/vid/ \

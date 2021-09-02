@@ -219,4 +219,138 @@ HWTEST_F(SysTest, IT_TEST_SYS_031, TestSize.Level0)
     IT_TEST_SYS_031();
 }
 #endif
+
+#if defined(LOSCFG_USER_TEST_FULL)
+/* *
+ * @tc.name: IT_TEST_SYS_001
+ * @tc.desc: function for SysTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(SysTest, ItTestSys001, TestSize.Level0)
+{
+    ItTestSys001();
+}
+
+/* *
+ * @tc.name: IT_TEST_SYS_018
+ * @tc.desc: function for SysTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(SysTest, ItTestSys018, TestSize.Level0)
+{
+    ItTestSys018();
+}
+
+/* *
+ * @tc.name: IT_TEST_SYS_019
+ * @tc.desc: function for SysTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(SysTest, ItTestSys019, TestSize.Level0)
+{
+    ItTestSys019();
+}
+
+/* *
+ * @tc.name: IT_TEST_SYS_020
+ * @tc.desc: function for SysTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(SysTest, ItTestSys020, TestSize.Level0)
+{
+    ItTestSys020();
+}
+
+/* *
+ * @tc.name: IT_TEST_SYS_021
+ * @tc.desc: function for SysTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(SysTest, ItTestSys021, TestSize.Level0)
+{
+    ItTestSys021();
+}
+
+/* *
+ * @tc.name: IT_TEST_SYS_022
+ * @tc.desc: function for SysTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(SysTest, ItTestSys022, TestSize.Level0)
+{
+    ItTestSys022();
+}
+
+/* *
+ * @tc.name: IT_TEST_SYS_023
+ * @tc.desc: function for SysTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(SysTest, ItTestSys023, TestSize.Level0)
+{
+    ItTestSys023();
+}
+
+/* *
+ * @tc.name: IT_TEST_SYS_024
+ * @tc.desc: function for SysTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(SysTest, ItTestSys024, TestSize.Level0)
+{
+    ItTestSys024();
+}
+
+/* *
+ * @tc.name: IT_TEST_SYS_025
+ * @tc.desc: function for SysTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(SysTest, ItTestSys025, TestSize.Level0)
+{
+    ItTestSys025();
+}
+
+/* *
+ * @tc.name: IT_TEST_SYS_025
+ * @tc.desc: function for SysTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(SysTest, ItTestSys026, TestSize.Level0)
+{
+    ItTestSys026();
+}
+
+/* *
+ * @tc.name: IT_TEST_SYS_027
+ * @tc.desc: function for ftok normal test
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(SysTest, ItTestSys027, TestSize.Level0)
+{
+    ItTestSys027();
+}
+
+/* *
+ * @tc.name: IT_TEST_SYS_028
+ * @tc.desc: function for nice:set pthread priority
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(SysTest, IT_TEST_SYS_028, TestSize.Level0)
+{
+    IT_TEST_SYS_028();
+}
+#endif
 } // namespace OHOS

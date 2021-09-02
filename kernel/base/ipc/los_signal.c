@@ -361,6 +361,9 @@ static int OsSignalPermissionToCheck(const LosProcessCB *spcb)
 //信号分发,发送信号权限/进程组过滤.
 int OsDispatch(pid_t pid, siginfo_t *info, int permission)
 {
+    if (OsProcessIDUserCheckInvalid(pid) || pid < 0) {
+        return -ESRCH;
+    }
     LosProcessCB *spcb = OS_PCB_FROM_PID(pid);//找到这个进程
     if (OsProcessIsUnused(spcb)) {//进程是否还在使用,不一定是当前进程但必须是个有效进程
         return -ESRCH;
@@ -396,11 +399,8 @@ int OsKill(pid_t pid, int sig, int permission)
     int ret;
 
     /* Make sure that the para is valid */
-    if (!GOOD_SIGNO(sig) || pid < 0) {//有效信号 [0,64]
+    if (!GOOD_SIGNO(sig)) {
         return -EINVAL;
-    }
-    if (OsProcessIDUserCheckInvalid(pid)) {//检查参数进程 
-        return -ESRCH;
     }
 
     /* Create the siginfo structure */ //创建信号结构体
@@ -408,8 +408,18 @@ int OsKill(pid_t pid, int sig, int permission)
     info.si_code = SI_USER;	//来自用户进程信号
     info.si_value.sival_ptr = NULL;
 
-    /* Send the signal */
+    if (pid > 0) {
+        /* Send the signal to the specify process */
     ret = OsDispatch(pid, &info, permission);//发送信号
+    } else if (pid == -1) {
+        /* Send SIG to all processes */
+        ret = OsSendSignalToAllProcess(&info, permission);
+    } else {
+        /* Send SIG to all processes in process group PGRP.
+           If PGRP is zero, send SIG to all processes in
+           the current process's process group. */
+        ret = OsSendSignalToProcessGroup(pid, &info, permission);
+    }
     return ret;
 }
 //给发送信号过程加锁

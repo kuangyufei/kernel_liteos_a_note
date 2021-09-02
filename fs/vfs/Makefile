@@ -102,6 +102,7 @@ LOCAL_INCLUDE := \
 	-I $(LITEOSTOPDIR)/drivers/mtd/multi_partition/include\
 	-I $(LITEOSTOPDIR)/fs/vfs/include/operation\
 	-I $(LITEOSTOPDIR)/syscall\
+	-I $(LITEOSTOPDIR)/fs/zpfs/include
 
 ifeq ($(LOSCFG_FS_FAT), y)
 LOCAL_INCLUDE += -I $(LITEOSTHIRDPARTY)/FatFs/source

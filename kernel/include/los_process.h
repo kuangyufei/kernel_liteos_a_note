@@ -33,6 +33,7 @@
 #define _LOS_PROCESS_H
 
 #include "los_task.h"
+#include <signal.h>
 
 #ifdef LOSCFG_FS_VFS
 #include "fs/fd_table.h"
@@ -57,6 +58,8 @@ extern INT32 LOS_SetProcessScheduler(INT32 pid, UINT16 policy, UINT16 prio);
 extern UINT32 LOS_GetCurrProcessID(VOID);
 
 extern INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, VOID *rusage);
+
+extern INT32 LOS_Waitid(INT32 pid, USER siginfo_t *info, UINT32 options, VOID *rusage);
 
 extern INT32 LOS_GetCurrProcessGroupID(VOID);
 

@@ -36,7 +36,7 @@
 #include "los_cpup_pri.h"
 #endif
 #include "los_sched_pri.h"
-
+#include "los_hook.h"
 /******************************************************************************
 基本概念
 	中断是指出现需要时，CPU暂停执行当前程序，转而执行新程序的过程。即在程序运行过程中，
@@ -162,7 +162,7 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ //开启查询系统CPU的占用率的中断
     OsCpupIrqStart();//记录本次中断处理开始时间
 #endif
-
+    OsHookCall(LOS_HOOK_TYPE_ISR_ENTER, intNum);
     hwiForm = (&g_hwiForm[intNum]);//获取对应中断的实体
 #ifndef LOSCFG_NO_SHARED_IRQ	//如果没有定义不共享中断 ，意思就是如果是共享中断
     while (hwiForm->pstNext != NULL) { //一直撸到最后
@@ -185,6 +185,7 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
 #endif
     ++g_hwiFormCnt[intNum];//对应中断号计数器总数累加
 
+    OsHookCall(LOS_HOOK_TYPE_ISR_EXIT, intNum);
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
     OsCpupIrqEnd(intNum);
 #endif

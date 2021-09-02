@@ -76,7 +76,7 @@ struct file_table_s {//进程fd <--> 系统FD绑定
 };//sysFd的默认值是-1
 
 struct fd_table_s {//进程fd表结构体
-    unsigned int max_fds;//一个进程能打开的最大文件数量, 一般是 512 + 128 个,512指普通文件, 128指网络文件
+    unsigned int max_fds;//进程的文件描述符最多有256个
     struct file_table_s *ft_fds; /* process fd array associate with system fd *///系统分配给进程的FD数组 ,fd 默认是 -1
     fd_set *proc_fds;	//进程fd管理位,用bitmap管理FD使用情况,默认打开了 0,1,2	       (stdin,stdout,stderr)
     fd_set *cloexec_fds;

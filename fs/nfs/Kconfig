@@ -3,5 +3,6 @@ config FS_NFS
     default y
     depends on FS_VFS
     depends on NET_LWIP_SACK
+    depends on DEBUG_VERSION
     help
       Answer Y to enable LiteOS support nfs filesystem.

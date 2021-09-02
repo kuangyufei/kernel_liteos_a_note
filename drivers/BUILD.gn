@@ -36,6 +36,7 @@ group("drivers") {
     "char/mem",
     "char/quickstart",
     "char/random",
+    "char/trace",
     "char/video",
     "mtd/multi_partition",
   ]
@@ -49,6 +50,7 @@ config("public") {
     "char/quickstart:public",
     "char/random:public",
     "char/video:public",
+    "char/trace:public",
     "mtd/multi_partition:public",
   ]
 }

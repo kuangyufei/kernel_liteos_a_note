@@ -32,28 +32,18 @@ set -e
 
 OUT=$1
 ROOTFS_DIR=$2
-OUT_DIR=$3
 BIN_DIR=${OUT}/bin
 LIB_DIR=${OUT}/musl
 ETC_DIR=${OUT}/etc
-NEED_COPYTO_OUTDIR=(shell toybox mksh tftp)
 
 mkdir -p ${ROOTFS_DIR}/bin ${ROOTFS_DIR}/lib ${ROOTFS_DIR}/usr/bin ${ROOTFS_DIR}/usr/lib ${ROOTFS_DIR}/etc \
 ${ROOTFS_DIR}/app ${ROOTFS_DIR}/data ${ROOTFS_DIR}/proc ${ROOTFS_DIR}/dev ${ROOTFS_DIR}/data/system ${ROOTFS_DIR}/data/system/param \
-${ROOTFS_DIR}/system ${ROOTFS_DIR}/system/internal ${ROOTFS_DIR}/system/external ${OUT_DIR}/bin ${OUT_DIR}/libs ${OUT_DIR}/etc
+${ROOTFS_DIR}/system ${ROOTFS_DIR}/system/internal ${ROOTFS_DIR}/system/external
 if [ -d "${BIN_DIR}" ] && [ "$(ls -A "${BIN_DIR}")" != "" ]; then
     cp -f ${BIN_DIR}/* ${ROOTFS_DIR}/bin
-    for el in ${NEED_COPYTO_OUTDIR[@]}
-    do
-        if [ -e ${BIN_DIR}/$el ] && [ "${BIN_DIR}/$el" != "${OUT_DIR}/bin/$el" ]; then
-            cp -u ${BIN_DIR}/$el ${OUT_DIR}/bin/$el
-        fi
-    done
 fi
 cp -f ${LIB_DIR}/* ${ROOTFS_DIR}/lib
-cp -u ${LIB_DIR}/* ${OUT_DIR}/libs
 
 if [ -e ${ETC_DIR}/.mkshrc ]; then
 cp -f ${ETC_DIR}/.mkshrc ${ROOTFS_DIR}/etc
-cp -u ${ETC_DIR}/.mkshrc ${OUT_DIR}/etc
 fi

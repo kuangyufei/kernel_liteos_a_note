@@ -31,14 +31,10 @@ include $(LITEOSTOPDIR)/config.mk
 
 MODULE_NAME := $(notdir $(shell pwd))
 
-LOCAL_SRCS := $(wildcard *.c)
-LOCAL_INCLUDE = \
-    -I $(LITEOSTOPDIR)/fs/include \
-    -I $(LITEOSTOPDIR)/fs/zpfs \
-    -I $(LITEOSTOPDIR)/../../third_party/NuttX/liteos/fs/include\
-    -I $(LITEOSTOPDIR)/../../third_party/NuttX/liteos/fs/include/inode
+LOCAL_SRCS := $(wildcard src/*.c)
+LOCAL_INCLUDE := \
+		-I $(LITEOSTOPDIR)/fs/zpfs/include
 
-LOCAL_FLAGS := $(LITEOS_GCOV_OPTS)
+LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
 
 include $(MODULE)
-

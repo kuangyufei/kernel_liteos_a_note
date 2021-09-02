@@ -33,6 +33,8 @@ module_switch = defined(LOSCFG_COMPAT_POSIX)
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
   sources = [
+    "src/errno.c",
+    "src/malloc.c",
     "src/map_error.c",
     "src/misc.c",
     "src/mqueue.c",
@@ -44,6 +46,8 @@ kernel_module(module_name) {
     "src/sched.c",
     "src/semaphore.c",
     "src/socket.c",
+    "src/stdio.c",
+    "src/stdlib.c",
     "src/time.c",
   ]
 

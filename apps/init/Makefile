@@ -27,43 +27,15 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-INIT_DIR := $(dir $(shell pwd))/init/
+include $(APPSTOPDIR)/config.mk
 
-ifeq ($(APPSTOPDIR), )
-APPSTOPDIR := $(shell pwd)/../
-LITEOSTOPDIR = $(APPSTOPDIR)/../
-endif
-include $(INIT_DIR)/../config.mk
+APP_NAME := $(notdir $(shell pwd))
 
-APPS_OUT := $(OUT)/bin
 LOCAL_SRCS := src/init.c
-LOCAL_OBJ := src/init.o
-
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LOCAL_FLAGS += -Wno-shift-op-parentheses -Wno-bitwise-op-parentheses -Wnonnull $(LLVM_SYSROOT)
-LDCFLAGS += $(LLVM_EXTRA_LD_OPTS) $(LLVM_SYSROOT)
-endif
 
 ifeq ($(LOSCFG_QUICK_START), y)
-LDCFLAGS += --static
+LDFLAGS += --static
 CFLAGS += -DLOSCFG_QUICK_START
 endif
 
-INITNAME := init
-
-all: $(INITNAME)
-
-$(LOCAL_OBJ): %.o : %.c
-	$(HIDE) $(CC) $(CFLAGS) $(LOCAL_FLAGS) -fPIE $(LOCAL_INCLUDE) -c $< -o $@
-
-$(INITNAME):$(LOCAL_OBJ)
-	$(HIDE) $(CC) -pie -s $(LDPATH) $(BASE_OPTS) -o $(INITNAME) $^ $(LDCFLAGS)
-	$(HIDE) mkdir -p $(APPS_OUT)
-	$(HIDE) $(MV) $(INITNAME) $(APPS_OUT)
-	$(HIDE) $(RM) $(LOCAL_OBJ)
-
-clean:
-	$(HIDE) $(RM) $(LOCAL_OBJ)
-	$(HIDE) $(RM) $(INITNAME)
-
-.PHONY: all $(INITNAME) clean
+include $(APP)

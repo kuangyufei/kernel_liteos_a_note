@@ -17,7 +17,6 @@ tags
 
 # Menuconfig temp files
 /config.h
-/defconfig
 /.config
 /.config.old
 

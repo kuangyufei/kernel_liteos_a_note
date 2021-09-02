@@ -31,12 +31,32 @@ include $(LITEOSTOPDIR)/config.mk
 
 MODULE_NAME := $(notdir $(shell pwd))
 
-LOCAL_SRCS := $(wildcard *.c)
+LOCAL_SRCS := los_trace.c
+LOCAL_SRCS += $(wildcard cnv/*.c)
 
 LOCAL_INCLUDE := \
-        -I $(LITEOSTOPDIR)/kernel/base/include -I $(LITEOSTOPDIR)/kernel/extended/include
+        -I $(LITEOSTOPDIR)/kernel/extended/trace \
+        -I $(LITEOSTOPDIR)/kernel/extended/trace/pipeline \
+        -I $(LITEOSTOPDIR)/kernel/extended/trace/cnv
 
-LOCAL_FLAGS := $(LOCAL_INCLUDE)
+ifeq ($(LOSCFG_RECORDER_MODE_OFFLINE), y)
+LOCAL_SRCS += trace_offline.c
+endif
+
+ifeq ($(LOSCFG_RECORDER_MODE_ONLINE), y)
+LOCAL_SRCS += trace_online.c
+endif
+
+ifeq ($(LOSCFG_TRACE_CLIENT_INTERACT), y)
+LOCAL_SRCS += $(wildcard pipeline/*.c)
+endif
+
+ifeq ($(LOSCFG_TRACE_PIPELINE_SERIAL), y)
+LOCAL_SRCS += $(wildcard pipeline/serial/*.c)
+LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/kernel/extended/trace/pipeline/serial
+endif
+
+LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
 
 include $(MODULE)
 

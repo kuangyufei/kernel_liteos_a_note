@@ -27,31 +27,13 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-############################# SRCs #################################
-HWI_SRC     :=
-MMU_SRC     :=
-NET_SRC     :=
-TIMER_SRC   :=
-HRTIMER_SRC :=
-USB_SRC     :=
-
-############################# HI3516DV300 Options#################################
-
-########################## HI3518EV300 Options##############################
-
-########################## Qemu ARM Virt Options##############################
-
-LITEOS_BASELIB       += -lbsp
+LITEOS_BASELIB       += -lbsp -lbsp_config
 
 PLATFORM_BSP_BASE := $(LITEOSTOPDIR)/platform
 
 PLATFORM_INCLUDE := -I $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) \
                     -I $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH)/include \
-                    -I $(PLATFORM_BSP_BASE)/../kernel/common/rootfs \
-                    -I $(PLATFORM_BSP_BASE) \
-                    -I $(PLATFORM_BSP_BASE)/../../../drivers/liteos/platform/pm \
-                    -I $(PLATFORM_BSP_BASE)/hw/include \
-                    -I $(PLATFORM_BSP_BASE)/include
+                    -I $(PLATFORM_BSP_BASE)
 
-LIB_SUBDIRS             += $(PLATFORM_BSP_BASE)
+LIB_SUBDIRS             += $(PLATFORM_BSP_BASE) $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH)
 LITEOS_PLATFORM_INCLUDE += $(PLATFORM_INCLUDE)

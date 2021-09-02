@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 块设备驱动程序注解.  
+git commit -m  ' 同步官方对trace模块较大更新.  
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     博客输出站点(国内):http://weharmonyos.com
     博客输出站点(国外):https://openharmony.github.io

@@ -265,6 +265,10 @@ static struct Mount* GetDevMountPoint(struct Vnode *dev)
 {
     struct Mount *mnt = NULL;
     LIST_HEAD *mntList = GetMountList();
+    if (mntList == NULL) {
+        return NULL;
+    }
+
     LOS_DL_LIST_FOR_EACH_ENTRY(mnt, mntList, struct Mount, mountList) {
         if (mnt->vnodeDev == dev) {
             return mnt;
@@ -302,7 +306,7 @@ static void FileDisableAndClean(struct Mount *mnt)
 {
     struct filelist *flist = &tg_filelist;
     struct file *filep = NULL;
-    const struct file_operations_vfs *originOps;
+    const struct file_operations_vfs *originOps = NULL;
 
     for (int i = 3; i < CONFIG_NFILE_DESCRIPTORS; i++) {
         if (!get_bit(i)) {
@@ -355,7 +359,7 @@ static void VnodeTryFreeAll(struct Mount *mount)
 int ForceUmountDev(struct Vnode *dev)
 {
     int ret;
-    struct Vnode *origin;
+    struct Vnode *origin = NULL;
     struct filelist *flist = &tg_filelist;
     if (dev == NULL) {
         return -EINVAL;

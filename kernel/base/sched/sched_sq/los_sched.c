@@ -34,6 +34,7 @@
 #include "los_task_pri.h"
 #include "los_process_pri.h"
 #include "los_arch_mmu.h"
+#include "los_hook.h"
 #ifdef LOSCFG_KERNEL_CPUP
 #include "los_cpup_pri.h"
 #endif
@@ -727,6 +728,7 @@ BOOL OsSchedModifyTaskSchedParam(LosTaskCB *taskCB, UINT16 policy, UINT16 priori
     }
 
     taskCB->priority = priority;
+    OsHookCall(LOS_HOOK_TYPE_TASK_PRIMODIFY, taskCB, taskCB->priority); 
     if (taskCB->taskStatus & OS_TASK_STATUS_INIT) {
         OsSchedTaskEnQueue(taskCB);
         return TRUE;
@@ -955,9 +957,8 @@ STATIC INLINE VOID OsSchedSwitchCheck(LosTaskCB *runTask, LosTaskCB *newTask)
 {
 #ifdef LOSCFG_BASE_CORE_TSK_MONITOR
     OsTaskStackCheck(runTask, newTask);
-#endif /* LOSCFG_BASE_CORE_TSK_MONITOR == YES */
-
-    OsTraceTaskSchedule(newTask, runTask);
+#endif /* LOSCFG_BASE_CORE_TSK_MONITOR */
+    OsHookCall(LOS_HOOK_TYPE_TASK_SWITCHEDIN, newTask, runTask);
 }
 
 STATIC INLINE VOID OsSchedSwitchProcess(LosProcessCB *runProcess, LosProcessCB *newProcess)

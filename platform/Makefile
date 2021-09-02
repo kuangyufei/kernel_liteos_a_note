@@ -44,22 +44,6 @@ ifneq ($(LOSCFG_BASE_CORE_HILOG), y)
 LOCAL_SRCS := $(filter-out los_hilog.c, $(LOCAL_SRCS))
 endif
 
-ifeq ($(LOSCFG_KERNEL_TICKLESS), y)
-LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/kernel/extended/include
-endif
-
-ifeq ($(LOSCFG_KERNEL_TRACE), y)
-LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/kernel/extended/include
-endif
-
-ifeq ($(LOSCFG_KERNEL_CPUP), y)
-LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/kernel/extended/include
-endif
-
-ifeq ($(LOSCFG_KERNEL_VDSO), y)
-LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/kernel/extended/vdso/include
-endif
-
 ALL_ASSRCS := $(wildcard *.S)
 ASSRCS := $(filter-out board.ld.S,$(ALL_ASSRCS))
 
@@ -68,9 +52,8 @@ LOCAL_SRCS += $(ASSRCS)
 LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
 
 BOARD_LD = $(OUT)/lib/board.ld
-$(BOARD_LD): board.ld.S $(LITEOS_MENUCONFIG_H)
-	$(HIDE)$(CC) -I$(LITEOSTOPDIR)/kernel/base/include -I$(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) -I. \
-		-imacros $(LITEOS_MENUCONFIG_H) -P -E $< -o $@
+$(BOARD_LD): board.ld.S
+	$(HIDE)$(CC) $(LITEOS_CFLAGS) -P -E $< -o $@
 
 .PHONY: rm_board_ld
 rm_board_ld:

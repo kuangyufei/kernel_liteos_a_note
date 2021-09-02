@@ -35,8 +35,8 @@
 #include "limits.h"
 #include "vnode.h"
 
-#define PATH_CACHE_HASH_MASK (LOSCFG_MAX_PATH_CACHE_SIZE - 1)
-LIST_HEAD g_pathCacheHashEntrys[LOSCFG_MAX_PATH_CACHE_SIZE];
+#define PATH_CACHE_HASH_MASK (LOSCFG_MAX_PATH_CACHE_SIZE - 1)	//路径缓存哈希表掩码
+LIST_HEAD g_pathCacheHashEntrys[LOSCFG_MAX_PATH_CACHE_SIZE];	//路径缓存哈希表项
 #ifdef LOSCFG_DEBUG_VERSION
 static int g_totalPathCacheHit = 0;
 static int g_totalPathCacheTry = 0;

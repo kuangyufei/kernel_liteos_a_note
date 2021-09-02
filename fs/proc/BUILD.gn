@@ -35,7 +35,6 @@ kernel_module(module_name) {
   sources = [
     "os_adapt/fd_proc.c",
     "os_adapt/fs_cache_proc.c",
-    "os_adapt/kernel_trace_proc.c",
     "os_adapt/mounts_proc.c",
     "os_adapt/power_proc.c",
     "os_adapt/proc_init.c",

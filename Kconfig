@@ -26,27 +26,64 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-#
-# For a description of the syntax of this configuration file,
-# see extra/config/Kconfig-language.txt
-#
+
 mainmenu "Huawei LiteOS Configuration"
 
 menu "Compiler"
 choice
-    prompt "LiteOS_Compiler_Type"
+    prompt "Compiler type"
     default COMPILER_CLANG_LLVM
     help
-      Enable arm-himix100 or aarch64-himix100 or compiler.
+      Choose compiler type.
 
-config COMPILER_HIMIX_32
-    bool "arm-linux-ohoseabi"
+config COMPILER_GCC
+    bool "GCC"
+
+config CROSS_COMPILE
+    string "GCC cross-compile toolchain prefix"
+    depends on COMPILER_GCC
+    default "arm-linux-ohoseabi-" if ARCH_ARM_AARCH32
 
 config COMPILER_CLANG_LLVM
-    bool "clang-llvm"
+    bool "Clang"
+
+config LLVM_TARGET
+    string "Clang LLVM target"
+    depends on COMPILER_CLANG_LLVM
+    default "arm-liteos" if ARCH_ARM_AARCH32
 
 endchoice
+
+config COMPILE_DEBUG
+    bool "Enable debug options"
+    default n
+    help
+      Answer Y to add -g option in compile command.
+
+config COMPILE_OPTIMIZE
+    bool "Enable code optimization options"
+    default y
+    help
+      Answer Y to add optimization options for efficient code.
+      The final binary size will be smaller and execute faster.
+      But the debugging experience may be worst somehow.
+
+config COMPILE_OPTIMIZE_SIZE
+    bool "Enable code size optimization options" if COMPILE_OPTIMIZE
+    default y
+    help
+      Answer Y to add optimization options for small code size.
+      The final binary size will be smaller.
+      But the compile time may be a bit longer.
+
+config COMPILE_LTO
+    bool "Enable link time optimization (LTO)" if COMPILE_OPTIMIZE_SIZE
+    default y
+    help
+      Answer Y to add lto options for more smaller code size.
+      The final binary size will be smaller.
+      But the compile time may be much longer.
+
 endmenu
 
 menu "Platform"
@@ -123,11 +160,11 @@ source "net/Kconfig"
 
 ######################## config options of debug ########################
 menu "Debug"
-config COMPILE_DEBUG
-    bool "Enable GCC -g Option"
+config GDB
+    bool "Enable gdb functions"
     default n
     help
-      Answer Y to add -g option in gcc command. But the LiteOS size will be much larger.
+      Answer Y to enable gdb functions.
 
 config PLATFORM_ADAPT
     bool "Enable Os_adapt"
@@ -164,15 +201,9 @@ config ENABLE_MAGICKEY
 config THUMB
     bool "Enable Thumb"
     default n
-    select INTERWORK_THUMB
+    depends on ARCH_ARM
     help
       Answer Y to build thumb version.  This will make LiteOS smaller.
-
-config INTERWORK_THUMB
-    bool "Enable interwork Thumb" if THUMB
-    default n
-    help
-      Answer Y to enable interwork thumb.
 
 config PLATFORM_DVFS
     bool "Enable Dvfs"
@@ -193,8 +224,8 @@ config DEBUG_VERSION
     default n
     help
       If you do not select this option that means you enable a release version for LiteOS.
-      It also means you do not want to use debug modules, like shell,telnet,tftp,
-      ,nfs,ramfs proc and memory check.
+      It also means you do not want to use debug modules, like shell,telnet,tftp,nfs and
+      memory check, etc.
       If you select this option that means you enable a debug version for LiteOS.
       That means you want a opposite behaviour compared to release version.
 
@@ -309,6 +340,7 @@ source "drivers/char/mem/Kconfig"
 source "drivers/char/quickstart/Kconfig"
 source "drivers/char/random/Kconfig"
 source "drivers/char/video/Kconfig"
+source "drivers/char/trace/Kconfig"
 
 source "../../drivers/liteos/tzdriver/Kconfig"
 source "../../drivers/liteos/hievent/Kconfig"

@@ -91,16 +91,11 @@ sources_smoke = [
   "smoke/process_test_049.cpp",
   "smoke/process_test_050.cpp",
   "smoke/process_test_051.cpp",
-  "smoke/process_test_053.cpp",
-  "smoke/process_test_054.cpp",
-  "smoke/process_test_055.cpp",
   "smoke/process_test_056.cpp",
   "smoke/process_test_057.cpp",
   "smoke/process_test_058.cpp",
   "smoke/process_test_059.cpp",
   "smoke/process_test_060.cpp",
-  "smoke/process_test_061.cpp",
-  "smoke/process_test_062.cpp",
   "smoke/process_test_063.cpp",
   "smoke/process_test_064.cpp",
   "smoke/process_test_065.cpp",
@@ -119,6 +114,11 @@ sources_smoke = [
 ]
 
 sources_full = [
+  "full/process_test_053.cpp",
+  "full/process_test_054.cpp",
+  "full/process_test_055.cpp",
+  "full/process_test_061.cpp",
+  "full/process_test_062.cpp",
 ]
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {

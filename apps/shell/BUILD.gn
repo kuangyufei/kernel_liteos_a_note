@@ -41,18 +41,4 @@ executable("shell") {
   deps = [ "$LITEOSTHIRDPARTY/bounds_checking_function:libsec_static" ]
 
   include_dirs = [ "include" ]
-
-  cflags = [ "-fPIE" ]
-
-  if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
-    cflags += [
-      "-Wno-shift-op-parentheses",
-      "-Wno-bitwise-op-parentheses",
-    ]
-  }
-
-  ldflags = [
-    "-pie",
-    "-s",
-  ]
 }

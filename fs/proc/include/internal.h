@@ -51,8 +51,6 @@ void ProcVmmInit(void);
 
 void ProcProcessInit(void);
 
-void ProcKernelTraceInit(void);
-
 int ProcMatch(unsigned int len, const char *name, struct ProcDirEntry *pde);
 
 struct ProcDirEntry *ProcFindEntry(const char *path);

@@ -330,5 +330,13 @@ group("unittest") {
         deps += [ "signal:liteos_a_signal_unittest" ]
       }
     }
+    if (LOSCFG_USER_TEST_TRACE == true) {
+      if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
+        deps += [ "trace:liteos_a_trace_unittest_door" ]
+      }
+      if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
+        deps += [ "trace:liteos_a_trace_unittest" ]
+      }
+    }
   }
 }

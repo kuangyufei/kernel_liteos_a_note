@@ -36,15 +36,15 @@ LOSCFG_ARCH_FPU_STRIP   := $(subst $\",,$(LOSCFG_ARCH_FPU))
 LOSCFG_ARCH_FPU          = $(LOSCFG_ARCH_FPU_STRIP)
 
 ifeq ($(LOSCFG_ARCH_ARM_AARCH32), y)
-LITEOS_ARCH_ARM         := arm
+ARCH                    := arm
 else ifeq ($(LOSCFG_ARCH_ARM_AARCH64), y)
-LITEOS_ARCH_ARM         := 
+ARCH                    := aarch64
 endif
 
 LITEOS_BASELIB          += -l$(LOSCFG_ARCH_CPU)
 LITEOS_BASELIB          += -lgic
 
-LIB_SUBDIRS             += arch/arm/$(LITEOS_ARCH_ARM)
+LIB_SUBDIRS             += arch/arm/$(ARCH)
 LIB_SUBDIRS             += arch/arm/gic
 
 # CPU compile options
@@ -66,14 +66,12 @@ LITEOS_GCCLIB           := $(subst cortex-,,$(LOSCFG_ARCH_CPU))_softfp_$(LOSCFG_
 endif
 
 LITEOS_CORE_COPTS        = $(or $(ARCH_CFLAGS),$(LITEOS_CPU_OPTS) $(LITEOS_FLOAT_OPTS) $(LITEOS_FPU_OPTS))
-LITEOS_INTERWORK        += $(LITEOS_CORE_COPTS)
-LITEOS_NODEBUG          += $(LITEOS_CORE_COPTS)
 LITEOS_ASOPTS           += $(LITEOS_CPU_OPTS)
 LITEOS_CXXOPTS_BASE     += $(LITEOS_CORE_COPTS)
 
 ARCH_INCLUDE            := -I $(LITEOSTOPDIR)/arch/arm/include \
-                           -I $(LITEOSTOPDIR)/arch/arm/$(LITEOS_ARCH_ARM)/include \
-                           -I $(LITEOSTOPDIR)/arch/arm/$(LITEOS_ARCH_ARM)/src/include
+                           -I $(LITEOSTOPDIR)/arch/arm/$(ARCH)/include \
+                           -I $(LITEOSTOPDIR)/arch/arm/$(ARCH)/src/include
 
 LITEOS_PLATFORM_INCLUDE += $(ARCH_INCLUDE)
 
@@ -85,10 +83,6 @@ else ifeq ($(LOSCFG_ARCH_FPU_VFP_D16), y)
 else ifeq ($(LOSCFG_ARCH_FPU_VFP_D32), y)
     LITEOS_CMACRO       += -DLOSCFG_ARCH_FPU_VFP_D32
 endif
-
-# extra definition for other module
-LITEOS_CPU_TYPE          = $(LOSCFG_ARCH_CPU)
-LITEOS_ARM_ARCH         := -march=$(subst $\",,$(LOSCFG_ARCH_ARM_VER))
 
 # linux style macros
 LINUX_ARCH_$(LOSCFG_ARCH_ARM_V7A) = -D__LINUX_ARM_ARCH__=7

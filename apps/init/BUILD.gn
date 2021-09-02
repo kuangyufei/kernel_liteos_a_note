@@ -32,22 +32,8 @@ import("//kernel/liteos_a/liteos.gni")
 executable("init") {
   sources = [ "src/init.c" ]
 
-  cflags = [ "-fPIE" ]
-
-  if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
-    cflags += [
-      "-Wno-shift-op-parentheses",
-      "-Wno-bitwise-op-parentheses",
-      "-Wnonnull",
-    ]
-  }
-
-  ldflags = [
-    "-pie",
-    "-s",
-  ]
-
   if (defined(LOSCFG_QUICK_START)) {
-    ldflags += [ "--static" ]
+    ldflags = [ "--static" ]
+    defines = [ "LOSCFG_QUICK_START" ]
   }
 }

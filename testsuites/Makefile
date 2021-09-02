@@ -27,17 +27,12 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-LITEOSTESTTOPDIR := $(shell if [ "$$PWD" != "" ]; then echo $$PWD; else pwd; fi)
-export OS=$(shell uname -s)
-ifneq ($(OS), Linux)
-LITEOSTESTTOPDIR := $(shell dirname $(subst \,/,$(LITEOSTESTTOPDIR))/./)
-endif
-
-LITEOSTOPDIR := $(LITEOSTESTTOPDIR)/..
+LITEOSTESTTOPDIR := $(shell pwd)
+LITEOSTOPDIR ?= $(LITEOSTESTTOPDIR)/..
 export LITEOSTOPDIR
 export LITEOSTESTTOPDIR
 
--include $(LITEOSTESTTOPDIR)/config.mk
+include $(LITEOSTESTTOPDIR)/config.mk
 
 RM = -rm -rf
 MAKE = make
@@ -80,7 +75,7 @@ $(TEST_KERNEL): $(LITEOS_TEST_TARGET)
 
 $(LITEOS_TEST_TARGET): $(LITEOS_TEST_LIBC)
 	$(LD) $(LITEOS_LDFLAGS) $(LITEOS_TABLES_LDFLAGS) $(LITEOS_DYNLDFLAGS) -Map=$(OUT)/$@.map -o $(OUT)/$@ --start-group $(LITEOS_LIBDEP) --end-group
-	$(OBJCOPY) -O binary $(OUT)/$@ $(LITEOS_TARGET_DIR)/$@.bin
+	$(OBJCOPY) -O binary $(OUT)/$@ $(OUT)/$@.bin
 	$(OBJDUMP) -t $(OUT)/$@ |sort >$(OUT)/$@.sym.sorted
 	$(OBJDUMP) -d $(OUT)/$@ >$(OUT)/$@.asm
 

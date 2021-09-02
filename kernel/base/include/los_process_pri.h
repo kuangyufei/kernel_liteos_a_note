@@ -409,12 +409,24 @@ STATIC INLINE User *OsCurrUserGet(VOID)//获取当前进程的所属用户
  * if this option is not specified.
  */
 #define LOS_WAIT_WUNTRACED (1 << 1U) //如果子进程进入暂停情况则马上返回，不予以理会结束状态。untraced
+#define LOS_WAIT_WSTOPPED (1 << 1U)
+
+/*
+ * Wait for exited processes
+ */
+#define LOS_WAIT_WEXITED (1 << 2U)
 
 /*
  * return if a stopped child has been resumed by delivery of SIGCONT.
  * (For Linux-only options, see below.)
  */
 #define LOS_WAIT_WCONTINUED (1 << 3U) //可获取子进程恢复执行的状态，也就是可获取continued状态 continued
+
+/*
+ * Leave the child in a waitable state;
+ * a later wait call can be used to again retrieve the child status information.
+ */
+#define LOS_WAIT_WNOWAIT (1 << 24U)
 
 /*
  * Indicates that you are already in a wait state
@@ -457,7 +469,6 @@ extern UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBas
 extern UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name);
 extern INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio, UINT16 policy);
 extern INT32 OsGetProcessPriority(INT32 which, INT32 pid);
-extern VOID *OsUserStackAlloc(UINT32 processID, UINT32 *size);
 extern UINT32 OsGetUserInitProcessID(VOID);
 extern UINT32 OsGetIdleProcessID(VOID);
 extern INT32 OsSetProcessGroupID(UINT32 pid, UINT32 gid);
@@ -466,6 +477,9 @@ extern UINT32 OsGetKernelInitProcessID(VOID);
 extern VOID OsSetSigHandler(UINTPTR addr);
 extern UINTPTR OsGetSigHandler(VOID);
 extern VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID);
+extern INT32 OsSendSignalToProcessGroup(INT32 pid, siginfo_t *info, INT32 permission);
+extern INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permission);
+
 #ifdef __cplusplus
 #if __cplusplus
 }

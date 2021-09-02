@@ -60,6 +60,15 @@ kernel_module(module_name) {
       "$OPTRTDIR/string/arm/strcmp.S",
       "$OPTRTDIR/string/arm/strcpy.c",
       "$OPTRTDIR/string/arm/strlen-armv6t2.S",
+    ]
+    asmflags = [
+      "-D__strlen_armv6t2=strlen",
+      "-D__strcpy_arm=strcpy",
+      "-D__strcmp_arm=strcmp",
+      "-D__memcpy_arm=memcpy",
+      "-D__memchr_arm=memchr",
+    ]
+    sources += [
       "src/arch/arm/memset.S",
       "src/arch/arm/memcmp.S",
     ]
@@ -70,12 +79,20 @@ kernel_module(module_name) {
     ]
   }
 
+  include_dirs = [
+    "$MUSLPORTINGDIR/src/include",
+    "$MUSLPORTINGDIR/src/internal",
+  ]
+
   public_configs = [ ":public" ]
   configs += [ ":private" ]
 }
 
 config("public") {
-  include_dirs = [ "$MUSLPORTINGDIR/include" ]
+  cflags = [
+    "-isystem",
+    rebase_path("$MUSLPORTINGDIR/include"),
+  ]
 }
 
 config("private") {
@@ -92,8 +109,9 @@ config("private") {
     ]
   }
 
-  include_dirs = [
-    "$MUSLPORTINGDIR/src/include",
-    "$MUSLPORTINGDIR/src/internal",
+  cflags += [
+    "-Wno-shift-op-parentheses",
+    "-Wno-logical-op-parentheses",
+    "-Wno-bitwise-op-parentheses",
   ]
 }

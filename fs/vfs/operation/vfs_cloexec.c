@@ -50,7 +50,10 @@ void CloseOnExec(struct files_struct *files)
         if (FD_ISSET(i, files->fdt->proc_fds) &&
             FD_ISSET(i, files->fdt->cloexec_fds)) {
             sysFd = DisassociateProcessFd(i);
-            close(sysFd);
+            if (sysFd >= 0) {
+                close(sysFd);
+            }
+
             FreeProcessFd(i);
         }
     }

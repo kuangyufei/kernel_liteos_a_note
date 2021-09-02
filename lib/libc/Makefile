@@ -2,7 +2,6 @@ include $(LITEOSTOPDIR)/config.mk
 
 MODULE_NAME := c
 
-ARCH = arm
 TOPDIR = $(LITEOSTOPDIR)/../..
 MUSLDIR = $(TOPDIR)/third_party/musl
 MUSLPORTINGDIR = $(MUSLDIR)/porting/liteos_a/kernel
@@ -35,6 +34,14 @@ LOCAL_SRCS += \
 	$(OPTRTDIR)/string/arm/strcmp.S \
 	$(OPTRTDIR)/string/arm/strcpy.c \
 	$(OPTRTDIR)/string/arm/strlen-armv6t2.S
+
+LOCAL_CMACRO = \
+	-D__strlen_armv6t2=strlen \
+	-D__strcpy_arm=strcpy \
+	-D__strcmp_arm=strcmp \
+	-D__memcpy_arm=memcpy \
+	-D__memchr_arm=memchr
+
 # Replace the general srcs of the same name with specially optimized srcs
 LOCAL_SRCS += $(LOCAL_OPT_SRCS)
 LOCAL_SRCS := $(filter-out $(LOCAL_FILTER_SRCS),$(LOCAL_SRCS))
@@ -47,11 +54,12 @@ LOCAL_INCLUDE := \
 
 LOCAL_INCLUDE += $(addprefix -I$(MUSLPORTINGDIR)/, src/include src/internal)
 
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
+LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS) $(LOCAL_CMACRO)
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 LOCAL_FLAGS +=-Wno-char-subscripts -Wno-unknown-pragmas
 else
 LOCAL_FLAGS += -frounding-math -Wno-unused-but-set-variable -Wno-unknown-pragmas
 endif
+LOCAL_FLAGS += -Wno-shift-op-parentheses -Wno-logical-op-parentheses -Wno-bitwise-op-parentheses
 
 include $(MODULE)

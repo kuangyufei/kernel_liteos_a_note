@@ -143,6 +143,59 @@ STATIC ProcessGroup *OsFindProcessGroup(UINT32 gid)
     return NULL;
 }
 
+STATIC INT32 OsSendSignalToSpecifyProcessGroup(ProcessGroup *group, siginfo_t *info, INT32 permission)
+{
+    INT32 ret, success, err;
+    LosProcessCB *childCB = NULL;
+
+    success = 0;
+    ret = -LOS_ESRCH;
+    LOS_DL_LIST_FOR_EACH_ENTRY(childCB, &(group->processList), LosProcessCB, subordinateGroupList) {
+        if (childCB->processID == 0) {
+            continue;
+        }
+
+        err = OsDispatch(childCB->processID, info, permission);
+        success |= !err;
+        ret = err;
+    }
+    /* At least one success. */
+    return success ? LOS_OK : ret;
+}
+
+LITE_OS_SEC_TEXT INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permission)
+{
+    INT32 ret, success, err;
+    ProcessGroup *group = NULL;
+
+    success = 0;
+    err = OsSendSignalToSpecifyProcessGroup(g_processGroup, info, permission);
+    success |= !err;
+    ret = err;
+    /* all processes group */
+    LOS_DL_LIST_FOR_EACH_ENTRY(group, &g_processGroup->groupList, ProcessGroup, groupList) {
+        /* all processes in the process group. */
+        err = OsSendSignalToSpecifyProcessGroup(group, info, permission);
+        success |= !err;
+        ret = err;
+    }
+    return success ? LOS_OK : ret;
+}
+
+LITE_OS_SEC_TEXT INT32 OsSendSignalToProcessGroup(INT32 pid, siginfo_t *info, INT32 permission)
+{
+    ProcessGroup *group = NULL;
+    /* Send SIG to all processes in process group PGRP.
+       If PGRP is zero, send SIG to all processes in
+       the current process's process group. */
+    group = OsFindProcessGroup(pid ? -pid : LOS_GetCurrProcessGroupID());
+    if (group == NULL) {
+        return -LOS_ESRCH;
+    }
+    /* all processes in the process group. */
+    return OsSendSignalToSpecifyProcessGroup(group, info, permission);
+}
+
 STATIC LosProcessCB *OsFindGroupExitProcess(ProcessGroup *group, INT32 pid)
 {
     LosProcessCB *childCB = NULL;
@@ -1025,12 +1078,19 @@ WAIT_BACK:
     return LOS_OK;
 }
 //等待回收孩子进程 @note_thinking 这样写Porcess不太好吧
-STATIC UINT32 OsWaitRecycleChildProcess(const LosProcessCB *childCB, UINT32 intSave, INT32 *status)
+STATIC UINT32 OsWaitRecycleChildProcess(const LosProcessCB *childCB, UINT32 intSave, INT32 *status, siginfo_t *info)
 {
     ProcessGroup *group = NULL;
     UINT32 pid = childCB->processID;
     UINT16 mode = childCB->processMode;
     INT32 exitCode = childCB->exitCode;
+    UINT32 uid = 0;
+
+#ifdef LOSCFG_SECURITY_CAPABILITY
+    if (childCB->user != NULL) {
+        uid = childCB->user->userID;
+    }
+#endif
 
     OsRecycleZombiesProcess((LosProcessCB *)childCB, &group);//回收僵尸进程
     SCHEDULER_UNLOCK(intSave);
@@ -1042,7 +1102,33 @@ STATIC UINT32 OsWaitRecycleChildProcess(const LosProcessCB *childCB, UINT32 intS
             *status = exitCode;
         }
     }
+    /* get signal info */
+    if (info != NULL) {
+        siginfo_t tempinfo = { 0 };
 
+        tempinfo.si_signo = SIGCHLD;
+        tempinfo.si_errno = 0;
+        tempinfo.si_pid = pid;
+        tempinfo.si_uid = uid;
+        /*
+         * Process exit code
+         * 31	 15 		  8 		  7 	   0
+         * |	 | exit code  | core dump | signal |
+         */
+        if ((exitCode & 0x7f) == 0) {
+            tempinfo.si_code = CLD_EXITED;
+            tempinfo.si_status = (exitCode >> 8U);
+        } else {
+            tempinfo.si_code = (exitCode & 0x80) ? CLD_DUMPED : CLD_KILLED;
+            tempinfo.si_status = (exitCode & 0x7f);
+        }
+
+        if (mode == OS_USER_MODE) {
+            (VOID)LOS_ArchCopyToUser((VOID *)(info), (const VOID *)(&(tempinfo)), sizeof(siginfo_t));
+        } else {
+            (VOID)memcpy_s((VOID *)(info), sizeof(siginfo_t), (const VOID *)(&(tempinfo)), sizeof(siginfo_t));
+        }
+    }
     (VOID)LOS_MemFree(m_aucSysMem1, group);
     return pid;
 }
@@ -1076,7 +1162,7 @@ STATIC UINT32 OsWaitOptionsCheck(UINT32 options)
     return LOS_OK;
 }
 //返回已经终止的子进程的进程ID号，并清除僵死进程。
-LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, VOID *rusage)
+STATIC INT32 OsWait(INT32 pid, USER INT32 *status, USER siginfo_t *info, UINT32 options, VOID *rusage)
 {
     (VOID)rusage;
     UINT32 ret;
@@ -1084,11 +1170,6 @@ LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, V
     LosProcessCB *childCB = NULL;
     LosProcessCB *processCB = NULL;
     LosTaskCB *runTask = NULL;
-
-    ret = OsWaitOptionsCheck(options);//参数检查,只支持LOS_WAIT_WNOHANG
-    if (ret != LOS_OK) {
-        return -ret;
-    }
 
     SCHEDULER_LOCK(intSave);
     processCB = OsCurrProcessGet();	//获取当前进程
@@ -1101,7 +1182,7 @@ LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, V
     }
 
     if (childCB != NULL) {//找到了进程
-        return (INT32)OsWaitRecycleChildProcess(childCB, intSave, status);
+        return (INT32)OsWaitRecycleChildProcess(childCB, intSave, status, info);
     }
 	//没有找到,看是否要返回还是去做个登记
     if ((options & LOS_WAIT_WNOHANG) != 0) {//有LOS_WAIT_WNOHANG标签
@@ -1125,12 +1206,64 @@ LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, V
         goto ERROR;
     }
 	//回收僵死进程
-    return (INT32)OsWaitRecycleChildProcess(childCB, intSave, status);
+    return (INT32)OsWaitRecycleChildProcess(childCB, intSave, status, info);
 
 ERROR:
     SCHEDULER_UNLOCK(intSave);
     return pid;
 }
+
+LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, VOID *rusage)
+{
+    (VOID)rusage;
+    UINT32 ret;
+
+    ret = OsWaitOptionsCheck(options);
+    if (ret != LOS_OK) {
+        return -ret;
+    }
+
+    return OsWait(pid, status, NULL, options, NULL);
+}
+
+STATIC UINT32 OsWaitidOptionsCheck(UINT32 options)
+{
+    UINT32 flag = LOS_WAIT_WNOHANG | LOS_WAIT_WSTOPPED | LOS_WAIT_WCONTINUED | LOS_WAIT_WEXITED | LOS_WAIT_WNOWAIT;
+
+    flag = ~flag & options;
+    if ((flag != 0) || (options == 0)) {
+        return LOS_EINVAL;
+    }
+
+    /*
+     * only support LOS_WAIT_WNOHANG | LOS_WAIT_WEXITED
+     * notsupport LOS_WAIT_WSTOPPED | LOS_WAIT_WCONTINUED | LOS_WAIT_WNOWAIT
+     */
+    if ((options & (LOS_WAIT_WSTOPPED | LOS_WAIT_WCONTINUED | LOS_WAIT_WNOWAIT)) != 0) {
+        return LOS_EOPNOTSUPP;
+    }
+
+    if (OS_INT_ACTIVE) {
+        return LOS_EINTR;
+    }
+
+    return LOS_OK;
+}
+
+LITE_OS_SEC_TEXT INT32 LOS_Waitid(INT32 pid, USER siginfo_t *info, UINT32 options, VOID *rusage)
+{
+    (VOID)rusage;
+    UINT32 ret;
+
+    /* check options value */
+    ret = OsWaitidOptionsCheck(options);
+    if (ret != LOS_OK) {
+        return -ret;
+    }
+
+    return OsWait(pid, NULL, info, options, NULL);
+}
+
 //设置进程组检查
 STATIC UINT32 OsSetProcessGroupCheck(const LosProcessCB *processCB, UINT32 gid)
 {

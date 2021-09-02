@@ -41,20 +41,18 @@ sources_entry = [
   "time_clock_test.cpp",
 ]
 
-sources_smoke = [
-  "smoke/clock_test_001.cpp",
-  "smoke/clock_test_002.cpp",
-  "smoke/clock_test_003.cpp",
-  "smoke/clock_test_004.cpp",
-  "smoke/clock_test_006.cpp",
-  "smoke/clock_test_007.cpp",
-  "smoke/clock_test_008.cpp",
-  "smoke/clock_test_009.cpp",
-  "smoke/clock_test_011.cpp",
-  "smoke/clock_test_012.cpp",
-]
+sources_smoke = [ "smoke/clock_test_smoke.cpp" ]
 
 sources_full = [
+  "full/clock_test_001.cpp",
+  "full/clock_test_002.cpp",
+  "full/clock_test_003.cpp",
+  "full/clock_test_004.cpp",
+  "full/clock_test_005.cpp",
+  "full/clock_test_006.cpp",
+  "full/clock_test_007.cpp",
+  "full/clock_test_008.cpp",
+  "full/clock_test_009.cpp",
   "full/clock_test_010.cpp",
 ]
 

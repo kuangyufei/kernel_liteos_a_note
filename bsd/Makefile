@@ -33,8 +33,8 @@ MODULE_NAME := $(notdir $(shell pwd))
 
 LOCAL_SRCS  := $(wildcard kern/*.c)
 
-LOCAL_SRCS  += $(wildcard $(LITEOS_ARCH_ARM)/*.c)
-LOCAL_SRCS  += $(wildcard $(LITEOS_ARCH_ARM)/*.S)
+LOCAL_SRCS  += $(wildcard $(ARCH)/*.c)
+LOCAL_SRCS  += $(wildcard $(ARCH)/*.S)
 
 ifeq ($(LOSCFG_DRIVERS_RANDOM), y)
 LOCAL_SRCS += $(wildcard crypto/rijndael/*.c) \

@@ -48,7 +48,6 @@ build_ext_component("build_mksh") {
     "-flto",
     "-fdata-sections",
     "-ffunction-sections",
-    "-Oz",
     "-fstack-protector-strong",
     "-D_FORTIFY_SOURCE=2",
     "-DMKSH_DISABLE_TTY_WARNING",
@@ -62,6 +61,11 @@ build_ext_component("build_mksh") {
     "-DMKSH_NO_INITCOMS",
     "-DADAPT_FOR_LITEOS_A",
   ]
+  if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
+    cflags += [ "-Oz" ]
+  } else {
+    cflags += [ "-O2" ]
+  }
   cflags = string_join(" ", cflags)
 
   extra_flags = string_join(" ", target_arch_cflags)

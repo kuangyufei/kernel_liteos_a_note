@@ -38,6 +38,7 @@ group("extended") {
     "liteipc",
     "pipes",
     "power",
+    "hook",
     "trace",
     "vdso",
   ]
@@ -48,7 +49,7 @@ config("public") {
     "cpup:public",
     "dynload:public",
     "vdso:public",
-    "trace:public",
+    "hook:public",
     "liteipc:public",
     "pipes:public",
     "hilog:public",

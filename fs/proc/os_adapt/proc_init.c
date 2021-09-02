@@ -62,7 +62,6 @@ void ProcFsInit(void)
 #endif
     ProcProcessInit();//初始化 /proc/process
     ProcUptimeInit();//初始化 /proc/uptime
-    ProcKernelTraceInit();//初始化 /proc/ktrace
     ProcFsCacheInit();
     ProcFdInit();
 #ifdef LOSCFG_KERNEL_PM

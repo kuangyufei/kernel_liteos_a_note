@@ -39,7 +39,6 @@ LOCAL_INCLUDE := \
 	-I $(LITEOSTOPDIR)/fs/fat/os_adapt \
 	-I $(LITEOSTOPDIR)/fs/fat/virpart/include \
 	-I $(LITEOSTOPDIR)/fs/vfs \
-	-I $(LITEOSTHIRDPARTY)/NuttX/include
 
 LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
 

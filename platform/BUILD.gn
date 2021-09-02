@@ -60,30 +60,22 @@ kernel_module(module_name) {
 
 group("platform") {
   public_deps = [ ":$module_name" ]
-  deps = [ ":board.ld" ]
 }
 
 config("public") {
   include_dirs = [ "." ]
 }
 
-source_set("board") {
+kernel_module("board.ld") {
   sources = [ "board.ld.S" ]
-
-  configs = []
-  configs += [
-    "$LITEOSTOPDIR:los_config",
-    "$LITEOSTOPDIR:public",
-  ]
-
   asmflags = [
     "-P",
     "-E",
   ]
 }
 
-copy("board.ld") {
-  deps = [ ":board" ]
-  sources = [ "$target_out_dir/board.board.ld.o" ]
+copy("copy_board.ld") {
+  deps = [ ":board.ld" ]
+  sources = [ "$target_out_dir/board.ld.board.ld.o" ]
   outputs = [ "$root_out_dir/board.ld" ]
 }

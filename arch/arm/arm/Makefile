@@ -38,7 +38,7 @@ LOCAL_INCLUDE := \
 	-I $(LITEOSTOPDIR)/kernel/extended/dynload/include \
 	-I $(LITEOSTOPDIR)/arch/arm/arm/include \
 
-ifeq ($(LITEOS_ARM_ARCH), -march=armv7-a)
+ifeq ($(LOSCFG_ARCH_ARM_VER), "armv7-a")
 LOCAL_SRCS += $(wildcard src/armv7a/*.S)
 endif
 

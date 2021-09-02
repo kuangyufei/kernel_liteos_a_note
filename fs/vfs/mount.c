@@ -37,7 +37,7 @@
 #include "stdlib.h"
 #endif
 
-static LIST_HEAD *g_mountList = NULL;//装载链表,上面挂的是系统所有的装载设备
+static LIST_HEAD *g_mountList = NULL;//挂载点链表,上面挂的是系统所有挂载点
 /*	在内核MountAlloc只被VnodeDevInit调用,但真实情况下它还将被系统调用 mount()调用
 * int mount(const char *source, const char *target,
           const char *filesystemtype, unsigned long mountflags,
@@ -67,7 +67,7 @@ struct Mount* MountAlloc(struct Vnode* vnodeBeCovered, struct MountOps* fsop)
 #endif
     return mnt;
 }
-//获取装载链表
+//获取装载链表,并初始化
 LIST_HEAD* GetMountList()
 {
     if (g_mountList == NULL) {

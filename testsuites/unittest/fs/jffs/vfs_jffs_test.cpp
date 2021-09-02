@@ -1000,6 +1000,72 @@ public:
 };
 #if defined(LOSCFG_USER_TEST_FULL)
 /* *
+ * @tc.name: IO_TEST_FACCESSAT_001 
+ * @tc.desc: normal tests for faccessat
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, IO_TEST_FACCESSAT_001, TestSize.Level0)
+{
+    IO_TEST_FACCESSAT_001();
+}
+
+/* *
+ * @tc.name: IO_TEST_FACCESSAT_002
+ * @tc.desc: innormal tests for faccessat
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, IO_TEST_FACCESSAT_002, TestSize.Level0)
+{
+    IO_TEST_FACCESSAT_002();
+}
+
+/* *
+ * @tc.name: IO_TEST_FSTATFS_001
+ * @tc.desc: normal tests for fstatfs
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, IO_TEST_FSTATFS_001, TestSize.Level0)
+{
+    IO_TEST_FSTATFS_001();
+}
+
+/* *
+ * @tc.name: IO_TEST_FSTATFS_002
+ * @tc.desc: innormal tests for fstatfs
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, IO_TEST_FSTATFS_002, TestSize.Level0)
+{
+    IO_TEST_FSTATFS_002();
+}
+
+/* *
+ * @tc.name: IO_TEST_FSTATAT_001
+ * @tc.desc: normal tests for fstatat
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, IO_TEST_FSTATAT_001, TestSize.Level0)
+{
+    IO_TEST_FSTATAT_001();
+}
+
+/* *
+ * @tc.name: IO_TEST_FSTATAT_002
+ * @tc.desc: innormal tests for fstatat
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, IO_TEST_FSTATAT_002, TestSize.Level0)
+{
+    IO_TEST_FSTATAT_002();
+}
+
+/* *
  * @tc.name: ItTestFsJffs001
  * @tc.desc: function for VfsJffsTest
  * @tc.type: FUNC
@@ -1044,6 +1110,28 @@ HWTEST_F(VfsJffsTest, ItTestFsJffs004, TestSize.Level0)
 }
 
 /* *
+ * @tc.name: ItTestFsJffs100
+ * @tc.desc: function for VfsJffsTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, ItTestFsJffs100, TestSize.Level0)
+{
+    ItTestFsJffs100();
+}
+
+/* *
+ * @tc.name: ItTestFsJffs101
+ * @tc.desc: function for VfsJffsTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, ItTestFsJffs101, TestSize.Level0)
+{
+    ItTestFsJffs101();
+}
+
+/* *
  * @tc.name: ItTestFsJffs102
  * @tc.desc: function for VfsJffsTest
  * @tc.type: FUNC
@@ -1064,6 +1152,40 @@ HWTEST_F(VfsJffsTest, ItTestFsJffs103, TestSize.Level0)
 {
     ItTestFsJffs103();
 }
+
+/* *
+ * @tc.name: ItTestFsJffs106
+ * @tc.desc: function for VfsJffsTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, ItTestFsJffs106, TestSize.Level0)
+{
+    ItTestFsJffs106();
+}
+
+/* *
+ * @tc.name: ItTestFsJffs112
+ * @tc.desc: function for VfsJffsTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, ItTestFsJffs112, TestSize.Level0)
+{
+    ItTestFsJffs112();
+}
+
+/* *
+ * @tc.name: ItTestFsJffs113
+ * @tc.desc: function for VfsJffsTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, ItTestFsJffs113, TestSize.Level0)
+{
+    ItTestFsJffs113();
+}
+
 /* *
  * @tc.name: IT_JFFS_002
  * @tc.desc: function for VfsJffsTest

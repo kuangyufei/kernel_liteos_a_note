@@ -54,6 +54,8 @@
     .extern __stack_chk_guard_setup
     .extern g_firstPageTable 	/*一级页表,section(".bss.prebss.translation_table") UINT8 g_firstPageTable[MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS]*/
     .extern g_mmuJumpPageTable	/*临时页表,仅用于系统开机阶段使用*/
+    .extern g_archMmuInitMapping
+    .extern HalSecondaryCpuStart
 
     .equ MPIDR_CPUID_MASK, 0xffU
 
@@ -76,15 +78,7 @@
     ldr     r2, =\param2
     bl      excstack_magic @初始化栈
 .endm
-/* 参数顺序:物理地址,虚拟地址,大小,标签*/
-/* param0 is physical address, param1 virtual address, param2 is sizes, param3 is flag */
-.macro PAGE_TABLE_SET param0, param1, param2, param3
-    ldr     r6, =\param0
-    ldr     r7, =\param1
-    ldr     r8, =\param2
-    ldr     r10, =\param3
-    bl      page_table_build @创建页表
-.endm
+
     .code   32
     .section ".vectors","ax"
 
@@ -106,6 +100,7 @@ __exception_handlers:@异常处理
     /* Startup code which will get the machine into supervisor mode */
     .global reset_vector
     .type   reset_vector,function
+
 #ifdef LOSCFG_BOOTENV_RAM
 __quickstart_args_start:
     .fill LOSCFG_BOOTENV_RAMSIZE,1,0
@@ -118,6 +113,7 @@ OsGetArgsAddr:
     ldr     r0, =__quickstart_args_start
     bx      lr
 #endif
+
 reset_vector: //鸿蒙开机代码
     /* clear register TPIDRPRW */
     mov     r0, #0					@r0 = 0
@@ -187,12 +183,15 @@ reloc_img_to_bottom_done:
     mov     r2, #MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS
     bl      memset_optimized                    /* optimized memset since r0 is 64-byte aligned */
 
-    PAGE_TABLE_SET SYS_MEM_BASE, KERNEL_VMM_BASE, KERNEL_VMM_SIZE, MMU_DESCRIPTOR_KERNEL_L1_PTE_FLAGS
-    PAGE_TABLE_SET SYS_MEM_BASE, UNCACHED_VMM_BASE, UNCACHED_VMM_SIZE, MMU_INITIAL_MAP_NORMAL_NOCACHE
-    PAGE_TABLE_SET PERIPH_PMM_BASE, PERIPH_DEVICE_BASE, PERIPH_DEVICE_SIZE, MMU_INITIAL_MAP_DEVICE
-    PAGE_TABLE_SET PERIPH_PMM_BASE, PERIPH_CACHED_BASE, PERIPH_CACHED_SIZE, MMU_DESCRIPTOR_KERNEL_L1_PTE_FLAGS
-    PAGE_TABLE_SET PERIPH_PMM_BASE, PERIPH_UNCACHED_BASE, PERIPH_UNCACHED_SIZE, MMU_INITIAL_MAP_STRONGLY_ORDERED
-
+    ldr     r5, =g_archMmuInitMapping
+    add     r5, r5, r11
+init_mmu_loop:
+    ldmia   r5!, {r6-r10}                       /* r6 = phys, r7 = virt, r8 = size, r9 = mmu_flags, r10 = name */
+    cmp     r8, 0                               /* if size = 0, the mmu init done */
+    beq     init_mmu_done
+    bl      page_table_build
+    b       init_mmu_loop
+init_mmu_done:
     orr     r8, r4, #MMU_TTBRx_FLAGS            /* r8 = r4 and set cacheable attributes on translation walk */
     ldr     r4, =g_mmuJumpPageTable             /* r4: jump pagetable vaddr */
     add     r4, r4, r11
@@ -208,10 +207,8 @@ reloc_img_to_bottom_done:
     str     r12, [r4, r7, lsr #(20 - 2)]        /* jumpTable[paIndex] = pt entry */
     rsb     r7, r11, r6, lsl #20                /* r7: va */
     str     r12, [r4, r7, lsr #(20 - 2)]        /* jumpTable[vaIndex] = pt entry */
-#endif
-    bl      _bootaddr_setup	@安装引导地址
-#ifdef LOSCFG_KERNEL_MMU
-    bl      mmu_setup                           /* set up the mmu */@安装MMU
+
+    bl      mmu_setup                           /* set up the mmu */
 #endif
     /* clear out the interrupt and exception stack and set magic num to check the overflow */
     ldr     r0, =__svc_stack
@@ -333,7 +330,8 @@ cpu_start:	/* CPU 启动 */
 
     bl     mmu_setup			/* 安装MMU */
 #endif
-    bl     secondary_cpu_start	/* 启动次级CPU */
+
+    bl     HalSecondaryCpuStart
     b      . //注意 b . 就会跳转到当前地址,相当于死循环
 
 secondary_cpu_init:	/* 次级CPU初始化 */
@@ -373,9 +371,9 @@ sp_set: /* 设置当前cpu 栈顶指针 ,r1是栈底 ,r0是栈大小,r12是cpuid
  */
 #ifdef LOSCFG_KERNEL_MMU
 page_table_build:	@创建页面
-    mov     r9, r6
-    bfc     r9, #20, #12                        /* r9: pa % MB */
-    add     r8, r8, r9
+    mov     r10, r6
+    bfc     r10, #20, #12                       /* r9: pa % MB */
+    add     r8, r8, r10
     add     r8, r8, #(1 << 20)
     sub     r8, r8, #1
     lsr     r6, #20                             /* r6 = physical address / MB */
@@ -383,7 +381,7 @@ page_table_build:	@创建页面
     lsr     r8, #20                             /* r8 = roundup(size, MB) */
 
 page_table_build_loop:
-    orr     r12, r10, r6, lsl #20               /* r12: flags | physAddr */
+    orr     r12, r9, r6, lsl #20                /* r12: flags | physAddr */
     str     r12, [r4, r7, lsl #2]               /* gPgTable[l1Index] = physAddr | flags */
     add     r6, #1                              /* physAddr+ */
     add     r7, #1                              /* l1Index++ */
@@ -423,24 +421,6 @@ excstack_magic_loop:@给所有CPU栈顶位置设置魔法数字
     add     r3, r3, #1 @r3++
     cmp     r3, #CORE_NUM @比较cpu个数 
     blt     excstack_magic_loop @循环来
-    bx      lr @跳回 mov pc lr
-
-/*
- * 0xe51ff004 = "ldr  pc, [pc, #-4]" 
- * next addr value will be the real booting addr 下一个addr将是真正的引导addr
- */
-_bootaddr_setup:@引导程序 另外 0xE28FE004 = "add lr,pc,#4"
-    mov     r0, #0
-    ldr     r1, =0xe51ff004 @等同于 MOV r1, #0xe51ff004   ,
-    str     r1, [r0] @等同于 *r0 = r1
-
-    add     r0, r0, #4	@r0 = r0 + 4
-    ldr     r1, =SYS_MEM_BASE	@r1 = 0x80000000 物理基地址 SYS_MEM_BASE = 0x80000000
-    str     r1, [r0] @等同于 *r0 = r1
-
-    dsb @数据同步
-    isb @指令同步
-
     bx      lr @跳回调用处
 
 #ifdef LOSCFG_KERNEL_MMU

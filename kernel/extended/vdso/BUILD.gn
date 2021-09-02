@@ -46,8 +46,10 @@ config("public") {
   include_dirs = [ "include" ]
 }
 
-copy("copy_ohos_vdso") {
-  deps = [ "usr:OHOS-vdso" ]
-  sources = [ get_path_info("usr/", "out_dir") + "/libOHOS-vdso.so" ]
-  outputs = [ "$root_out_dir/OHOS-vdso.so" ]
+if (module_switch) {
+  copy("copy_ohos_vdso") {
+    deps = [ "usr:OHOS-vdso" ]
+    sources = [ get_path_info("usr/", "out_dir") + "/libOHOS-vdso.so" ]
+    outputs = [ "$root_out_dir/OHOS-vdso.so" ]
+  }
 }

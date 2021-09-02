@@ -110,7 +110,10 @@ kernel_module(module_name) {
     "$LITEOSTOPDIR/fs/vfs/vnode_hash.c",
   ]
 
-  include_dirs = [ "$LITEOSTOPDIR/syscall" ]
+  include_dirs = [
+    "$LITEOSTOPDIR/syscall",
+    "$LITEOSTOPDIR/fs/zpfs/include",
+  ]
   public_configs = [ ":public" ]
 }
 

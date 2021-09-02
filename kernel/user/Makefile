@@ -32,17 +32,8 @@ include $(LITEOSTOPDIR)/config.mk
 MODULE_NAME := userinit
 
 LOCAL_INCLUDE := \
-    -I $(LITEOSTOPDIR)/kernel/base/include\
-    -I $(LITEOSTOPDIR)/kernel/include \
-    -I $(LITEOSTOPDIR)/kernel/extended/include \
     -I $(LITEOSTOPDIR)/syscall \
-    -I $(LITEOSTOPDIR)/fs/vfs \
-    -I $(LITEOSTHIRDPARTY)/FatFs/source \
-    -I $(LITEOSTOPDIR)/fs/proc/include \
-    -I $(LITEOSTOPDIR)/fs/jffs2/include\
-    -I $(LITEOSTOPDIR)/fs/nfs/include\
-    -I $(LITEOSTOPDIR)/bsd/compat/linuxkpi/include \
-    -I $(LITEOSTOPDIR)/kernel/user/include
+    -I include
 
 LOCAL_SRCS := $(wildcard src/*.c) \
               $(wildcard src/*.S)
@@ -51,15 +42,14 @@ LOCAL_FLAGS :=  $(LOCAL_INCLUDE)
 
 include $(MODULE)
 
-LIBO := $(OUT)/lib/lib$(MODULE_NAME).O
+USERINIT := $(OUT)/lib/lib$(MODULE_NAME).O
 
-$(LIBO): $(LIBA)
-	$(HIDE) $(LD) -r -o $@ --whole-archive $< --no-whole-archive
-	$(HIDE) $(RM) $<
+$(USERINIT): $(MODULE)
+	$(HIDE)$(LD) -r -o $@ --whole-archive $< --no-whole-archive
 
-clean2:
-	$(HIDE) $(RM) $(LIBO)
+clean_userinit:
+	$(HIDE)$(RM) $(USERINIT)
 
-all: $(LIBO)
-clean: clean2
-.PHONY: clean2
+all: $(USERINIT)
+clean: clean_userinit
+.PHONY: clean_userinit

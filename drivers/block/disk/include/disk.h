@@ -166,26 +166,26 @@ extern "C" {
 #define DISK_ATA_GET_SN         22  /* Get serial number */
 
 typedef enum _disk_status_ {
-    STAT_UNUSED,	//未使用
-    STAT_INUSED,	//正在使用
-    STAT_UNREADY	//未准备
+    STAT_UNUSED,
+    STAT_INUSED,
+    STAT_UNREADY
 } disk_status_e;
-//磁盘信息描述体
+
 typedef struct _los_disk_ {
-    UINT32 disk_id : 8;     /* physics disk number *///物理磁盘编号
-    UINT32 disk_status : 2; /* status of disk */	//磁盘状态
-    UINT32 part_count : 8;  /* current partition count */ //分区数量
+    UINT32 disk_id : 8;     /* physics disk number */
+    UINT32 disk_status : 2; /* status of disk */
+    UINT32 part_count : 8;  /* current partition count */
     UINT32 reserved : 14;
-    struct Vnode *dev;      /* device *///磁盘索引节点
-#ifdef LOSCFG_FS_FAT_CACHE //是否支持缓存
+    struct Vnode *dev;      /* device */
+#ifdef LOSCFG_FS_FAT_CACHE
     OsBcache *bcache;       /* cache of the disk, shared in all partitions */
 #endif
-    UINT32 sector_size;     /* disk sector size */	//磁盘扇区大小
-    UINT64 sector_start;    /* disk start sector */ //开始扇区
-    UINT64 sector_count;    /* disk sector number */ //扇区数量
-    UINT8 type;				//磁盘类型
-    CHAR *disk_name;		//磁盘名称
-    LOS_DL_LIST head;       /* link head of all the partitions *///挂载本磁盘分区信息
+    UINT32 sector_size;     /* disk sector size */
+    UINT64 sector_start;    /* disk start sector */
+    UINT64 sector_count;    /* disk sector number */
+    UINT8 type;
+    CHAR *disk_name;
+    LOS_DL_LIST head;       /* link head of all the partitions */
     struct pthread_mutex disk_mutex;
 } los_disk;
 

@@ -267,12 +267,23 @@ VOID ItFsJffs535(VOID);
 #endif
 
 #if defined(LOSCFG_USER_TEST_FULL)
+VOID IO_TEST_FACCESSAT_001(void);
+VOID IO_TEST_FACCESSAT_002(void);
+VOID IO_TEST_FSTATFS_001(void);
+VOID IO_TEST_FSTATFS_002(void);
+VOID IO_TEST_FSTATAT_001(void);
+VOID IO_TEST_FSTATAT_002(void);
 void ItTestFsJffs001(void);
 void ItTestFsJffs002(void);
 void ItTestFsJffs003(void);
 void ItTestFsJffs004(void);
+void ItTestFsJffs100(void);
+void ItTestFsJffs101(void);
 void ItTestFsJffs102(void);
 void ItTestFsJffs103(void);
+void ItTestFsJffs106(void);
+void ItTestFsJffs112(void);
+void ItTestFsJffs113(void);
 VOID ItJffs001(VOID);
 VOID ItJffs002(VOID);
 VOID ItJffs003(VOID);

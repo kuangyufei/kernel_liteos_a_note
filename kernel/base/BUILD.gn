@@ -38,6 +38,7 @@ kernel_module(module_name) {
     "core/los_sys.c",
     "core/los_task.c",
     "core/los_tick.c",
+    "core/los_smp.c",
     "ipc/los_event.c",
     "ipc/los_futex.c",
     "ipc/los_ipcdebug.c",

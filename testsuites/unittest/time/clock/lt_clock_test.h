@@ -37,6 +37,13 @@
 #include <sys/times.h>
 #include "osTest.h"
 
+#define CLOCK_RES_SEC 0
+#define CLOCK_RES_NSEC 1000
+#define CLOCK_COARSE_RES_SEC 0
+#define CLOCK_COARSE_RES_NSEC 1000000
+#define CLOCK_GET_CPU_CLOCKID(pid) ((-pid - 1) * 8U + 2)
+
+void ClockTestSmoke(void);
 void ClockTest001(void);
 void ClockTest002(void);
 void ClockTest003(void);
@@ -47,7 +54,5 @@ void ClockTest007(void);
 void ClockTest008(void);
 void ClockTest009(void);
 void ClockTest010(void);
-void ClockTest011(void);
-void ClockTest012(void);
 
 #endif /* TIME_CLOCK_LT_CLOCK_TEST_H_ */

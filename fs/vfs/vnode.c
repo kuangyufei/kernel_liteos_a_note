@@ -395,15 +395,21 @@ STEP_FINISH:
     return ret;
 }
 //通过路径 查找索引节点.路径和节点是 N:1的关系, 硬链接 
-int VnodeLookup(const char *path, struct Vnode **result, uint32_t flags)
+int VnodeLookupAt(const char *path, struct Vnode **result, uint32_t flags, struct Vnode *orgVnode)
 {
+    int ret;
     struct Vnode *startVnode = NULL;
     char *normalizedPath = NULL;
 
-
-    int ret = PreProcess(path, &startVnode, &normalizedPath);//找到根节点和绝对路径
-    if (ret != LOS_OK) {
-        goto OUT_FREE_PATH;
+    if (orgVnode != NULL) {
+        startVnode = orgVnode;
+        normalizedPath = strdup(path);
+    } else {
+        ret = PreProcess(path, &startVnode, &normalizedPath);
+        if (ret != LOS_OK) {
+            PRINT_ERR("[VFS]lookup failed, invalid path err = %d\n", ret);
+            goto OUT_FREE_PATH;
+        }
     }
 
     if (normalizedPath[0] == '/' && normalizedPath[1] == '\0') {//如果是根节点 
@@ -439,7 +445,12 @@ OUT_FREE_PATH:
 
     return ret;
 }
+int VnodeLookup(const char *path, struct Vnode **vnode, uint32_t flags)
+{
+    return VnodeLookupAt(path, vnode, flags, NULL);
+}
 //根节点内部改变
+
 static void ChangeRootInternal(struct Vnode *rootOld, char *dirname)
 {
     int ret;

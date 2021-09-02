@@ -47,4 +47,8 @@ group("apps") {
   if (defined(LOSCFG_NET_LWIP_SACK_TFTP)) {
     deps += [ "tftp" ]
   }
+
+  if (defined(LOSCFG_DRIVERS_TRACE)) {
+    deps += [ "trace" ]
+  }
 }

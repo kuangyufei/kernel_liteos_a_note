@@ -110,12 +110,88 @@ config KERNEL_VDSO
     help
       If you wish to speed up some system calls.
 
+config KERNEL_HOOK
+    bool "Enable Hook Feature"
+    default n
+    depends on KERNEL_EXTKERNEL && DEBUG_VERSION
+
 config KERNEL_TRACE
     bool "Enable Trace Feature"
     default n
-    depends on KERNEL_EXTKERNEL && DEBUG_VERSION
+    depends on KERNEL_HOOK
+
+config TRACE_MSG_EXTEND
+    bool "Enable Record more extended content"
+    default n
+    depends on KERNEL_TRACE
+
+config TRACE_FRAME_CORE_MSG
+    bool "Record cpuid, hardware interrupt status, task lock status"
+    default n
+    depends on TRACE_MSG_EXTEND
+
+config TRACE_FRAME_EVENT_COUNT
+    bool "Record event count, which indicate the sequence of happend events"
+    default n
+    depends on TRACE_MSG_EXTEND
+
+config TRACE_FRAME_MAX_PARAMS
+    int "Record max params"
+    default 3
+    depends on KERNEL_TRACE
     help
-      If you wish to record LiteOS's task and interrupt switch trace.
+      Make sure the max value is bigger than the number defined by each #MODULE#_#TYPE#_PARMAS in los_trace.h, e.g. TASK_SWITCH_PARAMS
+
+choice
+    prompt "Trace work mode"
+    default RECORDER_MODE_OFFLINE
+    depends on KERNEL_TRACE
+
+config RECORDER_MODE_ONLINE
+    bool "Online mode"
+    select TRACE_CLIENT_INTERACT
+
+config RECORDER_MODE_OFFLINE
+    bool "Offline mode"
+
+endchoice
+
+config TRACE_BUFFER_SIZE
+    int "Trace record buffer size"
+    default 10000
+
+config TRACE_CLIENT_INTERACT
+    bool "Enable Trace Client Visualization and Control"
+    default n
+    depends on KERNEL_TRACE
+
+choice
+    prompt "Trace Pipeline for Data Transmission"
+    depends on TRACE_CLIENT_INTERACT
+
+config TRACE_PIPELINE_SERIAL
+    bool "Via Serial"
+
+endchoice
+
+choice
+    prompt "Trace Control"
+    default TRACE_CONTROL_VIA_SHELL
+    depends on TRACE_CLIENT_INTERACT
+    help
+      If you wish to control Trace's start/stop etc.,dynamically by Trace Client.
+
+config TRACE_CONTROL_VIA_SHELL
+    bool "Via Shell"
+    select LOSCFG_SHELL
+
+config TRACE_CONTROL_AGENT
+    bool "Via Trace Agent Task"
+
+config TRACE_NO_CONTROL
+    bool "No Control"
+
+endchoice
 
 config KERNEL_SHM
     bool "Enable Shared Memory"

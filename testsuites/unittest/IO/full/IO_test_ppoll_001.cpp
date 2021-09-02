@@ -47,16 +47,16 @@ static void *pthread_01(void)
     int total_num = 0;
     int times = 3;
     int i, ret;
-    struct pollfd fds[LISTEN_FD_NUM] = {0};
+    struct pollfd fds[LISTEN_FD_NUM] = { 0 };
     char buffer[20];
     struct timespec t = { 3,0 };
     sigset_t sigset;
 
-    TEST_PRINT("[INFO]%s:%d,%s,Create thread %d\n", __FILE__, __LINE__, __func__, count); 
+    /* TEST_PRINT("[INFO]%s:%d,%s,Create thread %d\n", __FILE__, __LINE__, __func__, count); */
     count++;
 
     sigemptyset(&sigset);
-    sigaddset(&sigset, SIGALRM);    //把SIGALRM 信号添加到sigset 信号集中
+    sigaddset(&sigset, SIGALRM);    /* 把SIGALRM 信号添加到sigset 信号集中 */
     sigaddset(&sigset, SIGUSR1);
 
     for (i = 0; i < LISTEN_FD_NUM; i++) {
@@ -87,7 +87,7 @@ static void *pthread_01(void)
     }
 
     /* ICUNIT_GOTO_EQUAL(total_num, 10, -1, EXIT); */
-    TEST_PRINT("[INFO]%s:%d,%s,total_num=%d\n", __FILE__, __LINE__, __func__, total_num);
+    /* TEST_PRINT("[INFO]%s:%d,%s,total_num=%d\n", __FILE__, __LINE__, __func__, total_num); */
 EXIT:
     return nullptr;
 }
@@ -106,7 +106,7 @@ static UINT32 testcase1(VOID)
     }
 
     errno = 0;
-    ret = pthread_create(&g_tid, nullptr, pthread_01(nullptr), nullptr);
+    ret = pthread_create(&g_tid, nullptr, (void *(*)(void *))pthread_01, nullptr);
     TEST_PRINT("[INFO]%s:%d,%s,ret=%d,errno=%d,errstr=%s\n", __FILE__, __LINE__, __func__, ret, errno, strerror(errno));
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
@@ -127,7 +127,7 @@ static UINT32 testcase1(VOID)
         sleep(1);
         for (i = 0; i < LISTEN_FD_NUM; i++) {
             errno = 0;
-            ret = pthread_create(&g_tid, nullptr, pthread_01(nullptr), nullptr);
+            ret = pthread_create(&g_tid, nullptr, (void *(*)(void *))pthread_01, nullptr);
             TEST_PRINT("[INFO]%s:%d,%s,ret=%d,errno=%d,errstr=%s\n", __FILE__, __LINE__, __func__, ret, errno, strerror(errno));
             ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 

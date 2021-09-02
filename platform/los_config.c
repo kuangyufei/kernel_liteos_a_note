@@ -50,6 +50,7 @@
 #include "los_task_pri.h"
 #include "los_tick.h"
 #include "los_vm_boot.h"
+#include "los_smp.h"
 
 STATIC SystemRebootFunc g_rebootHook = NULL;
 
@@ -65,9 +66,6 @@ SystemRebootFunc OsGetRebootHook(VOID)
 
 extern UINT32 OsSystemInit(VOID);
 extern VOID SystemInit(VOID);
-#ifdef LOSCFG_KERNEL_SMP
-extern VOID release_secondary_cores(VOID);
-#endif
 
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 EarliestInit(VOID)
 {
@@ -266,7 +264,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     OsInitCall(LOS_INIT_LEVEL_KMOD_EXTENDED);
 
 #ifdef LOSCFG_KERNEL_SMP
-    release_secondary_cores();
+    OsSmpInit();
 #endif
 
     OsInitCall(LOS_INIT_LEVEL_KMOD_TASK);

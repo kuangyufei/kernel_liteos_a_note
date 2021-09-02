@@ -30,38 +30,35 @@
 import("//kernel/liteos_a/liteos.gni")
 
 module_name = "userinit"
-executable(module_name) {
+kernel_module(module_name) {
   sources = [ "src/los_user_init.c" ]
 
   include_dirs = [
     "include",
     "$LITEOSTOPDIR/syscall",
   ]
-
-  configs = []
-  configs += [
-    "$LITEOSTOPDIR:public",
-    "$LITEOSTOPDIR:los_config",
-  ]
-
-  ldflags = [
-    "-static",
-    "-Wl,-r",
-  ]
-
-  output_dir = target_out_dir
-}
-
-group("user") {
-  public_deps = [ ":$module_name" ]
-  deps = [ ":copy_userinit" ]
 }
 
 config("public") {
 }
 
-copy("copy_userinit") {
+userinit = "lib$module_name.O"
+executable(userinit) {
+  output_dir = target_out_dir
   deps = [ ":$module_name" ]
-  sources = [ "$target_out_dir/unstripped/bin/$module_name" ]
-  outputs = [ "$root_out_dir/lib$module_name.O" ]
+  ldflags = [
+    "-nostdlib",
+    "-static",
+    "-Wl,-r",
+  ]
+}
+
+copy("copy_userinit") {
+  deps = [ ":$userinit" ]
+  sources = [ "$target_out_dir/unstripped/bin/$userinit" ]
+  outputs = [ "$root_out_dir/$userinit" ]
+}
+
+group("user") {
+  deps = [ ":copy_userinit" ]
 }

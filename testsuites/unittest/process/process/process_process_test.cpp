@@ -611,40 +611,6 @@ HWTEST_F(ProcessProcessTest, ItTestProcess051, TestSize.Level0)
 }
 
 /* *
- * @tc.name: it_test_process_053
- * @tc.desc: function for killpg:Sends a signal to the process group,
- * Other processes in the process group can receive the signal.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess053, TestSize.Level0)
-{
-    ItTestProcess053();
-}
-
-/* *
- * @tc.name: it_test_process_054
- * @tc.desc: function for waitid: The waitid parameter is incorrect and the error code is verified.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess054, TestSize.Level0)
-{
-    ItTestProcess054();
-}
-
-/* *
- * @tc.name: it_test_process_055
- * @tc.desc: function for waitid:To test the function of transferring different parameters of the waitid.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess055, TestSize.Level0)
-{
-    ItTestProcess055();
-}
-
-/* *
  * @tc.name: it_test_process_056
  * @tc.desc: function for posix_spawn:Verifying Basic Functions
  * @tc.type: FUNC
@@ -698,29 +664,6 @@ HWTEST_F(ProcessProcessTest, ItTestProcess059, TestSize.Level0)
 HWTEST_F(ProcessProcessTest, ItTestProcess060, TestSize.Level0)
 {
     ItTestProcess060();
-}
-
-/* *
- * @tc.name: it_test_process_061
- * @tc.desc: function for killpg: The killpg parameter is incorrect and the error code is verified.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess061, TestSize.Level0)
-{
-    ItTestProcess061();
-}
-
-/* *
- * @tc.name: it_test_process_062
- * @tc.desc: function for killpg:Fork two processes. The killpg sends a signal to the current process group.
- * The other two processes can receive the signal.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess062, TestSize.Level0)
-{
-    ItTestProcess062();
 }
 
 /* *
@@ -892,5 +835,64 @@ HWTEST_F(ProcessProcessTest, ItTestProcessSmp008, TestSize.Level0)
     ItTestProcessSmp008();
 }
 #endif
+#endif
+
+#if defined(LOSCFG_USER_TEST_FULL)
+/* *
+ * @tc.name: it_test_process_053
+ * @tc.desc: function for killpg:Sends a signal to the process group,
+ * Other processes in the process group can receive the signal.
+ * @tc.type: FUNC
+ * @tc.require: AR000E0QAB
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess053, TestSize.Level0)
+{
+    ItTestProcess053();
+}
+
+/* *
+ * @tc.name: it_test_process_054
+ * @tc.desc: function for waitid: The waitid parameter is incorrect and the error code is verified.
+ * @tc.type: FUNC
+ * @tc.require: AR000E0QAB
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess054, TestSize.Level0)
+{
+    ItTestProcess054();
+}
+
+/* *
+ * @tc.name: it_test_process_055
+ * @tc.desc: function for waitid:To test the function of transferring different parameters of the waitid.
+ * @tc.type: FUNC
+ * @tc.require: AR000E0QAB
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess055, TestSize.Level0)
+{
+    ItTestProcess055();
+}
+
+/* *
+ * @tc.name: it_test_process_061
+ * @tc.desc: function for killpg: The killpg parameter is incorrect and the error code is verified.
+ * @tc.type: FUNC
+ * @tc.require: AR000E0QAB
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess061, TestSize.Level0)
+{
+    ItTestProcess061();
+}
+
+/* *
+ * @tc.name: it_test_process_062
+ * @tc.desc: function for killpg:Fork two processes. The killpg sends a signal to the current process group.
+ * The other two processes can receive the signal.
+ * @tc.type: FUNC
+ * @tc.require: AR000E0QAB
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess062, TestSize.Level0)
+{
+    ItTestProcess062();
+}
 #endif
 } // namespace OHOS

@@ -36,7 +36,7 @@
 #include "los_sched_pri.h"
 #include "los_sortlink_pri.h"
 #include "los_task_pri.h"
-
+#include "los_hook.h"
 /******************************************************************************
 基本概念
 	软件定时器，是基于系统Tick时钟中断且由软件来模拟的定时器。当经过设定的Tick数后，
@@ -420,7 +420,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_SwtmrCreate(UINT32 interval,
     swtmr->ucState = OS_SWTMR_STATUS_CREATED;	//已创建状态
     SET_SORTLIST_VALUE(&swtmr->stSortList, OS_SORT_LINK_INVALID_TIME);
     *swtmrID = swtmr->usTimerID;
-
+    OsHookCall(LOS_HOOK_TYPE_SWTMR_CREATE, swtmr);
     return LOS_OK;
 }
 //接口函数 启动定时器       参数定时任务ID
@@ -465,6 +465,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStart(UINT16 swtmrID)
     }
 
     SWTMR_UNLOCK(intSave);
+    OsHookCall(LOS_HOOK_TYPE_SWTMR_START, swtmr);
     return ret;
 }
 //接口函数 停止定时器          参数定时任务ID
@@ -504,6 +505,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStop(UINT16 swtmrID)
     }
 
     SWTMR_UNLOCK(intSave);
+    OsHookCall(LOS_HOOK_TYPE_SWTMR_STOP, swtmr);
     return ret;
 }
 //接口函数 获得软件定时器剩余Tick数 通过 *tick 带走 
@@ -584,6 +586,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrDelete(UINT16 swtmrID)
     }
 
     SWTMR_UNLOCK(intSave);
+    OsHookCall(LOS_HOOK_TYPE_SWTMR_DELETE, swtmr);
     return ret;
 }
 

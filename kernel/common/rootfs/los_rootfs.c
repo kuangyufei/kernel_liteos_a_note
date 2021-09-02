@@ -81,6 +81,17 @@ STATIC INT32 AddEmmcParts(INT32 rootAddr, INT32 rootSize, INT32 userAddr, INT32 
         return LOS_NOK;
     }
 
+#ifdef LOSCFG_PLATFORM_PATCHFS
+    UINT64 patchStartCnt = userAddr / EMMC_SEC_SIZE;
+    UINT64 patchSizeCnt = PATCH_SIZE / EMMC_SEC_SIZE;
+    ret = add_mmc_partition(emmc, patchStartCnt, patchSizeCnt);
+    if (ret != LOS_OK) {
+        PRINT_ERR("Failed to add mmc patch partition!\n");
+        return LOS_NOK;
+    }
+    userAddr += PATCH_SIZE;
+#endif
+
     UINT64 storageStartCnt = userAddr / EMMC_SEC_SIZE;
     UINT64 storageSizeCnt = userSize / EMMC_SEC_SIZE;
     UINT64 userdataStartCnt = storageStartCnt + storageSizeCnt;
@@ -114,7 +125,7 @@ STATIC INT32 AddEmmcParts(INT32 rootAddr, INT32 rootSize, INT32 userAddr, INT32 
 }
 #endif
 
-//增加一个分区
+//增加一个分�?
 STATIC INT32 AddPartitions(CHAR *dev, UINT64 rootAddr, UINT64 rootSize, UINT64 userAddr, UINT64 userSize)
 {
 #ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
@@ -155,14 +166,14 @@ STATIC INT32 AddPartitions(CHAR *dev, UINT64 rootAddr, UINT64 rootSize, UINT64 u
     return LOS_NOK;
 }
 
-//获取根文件系统参数
+//获取根文件系统参�?
 STATIC INT32 ParseRootArgs(CHAR **dev, CHAR **fstype, UINT64 *rootAddr, UINT64 *rootSize, UINT32 *mountFlags)
 {
     INT32 ret;
     CHAR *rootAddrStr = NULL;
     CHAR *rootSizeStr = NULL;
     CHAR *rwTag = NULL;
-	//获取文件系统放在哪种设备上
+	//获取文件系统放在哪种设备�?
     ret = LOS_GetArgValue("root", dev);//root = flash | mmc | 
     if (ret != LOS_OK) {
         PRINT_ERR("Cannot find root!");
@@ -174,7 +185,7 @@ STATIC INT32 ParseRootArgs(CHAR **dev, CHAR **fstype, UINT64 *rootAddr, UINT64 *
         PRINT_ERR("Cannot find fstype!");
         return ret;
     }
-	//获取内核地址空间开始位置
+	//获取内核地址空间开始位�?
     ret = LOS_GetArgValue("rootaddr", &rootAddrStr);
     if (ret != LOS_OK) {
         *rootAddr = ROOTFS_ADDR;
@@ -221,19 +232,48 @@ STATIC INT32 ParseUserArgs(UINT64 rootAddr, UINT64 rootSize, UINT64 *userAddr, U
 
     return LOS_OK;
 }
-//挂载分区,即挂载 "/","/storage"
+//挂载分区,即挂�?"/","/storage"
 STATIC INT32 MountPartitions(CHAR *fsType, UINT32 mountFlags)
 {
     INT32 ret;
     INT32 err;
 
     /* Mount rootfs */
-    ret = mount(ROOT_DEV_NAME, ROOT_DIR_NAME, fsType, mountFlags, NULL);//挂载根文件系统
+    ret = mount(ROOT_DEV_NAME, ROOT_DIR_NAME, fsType, mountFlags, NULL);//挂载根文件系�?
     if (ret != LOS_OK) {
         err = get_errno();
         PRINT_ERR("Failed to mount %s, rootDev %s, errno %d: %s\n", ROOT_DIR_NAME, ROOT_DEV_NAME, err, strerror(err));
         return ret;
     }
+
+#ifdef LOSCFG_STORAGE_EMMC
+#ifdef LOSCFG_PLATFORM_PATCHFS
+    /* Mount patch */
+    ret = mkdir(PATCH_DIR_NAME, DEFAULT_MOUNT_DIR_MODE);
+    if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
+        PRINT_ERR("Failed to mkdir %s, errno %d: %s\n", PATCH_DIR_NAME, err, strerror(err));
+        return ret;
+    }
+
+    ret = mount(PATCH_DEV_NAME, PATCH_DIR_NAME, fsType, 0, DEFAULT_MOUNT_DATA);
+    if ((ret != LOS_OK) && ((err = get_errno()) == ENOTSUP)) {
+        ret = format(PATCH_DEV_NAME, 0, FM_FAT32);
+        if (ret != LOS_OK) {
+            PRINT_ERR("Failed to format %s\n", PATCH_DEV_NAME);
+            return ret;
+        }
+
+        ret = mount(PATCH_DEV_NAME, PATCH_DIR_NAME, fsType, 0, DEFAULT_MOUNT_DATA);
+        if (ret != LOS_OK) {
+            err = get_errno();
+        }
+    }
+    if (ret != LOS_OK) {
+        PRINT_ERR("Failed to mount %s, errno %d: %s\n", PATCH_DIR_NAME, err, strerror(err));
+        return ret;
+    }
+#endif
+#endif
 
     /* Mount userfs */
     ret = mkdir(STORAGE_DIR_NAME, DEFAULT_MOUNT_DIR_MODE);//创建目录"/storage"
@@ -294,7 +334,7 @@ STATIC INT32 CheckValidation(UINT64 rootAddr, UINT64 rootSize, UINT64 userAddr, 
 
     return LOS_OK;
 }
-//挂载根文件系统 由 SystemInit 调用
+//挂载根文件系�?�?SystemInit 调用
 INT32 OsMountRootfs()
 {
     INT32 ret;
@@ -305,7 +345,7 @@ INT32 OsMountRootfs()
     UINT64 userAddr;
     UINT64 userSize;
     UINT32 mountFlags;
-	//获取根文件系统参数
+	//获取根文件系统参�?
     ret = ParseRootArgs(&dev, &fstype, &rootAddr, &rootSize, &mountFlags);
     if (ret != LOS_OK) {
         return ret;
@@ -315,7 +355,7 @@ INT32 OsMountRootfs()
     if (ret != LOS_OK) {
         return ret;
     }
-	//检查内核和用户空间的有效性
+	//检查内核和用户空间的有效�?
     ret = CheckValidation(rootAddr, rootSize, userAddr, userSize);
     if (ret != LOS_OK) {
         return ret;
@@ -325,7 +365,7 @@ INT32 OsMountRootfs()
     if (ret != LOS_OK) {
         return ret;
     }
-	//挂载分区,即挂载 `/`
+	//挂载分区,即挂�?`/`
     ret = MountPartitions(fstype, mountFlags);
     if (ret != LOS_OK) {
         return ret;
