@@ -191,7 +191,7 @@ int AllocSpecifiedProcessFd(int procFd)//分配指定的进程Fd
     FileTableUnLock(fdt);
     return OK;
 }
-//是否进程文件描述符
+//释放进程文件描述符
 void FreeProcessFd(int procFd)
 {
     struct fd_table_s *fdt = GetFdTable();
