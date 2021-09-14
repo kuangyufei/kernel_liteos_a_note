@@ -41,14 +41,6 @@ LOCAL_SRCS += $(wildcard crypto/rijndael/*.c) \
               $(wildcard crypto/sha2/*.c) \
               $(wildcard dev/random/*.c) \
               $(wildcard libkern/*.c)
-
 endif
-
-LOCAL_INCLUDE := \
-        -I $(LITEOSTOPDIR)/kernel/base/include \
-        -I $(LITEOSTOPDIR)/bsd \
-        -I $(LITEOSTOPDIR)/bsd/kern \
-
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
 
 include $(MODULE)

@@ -30,7 +30,7 @@
 include $(LITEOSTOPDIR)/config.mk
 
 # common flags config
-BASE_OPTS := -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE $(LITEOS_GCOV_OPTS)
+BASE_OPTS := -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE
 
 ASFLAGS   :=
 CFLAGS    := $(LITEOS_COPTS) $(BASE_OPTS) -fPIE
@@ -69,12 +69,3 @@ endif
 ifeq ($(LOSCFG_DRIVERS_TRACE), y)
 APP_SUBDIRS += trace
 endif
-
-# clear all local variables
-LOCAL_FLAGS    :=
-LOCAL_CFLAGS   :=
-LOCAL_CPPFLAGS :=
-LOCAL_ASFLAGS  :=
-LOCAL_SRCS     :=
-LOCAL_CHS      :=
-LOCAL_CPPHS    :=

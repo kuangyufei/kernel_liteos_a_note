@@ -18,3 +18,26 @@ config FILE_MODE
     depends on FS_VFS
     help
       Answer Y to enable LiteOS support file mode.
+
+config ENABLE_READ_BUFFER
+    bool "Enable read buffer Option"
+    default n
+    depends on FS_VFS
+    help
+      Answer Y to add enable read buffer Option.
+
+config MAX_VNODE_SIZE
+    int "Vnode max number"
+    range 0 512
+    default 512
+    depends on FS_VFS
+    help
+      vnode number, range from 0 to 512.
+
+config MAX_PATH_CACHE_SIZE
+    int "PathCache max number"
+    range 0 1024
+    default 512
+    depends on FS_VFS
+    help
+      pathCache number, range from 0 to 1024.

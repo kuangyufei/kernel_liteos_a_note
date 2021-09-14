@@ -89,7 +89,7 @@ typedef struct {
     LD_ELF_EHDR  elfEhdr;	//ELF头信息
     LD_ELF_PHDR  *elfPhdr;	//ELF程序头信息,也称段头信息
     UINT32       fileLen;	//文件长度
-    INT32        fd;		//文件描述符
+    INT32        procfd;		//文件描述符
 } ELFInfo;
 //ELF加载信息
 typedef struct {

@@ -33,10 +33,4 @@ MODULE_NAME := $(notdir $(shell pwd))
 
 LOCAL_SRCS := $(wildcard *.c)
 
-LOCAL_INCLUDE := -I $(LITEOSTOPDIR)/kernel/base/include \
-                 -I $(LITEOSTOPDIR)/kernel/extended/include \
-                 -I $(LITEOSTOPDIR)/arch/arm/include
-
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
-
 include $(MODULE)

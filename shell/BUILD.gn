@@ -38,10 +38,11 @@ kernel_module(module_name) {
     "full/src/base/shell_lk.c",
     "full/src/base/shmsg.c",
     "full/src/base/show.c",
-    "full/src/cmds/date_shell.c",
+    "full/src/cmds/date_shellcmd.c",
     "full/src/cmds/dmesg.c",
+    "full/src/cmds/hwi_shellcmd.c",
     "full/src/cmds/shell_shellcmd.c",
-    "full/src/cmds/watch_shell.c",
+    "full/src/cmds/watch_shellcmd.c",
   ]
 
   public_configs = [ ":public" ]

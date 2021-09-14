@@ -50,7 +50,6 @@ Case B:
               Tail                                 Head
 */
 
-#include "sys_config.h"
 #ifdef LOSCFG_SHELL_DMESG
 #include "dmesg_pri.h"
 #include "show.h"

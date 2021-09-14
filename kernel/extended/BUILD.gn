@@ -31,14 +31,16 @@ import("//kernel/liteos_a/liteos.gni")
 
 group("extended") {
   deps = [
+    "blackbox",
     "cppsupport",
     "cpup",
     "dynload",
+    "hidumper",
     "hilog",
+    "hook",
     "liteipc",
     "pipes",
     "power",
-    "hook",
     "trace",
     "vdso",
   ]
@@ -46,12 +48,14 @@ group("extended") {
 
 config("public") {
   configs = [
+    "blackbox:public",
     "cpup:public",
     "dynload:public",
-    "vdso:public",
+    "hidumper:public",
+    "hilog:public",
     "hook:public",
     "liteipc:public",
     "pipes:public",
-    "hilog:public",
+    "vdso:public",
   ]
 }

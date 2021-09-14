@@ -37,7 +37,6 @@
 #ifndef _LOS_PRINTF_H
 #define _LOS_PRINTF_H
 
-#include "sys_config.h"
 #ifdef LOSCFG_LIB_LIBC
 #include "stdarg.h"
 #endif

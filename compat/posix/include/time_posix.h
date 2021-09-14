@@ -86,6 +86,7 @@ STATIC INLINE VOID OsTick2TimeSpec(struct timespec *tp, UINT32 tick)
 }
 
 int OsTimerCreate(clockid_t, struct ksigevent *__restrict, timer_t *__restrict);
+void OsAdjTime(void);
 
 #ifdef __cplusplus
 #if __cplusplus

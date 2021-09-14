@@ -32,8 +32,10 @@ import("//kernel/liteos_a/liteos.gni")
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
   sources = [
+    "src/los_cir_buf.c",
     "src/los_crc32.c",
     "src/los_rbtree.c",
+    "src/los_seq_buf.c",
   ]
 
   sources += [ "$LITEOSTHIRDPARTY/FreeBSD/sys/libkern/crc32.c" ]

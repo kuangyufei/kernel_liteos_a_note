@@ -587,9 +587,21 @@ int OsSigSuspend(const sigset_t *set)
 
     /* If pending mask not in sigmask, need set sigflag */
     OsSigMaskSwitch(rtcb, *set);
-    ret = OsSigTimedWaitNoLock(&setSuspend, NULL, LOS_WAIT_FOREVER);
-    if (ret < 0) {
-        PRINT_ERR("FUNC %s LINE = %d, ret = %x\n", __FUNCTION__, __LINE__, ret);
+
+    if (rtcb->sig.sigFlag > 0) {
+        SCHEDULER_UNLOCK(intSave);
+
+        /*
+         * If rtcb->sig.sigFlag > 0, it means that some signal have been
+         * received, and we need to do schedule to handle the signal directly.
+         */
+        LOS_Schedule();
+        return -EINTR;
+    } else {
+        ret = OsSigTimedWaitNoLock(&setSuspend, NULL, LOS_WAIT_FOREVER);
+        if (ret < 0) {
+            PRINT_ERR("FUNC %s LINE = %d, ret = %x\n", __FUNCTION__, __LINE__, ret);
+        }
     }
 
     SCHEDULER_UNLOCK(intSave);

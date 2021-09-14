@@ -29,20 +29,52 @@
 
 -include $(LITEOS_CONFIG_FILE)
 
-HIDE := @
-OBJ_MKDIR = if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-RM = -rm -rf
-ifeq ($(OS),)
-OS := $(shell uname -s)
-export OS
-endif
-
-ARFLAGS  := cr
-
-## platform relative ##
 ifeq ($(ARCH),)
 ARCH = $(error ARCH not set!)
 endif
+
+## variable define ##
+HIDE = @
+RM = -rm -rf
+OUT = $(or $(OUTDIR),$(LITEOSTOPDIR)/out/$(LOSCFG_PRODUCT_NAME:"%"=%))
+MODULE = $(LITEOSTOPDIR)/tools/build/mk/module.mk
+LITEOS_SCRIPTPATH = $(LITEOSTOPDIR)/tools/scripts
+LITEOSTHIRDPARTY = $(LITEOSTOPDIR)/../../third_party
+
+## compiler relative ##
+get_compiler_path = $(or $(wildcard $(1)),$(dir $(shell which $(CROSS_COMPILE)as)))
+ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
+CROSS_COMPILE ?= llvm-
+LITEOS_COMPILER_PATH ?= $(call get_compiler_path,$(LITEOSTOPDIR)/../../prebuilts/clang/ohos/linux-x86_64/llvm/bin/)
+LLVM_TARGET = $(if $(LOSCFG_LLVM_TARGET),-target $(LOSCFG_LLVM_TARGET),)
+LLVM_SYSROOT = $(if $(SYSROOT_PATH),--sysroot=$(SYSROOT_PATH),)
+CC  = $(LITEOS_COMPILER_PATH)clang $(LLVM_TARGET) $(LLVM_SYSROOT)
+AS  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)as
+AR  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)ar
+LD  = $(LITEOS_COMPILER_PATH)ld.lld
+GPP = $(LITEOS_COMPILER_PATH)clang++ $(LLVM_TARGET) $(LLVM_SYSROOT)
+OBJCOPY = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)objcopy -R .bss
+OBJDUMP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)objdump
+SIZE = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)size
+NM = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)nm
+STRIP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)strip
+else ifeq ($(LOSCFG_COMPILER_GCC), y)
+CROSS_COMPILE ?= $(LOSCFG_CROSS_COMPILE)
+LITEOS_COMPILER_PATH ?= $(call get_compiler_path,$(LITEOSTOPDIR)/../../prebuilts/gcc/linux-x86/arm/arm-linux-ohoseabi-gcc/bin/)
+CC  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)gcc
+AS  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)as
+AR  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)ar
+LD  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)ld
+GPP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)g++
+OBJCOPY = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)objcopy
+OBJDUMP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)objdump
+SIZE = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)size
+NM = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)nm
+STRIP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)strip
+else
+CC  = echo $(info compiler type not set!)
+endif
+
 ## c as cxx ld options ##
 LITEOS_ASOPTS :=
 LITEOS_COPTS_BASE :=
@@ -53,7 +85,7 @@ LITEOS_CXXOPTS_BASE :=
 LITEOS_LD_OPTS :=
 LITEOS_GCOV_OPTS :=
 ## macro define ##
-LITEOS_CMACRO :=
+LITEOS_CMACRO := -D__LITEOS__
 LITEOS_CXXMACRO :=
 ## head file path and ld path ##
 LITEOS_PLATFORM_INCLUDE :=
@@ -71,63 +103,12 @@ LITEOS_LIBDEP :=
 ## directory ##
 LIB_SUBDIRS :=
 
-## variable define ##
-ifeq ($(LITEOSTHIRDPARTY),)
-LITEOSTHIRDPARTY := $(LITEOSTOPDIR)/../../third_party
-endif
-LOSCFG_BOARD_CONFIG_PATH := $(LOSCFG_BOARD_CONFIG_PATH:"%"=%)
-ifeq ($(wildcard $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) $(LOSCFG_BOARD_CONFIG_PATH)),)
-LOSCFG_BOARD_CONFIG_PATH := $(LOSCFG_BOARD_CONFIG_PATH:%/config/board=%/board)
-endif
-ifeq ($(LOSCFG_COMPILER_GCC), y)
-CROSS_COMPILE ?= $(LOSCFG_CROSS_COMPILE)
-LITEOS_COMPILER_PATH ?= $(LITEOSTOPDIR)/../../prebuilts/gcc/linux-x86/arm/arm-linux-ohoseabi-gcc/bin/
-else ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-CROSS_COMPILE ?= llvm-
-LITEOS_COMPILER_PATH ?= $(LITEOSTOPDIR)/../../prebuilts/clang/ohos/linux-x86_64/llvm/bin/
-ifneq ($(LOSCFG_LLVM_TARGET),)
-LLVM_TARGET = -target $(LOSCFG_LLVM_TARGET)
-endif
-ifneq ($(SYSROOT_PATH),)
-LLVM_SYSROOT = --sysroot=$(SYSROOT_PATH)
-endif
-endif
-ifeq ($(wildcard $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)as),)
-LITEOS_COMPILER_PATH := $(patsubst %/$(CROSS_COMPILE)as,%/,$(shell which $(CROSS_COMPILE)as))
-endif
-LITEOS_PLATFORM := $(LOSCFG_PLATFORM:"%"=%)
-ifeq ($(OUTDIR),)
-OUT = $(LITEOSTOPDIR)/out/$(LOSCFG_PRODUCT_NAME:"%"=%)
-else
-OUT = $(OUTDIR)
-endif
-BUILD  = $(OUT)/obj
-CXX_PATH  = $(LITEOSTOPDIR)/lib/cxxstl
-JFFS_PATH  = $(LITEOSTOPDIR)/fs/jffs2
-LITEOS_SCRIPTPATH ?= $(LITEOSTOPDIR)/tools/scripts
-
-### include variable
-MODULE = $(LITEOSTOPDIR)/tools/build/mk/module.mk
-LITEOS_CMACRO      += -D__LITEOS__ -DSECUREC_IN_KERNEL=0
-AS_OBJS_LIBC_FLAGS  = -D__ASSEMBLY__
-
 ####################################### CPU Option Begin #########################################
 include $(LITEOSTOPDIR)/arch/cpu.mk
 ####################################### CPU Option End #########################################
 
 ############################# Platform Option Begin#################################
 include $(LITEOSTOPDIR)/platform/bsp.mk
-
-ifeq ($(LOSCFG_PLATFORM_ROOTFS), y)
-    LITEOS_BASELIB  += -lrootfs
-    LIB_SUBDIRS     += $(LITEOSTOPDIR)/kernel/common/rootfs
-    LITEOS_PLATFORM_INCLUDE     += -I $(LITEOSTOPDIR)/kernel/common/rootfs
-endif
-
-ifeq ($(LOSCFG_PLATFORM_PATCHFS), y)
-    LITEOS_BASELIB  += -lpatchfs
-    LIB_SUBDIRS     += $(LITEOSTOPDIR)/kernel/common/patchfs
-endif
 ############################# Platform Option End #################################
 
 ####################################### Kernel Option Begin ###########################################
@@ -135,6 +116,16 @@ LITEOS_BASELIB += -lbase
 LIB_SUBDIRS       += kernel/base
 LITEOS_KERNEL_INCLUDE   := -I $(LITEOSTOPDIR)/kernel/include \
                            -I $(LITEOSTOPDIR)/kernel/base/include
+
+LITEOS_BASELIB += -lcommon
+LIB_SUBDIRS       += kernel/common
+LITEOS_KERNEL_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/common
+
+ifeq ($(LOSCFG_KERNEL_CPPSUPPORT), y)
+    LITEOS_BASELIB += -lcppsupport
+    LIB_SUBDIRS       += kernel/extended/cppsupport
+    LITEOS_CPPSUPPORT_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/cppsupport
+endif
 
 ifeq ($(LOSCFG_KERNEL_CPUP), y)
     LITEOS_BASELIB   += -lcpup
@@ -175,7 +166,7 @@ endif
 ifeq ($(LOSCFG_KERNEL_PIPE), y)
     LITEOS_BASELIB     += -lpipes
     LIB_SUBDIRS           += kernel/extended/pipes
-    LITEOS_PIPE_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/pipes
+    LITEOS_PIPE_INCLUDE   += -I $(LITEOSTOPDIR)/../../third_party/NuttX/drivers/pipes
 endif
 
 ifeq ($(LOSCFG_KERNEL_PM), y)
@@ -184,9 +175,19 @@ ifeq ($(LOSCFG_KERNEL_PM), y)
     LITEOS_PIPE_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/power
 endif
 
+ifeq ($(LOSCFG_KERNEL_SYSCALL), y)
+    LITEOS_BASELIB += -lsyscall
+    LIB_SUBDIRS += syscall
+endif
+LIB_SUBDIRS += kernel/user
+
 ################################### Kernel Option End ################################
 
 #################################### Lib Option Begin ###############################
+LITEOS_BASELIB   += -lscrew
+LIB_SUBDIRS         += lib/libscrew
+LITEOS_LIBSCREW_INCLUDE += -I $(LITEOSTOPDIR)/lib/libscrew/include
+
 ifeq ($(LOSCFG_LIB_LIBC), y)
     LIB_SUBDIRS           += lib/libc
     LITEOS_BASELIB        += -lc
@@ -197,16 +198,7 @@ ifeq ($(LOSCFG_LIB_LIBC), y)
     LITEOS_BASELIB        += -lsec
     LITEOS_LIBC_INCLUDE   += \
         -I $(LITEOSTHIRDPARTY)/bounds_checking_function/include
-endif
-
-    LITEOS_BASELIB   += -lscrew
-    LIB_SUBDIRS         += lib/libscrew
-    LITEOS_LIBSCREW_INCLUDE += -I $(LITEOSTOPDIR)/lib/libscrew/include
-
-ifeq ($(LOSCFG_KERNEL_CPPSUPPORT), y)
-    LITEOS_BASELIB += -lcppsupport
-    LIB_SUBDIRS       += kernel/extended/cppsupport
-    LITEOS_CPPSUPPORT_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/cppsupport
+    LITEOS_CMACRO         += -DSECUREC_IN_KERNEL=0
 endif
 
 ifeq ($(LOSCFG_LIB_ZLIB), y)
@@ -228,7 +220,6 @@ ifeq ($(LOSCFG_COMPAT_BSD), y)
     LITEOS_BASELIB += -lbsd
     LIB_SUBDIRS    += bsd
     LITEOS_BSD_INCLUDE   += -I $(LITEOSTOPDIR)/bsd
-    LITEOS_CMACRO += -DLOSCFG_COMPAT_LINUXKPI
     LITEOS_BASELIB += -llinuxkpi
     LIB_SUBDIRS       += bsd/compat/linuxkpi
     LITEOS_LINUX_INCLUDE += -I $(LITEOSTOPDIR)/bsd/compat/linuxkpi/include \
@@ -250,7 +241,6 @@ endif
                             -I $(LITEOSTOPDIR)/fs/vfs/include
     LITEOS_VFS_INCLUDE   += -I $(LITEOSTOPDIR)/fs/vfs/include/operation
     LITEOS_VFS_MTD_INCLUDE := -I $(LITEOSTOPDIR)/drivers/mtd/multi_partition/include
-    LITEOS_VFS_DISK_INCLUDE := -I $(LITEOSTOPDIR)/drivers/block/disk/include
 endif
 
 ifeq ($(LOSCFG_FS_FAT), y)
@@ -268,6 +258,7 @@ endif
 ifeq ($(LOSCFG_FS_FAT_DISK), y)
     LITEOS_BASELIB += -ldisk
     LIB_SUBDIRS += $(LITEOSTOPDIR)/drivers/block/disk
+    LITEOS_VFS_DISK_INCLUDE := -I $(LITEOSTOPDIR)/drivers/block/disk/include
 endif
 
 ifeq ($(LOSCFG_FS_FAT_CACHE), y)
@@ -304,6 +295,17 @@ ifeq ($(LOSCFG_FS_JFFS), y)
     LIB_SUBDIRS     += fs/jffs2
 endif
 
+ifeq ($(LOSCFG_PLATFORM_ROOTFS), y)
+    LITEOS_BASELIB  += -lrootfs
+    LIB_SUBDIRS     += fs/rootfs
+    LITEOS_PLATFORM_INCLUDE     += -I $(LITEOSTOPDIR)/fs/rootfs
+endif
+
+ifeq ($(LOSCFG_PLATFORM_PATCHFS), y)
+    LITEOS_BASELIB  += -lpatchfs
+    LIB_SUBDIRS     += fs/patchfs
+endif
+
 ifeq ($(LOSCFG_FS_ZPFS), y)
     LITEOS_BASELIB  += -lzpfs
     LIB_SUBDIRS     += fs/zpfs
@@ -321,8 +323,6 @@ ifeq ($(LOSCFG_NET_LWIP_SACK_2_1), y)
         -I $(LITEOSTOPDIR)/net/lwip-2.1/porting/include \
         -I $(LWIPDIR)/include \
         -I $(LITEOSTOPDIR)/net/mac
-
-    LITEOS_CMACRO     +=  $(LWIP_MACROS)
 else ifeq ($(LOSCFG_NET_LWIP_SACK_2_0), y)
     LWIPDIR := $(LITEOSTHIRDPARTY)/lwip_enhanced/src
     LITEOS_BASELIB += -llwip
@@ -330,8 +330,7 @@ else ifeq ($(LOSCFG_NET_LWIP_SACK_2_0), y)
     LITEOS_LWIP_SACK_INCLUDE   += \
         -I $(LWIPDIR)/include \
         -I $(LITEOSTOPDIR)/net/mac
-    LWIP_MACROS += -DLWIP_CONFIG_FILE=\"lwip/lwipopts.h\" -DLWIP_LITEOS_A_COMPAT
-    LITEOS_CMACRO     +=  $(LWIP_MACROS)
+    LITEOS_CMACRO += -DLWIP_CONFIG_FILE=\"lwip/lwipopts.h\" -DLWIP_LITEOS_A_COMPAT
 else
     $(error "unknown lwip version")
 endif
@@ -383,9 +382,7 @@ ifeq ($(LOSCFG_DRIVERS_USB), y)
     LITEOS_BASELIB  += -lusb_base
     LIB_SUBDIRS     += $(LITEOSTOPDIR)/bsd/dev/usb
     LITEOS_USB_INCLUDE += -I $(LITEOSTOPDIR)/bsd/dev/usb
-ifeq ($(LOSCFG_USB_DEBUG), y)
-    LITEOS_CMACRO   += -DLOSCFG_USB_DEBUG
-endif
+    LITEOS_CMACRO   += -DUSB_DEBUG_VAR=5
 endif
 
 ifeq ($(LOSCFG_DRIVERS_VIDEO), y)
@@ -398,21 +395,22 @@ endif
 
 ############################## Dfx Option Begin#######################################
 ifeq ($(LOSCFG_BASE_CORE_HILOG), y)
-    LITEOS_BASELIB     += -lhilog
-    LIB_SUBDIRS           += $(LITEOSTOPDIR)/../../base/hiviewdfx/hilog_lite/frameworks/featured
+    LITEOS_BASELIB      += -lhilog
+    LIB_SUBDIRS         += $(LITEOSTOPDIR)/../../base/hiviewdfx/hilog_lite/frameworks/featured
+    LIB_SUBDIRS         += $(LITEOSTOPDIR)/kernel/extended/hilog
     LITEOS_HILOG_INCLUDE  += -I $(LITEOSTOPDIR)/../../base/hiviewdfx/hilog_lite/interfaces/native/kits
     LITEOS_HILOG_INCLUDE  += -I $(LITEOSTOPDIR)/../../base/hiviewdfx/hilog_lite/interfaces/native/kits/hilog
-    LITEOS_CMACRO += -DLOSCFG_BASE_CORE_HILOG
+    LITEOS_HILOG_INCLUDE  += -I $(LITEOSTOPDIR)/kernel/extended/hilog
 endif
 ifeq ($(LOSCFG_BLACKBOX), y)
     LITEOS_BASELIB     += -lblackbox
-    LIB_SUBDIRS           += $(LITEOSTOPDIR)/kernel/common/blackbox
-    LITEOS_BLACKBOX_INCLUDE  += -I $(LITEOSTOPDIR)/kernel/common/blackbox
+    LIB_SUBDIRS           += $(LITEOSTOPDIR)/kernel/extended/blackbox
+    LITEOS_BLACKBOX_INCLUDE  += -I $(LITEOSTOPDIR)/kernel/extended/blackbox
 endif
 ifeq ($(LOSCFG_HIDUMPER), y)
     LITEOS_BASELIB     += -lhidumper
-    LIB_SUBDIRS           += $(LITEOSTOPDIR)/kernel/common/hidumper
-    LITEOS_HIDUMPER_INCLUDE  += -I $(LITEOSTOPDIR)/kernel/common/hidumper
+    LIB_SUBDIRS           += $(LITEOSTOPDIR)/kernel/extended/hidumper
+    LITEOS_HIDUMPER_INCLUDE  += -I $(LITEOSTOPDIR)/kernel/extended/hidumper
 endif
 ############################## Dfx Option End #######################################
 
@@ -464,13 +462,6 @@ ifeq ($(LOSCFG_NET_TELNET), y)
     LITEOS_TELNET_INCLUDE   += \
         -I $(LITEOSTOPDIR)/net/telnet/include
 endif
-
-ifeq ($(LOSCFG_KERNEL_SYSCALL), y)
-LITEOS_BASELIB += -lsyscall
-LIB_SUBDIRS += syscall
-endif
-LIB_SUBDIRS += kernel/user
-
 ############################# Tools && Debug Option End #################################
 
 ############################# Security Option Begin ##############################
@@ -488,41 +479,17 @@ ifeq ($(LOSCFG_CC_STACKPROTECTOR_ALL), y)
 endif
 
 ifeq ($(LOSCFG_SECURITY), y)
-LIB_SUBDIRS += security
-LITEOS_BASELIB += -lsecurity
+    LIB_SUBDIRS += security
+    LITEOS_BASELIB += -lsecurity
 ifeq ($(LOSCFG_SECURITY_CAPABILITY), y)
-LITEOS_SECURITY_CAP_INC := -I $(LITEOSTOPDIR)/security/cap
+    LITEOS_SECURITY_CAP_INC := -I $(LITEOSTOPDIR)/security/cap
 endif
 ifeq ($(LOSCFG_SECURITY_VID), y)
-LITEOS_SECURITY_VID_INC := -I $(LITEOSTOPDIR)/security/vid
+    LITEOS_SECURITY_VID_INC := -I $(LITEOSTOPDIR)/security/vid
 endif
 endif
 
 ############################# Security Option End ##############################
-
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-CC  = $(LITEOS_COMPILER_PATH)clang $(LLVM_TARGET) $(LLVM_SYSROOT)
-AS  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)as
-AR  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)ar
-LD  = $(LITEOS_COMPILER_PATH)ld.lld
-GPP = $(LITEOS_COMPILER_PATH)clang++ $(LLVM_TARGET) $(LLVM_SYSROOT)
-OBJCOPY = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)objcopy -R .bss
-OBJDUMP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)objdump
-SIZE = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)size
-NM = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)nm
-STRIP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)strip
-else
-CC  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)gcc
-AS  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)as
-AR  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)ar
-LD  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)ld
-GPP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)g++
-OBJCOPY = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)objcopy
-OBJDUMP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)objdump
-SIZE = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)size
-NM = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)nm
-STRIP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)strip
-endif
 
 LITEOS_EXTKERNEL_INCLUDE   := $(LITEOS_CPPSUPPORT_INCLUDE) $(LITEOS_DYNLOAD_INCLUDE) \
                               $(LITEOS_TICKLESS_INCLUDE)   $(LITEOS_HOOK_INCLUDE)\

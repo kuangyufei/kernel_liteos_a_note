@@ -71,6 +71,7 @@ kernel_module(module_name) {
     "$LITEOSTHIRDPARTY/NuttX/fs/inode/fs_files.c",
     "$LITEOSTHIRDPARTY/NuttX/fs/mount/fs_foreachmountpoint.c",
     "$LITEOSTHIRDPARTY/NuttX/fs/mount/fs_mount.c",
+    "$LITEOSTHIRDPARTY/NuttX/fs/mount/fs_sync.c",
     "$LITEOSTHIRDPARTY/NuttX/fs/mount/fs_umount.c",
     "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_close.c",
     "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_dup.c",

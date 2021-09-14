@@ -29,37 +29,12 @@
 
 include $(LITEOSTOPDIR)/config.mk
 
-MODULE_NAME := bsp
-
-LOCAL_SRCS = $(wildcard ./main.c)
-
-LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/compat/posix/src \
-                 -I $(LITEOSTOPDIR)/bsd/dev/random
-
-LOCAL_SRCS += $(wildcard *.c)
-ifneq ($(LOSCFG_FS_VFS), y)
-LOCAL_SRCS := $(filter-out console.c virtual_serial.c, $(LOCAL_SRCS))
-endif
-ifneq ($(LOSCFG_BASE_CORE_HILOG), y)
-LOCAL_SRCS := $(filter-out los_hilog.c, $(LOCAL_SRCS))
-endif
-
-ALL_ASSRCS := $(wildcard *.S)
-ASSRCS := $(filter-out board.ld.S,$(ALL_ASSRCS))
-
-LOCAL_SRCS += $(ASSRCS)
-
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
-
 BOARD_LD = $(OUT)/lib/board.ld
 $(BOARD_LD): board.ld.S
 	$(HIDE)$(CC) $(LITEOS_CFLAGS) -P -E $< -o $@
 
-.PHONY: rm_board_ld
-rm_board_ld:
+.PHONY: all clean
+clean:
 	$(HIDE)$(RM) $(BOARD_LD)
 
 all: $(BOARD_LD)
-clean: rm_board_ld
-
-include $(MODULE)

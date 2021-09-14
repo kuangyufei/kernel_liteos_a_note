@@ -29,7 +29,6 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "sys_config.h"
 #include "los_oom.h"
 #include "los_init.h"
 #include "los_vm_dump.h"

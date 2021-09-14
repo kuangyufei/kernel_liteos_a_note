@@ -35,13 +35,10 @@ ifeq ($(LOSCFG_SHELL), y)
 LOCAL_SRCS := $(wildcard full/src/base/*.c) $(wildcard full/src/cmds/*.c)
 LOCAL_INCLUDE := \
 	-I $(LITEOSTOPDIR)/fs/nfs \
-	-I $(LITEOSTOPDIR)/shell/full/include \
-	-I $(LITEOSTOPDIR)/fs/ramfs \
-	-I $(LITEOSTOPDIR)/fs/fat \
-	-I $(LITEOSTOPDIR)/kernel/base/include \
+	-I $(LITEOSTOPDIR)/fs/ramfs
 
 endif
 
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
+LOCAL_FLAGS := $(LOCAL_INCLUDE)
 
 include $(MODULE)

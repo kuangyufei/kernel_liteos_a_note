@@ -1087,8 +1087,6 @@ OsBcache *BlockCacheInit(struct Vnode *devNode, UINT32 sectorSize, UINT32 sector
         return NULL;
     }
 
-    set_sd_sync_fn(OsSdSync);
-
     bcacheMem = (UINT8 *)zalloc(memSize);
     if (bcacheMem == NULL) {
         PRINT_ERR("bcache_init : malloc %u Bytes failed!\n", memSize);

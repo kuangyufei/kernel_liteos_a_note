@@ -1,0 +1,6 @@
+config HIDUMPER
+    bool "Enable hidumper"
+    default n
+    depends on KERNEL_EXTKERNEL
+    help
+      Answer Y to enable LiteOS support hidumper

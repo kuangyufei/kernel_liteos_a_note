@@ -444,28 +444,6 @@ char *rindex(const char *s, int c)
     return (char *)strrchr(s, c);
 }
 
-int (*sd_sync_fn)(int) = NULL;
-
-int (*nand_sync_fn)(void) = NULL;
-
-void set_sd_sync_fn(int (*sync_fn)(int))
-{
-    sd_sync_fn = sync_fn;
-}
-
-void sync(void)
-{
-#ifdef LOSCFG_FS_FAT_CACHE
-    if (sd_sync_fn != NULL)
-      {
-        (void)sd_sync_fn(0);
-        (void)sd_sync_fn(1);
-        return;
-      }
-#endif
-    PRINT_ERR("Unsupport syscall %s\n", __FUNCTION__);
-}
-
 static char *ls_get_fullpath(const char *path, struct dirent *pdirent)
 {
     char *fullpath = NULL;

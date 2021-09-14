@@ -1,0 +1,98 @@
+config KERNEL_EXTKERNEL
+    bool "Enable Extend Kernel"
+    default y
+    help
+      This option will enable extend Kernel of LiteOS.  Extend kernel include
+      cppsupport, cpup, and dynload. You can select one or some
+      of them.
+
+config KERNEL_CPPSUPPORT
+    bool "Enable C++ Support"
+    default y
+    depends on KERNEL_EXTKERNEL
+    help
+      If you wish to build LiteOS with support for C++.
+
+config KERNEL_CPUP
+    bool "Enable Cpup"
+    default y
+    depends on KERNEL_EXTKERNEL
+    help
+      If you wish to build LiteOS with support for cpup.
+
+config CPUP_INCLUDE_IRQ
+    bool "Enable Cpup include irq"
+    default y
+    depends on KERNEL_CPUP
+    help
+      If you wish to include irq usage for cpup.
+
+config KERNEL_DYNLOAD
+    bool "Enable Dynamic Load Feature"
+    default y
+    depends on KERNEL_EXTKERNEL && KERNEL_VM && KERNEL_SYSCALL
+    help
+      If you wish to build LiteOS with support for dynamic load.
+
+config ASLR
+    bool "Enable Address Space Layout Randomization"
+    default n
+    depends on KERNEL_DYNLOAD && HW_RANDOM_ENABLE
+    help
+      If you wish to enable ASLR for user aspace.
+
+config KERNEL_PM
+    bool "Enable Power Management"
+    default y
+    depends on KERNEL_EXTKERNEL
+    help
+      If you wish to build LiteOS with support for power management.
+
+config KERNEL_VDSO
+    bool "Enable VDSO Feature"
+    default n
+    depends on KERNEL_EXTKERNEL && KERNEL_VM && KERNEL_SYSCALL
+    help
+      If you wish to speed up some system calls.
+
+config KERNEL_SHM
+    bool "Enable Shared Memory"
+    default y
+    depends on KERNEL_EXTKERNEL && KERNEL_VM && KERNEL_SYSCALL
+    help
+      Answer Y to enable LiteOS support shared memory.
+
+config KERNEL_LITEIPC
+    bool "Enable liteipc"
+    default y
+    depends on KERNEL_EXTKERNEL && KERNEL_VM
+    help
+      Answer Y to enable LiteOS support liteipc.
+
+config KERNEL_PIPE
+    bool "Enable pipes"
+    default y
+    depends on KERNEL_EXTKERNEL
+    help
+      Answer Y to enable LiteOS support pipes.
+
+config BASE_CORE_HILOG
+    bool "Enable Hilog"
+    default y
+    depends on KERNEL_EXTKERNEL
+    help
+      If you wish to include hilog.
+
+config KERNEL_HOOK
+    bool "Enable Hook Feature"
+    default n
+    depends on KERNEL_EXTKERNEL && DEBUG_VERSION
+
+######################### config options of trace #########################
+source "kernel/extended/trace/Kconfig"
+
+######################### config options of blackbox #########################
+source "kernel/extended/blackbox/Kconfig"
+
+######################### config options of hidumper #########################
+source "kernel/extended/hidumper/Kconfig"

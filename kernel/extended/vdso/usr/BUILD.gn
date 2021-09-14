@@ -35,7 +35,6 @@ shared_library("OHOS-vdso") {
   include_dirs = [
     "$LITEOSTOPDIR/kernel/extended/vdso/include",
     "$LITEOSTOPDIR/kernel/include",
-    "$LITEOSTOPDIR/platform",
     "$LITEOSTOPDIR/bsd/compat/linuxkpi/include",
   ]
 

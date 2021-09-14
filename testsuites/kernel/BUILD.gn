@@ -27,116 +27,122 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 import("//build/lite/config/component/lite_component.gni")
 
 static_library("test_base") {
+  sources = [
+    "src/ChipTest.c",
+    "src/iCunit.c",
+    "src/osTest.c",
+    "src/testrun_shellcmd.c",
+    "src/testusb_shellcmd.c",
+  ]
 
-    sources = [
-        "src/ChipTest.c",
-        "src/iCunit.c",
-        "src/osTest.c",
-        "src/testrun_shellcmd.c",
-        "src/testusb_shellcmd.c",
-    ]
+  include_dirs = [
+    "../kernel/base/includ",
+    "../kernel/include",
+    "../kernel/extended/include",
+    "include",
+    "../fs/vfs",
+    "../fs/proc/include",
+    "../fs/jffs2/include",
+    "../fs/nfs/include",
+    "../bsd/compat/linuxkpi/include",
+  ]
 
-    include_dirs = [
-        "../kernel/base/includ",
-        "../kernel/include",
-        "../kernel/extended/include",
-        "include",
-        "../fs/vfs",
-        "../fs/proc/include",
-        "../fs/jffs2/include",
-        "../fs/nfs/include",
-        "../bsd/compat/linuxkpi/include",
-    ]
+  public_configs = [ ":public" ]
+}
+
+config("public") {
+  include_dirs = [ "include" ]
 }
 
 lite_component("test") {
-    features = [ ":test_base" ]
+  features = [ ":test_base" ]
 
-# KERNEL BASE TEST
-    if (LOSCFG_TEST_KERNEL_BASE_IPC) {
-        features += [ "sample/kernel_base/ipc:test_ipc" ]
-    }
-    if (LOSCFG_TEST_KERNEL_BASE_CORE) {
-        features += [ "sample/kernel_base/core:test_core" ]
-    }
-    if (LOSCFG_TEST_KERNEL_BASE_MP) {
-        features += [ "sample/kernel_base/mp:test_mp" ]
-    }
-    if (LOSCFG_TEST_KERNEL_BASE_MEM) {
-        features += [ "sample/kernel_base/mem:test_mem" ]
-    }
-    if (LOSCFG_TEST_KERNEL_BASE_MISC) {
-        features += [ "sample/kernel_base/misc:test_misc" ]
-    }
-    if (LOSCFG_TEST_KERNEL_BASE_OM) {
-        features += [ "sample/kernel_base/om:test_om" ]
-    }
-    if (LOSCFG_TEST_KERNEL_BASE_ATOMIC) {
-        features += [ "sample/kernel_base/atomic:test_atomic" ]
-    }
+  # KERNEL BASE TEST
+  if (LOSCFG_TEST_KERNEL_BASE_IPC) {
+    features += [ "sample/kernel_base/ipc:test_ipc" ]
+  }
+  if (LOSCFG_TEST_KERNEL_BASE_CORE) {
+    features += [ "sample/kernel_base/core:test_core" ]
+  }
+  if (LOSCFG_TEST_KERNEL_BASE_MP) {
+    features += [ "sample/kernel_base/mp:test_mp" ]
+  }
+  if (LOSCFG_TEST_KERNEL_BASE_MEM) {
+    features += [ "sample/kernel_base/mem:test_mem" ]
+  }
+  if (LOSCFG_TEST_KERNEL_BASE_MISC) {
+    features += [ "sample/kernel_base/misc:test_misc" ]
+  }
+  if (LOSCFG_TEST_KERNEL_BASE_OM) {
+    features += [ "sample/kernel_base/om:test_om" ]
+  }
+  if (LOSCFG_TEST_KERNEL_BASE_ATOMIC) {
+    features += [ "sample/kernel_base/atomic:test_atomic" ]
+  }
 
-# KERNEL EXTEND TEST
-    if (LOSCFG_TEST_KERNEL_EXTEND_CPP) {
-        features += [ "sample/kernel_extend/cpp:test_cpp" ]
-    }
-    if (LOSCFG_TEST_KERNEL_EXTEND_CPUP) {
-        features += [ "sample/kernel_extend/cpup:test_cpup" ]
-    }
-    if (LOSCFG_TEST_KERNEL_EXTEND_MMU) {
-        features += [ "sample/kernel_extend/mmu:test_mmu" ]
-    }
+  # KERNEL EXTEND TEST
+  if (LOSCFG_TEST_KERNEL_EXTEND_CPP) {
+    features += [ "sample/kernel_extend/cpp:test_cpp" ]
+  }
+  if (LOSCFG_TEST_KERNEL_EXTEND_CPUP) {
+    features += [ "sample/kernel_extend/cpup:test_cpup" ]
+  }
+  if (LOSCFG_TEST_KERNEL_EXTEND_MMU) {
+    features += [ "sample/kernel_extend/mmu:test_mmu" ]
+  }
 
-# COMPAT TEST
-    if (LOSCFG_TEST_POSIX) {
-        features += [
-            "sample/posix:test_posix",
-            # "sample/posix/smp:test_posix_smp",
-        ]
-    }
-    # if (LOSCFG_TEST_POSIX_MEM) {
-    #     features += [ "sample/posix/mem:test_posix_mem" ]
-    # }
-    # if (LOSCFG_TEST_POSIX_MQUEUE) {
-    #     features += [ "sample/posix/mqueue:test_posix_mqueue" ]
-    # }
-    # if (LOSCFG_TEST_POSIX_MUTEX) {
-    #     features += [ "sample/posix/mutex:test_posix_mutex" ]
-    # }
-    # if (LOSCFG_TEST_POSIX_PTHREAD) {
-    #     features += [ "sample/posix/pthread:test_posix_pthread" ]
-    # }
-    # if (LOSCFG_TEST_POSIX_SCHED) {
-    #     features += [ "sample/posix/sched:test_posix_sched" ]
-    # }
-    # if (LOSCFG_TEST_POSIX_SEM) {
-    #     features += [ "sample/posix/sem:test_posix_sem" ]
-    # }
-    # if (LOSCFG_TEST_POSIX_SWTMR) {
-    #     features += [ "sample/posix/swtmr:test_posix_swtmr" ]
-    # }
-    if (LOSCFG_TEST_LINUX) {
-        features += [ "sample/linux:test_linux" ]
-    }
-    #if (LOSCFG_TEST_LINUX_HRTIMER) {
-    #    features += [ "sample/linux/hrtimer:test_linux_hrtimer" ]
-    #}
+  # COMPAT TEST
+  if (LOSCFG_TEST_POSIX) {
+    features += [
+      "sample/posix:test_posix",
+      # "sample/posix/smp:test_posix_smp",
+    ]
+  }
 
-# LIBC TEST
-    if (LOSCFG_TEST_LIBC) {
-        features += [ "sample/libc:test_libc" ]
-    }
+  # if (LOSCFG_TEST_POSIX_MEM) {
+  #     features += [ "sample/posix/mem:test_posix_mem" ]
+  # }
+  # if (LOSCFG_TEST_POSIX_MQUEUE) {
+  #     features += [ "sample/posix/mqueue:test_posix_mqueue" ]
+  # }
+  # if (LOSCFG_TEST_POSIX_MUTEX) {
+  #     features += [ "sample/posix/mutex:test_posix_mutex" ]
+  # }
+  # if (LOSCFG_TEST_POSIX_PTHREAD) {
+  #     features += [ "sample/posix/pthread:test_posix_pthread" ]
+  # }
+  # if (LOSCFG_TEST_POSIX_SCHED) {
+  #     features += [ "sample/posix/sched:test_posix_sched" ]
+  # }
+  # if (LOSCFG_TEST_POSIX_SEM) {
+  #     features += [ "sample/posix/sem:test_posix_sem" ]
+  # }
+  # if (LOSCFG_TEST_POSIX_SWTMR) {
+  #     features += [ "sample/posix/swtmr:test_posix_swtmr" ]
+  # }
+  if (LOSCFG_TEST_LINUX) {
+    features += [ "sample/linux:test_linux" ]
+  }
 
-# LIBM TEST
-    if (LOSCFG_TEST_LIBM) {
-        features += [ "sample/libm:test_libm" ]
-    }
+  #if (LOSCFG_TEST_LINUX_HRTIMER) {
+  #    features += [ "sample/linux/hrtimer:test_linux_hrtimer" ]
+  #}
 
-# SHELL TEST
-    if (LOSCFG_TEST_SHELL) {
-        features += [ "sample/shell:test_shell" ]
-    }
+  # LIBC TEST
+  if (LOSCFG_TEST_LIBC) {
+    features += [ "sample/libc:test_libc" ]
+  }
+
+  # LIBM TEST
+  if (LOSCFG_TEST_LIBM) {
+    features += [ "sample/libm:test_libm" ]
+  }
+
+  # SHELL TEST
+  if (LOSCFG_TEST_SHELL) {
+    features += [ "sample/shell:test_shell" ]
+  }
 }

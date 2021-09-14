@@ -65,7 +65,7 @@ kernel_module(module_name) {
   include_dirs = [ "src/include" ]
 
   if (defined(LOSCFG_GDB)) {
-    configs += [ "$LITEOSTOPDIR:as_objs_libc_flags" ]
+    configs += [ ":as_objs_libc_flags" ]
   }
 
   public_configs = [ ":public" ]
@@ -76,4 +76,15 @@ config("public") {
     "include",
     "src/include",
   ]
+}
+
+config("as_objs_libc_flags") {
+  defines = [ "__ASSEMBLY__" ]
+
+  # linux style macros
+  if (defined(LOSCFG_ARCH_ARM_V7A) || defined(LOSCFG_ARCH_ARM_V7R) || defined(LOSCFG_ARCH_ARM_V7M)) {
+    defines += [ "__LINUX_ARM_ARCH__=7" ]
+  } else if (defined(LOSCFG_ARCH_ARM_V8A) || defined(LOSCFG_ARCH_ARM_V8R) || defined(LOSCFG_ARCH_ARM_V8M)) {
+    defines += [ "__LINUX_ARM_ARCH__=8" ]
+  }
 }

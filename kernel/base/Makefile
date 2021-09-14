@@ -40,12 +40,6 @@ LOCAL_SRCS := 	$(wildcard ipc/*.c) $(wildcard core/*.c) $(wildcard mem/membox/*.
 		$(wildcard sched/sched_sq/*.c) \
 		$(wildcard vm/*.c)
 
-LOCAL_INCLUDE := \
-	-I $(LITEOSTOPDIR)/kernel/base/include \
-	-I $(LITEOSTOPDIR)/kernel/extended/include \
-	-I $(LITEOSTOPDIR)/kernel/base/mem \
-	-I $(LITEOSTOPDIR)/kernel/base/vm
-
-LOCAL_FLAGS := $(LITEOS_CFLAGS_INTERWORK) $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
+LOCAL_FLAGS := $(LITEOS_CFLAGS_INTERWORK)
 
 include $(MODULE)

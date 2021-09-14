@@ -31,18 +31,10 @@ include $(LITEOSTOPDIR)/config.mk
 
 MODULE_NAME := $(notdir $(shell pwd))
 
-# LOCAL_SRCS := $(wildcard *.c)
-
 ifeq ($(LOSCFG_ARCH_GIC_V2), y)
 LOCAL_SRCS := gic_v2.c
 else ifeq ($(LOSCFG_ARCH_GIC_V3), y)
 LOCAL_SRCS := gic_v3.c
 endif
 
-LOCAL_INCLUDE := \
-	-I $(LITEOSTOPDIR)/kernel/base/include \
-	-I $(LITEOSTOPDIR)/arch/arm/include \
-	-I $(LITEOSTOPDIR)/arch/arm/arm/src/include \
-
-LOCAL_FLAGS := $(LOCAL_INCLUDE)
 include $(MODULE)

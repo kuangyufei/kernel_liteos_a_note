@@ -38,7 +38,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-extern UINT32 OsTestInit(VOID);
+extern UINT32 TestSystemInit(VOID);
 
 #ifdef __cplusplus
 #if __cplusplus

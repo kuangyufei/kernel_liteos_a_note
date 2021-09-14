@@ -68,6 +68,20 @@ static int OsELFOpen(const CHAR *fileName, INT32 oflags)
     }
 
     AssociateSystemFd(procFd, ret);
+    return procFd;
+}
+
+static int OsELFClose(int procFd)
+{
+    int ret;
+    /* Process procfd convert to system global procfd */
+    int sysfd = DisassociateProcessFd(procFd);
+    ret = close(sysfd);
+    if (ret < 0) {
+        AssociateSystemFd(procFd, sysfd);
+        return -get_errno();
+    }
+    FreeProcessFd(procFd);
     return ret;
 }
 
@@ -101,10 +115,11 @@ STATIC INT32 OsGetFileLength(UINT32 *fileLen, const CHAR *fileName)
     return LOS_OK;
 }
 
-STATIC INT32 OsReadELFInfo(INT32 fd, UINT8 *buffer, size_t readSize, off_t offset)
+STATIC INT32 OsReadELFInfo(INT32 procfd, UINT8 *buffer, size_t readSize, off_t offset)
 {
     ssize_t byteNum;
     off_t returnPos;
+    INT32 fd = GetAssociatedSystemFd(procfd);
 
     if (readSize > 0) {
         returnPos = lseek(fd, offset, SEEK_SET);
@@ -121,23 +136,22 @@ STATIC INT32 OsReadELFInfo(INT32 fd, UINT8 *buffer, size_t readSize, off_t offse
     }
     return LOS_OK;
 }
-//确认ELF头信息是否异常
+
 STATIC INT32 OsVerifyELFEhdr(const LD_ELF_EHDR *ehdr, UINT32 fileLen)
 {
     if (memcmp(ehdr->elfIdent, LD_ELFMAG, LD_SELFMAG) != 0) {
         PRINT_ERR("%s[%d], The file is not elf!\n", __FUNCTION__, __LINE__);
         return LOS_NOK;
     }
-	//必须为 LD_ET_EXEC 和 LD_ET_DYN 才可以被执行,
     if ((ehdr->elfType != LD_ET_EXEC) && (ehdr->elfType != LD_ET_DYN)) {
         PRINT_ERR("%s[%d], The type of file is not ET_EXEC or ET_DYN!\n", __FUNCTION__, __LINE__);
         return LOS_NOK;
     }
-    if (ehdr->elfMachine != LD_EM_ARM) {//CPU架构,目前只支持arm系列
+    if (ehdr->elfMachine != LD_EM_ARM) {
         PRINT_ERR("%s[%d], The type of machine is not EM_ARM!\n", __FUNCTION__, __LINE__);
         return LOS_NOK;
     }
-    if (ehdr->elfPhNum > ELF_PHDR_NUM_MAX) {//程序头数量不能大于128个
+    if (ehdr->elfPhNum > ELF_PHDR_NUM_MAX) {
         PRINT_ERR("%s[%d], The num of program header is out of limit\n", __FUNCTION__, __LINE__);
         return LOS_NOK;
     }
@@ -175,14 +189,14 @@ STATIC VOID OsLoadInit(ELFLoadInfo *loadInfo)
 {
 #ifdef LOSCFG_FS_VFS
     const struct files_struct *oldFiles = OsCurrProcessGet()->files;
-    loadInfo->oldFiles = (UINTPTR)create_files_snapshot(oldFiles);//为当前进程做文件镜像
+    loadInfo->oldFiles = (UINTPTR)create_files_snapshot(oldFiles);
 #else
     loadInfo->oldFiles = NULL;
 #endif
-    loadInfo->execInfo.fd = INVALID_FD;
-    loadInfo->interpInfo.fd = INVALID_FD;
+    loadInfo->execInfo.procfd = INVALID_FD;
+    loadInfo->interpInfo.procfd = INVALID_FD;
 }
-//读 ELF头信息
+
 STATIC INT32 OsReadEhdr(const CHAR *fileName, ELFInfo *elfInfo, BOOL isExecFile)
 {
     INT32 ret;
@@ -197,23 +211,23 @@ STATIC INT32 OsReadEhdr(const CHAR *fileName, ELFInfo *elfInfo, BOOL isExecFile)
         PRINT_ERR("%s[%d], Failed to open ELF file: %s!\n", __FUNCTION__, __LINE__, fileName);
         return ret;
     }
-    elfInfo->fd = ret;//文件描述符
+    elfInfo->procfd = ret;
 
 #ifdef LOSCFG_DRIVERS_TZDRIVER
     if (isExecFile) {
-        ret = fs_getfilep(elfInfo->fd, &OsCurrProcessGet()->execFile);
+        ret = fs_getfilep(GetAssociatedSystemFd(elfInfo->procfd), &OsCurrProcessGet()->execFile);
         if (ret) {
             PRINT_ERR("%s[%d], Failed to get struct file %s!\n", __FUNCTION__, __LINE__, fileName);
         }
     }
 #endif
-    ret = OsReadELFInfo(elfInfo->fd, (UINT8 *)&elfInfo->elfEhdr, sizeof(LD_ELF_EHDR), 0);//读取ELF头部信息
+    ret = OsReadELFInfo(elfInfo->procfd, (UINT8 *)&elfInfo->elfEhdr, sizeof(LD_ELF_EHDR), 0);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
         return -EIO;
     }
 
-    ret = OsVerifyELFEhdr(&elfInfo->elfEhdr, elfInfo->fileLen);//确认是否为有效的ELF文件
+    ret = OsVerifyELFEhdr(&elfInfo->elfEhdr, elfInfo->fileLen);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
         return isExecFile ? -ENOEXEC : -ELIBBAD;
@@ -221,7 +235,7 @@ STATIC INT32 OsReadEhdr(const CHAR *fileName, ELFInfo *elfInfo, BOOL isExecFile)
 
     return LOS_OK;
 }
-//读程序头信息
+
 STATIC INT32 OsReadPhdrs(ELFInfo *elfInfo, BOOL isExecFile)
 {
     LD_ELF_EHDR *elfEhdr = &elfInfo->elfEhdr;
@@ -236,18 +250,18 @@ STATIC INT32 OsReadPhdrs(ELFInfo *elfInfo, BOOL isExecFile)
         goto OUT;
     }
 
-    size = sizeof(LD_ELF_PHDR) * elfEhdr->elfPhNum;//计算所有程序头大小
+    size = sizeof(LD_ELF_PHDR) * elfEhdr->elfPhNum;
     if ((elfEhdr->elfPhoff + size) > elfInfo->fileLen) {
         goto OUT;
     }
 
-    elfInfo->elfPhdr = LOS_MemAlloc(m_aucSysMem0, size);//在内核空间分配内存保存ELF程序头
+    elfInfo->elfPhdr = LOS_MemAlloc(m_aucSysMem0, size);
     if (elfInfo->elfPhdr == NULL) {
         PRINT_ERR("%s[%d], Failed to allocate for elfPhdr!\n", __FUNCTION__, __LINE__);
         return -ENOMEM;
     }
-	//读取所有程序头信息
-    ret = OsReadELFInfo(elfInfo->fd, (UINT8 *)elfInfo->elfPhdr, size, elfEhdr->elfPhoff);
+
+    ret = OsReadELFInfo(elfInfo->procfd, (UINT8 *)elfInfo->elfPhdr, size, elfEhdr->elfPhoff);
     if (ret != LOS_OK) {
         (VOID)LOS_MemFree(m_aucSysMem0, elfInfo->elfPhdr);
         elfInfo->elfPhdr = NULL;
@@ -260,7 +274,7 @@ OUT:
     PRINT_ERR("%s[%d], elf file is bad!\n", __FUNCTION__, __LINE__);
     return isExecFile ? -ENOEXEC : -ELIBBAD;
 }
-//读取 INTERP段信息,描述了一个特殊内存段,该段内存记录了动态加载解析器的访问路径字符串.
+
 STATIC INT32 OsReadInterpInfo(ELFLoadInfo *loadInfo)
 {
     LD_ELF_PHDR *elfPhdr = loadInfo->execInfo.elfPhdr;
@@ -268,10 +282,10 @@ STATIC INT32 OsReadInterpInfo(ELFLoadInfo *loadInfo)
     INT32 ret, i;
 
     for (i = 0; i < loadInfo->execInfo.elfEhdr.elfPhNum; ++i, ++elfPhdr) {
-        if (elfPhdr->type != LD_PT_INTERP) {//该可执行文件所需的动态链接器的路径
-            continue;//[Requesting program interpreter: /lib/ld-musl-arm.so.1]
-        }//lib/ld-musl-arm.so.1 -> /lib/libc.so
-		//./out/hispark_aries/ipcamera_hispark_aries/obj/kernel/liteos_a/rootfs/lib/libc.so
+        if (elfPhdr->type != LD_PT_INTERP) {
+            continue;
+        }
+
         if (OsVerifyELFPhdr(elfPhdr) != LOS_OK) {
             return -ENOEXEC;
         }
@@ -288,7 +302,7 @@ STATIC INT32 OsReadInterpInfo(ELFLoadInfo *loadInfo)
             return -ENOMEM;
         }
 
-        ret = OsReadELFInfo(loadInfo->execInfo.fd, (UINT8 *)elfInterpName, elfPhdr->fileSize, elfPhdr->offset);
+        ret = OsReadELFInfo(loadInfo->execInfo.procfd, (UINT8 *)elfInterpName, elfPhdr->fileSize, elfPhdr->offset);
         if (ret != LOS_OK) {
             PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
             ret = -EIO;
@@ -300,13 +314,13 @@ STATIC INT32 OsReadInterpInfo(ELFLoadInfo *loadInfo)
             ret = -ENOEXEC;
             goto OUT;
         }
-		//读"/lib/libc.so" ELF头信息
-        ret = OsReadEhdr(INTERP_FULL_PATH, &loadInfo->interpInfo, FALSE);//打开.so文件,绑定 fd
+
+        ret = OsReadEhdr(INTERP_FULL_PATH, &loadInfo->interpInfo, FALSE);
         if (ret != LOS_OK) {
             PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
             goto OUT;
         }
-		//读"/lib/libc.so" ELF程序头信息
+
         ret = OsReadPhdrs(&loadInfo->interpInfo, FALSE);
         if (ret != LOS_OK) {
             goto OUT;
@@ -373,7 +387,7 @@ STATIC UINTPTR OsDoMmapFile(INT32 fd, UINTPTR addr, const LD_ELF_PHDR *elfPhdr, 
 {
     UINTPTR mapAddr;
     UINT32 size;
-    UINT32 offset = elfPhdr->offset - ROUNDOFFSET(elfPhdr->vAddr, PAGE_SIZE);//相对文件的偏移量
+    UINT32 offset = elfPhdr->offset - ROUNDOFFSET(elfPhdr->vAddr, PAGE_SIZE);
     addr = ROUNDDOWN(addr, PAGE_SIZE);
 
     if (mapSize != 0) {
@@ -391,7 +405,7 @@ STATIC UINTPTR OsDoMmapFile(INT32 fd, UINTPTR addr, const LD_ELF_PHDR *elfPhdr, 
     }
     return mapAddr;
 }
-//获取内核虚拟地址
+
 INT32 OsGetKernelVaddr(const LosVmSpace *space, VADDR_T vaddr, VADDR_T *kvaddr)
 {
     INT32 ret;
@@ -402,17 +416,17 @@ INT32 OsGetKernelVaddr(const LosVmSpace *space, VADDR_T vaddr, VADDR_T *kvaddr)
         return LOS_NOK;
     }
 
-    if (LOS_IsKernelAddress(vaddr)) {//如果vaddr是内核空间地址
-        *kvaddr = vaddr;//直接返回
+    if (LOS_IsKernelAddress(vaddr)) {
+        *kvaddr = vaddr;
         return LOS_OK;
     }
 
-    ret = LOS_ArchMmuQuery(&space->archMmu, vaddr, &paddr, NULL);//通过虚拟地址查询物理地址
+    ret = LOS_ArchMmuQuery(&space->archMmu, vaddr, &paddr, NULL);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d], Failed to query the vaddr: %#x, status: %d\n", __FUNCTION__, __LINE__, vaddr, ret);
         return LOS_NOK;
     }
-    *kvaddr = (VADDR_T)(UINTPTR)LOS_PaddrToKVaddr(paddr);//获取通过物理地址获取内核虚拟地址
+    *kvaddr = (VADDR_T)(UINTPTR)LOS_PaddrToKVaddr(paddr);
     if (*kvaddr == 0) {
         PRINT_ERR("%s[%d], kvaddr is null\n", __FUNCTION__, __LINE__);
         return LOS_NOK;
@@ -420,7 +434,7 @@ INT32 OsGetKernelVaddr(const LosVmSpace *space, VADDR_T vaddr, VADDR_T *kvaddr)
 
     return LOS_OK;
 }
-//设置.bss 区
+
 STATIC INT32 OsSetBss(const LD_ELF_PHDR *elfPhdr, INT32 fd, UINTPTR bssStart, UINT32 bssEnd, UINT32 elfProt)
 {
     UINTPTR bssStartPageAlign, bssEndPageAlign;
@@ -440,8 +454,8 @@ STATIC INT32 OsSetBss(const LD_ELF_PHDR *elfPhdr, INT32 fd, UINTPTR bssStart, UI
 
     bssMapSize = bssEndPageAlign - bssStartPageAlign;
     if (bssMapSize > 0) {
-        stackFlags = MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS;//私有/覆盖/匿名映射
-        mapBase = (UINTPTR)LOS_MMap(bssStartPageAlign, bssMapSize, elfProt, stackFlags, -1, 0);//再建立映射关系
+        stackFlags = MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS;
+        mapBase = (UINTPTR)LOS_MMap(bssStartPageAlign, bssMapSize, elfProt, stackFlags, -1, 0);
         if (!LOS_IsUserAddress((VADDR_T)mapBase)) {
             PRINT_ERR("%s[%d], Failed to map bss\n", __FUNCTION__, __LINE__);
             return -ENOMEM;
@@ -450,37 +464,38 @@ STATIC INT32 OsSetBss(const LD_ELF_PHDR *elfPhdr, INT32 fd, UINTPTR bssStart, UI
 
     return LOS_OK;
 }
-//映射ELF文件,处理 LD_PT_LOAD 类型,(代码区,数据区) 
-STATIC INT32 OsMmapELFFile(INT32 fd, const LD_ELF_PHDR *elfPhdr, const LD_ELF_EHDR *elfEhdr, UINTPTR *elfLoadAddr,
+
+STATIC INT32 OsMmapELFFile(INT32 procfd, const LD_ELF_PHDR *elfPhdr, const LD_ELF_EHDR *elfEhdr, UINTPTR *elfLoadAddr,
                            UINT32 mapSize, UINTPTR *loadBase)
 {
     const LD_ELF_PHDR *elfPhdrTemp = elfPhdr;
     UINTPTR vAddr, mapAddr, bssStart;
     UINT32 bssEnd, elfProt, elfFlags;
     INT32 ret, i;
+    INT32 fd = GetAssociatedSystemFd(procfd);
 
-    for (i = 0; i < elfEhdr->elfPhNum; ++i, ++elfPhdrTemp) {//一段一段处理
-        if (elfPhdrTemp->type != LD_PT_LOAD) {//只处理 LD_PT_LOAD 类型段
+    for (i = 0; i < elfEhdr->elfPhNum; ++i, ++elfPhdrTemp) {
+        if (elfPhdrTemp->type != LD_PT_LOAD) {
             continue;
         }
-        if (elfEhdr->elfType == LD_ET_EXEC) {//验证可执行文件
+        if (elfEhdr->elfType == LD_ET_EXEC) {
             if (OsVerifyELFPhdr(elfPhdrTemp) != LOS_OK) {
                 return -ENOEXEC;
             }
         }
 
-        elfProt = OsGetProt(elfPhdrTemp->flags);//获取段权限
-        if ((elfProt & PROT_READ) == 0) {// LD_PT_LOAD 必有 R 属性
+        elfProt = OsGetProt(elfPhdrTemp->flags);
+        if ((elfProt & PROT_READ) == 0) {
             return -ENOEXEC;
         }
-        elfFlags = MAP_PRIVATE | MAP_FIXED;//进程私有并覆盖方式,非匿名即文件映射
-        vAddr = elfPhdrTemp->vAddr;//虚拟地址
-        if ((vAddr == 0) && (*loadBase == 0)) {//这种情况不用覆盖.
+        elfFlags = MAP_PRIVATE | MAP_FIXED;
+        vAddr = elfPhdrTemp->vAddr;
+        if ((vAddr == 0) && (*loadBase == 0)) {
             elfFlags &= ~MAP_FIXED;
         }
-		//处理文件段和虚拟空间的映射关系
+
         mapAddr = OsDoMmapFile(fd, (vAddr + *loadBase), elfPhdrTemp, elfProt, elfFlags, mapSize);
-        if (!LOS_IsUserAddress((VADDR_T)mapAddr)) {//映射地址必在用户空间.
+        if (!LOS_IsUserAddress((VADDR_T)mapAddr)) {
             return -ENOMEM;
         }
 #ifdef LOSCFG_DRIVERS_TZDRIVER
@@ -495,13 +510,13 @@ STATIC INT32 OsMmapELFFile(INT32 fd, const LD_ELF_PHDR *elfPhdr, const LD_ELF_EH
         }
 
         if ((*loadBase == 0) && (elfEhdr->elfType == LD_ET_DYN)) {
-            *loadBase = mapAddr;//改变装载基地址
+            *loadBase = mapAddr;
         }
-		//.bss 的区分标识为 实际使用内存大小要大于文件大小,而且必是可写,.bss采用匿名映射
+
         if ((elfPhdrTemp->memSize > elfPhdrTemp->fileSize) && (elfPhdrTemp->flags & PF_W)) {
-            bssStart = mapAddr + ROUNDOFFSET(vAddr, PAGE_SIZE) + elfPhdrTemp->fileSize;//bss区开始位置
-            bssEnd = mapAddr + ROUNDOFFSET(vAddr, PAGE_SIZE) + elfPhdrTemp->memSize;//bss区结束位置
-            ret = OsSetBss(elfPhdrTemp, fd, bssStart, bssEnd, elfProt);//设置bss区
+            bssStart = mapAddr + ROUNDOFFSET(vAddr, PAGE_SIZE) + elfPhdrTemp->fileSize;
+            bssEnd = mapAddr + ROUNDOFFSET(vAddr, PAGE_SIZE) + elfPhdrTemp->memSize;
+            ret = OsSetBss(elfPhdrTemp, fd, bssStart, bssEnd, elfProt);
             if (ret != LOS_OK) {
                 return ret;
             }
@@ -510,20 +525,20 @@ STATIC INT32 OsMmapELFFile(INT32 fd, const LD_ELF_PHDR *elfPhdr, const LD_ELF_EH
 
     return LOS_OK;
 }
-//加载解析器二进制
+
 STATIC INT32 OsLoadInterpBinary(const ELFLoadInfo *loadInfo, UINTPTR *interpMapBase)
 {
     UINTPTR loadBase = 0;
     UINT32 mapSize;
     INT32 ret;
 
-    mapSize = OsGetAllocSize(loadInfo->interpInfo.elfPhdr, loadInfo->interpInfo.elfEhdr.elfPhNum);//获取要分配映射内存大小
+    mapSize = OsGetAllocSize(loadInfo->interpInfo.elfPhdr, loadInfo->interpInfo.elfEhdr.elfPhNum);
     if (mapSize == 0) {
         PRINT_ERR("%s[%d], Failed to get interp allocation size!\n", __FUNCTION__, __LINE__);
         return -EINVAL;
     }
-	//对动态链接库做映射
-    ret = OsMmapELFFile(loadInfo->interpInfo.fd, loadInfo->interpInfo.elfPhdr, &loadInfo->interpInfo.elfEhdr,
+
+    ret = OsMmapELFFile(loadInfo->interpInfo.procfd, loadInfo->interpInfo.elfPhdr, &loadInfo->interpInfo.elfEhdr,
                         interpMapBase, mapSize, &loadBase);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
@@ -605,7 +620,7 @@ STATIC INT32 OsPutUserArgv(UINTPTR *strPtr, UINTPTR **sp, INT32 count)
 
     return LOS_OK;
 }
-//拷贝参数,将内核空间参数拷贝到用户栈空间.
+
 STATIC INT32 OsCopyParams(ELFLoadInfo *loadInfo, INT32 argc, CHAR *const *argv)
 {
     CHAR *strPtr = NULL;
@@ -618,7 +633,7 @@ STATIC INT32 OsCopyParams(ELFLoadInfo *loadInfo, INT32 argc, CHAR *const *argv)
         return -EINVAL;
     }
 
-    ret = OsGetKernelVaddr(loadInfo->newSpace, loadInfo->stackParamBase, &kvaddr);//获取内核虚拟地址
+    ret = OsGetKernelVaddr(loadInfo->newSpace, loadInfo->stackParamBase, &kvaddr);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
         return -EFAULT;
@@ -644,7 +659,7 @@ STATIC INT32 OsCopyParams(ELFLoadInfo *loadInfo, INT32 argc, CHAR *const *argv)
         loadInfo->topOfMem -= strLen;
         offset -= strLen;
 
-        /* copy strings to user stack *///拷贝参数到用户栈空间
+        /* copy strings to user stack */
         if (LOS_IsKernelAddress((VADDR_T)(UINTPTR)strPtr)) {
             err = memcpy_s((VOID *)(UINTPTR)(kvaddr + offset), strLen, strPtr, strLen);
         } else {
@@ -659,7 +674,7 @@ STATIC INT32 OsCopyParams(ELFLoadInfo *loadInfo, INT32 argc, CHAR *const *argv)
 
     return LOS_OK;
 }
-//获取参数
+
 STATIC INT32 OsGetParamNum(CHAR *const *argv)
 {
     CHAR *argPtr = NULL;
@@ -687,7 +702,7 @@ STATIC INT32 OsGetParamNum(CHAR *const *argv)
 
     return count;
 }
-//对齐
+
 STATIC UINT32 OsGetRndOffset(const ELFLoadInfo *loadInfo)
 {
     UINT32 randomValue = 0;
@@ -702,9 +717,9 @@ STATIC UINT32 OsGetRndOffset(const ELFLoadInfo *loadInfo)
     (VOID)loadInfo;
 #endif
 
-    return ROUNDDOWN(randomValue, PAGE_SIZE);//按4K页大小向下圆整
+    return ROUNDDOWN(randomValue, PAGE_SIZE);
 }
-//获取LD_PT_GNU_STACK栈的权限
+
 STATIC VOID OsGetStackProt(ELFLoadInfo *loadInfo)
 {
     LD_ELF_PHDR *elfPhdrTemp = loadInfo->execInfo.elfPhdr;
@@ -759,7 +774,7 @@ OUT:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return LOS_NOK;
 }
-//设置命令行参数
+
 STATIC INT32 OsSetArgParams(ELFLoadInfo *loadInfo, CHAR *const *argv, CHAR *const *envp)
 {
     UINT32 vmFlags;
@@ -772,45 +787,45 @@ STATIC INT32 OsSetArgParams(ELFLoadInfo *loadInfo, CHAR *const *argv, CHAR *cons
     }
 #endif
 
-    (VOID)OsGetStackProt(loadInfo);//获取栈权限
-    if (((UINT32)loadInfo->stackProt & (PROT_READ | PROT_WRITE)) != (PROT_READ | PROT_WRITE)) {//要求对栈有读写权限
+    (VOID)OsGetStackProt(loadInfo);
+    if (((UINT32)loadInfo->stackProt & (PROT_READ | PROT_WRITE)) != (PROT_READ | PROT_WRITE)) {
         return -ENOEXEC;
     }
-    loadInfo->stackTopMax = USER_STACK_TOP_MAX - OsGetRndOffset(loadInfo);//设置栈底位置,递减满栈方式
-    loadInfo->stackBase = loadInfo->stackTopMax - USER_STACK_SIZE;//设置栈顶位置
+    loadInfo->stackTopMax = USER_STACK_TOP_MAX - OsGetRndOffset(loadInfo);
+    loadInfo->stackBase = loadInfo->stackTopMax - USER_STACK_SIZE;
     loadInfo->stackSize = USER_STACK_SIZE;
     loadInfo->stackParamBase = loadInfo->stackTopMax - USER_PARAM_BYTE_MAX;
-    vmFlags = OsCvtProtFlagsToRegionFlags(loadInfo->stackProt, MAP_FIXED);//权限转化
-    vmFlags |= VM_MAP_REGION_FLAG_STACK;//栈区标识
+    vmFlags = OsCvtProtFlagsToRegionFlags(loadInfo->stackProt, MAP_FIXED);
+    vmFlags |= VM_MAP_REGION_FLAG_STACK;
     ret = OsStackAlloc((VOID *)loadInfo->newSpace, loadInfo->stackBase, USER_STACK_SIZE,
                        USER_PARAM_BYTE_MAX, vmFlags);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d], Failed to alloc memory for user stack!\n", __FUNCTION__, __LINE__);
         return -ENOMEM;
     }
-    loadInfo->topOfMem = loadInfo->stackTopMax - sizeof(UINTPTR);//虚拟空间顶部位置
+    loadInfo->topOfMem = loadInfo->stackTopMax - sizeof(UINTPTR);
 
-    loadInfo->argc = OsGetParamNum(argv);//获取参数个数
-    loadInfo->envc = OsGetParamNum(envp);//获取环境变量个数
-    ret = OsCopyParams(loadInfo, 1, (CHAR *const *)&loadInfo->fileName);//保存文件名称到用户空间
+    loadInfo->argc = OsGetParamNum(argv);
+    loadInfo->envc = OsGetParamNum(envp);
+    ret = OsCopyParams(loadInfo, 1, (CHAR *const *)&loadInfo->fileName);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d], Failed to copy filename to user stack!\n", __FUNCTION__, __LINE__);
         return ret;
     }
     loadInfo->execName = (CHAR *)loadInfo->topOfMem;
 
-    ret = OsCopyParams(loadInfo, loadInfo->envc, envp);//保存环境变量
+    ret = OsCopyParams(loadInfo, loadInfo->envc, envp);
     if (ret != LOS_OK) {
         return ret;
     }
-    ret = OsCopyParams(loadInfo, loadInfo->argc, argv);//保存命令行参数
+    ret = OsCopyParams(loadInfo, loadInfo->argc, argv);
     if (ret != LOS_OK) {
         return ret;
     }
 
     return LOS_OK;
 }
-//将参数放到栈底保存
+
 STATIC INT32 OsPutParamToStack(ELFLoadInfo *loadInfo, const UINTPTR *auxVecInfo, INT32 vecIndex)
 {
     UINTPTR argStart = loadInfo->topOfMem;
@@ -848,14 +863,10 @@ STATIC INT32 OsPutParamToStack(ELFLoadInfo *loadInfo, const UINTPTR *auxVecInfo,
 
     return LOS_OK;
 }
-/*
-ELF辅助向量:从内核空间到用户空间的神秘信息载体。
-ELF辅助向量是一种将某些内核级信息传递给用户进程的机制。此类信息的一个示例是指向系统呼叫内存中的入口点(AT_SYSINFO)；
-这些信息本质上是动态的，只有在内核完成加载之后才知道。
-*/
+
 STATIC INT32 OsMakeArgsStack(ELFLoadInfo *loadInfo, UINTPTR interpMapBase)
 {
-    UINTPTR auxVector[AUX_VECTOR_SIZE] = { 0 };//辅助向量
+    UINTPTR auxVector[AUX_VECTOR_SIZE] = { 0 };
     UINTPTR *auxVecInfo = (UINTPTR *)auxVector;
     INT32 vecIndex = 0;
     INT32 ret;
@@ -888,7 +899,7 @@ STATIC INT32 OsMakeArgsStack(ELFLoadInfo *loadInfo, UINTPTR interpMapBase)
 #endif
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_NULL,   0);
 
-    ret = OsPutParamToStack(loadInfo, auxVecInfo, vecIndex);//设置到栈底保存
+    ret = OsPutParamToStack(loadInfo, auxVecInfo, vecIndex);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d], Failed to put param to user stack\n", __FUNCTION__, __LINE__);
         return ret;
@@ -896,18 +907,18 @@ STATIC INT32 OsMakeArgsStack(ELFLoadInfo *loadInfo, UINTPTR interpMapBase)
 
     return LOS_OK;
 }
-//加载段信息,这是主体函数
+
 STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
 {
     LD_ELF_PHDR *elfPhdrTemp = loadInfo->execInfo.elfPhdr;
-    UINTPTR loadBase = 0;//加载基地址
-    UINTPTR interpMapBase = 0;//解析器基地址
+    UINTPTR loadBase = 0;
+    UINTPTR interpMapBase = 0;
     UINT32 mapSize = 0;
     INT32 ret;
     loadInfo->loadAddr = 0;
 
-    if (loadInfo->execInfo.elfEhdr.elfType == LD_ET_DYN) {//共享目标文件
-        loadBase = EXEC_MMAP_BASE + OsGetRndOffset(loadInfo);//加载基地址
+    if (loadInfo->execInfo.elfEhdr.elfType == LD_ET_DYN) {
+        loadBase = EXEC_MMAP_BASE + OsGetRndOffset(loadInfo);
         mapSize = OsGetAllocSize(elfPhdrTemp, loadInfo->execInfo.elfEhdr.elfPhNum);
         if (mapSize == 0) {
             PRINT_ERR("%s[%d], Failed to get allocation size of file: %s!\n", __FUNCTION__, __LINE__,
@@ -915,27 +926,27 @@ STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
             return -EINVAL;
         }
     }
-	//先映射 ELF文件各段
-    ret = OsMmapELFFile(loadInfo->execInfo.fd, loadInfo->execInfo.elfPhdr, &loadInfo->execInfo.elfEhdr,
+
+    ret = OsMmapELFFile(loadInfo->execInfo.procfd, loadInfo->execInfo.elfPhdr, &loadInfo->execInfo.elfEhdr,
                         &loadInfo->loadAddr, mapSize, &loadBase);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
         return ret;
     }
 
-    if (loadInfo->interpInfo.fd != INVALID_FD) {//存在解析器的情况
-        ret = OsLoadInterpBinary(loadInfo, &interpMapBase);//加载和映射 libc.so相关段 
+    if (loadInfo->interpInfo.procfd != INVALID_FD) {
+        ret = OsLoadInterpBinary(loadInfo, &interpMapBase);
         if (ret != LOS_OK) {
             return ret;
         }
 
-        loadInfo->elfEntry = loadInfo->interpInfo.elfEhdr.elfEntry + interpMapBase;//解析器的装载点为进程程序装载点
+        loadInfo->elfEntry = loadInfo->interpInfo.elfEhdr.elfEntry + interpMapBase;
         loadInfo->execInfo.elfEhdr.elfEntry = loadInfo->execInfo.elfEhdr.elfEntry + loadBase;
     } else {
-        loadInfo->elfEntry = loadInfo->execInfo.elfEhdr.elfEntry;//直接用ELF头信息的程序装载点 "_start"
+        loadInfo->elfEntry = loadInfo->execInfo.elfEhdr.elfEntry;
     }
 
-    ret = OsMakeArgsStack(loadInfo, interpMapBase);//保存辅助向量
+    ret = OsMakeArgsStack(loadInfo, interpMapBase);
     if (ret != LOS_OK) {
         return ret;
     }
@@ -946,87 +957,87 @@ STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
 
     return LOS_OK;
 }
-//更新进程空间
+
 STATIC VOID OsFlushAspace(ELFLoadInfo *loadInfo)
 {
-    LosProcessCB *processCB = OsCurrProcessGet();//获取当前进程
+    LosProcessCB *processCB = OsCurrProcessGet();
 
-    OsExecDestroyTaskGroup();//任务退出
+    OsExecDestroyTaskGroup();
 
-    loadInfo->oldSpace = processCB->vmSpace;//当前进程空间变成老空间
-    processCB->vmSpace = loadInfo->newSpace;//ELF进程空间变成当前进程空间,腾笼换鸟
-    processCB->vmSpace->heapBase += OsGetRndOffset(loadInfo);//堆起始地址
-    processCB->vmSpace->heapNow = processCB->vmSpace->heapBase;//堆现地址
-    processCB->vmSpace->mapBase += OsGetRndOffset(loadInfo);//映射地址
-    processCB->vmSpace->mapSize = loadInfo->stackBase - processCB->vmSpace->mapBase;//映射区大小
-    LOS_ArchMmuContextSwitch(&OsCurrProcessGet()->vmSpace->archMmu);//MMU切换
+    loadInfo->oldSpace = processCB->vmSpace;
+    processCB->vmSpace = loadInfo->newSpace;
+    processCB->vmSpace->heapBase += OsGetRndOffset(loadInfo);
+    processCB->vmSpace->heapNow = processCB->vmSpace->heapBase;
+    processCB->vmSpace->mapBase += OsGetRndOffset(loadInfo);
+    processCB->vmSpace->mapSize = loadInfo->stackBase - processCB->vmSpace->mapBase;
+    LOS_ArchMmuContextSwitch(&OsCurrProcessGet()->vmSpace->archMmu);
 }
-//反初始化信息加载
+
 STATIC VOID OsDeInitLoadInfo(ELFLoadInfo *loadInfo)
 {
 #ifdef LOSCFG_ASLR
     (VOID)close(loadInfo->randomDevFD);
 #endif
 
-    if (loadInfo->execInfo.elfPhdr != NULL) {//ELF程序头
+    if (loadInfo->execInfo.elfPhdr != NULL) {
         (VOID)LOS_MemFree(m_aucSysMem0, loadInfo->execInfo.elfPhdr);
     }
 
-    if (loadInfo->interpInfo.elfPhdr != NULL) {// lib/libc.so 程序头
+    if (loadInfo->interpInfo.elfPhdr != NULL) {
         (VOID)LOS_MemFree(m_aucSysMem0, loadInfo->interpInfo.elfPhdr);
     }
 }
-//反初始化文件
+
 STATIC VOID OsDeInitFiles(ELFLoadInfo *loadInfo)
 {
-    if (loadInfo->execInfo.fd != INVALID_FD) {
-        (VOID)close(loadInfo->execInfo.fd);
+    if (loadInfo->execInfo.procfd != INVALID_FD) {
+        (VOID)OsELFClose(loadInfo->execInfo.procfd);
     }
 
-    if (loadInfo->interpInfo.fd != INVALID_FD) {
-        (VOID)close(loadInfo->interpInfo.fd);
+    if (loadInfo->interpInfo.procfd != INVALID_FD) {
+        (VOID)OsELFClose(loadInfo->interpInfo.procfd);
     }
 #ifdef LOSCFG_FS_VFS
-    delete_files_snapshot((struct files_struct *)loadInfo->oldFiles);//删除镜像文件
+    delete_files_snapshot((struct files_struct *)loadInfo->oldFiles);
 #endif
 }
-//加载ELF格式文件
+
 INT32 OsLoadELFFile(ELFLoadInfo *loadInfo)
 {
     INT32 ret;
 
-    OsLoadInit(loadInfo);//初始化加载信息
+    OsLoadInit(loadInfo);
 
-    ret = OsReadEhdr(loadInfo->fileName, &loadInfo->execInfo, TRUE);//读ELF头信息
+    ret = OsReadEhdr(loadInfo->fileName, &loadInfo->execInfo, TRUE);
     if (ret != LOS_OK) {
         goto OUT;
     }
 
-    ret = OsReadPhdrs(&loadInfo->execInfo, TRUE);//读ELF程序头信息,构建进程映像所需信息.
+    ret = OsReadPhdrs(&loadInfo->execInfo, TRUE);
     if (ret != LOS_OK) {
         goto OUT;
     }
 
-    ret = OsReadInterpInfo(loadInfo);//读取段 INTERP 解析器信息
+    ret = OsReadInterpInfo(loadInfo);
     if (ret != LOS_OK) {
         goto OUT;
     }
 
-    ret = OsSetArgParams(loadInfo, loadInfo->argv, loadInfo->envp);//设置外部参数内容
+    ret = OsSetArgParams(loadInfo, loadInfo->argv, loadInfo->envp);
     if (ret != LOS_OK) {
         goto OUT;
     }
 
-    OsFlushAspace(loadInfo);//擦除空间
+    OsFlushAspace(loadInfo);
 
-    ret = OsLoadELFSegment(loadInfo);//加载段信息
-    if (ret != LOS_OK) {//加载失败时
-        OsCurrProcessGet()->vmSpace = loadInfo->oldSpace;//切回原有虚拟空间
-        LOS_ArchMmuContextSwitch(&OsCurrProcessGet()->vmSpace->archMmu);//切回原有MMU
+    ret = OsLoadELFSegment(loadInfo);
+    if (ret != LOS_OK) {
+        OsCurrProcessGet()->vmSpace = loadInfo->oldSpace;
+        LOS_ArchMmuContextSwitch(&OsCurrProcessGet()->vmSpace->archMmu);
         goto OUT;
     }
 
-    OsDeInitLoadInfo(loadInfo);//ELF和.so 加载完成后释放内存
+    OsDeInitLoadInfo(loadInfo);
 
     return LOS_OK;
 

@@ -32,7 +32,6 @@
 #ifndef _HWLITEOS_SHELL_DMESG_PRI_H
 #define _HWLITEOS_SHELL_DMESG_PRI_H
 
-#include "sys_config.h"
 #ifdef LOSCFG_SHELL_DMESG
 #include "dmesg.h"
 

@@ -30,8 +30,6 @@ include $(LITEOSTOPDIR)/config.mk
 
 MODULE_NAME := $(notdir $(shell pwd))
 
-ifeq ($(LOSCFG_KERNEL_LITEIPC), y)
-    LOCAL_SRCS += $(wildcard ./*.c)
-endif
+LOCAL_SRCS := $(wildcard ./*.c)
 
 include $(MODULE)

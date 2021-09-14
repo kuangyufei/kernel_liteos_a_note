@@ -36,6 +36,7 @@
 #include "los_dev_trace.h"
 #include "los_trace.h"
 #include "los_hook.h"
+#include "los_init.h"
 
 #define TRACE_DRIVER "/dev/trace"
 #define TRACE_DRIVER_MODE 0666
@@ -155,3 +156,5 @@ int DevTraceRegister(void)
 {
     return register_driver(TRACE_DRIVER, &g_traceDevOps, TRACE_DRIVER_MODE, 0); /* 0666: file mode */
 }
+
+LOS_MODULE_INIT(DevTraceRegister, LOS_INIT_LEVEL_KMOD_EXTENDED);

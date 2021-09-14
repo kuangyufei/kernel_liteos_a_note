@@ -33,10 +33,8 @@ MODULE_NAME := $(notdir $(shell pwd))
 
 LOCAL_SRCS :=  $(wildcard src/*.c)
 
-LOCAL_INCLUDE := \
-    -I $(LITEOSTOPDIR)/compat/posix/src \
-    -I $(LITEOSTOPDIR)/kernel/base/include \
+LOCAL_INCLUDE := -I $(LITEOSTOPDIR)/compat/posix/src
 
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
+LOCAL_FLAGS := $(LOCAL_INCLUDE)
 
 include $(MODULE)

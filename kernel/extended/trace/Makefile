@@ -56,7 +56,7 @@ LOCAL_SRCS += $(wildcard pipeline/serial/*.c)
 LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/kernel/extended/trace/pipeline/serial
 endif
 
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
+LOCAL_FLAGS := $(LOCAL_INCLUDE)
 
 include $(MODULE)
 

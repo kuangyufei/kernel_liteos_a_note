@@ -94,15 +94,6 @@ source "platform/Kconfig"
 ######################### config options of cpu arch ################
 source "arch/Kconfig"
 
-######################### config options of rootfs #####################
-source "kernel/common/rootfs/Kconfig"
-######################### config options of patchfs #####################
-source "kernel/common/patchfs/Kconfig"
-######################### config options of blackbox #####################
-source "kernel/common/blackbox/Kconfig"
-######################### config options of hidumper #####################
-source "kernel/common/hidumper/Kconfig"
-
 config QUICK_START
     bool "Enable QUICK_START"
     default n
@@ -123,36 +114,7 @@ endmenu
 
 ######################## config options of filesystem ##################
 menu "FileSystem"
-source "fs/vfs/Kconfig"
-source "fs/fat/Kconfig"
-source "fs/ramfs/Kconfig"
-source "fs/romfs/Kconfig"
-source "fs/nfs/Kconfig"
-source "fs/proc/Kconfig"
-source "fs/jffs2/Kconfig"
-source "fs/zpfs/Kconfig"
-config ENABLE_READ_BUFFER
-    bool "Enable read buffer Option"
-    default n
-    depends on FS_VFS
-    help
-      Answer Y to add enable read buffer Option.
-
-config MAX_VNODE_SIZE
-    int "Vnode max number"
-    range 0 512
-    default 512
-    depends on FS_VFS
-    help
-      vnode number, range from 0 to 512.
-
-config MAX_PATH_CACHE_SIZE
-    int "PathCache max number"
-    range 0 1024
-    default 512
-    depends on FS_VFS
-    help
-      pathCache number, range from 0 to 1024.
+source "fs/Kconfig"
 endmenu
 
 ######################## config options of net ############################
@@ -324,29 +286,10 @@ endmenu
 
 ######################## config options os drivers ########################
 menu "Driver"
-config DRIVERS
-    bool "Enable Driver"
-    default y
-    help
-      Answer Y to enable LiteOS support driver.
-
-source "bsd/dev/usb/Kconfig"
-source "../../drivers/adapter/khdf/liteos/Kconfig"
-
-# Device driver Kconfig import
-osource "$(DEVICE_PATH)/drivers/Kconfig"
-
-source "drivers/char/mem/Kconfig"
-source "drivers/char/quickstart/Kconfig"
-source "drivers/char/random/Kconfig"
-source "drivers/char/video/Kconfig"
-source "drivers/char/trace/Kconfig"
-
-source "../../drivers/liteos/tzdriver/Kconfig"
-source "../../drivers/liteos/hievent/Kconfig"
-
+source "drivers/Kconfig"
 endmenu
 
+######################## config options os security #######################
 menu "Security"
 source "security/Kconfig"
 endmenu

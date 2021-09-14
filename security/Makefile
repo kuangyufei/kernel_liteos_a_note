@@ -43,6 +43,6 @@ LOCAL_SRCS += $(wildcard vid/*.c)
 LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/security/vid
 endif
 
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
+LOCAL_FLAGS := $(LOCAL_INCLUDE)
 
 include $(MODULE)

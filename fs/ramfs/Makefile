@@ -33,6 +33,4 @@ MODULE_NAME := $(notdir $(shell pwd))
 
 LOCAL_SRCS := $(wildcard $(LITEOSTHIRDPARTY)/NuttX/fs/tmpfs/*.c)
 
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
-
 include $(MODULE)

@@ -49,12 +49,11 @@ endif
 
 LOCAL_INCLUDE := \
 	-I $(LITEOSTOPDIR)/syscall \
-	-I $(LITEOSTOPDIR)/bsd/dev/random \
-	-I $(LITEOSTOPDIR)/bsd/compat/linuxkpi/include
+	-I $(LITEOSTOPDIR)/bsd/dev/random
 
 LOCAL_INCLUDE += $(addprefix -I$(MUSLPORTINGDIR)/, src/include src/internal)
 
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS) $(LOCAL_CMACRO)
+LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LOCAL_CMACRO)
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 LOCAL_FLAGS +=-Wno-char-subscripts -Wno-unknown-pragmas
 else

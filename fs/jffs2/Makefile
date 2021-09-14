@@ -35,10 +35,9 @@ LOCAL_SRCS := $(wildcard src/*.c) \
 		$(wildcard $(LITEOSTHIRDPARTY)/Linux_Kernel/fs/jffs2/*.c)
 LOCAL_INCLUDE := \
 		-I $(LITEOSTOPDIR)/fs/jffs2/include \
-		-I $(LITEOSTOPDIR)/drivers/mtd/multi_partition/include \
 		-I $(LITEOSTHIRDPARTY)/Linux_Kernel/fs/jffs2 \
 		-I $(LITEOSTHIRDPARTY)/Linux_Kernel/fs
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
+LOCAL_FLAGS := $(LOCAL_INCLUDE)
 
 include $(MODULE)
 

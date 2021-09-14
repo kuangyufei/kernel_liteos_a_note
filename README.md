@@ -9,7 +9,7 @@
 ### 几点说明
 
 * **[kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note) | 中文注解鸿蒙内核**  是在 `OpenHarmony` 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) 基础上给内核源码加上中文注解的版本.与官方源码按月保持同步,同步历史如下:
-  * `2021/9/02` -- trace模块较大更新
+  * `2021/9/14` -- common,extended等几个目录结构和Makefile调整
   * `2021/8/19` -- 各目录增加了`BUILD.gn`文件,文件系统部分文件调整 
   * `2021/7/15` -- 改动不大,新增`blackbox`,`hidumper`,对一些宏规范化使用 
   * `2021/6/27` -- 对文件系统/设备驱动改动较大,目录结构进行了重新整理

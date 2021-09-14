@@ -34,13 +34,9 @@ MODULE_NAME := $(notdir $(shell pwd))
 LOCAL_SRCS := $(wildcard os_adapt/*.c)
 LOCAL_SRCS += $(wildcard $(LITEOSTHIRDPARTY)/FatFs/source/*.c)
 
-LOCAL_INCLUDE := \
-	-I $(LITEOSTHIRDPARTY)/FatFs/source \
-	-I $(LITEOSTOPDIR)/fs/fat/os_adapt \
-	-I $(LITEOSTOPDIR)/fs/fat/virpart/include \
-	-I $(LITEOSTOPDIR)/fs/vfs \
+LOCAL_INCLUDE := -I $(LITEOSTOPDIR)/fs/fat/os_adapt
 
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
+LOCAL_FLAGS := $(LOCAL_INCLUDE)
 
 include $(MODULE)
 

@@ -27,88 +27,50 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-OBJOUT := $(BUILD)$(dir $(subst $(LITEOSTOPDIR),,$(shell pwd)))$(MODULE_NAME)
+OBJOUT = $(OUT)/obj
+TOPDIR = $(abspath $(LITEOSTOPDIR)/../..)
 
-MODULE := $(OUT)/lib/lib$(MODULE_NAME).a
+TARGET = $(OUT)/lib/lib$(MODULE_NAME).a
 
-# create a separate list of objects per source type
+LOCAL_OBJS = $(addprefix $(OBJOUT)/,$(addsuffix .o,$(basename $(subst $(TOPDIR)/,,$(abspath $(LOCAL_SRCS))))))
 
-LOCAL_CSRCS := $(filter %.c,$(LOCAL_SRCS))
-LOCAL_CPPSRCS := $(filter %.cpp,$(LOCAL_SRCS))
-LOCAL_ASMSRCS := $(filter %.S,$(LOCAL_SRCS))
-LOCAL_ASMSRCS2 := $(filter %.s,$(LOCAL_SRCS))
-LOCAL_CCSRCS := $(filter %.cc,$(LOCAL_SRCS))
+all : $(TARGET)
 
-LOCAL_COBJS := $(patsubst %.c,$(OBJOUT)/%.o,$(LOCAL_CSRCS))
-LOCAL_CPPOBJS := $(patsubst %.cpp,$(OBJOUT)/%.o,$(LOCAL_CPPSRCS))
-LOCAL_ASMOBJS := $(patsubst %.S,$(OBJOUT)/%.o,$(LOCAL_ASMSRCS))
-LOCAL_ASMOBJS2 := $(patsubst %.s,$(OBJOUT)/%.o,$(LOCAL_ASMSRCS2))
-LOCAL_CCOBJS := $(patsubst %.cc,$(OBJOUT)/%.o,$(LOCAL_CCSRCS))
-
-LOCAL_OBJS := $(LOCAL_COBJS) $(LOCAL_CPPOBJS) $(LOCAL_ASMOBJS) $(LOCAL_ASMOBJS2) $(LOCAL_CCOBJS)
-
-LOCAL_CGCH := $(patsubst %.h,%.h.gch,$(LOCAL_CHS))
-LOCAL_CPPGCH := $(patsubst %.h,%.h.gch,$(LOCAL_CPPHS))
-
-all : $(MODULE)
-
-define ECHO =
-ifeq ($$(HIDE),@)
-_$(1) := $($(1))
-$(1) = echo "  $(1)" $$(patsubst $$(OUT)/%,%,$$@) && $$(_$(1))
+ifeq ($(HIDE),@)
+ECHO = $1 = echo "  $1" $$(patsubst $$(OUT)/%,%,$$@) && $($1)
+$(foreach cmd,CC GPP AS AR LD,$(eval $(call ECHO,$(cmd))))
 endif
-endef
-$(foreach cmd,CC GPP AS AR,$(eval $(call ECHO,$(cmd))))
 
 LOCAL_FLAGS += -MD -MP
 -include $(LOCAL_OBJS:%.o=%.d)
 
-$(LOCAL_COBJS): $(OBJOUT)/%.o: %.c
-	$(HIDE)$(OBJ_MKDIR)
-	$(HIDE)$(CC) $(LITEOS_CFLAGS) $(LOCAL_FLAGS) $(LOCAL_CFLAGS) -c $< -o $@
+$(OBJOUT)/%.o: $(TOPDIR)/%.c
+	$(HIDE)$(CC) $(CFLAGS) $(LOCAL_FLAGS) $(LOCAL_CFLAGS) -c $< -o $@
 
-$(LOCAL_CPPOBJS): $(OBJOUT)/%.o: %.cpp
-	$(HIDE)$(OBJ_MKDIR)
-	$(HIDE)$(GPP) $(LITEOS_CXXFLAGS) $(LOCAL_FLAGS) $(LOCAL_CPPFLAGS) -c $< -o $@
+$(OBJOUT)/%.o: $(TOPDIR)/%.cpp
+	$(HIDE)$(GPP) $(CXXFLAGS) $(LOCAL_FLAGS) $(LOCAL_CPPFLAGS) -c $< -o $@
 
-$(LOCAL_ASMOBJS): $(OBJOUT)/%.o: %.S
-	$(HIDE)$(OBJ_MKDIR)
-	$(HIDE)$(CC) $(LITEOS_CFLAGS) $(LOCAL_FLAGS) $(LOCAL_ASFLAGS) -c $< -o $@
+$(OBJOUT)/%.o: $(TOPDIR)/%.S
+	$(HIDE)$(CC) $(CFLAGS) $(LOCAL_FLAGS) $(LOCAL_ASFLAGS) -c $< -o $@
 
-$(LOCAL_ASMOBJS2): $(OBJOUT)/%.o: %.s
-	$(HIDE)$(OBJ_MKDIR)
-	$(HIDE)$(AS) $(LITEOS_ASFLAGS) $(LOCAL_FLAGS) $(LOCAL_ASFLAGS) -c $< -o $@
+$(OBJOUT)/%.o: $(TOPDIR)/%.s
+	$(HIDE)$(AS) $(ASFLAGS) $(LOCAL_FLAGS) $(LOCAL_ASFLAGS) -c $< -o $@
 
-$(LOCAL_CCOBJS): $(OBJOUT)/%.o: %.cc
-	$(HIDE)$(OBJ_MKDIR)
-	$(HIDE)$(GPP) $(LITEOS_CXXFLAGS) $(LOCAL_FLAGS) $(LOCAL_CPPFLAGS) -c $< -o $@
+$(OBJOUT)/%.o: $(TOPDIR)/%.cc
+	$(HIDE)$(GPP) $(CXXFLAGS) $(LOCAL_FLAGS) $(LOCAL_CPPFLAGS) -c $< -o $@
 
-$(LOCAL_CGCH): %.h.gch : %.h
-	$(HIDE)$(CC) $(LITEOS_CFLAGS) $(LOCAL_FLAGS) $(LOCAL_CFLAGS) $> $^
-
-$(LOCAL_CPPGCH): %.h.gch : %.h
-	$(HIDE)$(GPP) $(LITEOS_CXXFLAGS) $(LOCAL_FLAGS) $(LOCAL_CPPFLAGS) -x c++-header $> $^
-
-LOCAL_GCH := $(LOCAL_CGCH) $(LOCAL_CPPGCH)
-
-$(LOCAL_OBJS): $(LOCAL_GCH)
-$(MODULE): $(LOCAL_OBJS)
-	$(HIDE)$(OBJ_MKDIR)
+$(OUT)/lib/lib%.a: $(LOCAL_OBJS)
 	$(HIDE)$(AR) $(ARFLAGS) $@ $^
 
+$(OUT)/bin/%: $(LOCAL_OBJS)
+	$(HIDE)$(GPP) $(LDFLAGS) -o $@ $^
+
+$(OUT)/%/:;$(HIDE)mkdir -p $@
+
+$(LOCAL_OBJS): | $(dir $(LOCAL_OBJS))
+$(TARGET): | $(dir $(TARGET))
+
 clean:
-	$(HIDE)$(RM) $(MODULE) $(OBJOUT) $(LOCAL_GCH) *.bak *~
+	$(HIDE)$(RM) $(TARGET) $(LOCAL_OBJS)
 
 .PHONY: all clean
-
-# clear some variables we set here
-LOCAL_CSRCS :=
-LOCAL_CPPSRCS :=
-LOCAL_ASMSRCS :=
-LOCAL_COBJS :=
-LOCAL_CPPOBJS :=
-LOCAL_ASMOBJS :=
-LOCAL_ASMOBJS2 :=
-
-# LOCAL_OBJS is passed back
-#LOCAL_OBJS :=

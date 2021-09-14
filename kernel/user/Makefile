@@ -44,7 +44,7 @@ include $(MODULE)
 
 USERINIT := $(OUT)/lib/lib$(MODULE_NAME).O
 
-$(USERINIT): $(MODULE)
+$(USERINIT): $(TARGET)
 	$(HIDE)$(LD) -r -o $@ --whole-archive $< --no-whole-archive
 
 clean_userinit:

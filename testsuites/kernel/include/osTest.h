@@ -337,7 +337,7 @@ extern VOID ItSuitePosixPthread(VOID);
 
 extern VOID TestRunShell(VOID);
 
-extern UINT32 OsTestInit(VOID);
+extern void TestSystemInit(void);
 
 extern void TEST_DT_COMMON(void);
 extern VOID dprintf(const char *fmt, ...);

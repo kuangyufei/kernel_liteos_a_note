@@ -34,9 +34,8 @@ MODULE_NAME := $(notdir $(shell pwd))
 LOCAL_SRCS :=  $(wildcard $(LITEOSTHIRDPARTY)/NuttX/drivers/bch/*.c)
 
 LOCAL_INCLUDE := \
-	-I $(LITEOSTHIRDPARTY)/NuttX/drivers/bch \
-	-I $(LITEOSTOPDIR)/fs/include \
+	-I $(LITEOSTHIRDPARTY)/NuttX/drivers/bch
 
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
+LOCAL_FLAGS := $(LOCAL_INCLUDE)
 
 include $(MODULE)

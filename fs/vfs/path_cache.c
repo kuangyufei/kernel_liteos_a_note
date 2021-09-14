@@ -128,6 +128,7 @@ struct PathCache *PathCacheAlloc(struct Vnode *parent, struct Vnode *vnode, cons
 
     ret = strncpy_s(pc->name, len + 1, name, len);
     if (ret != LOS_OK) {
+        free(pc);
         return NULL;
     }
 

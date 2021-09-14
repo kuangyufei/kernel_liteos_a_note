@@ -45,23 +45,23 @@ if (tee_enable) {
   tee = "_tee"
 }
 
-liteos_config_file = "$product_path/kernel_configs/${ohos_build_type}${tee}.config"
+declare_args() {
+  liteos_config_file = "${ohos_build_type}${tee}.config"
+}
+
+liteos_config_file =
+    rebase_path(liteos_config_file, "", "$product_path/kernel_configs")
 print("liteos_config_file:", liteos_config_file)
 
 exec_script("//build/lite/run_shell_cmd.py",
-            [
-              "env" +
-              " CONFIG_=LOSCFG_" +
-              " KCONFIG_CONFIG_HEADER='y=true'" +
-              " KCONFIG_CONFIG=$liteos_config_file" +
-              " DEVICE_PATH=$device_path" +
-              " srctree=" + rebase_path(".") +
-              " genconfig" +
-              " --header-path $LITEOS_MENUCONFIG_H" +
-              " --file-list kconfig_files.txt" +
-              " --env-list kconfig_env.txt" +
-              " --config-out config.gni",
-            ], "", [ liteos_config_file ])
+            [ "env" + " CONFIG_=LOSCFG_" + " KCONFIG_CONFIG_HEADER='y=true'" +
+                  " KCONFIG_CONFIG=$liteos_config_file" +
+                  " DEVICE_PATH=$device_path" + " srctree=" + rebase_path(".") +
+                  " genconfig" + " --header-path $LITEOS_MENUCONFIG_H" +
+                  " --file-list kconfig_files.txt" +
+                  " --env-list kconfig_env.txt" + " --config-out config.gni" ],
+            "",
+            [ liteos_config_file ])
 
 import("liteos.gni")
 
@@ -109,7 +109,7 @@ config("arch_config") {
   ldflags = cflags
   if (defined(LOSCFG_ARCH_ARM_AARCH32)) {
     if (!defined(LOSCFG_COMPILER_CLANG_LLVM)) {
-      cflags += ["-mthumb-interwork"]
+      cflags += [ "-mthumb-interwork" ]
     }
   }
   if (defined(LOSCFG_THUMB)) {
@@ -122,21 +122,10 @@ config("arch_config") {
   }
 }
 
-config("as_objs_libc_flags") {
-  defines = [ "__ASSEMBLY__" ]
-
-  # linux style macros
-  if (defined(LOSCFG_ARCH_ARM_V7A) || defined(LOSCFG_ARCH_ARM_V7R) ||
-  defined(LOSCFG_ARCH_ARM_V7M)) {
-    defines += [ "__LINUX_ARM_ARCH__=7" ]
-  } else if (defined(LOSCFG_ARCH_ARM_V8A) || defined(LOSCFG_ARCH_ARM_V8R) ||
-  defined(LOSCFG_ARCH_ARM_V8M)) {
-    defines += [ "__LINUX_ARM_ARCH__=8" ]
-  }
-}
-
 config("stdinc_config") {
-  std_include = exec_script("//build/lite/run_shell_cmd.py", [ "$cc -print-file-name=include" ], "trim string")
+  std_include = exec_script("//build/lite/run_shell_cmd.py",
+                            [ "$cc -print-file-name=include" ],
+                            "trim string")
   cflags = [
     "-isystem",
     std_include,
@@ -260,7 +249,7 @@ config("los_config") {
 }
 
 executable("liteos") {
-  configs = [] # clear default configs
+  configs = []  # clear default configs
   configs += [ ":arch_config" ]
   configs += [ ":public" ]
 
@@ -272,13 +261,17 @@ executable("liteos") {
     "-Wl,--no-eh-frame-hdr",
   ]
 
-  libgcc = exec_script("//build/lite/run_shell_cmd.py", [ "$cc -print-libgcc-file-name" ], "trim string")
+  libgcc = exec_script("//build/lite/run_shell_cmd.py",
+                       [ "$cc -print-libgcc-file-name" ],
+                       "trim string")
   libs = [ libgcc ]
   if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
-    ldflags += [ "-Wl,-T" + rebase_path("tools/build/liteos_llvm.ld", root_build_dir) ]
+    ldflags +=
+        [ "-Wl,-T" + rebase_path("tools/build/liteos_llvm.ld", root_build_dir) ]
     inputs = [ "tools/build/liteos_llvm.ld" ]
   } else {
-    ldflags += [ "-Wl,-T" + rebase_path("tools/build/liteos.ld", root_build_dir) ]
+    ldflags +=
+        [ "-Wl,-T" + rebase_path("tools/build/liteos.ld", root_build_dir) ]
     ldflags += [ "-Wl,-nostartfiles" ]
     inputs = [ "tools/build/liteos.ld" ]
   }
@@ -288,8 +281,8 @@ executable("liteos") {
   output_dir = target_out_dir
 
   deps = [
-    "platform:copy_board.ld",
     ":modules",
+    "platform:copy_board.ld",
   ]
 }
 
@@ -307,14 +300,14 @@ build_ext_component("build_kernel_image") {
   objdump = "${compile_prefix}objdump$toolchain_cmd_suffix"
 
   command = "$objcopy -O binary $liteos_name $liteos_name.bin"
-  command += " && sh -c '$objdump -t $liteos_name | sort >$liteos_name.sym.sorted'"
+  command +=
+      " && sh -c '$objdump -t $liteos_name | sort >$liteos_name.sym.sorted'"
   command += " && sh -c '$objdump -d $liteos_name >$liteos_name.asm'"
 }
 
 config("public") {
   configs = [
     "arch:public",
-    "platform:public",
     "kernel:public",
     "compat:public",
     "bsd:public",
@@ -346,15 +339,14 @@ group("modules") {
     "kernel",
     "lib",
     "net",
-    "platform",
     "security",
     "shell",
     "syscall",
   ]
 
   deps += [
-    HDFTOPDIR,
     "//drivers/liteos",
+    HDFTOPDIR,
   ]
 
   if (HAVE_DEVICE_SDK) {

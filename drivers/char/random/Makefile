@@ -37,9 +37,4 @@ ifdef LOSCFG_HW_RANDOM_ENABLE
 LOCAL_SRCS += $(wildcard src/random_hw.c)
 endif
 
-LOCAL_INCLUDE := -I $(LITEOSTOPDIR)/drivers/char/random/include \
-                 -I $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH)/include
-
-LOCAL_FLAGS := $(LOCAL_INCLUDE)
-
 include $(MODULE)

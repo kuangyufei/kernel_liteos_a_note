@@ -79,6 +79,7 @@ struct MountOps {
     int (*Mount)(struct Mount *mount, struct Vnode *vnode, const void *data);//挂载
     int (*Unmount)(struct Mount *mount, struct Vnode **blkdriver);//卸载
     int (*Statfs)(struct Mount *mount, struct statfs *sbp);//统计文件系统的信息，如该文件系统类型、总大小、可用大小等信息
+    int (*Sync)(struct Mount *mount);
 };
 
 typedef int (*foreach_mountpoint_t)(const char *devpoint,

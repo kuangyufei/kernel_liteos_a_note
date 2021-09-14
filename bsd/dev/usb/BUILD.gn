@@ -137,14 +137,13 @@ kernel_module(module_name) {
     ]
   }
 
-  configs += [
-    "$HDFTOPDIR:hdf_config"
-  ]
+  configs += [ "$HDFTOPDIR:hdf_config" ]
 
   public_configs = [ ":public" ]
 }
 
 config("public") {
+  defines = [ "USB_DEBUG_VAR=5" ]
   include_dirs = [ "." ]
   include_dirs += [ "$LITEOSTHIRDPARTY/FreeBSD/sys/dev/evdev" ]
 }

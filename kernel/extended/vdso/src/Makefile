@@ -33,8 +33,6 @@ MODULE_NAME := $(notdir $(shell pwd)/../vdso)
 
 LOCAL_SRCS := $(wildcard *.c) $(wildcard *.S)
 
-LOCAL_INCLUDE := -I $(LITEOSTOPDIR)/kernel/base/include -I ../include
-
-LOCAL_FLAGS := $(LOCAL_INCLUDE) -DOHOS_VDSO_SO=\"$(OUT)/lib/OHOS-vdso.so\"
+LOCAL_FLAGS := -DOHOS_VDSO_SO=\"$(OUT)/lib/OHOS-vdso.so\"
 
 include $(MODULE)

@@ -135,6 +135,4 @@ LOCAL_SRCS += $(INPUT_SRC)/uhid.c  \
               $(CORE_SRC)/usb_hid.c
 endif
 
-LOCAL_FLAGS += $(LITEOS_GCOV_OPTS)
-
 include $(HDF_DRIVER)

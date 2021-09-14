@@ -32,7 +32,10 @@ import("//kernel/liteos_a/liteos.gni")
 module_switch = defined(LOSCFG_BASE_CORE_HILOG)
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
-  sources = [ "//base/hiviewdfx/hilog_lite/frameworks/featured/hiview_log.c" ]
+  sources = [
+    "//base/hiviewdfx/hilog_lite/frameworks/featured/hiview_log.c",
+    "los_hilog.c",
+  ]
 
   public_configs = [ ":public" ]
 }
@@ -41,5 +44,6 @@ config("public") {
   include_dirs = [
     "//base/hiviewdfx/hilog_lite/interfaces/native/kits",
     "//base/hiviewdfx/hilog_lite/interfaces/native/kits/hilog",
+    ".",
   ]
 }

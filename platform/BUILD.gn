@@ -29,43 +29,6 @@
 
 import("//kernel/liteos_a/liteos.gni")
 
-module_name = "bsp"
-kernel_module(module_name) {
-  sources = [ "main.c" ]
-
-  sources += [
-    "hwi_shell.c",
-    "los_cir_buf.c",
-    "los_config.c",
-    "los_excinfo.c",
-    "los_init.c",
-    "los_magickey.c",
-    "los_printf.c",
-    "los_seq_buf.c",
-  ]
-
-  if (defined(LOSCFG_FS_VFS)) {
-    sources += [
-      "console.c",
-      "virtual_serial.c",
-    ]
-  }
-
-  if (defined(LOSCFG_BASE_CORE_HILOG)) {
-    sources += [ "los_hilog.c" ]
-  }
-
-  public_configs = [ ":public" ]
-}
-
-group("platform") {
-  public_deps = [ ":$module_name" ]
-}
-
-config("public") {
-  include_dirs = [ "." ]
-}
-
 kernel_module("board.ld") {
   sources = [ "board.ld.S" ]
   asmflags = [

@@ -29,20 +29,27 @@
 
 import("//kernel/liteos_a/liteos.gni")
 
-group("common") {
-  deps = [
-    "blackbox",
-    "hidumper",
-    "patchfs",
-    "rootfs",
+module_name = get_path_info(rebase_path("."), "name")
+kernel_module(module_name) {
+  sources = [
+    "los_config.c",
+    "los_excinfo.c",
+    "los_init.c",
+    "los_magickey.c",
+    "los_printf.c",
+    "main.c",
   ]
+
+  if (defined(LOSCFG_FS_VFS)) {
+    sources += [
+      "console.c",
+      "virtual_serial.c",
+    ]
+  }
+
+  public_configs = [ ":public" ]
 }
 
 config("public") {
-  configs = [
-    "blackbox:public",
-    "hidumper:public",
-    "patchfs:public",
-    "rootfs:public",
-  ]
+  include_dirs = [ "." ]
 }

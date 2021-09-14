@@ -327,6 +327,7 @@ LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)//扫描定时器,如果碰到超时的,�
         OsDeleteNodeSortLink(swtmrSortLink, sortList);
         LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
 
+        OsHookCall(LOS_HOOK_TYPE_SWTMR_EXPIRED, swtmr);
         OsWakePendTimeSwtmr(cpu, currTime, swtmr);
 
         LOS_SpinLock(&cpu->swtmrSortLinkSpin);

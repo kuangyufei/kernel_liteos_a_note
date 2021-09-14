@@ -706,7 +706,6 @@ int VfsJffs2Symlink(struct Vnode *parentVnode, struct Vnode **newVnode, const ch
 
 ssize_t VfsJffs2Readlink(struct Vnode *vnode, char *buffer, size_t bufLen)
 {
-    ssize_t ret = 0;
     struct jffs2_inode *inode = NULL;
     struct jffs2_inode_info *f = NULL;
     ssize_t targetLen;
@@ -725,14 +724,12 @@ ssize_t VfsJffs2Readlink(struct Vnode *vnode, char *buffer, size_t bufLen)
     cnt = (bufLen - 1) < targetLen ? (bufLen - 1) : targetLen;
     if (LOS_CopyFromKernel(buffer, bufLen, (const char *)f->target, cnt) != 0) {
         cnt = 0;
-        ret = -EFAULT;
+        LOS_MuxUnlock(&g_jffs2FsLock);
+        return -EFAULT;
     }
     buffer[cnt] = '\0';
 
     LOS_MuxUnlock(&g_jffs2FsLock);
-    if (ret < 0) {
-        return ret;
-    }
 
     return cnt;
 }

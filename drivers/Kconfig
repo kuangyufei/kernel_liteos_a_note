@@ -1,0 +1,20 @@
+config DRIVERS
+    bool "Enable Driver"
+    default y
+    help
+      Answer Y to enable LiteOS support driver.
+
+source "bsd/dev/usb/Kconfig"
+source "../../drivers/adapter/khdf/liteos/Kconfig"
+
+# Device driver Kconfig import
+source "$(DEVICE_PATH)/drivers/Kconfig"
+
+source "drivers/char/mem/Kconfig"
+source "drivers/char/quickstart/Kconfig"
+source "drivers/char/random/Kconfig"
+source "drivers/char/video/Kconfig"
+source "drivers/char/trace/Kconfig"
+
+source "../../drivers/liteos/tzdriver/Kconfig"
+source "../../drivers/liteos/hievent/Kconfig"

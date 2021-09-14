@@ -35,9 +35,11 @@ group("fs") {
     "fat/virpart",
     "jffs2",
     "nfs",
+    "patchfs",
     "proc",
     "ramfs",
     "romfs",
+    "rootfs",
     "vfs",
     "vfs/bcache",
     "zpfs",
@@ -52,5 +54,7 @@ config("public") {
     "fat:public",
     "fat/virpart:public",
     "proc:public",
+    "patchfs:public",
+    "rootfs:public",
   ]
 }

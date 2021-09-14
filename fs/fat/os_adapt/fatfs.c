@@ -34,6 +34,7 @@
 #include "ff.h"
 #include "disk_pri.h"
 #include "diskio.h"
+#include "fs/file.h"
 #include "fs/fs.h"
 #include "fs/dirent_fs.h"
 #include "fs/mount.h"
@@ -1317,6 +1318,29 @@ int fatfs_umount(struct Mount *mnt, struct Vnode **blkdriver)
     return 0;
 }
 
+int fatfs_sync_adapt(struct Mount *mnt)
+{
+    (void)mnt;
+    int ret = 0;
+#ifdef LOSCFG_FS_FAT_CACHE
+    struct Vnode *dev = NULL;
+    los_part *part = NULL;
+
+    if (mnt == NULL) {
+        return -EINVAL;
+    }
+
+    dev = mnt->vnodeDev;
+    part = los_part_find(dev);
+    if (part == NULL) {
+        return -EINVAL;
+    }
+
+    ret = OsSdSync(part->disk_id);
+#endif
+    return ret;
+}
+
 int fatfs_statfs(struct Mount *mnt, struct statfs *info)
 {
     FATFS *fs = (FATFS *)mnt->data;
@@ -2226,6 +2250,7 @@ struct MountOps fatfs_mops = {
     .Mount = fatfs_mount,
     .Unmount = fatfs_umount,
     .Statfs = fatfs_statfs,
+    .Sync = fatfs_sync_adapt,
 };
 //fat 文件系统 文件操作实现
 struct file_operations_vfs fatfs_fops = {
