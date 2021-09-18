@@ -35,32 +35,32 @@
 #include "console.h"
 
 
-STATIC BOOL g_shellSourceFlag = FALSE;
-
+STATIC BOOL g_shellSourceFlag = FALSE;//
+//shell支持的命令初始化
 STATIC UINT32 OsShellCmdInit(VOID)
 {
-    UINT32 ret = OsCmdInit();
+    UINT32 ret = OsCmdInit();//命令初始化
     if (ret != LOS_OK) {
         return ret;
     }
 
-    return OsShellSysCmdRegister();
+    return OsShellSysCmdRegister();//系统自带的shell命令初始化
 }
-
+//创建shell任务
 STATIC UINT32 OsShellCreateTask(ShellCB *shellCB)
 {
-    UINT32 ret = ShellTaskInit(shellCB);
+    UINT32 ret = ShellTaskInit(shellCB);//执行shell命令的任务初始化
     if (ret != LOS_OK) {
         return ret;
     }
 
-    return ShellEntryInit(shellCB);
+    return ShellEntryInit(shellCB);//通过控制台接受shell命令的任务初始化
 }
-
+//shell资源初始化
 STATIC UINT32 OsShellSourceInit(INT32 consoleId)
 {
     UINT32 ret = LOS_NOK;
-    CONSOLE_CB *consoleCB = OsGetConsoleByID(consoleId);
+    CONSOLE_CB *consoleCB = OsGetConsoleByID(consoleId);//获取控制台信息
     if ((consoleCB == NULL) || (consoleCB->shellHandle != NULL)) {
         return LOS_NOK;
     }
@@ -120,7 +120,7 @@ ERR_OUT1:
     consoleCB->shellHandle = NULL;
     return ret;
 }
-
+//shell初始化
 UINT32 OsShellInit(INT32 consoleId)
 {
     if (g_shellSourceFlag == FALSE) {
@@ -133,27 +133,27 @@ UINT32 OsShellInit(INT32 consoleId)
     }
     return OsShellSourceInit(consoleId);
 }
-
+//shell结束
 INT32 OsShellDeinit(INT32 consoleId)
 {
     CONSOLE_CB *consoleCB = NULL;
     ShellCB *shellCB = NULL;
 
-    consoleCB = OsGetConsoleByID(consoleId);
+    consoleCB = OsGetConsoleByID(consoleId);//通过ID获取当前控制台
     if (consoleCB == NULL) {
         PRINT_ERR("shell deinit error.\n");
         return -1;
     }
 
-    shellCB = (ShellCB *)consoleCB->shellHandle;
-    consoleCB->shellHandle = NULL;
+    shellCB = (ShellCB *)consoleCB->shellHandle;//从当前控制台获取shell控制块
+    consoleCB->shellHandle = NULL;//重置控制台的shell
     if (shellCB == NULL) {
         PRINT_ERR("shell deinit error.\n");
         return -1;
     }
 
-    (VOID)LOS_TaskDelete(shellCB->shellEntryHandle);
-    (VOID)LOS_EventWrite(&shellCB->shellEvent, CONSOLE_SHELL_KEY_EVENT);
+    (VOID)LOS_TaskDelete(shellCB->shellEntryHandle);//删除接收控制台指令的shell任务
+    (VOID)LOS_EventWrite(&shellCB->shellEvent, CONSOLE_SHELL_KEY_EVENT);//发送结束事件
 
     return 0;
 }

@@ -125,13 +125,13 @@ STATIC ssize_t SerialRead(struct file *filep, CHAR *buffer, size_t bufLen)
     struct file *privFilep = NULL;
     const struct file_operations_vfs *fileOps = NULL;
 
-    ret = GetFilepOps(filep, &privFilep, &fileOps);
+    ret = GetFilepOps(filep, &privFilep, &fileOps);//获取控制台file实例
     if (ret != ENOERR) {
         ret = -EINVAL;
         goto ERROUT;
     }
 
-    ret = FilepRead(privFilep, fileOps, buffer, bufLen);
+    ret = FilepRead(privFilep, fileOps, buffer, bufLen);//从控制台读buf
     if (ret < 0) {
         goto ERROUT;
     }
@@ -149,13 +149,13 @@ STATIC ssize_t SerialWrite(struct file *filep,  const CHAR *buffer, size_t bufLe
     struct file *privFilep = NULL;
     const struct file_operations_vfs *fileOps = NULL;
 
-    ret = GetFilepOps(filep, &privFilep, &fileOps);
+    ret = GetFilepOps(filep, &privFilep, &fileOps);//获取控制台file实例
     if (ret != ENOERR) {
         ret = -EINVAL;
         goto ERROUT;
     }
 
-    ret = FilepWrite(privFilep, fileOps, buffer, bufLen);
+    ret = FilepWrite(privFilep, fileOps, buffer, bufLen);//向控制台文件写入数据
     if (ret < 0) {
         goto ERROUT;
     }
@@ -210,7 +210,7 @@ ERROUT:
     set_errno(-ret);
     return VFS_ERROR;
 }
-//串口 对 VFS 接口实现
+//串口实现VFS接口,以便支持按文件方式操作串口
 STATIC const struct file_operations_vfs g_serialDevOps = {
     SerialOpen,  /* open */
     SerialClose, /* close */
@@ -235,15 +235,15 @@ INT32 virtual_serial_init(const CHAR *deviceName)
         goto ERROUT;
     }
 
-    SerialTypeSet(deviceName);
+    SerialTypeSet(deviceName);//设置串口类型
 
     VnodeHold();
-    ret = VnodeLookup(deviceName, &vnode, V_DUMMY);
+    ret = VnodeLookup(deviceName, &vnode, V_DUMMY);//由deviceName查询vnode节点
     if (ret != LOS_OK) {
         ret = EACCES;
         goto ERROUT;
     }
-
+	//接着是 vnode < -- > file 的绑定操作
     (VOID)memset_s(&g_serialFilep, sizeof(struct file), 0, sizeof(struct file));
     g_serialFilep.f_oflags = O_RDWR;
     g_serialFilep.f_vnode = vnode;
@@ -269,6 +269,6 @@ ERROUT:
 //串口设备去初始化,其实就是注销驱动程序
 INT32 virtual_serial_deinit(VOID)
 {
-    return unregister_driver(SERIAL);
+    return unregister_driver(SERIAL);//注销驱动程序
 }
 

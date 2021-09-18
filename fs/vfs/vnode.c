@@ -445,6 +445,7 @@ OUT_FREE_PATH:
 
     return ret;
 }
+//通过路径查询vnode节点
 int VnodeLookup(const char *path, struct Vnode **vnode, uint32_t flags)
 {
     return VnodeLookupAt(path, vnode, flags, NULL);

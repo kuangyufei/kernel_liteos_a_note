@@ -93,11 +93,11 @@ typedef struct {
     UINT32 consoleMask;	//控制台掩码
     struct Vnode *devVnode;	//索引节点
     CHAR *name;	//名称
-    INT32 fd;	//文件描述符
+    INT32 fd;	//系统文件句柄
     UINT32 refCount;	//引用次数
     UINT32 shellEntryId;//shell 入口ID,一般为任务ID
     INT32 pgrpId;	//进程组ID
-    BOOL isNonBlock;		
+    BOOL isNonBlock;//是否无锁方式		
 #ifdef LOSCFG_SHELL
     VOID *shellHandle;	//shell句柄,本质是 shell控制块 ShellCB
 #endif
@@ -108,8 +108,8 @@ typedef struct {
     UINT32 fifoOut;	//对fifo的标记,输出位置
     UINT32 fifoIn;	//对fifo的标记,输入位置
     UINT32 currentLen;	//当前fifo位置
-    /*---以上为 一家子 end-------*/
-    struct termios consoleTermios; //控制台术语
+    /*---以上为 一家子 end-------*///https://man7.org/linux/man-pages/man3/tcflow.3.html
+    struct termios consoleTermios; //termios 函数描述了一个通用的终端接口用于控制异步通信端口
 } CONSOLE_CB;
 /*
 termios 结构是在POSIX规范中定义的标准接口，它类似于系统V中的termio接口，通过设置termios类型的数据结构中的值和使用一小组函数调用，

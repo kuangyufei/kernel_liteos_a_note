@@ -40,6 +40,7 @@
 
 #ifdef LOSCFG_NET_LWIP_SACK
 #include "lwip/sockets.h"
+//网络相关系统调用
 
 #define SOCKET_U2K(s) \
     do { \

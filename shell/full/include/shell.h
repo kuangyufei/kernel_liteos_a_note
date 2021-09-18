@@ -82,32 +82,32 @@ extern "C" {
 
 #define QUOTES_STATUS_CLOSE(qu) ((qu) == FALSE)
 #define QUOTES_STATUS_OPEN(qu)  ((qu) == TRUE)
-
+//shell 控制块
 typedef struct {
-    UINT32   consoleID;
-    UINT32   shellTaskHandle;
-    UINT32   shellEntryHandle;
+    UINT32   consoleID;	//控制台ID
+    UINT32   shellTaskHandle;	//处理shell的任务ID
+    UINT32   shellEntryHandle;	//接收shell指令的任务ID
     VOID     *cmdKeyLink;
     VOID     *cmdHistoryKeyLink;
     VOID     *cmdMaskKeyLink;
-    UINT32   shellBufOffset;
-    UINT32   shellKeyType;
-    EVENT_CB_S shellEvent;
+    UINT32   shellBufOffset;	//buf偏移量
+    UINT32   shellKeyType;	//键内型
+    EVENT_CB_S shellEvent;	//事件类型触发
     pthread_mutex_t keyMutex;
     pthread_mutex_t historyMutex;
-    CHAR     shellBuf[SHOW_MAX_LEN];
-    CHAR     shellWorkingDirectory[PATH_MAX];
+    CHAR     shellBuf[SHOW_MAX_LEN];	//shell命令buf,接受键盘的输入,需要对输入字符解析.
+    CHAR     shellWorkingDirectory[PATH_MAX];//shell的工作目录
 } ShellCB;
 
 /* All support cmd types */
-typedef enum {
-    CMD_TYPE_SHOW = 0,
-    CMD_TYPE_STD = 1,
-    CMD_TYPE_EX = 2,
+typedef enum {//所有支持的按键类型
+    CMD_TYPE_SHOW = 0,	//用户怎么输入就怎么显示出现,包括 \n \0 这些字符也都会存在
+    CMD_TYPE_STD = 1,	//支持的标准命令参数输入，所有输入的字符都会通过命令解析后被传入。
+    CMD_TYPE_EX = 2,	//不支持标准命令参数输入，会把用户填写的命令关键字屏蔽掉，例如：输入ls /ramfs，传入给注册函数的参数只有/ramfs，而ls命令关键字并不会被传入。
     CMD_TYPE_BUTT
 } CmdType;
 
-typedef enum {
+typedef enum {//四个方向上下左右键
     CMD_KEY_UP = 0,
     CMD_KEY_DOWN = 1,
     CMD_KEY_RIGHT = 2,

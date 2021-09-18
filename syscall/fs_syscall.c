@@ -105,7 +105,7 @@ static int CheckNewAttrTime(struct IATTR *attr, struct timespec times[TIMESPEC_T
 
     return ret;
 }
-
+//获取全路径
 static int GetFullpathNull(int fd, const char *path, char **filePath)
 {
     int ret;

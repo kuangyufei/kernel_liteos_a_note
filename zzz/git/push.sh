@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' common,extended等几个目录结构和Makefile调整 
+git commit -m  ' 对shell,控制台模块代码注解
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     博客输出站点(国内):http://weharmonyos.com
     博客输出站点(国外):https://openharmony.github.io

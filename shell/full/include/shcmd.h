@@ -51,15 +51,17 @@ extern "C" {
 typedef BOOL (*CmdVerifyTransID)(UINT32 transID);
 
 typedef struct {//命令项
-    CmdType cmdType;
-    const CHAR *cmdKey;	//按键
-    UINT32 paraNum;	//参数个数
-    CmdCallBackFunc cmdHook;	//回调函数
+    CmdType cmdType;	//命令类型
+					    //CMD_TYPE_EX：不支持标准命令参数输入，会把用户填写的命令关键字屏蔽掉，例如：输入ls /ramfs，传入给注册函数的参数只有/ramfs，而ls命令关键字并不会被传入。
+					    //CMD_TYPE_STD：支持的标准命令参数输入，所有输入的字符都会通过命令解析后被传入。
+    const CHAR *cmdKey;	//命令关键字，例如:ls 函数在Shell中访问的名称。
+    UINT32 paraNum;		//调用的执行函数的入参最大个数，暂不支持。
+    CmdCallBackFunc cmdHook;//命令执行函数地址，即命令实际执行函数。
 } CmdItem;
 
 typedef struct {	//命令节点
-    LOS_DL_LIST list;
-    CmdItem *cmd;
+    LOS_DL_LIST list;	//双向链表
+    CmdItem *cmd;	//命令项
 } CmdItemNode;
 
 /* global info for shell module */

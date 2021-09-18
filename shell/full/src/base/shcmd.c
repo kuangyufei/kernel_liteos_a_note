@@ -44,7 +44,7 @@
 #define SHELL_INIT_MAGIC_FLAG 0xABABABAB
 #define CTRL_C 0x03 /* 0x03: ctrl+c ASCII */
 
-STATIC CmdModInfo g_cmdInfo;//命令模块信息,上面挂了所有的命令项目
+STATIC CmdModInfo g_cmdInfo;//shell 命令模块信息,上面挂了所有的命令项(ls,cd ,cp ==)
 
 LOS_HAL_TABLE_BEGIN(g_shellcmd, shellcmd);
 LOS_HAL_TABLE_END(g_shellcmdEnd, shellcmd);
@@ -561,7 +561,7 @@ LITE_OS_SEC_TEXT_MINOR INT32 OsTabCompletion(CHAR *cmdKey, UINT32 *len)
 
     return count;
 }
-
+//按升序插入到链表中
 LITE_OS_SEC_TEXT_MINOR VOID OsCmdAscendingInsert(CmdItemNode *cmd)
 {
     CmdItemNode *cmdItem = NULL;
@@ -639,29 +639,29 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellKeyDeInit(CmdKeyLink *cmdKeyLink)
     cmdKeyLink->count = 0;
     (VOID)LOS_MemFree(m_aucSysMem0, cmdKeyLink);
 }
-
+//注册系统自带的shell命令
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellSysCmdRegister(VOID)
 {
     UINT32 i;
     UINT8 *cmdItemGroup = NULL;
-    UINT32 index = ((UINTPTR)(&g_shellcmdEnd) - (UINTPTR)(&g_shellcmd[0])) / sizeof(CmdItem);
+    UINT32 index = ((UINTPTR)(&g_shellcmdEnd) - (UINTPTR)(&g_shellcmd[0])) / sizeof(CmdItem);//获取个数
     CmdItemNode *cmdItem = NULL;
 
-    cmdItemGroup = (UINT8 *)LOS_MemAlloc(m_aucSysMem0, index * sizeof(CmdItemNode));
+    cmdItemGroup = (UINT8 *)LOS_MemAlloc(m_aucSysMem0, index * sizeof(CmdItemNode));//分配命令项
     if (cmdItemGroup == NULL) {
         PRINT_ERR("[%s]System memory allocation failure!\n", __FUNCTION__);
         return (UINT32)OS_ERROR;
     }
 
-    for (i = 0; i < index; ++i) {
+    for (i = 0; i < index; ++i) {//循环插入
         cmdItem = (CmdItemNode *)(cmdItemGroup + i * sizeof(CmdItemNode));
-        cmdItem->cmd = &g_shellcmd[i];
-        OsCmdAscendingInsert(cmdItem);
+        cmdItem->cmd = &g_shellcmd[i];//一个个取
+        OsCmdAscendingInsert(cmdItem);//按升序插入到链表中
     }
-    g_cmdInfo.listNum += index;
+    g_cmdInfo.listNum += index;//命令数量叠加
     return LOS_OK;
 }
-
+//解析回车或换行键
 LITE_OS_SEC_TEXT_MINOR VOID OsShellCmdPush(const CHAR *string, CmdKeyLink *cmdKeyLink)
 {
     CmdKeyLink *cmdNewNode = NULL;
@@ -776,7 +776,15 @@ OUT:
 
     return (UINT32)ret;
 }
-//命令初始化
+/*	命令初始化,用于存放支持的命令,目前鸿蒙支持如下命令
+arp           cat           cd            chgrp         chmod         chown         cp            cpup          
+date          dhclient      dmesg         dns           format        free          help          hwi           
+ifconfig      ipdebug       kill          log           ls            lsfd          memcheck      mkdir         
+mount         netstat       oom           partinfo      partition     ping          ping6         pwd           
+reset         rm            rmdir         sem           statfs        su            swtmr         sync          
+systeminfo    task          telnet        test          tftp          touch         umount        uname         
+watch         writeproc     
+*/
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdInit(VOID)
 {
     UINT32 ret;
@@ -790,7 +798,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdInit(VOID)
     }
     return LOS_OK;
 }
-//创建一个命令项
+//创建一个命令项,例如 chmod
 STATIC UINT32 OsCmdItemCreate(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNum, CmdCallBackFunc cmdProc)
 {
     CmdItem *cmdItem = NULL;

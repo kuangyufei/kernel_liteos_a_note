@@ -43,23 +43,24 @@
 #include "capability_api.h"
 #endif
 
-
+//进程相关系统回调
+//检查进程权限
 static int OsPermissionToCheck(unsigned int pid, unsigned int who)
 {
-    int ret = LOS_GetProcessGroupID(pid);
+    int ret = LOS_GetProcessGroupID(pid);//获取进程组ID
     if (ret < 0) {
         return ret;
-    } else if (ret == OS_KERNEL_PROCESS_GROUP) {
+    } else if (ret == OS_KERNEL_PROCESS_GROUP) {//为内核进程组
         return -EPERM;
-    } else if ((ret == OS_USER_PRIVILEGE_PROCESS_GROUP) && (pid != who)) {
+    } else if ((ret == OS_USER_PRIVILEGE_PROCESS_GROUP) && (pid != who)) {//为用户进程组,但两个参数进程不一致
         return -EPERM;
-    } else if (pid == OsGetUserInitProcessID()) {
+    } else if (pid == OsGetUserInitProcessID()) {//为用户进程的祖宗
         return -EPERM;
     }
 
     return 0;
 }
-
+//设置用户级任务调度信息
 static int OsUserTaskSchedulerSet(unsigned int tid, unsigned short policy, unsigned short priority, bool policyFlag)
 {
     int ret;
@@ -190,7 +191,7 @@ int SysSchedGetParam(int id, int flag)
 
     return OsGetProcessPriority(LOS_PRIO_PROCESS, id);
 }
-
+//设置进程优先级
 int SysSetProcessPriority(int which, int who, unsigned int prio)
 {
     int ret;

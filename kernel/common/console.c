@@ -160,7 +160,7 @@ STATIC UINT32 ConsoleRefcountGet(const CONSOLE_CB *consoleCB)
 {
     return consoleCB->refCount;
 }
-
+//设置控制台引用次数
 STATIC VOID ConsoleRefcountSet(CONSOLE_CB *consoleCB, BOOL flag)
 {
     if (flag == TRUE) {
@@ -169,7 +169,7 @@ STATIC VOID ConsoleRefcountSet(CONSOLE_CB *consoleCB, BOOL flag)
         --(consoleCB->refCount);
     }
 }
-
+//控制台是否被占用
 BOOL IsConsoleOccupied(const CONSOLE_CB *consoleCB)
 {
     if (ConsoleRefcountGet(consoleCB) != FALSE) {
@@ -264,13 +264,13 @@ STATIC INT32 OsGetConsoleID(const CHAR *deviceName)
     if ((deviceName != NULL) &&
         (strlen(deviceName) == strlen(SERIAL)) &&
         (!strncmp(deviceName, SERIAL, strlen(SERIAL)))) {
-        return CONSOLE_SERIAL;//1
+        return CONSOLE_SERIAL;//1 串口
     }
 #ifdef LOSCFG_NET_TELNET
     else if ((deviceName != NULL) &&
              (strlen(deviceName) == strlen(TELNET)) &&
              (!strncmp(deviceName, TELNET, strlen(TELNET)))) {
-        return CONSOLE_TELNET;//2
+        return CONSOLE_TELNET;//2 远程登录
     }
 #endif
     return -1;
@@ -370,11 +370,11 @@ STATIC INLINE VOID UserEndOfRead(CONSOLE_CB *consoleCB, struct file *filep,
     consoleCB->fifo[consoleCB->fifoIn] = '\0';
     consoleCB->currentLen = consoleCB->fifoIn;
 }
-
+//根据VT终端标准 <ESC>[37m 为设置前景色
 enum {
-    STAT_NOMAL_KEY,
-    STAT_ESC_KEY,
-    STAT_MULTI_KEY
+    STAT_NOMAL_KEY,	//普通按键
+    STAT_ESC_KEY,	//控制按键,只有 ESC 是
+    STAT_MULTI_KEY	//多个按键,只有 [ 是
 };
 
 STATIC INT32 UserShellCheckUDRL(const CHAR ch, INT32 *lastTokenType)
@@ -384,7 +384,7 @@ STATIC INT32 UserShellCheckUDRL(const CHAR ch, INT32 *lastTokenType)
         *lastTokenType = STAT_ESC_KEY;
         return ret;
     } else if (ch == 0x5b) { /* 0x5b: first Key combination */
-        if (*lastTokenType == STAT_ESC_KEY) {
+        if (*lastTokenType == STAT_ESC_KEY) { //遇到 <ESC>[
             *lastTokenType = STAT_MULTI_KEY;
             return ret;
         }
@@ -519,7 +519,7 @@ STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const stru
 
     return ret;
 }
-
+//从控制台读数据
 INT32 FilepRead(struct file *filep, const struct file_operations_vfs *fops, CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -1053,7 +1053,7 @@ STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
     }
 #endif
 }
-//控制台文件初始化
+//控制台文件实例初始化
 STATIC INT32 OsConsoleFileInit(CONSOLE_CB *consoleCB)
 {
     INT32 ret;
@@ -1072,7 +1072,7 @@ STATIC INT32 OsConsoleFileInit(CONSOLE_CB *consoleCB)
         ret = EACCES;
         goto ERROUT_WITH_FULLPATH;
     }
-	//分配一个系统文件描述符
+	//分配一个系统文件句柄
     consoleCB->fd = files_allocate(vnode, O_RDWR, (off_t)0, consoleCB, STDERR_FILENO + 1);
     if (consoleCB->fd < 0) {
         ret = EMFILE;
@@ -1387,7 +1387,7 @@ INT32 system_console_init(const CHAR *deviceName)//deviceName: /dev/serial /dev/
     }
 
     LOS_SpinLockSave(&g_consoleSpin, &intSave);
-    g_console[consoleID - 1] = consoleCB;//g_console最大值只有2
+    g_console[consoleID - 1] = consoleCB;//全局变量,  g_console最大值只有2 ,代表当前0,1指向哪个任务.
     if (OsCurrTaskGet() != NULL) {//当前task
         g_taskConsoleIDArray[OsCurrTaskGet()->taskID] = (UINT8)consoleID;//任务绑定控制台ID
     }
@@ -1480,7 +1480,7 @@ BOOL ConsoleEnable(VOID)
 
     return FALSE;
 }
-//任务注册控制台,每个任务都有属于自己的控制台
+//任务注册控制台,每个shell任务都有属于自己的控制台
 INT32 ConsoleTaskReg(INT32 consoleID, UINT32 taskID)
 {
     if (g_console[consoleID - 1]->shellEntryId == SHELL_ENTRYID_INVALID) {
@@ -1562,7 +1562,7 @@ BOOL is_nonblock(const CONSOLE_CB *consoleCB)
     }
     return consoleCB->isNonBlock;
 }
-//控制台更新FD
+//控制台更新文件句柄
 INT32 ConsoleUpdateFd(VOID)
 {
     INT32 consoleID;

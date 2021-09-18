@@ -111,14 +111,14 @@ enum {
     STAT_ESC_KEY,
     STAT_MULTI_KEY
 };
-
+//解析上下左右键
 STATIC INT32 ShellCmdLineCheckUDRL(const CHAR ch, ShellCB *shellCB)
 {
     INT32 ret = LOS_OK;
     if (ch == 0x1b) { /* 0x1b: ESC */
         shellCB->shellKeyType = STAT_ESC_KEY;
         return ret;
-    } else if (ch == 0x5b) { /* 0x5b: first Key combination */
+    } else if (ch == 0x5b) { /* 0x5b: first Key combination */ //为[键 ,遵循 vt100 规则
         if (shellCB->shellKeyType == STAT_ESC_KEY) {
             shellCB->shellKeyType = STAT_MULTI_KEY;
             return ret;
@@ -148,44 +148,44 @@ STATIC INT32 ShellCmdLineCheckUDRL(const CHAR ch, ShellCB *shellCB)
     }
     return LOS_NOK;
 }
-
+//对命令行内容分解 
 LITE_OS_SEC_TEXT_MINOR VOID ShellCmdLineParse(CHAR c, pf_OUTPUT outputFunc, ShellCB *shellCB)
 {
     const CHAR ch = c;
     INT32 ret;
-
+	//不是碰到回车键和字符串结束
     if ((shellCB->shellBufOffset == 0) && (ch != '\n') && (ch != '\0')) {
-        (VOID)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);
+        (VOID)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);//重置buf
     }
-
+	//遇到回车或换行
     if ((ch == '\r') || (ch == '\n')) {
         if (shellCB->shellBufOffset < (SHOW_MAX_LEN - 1)) {
-            shellCB->shellBuf[shellCB->shellBufOffset] = '\0';
+            shellCB->shellBuf[shellCB->shellBufOffset] = '\0';//字符串结束
         }
         shellCB->shellBufOffset = 0;
         (VOID)pthread_mutex_lock(&shellCB->keyMutex);
-        OsShellCmdPush(shellCB->shellBuf, shellCB->cmdKeyLink);
+        OsShellCmdPush(shellCB->shellBuf, shellCB->cmdKeyLink);//解析回车或换行
         (VOID)pthread_mutex_unlock(&shellCB->keyMutex);
-        ShellNotify(shellCB);
+        ShellNotify(shellCB);//通知输入命令完成
         return;
-    } else if ((ch == '\b') || (ch == 0x7F)) { /* backspace or delete(0x7F) */
+    } else if ((ch == '\b') || (ch == 0x7F)) { /* backspace or delete(0x7F) */ //遇到删除键
         if ((shellCB->shellBufOffset > 0) && (shellCB->shellBufOffset < (SHOW_MAX_LEN - 1))) {
-            shellCB->shellBuf[shellCB->shellBufOffset - 1] = '\0';
-            shellCB->shellBufOffset--;
-            outputFunc("\b \b");
+            shellCB->shellBuf[shellCB->shellBufOffset - 1] = '\0';//填充`\0`
+            shellCB->shellBufOffset--;//buf减少
+            outputFunc("\b \b");//回调入参函数
         }
         return;
-    } else if (ch == 0x09) { /* 0x09: tab */
+    } else if (ch == 0x09) { /* 0x09: tab *///遇到tab键
         if ((shellCB->shellBufOffset > 0) && (shellCB->shellBufOffset < (SHOW_MAX_LEN - 1))) {
-            ret = OsTabCompletion(shellCB->shellBuf, &shellCB->shellBufOffset);
+            ret = OsTabCompletion(shellCB->shellBuf, &shellCB->shellBufOffset);//解析tab键
             if (ret > 1) {
-                outputFunc("OHOS # %s", shellCB->shellBuf);
+                outputFunc("OHOS # %s", shellCB->shellBuf);//回调入参函数
             }
         }
         return;
     }
     /* parse the up/down/right/left key */
-    ret = ShellCmdLineCheckUDRL(ch, shellCB);
+    ret = ShellCmdLineCheckUDRL(ch, shellCB);//解析上下左右键
     if (ret == LOS_OK) {
         return;
     }
@@ -324,7 +324,7 @@ END:
     }
     return ret;
 }
-
+//读取命令行内容
 #ifdef LOSCFG_FS_VFS
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntry(UINTPTR param)
 {
@@ -332,7 +332,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntry(UINTPTR param)
     INT32 n = 0;
     ShellCB *shellCB = (ShellCB *)param;
 
-    CONSOLE_CB *consoleCB = OsGetConsoleByID((INT32)shellCB->consoleID);
+    CONSOLE_CB *consoleCB = OsGetConsoleByID((INT32)shellCB->consoleID);//获取控制台
     if (consoleCB == NULL) {
         PRINT_ERR("Shell task init error!\n");
         return 1;
@@ -342,11 +342,11 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntry(UINTPTR param)
 
     while (1) {
 #ifdef LOSCFG_PLATFORM_CONSOLE
-        if (!IsConsoleOccupied(consoleCB)) {
+        if (!IsConsoleOccupied(consoleCB)) {//控制台是否被占用
 #endif
             /* is console ready for shell ? */
-            n = read(consoleCB->fd, &ch, 1);
-            if (n == 1) {
+            n = read(consoleCB->fd, &ch, 1);//从控制台读取一个字符内容
+            if (n == 1) {//如果能读到一个字符
                 ShellCmdLineParse(ch, (pf_OUTPUT)dprintf, shellCB);
             }
             if (is_nonblock(consoleCB)) {
@@ -358,17 +358,17 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntry(UINTPTR param)
     }
 }
 #endif
-
+//处理shell 命令
 STATIC VOID ShellCmdProcess(ShellCB *shellCB)
 {
     CHAR *buf = NULL;
     while (1) {
-        buf = ShellGetInputBuf(shellCB);
+        buf = ShellGetInputBuf(shellCB);//获取输入的buf
         if (buf == NULL) {
             break;
         }
-        (VOID)ShellMsgParse(buf);
-        ShellSaveHistoryCmd(buf, shellCB);
+        (VOID)ShellMsgParse(buf);//解析buf
+        ShellSaveHistoryCmd(buf, shellCB);//保存到历史记录中
         shellCB->cmdMaskKeyLink = shellCB->cmdHistoryKeyLink;
     }
 }
@@ -390,14 +390,14 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellTask(UINTPTR param1,
                             0xFFF, LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
         if (ret == SHELL_CMD_PARSE_EVENT) {//获得解析命令事件
             ShellCmdProcess(shellCB);//处理命令 
-        } else if (ret == CONSOLE_SHELL_KEY_EVENT) {
+        } else if (ret == CONSOLE_SHELL_KEY_EVENT) {//退出shell事件
             break;
         }
     }
-    OsShellKeyDeInit((CmdKeyLink *)shellCB->cmdKeyLink);
+    OsShellKeyDeInit((CmdKeyLink *)shellCB->cmdKeyLink);//
     OsShellKeyDeInit((CmdKeyLink *)shellCB->cmdHistoryKeyLink);
-    (VOID)LOS_EventDestroy(&shellCB->shellEvent);
-    (VOID)LOS_MemFree((VOID *)m_aucSysMem0, shellCB);
+    (VOID)LOS_EventDestroy(&shellCB->shellEvent);//注销事件
+    (VOID)LOS_MemFree((VOID *)m_aucSysMem0, shellCB);//释放shell控制块
     return 0;
 }
 
@@ -405,21 +405,21 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellTask(UINTPTR param1,
 #define SERIAL_ENTRY_TASK_NAME "SerialEntryTask"
 #define TELNET_SHELL_TASK_NAME "TelnetShellTask"
 #define TELNET_ENTRY_TASK_NAME "TelnetEntryTask"
-
+//shell 任务初始化
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellTaskInit(ShellCB *shellCB)
 {
     CHAR *name = NULL;
     TSK_INIT_PARAM_S initParam = {0};
-
-    if (shellCB->consoleID == CONSOLE_SERIAL) {
+	//输入Shell命令的两种方式
+    if (shellCB->consoleID == CONSOLE_SERIAL) {	//通过串口工具
         name = SERIAL_SHELL_TASK_NAME;
-    } else if (shellCB->consoleID == CONSOLE_TELNET) {
+    } else if (shellCB->consoleID == CONSOLE_TELNET) {//通过远程工具
         name = TELNET_SHELL_TASK_NAME;
     } else {
         return LOS_NOK;
     }
 
-    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ShellTask;
+    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ShellTask;//任务入口地址,主要是解析shell命令
     initParam.usTaskPrio   = 9; /* 9:shell task priority */
     initParam.auwArgs[0]   = (UINTPTR)shellCB;
     initParam.uwStackSize  = 0x3000;
@@ -430,7 +430,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellTaskInit(ShellCB *shellCB)
 
     return LOS_TaskCreate(&shellCB->shellTaskHandle, &initParam);
 }
-
+//进入shell初始化
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntryInit(ShellCB *shellCB)
 {
     UINT32 ret;
@@ -445,7 +445,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntryInit(ShellCB *shellCB)
         return LOS_NOK;
     }
 
-    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ShellEntry;
+    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ShellEntry;//主要是读取命令行内容
     initParam.usTaskPrio   = 9; /* 9:shell task priority */
     initParam.auwArgs[0]   = (UINTPTR)shellCB;
     initParam.uwStackSize  = 0x1000;
