@@ -93,7 +93,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventInit(PEVENT_CB_S eventCB)
     }
 
     intSave = LOS_IntLock();//锁中断
-    eventCB->uwEventID = 0;
+    eventCB->uwEventID = 0;//事件类型初始化
     LOS_ListInit(&eventCB->stEventList);//事件链表初始化
     LOS_IntRestore(intSave);//恢复中断
     OsHookCall(LOS_HOOK_TYPE_EVENT_INIT, eventCB);
@@ -188,9 +188,9 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadImp(PEVENT_CB_S eventCB, UINT32 eventM
             return LOS_ERRNO_EVENT_READ_IN_LOCK;
         }
 
-        runTask->eventMask = eventMask;//等待事件
-        runTask->eventMode = mode;	//事件模式
-        runTask->taskEvent = eventCB;//事件控制块
+        runTask->eventMask = eventMask;	//等待事件
+        runTask->eventMode = mode;		//事件模式
+        runTask->taskEvent = eventCB;	//事件控制块
         OsTaskWaitSetPendMask(OS_TASK_WAIT_EVENT, eventMask, timeout);
         ret = OsSchedTaskWait(&eventCB->stEventList, timeout, TRUE);
         if (ret == LOS_ERRNO_TSK_TIMEOUT) {
@@ -290,13 +290,13 @@ LITE_OS_SEC_TEXT UINT32 LOS_EventPoll(UINT32 *eventID, UINT32 eventMask, UINT32 
 {
     UINT32 ret;
     UINT32 intSave;
-
+	//事件参数检查
     ret = OsEventParamCheck((VOID *)eventID, eventMask, mode);
     if (ret != LOS_OK) {
         return ret;
     }
 
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_LOCK(intSave);//申请任务自旋锁
     ret = OsEventPoll(eventID, eventMask, mode);
     SCHEDULER_UNLOCK(intSave);
     return ret;

@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' shell编辑,解析,执行三步走过程解析
+git commit -m  ' 注解shell底层实现
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     博客输出站点(国内):http://weharmonyos.com
     博客输出站点(国外):https://openharmony.github.io

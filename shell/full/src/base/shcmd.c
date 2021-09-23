@@ -118,7 +118,7 @@ STATIC INT32 OsStrSeparate(CHAR *tabStr, CHAR *strPath, CHAR *nameLooking, UINT3
         return ret;
     }
 
-    /* get fullpath str */
+    /* get fullpath str *///获取全路径
     if (*tabStr != '/') {
         if (strncpy_s(strPath, CMD_MAX_PATH, shellWorkingDirectory, CMD_MAX_PATH - 1)) {
             OsFreeCmdPara(&parsed);
@@ -133,7 +133,7 @@ STATIC INT32 OsStrSeparate(CHAR *tabStr, CHAR *strPath, CHAR *nameLooking, UINT3
     }
 
     if (strncat_s(strPath, CMD_MAX_PATH, tabStr, CMD_MAX_PATH - strlen(strPath) - 1)) {
-        OsFreeCmdPara(&parsed);
+        OsFreeCmdPara(&parsed);//释放命令行中参数所占内存
         return (INT32)OS_ERROR;
     }
 
@@ -151,12 +151,12 @@ STATIC INT32 OsStrSeparate(CHAR *tabStr, CHAR *strPath, CHAR *nameLooking, UINT3
     OsFreeCmdPara(&parsed);
     return LOS_OK;
 }
-
+//输出内容
 STATIC INT32 OsShowPageInputControl(VOID)
 {
     CHAR readChar;
 
-    while (1) {
+    while (1) {//从 stdin 中读取内容字符
         if (read(STDIN_FILENO, &readChar, 1) != 1) { /* get one CHAR from stdin */
             PRINTK("\n");
             return (INT32)OS_ERROR;
@@ -170,36 +170,36 @@ STATIC INT32 OsShowPageInputControl(VOID)
         }
     }
 }
-
+//显示页内容控制器
 STATIC INT32 OsShowPageControl(UINT32 timesPrint, UINT32 lineCap, UINT32 count)
 {
-    if (NEED_NEW_LINE(timesPrint, lineCap)) {
+    if (NEED_NEW_LINE(timesPrint, lineCap)) {//是否新开一行
         PRINTK("\n");
         if (SCREEN_IS_FULL(timesPrint, lineCap) && (timesPrint < count)) {
             PRINTK("--More--");
-            return OsShowPageInputControl();
+            return OsShowPageInputControl();//打印内容
         }
     }
     return 1;
 }
-
+//是否打印所有内容
 STATIC INT32 OsSurePrintAll(UINT32 count)
 {
     CHAR readChar = 0;
     PRINTK("\nDisplay all %u possibilities?(y/n)", count);
-    while (1) {
-        if (read(0, &readChar, 1) != 1) {
+    while (1) {//死循环等待输入
+        if (read(0, &readChar, 1) != 1) {//从标准输入中 读取字符
             return (INT32)OS_ERROR;
         }
-        if ((readChar == 'n') || (readChar == 'N') || (readChar == CTRL_C)) {
+        if ((readChar == 'n') || (readChar == 'N') || (readChar == CTRL_C)) {//输入N
             PRINTK("\n");
             return 0;
-        } else if ((readChar == 'y') || (readChar == 'Y') || (readChar == '\r')) {
+        } else if ((readChar == 'y') || (readChar == 'Y') || (readChar == '\r')) {//输入 Y
             return 1;
         }
     }
 }
-
+//打印匹配的列表数据
 STATIC INT32 OsPrintMatchList(UINT32 count, const CHAR *strPath, const CHAR *nameLooking, UINT32 printLen)
 {
     UINT32 timesPrint = 0;
@@ -216,12 +216,12 @@ STATIC INT32 OsPrintMatchList(UINT32 count, const CHAR *strPath, const CHAR *nam
     }
 
     if (count > (lineCap * DEFAULT_SCREEN_HEIGNT)) {
-        ret = OsSurePrintAll(count);
+        ret = OsSurePrintAll(count);//确认打印内容,等待用户输入 N/Y
         if (ret != 1) {
             return ret;
         }
     }
-    openDir = opendir(strPath);
+    openDir = opendir(strPath);//打开目录
     if (openDir == NULL) {
         return (INT32)OS_ERROR;
     }
@@ -270,6 +270,8 @@ STATIC VOID strncmp_cut(const CHAR *s1, CHAR *s2, size_t n)
     }
     return;
 }
+
+//匹配文件
 STATIC INT32 OsExecNameMatch(const CHAR *strPath, const CHAR *nameLooking, CHAR *strObj, UINT32 *maxLen)
 {
     INT32 count = 0;
@@ -280,9 +282,9 @@ STATIC INT32 OsExecNameMatch(const CHAR *strPath, const CHAR *nameLooking, CHAR 
     if (openDir == NULL) {
         return (INT32)OS_ERROR;
     }
-
+	//遍历目录下的文件夹
     for (readDir = readdir(openDir); readDir != NULL; readDir = readdir(openDir)) {
-        if (strncmp(nameLooking, readDir->d_name, strlen(nameLooking)) != 0) {
+        if (strncmp(nameLooking, readDir->d_name, strlen(nameLooking)) != 0) {//不存在字符,
             continue;
         }
         if (count == 0) {
@@ -298,7 +300,7 @@ STATIC INT32 OsExecNameMatch(const CHAR *strPath, const CHAR *nameLooking, CHAR 
                 *maxLen = strlen(readDir->d_name);
             }
         }
-        count++;
+        count++;//找到一个
     }
 
     if (closedir(openDir) < 0) {
@@ -324,7 +326,12 @@ STATIC VOID OsCompleteStr(const CHAR *result, const CHAR *target, CHAR *cmdKey, 
         (*len)++;
     }
 }
-
+//使用tab键去匹配命令
+/*例如:
+root@iZ7xv0x7yrn6s2or5pzw58Z:~# ls
+ls           lsblk        lscpu        lsinitramfs  lslocks      lsmem        lsns         lspci        lsusb
+lsattr       lsb_release  lshw         lsipc        lslogins     lsmod        lsof         lspgpot
+*/
 STATIC INT32 OsTabMatchCmd(CHAR *cmdKey, UINT32 *len)
 {
     INT32 count = 0;
@@ -340,12 +347,12 @@ STATIC INT32 OsTabMatchCmd(CHAR *cmdKey, UINT32 *len)
     if (LOS_ListEmpty(&(g_cmdInfo.cmdList.list))) {
         return (INT32)OS_ERROR;
     }
-
+	//遍历现有命令
     LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(g_cmdInfo.cmdList.list), CmdItemNode, list) {
         if ((curCmdItem == NULL) || (curCmdItem->cmd == NULL)) {
             return -1;
         }
-
+		
         if (strncmp(cmdMajor, curCmdItem->cmd->cmdKey, strlen(cmdMajor)) > 0) {
             continue;
         }
@@ -357,30 +364,30 @@ STATIC INT32 OsTabMatchCmd(CHAR *cmdKey, UINT32 *len)
         if (count == 0) {
             cmdItemGuard = curCmdItem;
         }
-        ++count;
+        ++count;//匹配到一个
     }
 
     if (cmdItemGuard == NULL) {
         return 0;
     }
 
-    if (count == 1) {
+    if (count == 1) {//只有一个的情况,直接补充完整
         OsCompleteStr(cmdItemGuard->cmd->cmdKey, cmdMajor, cmdKey, len);
     }
 
     ret = count;
     if (count > 1) {
         PRINTK("\n");
-        while (count--) {
+        while (count--) {//打印已经匹配到的命令
             PRINTK("%s  ", cmdItemGuard->cmd->cmdKey);
-            cmdItemGuard = LOS_DL_LIST_ENTRY(cmdItemGuard->list.pstNext, CmdItemNode, list);
+            cmdItemGuard = LOS_DL_LIST_ENTRY(cmdItemGuard->list.pstNext, CmdItemNode, list);//取下一个
         }
         PRINTK("\n");
     }
 
     return ret;
 }
-
+//使用tab键去匹配关键字文件
 STATIC INT32 OsTabMatchFile(CHAR *cmdKey, UINT32 *len)
 {
     UINT32 maxLen = 0;
@@ -400,7 +407,7 @@ STATIC INT32 OsTabMatchFile(CHAR *cmdKey, UINT32 *len)
         (VOID)LOS_MemFree(m_aucSysMem0, dirOpen);
         return (INT32)OS_ERROR;
     }
-
+	//匹配名字
     count = OsExecNameMatch(dirOpen, strCmp, strOutput, &maxLen);
     /* one or more matched */
     if (count >= 1) {
@@ -533,7 +540,7 @@ LITE_OS_SEC_TEXT_MINOR BOOL OsCmdKeyCheck(const CHAR *cmdKey)
 
     return TRUE;
 }
-
+//tab键
 LITE_OS_SEC_TEXT_MINOR INT32 OsTabCompletion(CHAR *cmdKey, UINT32 *len)
 {
     INT32 count = 0;
@@ -545,7 +552,7 @@ LITE_OS_SEC_TEXT_MINOR INT32 OsTabCompletion(CHAR *cmdKey, UINT32 *len)
     }
 
     /* cut left space */
-    while (*cmdMainStr == 0x20) {
+    while (*cmdMainStr == 0x20) {//空格键
         cmdMainStr++;
     }
 
@@ -570,14 +577,14 @@ LITE_OS_SEC_TEXT_MINOR VOID OsCmdAscendingInsert(CmdItemNode *cmd)
     if (cmd == NULL) {
         return;
     }
-
+	//遍历注册的命令项链表
     for (cmdItem = LOS_DL_LIST_ENTRY((&g_cmdInfo.cmdList.list)->pstPrev, CmdItemNode, list);
          &cmdItem->list != &(g_cmdInfo.cmdList.list);) {
-        cmdNext = LOS_DL_LIST_ENTRY(cmdItem->list.pstPrev, CmdItemNode, list);
+        cmdNext = LOS_DL_LIST_ENTRY(cmdItem->list.pstPrev, CmdItemNode, list);//获取实体,一个个比较
         if (&cmdNext->list != &(g_cmdInfo.cmdList.list)) {
             if ((strncmp(cmdItem->cmd->cmdKey, cmd->cmd->cmdKey, strlen(cmd->cmd->cmdKey)) >= 0) &&
                 (strncmp(cmdNext->cmd->cmdKey, cmd->cmd->cmdKey, strlen(cmd->cmd->cmdKey)) < 0)) {
-                LOS_ListTailInsert(&(cmdItem->list), &(cmd->list));
+                LOS_ListTailInsert(&(cmdItem->list), &(cmd->list));//从尾部插入
                 return;
             }
             cmdItem = cmdNext;
@@ -591,7 +598,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsCmdAscendingInsert(CmdItemNode *cmd)
 
     LOS_ListTailInsert(&(cmdItem->list), &(cmd->list));
 }
-//shell 按键初始化
+//shell 命令初始化
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellKeyInit(ShellCB *shellCB)
 {
     CmdKeyLink *cmdKeyLink = NULL;
@@ -613,16 +620,16 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellKeyInit(ShellCB *shellCB)
     }
 
     cmdKeyLink->count = 0;
-    LOS_ListInit(&(cmdKeyLink->list));
-    shellCB->cmdKeyLink = (VOID *)cmdKeyLink;
+    LOS_ListInit(&(cmdKeyLink->list));//待处理命令链表初始化
+    shellCB->cmdKeyLink = (VOID *)cmdKeyLink;//链表源头
 
     cmdHistoryLink->count = 0;
-    LOS_ListInit(&(cmdHistoryLink->list));
-    shellCB->cmdHistoryKeyLink = (VOID *)cmdHistoryLink;
-    shellCB->cmdMaskKeyLink = (VOID *)cmdHistoryLink;
+    LOS_ListInit(&(cmdHistoryLink->list));//历史记录链表初始化
+    shellCB->cmdHistoryKeyLink = (VOID *)cmdHistoryLink;//链表源头
+    shellCB->cmdMaskKeyLink = (VOID *)cmdHistoryLink;//掩码命令链表同历史记录链表,标识上下键位置.
     return LOS_OK;
 }
-
+//shell的析构函数
 LITE_OS_SEC_TEXT_MINOR VOID OsShellKeyDeInit(CmdKeyLink *cmdKeyLink)
 {
     CmdKeyLink *cmdtmp = NULL;
@@ -630,13 +637,13 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellKeyDeInit(CmdKeyLink *cmdKeyLink)
         return;
     }
 
-    while (!LOS_ListEmpty(&(cmdKeyLink->list))) {
+    while (!LOS_ListEmpty(&(cmdKeyLink->list))) {//清空待处理命令列表
         cmdtmp = LOS_DL_LIST_ENTRY(cmdKeyLink->list.pstNext, CmdKeyLink, list);
-        LOS_ListDelete(&cmdtmp->list);
-        (VOID)LOS_MemFree(m_aucSysMem0, cmdtmp);
+        LOS_ListDelete(&cmdtmp->list);//将自己从链表中摘出去
+        (VOID)LOS_MemFree(m_aucSysMem0, cmdtmp);//释放内核内存空间
     }
 
-    cmdKeyLink->count = 0;
+    cmdKeyLink->count = 0;//链表为空,个数清0
     (VOID)LOS_MemFree(m_aucSysMem0, cmdKeyLink);
 }
 //注册系统自带的shell命令
@@ -746,16 +753,16 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdExec(CmdParsed *cmdParsed, CHAR *cmdStr)
         return (UINT32)OS_ERROR;
     }
 
-    ret = OsCmdParse(cmdStr, cmdParsed);//解析命令
+    ret = OsCmdParse(cmdStr, cmdParsed);//解析出命令关键字,参数
     if (ret != LOS_OK) {
         goto OUT;
     }
-	//遍历链表
+	//遍历命令注册全局链表
     LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(g_cmdInfo.cmdList.list), CmdItemNode, list) {
         cmdKey = curCmdItem->cmd->cmdKey;
         if ((cmdParsed->cmdType == curCmdItem->cmd->cmdType) &&
             (strlen(cmdKey) == strlen(cmdParsed->cmdKeyword)) &&
-            (strncmp(cmdKey, (CHAR *)(cmdParsed->cmdKeyword), strlen(cmdKey)) == 0)) {
+            (strncmp(cmdKey, (CHAR *)(cmdParsed->cmdKeyword), strlen(cmdKey)) == 0)) {//找到命令的回调函数 例如: ls <-> osShellCmdLs
             cmdHook = curCmdItem->cmd->cmdHook;
             break;
         }

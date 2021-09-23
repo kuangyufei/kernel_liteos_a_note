@@ -157,19 +157,19 @@ INT32 OsShellDeinit(INT32 consoleId)
 
     return 0;
 }
-
+//获取shell的工作目录
 CHAR *OsShellGetWorkingDirtectory(VOID)
 {
-    CONSOLE_CB *consoleCB = OsGetConsoleByTaskID(OsCurrTaskGet()->taskID);
+    CONSOLE_CB *consoleCB = OsGetConsoleByTaskID(OsCurrTaskGet()->taskID);//获取当前任务控制台
     ShellCB *shellCB = NULL;
 
     if (consoleCB == NULL) {
         return NULL;
     }
-    shellCB = (ShellCB *)consoleCB->shellHandle;
+    shellCB = (ShellCB *)consoleCB->shellHandle;//获取控制台的shell实体
     if (shellCB == NULL) {
         return NULL;
     }
-    return shellCB->shellWorkingDirectory;
+    return shellCB->shellWorkingDirectory;//返回shell工作目录
 }
 

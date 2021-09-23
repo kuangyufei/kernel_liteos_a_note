@@ -72,11 +72,11 @@ typedef struct {//shell 模块的全局信息
     LosMux muxLock;	//操作链表互斥锁
     CmdVerifyTransID transIdHook;
 } CmdModInfo;
-
+//一个shell命令的结构体,命令有长有短,鸿蒙采用了可变数组的方式实现
 typedef struct {
-    UINT32 count;
-    LOS_DL_LIST list;
-    CHAR cmdString[0];
+    UINT32 count;	//字符数量
+    LOS_DL_LIST list;	//双向链表
+    CHAR cmdString[0];	//字符串,可变数组的一种实现方式.
 } CmdKeyLink;
 //shell 静态宏方式注册
 #define SHELLCMD_ENTRY(l, cmdType, cmdKey, paraNum, cmdHook)    \
@@ -86,10 +86,10 @@ typedef struct {
         paraNum,                                                \
         cmdHook                                                 \
     }
-
+//是否需要新开一行
 #define NEED_NEW_LINE(timesPrint, lineCap) ((timesPrint) % (lineCap) == 0)
 #define SCREEN_IS_FULL(timesPrint, lineCap) ((timesPrint) >= ((lineCap) * DEFAULT_SCREEN_HEIGNT))
-
+//是否全屏显示
 extern UINT32 OsCmdInit(VOID);
 extern CmdModInfo *OsCmdInfoGet(VOID);
 extern UINT32 OsCmdExec(CmdParsed *cmdParsed, CHAR *cmdStr);

@@ -190,19 +190,19 @@ static int OsShowPageControl(unsigned int timesPrint, unsigned int lineCap, unsi
     }
     return 1;
 }
-
+//确认打印的内容
 static int OsSurePrintAll(unsigned int count)
 {
     char readChar = 0;
     printf("\nDisplay all %u possibilities?(y/n)", count);
-    while (1) {
-        if (read(STDIN_FILENO, &readChar, 1) != 1) {
+    while (1) {//死循环等待输入
+        if (read(STDIN_FILENO, &readChar, 1) != 1) {//读取输入的字符
             return (int)SH_ERROR;
         }
-        if ((readChar == 'n') || (readChar == 'N') || (readChar == CTRL_C)) {
+        if ((readChar == 'n') || (readChar == 'N') || (readChar == CTRL_C)) {//不显示
             printf("\n");
             return 0;
-        } else if ((readChar == 'y') || (readChar == 'Y') || (readChar == '\r')) {
+        } else if ((readChar == 'y') || (readChar == 'Y') || (readChar == '\r')) {//显示的情况
             return 1;
         }
     }
@@ -296,7 +296,7 @@ static void OsCompleteStr(char *result, const char *target, char *cmdKey, unsign
         (*len)++;
     }
 }
-
+//当前目录下匹配名字
 static int OsExecNameMatch(const char *strPath, const char *nameLooking, char *strObj, unsigned int *maxLen)
 {
     int count = 0;
@@ -307,7 +307,7 @@ static int OsExecNameMatch(const char *strPath, const char *nameLooking, char *s
     if (openDir == NULL) {
         return (int)SH_ERROR;
     }
-
+	//遍历文件夹
     for (readDir = readdir(openDir); readDir != NULL; readDir = readdir(openDir)) {
         if (strncmp(nameLooking, readDir->d_name, strlen(nameLooking)) != 0) {
             continue;

@@ -50,14 +50,14 @@
 
 #define SIZEBUF  256
 
-const CHAR *g_logString[] = {
-    "EMG",
-    "COMMON",
-    "ERR",
-    "WARN",
-    "INFO",
-    "DEBUG",
-    "TRACE"
+const CHAR *g_logString[] = {//日志等级
+    "EMG",		//紧急
+    "COMMON",	//普通
+    "ERR",		//错误日志
+    "WARN",		//警告
+    "INFO",		//信息
+    "DEBUG",	//调试	
+    "TRACE"		//跟踪
 };
 
 const CHAR *OsLogLvGet(INT32 level)
@@ -84,40 +84,40 @@ STATIC VOID UartOutput(const CHAR *str, UINT32 len, BOOL isLock)
     UartPuts(str, len, isLock);//没有打开dmesg开关时,直接写串口 
 #endif
 }
-//输出控制处理
+//控制台输出
 #ifdef LOSCFG_PLATFORM_CONSOLE
 STATIC VOID ConsoleOutput(const CHAR *str, UINT32 len)
 {
     ssize_t writen = 0;
     ssize_t cnt;
-    ssize_t toWrite = len;
-
+    ssize_t toWrite = len;//每次写入的数量
+	
     for (;;) {
-        cnt = write(STDOUT_FILENO, str + writen, (size_t)toWrite);
+        cnt = write(STDOUT_FILENO, str + writen, (size_t)toWrite);//向控制台写入数据,STDOUT_FILENO = 1
         if ((cnt < 0) || (toWrite == cnt)) {
             break;
         }
-        writen += cnt;
-        toWrite -= cnt;
+        writen += cnt;	//已写入数量增加
+        toWrite -= cnt;	//要写入数量减少
     }
 }
 #endif
 
 VOID OutputControl(const CHAR *str, UINT32 len, OutputType type)
 {
-    switch (type) {
-        case CONSOLE_OUTPUT:
+    switch (type) {//输出类型
+        case CONSOLE_OUTPUT://控制台输出
 #ifdef LOSCFG_PLATFORM_CONSOLE
             if (ConsoleEnable() == TRUE) {//POSIX 定义了 STDIN_FILENO、STDOUT_FILENO 和 STDERR_FILENO 来代替 0、1、2 
-                ConsoleOutput(str, len);
+                ConsoleOutput(str, len);//输出到控制台
                 break;//在三个文件会在 VFS中默认创建
             }
 #endif
             /* fall-through */ //落空的情况下,会接着向串口打印数据
-        case UART_OUTPUT:
+        case UART_OUTPUT:	//串口输出
             UartOutput(str, len, UART_WITH_LOCK);//向串口发送数据
             break;
-        case EXC_OUTPUT:
+        case EXC_OUTPUT:	//异常输出
             UartPuts(str, len, UART_WITH_LOCK);
             break;
         default:
@@ -178,7 +178,7 @@ VOID OsVprintf(const CHAR *fmt, va_list ap, OutputType type)
 
     systemStatus = OsGetSystemStatus();//获取系统的状态
     if ((systemStatus == OS_SYSTEM_NORMAL) || (systemStatus == OS_SYSTEM_EXC_OTHER_CPU)) {//当前CPU空闲或其他CPU运行时
-        OutputControl(bBuf, len, type);//
+        OutputControl(bBuf, len, type);//输出到终端
     } else if (systemStatus == OS_SYSTEM_EXC_CURR_CPU) {//当前CPU正在执行
         OutputControl(bBuf, len, EXC_OUTPUT);//串口以无锁的方式输出
     }
@@ -197,7 +197,7 @@ __attribute__((noinline)) VOID UartPrintf(const CHAR *fmt, ...)
     OsVprintf(fmt, ap, UART_OUTPUT);
     va_end(ap);
 }
-
+//可变参数,输出到控制台
 __attribute__ ((noinline)) VOID dprintf(const CHAR *fmt, ...)
 {
     va_list ap;
@@ -228,7 +228,7 @@ __attribute__ ((noinline)) INT32 printf(const CHAR *fmt, ...)
     return 0;
 }
 #endif
-
+//系统日志的输出
 __attribute__((noinline)) VOID syslog(INT32 level, const CHAR *fmt, ...)
 {
     va_list ap;
@@ -237,7 +237,7 @@ __attribute__((noinline)) VOID syslog(INT32 level, const CHAR *fmt, ...)
     va_end(ap);
     (VOID)level;
 }
-
+//异常信息的输出
 __attribute__((noinline)) VOID ExcPrintf(const CHAR *fmt, ...)
 {
     va_list ap;

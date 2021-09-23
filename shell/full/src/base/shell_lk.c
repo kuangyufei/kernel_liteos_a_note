@@ -58,15 +58,15 @@ typedef struct {
     FILE *fp;		  //文件描述结构体
 } Logger;
 
-STATIC INT32 g_tracelevel;
-STATIC INT32 g_modulelevel;
+STATIC INT32 g_tracelevel;//日志等级
+STATIC INT32 g_modulelevel;//模块等级
 
 STATIC Logger g_logger = { 0 };
 
 VOID OsLkDefaultFunc(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, va_list ap);
 
 LK_FUNC g_osLkHook = (LK_FUNC)OsLkDefaultFunc;
-
+//获取日志等级
 STATIC INLINE INT32 OsLkTraceLvGet(VOID)
 {
     return g_tracelevel;
