@@ -66,7 +66,7 @@ typedef struct {	//命令节点
 
 /* global info for shell module */
 typedef struct {//shell 模块的全局信息
-    CmdItemNode cmdList;
+    CmdItemNode cmdList;	//命令项节点
     UINT32 listNum;//节点数量
     UINT32 initMagicFlag;//初始魔法标签 0xABABABAB
     LosMux muxLock;	//操作链表互斥锁
@@ -78,7 +78,7 @@ typedef struct {
     LOS_DL_LIST list;
     CHAR cmdString[0];
 } CmdKeyLink;
-
+//shell 静态宏方式注册
 #define SHELLCMD_ENTRY(l, cmdType, cmdKey, paraNum, cmdHook)    \
     CmdItem l LOS_HAL_TABLE_ENTRY(shellcmd) = {                 \
         cmdType,                                                \

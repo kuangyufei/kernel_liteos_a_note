@@ -43,7 +43,7 @@
 #include "shcmd.h"
 
 
-
+//获取命令行
 char *GetCmdline(ShellCB *shellCB)
 {
     CmdKeyLink *cmdkey = shellCB->cmdKeyLink;
@@ -71,7 +71,7 @@ char *GetCmdline(ShellCB *shellCB)
 
     return cmdNode->cmdString;
 }
-
+//保存shell命令历史
 static void ShellSaveHistoryCmd(char *string, ShellCB *shellCB)
 {
     CmdKeyLink *cmdHistory = shellCB->cmdHistoryKeyLink;
@@ -84,7 +84,7 @@ static void ShellSaveHistoryCmd(char *string, ShellCB *shellCB)
     }
 
     (void)pthread_mutex_lock(&shellCB->historyMutex);
-    if (cmdHistory->count != 0) {
+    if (cmdHistory->count != 0) {//这个分支的目的是去重,又不遍历整个链表,感觉没多大意义.
         cmdNxt = SH_LIST_ENTRY(cmdHistory->list.pstPrev, CmdKeyLink, list);
         if (strcmp(string, cmdNxt->cmdString) == 0) {
             free((void *)cmdkey);
@@ -93,22 +93,22 @@ static void ShellSaveHistoryCmd(char *string, ShellCB *shellCB)
         }
     }
 
-    if (cmdHistory->count >= CMD_HISTORY_LEN) {
-        cmdNxt = SH_LIST_ENTRY(cmdHistory->list.pstNext, CmdKeyLink, list);
-        SH_ListDelete(&(cmdNxt->list));
-        SH_ListTailInsert(&(cmdHistory->list), &(cmdkey->list));
-        free((void *)cmdNxt);
+    if (cmdHistory->count >= CMD_HISTORY_LEN) {//已经满了的处理,则需要删除一条再插入新的,数量不变,所以不存在 count的 +-
+        cmdNxt = SH_LIST_ENTRY(cmdHistory->list.pstNext, CmdKeyLink, list);//拿到下一条命令行记录
+        SH_ListDelete(&(cmdNxt->list));//将自己摘出去
+        SH_ListTailInsert(&(cmdHistory->list), &(cmdkey->list));//尾部插入新的命令
+        free((void *)cmdNxt);//释放旧数据
         (void)pthread_mutex_unlock(&shellCB->historyMutex);
         return;
     }
 
-    SH_ListTailInsert(&(cmdHistory->list), &(cmdkey->list));
-    cmdHistory->count++;
+    SH_ListTailInsert(&(cmdHistory->list), &(cmdkey->list));//从尾部插入
+    cmdHistory->count++;//历史记录的数量增加
 
     (void)pthread_mutex_unlock(&shellCB->historyMutex);
     return;
 }
-
+//shell挂起
 int ShellPend(ShellCB *shellCB)
 {
     if (shellCB == NULL) {
@@ -117,7 +117,7 @@ int ShellPend(ShellCB *shellCB)
 
     return sem_wait(&shellCB->shellSem);
 }
-
+//shell通知
 int ShellNotify(ShellCB *shellCB)
 {
     if (shellCB == NULL) {
@@ -128,11 +128,11 @@ int ShellNotify(ShellCB *shellCB)
 }
 
 enum {
-    STAT_NOMAL_KEY,
-    STAT_ESC_KEY,
-    STAT_MULTI_KEY
+    STAT_NOMAL_KEY,	//普通按键
+    STAT_ESC_KEY,	//<ESC>键,支持VT规范
+    STAT_MULTI_KEY	//组合键 例如: <ESC>[30m
 };
-
+//检查上下左右键
 static int ShellCmdLineCheckUDRL(const char ch, ShellCB *shellCB)
 {
     int ret = SH_OK;
@@ -169,7 +169,7 @@ static int ShellCmdLineCheckUDRL(const char ch, ShellCB *shellCB)
     }
     return SH_NOK;
 }
-
+//通知任务解析shell命令
 void ShellTaskNotify(ShellCB *shellCB)
 {
     int ret;
@@ -178,12 +178,12 @@ void ShellTaskNotify(ShellCB *shellCB)
     OsShellCmdPush(shellCB->shellBuf, shellCB->cmdKeyLink);
     (void)pthread_mutex_unlock(&shellCB->keyMutex);
 
-    ret = ShellNotify(shellCB);
+    ret = ShellNotify(shellCB);//通知解析shell命令的任务
     if (ret != SH_OK) {
         printf("command execute failed, \"%s\"", shellCB->shellBuf);
     }
 }
-
+//解析回车键 , 按回车后的处理
 void ParseEnterKey(OutputFunc outputFunc, ShellCB *shellCB)
 {
     if ((shellCB == NULL) || (outputFunc == NULL)) {
@@ -204,7 +204,7 @@ NOTIFY:
     shellCB->shellBufOffset = 0;
     ShellTaskNotify(shellCB);
 }
-
+//解析删除键 
 void ParseDeleteKey(OutputFunc outputFunc, ShellCB *shellCB)
 {
     if ((shellCB == NULL) || (outputFunc == NULL)) {
@@ -217,7 +217,7 @@ void ParseDeleteKey(OutputFunc outputFunc, ShellCB *shellCB)
         outputFunc("\b \b");
     }
 }
-
+//解析tab键
 void ParseTabKey(OutputFunc outputFunc, ShellCB *shellCB)
 {
     int ret;
@@ -233,7 +233,7 @@ void ParseTabKey(OutputFunc outputFunc, ShellCB *shellCB)
         }
     }
 }
-
+//解析普通字符
 void ParseNormalChar(char ch, OutputFunc outputFunc, ShellCB *shellCB)
 {
     if ((shellCB == NULL) || (outputFunc == NULL)) {

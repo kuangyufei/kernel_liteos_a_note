@@ -100,7 +100,7 @@ STATIC VOID ShellSaveHistoryCmd(const CHAR *string, ShellCB *shellCB)
     (VOID)pthread_mutex_unlock(&shellCB->historyMutex);
     return;
 }
-
+//发送解析事件
 STATIC VOID ShellNotify(ShellCB *shellCB)
 {
     (VOID)LOS_EventWrite(&shellCB->shellEvent, SHELL_CMD_PARSE_EVENT);
@@ -166,7 +166,7 @@ LITE_OS_SEC_TEXT_MINOR VOID ShellCmdLineParse(CHAR c, pf_OUTPUT outputFunc, Shel
         (VOID)pthread_mutex_lock(&shellCB->keyMutex);
         OsShellCmdPush(shellCB->shellBuf, shellCB->cmdKeyLink);//解析回车或换行
         (VOID)pthread_mutex_unlock(&shellCB->keyMutex);
-        ShellNotify(shellCB);//通知输入命令完成
+        ShellNotify(shellCB);//通知任务解析shell命令
         return;
     } else if ((ch == '\b') || (ch == 0x7F)) { /* backspace or delete(0x7F) */ //遇到删除键
         if ((shellCB->shellBufOffset > 0) && (shellCB->shellBufOffset < (SHOW_MAX_LEN - 1))) {

@@ -37,8 +37,8 @@
 #include "unistd.h"
 #include <sys/syscall.h>
 
-ShellCB *g_shellCB = NULL;
-
+ShellCB *g_shellCB = NULL;	//全部shell控制块
+//获取shell控制块
 ShellCB *OsGetShellCb()
 {
     return g_shellCB;

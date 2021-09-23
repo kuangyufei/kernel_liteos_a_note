@@ -47,7 +47,7 @@ extern UINT32 ShellTaskInit(ShellCB *shellCB);
 extern UINT32 ShellEntryInit(ShellCB *shellCB);
 extern VOID ShellCmdLineParse(CHAR c, pf_OUTPUT outputFunc, ShellCB *shellCB);
 extern UINT32 ShellMsgTypeGet(CmdParsed *cmdParsed, const CHAR *cmdType);
-#define SHELL_CMD_PARSE_EVENT   0x111
+#define SHELL_CMD_PARSE_EVENT   0x111	//shell命令解析事件
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -315,12 +315,12 @@ STATIC VOID ConsoleFifoClearup(CONSOLE_CB *console)
     console->fifoIn = 0;
     (VOID)memset_s(console->fifo, CONSOLE_FIFO_SIZE, 0, CONSOLE_FIFO_SIZE);
 }
-
+//控制台buf长度更新
 STATIC VOID ConsoleFifoLenUpdate(CONSOLE_CB *console)
 {
     console->currentLen = console->fifoIn - console->fifoOut;
 }
-
+//读取
 STATIC INT32 ConsoleReadFifo(CHAR *buffer, CONSOLE_CB *console, size_t bufLen)
 {
     INT32 ret;
@@ -339,7 +339,7 @@ STATIC INT32 ConsoleReadFifo(CHAR *buffer, CONSOLE_CB *console, size_t bufLen)
     ConsoleFifoLenUpdate(console);
     return (INT32)readNum;
 }
-//
+//打开串口或远程登录
 INT32 FilepOpen(struct file *filep, const struct file_operations_vfs *fops)
 {
     INT32 ret;
@@ -357,7 +357,7 @@ INT32 FilepOpen(struct file *filep, const struct file_operations_vfs *fops)
     }
     return ret;
 }
-
+//向控制台buf中写入结束字符
 STATIC INLINE VOID UserEndOfRead(CONSOLE_CB *consoleCB, struct file *filep,
                                  const struct file_operations_vfs *fops)
 {
@@ -376,12 +376,12 @@ enum {
     STAT_ESC_KEY,	//控制按键,只有 ESC 是
     STAT_MULTI_KEY	//多个按键,只有 [ 是
 };
-
+//用户shell检查上下左右键
 STATIC INT32 UserShellCheckUDRL(const CHAR ch, INT32 *lastTokenType)
 {
     INT32 ret = LOS_OK;
     if (ch == 0x1b) { /* 0x1b: ESC */
-        *lastTokenType = STAT_ESC_KEY;
+        *lastTokenType = STAT_ESC_KEY;// vt 的控制字符
         return ret;
     } else if (ch == 0x5b) { /* 0x5b: first Key combination */
         if (*lastTokenType == STAT_ESC_KEY) { //遇到 <ESC>[
@@ -411,7 +411,7 @@ STATIC INT32 UserShellCheckUDRL(const CHAR ch, INT32 *lastTokenType)
     }
     return LOS_NOK;
 }
-
+//是否需要继续
 STATIC INT32 IsNeedContinue(CONSOLE_CB *consoleCB, char ch, INT32 *lastTokenType)
 {
     if (((ch == '\b') && (consoleCB->consoleTermios.c_lflag & ECHO) && (ConsoleFifoEmpty(consoleCB))) ||
@@ -421,36 +421,36 @@ STATIC INT32 IsNeedContinue(CONSOLE_CB *consoleCB, char ch, INT32 *lastTokenType
 
     return LOS_OK;
 }
-
+//输出到终端
 STATIC VOID EchoToTerminal(CONSOLE_CB *consoleCB, struct file *filep, const struct file_operations_vfs *fops, char ch)
 {
     if (consoleCB->consoleTermios.c_lflag & ECHO) {
-        if (ch == '\b') {
-            (VOID)fops->write(filep, "\b \b", 3);
+        if (ch == '\b') {//遇到回退字符
+            (VOID)fops->write(filep, "\b \b", 3);//回退
         } else {
-            (VOID)fops->write(filep, &ch, EACH_CHAR);
+            (VOID)fops->write(filep, &ch, EACH_CHAR);//向终端写入字符
         }
     }
 }
-
+//存储读取的字符
 STATIC VOID StoreReadChar(CONSOLE_CB *consoleCB, char ch, INT32 readcount)
-{
+{	//读取字符
     if ((readcount == EACH_CHAR) && (consoleCB->fifoIn <= (CONSOLE_FIFO_SIZE - 3))) {
         if (ch == '\b') {
             if (!ConsoleFifoEmpty(consoleCB)) {
                 consoleCB->fifo[--consoleCB->fifoIn] = '\0';
             }
         } else {
-            consoleCB->fifo[consoleCB->fifoIn] = (UINT8)ch;
+            consoleCB->fifo[consoleCB->fifoIn] = (UINT8)ch;//将字符读入缓冲区
             consoleCB->fifoIn++;
         }
     }
 }
-
+//杀死进程组
 VOID KillPgrp()
 {
     INT32 consoleId;
-    LosProcessCB *process = OsCurrProcessGet();
+    LosProcessCB *process = OsCurrProcessGet();//获取当前进程
 
     if ((process->consoleID > CONSOLE_NUM -1 ) || (process->consoleID < 0)) {
         return;
@@ -458,9 +458,9 @@ VOID KillPgrp()
 
     consoleId = process->consoleID;
     CONSOLE_CB *consoleCB = g_console[consoleId];
-    (VOID)OsKillLock(consoleCB->pgrpId, SIGINT);
+    (VOID)OsKillLock(consoleCB->pgrpId, SIGINT);//发送信号 SIGINT对应 键盘中断（ctrl + c）信号
 }
-
+//用户使用参数buffer将控制台的buf接走
 STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const struct file_operations_vfs *fops,
                            CHAR *buffer, size_t bufLen)
 {
@@ -482,44 +482,43 @@ STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const stru
         return ret;
     }
     /* ICANON mode: store data to console buffer,  read data and stored data into console fifo */
-    if (consoleCB->currentLen == 0) {
-        while (1) {
-            ret = fops->read(filep, &ch, EACH_CHAR);
+    if (consoleCB->currentLen == 0) {//如果没有数据
+        while (1) {//存储数据到控制台buf中
+            ret = fops->read(filep, &ch, EACH_CHAR);//一个个字符读
             if (ret <= 0) {
                 return ret;
             }
 
-            if (IsNeedContinue(consoleCB, ch, &lastTokenType))
+            if (IsNeedContinue(consoleCB, ch, &lastTokenType))//是否继续读
                 continue;
 
             switch (ch) {
                 case '\r':
-                    ch = '\n';
+                    ch = '\n';//回车换行
                 case '\n':
-                    EchoToTerminal(consoleCB, filep, fops, ch);
-                    UserEndOfRead(consoleCB, filep, fops);
-                    ret = ConsoleReadFifo(buffer, consoleCB, bufLen);
-
-                    needreturn = LOS_OK;
+                    EchoToTerminal(consoleCB, filep, fops, ch);//输出到终端
+                    UserEndOfRead(consoleCB, filep, fops);//给控制台buf加上结束字符
+                    ret = ConsoleReadFifo(buffer, consoleCB, bufLen);//读取控制台buf的信息到参数buffer中
+                    needreturn = LOS_OK;//直接返回
                     break;
                 case '\b':
                 default:
-                    EchoToTerminal(consoleCB, filep, fops, ch);
-                    StoreReadChar(consoleCB, ch, ret);
+                    EchoToTerminal(consoleCB, filep, fops, ch);//输出到终端
+                    StoreReadChar(consoleCB, ch, ret);//将字符保存到控制台的buf中
                     break;
             }
 
             if (needreturn == LOS_OK)
                 break;
         }
-    } else {
+    } else {//如果数据准备好了,立即返回
         /* if data is already in console fifo, we returen them immediately */
-        ret = ConsoleReadFifo(buffer, consoleCB, bufLen);
+        ret = ConsoleReadFifo(buffer, consoleCB, bufLen);//读取控制台buf的信息到参数buffer中
     }
 
     return ret;
 }
-//从控制台读数据
+//从串口或远程登录中读数据
 INT32 FilepRead(struct file *filep, const struct file_operations_vfs *fops, CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -537,7 +536,7 @@ INT32 FilepRead(struct file *filep, const struct file_operations_vfs *fops, CHAR
     }
     return ret;
 }
-
+//写数据到串口或远程登录
 INT32 FilepWrite(struct file *filep, const struct file_operations_vfs *fops, const CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -551,7 +550,7 @@ INT32 FilepWrite(struct file *filep, const struct file_operations_vfs *fops, con
     }
     return ret;
 }
-
+//关闭串口或远程登录
 INT32 FilepClose(struct file *filep, const struct file_operations_vfs *fops)
 {
     INT32 ret;
@@ -632,7 +631,7 @@ ERROUT:
     set_errno(ret);
     return VFS_ERROR;
 }
-
+//关闭控制台
 STATIC INT32 ConsoleClose(struct file *filep)
 {
     INT32 ret;
@@ -677,7 +676,7 @@ STATIC ssize_t DoRead(CONSOLE_CB *consoleCB, CHAR *buffer, size_t bufLen,
 
     return ret;
 }
-
+//用户任务从控制台读数据
 STATIC ssize_t ConsoleRead(struct file *filep, CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -695,7 +694,7 @@ STATIC ssize_t ConsoleRead(struct file *filep, CHAR *buffer, size_t bufLen)
     if (bufLen > CONSOLE_FIFO_SIZE) {
         bufLen = CONSOLE_FIFO_SIZE;
     }
-
+	//检查buffer是否在用户区
     userBuf = LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buffer, bufLen);
     ret = GetFilepOps(filep, &privFilep, &fileOps);
     if (ret != ENOERR) {
@@ -720,7 +719,7 @@ STATIC ssize_t ConsoleRead(struct file *filep, CHAR *buffer, size_t bufLen)
         goto ERROUT;
     }
 
-    ret = DoRead(consoleCB, sbuffer, bufLen, privFilep, fileOps);
+    ret = DoRead(consoleCB, sbuffer, bufLen, privFilep, fileOps);//真正的读数据
     if (ret < 0) {
         goto ERROUT;
     }
@@ -774,12 +773,12 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
     LOS_CirBufUnlock(&cirBufSendCB->cirBufCB, intSave);
     /* Log is cached but not printed when a system exception occurs */
     if (OsGetSystemStatus() == OS_SYSTEM_NORMAL) {
-        (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_CIRBUF_EVENT);
+        (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_CIRBUF_EVENT);//发送数据事件
     }
 
     return writen;
 }
-//
+//用户任务写数据到控制台
 STATIC ssize_t ConsoleWrite(struct file *filep, const CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -797,7 +796,7 @@ STATIC ssize_t ConsoleWrite(struct file *filep, const CHAR *buffer, size_t bufLe
     if (bufLen > CONSOLE_FIFO_SIZE) {
         bufLen = CONSOLE_FIFO_SIZE;
     }
-
+	//检测buffer是否在用户空间
     userBuf = LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buffer, bufLen);
 
     ret = GetFilepOps(filep, &privFilep, &fileOps);
@@ -822,7 +821,7 @@ STATIC ssize_t ConsoleWrite(struct file *filep, const CHAR *buffer, size_t bufLe
         ret = EFAULT;
         goto ERROUT;
     }
-    ret = DoWrite(cirBufSendCB, sbuffer, bufLen);
+    ret = DoWrite(cirBufSendCB, sbuffer, bufLen);//真正的写操作
 
     if (userBuf) {
         LOS_MemFree(m_aucSysMem0, sbuffer);
@@ -1694,7 +1693,7 @@ VOID OsWaitConsoleSendTaskPend(UINT32 taskID)//等待控制台发送任务结束
     LosTaskCB *taskCB = NULL;
     INT32 waitTime = 3000; /* 3000: 3 seconds */
 
-    for (i = 0; i < CONSOLE_NUM; i++) {//循环cpu core
+    for (i = 0; i < CONSOLE_NUM; i++) {//轮询控制台
         console = g_console[i];
         if (console == NULL) {
             continue;

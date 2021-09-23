@@ -461,7 +461,7 @@ int OsTabCompletion(char *cmdKey, unsigned int *len)
 
     return count;
 }
-
+//shell 按键初始化
 unsigned int OsShellKeyInit(ShellCB *shellCB)
 {
     CmdKeyLink *cmdKeyLink = NULL;

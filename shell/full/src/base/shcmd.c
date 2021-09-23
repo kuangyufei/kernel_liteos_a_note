@@ -41,26 +41,26 @@
 #include "los_typedef.h"
 
 
-#define SHELL_INIT_MAGIC_FLAG 0xABABABAB
+#define SHELL_INIT_MAGIC_FLAG 0xABABABAB //shell的魔法数字
 #define CTRL_C 0x03 /* 0x03: ctrl+c ASCII */
 
 STATIC CmdModInfo g_cmdInfo;//shell 命令模块信息,上面挂了所有的命令项(ls,cd ,cp ==)
 
 LOS_HAL_TABLE_BEGIN(g_shellcmd, shellcmd);
 LOS_HAL_TABLE_END(g_shellcmdEnd, shellcmd);
-
+//获取全局变量
 CmdModInfo *OsCmdInfoGet(VOID)
 {
     return &g_cmdInfo;
 }
-
+//释放命令行参数所占内存
 STATIC VOID OsFreeCmdPara(CmdParsed *cmdParsed)
 {
     UINT32 i;
-    for (i = 0; i < cmdParsed->paramCnt; i++) {
-        if ((cmdParsed->paramArray[i]) != NULL) {
+    for (i = 0; i < cmdParsed->paramCnt; i++) {//遍历参数个数
+        if ((cmdParsed->paramArray[i]) != NULL) {//一个个释放内存
             (VOID)LOS_MemFree(m_aucSysMem0, (cmdParsed->paramArray[i]));
-            cmdParsed->paramArray[i] = NULL;
+            cmdParsed->paramArray[i] = NULL;//重新初始化
         }
     }
 }
@@ -499,15 +499,15 @@ LITE_OS_SEC_TEXT_MINOR BOOL OsCmdKeyCheck(const CHAR *cmdKey)
 {
     const CHAR *temp = cmdKey;
     enum Stat {
-        STAT_NONE,
-        STAT_DIGIT,
-        STAT_OTHER
+        STAT_NONE,	//普通
+        STAT_DIGIT,	//数字
+        STAT_OTHER	//其余
     } state = STAT_NONE;
 
-    if (strlen(cmdKey) >= CMD_KEY_LEN) {
+    if (strlen(cmdKey) >= CMD_KEY_LEN) {//长度不能超 16个字符
         return FALSE;
     }
-
+	//命令只支持数字,字母,下划线,中划线
     while (*temp != '\0') {
         if (!((*temp <= '9') && (*temp >= '0')) &&
             !((*temp <= 'z') && (*temp >= 'a')) &&
@@ -515,7 +515,7 @@ LITE_OS_SEC_TEXT_MINOR BOOL OsCmdKeyCheck(const CHAR *cmdKey)
             (*temp != '_') && (*temp != '-')) {
             return FALSE;
         }
-
+		//数字
         if ((*temp >= '0') && (*temp <= '9')) {
             if (state == STAT_NONE) {
                 state = STAT_DIGIT;
@@ -591,7 +591,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsCmdAscendingInsert(CmdItemNode *cmd)
 
     LOS_ListTailInsert(&(cmdItem->list), &(cmd->list));
 }
-
+//shell 按键初始化
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellKeyInit(ShellCB *shellCB)
 {
     CmdKeyLink *cmdKeyLink = NULL;
@@ -661,7 +661,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellSysCmdRegister(VOID)
     g_cmdInfo.listNum += index;//命令数量叠加
     return LOS_OK;
 }
-//解析回车或换行键
+//将shell命令 string 以 CmdKeyLink 方式加入链表
 LITE_OS_SEC_TEXT_MINOR VOID OsShellCmdPush(const CHAR *string, CmdKeyLink *cmdKeyLink)
 {
     CmdKeyLink *cmdNewNode = NULL;
@@ -671,23 +671,23 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellCmdPush(const CHAR *string, CmdKeyLink *cmdKe
         return;
     }
 
-    len = strlen(string);
-    cmdNewNode = (CmdKeyLink *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdKeyLink) + len + 1);
+    len = strlen(string);//获取string的长度,注意CmdKeyLink结构体中,cmdString[0],可变数组的实现.
+    cmdNewNode = (CmdKeyLink *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdKeyLink) + len + 1);//申请内核内存
     if (cmdNewNode == NULL) {
         return;
     }
 
     (VOID)memset_s(cmdNewNode, sizeof(CmdKeyLink) + len + 1, 0, sizeof(CmdKeyLink) + len + 1);
-    if (strncpy_s(cmdNewNode->cmdString, len + 1, string, len)) {
+    if (strncpy_s(cmdNewNode->cmdString, len + 1, string, len)) {//将string拷贝至cmdString中
         (VOID)LOS_MemFree(m_aucSysMem0, cmdNewNode);
         return;
     }
 
-    LOS_ListTailInsert(&(cmdKeyLink->list), &(cmdNewNode->list));
+    LOS_ListTailInsert(&(cmdKeyLink->list), &(cmdNewNode->list));//从尾部插入链表
 
     return;
 }
-
+//显示shell命令历史记录,支持上下键方式
 LITE_OS_SEC_TEXT_MINOR VOID OsShellHistoryShow(UINT32 value, ShellCB *shellCB)
 {
     CmdKeyLink *cmdtmp = NULL;
@@ -696,19 +696,19 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellHistoryShow(UINT32 value, ShellCB *shellCB)
     errno_t ret;
 
     (VOID)pthread_mutex_lock(&shellCB->historyMutex);
-    if (value == CMD_KEY_DOWN) {
+    if (value == CMD_KEY_DOWN) {//方向下键切换下一条历史
         if (cmdMask == cmdNode) {
             goto END;
         }
 
-        cmdtmp = LOS_DL_LIST_ENTRY(cmdMask->list.pstNext, CmdKeyLink, list);
+        cmdtmp = LOS_DL_LIST_ENTRY(cmdMask->list.pstNext, CmdKeyLink, list);//下一条命令
         if (cmdtmp != cmdNode) {
             cmdMask = cmdtmp;
         } else {
             goto END;
         }
     } else if (value == CMD_KEY_UP) {
-        cmdtmp = LOS_DL_LIST_ENTRY(cmdMask->list.pstPrev, CmdKeyLink, list);
+        cmdtmp = LOS_DL_LIST_ENTRY(cmdMask->list.pstPrev, CmdKeyLink, list);//上一条命令
         if (cmdtmp != cmdNode) {
             cmdMask = cmdtmp;
         } else {
@@ -716,18 +716,18 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellHistoryShow(UINT32 value, ShellCB *shellCB)
         }
     }
 
-    while (shellCB->shellBufOffset--) {
+    while (shellCB->shellBufOffset--) {//@note_why 这段代码不知道啥意思
         PRINTK("\b \b");
     }
-    PRINTK("%s", cmdMask->cmdString);
-    shellCB->shellBufOffset = strlen(cmdMask->cmdString);
-    (VOID)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);
-    ret = memcpy_s(shellCB->shellBuf, SHOW_MAX_LEN, cmdMask->cmdString, shellCB->shellBufOffset);
+    PRINTK("%s", cmdMask->cmdString);//打印命令
+    shellCB->shellBufOffset = strlen(cmdMask->cmdString);//获取命令长度
+    (VOID)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);//整个buf进行重置,
+    ret = memcpy_s(shellCB->shellBuf, SHOW_MAX_LEN, cmdMask->cmdString, shellCB->shellBufOffset);//将命令拷贝进buf,以便继续添加内容
     if (ret != EOK) {
         PRINT_ERR("%s, %d memcpy failed!\n", __FUNCTION__, __LINE__);
         goto END;
     }
-    shellCB->cmdMaskKeyLink = (VOID *)cmdMask;
+    shellCB->cmdMaskKeyLink = (VOID *)cmdMask;//记录按上下键命令的位置
 
 END:
     (VOID)pthread_mutex_unlock(&shellCB->historyMutex);
@@ -750,7 +750,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdExec(CmdParsed *cmdParsed, CHAR *cmdStr)
     if (ret != LOS_OK) {
         goto OUT;
     }
-
+	//遍历链表
     LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(g_cmdInfo.cmdList.list), CmdItemNode, list) {
         cmdKey = curCmdItem->cmd->cmdKey;
         if ((cmdParsed->cmdType == curCmdItem->cmd->cmdType) &&
@@ -767,7 +767,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdExec(CmdParsed *cmdParsed, CHAR *cmdStr)
     }
 
 OUT:
-    for (i = 0; i < cmdParsed->paramCnt; i++) {
+    for (i = 0; i < cmdParsed->paramCnt; i++) {//无效的命令要释放掉保存参数的内存
         if (cmdParsed->paramArray[i] != NULL) {
             (VOID)LOS_MemFree(m_aucSysMem0, cmdParsed->paramArray[i]);
             cmdParsed->paramArray[i] = NULL;
@@ -816,11 +816,11 @@ STATIC UINT32 OsCmdItemCreate(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNu
         return OS_ERRNO_SHELL_CMDREG_MEMALLOC_ERROR;
     }
     (VOID)memset_s(cmdItemNode, sizeof(CmdItemNode), '\0', sizeof(CmdItemNode));
-    cmdItemNode->cmd = cmdItem;
-    cmdItemNode->cmd->cmdHook = cmdProc;
-    cmdItemNode->cmd->paraNum = paraNum;
-    cmdItemNode->cmd->cmdType = cmdType;
-    cmdItemNode->cmd->cmdKey = cmdKey;
+    cmdItemNode->cmd = cmdItem;			//命令项 
+    cmdItemNode->cmd->cmdHook = cmdProc;//回调函数 osShellCmdLs
+    cmdItemNode->cmd->paraNum = paraNum;//`777`,'/home'
+    cmdItemNode->cmd->cmdType = cmdType;//关键字类型
+    cmdItemNode->cmd->cmdKey = cmdKey;	//`chmod`
 	//2.完成构造后挂入全局链表
     (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);
     OsCmdAscendingInsert(cmdItemNode);//按升序方式插入
@@ -830,12 +830,12 @@ STATIC UINT32 OsCmdItemCreate(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNu
     return LOS_OK;
 }
 
-/* open API */ //注册命令至全局
+/* open API */ //以动态方式注册命令
 LITE_OS_SEC_TEXT_MINOR UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNum, CmdCallBackFunc cmdProc)
 {
     CmdItemNode *cmdItemNode = NULL;
-
-    (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);//1.确保先拿到锁
+	//1.确保先拿到锁,魔法数字检查
+    (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);
     if (g_cmdInfo.initMagicFlag != SHELL_INIT_MAGIC_FLAG) {	//验证全局变量的有效性
         (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
         PRINT_ERR("[%s] shell is not yet initialized!\n", __FUNCTION__);
@@ -853,7 +853,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT
             return OS_ERRNO_SHELL_CMDREG_PARA_ERROR;
         }
     }
-	//3.按键检查
+	//3.关键字检查 ;例如:'chmod 777 /home' ,此处检查 'chmod'的合法性
     if (OsCmdKeyCheck(cmdKey) != TRUE) {
         return OS_ERRNO_SHELL_CMDREG_CMD_ERROR;
     }
@@ -864,11 +864,11 @@ LITE_OS_SEC_TEXT_MINOR UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT
             ((strlen(cmdKey) == strlen(cmdItemNode->cmd->cmdKey)) &&
             (strncmp((CHAR *)(cmdItemNode->cmd->cmdKey), cmdKey, strlen(cmdKey)) == 0))) {
             (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
-            return OS_ERRNO_SHELL_CMDREG_CMD_EXIST;
+            return OS_ERRNO_SHELL_CMDREG_CMD_EXIST;//已存在就退出
         }
     }
     (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
 	//5.正式创建命令,挂入链表
-    return OsCmdItemCreate(cmdType, cmdKey, paraNum, cmdProc);
+    return OsCmdItemCreate(cmdType, cmdKey, paraNum, cmdProc);//不存在就注册命令
 }
 

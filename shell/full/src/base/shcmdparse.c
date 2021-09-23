@@ -70,7 +70,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdParseParaGet(CHAR **value, const CHAR *paraTo
     }
     return LOS_OK;
 }
-
+//解析一个令牌
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdParseOneToken(CmdParsed *cmdParsed, UINT32 index, const CHAR *token)
 {
     UINT32 ret = LOS_OK;
@@ -85,7 +85,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdParseOneToken(CmdParsed *cmdParsed, UINT32 in
             return ret;
         }
     }
-
+	//参数限制,最多不能超过32个
     if ((token != NULL) && (cmdParsed->paramCnt < CMD_MAX_PARAS)) {
         tempLen = cmdParsed->paramCnt;
         ret = OsCmdParseParaGet(&(cmdParsed->paramArray[tempLen]), token);
@@ -96,7 +96,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdParseOneToken(CmdParsed *cmdParsed, UINT32 in
     }
     return ret;
 }
-
+//将shell命令按 ' ' 分开处理
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdTokenSplit(CHAR *cmdStr, CHAR split, CmdParsed *cmdParsed)
 {
     enum {
@@ -123,7 +123,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdTokenSplit(CHAR *cmdStr, CHAR split, CmdParse
             case STAT_TOKEN_IN:
                 if ((*p == split) && QUOTES_STATUS_CLOSE(quotes)) {
                     *p = '\0';
-                    ret = OsCmdParseOneToken(cmdParsed, count++, token);
+                    ret = OsCmdParseOneToken(cmdParsed, count++, token);//解析一个令牌
                     state = STAT_TOKEN_OUT;
                 }
                 break;
@@ -144,7 +144,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdTokenSplit(CHAR *cmdStr, CHAR split, CmdParse
 
     return ret;
 }
-
+//解析cmd命令
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdParse(CHAR *cmdStr, CmdParsed *cmdParsed)
 {
     if ((cmdStr == NULL) || (cmdParsed == NULL) || (strlen(cmdStr) == 0)) {
