@@ -120,11 +120,11 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdTokenSplit(CHAR *cmdStr, CHAR split, CmdParse
         }
         switch (state) {
             case STAT_INIT:
-            case STAT_TOKEN_IN:
+            case STAT_TOKEN_IN://开始参数获取
                 if ((*p == split) && QUOTES_STATUS_CLOSE(quotes)) {
                     *p = '\0';
-                    ret = OsCmdParseOneToken(cmdParsed, count++, token);//解析一个令牌
-                    state = STAT_TOKEN_OUT;
+                    ret = OsCmdParseOneToken(cmdParsed, count++, token);//解析一个令牌参数
+                    state = STAT_TOKEN_OUT;//参数获取完成
                 }
                 break;
             case STAT_TOKEN_OUT:
@@ -144,7 +144,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdTokenSplit(CHAR *cmdStr, CHAR split, CmdParse
 
     return ret;
 }
-//解析cmd命令
+//解析cmd命令,将关键字,参数分离出来
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdParse(CHAR *cmdStr, CmdParsed *cmdParsed)
 {
     if ((cmdStr == NULL) || (cmdParsed == NULL) || (strlen(cmdStr) == 0)) {

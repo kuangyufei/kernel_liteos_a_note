@@ -388,7 +388,7 @@ STATIC VOID ShellCmdProcess(ShellCB *shellCB)
         shellCB->cmdMaskKeyLink = shellCB->cmdHistoryKeyLink;
     }
 }
-//shell 任务
+//shell 任务,处理解析,执行命令
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellTask(UINTPTR param1,
                                         UINTPTR param2,
                                         UINTPTR param3,
@@ -401,8 +401,8 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellTask(UINTPTR param1,
     (VOID)param4;
 
     while (1) {
-        PRINTK("\nOHOS # ");
-        ret = LOS_EventRead(&shellCB->shellEvent,//读取shell 输入事件 例如: cat weharmony.net 命令
+        PRINTK("\nOHOS # ");//读取shell 输入事件 例如: cat weharmony.net 命令
+        ret = LOS_EventRead(&shellCB->shellEvent,
                             0xFFF, LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
         if (ret == SHELL_CMD_PARSE_EVENT) {//获得解析命令事件
             ShellCmdProcess(shellCB);//处理命令 

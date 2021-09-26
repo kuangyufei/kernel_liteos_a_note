@@ -111,11 +111,11 @@ static int DoShellExec(char **argv)
     }
 
     cmdLine[len - 2] = '\0';
-    ret = syscall(__NR_shellexec, argv[0], cmdLine);
+    ret = syscall(__NR_shellexec, argv[0], cmdLine);//执行 系统调用 __NR_shellexec 对应为 SysShellExec
     free(cmdLine);
     return ret;
 }
-
+//shell进程的入口函数
 int main(int argc, char **argv)
 {
     int ret = SH_NOK;
@@ -128,35 +128,35 @@ int main(int argc, char **argv)
 
     setbuf(stdout, NULL);
 
-    shellCB = (ShellCB *)malloc(sizeof(ShellCB));
+    shellCB = (ShellCB *)malloc(sizeof(ShellCB));//申请shell控制块
     if (shellCB == NULL) {
         goto ERR_OUT1;
     }
-    ret = memset_s(shellCB, sizeof(ShellCB), 0, sizeof(ShellCB));
+    ret = memset_s(shellCB, sizeof(ShellCB), 0, sizeof(ShellCB));//初始化控制块
     if (ret != SH_OK) {
         goto ERR_OUT1;
     }
 
-    ret = pthread_mutex_init(&shellCB->keyMutex, NULL);
+    ret = pthread_mutex_init(&shellCB->keyMutex, NULL);//初始化待处理命令链表互斥量
     if (ret != SH_OK) {
         goto ERR_OUT1;
     }
 
-    ret = pthread_mutex_init(&shellCB->historyMutex, NULL);
+    ret = pthread_mutex_init(&shellCB->historyMutex, NULL);//初始化命令历史记录链表互斥量
     if (ret != SH_OK) {
         goto ERR_OUT2;
     }
 
-    ret = (int)OsShellKeyInit(shellCB);
+    ret = (int)OsShellKeyInit(shellCB);//初始化待处理命令
     if (ret != SH_OK) {
         goto ERR_OUT3;
-    }
+    }//设置工作目录
     (void)strncpy_s(shellCB->shellWorkingDirectory, PATH_MAX, "/", 2); /* 2:space for "/" */
 
-    sem_init(&shellCB->shellSem, 0, 0);
+    sem_init(&shellCB->shellSem, 0, 0);//信号量初始化
 
-    g_shellCB = shellCB;
-    return OsShellCreateTask(shellCB);
+    g_shellCB = shellCB;//全局变量,说明鸿蒙同时只支持一个shell进程
+    return OsShellCreateTask(shellCB);//初始化两个任务
 
 ERR_OUT3:
     (void)pthread_mutex_destroy(&shellCB->historyMutex);

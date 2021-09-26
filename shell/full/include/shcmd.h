@@ -70,7 +70,7 @@ typedef struct {//shell 模块的全局信息
     UINT32 listNum;//节点数量
     UINT32 initMagicFlag;//初始魔法标签 0xABABABAB
     LosMux muxLock;	//操作链表互斥锁
-    CmdVerifyTransID transIdHook;
+    CmdVerifyTransID transIdHook;//暂不知何意.
 } CmdModInfo;
 //一个shell命令的结构体,命令有长有短,鸿蒙采用了可变数组的方式实现
 typedef struct {

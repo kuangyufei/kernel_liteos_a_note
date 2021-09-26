@@ -53,7 +53,16 @@ HAL层主要功能是实现轻OpenHarmony与芯片的解耦，
             ".previous\n"                                                    \
             )
 #endif
-
+/*
+如: LOS_HAL_TABLE_BEGIN(g_shellcmd, shellcmd);
+扩展后如下:
+.section ".liteos.table.shellcmd.begin","aw"
+        .globl g_shellcmd
+        .type  g_shellcmd, object
+        .p2align 3
+g_shellcmd :  
+       .previous 
+*/
 #ifndef LOS_HAL_TABLE_END
 #define LOS_HAL_TABLE_END(label, name)                                       \
     __asm__(".section \".liteos.table." X_STRING(name) ".finish\",\"aw\"\n"  \
@@ -64,6 +73,16 @@ HAL层主要功能是实现轻OpenHarmony与芯片的解耦，
             ".previous\n"                                                    \
             )
 #endif
+/*
+如: LOS_HAL_TABLE_END(g_shellcmdEnd, shellcmd);
+扩展后如下:
+.section ".liteos.table.shellcmd.finish","aw"
+        .globl g_shellcmdEnd
+        .type  g_shellcmdEnd, object
+        .p2align 3
+g_shellcmdEnd :  
+       .previous  
+*/
 
 /* This macro must be applied to any types whose objects are to be placed in tables */
 #ifndef LOS_HAL_TABLE_TYPE
@@ -80,7 +99,12 @@ HAL层主要功能是实现轻OpenHarmony与芯片的解耦，
     LOSBLD_ATTRIB_SECTION(".liteos.table." X_STRING(name) ".data") \
     LOSBLD_ATTRIB_USED
 #endif
-
+/*
+如: LOS_HAL_TABLE_ENTRY(shellcmd)
+扩展后如下:
+__attribute__((section(".liteos.table.shellcmd.data")))
+__attribute__((used))
+*/
 #ifndef LOS_HAL_TABLE_QUALIFIED_ENTRY
 #define LOS_HAL_TABLE_QUALIFIED_ENTRY(name, _qual)                                  \
     LOSBLD_ATTRIB_SECTION(".liteos.table." X_STRING(name) ".data." X_STRING(_qual)) \

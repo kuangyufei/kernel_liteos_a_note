@@ -104,10 +104,10 @@ int SysReboot(int magic, int magic2, int type)
     }
     return -EFAULT;
 }
-
+//执行 shell 命令
 #ifdef LOSCFG_SHELL
 int SysShellExec(const char *msgName, const char *cmdString)
-{//执行 shell 命令 
+{ 
     int ret;
     unsigned int uintRet;
     errno_t err;
@@ -197,7 +197,7 @@ int SysGetrusage(int what, struct rusage *ru)
     }
     return 0;
 }
-
+//系统配置
 long SysSysconf(int name)
 {
     long ret;

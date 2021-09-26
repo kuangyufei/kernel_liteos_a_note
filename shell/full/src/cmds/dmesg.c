@@ -784,6 +784,11 @@ ERR_OUT:
 }
 
 SHELLCMD_ENTRY(dmesg_shellcmd, CMD_TYPE_STD, "dmesg", XARGS, (CmdCallBackFunc)OsShellCmdDmesg);
+/*
+将扩展如下:
+CmdItem dmesg_shellcmd __attribute__((section(".liteos.table.shellcmd.data"))) 
+__attribute__((used)) = {CMD_TYPE_STD,"dmesg",XARGS,OsShellCmdDmesg}
+*/
 LOS_MODULE_INIT(OsDmesgInit, LOS_INIT_LEVEL_EARLIEST);//在非常早期调用
 
 #endif
