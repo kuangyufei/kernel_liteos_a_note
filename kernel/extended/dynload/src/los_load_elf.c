@@ -76,6 +76,10 @@ static int OsELFClose(int procFd)
     int ret;
     /* Process procfd convert to system global procfd */
     int sysfd = DisassociateProcessFd(procFd);
+    if (sysfd < 0) {
+        return -EBADF;
+    }
+
     ret = close(sysfd);
     if (ret < 0) {
         AssociateSystemFd(procFd, sysfd);
@@ -120,6 +124,10 @@ STATIC INT32 OsReadELFInfo(INT32 procfd, UINT8 *buffer, size_t readSize, off_t o
     ssize_t byteNum;
     off_t returnPos;
     INT32 fd = GetAssociatedSystemFd(procfd);
+    if (fd < 0) {
+        PRINT_ERR("%s[%d], Invalid procfd!\n", __FUNCTION__, __LINE__);
+        return LOS_NOK;
+    }
 
     if (readSize > 0) {
         returnPos = lseek(fd, offset, SEEK_SET);
@@ -218,6 +226,8 @@ STATIC INT32 OsReadEhdr(const CHAR *fileName, ELFInfo *elfInfo, BOOL isExecFile)
         ret = fs_getfilep(GetAssociatedSystemFd(elfInfo->procfd), &OsCurrProcessGet()->execFile);
         if (ret) {
             PRINT_ERR("%s[%d], Failed to get struct file %s!\n", __FUNCTION__, __LINE__, fileName);
+            /* File will be closed by OsLoadELFFile */
+            return ret;
         }
     }
 #endif
@@ -526,7 +536,7 @@ STATIC INT32 OsMmapELFFile(INT32 procfd, const LD_ELF_PHDR *elfPhdr, const LD_EL
     return LOS_OK;
 }
 
-STATIC INT32 OsLoadInterpBinary(const ELFLoadInfo *loadInfo, UINTPTR *interpMapBase)
+STATIC INT32 OsLoadInterpBinary(ELFLoadInfo *loadInfo, UINTPTR *interpMapBase)
 {
     UINTPTR loadBase = 0;
     UINT32 mapSize;
@@ -542,10 +552,9 @@ STATIC INT32 OsLoadInterpBinary(const ELFLoadInfo *loadInfo, UINTPTR *interpMapB
                         interpMapBase, mapSize, &loadBase);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
-        return ret;
     }
 
-    return LOS_OK;
+    return ret;
 }
 
 STATIC CHAR *OsGetParamPtr(CHAR * const *ptr, INT32 index)
@@ -780,12 +789,10 @@ STATIC INT32 OsSetArgParams(ELFLoadInfo *loadInfo, CHAR *const *argv, CHAR *cons
     UINT32 vmFlags;
     INT32 ret;
 
-#ifdef LOSCFG_ASLR
     loadInfo->randomDevFD = open("/dev/urandom", O_RDONLY);
     if (loadInfo->randomDevFD < 0) {
         PRINT_ERR("%s: open /dev/urandom failed\n", __FUNCTION__);
     }
-#endif
 
     (VOID)OsGetStackProt(loadInfo);
     if (((UINT32)loadInfo->stackProt & (PROT_READ | PROT_WRITE)) != (PROT_READ | PROT_WRITE)) {
@@ -822,13 +829,13 @@ STATIC INT32 OsSetArgParams(ELFLoadInfo *loadInfo, CHAR *const *argv, CHAR *cons
     if (ret != LOS_OK) {
         return ret;
     }
+    loadInfo->argStart = loadInfo->topOfMem;
 
     return LOS_OK;
 }
 
 STATIC INT32 OsPutParamToStack(ELFLoadInfo *loadInfo, const UINTPTR *auxVecInfo, INT32 vecIndex)
 {
-    UINTPTR argStart = loadInfo->topOfMem;
     UINTPTR *topMem = (UINTPTR *)ROUNDDOWN(loadInfo->topOfMem, sizeof(UINTPTR));
     UINTPTR *argsPtr = NULL;
     INT32 items = (loadInfo->argc + 1) + (loadInfo->envc + 1) + 1;
@@ -849,8 +856,8 @@ STATIC INT32 OsPutParamToStack(ELFLoadInfo *loadInfo, const UINTPTR *auxVecInfo,
 
     argsPtr++;
 
-    if ((OsPutUserArgv(&argStart, &argsPtr, loadInfo->argc) != LOS_OK) ||
-        (OsPutUserArgv(&argStart, &argsPtr, loadInfo->envc) != LOS_OK)) {
+    if ((OsPutUserArgv(&loadInfo->argStart, &argsPtr, loadInfo->argc) != LOS_OK) ||
+        (OsPutUserArgv(&loadInfo->argStart, &argsPtr, loadInfo->envc) != LOS_OK)) {
         PRINT_ERR("%s[%d], Failed to put argv or envp to user stack!\n", __FUNCTION__, __LINE__);
         return -EFAULT;
     }
@@ -864,15 +871,45 @@ STATIC INT32 OsPutParamToStack(ELFLoadInfo *loadInfo, const UINTPTR *auxVecInfo,
     return LOS_OK;
 }
 
+STATIC INT32 OsGetRndNum(const ELFLoadInfo *loadInfo, UINT32 *rndVec, UINT32 vecSize)
+{
+    UINT32 randomValue = 0;
+    UINT32 i, ret;
+
+    for (i = 0; i < vecSize; ++i) {
+        ret = read(loadInfo->randomDevFD, &randomValue, sizeof(UINT32));
+        if (ret != sizeof(UINT32)) {
+            return -EIO;
+        }
+        rndVec[i] = randomValue;
+    }
+
+    return LOS_OK;
+}
+
 STATIC INT32 OsMakeArgsStack(ELFLoadInfo *loadInfo, UINTPTR interpMapBase)
 {
     UINTPTR auxVector[AUX_VECTOR_SIZE] = { 0 };
     UINTPTR *auxVecInfo = (UINTPTR *)auxVector;
     INT32 vecIndex = 0;
+    UINT32 rndVec[RANDOM_VECTOR_SIZE];
+    UINTPTR rndVecStart;
     INT32 ret;
 #ifdef LOSCFG_KERNEL_VDSO
     vaddr_t vdsoLoadAddr;
 #endif
+
+    ret = OsGetRndNum(loadInfo, rndVec, sizeof(rndVec));
+    if (ret != LOS_OK) {
+        return ret;
+    }
+    loadInfo->topOfMem -= sizeof(rndVec);
+    rndVecStart = loadInfo->topOfMem;
+
+    ret = LOS_ArchCopyToUser((VOID *)loadInfo->topOfMem, rndVec, sizeof(rndVec));
+    if (ret != 0) {
+        return -EFAULT;
+    }
 
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_PHDR,   loadInfo->loadAddr + loadInfo->execInfo.elfEhdr.elfPhoff);
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_PHENT,  sizeof(LD_ELF_PHDR));
@@ -888,7 +925,7 @@ STATIC INT32 OsMakeArgsStack(ELFLoadInfo *loadInfo, UINTPTR interpMapBase)
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_HWCAP,  0);
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_CLKTCK, 0);
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_SECURE, 0);
-    AUX_VEC_ENTRY(auxVector, vecIndex, AUX_RANDOM, 0);
+    AUX_VEC_ENTRY(auxVector, vecIndex, AUX_RANDOM, rndVecStart);
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_EXECFN, (UINTPTR)loadInfo->execName);
 
 #ifdef LOSCFG_KERNEL_VDSO
@@ -929,6 +966,8 @@ STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
 
     ret = OsMmapELFFile(loadInfo->execInfo.procfd, loadInfo->execInfo.elfPhdr, &loadInfo->execInfo.elfEhdr,
                         &loadInfo->loadAddr, mapSize, &loadBase);
+    OsELFClose(loadInfo->execInfo.procfd);
+    loadInfo->execInfo.procfd = INVALID_FD;
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
         return ret;
@@ -936,6 +975,8 @@ STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
 
     if (loadInfo->interpInfo.procfd != INVALID_FD) {
         ret = OsLoadInterpBinary(loadInfo, &interpMapBase);
+        OsELFClose(loadInfo->interpInfo.procfd);
+        loadInfo->interpInfo.procfd = INVALID_FD;
         if (ret != LOS_OK) {
             return ret;
         }
@@ -975,9 +1016,7 @@ STATIC VOID OsFlushAspace(ELFLoadInfo *loadInfo)
 
 STATIC VOID OsDeInitLoadInfo(ELFLoadInfo *loadInfo)
 {
-#ifdef LOSCFG_ASLR
     (VOID)close(loadInfo->randomDevFD);
-#endif
 
     if (loadInfo->execInfo.elfPhdr != NULL) {
         (VOID)LOS_MemFree(m_aucSysMem0, loadInfo->execInfo.elfPhdr);

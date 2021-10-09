@@ -1,0 +1,6 @@
+config DRIVERS_PERF
+    bool "Enable PERF DRIVER"
+    default y
+    depends on DRIVERS && FS_VFS && KERNEL_PERF
+    help
+      Answer Y to enable LiteOS support perf in userspace.

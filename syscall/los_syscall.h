@@ -139,6 +139,7 @@ extern int SysFutex(const unsigned int *uAddr, unsigned int flags, int val,
                     unsigned int absTime, const unsigned int *newUserAddr);
 extern int SysSchedGetAffinity(int id, unsigned int *cpuset, int flag);
 extern int SysSchedSetAffinity(int id, const unsigned short cpuset, int flag);
+
 #ifdef LOSCFG_COMPAT_POSIX
 extern mqd_t SysMqOpen(const char *mqName, int openFlag, mode_t mode, struct mq_attr *attr);
 extern int SysMqClose(mqd_t personal);
@@ -151,12 +152,13 @@ extern ssize_t SysMqTimedReceive(mqd_t personal, char *msg, size_t msgLen, unsig
                                  const struct timespec *absTimeout);
 extern int SysMqNotify(mqd_t personal, const struct sigevent *sigev);
 #endif
+
 extern int SysSigAction(int sig, const sigaction_t *restrict sa, sigaction_t *restrict old, size_t sigsetsize);
-extern int SysSigprocMask(int how, const sigset_t_l *restrict set, sigset_t *restrict old, size_t sigsetsize);
+extern int SysSigprocMask(int how, const sigset_t_l *restrict setl, sigset_t_l *restrict oldl, size_t sigsetsize);
 extern int SysKill(pid_t pid, int sig);
 extern int SysPthreadKill(pid_t pid, int sig);
-extern int SysSigTimedWait(const sigset_t *set, siginfo_t *info,
-                           const struct timespec *timeoutsize_t, size_t sigsetsize);
+extern int SysSigTimedWait(const sigset_t_l *setl, siginfo_t *info,
+                           const struct timespec *timeout, size_t sigsetsize);
 extern int SysPause(void);
 extern int SysSigPending(sigset_t_l *setl);
 extern int SysSigSuspend(sigset_t_l *setl);
@@ -189,8 +191,8 @@ extern ssize_t SysRecvMsg(int s, struct msghdr *message, int flags);
 /* vmm */
 extern void *SysMmap(void *addr, size_t size, int prot, int flags, int fd, size_t offset);
 extern int SysMunmap(void *addr, size_t size);
-extern int SysMprotect(vaddr_t vaddr, size_t len, int prot);
-extern vaddr_t SysMremap(vaddr_t old_address, size_t old_size, size_t new_size, int flags, vaddr_t new_addr);
+extern int SysMprotect(void *vaddr, size_t len, int prot);
+extern void *SysMremap(void *oldAddr, size_t oldLen, size_t newLen, int flags, void *newAddr);
 extern void *SysBrk(void *addr);
 extern int SysShmGet(key_t key, size_t size, int shmflg);
 extern void *SysShmAt(int shmid, const void *shmaddr, int shmflg);

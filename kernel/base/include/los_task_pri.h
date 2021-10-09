@@ -368,6 +368,10 @@ typedef struct {
     LOS_DL_LIST     msgListHead;		//消息队列头结点,上面挂的都是任务要读的消息
     BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];//访问图,指的是task之间是否能访问的标识,LOSCFG_BASE_CORE_TSK_LIMIT 为任务池总数
 #endif
+#ifdef LOSCFG_KERNEL_PERF
+    UINTPTR         pc;
+    UINTPTR         fp;
+#endif
 } LosTaskCB;
 //LosTask结构体是给外部使用的
 typedef struct {

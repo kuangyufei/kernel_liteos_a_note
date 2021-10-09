@@ -37,10 +37,7 @@ kernel_module(module_name) {
     "src/mtd_shellcmd.c",
   ]
 
-  include_dirs = [
-    "$LITEOSTOPDIR/fs/jffs2/include",
-    "//device/hisilicon/drivers/include/mtd/common/include",
-  ]
+  include_dirs = [ "$LITEOSTOPDIR/fs/jffs2/include" ]
 
   if (defined(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)) {
     include_dirs += [ "//device/qemu/drivers/cfiflash" ]

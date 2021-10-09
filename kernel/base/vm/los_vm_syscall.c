@@ -209,7 +209,7 @@ STATIC INLINE BOOL OsProtMprotectPermCheck(unsigned long prot, LosVmMapRegion *r
 {
     UINT32 protFlags = 0;
     UINT32 permFlags = 0;
-    UINT32 fileFlags = (((region->unTypeData).rf).file)->f_oflags;
+    UINT32 fileFlags = region->unTypeData.rf.f_oflags;
     permFlags |= ((fileFlags & O_ACCMODE) ^ O_RDONLY) ? 0 : VM_MAP_REGION_FLAG_PERM_READ;
     permFlags |= (fileFlags & O_WRONLY) ? VM_MAP_REGION_FLAG_PERM_WRITE : 0;
     permFlags |= (fileFlags & O_RDWR) ? (VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE) : 0;

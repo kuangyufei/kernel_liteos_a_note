@@ -71,6 +71,9 @@ typedef struct {//内核对cpu的描述
     UINT32 schedFlag;                           /* pending scheduler flag */	//调度标识 INT_NO_RESCH INT_PEND_RESCH
 #ifdef LOSCFG_KERNEL_SMP
     UINT32            excFlag;               /* cpu halt or exc flag *///cpu 停止或 异常 标志
+#ifdef LOSCFG_KERNEL_SMP_CALL
+    LOS_DL_LIST       funcLink;              /* mp function call link */
+#endif
 #endif
 } Percpu;
 

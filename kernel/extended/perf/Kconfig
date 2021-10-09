@@ -1,0 +1,38 @@
+config KERNEL_PERF
+    bool "Enable Perf Feature"
+    default n
+    depends on KERNEL_EXTKERNEL
+    select KERNEL_SMP_CALL if KERNEL_SMP
+    help
+      If you wish to build LiteOS with support for perf.
+
+choice
+    prompt "Time-consuming Calc Methods"
+    depends on KERNEL_PERF
+
+config PERF_CALC_TIME_BY_TICK
+    bool "By Tick"
+
+config PERF_CALC_TIME_BY_CYCLE
+    bool "By Cpu Cycle"
+endchoice
+
+config PERF_BUFFER_SIZE
+    int "Perf Sampling Buffer Size"
+    default 20480
+    depends on KERNEL_PERF
+
+config PERF_HW_PMU
+    bool "Enable Hardware Pmu Events for Sampling"
+    default n
+    depends on KERNEL_PERF
+
+config PERF_TIMED_PMU
+    bool "Enable Hrtimer Period Events for Sampling"
+    default n
+    depends on KERNEL_PERF && HRTIMER_ENABLE
+
+config PERF_SW_PMU
+    bool "Enable Software Events for Sampling"
+    default y
+    depends on KERNEL_PERF && KERNEL_HOOK

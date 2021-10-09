@@ -205,6 +205,10 @@ struct sq_queue_s {//信号队列
 };
 typedef struct sq_queue_s sq_queue_t;
 
+typedef struct SigInfoListNode {
+    struct SigInfoListNode *next;
+    siginfo_t info;
+} SigInfoListNode;
 
 typedef struct {//信号控制块(描述符)
     sigset_t sigFlag;		//不屏蔽的信号集
@@ -214,6 +218,7 @@ typedef struct {//信号控制块(描述符)
     LOS_DL_LIST waitList;	//等待链表,上面挂的是等待信号到来的任务, 请查找 OsTaskWait(&sigcb->waitList, timeout, TRUE)	理解						
     sigset_t sigwaitmask; /* Waiting for pending signals         */	//任务在等待哪些信号的到来
     siginfo_t sigunbinfo; /* Signal info when task unblocked     */	//任务解锁时的信号信息
+    SigInfoListNode *tmpInfoListHead; /* Signal info List */
     unsigned int sigIntLock;
     void *sigContext;
     unsigned int count;
@@ -241,6 +246,7 @@ int OsSigSuspend(const sigset_t *set);
 VOID OsSigIntLock(VOID);
 VOID OsSigIntUnlock(VOID);
 INT32 OsTaskKillUnsafe(UINT32 taskID, INT32 signo);
+VOID OsClearSigInfoTmpList(sig_cb *sigcb);
 
 #ifdef __cplusplus
 #if __cplusplus

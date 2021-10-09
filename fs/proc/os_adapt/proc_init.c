@@ -44,7 +44,7 @@ void ProcFsInit(void)
 {
     int ret;
 
-    ret = mkdir(PROCFS_MOUNT_POINT, 0);//创建 "/proc"
+    ret = mkdir(PROCFS_MOUNT_POINT, PROCFS_DEFAULT_MODE);//创建 "/proc"
     if (ret < 0) {
         PRINT_ERR("failed to mkdir %s, errno = %d\n", PROCFS_MOUNT_POINT, get_errno());
         return;

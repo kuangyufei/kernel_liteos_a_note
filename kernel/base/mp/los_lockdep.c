@@ -39,6 +39,8 @@
 
 #ifdef LOSCFG_KERNEL_SMP_LOCKDEP
 
+#define PRINT_BUF_SIZE 256
+
 #define LOCKDEP_GET_NAME(lockDep, index)    (((SPIN_LOCK_S *)((lockDep)->heldLocks[(index)].lockPtr))->name)
 #define LOCKDEP_GET_ADDR(lockDep, index)    ((lockDep)->heldLocks[(index)].lockAddr)
 
@@ -102,6 +104,30 @@ WEAK VOID OsLockDepPanic(enum LockDepErrType errType)
     while (1) {}
 }
 
+STATIC VOID OsLockDepPrint(const CHAR *fmt, va_list ap)
+{
+    UINT32 len;
+    CHAR buf[PRINT_BUF_SIZE] = {0};
+
+    len = vsnprintf_s(buf, PRINT_BUF_SIZE, PRINT_BUF_SIZE - 1, fmt, ap);
+    if ((len == -1) && (*buf == '\0')) {
+        /* parameter is illegal or some features in fmt dont support */
+        UartPuts("OsLockDepPrint is error\n", strlen("OsLockDepPrint is error\n"), 0);
+        return;
+    }
+    *(buf + len) = '\0';
+
+    UartPuts(buf, len, 0);
+}
+
+STATIC VOID OsPrintLockDepInfo(const CHAR *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    OsLockDepPrint(fmt, ap);
+    va_end(ap);
+}
+
 STATIC VOID OsLockDepDumpLock(const LosTaskCB *task, const SPIN_LOCK_S *lock,
                               const VOID *requestAddr, enum LockDepErrType errType)
 {
@@ -109,24 +135,24 @@ STATIC VOID OsLockDepDumpLock(const LosTaskCB *task, const SPIN_LOCK_S *lock,
     const LockDep *lockDep = &task->lockDep;
     const LosTaskCB *temp = task;
 
-    PrintExcInfo("lockdep check failed\n");
-    PrintExcInfo("error type   : %s\n", OsLockDepErrorStringGet(errType));
-    PrintExcInfo("request addr : 0x%x\n", requestAddr);
+    OsPrintLockDepInfo("lockdep check failed\n");
+    OsPrintLockDepInfo("error type   : %s\n", OsLockDepErrorStringGet(errType));
+    OsPrintLockDepInfo("request addr : 0x%x\n", requestAddr);
 
     while (1) {
-        PrintExcInfo("task name    : %s\n", temp->taskName);
-        PrintExcInfo("task id      : %u\n", temp->taskID);
-        PrintExcInfo("cpu num      : %u\n", temp->currCpu);
-        PrintExcInfo("start dumping lockdep infomation\n");
+        OsPrintLockDepInfo("task name    : %s\n", temp->taskName);
+        OsPrintLockDepInfo("task id      : %u\n", temp->taskID);
+        OsPrintLockDepInfo("cpu num      : %u\n", temp->currCpu);
+        OsPrintLockDepInfo("start dumping lockdep infomation\n");
         for (i = 0; i < lockDep->lockDepth; i++) {
             if (lockDep->heldLocks[i].lockPtr == lock) {
-                PrintExcInfo("[%d] %s <-- addr:0x%x\n", i, LOCKDEP_GET_NAME(lockDep, i),
-                             LOCKDEP_GET_ADDR(lockDep, i));
+                OsPrintLockDepInfo("[%d] %s <-- addr:0x%x\n", i, LOCKDEP_GET_NAME(lockDep, i),
+                                   LOCKDEP_GET_ADDR(lockDep, i));
             } else {
-                PrintExcInfo("[%d] %s \n", i, LOCKDEP_GET_NAME(lockDep, i));
+                OsPrintLockDepInfo("[%d] %s \n", i, LOCKDEP_GET_NAME(lockDep, i));
             }
         }
-        PrintExcInfo("[%d] %s <-- now\n", i, lock->name);
+        OsPrintLockDepInfo("[%d] %s <-- now\n", i, lock->name);
 
         if (errType == LOCKDEP_ERR_DEAD_LOCK) {
             temp = lock->owner;
@@ -138,8 +164,6 @@ STATIC VOID OsLockDepDumpLock(const LosTaskCB *task, const SPIN_LOCK_S *lock,
             break;
         }
     }
-
-    OsLockDepPanic(errType);
 }
 
 STATIC BOOL OsLockDepCheckDependancy(const LosTaskCB *current, LosTaskCB *lockOwner)
@@ -167,7 +191,11 @@ VOID OsLockDepCheckIn(SPIN_LOCK_S *lock)
 {
     UINT32 intSave;
     enum LockDepErrType checkResult = LOCKDEP_SUCEESS;
+#ifdef LOSCFG_COMPILER_CLANG_LLVM
+    VOID *requestAddr = (VOID *)__builtin_return_address(1);
+#else
     VOID *requestAddr = (VOID *)__builtin_return_address(0);
+#endif
     LosTaskCB *current = OsCurrTaskGet();
     LockDep *lockDep = &current->lockDep;
     LosTaskCB *lockOwner = NULL;
@@ -206,11 +234,12 @@ OUT:
         lockDep->waitLock = lock;
         lockDep->heldLocks[lockDep->lockDepth].lockAddr = requestAddr;
         lockDep->heldLocks[lockDep->lockDepth].waitTime = OsLockDepGetCycles(); /* start time */
-    } else {
-        OsLockDepDumpLock(current, lock, requestAddr, checkResult);
+        OsLockDepRelease(intSave);
+        return;
     }
-
+    OsLockDepDumpLock(current, lock, requestAddr, checkResult);
     OsLockDepRelease(intSave);
+    OsLockDepPanic(checkResult);
 }
 
 VOID OsLockDepRecord(SPIN_LOCK_S *lock)
@@ -248,7 +277,11 @@ VOID OsLockDepCheckOut(SPIN_LOCK_S *lock)
     UINT32 intSave;
     INT32 depth;
     enum LockDepErrType checkResult = LOCKDEP_SUCEESS;
+#ifdef LOSCFG_COMPILER_CLANG_LLVM
+    VOID *requestAddr = (VOID *)__builtin_return_address(1);
+#else
     VOID *requestAddr = (VOID *)__builtin_return_address(0);
+#endif
     LosTaskCB *current = OsCurrTaskGet();
     LosTaskCB *owner = NULL;
     LockDep *lockDep = NULL;
@@ -260,7 +293,9 @@ VOID OsLockDepCheckOut(SPIN_LOCK_S *lock)
     if (owner == SPINLOCK_OWNER_INIT) {
         checkResult = LOCKDEP_ERR_UNLOCK_WITOUT_LOCK;
         OsLockDepDumpLock(current, lock, requestAddr, checkResult);
-        goto OUT;
+        OsLockDepRelease(intSave);
+        OsLockDepPanic(checkResult);
+        return;
     }
 
     lockDep = &owner->lockDep;
@@ -289,7 +324,6 @@ VOID OsLockDepCheckOut(SPIN_LOCK_S *lock)
     lock->cpuid = (UINT32)(-1);
     lock->owner = SPINLOCK_OWNER_INIT;
 
-OUT:
     OsLockDepRelease(intSave);
 }
 

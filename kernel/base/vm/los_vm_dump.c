@@ -38,6 +38,7 @@
 #include "los_mmu_descriptor_v6.h"
 #ifdef LOSCFG_FS_VFS
 #include "fs/file.h"
+#include "vnode.h"
 #endif
 #include "los_printf.h"
 #include "los_vm_page.h"
@@ -55,13 +56,13 @@
 //获取线性区的名称或文件路径
 const CHAR *OsGetRegionNameOrFilePath(LosVmMapRegion *region)
 {
-    struct file *filep = NULL;
+    struct Vnode *vnode = NULL;
     if (region == NULL) {
         return "";
 #ifdef LOSCFG_FS_VFS
     } else if (LOS_IsRegionFileValid(region)) {
-        filep = region->unTypeData.rf.file;
-        return filep->f_path;
+        vnode = region->unTypeData.rf.vnode;
+        return vnode->filePath;
 #endif
     } else if (region->regionFlags & VM_MAP_REGION_FLAG_HEAP) {//堆区
         return "HEAP";

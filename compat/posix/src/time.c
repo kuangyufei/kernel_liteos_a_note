@@ -133,11 +133,11 @@ STATIC const long long g_adjPacement = (((LOSCFG_BASE_CORE_ADJ_PER_SECOND * SCHE
                                         LOSCFG_BASE_CORE_TICK_PER_SECOND) * OS_SYS_NS_PER_US);
 
 /* accumulative time delta from continuous modify, such as adjtime */
-STATIC struct timespec64 g_accDeltaFromAdj;//连续修改的累积时间增量，例如 adjtime
+STATIC struct timespec64 g_accDeltaFromAdj;
 /* accumulative time delta from discontinuous modify, such as settimeofday */
-STATIC struct timespec64 g_accDeltaFromSet;//来自不连续修改的累积时间增量，例�?settimeofday
+STATIC struct timespec64 g_accDeltaFromSet;
 
-VOID OsAdjTime(VOID)//时间调整
+VOID OsAdjTime(VOID)
 {
     UINT32 intSave;
 
@@ -272,12 +272,12 @@ STATIC INLINE struct timespec64 OsTimeSpecSub(const struct timespec64 t1, const 
 
     return ret;
 }
-//获取硬件时间
+
 STATIC VOID OsGetHwTime(struct timespec64 *hwTime)
 {
     UINT64 nowNsec;
 
-    nowNsec = LOS_CurrNanosec();//当前纳秒
+    nowNsec = LOS_CurrNanosec();
     hwTime->tv_sec = nowNsec / OS_SYS_NS_PER_SECOND;
     hwTime->tv_nsec = nowNsec - hwTime->tv_sec * OS_SYS_NS_PER_SECOND;
 }
@@ -570,6 +570,7 @@ static int CpuClockGetres(const clockid_t clockID, struct timespec *tp)
     return error;
 }
 #endif
+
 int clock_gettime(clockid_t clockID, struct timespec *tp)
 {
     UINT32 intSave;
@@ -755,10 +756,10 @@ static VOID SwtmrProc(UINTPTR tmrArg)
     }
     return;
 EXIT:
-    PRINT_ERR("Dsipatch signals failed!, ret: %d\r\n", ret);
+    PRINT_ERR("Dispatch signals failed!, ret: %d\r\n", ret);
     return;
 }
-//为进程创建计时器
+
 int OsTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID)
 {
     UINT32 ret;
@@ -813,7 +814,7 @@ int OsTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID)
     *timerID = (timer_t)(UINTPTR)swtmrID;
     return 0;
 }
-//为进程删除计时器
+
 int timer_delete(timer_t timerID)
 {
     UINT16 swtmrID = (UINT16)(UINTPTR)timerID;
@@ -843,7 +844,7 @@ ERROUT:
     errno = EINVAL;
     return -1;
 }
-//为进程设置计时器
+
 int timer_settime(timer_t timerID, int flags,
                   const struct itimerspec *value,   /* new value */
                   struct itimerspec *oldValue)      /* old value to return, always 0 */

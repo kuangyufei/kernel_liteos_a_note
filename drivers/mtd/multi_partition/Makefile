@@ -34,8 +34,7 @@ MODULE_NAME := $(notdir $(shell pwd))
 LOCAL_SRCS :=  $(wildcard src/*.c)
 
 LOCAL_INCLUDE := \
-    -I $(LITEOSTOPDIR)/fs/jffs2/include \
-    -I $(LITEOSTOPDIR)/../../device/hisilicon/drivers/include/mtd/common/include
+    -I $(LITEOSTOPDIR)/fs/jffs2/include
 
 ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
 LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/../../device/qemu/drivers/cfiflash

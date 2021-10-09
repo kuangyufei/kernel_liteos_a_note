@@ -134,6 +134,7 @@
 #define LWIP_IGMP                       1
 #define LWIP_NETIF_API                  1
 #define LWIP_NETIF_LINK_CALLBACK        1
+#define LWIP_NETIF_EXT_STATUS_CALLBACK  1
 #define LWIP_NETIF_LOOPBACK             1
 #define LWIP_POSIX_SOCKETS_IO_NAMES     0
 #define LWIP_RAW                        1

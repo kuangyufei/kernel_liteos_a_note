@@ -43,6 +43,12 @@ else
 LOCAL_SRCS += src/startup/reset_vector_up.S
 endif
 
+ifeq ($(LOSCFG_PERF_HW_PMU), y)
+LOCAL_SRCS += src/pmu/armv7_pmu.c
+endif
+
+LOCAL_FLAGS := $(LOCAL_INCLUDE)
+
 AS_OBJS_LIBC_FLAGS  = -D__ASSEMBLY__
 # linux style macros
 LINUX_ARCH_$(LOSCFG_ARCH_ARM_V7A) = -D__LINUX_ARM_ARCH__=7
@@ -54,6 +60,6 @@ LINUX_ARCH_$(LOSCFG_ARCH_ARM_V8M) = -D__LINUX_ARM_ARCH__=8
 AS_OBJS_LIBC_FLAGS      += $(LINUX_ARCH_y)
 
 ifeq ($(LOSCFG_GDB), y)
-LOCAL_FLAGS := $(AS_OBJS_LIBC_FLAGS)
+LOCAL_FLAGS += $(AS_OBJS_LIBC_FLAGS)
 endif
 include $(MODULE)

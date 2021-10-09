@@ -141,14 +141,14 @@ ifeq ($(origin SYSROOT_PATH),file)
 endif
 endif
 
-$(KCONFIG_CMDS):
+$(filter-out menuconfig,$(KCONFIG_CMDS)):
 	$(HIDE)$@ $(args)
 
 $(LITEOS_CONFIG_FILE): $(KCONFIG_CONFIG)
 	$(HIDE)env KCONFIG_CONFIG=$< genconfig --config-out $@ --header-path $(LITEOS_MENUCONFIG_H)
 
-update_config:
-	$(HIDE)test -f "$(CONFIG)" && cp -v "$(CONFIG)" .config && menuconfig && savedefconfig --out "$(CONFIG)"
+update_config menuconfig:
+	$(HIDE)test -f "$(CONFIG)" && cp -v "$(CONFIG)" .config && menuconfig $(args) && savedefconfig --out "$(CONFIG)"
 
 $(LITEOS_LIBS_TARGET): sysroot
 	$(HIDE)for dir in $(LIB_SUBDIRS); do $(MAKE) -C $$dir all || exit 1; done

@@ -171,6 +171,8 @@ struct Vnode {//vnode并不包含文件名,因为 vnode和文件名是 1:N 的�
     LIST_ENTRY actFreeEntry;            /* vnode active/free list entry */	//通过本节点挂到空闲链表和使用链表上
     struct Mount *originMount;          /* fs info about this vnode */ //自己所在的文件系统挂载信息
     struct Mount *newMount;             /* fs info about who mount on this vnode */	//其他挂载在这个节点上文件系统信息
+    char *filePath;                     /* file path of the vnode */
+    struct page_mapping mapping;        /* page mapping of the vnode */
 };
 /*
 	虚拟节点操作接口,具体的文件系统只需实现这些接口函数来操作vnode.
@@ -181,6 +183,8 @@ struct VnodeOps {
     int (*Lookup)(struct Vnode *parent, const char *name, int len, struct Vnode **vnode);//查询节点
     //Lookup向底层文件系统查找获取inode信息
     int (*Open)(struct Vnode *vnode, int fd, int mode, int flags);//打开节点
+    ssize_t (*ReadPage)(struct Vnode *vnode, char *buffer, off_t pos);
+    ssize_t (*WritePage)(struct Vnode *vnode, char *buffer, off_t pos, size_t buflen);
     int (*Close)(struct Vnode *vnode);//关闭节点
     int (*Reclaim)(struct Vnode *vnode);//回收节点
     int (*Unlink)(struct Vnode *parent, struct Vnode *vnode, const char *fileName);//取消硬链接

@@ -3,21 +3,30 @@
 
 百篇博客系列篇.本篇为:
 
-**v13.xx 鸿蒙内核源码分析(源码注释篇) | 鸿蒙必定成功，也必然成功**
+**v13.xx 鸿蒙内核源码分析(源码注释篇) | 每天死磕一点点**
+
+#### **前因后果相关篇为:** 
+* [v08.03 鸿蒙内核源码分析(总目录) | 百万汉字注解 百篇博客分析](https://my.oschina.net/weharmony/blog/4626852)
+* [v09.04 鸿蒙内核源码分析(调度故事) | 用故事说内核调度过程](https://my.oschina.net/weharmony/blog/4634668)
+* [v10.03 鸿蒙内核源码分析(内存主奴) | 皇上和奴才如何相处](https://my.oschina.net/weharmony/blog/4646802)
+* [v13.05 鸿蒙内核源码分析(源码注释) | 每天死磕一点点](https://my.oschina.net/weharmony/blog/4686747)
+* [v18.02 鸿蒙内核源码分析(源码结构) | 内核每个文件的含义](https://my.oschina.net/weharmony/blog/4869137)
+* [v52.05 鸿蒙内核源码分析(静态站点) | 五一哪也没去就干了这事](https://my.oschina.net/weharmony/blog/5042657)
 
 
 ### 几点说明
 
 * **[kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note) | 中文注解鸿蒙内核**  是在 `OpenHarmony` 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) 基础上给内核源码加上中文注解的版本.与官方源码按月保持同步,同步历史如下:
-  * `2021/9/14` -- common,extended等几个目录结构和Makefile调整
-  * `2021/8/19` -- 各目录增加了`BUILD.gn`文件,文件系统部分文件调整 
-  * `2021/7/15` -- 改动不大,新增`blackbox`,`hidumper`,对一些宏规范化使用 
-  * `2021/6/27` -- 对文件系统/设备驱动改动较大,目录结构进行了重新整理
-  * `2021/6/08` -- 对编译构建,任务,信号模块有较大的改动
-  * `2021/5/28` -- 改动不大,主要针对一些错误单词拼写纠正
-  * `2021/5/13` -- 对系统调用，任务切换，信号处理，异常接管，文件管理，shell做了较大更新，代码结构更清晰
-  * `2021/4/21` -- 官方优化了很多之前吐槽的地方，点赞
-  * `2020/9/16` -- 中文注解版起点
+  * `2021/10/09` -- 增加性能优化模块`perf`,优化了文件映射模块
+  * `2021/09/14` -- common,extended等几个目录结构和Makefile调整
+  * `2021/08/19` -- 各目录增加了`BUILD.gn`文件,文件系统部分文件调整 
+  * `2021/07/15` -- 改动不大,新增`blackbox`,`hidumper`,对一些宏规范化使用 
+  * `2021/06/27` -- 对文件系统/设备驱动改动较大,目录结构进行了重新整理
+  * `2021/06/08` -- 对编译构建,任务,信号模块有较大的改动
+  * `2021/05/28` -- 改动不大,主要针对一些错误单词拼写纠正
+  * `2021/05/13` -- 对系统调用，任务切换，信号处理，异常接管，文件管理，shell做了较大更新，代码结构更清晰
+  * `2021/04/21` -- 官方优化了很多之前吐槽的地方，点赞
+  * `2020/09/16` -- 中文注解版起点
 
 * **[http://weharmonyos.com](http://weharmonyos.com) | 鸿蒙研究站**
   
@@ -41,7 +50,7 @@
 * 因为内核代码本身并不太多，都是浓缩的精华，精读是让各个知识点高频出现，不孤立成点状记忆，没有足够连接点的知识点是很容易忘的，点点成线，线面成体，连接越多，记得越牢，如此短时间内容易结成一张高浓度，高密度的系统化知识网，训练大脑肌肉记忆，驻入大脑直觉区，想抹都抹不掉，终生携带，随时调取。跟骑单车一样，一旦学会，即便多年不骑，照样跨上就走，游刃有余。
 ### **热爱是所有的理由和答案**
 * 因大学时阅读 `linux 2.6` 内核痛并快乐的经历，一直有个心愿，如何让更多对内核感兴趣的朋友减少阅读时间，加速对计算机系统级的理解，而不至于过早的放弃。但因过程种种，多年一直没有行动，基本要放弃这件事了。恰逢 **2020/9/10** 鸿蒙正式开源，重新激活了多年的心愿，就有那么点如黄河之水一发不可收拾了。 
-* 目前对内核源码的注解已完成了 **70%** ，对内核源码的博客分析已完成了**65+篇**， 每天都很充实，很兴奋，连做梦内核代码都在鱼贯而入。如此疯狂地做一件事还是当年谈恋爱的时候， 只因热爱， 热爱是所有的理由和答案。 :P 
+* 目前对内核源码的注解已完成了 **70%** ，对内核源码的博客分析已完成了**70+篇**， 每天都很充实，很兴奋，连做梦内核代码都在鱼贯而入。如此疯狂地做一件事还是当年谈恋爱的时候， 只因热爱， 热爱是所有的理由和答案。 :P 
 ### **(〃･ิ‿･ิ)ゞ鸿蒙内核开发者**
 * 感谢开放原子开源基金会，致敬鸿蒙内核开发者提供了如此优秀的源码，一了多年的夙愿，津津乐道于此。精读内核源码加注并整理成档是件很有挑战的事，时间上要以月甚至年为单位，但正因为很难才值得去做! 干困难事，方有所得;专注聚焦，必有所获。 
 * 从内核一行行的代码中能深深感受到开发者各中艰辛与坚持，及鸿蒙生态对未来的价值，这些是张嘴就来的网络喷子们永远不能体会到的。可以毫不夸张的说鸿蒙内核源码可作为大学 **C语言**，**数据结构**，**操作系统**，**汇编语言**，**计算机系统结构**，**计算机组成原理** 六门课程的教学项目。如此宝库，不深入研究实在是暴殄天物，于心不忍，注者坚信鸿蒙大势所趋，未来可期，其必定成功，也必然成功，誓做其坚定的追随者和传播者。
@@ -124,11 +133,11 @@
 给鸿蒙内核源码加注释过程中，整理出以下文章。内容立足源码，常以生活场景打比方尽可能多的将内核知识点置入某种场景，具有画面感，容易理解记忆。说别人能听得懂的话很重要! 百篇博客绝不是百度教条式的在说一堆诘屈聱牙的概念，那没什么意思。更希望让内核变得栩栩如生，倍感亲切.确实有难度，自不量力，但已经出发，回头已是不可能的了。　:P         
 与代码有bug需不断debug一样，文章和注解内容会存在不少错漏之处，请多包涵，但会反复修正，持续更新，`.xx` 代表修改的次数，精雕细琢，言简意赅，力求打造精品内容。
 
-|**编译构建**|**基础工具**|**加载运行**|**进程管理**
+|**基础工具**|**加载运行**|**进程管理**|**编译构建**
 |:-:|:-:|:-:|:-:|
-[编译环境](https://my.oschina.net/weharmony/blog/5028613) [编译过程](https://my.oschina.net/weharmony/blog/5064209) [环境脚本](https://my.oschina.net/weharmony/blog/5132725) [构建工具](https://my.oschina.net/weharmony/blog/5135157) [gn应用](https://my.oschina.net/weharmony/blog/5137565) [忍者ninja](https://my.oschina.net/weharmony/blog/5139034) |[双向链表](https://my.oschina.net/weharmony/blog/4572304) [位图管理](https://my.oschina.net/weharmony/blog/4888467) [用栈方式](https://my.oschina.net/weharmony/blog/4893388) [定时器](https://my.oschina.net/weharmony/blog/4951625) [原子操作](https://my.oschina.net/weharmony/blog/4955290) [时间管理](https://my.oschina.net/weharmony/blog/4956163) |[ELF格式](https://my.oschina.net/weharmony/blog/5030288) [ELF解析](https://my.oschina.net/weharmony/blog/5048746) [静态链接](https://my.oschina.net/weharmony/blog/5049918) [重定位](https://my.oschina.net/weharmony/blog/5055124) [进程映像](https://my.oschina.net/weharmony/blog/5060359) |[进程管理](https://my.oschina.net/weharmony/blog/4574429) [进程概念](https://my.oschina.net/weharmony/blog/4937521) [Fork](https://my.oschina.net/weharmony/blog/5010301) [特殊进程](https://my.oschina.net/weharmony/blog/5014444) [进程回收](https://my.oschina.net/weharmony/blog/5017716) [信号生产](https://my.oschina.net/weharmony/blog/5022149) [信号消费](https://my.oschina.net/weharmony/blog/5027224) [Shell编辑](https://my.oschina.net/weharmony/blog/5269307) [Shell解析](https://my.oschina.net/weharmony/blog/5269307) |
+[双向链表](https://my.oschina.net/weharmony/blog/4572304) [位图管理](https://my.oschina.net/weharmony/blog/4888467) [用栈方式](https://my.oschina.net/weharmony/blog/4893388) [定时器](https://my.oschina.net/weharmony/blog/4951625) [原子操作](https://my.oschina.net/weharmony/blog/4955290) [时间管理](https://my.oschina.net/weharmony/blog/4956163) |[ELF格式](https://my.oschina.net/weharmony/blog/5030288) [ELF解析](https://my.oschina.net/weharmony/blog/5048746) [静态链接](https://my.oschina.net/weharmony/blog/5049918) [重定位](https://my.oschina.net/weharmony/blog/5055124) [进程映像](https://my.oschina.net/weharmony/blog/5060359) |[进程管理](https://my.oschina.net/weharmony/blog/4574429) [进程概念](https://my.oschina.net/weharmony/blog/4937521) [Fork](https://my.oschina.net/weharmony/blog/5010301) [特殊进程](https://my.oschina.net/weharmony/blog/5014444) [进程回收](https://my.oschina.net/weharmony/blog/5017716) [信号生产](https://my.oschina.net/weharmony/blog/5022149) [信号消费](https://my.oschina.net/weharmony/blog/5027224) [Shell编辑](https://my.oschina.net/weharmony/blog/5269307) [Shell解析](https://my.oschina.net/weharmony/blog/5269307) |[编译环境](https://my.oschina.net/weharmony/blog/5028613) [编译过程](https://my.oschina.net/weharmony/blog/5064209) [环境脚本](https://my.oschina.net/weharmony/blog/5132725) [构建工具](https://my.oschina.net/weharmony/blog/5135157) [gn应用](https://my.oschina.net/weharmony/blog/5137565) [忍者ninja](https://my.oschina.net/weharmony/blog/5139034) |
 |**进程通讯**|**内存管理**|**前因后果**|**任务管理**
-[自旋锁](https://my.oschina.net/weharmony/blog/4944129) [互斥锁](https://my.oschina.net/weharmony/blog/4945465) [进程通讯](https://my.oschina.net/weharmony/blog/4947398) [信号量](https://my.oschina.net/weharmony/blog/4949720) [事件控制](https://my.oschina.net/weharmony/blog/4950956) [消息队列](https://my.oschina.net/weharmony/blog/4952961) |[内存分配](https://my.oschina.net/weharmony/blog/4646802) [内存管理](https://my.oschina.net/weharmony/blog/4652284) [内存汇编](https://my.oschina.net/weharmony/blog/4692156) [内存映射](https://my.oschina.net/weharmony/blog/4694841) [内存规则](https://my.oschina.net/weharmony/blog/4698384) [物理内存](https://my.oschina.net/weharmony/blog/4842408) |[总目录](https://my.oschina.net/weharmony/blog/4626852) [调度故事](https://my.oschina.net/weharmony/blog/4634668) [内存主奴](https://my.oschina.net/weharmony/blog/4646802) [源码注释](https://my.oschina.net/weharmony/blog/4686747) [源码结构](https://my.oschina.net/weharmony/blog/4869137) [静态站点](https://my.oschina.net/weharmony/blog/5042657) |[时钟任务](https://my.oschina.net/weharmony/blog/4574493) [任务调度](https://my.oschina.net/weharmony/blog/4595539) [任务管理](https://my.oschina.net/weharmony/blog/4603919) [调度队列](https://my.oschina.net/weharmony/blog/4606916) [调度机制](https://my.oschina.net/weharmony/blog/4623040) [线程概念](https://my.oschina.net/weharmony/blog/4915543) [并发并行](https://my.oschina.net/weharmony/blog/4940329) [系统调用](https://my.oschina.net/weharmony/blog/4967613) [任务切换](https://my.oschina.net/weharmony/blog/4988628) |
+[自旋锁](https://my.oschina.net/weharmony/blog/4944129) [互斥锁](https://my.oschina.net/weharmony/blog/4945465) [进程通讯](https://my.oschina.net/weharmony/blog/4947398) [信号量](https://my.oschina.net/weharmony/blog/4949720) [事件控制](https://my.oschina.net/weharmony/blog/4950956) [消息队列](https://my.oschina.net/weharmony/blog/4952961) |[内存分配](https://my.oschina.net/weharmony/blog/4646802) [内存管理](https://my.oschina.net/weharmony/blog/4652284) [内存汇编](https://my.oschina.net/weharmony/blog/4692156) [内存映射](https://my.oschina.net/weharmony/blog/4694841) [内存规则](https://my.oschina.net/weharmony/blog/4698384) [物理内存](https://my.oschina.net/weharmony/blog/4842408) |[总目录](https://my.oschina.net/weharmony/blog/4626852) [调度故事](https://my.oschina.net/weharmony/blog/4634668) [内存主奴](https://my.oschina.net/weharmony/blog/4646802) [源码注释](https://my.oschina.net/weharmony/blog/4686747) [源码结构](https://my.oschina.net/weharmony/blog/4869137) [静态站点](https://my.oschina.net/weharmony/blog/5042657) |[时钟任务](https://my.oschina.net/weharmony/blog/4574493) [任务调度](https://my.oschina.net/weharmony/blog/4595539) [任务管理](https://my.oschina.net/weharmony/blog/4603919) [调度队列](https://my.oschina.net/weharmony/blog/4606916) [调度机制](https://my.oschina.net/weharmony/blog/4623040) [线程概念](https://my.oschina.net/weharmony/blog/4915543) [并发并行](https://my.oschina.net/weharmony/blog/4940329) [CPU](https://my.oschina.net/weharmony/blog/4952034) [系统调用](https://my.oschina.net/weharmony/blog/4967613) [任务切换](https://my.oschina.net/weharmony/blog/4988628) |
 |**文件系统**|**硬件架构**
 [文件概念](https://my.oschina.net/weharmony/blog/5152858) [文件系统](https://my.oschina.net/weharmony/blog/5165752) [索引节点](https://my.oschina.net/weharmony/blog/5168716) [挂载目录](https://my.oschina.net/weharmony/blog/5172566) [根文件系统](https://my.oschina.net/weharmony/blog/5177087) [字符设备](https://my.oschina.net/weharmony/blog/5200946) [VFS](https://my.oschina.net/weharmony/blog/5211662) [文件句柄](https://my.oschina.net/weharmony/blog/5253251) [管道文件](https://my.oschina.net/weharmony/blog/5258434) |[汇编基础](https://my.oschina.net/weharmony/blog/4920361) [汇编传参](https://my.oschina.net/weharmony/blog/4927892) [工作模式](https://my.oschina.net/weharmony/blog/4965052) [寄存器](https://my.oschina.net/weharmony/blog/4969487) [异常接管](https://my.oschina.net/weharmony/blog/4973016) [汇编汇总](https://my.oschina.net/weharmony/blog/4977924) [中断切换](https://my.oschina.net/weharmony/blog/4990948) [中断概念](https://my.oschina.net/weharmony/blog/4992750) [中断管理](https://my.oschina.net/weharmony/blog/4995800) |
 

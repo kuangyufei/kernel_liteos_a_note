@@ -79,6 +79,7 @@ extern "C" {
 #endif
 
 #define STACK_ALIGN_SIZE                    0x10 	//栈对齐
+#define RANDOM_VECTOR_SIZE                  1
 
 /* The permissions on sections in the program header. */ //对段的操作权限
 #define PF_R                                0x4		//只读
@@ -107,15 +108,14 @@ typedef struct {
     UINTPTR      stackParamBase;//栈参数空间,放置启动ELF时的外部参数,大小为 USER_PARAM_BYTE_MAX 4K
     UINT32       stackSize;//栈大小
     INT32        stackProt;//LD_PT_GNU_STACK栈的权限 ,例如(RW)
+    UINTPTR      argStart;
     UINTPTR      loadAddr;	//加载地址
     UINTPTR      elfEntry;	//装载点地址 即: _start 函数地址
     UINTPTR      topOfMem;	//虚拟空间顶部位置,loadInfo->topOfMem = loadInfo->stackTopMax - sizeof(UINTPTR);
     UINTPTR      oldFiles;	//旧空间的文件映像
     LosVmSpace   *newSpace;//新虚拟空间
     LosVmSpace   *oldSpace;//旧虚拟空间
-#ifdef LOSCFG_ASLR
     INT32        randomDevFD;
-#endif
 } ELFLoadInfo;
 //不超过用户空间顶部位置
 STATIC INLINE BOOL OsIsBadUserAddress(VADDR_T vaddr)

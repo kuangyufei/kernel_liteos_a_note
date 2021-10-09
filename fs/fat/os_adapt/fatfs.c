@@ -48,6 +48,7 @@
 #include "user_copy.h"
 #include "los_vm_filemap.h"
 #include "los_hash.h"
+#include "los_vm_common.h"
 #include <time.h>
 #include <errno.h>
 #include <dirent.h>
@@ -1892,6 +1893,7 @@ int fatfs_mkfs (struct Vnode *device, int sectors, int option)
     BYTE *work_buff = NULL;
     los_part *part = NULL;
     FRESULT result;
+    MKFS_PARM opt = {0};
     int ret;
 
     part = los_part_find(device);
@@ -1916,7 +1918,9 @@ int fatfs_mkfs (struct Vnode *device, int sectors, int option)
         return -ENOMEM;
     }
 
-    result = _mkfs(part, sectors, option, work_buff, FF_MAX_SS);
+    opt.n_sect = sectors;
+    opt.fmt = (BYTE)option;
+    result = _mkfs(part, &opt, work_buff, FF_MAX_SS);
     free(work_buff);
     if (result != FR_OK) {
         return -fatfs_2_vfs(result);
@@ -2222,6 +2226,207 @@ ERROUT:
     unlock_fs(fs, res);
     return -fatfs_2_vfs(res);
 }
+
+ssize_t fatfs_readpage(struct Vnode *vnode, char *buff, off_t pos)
+{
+    FATFS *fs = (FATFS *)(vnode->originMount->data);
+    DIR_FILE *dfp = (DIR_FILE *)(vnode->data);
+    FILINFO *finfo = &(dfp->fno);
+    FAT_ENTRY *ep = &(dfp->fat_entry);
+    DWORD clust;
+    DWORD sclust;
+    QWORD sect;
+    QWORD step;
+    QWORD n;
+    size_t position; /* byte offset */
+    BYTE *buf = (BYTE *)buff;
+    size_t buflen = PAGE_SIZE;
+    FRESULT result;
+    int ret;
+
+    ret = lock_fs(fs);
+    if (ret == FALSE) {
+        result = FR_TIMEOUT;
+        goto ERROR_OUT;
+    }
+
+    if (finfo->fsize <= pos) {
+        result = FR_OK;
+        goto ERROR_UNLOCK;
+    }
+
+    if (ep->clst == 0) {
+        ep->clst = finfo->sclst;
+    }
+
+    if (pos >= ep->pos) {
+        clust = ep->clst;
+        position = ep->pos;
+    } else {
+        clust = finfo->sclst;
+        position = 0;
+    }
+
+    /* Get to the current cluster */
+    n = pos / SS(fs) / fs->csize - position / SS(fs) / fs->csize;
+    while (n--) {
+        clust = get_fat(&(dfp->f_dir.obj), clust);
+        if ((clust == BAD_CLUSTER) || (clust == DISK_ERROR)) {
+            result = FR_DISK_ERR;
+            goto ERROR_UNLOCK;
+        }
+    }
+
+    /* Get to the currnet sector */
+    sect = clst2sect(fs, clust);
+    sect += (pos / SS(fs)) & (fs->csize - 1);
+
+    /* How many sectors do we need to read once */
+    if (fs->csize < buflen / SS(fs)) {
+        step = fs->csize;
+    } else {
+        step = buflen / SS(fs);
+    }
+
+    n = 0;
+    sclust = clust;
+    while (n < buflen / SS(fs)) {
+        if (disk_read(fs->pdrv, buf, sect, step) != RES_OK) {
+            result = FR_DISK_ERR;
+            goto ERROR_UNLOCK;
+        }
+        n += step;
+        if (n >= buflen / SS(fs)) {
+            break;
+        }
+
+        /* As cluster size is aligned, it must jump to next cluster when cluster size is less than pagesize */
+        clust = get_fat(&(dfp->f_dir.obj), clust);
+        if ((clust == BAD_CLUSTER) || (clust == DISK_ERROR)) {
+            result = FR_DISK_ERR;
+            goto ERROR_UNLOCK;
+        } else if (fatfs_is_last_cluster(fs, clust)) {
+            break; /* read end */
+        }
+        sect = clst2sect(fs, clust);
+        buf += step * SS(fs);
+    }
+
+    ep->clst = sclust;
+    ep->pos = pos;
+
+    unlock_fs(fs, FR_OK);
+
+    return (ssize_t)min(finfo->fsize - pos, n * SS(fs));
+
+ERROR_UNLOCK:
+    unlock_fs(fs, result);
+ERROR_OUT:
+    return -fatfs_2_vfs(result);
+}
+
+ssize_t fatfs_writepage(struct Vnode *vnode, char *buff, off_t pos, size_t buflen)
+{
+    FATFS *fs = (FATFS *)(vnode->originMount->data);
+    DIR_FILE *dfp = (DIR_FILE *)(vnode->data);
+    FILINFO *finfo = &(dfp->fno);
+    FAT_ENTRY *ep = &(dfp->fat_entry);
+    DWORD clust;
+    DWORD sclst;
+    QWORD sect;
+    QWORD step;
+    QWORD n;
+    size_t position; /* byte offset */
+    BYTE *buf = (BYTE *)buff;
+    FRESULT result;
+    FIL fil;
+    int ret;
+
+    ret = lock_fs(fs);
+    if (ret == FALSE) {
+        result = FR_TIMEOUT;
+        goto ERROR_OUT;
+    }
+
+    if (finfo->fsize <= pos) {
+        result = FR_OK;
+        goto ERROR_UNLOCK;
+    }
+
+    if (ep->clst == 0) {
+        ep->clst = finfo->sclst;
+    }
+
+    if (pos >= ep->pos) {
+        clust = ep->clst;
+        position = ep->pos;
+    } else {
+        clust = finfo->sclst;
+        position = 0;
+    }
+
+    /* Get to the current cluster */
+    n = pos / SS(fs) / fs->csize - position / SS(fs) / fs->csize;
+    while (n--) {
+        clust = get_fat(&(dfp->f_dir.obj), clust);
+        if ((clust == BAD_CLUSTER) || (clust == DISK_ERROR)) {
+            result = FR_DISK_ERR;
+            goto ERROR_UNLOCK;
+        }
+    }
+
+    /* Get to the currnet sector */
+    sect = clst2sect(fs, clust);
+    sect += (pos / SS(fs)) & (fs->csize - 1);
+
+    /* How many sectors do we need to read once */
+    if (fs->csize < buflen / SS(fs)) {
+        step = fs->csize;
+    } else {
+        step = buflen / SS(fs);
+    }
+
+    n = 0;
+    sclst = clust;
+    while (n < buflen / SS(fs)) {
+        if (disk_write(fs->pdrv, buf, sect, step) != RES_OK) {
+            result = FR_DISK_ERR;
+            goto ERROR_UNLOCK;
+        }
+        n += step;
+        if (n >= buflen / SS(fs)) {
+            break;
+        }
+
+        /* As cluster size is aligned, it must jump to next cluster when cluster size is less than pagesize */
+        clust = get_fat(&(dfp->f_dir.obj), clust);
+        if ((clust == BAD_CLUSTER) || (clust == DISK_ERROR)) {
+            result = FR_DISK_ERR;
+            goto ERROR_UNLOCK;
+        } else if (fatfs_is_last_cluster(fs, clust)) {
+            break; /* read end */
+        }
+        sect = clst2sect(fs, clust);
+        buf += step * SS(fs);
+    }
+
+    ep->clst = sclst;
+    ep->pos = pos;
+
+    fil.obj.fs = fs;
+    if (update_filbuff(finfo, &fil, NULL) < 0) {
+        result = FR_DISK_ERR;
+        goto ERROR_UNLOCK;
+    }
+
+    unlock_fs(fs, FR_OK);
+
+    return (ssize_t)min(finfo->fsize - pos, n * SS(fs));
+ERROR_UNLOCK:
+    unlock_fs(fs, result);
+ERROR_OUT:
+    return -fatfs_2_vfs(result);
+}
 //fat 文件系统 vnode实现
 struct VnodeOps fatfs_vops = {
     /* file ops */
@@ -2230,6 +2435,8 @@ struct VnodeOps fatfs_vops = {
     .Lookup = fatfs_lookup,
     .Rename = fatfs_rename,
     .Create = fatfs_create,
+    .ReadPage = fatfs_readpage,
+    .WritePage = fatfs_writepage,
     .Unlink = fatfs_unlink,
     .Reclaim = fatfs_reclaim,
     .Truncate = fatfs_truncate,

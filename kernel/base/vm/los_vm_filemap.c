@@ -181,17 +181,17 @@ VOID OsVmmFileRemove(LosVmMapRegion *region, LosArchMmu *archMmu, VM_OFFSET_T pg
     UINT32 intSave;
     vaddr_t vaddr;
     paddr_t paddr = 0;
-    struct file *file = NULL;
+    struct Vnode *vnode = NULL;
     struct page_mapping *mapping = NULL;
     LosFilePage *fpage = NULL;
     LosFilePage *tmpPage = NULL;
     LosVmPage *mapPage = NULL;
 
-    if (!LOS_IsRegionFileValid(region) || (region->unTypeData.rf.file->f_mapping == NULL)) {
+    if (!LOS_IsRegionFileValid(region) || (region->unTypeData.rf.vnode == NULL)) {
         return;//判断是否为文件映射，是否已map
     }
-    file = region->unTypeData.rf.file;
-    mapping = file->f_mapping;
+    vnode = region->unTypeData.rf.vnode;
+    mapping = &vnode->mapping;
     vaddr = region->range.base + ((UINT32)(pgoff - region->pgOff) << PAGE_SHIFT);//得到虚拟地址
 
     status_t status = LOS_ArchMmuQuery(archMmu, vaddr, &paddr, NULL);//获取物理地址
@@ -241,15 +241,15 @@ VOID OsMarkPageDirty(LosFilePage *fpage, LosVmMapRegion *region, INT32 off, INT3
     }
 }
 
-STATIC UINT32 GetDirtySize(LosFilePage *fpage, struct file *file)
+STATIC UINT32 GetDirtySize(LosFilePage *fpage, struct Vnode *vnode)
 {
     UINT32 fileSize;
     UINT32 dirtyBegin;
     UINT32 dirtyEnd;
     struct stat buf_stat;
 
-    if (stat(file->f_path, &buf_stat) != OK) {
-        VM_ERR("FlushDirtyPage get file size failed. (filepath=%s)", file->f_path);
+    if (stat(vnode->filePath, &buf_stat) != OK) {
+        VM_ERR("FlushDirtyPage get file size failed. (filePath=%s)", vnode->filePath);
         return 0;
     }
 
@@ -273,31 +273,29 @@ STATIC INT32 OsFlushDirtyPage(LosFilePage *fpage)
     UINT32 ret;
     size_t len;
     char *buff = NULL;
-    VM_OFFSET_T oldPos;
-    struct file *file = fpage->mapping->host;/* owner of this mapping */ //此映射属于哪个文件,注意<file,page_mapping>是1:1的关系.
-    if ((file == NULL) || (file->f_vnode == NULL)) {
-        VM_ERR("page cache file error");
+    struct Vnode *vnode = fpage->mapping->host;/* owner of this mapping */ //此映射属于哪个文件,注意<file,page_mapping>是1:1的关系.
+    if (vnode == NULL) {
+        VM_ERR("page cache vnode error");
         return LOS_NOK;
     }
 
-    oldPos = file_seek(file, 0, SEEK_CUR);////先记录老位置,因为写完页数据后要seek回老位置
-    buff = (char *)OsVmPageToVaddr(fpage->vmPage);//获取页面的虚拟地址
-    file_seek(file, (((UINT32)fpage->pgoff << PAGE_SHIFT) + fpage->dirtyOff), SEEK_SET);//移到页面脏数据位置，注意不是整个页面都脏了，可能只脏了一部分
     len = fpage->dirtyEnd - fpage->dirtyOff;//计算出脏数据长度
-    len = (len == 0) ? GetDirtySize(fpage, file) : len;
+    len = (len == 0) ? GetDirtySize(fpage, vnode) : len;
     if (len == 0) {//没有脏数据
         OsCleanPageDirty(fpage->vmPage);//页面取消脏标签
-        (VOID)file_seek(file, oldPos, SEEK_SET);//移回老位置
         return LOS_OK;
     }
-	//
-    ret = file_write(file, (VOID *)buff, len);
+
+    buff = (char *)OsVmPageToVaddr(fpage->vmPage);
+
+    /* actually, we did not update the fpage->dirtyOff */
+    ret = vnode->vop->WritePage(vnode, (VOID *)buff, fpage->pgoff, len);
     if (ret <= 0) {
         VM_ERR("WritePage error ret %d", ret);
+    } else {
+        OsCleanPageDirty(fpage->vmPage);
     }
     ret = (ret <= 0) ? LOS_NOK : LOS_OK;
-    OsCleanPageDirty(fpage->vmPage);//撕掉脏页标签，还清白之身,哈哈,臣妾又干净了.
-    (VOID)file_seek(file, oldPos, SEEK_SET);//不管是否写正常,一定要切回到原来位置,很重要!!! 写页是内核的操作,不是用户的操作行为
 
     return ret;
 }
@@ -345,15 +343,17 @@ VOID OsDelMapInfo(LosVmMapRegion *region, LosVmPgFault *vmf, BOOL cleanDirty)
     UINT32 intSave;
     LosMapInfo *info = NULL;
     LosFilePage *fpage = NULL;
+    struct page_mapping *mapping = NULL;
 
-    if (!LOS_IsRegionFileValid(region) || (region->unTypeData.rf.file->f_mapping == NULL) || (vmf == NULL)) {//参数检查
+    if (!LOS_IsRegionFileValid(region) || (region->unTypeData.rf.vnode == NULL) || (vmf == NULL)) {
         return;
     }
 
-    LOS_SpinLockSave(&region->unTypeData.rf.file->f_mapping->list_lock, &intSave);
-    fpage = OsFindGetEntry(region->unTypeData.rf.file->f_mapping, vmf->pgoff);//找到文件页
+    mapping = &region->unTypeData.rf.vnode->mapping;
+    LOS_SpinLockSave(&mapping->list_lock, &intSave);
+    fpage = OsFindGetEntry(mapping, vmf->pgoff);
     if (fpage == NULL) {
-        LOS_SpinUnlockRestore(&region->unTypeData.rf.file->f_mapping->list_lock, intSave);
+        LOS_SpinUnlockRestore(&mapping->list_lock, intSave);
         return;
     }
 
@@ -365,11 +365,11 @@ VOID OsDelMapInfo(LosVmMapRegion *region, LosVmPgFault *vmf, BOOL cleanDirty)
         fpage->n_maps--;
         LOS_ListDelete(&info->node);
         LOS_AtomicDec(&fpage->vmPage->refCounts);
-        LOS_SpinUnlockRestore(&region->unTypeData.rf.file->f_mapping->list_lock, intSave);
+        LOS_SpinUnlockRestore(&mapping->list_lock, intSave);
         LOS_MemFree(m_aucSysMem0, info);
         return;
     }
-    LOS_SpinUnlockRestore(&region->unTypeData.rf.file->f_mapping->list_lock, intSave);
+    LOS_SpinUnlockRestore(&mapping->list_lock, intSave);
 }
 /**************************************************************************************************
 文件缺页时的处理,先读入磁盘数据，再重新读页数据
@@ -378,21 +378,20 @@ VOID OsDelMapInfo(LosVmMapRegion *region, LosVmPgFault *vmf, BOOL cleanDirty)
 INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
 {
     INT32 ret;
-    VM_OFFSET_T oldPos;
     VOID *kvaddr = NULL;
 
     UINT32 intSave;
     bool newCache = false;
-    struct file *file = NULL;
+    struct Vnode *vnode = NULL;
     struct page_mapping *mapping = NULL;
     LosFilePage *fpage = NULL;
 
-    if (!LOS_IsRegionFileValid(region) || (region->unTypeData.rf.file->f_mapping == NULL) || (vmf == NULL)) {//文件是否映射到了内存
+    if (!LOS_IsRegionFileValid(region) || (region->unTypeData.rf.vnode == NULL) || (vmf == NULL)) {//文件是否映射到了内存
         VM_ERR("Input param is NULL");
         return LOS_NOK;
     }
-    file = region->unTypeData.rf.file;
-    mapping = file->f_mapping;
+    vnode = region->unTypeData.rf.vnode;
+    mapping = &vnode->mapping;
 
     /* get or create a new cache node */
     LOS_SpinLockSave(&mapping->list_lock, &intSave);
@@ -416,10 +415,7 @@ INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
 
     /* read file to new page cache */
     if (newCache) {//新cache
-        oldPos = file_seek(file, 0, SEEK_CUR);//先记录老位置,因为读完页数据后要seek回老位置
-        file_seek(file, fpage->pgoff << PAGE_SHIFT, SEEK_SET);//定位到要开始读的位置,从fpage->pgoff << PAGE_SHIFT 文件位置开始读.
-        ret = file_read(file, kvaddr, PAGE_SIZE);//将磁盘4K数据读到物理页框的kvaddr地址中,真正写到了fpage->vmPage->physAddr中.
-        file_seek(file, oldPos, SEEK_SET);//不管是否读写正常,一定要切回到原来位置,很重要!!! 因为缺页->读页是内核的操作,不是用户的操作行为
+        ret = vnode->vop->ReadPage(vnode, kvaddr, fpage->pgoff << PAGE_SHIFT);
         if (ret == 0) {
             VM_ERR("Failed to read from file!");
             OsReleaseFpage(mapping, fpage);
@@ -521,8 +517,9 @@ LosVmFileOps g_commVmOps = {//
 INT32 OsVfsFileMmap(struct file *filep, LosVmMapRegion *region)
 {
     region->unTypeData.rf.vmFOps = &g_commVmOps;//文件操作
-    region->unTypeData.rf.file = filep; //文件描述信息
-    region->unTypeData.rf.fileMagic = filep->f_magicnum;//magic数
+    region->unTypeData.rf.vnode = filep->f_vnode;
+    region->unTypeData.rf.f_oflags = filep->f_oflags;
+
     return ENOERR;
 }
 /******************************************************************************
@@ -535,11 +532,11 @@ STATUS_T OsNamedMMap(struct file *filep, LosVmMapRegion *region)
     if (filep == NULL) {
         return LOS_ERRNO_VM_MAP_FAILED;
     }
+    file_hold(filep);
     vnode = filep->f_vnode;
-    if (vnode == NULL) {
-        return LOS_ERRNO_VM_MAP_FAILED;
-    }
-
+    VnodeHold();
+    vnode->useCount++;
+    VnodeDrop();
     if (filep->ops != NULL && filep->ops->mmap != NULL) {
         if (vnode->type == VNODE_TYPE_CHR || vnode->type == VNODE_TYPE_BLK) {//块设备或者字符设备 /dev/..
             LOS_SetRegionTypeDev(region);//设置为设备类型 
@@ -548,12 +545,15 @@ STATUS_T OsNamedMMap(struct file *filep, LosVmMapRegion *region)
         }
         int ret = filep->ops->mmap(filep, region);
         if (ret != LOS_OK) {
+            file_release(filep);
             return LOS_ERRNO_VM_MAP_FAILED;
         }
     } else {
         VM_ERR("mmap file type unknown");
+        file_release(filep);
         return LOS_ERRNO_VM_MAP_FAILED;
     }
+    file_release(filep);
     return LOS_OK;
 }
 
@@ -628,40 +628,7 @@ LosFilePage *OsPageCacheAlloc(struct page_mapping *mapping, VM_OFFSET_T pgoff)
     return fpage;
 }
 
-#ifdef LOSCFG_FS_VFS
-VOID OsVmmFileRegionFree(struct file *filep, LosProcessCB *processCB)//释放进程某个文件的线性区
-{
-    int ret;
-    LosVmSpace *space = NULL;
-    LosVmMapRegion *region = NULL;
-    LosRbNode *pstRbNode = NULL;
-    LosRbNode *pstRbNodeTmp = NULL;
-
-    if (processCB == NULL) {
-        processCB = OsCurrProcessGet();
-    }
-
-    space = processCB->vmSpace;//拿到进程空间
-    if (space != NULL) {
-        (VOID)LOS_MuxAcquire(&space->regionMux);
-        /* free the regions associated with filep */ //释放与filep关联的区域
-        RB_SCAN_SAFE(&space->regionRbTree, pstRbNode, pstRbNodeTmp) //红黑树遍历线性区
-            region = (LosVmMapRegion *)pstRbNode;
-            if (LOS_IsRegionFileValid(region)) {//是否为一个有效的文件线性区
-                if (region->unTypeData.rf.file != filep) {//一个文件对应一个线性区
-                    continue;
-                }
-                ret = LOS_RegionFree(space, region);//释放线性区
-                if (ret != LOS_OK) {
-                    VM_ERR("free region error, space %p, region %p", space, region);
-                }
-            }
-        RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNode, pstRbNodeTmp)//遍历结束
-        (VOID)LOS_MuxRelease(&space->regionMux);
-    }
-}
-#endif
-#else
+#ifndef LOSCFG_FS_VFS
 INT32 OsVfsFileMmap(struct file *filep, LosVmMapRegion *region)
 {
     UNUSED(filep);
@@ -670,3 +637,4 @@ INT32 OsVfsFileMmap(struct file *filep, LosVmMapRegion *region)
 }
 #endif
 
+#endif

@@ -49,7 +49,7 @@ static struct ProcFile g_procPf = {
 
 static struct ProcDirEntry g_procRootDirEntry = { //proc 根部 即 /proc
     .nameLen     = 5,
-    .mode        = S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH,//(04555)
+    .mode        = S_IFDIR | PROCFS_DEFAULT_MODE,
     .count       = ATOMIC_INIT(1),
     .procFileOps = NULL,//对根节点无操作需求
     .parent      = &g_procRootDirEntry,//自己当爹又当儿

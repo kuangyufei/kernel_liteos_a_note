@@ -39,6 +39,7 @@ group("extended") {
     "hilog",
     "hook",
     "liteipc",
+    "perf",
     "pipes",
     "power",
     "trace",
@@ -57,5 +58,6 @@ config("public") {
     "liteipc:public",
     "pipes:public",
     "vdso:public",
+    "perf:public",
   ]
 }

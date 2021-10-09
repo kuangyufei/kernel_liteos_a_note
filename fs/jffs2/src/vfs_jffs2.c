@@ -296,6 +296,33 @@ int VfsJffs2Close(struct file *filep)
     return 0;
 }
 
+ssize_t VfsJffs2ReadPage(struct Vnode *vnode, char *buffer, off_t off)
+{
+    struct jffs2_inode *node = NULL;
+    struct jffs2_inode_info *f = NULL;
+    struct jffs2_sb_info *c = NULL;
+    int ret;
+
+    LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
+
+    node = (struct jffs2_inode *)vnode->data;
+    f = JFFS2_INODE_INFO(node);
+    c = JFFS2_SB_INFO(node->i_sb);
+
+    off_t pos = min(node->i_size, off);
+    ssize_t len = min(PAGE_SIZE, (node->i_size - pos));
+    ret = jffs2_read_inode_range(c, f, (unsigned char *)buffer, off, len);
+    if (ret) {
+        LOS_MuxUnlock(&g_jffs2FsLock);
+        return ret;
+    }
+    node->i_atime = Jffs2CurSec();
+
+    LOS_MuxUnlock(&g_jffs2FsLock);
+
+    return len;
+}
+
 ssize_t VfsJffs2Read(struct file *filep, char *buffer, size_t bufLen)
 {
     struct jffs2_inode *node = NULL;
@@ -313,7 +340,6 @@ ssize_t VfsJffs2Read(struct file *filep, char *buffer, size_t bufLen)
     off_t len = min(bufLen, (node->i_size - pos));
     ret = jffs2_read_inode_range(c, f, (unsigned char *)buffer, filep->f_pos, len);
     if (ret) {
-        PRINTK("VfsJffs2Read(): read_inode_range failed %d\n", ret);
         LOS_MuxUnlock(&g_jffs2FsLock);
         return ret;
     }
@@ -323,6 +349,59 @@ ssize_t VfsJffs2Read(struct file *filep, char *buffer, size_t bufLen)
     LOS_MuxUnlock(&g_jffs2FsLock);
 
     return len;
+}
+
+ssize_t VfsJffs2WritePage(struct Vnode *vnode, char *buffer, off_t pos, size_t buflen)
+{
+    struct jffs2_inode *node = NULL;
+    struct jffs2_inode_info *f = NULL;
+    struct jffs2_sb_info *c = NULL;
+    struct jffs2_raw_inode ri = {0};
+    struct IATTR attr = {0};
+    int ret;
+    uint32_t writtenLen;
+
+    LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
+
+    node = (struct jffs2_inode *)vnode->data;
+    f = JFFS2_INODE_INFO(node);
+    c = JFFS2_SB_INFO(node->i_sb);
+
+    if (pos < 0) {
+        LOS_MuxUnlock(&g_jffs2FsLock);
+        return -EINVAL;
+    }
+
+    ri.ino = cpu_to_je32(f->inocache->ino);
+    ri.mode = cpu_to_jemode(node->i_mode);
+    ri.uid = cpu_to_je16(node->i_uid);
+    ri.gid = cpu_to_je16(node->i_gid);
+    ri.atime = ri.ctime = ri.mtime = cpu_to_je32(Jffs2CurSec());
+
+    if (pos > node->i_size) {
+        int err;
+        attr.attr_chg_valid = CHG_SIZE;
+        attr.attr_chg_size = pos;
+        err = jffs2_setattr(node, &attr);
+        if (err) {
+            LOS_MuxUnlock(&g_jffs2FsLock);
+            return err;
+        }
+    }
+    ri.isize = cpu_to_je32(node->i_size);
+
+    ret = jffs2_write_inode_range(c, f, &ri, (unsigned char *)buffer, pos, buflen, &writtenLen);
+    if (ret) {
+        node->i_mtime = node->i_ctime = je32_to_cpu(ri.mtime);
+        LOS_MuxUnlock(&g_jffs2FsLock);
+        return ret;
+    }
+
+    node->i_mtime = node->i_ctime = je32_to_cpu(ri.mtime);
+
+    LOS_MuxUnlock(&g_jffs2FsLock);
+
+    return (ssize_t)writtenLen;
 }
 
 ssize_t VfsJffs2Write(struct file *filep, const char *buffer, size_t bufLen)
@@ -895,6 +974,8 @@ const struct MountOps jffs_operations = {//jffs对mount接口实现
 struct VnodeOps g_jffs2Vops = {
     .Lookup = VfsJffs2Lookup,
     .Create = VfsJffs2Create,
+    .ReadPage = VfsJffs2ReadPage,
+    .WritePage = VfsJffs2WritePage,
     .Rename = VfsJffs2Rename,
     .Mkdir = VfsJffs2Mkdir,
     .Getattr = VfsJffs2Stat,

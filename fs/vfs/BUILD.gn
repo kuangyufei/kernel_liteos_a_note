@@ -40,7 +40,6 @@ kernel_module(module_name) {
     "operation/vfs_fallocate.c",
     "operation/vfs_fallocate64.c",
     "operation/vfs_fcntl.c",
-    "operation/vfs_file_mapping.c",
     "operation/vfs_force_umount.c",
     "operation/vfs_init.c",
     "operation/vfs_other.c",

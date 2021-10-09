@@ -157,6 +157,12 @@ ifeq ($(LOSCFG_KERNEL_HOOK), y)
     LITEOS_HOOK_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/hook/include
 endif
 
+ifeq ($(LOSCFG_KERNEL_PERF), y)
+    LITEOS_BASELIB        += -lperf
+    LIB_SUBDIRS           += kernel/extended/perf
+    LITEOS_PERF_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/perf
+endif
+
 ifeq ($(LOSCFG_KERNEL_LITEIPC), y)
     LITEOS_BASELIB     += -lliteipc
     LIB_SUBDIRS           += kernel/extended/liteipc
@@ -366,6 +372,12 @@ ifeq ($(LOSCFG_DRIVERS_TRACE), y)
     LIB_SUBDIRS       += $(LITEOSTOPDIR)/drivers/char/trace
 endif
 
+ifeq ($(LOSCFG_DRIVERS_PERF), y)
+    LITEOS_BASELIB            += -lperf_dev
+    LIB_SUBDIRS               += $(LITEOSTOPDIR)/drivers/char/perf
+    LITEOS_DEV_PERF_INCLUDE   += -I $(LITEOSTOPDIR)/drivers/char/perf/include
+endif
+
 ifeq ($(LOSCFG_DRIVERS_QUICKSTART), y)
     LITEOS_BASELIB += -lquickstart
     LIB_SUBDIRS       += $(LITEOSTOPDIR)/drivers/char/quickstart
@@ -494,7 +506,8 @@ endif
 LITEOS_EXTKERNEL_INCLUDE   := $(LITEOS_CPPSUPPORT_INCLUDE) $(LITEOS_DYNLOAD_INCLUDE) \
                               $(LITEOS_TICKLESS_INCLUDE)   $(LITEOS_HOOK_INCLUDE)\
                               $(LITEOS_VDSO_INCLUDE)       $(LITEOS_LITEIPC_INCLUDE) \
-                              $(LITEOS_PIPE_INCLUDE)       $(LITEOS_CPUP_INCLUDE)
+                              $(LITEOS_PIPE_INCLUDE)       $(LITEOS_CPUP_INCLUDE) \
+                              $(LITEOS_PERF_INCLUDE)
 LITEOS_COMPAT_INCLUDE      := $(LITEOS_POSIX_INCLUDE) $(LITEOS_LINUX_INCLUDE) \
                               $(LITEOS_BSD_INCLUDE)
 LITEOS_FS_INCLUDE          := $(LITEOS_VFS_INCLUDE)        $(LITEOS_FAT_CACHE_INCLUDE) \
@@ -516,7 +529,7 @@ LITEOS_DRIVERS_INCLUDE     := $(LITEOS_CELLWISE_INCLUDE)   $(LITEOS_GPIO_INCLUDE
                               $(LITEOS_REGULATOR_INCLUDE)  $(LITEOS_VIDEO_INCLUDE) \
                               $(LITEOS_DRIVERS_HDF_INCLUDE) $(LITEOS_TZDRIVER_INCLUDE) \
                               $(LITEOS_HIEVENT_INCLUDE)    $(LITEOS_DEV_MEM_INCLUDE) \
-                              $(LITEOS_DEV_QUICKSTART_INCLUDE)
+                              $(LITEOS_DEV_QUICKSTART_INCLUDE) $(LITEOS_DEV_PERF_INCLUDE)
 LITEOS_DFX_INCLUDE    := $(LITEOS_HILOG_INCLUDE) \
                          $(LITEOS_BLACKBOX_INCLUDE) \
                          $(LITEOS_HIDUMPER_INCLUDE)

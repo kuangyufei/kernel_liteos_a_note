@@ -69,3 +69,7 @@ endif
 ifeq ($(LOSCFG_DRIVERS_TRACE), y)
 APP_SUBDIRS += trace
 endif
+
+ifeq ($(LOSCFG_DRIVERS_PERF), y)
+APP_SUBDIRS += perf
+endif

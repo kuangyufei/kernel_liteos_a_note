@@ -215,6 +215,13 @@ OsIrqHandler:
     SRSFD   #0x13!
     /* disable irq, switch to svc mode */@超级用户模式(SVC 模式)，主要用于 SWI(软件中断)和 OS(操作系统)。
     CPSID   i, #0x13
+#ifdef LOSCFG_KERNEL_PERF
+    PUSH    {R0-R3, R12, LR}
+    MOV     R0, LR
+    MOV     R1, FP
+    BL      OsPerfSetIrqRegs
+    POP     {R0-R3, R12, LR}
+#endif
 
     STMFD   SP!, {R0-R3, R12, LR}
     STMFD   SP, {R13, R14}^

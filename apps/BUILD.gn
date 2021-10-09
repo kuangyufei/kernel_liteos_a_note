@@ -34,8 +34,8 @@ group("apps") {
 
   if (defined(LOSCFG_SHELL)) {
     deps += [
-      "shell",
       "mksh",
+      "shell",
       "toybox",
     ]
   }
@@ -50,5 +50,9 @@ group("apps") {
 
   if (defined(LOSCFG_DRIVERS_TRACE)) {
     deps += [ "trace" ]
+  }
+
+  if (defined(LOSCFG_DRIVERS_PERF)) {
+    deps += [ "perf" ]
   }
 }

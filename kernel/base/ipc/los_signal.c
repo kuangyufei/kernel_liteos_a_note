@@ -71,11 +71,59 @@ int OsSigIsMember(const sigset_t *set, int signo)
     return ret;
 }
 
+STATIC VOID OsMoveTmpInfoToUnbInfo(sig_cb *sigcb, INT32 signo)
+{
+    SigInfoListNode *tmpInfoNode = sigcb->tmpInfoListHead;
+    SigInfoListNode **prevHook = &sigcb->tmpInfoListHead;
+    INT32 isFirstDel = 1;
+    while (tmpInfoNode != NULL) {
+        if (tmpInfoNode->info.si_signo == signo) {
+            /* In some case, many siginfos have same signo, only last one inserted list need copy to unbinfo. */
+            if (isFirstDel) {
+		/* copy tmpinfo to unbinfo. */
+                (VOID)memcpy_s(&sigcb->sigunbinfo, sizeof(siginfo_t), &tmpInfoNode->info, sizeof(siginfo_t));
+                isFirstDel = 0;
+            }
+	    /* delete tmpinfo from tmpList. */
+            *prevHook = tmpInfoNode->next;
+            (VOID)LOS_MemFree(m_aucSysMem0, tmpInfoNode);
+            tmpInfoNode = *prevHook;
+            continue;
+        }
+        prevHook = &tmpInfoNode->next;
+        tmpInfoNode = tmpInfoNode->next;
+    }
+
+    return;
+}
+
+STATIC INT32 OsAddSigInfoToTmpList(sig_cb *sigcb, siginfo_t *info)
+{
+    SigInfoListNode *tmp = (SigInfoListNode *)LOS_MemAlloc(m_aucSysMem0, sizeof(SigInfoListNode));
+    if (tmp == NULL) {
+        return LOS_NOK;
+    }
+    (VOID)memcpy_s(&tmp->info, sizeof(siginfo_t), info, sizeof(siginfo_t));
+    tmp->next = sigcb->tmpInfoListHead;
+    sigcb->tmpInfoListHead = tmp;
+
+    return LOS_OK;
+}
+
+VOID OsClearSigInfoTmpList(sig_cb *sigcb)
+{
+    while (sigcb->tmpInfoListHead != NULL) {
+        SigInfoListNode *tmpInfoNode = sigcb->tmpInfoListHead;
+        sigcb->tmpInfoListHead = sigcb->tmpInfoListHead->next;
+        (VOID)LOS_MemFree(m_aucSysMem0, tmpInfoNode);
+    }
+}
 STATIC INLINE VOID OsSigWaitTaskWake(LosTaskCB *taskCB, INT32 signo)
 {
     sig_cb *sigcb = &taskCB->sig;
 
     if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, signo)) {
+        OsMoveTmpInfoToUnbInfo(sigcb, signo);
         OsTaskWakeClearPendMask(taskCB);
         OsSchedTaskWake(taskCB);
         OsSigEmptySet(&sigcb->sigwaitmask);
@@ -145,7 +193,10 @@ int OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info)
         /* unmasked signal actions */
         OsSigAddSet(&sigcb->sigFlag, info->si_signo);//不屏蔽的信号集
     }
-    (void) memcpy_s(&sigcb->sigunbinfo, sizeof(siginfo_t), info, sizeof(siginfo_t));
+
+    if (OsAddSigInfoToTmpList(sigcb, info) == LOS_NOK) {
+        return -ENOMEM;
+    }
 
     return OsPendingTaskWake(stcb, info->si_signo);
 }
@@ -528,6 +579,7 @@ int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
     if (clear) {
         sigcb->sigPendFlag ^= clear;
         ret = FindFirstSetedBit((UINT64)clear) + 1;
+        OsMoveTmpInfoToUnbInfo(sigcb, ret);
     } else {
         OsSigAddSet(set, SIGKILL);//kill 9 14 必须要处理
         OsSigAddSet(set, SIGSTOP);//终止进程的信号也必须处理
@@ -541,7 +593,7 @@ int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
         sigcb->sigwaitmask = NULL_SIGNAL_SET;
     }
     if (info != NULL) {
-        (void) memcpy_s(info, sizeof(siginfo_t), &sigcb->sigunbinfo, sizeof(siginfo_t));
+        (VOID)memcpy_s(info, sizeof(siginfo_t), &sigcb->sigunbinfo, sizeof(siginfo_t));
     }
     return ret;
 }
@@ -693,6 +745,7 @@ VOID *OsSaveSignalContext(VOID *sp, VOID *newSp)
         sigcb->sigFlag |= process->sigShare;
         UINT32 signo = (UINT32)FindFirstSetedBit(sigcb->sigFlag) + 1;
         UINT32 sigVal = (UINT32)(UINTPTR)(sigcb->sigunbinfo.si_value.sival_ptr);
+        OsMoveTmpInfoToUnbInfo(sigcb, signo);
         OsProcessExitCodeSignalSet(process, signo);
         sigcb->sigContext = sp;
 

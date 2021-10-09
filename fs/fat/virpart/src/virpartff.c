@@ -525,7 +525,7 @@ FRESULT f_checkvirpart(FATFS *fs, const TCHAR *path, BYTE vol)
     }
 
     /* Lock the filesystem object */
-    res = find_volume(&path, &fs, FA_WRITE); /* Update the filesystem info to the parent fs */
+    res = mount_volume(&path, &fs, FA_WRITE); /* Update the filesystem info to the parent fs */
     if (res != FR_OK) {
         LEAVE_FF(fs, res);
     }
@@ -683,7 +683,7 @@ FRESULT f_makevirpart(FATFS *fs, const TCHAR *path, BYTE vol)
     }
 
     /* Lock the filesystem object */
-    res = find_volume(&path, &fs, FA_WRITE); /* Update the filesystem info to the parent fs */
+    res = mount_volume(&path, &fs, FA_WRITE); /* Update the filesystem info to the parent fs */
     if (res != FR_OK) {
         LEAVE_FF(fs, res);
     }
@@ -774,7 +774,7 @@ FRESULT f_getvirfree(const TCHAR *path, DWORD *nclst, DWORD *cclst)
     DIR dj;
 
     /* Find volume to Update the global FSINFO */
-    res = find_volume(&path, &fs, 0);
+    res = mount_volume(&path, &fs, 0);
     if (res != FR_OK) {
         LEAVE_FF(fs, res);
     }

@@ -345,7 +345,7 @@ STATIC struct shmIDSource *ShmFindSeg(int shmid)
     }
 
     seg = &g_shmSegs[shmid];
-    if ((seg->status & SHM_SEG_FREE) || (seg->status & SHM_SEG_REMOVE)) {//空闲或删除时
+    if ((seg->status & SHM_SEG_FREE) || ((seg->ds.shm_nattch == 0) && (seg->status & SHM_SEG_REMOVE))) {
         set_errno(EIDRM);
         return NULL;
     }

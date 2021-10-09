@@ -146,7 +146,7 @@ int fatfs_fscheck(struct Vnode* vnode, struct fs_dirent_s *dir);
 
 FRESULT find_fat_partition(FATFS *fs, los_part *part, BYTE *format, QWORD *start_sector);
 FRESULT init_fatobj(FATFS *fs, BYTE fmt, QWORD start_sector);
-FRESULT _mkfs(los_part *partition, int sector, int opt, BYTE *work, UINT len);
+FRESULT _mkfs(los_part *partition, const MKFS_PARM *opt, BYTE *work, UINT len);
 
 #ifdef __cplusplus
 #if __cplusplus

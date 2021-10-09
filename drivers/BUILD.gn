@@ -34,6 +34,7 @@ group("drivers") {
     "block/disk",
     "char/bch",
     "char/mem",
+    "char/perf",
     "char/quickstart",
     "char/random",
     "char/trace",

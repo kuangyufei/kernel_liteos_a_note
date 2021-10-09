@@ -71,9 +71,9 @@ static int VnodeListProcess(struct SeqBuf *buf, LIST_HEAD* list)
     struct Vnode *nextItem = NULL;
 
     LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, list, struct Vnode, actFreeEntry) {
-        LosBufPrintf(buf, "%-10p    %-10p     %-10p    %10p    0x%08x    %-3d    %-4s    %-3d    %-3d    %o\n",
+        LosBufPrintf(buf, "%-10p    %-10p     %-10p    %10p    0x%08x    %-3d    %-4s    %-3d    %-3d    %-8o\t%s\n",
             item, item->parent, item->data, item->vop, item->hash, item->useCount,
-            VnodeTypeToStr(item->type), item->gid, item->uid, item->mode);
+            VnodeTypeToStr(item->type), item->gid, item->uid, item->mode, item->filePath);
         count++;
     }
 
@@ -104,7 +104,7 @@ static int PageCacheEntryProcess(struct SeqBuf *buf, struct page_mapping *mappin
     int total = 0;
     LosFilePage *fpage = NULL;
 
-    if (mapping == NULL) {
+    if (mapping->nrpages == 0) {
         LosBufPrintf(buf, "null]\n");
         return total;
     }
@@ -119,18 +119,18 @@ static int PageCacheEntryProcess(struct SeqBuf *buf, struct page_mapping *mappin
 
 static int PageCacheMapProcess(struct SeqBuf *buf)
 {
-    struct file_map *mapList = GetFileMappingList();
-    char *name = NULL;
-    struct file_map *curMap = NULL;
+    LIST_HEAD *vnodeList = GetVnodeActiveList();
+    struct page_mapping *mapping = NULL;
+    struct Vnode *vnode = NULL;
     int total = 0;
 
-    (VOID)LOS_MuxLock(&mapList->lock, LOS_WAIT_FOREVER);
-    LOS_DL_LIST_FOR_EACH_ENTRY(curMap, &mapList->head, struct file_map, head) {
-        name = curMap->rename ? curMap->rename: curMap->owner;
-        LosBufPrintf(buf, "%s:[", name);
-        total += PageCacheEntryProcess(buf, &curMap->mapping);
+    VnodeHold();
+    LOS_DL_LIST_FOR_EACH_ENTRY(vnode, vnodeList, struct Vnode, actFreeEntry) {
+        mapping = &vnode->mapping;
+        LosBufPrintf(buf, "%p, %s:[", vnode, vnode->filePath);
+        total += PageCacheEntryProcess(buf, mapping);
     }
-    (VOID)LOS_MuxUnlock(&mapList->lock);
+    VnodeDrop();
     return total;
 }
 

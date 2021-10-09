@@ -42,6 +42,7 @@
 #include "los_process_pri.h"
 #ifdef LOSCFG_FS_VFS
 #include "fs/file.h"
+#include "vnode.h"
 #endif
 #include "los_task.h"
 #include "los_memory_pri.h"
@@ -311,12 +312,12 @@ STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace)
 #ifdef LOSCFG_FS_VFS //文件系统开关
             if (LOS_IsRegionFileValid(oldRegion)) {//是都是一个文件映射线性区
                 LosFilePage *fpage = NULL;
-                LOS_SpinLockSave(&oldRegion->unTypeData.rf.file->f_mapping->list_lock, &intSave);
-                fpage = OsFindGetEntry(oldRegion->unTypeData.rf.file->f_mapping, newRegion->pgOff + i);
+                LOS_SpinLockSave(&oldRegion->unTypeData.rf.vnode->mapping.list_lock, &intSave);
+                fpage = OsFindGetEntry(&oldRegion->unTypeData.rf.vnode->mapping, newRegion->pgOff + i);
                 if ((fpage != NULL) && (fpage->vmPage == page)) { /* cow page no need map */
                     OsAddMapInfo(fpage, &newVmSpace->archMmu, vaddr);//添加文件页映射,记录页面被进程映射过
                 }
-                LOS_SpinUnlockRestore(&oldRegion->unTypeData.rf.file->f_mapping->list_lock, intSave);
+                LOS_SpinUnlockRestore(&oldRegion->unTypeData.rf.vnode->mapping.list_lock, intSave);
             }
 #endif
         }
@@ -439,13 +440,9 @@ VADDR_T OsAllocSpecificRange(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len, UIN
 //映射类型为文件的线性区是否有效
 BOOL LOS_IsRegionFileValid(LosVmMapRegion *region)
 {
-    struct file *filep = NULL;
     if ((region != NULL) && (LOS_IsRegionTypeFile(region)) &&
-        (region->unTypeData.rf.file != NULL)) {//满足文件映射的条件
-        filep = region->unTypeData.rf.file;
-        if (region->unTypeData.rf.fileMagic == filep->f_magicnum) {//魔法数字未被改变
-            return TRUE;
-        }
+        (region->unTypeData.rf.vnode != NULL)) {
+        return TRUE;
     }
     return FALSE;
 }
@@ -468,6 +465,7 @@ LosVmMapRegion *OsCreateRegion(VADDR_T vaddr, size_t len, UINT32 regionFlags, un
         return region;
     }
 	//创建线性区的本质就是在画饼，见如下操作:
+    memset_s(region, sizeof(LosVmMapRegion), 0, sizeof(LosVmMapRegion));
     region->range.base = vaddr;	//虚拟地址作为线性区的基地址
     region->range.size = len;	//线性区大小，这是线性区构思最巧妙的地方，只要不过分，蓝图随便画。
     region->pgOff = offset;		//页标
@@ -634,6 +632,9 @@ STATUS_T LOS_RegionFree(LosVmSpace *space, LosVmMapRegion *region)
 #ifdef LOSCFG_FS_VFS
     if (LOS_IsRegionFileValid(region)) {
         OsFilePagesRemove(space, region);
+        VnodeHold();
+        region->unTypeData.rf.vnode->useCount--;
+        VnodeDrop();
     } else
 #endif
 #ifdef LOSCFG_KERNEL_SHM
@@ -684,8 +685,11 @@ LosVmMapRegion *OsVmRegionDup(LosVmSpace *space, LosVmMapRegion *oldRegion, VADD
 #ifdef LOSCFG_FS_VFS
     if (LOS_IsRegionTypeFile(oldRegion)) {
         newRegion->unTypeData.rf.vmFOps = oldRegion->unTypeData.rf.vmFOps;
-        newRegion->unTypeData.rf.file = oldRegion->unTypeData.rf.file;
-        newRegion->unTypeData.rf.fileMagic = oldRegion->unTypeData.rf.fileMagic;
+        newRegion->unTypeData.rf.vnode = oldRegion->unTypeData.rf.vnode;
+        newRegion->unTypeData.rf.f_oflags = oldRegion->unTypeData.rf.f_oflags;
+        VnodeHold();
+        newRegion->unTypeData.rf.vnode->useCount++;
+        VnodeDrop();
     }
 #endif
 

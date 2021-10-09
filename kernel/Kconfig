@@ -26,6 +26,13 @@ config KERNEL_SMP_TASK_SYNC
     help
       This option will enable task synchronized operate task across cores.
 
+config KERNEL_SMP_CALL
+    bool "Enable Function call cross Multi-core"
+    default n
+    depends on KERNEL_SMP
+    help
+      This option will enable function call on multi-core.
+
 config KERNEL_SCHED_STATISTICS
     bool "Enable Scheduler statistics"
     default n

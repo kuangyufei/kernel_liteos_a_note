@@ -101,6 +101,7 @@ int VnodesInit(void)
     }
     g_rootVnode->mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;// 40777 (chmod 777)
     g_rootVnode->type = VNODE_TYPE_DIR;//节点类型为目录
+    g_rootVnode->filePath = "/";
 
     return LOS_OK;
 }
@@ -191,6 +192,11 @@ int VnodeAlloc(struct VnodeOps *vop, struct Vnode **newVnode)
         LOS_ListTailInsert(&g_vnodeActiveList, &(vnode->actFreeEntry));
         vnode->vop = vop;
     }
+    LOS_ListInit(&vnode->mapping.page_list);
+    LOS_SpinInit(&vnode->mapping.list_lock);
+    (VOID)LOS_MuxInit(&vnode->mapping.mux_lock, NULL);
+    vnode->mapping.host = vnode;
+
     VnodeDrop();
 
     *newVnode = vnode;
@@ -218,6 +224,9 @@ int VnodeFree(struct Vnode *vnode)
         vnode->vop->Reclaim(vnode);//先回收资源
     }
 
+    if (vnode->filePath) {
+        free(vnode->filePath);
+    }
     if (vnode->vop == &g_devfsOps) {//对设备文件的回收
         /* for dev vnode, just free it */
         free(vnode->data);//
@@ -398,6 +407,8 @@ STEP_FINISH:
 int VnodeLookupAt(const char *path, struct Vnode **result, uint32_t flags, struct Vnode *orgVnode)
 {
     int ret;
+    int vnodePathLen;
+    char *vnodePath = NULL;
     struct Vnode *startVnode = NULL;
     char *normalizedPath = NULL;
 
@@ -426,7 +437,12 @@ int VnodeLookupAt(const char *path, struct Vnode **result, uint32_t flags, struc
         if (currentDir == NULL || *currentDir == '\0') {
             // return target or parent vnode as result
             *result = currentVnode;
-            goto OUT_FREE_PATH;
+            if (currentVnode->filePath == NULL) {
+                currentVnode->filePath = normalizedPath;
+            } else {
+                free(normalizedPath);
+            }
+            return ret;
         } else if (VfsVnodePermissionCheck(currentVnode, EXEC_OP)) {
             ret = -EACCES;
             goto OUT_FREE_PATH;
@@ -436,7 +452,24 @@ int VnodeLookupAt(const char *path, struct Vnode **result, uint32_t flags, struc
             // no such file, lookup failed
             goto OUT_FREE_PATH;
         }
+        if (currentVnode->filePath == NULL) {
+            vnodePathLen = currentDir - normalizedPath;
+            vnodePath = malloc(vnodePathLen + 1);
+            if (vnodePath == NULL) {
+                ret = -ENOMEM;
+                goto OUT_FREE_PATH;
+            }
+            ret = strncpy_s(vnodePath, vnodePathLen + 1, normalizedPath, vnodePathLen);
+            if (ret != EOK) {
+                ret = -ENAMETOOLONG;
+                free(vnodePath);
+                goto OUT_FREE_PATH;
+            }
+            currentVnode->filePath = vnodePath;
+            currentVnode->filePath[vnodePathLen] = 0;
+        }
     }
+    return ret;
 
 OUT_FREE_PATH:
     if (normalizedPath) {
@@ -570,6 +603,9 @@ int VnodeCreate(struct Vnode *parent, const char *name, int mode, struct Vnode *
     newVnode->uid = parent->uid;	//用户ID
     newVnode->gid = parent->gid;	//用户组ID
     newVnode->mode = mode;
+    /* The 'name' here is not full path, but for device we don't depend on this path, it's just a name for DFx.
+       When we have devfs, we can get a fullpath. */
+    newVnode->filePath = strdup(name);
 
     *vnode = newVnode;
     return 0;

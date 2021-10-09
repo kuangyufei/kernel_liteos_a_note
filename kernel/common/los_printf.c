@@ -94,7 +94,7 @@ STATIC VOID ConsoleOutput(const CHAR *str, UINT32 len)
 	
     for (;;) {
         cnt = write(STDOUT_FILENO, str + writen, (size_t)toWrite);//向控制台写入数据,STDOUT_FILENO = 1
-        if ((cnt < 0) || (toWrite == cnt)) {
+        if ((cnt < 0) || ((cnt == 0) && (OS_INT_ACTIVE)) || (toWrite == cnt)) {
             break;
         }
         writen += cnt;	//已写入数量增加
@@ -203,12 +203,22 @@ __attribute__ ((noinline)) VOID dprintf(const CHAR *fmt, ...)
     va_list ap;
     va_start(ap, fmt);
     OsVprintf(fmt, ap, CONSOLE_OUTPUT);
+#ifdef LOSCFG_SAVE_EXCINFO
+    if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) {
+        WriteExcBufVa(fmt, ap);
+    }
+#endif
     va_end(ap);
 }
 //LK 注者的理解是 log kernel(内核日志)
 VOID LkDprintf(const CHAR *fmt, va_list ap)
 {
     OsVprintf(fmt, ap, CONSOLE_OUTPUT);
+#ifdef LOSCFG_SAVE_EXCINFO
+    if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) {
+        WriteExcBufVa(fmt, ap);
+    }
+#endif
 }
 
 #ifdef LOSCFG_SHELL_DMESG
@@ -271,8 +281,14 @@ VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, ...
     if ((level != LOS_COMMON_LEVEL) && ((level > LOS_EMG_LEVEL) && (level <= LOS_TRACE_LEVEL))) {
         dprintf("[%s]", g_logString[level]);//日志格式,先打印日志头           INFO ..... 
     }
+
     va_start(ap, fmt);
     OsVprintf(fmt, ap, CONSOLE_OUTPUT);//控制台打印
+#ifdef LOSCFG_SAVE_EXCINFO
+    if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) {
+        WriteExcBufVa(fmt, ap);
+    }
+#endif
     va_end(ap);
 }
 #endif

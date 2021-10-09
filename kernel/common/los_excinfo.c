@@ -169,16 +169,17 @@ VOID OsRecordExcInfoTime(VOID)
 #ifdef LOSCFG_SHELL
 INT32 OsShellCmdReadExcInfo(INT32 argc, CHAR **argv)
 {
+#define EXCINFO_ALIGN_SIZE 64
     UINT32 recordSpace = GetRecordSpace();
 
     (VOID)argc;
     (VOID)argv;
 
-    CHAR *buf = (CHAR*)LOS_MemAlloc((void *)OS_SYS_MEM_ADDR, recordSpace + 1);
+    CHAR *buf = (CHAR *)LOS_MemAllocAlign((VOID *)OS_SYS_MEM_ADDR, recordSpace + 1, EXCINFO_ALIGN_SIZE);
     if (buf == NULL) {
         return LOS_NOK;
     }
-    (void)memset_s(buf, recordSpace + 1, 0, recordSpace + 1);
+    (VOID)memset_s(buf, recordSpace + 1, 0, recordSpace + 1);
 
     log_read_write_fn hook = GetExcInfoRW();
     if (hook != NULL) {

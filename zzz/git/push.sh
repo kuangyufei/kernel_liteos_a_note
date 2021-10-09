@@ -1,8 +1,8 @@
 git add -A
-git commit -m  ' 百篇博客阅读方式大调整, 祝国庆节快乐!
+git commit -m  ' 同步代码,官方增加了性能优化模块perf,并优化了文件映射模块
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     博客输出站点(国内):http://weharmonyos.com
-    博客输出站点(国外):https://openharmony.github.io
+    博客输出站点(国外):https://weharmony.github.io
     注解文件系统:https://gitee.com/weharmony/third_party_NuttX
     注解协议栈:https://gitee.com/weharmony/third_party_lwip
     注解编译子系统:https://gitee.com/weharmony/build_lite

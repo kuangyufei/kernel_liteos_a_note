@@ -88,19 +88,12 @@ void los_vfs_init(void)//只能调用一次，多次调用将会造成文件系�
         return;
     }
 
-    retval = VnodeDevInit();//设备节点初始化
+    retval = VnodeDevInit();
     if (retval != LOS_OK) {
         PRINT_ERR("los_vfs_init VnodeDevInit failed error %d\n", retval);
         return;
     }
- 
-#ifdef LOSCFG_KERNEL_VM
-    retval = init_file_mapping();//初始化文件映射
-    if (retval != LOS_OK) {
-        PRINT_ERR("Page cache file map init failed\n");
-        return;
-    }
-#endif
+
     g_vfs_init = true;
 }
 

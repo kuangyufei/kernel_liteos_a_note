@@ -337,8 +337,8 @@ STATIC const CHAR *g_excTypeString[] = {//异常类型的字符说明,在鸿蒙�
 #ifdef LOSCFG_KERNEL_VM
 STATIC VADDR_T OsGetTextRegionBase(LosVmMapRegion *region, LosProcessCB *runProcess)
 {
-    struct file *curFilep = NULL;
-    struct file *lastFilep = NULL;
+    struct Vnode *curVnode = NULL;
+    struct Vnode *lastVnode = NULL;
     LosVmMapRegion *curRegion = NULL;
     LosVmMapRegion *lastRegion = NULL;
 
@@ -357,9 +357,9 @@ STATIC VADDR_T OsGetTextRegionBase(LosVmMapRegion *region, LosProcessCB *runProc
         if ((lastRegion == NULL) || !LOS_IsRegionFileValid(lastRegion)) {
             goto DONE;
         }
-        curFilep = curRegion->unTypeData.rf.file;
-        lastFilep = lastRegion->unTypeData.rf.file;
-    } while (!strcmp(curFilep->f_path, lastFilep->f_path));
+        curVnode = curRegion->unTypeData.rf.vnode;
+        lastVnode = lastRegion->unTypeData.rf.vnode;
+    } while (curVnode == lastVnode);
 
 DONE:
 #ifdef LOSCFG_KERNEL_DYNLOAD
@@ -752,20 +752,66 @@ FOUND:
     return found;
 }
 
-VOID BackTraceSub(UINTPTR regFP)
+BOOL OsGetUsrIpInfo(UINTPTR ip, IpInfo *info)
+{
+    if (info == NULL) {
+        return FALSE;
+    }
+#ifdef LOSCFG_KERNEL_VM
+    BOOL ret = FALSE;
+    const CHAR *name = NULL;
+    LosVmMapRegion *region = NULL;
+    LosProcessCB *runProcess = OsCurrProcessGet();
+
+    if (LOS_IsUserAddress((VADDR_T)ip) == FALSE) {
+        info->ip = ip;
+        name = "kernel";
+        ret = FALSE;
+        goto END;
+    }
+
+    region = LOS_RegionFind(runProcess->vmSpace, (VADDR_T)ip);
+    if (region == NULL) {
+        info->ip = ip;
+        name = "invalid";
+        ret = FALSE;
+        goto END;
+    }
+
+    info->ip = ip - OsGetTextRegionBase(region, runProcess);
+    name = OsGetRegionNameOrFilePath(region);
+    ret = TRUE;
+    if (strcmp(name, "/lib/libc.so") != 0) {
+        PRINT_ERR("ip = 0x%x, %s\n", info->ip, name);
+    }
+END:
+    info->len = strlen(name);
+    if (strncpy_s(info->f_path, REGION_PATH_MAX, name, REGION_PATH_MAX - 1) != EOK) {
+        info->f_path[0] = '\0';
+        info->len = 0;
+        PRINT_ERR("copy f_path failed, %s\n", name);
+    }
+    return ret;
+#else
+    info->ip = ip;
+    return FALSE;
+#endif
+}
+
+UINT32 BackTraceGet(UINTPTR regFP, IpInfo *callChain, UINT32 maxDepth)
 {
     UINTPTR tmpFP, backLR;
     UINTPTR stackStart, stackEnd;
     UINTPTR backFP = regFP;
     UINT32 count = 0;
+    BOOL ret;
     VADDR_T kvaddr;
-#ifdef LOSCFG_KERNEL_VM
-    LosProcessCB *runProcess = OsCurrProcessGet();
-#endif
 
     if (FindSuitableStack(regFP, &stackStart, &stackEnd, &kvaddr) == FALSE) {
-        PrintExcInfo("traceback error fp = 0x%x\n", regFP);
-        return;
+        if (callChain == NULL) {
+            PrintExcInfo("traceback error fp = 0x%x\n", regFP);
+        }
+        return 0;
     }
 
     /*
@@ -777,46 +823,59 @@ VOID BackTraceSub(UINTPTR regFP)
     tmpFP = *(UINTPTR *)(UINTPTR)kvaddr;
     if (IsValidFP(tmpFP, stackStart, stackEnd, NULL) == TRUE) {
         backFP = tmpFP;
-        PrintExcInfo("traceback fp fixed, trace using   fp = 0x%x\n", backFP);
+        if (callChain == NULL) {
+            PrintExcInfo("traceback fp fixed, trace using   fp = 0x%x\n", backFP);
+        }
     }
 
     while (IsValidFP(backFP, stackStart, stackEnd, &kvaddr) == TRUE) {
         tmpFP = backFP;
 #ifdef LOSCFG_COMPILER_CLANG_LLVM
-	backFP = *(UINTPTR *)(UINTPTR)kvaddr;
+        backFP = *(UINTPTR *)(UINTPTR)kvaddr;
         if (IsValidFP(tmpFP + POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
-            PrintExcInfo("traceback backLR check failed, backLP: 0x%x\n", tmpFP + POINTER_SIZE);
-            return;
+            if (callChain == NULL) {
+                PrintExcInfo("traceback backLR check failed, backLP: 0x%x\n", tmpFP + POINTER_SIZE);
+            }
+            return 0;
         }
         backLR = *(UINTPTR *)(UINTPTR)kvaddr;
 #else
-	backLR = *(UINTPTR *)(UINTPTR)kvaddr;
+        backLR = *(UINTPTR *)(UINTPTR)kvaddr;
         if (IsValidFP(tmpFP - POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
-            PrintExcInfo("traceback backFP check failed, backFP: 0x%x\n", tmpFP - POINTER_SIZE);
-            return;
+            if (callChain == NULL) {
+                PrintExcInfo("traceback backFP check failed, backFP: 0x%x\n", tmpFP - POINTER_SIZE);
+            }
+            return 0;
         }
         backFP = *(UINTPTR *)(UINTPTR)kvaddr;
 #endif
+        IpInfo info = {0};
+        ret = OsGetUsrIpInfo((VADDR_T)backLR, &info);
+        if (callChain == NULL) {
+            PrintExcInfo("traceback %u -- lr = 0x%x    fp = 0x%x ", count, backLR, backFP);
+            if (ret) {
 #ifdef LOSCFG_KERNEL_VM
-        LosVmMapRegion *region = NULL;
-        if (LOS_IsUserAddress((VADDR_T)backLR) == TRUE) {
-            region = LOS_RegionFind(runProcess->vmSpace, (VADDR_T)backLR);
-        }
-        if (region != NULL) {
-            PrintExcInfo("traceback %u -- lr = 0x%x    fp = 0x%x lr in %s --> 0x%x\n", count, backLR, backFP,
-                         OsGetRegionNameOrFilePath(region),
-                         backLR - OsGetTextRegionBase(region, runProcess));
-            region = NULL;
-        } else
+                PrintExcInfo("lr in %s --> 0x%x\n", info.f_path, info.ip);
+#else
+                PrintExcInfo("\n");
 #endif
-        {
-            PrintExcInfo("traceback %u -- lr = 0x%x    fp = 0x%x\n", count, backLR, backFP);
+            } else {
+                PrintExcInfo("\n");
+            }
+        } else {
+            (VOID)memcpy_s(&callChain[count], sizeof(IpInfo), &info, sizeof(IpInfo));
         }
         count++;
-        if ((count == OS_MAX_BACKTRACE) || (backFP == tmpFP)) {
+        if ((count == maxDepth) || (backFP == tmpFP)) {
             break;
         }
     }
+    return count;
+}
+
+VOID BackTraceSub(UINTPTR regFP)
+{
+    (VOID)BackTraceGet(regFP, NULL, OS_MAX_BACKTRACE);
 }
 //打印调用栈信息 
 VOID BackTrace(UINT32 regFP)//fp:R11寄存器 
@@ -1061,10 +1120,12 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
         g_currHandleExcCpuID = currCpuID;
         g_currHandleExcPID = OsCurrProcessGet()->processID;
         LOS_SpinUnlock(&g_excSerializerSpin);
+#ifndef LOSCFG_SAVE_EXCINFO
         if (g_excFromUserMode[currCpuID] == FALSE) {
             target = (UINT32)(OS_MP_CPU_ALL & ~CPUID_TO_AFFI_MASK(currCpuID));
             HalIrqSendIpi(target, LOS_MP_IPI_HALT);//向目标CPU发送停止消息
         }
+#endif
     } else if (g_excFromUserMode[currCpuID] == TRUE) {//当前运行在用户态
         /* Both cores raise exceptions, and the current core is a user-mode exception.
          * Both cores are abnormal and come from the same process
@@ -1089,11 +1150,12 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
             while (1) {}
         }
     }
-
+#ifndef LOSCFG_SAVE_EXCINFO
     /* use halt ipi to stop other active cores */
     if (g_excFromUserMode[ArchCurrCpuid()] == FALSE) {
         WaitAllCpuStop(currCpuID);
     }
+#endif
 }
 #endif
 

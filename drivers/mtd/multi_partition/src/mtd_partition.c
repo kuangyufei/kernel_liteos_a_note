@@ -37,7 +37,7 @@
 #include "los_config.h"
 #include "los_mux.h"
 #include "fs/driver.h"
-#include "mtd_common.h"
+#include "mtd/mtd_legacy_lite.h"
 
 #ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
 #include "cfiflash.h"

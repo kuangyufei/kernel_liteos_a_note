@@ -45,6 +45,9 @@
 #include "los_process_pri.h"
 #include "arm.h"
 
+#ifdef LOSCFG_FS_VFS
+#include "vnode.h"
+#endif
 
 #ifdef LOSCFG_KERNEL_VM
 
@@ -107,11 +110,11 @@ STATIC STATUS_T OsDoReadFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)//
         return LOS_OK;//查到了就说明不缺页的，缺页就是因为虚拟地址没有映射到物理地址嘛
     }
     if (region->unTypeData.rf.vmFOps == NULL || region->unTypeData.rf.vmFOps->fault == NULL) {//线性区必须有实现了缺页接口
-        VM_ERR("region args invalid, file path: %s", region->unTypeData.rf.file->f_path);
+        VM_ERR("region args invalid, file path: %s", region->unTypeData.rf.vnode->filePath);
         return LOS_ERRNO_VM_INVALID_ARGS;
     }
 
-    (VOID)LOS_MuxAcquire(&region->unTypeData.rf.file->f_mapping->mux_lock);
+    (VOID)LOS_MuxAcquire(&region->unTypeData.rf.vnode->mapping.mux_lock);
     ret = region->unTypeData.rf.vmFOps->fault(region, vmPgFault);// 函数指针，执行的是g_commVmOps.OsVmmFileFault
     if (ret == LOS_OK) {
         paddr = LOS_PaddrQuery(vmPgFault->pageKVaddr);//查询物理地址
@@ -125,14 +128,14 @@ STATIC STATUS_T OsDoReadFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)//
         if (ret < 0) {
             VM_ERR("LOS_ArchMmuMap failed");
             OsDelMapInfo(region, vmPgFault, false);
-            (VOID)LOS_MuxRelease(&region->unTypeData.rf.file->f_mapping->mux_lock);
+            (VOID)LOS_MuxRelease(&region->unTypeData.rf.vnode->mapping.mux_lock);
             return LOS_ERRNO_VM_NO_MEMORY;
         }
 
-        (VOID)LOS_MuxRelease(&region->unTypeData.rf.file->f_mapping->mux_lock);
+        (VOID)LOS_MuxRelease(&region->unTypeData.rf.vnode->mapping.mux_lock);
         return LOS_OK;
     }
-    (VOID)LOS_MuxRelease(&region->unTypeData.rf.file->f_mapping->mux_lock);
+    (VOID)LOS_MuxRelease(&region->unTypeData.rf.vnode->mapping.mux_lock);
 
     return LOS_ERRNO_VM_NO_MEMORY;
 }
@@ -146,8 +149,8 @@ STATIC LosVmPage *OsCowUnmapOrg(LosArchMmu *archMmu, LosVmMapRegion *region, Los
     LosFilePage *fpage = NULL;
     VADDR_T vaddr = (VADDR_T)vmf->vaddr;
 
-    LOS_SpinLockSave(&region->unTypeData.rf.file->f_mapping->list_lock, &intSave);
-    fpage = OsFindGetEntry(region->unTypeData.rf.file->f_mapping, vmf->pgoff);
+    LOS_SpinLockSave(&region->unTypeData.rf.vnode->mapping.list_lock, &intSave);
+    fpage = OsFindGetEntry(&region->unTypeData.rf.vnode->mapping, vmf->pgoff);
     if (fpage != NULL) {
         oldPage = fpage->vmPage;
         OsSetPageLocked(oldPage);
@@ -160,7 +163,7 @@ STATIC LosVmPage *OsCowUnmapOrg(LosArchMmu *archMmu, LosVmMapRegion *region, Los
     } else {
         LOS_ArchMmuUnmap(archMmu, vaddr, 1);
     }
-    LOS_SpinUnlockRestore(&region->unTypeData.rf.file->f_mapping->list_lock, intSave);
+    LOS_SpinUnlockRestore(&region->unTypeData.rf.vnode->mapping.list_lock, intSave);
 
     return oldPage;
 }
@@ -198,11 +201,11 @@ status_t OsDoCowFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
     newPaddr = VM_PAGE_TO_PHYS(newPage);//拿到新的物理地址
     kvaddr = OsVmPageToVaddr(newPage);//拿到新的虚拟地址
 
-    (VOID)LOS_MuxAcquire(&region->unTypeData.rf.file->f_mapping->mux_lock);
+    (VOID)LOS_MuxAcquire(&region->unTypeData.rf.vnode->mapping.mux_lock);
     ret = region->unTypeData.rf.vmFOps->fault(region, vmPgFault);// 函数指针 g_commVmOps.OsVmmFileFault
     if (ret != LOS_OK) {
         VM_ERR("call region->vm_ops->fault fail");
-        (VOID)LOS_MuxRelease(&region->unTypeData.rf.file->f_mapping->mux_lock);
+        (VOID)LOS_MuxRelease(&region->unTypeData.rf.vnode->mapping.mux_lock);
         goto ERR_OUT;
     }
 
@@ -228,10 +231,10 @@ status_t OsDoCowFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
     if (ret < 0) {
         VM_ERR("LOS_ArchMmuMap failed");
         ret =  LOS_ERRNO_VM_NO_MEMORY;
-        (VOID)LOS_MuxRelease(&region->unTypeData.rf.file->f_mapping->mux_lock);
+        (VOID)LOS_MuxRelease(&region->unTypeData.rf.vnode->mapping.mux_lock);
         goto ERR_OUT;
     }
-    (VOID)LOS_MuxRelease(&region->unTypeData.rf.file->f_mapping->mux_lock);
+    (VOID)LOS_MuxRelease(&region->unTypeData.rf.vnode->mapping.mux_lock);
 
     if (oldPage != NULL) {
         OsCleanPageLocked(oldPage);
@@ -274,17 +277,17 @@ status_t OsDoSharedFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
             return LOS_ERRNO_VM_NO_MEMORY;
         }
 
-        LOS_SpinLockSave(&region->unTypeData.rf.file->f_mapping->list_lock, &intSave);
-        fpage = OsFindGetEntry(region->unTypeData.rf.file->f_mapping, vmPgFault->pgoff);
+        LOS_SpinLockSave(&region->unTypeData.rf.vnode->mapping.list_lock, &intSave);
+        fpage = OsFindGetEntry(&region->unTypeData.rf.vnode->mapping, vmPgFault->pgoff);
         if (fpage) {//在页高速缓存(page cache)中找到了
             OsMarkPageDirty(fpage, region, 0, 0);//标记为脏页
         }
-        LOS_SpinUnlockRestore(&region->unTypeData.rf.file->f_mapping->list_lock, intSave);
+        LOS_SpinUnlockRestore(&region->unTypeData.rf.vnode->mapping.list_lock, intSave);
 
         return LOS_OK;
     }
 	//以下是没有映射到物理地址的处理
-    (VOID)LOS_MuxAcquire(&region->unTypeData.rf.file->f_mapping->mux_lock);
+    (VOID)LOS_MuxAcquire(&region->unTypeData.rf.vnode->mapping.mux_lock);
     ret = region->unTypeData.rf.vmFOps->fault(region, vmPgFault);//函数指针，执行的是g_commVmOps.OsVmmFileFault
     if (ret == LOS_OK) {
         paddr = LOS_PaddrQuery(vmPgFault->pageKVaddr);
@@ -298,14 +301,14 @@ status_t OsDoSharedFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
         if (ret < 0) {
             VM_ERR("LOS_ArchMmuMap failed. ret=%d", ret);
             OsDelMapInfo(region, vmPgFault, TRUE);
-            (VOID)LOS_MuxRelease(&region->unTypeData.rf.file->f_mapping->mux_lock);
+            (VOID)LOS_MuxRelease(&region->unTypeData.rf.vnode->mapping.mux_lock);
             return LOS_ERRNO_VM_NO_MEMORY;
         }
 
-        (VOID)LOS_MuxRelease(&region->unTypeData.rf.file->f_mapping->mux_lock);
+        (VOID)LOS_MuxRelease(&region->unTypeData.rf.vnode->mapping.mux_lock);
         return LOS_OK;
     }
-    (VOID)LOS_MuxRelease(&region->unTypeData.rf.file->f_mapping->mux_lock);
+    (VOID)LOS_MuxRelease(&region->unTypeData.rf.vnode->mapping.mux_lock);
     return ret;
 }
 
@@ -388,7 +391,7 @@ STATUS_T OsVmPageFaultHandler(VADDR_T vaddr, UINT32 flags, ExcContext *frame)
     vaddr = ROUNDDOWN(vaddr, PAGE_SIZE);//为啥要向下圆整，因为这一页要重新使用，需找到页面基地址
 #ifdef LOSCFG_FS_VFS 
     if (LOS_IsRegionFileValid(region)) {//是否为文件线性区
-        if (region->unTypeData.rf.file->f_mapping == NULL) {
+        if (region->unTypeData.rf.vnode == NULL) {
             goto  CHECK_FAILED;
         }
         vmPgFault.vaddr = vaddr;//虚拟地址

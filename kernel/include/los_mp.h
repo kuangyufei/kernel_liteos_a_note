@@ -33,6 +33,7 @@
 #define _LOS_MP_H
 
 #include "los_config.h"
+#include "los_list.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -48,7 +49,12 @@ typedef enum {//核间中断
     LOS_MP_IPI_WAKEUP,	//唤醒CPU
     LOS_MP_IPI_SCHEDULE,//调度CPU
     LOS_MP_IPI_HALT,	//停止CPU
+#ifdef LOSCFG_KERNEL_SMP_CALL
+    LOS_MP_IPI_FUNC_CALL,
+#endif
 } MP_IPI_TYPE;
+
+typedef VOID (*SMP_FUNC_CALL)(VOID *args);
 
 #ifdef LOSCFG_KERNEL_SMP
 extern VOID LOS_MpSchedule(UINT32 target);
@@ -62,6 +68,28 @@ STATIC INLINE VOID LOS_MpSchedule(UINT32 target)
     (VOID)target;
 }
 #endif
+
+#ifdef LOSCFG_KERNEL_SMP_CALL
+typedef struct {
+    LOS_DL_LIST node;
+    SMP_FUNC_CALL func;
+    VOID *args;
+} MpCallFunc;
+
+/**
+ * It is used to call function on target cpus by sending ipi, and the first param is target cpu mask value.
+ */
+extern VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args);
+extern VOID OsMpFuncCallHandler(VOID);
+#else
+INLINE VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args)
+{
+    (VOID)target;
+    if (func != NULL) {
+        func(args);
+    }
+}
+#endif /* LOSCFG_KERNEL_SMP_CALL */
 
 #ifdef __cplusplus
 #if __cplusplus

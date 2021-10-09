@@ -46,10 +46,10 @@ kernel_module(module_name) {
     "src/los_hw_runstop.S",
     "src/los_hw_tick.c",
     "src/los_hwi.c",
+    "src/smp.c",
     "src/strncpy_from_user.c",
     "src/strnlen_user.c",
     "src/user_copy.c",
-    "src/smp.c",
   ]
 
   if (LOSCFG_ARCH_ARM_VER == "armv7-a") {
@@ -63,6 +63,10 @@ kernel_module(module_name) {
   }
 
   include_dirs = [ "src/include" ]
+
+  if (defined(LOSCFG_PERF_HW_PMU)) {
+    sources += [ "src/pmu/armv7_pmu.c" ]
+  }
 
   if (defined(LOSCFG_GDB)) {
     configs += [ ":as_objs_libc_flags" ]
@@ -82,9 +86,11 @@ config("as_objs_libc_flags") {
   defines = [ "__ASSEMBLY__" ]
 
   # linux style macros
-  if (defined(LOSCFG_ARCH_ARM_V7A) || defined(LOSCFG_ARCH_ARM_V7R) || defined(LOSCFG_ARCH_ARM_V7M)) {
+  if (defined(LOSCFG_ARCH_ARM_V7A) || defined(LOSCFG_ARCH_ARM_V7R) ||
+      defined(LOSCFG_ARCH_ARM_V7M)) {
     defines += [ "__LINUX_ARM_ARCH__=7" ]
-  } else if (defined(LOSCFG_ARCH_ARM_V8A) || defined(LOSCFG_ARCH_ARM_V8R) || defined(LOSCFG_ARCH_ARM_V8M)) {
+  } else if (defined(LOSCFG_ARCH_ARM_V8A) || defined(LOSCFG_ARCH_ARM_V8R) ||
+             defined(LOSCFG_ARCH_ARM_V8M)) {
     defines += [ "__LINUX_ARM_ARCH__=8" ]
   }
 }

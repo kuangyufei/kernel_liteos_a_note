@@ -96,3 +96,6 @@ source "kernel/extended/blackbox/Kconfig"
 
 ######################### config options of hidumper #########################
 source "kernel/extended/hidumper/Kconfig"
+
+######################### config options of perf #########################
+source "kernel/extended/perf/Kconfig"
