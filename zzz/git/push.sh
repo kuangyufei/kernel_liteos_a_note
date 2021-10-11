@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 同步代码,官方增加了性能优化模块perf,并优化了文件映射模块
+git commit -m  ' readme 调整
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     博客输出站点(国内):http://weharmonyos.com
     博客输出站点(国外):https://weharmony.github.io
