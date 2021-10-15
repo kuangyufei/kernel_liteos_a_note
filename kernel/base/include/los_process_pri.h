@@ -69,10 +69,10 @@ typedef struct { //用户描述体
 #endif
 
 typedef struct {
-    UINT32      groupID;         /**< Process group ID is the PID of the process that created the group */
-    LOS_DL_LIST processList;     /**< List of processes under this process group */
-    LOS_DL_LIST exitProcessList; /**< List of closed processes (zombie processes) under this group */
-    LOS_DL_LIST groupList;       /**< Process group list */
+    UINT32      groupID;         /**< Process group ID is the PID of the process that created the group *///进程组ID是创建进程组的那个进程的ID
+    LOS_DL_LIST processList;     /**< List of processes under this process group *///属于该进程组的进程链表
+    LOS_DL_LIST exitProcessList; /**< List of closed processes (zombie processes) under this group *///进程组的僵死进程链表
+    LOS_DL_LIST groupList;       /**< Process group list *///进程组链表,上面挂的都是进程组
 } ProcessGroup;
 
 typedef struct ProcessCB {
@@ -117,15 +117,15 @@ typedef struct ProcessCB {
     User                *user;		//进程的拥有者
     UINT32              capability;	//安全能力范围 对应 CAP_SETGID
 #endif
-#ifdef LOSCFG_SECURITY_VID
+#ifdef LOSCFG_SECURITY_VID	//虚拟ID映射功能
     TimerIdMap          timerIdMap;
 #endif
 #ifdef LOSCFG_DRIVERS_TZDRIVER
-    struct file         *execFile;     /**< Exec bin of the process */
+    struct file         *execFile;     /**< Exec bin of the process *///进程的可执行文件
 #endif
     mode_t umask;//umask(user file-creatiopn mode mask)为用户文件创建掩码，是创建文件或文件夹时默认权限的基础。
 #ifdef LOSCFG_KERNEL_CPUP
-    OsCpupBase           processCpup; /**< Process cpu usage */
+    OsCpupBase           processCpup; /**< Process cpu usage *///进程占用CPU情况统计
 #endif
     struct rlimit        pl_rlimit[RLIM_NLIMITS];
 } LosProcessCB;
@@ -311,7 +311,7 @@ STATIC INLINE BOOL OsProcessIsDead(const LosProcessCB *processCB)//查下进程�
 
 #define OS_KERNEL_MODE 0x0U	//内核态
 #define OS_USER_MODE   0x1U	//用户态
-STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)//用户模式进程
+STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)//用户态进程
 {
     return (processCB->processMode == OS_USER_MODE);
 }

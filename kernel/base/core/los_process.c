@@ -125,7 +125,7 @@ STATIC VOID OsExitProcessGroup(LosProcessCB *processCB, ProcessGroup **group)//P
 
     processCB->group = NULL;
 }
-//通过组ID找到进程组
+//通过指定组ID找到进程组
 STATIC ProcessGroup *OsFindProcessGroup(UINT32 gid)
 {
     ProcessGroup *group = NULL;
@@ -142,7 +142,7 @@ STATIC ProcessGroup *OsFindProcessGroup(UINT32 gid)
     PRINT_INFO("%s is find group : %u failed!\n", __FUNCTION__, gid);
     return NULL;
 }
-
+//给指定进程组发送信号
 STATIC INT32 OsSendSignalToSpecifyProcessGroup(ProcessGroup *group, siginfo_t *info, INT32 permission)
 {
     INT32 ret, success, err;
@@ -150,30 +150,30 @@ STATIC INT32 OsSendSignalToSpecifyProcessGroup(ProcessGroup *group, siginfo_t *i
 
     success = 0;
     ret = -LOS_ESRCH;
-    LOS_DL_LIST_FOR_EACH_ENTRY(childCB, &(group->processList), LosProcessCB, subordinateGroupList) {
-        if (childCB->processID == 0) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(childCB, &(group->processList), LosProcessCB, subordinateGroupList) {//遍历进程组内的进程
+        if (childCB->processID == 0) {//0号进程为KIdle进程,是让CPU休息的进程,不处理信号
             continue;
         }
 
-        err = OsDispatch(childCB->processID, info, permission);
+        err = OsDispatch(childCB->processID, info, permission);//给进程发送信号
         success |= !err;
         ret = err;
     }
     /* At least one success. */
     return success ? LOS_OK : ret;
 }
-
+//给所有进程发送指定信号
 LITE_OS_SEC_TEXT INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permission)
 {
     INT32 ret, success, err;
     ProcessGroup *group = NULL;
 
     success = 0;
-    err = OsSendSignalToSpecifyProcessGroup(g_processGroup, info, permission);
+    err = OsSendSignalToSpecifyProcessGroup(g_processGroup, info, permission);//给g_processGroup进程组发送信号
     success |= !err;
     ret = err;
     /* all processes group */
-    LOS_DL_LIST_FOR_EACH_ENTRY(group, &g_processGroup->groupList, ProcessGroup, groupList) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(group, &g_processGroup->groupList, ProcessGroup, groupList) {//遍历进程组
         /* all processes in the process group. */
         err = OsSendSignalToSpecifyProcessGroup(group, info, permission);
         success |= !err;
@@ -181,7 +181,7 @@ LITE_OS_SEC_TEXT INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permissio
     }
     return success ? LOS_OK : ret;
 }
-
+//发送指定信号给给进程组
 LITE_OS_SEC_TEXT INT32 OsSendSignalToProcessGroup(INT32 pid, siginfo_t *info, INT32 permission)
 {
     ProcessGroup *group = NULL;
@@ -228,7 +228,7 @@ ERR:
     PRINT_INFO("%s is find the child : %d failed in parent : %u\n", __FUNCTION__, childPid, processCB->processID);
     return LOS_NOK;
 }
-
+//找出指定进程的指定孩子进程
 STATIC LosProcessCB *OsFindExitChildProcess(const LosProcessCB *processCB, INT32 childPid)
 {
     LosProcessCB *exitChild = NULL;
@@ -347,22 +347,22 @@ STATIC VOID OsWaitCheckAndWakeParentProcess(LosProcessCB *parentCB, const LosPro
 //回收指定进程的资源
 LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 {
-    if (!(processCB->processStatus & (OS_PROCESS_STATUS_INIT | OS_PROCESS_STATUS_RUNNING))) {//1.初始化阶段并没有使用到资源,所以不用回收
-        PRINT_ERR("The process(%d) has no permission to release process(%d) resources!\n",//2.正在运行的进程不能回收
+    if (!(processCB->processStatus & (OS_PROCESS_STATUS_INIT | OS_PROCESS_STATUS_RUNNING))) {//初始化和正在运行的进程,不用/能回收
+        PRINT_ERR("The process(%d) has no permission to release process(%d) resources!\n",// @note_thinking 此处应该直接 return回去吧 !
                   OsCurrProcessGet()->processID, processCB->processID);
     }
 
 #ifdef LOSCFG_FS_VFS
     if (OsProcessIsUserMode(processCB)) {//用户进程
-        delete_files(processCB->files);
+        delete_files(processCB->files);//归还进程占用的进程描述符`profd`,如果是最后一个占用的系统描述符的进程,则同时归还系统文件描述符`sysfd`
     }
-    processCB->files = NULL;
+    processCB->files = NULL;	//重置指针为空
 #endif
 
 #ifdef LOSCFG_SECURITY_CAPABILITY //安全开关
     if (processCB->user != NULL) {
         (VOID)LOS_MemFree(m_aucSysMem1, processCB->user);//删除用户
-        processCB->user = NULL;
+        processCB->user = NULL;	//重置指针为空
     }
 #endif
 
@@ -377,7 +377,7 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 #endif
 
 #ifdef LOSCFG_KERNEL_LITEIPC
-    if (OsProcessIsUserMode(processCB)) {//用户进程
+    if (OsProcessIsUserMode(processCB)) {//当为用户进程
         LiteIpcPoolDelete(&(processCB->ipcInfo));//删除进程对lite IPC的开销
         (VOID)memset_s(&(processCB->ipcInfo), sizeof(ProcIpcInfo), 0, sizeof(ProcIpcInfo));
     }
@@ -435,16 +435,16 @@ STATIC VOID OsDealAliveChildProcess(LosProcessCB *processCB)
 
     return;
 }
-//孩子进程资源释放
+//回收指定进程的已经退出(死亡)的孩子进程所占资源
 STATIC VOID OsChildProcessResourcesFree(const LosProcessCB *processCB)
 {
     LosProcessCB *childCB = NULL;
     ProcessGroup *group = NULL;
 
-    while (!LOS_ListEmpty(&((LosProcessCB *)processCB)->exitChildList)) {//
-        childCB = LOS_DL_LIST_ENTRY(processCB->exitChildList.pstNext, LosProcessCB, siblingList);
-        OsRecycleZombiesProcess(childCB, &group);
-        (VOID)LOS_MemFree(m_aucSysMem1, group);
+    while (!LOS_ListEmpty(&((LosProcessCB *)processCB)->exitChildList)) {//遍历直到没有了退出(死亡)的孩子进程
+        childCB = LOS_DL_LIST_ENTRY(processCB->exitChildList.pstNext, LosProcessCB, siblingList);//获取孩子进程,
+        OsRecycleZombiesProcess(childCB, &group);//其中会将childCB从exitChildList链表上摘出去
+        (VOID)LOS_MemFree(m_aucSysMem1, group);//
     }
 }
 //一个进程的自然消亡过程,参数是当前运行的任务
@@ -635,7 +635,7 @@ UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name)
     }
     return LOS_OK;
 }
-//初始化PCB块
+//初始化PCB(进程控制块)
 STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, const CHAR *name)
 {
     processCB->processMode = mode;						//用户态进程还是内核态进程
@@ -651,16 +651,16 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, c
     LOS_ListInit(&processCB->exitChildList);	//初始化记录退出孩子进程链表，上面挂的是哪些exit	见于 OsProcessNaturalExit LOS_ListTailInsert(&parentCB->exitChildList, &processCB->siblingList);
     LOS_ListInit(&(processCB->waitList));		//初始化等待任务链表 上面挂的是处于等待的 见于 OsWaitInsertWaitLIstInOrder LOS_ListHeadInsert(&processCB->waitList, &runTask->pendList);
 
-#ifdef LOSCFG_KERNEL_VM
-    if (OsProcessIsUserMode(processCB)) {
-        processCB->vmSpace = OsCreateUserVmSpace();
+#ifdef LOSCFG_KERNEL_VM	
+    if (OsProcessIsUserMode(processCB)) {//如果是用户态进程
+        processCB->vmSpace = OsCreateUserVmSpace();//创建用户空间
         if (processCB->vmSpace == NULL) {
             processCB->processStatus = OS_PROCESS_FLAG_UNUSED;
             return LOS_ENOMEM;
         }
     } else {
-        processCB->vmSpace = LOS_GetKVmSpace();
-    }
+        processCB->vmSpace = LOS_GetKVmSpace();//从这里也可以看出,所有内核态进程是共享一个进程空间的
+    }//在鸿蒙内核态进程只有kprocess 和 kidle 两个 
 #endif
 
 #ifdef LOSCFG_SECURITY_VID
@@ -670,7 +670,7 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, c
     }
 #endif
 #ifdef LOSCFG_SECURITY_CAPABILITY
-    OsInitCapability(processCB);
+    OsInitCapability(processCB);//初始化进程安全相关功能
 #endif
 
     if (OsSetProcessName(processCB, name) != LOS_OK) {
@@ -716,7 +716,7 @@ LITE_OS_SEC_TEXT BOOL LOS_CheckInGroups(UINT32 gid)
     return FALSE;
 }
 #endif
-
+//获取当前进程的用户ID
 LITE_OS_SEC_TEXT INT32 LOS_GetUserID(VOID)
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -731,7 +731,7 @@ LITE_OS_SEC_TEXT INT32 LOS_GetUserID(VOID)
     return 0;
 #endif
 }
-
+//获取当前进程的用户组ID
 LITE_OS_SEC_TEXT INT32 LOS_GetGroupID(VOID)
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -751,7 +751,7 @@ LITE_OS_SEC_TEXT INT32 LOS_GetGroupID(VOID)
 STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const CHAR *name, UINT16 priority)
 {
     ProcessGroup *group = NULL;
-    UINT32 ret = OsInitPCB(processCB, flags, priority, name);
+    UINT32 ret = OsInitPCB(processCB, flags, priority, name);//初始化进程控制块
     if (ret != LOS_OK) {
         goto EXIT;
     }
@@ -921,12 +921,12 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);//还锁
     return -ret;
 }
-//设置进程调度方式
+//设置指定进程的调度参数，包括优先级和调度策略
 LITE_OS_SEC_TEXT INT32 LOS_SetProcessScheduler(INT32 pid, UINT16 policy, UINT16 prio)
 {
     return OsSetProcessScheduler(LOS_PRIO_PROCESS, pid, prio, policy);
 }
-//获得进程调度方式
+//获得指定进程的调度策略
 LITE_OS_SEC_TEXT INT32 LOS_GetProcessScheduler(INT32 pid)
 {
     UINT32 intSave;
@@ -980,7 +980,7 @@ OUT:
     SCHEDULER_UNLOCK(intSave);
     return prio;
 }
-//接口封装 - 获取进程优先级
+//接口封装 - 获取指定进程优先级
 LITE_OS_SEC_TEXT INT32 LOS_GetProcessPriority(INT32 pid)
 {
     return OsGetProcessPriority(LOS_PRIO_PROCESS, pid);
@@ -1160,8 +1160,8 @@ STATIC UINT32 OsWaitOptionsCheck(UINT32 options)
     }
 
     return LOS_OK;
-}
-//返回已经终止的子进程的进程ID号，并清除僵死进程。
+}	
+//等待子进程结束并回收子进程,返回已经终止的子进程的进程ID号，并清除僵死进程。
 STATIC INT32 OsWait(INT32 pid, USER INT32 *status, USER siginfo_t *info, UINT32 options, VOID *rusage)
 {
     (VOID)rusage;
@@ -1995,12 +1995,12 @@ LITE_OS_SEC_TEXT struct fd_table_s *LOS_GetFdTable(UINT32 pid)
     return files->fdt;
 }
 #endif
-
+//获取当前进程的进程ID
 LITE_OS_SEC_TEXT UINT32 LOS_GetCurrProcessID(VOID)
 {
     return OsCurrProcessGet()->processID;
 }
-
+//按指定状态退出指定进程
 LITE_OS_SEC_TEXT VOID OsProcessExit(LosTaskCB *runTask, INT32 status)
 {
     UINT32 intSave;
@@ -2013,7 +2013,7 @@ LITE_OS_SEC_TEXT VOID OsProcessExit(LosTaskCB *runTask, INT32 status)
     OsProcessNaturalExit(runTask, status);//进程自然退出
     SCHEDULER_UNLOCK(intSave);
 }
-
+//获取系统支持的最大进程数目
 LITE_OS_SEC_TEXT UINT32 LOS_GetSystemProcessMaximum(VOID)
 {
     return g_processMaxNum;

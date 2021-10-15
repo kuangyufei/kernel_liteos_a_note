@@ -645,7 +645,7 @@ STATIC UINT32 OsMapL2PageContinous(PTE_T pte1, UINT32 flags, VADDR_T *vaddr, PAD
     *count -= saveCounts;
     return saveCounts;
 }
-//所谓的 map 就是 生成L1,L2页表项的过程
+//mmu映射,所谓的map就是生成L1,L2页表项的过程
 status_t LOS_ArchMmuMap(LosArchMmu *archMmu, VADDR_T vaddr, PADDR_T paddr, size_t count, UINT32 flags)
 {
     PTE_T l1Entry;

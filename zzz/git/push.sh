@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' readme 调整
+git commit -m  ' 优化进程模块部分注解
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     博客输出站点(国内):http://weharmonyos.com
     博客输出站点(国外):https://weharmony.github.io

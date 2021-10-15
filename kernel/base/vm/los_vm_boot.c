@@ -75,10 +75,10 @@ UINT32 OsSysMemInit(VOID)
 
 #ifdef LOSCFG_KERNEL_VM
     OsVmPageStartup();// 物理内存初始化
-    g_kHeapInited = TRUE;
-    OsInitMappingStartUp();// 映射初始化
+    g_kHeapInited = TRUE;	//内核堆区初始化完成
+    OsInitMappingStartUp();//映射初始化
 #else
-    g_kHeapInited = TRUE;//堆区完成初始化
+    g_kHeapInited = TRUE;//内核堆区完成初始化
 #endif
     return LOS_OK;
 }

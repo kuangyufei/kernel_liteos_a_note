@@ -43,23 +43,23 @@ extern "C" {
 
 #ifdef LOSCFG_NET_TELNET
 
-#define TELNET                 "/dev/telnet"
+#define TELNET                 "/dev/telnet"	//远程登录文件路径
 
-#define FIFO_MAX               1024
+#define FIFO_MAX               1024	//缓冲区大小
 #define TELNET_IOC_MAGIC       't'
 #define CFG_TELNET_SET_FD      _IO(TELNET_IOC_MAGIC, 1)
 #define CFG_TELNET_EVENT_PEND  CONSOLE_CMD_RD_BLOCK_TELNET
 #define BLOCK_DISABLE          0
 #define BLOCK_ENABLE           1
-
+//远程登录接发数据结构体.管理缓冲区
 typedef struct {
     UINT32 rxIndex;         /* index for receiving user's commands */
     UINT32 rxOutIndex;      /* index for taking out commands by a shell task to run */
-    UINT32 fifoNum;         /* unused size of the cmdBuf */
-    UINT32 lock;
+    UINT32 fifoNum;         /* unused size of the cmdBuf *///剩余buf大小
+    UINT32 lock;			//锁用于保证buf数据一致性
     CHAR rxBuf[FIFO_MAX];   /* the real buffer to store user's commands */
 } TELNTE_FIFO_S;
-
+//远程登录设备结构体
 typedef struct {
     INT32 clientFd;
     UINT32 id;

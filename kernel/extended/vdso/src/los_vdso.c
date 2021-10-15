@@ -36,16 +36,27 @@
 #include "los_vm_lock.h"
 #include "los_vm_phys.h"
 #include "los_process_pri.h"
-/*
-	vdso 新型系统调用机制 ,虚拟动态共享库VDSO就是Virtual Dynamic Shared Object，
-就是内核提供的虚拟的.so,这类.so文件不在磁盘上，而是包含在内核里面。内核把包含
-某一.so的物理页在程序启动的时候映射入其进程的内存空间，对应的程序就可以当普通的.so来使用里头的函数
+/**************************************************************************************
+基本概念:
+VDSO（Virtual Dynamic Shared Object，虚拟动态共享库）相对于普通的动态共享库，区别在于
+其so文件不保存在文件系统中，存在于系统镜像中，由内核在运行时确定并提供给应用程序，故称为虚拟动态共享库。
+OpenHarmony系统通过VDSO机制实现上层用户态程序可以快速读取内核相关数据的一种通道方法，
+可用于实现部分系统调用的加速，也可用于实现非系统敏感数据（硬件配置、软件配置）的快速读取。
+
+运行机制:
+VDSO其核心思想就是内核看护一段内存，并将这段内存映射（只读）进用户态应用程序的地址空间，
+应用程序通过链接vdso.so后，将某些系统调用替换为直接读取这段已映射的内存从而避免系统调用达到加速的效果。
+VDSO总体可分为数据页与代码页两部分：
+	数据页提供内核映射给用户进程的内核时数据；
+	代码页提供屏蔽系统调用的主要逻辑；
+
+@note_link http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-bundles-share.html
 
 参考:http://lishiwen4.github.io/linux/vdso-and-syscall
 	 https://vvl.me/2019/06/linux-syscall-and-vsyscall-vdso-in-x86/
 
 #cat /proc/self/maps
-*/
+**************************************************************************************/
 LITE_VDSO_DATAPAGE VdsoDataPage g_vdsoDataPage __attribute__((__used__));//使用这个数据区
 
 STATIC size_t g_vdsoSize;

@@ -435,7 +435,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCreateParamCheck(const UINT32 *taskID,
         return LOS_ERRNO_TSK_STKSZ_TOO_LARGE;
     }
 
-    if (initParam->uwStackSize == 0) {//运行栈空间不能为0
+    if (initParam->uwStackSize == 0) {//任何任务都必须由内核态栈,所以uwStackSize不能为0
         initParam->uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
     }
     initParam->uwStackSize = (UINT32)ALIGN(initParam->uwStackSize, LOSCFG_STACK_POINT_ALIGN_SIZE);
@@ -446,7 +446,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCreateParamCheck(const UINT32 *taskID,
 
     return LOS_OK;
 }
-
+//任务栈(内核态)内存分配,由内核态进程空间提供,即 KProcess 的进程空间
 LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskStackAlloc(VOID **topStack, UINT32 stackSize, VOID *pool)
 {
     *topStack = (VOID *)LOS_MemAllocAlign(pool, stackSize, LOSCFG_STACK_POINT_ALIGN_SIZE);

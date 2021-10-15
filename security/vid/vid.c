@@ -32,7 +32,7 @@
 #include "vid_type.h"
 #include "vid_api.h"
 #include "los_memory.h"
-
+//虚拟ID映射链表初始化
 UINT32 VidMapListInit(LosProcessCB *processCB)
 {
     memset_s(&processCB->timerIdMap, sizeof(TimerIdMap), 0, sizeof(TimerIdMap));
@@ -53,7 +53,7 @@ UINT32 VidMapListInit(LosProcessCB *processCB)
     }
     return LOS_OK;
 }
-
+//销毁虚拟ID映射
 void VidMapDestroy(LosProcessCB *processCB)
 {
     TimerIdMapNode *idNode = NULL;
