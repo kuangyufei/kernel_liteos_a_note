@@ -852,14 +852,48 @@ ERR_REGION_SPLIT:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return status;
 }
+
+STATIC VOID OsVmSpaceAllRegionFree(LosVmSpace *space)
+{
+    LosRbNode *pstRbNode = NULL;
+    LosRbNode *pstRbNodeNext = NULL;
+
+    /* free all of the regions */
+    RB_SCAN_SAFE(&space->regionRbTree, pstRbNode, pstRbNodeNext)
+        LosVmMapRegion *region = (LosVmMapRegion *)pstRbNode;
+        if (region->range.size == 0) {
+            VM_ERR("space free, region: %#x flags: %#x, base:%#x, size: %#x",
+                   region, region->regionFlags, region->range.base, region->range.size);
+        }
+        STATUS_T ret = LOS_RegionFree(space, region);
+        if (ret != LOS_OK) {
+            VM_ERR("free region error, space %p, region %p", space, region);
+        }
+    RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNode, pstRbNodeNext)
+
+    return;
+}
+
+STATUS_T OsVmSpaceRegionFree(LosVmSpace *space)
+{
+    if (space == NULL) {
+        return LOS_ERRNO_VM_INVALID_ARGS;
+    }
+
+    if (space == &g_kVmSpace) {
+        VM_ERR("try to free kernel aspace, not allowed");
+        return LOS_OK;
+    }
+
+    (VOID)LOS_MuxAcquire(&space->regionMux);
+    OsVmSpaceAllRegionFree(space);
+    (VOID)LOS_MuxRelease(&space->regionMux);
+
+    return LOS_OK;
+}
 //释放虚拟空间,注意内核空间不能被释放掉,永驻内存
 STATUS_T LOS_VmSpaceFree(LosVmSpace *space)
 {
-    LosVmMapRegion *region = NULL;
-    LosRbNode *pstRbNode = NULL;
-    LosRbNode *pstRbNodeNext = NULL;
-    STATUS_T ret;
-
     if (space == NULL) {
         return LOS_ERRNO_VM_INVALID_ARGS;
     }
@@ -872,18 +906,8 @@ STATUS_T LOS_VmSpaceFree(LosVmSpace *space)
     /* pop it out of the global aspace list */
     (VOID)LOS_MuxAcquire(&space->regionMux);
     LOS_ListDelete(&space->node);//从g_vmSpaceList链表里删除，g_vmSpaceList记录了所有空间节点。
-    /* free all of the regions */
-    RB_SCAN_SAFE(&space->regionRbTree, pstRbNode, pstRbNodeNext)//释放空间中所有线性区 ，RB_SCAN_SAFE是个for循环宏
-        region = (LosVmMapRegion *)pstRbNode;
-        if (region->range.size == 0) {
-            VM_ERR("space free, region: %#x flags: %#x, base:%#x, size: %#x",
-                   region, region->regionFlags, region->range.base, region->range.size);
-        }
-        ret = LOS_RegionFree(space, region);//
-        if (ret != LOS_OK) {
-            VM_ERR("free region error, space %p, region %p", space, region);
-        }
-    RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNode, pstRbNodeNext)
+
+    OsVmSpaceAllRegionFree(space);
 
     /* make sure the current thread does not map the aspace */
     LosProcessCB *currentProcess = OsCurrProcessGet();

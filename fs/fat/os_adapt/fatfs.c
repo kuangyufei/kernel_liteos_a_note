@@ -626,7 +626,7 @@ int fatfs_open(struct file *filep)
     FIL *fp;
     int ret;
 
-    fp = (FIL *)zalloc(sizeof(FIL));
+    fp = (FIL *)zalloc(sizeof(FIL) + SS(fs));
     if (fp == NULL) {
         ret = ENOMEM;
         goto ERROR_EXIT;
@@ -650,19 +650,13 @@ int fatfs_open(struct file *filep)
     fp->err = 0;
     fp->sect = 0;
     fp->fptr = 0;
-    fp->buf = (BYTE*) ff_memalloc(SS(fs));
-    if (fp->buf == NULL) {
-        ret = ENOMEM;
-        goto ERROR_UNLOCK;
-    }
+    fp->buf = (BYTE *)fp + sizeof(FIL);
     LOS_ListAdd(&finfo->fp_list, &fp->fp_entry);
     unlock_fs(fs, FR_OK);
 
     filep->f_priv = fp;
-    return fatfs_sync(vp->originMount->mountFlags, fs);
+    return 0;
 
-ERROR_UNLOCK:
-    unlock_fs(fs, FR_OK);
 ERROR_FREE:
     free(fp);
 ERROR_EXIT:
@@ -692,7 +686,6 @@ int fatfs_close(struct file *filep)
     }
 #endif
     LOS_ListDelete(&fp->fp_entry);
-    ff_memfree(fp->buf);
     free(fp);
     filep->f_priv = NULL;
 EXIT:

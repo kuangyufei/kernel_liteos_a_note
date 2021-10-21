@@ -137,15 +137,15 @@ static int lwip_socket_wrap(int domain, int type, int protocol)
 #endif
     return lwip_socket2(domain, type, protocol);
 }
-//设置选项
+
 static int lwip_setsockopt_wrap(int s, int level, int optname, const void *optval, socklen_t optlen)
 {
 #if LWIP_ENABLE_NET_CAPABILITY
     if (level == SOL_SOCKET) {
         switch (optname) {
 #if LWIP_ENABLE_CAP_NET_BROADCAST
-            case SO_BROADCAST:	//广播消息
-                if (!IsCapPermit(CAP_NET_BROADCAST)) {//鉴权,是否广播权限
+            case SO_BROADCAST:
+                if (!IsCapPermit(CAP_NET_BROADCAST)) {
                     set_errno(EPERM);
                     return -1;
                 }
@@ -1175,6 +1175,25 @@ static u8_t lwip_ioctl_internal_SIOCGIFMTU(struct ifreq *ifr)
     }
 }
 
+static u8_t lwip_ioctl_internal_SIOCGIFBRDADDR(struct ifreq *ifr)
+{
+    struct netif *netif = NULL;
+    struct sockaddr_in *sock_in = NULL;
+
+    /* get netif subnet broadcast addr */
+    netif = netif_find(ifr->ifr_name);
+    if (netif == NULL) {
+        return ENODEV;
+    }
+    if (ip4_addr_isany_val(*(ip_2_ip4(&netif->netmask)))) {
+        return ENXIO;
+    }
+    sock_in = (struct sockaddr_in *)&ifr->ifr_addr;
+    sock_in->sin_family = AF_INET;
+    sock_in->sin_addr.s_addr = (ip_2_ip4(&((netif)->ip_addr))->addr | ~(ip_2_ip4(&netif->netmask)->addr));
+    return 0;
+}
+
 #endif /* LWIP_IOCTL_IF */
 
 #if LWIP_NETIF_ETHTOOL
@@ -1437,6 +1456,13 @@ static u8_t lwip_ioctl_impl(const struct lwip_sock *sock, long cmd, void *argp)
         case SIOCSIFMTU:
             err = lwip_ioctl_internal_SIOCSIFMTU(ifr);
             break;
+        case SIOCGIFBRDADDR:
+            if (is_ipv6 != 0) {
+                err = EINVAL;
+            } else {
+                err = lwip_ioctl_internal_SIOCGIFBRDADDR(ifr);
+            }
+            break;
 #endif /* LWIP_IOCTL_IF */
 #if LWIP_NETIF_ETHTOOL
         case SIOCETHTOOL:
@@ -1550,6 +1576,7 @@ int socks_ioctl(int sockfd, long cmd, void *argp)
             case SIOCGIFMTU:
             case SIOCSIFMTU:
             case SIOCETHTOOL:
+            case SIOCGIFBRDADDR:
                 nbytes = sizeof(struct ifreq);
                 break;
             default:

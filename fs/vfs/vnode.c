@@ -423,7 +423,7 @@ int VnodeLookupAt(const char *path, struct Vnode **result, uint32_t flags, struc
         }
     }
 
-    if (normalizedPath[0] == '/' && normalizedPath[1] == '\0') {//如果是根节点 
+    if (normalizedPath[1] == '\0' && normalizedPath[0] == '/') {
         *result = g_rootVnode;//啥也不说了,还找啥呀,直接返回根节点
         free(normalizedPath);
         return LOS_OK;
@@ -469,7 +469,6 @@ int VnodeLookupAt(const char *path, struct Vnode **result, uint32_t flags, struc
             currentVnode->filePath[vnodePathLen] = 0;
         }
     }
-    return ret;
 
 OUT_FREE_PATH:
     if (normalizedPath) {
@@ -484,6 +483,10 @@ int VnodeLookup(const char *path, struct Vnode **vnode, uint32_t flags)
     return VnodeLookupAt(path, vnode, flags, NULL);
 }
 //根节点内部改变
+int VnodeLookupFullpath(const char *fullpath, struct Vnode **vnode, uint32_t flags)
+{
+    return VnodeLookupAt(fullpath, vnode, flags, g_rootVnode);
+}
 
 static void ChangeRootInternal(struct Vnode *rootOld, char *dirname)
 {

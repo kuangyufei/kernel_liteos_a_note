@@ -279,7 +279,9 @@ VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, ...
     }
 
     if ((level != LOS_COMMON_LEVEL) && ((level > LOS_EMG_LEVEL) && (level <= LOS_TRACE_LEVEL))) {
-        dprintf("[%s]", g_logString[level]);//日志格式,先打印日志头           INFO ..... 
+        dprintf("[%s][%s:%s]", g_logString[level],
+                ((OsCurrProcessGet() == NULL) ? "NULL" : OsCurrProcessGet()->processName),
+                ((OsCurrTaskGet() == NULL) ? "NULL" : OsCurrTaskGet()->taskName));
     }
 
     va_start(ap, fmt);

@@ -347,7 +347,7 @@ extern TRACE_EVENT_HOOK g_traceEventHook;
 #define TASK_RESUME_PARAMS(taskId, taskStatus, prio)     taskId, taskStatus, prio
 #define TASK_SIGNAL_PARAMS(taskId, signal, schedFlag)    // taskId, signal, schedFlag
 
-#define SWTMR_START_PARAMS(swtmrId, mode, overrun, interval, expiry)  swtmrId, mode, overrun, interval, expiry
+#define SWTMR_START_PARAMS(swtmrId, mode, interval)  swtmrId, mode, interval
 #define SWTMR_DELETE_PARAMS(swtmrId)                                  swtmrId
 #define SWTMR_EXPIRED_PARAMS(swtmrId)                                 swtmrId
 #define SWTMR_STOP_PARAMS(swtmrId)                                    swtmrId
@@ -496,13 +496,13 @@ extern UINT32 LOS_TraceStart(VOID);
 
 /**
  * @ingroup los_trace
- * @brief Stop trace sample.
+ * @brief Stop trace.
  *
  * @par Description:
- * This API is used to start trace sample.
+ * This API is used to stop trace.
  * @attention
  * <ul>
- * <li>Stop trace sample</li>
+ * <li>Stop trace</li>
  * </ul>
  *
  * @param  None.

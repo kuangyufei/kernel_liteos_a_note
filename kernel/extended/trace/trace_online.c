@@ -37,12 +37,6 @@ UINT32 OsTraceGetMaskTid(UINT32 taskId)
     return taskId;
 }
 
-UINT32 OsTraceBufInit(UINT32 size)
-{
-    (VOID)size;
-    return LOS_OK;
-}
-
 VOID OsTraceSendHead(VOID)
 {
     TraceBaseHeaderInfo head = {

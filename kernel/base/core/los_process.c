@@ -352,6 +352,11 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
                   OsCurrProcessGet()->processID, processCB->processID);
     }
 
+#ifdef LOSCFG_KERNEL_VM
+    if (OsProcessIsUserMode(processCB)) {
+        (VOID)OsVmSpaceRegionFree(processCB->vmSpace);
+    }
+#endif
 #ifdef LOSCFG_FS_VFS
     if (OsProcessIsUserMode(processCB)) {//用户进程
         delete_files(processCB->files);//归还进程占用的进程描述符`profd`,如果是最后一个占用的系统描述符的进程,则同时归还系统文件描述符`sysfd`
@@ -562,11 +567,11 @@ LITE_OS_SEC_TEXT VOID OsProcessCBRecycleToFree(VOID)
             /* Clear the bottom 4 bits of process status */
             OsInsertPCBToFreeList(processCB);//进程回到可分配池中,再分配利用
         }
-        SCHEDULER_UNLOCK(intSave);
 #ifdef LOSCFG_KERNEL_VM
+        SCHEDULER_UNLOCK(intSave);
         (VOID)LOS_VmSpaceFree(space);//释放用户态进程的虚拟内存空间,因为内核只有一个虚拟空间,因此不需要释放虚拟空间.
-#endif
         SCHEDULER_LOCK(intSave);
+#endif
     }
 
     SCHEDULER_UNLOCK(intSave);

@@ -121,9 +121,9 @@ typedef struct ProcessCB {
     TimerIdMap          timerIdMap;
 #endif
 #ifdef LOSCFG_DRIVERS_TZDRIVER
-    struct file         *execFile;     /**< Exec bin of the process *///进程的可执行文件
+    struct Vnode        *execVnode;     /**< Exec bin of the process *///进程的可执行文件
 #endif
-    mode_t umask;//umask(user file-creatiopn mode mask)为用户文件创建掩码，是创建文件或文件夹时默认权限的基础。
+    mode_t               umask;//umask(user file-creatiopn mode mask)为用户文件创建掩码，是创建文件或文件夹时默认权限的基础。
 #ifdef LOSCFG_KERNEL_CPUP
     OsCpupBase           processCpup; /**< Process cpu usage *///进程占用CPU情况统计
 #endif

@@ -525,7 +525,6 @@ STATIC INT32 OsFutexWaitParamCheck(const UINT32 *userVaddr, UINT32 flags, UINT32
     }
 
     if (!absTime) {
-        PRINT_ERR("Futex wait param check failed! error absTime: %u\n", absTime);
         return LOS_EINVAL;
     }
 

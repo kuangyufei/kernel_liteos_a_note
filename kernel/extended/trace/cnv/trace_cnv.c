@@ -211,7 +211,7 @@ STATIC VOID LOS_TraceSwtmrExpired(const SWTMR_CTRL_S *swtmr)
 
 STATIC VOID LOS_TraceSwtmrStart(const SWTMR_CTRL_S *swtmr)
 {
-    LOS_TRACE(SWTMR_START, swtmr->usTimerID, swtmr->ucMode, swtmr->uwCount, swtmr->uwInterval, 0);
+    LOS_TRACE(SWTMR_START, swtmr->usTimerID, swtmr->ucMode, swtmr->uwInterval);
 }
 
 STATIC VOID LOS_TraceSwtmrStop(const SWTMR_CTRL_S *swtmr)

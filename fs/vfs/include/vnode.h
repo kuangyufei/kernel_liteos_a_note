@@ -224,6 +224,7 @@ int VnodeDevInit(void);
 int VnodeAlloc(struct VnodeOps *vop, struct Vnode **vnode);
 int VnodeFree(struct Vnode *vnode);
 int VnodeLookup(const char *path, struct Vnode **vnode, uint32_t flags);
+int VnodeLookupFullpath(const char *fullpath, struct Vnode **vnode, uint32_t flags);
 int VnodeLookupAt(const char *path, struct Vnode **vnode, uint32_t flags, struct Vnode *orgVnode);
 int VnodeHold(void);
 int VnodeDrop(void);
