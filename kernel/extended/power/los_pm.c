@@ -37,6 +37,43 @@
 #include "los_spinlock.h"
 #include "los_mp.h"
 
+/*******************************************************************
+// @note_link http://weharmonyos.com/openharmony/zh-cn/readme/%E7%94%B5%E6%BA%90%E7%AE%A1%E7%90%86%E5%AD%90%E7%B3%BB%E7%BB%9F.html
+电源管理子系统提供如下功能：
+	重启系统。
+	管理休眠运行锁。
+	系统电源状态查询。
+	充电和电池状态查询和上报。
+	亮灭屏管理和亮度调节。
+/base/powermgr
+├── battery_manager            # 电池服务组件
+│   ├── hdi                    # HDI层
+│   ├── interfaces             # 接口层
+│   ├── sa_profile             # SA配置文件
+│   ├── services               # 服务层
+│   └── utils                  # 工具和通用层
+├── display_manager            # 显示控制组件
+│   ├── interfaces             # 接口层
+│   └── sa_profile             # SA配置文件
+│   └── services               # 服务层
+│   └── utils                  # 工具和通用层
+├── powermgr_lite              # 轻量级电源管理组件
+│   ├── interfaces             # 接口层
+│   └── services               # 服务层
+└── power_manager              # 电源管理服务组件
+    ├── interfaces             # 接口层
+    ├── sa_profile             # SA配置文件
+    └── services               # 服务层
+    └── utils                  # 工具和通用层
+开发者通过电源管理子系统提供的接口可以进行申请和释放休眠运行锁RunningLock、获取电池信息、亮度调节、重启设备、关机等操作。
+
+电源管理子系统相关仓库
+
+powermgr_battery_manager
+powermgr_power_manager
+powermgr_display_manager
+
+*******************************************************************/
 #ifdef LOSCFG_KERNEL_PM
 #define PM_INFO_SHOW(seqBuf, arg...) do {                   \
     if (seqBuf != NULL) {                                   \
@@ -50,34 +87,34 @@
 #define OS_PM_LOCK_NAME_MAX 28
 
 typedef UINT32 (*Suspend)(VOID);
-
+//电源锁控制块
 typedef struct {
-    CHAR         name[OS_PM_LOCK_NAME_MAX];
-    UINT32       count;
-    LOS_DL_LIST  list;
+    CHAR         name[OS_PM_LOCK_NAME_MAX];//电源锁名称
+    UINT32       count;	//数量
+    LOS_DL_LIST  list;	//电源锁链表,上面挂的是 OsPmLockCB
 } OsPmLockCB;
-
+//电源管理控制块 
 typedef struct {
-    LOS_SysSleepEnum  mode;
-    UINT16            lock;
-    LOS_DL_LIST       lockList;
+    LOS_SysSleepEnum  mode;		//模式类型
+    UINT16            lock;		//锁数量
+    LOS_DL_LIST       lockList;	//电源锁链表头,上面挂的是 OsPmLockCB
 } LosPmCB;
 
-STATIC LosPmCB g_pmCB;
-STATIC SPIN_LOCK_INIT(g_pmSpin);
-
+STATIC LosPmCB g_pmCB;//电源控制块全局遍历
+STATIC SPIN_LOCK_INIT(g_pmSpin);//电源模块自旋锁
+//获取电源模式
 LOS_SysSleepEnum LOS_PmModeGet(VOID)
 {
     LOS_SysSleepEnum mode;
     LosPmCB *pm = &g_pmCB;
 
     LOS_SpinLock(&g_pmSpin);
-    mode = pm->mode;
+    mode = pm->mode;	//枚举类型,4种状态
     LOS_SpinUnlock(&g_pmSpin);
 
     return mode;
 }
-
+//获取电源锁数量
 UINT32 LOS_PmLockCountGet(VOID)
 {
     UINT16 count;
@@ -89,7 +126,7 @@ UINT32 LOS_PmLockCountGet(VOID)
 
     return (UINT32)count;
 }
-
+//显示所有电源锁信息
 VOID LOS_PmLockInfoShow(struct SeqBuf *m)
 {
     UINT32 intSave;
@@ -99,16 +136,16 @@ VOID LOS_PmLockInfoShow(struct SeqBuf *m)
     LOS_DL_LIST *list = head->pstNext;
 
     intSave = LOS_IntLock();
-    while (list != head) {
-        lock = LOS_DL_LIST_ENTRY(list, OsPmLockCB, list);
-        PM_INFO_SHOW(m, "%-30s%5u\n\r", lock->name, lock->count);
+    while (list != head) {//遍历链表
+        lock = LOS_DL_LIST_ENTRY(list, OsPmLockCB, list);//获取 OsPmLockCB 实体
+        PM_INFO_SHOW(m, "%-30s%5u\n\r", lock->name, lock->count); //打印名称和数量
         list = list->pstNext;
     }
     LOS_IntRestore(intSave);
 
     return;
 }
-
+//请求获取指定的锁
 UINT32 LOS_PmLockRequest(const CHAR *name)
 {
     INT32 len;
@@ -137,7 +174,7 @@ UINT32 LOS_PmLockRequest(const CHAR *name)
         LOS_SpinUnlock(&g_pmSpin);
         return LOS_EINVAL;
     }
-
+	//遍历找到参数对应的 OsPmLockCB 
     while (list != head) {
         listNode = LOS_DL_LIST_ENTRY(list, OsPmLockCB, list);
         if (strcmp(name, listNode->name) == 0) {
@@ -147,8 +184,8 @@ UINT32 LOS_PmLockRequest(const CHAR *name)
 
         list = list->pstNext;
     }
-
-    if (lock == NULL) {
+	
+    if (lock == NULL) {//没有记录则创建记录
         lock = LOS_MemAlloc((VOID *)OS_SYS_MEM_ADDR, sizeof(OsPmLockCB));
         if (lock == NULL) {
             LOS_SpinUnlock(&g_pmSpin);
@@ -162,17 +199,18 @@ UINT32 LOS_PmLockRequest(const CHAR *name)
             return err;
         }
 
-        lock->count = 1;
-        LOS_ListTailInsert(head, &lock->list);
+        lock->count = 1;//数量增加
+        LOS_ListTailInsert(head, &lock->list);//从尾部插入链表中
     } else if (lock->count < OS_PM_LOCK_MAX) {
-        lock->count++;
+        lock->count++;//存在记录时,数量增加
     }
 
-    pm->lock++;
+    pm->lock++;//总数量增加
     LOS_SpinUnlock(&g_pmSpin);
     return LOS_OK;
 }
-
+//释放指定锁,注意这里的释放指的是释放数量,当数量为0时才删除锁
+//释放方式跟系统描述符(sysfd)很像
 UINT32 LOS_PmLockRelease(const CHAR *name)
 {
     LosPmCB *pm = &g_pmCB;
@@ -196,43 +234,43 @@ UINT32 LOS_PmLockRelease(const CHAR *name)
         return LOS_EINVAL;
     }
 
-    while (list != head) {
+    while (list != head) {//遍历找到参数对应的 OsPmLockCB
         listNode = LOS_DL_LIST_ENTRY(list, OsPmLockCB, list);
         if (strcmp(name, listNode->name) == 0) {
             lock = listNode;
-            break;
+            break;//找到返回
         }
 
-        list = list->pstNext;
+        list = list->pstNext;//继续遍历下一个结点
     }
 
     if (lock == NULL) {
         LOS_SpinUnlock(&g_pmSpin);
         return LOS_EACCES;
-    } else if (lock->count > 0) {
-        lock->count--;
-        if (lock->count == 0) {
-            LOS_ListDelete(&lock->list);
+    } else if (lock->count > 0) {//有记录且有数量
+        lock->count--;	//数量减少
+        if (lock->count == 0) {//没有了
+            LOS_ListDelete(&lock->list);//讲自己从链表中摘除
             lockFree = lock;
         }
     }
-    pm->lock--;
+    pm->lock--;//总数量减少
     LOS_SpinUnlock(&g_pmSpin);
 
     (VOID)LOS_MemFree((VOID *)OS_SYS_MEM_ADDR, lockFree);
     return LOS_OK;
 }
-
+//电源管理模块初始化
 UINT32 OsPmInit(VOID)
 {
     LosPmCB *pm = &g_pmCB;
 
-    (VOID)memset_s(pm, sizeof(LosPmCB), 0, sizeof(LosPmCB));
+    (VOID)memset_s(pm, sizeof(LosPmCB), 0, sizeof(LosPmCB));//全局链表置0
 
-    pm->mode = LOS_SYS_NORMAL_SLEEP;
-    LOS_ListInit(&pm->lockList);
+    pm->mode = LOS_SYS_NORMAL_SLEEP;//初始模式
+    LOS_ListInit(&pm->lockList);//初始化链表
     return LOS_OK;
 }
 
-LOS_MODULE_INIT(OsPmInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
+LOS_MODULE_INIT(OsPmInit, LOS_INIT_LEVEL_KMOD_EXTENDED);//以扩展方式初始化电源管理模块
 #endif

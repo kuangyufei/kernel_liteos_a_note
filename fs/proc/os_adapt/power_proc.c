@@ -35,7 +35,8 @@
 #include "internal.h"
 #ifdef LOSCFG_KERNEL_PM
 #include "los_pm.h"
-
+// /proc 下的电源适配层
+//写电源锁信息
 static int PowerLockWrite(struct ProcFile *pf, const char *buf, size_t count, loff_t *ppos)
 {
     (void)pf;
@@ -43,7 +44,7 @@ static int PowerLockWrite(struct ProcFile *pf, const char *buf, size_t count, lo
     (void)ppos;
     return -LOS_PmLockRequest(buf);
 }
-
+//读取电源锁信息
 static int PowerLockRead(struct SeqBuf *m, void *v)
 {
     (void)v;
@@ -51,12 +52,12 @@ static int PowerLockRead(struct SeqBuf *m, void *v)
     LOS_PmLockInfoShow(m);
     return 0;
 }
-
+//proc 拿电源锁操作
 static const struct ProcFileOperations PowerLock = {
     .write      = PowerLockWrite,
     .read       = PowerLockRead,
 };
-
+//proc 释放锁操作
 static int PowerUnlockWrite(struct ProcFile *pf, const char *buf, size_t count, loff_t *ppos)
 {
     (void)pf;
@@ -115,12 +116,12 @@ static const struct ProcFileOperations PowerCount = {
 };
 
 #define POWER_FILE_MODE  (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH)
-#define OS_POWER_PRIVILEGE 7
-
+#define OS_POWER_PRIVILEGE 7	//电源特权
+// /proc/power 的初始化 
 void ProcPmInit(void)
 {
     struct ProcDirEntry *power = CreateProcEntry("power", S_IFDIR | S_IRWXU | S_IRWXG | S_IROTH, NULL);
-    if (power == NULL) {
+    if (power == NULL) {//创建 文件夹 /proc/power
         PRINT_ERR("create /proc/power error!\n");
         return;
     }
@@ -128,7 +129,7 @@ void ProcPmInit(void)
     power->gid = OS_POWER_PRIVILEGE;
 
     struct ProcDirEntry *mode = CreateProcEntry("power/power_mode", POWER_FILE_MODE, NULL);
-    if (mode == NULL) {
+    if (mode == NULL) {//创建 文件夹 /proc/power/power_mode
         PRINT_ERR("create /proc/power/power_mode error!\n");
         goto FREE_POWER;
     }
@@ -137,7 +138,7 @@ void ProcPmInit(void)
     mode->gid = OS_POWER_PRIVILEGE;
 
     struct ProcDirEntry *lock = CreateProcEntry("power/power_lock", POWER_FILE_MODE, NULL);
-    if (lock == NULL) {
+    if (lock == NULL) {//创建 文件夹 /proc/power/power_lock
         PRINT_ERR("create /proc/power/power_lock error!\n");
         goto FREE_MODE;
     }
@@ -146,7 +147,7 @@ void ProcPmInit(void)
     lock->gid = OS_POWER_PRIVILEGE;
 
     struct ProcDirEntry *unlock = CreateProcEntry("power/power_unlock", POWER_FILE_MODE, NULL);
-    if (unlock == NULL) {
+    if (unlock == NULL) {//创建 文件夹 /proc/power/power_unlock
         PRINT_ERR("create /proc/power/power_unlock error!\n");
         goto FREE_LOCK;
     }
@@ -155,7 +156,7 @@ void ProcPmInit(void)
     unlock->gid = OS_POWER_PRIVILEGE;
 
     struct ProcDirEntry *count = CreateProcEntry("power/power_count", S_IRUSR | S_IRGRP | S_IROTH, NULL);
-    if (count == NULL) {
+    if (count == NULL) {//创建 文件夹 /proc/power/power_count
         PRINT_ERR("create /proc/power/power_count error!\n");
         goto FREE_UNLOCK;
     }

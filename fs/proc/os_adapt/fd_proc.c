@@ -39,11 +39,12 @@
 #include "los_process.h"
 #include "capability_api.h"
 #include "capability_type.h"
+// /proc 下的文件描述符适配层
 
 
 /*
  * Template: Pid    Fd  [SysFd ] Name
- */
+ */ //打印系统文件描述符信息
 static void FillFdInfo(struct SeqBuf *seqBuf, struct filelist *fileList, unsigned int pid, bool hasPrivilege)
 {
     int fd;
@@ -128,7 +129,7 @@ static int FdProcFill(struct SeqBuf *seqBuf, void *v)
 static const struct ProcFileOperations FD_PROC_FOPS = {
     .read       = FdProcFill,
 };
-
+// 初始化 /proc/fd
 void ProcFdInit(void)
 {
     struct ProcDirEntry *pde = CreateProcEntry("fd", 0, NULL);
