@@ -63,53 +63,53 @@ typedef struct { //用户描述体
     UINT32  effUserID;
     UINT32  gid;	//用户组ID [0,60000],0为root用户组
     UINT32  effGid;
-    UINT32  groupNumber;//用户组数量 
+    UINT32  groupNumber;///< 用户组数量 
     UINT32  groups[1];	//所属用户组列表,一个用户可属多个用户组
 } User;
 #endif
 
 typedef struct {
-    UINT32      groupID;         /**< Process group ID is the PID of the process that created the group *///进程组ID是创建进程组的那个进程的ID
-    LOS_DL_LIST processList;     /**< List of processes under this process group *///属于该进程组的进程链表
-    LOS_DL_LIST exitProcessList; /**< List of closed processes (zombie processes) under this group *///进程组的僵死进程链表
-    LOS_DL_LIST groupList;       /**< Process group list *///进程组链表,上面挂的都是进程组
+    UINT32      groupID;         /**< Process group ID is the PID of the process that created the group \n 进程组ID是创建进程组的那个进程的ID*/
+    LOS_DL_LIST processList;     /**< List of processes under this process group \n 属于该进程组的进程链表*/
+    LOS_DL_LIST exitProcessList; /**< List of closed processes (zombie processes) under this group \n 进程组的僵死进程链表*/
+    LOS_DL_LIST groupList;       /**< Process group list \n 进程组链表,上面挂的都是进程组*/
 } ProcessGroup;
 
 typedef struct ProcessCB {
-    CHAR                 processName[OS_PCB_NAME_LEN]; /**< Process name */	//进程名称
-    UINT32               processID;                    /**< process ID = leader thread ID */	//进程ID,由进程池分配,范围[0,64]
+    CHAR                 processName[OS_PCB_NAME_LEN]; /**< Process name \n 进程名称 */
+    UINT32               processID;                    /**< process ID = leader thread ID \n 进程ID,由进程池分配,范围[0,64] */
     UINT16               processStatus;                /**< [15:4] process Status; [3:0] The number of threads currently
-                                                            running in the process *///这里设计很巧妙.用一个变量表示了两层逻辑 数量和状态,点赞!从这里也可以看出一个进程可以有多个正在运行的任务
-    UINT16               priority;                     /**< process priority */	//进程优先级
-    UINT16               consoleID;                    /**< The console id of task belongs  *///任务的控制台id归属
-    UINT16               processMode;                  /**< Kernel Mode:0; User Mode:1; */	//模式指定为内核还是用户进程
+                                                            running in the process \n 这里设计很巧妙.用一个变量表示了两层逻辑 数量和状态,点赞!从这里也可以看出一个进程可以有多个正在运行的任务*/
+    UINT16               priority;                     /**< process priority \n 进程优先级*/
+    UINT16               consoleID;                    /**< The console id of task belongs \n 任务的控制台id归属 */
+    UINT16               processMode;                  /**< Kernel Mode:0; User Mode:1; \n 模式指定为内核还是用户进程 */
     UINT16               readyTaskNum;                 /**< The number of ready tasks in the current process */
-    UINT32               parentProcessID;              /**< Parent process ID */	//父进程ID
-    UINT32               exitCode;                     /**< process exit status */	//进程退出状态码
-    LOS_DL_LIST          pendList;                     /**< Block list to which the process belongs */ //进程所在的阻塞列表,进程因阻塞挂入相应的链表.
-    LOS_DL_LIST          childrenList;                 /**< my children process list */	//孩子进程都挂到这里,形成双循环链表
-    LOS_DL_LIST          exitChildList;                /**< my exit children process list */	//要退出的孩子进程链表，白发人要送黑发人.
-    LOS_DL_LIST          siblingList;                  /**< linkage in my parent's children list */ //兄弟进程链表, 56个民族是一家,来自同一个父进程.
-    ProcessGroup         *group;                       /**< Process group to which a process belongs */ //所属进程组
-    LOS_DL_LIST          subordinateGroupList;         /**< linkage in my group list */ //进程组员链表
-    UINT32               threadGroupID;                /**< Which thread group , is the main thread ID of the process */ //哪个线程组是进程的主线程ID
-    LOS_DL_LIST          threadSiblingList;            /**< List of threads under this process *///进程的线程(任务)列表
-    volatile UINT32      threadNumber; /**< Number of threads alive under this process */	//此进程下的活动线程数
-    UINT32               threadCount;  /**< Total number of threads created under this process */	//在此进程下创建的线程总数
-    LOS_DL_LIST          waitList;     /**< The process holds the waitLits to support wait/waitpid *///父进程通过进程等待的方式，回收子进程资源，获取子进程退出信息
+    UINT32               parentProcessID;              /**< Parent process ID \n 父进程ID*/
+    UINT32               exitCode;                     /**< process exit status \n 进程退出状态码*/
+    LOS_DL_LIST          pendList;                     /**< Block list to which the process belongs \n 进程所在的阻塞列表,进程因阻塞挂入相应的链表.*/
+    LOS_DL_LIST          childrenList;                 /**< my children process list \n 孩子进程都挂到这里,形成双循环链表*/
+    LOS_DL_LIST          exitChildList;                /**< my exit children process list \n 要退出的孩子进程链表，白发人要送黑发人.*/
+    LOS_DL_LIST          siblingList;                  /**< linkage in my parent's children list \n 兄弟进程链表, 56个民族是一家,来自同一个父进程.*/
+    ProcessGroup         *group;                       /**< Process group to which a process belongs \n 所属进程组*/
+    LOS_DL_LIST          subordinateGroupList;         /**< linkage in my group list \n 进程组员链表*/
+    UINT32               threadGroupID;                /**< Which thread group , is the main thread ID of the process */
+    LOS_DL_LIST          threadSiblingList;            /**< List of threads under this process \n 进程的线程(任务)列表 */
+    volatile UINT32      threadNumber; /**< Number of threads alive under this process \n 此进程下的活动线程数*/
+    UINT32               threadCount;  /**< Total number of threads created under this process \n 在此进程下创建的线程总数*/	//
+    LOS_DL_LIST          waitList;     /**< The process holds the waitLits to support wait/waitpid \n 父进程通过进程等待的方式，回收子进程资源，获取子进程退出信息*/
 #ifdef LOSCFG_KERNEL_SMP
-    UINT32               timerCpu;     /**< CPU core number of this task is delayed or pended *///统计各线程被延期或阻塞的时间
+    UINT32               timerCpu;     /**< CPU core number of this task is delayed or pended \n 统计各线程被延期或阻塞的时间*/
 #endif
-    UINTPTR              sigHandler;   /**< signal handler */ //信号处理函数,处理如 SIGSYS 等信号 
-    sigset_t             sigShare;     /**< signal share bit */	//信号共享位 sigset_t是个64位的变量,对应64种信号
+    UINTPTR              sigHandler;   /**< signal handler \n 信号处理函数,处理如 SIGSYS 等信号*/
+    sigset_t             sigShare;     /**< signal share bit \n 信号共享位 sigset_t是个64位的变量,对应64种信号*/
 #ifdef LOSCFG_KERNEL_LITEIPC
-    ProcIpcInfo         ipcInfo;       /**< memory pool for lite ipc */ //用于进程间通讯的虚拟设备文件系统,设备装载点为 /dev/lite_ipc
+    ProcIpcInfo         ipcInfo;       /**< memory pool for lite ipc \n 用于进程间通讯的虚拟设备文件系统,设备装载点为 /dev/lite_ipc*/
 #endif
 #ifdef LOSCFG_KERNEL_VM
-    LosVmSpace          *vmSpace;       /**< VMM space for processes */ //虚拟空间,描述进程虚拟内存的数据结构，linux称为内存描述符
+    LosVmSpace          *vmSpace;       /**< VMM space for processes \n 虚拟空间,描述进程虚拟内存的数据结构，linux称为内存描述符 */
 #endif
 #ifdef LOSCFG_FS_VFS
-    struct files_struct *files;        /**< Files held by the process */ //进程所持有的所有文件，注者称之为进程的文件管理器
+    struct files_struct *files;        /**< Files held by the process \n 进程所持有的所有文件，注者称之为进程的文件管理器*/
 #endif	//每个进程都有属于自己的文件管理器,记录对文件的操作. 注意:一个文件可以被多个进程操作
     timer_t             timerID;       /**< iTimer */
 
@@ -121,28 +121,28 @@ typedef struct ProcessCB {
     TimerIdMap          timerIdMap;
 #endif
 #ifdef LOSCFG_DRIVERS_TZDRIVER
-    struct Vnode        *execVnode;     /**< Exec bin of the process *///进程的可执行文件
+    struct Vnode        *execVnode;     /**< Exec bin of the process \n 进程的可执行文件 */
 #endif
-    mode_t               umask;//umask(user file-creatiopn mode mask)为用户文件创建掩码，是创建文件或文件夹时默认权限的基础。
+    mode_t               umask;///< umask(user file-creatiopn mode mask)为用户文件创建掩码，是创建文件或文件夹时默认权限的基础。
 #ifdef LOSCFG_KERNEL_CPUP
-    OsCpupBase           processCpup; /**< Process cpu usage *///进程占用CPU情况统计
+    OsCpupBase           processCpup; /**< Process cpu usage \n 进程占用CPU情况统计*/
 #endif
     struct rlimit        pl_rlimit[RLIM_NLIMITS];
 } LosProcessCB;
 
-#define CLONE_VM       0x00000100	//子进程与父进程运行于相同的内存空间
-#define CLONE_FS       0x00000200	//子进程与父进程共享相同的文件系统，包括root、当前目录、umask
-#define CLONE_FILES    0x00000400	//子进程与父进程共享相同的文件描述符（file descriptor）表
-#define CLONE_SIGHAND  0x00000800	//子进程与父进程共享相同的信号处理（signal handler）表
-#define CLONE_PTRACE   0x00002000	//若父进程被trace，子进程也被trace
-#define CLONE_VFORK    0x00004000	//父进程被挂起，直至子进程释放虚拟内存资源
-#define CLONE_PARENT   0x00008000	//创建的子进程的父进程是调用者的父进程，新进程与创建它的进程成了“兄弟”而不是“父子”
-#define CLONE_THREAD   0x00010000	//Linux 2.4中增加以支持POSIX线程标准，子进程与父进程共享相同的线程群
+#define CLONE_VM       0x00000100	///< 子进程与父进程运行于相同的内存空间
+#define CLONE_FS       0x00000200	///< 子进程与父进程共享相同的文件系统，包括root、当前目录、umask
+#define CLONE_FILES    0x00000400	///< 子进程与父进程共享相同的文件描述符（file descriptor）表
+#define CLONE_SIGHAND  0x00000800	///< 子进程与父进程共享相同的信号处理（signal handler）表
+#define CLONE_PTRACE   0x00002000	///< 若父进程被trace，子进程也被trace
+#define CLONE_VFORK    0x00004000	///< 父进程被挂起，直至子进程释放虚拟内存资源
+#define CLONE_PARENT   0x00008000	///< 创建的子进程的父进程是调用者的父进程，新进程与创建它的进程成了“兄弟”而不是“父子”
+#define CLONE_THREAD   0x00010000	///< Linux 2.4中增加以支持POSIX线程标准，子进程与父进程共享相同的线程群
 //CLONE_NEWNS 在新的namespace启动子进程，namespace描述了进程的文件hierarchy
 //CLONE_PID 子进程在创建时PID与父进程一致
-#define OS_PCB_FROM_PID(processID) (((LosProcessCB *)g_processCBArray) + (processID))//通过数组找到LosProcessCB
-#define OS_PCB_FROM_SIBLIST(ptr)   LOS_DL_LIST_ENTRY((ptr), LosProcessCB, siblingList)//通过siblingList节点找到 LosProcessCB
-#define OS_PCB_FROM_PENDLIST(ptr)  LOS_DL_LIST_ENTRY((ptr), LosProcessCB, pendList) //通过pendlist节点找到 LosProcessCB
+#define OS_PCB_FROM_PID(processID) (((LosProcessCB *)g_processCBArray) + (processID))///< 通过数组找到LosProcessCB
+#define OS_PCB_FROM_SIBLIST(ptr)   LOS_DL_LIST_ENTRY((ptr), LosProcessCB, siblingList)///< 通过siblingList节点找到 LosProcessCB
+#define OS_PCB_FROM_PENDLIST(ptr)  LOS_DL_LIST_ENTRY((ptr), LosProcessCB, pendList) ///< 通过pendlist节点找到 LosProcessCB
 
 /**
  * @ingroup los_process
@@ -337,17 +337,17 @@ STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)//用户态
 //置进程退出码第七位为1
 STATIC INLINE VOID OsProcessExitCodeCoreDumpSet(LosProcessCB *processCB)
 {
-    processCB->exitCode |= 0x80U;// 0b10000000 
+    processCB->exitCode |= 0x80U;///<  0b10000000 
 }
 //设置进程退出信号(0 ~ 7)
 STATIC INLINE VOID OsProcessExitCodeSignalSet(LosProcessCB *processCB, UINT32 signal)
 {
-    processCB->exitCode |= signal & 0x7FU;//0b01111111
+    processCB->exitCode |= signal & 0x7FU;///< 0b01111111
 }
 //清除进程退出信号(0 ~ 7)
 STATIC INLINE VOID OsProcessExitCodeSignalClear(LosProcessCB *processCB)
 {
-    processCB->exitCode &= (~0x7FU);//低7位全部清0
+    processCB->exitCode &= (~0x7FU);///< 低7位全部清0
 }
 //进程退出码是否被设置过,默认是 0 ,如果 & 0x7FU 还是 0 ,说明没有被设置过.
 STATIC INLINE BOOL OsProcessExitCodeSignalIsSet(LosProcessCB *processCB)
@@ -360,8 +360,8 @@ STATIC INLINE VOID OsProcessExitCodeSet(LosProcessCB *processCB, UINT32 code)
     processCB->exitCode |= ((code & 0x000000FFU) << 8U) & 0x0000FF00U; /* 8: Move 8 bits to the left, exitCode */
 }
 
-extern LosProcessCB *g_processCBArray;//进程池 OsProcessInit
-extern UINT32 g_processMaxNum;//进程最大数量
+extern LosProcessCB *g_processCBArray;///< 进程池 OsProcessInit
+extern UINT32 g_processMaxNum;///< 进程最大数量
 
 #define OS_PID_CHECK_INVALID(pid) (((UINT32)(pid)) >= g_processMaxNum)
 //内联函数 进程ID是否有效
@@ -454,7 +454,7 @@ STATIC INLINE User *OsCurrUserGet(VOID)//获取当前进程的所属用户
 extern UINTPTR __user_init_entry;	// 第一个用户态任务的入口地址 查看 LITE_USER_SEC_ENTRY
 extern UINTPTR __user_init_bss;		// 查看 LITE_USER_SEC_BSS
 extern UINTPTR __user_init_end;		// 用户空间结束虚拟地址
-extern UINTPTR __user_init_load_addr;//用户空间加载地址
+extern UINTPTR __user_init_load_addr;///< 用户空间加载地址
 extern UINT32 OsSystemProcessCreate(VOID);
 extern VOID OsProcessCBRecycleToFree(VOID);
 extern VOID OsProcessResourcesToFree(LosProcessCB *processCB);

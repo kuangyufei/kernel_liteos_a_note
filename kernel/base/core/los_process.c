@@ -55,26 +55,44 @@
 #include "los_vm_phys.h"
 #include "los_vm_syscall.h"
 
+/**@file  los_process.c
+* @brief       进程模块主文件
+* @details     主要包括进程的创建
+* @author      openharmony
+**********************************************************************************
+* @attention
+* 并发（Concurrent）:多个线程在单个核心运行，同一时间只能一个线程运行，内核不停切换线程，
+* 		看起来像同时运行，实际上是线程不停切换
+* 并行（Parallel）每个线程分配给独立的CPU核心，线程同时运行
+* 单核CPU多个进程或多个线程内能实现并发（微观上的串行，宏观上的并行）
+* 多核CPU线程间可以实现宏观和微观上的并行
+* LITE_OS_SEC_BSS 和 LITE_OS_SEC_DATA_INIT 是告诉编译器这些全局变量放在哪个数据段
+* @par 注解日志:
+* <table>
+* <tr><th>时间        <th>版本  <th>作者    <th>描述
+* <tr><td>2020/09/19  <td>1.0      <td>turing  <td>创建初始版本
+* </table>
+*
+**********************************************************************************
+*/
 
-/******************************************************************************
- 并发（Concurrent）:多个线程在单个核心运行，同一时间只能一个线程运行，内核不停切换线程，
- 		看起来像同时运行，实际上是线程不停切换
- 并行（Parallel）每个线程分配给独立的CPU核心，线程同时运行
- 单核CPU多个进程或多个线程内能实现并发（微观上的串行，宏观上的并行）
- 多核CPU线程间可以实现宏观和微观上的并行
- LITE_OS_SEC_BSS 和 LITE_OS_SEC_DATA_INIT 是告诉编译器这些全局变量放在哪个数据段
-******************************************************************************/
-LITE_OS_SEC_BSS LosProcessCB *g_processCBArray = NULL; // 进程池数组
-LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_freeProcess;// 空闲状态下的进程链表, .个人觉得应该取名为 g_freeProcessList  @note_thinking
-LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_processRecycleList;// 需要回收的进程列表
-LITE_OS_SEC_BSS UINT32 g_userInitProcess = OS_INVALID_VALUE;// 用户态的初始init进程,用户态下其他进程由它 fork
-LITE_OS_SEC_BSS UINT32 g_kernelInitProcess = OS_INVALID_VALUE;// 内核态初始Kprocess进程,内核态下其他进程由它 fork
-LITE_OS_SEC_BSS UINT32 g_kernelIdleProcess = OS_INVALID_VALUE;// 内核态idle进程,由Kprocess fork
-LITE_OS_SEC_BSS UINT32 g_processMaxNum;// 进程最大数量,默认64个
-LITE_OS_SEC_BSS ProcessGroup *g_processGroup = NULL;// 全局进程组,负责管理所有进程组
-//将task从该进程的就绪队列中摘除,如果需要进程也从进程就绪队列中摘除
+LITE_OS_SEC_BSS LosProcessCB *g_processCBArray = NULL; ///< 进程池数组
+LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_freeProcess;///< 空闲状态下的进程链表, .个人觉得应该取名为 g_freeProcessList  @note_thinking
+LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_processRecycleList;///< 需要回收的进程列表
+LITE_OS_SEC_BSS UINT32 g_userInitProcess = OS_INVALID_VALUE;///< 用户态的初始init进程,用户态下其他进程由它 fork
+LITE_OS_SEC_BSS UINT32 g_kernelInitProcess = OS_INVALID_VALUE;///< 内核态初始Kprocess进程,内核态下其他进程由它 fork
+LITE_OS_SEC_BSS UINT32 g_kernelIdleProcess = OS_INVALID_VALUE;///< 内核态idle进程,由Kprocess fork
+LITE_OS_SEC_BSS UINT32 g_processMaxNum;///< 进程最大数量,默认64个
+LITE_OS_SEC_BSS ProcessGroup *g_processGroup = NULL;///< 全局进程组,负责管理所有进程组
 
-//插入进程到空闲链表中
+/**
+ * @brief 将进程插入到空闲链表中
+ * @details 
+ * @param argc 1
+ * @param[LosProcessCB]  processCB  指定进程
+ * @return  函数执行结果
+ * - VOID   无
+*/
 STATIC INLINE VOID OsInsertPCBToFreeList(LosProcessCB *processCB)
 {
     UINT32 pid = processCB->processID;//获取进程ID
@@ -84,7 +102,14 @@ STATIC INLINE VOID OsInsertPCBToFreeList(LosProcessCB *processCB)
     processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;//timeID初始化值
     LOS_ListTailInsert(&g_freeProcess, &processCB->pendList);//进程节点挂入g_freeProcess以分配给后续进程使用
 }
-//创建进程组
+/**
+ * @brief 创建进程组
+ * @details 
+ * @param argc 1
+ * @param[UINT32]  pid  进程ID
+ * @return  函数执行结果
+ * - ProcessGroup   返回进程组
+*/
 STATIC ProcessGroup *OsCreateProcessGroup(UINT32 pid)
 {
     LosProcessCB *processCB = NULL;
@@ -107,7 +132,11 @@ STATIC ProcessGroup *OsCreateProcessGroup(UINT32 pid)
 
     return group;
 }
-//退出进程组,参数是进程地址和进程组地址的地址
+/**
+ * @brief 退出进程组,参数是进程地址和进程组地址的地址
+ * @details 
+ * 
+*/
 STATIC VOID OsExitProcessGroup(LosProcessCB *processCB, ProcessGroup **group)//ProcessGroup *g_processGroup = NULL
 {
     LosProcessCB *groupProcessCB = OS_PCB_FROM_PID(processCB->group->groupID);//找到进程组老大进程的实体
@@ -125,7 +154,11 @@ STATIC VOID OsExitProcessGroup(LosProcessCB *processCB, ProcessGroup **group)//P
 
     processCB->group = NULL;
 }
-//通过指定组ID找到进程组
+/**
+ * @brief 通过指定组ID找到进程组
+ * @details 
+ * 
+*/
 STATIC ProcessGroup *OsFindProcessGroup(UINT32 gid)
 {
     ProcessGroup *group = NULL;
@@ -142,7 +175,11 @@ STATIC ProcessGroup *OsFindProcessGroup(UINT32 gid)
     PRINT_INFO("%s is find group : %u failed!\n", __FUNCTION__, gid);
     return NULL;
 }
-//给指定进程组发送信号
+/**
+ * @brief 给指定进程组发送信号
+ * @details 
+ * 
+*/
 STATIC INT32 OsSendSignalToSpecifyProcessGroup(ProcessGroup *group, siginfo_t *info, INT32 permission)
 {
     INT32 ret, success, err;
@@ -162,7 +199,11 @@ STATIC INT32 OsSendSignalToSpecifyProcessGroup(ProcessGroup *group, siginfo_t *i
     /* At least one success. */
     return success ? LOS_OK : ret;
 }
-//给所有进程发送指定信号
+/**
+ * @brief 给所有进程发送指定信号
+ * @details 
+ * 
+*/
 LITE_OS_SEC_TEXT INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permission)
 {
     INT32 ret, success, err;
@@ -181,7 +222,11 @@ LITE_OS_SEC_TEXT INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permissio
     }
     return success ? LOS_OK : ret;
 }
-//发送指定信号给给进程组
+/**
+ * @brief 发送指定信号给给进程组
+ * @details 
+ * 
+*/
 LITE_OS_SEC_TEXT INT32 OsSendSignalToProcessGroup(INT32 pid, siginfo_t *info, INT32 permission)
 {
     ProcessGroup *group = NULL;
