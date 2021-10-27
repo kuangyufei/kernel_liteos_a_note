@@ -45,10 +45,10 @@ extern "C" {
  * Description: the info struct after cmd parser
  */
 typedef struct {//命令解析器
-    unsigned int paramCnt;          /* count of para *///参数数量
-    CmdType      cmdType;           /* cmd type, judge cmd keyword *///命令类型
-    char cmdKeyword[CMD_KEY_LEN];   /* cmd keyword str *///关键字,最多16个字符
-    char *paramArray[CMD_MAX_PARAS];//参数内容,最多32个参数
+    unsigned int paramCnt;          /**< count of para \n 参数数量*/
+    CmdType      cmdType;           /**< cmd type, judge cmd keyword \n 命令类型*/
+    char cmdKeyword[CMD_KEY_LEN];   /**< cmd keyword str \n 关键字,最多16个字符*/
+    char *paramArray[CMD_MAX_PARAS];/**< 参数内容,最多32个参数 */
 } CmdParsed;
 
 extern unsigned int OsCmdParse(char *cmdStr, CmdParsed *cmdParsed);

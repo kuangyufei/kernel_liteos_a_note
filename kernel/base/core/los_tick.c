@@ -37,12 +37,12 @@
 #endif
 
 
-LITE_OS_SEC_DATA_INIT UINT32 g_sysClock;//系统时钟,是绝大部分部件工作的时钟源，也是其他所有外设的时钟的来源 
-LITE_OS_SEC_DATA_INIT UINT32 g_tickPerSecond;//每秒Tick数,鸿蒙默认是每秒100次,即:10ms
-LITE_OS_SEC_BSS DOUBLE g_cycle2NsScale;	//周期转纳秒级
+LITE_OS_SEC_DATA_INIT UINT32 g_sysClock;///< 系统时钟,是绝大部分部件工作的时钟源，也是其他所有外设的时钟的来源 
+LITE_OS_SEC_DATA_INIT UINT32 g_tickPerSecond;///<每秒Tick数,鸿蒙默认是每秒100次,即:10ms
+LITE_OS_SEC_BSS DOUBLE g_cycle2NsScale;	///<周期转纳秒级
 
 /* spinlock for task module */
-LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_tickSpin); //节拍器自旋锁
+LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_tickSpin); ///<节拍器自旋锁
 
 /*
  * Description : Tick interruption handler

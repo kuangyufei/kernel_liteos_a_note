@@ -29,6 +29,67 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**@file  los_swtmr.c
+* @brief  软定时器主文件
+* @details  
+* @attention 基本概念 \n
+	软件定时器，是基于系统Tick时钟中断且由软件来模拟的定时器。当经过设定的Tick数后，会触发用户自定义的回调函数。\n
+	硬件定时器受硬件的限制，数量上不足以满足用户的实际需求。因此为了满足用户需求，提供更多的定时器，\n
+	软件定时器功能，支持如下特性：\n
+		创建软件定时器。\n
+		启动软件定时器。\n
+		停止软件定时器。\n
+		删除软件定时器。\n
+		获取软件定时器剩余Tick数。\n
+		可配置支持的软件定时器个数。\n
+ 		
+    运作机制 \n
+        软件定时器是系统资源，在模块初始化的时候已经分配了一块连续内存。\n
+        软件定时器使用了系统的一个队列和一个任务资源，软件定时器的触发遵循队列规则，\n
+        先进先出。定时时间短的定时器总是比定时时间长的靠近队列头，满足优先触发的准则。\n
+        软件定时器以Tick为基本计时单位，当创建并启动一个软件定时器时，Huawei LiteOS会根据 \n
+        当前系统Tick时间及设置的定时时长确定该定时器的到期Tick时间，并将该定时器控制结构挂入计时全局链表。\n
+        当Tick中断到来时，在Tick中断处理函数中扫描软件定时器的计时全局链表，检查是否有定时器超时，\n
+        若有则将超时的定时器记录下来。Tick中断处理函数结束后，软件定时器任务（优先级为最高）\n
+        被唤醒，在该任务中调用已经记录下来的定时器的回调函数。\n
+ 
+    定时器状态 \n
+        OS_SWTMR_STATUS_UNUSED（定时器未使用）\n
+        系统在定时器模块初始化时，会将系统中所有定时器资源初始化成该状态。\n
+ 
+        OS_SWTMR_STATUS_TICKING（定时器处于计数状态）\n
+        在定时器创建后调用LOS_SwtmrStart接口启动，定时器将变成该状态，是定时器运行时的状态。\n
+ 
+        OS_SWTMR_STATUS_CREATED（定时器创建后未启动，或已停止）\n
+        定时器创建后，不处于计数状态时，定时器将变成该状态。\n
+ 
+    软件定时器提供了三类模式：\n
+        单次触发定时器，这类定时器在启动后只会触发一次定时器事件，然后定时器自动删除。\n
+        周期触发定时器，这类定时器会周期性的触发定时器事件，直到用户手动停止定时器，否则将永远持续执行下去。\n
+        单次触发定时器，但这类定时器超时触发后不会自动删除，需要调用定时器删除接口删除定时器。\n
+ 
+    使用场景 \n
+        创建一个单次触发的定时器，超时后执行用户自定义的回调函数。\n
+        创建一个周期性触发的定时器，超时后执行用户自定义的回调函数。\n
+ 
+     软件定时器的典型开发流程 \n
+         通过make menuconfig配置软件定时器 \n
+         创建定时器LOS_SwtmrCreate，设置定时器的定时时长、定时器模式、超时后的回调函数。\n
+         启动定时器LOS_SwtmrStart。\n
+         获得软件定时器剩余Tick数LOS_SwtmrTimeGet。\n
+         停止定时器LOS_SwtmrStop。\n
+         删除定时器LOS_SwtmrDelete。\n
+ 
+     注意事项 \n
+         软件定时器的回调函数中不应执行过多操作，不建议使用可能引起任务挂起或者阻塞的接口或操作， \n
+         如果使用会导致软件定时器响应不及时，造成的影响无法确定。\n
+         软件定时器使用了系统的一个队列和一个任务资源。软件定时器任务的优先级设定为0，且不允许修改 。\n
+         系统可配置的软件定时器个数是指：整个系统可使用的软件定时器总个数，并非用户可使用的软件定时器个数。\n
+         例如：系统多占用一个软件定时器，那么用户能使用的软件定时器资源就会减少一个。\n
+         创建单次不自删除属性的定时器，用户需要自行调用定时器删除接口删除定时器，回收定时器资源，避免资源泄露。\n
+         软件定时器的定时精度与系统Tick时钟的周期有关。\n
+*/
+
 #include "los_swtmr_pri.h"
 #include "los_init.h"
 #include "los_process_pri.h"
@@ -37,82 +98,26 @@
 #include "los_sortlink_pri.h"
 #include "los_task_pri.h"
 #include "los_hook.h"
-/******************************************************************************
-基本概念
-	软件定时器，是基于系统Tick时钟中断且由软件来模拟的定时器。当经过设定的Tick数后，
-		会触发用户自定义的回调函数。
-	硬件定时器受硬件的限制，数量上不足以满足用户的实际需求。因此为了满足用户需求，
-		提供更多的定时器，
-	软件定时器功能，支持如下特性：
-		创建软件定时器。
-		启动软件定时器。
-		停止软件定时器。
-		删除软件定时器。
-		获取软件定时器剩余Tick数。
-		可配置支持的软件定时器个数。
-		
-运作机制
-	软件定时器是系统资源，在模块初始化的时候已经分配了一块连续内存。
-	软件定时器使用了系统的一个队列和一个任务资源，软件定时器的触发遵循队列规则，
-	先进先出。定时时间短的定时器总是比定时时间长的靠近队列头，满足优先触发的准则。
-	软件定时器以Tick为基本计时单位，当创建并启动一个软件定时器时，Huawei LiteOS会根据
-	当前系统Tick时间及设置的定时时长确定该定时器的到期Tick时间，并将该定时器控制结构挂入计时全局链表。
-	当Tick中断到来时，在Tick中断处理函数中扫描软件定时器的计时全局链表，检查是否有定时器超时，
-	若有则将超时的定时器记录下来。Tick中断处理函数结束后，软件定时器任务（优先级为最高）
-	被唤醒，在该任务中调用已经记录下来的定时器的回调函数。
-
-定时器状态
-	OS_SWTMR_STATUS_UNUSED（定时器未使用）
-	系统在定时器模块初始化时，会将系统中所有定时器资源初始化成该状态。
-
-	OS_SWTMR_STATUS_TICKING（定时器处于计数状态）
-	在定时器创建后调用LOS_SwtmrStart接口启动，定时器将变成该状态，是定时器运行时的状态。
-
-	OS_SWTMR_STATUS_CREATED（定时器创建后未启动，或已停止）
-	定时器创建后，不处于计数状态时，定时器将变成该状态。
-
-软件定时器提供了三类模式：
-	单次触发定时器，这类定时器在启动后只会触发一次定时器事件，然后定时器自动删除。
-	周期触发定时器，这类定时器会周期性的触发定时器事件，直到用户手动停止定时器，否则将永远持续执行下去。
-	单次触发定时器，但这类定时器超时触发后不会自动删除，需要调用定时器删除接口删除定时器。
-
-使用场景
-	创建一个单次触发的定时器，超时后执行用户自定义的回调函数。
-	创建一个周期性触发的定时器，超时后执行用户自定义的回调函数。
-
-软件定时器的典型开发流程
-	通过make menuconfig配置软件定时器
-	创建定时器LOS_SwtmrCreate，设置定时器的定时时长、定时器模式、超时后的回调函数。
-	启动定时器LOS_SwtmrStart。
-	获得软件定时器剩余Tick数LOS_SwtmrTimeGet。
-	停止定时器LOS_SwtmrStop。
-	删除定时器LOS_SwtmrDelete。
-
-注意事项
-	软件定时器的回调函数中不应执行过多操作，不建议使用可能引起任务挂起或者阻塞的接口或操作，
-	如果使用会导致软件定时器响应不及时，造成的影响无法确定。
-	软件定时器使用了系统的一个队列和一个任务资源。软件定时器任务的优先级设定为0，且不允许修改 。
-	系统可配置的软件定时器个数是指：整个系统可使用的软件定时器总个数，并非用户可使用的软件定时器个数。
-	例如：系统多占用一个软件定时器，那么用户能使用的软件定时器资源就会减少一个。
-	创建单次不自删除属性的定时器，用户需要自行调用定时器删除接口删除定时器，回收定时器资源，避免资源泄露。
-	软件定时器的定时精度与系统Tick时钟的周期有关。
-******************************************************************************/
-
 
 #ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
 #if (LOSCFG_BASE_CORE_SWTMR_LIMIT <= 0)
 #error "swtmr maxnum cannot be zero"
 #endif /* LOSCFG_BASE_CORE_SWTMR_LIMIT <= 0 */
 
-LITE_OS_SEC_BSS SWTMR_CTRL_S    *g_swtmrCBArray = NULL;     /* First address in Timer memory space *///定时器池
-LITE_OS_SEC_BSS UINT8           *g_swtmrHandlerPool = NULL; /* Pool of Swtmr Handler *///用于注册软时钟的回调函数
-LITE_OS_SEC_BSS LOS_DL_LIST     g_swtmrFreeList;            /* Free list of Software Timer *///空闲定时器链表
+LITE_OS_SEC_BSS SWTMR_CTRL_S    *g_swtmrCBArray = NULL;     /**< First address in Timer memory space  \n 定时器池 */
+LITE_OS_SEC_BSS UINT8           *g_swtmrHandlerPool = NULL; /**< Pool of Swtmr Handler \n 用于注册软时钟的回调函数 */
+LITE_OS_SEC_BSS LOS_DL_LIST     g_swtmrFreeList;            /**< Free list of Software Timer \n 空闲定时器链表 */
 
 /* spinlock for swtmr module, only available on SMP mode */
-LITE_OS_SEC_BSS  SPIN_LOCK_INIT(g_swtmrSpin);//初始化软时钟自旋锁,只有SMP情况才需要,只要是自旋锁都是用于CPU多核的同步
-#define SWTMR_LOCK(state)       LOS_SpinLockSave(&g_swtmrSpin, &(state))//持有软时钟自旋锁
-#define SWTMR_UNLOCK(state)     LOS_SpinUnlockRestore(&g_swtmrSpin, (state))//释放软时钟自旋锁
-//软时钟的入口函数,拥有任务的最高优先级 0 级!
+LITE_OS_SEC_BSS  SPIN_LOCK_INIT(g_swtmrSpin);///< 初始化软时钟自旋锁,只有SMP情况才需要,只要是自旋锁都是用于CPU多核的同步
+#define SWTMR_LOCK(state)       LOS_SpinLockSave(&g_swtmrSpin, &(state))///< 持有软时钟自旋锁
+#define SWTMR_UNLOCK(state)     LOS_SpinUnlockRestore(&g_swtmrSpin, (state))///< 释放软时钟自旋锁
+
+/**
+ * @brief 软时钟的入口函数,拥有任务的最高优先级 0 级!
+ * 
+ * @return LITE_OS_SEC_TEXT 
+ */
 LITE_OS_SEC_TEXT VOID OsSwtmrTask(VOID)
 {
     SwtmrHandlerItemPtr swtmrHandlePtr = NULL;
@@ -234,9 +239,9 @@ ERROR:
 }
 
 /*
- * Description: Start Software Timer
+ * Description: Start Software Timer \n 开始定时器
  * Input      : swtmr --- Need to start software timer
- */ //开始定时器
+ */
 LITE_OS_SEC_TEXT VOID OsSwtmrStart(UINT64 currTime, SWTMR_CTRL_S *swtmr)
 {
     UINT32 ticks;

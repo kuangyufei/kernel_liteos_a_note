@@ -327,7 +327,14 @@ STATIC BOOL OsWaitWakeSpecifiedProcess(LOS_DL_LIST *head, const LosProcessCB *pr
 
     return find;
 }
-//检查父进程的等待任务并唤醒父进程去处理等待任务
+
+/**
+ * @brief 检查父进程的等待任务并唤醒父进程去处理等待任务
+ * 
+ * @param parentCB 
+ * @param processCB 
+ * @return STATIC 
+ */
 STATIC VOID OsWaitCheckAndWakeParentProcess(LosProcessCB *parentCB, const LosProcessCB *processCB)
 {
     LOS_DL_LIST *head = &parentCB->waitList;
@@ -338,7 +345,7 @@ STATIC VOID OsWaitCheckAndWakeParentProcess(LosProcessCB *parentCB, const LosPro
     if (LOS_ListEmpty(&parentCB->waitList)) {//父进程中是否有在等待子进程退出的任务?
         return;//没有就退出
     }
-
+    // TODO 
     findSpecified = OsWaitWakeSpecifiedProcess(head, processCB, &list);//找到指定的任务
     if (findSpecified == TRUE) {
         /* No thread is waiting for any child process to finish */

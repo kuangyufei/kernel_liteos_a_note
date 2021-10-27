@@ -55,6 +55,7 @@ extern "C" {
  */ //在LPC2458平台上发生异常时存储的寄存器信息 以下不带uw的寄存器名是芯片手册中使用的寄存器名
 #ifdef LOSCFG_ARCH_ARM_AARCH64
 #define EXC_GEN_REGS_NUM     30
+
 typedef struct {
     UINT64 X[EXC_GEN_REGS_NUM]; /**< Register X0-X29 */
     UINT64 LR;                  /**< Program returning address. X30 */
