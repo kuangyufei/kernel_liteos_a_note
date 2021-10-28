@@ -85,36 +85,42 @@ extern "C" {
 #define PF_R                                0x4		//只读
 #define PF_W                                0x2		//只写
 #define PF_X                                0x1		//可执行
-//ELF信息结构体,
+
+/**@struct
+ * @brief ELF信息结构体
+ */
 typedef struct {
-    LD_ELF_EHDR  elfEhdr;	//ELF头信息
-    LD_ELF_PHDR  *elfPhdr;	//ELF程序头信息,也称段头信息
-    UINT32       fileLen;	//文件长度
-    INT32        procfd;		//文件描述符
+    LD_ELF_EHDR  elfEhdr;	///< ELF头信息
+    LD_ELF_PHDR  *elfPhdr;	///< ELF程序头信息,也称段头信息
+    UINT32       fileLen;	///< 文件长度
+    INT32        procfd;	///< 文件描述符
 } ELFInfo;
-//ELF加载信息
+
+/**@struct
+ * @brief ELF加载信息
+ */
 typedef struct {
-    ELFInfo      execInfo;	//可执行文件信息
-    ELFInfo      interpInfo;//解析器文件信息 lib/libc.so
-    const CHAR   *fileName;//文件名称
-    CHAR         *execName;//程序名称
-    INT32        argc;	//参数个数
-    INT32        envc;	//环境变量个数
-    CHAR *const  *argv;	//参数数组
-    CHAR *const  *envp;	//环境变量数组
-    UINTPTR      stackTop;//栈底位置,递减满栈下,stackTop是高地址位
-    UINTPTR      stackTopMax;//栈最大上限
-    UINTPTR      stackBase;//栈顶位置
-    UINTPTR      stackParamBase;//栈参数空间,放置启动ELF时的外部参数,大小为 USER_PARAM_BYTE_MAX 4K
-    UINT32       stackSize;//栈大小
-    INT32        stackProt;//LD_PT_GNU_STACK栈的权限 ,例如(RW)
+    ELFInfo      execInfo;	///< 可执行文件信息
+    ELFInfo      interpInfo;///< 解析器文件信息 lib/libc.so
+    const CHAR   *fileName;///< 文件名称
+    CHAR         *execName;///< 程序名称
+    INT32        argc;	///< 参数个数
+    INT32        envc;	///< 环境变量个数
+    CHAR *const  *argv;	///< 参数数组
+    CHAR *const  *envp;	///< 环境变量数组
+    UINTPTR      stackTop;///< 栈底位置,递减满栈下,stackTop是高地址位
+    UINTPTR      stackTopMax;///< 栈最大上限
+    UINTPTR      stackBase;///< 栈顶位置
+    UINTPTR      stackParamBase;///< 栈参数空间,放置启动ELF时的外部参数,大小为 USER_PARAM_BYTE_MAX 4K
+    UINT32       stackSize;///< 栈大小
+    INT32        stackProt;///< LD_PT_GNU_STACK栈的权限 ,例如(RW)
     UINTPTR      argStart;
-    UINTPTR      loadAddr;	//加载地址
-    UINTPTR      elfEntry;	//装载点地址 即: _start 函数地址
-    UINTPTR      topOfMem;	//虚拟空间顶部位置,loadInfo->topOfMem = loadInfo->stackTopMax - sizeof(UINTPTR);
-    UINTPTR      oldFiles;	//旧空间的文件映像
-    LosVmSpace   *newSpace;//新虚拟空间
-    LosVmSpace   *oldSpace;//旧虚拟空间
+    UINTPTR      loadAddr;	///< 加载地址
+    UINTPTR      elfEntry;	///< 装载点地址 即: _start 函数地址
+    UINTPTR      topOfMem;	///< 虚拟空间顶部位置,loadInfo->topOfMem = loadInfo->stackTopMax - sizeof(UINTPTR);
+    UINTPTR      oldFiles;	///< 旧空间的文件映像
+    LosVmSpace   *newSpace;///< 新虚拟空间
+    LosVmSpace   *oldSpace;///< 旧虚拟空间
     INT32        randomDevFD;
 } ELFLoadInfo;
 //不超过用户空间顶部位置

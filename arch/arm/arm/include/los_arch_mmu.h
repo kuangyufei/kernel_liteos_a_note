@@ -50,7 +50,8 @@ extern "C" {
  * @file los_arch_mmu.h
  * @brief 简介
  * @details 细节
- * @mainpage  https://blog.csdn.net/kuangyufei/article/details/109032636
+ * @attention  
+    https://blog.csdn.net/kuangyufei/article/details/109032636
     https://blog.csdn.net/qq_38410730/article/details/81036768
     虚拟内存空间中的地址叫做“虚拟地址”；而实际物理内存空间中的地址叫做“实际物理地址”或“物理地址”。处理器
     运算器和应用程序设计人员看到的只是虚拟内存空间和虚拟地址，而处理器片外的地址总线看到的只是物理地址空间和物理地址。

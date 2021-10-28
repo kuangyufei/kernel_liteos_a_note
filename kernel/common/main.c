@@ -32,10 +32,12 @@
 #include "los_config.h"
 #include "los_sched_pri.h"
 
-/******************************************************************************
-内核入口函数,由汇编调用,见于reset_vector_up.S 和 reset_vector_mp.S
-up指单核CPU, mp指多核CPU bl        main
-******************************************************************************/
+/**
+ * @brief 
+ * 内核入口函数,由汇编调用,见于reset_vector_up.S 和 reset_vector_mp.S \n
+ * up指单核CPU, mp指多核CPU bl        main
+ * @return LITE_OS_SEC_TEXT_INIT 
+ */
 LITE_OS_SEC_TEXT_INIT INT32 main(VOID)//由主CPU执行,默认0号CPU 为主CPU 
 {
     UINT32 uwRet;

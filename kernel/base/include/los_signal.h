@@ -209,8 +209,10 @@ typedef struct SigInfoListNode {
     struct SigInfoListNode *next;
     siginfo_t info;
 } SigInfoListNode;
-
-typedef struct {//信号控制块(描述符)
+/**
+ * @brief 信号控制块(描述符)
+ */
+typedef struct {
     sigset_t sigFlag;		//不屏蔽的信号集
     sigset_t sigPendFlag;	//信号阻塞标签集,记录那些信号来过,任务依然阻塞的集合.即:这些信号不能唤醒任务
     sigset_t sigprocmask; /* Signals that are blocked            */	//任务屏蔽了哪些信号
