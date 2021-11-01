@@ -47,13 +47,13 @@ extern "C" {
 #endif /* __cplusplus */
 //一个shell命令的结构体,命令有长有短,鸿蒙采用了可变数组的方式实现
 typedef struct {
-    unsigned int count;	//字符数量
-    SH_List list;		//双向链表
-    char cmdString[0];	//字符串,可变数组的一种实现方式.
+    unsigned int count;	///< 字符数量
+    SH_List list;		///< 双向链表
+    char cmdString[0];	///< 字符串,可变数组的一种实现方式.
 } CmdKeyLink;
 
 #define NEED_NEW_LINE(timesPrint, lineCap) ((timesPrint) % (lineCap) == 0)
-#define SCREEN_IS_FULL(timesPrint, lineCap) ((timesPrint) >= ((lineCap) * DEFAULT_SCREEN_HEIGNT))
+SCREEN_IS_FULL(timesPrint, lineCap) ((timesPrint) >= ((lineCap) * DEFAULT_SCREEN_HEIGNT))
 
 extern unsigned int OsCmdExec(CmdParsed *cmdParsed, char *cmdStr);
 extern unsigned int OsCmdKeyShift(const char *cmdKey, char *cmdOut, unsigned int size);

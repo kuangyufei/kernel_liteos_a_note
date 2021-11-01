@@ -90,23 +90,23 @@ extern "C" {
 //	|---------------------------|虚拟内存开始位置 0x00000000
 
 /* user address space, defaults to below kernel space with a 16MB guard gap on either side */
-#ifndef USER_ASPACE_BASE //用户地址空间，默认为低于内核空间，两侧各有16MB的保护间隙
-#define USER_ASPACE_BASE            ((vaddr_t)0x01000000UL) //用户空间基地址 从16M位置开始
+#ifndef USER_ASPACE_BASE ///< 用户地址空间，默认为低于内核空间，两侧各有16MB的保护间隙
+#define USER_ASPACE_BASE            ((vaddr_t)0x01000000UL) ///< 用户空间基地址 从16M位置开始
 #endif
 #ifndef USER_ASPACE_SIZE
-#define USER_ASPACE_SIZE            ((vaddr_t)KERNEL_ASPACE_BASE - USER_ASPACE_BASE - 0x01000000UL)//用户空间 < 内核空间 2个16M
+#define USER_ASPACE_SIZE            ((vaddr_t)KERNEL_ASPACE_BASE - USER_ASPACE_BASE - 0x01000000UL)///< 用户空间 < 内核空间 2个16M
 #endif
 
-#define USER_ASPACE_TOP_MAX         ((vaddr_t)(USER_ASPACE_BASE + USER_ASPACE_SIZE))//用户空间顶部位置
-#define USER_HEAP_BASE              ((vaddr_t)(USER_ASPACE_TOP_MAX >> 2))			//堆的开始地址
-#define USER_MAP_BASE               ((vaddr_t)(USER_ASPACE_TOP_MAX >> 1))			//用户映射区开始地址
-#define USER_MAP_SIZE               ((vaddr_t)(USER_ASPACE_SIZE >> 3))				//用户空间映射大小 = 1/8 用户空间
+#define USER_ASPACE_TOP_MAX         ((vaddr_t)(USER_ASPACE_BASE + USER_ASPACE_SIZE))///< 用户空间顶部位置
+#define USER_HEAP_BASE              ((vaddr_t)(USER_ASPACE_TOP_MAX >> 2))			///< 堆的开始地址
+#define USER_MAP_BASE               ((vaddr_t)(USER_ASPACE_TOP_MAX >> 1))			///< 用户映射区开始地址
+#define USER_MAP_SIZE               ((vaddr_t)(USER_ASPACE_SIZE >> 3))				///< 用户空间映射大小 = 1/8 用户空间
 
 #ifndef PAGE_SIZE
-#define PAGE_SIZE                        (0x1000U) // 页大小4K
+#define PAGE_SIZE                        (0x1000U) ///<  页大小4K
 #endif
-#define PAGE_MASK                        (~(PAGE_SIZE - 1)) //页掩码,用于页内偏移地址的计算
-#define PAGE_SHIFT                       (12)// 12位 - 4K 偏移
+#define PAGE_MASK                        (~(PAGE_SIZE - 1)) ///< 页掩码,用于页内偏移地址的计算
+#define PAGE_SHIFT                       (12)///<  12位 - 4K 偏移
 
 #define KB                               (1024UL)
 #define MB                               (1024UL * 1024UL)
@@ -119,14 +119,14 @@ extern "C" {
 	 ROUNDOFFSET(7,4) = 3	,ROUNDOFFSET(8,4) = 0	,ROUNDOFFSET(9,4) = 1
 发现规律看明白了吗?
 ******************************************************************/
-#define ROUNDUP(a, b)                    (((a) + ((b) - 1)) & ~((b) - 1))	//向上圆整
-#define ROUNDDOWN(a, b)                  ((a) & ~((b) - 1))	//向下圆整
-#define ROUNDOFFSET(a, b)                ((a) & ((b) - 1))	//圆整偏移
-#define MIN2(a, b)                       (((a) < (b)) ? (a) : (b))	//找到最小值
+#define ROUNDUP(a, b)                    (((a) + ((b) - 1)) & ~((b) - 1))	///< 向上圆整
+#define ROUNDDOWN(a, b)                  ((a) & ~((b) - 1))	///< 向下圆整
+#define ROUNDOFFSET(a, b)                ((a) & ((b) - 1))	///< 圆整偏移
+#define MIN2(a, b)                       (((a) < (b)) ? (a) : (b))	///< 找到最小值
 
-#define IS_ALIGNED(a, b)                 (!(((UINTPTR)(a)) & (((UINTPTR)(b)) - 1)))//是否按指定的参数对齐
-#define IS_PAGE_ALIGNED(x)               IS_ALIGNED(x, PAGE_SIZE) //是否按页大小对齐 4K
-#define IS_SECTION_ALIGNED(x)            IS_ALIGNED(x, SECTION_SIZE)//是否按段大小对齐
+#define IS_ALIGNED(a, b)                 (!(((UINTPTR)(a)) & (((UINTPTR)(b)) - 1)))///< 是否按指定的参数对齐
+#define IS_PAGE_ALIGNED(x)               IS_ALIGNED(x, PAGE_SIZE) ///< 是否按页大小对齐 4K
+#define IS_SECTION_ALIGNED(x)            IS_ALIGNED(x, SECTION_SIZE)///< 是否按段大小对齐
 
 #define LOS_ERRNO_VM_NO_ERROR            (0)
 #define LOS_ERRNO_VM_GENERIC             (-1)

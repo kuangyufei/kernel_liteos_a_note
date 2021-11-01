@@ -226,7 +226,6 @@ driverif_input(struct netif *netif, struct pbuf *p)
 
     LWIP_DEBUGF(DRIVERIF_DEBUG, ("driverif_input : received packet is processed\n"));
 }
-
 /*
  * Should be called at the beginning of the program to set up the
  * network interface. It calls the function low_level_init() to do the
@@ -247,7 +246,7 @@ driverif_init(struct netif *netif)//网络接口驱动层初始化
     if (netif == NULL) {
         return ERR_IF;
     }
-    link_layer_type = netif->link_layer_type;//链路层类�?
+    link_layer_type = netif->link_layer_type;//链路层类�?
     LWIP_ERROR("driverif_init : invalid link_layer_type in netif", \
     ((link_layer_type == ETHERNET_DRIVER_IF) || (link_layer_type == WIFI_DRIVER_IF)), \
     return ERR_IF);
@@ -274,7 +273,7 @@ driverif_init(struct netif *netif)//网络接口驱动层初始化
     NETIF_INIT_SNMP(netif, snmp_ifType_ethernet_csmacd, LINK_SPEED_OF_YOUR_NETIF_IN_BPS);
 
     netif->output = etharp_output;//该函数接收来自TCP/IP层的数据
-    netif->linkoutput = driverif_output;//该函数实现底层数据包的发�?
+    netif->linkoutput = driverif_output;//该函数实现底层数据包的发�?
   
   /* init the netif's full name */
     driverif_init_ifname(netif);//初始化链路接口层名称
@@ -294,7 +293,7 @@ driverif_init(struct netif *netif)//网络接口驱动层初始化
                    #endif
 
                    /**
-                   @page RFC-2710 RFC-2710
+                   @brief RFC-2710 RFC-2710
                    @par Compliant Sections
                    Section 5. Node State Transition Diagram
                    @par Behavior Description

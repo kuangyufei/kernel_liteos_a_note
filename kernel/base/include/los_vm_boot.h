@@ -50,11 +50,11 @@ extern "C" {
 #define OS_KHEAP_BLOCK_SIZE                 (512 * 1024UL)
 
 typedef struct ArchMmuInitMapping {
-    PADDR_T phys;//物理地址
-    VADDR_T virt;//虚拟地址
-    size_t  size;//大小
-    unsigned int flags;//标识 读/写/.. VM_MAP_REGION_FLAG_PERM_*
-    const char *name;//名称
+    PADDR_T phys;///< 物理地址
+    VADDR_T virt;///< 虚拟地址
+    size_t  size;///< 大小
+    unsigned int flags;///< 标识 读/写/.. VM_MAP_REGION_FLAG_PERM_*
+    const char *name;///< 名称
 } LosArchMmuInitMapping;
 
 extern LosArchMmuInitMapping g_archMmuInitMapping[];

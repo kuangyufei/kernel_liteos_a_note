@@ -307,66 +307,66 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 #define OS_TCB_NAME_LEN 32
 
 typedef struct {
-    VOID            *stackPointer;      /**< Task stack pointer */	//内核栈指针位置(SP)
-    UINT16          taskStatus;         /**< Task status */			//各种状态标签，可以拥有多种标签，按位标识
-    UINT16          priority;           /**< Task priority */		//任务优先级[0:31],默认是31级
+    VOID            *stackPointer;      /**< Task stack pointer \n  */	//内核栈指针位置(SP)
+    UINT16          taskStatus;         /**< Task status \n  */			//各种状态标签，可以拥有多种标签，按位标识
+    UINT16          priority;           /**< Task priority \n  */		//任务优先级[0:31],默认是31级
     UINT16          policy;				//任务的调度方式(三种 .. LOS_SCHED_RR )
-    UINT64          startTime;          /**< The start time of each phase of task *///任务开始时间
-    UINT64          irqStartTime;       /**< Interrupt start time *///任务中断开始时间
-    UINT32          irqUsedTime;        /**< Interrupt consumption time *///任务中断恢复时间
-    UINT32          initTimeSlice;      /**< Task init time slice *///任务初始的时间片
-    INT32           timeSlice;          /**< Task remaining time slice *///任务剩余时间片
-    UINT32          waitTimes;          /**< Task delay time, tick number *///设置任务调度延期时间
-    SortLinkList    sortList;           /**< Task sortlink node */	//任务排序链表节点
-    UINT32          stackSize;          /**< Task stack size */		//内核态栈大小,内存来自内核空间
-    UINTPTR         topOfStack;         /**< Task stack top */		//内核态栈顶 bottom = top + size
-    UINT32          taskID;             /**< Task ID */				//任务ID，任务池本质是一个大数组，ID就是数组的索引，默认 < 128
-    TSK_ENTRY_FUNC  taskEntry;          /**< Task entrance function */	//任务执行入口函数
-    VOID            *joinRetval;        /**< pthread adaption */	//用来存储join线程的返回值
-    VOID            *taskMux;           /**< Task-held mutex */		//task在等哪把锁
-    VOID            *taskEvent;         /**< Task-held event */		//task在等哪个事件
-    UINTPTR         args[4];            /**< Parameter, of which the maximum number is 4 */	//入口函数的参数 例如 main (int argc,char *argv[])
-    CHAR            taskName[OS_TCB_NAME_LEN]; /**< Task name */	//任务的名称
-    LOS_DL_LIST     pendList;           /**< Task pend node */		//如果任务阻塞时就通过它挂到各种阻塞情况的链表上,比如OsTaskWait时
-    LOS_DL_LIST     threadList;         /**< thread list */			//挂到所属进程的线程链表上
-    UINT32          eventMask;          /**< Event mask */			//任务对哪些事件进行屏蔽
-    UINT32          eventMode;          /**< Event mode */			//事件三种模式(LOS_WAITMODE_AND,LOS_WAITMODE_OR,LOS_WAITMODE_CLR)
+    UINT64          startTime;          /**< The start time of each phase of task \n  *///任务开始时间
+    UINT64          irqStartTime;       /**< Interrupt start time \n  *///任务中断开始时间
+    UINT32          irqUsedTime;        /**< Interrupt consumption time \n  *///任务中断恢复时间
+    UINT32          initTimeSlice;      /**< Task init time slice \n  *///任务初始的时间片
+    INT32           timeSlice;          /**< Task remaining time slice \n  *///任务剩余时间片
+    UINT32          waitTimes;          /**< Task delay time, tick number \n  *///设置任务调度延期时间
+    SortLinkList    sortList;           /**< Task sortlink node \n  */	//任务排序链表节点
+    UINT32          stackSize;          /**< Task stack size \n  */		//内核态栈大小,内存来自内核空间
+    UINTPTR         topOfStack;         /**< Task stack top \n  */		//内核态栈顶 bottom = top + size
+    UINT32          taskID;             /**< Task ID \n  */				//任务ID，任务池本质是一个大数组，ID就是数组的索引，默认 < 128
+    TSK_ENTRY_FUNC  taskEntry;          /**< Task entrance function \n  */	//任务执行入口函数
+    VOID            *joinRetval;        /**< pthread adaption \n  */	//用来存储join线程的返回值
+    VOID            *taskMux;           /**< Task-held mutex \n  */		//task在等哪把锁
+    VOID            *taskEvent;         /**< Task-held event \n  */		//task在等哪个事件
+    UINTPTR         args[4];            /**< Parameter, of which the maximum number is 4 \n  */	//入口函数的参数 例如 main (int argc,char *argv[])
+    CHAR            taskName[OS_TCB_NAME_LEN]; /**< Task name \n  */	//任务的名称
+    LOS_DL_LIST     pendList;           /**< Task pend node \n  */		//如果任务阻塞时就通过它挂到各种阻塞情况的链表上,比如OsTaskWait时
+    LOS_DL_LIST     threadList;         /**< thread list \n  */			//挂到所属进程的线程链表上
+    UINT32          eventMask;          /**< Event mask \n  */			//任务对哪些事件进行屏蔽
+    UINT32          eventMode;          /**< Event mode \n  */			//事件三种模式(LOS_WAITMODE_AND,LOS_WAITMODE_OR,LOS_WAITMODE_CLR)
     UINT32          priBitMap;          /**< BitMap for recording the change of task priority,	//任务在执行过程中优先级会经常变化，这个变量用来记录所有曾经变化
-                                             the priority can not be greater than 31 */			//过的优先级，例如 ..01001011 曾经有过 0,1,3,6 优先级
+                                             the priority can not be greater than 31 \n  */			//过的优先级，例如 ..01001011 曾经有过 0,1,3,6 优先级
 #ifdef LOSCFG_KERNEL_CPUP
-    OsCpupBase      taskCpup;           /**< task cpu usage */
+    OsCpupBase      taskCpup;           /**< task cpu usage \n  */
 #endif
-    INT32           errorNo;            /**< Error Num */
-    UINT32          signal;             /**< Task signal */ //任务信号类型,(SIGNAL_NONE,SIGNAL_KILL,SIGNAL_SUSPEND,SIGNAL_AFFI)
+    INT32           errorNo;            /**< Error Num \n  */
+    UINT32          signal;             /**< Task signal \n  */ //任务信号类型,(SIGNAL_NONE,SIGNAL_KILL,SIGNAL_SUSPEND,SIGNAL_AFFI)
     sig_cb          sig;				//信号控制块，用于异步通信,类似于 linux singal模块
 #ifdef LOSCFG_KERNEL_SMP
-    UINT16          currCpu;            /**< CPU core number of this task is running on */	//正在运行此任务的CPU内核号
-    UINT16          lastCpu;            /**< CPU core number of this task is running on last time */ //上次运行此任务的CPU内核号
-    UINT16          cpuAffiMask;        /**< CPU affinity mask, support up to 16 cores */	//CPU亲和力掩码，最多支持16核，亲和力很重要，多核情况下尽量一个任务在一个CPU核上运行，提高效率
+    UINT16          currCpu;            /**< CPU core number of this task is running on \n  */	//正在运行此任务的CPU内核号
+    UINT16          lastCpu;            /**< CPU core number of this task is running on last time \n  */ //上次运行此任务的CPU内核号
+    UINT16          cpuAffiMask;        /**< CPU affinity mask, support up to 16 cores \n  */	//CPU亲和力掩码，最多支持16核，亲和力很重要，多核情况下尽量一个任务在一个CPU核上运行，提高效率
 #ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
-    UINT32          syncSignal;         /**< Synchronization for signal handling */	//用于CPU之间 同步信号
+    UINT32          syncSignal;         /**< Synchronization for signal handling \n  */	//用于CPU之间 同步信号
 #endif
 #ifdef LOSCFG_KERNEL_SMP_LOCKDEP //死锁检测开关
     LockDep         lockDep;
 #endif
 #endif
 #ifdef LOSCFG_SCHED_DEBUG
-    SchedStat       schedStat;          /**< Schedule statistics */
+    SchedStat       schedStat;          /**< Schedule statistics \n  */
 #endif
-    UINTPTR         userArea;			//用户空间的堆区开始位置
-    UINTPTR         userMapBase;		//用户空间的栈顶位置,内存来自用户空间,和topOfStack有本质的区别.
-    UINT32          userMapSize;        /**< user thread stack size ,real size : userMapSize + USER_STACK_MIN_SIZE *///用户栈大小
-    UINT32          processID;          /**< Which belong process *///所属进程ID
-    FutexNode       futex;				//实现快锁功能
-    LOS_DL_LIST     joinList;           /**< join list */ //联结链表,允许任务之间相互释放彼此
-    LOS_DL_LIST     lockList;           /**< Hold the lock list */	//该链表上挂的都是已持有的锁
-    UINTPTR         waitID;             /**< Wait for the PID or GID of the child process */
+    UINTPTR         userArea;			///< 用户空间的堆区开始位置
+    UINTPTR         userMapBase;		///< 用户空间的栈顶位置,内存来自用户空间,和topOfStack有本质的区别.
+    UINT32          userMapSize;        /**< user thread stack size ,real size : userMapSize + USER_STACK_MIN_SIZE \n  *///用户栈大小
+    UINT32          processID;          /**< Which belong process \n  *///所属进程ID
+    FutexNode       futex;				///< 实现快锁功能
+    LOS_DL_LIST     joinList;           /**< join list \n  */ //联结链表,允许任务之间相互释放彼此
+    LOS_DL_LIST     lockList;           /**< Hold the lock list \n 该链表上挂的都是已持有的锁 */
+    UINTPTR         waitID;             /**< Wait for the PID or GID of the child process \n  */
     UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
-                                             a specific child process, or any child process */  //以什么样的方式等待子进程结束(OS_TASK_WAIT_PROCESS | OS_TASK_WAIT_GID | ..)
+                                             a specific child process, or any child process \n 以什么样的方式等待子进程结束(OS_TASK_WAIT_PROCESS | OS_TASK_WAIT_GID | ..) */
 #ifdef LOSCFG_KERNEL_LITEIPC
-    UINT32          ipcStatus;			//IPC状态
-    LOS_DL_LIST     msgListHead;		//消息队列头结点,上面挂的都是任务要读的消息
-    BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];//访问图,指的是task之间是否能访问的标识,LOSCFG_BASE_CORE_TSK_LIMIT 为任务池总数
+    UINT32          ipcStatus;			///< IPC状态
+    LOS_DL_LIST     msgListHead;		///< 消息队列头结点,上面挂的都是任务要读的消息
+    BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];///< 访问图,指的是task之间是否能访问的标识,LOSCFG_BASE_CORE_TSK_LIMIT 为任务池总数
 #endif
 #ifdef LOSCFG_KERNEL_PERF
     UINTPTR         pc;
@@ -380,11 +380,11 @@ typedef struct {
 } LosTask;
 
 struct ProcessSignalInfo {//进程信号描述符
-    siginfo_t *sigInfo;       /**< Signal to be dispatched */		//要发送的信号
-    LosTaskCB *defaultTcb;    /**< Default TCB */					//默认task,默认接收信号的任务.
-    LosTaskCB *unblockedTcb;  /**< The signal unblock on this TCB*/	//信号在此TCB上解除阻塞
-    LosTaskCB *awakenedTcb;   /**< This TCB was awakened */			//即 任务在等待这个信号,此信号一来任务被唤醒.
-    LosTaskCB *receivedTcb;   /**< This TCB received the signal */	//如果没有屏蔽信号,任务将接收这个信号.
+    siginfo_t *sigInfo;       /**< Signal to be dispatched \n  要发送的信号*/
+    LosTaskCB *defaultTcb;    /**< Default TCB \n 默认task,默认接收信号的任务. */
+    LosTaskCB *unblockedTcb;  /**< The signal unblock on this TCB \n 信号在此TCB上解除阻塞  */
+    LosTaskCB *awakenedTcb;   /**< This TCB was awakened \n  即 任务在等待这个信号,此信号一来任务被唤醒.*/
+    LosTaskCB *receivedTcb;   /**< This TCB received the signal \n 如果没有屏蔽信号,任务将接收这个信号. */
 };
 
 typedef int (*ForEachTaskCB)(LosTaskCB *tcb, void *arg);//回调任务函数,例如:进程被kill 9 时,通知所有任务善后处理
@@ -394,7 +394,7 @@ typedef int (*ForEachTaskCB)(LosTaskCB *tcb, void *arg);//回调任务函数,例
  * Maximum number of tasks.
  *
  */
-extern UINT32 g_taskMaxNum;//任务最大数量 默认128个
+extern UINT32 g_taskMaxNum;///< 任务最大数量 默认128个
 
 
 /**
@@ -402,16 +402,16 @@ extern UINT32 g_taskMaxNum;//任务最大数量 默认128个
  * Starting address of a task.
  *
  */
-extern LosTaskCB *g_taskCBArray;//外部变量 任务池 默认128个
+extern LosTaskCB *g_taskCBArray;///< 外部变量 任务池 默认128个
 
 /**
  * @ingroup los_task
  * Time slice structure.
  */
 typedef struct {//时间片结构体，任务轮询
-    LosTaskCB *task; /**< Current running task */	//当前运行着的任务
-    UINT16 time;     /**< Expiration time point */	//过期时间点
-    UINT16 timeout;  /**< Expiration duration */	//有效期
+    LosTaskCB *task; /**< Current running task \n 当前运行着的任务*/
+    UINT16 time;     /**< Expiration time point \n 过期时间点*/
+    UINT16 timeout;  /**< Expiration duration \n 有效期*/
 } OsTaskRobin;
 //获取当前CPU  core运行的任务
 STATIC INLINE LosTaskCB *OsCurrTaskGet(VOID)
@@ -484,18 +484,18 @@ STATIC INLINE BOOL OsTaskIsKilled(const LosTaskCB *taskCB)
 /* get task info */
 #define OS_ALL_TASK_MASK  0xFFFFFFFF
 
-#define OS_TASK_WAIT_ANYPROCESS (1 << 0U)					//任务等待任何进程出现
-#define OS_TASK_WAIT_PROCESS    (1 << 1U)					//任务等待进程出现
-#define OS_TASK_WAIT_GID        (1 << 2U)					//任务等待组ID
-#define OS_TASK_WAIT_SEM        (OS_TASK_WAIT_GID + 1)		//任务等待信号量发生
-#define OS_TASK_WAIT_QUEUE      (OS_TASK_WAIT_SEM + 1)		//任务等待队列到来
-#define OS_TASK_WAIT_JOIN       (OS_TASK_WAIT_QUEUE + 1)	//任务等待
-#define OS_TASK_WAIT_SIGNAL     (OS_TASK_WAIT_JOIN + 1) 	//任务等待信号的到来
-#define OS_TASK_WAIT_LITEIPC    (OS_TASK_WAIT_SIGNAL + 1)	//任务等待liteipc到来
-#define OS_TASK_WAIT_MUTEX      (OS_TASK_WAIT_LITEIPC + 1)	//任务等待MUTEX到来
-#define OS_TASK_WAIT_FUTEX      (OS_TASK_WAIT_MUTEX + 1)	//任务等待FUTEX到来
-#define OS_TASK_WAIT_EVENT      (OS_TASK_WAIT_FUTEX + 1) 	//任务等待事件发生
-#define OS_TASK_WAIT_COMPLETE   (OS_TASK_WAIT_EVENT + 1)	//任务等待完成
+#define OS_TASK_WAIT_ANYPROCESS (1 << 0U)					///< 任务等待任何进程出现
+#define OS_TASK_WAIT_PROCESS    (1 << 1U)					///< 任务等待进程出现
+#define OS_TASK_WAIT_GID        (1 << 2U)					///< 任务等待组ID
+#define OS_TASK_WAIT_SEM        (OS_TASK_WAIT_GID + 1)		///< 任务等待信号量发生
+#define OS_TASK_WAIT_QUEUE      (OS_TASK_WAIT_SEM + 1)		///< 任务等待队列到来
+#define OS_TASK_WAIT_JOIN       (OS_TASK_WAIT_QUEUE + 1)	///< 任务等待
+#define OS_TASK_WAIT_SIGNAL     (OS_TASK_WAIT_JOIN + 1) 	///< 任务等待信号的到来
+#define OS_TASK_WAIT_LITEIPC    (OS_TASK_WAIT_SIGNAL + 1)	///< 任务等待liteipc到来
+#define OS_TASK_WAIT_MUTEX      (OS_TASK_WAIT_LITEIPC + 1)	///< 任务等待MUTEX到来
+#define OS_TASK_WAIT_FUTEX      (OS_TASK_WAIT_MUTEX + 1)	///< 任务等待FUTEX到来
+#define OS_TASK_WAIT_EVENT      (OS_TASK_WAIT_FUTEX + 1) 	///< 任务等待事件发生
+#define OS_TASK_WAIT_COMPLETE   (OS_TASK_WAIT_EVENT + 1)	///< 任务等待完成
 
 //设置事件阻塞掩码,即设置任务的等待事件.
 STATIC INLINE VOID OsTaskWaitSetPendMask(UINT16 mask, UINTPTR lockID, UINT32 timeout)
