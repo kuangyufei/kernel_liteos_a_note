@@ -75,37 +75,44 @@ STATIC VOID OsMoveTmpInfoToUnbInfo(sig_cb *sigcb, INT32 signo)
 {
     SigInfoListNode *tmpInfoNode = sigcb->tmpInfoListHead;
     SigInfoListNode **prevHook = &sigcb->tmpInfoListHead;
-    INT32 isFirstDel = 1;
     while (tmpInfoNode != NULL) {
         if (tmpInfoNode->info.si_signo == signo) {
-            /* In some case, many siginfos have same signo, only last one inserted list need copy to unbinfo. */
-            if (isFirstDel) {
-		/* copy tmpinfo to unbinfo. */
-                (VOID)memcpy_s(&sigcb->sigunbinfo, sizeof(siginfo_t), &tmpInfoNode->info, sizeof(siginfo_t));
-                isFirstDel = 0;
-            }
-	    /* delete tmpinfo from tmpList. */
+            /* copy tmpinfo to unbinfo. */
+            (VOID)memcpy_s(&sigcb->sigunbinfo, sizeof(siginfo_t), &tmpInfoNode->info, sizeof(siginfo_t));
+            /* delete tmpinfo from tmpList. */
             *prevHook = tmpInfoNode->next;
             (VOID)LOS_MemFree(m_aucSysMem0, tmpInfoNode);
             tmpInfoNode = *prevHook;
-            continue;
+            break;
         }
         prevHook = &tmpInfoNode->next;
         tmpInfoNode = tmpInfoNode->next;
     }
-
-    return;
 }
 
 STATIC INT32 OsAddSigInfoToTmpList(sig_cb *sigcb, siginfo_t *info)
 {
-    SigInfoListNode *tmp = (SigInfoListNode *)LOS_MemAlloc(m_aucSysMem0, sizeof(SigInfoListNode));
-    if (tmp == NULL) {
-        return LOS_NOK;
+    /* try to find the old siginfo */
+    SigInfoListNode *tmp = sigcb->tmpInfoListHead;
+    while (tmp != NULL) {
+        if (tmp->info.si_signo == info->si_signo) {
+            /* found it, break. */
+            break;
+        }
+        tmp = tmp->next;
     }
+
+    if (tmp == NULL) {
+        /* none, alloc new one */
+        tmp = (SigInfoListNode *)LOS_MemAlloc(m_aucSysMem0, sizeof(SigInfoListNode));
+        if (tmp == NULL) {
+            return LOS_NOK;
+        }
+        tmp->next = sigcb->tmpInfoListHead;
+        sigcb->tmpInfoListHead = tmp;
+    }
+
     (VOID)memcpy_s(&tmp->info, sizeof(siginfo_t), info, sizeof(siginfo_t));
-    tmp->next = sigcb->tmpInfoListHead;
-    sigcb->tmpInfoListHead = tmp;
 
     return LOS_OK;
 }
@@ -153,13 +160,10 @@ STATIC UINT32 OsPendingTaskWake(LosTaskCB *taskCB, INT32 signo)
         case OS_TASK_WAIT_SIGNAL:
             OsSigWaitTaskWake(taskCB, signo);
             break;
-#ifdef LOSCFG_KERNEL_LITEIPC
         case OS_TASK_WAIT_LITEIPC:
-            taskCB->ipcStatus &= ~IPC_THREAD_STATUS_PEND;
             OsTaskWakeClearPendMask(taskCB);
             OsSchedTaskWake(taskCB);
             break;
-#endif
         case OS_TASK_WAIT_FUTEX:
             OsFutexNodeDeleteFromFutexHash(&taskCB->futex, TRUE, NULL, NULL);
             OsTaskWakeClearPendMask(taskCB);

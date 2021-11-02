@@ -210,7 +210,6 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskJoinPostUnsafe(LosTaskCB *taskCB)
             OsTaskWakeClearPendMask(resumedTask);
             OsSchedTaskWake(resumedTask);
         }
-        taskCB->taskStatus &= ~OS_TASK_FLAG_PTHREAD_JOIN;//去掉JOIN标签
     }
     taskCB->taskStatus |= OS_TASK_STATUS_EXIT;//贴上任务退出标签
 }
@@ -226,11 +225,13 @@ LITE_OS_SEC_TEXT UINT32 OsTaskJoinPendUnsafe(LosTaskCB *taskCB)
         return LOS_EINVAL;
     }
 
+    if (taskCB->taskStatus & OS_TASK_STATUS_EXIT) {
+        return LOS_OK;
+    }
+
     if ((taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) && LOS_ListEmpty(&taskCB->joinList)) {
         OsTaskWaitSetPendMask(OS_TASK_WAIT_JOIN, taskCB->taskID, LOS_WAIT_FOREVER);
         return OsSchedTaskWait(&taskCB->joinList, LOS_WAIT_FOREVER, TRUE);
-    } else if (taskCB->taskStatus & OS_TASK_STATUS_EXIT) {
-        return LOS_OK;
     }
 
     return LOS_EINVAL;
@@ -247,7 +248,6 @@ LITE_OS_SEC_TEXT UINT32 OsTaskSetDetachUnsafe(LosTaskCB *taskCB)
         if (LOS_ListEmpty(&(taskCB->joinList))) {//joinlist中没有数据了
             LOS_ListDelete(&(taskCB->joinList));//所谓删除就是自己指向自己
             taskCB->taskStatus &= ~OS_TASK_FLAG_PTHREAD_JOIN;//去掉JOIN标签
-            taskCB->taskStatus |= OS_TASK_FLAG_DETACHED;//贴上分离标签,自己独立存在,不和其他任务媾和,不能被别的任务回收和干掉,只能由系统回收
             return LOS_OK;
         }
         /* This error code has a special purpose and is not allowed to appear again on the interface */
@@ -338,6 +338,88 @@ LITE_OS_SEC_TEXT UINT32 LOS_CurTaskIDGet(VOID)//获取当前任务的ID
     return runTask->taskID;
 }
 
+STATIC INLINE UINT32 OsTaskSyncCreate(LosTaskCB *taskCB)
+{
+#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
+    UINT32 ret = LOS_SemCreate(0, &taskCB->syncSignal);
+    if (ret != LOS_OK) {
+        return LOS_ERRNO_TSK_MP_SYNC_RESOURCE;
+    }
+#else
+    (VOID)taskCB;
+#endif
+    return LOS_OK;
+}
+
+STATIC INLINE VOID OsTaskSyncDestroy(UINT32 syncSignal)
+{
+#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
+    (VOID)LOS_SemDelete(syncSignal);
+#else
+    (VOID)syncSignal;
+#endif
+}
+
+#ifdef LOSCFG_KERNEL_SMP
+STATIC INLINE UINT32 OsTaskSyncWait(const LosTaskCB *taskCB)
+{
+#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
+    UINT32 ret = LOS_OK;
+
+    LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));
+    LOS_SpinUnlock(&g_taskSpin);
+    /*
+     * gc soft timer works every OS_MP_GC_PERIOD period, to prevent this timer
+     * triggered right at the timeout has reached, we set the timeout as double
+     * of the gc peroid.
+     */
+    if (LOS_SemPend(taskCB->syncSignal, OS_MP_GC_PERIOD * 2) != LOS_OK) {
+        ret = LOS_ERRNO_TSK_MP_SYNC_FAILED;
+    }
+
+    LOS_SpinLock(&g_taskSpin);
+
+    return ret;
+#else
+    (VOID)taskCB;
+    return LOS_OK;
+#endif
+}
+#endif
+
+STATIC INLINE VOID OsTaskSyncWake(const LosTaskCB *taskCB)
+{
+#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
+    (VOID)OsSemPostUnsafe(taskCB->syncSignal, NULL);
+#else
+    (VOID)taskCB;
+#endif
+}
+
+STATIC VOID OsTaskReleaseHoldLock(LosProcessCB *processCB, LosTaskCB *taskCB)
+{
+    LosMux *mux = NULL;
+    UINT32 ret;
+
+    while (!LOS_ListEmpty(&taskCB->lockList)) {
+        mux = LOS_DL_LIST_ENTRY(LOS_DL_LIST_FIRST(&taskCB->lockList), LosMux, holdList);
+        ret = OsMuxUnlockUnsafe(taskCB, mux, NULL);
+        if (ret != LOS_OK) {
+            LOS_ListDelete(&mux->holdList);
+            PRINT_ERR("mux ulock failed! : %u\n", ret);
+        }
+    }
+
+#ifdef LOSCFG_KERNEL_VM
+    if (processCB->processMode == OS_USER_MODE) {
+        OsFutexNodeDeleteFromFutexHash(&taskCB->futex, TRUE, NULL, NULL);
+    }
+#endif
+
+    OsTaskJoinPostUnsafe(taskCB);
+
+    OsTaskSyncWake(taskCB);
+}
 //一个任务的退出过程
 LITE_OS_SEC_TEXT VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status)
 {
@@ -356,13 +438,13 @@ LITE_OS_SEC_TEXT VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status)
         return;
     }
 
-    /* The thread being killed must be able to exit automatically and will have the detached property */
-    OsTaskJoinPostUnsafe(taskCB);
-
-    if (taskCB->taskStatus & (OS_TASK_FLAG_DETACHED | OS_TASK_FLAG_EXIT_KILL)) {
+    if ((taskCB->taskStatus & OS_TASK_FLAG_EXIT_KILL) || !(taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN)) {
         UINT32 ret = OsTaskDeleteUnsafe(taskCB, status, intSave);
         LOS_Panic("Task delete failed! ERROR : 0x%x\n", ret);
+        return;
     }
+
+    OsTaskReleaseHoldLock(runProcess, taskCB);
 
     OsSchedResched();//申请调度
     SCHEDULER_UNLOCK(intSave);
@@ -390,7 +472,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskEntry(UINT32 taskID)
     taskCB = OS_TCB_FROM_TID(taskID);
     taskCB->joinRetval = taskCB->taskEntry(taskCB->args[0], taskCB->args[1],//调用任务的入口函数
                                            taskCB->args[2], taskCB->args[3]); /* 2 & 3: just for args array index */
-    if (taskCB->taskStatus & OS_TASK_FLAG_DETACHED) {//task有分离标签时
+    if (!(taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN)) {
         taskCB->joinRetval = 0;//结合数为0
     }
 	
@@ -451,67 +533,7 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskStackAlloc(VOID **topStack, UINT32 stack
 {
     *topStack = (VOID *)LOS_MemAllocAlign(pool, stackSize, LOSCFG_STACK_POINT_ALIGN_SIZE);
 }
-//创建任务同步信号
-STATIC INLINE UINT32 OsTaskSyncCreate(LosTaskCB *taskCB)
-{
-#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
-    UINT32 ret = LOS_SemCreate(0, &taskCB->syncSignal);//创建一个syncSignal信号量
-    if (ret != LOS_OK) {
-        return LOS_ERRNO_TSK_MP_SYNC_RESOURCE;
-    }
-#else
-    (VOID)taskCB;
-#endif
-    return LOS_OK;
-}
-//删除任务同步信号
-STATIC INLINE VOID OsTaskSyncDestroy(UINT32 syncSignal)
-{
-#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
-    (VOID)LOS_SemDelete(syncSignal);
-#else
-    (VOID)syncSignal;
-#endif
-}
-/******************************************
-等待任务的同步信号量,
-A --发送syncSignal-- > B
-B --回一个syncSignal-- > A
-如此A就知道B此时还在
-*******************************************/
-LITE_OS_SEC_TEXT UINT32 OsTaskSyncWait(const LosTaskCB *taskCB)
-{
-#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
-    UINT32 ret = LOS_OK;
 
-    LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));
-    LOS_SpinUnlock(&g_taskSpin);
-    /*
-     * gc soft timer works every OS_MP_GC_PERIOD period, to prevent this timer
-     * triggered right at the timeout has reached, we set the timeout as double
-     * of the gc peroid.
-     */
-    if (LOS_SemPend(taskCB->syncSignal, OS_MP_GC_PERIOD * 2) != LOS_OK) {//发送同步信号量
-        ret = LOS_ERRNO_TSK_MP_SYNC_FAILED;
-    }
-
-    LOS_SpinLock(&g_taskSpin);
-
-    return ret;
-#else
-    (VOID)taskCB;
-    return LOS_OK;
-#endif
-}
-//任务同步唤醒
-STATIC INLINE VOID OsTaskSyncWake(const LosTaskCB *taskCB)
-{
-#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
-    (VOID)OsSemPostUnsafe(taskCB->syncSignal, NULL);//唤醒一个挂在信号量链表上的阻塞任务
-#else
-    (VOID)taskCB;
-#endif
-}
 //释放任务内核资源
 STATIC VOID OsTaskKernelResourcesToFree(UINT32 syncSignal, UINTPTR topOfStack)
 {
@@ -611,11 +633,9 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskCBInitBase(LosTaskCB *taskCB,
     LOS_ListInit(&(taskCB->msgListHead));//初始化 liteipc的消息链表 
 #endif
     taskCB->policy = (initParam->policy == LOS_SCHED_FIFO) ? LOS_SCHED_FIFO : LOS_SCHED_RR;//调度模式
-    taskCB->taskStatus = OS_TASK_STATUS_INIT;//任务初始状态
-    if (initParam->uwResved & OS_TASK_FLAG_DETACHED) {//分离模式 代表任务与其他任务的关系
-        taskCB->taskStatus |= OS_TASK_FLAG_DETACHED;//任务状态贴上分离标签
-    } else {//参与模式
-        taskCB->taskStatus |= OS_TASK_FLAG_PTHREAD_JOIN;//任务状态贴上联合标签
+    taskCB->taskStatus = OS_TASK_STATUS_INIT;
+    if (initParam->uwResved & LOS_TASK_ATTR_JOINABLE) {
+        taskCB->taskStatus |= OS_TASK_FLAG_PTHREAD_JOIN;
         LOS_ListInit(&taskCB->joinList);
     }
 
@@ -768,10 +788,6 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreate(UINT32 *taskID, TSK_INIT_PARAM_S *in
         initParam->processID = OsGetKernelInitProcessID();
     } else {
         initParam->processID = OsCurrProcessGet()->processID;
-    }
-    initParam->uwResved &= ~OS_TASK_FLAG_PTHREAD_JOIN;
-    if (initParam->uwResved & LOS_TASK_STATUS_DETACHED) {
-        initParam->uwResved = OS_TASK_FLAG_DETACHED;
     }
 
     ret = LOS_TaskCreateOnly(taskID, initParam);
@@ -938,30 +954,7 @@ STATIC INLINE VOID OsTaskStatusUnusedSet(LosTaskCB *taskCB)
 
     OS_MEM_CLEAR(taskCB->taskID);
 }
-//task释放持有的所有锁，一个任务可以持有很多把锁
-STATIC INLINE VOID OsTaskReleaseHoldLock(LosProcessCB *processCB, LosTaskCB *taskCB)
-{
-    LosMux *mux = NULL;
-    UINT32 ret;
 
-    while (!LOS_ListEmpty(&taskCB->lockList)) {//轮询任务锁链表
-        mux = LOS_DL_LIST_ENTRY(LOS_DL_LIST_FIRST(&taskCB->lockList), LosMux, holdList);//取出第一个互斥锁
-        ret = OsMuxUnlockUnsafe(taskCB, mux, NULL);//还锁
-        if (ret != LOS_OK) {//换锁成功
-            LOS_ListDelete(&mux->holdList);//从锁链表中将自己摘除
-            PRINT_ERR("mux ulock failed! : %u\n", ret);
-        }
-    }
-
-    if (processCB->processMode == OS_USER_MODE) {//如果是用户模式，会怎样？
-        OsTaskJoinPostUnsafe(taskCB);//把taskCB绑在一起的其他task唤醒.
-#ifdef LOSCFG_KERNEL_VM
-        OsFutexNodeDeleteFromFutexHash(&taskCB->futex, TRUE, NULL, NULL);
-#endif
-    }
-
-    OsTaskSyncWake(taskCB);//同步唤醒任务
-}
 //删除一个正在运行的任务
 LITE_OS_SEC_TEXT VOID OsRunTaskToDelete(LosTaskCB *runTask)
 {
@@ -1722,6 +1715,104 @@ LITE_OS_SEC_TEXT INT32 LOS_SetTaskScheduler(INT32 taskID, UINT16 policy, UINT16 
     }
 
     return LOS_OK;
+}
+
+STATIC UINT32 OsTaskJoinCheck(UINT32 taskID)
+{
+    if (OS_TID_CHECK_INVALID(taskID)) {
+        return LOS_EINVAL;
+    }
+
+    if (OS_INT_ACTIVE) {
+        return LOS_EINTR;
+    }
+
+    if (!OsPreemptable()) {
+        return LOS_EINVAL;
+    }
+
+    if (taskID == OsCurrTaskGet()->taskID) {
+        return LOS_EDEADLK;
+    }
+    return LOS_OK;
+}
+
+UINT32 LOS_TaskJoin(UINT32 taskID, UINTPTR *retval)
+{
+    UINT32 intSave;
+    LosTaskCB *runTask = OsCurrTaskGet();
+    LosTaskCB *taskCB = NULL;
+    UINT32 errRet;
+
+    errRet = OsTaskJoinCheck(taskID);
+    if (errRet != LOS_OK) {
+        return errRet;
+    }
+
+    taskCB = OS_TCB_FROM_TID(taskID);
+    SCHEDULER_LOCK(intSave);
+    if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {
+        SCHEDULER_UNLOCK(intSave);
+        return LOS_EINVAL;
+    }
+
+    if (runTask->processID != taskCB->processID) {
+        SCHEDULER_UNLOCK(intSave);
+        return LOS_EPERM;
+    }
+
+    errRet = OsTaskJoinPendUnsafe(taskCB);
+    SCHEDULER_UNLOCK(intSave);
+
+    if (errRet == LOS_OK) {
+        LOS_Schedule();
+
+        if (retval != NULL) {
+            *retval = (UINTPTR)taskCB->joinRetval;
+        }
+
+        (VOID)LOS_TaskDelete(taskID);
+        return LOS_OK;
+    }
+
+    return errRet;
+}
+
+UINT32 LOS_TaskDetach(UINT32 taskID)
+{
+    UINT32 intSave;
+    LosTaskCB *runTask = OsCurrTaskGet();
+    LosTaskCB *taskCB = NULL;
+    UINT32 errRet;
+
+    if (OS_TID_CHECK_INVALID(taskID)) {
+        return LOS_EINVAL;
+    }
+
+    if (OS_INT_ACTIVE) {
+        return LOS_EINTR;
+    }
+
+    taskCB = OS_TCB_FROM_TID(taskID);
+    SCHEDULER_LOCK(intSave);
+    if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {
+        SCHEDULER_UNLOCK(intSave);
+        return LOS_EINVAL;
+    }
+
+    if (runTask->processID != taskCB->processID) {
+        SCHEDULER_UNLOCK(intSave);
+        return LOS_EPERM;
+    }
+
+    if (taskCB->taskStatus & OS_TASK_STATUS_EXIT) {
+        SCHEDULER_UNLOCK(intSave);
+        return LOS_TaskJoin(taskID, NULL);
+    }
+
+    errRet = OsTaskSetDetachUnsafe(taskCB);
+    SCHEDULER_UNLOCK(intSave);
+    return errRet;
 }
 
 LITE_OS_SEC_TEXT UINT32 LOS_GetSystemTaskMaximum(VOID)

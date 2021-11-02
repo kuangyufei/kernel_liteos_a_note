@@ -36,6 +36,7 @@
 #endif
 #include "los_hwi.h"
 #include "los_memory_pri.h"
+#include "los_process_pri.h"
 #ifdef LOSCFG_FS_VFS
 #include "console.h"
 #endif

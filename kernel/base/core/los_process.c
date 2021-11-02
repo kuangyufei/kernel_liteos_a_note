@@ -435,10 +435,15 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 
 #ifdef LOSCFG_KERNEL_LITEIPC
     if (OsProcessIsUserMode(processCB)) {//当为用户进程
-        LiteIpcPoolDelete(&(processCB->ipcInfo));//删除进程对lite IPC的开销
+        LiteIpcPoolDelete(&(processCB->ipcInfo), processCB->processID);
         (VOID)memset_s(&(processCB->ipcInfo), sizeof(ProcIpcInfo), 0, sizeof(ProcIpcInfo));
     }
 #endif
+
+    if (processCB->resourceLimit != NULL) {
+        (VOID)LOS_MemFree((VOID *)m_aucSysMem0, processCB->resourceLimit);
+        processCB->resourceLimit = NULL;
+    }
 }
 //回收僵死状态进程的资源
 LITE_OS_SEC_TEXT STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, ProcessGroup **group)
@@ -1738,9 +1743,7 @@ STATIC VOID OsInitCopyTaskParam(LosProcessCB *childProcessCB, const CHAR *name, 
     childPara->usTaskPrio = mainThread->priority;		//优先级
     childPara->processID = childProcessCB->processID;	//进程ID
     if (mainThread->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {
-        childPara->uwResved = OS_TASK_FLAG_PTHREAD_JOIN;
-    } else if (mainThread->taskStatus & OS_TASK_FLAG_DETACHED) {
-        childPara->uwResved = OS_TASK_FLAG_DETACHED;
+        childPara->uwResved = LOS_TASK_ATTR_JOINABLE;
     }
 
     SCHEDULER_UNLOCK(intSave);

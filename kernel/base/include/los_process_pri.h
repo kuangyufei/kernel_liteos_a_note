@@ -127,7 +127,7 @@ typedef struct ProcessCB {
 #ifdef LOSCFG_KERNEL_CPUP
     OsCpupBase           processCpup; /**< Process cpu usage \n 进程占用CPU情况统计*/
 #endif
-    struct rlimit        pl_rlimit[RLIM_NLIMITS];
+    struct rlimit        *resourceLimit;
 } LosProcessCB;
 
 #define CLONE_VM       0x00000100	///< 子进程与父进程运行于相同的内存空间

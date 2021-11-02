@@ -31,39 +31,55 @@
 #include "It_test_sys.h"
 #include "grp.h"
 
-static UINT32 TestCase(VOID)
+STATIC UINT32 TestCase(VOID)
 {
     struct group *grp1 = nullptr;
     struct group *grp2 = nullptr;
     struct group *grp3 = nullptr;
     struct group *grp4 = nullptr;
+    INT32 ret;
+    CHAR *pathList[] = {"/etc/group"};
+    CHAR *streamList[] = {g_groupFileStream};
+    INT32 streamLen[] = {strlen(g_groupFileStream)};
+
+    ret = PrepareFileEnv(pathList, streamList, streamLen, 1);
+    if (ret != 0) {
+        printf("error: need some env file, but prepare is not ok");
+        (VOID)RecoveryFileEnv(pathList, 1);
+        return -1;
+    }
 
     grp1 = getgrent();
-    ICUNIT_ASSERT_NOT_EQUAL(grp1, nullptr, -1);
-    ICUNIT_ASSERT_STRING_EQUAL(grp1->gr_name, "root", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(grp1->gr_passwd, "x", -1);
-    ICUNIT_ASSERT_EQUAL(grp1->gr_gid, 0, -1);
+    ICUNIT_GOTO_NOT_EQUAL(grp1, nullptr, -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(grp1->gr_name, "root", -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(grp1->gr_passwd, "x", -1, ERROUT);
+    ICUNIT_GOTO_EQUAL(grp1->gr_gid, 0, -1, ERROUT);
 
     grp2 = getgrent();
-    ICUNIT_ASSERT_NOT_EQUAL(grp2, nullptr, -1);
-    ICUNIT_ASSERT_STRING_EQUAL(grp2->gr_name, "daemon", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(grp2->gr_passwd, "x", -1);
-    ICUNIT_ASSERT_EQUAL(grp2->gr_gid, 1, -1);
+    ICUNIT_GOTO_NOT_EQUAL(grp2, nullptr, -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(grp2->gr_name, "daemon", -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(grp2->gr_passwd, "x", -1, ERROUT);
+    ICUNIT_GOTO_EQUAL(grp2->gr_gid, 1, -1, ERROUT);
 
     grp3 = getgrent();
-    ICUNIT_ASSERT_NOT_EQUAL(grp3, nullptr, -1);
-    ICUNIT_ASSERT_STRING_EQUAL(grp3->gr_name, "bin", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(grp3->gr_passwd, "x", -1);
-    ICUNIT_ASSERT_EQUAL(grp3->gr_gid, 2, -1);
+    ICUNIT_GOTO_NOT_EQUAL(grp3, nullptr, -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(grp3->gr_name, "bin", -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(grp3->gr_passwd, "x", -1, ERROUT);
+    ICUNIT_GOTO_EQUAL(grp3->gr_gid, 2, -1, ERROUT); /* 2, from etc/group */
 
     setgrent();
 
     grp4 = getgrent();
-    ICUNIT_ASSERT_NOT_EQUAL(grp4, nullptr, -1);
-    ICUNIT_ASSERT_STRING_EQUAL(grp1->gr_name, grp4->gr_name, -1);
+    ICUNIT_GOTO_NOT_EQUAL(grp4, nullptr, -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(grp1->gr_name, grp4->gr_name, -1, ERROUT);
 
     setgrent();
+    (VOID)RecoveryFileEnv(pathList, 1);
     return 0;
+ERROUT:
+    setgrent();
+    (VOID)RecoveryFileEnv(pathList, 1);
+    return -1;
 }
 
 VOID ItTestSys023(VOID)

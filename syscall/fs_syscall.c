@@ -2610,4 +2610,51 @@ int SysPpoll(struct pollfd *fds, nfds_t nfds, const struct timespec *tmo_p, cons
     PointerFree(sigMaskbak);
     return (ret == -1) ? -get_errno() : ret;
 }
+
+int SysPselect6(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+    const struct timespec *timeout, const long data[2])
+{
+    int ret;
+    int retVal;
+    sigset_t_l origMask;
+    sigset_t_l setl;
+
+    CHECK_ASPACE(readfds, sizeof(fd_set));
+    CHECK_ASPACE(writefds, sizeof(fd_set));
+    CHECK_ASPACE(exceptfds, sizeof(fd_set));
+    CHECK_ASPACE(timeout, sizeof(struct timeval));
+
+    CPY_FROM_USER(readfds);
+    CPY_FROM_USER(writefds);
+    CPY_FROM_USER(exceptfds);
+    DUP_FROM_USER(timeout, sizeof(struct timeval));
+
+    ((struct timeval *)timeout)->tv_usec = timeout->tv_nsec / 1000; /* 1000, convert ns to us */
+
+    if (data != NULL) {
+        retVal = LOS_ArchCopyFromUser(&(setl.sig[0]), (int *)data[0], sizeof(sigset_t));
+        if (retVal != 0) {
+            ret = -EFAULT;
+            FREE_DUP(timeout);
+            return ret;
+        }
+    }
+
+    OsSigprocMask(SIG_SETMASK, &setl, &origMask);
+    ret = do_select(nfds, readfds, writefds, exceptfds, (struct timeval *)timeout, UserPoll);
+    if (ret < 0) {
+        /* do not copy parameter back to user mode if do_select failed */
+        ret = -get_errno();
+        FREE_DUP(timeout);
+        return ret;
+    }
+    OsSigprocMask(SIG_SETMASK, &origMask, NULL);
+
+    CPY_TO_USER(readfds);
+    CPY_TO_USER(writefds);
+    CPY_TO_USER(exceptfds);
+    FREE_DUP(timeout);
+
+    return ret;
+}
 #endif

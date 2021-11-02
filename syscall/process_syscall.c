@@ -884,9 +884,9 @@ unsigned int SysCreateUserThread(const TSK_ENTRY_FUNC func, const UserTaskParam 
 
     param.pfnTaskEntry = func;
     if (joinable == TRUE) {
-        param.uwResved = OS_TASK_FLAG_PTHREAD_JOIN;
+        param.uwResved = LOS_TASK_ATTR_JOINABLE;
     } else {
-        param.uwResved = OS_TASK_FLAG_DETACHED;
+        param.uwResved = LOS_TASK_STATUS_DETACHED;
     }
 
     return OsCreateUserTask(OS_INVALID_VALUE, &param);
@@ -922,7 +922,7 @@ char *SysGetThreadArea(void)
     return (char *)(OsCurrTaskGet()->userArea);
 }
 
-int SysUserThreadSetDeatch(unsigned int taskID)
+int SysUserThreadSetDetach(unsigned int taskID)
 {
     unsigned int intSave;
     int ret;

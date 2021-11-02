@@ -59,7 +59,15 @@ extern "C" {
  *
  * The task is automatically deleted.
  */
-#define LOS_TASK_STATUS_DETACHED                0x0800U //任务被自动删除
+#define LOS_TASK_STATUS_DETACHED                0x0U
+
+/**
+ * @ingroup los_task
+ * Flag that indicates the task or task control block status.
+ *
+ * The task is joinable.
+ */
+#define LOS_TASK_ATTR_JOINABLE                  0x80000000
 
 /**
  * @ingroup los_task
@@ -1064,6 +1072,49 @@ extern INT32 LOS_SetTaskScheduler(INT32 taskID, UINT16 policy, UINT16 priority);
  * <ul><li>los_task.h: the header file that contains the API declaration.</li></ul>
  */
 extern VOID LOS_Schedule(VOID);
+
+/**
+ * @ingroup  los_task
+ * @brief Wait for the specified task to finish and reclaim its resources.
+ *
+ * @par Description:
+ * This API is used to wait for the specified task to finish and reclaim its resources.
+ *
+ * @attention None.
+ *
+ * @param taskID [IN]  task ID.
+ * @param retval [OUT] wait for the return value of the task.
+ *
+ * @retval LOS_OK      successful
+ * @retval LOS_EINVAL  Invalid parameter or invalid operation
+ * @retval LOS_EINTR   Disallow calls in interrupt handlers
+ * @retval LOS_EPERM   Waiting tasks and calling tasks do not belong to the same process
+ * @retval LOS_EDEADLK The waiting task is the same as the calling task
+ * @par Dependency:
+ * <ul><li>los_task.h: the header file that contains the API declaration.</li></ul>
+ */
+extern UINT32 LOS_TaskJoin(UINT32 taskID, UINTPTR *retval);
+
+/**
+ * @ingroup  los_task
+ * @brief Change the joinable attribute of the task to detach.
+ *
+ * @par Description:
+ * This API is used to change the joinable attribute of the task to detach.
+ *
+ * @attention None.
+ *
+ * @param taskID [IN] task ID.
+ *
+ * @retval LOS_OK      successful
+ * @retval LOS_EINVAL  Invalid parameter or invalid operation
+ * @retval LOS_EINTR   Disallow calls in interrupt handlers
+ * @retval LOS_EPERM   Waiting tasks and calling tasks do not belong to the same process
+ * @retval LOS_ESRCH   Cannot modify the Joinable attribute of a task that is waiting for completion.
+ * @par Dependency:
+ * <ul><li>los_task.h: the header file that contains the API declaration.</li></ul>
+ */
+extern UINT32 LOS_TaskDetach(UINT32 taskID);
 
 #ifdef __cplusplus
 #if __cplusplus

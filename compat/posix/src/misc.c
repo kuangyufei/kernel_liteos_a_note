@@ -40,6 +40,7 @@
 #include "los_process_pri.h"
 #include "los_hw.h"
 
+static struct rlimit g_defaultLimit = { 0 };
 /*
  * Supply some suitable values for constants that may not be present
  * in all configurations.
@@ -154,7 +155,9 @@ pid_t getpid(void)
 
 int getrlimit(int resource, struct rlimit *rlim)
 {
+    unsigned int intSave;
     LosProcessCB *pcb = OsCurrProcessGet();
+    struct rlimit *resourceLimit = pcb->resourceLimit;
 
     switch (resource) {
         case RLIMIT_NOFILE:
@@ -163,8 +166,15 @@ int getrlimit(int resource, struct rlimit *rlim)
         default:
             return -EINVAL;
     }
-    rlim->rlim_cur = pcb->pl_rlimit[resource].rlim_cur;
-    rlim->rlim_max = pcb->pl_rlimit[resource].rlim_max;
+
+    if (resourceLimit == NULL) {
+        resourceLimit = &g_defaultLimit;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    rlim->rlim_cur = resourceLimit[resource].rlim_cur;
+    rlim->rlim_max = resourceLimit[resource].rlim_max;
+    SCHEDULER_UNLOCK(intSave);
 
     return 0;
 }
@@ -175,6 +185,8 @@ int getrlimit(int resource, struct rlimit *rlim)
 #endif
 int setrlimit(int resource, const struct rlimit *rlim)
 {
+    unsigned int intSave;
+    struct rlimit *resourceLimit = NULL;
     LosProcessCB *pcb = OsCurrProcessGet();
 
     if (rlim->rlim_cur > rlim->rlim_max) {
@@ -194,8 +206,23 @@ int setrlimit(int resource, const struct rlimit *rlim)
         default:
             return -EINVAL;
     }
-    pcb->pl_rlimit[resource].rlim_cur = rlim->rlim_cur;
-    pcb->pl_rlimit[resource].rlim_max = rlim->rlim_max;
 
+    if (pcb->resourceLimit == NULL) {
+        resourceLimit = LOS_MemAlloc((VOID *)m_aucSysMem0, RLIM_NLIMITS * sizeof(struct rlimit));
+        if (resourceLimit == NULL) {
+            return -EINVAL;
+        }
+    }
+
+    SCHEDULER_LOCK(intSave);
+    if (pcb->resourceLimit == NULL) {
+        pcb->resourceLimit = resourceLimit;
+        resourceLimit = NULL;
+    }
+    pcb->resourceLimit[resource].rlim_cur = rlim->rlim_cur;
+    pcb->resourceLimit[resource].rlim_max = rlim->rlim_max;
+    SCHEDULER_UNLOCK(intSave);
+
+    (VOID)LOS_MemFree((VOID *)m_aucSysMem0, resourceLimit);
     return 0;
 }

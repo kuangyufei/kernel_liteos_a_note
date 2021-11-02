@@ -46,12 +46,10 @@ sources_smoke = [
   "smoke/pthread_atfork_test_002.cpp",
   "smoke/pthread_cond_test_001.cpp",
   "smoke/pthread_cond_test_002.cpp",
+  "smoke/pthread_cond_test_003.cpp",
+  "smoke/pthread_cond_test_004.cpp",
   "smoke/pthread_once_test_001.cpp",
-  "smoke/pthread_test_001.cpp",
-  "smoke/pthread_test_002.cpp",
   "smoke/pthread_test_003.cpp",
-  "smoke/pthread_test_004.cpp",
-  "smoke/pthread_test_005.cpp",
   "smoke/pthread_test_006.cpp",
   "smoke/pthread_test_007.cpp",
   "smoke/pthread_test_008.cpp",
@@ -60,7 +58,6 @@ sources_smoke = [
   "smoke/pthread_test_011.cpp",
   "smoke/pthread_test_012.cpp",
   "smoke/pthread_test_013.cpp",
-  "smoke/pthread_test_014.cpp",
   "smoke/pthread_test_015.cpp",
   "smoke/pthread_test_016.cpp",
   "smoke/pthread_test_017.cpp",
@@ -69,6 +66,11 @@ sources_smoke = [
 ]
 
 sources_full = [
+  "full/pthread_test_001.cpp",
+  "full/pthread_test_002.cpp",
+  "full/pthread_test_004.cpp",
+  "full/pthread_test_005.cpp",
+  "full/pthread_test_014.cpp",
 ]
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {

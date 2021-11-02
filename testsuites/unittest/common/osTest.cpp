@@ -129,6 +129,70 @@ VOID test_init_spinor(VOID);
 VOID test_deinit_jffs(VOID);
 VOID test_mtd_jffs(VOID);
 
+UINT32 PrepareFileEnv(CHAR *pathList[], CHAR *streamList[], INT32 streamLen[], INT32 listCnt)
+{
+    CHAR nameBuf[256] = {0};
+    for (UINT32 i = 0; i < listCnt; i++) {
+        UINT32 ret = access(pathList[i], 0);
+        if (ret == 0) {
+            ret = memcpy_s(nameBuf, sizeof(nameBuf), pathList[i], strlen(pathList[i]) + 1);
+            if (ret != 0) {
+                return -1;
+            }
+            ret = strcat_s(nameBuf, sizeof(nameBuf), "_bak_for_test");
+            if (ret != 0) {
+                return -1;
+            }
+            ret = rename(pathList[i], nameBuf);
+            if (ret != 0) {
+                return -1;
+            }
+        }
+        FILE *fp = fopen(pathList[i], "w");
+        if (fp == NULL) {
+            return -1;
+        }
+        ret = fwrite(streamList[i], 1, streamLen[i], fp);
+        if (ret != streamLen[i]) {
+            (VOID)fclose(fp);
+            return -1;
+        }
+        ret = fclose(fp);
+        if (ret != 0) {
+            printf("%d\n", errno);
+        }
+    }
+    return 0;
+}
+
+UINT32 RecoveryFileEnv(CHAR *pathList[], INT32 listCnt)
+{
+    UINT32 ret;
+    CHAR nameBuf[256] = {0};
+    for (UINT32 i = 0; i < listCnt; i++) {
+        ret = remove(pathList[i]);
+        if (ret != 0) {
+            printf("ret = %d, err = %d\n", ret, errno);
+        }
+        ret = memcpy_s(nameBuf, sizeof(nameBuf), pathList[i], strlen(pathList[i]) + 1);
+        if (ret != 0) {
+            return -1;
+        }
+        ret = strcat_s(nameBuf, sizeof(nameBuf), "_bak_for_test");
+        if (ret != 0) {
+            return -1;
+        }
+        ret = access(nameBuf, 0);
+        if (ret == 0) {
+            ret = rename(nameBuf, pathList[i]);
+            if (ret != 0) {
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
 VOID Wfi(VOID)
 {
     __asm__ __volatile__("wfi" : : : "memory");

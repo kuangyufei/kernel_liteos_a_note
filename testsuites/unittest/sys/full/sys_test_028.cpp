@@ -31,20 +31,30 @@
 
 static UINT32 TestCase(VOID)
 {
-    int ret;
+    int ret, status;
+
     pid_t pid = fork();
     if (pid == 0) {
+        ret = setpriority(PRIO_PROCESS, 0, 15); /* 15, set priority for test */
+        if (ret != 0) {
+            exit(0);
+        }
         ret = nice(0);
-        ICUNIT_ASSERT_EQUAL(ret, 15, ret);
+        exit(ret);
     } else {
-        ret = nice(-15);
+        ret = waitpid(pid, &status, 0);
+        ICUNIT_ASSERT_EQUAL(ret, pid, ret);
+        status = WEXITSTATUS(status);
+        ICUNIT_ASSERT_EQUAL(status, 15, status); /* 15, set priority for test */
+
+        ret = nice(-40); /* -40, set invaild priority for test */
         ICUNIT_ASSERT_EQUAL(ret, -1, ret);
         ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
     }
     return 0;
 }
 
-VOID IT_TEST_SYS_028(VOID)
+VOID ItTestSys028(VOID)
 {
-    TEST_ADD_CASE(IT_TEST_SYS_028, TestCase, TEST_POSIX, TEST_MEM, TEST_LEVEL0, TEST_FUNCTION);
+    TEST_ADD_CASE(ItTestSys028, TestCase, TEST_POSIX, TEST_MEM, TEST_LEVEL0, TEST_FUNCTION);
 }

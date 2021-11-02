@@ -41,7 +41,7 @@ static void *PthreadF01(void *t)
     ICUNIT_GOTO_EQUAL(rc, 0, rc, EXIT);
 
     g_testCount++;
-    LosTaskDelay(1);
+    LosTaskDelay(100);
     ICUNIT_GOTO_EQUAL(g_testCount, 2, g_testCount, EXIT); // 2, here assert the result.
     g_testCount++;
 

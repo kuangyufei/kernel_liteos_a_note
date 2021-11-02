@@ -53,10 +53,6 @@ static UINT32 Testcase(VOID)
 #ifdef LOSCFG_USER_TEST_SMP
     sleep(1);
 #endif
-
-    ret = pthread_join(g_th, NULL);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    ICUNIT_ASSERT_EQUAL(g_testCount, 2, g_testCount); // 2, assert the exit code.
     return 0;
 }
 

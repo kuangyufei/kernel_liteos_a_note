@@ -107,6 +107,8 @@
 #define HWI_NUM_INTVALID OS_HWI_MAX_NUM
 #define writel(value, address) WRITE_UINT32(value, address)
 
+extern UINT32 PrepareFileEnv(CHAR *pathList[], CHAR *streamList[], INT32 streamLen[], INT32 listCnt);
+extern UINT32 RecoveryFileEnv(CHAR *pathList[], INT32 listCnt);
 extern UINT32 PosixPthreadInit(pthread_attr_t *attr, int pri);
 extern UINT32 PosixPthreadDestroy(pthread_attr_t *attr, pthread_t thread);
 
@@ -233,18 +235,6 @@ UINT32 LosTaskDelay(UINT32 tick);
 #define TEST_TASKDELAY_20TICK 20
 #define TEST_TASKDELAY_50TICK 50
 
-#ifdef TEST3731
-#define TestTimer2ValueGet(temp) READ_UINT32(temp, TIMER1_REG_BASE + TIMER_VALUE)
-#elif defined TEST3559
-#define TestTimer2ValueGet(temp) READ_UINT32(temp, TIMER3_REG_BASE + TIMER_VALUE)
-#else
-#define TestTimer2ValueGet(temp) READ_UINT32(temp, TIMER2_REG_BASE + TIMER_VALUE)
-#endif
-extern void TestTimer2Config(void);
-
-#define REALTIME(time) (UINT32)((UINT64)(0xffffffff - time) * 1000 / OS_SYS_CLOCK)           /* accuracy:ms */
-#define HW_TMI(time) (UINT32)((UINT64)(0xffffffff - time) * 1000 / (OS_SYS_CLOCK / 1000000)) /* accuracy:ns */
-
 #define uart_printf_func printf
 
 #ifndef VFS_STAT_PRINTF
@@ -268,7 +258,6 @@ extern void TestTimer2Config(void);
 #endif
 
 extern UINT32 g_shellTestQueueID;
-extern int g_min_mempool_size;
 extern UINT32 g_testCount;
 extern UINT32 g_testCount1;
 extern UINT32 g_testCount2;
@@ -399,10 +388,6 @@ void Test_usb_shellcmd(controller_type ctype, device_type dtype, usb_test_type t
 #endif
 
 extern int Gettid(void);
-
-#define COLOR(c) "\033[" c "m"
-#define COLOR_RED(text) COLOR("1;31") text COLOR("0")
-#define COLOR_GREEN(text) COLOR("1;32") text COLOR("0")
 
 /* like the ctime/asctime api, use static buffer, though not thread-safe. */
 static inline const char *Curtime()

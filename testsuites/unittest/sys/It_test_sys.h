@@ -51,6 +51,8 @@
 #define FE_UPWARD 0x800
 #define FE_TOWARDZERO 0xc00
 
+extern CHAR *g_groupFileStream;
+extern CHAR *g_passwdFileStream;
 extern VOID ItTestSys001(VOID);
 extern VOID IT_TEST_SYS_002(VOID);
 extern VOID IT_TEST_SYS_003(VOID);
@@ -78,7 +80,7 @@ extern VOID ItTestSys024(VOID);
 extern VOID ItTestSys025(VOID);
 extern VOID ItTestSys026(VOID);
 extern VOID ItTestSys027(VOID);
-extern VOID IT_TEST_SYS_028(VOID);
+extern VOID ItTestSys028(VOID);
 extern VOID ItTestSys029(VOID);
 extern VOID IT_TEST_SYS_030(VOID);
 extern VOID IT_TEST_SYS_031(VOID);

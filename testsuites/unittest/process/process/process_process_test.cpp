@@ -127,17 +127,6 @@ HWTEST_F(ProcessProcessTest, ItTestProcess006, TestSize.Level0)
 }
 
 /* *
- * @tc.name: it_test_process_007
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess007, TestSize.Level0)
-{
-    ItTestProcess007();
-}
-
-/* *
  * @tc.name: it_test_process_008
  * @tc.desc: function for ProcessProcessTest
  * @tc.type: FUNC
@@ -380,83 +369,6 @@ HWTEST_F(ProcessProcessTest, ItTestProcess030, TestSize.Level0)
 }
 
 /* *
- * @tc.name: it_test_process_031
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess031, TestSize.Level0)
-{
-    ItTestProcess031();
-}
-
-/* *
- * @tc.name: it_test_process_032
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess032, TestSize.Level0)
-{
-    ItTestProcess032();
-}
-
-/* *
- * @tc.name: it_test_process_033
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess033, TestSize.Level0)
-{
-    ItTestProcess033();
-}
-
-/* *
- * @tc.name: it_test_process_034
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess034, TestSize.Level0)
-{
-    ItTestProcess034();
-}
-
-/* *
- * @tc.name: it_test_process_035
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess035, TestSize.Level0)
-{
-    ItTestProcess035();
-}
-
-/* *
- * @tc.name: it_test_process_036
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess036, TestSize.Level0)
-{
-    ItTestProcess036();
-}
-
-/* *
- * @tc.name: it_test_process_037
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess037, TestSize.Level0)
-{
-    ItTestProcess037();
-}
-
-/* *
  * @tc.name: it_test_process_038
  * @tc.desc: function for ProcessProcessTest
  * @tc.type: FUNC
@@ -476,39 +388,6 @@ HWTEST_F(ProcessProcessTest, ItTestProcess038, TestSize.Level0)
 HWTEST_F(ProcessProcessTest, ItTestProcess039, TestSize.Level0)
 {
     ItTestProcess039();
-}
-
-/* *
- * @tc.name: it_test_process_040
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess040, TestSize.Level0)
-{
-    ItTestProcess040();
-}
-
-/* *
- * @tc.name: it_test_process_041
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess041, TestSize.Level0)
-{
-    ItTestProcess041();
-}
-
-/* *
- * @tc.name: it_test_process_042
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess042, TestSize.Level0)
-{
-    ItTestProcess042();
 }
 
 /* *
@@ -578,172 +457,25 @@ HWTEST_F(ProcessProcessTest, ItTestProcess048, TestSize.Level0)
 }
 
 /* *
- * @tc.name: it_test_process_049
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: DTS202101040I5J4KP0H00
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess049, TestSize.Level0)
-{
-    ItTestProcess049();
-}
-
-/* *
- * @tc.name: it_test_process_050
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: DTS202101040I5J4KP0H00
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess050, TestSize.Level0)
-{
-    ItTestProcess050();
-}
-
-/* *
- * @tc.name: it_test_process_051
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: DTS202101040I5J4KP0H00
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess051, TestSize.Level0)
-{
-    ItTestProcess051();
-}
-
-/* *
- * @tc.name: it_test_process_056
- * @tc.desc: function for posix_spawn:Verifying Basic Functions
+ * @tc.name: it_test_process_054
+ * @tc.desc: function for waitid: The waitid parameter is incorrect and the error code is verified.
  * @tc.type: FUNC
  * @tc.require: AR000E0QAB
  */
-HWTEST_F(ProcessProcessTest, ItTestProcess056, TestSize.Level0)
+HWTEST_F(ProcessProcessTest, ItTestProcess054, TestSize.Level0)
 {
-    ItTestProcess056();
+    ItTestProcess054();
 }
 
 /* *
- * @tc.name: it_test_process_057
- * @tc.desc: function for posix_spawnp:Verifying Basic Functions
+ * @tc.name: it_test_process_061
+ * @tc.desc: function for killpg: The killpg parameter is incorrect and the error code is verified.
  * @tc.type: FUNC
  * @tc.require: AR000E0QAB
  */
-HWTEST_F(ProcessProcessTest, ItTestProcess057, TestSize.Level0)
+HWTEST_F(ProcessProcessTest, ItTestProcess061, TestSize.Level0)
 {
-    ItTestProcess057();
-}
-
-/* *
- * @tc.name: it_test_process_058
- * @tc.desc: function for posix_spawn: The attr parameter is correctly transferred and the flag is set.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess058, TestSize.Level0)
-{
-    ItTestProcess058();
-}
-
-/* *
- * @tc.name: it_test_process_059
- * @tc.desc: function for posix_spawnp: The attr parameter is correctly transferred and the flag is set.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess059, TestSize.Level0)
-{
-    ItTestProcess059();
-}
-
-/* *
- * @tc.name: it_test_process_060
- * @tc.desc: function for posix_spawnp: Error code verification for the attr setting function.
- * The attr parameter is incorrect and the error code is verified.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess060, TestSize.Level0)
-{
-    ItTestProcess060();
-}
-
-/* *
- * @tc.name: it_test_process_063
- * @tc.desc: function for posix_spawn: The file path, argv command, and envp environment variable are invalid.
- * Error code verification is performed.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess063, TestSize.Level0)
-{
-    ItTestProcess063();
-}
-
-/* *
- * @tc.name: it_test_process_064
- * @tc.desc: function for posix_spawnp: The file path, argv command, and envp environment variable are invalid.
- * Error code verification is performed.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess064, TestSize.Level0)
-{
-    ItTestProcess064();
-}
-
-/* *
- * @tc.name: it_test_process_065
- * @tc.desc: function for posix_spawn: Error code verification for the attr setting function.
- * The attr parameter is incorrect and the error code is verified.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess065, TestSize.Level0)
-{
-    ItTestProcess065();
-}
-
-/* *
- * @tc.name: it_test_process_066
- * @tc.desc: function for posix_spawn: Check the effect of subprocess settings when attr is valid.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess066, TestSize.Level0)
-{
-    ItTestProcess066();
-}
-
-/* *
- * @tc.name: it_test_process_067
- * @tc.desc: function for posix_spawn: Check the effect of subprocess settings when attr is valid.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess067, TestSize.Level0)
-{
-    ItTestProcess067();
-}
-
-/* *
- * @tc.name: it_test_process_068
- * @tc.desc: function for posix_spawn: Verify the effect of the argv and envp parameters in subprocesses.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess068, TestSize.Level0)
-{
-    ItTestProcess068();
-}
-
-/* *
- * @tc.name: it_test_process_069
- * @tc.desc: function for posix_spawnp: Verify the effect of the argv and envp parameters in subprocesses.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess069, TestSize.Level0)
-{
-    ItTestProcess069();
+    ItTestProcess061();
 }
 
 #ifdef LOSCFG_USER_TEST_SMP
@@ -839,6 +571,127 @@ HWTEST_F(ProcessProcessTest, ItTestProcessSmp008, TestSize.Level0)
 
 #if defined(LOSCFG_USER_TEST_FULL)
 /* *
+ * @tc.name: it_test_process_007
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess007, TestSize.Level0)
+{
+    ItTestProcess007();
+}
+
+/* *
+ * @tc.name: it_test_process_031
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess031, TestSize.Level0)
+{
+    ItTestProcess031();
+}
+
+/* *
+ * @tc.name: it_test_process_032
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess032, TestSize.Level0)
+{
+    ItTestProcess032();
+}
+
+/* *
+ * @tc.name: it_test_process_033
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess033, TestSize.Level0)
+{
+    ItTestProcess033();
+}
+
+/* *
+ * @tc.name: it_test_process_034
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess034, TestSize.Level0)
+{
+    ItTestProcess034();
+}
+
+/* *
+ * @tc.name: it_test_process_035
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess035, TestSize.Level0)
+{
+    ItTestProcess035();
+}
+
+/* *
+ * @tc.name: it_test_process_036
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess036, TestSize.Level0)
+{
+    ItTestProcess036();
+}
+
+/* *
+ * @tc.name: it_test_process_037
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess037, TestSize.Level0)
+{
+    ItTestProcess037();
+}
+
+/* *
+ * @tc.name: it_test_process_040
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess040, TestSize.Level0)
+{
+    ItTestProcess040();
+}
+
+/* *
+ * @tc.name: it_test_process_041
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess041, TestSize.Level0)
+{
+    ItTestProcess041();
+}
+
+/* *
+ * @tc.name: it_test_process_042
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess042, TestSize.Level0)
+{
+    ItTestProcess042();
+}
+
+/* *
  * @tc.name: it_test_process_053
  * @tc.desc: function for killpg:Sends a signal to the process group,
  * Other processes in the process group can receive the signal.
@@ -851,17 +704,6 @@ HWTEST_F(ProcessProcessTest, ItTestProcess053, TestSize.Level0)
 }
 
 /* *
- * @tc.name: it_test_process_054
- * @tc.desc: function for waitid: The waitid parameter is incorrect and the error code is verified.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess054, TestSize.Level0)
-{
-    ItTestProcess054();
-}
-
-/* *
  * @tc.name: it_test_process_055
  * @tc.desc: function for waitid:To test the function of transferring different parameters of the waitid.
  * @tc.type: FUNC
@@ -870,17 +712,6 @@ HWTEST_F(ProcessProcessTest, ItTestProcess054, TestSize.Level0)
 HWTEST_F(ProcessProcessTest, ItTestProcess055, TestSize.Level0)
 {
     ItTestProcess055();
-}
-
-/* *
- * @tc.name: it_test_process_061
- * @tc.desc: function for killpg: The killpg parameter is incorrect and the error code is verified.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess061, TestSize.Level0)
-{
-    ItTestProcess061();
 }
 
 /* *

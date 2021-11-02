@@ -249,7 +249,7 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
         taskInitParam.uwResved = LOS_TASK_STATUS_DETACHED;
     } else {
         /* Set the pthread default joinable */
-        taskInitParam.uwResved = 0;
+        taskInitParam.uwResved = LOS_TASK_ATTR_JOINABLE;
     }
 
     PthreadReap();

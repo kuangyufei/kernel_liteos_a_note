@@ -30,51 +30,66 @@
  */
 #include "It_test_sys.h"
 
-static UINT32 TestCase(VOID)
+STATIC UINT32 TestCase(VOID)
 {
     struct passwd *user1 = nullptr;
     struct passwd *user2 = nullptr;
     struct passwd *user3 = nullptr;
     struct passwd *user4 = nullptr;
+    INT32 ret;
+    CHAR *pathList[] = {"/etc/group", "/etc/passwd"};
+    CHAR *streamList[] = {g_groupFileStream, g_passwdFileStream};
+    INT32 streamLen[] = {strlen(g_groupFileStream), strlen(g_passwdFileStream)};
+
+    ret = PrepareFileEnv(pathList, streamList, streamLen, 2); /* 2, group & passwd */
+    if (ret != 0) {
+        printf("error: need some env file, but prepare is not ok");
+        (VOID)RecoveryFileEnv(pathList, 2); /* 2, group & passwd */
+        return -1;
+    }
 
     user1 = getpwnam("root");
-    ICUNIT_ASSERT_NOT_EQUAL(user1, nullptr, -1);
-    ICUNIT_ASSERT_STRING_EQUAL(user1->pw_name, "root", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(user1->pw_passwd, "x", -1);
-    ICUNIT_ASSERT_EQUAL(user1->pw_uid, 0, -1);
-    ICUNIT_ASSERT_EQUAL(user1->pw_gid, 0, -1);
-    ICUNIT_ASSERT_STRING_EQUAL(user1->pw_gecos, "root", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(user1->pw_dir, "/root", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(user1->pw_shell, "/bin/bash", -1);
+    ICUNIT_GOTO_NOT_EQUAL(user1, nullptr, -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(user1->pw_name, "root", -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(user1->pw_passwd, "x", -1, ERROUT);
+    ICUNIT_GOTO_EQUAL(user1->pw_uid, 0, -1, ERROUT);
+    ICUNIT_GOTO_EQUAL(user1->pw_gid, 0, -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(user1->pw_gecos, "root", -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(user1->pw_dir, "/root", -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(user1->pw_shell, "/bin/bash", -1, ERROUT);
 
     user2 = getpwnam("daemon");
-    ICUNIT_ASSERT_NOT_EQUAL(user2, nullptr, -1);
-    ICUNIT_ASSERT_STRING_EQUAL(user2->pw_name, "daemon", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(user2->pw_passwd, "x", -1);
-    ICUNIT_ASSERT_EQUAL(user2->pw_uid, 1, -1);
-    ICUNIT_ASSERT_EQUAL(user2->pw_gid, 1, -1);
-    ICUNIT_ASSERT_STRING_EQUAL(user2->pw_gecos, "daemon", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(user2->pw_dir, "/usr/sbin", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(user2->pw_shell, "/usr/sbin/nologin", -1);
+    ICUNIT_GOTO_NOT_EQUAL(user2, nullptr, -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(user2->pw_name, "daemon", -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(user2->pw_passwd, "x", -1, ERROUT);
+    ICUNIT_GOTO_EQUAL(user2->pw_uid, 1, -1, ERROUT);
+    ICUNIT_GOTO_EQUAL(user2->pw_gid, 1, -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(user2->pw_gecos, "daemon", -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(user2->pw_dir, "/usr/sbin", -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(user2->pw_shell, "/usr/sbin/nologin", -1, ERROUT);
 
 
     user3 = getpwnam("bin");
-    ICUNIT_ASSERT_NOT_EQUAL(user3, nullptr, -1);
-    ICUNIT_ASSERT_STRING_EQUAL(user3->pw_name, "bin", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(user3->pw_passwd, "x", -1);
-    ICUNIT_ASSERT_EQUAL(user3->pw_uid, 2, -1);
-    ICUNIT_ASSERT_EQUAL(user3->pw_gid, 2, -1);
-    ICUNIT_ASSERT_STRING_EQUAL(user3->pw_gecos, "bin", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(user3->pw_dir, "/bin", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(user3->pw_shell, "/usr/sbin/nologin", -1);
+    ICUNIT_GOTO_NOT_EQUAL(user3, nullptr, -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(user3->pw_name, "bin", -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(user3->pw_passwd, "x", -1, ERROUT);
+    ICUNIT_GOTO_EQUAL(user3->pw_uid, 2, -1, ERROUT); /* 2, from etc/group */
+    ICUNIT_GOTO_EQUAL(user3->pw_gid, 2, -1, ERROUT); /* 2, from etc/group */
+    ICUNIT_GOTO_STRING_EQUAL(user3->pw_gecos, "bin", -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(user3->pw_dir, "/bin", -1, ERROUT);
+    ICUNIT_GOTO_STRING_EQUAL(user3->pw_shell, "/usr/sbin/nologin", -1, ERROUT);
 
     user4 = getpwnam("lyw");
-    ICUNIT_ASSERT_EQUAL(user4, nullptr, -1);
+    ICUNIT_GOTO_EQUAL(user4, nullptr, -1, ERROUT);
 
     user4 = getpwnam("");
-    ICUNIT_ASSERT_EQUAL(user4, nullptr, -1);
+    ICUNIT_GOTO_EQUAL(user4, nullptr, -1, ERROUT);
 
+    (VOID)RecoveryFileEnv(pathList, 2); /* 2, group & passwd */
     return 0;
+ERROUT:
+    (VOID)RecoveryFileEnv(pathList, 2); /* 2, group & passwd */
+    return -1;
 }
 
 VOID ItTestSys018(VOID)

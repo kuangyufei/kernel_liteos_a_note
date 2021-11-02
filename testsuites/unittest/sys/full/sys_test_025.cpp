@@ -34,17 +34,17 @@
 
 #define GROUPFILE "/etc/group"
 
-static int TestCase0(void)
+STATIC INT32 TestCase0(void)
 {
     struct group getNam1 = { nullptr };
     struct group *getNam2 = nullptr;
     struct group getData1 = { nullptr };
     struct group *getData2 = nullptr;
     struct group *groupRet = nullptr;
-    char buf[1000];
-    size_t len = 1000;
+    CHAR buf[1000]; /* 1000, buffer for test */
+    size_t len = sizeof(buf);
 
-    int ret = getgrgid_r(0, &getNam1, buf, len, &getNam2);
+    INT32 ret = getgrgid_r(0, &getNam1, buf, len, &getNam2);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     ICUNIT_ASSERT_NOT_EQUAL(getNam2, nullptr, getNam2);
@@ -73,17 +73,17 @@ static int TestCase0(void)
     return 0;
 }
 
-static int TestCase1(void)
+STATIC INT32 TestCase1(void)
 {
-    int len = 1000;
-    char buf[1000];
+    INT32 len = 1000;
+    CHAR buf[1000];
     struct group getNam1 = { nullptr };
     struct group *getNam2 = nullptr;
     struct group getData1 = { nullptr };
     struct group *getData2 = nullptr;
     struct group *groupRet = nullptr;
 
-    int ret = getgrgid_r(-1, &getNam1, buf, len, &getNam2);
+    INT32 ret = getgrgid_r(-1, &getNam1, buf, len, &getNam2);
     ICUNIT_ASSERT_NOT_EQUAL(ret, 0, ret);
     ICUNIT_ASSERT_EQUAL(errno, EAFNOSUPPORT, errno);
     errno = 0;
@@ -103,39 +103,33 @@ static int TestCase1(void)
     ICUNIT_ASSERT_EQUAL(errno, EAFNOSUPPORT, errno);
     errno = 0;
 
-    remove(GROUPFILE);
-
-    ret = getgrgid_r(0, &getNam1, buf, len, &getNam2);
-    ICUNIT_ASSERT_NOT_EQUAL(ret, 0, ret);
-    ICUNIT_ASSERT_EQUAL(errno, ENOENT, errno);
-    errno = 0;
-
-    groupRet = getgrgid(0);
-    ICUNIT_ASSERT_EQUAL(groupRet, 0, ret);
-    ICUNIT_ASSERT_EQUAL(errno, ENOENT, errno);
-    errno = 0;
-
-    groupRet = getgrnam("root");
-    ICUNIT_ASSERT_EQUAL(groupRet, 0, ret);
-    ICUNIT_ASSERT_EQUAL(errno, ENOENT, errno);
-    errno = 0;
-
-    ret = getgrnam_r("root", &getData1, buf, len, &getData2);
-    ICUNIT_ASSERT_NOT_EQUAL(ret, 0, ret);
-    ICUNIT_ASSERT_EQUAL(errno, ENOENT, errno);
-
     return 0;
 }
 
-static int TestCase(void)
+STATIC INT32 TestCase(void)
 {
-    int ret = TestCase0();
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    CHAR *pathList[] = {"/etc/group"};
+    CHAR *streamList[] = {g_groupFileStream};
+    INT32 streamLen[] = {strlen(g_groupFileStream)};
+
+    INT32 ret = PrepareFileEnv(pathList, streamList, streamLen, 1);
+    if (ret != 0) {
+        printf("error: need some env file, but prepare is not ok");
+        (VOID)RecoveryFileEnv(pathList, 1);
+        return -1;
+    }
+
+    ret = TestCase0();
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, ERROUT);
 
     ret = TestCase1();
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_GOTO_EQUAL(ret, 0, re, ERROUT);
 
+    (VOID)RecoveryFileEnv(pathList, 1);
     return 0;
+ERROUT:
+    (VOID)RecoveryFileEnv(pathList, 1);
+    return -1;
 }
 
 VOID ItTestSys025(VOID)

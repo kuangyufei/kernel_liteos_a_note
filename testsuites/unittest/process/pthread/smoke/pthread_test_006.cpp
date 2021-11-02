@@ -125,6 +125,8 @@ static int Testcase(void)
     ret = pthread_create(&newPthread[index], &a, ThreadFuncTest2, &threadParam[index]);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
+    sleep(1);
+
     ICUNIT_ASSERT_EQUAL(g_testToCount001, testCount, g_testToCount001);
 
     index = 0;

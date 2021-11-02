@@ -36,31 +36,11 @@
 #include <unistd.h>
 #include "sys/select.h"
 
-static UINT32 Testcase1(VOID)
+static void SigPrint(int sig)
 {
-    static const int TAR_STR_LEN = 12; /* 12, str len */
-    int pipeFd[2], ret; /* 2, pipe return 2 file descirpter */
-    fd_set reads;
-    ret = pipe(pipeFd);
-    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
-    ret = write(pipeFd[1], "Hello World", TAR_STR_LEN);
-    ICUNIT_GOTO_EQUAL(ret, TAR_STR_LEN, ret, EXIT);
-    FD_ZERO(&reads);
-    FD_SET(pipeFd[0], &reads);
-    ret = select(pipeFd[0] + 1, &reads, nullptr, nullptr, nullptr);
-    ICUNIT_GOTO_EQUAL(ret, 1, ret, EXIT);
-    ret = FD_ISSET(pipeFd[0], &reads);
-    ICUNIT_GOTO_NOT_EQUAL(ret, 0, ret, EXIT);
-    close(pipeFd[0]);
-    close(pipeFd[1]);
-    return LOS_OK;
-EXIT:
-    close(pipeFd[0]);
-    close(pipeFd[1]);
-    return LOS_NOK;
+    return;
 }
 
-#define V_SIGMASK   0x5555
 static UINT32 testcase(VOID)
 {
     fd_set rfds;
@@ -69,13 +49,27 @@ static UINT32 testcase(VOID)
     pid_t pid;
     int pipeFd[2]; /* 2, pipe id num */
     char buffer[40]; /* 40, buffer size */
+
     int i = 0;
     int status;
 
+    void (*retSig)(int);
     sigset_t mask;
 
-    retval = Testcase1(); /* first check select works */
-    ICUNIT_GOTO_EQUAL(retval, 0, retval, OUT);
+    retSig = signal(SIGALRM, SigPrint);
+    ICUNIT_ASSERT_NOT_EQUAL(retSig, NULL, retSig);
+
+    retSig = signal(SIGUSR1, SigPrint);
+    ICUNIT_ASSERT_NOT_EQUAL(retSig, NULL, retSig);
+
+    retval = sigemptyset(&mask);
+    ICUNIT_ASSERT_EQUAL(retval, 0, retval);
+
+    retval = sigaddset(&mask, SIGALRM);
+    ICUNIT_ASSERT_EQUAL(retval, 0, retval);
+
+    retval = sigaddset(&mask, SIGUSR1);
+    ICUNIT_ASSERT_EQUAL(retval, 0, retval);
 
     retval = pipe(pipeFd);
     ICUNIT_GOTO_EQUAL(retval, 0, retval, OUT);
@@ -93,9 +87,10 @@ static UINT32 testcase(VOID)
         close(pipeFd[1]);
 
         retval = pselect(pipeFd[0] + 1, &rfds, nullptr, nullptr, &tv, &mask);
+
         close(pipeFd[0]);
 
-        if (retval) {
+        if (retval != 0) {
             exit(LOS_OK);
         } else {
             exit(LOS_NOK);
@@ -103,8 +98,12 @@ static UINT32 testcase(VOID)
     } else {
         sleep(1);
         close(pipeFd[0]);
-        retval = write(pipeFd[1], "0123456789012345678901234567890123456789", 40); /* write 40 bytes to stdin(fd 0) */
-        ICUNIT_GOTO_EQUAL(retval, 40, retval, OUT);
+
+        retval = kill(pid, SIGALRM);
+        ICUNIT_ASSERT_EQUAL(retval, 0, retval);
+
+        retval = kill(pid, SIGUSR1);
+        ICUNIT_ASSERT_EQUAL(retval, 0, retval);
         close(pipeFd[1]);
 
         wait(&status);
@@ -117,7 +116,8 @@ OUT:
     return LOS_NOK;
 }
 
-VOID IO_TEST_PSELECT_001(VOID)
+VOID IO_TEST_PSELECT_002(VOID)
 {
     TEST_ADD_CASE(__FUNCTION__, testcase, TEST_LIB, TEST_LIBC, TEST_LEVEL1, TEST_FUNCTION);
 }
+

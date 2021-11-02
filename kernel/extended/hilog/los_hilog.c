@@ -202,6 +202,13 @@ static ssize_t HiLogRead(struct file *filep, char *buffer, size_t bufLen)
     HiLogBufferDec(header.len);
     retval = header.len + sizeof(header);
 out:
+    if (retval == -ENOMEM) {
+        // clean ring buffer
+        g_hiLogDev.writeOffset = 0;
+        g_hiLogDev.headOffset = 0;
+        g_hiLogDev.size = 0;
+        g_hiLogDev.count = 0;
+    }
     (VOID)LOS_MuxRelease(&g_hiLogDev.mtx);//临界区操作结束
     return retval;
 }

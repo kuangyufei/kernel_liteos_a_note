@@ -245,6 +245,10 @@ static void *threadFunc(void *arg)
     ret = pthread_create(&newPthread, &a, threadFunc2, 0);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
+#ifdef LOSCFG_USER_TEST_SMP
+    sleep(1);
+#endif
+
     ret = pthread_spin_lock(&g_spinTestLock);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     ICUNIT_GOTO_EQUAL(g_pthreadTestCount, 4, g_pthreadTestCount, EXIT); // 4, here assert the result.

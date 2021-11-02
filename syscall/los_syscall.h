@@ -130,7 +130,7 @@ extern int SysSetProcessGroupID(unsigned int pid, unsigned int gid);
 extern unsigned int SysCreateUserThread(const TSK_ENTRY_FUNC func, const UserTaskParam *userParam, bool joinable);
 extern int SysSetThreadArea(const char *area);
 extern char *SysGetThreadArea(void);
-extern int SysUserThreadSetDeatch(unsigned int taskID);
+extern int SysUserThreadSetDetach(unsigned int taskID);
 extern int SysUserThreadDetach(unsigned int taskID);
 extern int SysThreadJoin(unsigned int taskID);
 extern void SysUserExitGroup(int status);
@@ -281,6 +281,8 @@ extern int SysIoctl(int fd, int req, void *arg);
 extern int SysFcntl(int fd, int cmd, void *arg);
 extern int SysDup2(int fd1, int fd2);
 extern int SysSelect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+extern int SysPselect6(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+                    const struct timespec *timeout, const long data[2]);
 extern int SysTruncate(const char *path, off_t length);
 extern int SysFtruncate(int fd, off_t length);
 extern int SysStatfs(const char *path, struct statfs *buf);

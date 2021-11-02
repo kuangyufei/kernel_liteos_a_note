@@ -79,4 +79,6 @@ extern void ItTestPthreadAtfork002(void);
 extern void ItTestPthreadOnce001(void);
 extern void ItTestPthreadCond001(void);
 extern void ItTestPthreadCond002(void);
+extern void ItTestPthreadCond003(void);
+extern void ItTestPthreadCond004(void);
 #endif

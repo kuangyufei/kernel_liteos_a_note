@@ -59,11 +59,11 @@ static UINT32 Testcase(VOID)
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
     ICUNIT_ASSERT_EQUAL(errno, EPERM, errno);
 
-    ret = sched_setaffinity(60, sizeof(cpu_set_t), &cpuset); // 60, pid num
+    ret = sched_setaffinity(128, sizeof(cpu_set_t), &cpuset); // 128, pid num
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
     ICUNIT_ASSERT_EQUAL(errno, ESRCH, errno);
 
-    ret = sched_getaffinity(60, sizeof(cpu_set_t), &cpuset); // 60, pid num
+    ret = sched_getaffinity(128, sizeof(cpu_set_t), &cpuset); // 128, pid num
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
     ICUNIT_ASSERT_EQUAL(errno, ESRCH, errno);
 

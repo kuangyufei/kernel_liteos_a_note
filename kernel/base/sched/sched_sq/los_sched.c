@@ -475,9 +475,6 @@ STATIC INLINE VOID OsSchedWakePendTimeTask(UINT64 currTime, LosTaskCB *taskCB, B
     if (tempStatus & (OS_TASK_STATUS_PENDING | OS_TASK_STATUS_DELAY)) {
         taskCB->taskStatus &= ~(OS_TASK_STATUS_PENDING | OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY);
         if (tempStatus & OS_TASK_STATUS_PENDING) {
-#ifdef LOSCFG_KERNEL_LITEIPC
-            taskCB->ipcStatus &= ~IPC_THREAD_STATUS_PEND;
-#endif
             taskCB->taskStatus |= OS_TASK_STATUS_TIMEOUT;
             LOS_ListDelete(&taskCB->pendList);
             taskCB->taskMux = NULL;

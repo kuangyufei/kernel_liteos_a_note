@@ -53,7 +53,7 @@ typedef struct {
 } CmdKeyLink;
 
 #define NEED_NEW_LINE(timesPrint, lineCap) ((timesPrint) % (lineCap) == 0)
-SCREEN_IS_FULL(timesPrint, lineCap) ((timesPrint) >= ((lineCap) * DEFAULT_SCREEN_HEIGNT))
+#define SCREEN_IS_FULL(timesPrint, lineCap) ((timesPrint) >= ((lineCap) * DEFAULT_SCREEN_HEIGNT))
 
 extern unsigned int OsCmdExec(CmdParsed *cmdParsed, char *cmdStr);
 extern unsigned int OsCmdKeyShift(const char *cmdKey, char *cmdOut, unsigned int size);

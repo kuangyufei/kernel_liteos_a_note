@@ -183,15 +183,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  * The task is joinable.
  */
 #define OS_TASK_FLAG_PTHREAD_JOIN   0x0400U //主task和子task连在一块不分离
-//一个可结合的线程能够被其他线程收回其资源和杀死。在被其他线程回收之前，它的存储器资源（例如栈）是不释放的。
-/**
- * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The task is status detached.
- */
-#define OS_TASK_FLAG_DETACHED       0x0800U //任务分离 主task与子task分离，子task结束后，资源自动回收
-//一个分离的线程是不能被其他线程回收或杀死的，它的存储器资源在它终止时由系统自动释放。
+
 /**
  * @ingroup los_task
  * Flag that indicates the task property.
@@ -364,7 +356,6 @@ typedef struct {
     UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
                                              a specific child process, or any child process \n 以什么样的方式等待子进程结束(OS_TASK_WAIT_PROCESS | OS_TASK_WAIT_GID | ..) */
 #ifdef LOSCFG_KERNEL_LITEIPC
-    UINT32          ipcStatus;			///< IPC状态
     LOS_DL_LIST     msgListHead;		///< 消息队列头结点,上面挂的都是任务要读的消息
     BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];///< 访问图,指的是task之间是否能访问的标识,LOSCFG_BASE_CORE_TSK_LIMIT 为任务池总数
 #endif
@@ -533,7 +524,6 @@ extern VOID OsTaskProcSignal(VOID);
 extern UINT32 OsTaskDeleteUnsafe(LosTaskCB *taskCB, UINT32 status, UINT32 intSave);
 extern VOID OsTaskResourcesToFree(LosTaskCB *taskCB);
 extern VOID OsRunTaskToDelete(LosTaskCB *taskCB);
-extern UINT32 OsTaskSyncWait(const LosTaskCB *taskCB);
 extern UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam);
 extern INT32 OsSetTaskName(LosTaskCB *taskCB, const CHAR *name, BOOL setPName);
 extern VOID OsTaskCBRecycleToFree(VOID);

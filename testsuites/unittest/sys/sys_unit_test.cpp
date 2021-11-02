@@ -34,6 +34,10 @@
 
 #include "It_test_sys.h"
 
+CHAR *g_groupFileStream = "root:x:0:\ndaemon:x:1:\nbin:x:2:\n";
+CHAR *g_passwdFileStream = "root:x:0:0:root:/root:/bin/bash\n" \
+    "daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nbin:x:2:2:bin:/bin:/usr/sbin/nologin\n";
+
 using namespace testing::ext;
 namespace OHOS {
 class SysTest : public testing::Test {
@@ -343,14 +347,14 @@ HWTEST_F(SysTest, ItTestSys027, TestSize.Level0)
 }
 
 /* *
- * @tc.name: IT_TEST_SYS_028
+ * @tc.name: ItTestSys028
  * @tc.desc: function for nice:set pthread priority
  * @tc.type: FUNC
  * @tc.require: AR000EEMQ9
  */
-HWTEST_F(SysTest, IT_TEST_SYS_028, TestSize.Level0)
+HWTEST_F(SysTest, ItTestSys028, TestSize.Level0)
 {
-    IT_TEST_SYS_028();
+    ItTestSys028();
 }
 #endif
 } // namespace OHOS

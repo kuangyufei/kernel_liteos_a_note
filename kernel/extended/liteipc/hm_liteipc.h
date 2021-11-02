@@ -174,11 +174,6 @@ typedef struct {	//IPC消息内容回路,记录消息周期
     VOID                 *buffToFree;
 } IpcContent;
 
-#define IPC_THREAD_STATUS_INVAL        0x0001U
-#define IPC_THREAD_STATUS_START        0x0002U
-#define IPC_THREAD_STATUS_PEND         0x0004U
-#define IPC_THREAD_STATUS_STOP         0x0008U
-
 /* init liteipc driver */
 extern UINT32 OsLiteIpcInit(VOID);
 
@@ -189,7 +184,7 @@ extern UINT32 LiteIpcPoolInit(ProcIpcInfo *ipcInfo);
 extern UINT32 LiteIpcPoolReInit(ProcIpcInfo *childIpcInfo, const ProcIpcInfo *parentIpcInfo);
 
 /* delete process liteipc memory pool */
-extern VOID LiteIpcPoolDelete(ProcIpcInfo *ipcInfo);
+extern VOID LiteIpcPoolDelete(ProcIpcInfo *ipcInfo, UINT32 processID);
 
 /* remove service handle and send death notify */
 extern VOID LiteIpcRemoveServiceHandle(LosTaskCB *taskCB);

@@ -30,14 +30,29 @@
  */
 #include "It_test_misc.h"
 
-static UINT32 TestCase(VOID)
+STATIC UINT32 TestCase(VOID)
 {
-    long ret;
+    INT32 ret;
+    CHAR *hostsFileStream = "127.0.0.1 localhost\n192.168.1.3   hisilicon\n::1     localhost\n";
+    CHAR *pathList[] = {"/etc/hosts"};
+    CHAR *streamList[] = {hostsFileStream};
+    INT32 streamLen[] = {strlen(hostsFileStream)};
+
+    ret = PrepareFileEnv(pathList, streamList, streamLen, 1);
+    if (ret != 0) {
+        printf("error: need some env files, but prepare is not ok");
+        (VOID)RecoveryFileEnv(pathList, 1);
+        return -1;
+    }
 
     ret = gethostid();
-    ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);
-
+    ICUNIT_GOTO_NOT_EQUAL(ret, -1, ret, ERROUT);
+    (VOID)RecoveryFileEnv(pathList, 1);
     return 0;
+
+ERROUT:
+    (VOID)RecoveryFileEnv(pathList, 1);
+    return -1;
 }
 
 VOID ItTestMisc009(VOID)
