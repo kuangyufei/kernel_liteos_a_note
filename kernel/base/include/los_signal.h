@@ -155,7 +155,7 @@ musl是构建在Linux系统调用API之上的C标准库的实现，包括在基�
 以及广泛认可的扩展。musl是轻量级的，快速的，简单的，自由的.
 ********************************************************************/
 
-#define MAX_SIG_ARRAY_IN_MUSL 128 //128个信号
+#define MAX_SIG_ARRAY_IN_MUSL 128 ///< 128个信号
 
 typedef struct {
     unsigned long sig[MAX_SIG_ARRAY_IN_MUSL / sizeof(unsigned long)];
@@ -213,14 +213,14 @@ typedef struct SigInfoListNode {
  * @brief 信号控制块(描述符)
  */
 typedef struct {
-    sigset_t sigFlag;		//不屏蔽的信号集
-    sigset_t sigPendFlag;	//信号阻塞标签集,记录那些信号来过,任务依然阻塞的集合.即:这些信号不能唤醒任务
-    sigset_t sigprocmask; /* Signals that are blocked            */	//任务屏蔽了哪些信号
-    sq_queue_t sigactionq;	//信号捕捉队列					
-    LOS_DL_LIST waitList;	//等待链表,上面挂的是等待信号到来的任务, 请查找 OsTaskWait(&sigcb->waitList, timeout, TRUE)	理解						
-    sigset_t sigwaitmask; /* Waiting for pending signals         */	//任务在等待哪些信号的到来
-    siginfo_t sigunbinfo; /* Signal info when task unblocked     */	//任务解锁时的信号信息
-    SigInfoListNode *tmpInfoListHead; /* Signal info List */
+    sigset_t sigFlag;		///< 不屏蔽的信号集
+    sigset_t sigPendFlag;	///< 信号阻塞标签集,记录那些信号来过,任务依然阻塞的集合.即:这些信号不能唤醒任务
+    sigset_t sigprocmask;   ///< Signals that are blocked | 任务屏蔽了哪些信号
+    sq_queue_t sigactionq;	///< 信号捕捉队列					
+    LOS_DL_LIST waitList;	///< 待链表,上面挂的是等待信号到来的任务, 请查找 OsTaskWait(&sigcb->waitList, timeout, TRUE)	理解						
+    sigset_t sigwaitmask; /*! Waiting for pending signals   | 任务在等待哪些信号的到来 */
+    siginfo_t sigunbinfo; /*! Signal info when task unblocked   | 任务解锁时的信号信息  */
+    SigInfoListNode *tmpInfoListHead; /*! Signal info List */
     unsigned int sigIntLock;
     void *sigContext;
     unsigned int count;

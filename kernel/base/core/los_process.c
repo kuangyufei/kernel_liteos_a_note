@@ -132,11 +132,8 @@ STATIC ProcessGroup *OsCreateProcessGroup(UINT32 pid)
 
     return group;
 }
-/**
- * @brief 退出进程组,参数是进程地址和进程组地址的地址
- * @details 
- * 
-*/
+
+/*! 退出进程组,参数是进程地址和进程组地址的地址 */
 STATIC VOID OsExitProcessGroup(LosProcessCB *processCB, ProcessGroup **group)//ProcessGroup *g_processGroup = NULL
 {
     LosProcessCB *groupProcessCB = OS_PCB_FROM_PID(processCB->group->groupID);//找到进程组老大进程的实体
@@ -154,11 +151,8 @@ STATIC VOID OsExitProcessGroup(LosProcessCB *processCB, ProcessGroup **group)//P
 
     processCB->group = NULL;
 }
-/**
- * @brief 通过指定组ID找到进程组
- * @details 
- * 
-*/
+
+/*! 通过指定组ID找到进程组 */
 STATIC ProcessGroup *OsFindProcessGroup(UINT32 gid)
 {
     ProcessGroup *group = NULL;
@@ -175,11 +169,8 @@ STATIC ProcessGroup *OsFindProcessGroup(UINT32 gid)
     PRINT_INFO("%s is find group : %u failed!\n", __FUNCTION__, gid);
     return NULL;
 }
-/**
- * @brief 给指定进程组发送信号
- * @details 
- * 
-*/
+
+/*! 给指定进程组发送信号 */
 STATIC INT32 OsSendSignalToSpecifyProcessGroup(ProcessGroup *group, siginfo_t *info, INT32 permission)
 {
     INT32 ret, success, err;
@@ -199,11 +190,8 @@ STATIC INT32 OsSendSignalToSpecifyProcessGroup(ProcessGroup *group, siginfo_t *i
     /* At least one success. */
     return success ? LOS_OK : ret;
 }
-/**
- * @brief 给所有进程发送指定信号
- * @details 
- * 
-*/
+
+/*! 给所有进程发送指定信号 */
 LITE_OS_SEC_TEXT INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permission)
 {
     INT32 ret, success, err;
@@ -222,11 +210,8 @@ LITE_OS_SEC_TEXT INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permissio
     }
     return success ? LOS_OK : ret;
 }
-/**
- * @brief 发送指定信号给给进程组
- * @details 
- * 
-*/
+
+/*! 发送指定信号给给进程组 */
 LITE_OS_SEC_TEXT INT32 OsSendSignalToProcessGroup(INT32 pid, siginfo_t *info, INT32 permission)
 {
     ProcessGroup *group = NULL;
@@ -254,7 +239,8 @@ STATIC LosProcessCB *OsFindGroupExitProcess(ProcessGroup *group, INT32 pid)
     PRINT_INFO("%s find exit process : %d failed in group : %u\n", __FUNCTION__, pid, group->groupID);
     return NULL;
 }
-//查找进程是否有指定孩子进程
+
+/*! 查找进程是否有指定孩子进程 */
 STATIC UINT32 OsFindChildProcess(const LosProcessCB *processCB, INT32 childPid)
 {
     LosProcessCB *childCB = NULL;
@@ -273,7 +259,8 @@ ERR:
     PRINT_INFO("%s is find the child : %d failed in parent : %u\n", __FUNCTION__, childPid, processCB->processID);
     return LOS_NOK;
 }
-//找出指定进程的指定孩子进程
+
+/*! 找出指定进程的指定孩子进程 */
 STATIC LosProcessCB *OsFindExitChildProcess(const LosProcessCB *processCB, INT32 childPid)
 {
     LosProcessCB *exitChild = NULL;
@@ -287,7 +274,8 @@ STATIC LosProcessCB *OsFindExitChildProcess(const LosProcessCB *processCB, INT32
     PRINT_INFO("%s is find the exit child : %d failed in parent : %u\n", __FUNCTION__, childPid, processCB->processID);
     return NULL;
 }
-//唤醒等待wakePID结束的任务,
+
+/*! 唤醒等待wakePID结束的任务 */
 VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID)
 {
     taskCB->waitID = wakePID;
@@ -296,7 +284,8 @@ VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID)
     LOS_MpSchedule(OS_MP_CPU_ALL);//向所有cpu发送调度指令
 #endif
 }
-//唤醒等待参数进程结束的任务
+
+/*! 唤醒等待参数进程结束的任务 */
 STATIC BOOL OsWaitWakeSpecifiedProcess(LOS_DL_LIST *head, const LosProcessCB *processCB, LOS_DL_LIST **anyList)
 {
     LOS_DL_LIST *list = head;
@@ -328,13 +317,7 @@ STATIC BOOL OsWaitWakeSpecifiedProcess(LOS_DL_LIST *head, const LosProcessCB *pr
     return find;
 }
 
-/**
- * @brief 检查父进程的等待任务并唤醒父进程去处理等待任务
- * 
- * @param parentCB 
- * @param processCB 
- * @return STATIC 
- */
+/*! 检查父进程的等待任务并唤醒父进程去处理等待任务 */
 STATIC VOID OsWaitCheckAndWakeParentProcess(LosProcessCB *parentCB, const LosProcessCB *processCB)
 {
     LOS_DL_LIST *head = &parentCB->waitList;
@@ -396,7 +379,8 @@ STATIC VOID OsWaitCheckAndWakeParentProcess(LosProcessCB *parentCB, const LosPro
 
     return;
 }
-//回收指定进程的资源
+
+/*! 回收指定进程的资源 */
 LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 {
     if (!(processCB->processStatus & (OS_PROCESS_STATUS_INIT | OS_PROCESS_STATUS_RUNNING))) {//初始化和正在运行的进程,不用/能回收
@@ -445,7 +429,8 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
         processCB->resourceLimit = NULL;
     }
 }
-//回收僵死状态进程的资源
+
+/*! 回收僵死状态进程的资源 */
 LITE_OS_SEC_TEXT STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, ProcessGroup **group)
 {
     OsExitProcessGroup(childCB, group);//退出进程组
@@ -464,7 +449,8 @@ LITE_OS_SEC_TEXT STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, Proc
         OsInsertPCBToFreeList(childCB);//直接插到freeList中去，可用于重新分配了。
     }
 }
-//当一个进程自然退出的时候,它的孩子进程由两位老祖宗收养
+
+/*! 当一个进程自然退出的时候,它的孩子进程由两位老祖宗收养 */
 STATIC VOID OsDealAliveChildProcess(LosProcessCB *processCB)
 {
     UINT32 parentID;
@@ -497,7 +483,8 @@ STATIC VOID OsDealAliveChildProcess(LosProcessCB *processCB)
 
     return;
 }
-//回收指定进程的已经退出(死亡)的孩子进程所占资源
+
+/*! 回收指定进程的已经退出(死亡)的孩子进程所占资源 */
 STATIC VOID OsChildProcessResourcesFree(const LosProcessCB *processCB)
 {
     LosProcessCB *childCB = NULL;
@@ -509,7 +496,8 @@ STATIC VOID OsChildProcessResourcesFree(const LosProcessCB *processCB)
         (VOID)LOS_MemFree(m_aucSysMem1, group);//
     }
 }
-//一个进程的自然消亡过程,参数是当前运行的任务
+
+/*! 一个进程的自然消亡过程,参数是当前运行的任务*/
 STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
 {
     LosProcessCB *processCB = OS_PCB_FROM_PID(runTask->processID);//通过task找到所属PCB
@@ -548,7 +536,8 @@ STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
     LOS_Panic("pid : %u is the root process exit!\n", processCB->processID);
     return;
 }
-//进程模块初始化,被编译放在代码段 .init 中
+
+/*! 进程模块初始化,被编译放在代码段 .init 中*/
 STATIC UINT32 OsProcessInit(VOID)
 {
     UINT32 index;
@@ -587,7 +576,7 @@ STATIC UINT32 OsProcessInit(VOID)
     return LOS_OK;
 }
 
-//进程回收再利用过程
+/*! 进程回收再利用过程*/
 LITE_OS_SEC_TEXT VOID OsProcessCBRecycleToFree(VOID)
 {
     UINT32 intSave;
@@ -634,7 +623,7 @@ LITE_OS_SEC_TEXT VOID OsProcessCBRecycleToFree(VOID)
     SCHEDULER_UNLOCK(intSave);
 }
 
-//删除PCB块 其实是 PCB块回归进程池,先进入回收链表
+/*! 删除PCB块 其实是 PCB块回归进程池,先进入回收链表*/
 STATIC VOID OsDeInitPCB(LosProcessCB *processCB)
 {
     UINT32 intSave;
@@ -665,7 +654,8 @@ STATIC VOID OsDeInitPCB(LosProcessCB *processCB)
     OsWriteResourceEvent(OS_RESOURCE_EVENT_FREE);
     return;
 }
-//设置进程的名字
+
+/*! 设置进程的名字*/
 UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name)
 {
     errno_t errRet;
@@ -697,7 +687,8 @@ UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name)
     }
     return LOS_OK;
 }
-//初始化PCB(进程控制块)
+
+/*! 初始化PCB(进程控制块)*/
 STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, const CHAR *name)
 {
     processCB->processMode = mode;						//用户态进程还是内核态进程
@@ -758,7 +749,8 @@ STATIC User *OsCreateUser(UINT32 userID, UINT32 gid, UINT32 size)//参数size �
     user->groups[0] = gid;	 //用户组列表,一个用户可以属于多个用户组
     return user;
 }
-//检查参数群组ID是否在当前用户所属群组中
+
+/*! 检查参数群组ID是否在当前用户所属群组中*/
 LITE_OS_SEC_TEXT BOOL LOS_CheckInGroups(UINT32 gid)
 {
     UINT32 intSave;
@@ -778,7 +770,8 @@ LITE_OS_SEC_TEXT BOOL LOS_CheckInGroups(UINT32 gid)
     return FALSE;
 }
 #endif
-//获取当前进程的用户ID
+
+/*! 获取当前进程的用户ID*/
 LITE_OS_SEC_TEXT INT32 LOS_GetUserID(VOID)
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -793,7 +786,8 @@ LITE_OS_SEC_TEXT INT32 LOS_GetUserID(VOID)
     return 0;
 #endif
 }
-//获取当前进程的用户组ID
+
+/*! 获取当前进程的用户组ID*/
 LITE_OS_SEC_TEXT INT32 LOS_GetGroupID(VOID)
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -809,7 +803,8 @@ LITE_OS_SEC_TEXT INT32 LOS_GetGroupID(VOID)
     return 0;
 #endif
 }
-//进程创建初始化
+
+/*! 进程创建初始化*/
 STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const CHAR *name, UINT16 priority)
 {
     ProcessGroup *group = NULL;

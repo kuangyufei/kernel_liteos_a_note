@@ -44,48 +44,49 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_SMP
+/*! \enum
+
+*/
 typedef enum {
-    CPU_RUNNING = 0,   /* cpu is running */ 	//CPU正在运行状态
-    CPU_HALT,          /* cpu in the halt */	//CPU处于暂停状态
-    CPU_EXC            /* cpu in the exc */		//CPU处于异常状态
+    CPU_RUNNING = 0,   ///< cpu is running | CPU正在运行状态
+    CPU_HALT,          ///< cpu in the halt | CPU处于暂停状态
+    CPU_EXC            ///< cpu in the exc | CPU处于异常状态
 } ExcFlag;
 #endif
 
-/**
- * @brief  per-CPU变量是linux系统一个非常有趣的特性，它为系统中的每个处理器都分配了该变量的副本。
+/*! \struct  内核对cpu的描述, per-CPU变量是linux系统一个非常有趣的特性，它为系统中的每个处理器都分配了该变量的副本。
  * 这样做的好处是，在多处理器系统中，当处理器操作属于它的变量副本时，不需要考虑与其他处理器的竞争的问题，
  */
-typedef struct {//内核对cpu的描述
-    SortLinkAttribute taskSortLink;             /* task sort link \n 挂等待和延时的任务 */
-    SPIN_LOCK_S       taskSortLinkSpin;      /* task sort link spin lock \n 操作taskSortLink链表的自旋锁 */
-    SortLinkAttribute swtmrSortLink;         /* swtmr sort link \n 挂还没到时间的定时器 */	
-    SPIN_LOCK_S       swtmrSortLinkSpin;     /* swtmr sort link spin lock \n* 操作swtmrSortLink链表的自旋锁 */
-    UINT64            responseTime;          /* Response time for current nuclear Tick interrupts \n 当前CPU核 Tick 中断的响应时间 */
-    UINT64            tickStartTime;         /* The time when the tick interrupt starts processing \n */
-    UINT32            responseID;            /* The response ID of the current nuclear TICK interrupt \n 当前CPU核TICK中断的响应ID */
-    UINTPTR           runProcess;            /* The address of the process control block pointer to which
-                                                the current kernel is running \n 当前进程控制块地址 */
-    UINT32 idleTaskID;                          /* idle task id \n 每个CPU都有一个空闲任务 见于 OsIdleTaskCreate */
-    UINT32 taskLockCnt;                         /* task lock flag \n 任务锁的数量,当 > 0 的时候,需要重新调度了 */
-    UINT32 swtmrHandlerQueue;                   /* software timer timeout queue id \n 软时钟超时队列句柄 */
-    UINT32 swtmrTaskID;                         /* software timer task id \n 软时钟任务ID */
-    UINT32 schedFlag;                           /* pending scheduler flag \n 调度标识 INT_NO_RESCH INT_PEND_RESCH */
+typedef struct {
+    SortLinkAttribute taskSortLink;             /*! task sort link | 挂等待和延时的任务 */
+    SPIN_LOCK_S       taskSortLinkSpin;      ///<  task sort link spin lock | 操作taskSortLink链表的自旋锁
+    SortLinkAttribute swtmrSortLink;         ///<  swtmr sort link | 挂还没到时间的定时器	
+    SPIN_LOCK_S       swtmrSortLinkSpin;     ///<  swtmr sort link spin lock |* 操作swtmrSortLink链表的自旋锁
+    UINT64            responseTime;          ///<  Response time for current nuclear Tick interrupts | 当前CPU核 Tick 中断的响应时间
+    UINT64            tickStartTime;         ///<  The time when the tick interrupt starts processing |
+    UINT32            responseID;            ///<  The response ID of the current nuclear TICK interrupt | 当前CPU核TICK中断的响应ID
+    UINTPTR           runProcess;            ///<  The address of the process control block pointer to which the current kernel is running | 当前进程控制块地址
+    UINT32 idleTaskID;                          ///<  idle task id | 每个CPU都有一个空闲任务 见于 OsIdleTaskCreate
+    UINT32 taskLockCnt;                         ///<  task lock flag | 任务锁的数量,当 > 0 的时候,需要重新调度了
+    UINT32 swtmrHandlerQueue;                   ///<  software timer timeout queue id | 软时钟超时队列句柄
+    UINT32 swtmrTaskID;                         ///<  software timer task id | 软时钟任务ID
+    UINT32 schedFlag;                           ///<  pending scheduler flag | 调度标识 INT_NO_RESCH INT_PEND_RESCH
 #ifdef LOSCFG_KERNEL_SMP
-    UINT32            excFlag;               /* cpu halt or exc flag \n cpu 停止或 异常 标志 */
+    UINT32            excFlag;               ///<  cpu halt or exc flag | cpu 停止或 异常 标志
 #ifdef LOSCFG_KERNEL_SMP_CALL
-    LOS_DL_LIST       funcLink;              /* mp function call link */
+    LOS_DL_LIST       funcLink;              ///<  mp function call link
 #endif
 #endif
 } Percpu;
 
-/* the kernel per-cpu structure */
-extern Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM];//每个cpu的内核描述符
-//获得当前运行CPU的信息
+/*! the kernel per-cpu structure | 每个cpu的内核描述符 */
+extern Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM];
+/*! 获得当前运行CPU的信息 */
 STATIC INLINE Percpu *OsPercpuGet(VOID)
 {
     return &g_percpu[ArchCurrCpuid()];	
 }
-//获得参数CPU的信息
+/*! 获得参数CPU的信息 */
 STATIC INLINE Percpu *OsPercpuGetByID(UINT32 cpuid)
 {
     return &g_percpu[cpuid];
