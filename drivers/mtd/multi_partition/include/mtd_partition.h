@@ -47,7 +47,9 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-/***************************************************************
+/**
+ * @brief 
+ * @verbatim
 * flash按照内部存储结构不同，分为两种：nor flash和nand flash
 * Nor FLASH使用方便，易于连接，可以在芯片上直接运行代码，稳定性出色，传输速率高，
 	在小容量时有很高的性价比，这使其很适合应于嵌入式系统中作为 FLASH ROM。
@@ -78,16 +80,19 @@ Nand Flash：芯片操作是以“块”为基本单位.NAND闪存的块比较�
 	页大小一般是512字节.要修改NandFlash芯片中一个字节，必须重写整个数据块，读和写都是按照扇区进行的。
 	
 参考:https://blog.csdn.net/zhejfl/article/details/78544796	
-***************************************************************/
+ * @endverbatim
+ */
+
+#define SPIBLK_NAME  "/dev/spinorblk"	///< nor spi flash | 块设备
+#define SPICHR_NAME  "/dev/spinorchr"	///< nor spi flash | 字符设备
+
+#define NANDBLK_NAME "/dev/nandblk" 	///< nand flash | 块设备
+#define NANDCHR_NAME "/dev/nandchr"		///< nand flash | 字符设备
 
 
-#define SPIBLK_NAME  "/dev/spinorblk"	//nor spi flash 块设备
-#define SPICHR_NAME  "/dev/spinorchr"	//nor spi flash 字符设备
-
-#define NANDBLK_NAME "/dev/nandblk" 	//nand flash 块设备
-#define NANDCHR_NAME "/dev/nandchr"		//nand flash 字符设备
-
-/***************************************************************
+/**
+ * @brief 通过mknod在/dev子目录下建立MTD块设备节点（主设备号为31）和MTD字符设备节点（主设备号为90）
+ * @verbatim
 存储器技术设备（英语：Memory Technology Device，缩写为 MTD），是Linux系统中设备文件系统的一个类别，
 主要用于闪存的应用，是一种闪存转换层（Flash Translation Layer，FTL）。创造MTD子系统的主要目的是提供
 一个介于闪存硬件驱动程序与高端应用程序之间的抽象层。
@@ -121,33 +126,36 @@ MTD设备既非块设备也不是字符设备，但可以同时提供字符设�
 MTD设备通常可分为四层 
 这四层从上到下依次是：设备节点、MTD设备层、MTD原始设备层和硬件驱动层。
 参考: https://blog.csdn.net/lwj103862095/article/details/21545791
-***************************************************************/
-
-typedef struct mtd_node {//通过mknod在/dev子目录下建立MTD块设备节点（主设备号为31）和MTD字符设备节点（主设备号为90） 
-	UINT32 start_block;	//开始块索引
-    UINT32 end_block;	//结束块索引
-    UINT32 patitionnum;	//分区编号
-    CHAR *blockdriver_name;	//块设备驱动名称 例如: /dev/spinorblk0p0
-    CHAR *chardriver_name;	//字符设备驱动名称	例如: /dev/nandchr0p2
-    CHAR *mountpoint_name;	//挂载点名称	例如: /
+ * @endverbatim
+ */
+typedef struct mtd_node {
+	UINT32 start_block;	///< 开始块索引
+    UINT32 end_block;	///< 结束块索引
+    UINT32 patitionnum;	///< 分区编号
+    CHAR *blockdriver_name;	///< 块设备驱动名称 例如: /dev/spinorblk0p0
+    CHAR *chardriver_name;	///< 字符设备驱动名称	例如: /dev/nandchr0p2
+    CHAR *mountpoint_name;	///< 挂载点名称	例如: /
     VOID *mtd_info; /* Driver used by a partition *///分区使用的驱动程序
-    LOS_DL_LIST node_info;//双循环节点,挂在首个分区节点上
-    LosMux lock;			//每个分区都有自己的互斥锁
-    UINT32 user_num;		//使用数量
+    LOS_DL_LIST node_info;///< 双循环节点,挂在首个分区节点上
+    LosMux lock;			///< 每个分区都有自己的互斥锁
+    UINT32 user_num;		///< 使用数量
 } mtd_partition;
 
-typedef struct par_param {//分区参数描述符,一个分区既可支持按块访问也可以支持按字符访问,只要有驱动程序就阔以
-    mtd_partition *partition_head;	//首个分区,其他分区都挂在.node_info节点上
-    struct MtdDev *flash_mtd;	//flash设备描述符,属于硬件驱动层
-    const struct block_operations *flash_ops;	//块方式的操作数据
-    const struct file_operations_vfs *char_ops;	//字符方式的操作数据
-    CHAR *blockname;	//块设备名称
-    CHAR *charname;		//字符设备名称
-    UINT32 block_size;	//块单位(4K),对文件系统而言是按块读取数据,方便和内存页置换
+/**
+ * @brief 分区参数描述符,一个分区既可支持按块访问也可以支持按字符访问,只要有驱动程序就阔以
+ */
+typedef struct par_param {
+    mtd_partition *partition_head;	///< 首个分区,其他分区都挂在.node_info节点上
+    struct MtdDev *flash_mtd;	///< flash设备描述符,属于硬件驱动层
+    const struct block_operations *flash_ops;	///< 块方式的操作数据
+    const struct file_operations_vfs *char_ops;	///< 字符方式的操作数据
+    CHAR *blockname;	///< 块设备名称
+    CHAR *charname;		///< 字符设备名称
+    UINT32 block_size;	///< 块单位(4K),对文件系统而言是按块读取数据,方便和内存页置换
 } partition_param;
 
 
-#define CONFIG_MTD_PATTITION_NUM 20 //分区数量的上限
+#define CONFIG_MTD_PATTITION_NUM 20 ///< 分区数量的上限
 
 #define ALIGN_ASSIGN(len, startAddr, startBlk, endBlk, blkSize) do {    \
     (len) = (((len) + ((blkSize) - 1)) & ~((blkSize) - 1));             \

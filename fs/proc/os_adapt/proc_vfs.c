@@ -41,7 +41,9 @@
 #include "los_tables.h"
 #include "internal.h"
 
-/******************************************************************
+/**
+ * @brief 
+ * @verbatim
 鸿蒙的/proc目录是一种文件系统，即proc文件系统。与其它常见的文件系统不同的是，/proc是一种伪文件系统（也即虚拟文件系统），
 存储的是当前内核运行状态的一系列特殊文件，用户可以通过这些文件查看有关系统硬件及当前正在运行进程的信息，
 甚至可以通过更改其中某些文件来改变内核的运行状态。
@@ -54,17 +56,18 @@
 如/proc/mounts 目录中存储的就是当前系统上所有装载点的相关信息，
 
 大多数虚拟文件可以使用文件查看命令如cat、more或者less进行查看，有些文件信息表述的内容可以一目了然，
-*******************************************************************/
-#ifdef LOSCFG_FS_PROC //使能 /proc 功能
-static struct VnodeOps g_procfsVops; // proc 文件系统
+ * @endverbatim
+ */
+#ifdef LOSCFG_FS_PROC
+static struct VnodeOps g_procfsVops; /// proc 文件系统
 static struct file_operations_vfs g_procfsFops;
 
-//通过节点获取私有内存对象,注意要充分理解 node->data 的作用,那是个可以通天的神奇变量. 
+/// 通过节点获取私有内存对象,注意要充分理解 node->data 的作用,那是个可以通天的神奇变量. 
 static struct ProcDirEntry *VnodeToEntry(struct Vnode *node)
 {
     return (struct ProcDirEntry *)(node->data);
 }
-///创建节点,通过实体对象转成vnode节点,如此达到统一管理的目的.
+/// 创建节点,通过实体对象转成vnode节点,如此达到统一管理的目的.
 static struct Vnode *EntryToVnode(struct ProcDirEntry *entry)
 {
     struct Vnode *node = NULL;

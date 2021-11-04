@@ -35,7 +35,11 @@
 #include "time_posix.h"
 #include "los_atomic.h"
 #include "los_event_pri.h"
-/************************************************************
+
+/**
+ * @file 
+ * @brief 
+ * @verbatim
 条件变量属性
 
 使用条件变量可以以原子方式阻塞线程，直到某个特定条件为真为止。条件变量始终与互斥锁一起使用。
@@ -52,7 +56,8 @@
 
 https://docs.oracle.com/cd/E19253-01/819-7051/sync-13528/index.html
 https://docs.oracle.com/cd/E19253-01/819-7051/6n919hpai/index.html#sync-59145
-************************************************************/
+ * @endverbatim
+ */
 
 #define BROADCAST_EVENT     1
 #define COND_COUNTER_STEP   0x0004U

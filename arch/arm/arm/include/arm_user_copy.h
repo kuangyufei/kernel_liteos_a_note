@@ -31,12 +31,19 @@
 
 #include "los_typedef.h"
 #pragma once
-//汇编代码实现 见于..\third_party\FreeBSD\lib\libc\arm\string\hw_user_copy.S
-/****************************************
-用户空间 <---> 内核空间的拷贝实现函数,由上层封装从哪到哪的拷贝
-根据参数的不同来实现相互的拷贝
-dst:可以是 用户空间/内核空间地址
-src:可以是 用户空间/内核空间地址
-****************************************/
+
+
+/**
+ * @file arm_user_copy.h 
+ * @brief 汇编代码实现 见于..\third_party\FreeBSD\lib\libc\arm\string\hw_user_copy.S
+ * 用户空间 <---> 内核空间的拷贝实现函数,由上层封装从哪到哪的拷贝
+ * 根据参数的不同来实现相互的拷贝
+ * dst:可以是 用户空间/内核空间地址
+ * src:可以是 用户空间/内核空间地址
+ * @param dst 
+ * @param src 
+ * @param len 
+ * @return size_t 
+ */
 size_t _arm_user_copy(void *dst, const void *src, size_t len);
 

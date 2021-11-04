@@ -58,7 +58,9 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-/***************************************************
+/**
+ * @brief 
+ * @verbatim
 FAT文件系统是File Allocation Table（文件配置表）的简称，主要包括DBR区、FAT区、DATA区三个区域。
 其中，FAT区各个表项记录存储设备中对应簇的信息，包括簇是否被使用、文件下一个簇的编号、是否文件结尾等。
 FAT文件系统有FAT12、FAT16、FAT32等多种格式，其中，12、16、32表示对应格式中FAT表项的字节数。
@@ -73,9 +75,8 @@ OpenHarmony内核支持FAT12、FAT16与FAT32三种格式的FAT文件系统，
 	FAT文件系统的使用需要底层MMC相关驱动的支持。在一个带MMC存储设备的板子上运行FATFS，需要：
 	1、适配板端EMMC驱动，实现disk_status、disk_initialize、disk_read、disk_write、disk_ioctl接口；
 	2、新增fs_config.h文件，配置FS_MAX_SS（存储设备最大sector大小）、FF_VOLUME_STRS（分区名）等信息，
-
-***************************************************/
-
+ * @endverbatim
+ */
 
 struct VnodeOps fatfs_vops; /* forward define */
 struct file_operations_vfs fatfs_fops;
@@ -84,13 +85,13 @@ struct file_operations_vfs fatfs_fops;
 #define BITMASK5 0x1F
 #define BITMASK6 0x3F
 #define BITMASK7 0x7F
-#define FTIME_MIN_OFFSET 6 /* minute offset in word */
-#define FTIME_HR_OFFSET 11 /* hour offset in word */
-#define FTIME_MTH_OFFSET 5 /* month offset in word */
-#define FTIME_YEAR_OFFSET 9 /* year offset in word */
-#define FTIME_DATE_OFFSET 16 /* date offset in dword */
+#define FTIME_MIN_OFFSET 6 /*! minute offset in word */
+#define FTIME_HR_OFFSET 11 /*! hour offset in word */
+#define FTIME_MTH_OFFSET 5 /*! month offset in word */
+#define FTIME_YEAR_OFFSET 9 /*! year offset in word */
+#define FTIME_DATE_OFFSET 16 /*! date offset in dword */
 #define SEC_MULTIPLIER 2
-#define YEAR_OFFSET 80 /* Year start from 1980 in FATFS, while start from 1900 in struct tm */
+#define YEAR_OFFSET 80 /*! Year start from 1980 in FATFS, while start from 1900 in struct tm */
 // 结果转化 fat 转 vfs
 int fatfs_2_vfs(int result)
 {

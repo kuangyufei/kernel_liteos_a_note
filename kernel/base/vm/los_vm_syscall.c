@@ -104,6 +104,7 @@ STATUS_T OsAnonMMap(LosVmMapRegion *region)
 
 /**
  * @brief 
+    @verbatim
     mmap基础概念:
     一种内存映射文件的方法，即将一个文件或者其它对象映射到进程的地址空间，实现文件磁盘地址和进程虚拟地址空间中一段虚拟地址的一一对映关系.
     实现这样的映射关系后，进程就可以采用指针的方式读写操作这一段内存，而系统会自动回写脏页面到对应的文件磁盘上，
@@ -136,6 +137,7 @@ STATUS_T OsAnonMMap(LosVmMapRegion *region)
     offset	文件映射的偏移量，通常设置为0，代表从文件最前方开始对应，offset必须是PAGE_SIZE的整数倍。
     成功返回：虚拟内存地址，这地址是页对齐。
     失败返回：(void *)-1。
+    @endverbatim   
  * @param vaddr 
  * @param len 
  * @param prot 

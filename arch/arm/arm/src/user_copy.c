@@ -37,11 +37,19 @@
 #include "los_vm_map.h"
 
 
-/*******************************************************
-从用户空间拷贝到内核空间
-请思考个问题,系统调用时为什么一定要copy_from_user ? 为什么不直接用memcpy？
-https://mp.weixin.qq.com/s/H3nXlOpP_XyF7M-1B4qreQ
-*******************************************************/
+
+/**
+ * @brief 
+ * @verbatim
+    从用户空间拷贝到内核空间
+    请思考个问题,系统调用时为什么一定要copy_from_user ? 为什么不直接用memcpy？
+    https://mp.weixin.qq.com/s/H3nXlOpP_XyF7M-1B4qreQ
+ * @endverbatim
+ * @param dst 
+ * @param src 
+ * @param len 
+ * @return size_t 
+ */
 size_t arch_copy_from_user(void *dst, const void *src, size_t len)
 {
     return LOS_ArchCopyFromUser(dst, src, len);
@@ -60,11 +68,14 @@ size_t arch_copy_to_user(void *dst, const void *src, size_t len)
 {
     return LOS_ArchCopyToUser(dst, src, len);//
 }
-/********************************************
-从内核空间拷贝到用户空间
-dst:必须在用户空间
-src:必须在内核空间
-********************************************/
+
+/**
+ * @brief 从内核空间拷贝到用户空间
+ * @param dst 必须在用户空间
+ * @param src 必须在内核空间
+ * @param len 
+ * @return size_t 
+ */
 size_t LOS_ArchCopyToUser(void *dst, const void *src, size_t len)
 {//先判断地址是不是在用户空间
     if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dst, len)) {//[dest,dest+count] 不在用户空间

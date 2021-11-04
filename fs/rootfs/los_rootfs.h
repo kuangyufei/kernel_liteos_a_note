@@ -31,7 +31,10 @@
 
 #ifndef _LOS_ROOTFS_H
 #define _LOS_ROOTFS_H
-/**********************************************
+
+/**
+ * @brief 
+ * @verbatim
 rootfs之所以存在，是因为需要在VFS机制下给系统提供最原始的挂载点
 https://blog.csdn.net/tankai19880619/article/details/12093239
 
@@ -51,7 +54,9 @@ rootfs的特点:
 3.该文件系统仅仅存在于内存中。
 VFS是一种机制、是每一种文件系统都必须按照这个机制去实现的一种规范；
 而rootfs仅仅是符合VFS规范的而且又具有如上3个特点的一个文件系统。
-**********************************************/
+ * @endverbatim
+ */
+
 #include "los_typedef.h"
 
 #define ROOT_DIR_NAME           "/"
@@ -66,15 +71,15 @@ VFS是一种机制、是每一种文件系统都必须按照这个机制去实�
 #define DEFAULT_MOUNT_DATA      NULL
 
 #ifdef LOSCFG_STORAGE_SPINOR //外部开关定 使用哪种flash
-#define FLASH_TYPE              "spinor" //flash类型
-#define ROOT_DEV_NAME          "/dev/spinorblk0" //根设备名称,将挂载到 `/` 目录下
+#define FLASH_TYPE              "spinor" ///< flash类型
+#define ROOT_DEV_NAME          "/dev/spinorblk0" ///< 根设备名称,将挂载到 `/` 目录下
 #define USER_DEV_NAME           "/dev/spinorblk2"
 #define ROOTFS_ADDR             0x600000
 #define ROOTFS_SIZE             0x800000
 #define USERFS_SIZE             0x80000
 #elif defined(LOSCFG_STORAGE_SPINAND)
 #define FLASH_TYPE              "nand"
-#define ROOT_DEV_NAME          "/dev/nandblk0"	//设备名称
+#define ROOT_DEV_NAME          "/dev/nandblk0"	///< 设备名称
 #define USER_DEV_NAME           "/dev/nandblk2"
 #define ROOTFS_ADDR             0x600000
 #define ROOTFS_SIZE             0x800000
