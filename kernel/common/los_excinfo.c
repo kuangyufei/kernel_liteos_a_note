@@ -50,27 +50,27 @@ VOID SetExcInfoRW(log_read_write_fn func)
 {
     g_excInfoRW = func;
 }
-//获取异常信息读写函数
+///获取异常信息读写函数
 log_read_write_fn GetExcInfoRW(VOID)
 {
     return g_excInfoRW;
 }
-//设置异常信息的缓存
+///设置异常信息的缓存
 VOID SetExcInfoBuf(CHAR *buf)
 {
     g_excInfoBuf = buf;
 }
-//获取异常信息的缓存
+///获取异常信息的缓存
 CHAR *GetExcInfoBuf(VOID)
 {
     return g_excInfoBuf;
 }
-//设置异常信息索引位
+///设置异常信息索引位
 VOID SetExcInfoIndex(UINT32 index)
 {
     g_excInfoIndex = index;
 }
-//获取异常信息索引位
+///获取异常信息索引位
 UINT32 GetExcInfoIndex(VOID)
 {
     return g_excInfoIndex;
@@ -95,7 +95,7 @@ UINT32 GetRecordSpace(VOID)
 {
     return g_recordSpace;
 }
-//vsnprintf 为C标准库可变参数的实现函数 见于 ..\third_party\musl\kernel\src\stdio\vsnprintf.c
+///vsnprintf 为C标准库可变参数的实现函数 见于 ..\third_party\musl\kernel\src\stdio\vsnprintf.c
 VOID WriteExcBufVa(const CHAR *format, va_list arglist)
 {
     errno_t ret;
@@ -110,7 +110,7 @@ VOID WriteExcBufVa(const CHAR *format, va_list arglist)
         g_excInfoIndex += ret;
     }
 }
-//写异常信息到系统异常信息中心
+///写异常信息到系统异常信息中心
 VOID WriteExcInfoToBuf(const CHAR *format, ...)
 {
     va_list arglist;//va_arg
@@ -118,7 +118,7 @@ VOID WriteExcInfoToBuf(const CHAR *format, ...)
     WriteExcBufVa(format, arglist);//入栈参数列表作为实参传入交由vsnprintf处理
     va_end(arglist);//释放资源
 }
-//用于注册记录异常信息函数，并指定位置、空间和大小
+///用于注册记录异常信息函数，并指定位置、空间和大小
 VOID LOS_ExcInfoRegHook(UINT32 startAddr, UINT32 space, CHAR *buf, log_read_write_fn hook)
 {
     if ((hook == NULL) || (buf == NULL)) {
@@ -145,7 +145,7 @@ VOID OsReadWriteExceptionInfo(UINT32 startAddr, UINT32 space, UINT32 flag, CHAR 
     }
     // user can write exception information to files here
 }
-//记录异常信息产生的时间
+///记录异常信息产生的时间
 VOID OsRecordExcInfoTime(VOID)
 {
 #ifdef LOSCFG_FS_VFS

@@ -91,7 +91,7 @@ STATIC INT32 OsVdsoMap(LosVmSpace *space, size_t len, PADDR_T paddr, VADDR_T vad
     }
     return LOS_OK;
 }
-//为每个进程加载 vsdo
+///为每个进程加载 vsdo
 vaddr_t OsVdsoLoad(const LosProcessCB *processCB)
 {
     INT32 ret = -1;
@@ -128,19 +128,19 @@ LOCK_RELEASE:
     }
     return 0;
 }
-//对数据页加锁
+///对数据页加锁
 STATIC VOID LockVdsoDataPage(VdsoDataPage *vdsoDataPage)
 {
     vdsoDataPage->lockCount = 1;
     DMB;
 }
-//对数据页加锁
+///对数据页加锁
 STATIC VOID UnlockVdsoDataPage(VdsoDataPage *vdsoDataPage)
 {
     DMB;
     vdsoDataPage->lockCount = 0;
 }
-//更新时间,
+///更新时间,
 VOID OsVdsoTimevalUpdate(VOID)
 {
     VdsoDataPage *kVdsoDataPage = (VdsoDataPage *)(&__vdso_data_start);//获取vdso 数据区

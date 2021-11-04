@@ -50,12 +50,12 @@ BOOL IsCapPermit(UINT32 capIndex)
 
     return (capability & (CAPABILITY_GET_CAP_MASK(capIndex)));
 }
-//初始化进程安全能力
+///初始化进程安全能力
 VOID OsInitCapability(LosProcessCB *processCB)
 {
     processCB->capability = CAPABILITY_INIT_STAT;
 }
-//进程间安全能力的拷贝
+///进程间安全能力的拷贝
 VOID OsCopyCapability(LosProcessCB *from, LosProcessCB *to)
 {
     UINT32 intSave;
@@ -64,7 +64,7 @@ VOID OsCopyCapability(LosProcessCB *from, LosProcessCB *to)
     to->capability = from->capability;
     SCHEDULER_UNLOCK(intSave);
 }
-//为进程设置权限项
+///为进程设置权限项
 UINT32 SysCapSet(UINT32 caps)
 {
     UINT32 intSave;
@@ -84,7 +84,7 @@ UINT32 SysCapSet(UINT32 caps)
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
-//获取参数进程的权限集
+///获取参数进程的权限集
 UINT32 SysCapGet(pid_t pid, UINT32 *caps)
 {
     UINT32 intSave;

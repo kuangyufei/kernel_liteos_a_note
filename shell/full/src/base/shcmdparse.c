@@ -57,7 +57,7 @@ LITE_OS_SEC_TEXT_MINOR CHAR *OsCmdParseStrdup(const CHAR *str)
     *newStr = '\0';
     return tempStr;
 }
-//获取一个参数实体
+///获取一个参数实体
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdParseParaGet(CHAR **value, const CHAR *paraTokenStr)
 {
     if ((paraTokenStr == NULL) || (value == NULL)) {
@@ -70,7 +70,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdParseParaGet(CHAR **value, const CHAR *paraTo
     }
     return LOS_OK;
 }
-//解析出一个参数
+///解析出一个参数
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdParseOneToken(CmdParsed *cmdParsed, UINT32 index, const CHAR *token)
 {
     UINT32 ret = LOS_OK;
@@ -96,7 +96,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdParseOneToken(CmdParsed *cmdParsed, UINT32 in
     }
     return ret;
 }
-//将shell命令按 ' ' 分开处理
+///将shell命令按 ' ' 分开处理
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdTokenSplit(CHAR *cmdStr, CHAR split, CmdParsed *cmdParsed)
 {
     enum {
@@ -144,7 +144,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdTokenSplit(CHAR *cmdStr, CHAR split, CmdParse
 
     return ret;
 }
-//解析cmd命令,将关键字,参数分离出来
+///解析cmd命令,将关键字,参数分离出来
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdParse(CHAR *cmdStr, CmdParsed *cmdParsed)
 {
     if ((cmdStr == NULL) || (cmdParsed == NULL) || (strlen(cmdStr) == 0)) {

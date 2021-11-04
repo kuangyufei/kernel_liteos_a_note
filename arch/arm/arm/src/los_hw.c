@@ -103,7 +103,7 @@ LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOI
 
     return (VOID *)taskContext;
 }
-//把父任务上下文克隆给子任务
+///把父任务上下文克隆给子任务
 LITE_OS_SEC_TEXT VOID OsUserCloneParentStack(VOID *childStack, UINTPTR parentTopOfStack, UINT32 parentStackSize)
 {
     LosTaskCB *task = OsCurrTaskGet();
@@ -137,7 +137,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, UINTPTR tas
     context->ULR = 0;//保存子程序返回地址 例如 a call b ,在b中保存 a地址
     context->PC = (UINTPTR)taskEntry;//入口函数,由外部传入,由上层应用指定,固然每个都不一样.
 }
-//初始化信号上下文
+///初始化信号上下文
 VOID OsInitSignalContext(const VOID *sp, VOID *signalContext, UINTPTR sigHandler, UINT32 signo, UINT32 param)
 {
     IrqContext *newSp = (IrqContext *)signalContext;

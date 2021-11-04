@@ -53,7 +53,7 @@ UINT32 VidMapListInit(LosProcessCB *processCB)
     }
     return LOS_OK;
 }
-//销毁虚拟ID映射
+///销毁虚拟ID映射
 void VidMapDestroy(LosProcessCB *processCB)
 {
     TimerIdMapNode *idNode = NULL;

@@ -39,8 +39,8 @@
 #include "unistd.h"
 #include <sys/syscall.h>
 
-ShellCB *g_shellCB = NULL;	//全部shell控制块
-//获取shell控制块
+ShellCB *g_shellCB = NULL;	///< 全部shell控制块
+/// 获取shell控制块
 ShellCB *OsGetShellCb()
 {
     return g_shellCB;
@@ -117,7 +117,7 @@ static int DoShellExec(char **argv)
     free(cmdLine);
     return ret;
 }
-//shell进程的入口函数
+/// shell进程的入口函数
 int main(int argc, char **argv)
 {
     int ret = SH_NOK;

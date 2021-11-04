@@ -44,8 +44,8 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
-/******************************************************************************
+/*! 
+    \file arch\arm\arm\include\los_atomic.h
 基本概念
 	在支持多任务的操作系统中，修改一块内存区域的数据需要“读取-修改-写入”三个步骤。
 	然而同一内存区域的数据可能同时被多个任务访问，如果在修改数据的过程中被其他任务打断，
@@ -81,7 +81,7 @@ extern "C" {
 
 参考
 	https://gitee.com/LiteOS/LiteOS/blob/master/doc/Huawei_LiteOS_Kernel_Developer_Guide_zh.md#setup
-******************************************************************************/
+*/
 typedef volatile INT32 Atomic;	//原子数据包含两种类型Atomic（有符号32位数）与 Atomic64（有符号64位数）
 typedef volatile INT64 Atomic64;
 
@@ -102,10 +102,10 @@ typedef volatile INT64 Atomic64;
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//读取内存数据
+ */	
 STATIC INLINE INT32 LOS_AtomicRead(const Atomic *v)	
 {
-    return *(volatile INT32 *)v;
+    return *(volatile INT32 *)v;    //读取内存数据
 }
 
 /**

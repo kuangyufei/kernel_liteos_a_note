@@ -66,7 +66,7 @@ _pthread_data *pthread_get_self_data(void)//获取当前线程信息
 
     return data;
 }
-//获取线程控制块
+///获取线程控制块
 _pthread_data *pthread_get_data(pthread_t id)
 {
     _pthread_data *data = NULL;
@@ -137,7 +137,7 @@ STATIC VOID PthreadReap(VOID)
         }
     }
 }
-//设置线程的属性
+///设置线程的属性
 STATIC VOID SetPthreadAttr(const _pthread_data *self, const pthread_attr_t *attr, pthread_attr_t *outAttr)
 {
     /*
@@ -185,7 +185,7 @@ STATIC VOID SetPthreadDataAttr(const pthread_attr_t *userAttr, const pthread_t t
     created->stackmem     = taskCB->topOfStack;
     created->thread_data  = NULL;
 }
-//线程控制块初始化
+///线程控制块初始化
 STATIC UINT32 InitPthreadData(pthread_t threadID, pthread_attr_t *userAttr,
                               const CHAR name[], size_t len)
 {
@@ -457,7 +457,7 @@ int pthread_detach(pthread_t thread)
 
     return ret;
 }
-//设置调度参数
+///设置调度参数
 int pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *param)
 {
     _pthread_data *data = NULL;

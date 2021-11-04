@@ -409,22 +409,22 @@ STATIC INLINE LosTaskCB *OsCurrTaskGet(VOID)
 {
     return (LosTaskCB *)ArchCurrTaskGet();
 }
-//告诉协处理器当前任务使用范围为内核空间 
+///告诉协处理器当前任务使用范围为内核空间 
 STATIC INLINE VOID OsCurrTaskSet(LosTaskCB *task)
 {
     ArchCurrTaskSet(task);
 }
-//告诉协处理器当前任务使用范围为 用户空间
+///告诉协处理器当前任务使用范围为 用户空间
 STATIC INLINE VOID OsCurrUserTaskSet(UINTPTR thread)
 {
     ArchCurrUserTaskSet(thread);
 }
-//通过任务ID获取任务实体，task由任务池分配，本质是个数组，彼此都挨在一块
+///通过任务ID获取任务实体，task由任务池分配，本质是个数组，彼此都挨在一块
 STATIC INLINE LosTaskCB *OsGetTaskCB(UINT32 taskID)
 {
     return OS_TCB_FROM_TID(taskID);
 }
-//任务是否在使用
+///任务是否在使用
 STATIC INLINE BOOL OsTaskIsUnused(const LosTaskCB *taskCB)
 {
     if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {//在freelist中的任务都是 OS_TASK_STATUS_UNUSED 状态
@@ -433,7 +433,7 @@ STATIC INLINE BOOL OsTaskIsUnused(const LosTaskCB *taskCB)
 
     return FALSE;
 }
-//任务是否在运行
+///任务是否在运行
 STATIC INLINE BOOL OsTaskIsRunning(const LosTaskCB *taskCB)
 {
     if (taskCB->taskStatus & OS_TASK_STATUS_RUNNING) {//一个CPU core 只能有一个 OS_TASK_STATUS_RUNNING task
@@ -442,7 +442,7 @@ STATIC INLINE BOOL OsTaskIsRunning(const LosTaskCB *taskCB)
 
     return FALSE;
 }
-//任务是否不再活动
+///任务是否不再活动
 STATIC INLINE BOOL OsTaskIsInactive(const LosTaskCB *taskCB)
 {
     if (taskCB->taskStatus & (OS_TASK_STATUS_UNUSED | OS_TASK_STATUS_INIT | OS_TASK_STATUS_EXIT)) {//三个标签有一个代表不在活动

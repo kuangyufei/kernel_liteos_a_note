@@ -52,7 +52,7 @@ static ssize_t MemWrite(struct file *filep, const char *buffer, size_t buflen)
 {
     return 0;
 }
-//文件和线性区的映射关系
+///文件和线性区的映射关系
 static ssize_t MemMap(struct file *filep, LosVmMapRegion *region)
 {
 #ifdef LOSCFG_KERNEL_VM
@@ -80,7 +80,7 @@ static ssize_t MemMap(struct file *filep, LosVmMapRegion *region)
 #endif
     return 0;
 }
-// vfs 接口实现
+/// vfs 接口实现
 static const struct file_operations_vfs g_memDevOps = {
     MemOpen,  /* open */
     MemClose, /* close */

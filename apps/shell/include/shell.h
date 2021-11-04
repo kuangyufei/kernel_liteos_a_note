@@ -51,7 +51,7 @@ extern "C" {
 #define CMD_KEY_LEN                     16U
 #define CMD_MAX_LEN                     (256U + CMD_KEY_LEN)
 #define CMD_KEY_NUM                     32
-#define CMD_HISTORY_LEN                 10	//最多保存十个命令行记录
+#define CMD_HISTORY_LEN                 10	///< 最多保存十个命令行记录
 #define CMD_MAX_PATH                    256
 #define DEFAULT_SCREEN_WIDTH            80
 #define DEFAULT_SCREEN_HEIGNT           24
@@ -70,34 +70,34 @@ extern "C" {
 typedef size_t bool;
 
 typedef struct {
-    unsigned int   consoleID;	//控制台ID
-    pthread_t      shellTaskHandle;	//shell服务端任务
-    pthread_t      shellEntryHandle;//shell客户端任务
-    void     *cmdKeyLink;			//命令链表,所有敲过的命令链表
-    void     *cmdHistoryKeyLink;	//命令的历史记录链表,去重,10个
-    void     *cmdMaskKeyLink;		//主要用于方向键上下遍历历史命令
-    unsigned int   shellBufOffset;	//buf偏移量
-    unsigned int   shellKeyType;	//按键类型
-    sem_t           shellSem;		//shell信号量
-    pthread_mutex_t keyMutex;		//操作cmdKeyLink的互斥量
-    pthread_mutex_t historyMutex;	//操作cmdHistoryKeyLink的互斥量
-    char     shellBuf[SHOW_MAX_LEN];	//接受shell命令 buf大小
-    char     shellWorkingDirectory[PATH_MAX];//shell工作目录
+    unsigned int   consoleID;	///< 控制台ID
+    pthread_t      shellTaskHandle;	///< shell服务端任务
+    pthread_t      shellEntryHandle;///< shell客户端任务
+    void     *cmdKeyLink;			///< 命令链表,所有敲过的命令链表
+    void     *cmdHistoryKeyLink;	///< 命令的历史记录链表,去重,10个
+    void     *cmdMaskKeyLink;		///< 主要用于方向键上下遍历历史命令
+    unsigned int   shellBufOffset;	///< buf偏移量
+    unsigned int   shellKeyType;	///< 按键类型
+    sem_t           shellSem;		///< shell信号量
+    pthread_mutex_t keyMutex;		///< 操作cmdKeyLink的互斥量
+    pthread_mutex_t historyMutex;	///< 操作cmdHistoryKeyLink的互斥量
+    char     shellBuf[SHOW_MAX_LEN];	///< 接受shell命令 buf大小
+    char     shellWorkingDirectory[PATH_MAX];///< shell工作目录
 } ShellCB;
 
-/* All support cmd types */
-typedef enum {//所有支持的类型
-    CMD_TYPE_SHOW = 0,	//用户怎么输入就怎么显示出现,包括 \n \0 这些字符也都会存在
-    CMD_TYPE_STD = 1,	//支持的标准命令参数输入，所有输入的字符都会通过命令解析后被传入。
-    CMD_TYPE_EX = 2,	//不支持标准命令参数输入，会把用户填写的命令关键字屏蔽掉，例如：输入ls /ramfs，传入给注册函数的参数只有/ramfs，而ls命令关键字并不会被传入。
+/*! All support cmd types | 所有支持的类型*/
+typedef enum {
+    CMD_TYPE_SHOW = 0,	///< 用户怎么输入就怎么显示出现,包括 \n \0 这些字符也都会存在
+    CMD_TYPE_STD = 1,	///< 支持的标准命令参数输入，所有输入的字符都会通过命令解析后被传入。
+    CMD_TYPE_EX = 2,	///< 不支持标准命令参数输入，会把用户填写的命令关键字屏蔽掉，例如：输入ls /ramfs，传入给注册函数的参数只有/ramfs，而ls命令关键字并不会被传入。
     CMD_TYPE_BUTT
 } CmdType;
 
 typedef enum {
-    CMD_KEY_UP = 0,		//方向上键 
-    CMD_KEY_DOWN = 1,	//方向下键
-    CMD_KEY_RIGHT = 2,	//方向左键
-    CMD_KEY_LEFT = 4,	//方向右键
+    CMD_KEY_UP = 0,		///< 方向上键 
+    CMD_KEY_DOWN = 1,	///< 方向下键
+    CMD_KEY_RIGHT = 2,	///< 方向左键
+    CMD_KEY_LEFT = 4,	///< 方向右键
     CMD_KEY_BUTT
 } CmdKeyDirection;
 

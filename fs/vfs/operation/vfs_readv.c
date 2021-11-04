@@ -87,7 +87,7 @@ static char *pread_buf_and_check(int fd, const struct iovec *iov, int iovcnt, ss
 
     return buf;
 }
-//供系统调用
+///供系统调用
 ssize_t vfs_readv(int fd, const struct iovec *iov, int iovcnt, off_t *offset)
 {
     int i;

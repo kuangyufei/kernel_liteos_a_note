@@ -72,7 +72,7 @@ EXPAND_FAILED:
 
     return -LOS_NOK;
 }
-//创建seq buf
+///创建seq buf
 struct SeqBuf *LosBufCreat(void)
 {
     struct SeqBuf *seqBuf = NULL;
@@ -86,7 +86,7 @@ struct SeqBuf *LosBufCreat(void)
 
     return seqBuf;
 }
-//真正写 buf 函数,调整 size/count的值,count可理解为偏移位
+///真正写 buf 函数,调整 size/count的值,count可理解为偏移位
 int LosBufVprintf(struct SeqBuf *seqBuf, const char *fmt, va_list argList)
 {
     bool needreprintf = FALSE;
@@ -129,7 +129,7 @@ int LosBufVprintf(struct SeqBuf *seqBuf, const char *fmt, va_list argList)
 
     return -LOS_NOK;
 }
-//支持可变参数 写 buf
+///支持可变参数 写 buf
 int LosBufPrintf(struct SeqBuf *seqBuf, const char *fmt, ...)
 {
     va_list argList;
@@ -141,7 +141,7 @@ int LosBufPrintf(struct SeqBuf *seqBuf, const char *fmt, ...)
 
     return ret;
 }
-//释放 seq buf
+///释放 seq buf
 int LosBufRelease(struct SeqBuf *seqBuf)
 {
     if (seqBuf == NULL) {

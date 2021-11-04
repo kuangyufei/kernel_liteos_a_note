@@ -102,7 +102,7 @@ uint init_file_mapping()
 
     return ret;
 }
-//清除文件映射
+///清除文件映射
 static void clear_file_mapping(const struct page_mapping *mapping)
 {
     unsigned int i = 3; /* file start fd */
@@ -116,7 +116,7 @@ static void clear_file_mapping(const struct page_mapping *mapping)
         i++;
     }
 }
-//以无锁的方式通过文件名查找文件映射并返回
+///以无锁的方式通过文件名查找文件映射并返回
 static struct page_mapping *find_mapping_nolock(const char *fullpath)
 {
     char *map_name = NULL;
@@ -214,7 +214,7 @@ int remove_mapping_nolock(struct page_mapping *mapping)
 
     return OK;
 }
-//无锁方式引用递减，删除或关闭文件时 由 files_close_internal调用
+///无锁方式引用递减，删除或关闭文件时 由 files_close_internal调用
 void dec_mapping_nolock(struct page_mapping *mapping)
 {
     if (mapping == NULL) {
@@ -234,7 +234,7 @@ void dec_mapping_nolock(struct page_mapping *mapping)
 
     (VOID)LOS_MuxUnlock(&g_file_mapping.lock);
 }
-//已有锁的方式删除文件映射
+///已有锁的方式删除文件映射
 int remove_mapping(const char *fullpath)
 {
     int ret;
@@ -260,7 +260,7 @@ int remove_mapping(const char *fullpath)
     (void)sem_post(&f_list->fl_sem);
     return OK;
 }
-//重命名映射
+///重命名映射
 void rename_mapping(const char *src_path, const char *dst_path)
 {
     int ret;
@@ -303,7 +303,7 @@ void rename_mapping(const char *src_path, const char *dst_path)
 out:
     (VOID)LOS_MuxUnlock(&g_file_mapping.lock);
 }
-//更新文件路径
+///更新文件路径
 int update_file_path(const char *old_path, const char *new_path)
 {
     struct filelist *f_list = NULL;

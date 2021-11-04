@@ -694,7 +694,7 @@ char *realpath(const char *path, char *resolved_path)
     }
     return resolved_path;
 }
-//查看FD
+///查看FD
 void lsfd(void)
 {
     struct filelist *f_list = NULL;
@@ -720,12 +720,12 @@ void lsfd(void)
     }
     (void)sem_post(&f_list->fl_sem);
 }
-//获取用户创建文件掩码
+///获取用户创建文件掩码
 mode_t GetUmask(void)
 {
     return OsCurrProcessGet()->umask;
 }
-//给当前进程设置系统创建文件掩码,并返回进程旧掩码
+///给当前进程设置系统创建文件掩码,并返回进程旧掩码
 mode_t SysUmask(mode_t mask)
 {
     UINT32 intSave;

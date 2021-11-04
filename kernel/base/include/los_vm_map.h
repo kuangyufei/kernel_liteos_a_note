@@ -196,75 +196,75 @@ STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned lo
 
     return regionFlags;
 }
-//是否为内核空间
+///是否为内核空间
 STATIC INLINE BOOL LOS_IsKernelAddress(VADDR_T vaddr)
 {
     return ((vaddr >= (VADDR_T)KERNEL_ASPACE_BASE) &&
             (vaddr <= ((VADDR_T)KERNEL_ASPACE_BASE + ((VADDR_T)KERNEL_ASPACE_SIZE - 1))));
 }
-//给定范围是否在内核空间中
+///给定范围是否在内核空间中
 STATIC INLINE BOOL LOS_IsKernelAddressRange(VADDR_T vaddr, size_t len)
 {
     return (vaddr + len > vaddr) && LOS_IsKernelAddress(vaddr) && (LOS_IsKernelAddress(vaddr + len - 1));
 }
-//获取区的结束地址
+///获取区的结束地址
 STATIC INLINE VADDR_T LOS_RegionEndAddr(LosVmMapRegion *region)
 {
     return (region->range.base + region->range.size - 1);
 }
-//线性区大小
+///线性区大小
 STATIC INLINE size_t LOS_RegionSize(VADDR_T start, VADDR_T end)
 {
     return (end - start + 1);
 }
-//是否为文件映射区
+///是否为文件映射区
 STATIC INLINE BOOL LOS_IsRegionTypeFile(LosVmMapRegion* region)
 {
     return region->regionType == VM_MAP_REGION_TYPE_FILE;
 }
-//permanent 用户进程常量区
+///permanent 用户进程常量区
 STATIC INLINE BOOL LOS_IsRegionPermUserReadOnly(LosVmMapRegion* region)
 {
     return ((region->regionFlags & VM_MAP_REGION_FLAG_PROT_MASK) ==
             (VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ));
 }
-//是否为私有线性区
+///是否为私有线性区
 STATIC INLINE BOOL LOS_IsRegionFlagPrivateOnly(LosVmMapRegion* region)
 {
     return ((region->regionFlags & VM_MAP_REGION_FLAG_FLAG_MASK) == VM_MAP_REGION_FLAG_PRIVATE);
 }
-//设置线性区为文件映射
+///设置线性区为文件映射
 STATIC INLINE VOID LOS_SetRegionTypeFile(LosVmMapRegion* region)
 {
     region->regionType = VM_MAP_REGION_TYPE_FILE;
 }
-//是否为设备映射线性区 /dev/...
+///是否为设备映射线性区 /dev/...
 STATIC INLINE BOOL LOS_IsRegionTypeDev(LosVmMapRegion* region)
 {
     return region->regionType == VM_MAP_REGION_TYPE_DEV;
 }
-//设为设备映射线性区
+///设为设备映射线性区
 STATIC INLINE VOID LOS_SetRegionTypeDev(LosVmMapRegion* region)
 {
     region->regionType = VM_MAP_REGION_TYPE_DEV;
 }
-//是否为匿名swap映射线性区
+///是否为匿名swap映射线性区
 STATIC INLINE BOOL LOS_IsRegionTypeAnon(LosVmMapRegion* region)
 {
     return region->regionType == VM_MAP_REGION_TYPE_ANON;
 }
-//设为匿名swap映射线性区
+///设为匿名swap映射线性区
 STATIC INLINE VOID LOS_SetRegionTypeAnon(LosVmMapRegion* region)
 {
     region->regionType = VM_MAP_REGION_TYPE_ANON;
 }
-//虚拟地址是否在用户空间
+///虚拟地址是否在用户空间
 STATIC INLINE BOOL LOS_IsUserAddress(VADDR_T vaddr)
 {
     return ((vaddr >= USER_ASPACE_BASE) &&
             (vaddr <= (USER_ASPACE_BASE + (USER_ASPACE_SIZE - 1))));
 }
-//虚拟地址[vaddr,vaddr + len]是否在用户空间
+///虚拟地址[vaddr,vaddr + len]是否在用户空间
 STATIC INLINE BOOL LOS_IsUserAddressRange(VADDR_T vaddr, size_t len)
 {
     return (vaddr + len > vaddr) && LOS_IsUserAddress(vaddr) && (LOS_IsUserAddress(vaddr + len - 1));
@@ -276,7 +276,7 @@ STATIC INLINE BOOL LOS_IsVmallocAddress(VADDR_T vaddr)
     return ((vaddr >= VMALLOC_START) &&
             (vaddr <= (VMALLOC_START + (VMALLOC_SIZE - 1))));
 }
-//是否为一个空线性区
+///是否为一个空线性区
 STATIC INLINE BOOL OsIsVmRegionEmpty(LosVmSpace *vmSpace)
 {
     if (vmSpace->regionRbTree.ulNodes == 0) {

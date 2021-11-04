@@ -54,7 +54,7 @@ STATIC INLINE UINT16 Ffz(UINTPTR x)
 {//__builtin_ffsl: 返回右起第一个1的位置，函数来自 glibc
     return __builtin_ffsl(~x) - 1;//从LSB开始查找第一个零位 LSB(最低有效位) 对应 最高有效位(MSB)
 }
-//对状态字的某一标志位进行置1操作
+///对状态字的某一标志位进行置1操作
 VOID LOS_BitmapSet(UINT32 *bitmap, UINT16 pos)
 {
     if (bitmap == NULL) {
@@ -63,7 +63,7 @@ VOID LOS_BitmapSet(UINT32 *bitmap, UINT16 pos)
 
     *bitmap |= 1U << (pos & OS_BITMAP_MASK);//在对应位上置1
 }
-//对状态字的某一标志位进行清0操作
+///对状态字的某一标志位进行清0操作
 VOID LOS_BitmapClr(UINT32 *bitmap, UINT16 pos)
 {
     if (bitmap == NULL) {
@@ -86,7 +86,7 @@ UINT16 LOS_HighBitGet(UINT32 bitmap)
 
     return (OS_BITMAP_MASK - CLZ(bitmap));//CLZ = count leading zeros 用于计算整数的前导零
 }
-//获取参数位图中最低位为1的索引位， 例如: 00110110 返回 1
+///获取参数位图中最低位为1的索引位， 例如: 00110110 返回 1
 UINT16 LOS_LowBitGet(UINT32 bitmap)
 {
     if (bitmap == 0) {
@@ -95,7 +95,7 @@ UINT16 LOS_LowBitGet(UINT32 bitmap)
 
     return CTZ(bitmap);// CTZ = count trailing zeros 用于计算给定整数的尾随零
 }
-//从start位置开始设置numsSet个bit位 置1 
+///从start位置开始设置numsSet个bit位 置1 
 VOID LOS_BitmapSetNBits(UINTPTR *bitmap, UINT32 start, UINT32 numsSet)
 {
     UINTPTR *p = bitmap + BITMAP_WORD(start);
@@ -115,7 +115,7 @@ VOID LOS_BitmapSetNBits(UINTPTR *bitmap, UINT32 start, UINT32 numsSet)
         *p |= maskToSet;
     }
 }
-//从start位置开始清除numsSet个bit位 置0
+///从start位置开始清除numsSet个bit位 置0
 VOID LOS_BitmapClrNBits(UINTPTR *bitmap, UINT32 start, UINT32 numsClear)
 {
     UINTPTR *p = bitmap + BITMAP_WORD(start);
@@ -135,7 +135,7 @@ VOID LOS_BitmapClrNBits(UINTPTR *bitmap, UINT32 start, UINT32 numsClear)
         *p &= ~maskToClear;
     }
 }
-//从numBits位置开始找到第一个0位
+///从numBits位置开始找到第一个0位
 INT32 LOS_BitmapFfz(UINTPTR *bitmap, UINT32 numBits)
 {
     INT32 bit, i;

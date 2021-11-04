@@ -137,7 +137,7 @@ LITE_OS_SEC_TEXT VOID OsSwtmrTask(VOID)
         }
     }
 }
-//创建软时钟任务,每个cpu core都可以拥有自己的软时钟任务
+///创建软时钟任务,每个cpu core都可以拥有自己的软时钟任务
 LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrTaskCreate(VOID)
 {
     UINT32 ret, swtmrTaskID;
@@ -161,7 +161,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrTaskCreate(VOID)
 
     return ret;
 }
-//回收指定进程的软时钟
+///回收指定进程的软时钟
 LITE_OS_SEC_TEXT_INIT VOID OsSwtmrRecycle(UINT32 processID)
 {
     for (UINT16 index = 0; index < LOSCFG_BASE_CORE_SWTMR_LIMIT; index++) {//一个进程往往会有多个定时器
@@ -170,7 +170,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsSwtmrRecycle(UINT32 processID)
         }
     }
 }
-//软时钟初始化 ,注意函数在多CPU情况下会执行多次
+///软时钟初始化 ,注意函数在多CPU情况下会执行多次
 LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
 {
     UINT32 size;
@@ -377,7 +377,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsSwtmrTimeGet(const SWTMR_CTRL_S *swtmr)
 {
     return OsSortLinkGetTargetExpireTime(&swtmr->stSortList);
 }
-//创建定时器，设置定时器的定时时长、定时器模式、回调函数，并返回定时器ID
+///创建定时器，设置定时器的定时时长、定时器模式、回调函数，并返回定时器ID
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_SwtmrCreate(UINT32 interval,
                                              UINT8 mode,
                                              SWTMR_PROC_FUNC handler,
@@ -429,7 +429,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_SwtmrCreate(UINT32 interval,
     OsHookCall(LOS_HOOK_TYPE_SWTMR_CREATE, swtmr);
     return LOS_OK;
 }
-//接口函数 启动定时器       参数定时任务ID
+///接口函数 启动定时器       参数定时任务ID
 LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStart(UINT16 swtmrID)
 {
     SWTMR_CTRL_S *swtmr = NULL;
@@ -474,7 +474,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStart(UINT16 swtmrID)
     OsHookCall(LOS_HOOK_TYPE_SWTMR_START, swtmr);
     return ret;
 }
-//接口函数 停止定时器          参数定时任务ID
+///接口函数 停止定时器          参数定时任务ID
 LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStop(UINT16 swtmrID)
 {
     SWTMR_CTRL_S *swtmr = NULL;
@@ -514,7 +514,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStop(UINT16 swtmrID)
     OsHookCall(LOS_HOOK_TYPE_SWTMR_STOP, swtmr);
     return ret;
 }
-//接口函数 获得软件定时器剩余Tick数 通过 *tick 带走 
+///接口函数 获得软件定时器剩余Tick数 通过 *tick 带走 
 LITE_OS_SEC_TEXT UINT32 LOS_SwtmrTimeGet(UINT16 swtmrID, UINT32 *tick)
 {
     SWTMR_CTRL_S *swtmr = NULL;
@@ -555,7 +555,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrTimeGet(UINT16 swtmrID, UINT32 *tick)
     SWTMR_UNLOCK(intSave);
     return ret;
 }
-//接口函数 删除定时器
+///接口函数 删除定时器
 LITE_OS_SEC_TEXT UINT32 LOS_SwtmrDelete(UINT16 swtmrID)
 {
     SWTMR_CTRL_S *swtmr = NULL;

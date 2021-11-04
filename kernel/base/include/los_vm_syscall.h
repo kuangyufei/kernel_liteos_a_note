@@ -50,7 +50,7 @@ STATIC INLINE BOOL LOS_IsNamedMapping(unsigned long flags)
 {
     return ((flags & MAP_ANONYMOUS) == 0);
 }
-//是否匿名映射 匿名映射：没有映射对应的相关文件，这种映射的内存区域的内容会被初始化为0
+///是否匿名映射 匿名映射：没有映射对应的相关文件，这种映射的内存区域的内容会被初始化为0
 STATIC INLINE BOOL LOS_IsAnonymousMapping(unsigned long flags)
 {
     return ((flags & MAP_ANONYMOUS) == MAP_ANONYMOUS);

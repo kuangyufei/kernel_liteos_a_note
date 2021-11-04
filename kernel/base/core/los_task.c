@@ -181,7 +181,7 @@ VOID OsSetMainTask()
         LOS_ListInit(&g_mainTask[i].lockList);//初始化任务锁链表,上面挂的是任务已申请到的互斥锁
     }
 }
-//空闲任务,每个CPU都有自己的空闲任务
+///空闲任务,每个CPU都有自己的空闲任务
 LITE_OS_SEC_TEXT WEAK VOID OsIdleTask(VOID)
 {
     while (1) {//只有一个死循环
@@ -236,7 +236,7 @@ LITE_OS_SEC_TEXT UINT32 OsTaskJoinPendUnsafe(LosTaskCB *taskCB)
 
     return LOS_EINVAL;
 }
-//任务设置分离模式  Deatch和JOIN是一对有你没我的状态
+///任务设置分离模式  Deatch和JOIN是一对有你没我的状态
 LITE_OS_SEC_TEXT UINT32 OsTaskSetDetachUnsafe(LosTaskCB *taskCB)
 {
     LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);//获取进程实体
@@ -293,13 +293,13 @@ EXIT:
     }
     return ret;
 }
-//获取IdletaskId,每个CPU核都对Task进行了内部管理,做到真正的并行处理
+///获取IdletaskId,每个CPU核都对Task进行了内部管理,做到真正的并行处理
 UINT32 OsGetIdleTaskId(VOID)
 {
     Percpu *perCpu = OsPercpuGet();//获取当前Cpu信息
     return perCpu->idleTaskID;//返回当前CPU 空闲任务ID
 }
-//创建一个空闲任务
+///创建一个空闲任务
 LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
 {
     UINT32 ret;
@@ -420,7 +420,7 @@ STATIC VOID OsTaskReleaseHoldLock(LosProcessCB *processCB, LosTaskCB *taskCB)
 
     OsTaskSyncWake(taskCB);
 }
-//一个任务的退出过程
+///一个任务的退出过程
 LITE_OS_SEC_TEXT VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status)
 {
     UINT32 intSave;
@@ -478,7 +478,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskEntry(UINT32 taskID)
 	
     OsTaskToExit(taskCB, 0);//到这里任务跑完了要退出了
 }
-//任务创建参数检查
+///任务创建参数检查
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCreateParamCheck(const UINT32 *taskID,
     TSK_INIT_PARAM_S *initParam, VOID **pool)
 {
@@ -528,7 +528,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCreateParamCheck(const UINT32 *taskID,
 
     return LOS_OK;
 }
-//任务栈(内核态)内存分配,由内核态进程空间提供,即 KProcess 的进程空间
+///任务栈(内核态)内存分配,由内核态进程空间提供,即 KProcess 的进程空间
 LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskStackAlloc(VOID **topStack, UINT32 stackSize, VOID *pool)
 {
     *topStack = (VOID *)LOS_MemAllocAlign(pool, stackSize, LOSCFG_STACK_POINT_ALIGN_SIZE);
@@ -543,7 +543,7 @@ STATIC VOID OsTaskKernelResourcesToFree(UINT32 syncSignal, UINTPTR topOfStack)
 
     (VOID)LOS_MemFree(poolTmp, (VOID *)topOfStack);
 }
-//从回收链表中回收任务到空闲链表
+///从回收链表中回收任务到空闲链表
 LITE_OS_SEC_TEXT VOID OsTaskCBRecycleToFree()
 {
     LosTaskCB *taskCB = NULL;
@@ -607,7 +607,7 @@ LITE_OS_SEC_TEXT VOID OsTaskResourcesToFree(LosTaskCB *taskCB)
     }
     return;
 }
-//任务基本信息的初始化
+///任务基本信息的初始化
 LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskCBInitBase(LosTaskCB *taskCB,
                                                    const VOID *stackPtr,
                                                    const VOID *topStack,
@@ -643,7 +643,7 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskCBInitBase(LosTaskCB *taskCB,
     LOS_ListInit(&taskCB->lockList);//初始化互斥锁链表
     SET_SORTLIST_VALUE(&taskCB->sortList, OS_SORT_LINK_INVALID_TIME);
 }
-//任务初始化
+///任务初始化
 STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam,
                            const VOID *stackPtr, const VOID *topStack)
 {
@@ -690,7 +690,7 @@ STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam,
     }
     return LOS_OK;
 }
-//获取一个空闲TCB
+///获取一个空闲TCB
 LITE_OS_SEC_TEXT LosTaskCB *OsGetFreeTaskCB(VOID)
 {
     UINT32 intSave;
@@ -712,7 +712,7 @@ LITE_OS_SEC_TEXT LosTaskCB *OsGetFreeTaskCB(VOID)
 
     return taskCB;
 }
-//创建任务，并使该任务进入suspend状态，不对该任务进行调度。如果需要调度，可以调用LOS_TaskResume使该任务进入ready状态
+///创建任务，并使该任务进入suspend状态，不对该任务进行调度。如果需要调度，可以调用LOS_TaskResume使该任务进入ready状态
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *taskID, TSK_INIT_PARAM_S *initParam)
 {
     UINT32 intSave, errRet;
@@ -769,7 +769,7 @@ LOS_ERREND_REWIND_TCB:
 LOS_ERREND:
     return errRet;
 }
-//创建任务，并使该任务进入ready状态，如果就绪队列中没有更高优先级的任务，则运行该任务
+///创建任务，并使该任务进入ready状态，如果就绪队列中没有更高优先级的任务，则运行该任务
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreate(UINT32 *taskID, TSK_INIT_PARAM_S *initParam)
 {
     UINT32 ret;
@@ -809,7 +809,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreate(UINT32 *taskID, TSK_INIT_PARAM_S *in
 
     return LOS_OK;
 }
-//恢复挂起的任务，使该任务进入ready状态
+///恢复挂起的任务，使该任务进入ready状态
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskResume(UINT32 taskID)
 {
     UINT32 intSave;
@@ -893,7 +893,7 @@ LITE_OS_SEC_TEXT_INIT STATIC BOOL OsTaskSuspendCheckOnRun(LosTaskCB *taskCB, UIN
 
     return TRUE;
 }
-//任务暂停,参数可以不是当前任务，也就是说 A任务可以让B任务处于阻塞状态,挂起指定的任务，然后切换任务
+///任务暂停,参数可以不是当前任务，也就是说 A任务可以让B任务处于阻塞状态,挂起指定的任务，然后切换任务
 LITE_OS_SEC_TEXT STATIC UINT32 OsTaskSuspend(LosTaskCB *taskCB)
 {
     UINT32 errRet;
@@ -925,7 +925,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsTaskSuspend(LosTaskCB *taskCB)
 
     return LOS_OK;
 }
-//外部接口，对OsTaskSuspend的封装
+///外部接口，对OsTaskSuspend的封装
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskSuspend(UINT32 taskID)
 {
     UINT32 intSave;
@@ -946,7 +946,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskSuspend(UINT32 taskID)
     SCHEDULER_UNLOCK(intSave);
     return errRet;
 }
-//设置任务为不使用状态
+///设置任务为不使用状态
 STATIC INLINE VOID OsTaskStatusUnusedSet(LosTaskCB *taskCB)
 {
     taskCB->taskStatus |= OS_TASK_STATUS_UNUSED;
@@ -1025,7 +1025,7 @@ STATIC BOOL OsRunTaskToDeleteCheckOnRun(LosTaskCB *taskCB, UINT32 *ret)
 
     return TRUE;
 }
-//删除不活动的任务 !OS_TASK_STATUS_RUNNING 
+///删除不活动的任务 !OS_TASK_STATUS_RUNNING 
 STATIC VOID OsTaskDeleteInactive(LosProcessCB *processCB, LosTaskCB *taskCB)
 {
     LosMux *mux = (LosMux *)taskCB->taskMux; //任务
@@ -1049,7 +1049,7 @@ STATIC VOID OsTaskDeleteInactive(LosProcessCB *processCB, LosTaskCB *taskCB)
     LOS_ListTailInsert(&g_taskRecycleList, &taskCB->pendList);
     return;
 }
-//以不安全的方式删除参数任务
+///以不安全的方式删除参数任务
 LITE_OS_SEC_TEXT UINT32 OsTaskDeleteUnsafe(LosTaskCB *taskCB, UINT32 status, UINT32 intSave)
 {
     LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);//获取进程实体
@@ -1089,7 +1089,7 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);
     return errRet;
 }
-//删除指定的任务,回归任务池
+///删除指定的任务,回归任务池
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskDelete(UINT32 taskID)
 {
     UINT32 intSave;
@@ -1135,7 +1135,7 @@ LOS_ERREND:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//任务延时等待，释放CPU，等待时间到期后该任务会重新进入ready状态
+///任务延时等待，释放CPU，等待时间到期后该任务会重新进入ready状态
 LITE_OS_SEC_TEXT UINT32 LOS_TaskDelay(UINT32 tick)
 {
     UINT32 intSave;
@@ -1167,7 +1167,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_TaskDelay(UINT32 tick)
 
     return LOS_OK;
 }
-//获取任务的优先级
+///获取任务的优先级
 LITE_OS_SEC_TEXT_MINOR UINT16 LOS_TaskPriGet(UINT32 taskID)
 {
     UINT32 intSave;
@@ -1189,7 +1189,7 @@ LITE_OS_SEC_TEXT_MINOR UINT16 LOS_TaskPriGet(UINT32 taskID)
     SCHEDULER_UNLOCK(intSave);
     return priority;
 }
-//设置指定任务的优先级
+///设置指定任务的优先级
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskPriSet(UINT32 taskID, UINT16 taskPrio)
 {
     UINT32 intSave;
@@ -1223,7 +1223,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskPriSet(UINT32 taskID, UINT16 taskPrio)
     }
     return LOS_OK;
 }
-//设置当前任务的优先级
+///设置当前任务的优先级
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_CurTaskPriSet(UINT16 taskPrio)
 {
     return LOS_TaskPriSet(OsCurrTaskGet()->taskID, taskPrio);
@@ -1318,7 +1318,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskInfoGet(UINT32 taskID, TSK_INFO_S *taskInf
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
-//CPU亲和性（affinity）将任务绑在指定CPU上,用于多核CPU情况,（该函数仅在SMP模式下支持）
+///CPU亲和性（affinity）将任务绑在指定CPU上,用于多核CPU情况,（该函数仅在SMP模式下支持）
 LITE_OS_SEC_TEXT BOOL OsTaskCpuAffiSetUnsafe(UINT32 taskID, UINT16 newCpuAffiMask, UINT16 *oldCpuAffiMask)
 {
 #ifdef LOSCFG_KERNEL_SMP
@@ -1370,7 +1370,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskCpuAffiSet(UINT32 taskID, UINT16 cpuAffiMa
 
     return LOS_OK;
 }
-//查询任务被绑在哪个CPU上
+///查询任务被绑在哪个CPU上
 LITE_OS_SEC_TEXT_MINOR UINT16 LOS_TaskCpuAffiGet(UINT32 taskID)
 {
 #ifdef LOSCFG_KERNEL_SMP
@@ -1525,7 +1525,7 @@ STATIC VOID OsExitGroupActiveTaskKilled(LosProcessCB *processCB, LosTaskCB *task
                   taskCB->processID, OsCurrTaskGet()->taskID, taskCB->taskID, taskCB->taskStatus, ret);
     }
 }
-//1.当前进程中的任务集体退群, 2.当前进程贴上退出标签
+///1.当前进程中的任务集体退群, 2.当前进程贴上退出标签
 LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
 {
     UINT32 intSave;
@@ -1564,7 +1564,7 @@ LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
     LOS_ASSERT(processCB->threadNumber == 1);//这一趟下来,进程只有一个正在活动的任务
     return;
 }
-//任务退群并销毁,进入任务的回收链表之后再进入空闲链表,等着再次被分配使用.
+///任务退群并销毁,进入任务的回收链表之后再进入空闲链表,等着再次被分配使用.
 LITE_OS_SEC_TEXT VOID OsExecDestroyTaskGroup(VOID)
 {
     OsTaskExitGroup(OS_PRO_EXIT_OK);//任务退出
@@ -1596,7 +1596,7 @@ UINT32 OsUserProcessOperatePermissionsCheck(LosTaskCB *taskCB, UINT32 processID)
 
     return LOS_OK;
 }
-//创建任务之前,检查用户态任务栈的参数,是否地址在用户空间
+///创建任务之前,检查用户态任务栈的参数,是否地址在用户空间
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsCreateUserTaskParamCheck(UINT32 processID, TSK_INIT_PARAM_S *param)
 {
     UserTaskParam *userParam = NULL;
@@ -1624,7 +1624,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsCreateUserTaskParamCheck(UINT32 processID,
 
     return LOS_OK;
 }
-//创建一个用户态任务
+///创建一个用户态任务
 LITE_OS_SEC_TEXT_INIT UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam)
 {
     LosProcessCB *processCB = NULL;
@@ -1662,7 +1662,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S
 
     return taskID;
 }
-//获取任务的调度方式
+///获取任务的调度方式
 LITE_OS_SEC_TEXT INT32 LOS_GetTaskScheduler(INT32 taskID)
 {
     UINT32 intSave;
@@ -1829,7 +1829,7 @@ LITE_OS_SEC_TEXT VOID OsWriteResourceEventUnsafe(UINT32 events)
 {
     (VOID)OsEventWriteUnsafe(&g_resourceEvent, events, FALSE, NULL);
 }
-//资源回收任务
+///资源回收任务
 STATIC VOID OsResourceRecoveryTask(VOID)
 {
     UINT32 ret;
@@ -1849,7 +1849,7 @@ STATIC VOID OsResourceRecoveryTask(VOID)
 #endif
     }
 }
-//创建一个回收资源的任务
+///创建一个回收资源的任务
 LITE_OS_SEC_TEXT UINT32 OsResourceFreeTaskCreate(VOID)
 {
     UINT32 ret;

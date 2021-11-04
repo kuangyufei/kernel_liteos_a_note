@@ -186,7 +186,7 @@ LITE_OS_SEC_TEXT STATIC INT32 DoIpcMmap(LosProcessCB *pcb, LosVmMapRegion *regio
     (VOID)LOS_MuxRelease(&pcb->vmSpace->regionMux);
     return ret;
 }
-//将参数线性区设为IPC专用区
+///将参数线性区设为IPC专用区
 LITE_OS_SEC_TEXT STATIC int LiteIpcMmap(struct file *filep, LosVmMapRegion *region)
 {
     int ret = 0;
@@ -236,7 +236,7 @@ ERROR_REGION_OUT:
     pcb->ipcInfo.pool.kvaddr = NULL;
     return ret;
 }
-//ipc内存池初始化
+///ipc内存池初始化
 LITE_OS_SEC_TEXT_INIT UINT32 LiteIpcPoolInit(ProcIpcInfo *ipcInfo)
 {
     ipcInfo->pool.uvaddr = NULL;
@@ -245,7 +245,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LiteIpcPoolInit(ProcIpcInfo *ipcInfo)
     ipcInfo->ipcTaskID = INVAILD_ID;
     return LOS_OK;
 }
-//重置ipc池
+///重置ipc池
 LITE_OS_SEC_TEXT UINT32 LiteIpcPoolReInit(ProcIpcInfo *child, const ProcIpcInfo *parent)
 {
     child->pool.uvaddr = parent->pool.uvaddr;
@@ -278,7 +278,7 @@ LITE_OS_SEC_TEXT VOID LiteIpcPoolDelete(ProcIpcInfo *ipcInfo, UINT32 processID)
         }
     }
 }
-//只有当内核不再访问ipc节点内容时，用户才能释放ipc节点
+///只有当内核不再访问ipc节点内容时，用户才能释放ipc节点
 /* Only when kernel no longer access ipc node content, can user free the ipc node */
 LITE_OS_SEC_TEXT STATIC VOID EnableIpcNodeFreeByUser(UINT32 processID, VOID *buf)//用户释放一个在使用的IPC节点
 {
@@ -291,7 +291,7 @@ LITE_OS_SEC_TEXT STATIC VOID EnableIpcNodeFreeByUser(UINT32 processID, VOID *buf
         IPC_UNLOCK(intSave);
     }
 }
-//分配一个IPC节点
+///分配一个IPC节点
 LITE_OS_SEC_TEXT STATIC VOID* LiteIpcNodeAlloc(UINT32 processID, UINT32 size)
 {
     VOID *ptr = LOS_MemAlloc(OS_PCB_FROM_PID(processID)->ipcInfo.pool.kvaddr, size);
@@ -299,14 +299,14 @@ LITE_OS_SEC_TEXT STATIC VOID* LiteIpcNodeAlloc(UINT32 processID, UINT32 size)
                processID, OS_PCB_FROM_PID(processID)->ipcInfo.pool.kvaddr, ptr, size);
     return ptr;
 }
-//释放一个IPC节点
+///释放一个IPC节点
 LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcNodeFree(UINT32 processID, VOID *buf)
 {
     PRINT_INFO("LiteIpcNodeFree pid:%d, pool:%x buf:%x\n",
                processID, OS_PCB_FROM_PID(processID)->ipcInfo.pool.kvaddr, buf);
     return LOS_MemFree(OS_PCB_FROM_PID(processID)->ipcInfo.pool.kvaddr, buf);
 }
-//是否是IPC节点
+///是否是IPC节点
 LITE_OS_SEC_TEXT STATIC BOOL IsIpcNode(UINT32 processID, const VOID *buf)
 {
     IpcUsedNode *node = NULL;
@@ -323,14 +323,14 @@ LITE_OS_SEC_TEXT STATIC BOOL IsIpcNode(UINT32 processID, const VOID *buf)
     IPC_UNLOCK(intSave);
     return FALSE;
 }
-//获得IPC用户空间地址
+///获得IPC用户空间地址
 LITE_OS_SEC_TEXT STATIC INTPTR GetIpcUserAddr(UINT32 processID, INTPTR kernelAddr)
 {
     IpcPool pool = OS_PCB_FROM_PID(processID)->ipcInfo.pool;
     INTPTR offset = (INTPTR)(pool.uvaddr) - (INTPTR)(pool.kvaddr);
     return kernelAddr + offset;
 }
-//获得IPC内核空间地址
+///获得IPC内核空间地址
 LITE_OS_SEC_TEXT STATIC INTPTR GetIpcKernelAddr(UINT32 processID, INTPTR userAddr)
 {
     IpcPool pool = OS_PCB_FROM_PID(processID)->ipcInfo.pool;
@@ -448,7 +448,7 @@ LITE_OS_SEC_TEXT STATIC BOOL HasServiceAccess(UINT32 serviceHandle)
     }
     return OS_TCB_FROM_TID(serviceTid)->accessMap[curProcessID];
 }
-//设置ipc任务ID
+///设置ipc任务ID
 LITE_OS_SEC_TEXT STATIC UINT32 SetIpcTask(VOID)
 {
     if (OsCurrProcessGet()->ipcInfo.ipcTaskID == INVAILD_ID) {
@@ -458,7 +458,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 SetIpcTask(VOID)
     PRINT_ERR("curprocess %d IpcTask already set!\n", OsCurrProcessGet()->processID);
     return -EINVAL;
 }
-//是否设置ipc任务ID
+///是否设置ipc任务ID
 LITE_OS_SEC_TEXT BOOL IsIpcTaskSet(VOID)
 {
     if (OsCurrProcessGet()->ipcInfo.ipcTaskID == INVAILD_ID) {
@@ -466,7 +466,7 @@ LITE_OS_SEC_TEXT BOOL IsIpcTaskSet(VOID)
     }
     return TRUE;
 }
-//获取
+///获取
 LITE_OS_SEC_TEXT STATIC UINT32 GetIpcTaskID(UINT32 processID, UINT32 *ipcTaskID)
 {
     if (OS_PCB_FROM_PID(processID)->ipcInfo.ipcTaskID == INVAILD_ID) {
@@ -475,7 +475,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 GetIpcTaskID(UINT32 processID, UINT32 *ipcTaskID)
     *ipcTaskID = OS_PCB_FROM_PID(processID)->ipcInfo.ipcTaskID;
     return LOS_OK;
 }
-//发送死亡消息
+///发送死亡消息
 LITE_OS_SEC_TEXT STATIC UINT32 SendDeathMsg(UINT32 processID, UINT32 serviceHandle)
 {
     UINT32 ipcTaskID;
@@ -579,7 +579,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 SetCms(UINTPTR maxMsgSize)
     (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
     return -EEXIST;
 }
-//是否注册了CMS服务
+///是否注册了CMS服务
 LITE_OS_SEC_TEXT STATIC BOOL IsCmsSet(VOID)
 {
     BOOL ret;
@@ -921,7 +921,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
     }
     return LOS_OK;
 }
-//写IPC消息队列
+///写IPC消息队列
 LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcWrite(IpcContent *content)
 {
     UINT32 ret, intSave;
@@ -1186,7 +1186,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleCmsCmd(CmsCmdContent *content)
     }
     return ret;
 }
-//设置IPC控制参数
+///设置IPC控制参数
 LITE_OS_SEC_TEXT int LiteIpcIoctl(struct file *filep, int cmd, unsigned long arg)
 {
     UINT32 ret = LOS_OK;

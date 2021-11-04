@@ -51,7 +51,7 @@ STATIC VOID OsVmPageInit(LosVmPage *page, paddr_t pa, UINT8 segID)
     page->order = VM_LIST_ORDER_MAX;	//初始化值,不属于任何块组
     page->nPages = 0;
 }
-//伙伴算法初始化
+///伙伴算法初始化
 STATIC INLINE VOID OsVmPageOrderListInit(LosVmPage *page, size_t nPages)
 {//@note_why 此时所有页面 page->order = VM_LIST_ORDER_MAX,能挂入伙伴算法的链表吗?
     OsVmPhysPagesFreeContiguous(page, nPages);//释放连续的物理页框
@@ -113,7 +113,7 @@ VOID OsVmPageStartup(VOID)
         OsVmPageOrderListInit(seg->pageBase, nPage);//伙伴算法初始化,将所有页加入空闲链表供分配
     }
 }
-//通过物理地址获取页框
+///通过物理地址获取页框
 LosVmPage *LOS_VmPageGet(PADDR_T paddr)
 {
     INT32 segID;

@@ -99,7 +99,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventInit(PEVENT_CB_S eventCB)
     OsHookCall(LOS_HOOK_TYPE_EVENT_INIT, eventCB);
     return LOS_OK;
 }
-//事件参数检查
+///事件参数检查
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventParamCheck(const VOID *ptr, UINT32 eventMask, UINT32 mode)
 {
     if (ptr == NULL) {
@@ -121,7 +121,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventParamCheck(const VOID *ptr, UINT32 eventMa
     }
     return LOS_OK;
 }
-//根据用户传入的事件值、事件掩码及校验模式，返回用户传入的事件是否符合预期
+///根据用户传入的事件值、事件掩码及校验模式，返回用户传入的事件是否符合预期
 LITE_OS_SEC_TEXT UINT32 OsEventPoll(UINT32 *eventID, UINT32 eventMask, UINT32 mode)
 {
     UINT32 ret = 0;
@@ -145,7 +145,7 @@ LITE_OS_SEC_TEXT UINT32 OsEventPoll(UINT32 *eventID, UINT32 eventMask, UINT32 mo
 
     return ret;
 }
-//检查读事件
+///检查读事件
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadCheck(const PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode)
 {
     UINT32 ret;
@@ -167,7 +167,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadCheck(const PEVENT_CB_S eventCB, UINT3
     }
     return LOS_OK;
 }
-//读取指定事件类型的实现函数，超时时间为相对时间：单位为Tick
+///读取指定事件类型的实现函数，超时时间为相对时间：单位为Tick
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadImp(PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode,
                                               UINT32 timeout, BOOL once)
 {
@@ -201,7 +201,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadImp(PEVENT_CB_S eventCB, UINT32 eventM
     }
     return ret;
 }
-//读取指定事件类型，超时时间为相对时间：单位为Tick
+///读取指定事件类型，超时时间为相对时间：单位为Tick
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventRead(PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode, UINT32 timeout,
                                            BOOL once)
 {
@@ -218,7 +218,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventRead(PEVENT_CB_S eventCB, UINT32 eventMask
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//事件恢复操作
+///事件恢复操作
 LITE_OS_SEC_TEXT STATIC UINT8 OsEventResume(LosTaskCB *resumedTask, const PEVENT_CB_S eventCB, UINT32 events)
 {
     UINT8 exitFlag = 0;//是否唤醒
@@ -235,7 +235,7 @@ LITE_OS_SEC_TEXT STATIC UINT8 OsEventResume(LosTaskCB *resumedTask, const PEVENT
 
     return exitFlag;
 }
-//以不安全的方式写事件
+///以不安全的方式写事件
 LITE_OS_SEC_TEXT VOID OsEventWriteUnsafe(PEVENT_CB_S eventCB, UINT32 events, BOOL once, UINT8 *exitFlag)
 {
     LosTaskCB *resumedTask = NULL;
@@ -261,7 +261,7 @@ LITE_OS_SEC_TEXT VOID OsEventWriteUnsafe(PEVENT_CB_S eventCB, UINT32 events, BOO
         *exitFlag = 1;
     }
 }
-//写入事件
+///写入事件
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventWrite(PEVENT_CB_S eventCB, UINT32 events, BOOL once)
 {
     UINT32 intSave;
@@ -285,7 +285,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventWrite(PEVENT_CB_S eventCB, UINT32 events, 
     }
     return LOS_OK;
 }
-//根据用户传入的事件值、事件掩码及校验模式，返回用户传入的事件是否符合预期
+///根据用户传入的事件值、事件掩码及校验模式，返回用户传入的事件是否符合预期
 LITE_OS_SEC_TEXT UINT32 LOS_EventPoll(UINT32 *eventID, UINT32 eventMask, UINT32 mode)
 {
     UINT32 ret;
@@ -301,28 +301,28 @@ LITE_OS_SEC_TEXT UINT32 LOS_EventPoll(UINT32 *eventID, UINT32 eventMask, UINT32 
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//读取指定事件类型，超时时间为相对时间：单位为Tick
+///读取指定事件类型，超时时间为相对时间：单位为Tick
 LITE_OS_SEC_TEXT UINT32 LOS_EventRead(PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode, UINT32 timeout)
 {
     return OsEventRead(eventCB, eventMask, mode, timeout, FALSE);
 }
-//写指定的事件类型
+///写指定的事件类型
 LITE_OS_SEC_TEXT UINT32 LOS_EventWrite(PEVENT_CB_S eventCB, UINT32 events)
 {
     return OsEventWrite(eventCB, events, FALSE);
 }
-//只读一次事件
+///只读一次事件
 LITE_OS_SEC_TEXT_MINOR UINT32 OsEventReadOnce(PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode,
                                               UINT32 timeout)
 {
     return OsEventRead(eventCB, eventMask, mode, timeout, TRUE);
 }
-//只写一次事件
+///只写一次事件
 LITE_OS_SEC_TEXT_MINOR UINT32 OsEventWriteOnce(PEVENT_CB_S eventCB, UINT32 events)
 {
     return OsEventWrite(eventCB, events, TRUE);
 }
-//销毁指定的事件控制块
+///销毁指定的事件控制块
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventDestroy(PEVENT_CB_S eventCB)
 {
     UINT32 intSave;
@@ -343,7 +343,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventDestroy(PEVENT_CB_S eventCB)
     OsHookCall(LOS_HOOK_TYPE_EVENT_DESTROY, eventCB);
     return LOS_OK;
 }
-//清除指定的事件类型
+///清除指定的事件类型
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_EventClear(PEVENT_CB_S eventCB, UINT32 eventMask)
 {
     UINT32 intSave;
@@ -358,7 +358,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_EventClear(PEVENT_CB_S eventCB, UINT32 eventMa
 
     return LOS_OK;
 }
-//有条件式读事件
+///有条件式读事件
 #ifdef LOSCFG_COMPAT_POSIX
 LITE_OS_SEC_TEXT UINT32 OsEventReadWithCond(const EventCond *cond, PEVENT_CB_S eventCB,
                                             UINT32 eventMask, UINT32 mode, UINT32 timeout)

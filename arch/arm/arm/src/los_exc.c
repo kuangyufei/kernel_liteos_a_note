@@ -514,7 +514,7 @@ STATIC VOID OsExcRegsInfo(const ExcContext *excBufAddr)
                  excBufAddr->R7, excBufAddr->R8, excBufAddr->R9, excBufAddr->R10,
                  excBufAddr->R11, excBufAddr->R12, excBufAddr->regCPSR);
 }
-//注册异常处理钩子
+///注册异常处理钩子
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_ExcRegHook(EXC_PROC_FUNC excHook)
 {
     UINT32 intSave;
@@ -525,12 +525,12 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_ExcRegHook(EXC_PROC_FUNC excHook)
 
     return LOS_OK;
 }
-//获取hook函数
+///获取hook函数
 EXC_PROC_FUNC OsExcRegHookGet(VOID)
 {
     return g_excHook;
 }
-//dump 虚拟空间下异常虚拟地址线性区
+///dump 虚拟空间下异常虚拟地址线性区
 #ifdef LOSCFG_KERNEL_VM
 STATIC VOID OsDumpExcVaddrRegion(LosVmSpace *space, LosVmMapRegion *region)
 {
@@ -583,7 +583,7 @@ STATIC VOID OsDumpExcVaddrRegion(LosVmSpace *space, LosVmMapRegion *region)
         startPaddr = 0;
     }
 }
-//dump 进程使用的内存线性区
+///dump 进程使用的内存线性区
 STATIC VOID OsDumpProcessUsedMemRegion(LosProcessCB *runProcess, LosVmSpace *runspace, UINT16 vmmFlags)
 {
     LosVmMapRegion *region = NULL;
@@ -603,7 +603,7 @@ STATIC VOID OsDumpProcessUsedMemRegion(LosProcessCB *runProcess, LosVmSpace *run
     (VOID) OsRegionOverlapCheckUnlock(runspace, region);
     RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNodeTemp, pstRbNodeNext)
 }
-//dump 进程使用的内存节点
+///dump 进程使用的内存节点
 STATIC VOID OsDumpProcessUsedMemNode(UINT16 vmmFalgs)
 {
     LosProcessCB *runProcess = NULL;
@@ -658,7 +658,7 @@ VOID OsDumpContextMem(const ExcContext *excBufAddr)
         OsDumpMemByte(DUMPSIZE, (excBufAddr->SP - (DUMPSIZE >> 1)));
     }
 }
-//异常恢复,继续执行
+///异常恢复,继续执行
 STATIC VOID OsExcRestore(VOID)
 {
     UINT32 currCpuID = ArchCurrCpuid(); //获取当前CPU ID
@@ -671,7 +671,7 @@ STATIC VOID OsExcRestore(VOID)
 #endif
     OsPercpuGet()->taskLockCnt = 0;
 }
-//用户态异常处理函数
+///用户态异常处理函数
 STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 {
     UINT32 intSave;
@@ -742,7 +742,7 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
     g_intCount[currCpu]++;
     PrintExcInfo("User mode exception ends unscheduled!\n");
 }
-//此函数用于验证fp或验证检查开始和结束范围
+///此函数用于验证fp或验证检查开始和结束范围
 //sp是上级函数即调用者的堆栈首地址，fp是上级函数的堆栈结束地址
 /* this function is used to validate fp or validate the checking range start and end. */
 STATIC INLINE BOOL IsValidFP(UINTPTR regFP, UINTPTR start, UINTPTR end, vaddr_t *vaddr)
@@ -780,7 +780,7 @@ STATIC INLINE BOOL IsValidFP(UINTPTR regFP, UINTPTR start, UINTPTR end, vaddr_t 
 
     return TRUE;
 }
-//找到一个合适的栈
+///找到一个合适的栈
 STATIC INLINE BOOL FindSuitableStack(UINTPTR regFP, UINTPTR *start, UINTPTR *end, vaddr_t *vaddr)
 {
     UINT32 index, stackStart, stackEnd;
@@ -990,19 +990,19 @@ VOID BackTraceSub(UINTPTR regFP)
 {
     (VOID) BackTraceGet(regFP, NULL, OS_MAX_BACKTRACE);
 }
-//打印调用栈信息
+///打印调用栈信息
 VOID BackTrace(UINT32 regFP) //fp:R11寄存器
 {
     PrintExcInfo("*******backtrace begin*******\n");
 
     BackTraceSub(regFP);
 }
-//异常接管模块的初始化
+///异常接管模块的初始化
 VOID OsExcInit(VOID)
 {
     OsExcStackInfoReg(g_excStack, sizeof(g_excStack) / sizeof(g_excStack[0])); //异常模式下注册内核栈信息
 }
-//由注册后回调,发送异常情况下会回调这里执行,见于 OsUndefIncExcHandleEntry, OsExcHandleEntry ==函数
+///由注册后回调,发送异常情况下会回调这里执行,见于 OsUndefIncExcHandleEntry, OsExcHandleEntry ==函数
 VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 {                                             //参考文档 https://gitee.com/openharmony/docs/blob/master/kernel/%E7%94%A8%E6%88%B7%E6%80%81%E5%BC%82%E5%B8%B8%E4%BF%A1%E6%81%AF%E8%AF%B4%E6%98%8E.md
     OsExcType(excType, excBufAddr, far, fsr); //1.打印异常的类型
@@ -1035,7 +1035,7 @@ VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 
     OsUserExcHandle(excBufAddr); //用户态下异常的处理
 }
-//打印调用栈信息
+///打印调用栈信息
 VOID OsCallStackInfo(VOID)
 {
     UINT32 count = 0;
@@ -1101,7 +1101,7 @@ VOID OsBackTrace(VOID)
     PrintExcInfo("runTask->taskID = %u\n", runTask->taskID);
     BackTrace(regFP);
 }
-//未定义的异常处理函数，由汇编调用 见于 los_hw_exc.s
+///未定义的异常处理函数，由汇编调用 见于 los_hw_exc.s
 #ifdef LOSCFG_GDB
 VOID OsUndefIncExcHandleEntry(ExcContext *excBufAddr)
 {
@@ -1121,7 +1121,7 @@ VOID OsUndefIncExcHandleEntry(ExcContext *excBufAddr)
     {
     }
 }
-//预取指令异常处理函数，由汇编调用 见于 los_hw_exc.s
+///预取指令异常处理函数，由汇编调用 见于 los_hw_exc.s
 #if __LINUX_ARM_ARCH__ >= 7
 VOID OsPrefetchAbortExcHandleEntry(ExcContext *excBufAddr)
 {
@@ -1145,7 +1145,7 @@ VOID OsPrefetchAbortExcHandleEntry(ExcContext *excBufAddr)
     {
     }
 }
-//数据中止异常处理函数，由汇编调用 见于 los_hw_exc.s
+///数据中止异常处理函数，由汇编调用 见于 los_hw_exc.s
 VOID OsDataAbortExcHandleEntry(ExcContext *excBufAddr)
 {
     UINT32 far;
@@ -1198,7 +1198,7 @@ STATIC VOID OsAllCpuStatusOutput(VOID)
     }
     PrintExcInfo("The current handling the exception is cpu%u !\n", ArchCurrCpuid()); //当前正在处理异常的CPU是:
 }
-//等待所有CPU停止
+///等待所有CPU停止
 STATIC VOID WaitAllCpuStop(UINT32 cpuID)
 {
     UINT32 i;
@@ -1245,7 +1245,7 @@ STATIC VOID OsWaitOtherCoresHandleExcEnd(UINT32 currCpuID)
         LOS_Mdelay(EXC_WAIT_INTER);
     }
 }
-//检查所有CPU的状态
+///检查所有CPU的状态
 STATIC VOID OsCheckAllCpuStatus(VOID)
 {
     UINT32 currCpuID = ArchCurrCpuid();
@@ -1320,7 +1320,7 @@ STATIC VOID OsCheckCpuStatus(VOID)
     g_currHandleExcCpuID = ArchCurrCpuid();
 #endif
 }
-//执行期间的优先处理 excBufAddr为CPU异常上下文，
+///执行期间的优先处理 excBufAddr为CPU异常上下文，
 LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 {
     if ((excBufAddr->regCPSR & CPSR_MASK_MODE) == CPSR_USER_MODE)
@@ -1345,7 +1345,7 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 #endif
 #endif
 }
-//异常信息头部打印
+///异常信息头部打印
 LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
 {
 #ifdef LOSCFG_BLACKBOX

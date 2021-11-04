@@ -65,7 +65,7 @@ int pthread_attr_destroy(pthread_attr_t *attr)
     /* Nothing to do here... */
     return ENOERR;
 }
-//设置分离状态(分离和联合) 如果创建分离线程 (PTHREAD_CREATE_DETACHED)，则该线程一退出，便可重用其线程 ID 和其他资源。
+///设置分离状态(分离和联合) 如果创建分离线程 (PTHREAD_CREATE_DETACHED)，则该线程一退出，便可重用其线程 ID 和其他资源。
 int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachState)
 {
     if ((attr != NULL) && ((detachState == PTHREAD_CREATE_JOINABLE) || (detachState == PTHREAD_CREATE_DETACHED))) {
@@ -75,7 +75,7 @@ int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachState)
 
     return EINVAL;
 }
-//获取分离状态
+///获取分离状态
 int pthread_attr_getdetachstate(const pthread_attr_t *attr, int *detachState)
 {
     if ((attr == NULL) || (detachState == NULL)) {
@@ -86,7 +86,7 @@ int pthread_attr_getdetachstate(const pthread_attr_t *attr, int *detachState)
 
     return ENOERR;
 }
-//设置线程的竞争范围（PTHREAD_SCOPE_SYSTEM 或 PTHREAD_SCOPE_PROCESS）。 
+///设置线程的竞争范围（PTHREAD_SCOPE_SYSTEM 或 PTHREAD_SCOPE_PROCESS）。 
 //使用 PTHREAD_SCOPE_SYSTEM 时，此线程将与系统中的所有线程进行竞争。
 //使用 PTHREAD_SCOPE_PROCESS 时，此线程将与进程中的其他线程进行竞争。
 int pthread_attr_setscope(pthread_attr_t *attr, int scope)
@@ -106,7 +106,7 @@ int pthread_attr_setscope(pthread_attr_t *attr, int scope)
 
     return EINVAL;
 }
-//获取线程的竞争范围
+///获取线程的竞争范围
 int pthread_attr_getscope(const pthread_attr_t *attr, int *scope)
 {
     if ((attr == NULL) || (scope == NULL)) {
@@ -117,7 +117,7 @@ int pthread_attr_getscope(const pthread_attr_t *attr, int *scope)
 
     return ENOERR;
 }
-//设置继承的调度策略, PTHREAD_INHERIT_SCHED 表示新建的线程将继承创建者线程中定义的调度策略。
+///设置继承的调度策略, PTHREAD_INHERIT_SCHED 表示新建的线程将继承创建者线程中定义的调度策略。
 //将忽略在 pthread_create() 调用中定义的所有调度属性。如果使用缺省值 PTHREAD_EXPLICIT_SCHED，则将使用 pthread_create() 调用中的属性
 int pthread_attr_setinheritsched(pthread_attr_t *attr, int inherit)
 {
@@ -128,7 +128,7 @@ int pthread_attr_setinheritsched(pthread_attr_t *attr, int inherit)
 
     return EINVAL;
 }
-//获取继承的调度策略
+///获取继承的调度策略
 int pthread_attr_getinheritsched(const pthread_attr_t *attr, int *inherit)
 {
     if ((attr == NULL) || (inherit == NULL)) {
@@ -139,7 +139,7 @@ int pthread_attr_getinheritsched(const pthread_attr_t *attr, int *inherit)
 
     return ENOERR;
 }
-//设置调度策略,POSIX 标准指定 SCHED_FIFO（先入先出）、SCHED_RR（抢占）或 SCHED_OTHER（实现定义的方法）的调度策略属性。
+///设置调度策略,POSIX 标准指定 SCHED_FIFO（先入先出）、SCHED_RR（抢占）或 SCHED_OTHER（实现定义的方法）的调度策略属性。
 int pthread_attr_setschedpolicy(pthread_attr_t *attr, int policy)
 {
     if ((attr != NULL) && (policy == SCHED_RR)) {
@@ -149,7 +149,7 @@ int pthread_attr_setschedpolicy(pthread_attr_t *attr, int policy)
 
     return EINVAL;
 }
-//获取调度策略
+///获取调度策略
 int pthread_attr_getschedpolicy(const pthread_attr_t *attr, int *policy)
 {
     if ((attr == NULL) || (policy == NULL)) {
@@ -160,7 +160,7 @@ int pthread_attr_getschedpolicy(const pthread_attr_t *attr, int *policy)
 
     return ENOERR;
 }
-//设置线程属性对象的调度参数属性,调度参数是在 param 结构中定义的。仅支持优先级参数。新创建的线程使用此优先级运行。
+///设置线程属性对象的调度参数属性,调度参数是在 param 结构中定义的。仅支持优先级参数。新创建的线程使用此优先级运行。
 int pthread_attr_setschedparam(pthread_attr_t *attr, const struct sched_param *param)
 {
     if ((attr == NULL) || (param == NULL)) {
@@ -173,7 +173,7 @@ int pthread_attr_setschedparam(pthread_attr_t *attr, const struct sched_param *p
 
     return ENOERR;
 }
-//获取线程属性对象的调度参数属性
+///获取线程属性对象的调度参数属性
 int pthread_attr_getschedparam(const pthread_attr_t *attr, struct sched_param *param)
 {
     if ((attr == NULL) || (param == NULL)) {
@@ -202,7 +202,7 @@ int pthread_attr_setstackaddr(pthread_attr_t *attr, void *stackAddr)
 
     return ENOERR;
 }
-//获取栈起始地址
+///获取栈起始地址
 int pthread_attr_getstackaddr(const pthread_attr_t *attr, void **stackAddr)
 {
     if (((attr != NULL) && (stackAddr != NULL)) && attr->stackaddr_set) {
@@ -212,7 +212,7 @@ int pthread_attr_getstackaddr(const pthread_attr_t *attr, void **stackAddr)
 
     return EINVAL; /* Stack address not set, return EINVAL. */
 }
-//设置栈大小
+///设置栈大小
 int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stackSize)
 {
     /* Reject inadequate stack sizes *///拒绝不合适的堆栈尺寸
@@ -225,7 +225,7 @@ int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stackSize)
 
     return ENOERR;
 }
-//获取栈大小
+///获取栈大小
 int pthread_attr_getstacksize(const pthread_attr_t *attr, size_t *stackSize)
 {
     /* Reject attempts to get a stack size when one has not been set. */
@@ -252,7 +252,7 @@ int pthread_attr_setaffinity_np(pthread_attr_t* attr, size_t cpusetsize, const c
         attr->cpuset.__bits[0] = 0;
         return ENOERR;
     }
-//cpu_set_t这个结构体的理解类似于select中的fd_set，可以理解为cpu集，也是通过约定好的宏来进行清除、设置以及判断
+///cpu_set_t这个结构体的理解类似于select中的fd_set，可以理解为cpu集，也是通过约定好的宏来进行清除、设置以及判断
     if ((cpusetsize != sizeof(cpu_set_t)) || (cpuset->__bits[0] > LOSCFG_KERNEL_CPU_MASK)) {
         return EINVAL;
     }

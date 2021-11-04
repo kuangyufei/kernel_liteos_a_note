@@ -851,7 +851,7 @@ EXIT:
     OsDeInitPCB(processCB);//删除进程控制块,归还内存
     return ret;
 }
-//创建2,0号进程,即内核态进程的老祖宗
+/*! 创建2,0号进程,即内核态进程的老祖宗*/
 LITE_OS_SEC_TEXT_INIT UINT32 OsSystemProcessCreate(VOID)
 {
     UINT32 ret = OsProcessInit();
@@ -894,7 +894,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSystemProcessCreate(VOID)
 
     return LOS_OK;
 }
-//进程调度参数检查
+/// 进程调度参数检查
 STATIC INLINE INT32 OsProcessSchedlerParamCheck(INT32 which, INT32 pid, UINT16 prio, UINT16 policy)
 {
     if (OS_PID_CHECK_INVALID(pid)) {//进程ID是否有效，默认 g_processMaxNum = 64
@@ -938,7 +938,7 @@ STATIC BOOL OsProcessCapPermitCheck(const LosProcessCB *processCB, UINT16 prio)
     return FALSE;
 }
 #endif
-//设置进程调度计划
+/// 设置进程调度计划
 LITE_OS_SEC_TEXT INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio, UINT16 policy)
 {
     LosProcessCB *processCB = NULL;
@@ -978,12 +978,12 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);//还锁
     return -ret;
 }
-//设置指定进程的调度参数，包括优先级和调度策略
+/// 设置指定进程的调度参数，包括优先级和调度策略
 LITE_OS_SEC_TEXT INT32 LOS_SetProcessScheduler(INT32 pid, UINT16 policy, UINT16 prio)
 {
     return OsSetProcessScheduler(LOS_PRIO_PROCESS, pid, prio, policy);
 }
-//获得指定进程的调度策略
+/// 获得指定进程的调度策略
 LITE_OS_SEC_TEXT INT32 LOS_GetProcessScheduler(INT32 pid)
 {
     UINT32 intSave;
@@ -1003,12 +1003,12 @@ LITE_OS_SEC_TEXT INT32 LOS_GetProcessScheduler(INT32 pid)
 
     return LOS_SCHED_RR;
 }
-//接口封装 - 设置进程优先级
+/// 接口封装 - 设置进程优先级
 LITE_OS_SEC_TEXT INT32 LOS_SetProcessPriority(INT32 pid, UINT16 prio)
 {
     return OsSetProcessScheduler(LOS_PRIO_PROCESS, pid, prio, LOS_GetProcessScheduler(pid));
 }
-//接口封装 - 获取进程优先级 which:标识进程,进程组,用户
+/// 接口封装 - 获取进程优先级 which:标识进程,进程组,用户
 LITE_OS_SEC_TEXT INT32 OsGetProcessPriority(INT32 which, INT32 pid)
 {
     LosProcessCB *processCB = NULL;
@@ -1037,14 +1037,16 @@ OUT:
     SCHEDULER_UNLOCK(intSave);
     return prio;
 }
-//接口封装 - 获取指定进程优先级
+/// 接口封装 - 获取指定进程优先级
 LITE_OS_SEC_TEXT INT32 LOS_GetProcessPriority(INT32 pid)
 {
     return OsGetProcessPriority(LOS_PRIO_PROCESS, pid);
 }
 
-//将任务挂入进程的waitList链表,表示这个任务在等待某个进程的退出
-//当被等待进程退出时候会将自己挂到父进程的退出子进程链表和进程组的退出进程链表.
+/*! 
+* 将任务挂入进程的waitList链表,表示这个任务在等待某个进程的退出
+* 当被等待进程退出时候会将自己挂到父进程的退出子进程链表和进程组的退出进程链表.
+*/
 STATIC VOID OsWaitInsertWaitListInOrder(LosTaskCB *runTask, LosProcessCB *processCB)
 {
     LOS_DL_LIST *head = &processCB->waitList;
@@ -1077,7 +1079,7 @@ STATIC VOID OsWaitInsertWaitListInOrder(LosTaskCB *runTask, LosProcessCB *proces
     (VOID)OsSchedTaskWait(list->pstNext, LOS_WAIT_FOREVER, TRUE);
     return;
 }
-//设置等待子进程退出方式方法
+/// 设置等待子进程退出方式方法
 STATIC UINT32 OsWaitSetFlag(const LosProcessCB *processCB, INT32 pid, LosProcessCB **child)
 {
     LosProcessCB *childCB = NULL;
@@ -1134,7 +1136,7 @@ WAIT_BACK:
     *child = childCB;
     return LOS_OK;
 }
-//等待回收孩子进程 @note_thinking 这样写Porcess不太好吧
+/// 等待回收孩子进程 @note_thinking 这样写Porcess不太好吧
 STATIC UINT32 OsWaitRecycleChildProcess(const LosProcessCB *childCB, UINT32 intSave, INT32 *status, siginfo_t *info)
 {
     ProcessGroup *group = NULL;
@@ -1189,7 +1191,7 @@ STATIC UINT32 OsWaitRecycleChildProcess(const LosProcessCB *childCB, UINT32 intS
     (VOID)LOS_MemFree(m_aucSysMem1, group);
     return pid;
 }
-//检查要等待的孩子进程
+/// 检查要等待的孩子进程
 STATIC UINT32 OsWaitChildProcessCheck(LosProcessCB *processCB, INT32 pid, LosProcessCB **childCB)
 {	//当进程没有孩子且没有退出的孩子进程
     if (LOS_ListEmpty(&(processCB->childrenList)) && LOS_ListEmpty(&(processCB->exitChildList))) {
@@ -1218,7 +1220,7 @@ STATIC UINT32 OsWaitOptionsCheck(UINT32 options)
 
     return LOS_OK;
 }	
-//等待子进程结束并回收子进程,返回已经终止的子进程的进程ID号，并清除僵死进程。
+///等待子进程结束并回收子进程,返回已经终止的子进程的进程ID号，并清除僵死进程。
 STATIC INT32 OsWait(INT32 pid, USER INT32 *status, USER siginfo_t *info, UINT32 options, VOID *rusage)
 {
     (VOID)rusage;
@@ -1321,7 +1323,7 @@ LITE_OS_SEC_TEXT INT32 LOS_Waitid(INT32 pid, USER siginfo_t *info, UINT32 option
     return OsWait(pid, NULL, info, options, NULL);
 }
 
-//设置进程组检查
+/// 设置进程组检查
 STATIC UINT32 OsSetProcessGroupCheck(const LosProcessCB *processCB, UINT32 gid)
 {
     LosProcessCB *runProcessCB = OsCurrProcessGet();//拿到当前运行进程
@@ -1441,12 +1443,12 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);
     return gid;
 }
-//获取当前进程的组ID
+/// 获取当前进程的组ID
 LITE_OS_SEC_TEXT INT32 LOS_GetCurrProcessGroupID(VOID)
 {
     return LOS_GetProcessGroupID(OsCurrProcessGet()->processID);
 }
-//为用户态任务分配栈空间
+/// 为用户态任务分配栈空间
 #ifdef LOSCFG_KERNEL_VM
 STATIC LosProcessCB *OsGetFreePCB(VOID)
 {
@@ -1486,9 +1488,15 @@ STATIC VOID *OsUserInitStackAlloc(LosProcessCB *processCB, UINT32 *size)
 
     return (VOID *)(UINTPTR)region->range.base;
 }
-/**************************************************
-进程的回收再利用,被LOS_DoExecveFile调用
-**************************************************/
+
+/**
+ * @brief 进程的回收再利用,被LOS_DoExecveFile调用
+ * @param processCB 
+ * @param name 
+ * @param oldSpace 
+ * @param oldFiles 
+ * @return LITE_OS_SEC_TEXT 
+ */
 LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR *name,
                                              LosVmSpace *oldSpace, UINTPTR oldFiles)
 {
@@ -1539,7 +1547,7 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
 
     return LOS_OK;
 }
-//执行用户态任务, entry为入口函数 ,其中 创建好task,task上下文 等待调度真正执行, sp:栈指针 mapBase:栈底 mapSize:栈大小
+/// 执行用户态任务, entry为入口函数 ,其中 创建好task,task上下文 等待调度真正执行, sp:栈指针 mapBase:栈底 mapSize:栈大小
 LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBase, UINT32 mapSize)
 {
     UINT32 intSave;
@@ -1570,7 +1578,7 @@ LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINT
     SCHEDULER_UNLOCK(intSave);//解锁
     return LOS_OK;
 }
-//用户进程开始初始化
+/// 用户进程开始初始化
 STATIC UINT32 OsUserInitProcessStart(UINT32 processID, TSK_INIT_PARAM_S *param)
 {
     UINT32 intSave;
@@ -1699,7 +1707,7 @@ ERROR:
     OsDeInitPCB(processCB);
     return ret;
 }
-//拷贝用户信息 直接用memcpy_s
+/// 拷贝用户信息 直接用memcpy_s
 STATIC UINT32 OsCopyUser(LosProcessCB *childCB, LosProcessCB *parentCB)
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY

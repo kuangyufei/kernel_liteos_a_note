@@ -104,14 +104,14 @@ static VOID MtdNandParamAssign(partition_param *nandParam, const struct MtdDev *
     nandParam->partition_head = g_nandPartitionHead;//头分区节点
     nandParam->block_size = nandMtd->eraseSize;//4K
 }
-//反初始化
+///反初始化
 static VOID MtdDeinitNandParam(VOID)
 {
     if (YaffsLockDeinit != NULL) {
         YaffsLockDeinit();
     }
 }
-//nand flash 初始化
+///nand flash 初始化
 static partition_param *MtdInitNandParam(partition_param *nandParam)
 {
     struct MtdDev *nandMtd = GetMtd("nand");
@@ -139,7 +139,7 @@ static partition_param *MtdInitNandParam(partition_param *nandParam)
 
     return nandParam;
 }
-//nor flash 初始化,本函数只会被调用一次
+///nor flash 初始化,本函数只会被调用一次
 static VOID MtdNorParamAssign(partition_param *spinorParam, const struct MtdDev *spinorMtd)
 {
     LOS_ListInit(&g_spinorPartitionHead->node_info);//初始化全局链表,所有spi nor 分区节点都将挂上来
@@ -169,7 +169,7 @@ static VOID MtdDeinitSpinorParam(VOID)
         Jffs2LockDeinit();
     }
 }
-//spi nor flash 参数初始化
+///spi nor flash 参数初始化
 static partition_param *MtdInitSpinorParam(partition_param *spinorParam)
 {
 #ifndef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7 //
@@ -205,7 +205,7 @@ static partition_param *MtdInitSpinorParam(partition_param *spinorParam)
 
     return spinorParam;
 }
-//根据 flash-type 来初始化分区的参数, Fspar 是不是 flash partition 的意思? 这名字取得有点费解 @note_thinking 
+///根据 flash-type 来初始化分区的参数, Fspar 是不是 flash partition 的意思? 这名字取得有点费解 @note_thinking 
 /* According the flash-type to init the param of the partition. */
 static INT32 MtdInitFsparParam(const CHAR *type, partition_param **fsparParam)
 {
@@ -225,7 +225,7 @@ static INT32 MtdInitFsparParam(const CHAR *type, partition_param **fsparParam)
 
     return ENOERR;
 }
-//根据flash-type 去初始化 分区的参数。
+///根据flash-type 去初始化 分区的参数。
 /* According the flash-type to deinit the param of the partition. */
 static INT32 MtdDeinitFsparParam(const CHAR *type)
 {
@@ -241,7 +241,7 @@ static INT32 MtdDeinitFsparParam(const CHAR *type)
 
     return ENOERR;
 }
-//增加MTD分区参数检查
+///增加MTD分区参数检查
 static INT32 AddParamCheck(UINT32 startAddr,
                            const partition_param *param,
                            UINT32 partitionNum,
@@ -275,7 +275,7 @@ static INT32 AddParamCheck(UINT32 startAddr,
 
     return ENOERR;
 }
-//注册块设备,此函数之后设备将支持VFS访问
+///注册块设备,此函数之后设备将支持VFS访问
 static INT32 BlockDriverRegisterOperate(mtd_partition *newNode,
                                         const partition_param *param,
                                         UINT32 partitionNum)
@@ -311,7 +311,7 @@ static INT32 BlockDriverRegisterOperate(mtd_partition *newNode,
     }
     return ENOERR;
 }
-//注册字符设备,此函数之后设备将支持VFS访问
+///注册字符设备,此函数之后设备将支持VFS访问
 static INT32 CharDriverRegisterOperate(mtd_partition *newNode,
                                        const partition_param *param,
                                        UINT32 partitionNum)
@@ -346,7 +346,7 @@ static INT32 CharDriverRegisterOperate(mtd_partition *newNode,
     }
     return ENOERR;
 }
-//注销块设备驱动
+///注销块设备驱动
 static INT32 BlockDriverUnregister(mtd_partition *node)
 {
     INT32 ret;
@@ -362,7 +362,7 @@ static INT32 BlockDriverUnregister(mtd_partition *node)
     }
     return ENOERR;
 }
-//注销字符设备驱动
+///注销字符设备驱动
 static INT32 CharDriverUnregister(mtd_partition *node)
 {
     INT32 ret;
@@ -452,7 +452,7 @@ ERROR_OUT:
     (VOID)pthread_mutex_unlock(&g_mtdPartitionLock);
     return ret;
 }
-//检查分区参数
+///检查分区参数
 static INT32 DeleteParamCheck(UINT32 partitionNum,
                               const CHAR *type,
                               partition_param **param)
@@ -472,7 +472,7 @@ static INT32 DeleteParamCheck(UINT32 partitionNum,
     }
     return ENOERR;
 }
-//删除分区驱动程序,注意每个分区的文件系统都可以不一样,驱动程序也都不同
+///删除分区驱动程序,注意每个分区的文件系统都可以不一样,驱动程序也都不同
 static INT32 DeletePartitionUnregister(mtd_partition *node)
 {
     INT32 ret;
@@ -489,7 +489,7 @@ static INT32 DeletePartitionUnregister(mtd_partition *node)
 
     return ENOERR;
 }
-//获取分区链表节点
+///获取分区链表节点
 static INT32 OsNodeGet(mtd_partition **node, UINT32 partitionNum, const partition_param *param)
 {	//遍历链表
     LOS_DL_LIST_FOR_EACH_ENTRY(*node, &param->partition_head->node_info, mtd_partition, node_info) {
@@ -504,7 +504,7 @@ static INT32 OsNodeGet(mtd_partition **node, UINT32 partitionNum, const partitio
 
     return ENOERR;
 }
-//释放分区链表节点所占内存 sizeof(mtd_partition)
+///释放分区链表节点所占内存 sizeof(mtd_partition)
 static INT32 OsResourceRelease(mtd_partition *node, const CHAR *type, partition_param *param)
 {
     (VOID)LOS_MuxDestroy(&node->lock);
@@ -523,7 +523,7 @@ static INT32 OsResourceRelease(mtd_partition *node, const CHAR *type, partition_
     }
     return ENOERR;
 }
-//删除MTD分区
+///删除MTD分区
 INT32 delete_mtd_partition(UINT32 partitionNum, const CHAR *type)
 {
     INT32 ret;

@@ -56,12 +56,12 @@
 #endif
 
 STATIC SystemRebootFunc g_rebootHook = NULL;//系统重启钩子函数
-//设置系统重启钩子函数
+/// 设置系统重启钩子函数
 VOID OsSetRebootHook(SystemRebootFunc func)
 {
     g_rebootHook = func;
 }
-//获取系统重启钩子函数
+///获取系统重启钩子函数
 SystemRebootFunc OsGetRebootHook(VOID)
 {
     return g_rebootHook;
@@ -183,7 +183,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsSystemInfo(VOID)
                   HalIrqVersion(), __DATE__, __TIME__,\
                   KERNEL_NAME, KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE, buildType);
 }
-//由汇编调用,鸿蒙C语言层级的入口点 
+///由汇编调用,鸿蒙C语言层级的入口点 
 LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 {
     UINT32 ret;

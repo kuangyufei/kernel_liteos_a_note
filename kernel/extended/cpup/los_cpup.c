@@ -134,7 +134,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsCpupGuard(VOID)
 
     SCHEDULER_UNLOCK(intSave);
 }
-//创建cpu使用统计定时器
+///创建cpu使用统计定时器
 LITE_OS_SEC_TEXT_INIT UINT32 OsCpupGuardCreator(VOID)
 {
     (VOID)LOS_SwtmrCreate(LOSCFG_BASE_CORE_TICK_PER_SECOND, LOS_SWTMR_MODE_PERIOD,

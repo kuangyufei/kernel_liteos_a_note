@@ -64,7 +64,7 @@ static struct ProcDirEntry *VnodeToEntry(struct Vnode *node)
 {
     return (struct ProcDirEntry *)(node->data);
 }
-//创建节点,通过实体对象转成vnode节点,如此达到统一管理的目的.
+///创建节点,通过实体对象转成vnode节点,如此达到统一管理的目的.
 static struct Vnode *EntryToVnode(struct ProcDirEntry *entry)
 {
     struct Vnode *node = NULL;
@@ -78,7 +78,7 @@ static struct Vnode *EntryToVnode(struct ProcDirEntry *entry)
     node->mode = entry->mode;//读/写/执行模式
     return node;
 }
-//实体匹配,通过名称匹配
+///实体匹配,通过名称匹配
 static int EntryMatch(const char *name, int len, const struct ProcDirEntry *pn)
 {
     if (len != pn->nameLen) {
@@ -91,7 +91,7 @@ int VfsProcfsTruncate(struct Vnode *pVnode, off_t len)
 {
     return 0;
 }
-//创建vnode节点,并绑定私有内容项
+///创建vnode节点,并绑定私有内容项
 int VfsProcfsCreate(struct Vnode* parent, const char *name, int mode, struct Vnode **vnode)
 {
     int ret;
@@ -190,7 +190,7 @@ int VfsProcfsLookup(struct Vnode *parent, const char *name, int len, struct Vnod
     (*vpp)->parent = parent;
     return LOS_OK;
 }
-//挂s载实现,找个vnode节点挂上去 
+///挂s载实现,找个vnode节点挂上去 
 int VfsProcfsMount(struct Mount *mnt, struct Vnode *device, const void *data)
 {
     struct Vnode *vp = NULL;
@@ -285,7 +285,7 @@ int VfsProcfsReaddir(struct Vnode *node, struct fs_dirent_s *dir)
 
     return i;
 }
-//proc 打开目录
+///proc 打开目录
 int VfsProcfsOpendir(struct Vnode *node,  struct fs_dirent_s *dir)
 {
     struct ProcDirEntry *pde = VnodeToEntry(node);
@@ -297,7 +297,7 @@ int VfsProcfsOpendir(struct Vnode *node,  struct fs_dirent_s *dir)
 
     return LOS_OK;
 }
-//proc 打开文件
+///proc 打开文件
 int VfsProcfsOpen(struct file *filep)
 {
     if (filep == NULL) {
@@ -336,7 +336,7 @@ int VfsProcfsClose(struct file *filep)
 
     return result;
 }
-//统计信息接口,简单实现
+///统计信息接口,简单实现
 int VfsProcfsStatfs(struct Mount *mnt, struct statfs *buf)
 {
     (void)memset_s(buf, sizeof(struct statfs), 0, sizeof(struct statfs));
@@ -349,7 +349,7 @@ int VfsProcfsClosedir(struct Vnode *vp, struct fs_dirent_s *dir)
 {
     return LOS_OK;
 }
-// proc 对 MountOps 接口实现
+/// proc 对 MountOps 接口实现
 const struct MountOps procfs_operations = {
     .Mount = VfsProcfsMount,//装载
     .Unmount = NULL,

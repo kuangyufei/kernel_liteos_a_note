@@ -58,7 +58,7 @@ UINT32 OsStackWaterLineGet(const UINTPTR *stackBottom, const UINTPTR *stackTop, 
         return LOS_NOK;
     }
 }
-//异常情况下的栈检查,主要就是检查栈顶值有没有被改写
+///异常情况下的栈检查,主要就是检查栈顶值有没有被改写
 VOID OsExcStackCheck(VOID)
 {
     UINT32 index;
@@ -78,7 +78,7 @@ VOID OsExcStackCheck(VOID)
         }
     }
 }
-//打印栈的信息 把每个CPU的栈信息打印出来
+///打印栈的信息 把每个CPU的栈信息打印出来
 VOID OsExcStackInfo(VOID)
 {
     UINT32 index;
@@ -134,7 +134,7 @@ VOID OsExcStackInfoReg(const StackInfo *stackInfo, UINT32 stackNum)
     g_stackInfo = stackInfo;	//全局变量指向g_excStack
     g_stackNum = stackNum;
 }
-//task栈的初始化,设置固定的值. 0xcccccccc 和 0xcacacaca
+///task栈的初始化,设置固定的值. 0xcccccccc 和 0xcacacaca
 VOID OsStackInit(VOID *stacktop, UINT32 stacksize)
 {
     /* initialize the task stack, write magic num to stack top */

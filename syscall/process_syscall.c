@@ -60,7 +60,7 @@ static int OsPermissionToCheck(unsigned int pid, unsigned int who)
 
     return 0;
 }
-//设置用户级任务调度信息
+///设置用户级任务调度信息
 static int OsUserTaskSchedulerSet(unsigned int tid, unsigned short policy, unsigned short priority, bool policyFlag)
 {
     int ret;
@@ -191,7 +191,7 @@ int SysSchedGetParam(int id, int flag)
 
     return OsGetProcessPriority(LOS_PRIO_PROCESS, id);
 }
-//设置进程优先级
+///设置进程优先级
 int SysSetProcessPriority(int which, int who, unsigned int prio)
 {
     int ret;

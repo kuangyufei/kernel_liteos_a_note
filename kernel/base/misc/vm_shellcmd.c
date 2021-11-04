@@ -104,7 +104,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsDoDumpVm(pid_t pid)
         PRINTK("\tThe process [%d] not active\n", pid);
     }
 }
-//查看进程的虚拟内存使用情况。vmm [-a / -h / --help]， vmm [pid]
+///查看进程的虚拟内存使用情况。vmm [-a / -h / --help]， vmm [pid]
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpVm(INT32 argc, const CHAR *argv[])
 {
     if (argc == 0) { //没有参数 使用 # vmm 查看所有进程使用虚拟内存的情况
@@ -135,7 +135,7 @@ LITE_OS_SEC_TEXT_MINOR VOID V2PPrintUsage(VOID)
     PRINTK("pid vaddr(0x1000000~0x3e000000),     print physical address of virtual address\n"
            "-h | --help,                     print v2p command usage\n");
 }
-//v2p 虚拟内存对应的物理内存
+///v2p 虚拟内存对应的物理内存
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdV2P(INT32 argc, const CHAR *argv[])
 {
     UINT32 vaddr;
@@ -180,7 +180,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdV2P(INT32 argc, const CHAR *argv[])
 
     return LOS_OK;
 }
-//查看系统内存物理页及pagecache物理页使用情况 ,             Debug版本才具备的命令 # pmm
+///查看系统内存物理页及pagecache物理页使用情况 ,             Debug版本才具备的命令 # pmm
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpPmm(VOID)
 {
     OsVmPhysDump();
@@ -197,7 +197,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OomPrintUsage(VOID)
            "\t-r [mem byte],     set page cache reclaim memory threshold (Byte)\n"	//设置pagecache内存回收阈值。
            "\t-h | --help,       print vmm command usage\n");	//使用帮助。
 }
-//查看和设置低内存阈值以及pagecache内存回收阈值。参数缺省时，显示oom功能当前配置信息。 
+///查看和设置低内存阈值以及pagecache内存回收阈值。参数缺省时，显示oom功能当前配置信息。 
 //当系统内存不足时，会打印出内存不足的提示信息。
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdOom(INT32 argc, const CHAR *argv[])
 {

@@ -81,7 +81,7 @@ const CHAR *OsGetRegionNameOrFilePath(LosVmMapRegion *region)
     }
     return "";
 }
-//
+///
 INT32 OsRegionOverlapCheckUnlock(LosVmSpace *space, LosVmMapRegion *region)
 {
     LosVmMapRegion *regionTemp = NULL;
@@ -107,7 +107,7 @@ INT32 OsRegionOverlapCheckUnlock(LosVmSpace *space, LosVmMapRegion *region)
 
     return 0;
 }
-//shell task 进程虚拟内存的使用情况
+///shell task 进程虚拟内存的使用情况
 UINT32 OsShellCmdProcessVmUsage(LosVmSpace *space)
 {
     LosVmMapRegion *region = NULL;
@@ -130,7 +130,7 @@ UINT32 OsShellCmdProcessVmUsage(LosVmSpace *space)
 
     return used;
 }
-//内核空间物理内存使用情况统计
+///内核空间物理内存使用情况统计
 VOID OsKProcessPmUsage(LosVmSpace *kSpace, UINT32 *actualPm)
 {
     UINT32 memUsed;
@@ -171,7 +171,7 @@ VOID OsKProcessPmUsage(LosVmSpace *kSpace, UINT32 *actualPm)
 
     *actualPm = memUsed;
 }
-//shell task 物理内存的使用情况
+///shell task 物理内存的使用情况
 VOID OsShellCmdProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
 {
     if (space == NULL) {
@@ -188,7 +188,7 @@ VOID OsShellCmdProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actual
         OsUProcessPmUsage(space, sharePm, actualPm);//用户空间物理内存使用情况统计
     }
 }
-//虚拟空间物理内存的使用情况,参数同时带走共享物理内存 sharePm和actualPm 单位是字节
+///虚拟空间物理内存的使用情况,参数同时带走共享物理内存 sharePm和actualPm 单位是字节
 VOID OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
 {
     LosVmMapRegion *region = NULL;
@@ -239,7 +239,7 @@ VOID OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
         }
     RB_SCAN_SAFE_END(&oldVmSpace->regionRbTree, pstRbNode, pstRbNodeNext)
 }
-//通过虚拟空间获取进程实体
+///通过虚拟空间获取进程实体
 LosProcessCB *OsGetPIDByAspace(LosVmSpace *space)
 {
     UINT32 pid;
@@ -261,7 +261,7 @@ LosProcessCB *OsGetPIDByAspace(LosVmSpace *space)
     SCHEDULER_UNLOCK(intSave);
     return NULL;
 }
-//统计虚拟空间中某个线性区的页数
+///统计虚拟空间中某个线性区的页数
 UINT32 OsCountRegionPages(LosVmSpace *space, LosVmMapRegion *region, UINT32 *pssPages)
 {
     UINT32 regionPages = 0;
@@ -295,7 +295,7 @@ UINT32 OsCountRegionPages(LosVmSpace *space, LosVmMapRegion *region, UINT32 *pss
 
     return regionPages;
 }
-//统计虚拟空间的总页数
+///统计虚拟空间的总页数
 UINT32 OsCountAspacePages(LosVmSpace *space)
 {
     UINT32 spacePages = 0;
@@ -379,7 +379,7 @@ VOID OsDumpRegion2(LosVmSpace *space, LosVmMapRegion *region)
         region->range.size, flagsStr, regionPages, pssPages);
     (VOID)LOS_MemFree(m_aucSysMem0, flagsStr);
 }
-//dump 指定虚拟空间的信息
+///dump 指定虚拟空间的信息
 VOID OsDumpAspace(LosVmSpace *space)
 {
     LosVmMapRegion *region = NULL;
@@ -413,7 +413,7 @@ VOID OsDumpAspace(LosVmSpace *space)
     RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNode, pstRbNodeNext)
     return;
 }
-//查看所有进程使用虚拟内存的情况
+///查看所有进程使用虚拟内存的情况
 VOID OsDumpAllAspace(VOID)
 {
     LosVmSpace *space = NULL;
@@ -439,7 +439,7 @@ STATUS_T OsRegionOverlapCheck(LosVmSpace *space, LosVmMapRegion *region)
     (VOID)LOS_MuxRelease(&space->regionMux);
     return ret;
 }
-//dump 页表项
+///dump 页表项
 VOID OsDumpPte(VADDR_T vaddr)
 {
     UINT32 l1Index = vaddr >> MMU_DESCRIPTOR_L1_SMALL_SHIFT;
@@ -473,7 +473,7 @@ VOID OsDumpPte(VADDR_T vaddr)
 ERR:
     PRINTK("%s, error vaddr: %#x, l2Table: %#x, l2Index: %#x\n", __FUNCTION__, vaddr, l2Table, l2Index);
 }
-//获取段剩余页框数
+///获取段剩余页框数
 UINT32 OsVmPhySegPagesGet(LosVmPhysSeg *seg)
 {
     UINT32 intSave;
@@ -488,7 +488,7 @@ UINT32 OsVmPhySegPagesGet(LosVmPhysSeg *seg)
 
     return segFreePages;//返回剩余未分配的总物理页框
 }
-//dump 物理内存
+///dump 物理内存
 /***********************************************************
 *	phys_seg:物理页控制块地址信息
 *	base:第一个物理页地址，即物理页内存起始地址
@@ -541,7 +541,7 @@ VOID OsVmPhysDump(VOID)
     PRINTK("\n\rpmm pages: total = %u, used = %u, free = %u\n",
            totalPages, (totalPages - totalFreePages), totalFreePages);
 }
-//获取物理内存的使用信息，两个参数接走数据
+///获取物理内存的使用信息，两个参数接走数据
 VOID OsVmPhysUsedInfoGet(UINT32 *usedCount, UINT32 *totalCount)
 {
     UINT32 index;

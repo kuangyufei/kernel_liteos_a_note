@@ -175,7 +175,7 @@ STATIC UINT32 OsPendingTaskWake(LosTaskCB *taskCB, INT32 signo)
 
     return 0;
 }
-//给任务(线程)发送一个信号
+///给任务(线程)发送一个信号
 int OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info)
 {
     bool masked = FALSE;
@@ -280,7 +280,7 @@ int OsSigprocMask(int how, const sigset_t_l *setl, sigset_t_l *oldset)
     }
     return ret;
 }
-//让进程的每一个task执行参数函数
+///让进程的每一个task执行参数函数
 int OsSigProcessForeachChild(LosProcessCB *spcb, ForEachTaskCB handler, void *arg)
 {
     int ret;
@@ -293,7 +293,7 @@ int OsSigProcessForeachChild(LosProcessCB *spcb, ForEachTaskCB handler, void *ar
     }
     return LOS_OK;
 }
-//信号处理函数,这里就是上面的 handler =  SigProcessSignalHandler,见于 OsSigProcessSend
+///信号处理函数,这里就是上面的 handler =  SigProcessSignalHandler,见于 OsSigProcessSend
 static int SigProcessSignalHandler(LosTaskCB *tcb, void *arg)
 {
     struct ProcessSignalInfo *info = (struct ProcessSignalInfo *)arg;//先把参数解出来
@@ -338,7 +338,7 @@ static int SigProcessSignalHandler(LosTaskCB *tcb, void *arg)
     }
     return 0; /* Keep searching */
 }
-//进程收到 SIGKILL 信号后,通知任务tcb处理.
+///进程收到 SIGKILL 信号后,通知任务tcb处理.
 static int SigProcessKillSigHandler(LosTaskCB *tcb, void *arg)
 {
     struct ProcessSignalInfo *info = (struct ProcessSignalInfo *)arg;//转参
@@ -363,7 +363,7 @@ static void SigProcessLoadTcb(struct ProcessSignalInfo *info, siginfo_t *sigInfo
         (void)OsTcbDispatch(tcb, sigInfo);//向所选任务发送信号
     }
 }
-//给参数进程发送参数信号
+///给参数进程发送参数信号
 int OsSigProcessSend(LosProcessCB *spcb, siginfo_t *sigInfo)
 {
     int ret;
@@ -393,7 +393,7 @@ int OsSigProcessSend(LosProcessCB *spcb, siginfo_t *sigInfo)
     SigProcessLoadTcb(&info, sigInfo);//确保能给一个任务发送信号
     return 0;
 }
-//信号集全部清0
+///信号集全部清0
 int OsSigEmptySet(sigset_t *set)
 {
     *set = NULL_SIGNAL_SET;
@@ -413,7 +413,7 @@ static int OsSignalPermissionToCheck(const LosProcessCB *spcb)
 
     return 0;
 }
-//信号分发,发送信号权限/进程组过滤.
+///信号分发,发送信号权限/进程组过滤.
 int OsDispatch(pid_t pid, siginfo_t *info, int permission)
 {
     if (OsProcessIDUserCheckInvalid(pid) || pid < 0) {
@@ -477,7 +477,7 @@ int OsKill(pid_t pid, int sig, int permission)
     }
     return ret;
 }
-//给发送信号过程加锁
+///给发送信号过程加锁
 int OsKillLock(pid_t pid, int sig)
 {
     int ret;
@@ -506,7 +506,7 @@ INT32 OsTaskKillUnsafe(UINT32 taskID, INT32 signo)
      * dispatch rules. */
     return OsTcbDispatch(taskCB, &info);
 }
-//发送信号
+///发送信号
 int OsPthreadKill(UINT32 tid, int signo)
 {
     int ret;
@@ -524,7 +524,7 @@ int OsPthreadKill(UINT32 tid, int signo)
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//向信号集中加入signo信号
+///向信号集中加入signo信号
 int OsSigAddSet(sigset_t *set, int signo)
 {
     /* Verify the signal */
@@ -538,7 +538,7 @@ int OsSigAddSet(sigset_t *set, int signo)
         return LOS_OK;
     }
 }
-//获取阻塞当前任务的信号集
+///获取阻塞当前任务的信号集
 int OsSigPending(sigset_t *set)
 {
     LosTaskCB *tcb = NULL;
@@ -565,7 +565,7 @@ STATIC int FindFirstSetedBit(UINT64 n)
     for (count = 0; (count < UINT64_BIT_SIZE) && (n ^ 1ULL); n >>= 1, count++) {}
     return (count < UINT64_BIT_SIZE) ? count : (-1);
 }
-//等待信号时间
+///等待信号时间
 int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
 {
     LosTaskCB *task = NULL;
@@ -601,7 +601,7 @@ int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
     }
     return ret;
 }
-//让当前任务等待的信号
+///让当前任务等待的信号
 int OsSigTimedWait(sigset_t *set, siginfo_t *info, unsigned int timeout)
 {
     int ret;
@@ -614,7 +614,7 @@ int OsSigTimedWait(sigset_t *set, siginfo_t *info, unsigned int timeout)
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//通过信号挂起当前任务
+///通过信号挂起当前任务
 int OsPause(void)
 {
     LosTaskCB *spcb = NULL;
@@ -624,7 +624,7 @@ int OsPause(void)
     oldSigprocmask = spcb->sig.sigprocmask;
     return OsSigSuspend(&oldSigprocmask);
 }
-//用参数set代替进程的原有掩码，并暂停进程执行，直到收到信号再恢复原有掩码并继续执行进程。
+///用参数set代替进程的原有掩码，并暂停进程执行，直到收到信号再恢复原有掩码并继续执行进程。
 int OsSigSuspend(const sigset_t *set)
 {
     unsigned int intSave;

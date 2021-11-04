@@ -105,7 +105,7 @@ int VnodesInit(void)
 
     return LOS_OK;
 }
-//获取空闲节点链表,分配的节点从空闲链表里出
+///获取空闲节点链表,分配的节点从空闲链表里出
 static struct Vnode *GetFromFreeList(void)
 {
     if (g_freeVnodeSize <= 0) {
@@ -124,7 +124,7 @@ static struct Vnode *GetFromFreeList(void)
     g_freeVnodeSize--;
     return vnode;
 }
-//节点批量回收, LRU是Least Recently Used的缩写，即最近最少使用，
+///节点批量回收, LRU是Least Recently Used的缩写，即最近最少使用，
 struct Vnode *VnodeReclaimLru(void)
 {
     struct Vnode *item = NULL;
@@ -157,7 +157,7 @@ struct Vnode *VnodeReclaimLru(void)
     }
     return item;
 }
-//申请分配一个 vnode 节点,vop为操作节点的驱动程序
+///申请分配一个 vnode 节点,vop为操作节点的驱动程序
 int VnodeAlloc(struct VnodeOps *vop, struct Vnode **newVnode)
 {
     struct Vnode* vnode = NULL;
@@ -203,7 +203,7 @@ int VnodeAlloc(struct VnodeOps *vop, struct Vnode **newVnode)
 
     return LOS_OK;
 }
-//是否 vnode 节点
+///是否 vnode 节点
 int VnodeFree(struct Vnode *vnode)
 {
     if (vnode == NULL) {
@@ -242,7 +242,7 @@ int VnodeFree(struct Vnode *vnode)
 
     return LOS_OK;
 }
-//释放mount下所有的索引节点
+///释放mount下所有的索引节点
 int VnodeFreeAll(const struct Mount *mount)
 {
     struct Vnode *vnode = NULL;
@@ -260,7 +260,7 @@ int VnodeFreeAll(const struct Mount *mount)
 
     return LOS_OK;
 }
-//mount是否正在被某个索引节点使用
+///mount是否正在被某个索引节点使用
 BOOL VnodeInUseIter(const struct Mount *mount)
 {
     struct Vnode *vnode = NULL;
@@ -274,7 +274,7 @@ BOOL VnodeInUseIter(const struct Mount *mount)
     }
     return FALSE;
 }
-//拿锁,封装互斥量
+///拿锁,封装互斥量
 int VnodeHold()
 {
     int ret = LOS_MuxLock(&g_vnodeMux, LOS_WAIT_FOREVER);
@@ -283,7 +283,7 @@ int VnodeHold()
     }
     return ret;
 }
-//归还锁
+///归还锁
 int VnodeDrop()
 {
     int ret = LOS_MuxUnlock(&g_vnodeMux);
@@ -292,7 +292,7 @@ int VnodeDrop()
     }
     return ret;
 }
-//
+///
 static char *NextName(char *pos, uint8_t *len)
 {
     char *name = NULL;
@@ -309,7 +309,7 @@ static char *NextName(char *pos, uint8_t *len)
     *len = pos - name;
     return name;
 }
-//处理前的准备
+///处理前的准备
 static int PreProcess(const char *originPath, struct Vnode **startVnode, char **path)
 {
     int ret;
@@ -331,7 +331,7 @@ static struct Vnode *ConvertVnodeIfMounted(struct Vnode *vnode)
     }
     return vnode->newMount->vnodeCovered;
 }
-//刷新虚拟节点
+///刷新虚拟节点
 static void RefreshLRU(struct Vnode *vnode)
 {
     if (vnode == NULL || (vnode->type != VNODE_TYPE_REG && vnode->type != VNODE_TYPE_DIR) ||
@@ -354,7 +354,7 @@ static int ProcessVirtualVnode(struct Vnode *parent, uint32_t flags, struct Vnod
     }
     return ret;
 }
-//一级一级向下找
+///一级一级向下找
 static int Step(char **currentDir, struct Vnode **currentVnode, uint32_t flags)
 {
     int ret;
@@ -403,7 +403,7 @@ STEP_FINISH:
 
     return ret;
 }
-//通过路径 查找索引节点.路径和节点是 N:1的关系, 硬链接 
+///通过路径 查找索引节点.路径和节点是 N:1的关系, 硬链接 
 int VnodeLookupAt(const char *path, struct Vnode **result, uint32_t flags, struct Vnode *orgVnode)
 {
     int ret;
@@ -477,12 +477,12 @@ OUT_FREE_PATH:
 
     return ret;
 }
-//通过路径查询vnode节点
+///通过路径查询vnode节点
 int VnodeLookup(const char *path, struct Vnode **vnode, uint32_t flags)
 {
     return VnodeLookupAt(path, vnode, flags, NULL);
 }
-//根节点内部改变
+///根节点内部改变
 int VnodeLookupFullpath(const char *fullpath, struct Vnode **vnode, uint32_t flags)
 {
     return VnodeLookupAt(fullpath, vnode, flags, g_rootVnode);
@@ -522,7 +522,7 @@ static void ChangeRootInternal(struct Vnode *rootOld, char *dirname)
         break;
     }
 }
-//改变根节点
+///改变根节点
 void ChangeRoot(struct Vnode *rootNew)
 {
     struct Vnode *rootOld = g_rootVnode;
@@ -586,7 +586,7 @@ int VnodeClosedir(struct Vnode *vnode, struct fs_dirent_s *dir)
     (void)dir;
     return LOS_OK;
 }
-//创建节点
+///创建节点
 int VnodeCreate(struct Vnode *parent, const char *name, int mode, struct Vnode **vnode)
 {
     int ret;
@@ -613,7 +613,7 @@ int VnodeCreate(struct Vnode *parent, const char *name, int mode, struct Vnode *
     *vnode = newVnode;
     return 0;
 }
-//设备初始化,设备结点：/dev目录下，对应一个设备，如/dev/mmcblk0
+///设备初始化,设备结点：/dev目录下，对应一个设备，如/dev/mmcblk0
 int VnodeDevInit()
 {
     struct Vnode *devNode = NULL;
@@ -636,7 +636,7 @@ int VnodeDevInit()
     devMount->vnodeBeCovered->flag |= VNODE_FLAG_MOUNT_ORIGIN;
     return LOS_OK;
 }
-//buf 接走 vnode 属性
+///buf 接走 vnode 属性
 int VnodeGetattr(struct Vnode *vnode, struct stat *buf)
 {
     (void)memset_s(buf, sizeof(struct stat), 0, sizeof(struct stat));
@@ -682,7 +682,7 @@ int VnodeDevLookup(struct Vnode *parentVnode, const char *path, int len, struct 
     /* dev node must in pathCache. */
     return -ENOENT;
 }
-//设备文件系统节点操作
+///设备文件系统节点操作
 static struct VnodeOps g_devfsOps = {
     .Lookup = VnodeDevLookup,
     .Getattr = VnodeGetattr,

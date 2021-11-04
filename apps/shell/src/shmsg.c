@@ -73,7 +73,7 @@ char *GetCmdline(ShellCB *shellCB)
 
     return cmdNode->cmdString;
 }
-//保存shell命令历史
+///保存shell命令历史
 static void ShellSaveHistoryCmd(char *string, ShellCB *shellCB)
 {
     CmdKeyLink *cmdHistory = shellCB->cmdHistoryKeyLink;
@@ -110,7 +110,7 @@ static void ShellSaveHistoryCmd(char *string, ShellCB *shellCB)
     (void)pthread_mutex_unlock(&shellCB->historyMutex);
     return;
 }
-//shell挂起
+//// shell挂起
 int ShellPend(ShellCB *shellCB)
 {
     if (shellCB == NULL) {
@@ -119,7 +119,7 @@ int ShellPend(ShellCB *shellCB)
 
     return sem_wait(&shellCB->shellSem);
 }
-//shell通知
+//// shell通知
 int ShellNotify(ShellCB *shellCB)
 {
     if (shellCB == NULL) {
@@ -130,11 +130,11 @@ int ShellNotify(ShellCB *shellCB)
 }
 
 enum {
-    STAT_NOMAL_KEY,	//普通按键
-    STAT_ESC_KEY,	//<ESC>键,支持VT规范
-    STAT_MULTI_KEY	//组合键 例如: <ESC>[30m
+    STAT_NOMAL_KEY,	///< 普通按键
+    STAT_ESC_KEY,	///< <ESC>键,支持VT规范
+    STAT_MULTI_KEY	///< 组合键 例如: <ESC>[30m
 };
-//检查上下左右键
+///检查上下左右键
 static int ShellCmdLineCheckUDRL(const char ch, ShellCB *shellCB)
 {
     int ret = SH_OK;
@@ -171,7 +171,7 @@ static int ShellCmdLineCheckUDRL(const char ch, ShellCB *shellCB)
     }
     return SH_NOK;
 }
-//通知任务解析shell命令
+//// 通知任务解析shell命令
 void ShellTaskNotify(ShellCB *shellCB)
 {
     int ret;
@@ -185,7 +185,7 @@ void ShellTaskNotify(ShellCB *shellCB)
         printf("command execute failed, \"%s\"", shellCB->shellBuf);
     }
 }
-//解析回车键 , 按回车后的处理
+//// 解析回车键 , 按回车后的处理
 void ParseEnterKey(OutputFunc outputFunc, ShellCB *shellCB)
 {
     if ((shellCB == NULL) || (outputFunc == NULL)) {
@@ -206,7 +206,7 @@ NOTIFY:
     shellCB->shellBufOffset = 0;
     ShellTaskNotify(shellCB);
 }
-//解析删除键 
+///解析删除键 
 void ParseDeleteKey(OutputFunc outputFunc, ShellCB *shellCB)
 {
     if ((shellCB == NULL) || (outputFunc == NULL)) {
@@ -219,7 +219,7 @@ void ParseDeleteKey(OutputFunc outputFunc, ShellCB *shellCB)
         outputFunc("\b \b");
     }
 }
-//解析tab键
+//// 解析tab键
 void ParseTabKey(OutputFunc outputFunc, ShellCB *shellCB)
 {
     int ret;
@@ -235,7 +235,7 @@ void ParseTabKey(OutputFunc outputFunc, ShellCB *shellCB)
         }
     }
 }
-//解析普通字符
+//// 解析普通字符
 void ParseNormalChar(char ch, OutputFunc outputFunc, ShellCB *shellCB)
 {
     if ((shellCB == NULL) || (outputFunc == NULL)) {

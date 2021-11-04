@@ -36,7 +36,7 @@
 #include "los_vm_phys.h"
 #include "los_vm_map.h"
 #include "los_vm_dump.h"
-//运行ELF
+/// 运行ELF
 STATIC INT32 OsExecve(const ELFLoadInfo *loadInfo)
 {
     if ((loadInfo == NULL) || (loadInfo->elfEntry == 0)) {
@@ -113,7 +113,7 @@ STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *
     loadInfo->fileName = kfileName;//文件名指向内核空间
     return LOS_OK;
 }
-//运行用户态进程 ELF格式,运行在内核态
+////运行用户态进程 ELF格式,运行在内核态
 INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *envp)
 {
     ELFLoadInfo loadInfo = { 0 };

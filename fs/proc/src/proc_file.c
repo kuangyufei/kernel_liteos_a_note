@@ -162,7 +162,7 @@ struct ProcDirEntry *ProcFindEntry(const char *path)//查看内容项
     spin_unlock(&procfsLock);
     return NULL;
 }
-//检查 proc名称有效性
+///检查 proc名称有效性
 static int CheckProcName(const char *name, struct ProcDirEntry **parent, const char **lastName)
 {
     struct ProcDirEntry *pn = *parent;
@@ -198,7 +198,7 @@ static int CheckProcName(const char *name, struct ProcDirEntry **parent, const c
 
     return 0;
 }
-//分配 proc 节点
+///分配 proc 节点
 static struct ProcDirEntry *ProcAllocNode(struct ProcDirEntry **parent, const char *name, mode_t mode)
 {
     struct ProcDirEntry *pn = NULL;
@@ -315,7 +315,7 @@ static void ProcDetachNode(struct ProcDirEntry *pn)
     }
     pn->parent = NULL;
 }
-// /proc文件系统创建目录的方式
+/// /proc文件系统创建目录的方式
 static struct ProcDirEntry *ProcCreateDir(struct ProcDirEntry *parent, const char *name,
                                           const struct ProcFileOperations *procFileOps, mode_t mode)
 {
@@ -337,7 +337,7 @@ static struct ProcDirEntry *ProcCreateDir(struct ProcDirEntry *parent, const cha
 
     return pn;
 }
-//创建文件项
+///创建文件项
 static struct ProcDirEntry *ProcCreateFile(struct ProcDirEntry *parent, const char *name,
                                            const struct ProcFileOperations *procFileOps, mode_t mode)
 {
@@ -360,7 +360,7 @@ static struct ProcDirEntry *ProcCreateFile(struct ProcDirEntry *parent, const ch
 
     return pn;
 }
-//创建 pro (目录/文件)项
+///创建 pro (目录/文件)项
 struct ProcDirEntry *CreateProcEntry(const char *name, mode_t mode, struct ProcDirEntry *parent)
 {
     struct ProcDirEntry *pde = NULL;
@@ -372,7 +372,7 @@ struct ProcDirEntry *CreateProcEntry(const char *name, mode_t mode, struct ProcD
     }
     return pde;
 }
-//释放proc
+///释放proc
 static void FreeProcEntry(struct ProcDirEntry *entry)
 {
     if (entry == NULL) {
@@ -384,7 +384,7 @@ static void FreeProcEntry(struct ProcDirEntry *entry)
     }
     free(entry);
 }
-//释放
+///释放
 void ProcFreeEntry(struct ProcDirEntry *pn)
 {
     if (atomic_dec_and_test(&pn->count))
@@ -440,7 +440,7 @@ struct ProcDirEntry *ProcMkdir(const char *name, struct ProcDirEntry *parent)
 {
     return ProcCreateDir(parent, name, NULL, 0);
 }
-//创建数据
+///创建数据
 struct ProcDirEntry *ProcCreateData(const char *name, mode_t mode, struct ProcDirEntry *parent,
                                     const struct ProcFileOperations *procFileOps, void *data)
 {
@@ -499,7 +499,7 @@ static int GetNextDir(struct ProcDirEntry *pn, void *buf, size_t len)
     pn->pf->fPos++;
     return ENOERR;
 }
-//打开 pro 
+///打开 pro 
 int ProcOpen(struct ProcFile *procFile)
 {
     if (procFile == NULL) {
@@ -597,7 +597,7 @@ int ReadProcFile(struct ProcDirEntry *pde, void *buf, size_t len)
     }
     return result;
 }
-//写 proc 文件
+///写 proc 文件
 int WriteProcFile(struct ProcDirEntry *pde, const void *buf, size_t len)
 {
     int result = -EPERM;
@@ -618,7 +618,7 @@ int WriteProcFile(struct ProcDirEntry *pde, const void *buf, size_t len)
 
     return result;
 }
-// seek proc 文件
+/// seek proc 文件
 loff_t LseekProcFile(struct ProcDirEntry *pde, loff_t offset, int whence)
 {
     if (pde == NULL || pde->pf == NULL) {

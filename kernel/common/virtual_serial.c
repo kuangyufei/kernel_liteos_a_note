@@ -65,7 +65,7 @@ UINT32 SerialTypeGet(VOID)
 {
     return g_serialType;
 }
-//设置串口类型
+///设置串口类型
 STATIC VOID SerialTypeSet(const CHAR *deviceName)
 {
     if (!strncmp(deviceName, SERIAL_UARTDEV, strlen(SERIAL_UARTDEV))) {
@@ -74,7 +74,7 @@ STATIC VOID SerialTypeSet(const CHAR *deviceName)
         g_serialType = SERIAL_TYPE_USBTTY_DEV;
     }
 }
-//打开串口设备
+///打开串口设备
 STATIC INT32 SerialOpen(struct file *filep)
 {
     INT32 ret;
@@ -102,7 +102,7 @@ ERROUT:
     set_errno(ret);
     return VFS_ERROR;
 }
-//关闭串口设备
+///关闭串口设备
 STATIC INT32 SerialClose(struct file *filep)
 {
     (VOID)filep;
@@ -118,7 +118,7 @@ STATIC INT32 SerialClose(struct file *filep)
 
     return ENOERR;
 }
-//读取串口数据
+///读取串口数据
 STATIC ssize_t SerialRead(struct file *filep, CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -141,7 +141,7 @@ ERROUT:
     set_errno(-ret);
     return VFS_ERROR;
 }
-//写入串口数据
+///写入串口数据
 /* Note: do not add print function in this module! */ //注意：请勿在本模块中添加打印功能！
 STATIC ssize_t SerialWrite(struct file *filep,  const CHAR *buffer, size_t bufLen)
 {
@@ -165,7 +165,7 @@ ERROUT:
     set_errno(-ret);
     return VFS_ERROR;
 }
-//控制串口设备
+///控制串口设备
 STATIC INT32 SerialIoctl(struct file *filep, INT32 cmd, unsigned long arg)
 {
     INT32 ret;
@@ -210,7 +210,7 @@ ERROUT:
     set_errno(-ret);
     return VFS_ERROR;
 }
-//串口实现VFS接口,以便支持按文件方式操作串口
+///串口实现VFS接口,以便支持按文件方式操作串口
 STATIC const struct file_operations_vfs g_serialDevOps = {
     SerialOpen,  /* open */
     SerialClose, /* close */
@@ -266,7 +266,7 @@ ERROUT:
     set_errno(ret);
     return VFS_ERROR;
 }
-//串口设备去初始化,其实就是注销驱动程序
+///串口设备去初始化,其实就是注销驱动程序
 INT32 virtual_serial_deinit(VOID)
 {
     return unregister_driver(SERIAL);//注销驱动程序

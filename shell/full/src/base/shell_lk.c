@@ -51,15 +51,17 @@ typedef enum {//模块等级
     MODULE3 = 3,
     MODULE4 = 4,
 } MODULE_FLAG;
-
+/**
+ * @brief 
+ */
 typedef struct {
-    INT32 module_level;//模块等级
-    INT32 trace_level;//跟踪等级
-    FILE *fp;		  //文件描述结构体
+    INT32 module_level; ///< 模块等级
+    INT32 trace_level; ///< 跟踪等级
+    FILE *fp;		  ///< 文件描述结构体
 } Logger;
 
-STATIC INT32 g_tracelevel;//日志等级
-STATIC INT32 g_modulelevel;//模块等级
+STATIC INT32 g_tracelevel; ///< 日志等级
+STATIC INT32 g_modulelevel; ///< 模块等级
 
 STATIC Logger g_logger = { 0 };
 
@@ -120,32 +122,21 @@ FILE *OsLogFpGet(VOID)
 {
     return g_logger.fp;
 }
-/**************************************************************
-log命令用于修改&查询日志配置,即选择打印哪种日志?
-该命令依赖于LOSCFG_SHELL_LK，使用时通过menuconfig在配置项中开启"Enable Shell lk"：
-
-Debug ---> Enable a Debug Version ---> Enable Shell ---> Enable Shell lK。
-
-log level命令用于配置日志的打印等级，包括6个等级
-
-TRACE_EMG = 0,
-
-TRACE_COMMON = 1,
-
-TRACE_ERROR = 2,
-
-TRACE_WARN = 3,
-
-TRACE_INFO = 4,
-
-TRACE_DEBUG = 5
-
-若level不在有效范围内，会打印提示信息。
-
-若log level命令不加[levelNum]参数，则默认查看当前打印等级，并且提示使用方法。
-
-输入log level 4
-***************************************************************/
+/**
+ * @brief log命令用于修改&查询日志配置,即选择打印哪种日志?
+    该命令依赖于LOSCFG_SHELL_LK，使用时通过menuconfig在配置项中开启"Enable Shell lk"：
+    Debug ---> Enable a Debug Version ---> Enable Shell ---> Enable Shell lK。
+    log level命令用于配置日志的打印等级，包括6个等级
+    TRACE_EMG = 0,
+    TRACE_COMMON = 1,
+    TRACE_ERROR = 2,
+    TRACE_WARN = 3,
+    TRACE_INFO = 4,
+    TRACE_DEBUG = 5
+    若level不在有效范围内，会打印提示信息。
+    若log level命令不加[levelNum]参数，则默认查看当前打印等级，并且提示使用方法。
+    输入log level 4
+ */
 INT32 CmdLog(INT32 argc, const CHAR **argv)
 {
     size_t level;
@@ -192,7 +183,8 @@ INT32 CmdLog(INT32 argc, const CHAR **argv)
 }
 
 #ifdef LOSCFG_SHELL_DMESG
-STATIC INLINE VOID OsLogCycleRecord(INT32 level)//日志循环记录
+/// 日志循环记录
+STATIC INLINE VOID OsLogCycleRecord(INT32 level)
 {
     UINT32 tmpLen;
     if (level != LOS_COMMON_LEVEL && (level > LOS_EMG_LEVEL && level <= LOS_TRACE_LEVEL)) {
@@ -202,7 +194,7 @@ STATIC INLINE VOID OsLogCycleRecord(INT32 level)//日志循环记录
     }
 }
 #endif
-//内核打印函数,在LOS_LkPrint中回调
+/// 内核打印函数,在LOS_LkPrint中回调
 VOID OsLkDefaultFunc(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, va_list ap)
 {
     if (level > OsLkTraceLvGet()) {
@@ -219,7 +211,7 @@ VOID OsLkDefaultFunc(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt,
     }
     LkDprintf(fmt, ap);
 }
-//打印
+/// 打印
 VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, ...)
 {
     va_list ap;
@@ -229,12 +221,12 @@ VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, ...
         va_end(ap);
     }
 }
-//设置回调函数
+/// 设置回调函数
 VOID LOS_LkRegHook(LK_FUNC hook)
 {
     g_osLkHook = hook;
 }
-//内核日志初始化
+/// 内核日志初始化
 UINT32 OsLkLoggerInit(VOID)
 {
     (VOID)memset_s(&g_logger, sizeof(Logger), 0, sizeof(Logger));
@@ -249,7 +241,7 @@ UINT32 OsLkLoggerInit(VOID)
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 SHELLCMD_ENTRY(log_shellcmd, CMD_TYPE_EX, "log", 1, (CmdCallBackFunc)CmdLog);
 #endif
-
-LOS_MODULE_INIT(OsLkLoggerInit, LOS_INIT_LEVEL_EARLIEST);//日志模块初始化
+/// 日志模块初始化
+LOS_MODULE_INIT(OsLkLoggerInit, LOS_INIT_LEVEL_EARLIEST);
 
 #endif

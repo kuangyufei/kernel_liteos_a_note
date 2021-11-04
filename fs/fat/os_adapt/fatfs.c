@@ -222,7 +222,7 @@ static int fatfs_sync(unsigned long mountflags, FATFS *fs)
 #endif
     return 0;
 }
-//哈希值比较函数,返回int
+///哈希值比较函数,返回int
 //typedef int VfsHashCmp(struct Vnode *vnode, void *arg);
 int fatfs_hash_cmp(struct Vnode *vp, void *arg)
 {
@@ -233,7 +233,7 @@ int fatfs_hash_cmp(struct Vnode *vp, void *arg)
               dfp_target->f_dir.dptr != dfp->f_dir.dptr ||
               dfp_target->fno.sclst != dfp->fno.sclst;
 }
-//生成hash值的过程
+///生成hash值的过程
 static DWORD fatfs_hash(QWORD sect, DWORD dptr, DWORD sclst)
 {
     DWORD hash = FNV1_32A_INIT;
@@ -260,7 +260,7 @@ static mode_t fatfs_get_mode(BYTE attribute, mode_t fs_mode)
     }
     return fs_mode;
 }
-//类型转换
+///类型转换
 static enum VnodeType fatfstype_2_vnodetype(BYTE type) 
 {
     switch (type) {
@@ -511,7 +511,7 @@ ERROR_FREE:
 ERROR_EXIT:
     return -fatfs_2_vfs(result);
 }
-// fat文件系统对 Lookup 接口的实现
+/// fat文件系统对 Lookup 接口的实现
 int fatfs_lookup(struct Vnode *parent, const char *path, int len, struct Vnode **vpp)
 {
     struct Vnode *vp = NULL;
@@ -609,7 +609,7 @@ ERROR_FREE:
 ERROR_EXIT:
     return -ret;
 }
-//创建 fat vnode 节点
+///创建 fat vnode 节点
 int fatfs_create(struct Vnode *parent, const char *name, int mode, struct Vnode **vpp)
 {
     return fatfs_create_obj(parent, name, mode, vpp, AM_ARC, NULL);
@@ -1098,7 +1098,7 @@ static int fat_bind_check(struct Vnode *blk_driver, los_part **partition)
     *partition = part;
     return 0;
 }
-//fat将分区文件系统挂载 举例: mount /dev/mmcblk0p0 /bin1/vs/sd vfat
+///fat将分区文件系统挂载 举例: mount /dev/mmcblk0p0 /bin1/vs/sd vfat
 int fatfs_mount(struct Mount *mnt, struct Vnode *blk_device, const void *data)
 {
     struct Vnode *vp = NULL;
@@ -1809,7 +1809,7 @@ static int fatfs_erase(los_part *part, int option)
 
     return opt;
 }
-//设置FAT分区信息
+///设置FAT分区信息
 static int fatfs_set_part_info(los_part *part)
 {
     los_disk *disk = NULL;
@@ -1996,7 +1996,7 @@ ERROR_UNLOCK:
 ERROR_OUT:
     return -fatfs_2_vfs(result);
 }
-//回收节点
+///回收节点
 int fatfs_reclaim(struct Vnode *vp)
 {
     free(vp->data);
@@ -2420,7 +2420,7 @@ ERROR_UNLOCK:
 ERROR_OUT:
     return -fatfs_2_vfs(result);
 }
-//fat 文件系统 vnode实现
+///fat 文件系统 vnode实现
 struct VnodeOps fatfs_vops = {
     /* file ops */
     .Getattr = fatfs_stat,

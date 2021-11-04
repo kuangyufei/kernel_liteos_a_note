@@ -48,7 +48,7 @@ void FileTableLock(struct fd_table_s *fdt)
         LOS_ASSERT(errno == EINTR);
     }
 }
-//对进程文件表操作解锁
+///对进程文件表操作解锁
 void FileTableUnLock(struct fd_table_s *fdt)
 {
     int ret = sem_post(&fdt->ft_sem);
@@ -56,7 +56,7 @@ void FileTableUnLock(struct fd_table_s *fdt)
         PRINTK("sem_post error, errno %d \n", get_errno());
     }
 }
-//分配进程描述符
+///分配进程描述符
 static int AssignProcessFd(const struct fd_table_s *fdt, int minFd)
 {
     if (minFd >= fdt->max_fds) {
@@ -73,7 +73,7 @@ static int AssignProcessFd(const struct fd_table_s *fdt, int minFd)
     set_errno(EMFILE);
     return VFS_ERROR;
 }
-//获取进程文件描述符表
+///获取进程文件描述符表
 struct fd_table_s *GetFdTable(void)
 {
     struct fd_table_s *fdt = NULL;
@@ -101,7 +101,7 @@ static bool IsValidProcessFd(struct fd_table_s *fdt, int procFd)
     }
     return true;
 }
-//参数进程FD和参数系统FD进行绑定(关联)
+///参数进程FD和参数系统FD进行绑定(关联)
 void AssociateSystemFd(int procFd, int sysFd)
 {
     struct fd_table_s *fdt = GetFdTable();//获取当前进程FD表
@@ -129,7 +129,7 @@ int CheckProcessFd(int procFd)
 
     return OK;
 }
-//获取绑定的系统描述符
+///获取绑定的系统描述符
 int GetAssociatedSystemFd(int procFd)
 {
     struct fd_table_s *fdt = GetFdTable();
@@ -187,7 +187,7 @@ int AllocSpecifiedProcessFd(int procFd)//分配指定的进程Fd
     FileTableUnLock(fdt);
     return OK;
 }
-//释放进程文件描述符
+///释放进程文件描述符
 void FreeProcessFd(int procFd)
 {
     struct fd_table_s *fdt = GetFdTable();
@@ -202,7 +202,7 @@ void FreeProcessFd(int procFd)
     fdt->ft_fds[procFd].sysFd = -1;	//解绑系统文件描述符
     FileTableUnLock(fdt);
 }
-//解绑系统文件描述符,返回系统文件描述符
+///解绑系统文件描述符,返回系统文件描述符
 int DisassociateProcessFd(int procFd)
 {
     struct fd_table_s *fdt = GetFdTable();
@@ -224,12 +224,12 @@ int DisassociateProcessFd(int procFd)
 
     return sysFd;
 }
-//分配文件描述符
+///分配文件描述符
 int AllocProcessFd(void)
 {
     return AllocLowestProcessFd(MIN_START_FD);
 }
-//分配文件描述符,从3号开始
+///分配文件描述符,从3号开始
 int AllocLowestProcessFd(int minFd)
 {
     struct fd_table_s *fdt = GetFdTable();
@@ -257,7 +257,7 @@ int AllocLowestProcessFd(int minFd)
 
     return procFd;
 }
-//分配和绑定进程描述符
+///分配和绑定进程描述符
 int AllocAndAssocProcessFd(int sysFd, int minFd)
 {
     struct fd_table_s *fdt = GetFdTable();
@@ -286,7 +286,7 @@ int AllocAndAssocProcessFd(int sysFd, int minFd)
 
     return procFd;
 }
-//分配和绑定系统描述符
+///分配和绑定系统描述符
 int AllocAndAssocSystemFd(int procFd, int minFd)
 {
     struct fd_table_s *fdt = GetFdTable();//获取当前进程文件表
@@ -306,7 +306,7 @@ int AllocAndAssocSystemFd(int procFd, int minFd)
 
     return sysFd;
 }
-//进程FD引用数改变
+///进程FD引用数改变
 static void FdRefer(int sysFd)
 {
     if ((sysFd > STDERR_FILENO) && (sysFd < CONFIG_NFILE_DESCRIPTORS)) {
@@ -323,7 +323,7 @@ static void FdRefer(int sysFd)
     }
 #endif
 }
-//关闭FD
+///关闭FD
 static void FdClose(int sysFd, unsigned int targetPid)
 {
     UINT32 intSave;
@@ -350,7 +350,7 @@ static void FdClose(int sysFd, unsigned int targetPid)
     }
 #endif
 }
-//获取参数进程FD表
+///获取参数进程FD表
 static struct fd_table_s *GetProcessFTable(unsigned int pid, sem_t *semId)
 {
     UINT32 intSave;
@@ -374,7 +374,7 @@ static struct fd_table_s *GetProcessFTable(unsigned int pid, sem_t *semId)
 
     return procFiles->fdt;
 }
-//拷贝一个进程FD给指定的进程
+///拷贝一个进程FD给指定的进程
 int CopyFdToProc(int fd, unsigned int targetPid)
 {
 #if !defined(LOSCFG_NET_LWIP_SACK) && !defined(LOSCFG_COMPAT_POSIX) && !defined(LOSCFG_FS_VFS)
@@ -427,7 +427,7 @@ int CopyFdToProc(int fd, unsigned int targetPid)
     return procFd;
 #endif
 }
-//关闭进程FD
+///关闭进程FD
 int CloseProcFd(int procFd, unsigned int targetPid)
 {
 #if !defined(LOSCFG_NET_LWIP_SACK) && !defined(LOSCFG_COMPAT_POSIX) && !defined(LOSCFG_FS_VFS)

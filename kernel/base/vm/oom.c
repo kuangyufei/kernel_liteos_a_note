@@ -64,13 +64,13 @@ LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomScoreProcess(LosProcessCB *candidateProc
 #endif
     return actualPm;
 }
-//用于设置   g_oomCB->processVictimCB 回调函数
+///用于设置   g_oomCB->processVictimCB 回调函数
 LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomKillProcess(UINTPTR param)
 {
     /* we will not kill process, and do nothing here */
     return LOS_OK;
 }
-//强制收缩内存
+///强制收缩内存
 LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomForceShrinkMemory(VOID)
 {
     UINT32 i;
@@ -87,7 +87,7 @@ LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomForceShrinkMemory(VOID)
 
     return reclaimMemPages;
 }
-//内存不足时回收页高速缓存
+///内存不足时回收页高速缓存
 LITE_OS_SEC_TEXT_MINOR STATIC BOOL OomReclaimPageCache(VOID)
 {
     UINT32 totalPm = 0;
@@ -172,7 +172,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OomInfodump(VOID) //打印内存溢出信息
            g_oomCB->lowMemThreshold, g_oomCB->reclaimMemThreshold,
            g_oomCB->checkInterval);
 }
-//设置低内存门槛
+///设置低内存门槛
 LITE_OS_SEC_TEXT_MINOR VOID OomSetLowMemThreashold(UINT32 lowMemThreshold)
 {
     if ((lowMemThreshold > OOM_DEFAULT_LOW_MEM_THRESHOLD_MAX)) {
@@ -186,7 +186,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OomSetLowMemThreashold(UINT32 lowMemThreshold)
                g_oomCB->lowMemThreshold);
     }
 }
-//设置回收内存的门槛
+///设置回收内存的门槛
 LITE_OS_SEC_TEXT_MINOR VOID OomSetReclaimMemThreashold(UINT32 reclaimMemThreshold)
 {
     UINT32 totalPm = 0;
@@ -204,7 +204,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OomSetReclaimMemThreashold(UINT32 reclaimMemThreshol
                g_oomCB->reclaimMemThreshold);
     }
 }
-//设置监控间隔
+///设置监控间隔
 LITE_OS_SEC_TEXT_MINOR VOID OomSetCheckInterval(UINT32 checkInterval)
 {
     if ((checkInterval >= OOM_CHECK_MIN) && (checkInterval <= OOM_CHECK_MAX)) {
@@ -216,7 +216,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OomSetCheckInterval(UINT32 checkInterval)
                g_oomCB->checkInterval, OOM_CHECK_MIN, OOM_CHECK_MAX);
     }
 }
-//内存不足监控任务初始化, OOM 通过开一个软件定时器来检查内存的使用情况
+///内存不足监控任务初始化, OOM 通过开一个软件定时器来检查内存的使用情况
 LITE_OS_SEC_TEXT_MINOR UINT32 OomTaskInit(VOID)
 {
     g_oomCB = (OomCB *)LOS_MemAlloc(m_aucSysMem0, sizeof(OomCB));

@@ -232,7 +232,7 @@ STATIC INT32 ParseUserArgs(UINT64 rootAddr, UINT64 rootSize, UINT64 *userAddr, U
 
     return LOS_OK;
 }
-//挂载分区,即挂载 "/","/storage"
+///挂载分区,即挂载 "/","/storage"
 STATIC INT32 MountPartitions(CHAR *fsType, UINT32 mountFlags)
 {
     INT32 ret;
@@ -334,7 +334,7 @@ STATIC INT32 CheckValidation(UINT64 rootAddr, UINT64 rootSize, UINT64 userAddr, 
 
     return LOS_OK;
 }
-//挂载根文件系统 由 SystemInit 调用
+///挂载根文件系统 由 SystemInit 调用
 INT32 OsMountRootfs()
 {
     INT32 ret;

@@ -487,10 +487,10 @@ typedef VOID *(*TSK_ENTRY_FUNC)(UINTPTR param1,
  * You are not allowed to add any fields and adjust fields to the structure
  */
 typedef struct {//用户态栈信息,(按递减满栈方式注解)
-    UINTPTR         userArea;	//用户空间的堆区开始位置
-    UINTPTR         userSP;		//用户空间当前栈指针位置
-    UINTPTR         userMapBase;//用户空间的栈顶位置.
-    UINT32          userMapSize;//用户空间的栈大小,栈底 = userMapBase + userMapSize
+    UINTPTR         userArea;	///< 用户空间的堆区开始位置
+    UINTPTR         userSP;		///< 用户空间当前栈指针位置
+    UINTPTR         userMapBase;///< 用户空间的栈顶位置.
+    UINT32          userMapSize;///< 用户空间的栈大小,栈底 = userMapBase + userMapSize
 } UserTaskParam;
 
 /**
@@ -512,8 +512,8 @@ typedef struct tagTskInitParam {//Task的初始化参数
     UINT32          uwResved;      /**< It is automatically deleted if set to LOS_TASK_STATUS_DETACHED.
                                         It is unable to be deleted if set to 0. */ //如果设置为LOS_TASK_STATUS_DETACHED，则自动删除。如果设置为0，则无法删除
     UINT16          consoleID;     /**< The console id of task belongs  */ //任务的控制台id所属
-    UINT32          processID;	//进程ID
-    UserTaskParam   userParam;	//任务用户态运行时栈参数
+    UINT32          processID;	///< 进程ID
+    UserTaskParam   userParam;	///< 任务用户态运行时栈参数
 } TSK_INIT_PARAM_S;
 
 /**

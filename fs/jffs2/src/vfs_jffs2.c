@@ -254,7 +254,7 @@ int VfsJffs2Lookup(struct Vnode *parentVnode, const char *path, int len, struct 
     LOS_MuxUnlock(&g_jffs2FsLock);
     return 0;
 }
-//创建一个jffs2 索引节点
+///创建一个jffs2 索引节点
 int VfsJffs2Create(struct Vnode *parentVnode, const char *path, int mode, struct Vnode **ppVnode)
 {
     int ret;

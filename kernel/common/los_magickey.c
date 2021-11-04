@@ -95,7 +95,7 @@ STATIC VOID OsMagicHelp(VOID)//遍历一下 g_magicOpTable
     PRINTK("\n");
     return;
 }
-//执行 shell task -a 命令 
+///执行 shell task -a 命令 
 STATIC VOID OsMagicTaskShow(VOID)
 {
     const CHAR *arg = "-a";
@@ -109,7 +109,7 @@ STATIC VOID OsMagicPanic(VOID)
     LOS_Panic("Magic key :\n");
     return;
 }
-//快捷键触发内存检查
+///快捷键触发内存检查
 STATIC VOID OsMagicMemCheck(VOID)
 {
     if (LOS_MemIntegrityCheck(m_aucSysMem1) == LOS_OK) {

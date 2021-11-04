@@ -45,7 +45,7 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-//一个shell命令的结构体,命令有长有短,鸿蒙采用了可变数组的方式实现
+/*! 一个shell命令的结构体,命令有长有短,鸿蒙采用了可变数组的方式实现 */ 
 typedef struct {
     unsigned int count;	///< 字符数量
     SH_List list;		///< 双向链表

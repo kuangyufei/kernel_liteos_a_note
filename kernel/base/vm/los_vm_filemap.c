@@ -89,13 +89,13 @@ STATIC VOID OsPageCacheAdd(LosFilePage *page, struct page_mapping *mapping, VM_O
 done_add:
     mapping->nrpages++;	//文件在缓存中多了一个 文件页
 }
-//将页面加到活动文件页LRU链表上
+///将页面加到活动文件页LRU链表上
 VOID OsAddToPageacheLru(LosFilePage *page, struct page_mapping *mapping, VM_OFFSET_T pgoff)
 {
     OsPageCacheAdd(page, mapping, pgoff);
     OsLruCacheAdd(page, VM_LRU_ACTIVE_FILE);
 }
-//从页高速缓存上删除页
+///从页高速缓存上删除页
 VOID OsPageCacheDel(LosFilePage *fpage)
 {
     /* delete from file cache list */
@@ -133,7 +133,7 @@ VOID OsAddMapInfo(LosFilePage *page, LosArchMmu *archMmu, VADDR_T vaddr)
     LOS_ListAdd(&page->i_mmap, &info->node);//将 LosMapInfo 节点挂入链表
     page->n_maps++;//映射总数++
 }
-//通过虚拟地址获取文件页映射信息,archMmu每个进程都有属于自己的mmu
+///通过虚拟地址获取文件页映射信息,archMmu每个进程都有属于自己的mmu
 LosMapInfo *OsGetMapInfo(LosFilePage *page, LosArchMmu *archMmu, VADDR_T vaddr)
 {
     LosMapInfo *info = NULL;
@@ -146,7 +146,7 @@ LosMapInfo *OsGetMapInfo(LosFilePage *page, LosArchMmu *archMmu, VADDR_T vaddr)
     }
     return NULL;
 }
-//删除页高速缓存和LRU,对应 OsAddToPageacheLru
+///删除页高速缓存和LRU,对应 OsAddToPageacheLru
 VOID OsDeletePageCacheLru(LosFilePage *page)
 {
     /* delete form lru list */
@@ -175,7 +175,7 @@ STATIC VOID OsPageCacheUnmap(LosFilePage *fpage, LosArchMmu *archMmu, VADDR_T va
 
     LOS_SpinUnlockRestore(&fpage->physSeg->lruLock, intSave);
 }
-//删除文件
+///删除文件
 VOID OsVmmFileRemove(LosVmMapRegion *region, LosArchMmu *archMmu, VM_OFFSET_T pgoff)
 {
     UINT32 intSave;
@@ -222,7 +222,7 @@ VOID OsVmmFileRemove(LosVmMapRegion *region, LosArchMmu *archMmu, VM_OFFSET_T pg
     }
     return;
 }
-//标记page为脏页 进程修改了高速缓存里的数据时，该页就被内核标记为脏页
+///标记page为脏页 进程修改了高速缓存里的数据时，该页就被内核标记为脏页
 VOID OsMarkPageDirty(LosFilePage *fpage, LosVmMapRegion *region, INT32 off, INT32 len)
 {
     if (region != NULL) {
@@ -267,7 +267,7 @@ STATIC UINT32 GetDirtySize(LosFilePage *fpage, struct Vnode *vnode)
 
     return PAGE_SIZE;
 }
-//冲洗脏页，回写磁盘
+///冲洗脏页，回写磁盘
 STATIC INT32 OsFlushDirtyPage(LosFilePage *fpage)
 {
     UINT32 ret;
@@ -299,7 +299,7 @@ STATIC INT32 OsFlushDirtyPage(LosFilePage *fpage)
 
     return ret;
 }
-//备份脏页,老脏页撕掉脏页标签
+///备份脏页,老脏页撕掉脏页标签
 LosFilePage *OsDumpDirtyPage(LosFilePage *oldFPage)
 {
     LosFilePage *newFPage = NULL;
@@ -315,7 +315,7 @@ LosFilePage *OsDumpDirtyPage(LosFilePage *oldFPage)
 
     return newFPage;
 }
-//冲洗脏页数据,将脏页数据回写磁盘
+///冲洗脏页数据,将脏页数据回写磁盘
 VOID OsDoFlushDirtyPage(LosFilePage *fpage)
 {
     if (fpage == NULL) {
@@ -337,7 +337,7 @@ STATIC VOID OsReleaseFpage(struct page_mapping *mapping, LosFilePage *fpage)
     LOS_SpinUnlockRestore(lruLock, lruSave);
     LOS_SpinUnlockRestore(&mapping->list_lock, intSave);
 }
-//删除映射信息
+///删除映射信息
 VOID OsDelMapInfo(LosVmMapRegion *region, LosVmPgFault *vmf, BOOL cleanDirty)
 {
     UINT32 intSave;
@@ -442,7 +442,7 @@ INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
     LOS_SpinUnlockRestore(&mapping->list_lock, intSave);
     return LOS_OK;
 }
-//文件缓存冲洗,把所有fpage冲洗一边，把脏页洗到dirtyList中,配合OsFileCacheRemove理解 
+///文件缓存冲洗,把所有fpage冲洗一边，把脏页洗到dirtyList中,配合OsFileCacheRemove理解 
 VOID OsFileCacheFlush(struct page_mapping *mapping)
 {
     UINT32 intSave;
@@ -506,7 +506,7 @@ VOID OsFileCacheRemove(struct page_mapping *mapping)
         OsDoFlushDirtyPage(fpage);//遍历脏页链表,一页一页处理
     }
 }
-//虚拟内存文件操作实现类
+///虚拟内存文件操作实现类
 LosVmFileOps g_commVmOps = {//
     .open = NULL,
     .close = NULL,

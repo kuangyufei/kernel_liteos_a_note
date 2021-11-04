@@ -252,14 +252,14 @@ UINT32 OsSchedSetTickTimerType(UINT32 timerType)
 
     return LOS_OK;
 }
-//设置调度开始时间
+///设置调度开始时间
 STATIC VOID OsSchedSetStartTime(UINT64 currCycle)
 {
     if (g_sysSchedStartTime == OS_64BIT_MAX) {
         g_sysSchedStartTime = currCycle;
     }
 }
-//升级时间片
+///升级时间片
 STATIC INLINE VOID OsTimeSliceUpdate(LosTaskCB *taskCB, UINT64 currTime)
 {
     LOS_ASSERT(currTime >= taskCB->startTime);
@@ -493,7 +493,7 @@ STATIC INLINE VOID OsSchedWakePendTimeTask(UINT64 currTime, LosTaskCB *taskCB, B
 
     LOS_SpinUnlock(&g_taskSpin);
 }
-//扫描那些处于等待状态的任务是否时间到了
+///扫描那些处于等待状态的任务是否时间到了
 STATIC INLINE BOOL OsSchedScanTimerList(VOID)
 {
     Percpu *cpu = OsPercpuGet();
@@ -646,7 +646,7 @@ VOID OsSchedTaskExit(LosTaskCB *taskCB)
         taskCB->taskStatus &= ~(OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME);
     }
 }
-//通过本函数可以看出 yield 的真正含义是主动让出CPU,当它自己还是在就绪队列中,跑末位去排队了.像个活雷锋.
+///通过本函数可以看出 yield 的真正含义是主动让出CPU,当它自己还是在就绪队列中,跑末位去排队了.像个活雷锋.
 VOID OsSchedYield(VOID)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
@@ -657,7 +657,7 @@ VOID OsSchedYield(VOID)
     OsSchedTaskEnQueue(runTask);//跑队列尾部排队
     OsSchedResched();//发起调度
 }
-//延期调度
+///延期调度
 VOID OsSchedDelay(LosTaskCB *runTask, UINT32 tick)
 {
     OsSchedTaskDeQueue(runTask);//将任务从就绪队列中删除
@@ -666,7 +666,7 @@ VOID OsSchedDelay(LosTaskCB *runTask, UINT32 tick)
 
     OsSchedResched();//既然本任务延期,就需要发起新的调度.
 }
-//任务进入等待链表
+///任务进入等待链表
 UINT32 OsSchedTaskWait(LOS_DL_LIST *list, UINT32 ticks, BOOL needSched)
 {
     LosTaskCB *runTask = OsCurrTaskGet();//获取当前任务
@@ -690,7 +690,7 @@ UINT32 OsSchedTaskWait(LOS_DL_LIST *list, UINT32 ticks, BOOL needSched)
 
     return LOS_OK;
 }
-//任务从等待链表中恢复,并从链表中摘除.
+///任务从等待链表中恢复,并从链表中摘除.
 VOID OsSchedTaskWake(LosTaskCB *resumedTask)
 {
     LOS_ListDelete(&resumedTask->pendList);
@@ -737,7 +737,7 @@ BOOL OsSchedModifyTaskSchedParam(LosTaskCB *taskCB, UINT16 policy, UINT16 priori
 
     return FALSE;
 }
-//修改进程调度参数
+///修改进程调度参数
 BOOL OsSchedModifyProcessSchedParam(LosProcessCB *processCB, UINT16 policy, UINT16 priority)
 {
     LosTaskCB *taskCB = NULL;
@@ -803,7 +803,7 @@ UINT32 OsSchedSwtmrScanRegister(SchedScan func)
     g_sched->swtmrScan = func;
     return LOS_OK;
 }
-//调度初始化
+///调度初始化
 UINT32 OsSchedInit(VOID)
 {
     UINT16 index, pri;
@@ -845,7 +845,7 @@ UINT32 OsSchedInit(VOID)
 #endif
     return LOS_OK;
 }
-//获取优先级最高的任务
+///获取优先级最高的任务
 STATIC LosTaskCB *OsGetTopTask(VOID)
 {
     UINT32 priority, processPriority;
@@ -882,7 +882,7 @@ FIND_TASK:
     OsSchedDeTaskQueue(newTask, OS_PCB_FROM_PID(newTask->processID));
     return newTask;
 }
-//CPU的调度开始,每个CPU核都会执行这个函数一次.
+///CPU的调度开始,每个CPU核都会执行这个函数一次.
 VOID OsSchedStart(VOID)
 {
     UINT32 cpuid = ArchCurrCpuid();//从系统寄存器上获取当前执行的CPU核编号

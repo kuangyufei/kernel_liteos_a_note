@@ -82,32 +82,32 @@ extern "C" {
 
 #define QUOTES_STATUS_CLOSE(qu) ((qu) == FALSE)
 #define QUOTES_STATUS_OPEN(qu)  ((qu) == TRUE)
-//shell 控制块
+/*! shell 控制块 */
 typedef struct {
-    UINT32   consoleID;	//控制台ID
-    UINT32   shellTaskHandle;	//shell服务端任务
-    UINT32   shellEntryHandle;	//shell客户端任务
-    VOID     *cmdKeyLink;		//待处理的shell命令链表
-    VOID     *cmdHistoryKeyLink;//已处理的历史记录链表,去重,10个
-    VOID     *cmdMaskKeyLink;	//主要用于方向键上下遍历历史命令
-    UINT32   shellBufOffset;	//buf偏移量
-    UINT32   shellKeyType;	//按键类型
-    EVENT_CB_S shellEvent;	//事件类型触发
-    pthread_mutex_t keyMutex;	//按键互斥量
-    pthread_mutex_t historyMutex;	//历史记录互斥量
-    CHAR     shellBuf[SHOW_MAX_LEN];	//shell命令buf,接受键盘的输入,需要对输入字符解析.
-    CHAR     shellWorkingDirectory[PATH_MAX];//shell的工作目录
+    UINT32   consoleID;	        ///< 控制台ID
+    UINT32   shellTaskHandle;	///< shell服务端任务
+    UINT32   shellEntryHandle;	///< shell客户端任务
+    VOID     *cmdKeyLink;		///< 待处理的shell命令链表
+    VOID     *cmdHistoryKeyLink; ///< 已处理的历史记录链表,去重,10个
+    VOID     *cmdMaskKeyLink;	///< 主要用于方向键上下遍历历史命令
+    UINT32   shellBufOffset;	///< buf偏移量
+    UINT32   shellKeyType;	    ///< 按键类型
+    EVENT_CB_S shellEvent;	    ///< 事件类型触发
+    pthread_mutex_t keyMutex;	///< 按键互斥量
+    pthread_mutex_t historyMutex;	    ///< 历史记录互斥量
+    CHAR     shellBuf[SHOW_MAX_LEN];	///< shell命令buf,接受键盘的输入,需要对输入字符解析.
+    CHAR     shellWorkingDirectory[PATH_MAX]; ///< shell的工作目录
 } ShellCB;
 
-/* All support cmd types */
-typedef enum {//所有支持的类型
-    CMD_TYPE_SHOW = 0,	//用户怎么输入就怎么显示出现,包括 \n \0 这些字符也都会存在
-    CMD_TYPE_STD = 1,	//支持的标准命令参数输入，所有输入的字符都会通过命令解析后被传入。
-    CMD_TYPE_EX = 2,	//不支持标准命令参数输入，会把用户填写的命令关键字屏蔽掉，例如：输入ls /ramfs，传入给注册函数的参数只有/ramfs，而ls命令关键字并不会被传入。
+/*! All support cmd types | 所有支持的类型 */
+typedef enum {
+    CMD_TYPE_SHOW = 0,	///< 用户怎么输入就怎么显示出现,包括 \n \0 这些字符也都会存在
+    CMD_TYPE_STD = 1,	///< 支持的标准命令参数输入，所有输入的字符都会通过命令解析后被传入。
+    CMD_TYPE_EX = 2,	///< 不支持标准命令参数输入，会把用户填写的命令关键字屏蔽掉，例如：输入ls /ramfs，传入给注册函数的参数只有/ramfs，而ls命令关键字并不会被传入。
     CMD_TYPE_BUTT
 } CmdType;
-
-typedef enum {//四个方向上下左右键
+/*! 四个方向上下左右键*/
+typedef enum {
     CMD_KEY_UP = 0,
     CMD_KEY_DOWN = 1,
     CMD_KEY_RIGHT = 2,
@@ -124,7 +124,7 @@ typedef UINT32 (*CmdCallBackFunc)(UINT32 argc, const CHAR **argv);//命令回调
 /* External interface, need reserved */
 typedef CmdCallBackFunc CMD_CBK_FUNC;
 typedef CmdType CMD_TYPE_E;
-//以动态方式注册命令
+/// 以动态方式注册命令
 extern UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNum, CmdCallBackFunc cmdProc);
 
 #ifdef __cplusplus

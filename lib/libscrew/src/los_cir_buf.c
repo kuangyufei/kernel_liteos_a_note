@@ -107,7 +107,7 @@ STATIC UINT32 OsCirBufWriteLoop(CirBuf *cirbufCB, const CHAR *buf, UINT32 size)
 
     return cpSize;
 }
-//写入数据到循环buf区
+///写入数据到循环buf区
 UINT32 LOS_CirBufWrite(CirBuf *cirbufCB, const CHAR *buf, UINT32 size)
 {
     UINT32 cpSize;
@@ -189,7 +189,7 @@ STATIC UINT32 OsCirBufReadLoop(CirBuf *cirbufCB, CHAR *buf, UINT32 size)
 
     return cpSize;
 }
-//读取循环buf的数据
+///读取循环buf的数据
 UINT32 LOS_CirBufRead(CirBuf *cirbufCB, CHAR *buf, UINT32 size)
 {
     UINT32 cpSize;
@@ -210,7 +210,7 @@ UINT32 LOS_CirBufRead(CirBuf *cirbufCB, CHAR *buf, UINT32 size)
 
     return cpSize;
 }
-//初始化循环buf
+///初始化循环buf
 UINT32 LOS_CirBufInit(CirBuf *cirbufCB, CHAR *fifo, UINT32 size)
 {
     if ((cirbufCB == NULL) || (fifo == NULL)) {
@@ -226,7 +226,7 @@ UINT32 LOS_CirBufInit(CirBuf *cirbufCB, CHAR *fifo, UINT32 size)
 
     return LOS_OK;
 }
-//删除初始化操作，其实就是清0
+///删除初始化操作，其实就是清0
 VOID LOS_CirBufDeinit(CirBuf *cirbufCB)
 {
     (VOID)memset_s(cirbufCB, sizeof(CirBuf), 0, sizeof(CirBuf));

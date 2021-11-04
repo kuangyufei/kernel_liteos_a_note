@@ -190,7 +190,7 @@ static int OsShowPageControl(unsigned int timesPrint, unsigned int lineCap, unsi
     }
     return 1;
 }
-//确认打印的内容
+/// 确认打印的内容
 static int OsSurePrintAll(unsigned int count)
 {
     char readChar = 0;
@@ -296,7 +296,7 @@ static void OsCompleteStr(char *result, const char *target, char *cmdKey, unsign
         (*len)++;
     }
 }
-//当前目录下匹配名字
+/// 当前目录下匹配名字
 static int OsExecNameMatch(const char *strPath, const char *nameLooking, char *strObj, unsigned int *maxLen)
 {
     int count = 0;

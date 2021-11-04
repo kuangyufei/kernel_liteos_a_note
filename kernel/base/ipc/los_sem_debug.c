@@ -102,14 +102,14 @@ UINT32 OsSemDbgInit(VOID)
     (VOID)memset_s(g_semDebugArray, size, 0, size);
     return LOS_OK;
 }
-//更新最后访问时间
+///更新最后访问时间
 VOID OsSemDbgTimeUpdate(UINT32 semID)
 {
     SemDebugCB *semDebug = &g_semDebugArray[GET_SEM_INDEX(semID)];
     semDebug->lastAccessTime = LOS_TickCountGet();//获取tick总数
     return;
 }
-//更新信号量
+///更新信号量
 VOID OsSemDbgUpdate(UINT32 semID, TSK_ENTRY_FUNC creater, UINT16 count)
 {
     SemDebugCB *semDebug = &g_semDebugArray[GET_SEM_INDEX(semID)];
@@ -118,7 +118,7 @@ VOID OsSemDbgUpdate(UINT32 semID, TSK_ENTRY_FUNC creater, UINT16 count)
     semDebug->origSemCount = count;//原始信号量改变
     return;
 }
-//按信号量访问时间排序
+///按信号量访问时间排序
 STATIC VOID OsSemSort(UINT32 *semIndexArray, UINT32 usedCount)
 {
     UINT32 i, intSave;

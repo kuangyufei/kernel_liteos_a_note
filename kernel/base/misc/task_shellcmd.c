@@ -363,7 +363,7 @@ STATIC VOID OsShellCmdTaskWaterLineGet(const LosTaskCB *allTaskArray)
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 #define OS_PEND_REASON_MAX_LEN 20
-//shell检查任务等待标�?
+//shell检查任务等待标�?
 STATIC CHAR *OsShellCheckTaskWaitFlag(const LosTaskCB *taskCB, UINTPTR *lockID)
 {
     *lockID = taskCB->waitID;
@@ -538,7 +538,7 @@ STATIC VOID OsProcessAndTaskInfoGet(LosProcessCB **pcbArray, INT32 **group, LosT
         SCHEDULER_UNLOCK(intSave);
     }
 }
-//获取任务相关信息
+///获取任务相关信息
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdTskInfoGet(UINT32 taskID, VOID *seqBuf, UINT16 flag)
 {
     UINT32 size;

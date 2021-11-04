@@ -46,7 +46,7 @@ STATIC UINT32 OsShellCmdInit(VOID)
 
     return OsShellSysCmdRegister();//系统自带的shell命令初始化
 }
-//创建shell任务
+///创建shell任务
 STATIC UINT32 OsShellCreateTask(ShellCB *shellCB)
 {
     UINT32 ret = ShellTaskInit(shellCB);//执行shell命令的任务初始化
@@ -56,7 +56,7 @@ STATIC UINT32 OsShellCreateTask(ShellCB *shellCB)
 
     return ShellEntryInit(shellCB);//通过控制台接受shell命令的任务初始化
 }
-//shell资源初始化
+///shell资源初始化
 STATIC UINT32 OsShellSourceInit(INT32 consoleId)
 {
     UINT32 ret = LOS_NOK;
@@ -120,7 +120,7 @@ ERR_OUT1:
     consoleCB->shellHandle = NULL;
     return ret;
 }
-//shell初始化
+///shell初始化
 UINT32 OsShellInit(INT32 consoleId)
 {
     if (g_shellSourceFlag == FALSE) {
@@ -133,7 +133,7 @@ UINT32 OsShellInit(INT32 consoleId)
     }
     return OsShellSourceInit(consoleId);
 }
-//shell结束
+///shell结束
 INT32 OsShellDeinit(INT32 consoleId)
 {
     CONSOLE_CB *consoleCB = NULL;
@@ -157,7 +157,7 @@ INT32 OsShellDeinit(INT32 consoleId)
 
     return 0;
 }
-//获取shell的工作目录
+///获取shell的工作目录
 CHAR *OsShellGetWorkingDirtectory(VOID)
 {
     CONSOLE_CB *consoleCB = OsGetConsoleByTaskID(OsCurrTaskGet()->taskID);//获取当前任务控制台

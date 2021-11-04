@@ -95,7 +95,7 @@ mqd_t SysMqOpen(const char *mqName, int openFlag, mode_t mode, struct mq_attr *a
     MQUEUE_FD_K2U(ret);
     return ret;
 }
-//关闭一个消息队列
+///关闭一个消息队列
 int SysMqClose(mqd_t personal)
 {
     int ret;
@@ -257,7 +257,7 @@ ssize_t SysMqTimedReceive(mqd_t personal, char *msg, size_t msgLen, unsigned int
     }
     return receiveLen;
 }
-//注册信号,鸿蒙内核只捕捉了SIGSYS 信号
+///注册信号,鸿蒙内核只捕捉了SIGSYS 信号
 int SysSigAction(int sig, const sigaction_t *restrict sa, sigaction_t *restrict old, size_t sigsetsize)
 {
     return OsSigAction(sig, sa, old);
@@ -277,12 +277,12 @@ int SysSigprocMask(int how, const sigset_t_l *restrict setl, sigset_t_l *restric
     /* Let nxsig_procmask do all of the work */
     return OsSigprocMask(how, setl, oldl);
 }
-//系统调用之向进程发送信号
+///系统调用之向进程发送信号
 int SysKill(pid_t pid, int sig)
 {
     return OsKillLock(pid, sig);
 }
-//系统调用之之向进程发送信号
+///系统调用之之向进程发送信号
 int SysPthreadKill(pid_t pid, int sig)
 {
     return OsPthreadKill(pid, sig);
@@ -325,12 +325,12 @@ int SysSigTimedWait(const sigset_t_l *setl, siginfo_t *info, const struct timesp
     }
     return (ret == 0 ? infoIntr.si_signo : ret);
 }
-//系统调用之暂停任务
+///系统调用之暂停任务
 int SysPause(void)
 {
     return OsPause();
 }
-//获取阻塞当前任务的信号集
+///获取阻塞当前任务的信号集
 int SysSigPending(sigset_t_l *setl)
 {
     sigset_t set;
@@ -350,7 +350,7 @@ int SysSigPending(sigset_t_l *setl)
     }
     return ret;
 }
-//
+///
 int SysSigSuspend(sigset_t_l *setl)
 {
     sigset_t set;

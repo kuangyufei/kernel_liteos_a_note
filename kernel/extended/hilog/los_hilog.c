@@ -93,19 +93,19 @@ static inline unsigned char *HiLogBufferHead(void)
 {
     return g_hiLogDev.buffer + g_hiLogDev.headOffset;
 }
-//为支持VFS,作打开状
+///为支持VFS,作打开状
 int HiLogOpen(struct file *filep)
 {
     (void)filep;
     return 0;
 }
-//为支持VFS,作关闭状
+///为支持VFS,作关闭状
 int HiLogClose(struct file *filep)
 {
     (void)filep;
     return 0;
 }
-//读写对冲,对hilog的写操作,更新相关变量内容
+///读写对冲,对hilog的写操作,更新相关变量内容
 static void HiLogBufferInc(size_t sz)
 {
     if (g_hiLogDev.size + sz <= HILOG_BUFFER) {
@@ -115,7 +115,7 @@ static void HiLogBufferInc(size_t sz)
         g_hiLogDev.count++;//读写对冲
     }
 }
-//读写对冲,对hilog的读操作,更新相关变量内容
+///读写对冲,对hilog的读操作,更新相关变量内容
 static void HiLogBufferDec(size_t sz)
 {
     if (g_hiLogDev.size >= sz) {
@@ -145,7 +145,7 @@ static int HiLogBufferCopy(unsigned char *dst, unsigned dstLen, const unsigned c
     }
     return retval;
 }
-//读取ring buffer
+///读取ring buffer
 static int HiLogReadRingBuffer(unsigned char *buffer, size_t bufLen)
 {
     size_t retval;
@@ -212,7 +212,7 @@ out:
     (VOID)LOS_MuxRelease(&g_hiLogDev.mtx);//临界区操作结束
     return retval;
 }
-//写入 RingBuffer环形缓冲，也叫 circleBuffer
+///写入 RingBuffer环形缓冲，也叫 circleBuffer
 static int HiLogWriteRingBuffer(unsigned char *buffer, size_t bufLen)
 {
     int retval;
@@ -231,7 +231,7 @@ static int HiLogWriteRingBuffer(unsigned char *buffer, size_t bufLen)
     }
     return 0;
 }
-//hilog实体初始化
+///hilog实体初始化
 static void HiLogHeadInit(struct HiLogEntry *header, size_t len)
 {
     struct timespec now;//标准C库函数,时间格式,包含秒数和纳秒数
@@ -267,7 +267,7 @@ static void HiLogCoverOldLog(size_t bufLen)
         HiLogBufferDec(header.len);
     }
 }
-//将外部buf写入hilog设备分两步完成
+///将外部buf写入hilog设备分两步完成
 int HiLogWriteInternal(const char *buffer, size_t bufLen)
 {
     struct HiLogEntry header;
@@ -310,7 +310,7 @@ out:
     }
     return retval;
 }
-//写hilog,外部以VFS方式写入
+///写hilog,外部以VFS方式写入
 static ssize_t HiLogWrite(struct file *filep, const char *buffer, size_t bufLen)
 {
     (void)filep;
@@ -321,7 +321,7 @@ static ssize_t HiLogWrite(struct file *filep, const char *buffer, size_t bufLen)
 
     return HiLogWriteInternal(buffer, bufLen);
 }
-//初始化全局变量g_hiLogDev
+///初始化全局变量g_hiLogDev
 static void HiLogDeviceInit(void)
 {
     g_hiLogDev.buffer = LOS_MemAlloc((VOID *)OS_SYS_MEM_ADDR, HILOG_BUFFER);//分配内核空间
@@ -337,7 +337,7 @@ static void HiLogDeviceInit(void)
     g_hiLogDev.size = 0;	//
     g_hiLogDev.count = 0;
 }
-//初始化hilog驱动
+///初始化hilog驱动
 int OsHiLogDriverInit(VOID)
 {
     HiLogDeviceInit();//初始化全局变量g_hiLogDev

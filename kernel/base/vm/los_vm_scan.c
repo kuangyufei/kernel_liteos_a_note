@@ -53,7 +53,7 @@ VOID OsUnmapPageLocked(LosFilePage *page, LosMapInfo *info)
     LOS_ArchMmuUnmap(info->archMmu, info->vaddr, 1);
     LOS_MemFree(m_aucSysMem0, info);//释放虚拟
 }
-//解除文件页在所有进程的映射
+///解除文件页在所有进程的映射
 VOID OsUnmapAllLocked(LosFilePage *page)
 {
     LosMapInfo *info = NULL;
@@ -90,7 +90,7 @@ VOID OsLruCacheDel(LosFilePage *fpage)//删除lru节点，调用者需要拿到l
     physSeg->lruSize[type]--;	//type页总size--
     LOS_ListDelete(&fpage->lru);//将自己从lru链表中摘出来
 }
-//非活动文件页低于活动文件页吗
+///非活动文件页低于活动文件页吗
 BOOL OsInactiveListIsLow(LosVmPhysSeg *physSeg)
 {
     return (physSeg->lruSize[VM_LRU_ACTIVE_FILE] >
@@ -209,7 +209,7 @@ VOID OsPageRefDecNoLock(LosFilePage *fpage) // ref ,act 标签转换功能
         OsMoveToInactiveList(fpage);
     }
 }
-//缩小活动页链表
+///缩小活动页链表
 VOID OsShrinkActiveList(LosVmPhysSeg *physSeg, int nScan)
 {
     LosFilePage *fpage = NULL;
@@ -241,7 +241,7 @@ VOID OsShrinkActiveList(LosVmPhysSeg *physSeg, int nScan)
         }
     }
 }
-//缩小未活动页链表
+///缩小未活动页链表
 int OsShrinkInactiveList(LosVmPhysSeg *physSeg, int nScan, LOS_DL_LIST *list)
 {
     UINT32 nrReclaimed = 0;
@@ -288,7 +288,7 @@ int OsShrinkInactiveList(LosVmPhysSeg *physSeg, int nScan, LOS_DL_LIST *list)
 
     return nrReclaimed;
 }
-//是否 未活动文件页少于活动文件页
+///是否 未活动文件页少于活动文件页
 bool InactiveListIsLow(LosVmPhysSeg *physSeg)
 {
     return (physSeg->lruSize[VM_LRU_ACTIVE_FILE] > physSeg->lruSize[VM_LRU_INACTIVE_FILE]) ? TRUE : FALSE;

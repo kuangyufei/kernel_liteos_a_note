@@ -67,7 +67,7 @@ struct Mount* MountAlloc(struct Vnode* vnodeBeCovered, struct MountOps* fsop)
 #endif
     return mnt;
 }
-//获取装载链表,并初始化
+///获取装载链表,并初始化
 LIST_HEAD* GetMountList()
 {
     if (g_mountList == NULL) {

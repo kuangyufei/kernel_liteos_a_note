@@ -69,7 +69,7 @@ static int UptimeProcFill(struct SeqBuf *seqBuf, void *v)
 #endif
     return 0;
 }
-//替换了 read 接口的实现
+///替换了 read 接口的实现
 static const struct ProcFileOperations UPTIME_PROC_FOPS = {
     .read       = UptimeProcFill,//读取接口的实现
 };

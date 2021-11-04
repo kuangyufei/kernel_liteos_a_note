@@ -53,7 +53,7 @@ CmdModInfo *OsCmdInfoGet(VOID)
 {
     return &g_cmdInfo;
 }
-//释放命令行参数所占内存
+///释放命令行参数所占内存
 STATIC VOID OsFreeCmdPara(CmdParsed *cmdParsed)
 {
     UINT32 i;
@@ -151,7 +151,7 @@ STATIC INT32 OsStrSeparate(CHAR *tabStr, CHAR *strPath, CHAR *nameLooking, UINT3
     OsFreeCmdPara(&parsed);
     return LOS_OK;
 }
-//输出内容
+///输出内容
 STATIC INT32 OsShowPageInputControl(VOID)
 {
     CHAR readChar;
@@ -170,7 +170,7 @@ STATIC INT32 OsShowPageInputControl(VOID)
         }
     }
 }
-//显示页内容控制器
+///显示页内容控制器
 STATIC INT32 OsShowPageControl(UINT32 timesPrint, UINT32 lineCap, UINT32 count)
 {
     if (NEED_NEW_LINE(timesPrint, lineCap)) {//是否新开一行
@@ -182,7 +182,7 @@ STATIC INT32 OsShowPageControl(UINT32 timesPrint, UINT32 lineCap, UINT32 count)
     }
     return 1;
 }
-//是否打印所有内容
+///是否打印所有内容
 STATIC INT32 OsSurePrintAll(UINT32 count)
 {
     CHAR readChar = 0;
@@ -199,7 +199,7 @@ STATIC INT32 OsSurePrintAll(UINT32 count)
         }
     }
 }
-//打印匹配的列表数据
+///打印匹配的列表数据
 STATIC INT32 OsPrintMatchList(UINT32 count, const CHAR *strPath, const CHAR *nameLooking, UINT32 printLen)
 {
     UINT32 timesPrint = 0;
@@ -326,7 +326,7 @@ STATIC VOID OsCompleteStr(const CHAR *result, const CHAR *target, CHAR *cmdKey, 
         (*len)++;
     }
 }
-//使用tab键去匹配命令
+///使用tab键去匹配命令
 /*例如:
 root@iZ7xv0x7yrn6s2or5pzw58Z:~# ls
 ls           lsblk        lscpu        lsinitramfs  lslocks      lsmem        lsns         lspci        lsusb
@@ -387,7 +387,7 @@ STATIC INT32 OsTabMatchCmd(CHAR *cmdKey, UINT32 *len)
 
     return ret;
 }
-//使用tab键去匹配关键字文件
+///使用tab键去匹配关键字文件
 STATIC INT32 OsTabMatchFile(CHAR *cmdKey, UINT32 *len)
 {
     UINT32 maxLen = 0;
@@ -501,7 +501,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdKeyShift(const CHAR *cmdKey, CHAR *cmdOut, UI
 
     return LOS_OK;
 }
-//类型变量命名,必须是数字字母下划线,首字母不能是数字
+///类型变量命名,必须是数字字母下划线,首字母不能是数字
 LITE_OS_SEC_TEXT_MINOR BOOL OsCmdKeyCheck(const CHAR *cmdKey)
 {
     const CHAR *temp = cmdKey;
@@ -540,7 +540,7 @@ LITE_OS_SEC_TEXT_MINOR BOOL OsCmdKeyCheck(const CHAR *cmdKey)
 
     return TRUE;
 }
-//tab键
+///tab键
 LITE_OS_SEC_TEXT_MINOR INT32 OsTabCompletion(CHAR *cmdKey, UINT32 *len)
 {
     INT32 count = 0;
@@ -568,7 +568,7 @@ LITE_OS_SEC_TEXT_MINOR INT32 OsTabCompletion(CHAR *cmdKey, UINT32 *len)
 
     return count;
 }
-//按升序插入到链表中
+///按升序插入到链表中
 LITE_OS_SEC_TEXT_MINOR VOID OsCmdAscendingInsert(CmdItemNode *cmd)
 {
     CmdItemNode *cmdItem = NULL;
@@ -598,7 +598,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsCmdAscendingInsert(CmdItemNode *cmd)
 
     LOS_ListTailInsert(&(cmdItem->list), &(cmd->list));
 }
-//shell 命令初始化
+///shell 命令初始化
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellKeyInit(ShellCB *shellCB)
 {
     CmdKeyLink *cmdKeyLink = NULL;
@@ -629,7 +629,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellKeyInit(ShellCB *shellCB)
     shellCB->cmdMaskKeyLink = (VOID *)cmdHistoryLink;//掩码命令链表同历史记录链表,标识上下键位置.
     return LOS_OK;
 }
-//shell的析构函数
+///shell的析构函数
 LITE_OS_SEC_TEXT_MINOR VOID OsShellKeyDeInit(CmdKeyLink *cmdKeyLink)
 {
     CmdKeyLink *cmdtmp = NULL;
@@ -646,7 +646,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellKeyDeInit(CmdKeyLink *cmdKeyLink)
     cmdKeyLink->count = 0;//链表为空,个数清0
     (VOID)LOS_MemFree(m_aucSysMem0, cmdKeyLink);
 }
-//注册系统自带的shell命令
+///注册系统自带的shell命令
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellSysCmdRegister(VOID)
 {
     UINT32 i;
@@ -668,7 +668,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellSysCmdRegister(VOID)
     g_cmdInfo.listNum += index;//命令数量叠加
     return LOS_OK;
 }
-//将shell命令 string 以 CmdKeyLink 方式加入链表
+///将shell命令 string 以 CmdKeyLink 方式加入链表
 LITE_OS_SEC_TEXT_MINOR VOID OsShellCmdPush(const CHAR *string, CmdKeyLink *cmdKeyLink)
 {
     CmdKeyLink *cmdNewNode = NULL;
@@ -694,7 +694,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellCmdPush(const CHAR *string, CmdKeyLink *cmdKe
 
     return;
 }
-//显示shell命令历史记录,支持上下键方式
+///显示shell命令历史记录,支持上下键方式
 LITE_OS_SEC_TEXT_MINOR VOID OsShellHistoryShow(UINT32 value, ShellCB *shellCB)
 {
     CmdKeyLink *cmdtmp = NULL;
@@ -740,7 +740,7 @@ END:
     (VOID)pthread_mutex_unlock(&shellCB->historyMutex);
     return;
 }
-//执行命令,shell是运行程序的程序.
+///执行命令,shell是运行程序的程序.
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdExec(CmdParsed *cmdParsed, CHAR *cmdStr)
 {
     UINT32 ret;
@@ -783,7 +783,7 @@ OUT:
 
     return (UINT32)ret;
 }
-/*	命令初始化,用于存放支持的命令,目前鸿蒙支持如下命令
+/*!	命令初始化,用于存放支持的命令,目前鸿蒙支持如下命令 
 arp           cat           cd            chgrp         chmod         chown         cp            cpup          
 date          dhclient      dmesg         dns           format        free          help          hwi           
 ifconfig      ipdebug       kill          log           ls            lsfd          memcheck      mkdir         
@@ -805,7 +805,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdInit(VOID)
     }
     return LOS_OK;
 }
-//创建一个命令项,例如 chmod
+///创建一个命令项,例如 chmod
 STATIC UINT32 OsCmdItemCreate(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNum, CmdCallBackFunc cmdProc)
 {
     CmdItem *cmdItem = NULL;

@@ -56,7 +56,7 @@ int VnodeHashInit(void)
 
     return LOS_OK;
 }
-//打印全部 hash 表
+///打印全部 hash 表
 void VnodeHashDump(void)
 {
     PRINTK("-------->VnodeHashDump in\n");
@@ -72,7 +72,7 @@ void VnodeHashDump(void)
     (void)LOS_MuxUnlock(&g_vnodeHashMux);
     PRINTK("-------->VnodeHashDump out\n");
 }
-//通过节点获取哈希索引值
+///通过节点获取哈希索引值
 uint32_t VfsHashIndex(struct Vnode *vnode)
 {
     if (vnode == NULL) {
@@ -80,12 +80,12 @@ uint32_t VfsHashIndex(struct Vnode *vnode)
     }
     return (vnode->hash + vnode->originMount->hashseed);//用于定位在哈希表的下标
 }
-//通过哈希值和装载设备哈希种子获取哈希表索引
+///通过哈希值和装载设备哈希种子获取哈希表索引
 static LOS_DL_LIST *VfsHashBucket(const struct Mount *mp, uint32_t hash)
 {
     return (&g_vnodeHashEntrys[(hash + mp->hashseed) & g_vnodeHashMask]);//g_vnodeHashMask确保始终范围在[0~g_vnodeHashMask]之间
 }
-//通过哈希值获取节点信息
+///通过哈希值获取节点信息
 int VfsHashGet(const struct Mount *mount, uint32_t hash, struct Vnode **vnode, VfsHashCmp *fn, void *arg)
 {
     struct Vnode *curVnode = NULL;
@@ -114,7 +114,7 @@ int VfsHashGet(const struct Mount *mount, uint32_t hash, struct Vnode **vnode, V
     *vnode = NULL;
     return LOS_NOK;
 }
-//从哈希链表中摘除索引节点
+///从哈希链表中摘除索引节点
 void VfsHashRemove(struct Vnode *vnode)
 {
     if (vnode == NULL) {
@@ -124,7 +124,7 @@ void VfsHashRemove(struct Vnode *vnode)
     LOS_ListDelete(&vnode->hashEntry);//直接把自己摘掉就行了
     (void)LOS_MuxUnlock(&g_vnodeHashMux);
 }
-//插入哈希表
+///插入哈希表
 int VfsHashInsert(struct Vnode *vnode, uint32_t hash)
 {
     if (vnode == NULL) {

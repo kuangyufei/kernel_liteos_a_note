@@ -115,7 +115,7 @@ ERROUT:
     set_errno(ret);
     return VFS_ERROR;
 }
-//获取控制台 模式值 
+///获取控制台 模式值 
 INT32 ConsoleTcGetAttr(INT32 fd, struct termios *termios)
 {
     struct file *filep = NULL;
@@ -134,7 +134,7 @@ INT32 ConsoleTcGetAttr(INT32 fd, struct termios *termios)
     (VOID)memcpy_s(termios, sizeof(struct termios), &consoleCB->consoleTermios, sizeof(struct termios));
     return LOS_OK;
 }
-//设置控制台 模式值 
+///设置控制台 模式值 
 INT32 ConsoleTcSetAttr(INT32 fd, INT32 actions, const struct termios *termios)
 {
     struct file *filep = NULL;
@@ -160,7 +160,7 @@ STATIC UINT32 ConsoleRefcountGet(const CONSOLE_CB *consoleCB)
 {
     return consoleCB->refCount;
 }
-//设置控制台引用次数
+///设置控制台引用次数
 STATIC VOID ConsoleRefcountSet(CONSOLE_CB *consoleCB, BOOL flag)
 {
     if (flag == TRUE) {
@@ -169,7 +169,7 @@ STATIC VOID ConsoleRefcountSet(CONSOLE_CB *consoleCB, BOOL flag)
         --(consoleCB->refCount);
     }
 }
-//控制台是否被占用
+///控制台是否被占用
 BOOL IsConsoleOccupied(const CONSOLE_CB *consoleCB)
 {
     if (ConsoleRefcountGet(consoleCB) != FALSE) {
@@ -258,7 +258,7 @@ STATIC CONSOLE_CB *OsGetConsoleByDevice(const CHAR *deviceName)
         return NULL;
     }
 }
-//获取控制台ID,(/dev/serial = 1, /dev/telnet = 2)
+///获取控制台ID,(/dev/serial = 1, /dev/telnet = 2)
 STATIC INT32 OsGetConsoleID(const CHAR *deviceName)
 {
     if ((deviceName != NULL) &&
@@ -275,7 +275,7 @@ STATIC INT32 OsGetConsoleID(const CHAR *deviceName)
 #endif
     return -1;
 }
-//通过路径找到控制台ID
+///通过路径找到控制台ID
 STATIC INT32 OsConsoleFullpathToID(const CHAR *fullpath)
 {
 #define CONSOLE_SERIAL_1 "/dev/console1"
@@ -315,12 +315,12 @@ STATIC VOID ConsoleFifoClearup(CONSOLE_CB *console)
     console->fifoIn = 0;
     (VOID)memset_s(console->fifo, CONSOLE_FIFO_SIZE, 0, CONSOLE_FIFO_SIZE);
 }
-//控制台buf长度更新
+///控制台buf长度更新
 STATIC VOID ConsoleFifoLenUpdate(CONSOLE_CB *console)
 {
     console->currentLen = console->fifoIn - console->fifoOut;
 }
-//读取
+///读取
 STATIC INT32 ConsoleReadFifo(CHAR *buffer, CONSOLE_CB *console, size_t bufLen)
 {
     INT32 ret;
@@ -339,7 +339,7 @@ STATIC INT32 ConsoleReadFifo(CHAR *buffer, CONSOLE_CB *console, size_t bufLen)
     ConsoleFifoLenUpdate(console);
     return (INT32)readNum;
 }
-//打开串口或远程登录
+///打开串口或远程登录
 INT32 FilepOpen(struct file *filep, const struct file_operations_vfs *fops)
 {
     INT32 ret;
@@ -357,7 +357,7 @@ INT32 FilepOpen(struct file *filep, const struct file_operations_vfs *fops)
     }
     return ret;
 }
-//向控制台buf中写入结束字符
+///向控制台buf中写入结束字符
 STATIC INLINE VOID UserEndOfRead(CONSOLE_CB *consoleCB, struct file *filep,
                                  const struct file_operations_vfs *fops)
 {
@@ -370,7 +370,7 @@ STATIC INLINE VOID UserEndOfRead(CONSOLE_CB *consoleCB, struct file *filep,
     consoleCB->fifo[consoleCB->fifoIn] = '\0';
     consoleCB->currentLen = consoleCB->fifoIn;
 }
-//根据VT终端标准 <ESC>[37m 为设置前景色
+///根据VT终端标准 <ESC>[37m 为设置前景色
 enum {
     STAT_NOMAL_KEY,	//普通按键
     STAT_ESC_KEY,	//控制按键,只有 ESC 是
@@ -411,7 +411,7 @@ STATIC INT32 UserShellCheckUDRL(const CHAR ch, INT32 *lastTokenType)
     }
     return LOS_NOK;
 }
-//是否需要继续
+///是否需要继续
 STATIC INT32 IsNeedContinue(CONSOLE_CB *consoleCB, char ch, INT32 *lastTokenType)
 {
     if (((ch == '\b') && (consoleCB->consoleTermios.c_lflag & ECHO) && (ConsoleFifoEmpty(consoleCB))) ||
@@ -421,7 +421,7 @@ STATIC INT32 IsNeedContinue(CONSOLE_CB *consoleCB, char ch, INT32 *lastTokenType
 
     return LOS_OK;
 }
-//输出到终端
+///输出到终端
 STATIC VOID EchoToTerminal(CONSOLE_CB *consoleCB, struct file *filep, const struct file_operations_vfs *fops, char ch)
 {
     if (consoleCB->consoleTermios.c_lflag & ECHO) {
@@ -432,7 +432,7 @@ STATIC VOID EchoToTerminal(CONSOLE_CB *consoleCB, struct file *filep, const stru
         }
     }
 }
-//存储读取的字符
+///存储读取的字符
 STATIC VOID StoreReadChar(CONSOLE_CB *consoleCB, char ch, INT32 readcount)
 {	//读取字符
     if ((readcount == EACH_CHAR) && (consoleCB->fifoIn <= (CONSOLE_FIFO_SIZE - 3))) {
@@ -446,7 +446,7 @@ STATIC VOID StoreReadChar(CONSOLE_CB *consoleCB, char ch, INT32 readcount)
         }
     }
 }
-//杀死进程组
+///杀死进程组
 VOID KillPgrp()
 {
     INT32 consoleId;
@@ -460,7 +460,7 @@ VOID KillPgrp()
     CONSOLE_CB *consoleCB = g_console[consoleId];
     (VOID)OsKillLock(consoleCB->pgrpId, SIGINT);//发送信号 SIGINT对应 键盘中断（ctrl + c）信号
 }
-//用户使用参数buffer将控制台的buf接走
+///用户使用参数buffer将控制台的buf接走
 STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const struct file_operations_vfs *fops,
                            CHAR *buffer, size_t bufLen)
 {
@@ -518,7 +518,7 @@ STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const stru
 
     return ret;
 }
-//从串口或远程登录中读数据
+///从串口或远程登录中读数据
 INT32 FilepRead(struct file *filep, const struct file_operations_vfs *fops, CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -536,7 +536,7 @@ INT32 FilepRead(struct file *filep, const struct file_operations_vfs *fops, CHAR
     }
     return ret;
 }
-//写数据到串口或远程登录
+///写数据到串口或远程登录
 INT32 FilepWrite(struct file *filep, const struct file_operations_vfs *fops, const CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -550,7 +550,7 @@ INT32 FilepWrite(struct file *filep, const struct file_operations_vfs *fops, con
     }
     return ret;
 }
-//关闭串口或远程登录
+///关闭串口或远程登录
 INT32 FilepClose(struct file *filep, const struct file_operations_vfs *fops)
 {
     INT32 ret;
@@ -600,7 +600,7 @@ INT32 FilepPoll(struct file *filep, const struct file_operations_vfs *fops, poll
     }
     return ret;
 }
-//对 file_operations_vfs->open 的实现函数,也就是说这是 打开控制台的实体函数.
+///对 file_operations_vfs->open 的实现函数,也就是说这是 打开控制台的实体函数.
 STATIC INT32 ConsoleOpen(struct file *filep)
 {
     INT32 ret;
@@ -631,7 +631,7 @@ ERROUT:
     set_errno(ret);
     return VFS_ERROR;
 }
-//关闭控制台
+///关闭控制台
 STATIC INT32 ConsoleClose(struct file *filep)
 {
     INT32 ret;
@@ -676,7 +676,7 @@ STATIC ssize_t DoRead(CONSOLE_CB *consoleCB, CHAR *buffer, size_t bufLen,
 
     return ret;
 }
-//用户任务从控制台读数据
+///用户任务从控制台读数据
 STATIC ssize_t ConsoleRead(struct file *filep, CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -778,7 +778,7 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
 
     return writen;
 }
-//用户任务写数据到控制台
+///用户任务写数据到控制台
 STATIC ssize_t ConsoleWrite(struct file *filep, const CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -1052,7 +1052,7 @@ STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
     }
 #endif
 }
-//控制台文件实例初始化
+///控制台文件实例初始化
 STATIC INT32 OsConsoleFileInit(CONSOLE_CB *consoleCB)
 {
     INT32 ret;
@@ -1153,7 +1153,7 @@ ERROUT:
     set_errno(ret);
     return LOS_NOK;
 }
-//控制台设备去初始化
+///控制台设备去初始化
 STATIC UINT32 OsConsoleDevDeinit(const CONSOLE_CB *consoleCB)
 {
     return unregister_driver(consoleCB->name);//注销驱动
@@ -1194,7 +1194,7 @@ ERROR_WITH_SENDCB:
     (VOID)LOS_MemFree(m_aucSysMem0, cirBufSendCB);
     return NULL;
 }
-//删除循环buf
+///删除循环buf
 STATIC VOID ConsoleCirBufDelete(CirBufSendCB *cirBufSendCB)
 {
     CirBuf *cirBufCB = &cirBufSendCB->cirBufCB;
@@ -1204,7 +1204,7 @@ STATIC VOID ConsoleCirBufDelete(CirBufSendCB *cirBufSendCB)
     (VOID)LOS_EventDestroy(&cirBufSendCB->sendEvent);//销毁事件
     (VOID)LOS_MemFree(m_aucSysMem0, cirBufSendCB);//释放循环buf发送控制块
 }
-//控制台缓存初始化，创建一个 发送任务
+///控制台缓存初始化，创建一个 发送任务
 STATIC UINT32 OsConsoleBufInit(CONSOLE_CB *consoleCB)
 {
     UINT32 ret;
@@ -1237,7 +1237,7 @@ STATIC UINT32 OsConsoleBufInit(CONSOLE_CB *consoleCB)
 
     return LOS_OK;
 }
-//控制台buf去初始化
+///控制台buf去初始化
 STATIC VOID OsConsoleBufDeinit(CONSOLE_CB *consoleCB)
 {
     CirBufSendCB *cirBufSendCB = consoleCB->cirBufSendCB;
@@ -1245,7 +1245,7 @@ STATIC VOID OsConsoleBufDeinit(CONSOLE_CB *consoleCB)
     consoleCB->cirBufSendCB = NULL;
     (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_SEND_TASK_EXIT);//写任务退出事件 ConsoleSendTask将会收到事件，退出死循环
 }
-//控制台描述符初始化
+///控制台描述符初始化
 STATIC CONSOLE_CB *OsConsoleCBInit(UINT32 consoleID)
 {
     CONSOLE_CB *consoleCB = (CONSOLE_CB *)LOS_MemAlloc((VOID *)m_aucSysMem0, sizeof(CONSOLE_CB));//内核空间分配控制台描述符
@@ -1265,14 +1265,14 @@ STATIC CONSOLE_CB *OsConsoleCBInit(UINT32 consoleID)
     }
     return consoleCB;
 }
-//释放控制台描述符初始化时所占用的内核空间
+///释放控制台描述符初始化时所占用的内核空间
 STATIC VOID OsConsoleCBDeinit(CONSOLE_CB *consoleCB)
 {
     (VOID)LOS_MemFree((VOID *)m_aucSysMem0, consoleCB->name);//释放控制台名称占用的内核内存
     consoleCB->name = NULL;
     (VOID)LOS_MemFree((VOID *)m_aucSysMem0, consoleCB);//释放控制台描述符所占用的内核内存
 }
-//创建一个控制台，这个函数的goto语句贼多
+///创建一个控制台，这个函数的goto语句贼多
 STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
 {
     INT32 ret;
@@ -1329,7 +1329,7 @@ ERR_WITH_NAME:
     OsConsoleCBDeinit(consoleCB);//控制块取消初始化
     return NULL;
 }
-//删除控制台
+///删除控制台
 STATIC UINT32 OsConsoleDelete(CONSOLE_CB *consoleCB)
 {
     UINT32 ret;
@@ -1347,7 +1347,7 @@ STATIC UINT32 OsConsoleDelete(CONSOLE_CB *consoleCB)
 
     return ret;
 }
-//初始化系统控制台并返回 stdinfd stdoutfd stderrfd ，和system_console_deinit成对出现，像控制台的构造函数
+///初始化系统控制台并返回 stdinfd stdoutfd stderrfd ，和system_console_deinit成对出现，像控制台的构造函数
 /* Initialized system console and return stdinfd stdoutfd stderrfd */
 INT32 system_console_init(const CHAR *deviceName)//deviceName: /dev/serial /dev/telnet
 {
@@ -1392,7 +1392,7 @@ INT32 system_console_init(const CHAR *deviceName)//deviceName: /dev/serial /dev/
 
     return ENOERR;
 }
-//控制台结束前的处理 和 system_console_init成对出现,像控制台的析构函数
+///控制台结束前的处理 和 system_console_init成对出现,像控制台的析构函数
 INT32 system_console_deinit(const CHAR *deviceName)
 {
     UINT32 ret;
@@ -1432,7 +1432,7 @@ INT32 system_console_deinit(const CHAR *deviceName)
 
     return ENOERR;
 }
-//控制台使能
+///控制台使能
 BOOL ConsoleEnable(VOID)
 {
     INT32 consoleID;
@@ -1462,7 +1462,7 @@ BOOL ConsoleEnable(VOID)
 
     return FALSE;
 }
-//任务注册控制台,每个shell任务都有属于自己的控制台
+///任务注册控制台,每个shell任务都有属于自己的控制台
 INT32 ConsoleTaskReg(INT32 consoleID, UINT32 taskID)
 {
     if (g_console[consoleID - 1]->shellEntryId == SHELL_ENTRYID_INVALID) {
@@ -1473,7 +1473,7 @@ INT32 ConsoleTaskReg(INT32 consoleID, UINT32 taskID)
 
     return LOS_NOK;
 }
-//无锁方式设置串口
+///无锁方式设置串口
 BOOL SetSerialNonBlock(const CONSOLE_CB *consoleCB)
 {
     INT32 ret;
@@ -1489,7 +1489,7 @@ BOOL SetSerialNonBlock(const CONSOLE_CB *consoleCB)
 
     return TRUE;
 }
-//锁方式设置串口
+///锁方式设置串口
 BOOL SetSerialBlock(const CONSOLE_CB *consoleCB)
 {
     INT32 ret;
@@ -1505,7 +1505,7 @@ BOOL SetSerialBlock(const CONSOLE_CB *consoleCB)
 
     return FALSE;
 }
-//无锁方式设置远程登录
+///无锁方式设置远程登录
 BOOL SetTelnetNonBlock(const CONSOLE_CB *consoleCB)
 {
     INT32 ret;
@@ -1520,7 +1520,7 @@ BOOL SetTelnetNonBlock(const CONSOLE_CB *consoleCB)
     }
     return TRUE;
 }
-//锁方式设置远程登录
+///锁方式设置远程登录
 BOOL SetTelnetBlock(const CONSOLE_CB *consoleCB)
 {
     INT32 ret;
@@ -1544,7 +1544,7 @@ BOOL is_nonblock(const CONSOLE_CB *consoleCB)
     }
     return consoleCB->isNonBlock;
 }
-//控制台更新文件句柄
+///控制台更新文件句柄
 INT32 ConsoleUpdateFd(VOID)
 {
     INT32 consoleID;
@@ -1576,7 +1576,7 @@ INT32 ConsoleUpdateFd(VOID)
 
     return g_console[consoleID - 1]->fd;
 }
-//获取参数控制台ID 获取对应的控制台控制块(描述符)
+///获取参数控制台ID 获取对应的控制台控制块(描述符)
 CONSOLE_CB *OsGetConsoleByID(INT32 consoleID)
 {
     if (consoleID != CONSOLE_TELNET) {//只允许 1,2存在，> 3 时统统变成1
@@ -1584,14 +1584,14 @@ CONSOLE_CB *OsGetConsoleByID(INT32 consoleID)
     }
     return g_console[consoleID - 1];
 }
-//获取参数任务的控制台控制块(描述符)
+///获取参数任务的控制台控制块(描述符)
 CONSOLE_CB *OsGetConsoleByTaskID(UINT32 taskID)
 {
     INT32 consoleID = g_taskConsoleIDArray[taskID];
 
     return OsGetConsoleByID(consoleID);
 }
-//设置控制台ID
+///设置控制台ID
 VOID OsSetConsoleID(UINT32 newTaskID, UINT32 curTaskID)
 {
     if ((newTaskID >= LOSCFG_BASE_CORE_TSK_LIMIT) || (curTaskID >= LOSCFG_BASE_CORE_TSK_LIMIT)) {
@@ -1600,7 +1600,7 @@ VOID OsSetConsoleID(UINT32 newTaskID, UINT32 curTaskID)
 
     g_taskConsoleIDArray[newTaskID] = g_taskConsoleIDArray[curTaskID];
 }
-//将buf内容写到终端设备
+///将buf内容写到终端设备
 STATIC ssize_t WriteToTerminal(const CONSOLE_CB *consoleCB, const CHAR *buffer, size_t bufLen)
 {
     INT32 ret, fd;
@@ -1625,7 +1625,7 @@ ERROUT:
     set_errno(ret);
     return VFS_ERROR;
 }
-//控制台发送任务
+///控制台发送任务
 STATIC UINT32 ConsoleSendTask(UINTPTR param)
 {
     CONSOLE_CB *consoleCB = (CONSOLE_CB *)param;
@@ -1691,7 +1691,7 @@ VOID OsWaitConsoleSendTaskPend(UINT32 taskID)//等待控制台发送任务结束
         }
     }
 }
-//唤醒控制台发送任务
+///唤醒控制台发送任务
 VOID OsWakeConsoleSendTask(VOID)
 {
     UINT32 i;

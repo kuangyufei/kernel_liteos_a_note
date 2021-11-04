@@ -78,7 +78,7 @@ STATIC INLINE VOID OsPrintSwtmrMsgHead(VOID)
     PRINTK("\r\nSwTmrID     State    Mode    Interval  Count   Arg         handlerAddr\n");
     PRINTK("----------  -------  ------- --------- ------- ----------  --------\n");
 }
-//shell命令之swtmr 命令用于查询系统软件定时器相关信息。 
+///shell命令之swtmr 命令用于查询系统软件定时器相关信息。 
 //参数缺省时，默认显示所有软件定时器的相关信息。
 //swtmr后加ID号时，显示ID对应的软件定时器相关信息。
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdSwtmrInfoGet(INT32 argc, const UINT8 **argv)

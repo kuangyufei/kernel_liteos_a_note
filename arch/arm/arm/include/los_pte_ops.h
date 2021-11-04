@@ -53,12 +53,12 @@ STATIC INLINE VOID OsSavePte1(PTE_T *pte1Ptr, PTE_T pte1)
     *pte1Ptr = pte1;
     DSB;
 }
-//生成 L1 section格式项地址
+///生成 L1 section格式项地址
 STATIC INLINE ADDR_T OsTruncPte1(ADDR_T addr)
 {
     return MMU_DESCRIPTOR_L1_SECTION_ADDR(addr);
 }
-//获取L1 页表项索引
+///获取L1 页表项索引
 STATIC INLINE UINT32 OsGetPte1Index(vaddr_t va)
 {
     return va >> MMU_DESCRIPTOR_L1_SMALL_SHIFT;//右移20位，得到一级页表
@@ -68,7 +68,7 @@ STATIC INLINE VOID OsClearPte1(PTE_T *pte1Ptr)
 {
     OsSavePte1(pte1Ptr, 0);
 }
-//pte1BasePtr L1 转换页表基地址
+///pte1BasePtr L1 转换页表基地址
 STATIC INLINE PTE_T *OsGetPte1Ptr(PTE_T *pte1BasePtr, vaddr_t va)
 {
     return (pte1BasePtr + OsGetPte1Index(va));//得到一级页面的页号

@@ -88,12 +88,12 @@ VOID LOS_SetDirtyRatioThreshold(UINT32 dirtyRatio)
         g_dirtyRatio = dirtyRatio;
     }
 }
-//设置同步间隔,5秒
+///设置同步间隔,5秒
 VOID LOS_SetSyncThreadInterval(UINT32 interval)
 {
     g_syncInterval = interval;
 }
-//设置同步任务优先级,10
+///设置同步任务优先级,10
 INT32 LOS_SetSyncThreadPrio(UINT32 prio, const CHAR *name)
 {
     INT32 ret = VFS_ERROR;
@@ -148,7 +148,7 @@ static OsBcacheBlock *RbFindBlock(const OsBcache *bc, UINT64 num)
     }
     return NULL;
 }
-//添加缓存块
+///添加缓存块
 static VOID RbAddBlock(OsBcache *bc, OsBcacheBlock *block)
 {
     struct rb_node *node = bc->rbRoot.rb_node;
@@ -169,18 +169,18 @@ static VOID RbAddBlock(OsBcache *bc, OsBcacheBlock *block)
     }
     rb_insert_color(&block->rbNode, &bc->rbRoot);
 }
-//删除红黑树块
+///删除红黑树块
 static inline VOID RbDelBlock(OsBcache *bc, OsBcacheBlock *block)
 {
     rb_erase(&block->rbNode, &bc->rbRoot);
 }
-//删除红黑树块
+///删除红黑树块
 static inline VOID ListMoveBlockToHead(OsBcache *bc, OsBcacheBlock *block)
 {
     LOS_ListDelete(&block->listNode);
     LOS_ListAdd(&bc->listHead, &block->listNode);
 }
-//释放块
+///释放块
 static inline VOID FreeBlock(OsBcache *bc, OsBcacheBlock *block)
 {
     block->used = FALSE;
@@ -712,7 +712,7 @@ INT32 BcacheClearCache(OsBcache *bc)
     }
     return 0;
 }
-//块设备缓存初始化
+///块设备缓存初始化
 static INT32 BcacheInitCache(OsBcache *bc,
                              UINT8 *memStart,
                              UINT32 memSize,
@@ -773,7 +773,7 @@ static INT32 BcacheInitCache(OsBcache *bc,
 
     return ENOERR;
 }
-//读块设备数据
+///读块设备数据
 static INT32 DrvBread(struct Vnode *priv, UINT8 *buf, UINT32 len, UINT64 pos)
 {
     struct block_operations *bops = (struct block_operations *)((struct drv_data *)priv->data)->ops;
@@ -785,7 +785,7 @@ static INT32 DrvBread(struct Vnode *priv, UINT8 *buf, UINT32 len, UINT64 pos)
     }
     return ENOERR;
 }
-//写块设备数据
+///写块设备数据
 static INT32 DrvBwrite(struct Vnode *priv, const UINT8 *buf, UINT32 len, UINT64 pos)
 {
     struct block_operations *bops = (struct block_operations *)((struct drv_data *)priv->data)->ops;
@@ -796,7 +796,7 @@ static INT32 DrvBwrite(struct Vnode *priv, const UINT8 *buf, UINT32 len, UINT64 
     }
     return ENOERR;
 }
-//初始化块设备
+///初始化块设备
 INT32 BlockCacheDrvCreate(VOID *handle,
                           UINT8 *memStart,
                           UINT32 memSize,
@@ -820,7 +820,7 @@ INT32 BlockCacheDrvCreate(VOID *handle,
 
     return ENOERR;
 }
-//读块设备缓存
+///读块设备缓存
 INT32 BlockCacheRead(OsBcache *bc, UINT8 *buf, UINT32 *len, UINT64 sector, BOOL useRead)
 {
     OsBcacheBlock *block = NULL;
@@ -888,7 +888,7 @@ INT32 BlockCacheRead(OsBcache *bc, UINT8 *buf, UINT32 *len, UINT64 sector, BOOL 
     *len -= size;
     return ret;
 }
-//写块设备缓存
+///写块设备缓存
 INT32 BlockCacheWrite(OsBcache *bc, const UINT8 *buf, UINT32 *len, UINT64 sector)
 {
     OsBcacheBlock *block = NULL;
@@ -947,7 +947,7 @@ INT32 BlockCacheWrite(OsBcache *bc, const UINT8 *buf, UINT32 *len, UINT64 sector
     *len -= size;
     return ret;
 }
-//块缓存同步
+///块缓存同步
 INT32 BlockCacheSync(OsBcache *bc)
 {
     return BcacheSync(bc);
@@ -1033,7 +1033,7 @@ static VOID BcacheSyncThread(UINT32 id)
         msleep(g_syncInterval);
     }
 }
-//块缓存同步任务初始化,开了个内核任务.
+///块缓存同步任务初始化,开了个内核任务.
 VOID BcacheSyncThreadInit(OsBcache *bc, INT32 id)
 {
     UINT32 ret;

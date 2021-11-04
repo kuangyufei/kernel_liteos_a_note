@@ -114,7 +114,7 @@ LOS_SysSleepEnum LOS_PmModeGet(VOID)
 
     return mode;
 }
-//获取电源锁数量
+///获取电源锁数量
 UINT32 LOS_PmLockCountGet(VOID)
 {
     UINT16 count;
@@ -126,7 +126,7 @@ UINT32 LOS_PmLockCountGet(VOID)
 
     return (UINT32)count;
 }
-//显示所有电源锁信息
+///显示所有电源锁信息
 VOID LOS_PmLockInfoShow(struct SeqBuf *m)
 {
     UINT32 intSave;
@@ -145,7 +145,7 @@ VOID LOS_PmLockInfoShow(struct SeqBuf *m)
 
     return;
 }
-//请求获取指定的锁
+///请求获取指定的锁
 UINT32 LOS_PmLockRequest(const CHAR *name)
 {
     INT32 len;
@@ -209,7 +209,7 @@ UINT32 LOS_PmLockRequest(const CHAR *name)
     LOS_SpinUnlock(&g_pmSpin);
     return LOS_OK;
 }
-//释放指定锁,注意这里的释放指的是释放数量,当数量为0时才删除锁
+///释放指定锁,注意这里的释放指的是释放数量,当数量为0时才删除锁
 //释放方式跟系统描述符(sysfd)很像
 UINT32 LOS_PmLockRelease(const CHAR *name)
 {
@@ -260,7 +260,7 @@ UINT32 LOS_PmLockRelease(const CHAR *name)
     (VOID)LOS_MemFree((VOID *)OS_SYS_MEM_ADDR, lockFree);
     return LOS_OK;
 }
-//电源管理模块初始化
+///电源管理模块初始化
 UINT32 OsPmInit(VOID)
 {
     LosPmCB *pm = &g_pmCB;

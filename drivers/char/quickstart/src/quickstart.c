@@ -104,7 +104,7 @@ static int QuickstartDevUnlink(struct Vnode *node)
     (void)node;
     return unregister_driver(QUICKSTART_NODE);
 }
-//快速开始控制器
+///快速开始控制器
 static ssize_t QuickstartIoctl(struct file *filep, int cmd, unsigned long arg)
 {
     ssize_t ret;

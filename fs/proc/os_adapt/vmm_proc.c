@@ -89,7 +89,7 @@ STATIC VOID OsVmDumpSeqSpaces(struct SeqBuf *seqBuf)
     }
     (VOID)LOS_MuxRelease(aspaceListMux);
 }
-// .read 接口的现实
+/// .read 接口的现实
 static int VmmProcFill(struct SeqBuf *m, void *v)
 {
     (void)v;
@@ -97,7 +97,7 @@ static int VmmProcFill(struct SeqBuf *m, void *v)
 
     return 0;
 }
-//实现 操作proc file 接口,也可理解为驱动程序不同
+///实现 操作proc file 接口,也可理解为驱动程序不同
 static const struct ProcFileOperations VMM_PROC_FOPS = {
     .write      = NULL,
     .read       = VmmProcFill,

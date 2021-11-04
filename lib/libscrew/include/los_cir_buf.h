@@ -64,7 +64,7 @@ STATIC INLINE VOID LOS_CirBufLock(CirBuf *cirbufCB, UINT32 *intSave)
     }
     LOS_SpinLockSave(&cirbufCB->lock, intSave);
 }
-//解锁循环buf
+///解锁循环buf
 STATIC INLINE VOID LOS_CirBufUnlock(CirBuf *cirbufCB, UINT32 intSave)
 {
     if (cirbufCB == NULL) {

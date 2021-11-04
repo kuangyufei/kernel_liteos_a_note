@@ -102,26 +102,26 @@ int shutdown(int s, int how)
 {
     return lwip_shutdown(s, how);
 }
-//获取对等名称 = getsockname
+///获取对等名称 = getsockname
 int getpeername(int s, struct sockaddr *name, socklen_t *namelen)
 {
     CHECK_NULL_PTR(name);//参数判空检查,这种写法有点意思
     CHECK_NULL_PTR(namelen);
     return lwip_getpeername(s, name, namelen);
 }
-//获取socket名称和长度
+///获取socket名称和长度
 int getsockname(int s, struct sockaddr *name, socklen_t *namelen)
 {
     CHECK_NULL_PTR(name);
     CHECK_NULL_PTR(namelen);
     return lwip_getsockname(s, name, namelen);
 }
-//获取 socket 配置项
+///获取 socket 配置项
 int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
 {
     return lwip_getsockopt(s, level, optname, optval, optlen);
 }
-//设置socket 配置项
+///设置socket 配置项
 int setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen)
 {
     return lwip_setsockopt(s, level, optname, optval, optlen);
@@ -183,14 +183,14 @@ ssize_t recv(int s, void *mem, size_t len, int flags)
     CHECK_NULL_PTR(mem);
     return lwip_recv(s, mem, len, flags);
 }
-//区别是返回源地址,意思是这些数据是从哪个地址过来的
+///区别是返回源地址,意思是这些数据是从哪个地址过来的
 ssize_t recvfrom(int s, void *mem, size_t len, int flags,
                  struct sockaddr *from, socklen_t *fromlen)
 {
     CHECK_NULL_PTR(mem);
     return lwip_recvfrom(s, mem, len, flags, from, fromlen);
 }
-//只是数据的格式的不同
+///只是数据的格式的不同
 ssize_t recvmsg(int s, struct msghdr *message, int flags)
 {
     CHECK_NULL_PTR(message);
@@ -207,12 +207,12 @@ ssize_t send(int s, const void *dataptr, size_t size, int flags)
     CHECK_NULL_PTR(dataptr);
     return  lwip_send(s, dataptr, size, flags);
 }
-//只是发送数据的格式的不同
+///只是发送数据的格式的不同
 ssize_t sendmsg(int s, const struct msghdr *message, int flags)
 {
     return lwip_sendmsg(s, message, flags);
 }
-//区别是送达地址,意思是这些数据要发给哪个地址的
+///区别是送达地址,意思是这些数据要发给哪个地址的
 ssize_t sendto(int s, const void *dataptr, size_t size, int flags,
                const struct sockaddr *to, socklen_t tolen)
 {
@@ -264,7 +264,7 @@ const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
 {
     return lwip_inet_ntop(af, src, dst, size);
 }
-//inet_pton 函数转换字符串到网络地址，第一个参数af是地址族，转换后存在dst中
+///inet_pton 函数转换字符串到网络地址，第一个参数af是地址族，转换后存在dst中
 int inet_pton(int af, const char *src, void *dst)
 {
     return lwip_inet_pton(af, src, dst);

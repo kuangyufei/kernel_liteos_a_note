@@ -56,7 +56,7 @@ int pthread_mutexattr_init(pthread_mutexattr_t *attr)//初始化互斥锁
     if (ret != LOS_OK) {
         return (int)ret;
     }
-//当其他线程正在使用某个互斥锁时，请勿重新初始化或销毁该互斥锁。如果任一操作没有正确完成，将会导致程序失败。如果要重新初始化或销毁某个互斥锁，则应用程序必须确保当前未使用该互斥锁。
+///当其他线程正在使用某个互斥锁时，请勿重新初始化或销毁该互斥锁。如果任一操作没有正确完成，将会导致程序失败。如果要重新初始化或销毁某个互斥锁，则应用程序必须确保当前未使用该互斥锁。
 #if defined POSIX_MUTEX_DEFAULT_INHERIT
     attr->protocol    = PTHREAD_PRIO_INHERIT;
 #elif defined POSIX_MUTEX_DEFAULT_PROTECT
@@ -112,7 +112,7 @@ int pthread_mutexattr_settype(pthread_mutexattr_t *attr, int type)
 {
     return LOS_MuxAttrSetType(attr, type);
 }
-//初始化互斥锁
+///初始化互斥锁
 /* Initialize mutex. If mutexAttr is NULL, use default attributes. */
 int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *mutexAttr)
 {//初始化互斥锁。 如果 mutexAttr 为 NULL，则使用默认属性。
@@ -130,23 +130,23 @@ int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *mutexA
 
     return (int)ret;
 }
-//销毁互斥锁
+///销毁互斥锁
 int pthread_mutex_destroy(pthread_mutex_t *mutex)
 {
     return LOS_MuxDestroy(mutex);
 }
-//互斥锁加锁操作
+///互斥锁加锁操作
 /* Lock mutex, waiting for it if necessary. */
 int pthread_mutex_lock(pthread_mutex_t *mutex)
 {
     return LOS_MuxLock(mutex, LOS_WAIT_FOREVER);
 }
-//互斥锁尝试加锁操作
+///互斥锁尝试加锁操作
 int pthread_mutex_trylock(pthread_mutex_t *mutex)
 {
     return LOS_MuxTrylock(mutex);
 }
-//解锁互斥锁
+///解锁互斥锁
 int pthread_mutex_unlock(pthread_mutex_t *mutex)
 {
     return LOS_MuxUnlock(mutex);

@@ -92,7 +92,7 @@ STATIC INLINE UINT32 OsCheckBoxMem(const LOS_MEMBOX_INFO *boxInfo, const VOID *n
 
     return OS_MEMBOX_CHECK_MAGIC(node);//检查魔法数字是否被修改过了
 }
-//初始化一个静态内存池，根据入参设定其起始地址、总大小及每个内存块大小
+///初始化一个静态内存池，根据入参设定其起始地址、总大小及每个内存块大小
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_MemboxInit(VOID *pool, UINT32 poolSize, UINT32 blkSize)
 {
     LOS_MEMBOX_INFO *boxInfo = (LOS_MEMBOX_INFO *)pool;//在内存起始处放置控制头
@@ -136,7 +136,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_MemboxInit(VOID *pool, UINT32 poolSize, UINT32 
 
     return LOS_OK;
 }
-//从指定的静态内存池中申请一块静态内存块,整个内核源码只有 OsSwtmrScan中用到了静态内存.
+///从指定的静态内存池中申请一块静态内存块,整个内核源码只有 OsSwtmrScan中用到了静态内存.
 LITE_OS_SEC_TEXT VOID *LOS_MemboxAlloc(VOID *pool)
 {
     LOS_MEMBOX_INFO *boxInfo = (LOS_MEMBOX_INFO *)pool;
@@ -160,7 +160,7 @@ LITE_OS_SEC_TEXT VOID *LOS_MemboxAlloc(VOID *pool)
 
     return (nodeTmp == NULL) ? NULL : OS_MEMBOX_USER_ADDR(nodeTmp);//返回可用的内存地址
 }
-//释放指定的一块静态内存块
+///释放指定的一块静态内存块
 LITE_OS_SEC_TEXT UINT32 LOS_MemboxFree(VOID *pool, VOID *box)
 {
     LOS_MEMBOX_INFO *boxInfo = (LOS_MEMBOX_INFO *)pool;
@@ -187,7 +187,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MemboxFree(VOID *pool, VOID *box)
 
     return ret;
 }
-//清零指定静态内存块的内容
+///清零指定静态内存块的内容
 LITE_OS_SEC_TEXT_MINOR VOID LOS_MemboxClr(VOID *pool, VOID *box)
 {
     LOS_MEMBOX_INFO *boxInfo = (LOS_MEMBOX_INFO *)pool;
@@ -199,7 +199,7 @@ LITE_OS_SEC_TEXT_MINOR VOID LOS_MemboxClr(VOID *pool, VOID *box)
     (VOID)memset_s(box, (boxInfo->uwBlkSize - OS_MEMBOX_NODE_HEAD_SIZE), 0,
         (boxInfo->uwBlkSize - OS_MEMBOX_NODE_HEAD_SIZE));
 }
-//打印指定静态内存池所有节点信息（打印等级是LOS_INFO_LEVEL），包括内存池起始地址、
+///打印指定静态内存池所有节点信息（打印等级是LOS_INFO_LEVEL），包括内存池起始地址、
 //内存块大小、总内存块数量、每个空闲内存块的起始地址、所有内存块的起始地址
 LITE_OS_SEC_TEXT_MINOR VOID LOS_ShowBox(VOID *pool)
 {
@@ -227,7 +227,7 @@ LITE_OS_SEC_TEXT_MINOR VOID LOS_ShowBox(VOID *pool)
     }
     MEMBOX_UNLOCK(intSave);
 }
-//获取指定静态内存池的信息，包括内存池中总内存块数量、已经分配出去的内存块数量、每个内存块的大小
+///获取指定静态内存池的信息，包括内存池中总内存块数量、已经分配出去的内存块数量、每个内存块的大小
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemboxStatisticsGet(const VOID *boxMem, UINT32 *maxBlk,
                                                       UINT32 *blkCnt, UINT32 *blkSize)
 {

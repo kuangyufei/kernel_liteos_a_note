@@ -49,7 +49,7 @@ extern "C" {
 
 typedef UINT32 (*FUNC_ONE_TOKEN)(VOID *ctx, UINT32 index, CHAR *token);
 
-/*
+/*!
  * Description: the info struct after cmd parser
  */
 typedef struct {

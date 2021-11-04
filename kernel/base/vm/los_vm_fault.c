@@ -252,7 +252,7 @@ ERR_OUT:
 
     return ret;
 }
-//在共享线性区写文件操作发生缺页的情况处理,因为线性区是共享的
+///在共享线性区写文件操作发生缺页的情况处理,因为线性区是共享的
 status_t OsDoSharedFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
 {
     STATUS_T ret;

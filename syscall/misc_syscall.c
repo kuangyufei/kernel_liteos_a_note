@@ -70,7 +70,7 @@ int SysUname(struct utsname *name)
     }
     return ret;
 }
-//系统信息
+///系统信息
 int SysInfo(struct sysinfo *info)
 {
     int ret;
@@ -89,7 +89,7 @@ int SysInfo(struct sysinfo *info)
     }
     return 0;
 }
-//重启系统
+///重启系统
 int SysReboot(int magic, int magic2, int type)
 {
     (void)magic;
@@ -104,7 +104,7 @@ int SysReboot(int magic, int magic2, int type)
     }
     return -EFAULT;
 }
-//执行 shell 命令
+///执行 shell 命令
 #ifdef LOSCFG_SHELL
 int SysShellExec(const char *msgName, const char *cmdString)
 { 
@@ -197,7 +197,7 @@ int SysGetrusage(int what, struct rusage *ru)
     }
     return 0;
 }
-//系统配置
+///系统配置
 long SysSysconf(int name)
 {
     long ret;

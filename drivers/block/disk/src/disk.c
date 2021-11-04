@@ -112,7 +112,7 @@ UINT32 GetFatSectorsPerBlock(VOID)
 {
     return g_uwFatSectorsPerBlock;
 }
-//设置FAR每块扇区数
+///设置FAR每块扇区数
 VOID SetFatSectorsPerBlock(UINT32 sectorsPerBlock)
 {
     if (((sectorsPerBlock % UNSIGNED_INTEGER_BITS) == 0) && //1.必须是整数倍
@@ -178,7 +178,7 @@ INT32 los_alloc_diskid_byname(const CHAR *diskName)
 
     return diskID;
 }
-//通过名称查询使用中(STAT_INUSED)磁盘ID
+///通过名称查询使用中(STAT_INUSED)磁盘ID
 INT32 los_get_diskid_byname(const CHAR *diskName)
 {
     INT32 diskID;
@@ -259,7 +259,7 @@ los_disk *get_disk(INT32 id)
 
     return NULL;
 }
-//获取某个分区的描述符
+///获取某个分区的描述符
 los_part *get_part(INT32 id)
 {
     if ((id >= 0) && (id < SYS_MAX_PART)) {
@@ -276,7 +276,7 @@ static UINT64 GetFirstPartStart(const los_part *part)
     firstPart = (disk == NULL) ? NULL : LOS_DL_LIST_ENTRY(disk->head.pstNext, los_part, list);
     return (firstPart == NULL) ? 0 : firstPart->sector_start;
 }
-//磁盘增加一个分区
+///磁盘增加一个分区
 static VOID DiskPartAddToDisk(los_disk *disk, los_part *part)
 {
     part->disk_id = disk->disk_id;
@@ -284,13 +284,13 @@ static VOID DiskPartAddToDisk(los_disk *disk, los_part *part)
     LOS_ListTailInsert(&disk->head, &part->list);
     disk->part_count++;
 }
-//从磁盘上删除分区
+///从磁盘上删除分区
 static VOID DiskPartDelFromDisk(los_disk *disk, los_part *part)
 {
     LOS_ListDelete(&part->list);//从分区链表上摘掉
     disk->part_count--;//分区数量减少
 }
-//分配一个磁盘分区,必须要有索引节点才给分配.
+///分配一个磁盘分区,必须要有索引节点才给分配.
 static los_part *DiskPartAllocate(struct Vnode *dev, UINT64 start, UINT64 count)
 {
     UINT32 i;//从数组的开头遍历,先获取第一个分区
@@ -317,7 +317,7 @@ static los_part *DiskPartAllocate(struct Vnode *dev, UINT64 start, UINT64 count)
 
     return NULL;
 }
-//清空分区信息
+///清空分区信息
 static VOID DiskPartRelease(los_part *part)
 {
     part->dev = NULL;//全局释放这步最关键,因为 DiskPartAllocate 中是通过它来判断是否全局分区项已被占用
@@ -392,7 +392,7 @@ static INT32 DiskAddPart(los_disk *disk, UINT64 sectorStart, UINT64 sectorCount,
     }
     return (INT32)part->part_id;
 }
-//磁盘分区
+///磁盘分区
 static INT32 DiskDivide(los_disk *disk, struct disk_divide_info *info)
 {
     UINT32 i;
@@ -424,7 +424,7 @@ static INT32 DiskDivide(los_disk *disk, struct disk_divide_info *info)
 
     return ENOERR;
 }
-//GPT分区类型识别
+///GPT分区类型识别
 static CHAR GPTPartitionTypeRecognition(const CHAR *parBuf)
 {
     const CHAR *buf = parBuf;
@@ -440,7 +440,7 @@ static CHAR GPTPartitionTypeRecognition(const CHAR *parBuf)
 
     return ENOERR;
 }
-//磁盘分区内存申请
+///磁盘分区内存申请
 static INT32 DiskPartitionMemZalloc(size_t boundary, size_t size, CHAR **gptBuf, CHAR **partitionBuf)
 {
     CHAR *buffer1 = NULL;
@@ -465,7 +465,7 @@ static INT32 DiskPartitionMemZalloc(size_t boundary, size_t size, CHAR **gptBuf,
 
     return ENOERR;
 }
-//获取GPT信息,是GPT还是MBR取决于磁盘上放的内容
+///获取GPT信息,是GPT还是MBR取决于磁盘上放的内容
 static INT32 GPTInfoGet(struct Vnode *blkDrv, CHAR *gptBuf)
 {
     INT32 ret;
@@ -485,7 +485,7 @@ static INT32 GPTInfoGet(struct Vnode *blkDrv, CHAR *gptBuf)
 
     return ENOERR;
 }
-//解析GPT分区内容
+///解析GPT分区内容
 static INT32 OsGPTPartitionRecognitionSub(struct disk_divide_info *info, const CHAR *partitionBuf,
                                           UINT32 *partitionCount, UINT64 partitionStart, UINT64 partitionEnd)
 {
@@ -509,7 +509,7 @@ static INT32 OsGPTPartitionRecognitionSub(struct disk_divide_info *info, const C
     }
     return ENOERR;
 }
-//识别GPT分区内容
+///识别GPT分区内容
 static INT32 OsGPTPartitionRecognition(struct Vnode *blkDrv, struct disk_divide_info *info,
                                        const CHAR *gptBuf, CHAR *partitionBuf, UINT32 *partitionCount)
 {
@@ -606,7 +606,7 @@ OUT_WITH_MEM:
     free(partitionBuf);
     return ret;
 }
-//获取MBR信息,即特殊扇区信息,在MBR硬盘中，分区信息直接存储于主引导记录(MBR)中（主引导记录中还存储着系统的引导程序）。
+///获取MBR信息,即特殊扇区信息,在MBR硬盘中，分区信息直接存储于主引导记录(MBR)中（主引导记录中还存储着系统的引导程序）。
 static INT32 OsMBRInfoGet(struct Vnode *blkDrv, CHAR *mbrBuf)
 {
     INT32 ret;
@@ -649,7 +649,7 @@ static INT32 OsEBRInfoGet(struct Vnode *blkDrv, const struct disk_divide_info *i
 
     return ENOERR;
 }
-//识别主分区
+///识别主分区
 static INT32 OsPrimaryPartitionRecognition(const CHAR *mbrBuf, struct disk_divide_info *info,
                                            INT32 *extendedPos, INT32 *mbrCount)
 {
@@ -676,7 +676,7 @@ static INT32 OsPrimaryPartitionRecognition(const CHAR *mbrBuf, struct disk_divid
 
     return extendedFlag;//返回是否为扩展分区标签
 }
-//识别扩展分区
+///识别扩展分区
 static INT32 OsLogicalPartitionRecognition(struct Vnode *blkDrv, struct disk_divide_info *info,
                                            UINT32 extendedAddress, CHAR *ebrBuf, INT32 mbrCount)
 {
@@ -715,7 +715,7 @@ static INT32 OsLogicalPartitionRecognition(struct Vnode *blkDrv, struct disk_div
 
     return ebrCount;
 }
-//识别磁盘分区信息 https://blog.csdn.net/Hilavergil/article/details/79270379
+///识别磁盘分区信息 https://blog.csdn.net/Hilavergil/article/details/79270379
 static INT32 DiskPartitionRecognition(struct Vnode *blkDrv, struct disk_divide_info *info)
 {
     INT32 ret;
@@ -773,7 +773,7 @@ OUT_WITH_MEM:
     free(mbrBuf);
     return ret;
 }
-//磁盘分区注册
+///磁盘分区注册
 INT32 DiskPartitionRegister(los_disk *disk)
 {
     INT32 count;
@@ -827,7 +827,7 @@ INT32 DiskPartitionRegister(los_disk *disk)
 
     return ENOERR;
 }
-//读磁盘数据
+///读磁盘数据
 INT32 los_disk_read(INT32 drvID, VOID *buf, UINT64 sector, UINT32 count, BOOL useRead)
 {
 #ifdef LOSCFG_FS_FAT_CACHE
@@ -892,7 +892,7 @@ ERROR_HANDLE:
     DISK_UNLOCK(&disk->disk_mutex);
     return VFS_ERROR;
 }
-//将buf内容写到指定扇区,
+///将buf内容写到指定扇区,
 INT32 los_disk_write(INT32 drvID, const VOID *buf, UINT64 sector, UINT32 count)
 {
 #ifdef LOSCFG_FS_FAT_CACHE
@@ -1005,7 +1005,7 @@ ERROR_HANDLE:
     DISK_UNLOCK(&disk->disk_mutex);
     return VFS_ERROR;
 }
-//读分区上扇区内容
+///读分区上扇区内容
 INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count, BOOL useRead)
 {
     const los_part *part = get_part(pt);//先拿到分区信息
@@ -1061,7 +1061,7 @@ ERROR_HANDLE:
     DISK_UNLOCK(&disk->disk_mutex);
     return VFS_ERROR;
 }
-//将数据写入指定分区的指定扇区
+///将数据写入指定分区的指定扇区
 INT32 los_part_write(INT32 pt, const VOID *buf, UINT64 sector, UINT32 count)
 {
     const los_part *part = get_part(pt);
@@ -1304,7 +1304,7 @@ static VOID DiskStructInit(const CHAR *diskName, INT32 diskID, const struct geom
     disk->disk_name[nameLen] = '\0';
     LOS_ListInit(&disk->head);
 }
-//磁盘分区和注册分区
+///磁盘分区和注册分区
 static INT32 DiskDivideAndPartitionRegister(struct disk_divide_info *info, los_disk *disk)
 {
     INT32 ret;
@@ -1324,7 +1324,7 @@ static INT32 DiskDivideAndPartitionRegister(struct disk_divide_info *info, los_d
     }
     return ENOERR;
 }
-//磁盘反初始化
+///磁盘反初始化
 static INT32 DiskDeinit(los_disk *disk)
 {
     los_part *part = NULL;
@@ -1372,7 +1372,7 @@ static INT32 DiskDeinit(los_disk *disk)
 
     return ENOERR;
 }
-//磁盘初始化
+///磁盘初始化
 static VOID OsDiskInitSub(const CHAR *diskName, INT32 diskID, los_disk *disk,
                           struct geometry *diskInfo, struct Vnode *blkDriver)
 {
@@ -1388,7 +1388,7 @@ static VOID OsDiskInitSub(const CHAR *diskName, INT32 diskID, los_disk *disk,
 
     DiskStructInit(diskName, diskID, diskInfo, blkDriver, disk);
 }
-//磁盘初始化
+///磁盘初始化
 INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
                     VOID *priv, INT32 diskID, VOID *info)
 {
@@ -1448,7 +1448,7 @@ DISK_FIND_ERROR:
     (VOID)unregister_blockdriver(diskName);//注销块设备驱动
     return VFS_ERROR;
 }
-//磁盘反初始化
+///磁盘反初始化
 INT32 los_disk_deinit(INT32 diskID)
 {
     int ret;
@@ -1471,7 +1471,7 @@ INT32 los_disk_deinit(INT32 diskID)
 
     return DiskDeinit(disk);
 }
-//磁盘同步,同步指的是缓存同步
+///磁盘同步,同步指的是缓存同步
 INT32 los_disk_sync(INT32 drvID)
 {
     INT32 ret = ENOERR;
@@ -1495,7 +1495,7 @@ INT32 los_disk_sync(INT32 drvID)
     DISK_UNLOCK(&disk->disk_mutex);
     return ret;
 }
-//设置磁盘块缓存
+///设置磁盘块缓存
 INT32 los_disk_set_bcache(INT32 drvID, UINT32 sectorPerBlock, UINT32 blockNum)
 {
 #ifdef LOSCFG_FS_FAT_CACHE
@@ -1560,7 +1560,7 @@ ERROR_HANDLE:
     return VFS_ERROR;
 #endif
 }
-//通过索引节点从磁盘中找分区信息
+///通过索引节点从磁盘中找分区信息
 static los_part *OsPartFind(los_disk *disk, const struct Vnode *blkDriver)
 {
     los_part *part = NULL;
@@ -1586,7 +1586,7 @@ EXIT:
     DISK_UNLOCK(&disk->disk_mutex);
     return part;
 }
-//通过索引节点找到分区信息
+///通过索引节点找到分区信息
 los_part *los_part_find(struct Vnode *blkDriver)
 {
     INT32 i;
@@ -1610,7 +1610,7 @@ los_part *los_part_find(struct Vnode *blkDriver)
 
     return NULL;
 }
-//访问分区
+///访问分区
 INT32 los_part_access(const CHAR *dev, mode_t mode)
 {
     los_part *part = NULL;
@@ -1630,7 +1630,7 @@ INT32 los_part_access(const CHAR *dev, mode_t mode)
 
     return ENOERR;
 }
-//设置分区名称
+///设置分区名称
 INT32 SetDiskPartName(los_part *part, const CHAR *src)
 {
     size_t len;
@@ -1709,7 +1709,7 @@ INT32 add_mmc_partition(struct disk_divide_info *info, size_t sectorStart, size_
 
     return ENOERR;
 }
-//OHOS #partinfo /dev/mmcblk0p0 命令输出信息
+///OHOS #partinfo /dev/mmcblk0p0 命令输出信息
 VOID show_part(los_part *part)
 {
     if ((part == NULL) || (part->dev == NULL)) {
@@ -1726,7 +1726,7 @@ VOID show_part(los_part *part)
     PRINTK("part sec start   : %llu\n", part->sector_start);//开始扇区
     PRINTK("part sec count   : %llu\n", part->sector_count);//扇区大小
 }
-//通过磁盘ID 擦除磁盘信息
+///通过磁盘ID 擦除磁盘信息
 #ifdef LOSCFG_DRIVERS_MMC
 ssize_t StorageBlockMmcErase(uint32_t blockId, size_t secStart, size_t secNr);
 #endif

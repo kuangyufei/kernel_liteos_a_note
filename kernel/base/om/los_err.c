@@ -61,7 +61,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_ErrHandle(CHAR *fileName, UINT32 lineNo, UINT32
 
     return LOS_OK;
 }
-//设置钩子函数，处理错误
+///设置钩子函数，处理错误
 LITE_OS_SEC_TEXT_INIT VOID LOS_SetErrHandleHook(LOS_ERRORHANDLE_FUNC fun)
 {
     g_errHandleHook = fun;

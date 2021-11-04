@@ -44,7 +44,7 @@ static int PowerLockWrite(struct ProcFile *pf, const char *buf, size_t count, lo
     (void)ppos;
     return -LOS_PmLockRequest(buf);
 }
-//读取电源锁信息
+///读取电源锁信息
 static int PowerLockRead(struct SeqBuf *m, void *v)
 {
     (void)v;
@@ -52,7 +52,7 @@ static int PowerLockRead(struct SeqBuf *m, void *v)
     LOS_PmLockInfoShow(m);
     return 0;
 }
-//proc 拿电源锁操作
+///proc 拿电源锁操作
 static const struct ProcFileOperations PowerLock = {
     .write      = PowerLockWrite,
     .read       = PowerLockRead,

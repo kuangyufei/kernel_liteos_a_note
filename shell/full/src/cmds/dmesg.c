@@ -84,17 +84,17 @@ STATIC VOID OsLockConsole(VOID)
 {
     g_consoleLock = 1;
 }
-//打开控制台
+///打开控制台
 STATIC VOID OsUnlockConsole(VOID)
 {
     g_consoleLock = 0;
 }
-//关闭串口
+///关闭串口
 STATIC VOID OsLockUart(VOID)
 {
     g_uartLock = 1;
 }
-//打开串口
+///打开串口
 STATIC VOID OsUnlockUart(VOID)
 {
     g_uartLock = 0;
@@ -299,7 +299,7 @@ UINT32 OsCheckUartLock(VOID)
 {
     return g_uartLock;
 }
-//初始化 dmesg
+///初始化 dmesg
 UINT32 OsDmesgInit(VOID)
 {
     CHAR* buffer = NULL;

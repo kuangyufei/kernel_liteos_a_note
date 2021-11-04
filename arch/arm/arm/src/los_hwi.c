@@ -209,7 +209,7 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
     /* Must keep the operation at the end of the interface */
     *intCnt = *intCnt - 1;
 }
-//申请内核空间拷贝硬中断参数
+///申请内核空间拷贝硬中断参数
 STATIC HWI_ARG_T OsHwiCpIrqParam(const HwiIrqParam *irqParam)
 {
     HwiIrqParam *paramByAlloc = NULL;
@@ -240,7 +240,7 @@ STATIC UINT32 OsHwiDelNoShared(HWI_HANDLE_T hwiNum)
     HWI_UNLOCK(intSave);//释放硬中断自旋锁
     return LOS_OK;
 }
-//创建一个不支持共享的中断
+///创建一个不支持共享的中断
 STATIC UINT32 OsHwiCreateNoShared(HWI_HANDLE_T hwiNum, HWI_MODE_T hwiMode,
                                   HWI_PROC_FUNC hwiHandler, const HwiIrqParam *irqParam)
 {
@@ -322,7 +322,7 @@ STATIC UINT32 OsHwiDelShared(HWI_HANDLE_T hwiNum, const HwiIrqParam *irqParam)
     HWI_UNLOCK(intSave);
     return LOS_OK;
 }
-//创建一个共享硬件中断,共享中断就是一个中断能触发多个响应函数
+///创建一个共享硬件中断,共享中断就是一个中断能触发多个响应函数
 STATIC UINT32 OsHwiCreateShared(HWI_HANDLE_T hwiNum, HWI_MODE_T hwiMode,
                                 HWI_PROC_FUNC hwiHandler, const HwiIrqParam *irqParam)
 {
@@ -428,7 +428,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_HwiCreate(HWI_HANDLE_T hwiNum,	//硬中断句�
 #endif
     return ret;
 }
-//删除一个硬中断
+///删除一个硬中断
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_HwiDelete(HWI_HANDLE_T hwiNum, HwiIrqParam *irqParam)
 {
     UINT32 ret;

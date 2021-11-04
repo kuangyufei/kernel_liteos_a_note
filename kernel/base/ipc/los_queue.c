@@ -120,7 +120,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsQueueInit(VOID)//消息队列模块初始化
     }
     return LOS_OK;
 }
-//创建一个队列,根据用户传入队列长度和消息节点大小来开辟相应的内存空间以供该队列使用，参数queueID带走队列ID
+///创建一个队列,根据用户传入队列长度和消息节点大小来开辟相应的内存空间以供该队列使用，参数queueID带走队列ID
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueCreate(CHAR *queueName, UINT16 len, UINT32 *queueID,
                                              UINT32 flags, UINT16 maxMsgSize)
 {
@@ -185,7 +185,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueCreate(CHAR *queueName, UINT16 len, UINT32
     OsHookCall(LOS_HOOK_TYPE_QUEUE_CREATE, queueCB);
     return LOS_OK;
 }
-//读队列参数检查
+///读队列参数检查
 STATIC LITE_OS_SEC_TEXT UINT32 OsQueueReadParameterCheck(UINT32 queueID, const VOID *bufferAddr,
                                                          const UINT32 *bufferSize, UINT32 timeout)
 {
@@ -209,7 +209,7 @@ STATIC LITE_OS_SEC_TEXT UINT32 OsQueueReadParameterCheck(UINT32 queueID, const V
     }
     return LOS_OK;
 }
-//写队列参数检查
+///写队列参数检查
 STATIC LITE_OS_SEC_TEXT UINT32 OsQueueWriteParameterCheck(UINT32 queueID, const VOID *bufferAddr,
                                                           const UINT32 *bufferSize, UINT32 timeout)
 {
@@ -234,7 +234,7 @@ STATIC LITE_OS_SEC_TEXT UINT32 OsQueueWriteParameterCheck(UINT32 queueID, const 
     }
     return LOS_OK;
 }
-//队列buf操作,注意队列数据是按顺序来读取的,要不从头,要不从尾部,不会出现从中间读写,所有可由 head 和 tail 来管理队列.
+///队列buf操作,注意队列数据是按顺序来读取的,要不从头,要不从尾部,不会出现从中间读写,所有可由 head 和 tail 来管理队列.
 STATIC VOID OsQueueBufferOperate(LosQueueCB *queueCB, UINT32 operateType, VOID *bufferAddr, UINT32 *bufferSize)
 {
     UINT8 *queueNode = NULL;
@@ -286,7 +286,7 @@ STATIC VOID OsQueueBufferOperate(LosQueueCB *queueCB, UINT32 operateType, VOID *
         }
     }
 }
-//队列操作参数检查
+///队列操作参数检查
 STATIC UINT32 OsQueueOperateParamCheck(const LosQueueCB *queueCB, UINT32 queueID,
                                        UINT32 operateType, const UINT32 *bufferSize)
 {
@@ -361,7 +361,7 @@ QUEUE_END:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//接口函数定时读取消息队列
+///接口函数定时读取消息队列
 LITE_OS_SEC_TEXT UINT32 LOS_QueueReadCopy(UINT32 queueID,
                                           VOID *bufferAddr,
                                           UINT32 *bufferSize,
@@ -378,7 +378,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_QueueReadCopy(UINT32 queueID,
     operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_READ, OS_QUEUE_HEAD);//从头开始读
     return OsQueueOperate(queueID, operateType, bufferAddr, bufferSize, timeout);//定时执行读操作
 }
-//接口函数从队列头开始写
+///接口函数从队列头开始写
 LITE_OS_SEC_TEXT UINT32 LOS_QueueWriteHeadCopy(UINT32 queueID,
                                                VOID *bufferAddr,
                                                UINT32 bufferSize,
@@ -395,7 +395,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_QueueWriteHeadCopy(UINT32 queueID,
     operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_WRITE, OS_QUEUE_HEAD);//从头开始写
     return OsQueueOperate(queueID, operateType, bufferAddr, &bufferSize, timeout);//执行写操作
 }
-//接口函数 从队列尾部开始写
+///接口函数 从队列尾部开始写
 LITE_OS_SEC_TEXT UINT32 LOS_QueueWriteCopy(UINT32 queueID,
                                            VOID *bufferAddr,
                                            UINT32 bufferSize,
@@ -511,7 +511,7 @@ QUEUE_END:
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//外部接口, 获取队列信息,用queueInfo 把 LosQueueCB数据接走,QUEUE_INFO_S对内部数据的封装 
+///外部接口, 获取队列信息,用queueInfo 把 LosQueueCB数据接走,QUEUE_INFO_S对内部数据的封装 
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_QueueInfoGet(UINT32 queueID, QUEUE_INFO_S *queueInfo)
 {
     UINT32 intSave;

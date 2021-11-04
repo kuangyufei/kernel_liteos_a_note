@@ -1750,7 +1750,7 @@ STATIC INLINE VOID OsMemInfoGet(struct OsMemPoolHead *poolInfo, struct OsMemNode
     poolStatus->usedNodeNum += usedNodeNum;
     poolStatus->freeNodeNum += freeNodeNum;
 }
-//内存水线获取：调用LOS_MemInfoGet接口，第1个参数是内存池首地址，第2个参数是LOS_MEM_POOL_STATUS类型的句柄，其中字段usageWaterLine即水线值
+///内存水线获取：调用LOS_MemInfoGet接口，第1个参数是内存池首地址，第2个参数是LOS_MEM_POOL_STATUS类型的句柄，其中字段usageWaterLine即水线值
 UINT32 LOS_MemInfoGet(VOID *pool, LOS_MEM_POOL_STATUS *poolStatus)
 {//内存碎片率计算：同样调用LOS_MemInfoGet接口，可以获取内存池的剩余内存大小和最大空闲内存块大小，然后根据公式（fragment=100-最大空闲内存块大小/剩余内存大小）得出此时的动态内存池碎片率。
     struct OsMemPoolHead *poolInfo = pool;
@@ -1878,7 +1878,7 @@ UINT32 LOS_MemFreeNodeShow(VOID *pool)
 
     return LOS_OK;
 }
-//内核空间动态内存(堆内存)初始化
+///内核空间动态内存(堆内存)初始化
 STATUS_T OsKHeapInit(size_t size)
 {
     STATUS_T ret;

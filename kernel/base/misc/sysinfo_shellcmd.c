@@ -115,7 +115,7 @@ UINT32 OsShellCmdSwtmrCntGet(VOID)
     LOS_IntRestore(intSave);
     return swtmrCnt;
 }
-//查看系统资源使用情况
+///查看系统资源使用情况
 LITE_OS_SEC_TEXT_MINOR VOID OsShellCmdSystemInfoGet(VOID)
 {
     UINT8 isTaskEnable  = YES;
@@ -154,7 +154,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellCmdSystemInfoGet(VOID)
            LOSCFG_BASE_CORE_SWTMR_LIMIT,	//定时器的总数 1024
            SYSINFO_ENABLED(isSwtmrEnable));	//定时器是否失效 YES or NO
 }
-//systeminfo命令用于显示当前操作系统内资源使用情况，包括任务、信号量、互斥量、队列、定时器等。
+///systeminfo命令用于显示当前操作系统内资源使用情况，包括任务、信号量、互斥量、队列、定时器等。
 INT32 OsShellCmdSystemInfo(INT32 argc, const CHAR **argv)
 {
     if (argc == 0) {

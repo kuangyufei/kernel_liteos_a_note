@@ -166,7 +166,7 @@ err_t sys_mbox_new(sys_mbox_t *mbox, int size)
     LWIP_DEBUGF(SYS_DEBUG, ("%s: LOS_QueueCreate error %u\n", __FUNCTION__, ret));
     return ERR_ARG;
 }
-//发送消息,参数2不能为空,直到发送成功为止
+///发送消息,参数2不能为空,直到发送成功为止
 void sys_mbox_post(sys_mbox_t *mbox, void *msg)
 {
     /* Caution: the second parameter is NOT &msg */
@@ -175,7 +175,7 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
         LWIP_DEBUGF(SYS_DEBUG, ("%s: LOS_QueueWrite error %u\n", __FUNCTION__, ret));
     }
 }
-//尝试发送消息
+///尝试发送消息
 err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
 {
     /* Caution: the second parameter is NOT &msg */
@@ -211,7 +211,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeoutMs)
     LWIP_DEBUGF(SYS_DEBUG, ("%s: LOS_QueueRead error %u\n", __FUNCTION__, ret));
     return SYS_ARCH_TIMEOUT; /* Errors should be treated as timeout */
 }
-//尝试都消息
+///尝试都消息
 u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
 {
     void *ignore = 0; /* if msg==NULL, the fetched msg should be dropped */
@@ -229,12 +229,12 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
     LWIP_DEBUGF(SYS_DEBUG, ("%s: LOS_QueueRead error %u\n", __FUNCTION__, ret));
     return SYS_MBOX_EMPTY; /* Errors should be treated as timeout */
 }
-//删除队列
+///删除队列
 void sys_mbox_free(sys_mbox_t *mbox)
 {
     (void)LOS_QueueDelete(*mbox);
 }
-//队列是否有效
+///队列是否有效
 int sys_mbox_valid(sys_mbox_t *mbox)
 {
     QUEUE_INFO_S queueInfo;

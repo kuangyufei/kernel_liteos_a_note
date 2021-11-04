@@ -40,7 +40,7 @@ static int ProcessProcFill(struct SeqBuf *m, void *v)
     (void)OsShellCmdTskInfoGet(OS_ALL_TASK_MASK, m, OS_PROCESS_INFO_ALL);
     return 0;
 }
-// 对 /proc/process 各种骚操作,只能读
+/// 对 /proc/process 各种骚操作,只能读
 static const struct ProcFileOperations PROCESS_PROC_FOPS = {
     .read       = ProcessProcFill,//读取操作
 };

@@ -427,7 +427,7 @@ STATUS_T LOS_ArchMmuQuery(const LosArchMmu *archMmu, VADDR_T vaddr, PADDR_T *pad
         }
         l2Entry = OsGetPte2(l2Base, vaddr);//获取L2描述子地址
         if (OsIsPte2SmallPage(l2Entry) || OsIsPte2SmallPageXN(l2Entry)) {
-            if (paddr != NULL) {//物理地址 = 小页基地址(L2页表项的高20位) + 虚拟地址低12位
+            if (paddr != NULL) {物理地址 = 小页基地址(L2页表项的高20位) + 虚拟地址低12位
                 *paddr = MMU_DESCRIPTOR_L2_SMALL_PAGE_ADDR(l2Entry) + (vaddr & (MMU_DESCRIPTOR_L2_SMALL_SIZE - 1));
             }
 
@@ -443,7 +443,7 @@ STATUS_T LOS_ArchMmuQuery(const LosArchMmu *archMmu, VADDR_T vaddr, PADDR_T *pad
 
     return LOS_OK;
 }
-//解除映射关系
+/// 解除映射关系
 STATUS_T LOS_ArchMmuUnmap(LosArchMmu *archMmu, VADDR_T vaddr, size_t count)
 {
     PTE_T l1Entry;
@@ -473,7 +473,7 @@ STATUS_T LOS_ArchMmuUnmap(LosArchMmu *archMmu, VADDR_T vaddr, size_t count)
     OsArmInvalidateTlbBarrier();//TLB失效，不可用
     return unmapped;
 }
-//section页表格式项映射
+/// section页表格式项映射
 STATIC UINT32 OsMapSection(const LosArchMmu *archMmu, UINT32 flags, VADDR_T *vaddr,
                            PADDR_T *paddr, UINT32 *count)
 {
@@ -488,7 +488,7 @@ STATIC UINT32 OsMapSection(const LosArchMmu *archMmu, UINT32 flags, VADDR_T *vad
 
     return MMU_DESCRIPTOR_L2_NUMBERS_PER_L1;
 }
-//获取L2页表,分配L2表(需物理内存)
+/// 获取L2页表,分配L2表(需物理内存)
 STATIC STATUS_T OsGetL2Table(LosArchMmu *archMmu, UINT32 l1Index, paddr_t *ppa)
 {
     UINT32 index;
@@ -525,10 +525,10 @@ STATIC STATUS_T OsGetL2Table(LosArchMmu *archMmu, UINT32 l1Index, paddr_t *ppa)
     (VOID)memset_s(kvaddr, MMU_DESCRIPTOR_L2_SMALL_SIZE, 0, MMU_DESCRIPTOR_L2_SMALL_SIZE);
 
     /* get physical address */
-    *ppa = LOS_PaddrQuery(kvaddr) + l2Offset;//返回页表的
+    *ppa = LOS_PaddrQuery(kvaddr) + l2Offset;//返回页表物理地址
     return LOS_OK;
 }
-//映射L1页表项,将item写入L1表
+/// 映射L1页表项,将item写入L1表
 STATIC VOID OsMapL1PTE(LosArchMmu *archMmu, PTE_T *pte1Ptr, vaddr_t vaddr, UINT32 flags)
 {
     paddr_t pte2Base = 0;
@@ -645,7 +645,7 @@ STATIC UINT32 OsMapL2PageContinous(PTE_T pte1, UINT32 flags, VADDR_T *vaddr, PAD
     *count -= saveCounts;
     return saveCounts;
 }
-//mmu映射,所谓的map就是生成L1,L2页表项的过程
+/// mmu映射,所谓的map就是生成L1,L2页表项的过程
 status_t LOS_ArchMmuMap(LosArchMmu *archMmu, VADDR_T vaddr, PADDR_T paddr, size_t count, UINT32 flags)
 {
     PTE_T l1Entry;
@@ -682,7 +682,7 @@ status_t LOS_ArchMmuMap(LosArchMmu *archMmu, VADDR_T vaddr, PADDR_T paddr, size_
 
     return mapped;
 }
-//改变内存段的访问权限,读/写/可执行/不可用
+/// 改变内存段的访问权限,读/写/可执行/不可用
 STATUS_T LOS_ArchMmuChangeProt(LosArchMmu *archMmu, VADDR_T vaddr, size_t count, UINT32 flags)
 {
     STATUS_T status;
@@ -833,7 +833,7 @@ STATIC VOID OsSwitchTmpTTB(VOID)
     ISB;
 }
 
-//设置内核空间段属性,可看出内核空间是固定映射到物理地址
+/// 设置内核空间段属性,可看出内核空间是固定映射到物理地址
 STATIC VOID OsSetKSectionAttr(UINTPTR virtAddr, BOOL uncached)
 {
     UINT32 offset = virtAddr - KERNEL_VMM_BASE;

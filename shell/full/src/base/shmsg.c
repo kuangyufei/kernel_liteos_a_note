@@ -64,7 +64,7 @@ CHAR *ShellGetInputBuf(ShellCB *shellCB)
 
     return cmdNode->cmdString;//返回命令内容
 }
-//保存命令历史记录,这个函数写的不太好
+///保存命令历史记录,这个函数写的不太好
 STATIC VOID ShellSaveHistoryCmd(const CHAR *string, ShellCB *shellCB)
 {
     CmdKeyLink *cmdHistory = shellCB->cmdHistoryKeyLink;//获取历史记录的源头
@@ -100,7 +100,7 @@ STATIC VOID ShellSaveHistoryCmd(const CHAR *string, ShellCB *shellCB)
     (VOID)pthread_mutex_unlock(&shellCB->historyMutex);//释放互斥锁
     return;
 }
-//发送解析事件
+///发送解析事件
 STATIC VOID ShellNotify(ShellCB *shellCB)
 {
     (VOID)LOS_EventWrite(&shellCB->shellEvent, SHELL_CMD_PARSE_EVENT);
@@ -164,7 +164,7 @@ STATIC INT32 ShellCmdLineCheckUDRL(const CHAR ch, ShellCB *shellCB)
     }
     return LOS_NOK;
 }
-//对命令行内容解析
+///对命令行内容解析
 LITE_OS_SEC_TEXT_MINOR VOID ShellCmdLineParse(CHAR c, pf_OUTPUT outputFunc, ShellCB *shellCB)
 {
     const CHAR ch = c;
@@ -218,7 +218,7 @@ LITE_OS_SEC_TEXT_MINOR VOID ShellCmdLineParse(CHAR c, pf_OUTPUT outputFunc, Shel
 
     shellCB->shellKeyType = STAT_NOMAL_KEY;//普通字符
 }
-//获取shell消息类型
+///获取shell消息类型
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellMsgTypeGet(CmdParsed *cmdParsed, const CHAR *cmdType)
 {
     CmdItemNode *curCmdItem = (CmdItemNode *)NULL;
@@ -243,7 +243,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellMsgTypeGet(CmdParsed *cmdParsed, const CHAR *
 
     return OS_INVALID;
 }
-//获取命令名称和参数,并执行
+///获取命令名称和参数,并执行
 STATIC UINT32 ShellMsgNameGetAndExec(CmdParsed *cmdParsed, const CHAR *output, UINT32 len)
 {
     UINT32 loop;
@@ -285,7 +285,7 @@ STATIC UINT32 ShellMsgNameGetAndExec(CmdParsed *cmdParsed, const CHAR *output, U
     (VOID)LOS_MemFree(m_aucSysMem0, msgName);
     return ret;
 }
-//命令内容解析
+///命令内容解析
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellMsgParse(const VOID *msg)
 {
     CHAR *output = NULL;
@@ -340,7 +340,7 @@ END:
     }
     return ret;
 }
-//读取命令行内容
+///读取命令行内容
 #ifdef LOSCFG_FS_VFS
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntry(UINTPTR param)
 {
@@ -388,7 +388,7 @@ STATIC VOID ShellCmdProcess(ShellCB *shellCB)
         shellCB->cmdMaskKeyLink = shellCB->cmdHistoryKeyLink;
     }
 }
-//shell 任务,处理解析,执行命令
+///shell 任务,处理解析,执行命令
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellTask(UINTPTR param1,
                                         UINTPTR param2,
                                         UINTPTR param3,
@@ -446,7 +446,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellTaskInit(ShellCB *shellCB)
 
     return LOS_TaskCreate(&shellCB->shellTaskHandle, &initParam);//创建任务
 }
-//进入shell客户端任务初始化,这个任务负责编辑命令,处理命令产生的过程,例如如何处理方向键,退格键,回车键等
+///进入shell客户端任务初始化,这个任务负责编辑命令,处理命令产生的过程,例如如何处理方向键,退格键,回车键等
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntryInit(ShellCB *shellCB)
 {
     UINT32 ret;

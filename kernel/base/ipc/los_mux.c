@@ -102,7 +102,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrInit(LosMuxAttr *attr)
     attr->type        = LOS_MUX_DEFAULT;		//默认 LOS_MUX_RECURSIVE
     return LOS_OK;
 }
-// ????? 销毁互斥属 ,这里啥也没干呀 
+/// ????? 销毁互斥属 ,这里啥也没干呀 
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrDestroy(LosMuxAttr *attr)
 {
     if (attr == NULL) {
@@ -111,7 +111,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrDestroy(LosMuxAttr *attr)
 
     return LOS_OK;
 }
-//获取互斥锁的类型属性,由outType接走,不送! 
+///获取互斥锁的类型属性,由outType接走,不送! 
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrGetType(const LosMuxAttr *attr, INT32 *outType)
 {
     INT32 type;
@@ -129,7 +129,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrGetType(const LosMuxAttr *attr, INT32 *outTyp
 
     return LOS_OK;
 }
-//设置互斥锁的类型属性  
+///设置互斥锁的类型属性  
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrSetType(LosMuxAttr *attr, INT32 type)
 {
     if ((attr == NULL) || (type < LOS_MUX_NORMAL) || (type > LOS_MUX_ERRORCHECK)) {
@@ -139,7 +139,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrSetType(LosMuxAttr *attr, INT32 type)
     attr->type = (UINT8)((attr->type & ~MUTEXATTR_TYPE_MASK) | (UINT32)type);
     return LOS_OK;
 }
-//获取互斥锁的类型属性 
+///获取互斥锁的类型属性 
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrGetProtocol(const LosMuxAttr *attr, INT32 *protocol)
 {
     if ((attr != NULL) && (protocol != NULL)) {
@@ -150,7 +150,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrGetProtocol(const LosMuxAttr *attr, INT32 *pr
 
     return LOS_OK;
 }
-//设置互斥锁属性的协议 
+///设置互斥锁属性的协议 
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrSetProtocol(LosMuxAttr *attr, INT32 protocol)
 {
     if (attr == NULL) {
@@ -167,7 +167,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrSetProtocol(LosMuxAttr *attr, INT32 protocol)
             return LOS_EINVAL;
     }
 }
-//获取互斥锁属性优先级
+///获取互斥锁属性优先级
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrGetPrioceiling(const LosMuxAttr *attr, INT32 *prioceiling)
 {
     if (attr == NULL) {
@@ -180,7 +180,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrGetPrioceiling(const LosMuxAttr *attr, INT32 
 
     return LOS_OK;
 }
-//设置互斥锁属性的优先级的上限 
+///设置互斥锁属性的优先级的上限 
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrSetPrioceiling(LosMuxAttr *attr, INT32 prioceiling)
 {
     if ((attr == NULL) ||
@@ -193,7 +193,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrSetPrioceiling(LosMuxAttr *attr, INT32 prioce
 
     return LOS_OK;
 }
-//设置互斥锁的优先级的上限,老优先级由oldPrioceiling带走
+///设置互斥锁的优先级的上限,老优先级由oldPrioceiling带走
 LITE_OS_SEC_TEXT UINT32 LOS_MuxSetPrioceiling(LosMux *mutex, INT32 prioceiling, INT32 *oldPrioceiling)
 {
     INT32 ret;
@@ -222,7 +222,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxSetPrioceiling(LosMux *mutex, INT32 prioceiling, 
 
     return ret;
 }
-//获取互斥锁的优先级的上限
+///获取互斥锁的优先级的上限
 LITE_OS_SEC_TEXT UINT32 LOS_MuxGetPrioceiling(const LosMux *mutex, INT32 *prioceiling)
 {
     if ((mutex != NULL) && (prioceiling != NULL) && (mutex->magic == OS_MUX_MAGIC)) {
@@ -232,7 +232,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxGetPrioceiling(const LosMux *mutex, INT32 *prioce
 
     return LOS_EINVAL;
 }
-//互斥锁是否有效
+///互斥锁是否有效
 LITE_OS_SEC_TEXT BOOL LOS_MuxIsValid(const LosMux *mutex)
 {
     if ((mutex != NULL) && (mutex->magic == OS_MUX_MAGIC)) {
@@ -241,7 +241,7 @@ LITE_OS_SEC_TEXT BOOL LOS_MuxIsValid(const LosMux *mutex)
 
     return FALSE;
 }
-//检查互斥锁属性是否OK,否则 no ok :|)
+///检查互斥锁属性是否OK,否则 no ok :|)
 STATIC UINT32 OsCheckMutexAttr(const LosMuxAttr *attr)
 {
     if (((INT8)(attr->type) < LOS_MUX_NORMAL) || (attr->type > LOS_MUX_ERRORCHECK)) {
@@ -255,7 +255,7 @@ STATIC UINT32 OsCheckMutexAttr(const LosMuxAttr *attr)
     }
     return LOS_OK;
 }
-//初始化互斥量
+///初始化互斥量
 LITE_OS_SEC_TEXT UINT32 LOS_MuxInit(LosMux *mutex, const LosMuxAttr *attr)
 {
     UINT32 intSave;
@@ -282,7 +282,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxInit(LosMux *mutex, const LosMuxAttr *attr)
     SCHEDULER_UNLOCK(intSave);		//释放调度自旋锁
     return LOS_OK;
 }
-//销毁互斥锁
+///销毁互斥锁
 LITE_OS_SEC_TEXT UINT32 LOS_MuxDestroy(LosMux *mutex)
 {
     UINT32 intSave;
@@ -306,7 +306,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxDestroy(LosMux *mutex)
     SCHEDULER_UNLOCK(intSave);	//释放调度自旋锁
     return LOS_OK;
 }
-//设置互斥锁位图
+///设置互斥锁位图
 STATIC VOID OsMuxBitmapSet(const LosMux *mutex, const LosTaskCB *runTask, LosTaskCB *owner)
 {	//当前任务优先级高于锁持有task时的处理
     if ((owner->priority > runTask->priority) && (mutex->attr.protocol == LOS_MUX_PRIO_INHERIT)) {//协议用继承方式是怎么的呢?
@@ -314,7 +314,7 @@ STATIC VOID OsMuxBitmapSet(const LosMux *mutex, const LosTaskCB *runTask, LosTas
         (VOID)OsSchedModifyTaskSchedParam(owner, owner->policy, runTask->priority);
     }//注意任务优先级有32个, 是0最高,31最低!!!这里等于提高了持有锁任务的优先级,目的是让其在下次调度中提高选中的概率,从而快速的释放锁.您明白了吗? :|)
 }
-//恢复互斥锁位图
+///恢复互斥锁位图
 VOID OsMuxBitmapRestore(const LosMux *mutex, const LosTaskCB *taskCB, LosTaskCB *owner)
 {
     UINT16 bitMapPri;
@@ -416,7 +416,7 @@ UINT32 OsMuxLockUnsafe(LosMux *mutex, UINT32 timeout)
 
     return OsMuxPendOp(runTask, mutex, timeout);
 }
-//尝试加锁,
+///尝试加锁,
 UINT32 OsMuxTrylockUnsafe(LosMux *mutex, UINT32 timeout)
 {
     LosTaskCB *runTask = OsCurrTaskGet();//获取当前任务
@@ -436,7 +436,7 @@ UINT32 OsMuxTrylockUnsafe(LosMux *mutex, UINT32 timeout)
 
     return OsMuxPendOp(runTask, mutex, timeout);//当前任务去拿锁,拿不到就等timeout
 }
-//拿互斥锁,
+///拿互斥锁,
 LITE_OS_SEC_TEXT UINT32 LOS_MuxLock(LosMux *mutex, UINT32 timeout)
 {
     LosTaskCB *runTask = NULL;
@@ -463,7 +463,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxLock(LosMux *mutex, UINT32 timeout)
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//尝试锁不纠结,没拿到不会等待,返回
+///尝试锁不纠结,没拿到不会等待,返回
 LITE_OS_SEC_TEXT UINT32 LOS_MuxTrylock(LosMux *mutex)
 {
     LosTaskCB *runTask = NULL;
@@ -490,7 +490,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxTrylock(LosMux *mutex)
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-//降低参数任务的优先级上限
+///降低参数任务的优先级上限
 STATIC VOID OsMuxPostOpSub(LosTaskCB *taskCB, LosMux *mutex)
 {
     LosTaskCB *pendedTask = NULL;
@@ -508,7 +508,7 @@ STATIC VOID OsMuxPostOpSub(LosTaskCB *taskCB, LosMux *mutex)
     LOS_BitmapClr(&taskCB->priBitMap, bitMapPri);//把taskCB已知的最高优先级记录位清0,实际等于降低了taskCB优先级的上限
     (VOID)OsSchedModifyTaskSchedParam((LosTaskCB *)mutex->owner, ((LosTaskCB *)mutex->owner)->policy, bitMapPri);
 }
-//是否有其他任务持有互斥锁而处于阻塞状,如果是就要唤醒它,注意唤醒一个任务的操作是由别的任务完成的
+///是否有其他任务持有互斥锁而处于阻塞状,如果是就要唤醒它,注意唤醒一个任务的操作是由别的任务完成的
 //OsMuxPostOp只由OsMuxUnlockUnsafe,参数任务归还锁了,自然就会遇到锁要给谁用的问题, 因为很多任务在申请锁,由OsMuxPostOp来回答这个问题
 STATIC UINT32 OsMuxPostOp(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched)
 {
@@ -579,7 +579,7 @@ UINT32 OsMuxUnlockUnsafe(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched)
     /* Whether a task block the mutex lock. *///任务是否阻塞互斥锁
     return OsMuxPostOp(taskCB, mutex, needSched);//一个任务去唤醒另一个在等锁的任务
 }
-//释放锁
+///释放锁
 LITE_OS_SEC_TEXT UINT32 LOS_MuxUnlock(LosMux *mutex)
 {
     LosTaskCB *runTask = NULL;

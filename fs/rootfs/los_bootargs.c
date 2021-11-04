@@ -125,7 +125,7 @@ VOID LOS_FreeCmdLine(VOID)
         g_cmdLine = NULL;
     }
 }
-//获取boot参数
+///获取boot参数
 STATIC INT32 GetBootargs(CHAR **args)
 {
 #ifdef LOSCFG_BOOTENV_RAM
@@ -154,7 +154,7 @@ STATIC INT32 GetBootargs(CHAR **args)
     return LOS_NOK;
 #endif
 }
-//解析boot参数
+///解析boot参数
 INT32 LOS_ParseBootargs(VOID)
 {
     INT32 idx = 0;

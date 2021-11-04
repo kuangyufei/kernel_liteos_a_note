@@ -71,7 +71,7 @@ STATIC VOID ErrorMsg(VOID)
     const CHAR *p = "Output illegal string! vsnprintf_s failed!\n";
     UartPuts(p, (UINT32)strlen(p), UART_WITH_LOCK);
 }
-//串口输出,打印消息的本质就是向串口输出buf
+///串口输出,打印消息的本质就是向串口输出buf
 STATIC VOID UartOutput(const CHAR *str, UINT32 len, BOOL isLock)
 {
 #ifdef LOSCFG_SHELL_DMESG //是否打开了 dmesg开关,打开了会写到文件中 var/log/dmesg 文件中
@@ -85,7 +85,7 @@ STATIC VOID UartOutput(const CHAR *str, UINT32 len, BOOL isLock)
     UartPuts(str, len, isLock);//没有打开dmesg开关时,直接写串口 
 #endif
 }
-//控制台输出
+///控制台输出
 #ifdef LOSCFG_PLATFORM_CONSOLE
 STATIC VOID ConsoleOutput(const CHAR *str, UINT32 len)
 {
@@ -133,7 +133,7 @@ STATIC VOID OsVprintfFree(CHAR *buf, UINT32 bufLen)
         (VOID)LOS_MemFree(m_aucSysMem0, buf);
     }
 }
-//printf由 print 和 format 两个单词构成,格式化输出函数, 一般用于向标准输出设备按规定格式输出信息 
+///printf由 print 和 format 两个单词构成,格式化输出函数, 一般用于向标准输出设备按规定格式输出信息 
 //鸿蒙由OsVprintf 来实现可变参数日志格式的输入
 VOID OsVprintf(const CHAR *fmt, va_list ap, OutputType type)
 {
@@ -185,12 +185,12 @@ VOID OsVprintf(const CHAR *fmt, va_list ap, OutputType type)
     }
     OsVprintfFree(bBuf, bufLen);
 }
-//串口方式输入printf内容
+///串口方式输入printf内容
 VOID UartVprintf(const CHAR *fmt, va_list ap)
 {
     OsVprintf(fmt, ap, UART_OUTPUT);
 }
-//__attribute__((noinline)) 意思是告诉编译器 这是非内联函数
+///__attribute__((noinline)) 意思是告诉编译器 这是非内联函数
 __attribute__((noinline)) VOID UartPrintf(const CHAR *fmt, ...)
 {
     va_list ap;
@@ -198,7 +198,7 @@ __attribute__((noinline)) VOID UartPrintf(const CHAR *fmt, ...)
     OsVprintf(fmt, ap, UART_OUTPUT);
     va_end(ap);
 }
-//可变参数,输出到控制台
+///可变参数,输出到控制台
 __attribute__ ((noinline)) VOID dprintf(const CHAR *fmt, ...)
 {
     va_list ap;
@@ -211,7 +211,7 @@ __attribute__ ((noinline)) VOID dprintf(const CHAR *fmt, ...)
 #endif
     va_end(ap);
 }
-//LK 注者的理解是 log kernel(内核日志)
+///LK 注者的理解是 log kernel(内核日志)
 VOID LkDprintf(const CHAR *fmt, va_list ap)
 {
     OsVprintf(fmt, ap, CONSOLE_OUTPUT);
@@ -248,7 +248,7 @@ __attribute__((noinline)) VOID syslog(INT32 level, const CHAR *fmt, ...)
     va_end(ap);
     (VOID)level;
 }
-//异常信息的输出
+///异常信息的输出
 __attribute__((noinline)) VOID ExcPrintf(const CHAR *fmt, ...)
 {
     va_list ap;
@@ -257,7 +257,7 @@ __attribute__((noinline)) VOID ExcPrintf(const CHAR *fmt, ...)
     OsVprintf(fmt, ap, EXC_OUTPUT);
     va_end(ap);
 }
-//打印异常信息
+///打印异常信息
 VOID PrintExcInfo(const CHAR *fmt, ...)
 {
     va_list ap;
