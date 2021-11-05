@@ -970,7 +970,16 @@ LITE_OS_SEC_TEXT VOID OsRunTaskToDelete(LosTaskCB *runTask)
     OsSchedResched();//申请调度
     return;
 }
-
+/**
+ * @brief 获取参数位图中最高位为1的索引位 例如: 00110110 返回 5
+ * @verbatim
+    CLZ 用于计算操作数最高端0的个数，这条指令主要用于以下两个场合
+    　　1.计算操作数规范化（使其最高位为1）时需要左移的位数
+    　　2.确定一个优先级掩码中最高优先级
+ * @endverbatim
+ * @param bitmap 
+ * @return UINT16 
+ */
 /*
  * Check if needs to do the delete operation on the running task.
  * Return TRUE, if needs to do the deletion.
@@ -980,14 +989,21 @@ LITE_OS_SEC_TEXT VOID OsRunTaskToDelete(LosTaskCB *runTask)
  * 3. Do the deletion in hard-irq
  * then LOS_TaskDelete will directly return with 'ret' value.
  */
- /****************************************************************
- 检查是否需要对正在运行的任务执行删除操作,如果需要删除，则返回TRUE。
- 如果满足以下情况，则返回FALSE：
- 1.如果启用了SMP，则跨CPU执行删除
- 2.禁用抢占时执行删除
- 3.在硬irq中删除
- 然后LOS_TaskDelete将直接返回ret值
- ****************************************************************/
+
+/**
+ * @brief 
+ * @verbatim
+    检查是否需要对正在运行的任务执行删除操作,如果需要删除，则返回TRUE。
+    如果满足以下情况，则返回FALSE：
+    1.如果启用了SMP，则跨CPU执行删除
+    2.禁用抢占时执行删除
+    3.在硬irq中删除
+    然后LOS_TaskDelete将直接返回ret值
+ * @endverbatim
+ * @param taskCB 
+ * @param ret 
+ * @return STATIC 
+ */
 STATIC BOOL OsRunTaskToDeleteCheckOnRun(LosTaskCB *taskCB, UINT32 *ret)
 {
     /* init default out return value */

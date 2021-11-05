@@ -65,16 +65,16 @@ __attribute__ ((section(".data"))) UINT32 g_uart_fputc_en = 1;
 extern UINT32 g_uart_fputc_en;
 STATIC UINT32 ConsoleSendTask(UINTPTR param);
 
-STATIC UINT8 g_taskConsoleIDArray[LOSCFG_BASE_CORE_TSK_LIMIT];//task 控制台ID池,同步task数量,理论上每个task都可以有一个自己的控制台
-STATIC SPIN_LOCK_INIT(g_consoleSpin);//初始化控制台自旋锁
+STATIC UINT8 g_taskConsoleIDArray[LOSCFG_BASE_CORE_TSK_LIMIT];///< task 控制台ID池,同步task数量,理论上每个task都可以有一个自己的控制台
+STATIC SPIN_LOCK_INIT(g_consoleSpin);///< 初始化控制台自旋锁
 
-#define SHELL_ENTRYID_INVALID     0xFFFFFFFF	//默认值,SHELL_ENTRYID 一般为 任务ID
-#define SHELL_TASK_PRIORITY       9		//shell 的优先级为 9
-#define CONSOLE_CIRBUF_EVENT      0x02U	//控制台循环buffer事件	
-#define CONSOLE_SEND_TASK_EXIT    0x04U	//控制台发送任务退出事件
-#define CONSOLE_SEND_TASK_RUNNING 0x10U	//控制台发送任务正在执行事件
+#define SHELL_ENTRYID_INVALID     0xFFFFFFFF	///< 默认值,SHELL_ENTRYID 一般为 任务ID
+#define SHELL_TASK_PRIORITY       9		///< shell 的优先级为 9
+#define CONSOLE_CIRBUF_EVENT      0x02U	///< 控制台循环buffer事件	
+#define CONSOLE_SEND_TASK_EXIT    0x04U	///< 控制台发送任务退出事件
+#define CONSOLE_SEND_TASK_RUNNING 0x10U	///< 控制台发送任务正在执行事件
 
-CONSOLE_CB *g_console[CONSOLE_NUM];//控制台全局变量,控制台是共用的, 默认为 2个
+CONSOLE_CB *g_console[CONSOLE_NUM];///< 控制台全局变量,控制台是共用的, 默认为 2个
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 /*
@@ -372,11 +372,11 @@ STATIC INLINE VOID UserEndOfRead(CONSOLE_CB *consoleCB, struct file *filep,
 }
 ///根据VT终端标准 <ESC>[37m 为设置前景色
 enum {
-    STAT_NOMAL_KEY,	//普通按键
-    STAT_ESC_KEY,	//控制按键,只有 ESC 是
-    STAT_MULTI_KEY	//多个按键,只有 [ 是
+    STAT_NOMAL_KEY,	///< 普通按键
+    STAT_ESC_KEY,	///< 控制按键,只有 ESC 是
+    STAT_MULTI_KEY	///< 多个按键,只有 [ 是
 };
-//用户shell检查上下左右键
+///用户shell检查上下左右键
 STATIC INT32 UserShellCheckUDRL(const CHAR ch, INT32 *lastTokenType)
 {
     INT32 ret = LOS_OK;

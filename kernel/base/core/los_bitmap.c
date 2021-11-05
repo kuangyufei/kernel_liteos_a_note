@@ -33,23 +33,25 @@
 #include "los_printf.h"
 #include "los_toolchain.h" //GCC 编译器的内置函数
 
+/**
+ * @brief
+ * @verbatim
+    基本概念
+        位操作是指对二进制数的bit位进行操作。程序可以设置某一变量为状态字，状态字中的
+        每一bit位（标志位）可以具有自定义的含义。
 
-/******************************************************************************
-基本概念
-	位操作是指对二进制数的bit位进行操作。程序可以设置某一变量为状态字，状态字中的
-	每一bit位（标志位）可以具有自定义的含义。
+    使用场景
+        系统提供标志位的置1和清0操作，可以改变标志位的内容，同时还提供获取状态字中标志位
+        为1的最高位和最低位的功能。用户也可以对系统的寄存器进行位操作。
 
-使用场景
-	系统提供标志位的置1和清0操作，可以改变标志位的内容，同时还提供获取状态字中标志位
-	为1的最高位和最低位的功能。用户也可以对系统的寄存器进行位操作。
-
-参考
-	https://www.geeksforgeeks.org/builtin-functions-gcc-compiler/
-******************************************************************************/
+    参考
+        https://www.geeksforgeeks.org/builtin-functions-gcc-compiler/
+ * @endverbatim 
+ */
 #define OS_BITMAP_MASK 0x1FU //
 #define OS_BITMAP_WORD_MASK ~0UL
 
-/* find first zero bit starting from LSB */
+/*! find first zero bit starting from LSB */
 STATIC INLINE UINT16 Ffz(UINTPTR x)
 {//__builtin_ffsl: 返回右起第一个1的位置，函数来自 glibc
     return __builtin_ffsl(~x) - 1;//从LSB开始查找第一个零位 LSB(最低有效位) 对应 最高有效位(MSB)
@@ -72,12 +74,17 @@ VOID LOS_BitmapClr(UINT32 *bitmap, UINT16 pos)
 
     *bitmap &= ~(1U << (pos & OS_BITMAP_MASK));//在对应位上置0
 }
-/********************************************************
-CLZ 用于计算操作数最高端0的个数，这条指令主要用于以下两个场合
-　　1.计算操作数规范化（使其最高位为1）时需要左移的位数
-　　2.确定一个优先级掩码中最高优先级
-********************************************************/
-//获取参数位图中最高位为1的索引位 例如: 00110110 返回 5
+
+/**
+ * @brief 获取参数位图中最高位为1的索引位 例如: 00110110 返回 5
+ * @verbatim
+    CLZ 用于计算操作数最高端0的个数，这条指令主要用于以下两个场合
+    　　1.计算操作数规范化（使其最高位为1）时需要左移的位数
+    　　2.确定一个优先级掩码中最高优先级
+ * @endverbatim
+ * @param bitmap 
+ * @return UINT16 
+ */
 UINT16 LOS_HighBitGet(UINT32 bitmap)
 {
     if (bitmap == 0) {

@@ -39,8 +39,10 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-/***************************************************** @note_pic
-鸿蒙对消息队列图
+/**
+ * @brief @note_pic
+ * @verbatim
+ 鸿蒙对消息队列图
 						   |<-----消息内容区,有2个消息---->|
 +------------+------------------------------------------------------------+
 |            |             |---------------|---------------|              |
@@ -54,17 +56,18 @@ extern "C" {
 |                                                                         |
 |                                                                         |
 +<-------------+      队列长度,消息点个数,                          +------------->+
+ * @endverbatim
+ */
 
-*****************************************************/
 typedef enum {
-    OS_QUEUE_READ = 0,	//读队列
-    OS_QUEUE_WRITE = 1,	//写队列
+    OS_QUEUE_READ = 0,	///< 读队列
+    OS_QUEUE_WRITE = 1,	///< 写队列
     OS_QUEUE_N_RW = 2
 } QueueReadWrite;
 
 typedef enum {
-    OS_QUEUE_HEAD = 0,	//队列头部标识
-    OS_QUEUE_TAIL = 1	//队列尾部标识
+    OS_QUEUE_HEAD = 0,	///< 队列头部标识
+    OS_QUEUE_TAIL = 1	///< 队列尾部标识
 } QueueHeadTail;
 
 #define OS_QUEUE_OPERATE_TYPE(ReadOrWrite, HeadOrTail) (((UINT32)(HeadOrTail) << 1) | (ReadOrWrite))
@@ -80,6 +83,7 @@ typedef enum {
 /**
  * @ingroup los_queue
  * Queue information block structure
+ * @attention 读写队列分离
  */
 typedef struct {
     UINT8 *queueHandle; /**< Pointer to a queue handle */	//指向队列句柄的指针
@@ -94,7 +98,7 @@ typedef struct {
     LOS_DL_LIST readWriteList[OS_QUEUE_N_RW]; /**< the linked list to be read or written, 0:readlist, 1:writelist */
 											//挂的都是等待读/写消息的任务链表，0表示读消息的链表，1表示写消息的任务链表
     LOS_DL_LIST memList; /**< Pointer to the memory linked list */	//@note_why 这里尚未搞明白是啥意思 ，是共享内存吗？
-} LosQueueCB;//读写队列分离
+} LosQueueCB;
 
 /* queue state */
 /**

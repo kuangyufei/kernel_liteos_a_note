@@ -130,24 +130,29 @@ int osShellCmdDoChdir(const char *path)
 
   return 0;
 }
-/*******************************************************
-命令功能
-ls命令用来显示当前目录的内容。
+/**
+ * @brief 
+ * @verbatim
+  命令功能
+  ls命令用来显示当前目录的内容。
 
-命令格式
-ls [path]
+  命令格式
+  ls [path]
 
-path为空时，显示当前目录的内容。
-path为无效文件名时，显示失败，提示：
-ls error: No such directory。
-path为有效目录路径时，会显示对应目录下的内容。
+  path为空时，显示当前目录的内容。
+  path为无效文件名时，显示失败，提示：
+  ls error: No such directory。
+  path为有效目录路径时，会显示对应目录下的内容。
 
-使用指南
-ls命令显示当前目录的内容。
-ls可以显示文件的大小。
-proc下ls无法统计文件大小，显示为0。
-
-*******************************************************/
+  使用指南
+  ls命令显示当前目录的内容。
+  ls可以显示文件的大小。
+  proc下ls无法统计文件大小，显示为0。
+ * @endverbatim
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int osShellCmdLs(int argc, const char **argv)
 {
   char *fullpath = NULL;
@@ -176,22 +181,27 @@ int osShellCmdLs(int argc, const char **argv)
 
   return 0;
 }
-/*******************************************************
-命令功能
-cd命令用来改变当前目录。
 
-命令格式
-cd [path]
+/**
+ * @brief 
+ * @verbatim
+  命令功能
+  cd命令用来改变当前目录。
 
-未指定目录参数时，会跳转至根目录。
-cd后加路径名时，跳转至该路径。
-路径名以 /（斜杠）开头时，表示根目录。
-.（点）表示当前目录。
-..（点点）表示父目录。
+  命令格式
+  cd [path]
 
-cd ..
-
-*******************************************************/
+  未指定目录参数时，会跳转至根目录。
+  cd后加路径名时，跳转至该路径。
+  路径名以 /（斜杠）开头时，表示根目录。
+  .（点）表示当前目录。
+  ..（点点）表示父目录。
+  cd ..
+ * @endverbatim
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int osShellCmdCd(int argc, const char **argv)
 {
   if (argc == 0)//没有参数时 #cd 
@@ -209,7 +219,10 @@ int osShellCmdCd(int argc, const char **argv)
 #define CAT_TASK_PRIORITY  10
 #define CAT_TASK_STACK_SIZE  0x3000
 pthread_mutex_t g_mutex_cat = PTHREAD_MUTEX_INITIALIZER;
-/*******************************************************
+
+/**
+ * @brief 
+ * @verbatim
 cat用于显示文本文件的内容。
 
 命令格式
@@ -220,7 +233,10 @@ cat用于显示文本文件的内容。
 
 使用实例
 举例：cat harmony.txt
-*******************************************************/
+ * @endverbatim
+ * @param arg 
+ * @return int 
+ */
 int osShellCmdDoCatShow(UINTPTR arg) //shellcmd_cat 任务实现
 {
   int ret = 0;
@@ -278,10 +294,10 @@ out:
   (void)pthread_mutex_unlock(&g_mutex_cat);
   return ret;
 }
-/*****************************************************************
+/*!
 cat用于显示文本文件的内容。cat [pathname]
 cat weharmony.txt
-*****************************************************************/
+*/
 int osShellCmdCat(int argc, const char **argv)
 {
   char *fullpath = NULL;
@@ -365,21 +381,28 @@ static inline void print_mount_usage(void)//mount 用法
 {
   PRINTK("mount [DEVICE] [PATH] [NAME]\n");
 }
-/*****************************************************************
-命令功能
-mount命令用来将设备挂载到指定目录。
-命令格式
-mount <device> <path> <name> [uid gid]
-device 要挂载的设备（格式为设备所在路径）。系统拥有的设备。
-path 指定目录。用户必须具有指定目录中的执行（搜索）许可权。N/A
-name 文件系统的种类。 vfat, yaffs, jffs, ramfs, nfs，procfs, romfs.
-uid gid uid是指用户ID。 gid是指组ID。可选参数，缺省值uid:0，gid:0。
 
-使用指南
-mount后加需要挂载的设备信息、指定目录以及设备文件格式，就能成功挂载文件系统到指定目录。
-使用实例
-举例：mount /dev/mmcblk0p0 /bin/vs/sd vfat
-*****************************************************************/
+/**
+ * @brief
+ * @verbatim
+  命令功能
+  mount命令用来将设备挂载到指定目录。
+  命令格式
+  mount <device> <path> <name> [uid gid]
+  device 要挂载的设备（格式为设备所在路径）。系统拥有的设备。
+  path 指定目录。用户必须具有指定目录中的执行（搜索）许可权。N/A
+  name 文件系统的种类。 vfat, yaffs, jffs, ramfs, nfs，procfs, romfs.
+  uid gid uid是指用户ID。 gid是指组ID。可选参数，缺省值uid:0，gid:0。
+
+  使用指南
+  mount后加需要挂载的设备信息、指定目录以及设备文件格式，就能成功挂载文件系统到指定目录。
+  使用实例
+  举例：mount /dev/mmcblk0p0 /bin/vs/sd vfat
+ * @endverbatim 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int osShellCmdMount(int argc, const char **argv)
 {
   int ret;
@@ -512,18 +535,25 @@ int osShellCmdMount(int argc, const char **argv)
   free(fullpath);
   return 0;
 }
-/*****************************************************************
-命令功能
-umount命令用来卸载指定文件系统。
-命令格式
-umount [dir]
-参数说明
-dir 需要卸载文件系统对应的目录。 系统已挂载的文件系统的目录。
-使用指南
-umount后加上需要卸载的指定文件系统的目录，即将指定文件系统卸载。
-使用实例
-举例：mount /bin/vs/sd
-*****************************************************************/
+
+/**
+ * @brief
+ * @verbatim
+  命令功能
+  umount命令用来卸载指定文件系统。
+  命令格式
+  umount [dir]
+  参数说明
+  dir 需要卸载文件系统对应的目录。 系统已挂载的文件系统的目录。
+  使用指南
+  umount后加上需要卸载的指定文件系统的目录，即将指定文件系统卸载。
+  使用实例
+  举例：mount /bin/vs/sd
+ * @endverbatim 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int osShellCmdUmount(int argc, const char **argv)
 {
   int ret;
@@ -571,20 +601,27 @@ int osShellCmdUmount(int argc, const char **argv)
   PRINTK("umount ok\n");
   return 0;
 }
-/*****************************************************************
-命令功能
-mkdir命令用来创建一个目录。
-命令格式
-mkdir [directory]
-参数说明
-directory 需要创建的目录。
-使用指南
-mkdir后加所需要创建的目录名会在当前目录下创建目录。
-mkdir后加路径，再加上需要创建的目录名，即在指定目录下创建目录。
 
-使用实例
-举例：mkdir harmony
-*****************************************************************/
+/**
+ * @brief
+ * @verbatim
+  命令功能
+  mkdir命令用来创建一个目录。
+  命令格式
+  mkdir [directory]
+  参数说明
+  directory 需要创建的目录。
+  使用指南
+  mkdir后加所需要创建的目录名会在当前目录下创建目录。
+  mkdir后加路径，再加上需要创建的目录名，即在指定目录下创建目录。
+
+  使用实例
+  举例：mkdir harmony
+ * @endverbatim 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int osShellCmdMkdir(int argc, const char **argv)
 {
   int ret;
@@ -610,15 +647,22 @@ int osShellCmdMkdir(int argc, const char **argv)
   free(fullpath);
   return 0;
 }
-/*****************************************************************
-命令功能
-pwd命令用来显示当前路径。
-命令格式
-无
-使用指南
-pwd 命令将当前目录的全路径名称（从根目录）写入标准输出。全部目录使用 / （斜线）分隔。
-第一个 / 表示根目录， 最后一个目录是当前目录。
-*****************************************************************/
+
+/**
+ * @brief
+ * @verbatim
+  命令功能
+  pwd命令用来显示当前路径。
+  命令格式
+  无
+  使用指南
+  pwd 命令将当前目录的全路径名称（从根目录）写入标准输出。全部目录使用 / （斜线）分隔。
+  第一个 / 表示根目录， 最后一个目录是当前目录。
+ * @endverbatim 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int osShellCmdPwd(int argc, const char **argv)
 {
   char buf[SHOW_MAX_LEN] = {0};
@@ -661,17 +705,24 @@ static inline void print_statfs_usage(void)
   PRINTK("Example:\n");
   PRINTK("    statfs /ramfs\n");
 }
-/*****************************************************************
-命令功能
-statfs 命令用来打印文件系统的信息，如该文件系统类型、总大小、可用大小等信息。
-命令格式
-statfs [directory]
-参数说明
-directory 文件系统的路径。 必须是存在的文件系统，并且其支持statfs命令，当前支持的文件系统有：JFFS2，FAT，NFS。
-使用指南
-打印信息因文件系统而异。
-以nfs文件系统为例：	statfs /nfs
-*****************************************************************/
+
+/**
+ * @brief
+ * @verbatim
+  命令功能
+  statfs 命令用来打印文件系统的信息，如该文件系统类型、总大小、可用大小等信息。
+  命令格式
+  statfs [directory]
+  参数说明
+  directory 文件系统的路径。 必须是存在的文件系统，并且其支持statfs命令，当前支持的文件系统有：JFFS2，FAT，NFS。
+  使用指南
+  打印信息因文件系统而异。
+  以nfs文件系统为例：	statfs /nfs
+ * @endverbatim 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int osShellCmdStatfs(int argc, const char **argv)
 {
   struct statfs sfs;
@@ -713,12 +764,19 @@ int osShellCmdStatfs(int argc, const char **argv)
 
   return 0;
 }
-/*****************************************************************
-touch命令用来在指定的目录下创建一个不存在的空文件。
-touch命令操作已存在的文件会成功，不会更新时间戳。touch [filename]
-touch命令用来创建一个空文件，该文件可读写。
-使用touch命令一次只能创建一个文件。
-*****************************************************************/
+
+/**
+ * @brief
+ * @verbatim
+  touch命令用来在指定的目录下创建一个不存在的空文件。
+  touch命令操作已存在的文件会成功，不会更新时间戳。touch [filename]
+  touch命令用来创建一个空文件，该文件可读写。
+  使用touch命令一次只能创建一个文件。
+ * @endverbatim 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int osShellCmdTouch(int argc, const char **argv)
 {
   int ret;
@@ -751,20 +809,27 @@ int osShellCmdTouch(int argc, const char **argv)
 
 #define CP_BUF_SIZE 4096
 pthread_mutex_t g_mutex_cp = PTHREAD_MUTEX_INITIALIZER;
-/*****************************************************************
-cp 拷贝文件，创建一份副本。
-cp [SOURCEFILE] [DESTFILE]
-使用指南
-	同一路径下，源文件与目的文件不能重名。
-	源文件必须存在，且不为目录。
-	源文件路径支持“*”和“？”通配符，“*”代表任意多个字符，“？”代表任意单个字符。目的路径不支持通配符。当源路径可匹配多个文件时，目的路径必须为目录。
-	目的路径为目录时，该目录必须存在。此时目的文件以源文件命名。
-	目的路径为文件时，所在目录必须存在。此时拷贝文件的同时为副本重命名。
-	目前不支持多文件拷贝。参数大于2个时，只对前2个参数进行操作。
-	目的文件不存在时创建新文件，已存在则覆盖。
-	拷贝系统重要资源时，会对系统造成死机等重大未知影响，如用于拷贝/dev/uartdev-0 文件时，会产生系统卡死现象。
-举例：cp weharmony.txt ./tmp/
-*****************************************************************/
+
+/**
+ * @brief
+ * @verbatim
+  cp 拷贝文件，创建一份副本。
+  cp [SOURCEFILE] [DESTFILE]
+  使用指南
+    同一路径下，源文件与目的文件不能重名。
+    源文件必须存在，且不为目录。
+    源文件路径支持“*”和“？”通配符，“*”代表任意多个字符，“？”代表任意单个字符。目的路径不支持通配符。当源路径可匹配多个文件时，目的路径必须为目录。
+    目的路径为目录时，该目录必须存在。此时目的文件以源文件命名。
+    目的路径为文件时，所在目录必须存在。此时拷贝文件的同时为副本重命名。
+    目前不支持多文件拷贝。参数大于2个时，只对前2个参数进行操作。
+    目的文件不存在时创建新文件，已存在则覆盖。
+    拷贝系统重要资源时，会对系统造成死机等重大未知影响，如用于拷贝/dev/uartdev-0 文件时，会产生系统卡死现象。
+  举例：cp weharmony.txt ./tmp/
+ * @endverbatim 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 static int os_shell_cmd_do_cp(const char *src_filepath, const char *dst_filename)
 {
   int  ret;
@@ -1282,29 +1347,36 @@ closedir_out:
   (void)closedir(d);
   return VFS_ERROR;
 }
-/*****************************************************************
-命令功能
-拷贝文件，创建一份副本。
 
-命令格式
-cp [SOURCEFILE] [DESTFILE]
+/**
+ * @brief
+ * @verbatim
+  命令功能
+  拷贝文件，创建一份副本。
 
-SOURCEFILE - 源文件路径。- 目前只支持文件,不支持目录。
-DESTFILE - 目的文件路径。 - 支持目录以及文件。
+  命令格式
+  cp [SOURCEFILE] [DESTFILE]
 
-使用指南
-同一路径下，源文件与目的文件不能重名。
-源文件必须存在，且不为目录。
-源文件路径支持“*”和“？”通配符，“*”代表任意多个字符，“？”代表任意单个字符。目的路径不支持通配符。当源路径可匹配多个文件时，目的路径必须为目录。
-目的路径为目录时，该目录必须存在。此时目的文件以源文件命名。
-目的路径为文件时，所在目录必须存在。此时拷贝文件的同时为副本重命名。
-目前不支持多文件拷贝。参数大于2个时，只对前2个参数进行操作。
-目的文件不存在时创建新文件，已存在则覆盖。
-拷贝系统重要资源时，会对系统造成死机等重大未知影响，如用于拷贝/dev/uartdev-0 文件时，会产生系统卡死现象。
+  SOURCEFILE - 源文件路径。- 目前只支持文件,不支持目录。
+  DESTFILE - 目的文件路径。 - 支持目录以及文件。
 
-使用实例
-举例：cp harmony.txt ./tmp/
-*****************************************************************/
+  使用指南
+  同一路径下，源文件与目的文件不能重名。
+  源文件必须存在，且不为目录。
+  源文件路径支持“*”和“？”通配符，“*”代表任意多个字符，“？”代表任意单个字符。目的路径不支持通配符。当源路径可匹配多个文件时，目的路径必须为目录。
+  目的路径为目录时，该目录必须存在。此时目的文件以源文件命名。
+  目的路径为文件时，所在目录必须存在。此时拷贝文件的同时为副本重命名。
+  目前不支持多文件拷贝。参数大于2个时，只对前2个参数进行操作。
+  目的文件不存在时创建新文件，已存在则覆盖。
+  拷贝系统重要资源时，会对系统造成死机等重大未知影响，如用于拷贝/dev/uartdev-0 文件时，会产生系统卡死现象。
+
+  使用实例
+  举例：cp harmony.txt ./tmp/
+ * @endverbatim 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int osShellCmdCp(int argc, const char **argv)
 {
   int  ret;
@@ -1471,24 +1543,31 @@ int osShellCmdRm(int argc, const char **argv)
   free(fullpath);
   return 0;
 }
-/*******************************************************
-命令功能
-rmdir命令用来删除一个目录。
 
-命令格式
-rmdir [dir]
+/**
+ * @brief
+ * @verbatim
+  命令功能
+  rmdir命令用来删除一个目录。
 
-参数说明
-参数		参数说明		取值范围
-dir		需要删除目录的名称，删除目录必须为空，支持输入路径。N/A
+  命令格式
+  rmdir [dir]
 
-使用指南
-rmdir命令只能用来删除目录。
-rmdir一次只能删除一个目录。
-rmdir只能删除空目录。
-使用实例
-举例：输入rmdir dir
-*******************************************************/
+  参数说明
+  参数		参数说明		取值范围
+  dir		需要删除目录的名称，删除目录必须为空，支持输入路径。N/A
+
+  使用指南
+  rmdir命令只能用来删除目录。
+  rmdir一次只能删除一个目录。
+  rmdir只能删除空目录。
+  使用实例
+  举例：输入rmdir dir
+ * @endverbatim 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int osShellCmdRmdir(int argc, const char **argv)
 {
   int  ret;
@@ -1522,23 +1601,29 @@ int osShellCmdRmdir(int argc, const char **argv)
 
   return 0;
 }
-/*****************************************************************
-命令功能
-sync命令用于同步缓存数据（文件系统的数据）到sd卡。
 
-命令格式
-sync
+/**
+ * @brief
+ * @verbatim
+  命令功能
+  sync命令用于同步缓存数据（文件系统的数据）到sd卡。
 
-参数说明
-无。
+  命令格式
+  sync
 
-使用指南
-sync命令用来刷新缓存，当没有sd卡插入时不进行操作。
-有sd卡插入时缓存信息会同步到sd卡，成功返回时无显示。
-使用实例
-举例：输入sync，有sd卡时同步到sd卡，无sd卡时不操作。
+  参数说明
+  无。
 
-*****************************************************************/
+  使用指南
+  sync命令用来刷新缓存，当没有sd卡插入时不进行操作。
+  有sd卡插入时缓存信息会同步到sd卡，成功返回时无显示。
+  使用实例
+  举例：输入sync，有sd卡时同步到sd卡，无sd卡时不操作。
+ * @endverbatim 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int osShellCmdSync(int argc, const char **argv)
 {
   ERROR_OUT_IF(argc > 0, PRINTK("\nUsage: sync\n"), return -1);
@@ -1546,25 +1631,32 @@ int osShellCmdSync(int argc, const char **argv)
   sync();
   return 0;
 }
-/*****************************************************************
-命令功能
-lsfd命令用来显示当前已经打开的系统文件描述符及对应的文件名。
 
-命令格式
-lsfd
+/**
+ * @brief
+ * @verbatim
+  命令功能
+  lsfd命令用来显示当前已经打开的系统文件描述符及对应的文件名。
 
-使用指南
-lsfd命令显示当前已经打开文件的fd号以及文件的名字。
+  命令格式
+  lsfd
 
-使用实例
-举例：输入lsfd,注意这里并不显示 (0 ~ 2)号
-OHOS #lsfd
-	fd	filename
-	3	/dev/console1
-	4	/dev/spidev1.0
-	5	/bin/init
-	6	/bin/shell
-*****************************************************************/
+  使用指南
+  lsfd命令显示当前已经打开文件的fd号以及文件的名字。
+
+  使用实例
+  举例：输入lsfd,注意这里并不显示 (0 ~ 2)号
+  OHOS #lsfd
+    fd	filename
+    3	/dev/console1
+    4	/dev/spidev1.0
+    5	/bin/init
+    6	/bin/shell
+ * @endverbatim 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int osShellCmdLsfd(int argc, const char **argv)
 {
   ERROR_OUT_IF(argc > 0, PRINTK("\nUsage: lsfd\n"), return -1);
@@ -1598,13 +1690,20 @@ int checkNum(const char *arg)
 }
 
 #ifdef LOSCFG_KERNEL_SYSCALL
-/*****************************************************************
-shell su 用于变更为其他使用者的身份
-su [uid] [gid]
-su命令缺省切换到root用户，uid默认为0，gid为0。
-在su命令后的输入参数uid和gid就可以切换到该uid和gid的用户。
-输入参数超出范围时，会打印提醒输入正确范围参数。
-*****************************************************************/
+
+/**
+ * @brief
+ * @verbatim
+  shell su 用于变更为其他使用者的身份
+  su [uid] [gid]
+  su命令缺省切换到root用户，uid默认为0，gid为0。
+  在su命令后的输入参数uid和gid就可以切换到该uid和gid的用户。
+  输入参数超出范围时，会打印提醒输入正确范围参数。
+ * @endverbatim 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int osShellCmdSu(int argc, const char **argv)
 {
   unsigned int su_uid;

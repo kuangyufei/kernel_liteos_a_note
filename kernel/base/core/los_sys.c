@@ -32,41 +32,43 @@
 #include "los_sys_pri.h"
 #include "los_sched_pri.h"
 
-/**@file  los_sys.c
+/*!
+* @file  los_sys.c
 * @brief  系统时间转化
 * @details  
-* @attention
-	基本概念 \n
-		时间管理以系统时钟为基础，给应用程序提供所有和时间有关的服务。\n
+* @attention @verbatim 
+	基本概念 
+		时间管理以系统时钟为基础，给应用程序提供所有和时间有关的服务。
 
-		系统时钟是由定时器/计数器产生的输出脉冲触发中断产生的，一般定义为整数或长整数。\n
-		输出脉冲的周期叫做一个“时钟滴答”。系统时钟也称为时标或者Tick。\n
+		系统时钟是由定时器/计数器产生的输出脉冲触发中断产生的，一般定义为整数或长整数。
+		输出脉冲的周期叫做一个“时钟滴答”。系统时钟也称为时标或者Tick。
 
-		用户以秒、毫秒为单位计时，而操作系统以Tick为单位计时，当用户需要对系统进行操作时，\n
-		例如任务挂起、延时等，此时需要时间管理模块对Tick和秒/毫秒进行转换。\n
-		时间管理模块提供时间转换、统计、延迟功能\n
+		用户以秒、毫秒为单位计时，而操作系统以Tick为单位计时，当用户需要对系统进行操作时，
+		例如任务挂起、延时等，此时需要时间管理模块对Tick和秒/毫秒进行转换。
+		时间管理模块提供时间转换、统计、延迟功能
 
-	相关概念	\n
-		Cycle	\n
-		系统最小的计时单位。Cycle的时长由系统主时钟频率决定，系统主时钟频率就是每秒钟的Cycle数。\n
+	相关概念	
+		Cycle	
+		系统最小的计时单位。Cycle的时长由系统主时钟频率决定，系统主时钟频率就是每秒钟的Cycle数。
 
-		Tick	\n
-		Tick是操作系统的基本时间单位，由用户配置的每秒Tick数决定。\n
+		Tick	
+		Tick是操作系统的基本时间单位，由用户配置的每秒Tick数决定。
 
-	使用场景	\n
-		用户需要了解当前系统运行的时间以及Tick与秒、毫秒之间的转换关系等。 \n
+	使用场景	
+		用户需要了解当前系统运行的时间以及Tick与秒、毫秒之间的转换关系等。 
 
-	时间管理的典型开发流程	\n
-		根据实际需求，在板级配置适配时确认是否使能LOSCFG_BASE_CORE_TICK_HW_TIME宏选择外部定时器，\n
-		并配置系统主时钟频率OS_SYS_CLOCK（单位Hz）。OS_SYS_CLOCK的默认值基于硬件平台配置。\n
-		通过make menuconfig配置LOSCFG_BASE_CORE_TICK_PER_SECOND。\n
+	时间管理的典型开发流程	
+		根据实际需求，在板级配置适配时确认是否使能LOSCFG_BASE_CORE_TICK_HW_TIME宏选择外部定时器，
+		并配置系统主时钟频率OS_SYS_CLOCK（单位Hz）。OS_SYS_CLOCK的默认值基于硬件平台配置。
+		通过make menuconfig配置LOSCFG_BASE_CORE_TICK_PER_SECOND。
 		
-	注意事项	\n
-		时间管理不是单独的功能模块，依赖于OS_SYS_CLOCK和LOSCFG_BASE_CORE_TICK_PER_SECOND两个配置选项。\n
-		系统的Tick数在关中断的情况下不进行计数，故系统Tick数不能作为准确时间使用。\n
+	注意事项	
+		时间管理不是单独的功能模块，依赖于OS_SYS_CLOCK和LOSCFG_BASE_CORE_TICK_PER_SECOND两个配置选项。
+		系统的Tick数在关中断的情况下不进行计数，故系统Tick数不能作为准确时间使用。
 
-	参考	\n
-		https://gitee.com/LiteOS/LiteOS/blob/master/doc/Huawei_LiteOS_Kernel_Developer_Guide_zh.md#setup\n
+	参考	
+		https://gitee.com/LiteOS/LiteOS/blob/master/doc/Huawei_LiteOS_Kernel_Developer_Guide_zh.md#setup
+	@endverbatim 	
 */
 
 #define OS_MAX_VALUE    0xFFFFFFFFUL
