@@ -400,16 +400,23 @@ LITE_OS_SEC_TEXT_INIT VOID OsHwiInit(VOID)//硬件中断初始化
 
     return;
 }
-/******************************************************************************
- 创建一个硬中断
- 中断创建，注册中断号、中断触发模式、中断优先级、中断处理程序。中断被触发时，
- handleIrq会调用该中断处理程序
-******************************************************************************/
-LITE_OS_SEC_TEXT_INIT UINT32 LOS_HwiCreate(HWI_HANDLE_T hwiNum,	//硬中断句柄编号 默认范围[0-127]
-                                           HWI_PRIOR_T hwiPrio,		//硬中断优先级	
-                                           HWI_MODE_T hwiMode,		//硬中断模式 共享和非共享
-                                           HWI_PROC_FUNC hwiHandler,//硬中断处理函数
-                                           HwiIrqParam *irqParam)	//硬中断处理函数参数
+
+/**
+ * @brief  创建一个硬中断
+    \n 中断创建，注册中断号、中断触发模式、中断优先级、中断处理程序。中断被触发时，
+    \n handleIrq会调用该中断处理程序
+ * @param hwiNum 硬中断句柄编号 默认范围[0-127]
+ * @param hwiPrio 硬中断优先级	
+ * @param hwiMode 硬中断模式 共享和非共享
+ * @param hwiHandler 硬中断处理函数
+ * @param irqParam 硬中断处理函数参数
+ * @return LITE_OS_SEC_TEXT_INIT 
+ */
+LITE_OS_SEC_TEXT_INIT UINT32 LOS_HwiCreate(HWI_HANDLE_T hwiNum,
+                                           HWI_PRIOR_T hwiPrio,
+                                           HWI_MODE_T hwiMode,
+                                           HWI_PROC_FUNC hwiHandler,
+                                           HwiIrqParam *irqParam)
 {
     UINT32 ret;
 

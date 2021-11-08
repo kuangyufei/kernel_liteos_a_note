@@ -66,9 +66,10 @@
 #ifdef LOSCFG_FS_VFS
 #include "vnode.h"
 #endif
-/*********************************************************
-https://blog.csdn.net/piyongduo3393/article/details/89378243
-
+/**
+ * @file los_syscall.h
+ * @brief 
+@verbatim 
 什么情况下会发生从用户态向内核态切换。这里细分为3种情况:
 
 1、发生系统调用时
@@ -90,7 +91,11 @@ https://blog.csdn.net/piyongduo3393/article/details/89378243
 比如硬盘读写操作的完成，系统会切换到硬盘读写的中断处理程序中执行后续操作等。
 可以看到上述三种由用户态切换到内核态的情况中，只有系统调用是进程主动请求发生切换的，
 中断和异常都是被动的。
-*********************************************************/
+
+https://blog.csdn.net/piyongduo3393/article/details/89378243
+@endverbatim 
+ */
+
 /* process */
 extern unsigned int SysGetGroupId(void);
 extern unsigned int SysGetTid(void);

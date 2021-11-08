@@ -341,6 +341,14 @@ STATIC STATUS_T OsDoFileFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault, U
 第一种:由编程错误引起的异常
 第二种:属于进程的地址空间范围但还尚未分配物理页框引起的异常
 ***************************************************************/
+
+/**
+ * @brief 
+ * @param vaddr 
+ * @param flags 
+ * @param frame 
+ * @return STATUS_T 
+ */
 STATUS_T OsVmPageFaultHandler(VADDR_T vaddr, UINT32 flags, ExcContext *frame)
 {
     LosVmSpace *space = LOS_SpaceGet(vaddr);//获取虚拟地址所属空间

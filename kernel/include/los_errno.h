@@ -45,32 +45,36 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-/******************************************************************************
-调用API接口时可能会出现错误，此时接口会返回对应的错误码，以便快速定位错误原因。
+/**
+ * @brief 
+ * @verbatim 
+	调用API接口时可能会出现错误，此时接口会返回对应的错误码，以便快速定位错误原因。
 
-错误码是一个32位的无符号整型数，31~24位表示错误等级，23~16位表示错误码标志（当前该标志值为0），
-15~8位代表错误码所属模块，7~0位表示错误码序号。
+	错误码是一个32位的无符号整型数，31~24位表示错误等级，23~16位表示错误码标志（当前该标志值为0），
+	15~8位代表错误码所属模块，7~0位表示错误码序号。
 
-错误码中的错误等级
-	错误等级		数值		含义
-	NORMAL		0		提示
-	WARN		1		告警
-	ERR			2		严重
-	FATAL		3		致命 
-	
-例如
-	#define LOS_ERRNO_TSK_NO_MEMORY  LOS_ERRNO_OS_FATAL(LOS_MOD_TSK, 0x00)
-	#define LOS_ERRNO_OS_FATAL(MID, ERRNO)  \
-    	(LOS_ERRTYPE_FATAL | LOS_ERRNO_OS_ID | ((UINT32)(MID) << 8) | ((UINT32)(ERRNO)))
-说明
-	LOS_ERRTYPE_FATAL：错误等级为FATAL，值为0x03000000 LOS_ERRNO_OS_ID：错误码标志，
-	值为0x000000 MID：所属模块，LOS_MOD_TSK的值为0x2 ERRNO：错误码序号 
-	所以LOS_ERRNO_TSK_NO_MEMORY的值为0x03000200
-	
-错误码接管
-	有时只靠错误码不能快速准确的定位问题，为方便用户分析错误，错误处理模块支持
-	注册错误处理的钩子函数，发生错误时，用户可以调用LOS_ErrHandle接口以执行错误处理函数。
-******************************************************************************/
+	错误码中的错误等级
+		错误等级		数值		含义
+		NORMAL		0		提示
+		WARN		1		告警
+		ERR			2		严重
+		FATAL		3		致命 
+		
+	例如
+		#define LOS_ERRNO_TSK_NO_MEMORY  LOS_ERRNO_OS_FATAL(LOS_MOD_TSK, 0x00)
+		#define LOS_ERRNO_OS_FATAL(MID, ERRNO)  \
+			(LOS_ERRTYPE_FATAL | LOS_ERRNO_OS_ID | ((UINT32)(MID) << 8) | ((UINT32)(ERRNO)))
+	说明
+		LOS_ERRTYPE_FATAL：错误等级为FATAL，值为0x03000000 LOS_ERRNO_OS_ID：错误码标志，
+		值为0x000000 MID：所属模块，LOS_MOD_TSK的值为0x2 ERRNO：错误码序号 
+		所以LOS_ERRNO_TSK_NO_MEMORY的值为0x03000200
+		
+	错误码接管
+		有时只靠错误码不能快速准确的定位问题，为方便用户分析错误，错误处理模块支持
+		注册错误处理的钩子函数，发生错误时，用户可以调用LOS_ErrHandle接口以执行错误处理函数。
+ * @endverbatim
+ */
+
 
 /**
  * @ingroup los_errno

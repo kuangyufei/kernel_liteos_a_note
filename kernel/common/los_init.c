@@ -116,10 +116,13 @@ STATIC VOID InitLevelCall(const CHAR *name, const UINT32 level, struct ModuleIni
     PRINTK("%s initialization at level %u consumes %lluns on cpu %u.\n", name, level, totalTime, ArchCurrCpuid());
 #endif
 }
-/*********************************************************
-初始化调用日志打印,这个函数的功能主要是为了记录某个步骤的耗时.在一个函数前后各调用一次就知道函数的执行情况.
+
+/**
+ * @brief 初始化调用日志打印,这个函数的功能主要是为了记录某个步骤的耗时.在一个函数前后各调用一次就知道函数的执行情况.
 这为开机调试提供了很重要的日志依据.
-**********************************************************/
+ * @param level 
+ * @return VOID 
+ */
 VOID OsInitCall(const UINT32 level)
 {
     if (level >= LOS_INIT_LEVEL_FINISH) {

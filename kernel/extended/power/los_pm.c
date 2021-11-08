@@ -37,43 +37,46 @@
 #include "los_spinlock.h"
 #include "los_mp.h"
 
-/*******************************************************************
-// @note_link http://weharmonyos.com/openharmony/zh-cn/readme/%E7%94%B5%E6%BA%90%E7%AE%A1%E7%90%86%E5%AD%90%E7%B3%BB%E7%BB%9F.html
-电源管理子系统提供如下功能：
-	重启系统。
-	管理休眠运行锁。
-	系统电源状态查询。
-	充电和电池状态查询和上报。
-	亮灭屏管理和亮度调节。
-/base/powermgr
-├── battery_manager            # 电池服务组件
-│   ├── hdi                    # HDI层
-│   ├── interfaces             # 接口层
-│   ├── sa_profile             # SA配置文件
-│   ├── services               # 服务层
-│   └── utils                  # 工具和通用层
-├── display_manager            # 显示控制组件
-│   ├── interfaces             # 接口层
-│   └── sa_profile             # SA配置文件
-│   └── services               # 服务层
-│   └── utils                  # 工具和通用层
-├── powermgr_lite              # 轻量级电源管理组件
-│   ├── interfaces             # 接口层
-│   └── services               # 服务层
-└── power_manager              # 电源管理服务组件
-    ├── interfaces             # 接口层
-    ├── sa_profile             # SA配置文件
-    └── services               # 服务层
-    └── utils                  # 工具和通用层
-开发者通过电源管理子系统提供的接口可以进行申请和释放休眠运行锁RunningLock、获取电池信息、亮度调节、重启设备、关机等操作。
+/**
+ * @brief 删除链:删除由装入点管理的文件
+ * @verbatim 
+    @note_link http://weharmonyos.com/openharmony/zh-cn/readme/%E7%94%B5%E6%BA%90%E7%AE%A1%E7%90%86%E5%AD%90%E7%B3%BB%E7%BB%9F.html
+    电源管理子系统提供如下功能：
+        重启系统。
+        管理休眠运行锁。
+        系统电源状态查询。
+        充电和电池状态查询和上报。
+        亮灭屏管理和亮度调节。
+    /base/powermgr
+    ├── battery_manager            # 电池服务组件
+    │   ├── hdi                    # HDI层
+    │   ├── interfaces             # 接口层
+    │   ├── sa_profile             # SA配置文件
+    │   ├── services               # 服务层
+    │   └── utils                  # 工具和通用层
+    ├── display_manager            # 显示控制组件
+    │   ├── interfaces             # 接口层
+    │   └── sa_profile             # SA配置文件
+    │   └── services               # 服务层
+    │   └── utils                  # 工具和通用层
+    ├── powermgr_lite              # 轻量级电源管理组件
+    │   ├── interfaces             # 接口层
+    │   └── services               # 服务层
+    └── power_manager              # 电源管理服务组件
+        ├── interfaces             # 接口层
+        ├── sa_profile             # SA配置文件
+        └── services               # 服务层
+        └── utils                  # 工具和通用层
+    开发者通过电源管理子系统提供的接口可以进行申请和释放休眠运行锁RunningLock、获取电池信息、亮度调节、重启设备、关机等操作。
 
-电源管理子系统相关仓库
+    电源管理子系统相关仓库
 
-powermgr_battery_manager
-powermgr_power_manager
-powermgr_display_manager
+    powermgr_battery_manager
+    powermgr_power_manager
+    powermgr_display_manager
+ * @endverbatim
+ */
 
-*******************************************************************/
 #ifdef LOSCFG_KERNEL_PM
 #define PM_INFO_SHOW(seqBuf, arg...) do {                   \
     if (seqBuf != NULL) {                                   \
@@ -87,22 +90,22 @@ powermgr_display_manager
 #define OS_PM_LOCK_NAME_MAX 28
 
 typedef UINT32 (*Suspend)(VOID);
-//电源锁控制块
+///< 电源锁控制块
 typedef struct {
-    CHAR         name[OS_PM_LOCK_NAME_MAX];//电源锁名称
-    UINT32       count;	//数量
-    LOS_DL_LIST  list;	//电源锁链表,上面挂的是 OsPmLockCB
+    CHAR         name[OS_PM_LOCK_NAME_MAX]; ///< 电源锁名称
+    UINT32       count;	///< 数量
+    LOS_DL_LIST  list;	///< 电源锁链表,上面挂的是 OsPmLockCB
 } OsPmLockCB;
-//电源管理控制块 
+///< 电源管理控制块 
 typedef struct {
-    LOS_SysSleepEnum  mode;		//模式类型
-    UINT16            lock;		//锁数量
-    LOS_DL_LIST       lockList;	//电源锁链表头,上面挂的是 OsPmLockCB
+    LOS_SysSleepEnum  mode;		///< 模式类型
+    UINT16            lock;		///< 锁数量
+    LOS_DL_LIST       lockList;	///< 电源锁链表头,上面挂的是 OsPmLockCB
 } LosPmCB;
 
-STATIC LosPmCB g_pmCB;//电源控制块全局遍历
-STATIC SPIN_LOCK_INIT(g_pmSpin);//电源模块自旋锁
-//获取电源模式
+STATIC LosPmCB g_pmCB; ///< 电源控制块全局遍历
+STATIC SPIN_LOCK_INIT(g_pmSpin); ///< 电源模块自旋锁
+/// 获取电源模式
 LOS_SysSleepEnum LOS_PmModeGet(VOID)
 {
     LOS_SysSleepEnum mode;

@@ -39,11 +39,14 @@
 #include <los_sem.h>
 #include <los_mux.h>
 #include <los_spinlock.h>
+/**
+ * @brief 
+ * @verbatim 
+    移值lwip所需的内核架构层支持.
+    创建线程,互斥锁,信号量,队列的接口实现
+ * @endverbatim
+ */
 
-/***************************************************************
-移值lwip所需的内核架构层支持.
-创建线程,互斥锁,信号量,队列的接口实现
-***************************************************************/
 #ifdef LOSCFG_KERNEL_SMP
 SPIN_LOCK_INIT(arch_protect_spin);
 static u32_t lwprot_thread = LOS_ERRNO_TSK_ID_INVALID;

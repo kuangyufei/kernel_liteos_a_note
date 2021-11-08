@@ -37,10 +37,10 @@
 #include "linux/spinlock.h"
 #include "path_cache.h"
 
-/************************************************************************* 
-https://www.howtogeek.com/193669/whats-the-difference-between-gpt-and-mbr-when-partitioning-a-drive/
-https://www.html.cn/qa/other/20741.html
-* GPT和MBR是做什么的？
+/**
+ * @file disk.c
+ * @verbatim
+GPT和MBR是做什么的？
 	在使用磁盘驱动器之前，必须对其进行分区。。MBR(主引导记录)和GPT(GUID分区表)是在驱动器上存储分区信息的两种不同方法。
 	这些信息包括分区在物理磁盘上的开始和结束位置，因此您的操作系统知道哪些扇区属于每个分区，哪些分区是可引导的。
 	这就是为什么在驱动器上创建分区之前必须选择MBR或GPT的原因。
@@ -62,16 +62,21 @@ https://www.html.cn/qa/other/20741.html
 	或驱动器分区消失时才会看到问题。
 	GUID分区表自带备份。在磁盘的首尾部分分别保存了一份相同的分区表，因此当一份损坏可以通过另一份恢复。
 	而MBR磁盘分区表一旦被破坏就无法恢复，需要重新分区
-*************************************************************************/
+    https://www.howtogeek.com/193669/whats-the-difference-between-gpt-and-mbr-when-partitioning-a-drive/
+    https://www.html.cn/qa/other/20741.html
+ * @endverbatim 
+ * @brief 
+ */
+
 //磁盘的最小单位就是扇区
-los_disk g_sysDisk[SYS_MAX_DISK];//支持挂载的磁盘总数量 5个
-los_part g_sysPart[SYS_MAX_PART];//支持磁盘的分区总数量 5*16,每个磁盘最大分16个区
+los_disk g_sysDisk[SYS_MAX_DISK]; ///< 支持挂载的磁盘总数量 5个
+los_part g_sysPart[SYS_MAX_PART]; ///< 支持磁盘的分区总数量 5*16,每个磁盘最大分16个区
 
-UINT32 g_uwFatSectorsPerBlock = CONFIG_FS_FAT_SECTOR_PER_BLOCK;//每块支持扇区数 默认64个扇区
-UINT32 g_uwFatBlockNums = CONFIG_FS_FAT_BLOCK_NUMS;//块数量 默认28
+UINT32 g_uwFatSectorsPerBlock = CONFIG_FS_FAT_SECTOR_PER_BLOCK; ///< 每块支持扇区数 默认64个扇区
+UINT32 g_uwFatBlockNums = CONFIG_FS_FAT_BLOCK_NUMS; ///< 块数量 默认28
 
-spinlock_t g_diskSpinlock;//磁盘自锁锁
-spinlock_t g_diskFatBlockSpinlock;//磁盘Fat块自旋锁
+spinlock_t g_diskSpinlock; ///< 磁盘自锁锁
+spinlock_t g_diskFatBlockSpinlock; ///< 磁盘Fat块自旋锁
 
 UINT32 g_usbMode = 0;
 
@@ -121,7 +126,7 @@ VOID SetFatSectorsPerBlock(UINT32 sectorsPerBlock)
     }
 }
 #endif
-//通过名称分配磁盘ID
+///通过名称分配磁盘ID
 INT32 los_alloc_diskid_byname(const CHAR *diskName)
 {
     INT32 diskID;

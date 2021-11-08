@@ -707,7 +707,8 @@ INT32 LOS_DmesgToFile(CHAR *filename)
 }
 #endif
 
-/*************************************************************
+/**
+ * @brief 
 dmesg全称是display message (or display driver)，即显示信息。
 
 dmesg命令用于控制内核dmesg缓存区
@@ -724,8 +725,10 @@ dmesg参数缺省时，默认打印缓存区内容。
 关闭串口打印会影响shell使用，建议先连接telnet再尝试关闭串口。
 
 dmesg > /usr/dmesg.log。
-
-**************************************************************/
+ * @param argc 
+ * @param argv 
+ * @return INT32 
+ */
 INT32 OsShellCmdDmesg(INT32 argc, const CHAR **argv)
 {
     if (argc == 1) {

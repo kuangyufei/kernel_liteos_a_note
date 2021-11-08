@@ -49,32 +49,32 @@ extern "C" {
  * @ingroup los_config
  * int stack start addr
  */
-extern CHAR __int_stack_start;	// 运行系统函数栈的开始地址
-extern CHAR __rodata_start;		// ROM开始地址 只读
-extern CHAR __rodata_end;		// ROM结束地址
-extern CHAR __bss_start;		// bss开始地址 __attribute__((section(".__bss_start")));
-extern CHAR __bss_end;			// bss结束地址 __attribute__((section(".__bss_end")));
-extern CHAR __text_start;		// 代码区开始地址
-extern CHAR __text_end;			// 代码区结束地址
-extern CHAR __ram_data_start;	// RAM开始地址 可读可写
-extern CHAR __ram_data_end;		// RAM结束地址
-extern UINT32 __heap_start; 	// 堆区开始地址
-extern UINT32 __heap_end;		// 堆区结束地址
+extern CHAR __int_stack_start;	///< 运行系统函数栈的开始地址
+extern CHAR __rodata_start;		///< ROM开始地址 只读
+extern CHAR __rodata_end;		///< ROM结束地址
+extern CHAR __bss_start;		///< bss开始地址 __attribute__((section(".__bss_start")));
+extern CHAR __bss_end;			///< bss结束地址 __attribute__((section(".__bss_end")));
+extern CHAR __text_start;		///< 代码区开始地址
+extern CHAR __text_end;			///< 代码区结束地址
+extern CHAR __ram_data_start;	///< RAM开始地址 可读可写
+extern CHAR __ram_data_end;		///< RAM结束地址
+extern UINT32 __heap_start; 	///< 堆区开始地址
+extern UINT32 __heap_end;		///< 堆区结束地址
 
 /****************************** System clock module configuration ****************************/
 /**
  * @ingroup los_config
  * System clock (unit: HZ)
  */
-#ifndef OS_SYS_CLOCK	//HZ:是每秒中的周期性变动重复次数的计量
-#define OS_SYS_CLOCK (get_bus_clk()) //系统主时钟频率 例如:50000000 即50微秒 
+#ifndef OS_SYS_CLOCK	///< HZ:是每秒中的周期性变动重复次数的计量
+#define OS_SYS_CLOCK (get_bus_clk()) ///< 系统主时钟频率 例如:50000000 即50微秒 
 #endif
 /**
  * @ingroup los_config
  * time timer clock (unit: HZ)
  */
 #ifndef OS_TIME_TIMER_CLOCK
-#define OS_TIME_TIMER_CLOCK OS_SYS_CLOCK //定时器频率
+#define OS_TIME_TIMER_CLOCK OS_SYS_CLOCK ///< 定时器频率
 #endif
 
 /**
@@ -131,7 +131,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * External configuration item for timer tailoring
  */
 #if defined(LOSCFG_BASE_CORE_TICK_HW_TIME) && (LOSCFG_BASE_CORE_TICK_HW_TIME == 0)
-#undef LOSCFG_BASE_CORE_TICK_HW_TIME //定时器裁剪的外部配置项
+#undef LOSCFG_BASE_CORE_TICK_HW_TIME ///< 定时器裁剪的外部配置项
 #endif
 
 /****************************** Hardware interrupt module configuration ******************************/
@@ -139,7 +139,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * @ingroup los_config
  * Configuration item for hardware interrupt tailoring 
  */
-#ifndef LOSCFG_PLATFORM_HWI	//硬件中断裁剪配置项
+#ifndef LOSCFG_PLATFORM_HWI	///< 硬件中断裁剪配置项
 #define LOSCFG_PLATFORM_HWI
 #endif
 
@@ -148,7 +148,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * Maximum number of used hardware interrupts, including Tick timer interrupts.
  */
 #ifndef LOSCFG_PLATFORM_HWI_LIMIT
-#define LOSCFG_PLATFORM_HWI_LIMIT 96 //硬件中断最大数量
+#define LOSCFG_PLATFORM_HWI_LIMIT 96 ///< 硬件中断最大数量
 #endif
 
 /**
@@ -183,7 +183,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * @ingroup los_config
  * Default task priority
  */
-#ifndef LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO	//内核任务默认优先级
+#ifndef LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO	///< 内核任务默认优先级
 #define LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO 10
 #endif
 
@@ -191,7 +191,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * @ingroup los_config
  * Maximum supported number of tasks except the idle task rather than the number of usable tasks
  */
-#ifndef LOSCFG_BASE_CORE_TSK_LIMIT	//支持的最大任务数（空闲任务除外，而不是可用任务数）
+#ifndef LOSCFG_BASE_CORE_TSK_LIMIT	///< 支持的最大任务数（空闲任务除外，而不是可用任务数）
 #define LOSCFG_BASE_CORE_TSK_LIMIT 128
 #endif
 
@@ -199,7 +199,7 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * @ingroup los_config
  * Maximum supported number of process rather than the number of usable processes.
  */
-#ifndef LOSCFG_BASE_CORE_PROCESS_LIMIT	//支持的最大进程数，而不是可用进程数
+#ifndef LOSCFG_BASE_CORE_PROCESS_LIMIT	///< 支持的最大进程数，而不是可用进程数
 #define LOSCFG_BASE_CORE_PROCESS_LIMIT 64
 #endif
 
@@ -211,8 +211,8 @@ extern UINT32 __heap_end;		// 堆区结束地址
  * @ingroup los_config
  * Size of the idle task stack
  */
-#ifndef LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE	//空闲任务栈大小
-#define LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE SIZE(0x800)// 2K
+#ifndef LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE	///< 空闲任务栈大小
+#define LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE SIZE(0x800) ///< 2K
 #endif
 
 /**

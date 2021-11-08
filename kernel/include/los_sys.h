@@ -46,8 +46,10 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
-/******************************************************************************
+/**
+ * @file los_sys.h
+ * @brief 
+@verbatim 
 基本概念
 	时间管理以系统时钟为基础，给应用程序提供所有和时间有关的服务。
 
@@ -77,9 +79,10 @@ extern "C" {
 	时间管理不是单独的功能模块，依赖于OS_SYS_CLOCK和LOSCFG_BASE_CORE_TICK_PER_SECOND两个配置选项。
 	系统的Tick数在关中断的情况下不进行计数，故系统Tick数不能作为准确时间使用。
 
-参考
-	https://gitee.com/LiteOS/LiteOS/blob/master/doc/Huawei_LiteOS_Kernel_Developer_Guide_zh.md#setup
-******************************************************************************/
+@endverbatim 
+ */
+
+
 /**
  * @ingroup los_sys
  * System time basic function error code: Null pointer.
