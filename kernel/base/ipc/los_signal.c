@@ -52,10 +52,13 @@ int raise(int sig)
 
 #define GETUNMASKSET(procmask, pendFlag) ((~(procmask)) & (sigset_t)(pendFlag))
 #define UINT64_BIT_SIZE 64
-/****************************************************
-判定信号signo是否存在信号集中。
-如果信号集里已有该信号则返回1，否则返回0。如果有错误则返回-1
-****************************************************/
+
+/**
+ * @brief 判定信号signo是否存在信号集中。如果信号集里已有该信号则返回1，否则返回0。如果有错误则返回-1
+ * @param set 
+ * @param signo 
+ * @return int 
+ */
 int OsSigIsMember(const sigset_t *set, int signo)
 {
     int ret = LOS_NOK;
@@ -217,12 +220,16 @@ void OsSigMaskSwitch(LosTaskCB * const rtcb, sigset_t set)
         rtcb->sig.sigPendFlag ^= unmaskset;//从阻塞集中去掉unmaskset
     }
 }
-/******************************************************************
-向信号集设置信号屏蔽的方法
-	SIG_BLOCK：将set指向信号集中的信号，添加到进程阻塞信号集；
-	SIG_UNBLOCK：将set指向信号集中的信号，从进程阻塞信号集删除；
-	SIG_SETMASK：将set指向信号集中的信号，设置成进程阻塞信号集；
-*******************************************************************/
+
+/**
+ * @brief 
+ * @verbatim
+    向信号集设置信号屏蔽的方法
+        SIG_BLOCK：将set指向信号集中的信号，添加到进程阻塞信号集；
+        SIG_UNBLOCK：将set指向信号集中的信号，从进程阻塞信号集删除；
+        SIG_SETMASK：将set指向信号集中的信号，设置成进程阻塞信号集；
+ * @endverbatim
+ */
 int OsSigprocMask(int how, const sigset_t_l *setl, sigset_t_l *oldset)
 {
     LosTaskCB *spcb = NULL;
@@ -443,11 +450,15 @@ int OsDispatch(pid_t pid, siginfo_t *info, int permission)
     }
     return OsSigProcessSend(spcb, info);//给参数进程发送信号
 }
-/************************************************
-用于向进程或进程组发送信号
-shell命令 kill 14 7（kill -14 7效果相同）
-发送信号14（SIGALRM默认行为为进程终止）给7号进程
-************************************************/
+
+/**
+ * @brief 
+ * @verbatim
+    用于向进程或进程组发送信号
+    shell命令 kill 14 7（kill -14 7效果相同）
+    发送信号14（SIGALRM默认行为为进程终止）给7号进程
+ * @endverbatim
+ */
 int OsKill(pid_t pid, int sig, int permission)
 {
     siginfo_t info;
@@ -663,14 +674,18 @@ int OsSigSuspend(const sigset_t *set)
     SCHEDULER_UNLOCK(intSave);
     return -EINTR;
 }
-/**************************************************
-信号安装,函数用于改变进程接收到特定信号后的行为。
-sig:信号的值，可以为除SIGKILL及SIGSTOP外的任何一个特定有效的信号（为这两个信号定义自己的处理函数，将导致信号安装错误）。
-act:设置对signal信号的新处理方式。
-oldact:原来对信号的处理方式。
-如果把第二、第三个参数都设为NULL，那么该函数可用于检查信号的有效性。
-返回值：0 表示成功，-1 表示有错误发生。
-**************************************************/
+
+/**
+ * @brief 
+ * @verbatim
+    信号安装,函数用于改变进程接收到特定信号后的行为。
+    sig:信号的值，可以为除SIGKILL及SIGSTOP外的任何一个特定有效的信号（为这两个信号定义自己的处理函数，将导致信号安装错误）。
+    act:设置对signal信号的新处理方式。
+    oldact:原来对信号的处理方式。
+    如果把第二、第三个参数都设为NULL，那么该函数可用于检查信号的有效性。
+    返回值：0 表示成功，-1 表示有错误发生。
+ * @endverbatim
+ */
 int OsSigAction(int sig, const sigaction_t *act, sigaction_t *oact)
 {
     UINTPTR addr;
@@ -713,10 +728,14 @@ VOID OsSigIntUnlock(VOID)
 
     (VOID)LOS_AtomicSub((Atomic *)&sigcb->sigIntLock, 1);
 }
-/**********************************************
-产生系统调用时,也就是软中断时,保存用户栈寄存器现场信息
-改写PC寄存器的值
-**********************************************/
+
+/**
+ * @brief 保存信号上下文
+ * @verbatim
+    产生系统调用时,也就是软中断时,保存用户栈寄存器现场信息
+    改写PC寄存器的值
+ * @endverbatim
+ */
 VOID *OsSaveSignalContext(VOID *sp, VOID *newSp)
 {
     UINTPTR sigHandler;
@@ -766,13 +785,16 @@ VOID *OsSaveSignalContext(VOID *sp, VOID *newSp)
     return sp;
 }
 
-/****************************************************
-恢复信号上下文,由系统调用之__NR_sigreturn产生,这是一个内部产生的系统调用.
-为什么要恢复呢?
-因为系统调用的执行由任务内核态完成,使用的栈也是内核栈,CPU相关寄存器记录的都是内核栈的内容,
-而系统调用完成后,需返回任务的用户栈执行,这时需将CPU各寄存器回到用户态现场
-所以函数的功能就变成了还原寄存器的值
-****************************************************/
+/**
+ * @brief 
+ * @verbatim
+    恢复信号上下文,由系统调用之__NR_sigreturn产生,这是一个内部产生的系统调用.
+    为什么要恢复呢?
+    因为系统调用的执行由任务内核态完成,使用的栈也是内核栈,CPU相关寄存器记录的都是内核栈的内容,
+    而系统调用完成后,需返回任务的用户栈执行,这时需将CPU各寄存器回到用户态现场
+    所以函数的功能就变成了还原寄存器的值
+ * @endverbatim
+ */
 VOID *OsRestorSignalContext(VOID *sp)
 {
     UINT32 intSave;

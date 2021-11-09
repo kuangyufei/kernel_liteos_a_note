@@ -1679,11 +1679,16 @@ ERROR_HANDLE:
     DISK_UNLOCK(&disk->disk_mutex);
     return VFS_ERROR;
 }
-/************************************************************** 
-*  添加 MMC分区
-*  MMC， 是一种闪存卡（Flash Memory Card）标准，它定义了 MMC 的架构以及访问　Flash Memory 的接口和协议。
-*  而eMMC 则是对 MMC 的一个拓展，以满足更高标准的性能、成本、体积、稳定、易用等的需求。
-***************************************************************/
+
+/**
+ * @brief 添加 MMC分区
+    \n  MMC， 是一种闪存卡（Flash Memory Card）标准，它定义了 MMC 的架构以及访问　Flash Memory 的接口和协议。
+    \n  而eMMC 则是对 MMC 的一个拓展，以满足更高标准的性能、成本、体积、稳定、易用等的需求。
+ * @param info 
+ * @param sectorStart 
+ * @param sectorCount 
+ * @return INT32 
+ */
 INT32 add_mmc_partition(struct disk_divide_info *info, size_t sectorStart, size_t sectorCount)
 {
     UINT32 index, i;

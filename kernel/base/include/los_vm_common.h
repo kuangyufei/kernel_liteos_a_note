@@ -42,52 +42,60 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-/*************************************************************************** @note_pic
-*	鸿蒙虚拟内存-用户空间图 从 USER_ASPACE_BASE 至 USER_ASPACE_TOP_MAX
-*	鸿蒙源码分析系列篇: 			https://blog.csdn.net/kuangyufei 
-*						https://my.oschina.net/u/3751245
-***************************************************************************
-//	|			/\				|
-//	|			||				|
-//	|---------------------------|内核空间结束位置KERNEL_ASPACE_BASE + KERNEL_ASPACE_SIZE
-//	|							|
-//	|		内核空间				|
-//	|							|
-//	|							|
-//	|---------------------------|内核空间开始位置 KERNEL_ASPACE_BASE
-//	|							|
-//	|		16M 预留				|
-//	|---------------------------|用户空间栈顶 USER_ASPACE_TOP_MAX = USER_ASPACE_BASE + USER_ASPACE_SIZE
-//	|							|		
-//	|		stack区 自上而下			|
-//	|							|
-//	|			||				|
-//	|			||				|
-//	|			||				|
-//	|			\/				|
-//	|							|
-//	|---------------------------|映射区结束位置 USER_MAP_BASE + USER_MAP_SIZE
-//	|	虚拟地址-物理地址映射区	|
-//	|							|
-//	|---------------------------|映射区开始位置 USER_MAP_BASE = (USER_ASPACE_TOP_MAX >> 1)
-//	|							|
-//	|							|
-//	|			/\				|
-//	|			||				|
-//	|			||				|
-//	|			||				|
-//	|							|
-//	|		heap 自下而上			|
-//	|							|
-//	|---------------------------|用户空间堆区开始位置 USER_HEAP_BASE = USER_ASPACE_TOP_MAX >> 2
-//	|							|
-//	|		.bss 				|
-//	|		.data				|
-//	|		.text				|
-//	|---------------------------|用户空间开始位置 USER_ASPACE_BASE = 0x01000000UL
-//	|							|
-//	|		16M预留				|
-//	|---------------------------|虚拟内存开始位置 0x00000000
+
+/**
+ * @file los_vm_common.h 
+ * @verbatim
+    @note_pic
+    鸿蒙虚拟内存-用户空间图 从 USER_ASPACE_BASE 至 USER_ASPACE_TOP_MAX
+    鸿蒙源码分析系列篇:     https://blog.csdn.net/kuangyufei 
+                        https://my.oschina.net/u/3751245
+
+    |			/\				|
+    |			||				|
+    |---------------------------|内核空间结束位置KERNEL_ASPACE_BASE + KERNEL_ASPACE_SIZE
+    |							|
+    |		内核空间				|
+    |							|
+    |							|
+    |---------------------------|内核空间开始位置 KERNEL_ASPACE_BASE
+    |							|
+    |		16M 预留				|
+    |---------------------------|用户空间栈顶 USER_ASPACE_TOP_MAX = USER_ASPACE_BASE + USER_ASPACE_SIZE
+    |							|		
+    |		stack区 自上而下			|
+    |							|
+    |			||				|
+    |			||				|
+    |			||				|
+    |			\/				|
+    |							|
+    |---------------------------|映射区结束位置 USER_MAP_BASE + USER_MAP_SIZE
+    |	虚拟地址-物理地址映射区	|
+    |							|
+    |---------------------------|映射区开始位置 USER_MAP_BASE = (USER_ASPACE_TOP_MAX >> 1)
+    |							|
+    |							|
+    |			/\				|
+    |			||				|
+    |			||				|
+    |			||				|
+    |							|
+    |		heap 自下而上		|
+    |							|
+    |---------------------------|用户空间堆区开始位置 USER_HEAP_BASE = USER_ASPACE_TOP_MAX >> 2
+    |							|
+    |		.bss 				|
+    |		.data				|
+    |		.text				|
+    |---------------------------|用户空间开始位置 USER_ASPACE_BASE = 0x01000000UL
+    |							|
+    |		16M预留				|
+    |---------------------------|虚拟内存开始位置 0x00000000
+ * @endverbatim
+ * @brief 
+ */
+
 
 /* user address space, defaults to below kernel space with a 16MB guard gap on either side */
 #ifndef USER_ASPACE_BASE ///< 用户地址空间，默认为低于内核空间，两侧各有16MB的保护间隙
@@ -111,14 +119,18 @@ extern "C" {
 #define KB                               (1024UL)
 #define MB                               (1024UL * 1024UL)
 #define GB                               (1024UL * 1024UL * 1024UL)
-/******************************************************************
-圆整通常被理解为为满足某种要求而进行的数据修正。按照修正后的数据在数值上是否比原数据大，
-又可分为向上圆整和向下圆整。它们很像对模拟信号进行采样，对一定范围的数据向一个固定的数据靠拢。
-举例:ROUNDUP(7,4) = 8 		,ROUNDUP(8,4) = 8 		,ROUNDUP(9,4) = 12  
-	 ROUNDDOWN(7,4) = 4 	,ROUNDDOWN(8,4) = 8 	,ROUNDDOWN(9,4) = 8
-	 ROUNDOFFSET(7,4) = 3	,ROUNDOFFSET(8,4) = 0	,ROUNDOFFSET(9,4) = 1
-发现规律看明白了吗?
-******************************************************************/
+
+/**
+ * @brief 
+ * @verbatim
+    圆整通常被理解为为满足某种要求而进行的数据修正。按照修正后的数据在数值上是否比原数据大，
+    又可分为向上圆整和向下圆整。它们很像对模拟信号进行采样，对一定范围的数据向一个固定的数据靠拢。
+    举例:ROUNDUP(7,4) = 8 		,ROUNDUP(8,4) = 8 		,ROUNDUP(9,4) = 12  
+        ROUNDDOWN(7,4) = 4 	,ROUNDDOWN(8,4) = 8 	,ROUNDDOWN(9,4) = 8
+        ROUNDOFFSET(7,4) = 3	,ROUNDOFFSET(8,4) = 0	,ROUNDOFFSET(9,4) = 1
+    发现规律看明白了吗?
+ * @endverbatim
+ */
 #define ROUNDUP(a, b)                    (((a) + ((b) - 1)) & ~((b) - 1))	///< 向上圆整
 #define ROUNDDOWN(a, b)                  ((a) & ~((b) - 1))	///< 向下圆整
 #define ROUNDOFFSET(a, b)                ((a) & ((b) - 1))	///< 圆整偏移

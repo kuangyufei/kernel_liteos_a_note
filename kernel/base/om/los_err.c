@@ -31,7 +31,10 @@
 
 #include "los_err.h"
 
-/******************************************************************************
+/**
+ * @file los_err.c
+ * @brief 
+ * @verbatim
 基本概念
 	错误处理指程序运行错误时，调用错误处理模块的接口函数，上报错误信息，并调用注册的钩子函数
 	进行特定处理，保存现场以便定位问题。通过错误处理，可以控制和提示程序中的非法输入，防止程序崩溃。
@@ -41,17 +44,20 @@
 	此外，如果注册了相应的错误处理函数，则会执行这个函数。
 
 系统中只有一个错误处理的钩子函数。当多次注册钩子函数时，最后一次注册的钩子函数会覆盖前一次注册的函数
+ * @endverbatim
+ */
 
-******************************************************************************/
-LITE_OS_SEC_BSS STATIC LOS_ERRORHANDLE_FUNC g_errHandleHook = NULL;//错误接管钩子函数
-/******************************************************************************
-调用钩子函数，处理错误
-	fileName：存放错误日志的文件名,系统内部调用时，入参为"os_unspecific_file"
-	lineNo：发生错误的代码行号系统内部调用时，若值为0xa1b2c3f8，表示未传递行号
-	errnoNo：错误码
-	paraLen：入参para的长度系统内部调用时，入参为0
-	para：错误标签系统内部调用时，入参为NULL
-******************************************************************************/
+LITE_OS_SEC_BSS STATIC LOS_ERRORHANDLE_FUNC g_errHandleHook = NULL;///< 错误接管钩子函数
+
+/**
+ * @brief 调用钩子函数，处理错误
+ * @param fileName 存放错误日志的文件名,系统内部调用时，入参为"os_unspecific_file" 
+ * @param lineNo 发生错误的代码行号系统内部调用时，若值为0xa1b2c3f8，表示未传递行号
+ * @param errorNo 错误码
+ * @param paraLen 入参para的长度系统内部调用时，入参为0
+ * @param para 错误标签系统内部调用时，入参为NULL
+ * @return LITE_OS_SEC_TEXT_INIT 
+ */
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_ErrHandle(CHAR *fileName, UINT32 lineNo, UINT32 errorNo,
                                            UINT32 paraLen, VOID *para)
 {

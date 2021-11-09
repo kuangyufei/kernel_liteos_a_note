@@ -146,28 +146,32 @@ STATIC UINT32 g_nextExcWaitCpu = INVALID_CPUID;
 #define IS_VALID_ADDR(ptr) (((ptr) >= g_minAddr) && \
                             ((ptr) <= g_maxAddr) && \
                             (IS_ALIGNED((ptr), sizeof(CHAR *))))
-/******************************************************************************
-6种异常情况下对应的栈,每一种异常模式都有其独立的堆栈,用不同的堆栈指针来索引,
-这样当ARM进入异常模式的时候，程序就可以把一般通用寄存器压入堆栈，返回时再出栈，
-保证了各种模式下程序的状态的完整性
 
-用户模式，运行应用程序的普通模式。限制你的内存访问并且不能直接读取硬件设备。 
-超级用户模式(SVC 模式)，主要用于 SWI(软件中断)和 OS(操作系统)。这个模式有额外的特权，
-	允许你进一步控制计算机。例如，你必须进入超级用户模式来读取一个插件(podule)。
-	这不能在用户模式下完成。 
-中断模式(IRQ 模式)，用来处理发起中断的外设。这个模式也是有特权的。导致 IRQ 的设备有
-	键盘、 VSync (在发生屏幕刷新的时候)、IOC 定时器、串行口、硬盘、软盘、等等... 
-快速中断模式(FIQ 模式)，用来处理发起快速中断的外设。这个模式是有特权的。导致 FIQ 的设备有
-	处理数据的软盘，串行端口。  
-	
-IRQ 和 FIQ 之间的区别是对于 FIQ 你必须尽快处理你事情并离开这个模式。
-IRQ 可以被 FIQ 所中断但 IRQ 不能中断 FIQ
-******************************************************************************/
+/**
+ * @brief 
+ * @verbatim
+    6种异常情况下对应的栈,每一种异常模式都有其独立的堆栈,用不同的堆栈指针来索引,
+    这样当ARM进入异常模式的时候，程序就可以把一般通用寄存器压入堆栈，返回时再出栈，
+    保证了各种模式下程序的状态的完整性
+
+    用户模式，运行应用程序的普通模式。限制你的内存访问并且不能直接读取硬件设备。 
+    超级用户模式(SVC 模式)，主要用于 SWI(软件中断)和 OS(操作系统)。这个模式有额外的特权，
+        允许你进一步控制计算机。例如，你必须进入超级用户模式来读取一个插件(podule)。
+        这不能在用户模式下完成。 
+    中断模式(IRQ 模式)，用来处理发起中断的外设。这个模式也是有特权的。导致 IRQ 的设备有
+        键盘、 VSync (在发生屏幕刷新的时候)、IOC 定时器、串行口、硬盘、软盘、等等... 
+    快速中断模式(FIQ 模式)，用来处理发起快速中断的外设。这个模式是有特权的。导致 FIQ 的设备有
+        处理数据的软盘，串行端口。  
+        
+    IRQ 和 FIQ 之间的区别是对于 FIQ 你必须尽快处理你事情并离开这个模式。
+    IRQ 可以被 FIQ 所中断但 IRQ 不能中断 FIQ
+ * @endverbatim
+ */
 STATIC const StackInfo g_excStack[] = {
     {&__svc_stack, OS_EXC_SVC_STACK_SIZE, "svc_stack"}, //8K 主管模式堆栈.有些指令只能在SVC模式下运行
     {&__exc_stack, OS_EXC_STACK_SIZE, "exc_stack"}      //4K 异常处理堆栈
 };
-//获取系统状态
+/// 获取系统状态
 UINT32 OsGetSystemStatus(VOID)
 {
     UINT32 flag;
@@ -247,12 +251,17 @@ STATIC INT32 OsDecodeDataFSR(UINT32 regDFSR)
     ret = OsDecodeFS(bitsFS);
     return ret;
 }
-/*
-* 共享页缺失异常
-* 异常状态寄存器(Fault Status Register -FAR)
-* 异常地址寄存器(Fault Address Register -FSR) 
-*/
+
 #ifdef LOSCFG_KERNEL_VM
+
+/**
+ * @brief 共享页缺失异常
+ * @param excType 
+ * @param frame 
+ * @param far 异常状态寄存器(Fault Status Register -FAR)
+ * @param fsr 异常地址寄存器(Fault Address Register -FSR) 
+ * @return UINT32 
+ */
 UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT32 fsr)
 {
     BOOL instructionFault = FALSE;
@@ -326,7 +335,7 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
     return ret;
 }
 #endif
-//异常类型
+/// 异常类型
 STATIC VOID OsExcType(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 {
     /* undefinited exception handling or software interrupt */ //未定义的异常处理或软件中断
@@ -365,7 +374,7 @@ STATIC const CHAR *g_excTypeString[] = {
     "address abort",         //地址异常源 - abort模式
     "irq"                    //中断异常源 - IRQ模式
 };
-//打印系统信息
+
 #ifdef LOSCFG_KERNEL_VM
 STATIC VADDR_T OsGetTextRegionBase(LosVmMapRegion *region, LosProcessCB *runProcess)
 {
@@ -408,7 +417,7 @@ DONE:
 }
 #endif
 /**
- * @brief 
+ * @brief 打印异常系统信息
  * 
  * @param excType 
  * @param excBufAddr 

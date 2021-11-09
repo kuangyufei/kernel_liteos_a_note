@@ -37,65 +37,71 @@
 #include "los_mp.h"
 #include "los_percpu_pri.h"
 #include "los_hook.h"
-/******************************************************************************
-基本概念
-	队列又称消息队列，是一种常用于任务间通信的数据结构。队列接收来自任务或中断的
-	不固定长度消息，并根据不同的接口确定传递的消息是否存放在队列空间中。
-	
-	任务能够从队列里面读取消息，当队列中的消息为空时，挂起读取任务；当队列中有新消息时，
-	挂起的读取任务被唤醒并处理新消息。任务也能够往队列里写入消息，当队列已经写满消息时，
-	挂起写入任务；当队列中有空闲消息节点时，挂起的写入任务被唤醒并写入消息。如果将
-	读队列和写队列的超时时间设置为0，则不会挂起任务，接口会直接返回，这就是非阻塞模式。
 
-	消息队列提供了异步处理机制，允许将一个消息放入队列，但不立即处理。同时队列还有缓冲消息的作用。
-	
-队列特性
-	消息以先进先出的方式排队，支持异步读写。
-	读队列和写队列都支持超时机制。
-	每读取一条消息，就会将该消息节点设置为空闲。
-	发送消息类型由通信双方约定，可以允许不同长度（不超过队列的消息节点大小）的消息。
-	一个任务能够从任意一个消息队列接收和发送消息。
-	多个任务能够从同一个消息队列接收和发送消息。
-	创建队列时所需的队列空间，默认支持接口内系统自行动态申请内存的方式，同时也支持将用户分配的队列空间作为接口入参传入的方式。
+/**
+ * @file los_queue.c
+ * @brief 
+ * @verbatim
+    基本概念
+        队列又称消息队列，是一种常用于任务间通信的数据结构。队列接收来自任务或中断的
+        不固定长度消息，并根据不同的接口确定传递的消息是否存放在队列空间中。
+        
+        任务能够从队列里面读取消息，当队列中的消息为空时，挂起读取任务；当队列中有新消息时，
+        挂起的读取任务被唤醒并处理新消息。任务也能够往队列里写入消息，当队列已经写满消息时，
+        挂起写入任务；当队列中有空闲消息节点时，挂起的写入任务被唤醒并写入消息。如果将
+        读队列和写队列的超时时间设置为0，则不会挂起任务，接口会直接返回，这就是非阻塞模式。
 
-队列运作原理
-	创建队列时，创建队列成功会返回队列ID。
+        消息队列提供了异步处理机制，允许将一个消息放入队列，但不立即处理。同时队列还有缓冲消息的作用。
+        
+    队列特性
+        消息以先进先出的方式排队，支持异步读写。
+        读队列和写队列都支持超时机制。
+        每读取一条消息，就会将该消息节点设置为空闲。
+        发送消息类型由通信双方约定，可以允许不同长度（不超过队列的消息节点大小）的消息。
+        一个任务能够从任意一个消息队列接收和发送消息。
+        多个任务能够从同一个消息队列接收和发送消息。
+        创建队列时所需的队列空间，默认支持接口内系统自行动态申请内存的方式，同时也支持将用户分配的队列空间作为接口入参传入的方式。
 
-	在队列控制块中维护着一个消息头节点位置Head和一个消息尾节点位置Tail来，用于表示当前
-	队列中消息的存储情况。Head表示队列中被占用的消息节点的起始位置。Tail表示被占用的
-	消息节点的结束位置，也是空闲消息节点的起始位置。队列刚创建时，Head和Tail均指向队列起始位置。
+    队列运作原理
+        创建队列时，创建队列成功会返回队列ID。
 
-	写队列时，根据readWriteableCnt[1]判断队列是否可以写入，不能对已满（readWriteableCnt[1]为0）
-	队列进行写操作。写队列支持两种写入方式：向队列尾节点写入，也可以向队列头节点写入。尾节点写入时，
-	根据Tail找到起始空闲消息节点作为数据写入对象，如果Tail已经指向队列尾部则采用回卷方式。头节点写入时，
-	将Head的前一个节点作为数据写入对象，如果Head指向队列起始位置则采用回卷方式。
+        在队列控制块中维护着一个消息头节点位置Head和一个消息尾节点位置Tail来，用于表示当前
+        队列中消息的存储情况。Head表示队列中被占用的消息节点的起始位置。Tail表示被占用的
+        消息节点的结束位置，也是空闲消息节点的起始位置。队列刚创建时，Head和Tail均指向队列起始位置。
 
-	读队列时，根据readWriteableCnt[0]判断队列是否有消息需要读取，对全部空闲（readWriteableCnt[0]为0）
-	队列进行读操作会引起任务挂起。如果队列可以读取消息，则根据Head找到最先写入队列的消息节点进行读取。
-	如果Head已经指向队列尾部则采用回卷方式。
+        写队列时，根据readWriteableCnt[1]判断队列是否可以写入，不能对已满（readWriteableCnt[1]为0）
+        队列进行写操作。写队列支持两种写入方式：向队列尾节点写入，也可以向队列头节点写入。尾节点写入时，
+        根据Tail找到起始空闲消息节点作为数据写入对象，如果Tail已经指向队列尾部则采用回卷方式。头节点写入时，
+        将Head的前一个节点作为数据写入对象，如果Head指向队列起始位置则采用回卷方式。
 
-	删除队列时，根据队列ID找到对应队列，把队列状态置为未使用，把队列控制块置为初始状态。
-	如果是通过系统动态申请内存方式创建的队列，还会释放队列所占内存。
+        读队列时，根据readWriteableCnt[0]判断队列是否有消息需要读取，对全部空闲（readWriteableCnt[0]为0）
+        队列进行读操作会引起任务挂起。如果队列可以读取消息，则根据Head找到最先写入队列的消息节点进行读取。
+        如果Head已经指向队列尾部则采用回卷方式。
 
-使用场景
-	队列用于任务间通信，可以实现消息的异步处理。同时消息的发送方和接收方不需要彼此联系，两者间是解耦的。
+        删除队列时，根据队列ID找到对应队列，把队列状态置为未使用，把队列控制块置为初始状态。
+        如果是通过系统动态申请内存方式创建的队列，还会释放队列所占内存。
 
-队列错误码
-	对存在失败可能性的操作返回对应的错误码，以便快速定位错误原因。	
-******************************************************************************/
+    使用场景
+        队列用于任务间通信，可以实现消息的异步处理。同时消息的发送方和接收方不需要彼此联系，两者间是解耦的。
+
+    队列错误码
+        对存在失败可能性的操作返回对应的错误码，以便快速定位错误原因。
+ * @endverbatim
+ */
+
 #ifdef LOSCFG_BASE_IPC_QUEUE
 #if (LOSCFG_BASE_IPC_QUEUE_LIMIT <= 0)
 #error "queue maxnum cannot be zero"
 #endif /* LOSCFG_BASE_IPC_QUEUE_LIMIT <= 0 */
 
-LITE_OS_SEC_BSS LosQueueCB *g_allQueue = NULL;//消息队列池
-LITE_OS_SEC_BSS STATIC LOS_DL_LIST g_freeQueueList;//空闲队列链表,管分配的,需要队列从这里申请
+LITE_OS_SEC_BSS LosQueueCB *g_allQueue = NULL;///< 消息队列池
+LITE_OS_SEC_BSS STATIC LOS_DL_LIST g_freeQueueList;///< 空闲队列链表,管分配的,需要队列从这里申请
 
 /*
- * Description : queue initial
+ * Description : queue initial | 消息队列模块初始化
  * Return      : LOS_OK on success or error code on failure
  */
-LITE_OS_SEC_TEXT_INIT UINT32 OsQueueInit(VOID)//消息队列模块初始化
+LITE_OS_SEC_TEXT_INIT UINT32 OsQueueInit(VOID)
 {
     LosQueueCB *queueNode = NULL;
     UINT32 index;
@@ -413,20 +419,27 @@ LITE_OS_SEC_TEXT UINT32 LOS_QueueWriteCopy(UINT32 queueID,
     return OsQueueOperate(queueID, operateType, bufferAddr, &bufferSize, timeout);//执行写操作
 }
 
-/********************************************************
-外部接口 读一个队列数据
-读队列时，根据Head找到最先写入队列中的消息节点进行读取。如果Head已经指向队列尾则采用回卷方式。
-根据usReadableCnt判断队列是否有消息读取，对全部空闲（usReadableCnt为0）队列进行读队列操作会引起任务挂起。
-********************************************************/
+/**
+ * @brief 
+ * @verbatim
+    外部接口 读一个队列数据
+    读队列时，根据Head找到最先写入队列中的消息节点进行读取。如果Head已经指向队列尾则采用回卷方式。
+    根据usReadableCnt判断队列是否有消息读取，对全部空闲（usReadableCnt为0）队列进行读队列操作会引起任务挂起。
+ * @endverbatim
+ */
 LITE_OS_SEC_TEXT UINT32 LOS_QueueRead(UINT32 queueID, VOID *bufferAddr, UINT32 bufferSize, UINT32 timeout)
 {
     return LOS_QueueReadCopy(queueID, bufferAddr, &bufferSize, timeout);
 }
-/********************************************************
-外部接口 写一个队列数据
-根据Tail找到被占用消息节点末尾的空闲节点作为数据写入对象。如果Tail已经指向队列尾则采用回卷方式。
-根据usWritableCnt判断队列是否可以写入，不能对已满（usWritableCnt为0）队列进行写队列操作
-********************************************************/
+
+/**
+ * @brief 
+ * @verbatim
+    外部接口 写一个队列数据
+    根据Tail找到被占用消息节点末尾的空闲节点作为数据写入对象。如果Tail已经指向队列尾则采用回卷方式。
+    根据usWritableCnt判断队列是否可以写入，不能对已满（usWritableCnt为0）队列进行写队列操作
+ * @endverbatim
+ */
 LITE_OS_SEC_TEXT UINT32 LOS_QueueWrite(UINT32 queueID, VOID *bufferAddr, UINT32 bufferSize, UINT32 timeout)
 {
     if (bufferAddr == NULL) {
@@ -435,11 +448,15 @@ LITE_OS_SEC_TEXT UINT32 LOS_QueueWrite(UINT32 queueID, VOID *bufferAddr, UINT32 
     bufferSize = sizeof(CHAR *);
     return LOS_QueueWriteCopy(queueID, &bufferAddr, bufferSize, timeout);
 }
-/********************************************************
-外部接口 从头部写入
-写队列时，根据Tail找到被占用消息节点末尾的空闲节点作为数据写入对象。如果Tail已经指向队列尾则采用回卷方式。
-根据usWritableCnt判断队列是否可以写入，不能对已满（usWritableCnt为0）队列进行写队列操作
-********************************************************/
+
+/**
+ * @brief 
+ * @verbatim
+    外部接口 从头部写入
+    写队列时，根据Tail找到被占用消息节点末尾的空闲节点作为数据写入对象。如果Tail已经指向队列尾则采用回卷方式。
+    根据usWritableCnt判断队列是否可以写入，不能对已满（usWritableCnt为0）队列进行写队列操作
+ * @endverbatim
+ */
 LITE_OS_SEC_TEXT UINT32 LOS_QueueWriteHead(UINT32 queueID,
                                            VOID *bufferAddr,
                                            UINT32 bufferSize,
@@ -451,11 +468,15 @@ LITE_OS_SEC_TEXT UINT32 LOS_QueueWriteHead(UINT32 queueID,
     bufferSize = sizeof(CHAR *);
     return LOS_QueueWriteHeadCopy(queueID, &bufferAddr, bufferSize, timeout);
 }
-/********************************************************
-外部接口 删除队列,还有任务要读/写消息时不能删除
-删除队列时，根据传入的队列ID寻找到对应的队列，把队列状态置为未使用，
-释放原队列所占的空间，对应的队列控制头置为初始状态。
-********************************************************/
+
+/**
+ * @brief 
+ * @verbatim
+    外部接口 删除队列,还有任务要读/写消息时不能删除
+    删除队列时，根据传入的队列ID寻找到对应的队列，把队列状态置为未使用，
+    释放原队列所占的空间，对应的队列控制头置为初始状态。
+ * @endverbatim
+ */
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueDelete(UINT32 queueID)
 {
     LosQueueCB *queueCB = NULL;

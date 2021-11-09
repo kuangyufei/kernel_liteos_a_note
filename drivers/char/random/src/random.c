@@ -39,9 +39,9 @@
 
 *****************************************************************/
 
-static unsigned long g_randomMax =  0x7FFFFFFF;//随机数范围
+static unsigned long g_randomMax =  0x7FFFFFFF; ///< 随机数范围
 
-//生成随机数
+/// 生成随机数
 static long DoRand(unsigned long *value)
 {
     long quotient, remainder, t;

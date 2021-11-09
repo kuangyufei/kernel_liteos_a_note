@@ -38,10 +38,9 @@
 
 
 #ifdef LOSCFG_KERNEL_VM
-/******************************************************************************
-鸿蒙物理内存采用段页式管理
- 
-******************************************************************************/
+/**
+ * @brief 鸿蒙物理内存采用段页式管理
+ */
 #define ONE_PAGE    1
 
 /* Physical memory area array */
@@ -52,9 +51,9 @@ STATIC struct VmPhysArea g_physArea[] = {//这里只有一个区域,即只生成
     },
 };
 
-struct VmPhysSeg g_vmPhysSeg[VM_PHYS_SEG_MAX];//最大32段
-INT32 g_vmPhysSegNum = 0;	//段数
-//获取段数组,全局变量,变量放在 .bbs 区
+struct VmPhysSeg g_vmPhysSeg[VM_PHYS_SEG_MAX]; ///< 最大32段
+INT32 g_vmPhysSegNum = 0;	///< 段数
+/// 获取段数组,全局变量,变量放在 .bbs 区
 LosVmPhysSeg *OsGVmPhysSegGet()
 {
     return g_vmPhysSeg;
@@ -227,11 +226,15 @@ STATIC VOID OsVmPhysFreeListDel(LosVmPage *page)
     page->order = VM_LIST_ORDER_MAX;
 }
 
-/******************************************************************************
- 本函数很像卖猪肉的,拿一大块肉剁,先把多余的放回到小块肉堆里去.
- oldOrder:原本要买 2^2肉
- newOrder:却找到个 2^8肉块
-******************************************************************************/
+/**
+ * @brief  本函数很像卖猪肉的,拿一大块肉剁,先把多余的放回到小块肉堆里去.
+        oldOrder:原本要买 2^2肉
+        newOrder:却找到个 2^8肉块
+ * @param page 
+ * @param oldOrder 
+ * @param newOrder 
+ * @return STATIC 
+ */
 STATIC VOID OsVmPhysPagesSpiltUnsafe(LosVmPage *page, UINT8 oldOrder, UINT8 newOrder)
 {
     UINT32 order;
@@ -262,12 +265,14 @@ LosVmPage *OsVmPhysToPage(paddr_t pa, UINT8 segID)
     return (seg->pageBase + (offset >> PAGE_SHIFT));//得到对应的物理页框
 }
 
-/******************************************************************************
- 通过page获取内核空间的虚拟地址 参考OsArchMmuInit
- #define SYS_MEM_BASE            DDR_MEM_ADDR /* physical memory base 物理地址的起始地址 * /
- 本函数非常重要，通过一个物理地址找到内核虚拟地址
- 内核静态映射:提升虚实转化效率,段映射减少页表项
-******************************************************************************/
+/**
+ * @brief 通过page获取内核空间的虚拟地址 参考OsArchMmuInit
+ \n #define SYS_MEM_BASE            DDR_MEM_ADDR /* physical memory base 物理地址的起始地址 * /
+ \n 本函数非常重要，通过一个物理地址找到内核虚拟地址
+ \n 内核静态映射:提升虚实转化效率,段映射减少页表项
+ * @param page 
+ * @return VOID* 
+ */
 VOID *OsVmPageToVaddr(LosVmPage *page)//
 {
     VADDR_T vaddr;
@@ -429,10 +434,12 @@ VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
     }
 }
 
-/******************************************************************************
- 获取一定数量的页框 LosVmPage实体是放在全局大数组中的,
- LosVmPage->nPages 标记了分配页数
-******************************************************************************/
+/**
+ * @brief 获取一定数量的页框 LosVmPage实体是放在全局大数组中的,
+            LosVmPage->nPages 标记了分配页数
+ * @param nPages 
+ * @return STATIC* 
+ */
 STATIC LosVmPage *OsVmPhysPagesGet(size_t nPages)
 {
     UINT32 intSave;
@@ -496,9 +503,8 @@ VOID LOS_PhysPagesFreeContiguous(VOID *ptr, size_t nPages)
 
     LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
 }
-/******************************************************************************
- 通过物理地址获取内核虚拟地址,内核静态映射,减少虚实地址的转换
-******************************************************************************/
+
+/// 通过物理地址获取内核虚拟地址,内核静态映射,减少虚实地址的转换
 VADDR_T *LOS_PaddrToKVaddr(PADDR_T paddr)
 {
     struct VmPhysSeg *seg = NULL;

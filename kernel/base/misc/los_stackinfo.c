@@ -38,9 +38,35 @@
 #include "shell.h"
 #endif
 
-const StackInfo *g_stackInfo = NULL;    //CPU所有工作模式的栈信息
-UINT32 g_stackNum;  //CPU所有工作模式的栈数量
-//获取栈的吃水线
+/**
+ * @file los_stackinfo.c
+ * @brief 栈内容
+ * @verbatim
+    @note_pic OsExcStackInfo 各个CPU栈布局图,其他栈也是一样,CPU各核硬件栈都是紧挨着
+    __undef_stack(SMP)
+    +-------------------+ <--- cpu1 top
+    |                   |
+    |  CPU core1        |
+    |                   |
+    +--------------------<--- cpu2 top
+    |                   |
+    |  cpu core 2       |
+    |                   |
+    +--------------------<--- cpu3 top
+    |                   |
+    |  cpu core 3       |
+    |                   |
+    +--------------------<--- cpu4 top
+    |                   |
+    |  cpu core 4       |
+    |                   |
+    +-------------------+
+ * @endverbatim
+ */
+
+const StackInfo *g_stackInfo = NULL;    ///< CPU所有工作模式的栈信息
+UINT32 g_stackNum;  ///< CPU所有工作模式的栈数量
+///获取栈的吃水线
 UINT32 OsStackWaterLineGet(const UINTPTR *stackBottom, const UINTPTR *stackTop, UINT32 *peakUsed)
 {
     UINT32 size;
@@ -78,6 +104,7 @@ VOID OsExcStackCheck(VOID)
         }
     }
 }
+
 ///打印栈的信息 把每个CPU的栈信息打印出来
 VOID OsExcStackInfo(VOID)
 {
@@ -106,34 +133,14 @@ VOID OsExcStackInfo(VOID)
 
     OsExcStackCheck();//发生异常时栈检查
 }
-/*************************************************************************************** @note_pic
-  OsExcStackInfo 各个CPU栈布局图,其他栈也是一样,CPU各核硬件栈都是紧挨着
-  __undef_stack(SMP)
-+-------------------+ <--- cpu1 top
-|                   |
-|  CPU core1        |
-|                   |
-+--------------------<--- cpu2 top
-|                   |
-|  cpu core 2       |
-|                   |
-+--------------------<--- cpu3 top
-|                   |
-|  cpu core 3       |
-|                   |
-+--------------------<--- cpu4 top
-|                   |
-|  cpu core 4       |
-|                   |
-+-------------------+
-******************************************************************************************/
 
-//注册栈信息
+///注册栈信息
 VOID OsExcStackInfoReg(const StackInfo *stackInfo, UINT32 stackNum)
 {
     g_stackInfo = stackInfo;	//全局变量指向g_excStack
     g_stackNum = stackNum;
 }
+
 ///task栈的初始化,设置固定的值. 0xcccccccc 和 0xcacacaca
 VOID OsStackInit(VOID *stacktop, UINT32 stacksize)
 {

@@ -33,15 +33,19 @@
 #include "fs/dirent_fs.h"
 #include "path_cache.h"
 
-LIST_HEAD g_vnodeFreeList;              /* free vnodes list */	//空闲节点链表
-LIST_HEAD g_vnodeVirtualList;           /* dev vnodes list */	//虚拟设备节点链表,暂无实际的文件系统
-LIST_HEAD g_vnodeActiveList;            /* inuse vnodes list */	//正在使用的虚拟节点链表
-static int g_freeVnodeSize = 0;         /* system free vnodes size */	//剩余节点数量
-static int g_totalVnodeSize = 0;        /* total vnode size */	//已分配的总节点数量
+/**
+ * @brief 
+ */
 
-static LosMux g_vnodeMux;	//操作链表互斥量			
-static struct Vnode *g_rootVnode = NULL;//根节点
-static struct VnodeOps g_devfsOps;//设备文件节点操作
+LIST_HEAD g_vnodeFreeList;              /* free vnodes list | 空闲节点链表*/
+LIST_HEAD g_vnodeVirtualList;           /* dev vnodes list | 虚拟设备节点链表,暂无实际的文件系统*/
+LIST_HEAD g_vnodeActiveList;            /* inuse vnodes list | 正在使用的虚拟节点链表*/
+static int g_freeVnodeSize = 0;         /* system free vnodes size | 剩余节点数量*/
+static int g_totalVnodeSize = 0;        /* total vnode size | 已分配的总节点数量*/
+
+static LosMux g_vnodeMux;	            ///< 操作链表互斥量			
+static struct Vnode *g_rootVnode = NULL;///< 根节点
+static struct VnodeOps g_devfsOps;      ///< 设备文件节点操作
 /*********************************************************
 linux下有专门的文件系统(devfs | sysfs)用来对设备进行管理,鸿蒙目前只支持 devfs方式
 devfs和sysfs都是和proc一样，是一个虚拟的文件系统，提供了一种类似于文件的方法来管理位于/dev目录下的所有设备，
@@ -61,10 +65,10 @@ devfs:设备文件系统
 	没有足够的主/辅设备号，当设备过多的时候，显然会成为一个问题
 **********************************************************/
 
-#define ENTRY_TO_VNODE(ptr)  LOS_DL_LIST_ENTRY(ptr, struct Vnode, actFreeEntry) //通过局部(actFreeEntry)找到整体(Vnode)
-#define VNODE_LRU_COUNT      10		//最多回收数量
-#define DEV_VNODE_MODE       0755	//0755可不是深圳的意思哈,而是节点的权限,对照以下注释理解
-/*
+#define ENTRY_TO_VNODE(ptr)  LOS_DL_LIST_ENTRY(ptr, struct Vnode, actFreeEntry) ///< 通过局部(actFreeEntry)找到整体(Vnode)
+#define VNODE_LRU_COUNT      10		///< 最多回收数量
+#define DEV_VNODE_MODE       0755	///< 0755可不是深圳的意思哈,而是节点的权限,对照以下注释理解
+/*!
 #ifndef S_IRUSR
 #define S_ISUID 04000
 #define S_ISGID 02000

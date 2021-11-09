@@ -1000,17 +1000,23 @@ errout_with_srcpath:
 /* The separator and EOF for a directory fullpath: '/'and '\0' */
 
 #define SEPARATOR_EOF_LEN 2
-/*****************************************************************
-rmdir命令用来删除一个目录。
-rmdir [dir]
-dir 需要删除目录的名称，删除目录必须为空，支持输入路径。
-使用指南
-	rmdir命令只能用来删除目录。
-	rmdir一次只能删除一个目录。
-	rmdir只能删除空目录。
 
-举例：输入rmdir dir
-*****************************************************************/
+/**
+ * @brief 
+ * @verbatim
+  rmdir命令用来删除一个目录。
+  rmdir [dir]
+  dir 需要删除目录的名称，删除目录必须为空，支持输入路径。
+  使用指南
+    rmdir命令只能用来删除目录。
+    rmdir一次只能删除一个目录。
+    rmdir只能删除空目录。
+
+  举例：输入rmdir dir
+ * @endverbatim
+ * @param pathname 
+ * @return int 
+ */
 static int os_shell_cmd_do_rmdir(const char *pathname)
 {
   struct dirent *dirent = NULL;
@@ -1734,12 +1740,18 @@ int osShellCmdSu(int argc, const char **argv)
   return 0;
 }
 #endif
-/****************************************************************
-shell chmod 用于修改文件操作权限。chmod [mode] [pathname]
-mode 文件或文件夹权限，用8进制表示对应User、Group、及Other（拥有者、群组、其他组）的权限。[0,777]
-pathname 文件路径。已存在的文件。
-chmod 777 weharmony.txt 暂不支持 chmod ugo+r file1.txt这种写法
-****************************************************************/
+
+/**
+ * @brief 
+ * @verbatim
+  shell chmod 用于修改文件操作权限。chmod [mode] [pathname]
+  mode 文件或文件夹权限，用8进制表示对应User、Group、及Other（拥有者、群组、其他组）的权限。[0,777]
+  pathname 文件路径。已存在的文件。
+  chmod 777 weharmony.txt 暂不支持 chmod ugo+r file1.txt这种写法
+ * @endverbatim
+ * @param pathname 
+ * @return int 
+ */
 int osShellCmdChmod(int argc, const char **argv)
 {
   int i = 0;
@@ -1857,13 +1869,19 @@ int osShellCmdChown(int argc, const char **argv)
   free(fullpath);
   return 0;
 }
-/****************************************************************
-chgrp用于修改文件的群组。chgrp [group] [pathname]
-group 文件群组。[0,0xFFFFFFFF]
-pathname	文件路径。 已存在的文件。
-在需要修改的文件名前加上文件群组值就可以修改该文件的所属组。
-举例：chgrp 100 weharmony.txt
-****************************************************************/
+
+/**
+ * @brief 
+ * @verbatim
+  chgrp用于修改文件的群组。chgrp [group] [pathname]
+  group 文件群组。[0,0xFFFFFFFF]
+  pathname	文件路径。 已存在的文件。
+  在需要修改的文件名前加上文件群组值就可以修改该文件的所属组。
+  举例：chgrp 100 weharmony.txt
+ * @endverbatim
+ * @param pathname 
+ * @return int 
+ */
 int osShellCmdChgrp(int argc, const char **argv)
 {
   int ret;
