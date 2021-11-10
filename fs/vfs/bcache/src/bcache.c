@@ -134,7 +134,7 @@ INT32 LOS_SetSyncThreadPrio(UINT32 prio, const CHAR *name)
     return ret;
 }
 #endif
-//红黑树找块
+///红黑树找块
 static OsBcacheBlock *RbFindBlock(const OsBcache *bc, UINT64 num)
 {
     OsBcacheBlock *block = NULL;

@@ -1006,7 +1006,7 @@ ERROUT:
     return VFS_ERROR;
 }
 
-/* console device driver function structure */ //控制台设备驱动程序,对统一的vfs接口的实现
+/*! console device driver function structure | 控制台设备驱动程序,对统一的vfs接口的实现 */
 STATIC const struct file_operations_vfs g_consoleDevOps = {
     .open = ConsoleOpen,   /* open */
     .close = ConsoleClose, /* close */
@@ -1019,10 +1019,14 @@ STATIC const struct file_operations_vfs g_consoleDevOps = {
     .poll = ConsolePoll,
 #endif
 };
-/*
-termios 结构是在POSIX规范中定义的标准接口，它类似于系统V中的termio接口，
+
+/**
+ * @brief termios 结构是在POSIX规范中定义的标准接口，它类似于系统V中的termio接口，
 通过设置termios类型的数据结构中的值和使用一小组函数调用，你就可以对终端接口进行控制。
-*/
+ * @param consoleCB 
+ * @param deviceName 
+ * @return STATIC 
+ */
 STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
 {
     struct termios consoleTermios = {0};
@@ -1081,8 +1085,8 @@ ERROUT:
 
 /*
  * Initialized console control platform so that when we operate /dev/console
- * as if we are operating /dev/ttyS0 (uart0).
- *///初始化控制台以此来控制平台，以便在操作/dev/console时，就好像我们在操作/dev/ttyS0（uart0）
+ * as if we are operating /dev/ttyS0 (uart0). | 初始化控制台以此来控制平台，以便在操作/dev/console时，就好像我们在操作/dev/ttyS0（uart0）
+ */
 STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
 {
     INT32 ret;
@@ -1153,13 +1157,13 @@ ERROUT:
     set_errno(ret);
     return LOS_NOK;
 }
-///控制台设备去初始化
+/// 控制台设备去初始化
 STATIC UINT32 OsConsoleDevDeinit(const CONSOLE_CB *consoleCB)
 {
     return unregister_driver(consoleCB->name);//注销驱动
 }
 
-//创建一个控制台循环buf
+/// 创建一个控制台循环buf
 STATIC CirBufSendCB *ConsoleCirBufCreate(VOID)
 {
     UINT32 ret;
@@ -1194,7 +1198,7 @@ ERROR_WITH_SENDCB:
     (VOID)LOS_MemFree(m_aucSysMem0, cirBufSendCB);
     return NULL;
 }
-///删除循环buf
+/// 删除循环buf
 STATIC VOID ConsoleCirBufDelete(CirBufSendCB *cirBufSendCB)
 {
     CirBuf *cirBufCB = &cirBufSendCB->cirBufCB;
@@ -1204,7 +1208,7 @@ STATIC VOID ConsoleCirBufDelete(CirBufSendCB *cirBufSendCB)
     (VOID)LOS_EventDestroy(&cirBufSendCB->sendEvent);//销毁事件
     (VOID)LOS_MemFree(m_aucSysMem0, cirBufSendCB);//释放循环buf发送控制块
 }
-///控制台缓存初始化，创建一个 发送任务
+/// 控制台缓存初始化，创建一个 发送任务
 STATIC UINT32 OsConsoleBufInit(CONSOLE_CB *consoleCB)
 {
     UINT32 ret;
@@ -1237,7 +1241,7 @@ STATIC UINT32 OsConsoleBufInit(CONSOLE_CB *consoleCB)
 
     return LOS_OK;
 }
-///控制台buf去初始化
+/// 控制台buf去初始化
 STATIC VOID OsConsoleBufDeinit(CONSOLE_CB *consoleCB)
 {
     CirBufSendCB *cirBufSendCB = consoleCB->cirBufSendCB;
@@ -1245,7 +1249,7 @@ STATIC VOID OsConsoleBufDeinit(CONSOLE_CB *consoleCB)
     consoleCB->cirBufSendCB = NULL;
     (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_SEND_TASK_EXIT);//写任务退出事件 ConsoleSendTask将会收到事件，退出死循环
 }
-///控制台描述符初始化
+/// 控制台描述符初始化
 STATIC CONSOLE_CB *OsConsoleCBInit(UINT32 consoleID)
 {
     CONSOLE_CB *consoleCB = (CONSOLE_CB *)LOS_MemAlloc((VOID *)m_aucSysMem0, sizeof(CONSOLE_CB));//内核空间分配控制台描述符
@@ -1265,14 +1269,14 @@ STATIC CONSOLE_CB *OsConsoleCBInit(UINT32 consoleID)
     }
     return consoleCB;
 }
-///释放控制台描述符初始化时所占用的内核空间
+/// 释放控制台描述符初始化时所占用的内核空间
 STATIC VOID OsConsoleCBDeinit(CONSOLE_CB *consoleCB)
 {
     (VOID)LOS_MemFree((VOID *)m_aucSysMem0, consoleCB->name);//释放控制台名称占用的内核内存
     consoleCB->name = NULL;
     (VOID)LOS_MemFree((VOID *)m_aucSysMem0, consoleCB);//释放控制台描述符所占用的内核内存
 }
-///创建一个控制台，这个函数的goto语句贼多
+/// 创建一个控制台，这个函数的goto语句贼多
 STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
 {
     INT32 ret;
@@ -1329,7 +1333,7 @@ ERR_WITH_NAME:
     OsConsoleCBDeinit(consoleCB);//控制块取消初始化
     return NULL;
 }
-///删除控制台
+/// 删除控制台
 STATIC UINT32 OsConsoleDelete(CONSOLE_CB *consoleCB)
 {
     UINT32 ret;

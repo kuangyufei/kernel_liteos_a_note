@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 修改注解方式,支持doxygen
+git commit -m  ' 注解支持doxygen格式,基本修改完成
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     博客输出站点(国内):http://weharmonyos.com
     博客输出站点(国外):https://weharmony.github.io

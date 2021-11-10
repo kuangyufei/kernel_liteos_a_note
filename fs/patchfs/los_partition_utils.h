@@ -49,7 +49,7 @@
 #else
 #define STORAGE_TYPE            "emmc"
 #endif
-//分区信息
+///分区信息
 struct PartitionInfo {
     const CHAR   *partName;			//分区名称
     const CHAR   *cmdlineArgName;	//命令行参数名称

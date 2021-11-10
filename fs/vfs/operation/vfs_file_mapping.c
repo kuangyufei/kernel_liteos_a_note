@@ -40,7 +40,7 @@
 
 #ifdef LOSCFG_KERNEL_VM
 
-static struct file_map g_file_mapping = {0};//用于挂载所有文件的file_map
+static struct file_map g_file_mapping = {0}; ///< 用于挂载所有文件的file_map
 
 #if 0 
 定义见于 ..\third_party\NuttX\include\nuttx\fs\fs.h
@@ -135,11 +135,15 @@ static struct page_mapping *find_mapping_nolock(const char *fullpath)
 
     return NULL;
 }
-/**************************************************************************************************
- 增加一个文件映射，这个函数被do_open()函数调用，每打开一次文件就会调用一次
+
+
+/**
+ * @brief  增加一个文件映射，这个函数被do_open()函数调用，每打开一次文件就会调用一次
  注意不同的进程打开同一个文件，拿到的file是不一样的。
  https://blog.csdn.net/cywosp/article/details/38965239
-**************************************************************************************************/
+ * @param filep 
+ * @param fullpath 
+ */
 void add_mapping(struct file *filep, const char *fullpath)
 {
     int path_len;
@@ -190,12 +194,14 @@ out:
     (VOID)LOS_MuxUnlock(&g_file_mapping.lock);
 }
 
-/******************************************************************************
- 删除一个文件映射,需要有个三个地方删除才算断开了文件和内存的联系.
- 
- 以无锁的方式删除映射
-******************************************************************************/
 
+
+/**
+ * @brief 删除一个文件映射,需要有个三个地方删除才算断开了文件和内存的联系.
+ 以无锁的方式删除映射
+ * @param mapping 
+ * @return int 
+ */
 int remove_mapping_nolock(struct page_mapping *mapping)
 {
     struct file_map *fmap = NULL;

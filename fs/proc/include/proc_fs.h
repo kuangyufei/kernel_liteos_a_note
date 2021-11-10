@@ -82,7 +82,10 @@ typedef unsigned short fmode_t;
 #define FMODE_READ        ((fmode_t)0x1)
 
 struct ProcFile;
-//真正最后能操作pro file的接口,proc本质是个内存文件系统, vfs - > ProcFileOperations
+
+/**
+ * @brief 真正最后能操作pro file的接口,proc本质是个内存文件系统, vfs - > ProcFileOperations
+ */
 struct ProcFileOperations {
     char *name;
     ssize_t (*write)(struct ProcFile *pf, const char *buf, size_t count, loff_t *ppos);
@@ -90,33 +93,40 @@ struct ProcFileOperations {
     int (*release)(struct Vnode *vnode, struct ProcFile *pf);
     int (*read)(struct SeqBuf *m, void *v);
 };
-//proc 目录/文件项, @notethinking 直接叫 ProcEntry不香吗 ?
-struct ProcDirEntry {//这才是能操作 /proc的 真正结构体
+
+/**
+ * @brief proc 目录/文件项, @notethinking 直接叫 ProcEntry不香吗 ?
+ * \n 操作 /proc的 真正结构体
+ */
+struct ProcDirEntry {
     uint uid;
     uint gid;
-    mode_t mode;	//模式(读|写...)
-    int flags;	//标签
-    const struct ProcFileOperations *procFileOps;//驱动程序,每个 /proc 下目录的驱动程序都不一样
-    struct ProcFile *pf;//proc文件指针
-    struct ProcDirEntry *next, *parent, *subdir;//当前目录项的关系项
+    mode_t mode;	///<模式(读|写...)
+    int flags;	///<标签
+    const struct ProcFileOperations *procFileOps; ///< 驱动程序,每个 /proc 下目录的驱动程序都不一样
+    struct ProcFile *pf; ///<proc文件指针
+    struct ProcDirEntry *next, *parent, *subdir; ///<当前目录项的关系项
     void *data;
-    atomic_t count; /* open file count */ //打开文件的数量
+    atomic_t count; /* open file count | 打开文件的数量*/
     spinlock_t pdeUnloadLock;
     int nameLen;
-    struct ProcDirEntry *pdirCurrent;//当前目录
+    struct ProcDirEntry *pdirCurrent; ///<当前目录
     char name[NAME_MAX];
-    enum VnodeType type;	//节点类型
+    enum VnodeType type;	///<节点类型
 };
-//Proc文件结构体,对标 FILE 结构体
+
+/**
+ * @brief Proc文件结构体,对标 FILE 结构体
+ */
 struct ProcFile {
-    fmode_t fMode;		//操作文件的模式
-    spinlock_t fLock;	//自旋锁
-    atomic_t fCount;	//原子操作
-    struct SeqBuf *sbuf;//序列号BUF
-    struct ProcDirEntry *pPDE;//目录项
-    unsigned long long fVersion;//版本号
-    loff_t fPos;	//文件操作偏移位
-    char name[NAME_MAX];//文件名
+    fmode_t fMode;		///< 操作文件的模式
+    spinlock_t fLock;	///< 自旋锁
+    atomic_t fCount;	///< 原子操作
+    struct SeqBuf *sbuf; ///< 序列号BUF
+    struct ProcDirEntry *pPDE; ///< 目录项
+    unsigned long long fVersion; ///< 版本号
+    loff_t fPos;	///<文件操作偏移位
+    char name[NAME_MAX]; ///<文件名
 };
 
 struct ProcStat {

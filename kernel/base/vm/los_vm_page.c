@@ -62,10 +62,10 @@ STATIC INLINE VOID OsVmPageOrderListInit(LosVmPage *page, size_t nPages)
     (pa) += PAGE_SIZE;                      \
 } while (0)
 
-/******************************************************************************
+/*!
  完成对物理内存整体初始化,本函数一定运行在实模式下
  1.申请大块内存g_vmPageArray存放LosVmPage,按4K一页划分物理内存存放在数组中.
-******************************************************************************/
+*/
 VOID OsVmPageStartup(VOID)
 {
     struct VmPhysSeg *seg = NULL;

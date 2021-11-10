@@ -43,7 +43,7 @@ LITE_USER_SEC_RODATA STATIC CHAR *g_initPath = "/dev/shm/init";
 #else
 LITE_USER_SEC_RODATA STATIC CHAR *g_initPath = "/bin/init";//由Init_lite在编译后,生成
 #endif
-//将 sys_call3 链接在 section(".user.text")段
+///将 sys_call3 链接在 section(".user.text")段
 LITE_USER_SEC_TEXT STATIC UINT32 sys_call3(UINT32 nbr, UINT32 parm1, UINT32 parm2, UINT32 parm3)
 {
     register UINT32 reg7 __asm__("r7") = (UINT32)(nbr); //系统调用号给了R7寄存器

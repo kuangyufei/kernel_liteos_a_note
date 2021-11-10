@@ -229,12 +229,12 @@ extern "C" {
  * Software timer mode
  */
 enum enSwTmrType {
-    LOS_SWTMR_MODE_ONCE, /**< One-off software timer */		//一次性的软件计时器
-    LOS_SWTMR_MODE_PERIOD, /**< Periodic software timer */	//周期性的软件计时器
-    LOS_SWTMR_MODE_NO_SELFDELETE, /**< One-off software timer, but not self-delete */ //一次性软件计时器，但不能自删除
-    LOS_SWTMR_MODE_OPP  /**< After the one-off timer finishes timing, //一次性完成后启用周期性软件计时器,鸿蒙目前暂时不支持这种方式
+    LOS_SWTMR_MODE_ONCE, /**< One-off software timer | 一次性的软件计时器*/
+    LOS_SWTMR_MODE_PERIOD, /**< Periodic software timer | 周期性的软件计时器*/
+    LOS_SWTMR_MODE_NO_SELFDELETE, /**< One-off software timer, but not self-delete | 一次性软件计时器，但不能自删除*/
+    LOS_SWTMR_MODE_OPP  /**< After the one-off timer finishes timing,
                              the periodic software timer is enabled.
-                             This mode is not supported temporarily. */
+                             This mode is not supported temporarily. | 一次性完成后启用周期性软件计时器,鸿蒙目前暂时不支持这种方式*/
 };
 
 /**
@@ -261,23 +261,24 @@ typedef VOID (*SWTMR_PROC_FUNC)(UINTPTR arg);	//函数指针, 赋值给 SWTMR_CT
 
 /**
  * @ingroup los_swtmr
- * Software timer control structure
+ * Software timer control structure | 软件定时器控制块
+ * \n 变量前缀 uc:UINT8  us:UINT16 uw:UINT32 代表的意思
  */
-typedef struct tagSwTmrCtrl {//软件定时器控制块
-    SortLinkList stSortList;//通过它挂到对应CPU核定时器链表上
-    UINT8 ucState;      /**< Software timer state */							//软件定时器的状态
-    UINT8 ucMode;       /**< Software timer mode */								//软件定时器的模式
-    UINT16 usTimerID;   /**< Software timer ID */								//软件定时器ID,唯一标识,由软件计时器池分配
+typedef struct tagSwTmrCtrl {
+    SortLinkList stSortList; ///< 通过它挂到对应CPU核定时器链表上
+    UINT8 ucState;      /**< Software timer state | 软件定时器的状态*/
+    UINT8 ucMode;       /**< Software timer mode | 软件定时器的模式*/
+    UINT16 usTimerID;   /**< Software timer ID | 软件定时器ID,唯一标识,由软件计时器池分配*/
     UINT32 uwOverrun;    /**< Times that a software timer repeats timing */
-    UINT32 uwCount;     /**< Times that a software timer works */				//软件定时器工作的时间
-    UINT32 uwInterval;  /**< Timeout interval of a periodic software timer */	//周期性软件定时器的超时间隔
-    UINT32 uwExpiry;    /**< Timeout interval of an one-off software timer */	//一次性软件定时器的超时间隔
-    UINTPTR uwArg;      /**< Parameter passed in when the callback function		//回调函数的参数
-                             that handles software timer timeout is called */
-    SWTMR_PROC_FUNC pfnHandler; /**< Callback function that handles software timer timeout */	//处理软件计时器超时的回调函数
-    UINT32          uwOwnerPid; /** Owner of this software timer */	//软件定时器所属进程ID号
+    UINT32 uwCount;     /**< Times that a software timer works | 软件定时器工作的时间*/
+    UINT32 uwInterval;  /**< Timeout interval of a periodic software timer | 周期性软件定时器的超时间隔*/
+    UINT32 uwExpiry;    /**< Timeout interval of an one-off software timer | 一次性软件定时器的超时间隔*/
+    UINTPTR uwArg;      /**< Parameter passed in when the callback function
+                             that handles software timer timeout is called | 回调函数的参数*/
+    SWTMR_PROC_FUNC pfnHandler; /**< Callback function that handles software timer timeout | 处理软件计时器超时的回调函数*/
+    UINT32          uwOwnerPid; /**< Owner of this software timer | 软件定时器所属进程ID号*/
     UINT64 startTime;  /**< Software timer start time */
-} SWTMR_CTRL_S;//变量前缀 uc:UINT8  us:UINT16 uw:UINT32 代表的意思
+} SWTMR_CTRL_S;
 
 /**
  * @ingroup los_swtmr

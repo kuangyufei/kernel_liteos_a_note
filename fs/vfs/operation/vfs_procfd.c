@@ -36,7 +36,7 @@
 #ifdef LOSCFG_NET_LWIP_SACK
 #include "lwip/sockets.h"
 #endif
-//对进程文件表操作上锁
+///对进程文件表操作上锁
 void FileTableLock(struct fd_table_s *fdt)
 {
     /* Take the semaphore (perhaps waiting) */

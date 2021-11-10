@@ -247,7 +247,7 @@ STATIC VOID OsQueueBufferOperate(LosQueueCB *queueCB, UINT32 operateType, VOID *
     UINT32 msgDataSize;
     UINT16 queuePosition;
 
-    /* get the queue position */ //先找到队列的位置
+    /* get the queue position | 先找到队列的位置*/
     switch (OS_QUEUE_OPERATE_GET(operateType)) {//获取操作类型
         case OS_QUEUE_READ_HEAD://从列队头开始读
             queuePosition = queueCB->queueHead;//拿到头部位置
@@ -307,11 +307,18 @@ STATIC UINT32 OsQueueOperateParamCheck(const LosQueueCB *queueCB, UINT32 queueID
     }
     return LOS_OK;
 }
-/************************************************
-队列操作.是读是写由operateType定
-本函数是消息队列最重要的一个函数,可以分析出读取消息过程中
-发生的细节,涉及任务的唤醒和阻塞,阻塞链表任务的相互提醒.
-************************************************/
+
+/**
+ * @brief 队列操作.是读是写由operateType定
+    本函数是消息队列最重要的一个函数,可以分析出读取消息过程中
+    发生的细节,涉及任务的唤醒和阻塞,阻塞链表任务的相互提醒.
+ * @param queueID 
+ * @param operateType 
+ * @param bufferAddr 
+ * @param bufferSize 
+ * @param timeout 
+ * @return UINT32 
+ */
 UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT32 *bufferSize, UINT32 timeout)
 {
     LosQueueCB *queueCB = NULL;

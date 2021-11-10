@@ -247,10 +247,10 @@ int OsSigprocMask(int how, const sigset_t_l *setl, sigset_t_l *oldset)
     }
     SCHEDULER_LOCK(intSave);
     spcb = OsCurrTaskGet();
-    /* If requested, copy the old mask to user. */ //如果需要，请将旧掩码复制给用户
+    /* If requested, copy the old mask to user. | 如果需要，请将旧掩码复制给用户*/
     oldSigprocmask = spcb->sig.sigprocmask;
 
-    /* If requested, modify the current signal mask. */ //如有要求，修改当前信号屏蔽
+    /* If requested, modify the current signal mask. | 如有要求，修改当前信号屏蔽*/
     if (setl != NULL) {
         /* Okay, determine what we are supposed to do */
         switch (how) {

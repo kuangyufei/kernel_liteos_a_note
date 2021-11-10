@@ -96,13 +96,19 @@ void OsSyscallHandleInit(void)
 
 LOS_MODULE_INIT(OsSyscallHandleInit, LOS_INIT_LEVEL_KMOD_EXTENDED);//注册系统调用模块
 /* The SYSCALL ID is in R7 on entry.  Parameters follow in R0..R6 */
-/******************************************************************
-由汇编调用,见于 los_hw_exc.s    / BLX    OsArmA32SyscallHandle
-SYSCALL是产生系统调用时触发的信号,R7寄存器存放具体的系统调用ID,也叫系统调用号
-regs:参数就是所有寄存器
-注意:本函数在用户态和内核态下都可能被调用到
-//MOV     R0, SP @获取SP值,R0将作为OsArmA32SyscallHandle的参数
-******************************************************************/
+
+/**
+ * @brief 
+    @verbatim
+    由汇编调用,见于 los_hw_exc.s    / BLX    OsArmA32SyscallHandle
+    SYSCALL是产生系统调用时触发的信号,R7寄存器存放具体的系统调用ID,也叫系统调用号
+    regs:参数就是所有寄存器
+    注意:本函数在用户态和内核态下都可能被调用到
+    //MOV     R0, SP @获取SP值,R0将作为OsArmA32SyscallHandle的参数
+	@endverbatim
+ * @param regs 
+ * @return VOID 
+ */
 VOID OsArmA32SyscallHandle(TaskContext *regs)
 {
     UINT32 ret;

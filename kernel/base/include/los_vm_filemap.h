@@ -51,18 +51,22 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-/**************************************************************************************************
- 磁盘高速缓存是一种软件机制，它允许系统把通常存放在磁盘上的一些数据保留在 RAM 中，以便对那些数据的
- 进一步访问不用再访问磁盘而能尽快得到满足。
- 页高速缓存中的信息单位是一个完整的页。
- 一个页包含的磁盘块在物理上不一定相邻，所以不能用设备号和块号标识，而是通过页的所有者和所有者数据中的索引来识别。
- 页高速缓存可以缓存以下内容
- A.普通文件数据
- B.含有目录的页 
- C.直接从快设备读取的页 
- D.用户进程数据的页
- E.特殊文件系统的文件页
-**************************************************************************************************/
+/**
+ * @brief 
+ * @verbatim 
+    磁盘高速缓存是一种软件机制，它允许系统把通常存放在磁盘上的一些数据保留在 RAM 中，以便对那些数据的
+    进一步访问不用再访问磁盘而能尽快得到满足。
+    页高速缓存中的信息单位是一个完整的页。
+    一个页包含的磁盘块在物理上不一定相邻，所以不能用设备号和块号标识，而是通过页的所有者和所有者数据中的索引来识别。
+    页高速缓存可以缓存以下内容
+    A.普通文件数据
+    B.含有目录的页 
+    C.直接从快设备读取的页 
+    D.用户进程数据的页
+    E.特殊文件系统的文件页
+ * @endverbatim
+ * 
+ */
 #if 0 //@note_#if0 
 //page_mapping描述的是一个文件在内存中被映射了多少页,<文件,文件页的关系>
 /* file mapped in VMM pages */
@@ -86,134 +90,134 @@ struct file_map { //为在内核层面文件在内存的身份证,每个需映�
 
 #endif
 
-//文件页结构体
+/// 文件页结构体
 typedef struct FilePage {
-    LOS_DL_LIST             node;		//节点,节点挂到page_mapping.page_list上,链表以 pgoff 从小到大方式排序.
-    LOS_DL_LIST             lru;		//lru节点, 结合 LosVmPhysSeg: LOS_DL_LIST lruList[VM_NR_LRU_LISTS] 理解
-    LOS_DL_LIST             i_mmap;     /* list of mappings */ //链表记录文件页被哪些进程映射 MapInfo.node挂上来
-    UINT32                  n_maps;       /* num of mapping */ //记录被进程映射的次数
-    struct VmPhysSeg        *physSeg;      /* physical memory that file page belongs to */ //物理段:物理页框 = 1:N
-    struct VmPage           *vmPage;	//物理页框
-    struct page_mapping     *mapping;	//此结构由文件系统提供，用于描述装入点 见于 ..\third_party\NuttX\include\nuttx\fs\fs.h
-    VM_OFFSET_T             pgoff;		//页标，文件被切成一页一页读到内存
-    UINT32                  flags;		//标签
-    UINT16                  dirtyOff;	//脏页的页内偏移地址
-    UINT16                  dirtyEnd;	//脏页的结束位置
+    LOS_DL_LIST             node;		///< 节点,节点挂到page_mapping.page_list上,链表以 pgoff 从小到大方式排序.
+    LOS_DL_LIST             lru;		///< lru节点, 结合 LosVmPhysSeg: LOS_DL_LIST lruList[VM_NR_LRU_LISTS] 理解
+    LOS_DL_LIST             i_mmap;     /* list of mappings | 链表记录文件页被哪些进程映射 MapInfo.node挂上来*/
+    UINT32                  n_maps;     /* num of mapping | 记录被进程映射的次数*/
+    struct VmPhysSeg        *physSeg;   /* physical memory that file page belongs to | 物理段:物理页框 = 1:N */
+    struct VmPage           *vmPage;	///< 物理页框
+    struct page_mapping     *mapping;	///< 此结构由文件系统提供，用于描述装入点 见于 ..\third_party\NuttX\include\nuttx\fs\fs.h
+    VM_OFFSET_T             pgoff;		///< 页标，文件被切成一页一页读到内存
+    UINT32                  flags;		///< 标签
+    UINT16                  dirtyOff;	///< 脏页的页内偏移地址
+    UINT16                  dirtyEnd;	///< 脏页的结束位置
 } LosFilePage;
-//虚拟地址和文件页的映射信息
-typedef struct MapInfo {//在一个进程使用文件页之前,需要提前做好文件页在此内存空间的映射关系,如此通过虚拟内存就可以对文件页读写操作.
-    LOS_DL_LIST             node;	//节点,挂到page->i_mmap链表上.链表上记录要操作文件页的进程对这个page的映射信息
-    VADDR_T                 vaddr;	//虚拟地址.每个进程访问同一个文件页的虚拟地址都是不一样的
-    LosFilePage             *page;	//文件页中只记录物理地址,是不会变的.但它是需要被多个进程访问,和映射的.
-    LosArchMmu              *archMmu;//mmu完成vaddr和page->vmPage->physAddr物理地址的映射
+/// 虚拟地址和文件页的映射信息,在一个进程使用文件页之前,需要提前做好文件页在此内存空间的映射关系,如此通过虚拟内存就可以对文件页读写操作.
+typedef struct MapInfo {
+    LOS_DL_LIST             node;	///< 节点,挂到page->i_mmap链表上.链表上记录要操作文件页的进程对这个page的映射信息
+    VADDR_T                 vaddr;	///< 虚拟地址.每个进程访问同一个文件页的虚拟地址都是不一样的
+    LosFilePage             *page;	///< 文件页中只记录物理地址,是不会变的.但它是需要被多个进程访问,和映射的.
+    LosArchMmu              *archMmu; ///< mmu完成vaddr和page->vmPage->physAddr物理地址的映射
 } LosMapInfo;
-//Flags由 bitmap 管理
+/// Flags由 bitmap 管理
 enum OsPageFlags {
-    FILE_PAGE_FREE,			//空闲页	
-    FILE_PAGE_LOCKED,		//被锁页
-    FILE_PAGE_REFERENCED,   //被引用页
-    FILE_PAGE_DIRTY,		//脏页
-    FILE_PAGE_LRU,			//LRU置换页
-    FILE_PAGE_ACTIVE,		//活动页
-    FILE_PAGE_SHARED,		//共享页
+    FILE_PAGE_FREE,			///< 空闲页	
+    FILE_PAGE_LOCKED,		///< 被锁页
+    FILE_PAGE_REFERENCED,   ///< 被引用页
+    FILE_PAGE_DIRTY,		///< 脏页
+    FILE_PAGE_LRU,			///< LRU置换页
+    FILE_PAGE_ACTIVE,		///< 活动页
+    FILE_PAGE_SHARED,		///< 共享页
 };
 
 #define PGOFF_MAX                       2000
 #define MAX_SHRINK_PAGECACHE_TRY        2
-#define VM_FILEMAP_MAX_SCAN             (SYS_MEM_SIZE_DEFAULT >> PAGE_SHIFT) //扫描文件映射页最大数量
-#define VM_FILEMAP_MIN_SCAN             32 //扫描文件映射页最小数量
-//给页面贴上被锁的标签
+#define VM_FILEMAP_MAX_SCAN             (SYS_MEM_SIZE_DEFAULT >> PAGE_SHIFT) ///< 扫描文件映射页最大数量
+#define VM_FILEMAP_MIN_SCAN             32 ///< 扫描文件映射页最小数量
+/// 给页面贴上被锁的标签
 STATIC INLINE VOID OsSetPageLocked(LosVmPage *page)
 {
     LOS_BitmapSet(&page->flags, FILE_PAGE_LOCKED);
 }
-///给页面撕掉被锁的标签
+/// 给页面撕掉被锁的标签
 STATIC INLINE VOID OsCleanPageLocked(LosVmPage *page)
 {
     LOS_BitmapClr(&page->flags, FILE_PAGE_LOCKED);
 }
-///给页面贴上数据被修改的标签
+/// 给页面贴上数据被修改的标签
 STATIC INLINE VOID OsSetPageDirty(LosVmPage *page)
 {
     LOS_BitmapSet(&page->flags, FILE_PAGE_DIRTY);
 }
-///给页面撕掉数据被修改的标签
+/// 给页面撕掉数据被修改的标签
 STATIC INLINE VOID OsCleanPageDirty(LosVmPage *page)
 {
     LOS_BitmapClr(&page->flags, FILE_PAGE_DIRTY);
 }
-///给页面贴上活动的标签
+/// 给页面贴上活动的标签
 STATIC INLINE VOID OsSetPageActive(LosVmPage *page)
 {
     LOS_BitmapSet(&page->flags, FILE_PAGE_ACTIVE);
 }
-///给页面撕掉活动的标签
+/// 给页面撕掉活动的标签
 STATIC INLINE VOID OsCleanPageActive(LosVmPage *page)
 {
     LOS_BitmapClr(&page->flags, FILE_PAGE_ACTIVE);
 }
-///给页面贴上置换页的标签
+/// 给页面贴上置换页的标签
 STATIC INLINE VOID OsSetPageLRU(LosVmPage *page)
 {
     LOS_BitmapSet(&page->flags, FILE_PAGE_LRU);
 }
-///给页面贴上被释放的标签
+/// 给页面贴上被释放的标签
 STATIC INLINE VOID OsSetPageFree(LosVmPage *page)
 {
     LOS_BitmapSet(&page->flags, FILE_PAGE_FREE);
 }
-///给页面撕掉被释放的标签
+/// 给页面撕掉被释放的标签
 STATIC INLINE VOID OsCleanPageFree(LosVmPage *page)
 {
     LOS_BitmapClr(&page->flags, FILE_PAGE_FREE);
 }
-///给页面贴上被引用的标签
+/// 给页面贴上被引用的标签
 STATIC INLINE VOID OsSetPageReferenced(LosVmPage *page)
 {
     LOS_BitmapSet(&page->flags, FILE_PAGE_REFERENCED);
 }
-///给页面撕掉被引用的标签
+/// 给页面撕掉被引用的标签
 STATIC INLINE VOID OsCleanPageReferenced(LosVmPage *page)
 {
     LOS_BitmapClr(&page->flags, FILE_PAGE_REFERENCED);
 }
-///页面是否活动
+/// 页面是否活动
 STATIC INLINE BOOL OsIsPageActive(LosVmPage *page)
 {
     return BIT_GET(page->flags, FILE_PAGE_ACTIVE);
 }
-///页面是否被锁
+/// 页面是否被锁
 STATIC INLINE BOOL OsIsPageLocked(LosVmPage *page)
 {
     return BIT_GET(page->flags, FILE_PAGE_LOCKED);
 }
-///页面是否被引用，只被一个进程引用的页叫私有页，多个进程引用就是共享页，此为共享内存的本质所在
+/// 页面是否被引用，只被一个进程引用的页叫私有页，多个进程引用就是共享页，此为共享内存的本质所在
 STATIC INLINE BOOL OsIsPageReferenced(LosVmPage *page)
 {
     return BIT_GET(page->flags, FILE_PAGE_REFERENCED);
 }
-///页面是否为脏页，所谓脏页就是页内数据是否被更新过，只有脏页才会有写时拷贝
+/// 页面是否为脏页，所谓脏页就是页内数据是否被更新过，只有脏页才会有写时拷贝
 STATIC INLINE BOOL OsIsPageDirty(LosVmPage *page)
 {
     return BIT_GET(page->flags, FILE_PAGE_DIRTY);
 }
-///文件页是否映射过了
+/// 文件页是否映射过了
 STATIC INLINE BOOL OsIsPageMapped(LosFilePage *page)
 {
     return (page->n_maps != 0);//由映射的次数来判断
 }
 
-/* The follow three functions is used to SHM module */
-STATIC INLINE VOID OsSetPageShared(LosVmPage *page)//给页面贴上共享页标签
+/*! The follow three functions is used to SHM module | 给页面贴上共享页标签*/
+STATIC INLINE VOID OsSetPageShared(LosVmPage *page)
 {
     LOS_BitmapSet(&page->flags, FILE_PAGE_SHARED);//设为共享页面,共享页位 置0
 }
-///给页面撕掉共享页标签
+/// 给页面撕掉共享页标签
 STATIC INLINE VOID OsCleanPageShared(LosVmPage *page)
 {
     LOS_BitmapClr(&page->flags, FILE_PAGE_SHARED);//共享页位 置0
 }
-///是否为共享页
+/// 是否为共享页
 STATIC INLINE BOOL OsIsPageShared(LosVmPage *page)
 {
     return BIT_GET(page->flags, FILE_PAGE_SHARED);

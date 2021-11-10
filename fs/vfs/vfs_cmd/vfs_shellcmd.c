@@ -1490,13 +1490,18 @@ static inline void print_rm_usage(void)
 {
   PRINTK("rm [FILE] or rm [-r/-R] [FILE]\n");
 }
-/*****************************************************************
-rm命令用来删除文件或文件夹。rm [-r] [dirname / filename]
-rm命令一次只能删除一个文件或文件夹。
-rm -r命令可以删除非空目录。
-rm log1.txt ; rm -r sd
-*****************************************************************/
 
+/**
+ * @brief 
+ * @verbatim rm命令用来删除文件或文件夹。rm [-r] [dirname / filename]
+  rm命令一次只能删除一个文件或文件夹。
+  rm -r命令可以删除非空目录。
+  rm log1.txt ; rm -r sd 
+   @endverbatim
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int osShellCmdRm(int argc, const char **argv)
 {
   int  ret = 0;

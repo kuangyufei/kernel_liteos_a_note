@@ -130,10 +130,10 @@ ULONG_T OsRegionRbCmpKeyFn(const VOID *pNodeKeyA, const VOID *pNodeKeyB)
     }
     return RB_EQUAL;
 }
-/**************************************************************************
+/*!
 初始化虚拟空间，必须提供L1表的虚拟内存地址
 VADDR_T *virtTtb:L1表的地址，TTB表地址
-**************************************************************************/
+*/
 STATIC BOOL OsVmSpaceInitCommon(LosVmSpace *vmSpace, VADDR_T *virtTtb)
 {
     LOS_RbInitTree(&vmSpace->regionRbTree, OsRegionRbCmpKeyFn, OsRegionRbFreeFn, OsRegionRbGetKeyFn);//初始化虚拟存储空间-以红黑树组织方式
@@ -503,10 +503,10 @@ PADDR_T LOS_PaddrQuery(VOID *vaddr)
     }
 }
 
-/**************************************************************************************************
+/*!
  * 这里不是真的分配物理内存，而是逻辑上画一个连续的区域，标记这个区域可以拿用，表示内存已经归你了。
    但真正的物理内存的占用会延迟到使用的时候才由缺页中断调入内存
-**************************************************************************************************/
+*/
 LosVmMapRegion *LOS_RegionAlloc(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len, UINT32 regionFlags, VM_OFFSET_T pgoff)
 {
     VADDR_T rstVaddr;
@@ -547,10 +547,10 @@ OUT:
     (VOID)LOS_MuxRelease(&vmSpace->regionMux);//释放互斥锁
     return newRegion;
 }
-/**************************************************************************************************
+/*!
  * 删除匿名页,匿名页就是内存映射页
  * 1.解除映射关系 2.释放物理内存
-**************************************************************************************************/
+*/
 STATIC VOID OsAnonPagesRemove(LosArchMmu *archMmu, VADDR_T vaddr, UINT32 count)
 {
     status_t status;
@@ -619,7 +619,7 @@ STATIC VOID OsFilePagesRemove(LosVmSpace *space, LosVmMapRegion *region)
     }
 }
 #endif
-//释放线性区
+////释放线性区
 STATUS_T LOS_RegionFree(LosVmSpace *space, LosVmMapRegion *region)
 {
     if ((space == NULL) || (region == NULL)) {
@@ -1130,7 +1130,7 @@ PADDR_T LOS_PaddrQuery(VOID *vaddr)
     return (PADDR_T)VMM_TO_DMA_ADDR((VADDR_T)vaddr);
 }
 #endif
-//内核空间内存分配
+///内核空间内存分配
 VOID *LOS_KernelMalloc(UINT32 size)
 {
     VOID *ptr = NULL;

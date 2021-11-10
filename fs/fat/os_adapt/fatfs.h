@@ -64,7 +64,7 @@ extern "C" {
 #define MBR_PRIMARY_PART_NUM 4
 #define JUMP_CODE "\xEB\xFE\x90"
 
-/* Partiton type */ //分区类型
+/* Partiton type | 分区类型*/
 #define FAT12                  0x01 /* FAT12 as primary partition in first physical 32MB */
 #define FAT16                  0x04 /* FAT16 with less than 65536 sectors(32MB) */
 #define EXTENDED_PARTITION_CHS  0x05
@@ -74,13 +74,13 @@ extern "C" {
 #define EXTENDED_PARTITION_LBA 0x0F
 #define GPT_PROTECTIVE_MBR     0xEE
 
-/* volume boot record type */ //卷引导记录类型
+/* volume boot record type | 卷引导记录类型 */
 #define VBR_FAT                0
 #define VBR_BS_NOT_FAT         2
 #define VBR_NOT_BS             3
 #define VBR_DISK_ERR           4
 
-/* Limit and boundary */	//限制和边界
+/* Limit and boundary | 限制和边界*/
 #define FAT_MAX_CLUSTER_SIZE     64  /* (sectors) */
 #define FAT32_MAX_CLUSTER_SIZE   128 /* (sectors) */
 #define FAT32_ENTRY_SIZE         4 /* (bytes) */
@@ -89,7 +89,7 @@ extern "C" {
 #define SFD_START_SECTOR         63
 #define MAX_BLOCK_SIZE         32768 /* (sectors) */
 
-/* Sector */ //扇区
+/* Sector | 扇区*/
 #define FAT32_RESERVED_SECTOR  32 
 #define FAT_RESERVED_SECTOR    1
 

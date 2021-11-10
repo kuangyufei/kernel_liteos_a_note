@@ -338,7 +338,7 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
 /// 异常类型
 STATIC VOID OsExcType(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 {
-    /* undefinited exception handling or software interrupt */ //未定义的异常处理或软件中断
+    /* undefinited exception handling or software interrupt | 未定义的异常处理或软件中断 */
     if ((excType == OS_EXCEPT_UNDEF_INSTR) || (excType == OS_EXCEPT_SWI))
     {
         if ((excBufAddr->regCPSR & INSTR_SET_MASK) == 0)
@@ -644,8 +644,13 @@ STATIC VOID OsDumpProcessUsedMemNode(UINT16 vmmFalgs)
     return;
 }
 #endif
-//dump 上下文内存,注意内核异常不能简单的映射理解为应用的异常,异常对内核来说是一个很常见操作,
-//比如任务的切换对内核来说就是一个异常处理
+
+/** 打印异常上下文
+ * @brief dump 上下文内存,注意内核异常不能简单的映射理解为应用的异常,异常对内核来说是一个很常见操作,
+    \n 比如任务的切换对内核来说就是一个异常处理
+ * @param excBufAddr 
+ * @return VOID 
+ */
 VOID OsDumpContextMem(const ExcContext *excBufAddr)
 {
     UINT32 count = 0;
@@ -814,7 +819,7 @@ STATIC INLINE BOOL FindSuitableStack(UINTPTR regFP, UINTPTR *start, UINTPTR *end
         return found;
     }
 
-    /* Search in the task stacks */ //找任务的内核态栈
+    /* Search in the task stacks | 找任务的内核态栈*/
     for (index = 0; index < g_taskMaxNum; index++)
     {
         taskCB = &g_taskCBArray[index];

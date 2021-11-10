@@ -79,8 +79,8 @@ struct page_mapping {
 /* If the kernel malloc size is less than 16k, use heap, otherwise use physical pages */
 #define KMALLOC_LARGE_SIZE    (PAGE_SIZE << 2)
 typedef struct VmMapRange {
-    VADDR_T             base;           /**< vm region base addr */ //线性区基地址
-    UINT32              size;           /**< vm region size */		//线性区大小
+    VADDR_T             base;           /**< vm region base addr | 线性区基地址*/
+    UINT32              size;           /**< vm region size | 线性区大小*/
 } LosVmMapRange;
 
 struct VmMapRegion;
@@ -89,31 +89,31 @@ struct VmFileOps;
 typedef struct VmFileOps LosVmFileOps;
 struct VmSpace;
 typedef struct VmSpace LosVmSpace;
-//缺页结构信息体 
+/// 缺页结构信息体 
 typedef struct VmFault {
-    UINT32          flags;              /* FAULT_FLAG_xxx flags */	//缺页标识
-    unsigned long   pgoff;              /* Logical page offset based on region */	//基于线性区的逻辑页偏移量
-    VADDR_T         vaddr;              /* Faulting virtual address */ //产生缺页的虚拟地址
-    VADDR_T         *pageKVaddr;        /* KVaddr of pagefault's vm page's paddr */ //page cache中的虚拟地址
+    UINT32          flags;              /*! FAULT_FLAG_xxx flags | 缺页标识*/
+    unsigned long   pgoff;              /*! Logical page offset based on region | 基于线性区的逻辑页偏移量*/
+    VADDR_T         vaddr;              /*! Faulting virtual address | 产生缺页的虚拟地址*/
+    VADDR_T         *pageKVaddr;        /*! KVaddr of pagefault's vm page's paddr | page cache中的虚拟地址*/
 } LosVmPgFault;
-//虚拟内存文件操作函数指针,上层开发可理解为 class 里的方法，注意是对线性区的操作
-struct VmFileOps {// 文件操作 见于g_commVmOps
-    void (*open)(struct VmMapRegion *region); //打开
-    void (*close)(struct VmMapRegion *region);//关闭
-    int  (*fault)(struct VmMapRegion *region, LosVmPgFault *pageFault);//缺页,OsVmmFileFault
-    void (*remove)(struct VmMapRegion *region, LosArchMmu *archMmu, VM_OFFSET_T offset);//删除 OsVmmFileRemove
+/// 虚拟内存文件操作函数指针,上层开发可理解为 class 里的方法，注意是对线性区的操作 , 文件操作 见于g_commVmOps
+struct VmFileOps {
+    void (*open)(struct VmMapRegion *region); ///< 打开
+    void (*close)(struct VmMapRegion *region); ///< 关闭
+    int  (*fault)(struct VmMapRegion *region, LosVmPgFault *pageFault); ///< 缺页,OsVmmFileFault
+    void (*remove)(struct VmMapRegion *region, LosArchMmu *archMmu, VM_OFFSET_T offset); ///< 删除 OsVmmFileRemove
 };
-
-struct VmMapRegion {//线性区描述符,内核通过线性区管理虚拟地址,而线性地址就是虚拟地址
-    LosRbNode           rbNode;         /**< region red-black tree node \n 红黑树节点,通过它将本线性区挂在VmSpace.regionRbTree*/
+/// 线性区描述符,内核通过线性区管理虚拟地址,而线性地址就是虚拟地址
+struct VmMapRegion {
+    LosRbNode           rbNode;         /**< region red-black tree node | 红黑树节点,通过它将本线性区挂在VmSpace.regionRbTree*/
     LosVmSpace          *space;			///< 所属虚拟空间,虚拟空间由多个线性区组成
-    LOS_DL_LIST         node;           /**< region dl list \n 链表节点,通过它将本线性区挂在VmSpace.regions上*/				
-    LosVmMapRange       range;          /**< region address range \n 记录线性区的范围*/
-    VM_OFFSET_T         pgOff;          /**< region page offset to file \n 以文件开始处的偏移量, 必须是分页大小的整数倍, 通常为0, 表示从文件头开始映射。*/
-    UINT32              regionFlags;   /**< region flags: cow, user_wired \n 线性区标签*/
-    UINT32              shmid;          /**< shmid about shared region \n shmid为共享线性区id,id背后就是共享线性区*/
-    UINT8               forkFlags;      /**< vm space fork flags: COPY, ZERO, \n fork的方式*/
-    UINT8               regionType;     /**< vm region type: ANON, FILE, DEV \n 映射类型是匿名,文件,还是设备,所谓匿名可理解为内存映射*/
+    LOS_DL_LIST         node;           /**< region dl list | 链表节点,通过它将本线性区挂在VmSpace.regions上*/				
+    LosVmMapRange       range;          /**< region address range | 记录线性区的范围*/
+    VM_OFFSET_T         pgOff;          /**< region page offset to file | 以文件开始处的偏移量, 必须是分页大小的整数倍, 通常为0, 表示从文件头开始映射。*/
+    UINT32              regionFlags;   /**< region flags: cow, user_wired | 线性区标签*/
+    UINT32              shmid;          /**< shmid about shared region | shmid为共享线性区id,id背后就是共享线性区*/
+    UINT8               forkFlags;      /**< vm space fork flags: COPY, ZERO, | fork的方式*/
+    UINT8               regionType;     /**< vm region type: ANON, FILE, DEV | 映射类型是匿名,文件,还是设备,所谓匿名可理解为内存映射*/
     union {
         struct VmRegionFile {//文件映射
             int f_oflags;
@@ -121,38 +121,38 @@ struct VmMapRegion {//线性区描述符,内核通过线性区管理虚拟地址
             const LosVmFileOps *vmFOps;///< 文件处理各操作接口
         } rf;
         struct VmRegionAnon {//匿名映射可理解为就是物理内存
-            LOS_DL_LIST  node;          /**< region LosVmPage list \n 线性区虚拟页链表*/
+            LOS_DL_LIST  node;          /**< region LosVmPage list | 线性区虚拟页链表*/
         } ra;
         struct VmRegionDev {//设备映射
-            LOS_DL_LIST  node;          /**< region LosVmPage list \n 线性区虚拟页链表*/
+            LOS_DL_LIST  node;          /**< region LosVmPage list | 线性区虚拟页链表*/
             const LosVmFileOps *vmFOps; ///< 设备也是一种文件
         } rd;
     } unTypeData;
 };
 
 typedef struct VmSpace {
-    LOS_DL_LIST         node;           /**< vm space dl list \n 节点,通过它挂到全局虚拟空间 g_vmSpaceList 链表上*/
-    LosRbTree           regionRbTree;   /**< region red-black tree root \n 采用红黑树方式管理本空间各个线性区*/
-    LosMux              regionMux;      /**< region list mutex lock \n 虚拟空间的互斥锁*/
-    VADDR_T             base;           /**< vm space base addr \n 虚拟空间的基地址,常用于判断地址是否在内核还是用户空间*/
-    UINT32              size;           /**< vm space size \n 虚拟空间大小*/
-    VADDR_T             heapBase;       /**< vm space heap base address \n 用户进程专用，堆区基地址，表堆区范围起点*/
-    VADDR_T             heapNow;        /**< vm space heap base now \n 用户进程专用，堆区结束地址，表堆区范围终点，do_brk()直接修改堆的大小返回新的堆区结束地址， heapNow >= heapBase*/
-    LosVmMapRegion      *heap;          /**< heap region \n 堆区是个特殊的线性区，用于满足进程的动态内存需求，大家熟知的malloc,realloc,free其实就是在操作这个区*/				
-    VADDR_T             mapBase;        /**< vm space mapping area base \n 虚拟空间映射区基地址,L1，L2表存放在这个区 */
-    UINT32              mapSize;        /**< vm space mapping area size \n 虚拟空间映射区大小，映射区是个很大的区。*/
-    LosArchMmu          archMmu;        /**< vm mapping physical memory \n MMU记录<虚拟地址,物理地址>的映射情况 */
+    LOS_DL_LIST         node;           /**< vm space dl list | 节点,通过它挂到全局虚拟空间 g_vmSpaceList 链表上*/
+    LosRbTree           regionRbTree;   /**< region red-black tree root | 采用红黑树方式管理本空间各个线性区*/
+    LosMux              regionMux;      /**< region list mutex lock | 虚拟空间的互斥锁*/
+    VADDR_T             base;           /**< vm space base addr | 虚拟空间的基地址,常用于判断地址是否在内核还是用户空间*/
+    UINT32              size;           /**< vm space size | 虚拟空间大小*/
+    VADDR_T             heapBase;       /**< vm space heap base address | 用户进程专用，堆区基地址，表堆区范围起点*/
+    VADDR_T             heapNow;        /**< vm space heap base now | 用户进程专用，堆区结束地址，表堆区范围终点，do_brk()直接修改堆的大小返回新的堆区结束地址， heapNow >= heapBase*/
+    LosVmMapRegion      *heap;          /**< heap region | 堆区是个特殊的线性区，用于满足进程的动态内存需求，大家熟知的malloc,realloc,free其实就是在操作这个区*/				
+    VADDR_T             mapBase;        /**< vm space mapping area base | 虚拟空间映射区基地址,L1，L2表存放在这个区 */
+    UINT32              mapSize;        /**< vm space mapping area size | 虚拟空间映射区大小，映射区是个很大的区。*/
+    LosArchMmu          archMmu;        /**< vm mapping physical memory | MMU记录<虚拟地址,物理地址>的映射情况 */
 #ifdef LOSCFG_DRIVERS_TZDRIVER
-    VADDR_T             codeStart;      /**< user process code area start */
-    VADDR_T             codeEnd;        /**< user process code area end */
+    VADDR_T             codeStart;      /**< user process code area start | 用户进程代码区开始位置 */
+    VADDR_T             codeEnd;        /**< user process code area end | 用户进程代码区结束位置 */
 #endif
 } LosVmSpace;
 
-#define     VM_MAP_REGION_TYPE_NONE                 (0x0)///< 初始化使用
-#define     VM_MAP_REGION_TYPE_ANON                 (0x1)///< 匿名映射线性区
-#define     VM_MAP_REGION_TYPE_FILE                 (0x2)///< 文件映射线性区
-#define     VM_MAP_REGION_TYPE_DEV                  (0x4)///< 设备映射线性区
-#define     VM_MAP_REGION_TYPE_MASK                 (0x7)///< 映射线性区掩码
+#define     VM_MAP_REGION_TYPE_NONE                 (0x0) ///< 初始化使用
+#define     VM_MAP_REGION_TYPE_ANON                 (0x1) ///< 匿名映射线性区
+#define     VM_MAP_REGION_TYPE_FILE                 (0x2) ///< 文件映射线性区
+#define     VM_MAP_REGION_TYPE_DEV                  (0x4) ///< 设备映射线性区
+#define     VM_MAP_REGION_TYPE_MASK                 (0x7) ///< 映射线性区掩码
 
 /* the high 8 bits(24~31) should reserved, shm will use it */
 #define     VM_MAP_REGION_FLAG_CACHED               (0<<0)		///< 缓冲区
@@ -180,7 +180,7 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_FIXED                (1<<17)
 #define     VM_MAP_REGION_FLAG_FIXED_NOREPLACE      (1<<18)
 #define     VM_MAP_REGION_FLAG_INVALID              (1<<19) /* indicates that flags are not specified */
-//从外部权限标签转化为线性区权限标签
+/// 从外部权限标签转化为线性区权限标签
 STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned long flags)
 {
     UINT32 regionFlags = 0;
@@ -202,69 +202,69 @@ STATIC INLINE BOOL LOS_IsKernelAddress(VADDR_T vaddr)
     return ((vaddr >= (VADDR_T)KERNEL_ASPACE_BASE) &&
             (vaddr <= ((VADDR_T)KERNEL_ASPACE_BASE + ((VADDR_T)KERNEL_ASPACE_SIZE - 1))));
 }
-///给定范围是否在内核空间中
+/// 给定范围是否在内核空间中
 STATIC INLINE BOOL LOS_IsKernelAddressRange(VADDR_T vaddr, size_t len)
 {
     return (vaddr + len > vaddr) && LOS_IsKernelAddress(vaddr) && (LOS_IsKernelAddress(vaddr + len - 1));
 }
-///获取区的结束地址
+/// 获取区的结束地址
 STATIC INLINE VADDR_T LOS_RegionEndAddr(LosVmMapRegion *region)
 {
     return (region->range.base + region->range.size - 1);
 }
-///线性区大小
+/// 线性区大小
 STATIC INLINE size_t LOS_RegionSize(VADDR_T start, VADDR_T end)
 {
     return (end - start + 1);
 }
-///是否为文件映射区
+/// 是否为文件映射区
 STATIC INLINE BOOL LOS_IsRegionTypeFile(LosVmMapRegion* region)
 {
     return region->regionType == VM_MAP_REGION_TYPE_FILE;
 }
-///permanent 用户进程常量区
+/// permanent 用户进程常量区
 STATIC INLINE BOOL LOS_IsRegionPermUserReadOnly(LosVmMapRegion* region)
 {
     return ((region->regionFlags & VM_MAP_REGION_FLAG_PROT_MASK) ==
             (VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ));
 }
-///是否为私有线性区
+/// 是否为私有线性区
 STATIC INLINE BOOL LOS_IsRegionFlagPrivateOnly(LosVmMapRegion* region)
 {
     return ((region->regionFlags & VM_MAP_REGION_FLAG_FLAG_MASK) == VM_MAP_REGION_FLAG_PRIVATE);
 }
-///设置线性区为文件映射
+/// 设置线性区为文件映射
 STATIC INLINE VOID LOS_SetRegionTypeFile(LosVmMapRegion* region)
 {
     region->regionType = VM_MAP_REGION_TYPE_FILE;
 }
-///是否为设备映射线性区 /dev/...
+/// 是否为设备映射线性区 /dev/...
 STATIC INLINE BOOL LOS_IsRegionTypeDev(LosVmMapRegion* region)
 {
     return region->regionType == VM_MAP_REGION_TYPE_DEV;
 }
-///设为设备映射线性区
+/// 设为设备映射线性区
 STATIC INLINE VOID LOS_SetRegionTypeDev(LosVmMapRegion* region)
 {
     region->regionType = VM_MAP_REGION_TYPE_DEV;
 }
-///是否为匿名swap映射线性区
+/// 是否为匿名swap映射线性区
 STATIC INLINE BOOL LOS_IsRegionTypeAnon(LosVmMapRegion* region)
 {
     return region->regionType == VM_MAP_REGION_TYPE_ANON;
 }
-///设为匿名swap映射线性区
+/// 设为匿名swap映射线性区
 STATIC INLINE VOID LOS_SetRegionTypeAnon(LosVmMapRegion* region)
 {
     region->regionType = VM_MAP_REGION_TYPE_ANON;
 }
-///虚拟地址是否在用户空间
+/// 虚拟地址是否在用户空间
 STATIC INLINE BOOL LOS_IsUserAddress(VADDR_T vaddr)
 {
     return ((vaddr >= USER_ASPACE_BASE) &&
             (vaddr <= (USER_ASPACE_BASE + (USER_ASPACE_SIZE - 1))));
 }
-///虚拟地址[vaddr,vaddr + len]是否在用户空间
+/// 虚拟地址[vaddr,vaddr + len]是否在用户空间
 STATIC INLINE BOOL LOS_IsUserAddressRange(VADDR_T vaddr, size_t len)
 {
     return (vaddr + len > vaddr) && LOS_IsUserAddress(vaddr) && (LOS_IsUserAddress(vaddr + len - 1));
@@ -276,7 +276,7 @@ STATIC INLINE BOOL LOS_IsVmallocAddress(VADDR_T vaddr)
     return ((vaddr >= VMALLOC_START) &&
             (vaddr <= (VMALLOC_START + (VMALLOC_SIZE - 1))));
 }
-///是否为一个空线性区
+/// 是否为一个空线性区
 STATIC INLINE BOOL OsIsVmRegionEmpty(LosVmSpace *vmSpace)
 {
     if (vmSpace->regionRbTree.ulNodes == 0) {

@@ -68,11 +68,18 @@ VOID ResetPageCacheHitInfo(int *try, int *hit)
 #endif
 #ifdef LOSCFG_KERNEL_VM
 
-/**************************************************************************************************
-增加文件页到页高速缓存(page cache)
-LosFilePage将一个文件切成了一页一页,因为读文件过程随机seek,所以文件页也不会是连续的,
-pgoff记录文件的位置,并确保在cache的文件数据是按顺序排列的.
-**************************************************************************************************/ 
+/**
+ * @brief 
+    @verbatim
+    增加文件页到页高速缓存(page cache)
+    LosFilePage将一个文件切成了一页一页,因为读文件过程随机seek,所以文件页也不会是连续的,
+    pgoff记录文件的位置,并确保在cache的文件数据是按顺序排列的.
+    @endverbatim
+ * @param page 
+ * @param mapping 
+ * @param pgoff 
+ * @return STATIC 
+ */
 STATIC VOID OsPageCacheAdd(LosFilePage *page, struct page_mapping *mapping, VM_OFFSET_T pgoff)
 {
     LosFilePage *fpage = NULL;
@@ -371,10 +378,10 @@ VOID OsDelMapInfo(LosVmMapRegion *region, LosVmPgFault *vmf, BOOL cleanDirty)
     }
     LOS_SpinUnlockRestore(&mapping->list_lock, intSave);
 }
-/**************************************************************************************************
+/*!
 文件缺页时的处理,先读入磁盘数据，再重新读页数据
 被 OsDoReadFault(...),OsDoCowFault(...),OsDoSharedFault(...) 等调用
-**************************************************************************************************/
+*/
 INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
 {
     INT32 ret;
@@ -522,10 +529,10 @@ INT32 OsVfsFileMmap(struct file *filep, LosVmMapRegion *region)
 
     return ENOERR;
 }
-/******************************************************************************
+/*!
  有名映射,可理解为文件映射,跟匿名映射相对应
  参数filep是广义的文件,在鸿蒙内核,目录/普通文件/字符设备/块设备/网络套接字/管道/链接 都是文件
-******************************************************************************/
+*/
 STATUS_T OsNamedMMap(struct file *filep, LosVmMapRegion *region)
 {
     struct Vnode *vnode = NULL;
@@ -579,11 +586,11 @@ LosFilePage *OsFindGetEntry(struct page_mapping *mapping, VM_OFFSET_T pgoff)
 }
 
 /* need mutex & change memory to dma zone. */
-/**************************************************************************************************
+/*!
 以页高速缓存方式分配一个文件页 LosFilePage
  Direct Memory Access（存储器直接访问）指一种高速的数据传输操作，允许在外部设备和存储器之间直接读写数据。
  整个数据传输操作在一个称为"DMA控制器"的控制下进行的。CPU只需在数据传输开始和结束时做一点处理（开始和结束时候要做中断处理）
-**************************************************************************************************/
+*/
 LosFilePage *OsPageCacheAlloc(struct page_mapping *mapping, VM_OFFSET_T pgoff)
 {
     VOID *kvaddr = NULL;

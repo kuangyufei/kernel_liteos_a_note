@@ -36,27 +36,33 @@
 #include "los_vm_lock.h"
 #include "los_vm_phys.h"
 #include "los_process_pri.h"
-/**************************************************************************************
-基本概念:
-VDSO（Virtual Dynamic Shared Object，虚拟动态共享库）相对于普通的动态共享库，区别在于
-其so文件不保存在文件系统中，存在于系统镜像中，由内核在运行时确定并提供给应用程序，故称为虚拟动态共享库。
-OpenHarmony系统通过VDSO机制实现上层用户态程序可以快速读取内核相关数据的一种通道方法，
-可用于实现部分系统调用的加速，也可用于实现非系统敏感数据（硬件配置、软件配置）的快速读取。
 
-运行机制:
-VDSO其核心思想就是内核看护一段内存，并将这段内存映射（只读）进用户态应用程序的地址空间，
-应用程序通过链接vdso.so后，将某些系统调用替换为直接读取这段已映射的内存从而避免系统调用达到加速的效果。
-VDSO总体可分为数据页与代码页两部分：
-	数据页提供内核映射给用户进程的内核时数据；
-	代码页提供屏蔽系统调用的主要逻辑；
+/** 
+ * @file 
+ * @brief 
+ * @verbatim
+    基本概念:
+    VDSO（Virtual Dynamic Shared Object，虚拟动态共享库）相对于普通的动态共享库，区别在于
+    其so文件不保存在文件系统中，存在于系统镜像中，由内核在运行时确定并提供给应用程序，故称为虚拟动态共享库。
+    OpenHarmony系统通过VDSO机制实现上层用户态程序可以快速读取内核相关数据的一种通道方法，
+    可用于实现部分系统调用的加速，也可用于实现非系统敏感数据（硬件配置、软件配置）的快速读取。
 
-@note_link http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-bundles-share.html
+    运行机制:
+    VDSO其核心思想就是内核看护一段内存，并将这段内存映射（只读）进用户态应用程序的地址空间，
+    应用程序通过链接vdso.so后，将某些系统调用替换为直接读取这段已映射的内存从而避免系统调用达到加速的效果。
+    VDSO总体可分为数据页与代码页两部分：
+        数据页提供内核映射给用户进程的内核时数据；
+        代码页提供屏蔽系统调用的主要逻辑；
 
-参考:http://lishiwen4.github.io/linux/vdso-and-syscall
-	 https://vvl.me/2019/06/linux-syscall-and-vsyscall-vdso-in-x86/
+    @note_link http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-bundles-share.html
 
-#cat /proc/self/maps
-**************************************************************************************/
+    参考:http://lishiwen4.github.io/linux/vdso-and-syscall
+        https://vvl.me/2019/06/linux-syscall-and-vsyscall-vdso-in-x86/
+
+    #cat /proc/self/maps
+ * @endverbatim
+ */
+
 LITE_VDSO_DATAPAGE VdsoDataPage g_vdsoDataPage __attribute__((__used__));//使用这个数据区
 
 STATIC size_t g_vdsoSize;
@@ -73,8 +79,8 @@ UINT32 OsVdsoInit(VOID)
 }
 
 LOS_MODULE_INIT(OsVdsoInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
-//映射,这里先通过内核地址找到 vdso的物理地址,再将物理地址映射到进程的线性区.
-//结论是每个进程都可以拥有自己的 vdso区,映射到同一个块物理地址.
+/// 映射,这里先通过内核地址找到 vdso的物理地址,再将物理地址映射到进程的线性区.
+/// 结论是每个进程都可以拥有自己的 vdso区,映射到同一个块物理地址.
 STATIC INT32 OsVdsoMap(LosVmSpace *space, size_t len, PADDR_T paddr, VADDR_T vaddr, UINT32 flag)
 {
     STATUS_T ret;

@@ -224,11 +224,15 @@ STATIC VOID ShmPagesRefDec(struct shmIDSource *seg)
     }
 }
 
-/******************************************************************************
- 为共享段分配物理内存
+/**
+ * @brief 为共享段分配物理内存
  例如:参数size = 4097, LOS_Align(size, PAGE_SIZE) = 8192
  分配页数    size >> PAGE_SHIFT = 2页 
-******************************************************************************/
+ * @param key 
+ * @param size 
+ * @param shmflg 
+ * @return STATIC 
+ */
 STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
 {
     INT32 i;
@@ -770,12 +774,14 @@ ERROR:
     return -1;
 }
 
-/******************************************************************************
- 当对共享存储的操作已经结束时，则调用shmdt与该存储段分离
+/**
+ * @brief 当对共享存储的操作已经结束时，则调用shmdt与该存储段分离
 	如果shmat成功执行，那么内核将使与该共享存储相关的shmid_ds结构中的shm_nattch计数器值减1
-注意：这并不从系统中删除共享存储的标识符以及其相关的数据结构。共享存储的仍然存在，
+ * @attention 注意：这并不从系统中删除共享存储的标识符以及其相关的数据结构。共享存储的仍然存在，
 	直至某个进程带IPC_RMID命令的调用shmctl特地删除共享存储为止
-******************************************************************************/
+ * @param shmaddr 
+ * @return INT32 
+ */
 INT32 ShmDt(const VOID *shmaddr)
 {
     LosVmSpace *space = OsCurrProcessGet()->vmSpace;//获取进程空间

@@ -1424,10 +1424,10 @@ LITE_OS_SEC_TEXT_MINOR UINT16 LOS_TaskCpuAffiGet(UINT32 taskID)
 /*
  * Description : Process pending signals tagged by others cores
  */
- /******************************************************
+ /*!
  	由其他CPU核触发阻塞进程的信号
 	函数由汇编代码调用 ..\arch\arm\arm\src\los_dispatch.S
- ******************************************************/
+*/
 LITE_OS_SEC_TEXT_MINOR VOID OsTaskProcSignal(VOID)
 {
     UINT32 intSave, ret;

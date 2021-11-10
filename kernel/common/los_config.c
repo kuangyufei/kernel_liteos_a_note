@@ -286,7 +286,7 @@ STATIC VOID SystemInit(VOID)
 #else
 extern VOID SystemInit(VOID);
 #endif
-//创建系统初始任务并申请调度
+///创建系统初始任务并申请调度
 STATIC UINT32 OsSystemInitTaskCreate(VOID)
 {
     UINT32 taskID;

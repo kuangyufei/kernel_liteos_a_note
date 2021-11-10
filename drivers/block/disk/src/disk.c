@@ -434,7 +434,7 @@ static CHAR GPTPartitionTypeRecognition(const CHAR *parBuf)
 {
     const CHAR *buf = parBuf;
     const CHAR *fsType = "FAT";
-    const CHAR *str = "\xEB\x52\x90" "NTFS    "; /* NTFS Boot entry point */ //NTFS 引导入口点 
+    const CHAR *str = "\xEB\x52\x90" "NTFS    "; /* NTFS Boot entry point | NTFS 引导入口点*/
 
     if (((LD_DWORD_DISK(&buf[BS_FILSYSTEMTYPE32]) & BS_FS_TYPE_MASK) == BS_FS_TYPE_VALUE) ||
         (strncmp(&buf[BS_FILSYSTYPE], fsType, strlen(fsType)) == 0)) {//识别FAT的方法
@@ -1276,7 +1276,7 @@ static VOID DiskCacheDeinit(los_disk *disk)
     }
 }
 #endif
-//磁盘结构体初始化,初始化 los_disk 结构体
+///磁盘结构体初始化,初始化 los_disk 结构体
 static VOID DiskStructInit(const CHAR *diskName, INT32 diskID, const struct geometry *diskInfo,
                            struct Vnode *blkDriver, los_disk *disk)
 {

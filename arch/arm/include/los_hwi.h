@@ -49,13 +49,13 @@ extern "C" {
 /**
  * @ingroup los_hwi
  * Count of interrupts.
- */ //中断次数,每个CPU都会记录响应中断的次数
-extern size_t g_intCount[];
+ */ 
+extern size_t g_intCount[];///< 中断次数,每个CPU都会记录响应中断的次数
 
 /**
  * @ingroup los_hwi
- * An interrupt is active.
- */ //中断处于活动状态
+ * An interrupt is active. | 中断处于活动状态
+ */
 #define OS_INT_ACTIVE ({                    \
     size_t intCount;                        \
     UINT32 intSave_ = LOS_IntLock();        \
@@ -66,36 +66,36 @@ extern size_t g_intCount[];
 
 /**
  * @ingroup los_hwi
- * An interrupt is inactive.
- */ //中断处于非活动状态
+ * An interrupt is inactive. | 中断处于非活动状态
+ */
 #define OS_INT_INACTIVE (!(OS_INT_ACTIVE))
 
 /**
  * @ingroup los_hwi
- * Highest priority of a hardware interrupt.
- */ //硬件中断的最高优先级
+ * Highest priority of a hardware interrupt. | 硬件中断的最高优先级
+ */
 #define OS_HWI_PRIO_HIGHEST 0
 
 /**
  * @ingroup los_hwi
- * Lowest priority of a hardware interrupt.
- */ //硬件中断的最低优先级
+ * Lowest priority of a hardware interrupt. | 硬件中断的最低优先级
+ */
 #define OS_HWI_PRIO_LOWEST 31
 
 /**
  * @ingroup los_hwi
- * Max name length of a hardware interrupt.
- */	//硬件中断的最大名称长度
+ * Max name length of a hardware interrupt. | 硬件中断的最大名称长度
+ */
 #define OS_HWI_MAX_NAMELEN 10
 
 /**
  * @ingroup los_hwi
- * Hardware interrupt error code: Invalid interrupt number.
+ * Hardware interrupt error code: Invalid interrupt number. | 创建或删除中断时，传入了无效中断号
  *
  * Value: 0x02000900
  *
  * Solution: Ensure that the interrupt number is valid.
- */ //创建或删除中断时，传入了无效中断号
+ */
 #define OS_ERRNO_HWI_NUM_INVALID                LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x00)
 
 /**
