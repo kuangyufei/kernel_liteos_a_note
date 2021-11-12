@@ -84,7 +84,7 @@ int osShellCmdDoChdir(const char *path)
   char *fullpath = NULL;
   char *fullpath_bak = NULL;
   int ret;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();
+  char *shell_working_directory = OsShellGetWorkingDirectory();
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -158,7 +158,7 @@ int osShellCmdLs(int argc, const char **argv)
   char *fullpath = NULL;
   const char *filename = NULL;
   int ret;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();//获取当前工作目录
+  char *shell_working_directory = OsShellGetWorkingDirectory();//获取当前工作目录
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -241,7 +241,7 @@ int osShellCmdDoCatShow(UINTPTR arg) //shellcmd_cat 任务实现
 {
   int ret = 0;
   char buf[CAT_BUF_SIZE];
-  size_t size, writen, toWrite;
+  size_t size, written, toWrite;
   ssize_t cnt;
   char *fullpath = (char *)arg;
   FILE *ini = NULL;
@@ -266,9 +266,9 @@ int osShellCmdDoCatShow(UINTPTR arg) //shellcmd_cat 任务实现
           goto out_with_fclose;
         }
 
-      for (toWrite = size, writen = 0; toWrite > 0;)
+      for (toWrite = size, written = 0; toWrite > 0;)
         {
-          cnt = write(1, buf + writen, toWrite);//stdout:1 标准输出文件
+          cnt = write(1, buf + written, toWrite);//stdout:1 标准输出文件
           if (cnt == 0)
             {
               /* avoid task-starvation */
@@ -281,7 +281,7 @@ int osShellCmdDoCatShow(UINTPTR arg) //shellcmd_cat 任务实现
               break;
             }
 
-          writen += cnt;
+          written += cnt;
           toWrite -= cnt;
         }
     }
@@ -305,7 +305,7 @@ int osShellCmdCat(int argc, const char **argv)
   unsigned int ca_task;
   struct Vnode *vnode = NULL;
   TSK_INIT_PARAM_S init_param;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();//显示当前目录 pwd
+  char *shell_working_directory = OsShellGetWorkingDirectory();//显示当前目录 pwd
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -412,7 +412,7 @@ int osShellCmdMount(int argc, const char **argv)
   char *data = NULL;
   char *filessystemtype = NULL;
   unsigned long mountfalgs;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();
+  char *shell_working_directory = OsShellGetWorkingDirectory();
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -562,7 +562,7 @@ int osShellCmdUmount(int argc, const char **argv)
   char *target_path = NULL;
   int cmp_num;
   char *work_path = NULL;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();
+  char *shell_working_directory = OsShellGetWorkingDirectory();
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -627,7 +627,7 @@ int osShellCmdMkdir(int argc, const char **argv)
   int ret;
   char *fullpath = NULL;
   const char *filename = NULL;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();
+  char *shell_working_directory = OsShellGetWorkingDirectory();
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -667,7 +667,7 @@ int osShellCmdPwd(int argc, const char **argv)
 {
   char buf[SHOW_MAX_LEN] = {0};
   DIR *dir = NULL;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();//获取当前工作路径
+  char *shell_working_directory = OsShellGetWorkingDirectory();//获取当前工作路径
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -730,7 +730,7 @@ int osShellCmdStatfs(int argc, const char **argv)
   unsigned long long total_size, free_size;
   char *fullpath = NULL;
   const char *filename = NULL;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();
+  char *shell_working_directory = OsShellGetWorkingDirectory();
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -783,7 +783,7 @@ int osShellCmdTouch(int argc, const char **argv)
   int fd = -1;
   char *fullpath = NULL;
   const char *filename = NULL;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();
+  char *shell_working_directory = OsShellGetWorkingDirectory();
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -844,7 +844,7 @@ static int os_shell_cmd_do_cp(const char *src_filepath, const char *dst_filename
   int dst_fd = -1;
   struct stat stat_buf;
   mode_t src_mode;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();
+  char *shell_working_directory = OsShellGetWorkingDirectory();
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -1392,7 +1392,7 @@ int osShellCmdCp(int argc, const char **argv)
   char *dst_fullpath = NULL;
   struct stat stat_buf;
   int count = 0;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();//获取进程当前工作目录
+  char *shell_working_directory = OsShellGetWorkingDirectory();//获取进程当前工作目录
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -1507,7 +1507,7 @@ int osShellCmdRm(int argc, const char **argv)
   int  ret = 0;
   char *fullpath = NULL;
   const char *filename = NULL;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();
+  char *shell_working_directory = OsShellGetWorkingDirectory();
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -1584,7 +1584,7 @@ int osShellCmdRmdir(int argc, const char **argv)
   int  ret;
   char *fullpath = NULL;
   const char *filename = NULL;
-  char *shell_working_directory = OsShellGetWorkingDirtectory();
+  char *shell_working_directory = OsShellGetWorkingDirectory();
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -1787,7 +1787,7 @@ int osShellCmdChmod(int argc, const char **argv)
     }
   filename = argv[1];
 
-  shell_working_directory = OsShellGetWorkingDirtectory();
+  shell_working_directory = OsShellGetWorkingDirectory();
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -1855,7 +1855,7 @@ int osShellCmdChown(int argc, const char **argv)
       attr.attr_chg_valid |= CHG_UID;//贴上拥有者被修改过的标签
     }
 
-  char *shell_working_directory = OsShellGetWorkingDirtectory();
+  char *shell_working_directory = OsShellGetWorkingDirectory();
   if (shell_working_directory == NULL)
     {
       return -1;
@@ -1905,7 +1905,7 @@ int osShellCmdChgrp(int argc, const char **argv)
     attr.attr_chg_valid |= CHG_GID;
   }
 
-  char *shell_working_directory = OsShellGetWorkingDirtectory();
+  char *shell_working_directory = OsShellGetWorkingDirectory();
   if (shell_working_directory == NULL) {
     return -1;
   }

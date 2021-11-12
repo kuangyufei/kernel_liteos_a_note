@@ -36,14 +36,13 @@ local_flags = [
   "-Wno-narrowing",
   "-fPIE",
 ]
-if (LOSCFG_USER_TEST_SMP == "enable" || (LOSCFG_USER_TEST_SMP == "default" && board_name == "hispark_taurus")) {
+if (LOSCFG_USER_TEST_SMP == "enable" ||
+    (LOSCFG_USER_TEST_SMP == "default" && board_name == "hispark_taurus")) {
   local_flags += [ "-DLOSCFG_USER_TEST_SMP" ]
 }
 
 config("public_config_for_door") {
-  cflags = [
-    "-DLOSCFG_USER_TEST_SMOKE",
-  ]
+  cflags = [ "-DLOSCFG_USER_TEST_SMOKE" ]
   cflags += local_flags
   cflags_cc = cflags
 }
@@ -58,9 +57,7 @@ config("public_config_for_all") {
 }
 
 config("public_config_for_pressure") {
-  cflags = [
-    "-DLOSCFG_USER_TEST_PRESSURE",
-  ]
+  cflags = [ "-DLOSCFG_USER_TEST_PRESSURE" ]
   cflags += local_flags
   cflags_cc = cflags
 }
@@ -276,7 +273,8 @@ group("unittest") {
     }
     if (LOSCFG_USER_TEST_SECURITY_CAPABILITY == true) {
       if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
-        deps += [ "security/capability:liteos_a_security_capability_unittest_door" ]
+        deps +=
+            [ "security/capability:liteos_a_security_capability_unittest_door" ]
       }
       if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
         deps += [ "security/capability:liteos_a_security_capability_unittest" ]

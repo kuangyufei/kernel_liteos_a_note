@@ -153,7 +153,7 @@ extern INT32 GetFilepOps(const struct file *filep, struct file **privFilep, cons
 extern VOID OsWaitConsoleSendTaskPend(UINT32 taskID);
 extern VOID OsWakeConsoleSendTask(VOID);
 #endif
-extern VOID KillPgrp(VOID);
+extern VOID KillPgrp(UINT16 consoleId);
 
 /* console ioctl */
 #define CONSOLE_IOC_MAGIC   'c'

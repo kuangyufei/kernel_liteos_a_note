@@ -41,8 +41,7 @@ sources_entry = [
   "It_vfs_proc.cpp",
 ]
 
-sources_smoke = [
-]
+sources_smoke = []
 
 sources_full = [
   "full/It_vfs_proc_001.cpp",

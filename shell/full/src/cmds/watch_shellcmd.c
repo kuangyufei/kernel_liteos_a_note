@@ -55,7 +55,7 @@ typedef struct {
 STATIC WatchCB *g_watchCmd;
 
 #define WATCH_COUNT_MAX 0xFFFFFF
-#define WATCH_INTETVAL_MAX 0xFFFFFF
+#define WATCH_INTERTVAL_MAX 0xFFFFFF
 
 STATIC VOID PrintTime(VOID)
 {
@@ -129,7 +129,7 @@ INT32 OsWatchOptionParsed(UINT32 argc, UINT32 *argoff, const CHAR **argv, WatchC
                 return -1;
             }
             tmpVal = (long)strtoul(argv[*argoff + 1], &strPtr, 0);
-            if ((*strPtr != 0) || (tmpVal <= 0) || (tmpVal > WATCH_INTETVAL_MAX)) {
+            if ((*strPtr != 0) || (tmpVal <= 0) || (tmpVal > WATCH_INTERTVAL_MAX)) {
                 PRINTK("\ninterval time is invalid\n");
                 OsWatchCmdUsage();
                 return -1;

@@ -110,7 +110,7 @@ Please deal with the "char *" by function:UserPathCopy.
 #define CPY_FROM_USER(ptr) \
     __typeof(*ptr) ptr##cpy = {0}, *ptr##bak = ptr; \
     if (ptr != NULL) { \
-        if (LOS_ArchCopyFromUser((void*)&ptr##cpy, ptr, sizeof(*ptr)) != 0) { \
+        if (LOS_ArchCopyFromUser((void*)&ptr##cpy, ptr##bak, sizeof(*ptr##bak)) != 0) { \
             set_errno(EFAULT); \
             return -get_errno(); \
         } \

@@ -107,7 +107,7 @@ STATIC VOID ShellNotify(ShellCB *shellCB)
 }
 
 enum {
-    STAT_NOMAL_KEY,	//普通的按键
+    STAT_NORMAL_KEY,	///< 普通的按键
     STAT_ESC_KEY,	//<ESC>键在VT控制规范中时控制的起始键
     STAT_MULTI_KEY	//组合键
 };
@@ -142,23 +142,23 @@ STATIC INT32 ShellCmdLineCheckUDRL(const CHAR ch, ShellCB *shellCB)
     } else if (ch == 0x41) { /* up */	//上方向键
         if (shellCB->shellKeyType == STAT_MULTI_KEY) {
             OsShellHistoryShow(CMD_KEY_UP, shellCB);
-            shellCB->shellKeyType = STAT_NOMAL_KEY;
+            shellCB->shellKeyType = STAT_NORMAL_KEY;
             return ret;
         }
     } else if (ch == 0x42) { /* down *///下方向键
         if (shellCB->shellKeyType == STAT_MULTI_KEY) {
-            shellCB->shellKeyType = STAT_NOMAL_KEY;
+            shellCB->shellKeyType = STAT_NORMAL_KEY;
             OsShellHistoryShow(CMD_KEY_DOWN, shellCB);
             return ret;
         }
     } else if (ch == 0x43) { /* right *///右方向键
         if (shellCB->shellKeyType == STAT_MULTI_KEY) {
-            shellCB->shellKeyType = STAT_NOMAL_KEY;
+            shellCB->shellKeyType = STAT_NORMAL_KEY;
             return ret;
         }
     } else if (ch == 0x44) { /* left *///左方向键
         if (shellCB->shellKeyType == STAT_MULTI_KEY) {
-            shellCB->shellKeyType = STAT_NOMAL_KEY;
+            shellCB->shellKeyType = STAT_NORMAL_KEY;
             return ret;
         }
     }
@@ -216,7 +216,7 @@ LITE_OS_SEC_TEXT_MINOR VOID ShellCmdLineParse(CHAR c, pf_OUTPUT outputFunc, Shel
         outputFunc("%c", ch);//向终端输出字符
     }
 
-    shellCB->shellKeyType = STAT_NOMAL_KEY;//普通字符
+    shellCB->shellKeyType = STAT_NORMAL_KEY;//普通字符
 }
 ///获取shell消息类型
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellMsgTypeGet(CmdParsed *cmdParsed, const CHAR *cmdType)

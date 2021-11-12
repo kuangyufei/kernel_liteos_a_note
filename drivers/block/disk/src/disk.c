@@ -1032,7 +1032,7 @@ INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count, BOOL useRe
     }
 
     if (count > part->sector_count) {//不能超过分区总扇区数量
-        PRINT_ERR("los_part_read failed, invaild count, count = %u\n", count);
+        PRINT_ERR("los_part_read failed, invalid count, count = %u\n", count);
         goto ERROR_HANDLE;
     }
 
@@ -1041,7 +1041,7 @@ INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count, BOOL useRe
         if ((disk->sector_count - part->sector_start) > sector) {//从绝对扇区读取
             sector += part->sector_start;
         } else {
-            PRINT_ERR("los_part_read failed, invaild sector, sector = %llu\n", sector);
+            PRINT_ERR("los_part_read failed, invalid sector, sector = %llu\n", sector);
             goto ERROR_HANDLE;
         }
     }
@@ -1088,7 +1088,7 @@ INT32 los_part_write(INT32 pt, const VOID *buf, UINT64 sector, UINT32 count)
     }
 
     if (count > part->sector_count) {
-        PRINT_ERR("los_part_write failed, invaild count, count = %u\n", count);
+        PRINT_ERR("los_part_write failed, invalid count, count = %u\n", count);
         goto ERROR_HANDLE;
     }
 
@@ -1097,7 +1097,7 @@ INT32 los_part_write(INT32 pt, const VOID *buf, UINT64 sector, UINT32 count)
         if ((disk->sector_count - part->sector_start) > sector) {
             sector += part->sector_start;
         } else {
-            PRINT_ERR("los_part_write failed, invaild sector, sector = %llu\n", sector);
+            PRINT_ERR("los_part_write failed, invalid sector, sector = %llu\n", sector);
             goto ERROR_HANDLE;
         }
     }

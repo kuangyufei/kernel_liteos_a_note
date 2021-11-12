@@ -33,8 +33,8 @@ module_switch = defined(LOSCFG_KERNEL_TRACE)
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
   sources = [
-    "los_trace.c",
     "cnv/trace_cnv.c",
+    "los_trace.c",
   ]
 
   include_dirs = [
@@ -43,11 +43,11 @@ kernel_module(module_name) {
     "pipeline",
   ]
 
-  if (defined(LOSCFG_RECORDER_MODE_OFFLINE)){
+  if (defined(LOSCFG_RECORDER_MODE_OFFLINE)) {
     sources += [ "trace_offline.c" ]
   }
 
-  if (defined(LOSCFG_RECORDER_MODE_ONLINE)){
+  if (defined(LOSCFG_RECORDER_MODE_ONLINE)) {
     sources += [ "trace_online.c" ]
   }
 

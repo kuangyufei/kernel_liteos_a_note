@@ -58,7 +58,7 @@ extern "C" {
 #define LOSCFG_TRACE_OBJ_MAX_NAME_SIZE                          LOS_TASK_NAMELEN
 
 #define LOS_TRACE_LR_RECORD                                     5
-#define LOS_TRACE_LR_IGNOR                                      0
+#define LOS_TRACE_LR_IGNORE                                     0
 /**
  * @ingroup los_trace
  * Trace records the max number of objects(kernel object, like tasks), range is [0, LOSCFG_BASE_CORE_TSK_LIMIT].

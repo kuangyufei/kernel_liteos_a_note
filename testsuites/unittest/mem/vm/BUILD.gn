@@ -59,8 +59,7 @@ sources_smoke = [
   "smoke/user_copy_test_001.cpp",
 ]
 
-sources_full = [
-]
+sources_full = []
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
   unittest("liteos_a_mem_vm_unittest_door") {

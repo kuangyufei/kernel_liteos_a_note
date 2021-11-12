@@ -28,74 +28,80 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 #include "It_test_IO.h"
+#include <sys/epoll.h>
+#include "signal.h"
+#include "pthread.h"
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 static UINT32 testcase(VOID)
 {
-    struct mntent* mnt = nullptr;
-    struct mntent* mnt_new = nullptr;
-    FILE *fp = nullptr;
-    char *argv[2] = {nullptr};
-    argv[0] = "/etc/fstab";
-    argv[1] = "errors";
-    char *opt = argv[1];
-    char *ret = nullptr;
+    fd_set rfds;
+    int retval;
+    pid_t pid;
+    int pipeFd[2]; /* 2, pipe id num */
+    char buffer[40]; /* 40, buffer size */
+    int i = 0;
+    int status;
 
-    char fileWords[] = "/dev/disk/by-uuid/c4992556-a86e-45e8-ba5f-190b16a9073x /usr1 ext3 errors=remount-ro,nofail 0 1";
-    char *pathList[] = {"/etc/fstab"};
-    char *streamList[] = {(char *)fileWords};
-    int streamLen[] = {sizeof(fileWords)};
-    
-    int flag = PrepareFileEnv(pathList, streamList, streamLen, 1);
-    if (flag != 0) {
-        printf("error: need some env file, but prepare is not ok");
-        (VOID)RecoveryFileEnv(pathList, 1);
-        return -1;
-    }
-    
-    mnt_new = (struct mntent *)malloc(sizeof(struct mntent));
-    mnt_new->mnt_fsname = "UUID=c4992556-a86e-45e8-ba5f-190b16a9073x";
-    mnt_new->mnt_dir = "/usr1";
-    mnt_new->mnt_type = "ext3";
-    mnt_new->mnt_opts = "errors=remount-ro,nofail";
-    mnt_new->mnt_freq = 0;
-    mnt_new->mnt_passno = 1;
+    int epFd;
+    sigset_t mask;
+    struct epoll_event ev;
+    struct epoll_event evWait[2]; /* 2, evs num */
 
-    fp = setmntent("/etc/fstab", "r");
-    if (!fp) {
-        printf("fp=0x%x\n", fp);
-        return LOS_NOK;
-    }
+    retval = pipe(pipeFd);
+    ICUNIT_GOTO_EQUAL(retval, 0, retval, OUT);
 
-    mnt = getmntent(fp);
-    if (mnt && !(feof(fp) || ferror(fp))) {
-        ret =  hasmntopt(mnt, opt);
-        printf("hasmntopt=%s\n", ret);
-        ICUNIT_ASSERT_NOT_EQUAL_NULL(ret, NULL, -1);
-        mnt = getmntent(fp);
-    }
+    /* Watch fd to see when it has input. */
+    FD_ZERO(&rfds);
+    FD_SET(pipeFd[0], &rfds);
 
-    if (fp != NULL) {
-        endmntent(fp);
-    }
+    /* Wait up to three seconds. */
+    epFd = epoll_create1(100); /* 100, cretae input, */
+    ICUNIT_GOTO_NOT_EQUAL(epFd, -1, epFd, OUT);
 
-    /* test the addmntent below */
-    fp = setmntent(argv[0], "a");
-    if (fopen("/lib/libc.so", "r")) {
-        printf("aha I found you are OHOS!!!\n");
-        if (addmntent(fp, mnt_new)) {
-            printf("a new mnt is added to %s\n", argv[0]);
+    ev.events = EPOLLIN | EPOLLOUT | EPOLLRDNORM | EPOLLWRNORM;
+    retval = epoll_ctl(epFd, EPOLL_CTL_ADD, pipeFd[0], &ev);
+    ICUNIT_GOTO_NOT_EQUAL(retval, -1, retval, OUT);
+
+    pid = fork();
+    if (pid == 0) {
+        close(pipeFd[1]);
+
+        memset(evWait, 0, sizeof(struct epoll_event) * 2); /* 2, evs num */
+        retval = epoll_wait(epFd, evWait, 2, 3000); /* 2, num of wait fd. 3000, wait time */
+        close(pipeFd[0]);
+
+        if (retval) {
+            exit(LOS_OK);
+        } else {
+            exit(LOS_NOK);
         }
+    } else {
+        sleep(1);
+        close(pipeFd[0]);
+        retval = write(pipeFd[1], "0123456789012345678901234567890123456789", 40); /* write 40 bytes to stdin(fd 0) */
+        ICUNIT_GOTO_EQUAL(retval, 40, retval, OUT);
+        close(pipeFd[1]);
+
+        wait(&status);
+        status = WEXITSTATUS(status);
+        ICUNIT_ASSERT_EQUAL(status, LOS_OK, status);
     }
 
-    if (fp != NULL) {
-        endmntent(fp);
-    }
-    (VOID)RecoveryFileEnv(pathList, 1);
     return LOS_OK;
+OUT:
+    close(pipeFd[0]);
+    close(pipeFd[1]);
+    close(epFd);
+    return LOS_NOK;
 }
 
-VOID IT_STDIO_HASMNTOPT_001(void)
+
+VOID IO_TEST_EPOLL_001(VOID)
 {
     TEST_ADD_CASE(__FUNCTION__, testcase, TEST_LIB, TEST_LIBC, TEST_LEVEL1, TEST_FUNCTION);
 }

@@ -171,7 +171,7 @@ STATIC VOID OsPageCacheUnmap(LosFilePage *fpage, LosArchMmu *archMmu, VADDR_T va
     LOS_SpinLockSave(&fpage->physSeg->lruLock, &intSave);
     info = OsGetMapInfo(fpage, archMmu, vaddr);//获取文件页在进程的映射信息
     if (info == NULL) {
-        VM_ERR("OsPageCacheUnmap get map info fail!");
+        VM_ERR("OsPageCacheUnmap get map info failed!");
     } else {
         OsUnmapPageLocked(fpage, info);//解除进程和文件页映射关系
     }

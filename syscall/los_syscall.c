@@ -125,7 +125,7 @@ VOID OsArmA32SyscallHandle(TaskContext *regs)
     nArgs = g_syscallNArgs[cmd / NARG_PER_BYTE]; /* 4bit per nargs */
     nArgs = (cmd & 1) ? (nArgs >> NARG_BITS) : (nArgs & NARG_MASK);//获取参数个数
     if ((handle == 0) || (nArgs > ARG_NUM_7)) {//系统调用必须有参数且参数不能大于8个
-        PRINT_ERR("Unsupport syscall ID: %d nArgs: %d\n", cmd, nArgs);
+        PRINT_ERR("Unsupported syscall ID: %d nArgs: %d\n", cmd, nArgs);
         regs->R0 = -ENOSYS;
         return;
     }

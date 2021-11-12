@@ -509,7 +509,11 @@ static int ProcessGetCputime(clockid_t clockID, struct timespec *ats)
     }
 
     SCHEDULER_LOCK(intSave);
-    runtime = spcb->processCpup.allTime;
+    if (spcb->processCpup == NULL) {
+        SCHEDULER_UNLOCK(intSave);
+        return -EINVAL;
+    }
+    runtime = spcb->processCpup->allTime;
     SCHEDULER_UNLOCK(intSave);
 
     ats->tv_sec = runtime / OS_SYS_NS_PER_SECOND;

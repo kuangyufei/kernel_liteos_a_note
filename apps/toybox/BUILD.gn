@@ -46,7 +46,10 @@ copy("copy_toybox_config") {
 }
 
 build_ext_component("build_toybox") {
-  deps = [ ":copy_toybox_src", ":copy_toybox_config" ]
+  deps = [
+    ":copy_toybox_config",
+    ":copy_toybox_src",
+  ]
   deps += [ "//prebuilts/lite/sysroot" ]
   exec_path = rebase_path("$target_out_dir/toybox_build")
 

@@ -36,7 +36,7 @@ static void *Xmalloc(unsigned n)
 {
     void *p = NULL;
     if (n <= 0) {
-        printf("err: malloc size invaild\n");
+        printf("err: malloc size invalid\n");
         exit(EXIT_FAILURE);
     }
     p = malloc(n);

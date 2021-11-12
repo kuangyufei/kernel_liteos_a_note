@@ -46,7 +46,7 @@ VOID *LOS_DmaMemAlloc(DMA_ADDR_T *dmaAddr, size_t size, size_t align, enum DmaMe
     }
 
     if ((type != DMA_CACHE) && (type != DMA_NOCACHE)) {
-        VM_ERR("The dma type = %d is not support!", type);
+        VM_ERR("The dma type = %d is not supported!", type);
         return NULL;
     }
 

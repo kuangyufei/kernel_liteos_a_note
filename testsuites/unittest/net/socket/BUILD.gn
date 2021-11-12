@@ -64,8 +64,7 @@ sources_smoke = [
   "smoke/net_socket_test_013.cpp",
 ]
 
-sources_full = [
-]
+sources_full = []
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
   unittest("liteos_a_net_socket_unittest_door") {

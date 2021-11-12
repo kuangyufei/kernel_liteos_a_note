@@ -62,7 +62,7 @@ LITE_OS_SEC_BSS STATIC UINT32 g_traceTaskId;
 #define EVENT_MASK            0xFFFFFFF0
 #define MIN(x, y)             ((x) < (y) ? (x) : (y))
 
-LITE_OS_SEC_BSS STATIC TRACE_HWI_FILTER_HOOK g_traceHwiFliterHook = NULL;
+LITE_OS_SEC_BSS STATIC TRACE_HWI_FILTER_HOOK g_traceHwiFilterHook = NULL;
 
 #ifdef LOSCFG_KERNEL_SMP
 LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_traceSpin);
@@ -74,8 +74,8 @@ STATIC_INLINE BOOL OsTraceHwiFilter(UINT32 hwiNum)
 #ifdef LOSCFG_KERNEL_SMP
     ret |= (hwiNum == LOS_MP_IPI_SCHEDULE);
 #endif
-    if (g_traceHwiFliterHook != NULL) {
-        ret |= g_traceHwiFliterHook(hwiNum);
+    if (g_traceHwiFilterHook != NULL) {
+        ret |= g_traceHwiFilterHook(hwiNum);
     }
     return ret;
 }
@@ -102,13 +102,13 @@ STATIC VOID OsTraceSetFrame(TraceEventFrame *frame, UINT32 eventType, UINTPTR id
 #ifdef LOSCFG_TRACE_FRAME_CORE_MSG
     frame->core.cpuId      = ArchCurrCpuid();
     frame->core.hwiActive  = OS_INT_ACTIVE ? TRUE : FALSE;
-    frame->core.taskLockCnt = MIN(OsPercpuGet()->taskLockCnt, 0xF); /* taskLockCnt is 4 bits, max vaule = 0xF */
+    frame->core.taskLockCnt = MIN(OsPercpuGet()->taskLockCnt, 0xF); /* taskLockCnt is 4 bits, max value = 0xF */
     frame->core.paramCount = paramCount;
 #endif
 
 #ifdef LOS_TRACE_FRAME_LR
     /* Get the linkreg from stack fp and storage to frame */
-    LOS_RecordLR(frame->linkReg, LOS_TRACE_LR_RECORD, LOS_TRACE_LR_RECORD, LOS_TRACE_LR_IGNOR);
+    LOS_RecordLR(frame->linkReg, LOS_TRACE_LR_RECORD, LOS_TRACE_LR_RECORD, LOS_TRACE_LR_IGNORE);
 #endif
 
 #ifdef LOSCFG_TRACE_FRAME_EVENT_COUNT
@@ -371,7 +371,7 @@ VOID LOS_TraceHwiFilterHookReg(TRACE_HWI_FILTER_HOOK hook)
     UINT32 intSave;
 
     TRACE_LOCK(intSave);
-    g_traceHwiFliterHook = hook;
+    g_traceHwiFilterHook = hook;
     TRACE_UNLOCK(intSave);
 }
 

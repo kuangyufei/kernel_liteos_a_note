@@ -158,7 +158,7 @@ INT32 OsShellDeinit(INT32 consoleId)
     return 0;
 }
 ///获取shell的工作目录
-CHAR *OsShellGetWorkingDirtectory(VOID)
+CHAR *OsShellGetWorkingDirectory(VOID)
 {
     CONSOLE_CB *consoleCB = OsGetConsoleByTaskID(OsCurrTaskGet()->taskID);//获取当前任务控制台
     ShellCB *shellCB = NULL;

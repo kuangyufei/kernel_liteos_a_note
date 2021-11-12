@@ -74,6 +74,8 @@ STATIC SPIN_LOCK_INIT(g_consoleSpin);///< 初始化控制台自旋锁
 #define CONSOLE_SEND_TASK_EXIT    0x04U	///< 控制台发送任务退出事件
 #define CONSOLE_SEND_TASK_RUNNING 0x10U	///< 控制台发送任务正在执行事件
 
+#define SHELL_ENTRY_NAME     "ShellEntry"
+#define SHELL_ENTRY_NAME_LEN 10
 CONSOLE_CB *g_console[CONSOLE_NUM];///< 控制台全局变量,控制台是共用的, 默认为 2个
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
@@ -372,7 +374,7 @@ STATIC INLINE VOID UserEndOfRead(CONSOLE_CB *consoleCB, struct file *filep,
 }
 ///根据VT终端标准 <ESC>[37m 为设置前景色
 enum {
-    STAT_NOMAL_KEY,	///< 普通按键
+    STAT_NORMAL_KEY,	///< 普通按键
     STAT_ESC_KEY,	///< 控制按键,只有 ESC 是
     STAT_MULTI_KEY	///< 多个按键,只有 [ 是
 };
@@ -390,22 +392,22 @@ STATIC INT32 UserShellCheckUDRL(const CHAR ch, INT32 *lastTokenType)
         }
     } else if (ch == 0x41) { /* up */
         if (*lastTokenType == STAT_MULTI_KEY) {
-            *lastTokenType = STAT_NOMAL_KEY;
+            *lastTokenType = STAT_NORMAL_KEY;
             return ret;
         }
     } else if (ch == 0x42) { /* down */
         if (*lastTokenType == STAT_MULTI_KEY) {
-            *lastTokenType = STAT_NOMAL_KEY;
+            *lastTokenType = STAT_NORMAL_KEY;
             return ret;
         }
     } else if (ch == 0x43) { /* right */
         if (*lastTokenType == STAT_MULTI_KEY) {
-            *lastTokenType = STAT_NOMAL_KEY;
+            *lastTokenType = STAT_NORMAL_KEY;
             return ret;
         }
     } else if (ch == 0x44) { /* left */
         if (*lastTokenType == STAT_MULTI_KEY) {
-            *lastTokenType = STAT_NOMAL_KEY;
+            *lastTokenType = STAT_NORMAL_KEY;
             return ret;
         }
     }
@@ -447,17 +449,16 @@ STATIC VOID StoreReadChar(CONSOLE_CB *consoleCB, char ch, INT32 readcount)
     }
 }
 ///杀死进程组
-VOID KillPgrp()
+VOID KillPgrp(UINT16 consoleId)
 {
-    INT32 consoleId;
-    LosProcessCB *process = OsCurrProcessGet();//获取当前进程
-
-    if ((process->consoleID > CONSOLE_NUM -1 ) || (process->consoleID < 0)) {
+    if ((consoleId > CONSOLE_NUM) || (consoleId <= 0)) {
         return;
     }
-
-    consoleId = process->consoleID;
-    CONSOLE_CB *consoleCB = g_console[consoleId];
+    CONSOLE_CB *consoleCB = g_console[consoleId-1];
+    /* the default of consoleCB->pgrpId is -1, may not be set yet, avoid killing all processes */
+    if (consoleCB->pgrpId < 0) {
+        return;
+    }
     (VOID)OsKillLock(consoleCB->pgrpId, SIGINT);//发送信号 SIGINT对应 键盘中断（ctrl + c）信号
 }
 ///用户使用参数buffer将控制台的buf接走
@@ -467,7 +468,7 @@ STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const stru
     INT32 ret;
     INT32 needreturn = LOS_NOK;
     CHAR ch;
-    INT32 lastTokenType = STAT_NOMAL_KEY;
+    INT32 lastTokenType = STAT_NORMAL_KEY;
 
     if (fops->read == NULL) {
         return -EFAULT;
@@ -746,7 +747,7 @@ ERROUT:
 STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
 {
     INT32 cnt;
-    size_t writen = 0;
+    size_t written = 0;
     size_t toWrite = bufLen;
     UINT32 intSave;
 
@@ -757,18 +758,18 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
     }
 #endif
     LOS_CirBufLock(&cirBufSendCB->cirBufCB, &intSave);
-    while (writen < (INT32)bufLen) {
+    while (written < (INT32)bufLen) {
         /* Transform for CR/LR mode */
-        if ((buffer[writen] == '\n') || (buffer[writen] == '\r')) {
+        if ((buffer[written] == '\n') || (buffer[written] == '\r')) {
             (VOID)LOS_CirBufWrite(&cirBufSendCB->cirBufCB, "\r", 1);
         }
 
-        cnt = LOS_CirBufWrite(&cirBufSendCB->cirBufCB, &buffer[writen], 1);
+        cnt = LOS_CirBufWrite(&cirBufSendCB->cirBufCB, &buffer[written], 1);
         if (cnt <= 0) {
             break;
         }
         toWrite -= cnt;
-        writen += cnt;
+        written += cnt;
     }
     LOS_CirBufUnlock(&cirBufSendCB->cirBufCB, intSave);
     /* Log is cached but not printed when a system exception occurs */
@@ -776,7 +777,7 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
         (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_CIRBUF_EVENT);//发送数据事件
     }
 
-    return writen;
+    return written;
 }
 ///用户任务写数据到控制台
 STATIC ssize_t ConsoleWrite(struct file *filep, const CHAR *buffer, size_t bufLen)
@@ -1466,16 +1467,32 @@ BOOL ConsoleEnable(VOID)
 
     return FALSE;
 }
+
+BOOL IsShellEntryRunning(UINT32 shellEntryId)
+{
+    LosTaskCB *taskCB;
+    if (shellEntryId == SHELL_ENTRYID_INVALID) {
+        return FALSE;
+    }
+    taskCB = OsGetTaskCB(shellEntryId);
+    return !OsTaskIsUnused(taskCB) &&
+           (strlen(taskCB->taskName) == SHELL_ENTRY_NAME_LEN &&
+            strncmp(taskCB->taskName, SHELL_ENTRY_NAME, SHELL_ENTRY_NAME_LEN) == 0);
+}
 ///任务注册控制台,每个shell任务都有属于自己的控制台
 INT32 ConsoleTaskReg(INT32 consoleID, UINT32 taskID)
 {
-    if (g_console[consoleID - 1]->shellEntryId == SHELL_ENTRYID_INVALID) {
+    UINT32 intSave;
+
+    LOS_SpinLockSave(&g_consoleSpin, &intSave);
+    if (!IsShellEntryRunning(g_console[consoleID - 1]->shellEntryId)) {
         g_console[consoleID - 1]->shellEntryId = taskID;	//ID捆绑
+        LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
         (VOID)OsSetCurrProcessGroupID(OsGetUserInitProcessID());// @notethinking 为何要在此处设置当前进程的组ID?
         return LOS_OK;
     }
-
-    return LOS_NOK;
+    LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
+    return g_console[consoleID - 1]->shellEntryId == taskID ? LOS_OK : LOS_NOK;
 }
 ///无锁方式设置串口
 BOOL SetSerialNonBlock(const CONSOLE_CB *consoleCB)

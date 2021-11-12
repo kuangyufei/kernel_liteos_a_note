@@ -45,7 +45,8 @@ template("kernel_module") {
   if (target_name != current_dir_name) {
     build_gn = rebase_path("BUILD.gn")
     cmd = "if grep -q '^\s*group\s*(\s*\"$current_dir_name\"\s*)\s*{\s*\$' $build_gn; then echo true; else echo false; fi"
-    has_current_dir_group = exec_script("//build/lite/run_shell_cmd.py", [ cmd ], "value")
+    has_current_dir_group =
+        exec_script("//build/lite/run_shell_cmd.py", [ cmd ], "value")
     if (!has_current_dir_group) {
       module_name = target_name
       group(current_dir_name) {
@@ -66,7 +67,8 @@ template("kernel_module") {
 
 template("config") {
   config(target_name) {
-    if (defined(invoker.module_switch) && !invoker.module_switch && target_name == "public") {
+    if (defined(invoker.module_switch) && !invoker.module_switch &&
+        target_name == "public") {
       not_needed(invoker, "*")
       forward_variables_from(invoker, [ "configs" ])
     } else {

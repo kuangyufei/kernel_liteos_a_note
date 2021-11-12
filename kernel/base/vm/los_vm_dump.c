@@ -97,7 +97,7 @@ INT32 OsRegionOverlapCheckUnlock(LosVmSpace *space, LosVmMapRegion *region)
         if (((region->range.base + region->range.size) > regionTemp->range.base) &&
             (region->range.base < (regionTemp->range.base + regionTemp->range.size))) {
             VM_ERR("overlap between regions:\n"
-                   "flals:%#x base:%p size:%08x space:%p\n"
+                   "flags:%#x base:%p size:%08x space:%p\n"
                    "flags:%#x base:%p size:%08x space:%p",
                    region->regionFlags, region->range.base, region->range.size, region->space,
                    regionTemp->regionFlags, regionTemp->range.base, regionTemp->range.size, regionTemp->space);
@@ -535,7 +535,7 @@ VOID OsVmPhysDump(VOID)
             PRINTK("active   anon   %d\n", seg->lruSize[VM_LRU_ACTIVE_ANON]);
             PRINTK("inactive anon   %d\n", seg->lruSize[VM_LRU_INACTIVE_ANON]);
             PRINTK("active   file   %d\n", seg->lruSize[VM_LRU_ACTIVE_FILE]);
-            PRINTK("inactice file   %d\n", seg->lruSize[VM_LRU_INACTIVE_FILE]);
+            PRINTK("inactive file   %d\n", seg->lruSize[VM_LRU_INACTIVE_FILE]);
         }
     }
     PRINTK("\n\rpmm pages: total = %u, used = %u, free = %u\n",

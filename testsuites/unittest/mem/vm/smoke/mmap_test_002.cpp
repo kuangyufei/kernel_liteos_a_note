@@ -39,7 +39,7 @@ static int CheckedMmap(int prot, int flags, int fd)
     int ret;
 
     if (pageSize < 0) {
-        printf("err: mmap size invaild\n");
+        printf("err: mmap size invalid\n");
         return -1;
     }
     p = mmap(NULL, pageSize, prot, flags, fd, 0);
@@ -64,11 +64,11 @@ static int Testcase(void)
     ICUNIT_ASSERT_NOT_EQUAL(shmfd, -1, shmfd);
 
     if (pageSize <= 0) {
-        printf("err: malloc size invaild\n");
+        printf("err: malloc size invalid\n");
         return -1;
     }
     if (pageSize <= 0) {
-        printf("err: malloc size invaild\n");
+        printf("err: malloc size invalid\n");
         return -1;
     }
     buf = (char *)malloc(pageSize);

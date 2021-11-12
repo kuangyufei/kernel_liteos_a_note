@@ -43,7 +43,8 @@
 
 /* ------------ local macroes ------------ */
 #ifdef LOSCFG_FS_VFS
-#define BBOX_DIR_MODE 0777
+#define BBOX_DIR_MODE 0750
+#define BBOX_FILE_MODE 0640
 #endif
 
 /* ------------ local prototypes ------------ */
@@ -69,7 +70,7 @@ int FullWriteFile(const char *filePath, const char *buf, size_t bufSize, int isA
         BBOX_PRINT_ERR("log path [%s] isn't ready to be written!\n", LOSCFG_BLACKBOX_LOG_ROOT_PATH);
         return -1;
     }
-    fd = open(filePath, O_CREAT | O_RDWR | (isAppend ? O_APPEND : O_TRUNC), 0644);
+    fd = open(filePath, O_CREAT | O_RDWR | (isAppend ? O_APPEND : O_TRUNC), BBOX_FILE_MODE);
     if (fd < 0) {
         BBOX_PRINT_ERR("Create file [%s] failed, fd: %d!\n", filePath, fd);
         return -1;

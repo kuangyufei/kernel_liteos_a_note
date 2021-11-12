@@ -47,7 +47,7 @@ static UINT32 TestCase(VOID)
         status = WEXITSTATUS(status);
         ICUNIT_ASSERT_EQUAL(status, 15, status); /* 15, set priority for test */
 
-        ret = nice(-40); /* -40, set invaild priority for test */
+        ret = nice(-40); /* -40, set invalid priority for test */
         ICUNIT_ASSERT_EQUAL(ret, -1, ret);
         ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
     }

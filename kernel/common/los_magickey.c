@@ -119,14 +119,14 @@ STATIC VOID OsMagicMemCheck(VOID)
 }
 #endif
 
-INT32 CheckMagicKey(CHAR key)
+INT32 CheckMagicKey(CHAR key, UINT16 consoleId)
 {
 #ifdef LOSCFG_ENABLE_MAGICKEY //魔法键开关
     INT32 i;
     STATIC UINT32 magicKeySwitch = 0;
 
     if (key == 0x03) { /* ctrl + c */
-        KillPgrp();
+        KillPgrp(consoleId);
         return 0;
     } else if (key == 0x12) { /* ctrl + r */
         magicKeySwitch = ~magicKeySwitch;

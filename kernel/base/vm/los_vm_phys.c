@@ -160,23 +160,7 @@ VOID OsVmPhysInit(VOID)
     }
 }
 ///将页框挂入空闲链表,分配物理页框从空闲链表里拿
-STATIC VOID OsVmPhysFreeListAdd(LosVmPage *page, UINT8 order)
-{
-    struct VmPhysSeg *seg = NULL;
-    struct VmFreeList *list = NULL;
 
-    if (page->segID >= VM_PHYS_SEG_MAX) {
-        LOS_Panic("The page segment id(%d) is invalid\n", page->segID);
-    }
-
-    page->order = order;// page记录伙伴算法的组序号
-    seg = &g_vmPhysSeg[page->segID];//先找到所属段
-
-    list = &seg->freeList[order];//找到对应List
-    LOS_ListTailInsert(&list->node, &page->node);//将page节点挂入链表
-    list->listCnt++;//链表节点总数++
-}
-///同上
 STATIC VOID OsVmPhysFreeListAddUnsafe(LosVmPage *page, UINT8 order)
 {
     struct VmPhysSeg *seg = NULL;
@@ -209,22 +193,7 @@ STATIC VOID OsVmPhysFreeListDelUnsafe(LosVmPage *page)
     LOS_ListDelete(&page->node);		//将自己从链表上摘除
     page->order = VM_LIST_ORDER_MAX;	//告诉系统物理页框已不在空闲链表上, 用于OsVmPhysPagesSpiltUnsafe的断言
 }
-///同上
-STATIC VOID OsVmPhysFreeListDel(LosVmPage *page)
-{
-    struct VmPhysSeg *seg = NULL;
-    struct VmFreeList *list = NULL;
 
-    if ((page->segID >= VM_PHYS_SEG_MAX) || (page->order >= VM_LIST_ORDER_MAX)) {
-        LOS_Panic("The page segment id(%u) or order(%u) is invalid\n", page->segID, page->order);
-    }
-
-    seg = &g_vmPhysSeg[page->segID];
-    list = &seg->freeList[page->order];
-    list->listCnt--;
-    LOS_ListDelete(&page->node);
-    page->order = VM_LIST_ORDER_MAX;
-}
 
 /**
  * @brief  本函数很像卖猪肉的,拿一大块肉剁,先把多余的放回到小块肉堆里去.
@@ -397,14 +366,14 @@ VOID OsVmPhysPagesFree(LosVmPage *page, UINT8 order)
             if ((buddyPage == NULL) || (buddyPage->order != order)) {//页框所在组块必须要对应
                 break;
             }
-            OsVmPhysFreeListDel(buddyPage);//注意buddypage是连续的物理页框 例如order=2时,2^2=4页就是一个块组 |_|_|_|_| 
+            OsVmPhysFreeListDelUnsafe(buddyPage);//注意buddypage是连续的物理页框 例如order=2时,2^2=4页就是一个块组 |_|_|_|_| 
             order++;
             pa &= ~(VM_ORDER_TO_PHYS(order) - 1);
             page = OsVmPhysToPage(pa, page->segID);
         } while (order < VM_LIST_ORDER_MAX - 1);
     }
 
-    OsVmPhysFreeListAdd(page, order);//伙伴算法 空闲节点增加
+    OsVmPhysFreeListAddUnsafe(page, order);//伙伴算法 空闲节点增加
 }
 ///连续的释放物理页框, 如果8页连在一块是一起释放的
 VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
@@ -584,7 +553,7 @@ VOID OsPhysSharePageCopy(PADDR_T oldPaddr, PADDR_T *newPaddr, LosVmPage *newPage
 
     oldPage = LOS_VmPageGet(oldPaddr);//由物理地址得到页框
     if (oldPage == NULL) {
-        VM_ERR("invalid paddr %p", oldPaddr);
+        VM_ERR("invalid oldPaddr %p", oldPaddr);
         return;
     }
 

@@ -6,11 +6,11 @@ config KERNEL_SMP
       This option will enable smp support of LiteOS.
 
 config KERNEL_SMP_CORE_NUM
-    int "Muti-processing Core Numbers"
+    int "Multi-processing Core Numbers"
     default 2
     depends on KERNEL_SMP
     help
-      This represents the number of muti-processing cores.
+      This represents the number of multi-processing cores.
 
 config KERNEL_SMP_LOCKDEP
     bool "Enable Spinlock Lockdep Check"
@@ -38,7 +38,7 @@ config KERNEL_SCHED_STATISTICS
     default n
     depends on KERNEL_SMP
     help
-      This option will enable schedulder statistics.
+      This option will enable scheduler statistics.
 
 config KERNEL_MMU
     bool "Enable MMU"

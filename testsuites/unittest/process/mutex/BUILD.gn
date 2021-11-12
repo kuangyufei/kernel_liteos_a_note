@@ -70,7 +70,6 @@ sources_full = [
   "full/pthread_mutex_test_023.cpp",
   "full/pthread_mutex_test_024.cpp",
   "full/pthread_mutex_test_025.cpp",
-
 ]
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {

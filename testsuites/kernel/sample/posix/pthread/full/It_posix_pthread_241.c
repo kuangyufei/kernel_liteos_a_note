@@ -43,7 +43,7 @@ static VOID *PthreadF01(VOID *argument)
 
     g_testCount++;
 
-    ret = pthread_setcancelstate(-100, NULL); // -100, test for invaild param.
+    ret = pthread_setcancelstate(-100, NULL); // -100, test for invalid param.
     ICUNIT_TRACK_EQUAL(ret, EINVAL, ret);
 
     pthread_exit(0);

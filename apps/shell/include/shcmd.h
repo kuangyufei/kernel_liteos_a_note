@@ -53,7 +53,7 @@ typedef struct {
 } CmdKeyLink;
 
 #define NEED_NEW_LINE(timesPrint, lineCap) ((timesPrint) % (lineCap) == 0)
-#define SCREEN_IS_FULL(timesPrint, lineCap) ((timesPrint) >= ((lineCap) * DEFAULT_SCREEN_HEIGNT))
+#define SCREEN_IS_FULL(timesPrint, lineCap) ((timesPrint) >= ((lineCap) * DEFAULT_SCREEN_HEIGHT))
 
 extern unsigned int OsCmdExec(CmdParsed *cmdParsed, char *cmdStr);
 extern unsigned int OsCmdKeyShift(const char *cmdKey, char *cmdOut, unsigned int size);
@@ -62,7 +62,7 @@ extern void OsShellCmdPush(const char *string, CmdKeyLink *cmdKeyLink);
 extern void OsShellHistoryShow(unsigned int value, ShellCB *shellCB);
 extern unsigned int OsShellKeyInit(ShellCB *shellCB);
 extern void OsShellKeyDeInit(CmdKeyLink *cmdKeyLink);
-extern int OsShellSetWorkingDirtectory(const char *dir, size_t len);
+extern int OsShellSetWorkingDirectory(const char *dir, size_t len);
 
 #ifdef __cplusplus
 #if __cplusplus

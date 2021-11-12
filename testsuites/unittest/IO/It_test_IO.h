@@ -55,6 +55,7 @@
 #include "pwd.h"
 #include "sys/uio.h"
 #include "syslog.h"
+#include "sys/epoll.h"
 
 extern int CloseRmAllFile(int fd[], char filePathName[][50], int cnt);
 extern char *g_ioTestPath;
@@ -118,6 +119,8 @@ extern VOID IO_TEST_CONFSTR_001(void);
 extern VOID IO_TEST_NL_LANGINFO_001(VOID);
 extern VOID IO_TEST_STRCASECMP_L_001(VOID);
 extern VOID IO_TEST_STRCASECMP_L_002(VOID);
+extern VOID IO_TEST_STRNCASECMP_L_001(VOID);
+extern VOID IO_TEST_STRNCASECMP_L_002(VOID);
 extern VOID IO_TEST_DUPLOCALE_001(void);
 extern VOID IO_TEST_NL_LANGINFO_l_001(VOID);
 extern VOID IO_TEST_DNGETTEXT_001(VOID);
@@ -127,13 +130,14 @@ extern VOID IO_TEST_DCNGETTEXT_002(VOID);
 extern VOID IO_TEST_DCGETTEXT_001(VOID);
 extern VOID IO_TEST_DCGETTEXT_002(VOID);
 extern VOID IO_TEST_GETTEXT_001(VOID);
-extern VOID IO_TEST_PPOLL_001(void);
-extern VOID IO_TEST_PPOLL_002(void);
 extern VOID IO_TEST_PSELECT_001(void);
 extern VOID IO_TEST_PSELECT_002(void);
 extern VOID IO_TEST_STRFMON_L_001(VOID);
 extern VOID IO_TEST_STRFMON_L_002(VOID);
 extern VOID IO_TEST_PPOLL_001(VOID);
 extern VOID IO_TEST_PPOLL_002(VOID);
+extern VOID IO_TEST_PPOLL_003(VOID);
+extern VOID IO_TEST_EPOLL_001(VOID);
+extern VOID IO_TEST_EPOLL_002(VOID);
 
 #endif

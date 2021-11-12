@@ -66,7 +66,7 @@ static UINT32 Testcase(VOID)
     ret = pthread_setschedparam(newTh, 0, &param);
     ICUNIT_ASSERT_EQUAL(ret, EINVAL, ret);
 
-    ret = pthread_setschedparam(newTh, 4, &param); // 4, test for invaild param.
+    ret = pthread_setschedparam(newTh, 4, &param); // 4, test for invalid param.
     ICUNIT_ASSERT_EQUAL(ret, EINVAL, ret);
 
     ret = pthread_setschedparam(newTh, SCHED_RR, NULL);
@@ -103,13 +103,13 @@ static UINT32 Testcase(VOID)
     ret = pthread_setschedparam(newTh, SCHED_RR, &param);
     ICUNIT_ASSERT_EQUAL(ret, ESRCH, ret);
 
-    ret = pthread_setschedparam(newTh + 9, SCHED_RR, &param); // 9, test for invaild param.
+    ret = pthread_setschedparam(newTh + 9, SCHED_RR, &param); // 9, test for invalid param.
     ICUNIT_ASSERT_EQUAL(ret, ESRCH, ret);
 
     ret = pthread_getschedparam(newTh, &policy, &param2);
     ICUNIT_ASSERT_EQUAL(ret, ESRCH, ret);
 
-    ret = pthread_getschedparam(newTh + 8, &policy, &param2); // 8, test for invaild param.
+    ret = pthread_getschedparam(newTh + 8, &policy, &param2); // 8, test for invalid param.
     ICUNIT_ASSERT_EQUAL(ret, ESRCH, ret);
 
     ret = pthread_attr_destroy(&attr);

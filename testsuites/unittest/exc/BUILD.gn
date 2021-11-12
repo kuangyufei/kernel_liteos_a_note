@@ -49,9 +49,7 @@ sources_smoke = [
   "smoke/it_test_exc_005.cpp",
 ]
 
-sources_full = [
-  "full/it_test_fexecve_001.cpp",
-]
+sources_full = [ "full/it_test_fexecve_001.cpp" ]
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
   unittest("liteos_a_exc_unittest_door") {

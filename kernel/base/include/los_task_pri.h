@@ -44,7 +44,9 @@
 #ifdef LOSCFG_KERNEL_CPUP
 #include "los_cpup_pri.h"
 #endif
-
+#ifdef LOSCFG_KERNEL_LITEIPC
+#include "hm_liteipc.h"
+#endif
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
@@ -356,8 +358,7 @@ typedef struct {
     UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
                                              a specific child process, or any child process \n 以什么样的方式等待子进程结束(OS_TASK_WAIT_PROCESS | OS_TASK_WAIT_GID | ..) */
 #ifdef LOSCFG_KERNEL_LITEIPC
-    LOS_DL_LIST     msgListHead;		///< 消息队列头结点,上面挂的都是任务要读的消息
-    BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];///< 访问图,指的是task之间是否能访问的标识,LOSCFG_BASE_CORE_TSK_LIMIT 为任务池总数
+    IpcTaskInfo     *ipcTaskInfo;
 #endif
 #ifdef LOSCFG_KERNEL_PERF
     UINTPTR         pc;

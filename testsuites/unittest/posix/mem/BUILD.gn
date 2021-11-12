@@ -46,8 +46,7 @@ sources_smoke = [
   "smoke/It_posix_mem_003.cpp",
 ]
 
-sources_full = [
-]
+sources_full = []
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
   unittest("liteos_a_posix_mem_unittest_door") {

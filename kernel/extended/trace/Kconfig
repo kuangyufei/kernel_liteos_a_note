@@ -14,7 +14,7 @@ config TRACE_FRAME_CORE_MSG
     depends on TRACE_MSG_EXTEND
 
 config TRACE_FRAME_EVENT_COUNT
-    bool "Record event count, which indicate the sequence of happend events"
+    bool "Record event count, which indicate the sequence of happened events"
     default n
     depends on TRACE_MSG_EXTEND
 
@@ -23,7 +23,7 @@ config TRACE_FRAME_MAX_PARAMS
     default 3
     depends on KERNEL_TRACE
     help
-      Make sure the max value is bigger than the number defined by each #MODULE#_#TYPE#_PARMAS in los_trace.h, e.g. TASK_SWITCH_PARAMS
+      Make sure the max value is bigger than the number defined by each #MODULE#_#TYPE#_PARAMS in los_trace.h, e.g. TASK_SWITCH_PARAMS
 
 choice
     prompt "Trace work mode"

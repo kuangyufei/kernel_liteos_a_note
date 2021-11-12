@@ -586,12 +586,12 @@ LITE_OS_SEC_TEXT VOID OsTaskResourcesToFree(LosTaskCB *taskCB)
         LOS_ASSERT(!(processCB->vmSpace == NULL));
         UINT32 ret = OsUnMMap(processCB->vmSpace, (UINTPTR)mapBase, mapSize);
         if ((ret != LOS_OK) && (mapBase != 0) && !(processCB->processStatus & OS_PROCESS_STATUS_INIT)) {
-            PRINT_ERR("process(%u) ummap user task(%u) stack failed! mapbase: 0x%x size :0x%x, error: %d\n",
+            PRINT_ERR("process(%u) unmmap user task(%u) stack failed! mapbase: 0x%x size :0x%x, error: %d\n",
                       processCB->processID, taskCB->taskID, mapBase, mapSize, ret);
         }
 
 #ifdef LOSCFG_KERNEL_LITEIPC
-        LiteIpcRemoveServiceHandle(taskCB);
+        LiteIpcRemoveServiceHandle(taskCB->taskID);
 #endif
     }
 #endif
@@ -633,9 +633,6 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskCBInitBase(LosTaskCB *taskCB,
     taskCB->currCpu      = OS_TASK_INVALID_CPUID;
     taskCB->cpuAffiMask  = (initParam->usCpuAffiMask) ?
                             initParam->usCpuAffiMask : LOSCFG_KERNEL_CPU_MASK;
-#endif
-#ifdef LOSCFG_KERNEL_LITEIPC
-    LOS_ListInit(&(taskCB->msgListHead));//初始化 liteipc的消息链表 
 #endif
     taskCB->policy = (initParam->policy == LOS_SCHED_FIFO) ? LOS_SCHED_FIFO : LOS_SCHED_RR;//调度模式
     taskCB->taskStatus = OS_TASK_STATUS_INIT;

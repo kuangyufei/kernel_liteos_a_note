@@ -88,8 +88,8 @@ typedef struct {
     }
 /// 是否需要新开一行
 #define NEED_NEW_LINE(timesPrint, lineCap) ((timesPrint) % (lineCap) == 0)
-#define SCREEN_IS_FULL(timesPrint, lineCap) ((timesPrint) >= ((lineCap) * DEFAULT_SCREEN_HEIGNT))
-/// 是否全屏显示
+#define SCREEN_IS_FULL(timesPrint, lineCap) ((timesPrint) >= ((lineCap) * DEFAULT_SCREEN_HEIGHT))
+
 extern UINT32 OsCmdInit(VOID);
 extern CmdModInfo *OsCmdInfoGet(VOID);
 extern UINT32 OsCmdExec(CmdParsed *cmdParsed, CHAR *cmdStr);

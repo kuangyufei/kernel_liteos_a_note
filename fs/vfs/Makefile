@@ -36,6 +36,7 @@ $(LITEOSTOPDIR)/fs/vfs/mount.c \
 $(LITEOSTOPDIR)/fs/vfs/vnode.c \
 $(LITEOSTOPDIR)/fs/vfs/path_cache.c \
 $(LITEOSTOPDIR)/fs/vfs/vnode_hash.c \
+$(LITEOSTOPDIR)/fs/vfs/epoll/fs_epoll.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_close.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_dup2.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_dup.c \

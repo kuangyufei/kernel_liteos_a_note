@@ -195,8 +195,7 @@ UINT32 OsGetSystemStatus(VOID)
 
 STATIC INT32 OsDecodeFS(UINT32 bitsFS)
 {
-    switch (bitsFS)
-    {
+    switch (bitsFS) {
     case 0x05: /* 0b00101 */
     case 0x07: /* 0b00111 */
         PrintExcInfo("Translation fault, %s\n", (bitsFS & 0x2) ? "page" : "section");
@@ -234,17 +233,13 @@ STATIC INT32 OsDecodeDataFSR(UINT32 regDFSR)
     UINT32 bitWnR = GET_WNR(regDFSR); /* WnR bit[11] */
     UINT32 bitsFS = GET_FS(regDFSR);  /* FS bits[4]+[3:0] */
 
-    if (bitWnR)
-    {
+    if (bitWnR) {
         PrintExcInfo("Abort caused by a write instruction. ");
-    }
-    else
-    {
+    } else {
         PrintExcInfo("Abort caused by a read instruction. ");
     }
 
-    if (bitsFS == 0x01)
-    { /* 0b00001 */
+    if (bitsFS == 0x01) { /* 0b00001 */
         PrintExcInfo("Alignment fault.\n");
         return ret;
     }
@@ -271,62 +266,52 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
     UINT32 ret;
 
     PRINT_INFO("page fault entry!!!\n");
-    if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU)
-    {
+    if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) {
         return LOS_ERRNO_VM_NOT_FOUND;
     }
 #if defined(LOSCFG_KERNEL_SMP) && defined(LOSCFG_DEBUG_VERSION)
     BOOL irqEnable = !(LOS_SpinHeld(&g_taskSpin) && (OsPercpuGet()->taskLockCnt != 0));
-    if (irqEnable)
-    {
+    if (irqEnable) {
         ArchIrqEnable();
-    }
-    else
-    {
+    } else {
         PrintExcInfo("[ERR][%s] may be held scheduler lock when entering [%s] on cpu [%u]\n",
                      OsCurrTaskGet()->taskName, __FUNCTION__, ArchCurrCpuid());
     }
 #else
     ArchIrqEnable();
 #endif
-    if (excType == OS_EXCEPT_PREFETCH_ABORT)
-    {
+    if (excType == OS_EXCEPT_PREFETCH_ABORT) {
         instructionFault = TRUE;
-    }
-    else
-    {
+    } else {
         write = !!BIT_GET(fsr, WNR_BIT);
     }
 
     fsrFlag = ((BIT_GET(fsr, FSR_FLAG_OFFSET_BIT) ? 0b10000 : 0) | BITS_GET(fsr, FSR_BITS_BEGIN_BIT, 0));
-    switch (fsrFlag)
-    {
-    case 0b00101:
-    /* translation fault */
-    case 0b00111:
-    /* translation fault */
-    case 0b01101:
-    /* permission fault */
-    case 0b01111:
-    {
+    switch (fsrFlag) {
+        case 0b00101:
+        /* translation fault */
+        case 0b00111:
+        /* translation fault */
+        case 0b01101:
         /* permission fault */
-        BOOL user = (frame->regCPSR & CPSR_MODE_MASK) == CPSR_MODE_USR;
-        pfFlags |= write ? VM_MAP_PF_FLAG_WRITE : 0;
-        pfFlags |= user ? VM_MAP_PF_FLAG_USER : 0;
-        pfFlags |= instructionFault ? VM_MAP_PF_FLAG_INSTRUCTION : 0;
-        pfFlags |= VM_MAP_PF_FLAG_NOT_PRESENT;
-        OsSigIntLock();
-        ret = OsVmPageFaultHandler(far, pfFlags, frame);
-        OsSigIntUnlock();
-        break;
-    }
-    default:
-        ret = LOS_ERRNO_VM_NOT_FOUND;
-        break;
+        case 0b01111: {
+        /* permission fault */
+            BOOL user = (frame->regCPSR & CPSR_MODE_MASK) == CPSR_MODE_USR;
+            pfFlags |= write ? VM_MAP_PF_FLAG_WRITE : 0;
+            pfFlags |= user ? VM_MAP_PF_FLAG_USER : 0;
+            pfFlags |= instructionFault ? VM_MAP_PF_FLAG_INSTRUCTION : 0;
+            pfFlags |= VM_MAP_PF_FLAG_NOT_PRESENT;
+            OsSigIntLock();
+            ret = OsVmPageFaultHandler(far, pfFlags, frame);
+            OsSigIntUnlock();
+            break;
+        }
+        default:
+            ret = LOS_ERRNO_VM_NOT_FOUND;
+            break;
     }
 #if defined(LOSCFG_KERNEL_SMP) && defined(LOSCFG_DEBUG_VERSION)
-    if (irqEnable)
-    {
+    if (irqEnable) {
         ArchIrqDisable();
     }
 #else
@@ -383,23 +368,19 @@ STATIC VADDR_T OsGetTextRegionBase(LosVmMapRegion *region, LosProcessCB *runProc
     LosVmMapRegion *curRegion = NULL;
     LosVmMapRegion *lastRegion = NULL;
 
-    if ((region == NULL) || (runProcess == NULL))
-    {
+    if ((region == NULL) || (runProcess == NULL)) {
         return 0;
     }
 
-    if (!LOS_IsRegionFileValid(region))
-    {
+    if (!LOS_IsRegionFileValid(region)) {
         return region->range.base;
     }
 
     lastRegion = region;
-    do
-    {
+    do {
         curRegion = lastRegion;
         lastRegion = LOS_RegionFind(runProcess->vmSpace, curRegion->range.base - 1);
-        if ((lastRegion == NULL) || !LOS_IsRegionFileValid(lastRegion))
-        {
+        if ((lastRegion == NULL) || !LOS_IsRegionFileValid(lastRegion)) {
             goto DONE;
         }
         curVnode = curRegion->unTypeData.rf.vnode;
@@ -408,8 +389,7 @@ STATIC VADDR_T OsGetTextRegionBase(LosVmMapRegion *region, LosProcessCB *runProc
 
 DONE:
 #ifdef LOSCFG_KERNEL_DYNLOAD
-    if (curRegion->range.base == EXEC_MMAP_BASE)
-    {
+    if (curRegion->range.base == EXEC_MMAP_BASE) {
         return 0;
     }
 #endif
@@ -553,39 +533,29 @@ STATIC VOID OsDumpExcVaddrRegion(LosVmSpace *space, LosVmMapRegion *region)
 
     numPages = region->range.size >> PAGE_SHIFT;
     mmuFlag = TRUE;
-    for (pageCount = 0, startPaddr = 0, startVaddr = 0, i = 0; i < numPages; i++)
-    {
+    for (pageCount = 0, startPaddr = 0, startVaddr = 0, i = 0; i < numPages; i++) {
         pageBase = region->range.base + i * PAGE_SIZE;
         addr = 0;
-        if (LOS_ArchMmuQuery(&space->archMmu, pageBase, &addr, NULL) != LOS_OK)
-        {
-            if (startPaddr == 0)
-            {
+        if (LOS_ArchMmuQuery(&space->archMmu, pageBase, &addr, NULL) != LOS_OK) {
+            if (startPaddr == 0) {
                 continue;
             }
-        }
-        else if (startPaddr == 0)
-        {
+        } else if (startPaddr == 0) {
             startVaddr = pageBase;
             startPaddr = addr;
             oldAddr = addr;
             pageCount++;
-            if (numPages > 1)
-            {
+            if (numPages > 1) {
                 continue;
             }
-        }
-        else if (addr == (oldAddr + PAGE_SIZE))
-        {
+        } else if (addr == (oldAddr + PAGE_SIZE)) {
             pageCount++;
             oldAddr = addr;
-            if (i < (numPages - 1))
-            {
+            if (i < (numPages - 1)) {
                 continue;
             }
         }
-        if (mmuFlag == TRUE)
-        {
+        if (mmuFlag == TRUE) {
             PrintExcInfo("       uvaddr       kvaddr       mapped size\n");
             mmuFlag = FALSE;
         }
@@ -607,40 +577,36 @@ STATIC VOID OsDumpProcessUsedMemRegion(LosProcessCB *runProcess, LosVmSpace *run
     RB_SCAN_SAFE(&runspace->regionRbTree, pstRbNodeTemp, pstRbNodeNext)
     region = (LosVmMapRegion *)pstRbNodeTemp;
     PrintExcInfo("%3u -> regionBase: 0x%08x regionSize: 0x%08x\n", count, region->range.base, region->range.size);
-    if (vmmFlags == OS_EXC_VMM_ALL_REGION)
-    {
-        OsDumpExcVaddrRegion(runspace, region);
-    }
+        if (vmmFlags == OS_EXC_VMM_ALL_REGION) {
+            OsDumpExcVaddrRegion(runspace, region);
+        }
     count++;
     (VOID) OsRegionOverlapCheckUnlock(runspace, region);
     RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNodeTemp, pstRbNodeNext)
 }
 ///dump 进程使用的内存节点
-STATIC VOID OsDumpProcessUsedMemNode(UINT16 vmmFalgs)
+STATIC VOID OsDumpProcessUsedMemNode(UINT16 vmmFlags)
 {
     LosProcessCB *runProcess = NULL;
     LosVmSpace *runspace = NULL;
 
     runProcess = OsCurrProcessGet();
-    if (runProcess == NULL)
-    {
+    if (runProcess == NULL) {
         return;
     }
 
-    if (!OsProcessIsUserMode(runProcess))
-    {
+    if (!OsProcessIsUserMode(runProcess)) {
         return;
     }
 
     PrintExcInfo("\n   ******Current process %u vmm regions: ******\n", runProcess->processID);
 
     runspace = runProcess->vmSpace;
-    if (!runspace)
-    {
+    if (!runspace) {
         return;
     }
 
-    OsDumpProcessUsedMemRegion(runProcess, runspace, vmmFalgs);
+    OsDumpProcessUsedMemRegion(runProcess, runspace, vmmFlags);
     return;
 }
 #endif
@@ -655,22 +621,18 @@ VOID OsDumpContextMem(const ExcContext *excBufAddr)
 {
     UINT32 count = 0;
     const UINT32 *excReg = NULL;
-    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE)
-    {
+    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
         return;
     }
 
-    for (excReg = &(excBufAddr->R0); count <= DUMPREGS; excReg++, count++)
-    {
-        if (IS_VALID_ADDR(*excReg))
-        {
+    for (excReg = &(excBufAddr->R0); count <= DUMPREGS; excReg++, count++) {
+        if (IS_VALID_ADDR(*excReg)) {
             PrintExcInfo("\ndump mem around R%u:%p", count, (*excReg));
             OsDumpMemByte(DUMPSIZE, ((*excReg) - (DUMPSIZE >> 1)));
         }
     }
 
-    if (IS_VALID_ADDR(excBufAddr->SP))
-    {
+    if (IS_VALID_ADDR(excBufAddr->SP)) {
         PrintExcInfo("\ndump mem around SP:%p", excBufAddr->SP);
         OsDumpMemByte(DUMPSIZE, (excBufAddr->SP - (DUMPSIZE >> 1)));
     }
@@ -703,13 +665,10 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 
 #ifdef LOSCFG_KERNEL_SMP
     LOS_SpinLock(&g_excSerializerSpin);
-    if (g_nextExcWaitCpu != INVALID_CPUID)
-    {
+    if (g_nextExcWaitCpu != INVALID_CPUID) {
         g_currHandleExcCpuID = g_nextExcWaitCpu;
         g_nextExcWaitCpu = INVALID_CPUID;
-    }
-    else
-    {
+    } else {
         g_currHandleExcCpuID = INVALID_CPUID;
     }
     g_currHandleExcPID = OS_INVALID_VALUE;
@@ -737,15 +696,12 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
     /* An exception was raised by a task that is not the current main thread during the exit process of
      * the current process.
      */
-    if ((runProcess->processStatus & OS_PROCESS_FLAG_EXIT) && (runProcess->threadGroupID != runTask->taskID))
-    {
+    if ((runProcess->processStatus & OS_PROCESS_FLAG_EXIT) && (runProcess->threadGroupID != runTask->taskID)) {
         SCHEDULER_UNLOCK(intSave);
         /* Exception handling All operations should be kept prior to that operation */
         OsExcRestore();
         OsTaskToExit(runTask, OS_PRO_EXIT_OK);
-    }
-    else
-    {
+    } else {
         SCHEDULER_UNLOCK(intSave);
 
         /* Exception handling All operations should be kept prior to that operation */
@@ -766,32 +722,27 @@ STATIC INLINE BOOL IsValidFP(UINTPTR regFP, UINTPTR start, UINTPTR end, vaddr_t 
 {
     VADDR_T kvaddr = regFP;
 
-    if (!((regFP > start) && (regFP < end) && IS_ALIGNED(regFP, sizeof(CHAR *))))
-    {
+    if (!((regFP > start) && (regFP < end) && IS_ALIGNED(regFP, sizeof(CHAR *)))) {
         return FALSE;
     }
 
 #ifdef LOSCFG_KERNEL_VM
     PADDR_T paddr;
-    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE)
-    {
+    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
         LosProcessCB *runProcess = OsCurrProcessGet();
         LosVmSpace *runspace = runProcess->vmSpace;
-        if (runspace == NULL)
-        {
+        if (runspace == NULL) {
             return FALSE;
         }
 
-        if (LOS_ArchMmuQuery(&runspace->archMmu, regFP, &paddr, NULL) != LOS_OK)
-        {
+        if (LOS_ArchMmuQuery(&runspace->archMmu, regFP, &paddr, NULL) != LOS_OK) {
             return FALSE;
         }
 
         kvaddr = (PADDR_T)(UINTPTR)LOS_PaddrToKVaddr(paddr);
     }
 #endif
-    if (vaddr != NULL)
-    {
+    if (vaddr != NULL) {
         *vaddr = kvaddr;
     }
 
@@ -851,8 +802,7 @@ STATIC INLINE BOOL FindSuitableStack(UINTPTR regFP, UINTPTR *start, UINTPTR *end
     }
 
 FOUND:
-    if (found == TRUE)
-    {
+    if (found == TRUE) {
         *start = stackStart;
         *end = stackEnd;
         *vaddr = kvaddr;
@@ -863,8 +813,7 @@ FOUND:
 
 BOOL OsGetUsrIpInfo(UINTPTR ip, IpInfo *info)
 {
-    if (info == NULL)
-    {
+    if (info == NULL) {
         return FALSE;
     }
 #ifdef LOSCFG_KERNEL_VM
@@ -873,8 +822,7 @@ BOOL OsGetUsrIpInfo(UINTPTR ip, IpInfo *info)
     LosVmMapRegion *region = NULL;
     LosProcessCB *runProcess = OsCurrProcessGet();
 
-    if (LOS_IsUserAddress((VADDR_T)ip) == FALSE)
-    {
+    if (LOS_IsUserAddress((VADDR_T)ip) == FALSE) {
         info->ip = ip;
         name = "kernel";
         ret = FALSE;
@@ -882,8 +830,7 @@ BOOL OsGetUsrIpInfo(UINTPTR ip, IpInfo *info)
     }
 
     region = LOS_RegionFind(runProcess->vmSpace, (VADDR_T)ip);
-    if (region == NULL)
-    {
+    if (region == NULL) {
         info->ip = ip;
         name = "invalid";
         ret = FALSE;
@@ -893,14 +840,12 @@ BOOL OsGetUsrIpInfo(UINTPTR ip, IpInfo *info)
     info->ip = ip - OsGetTextRegionBase(region, runProcess);
     name = OsGetRegionNameOrFilePath(region);
     ret = TRUE;
-    if (strcmp(name, "/lib/libc.so") != 0)
-    {
+    if (strcmp(name, "/lib/libc.so") != 0) {
         PRINT_ERR("ip = 0x%x, %s\n", info->ip, name);
     }
 END:
     info->len = strlen(name);
-    if (strncpy_s(info->f_path, REGION_PATH_MAX, name, REGION_PATH_MAX - 1) != EOK)
-    {
+    if (strncpy_s(info->f_path, REGION_PATH_MAX, name, REGION_PATH_MAX - 1) != EOK) {
         info->f_path[0] = '\0';
         info->len = 0;
         PRINT_ERR("copy f_path failed, %s\n", name);
@@ -921,10 +866,8 @@ UINT32 BackTraceGet(UINTPTR regFP, IpInfo *callChain, UINT32 maxDepth)
     BOOL ret;
     VADDR_T kvaddr;
 
-    if (FindSuitableStack(regFP, &stackStart, &stackEnd, &kvaddr) == FALSE)
-    {
-        if (callChain == NULL)
-        {
+    if (FindSuitableStack(regFP, &stackStart, &stackEnd, &kvaddr) == FALSE) {
+        if (callChain == NULL) {
             PrintExcInfo("traceback error fp = 0x%x\n", regFP);
         }
         return 0;
@@ -937,24 +880,19 @@ UINT32 BackTraceGet(UINTPTR regFP, IpInfo *callChain, UINT32 maxDepth)
      * will still be stored and updated. In that case we needs to find the right position of frame pointer.
      */
     tmpFP = *(UINTPTR *)(UINTPTR)kvaddr;
-    if (IsValidFP(tmpFP, stackStart, stackEnd, NULL) == TRUE)
-    {
+    if (IsValidFP(tmpFP, stackStart, stackEnd, NULL) == TRUE) {
         backFP = tmpFP;
-        if (callChain == NULL)
-        {
+        if (callChain == NULL) {
             PrintExcInfo("traceback fp fixed, trace using   fp = 0x%x\n", backFP);
         }
     }
 
-    while (IsValidFP(backFP, stackStart, stackEnd, &kvaddr) == TRUE)
-    {
+    while (IsValidFP(backFP, stackStart, stackEnd, &kvaddr) == TRUE) {
         tmpFP = backFP;
 #ifdef LOSCFG_COMPILER_CLANG_LLVM
         backFP = *(UINTPTR *)(UINTPTR)kvaddr;
-        if (IsValidFP(tmpFP + POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE)
-        {
-            if (callChain == NULL)
-            {
+        if (IsValidFP(tmpFP + POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
+            if (callChain == NULL) {
                 PrintExcInfo("traceback backLR check failed, backLP: 0x%x\n", tmpFP + POINTER_SIZE);
             }
             return 0;
@@ -962,10 +900,8 @@ UINT32 BackTraceGet(UINTPTR regFP, IpInfo *callChain, UINT32 maxDepth)
         backLR = *(UINTPTR *)(UINTPTR)kvaddr;
 #else
         backLR = *(UINTPTR *)(UINTPTR)kvaddr;
-        if (IsValidFP(tmpFP - POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE)
-        {
-            if (callChain == NULL)
-            {
+        if (IsValidFP(tmpFP - POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
+            if (callChain == NULL) {
                 PrintExcInfo("traceback backFP check failed, backFP: 0x%x\n", tmpFP - POINTER_SIZE);
             }
             return 0;
@@ -974,29 +910,22 @@ UINT32 BackTraceGet(UINTPTR regFP, IpInfo *callChain, UINT32 maxDepth)
 #endif
         IpInfo info = {0};
         ret = OsGetUsrIpInfo((VADDR_T)backLR, &info);
-        if (callChain == NULL)
-        {
+        if (callChain == NULL) {
             PrintExcInfo("traceback %u -- lr = 0x%x    fp = 0x%x ", count, backLR, backFP);
-            if (ret)
-            {
+            if (ret) {
 #ifdef LOSCFG_KERNEL_VM
                 PrintExcInfo("lr in %s --> 0x%x\n", info.f_path, info.ip);
 #else
                 PrintExcInfo("\n");
 #endif
-            }
-            else
-            {
+            } else {
                 PrintExcInfo("\n");
             }
-        }
-        else
-        {
-            (VOID) memcpy_s(&callChain[count], sizeof(IpInfo), &info, sizeof(IpInfo));
+        } else {
+            (VOID)memcpy_s(&callChain[count], sizeof(IpInfo), &info, sizeof(IpInfo));
         }
         count++;
-        if ((count == maxDepth) || (backFP == tmpFP))
-        {
+        if ((count == maxDepth) || (backFP == tmpFP)) {
             break;
         }
     }
@@ -1147,21 +1076,18 @@ VOID OsPrefetchAbortExcHandleEntry(ExcContext *excBufAddr)
 
     excBufAddr->PC -= 4; /* lr in prefetch abort is pc + 4 */
 
-    if (gdbhw_hook(excBufAddr, OS_EXCEPT_PREFETCH_ABORT))
-    {
+    if (gdbhw_hook(excBufAddr, OS_EXCEPT_PREFETCH_ABORT)) {
         return;
     }
 
-    if (g_excHook != NULL)
-    {
+    if (g_excHook != NULL) {
         far = OsArmReadIfar();                                     //far 为CP15的 C6寄存器 详见:https://blog.csdn.net/kuangyufei/article/details/108994081
         fsr = OsArmReadIfsr();                                     //fsr 为CP15的 C5寄存器
         g_excHook(OS_EXCEPT_PREFETCH_ABORT, excBufAddr, far, fsr); //回调函数,详见: OsExcHook
     }
-    while (1)
-    {
-    }
+    while (1) {}
 }
+
 ///数据中止异常处理函数，由汇编调用 见于 los_hw_exc.s
 VOID OsDataAbortExcHandleEntry(ExcContext *excBufAddr)
 {
@@ -1170,20 +1096,16 @@ VOID OsDataAbortExcHandleEntry(ExcContext *excBufAddr)
 
     excBufAddr->PC -= 8; /* lr in data abort is pc + 8 */
 
-    if (gdbhw_hook(excBufAddr, OS_EXCEPT_DATA_ABORT))
-    {
+    if (gdbhw_hook(excBufAddr, OS_EXCEPT_DATA_ABORT)) {
         return;
     }
 
-    if (g_excHook != NULL)
-    {
+    if (g_excHook != NULL) {
         far = OsArmReadDfar();
         fsr = OsArmReadDfsr();
         g_excHook(OS_EXCEPT_DATA_ABORT, excBufAddr, far, fsr); ////回调函数,详见: OsExcHook
     }
-    while (1)
-    {
-    }
+    while (1) {}
 }
 #endif /* __LINUX_ARM_ARCH__ */
 #endif /* LOSCFG_GDB */
@@ -1196,10 +1118,8 @@ STATIC VOID OsAllCpuStatusOutput(VOID)
 {
     UINT32 i;
 
-    for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++)
-    {
-        switch (g_percpu[i].excFlag)
-        {
+    for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
+        switch (g_percpu[i].excFlag) {
         case CPU_RUNNING: //处于运行状态
             PrintExcInfo("cpu%u is running.\n", i);
             break;
@@ -1221,20 +1141,16 @@ STATIC VOID WaitAllCpuStop(UINT32 cpuID)
     UINT32 i;
     UINT32 time = 0;
 
-    while (time < EXC_WAIT_TIME)
-    {
-        for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++)
-        {
-            if ((i != cpuID) && (g_percpu[i].excFlag != CPU_HALT))
-            {
+    while (time < EXC_WAIT_TIME) {
+        for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
+            if ((i != cpuID) && (g_percpu[i].excFlag != CPU_HALT)) {
                 LOS_Mdelay(EXC_WAIT_INTER);
                 time += EXC_WAIT_INTER;
                 break;
             }
         }
         /* Other CPUs are all haletd or in the exc. */
-        if (i == LOSCFG_KERNEL_CORE_NUM)
-        {
+        if (i == LOSCFG_KERNEL_CORE_NUM) {
             break;
         }
     }
@@ -1243,19 +1159,16 @@ STATIC VOID WaitAllCpuStop(UINT32 cpuID)
 
 STATIC VOID OsWaitOtherCoresHandleExcEnd(UINT32 currCpuID)
 {
-    while (1)
-    {
+    while (1) {
         LOS_SpinLock(&g_excSerializerSpin);
-        if ((g_currHandleExcCpuID == INVALID_CPUID) || (g_currHandleExcCpuID == currCpuID))
-        {
+        if ((g_currHandleExcCpuID == INVALID_CPUID) || (g_currHandleExcCpuID == currCpuID)) {
             g_currHandleExcCpuID = currCpuID;
             g_currHandleExcPID = OsCurrProcessGet()->processID;
             LOS_SpinUnlock(&g_excSerializerSpin);
             break;
         }
 
-        if (g_nextExcWaitCpu == INVALID_CPUID)
-        {
+        if (g_nextExcWaitCpu == INVALID_CPUID) {
             g_nextExcWaitCpu = currCpuID;
         }
         LOS_SpinUnlock(&g_excSerializerSpin);
@@ -1272,15 +1185,14 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
     LOCKDEP_CLEAR_LOCKS();
 
     LOS_SpinLock(&g_excSerializerSpin);
-    /* Only the current nuclear anomaly */
-    if (g_currHandleExcCpuID == INVALID_CPUID)
+    /* Only the current CPU anomaly */
+    if (g_currHandleExcCpuID == INVALID_CPUID) {
     {
         g_currHandleExcCpuID = currCpuID;
         g_currHandleExcPID = OsCurrProcessGet()->processID;
         LOS_SpinUnlock(&g_excSerializerSpin);
 #ifndef LOSCFG_SAVE_EXCINFO
-        if (g_excFromUserMode[currCpuID] == FALSE)
-        {
+        if (g_excFromUserMode[currCpuID] == FALSE) {
             target = (UINT32)(OS_MP_CPU_ALL & ~CPUID_TO_AFFI_MASK(currCpuID));
             HalIrqSendIpi(target, LOS_MP_IPI_HALT); //向目标CPU发送停止消息
         }
@@ -1458,8 +1370,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
         }
 
 #ifdef LOSCFG_SAVE_EXCINFO
-        if (func != NULL)
-        {
+        if (func != NULL) {
             PrintExcInfo("Be sure flash space bigger than GetExcInfoIndex():0x%x\n", GetExcInfoIndex());
             OsSysStateSave(&intCount, &lockCount);
             func(GetRecordAddr(), GetRecordSpace(), 0, GetExcInfoBuf());
@@ -1470,18 +1381,16 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
     SystemRebootFunc rebootHook = OsGetRebootHook();
-    if ((OsSystemExcIsReset() == TRUE) && (rebootHook != NULL))
-    {
+    if ((OsSystemExcIsReset() == TRUE) && (rebootHook != NULL)) {
         LOS_Mdelay(3000); /* 3000: System dead, delay 3 seconds after system restart */
         rebootHook();
     }
 #endif
+
 #ifdef LOSCFG_BLACKBOX
     BBoxNotifyError(EVENT_PANIC, MODULE_SYSTEM, "Crash in kernel", 1);
 #endif
-    while (1)
-    {
-    }
+    while (1) {}
 }
 
 __attribute__((noinline)) VOID LOS_Panic(const CHAR *fmt, ...)
@@ -1491,8 +1400,7 @@ __attribute__((noinline)) VOID LOS_Panic(const CHAR *fmt, ...)
     UartVprintf(fmt, ap);
     va_end(ap);
     __asm__ __volatile__("swi 0"); //触发断异常
-    while (1)
-        ;
+    while (1);
 }
 
 /* stack protector */
@@ -1513,13 +1421,11 @@ VOID LOS_RecordLR(UINTPTR *LR, UINT32 LRSize, UINT32 recordCount, UINT32 jumpCou
     LosTaskCB *taskCB = NULL;
     UINTPTR framePtr, tmpFramePtr, linkReg;
 
-    if (LR == NULL)
-    {
+    if (LR == NULL) {
         return;
     }
     /* if LR array is not enough,just record LRSize. */
-    if (LRSize < recordCount)
-    {
+    if (LRSize < recordCount) {
         recordCount = LRSize;
     }
 
@@ -1528,19 +1434,16 @@ VOID LOS_RecordLR(UINTPTR *LR, UINT32 LRSize, UINT32 recordCount, UINT32 jumpCou
     stackEnd = stackStart + taskCB->stackSize;
 
     framePtr = Get_Fp();
-    while ((framePtr > stackStart) && (framePtr < stackEnd) && IS_ALIGNED(framePtr, sizeof(CHAR *)))
-    {
+    while ((framePtr > stackStart) && (framePtr < stackEnd) && IS_ALIGNED(framePtr, sizeof(CHAR *))) {
         tmpFramePtr = framePtr;
 #ifdef LOSCFG_COMPILER_CLANG_LLVM
         linkReg = *(UINTPTR *)(tmpFramePtr + sizeof(UINTPTR));
 #else
         linkReg = *(UINTPTR *)framePtr;
 #endif
-        if (index >= jumpCount)
-        {
+        if (index >= jumpCount) {
             LR[count++] = linkReg;
-            if (count == recordCount)
-            {
+            if (count == recordCount) {
                 break;
             }
         }
@@ -1553,8 +1456,7 @@ VOID LOS_RecordLR(UINTPTR *LR, UINT32 LRSize, UINT32 recordCount, UINT32 jumpCou
     }
 
     /* if linkReg is not enough,clean up the last of the effective LR as the end. */
-    if (count < recordCount)
-    {
+    if (count < recordCount) {
         LR[count] = 0;
     }
 }

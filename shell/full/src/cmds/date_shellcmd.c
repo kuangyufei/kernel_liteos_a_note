@@ -232,7 +232,7 @@ STATIC INT32 OsViewFileTime(const CHAR *filename)
     CHAR *fullpath = NULL;
     INT32 ret;
     CHAR buf[BUFFER_SIZE];
-    CHAR *shellWorkingDirectory = OsShellGetWorkingDirtectory();
+    CHAR *shellWorkingDirectory = OsShellGetWorkingDirectory();
 
     ret = vfs_normalize_path(shellWorkingDirectory, filename, &fullpath);
     if (ret < 0) {

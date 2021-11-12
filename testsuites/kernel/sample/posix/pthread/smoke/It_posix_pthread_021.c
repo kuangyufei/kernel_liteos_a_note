@@ -43,10 +43,10 @@ static UINT32 Testcase(VOID)
     int oldstate;
     int oldstype;
 
-    ret = pthread_setcancelstate(2, &oldstate); // 2, test for invaild param.
+    ret = pthread_setcancelstate(2, &oldstate); // 2, test for invalid param.
     ICUNIT_ASSERT_EQUAL(ret, EINVAL, ret);
 
-    ret = pthread_setcancelstate(3, &oldstate); // 3, test for invaild param.
+    ret = pthread_setcancelstate(3, &oldstate); // 3, test for invalid param.
     ICUNIT_ASSERT_EQUAL(ret, EINVAL, ret);
 
     ret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -56,10 +56,10 @@ static UINT32 Testcase(VOID)
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     ICUNIT_ASSERT_EQUAL(oldstate, PTHREAD_CANCEL_ENABLE, oldstate);
 
-    ret = pthread_setcanceltype(2, &oldstype); // 2, test for invaild param.
+    ret = pthread_setcanceltype(2, &oldstype); // 2, test for invalid param.
     ICUNIT_ASSERT_EQUAL(ret, EINVAL, ret);
 
-    ret = pthread_setcanceltype(3, &oldstype); // 3, test for invaild param.
+    ret = pthread_setcanceltype(3, &oldstype); // 3, test for invalid param.
     ICUNIT_ASSERT_EQUAL(ret, EINVAL, ret);
 
     ret = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);

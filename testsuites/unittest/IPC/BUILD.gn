@@ -41,8 +41,7 @@ sources_entry = [
   "ipc_test.cpp",
 ]
 
-sources_smoke = [
-]
+sources_smoke = []
 
 sources_full = [
   "full/IPC_test_mkfifoat_001.cpp",

@@ -34,7 +34,6 @@
 
 #include "sys/ioctl.h"
 #include "los_config.h"
-#include "los_task_pri.h"
 #include "los_typedef.h"
 #include "los_vm_map.h"
 
@@ -93,8 +92,13 @@ typedef struct {
 typedef struct {
     IpcPool pool;	///< ipc池
     UINT32 ipcTaskID;	//ipc任务ID
+    LOS_DL_LIST ipcUsedNodelist;
     UINT32 access[LOSCFG_BASE_CORE_TSK_LIMIT];	///< 访问的任务数组
 } ProcIpcInfo;
+typedef struct {
+    LOS_DL_LIST     msgListHead;
+    BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];
+} IpcTaskInfo;
 
 typedef enum {
     OBJ_FD,
@@ -201,17 +205,13 @@ typedef struct {
 /* init liteipc driver */
 extern UINT32 OsLiteIpcInit(VOID);
 
-/* init process liteipc memory pool */
-extern UINT32 LiteIpcPoolInit(ProcIpcInfo *ipcInfo);
-
 /* reinit process liteipc memory pool, using in fork situation */
-extern UINT32 LiteIpcPoolReInit(ProcIpcInfo *childIpcInfo, const ProcIpcInfo *parentIpcInfo);
-
-/* delete process liteipc memory pool */
-extern VOID LiteIpcPoolDelete(ProcIpcInfo *ipcInfo, UINT32 processID);
+extern ProcIpcInfo *LiteIpcPoolReInit(const ProcIpcInfo *parentIpcInfo);
 
 /* remove service handle and send death notify */
-extern VOID LiteIpcRemoveServiceHandle(LosTaskCB *taskCB);
+extern VOID LiteIpcRemoveServiceHandle(UINT32 taskID);
+
+extern UINT32 LiteIpcPoolDestroy(UINT32 processID);
 
 #ifdef __cplusplus
 #if __cplusplus

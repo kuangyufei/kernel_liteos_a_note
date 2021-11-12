@@ -30,79 +30,83 @@
  */
 
 #include "It_test_IO.h"
-#include "time.h"
 #include "signal.h"
-#include <poll.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <strings.h>
+#include "pthread.h"
 
-#define BUF_LEN            20
-#define MAX_SCAN_FDSET     10      /* define poll's listened FD set's size */
-#define POLL_WAIT_TIMEOUT  10*1000 /* ms */
+const int BUF_SIZE = 128;
+const int DELAY_TIME = 200;
 
-extern int ppoll(struct pollfd *fds, nfds_t nfds, const struct timespec *timeout, const sigset_t *sigmask);
-void work_ppoll(int fd)
+static int pipeFdPpoll[2];
+static int g_step = 1;
+static char strBuf[] = "hello world.";
+static struct pollfd pfd;
+
+static void *pthread_01(void *arg)
 {
-    int ret = 0;
-    int i = 0;
-    char recv_buf[BUF_LEN];
-    sigset_t sigset;
-    struct timespec t;
-    struct pollfd scan_fdset[MAX_SCAN_FDSET];
-    int scan_fdset_num = 10;
-    int count = 5;
-
-    bzero(recv_buf, BUF_LEN);
-    sigemptyset(&sigset);
-    sigaddset(&sigset, SIGALRM);        /* add SIGALRM to sigset */
-    sigaddset(&sigset, SIGUSR1);        /* add SIGUSR1 to sigset */
-    bzero(&t, sizeof(struct timespec));
-    t.tv_sec = 10;
-    t.tv_nsec = 0;
-    bzero(scan_fdset, sizeof(struct pollfd) * MAX_SCAN_FDSET);
-    scan_fdset[0].fd = fd;
-
-    /* attention:in the book《UNIX网络编程第一卷》P162 metions:POLLERR,POLLHUP,POLLNVAL\
-       those error signals can not be set in events. */
-    /* they will return in revents,while the proper condition happens. */
-    scan_fdset[0].events = POLLOUT;  /* set the signal needed to be listened:POLLOUT/POLLIN */
-
-    /* set other elements in the array as invalid. */
-    for (i = 1; i < MAX_SCAN_FDSET; i++) {
-        /* scan_fdset[i].fd = -1; */
-        scan_fdset[i].fd = fd;
-        scan_fdset[i].events = POLLOUT;  /* set the signal needed to be listened. */
+    int retVal;
+    char buf[BUF_SIZE];
+    const struct timespec timeout = {10000, 0};
+    
+    /* 执行ppoll监视文件描述符 */
+    while (g_step < 4) { /* 4, 4th step */
+        usleep(DELAY_TIME);
     }
-    /* scan_fdset_num = 1; */ /* 表示当前的scan_fdset[] 数组中只使用前面1 个元素存放需要监听的扫描符 */
-
-    while (count--) {
-       ret = ppoll(scan_fdset, scan_fdset_num, &t, &sigset);
-
-       for (i = 0; i < MAX_SCAN_FDSET; i++) {
-           if (scan_fdset[i].revents & POLLOUT) {
-               TEST_PRINT("[INFO]%s:%d,%s,fd have signal!\n", __FILE__, __LINE__, __func__);
-               ret = read(fd, recv_buf, BUF_LEN);
-               if (-1 == ret) {
-                   TEST_PRINT("[INFO]%s:%d,%s,read error!\n", __FILE__, __LINE__, __func__);
-                   continue;
-               }
-               TEST_PRINT("[INFO]%s:%d,%s,recv_buf=%s\n", __FILE__, __LINE__, __func__, recv_buf);
-           }
-           TEST_PRINT("[INFO]%s:%d,%s,scan_fdset[i].revents=%d\n", __FILE__, __LINE__, __func__, scan_fdset[i].revents);
-       }
+    g_step++;
+    retVal = ppoll(&pfd, 1, &timeout, NULL);
+    ICUNIT_ASSERT_NOT_EQUAL_NULL(retVal, -1, retVal);
+    
+    /* 判断revents */
+    if (pfd.revents & POLLIN) {
+        memset_s(buf, sizeof(buf), 0, sizeof(buf));
+        retVal = read(pfd.fd, buf, BUF_SIZE);
+        ICUNIT_ASSERT_NOT_EQUAL_NULL(retVal, -1, retVal);
+        retVal = strcmp(strBuf, buf);
+        ICUNIT_ASSERT_EQUAL_NULL(retVal, 0, retVal);
     }
+    
+    while (g_step < 5) { /* 5, 5th step */
+        usleep(DELAY_TIME);
+    }
+    pthread_exit(NULL);
 }
 
 static UINT32 testcase(VOID)
 {
-    int fd;
-    char *filename = FILEPATH_775;
+    int retVal;
+    pthread_t tid;
+    
+    /* 建立管道 */
+    while (g_step < 1) {
+        usleep(DELAY_TIME);
+    }
+    retVal = pipe(pipeFdPpoll);
+    ICUNIT_ASSERT_NOT_EQUAL(retVal, -1, retVal);
+    g_step++;
+    
+    /* 设置pfd */
+    pfd.fd = pipeFdPpoll[0];
+    pfd.events = POLLIN;
+    
+    /* 向管道写入数据 */
+    while (g_step < 2) { /* 2, 2nd step */
+        usleep(DELAY_TIME);
+    }
+    sleep(1);
+    
+    retVal = write(pipeFdPpoll[1], "hello world.", sizeof(strBuf));
+    ICUNIT_ASSERT_NOT_EQUAL(retVal, -1, retVal);
+    g_step++;
 
-    fd = open(filename, O_RDWR);
-    TEST_PRINT("[INFO]%s:%d,%s,fd=%d\n", __FILE__, __LINE__, __func__, fd);
-    work_ppoll(fd);
+    /* 开辟线程执行 ppoll */
+    while (g_step < 3) { /* 3, 3rd step */
+        usleep(DELAY_TIME);
+    }
+    retVal = pthread_create(&tid, NULL, pthread_01, NULL);
+    ICUNIT_ASSERT_EQUAL(retVal, 0, retVal);
+    g_step++;
 
+    pthread_join(tid, NULL);
+    
     return LOS_OK;
 }
 

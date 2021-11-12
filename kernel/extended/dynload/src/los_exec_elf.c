@@ -54,7 +54,7 @@ STATIC INT32 OsGetRealPath(const CHAR *fileName, CHAR *buf, UINT32 maxLen)
     UINT32 len, workPathLen, newLen;
 
     if (access(fileName, F_OK) < 0) {
-        workingDirectory = OsShellGetWorkingDirtectory();
+        workingDirectory = OsShellGetWorkingDirectory();
         if (workingDirectory == NULL) {
             goto ERR_FILE;
         }

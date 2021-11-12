@@ -30,7 +30,6 @@
 import("//build/lite/config/test.gni")
 import("../config.gni")
 
-
 common_include_dirs = [
   "//third_party/googletest/googletest/include",
   "../common/include",
@@ -55,8 +54,7 @@ sources_smoke = [
   "smoke/util_test_007.cpp",
 ]
 
-sources_full = [
-]
+sources_full = []
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
   unittest("liteos_a_util_unittest_door") {

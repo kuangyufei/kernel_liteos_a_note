@@ -386,15 +386,16 @@ VOID OsSchedUpdateExpireTime(UINT64 startTime)
 
 STATIC INLINE UINT32 OsSchedCalculateTimeSlice(UINT16 proPriority, UINT16 priority)
 {
-    UINT32 ratTime, readTasks;
+    UINT32 retTime;
+    UINT32 readyTasks;
 
     SchedQueue *queueList = &g_sched->queueList[proPriority];
-    readTasks = queueList->readyTasks[priority];
-    if (readTasks > OS_SCHED_READY_MAX) {
+    readyTasks = queueList->readyTasks[priority];
+    if (readyTasks > OS_SCHED_READY_MAX) {
         return OS_SCHED_TIME_SLICES_MIN;
     }
-    ratTime = ((OS_SCHED_READY_MAX - readTasks) * OS_SCHED_TIME_SLICES_DIFF) / OS_SCHED_READY_MAX;
-    return (ratTime + OS_SCHED_TIME_SLICES_MIN);
+    retTime = ((OS_SCHED_READY_MAX - readyTasks) * OS_SCHED_TIME_SLICES_DIFF) / OS_SCHED_READY_MAX;
+    return (retTime + OS_SCHED_TIME_SLICES_MIN);
 }
 
 STATIC INLINE VOID OsSchedPriQueueEnHead(UINT32 proPriority, LOS_DL_LIST *priqueueItem, UINT32 priority)
@@ -980,7 +981,7 @@ STATIC INLINE VOID OsSchedSwitchProcess(LosProcessCB *runProcess, LosProcessCB *
     OsCurrProcessSet(newProcess);
 }
 
-STATIC VOID OsSchedTaskSwicth(LosTaskCB *runTask, LosTaskCB *newTask)
+STATIC VOID OsSchedTaskSwitch(LosTaskCB *runTask, LosTaskCB *newTask)
 {
     UINT64 endTime;
 
@@ -1063,7 +1064,7 @@ VOID OsSchedIrqEndCheckNeedSched(VOID)
 
         LosTaskCB *newTask = OsGetTopTask();
         if (runTask != newTask) {
-            OsSchedTaskSwicth(runTask, newTask);
+            OsSchedTaskSwitch(runTask, newTask);
             LOS_SpinUnlock(&g_taskSpin);
             return;
         }
@@ -1092,7 +1093,7 @@ VOID OsSchedResched(VOID)
         return;
     }
 
-    OsSchedTaskSwicth(runTask, newTask);
+    OsSchedTaskSwitch(runTask, newTask);
 }
 
 VOID LOS_Schedule(VOID)

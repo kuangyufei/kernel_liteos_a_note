@@ -71,6 +71,8 @@ static void FillFdInfo(struct SeqBuf *seqBuf, struct filelist *fileList, unsigne
                 name = "(timer)";
             } else if (sysFd < (MQUEUE_FD_OFFSET + CONFIG_NQUEUE_DESCRIPTORS)) {
                 name = "(mqueue)";
+            } else if (sysFd < (EPOLL_FD_OFFSET + CONFIG_EPOLL_DESCRIPTORS)) {
+                name = "(epoll)";
             } else {
                 name = "(unknown)";
             }

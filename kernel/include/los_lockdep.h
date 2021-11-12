@@ -43,7 +43,7 @@ typedef struct Spinlock SPIN_LOCK_S;
 #define MAX_LOCK_DEPTH  16U //最大的锁深度
 
 enum LockDepErrType {
-    LOCKDEP_SUCEESS = 0,
+    LOCKDEP_SUCCESS = 0,
     LOCKDEP_ERR_DOUBLE_LOCK,
     LOCKDEP_ERR_DEAD_LOCK,
     LOCKDEP_ERR_UNLOCK_WITOUT_LOCK,

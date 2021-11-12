@@ -41,9 +41,7 @@ sources_entry = [
   "mem_shm_test.cpp",
 ]
 
-sources_smoke = [
-  "smoke/shm_test_011.cpp",
-]
+sources_smoke = [ "smoke/shm_test_011.cpp" ]
 
 sources_full = [
   "full/shm_test_001.cpp",

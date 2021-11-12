@@ -78,21 +78,21 @@ typedef struct {
 /*! 进程控制块*/
 typedef struct ProcessCB {
     CHAR                 processName[OS_PCB_NAME_LEN]; /**< Process name | 进程名称 */
-    UINT32               processID;                    /**< process ID = leader thread ID | 进程ID,由进程池分配,范围[0,64] */
-    UINT16               processStatus;                /**< [15:4] process Status; [3:0] The number of threads currently
+    UINT32               processID;                    /**< Process ID = leader thread ID | 进程ID,由进程池分配,范围[0,64] */
+    UINT16               processStatus;                /**< [15:4] Process Status; [3:0] The number of threads currently
                                                             running in the process | 这里设计很巧妙.用一个变量表示了两层逻辑 数量和状态,点赞!从这里也可以看出一个进程可以有多个正在运行的任务*/
-    UINT16               priority;                     /**< process priority | 进程优先级*/
+    UINT16               priority;                     /**< Process priority | 进程优先级*/
     UINT16               consoleID;                    /**< The console id of task belongs | 任务的控制台id归属 */
     UINT16               processMode;                  /**< Kernel Mode:0; User Mode:1; | 模式指定为内核还是用户进程 */
     UINT16               readyTaskNum;                 /**< The number of ready tasks in the current process */
     UINT32               parentProcessID;              /**< Parent process ID | 父进程ID*/
-    UINT32               exitCode;                     /**< process exit status | 进程退出状态码*/
+    UINT32               exitCode;                     /**< Process exit status | 进程退出状态码*/
     LOS_DL_LIST          pendList;                     /**< Block list to which the process belongs | 进程所在的阻塞列表,进程因阻塞挂入相应的链表.*/
-    LOS_DL_LIST          childrenList;                 /**< my children process list | 孩子进程都挂到这里,形成双循环链表*/
-    LOS_DL_LIST          exitChildList;                /**< my exit children process list | 要退出的孩子进程链表，白发人要送黑发人.*/
-    LOS_DL_LIST          siblingList;                  /**< linkage in my parent's children list | 兄弟进程链表, 56个民族是一家,来自同一个父进程.*/
+    LOS_DL_LIST          childrenList;                 /**< Children process list | 孩子进程都挂到这里,形成双循环链表*/
+    LOS_DL_LIST          exitChildList;                /**< Exit children process list | 要退出的孩子进程链表，白发人要送黑发人.*/
+    LOS_DL_LIST          siblingList;                  /**< Linkage in parent's children list | 兄弟进程链表, 56个民族是一家,来自同一个父进程.*/
     ProcessGroup         *group;                       /**< Process group to which a process belongs | 所属进程组*/
-    LOS_DL_LIST          subordinateGroupList;         /**< linkage in my group list | 进程组员链表*/
+    LOS_DL_LIST          subordinateGroupList;         /**< Linkage in group list | 进程组员链表*/
     UINT32               threadGroupID;                /**< Which thread group , is the main thread ID of the process */
     LOS_DL_LIST          threadSiblingList;            /**< List of threads under this process | 进程的线程(任务)列表 */
     volatile UINT32      threadNumber; /**< Number of threads alive under this process | 此进程下的活动线程数*/
@@ -101,10 +101,10 @@ typedef struct ProcessCB {
 #ifdef LOSCFG_KERNEL_SMP
     UINT32               timerCpu;     /**< CPU core number of this task is delayed or pended | 统计各线程被延期或阻塞的时间*/
 #endif
-    UINTPTR              sigHandler;   /**< signal handler | 信号处理函数,处理如 SIGSYS 等信号*/
-    sigset_t             sigShare;     /**< signal share bit | 信号共享位 sigset_t是个64位的变量,对应64种信号*/
+    UINTPTR              sigHandler;   /**< Signal handler | 信号处理函数,处理如 SIGSYS 等信号*/
+    sigset_t             sigShare;     /**< Signal share bit | 信号共享位 sigset_t是个64位的变量,对应64种信号*/
 #ifdef LOSCFG_KERNEL_LITEIPC
-    ProcIpcInfo         ipcInfo;       /**< memory pool for lite ipc | 用于进程间通讯的虚拟设备文件系统,设备装载点为 /dev/lite_ipc*/
+    ProcIpcInfo         *ipcInfo;       /**< Memory pool for lite ipc | 用于进程间通讯的虚拟设备文件系统,设备装载点为 /dev/lite_ipc*/
 #endif
 #ifdef LOSCFG_KERNEL_VM
     LosVmSpace          *vmSpace;       /**< VMM space for processes | 虚拟空间,描述进程虚拟内存的数据结构，linux称为内存描述符 */
@@ -126,7 +126,7 @@ typedef struct ProcessCB {
 #endif
     mode_t               umask;///< umask(user file-creatiopn mode mask)为用户文件创建掩码，是创建文件或文件夹时默认权限的基础。
 #ifdef LOSCFG_KERNEL_CPUP
-    OsCpupBase           processCpup; /**< Process cpu usage | 进程占用CPU情况统计*/
+    OsCpupBase           *processCpup; /**< Process cpu usage | 进程占用CPU情况统计*/
 #endif
     struct rlimit        *resourceLimit;
 } LosProcessCB;

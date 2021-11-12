@@ -235,7 +235,7 @@ STATIC UINT32 OsSemInfoOutput(size_t semID)
         return LOS_OK;
     } else {
         if (GET_SEM_INDEX(semID) >= LOSCFG_BASE_IPC_SEM_LIMIT) {
-            PRINTK("\nInvalid semphore id!\n");
+            PRINTK("\nInvalid semaphore id!\n");
             return LOS_OK;
         }
 
@@ -244,7 +244,7 @@ STATIC UINT32 OsSemInfoOutput(size_t semID)
         (VOID)memcpy_s(&semNode, sizeof(LosSemCB), semCB, sizeof(LosSemCB));
         SCHEDULER_UNLOCK(intSave);
         if ((semNode.semID != semID) || (semNode.semStat != OS_SEM_USED)) {
-            PRINTK("\nThe semphore is not in use!\n");
+            PRINTK("\nThe semaphore is not in use!\n");
             return LOS_OK;
         }
 
@@ -252,7 +252,7 @@ STATIC UINT32 OsSemInfoOutput(size_t semID)
         PRINTK("   0x%08x      0x%u\n", semNode.semID, semNode.semCount);
 
         if (LOS_ListEmpty(&semNode.semList)) {
-            PRINTK("No task is pended on this semphore!\n");
+            PRINTK("No task is pended on this semaphore!\n");
             return LOS_OK;
         } else {
             OsSemPendedTaskNamePrint(semCB);

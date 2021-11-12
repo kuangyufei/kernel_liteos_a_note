@@ -29,6 +29,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "syscall_pub.h"
 #include "mqueue.h"
 #include <errno.h>
 #include <sys/types.h>
@@ -36,6 +37,7 @@
 #include "time_posix.h"
 #include "user_copy.h"
 #include "los_signal.h"
+#include "los_process_pri.h"
 #include "los_strncpy_from_user.h"
 #include "fs/file.h"
 
@@ -287,8 +289,14 @@ int SysSigAction(int sig, const sigaction_t *restrict sa, sigaction_t *restrict 
  */
 int SysSigprocMask(int how, const sigset_t_l *restrict setl, sigset_t_l *restrict oldl, size_t sigsetsize)
 {
-    /* Let nxsig_procmask do all of the work */
-    return OsSigprocMask(how, setl, oldl);
+    CHECK_ASPACE(setl, sizeof(sigset_t_l));
+    CHECK_ASPACE(oldl, sizeof(sigset_t_l));
+    CPY_FROM_USER(setl);
+    CPY_FROM_USER(oldl);
+    /* Let OsSigprocMask do all of the work */
+    int ret = OsSigprocMask(how, setl, oldl);
+    CPY_TO_USER(oldl);
+    return ret;
 }
 ///系统调用之向进程发送信号
 int SysKill(pid_t pid, int sig)

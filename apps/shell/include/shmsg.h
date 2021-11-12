@@ -43,8 +43,13 @@ extern "C" {
 #define SHELL_ENTRY_STACKSIZE   0x1000
 #define SHELL_TASK_STACKSIZE    0x3000
 
-#define SHELL_EXEC_COMMAND          "exec "
-#define SHELL_EXEC_COMMAND_BYTES    5
+#define SHELL_EXEC_COMMAND          "exec"
+#define SHELL_EXEC_COMMAND_BYTES    4
+#define CMD_EXEC_COMMAND            SHELL_EXEC_COMMAND" "
+#define CMD_EXEC_COMMAND_BYTES      (SHELL_EXEC_COMMAND_BYTES+1)
+#define CMD_EXIT_COMMAND            "exit"
+#define CMD_EXIT_COMMAND_BYTES      4
+#define CMD_EXIT_CODE_BASE_DEC      10
 
 #define CONSOLE_IOC_MAGIC   'c'
 #define CONSOLE_CONTROL_REG_USERTASK _IO(CONSOLE_IOC_MAGIC, 7)
@@ -57,6 +62,7 @@ extern "C" {
 typedef void (*OutputFunc)(const char *fmt, ...);
 extern int ShellTaskInit(ShellCB *shellCB);
 extern int ShellEntryInit(ShellCB *shellCB);
+extern void ChildExec(const char *cmdName, char *const paramArray[]);
 extern void ShellCmdLineParse(char c, OutputFunc outputFunc, ShellCB *shellCB);
 extern int ShellNotify(ShellCB *shellCB);
 

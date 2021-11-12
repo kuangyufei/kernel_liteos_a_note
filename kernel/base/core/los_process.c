@@ -419,10 +419,16 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 #endif
 
 #ifdef LOSCFG_KERNEL_LITEIPC
-    if (OsProcessIsUserMode(processCB)) {//当为用户进程
-        LiteIpcPoolDelete(&(processCB->ipcInfo), processCB->processID);
-        (VOID)memset_s(&(processCB->ipcInfo), sizeof(ProcIpcInfo), 0, sizeof(ProcIpcInfo));
-    }
+    (VOID)LiteIpcPoolDestroy(processCB->processID);
+#endif
+
+#ifdef LOSCFG_KERNEL_CPUP
+    UINT32 intSave;
+    OsCpupBase *processCpup = processCB->processCpup;
+    SCHEDULER_LOCK(intSave);
+    processCB->processCpup = NULL;
+    SCHEDULER_UNLOCK(intSave);
+    (VOID)LOS_MemFree(m_aucSysMem1, processCpup);
 #endif
 
     if (processCB->resourceLimit != NULL) {
@@ -717,6 +723,13 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, c
     }//在鸿蒙内核态进程只有kprocess 和 kidle 两个 
 #endif
 
+#ifdef LOSCFG_KERNEL_CPUP
+    processCB->processCpup = (OsCpupBase *)LOS_MemAlloc(m_aucSysMem1, sizeof(OsCpupBase));
+    if (processCB->processCpup == NULL) {
+        return LOS_ENOMEM;
+    }
+    (VOID)memset_s(processCB->processCpup, sizeof(OsCpupBase), 0, sizeof(OsCpupBase));
+#endif
 #ifdef LOSCFG_SECURITY_VID
     status_t status = VidMapListInit(processCB);
     if (status != LOS_OK) {
@@ -813,16 +826,6 @@ STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const C
     if (ret != LOS_OK) {
         goto EXIT;
     }
-
-#ifdef LOSCFG_KERNEL_LITEIPC
-    if (OsProcessIsUserMode(processCB)) {//是否在用户模式
-        ret = LiteIpcPoolInit(&(processCB->ipcInfo));//IPC池初始化
-        if (ret != LOS_OK) {//异常处理
-            ret = LOS_ENOMEM;
-            goto EXIT;
-        }
-    }
-#endif
 
 #ifdef LOSCFG_FS_VFS
     processCB->files = alloc_files();//分配进程的文件的管理器
@@ -1517,10 +1520,7 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
     }
 
 #ifdef LOSCFG_KERNEL_LITEIPC
-    ret = LiteIpcPoolInit(&(processCB->ipcInfo));
-    if (ret != LOS_OK) {
-        return LOS_NOK;
-    }
+    (VOID)LiteIpcPoolDestroy(processCB->processID);
 #endif
 
     processCB->sigHandler = 0;
@@ -1913,9 +1913,9 @@ STATIC UINT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProce
     }
 
 #ifdef LOSCFG_KERNEL_LITEIPC
-    if (OsProcessIsUserMode(child)) {//用户模式下
-        ret = LiteIpcPoolReInit(&child->ipcInfo, (const ProcIpcInfo *)(&run->ipcInfo));//重新初始化IPC池
-        if (ret != LOS_OK) {
+    if (run->ipcInfo != NULL) {
+        child->ipcInfo = LiteIpcPoolReInit((const ProcIpcInfo *)(run->ipcInfo));
+        if (child->ipcInfo == NULL) {
             return LOS_ENOMEM;
         }
     }

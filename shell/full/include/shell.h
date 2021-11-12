@@ -67,7 +67,7 @@ extern "C" {
 #define CMD_HISTORY_LEN         10	//历史记录数量
 #define CMD_MAX_PATH            256	//最大路径
 #define DEFAULT_SCREEN_WIDTH    80	//屏幕的宽
-#define DEFAULT_SCREEN_HEIGNT   24	//屏幕的高
+#define DEFAULT_SCREEN_HEIGHT   24	//屏幕的高
 
 #define SHELL_MODE              0	//shell模式
 #define OTHER_MODE              1	//其他模式

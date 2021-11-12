@@ -97,6 +97,9 @@ static int DoShellExec(char **argv)
     int ret = SH_NOK;
     char *cmdLine = NULL;
 
+    if (strncmp(argv[0], SHELL_EXEC_COMMAND, SHELL_EXEC_COMMAND_BYTES) == 0) {
+        ChildExec(argv[1], argv + 1);
+    }
     for (i = 0; argv[i]; i++) {
         len += strlen(argv[i]);
     }
@@ -123,7 +126,7 @@ int main(int argc, char **argv)
     int ret = SH_NOK;
     ShellCB *shellCB = NULL;
 
-    if (!strcmp(argv[0], "shell") && argv[1]) {
+    if (argc > 1) {
         ret = DoShellExec(argv + 1);
         return ret;
     }

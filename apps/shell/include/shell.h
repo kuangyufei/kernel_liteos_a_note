@@ -54,7 +54,7 @@ extern "C" {
 #define CMD_HISTORY_LEN                 10	///< 最多保存十个命令行记录
 #define CMD_MAX_PATH                    256
 #define DEFAULT_SCREEN_WIDTH            80
-#define DEFAULT_SCREEN_HEIGNT           24
+#define DEFAULT_SCREEN_HEIGHT           24
 
 #define SWITCH_QUOTES_STATUS(qu) do {   \
     if ((qu) == TRUE) {                 \

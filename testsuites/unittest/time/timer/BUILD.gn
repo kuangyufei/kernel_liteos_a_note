@@ -51,8 +51,7 @@ sources_smoke = [
   "smoke/timer_test_tzset_002.cpp",
 ]
 
-sources_full = [
-]
+sources_full = []
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
   unittest("liteos_a_time_timer_unittest_door") {

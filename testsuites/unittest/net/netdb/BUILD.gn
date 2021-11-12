@@ -44,8 +44,8 @@ common_include_dirs = [
 ]
 
 sources_entry = [
-    "../../common/osTest.cpp",
-    "net_netdb_test.cpp",
+  "../../common/osTest.cpp",
+  "net_netdb_test.cpp",
 ]
 
 sources_smoke = [

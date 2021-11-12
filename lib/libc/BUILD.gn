@@ -69,13 +69,13 @@ kernel_module(module_name) {
       "-D__memchr_arm=memchr",
     ]
     sources += [
-      "src/arch/arm/memset.S",
       "src/arch/arm/memcmp.S",
+      "src/arch/arm/memset.S",
     ]
   } else {
     sources += [
-      "src/memset.c",
       "src/memcmp.c",
+      "src/memset.c",
     ]
   }
 

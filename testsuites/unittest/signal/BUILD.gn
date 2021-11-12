@@ -51,7 +51,7 @@ sources_smoke = [
   "smoke/mkfifo_test_002.cpp",
   "smoke/pipe_test_002.cpp",
   "smoke/pipe_test_004.cpp",
-  
+
   "smoke/signal_test_002.cpp",
   "smoke/signal_test_009.cpp",
   "smoke/signal_test_013.cpp",
@@ -109,7 +109,6 @@ sources_full = [
   "full/pipe_test_003.cpp",
   "full/pipe_test_005.cpp",
   "full/pipe_test_006.cpp",
-  
 ]
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {

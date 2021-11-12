@@ -42,9 +42,7 @@ sources_entry = [
   "VfsFatTest.cpp",
 ]
 
-sources_smoke = [
-  "smoke/It_vfs_fat_026.cpp",
-]
+sources_smoke = [ "smoke/It_vfs_fat_026.cpp" ]
 
 sources_pressure = [
   "pressure/It_fs_fat_performance_001.cpp",

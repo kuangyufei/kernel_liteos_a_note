@@ -1568,7 +1568,7 @@ static void lwip_ping_usage(void)
            "\n  ping [-n cnt] [-w interval] [-l data_len] destination"
            "\n  ping [-t] [-w interval] destination"
            "\n  ping -k");
-    PRINTK("\n  -t means ping forever, user can use -k to stop the forever ping");
+    PRINTK("\n  -t means ping forever, user can use -k to stop the forever ping\n");
 }
 
 LWIP_STATIC int osPingFunc(u32_t destip, u32_t cnt, u32_t interval, u32_t data_len)

@@ -27,7 +27,7 @@ config FS_FAT_CHINESE
       Answer Y to enable LiteOS fat filesystem support Chinese.
 
 config FS_FAT_VIRTUAL_PARTITION
-    bool "Enabel Virtual Partition"
+    bool "Enable Virtual Partition"
     default n
     depends on FS_FAT
 

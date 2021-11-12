@@ -649,7 +649,7 @@ INT32 LOS_DmesgToFile(const CHAR *filename)
     CHAR *fullpath = NULL;
     CHAR *buf = NULL;
     INT32 ret;
-    CHAR *shellWorkingDirectory = OsShellGetWorkingDirtectory();
+    CHAR *shellWorkingDirectory = OsShellGetWorkingDirectory();
     UINT32 logSize, bufSize, head, tail, intSave;
     CHAR *logBuf = NULL;
 

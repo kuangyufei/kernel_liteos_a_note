@@ -104,6 +104,7 @@ kernel_module(module_name) {
     "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_truncate64.c",
     "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_unlink.c",
     "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_write.c",
+    "$LITEOSTOPDIR/fs/vfs/epoll/fs_epoll.c",
     "$LITEOSTOPDIR/fs/vfs/mount.c",
     "$LITEOSTOPDIR/fs/vfs/path_cache.c",
     "$LITEOSTOPDIR/fs/vfs/vnode.c",

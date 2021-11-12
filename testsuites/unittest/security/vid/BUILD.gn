@@ -41,12 +41,9 @@ sources_entry = [
   "security_vid_test.cpp",
 ]
 
-sources_smoke = [
-  "smoke/vid_test_001.cpp",
-]
+sources_smoke = [ "smoke/vid_test_001.cpp" ]
 
-sources_full = [
-]
+sources_full = []
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
   unittest("liteos_a_security_vid_unittest_door") {

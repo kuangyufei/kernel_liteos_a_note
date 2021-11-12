@@ -43,6 +43,7 @@
 #include "sys/uio.h"
 #include "poll.h"
 #include "sys/prctl.h"
+#include "epoll.h"
 #ifdef LOSCFG_KERNEL_DYNLOAD
 #include "los_exec_elf.h"
 #endif
@@ -1361,7 +1362,7 @@ OUT:
     return ret;
 }
 ///参见SysStat
-int SysFstat(int fd, struct stat *buf)
+int SysFstat(int fd, struct kstat *buf)
 {
     int ret;
     struct stat bufRet = {0};
@@ -1384,7 +1385,7 @@ int SysFstat(int fd, struct stat *buf)
         return -get_errno();
     }
 
-    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct stat));
+    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct kstat));
     if (ret != 0) {
         return -EFAULT;
     }
@@ -2150,7 +2151,7 @@ OUT:
 }
 #endif
 
-int SysFstat64(int fd, struct stat64 *buf)
+int SysFstat64(int fd, struct kstat *buf)
 {
     int ret;
     struct stat64 bufRet = {0};
@@ -2163,7 +2164,7 @@ int SysFstat64(int fd, struct stat64 *buf)
         return -get_errno();
     }
 
-    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct stat64));
+    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct kstat));
     if (ret != 0) {
         return -EFAULT;
     }
@@ -2467,7 +2468,7 @@ OUT:
     return ret;
 }
 
-int SysFstatat64(int dirfd, const char *restrict path, struct stat *restrict buf, int flag)
+int SysFstatat64(int dirfd, const char *restrict path, struct kstat *restrict buf, int flag)
 {
     int ret;
     struct stat bufRet = {0};
@@ -2497,7 +2498,7 @@ int SysFstatat64(int dirfd, const char *restrict path, struct stat *restrict buf
         goto OUT;
     }
 
-    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct stat));
+    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct kstat));
     if (ret != 0) {
         ret = -EFAULT;
         goto OUT;
@@ -2598,37 +2599,36 @@ int SysFstatfs64(int fd, size_t sz, struct statfs *buf)
 
 int SysPpoll(struct pollfd *fds, nfds_t nfds, const struct timespec *tmo_p, const sigset_t *sigMask, int nsig)
 {
-    int timeout;
-    int ret;
-    sigset_t_l origMask;
-    sigset_t_l setl;
-
-    if (sigMask == NULL) {
-        ret = -EINVAL;
-        return ret;
-    }
+    int timeout, retVal;
+    sigset_t_l origMask = {0};
+    sigset_t_l set = {0};
 
     CHECK_ASPACE(tmo_p, sizeof(struct timespec));
-    CHECK_ASPACE(sigMask, sizeof(sigset_t));
     CPY_FROM_USER(tmo_p);
-    CPY_FROM_USER(sigMask);
 
-    timeout = (tmo_p == NULL) ? -1 : (tmo_p->tv_sec * OS_SYS_US_PER_MS + tmo_p->tv_nsec / OS_SYS_NS_PER_MS);
-    if (timeout & 0x80000000) {
-        ret = -EINVAL;
-	return ret;
+    if (tmo_p != NULL) {
+        timeout = tmo_p->tv_sec * OS_SYS_US_PER_MS + tmo_p->tv_nsec / OS_SYS_NS_PER_MS;
+        if (timeout < 0) {
+            return -EINVAL;
+        }
+    } else {
+        timeout = -1;
     }
-    setl.sig[0] = *sigMask;
-    OsSigprocMask(SIG_SETMASK, &setl, &origMask);
-    ret = SysPoll(fds, nfds, timeout);
-    if (ret < 0) {
-        ret = -get_errno();
-    }
-    OsSigprocMask(SIG_SETMASK, &origMask, NULL);
 
-    PointerFree(tmo_pbak);
-    PointerFree(sigMaskbak);
-    return (ret == -1) ? -get_errno() : ret;
+    if (sigMask != NULL) {
+        retVal = LOS_ArchCopyFromUser(&set, sigMask, sizeof(sigset_t));
+        if (retVal != 0) {
+            return -EFAULT;
+        }
+        (VOID)OsSigprocMask(SIG_SETMASK, &set, &origMask);
+    } else {
+        (VOID)OsSigprocMask(SIG_SETMASK, NULL, &origMask);
+    }
+
+    retVal = SysPoll(fds, nfds, timeout);
+    (VOID)OsSigprocMask(SIG_SETMASK, &origMask, NULL);
+
+    return retVal;
 }
 
 int SysPselect6(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
@@ -2677,4 +2677,132 @@ int SysPselect6(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 
     return ret;
 }
+
+int SysEpollCreate(int size)
+{
+    int ret;
+    int procFd;
+
+    if (size <= 0) {
+        return -EINVAL;
+    }
+
+    ret = epoll_create(size);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+    procFd = AllocAndAssocProcessFd((INTPTR)(ret), MIN_START_FD);
+    if (procFd == -1) {
+        epoll_close(ret);
+        return -EMFILE;
+    }
+
+    return procFd;
+}
+
+int SysEpollCreate1(int flags)
+{
+    int ret;
+    int procFd;
+
+    ret = epoll_create(flags);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+    procFd = AllocAndAssocProcessFd((INTPTR)(ret), MIN_START_FD);
+    if (procFd == -1) {
+        epoll_close(ret);
+        return -EMFILE;
+    }
+
+    return procFd;
+}
+
+int SysEpollCtl(int epfd, int op, int fd, struct epoll_event *ev)
+{
+    int ret;
+
+    CHECK_ASPACE(ev, sizeof(struct epoll_event));
+    CPY_FROM_USER(ev);
+
+    fd = GetAssociatedSystemFd(fd);
+    epfd = GetAssociatedSystemFd(epfd);
+    if ((fd < 0) || (epfd < 0)) {
+        ret = -EBADF;
+        goto OUT;
+    }
+
+    ret = epoll_ctl(epfd, op, fd, ev);
+    if (ret < 0) {
+        ret =-EBADF;
+        goto OUT;
+    }
+
+    CPY_TO_USER(ev);
+OUT:
+    return (ret == -1)? -get_errno():ret;
+}
+
+int SysEpollWait(int epfd, struct epoll_event *evs, int maxevents, int timeout)
+{
+    int ret = 0;
+
+    CHECK_ASPACE(evs, sizeof(struct epoll_event));
+    CPY_FROM_USER(evs);
+
+    epfd = GetAssociatedSystemFd(epfd);
+    if  (epfd < 0) {
+        ret = -EBADF;
+        goto OUT;
+    }
+
+    ret = epoll_wait(epfd, evs, maxevents, timeout);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+    CPY_TO_USER(evs);
+OUT:
+    return (ret == -1) ? -get_errno() : ret;
+}
+
+int SysEpollPwait(int epfd, struct epoll_event *evs, int maxevents, int timeout, const sigset_t *mask)
+{
+    sigset_t_l origMask;
+    sigset_t_l setl;
+    int ret = 0;
+
+    CHECK_ASPACE(mask, sizeof(sigset_t));
+
+    if (mask != NULL) {
+        ret = LOS_ArchCopyFromUser(&setl, mask, sizeof(sigset_t));
+        if (ret != 0) {
+            return -EFAULT;
+        }
+    }
+
+    CHECK_ASPACE(evs, sizeof(struct epoll_event));
+    CPY_FROM_USER(evs);
+
+    epfd = GetAssociatedSystemFd(epfd);
+    if (epfd < 0) {
+        ret = -EBADF;
+        goto OUT;
+    }
+
+    OsSigprocMask(SIG_SETMASK, &setl, &origMask);
+    ret = epoll_wait(epfd, evs, maxevents, timeout);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+    OsSigprocMask(SIG_SETMASK, &origMask, NULL);
+
+    CPY_TO_USER(evs);
+OUT:
+    return (ret == -1) ? -get_errno() : ret;
+}
+
 #endif

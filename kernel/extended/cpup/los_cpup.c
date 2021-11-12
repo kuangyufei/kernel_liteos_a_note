@@ -106,7 +106,10 @@ LITE_OS_SEC_TEXT_INIT VOID OsCpupGuard(VOID)
 
     for (loop = 0; loop < g_processMaxNum; loop++) {
         processCB = OS_PCB_FROM_PID(loop);
-        processCB->processCpup.historyTime[prevPos] = processCB->processCpup.allTime;
+        if (processCB->processCpup == NULL) {
+            continue;
+        }
+        processCB->processCpup->historyTime[prevPos] = processCB->processCpup->allTime;
     }
 
     for (loop = 0; loop < g_taskMaxNum; loop++) {
@@ -129,7 +132,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsCpupGuard(VOID)
 #endif
         taskCB->taskCpup.historyTime[prevPos] += cycleIncrement;
         processCB = OS_PCB_FROM_PID(taskCB->processID);
-        processCB->processCpup.historyTime[prevPos] += cycleIncrement;
+        processCB->processCpup->historyTime[prevPos] += cycleIncrement;
     }
 
     SCHEDULER_UNLOCK(intSave);
@@ -209,7 +212,10 @@ LITE_OS_SEC_TEXT_INIT VOID LOS_CpupReset(VOID)
 
     for (index = 0; index < g_processMaxNum; index++) {
         processCB = OS_PCB_FROM_PID(index);
-        OsResetCpup(&processCB->processCpup, cycle);
+        if (processCB->processCpup == NULL) {
+            continue;
+        }
+        OsResetCpup(processCB->processCpup, cycle);
     }
 
     for (index = 0; index < g_taskMaxNum; index++) {
@@ -242,7 +248,7 @@ VOID OsCpupCycleEndStart(UINT32 runTaskID, UINT32 newTaskID)
     LosTaskCB *runTask = OS_TCB_FROM_TID(runTaskID);
     OsCpupBase *runTaskCpup = &runTask->taskCpup;
     OsCpupBase *newTaskCpup = (OsCpupBase *)&(OS_TCB_FROM_TID(newTaskID)->taskCpup);
-    OsCpupBase *processCpup = (OsCpupBase *)&(OS_PCB_FROM_PID(runTask->processID)->processCpup);
+    OsCpupBase *processCpup = OS_PCB_FROM_PID(runTask->processID)->processCpup;
     UINT64 cpuCycle, cycleIncrement;
     UINT16 cpuID = ArchCurrCpuid();
 
@@ -258,7 +264,9 @@ VOID OsCpupCycleEndStart(UINT32 runTaskID, UINT32 newTaskID)
         timeInIrqSwitch[cpuID] = 0;
 #endif
         runTaskCpup->allTime += cycleIncrement;
-        processCpup->allTime += cycleIncrement;
+        if (processCpup != NULL) {
+            processCpup->allTime += cycleIncrement;
+        }
         runTaskCpup->startTime = 0;
     }
 
@@ -326,7 +334,7 @@ STATIC UINT32 OsHistorySysCpuUsageUnsafe(UINT16 mode)
     cpuAllCycle = cpuHistoryTime[pos] - cpuHistoryTime[prePos];
 
     idleProcessID = OsGetIdleProcessID();
-    processCpup = (OsCpupBase *)&(OS_PCB_FROM_PID(idleProcessID)->processCpup);
+    processCpup = OS_PCB_FROM_PID(idleProcessID)->processCpup;
     return (LOS_CPUP_PRECISION - OsCalculateCpupUsage(processCpup, pos, prePos, cpuAllCycle));
 }
 
@@ -361,10 +369,14 @@ STATIC UINT32 OsHistoryProcessCpuUsageUnsafe(UINT32 pid, UINT16 mode)
         return LOS_ERRNO_CPUP_NO_CREATED;
     }
 
+    if (processCB->processCpup == NULL) {
+        return LOS_ERRNO_CPUP_ID_INVALID;
+    }
+
     OsCpupGetPos(mode, &pos, &prePos);
     cpuAllCycle = cpuHistoryTime[pos] - cpuHistoryTime[prePos];
 
-    return OsCalculateCpupUsage(&processCB->processCpup, pos, prePos, cpuAllCycle);
+    return OsCalculateCpupUsage(processCB->processCpup, pos, prePos, cpuAllCycle);
 }
 
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_HistoryProcessCpuUsage(UINT32 pid, UINT16 mode)
@@ -446,11 +458,11 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsGetAllProcessCpuUsageUnsafe(UINT16 mode, CPUP_IN
 
     for (processID = 0; processID < g_processMaxNum; processID++) {
         processCB = OS_PCB_FROM_PID(processID);
-        if (OsProcessIsUnused(processCB)) {
+        if (OsProcessIsUnused(processCB) || (processCB->processCpup == NULL)) {
             continue;
         }
 
-        cpupInfo[processID].usage = OsCalculateCpupUsage(&processCB->processCpup, pos, prePos, cpuAllCycle);
+        cpupInfo[processID].usage = OsCalculateCpupUsage(processCB->processCpup, pos, prePos, cpuAllCycle);
         cpupInfo[processID].status = OS_CPUP_USED;
     }
 
@@ -496,9 +508,11 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsGetAllProcessAndTaskCpuUsageUnsafe(UINT16 mode, 
         taskCpup[taskID].usage = OsCalculateCpupUsage(&taskCB->taskCpup, pos, prePos, cpuAllCycle);
         taskCpup[taskID].status = OS_CPUP_USED;
         if (processCpup[taskCB->processID].status == OS_CPUP_UNUSED) {
-            processCpupBase = &(OS_PCB_FROM_PID(taskCB->processID)->processCpup);
-            processCpup[taskCB->processID].usage = OsCalculateCpupUsage(processCpupBase, pos, prePos, cpuAllCycle);
-            processCpup[taskCB->processID].status = OS_CPUP_USED;
+            processCpupBase = OS_PCB_FROM_PID(taskCB->processID)->processCpup;
+            if (processCpupBase != NULL) {
+                processCpup[taskCB->processID].usage = OsCalculateCpupUsage(processCpupBase, pos, prePos, cpuAllCycle);
+                processCpup[taskCB->processID].status = OS_CPUP_USED;
+            }
         }
     }
 

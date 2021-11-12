@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2021-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,25 +28,57 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _HWLITEOS_SHELL_SHOW_H
-#define _HWLITEOS_SHELL_SHOW_H
+#ifndef _FS_EPOLL_H_
+#define _FS_EPOLL_H_
 
-#include "shell.h"
+#include "los_typedef.h"
 
 #ifdef __cplusplus
-#if __cplusplus
 extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#endif
 
-extern CHAR *OsShellGetWorkingDirectory(VOID);
-extern UINT32 OsShellInit(INT32 consoleId);
-extern INT32 OsShellDeinit(INT32 consoleId);
+#ifndef FAR
+#define FAR
+#endif
+
+#define EPOLL_CLOEXEC O_CLOEXEC
+#define EPOLL_NONBLOCK O_NONBLOCK
+
+#define EPOLLIN         0x001
+#define EPOLLPRI        0x002
+#define EPOLLOUT        0x004
+#define EPOLLRDNORM     0x040
+#define EPOLLNVAL       0x020
+#define EPOLLRDBAND     0x080
+#define EPOLLWRNORM     0x100
+#define EPOLLWRBAND     0x200
+#define EPOLLMSG        0x400
+#define EPOLLERR        0x008
+#define EPOLLHUP        0x010
+
+#define EPOLL_CTL_ADD 1
+#define EPOLL_CTL_DEL 2
+#define EPOLL_CTL_MOD 3
+
+typedef union epoll_data {
+	void *ptr;
+	int fd;
+	UINT32 u32;
+	UINT64 u64;
+} epoll_data_t;
+
+struct epoll_event {
+	UINT32 events;
+	epoll_data_t data;
+};
+
+int epoll_create(int size);
+int epoll_close(int epfd);
+int epoll_ctl(int epfd, int op, int fd, struct epoll_event *ev);
+int epoll_wait(int epfd, FAR struct epoll_event *evs, int maxevents, int timeout);
 
 #ifdef __cplusplus
-#if __cplusplus
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#endif
 
-#endif /* _HWLITEOS_SHELL_SHOW_H */
+#endif /* sys/epoll.h */

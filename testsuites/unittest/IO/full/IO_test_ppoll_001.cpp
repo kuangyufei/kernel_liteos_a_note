@@ -30,139 +30,87 @@
  */
 
 #include "It_test_IO.h"
-#include <poll.h>
-#include "signal.h"
 #include "pthread.h"
 
-#define LISTEN_FD_NUM 10
-#define POLL_EVENTS 1
+const int BUF_SIZE = 128;
+const int DELAY_TIME = 200;
 
-int pipeFdPpoll[LISTEN_FD_NUM][2];
-static pthread_t g_tid = -1;
-extern int ppoll(struct pollfd *fds, nfds_t nfds, const struct timespec *tmo_p, const sigset_t *sigmask);
+static INT32 pipeFdPpoll[2];
+static INT32 g_step = 1;
+static CHAR strBuf[] = "hello world.";
+static struct pollfd pfd;
 
-static void *pthread_01(void)
+static void *pthread_01(void *arg)
 {
-    static int count = 0;
-    int total_num = 0;
-    int times = 3;
-    int i, ret;
-    struct pollfd fds[LISTEN_FD_NUM] = { 0 };
-    char buffer[20];
-    struct timespec t = { 3,0 };
-    sigset_t sigset;
-
-    /* TEST_PRINT("[INFO]%s:%d,%s,Create thread %d\n", __FILE__, __LINE__, __func__, count); */
-    count++;
-
-    sigemptyset(&sigset);
-    sigaddset(&sigset, SIGALRM);    /* 把SIGALRM 信号添加到sigset 信号集中 */
-    sigaddset(&sigset, SIGUSR1);
-
-    for (i = 0; i < LISTEN_FD_NUM; i++) {
-        fds[i].fd = pipeFdPpoll[i][0];
-        fds[i].events = POLL_EVENTS;
+    INT32 retVal;
+    CHAR buf[BUF_SIZE];
+    
+    /* 执行ppoll监视文件描述符 */
+    while (g_step < 3) { /* 3, 3rd step */
+        usleep(DELAY_TIME);
     }
-
-    while (times--) {
-        ret = ppoll(fds, LISTEN_FD_NUM, &t, &sigset);
-        total_num += ((ret > 0) ? ret : 0);
-
-        if (ret <= 0) {
-            continue;
-        }
-
-        for (i = 0; i < LISTEN_FD_NUM; i++) {
-            if (fds[i].revents & POLL_EVENTS) {
-                ret = read(fds[i].fd, buffer, 12);
-                ICUNIT_GOTO_EQUAL(ret, 12, ret, EXIT);
-                ret = strcmp(buffer, "hello world");
-                TEST_PRINT("[EVENT]%s:%d,%s,buffer=%s\n", __FILE__, __LINE__, __func__, buffer);
-            }
-        }
-
-        if (total_num == LISTEN_FD_NUM) {
-            break;
-        }
+    g_step++;
+    retVal = ppoll(&pfd, 1, NULL, NULL);
+    ICUNIT_ASSERT_NOT_EQUAL_NULL(retVal, -1, retVal);
+    
+    while (g_step < 5) { /* 5, 5th step */
+        usleep(DELAY_TIME);
     }
+    g_step++;
+    
+    /* 判断revents */
+    if (pfd.revents & POLLIN) {
+        memset_s(buf, sizeof(buf), 0, sizeof(buf));
+        retVal = read(pfd.fd, buf, BUF_SIZE);
+        ICUNIT_ASSERT_NOT_EQUAL_NULL(retVal, -1, retVal);
 
-    /* ICUNIT_GOTO_EQUAL(total_num, 10, -1, EXIT); */
-    /* TEST_PRINT("[INFO]%s:%d,%s,total_num=%d\n", __FILE__, __LINE__, __func__, total_num); */
-EXIT:
-    return nullptr;
+        retVal = strcmp(strBuf, buf);
+        ICUNIT_ASSERT_EQUAL_NULL(retVal, 0, retVal);
+    }
+    
+    while (g_step < 6) { /* 6, 6th step */
+        usleep(DELAY_TIME);
+    }
+    pthread_exit(NULL);
 }
 
-static UINT32 testcase1(VOID)
+STATIC UINT32 testcase(VOID)
 {
-    int i;
-    int ret;
-    int count = 0;
-
-    for (i = 0; i < LISTEN_FD_NUM; i++) {
-        ret = pipe(pipeFdPpoll[i]);
-        ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
-        TEST_PRINT("[INFO]%s:%d,%s,ret=%d,pipeFdPpoll[%d][0]=%d\n", __FILE__, __LINE__, __func__, ret, i, pipeFdPpoll[i][0]);
-        TEST_PRINT("[INFO]%s:%d,%s,ret=%d,pipeFdPpoll[%d][0]=%d\n", __FILE__, __LINE__, __func__, ret, i, pipeFdPpoll[i][1]);
+    INT32 retVal;
+    pthread_t tid;
+    
+    /* 建立管道 */
+    while (g_step < 1) { /* 1, 1st step */
+        usleep(DELAY_TIME);
     }
-
-    errno = 0;
-    ret = pthread_create(&g_tid, nullptr, (void *(*)(void *))pthread_01, nullptr);
-    TEST_PRINT("[INFO]%s:%d,%s,ret=%d,errno=%d,errstr=%s\n", __FILE__, __LINE__, __func__, ret, errno, strerror(errno));
-    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
-
-    errno = 0;
-    for (i = 0; i < LISTEN_FD_NUM; i++) {
-        if ((pipeFdPpoll[i][1] != 9) && (pipeFdPpoll[i][1] != 10) && (pipeFdPpoll[i][1] != 11)) {
-            ret = write(pipeFdPpoll[i][1], "hello world!", 12); /* 12, "hello world" length and '\0' */
-        }
-        ICUNIT_GOTO_EQUAL(ret, 12, ret, EXIT);
-        TEST_PRINT("[INFO]%s:%d,%s,ret=%d,errno=%d,errstr=%s\n", __FILE__, __LINE__, __func__, ret, errno, strerror(errno));
+    retVal = pipe(pipeFdPpoll);
+    ICUNIT_ASSERT_NOT_EQUAL(retVal, -1, retVal);
+    g_step++;
+    
+    /* 设置pfd */
+    pfd.fd = pipeFdPpoll[0];
+    pfd.events = POLLIN;
+    
+    /* 开辟线程执行 ppoll */
+    while (g_step < 2) { /* 2, 2nd step */
+        usleep(DELAY_TIME);
     }
-
-#if 1 /* write looply */
-    while(1) {
-        if (count++ > 3) {
-            break;
-        }
-        sleep(1);
-        for (i = 0; i < LISTEN_FD_NUM; i++) {
-            errno = 0;
-            ret = pthread_create(&g_tid, nullptr, (void *(*)(void *))pthread_01, nullptr);
-            TEST_PRINT("[INFO]%s:%d,%s,ret=%d,errno=%d,errstr=%s\n", __FILE__, __LINE__, __func__, ret, errno, strerror(errno));
-            ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
-
-            if ((pipeFdPpoll[i][1] == 13) || (pipeFdPpoll[i][1] == 14) || (pipeFdPpoll[i][1] == 15)) {
-                errno = 0;
-                ret = write(pipeFdPpoll[i][1], "World HELLO!", 12); /* 12, "hello world" length and '\0' */
-                TEST_PRINT("[INFO]%s:%d,%s,ret=%d,errno=%d,errstr=%s\n", __FILE__, __LINE__, __func__, ret, errno, strerror(errno));
-                TEST_PRINT("[INFO]%s:%d,%s,ret=%d,pipeFdPpoll[%d][1]=%d,count=%d\n", __FILE__, __LINE__, __func__, ret,i, pipeFdPpoll[i][1], count);
-            }
-            /* ICUNIT_GOTO_EQUAL(ret, 12, ret, EXIT); */
-        }
+    retVal = pthread_create(&tid, NULL, pthread_01, NULL);
+    ICUNIT_ASSERT_EQUAL(retVal, 0, retVal);
+    g_step++;
+    
+    /* 向管道写入数据 */
+    while (g_step < 4) { /* 4, 4th step */
+        usleep(DELAY_TIME);
     }
-#endif
+    sleep(1);
+    
+    retVal = write(pipeFdPpoll[1], "hello world.", sizeof(strBuf));
+    ICUNIT_ASSERT_NOT_EQUAL(retVal, -1, retVal);
+    g_step++;
 
-    pthread_join(g_tid, nullptr);
-
-    for (i = 0; i < LISTEN_FD_NUM; i++) {
-        close(pipeFdPpoll[i][0]);
-        close(pipeFdPpoll[i][1]);
-    }
-
-    return LOS_OK;
-
-EXIT:
-    for (i = 0; i < LISTEN_FD_NUM; i++) {
-        close(pipeFdPpoll[i][0]);
-        close(pipeFdPpoll[i][1]);
-    }
-    return LOS_NOK;
-}
-
-static UINT32 testcase(VOID)
-{
-    testcase1();
-
+    pthread_join(tid, NULL);
+    
     return LOS_OK;
 }
 

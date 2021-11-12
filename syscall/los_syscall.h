@@ -60,6 +60,7 @@
 #include "sys/socket.h"
 #include "dirent.h"
 #include "fs/file.h"
+#include "epoll.h"
 #endif
 #include <sys/wait.h>
 #include "sys/resource.h"
@@ -297,15 +298,15 @@ extern int SysFstatfs64(int fd, size_t sz, struct statfs *buf);
 
 extern int SysStat(const char *path, struct kstat *buf);
 extern int SysLstat(const char *path, struct kstat *buffer);
-extern int SysFstat(int fildes, struct stat *buf);
+extern int SysFstat(int fildes, struct kstat *buf);
 extern int SysStatx(int fd, const char *restrict path, int flag, unsigned mask, struct statx *restrict stx);
 extern int SysFsync(int fd);
 extern ssize_t SysReadv(int fd, const struct iovec *iov, int iovcnt);
 extern ssize_t SysWritev(int fd, const struct iovec *iov, int iovcnt);
 extern int SysPipe(int pipefd[2]); /* 2 : pipe fds for read and write */
 extern int SysFormat(const char *dev, int sectors, int option);
-extern int SysFstat64(int fd, struct stat64 *buf);
-extern int SysFstatat64(int fd, const char *restrict path, struct stat *restrict buf, int flag);
+extern int SysFstat64(int fd, struct kstat *buf);
+extern int SysFstatat64(int fd, const char *restrict path, struct kstat *restrict buf, int flag);
 extern int SysFcntl64(int fd, int cmd, void *arg);
 extern int SysPoll(struct pollfd *fds, nfds_t nfds, int timeout);
 extern int SysPpoll(struct pollfd *fds, nfds_t nfds, const struct timespec *tmo_p,
@@ -313,6 +314,11 @@ extern int SysPpoll(struct pollfd *fds, nfds_t nfds, const struct timespec *tmo_
 extern int SysPrctl(int option, ...);
 extern ssize_t SysPread64(int fd, void *buf, size_t nbytes, off64_t offset);
 extern ssize_t SysPwrite64(int fd, const void *buf, size_t nbytes, off64_t offset);
+extern int SysEpollCreate(int size);
+extern int SysEpollCreate1(int size);
+extern int SysEpollCtl(int epfd, int op, int fd, struct epoll_event *ev);
+extern int SysEpollWait(int epfd, struct epoll_event *evs, int maxevents, int timeout);
+extern int SysEpollPwait(int epfd, struct epoll_event *evs, int maxevents, int timeout, const sigset_t *mask);
 extern char *SysGetcwd(char *buf, size_t n);
 extern ssize_t SysSendFile(int outfd, int infd, off_t *offset, size_t count);
 extern int SysTruncate(const char *path, off_t length);

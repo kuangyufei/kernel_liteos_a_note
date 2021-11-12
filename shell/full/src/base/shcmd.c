@@ -110,7 +110,7 @@ STATIC INT32 OsStrSeparate(CHAR *tabStr, CHAR *strPath, CHAR *nameLooking, UINT3
     CHAR *strEnd = NULL;
     CHAR *cutPos = NULL;
     CmdParsed parsed = {0};
-    CHAR *shellWorkingDirectory = OsShellGetWorkingDirtectory();
+    CHAR *shellWorkingDirectory = OsShellGetWorkingDirectory();
     INT32 ret;
 
     ret = OsStrSeparateTabStrGet(&tabStr, &parsed, tabStrLen);
@@ -215,7 +215,7 @@ STATIC INT32 OsPrintMatchList(UINT32 count, const CHAR *strPath, const CHAR *nam
         return (INT32)OS_ERROR;
     }
 
-    if (count > (lineCap * DEFAULT_SCREEN_HEIGNT)) {
+    if (count > (lineCap * DEFAULT_SCREEN_HEIGHT)) {
         ret = OsSurePrintAll(count);//确认打印内容,等待用户输入 N/Y
         if (ret != 1) {
             return ret;
