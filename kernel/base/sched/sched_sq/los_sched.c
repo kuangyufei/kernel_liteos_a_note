@@ -60,13 +60,15 @@
 #define OS_SCHED_READY_MAX         30
 #define OS_TIME_SLICE_MIN          (INT32)((50 * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE) /* 50us */
 
-typedef struct {//进程调度队列
-    LOS_DL_LIST priQueueList[OS_PRIORITY_QUEUE_NUM];//各优先级任务调度队列,默认32级
-    UINT32      readyTasks[OS_PRIORITY_QUEUE_NUM];//各优先级就绪任务个数
-    UINT32      queueBitmap;//任务优先级调度位图
+/// 调度队列
+typedef struct {
+    LOS_DL_LIST priQueueList[OS_PRIORITY_QUEUE_NUM];///< 各优先级任务调度队列,默认32级
+    UINT32      readyTasks[OS_PRIORITY_QUEUE_NUM]; ///< 各优先级就绪任务数
+    UINT32      queueBitmap; ///< 任务优先级调度位图
 } SchedQueue;
 
-typedef struct {//调度器
+/// 调度器
+typedef struct {
     SchedQueue queueList[OS_PRIORITY_QUEUE_NUM];//进程优先级调度队列,默认32级
     UINT32     queueBitmap;//进程优先级调度位图
     SchedScan  taskScan;//函数指针,扫描任务
@@ -598,24 +600,26 @@ STATIC INLINE VOID OsSchedDeTaskQueue(LosTaskCB *taskCB, LosProcessCB *processCB
         processCB->processStatus &= ~OS_PROCESS_STATUS_READY;
     }
 }
-
+/// 将任务从就绪队列中删除
 VOID OsSchedTaskDeQueue(LosTaskCB *taskCB)
 {
-    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
+    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);//通过任务获取所在进程
 
-    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {
-        OsSchedDeTaskQueue(taskCB, processCB);
+    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {//任务处于就绪状态
+        OsSchedDeTaskQueue(taskCB, processCB);//从该进程的就绪任务队列中删除
     }
 
-    if (processCB->processStatus & OS_PROCESS_STATUS_READY) {
+    if (processCB->processStatus & OS_PROCESS_STATUS_READY) { //进程处于就绪状态不能删除任务,这是为什么呢 ? @note_thinking 
         return;
     }
 
     /* If the current process has only the current thread running,
      * the process becomes blocked after the thread leaves the scheduling queue
+     * 如果当前进程只有当前任务在运行,任务离开调度队列后进程设置为阻塞状态
+     * 注意:一个进程下的任务可能同时被多个CPU在并行运行.
      */
-    if (OS_PROCESS_GET_RUNTASK_COUNT(processCB->processStatus) == 1) {
-        processCB->processStatus |= OS_PROCESS_STATUS_PENDING;
+    if (OS_PROCESS_GET_RUNTASK_COUNT(processCB->processStatus) == 1) { //根据数量来这只状态,注意 processStatus 承载了两重含义
+        processCB->processStatus |= OS_PROCESS_STATUS_PENDING; //将进程状态设为阻塞状态
     }
 }
 
@@ -846,7 +850,7 @@ UINT32 OsSchedInit(VOID)
 #endif
     return LOS_OK;
 }
-///获取优先级最高的任务
+/// 获取就绪队列中优先级最高的任务
 STATIC LosTaskCB *OsGetTopTask(VOID)
 {
     UINT32 priority, processPriority;
@@ -899,7 +903,7 @@ VOID OsSchedStart(VOID)
     LosProcessCB *newProcess = OS_PCB_FROM_PID(newTask->processID);//获取该任务的进程实体
 
     newTask->taskStatus |= OS_TASK_STATUS_RUNNING;//变成运行状态,注意此时该任务还没真正的运行
-    newProcess->processStatus |= OS_PROCESS_STATUS_RUNNING;
+    newProcess->processStatus |= OS_PROCESS_STATUS_RUNNING;//processStatus 具有两重含义,将它设为正在运行状态,但注意这是在进程的角度,实际上底层还没有切到它运行.
     newProcess->processStatus = OS_PROCESS_RUNTASK_COUNT_ADD(newProcess->processStatus);//当前任务的数量也增加一个
 
     OsSchedSetStartTime(HalClockGetCycles());//设置调度开始时间

@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 同步官源,加入epoll支持,对shell模块有较大调整,微调process,task,更正单词拼写错误
+git commit -m  ' 因同步官源,代码覆盖,部分模块需重新注解
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     博客输出站点(国内):http://weharmonyos.com
     博客输出站点(国外):https://weharmony.github.io

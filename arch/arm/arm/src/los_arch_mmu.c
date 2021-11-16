@@ -58,9 +58,9 @@ __attribute__((aligned(MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS))) \
 UINT8 *g_mmuJumpPageTable = g_tempPageTable;
 #else
 extern CHAR __mmu_ttlb_begin; /* defined in .ld script */
-UINT8 *g_mmuJumpPageTable = (UINT8 *)&__mmu_ttlb_begin; /* temp page table, this is only used when system power up */
+UINT8 *g_mmuJumpPageTable = (UINT8 *)&__mmu_ttlb_begin; /* temp page table, this is only used when system power up | 临时页表,用于系统启动阶段*/
 #endif
-
+/// 获取页表基地址
 STATIC INLINE PTE_T *OsGetPte2BasePtr(PTE_T pte1)
 {
     PADDR_T pa = MMU_DESCRIPTOR_L1_PAGE_TABLE_ADDR(pte1);
@@ -376,11 +376,20 @@ STATIC UINT32 OsUnmapSection(LosArchMmu *archMmu, vaddr_t *vaddr, UINT32 *count)
     return MMU_DESCRIPTOR_L2_NUMBERS_PER_L1;
 }
 
-//mmu 初始化 
+
+/*!
+ * @brief OsArchMmuInit	初始化MMU
+ *
+ * @param archMmu	
+ * @param virtTtb	
+ * @return	
+ *
+ * @see
+ */
 BOOL OsArchMmuInit(LosArchMmu *archMmu, VADDR_T *virtTtb)
 {
 #ifdef LOSCFG_KERNEL_VM
-    if (OsAllocAsid(&archMmu->asid) != LOS_OK) {//分配一个asid,ASID可用来唯一标识进程
+    if (OsAllocAsid(&archMmu->asid) != LOS_OK) {//分配一个asid,ASID可用来唯一标识进程空间
         VM_ERR("alloc arch mmu asid failed");//地址空间标识码（address-space identifier，ASID）为CP15协处理器 C13寄存器
         return FALSE;
     }
@@ -400,13 +409,17 @@ BOOL OsArchMmuInit(LosArchMmu *archMmu, VADDR_T *virtTtb)
     return TRUE;
 }
 
-/**
- * @brief 本函数是内核高频函数,通过MMU查询虚拟地址是否映射过,带走映射的物理地址和权限
- * @param archMmu 
- * @param vaddr 
- * @param paddr 
- * @param flags 
- * @return STATUS_T 
+
+/*!
+ * @brief LOS_ArchMmuQuery	本函数是内核高频函数,通过MMU查询虚拟地址是否映射过,带走映射的物理地址和权限
+ *
+ * @param archMmu	
+ * @param flags	
+ * @param paddr	
+ * @param vaddr	
+ * @return	
+ *
+ * @see
  */
 STATUS_T LOS_ArchMmuQuery(const LosArchMmu *archMmu, VADDR_T vaddr, PADDR_T *paddr, UINT32 *flags)
 {//archMmu->virtTtb:转换表基地址
@@ -447,7 +460,17 @@ STATUS_T LOS_ArchMmuQuery(const LosArchMmu *archMmu, VADDR_T vaddr, PADDR_T *pad
 
     return LOS_OK;
 }
-/// 解除映射关系
+
+/*!
+ * @brief LOS_ArchMmuUnmap	解除映射关系
+ *
+ * @param archMmu	
+ * @param count	
+ * @param vaddr	
+ * @return	
+ *
+ * @see
+ */
 STATUS_T LOS_ArchMmuUnmap(LosArchMmu *archMmu, VADDR_T vaddr, size_t count)
 {
     PTE_T l1Entry;
@@ -477,7 +500,19 @@ STATUS_T LOS_ArchMmuUnmap(LosArchMmu *archMmu, VADDR_T vaddr, size_t count)
     OsArmInvalidateTlbBarrier();//TLB失效，不可用
     return unmapped;
 }
-/// section页表格式项映射
+
+/*!
+ * @brief OsMapSection	section页表格式项映射
+ *
+ * @param archMmu	
+ * @param count	
+ * @param flags	
+ * @param paddr	
+ * @param vaddr	
+ * @return	
+ *
+ * @see
+ */
 STATIC UINT32 OsMapSection(const LosArchMmu *archMmu, UINT32 flags, VADDR_T *vaddr,
                            PADDR_T *paddr, UINT32 *count)
 {
@@ -762,6 +797,14 @@ STATUS_T LOS_ArchMmuMove(LosArchMmu *archMmu, VADDR_T oldVaddr, VADDR_T newVaddr
     return LOS_OK;
 }
 
+/*!
+ * @brief LOS_ArchMmuContextSwitch	切换MMU上下文
+ *
+ * @param archMmu	
+ * @return	
+ *
+ * @see
+ */
 VOID LOS_ArchMmuContextSwitch(LosArchMmu *archMmu)
 {
     UINT32 ttbr;
@@ -793,17 +836,25 @@ VOID LOS_ArchMmuContextSwitch(LosArchMmu *archMmu)
 #endif
 }
 
+/*!
+ * @brief LOS_ArchMmuDestroy 销毁MMU 和 initMmu 相呼应,释放页表页
+ * 
+ * @param archMmu	
+ * @return	
+ *
+ * @see
+ */
 STATUS_T LOS_ArchMmuDestroy(LosArchMmu *archMmu)
 {
 #ifdef LOSCFG_KERNEL_VM
     LosVmPage *page = NULL;
     /* free all of the pages allocated in archMmu->ptList */
     while ((page = LOS_ListRemoveHeadType(&archMmu->ptList, LosVmPage, node)) != NULL) {
-        LOS_PhysPageFree(page);
+        LOS_PhysPageFree(page);//释放物理页
     }
 
-    OsArmWriteTlbiasid(archMmu->asid);
-    OsFreeAsid(archMmu->asid);
+    OsArmWriteTlbiasid(archMmu->asid);//写TLB
+    OsFreeAsid(archMmu->asid);//释放asid
 #endif
     (VOID)LOS_MuxDestroy(&archMmu->mtx);
     return LOS_OK;

@@ -80,7 +80,7 @@ typedef struct ProcessCB {
     CHAR                 processName[OS_PCB_NAME_LEN]; /**< Process name | 进程名称 */
     UINT32               processID;                    /**< Process ID = leader thread ID | 进程ID,由进程池分配,范围[0,64] */
     UINT16               processStatus;                /**< [15:4] Process Status; [3:0] The number of threads currently
-                                                            running in the process | 这里设计很巧妙.用一个变量表示了两层逻辑 数量和状态,点赞!从这里也可以看出一个进程可以有多个正在运行的任务*/
+                                                            running in the process | 这里设计很巧妙.用一个变量表示了两层逻辑 数量和状态,点赞! @note_good 从这里也可以看出一个进程可以有多个正在运行的任务*/
     UINT16               priority;                     /**< Process priority | 进程优先级*/
     UINT16               consoleID;                    /**< The console id of task belongs | 任务的控制台id归属 */
     UINT16               processMode;                  /**< Kernel Mode:0; User Mode:1; | 模式指定为内核还是用户进程 */
@@ -300,9 +300,12 @@ STATIC INLINE BOOL OsProcessIsDead(const LosProcessCB *processCB)//查下进程�
 #define OS_PROCESS_USERINIT_PRIORITY     28	///< 用户进程默认的优先级,28级好低啊
 
 #define OS_GET_PROCESS_STATUS(status) ((UINT16)((UINT16)(status) & OS_PROCESS_STATUS_MASK))
+/// 获取进程处于运行中的任务数量
 #define OS_PROCESS_GET_RUNTASK_COUNT(status) ((UINT16)(((UINT16)(status)) & OS_PROCESS_RUNTASK_COUNT_MASK))
+/// 进程运行中的任务数量加1
 #define OS_PROCESS_RUNTASK_COUNT_ADD(status) ((UINT16)(((UINT16)(status)) & OS_PROCESS_STATUS_MASK) | \
         ((OS_PROCESS_GET_RUNTASK_COUNT(status) + 1) & OS_PROCESS_RUNTASK_COUNT_MASK))
+/// 进程运行中的任务数量减1        
 #define OS_PROCESS_RUNTASK_COUNT_DEC(status) ((UINT16)(((UINT16)(status)) & OS_PROCESS_STATUS_MASK) | \
         ((OS_PROCESS_GET_RUNTASK_COUNT(status) - 1) & OS_PROCESS_RUNTASK_COUNT_MASK))
 
