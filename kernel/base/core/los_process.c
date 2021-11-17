@@ -1998,6 +1998,14 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
 }
 #endif
 
+/*!
+ * @brief LOS_Exit	
+ * 进程退出
+ * @param status	
+ * @return	
+ *
+ * @see
+ */
 LITE_OS_SEC_TEXT VOID LOS_Exit(INT32 status)
 {
     UINT32 intSave;
@@ -2005,15 +2013,26 @@ LITE_OS_SEC_TEXT VOID LOS_Exit(INT32 status)
     /* The exit of a kernel - state process must be kernel - state and all threads must actively exit */
     LosProcessCB *processCB = OsCurrProcessGet();
     SCHEDULER_LOCK(intSave);
-    if (!OsProcessIsUserMode(processCB) && (processCB->threadNumber != 1)) {
+    if (!OsProcessIsUserMode(processCB) && (processCB->threadNumber != 1)) {//内核态下进程的退出方式,必须是所有的任务都退出了
         SCHEDULER_UNLOCK(intSave);
         PRINT_ERR("Kernel-state processes with multiple threads are not allowed to exit directly\n");
         return;
     }
     SCHEDULER_UNLOCK(intSave);
-    OsTaskExitGroup((UINT32)status);
-    OsProcessExit(OsCurrTaskGet(), (UINT32)status);
+    OsTaskExitGroup((UINT32)status);//退出进程组
+    OsProcessExit(OsCurrTaskGet(), (UINT32)status);//进程退出
 }
+
+
+/*!
+ * @brief LOS_GetUsedPIDList	
+ * 获取使用中的进程列表
+ * @param pidList	
+ * @param pidMaxNum	
+ * @return	
+ *
+ * @see
+ */
 LITE_OS_SEC_TEXT INT32 LOS_GetUsedPIDList(UINT32 *pidList, INT32 pidMaxNum)
 {
     LosProcessCB *pcb = NULL;
@@ -2025,13 +2044,13 @@ LITE_OS_SEC_TEXT INT32 LOS_GetUsedPIDList(UINT32 *pidList, INT32 pidMaxNum)
         return 0;
     }
     SCHEDULER_LOCK(intSave);
-    while (OsProcessIDUserCheckInvalid(pid) == false) {
+    while (OsProcessIDUserCheckInvalid(pid) == false) {//遍历进程池
         pcb = OS_PCB_FROM_PID(pid);
         pid++;
-        if (OsProcessIsUnused(pcb)) {
+        if (OsProcessIsUnused(pcb)) {//未使用的不算
             continue;
         }
-        pidList[num] = pcb->processID;
+        pidList[num] = pcb->processID;//由参数带走
         num++;
         if (num >= pidMaxNum) {
             break;
@@ -2059,12 +2078,12 @@ LITE_OS_SEC_TEXT struct fd_table_s *LOS_GetFdTable(UINT32 pid)
     return files->fdt;
 }
 #endif
-//获取当前进程的进程ID
+/// 获取当前进程的进程ID
 LITE_OS_SEC_TEXT UINT32 LOS_GetCurrProcessID(VOID)
 {
     return OsCurrProcessGet()->processID;
 }
-//按指定状态退出指定进程
+/// 按指定状态退出指定进程
 LITE_OS_SEC_TEXT VOID OsProcessExit(LosTaskCB *runTask, INT32 status)
 {
     UINT32 intSave;
@@ -2077,32 +2096,32 @@ LITE_OS_SEC_TEXT VOID OsProcessExit(LosTaskCB *runTask, INT32 status)
     OsProcessNaturalExit(runTask, status);//进程自然退出
     SCHEDULER_UNLOCK(intSave);
 }
-//获取系统支持的最大进程数目
+/// 获取系统支持的最大进程数目
 LITE_OS_SEC_TEXT UINT32 LOS_GetSystemProcessMaximum(VOID)
 {
     return g_processMaxNum;
 }
-//获取用户态进程的根进程,所有用户进程都是g_processCBArray[g_userInitProcess] fork来的
+/// 获取用户态进程的根进程,所有用户进程都是g_processCBArray[g_userInitProcess] fork来的
 LITE_OS_SEC_TEXT UINT32 OsGetUserInitProcessID(VOID)
 {
     return g_userInitProcess;//用户态根进程 序号为 1
 }
-
+/// 获取内核态根进程
 LITE_OS_SEC_TEXT UINT32 OsGetKernelInitProcessID(VOID)
 {
     return g_kernelInitProcess;
 }
-
+/// 获取内核态空闲进程
 LITE_OS_SEC_TEXT UINT32 OsGetIdleProcessID(VOID)
 {
     return g_kernelIdleProcess;
 }
-//设置进程的信号处理函数
+/// 设置进程的信号处理函数
 LITE_OS_SEC_TEXT VOID OsSetSigHandler(UINTPTR addr)
 {
     OsCurrProcessGet()->sigHandler = addr;
 }
-//获取进程的信号处理函数
+/// 获取进程的信号处理函数
 LITE_OS_SEC_TEXT UINTPTR OsGetSigHandler(VOID)
 {
     return OsCurrProcessGet()->sigHandler;

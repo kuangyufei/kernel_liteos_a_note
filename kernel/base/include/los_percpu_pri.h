@@ -63,8 +63,8 @@ typedef struct {
     SortLinkAttribute swtmrSortLink;         ///<  swtmr sort link | 挂还没到时间的定时器	
     SPIN_LOCK_S       swtmrSortLinkSpin;     ///<  swtmr sort link spin lock |* 操作swtmrSortLink链表的自旋锁
     UINT64            responseTime;          ///<  Response time for current nuclear Tick interrupts | 当前CPU核 Tick 中断的响应时间
-    UINT64            tickStartTime;         ///<  The time when the tick interrupt starts processing |
-    UINT32            responseID;            ///<  The response ID of the current nuclear TICK interrupt | 当前CPU核TICK中断的响应ID
+    UINT64            tickStartTime;         ///<  The time when the tick interrupt starts processing | 开始处理tick中断的时间
+    UINT32            responseID;            ///<  The response ID of the current nuclear TICK interrupt | 当前CPU核TICK中断的响应任务ID
     UINTPTR           runProcess;            ///<  The address of the process control block pointer to which the current kernel is running | 当前进程控制块地址
     UINT32 idleTaskID;                          ///<  idle task id | 每个CPU都有一个空闲任务 见于 OsIdleTaskCreate
     UINT32 taskLockCnt;                         ///<  task lock flag | 任务锁的数量,当 > 0 的时候,需要重新调度了

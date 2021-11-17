@@ -46,7 +46,7 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-//保存L1 页表项至L1页表
+/// PTE(Page Table Entry),页表条目,保存L1页表项至L1页表
 STATIC INLINE VOID OsSavePte1(PTE_T *pte1Ptr, PTE_T pte1)
 {
     DMB;

@@ -403,7 +403,7 @@ extern LosTaskCB *g_taskCBArray;///< 外部变量 任务池 默认128个
  */
 typedef struct {//时间片结构体，任务轮询
     LosTaskCB *task; /**< Current running task | 当前运行着的任务*/
-    UINT16 time;     /**< Expiration time point | 过期时间点*/
+    UINT16 time;     /**< Expiration time point | 到期时间点*/
     UINT16 timeout;  /**< Expiration duration | 有效期*/
 } OsTaskRobin;
 /// 获取当前CPU  core运行的任务

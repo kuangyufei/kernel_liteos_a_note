@@ -92,7 +92,7 @@ VOID OsDeleteNodeSortLink(SortLinkAttribute *sortLinkHeader, SortLinkList *sortL
     SET_SORTLIST_VALUE(sortList, OS_SORT_LINK_INVALID_TIME);//重置响应时间
     sortLinkHeader->nodeNum--;//cpu的工作量减少一份
 }
-/// 获取下一个结点的过期时间
+/// 获取下一个结点的到期时间
 STATIC INLINE UINT64 OsGetSortLinkNextExpireTime(SortLinkAttribute *sortHeader, UINT64 startTime)
 {
     LOS_DL_LIST *head = &sortHeader->sortLink;
@@ -215,7 +215,7 @@ UINT64 OsGetNextExpireTime(UINT64 startTime)
     SortLinkAttribute *swtmrHeader = &cpu->swtmrSortLink;
 
     LOS_SpinLockSave(&cpu->taskSortLinkSpin, &intSave);
-    UINT64 taskExpirTime = OsGetSortLinkNextExpireTime(taskHeader, startTime);//拿到下一个过期时间,注意此处拿到的一定是最短的时间
+    UINT64 taskExpirTime = OsGetSortLinkNextExpireTime(taskHeader, startTime);//拿到下一个到期时间,注意此处拿到的一定是最短的时间
     LOS_SpinUnlockRestore(&cpu->taskSortLinkSpin, intSave);
 
     LOS_SpinLockSave(&cpu->swtmrSortLinkSpin, &intSave);

@@ -203,8 +203,17 @@ STATIC INLINE VOID OsInsertTCBToFreeList(LosTaskCB *taskCB)
     taskCB->taskStatus = OS_TASK_STATUS_UNUSED;
     taskCB->processID = OS_INVALID_VALUE;
     LOS_ListAdd(&g_losFreeTask, &taskCB->pendList);//内核挂在g_losFreeTask上的任务都是由pendList完成
-}//查找task 就通过 OS_TCB_FROM_PENDLIST 来完成,相当于由LOS_DL_LIST找到LosTaskCB
-//把那些和参数任务绑在一起的task唤醒.
+}
+
+/*!
+ * @brief OsTaskJoinPostUnsafe	
+ * 	查找task 通过 OS_TCB_FROM_PENDLIST 来完成,相当于由LOS_DL_LIST找到LosTaskCB,
+ *	将那些和参数任务绑在一起的task唤醒.
+ * @param taskCB	
+ * @return	
+ *
+ * @see
+ */
 LITE_OS_SEC_TEXT_INIT VOID OsTaskJoinPostUnsafe(LosTaskCB *taskCB)
 {
     LosTaskCB *resumedTask = NULL;
@@ -212,13 +221,13 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskJoinPostUnsafe(LosTaskCB *taskCB)
     if (taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {//join任务处理
         if (!LOS_ListEmpty(&taskCB->joinList)) {//注意到了这里 joinList中的节点身上都有阻塞标签
             resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(taskCB->joinList)));//通过贴有JOIN标签链表的第一个节点找到Task
-            OsTaskWakeClearPendMask(resumedTask);
-            OsSchedTaskWake(resumedTask);
+            OsTaskWakeClearPendMask(resumedTask);//清除任务的挂起标记
+            OsSchedTaskWake(resumedTask);//唤醒任务
         }
     }
     taskCB->taskStatus |= OS_TASK_STATUS_EXIT;//贴上任务退出标签
 }
-
+/// 挂起任务,任务进入等待链表,Join代表是支持通过一个任务去唤醒其他的任务
 LITE_OS_SEC_TEXT UINT32 OsTaskJoinPendUnsafe(LosTaskCB *taskCB)
 {
     LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
@@ -235,8 +244,8 @@ LITE_OS_SEC_TEXT UINT32 OsTaskJoinPendUnsafe(LosTaskCB *taskCB)
     }
 
     if ((taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) && LOS_ListEmpty(&taskCB->joinList)) {
-        OsTaskWaitSetPendMask(OS_TASK_WAIT_JOIN, taskCB->taskID, LOS_WAIT_FOREVER);
-        return OsSchedTaskWait(&taskCB->joinList, LOS_WAIT_FOREVER, TRUE);
+        OsTaskWaitSetPendMask(OS_TASK_WAIT_JOIN, taskCB->taskID, LOS_WAIT_FOREVER);//设置任务的等待标记
+        return OsSchedTaskWait(&taskCB->joinList, LOS_WAIT_FOREVER, TRUE);//永久等待
     }
 
     return LOS_EINVAL;
@@ -366,6 +375,14 @@ STATIC INLINE VOID OsTaskSyncDestroy(UINT32 syncSignal)
 }
 
 #ifdef LOSCFG_KERNEL_SMP
+/*!
+ * @brief OsTaskSyncWait	
+ * 任务同步等待,通过信号量保持同步
+ * @param taskCB	
+ * @return	
+ *
+ * @see
+ */
 STATIC INLINE UINT32 OsTaskSyncWait(const LosTaskCB *taskCB)
 {
 #ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
@@ -1509,7 +1526,7 @@ EXIT:
     SCHEDULER_UNLOCK(intSave);
     return err;
 }
-
+/// //退群并发起kill信号
 STATIC VOID OsExitGroupActiveTaskKilled(LosProcessCB *processCB, LosTaskCB *taskCB)
 {
     INT32 ret;
@@ -1550,7 +1567,7 @@ LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
 
     LosProcessCB *processCB = OsCurrProcessGet();
     LosTaskCB *currTask = OsCurrTaskGet();
-    SCHEDULER_LOCK(intSave);//调度自旋锁,这块锁的代码有点多,这块容易出问题!出问题也不好复现,希望鸿蒙有充分测试这块的功能. @note_thinking
+    SCHEDULER_LOCK(intSave);//调度自旋锁,这块锁的代码有点多,容易出问题!出问题也不好复现,希望鸿蒙有充分测试这块的功能. @note_thinking
     if ((processCB->processStatus & OS_PROCESS_FLAG_EXIT) || !OsProcessIsUserMode(processCB)) {
         SCHEDULER_UNLOCK(intSave);
         return;
@@ -1559,25 +1576,25 @@ LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
     processCB->processStatus |= OS_PROCESS_FLAG_EXIT;//贴上进程要退出的标签
     processCB->threadGroupID = currTask->taskID;
 
-    LOS_DL_LIST *list = &processCB->threadSiblingList;
+    LOS_DL_LIST *list = &processCB->threadSiblingList;//获取进程的任务链表遍历
     LOS_DL_LIST *head = list;
     do {
         LosTaskCB *taskCB = LOS_DL_LIST_ENTRY(list->pstNext, LosTaskCB, threadList);
         if ((taskCB->taskStatus & (OS_TASK_STATUS_INIT | OS_TASK_STATUS_EXIT) ||
             ((taskCB->taskStatus & OS_TASK_STATUS_READY) && !taskCB->sig.sigIntLock)) &&
             !(taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {
-            OsTaskDeleteInactive(processCB, taskCB);
+            OsTaskDeleteInactive(processCB, taskCB);//先删除不活动的任务
         } else {
-            if (taskCB != currTask) {
-                OsExitGroupActiveTaskKilled(processCB, taskCB);
+            if (taskCB != currTask) {//非当前任务
+                OsExitGroupActiveTaskKilled(processCB, taskCB);//退群并发起kill信号
             } else {
-                /* Skip the current task */
+                /* Skip the current task | 跳过当前任务 */
                 list = list->pstNext;
             }
         }
-    } while (head != list->pstNext);
+    } while (head != list->pstNext);//遍历链表
 
-    SCHEDULER_UNLOCK(intSave);
+    SCHEDULER_UNLOCK(intSave);//释放锁
 
     LOS_ASSERT(processCB->threadNumber == 1);//这一趟下来,进程只有一个正在活动的任务
     return;

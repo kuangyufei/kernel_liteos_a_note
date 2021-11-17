@@ -52,11 +52,11 @@
 
 #define OS_32BIT_MAX               0xFFFFFFFFUL
 #define OS_SCHED_FIFO_TIMEOUT      0x7FFFFFFF
-#define OS_PRIORITY_QUEUE_NUM      32
+#define OS_PRIORITY_QUEUE_NUM      32	///< 就绪队列数量
 #define PRIQUEUE_PRIOR0_BIT        0x80000000U
-#define OS_SCHED_TIME_SLICES_MIN   ((5000 * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE)  /* 5ms */
-#define OS_SCHED_TIME_SLICES_MAX   ((LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE)
-#define OS_SCHED_TIME_SLICES_DIFF  (OS_SCHED_TIME_SLICES_MAX - OS_SCHED_TIME_SLICES_MIN)
+#define OS_SCHED_TIME_SLICES_MIN   ((5000 * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE)  /* 5ms 调度最小时间片 */
+#define OS_SCHED_TIME_SLICES_MAX   ((LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE) ///< 调度最大时间片 
+#define OS_SCHED_TIME_SLICES_DIFF  (OS_SCHED_TIME_SLICES_MAX - OS_SCHED_TIME_SLICES_MIN) ///< 最大,最小二者差
 #define OS_SCHED_READY_MAX         30
 #define OS_TIME_SLICE_MIN          (INT32)((50 * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE) /* 50us */
 
@@ -237,7 +237,7 @@ UINT32 OsShellShowSchedParam(VOID)
     return LOS_NOK;
 }
 #endif
-
+///< 设置节拍器类型
 UINT32 OsSchedSetTickTimerType(UINT32 timerType)
 {
     switch (timerType) {
@@ -254,30 +254,30 @@ UINT32 OsSchedSetTickTimerType(UINT32 timerType)
 
     return LOS_OK;
 }
-///设置调度开始时间
+/// 设置调度开始时间
 STATIC VOID OsSchedSetStartTime(UINT64 currCycle)
 {
     if (g_sysSchedStartTime == OS_64BIT_MAX) {
         g_sysSchedStartTime = currCycle;
     }
 }
-///升级时间片
+/// 更新时间片
 STATIC INLINE VOID OsTimeSliceUpdate(LosTaskCB *taskCB, UINT64 currTime)
 {
-    LOS_ASSERT(currTime >= taskCB->startTime);
+    LOS_ASSERT(currTime >= taskCB->startTime); //断言参数时间必须大于开始时间
 
-    INT32 incTime = (currTime - taskCB->startTime - taskCB->irqUsedTime);
+    INT32 incTime = (currTime - taskCB->startTime - taskCB->irqUsedTime);//计算增加的时间
 
     LOS_ASSERT(incTime >= 0);
 
-    if (taskCB->policy == LOS_SCHED_RR) {
-        taskCB->timeSlice -= incTime;
+    if (taskCB->policy == LOS_SCHED_RR) {//抢占调度
+        taskCB->timeSlice -= incTime; //任务的时间片减少
 #ifdef LOSCFG_SCHED_DEBUG
         taskCB->schedStat.timeSliceRealTime += incTime;
 #endif
     }
-    taskCB->irqUsedTime = 0;
-    taskCB->startTime = currTime;
+    taskCB->irqUsedTime = 0;//中断时间置0
+    taskCB->startTime = currTime;//重新设置开始时间
 
 #ifdef LOSCFG_SCHED_DEBUG
     taskCB->schedStat.allRuntime += incTime;
@@ -325,7 +325,7 @@ STATIC INLINE VOID OsSchedTickReload(Percpu *currCpu, UINT64 nextResponseTime, U
     }
 #endif
 }
-
+/// 设置下一个到期时间
 STATIC INLINE VOID OsSchedSetNextExpireTime(UINT64 startTime, UINT32 responseID,
                                             UINT64 taskEndTime, UINT32 oldResponseID)
 {
@@ -385,13 +385,13 @@ VOID OsSchedUpdateExpireTime(UINT64 startTime)
 
     OsSchedSetNextExpireTime(startTime, runTask->taskID, endTime, runTask->taskID);
 }
-
+/// 计算时间片
 STATIC INLINE UINT32 OsSchedCalculateTimeSlice(UINT16 proPriority, UINT16 priority)
 {
     UINT32 retTime;
     UINT32 readyTasks;
 
-    SchedQueue *queueList = &g_sched->queueList[proPriority];
+    SchedQueue *queueList = &g_sched->queueList[proPriority];//拿到优先级调度队列
     readyTasks = queueList->readyTasks[priority];
     if (readyTasks > OS_SCHED_READY_MAX) {
         return OS_SCHED_TIME_SLICES_MIN;
@@ -540,17 +540,26 @@ STATIC INLINE BOOL OsSchedScanTimerList(VOID)
     return needSchedule;
 }
 
+/*!
+ * @brief OsSchedEnTaskQueue	
+ * 添加任务到进程的就绪队列中
+ * @param processCB	
+ * @param taskCB	
+ * @return	
+ *
+ * @see
+ */
 STATIC INLINE VOID OsSchedEnTaskQueue(LosTaskCB *taskCB, LosProcessCB *processCB)
 {
-    LOS_ASSERT(!(taskCB->taskStatus & OS_TASK_STATUS_READY));
+    LOS_ASSERT(!(taskCB->taskStatus & OS_TASK_STATUS_READY));//必须是就绪状态,因为只有就绪状态才能入就绪队列
 
     switch (taskCB->policy) {
-        case LOS_SCHED_RR: {
-            if (taskCB->timeSlice > OS_TIME_SLICE_MIN) {
-                OsSchedPriQueueEnHead(processCB->priority, &taskCB->pendList, taskCB->priority);
-            } else {
-                taskCB->initTimeSlice = OsSchedCalculateTimeSlice(processCB->priority, taskCB->priority);
-                taskCB->timeSlice = taskCB->initTimeSlice;
+        case LOS_SCHED_RR: {//抢占式跳读
+            if (taskCB->timeSlice > OS_TIME_SLICE_MIN) {//时间片大于最小的时间片 50微妙
+                OsSchedPriQueueEnHead(processCB->priority, &taskCB->pendList, taskCB->priority);//插入对应优先级的就绪队列中
+            } else {//如果时间片不够了,咋办?
+                taskCB->initTimeSlice = OsSchedCalculateTimeSlice(processCB->priority, taskCB->priority);//重新计算时间片
+                taskCB->timeSlice = taskCB->initTimeSlice;//
                 OsSchedPriQueueEnTail(processCB->priority, &taskCB->pendList, taskCB->priority);
 #ifdef LOSCFG_SCHED_DEBUG
                 taskCB->schedStat.timeSliceTime = taskCB->schedStat.timeSliceRealTime;
@@ -651,14 +660,14 @@ VOID OsSchedTaskExit(LosTaskCB *taskCB)
         taskCB->taskStatus &= ~(OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME);
     }
 }
-///通过本函数可以看出 yield 的真正含义是主动让出CPU,当它自己还是在就绪队列中,跑末位去排队了.像个活雷锋.
+///通过本函数可以看出 yield 的真正含义是主动让出CPU,那怎么安置自己呢? 跑到末尾重新排队. 真是个活雷锋,好同志啊!!!
 VOID OsSchedYield(VOID)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
 
     runTask->timeSlice = 0;//时间片变成0,代表主动让出运行时间.
 
-    runTask->startTime = OsGetCurrSchedTimeCycle();
+    runTask->startTime = OsGetCurrSchedTimeCycle();//重新获取开始时间
     OsSchedTaskEnQueue(runTask);//跑队列尾部排队
     OsSchedResched();//发起调度
 }
@@ -985,30 +994,39 @@ STATIC INLINE VOID OsSchedSwitchProcess(LosProcessCB *runProcess, LosProcessCB *
     OsCurrProcessSet(newProcess);
 }
 
+/*!
+ * @brief OsSchedTaskSwitch	实现新老两个任务切换
+ *
+ * @param newTask 	
+ * @param runTask	
+ * @return	
+ *
+ * @see
+ */
 STATIC VOID OsSchedTaskSwitch(LosTaskCB *runTask, LosTaskCB *newTask)
 {
     UINT64 endTime;
 
-    OsSchedSwitchCheck(runTask, newTask);
+    OsSchedSwitchCheck(runTask, newTask);//任务内容检查
 
-    runTask->taskStatus &= ~OS_TASK_STATUS_RUNNING;
-    newTask->taskStatus |= OS_TASK_STATUS_RUNNING;
+    runTask->taskStatus &= ~OS_TASK_STATUS_RUNNING; //当前任务去掉正在运行的标签
+    newTask->taskStatus |= OS_TASK_STATUS_RUNNING;	//新任务贴上正在运行的标签,虽标签贴上了,但目前还是在老任务中跑.
 
 #ifdef LOSCFG_KERNEL_SMP
     /* mask new running task's owner processor */
-    runTask->currCpu = OS_TASK_INVALID_CPUID;
-    newTask->currCpu = ArchCurrCpuid();
+    runTask->currCpu = OS_TASK_INVALID_CPUID;//褫夺当前任务的CPU使用权
+    newTask->currCpu = ArchCurrCpuid(); //标记新任务获取当前CPU使用权
 #endif
 
-    OsCurrTaskSet((VOID *)newTask);
-    LosProcessCB *newProcess = OS_PCB_FROM_PID(newTask->processID);
-    LosProcessCB *runProcess = OS_PCB_FROM_PID(runTask->processID);
-    if (runProcess != newProcess) {
-        OsSchedSwitchProcess(runProcess, newProcess);
+    OsCurrTaskSet((VOID *)newTask);//设置新任务为当前任务
+    LosProcessCB *newProcess = OS_PCB_FROM_PID(newTask->processID);//获取新任务所在进程实体
+    LosProcessCB *runProcess = OS_PCB_FROM_PID(runTask->processID);//获取老任务所在进程实体
+    if (runProcess != newProcess) {//如果不是同一个进程,就需要换行进程上下文,也就是切换MMU,切换进程空间
+        OsSchedSwitchProcess(runProcess, newProcess);//切换进程上下文
     }
 
-    if (OsProcessIsUserMode(newProcess)) {
-        OsCurrUserTaskSet(newTask->userArea);
+    if (OsProcessIsUserMode(newProcess)) {//如果是用户模式即应用进程
+        OsCurrUserTaskSet(newTask->userArea);//设置用户态栈空间
     }
 
 #ifdef LOSCFG_KERNEL_CPUP
@@ -1018,15 +1036,16 @@ STATIC VOID OsSchedTaskSwitch(LosTaskCB *runTask, LosTaskCB *newTask)
 #ifdef LOSCFG_SCHED_DEBUG
     UINT64 waitStartTime = newTask->startTime;
 #endif
-    if (runTask->taskStatus & OS_TASK_STATUS_READY) {
-        /* When a thread enters the ready queue, its slice of time is updated */
+    if (runTask->taskStatus & OS_TASK_STATUS_READY) {//注意老任务可不一定是就绪状态
+        /* When a thread enters the ready queue, its slice of time is updated 
+		当一个线程(任务)进入就绪队列时，它的时间片被更新 */
         newTask->startTime = runTask->startTime;
     } else {
         /* The currently running task is blocked */
-        newTask->startTime = OsGetCurrSchedTimeCycle();
+        newTask->startTime = OsGetCurrSchedTimeCycle();//重新获取时间
         /* The task is in a blocking state and needs to update its time slice before pend */
-        OsTimeSliceUpdate(runTask, newTask->startTime);
-
+        OsTimeSliceUpdate(runTask, newTask->startTime);//更新时间片
+		//两种状态下将老任务放入CPU的工作链表中
         if (runTask->taskStatus & (OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY)) {
             OsAdd2SortLink(&runTask->sortList, runTask->startTime, runTask->waitTimes, OS_SORT_LINK_TASK);
         }
@@ -1046,7 +1065,7 @@ STATIC VOID OsSchedTaskSwitch(LosTaskCB *runTask, LosTaskCB *newTask)
     runTask->schedStat.switchCount++;
 #endif
     /* do the task context switch */
-    OsTaskSchedule(newTask, runTask);
+    OsTaskSchedule(newTask, runTask); //执行汇编代码
 }
 
 VOID OsSchedIrqEndCheckNeedSched(VOID)
@@ -1080,37 +1099,44 @@ VOID OsSchedIrqEndCheckNeedSched(VOID)
         OsSchedUpdateExpireTime(runTask->startTime);
     }
 }
-
+/// 申请一次调度
 VOID OsSchedResched(VOID)
 {
     LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));
 #ifdef LOSCFG_KERNEL_SMP
-    LOS_ASSERT(OsPercpuGet()->taskLockCnt == 1);
+    LOS_ASSERT(OsPercpuGet()->taskLockCnt == 1); // @note_thinking 为何此处一定得 == 1, 大于1不行吗?  
 #else
     LOS_ASSERT(OsPercpuGet()->taskLockCnt == 0);
 #endif
 
-    OsPercpuGet()->schedFlag &= ~INT_PEND_RESCH;
+    OsPercpuGet()->schedFlag &= ~INT_PEND_RESCH;//去掉标签
     LosTaskCB *runTask = OsCurrTaskGet();
-    LosTaskCB *newTask = OsGetTopTask();
+    LosTaskCB *newTask = OsGetTopTask();//获取最高优先级任务
     if (runTask == newTask) {
         return;
     }
 
-    OsSchedTaskSwitch(runTask, newTask);
+    OsSchedTaskSwitch(runTask, newTask);//CPU将真正的换任务执行
 }
 
+/*!
+ * @brief LOS_Schedule	任务调度主函数
+ *
+ * @return	
+ *
+ * @see
+ */
 VOID LOS_Schedule(VOID)
 {
     UINT32 intSave;
     LosTaskCB *runTask = OsCurrTaskGet();
 
-    if (OS_INT_ACTIVE) {
-        OsPercpuGet()->schedFlag |= INT_PEND_RESCH;
+    if (OS_INT_ACTIVE) { //中断发生中...,需停止调度
+        OsPercpuGet()->schedFlag |= INT_PEND_RESCH;//贴上原因
         return;
     }
 
-    if (!OsPreemptable()) {
+    if (!OsPreemptable()) {//当不可抢占时直接返回
         return;
     }
 
@@ -1121,12 +1147,12 @@ VOID LOS_Schedule(VOID)
      */
     SCHEDULER_LOCK(intSave);
 
-    OsTimeSliceUpdate(runTask, OsGetCurrSchedTimeCycle());
+    OsTimeSliceUpdate(runTask, OsGetCurrSchedTimeCycle());//更新时间片
 
-    /* add run task back to ready queue */
-    OsSchedTaskEnQueue(runTask);
+    /* add run task back to ready queue | 添加任务到就绪队列*/
+    OsSchedTaskEnQueue(runTask); 
 
-    /* reschedule to new thread */
+    /* reschedule to new thread | 申请调度,CPU可能将换任务执行*/
     OsSchedResched();
 
     SCHEDULER_UNLOCK(intSave);

@@ -1,3 +1,43 @@
+/*!
+ * @file    los_arch_mmu.c
+ * @brief 虚实映射其实就是一个建立页表的过程
+ * @link http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-basic-inner-reflect.html
+ * @verbatim
+ 
+	虚实映射是指系统通过内存管理单元（MMU，Memory Management Unit）将进程空间的虚拟地址与实际的物理地址做映射，
+	并指定相应的访问权限、缓存属性等。程序执行时，CPU访问的是虚拟内存，通过MMU页表条目找到对应的物理内存，
+	并做相应的代码执行或数据读写操作。MMU的映射由页表（Page Table）来描述，其中保存虚拟地址和物理地址的映射关系以及访问权限等。
+	每个进程在创建的时候都会创建一个页表，页表由一个个页表条目（Page Table Entry， PTE）构成，
+	每个页表条目描述虚拟地址区间与物理地址区间的映射关系。MMU中有一块页表缓存，称为快表（TLB, Translation Lookaside Buffers），
+	做地址转换时，MMU首先在TLB中查找，如果找到对应的页表条目可直接进行转换，提高了查询效率。
+
+	虚实映射其实就是一个建立页表的过程。MMU有多级页表，LiteOS-A内核采用二级页表描述进程空间。每个一级页表条目描述符占用4个字节，
+	可表示1MiB的内存空间的映射关系，即1GiB用户空间（LiteOS-A内核中用户空间占用1GiB）的虚拟内存空间需要1024个。系统创建用户进程时，
+	在内存中申请一块4KiB大小的内存块作为一级页表的存储区域，二级页表根据当前进程的需要做动态的内存申请。
+
+	用户程序加载启动时，会将代码段、数据段映射进虚拟内存空间（详细可参考动态加载与链接），此时并没有物理页做实际的映射；
+	程序执行时，如下图粗箭头所示，CPU访问虚拟地址，通过MMU查找是否有对应的物理内存，若该虚拟地址无对应的物理地址则触发缺页异常，
+	内核申请物理内存并将虚实映射关系及对应的属性配置信息写进页表，并把页表条目缓存至TLB，接着CPU可直接通过转换关系访问实际的物理内存；
+	若CPU访问已缓存至TLB的页表条目，无需再访问保存在内存中的页表，可加快查找速度。
+
+	开发流程
+		1. 虚实映射相关接口的使用：
+			通过LOS_ArchMmuMap映射一块物理内存。
+
+		2. 对映射的地址区间做相关操作：
+			通过LOS_ArchMmuQuery可以查询相应虚拟地址区间映射的物理地址区间及映射属性；
+			通过LOS_ArchMmuChangeProt修改映射属性；
+			通过LOS_ArchMmuMove做虚拟地址区间的重映射。
+		3. 通过LOS_ArchMmuUnmap解除映射关系。
+
+ * @endverbatim
+ * @version 
+ * @author  weharmonyos.com
+ * @date    2021-11-17
+ *
+ * @history
+ *
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -411,8 +451,8 @@ BOOL OsArchMmuInit(LosArchMmu *archMmu, VADDR_T *virtTtb)
 
 
 /*!
- * @brief LOS_ArchMmuQuery	本函数是内核高频函数,通过MMU查询虚拟地址是否映射过,带走映射的物理地址和权限
- *
+ * @brief LOS_ArchMmuQuery 获取进程空间虚拟地址对应的物理地址以及映射属性。	
+ * 本函数是内核高频函数,通过MMU查询虚拟地址是否映射过,带走映射的物理地址和权限
  * @param archMmu	
  * @param flags	
  * @param paddr	
@@ -462,7 +502,7 @@ STATUS_T LOS_ArchMmuQuery(const LosArchMmu *archMmu, VADDR_T vaddr, PADDR_T *pad
 }
 
 /*!
- * @brief LOS_ArchMmuUnmap	解除映射关系
+ * @brief LOS_ArchMmuUnmap	解除进程空间虚拟地址区间与物理地址区间的映射关系
  *
  * @param archMmu	
  * @param count	
@@ -684,7 +724,18 @@ STATIC UINT32 OsMapL2PageContinuous(PTE_T pte1, UINT32 flags, VADDR_T *vaddr, PA
     *count -= saveCounts;
     return saveCounts;
 }
-/// mmu映射,所谓的map就是生成L1,L2页表项的过程
+/*!
+ * @brief LOS_ArchMmuMap 映射进程空间虚拟地址区间与物理地址区间	
+ * 所谓的map就是生成L1,L2页表项的过程
+ * @param archMmu	
+ * @param count	
+ * @param flags	
+ * @param paddr	
+ * @param vaddr	
+ * @return	
+ *
+ * @see
+ */
 status_t LOS_ArchMmuMap(LosArchMmu *archMmu, VADDR_T vaddr, PADDR_T paddr, size_t count, UINT32 flags)
 {
     PTE_T l1Entry;
@@ -721,7 +772,18 @@ status_t LOS_ArchMmuMap(LosArchMmu *archMmu, VADDR_T vaddr, PADDR_T paddr, size_
 
     return mapped;
 }
-/// 改变内存段的访问权限,读/写/可执行/不可用
+
+/*!
+ * @brief LOS_ArchMmuChangeProt	修改进程空间虚拟地址区间的映射属性
+ * 改变内存段的访问权限,例如: 读/写/可执行/不可用 == 
+ * @param archMmu	
+ * @param count	
+ * @param flags	
+ * @param vaddr	
+ * @return	
+ *
+ * @see
+ */
 STATUS_T LOS_ArchMmuChangeProt(LosArchMmu *archMmu, VADDR_T vaddr, size_t count, UINT32 flags)
 {
     STATUS_T status;
@@ -757,6 +819,18 @@ STATUS_T LOS_ArchMmuChangeProt(LosArchMmu *archMmu, VADDR_T vaddr, size_t count,
     return LOS_OK;
 }
 
+/*!
+ * @brief LOS_ArchMmuMove 将进程空间一个虚拟地址区间的映射关系转移至另一块未使用的虚拟地址区间重新做映射。	
+ *
+ * @param archMmu	
+ * @param count	
+ * @param flags	
+ * @param newVaddr	
+ * @param oldVaddr	
+ * @return	
+ *
+ * @see
+ */
 STATUS_T LOS_ArchMmuMove(LosArchMmu *archMmu, VADDR_T oldVaddr, VADDR_T newVaddr, size_t count, UINT32 flags)
 {
     STATUS_T status;
@@ -1017,12 +1091,19 @@ VOID OsArchMmuInitPerCPU(VOID)
     OsArmWriteTtbr0(0);
     ISB;
 }
-//启动映射初始化
+
+/*!
+ * @brief OsInitMappingStartUp	开始初始化mmu
+ *
+ * @return	
+ *
+ * @see
+ */
 VOID OsInitMappingStartUp(VOID)
 {
     OsArmInvalidateTlbBarrier();//使TLB失效
 
-    OsSwitchTmpTTB();//切换到临时TTB
+    OsSwitchTmpTTB();//切换到临时TTB ,请想想为何要切换到临时 @note_thinking
 
     OsSetKSectionAttr(KERNEL_VMM_BASE, FALSE);
     OsSetKSectionAttr(UNCACHED_VMM_BASE, TRUE);

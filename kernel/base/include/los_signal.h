@@ -226,9 +226,9 @@ typedef struct {
     sigset_t sigwaitmask; /*! Waiting for pending signals   | 任务在等待哪些信号的到来 */
     siginfo_t sigunbinfo; /*! Signal info when task unblocked   | 任务解锁时的信号信息  */
     SigInfoListNode *tmpInfoListHead; /*! Signal info List */
-    unsigned int sigIntLock;
-    void *sigContext;
-    unsigned int count;
+    unsigned int sigIntLock;///< 信号中断锁
+    void *sigContext; ///< 信号上下文
+    unsigned int count;///< 信号数量
 } sig_cb;
 
 #define SIGEV_THREAD_ID 4
