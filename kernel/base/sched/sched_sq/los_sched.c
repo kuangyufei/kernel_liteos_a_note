@@ -633,17 +633,17 @@ VOID OsSchedTaskEnQueue(LosTaskCB *taskCB)
 #endif
     OsSchedEnTaskQueue(taskCB, processCB);
 }
-
+/// 任务退出
 VOID OsSchedTaskExit(LosTaskCB *taskCB)
 {
     LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
 
-    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {
-        OsSchedTaskDeQueue(taskCB);
-        processCB->processStatus &= ~OS_PROCESS_STATUS_PENDING;
-    } else if (taskCB->taskStatus & OS_TASK_STATUS_PENDING) {
-        LOS_ListDelete(&taskCB->pendList);
-        taskCB->taskStatus &= ~OS_TASK_STATUS_PENDING;
+    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {//就绪状态
+        OsSchedTaskDeQueue(taskCB);//从就绪队列中删除
+        processCB->processStatus &= ~OS_PROCESS_STATUS_PENDING;//进程贴上非挂起标签
+    } else if (taskCB->taskStatus & OS_TASK_STATUS_PENDING) { //挂起状态
+        LOS_ListDelete(&taskCB->pendList);	//从任务挂起链表中摘除
+        taskCB->taskStatus &= ~OS_TASK_STATUS_PENDING;////任务贴上非挂起标签
     }
 
     if (taskCB->taskStatus & (OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME)) {

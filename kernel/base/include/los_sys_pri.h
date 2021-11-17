@@ -45,79 +45,78 @@ extern "C" {
  * @ingroup los_sys
  * Number of milliseconds in one second.	
  */
-#define OS_SYS_MS_PER_SECOND   1000			//一秒多少毫秒
+#define OS_SYS_MS_PER_SECOND   1000			///< 一秒多少毫秒
 
 /**
  * @ingroup los_sys
  * Number of microseconds in one second.
  */
-#define OS_SYS_US_PER_SECOND   1000000		//一秒多少微秒
+#define OS_SYS_US_PER_SECOND   1000000		///< 一秒多少微秒
 
 /**
  * @ingroup los_sys
  * Number of nanoseconds in one second.
  */
-#define OS_SYS_NS_PER_SECOND   1000000000	//一秒多少纳秒
+#define OS_SYS_NS_PER_SECOND   1000000000	///< 一秒多少纳秒
 
 /**
  * @ingroup los_sys
  * Number of microseconds in one milliseconds.
  */
-#define OS_SYS_US_PER_MS        1000		//一毫秒都是微秒
-
+#define OS_SYS_US_PER_MS        1000		///< 一毫秒的微秒数
 /**
  * @ingroup los_sys
  * Number of nanoseconds in one milliseconds.
  */
-#define OS_SYS_NS_PER_MS        1000000		//一毫秒都是纳秒
+#define OS_SYS_NS_PER_MS        1000000		///< 一毫秒的纳秒数
 
 /**
  * @ingroup los_sys
  * Number of nanoseconds in one microsecond.
  */
-#define OS_SYS_NS_PER_US        1000		//一微秒都是纳秒
+#define OS_SYS_NS_PER_US        1000		///< 一微秒的纳秒数
 
 /**
  * @ingroup los_sys
  * Number of cycle in one tick.
  */
-#define OS_CYCLE_PER_TICK       (OS_SYS_CLOCK / LOSCFG_BASE_CORE_TICK_PER_SECOND)
+#define OS_CYCLE_PER_TICK       (OS_SYS_CLOCK / LOSCFG_BASE_CORE_TICK_PER_SECOND) ///< 一个节拍的周期数
 
 /**
  * @ingroup los_sys
  * Number of nanoseconds in one cycle.
  */
-#define OS_NS_PER_CYCLE         (OS_SYS_NS_PER_SECOND / OS_SYS_CLOCK)
+#define OS_NS_PER_CYCLE         (OS_SYS_NS_PER_SECOND / OS_SYS_CLOCK)  ///< 一周期的纳秒数
 
 /**
  * @ingroup los_sys
  * Number of microseconds in one tick.
  */
-#define OS_US_PER_TICK          (OS_SYS_US_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND)
+#define OS_US_PER_TICK          (OS_SYS_US_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND) ///< 一个tick的微秒数
 
 /**
  * @ingroup los_sys
  * Number of nanoseconds in one tick.
  */
-#define OS_NS_PER_TICK          (OS_SYS_NS_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND)
+#define OS_NS_PER_TICK          (OS_SYS_NS_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND) ///< 一个tick的纳秒数
 
 /**
  * @ingroup los_sys
  * The maximum length of name.
  */
-#define OS_SYS_APPVER_NAME_MAX 64			//名字的最大长度
+#define OS_SYS_APPVER_NAME_MAX 64			///< 名字的最大长度
 
 /**
  * @ingroup los_sys
  * The magic word.
  */
-#define OS_SYS_MAGIC_WORD      0xAAAAAAAA	//魔法数字,还记得栈顶的魔法数字是多少吗? 0xCCCCCCCC
+#define OS_SYS_MAGIC_WORD      0xAAAAAAAA	///< 魔法数字,还记得栈顶的魔法数字是多少吗? 0xCCCCCCCC
 
 /**
  * @ingroup los_sys
  * The initialization value of stack space.
  */
-#define OS_SYS_EMPTY_STACK     0xCACACACA	//栈的填充内容魔法数字
+#define OS_SYS_EMPTY_STACK     0xCACACACA	///< 栈的填充内容魔法数字
 
 /**
  * @ingroup los_sys

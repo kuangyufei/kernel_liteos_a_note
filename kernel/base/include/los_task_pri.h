@@ -77,7 +77,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  * Null task ID
  *
  */
-#define OS_TASK_ERRORID             0xFFFFFFFF
+#define OS_TASK_ERRORID             0xFFFFFFFF 
 
 /**
  * @ingroup los_task
@@ -93,7 +93,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * Lowest task priority.
  */
-#define OS_TASK_PRIORITY_LOWEST     31 //任务最低优先级
+#define OS_TASK_PRIORITY_LOWEST     31 ///< 任务最低优先级
 
 /**
  * @ingroup los_task
@@ -101,7 +101,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is init.
  */
-#define OS_TASK_STATUS_INIT         0x0001U //初始化状态
+#define OS_TASK_STATUS_INIT         0x0001U ///< 初始化状态
 
 /**
  * @ingroup los_task
@@ -109,7 +109,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is ready.
  */
-#define OS_TASK_STATUS_READY        0x0002U //就绪状态的任务都将插入就绪队列,注意就绪队列的本质是个双向链表
+#define OS_TASK_STATUS_READY        0x0002U ///< 就绪状态的任务都将插入就绪队列,注意就绪队列的本质是个双向链表
 
 /**
  * @ingroup los_task
@@ -117,7 +117,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is running.
  */
-#define OS_TASK_STATUS_RUNNING      0x0004U //运行状态
+#define OS_TASK_STATUS_RUNNING      0x0004U ///< 任务状态: 运行中
 
 /**
  * @ingroup los_task
@@ -125,7 +125,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is suspended.
  */
-#define OS_TASK_STATUS_SUSPENDED    0x0008U
+#define OS_TASK_STATUS_SUSPENDED    0x0008U ///< 任务状态: 暂停 ,意思是任务已经开始了, 不过现在要停了
 
 /**
  * @ingroup los_task
@@ -133,7 +133,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is blocked.
  */
-#define OS_TASK_STATUS_PENDING      0x0010U
+#define OS_TASK_STATUS_PENDING      0x0010U ///< 任务状态: 挂起 ,意思是任务还没开始,在等待其他条件成熟
 
 /**
  * @ingroup los_task
@@ -141,7 +141,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is delayed.
  */
-#define OS_TASK_STATUS_DELAY        0x0020U //延期状态
+#define OS_TASK_STATUS_DELAY        0x0020U ///< 延期状态 ,见于 OsSchedDelay 延期调度
 
 /**
  * @ingroup los_task
@@ -149,7 +149,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The time for waiting for an event to occur expires.
  */
-#define OS_TASK_STATUS_TIMEOUT      0x0040U	//任务超时
+#define OS_TASK_STATUS_TIMEOUT      0x0040U	///< 任务等待事件发生超时
 
 /**
  * @ingroup los_task
@@ -157,10 +157,10 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is pend for a period of time.
  */
-#define OS_TASK_STATUS_PEND_TIME    0x0080U
+#define OS_TASK_STATUS_PEND_TIME    0x0080U ///< 任务状态: 挂起
 
 #define OS_TASK_STATUS_BLOCKED      (OS_TASK_STATUS_INIT | OS_TASK_STATUS_PENDING | \
-                                     OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME)
+                                     OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME) ///< 任务状态: 屏蔽
 
 /**
  * @ingroup los_task
@@ -168,7 +168,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is exit.
  */
-#define OS_TASK_STATUS_EXIT         0x0100U
+#define OS_TASK_STATUS_EXIT         0x0100U ///< 任务状态:退出
 
 /**
  * @ingroup los_task
@@ -176,7 +176,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task control block is unused.
  */
-#define OS_TASK_STATUS_UNUSED       0x0200U
+#define OS_TASK_STATUS_UNUSED       0x0200U ///< 任务状态:未使用
 
 /**
  * @ingroup los_task
@@ -184,7 +184,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is joinable.
  */
-#define OS_TASK_FLAG_PTHREAD_JOIN   0x0400U //主task和子task连在一块不分离
+#define OS_TASK_FLAG_PTHREAD_JOIN   0x0400U ///< 主task和子task连在一块不分离
 
 /**
  * @ingroup los_task
@@ -192,15 +192,15 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is system-level task, like idle, swtmr and etc.
  */
-#define OS_TASK_FLAG_SYSTEM_TASK    0x1000U	//系统任务
+#define OS_TASK_FLAG_SYSTEM_TASK    0x1000U	///< 系统任务
 
 /**
  * @ingroup los_task
  * Flag that indicates the task property.
  *
- * The task is no-delete system task, like resourceTask. //该任务是不可删除的系统任务，如资源回收任务
+ * The task is no-delete system task, like resourceTask. 
  */
-#define OS_TASK_FLAG_NO_DELETE    0x2000U
+#define OS_TASK_FLAG_NO_DELETE    0x2000U ///< 该任务是不可删除的系统任务，如资源回收任务
 
 /**
  * @ingroup los_task
@@ -208,7 +208,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * Kills the thread during process exit.
  */
-#define OS_TASK_FLAG_EXIT_KILL       0x4000U //在进程退出期间一同被干掉的任务
+#define OS_TASK_FLAG_EXIT_KILL       0x4000U ///< 在进程退出期间一同被干掉的任务
 
 /**
  * @ingroup los_task
@@ -216,26 +216,26 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * Specifies the process creation task.
  */
-#define OS_TASK_FLAG_SPECIFIES_PROCESS 0x0U //创建指定任务 例如: cat weharmony.net 实现 
+#define OS_TASK_FLAG_SPECIFIES_PROCESS 0x0U ///< 创建指定任务 例如: cat weharmony.net 实现 
 
 /**
  * @ingroup los_task
  * Boundary on which the stack size is aligned.
  *
  */
-#define OS_TASK_STACK_SIZE_ALIGN    16U //堆栈大小对齐的边界
+#define OS_TASK_STACK_SIZE_ALIGN    16U ///< 堆栈大小对齐
 
 /**
  * @ingroup los_task
  * Boundary on which the stack address is aligned.
  *
  */
-#define OS_TASK_STACK_ADDR_ALIGN    8U
+#define OS_TASK_STACK_ADDR_ALIGN    8U ///< 堆栈地址对齐
 
 /**
  * @ingroup los_task
- * Number of usable task priorities.
- */	//可用任务优先级的数量
+ * Number of usable task priorities. | 任务优先级数量
+ */
 #define OS_TSK_PRINUM               (OS_TASK_PRIORITY_LOWEST - OS_TASK_PRIORITY_HIGHEST + 1)
 
 /**
@@ -269,9 +269,9 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 * @par Dependency:
 * <ul><li>los_task_pri.h: the header file that contains the API declaration.</li></ul>
 * @see
-*/
+*/ ///通过pendList取出TCB,用于挂入链表节点时使用 pendList的情况
 #define OS_TCB_FROM_PENDLIST(ptr) LOS_DL_LIST_ENTRY(ptr, LosTaskCB, pendList)
-//通过pendList取出TCB,用于挂入链表节点时使用 pendList的情况 
+ 
 /**
 * @ingroup  los_task
 * @brief Obtain the pointer to a task control block.
@@ -286,19 +286,19 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 * @par Dependency:
 * <ul><li>los_task_pri.h: the header file that contains the API declaration.</li></ul>
 * @see
-*/
+*/ ///通过任务ID找到任务实体
 #define OS_TCB_FROM_TID(taskID) (((LosTaskCB *)g_taskCBArray) + (taskID))
-//通过Tid找到TCB
+
 #ifndef LOSCFG_STACK_POINT_ALIGN_SIZE
 #define LOSCFG_STACK_POINT_ALIGN_SIZE                       (sizeof(UINTPTR) * 2)
 #endif
 
-#define OS_TASK_RESOURCE_STATIC_SIZE    0x1000	//4K
-#define OS_TASK_RESOURCE_FREE_PRIORITY  5		//回收资源任务的优先级
-#define OS_RESOURCE_EVENT_MASK          0xFF	//资源事件的掩码
-#define OS_RESOURCE_EVENT_OOM           0x02	//内存溢出事件
-#define OS_RESOURCE_EVENT_FREE          0x04	//资源释放事件
-#define OS_TCB_NAME_LEN 32
+#define OS_TASK_RESOURCE_STATIC_SIZE    0x1000	///< 4K
+#define OS_TASK_RESOURCE_FREE_PRIORITY  5		///< 回收资源任务的优先级
+#define OS_RESOURCE_EVENT_MASK          0xFF	///< 资源事件的掩码
+#define OS_RESOURCE_EVENT_OOM           0x02	///< 内存溢出事件
+#define OS_RESOURCE_EVENT_FREE          0x04	///< 资源释放事件
+#define OS_TCB_NAME_LEN 32	///< 任务名称长度上限
 
 typedef struct {
     VOID            *stackPointer;      /**< Task stack pointer | 内核栈指针位置(SP)  */	
@@ -311,7 +311,7 @@ typedef struct {
     UINT32          initTimeSlice;      /**< Task init time slice | 任务初始的时间片  */ 
     INT32           timeSlice;          /**< Task remaining time slice | 任务剩余时间片  */ 
     UINT32          waitTimes;          /**< Task delay time, tick number | 设置任务调度延期时间  */ 
-    SortLinkList    sortList;           /**< Task sortlink node | 任务排序链表节点  */	
+    SortLinkList    sortList;           /**< Task sortlink node | 跟CPU捆绑的任务排序链表节点,上面挂的是就绪队列的下一个阶段,进入CPU要执行的任务队列  */	
     UINT32          stackSize;          /**< Task stack size | 内核态栈大小,内存来自内核空间  */		
     UINTPTR         topOfStack;         /**< Task stack top | 内核态栈顶 bottom = top + size */		
     UINT32          taskID;             /**< Task ID | 任务ID，任务池本质是一个大数组，ID就是数组的索引，默认 < 128 */				
@@ -365,13 +365,14 @@ typedef struct {
     UINTPTR         fp; ///< fp寄存器
 #endif
 } LosTaskCB;
-//LosTask结构体是给外部使用的
+///< LosTask结构体是给外部使用的
 typedef struct {
     LosTaskCB *runTask;
     LosTaskCB *newTask;
 } LosTask;
 
-struct ProcessSignalInfo {//进程信号描述符
+///< 进程信号描述符
+struct ProcessSignalInfo {
     siginfo_t *sigInfo;       /**< Signal to be dispatched |  要发送的信号*/
     LosTaskCB *defaultTcb;    /**< Default TCB | 默认task,默认接收信号的任务. */
     LosTaskCB *unblockedTcb;  /**< The signal unblock on this TCB | 信号在此TCB上解除阻塞  */
@@ -405,27 +406,27 @@ typedef struct {//时间片结构体，任务轮询
     UINT16 time;     /**< Expiration time point | 过期时间点*/
     UINT16 timeout;  /**< Expiration duration | 有效期*/
 } OsTaskRobin;
-//获取当前CPU  core运行的任务
+/// 获取当前CPU  core运行的任务
 STATIC INLINE LosTaskCB *OsCurrTaskGet(VOID)
 {
     return (LosTaskCB *)ArchCurrTaskGet();
 }
-///告诉协处理器当前任务使用范围为内核空间 
+/// 告诉协处理器当前任务使用范围为内核空间 
 STATIC INLINE VOID OsCurrTaskSet(LosTaskCB *task)
 {
     ArchCurrTaskSet(task);
 }
-///告诉协处理器当前任务使用范围为 用户空间
+/// 告诉协处理器当前任务使用范围为 用户空间
 STATIC INLINE VOID OsCurrUserTaskSet(UINTPTR thread)
 {
     ArchCurrUserTaskSet(thread);
 }
-///通过任务ID获取任务实体，task由任务池分配，本质是个数组，彼此都挨在一块
+/// 通过任务ID获取任务实体，task由任务池分配，本质是个数组，彼此都挨在一块
 STATIC INLINE LosTaskCB *OsGetTaskCB(UINT32 taskID)
 {
     return OS_TCB_FROM_TID(taskID);
 }
-///任务是否在使用
+/// 任务是否在使用
 STATIC INLINE BOOL OsTaskIsUnused(const LosTaskCB *taskCB)
 {
     if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {//在freelist中的任务都是 OS_TASK_STATUS_UNUSED 状态
@@ -434,7 +435,7 @@ STATIC INLINE BOOL OsTaskIsUnused(const LosTaskCB *taskCB)
 
     return FALSE;
 }
-///任务是否在运行
+/// 任务是否在运行
 STATIC INLINE BOOL OsTaskIsRunning(const LosTaskCB *taskCB)
 {
     if (taskCB->taskStatus & OS_TASK_STATUS_RUNNING) {//一个CPU core 只能有一个 OS_TASK_STATUS_RUNNING task
@@ -443,7 +444,7 @@ STATIC INLINE BOOL OsTaskIsRunning(const LosTaskCB *taskCB)
 
     return FALSE;
 }
-///任务是否不再活动
+/// 任务是否不再活动
 STATIC INLINE BOOL OsTaskIsInactive(const LosTaskCB *taskCB)
 {
     if (taskCB->taskStatus & (OS_TASK_STATUS_UNUSED | OS_TASK_STATUS_INIT | OS_TASK_STATUS_EXIT)) {//三个标签有一个代表不在活动
@@ -452,7 +453,7 @@ STATIC INLINE BOOL OsTaskIsInactive(const LosTaskCB *taskCB)
 
     return FALSE;
 }
-
+/// 任务是否挂起
 STATIC INLINE BOOL OsTaskIsPending(const LosTaskCB *taskCB)
 {
     if (taskCB->taskStatus & OS_TASK_STATUS_PENDING) {
@@ -461,7 +462,7 @@ STATIC INLINE BOOL OsTaskIsPending(const LosTaskCB *taskCB)
 
     return FALSE;
 }
-
+/// 任务是否被干掉
 STATIC INLINE BOOL OsTaskIsKilled(const LosTaskCB *taskCB)
 {
     if (taskCB->taskStatus & OS_TASK_FLAG_EXIT_KILL) {
@@ -489,7 +490,7 @@ STATIC INLINE BOOL OsTaskIsKilled(const LosTaskCB *taskCB)
 #define OS_TASK_WAIT_EVENT      (OS_TASK_WAIT_FUTEX + 1) 	///< 任务等待事件发生
 #define OS_TASK_WAIT_COMPLETE   (OS_TASK_WAIT_EVENT + 1)	///< 任务等待完成
 
-//设置事件阻塞掩码,即设置任务的等待事件.
+/// 设置事件阻塞掩码,即设置任务的等待事件.
 STATIC INLINE VOID OsTaskWaitSetPendMask(UINT16 mask, UINTPTR lockID, UINT32 timeout)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
@@ -498,7 +499,7 @@ STATIC INLINE VOID OsTaskWaitSetPendMask(UINT16 mask, UINTPTR lockID, UINT32 tim
     (VOID)timeout;
 }
 
-//清除事件阻塞掩码,即任务不再等待任何事件.
+/// 清除事件阻塞掩码,即任务不再等待任何事件.
 STATIC INLINE VOID OsTaskWakeClearPendMask(LosTaskCB *resumeTask)
 {
     resumeTask->waitID = 0;

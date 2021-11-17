@@ -43,30 +43,30 @@ extern "C" {
 #endif /* __cplusplus */
 
 /*!  \enum SortLinkType
-*   因为任务和定时器都是吃CPU的,让CPU不停工作的主要就是这两宝贝.
+* @brief  因为任务和定时器都是吃CPU的,让CPU不停工作的主要就是这两宝贝.
 */
 typedef enum {
-    OS_SORT_LINK_TASK = 1,	///< 任务排序
-    OS_SORT_LINK_SWTMR = 2,	///< 定时器排序
+    OS_SORT_LINK_TASK = 1,	///< 任务
+    OS_SORT_LINK_SWTMR = 2,	///< 定时器
 } SortLinkType;
 
 /*!  \struct SortLinkList
 *   
 */
 typedef struct {
-    LOS_DL_LIST sortLinkNode;   ///< 任务排序链表,注意上面挂的是一个个等待的任务
-    UINT64      responseTime;   ///< 响应时间
+    LOS_DL_LIST sortLinkNode;   ///< 排序链表,注意上面挂的是一个个等待被执行的任务/软件定时器
+    UINT64      responseTime;   ///< 响应时间,注意是时间短的排在前面,见于 OsAddNode2SortLink 的实现
 #ifdef LOSCFG_KERNEL_SMP
     UINT32      cpuid;  ///< 需要哪个CPU处理
 #endif
 } SortLinkList;
 
-/*!  \struct SortLinkAttribute
-*   
+/*!  \struct SortLinkAttribute 
+* @brief 排序链表属性  
 */
 typedef struct {
-    LOS_DL_LIST sortLink;
-    UINT32      nodeNum;
+    LOS_DL_LIST sortLink; ///< 排序链表,上面挂的任务/软件定时器
+    UINT32      nodeNum;	///< 链表结点数量
 } SortLinkAttribute;
 
 #define OS_SORT_LINK_INVALID_TIME ((UINT64)-1)

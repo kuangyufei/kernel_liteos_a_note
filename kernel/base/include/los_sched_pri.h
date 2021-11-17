@@ -45,8 +45,8 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_SCHED_MINI_PERIOD       (OS_SYS_CLOCK / LOSCFG_BASE_CORE_TICK_PER_SECOND_MINI)
-#define OS_TICK_RESPONSE_PRECISION (UINT32)((OS_SCHED_MINI_PERIOD * 75) / 100)
+#define OS_SCHED_MINI_PERIOD       (OS_SYS_CLOCK / LOSCFG_BASE_CORE_TICK_PER_SECOND_MINI) ///< 1毫秒的时钟周期
+#define OS_TICK_RESPONSE_PRECISION (UINT32)((OS_SCHED_MINI_PERIOD * 75) / 100) ///< 不明白为啥是 * 75 就精确了???  @note_thinking
 #define OS_SCHED_MAX_RESPONSE_TIME (UINT64)(((UINT64)-1) - 1U)
 
 extern UINT32 g_taskScheduled;
@@ -62,17 +62,17 @@ STATIC INLINE UINT64 OsGetCurrSchedTimeCycle(VOID)
 
     return 0;
 }
-
+/// 更新中断使用时间
 STATIC INLINE VOID OsSchedIrqUpdateUsedTime(VOID)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
-    runTask->irqUsedTime = OsGetCurrSchedTimeCycle() - runTask->irqStartTime;
+    runTask->irqUsedTime = OsGetCurrSchedTimeCycle() - runTask->irqStartTime;//获取时间差
 }
-
+/// 获取中断开始时间
 STATIC INLINE VOID OsSchedIrqStartTime(VOID)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
-    runTask->irqStartTime = OsGetCurrSchedTimeCycle();
+    runTask->irqStartTime = OsGetCurrSchedTimeCycle(); //获取当前时间
 }
 
 /*
@@ -87,12 +87,12 @@ STATIC INLINE VOID OsSchedIrqStartTime(VOID)
     g_taskScheduled &= ~(1U << (cpuid)); \
 } while (0);
 
-#define OS_SCHEDULER_ACTIVE (g_taskScheduled & (1U << ArchCurrCpuid()))//用于判断当前cpu是否可调度
+#define OS_SCHEDULER_ACTIVE (g_taskScheduled & (1U << ArchCurrCpuid()))///< 用于判断当前cpu是否在调度中
 
 typedef enum {
-    INT_NO_RESCH = 0x0,   /* no needs to schedule */
-    INT_PEND_RESCH = 0x1, /* pending schedule flag */
-    INT_PEND_TICK = 0x2,  /* pending tick */
+    INT_NO_RESCH = 0x0,   /**< no needs to schedule | 不需要调度*/
+    INT_PEND_RESCH = 0x1, /**< pending schedule flag | 因不允许抢占或正在中断导致的不允许调度*/
+    INT_PEND_TICK = 0x2,  /**< pending tick | 更新过期时间遇到正在中断导致的不允许调度*/
 } SchedFlag;
 
 /* Check if preemptable with counter flag */
@@ -122,7 +122,7 @@ STATIC INLINE BOOL OsPreemptableInSched(VOID)
 #ifdef LOSCFG_KERNEL_SMP
     /*
      * For smp systems, schedule must hold the task spinlock, and this counter
-     * will increase by 1 in that case.
+     * will increase by 1 in that case. | 对于 smp ,调度必须持有任务自旋锁，在这种情况下，此计数器将增加 1。
      */
     preemptable = (OsPercpuGet()->taskLockCnt == 1);//SMP时 taskLockCnt=1 才能执行调度任务
 
@@ -130,18 +130,18 @@ STATIC INLINE BOOL OsPreemptableInSched(VOID)
     preemptable = (OsPercpuGet()->taskLockCnt == 0);
 #endif
     if (!preemptable) {
-        /* Set schedule flag if preemption is disabled */
+        /* Set schedule flag if preemption is disabled | 如果禁用抢占，则设置调度标志*/
         OsPercpuGet()->schedFlag |= INT_PEND_RESCH;
     }
 
     return preemptable;
 }
-
+/// 申请CPU调度锁
 STATIC INLINE VOID OsCpuSchedLock(Percpu *cpu)
 {
     cpu->taskLockCnt++;
 }
-
+/// 释放CPU调度锁
 STATIC INLINE VOID OsCpuSchedUnlock(Percpu *cpu, UINT32 intSave)
 {
     if (cpu->taskLockCnt > 0) {

@@ -58,7 +58,7 @@ typedef enum {
  * 这样做的好处是，在多处理器系统中，当处理器操作属于它的变量副本时，不需要考虑与其他处理器的竞争的问题，
  */
 typedef struct {
-    SortLinkAttribute taskSortLink;             /*! task sort link | 挂等待和延时的任务 */
+    SortLinkAttribute taskSortLink;             /*! task sort link | 挂等待和延时的任务,这些任务从任务就绪队列中来,等待最后CPU执行 */
     SPIN_LOCK_S       taskSortLinkSpin;      ///<  task sort link spin lock | 操作taskSortLink链表的自旋锁
     SortLinkAttribute swtmrSortLink;         ///<  swtmr sort link | 挂还没到时间的定时器	
     SPIN_LOCK_S       swtmrSortLinkSpin;     ///<  swtmr sort link spin lock |* 操作swtmrSortLink链表的自旋锁
@@ -74,7 +74,7 @@ typedef struct {
 #ifdef LOSCFG_KERNEL_SMP
     UINT32            excFlag;               ///<  cpu halt or exc flag | cpu 停止或 异常 标志
 #ifdef LOSCFG_KERNEL_SMP_CALL
-    LOS_DL_LIST       funcLink;              ///<  mp function call link
+    LOS_DL_LIST       funcLink;              ///<  mp function call link | 回调函数
 #endif
 #endif
 } Percpu;

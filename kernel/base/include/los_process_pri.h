@@ -167,7 +167,7 @@ typedef struct ProcessCB {
  *
  * The process is running.
  */
-#define OS_PROCESS_STATUS_RUNNING        0x0040U	///< 进程运行状态
+#define OS_PROCESS_STATUS_RUNNING        0x0040U	///< 进程状态: 运行中...
 
 /**
  * @ingroup los_process
@@ -175,7 +175,7 @@ typedef struct ProcessCB {
  *
  * The process is pending
  */
-#define OS_PROCESS_STATUS_PENDING       0x0080U
+#define OS_PROCESS_STATUS_PENDING       0x0080U ///< 进程状态: 挂起中... ,意思是进程还没开始,在等待其他条件成熟
 
 /**
  * @ingroup los_process
@@ -183,7 +183,7 @@ typedef struct ProcessCB {
  *
  * The process is run out but the resources occupied by the process are not recovered.
  */
-#define OS_PROCESS_STATUS_ZOMBIES        0x100U		///< 进程僵死状态
+#define OS_PROCESS_STATUS_ZOMBIES        0x100U		///< 进程状态: 僵死
 
 /**
  * @ingroup los_process
@@ -239,9 +239,9 @@ typedef struct ProcessCB {
  * Flag that indicates the process or process control block status.
  *
  * The process is dying or already dying.
- */
+ */ /// 进程不活跃状态定义: 身上贴有退出便签且状态为僵死的进程
 #define OS_PROCESS_STATUS_INACTIVE       (OS_PROCESS_FLAG_EXIT | OS_PROCESS_STATUS_ZOMBIES) 
-//进程不活跃状态定义: 身上贴有退出便签且状态为僵死的进程
+
 /**
  * @ingroup los_process
  * Used to check if the process control block is unused.
@@ -254,44 +254,44 @@ STATIC INLINE BOOL OsProcessIsUnused(const LosProcessCB *processCB)//查下进�
 /**
  * @ingroup los_process
  * Used to check if the process is inactive.
- */
+ */ /// 进程不活跃函数定义:身上贴有不使用且不活跃标签的进程
 STATIC INLINE BOOL OsProcessIsInactive(const LosProcessCB *processCB)//查下进程是否不活跃?
 {
     return ((processCB->processStatus & (OS_PROCESS_FLAG_UNUSED | OS_PROCESS_STATUS_INACTIVE)) != 0);
-}//进程不活跃函数定义:身上贴有不使用且不活跃标签的进程
+}
 
 /**
  * @ingroup los_process
  * Used to check if the process is dead.
- */
+ */ /// 进程死啦死啦的定义: 身上贴有不使用且状态为僵死的进程
 STATIC INLINE BOOL OsProcessIsDead(const LosProcessCB *processCB)//查下进程是否死啦死啦滴?
 {
     return ((processCB->processStatus & (OS_PROCESS_FLAG_UNUSED | OS_PROCESS_STATUS_ZOMBIES)) != 0);
-}//进程死啦死啦的定义: 身上贴有不使用且状态为僵死的进程
+}
 
 /**
  * @ingroup los_process
  * The highest priority of a kernel mode process.
  */
-#define OS_PROCESS_PRIORITY_HIGHEST      0	//进程最高优先级
+#define OS_PROCESS_PRIORITY_HIGHEST      0	///< 进程最高优先级
 
 /**
  * @ingroup los_process
  * The lowest priority of a kernel mode process
  */
-#define OS_PROCESS_PRIORITY_LOWEST       31 //进程最低优先级
+#define OS_PROCESS_PRIORITY_LOWEST       31 ///< 进程最低优先级
 
 /**
  * @ingroup los_process
  * The highest priority of a user mode process.
  */
-#define OS_USER_PROCESS_PRIORITY_HIGHEST 10 //内核模式和用户模式的优先级分割线 10-31 用户级, 0-9内核级
+#define OS_USER_PROCESS_PRIORITY_HIGHEST 10 ///< 内核模式和用户模式的优先级分割线 10-31 用户级, 0-9内核级
 
 /**
  * @ingroup los_process
  * The lowest priority of a user mode process
  */
-#define OS_USER_PROCESS_PRIORITY_LOWEST  OS_PROCESS_PRIORITY_LOWEST //用户进程的最低优先级
+#define OS_USER_PROCESS_PRIORITY_LOWEST  OS_PROCESS_PRIORITY_LOWEST ///< 用户进程的最低优先级
 
 /**
  * @ingroup los_process
@@ -339,7 +339,7 @@ STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)
  * |     | exit code  | core dump | signal |
  */
 #define OS_PRO_EXIT_OK 0 ///< 进程正常退出
-//置进程退出码第七位为1
+/// 置进程退出码第七位为1
 STATIC INLINE VOID OsProcessExitCodeCoreDumpSet(LosProcessCB *processCB)
 {
     processCB->exitCode |= 0x80U;   //  0b10000000 
