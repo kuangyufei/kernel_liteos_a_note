@@ -93,7 +93,7 @@ UINT16 LOS_HighBitGet(UINT32 bitmap)
 
     return (OS_BITMAP_MASK - CLZ(bitmap));//CLZ = count leading zeros 用于计算整数的前导零
 }
-///获取参数位图中最低位为1的索引位， 例如: 00110110 返回 1
+/// 获取参数位图中最低位为1的索引位， 例如: 00110110 返回 1
 UINT16 LOS_LowBitGet(UINT32 bitmap)
 {
     if (bitmap == 0) {
@@ -102,7 +102,7 @@ UINT16 LOS_LowBitGet(UINT32 bitmap)
 
     return CTZ(bitmap);// CTZ = count trailing zeros 用于计算给定整数的尾随零
 }
-///从start位置开始设置numsSet个bit位 置1 
+/// 从start位置开始设置numsSet个bit位 置1 
 VOID LOS_BitmapSetNBits(UINTPTR *bitmap, UINT32 start, UINT32 numsSet)
 {
     UINTPTR *p = bitmap + BITMAP_WORD(start);

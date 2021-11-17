@@ -51,18 +51,18 @@
 #endif
 ///分区信息
 struct PartitionInfo {
-    const CHAR   *partName;			//分区名称
-    const CHAR   *cmdlineArgName;	//命令行参数名称
+    const CHAR   *partName;			///< 分区名称
+    const CHAR   *cmdlineArgName;	///< 命令行参数名称
     const CHAR   *storageTypeArgName;
     CHAR         *storageType;	
     const CHAR   *fsTypeArgName;
-    CHAR         *fsType;		//文件系统类型
+    CHAR         *fsType;		///< 文件系统类型
     const CHAR   *addrArgName;
-    INT32        startAddr;		
+    INT32        startAddr;     ///< 开始地址		
     const CHAR   *partSizeArgName;
-    INT32        partSize;
-    CHAR         *devName;
-    UINT32       partNum;		//分区编号
+    INT32        partSize;		///< 分区大小
+    CHAR         *devName; 		///< 设备名称
+    UINT32       partNum;		///< 分区编号
 };
 
 INT32 GetPartitionInfo(struct PartitionInfo *partInfo);

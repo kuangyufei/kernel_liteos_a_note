@@ -55,7 +55,7 @@
 #include "los_test_pri.h"
 #endif
 
-STATIC SystemRebootFunc g_rebootHook = NULL;//系统重启钩子函数
+STATIC SystemRebootFunc g_rebootHook = NULL;///< 系统重启钩子函数
 /// 设置系统重启钩子函数
 VOID OsSetRebootHook(SystemRebootFunc func)
 {

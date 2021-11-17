@@ -33,7 +33,7 @@
 #include "los_hwi.h"
 
 
-//节拍初始化
+/// 节拍初始化
 LITE_OS_SEC_TEXT_INIT UINT32 OsTickInit(UINT32 systemClock, UINT32 tickPerSecond)
 {
     if ((systemClock == 0) ||

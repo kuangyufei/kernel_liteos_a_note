@@ -33,15 +33,15 @@
 #include "los_task_pri.h"
 
 
-/* support cpu vendors */
-CpuVendor g_cpuTable[] = {	//支持的CPU供应商
+/* support cpu vendors | 支持的CPU供应商*/
+CpuVendor g_cpuTable[] = {
     /* armv7-a */
     { 0xc07, "Cortex-A7" },
     { 0xc09, "Cortex-A9" },
     { 0, NULL }
 };
 
-/* logical cpu mapping */	//逻辑层cpu映射
+/* logical cpu mapping | cpu 逻辑层映射*/
 UINT64 g_cpuMap[LOSCFG_KERNEL_CORE_NUM] = {
     [0 ... LOSCFG_KERNEL_CORE_NUM - 1] = (UINT64)(-1) //统一赋值,这个赋值方式还挺别致的.
 };
@@ -69,7 +69,7 @@ VOID OsTaskEntrySetupLoopFrame(UINT32 arg0)
                  "\tpop {fp, pc}\n");
 }
 #endif
-//内核态任务运行栈初始化
+/// 内核态任务运行栈初始化
 LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOID *topStack, BOOL initFlag)
 {
     if (initFlag == TRUE) {
@@ -112,17 +112,14 @@ LITE_OS_SEC_TEXT VOID OsUserCloneParentStack(VOID *childStack, UINTPTR parentTop
 
     if (sigcb->sigContext != NULL) {
         cloneStack = (VOID *)((UINTPTR)sigcb->sigContext - sizeof(TaskContext));
-    } else {
+    } else {//cloneStack指向 TaskContext
         cloneStack = (VOID *)(((UINTPTR)parentTopOfStack + parentStackSize) - sizeof(TaskContext));
-	//cloneStack指向 TaskContext
     }
     (VOID)memcpy_s(childStack, sizeof(TaskContext), cloneStack, sizeof(TaskContext));//直接把任务上下文拷贝了一份
-    ((TaskContext *)childStack)->R0 = 0;//R0寄存器为0,这个很重要, pid = fork()  pid == 0 是子进程返回.
+    ((TaskContext *)childStack)->R0 = 0;//R0寄存器为0,这个很重要!!! pid = fork()  pid == 0 是子进程返回.
 }
-/*
-用户态运行栈初始化,此时上下文还在内核区
 
-*/
+/// 用户态运行栈初始化,此时上下文还在内核区
 LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, UINTPTR taskEntry, UINTPTR stack)
 {
     LOS_ASSERT(context != NULL);

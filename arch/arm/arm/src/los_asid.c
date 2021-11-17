@@ -1,8 +1,6 @@
 /*!
  * @file    los_asid.c
  * @brief
- *
- * \n
  * @link http://weharmonyos.com/blog/14.html
  * @verbatim
 	asid(Adress Space ID) 进程标识符，属于CP15协处理器的C13号寄存器，ASID可用来唯一标识进程，并为进程提供地址空间保护。
@@ -22,8 +20,6 @@
 	已经被置换到硬盘上了。明白了吗？只关注应用开发的同学当然可以说这关我鸟事，给我的感觉有就行了，但想熟悉内核的同学就必须要明白，
 	这是每分每秒都在发生的事情。
  * @endverbatim
- *
- * \n
  * @version 
  * @author  weharmonyos.com
  * @date    2021-11-16

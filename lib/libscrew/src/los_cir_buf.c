@@ -32,7 +32,7 @@
 #include "los_cir_buf.h"
 
 
-//返回循环buf已使用的大小
+/// 返回循环buf已使用的大小
 UINT32 LOS_CirBufUsedSize(CirBuf *cirbufCB)
 {
     UINT32 size;
@@ -73,7 +73,7 @@ STATIC UINT32 OsCirBufWriteLinear(CirBuf *cirbufCB, const CHAR *buf, UINT32 size
 
     return cpSize;
 }
-/* 图形表示写循环buf        loop 模式 ，图表示 写之前的样子       @note_pic
+/* 图形表示写循环buf        loop 模式 ，图表示 写之前的样子              @note_pic
  *                    endIdx            第二阶段拷贝
  *                    |               |             |
  *    X X X X X X X X 0 0 0 0 0 0 0 0 X X X X X X X X
@@ -128,7 +128,7 @@ UINT32 LOS_CirBufWrite(CirBuf *cirbufCB, const CHAR *buf, UINT32 size)
 
     return cpSize;
 }
-/* 图形表示读线性buf        linear 模式 ，图表示 读之前的样子         @note_pic
+/* 图形表示读线性buf        linear 模式 ，图表示 读之前的样子             @note_pic
  *                    endIdx            
  *                    |               
  *    X X X X X X X X 0 0 0 0 0 0 0 0 X X X X X X X X

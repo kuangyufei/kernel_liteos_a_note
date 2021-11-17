@@ -112,7 +112,7 @@ VADDR_T *OsGFirstTableGet(VOID)
     return (VADDR_T *)g_firstPageTable;
 }
 
-//解除L1表的映射关系
+/// 解除L1表的映射关系
 STATIC INLINE UINT32 OsUnmapL1Invalid(vaddr_t *vaddr, UINT32 *count)
 {
     UINT32 unmapCount;
