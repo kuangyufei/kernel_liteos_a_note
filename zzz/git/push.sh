@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' CPU核间通讯注解, 多个CPU之间是如何通讯的 ?
+git commit -m  ' 完善互斥量,信号量注解
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)

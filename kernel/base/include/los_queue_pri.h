@@ -86,18 +86,18 @@ typedef enum {
  * @attention 读写队列分离
  */
 typedef struct {
-    UINT8 *queueHandle; /**< Pointer to a queue handle */	//指向队列句柄的指针
-    UINT16 queueState; /**< Queue state */	//队列状态
-    UINT16 queueLen; /**< Queue length */	//队列中消息总数的上限值,由创建时确定,不再改变
-    UINT16 queueSize; /**< Node size */		//消息节点大小,由创建时确定,不再改变,即定义了每个消息长度的上限.
-    UINT32 queueID; /**< queueID */			//队列ID
-    UINT16 queueHead; /**< Node head */		//消息头节点位置（数组下标）
-    UINT16 queueTail; /**< Node tail */		//消息尾节点位置（数组下标）
-    UINT16 readWriteableCnt[OS_QUEUE_N_RW]; /**< Count of readable or writable resources, 0:readable, 1:writable */
-											//队列中可写或可读消息数，0表示可读，1表示可写
-    LOS_DL_LIST readWriteList[OS_QUEUE_N_RW]; /**< the linked list to be read or written, 0:readlist, 1:writelist */
-											//挂的都是等待读/写消息的任务链表，0表示读消息的链表，1表示写消息的任务链表
-    LOS_DL_LIST memList; /**< Pointer to the memory linked list */	//@note_why 这里尚未搞明白是啥意思 ，是共享内存吗？
+    UINT8 *queueHandle; /**< Pointer to a queue handle | 队列消息内存空间的指针*/
+    UINT16 queueState; 	/**< Queue state | 队列状态*/	
+    UINT16 queueLen; 	/**< Queue length | 队列中消息节点个数，即队列长度,由创建时确定,不再改变*/
+    UINT16 queueSize; 	/**< Node size | 消息节点大小,由创建时确定,不再改变,即定义了每个消息长度的上限.*/
+    UINT32 queueID; 	/**< queueID | 队列ID*/
+    UINT16 queueHead; 	/**< Node head | 消息头节点位置（数组下标）*/
+    UINT16 queueTail; 	/**< Node tail | 消息尾节点位置（数组下标）*/
+    UINT16 readWriteableCnt[OS_QUEUE_N_RW]; /**< Count of readable or writable resources, 0:readable, 1:writable 
+    										| 队列中可写或可读消息数，0表示可读，1表示可写*/										
+    LOS_DL_LIST readWriteList[OS_QUEUE_N_RW]; /**< the linked list to be read or written, 0:readlist, 1:writelist 
+    										| 挂的都是等待读/写消息的任务链表，0表示读消息的链表，1表示写消息的任务链表*/										
+    LOS_DL_LIST memList; /**< Pointer to the memory linked list | 内存块链表*/
 } LosQueueCB;
 
 /* queue state */
@@ -105,13 +105,13 @@ typedef struct {
  *  @ingroup los_queue
  *  Message queue state: not in use.
  */
-#define OS_QUEUE_UNUSED        0	//队列没有使用
+#define OS_QUEUE_UNUSED        0	///< 队列没有使用
 
 /**
  *  @ingroup los_queue
  *  Message queue state: used.
  */
-#define OS_QUEUE_INUSED        1	//队列被使用
+#define OS_QUEUE_INUSED        1	///< 队列被使用
 
 /**
  *  @ingroup los_queue

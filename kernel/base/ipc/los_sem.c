@@ -1,3 +1,49 @@
+/*!
+ * @file    los_sem.c
+ * @brief
+ * @link  kernel-mini-basic-ipc-sem-basic http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-mini-basic-ipc-sem-basic.html @endlink
+ @verbatim
+	 信号量（Semaphore）是一种实现任务间通信的机制，可以实现任务间同步或共享资源的互斥访问。
+	 
+	 一个信号量的数据结构中，通常有一个计数值，用于对有效资源数的计数，表示剩下的可被使用的共享资源数，其值的含义分两种情况：
+	 
+	 	0，表示该信号量当前不可获取，因此可能存在正在等待该信号量的任务。
+	 	正值，表示该信号量当前可被获取。
+	 以同步为目的的信号量和以互斥为目的的信号量在使用上有如下不同：
+	 
+	 	用作互斥时，初始信号量计数值不为0，表示可用的共享资源个数。在需要使用共享资源前，先获取信号量，
+		 	然后使用一个共享资源，使用完毕后释放信号量。这样在共享资源被取完，即信号量计数减至0时，其他需要获取信号量的任务将被阻塞，
+		 	从而保证了共享资源的互斥访问。另外，当共享资源数为1时，建议使用二值信号量，一种类似于互斥锁的机制。
+		用作同步时，初始信号量计数值为0。任务1获取信号量而阻塞，直到任务2或者某中断释放信号量，任务1才得以进入Ready或Running态，从而达到了任务间的同步。
+
+	 信号量运作原理
+		信号量初始化，为配置的N个信号量申请内存（N值可以由用户自行配置，通过LOSCFG_BASE_IPC_SEM_LIMIT宏实现），并把所有信号量初始化成未使用，
+		加入到未使用链表中供系统使用。
+
+		信号量创建，从未使用的信号量链表中获取一个信号量，并设定初值。
+
+		信号量申请，若其计数器值大于0，则直接减1返回成功。否则任务阻塞，等待其它任务释放该信号量，等待的超时时间可设定。
+		当任务被一个信号量阻塞时，将该任务挂到信号量等待任务队列的队尾。
+
+		信号量释放，若没有任务等待该信号量，则直接将计数器加1返回。否则唤醒该信号量等待任务队列上的第一个任务。
+
+		信号量删除，将正在使用的信号量置为未使用信号量，并挂回到未使用链表。
+
+		信号量允许多个任务在同一时刻访问共享资源，但会限制同一时刻访问此资源的最大任务数目。当访问资源的任务数达到该资源允许的最大数量时，
+		会阻塞其他试图获取该资源的任务，直到有任务释放该信号量。
+
+	开发流程
+		创建信号量LOS_SemCreate，若要创建二值信号量则调用LOS_BinarySemCreate。
+		申请信号量LOS_SemPend。
+		释放信号量LOS_SemPost。
+		删除信号量LOS_SemDelete。
+ @endverbatim
+ * @image html https://gitee.com/weharmonyos/resources/raw/master/29/sem_run.png
+ * @attention 由于中断不能被阻塞，因此不能在中断中使用阻塞模式申请信号量。
+ * @version 
+ * @author  weharmonyos.com
+ * @date    2021-11-18
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -39,61 +85,7 @@
 #include "los_mp.h"
 #include "los_percpu_pri.h"
 #include "los_hook.h"
-/**
- * @file los_sem.c 
- * @brief 
- * @verbatim
-    基本概念
-        信号量（Semaphore）是一种实现任务间通信的机制，可以实现任务间同步或共享资源的互斥访问。
-        一个信号量的数据结构中，通常有一个计数值，用于对有效资源数的计数，表示剩下的可被使用的共享资源数，其值的含义分两种情况：
-            0，表示该信号量当前不可获取，因此可能存在正在等待该信号量的任务。
-            正值，表示该信号量当前可被获取。
-        
-        以同步为目的的信号量和以互斥为目的的信号量在使用上有如下不同：
-            用作互斥时，初始信号量计数值不为0，表示可用的共享资源个数。在需要使用共享资源前，先获取信号量，
-            然后使用一个共享资源，使用完毕后释放信号量。这样在共享资源被取完，即信号量计数减至0时，其他
-            需要获取信号量的任务将被阻塞，从而保证了共享资源的互斥访问。另外，当共享资源数为1时，
-            建议使用二值信号量，一种类似于互斥锁的机制。
-            
-            用作同步时，初始信号量计数值为0。任务1获取信号量而阻塞，直到任务2或者某中断释放信号量，
-            任务1才得以进入Ready或Running态，从而达到了任务间的同步。
 
-    信号量运作原理
-
-        信号量初始化，为配置的N个信号量申请内存（N值可以由用户自行配置，通过LOSCFG_BASE_IPC_SEM_LIMIT宏实现），
-        并把所有信号量初始化成未使用，加入到未使用链表中供系统使用。
-        信号量创建，从未使用的信号量链表中获取一个信号量，并设定初值。
-        信号量申请，若其计数器值大于0，则直接减1返回成功。否则任务阻塞，等待其它任务释放该信号量，
-        等待的超时时间可设定。当任务被一个信号量阻塞时，将该任务挂到信号量等待任务队列的队尾。
-        信号量释放，若没有任务等待该信号量，则直接将计数器加1返回。否则唤醒该信号量等待任务队列上的第一个任务。
-        信号量删除，将正在使用的信号量置为未使用信号量，并挂回到未使用链表。
-        信号量允许多个任务在同一时刻访问共享资源，但会限制同一时刻访问此资源的最大任务数目。
-        当访问资源的任务数达到该资源允许的最大数量时，会阻塞其他试图获取该资源的任务，直到有任务释放该信号量。
-
-    使用场景
-        在多任务系统中，信号量是一种非常灵活的同步方式，可以运用在多种场合中，实现锁、同步、资源计数等功能，
-        也能方便的用于任务与任务，中断与任务的同步中。信号量常用于协助一组相互竞争的任务访问共享资源。
-
-    信号量有三种申请模式：无阻塞模式、永久阻塞模式、定时阻塞模式
-        无阻塞模式：即任务申请信号量时，入参timeout等于0。若当前信号量计数值不为0，则申请成功，否则立即返回申请失败。
-        永久阻塞模式：即任务申请信号量时，入参timeout等于0xFFFFFFFF。若当前信号量计数值不为0，则申请成功。
-            否则该任务进入阻塞态，系统切换到就绪任务中优先级最高者继续执行。任务进入阻塞态后，直到有其他任务释放该信号量，
-            阻塞任务才会重新得以执行。
-        定时阻塞模式：即任务申请信号量时，0<timeout<0xFFFFFFFF。若当前信号量计数值不为0，则申请成功。
-            否则，该任务进入阻塞态，系统切换到就绪任务中优先级最高者继续执行。任务进入阻塞态后，
-            超时前如果有其他任务释放该信号量，则该任务可成功获取信号量继续执行，若超时前未获取到信号量，接口将返回超时错误码。
-
-    使用流程
-        通过make menuconfig配置信号量模块
-        创建信号量LOS_SemCreate，若要创建二值信号量则调用LOS_BinarySemCreate。
-        申请信号量LOS_SemPend。
-        释放信号量LOS_SemPost。
-        删除信号量LOS_SemDelete。
-
-    注意事项
-        由于中断不能被阻塞，因此不能在中断中使用阻塞模式申请信号量。
- * @endverbatim
- */
 
 #ifdef LOSCFG_BASE_IPC_SEM
 
@@ -113,7 +105,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSemInit(VOID)
     LosSemCB *semNode = NULL;
     UINT32 index;
 
-    LOS_ListInit(&g_unusedSemList);//初始
+    LOS_ListInit(&g_unusedSemList);//初始化链表,链表上挂未使用的信号量,用于分配信号量,鸿蒙信号量的个数是有限的,默认1024个
     /* system resident memory, don't free */
     g_allSem = (LosSemCB *)LOS_MemAlloc(m_aucSysMem0, (LOSCFG_BASE_IPC_SEM_LIMIT * sizeof(LosSemCB)));//分配信号池
     if (g_allSem == NULL) {
@@ -186,12 +178,12 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_SemCreate(UINT16 count, UINT32 *semHandle)
 {
     return OsSemCreate(count, OS_SEM_COUNT_MAX, semHandle);
 }
-///对外接口 创建一个最大信号数为1的信号量，可以当互斥锁用
+///对外接口 创建二值信号量，其计数值最大为1，可以当互斥锁用
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_BinarySemCreate(UINT16 count, UINT32 *semHandle)
 {
     return OsSemCreate(count, OS_SEM_BINARY_COUNT_MAX, semHandle);
 }
-///对外接口 删除信号量,参数就是 semID 
+///对外接口 删除指定的信号量,参数就是 semID 
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_SemDelete(UINT32 semHandle)
 {
     UINT32 intSave;
@@ -230,7 +222,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_SemDelete(UINT32 semHandle)
 ERR_HANDLER:
     OS_RETURN_ERROR_P2(errLine, errNo);
 }
-///对外接口 等待信号量
+///对外接口 申请指定的信号量，并设置超时时间
 LITE_OS_SEC_TEXT UINT32 LOS_SemPend(UINT32 semHandle, UINT32 timeout)
 {
     UINT32 intSave;
@@ -291,7 +283,7 @@ OUT:
     SCHEDULER_UNLOCK(intSave);
     return retErr;
 }
-///释放信号
+///以不安全的方式释放指定的信号量,所谓不安全指的是不用自旋锁
 LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)
 {
     LosSemCB *semPosted = NULL;
@@ -321,7 +313,7 @@ LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)
     OsHookCall(LOS_HOOK_TYPE_SEM_POST, semPosted, resumedTask);
     return LOS_OK;
 }
-///对外接口 释放信号量
+///对外接口 释放指定的信号量
 LITE_OS_SEC_TEXT UINT32 LOS_SemPost(UINT32 semHandle)
 {
     UINT32 intSave;

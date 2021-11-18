@@ -49,7 +49,7 @@ typedef struct {
     UINT16 semCount; /**< Number of available semaphores | 有效信号量的数量 */
     UINT16 maxSemCount;  /**< Max number of available semaphores | 有效信号量的最大数量 */
     UINT32 semID; /**< Semaphore control structure ID | 信号量索引号 */
-    LOS_DL_LIST semList; /**< Queue of tasks that are waiting on a semaphore | 等待信号量的任务队列,任务通过阻塞节点挂上去 */
+    LOS_DL_LIST semList; /**< Queue of tasks that are waiting on a semaphore | 挂接阻塞于该信号量的任务 */
 } LosSemCB;
 
 /**

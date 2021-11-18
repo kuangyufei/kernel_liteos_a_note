@@ -326,23 +326,23 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
     taskInitParam.uwStackSize = LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE;//任务栈大小 2K
     taskInitParam.pcName = "Idle";//任务名称 叫pcName有点怪怪的,不能换个撒
     taskInitParam.usTaskPrio = OS_TASK_PRIORITY_LOWEST;//默认最低优先级 31
-    taskInitParam.processID = OsGetIdleProcessID();
+    taskInitParam.processID = OsGetIdleProcessID();//任务的进程ID绑定为空闲进程
 #ifdef LOSCFG_KERNEL_SMP
     taskInitParam.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());//每个idle任务只在单独的cpu上运行
 #endif
-    ret = LOS_TaskCreateOnly(idleTaskID, &taskInitParam);
-    LosTaskCB *idleTask = OS_TCB_FROM_TID(*idleTaskID);
-    idleTask->taskStatus |= OS_TASK_FLAG_SYSTEM_TASK;
-    OsSchedSetIdleTaskSchedParam(idleTask);
+    ret = LOS_TaskCreateOnly(idleTaskID, &taskInitParam);//只创建任务,不调度
+    LosTaskCB *idleTask = OS_TCB_FROM_TID(*idleTaskID);//获取任务实体
+    idleTask->taskStatus |= OS_TASK_FLAG_SYSTEM_TASK; //标记为系统任务,idle任务是给CPU休息用的,当然是个系统任务
+    OsSchedSetIdleTaskSchedParam(idleTask);//设置空闲任务的调度参数
 
     return ret;
 }
 
 /*
- * Description : get id of current running task.
+ * Description : get id of current running task. | 获取当前CPU正在执行的任务ID
  * Return      : task id
  */
-LITE_OS_SEC_TEXT UINT32 LOS_CurTaskIDGet(VOID)//获取当前任务的ID
+LITE_OS_SEC_TEXT UINT32 LOS_CurTaskIDGet(VOID)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
 
@@ -351,7 +351,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_CurTaskIDGet(VOID)//获取当前任务的ID
     }
     return runTask->taskID;
 }
-
+/// 创建指定任务同步信号量
 STATIC INLINE UINT32 OsTaskSyncCreate(LosTaskCB *taskCB)
 {
 #ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
@@ -364,7 +364,7 @@ STATIC INLINE UINT32 OsTaskSyncCreate(LosTaskCB *taskCB)
 #endif
     return LOS_OK;
 }
-
+/// 销毁指定任务同步信号量
 STATIC INLINE VOID OsTaskSyncDestroy(UINT32 syncSignal)
 {
 #ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
@@ -408,7 +408,7 @@ STATIC INLINE UINT32 OsTaskSyncWait(const LosTaskCB *taskCB)
 #endif
 }
 #endif
-
+/// 同步唤醒
 STATIC INLINE VOID OsTaskSyncWake(const LosTaskCB *taskCB)
 {
 #ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
@@ -417,7 +417,7 @@ STATIC INLINE VOID OsTaskSyncWake(const LosTaskCB *taskCB)
     (VOID)taskCB;
 #endif
 }
-
+/// 
 STATIC VOID OsTaskReleaseHoldLock(LosProcessCB *processCB, LosTaskCB *taskCB)
 {
     LosMux *mux = NULL;
@@ -731,7 +731,16 @@ LITE_OS_SEC_TEXT LosTaskCB *OsGetFreeTaskCB(VOID)
 
     return taskCB;
 }
-///创建任务，并使该任务进入suspend状态，不对该任务进行调度。如果需要调度，可以调用LOS_TaskResume使该任务进入ready状态
+
+/*!
+ * @brief LOS_TaskCreateOnly	
+ * 创建任务，并使该任务进入suspend状态，不对该任务进行调度。如果需要调度，可以调用LOS_TaskResume使该任务进入ready状态
+ * @param initParam	
+ * @param taskID	
+ * @return	
+ *
+ * @see
+ */
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *taskID, TSK_INIT_PARAM_S *initParam)
 {
     UINT32 intSave, errRet;

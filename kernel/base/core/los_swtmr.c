@@ -272,7 +272,7 @@ STATIC INLINE VOID OsSwtmrDelete(SWTMR_CTRL_S *swtmr)
     /* insert to free list */
     LOS_ListTailInsert(&g_swtmrFreeList, &swtmr->stSortList.sortLinkNode);//直接插入空闲链表中,回收再利用
     swtmr->ucState = OS_SWTMR_STATUS_UNUSED;//又干净着呢
-    swtmr->uwOwnerPid = 0;//谁拥有这个定时器? 是 0号进程, 0号进程出来了,竟然是虚拟的一个进程.用于这类缓冲使用.
+    swtmr->uwOwnerPid = 0;//谁拥有这个定时器? 是 0号进程
 }
 
 STATIC INLINE VOID OsWakePendTimeSwtmr(Percpu *cpu, UINT64 currTime, SWTMR_CTRL_S *swtmr)
