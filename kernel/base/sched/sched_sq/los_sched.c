@@ -71,8 +71,8 @@ typedef struct {
 typedef struct {
     SchedQueue queueList[OS_PRIORITY_QUEUE_NUM];//进程优先级调度队列,默认32级
     UINT32     queueBitmap;//进程优先级调度位图
-    SchedScan  taskScan;//函数指针,扫描任务
-    SchedScan  swtmrScan;//函数指针,扫描定时器
+    SchedScan  taskScan;//函数指针,扫描任务的回调函数
+    SchedScan  swtmrScan;//函数指针,扫描定时器的回调函数
 } Sched;
 
 STATIC Sched *g_sched = NULL;//全局调度器
@@ -775,29 +775,29 @@ BOOL OsSchedModifyProcessSchedParam(LosProcessCB *processCB, UINT16 policy, UINT
 
     return needSched;
 }
-
+//由时钟发起的调度
 VOID OsSchedTick(VOID)
 {
-    Sched *sched = g_sched;
-    Percpu *currCpu = OsPercpuGet();
+    Sched *sched = g_sched;	//获取全局调度器
+    Percpu *currCpu = OsPercpuGet(); //获取当前CPU
     BOOL needSched = FALSE;
-    LosTaskCB *runTask = OsCurrTaskGet();
+    LosTaskCB *runTask = OsCurrTaskGet(); //获取当前任务
 
-    currCpu->tickStartTime = runTask->irqStartTime;
+    currCpu->tickStartTime = runTask->irqStartTime;//将任务的中断开始时间给CPU的tick开始时间,这个做的目的是什么呢 ? @note_thinking 
     if (currCpu->responseID == OS_INVALID_VALUE) {
         if (sched->swtmrScan != NULL) {
-            (VOID)sched->swtmrScan();
+            (VOID)sched->swtmrScan();//扫描软件定时器 实体函数是: OsSwtmrScan
         }
 
-        needSched = sched->taskScan();
+        needSched = sched->taskScan();//扫描任务, 实体函数是: OsSchedScanTimerList
 
-        if (needSched) {
-            LOS_MpSchedule(OS_MP_CPU_ALL);
-            currCpu->schedFlag |= INT_PEND_RESCH;
+        if (needSched) {//若需调度
+            LOS_MpSchedule(OS_MP_CPU_ALL);//当前CPU向所有cpu发起核间中断,让其发生一次调度
+            currCpu->schedFlag |= INT_PEND_RESCH; //内因触发的调度
         }
     }
-    currCpu->schedFlag |= INT_PEND_TICK;
-    currCpu->responseTime = OS_SCHED_MAX_RESPONSE_TIME;
+    currCpu->schedFlag |= INT_PEND_TICK; //贴上外因触发的调度,这个外因指的就是tick时间到了
+    currCpu->responseTime = OS_SCHED_MAX_RESPONSE_TIME;//响应时间默认设最大
 }
 
 VOID OsSchedSetIdleTaskSchedParam(LosTaskCB *idleTask)
@@ -807,14 +807,14 @@ VOID OsSchedSetIdleTaskSchedParam(LosTaskCB *idleTask)
     idleTask->timeSlice = idleTask->initTimeSlice;
     OsSchedTaskEnQueue(idleTask);
 }
-
+/// 向全局调度器注册扫描软件定时器的回调函数
 UINT32 OsSchedSwtmrScanRegister(SchedScan func)
 {
     if (func == NULL) {
         return LOS_NOK;
     }
 
-    g_sched->swtmrScan = func;
+    g_sched->swtmrScan = func;//正式注册, func 将在 OsSchedTick 中被回调
     return LOS_OK;
 }
 ///调度初始化
@@ -849,7 +849,7 @@ UINT32 OsSchedInit(VOID)
         LOS_SpinInit(&cpu->swtmrSortLinkSpin);//操作具体CPU核定时器排序链表
     }
 
-    g_sched->taskScan = OsSchedScanTimerList;//扫描那些处于等待状态的任务是否时间到了
+    g_sched->taskScan = OsSchedScanTimerList;// 注册回调函数,扫描那些处于等待状态的任务是否时间到了,将在 OsSchedTick 中回调
 
 #ifdef LOSCFG_SCHED_TICK_DEBUG
     ret = OsSchedDebugInit();

@@ -33,6 +33,7 @@
 #include "los_hook_types_parse.h"
 
 #ifdef LOSCFG_KERNEL_HOOK
+/// 定义钩子函数
 #define LOS_HOOK_TYPE_DEF(type, paramList)                  \
     STATIC type##_FN g_fn##type;                            \
     UINT32 type##_RegHook(type##_FN func) {                 \
@@ -60,6 +61,16 @@
 
 LOS_HOOK_ALL_TYPES_DEF;
 
+/*
+LOS_HOOK_TYPE_DEF(LOS_HOOK_TYPE_MEM_INIT, (VOID *pool, UINT32 size))
+拆完之后变成
+
+STATIC LOS_HOOK_TYPE_MEM_INIT_FN g_fnLOS_HOOK_TYPE_MEM_INIT;
+
+
+
+
+*/
 #undef LOS_HOOK_TYPE_DEF
 
 #endif /* LOSCFG_DEBUG_HOOK */

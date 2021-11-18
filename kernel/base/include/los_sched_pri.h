@@ -91,8 +91,8 @@ STATIC INLINE VOID OsSchedIrqStartTime(VOID)
 
 typedef enum {
     INT_NO_RESCH = 0x0,   /**< no needs to schedule | 不需要调度*/
-    INT_PEND_RESCH = 0x1, /**< pending schedule flag | 因不允许抢占或正在中断导致的不允许调度*/
-    INT_PEND_TICK = 0x2,  /**< pending tick | 更新到期时间遇到正在中断导致的不允许调度*/
+    INT_PEND_RESCH = 0x1, /**< pending schedule flag | 因定时器/任务优先级调整等导致的调度,可以理解为内因触发的调度*/
+    INT_PEND_TICK = 0x2,  /**< pending tick | 因tick导致的调度,可以理解为外因触发的调度*/
 } SchedFlag;
 
 /* Check if preemptable with counter flag */

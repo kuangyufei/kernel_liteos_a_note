@@ -308,12 +308,19 @@ STATIC INLINE VOID OsWakePendTimeSwtmr(Percpu *cpu, UINT64 currTime, SWTMR_CTRL_
 /*
  * Description: Tick interrupt interface module of software timer
  * Return     : LOS_OK on success or error code on failure
- *///OsSwtmrScan 由系统时钟中断处理函数调用
-LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)//扫描定时器,如果碰到超时的,就放入超时队列
+ */
+/*!
+ * @brief OsSwtmrScan 由系统时钟中断处理函数调用	
+ * 扫描定时器,如果碰到超时的,就放入超时队列
+ * @return	
+ *
+ * @see
+ */
+LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)
 {
-    Percpu *cpu = OsPercpuGet();
-    SortLinkAttribute* swtmrSortLink = &OsPercpuGet()->swtmrSortLink;
-    LOS_DL_LIST *listObject = &swtmrSortLink->sortLink;
+    Percpu *cpu = OsPercpuGet();//获取当前CPU
+    SortLinkAttribute* swtmrSortLink = &OsPercpuGet()->swtmrSortLink;//获取需由CPU处理的软件定时器总信息
+    LOS_DL_LIST *listObject = &swtmrSortLink->sortLink;//获取定时器链表,上面挂的是等待时间到触发的定时器
 
     /*
      * it needs to be carefully coped with, since the swtmr is in specific sortlink
@@ -325,25 +332,25 @@ LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)//扫描定时器,如果碰到超时的,�
         LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
         return;
     }
-    SortLinkList *sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
+    SortLinkList *sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);//获取节点
 
-    UINT64 currTime = OsGetCurrSchedTimeCycle();
-    while (sortList->responseTime <= currTime) {
-        sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-        SWTMR_CTRL_S *swtmr = LOS_DL_LIST_ENTRY(sortList, SWTMR_CTRL_S, stSortList);
-        swtmr->startTime = GET_SORTLIST_VALUE(sortList);
-        OsDeleteNodeSortLink(swtmrSortLink, sortList);
+    UINT64 currTime = OsGetCurrSchedTimeCycle();//获取当前时间,用于比较所有定时器的时间是否到了
+    while (sortList->responseTime <= currTime) {//说明有定时器的时间到了,需要去触发定时器了
+        sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);//这行代码多余了,可以删除 @note_why 
+        SWTMR_CTRL_S *swtmr = LOS_DL_LIST_ENTRY(sortList, SWTMR_CTRL_S, stSortList);//获取软件定时器控制块
+        swtmr->startTime = GET_SORTLIST_VALUE(sortList);//获取该定时器的响应时间
+        OsDeleteNodeSortLink(swtmrSortLink, sortList);//将其从链表上摘除
         LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
 
-        OsHookCall(LOS_HOOK_TYPE_SWTMR_EXPIRED, swtmr);
-        OsWakePendTimeSwtmr(cpu, currTime, swtmr);
+        OsHookCall(LOS_HOOK_TYPE_SWTMR_EXPIRED, swtmr);//回调钩子函数 将调用 LOS_TraceSwtmrExpired
+        OsWakePendTimeSwtmr(cpu, currTime, swtmr);//触发定时器
 
         LOS_SpinLock(&cpu->swtmrSortLinkSpin);
-        if (LOS_ListEmpty(listObject)) {
+        if (LOS_ListEmpty(listObject)) {//链表为空就退出
             break;
         }
 
-        sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
+        sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);//继续下一个节点
     }
 
     LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);

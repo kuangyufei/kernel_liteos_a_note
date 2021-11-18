@@ -55,7 +55,7 @@ typedef enum {
 */
 typedef struct {
     LOS_DL_LIST sortLinkNode;   ///< 排序链表,注意上面挂的是一个个等待被执行的任务/软件定时器
-    UINT64      responseTime;   ///< 响应时间,注意是时间短的排在前面,见于 OsAddNode2SortLink 的实现
+    UINT64      responseTime;   ///< 响应时间,这里提取了最近需要触发的定时器/任务的时间,见于 OsAddNode2SortLink 的实现
 #ifdef LOSCFG_KERNEL_SMP
     UINT32      cpuid;  ///< 需要哪个CPU处理
 #endif

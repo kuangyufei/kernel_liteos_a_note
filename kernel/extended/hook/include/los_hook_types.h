@@ -48,6 +48,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_HOOK
+/// 内存模块支持的钩子类型
 #define LOS_HOOK_ALL_TYPES_DEF                                                                              \
     /* Hook types supported by memory modules */                                                            \
     LOS_HOOK_TYPE_DEF(LOS_HOOK_TYPE_MEM_INIT, (VOID *pool, UINT32 size))                                    \
@@ -114,16 +115,16 @@ extern "C" {
     LOS_HOOK_TYPE_DEF(LOS_HOOK_TYPE_USR_EVENT, (VOID *buffer, UINT32 len))
 
 /**
- * Defines the types of all hooks.
+ * Defines the types of all hooks. | 定义所有的钩子类型
  */
 #define LOS_HOOK_TYPE_DEF(type, paramList)                  type,
 
 typedef enum {
-    /* Used to manage hook pools */
+    /* Used to manage hook pools | 钩子池 开始位 */
     LOS_HOOK_TYPE_START = 0,
-    /* All supported hook types */
-    LOS_HOOK_ALL_TYPES_DEF
-    /* Used to manage hook pools */
+    /* All supported hook types | 所有支持的钩子类型 ,枚举中写宏,这个得点赞  @note_good */
+    LOS_HOOK_ALL_TYPES_DEF 
+    /* Used to manage hook pools | 钩子池 结束位 */
     LOS_HOOK_TYPE_END
 } HookType;
 

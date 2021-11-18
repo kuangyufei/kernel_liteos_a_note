@@ -93,7 +93,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * Number of Ticks in one second
  */
 #ifndef LOSCFG_BASE_CORE_TICK_PER_SECOND
-#define LOSCFG_BASE_CORE_TICK_PER_SECOND  1000  /* 1ms per tick */
+#define LOSCFG_BASE_CORE_TICK_PER_SECOND  1000  /* 1ms per tick | 每秒节拍数*/
 #endif
 
 /**
@@ -220,7 +220,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * Default task stack size
  */
 #ifndef LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE	//内核默认任务栈大小
-#define LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE SIZE(0x4000) //16K 
+#define LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE SIZE(0x4000) ///< 16K 
 #endif
 
 /**

@@ -203,7 +203,7 @@ STATIC VOID LOS_TraceSwtmrDelete(const SWTMR_CTRL_S *swtmr)
 {
     LOS_TRACE(SWTMR_DELETE, swtmr->usTimerID);
 }
-
+/// 指定定时器时间到的日志
 STATIC VOID LOS_TraceSwtmrExpired(const SWTMR_CTRL_S *swtmr)
 {
     LOS_TRACE(SWTMR_EXPIRED, swtmr->usTimerID);
@@ -266,7 +266,7 @@ STATIC VOID LOS_TraceUsrEvent(VOID *buffer, UINT32 len)
     LOS_MemFree(m_aucSysMem0, buffer);
 #endif
 }
-
+///< 为输出日志而注册的钩子函数
 VOID OsTraceCnvInit(VOID)
 {
     LOS_HookReg(LOS_HOOK_TYPE_MEM_ALLOC, LOS_TraceMemAlloc);
@@ -299,11 +299,11 @@ VOID OsTraceCnvInit(VOID)
     LOS_HookReg(LOS_HOOK_TYPE_MOVEDTASKTOSUSPENDEDLIST, LOS_TraceTaskSuspend);
     LOS_HookReg(LOS_HOOK_TYPE_ISR_ENTER, LOS_TraceIsrEnter);
     LOS_HookReg(LOS_HOOK_TYPE_ISR_EXIT, LOS_TraceIsrExit);
-    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_CREATE, LOS_TraceSwtmrCreate);
-    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_DELETE, LOS_TraceSwtmrDelete);
-    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_EXPIRED, LOS_TraceSwtmrExpired);
-    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_START, LOS_TraceSwtmrStart);
-    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_STOP, LOS_TraceSwtmrStop);
+    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_CREATE, LOS_TraceSwtmrCreate);		///< 创建定时器
+    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_DELETE, LOS_TraceSwtmrDelete);		///< 删除定时器
+    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_EXPIRED, LOS_TraceSwtmrExpired);	///< 定时器时间到
+    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_START, LOS_TraceSwtmrStart);		///< 启动定时器
+    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_STOP, LOS_TraceSwtmrStop);			///< 停止定时器
     LOS_HookReg(LOS_HOOK_TYPE_USR_EVENT, LOS_TraceUsrEvent);
     LOS_HookReg(LOS_HOOK_TYPE_IPC_WRITE_DROP, LOS_TraceIpcWriteDrop);
     LOS_HookReg(LOS_HOOK_TYPE_IPC_WRITE, LOS_TraceIpcWrite);
