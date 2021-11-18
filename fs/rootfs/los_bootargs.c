@@ -47,7 +47,7 @@
 STATIC CHAR *g_cmdLine = NULL;
 STATIC UINT64 g_alignSize = 0;
 STATIC struct BootArgs g_bootArgs[MAX_ARGS_NUM] = {0};
-//读取环境变量bootcmd 来启动内核
+/// 读取环境变量bootcmd 来启动内核
 INT32 LOS_GetCmdLine(VOID)
 {
     int ret;

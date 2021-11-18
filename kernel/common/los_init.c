@@ -43,7 +43,7 @@
 #endif
 
 /**
- * Register kernel init level labels.
+ * Register kernel init level labels. | 内核初始化等级
  */
 OS_INIT_LEVEL_REG(kernel, 10, g_kernInitLevelList);
 
@@ -51,9 +51,10 @@ STATIC volatile UINT32 g_initCurrentLevel = OS_INVALID_VALUE;	//当前等级
 STATIC volatile struct ModuleInitInfo *g_initCurrentModule = 0;	//当前模块
 STATIC Atomic g_initCount = 0;
 STATIC SPIN_LOCK_INIT(g_initLock);
-//	建议每个启动框架都封装一层自己的调用接口
+
 /**
  * It is recommended that each startup framework encapsulate a layer of its own calling interface.
+ * 建议每个启动框架都封装一层自己的调用接口
  */
 STATIC VOID InitLevelCall(const CHAR *name, const UINT32 level, struct ModuleInitInfo *initLevelList[])
 {

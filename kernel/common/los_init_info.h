@@ -62,7 +62,7 @@
 typedef UINT32 (*OsInitHook)(VOID);//初始化钩子函数
 
 struct ModuleInitInfo {//模块初始化信息
-    OsInitHook hook;	//函数指针,钩子函数
+    OsInitHook hook;	///< 函数指针,钩子函数
 #ifdef LOS_INIT_DEBUG
     const CHAR *name;
 #endif

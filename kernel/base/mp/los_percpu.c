@@ -32,5 +32,5 @@
 #include "los_percpu_pri.h"
 
 
-Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM];
+Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM]; ///< CPU池,池大小由CPU核数决定
 

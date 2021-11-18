@@ -48,13 +48,13 @@
 #endif
 
 STATIC BOOL g_srandInit;
-
+/// 打开ELF文件
 STATIC INT32 OsELFOpen(const CHAR *fileName, INT32 oflags)
 {
     INT32 ret = -LOS_NOK;
     INT32 procFd;
 
-    procFd = AllocProcessFd();
+    procFd = AllocProcessFd();//分配一个文件描述符
     if (procFd < 0) {
         return -EMFILE;
     }
@@ -63,13 +63,13 @@ STATIC INT32 OsELFOpen(const CHAR *fileName, INT32 oflags)
         SetCloexecFlag(procFd);
     }
 
-    ret = open(fileName, oflags);
+    ret = open(fileName, oflags);//打开文件
     if (ret < 0) {
         FreeProcessFd(procFd);
         return -get_errno();
     }
 
-    AssociateSystemFd(procFd, ret);
+    AssociateSystemFd(procFd, ret);//分配一个系统描述符
     return procFd;
 }
 
