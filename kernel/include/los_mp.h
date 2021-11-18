@@ -45,12 +45,13 @@ extern "C" {
 
 #define OS_MP_GC_PERIOD     100 /* ticks */
 
-typedef enum {//核间中断
-    LOS_MP_IPI_WAKEUP,	//唤醒CPU
-    LOS_MP_IPI_SCHEDULE,//调度CPU
-    LOS_MP_IPI_HALT,	//停止CPU
+/// 核间中断
+typedef enum {
+    LOS_MP_IPI_WAKEUP,            ///!< 唤醒CPU
+    LOS_MP_IPI_SCHEDULE,          ///!< 调度CPU
+    LOS_MP_IPI_HALT,              ///!< 停止CPU
 #ifdef LOSCFG_KERNEL_SMP_CALL
-    LOS_MP_IPI_FUNC_CALL,
+    LOS_MP_IPI_FUNC_CALL,         ///!< 触发CPU的回调函数,这些回调函数都挂到了cpu的链表上
 #endif
 } MP_IPI_TYPE;
 
@@ -69,11 +70,11 @@ STATIC INLINE VOID LOS_MpSchedule(UINT32 target)
 }
 #endif
 
-#ifdef LOSCFG_KERNEL_SMP_CALL
+#ifdef LOSCFG_KERNEL_SMP_CALL //多核下的回调开关
 typedef struct {
-    LOS_DL_LIST node;
-    SMP_FUNC_CALL func;
-    VOID *args;
+    LOS_DL_LIST node;	///< 链表节点,将挂到 g_percpu[cpuid]上
+    SMP_FUNC_CALL func;	///< 回调函数地址
+    VOID *args;			///< 回调函数的参数
 } MpCallFunc;
 
 /**

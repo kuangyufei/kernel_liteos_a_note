@@ -1,3 +1,17 @@
+/*!
+ * @file    gic_common.h
+ * @brief GIC（Generic Interrupt Controller）是ARM公司提供的一个通用的中断控制器
+ * @link http://weharmonyos.com/blog/44.html
+ * @verbatim
+ * @endverbatim
+ * @version 
+ * @author  weharmonyos.com
+ * @date    2021-11-18
+ *
+ * @history
+ *
+ */
+ 
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -36,7 +50,7 @@
 #include "target_config.h"
 #include "los_config.h"
 
-/* gic arch revision */
+/* gic arch revision | GIC架构版本*/
 enum {
     GICV1 = 1,
     GICV2,
@@ -46,15 +60,15 @@ enum {
 
 #define GIC_REV_MASK                    0xF0
 #define GIC_REV_OFFSET                  0x4
-
+/// 前往  http://weharmonyos.com 下载 对应datasheet 
 #ifdef LOSCFG_ARCH_GIC_V2
-#define GICC_CTLR                       (GICC_OFFSET + 0x00)            /* CPU Interface Control Register */
-#define GICC_PMR                        (GICC_OFFSET + 0x04)            /* Interrupt Priority Mask Register */
+#define GICC_CTLR                       (GICC_OFFSET + 0x00)            /* CPU Interface Control Register | 控制寄存器，控制是否上报中断到处理器 */
+#define GICC_PMR                        (GICC_OFFSET + 0x04)            /* Interrupt Priority Mask Register | 中断优先级屏蔽寄存器*/
 #define GICC_BPR                        (GICC_OFFSET + 0x08)            /* Binary Point Register */
-#define GICC_IAR                        (GICC_OFFSET + 0x0c)            /* Interrupt Acknowledge Register */
-#define GICC_EOIR                       (GICC_OFFSET + 0x10)            /* End of Interrupt Register */
-#define GICC_RPR                        (GICC_OFFSET + 0x14)            /* Running Priority Register */
-#define GICC_HPPIR                      (GICC_OFFSET + 0x18)            /* Highest Priority Pending Interrupt Register */
+#define GICC_IAR                        (GICC_OFFSET + 0x0c)            /* Interrupt Acknowledge Register | 中断回应寄存器，处理器会读取此寄存器，用来获取上报的中断号*/
+#define GICC_EOIR                       (GICC_OFFSET + 0x10)            /* End of Interrupt Register | 处理器会写这个寄存器来告知CPU interface，此中断已经处理完成*/
+#define GICC_RPR                        (GICC_OFFSET + 0x14)            /* Running Priority Register | 运行优先级寄存器，此寄存器的值表示当前CPU interface的运行优先级*/
+#define GICC_HPPIR                      (GICC_OFFSET + 0x18)            /* Highest Priority Pending Interrupt Register | 当前pending状态的最高优先级中断号，当在允许中断抢占的情况下，如果此中断的优先级值大于运行优先级寄存器的值的话，就会发生中断抢占*/
 #endif
 
 #define GICD_CTLR                       (GICD_OFFSET + 0x000)           /* Distributor Control Register */
@@ -106,7 +120,7 @@ enum {
 #ifndef LOSCFG_ARCH_INTERRUPT_PREEMPTION
 #define MAX_BINARY_POINT_VALUE              7
 #define PRIORITY_SHIFT                      0
-#define GIC_MAX_INTERRUPT_PREEMPTION_LEVEL  0U
+#define GIC_MAX_INTERRUPT_PREEMPTION_LEVEL  0U ///< 中断最高优先级
 #else
 #define PRIORITY_SHIFT                      ((MAX_BINARY_POINT_VALUE + 1) % GIC_PRIORITY_OFFSET)
 #define GIC_MAX_INTERRUPT_PREEMPTION_LEVEL  ((UINT8)((GIC_PRIORITY_MASK + 1) >> PRIORITY_SHIFT))
@@ -118,6 +132,6 @@ enum {
  * The preemption level is up to 128, and the maximum value corresponding to the interrupt priority is 254 [7:1].
  * If the GIC_MAX_INTERRUPT_PREEMPTION_LEVEL is 0, the minimum priority is 0xff.
  */
-#define MIN_INTERRUPT_PRIORITY              ((UINT8)((GIC_MAX_INTERRUPT_PREEMPTION_LEVEL - 1) << PRIORITY_SHIFT))
+#define MIN_INTERRUPT_PRIORITY              ((UINT8)((GIC_MAX_INTERRUPT_PREEMPTION_LEVEL - 1) << PRIORITY_SHIFT)) ///< 中断最低优先级
 
 #endif

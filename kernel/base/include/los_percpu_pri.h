@@ -74,7 +74,7 @@ typedef struct {
 #ifdef LOSCFG_KERNEL_SMP
     UINT32            excFlag;               ///<  cpu halt or exc flag | cpu 停止或 异常 标志
 #ifdef LOSCFG_KERNEL_SMP_CALL
-    LOS_DL_LIST       funcLink;              ///<  mp function call link | 回调函数
+    LOS_DL_LIST       funcLink;              ///<  mp function call link | 回调函数链表,由 LOS_MP_IPI_FUNC_CALL 触发
 #endif
 #endif
 } Percpu;

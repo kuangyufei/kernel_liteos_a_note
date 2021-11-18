@@ -125,18 +125,18 @@ UINT64 HalClockGetCycles(VOID)
     cntpct = READ_TIMER_REG64(TIMER_REG_CT);
     return cntpct;
 }
-
+/// 硬时钟初始化,创建硬中断
 LITE_OS_SEC_TEXT_INIT VOID HalClockInit(VOID)
 {
     UINT32 ret;
 
     g_sysClock = HalClockFreqRead();//读取时钟源频率
-    ret = LOS_HwiCreate(OS_TICK_INT_NUM, MIN_INTERRUPT_PRIORITY, 0, OsTickHandler, 0);
+    ret = LOS_HwiCreate(OS_TICK_INT_NUM, MIN_INTERRUPT_PRIORITY, 0, OsTickHandler, 0);//创建硬中断
     if (ret != LOS_OK) {
         PRINT_ERR("%s, %d create tick irq failed, ret:0x%x\n", __FUNCTION__, __LINE__, ret);
     }
 }
-
+/// 开始硬时钟
 LITE_OS_SEC_TEXT_INIT VOID HalClockStart(VOID)
 {
     UINT32 ret = OsSchedSetTickTimerType(64); /* 64 bit tick timer */
@@ -146,7 +146,7 @@ LITE_OS_SEC_TEXT_INIT VOID HalClockStart(VOID)
 
     HalIrqUnmask(OS_TICK_INT_NUM);
 
-    /* triggle the first tick */
+    /* triggle the first tick | 触发第一个节拍*/
     TimerCtlWrite(0);
     TimerTvalWrite(OS_CYCLE_PER_TICK);//递减计时器,使能tick中断,产生周期性tick
     TimerCtlWrite(1);

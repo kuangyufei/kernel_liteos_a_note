@@ -68,12 +68,12 @@ VOID HalIrqSetAffinity(UINT32 vector, UINT32 cpuMask)
     GIC_REG_8(GICD_ITARGETSR(offset) + index) = cpuMask;
 }
 #endif
-
+/// 获取当前中断号
 UINT32 HalCurIrqGet(VOID)
 {
     return g_curIrqNum;
 }
-
+/// 屏蔽中断
 VOID HalIrqMask(UINT32 vector)
 {
     if ((vector > OS_USER_HWI_MAX) || (vector < OS_USER_HWI_MIN)) {
@@ -82,7 +82,7 @@ VOID HalIrqMask(UINT32 vector)
 
     GIC_REG_32(GICD_ICENABLER(vector / 32)) = 1U << (vector % 32);
 }
-
+/// 撤销中断屏蔽
 VOID HalIrqUnmask(UINT32 vector)
 {
     if ((vector > OS_USER_HWI_MAX) || (vector < OS_USER_HWI_MIN)) {
@@ -105,52 +105,52 @@ VOID HalIrqClear(UINT32 vector)
 {
     GIC_REG_32(GICC_EOIR) = vector;
 }
-
+/// 中断控制器与CPU之间的关系初始化
 VOID HalIrqInitPercpu(VOID)
 {
     /* unmask interrupts */
-    GIC_REG_32(GICC_PMR) = 0xFF;
+    GIC_REG_32(GICC_PMR) = 0xFF;//写中断优先级屏蔽寄存器,0xFF代表开放所有中断
 
     /* enable gic cpu interface */
-    GIC_REG_32(GICC_CTLR) = 1;
+    GIC_REG_32(GICC_CTLR) = 1;//使能GICC_CTLR寄存器,意思是打通控制器和CPU之间的链路
 }
-
+/// 中断控制器本身初始化
 VOID HalIrqInit(VOID)
 {
     UINT32 i;
 
-    /* set externel interrupts to be level triggered, active low. */
+    /* set externel interrupts to be level triggered, active low. | 设置外部中断为电平触发，低电平有效。*/
     for (i = 32; i < OS_HWI_MAX_NUM; i += 16) {
         GIC_REG_32(GICD_ICFGR(i / 16)) = 0;
     }
 
-    /* set externel interrupts to CPU 0 */
+    /* set externel interrupts to CPU 0 | 将外部中断设置为 CPU 0*/
     for (i = 32; i < OS_HWI_MAX_NUM; i += 4) {
         GIC_REG_32(GICD_ITARGETSR(i / 4)) = 0x01010101;
     }
 
-    /* set priority on all interrupts */
+    /* set priority on all interrupts | 设置所有中断的优先级*/
     for (i = 0; i < OS_HWI_MAX_NUM; i += 4) {
         GIC_REG_32(GICD_IPRIORITYR(i / 4)) = GICD_INT_DEF_PRI_X4;
     }
 
-    /* disable all interrupts. */
+    /* disable all interrupts. | 禁止所有中断*/
     for (i = 0; i < OS_HWI_MAX_NUM; i += 32) {
         GIC_REG_32(GICD_ICENABLER(i / 32)) = ~0;
     }
 
-    HalIrqInitPercpu();
+    HalIrqInitPercpu();//启动和CPU之间关系
 
     /* enable gic distributor control */
-    GIC_REG_32(GICD_CTLR) = 1;
+    GIC_REG_32(GICD_CTLR) = 1;//使能中断分发寄存器
 
-#ifdef LOSCFG_KERNEL_SMP
-    /* register inter-processor interrupt */
-    (VOID)LOS_HwiCreate(LOS_MP_IPI_WAKEUP, 0xa0, 0, OsMpWakeHandler, 0);
-    (VOID)LOS_HwiCreate(LOS_MP_IPI_SCHEDULE, 0xa0, 0, OsMpScheduleHandler, 0);
-    (VOID)LOS_HwiCreate(LOS_MP_IPI_HALT, 0xa0, 0, OsMpHaltHandler, 0);
+#ifdef LOSCFG_KERNEL_SMP //多核情况下会出现CPU核间的通讯
+    /* register inter-processor interrupt | 注册核间中断*/
+    (VOID)LOS_HwiCreate(LOS_MP_IPI_WAKEUP, 0xa0, 0, OsMpWakeHandler, 0);//由某CPU去唤醒其他CPU继续工作
+    (VOID)LOS_HwiCreate(LOS_MP_IPI_SCHEDULE, 0xa0, 0, OsMpScheduleHandler, 0);//由某CPU发起对其他CPU的调度
+    (VOID)LOS_HwiCreate(LOS_MP_IPI_HALT, 0xa0, 0, OsMpHaltHandler, 0);//由某CPU去暂停其他CPU的工作
 #ifdef LOSCFG_KERNEL_SMP_CALL
-    (VOID)LOS_HwiCreate(LOS_MP_IPI_FUNC_CALL, 0xa0, 0, OsMpFuncCallHandler, 0);
+    (VOID)LOS_HwiCreate(LOS_MP_IPI_FUNC_CALL, 0xa0, 0, OsMpFuncCallHandler, 0);//触发回调函数
 #endif
 #endif
 }

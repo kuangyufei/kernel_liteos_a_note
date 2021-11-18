@@ -1,3 +1,32 @@
+/*!
+ * @file    los_mp.c
+ * @brief
+ * @link
+ * @verbatim
+	 多CPU核的操作系统3种处理模式(SMP+AMP+BMP) 鸿蒙实现的是 SMP 的方式
+		非对称多处理（Asymmetric multiprocessing，AMP）每个CPU内核
+		运行一个独立的操作系统或同一操作系统的独立实例（instantiation）。
+		
+		对称多处理（Symmetric multiprocessing，SMP）一个操作系统的实例
+		可以同时管理所有CPU内核，且应用并不绑定某一个内核。
+		
+		混合多处理（Bound multiprocessing，BMP）一个操作系统的实例可以
+		同时管理所有CPU内核，但每个应用被锁定于某个指定的核心。
+
+	多核多线程处理器的中断
+		由 PIC(Programmable Interrupt Controller）统一控制。PIC 允许一个
+		硬件线程中断其他的硬件线程，这种方式被称为核间中断(Inter-Processor Interrupts,IPI）
+		
+	SGI:软件触发中断(Software Generated Interrupt)。在arm处理器中，
+		SGI共有16个,硬件中断号分别为ID0~ID15。它通常用于多核间通讯。
+ * @endverbatim
+ * @version 
+ * @author  weharmonyos.com
+ * @date    2021-11-18
+ *
+ * @history
+ *
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -35,24 +64,7 @@
 #include "los_sched_pri.h"
 #include "los_swtmr.h"
 #include "los_task_pri.h"
-/*******************************************************	
-多CPU核的操作系统3种处理模式(SMP+AMP+BMP) 鸿蒙实现的是 SMP 的方式
-	非对称多处理（Asymmetric multiprocessing，AMP）每个CPU内核
-	运行一个独立的操作系统或同一操作系统的独立实例（instantiation）。
-	
-	对称多处理（Symmetric multiprocessing，SMP）一个操作系统的实例
-	可以同时管理所有CPU内核，且应用并不绑定某一个内核。
-	
-	混合多处理（Bound multiprocessing，BMP）一个操作系统的实例可以
-	同时管理所有CPU内核，但每个应用被锁定于某个指定的核心。
 
-多核多线程处理器的中断
-	由 PIC(Programmable Interrupt Controller）统一控制。PIC 允许一个
-	硬件线程中断其他的硬件线程，这种方式被称为核间中断(Inter-Processor Interrupts,IPI）
-	
-SGI:软件触发中断(Software Generated Interrupt)。在arm处理器中，
-	SGI共有16个,硬件中断号分别为ID0~ID15。它通常用于多核间通讯。
-********************************************************/
 
 #ifdef LOSCFG_KERNEL_SMP
 //给参数CPU发送调度信号
@@ -118,6 +130,17 @@ VOID OsMpCollectTasks(VOID)
 }
 
 #ifdef LOSCFG_KERNEL_SMP_CALL
+/*!
+ * @brief OsMpFuncCall	
+ * 向指定CPU的funcLink上注册回调函数, 该怎么理解这个函数呢 ? 具体有什么用呢 ?
+ * \n 可由CPU a核向b核发起一个请求,让b核去执行某个函数, 这是否是分布式调度的底层实现基础 ?
+ * @param args	
+ * @param func	
+ * @param target	
+ * @return	
+ *
+ * @see
+ */
 VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args)
 {
     UINT32 index;
@@ -127,13 +150,13 @@ VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args)
         return;
     }
 
-    if (!(target & OS_MP_CPU_ALL)) {
+    if (!(target & OS_MP_CPU_ALL)) {//检查目标CPU是否正确
         return;
     }
 
-    for (index = 0; index < LOSCFG_KERNEL_CORE_NUM; index++) {
+    for (index = 0; index < LOSCFG_KERNEL_CORE_NUM; index++) {//遍历所有核
         if (CPUID_TO_AFFI_MASK(index) & target) {
-            MpCallFunc *mpCallFunc = (MpCallFunc *)LOS_MemAlloc(m_aucSysMem0, sizeof(MpCallFunc));
+            MpCallFunc *mpCallFunc = (MpCallFunc *)LOS_MemAlloc(m_aucSysMem0, sizeof(MpCallFunc));//从内核空间 分配回调结构体
             if (mpCallFunc == NULL) {
                 PRINT_ERR("smp func call malloc failed\n");
                 return;
@@ -142,41 +165,48 @@ VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args)
             mpCallFunc->args = args;
 
             MP_CALL_LOCK(intSave);
-            LOS_ListAdd(&g_percpu[index].funcLink, &(mpCallFunc->node));
+            LOS_ListAdd(&g_percpu[index].funcLink, &(mpCallFunc->node));//将回调结构体挂入链表尾部
             MP_CALL_UNLOCK(intSave);
         }
     }
-    HalIrqSendIpi(target, LOS_MP_IPI_FUNC_CALL);
+    HalIrqSendIpi(target, LOS_MP_IPI_FUNC_CALL);//向目标CPU发起核间中断
 }
 
+/*!
+ * @brief OsMpFuncCallHandler	
+ * 回调向当前CPU注册过的函数
+ * @return	
+ *
+ * @see
+ */
 VOID OsMpFuncCallHandler(VOID)
 {
     UINT32 intSave;
-    UINT32 cpuid = ArchCurrCpuid();
+    UINT32 cpuid = ArchCurrCpuid();//获取当前CPU
     LOS_DL_LIST *list = NULL;
     MpCallFunc *mpCallFunc = NULL;
 
     MP_CALL_LOCK(intSave);
-    while (!LOS_ListEmpty(&g_percpu[cpuid].funcLink)) {
-        list = LOS_DL_LIST_FIRST(&g_percpu[cpuid].funcLink);
-        LOS_ListDelete(list);
+    while (!LOS_ListEmpty(&g_percpu[cpuid].funcLink)) {//遍历回调函数链表,知道为空
+        list = LOS_DL_LIST_FIRST(&g_percpu[cpuid].funcLink);//获取链表第一个数据
+        LOS_ListDelete(list);//将自己从链表上摘除
         MP_CALL_UNLOCK(intSave);
 
-        mpCallFunc = LOS_DL_LIST_ENTRY(list, MpCallFunc, node);
-        mpCallFunc->func(mpCallFunc->args);
-        (VOID)LOS_MemFree(m_aucSysMem0, mpCallFunc);
+        mpCallFunc = LOS_DL_LIST_ENTRY(list, MpCallFunc, node);//获取回调函数
+        mpCallFunc->func(mpCallFunc->args);//获取参数并回调该函数
+        (VOID)LOS_MemFree(m_aucSysMem0, mpCallFunc);//释放回调函数内存
 
         MP_CALL_LOCK(intSave);
     }
     MP_CALL_UNLOCK(intSave);
 }
-
+/// CPU层级的回调模块初始化
 VOID OsMpFuncCallInit(VOID)
 {
     UINT32 index;
-    /* init funclink for each core */
+    /* init funclink for each core | 为每个CPU核整一个回调函数链表*/
     for (index = 0; index < LOSCFG_KERNEL_CORE_NUM; index++) {
-        LOS_ListInit(&g_percpu[index].funcLink);
+        LOS_ListInit(&g_percpu[index].funcLink);//链表初始化
     }
 }
 #endif /* LOSCFG_KERNEL_SMP_CALL */

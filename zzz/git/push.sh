@@ -1,11 +1,15 @@
 git add -A
-git commit -m  ' 对任务模块更详细的注解
+git commit -m  ' CPU核间通讯注解, 多个CPU之间是如何通讯的 ?
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
-    博客输出站点(国内):http://weharmonyos.com
-    博客输出站点(国外):https://weharmony.github.io
-    注解文件系统:https://gitee.com/weharmony/third_party_NuttX
-    注解协议栈:https://gitee.com/weharmony/third_party_lwip
-    注解编译子系统:https://gitee.com/weharmony/build_lite
+    鸿蒙研究站 | http://weharmonyos.com (国内) 
+              | https://weharmony.github.io (国外)
+    oschina | https://my.oschina.net/weharmony
+    博客园 | https://www.cnblogs.com/weharmony/
+    知乎 | https://www.zhihu.com/people/weharmonyos
+    csdn | https://blog.csdn.net/kuangyufei
+    51cto | https://harmonyos.51cto.com/column/34
+    掘金 | https://juejin.cn/user/756888642000808
+    公众号 | 鸿蒙研究站 (weharmonyos)
 '
 
 git push  origin master
