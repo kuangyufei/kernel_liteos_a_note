@@ -49,7 +49,7 @@ BOOL LOS_RwlockIsValid(const LosRwlock *rwlock)
 
     return FALSE;
 }
-
+/// 创建读写锁
 UINT32 LOS_RwlockInit(LosRwlock *rwlock)
 {
     UINT32 intSave;

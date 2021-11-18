@@ -1120,7 +1120,7 @@ VOID OsSchedResched(VOID)
 }
 
 /*!
- * @brief LOS_Schedule	任务调度主函数
+ * @brief LOS_Schedule	任务调度主函数,触发系统调度
  *
  * @return	
  *

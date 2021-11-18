@@ -33,10 +33,11 @@
 #include "los_sched_pri.h"
 
 /*!
-* @file  los_sys.c
-* @brief  系统时间转化
-* @details  
-* @attention @verbatim 
+ * @file  los_sys.c
+ * @brief  系统时间转化
+ * @details 
+ * @link  kernel-small-basic-time http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-basic-time.html @endlink
+ * @verbatim 
 	基本概念 
 		时间管理以系统时钟为基础，给应用程序提供所有和时间有关的服务。
 
@@ -61,15 +62,15 @@
 		根据实际需求，在板级配置适配时确认是否使能LOSCFG_BASE_CORE_TICK_HW_TIME宏选择外部定时器，
 		并配置系统主时钟频率OS_SYS_CLOCK（单位Hz）。OS_SYS_CLOCK的默认值基于硬件平台配置。
 		通过make menuconfig配置LOSCFG_BASE_CORE_TICK_PER_SECOND。
-		
-	注意事项	
-		时间管理不是单独的功能模块，依赖于OS_SYS_CLOCK和LOSCFG_BASE_CORE_TICK_PER_SECOND两个配置选项。
-		系统的Tick数在关中断的情况下不进行计数，故系统Tick数不能作为准确时间使用。
 
 	参考	
-		https://gitee.com/LiteOS/LiteOS/blob/master/doc/Huawei_LiteOS_Kernel_Developer_Guide_zh.md#setup
-	@endverbatim 	
-*/
+		http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-basic-time.html
+	@endverbatim 
+ *	@attention 
+	 获取系统Tick数需要在系统时钟使能之后。
+	 时间管理不是单独的功能模块，依赖于los_config.h中的OS_SYS_CLOCK和LOSCFG_BASE_CORE_TICK_PER_SECOND两个配置选项。
+	 系统的Tick数在关中断的情况下不进行计数，故系统Tick数不能作为准确时间计算。
+ */
 
 #define OS_MAX_VALUE    0xFFFFFFFFUL
 

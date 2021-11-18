@@ -80,14 +80,14 @@ extern "C" {
 	原子操作中，操作数及其结果不能超过函数所支持位数的最大值。目前原子操作接口只支持整型数据。
 
 参考
-	https://gitee.com/LiteOS/LiteOS/blob/master/doc/Huawei_LiteOS_Kernel_Developer_Guide_zh.md#setup
+	http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-basic-atomic.html
 */
 typedef volatile INT32 Atomic;	//原子数据包含两种类型Atomic（有符号32位数）与 Atomic64（有符号64位数）
 typedef volatile INT64 Atomic64;
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic read.
+ * @brief Atomic read. | 读取32bit原子数据
  *
  * @par Description:
  * This API is used to implement the atomic read and return the result value of the read.
@@ -356,7 +356,7 @@ STATIC INLINE INT32 LOS_AtomicDecRet(Atomic *v)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic64 read.
+ * @brief Atomic64 read. | 读取64bit原子数据
  *
  * @par Description:
  * This API is used to implement the atomic64 read and return the result value of the read.

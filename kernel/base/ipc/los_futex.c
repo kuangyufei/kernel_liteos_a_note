@@ -636,7 +636,7 @@ EXIT_ERR:
 EXIT_UNLOCK_ERR:
     return futexRet;
 }
-
+/// 向Futex表中插入代表被阻塞的线程的node
 INT32 OsFutexWait(const UINT32 *userVaddr, UINT32 flags, UINT32 val, UINT32 absTime)
 {
     INT32 ret;
@@ -745,7 +745,7 @@ STATIC INT32 OsFutexWakeTask(UINTPTR futexKey, UINT32 flags, INT32 wakeNumber, F
 
     return LOS_OK;
 }
-
+/// 唤醒一个被指定锁阻塞的线程
 INT32 OsFutexWake(const UINT32 *userVaddr, UINT32 flags, INT32 wakeNumber)
 {
     INT32 ret, futexRet;
@@ -952,7 +952,7 @@ STATIC INT32 OsFutexRequeueParamCheck(const UINT32 *oldUserVaddr, UINT32 flags, 
 
     return LOS_OK;
 }
-
+/// 调整指定锁在Futex表中的位置
 INT32 OsFutexRequeue(const UINT32 *userVaddr, UINT32 flags, INT32 wakeNumber, INT32 count, const UINT32 *newUserVaddr)
 {
     INT32 ret;
