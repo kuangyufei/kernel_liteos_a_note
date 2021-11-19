@@ -47,7 +47,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_KHEAP_BLOCK_SIZE                 (512 * 1024UL)
+#define OS_KHEAP_BLOCK_SIZE                 (512 * 1024UL) ///< 内核空间 堆内存部分大小, 512K
 
 typedef struct ArchMmuInitMapping {
     PADDR_T phys;///< 物理地址

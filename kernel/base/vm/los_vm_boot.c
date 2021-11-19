@@ -42,7 +42,7 @@
  * @brief 虚拟内存区间检查, 需理解 los_vm_zone.h 中画出的鸿蒙虚拟内存全景图
  */
 
-UINTPTR g_vmBootMemBase = (UINTPTR)&__bss_end; ///< 内核空间可用于分配的区域
+UINTPTR g_vmBootMemBase = (UINTPTR)&__bss_end; ///< 内核空间可用于分配的区域,紧挨着.bss区
 BOOL g_kHeapInited = FALSE; ///< 内核堆区初始化变量
 
 

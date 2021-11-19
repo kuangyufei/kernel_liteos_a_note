@@ -1,8 +1,9 @@
 /*!
  * @file    los_memory.c
  * @brief
- * @link
+ * @link tlsf算法论文 http://www.gii.upv.es/tlsf/files/ecrts04_tlsf.pdf @endlink
    @verbatim
+   https://www.codenong.com/cs106845116/ TLSF算法（一）分配中的位图计算
    基本概念
 		内存管理模块管理系统的内存资源，它是操作系统的核心模块之一，主要包括内存的初始化、分配以及释放。
 		OpenHarmony LiteOS-A的堆内存管理提供内存初始化、分配、释放等功能。在系统运行过程中，堆内存管理
@@ -15,7 +16,31 @@
 		OpenHarmony LiteOS-A堆内存在TLSF算法的基础上，对区间的划分进行了优化，获得更优的性能，降低了碎片率。
 		动态内存核心算法框图如下：
    @endverbatim
- * @image html https://gitee.com/weharmonyos/resources/raw/master/11/1.png   
+ * @image html https://gitee.com/weharmonyos/resources/raw/master/11/1.png  
+   @verbatim
+	根据空闲内存块的大小，使用多个空闲链表来管理。根据内存空闲块大小分为两个部分：[4, 127]和[27, 231]，如上图size class所示：
+
+	1. 对[4,127]区间的内存进行等分，如上图下半部分所示，分为31个小区间，每个小区间对应内存块大小为4字节的倍数。
+		每个小区间对应一个空闲内存链表和用于标记对应空闲内存链表是否为空的一个比特位，值为1时，空闲链表非空。
+		[4,127]区间的31个小区间内存对应31个比特位进行标记链表是否为空。
+	2. 大于127字节的空闲内存块，按照2的次幂区间大小进行空闲链表管理。总共分为24个小区间，每个小区间又等分为8个二级小区间，
+		见上图上半部分的Size Class和Size SubClass部分。每个二级小区间对应一个空闲链表和用于标记对应空闲内存链表是否为空的一个比特位。
+		总共24*8=192个二级小区间，对应192个空闲链表和192个比特位进行标记链表是否为空。
+	例如，当有40字节的空闲内存需要插入空闲链表时，对应小区间[40,43]，第10个空闲链表，位图标记的第10比特位。
+	把40字节的空闲内存挂载第10个空闲链表上，并判断是否需要更新位图标记。当需要申请40字节的内存时，
+	根据位图标记获取存在满足申请大小的内存块的空闲链表，从空闲链表上获取空闲内存节点。如果分配的节点大于需要申请的内存大小，
+	进行分割节点操作，剩余的节点重新挂载到相应的空闲链表上。当有580字节的空闲内存需要插入空闲链表时，对应二级小区间[29,29+2^6]，
+	第31+2*8=47个空闲链表，并使用位图的第47个比特位来标记链表是否为空。把580字节的空闲内存挂载第47个空闲链表上，并判断是否需要更新位图标记。
+	当需要申请580字节的内存时，根据位图标记获取存在满足申请大小的内存块的空闲链表，从空闲链表上获取空闲内存节点。
+	如果分配的节点大于需要申请的内存大小，进行分割节点操作，剩余的节点重新挂载到相应的空闲链表上。如果对应的空闲链表为空，
+	则向更大的内存区间去查询是否有满足条件的空闲链表，实际计算时，会一次性查找到满足申请大小的空闲链表。
+	
+    内存信息包括内存池大小、内存使用量、剩余内存大小、最大空闲内存、内存水线、内存节点数统计、碎片率等。
+    内存水线：即内存池的最大使用量，每次申请和释放时，都会更新水线值，实际业务可根据该值，优化内存池大小；
+    碎片率：衡量内存池的碎片化程度，碎片率高表现为内存池剩余内存很多，但是最大空闲内存块很小，可以用公式（fragment=100-最大空闲内存块大小/剩余内存大小）来度量；
+
+	内存管理结构如下图所示：
+   @endverbatim
  * @image html https://gitee.com/weharmonyos/resources/raw/master/11/2.png  
  * @version 
  * @author  weharmonyos.com
@@ -62,15 +87,6 @@
 #include "los_task_pri.h"
 #include "los_hook.h"
 
-/**
- * @file los_memory.c
- * @brief 
- * @verbatim
-    内存信息包括内存池大小、内存使用量、剩余内存大小、最大空闲内存、内存水线、内存节点数统计、碎片率等。
-    内存水线：即内存池的最大使用量，每次申请和释放时，都会更新水线值，实际业务可根据该值，优化内存池大小；
-    碎片率：衡量内存池的碎片化程度，碎片率高表现为内存池剩余内存很多，但是最大空闲内存块很小，可以用公式（fragment=100-最大空闲内存块大小/剩余内存大小）来度量；
- * @endverbatim
- */
 
 /* Used to cut non-essential functions. */
 #define OS_MEM_FREE_BY_TASKID   0
@@ -89,28 +105,28 @@ UINT8 *m_aucSysMem0 = NULL;	///< 异常交互动态内存池地址的起始地�
 UINT8 *m_aucSysMem1 = NULL;	///< 系统动态内存池地址的起始地址
 
 #ifdef LOSCFG_MEM_MUL_POOL
-VOID *g_poolHead = NULL;
+VOID *g_poolHead = NULL;	///内存池头,由它牵引多个内存池
 #endif
 
 /* The following is the macro definition and interface implementation related to the TLSF. */
 
 /* Supposing a Second Level Index: SLI = 3. */
-#define OS_MEM_SLI                      3
+#define OS_MEM_SLI                      3 ///< 二级小区间级数,
 /* Giving 1 free list for each small bucket: 4, 8, 12, up to 124. */
-#define OS_MEM_SMALL_BUCKET_COUNT       31
-#define OS_MEM_SMALL_BUCKET_MAX_SIZE    128
-/* Giving OS_MEM_FREE_LIST_NUM free lists for each large bucket. */
-#define OS_MEM_LARGE_BUCKET_COUNT       24
-#define OS_MEM_FREE_LIST_NUM            (1 << OS_MEM_SLI)
+#define OS_MEM_SMALL_BUCKET_COUNT       31 ///< 小桶的偏移单位 从 4 ~ 124 ,共31级
+#define OS_MEM_SMALL_BUCKET_MAX_SIZE    128 ///< 小桶的最大数量 
+/* Giving OS_MEM_FREE_LIST_NUM free lists for each large bucket.  */
+#define OS_MEM_LARGE_BUCKET_COUNT       24	/// 为每个大存储桶空闲列表数量 大桶范围: [2^7, 2^31] ,每个小区间有分为 2^3个小区间
+#define OS_MEM_FREE_LIST_NUM            (1 << OS_MEM_SLI) ///<  2^3 = 8 个,即大桶的每个区间又分为8个小区间
 /* OS_MEM_SMALL_BUCKET_MAX_SIZE to the power of 2 is 7. */
-#define OS_MEM_LARGE_START_BUCKET       7
+#define OS_MEM_LARGE_START_BUCKET       7 /// 大桶的开始下标
 
 /* The count of free list. */
-#define OS_MEM_FREE_LIST_COUNT  (OS_MEM_SMALL_BUCKET_COUNT + (OS_MEM_LARGE_BUCKET_COUNT << OS_MEM_SLI))
+#define OS_MEM_FREE_LIST_COUNT  (OS_MEM_SMALL_BUCKET_COUNT + (OS_MEM_LARGE_BUCKET_COUNT << OS_MEM_SLI)) ///< 总链表的数量 31 + 24 * 8 = 223  
 /* The bitmap is used to indicate whether the free list is empty, 1: not empty, 0: empty. */
-#define OS_MEM_BITMAP_WORDS     ((OS_MEM_FREE_LIST_COUNT >> 5) + 1)
-
-#define OS_MEM_BITMAP_MASK 0x1FU
+#define OS_MEM_BITMAP_WORDS     ((OS_MEM_FREE_LIST_COUNT >> 5) + 1) ///< 223 >> 5 + 1 = 7 ,为什么要右移 5 因为 2^5 = 32 是一个32位整型的大小 
+								///< 而 32 * 7 = 224 ,也就是说用 int[7]当位图就能表示完 223个链表 ,此处,一定要理解好,因为这是理解 TLSF 算法的关键. 
+#define OS_MEM_BITMAP_MASK 0x1FU ///< 因为一个int型为 32位, 2^5 = 32,所以此处 0x1FU = 5个1 足以. 
 
 /* Used to find the first bit of 1 in bitmap. */
 STATIC INLINE UINT16 OsMemFFS(UINT32 bitmap)
@@ -146,49 +162,49 @@ STATIC INLINE UINT32 OsMemSlGet(UINT32 size, UINT32 fl)
 }
 
 /* The following is the memory algorithm related macro definition and interface implementation. */
-
+/// 内存池节点
 struct OsMemNodeHead {
-    UINT32 magic;
+    UINT32 magic;	///< 魔法数字 0xABCDDCBA
     union {
         struct OsMemNodeHead *prev; /* The prev is used for current node points to the previous node */
         struct OsMemNodeHead *next; /* The next is used for last node points to the expand node */
     } ptr;
-#ifdef LOSCFG_MEM_LEAKCHECK
-    UINTPTR linkReg[LOS_RECORD_LR_CNT];
+#ifdef LOSCFG_MEM_LEAKCHECK //内存泄漏检测
+    UINTPTR linkReg[LOS_RECORD_LR_CNT];///< 存放地址,用于检测
 #endif
-    UINT32 sizeAndFlag;
+    UINT32 sizeAndFlag;	///< 数据域大小
 };
-
+/// 已使用内存节点
 struct OsMemUsedNodeHead {
-    struct OsMemNodeHead header;
+    struct OsMemNodeHead header;///< 已被使用节点
 #if OS_MEM_FREE_BY_TASKID
-    UINT32 taskID;
+    UINT32 taskID; ///< 使用节点的任务ID
 #endif
 };
-
+/// 内存池空闲节点
 struct OsMemFreeNodeHead {
-    struct OsMemNodeHead header;
-    struct OsMemFreeNodeHead *prev;
-    struct OsMemFreeNodeHead *next;
+    struct OsMemNodeHead header;	///< 内存池节点
+    struct OsMemFreeNodeHead *prev;	///< 前驱节点
+    struct OsMemFreeNodeHead *next;	///< 后继节点
 };
-
+/// 内存池信息
 struct OsMemPoolInfo {
-    VOID *pool;
-    UINT32 totalSize;
-    UINT32 attr;
+    VOID *pool;			///< 指向内存块基地址,仅做记录而已,真正的分配内存跟它没啥关系
+    UINT32 totalSize;	///< 总大小,确定了内存池的边界
+    UINT32 attr;		///< 属性 default attr: lock, not expand.
 #ifdef LOSCFG_MEM_WATERLINE
-    UINT32 waterLine;   /* Maximum usage size in a memory pool */
-    UINT32 curUsedSize; /* Current usage size in a memory pool */
+    UINT32 waterLine;   /* Maximum usage size in a memory pool | 内存吃水线*/
+    UINT32 curUsedSize; /* Current usage size in a memory pool | 当前已使用大小*/
 #endif
 };
-
+/// 内存池总结构体
 struct OsMemPoolHead {
-    struct OsMemPoolInfo info;
-    UINT32 freeListBitmap[OS_MEM_BITMAP_WORDS];
-    struct OsMemFreeNodeHead *freeList[OS_MEM_FREE_LIST_COUNT];
-    SPIN_LOCK_S spinlock;
+    struct OsMemPoolInfo info; ///< 记录内存池的信息
+    UINT32 freeListBitmap[OS_MEM_BITMAP_WORDS]; ///< 空闲位图 int[7] = 32 * 7 = 224 > 223 
+    struct OsMemFreeNodeHead *freeList[OS_MEM_FREE_LIST_COUNT];///< 空闲节点链表 31 + 24 * 8 = 223  
+    SPIN_LOCK_S spinlock;	///< 操作本池的自旋锁,涉及CPU多核竞争,所以必须得是自旋锁
 #ifdef LOSCFG_MEM_MUL_POOL
-    VOID *nextPool;
+    VOID *nextPool;	///< 指向下一个内存池 OsMemPoolHead 类型
 #endif
 };
 
@@ -197,16 +213,16 @@ struct OsMemPoolHead {
 #define MEM_UNLOCK(pool, state)     LOS_SpinUnlockRestore(&(pool)->spinlock, (state))
 
 /* The memory pool support expand. */
-#define OS_MEM_POOL_EXPAND_ENABLE  0x01
-/* The memory pool ssupport no lock. */
-#define OS_MEM_POOL_LOCK_ENABLE    0x02
+#define OS_MEM_POOL_EXPAND_ENABLE  0x01	///< 支持扩展
+/* The memory pool support no lock. */
+#define OS_MEM_POOL_LOCK_ENABLE    0x02	///< 加锁
 
-#define OS_MEM_NODE_MAGIC        0xABCDDCBA
+#define OS_MEM_NODE_MAGIC        0xABCDDCBA ///< 内存节点的魔法数字
 #define OS_MEM_MIN_ALLOC_SIZE    (sizeof(struct OsMemFreeNodeHead) - sizeof(struct OsMemUsedNodeHead))
 
-#define OS_MEM_NODE_USED_FLAG      0x80000000U
-#define OS_MEM_NODE_ALIGNED_FLAG   0x40000000U
-#define OS_MEM_NODE_LAST_FLAG      0x20000000U  /* Sentinel Node */
+#define OS_MEM_NODE_USED_FLAG      0x80000000U ///< 已使用标签
+#define OS_MEM_NODE_ALIGNED_FLAG   0x40000000U ///< 对齐标签
+#define OS_MEM_NODE_LAST_FLAG      0x20000000U  /* Sentinel Node | 哨兵节点标签*/
 #define OS_MEM_NODE_ALIGNED_AND_USED_FLAG (OS_MEM_NODE_USED_FLAG | OS_MEM_NODE_ALIGNED_FLAG | OS_MEM_NODE_LAST_FLAG)
 
 #define OS_MEM_NODE_GET_ALIGNED_FLAG(sizeAndFlag) \
@@ -255,7 +271,7 @@ STATIC INLINE UINT32 OsMemAllocCheck(struct OsMemPoolHead *pool, UINT32 intSave)
 #if OS_MEM_FREE_BY_TASKID
 STATIC INLINE VOID OsMemNodeSetTaskID(struct OsMemUsedNodeHead *node)
 {
-    node->taskID = LOS_CurTaskIDGet();
+    node->taskID = LOS_CurTaskIDGet();//将当前任务ID绑定到内存池节点上
 }
 #endif
 
@@ -441,10 +457,10 @@ RETRY:
 
     return 0;
 }
-
+/// 扩展内存池
 STATIC INLINE INT32 OsMemPoolExpand(VOID *pool, UINT32 allocSize, UINT32 intSave)
 {
-    UINT32 expandDefault = MEM_EXPAND_SIZE(LOS_MemPoolSizeGet(pool));
+    UINT32 expandDefault = MEM_EXPAND_SIZE(LOS_MemPoolSizeGet(pool));//至少要扩展现有内存池的 1/8 大小
     UINT32 expandSize = MAX(expandDefault, allocSize);
     UINT32 tryCount = 1;
     UINT32 ret;
@@ -463,7 +479,7 @@ STATIC INLINE INT32 OsMemPoolExpand(VOID *pool, UINT32 allocSize, UINT32 intSave
 
     return -1;
 }
-
+///< 允许指定内存池扩展
 VOID LOS_MemExpandEnable(VOID *pool)
 {
     if (pool == NULL) {
@@ -474,7 +490,7 @@ VOID LOS_MemExpandEnable(VOID *pool)
 }
 #endif
 
-#ifdef LOSCFG_MEM_LEAKCHECK
+#ifdef LOSCFG_MEM_LEAKCHECK //内存泄漏检查
 STATIC INLINE VOID OsMemLinkRegisterRecord(struct OsMemNodeHead *node)
 {
     LOS_RecordLR(node->linkReg, LOS_RECORD_LR_CNT, LOS_RECORD_LR_CNT, LOS_OMIT_LR_CNT);
@@ -500,7 +516,7 @@ STATIC INLINE VOID OsMemUsedNodePrint(struct OsMemNodeHead *node)
         PRINTK("\n");
     }
 }
-
+/// 打印已使用的节点
 VOID OsMemUsedNodeShow(VOID *pool)
 {
     if (pool == NULL) {
@@ -771,9 +787,20 @@ STATIC INLINE VOID *OsMemCreateUsedNode(VOID *addr)
     OsMemNodeSetTaskID(node);
 #endif
 
-    return node + 1;
+    return node + 1; //@note_good 这个地方挺有意思的,只是将结构体扩展下,留一个 int 位 ,变成了已使用节点
 }
 
+/*!
+ * @brief OsMemPoolInit	内存池初始化
+ * 内存池节点部分包含3种类型节点：未使用空闲内存节点(OsMemFreeNodeHead)，已使用内存节点(OsMemUsedNodeHead) 和 尾节点(OsMemNodeHead)。
+ * \n 每个内存节点维护一个前序指针，指向内存池中上一个内存节点，还维护内存节点的大小和使用标记。
+ * \n 空闲内存节点和已使用内存节点后面的内存区域是数据域
+ * @param pool	
+ * @param size	
+ * @return	
+ *
+ * @see
+ */
 STATIC UINT32 OsMemPoolInit(VOID *pool, UINT32 size)
 {
     struct OsMemPoolHead *poolHead = (struct OsMemPoolHead *)pool;
@@ -783,30 +810,32 @@ STATIC UINT32 OsMemPoolInit(VOID *pool, UINT32 size)
     (VOID)memset_s(poolHead, sizeof(struct OsMemPoolHead), 0, sizeof(struct OsMemPoolHead));
 
     LOS_SpinInit(&poolHead->spinlock);
-    poolHead->info.pool = pool;
-    poolHead->info.totalSize = size;
-    poolHead->info.attr = OS_MEM_POOL_LOCK_ENABLE; /* default attr: lock, not expand. */
+    poolHead->info.pool = pool;	//内存池的起始地址,但注意真正的内存并不是从此处分配,它只是用来记录这个内存块的开始位置而已.
+    poolHead->info.totalSize = size;//内存池总大小
+    poolHead->info.attr = OS_MEM_POOL_LOCK_ENABLE; /* default attr: lock, not expand. | 默认是上锁,不支持扩展,需扩展得另外设置*/
 
-    newNode = OS_MEM_FIRST_NODE(pool);
-    newNode->sizeAndFlag = (size - sizeof(struct OsMemPoolHead) - OS_MEM_NODE_HEAD_SIZE);
-    newNode->ptr.prev = NULL;
-    newNode->magic = OS_MEM_NODE_MAGIC;
-    OsMemFreeNodeAdd(pool, (struct OsMemFreeNodeHead *)newNode);
+    newNode = OS_MEM_FIRST_NODE(pool);//跳到第一个节点位置,即跳过结构体本身位置,真正的分配内存是从newNode开始的.
+    newNode->sizeAndFlag = (size - sizeof(struct OsMemPoolHead) - OS_MEM_NODE_HEAD_SIZE);//这才是可供分配给外界使用的总内存块大小,即数据域
+    //OS_MEM_NODE_HEAD_SIZE 叫当前使用节点,即指 newNode占用的空间
+    newNode->ptr.prev = NULL;//开始是空指向
+    newNode->magic = OS_MEM_NODE_MAGIC;//魔法数字 用于标识这是一个 OsMemNodeHead 节点, 魔法数字不能被覆盖,
+    OsMemFreeNodeAdd(pool, (struct OsMemFreeNodeHead *)newNode);//添加一个空闲节点,由此有了首个可供分配的空闲节点
 
     /* The last mem node */
-    endNode = OS_MEM_END_NODE(pool, size);
-    endNode->magic = OS_MEM_NODE_MAGIC;
-#if OS_MEM_EXPAND_ENABLE
-    endNode->ptr.next = NULL;
-    OsMemSentinelNodeSet(endNode, NULL, 0);
+    endNode = OS_MEM_END_NODE(pool, size);//确定尾节点位置,尾节点没有数据域
+    endNode->magic = OS_MEM_NODE_MAGIC; //填入尾节点的魔法数字
+#if OS_MEM_EXPAND_ENABLE //支持扩展
+    endNode->ptr.next = NULL;//尾节点没有后继节点
+    OsMemSentinelNodeSet(endNode, NULL, 0);//将尾节点设置为哨兵节点
 #else
-    endNode->sizeAndFlag = 0;
-    endNode->ptr.prev = newNode;
+    endNode->sizeAndFlag = 0;//0代表没有数据域
+    endNode->ptr.prev = newNode;//前驱指针指向第一个节点
     OS_MEM_NODE_SET_USED_FLAG(endNode->sizeAndFlag);
 #endif
-#ifdef LOSCFG_MEM_WATERLINE
-    poolHead->info.curUsedSize = sizeof(struct OsMemPoolHead) + OS_MEM_NODE_HEAD_SIZE;
-    poolHead->info.waterLine = poolHead->info.curUsedSize;
+#ifdef LOSCFG_MEM_WATERLINE //吃水线开关
+    poolHead->info.curUsedSize = sizeof(struct OsMemPoolHead) + OS_MEM_NODE_HEAD_SIZE;//内存池已使用了这么多空间,这些都是存内存池自身数据的空间, 
+    							//但此处是否还要算是 endNode ? @note_thinking 
+    poolHead->info.waterLine = poolHead->info.curUsedSize; //设置吃水线
 #endif
 
     return LOS_OK;
@@ -817,13 +846,13 @@ STATIC VOID OsMemPoolDeinit(VOID *pool)
 {
     (VOID)memset_s(pool, sizeof(struct OsMemPoolHead), 0, sizeof(struct OsMemPoolHead));
 }
-
+/// 新增内存池
 STATIC UINT32 OsMemPoolAdd(VOID *pool, UINT32 size)
 {
     VOID *nextPool = g_poolHead;
     VOID *curPool = g_poolHead;
     UINTPTR poolEnd;
-    while (nextPool != NULL) {
+    while (nextPool != NULL) {//单链表遍历方式
         poolEnd = (UINTPTR)nextPool + LOS_MemPoolSizeGet(nextPool);
         if (((pool <= nextPool) && (((UINTPTR)pool + size) > (UINTPTR)nextPool)) ||
             (((UINTPTR)pool < poolEnd) && (((UINTPTR)pool + size) >= poolEnd))) {
@@ -837,15 +866,15 @@ STATIC UINT32 OsMemPoolAdd(VOID *pool, UINT32 size)
     }
 
     if (g_poolHead == NULL) {
-        g_poolHead = pool;
+        g_poolHead = pool; //首个内存池
     } else {
-        ((struct OsMemPoolHead *)curPool)->nextPool = pool;
+        ((struct OsMemPoolHead *)curPool)->nextPool = pool; //两池扯上关系
     }
 
-    ((struct OsMemPoolHead *)pool)->nextPool = NULL;
+    ((struct OsMemPoolHead *)pool)->nextPool = NULL; //新池下一个无所指
     return LOS_OK;
 }
-
+/// 删除内存池
 STATIC UINT32 OsMemPoolDelete(VOID *pool)
 {
     UINT32 ret = LOS_NOK;
@@ -875,26 +904,35 @@ STATIC UINT32 OsMemPoolDelete(VOID *pool)
     return ret;
 }
 #endif
-/// 初始化一块指定的动态内存池，大小为size
+
+/*!
+ * @brief LOS_MemInit	初始化一块指定的动态内存池，大小为size
+ * 初始一个内存池后生成一个内存池控制头、尾节点EndNode，剩余的内存被标记为FreeNode内存节点。
+ * @param pool	
+ * @param size	
+ * @return	
+ * @attention EndNode作为内存池末尾的节点，size为0。
+ * @see
+ */
 UINT32 LOS_MemInit(VOID *pool, UINT32 size)
 {
     if ((pool == NULL) || (size <= OS_MEM_MIN_POOL_SIZE)) {
         return OS_ERROR;
     }
 
-    size = OS_MEM_ALIGN(size, OS_MEM_ALIGN_SIZE);
+    size = OS_MEM_ALIGN(size, OS_MEM_ALIGN_SIZE);//4个字节对齐
     if (OsMemPoolInit(pool, size)) {
         return OS_ERROR;
     }
 
-#ifdef LOSCFG_MEM_MUL_POOL
+#ifdef LOSCFG_MEM_MUL_POOL //多内存池开关
     if (OsMemPoolAdd(pool, size)) {
         (VOID)OsMemPoolDeinit(pool);
         return OS_ERROR;
     }
 #endif
 
-    OsHookCall(LOS_HOOK_TYPE_MEM_INIT, pool, size);
+    OsHookCall(LOS_HOOK_TYPE_MEM_INIT, pool, size);//打印日志
     return LOS_OK;
 }
 
@@ -915,7 +953,7 @@ UINT32 LOS_MemDeInit(VOID *pool)
     OsHookCall(LOS_HOOK_TYPE_MEM_DEINIT, pool);
     return LOS_OK;
 }
-
+/// 打印系统中已初始化的所有内存池，包括内存池的起始地址、内存池大小、空闲内存总大小、已使用内存总大小、最大的空闲内存块大小、空闲内存块数量、已使用的内存块数量。
 UINT32 LOS_MemPoolList(VOID)
 {
     VOID *nextPool = g_poolHead;
@@ -942,15 +980,15 @@ STATIC INLINE VOID *OsMemAlloc(struct OsMemPoolHead *pool, UINT32 size, UINT32 i
 
     UINT32 allocSize = OS_MEM_ALIGN(size + OS_MEM_NODE_HEAD_SIZE, OS_MEM_ALIGN_SIZE);
 #if OS_MEM_EXPAND_ENABLE
-retry:
+retry: //这种写法也挺赞的 @note_good
 #endif
-    allocNode = OsMemFreeNodeGet(pool, allocSize);
-    if (allocNode == NULL) {
+    allocNode = OsMemFreeNodeGet(pool, allocSize);//获取空闲节点
+    if (allocNode == NULL) {//没有内存了,怎搞? 
 #if OS_MEM_EXPAND_ENABLE
         if (pool->info.attr & OS_MEM_POOL_EXPAND_ENABLE) {
-            INT32 ret = OsMemPoolExpand(pool, allocSize, intSave);
+            INT32 ret = OsMemPoolExpand(pool, allocSize, intSave);//扩展内存池
             if (ret == 0) {
-                goto retry;
+                goto retry;//再来一遍 
             }
         }
 #endif
@@ -965,17 +1003,17 @@ retry:
         return NULL;
     }
 
-    if ((allocSize + OS_MEM_NODE_HEAD_SIZE + OS_MEM_MIN_ALLOC_SIZE) <= allocNode->sizeAndFlag) {
-        OsMemSplitNode(pool, allocNode, allocSize);
+    if ((allocSize + OS_MEM_NODE_HEAD_SIZE + OS_MEM_MIN_ALLOC_SIZE) <= allocNode->sizeAndFlag) {//所需小于内存池可供分配量
+        OsMemSplitNode(pool, allocNode, allocSize);//劈开内存池
     }
 
-    OS_MEM_NODE_SET_USED_FLAG(allocNode->sizeAndFlag);
-    OsMemWaterUsedRecord(pool, OS_MEM_NODE_GET_SIZE(allocNode->sizeAndFlag));
+    OS_MEM_NODE_SET_USED_FLAG(allocNode->sizeAndFlag);//给节点贴上已使用的标签
+    OsMemWaterUsedRecord(pool, OS_MEM_NODE_GET_SIZE(allocNode->sizeAndFlag));//更新吃水线
 
-#ifdef LOSCFG_MEM_LEAKCHECK
+#ifdef LOSCFG_MEM_LEAKCHECK //检测内存泄漏开关
     OsMemLinkRegisterRecord(allocNode);
 #endif
-    return OsMemCreateUsedNode((VOID *)allocNode);
+    return OsMemCreateUsedNode((VOID *)allocNode);//创建已使用节点
 }
 /// 从指定动态内存池中申请size长度的内存
 VOID *LOS_MemAlloc(VOID *pool, UINT32 size)
@@ -997,11 +1035,11 @@ VOID *LOS_MemAlloc(VOID *pool, UINT32 size)
             break;
         }
         MEM_LOCK(poolHead, intSave);
-        ptr = OsMemAlloc(poolHead, size, intSave);
+        ptr = OsMemAlloc(poolHead, size, intSave);//真正的分配内存函数
         MEM_UNLOCK(poolHead, intSave);
     } while (0);
 
-    OsHookCall(LOS_HOOK_TYPE_MEM_ALLOC, pool, ptr, size);
+    OsHookCall(LOS_HOOK_TYPE_MEM_ALLOC, pool, ptr, size);//打印日志,到此一游
     return ptr;
 }
 /// 从指定动态内存池中申请长度为size且地址按boundary字节对齐的内存
@@ -1055,7 +1093,7 @@ VOID *LOS_MemAllocAlign(VOID *pool, UINT32 size, UINT32 boundary)
         ptr = alignedPtr;
     } while (0);
 
-    OsHookCall(LOS_HOOK_TYPE_MEM_ALLOCALIGN, pool, ptr, size, boundary);
+    OsHookCall(LOS_HOOK_TYPE_MEM_ALLOCALIGN, pool, ptr, size, boundary);//打印对齐日志,表示程序曾临幸过此处
     return ptr;
 }
 
@@ -1423,7 +1461,7 @@ UINT32 LOS_MemFreeByTaskID(VOID *pool, UINT32 taskID)
     return LOS_OK;
 }
 #endif
-
+/// 获取指定动态内存池的总大小
 UINT32 LOS_MemPoolSizeGet(const VOID *pool)
 {
     UINT32 count = 0;
@@ -1432,23 +1470,23 @@ UINT32 LOS_MemPoolSizeGet(const VOID *pool)
         return LOS_NOK;
     }
 
-    count += ((struct OsMemPoolHead *)pool)->info.totalSize;
+    count += ((struct OsMemPoolHead *)pool)->info.totalSize; // 这里的 += 好像没必要吧?, = 就可以了, @note_thinking 
 
-#if OS_MEM_EXPAND_ENABLE
+#if OS_MEM_EXPAND_ENABLE //支持扩展
     UINT32 size;
     struct OsMemNodeHead *node = NULL;
-    struct OsMemNodeHead *sentinel = OS_MEM_END_NODE(pool, count);
+    struct OsMemNodeHead *sentinel = OS_MEM_END_NODE(pool, count);//获取哨兵节点
 
-    while (OsMemIsLastSentinelNode(sentinel) == FALSE) {
-        size = OS_MEM_NODE_GET_SIZE(sentinel->sizeAndFlag);
-        node = OsMemSentinelNodeGet(sentinel);
-        sentinel = OS_MEM_END_NODE(node, size);
-        count += size;
+    while (OsMemIsLastSentinelNode(sentinel) == FALSE) {//不是最后一个节点
+        size = OS_MEM_NODE_GET_SIZE(sentinel->sizeAndFlag);//数据域大小
+        node = OsMemSentinelNodeGet(sentinel);//再获取哨兵节点
+        sentinel = OS_MEM_END_NODE(node, size);//获取尾节点
+        count += size; //内存池大小变大
     }
 #endif
     return count;
 }
-
+/// 获取指定动态内存池的总使用量大小
 UINT32 LOS_MemTotalUsedGet(VOID *pool)
 {
     struct OsMemNodeHead *tmpNode = NULL;
@@ -1598,7 +1636,7 @@ OUT:
 #endif
     }
 }
-
+//对指定内存池做完整性检查,
 STATIC UINT32 OsMemIntegrityCheck(const struct OsMemPoolHead *pool, struct OsMemNodeHead **tmpNode,
                 struct OsMemNodeHead **preNode)
 {
@@ -1723,7 +1761,7 @@ STATIC INLINE UINT32 OsMemAllocCheck(struct OsMemPoolHead *pool, UINT32 intSave)
     return LOS_OK;
 }
 #endif
-
+/// 对指定内存池做完整性检查
 UINT32 LOS_MemIntegrityCheck(const VOID *pool)
 {
     if (pool == NULL) {
@@ -1776,7 +1814,16 @@ STATIC INLINE VOID OsMemInfoGet(struct OsMemPoolHead *poolInfo, struct OsMemNode
     poolStatus->usedNodeNum += usedNodeNum;
     poolStatus->freeNodeNum += freeNodeNum;
 }
-///内存水线获取：调用LOS_MemInfoGet接口，第1个参数是内存池首地址，第2个参数是LOS_MEM_POOL_STATUS类型的句柄，其中字段usageWaterLine即水线值
+
+/*!
+ * @brief LOS_MemInfoGet	
+ * 获取指定内存池的内存结构信息，包括空闲内存大小、已使用内存大小、空闲内存块数量、已使用的内存块数量、最大的空闲内存块大小
+ * @param pool	
+ * @param poolStatus	
+ * @return	
+ *
+ * @see
+ */
 UINT32 LOS_MemInfoGet(VOID *pool, LOS_MEM_POOL_STATUS *poolStatus)
 {//内存碎片率计算：同样调用LOS_MemInfoGet接口，可以获取内存池的剩余内存大小和最大空闲内存块大小，然后根据公式（fragment=100-最大空闲内存块大小/剩余内存大小）得出此时的动态内存池碎片率。
     struct OsMemPoolHead *poolInfo = pool;
@@ -1859,7 +1906,7 @@ STATIC VOID OsMemInfoPrint(VOID *pool)
            status.freeNodeNum);
 #endif
 }
-
+/// 打印指定内存池的空闲内存块的大小及数量
 UINT32 LOS_MemFreeNodeShow(VOID *pool)
 {
     struct OsMemPoolHead *poolInfo = (struct OsMemPoolHead *)pool;
@@ -1924,7 +1971,7 @@ STATUS_T OsKHeapInit(size_t size)
     }
 
     m_aucSysMem0 = m_aucSysMem1 = ptr;
-    ret = LOS_MemInit(m_aucSysMem0, size);
+    ret = LOS_MemInit(m_aucSysMem0, size); //初始化内存池
     if (ret != LOS_OK) {
         PRINT_ERR("vmm_kheap_init LOS_MemInit failed!\n");
         g_vmBootMemBase -= size;
