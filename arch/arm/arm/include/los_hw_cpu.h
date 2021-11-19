@@ -47,10 +47,27 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+/*!
+ * @brief 内存屏障（英语：Memory barrier），也称内存栅栏，内存栅障，屏障指令等，是一类同步屏障指令，
+	 \n 它使得 CPU 或编译器在对内存进行操作的时候, 严格按照一定的顺序来执行, 也就是说在memory barrier 之前的指令
+	 \n 和memory barrier之后的指令不会由于系统优化等原因而导致乱序。
+	 \n 大多数现代计算机为了提高性能而采取乱序执行，这使得内存屏障成为必须。
+
+	 \n 语义上，内存屏障之前的所有写操作都要写入内存；内存屏障之后的读操作都可以获得同步屏障之前的写操作的结果。
+	 \n 因此，对于敏感的程序块，写操作之后、读操作之前可以插入内存屏障。	
+ *
+ * @param index	
+ * @return	
+ *
+ * @see
+ */
+
+
+// https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/memory-access-ordering---an-introduction
 /* ARM System Registers */
-#define DSB     __asm__ volatile("dsb" ::: "memory")
-#define DMB     __asm__ volatile("dmb" ::: "memory")
-#define ISB     __asm__ volatile("isb" ::: "memory")
+#define DSB     __asm__ volatile("dsb" ::: "memory") ///< Data Synchronization Barrier(DSB) 数据同步隔离。DSB 比 DMB 管得更宽， DSB 屏障之后的所有得指令不可越过屏障乱序执行
+#define DMB     __asm__ volatile("dmb" ::: "memory") ///< Data Memory Barrier(DMB)  数据存储器隔离。保证该指令前的所有内存访问结束，而该指令之后引起的内存访问只能在该指令执行结束后开始，其它数据处理指令等可以越过 DMB 屏障乱序执行
+#define ISB     __asm__ volatile("isb" ::: "memory") ///< Instruction Synchronization Barrier(ISB) 指令同步隔离。ISB 比 DSB 管的更宽， ISB 屏障之前的指令保证执行完，屏障之后的指令直接flush 掉再重新从 Memroy 中取指
 #define WFI     __asm__ volatile("wfi" ::: "memory")
 #define BARRIER __asm__ volatile("":::"memory")
 #define WFE     __asm__ volatile("wfe" ::: "memory")
@@ -225,7 +242,7 @@ STATIC INLINE UINT32 ArchIntLock(VOID)
         : :"memory");
     return intSave;
 }
-
+/// 打开当前处理器所有中断响应
 STATIC INLINE UINT32 ArchIntUnlock(VOID)
 {
     UINT32 intSave;
@@ -239,7 +256,7 @@ STATIC INLINE UINT32 ArchIntUnlock(VOID)
 }
 
 #endif
-
+/// 恢复到使用LOS_IntLock关闭所有中断之前的状态
 STATIC INLINE VOID ArchIntRestore(UINT32 intSave)
 {
     __asm__ __volatile__(
@@ -250,7 +267,7 @@ STATIC INLINE VOID ArchIntRestore(UINT32 intSave)
 }
 
 #define PSR_I_BIT   0x00000080U
-
+/// 关闭当前处理器所有中断响应
 STATIC INLINE UINT32 OsIntLocked(VOID)
 {
     UINT32 intSave;

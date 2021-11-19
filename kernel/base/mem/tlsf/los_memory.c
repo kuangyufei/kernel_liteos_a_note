@@ -1,3 +1,26 @@
+/*!
+ * @file    los_memory.c
+ * @brief
+ * @link
+   @verbatim
+   基本概念
+		内存管理模块管理系统的内存资源，它是操作系统的核心模块之一，主要包括内存的初始化、分配以及释放。
+		OpenHarmony LiteOS-A的堆内存管理提供内存初始化、分配、释放等功能。在系统运行过程中，堆内存管理
+		模块通过对内存的申请/释放来管理用户和OS对内存的使用，使内存的利用率和使用效率达到最优，同时最大限度地解决系统的内存碎片问题。
+
+   运行机制
+		堆内存管理，即在内存资源充足的情况下，根据用户需求，从系统配置的一块比较大的连续内存
+		（内存池，也是堆内存）中分配任意大小的内存块。当用户不需要该内存块时，又可以释放回系统供下一次使用。
+		与静态内存相比，动态内存管理的优点是按需分配，缺点是内存池中容易出现碎片。
+		OpenHarmony LiteOS-A堆内存在TLSF算法的基础上，对区间的划分进行了优化，获得更优的性能，降低了碎片率。
+		动态内存核心算法框图如下：
+   @endverbatim
+ * @image html https://gitee.com/weharmonyos/resources/raw/master/11/1.png   
+ * @image html https://gitee.com/weharmonyos/resources/raw/master/11/2.png  
+ * @version 
+ * @author  weharmonyos.com
+ * @date    2021-11-19
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -852,7 +875,7 @@ STATIC UINT32 OsMemPoolDelete(VOID *pool)
     return ret;
 }
 #endif
-
+/// 初始化一块指定的动态内存池，大小为size
 UINT32 LOS_MemInit(VOID *pool, UINT32 size)
 {
     if ((pool == NULL) || (size <= OS_MEM_MIN_POOL_SIZE)) {
@@ -876,6 +899,7 @@ UINT32 LOS_MemInit(VOID *pool, UINT32 size)
 }
 
 #ifdef LOSCFG_MEM_MUL_POOL
+/// 删除指定内存池
 UINT32 LOS_MemDeInit(VOID *pool)
 {
     if (pool == NULL) {
@@ -905,7 +929,7 @@ UINT32 LOS_MemPoolList(VOID)
     return index;
 }
 #endif
-
+/// 从指定动态内存池中申请size长度的内存
 STATIC INLINE VOID *OsMemAlloc(struct OsMemPoolHead *pool, UINT32 size, UINT32 intSave)
 {
     struct OsMemNodeHead *allocNode = NULL;
@@ -953,7 +977,7 @@ retry:
 #endif
     return OsMemCreateUsedNode((VOID *)allocNode);
 }
-
+/// 从指定动态内存池中申请size长度的内存
 VOID *LOS_MemAlloc(VOID *pool, UINT32 size)
 {
     if ((pool == NULL) || (size == 0)) {
@@ -980,7 +1004,7 @@ VOID *LOS_MemAlloc(VOID *pool, UINT32 size)
     OsHookCall(LOS_HOOK_TYPE_MEM_ALLOC, pool, ptr, size);
     return ptr;
 }
-
+/// 从指定动态内存池中申请长度为size且地址按boundary字节对齐的内存
 VOID *LOS_MemAllocAlign(VOID *pool, UINT32 size, UINT32 boundary)
 {
     UINT32 gapSize;
@@ -1179,7 +1203,7 @@ STATIC INLINE UINT32 OsMemFree(struct OsMemPoolHead *pool, struct OsMemNodeHead 
 
     return ret;
 }
-
+/// 释放从指定动态内存中申请的内存
 UINT32 LOS_MemFree(VOID *pool, VOID *ptr)
 {
     if ((pool == NULL) || (ptr == NULL) || !OS_MEM_IS_ALIGNED(pool, sizeof(VOID *)) ||
@@ -1306,7 +1330,7 @@ STATIC INLINE VOID *OsMemRealloc(struct OsMemPoolHead *pool, const VOID *ptr,
     }
     return tmpPtr;
 }
-
+/// 按size大小重新分配内存块，并将原内存块内容拷贝到新内存块。如果新内存块申请成功，则释放原内存块
 VOID *LOS_MemRealloc(VOID *pool, VOID *ptr, UINT32 size)
 {
     if ((pool == NULL) || OS_MEM_NODE_GET_USED_FLAG(size) || OS_MEM_NODE_GET_ALIGNED_FLAG(size)) {

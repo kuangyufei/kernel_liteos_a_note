@@ -130,10 +130,16 @@ ULONG_T OsRegionRbCmpKeyFn(const VOID *pNodeKeyA, const VOID *pNodeKeyB)
     }
     return RB_EQUAL;
 }
+
 /*!
-初始化虚拟空间，必须提供L1表的虚拟内存地址
-VADDR_T *virtTtb:L1表的地址，TTB表地址
-*/
+ * @brief OsVmSpaceInitCommon	初始化虚拟空间，必须提供L1表的虚拟内存地址
+ *
+ * @param virtTtb L1表的地址，TTB表地址	
+ * @param vmSpace	
+ * @return	
+ *
+ * @see
+ */
 STATIC BOOL OsVmSpaceInitCommon(LosVmSpace *vmSpace, VADDR_T *virtTtb)
 {
     LOS_RbInitTree(&vmSpace->regionRbTree, OsRegionRbCmpKeyFn, OsRegionRbFreeFn, OsRegionRbGetKeyFn);//初始化虚拟存储空间-以红黑树组织方式
@@ -191,7 +197,16 @@ VOID OsKSpaceInit(VOID)
     OsKernVmSpaceInit(&g_kVmSpace, OsGFirstTableGet());
     OsVMallocSpaceInit(&g_vMallocSpace, OsGFirstTableGet());
 }
-BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)//用户空间的TTB表是动态申请得来,每个进程有属于自己的L1,L2表
+/*!
+ * @brief OsUserVmSpaceInit	用户空间的TTB表是动态申请得来,每个进程有属于自己的L1,L2表
+ * 初始化用户进程虚拟空间,主要划分数据区,堆区,映射区和创建mmu
+ * @param virtTtb	
+ * @param vmSpace	
+ * @return	
+ *
+ * @see
+ */
+BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)
 {
     vmSpace->base = USER_ASPACE_BASE;//用户空间基地址
     vmSpace->size = USER_ASPACE_SIZE;//用户空间大小
@@ -206,24 +221,24 @@ BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)//用户空间的TT
 #endif
     return OsVmSpaceInitCommon(vmSpace, virtTtb);
 }
-///创建用户进程空间
+/// 创建用户进程空间
 LosVmSpace *OsCreateUserVmSpace(VOID)
 {
     BOOL retVal = FALSE;
 
-    LosVmSpace *space = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmSpace));
+    LosVmSpace *space = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmSpace));//在内核空间申请用户进程空间
     if (space == NULL) {
         return NULL;
     }
 
-    VADDR_T *ttb = LOS_PhysPagesAllocContiguous(1);
-    if (ttb == NULL) {
+    VADDR_T *ttb = LOS_PhysPagesAllocContiguous(1);//分配一个物理页用于存放虚实内存映射关系, 即:L1表
+    if (ttb == NULL) {//若连映射页都没有,剩下的也别玩了.
         (VOID)LOS_MemFree(m_aucSysMem0, space);
         return NULL;
     }
 
     (VOID)memset_s(ttb, PAGE_SIZE, 0, PAGE_SIZE);
-    retVal = OsUserVmSpaceInit(space, ttb);
+    retVal = OsUserVmSpaceInit(space, ttb);//初始化用户空间,mmu
     LosVmPage *vmPage = OsVmVaddrToPage(ttb);
     if ((retVal == FALSE) || (vmPage == NULL)) {
         (VOID)LOS_MemFree(m_aucSysMem0, space);
@@ -268,9 +283,9 @@ STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace)
     }
 	//空间克隆的主体实现是:线性区重新一个个分配物理内存,重新映射.
     /* search the region list */
-    newVmSpace->mapBase = oldVmSpace->mapBase;
-    newVmSpace->heapBase = oldVmSpace->heapBase;
-    newVmSpace->heapNow = oldVmSpace->heapNow;
+    newVmSpace->mapBase = oldVmSpace->mapBase; //复制映射区基址
+    newVmSpace->heapBase = oldVmSpace->heapBase; //复制堆区基址
+    newVmSpace->heapNow = oldVmSpace->heapNow;	//复制堆区当前使用到哪了
     (VOID)LOS_MuxAcquire(&oldVmSpace->regionMux);
     RB_SCAN_SAFE(&oldVmSpace->regionRbTree, pstRbNode, pstRbNodeNext)//红黑树循环开始
         oldRegion = (LosVmMapRegion *)pstRbNode;
@@ -339,18 +354,18 @@ LosVmMapRegion *OsFindRegion(LosRbTree *regionRbTree, VADDR_T vaddr, size_t len)
     }
     return regionRst;
 }
-
+/// 查找线性区
 LosVmMapRegion *LOS_RegionFind(LosVmSpace *vmSpace, VADDR_T addr)
 {
     LosVmMapRegion *region = NULL;
 
-    (VOID)LOS_MuxAcquire(&vmSpace->regionMux);
+    (VOID)LOS_MuxAcquire(&vmSpace->regionMux);//因进程空间是隔离的,所以此处只会涉及到任务(线程)之间的竞争,故使用互斥锁,而自旋锁则用于CPU核间的竞争
     region = OsFindRegion(&vmSpace->regionRbTree, addr, 1);
     (VOID)LOS_MuxRelease(&vmSpace->regionMux);
 
     return region;
 }
-
+/// 查找线性区范围
 LosVmMapRegion *LOS_RegionRangeFind(LosVmSpace *vmSpace, VADDR_T addr, size_t len)
 {
     LosVmMapRegion *region = NULL;
@@ -361,7 +376,7 @@ LosVmMapRegion *LOS_RegionRangeFind(LosVmSpace *vmSpace, VADDR_T addr, size_t le
 
     return region;
 }
-
+/// 分配线性区
 VADDR_T OsAllocRange(LosVmSpace *vmSpace, size_t len)
 {
     LosVmMapRegion *curRegion = NULL;

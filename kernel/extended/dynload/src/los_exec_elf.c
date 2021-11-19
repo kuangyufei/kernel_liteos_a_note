@@ -1,3 +1,41 @@
+/*!
+ * @file    los_exec_elf.c
+ * @brief 
+ * @link
+   @verbatim
+   基本概念
+	   OpenHarmony系统的动态加载与链接机制主要是由内核加载器以及动态链接器构成，内核加载器用于加载应用程序以及动态链接器，
+	   动态链接器用于加载应用程序所依赖的共享库，并对应用程序和共享库进行符号重定位。与静态链接相比，动态链接是将应用程序
+	   与动态库推迟到运行时再进行链接的一种机制。
+   动态链接的优势
+       1. 多个应用程序可以共享一份代码，最小加载单元为页，相对静态链接可以节约磁盘和内存空间。
+	   2. 共享库升级时，理论上将旧版本的共享库覆盖即可（共享库中的接口向下兼容），无需重新链接。
+	   3. 加载地址可以进行随机化处理，防止攻击，保证安全性。
+   运行机制	   
+   @endverbatim
+ * @image html https://gitee.com/weharmonyos/resources/raw/master/51/1.png
+   @verbatim
+   1. 内核将应用程序ELF文件的PT_LOAD段信息映射至进程空间。对于ET_EXEC类型的文件，根据PT_LOAD段中p_vaddr进行固定地址映射；
+   		对于ET_DYN类型（位置无关的可执行程序，通过编译选项“-fPIE”得到）的文件，内核通过mmap接口选择base基址进行映射（load_addr = base + p_vaddr）。
+   2. 若应用程序是静态链接的（静态链接不支持编译选项“-fPIE”），设置堆栈信息后跳转至应用程序ELF文件中e_entry指定的地址并运行；
+   		若程序是动态链接的，应用程序ELF文件中会有PT_INTERP段，保存动态链接器的路径信息（ET_DYN类型）。musl的动态链接器是libc-musl.so的一部分，
+   		libc-musl.so的入口即动态链接器的入口。内核通过mmap接口选择base基址进行映射，设置堆栈信息后跳转至base + e_entry（该e_entry为动态链接器的入口）
+   		地址并运行动态链接器。
+   3. 动态链接器自举并查找应用程序依赖的所有共享库并对导入符号进行重定位，最后跳转至应用程序的e_entry（或base + e_entry），开始运行应用程序。
+   @endverbatim
+ * @image html https://gitee.com/weharmonyos/resources/raw/master/51/2.png
+   @verbatim
+   1. 加载器与链接器调用mmap映射PT_LOAD段；
+   2. 内核调用map_pages接口查找并映射pagecache已有的缓存；
+   3. 程序执行时，内存若无所需代码或数据时触发缺页中断，将elf文件内容读入内存，并将该内存块加入pagecache；
+   4. 将已读入文件内容的内存块与虚拟地址区间做映射；
+   5. 程序继续执行；
+   至此，程序将在不断地缺页中断中执行。
+   @endverbatim
+ * @version 
+ * @author  weharmonyos.com
+ * @date    2021-11-19
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -113,7 +151,17 @@ STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *
     loadInfo->fileName = kfileName;//文件名指向内核空间
     return LOS_OK;
 }
-////运行用户态进程 ELF格式,运行在内核态
+
+/*!
+ * @brief LOS_DoExecveFile	
+ * 根据fileName执行一个新的用户程序 LOS_DoExecveFile接口一般由用户通过execve系列接口利用系统调用机制调用创建新的进程，内核不能直接调用该接口启动新进程。
+ * @param argv	程序执行所需的参数序列，以NULL结尾。无需参数时填入NULL。
+ * @param envp	程序执行所需的新的环境变量序列，以NULL结尾。无需新的环境变量时填入NULL。
+ * @param fileName	二进制可执行文件名，可以是路径名。
+ * @return	
+ *
+ * @see
+ */
 INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *envp)
 {
     ELFLoadInfo loadInfo = { 0 };
@@ -122,18 +170,18 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
 #ifdef LOSCFG_SHELL
     CHAR buf[PATH_MAX + 1] = { 0 };
 #endif
-	//先判断参数地址是否来自用户空间
+	//先判断参数地址是否来自用户空间,此处必须要来自用户空间,内核是不能直接调用本函数
     if ((fileName == NULL) || ((argv != NULL) && !LOS_IsUserAddress((VADDR_T)(UINTPTR)argv)) ||
         ((envp != NULL) && !LOS_IsUserAddress((VADDR_T)(UINTPTR)envp))) {
         return -EINVAL;
     }
-    ret = OsCopyUserParam(&loadInfo, fileName, kfileName, PATH_MAX);//确保拷贝至内核空间
+    ret = OsCopyUserParam(&loadInfo, fileName, kfileName, PATH_MAX);//拷贝用户空间数据至内核空间
     if (ret != LOS_OK) {
         return ret;
     }
 
 #ifdef LOSCFG_SHELL
-    if (OsGetRealPath(kfileName, buf, (PATH_MAX + 1)) != LOS_OK) {
+    if (OsGetRealPath(kfileName, buf, (PATH_MAX + 1)) != LOS_OK) {//获取绝对路径
         return -ENOENT;
     }
     if (buf[0] != '\0') {
@@ -141,7 +189,7 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
     }
 #endif
 
-    loadInfo.newSpace = OsCreateUserVmSpace();
+    loadInfo.newSpace = OsCreateUserVmSpace();//创建一个用户空间,用于开启新的进程
     if (loadInfo.newSpace == NULL) {
         PRINT_ERR("%s %d, failed to allocate new vm space\n", __FUNCTION__, __LINE__);
         return -ENOMEM;

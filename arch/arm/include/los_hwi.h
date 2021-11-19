@@ -250,22 +250,22 @@ typedef VOID (*HWI_PROC_FUNC)(VOID);
 #define IRQF_SHARED 0x8000U	//IRQF_SHARED-允许在多个设备之间共享irq
 
 typedef struct tagHwiHandleForm {	
-    HWI_PROC_FUNC pfnHook;	//中断处理函数
-    HWI_ARG_T uwParam;		//中断处理函数参数
-    struct tagHwiHandleForm *pstNext;	//节点，指向下一个中断,用于共享中断的情况
+    HWI_PROC_FUNC pfnHook;	///< 中断处理函数
+    HWI_ARG_T uwParam;		///< 中断处理函数参数
+    struct tagHwiHandleForm *pstNext;	///< 节点，指向下一个中断,用于共享中断的情况
 } HwiHandleForm;
 
 typedef struct tagIrqParam {	//中断参数
-    int swIrq;		//	软件中断
-    VOID *pDevId;	//	设备ID
-    const CHAR *pName;	//名称
+    int swIrq;				///<	软件中断
+    VOID *pDevId;			///<	设备ID
+    const CHAR *pName;		///< 名称
 } HwiIrqParam;
 
 extern HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];//中断注册表
 
 /**
  * @ingroup los_hwi
- * @brief Disable all interrupts.
+ * @brief Disable all interrupts. | 关闭当前处理器所有中断响应
  *
  * @par Description:
  * <ul>
@@ -282,7 +282,7 @@ extern HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];//中断注册表
  * @par Dependency:
  * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_IntRestore
- */ //关闭当前处理器所有中断响应
+ */ 
 STATIC INLINE UINT32 LOS_IntLock(VOID)
 {//此API用于禁用CPSR中的所有IRQ和FIQ中断。CPSR:程序状态寄存器(current program status register)
     return ArchIntLock();
@@ -290,7 +290,7 @@ STATIC INLINE UINT32 LOS_IntLock(VOID)
 
 /**
  * @ingroup los_hwi
- * @brief Enable all interrupts.
+ * @brief Enable all interrupts. | 打开当前处理器所有中断响应
  *
  * @par Description:
  * <ul>
@@ -307,7 +307,7 @@ STATIC INLINE UINT32 LOS_IntLock(VOID)
  * @par Dependency:
  * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_IntLock
- */	//打开当前处理器所有中断响应
+ */
 STATIC INLINE UINT32 LOS_IntUnLock(VOID)
 {//此API用于启用CPSR中的所有IRQ和FIQ中断。
     return ArchIntUnlock();
@@ -315,7 +315,7 @@ STATIC INLINE UINT32 LOS_IntUnLock(VOID)
 
 /**
  * @ingroup los_hwi
- * @brief Restore interrupts.
+ * @brief Restore interrupts. | 恢复到使用LOS_IntLock关闭所有中断之前的状态
  *
  * @par Description:
  * <ul>
@@ -333,7 +333,7 @@ STATIC INLINE UINT32 LOS_IntUnLock(VOID)
  * @par Dependency:
  * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_IntLock
- */	//恢复到使用LOS_IntLock关闭所有中断之前的状态
+ */
 STATIC INLINE VOID LOS_IntRestore(UINT32 intSave)
 {//只有在禁用所有中断之后才能调用此API，并且输入参数值应为LOS_IntLock返回的值。
     ArchIntRestore(intSave);

@@ -231,6 +231,7 @@
 
 ### 关注不迷路.代码即人生
 
-<img src="https://gitee.com/weharmonyos/resources/raw/master/common/so1so.png" alt="图片替换文本" width="855px" height="312px" align="bottom" />
+![](https://gitee.com/weharmonyos/resources/raw/master/common/so1so.png)
+
 
 **QQ群 790015635 | 入群密码 666  | 存放重要文档资料**
