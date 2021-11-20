@@ -1,3 +1,85 @@
+/*!
+ * @file    los_cpup.c
+ * @brief
+ * @link kernel-small-debug-process-cpu http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-debug-process-cpu.html @endlink
+   @verbatim
+   基本概念
+	   CPU（中央处理器，Central Processing Unit）占用率分为系统CPU占用率、进程CPU占用率、任务CPU占用率
+	   和中断CPU占用率。用户通过系统级的CPU占用率，判断当前系统负载是否超出设计规格。通过系统中各个
+	   进程/任务/中断的CPU占用情况，判断各个进程/任务/中断的CPU占用率是否符合设计的预期。
+	   
+		   系统CPU占用率（CPU Percent）
+
+		   指周期时间内系统的CPU占用率，用于表示系统一段时间内的闲忙程度，也表示CPU的负载情况。系统CPU占用率
+		   的有效表示范围为0～100，其精度（可通过配置调整）为百分比。100表示系统满负荷运转。
+	   
+		   进程CPU占用率
+		   
+		   指单个进程的CPU占用率，用于表示单个进程在一段时间内的闲忙程度。进程CPU占用率的有效表示范围为0～100，
+		   其精度（可通过配置调整）为百分比。100表示在一段时间内系统一直在运行该进程。
+		   
+		   任务CPU占用率
+		   
+		   指单个任务的CPU占用率，用于表示单个任务在一段时间内的闲忙程度。任务CPU占用率的有效表示范围为0～100，
+		   其精度（可通过配置调整）为百分比。100表示在一段时间内系统一直在运行该任务。
+		   
+		   中断CPU占用率
+		   
+		   指单个中断的CPU占用率，用于表示单个中断在一段时间内的闲忙程度。中断CPU占用率的有效表示范围为0～100，
+		   其精度（可通过配置调整）为百分比。100表示在一段时间内系统一直在运行该中断。
+
+   运行机制
+	   OpenHarmony LiteOS-A内核CPUP（CPU Percent，CPU占用率）模块采用进程、任务和中断级记录的方式，在进程/任务切换时，
+	   记录进程/任务启动时间，进程/任务切出或者退出时，系统会累加整个进程/任务的占用时间; 在执行中断时系统会累加记录
+	   每个中断的执行时间。
+	   
+	   OpenHarmony 提供以下四种CPU占用率的信息查询：
+	   
+		   系统CPU占用率
+		   进程CPU占用率
+		   任务CPU占用率
+		   中断CPU占用率
+		   
+	   CPU占用率的计算方法：
+	   
+	   系统CPU占用率=系统中除idle任务外其他任务运行总时间/系统运行总时间
+	   
+	   进程CPU占用率=进程运行总时间/系统运行总时间
+	   
+	   任务CPU占用率=任务运行总时间/系统运行总时间
+	   
+	   中断CPU占用率=中断运行总时间/系统运行总时间
+	   
+   开发流程
+	   CPU占用率的典型开发流程：
+	   
+	   调用获取系统历史CPU占用率函数LOS_HistorySysCpuUsage。
+	   
+	   调用获取指定进程历史CPU占用率函数LOS_HistoryProcessCpuUsage。
+	   
+	   若进程已创建，则关中断，根据不同模式正常获取，恢复中断；
+	   若进程未创建，则返回错误码；
+	   调用获取所有进程CPU占用率函数LOS_GetAllProcessCpuUsage。
+	   
+	   若CPUP已初始化，则关中断，根据不同模式正常获取，恢复中断；
+	   若CPUP未初始化或有非法入参，则返回错误码；
+	   调用获取指定任务历史CPU占用率函数LOS_HistoryTaskCpuUsage。
+	   
+	   若任务已创建，则关中断，根据不同模式正常获取，恢复中断；
+	   若任务未创建，则返回错误码；
+	   调用获取所有中断CPU占用率函数LOS_GetAllIrqCpuUsage。
+	   
+	   若CPUP已初始化，则关中断，根据不同模式正常获取，恢复中断；
+	   若CPUP未初始化或有非法入参，则返回错误码；
+   
+   @endverbatim
+ * @image html https://gitee.com/weharmonyos/resources/raw/master/27/mux.png
+ * @attention   
+ * @version 
+ * @author  weharmonyos.com
+ * @date    2021-11-21
+ */
+
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -38,14 +120,14 @@
 
 #ifdef LOSCFG_KERNEL_CPUP
 
-LITE_OS_SEC_BSS STATIC UINT16 cpupSwtmrID;	//监测CPU使用情况定时器s
+LITE_OS_SEC_BSS STATIC UINT16 cpupSwtmrID;	///< 监测CPU使用情况定时器s
 LITE_OS_SEC_BSS STATIC UINT16 cpupInitFlg = 0;
 LITE_OS_SEC_BSS OsIrqCpupCB *g_irqCpup = NULL;
 LITE_OS_SEC_BSS STATIC UINT16 cpupMaxNum;
 LITE_OS_SEC_BSS STATIC UINT16 cpupHisPos = 0; /* current Sampling point of historyTime */
 LITE_OS_SEC_BSS STATIC UINT64 cpuHistoryTime[OS_CPUP_HISTORY_RECORD_NUM + 1];
-LITE_OS_SEC_BSS STATIC UINT32 runningTasks[LOSCFG_KERNEL_CORE_NUM];
-LITE_OS_SEC_BSS STATIC UINT64 cpupStartCycles = 0;
+LITE_OS_SEC_BSS STATIC UINT32 runningTasks[LOSCFG_KERNEL_CORE_NUM]; 
+LITE_OS_SEC_BSS STATIC UINT64 cpupStartCycles = 0; ///< 记录
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
 LITE_OS_SEC_BSS UINT64 timeInIrqSwitch[LOSCFG_KERNEL_CORE_NUM];
 LITE_OS_SEC_BSS STATIC UINT64 cpupIntTimeStart[LOSCFG_KERNEL_CORE_NUM];
@@ -59,14 +141,14 @@ LITE_OS_SEC_BSS STATIC UINT64 cpupIntTimeStart[LOSCFG_KERNEL_CORE_NUM];
 
 #define CPUP_PRE_POS(pos) (((pos) == 0) ? (OS_CPUP_HISTORY_RECORD_NUM - 1) : ((pos) - 1))
 #define CPUP_POST_POS(pos) (((pos) == (OS_CPUP_HISTORY_RECORD_NUM - 1)) ? 0 : ((pos) + 1))
-//获取CPU周期
+///< 获取CPU周期
 STATIC UINT64 OsGetCpuCycle(VOID)
 {
     UINT32 high;
     UINT32 low;
-    UINT64 cycles;
+    UINT64 cycles;//周期数用 64位计算，读取分成高低位
 
-    LOS_GetCpuCycle(&high, &low);
+    LOS_GetCpuCycle(&high, &low);//将64位拆成两个32位
     cycles = ((UINT64)high << HIGH_BITS) + low;
     if (cpupStartCycles == 0) {
         cpupStartCycles = cycles;
@@ -338,6 +420,14 @@ STATIC UINT32 OsHistorySysCpuUsageUnsafe(UINT16 mode)
     return (LOS_CPUP_PRECISION - OsCalculateCpupUsage(processCpup, pos, prePos, cpuAllCycle));
 }
 
+/**
+  * \brief 获取系统历史CPU占用率
+  * 指周期时间内系统的CPU占用率，用于表示系统一段时间内的闲忙程度，也表示CPU的负载情况。系统CPU
+  * 占用率的有效表示范围为0～100，其精度（可通过配置调整）为百分比。100表示系统满负荷运转。
+  * \param mode
+  *
+  * \return 
+  */
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_HistorySysCpuUsage(UINT16 mode)
 {
     UINT32 cpup;
@@ -379,6 +469,15 @@ STATIC UINT32 OsHistoryProcessCpuUsageUnsafe(UINT32 pid, UINT16 mode)
     return OsCalculateCpupUsage(processCB->processCpup, pos, prePos, cpuAllCycle);
 }
 
+/**
+  * \brief 获取指定进程历史CPU占用率
+  * 指单个进程的CPU占用率，用于表示单个进程在一段时间内的闲忙程度。进程CPU占用率的有效表示范围为0～100，
+  * 其精度（可通过配置调整）为百分比。100表示在一段时间内系统一直在运行该进程。
+  * \param pid
+  * \param mode
+  *
+  * \return 
+  */
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_HistoryProcessCpuUsage(UINT32 pid, UINT16 mode)
 {
     UINT32 cpup;
@@ -415,6 +514,15 @@ STATIC UINT32 OsHistoryTaskCpuUsageUnsafe(UINT32 tid, UINT16 mode)
     return OsCalculateCpupUsage(&taskCB->taskCpup, pos, prePos, cpuAllCycle);
 }
 
+/**
+  * \brief 获取指定任务历史CPU占用率
+  * 指单个任务的CPU占用率，用于表示单个任务在一段时间内的闲忙程度。任务CPU占用率的有效表示范围为0～100，
+  * 其精度（可通过配置调整）为百分比。100表示在一段时间内系统一直在运行该任务。
+  * \param tid
+  * \param mode
+  *
+  * \return 
+  */
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_HistoryTaskCpuUsage(UINT32 tid, UINT16 mode)
 {
     UINT32 intSave;
@@ -468,7 +576,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsGetAllProcessCpuUsageUnsafe(UINT16 mode, CPUP_IN
 
     return LOS_OK;
 }
-
+/// 获取系统所有进程的历史CPU占用率
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_GetAllProcessCpuUsage(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len)
 {
     UINT32 intSave;
@@ -580,6 +688,16 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsGetAllIrqCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S
     return LOS_OK;
 }
 
+/**
+  * \brief 获取系统所有中断的历史CPU占用率
+  * 指单个中断的CPU占用率，用于表示单个中断在一段时间内的闲忙程度。中断CPU占用率的有效表示范围为0～100，
+  * 其精度（可通过配置调整）为百分比。100表示在一段时间内系统一直在运行该中断。
+  * \param mode
+  * \param cpupInfo
+  * \param len
+  *
+  * \return 
+  */
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_GetAllIrqCpuUsage(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len)
 {
     UINT32 intSave;

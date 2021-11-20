@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 注解trace模块,其用于跟踪内核各模块运行细节
+git commit -m  ' 注解内核如何监测CPU
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)

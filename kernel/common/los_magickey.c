@@ -33,7 +33,8 @@
 #include "console.h"
 #include "los_task_pri.h"
 
-
+/// 魔法键依赖于宏LOSCFG_ENABLE_MAGICKEY，使用时通过menuconfig在配置项中开启“Enable MAGIC KEY”：
+/// Debug ---> Enable MAGIC KEY；若关闭该选项，则魔法键失效。
 #ifdef LOSCFG_ENABLE_MAGICKEY
 
 #define MAGIC_KEY_NUM 5
@@ -118,7 +119,7 @@ STATIC VOID OsMagicMemCheck(VOID)
     return;
 }
 #endif
-
+///检查魔法键
 INT32 CheckMagicKey(CHAR key, UINT16 consoleId)
 {
 #ifdef LOSCFG_ENABLE_MAGICKEY //魔法键开关
@@ -129,6 +130,8 @@ INT32 CheckMagicKey(CHAR key, UINT16 consoleId)
         KillPgrp(consoleId);
         return 0;
     } else if (key == 0x12) { /* ctrl + r */
+		// 在连接UART或者USB转虚拟串口的情况下，输入“ctrl + r” 键，打开魔法键检测功能，输出 “Magic key on”；再输入一次后，
+		// 则关闭魔法键检测功能，输出“Magic key off”。
         magicKeySwitch = ~magicKeySwitch;
         if (magicKeySwitch != 0) {
             PRINTK("Magic key on\n");
@@ -137,10 +140,10 @@ INT32 CheckMagicKey(CHAR key, UINT16 consoleId)
         }
         return 1;
     }
-    if (magicKeySwitch != 0) {
+    if (magicKeySwitch != 0) {//打开情况下，输出魔法键各回调函数
         for (i = 0; i < MAGIC_KEY_NUM; i++) {
             if (g_magicOpTable[i] != NULL && key == g_magicOpTable[i]->magicKey) {
-                (g_magicOpTable[i])->opHandler();
+                (g_magicOpTable[i])->opHandler();//执行回调函数 OsMagicHelp ，OsMagicTaskShow ==
                 return 1;
             }
         }
