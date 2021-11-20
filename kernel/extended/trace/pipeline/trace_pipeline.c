@@ -126,23 +126,23 @@ VOID OsTracePipelineReg(const TracePipelineOps *ops)
 {
     g_tracePipelineOps = ops;
 }
-
+///< 发送跟踪数据
 VOID OsTraceDataSend(UINT8 type, UINT16 len, UINT8 *data)
 {
     UINT32 intSave;
-    UINT8 outBuf[LOSCFG_TRACE_TLV_BUF_SIZE] = {0};
+    UINT8 outBuf[LOSCFG_TRACE_TLV_BUF_SIZE] = {0};//100个字节
 
     if ((type > TRACE_MSG_MAX) || (len > LOSCFG_TRACE_TLV_BUF_SIZE)) {
         return;
     }
 
-    len = OsTraceDataEncode(type, g_traceTlvTbl[type], data, &outBuf[0], sizeof(outBuf));
+    len = OsTraceDataEncode(type, g_traceTlvTbl[type], data, &outBuf[0], sizeof(outBuf));//对数据进行编码(TLV格式)
 
     PIPE_LOCK(intSave);
-    g_tracePipelineOps->dataSend(len, &outBuf[0]);
+    g_tracePipelineOps->dataSend(len, &outBuf[0]);//向串口发送数据
     PIPE_UNLOCK(intSave);
 }
-
+/// 接口来自串口的数据,一般为空函数
 UINT32 OsTraceDataRecv(UINT8 *data, UINT32 size, UINT32 timeout)
 {
     return g_tracePipelineOps->dataRecv(data, size, timeout);

@@ -68,7 +68,14 @@ STATIC UINT32 OsWriteTlv(UINT8 *tlvBuf, UINT8 type, UINT8 len, UINT8 *value)
     (VOID)memcpy_s(body->value, len, value, len);
     return len + sizeof(body->type) + sizeof(body->len);
 }
+/*
+解码步骤
 
+读取 Tag（或Type）并使用 ntohl 将其转成主机字节序，指针偏移4；
+读取 Length ntohl** 将其转成主机字节序，指针偏移4；
+根据得到的长度读取 Value，若为 int、char、short、long 类型，将其转为主机字节序，指针偏移；若值为字符串，读取后指针偏移 Length；
+重复上述三步，继续读取后面的 TLV 单元。
+*/
 STATIC UINT32 OsTlvEncode(const TlvTable *table, UINT8 *srcBuf, UINT8 *tlvBuf, INT32 tlvBufLen)
 {
     UINT32 len = 0;
@@ -84,6 +91,27 @@ STATIC UINT32 OsTlvEncode(const TlvTable *table, UINT8 *srcBuf, UINT8 *tlvBuf, I
     return len;
 }
 
+/*!
+对trace数据进行 Tlv 编码
+
+TLV 是一种可变的格式，其中：
+
+T 可以理解为 Tag 或 Type ，用于标识标签或者编码格式信息；
+L 定义数值的长度；
+V 表示实际的数值。
+T 和 L 的长度固定，一般是2或4个字节，V 的长度由 Length 指定。
+
+要正确的解析对方发来的数据除了统一数据格式之外还要统一字节序。字节序是指多字节数据在计算机内存中存储
+或者网络传输时各字节的存储顺序。字节序一般分为大端和小端。
+
+大端模式（Big-Endian）： 高位字节放在内存的低地址端，低位字节排放在内存的高地址端。
+小端模式（Little-Endian）： 低位字节放在内存的低地址端，高位字节放在内存的高地址端。
+
+使用 htonl 将 Tag（或Type）转成网络字节序，指针偏移 4；
+使用 htonl 将 Length 转成网络字节序，指针偏移 4；
+若值 Value 为 int、char、short、long 类型，将其转为网络字节序，指针偏移；若值为字符串，写入后指针偏移 Length；
+重复上述三步，继续编码后面的 TLV 单元。
+*/
 UINT32 OsTraceDataEncode(UINT8 type, const TlvTable *table, UINT8 *src, UINT8 *dest, INT32 destLen)
 {
     UINT16 crc;

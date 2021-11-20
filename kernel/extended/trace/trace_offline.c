@@ -41,7 +41,7 @@ UINT32 OsTraceGetMaskTid(UINT32 tid)
 {
     return tid | ((tid < LOSCFG_BASE_CORE_TSK_LIMIT) ? g_tidMask[tid] << BITS_NUM_FOR_TASK_ID : 0); /* tid < 65535 */
 }
-
+/// trace离线模式初始化
 UINT32 OsTraceBufInit(UINT32 size)
 {
     UINT32 headSize;

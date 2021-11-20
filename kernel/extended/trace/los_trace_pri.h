@@ -106,15 +106,15 @@ typedef struct {
  * struct to store the trace config information.
  */
 typedef struct {
-    struct WriteCtrl {
-        UINT16 curIndex;            /* The current record index */
-        UINT16 maxRecordCount;      /* The max num of track items */
-        UINT16 curObjIndex;         /* The current obj index */
-        UINT16 maxObjCount;         /* The max num of obj index */
-        ObjData *objBuf;            /* Pointer to obj info data */
-        TraceEventFrame *frameBuf;  /* Pointer to the track items */
+    struct WriteCtrl {//内容控制器
+        UINT16 curIndex;            /* The current record index | 当前记录索引位*/
+        UINT16 maxRecordCount;      /* The max num of trace items | 记录上限数*/
+        UINT16 curObjIndex;         /* The current obj index | 当前内容索引位*/
+        UINT16 maxObjCount;         /* The max num of obj index | 内容上限数*/
+        ObjData *objBuf;            /* Pointer to obj info data | 指向内容数据域*/
+        TraceEventFrame *frameBuf;  /* Pointer to the trace items | 所有trace条目的开始位*/
     } ctrl;
-    OfflineHead *head;
+    OfflineHead *head;///< 离线模式头部信息
 } TraceOfflineHeaderInfo;
 
 extern UINT32 OsTraceGetMaskTid(UINT32 taskId);
@@ -128,13 +128,13 @@ extern OfflineHead *OsTraceRecordGet(VOID);
 extern VOID OsTraceSendHead(VOID);
 extern VOID OsTraceSendObjTable(VOID);
 extern VOID OsTraceSendNotify(UINT32 type, UINT32 value);
-
+/// 通知系统trace开始
 #define OsTraceNotifyStart() do {                                \
         OsTraceSendNotify(SYS_START, TRACE_CTL_MAGIC_NUM);       \
         OsTraceSendHead();                                       \
         OsTraceSendObjTable();                                   \
     } while (0)
-
+/// 通知系统trace结束
 #define OsTraceNotifyStop() do {                                 \
         OsTraceSendNotify(SYS_STOP, TRACE_CTL_MAGIC_NUM);        \
     } while (0)

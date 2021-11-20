@@ -147,7 +147,7 @@ typedef enum {
 typedef enum { //跟进模块的具体事件
     /* 0x10~0x1F */
     SYS_ERROR             = TRACE_SYS_FLAG | 0,
-    SYS_START             = TRACE_SYS_FLAG | 1,
+    SYS_START             = TRACE_SYS_FLAG | 1,	///< 系统开始
     SYS_STOP              = TRACE_SYS_FLAG | 2,
 
     /* 0x20~0x2F */
@@ -222,6 +222,20 @@ typedef enum { //跟进模块的具体事件
     IPC_READ_TIMEOUT      = TRACE_IPC_FLAG | 5,
     IPC_KILL              = TRACE_IPC_FLAG | 6,
 } LOS_TRACE_TYPE;
+/// http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-mini-memory-trace.html
+/*******TraceInfo begin******* trace 模块结构体多,可参考输出日志理解
+clockFreq = 50000000
+CurEvtIndex = 7
+Index   Time(cycles)      EventType      CurTask   Identity      params    
+0       0x366d5e88        0x45           0x1       0x0           0x1f         0x4       0x0
+1       0x366d74ae        0x45           0x0       0x1           0x0          0x8       0x1f
+2       0x36940da6        0x45           0x1       0xc           0x1f         0x4       0x9
+3       0x3694337c        0x45           0xc       0x1           0x9          0x8       0x1f
+4       0x36eea56e        0x45           0x1       0xc           0x1f         0x4       0x9
+5       0x36eec810        0x45           0xc       0x1           0x9          0x8       0x1f
+6       0x3706f804        0x45           0x1       0x0           0x1f         0x4       0x0
+7       0x37070e59        0x45           0x0       0x1           0x0          0x8       0x1f
+*******TraceInfo end*******/
 
 /**
  * @ingroup los_trace
@@ -230,7 +244,7 @@ typedef enum { //跟进模块的具体事件
 typedef struct {
     UINT32 bigLittleEndian;     /**< big little endian flag | 大小端标记*/
     UINT32 clockFreq;           /**< system clock frequency | 系统时钟频率*/
-    UINT32 version;             /**< trace version | 跟踪版本*/
+    UINT32 version;             /**< trace version | 跟踪版本号*/
 } TraceBaseHeaderInfo;
 
 /**
@@ -246,15 +260,15 @@ typedef struct {
 #ifdef LOSCFG_TRACE_FRAME_CORE_MSG //跟踪CPU信息
     struct CoreStatus {
         UINT32 cpuId      : 8,                       /**< cpuid | CPU 核 ID*/
-               hwiActive  : 4,                       /**< whether is in hwi response */
-               taskLockCnt : 4,                      /**< task lock count */
-               paramCount : 4,                       /**< event frame params' number */
+               hwiActive  : 4,                       /**< whether is in hwi response | 是否在等硬中断回应*/
+               taskLockCnt : 4,                      /**< task lock count | 等锁任务数量*/
+               paramCount : 4,                       /**< event frame params' number | */
                reserves   : 12;                      /**< reserves */
     } core;
 #endif
 
 #ifdef LOSCFG_TRACE_FRAME_EVENT_COUNT
-    UINT32  eventCount;                               /**< the sequence of happend events */
+    UINT32  eventCount;                               /**< the sequence of happend events  */
 #endif
 
 #ifdef LOS_TRACE_FRAME_LR
@@ -268,9 +282,9 @@ typedef struct {
 
 #ifdef LOSCFG_DRIVERS_TRACE
 typedef struct {
-    UINT32  eventType;
-    UINTPTR identity;
-    UINTPTR params[3];
+    UINT32  eventType; 	///< 表示的具体事件
+    UINTPTR identity;	///< 表示事件操作的主体对象
+    UINTPTR params[3];	///< 表示的事件参数
 } UsrEventInfo;
 #endif
 
@@ -279,9 +293,9 @@ typedef struct {
  * struct to store the kernel obj information, we defined task as kernel obj in this system.
  */
 typedef struct {
-    UINT32      id;                                     /**< kernel obj's id */
-    UINT32      prio;                                   /**< kernel obj's priority */
-    CHAR        name[LOSCFG_TRACE_OBJ_MAX_NAME_SIZE];   /**< kernel obj's name */
+    UINT32      id;                                     /**< kernel obj's id | 这里对象一般指任务ID*/
+    UINT32      prio;                                   /**< kernel obj's priority | 任务优先级*/
+    CHAR        name[LOSCFG_TRACE_OBJ_MAX_NAME_SIZE];   /**< kernel obj's name | 任务名称*/
 } ObjData;
 
 /**
@@ -289,13 +303,15 @@ typedef struct {
  * struct to store the trace data.
  */
 typedef struct {
-    TraceBaseHeaderInfo baseInfo;          /**< basic info, include bigLittleEndian flag, system clock freq */
-    UINT16 totalLen;                       /**< trace data's total length */
-    UINT16 objSize;                        /**< sizeof #ObjData */
-    UINT16 frameSize;                      /**< sizeof #TraceEventFrame */
-    UINT16 objOffset;                      /**< the offset of the first obj data to record beginning */
-    UINT16 frameOffset;                    /**< the offset of the first event frame data to record beginning */
+    TraceBaseHeaderInfo baseInfo;          /**< basic info, include bigLittleEndian flag, system clock freq | 基础信息*/
+    UINT16 totalLen;                       /**< trace data's total length | 总大小*/
+    UINT16 objSize;                        /**< sizeof #ObjData | 对象大小*/
+    UINT16 frameSize;                      /**< sizeof #TraceEventFrame | 事件帧大小*/
+    UINT16 objOffset;                      /**< the offset of the first obj data to record beginning | 开始对象数据位置*/
+    UINT16 frameOffset;                    /**< the offset of the first event frame data to record beginning | 开始事件帧数据位置*/
 } OfflineHead;
+
+
 
 /**
  * @ingroup  los_trace

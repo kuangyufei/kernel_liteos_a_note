@@ -6,7 +6,15 @@
 	基本概念
 		Trace调测旨在帮助开发者获取内核的运行流程，各个模块、任务的执行顺序，从而可以辅助开发者定位一些时序问题
 		或者了解内核的代码运行过程。
-
+	相关宏
+		LOSCFG_KERNEL_TRACE				Trace模块的裁剪开关				YES/NO
+		LOSCFG_RECORDER_MODE_OFFLINE	Trace工作模式为离线模式				YES/NO
+		LOSCFG_RECORDER_MODE_ONLINE		Trace工作模式为在线模式				YES/NO
+		LOSCFG_TRACE_CLIENT_INTERACT	使能与Trace IDE （dev tools）的交互，包括数据可视化和流程控制	YES/NO
+		LOSCFG_TRACE_FRAME_CORE_MSG		记录CPUID、中断状态、锁任务状态	YES/NO
+		LOSCFG_TRACE_FRAME_EVENT_COUNT	记录事件的次序编号					YES/NO
+		LOSCFG_TRACE_FRAME_MAX_PARAMS	配置记录事件的最大参数个数				INT
+		LOSCFG_TRACE_BUFFER_SIZE		配置Trace的缓冲区大小				INT
 	运行机制
 		内核提供一套Hook框架，将Hook点预埋在各个模块的主要流程中, 在内核启动初期完成Trace功能的初始化，
 		并注册Trace的处理函数到Hook中。
@@ -76,11 +84,11 @@
 
 LITE_OS_SEC_BSS STATIC UINT32 g_traceEventCount;
 LITE_OS_SEC_BSS STATIC volatile enum TraceState g_traceState = TRACE_UNINIT;
-LITE_OS_SEC_DATA_INIT STATIC volatile BOOL g_enableTrace = FALSE;
-LITE_OS_SEC_BSS STATIC UINT32 g_traceMask = TRACE_DEFAULT_MASK;
+LITE_OS_SEC_DATA_INIT STATIC volatile BOOL g_enableTrace = FALSE; ///< trace开关
+LITE_OS_SEC_BSS STATIC UINT32 g_traceMask = TRACE_DEFAULT_MASK;	///< 全局变量设置事件掩码，仅记录某些模块的事件
 
-TRACE_EVENT_HOOK g_traceEventHook = NULL;
-TRACE_DUMP_HOOK g_traceDumpHook = NULL;
+TRACE_EVENT_HOOK g_traceEventHook = NULL;	///< 事件钩子函数
+TRACE_DUMP_HOOK g_traceDumpHook = NULL;	///< 输出缓冲区数据
 
 #ifdef LOSCFG_TRACE_CONTROL_AGENT
 LITE_OS_SEC_BSS STATIC UINT32 g_traceTaskId;
@@ -89,7 +97,7 @@ LITE_OS_SEC_BSS STATIC UINT32 g_traceTaskId;
 #define EVENT_MASK            0xFFFFFFF0
 #define MIN(x, y)             ((x) < (y) ? (x) : (y))
 
-LITE_OS_SEC_BSS STATIC TRACE_HWI_FILTER_HOOK g_traceHwiFilterHook = NULL;
+LITE_OS_SEC_BSS STATIC TRACE_HWI_FILTER_HOOK g_traceHwiFilterHook = NULL; ///< 用于跟踪硬中断过滤的钩子函数
 
 #ifdef LOSCFG_KERNEL_SMP
 LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_traceSpin);
@@ -292,7 +300,9 @@ STATIC UINT32 OsTraceInit(VOID)
     }
 #endif
 
-#ifdef LOSCFG_RECORDER_MODE_OFFLINE
+#ifdef LOSCFG_RECORDER_MODE_OFFLINE //trace离线模式开关
+//离线模式会将trace frame记录到预先申请好的循环buffer中。如果循环buffer记录的frame过多则可能出现翻转，
+//会覆盖之前的记录，故保持记录的信息始终是最新的信息。
     ret = OsTraceBufInit(LOSCFG_TRACE_BUFFER_SIZE);
     if (ret != LOS_OK) {
 #ifdef LOSCFG_TRACE_CONTROL_AGENT
@@ -329,19 +339,19 @@ UINT32 LOS_TraceStart(VOID)
         goto START_END;
     }
 
-    if (g_traceState == TRACE_UNINIT) {
+    if (g_traceState == TRACE_UNINIT) {//必须初始化好
         TRACE_ERROR("trace not inited, be sure LOS_TraceInit excute success\n");
         ret = LOS_ERRNO_TRACE_ERROR_STATUS;
         goto START_END;
     }
 
-    OsTraceNotifyStart();
+    OsTraceNotifyStart();//通知系统开始
 
-    g_enableTrace = TRUE;
-    g_traceState = TRACE_STARTED;
+    g_enableTrace = TRUE; //使能trace功能
+    g_traceState = TRACE_STARTED;//设置状态,已开始
 
     TRACE_UNLOCK(intSave);
-    LOS_TRACE(MEM_INFO_REQ, m_aucSysMem0);
+    LOS_TRACE(MEM_INFO_REQ, m_aucSysMem0);//输出日志
     return ret;
 START_END:
     TRACE_UNLOCK(intSave);
@@ -398,11 +408,12 @@ VOID LOS_TraceHwiFilterHookReg(TRACE_HWI_FILTER_HOOK hook)
     UINT32 intSave;
 
     TRACE_LOCK(intSave);
-    g_traceHwiFilterHook = hook;
+    g_traceHwiFilterHook = hook;// 注册全局钩子函数
     TRACE_UNLOCK(intSave);
 }
 
 #ifdef LOSCFG_SHELL
+/// 通过shell命令 设置事件掩码，仅记录某些模块的事件
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdTraceSetMask(INT32 argc, const CHAR **argv)
 {
     size_t mask;
@@ -441,9 +452,9 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdTraceDump(INT32 argc, const CHAR **argv)
     return LOS_OK;
 }
 
-SHELLCMD_ENTRY(tracestart_shellcmd,   CMD_TYPE_EX, "trace_start", 0, (CmdCallBackFunc)LOS_TraceStart);
+SHELLCMD_ENTRY(tracestart_shellcmd,   CMD_TYPE_EX, "trace_start", 0, (CmdCallBackFunc)LOS_TraceStart);//通过shell 启动trace
 SHELLCMD_ENTRY(tracestop_shellcmd,    CMD_TYPE_EX, "trace_stop",  0, (CmdCallBackFunc)LOS_TraceStop);
-SHELLCMD_ENTRY(tracesetmask_shellcmd, CMD_TYPE_EX, "trace_mask",  1, (CmdCallBackFunc)OsShellCmdTraceSetMask);
+SHELLCMD_ENTRY(tracesetmask_shellcmd, CMD_TYPE_EX, "trace_mask",  1, (CmdCallBackFunc)OsShellCmdTraceSetMask);//设置事件掩码，仅记录某些模块的事件
 SHELLCMD_ENTRY(tracereset_shellcmd,   CMD_TYPE_EX, "trace_reset", 0, (CmdCallBackFunc)LOS_TraceReset);
 SHELLCMD_ENTRY(tracedump_shellcmd,    CMD_TYPE_EX, "trace_dump", 1, (CmdCallBackFunc)OsShellCmdTraceDump);
 #endif
