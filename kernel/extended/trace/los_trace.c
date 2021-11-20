@@ -1,3 +1,30 @@
+/*!
+ * @file    los_trace.c
+ * @brief
+ * @link kernel-small-debug-trace http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-debug-trace.html @endlink
+   @verbatim
+	基本概念
+		Trace调测旨在帮助开发者获取内核的运行流程，各个模块、任务的执行顺序，从而可以辅助开发者定位一些时序问题
+		或者了解内核的代码运行过程。
+
+	运行机制
+		内核提供一套Hook框架，将Hook点预埋在各个模块的主要流程中, 在内核启动初期完成Trace功能的初始化，
+		并注册Trace的处理函数到Hook中。
+
+		当系统触发到一个Hook点时，Trace模块会对输入信息进行封装，添加Trace帧头信息，包含事件类型、
+		运行的cpuid、运行的任务id、运行的相对时间戳等信息；
+
+		Trace提供2种工作模式，离线模式和在线模式。
+			在线模式需要配合IDE使用，实时将trace frame记录发送给IDE，IDE端进行解析并可视化展示。
+			离线模式会将trace frame记录到预先申请好的循环buffer中。如果循环buffer记录的frame过多则可能出现翻转，
+			会覆盖之前的记录，故保持记录的信息始终是最新的信息。Trace循环buffer的数据可以通过shell命令导出进行详细分析，
+			导出信息已按照时间戳信息完成排序。
+   @endverbatim 
+ * @image html https://gitee.com/weharmonyos/resources/raw/master/80/trace.png  
+ * @version 
+ * @author  weharmonyos.com
+ * @date    2021-11-20
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -239,7 +266,7 @@ STATIC UINT32 OsCreateTraceAgentTask(VOID)
     return ret;
 }
 #endif
-
+/// 跟踪模块初始化
 STATIC UINT32 OsTraceInit(VOID)
 {
     UINT32 ret;
@@ -291,7 +318,7 @@ STATIC UINT32 OsTraceInit(VOID)
 LOS_ERREND:
     return ret;
 }
-
+/// 启动Trace
 UINT32 LOS_TraceStart(VOID)
 {
     UINT32 intSave;
@@ -320,7 +347,7 @@ START_END:
     TRACE_UNLOCK(intSave);
     return ret;
 }
-
+/// 停止Trace(跟踪)
 VOID LOS_TraceStop(VOID)
 {
     UINT32 intSave;
@@ -336,12 +363,12 @@ VOID LOS_TraceStop(VOID)
 STOP_END:
     TRACE_UNLOCK(intSave);
 }
-
+/// 设置事件掩码，仅记录某些模块的事件
 VOID LOS_TraceEventMaskSet(UINT32 mask)
 {
     g_traceMask = mask & EVENT_MASK;
 }
-
+/// 输出Trace缓冲区数据
 VOID LOS_TraceRecordDump(BOOL toClient)
 {
     if (g_traceState != TRACE_STOPED) {
@@ -350,12 +377,12 @@ VOID LOS_TraceRecordDump(BOOL toClient)
     }
     OsTraceRecordDump(toClient);
 }
-
+/// 获取Trace缓冲区的首地址
 OfflineHead *LOS_TraceRecordGet(VOID)
 {
     return OsTraceRecordGet();
 }
-
+/// 清除Trace缓冲区中的事件
 VOID LOS_TraceReset(VOID)
 {
     if (g_traceState == TRACE_UNINIT) {
@@ -365,7 +392,7 @@ VOID LOS_TraceReset(VOID)
 
     OsTraceReset();
 }
-
+/// 注册过滤特定中断号事件的钩子函数
 VOID LOS_TraceHwiFilterHookReg(TRACE_HWI_FILTER_HOOK hook)
 {
     UINT32 intSave;

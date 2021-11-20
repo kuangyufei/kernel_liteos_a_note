@@ -104,13 +104,13 @@ extern "C" {
 
 /**
  * @ingroup los_trace
- * Trace state.
+ * Trace state. | 跟踪状态
  */
 enum TraceState {
-    TRACE_UNINIT = 0,  /**< trace isn't inited */
-    TRACE_INITED,      /**< trace is inited but not started yet */
-    TRACE_STARTED,     /**< trace is started and system is tracing */
-    TRACE_STOPED,      /**< trace is stopped */
+    TRACE_UNINIT = 0,  /**< trace isn't inited | 未初始化*/
+    TRACE_INITED,      /**< trace is inited but not started yet | 已初始化但未开始*/
+    TRACE_STARTED,     /**< trace is started and system is tracing | 跟踪进行中...*/
+    TRACE_STOPED,      /**< trace is stopped | 跟踪结束*/
 };
 
 /**
@@ -119,16 +119,16 @@ enum TraceState {
  * module's trace mask.
  */
 typedef enum {
-    TRACE_SYS_FLAG          = 0x10,
-    TRACE_HWI_FLAG          = 0x20,
-    TRACE_TASK_FLAG         = 0x40,
-    TRACE_SWTMR_FLAG        = 0x80,
-    TRACE_MEM_FLAG          = 0x100,
-    TRACE_QUE_FLAG          = 0x200,
-    TRACE_EVENT_FLAG        = 0x400,
-    TRACE_SEM_FLAG          = 0x800,
-    TRACE_MUX_FLAG          = 0x1000,
-    TRACE_IPC_FLAG          = 0x2000,
+    TRACE_SYS_FLAG          = 0x10,	///< 跟踪系统
+    TRACE_HWI_FLAG          = 0x20,	///< 跟踪硬中断
+    TRACE_TASK_FLAG         = 0x40,	///< 跟踪任务/线程
+    TRACE_SWTMR_FLAG        = 0x80,	///< 跟踪软件定时器
+    TRACE_MEM_FLAG          = 0x100,	///< 跟踪内存
+    TRACE_QUE_FLAG          = 0x200,	///< 跟踪队列
+    TRACE_EVENT_FLAG        = 0x400,	///< 跟踪事件
+    TRACE_SEM_FLAG          = 0x800,	///< 跟踪信号量
+    TRACE_MUX_FLAG          = 0x1000,	///< 跟踪互斥量
+    TRACE_IPC_FLAG          = 0x2000,	///< 跟踪IPC
 
     TRACE_MAX_FLAG          = 0x80000000,
     TRACE_USER_DEFAULT_FLAG = 0xFFFFFFF0,
@@ -144,7 +144,7 @@ typedef enum {
  *             trace_module_flag           number
  *
  */
-typedef enum {
+typedef enum { //跟进模块的具体事件
     /* 0x10~0x1F */
     SYS_ERROR             = TRACE_SYS_FLAG | 0,
     SYS_START             = TRACE_SYS_FLAG | 1,
@@ -228,24 +228,24 @@ typedef enum {
  * struct to store the trace config information.
  */
 typedef struct {
-    UINT32 bigLittleEndian;     /**< big little endian flag */
-    UINT32 clockFreq;           /**< system clock frequency */
-    UINT32 version;             /**< trace version */
+    UINT32 bigLittleEndian;     /**< big little endian flag | 大小端标记*/
+    UINT32 clockFreq;           /**< system clock frequency | 系统时钟频率*/
+    UINT32 version;             /**< trace version | 跟踪版本*/
 } TraceBaseHeaderInfo;
 
 /**
  * @ingroup los_trace
- * struct to store the event infomation
+ * struct to store the event infomation | 保存跟踪事件的信息
  */
 typedef struct {
-    UINT32  eventType;                               /**< event type */
-    UINT32  curTask;                                 /**< current running task */
-    UINT32  curPid;                                  /**< current running processID */
-    UINT64  curTime;                                 /**< current timestamp */
-    UINTPTR identity;                                /**< subject of the event description */
-#ifdef LOSCFG_TRACE_FRAME_CORE_MSG
+    UINT32  eventType;                               /**< event type | 事件类型*/
+    UINT32  curTask;                                 /**< current running task | 当前任务ID*/
+    UINT32  curPid;                                  /**< current running processID | 当前进程ID*/
+    UINT64  curTime;                                 /**< current timestamp | 时间戳*/
+    UINTPTR identity;                                /**< subject of the event description | 描述事件*/
+#ifdef LOSCFG_TRACE_FRAME_CORE_MSG //跟踪CPU信息
     struct CoreStatus {
-        UINT32 cpuId      : 8,                       /**< cpuid */
+        UINT32 cpuId      : 8,                       /**< cpuid | CPU 核 ID*/
                hwiActive  : 4,                       /**< whether is in hwi response */
                taskLockCnt : 4,                      /**< task lock count */
                paramCount : 4,                       /**< event frame params' number */
@@ -415,10 +415,15 @@ extern TRACE_EVENT_HOOK g_traceEventHook;
 
 /**
  * @ingroup los_trace
- * @brief Trace static code stub.
+ * @brief Trace static code stub. | 标准插桩
  *
  * @par Description:
  * This API is used to instrument trace code stub in source code, to track events.
+ 
+	\n 1. 相比简易插桩，支持动态过滤事件和参数裁剪，但使用上需要用户按规则来扩展。
+	\n 2. TYPE用于设置具体的事件类型，可以在头文件los_trace.h中的enum LOS_TRACE_TYPE中自定义事件类型。定义方法和规则可以参考其他事件类型。
+	\n 3. IDENTITY和Params的类型及含义同简易插桩。
+
  * @attention
  * None.
  *
@@ -446,10 +451,14 @@ extern TRACE_EVENT_HOOK g_traceEventHook;
 
 /**
  * @ingroup los_trace
- * @brief Trace static easier user-defined code stub.
+ * @brief Trace static easier user-defined code stub. | 简易插桩
  *
  * @par Description:
  * This API is used to instrument user-defined trace code stub in source code, to track events simply.
+	\n 1. 一句话插桩，用户在目标源代码中插入该接口即可。
+	\n 2. TYPE有效取值范围为[0, 0xF]，表示不同的事件类型，不同取值表示的含义由用户自定义。
+	\n 3. IDENTITY类型UINTPTR，表示事件操作的主体对象。
+	\n 4. Params类型UINTPTR，表示事件的参数。
  * @attention
  * None.
  *
@@ -461,7 +470,7 @@ extern TRACE_EVENT_HOOK g_traceEventHook;
  * @par Dependency:
  * <ul><li>los_trace.h: the header file that contains the API declaration.</li></ul>
  */
-#define LOS_TRACE_EASY(TYPE, IDENTITY, ...)                                                                          \
+#define LOS_TRACE_EASY(TYPE, IDENTITY, ...)                                                                           \
     do {                                                                                                             \
         UINTPTR _inner[] = {0, ##__VA_ARGS__};                                                                       \
         UINTPTR _n = sizeof(_inner) / sizeof(UINTPTR);                                                               \

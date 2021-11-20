@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 动态(堆)内存部分注解, 采用 tlsf 算法
+git commit -m  ' 注解trace模块,其用于跟踪内核各模块运行细节
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
