@@ -323,15 +323,15 @@ STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)
 
 #define LOS_SCHED_NORMAL  0U	///< 正常调度
 #define LOS_SCHED_FIFO    1U 	///< 先进先出，按顺序
-#define LOS_SCHED_RR      2U 	///< 抢占式调度
-#define LOS_SCHED_IDLE    3U
+#define LOS_SCHED_RR      2U 	///< 抢占式调度,鸿蒙默认调度方式
+#define LOS_SCHED_IDLE    3U	///< 空闲不调度
 
 #define LOS_PRIO_PROCESS  0U 	///< 进程标识
 #define LOS_PRIO_PGRP     1U	///< 进程组标识	
 #define LOS_PRIO_USER     2U	///< 用户标识
 
-#define OS_USER_PRIVILEGE_PROCESS_GROUP 1U
-#define OS_KERNEL_PROCESS_GROUP         2U
+#define OS_USER_PRIVILEGE_PROCESS_GROUP 1U	///< 用户态进程组ID
+#define OS_KERNEL_PROCESS_GROUP         2U	///< 内核态进程组ID
 
 /*
  * Process exit code

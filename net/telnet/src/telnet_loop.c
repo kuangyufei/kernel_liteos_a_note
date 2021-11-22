@@ -1,7 +1,7 @@
 /*!
- * @file    telnet_loop.c
- * @brief
- * @link
+ * @file   telnet_loop.c
+ * @brief  telnet实现过程
+ * @link RFC854 https://docs.huihoo.com/rfc/RFC854.txt @endlink
    @verbatim
 	telnet命令通常用来远程登录。telnet程序是基于TELNET协议的远程登录客户端程序。Telnet协议是TCP/IP协议族中的一员，
 	是Internet远程登陆服务的标准协议和主要方式。它为用户提供了在本地计算机上完成远程主机工作的 能力。
@@ -13,7 +13,41 @@
 	但仍然有很多别的系统可能采用了telnet方式来提供远程登录，因此弄清楚telnet客户端的使用方式仍是很有必要的。
 
 	telnet命令还可做别的用途，比如确定远程服务的状态，比如确定远程服务器的某个端口是否能访问。
+
+	下面几个编码对NVT打印机有确定意义：
 	
+	名称 				 		编码 			意义
+	
+	NULL (NUL) 				0		没有操作
+	BELL (BEL) 			 	7		产生一个可以看到或可以听到的信号（而不移动打印头。）
+	Back Space (BS)		 	8		向左移动打印头一个字符位置。
+	Horizontal Tab (HT)	 	9		把打印头移到下一个水平制表符停止的位置。它仍然没有指定每一方如何检测或者设定如何定位这样的制表符的停止位置。
+	Line Feed (LF) 			10		打印头移到下一个打印行，但不改变打印头的水平位置。
+	Vertical Tab (VT)		11 		把打印头移到下一个垂直制表符停止的位置。它仍然没有指定每一方如何检测或者设定如何定位这样的制表符的停止位置。
+	Form Feed (FF) 		 	12 		把打印头移到下一页的顶部，保持打印头在相同的水平位置上。
+	Carriage Return (CR)	13 		把打印头移到当前行的左边 。
+
+
+	下面是所有已定义的TELNET命令。需要注意的是，这些代码和代码序列只有在前面跟一个IAC时才有意义。
+	------------------------------------------------------------------------
+	名称                     代码                     意义
+	------------------------------------------------------------------------
+	SE                      240                子谈判参数的结束
+	NOP                     241                空操作
+	Data Mark               242                一个同步信号的数据流部分。该命令的后面经常跟着一个TCP紧急通知
+	Break                   243                NVT的BRK字符
+	Interrupt Process       244                IP功能.
+	Abort output            245                AO功能.
+	Are You There           246                AYT功能.
+	Erase character         247                EC功能.
+	Erase Line              248                EL功能.
+	Go ahead                249                GA信号.
+	SB                      250                表示后面所跟的是对需要的选项的子谈判
+	WILL (option code)      251                表示希望开始使用或者确认所使用的是指定的选项。
+	WON'T (option code)     252                表示拒绝使用或者继续使用指定的选项。
+	DO (option code)        253                表示一方要求另一方使用，或者确认你希望另一方使用指定的选项。
+	DON'T (option code)     254                表示一方要求另一方停止使用，或者确认你不再希望另一方使用指定的选项。 
+	IAC                     255            	   Data Byte 255.
    @endverbatim
  * @version 
  * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
@@ -76,15 +110,18 @@
 
 
 /* TELNET commands in RFC854 */
-#define TELNET_SB   250 /* Indicates that what follows is subnegotiation of the indicated option */
-#define TELNET_WILL 251 /* Indicates the desire to perform the indicated option */
-#define TELNET_DO   253 /* Indicates the request for the other party to perform the indicated option */
-#define TELNET_IAC  255 /* Interpret as Command */
+#define TELNET_SB   250 /* Indicates that what follows is subnegotiation of the indicated option 
+							 | 表示后面所跟的是对需要的选项的子谈判*/
+#define TELNET_WILL 251 /* Indicates the desire to perform the indicated option 
+							 | 表示希望执行指定的选项*/
+#define TELNET_DO   253 /* Indicates the request for the other party to perform the indicated option 
+							 |  表示一方要求另一方使用，或者确认你希望另一方使用指定的选项。*/
+#define TELNET_IAC  255 /* Interpret as Command | 中断命令*/
 
 /* telnet options in IANA */
-#define TELNET_ECHO 1    /* Echo */
-#define TELNET_SGA  3    /* Suppress Go Ahead */
-#define TELNET_NAWS 31   /* Negotiate About Window Size */
+#define TELNET_ECHO 1    /* Echo | 回显*/
+#define TELNET_SGA  3    /* Suppress Go Ahead | 抑制继续进行*/
+#define TELNET_NAWS 31   /* Negotiate About Window Size | 窗口大小*/
 #define TELNET_NOP  0xf1 /* Unassigned in IANA, putty use this to keepalive */
 
 #define LEN_IAC_CMD      2 /* Only 2 char: |IAC|cmd| */
@@ -100,9 +137,9 @@
 #define TELNET_ACCEPT_INTERVAL  200
 
 /* client settings  | 客户端设置*/
-#define TELNET_CLIENT_POLL_TIMEOUT  2000
-#define TELNET_CLIENT_READ_BUF_SIZE 256
-#define TELNET_CLIENT_READ_FILTER_BUF_SIZE (8 * 1024)
+#define TELNET_CLIENT_POLL_TIMEOUT  2000	//超时时间设置
+#define TELNET_CLIENT_READ_BUF_SIZE 256		//读buf大小
+#define TELNET_CLIENT_READ_FILTER_BUF_SIZE (8 * 1024) ///< buf大小
 
 /* limitation: only support 1 telnet client connection */
 STATIC volatile INT32 g_telnetClientFd = -1;  /* client fd */
@@ -111,7 +148,7 @@ STATIC volatile INT32 g_telnetClientFd = -1;  /* client fd */
 STATIC volatile INT32 g_telnetListenFd = -1;  /* listen fd of telnetd */
 
 /* each bit for a client connection, although only support 1 connection for now */
-STATIC volatile UINT32 g_telnetMask = 0; //掩码
+STATIC volatile UINT32 g_telnetMask = 0; //记录有任务打开了远程登录
 /* taskID of telnetd */
 STATIC atomic_t g_telnetTaskId = 0;	///< 任务ID
 /* protect listenFd, clientFd etc. */
@@ -127,7 +164,7 @@ VOID TelnetUnlock(VOID)
     (VOID)pthread_mutex_unlock(&g_telnetMutex);
 }
 
-/* filter out iacs from client stream */
+/* filter out iacs from client stream | 从客户端流中过滤*/
 STATIC UINT8 *ReadFilter(const UINT8 *src, UINT32 srcLen, UINT32 *dstLen)
 {
     STATIC UINT8 buf[TELNET_CLIENT_READ_FILTER_BUF_SIZE];
@@ -224,11 +261,11 @@ STATIC ssize_t WriteToFd(INT32 fd, const CHAR *src, size_t srcLen)
     return (ssize_t)(srcLen - sizeLeft);
 }
 
-/* Try to remove the client device if there is any client connection */
+/* Try to remove the client device if there is any client connection | 如果有任务在远程登录，尝试删除它*/
 STATIC VOID TelnetClientClose(VOID)
 {
     /* check if there is any client connection */
-    if (g_telnetMask == 0) {
+    if (g_telnetMask == 0) {//没有任务在远程链接,
         return;
     }
     (VOID)TelnetDevDeinit();
@@ -330,7 +367,7 @@ STATIC INT32 TelnetClientPrepare(INT32 clientFd)
         g_telnetClientFd = -1;
         return -1;
     }
-    g_telnetMask = 1;
+    g_telnetMask = 1;//表示有任务在远程登录
 
     /* negotiate with client */
     (VOID)WriteToFd(clientFd, (CHAR *)doEcho, sizeof(doEcho));

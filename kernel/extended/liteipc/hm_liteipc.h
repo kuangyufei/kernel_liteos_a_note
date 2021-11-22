@@ -50,10 +50,10 @@ extern "C" {
 句柄是给用户程序使用的一个数字凭证,能以小博大,通过柄
 能牵动内核模块工作.
  */
-#define LITEIPC_DRIVER "/dev/lite_ipc"	///< 设备位置
-#define LITEIPC_DRIVER_MODE 0644
+#define LITEIPC_DRIVER "/dev/lite_ipc"	///< 虚拟设备
+#define LITEIPC_DRIVER_MODE 0644 ///< 对虚拟设备的访问权限 110100100 表示只有所属用户才有读写权限,其余都只能读
 #define MAX_SERVICE_NUM LOSCFG_BASE_CORE_TSK_LIMIT ///< 最大服务数等于任务数 默认128
-#define USE_TIMESTAMP YES
+#define USE_TIMESTAMP YES ///< 使用时间戳
 
 /**
  * @enum HandleStatus 
@@ -90,14 +90,15 @@ typedef struct {
  * @brief 进程IPC信息,见于进程结构体:	LosProcessCB.ipcInfo
  */
 typedef struct {
-    IpcPool pool;	///< ipc池
-    UINT32 ipcTaskID;	//ipc任务ID
-    LOS_DL_LIST ipcUsedNodelist;
+    IpcPool pool;				///< ipc池
+    UINT32 ipcTaskID;			///< ipc任务ID
+    LOS_DL_LIST ipcUsedNodelist;///< 已使用节点链表
     UINT32 access[LOSCFG_BASE_CORE_TSK_LIMIT];	///< 访问的任务数组
 } ProcIpcInfo;
 typedef struct {
-    LOS_DL_LIST     msgListHead;
-    BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];
+    LOS_DL_LIST     msgListHead;///< 上面挂的是一个个的 ipc节点
+    BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT]; ///< 此处是不是应该用 LOSCFG_BASE_CORE_PROCESS_LIMIT ? @note_thinking 
+    				///< 任务是否可以给其他进程发送IPC消息
 } IpcTaskInfo;
 
 typedef enum {
@@ -110,22 +111,22 @@ typedef struct {
     UINT32         buffSz;
     VOID           *buff;
 } BuffPtr;
-
+/// svc 是啥哩? @note_thinking 
 typedef struct {
-    UINT32         handle;
+    UINT32         handle; 
     UINT32         token;
     UINT32         cookie;
 } SvcIdentity;
-
+/// 对象内容体
 typedef union {
-    UINT32      fd;
-    BuffPtr     ptr;
+    UINT32      fd; ///< 文件描述符
+    BuffPtr     ptr;///< 缓存的开始地址,即:指针
     SvcIdentity  svc;
 } ObjContent;
-
+/// 特殊对象
 typedef struct {
-    ObjType     type;
-    ObjContent  content;
+    ObjType     type; ///< 类型
+    ObjContent  content;///< 内容
 } SpecialObj;
 
 /**
@@ -184,8 +185,8 @@ typedef struct {
 } IpcMsg;
 
 typedef struct {	//IPC 内容节点
-    IpcMsg         msg;	//内容体
-    LOS_DL_LIST    listNode;//通过它挂到LosTaskCB.msgListHead链表上
+    IpcMsg         msg;			///< 内容体
+    LOS_DL_LIST    listNode; ///< 通过它挂到LosTaskCB.msgListHead链表上
 } IpcListNode;
 
 #define SEND (1 << 0)	///< 发送

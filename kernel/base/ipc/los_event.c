@@ -172,7 +172,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadCheck(const PEVENT_CB_S eventCB, UINT3
     }
     return LOS_OK;
 }
-///读取指定事件类型的实现函数，超时时间为相对时间：单位为Tick
+/// 读取指定事件类型的实现函数，超时时间为相对时间：单位为Tick
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadImp(PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode,
                                               UINT32 timeout, BOOL once)
 {
@@ -196,8 +196,8 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadImp(PEVENT_CB_S eventCB, UINT32 eventM
         runTask->eventMask = eventMask;	//等待事件
         runTask->eventMode = mode;		//事件模式
         runTask->taskEvent = eventCB;	//事件控制块
-        OsTaskWaitSetPendMask(OS_TASK_WAIT_EVENT, eventMask, timeout);
-        ret = OsSchedTaskWait(&eventCB->stEventList, timeout, TRUE);
+        OsTaskWaitSetPendMask(OS_TASK_WAIT_EVENT, eventMask, timeout);//任务进入等待状态,等待事件的到来并设置时长和掩码
+        ret = OsSchedTaskWait(&eventCB->stEventList, timeout, TRUE);//任务暂停,切换调度.
         if (ret == LOS_ERRNO_TSK_TIMEOUT) {
             return LOS_ERRNO_EVENT_READ_TIMEOUT;
         }

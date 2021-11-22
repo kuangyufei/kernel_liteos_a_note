@@ -359,13 +359,13 @@ unsigned int SysGetPID(void)
 {
     return LOS_GetCurrProcessID();
 }
-
+/// 为指定进程设置进程组ID
 int SysSetProcessGroupID(unsigned int pid, unsigned int gid)
 {
     int ret;
 
-    if (pid == 0) {
-        pid = LOS_GetCurrProcessID();
+    if (pid == 0) {//无指定进程ID时 @note_thinking 此处会不会有风险, 直接返回会不会好些 ?
+        pid = LOS_GetCurrProcessID();//获取当前进程ID,给当前进程设置组ID
     }
 
     if (gid == 0) {
@@ -381,7 +381,7 @@ int SysSetProcessGroupID(unsigned int pid, unsigned int gid)
 
     return OsSetProcessGroupID(pid, gid);
 }
-
+/// 获取指定进程的组ID,为0时返回当前进程ID
 int SysGetProcessGroupID(unsigned int pid)
 {
     if (pid == 0) {
@@ -390,12 +390,12 @@ int SysGetProcessGroupID(unsigned int pid)
 
     return LOS_GetProcessGroupID(pid);
 }
-
+/// 获取当前进程组ID
 int SysGetCurrProcessGroupID(void)
 {
     return LOS_GetCurrProcessGroupID();
 }
-
+/// 获取用户ID
 int SysGetUserID(void)
 {
     return LOS_GetUserID();

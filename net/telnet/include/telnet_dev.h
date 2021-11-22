@@ -61,12 +61,12 @@ typedef struct {
 } TELNTE_FIFO_S;
 //远程登录设备结构体
 typedef struct {
-    INT32 clientFd;
-    UINT32 id;
-    BOOL eventPend;
-    EVENT_CB_S eventTelnet;
+    INT32 clientFd;	///< 客户端文件句柄
+    UINT32 id;	
+    BOOL eventPend;	///< 事件是否挂起
+    EVENT_CB_S eventTelnet;	///< 远程登录事件
     wait_queue_head_t wait;
-    TELNTE_FIFO_S *cmdFifo;  /* use a FIFO to store user's commands */
+    TELNTE_FIFO_S *cmdFifo;  /* use a FIFO to store user's commands | 使用先进先出保存用户的命令*/
 } TELNET_DEV_S;
 
 extern INT32 TelnetTx(const CHAR *buf, UINT32 len);

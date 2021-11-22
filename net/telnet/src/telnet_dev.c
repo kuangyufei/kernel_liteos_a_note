@@ -50,8 +50,8 @@
 #include "fs/driver.h"
 
 /* event: there are more commands left in the FIFO to run */
-#define TELNET_EVENT_MORE_CMD   0x01
-#define TELNET_DEV_DRV_MODE     0666
+#define TELNET_EVENT_MORE_CMD   0x01 ///< 还有很多命令在FIFO中等待运行的事件
+#define TELNET_DEV_DRV_MODE     0666 ///< 文件权限 chmod = 666 
 
 STATIC TELNET_DEV_S g_telnetDev;
 STATIC EVENT_CB_S *g_event;
@@ -193,6 +193,7 @@ STATIC INT32 TelnetClose(struct file *file)
 /*
  * Description : When a command resolver task trys to read the telnet device,
  *               this method is called, and it will take out user's commands from the FIFO to run.
+ * 当命令解析器任务尝试读取 telnet 设备时，调用这个方法，它会从FIFO中取出用户的命令来运行。
  * Return      : -1                   --- On failure
  *               Non-negative integer --- length of commands taken out from the FIFO of the telnet device.
  */
@@ -203,15 +204,15 @@ STATIC ssize_t TelnetRead(struct file *file, CHAR *buf, size_t bufLen)
 
     TelnetLock();
 
-    telnetDev = GetTelnetDevByFile(file, FALSE);
+    telnetDev = GetTelnetDevByFile(file, FALSE);//获取远程登录实体
     if ((buf == NULL) || (telnetDev == NULL) || (telnetDev->cmdFifo == NULL)) {
         TelnetUnlock();
         return -1;
     }
 
-    if (telnetDev->eventPend) {
+    if (telnetDev->eventPend) {//挂起时,读取
         TelnetUnlock();
-        (VOID)LOS_EventRead(g_event, TELNET_EVENT_MORE_CMD, LOS_WAITMODE_OR, LOS_WAIT_FOREVER);
+        (VOID)LOS_EventRead(g_event, TELNET_EVENT_MORE_CMD, LOS_WAITMODE_OR, LOS_WAIT_FOREVER);//等待读取 TELNET_EVENT_MORE_CMD 事件
         TelnetLock();
     }
 
@@ -351,7 +352,7 @@ INT32 TelnetedUnregister(VOID)
 {
     free(g_telnetDev.cmdFifo);
     g_telnetDev.cmdFifo = NULL;
-    (VOID)unregister_driver(TELNET);
+    (VOID)unregister_driver(TELNET);//注销字符设备驱动
 
     return 0;
 }
@@ -394,7 +395,8 @@ INT32 TelnetDevInit(INT32 clientFd)
     return ret;
 }
 
-/* When closing the telnet client connection, reset the output console for tasks. */
+/* When closing the telnet client connection, reset the output console for tasks. | 
+关闭 telnet 客户端连接时，重置任务的控制台信息。*/
 INT32 TelnetDevDeinit(VOID)
 {
     INT32 ret;

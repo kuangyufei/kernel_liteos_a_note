@@ -139,14 +139,14 @@ STATIC INLINE VOID OsSigWaitTaskWake(LosTaskCB *taskCB, INT32 signo)
         OsSigEmptySet(&sigcb->sigwaitmask);
     }
 }
-
+///< 唤醒被挂起的处于等待指定信号的任务
 STATIC UINT32 OsPendingTaskWake(LosTaskCB *taskCB, INT32 signo)
 {
     if (!OsTaskIsPending(taskCB) || !OsProcessIsUserMode(OS_PCB_FROM_PID(taskCB->processID))) {
         return 0;
     }
 
-    if ((signo != SIGKILL) && (taskCB->waitFlag != OS_TASK_WAIT_SIGNAL)) {
+    if ((signo != SIGKILL) && (taskCB->waitFlag != OS_TASK_WAIT_SIGNAL)) { // @note_thinking 这个判断会不会有问题 ?
         return 0;
     }
 
@@ -760,7 +760,7 @@ VOID *OsSaveSignalContext(VOID *sp, VOID *newSp)
         OsProcessExitCodeSignalSet(process, signo);
         sigcb->sigContext = sp;
 
-        OsInitSignalContext(sp, newSp, sigHandler, signo, sigVal);
+        OsInitSignalContext(sp, newSp, sigHandler, signo, sigVal);//初始化信号上下文
 
         /* sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */
         sigcb->sigFlag ^= 1ULL << (signo - 1);

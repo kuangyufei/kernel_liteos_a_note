@@ -59,10 +59,10 @@ extern "C" {
  *
  * Task siginal types.
  */
-#define SIGNAL_NONE                 0U			//无信号
-#define SIGNAL_KILL                 (1U << 0)	//干掉
-#define SIGNAL_SUSPEND              (1U << 1)	//挂起
-#define SIGNAL_AFFI                 (1U << 2)	//CPU 亲和性,一个任务被切换后被同一个CPU再次执行,则亲和力高
+#define SIGNAL_NONE                 0U			///< 无信号
+#define SIGNAL_KILL                 (1U << 0)	///< 干掉
+#define SIGNAL_SUSPEND              (1U << 1)	///< 挂起
+#define SIGNAL_AFFI                 (1U << 2)	///< CPU 亲和性,一个任务被切换后被同一个CPU再次执行,则亲和力高
 
 /* scheduler lock */
 extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
@@ -286,8 +286,8 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 * @par Dependency:
 * <ul><li>los_task_pri.h: the header file that contains the API declaration.</li></ul>
 * @see
-*/ ///通过任务ID找到任务实体
-#define OS_TCB_FROM_TID(taskID) (((LosTaskCB *)g_taskCBArray) + (taskID))
+*/
+#define OS_TCB_FROM_TID(taskID) (((LosTaskCB *)g_taskCBArray) + (taskID)) ///< 通过任务ID从任务池中拿到实体
 
 #ifndef LOSCFG_STACK_POINT_ALIGN_SIZE
 #define LOSCFG_STACK_POINT_ALIGN_SIZE                       (sizeof(UINTPTR) * 2)
@@ -304,7 +304,7 @@ typedef struct {
     VOID            *stackPointer;      /**< Task stack pointer | 内核栈指针位置(SP)  */	
     UINT16          taskStatus;         /**< Task status | 各种状态标签，可以拥有多种标签，按位标识 */
     UINT16          priority;           /**< Task priority | 任务优先级[0:31],默认是31级  */
-    UINT16          policy;				///< 任务的调度方式(三种 .. LOS_SCHED_RR )
+    UINT16          policy;				///< 任务的调度方式(三种 .. LOS_SCHED_RR   		  LOS_SCHED_FIFO .. )
     UINT64          startTime;          /**< The start time of each phase of task | 任务开始时间  */
     UINT64          irqStartTime;       /**< Interrupt start time | 任务中断开始时间  */ 
     UINT32          irqUsedTime;        /**< Interrupt consumption time | 任务中断恢复时间  */ 
@@ -337,8 +337,8 @@ typedef struct {
     UINT16          currCpu;            /**< CPU core number of this task is running on | 正在运行此任务的CPU内核号 */
     UINT16          lastCpu;            /**< CPU core number of this task is running on last time | 上次运行此任务的CPU内核号 */
     UINT16          cpuAffiMask;        /**< CPU affinity mask, support up to 16 cores | CPU亲和力掩码，最多支持16核，亲和力很重要，多核情况下尽量一个任务在一个CPU核上运行，提高效率 */
-#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
-    UINT32          syncSignal;         /**< Synchronization for signal handling | 用于CPU之间 同步信号 */
+#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC	//多核情况下的任务同步开关,采用信号量实现
+    UINT32          syncSignal;         /**< Synchronization for signal handling | 用于CPU之间同步信号量 */
 #endif
 #ifdef LOSCFG_KERNEL_SMP_LOCKDEP //SMP死锁检测开关
     LockDep         lockDep;	///< 死锁依赖检测
@@ -357,8 +357,8 @@ typedef struct {
     UINTPTR         waitID;             /**< Wait for the PID or GID of the child process |  */
     UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
                                              a specific child process, or any child process | 以什么样的方式等待子进程结束(OS_TASK_WAIT_PROCESS | OS_TASK_WAIT_GID | ..) */
-#ifdef LOSCFG_KERNEL_LITEIPC
-    IpcTaskInfo     *ipcTaskInfo;	///< 任务IPC信息结构体
+#ifdef LOSCFG_KERNEL_LITEIPC //轻量级进程间通信开关
+    IpcTaskInfo     *ipcTaskInfo;	///< 任务间通讯信息结构体
 #endif
 #ifdef LOSCFG_KERNEL_PERF
     UINTPTR         pc;	///< pc寄存器
@@ -380,7 +380,7 @@ struct ProcessSignalInfo {
     LosTaskCB *receivedTcb;   /**< This TCB received the signal | 如果没有屏蔽信号,任务将接收这个信号. */
 };
 
-typedef int (*ForEachTaskCB)(LosTaskCB *tcb, void *arg);//回调任务函数,例如:进程被kill 9 时,通知所有任务善后处理
+typedef int (*ForEachTaskCB)(LosTaskCB *tcb, void *arg);///< 回调任务函数,例如:进程被kill 9 时,通知所有任务善后处理
 
 /**
  * @ingroup los_task
@@ -476,19 +476,19 @@ STATIC INLINE BOOL OsTaskIsKilled(const LosTaskCB *taskCB)
 
 /* get task info */
 #define OS_ALL_TASK_MASK  0xFFFFFFFF
-
-#define OS_TASK_WAIT_ANYPROCESS (1 << 0U)					///< 任务等待任何进程出现
-#define OS_TASK_WAIT_PROCESS    (1 << 1U)					///< 任务等待进程出现
-#define OS_TASK_WAIT_GID        (1 << 2U)					///< 任务等待组ID
-#define OS_TASK_WAIT_SEM        (OS_TASK_WAIT_GID + 1)		///< 任务等待信号量发生
-#define OS_TASK_WAIT_QUEUE      (OS_TASK_WAIT_SEM + 1)		///< 任务等待队列到来
-#define OS_TASK_WAIT_JOIN       (OS_TASK_WAIT_QUEUE + 1)	///< 任务等待
-#define OS_TASK_WAIT_SIGNAL     (OS_TASK_WAIT_JOIN + 1) 	///< 任务等待信号的到来
-#define OS_TASK_WAIT_LITEIPC    (OS_TASK_WAIT_SIGNAL + 1)	///< 任务等待liteipc到来
-#define OS_TASK_WAIT_MUTEX      (OS_TASK_WAIT_LITEIPC + 1)	///< 任务等待MUTEX到来
-#define OS_TASK_WAIT_FUTEX      (OS_TASK_WAIT_MUTEX + 1)	///< 任务等待FUTEX到来
-#define OS_TASK_WAIT_EVENT      (OS_TASK_WAIT_FUTEX + 1) 	///< 任务等待事件发生
-#define OS_TASK_WAIT_COMPLETE   (OS_TASK_WAIT_EVENT + 1)	///< 任务等待完成
+/// 任务的信号列表
+#define OS_TASK_WAIT_ANYPROCESS (1 << 0U)					///< 等待任意进程出现
+#define OS_TASK_WAIT_PROCESS    (1 << 1U)					///< 等待指定进程出现
+#define OS_TASK_WAIT_GID        (1 << 2U)					///< 等待组ID
+#define OS_TASK_WAIT_SEM        (OS_TASK_WAIT_GID + 1)		///< 等待信号量发生
+#define OS_TASK_WAIT_QUEUE      (OS_TASK_WAIT_SEM + 1)		///< 等待队列到来
+#define OS_TASK_WAIT_JOIN       (OS_TASK_WAIT_QUEUE + 1)	///< 等待
+#define OS_TASK_WAIT_SIGNAL     (OS_TASK_WAIT_JOIN + 1) 	///< 
+#define OS_TASK_WAIT_LITEIPC    (OS_TASK_WAIT_SIGNAL + 1)	///< 等待liteipc到来
+#define OS_TASK_WAIT_MUTEX      (OS_TASK_WAIT_LITEIPC + 1)	///< 等待MUTEX到来
+#define OS_TASK_WAIT_FUTEX      (OS_TASK_WAIT_MUTEX + 1)	///< 等待FUTEX到来
+#define OS_TASK_WAIT_EVENT      (OS_TASK_WAIT_FUTEX + 1) 	///< 等待事件发生
+#define OS_TASK_WAIT_COMPLETE   (OS_TASK_WAIT_EVENT + 1)	///< 等待结束信号
 
 /// 设置事件阻塞掩码,即设置任务的等待事件.
 STATIC INLINE VOID OsTaskWaitSetPendMask(UINT16 mask, UINTPTR lockID, UINT32 timeout)
