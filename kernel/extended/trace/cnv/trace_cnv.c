@@ -266,7 +266,7 @@ STATIC VOID LOS_TraceUsrEvent(VOID *buffer, UINT32 len)
     LOS_MemFree(m_aucSysMem0, buffer);
 #endif
 }
-///< 为输出日志而注册的钩子函数
+///< 为输出日志而注册的钩子函数 ,谁能告诉我 cnv 是啥意思?  @note_thinking
 VOID OsTraceCnvInit(VOID)
 {
     LOS_HookReg(LOS_HOOK_TYPE_MEM_ALLOC, LOS_TraceMemAlloc);
@@ -291,14 +291,14 @@ VOID OsTraceCnvInit(VOID)
     LOS_HookReg(LOS_HOOK_TYPE_MUX_POST, LOS_TraceMuxPost);
     LOS_HookReg(LOS_HOOK_TYPE_MUX_PEND, LOS_TraceMuxPend);
     LOS_HookReg(LOS_HOOK_TYPE_MUX_DELETE, LOS_TraceMuxDelete);
-    LOS_HookReg(LOS_HOOK_TYPE_TASK_PRIMODIFY, LOS_TraceTaskPriModify);
-    LOS_HookReg(LOS_HOOK_TYPE_TASK_DELETE, LOS_TraceTaskDelete);
-    LOS_HookReg(LOS_HOOK_TYPE_TASK_CREATE, LOS_TraceTaskCreate);
-    LOS_HookReg(LOS_HOOK_TYPE_TASK_SWITCHEDIN, LOS_TraceTaskSwitchedIn);
-    LOS_HookReg(LOS_HOOK_TYPE_MOVEDTASKTOREADYSTATE, LOS_TraceTaskResume);
-    LOS_HookReg(LOS_HOOK_TYPE_MOVEDTASKTOSUSPENDEDLIST, LOS_TraceTaskSuspend);
-    LOS_HookReg(LOS_HOOK_TYPE_ISR_ENTER, LOS_TraceIsrEnter);
-    LOS_HookReg(LOS_HOOK_TYPE_ISR_EXIT, LOS_TraceIsrExit);
+    LOS_HookReg(LOS_HOOK_TYPE_TASK_PRIMODIFY, LOS_TraceTaskPriModify);		///< 修改任务优先级
+    LOS_HookReg(LOS_HOOK_TYPE_TASK_DELETE, LOS_TraceTaskDelete);			///< 删除任务
+    LOS_HookReg(LOS_HOOK_TYPE_TASK_CREATE, LOS_TraceTaskCreate);			///< 创建任务
+    LOS_HookReg(LOS_HOOK_TYPE_TASK_SWITCHEDIN, LOS_TraceTaskSwitchedIn);	///< 任务切换中
+    LOS_HookReg(LOS_HOOK_TYPE_MOVEDTASKTOREADYSTATE, LOS_TraceTaskResume);	///< 恢复任务
+    LOS_HookReg(LOS_HOOK_TYPE_MOVEDTASKTOSUSPENDEDLIST, LOS_TraceTaskSuspend);///< 暂停任务
+    LOS_HookReg(LOS_HOOK_TYPE_ISR_ENTER, LOS_TraceIsrEnter);			///< 进入中断
+    LOS_HookReg(LOS_HOOK_TYPE_ISR_EXIT, LOS_TraceIsrExit);				///< 完成中断
     LOS_HookReg(LOS_HOOK_TYPE_SWTMR_CREATE, LOS_TraceSwtmrCreate);		///< 创建定时器
     LOS_HookReg(LOS_HOOK_TYPE_SWTMR_DELETE, LOS_TraceSwtmrDelete);		///< 删除定时器
     LOS_HookReg(LOS_HOOK_TYPE_SWTMR_EXPIRED, LOS_TraceSwtmrExpired);	///< 定时器时间到

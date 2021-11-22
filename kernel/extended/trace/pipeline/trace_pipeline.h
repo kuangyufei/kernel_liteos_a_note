@@ -49,10 +49,10 @@ typedef struct { // 串口实现方式:g_serialOps
 
 /* used as tlv's tag */
 enum TraceMsgType {
-    NOTIFY,		///< 通知
-    HEAD,		///< 数据头
-    OBJ,		///< 数据体
-    EVENT,		///< 事件
+    NOTIFY,		///< 通知信息 即发送 TraceNotifyFrame
+    HEAD,		///< 数据头信息, 即发送 TraceBaseHeaderInfo
+    OBJ,		///< 指对象(例如:任务) 即发送 ObjData
+    EVENT,		///< 指事件(例如:定时器开始) 即发送 TraceEventFrame
     TRACE_MSG_MAX,
 };
 

@@ -52,10 +52,10 @@ extern "C" {
  * @ingroup los_trace
  * Trace Control agent task's priority.
  */
-#define LOSCFG_TRACE_TASK_PRIORITY                              2
+#define LOSCFG_TRACE_TASK_PRIORITY                              2	///< trace 任务的优先级为 2, 也挺高的,仅次于软件定时器 0 
 #endif
 
-#define LOSCFG_TRACE_OBJ_MAX_NAME_SIZE                          LOS_TASK_NAMELEN
+#define LOSCFG_TRACE_OBJ_MAX_NAME_SIZE                          LOS_TASK_NAMELEN ///< Trace 对象的名称（内核对象，如任务）
 
 #define LOS_TRACE_LR_RECORD                                     5
 #define LOS_TRACE_LR_IGNORE                                     0
@@ -64,7 +64,7 @@ extern "C" {
  * Trace records the max number of objects(kernel object, like tasks), range is [0, LOSCFG_BASE_CORE_TSK_LIMIT].
  * if set to 0, trace will not record any object.
  */
-#define LOSCFG_TRACE_OBJ_MAX_NUM                                0
+#define LOSCFG_TRACE_OBJ_MAX_NUM                                0 ///< Trace 记录对象的最大数量（内核对象，如任务）
 
 /**
  * @ingroup los_trace
@@ -147,8 +147,8 @@ typedef enum {
 typedef enum { //跟进模块的具体事件
     /* 0x10~0x1F */
     SYS_ERROR             = TRACE_SYS_FLAG | 0,
-    SYS_START             = TRACE_SYS_FLAG | 1,	///< 系统开始
-    SYS_STOP              = TRACE_SYS_FLAG | 2,
+    SYS_START             = TRACE_SYS_FLAG | 1,	///< trace模块开始
+    SYS_STOP              = TRACE_SYS_FLAG | 2, ///< trace模块停止
 
     /* 0x20~0x2F */
     HWI_CREATE              = TRACE_HWI_FLAG | 0,
@@ -249,7 +249,8 @@ typedef struct {
 
 /**
  * @ingroup los_trace
- * struct to store the event infomation | 保存跟踪事件的信息
+ * struct to store the event infomation | 保存跟踪事件的信息 ,Trace模块会对输入信息进行封装，
+ * 添加Trace帧头信息，包含事件类型、运行的cpuid、运行的任务id、运行的相对时间戳等信息
  */
 typedef struct {
     UINT32  eventType;                               /**< event type | 事件类型*/
@@ -268,7 +269,7 @@ typedef struct {
 #endif
 
 #ifdef LOSCFG_TRACE_FRAME_EVENT_COUNT
-    UINT32  eventCount;                               /**< the sequence of happend events  */
+    UINT32  eventCount;                               /**< the sequence of happend events | 事件发生的顺序 */
 #endif
 
 #ifdef LOS_TRACE_FRAME_LR
@@ -291,6 +292,7 @@ typedef struct {
 /**
  * @ingroup los_trace
  * struct to store the kernel obj information, we defined task as kernel obj in this system.
+ * 存储内核对象信息, 在本系统中就是指任务
  */
 typedef struct {
     UINT32      id;                                     /**< kernel obj's id | 这里对象一般指任务ID*/
@@ -300,7 +302,7 @@ typedef struct {
 
 /**
  * @ingroup los_trace
- * struct to store the trace data.
+ * struct to store the trace data. | 离线模式头信息
  */
 typedef struct {
     TraceBaseHeaderInfo baseInfo;          /**< basic info, include bigLittleEndian flag, system clock freq | 基础信息*/
@@ -308,7 +310,7 @@ typedef struct {
     UINT16 objSize;                        /**< sizeof #ObjData | 对象大小*/
     UINT16 frameSize;                      /**< sizeof #TraceEventFrame | 事件帧大小*/
     UINT16 objOffset;                      /**< the offset of the first obj data to record beginning | 开始对象数据位置*/
-    UINT16 frameOffset;                    /**< the offset of the first event frame data to record beginning | 开始事件帧数据位置*/
+    UINT16 frameOffset;                    /**< the offset of the first event frame data to record beginning | 开始事件帧数据位置 g_traceRecoder.ctrl.frameBuf*/
 } OfflineHead;
 
 

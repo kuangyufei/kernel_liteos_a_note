@@ -171,30 +171,41 @@ VOID OsTraceSetObj(ObjData *obj, const LosTaskCB *tcb)
     }
 }
 
+/*!
+ * @brief OsTraceHook	
+ * 事件统一处理函数
+ * @param eventType	
+ * @param identity	
+ * @param paramCount	
+ * @param params	
+ * @return	
+ *
+ * @see
+ */
 VOID OsTraceHook(UINT32 eventType, UINTPTR identity, const UINTPTR *params, UINT16 paramCount)
 {
-    TraceEventFrame frame;
-    if ((eventType == TASK_CREATE) || (eventType == TASK_PRIOSET)) {
+    TraceEventFrame frame;//离线和在线模式下, trace数据的保存和传送以帧为单位
+    if ((eventType == TASK_CREATE) || (eventType == TASK_PRIOSET)) {//创建任务和设置任务优先级
         OsTraceObjAdd(eventType, identity); /* handle important obj info, these can not be filtered */
     }
 
-    if ((g_enableTrace == TRUE) && (eventType & g_traceMask)) {
+    if ((g_enableTrace == TRUE) && (eventType & g_traceMask)) {//使能跟踪模块且事件未屏蔽
         UINTPTR id = identity;
-        if (TRACE_GET_MODE_FLAG(eventType) == TRACE_HWI_FLAG) {
-            if (OsTraceHwiFilter(identity)) {
+        if (TRACE_GET_MODE_FLAG(eventType) == TRACE_HWI_FLAG) {//关于硬中断的事件
+            if (OsTraceHwiFilter(identity)) {//检查中断号是否过滤掉了,注意:中断控制器本身是可以屏蔽中断号的
                 return;
             }
-        } else if (TRACE_GET_MODE_FLAG(eventType) == TRACE_TASK_FLAG) {
-            id = OsTraceGetMaskTid(identity);
-        } else if (eventType == MEM_INFO_REQ) {
+        } else if (TRACE_GET_MODE_FLAG(eventType) == TRACE_TASK_FLAG) {//关于任务的事件
+            id = OsTraceGetMaskTid(identity);//获取任务ID
+        } else if (eventType == MEM_INFO_REQ) {//内存信息事件
             LOS_MEM_POOL_STATUS status;
-            LOS_MemInfoGet((VOID *)identity, &status);
-            LOS_TRACE(MEM_INFO, identity, status.totalUsedSize, status.totalFreeSize);
+            LOS_MemInfoGet((VOID *)identity, &status);//获取内存各项信息
+            LOS_TRACE(MEM_INFO, identity, status.totalUsedSize, status.totalFreeSize);//打印信息
             return;
         }
 
-        OsTraceSetFrame(&frame, eventType, id, params, paramCount);
-        OsTraceWriteOrSendEvent(&frame);
+        OsTraceSetFrame(&frame, eventType, id, params, paramCount);//创建帧数据
+        OsTraceWriteOrSendEvent(&frame);//保存(离线模式下)或者发送(在线模式下)帧数据
     }
 }
 
@@ -202,7 +213,7 @@ BOOL OsTraceIsEnable(VOID)
 {
     return g_enableTrace;
 }
-
+/// 初始化事件处理函数
 STATIC VOID OsTraceHookInstall(VOID)
 {
     g_traceEventHook = OsTraceHook;
@@ -241,7 +252,7 @@ STATIC VOID OsTraceCmdHandle(const TraceClientCmd *msg)
             break;
     }
 }
-
+///< trace任务的入口函数
 VOID TraceAgent(VOID)
 {
     UINT32 ret;
@@ -257,20 +268,27 @@ VOID TraceAgent(VOID)
     }
 }
 
+/*!
+ * @brief OsCreateTraceAgentTask 创建trace任务	
+ * 
+ * @return	
+ *
+ * @see
+ */
 STATIC UINT32 OsCreateTraceAgentTask(VOID)
 {
     UINT32 ret;
     TSK_INIT_PARAM_S taskInitParam;
 
     (VOID)memset_s((VOID *)(&taskInitParam), sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
-    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)TraceAgent;
-    taskInitParam.usTaskPrio = LOSCFG_TRACE_TASK_PRIORITY;
-    taskInitParam.pcName = "TraceAgent";
-    taskInitParam.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
+    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)TraceAgent;	//任务入口函数
+    taskInitParam.usTaskPrio = LOSCFG_TRACE_TASK_PRIORITY;	//任务优先级 2
+    taskInitParam.pcName = "TraceAgent";	//任务名称
+    taskInitParam.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE; //内核栈大小 16K
 #ifdef LOSCFG_KERNEL_SMP
-    taskInitParam.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
+    taskInitParam.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());//指定为当前CPU执行
 #endif
-    ret = LOS_TaskCreate(&g_traceTaskId, &taskInitParam);
+    ret = LOS_TaskCreate(&g_traceTaskId, &taskInitParam);//创建任务并产生调度
     return ret;
 }
 #endif
@@ -285,14 +303,14 @@ STATIC UINT32 OsTraceInit(VOID)
         goto LOS_ERREND;
     }
 
-#ifdef LOSCFG_TRACE_CLIENT_INTERACT
-    ret = OsTracePipelineInit();
+#ifdef LOSCFG_TRACE_CLIENT_INTERACT //使能与Trace IDE （dev tools）的交互，包括数据可视化和流程控制
+    ret = OsTracePipelineInit();//在线模式(管道模式)的初始化
     if (ret != LOS_OK) {
         goto LOS_ERREND;
     }
 #endif
 
-#ifdef LOSCFG_TRACE_CONTROL_AGENT
+#ifdef LOSCFG_TRACE_CONTROL_AGENT //trace任务代理开关,所谓代理是创建专门的任务来处理 trace
     ret = OsCreateTraceAgentTask();
     if (ret != LOS_OK) {
         TRACE_ERROR("trace init create agentTask error :0x%x\n", ret);
@@ -303,7 +321,7 @@ STATIC UINT32 OsTraceInit(VOID)
 #ifdef LOSCFG_RECORDER_MODE_OFFLINE //trace离线模式开关
 //离线模式会将trace frame记录到预先申请好的循环buffer中。如果循环buffer记录的frame过多则可能出现翻转，
 //会覆盖之前的记录，故保持记录的信息始终是最新的信息。
-    ret = OsTraceBufInit(LOSCFG_TRACE_BUFFER_SIZE);
+    ret = OsTraceBufInit(LOSCFG_TRACE_BUFFER_SIZE); //离线模式下buf 大小,这个大小决定了装多少 ObjData 和 TraceEventFrame
     if (ret != LOS_OK) {
 #ifdef LOSCFG_TRACE_CONTROL_AGENT
         (VOID)LOS_TaskDelete(g_traceTaskId);
@@ -312,7 +330,7 @@ STATIC UINT32 OsTraceInit(VOID)
     }
 #endif
 
-    OsTraceHookInstall();
+    OsTraceHookInstall();//安装HOOK框架
     OsTraceCnvInit();
 
     g_traceEventCount = 0;
