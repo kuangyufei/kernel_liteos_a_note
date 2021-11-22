@@ -41,19 +41,19 @@
 #include "los_typedef.h"
 
 
-#define SHELL_INIT_MAGIC_FLAG 0xABABABAB //shell的魔法数字
+#define SHELL_INIT_MAGIC_FLAG 0xABABABAB ///< shell的魔法数字
 #define CTRL_C 0x03 /* 0x03: ctrl+c ASCII */
 
-STATIC CmdModInfo g_cmdInfo;//shell 命令模块信息,上面挂了所有的命令项(ls,cd ,cp ==)
+STATIC CmdModInfo g_cmdInfo; ///< shell 命令模块信息,上面挂了所有的命令项(ls,cd ,cp ==)
 
 LOS_HAL_TABLE_BEGIN(g_shellcmd, shellcmd);
 LOS_HAL_TABLE_END(g_shellcmdEnd, shellcmd);
-//获取全局变量
+/// 获取全局变量
 CmdModInfo *OsCmdInfoGet(VOID)
 {
     return &g_cmdInfo;
 }
-///释放命令行参数所占内存
+/// 释放命令行参数所占内存
 STATIC VOID OsFreeCmdPara(CmdParsed *cmdParsed)
 {
     UINT32 i;
@@ -151,7 +151,7 @@ STATIC INT32 OsStrSeparate(CHAR *tabStr, CHAR *strPath, CHAR *nameLooking, UINT3
     OsFreeCmdPara(&parsed);
     return LOS_OK;
 }
-///输出内容
+/// 输出内容
 STATIC INT32 OsShowPageInputControl(VOID)
 {
     CHAR readChar;
@@ -837,7 +837,22 @@ STATIC UINT32 OsCmdItemCreate(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNu
     return LOS_OK;
 }
 
-/* open API */ //以动态方式注册命令
+/* open API */
+/*!
+ * @brief osCmdReg	以动态方式注册命令
+ *
+ * @param cmdKey	命令关键字，函数在Shell中访问的名称。
+ * @param cmdProc	命令执行函数地址，即命令实际执行函数。
+ * @param cmdType	CMD_TYPE_EX：不支持标准命令参数输入，会把用户填写的命令关键字屏蔽掉，
+ 						例如：输入ls /ramfs，传入给注册函数的参数只有/ramfs，而ls命令关键字并不会被传入。
+					CMD_TYPE_STD：支持的标准命令参数输入，所有输入的字符都会通过命令解析后被传入。
+ * @param paraNum	调用的执行函数的入参最大个数，暂不支持该参数；当前为默认值XARGS(0xFFFFFFFF)。
+ * @attention 命令关键字必须是唯一的，也即两个不同的命令项不能拥有相同的命令关键字，否则只会执行其中一个。
+ 	Shell在执行用户命令时，如果存在多个命令关键字相同的命令，只会执行其中在"help"命令中排序在最前面的一个。
+ * @return	
+ *
+ * @see
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNum, CmdCallBackFunc cmdProc)
 {
     CmdItemNode *cmdItemNode = NULL;
@@ -876,6 +891,6 @@ LITE_OS_SEC_TEXT_MINOR UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT
     }
     (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
 	//5.正式创建命令,挂入链表
-    return OsCmdItemCreate(cmdType, cmdKey, paraNum, cmdProc);//不存在就注册命令
+    return OsCmdItemCreate(cmdType, cmdKey, paraNum, cmdProc);
 }
 

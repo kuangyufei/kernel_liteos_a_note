@@ -1,3 +1,24 @@
+/*!
+ * @file    telnet_loop.c
+ * @brief
+ * @link
+   @verbatim
+	telnet命令通常用来远程登录。telnet程序是基于TELNET协议的远程登录客户端程序。Telnet协议是TCP/IP协议族中的一员，
+	是Internet远程登陆服务的标准协议和主要方式。它为用户提供了在本地计算机上完成远程主机工作的 能力。
+	在终端使用者的电脑上使用telnet程序，用它连接到服务器。终端使用者可以在telnet程序中输入命令，这些命令会在服务器上运行，
+	就像直接在服务器的控制台上输入一样。可以在本地就能控制服务器。要开始一个 telnet会话，必须输入用户名和密码来登录服务器。
+	Telnet是常用的远程控制Web服务器的方法。
+
+	但是，telnet因为采用明文传送报文，安全性不好，很多Linux服务器都不开放telnet服务，而改用更安全的ssh方式了。
+	但仍然有很多别的系统可能采用了telnet方式来提供远程登录，因此弄清楚telnet客户端的使用方式仍是很有必要的。
+
+	telnet命令还可做别的用途，比如确定远程服务的状态，比如确定远程服务器的某个端口是否能访问。
+	
+   @endverbatim
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2021-11-22
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -71,14 +92,14 @@
 #define LEN_IAC_CMD_NAWS 9 /* NAWS: |IAC|SB|NAWS|x1|x2|x3|x4|IAC|SE| */
 
 /* server/client settings */
-#define TELNET_TASK_STACK_SIZE  0x2000
-#define TELNET_TASK_PRIORITY    9
+#define TELNET_TASK_STACK_SIZE  0x2000	///< 内核栈大小 8K
+#define TELNET_TASK_PRIORITY    9	///< telnet 任务优先级
 
-/* server settings */
+/* server settings | 服务端设置*/
 #define TELNET_LISTEN_BACKLOG   128
 #define TELNET_ACCEPT_INTERVAL  200
 
-/* client settings */
+/* client settings  | 客户端设置*/
 #define TELNET_CLIENT_POLL_TIMEOUT  2000
 #define TELNET_CLIENT_READ_BUF_SIZE 256
 #define TELNET_CLIENT_READ_FILTER_BUF_SIZE (8 * 1024)
@@ -90,9 +111,9 @@ STATIC volatile INT32 g_telnetClientFd = -1;  /* client fd */
 STATIC volatile INT32 g_telnetListenFd = -1;  /* listen fd of telnetd */
 
 /* each bit for a client connection, although only support 1 connection for now */
-STATIC volatile UINT32 g_telnetMask = 0;
+STATIC volatile UINT32 g_telnetMask = 0; //掩码
 /* taskID of telnetd */
-STATIC atomic_t g_telnetTaskId = 0;
+STATIC atomic_t g_telnetTaskId = 0;	///< 任务ID
 /* protect listenFd, clientFd etc. */
 pthread_mutex_t g_telnetMutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
@@ -289,7 +310,7 @@ ERR_CLOSE_FD:
 ERR_OUT:
     return -1;
 }
-
+/// 远程登录客户端准备阶段
 STATIC INT32 TelnetClientPrepare(INT32 clientFd)
 {
     INT32 keepAlive = TELNET_KEEPALIVE;
@@ -480,17 +501,26 @@ STATIC VOID TelnetdAcceptLoop(INT32 listenFd)
     TelnetUnlock();
 }
 
+/*!
+ * @brief TelnetdMain	
+ *	输入 telnet on
+		OHOS # telnet on
+		OHOS # start telnet server successfully, waiting for connection.
+ * @return	
+ *
+ * @see
+ */
 STATIC INT32 TelnetdMain(VOID)
 {
     INT32 sock;
     INT32 ret;
-
+	//1.初始化
     sock = TelnetdInit(TELNETD_PORT);
     if (sock == -1) {
         PRINT_ERR("telnet init error.\n");
         return -1;
     }
-
+	//2.注册
     TelnetLock();
     ret = TelnetedRegister();
     TelnetUnlock();
@@ -500,7 +530,7 @@ STATIC INT32 TelnetdMain(VOID)
         (VOID)close(sock);
         return -1;
     }
-
+	//3.接收
     PRINTK("start telnet server successfully, waiting for connection.\n");
     TelnetdAcceptLoop(sock);
     return 0;
@@ -509,30 +539,39 @@ STATIC INT32 TelnetdMain(VOID)
 /*
  * Try to create telnetd task.
  */
+/*!
+ * @brief TelnetdTaskInit 创建 telnet 任务	
+ * \n 1. telnet启动要确保网络驱动及网络协议栈已经初始化完成，且板子的网卡是link up状态。
+ * \n 2. 暂时无法支持多个客户端（telnet + IP）同时连接开发板。
+ 		\n 须知： telnet属于调测功能，默认配置为关闭，正式产品中禁止使用该功能。
+ * @return	
+ *
+ * @see
+ */
 STATIC VOID TelnetdTaskInit(VOID)
 {
     UINT32 ret;
     TSK_INIT_PARAM_S initParam = {0};
 
-    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)TelnetdMain;
-    initParam.uwStackSize = TELNET_TASK_STACK_SIZE;
-    initParam.pcName = "TelnetServer";
-    initParam.usTaskPrio = TELNET_TASK_PRIORITY;
-    initParam.uwResved = LOS_TASK_STATUS_DETACHED;
+    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)TelnetdMain; // telnet任务入口函数
+    initParam.uwStackSize = TELNET_TASK_STACK_SIZE;	// 8K
+    initParam.pcName = "TelnetServer"; //任务名称
+    initParam.usTaskPrio = TELNET_TASK_PRIORITY; //优先级 9,和 shell 的优先级一样
+    initParam.uwResved = LOS_TASK_STATUS_DETACHED; //独立模式
 
     if (atomic_read(&g_telnetTaskId) != 0) {
         PRINT_ERR("telnet server is already running!\n");
         return;
     }
 
-    ret = LOS_TaskCreate((UINT32 *)&g_telnetTaskId, &initParam);
+    ret = LOS_TaskCreate((UINT32 *)&g_telnetTaskId, &initParam);//创建远程登录任务并发起调度
     if (ret != LOS_OK) {
         PRINT_ERR("failed to create telnet server task!\n");
     }
 }
 
 /*
- * Try to destroy telnetd task.
+ * Try to destroy telnetd task. | 销毁,删除远程登录任务
  */
 STATIC VOID TelnetdTaskDeinit(VOID)
 {
@@ -546,7 +585,7 @@ STATIC VOID TelnetdTaskDeinit(VOID)
     TelnetdDeinit();
     TelnetUnlock();
 }
-
+/// 远程登录用法 telnet [on | off]
 STATIC VOID TelnetUsage(VOID)
 {
     PRINTK("Usage: telnet [OPTION]...\n");
@@ -554,7 +593,7 @@ STATIC VOID TelnetUsage(VOID)
     PRINTK("  on       Init the telnet server\n");
     PRINTK("  off      Deinit the telnet server\n");
 }
-
+/// 远程登录命令处理 
 INT32 TelnetCmd(UINT32 argc, const CHAR **argv)
 {
     if (argc != 1) {
@@ -578,7 +617,7 @@ INT32 TelnetCmd(UINT32 argc, const CHAR **argv)
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(telnet_shellcmd, CMD_TYPE_EX, "telnet", 1, (CmdCallBackFunc)TelnetCmd);
+SHELLCMD_ENTRY(telnet_shellcmd, CMD_TYPE_EX, "telnet", 1, (CmdCallBackFunc)TelnetCmd);/// 以静态方式注册shell 命令
 #endif /* LOSCFG_SHELL_CMD_DEBUG */
 #endif
 

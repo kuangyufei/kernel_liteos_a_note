@@ -1,3 +1,26 @@
+/*!
+ * @file    vfs_init.c
+ * @brief
+ * @link vfs http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-bundles-fs-virtual.html @endlink
+   @verbatim
+   VFS是Virtual File System（虚拟文件系统）的缩写，它不是一个实际的文件系统，而是一个异构文件系统之上的软件粘合层，
+   为用户提供统一的类Unix文件操作接口。
+   
+   由于不同类型的文件系统接口不统一，若系统中有多个文件系统类型，访问不同的文件系统就需要使用不同的非标准接口。
+   而通过在系统中添加VFS层，提供统一的抽象接口，屏蔽了底层异构类型的文件系统的差异，使得访问文件系统的系统调用不用
+   关心底层的存储介质和文件系统类型，提高开发效率。
+   
+   OpenHarmony内核中，VFS框架是通过在内存中的树结构来实现的，树的每个结点都是一个inode结构体。
+   设备注册和文件系统挂载后会根据路径在树中生成相应的结点。VFS最主要是两个功能：
+	   查找节点。
+	   统一调用（标准）。
+   
+
+   @endverbatim
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2021-11-22
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -42,25 +65,7 @@
 #include "unistd.h"
 #include "vnode.h"
 
-/**
- * @file vfs_init.c 
- * @brief 
- * @verbatim
-    VFS是Virtual File System（虚拟文件系统）的缩写，它不是一个实际的文件系统，而是一个异构文件系统之上的软件粘合层，
-    为用户提供统一的类Unix文件操作接口。
 
-    由于不同类型的文件系统接口不统一，若系统中有多个文件系统类型，访问不同的文件系统就需要使用不同的非标准接口。
-    而通过在系统中添加VFS层，提供统一的抽象接口，屏蔽了底层异构类型的文件系统的差异，使得访问文件系统的系统调用不用
-    关心底层的存储介质和文件系统类型，提高开发效率。
-
-    OpenHarmony内核中，VFS框架是通过在内存中的树结构来实现的，树的每个结点都是一个inode结构体。
-    设备注册和文件系统挂载后会根据路径在树中生成相应的结点。VFS最主要是两个功能：
-        查找节点。
-        统一调用（标准）。
-
-    http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/VFS.html
- * @endverbatim
- */
 
 void los_vfs_init(void)//只能调用一次，多次调用将会造成文件系统异常
 {

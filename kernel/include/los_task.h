@@ -59,7 +59,7 @@ extern "C" {
  *
  * The task is automatically deleted.
  */
-#define LOS_TASK_STATUS_DETACHED                0x0U
+#define LOS_TASK_STATUS_DETACHED                0x0U //独立模式,自动删除
 
 /**
  * @ingroup los_task
@@ -67,7 +67,7 @@ extern "C" {
  *
  * The task is joinable.
  */
-#define LOS_TASK_ATTR_JOINABLE                  0x80000000
+#define LOS_TASK_ATTR_JOINABLE                  0x80000000 //联合模式,可由其他任务删除
 
 /**
  * @ingroup los_task

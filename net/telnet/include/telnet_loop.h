@@ -41,11 +41,11 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifdef LOSCFG_NET_TELNET
-#define TELNETD_PORT        23
-#define TELNET_KEEPALIVE    1
-#define TELNET_KEEPIDLE     60
-#define TELNET_KEEPINTV     2
-#define TELNET_KEEPCNT      5
+#define TELNETD_PORT        23	///< telnet 端口,默认 23
+#define TELNET_KEEPALIVE    1	///< 保持链接
+#define TELNET_KEEPIDLE     60	///< 
+#define TELNET_KEEPINTV     2	///< 
+#define TELNET_KEEPCNT      5   ///< 重连次数
 
 extern INT32 TelnetCmd(UINT32 argc, const CHAR **argv);
 #endif

@@ -331,7 +331,7 @@ STATIC UINT32 OsTraceInit(VOID)
 #endif
 
     OsTraceHookInstall();//安装HOOK框架
-    OsTraceCnvInit();
+    OsTraceCnvInit();//将事件处理函数注册到HOOK框架
 
     g_traceEventCount = 0;
 

@@ -355,7 +355,7 @@ static void VnodeTryFreeAll(struct Mount *mount)
         VnodeTryFree(vnode);
     }
 }
-
+/// 强制卸载挂载点
 int ForceUmountDev(struct Vnode *dev)
 {
     int ret;

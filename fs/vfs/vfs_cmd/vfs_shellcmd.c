@@ -131,7 +131,7 @@ int osShellCmdDoChdir(const char *path)
   return 0;
 }
 /**
- * @brief 
+ * @brief 添加内置命令 ls
  * @verbatim
   命令功能
   ls命令用来显示当前目录的内容。
@@ -149,8 +149,8 @@ int osShellCmdDoChdir(const char *path)
   ls可以显示文件的大小。
   proc下ls无法统计文件大小，显示为0。
  * @endverbatim
- * @param argc 
- * @param argv 
+ * @param argc Shell命令中，参数个数。
+ * @param argv 为指针数组，每个元素指向一个字符串，可以根据选择命令类型，决定是否要把命令关键字传入给注册函数。
  * @return int 
  */
 int osShellCmdLs(int argc, const char **argv)
