@@ -46,14 +46,13 @@ extern "C" {
 /**
  * @brief 什么是句柄?
 
-从形象意义的理解,跟门的把柄一样,握住门柄就控制了整个大门.
-句柄是给用户程序使用的一个数字凭证,能以小博大,通过柄
-能牵动内核模块工作.
+从形象意义的理解,跟门的把柄一样,握住门柄就控制了整个大门.句柄是给用户程序使用的一个数字凭证,
+能以小博大,通过句柄能牵动内核模块工作.
  */
 #define LITEIPC_DRIVER "/dev/lite_ipc"	///< 虚拟设备
 #define LITEIPC_DRIVER_MODE 0644 ///< 对虚拟设备的访问权限 110100100 表示只有所属用户才有读写权限,其余都只能读
 #define MAX_SERVICE_NUM LOSCFG_BASE_CORE_TSK_LIMIT ///< 最大服务数等于任务数 默认128
-#define USE_TIMESTAMP YES ///< 使用时间戳
+#define USE_TIMESTAMP YES 	///< 使用时间戳
 
 /**
  * @enum HandleStatus 
@@ -74,14 +73,15 @@ typedef struct {
     UINT32       taskID;	///< 任务ID,以任务标识句柄
     UINTPTR      maxMsgSize; ///< 最大消息大小
 } HandleInfo;
-
+ 
 /**
- * @struct IpcPool 
- * @brief ipc池
+ * @struct IpcPool | ipc池
+ * @brief  LiteIPC的核心思想就是在内核态为每个Service任务维护一个IPC消息队列，该消息队列通过LiteIPC设备文件向上层
+ * 用户态程序分别提供代表收取IPC消息的读操作和代表发送IPC消息的写操作。
  */
 typedef struct {
-    VOID   *uvaddr;	///< 虚拟地址,指向进程的LiteIPC线性区基地址
-    VOID   *kvaddr;	///< 注意这里指的是物理地址
+    VOID   *uvaddr;	///< 用户态空间地址,由kvaddr映射而来的地址,这两个地址的关系一定要搞清楚,否则无法理解IPC的核心思想
+    VOID   *kvaddr;	///< 内核态空间地址,IPC申请的是内核空间,但是会通过 DoIpcMmap 将这个地址映射到用户空间
     UINT32 poolSize; ///< ipc池大小
 } IpcPool;
 
@@ -91,9 +91,9 @@ typedef struct {
  */
 typedef struct {
     IpcPool pool;				///< ipc池
-    UINT32 ipcTaskID;			///< ipc任务ID
+    UINT32 ipcTaskID;			///< 当前由哪个任务ID在操作进程的IPC 通过 SetIpcTask 操作
     LOS_DL_LIST ipcUsedNodelist;///< 已使用节点链表
-    UINT32 access[LOSCFG_BASE_CORE_TSK_LIMIT];	///< 访问的任务数组
+    UINT32 access[LOSCFG_BASE_CORE_TSK_LIMIT];	///< 允许进程通过IPC访问哪些任务
 } ProcIpcInfo;
 typedef struct {
     LOS_DL_LIST     msgListHead;///< 上面挂的是一个个的 ipc节点
@@ -144,8 +144,8 @@ typedef enum {
 #define IPC_IOC_MAGIC       'i'
 #define IPC_SET_CMS         _IO(IPC_IOC_MAGIC, 1)
 #define IPC_CMS_CMD         _IOWR(IPC_IOC_MAGIC, 2, CmsCmdContent)
-#define IPC_SET_IPC_THREAD  _IO(IPC_IOC_MAGIC, 3)
-#define IPC_SEND_RECV_MSG   _IOWR(IPC_IOC_MAGIC, 4, IpcContent)
+#define IPC_SET_IPC_THREAD  _IO(IPC_IOC_MAGIC, 3)	///< 为进程设置IPC任务
+#define IPC_SEND_RECV_MSG   _IOWR(IPC_IOC_MAGIC, 4, IpcContent) ///< 对IPC的读写处理
 
 typedef enum {
     CMS_GEN_HANDLE,
@@ -165,22 +165,22 @@ typedef enum {
 } IpcFlag;
 
 typedef struct {
-    MsgType        type;       /**< cmd type, decide the data structure below | 命令类型，决定下面的数据结构*/
-    SvcIdentity    target;    /**< serviceHandle or targetTaskId, depending on type | 因命令类型不同而异*/
-    UINT32         code;      /**< service function code | 服务功能代码*/
-    UINT32         flag;	//标签
+    MsgType        type;       	/**< cmd type, decide the data structure below | 命令类型，决定下面的数据结构*/
+    SvcIdentity    target;    	/**< serviceHandle or targetTaskId, depending on type | 因命令类型不同而异*/
+    UINT32         code;      	/**< service function code | 服务功能代码*/
+    UINT32         flag;		///< 标签
 #if (USE_TIMESTAMP == YES)
-    UINT64         timestamp;	//时间戳
+    UINT64         timestamp;	///< 时间戳
 #endif
-    UINT32         dataSz;    /**< size of data | 消息内容大小*/
-    VOID           *data;	///< 消息的内容,真正要传递的消息
+    UINT32         dataSz;    	/**< size of data | 消息内容大小*/
+    VOID           *data;		///< 消息的内容,真正要传递的消息
     UINT32         spObjNum;	// ..
     VOID           *offsets;	// ..
-    UINT32         processID; /**< filled by kernel, processId of sender/reciever | 由内核填充,发送/接收消息的进程ID*/
-    UINT32         taskID;    /**< filled by kernel, taskId of sender/reciever | 由内核填充,发送/接收消息的任务ID*/
+    UINT32         processID; 	/**< filled by kernel, processId of sender/reciever | 由内核填充,发送/接收消息的进程ID*/
+    UINT32         taskID;    	/**< filled by kernel, taskId of sender/reciever | 由内核填充,发送/接收消息的任务ID*/
 #ifdef LOSCFG_SECURITY_CAPABILITY	
-    UINT32         userID;	///< 用户ID
-    UINT32         gid;		///< 组ID
+    UINT32         userID;		///< 用户ID
+    UINT32         gid;			///< 组ID
 #endif
 } IpcMsg;
 
@@ -194,7 +194,7 @@ typedef struct {	//IPC 内容节点
 #define BUFF_FREE (1 << 2) ///< 空闲状态
 
 /**
- * @brief IPC消息内容回路,记录消息周期
+ * @brief IPC消息内容结构体,记录消息周期
  */
 typedef struct {
     UINT32               flag;      /**< size of writeData | IPC标签 (SEND,RECV,BUFF_FREE)*/

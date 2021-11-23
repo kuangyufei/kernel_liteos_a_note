@@ -1839,7 +1839,7 @@ STATIC UINT32 OsCopyMM(UINT32 flags, LosProcessCB *childProcessCB, LosProcessCB 
     }
     return LOS_OK;
 }
-//拷贝文件信息
+/// 拷贝进程文件描述符(proc_fd)信息
 STATIC UINT32 OsCopyFile(UINT32 flags, LosProcessCB *childProcessCB, LosProcessCB *runProcessCB)
 {
 #ifdef LOSCFG_FS_VFS
@@ -1853,7 +1853,7 @@ STATIC UINT32 OsCopyFile(UINT32 flags, LosProcessCB *childProcessCB, LosProcessC
     }
 #endif
 
-    childProcessCB->consoleID = runProcessCB->consoleID;
+    childProcessCB->consoleID = runProcessCB->consoleID;//控制台也是文件
     childProcessCB->umask = runProcessCB->umask;
     return LOS_OK;
 }
@@ -1897,7 +1897,7 @@ STATIC UINT32 OsChildSetProcessGroupAndSched(LosProcessCB *child, LosProcessCB *
     (VOID)LOS_MemFree(m_aucSysMem1, group);
     return LOS_OK;
 }
-
+/// 拷贝进程资源
 STATIC UINT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProcessCB *run)
 {
     UINT32 ret;
@@ -1913,10 +1913,10 @@ STATIC UINT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProce
     }
 
 #ifdef LOSCFG_KERNEL_LITEIPC
-    if (run->ipcInfo != NULL) {
-        child->ipcInfo = LiteIpcPoolReInit((const ProcIpcInfo *)(run->ipcInfo));
-        if (child->ipcInfo == NULL) {
-            return LOS_ENOMEM;
+    if (run->ipcInfo != NULL) { //重新初始化IPC池
+        child->ipcInfo = LiteIpcPoolReInit((const ProcIpcInfo *)(run->ipcInfo));//@note_good 将沿用用户态空间地址(即线性区地址)
+        if (child->ipcInfo == NULL) {//因为整个进程虚拟空间都是拷贝的,ipc的用户态虚拟地址当然可以拷贝,但因进程不同了,所以需要重新申请ipc池和重新
+            return LOS_ENOMEM;//映射池中两个地址.
         }
     }
 #endif
@@ -1927,7 +1927,7 @@ STATIC UINT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProce
 
     return LOS_OK;
 }
-
+/// 拷贝进程
 STATIC INT32 OsCopyProcess(UINT32 flags, const CHAR *name, UINTPTR sp, UINT32 size)
 {
     UINT32 intSave, ret, processID;
@@ -1969,6 +1969,16 @@ ERROR_INIT:
     return -ret;
 }
 
+/*!
+ * @brief OsClone	进程克隆
+ *
+ * @param flags	
+ * @param size	进程主任务内核栈大小
+ * @param sp 进程主任务的入口函数	
+ * @return	
+ *
+ * @see
+ */
 LITE_OS_SEC_TEXT INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size)
 {
     UINT32 cloneFlag = CLONE_PARENT | CLONE_THREAD | CLONE_VFORK | CLONE_VM;

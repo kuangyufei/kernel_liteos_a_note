@@ -71,34 +71,34 @@
 #include "los_hook.h"
 
 #define USE_TASKID_AS_HANDLE YES 	///< 使用任务ID作为句柄
-#define USE_MMAP YES				//
+#define USE_MMAP YES				///< 使用映射( 用户空间 <--> 物理地址 <--> 内核空间 ) ==> 用户空间 <-映射-> 内核空间 
 #define IPC_IO_DATA_MAX 8192UL	///< 最大的消息内容 8K ,posix最大消息内容 64个字节
-#define IPC_MSG_DATA_SZ_MAX (IPC_IO_DATA_MAX * sizeof(SpecialObj) / (sizeof(SpecialObj) + sizeof(size_t)))
-#define IPC_MSG_OBJECT_NUM_MAX (IPC_MSG_DATA_SZ_MAX / sizeof(SpecialObj)) 
+#define IPC_MSG_DATA_SZ_MAX (IPC_IO_DATA_MAX * sizeof(SpecialObj) / (sizeof(SpecialObj) + sizeof(size_t))) ///< 消息内容上限
+#define IPC_MSG_OBJECT_NUM_MAX (IPC_MSG_DATA_SZ_MAX / sizeof(SpecialObj)) ///< 消息条数上限
 
 #define LITE_IPC_POOL_NAME "liteipc"	///< ipc池名称
-#define LITE_IPC_POOL_PAGE_MAX_NUM 64 	/* 256KB */
-#define LITE_IPC_POOL_PAGE_DEFAULT_NUM 16 /* 64KB */
+#define LITE_IPC_POOL_PAGE_MAX_NUM 64 	/* 256KB | IPC池最大物理页数 */
+#define LITE_IPC_POOL_PAGE_DEFAULT_NUM 16 /* 64KB | IPC池默认物理页数  */
 #define LITE_IPC_POOL_MAX_SIZE (LITE_IPC_POOL_PAGE_MAX_NUM << PAGE_SHIFT)	///< 最大IPC池 256K
 #define LITE_IPC_POOL_DEFAULT_SIZE (LITE_IPC_POOL_PAGE_DEFAULT_NUM << PAGE_SHIFT)///< 默认IPC池 64K
-#define LITE_IPC_POOL_UVADDR 0x10000000
+#define LITE_IPC_POOL_UVADDR 0x10000000 ///< IPC默认在用户空间地址
 #define INVAILD_ID (-1)
 
 #define LITEIPC_TIMEOUT_MS 5000UL			///< 超时时间单位毫秒
 #define LITEIPC_TIMEOUT_NS 5000000000ULL	///< 超时时间单位纳秒
 
-typedef struct {//IPC使用节点
-    LOS_DL_LIST list;///< 通过它挂到对应g_ipcUsedNodelist[processID]上
-    VOID *ptr;
+typedef struct {
+    LOS_DL_LIST list;	///< 通过它挂到对应g_ipcUsedNodelist[processID]上
+    VOID *ptr;			///< 指向ipc节点内容
 } IpcUsedNode;
 
-STATIC LosMux g_serviceHandleMapMux;
-#if (USE_TASKID_AS_HANDLE == YES) // @note_why 前缀cms是何意思? 猜测是Content Management System(内容管理系统) :(
-STATIC HandleInfo g_cmsTask;
+STATIC LosMux g_serviceHandleMapMux; 
+#if (USE_TASKID_AS_HANDLE == YES) // @note_why 前缀cms是何意思? 难道是Content Management System(内容管理系统) :(
+STATIC HandleInfo g_cmsTask;	///< 应该是Service管理器的意思,因借助任务ID参与管理,所以名称中存在 task ?
 #else
 STATIC HandleInfo g_serviceHandleMap[MAX_SERVICE_NUM]; ///< 整个系统只能有一个 ServiceManager 用于管理 service
 #endif
-STATIC LOS_DL_LIST g_ipcPendlist;//阻塞链表,上面挂等待读/写消息的任务LosTaskCB
+STATIC LOS_DL_LIST g_ipcPendlist;	///< 阻塞链表,上面挂等待读/写消息的任务LosTaskCB
 
 /* ipc lock */
 SPIN_LOCK_INIT(g_ipcSpin);//初始化IPC自旋锁
@@ -118,7 +118,7 @@ STATIC const struct file_operations_vfs g_liteIpcFops = {
     .open = LiteIpcOpen,   /* open */
     .close = LiteIpcClose,  /* close */
     .ioctl = LiteIpcIoctl,  /* ioctl */
-    .mmap = LiteIpcMmap,   /* mmap */
+    .mmap = LiteIpcMmap,   /* mmap | ipc机制的关键函数*/
 };
 
 /*!
@@ -149,8 +149,16 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsLiteIpcInit(VOID)
     return ret;
 }
 
-LOS_MODULE_INIT(OsLiteIpcInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
+LOS_MODULE_INIT(OsLiteIpcInit, LOS_INIT_LEVEL_KMOD_EXTENDED);//内核IPC模块的初始化
 
+/*!
+ * @brief LiteIpcOpen
+ * 以VFS方式为当前进程创建IPC消息池 
+ * @param filep	
+ * @return	
+ *
+ * @see
+ */
 LITE_OS_SEC_TEXT STATIC int LiteIpcOpen(struct file *filep)
 {
     LosProcessCB *pcb = OsCurrProcessGet();
@@ -170,13 +178,22 @@ LITE_OS_SEC_TEXT STATIC int LiteIpcClose(struct file *filep)
 {
     return 0;
 }
-
+/// 池是否已经映射
 LITE_OS_SEC_TEXT STATIC BOOL IsPoolMapped(ProcIpcInfo *ipcInfo)
 {
     return (ipcInfo->pool.uvaddr != NULL) && (ipcInfo->pool.kvaddr != NULL) &&
         (ipcInfo->pool.poolSize != 0);
 }
 
+/*!
+ * @brief DoIpcMmap	
+ * 做IPC层映射,将内核空间虚拟地址映射到用户空间,这样的好处是用户态下操作读写的背后是在读写内核态空间
+ * @param pcb	
+ * @param region	
+ * @return	
+ *
+ * @see
+ */
 LITE_OS_SEC_TEXT STATIC INT32 DoIpcMmap(LosProcessCB *pcb, LosVmMapRegion *region)
 {
     UINT32 i;
@@ -184,38 +201,38 @@ LITE_OS_SEC_TEXT STATIC INT32 DoIpcMmap(LosProcessCB *pcb, LosVmMapRegion *regio
     PADDR_T pa;
     UINT32 uflags = VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_USER;
     LosVmPage *vmPage = NULL;
-    VADDR_T uva = (VADDR_T)(UINTPTR)pcb->ipcInfo->pool.uvaddr;
-    VADDR_T kva = (VADDR_T)(UINTPTR)pcb->ipcInfo->pool.kvaddr;
+    VADDR_T uva = (VADDR_T)(UINTPTR)pcb->ipcInfo->pool.uvaddr;//用户空间地址
+    VADDR_T kva = (VADDR_T)(UINTPTR)pcb->ipcInfo->pool.kvaddr;//内核空间地址
 
     (VOID)LOS_MuxAcquire(&pcb->vmSpace->regionMux);
 
-    for (i = 0; i < (region->range.size >> PAGE_SHIFT); i++) {
-        pa = LOS_PaddrQuery((VOID *)(UINTPTR)(kva + (i << PAGE_SHIFT)));
+    for (i = 0; i < (region->range.size >> PAGE_SHIFT); i++) {//获取线性区页数
+        pa = LOS_PaddrQuery((VOID *)(UINTPTR)(kva + (i << PAGE_SHIFT)));//通过内核空间查找物理地址
         if (pa == 0) {
             PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
             ret = -EINVAL;
             break;
         }
-        vmPage = LOS_VmPageGet(pa);
-        if (vmPage == NULL) {
+        vmPage = LOS_VmPageGet(pa);//获取物理页框
+        if (vmPage == NULL) {//目的是检查物理页是否存在
             PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
             ret = -EINVAL;
             break;
         }
-        STATUS_T err = LOS_ArchMmuMap(&pcb->vmSpace->archMmu, uva + (i << PAGE_SHIFT), pa, 1, uflags);
+        STATUS_T err = LOS_ArchMmuMap(&pcb->vmSpace->archMmu, uva + (i << PAGE_SHIFT), pa, 1, uflags);//将物理页映射到用户空间
         if (err < 0) {
             ret = err;
             PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
             break;
         }
     }
-    /* if any failure happened, rollback */
+    /* if any failure happened, rollback | 如果发生失败,则回滚*/
     if (i != (region->range.size >> PAGE_SHIFT)) {
         while (i--) {
-            pa = LOS_PaddrQuery((VOID *)(UINTPTR)(kva + (i << PAGE_SHIFT)));
-            vmPage = LOS_VmPageGet(pa);
-            (VOID)LOS_ArchMmuUnmap(&pcb->vmSpace->archMmu, uva + (i << PAGE_SHIFT), 1);
-            LOS_PhysPageFree(vmPage);
+            pa = LOS_PaddrQuery((VOID *)(UINTPTR)(kva + (i << PAGE_SHIFT)));//查询物理地址
+            vmPage = LOS_VmPageGet(pa);//获取物理页框
+            (VOID)LOS_ArchMmuUnmap(&pcb->vmSpace->archMmu, uva + (i << PAGE_SHIFT), 1);//取消与用户空间的映射
+            LOS_PhysPageFree(vmPage);//释放物理页
         }
     }
 
@@ -235,37 +252,37 @@ LITE_OS_SEC_TEXT STATIC int LiteIpcMmap(struct file *filep, LosVmMapRegion *regi
         ret = -EINVAL;
         goto ERROR_REGION_OUT;
     }
-    if (IsPoolMapped(ipcInfo)) {
+    if (IsPoolMapped(ipcInfo)) {//已经用户空间和内核空间之间存在映射关系了
         return -EEXIST;
     }
-    if (ipcInfo->pool.uvaddr != NULL) {
-        regionTemp = LOS_RegionFind(pcb->vmSpace, (VADDR_T)(UINTPTR)ipcInfo->pool.uvaddr);
+    if (ipcInfo->pool.uvaddr != NULL) {//ipc池已在进程空间有地址
+        regionTemp = LOS_RegionFind(pcb->vmSpace, (VADDR_T)(UINTPTR)ipcInfo->pool.uvaddr);//找到所在线性区
         if (regionTemp != NULL) {
-            (VOID)LOS_RegionFree(pcb->vmSpace, regionTemp);
+            (VOID)LOS_RegionFree(pcb->vmSpace, regionTemp);//先释放线性区
         }
     }
-    ipcInfo->pool.uvaddr = (VOID *)(UINTPTR)region->range.base;
-    if (ipcInfo->pool.kvaddr != NULL) {
+    ipcInfo->pool.uvaddr = (VOID *)(UINTPTR)region->range.base;//将指定的线性区和ipc池虚拟地址绑定
+    if (ipcInfo->pool.kvaddr != NULL) {//如果
         LOS_VFree(ipcInfo->pool.kvaddr);
         ipcInfo->pool.kvaddr = NULL;
     }
     /* use vmalloc to alloc phy mem */
-    ipcInfo->pool.kvaddr = LOS_VMalloc(region->range.size);
+    ipcInfo->pool.kvaddr = LOS_VMalloc(region->range.size);//分配物理内存
     if (ipcInfo->pool.kvaddr == NULL) {
         ret = -ENOMEM;
         goto ERROR_REGION_OUT;
     }
     /* do mmap */
-    ret = DoIpcMmap(pcb, region);
+    ret = DoIpcMmap(pcb, region);//对uvaddr和kvaddr做好映射关系,如此用户态下通过操作uvaddr达到操作kvaddr的目的
     if (ret) {
         goto ERROR_MAP_OUT;
     }
     /* ipc pool init */
-    if (LOS_MemInit(ipcInfo->pool.kvaddr, region->range.size) != LOS_OK) {
+    if (LOS_MemInit(ipcInfo->pool.kvaddr, region->range.size) != LOS_OK) {//初始化ipc池
         ret = -EINVAL;
         goto ERROR_MAP_OUT;
     }
-    ipcInfo->pool.poolSize = region->range.size;
+    ipcInfo->pool.poolSize = region->range.size;//ipc池大小为线性区大小
     return 0;
 ERROR_MAP_OUT:
     LOS_VFree(ipcInfo->pool.kvaddr);
@@ -277,17 +294,17 @@ ERROR_REGION_OUT:
 ///初始化进程的IPC消息内存池
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 LiteIpcPoolInit(ProcIpcInfo *ipcInfo)
 {
-    ipcInfo->pool.uvaddr = NULL;
-    ipcInfo->pool.kvaddr = NULL;
+    ipcInfo->pool.uvaddr = NULL;//无用户空间地址
+    ipcInfo->pool.kvaddr = NULL;//无内核空间地址
     ipcInfo->pool.poolSize = 0;
     ipcInfo->ipcTaskID = INVAILD_ID;
-    LOS_ListInit(&ipcInfo->ipcUsedNodelist);
+    LOS_ListInit(&ipcInfo->ipcUsedNodelist);//上面将挂已被读取的节点
     return LOS_OK;
 }
-///创建OPC消息内存池
+///创建IPC消息内存池
 LITE_OS_SEC_TEXT_INIT STATIC ProcIpcInfo *LiteIpcPoolCreate(VOID)
 {
-    ProcIpcInfo *ipcInfo = LOS_MemAlloc(m_aucSysMem1, sizeof(ProcIpcInfo));
+    ProcIpcInfo *ipcInfo = LOS_MemAlloc(m_aucSysMem1, sizeof(ProcIpcInfo));//从内核堆内存中申请
     if (ipcInfo == NULL) {
         return NULL;
     }
@@ -297,7 +314,15 @@ LITE_OS_SEC_TEXT_INIT STATIC ProcIpcInfo *LiteIpcPoolCreate(VOID)
     (VOID)LiteIpcPoolInit(ipcInfo);
     return ipcInfo;
 }
-/// 重新初始化进程的IPC消息内存池
+
+/*!
+ * @brief LiteIpcPoolReInit	重新初始化进程的IPC消息内存池
+ *
+ * @param parent	
+ * @return	
+ *
+ * @see
+ */
 LITE_OS_SEC_TEXT ProcIpcInfo *LiteIpcPoolReInit(const ProcIpcInfo *parent)
 {
     ProcIpcInfo *ipcInfo = LiteIpcPoolCreate();
@@ -305,7 +330,7 @@ LITE_OS_SEC_TEXT ProcIpcInfo *LiteIpcPoolReInit(const ProcIpcInfo *parent)
         return NULL;
     }
 
-    ipcInfo->pool.uvaddr = parent->pool.uvaddr;
+    ipcInfo->pool.uvaddr = parent->pool.uvaddr;//用户空间地址继续沿用
     ipcInfo->pool.kvaddr = NULL;
     ipcInfo->pool.poolSize = 0;
     ipcInfo->ipcTaskID = INVAILD_ID;
@@ -320,24 +345,24 @@ STATIC VOID LiteIpcPoolDelete(ProcIpcInfo *ipcInfo, UINT32 processID)
         LOS_VFree(ipcInfo->pool.kvaddr);
         ipcInfo->pool.kvaddr = NULL;
         IPC_LOCK(intSave);
-        while (!LOS_ListEmpty(&ipcInfo->ipcUsedNodelist)) {
-            node = LOS_DL_LIST_ENTRY(ipcInfo->ipcUsedNodelist.pstNext, IpcUsedNode, list);
-            LOS_ListDelete(&node->list);
-            free(node);
+        while (!LOS_ListEmpty(&ipcInfo->ipcUsedNodelist)) {//对进程的IPC已被读取的链表遍历
+            node = LOS_DL_LIST_ENTRY(ipcInfo->ipcUsedNodelist.pstNext, IpcUsedNode, list);//挨个读取
+            LOS_ListDelete(&node->list);//将自己从链表上摘出去
+            free(node);//释放向内核堆内存申请的 sizeof(IpcUsedNode) 空间
         }
         IPC_UNLOCK(intSave);
     }
-    /* remove process access to service */
-    for (UINT32 i = 0; i < MAX_SERVICE_NUM; i++) {
-        if (ipcInfo->access[i] == TRUE) {
-            ipcInfo->access[i] = FALSE;
-            if (OS_TCB_FROM_TID(i)->ipcTaskInfo != NULL) {
-                OS_TCB_FROM_TID(i)->ipcTaskInfo->accessMap[processID] = FALSE;
+    /* remove process access to service | 删除进程对服务的访问,这里的服务指的就是任务*/
+    for (UINT32 i = 0; i < MAX_SERVICE_NUM; i++) {//双方断交
+        if (ipcInfo->access[i] == TRUE) {//允许访问
+            ipcInfo->access[i] = FALSE; //设为不允许访问
+            if (OS_TCB_FROM_TID(i)->ipcTaskInfo != NULL) {//任务有IPC时
+                OS_TCB_FROM_TID(i)->ipcTaskInfo->accessMap[processID] = FALSE;//同样设置任务也不允许访问进程
             }
         }
     }
 }
-
+/// 销毁指定进程的IPC
 LITE_OS_SEC_TEXT UINT32 LiteIpcPoolDestroy(UINT32 processID)
 {
     LosProcessCB *pcb = OS_PCB_FROM_PID(processID);
@@ -363,17 +388,18 @@ LITE_OS_SEC_TEXT_INIT STATIC IpcTaskInfo *LiteIpcTaskInit(VOID)
     LOS_ListInit(&taskInfo->msgListHead);
     return taskInfo;
 }
-/// 只有当内核不再访问ipc节点内容时，用户才能释放ipc节点
-/* Only when kernel no longer access ipc node content, can user free the ipc node */
-LITE_OS_SEC_TEXT STATIC VOID EnableIpcNodeFreeByUser(UINT32 processID, VOID *buf)//用户释放一个在使用的IPC节点
+
+/* Only when kernel no longer access ipc node content, can user free the ipc node 
+| 只有当内核不再访问ipc节点内容时，用户才能释放ipc节点*/
+LITE_OS_SEC_TEXT STATIC VOID EnableIpcNodeFreeByUser(UINT32 processID, VOID *buf)
 {
     UINT32 intSave;
     ProcIpcInfo *ipcInfo = OS_PCB_FROM_PID(processID)->ipcInfo;
-    IpcUsedNode *node = (IpcUsedNode *)malloc(sizeof(IpcUsedNode));
+    IpcUsedNode *node = (IpcUsedNode *)malloc(sizeof(IpcUsedNode));//申请一个已使用的节点,怎么定义已使用呢,就是被LiteIpcRead
     if (node != NULL) {
-        node->ptr = buf;
+        node->ptr = buf;//指向参数缓存
         IPC_LOCK(intSave);
-        LOS_ListAdd(&ipcInfo->ipcUsedNodelist, &node->list);//
+        LOS_ListAdd(&ipcInfo->ipcUsedNodelist, &node->list);//挂到已被读取的链表上
         IPC_UNLOCK(intSave);
     }
 }
@@ -524,8 +550,8 @@ LITE_OS_SEC_TEXT STATIC UINT32 AddServiceAccess(UINT32 taskID, UINT32 serviceHan
         PRINT_ERR("Liteipc AddServiceAccess ipc not create! pid %u tid %u\n", processID, tcb->taskID);
         return -EINVAL;
     }
-    tcb->ipcTaskInfo->accessMap[processID] = TRUE;//允许任务给自己所属进程发送IPC消息
-    pcb->ipcInfo->access[serviceTid] = TRUE;
+    tcb->ipcTaskInfo->accessMap[processID] = TRUE;//允许任务给进程发送IPC消息,此处为任务所在的进程
+    pcb->ipcInfo->access[serviceTid] = TRUE;//允许进程访问任务
     return LOS_OK;
 }
 /// 参数服务是否有访问当前进程的权限,实际中会有 A进程的任务去给B进程发送IPC信息,所以需要鉴权 
@@ -558,8 +584,8 @@ LITE_OS_SEC_TEXT STATIC BOOL HasServiceAccess(UINT32 serviceHandle)
 ///设置ipc任务ID
 LITE_OS_SEC_TEXT STATIC UINT32 SetIpcTask(VOID)
 {
-    if (OsCurrProcessGet()->ipcInfo->ipcTaskID == INVAILD_ID) {
-        OsCurrProcessGet()->ipcInfo->ipcTaskID = LOS_CurTaskIDGet();
+    if (OsCurrProcessGet()->ipcInfo->ipcTaskID == INVAILD_ID) { //未设置时
+        OsCurrProcessGet()->ipcInfo->ipcTaskID = LOS_CurTaskIDGet();//当前任务
         return OsCurrProcessGet()->ipcInfo->ipcTaskID;
     }
     PRINT_ERR("Liteipc curprocess %d IpcTask already set!\n", OsCurrProcessGet()->processID);
@@ -1344,7 +1370,7 @@ LITE_OS_SEC_TEXT int LiteIpcIoctl(struct file *filep, int cmd, unsigned long arg
             return SetCms(arg);
         case IPC_CMS_CMD:
             return HandleCmsCmd((CmsCmdContent *)(UINTPTR)arg);
-        case IPC_SET_IPC_THREAD:
+        case IPC_SET_IPC_THREAD://
             if (IsCmsSet() == FALSE) {
                 PRINT_ERR("Liteipc ServiceManager not set!\n");
                 return -EINVAL;
