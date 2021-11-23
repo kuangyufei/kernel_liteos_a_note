@@ -46,12 +46,12 @@
 #define FUTEX_MASK        0x3U
 
 typedef struct {
-    UINTPTR      key;           /* private:uvaddr   shared:paddr */
-    UINT32       index;         /* hash bucket index */
-    UINT32       pid;           /* private:process id   shared:OS_INVALID(-1) */
-    LOS_DL_LIST  pendList;      /* point to pendList in TCB struct */
-    LOS_DL_LIST  queueList;     /* thread list blocked by this lock */
-    LOS_DL_LIST  futexList;     /* point to the next FutexNode */
+    UINTPTR      key;           /* private:uvaddr | 私有锁    shared:paddr | 共享锁,物理地址 */
+    UINT32       index;         /* hash bucket index | 哈希桶索引 */
+    UINT32       pid;           /* private:process id   shared:OS_INVALID(-1) | 私有锁:进程ID     , 共享锁为 -1 */
+    LOS_DL_LIST  pendList;      /* point to pendList in TCB struct | 挂到任务阻塞链表上*/
+    LOS_DL_LIST  queueList;     /* thread list blocked by this lock | 挂等待这把锁的任务*/
+    LOS_DL_LIST  futexList;     /* point to the next FutexNode | 下一把Futex锁*/
 } FutexNode;
 
 extern UINT32 OsFutexInit(VOID);

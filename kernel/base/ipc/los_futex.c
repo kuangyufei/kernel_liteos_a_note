@@ -1,3 +1,35 @@
+/*!
+ * @file    los_futex.c
+ * @brief
+ * @link
+   @verbatim
+   基本概念
+	   Futex(Fast userspace mutex，用户态快速互斥锁)是内核提供的一种系统调用能力，通常作为基础组件与用户态的相关
+	   锁逻辑结合组成用户态锁，是一种用户态与内核态共同作用的锁，例如用户态mutex锁、barrier与cond同步锁、读写锁。
+	   其用户态部分负责锁逻辑，内核态部分负责锁调度。
+	   
+	   当用户态线程请求锁时，先在用户态进行锁状态的判断维护，若此时不产生锁的竞争，则直接在用户态进行上锁返回；
+	   反之，则需要进行线程的挂起操作，通过Futex系统调用请求内核介入来挂起线程，并维护阻塞队列。
+	   
+	   当用户态线程释放锁时，先在用户态进行锁状态的判断维护，若此时没有其他线程被该锁阻塞，则直接在用户态进行解锁返回；
+	   反之，则需要进行阻塞线程的唤醒操作，通过Futex系统调用请求内核介入来唤醒阻塞队列中的线程。
+   运行机制
+   	   当用户态产生锁的竞争或释放需要进行相关线程的调度操作时，会触发Futex系统调用进入内核，此时会将用户态锁的地址
+   	   传入内核，并在内核的Futex中以锁地址来区分用户态的每一把锁，因为用户态可用虚拟地址空间为1GiB，为了便于查找、
+   	   管理，内核Futex采用哈希桶来存放用户态传入的锁。
+
+	   当前哈希桶共有80个，0~63号桶用于存放私有锁（以虚拟地址进行哈希），64~79号桶用于存放共享锁（以物理地址进行哈希），
+	   私有/共享属性通过用户态锁的初始化以及Futex系统调用入参确定。
+
+	   如下图: 每个futex哈希桶中存放被futex_list串联起来的哈希值相同的futex node，每个futex node对应一个被挂起的task，
+	   node中key值唯一标识一把用户态锁，具有相同key值的node被queue_list串联起来表示被同一把锁阻塞的task队列。
+   @endverbatim
+   @image html https://gitee.com/weharmonyos/resources/raw/master/81/futex.png
+ * @attention Futex系统调用通常与用户态逻辑共同组成用户态锁，故推荐使用用户态POSIX接口的锁  
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2021-11-23
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -45,25 +77,25 @@
 
 #define OS_FUTEX_FROM_FUTEXLIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, futexList)
 #define OS_FUTEX_FROM_QUEUELIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, queueList)
-#define OS_FUTEX_KEY_BASE USER_ASPACE_BASE
-#define OS_FUTEX_KEY_MAX (USER_ASPACE_BASE + USER_ASPACE_SIZE)
+#define OS_FUTEX_KEY_BASE USER_ASPACE_BASE	///< 进程用户空间基址
+#define OS_FUTEX_KEY_MAX (USER_ASPACE_BASE + USER_ASPACE_SIZE) ///< 进程用户空间尾址
 
 /* private: 0~63    hash index_num
  * shared:  64~79   hash index_num */
-#define FUTEX_INDEX_PRIVATE_MAX     64
-#define FUTEX_INDEX_SHARED_MAX      16
-#define FUTEX_INDEX_MAX             (FUTEX_INDEX_PRIVATE_MAX + FUTEX_INDEX_SHARED_MAX)
+#define FUTEX_INDEX_PRIVATE_MAX     64	///< 0~63号桶用于存放私有锁（以虚拟地址进行哈希）
+#define FUTEX_INDEX_SHARED_MAX      16	///< 64~79号桶用于存放共享锁（以物理地址进行哈希）
+#define FUTEX_INDEX_MAX             (FUTEX_INDEX_PRIVATE_MAX + FUTEX_INDEX_SHARED_MAX) ///< 80个哈希桶
 
 #define FUTEX_INDEX_SHARED_POS      FUTEX_INDEX_PRIVATE_MAX
 #define FUTEX_HASH_PRIVATE_MASK     (FUTEX_INDEX_PRIVATE_MAX - 1)
 #define FUTEX_HASH_SHARED_MASK      (FUTEX_INDEX_SHARED_MAX - 1)
 
 typedef struct {
-    LosMux      listLock;
-    LOS_DL_LIST lockList;
+    LosMux      listLock;///< 操作lockList的互斥锁
+    LOS_DL_LIST lockList;///< 用于挂载Futex(Fast userspace mutex，用户态快速互斥锁)
 } FutexHash;
 
-FutexHash g_futexHash[FUTEX_INDEX_MAX];
+FutexHash g_futexHash[FUTEX_INDEX_MAX];///< 80个哈希桶
 
 STATIC INT32 OsFutexLock(LosMux *lock)
 {
@@ -84,12 +116,12 @@ STATIC INT32 OsFutexUnlock(LosMux *lock)
     }
     return LOS_OK;
 }
-
+///< 初始化Futex(Fast userspace mutex，用户态快速互斥锁)模块
 UINT32 OsFutexInit(VOID)
 {
     INT32 count;
     UINT32 ret;
-
+	// 初始化 80个双向链表和互斥锁
     for (count = 0; count < FUTEX_INDEX_MAX; count++) {
         LOS_ListInit(&g_futexHash[count].lockList);
         ret = LOS_MuxInit(&(g_futexHash[count].listLock), NULL);
@@ -101,7 +133,7 @@ UINT32 OsFutexInit(VOID)
     return LOS_OK;
 }
 
-LOS_MODULE_INIT(OsFutexInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
+LOS_MODULE_INIT(OsFutexInit, LOS_INIT_LEVEL_KMOD_EXTENDED);///< 注册Futex模块
 
 #ifdef LOS_FUTEX_DEBUG
 STATIC VOID OsFutexShowTaskNodeAttr(const LOS_DL_LIST *futexList)
@@ -242,7 +274,7 @@ EXIT:
     OsFutexDeinitFutexNode(node);
     return;
 }
-
+/// 从哈希桶上删除快锁
 VOID OsFutexNodeDeleteFromFutexHash(FutexNode *node, BOOL isDeleteHead, FutexNode **headNode, BOOL *queueFlags)
 {
     FutexHash *hashNode = NULL;
@@ -292,7 +324,7 @@ STATIC FutexNode *OsFutexDeleteAlreadyWakeTaskAndGetNext(const FutexNode *node, 
 
     return tempNode;
 }
-
+/// 插入一把新Futex锁进哈希
 STATIC VOID OsFutexInsertNewFutexKeyToHash(FutexNode *node)
 {
     FutexNode *headNode = NULL;
@@ -332,7 +364,7 @@ STATIC VOID OsFutexInsertNewFutexKeyToHash(FutexNode *node)
 EXIT:
     return;
 }
-
+///< 
 STATIC INT32 OsFutexInsertFindFormBackToFront(LOS_DL_LIST *queueList, const LosTaskCB *runTask, FutexNode *node)
 {
     LOS_DL_LIST *listHead = queueList;
@@ -410,7 +442,7 @@ STATIC INT32 OsFutexRecycleAndFindHeadNode(FutexNode *headNode, FutexNode *node,
 
     return LOS_OK;
 }
-
+///< 将快锁挂到任务的阻塞链表上
 STATIC INT32 OsFutexInsertTasktoPendList(FutexNode **firstNode, FutexNode *node, const LosTaskCB *run)
 {
     LosTaskCB *taskHead = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&((*firstNode)->pendList)));
@@ -441,10 +473,10 @@ STATIC INT32 OsFutexInsertTasktoPendList(FutexNode **firstNode, FutexNode *node,
 
     return OsFutexInsertFindFromFrontToBack(queueList, run, node);
 }
-
+/// 由参数快锁找到对应哈希桶
 STATIC FutexNode *OsFindFutexNode(const FutexNode *node)
 {
-    FutexHash *hashNode = &g_futexHash[node->index];
+    FutexHash *hashNode = &g_futexHash[node->index];//先找到所在哈希桶
     LOS_DL_LIST *futexList = &(hashNode->lockList);
     FutexNode *headNode = NULL;
 
@@ -459,7 +491,7 @@ STATIC FutexNode *OsFindFutexNode(const FutexNode *node)
 
     return NULL;
 }
-
+///< 查找快锁并插入哈希桶中
 STATIC INT32 OsFindAndInsertToHash(FutexNode *node)
 {
     FutexNode *headNode = NULL;
