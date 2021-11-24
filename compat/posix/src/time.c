@@ -574,7 +574,7 @@ static int CpuClockGetres(const clockid_t clockID, struct timespec *tp)
     return error;
 }
 #endif
-
+/// 当用户程序进行特定系统调用时（例如clock_gettime(CLOCK_REALTIME_COARSE， &ts)），VDSO代码页会将其拦截；
 int clock_gettime(clockid_t clockID, struct timespec *tp)
 {
     UINT32 intSave;
@@ -1115,6 +1115,7 @@ int getitimer(int which, struct itimerval *value)
 }
 
 #ifdef LOSCFG_KERNEL_VDSO
+//
 VOID OsVdsoTimeGet(VdsoDataPage *vdsoDataPage)
 {
     UINT32 intSave;
@@ -1125,10 +1126,10 @@ VOID OsVdsoTimeGet(VdsoDataPage *vdsoDataPage)
         return;
     }
 
-    OsGetHwTime(&hwTime);
+    OsGetHwTime(&hwTime);//获取硬件时间
 
     LOS_SpinLockSave(&g_timeSpin, &intSave);
-    tmp = OsTimeSpecAdd(hwTime, g_accDeltaFromAdj);
+    tmp = OsTimeSpecAdd(hwTime, g_accDeltaFromAdj);//
     vdsoDataPage->monoTimeSec = tmp.tv_sec;
     vdsoDataPage->monoTimeNsec = tmp.tv_nsec;
 

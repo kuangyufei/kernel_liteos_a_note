@@ -54,7 +54,7 @@ LITE_OS_SEC_TEXT VOID OsTickHandler(VOID)
 #endif
 
 #ifdef LOSCFG_KERNEL_VDSO
-    OsVdsoTimevalUpdate();
+    OsVdsoTimevalUpdate();//更新vdso数据页时间,vdso可以直接在用户进程空间绕过系统调用获取系统时间(例如:gettimeofday)
 #endif
 
 #ifdef LOSCFG_BASE_CORE_TICK_HW_TIME

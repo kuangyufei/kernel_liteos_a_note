@@ -281,7 +281,7 @@ int SysClockSettime(clockid_t clockID, const struct timespec *tp)
     }
     return ret;
 }
-
+/// 获取系统时间
 int SysClockGettime(clockid_t clockID, struct timespec *tp)
 {
     int ret;

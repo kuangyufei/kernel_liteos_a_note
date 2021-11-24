@@ -180,12 +180,19 @@ STATIC VOID UnlockVdsoDataPage(VdsoDataPage *vdsoDataPage)
     DMB;
     vdsoDataPage->lockCount = 0;
 }
-/// 更新时间,根据系统时钟中断不断将内核一些数据刷新进VDSO的数据页；
+ 
+/*!
+ * @brief OsVdsoTimevalUpdate	
+ * 更新时间,根据系统时钟中断不断将内核一些数据刷新进VDSO的数据页；
+ * @return	
+ *
+ * @see OsTickHandler 函数
+ */
 VOID OsVdsoTimevalUpdate(VOID)
 {
     VdsoDataPage *kVdsoDataPage = (VdsoDataPage *)(&__vdso_data_start);//获取vdso 数据区
 
     LockVdsoDataPage(kVdsoDataPage);//锁住数据页
-    OsVdsoTimeGet(kVdsoDataPage);	//获取时间页时间
+    OsVdsoTimeGet(kVdsoDataPage);	//更新数据页时间
     UnlockVdsoDataPage(kVdsoDataPage);//解锁数据页
 }
