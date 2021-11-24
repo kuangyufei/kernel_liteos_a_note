@@ -1,7 +1,8 @@
 /*!
  * @file    los_futex.c
  * @brief
- * @link
+ * @link mutex http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-basic-trans-user-mutex.html @endlink
+ * @link d17a6152740c https://www.jianshu.com/p/d17a6152740c @endlink
    @verbatim
    基本概念
 	   Futex(Fast userspace mutex，用户态快速互斥锁)是内核提供的一种系统调用能力，通常作为基础组件与用户态的相关
@@ -13,6 +14,22 @@
 	   
 	   当用户态线程释放锁时，先在用户态进行锁状态的判断维护，若此时没有其他线程被该锁阻塞，则直接在用户态进行解锁返回；
 	   反之，则需要进行阻塞线程的唤醒操作，通过Futex系统调用请求内核介入来唤醒阻塞队列中的线程。
+   历史
+	   futex (fast userspace mutex) 是Linux的一个基础组件，可以用来构建各种更高级别的同步机制，比如锁或者信号量等等，
+	   POSIX信号量就是基于futex构建的。大多数时候编写应用程序并不需要直接使用futex，一般用基于它所实现的系统库就够了。
+
+ 	   传统的SystemV IPC(inter process communication)进程间同步机制都是通过内核对象来实现的，以 semaphore 为例，
+ 	   当进程间要同步的时候，必须通过系统调用semop(2)进入内核进行PV操作。系统调用的缺点是开销很大，需要从user mode
+ 	   切换到kernel mode、保存寄存器状态、从user stack切换到kernel stack、等等，通常要消耗上百条指令。事实上，
+ 	   有一部分系统调用是可以避免的，因为现实中很多同步操作进行的时候根本不存在竞争，即某个进程从持有semaphore直至
+ 	   释放semaphore的这段时间内，常常没有其它进程对同一semaphore有需求，在这种情况下，内核的参与本来是不必要的，
+ 	   可是在传统机制下，持有semaphore必须先调用semop(2)进入内核去看看有没有人和它竞争，释放semaphore也必须调用semop(2)
+ 	   进入内核去看看有没有人在等待同一semaphore，这些不必要的系统调用造成了大量的性能损耗。  
+   设计思想
+   	   futex的解决思路是：在无竞争的情况下操作完全在user space进行，不需要系统调用，仅在发生竞争的时候进入内核去完成
+   	   相应的处理(wait 或者 wake up)。所以说，futex是一种user mode和kernel mode混合的同步机制，需要两种模式合作才能完成，
+   	   futex变量必须位于user space，而不是内核对象，futex的代码也分为user mode和kernel mode两部分，无竞争的情况下在user mode，
+   	   发生竞争时则通过sys_futex系统调用进入kernel mode进行处理
    运行机制
    	   当用户态产生锁的竞争或释放需要进行相关线程的调度操作时，会触发Futex系统调用进入内核，此时会将用户态锁的地址
    	   传入内核，并在内核的Futex中以锁地址来区分用户态的每一把锁，因为用户态可用虚拟地址空间为1GiB，为了便于查找、
@@ -82,8 +99,9 @@
 
 /* private: 0~63    hash index_num
  * shared:  64~79   hash index_num */
-#define FUTEX_INDEX_PRIVATE_MAX     64	///< 0~63号桶用于存放私有锁（以虚拟地址进行哈希）
-#define FUTEX_INDEX_SHARED_MAX      16	///< 64~79号桶用于存放共享锁（以物理地址进行哈希）
+#define FUTEX_INDEX_PRIVATE_MAX     64	///< 0~63号桶用于存放私有锁（以虚拟地址进行哈希）,同一进程不同线程共享futex变量，表明变量在进程地址空间中的位置
+///< 它告诉内核，这个futex是进程专有的，不可以与其他进程共享。它仅仅用作同一进程的线程间同步。
+#define FUTEX_INDEX_SHARED_MAX      16	///< 64~79号桶用于存放共享锁（以物理地址进行哈希）,不同进程间通过文件共享futex变量，表明该变量在文件中的位置
 #define FUTEX_INDEX_MAX             (FUTEX_INDEX_PRIVATE_MAX + FUTEX_INDEX_SHARED_MAX) ///< 80个哈希桶
 
 #define FUTEX_INDEX_SHARED_POS      FUTEX_INDEX_PRIVATE_MAX
@@ -708,7 +726,8 @@ STATIC INT32 OsFutexWakeParamCheck(const UINT32 *userVaddr, UINT32 flags)
 }
 
 /* Check to see if the task to be awakened has timed out
- * if time out, to weak next pend task.
+ * if time out, to weak next pend task. 
+ * | 查看要唤醒的任务是否超时，如果超时，就唤醒,并查看下一个挂起的任务。
  */
 STATIC VOID OsFutexCheckAndWakePendTask(FutexNode *headNode, const INT32 wakeNumber,
                                         FutexHash *hashNode, FutexNode **nextNode, BOOL *wakeAny)
@@ -743,7 +762,19 @@ STATIC VOID OsFutexCheckAndWakePendTask(FutexNode *headNode, const INT32 wakeNum
     }
     return;
 }
-
+ 
+/*!
+ * @brief OsFutexWakeTask	唤醒任务
+ *
+ * @param flags	
+ * @param futexKey	
+ * @param newHeadNode	
+ * @param wakeAny	
+ * @param wakeNumber 唤醒数量	
+ * @return	
+ *
+ * @see
+ */
 STATIC INT32 OsFutexWakeTask(UINTPTR futexKey, UINT32 flags, INT32 wakeNumber, FutexNode **newHeadNode, BOOL *wakeAny)
 {
     UINT32 intSave;
@@ -751,13 +782,13 @@ STATIC INT32 OsFutexWakeTask(UINTPTR futexKey, UINT32 flags, INT32 wakeNumber, F
     FutexNode *headNode = NULL;
     UINT32 index = OsFutexKeyToIndex(futexKey, flags);
     FutexHash *hashNode = &g_futexHash[index];
-    FutexNode tempNode = {
+    FutexNode tempNode = { //先组成一个临时快锁节点,目的是为了找到哈希桶中是否有这个节点
         .key = futexKey,
         .index = index,
         .pid = (flags & FUTEX_PRIVATE) ? LOS_GetCurrProcessID() : OS_INVALID,
     };
 
-    node = OsFindFutexNode(&tempNode);
+    node = OsFindFutexNode(&tempNode);//找快锁节点
     if (node == NULL) {
         return LOS_EBADF;
     }
@@ -765,7 +796,7 @@ STATIC INT32 OsFutexWakeTask(UINTPTR futexKey, UINT32 flags, INT32 wakeNumber, F
     headNode = node;
 
     SCHEDULER_LOCK(intSave);
-    OsFutexCheckAndWakePendTask(headNode, wakeNumber, hashNode, newHeadNode, wakeAny);
+    OsFutexCheckAndWakePendTask(headNode, wakeNumber, hashNode, newHeadNode, wakeAny);//再找到等这把锁的唤醒指向数量的任务
     if ((*newHeadNode) != NULL) {
         OsFutexReplaceQueueListHeadNode(headNode, *newHeadNode);
         OsFutexDeinitFutexNode(headNode);
@@ -786,11 +817,11 @@ INT32 OsFutexWake(const UINT32 *userVaddr, UINT32 flags, INT32 wakeNumber)
     FutexHash *hashNode = NULL;
     FutexNode *headNode = NULL;
     BOOL wakeAny = FALSE;
-
+	//1.检查参数
     if (OsFutexWakeParamCheck(userVaddr, flags)) {
         return LOS_EINVAL;
     }
-
+	//2.找到指定用户空间地址对应的桶
     futexKey = OsFutexFlagsToKey(userVaddr, flags);
     index = OsFutexKeyToIndex(futexKey, flags);
 
@@ -798,7 +829,7 @@ INT32 OsFutexWake(const UINT32 *userVaddr, UINT32 flags, INT32 wakeNumber)
     if (OsFutexLock(&hashNode->listLock)) {
         return LOS_EINVAL;
     }
-
+	//3.换起等待该锁的进程
     ret = OsFutexWakeTask(futexKey, flags, wakeNumber, &headNode, &wakeAny);
     if (ret) {
         goto EXIT_ERR;
@@ -812,7 +843,7 @@ INT32 OsFutexWake(const UINT32 *userVaddr, UINT32 flags, INT32 wakeNumber)
     if (futexRet) {
         goto EXIT_UNLOCK_ERR;
     }
-
+	//4.根据指定参数决定是否发起调度
     if (wakeAny == TRUE) {
         LOS_MpSchedule(OS_MP_CPU_ALL);
         LOS_Schedule();
@@ -921,7 +952,7 @@ STATIC VOID OsFutexRequeueSplitTwoLists(FutexHash *oldHashNode, FutexNode *oldHe
     tailNode->queueList.pstNext = &newHeadNode->queueList;
     return;
 }
-
+/// 删除旧key并获取头节点
 STATIC FutexNode *OsFutexRequeueRemoveOldKeyAndGetHead(UINTPTR oldFutexKey, UINT32 flags, INT32 wakeNumber,
                                                        UINTPTR newFutexKey, INT32 requeueCount, BOOL *wakeAny)
 {
@@ -957,7 +988,7 @@ STATIC FutexNode *OsFutexRequeueRemoveOldKeyAndGetHead(UINTPTR oldFutexKey, UINT
 
     return oldHeadNode;
 }
-
+/// 检查锁在Futex表中的状态
 STATIC INT32 OsFutexRequeueParamCheck(const UINT32 *oldUserVaddr, UINT32 flags, const UINT32 *newUserVaddr)
 {
     VADDR_T oldVaddr = (VADDR_T)(UINTPTR)oldUserVaddr;
@@ -966,12 +997,12 @@ STATIC INT32 OsFutexRequeueParamCheck(const UINT32 *oldUserVaddr, UINT32 flags, 
     if (oldVaddr == newVaddr) {
         return LOS_EINVAL;
     }
-
+	//检查标记
     if ((flags & (~FUTEX_PRIVATE)) != FUTEX_REQUEUE) {
         PRINT_ERR("Futex requeue param check failed! error flags: 0x%x\n", flags);
         return LOS_EINVAL;
     }
-
+	//检查地址范围,必须在用户空间
     if ((oldVaddr % sizeof(INT32)) || (oldVaddr < OS_FUTEX_KEY_BASE) || (oldVaddr >= OS_FUTEX_KEY_MAX)) {
         PRINT_ERR("Futex requeue param check failed! error old userVaddr: 0x%x\n", oldUserVaddr);
         return LOS_EINVAL;
@@ -1001,12 +1032,12 @@ INT32 OsFutexRequeue(const UINT32 *userVaddr, UINT32 flags, INT32 wakeNumber, IN
         return LOS_EINVAL;
     }
 
-    oldFutexKey = OsFutexFlagsToKey(userVaddr, flags);
+    oldFutexKey = OsFutexFlagsToKey(userVaddr, flags);//先拿key
     newFutexKey = OsFutexFlagsToKey(newUserVaddr, flags);
-    oldIndex = OsFutexKeyToIndex(oldFutexKey, flags);
+    oldIndex = OsFutexKeyToIndex(oldFutexKey, flags);//再拿所在哈希桶位置,共有80个哈希桶
     newIndex = OsFutexKeyToIndex(newFutexKey, flags);
 
-    oldHashNode = &g_futexHash[oldIndex];
+    oldHashNode = &g_futexHash[oldIndex];//拿到对应哈希桶实体
     if (OsFutexLock(&oldHashNode->listLock)) {
         return LOS_EINVAL;
     }

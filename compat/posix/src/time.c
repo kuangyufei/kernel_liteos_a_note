@@ -126,15 +126,15 @@ STATIC INLINE BOOL ValidTimerID(UINT16 swtmrID)
 
 STATIC SPIN_LOCK_INIT(g_timeSpin);
 STATIC long long g_adjTimeLeft; /* absolute value of adjtime */
-STATIC INT32 g_adjDirection;    /* 1, speed up; 0, slow down; */
+STATIC INT32 g_adjDirection;    /* 1, speed up; 0, slow down; | 调整方向(加速,减速)*/
 
 /* Adjust pacement, nanoseconds per SCHED_CLOCK_INTETRVAL_TICKS ticks */
 STATIC const long long g_adjPacement = (((LOSCFG_BASE_CORE_ADJ_PER_SECOND * SCHED_CLOCK_INTETRVAL_TICKS) /
                                         LOSCFG_BASE_CORE_TICK_PER_SECOND) * OS_SYS_NS_PER_US);
 
-/* accumulative time delta from continuous modify, such as adjtime */
+/* accumulative time delta from continuous modify, such as adjtime | 连续修改的累积时间增量，例如 adjtime */
 STATIC struct timespec64 g_accDeltaFromAdj;
-/* accumulative time delta from discontinuous modify, such as settimeofday */
+/* accumulative time delta from discontinuous modify, such as settimeofday | 来自不连续修改的累积时间增量，例如 settimeofday*/
 STATIC struct timespec64 g_accDeltaFromSet;
 
 VOID OsAdjTime(VOID)
@@ -272,14 +272,14 @@ STATIC INLINE struct timespec64 OsTimeSpecSub(const struct timespec64 t1, const 
 
     return ret;
 }
-
+/// 获取硬件时间
 STATIC VOID OsGetHwTime(struct timespec64 *hwTime)
 {
     UINT64 nowNsec;
 
-    nowNsec = LOS_CurrNanosec();
-    hwTime->tv_sec = nowNsec / OS_SYS_NS_PER_SECOND;
-    hwTime->tv_nsec = nowNsec - hwTime->tv_sec * OS_SYS_NS_PER_SECOND;
+    nowNsec = LOS_CurrNanosec();//获取当前纳秒
+    hwTime->tv_sec = nowNsec / OS_SYS_NS_PER_SECOND;//当前秒数
+    hwTime->tv_nsec = nowNsec - hwTime->tv_sec * OS_SYS_NS_PER_SECOND;// @note_thinking 为啥要这样做? 不应该是直接 nowNsec ?
 }
 
 STATIC INT32 OsSetTimeOfDay(const struct timeval64 *tv, const struct timezone *tz)

@@ -45,7 +45,7 @@
 #define LOS_INIT_LEVEL_ARCH                         5	//架构级
 #define LOS_INIT_LEVEL_PLATFORM                     6	//平台级
 #define LOS_INIT_LEVEL_KMOD_BASIC                   7	//基础级
-#define LOS_INIT_LEVEL_KMOD_EXTENDED                8	//扩展级 ,ipc,perf,procfs
+#define LOS_INIT_LEVEL_KMOD_EXTENDED                8	//扩展级 ,ipc,perf,procfs,vdso
 #define LOS_INIT_LEVEL_KMOD_TASK                    9	//任务级
 #define LOS_INIT_LEVEL_FINISH                       10
 

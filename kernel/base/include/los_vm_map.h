@@ -174,7 +174,7 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_DATA                 (1<<11)		///< data数据区 编译在ELF中
 #define     VM_MAP_REGION_FLAG_TEXT                 (1<<12)		///< 代码区
 #define     VM_MAP_REGION_FLAG_BSS                  (1<<13)		///< bbs数据区 由运行时动态分配
-#define     VM_MAP_REGION_FLAG_VDSO                 (1<<14)		///< VDSO(Virtual Dynamically-lined Shared Object)由内核提供的虚拟.so文件，它不在磁盘上，而在内核里，内核将其映射到一个地址空间中，被所有程序共享，正文段大小为一个页面。
+#define     VM_MAP_REGION_FLAG_VDSO                 (1<<14)		///< VDSO（Virtual Dynamic Shared Object，虚拟动态共享库）由内核提供的虚拟.so文件，它不在磁盘上，而在内核里，内核将其映射到一个地址空间中，被所有程序共享，正文段大小为一个页面。
 #define     VM_MAP_REGION_FLAG_MMAP                 (1<<15)		///< 映射区,虚拟空间内有专门用来存储<虚拟地址-物理地址>映射的区域
 #define     VM_MAP_REGION_FLAG_SHM                  (1<<16) 	///< 共享内存区,和代码区同级概念,意思是整个线性区被贴上共享标签
 #define     VM_MAP_REGION_FLAG_FIXED                (1<<17)

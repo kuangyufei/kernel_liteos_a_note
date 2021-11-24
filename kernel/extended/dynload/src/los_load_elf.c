@@ -937,7 +937,7 @@ STATIC INT32 OsMakeArgsStack(ELFLoadInfo *loadInfo, UINTPTR interpMapBase)
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_EXECFN, (UINTPTR)loadInfo->execName);
 
 #ifdef LOSCFG_KERNEL_VDSO
-    vdsoLoadAddr = OsVdsoLoad(OsCurrProcessGet());
+    vdsoLoadAddr = OsVdsoLoad(OsCurrProcessGet());//为当前进程加载 VDSO ELF
     if (vdsoLoadAddr != 0) {
         AUX_VEC_ENTRY(auxVector, vecIndex, AUX_SYSINFO_EHDR, vdsoLoadAddr);
     }

@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 开始注解 Futex(Fast userspace mutex，用户态快速互斥锁) 
+git commit -m  ' 开始注解 VDSO（Virtual Dynamic Shared Object，虚拟动态共享库）
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)

@@ -1000,24 +1000,36 @@ void SysUserExitGroup(int status)
 {
     OsTaskExitGroup((unsigned int)status);
 }
-
+/// 系统调用线程退出
 void SysThreadExit(int status)
 {
     OsTaskToExit(OsCurrTaskGet(), (unsigned int)status);
 }
 
+/*!
+ * @brief SysFutex	操作用户态快速互斥锁
+ * 系统调用
+ * @param absTime	绝对时间
+ * @param flags	操作标识
+ * @param newUserAddr FUTEX_REQUEUE下调整后带回新的用户空间地址	
+ * @param uAddr	用户空间地址 
+ * @param val 	
+ * @return	
+ *
+ * @see
+ */
 int SysFutex(const unsigned int *uAddr, unsigned int flags, int val,
              unsigned int absTime, const unsigned int *newUserAddr)
 {
-    if ((flags & FUTEX_MASK) == FUTEX_REQUEUE) {
+    if ((flags & FUTEX_MASK) == FUTEX_REQUEUE) {//调整标识
         return -OsFutexRequeue(uAddr, flags, val, absTime, newUserAddr);
     }
 
-    if ((flags & FUTEX_MASK) == FUTEX_WAKE) {
+    if ((flags & FUTEX_MASK) == FUTEX_WAKE) {//唤醒标识
         return -OsFutexWake(uAddr, flags, val);
     }
 
-    return -OsFutexWait(uAddr, flags, val, absTime);
+    return -OsFutexWait(uAddr, flags, val, absTime);//等待标识
 }
 
 unsigned int SysGetTid(void)
