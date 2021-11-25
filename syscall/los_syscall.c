@@ -21,7 +21,7 @@
 	 若需要新增系统调用接口，详见开发指导。内核向用户态提供的系统调用接口清单详见kernel/liteos_a/syscall/syscall_lookup.h，
 	 内核相应的系统调用对接函数清单详见kernel/liteos_a/syscall/los_syscall.h。
  * @version 
- * @author  weharmonyos.com
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
  * @date    2021-11-19
  */
 /*

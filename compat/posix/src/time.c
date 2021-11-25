@@ -1,3 +1,13 @@
+/*!
+ * @file    time.c
+ * @brief
+ * @link
+   @verbatim
+   @endverbatim
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2021-11-25
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -132,9 +142,9 @@ STATIC INT32 g_adjDirection;    /* 1, speed up; 0, slow down; | 调整方向(加
 STATIC const long long g_adjPacement = (((LOSCFG_BASE_CORE_ADJ_PER_SECOND * SCHED_CLOCK_INTETRVAL_TICKS) /
                                         LOSCFG_BASE_CORE_TICK_PER_SECOND) * OS_SYS_NS_PER_US);
 
-/* accumulative time delta from continuous modify, such as adjtime | 连续修改的累积时间增量，例如 adjtime */
+/* accumulative time delta from continuous modify, such as adjtime | 运行时间,来自连续修改的累积时间增量，例如 adjtime */
 STATIC struct timespec64 g_accDeltaFromAdj;
-/* accumulative time delta from discontinuous modify, such as settimeofday | 来自不连续修改的累积时间增量，例如 settimeofday*/
+/* accumulative time delta from discontinuous modify, such as settimeofday | 实时时间,来自不连续修改的累积时间增量，例如 日历时间 settimeofday*/
 STATIC struct timespec64 g_accDeltaFromSet;
 
 VOID OsAdjTime(VOID)
@@ -241,24 +251,25 @@ int adjtime(const struct timeval *delta, struct timeval *oldDelta)
     LOS_SpinUnlockRestore(&g_timeSpin, intSave);
     return 0;
 }
-
+/// 增加指定时间
 STATIC INLINE struct timespec64 OsTimeSpecAdd(const struct timespec64 t1, const struct timespec64 t2)
 {
     struct timespec64 ret = {0};
 
     ret.tv_sec = t1.tv_sec + t2.tv_sec;
     ret.tv_nsec = t1.tv_nsec + t2.tv_nsec;
-    if (ret.tv_nsec >= OS_SYS_NS_PER_SECOND) {
-        ret.tv_sec += 1;
-        ret.tv_nsec -= OS_SYS_NS_PER_SECOND;
-    } else if (ret.tv_nsec < 0L) {
-        ret.tv_sec -= 1;
-        ret.tv_nsec += OS_SYS_NS_PER_SECOND;
+	//用于校正精度
+    if (ret.tv_nsec >= OS_SYS_NS_PER_SECOND) {//超过1秒时的计算
+        ret.tv_sec += 1; //秒数加一
+        ret.tv_nsec -= OS_SYS_NS_PER_SECOND;//剩余纳秒数
+    } else if (ret.tv_nsec < 0L) {//介于 0 - 1秒之间的纳秒数
+        ret.tv_sec -= 1; //秒数减一
+        ret.tv_nsec += OS_SYS_NS_PER_SECOND;//纳秒数增加
     }
 
     return ret;
 }
-
+/// 减少指定时间
 STATIC INLINE struct timespec64 OsTimeSpecSub(const struct timespec64 t1, const struct timespec64 t2)
 {
     struct timespec64 ret = {0};
@@ -281,7 +292,7 @@ STATIC VOID OsGetHwTime(struct timespec64 *hwTime)
     hwTime->tv_sec = nowNsec / OS_SYS_NS_PER_SECOND;//当前秒数
     hwTime->tv_nsec = nowNsec - hwTime->tv_sec * OS_SYS_NS_PER_SECOND;// @note_thinking 为啥要这样做? 不应该是直接 nowNsec ?
 }
-
+/// 设置日历
 STATIC INT32 OsSetTimeOfDay(const struct timeval64 *tv, const struct timezone *tz)
 {
     UINT32 intSave;
@@ -341,7 +352,7 @@ int settimeofday64(const struct timeval64 *tv, const struct timezone *tz)
     return OsSetTimeOfDay(tv, tz);
 }
 #endif
-
+/// 设置本地秒数
 int setlocalseconds(int seconds)
 {
     struct timeval tv = {0};
@@ -351,7 +362,7 @@ int setlocalseconds(int seconds)
 
     return settimeofday(&tv, NULL);
 }
-
+/// 获取日历时间
 STATIC INT32 OsGetTimeOfDay(struct timeval64 *tv, struct timezone *tz)
 {
     UINT32 intSave;
@@ -387,6 +398,24 @@ int gettimeofday64(struct timeval64 *tv, struct timezone *tz)
 }
 #endif
 
+/*!
+ * @brief gettimeofday	
+ @verbatim
+ 	gettimeofday 函数是一个符合 POSIX 标准的函数，它可以检索当前时间，精度达到纳秒级
+	 struct timeval{  
+	    long int tv_sec; // 秒数  
+	    long int tv_usec; // 微秒数  
+	 }
+	 其中time_t和suseconds_t都是long int类型。在32位下为4个字节，能够表示的最大正整数是2147483647，
+	 而这个表示的时间最大能到2038-01-19 03:14:07，超过了之后就变为-2147483648，这就是linux2038年的问题。
+	 而64位系统下的time_t类型即long类型长度为8个字节，可以用到几千亿年，这么长的时间完全不用担心溢出的问题。
+ @endverbatim
+ * @param tv	
+ * @param tz	
+ * @return	
+ *
+ * @see
+ */
 int gettimeofday(struct timeval *tv, struct timezone *tz)
 {
     struct timeval64 stTimeVal64 = {0};
@@ -1115,7 +1144,7 @@ int getitimer(int which, struct itimerval *value)
 }
 
 #ifdef LOSCFG_KERNEL_VDSO
-//
+/// 将最新的时间刷进数据页
 VOID OsVdsoTimeGet(VdsoDataPage *vdsoDataPage)
 {
     UINT32 intSave;

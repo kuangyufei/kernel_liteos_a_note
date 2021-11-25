@@ -41,7 +41,7 @@
  * @image html https://gitee.com/weharmonyos/resources/raw/master/29/sem_run.png
  * @attention 由于中断不能被阻塞，因此不能在中断中使用阻塞模式申请信号量。
  * @version 
- * @author  weharmonyos.com
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
  * @date    2021-11-18
  */
 /*

@@ -98,7 +98,7 @@
  * @endverbatim
  * @image html https://gitee.com/weharmonyos/resources/raw/master/44/vector.png
  * @version 
- * @author  weharmonyos.com
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
  * @date    2021-11-16
  *
  * @history

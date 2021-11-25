@@ -34,7 +34,7 @@
 #include "sys/time.h"
 #include "los_typedef.h"
 #include "los_vdso_datapage.h"
-
+/// 通过vdso获取大致的实时时间
 STATIC INT32 VdsoGetRealtimeCoarse(struct timespec *ts, const VdsoDataPage *usrVdsoDataPage)
 {
     do {
@@ -45,7 +45,7 @@ STATIC INT32 VdsoGetRealtimeCoarse(struct timespec *ts, const VdsoDataPage *usrV
         }
     } while (1);
 }
-
+/// 通过vdso获取大致的运行时间
 STATIC INT32 VdsoGetMonotimeCoarse(struct timespec *ts, const VdsoDataPage *usrVdsoDataPage)
 {
     do {
@@ -56,7 +56,7 @@ STATIC INT32 VdsoGetMonotimeCoarse(struct timespec *ts, const VdsoDataPage *usrV
         }
     } while (1);
 }
-
+/// 开始vdso
 STATIC size_t LocVdsoStart(size_t vdsoStart, const CHAR *elfHead, const size_t len)
 {
     CHAR *head = NULL;

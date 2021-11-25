@@ -1,3 +1,38 @@
+/*!
+ * @file    los_vm_phys.c
+ * @brief 物理内存管理 - 段页式管理
+ * @link physical http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-basic-memory-physical.html @endlink
+   @verbatim
+基本概念
+   物理内存是计算机上最重要的资源之一，指的是实际的内存设备提供的、可以通过CPU总线直接进行寻址的内存空间，
+   其主要作用是为操作系统及程序提供临时存储空间。LiteOS-A内核管理物理内存是通过分页实现的，除了内核堆占用的一部分内存外，
+   其余可用内存均以4KiB为单位划分成页帧，内存分配和内存回收便是以页帧为单位进行操作。内核采用伙伴算法管理空闲页面，
+   可以降低一定的内存碎片率，提高内存分配和释放的效率，但是一个很小的块往往也会阻塞一个大块的合并，导致不能分配较大的内存块。
+运行机制
+   LiteOS-A内核的物理内存使用分布视图，主要由内核镜像、内核堆及物理页组成。内核堆部分见堆内存管理一节。
+   -----------------------------------------------------
+
+	kernel.bin 		| heap 		| page frames
+	(内核镜像)			| (内核堆)	 	| (物理页框)
+   -----------------------------------------------------
+   伙伴算法把所有空闲页帧分成9个内存块组，每组中内存块包含2的幂次方个页帧，例如：第0组的内存块包含2的0次方个页帧，
+   即1个页帧；第8组的内存块包含2的8次方个页帧，即256个页帧。相同大小的内存块挂在同一个链表上进行管理。
+   
+申请内存
+	系统申请12KiB内存，即3个页帧时，9个内存块组中索引为3的链表挂着一块大小为8个页帧的内存块满足要求，分配出12KiB内存后还剩余20KiB内存，
+	即5个页帧，将5个页帧分成2的幂次方之和，即4跟1，尝试查找伙伴进行合并。4个页帧的内存块没有伙伴则直接插到索引为2的链表上，
+	继续查找1个页帧的内存块是否有伙伴，索引为0的链表上此时有1个，如果两个内存块地址连续则进行合并，并将内存块挂到索引为1的链表上，否则不做处理。
+释放内存
+    系统释放12KiB内存，即3个页帧，将3个页帧分成2的幂次方之和，即2跟1，尝试查找伙伴进行合并，索引为1的链表上有1个内存块，
+    若地址连续则合并，并将合并后的内存块挂到索引为2的链表上，索引为0的链表上此时也有1个，如果地址连续则进行合并，
+    并将合并后的内存块挂到索引为1的链表上，此时继续判断是否有伙伴，重复上述操作。	
+   @endverbatim
+ * @image html https://gitee.com/weharmonyos/resources/raw/master/17/malloc_phy.png
+ * @image html https://gitee.com/weharmonyos/resources/raw/master/17/free_phy.png
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2021-11-25
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -38,9 +73,7 @@
 
 
 #ifdef LOSCFG_KERNEL_VM
-/**
- * @brief 鸿蒙物理内存采用段页式管理
- */
+
 #define ONE_PAGE    1
 
 /* Physical memory area array */
@@ -58,7 +91,7 @@ LosVmPhysSeg *OsGVmPhysSegGet()
 {
     return g_vmPhysSeg;
 }
-///初始化Lru置换链表
+/// 初始化Lru置换链表
 STATIC VOID OsVmPhysLruInit(struct VmPhysSeg *seg)
 {
     INT32 i;
@@ -72,7 +105,7 @@ STATIC VOID OsVmPhysLruInit(struct VmPhysSeg *seg)
     }
     LOS_SpinUnlockRestore(&seg->lruLock, intSave);
 }
-///创建物理段,由区划分转成段管理
+/// 创建物理段,由区划分转成段管理
 STATIC INT32 OsVmPhysSegCreate(paddr_t start, size_t size)
 {
     struct VmPhysSeg *seg = NULL;
@@ -90,7 +123,7 @@ STATIC INT32 OsVmPhysSegCreate(paddr_t start, size_t size)
 
     return 0;
 }
-///添加物理段
+/// 添加物理段
 VOID OsVmPhysSegAdd(VOID)
 {
     INT32 i, ret;
@@ -197,11 +230,9 @@ STATIC VOID OsVmPhysFreeListDelUnsafe(LosVmPage *page)
 
 /**
  * @brief  本函数很像卖猪肉的,拿一大块肉剁,先把多余的放回到小块肉堆里去.
-        oldOrder:原本要买 2^2肉
-        newOrder:却找到个 2^8肉块
  * @param page 
- * @param oldOrder 
- * @param newOrder 
+ * @param oldOrder 原本要买 2^2肉
+ * @param newOrder 却找到个 2^8肉块
  * @return STATIC 
  */
 STATIC VOID OsVmPhysPagesSpiltUnsafe(LosVmPage *page, UINT8 oldOrder, UINT8 newOrder)
@@ -311,7 +342,7 @@ STATIC LosVmPage *OsVmPhysLargeAlloc(struct VmPhysSeg *seg, size_t nPages)
 
     return NULL;
 }
-
+/// 申请物理页并挂在对应的链表上
 STATIC LosVmPage *OsVmPhysPagesAlloc(struct VmPhysSeg *seg, size_t nPages)
 {
     struct VmFreeList *list = NULL;
@@ -348,7 +379,7 @@ DONE:
 
     return page;
 }
-///释放物理页框,所谓释放物理页就是把页挂到空闲链表中
+/// 释放物理页框,所谓释放物理页就是把页挂到空闲链表中
 VOID OsVmPhysPagesFree(LosVmPage *page, UINT8 order)
 {
     paddr_t pa;
@@ -403,11 +434,13 @@ VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
     }
 }
 
-/**
- * @brief 获取一定数量的页框 LosVmPage实体是放在全局大数组中的,
-            LosVmPage->nPages 标记了分配页数
- * @param nPages 
- * @return STATIC* 
+/*!
+ * @brief OsVmPhysPagesGet 获取一定数量的页框 LosVmPage实体是放在全局大数组中的,
+ *           LosVmPage->nPages 标记了分配页数	
+ * @param nPages	
+ * @return	
+ *
+ * @see
  */
 STATIC LosVmPage *OsVmPhysPagesGet(size_t nPages)
 {
@@ -447,7 +480,7 @@ VOID *LOS_PhysPagesAllocContiguous(size_t nPages)
 
     return OsVmPageToVaddr(page);//通过物理页找虚拟地址
 }
-///释放连续的物理页
+/// 释放多页地址连续的物理内存
 VOID LOS_PhysPagesFreeContiguous(VOID *ptr, size_t nPages)
 {
     UINT32 intSave;
@@ -473,7 +506,7 @@ VOID LOS_PhysPagesFreeContiguous(VOID *ptr, size_t nPages)
     LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
 }
 
-/// 通过物理地址获取内核虚拟地址,内核静态映射,减少虚实地址的转换
+/// 通过物理地址获取内核虚拟地址
 VADDR_T *LOS_PaddrToKVaddr(PADDR_T paddr)
 {
     struct VmPhysSeg *seg = NULL;
@@ -488,7 +521,7 @@ VADDR_T *LOS_PaddrToKVaddr(PADDR_T paddr)
 	//内核
     return (VADDR_T *)(UINTPTR)(paddr - SYS_MEM_BASE + KERNEL_ASPACE_BASE);//
 }
-///释放物理页框
+///释放一个物理页框
 VOID LOS_PhysPageFree(LosVmPage *page)
 {
     UINT32 intSave;
@@ -508,7 +541,7 @@ VOID LOS_PhysPageFree(LosVmPage *page)
         LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
     }
 }
-///供外部调用
+/// 申请一个物理页
 LosVmPage *LOS_PhysPageAlloc(VOID)
 {
     return OsVmPhysPagesGet(ONE_PAGE);//分配一页物理页

@@ -21,7 +21,7 @@
 		SGI共有16个,硬件中断号分别为ID0~ID15。它通常用于多核间通讯。
  * @endverbatim
  * @version 
- * @author  weharmonyos.com
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
  * @date    2021-11-18
  *
  * @history

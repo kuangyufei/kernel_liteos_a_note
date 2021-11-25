@@ -1,3 +1,51 @@
+/*!
+ * @file    los_vm_map.c
+ * @brief 虚拟内存管理
+ * @link vm http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-basic-memory-virtual.html @endlink
+   @verbatim
+基本概念
+   	虚拟内存管理是计算机系统管理内存的一种技术。每个进程都有连续的虚拟地址空间，虚拟地址空间的大小由CPU的位数决定，
+   	32位的硬件平台可以提供的最大的寻址空间为0-4GiB。整个4GiB空间分成两部分，LiteOS-A内核占据3GiB的高地址空间，
+   	1GiB的低地址空间留给进程使用。各个进程空间的虚拟地址空间是独立的，代码、数据互不影响。
+   
+   	系统将虚拟内存分割为称为虚拟页的内存块，大小一般为4KiB或64KiB，LiteOS-A内核默认的页的大小是4KiB，
+   	根据需要可以对MMU（Memory Management Units）进行配置。虚拟内存管理操作的最小单位就是一个页，
+   	LiteOS-A内核中一个虚拟地址区间region包含地址连续的多个虚拟页，也可只有一个页。同样，物理内存也会按照页大小进行分割，
+   	分割后的每个内存块称为页帧。虚拟地址空间划分：内核态占高地址3GiB(0x40000000 ~ 0xFFFFFFFF)，
+   	用户态占低地址1GiB(0x01000000 ~ 0x3F000000)，具体见下表，详细可以查看或配置los_vm_zone.h。
+   	
+内核态地址规划：
+   Zone名称 		描述 														属性
+   ----------------------------------------------------------------------------
+   DMA zone		供IO设备的DMA使用。											Uncache
+   
+   Normal zone	加载内核代码段、数据段、堆和栈的地址区间。									Cache
+   
+   high mem zone可以分配连续的虚拟内存，但其所映射的物理内存不一定连续。Cache
+
+用户态地址规划：
+  Zone名称	    描述													    属性
+  ----------------------------------------------------------------------------
+  代码段	   		用户态代码段地址区间。										   		Cache
+  堆				用户态堆地址区间。												Cache
+  栈				用户态栈地址区间。								   				Cache
+  共享库			用于加载用户态共享库的地址区间，包括mmap所映射的区间。							Cache
+
+运行机制
+   虚拟内存管理中，虚拟地址空间是连续的，但是其映射的物理内存并不一定是连续的，如下图所示。
+   可执行程序加载运行，CPU访问虚拟地址空间的代码或数据时存在两种情况：
+   
+   1. CPU访问的虚拟地址所在的页，如V0，已经与具体的物理页P0做映射，CPU通过找到进程对应的页表条目（详见虚实映射），
+   根据页表条目中的物理地址信息访问物理内存中的内容并返回。
+   2. CPU访问的虚拟地址所在的页，如V2，没有与具体的物理页做映射，系统会触发缺页异常，系统申请一个物理页，
+   并把相应的信息拷贝到物理页中，并且把物理页的起始地址更新到页表条目中。此时CPU重新执行访问虚拟内存的指令
+   便能够访问到具体的代码或数据。
+
+   @endverbatim
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2021-11-25
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -51,17 +99,21 @@
 
 #ifdef LOSCFG_KERNEL_VM
 
-#define VM_MAP_WASTE_MEM_LEVEL          (PAGE_SIZE >> 2) //	浪费内存等级(1K)
-LosMux g_vmSpaceListMux;				//用于锁g_vmSpaceList的互斥量
-LOS_DL_LIST_HEAD(g_vmSpaceList);		//初始化全局虚拟空间节点,所有虚拟空间都挂到此节点上.
-LosVmSpace g_kVmSpace;					//内核空间地址
-LosVmSpace g_vMallocSpace;				//内核堆空间地址
-//通过虚拟地址获取所属空间地址
+#define VM_MAP_WASTE_MEM_LEVEL          (PAGE_SIZE >> 2) ///<	浪费内存大小(1K)
+LosMux g_vmSpaceListMux;				///< 用于锁g_vmSpaceList的互斥量
+LOS_DL_LIST_HEAD(g_vmSpaceList);		///< 初始化全局虚拟空间节点,所有虚拟空间都挂到此节点上.
+LosVmSpace g_kVmSpace;					///< 内核空间地址
+LosVmSpace g_vMallocSpace;				///< 内核堆空间地址
+
+/************************************************************
+* 获取进程空间系列接口
+************************************************************/
+/// 获取当前进程空间结构体指针
 LosVmSpace *LOS_CurrSpaceGet(VOID)
 {
     return OsCurrProcessGet()->vmSpace;
 }
-
+/// 获取虚拟地址对应的进程空间结构体指针
 LosVmSpace *LOS_SpaceGet(VADDR_T vaddr)
 {
     if (LOS_IsKernelAddress(vaddr)) {	//是否为内核空间
@@ -79,7 +131,7 @@ LosVmSpace *LOS_GetKVmSpace(VOID)
 {
     return &g_kVmSpace;
 }
-///获取虚拟空间双循环链表 g_vmSpaceList中存放的是 g_kVmSpace, g_vMallocSpace,所有用户进程空间(每个用户进程独有一个)
+///获取进程空间链表指针 g_vmSpaceList中挂的是进程空间 g_kVmSpace, g_vMallocSpace,所有用户进程的空间(独有一个进程空间)
 LOS_DL_LIST *LOS_GetVmSpaceList(VOID)
 {
     return &g_vmSpaceList;
@@ -89,6 +141,10 @@ LosVmSpace *LOS_GetVmallocSpace(VOID)
 {
     return &g_vMallocSpace;
 }
+
+/************************************************************
+* 虚拟地址区间region相关的操作
+************************************************************/
 ///释放挂在红黑树上节点,等于释放了线性区
 ULONG_T OsRegionRbFreeFn(LosRbNode *pstNode)
 {
@@ -354,7 +410,7 @@ LosVmMapRegion *OsFindRegion(LosRbTree *regionRbTree, VADDR_T vaddr, size_t len)
     }
     return regionRst;
 }
-/// 查找线性区
+/// 查找线性区 根据起始地址在进程空间内查找是否存在
 LosVmMapRegion *LOS_RegionFind(LosVmSpace *vmSpace, VADDR_T addr)
 {
     LosVmMapRegion *region = NULL;
@@ -365,7 +421,7 @@ LosVmMapRegion *LOS_RegionFind(LosVmSpace *vmSpace, VADDR_T addr)
 
     return region;
 }
-/// 查找线性区范围
+/// 查找线性区 根据地址区间在进程空间内查找是否存在
 LosVmMapRegion *LOS_RegionRangeFind(LosVmSpace *vmSpace, VADDR_T addr, size_t len)
 {
     LosVmMapRegion *region = NULL;
@@ -490,7 +546,7 @@ LosVmMapRegion *OsCreateRegion(VADDR_T vaddr, size_t len, UINT32 regionFlags, un
     region->shmid = -1;			//默认线性区为不共享,无共享资源ID
     return region;
 }
-///通过虚拟地址查询物理地址
+///通过虚拟地址查询映射的物理地址
 PADDR_T LOS_PaddrQuery(VOID *vaddr)
 {
     PADDR_T paddr = 0;
@@ -498,7 +554,7 @@ PADDR_T LOS_PaddrQuery(VOID *vaddr)
     LosVmSpace *space = NULL;
     LosArchMmu *archMmu = NULL;
     //先取出对应空间的mmu
-    if (LOS_IsKernelAddress((VADDR_T)(UINTPTR)vaddr)) {//是否是内核空间地址
+    if (LOS_IsKernelAddress((VADDR_T)(UINTPTR)vaddr)) {//是否内核空间地址
         archMmu = &g_kVmSpace.archMmu;
     } else if (LOS_IsUserAddress((VADDR_T)(UINTPTR)vaddr)) {//是否为用户空间地址
         space = OsCurrProcessGet()->vmSpace;
@@ -963,7 +1019,7 @@ BOOL LOS_IsRangeInSpace(const LosVmSpace *space, VADDR_T vaddr, size_t size)
     }
     return TRUE;
 }
-
+/// 在进程空间中预留一块内存空间
 STATUS_T LOS_VmSpaceReserve(LosVmSpace *space, size_t size, VADDR_T vaddr)
 {
     UINT32 regionFlags = 0;
@@ -984,7 +1040,7 @@ STATUS_T LOS_VmSpaceReserve(LosVmSpace *space, size_t size, VADDR_T vaddr)
 
     return region ? LOS_OK : LOS_ERRNO_VM_NO_MEMORY;
 }
-///实现从虚拟地址到物理地址的映射
+///实现从虚拟地址到物理地址的映射,将指定长度的物理地址区间与虚拟地址区间做映射，需提前申请物理地址区间
 STATUS_T LOS_VaddrToPaddrMmap(LosVmSpace *space, VADDR_T vaddr, PADDR_T paddr, size_t len, UINT32 flags)
 {
     STATUS_T ret;
@@ -1145,7 +1201,7 @@ PADDR_T LOS_PaddrQuery(VOID *vaddr)
     return (PADDR_T)VMM_TO_DMA_ADDR((VADDR_T)vaddr);
 }
 #endif
-///内核空间内存分配
+///内核空间内存分配,申请小于16KiB的内存则通过堆内存池获取，否则申请多个连续物理页
 VOID *LOS_KernelMalloc(UINT32 size)
 {
     VOID *ptr = NULL;
@@ -1161,7 +1217,7 @@ VOID *LOS_KernelMalloc(UINT32 size)
 
     return ptr;
 }
-
+/// 申请具有对齐属性的内存，申请规则：申请小于16KiB的内存则通过堆内存池获取，否则申请多个连续物理页
 VOID *LOS_KernelMallocAlign(UINT32 size, UINT32 boundary)
 {
     VOID *ptr = NULL;
@@ -1177,7 +1233,7 @@ VOID *LOS_KernelMallocAlign(UINT32 size, UINT32 boundary)
 
     return ptr;
 }
-
+/// 重新分配内核内存空间
 VOID *LOS_KernelRealloc(VOID *ptr, UINT32 size)
 {
     VOID *tmpPtr = NULL;

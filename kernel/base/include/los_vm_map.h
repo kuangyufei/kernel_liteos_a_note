@@ -120,7 +120,7 @@ struct VmMapRegion {
             struct Vnode *vnode;
             const LosVmFileOps *vmFOps;///< 文件处理各操作接口
         } rf;
-        struct VmRegionAnon {//匿名映射可理解为就是物理内存
+        struct VmRegionAnon {//匿名映射可理解为与物理内存的映射
             LOS_DL_LIST  node;          /**< region LosVmPage list | 线性区虚拟页链表*/
         } ra;
         struct VmRegionDev {//设备映射
@@ -160,7 +160,7 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_UNCACHED_DEVICE      (2<<0) /* only exists on some arches, otherwise UNCACHED */
 #define     VM_MAP_REGION_FLAG_STRONGLY_ORDERED     (3<<0) /* only exists on some arches, otherwise UNCACHED */
 #define     VM_MAP_REGION_FLAG_CACHE_MASK           (3<<0)		///< 缓冲区掩码
-#define     VM_MAP_REGION_FLAG_PERM_USER            (1<<2)		///< 用户区
+#define     VM_MAP_REGION_FLAG_PERM_USER            (1<<2)		///< 用户空间区
 #define     VM_MAP_REGION_FLAG_PERM_READ            (1<<3)		///< 可读取区
 #define     VM_MAP_REGION_FLAG_PERM_WRITE           (1<<4)		///< 可写入区
 #define     VM_MAP_REGION_FLAG_PERM_EXECUTE         (1<<5)		///< 可被执行区
@@ -196,13 +196,13 @@ STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned lo
 
     return regionFlags;
 }
-///是否为内核空间
+/// 是否为内核空间的地址
 STATIC INLINE BOOL LOS_IsKernelAddress(VADDR_T vaddr)
 {
     return ((vaddr >= (VADDR_T)KERNEL_ASPACE_BASE) &&
             (vaddr <= ((VADDR_T)KERNEL_ASPACE_BASE + ((VADDR_T)KERNEL_ASPACE_SIZE - 1))));
 }
-/// 给定范围是否在内核空间中
+/// 给定地址范围是否都在内核空间中
 STATIC INLINE BOOL LOS_IsKernelAddressRange(VADDR_T vaddr, size_t len)
 {
     return (vaddr + len > vaddr) && LOS_IsKernelAddress(vaddr) && (LOS_IsKernelAddress(vaddr + len - 1));
@@ -212,7 +212,7 @@ STATIC INLINE VADDR_T LOS_RegionEndAddr(LosVmMapRegion *region)
 {
     return (region->range.base + region->range.size - 1);
 }
-/// 线性区大小
+/// 获取线性区大小
 STATIC INLINE size_t LOS_RegionSize(VADDR_T start, VADDR_T end)
 {
     return (end - start + 1);
@@ -270,7 +270,7 @@ STATIC INLINE BOOL LOS_IsUserAddressRange(VADDR_T vaddr, size_t len)
     return (vaddr + len > vaddr) && LOS_IsUserAddress(vaddr) && (LOS_IsUserAddress(vaddr + len - 1));
 }
 
-//是否是一个动态分配的地址
+//是否是一个动态分配的地址(通过vmalloc申请的)
 STATIC INLINE BOOL LOS_IsVmallocAddress(VADDR_T vaddr)
 {
     return ((vaddr >= VMALLOC_START) &&

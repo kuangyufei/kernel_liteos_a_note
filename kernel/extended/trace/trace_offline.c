@@ -13,7 +13,7 @@
    Trace提供2种工作模式，离线模式和在线模式。此处为离线模式下的实现
    @endverbatim
  * @version 
- * @author  weharmonyos.com
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
  * @date    2021-11-22
  */
 /*

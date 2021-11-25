@@ -105,14 +105,26 @@ UINT32 OsVdsoInit(VOID)
 }
 
 LOS_MODULE_INIT(OsVdsoInit, LOS_INIT_LEVEL_KMOD_EXTENDED);//注册vdso模块
-/// 映射,这里先通过内核地址找到 vdso的物理地址,再将物理地址映射到进程的线性区.
-/// 结论是每个进程都可以拥有自己的 vdso区,映射到同一个块物理地址.
+
+/*!
+ * @brief OsVdsoMap	映射,这里先通过内核地址找到 vdso的物理地址,再将物理地址映射到进程的线性区.
+ * \n 结论是每个进程都可以拥有自己的 vdso区,映射到同一个块物理地址.
+ *
+ * @param flag	
+ * @param len	映射长度
+ * @param paddr	物理地址
+ * @param space	进程空间
+ * @param vaddr	虚拟地址
+ * @return	
+ *
+ * @see
+ */
 STATIC INT32 OsVdsoMap(LosVmSpace *space, size_t len, PADDR_T paddr, VADDR_T vaddr, UINT32 flag)
 {
     STATUS_T ret;
 
     while (len > 0) {
-        ret = LOS_ArchMmuMap(&(space->archMmu), vaddr, paddr, 1, flag);
+        ret = LOS_ArchMmuMap(&(space->archMmu), vaddr, paddr, 1, flag);//建立虚实映射关系
         if (ret != 1) {
             PRINT_ERR("VDSO Load Failed! : LOS_ArchMmuMap!\n");
             return LOS_NOK;
@@ -136,7 +148,7 @@ vaddr_t OsVdsoLoad(const LosProcessCB *processCB)
 {
     INT32 ret = -1;
     LosVmMapRegion *vdsoRegion = NULL;
-    UINT32 flag = VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_EXECUTE;
+    UINT32 flag = VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_EXECUTE; //用户空间区,可读,可执行,但不可写
 	//用户区,可读可执行
     if ((processCB == NULL) || (processCB->vmSpace == NULL)) {
         return 0;

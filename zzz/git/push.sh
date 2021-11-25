@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 注解 dmesg模块,环形buf记录内核日志
+git commit -m  ' 对虚拟内存/物理内存模块更详细的注解
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
