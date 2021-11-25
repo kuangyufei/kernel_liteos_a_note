@@ -43,12 +43,13 @@ extern "C" {
 
 /*
  * The dmesg buffer is start with this info structure, then the log.
+ * | dmesg信息管理器,环形buf
  */
-typedef struct {//dmesg信息管理器,环形buf
-    UINT32 logSize; /*! The size of log in buffer */
-    UINT32 logHead; /*! The index of the first log data. Data_out_flag */
-    UINT32 logTail; /*! The index where to write, write in and plus one. Data_it_flag */
-    CHAR   *logBuf; /*! The log buffer addr */
+typedef struct {
+    UINT32 logSize; /*! The size of log in buffer | 已写入的日志大小 */
+    UINT32 logHead; /*! The index of the first log data. Data_out_flag | 首条日志位置 */
+    UINT32 logTail; /*! The index where to write, write in and plus one. Data_it_flag | 写入日志的位置 */
+    CHAR   *logBuf; /*! The log buffer addr | 缓冲区地址 */
 } DmesgInfo;
 
 extern UINT32 OsDmesgInit(VOID);

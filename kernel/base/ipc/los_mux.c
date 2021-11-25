@@ -339,7 +339,7 @@ VOID OsMuxBitmapRestore(const LosMux *mutex, const LosTaskCB *taskCB, LosTaskCB 
     }
 }
 
-//最坏情况就是拿锁失败,让出CPU,变成阻塞任务,等别的任务释放锁后排到自己了接着执行. 
+/// 最坏情况就是拿锁失败,让出CPU,变成阻塞任务,等别的任务释放锁后排到自己了接着执行. 
 STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
 {
     UINT32 ret;
@@ -419,7 +419,7 @@ UINT32 OsMuxLockUnsafe(LosMux *mutex, UINT32 timeout)
 
     return OsMuxPendOp(runTask, mutex, timeout);
 }
-///尝试加锁,
+/// 尝试加锁,
 UINT32 OsMuxTrylockUnsafe(LosMux *mutex, UINT32 timeout)
 {
     LosTaskCB *runTask = OsCurrTaskGet();//获取当前任务
@@ -439,7 +439,7 @@ UINT32 OsMuxTrylockUnsafe(LosMux *mutex, UINT32 timeout)
 
     return OsMuxPendOp(runTask, mutex, timeout);//当前任务去拿锁,拿不到就等timeout
 }
-///拿互斥锁,
+/// 拿互斥锁,
 LITE_OS_SEC_TEXT UINT32 LOS_MuxLock(LosMux *mutex, UINT32 timeout)
 {
     LosTaskCB *runTask = NULL;
@@ -466,7 +466,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxLock(LosMux *mutex, UINT32 timeout)
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-///尝试锁不纠结,没拿到不会等待,返回
+///尝试要锁,没拿到也不等,直接返回,不纠结
 LITE_OS_SEC_TEXT UINT32 LOS_MuxTrylock(LosMux *mutex)
 {
     LosTaskCB *runTask = NULL;

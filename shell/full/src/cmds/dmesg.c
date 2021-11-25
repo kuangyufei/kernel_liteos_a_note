@@ -1,3 +1,34 @@
+/*!
+ * @file    dmesg.c
+ * @brief dmesg命令用于控制内核dmesg缓存区。
+ * @link dmesg http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-debug-shell-cmd-dmesg.html 
+ 				https://man7.org/linux/man-pages/man1/dmesg.1.html
+ * @endlink
+   @verbatim
+	  +-------------------------------------------------------+
+	  | Info |			log_space							  |
+	  +-------------------------------------------------------+
+	  |
+	  |__buffer_space
+   
+   Case A:
+	  +-------------------------------------------------------+
+	  | 		  |#############################|			  |
+	  +-------------------------------------------------------+
+				  | 							|
+				 Head							Tail
+   Case B:
+	  +-------------------------------------------------------+
+	  |##########|									  |#######|
+	  +-------------------------------------------------------+
+				 |									  |
+				 Tail								  Head
+
+   @endverbatim
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2021-11-25
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -29,27 +60,6 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
-   +-------------------------------------------------------+
-   | Info |          log_space                             |
-   +-------------------------------------------------------+
-   |
-   |__buffer_space
-
-Case A:
-   +-------------------------------------------------------+
-   |           |#############################|             |
-   +-------------------------------------------------------+
-               |                             |
-              Head                           Tail
-Case B:
-   +-------------------------------------------------------+
-   |##########|                                    |#######|
-   +-------------------------------------------------------+
-              |                                    |
-              Tail                                 Head
-*/
-
 #ifdef LOSCFG_SHELL_DMESG
 #include "dmesg_pri.h"
 #include "show.h"
@@ -61,17 +71,17 @@ Case B:
 #include "los_task.h"
 
 
-#define BUF_MAX_INDEX (g_logBufSize - 1)
+#define BUF_MAX_INDEX (g_logBufSize - 1) ///< 缓存区最大索引,可按单个字符保存
 
 LITE_OS_SEC_BSS STATIC SPIN_LOCK_INIT(g_dmesgSpin);
 
-STATIC DmesgInfo *g_dmesgInfo = NULL;
-STATIC UINT32 g_logBufSize = 0;
-STATIC VOID *g_mallocAddr = NULL;
-STATIC UINT32 g_dmesgLogLevel = 3;//日志等级
-STATIC UINT32 g_consoleLock = 0;//用于关闭和打开控制台
-STATIC UINT32 g_uartLock = 0;//用于关闭和打开串口
-STATIC const CHAR *g_levelString[] = {
+STATIC DmesgInfo *g_dmesgInfo = NULL;///< 保存在 g_mallocAddr 的开始位置,即头信息
+STATIC UINT32 g_logBufSize = 0;	///< 缓冲区内容体大小
+STATIC VOID *g_mallocAddr = NULL;///< 缓存区开始位置,即头位置
+STATIC UINT32 g_dmesgLogLevel = 3;	///< 日志等级
+STATIC UINT32 g_consoleLock = 0;	///< 用于关闭和打开控制台
+STATIC UINT32 g_uartLock = 0;		///< 用于关闭和打开串口
+STATIC const CHAR *g_levelString[] = {///< 日志等级
     "EMG",
     "COMMON",
     "ERR",
@@ -79,22 +89,22 @@ STATIC const CHAR *g_levelString[] = {
     "INFO",
     "DEBUG"
 };
-//关闭控制台
+/// 关闭控制台
 STATIC VOID OsLockConsole(VOID)
 {
     g_consoleLock = 1;
 }
-///打开控制台
+/// 打开控制台
 STATIC VOID OsUnlockConsole(VOID)
 {
     g_consoleLock = 0;
 }
-///关闭串口
+/// 关闭串口
 STATIC VOID OsLockUart(VOID)
 {
     g_uartLock = 1;
 }
-///打开串口
+/// 打开串口
 STATIC VOID OsUnlockUart(VOID)
 {
     g_uartLock = 0;
@@ -117,7 +127,7 @@ STATIC UINT32 OsCheckError(VOID)
 
     return LOS_OK;
 }
-
+///< 读取dmesg日志
 STATIC INT32 OsDmesgRead(CHAR *buf, UINT32 len)
 {
     UINT32 readLen;
@@ -168,7 +178,7 @@ STATIC INT32 OsDmesgRead(CHAR *buf, UINT32 len)
     }
     return (INT32)readLen;
 }
-
+/// 把旧人账目移交给新人
 STATIC INT32 OsCopyToNew(const VOID *addr, UINT32 size)
 {
     UINT32 copyStart = 0;
@@ -211,7 +221,7 @@ STATIC INT32 OsCopyToNew(const VOID *addr, UINT32 size)
 
     return (INT32)copyLen;
 }
-
+/// 重置内存
 STATIC UINT32 OsDmesgResetMem(const VOID *addr, UINT32 size)
 {
     VOID *temp = NULL;
@@ -246,7 +256,7 @@ STATIC UINT32 OsDmesgResetMem(const VOID *addr, UINT32 size)
 
     return LOS_OK;
 }
-
+///调整缓冲区大小,如下五个步骤
 STATIC UINT32 OsDmesgChangeSize(UINT32 size)
 {
     VOID *temp = NULL;
@@ -257,34 +267,34 @@ STATIC UINT32 OsDmesgChangeSize(UINT32 size)
     if (size == 0) {
         return LOS_NOK;
     }
-
+	//1. 重新整一块新地方
     newString = (CHAR *)malloc(size + sizeof(DmesgInfo));
-    if (newString == NULL) {
+    if (newString == NULL) {//新人未找到,旧人得接着用
         return LOS_NOK;
     }
 
     LOS_SpinLockSave(&g_dmesgSpin, &intSave);
     temp = g_dmesgInfo;
-
+	//2.把旧人账目移交给新人
     copyLen = OsCopyToNew(newString, size + sizeof(DmesgInfo));
     if (copyLen < 0) {
         LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
         free(newString);
         return LOS_NOK;
     }
-
+	//3.以新换旧
     g_logBufSize = size;
     g_dmesgInfo = (DmesgInfo *)newString;
     g_dmesgInfo->logBuf = (CHAR *)newString + sizeof(DmesgInfo);
     g_dmesgInfo->logSize = copyLen;
     g_dmesgInfo->logTail = ((copyLen == g_logBufSize) ? 0 : copyLen);
     g_dmesgInfo->logHead = 0;
-
+	//4. 有新欢了,释放旧人去找寻真爱
     if (temp == g_mallocAddr) {
         g_mallocAddr = NULL;
         free(temp);
     }
-    g_mallocAddr = newString;
+    g_mallocAddr = newString;//5. 正式和新人媾和
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
 
     return LOS_OK;
@@ -299,26 +309,26 @@ UINT32 OsCheckUartLock(VOID)
 {
     return g_uartLock;
 }
-///初始化 dmesg
+/// 初始化 dmesg
 UINT32 OsDmesgInit(VOID)
 {
     CHAR* buffer = NULL;
 
-    buffer = (CHAR *)malloc(KERNEL_LOG_BUF_SIZE + sizeof(DmesgInfo));
+    buffer = (CHAR *)malloc(KERNEL_LOG_BUF_SIZE + sizeof(DmesgInfo));//总内存分 头 + 体两部分
     if (buffer == NULL) {
         return LOS_NOK;
     }
     g_mallocAddr = buffer;
-    g_dmesgInfo = (DmesgInfo *)buffer;
-    g_dmesgInfo->logHead = 0;
-    g_dmesgInfo->logTail = 0;
-    g_dmesgInfo->logSize = 0;
-    g_dmesgInfo->logBuf = buffer + sizeof(DmesgInfo);
-    g_logBufSize = KERNEL_LOG_BUF_SIZE;
+    g_dmesgInfo = (DmesgInfo *)buffer;//全局变量
+    g_dmesgInfo->logHead = 0;//读取开始位置 记录在头部
+    g_dmesgInfo->logTail = 0;//写入开始位置 记录在头部
+    g_dmesgInfo->logSize = 0;//日志已占用数量 记录在头部
+    g_dmesgInfo->logBuf = buffer + sizeof(DmesgInfo);//身体部分开始位置
+    g_logBufSize = KERNEL_LOG_BUF_SIZE;//身体部分总大小位置
 
     return LOS_OK;
 }
-
+/// 只记录一个字符
 STATIC CHAR OsLogRecordChar(CHAR c)
 {
     *(g_dmesgInfo->logBuf + g_dmesgInfo->logTail++) = c;
@@ -334,7 +344,7 @@ STATIC CHAR OsLogRecordChar(CHAR c)
     }
     return c;
 }
-
+/// 记录一个字符串
 UINT32 OsLogRecordStr(const CHAR *str, UINT32 len)
 {
     UINT32 i = 0;
@@ -401,7 +411,7 @@ STATIC VOID OsBufFullWrite(const CHAR *dst, UINT32 logLen)
         }
     }
 }
-
+/// 从头写入 
 STATIC VOID OsWriteTailToHead(const CHAR *dst, UINT32 logLen)
 {
     UINT32 writeLen = 0;
@@ -436,7 +446,7 @@ STATIC VOID OsWriteTailToHead(const CHAR *dst, UINT32 logLen)
         g_dmesgInfo->logSize += logLen;
     }
 }
-
+/// 从尾写入 
 STATIC VOID OsWriteTailToEnd(const CHAR *dst, UINT32 logLen)
 {
     UINT32 writeLen;
@@ -474,7 +484,7 @@ STATIC VOID OsWriteTailToEnd(const CHAR *dst, UINT32 logLen)
         g_dmesgInfo->logSize += logLen;
     }
 }
-
+/// 内存拷贝日志
 INT32 OsLogMemcpyRecord(const CHAR *buf, UINT32 logLen)
 {
     UINT32 intSave;
@@ -497,7 +507,7 @@ INT32 OsLogMemcpyRecord(const CHAR *buf, UINT32 logLen)
 
     return LOS_OK;
 }
-
+/// 使用串口打印日志
 VOID OsLogShow(VOID)
 {
     UINT32 intSave;
@@ -515,21 +525,21 @@ VOID OsLogShow(VOID)
     }
     (VOID)memset_s(p, g_dmesgInfo->logSize + 1, 0, g_dmesgInfo->logSize + 1);
 
-    while (i < g_dmesgInfo->logSize) {
+    while (i < g_dmesgInfo->logSize) {//一个一个字符拷贝
         *(p + i) = *(g_dmesgInfo->logBuf + index++);
-        if (index > BUF_MAX_INDEX) {
+        if (index > BUF_MAX_INDEX) {//循环buf,读到尾了得从头开始读
             index = 0;
         }
         i++;
-        if (index == g_dmesgInfo->logTail) {
+        if (index == g_dmesgInfo->logTail) {//一直读到写入位置,才退出
             break;
         }
     }
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
-    UartPuts(p, i, UART_WITH_LOCK);
-    free(p);
+    UartPuts(p, i, UART_WITH_LOCK);//串口输出
+    free(p);//释放内存
 }
-
+/// 设置日志层级
 STATIC INT32 OsDmesgLvSet(const CHAR *level)
 {
     UINT32 levelNum, ret;
@@ -599,7 +609,7 @@ VOID LOS_DmesgClear(VOID)
     g_dmesgInfo->logSize = 0;
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
 }
-
+/// 设置dmesg缓存大小
 UINT32 LOS_DmesgMemSet(const VOID *addr, UINT32 size)
 {
     UINT32 ret = 0;
@@ -611,7 +621,7 @@ UINT32 LOS_DmesgMemSet(const VOID *addr, UINT32 size)
     }
     return ret;
 }
-
+/// 读取 dmesg 消息
 INT32 LOS_DmesgRead(CHAR *buf, UINT32 len)
 {
     INT32 ret;
@@ -644,12 +654,13 @@ INT32 OsDmesgWrite2File(const CHAR *fullpath, const CHAR *buf, UINT32 logSize)
 }
 
 #ifdef LOSCFG_FS_VFS
+/// 将dmesg 保存到文件中
 INT32 LOS_DmesgToFile(const CHAR *filename)
 {
     CHAR *fullpath = NULL;
     CHAR *buf = NULL;
     INT32 ret;
-    CHAR *shellWorkingDirectory = OsShellGetWorkingDirectory();
+    CHAR *shellWorkingDirectory = OsShellGetWorkingDirectory();//获取工作路径
     UINT32 logSize, bufSize, head, tail, intSave;
     CHAR *logBuf = NULL;
 
@@ -665,7 +676,7 @@ INT32 LOS_DmesgToFile(const CHAR *filename)
     logBuf = g_dmesgInfo->logBuf;
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
 
-    ret = vfs_normalize_path(shellWorkingDirectory, filename, &fullpath);
+    ret = vfs_normalize_path(shellWorkingDirectory, filename, &fullpath);//获取绝对路径
     if (ret != 0) {
         return -1;
     }
@@ -691,7 +702,7 @@ INT32 LOS_DmesgToFile(const CHAR *filename)
         }
     }
 
-    ret = OsDmesgWrite2File(fullpath, buf, logSize);
+    ret = OsDmesgWrite2File(fullpath, buf, logSize);//写文件
 ERR_OUT3:
     free(buf);
 ERR_OUT2:

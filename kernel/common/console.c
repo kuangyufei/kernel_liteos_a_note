@@ -751,8 +751,8 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
     size_t toWrite = bufLen;
     UINT32 intSave;
 
-#ifdef LOSCFG_SHELL_DMESG
-    (VOID)OsLogMemcpyRecord(buffer, bufLen);
+#ifdef LOSCFG_SHELL_DMESG 
+    (VOID)OsLogMemcpyRecord(buffer, bufLen); //写到内核缓冲区中
     if (OsCheckConsoleLock()) {
         return 0;
     }
