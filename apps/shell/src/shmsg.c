@@ -391,7 +391,7 @@ int CheckExit(const char *cmdName, const CmdParsed *cmdParsed)
         return -1;
     }
     if (cmdParsed->paramCnt == 1) {
-        char *p;
+        char *p = NULL;
         ret = strtol(cmdParsed->paramArray[0], &p, CMD_EXIT_CODE_BASE_DEC);
         if (*p != '\0') {
             printf("exit: bad number: %s\n", cmdParsed->paramArray[0]);

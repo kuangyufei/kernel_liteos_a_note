@@ -1343,7 +1343,7 @@ HWTEST_F(PosixMqueueTest, ItPosixQueue203, TestSize.Level0)
     ItPosixQueue203();
 }
 
-#if (LOSCFG_USER_TEST_SMP == YES)
+#if (LOSCFG_USER_TEST_SMP == 1)
 /**
  * @tc.name: IT_POSIX_QUEUE_204
  * @tc.desc: function for PosixMqueueTest

@@ -29,7 +29,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "it_pthread_test.h"
-#include "bits/syscall.h"
+#include "sys/syscall.h"
 
 void child1(void)
 {

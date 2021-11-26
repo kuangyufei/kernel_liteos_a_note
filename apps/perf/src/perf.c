@@ -70,7 +70,7 @@ static void PerfSetPeriod(PerfConfigAttr *attr)
 void PerfPrintBuffer(const char *buf, ssize_t num)
 {
 #define BYTES_PER_LINE  4
-    ssize_t i = 0;
+    ssize_t i;
     for (i = 0; i < num; i++) {
         printf(" %02x", (unsigned char)buf[i]);
         if (((i + 1) % BYTES_PER_LINE) == 0) {

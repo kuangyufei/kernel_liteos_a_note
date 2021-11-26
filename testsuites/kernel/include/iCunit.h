@@ -73,7 +73,7 @@ typedef unsigned long iiUINT32;
 
 #define TEST_MODE (FUNCTION_TEST)
 
-#define TEST_LESSER_MEM NO
+#define TEST_LESSER_MEM 0
 
 
 typedef iUINT32 (*CASE_FUNCTION)(void);

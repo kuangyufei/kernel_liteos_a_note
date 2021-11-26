@@ -120,23 +120,20 @@ int fallocate(int fd, int mode, off_t offset, off_t len)
 
 #if CONFIG_NFILE_DESCRIPTORS > 0
 
-    /* The descriptor is in the right range to be a file descriptor... write to the file.*/
+    /* The descriptor is in the right range to be a file descriptor... write to the file. */
 
     int ret = fs_getfilep(fd, &filep);
-    if (ret < 0)
-      {
+    if (ret < 0) {
         /* The errno value has already been set */
         return VFS_ERROR;
-      }
+    }
 
-    if (filep->f_oflags & O_DIRECTORY)
-      {
+    if (filep->f_oflags & O_DIRECTORY) {
         set_errno(EBADF);
         return VFS_ERROR;
-      }
+    }
 
     /* Perform the fallocate operation using the file descriptor as an index */
-
     return file_fallocate(filep, mode, offset, len);
 #endif
 }

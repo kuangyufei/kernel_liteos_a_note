@@ -81,7 +81,7 @@ typedef struct {
     SvcIdentity target; /**< serviceHandle or targetTaskId, depending on type */
     uint32_t code;
     uint32_t flag;
-#if (USE_TIMESTAMP == YES)
+#if (USE_TIMESTAMP == 1)
     uint64_t timestamp;
 #endif
     uint32_t dataSz;    /**< size of data */

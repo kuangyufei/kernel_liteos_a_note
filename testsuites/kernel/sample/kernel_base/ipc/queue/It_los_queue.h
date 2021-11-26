@@ -65,7 +65,7 @@ extern VOID ItSuiteLosQueue(VOID);
 #if defined(LOSCFG_TEST_SMOKE)
 VOID ItLosQueue001(VOID);
 VOID ItLosQueue097(VOID);
-#if (LOS_MEM_TLSF == YES)
+#if (LOS_MEM_TLSF == 1)
 #else
 VOID ItLosQueue100(VOID);
 VOID ItLosQueue105(VOID);

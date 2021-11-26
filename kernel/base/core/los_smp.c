@@ -44,16 +44,12 @@ STATIC struct SmpOps *g_smpOps = NULL;
 STATIC VOID OsSmpSecondaryInit(VOID *arg)
 {
     UNUSED(arg);
-    OsInitCall(LOS_INIT_LEVEL_PLATFORM);
 
     OsCurrProcessSet(OS_PCB_FROM_PID(OsGetKernelInitProcessID()));
-    OsInitCall(LOS_INIT_LEVEL_KMOD_BASIC);
 
 #ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
     OsSwtmrInit();
 #endif
-
-    OsInitCall(LOS_INIT_LEVEL_KMOD_EXTENDED);
 
     OsIdleTaskCreate();
     OsInitCall(LOS_INIT_LEVEL_KMOD_TASK);

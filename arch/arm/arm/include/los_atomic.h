@@ -1,3 +1,45 @@
+/*!
+ * @file    los_atomic.h
+ * @brief 原子操作
+ * @link atomic http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-basic-atomic.html @endlink
+   @verbatim
+   基本概念
+	   在支持多任务的操作系统中，修改一块内存区域的数据需要“读取-修改-写入”三个步骤。
+	   然而同一内存区域的数据可能同时被多个任务访问，如果在修改数据的过程中被其他任务打断，
+	   就会造成该操作的执行结果无法预知。
+	   使用开关中断的方法固然可以保证多任务执行结果符合预期，但这种方法显然会影响系统性能。
+	   ARMv6架构引入了LDREX和STREX指令，以支持对共享存储器更缜密的非阻塞同步。由此实现的
+	   原子操作能确保对同一数据的“读取-修改-写入”操作在它的执行期间不会被打断，即操作的原子性。
+   
+   使用场景
+	   有多个任务对同一个内存数据进行加减或交换操作时，使用原子操作保证结果的可预知性。
+   
+   汇编指令
+	   LDREX Rx, [Ry]
+		   读取内存中的值，并标记对该段内存为独占访问：
+		   读取寄存器Ry指向的4字节内存数据，保存到Rx寄存器中。
+		   对Ry指向的内存区域添加独占访问标记。
+   
+	   STREX Rf, Rx, [Ry]
+		   检查内存是否有独占访问标记，如果有则更新内存值并清空标记，否则不更新内存：
+		   有独占访问标记
+			   将寄存器Rx中的值更新到寄存器Ry指向的内存。
+			   标志寄存器Rf置为0。
+		   没有独占访问标记
+			   不更新内存。
+			   标志寄存器Rf置为1。
+   
+	   判断标志寄存器
+		   标志寄存器为0时，退出循环，原子操作结束。
+		   标志寄存器为1时，继续循环，重新进行原子操作。
+   
+   有多个任务对同一个内存数据进行加减或交换等操作时，使用原子操作保证结果的可预知性。
+   @endverbatim
+ * @attention  原子操作中，操作数及其结果不能超过函数所支持位数的最大值。目前原子操作接口只支持整型数据。
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2021-11-26
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -44,44 +86,7 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-/*! 
-    \file arch\arm\arm\include\los_atomic.h
-基本概念
-	在支持多任务的操作系统中，修改一块内存区域的数据需要“读取-修改-写入”三个步骤。
-	然而同一内存区域的数据可能同时被多个任务访问，如果在修改数据的过程中被其他任务打断，
-	就会造成该操作的执行结果无法预知。
-	使用开关中断的方法固然可以保证多任务执行结果符合预期，但这种方法显然会影响系统性能。
-	ARMv6架构引入了LDREX和STREX指令，以支持对共享存储器更缜密的非阻塞同步。由此实现的
-	原子操作能确保对同一数据的“读取-修改-写入”操作在它的执行期间不会被打断，即操作的原子性。
 
-使用场景
-	有多个任务对同一个内存数据进行加减或交换操作时，使用原子操作保证结果的可预知性。
-
-汇编指令
-	LDREX Rx, [Ry]
-		读取内存中的值，并标记对该段内存为独占访问：
-		读取寄存器Ry指向的4字节内存数据，保存到Rx寄存器中。
-		对Ry指向的内存区域添加独占访问标记。
-
-	STREX Rf, Rx, [Ry]
-		检查内存是否有独占访问标记，如果有则更新内存值并清空标记，否则不更新内存：
-		有独占访问标记
-			将寄存器Rx中的值更新到寄存器Ry指向的内存。
-			标志寄存器Rf置为0。
-		没有独占访问标记
-			不更新内存。
-			标志寄存器Rf置为1。
-
-	判断标志寄存器
-		标志寄存器为0时，退出循环，原子操作结束。
-		标志寄存器为1时，继续循环，重新进行原子操作。
-
-须知
-	原子操作中，操作数及其结果不能超过函数所支持位数的最大值。目前原子操作接口只支持整型数据。
-
-参考
-	http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-basic-atomic.html
-*/
 typedef volatile INT32 Atomic;	//原子数据包含两种类型Atomic（有符号32位数）与 Atomic64（有符号64位数）
 typedef volatile INT64 Atomic64;
 
@@ -250,7 +255,7 @@ STATIC INLINE VOID LOS_AtomicInc(Atomic *v)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic addSelf.
+ * @brief Atomic addSelf. | 对内存数据加1并返回运算结果
  *
  * @par Description:
  * This API is used to implement the atomic addSelf and return the result of addSelf.
@@ -266,7 +271,7 @@ STATIC INLINE VOID LOS_AtomicInc(Atomic *v)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//对内存数据加1并返回运算结果
+ */
 STATIC INLINE INT32 LOS_AtomicIncRet(Atomic *v)	
 {
     INT32 val;
@@ -286,7 +291,7 @@ STATIC INLINE INT32 LOS_AtomicIncRet(Atomic *v)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic auto-decrement.
+ * @brief Atomic auto-decrement. | 对32bit原子数据做减1
  *
  * @par Description:
  * This API is used to implementating the atomic auto-decrement.
@@ -302,7 +307,7 @@ STATIC INLINE INT32 LOS_AtomicIncRet(Atomic *v)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//对内存数据减1
+ */
 STATIC INLINE VOID LOS_AtomicDec(Atomic *v)	
 {
     INT32 val;
@@ -320,7 +325,7 @@ STATIC INLINE VOID LOS_AtomicDec(Atomic *v)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic auto-decrement.
+ * @brief Atomic auto-decrement. | 对内存数据减1并返回运算结果
  *
  * @par Description:
  * This API is used to implementating the atomic auto-decrement and return the result of auto-decrement.
@@ -336,7 +341,7 @@ STATIC INLINE VOID LOS_AtomicDec(Atomic *v)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//对内存数据减1并返回运算结果
+ */
 STATIC INLINE INT32 LOS_AtomicDecRet(Atomic *v)	
 {
     INT32 val;
@@ -371,7 +376,7 @@ STATIC INLINE INT32 LOS_AtomicDecRet(Atomic *v)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//读取64位内存数据
+ */
 STATIC INLINE INT64 LOS_Atomic64Read(const Atomic64 *v)	
 {
     INT64 val;
@@ -388,7 +393,7 @@ STATIC INLINE INT64 LOS_Atomic64Read(const Atomic64 *v)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic64 setting.
+ * @brief Atomic64 setting. | 写入64位内存数据
  *
  * @par Description:
  * This API is used to implement the atomic64 setting operation.
@@ -404,7 +409,7 @@ STATIC INLINE INT64 LOS_Atomic64Read(const Atomic64 *v)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//写入64位内存数据
+ */
 STATIC INLINE VOID LOS_Atomic64Set(Atomic64 *v, INT64 setVal)	
 {
     INT64 tmp;
@@ -421,7 +426,7 @@ STATIC INLINE VOID LOS_Atomic64Set(Atomic64 *v, INT64 setVal)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic64 addition.
+ * @brief Atomic64 addition. | 对64位内存数据做加法
  *
  * @par Description:
  * This API is used to implement the atomic64 addition and return the result value of the augend.
@@ -439,7 +444,7 @@ STATIC INLINE VOID LOS_Atomic64Set(Atomic64 *v, INT64 setVal)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//对64位内存数据做加法
+ */
 STATIC INLINE INT64 LOS_Atomic64Add(Atomic64 *v, INT64 addVal)	
 {
     INT64 val;
@@ -460,7 +465,7 @@ STATIC INLINE INT64 LOS_Atomic64Add(Atomic64 *v, INT64 addVal)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic64 subtraction.
+ * @brief Atomic64 subtraction. | 对64位原子数据做减法
  *
  * @par Description:
  * This API is used to implement the atomic64 subtraction and return the result value of the minuend.
@@ -478,7 +483,7 @@ STATIC INLINE INT64 LOS_Atomic64Add(Atomic64 *v, INT64 addVal)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//对64位内存数据做减法
+ */	
 STATIC INLINE INT64 LOS_Atomic64Sub(Atomic64 *v, INT64 subVal) 
 {
     INT64 val;
@@ -499,7 +504,7 @@ STATIC INLINE INT64 LOS_Atomic64Sub(Atomic64 *v, INT64 subVal)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic64 addSelf.
+ * @brief Atomic64 addSelf. | 对64位原子数据加1
  *
  * @par Description:
  * This API is used to implement the atomic64 addSelf .
@@ -515,7 +520,7 @@ STATIC INLINE INT64 LOS_Atomic64Sub(Atomic64 *v, INT64 subVal)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//对64位内存数据加1
+ */
 STATIC INLINE VOID LOS_Atomic64Inc(Atomic64 *v) 
 {
     INT64 val;
@@ -534,7 +539,7 @@ STATIC INLINE VOID LOS_Atomic64Inc(Atomic64 *v)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic64 addSelf.
+ * @brief Atomic64 addSelf. | 对64位原子数据加1并返回运算结果
  *
  * @par Description:
  * This API is used to implement the atomic64 addSelf and return the result of addSelf.
@@ -550,7 +555,7 @@ STATIC INLINE VOID LOS_Atomic64Inc(Atomic64 *v)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//对64位内存数据加1并返回运算结果
+ */
 STATIC INLINE INT64 LOS_Atomic64IncRet(Atomic64 *v) 
 {
     INT64 val;
@@ -571,7 +576,7 @@ STATIC INLINE INT64 LOS_Atomic64IncRet(Atomic64 *v)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic64 auto-decrement.
+ * @brief Atomic64 auto-decrement. | 对64位原子数据减1
  *
  * @par Description:
  * This API is used to implementating the atomic64 auto-decrement.
@@ -587,7 +592,7 @@ STATIC INLINE INT64 LOS_Atomic64IncRet(Atomic64 *v)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//对64位内存数据减1
+ */
 STATIC INLINE VOID LOS_Atomic64Dec(Atomic64 *v) 
 {
     INT64 val;
@@ -606,7 +611,7 @@ STATIC INLINE VOID LOS_Atomic64Dec(Atomic64 *v)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic64 auto-decrement.
+ * @brief Atomic64 auto-decrement. | 对64位原子数据减1并返回运算结果
  *
  * @par Description:
  * This API is used to implementating the atomic64 auto-decrement and return the result of auto-decrement.
@@ -622,7 +627,7 @@ STATIC INLINE VOID LOS_Atomic64Dec(Atomic64 *v)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//对64位内存数据减1并返回运算结果
+ */
 STATIC INLINE INT64 LOS_Atomic64DecRet(Atomic64 *v) 
 {
     INT64 val;
@@ -643,7 +648,7 @@ STATIC INLINE INT64 LOS_Atomic64DecRet(Atomic64 *v)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic exchange for 8-bit variable.
+ * @brief Atomic exchange for 8-bit variable. | 交换8位原子数据，原内存中的值以返回值的方式返回
  *
  * @par Description:
  * This API is used to implement the atomic exchange for 8-bit variable and
@@ -658,7 +663,7 @@ STATIC INLINE INT64 LOS_Atomic64DecRet(Atomic64 *v)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//交换8位内存数据，原内存中的值以返回值的方式返回
+ */
 STATIC INLINE INT32 LOS_AtomicXchgByte(volatile INT8 *v, INT32 val)	
 {
     INT32 prevVal;
@@ -677,7 +682,7 @@ STATIC INLINE INT32 LOS_AtomicXchgByte(volatile INT8 *v, INT32 val)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic exchange for 16-bit variable.
+ * @brief Atomic exchange for 16-bit variable. | 交换16位原子数据，原内存中的值以返回值的方式返回
  *
  * @par Description:
  * This API is used to implement the atomic exchange for 16-bit variable and
@@ -692,7 +697,7 @@ STATIC INLINE INT32 LOS_AtomicXchgByte(volatile INT8 *v, INT32 val)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//交换16位内存数据，原内存中的值以返回值的方式返回
+ */
 STATIC INLINE INT32 LOS_AtomicXchg16bits(volatile INT16 *v, INT32 val)	
 {
     INT32 prevVal;
@@ -711,7 +716,7 @@ STATIC INLINE INT32 LOS_AtomicXchg16bits(volatile INT16 *v, INT32 val)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic exchange for 32-bit variable.
+ * @brief Atomic exchange for 32-bit variable. | 交换32位原子数据，原内存中的值以返回值的方式返回
  *
  * @par Description:
  * This API is used to implement the atomic exchange for 32-bit variable
@@ -726,7 +731,7 @@ STATIC INLINE INT32 LOS_AtomicXchg16bits(volatile INT16 *v, INT32 val)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//交换32位内存数据，原内存中的值以返回值的方式返回
+ */
 STATIC INLINE INT32 LOS_AtomicXchg32bits(Atomic *v, INT32 val)	
 {
     INT32 prevVal;
@@ -745,7 +750,7 @@ STATIC INLINE INT32 LOS_AtomicXchg32bits(Atomic *v, INT32 val)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic exchange for 64-bit variable.
+ * @brief Atomic exchange for 64-bit variable. | 交换64位原子数据，原内存中的值以返回值的方式返回
  *
  * @par Description:
  * This API is used to implement the atomic exchange for 64-bit variable
@@ -760,7 +765,7 @@ STATIC INLINE INT32 LOS_AtomicXchg32bits(Atomic *v, INT32 val)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//交换64位内存数据，原内存中的值以返回值的方式返回
+ */
 STATIC INLINE INT64 LOS_AtomicXchg64bits(Atomic64 *v, INT64 val)	
 {
     INT64 prevVal;
@@ -779,7 +784,7 @@ STATIC INLINE INT64 LOS_AtomicXchg64bits(Atomic64 *v, INT64 val)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic exchange for 8-bit variable with compare.
+ * @brief Atomic exchange for 8-bit variable with compare. | 比较并交换8位原子数据，返回比较结果
  *
  * @par Description:
  * This API is used to implement the atomic exchange for 8-bit variable, if the value of variable is equal to oldVal.
@@ -795,7 +800,7 @@ STATIC INLINE INT64 LOS_AtomicXchg64bits(Atomic64 *v, INT64 val)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//比较并交换8位内存数据，返回比较结果
+ */
 STATIC INLINE BOOL LOS_AtomicCmpXchgByte(volatile INT8 *v, INT32 val, INT32 oldVal)	
 {
     INT32 prevVal;
@@ -816,7 +821,7 @@ STATIC INLINE BOOL LOS_AtomicCmpXchgByte(volatile INT8 *v, INT32 val, INT32 oldV
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic exchange for 16-bit variable with compare.
+ * @brief Atomic exchange for 16-bit variable with compare. | 比较并交换16位原子数据，返回比较结果
  *
  * @par Description:
  * This API is used to implement the atomic exchange for 16-bit variable, if the value of variable is equal to oldVal.
@@ -832,7 +837,7 @@ STATIC INLINE BOOL LOS_AtomicCmpXchgByte(volatile INT8 *v, INT32 val, INT32 oldV
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//比较并交换16位内存数据，返回比较结果
+ */
 STATIC INLINE BOOL LOS_AtomicCmpXchg16bits(volatile INT16 *v, INT32 val, INT32 oldVal)	
 {
     INT32 prevVal;
@@ -853,7 +858,7 @@ STATIC INLINE BOOL LOS_AtomicCmpXchg16bits(volatile INT16 *v, INT32 val, INT32 o
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic exchange for 32-bit variable with compare.
+ * @brief Atomic exchange for 32-bit variable with compare. | 比较并交换32位原子数据，返回比较结果
  *
  * @par Description:
  * This API is used to implement the atomic exchange for 32-bit variable, if the value of variable is equal to oldVal.
@@ -869,7 +874,7 @@ STATIC INLINE BOOL LOS_AtomicCmpXchg16bits(volatile INT16 *v, INT32 val, INT32 o
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//比较并交换32位内存数据，返回比较结果
+ */
 STATIC INLINE BOOL LOS_AtomicCmpXchg32bits(Atomic *v, INT32 val, INT32 oldVal)	
 {
     INT32 prevVal;
@@ -890,7 +895,7 @@ STATIC INLINE BOOL LOS_AtomicCmpXchg32bits(Atomic *v, INT32 val, INT32 oldVal)
 
 /**
  * @ingroup  los_atomic
- * @brief Atomic exchange for 64-bit variable with compare.
+ * @brief Atomic exchange for 64-bit variable with compare. | 比较并交换64位原子数据，返回比较结果
  *
  * @par Description:
  * This API is used to implement the atomic exchange for 64-bit variable, if the value of variable is equal to oldVal.
@@ -906,7 +911,7 @@ STATIC INLINE BOOL LOS_AtomicCmpXchg32bits(Atomic *v, INT32 val, INT32 oldVal)
  * @par Dependency:
  * <ul><li>los_atomic.h: the header file that contains the API declaration.</li></ul>
  * @see
- */	//比较并交换64位内存数据，返回比较结果
+ */
 STATIC INLINE BOOL LOS_AtomicCmpXchg64bits(Atomic64 *v, INT64 val, INT64 oldVal) 
 {
     INT64 prevVal;

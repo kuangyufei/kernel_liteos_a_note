@@ -52,7 +52,7 @@ extern "C" {
 #define LITEIPC_DRIVER "/dev/lite_ipc"	///< 虚拟设备
 #define LITEIPC_DRIVER_MODE 0644 ///< 对虚拟设备的访问权限 110100100 表示只有所属用户才有读写权限,其余都只能读
 #define MAX_SERVICE_NUM LOSCFG_BASE_CORE_TSK_LIMIT ///< 最大服务数等于任务数 默认128
-#define USE_TIMESTAMP YES 	///< 使用时间戳
+#define USE_TIMESTAMP 1 	///< 使用时间戳
 
 /**
  * @enum HandleStatus 
@@ -169,7 +169,7 @@ typedef struct {
     SvcIdentity    target;    	/**< serviceHandle or targetTaskId, depending on type | 因命令类型不同而异*/
     UINT32         code;      	/**< service function code | 服务功能代码*/
     UINT32         flag;		///< 标签
-#if (USE_TIMESTAMP == YES)
+#if (USE_TIMESTAMP == 1)
     UINT64         timestamp;	///< 时间戳
 #endif
     UINT32         dataSz;    	/**< size of data | 消息内容大小*/

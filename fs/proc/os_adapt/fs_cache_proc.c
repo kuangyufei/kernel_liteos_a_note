@@ -136,16 +136,16 @@ static int PageCacheMapProcess(struct SeqBuf *buf)
 
 static int FsCacheInfoFill(struct SeqBuf *buf, void *arg)
 {
-    int vnodeFree = 0;
-    int vnodeActive = 0;
-    int vnodeVirtual = 0;
-    int vnodeTotal = 0;
+    int vnodeFree;
+    int vnodeActive;
+    int vnodeVirtual;
+    int vnodeTotal;
 
-    int pathCacheTotal = 0;
+    int pathCacheTotal;
     int pathCacheTotalTry = 0;
     int pathCacheTotalHit = 0;
 
-    int pageCacheTotal = 0;
+    int pageCacheTotal;
     int pageCacheTotalTry = 0;
     int pageCacheTotalHit = 0;
 

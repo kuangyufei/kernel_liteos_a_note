@@ -64,7 +64,7 @@ typedef unsigned long iiUINT32;
 
 #define TEST_MODE (FUNCTION_TEST)
 
-#define TEST_LESSER_MEM NO
+#define TEST_LESSER_MEM 0
 
 #define TEST_ADD_CASE(string, TestCase, TEST_POSIX, TEST_MEM, TEST_LEVEL0, TEST_FUNCTION) \
     do {                                                                                  \

@@ -37,7 +37,7 @@ extern "C" {
 #endif /* __cpluscplus */
 #endif /* __cpluscplus */
 
-#define LOSCFG_TEST_UNSOLVED YES
+#define LOSCFG_TEST_UNSOLVED 1
 volatile UINT64 g_itTimesliceTestCount1 = 0;
 volatile INT32 g_timesliceTestCount = 0;
 

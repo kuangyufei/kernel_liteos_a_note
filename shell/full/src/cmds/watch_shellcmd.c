@@ -217,7 +217,7 @@ UINT32 OsShellCmdWatch(UINT32 argc, const CHAR **argv)
 {
     WatchCB *watchItem = NULL;
     UINT32 argoff = 0;
-    UINT32 ret = 0;
+    UINT32 ret;
     INT32 err;
 
     if (argc == 0) {

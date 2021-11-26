@@ -71,7 +71,7 @@ void SendReply(int fd, IpcMsg *dataIn, uint32_t result, uint32_t serviceHandle)
     data1.outMsg->target.handle = dataIn->taskID;
     data1.outMsg->target.token = dataIn->target.token;
     data1.outMsg->code = dataIn->code;
-#if (USE_TIMESTAMP == YES)
+#if (USE_TIMESTAMP == 1)
     data1.outMsg->timestamp = dataIn->timestamp;
 #endif
     ptr[0] = result;

@@ -28,56 +28,17 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
+import("//third_party/bounds_checking_function/libsec_src.gni")
 
 module_switch = defined(LOSCFG_LIB_LIBC)
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
-  sources = [
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/fscanf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/fwscanf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/gets_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/memcpy_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/memmove_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/memset_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/scanf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/securecutil.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/secureinput_a.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/secureinput_w.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/secureprintoutput_a.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/secureprintoutput_w.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/snprintf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/sprintf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/sscanf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/strcat_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/strcpy_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/strncat_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/strncpy_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/strtok_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/swprintf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/swscanf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/vfscanf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/vfwscanf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/vscanf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/vsnprintf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/vsprintf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/vsscanf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/vswprintf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/vswscanf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/vwscanf_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/wcscat_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/wcscpy_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/wcsncat_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/wcsncpy_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/wcstok_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/wmemcpy_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/wmemmove_s.c",
-    "$LITEOSTHIRDPARTY/bounds_checking_function/src/wscanf_s.c",
-  ]
+  sources = libsec_sources
 
   public_configs = [ ":public" ]
 }
 
 config("public") {
-  include_dirs = [ "$LITEOSTHIRDPARTY/bounds_checking_function/include" ]
+  include_dirs = libsec_include_dirs
   defines = [ "SECUREC_IN_KERNEL=0" ]
 }

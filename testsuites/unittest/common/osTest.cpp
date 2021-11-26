@@ -77,7 +77,7 @@ UINT32 g_testCircleCount = 0;
 UINT32 g_fatFilesystem;
 UINT8 g_mUsIndex;
 
-#if TEST_MODULE_CHECK == YES
+#if TEST_MODULE_CHECK == 1
 
 extern UINT32 g_FailModelResult[];
 extern UINT32 g_PassModelResult[];

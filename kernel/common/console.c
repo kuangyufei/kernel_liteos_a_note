@@ -1470,7 +1470,7 @@ BOOL ConsoleEnable(VOID)
 
 BOOL IsShellEntryRunning(UINT32 shellEntryId)
 {
-    LosTaskCB *taskCB;
+    LosTaskCB *taskCB = NULL;
     if (shellEntryId == SHELL_ENTRYID_INVALID) {
         return FALSE;
     }

@@ -36,39 +36,43 @@ int memcmp(const void *str1, const void *str2, size_t n)
 
     const unsigned char *s1 = str1;
     const unsigned char *s2 = str2;
+    size_t num = n;
 
-    while (n >= 8) {
+    while (num >= 8) { /* 8, compare size,  the number of chars of one uint64_t data */
         if (*(const uint64_t *)(s1) != *(const uint64_t *)(s2)) {
             goto L8_byte_diff;
         }
-        s1 += 8;
-        s2 += 8;
-        n -= 8;
+        s1 += 8; /* 8, compare size,  the number of chars of one uint64_t data */
+        s2 += 8; /* 8, compare size,  the number of chars of one uint64_t data */
+        num -= 8; /* 8, compare size,  the number of chars of one uint64_t data */
     }
-    if (n == 0) return 0;
-
+    if (num == 0) {
+        return 0;
+    }
 
     /* L4_byte_cmp */
-    if (n >= 4) {
+    if (num >= 4) { /* 4, compare size,  the number of chars of one uint32_t data */
         if (*(const uint32_t *)(s1) != *(const uint32_t *)(s2)) {
             goto L4_byte_diff;
         }
-        s1 += 4;
-        s2 += 4;
-        n -= 4;
+        s1 += 4; /* 4, compare size,  the number of chars of one uint32_t data */
+        s2 += 4; /* 4, compare size,  the number of chars of one uint32_t data */
+        num -= 4; /* 4, compare size,  the number of chars of one uint32_t data */
     }
-    if (n == 0) return 0;
-
+    if (num == 0) {
+        return 0;
+    }
 L4_byte_diff:
-    for (; n && (*s1 == *s2); n--, s1++, s2++);
-    return n ? *s1 - *s2 : 0;
+    for (; num && (*s1 == *s2); num--, s1++, s2++) {
+    }
+    return num ? *s1 - *s2 : 0;
 
 L8_byte_diff:
     if (*(const uint32_t *)(s1) != *(const uint32_t *)(s2)) {
             goto L4_byte_diff;
     }
-    s1 += 4;
-    s2 += 4;
-    n -= 4;
+    s1 += 4; /* 4, compare size,  the number of chars of one uint32_t data */
+    s2 += 4; /* 4, compare size,  the number of chars of one uint32_t data */
+    num -= 4; /* 4, compare size,  the number of chars of one uint32_t data */
     goto L4_byte_diff;
 }

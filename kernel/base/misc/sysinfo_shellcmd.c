@@ -42,7 +42,7 @@
 #endif
 
 
-#define SYSINFO_ENABLED(x) (((x) == YES) ? "YES" : "NO")
+#define SYSINFO_ENABLED(x) (((x) == TRUE) ? "YES" : "NO")
 UINT32 OsShellCmdTaskCntGet(VOID)
 {
     UINT32 loop;
@@ -118,21 +118,21 @@ UINT32 OsShellCmdSwtmrCntGet(VOID)
 ///查看系统资源使用情况
 LITE_OS_SEC_TEXT_MINOR VOID OsShellCmdSystemInfoGet(VOID)
 {
-    UINT8 isTaskEnable  = YES;
+    UINT8 isTaskEnable  = TRUE;
 #ifdef LOSCFG_BASE_IPC_SEM
-    UINT8 isSemEnable   = YES;
+    UINT8 isSemEnable   = TRUE;
 #else
-    UINT8 isSemEnable   = NO;
+    UINT8 isSemEnable   = FALSE;
 #endif
 #ifdef LOSCFG_BASE_IPC_QUEUE
-    UINT8 isQueueEnable = YES;
+    UINT8 isQueueEnable = TRUE;
 #else
-    UINT8 isQueueEnable = NO;
+    UINT8 isQueueEnable = FALSE;
 #endif
 #ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
-    UINT8 isSwtmrEnable = YES;
+    UINT8 isSwtmrEnable = TRUE;
 #else
-    UINT8 isSwtmrEnable = NO;
+    UINT8 isSwtmrEnable = FALSE;
 #endif
 //模块名称	当前使用量 最大可用量              	   模块是否开启 
     PRINTK("\n   Module    Used      Total     Enabled\n");

@@ -43,7 +43,7 @@
 
 #include "smgr_demo.h"
 
-#define NEED_BREAK YES
+#define NEED_BREAK 1
 
 static int g_ipcFd;
 char g_serviceName[] = "ohos.testservice";
@@ -71,7 +71,7 @@ static int CallTestServiceLoop(uint32_t id)
 
     while (1) {
         num++;
-#if (NEED_BREAK == YES)
+#if (NEED_BREAK == 1)
         if (num > 50000) {
             break;
         }
@@ -148,7 +148,7 @@ static int TestServiceLoop(void)
     gettimeofday(&last_time, 0);
     while (1) {
         cnt++;
-#if (NEED_BREAK == YES)
+#if (NEED_BREAK == 1)
         if (cnt > 100000 - 10) {
             printf("TestServiceLoop break!\n");
             break;

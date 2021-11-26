@@ -102,16 +102,6 @@ typedef size_t             BOOL;
 #define NULL               ((VOID *)0)
 #endif
 
-#ifdef YES
-#undef YES
-#endif
-#define YES                1
-
-#ifdef NO
-#undef NO
-#endif
-#define NO                 0
-
 #define OS_NULL_BYTE       ((UINT8)0xFF)
 #define OS_NULL_SHORT      ((UINT16)0xFFFF)
 #define OS_NULL_INT        ((UINT32)0xFFFFFFFF)

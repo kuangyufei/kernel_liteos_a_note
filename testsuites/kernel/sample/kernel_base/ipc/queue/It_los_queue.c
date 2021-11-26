@@ -75,7 +75,7 @@ VOID ItSuiteLosQueue(VOID)
 #if defined(LOSCFG_TEST_SMOKE)
     ItLosQueue001();
     ItLosQueue097();
-#if (LOS_MEM_TLSF == YES)
+#if (LOS_MEM_TLSF == 1)
 #else
     ItLosQueue100();
     ItLosQueue105();
@@ -172,7 +172,7 @@ VOID ItSuiteLosQueue(VOID)
     ItLosQueue096();
     ItLosQueue098();
 
-#if (LOS_MEM_TLSF == YES)
+#if (LOS_MEM_TLSF == 1)
 #else
     ItLosQueue099();
     ItLosQueue101();

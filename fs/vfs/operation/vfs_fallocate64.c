@@ -128,20 +128,17 @@ int fallocate64(int fd, int mode, off64_t offset, off64_t len)
      */
 
     int ret = fs_getfilep(fd, &filep);
-    if (ret < 0)
-      {
+    if (ret < 0) {
         /* The errno value has already been set */
         return VFS_ERROR;
-      }
+    }
 
-    if (filep->f_oflags & O_DIRECTORY)
-      {
+    if (filep->f_oflags & O_DIRECTORY) {
         set_errno(EBADF);
         return VFS_ERROR;
-      }
+    }
 
     /* Perform the fallocate operation using the file descriptor as an index */
-
     return file_fallocate64(filep, mode, offset, len);
 #endif
 }

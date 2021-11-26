@@ -35,7 +35,6 @@
 #include "los_hw.h"
 #include "los_atomic.h"
 #include "los_arch_mmu.h"
-#include "los_init_pri.h"
 #include "gic_common.h"
 #include "los_task_pri.h"
 
@@ -55,7 +54,7 @@ VOID HalArchCpuOn(UINT32 cpuNum, ArchCpuStartFunc func, struct SmpOps *ops, VOID
 {
     struct OsCpuInit *cpuInit = &g_cpuInit[cpuNum - 1];
     UINTPTR startEntry = (UINTPTR)&reset_vector - KERNEL_VMM_BASE + SYS_MEM_BASE;
-    INT32 ret = 0;
+    INT32 ret;
 
     cpuInit->cpuStart = func;
     cpuInit->arg = arg;
@@ -94,7 +93,6 @@ VOID HalSecondaryCpuStart(VOID)
     /* store each core's hwid */
     CPU_MAP_SET(cpuid, OsHwIDGet());
     HalIrqInitPercpu();
-    OsInitCall(LOS_INIT_LEVEL_ARCH);
 
     cpuInit->cpuStart(cpuInit->arg);
 

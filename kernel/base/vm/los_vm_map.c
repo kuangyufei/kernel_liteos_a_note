@@ -375,7 +375,7 @@ STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace)
                 LOS_AtomicInc(&page->refCounts);//refCounts 自增
             }
             if (flags & VM_MAP_REGION_FLAG_PERM_WRITE) {//可写入区标签
-                LOS_ArchMmuUnmap(&oldVmSpace->archMmu, vaddr, 1);//取消老空间映射
+                LOS_ArchMmuUnmap(&oldVmSpace->archMmu, vaddr, 1);//先删除老空间映射
                 LOS_ArchMmuMap(&oldVmSpace->archMmu, vaddr, paddr, 1, flags & ~VM_MAP_REGION_FLAG_PERM_WRITE);//老空间重新映射
             }
             LOS_ArchMmuMap(&newVmSpace->archMmu, vaddr, paddr, 1, flags & ~VM_MAP_REGION_FLAG_PERM_WRITE);//映射新空间
@@ -432,7 +432,7 @@ LosVmMapRegion *LOS_RegionRangeFind(LosVmSpace *vmSpace, VADDR_T addr, size_t le
 
     return region;
 }
-/// 分配线性区
+/// 分配指定长度的线性区
 VADDR_T OsAllocRange(LosVmSpace *vmSpace, size_t len)
 {
     LosVmMapRegion *curRegion = NULL;
@@ -481,7 +481,7 @@ VADDR_T OsAllocRange(LosVmSpace *vmSpace, size_t len)
 
     return 0;
 }
-
+/// 分配指定开始地址和长度的线性区
 VADDR_T OsAllocSpecificRange(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len, UINT32 regionFlags)
 {
     STATUS_T status;

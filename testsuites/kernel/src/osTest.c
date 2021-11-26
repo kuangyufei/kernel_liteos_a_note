@@ -103,7 +103,7 @@ UINT8 g_mIndex;
 UINT32 g_semID3[LOSCFG_BASE_IPC_SEM_CONFIG + 1];
 LOS_MEM_POOL_STATUS g_sysMemStatus = { 0 };
 
-#if TEST_MODULE_CHECK == YES
+#if TEST_MODULE_CHECK == 1
 
 extern UINT32 g_failModelResult[];
 extern UINT32 g_passModelResult[];
@@ -467,7 +467,7 @@ VOID TestTaskEntry(UINT32 param1, UINT32 param2, UINT32 param3, UINT32 param4)
     g_testCircleCount = 0;
     dprintf("\t\n --- Test start--- \n");
 
-#if (TEST_LESSER_MEM == YES)
+#if (TEST_LESSER_MEM == 1)
     UINT32 memusedfirst = 0x600000; // 6M for fs or 3M for kernel
     LOS_MEM_POOL_STATUS status = { 0 };
     LOS_MemInfoGet(OS_SYS_MEM_ADDR, &status);
@@ -483,7 +483,7 @@ VOID TestTaskEntry(UINT32 param1, UINT32 param2, UINT32 param3, UINT32 param4)
         TestKernelBase();
         TestPosix();
 
-#if (TEST_MODULE_CHECK == YES) && defined(LOSCFG_TEST)
+#if (TEST_MODULE_CHECK == 1) && defined(LOSCFG_TEST)
         for (int i = 0; i < g_modelNum - 1; i++) {
             if (g_executModelNum[i] != 0) {
                 dprintf("\nExecuted Model: %s, Executed Model_Num: %d ,failed_count: %d , sucess_count :%d",

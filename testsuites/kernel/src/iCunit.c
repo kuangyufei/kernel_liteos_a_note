@@ -33,7 +33,7 @@
 #include "iCunit.inc"
 #include "iCunit_config.h"
 #include "osTest.h"
-#if TEST_RESOURCELEAK_CHECK == YES
+#if TEST_RESOURCELEAK_CHECK == 1
 #include "los_swtmr_pri.h"
 #include "los_sem_pri.h"
 #include "los_queue_pri.h"
@@ -81,7 +81,7 @@ char *g_strModule[] = {"TASK", "MEM", "SEM", "MUX", "EVENT", "QUE", "SWTMR", "HW
                       };
 UINT32 g_modelNum = sizeof(g_strModule) / sizeof(g_strModule[0]);
 
-#if TEST_MODULE_CHECK == YES
+#if TEST_MODULE_CHECK == 1
 
 UINT32 g_failModelResult[sizeof(g_strModule) / sizeof(g_strModule[0])] = {0};
 UINT32 g_passModelResult[sizeof(g_strModule) / sizeof(g_strModule[0])] = {0};
@@ -217,7 +217,7 @@ iUINT32 ICunitRunF(ICUNIT_CASE_S *psubCase)
     g_iCunitErrLineNo = 0;
     g_iCunitErrCode = 0;
 
-#if TEST_RESOURCELEAK_CHECK == YES
+#if TEST_RESOURCELEAK_CHECK == 1
     extern UINT32 LOS_MemTotalUsedGet(VOID * pPool);
     extern HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];
     extern SWTMR_CTRL_S *g_swtmrCBArray;
@@ -399,14 +399,14 @@ iUINT32 ICunitRunF(ICUNIT_CASE_S *psubCase)
     psubCase->errLine = g_iCunitErrLineNo;
     psubCase->retCode = (0 == g_iCunitErrLineNo) ? (caseRet) : (g_iCunitErrCode);
 
-#if TEST_MODULE_CHECK == YES
+#if TEST_MODULE_CHECK == 1
     g_executModelNum[psubCase->testcase_module]++;
 #endif
 ENDING:
     if (psubCase->errLine == 0 && caseRet == 0) {
         g_passResult++;
 
-#if TEST_MODULE_CHECK == YES
+#if TEST_MODULE_CHECK == 1
         g_passModelResult[psubCase->testcase_module]++;
 #endif
 
@@ -416,7 +416,7 @@ ENDING:
                 g_strLevel[psubCase->testcase_level], g_strType[psubCase->testcase_type]);
         }
     } else {
-#if TEST_MODULE_CHECK == YES
+#if TEST_MODULE_CHECK == 1
         if (g_failResult < 50) { // 50
             g_errorCase[g_failResult] = *psubCase;
         }

@@ -264,7 +264,7 @@ LosVmPage *OsVmPhysToPage(paddr_t pa, UINT8 segID)
     return (seg->pageBase + (offset >> PAGE_SHIFT));//得到对应的物理页框
 }
 
-/**
+/*!
  * @brief 通过page获取内核空间的虚拟地址 参考OsArchMmuInit
  \n #define SYS_MEM_BASE            DDR_MEM_ADDR /* physical memory base 物理地址的起始地址 * /
  \n 本函数非常重要，通过一个物理地址找到内核虚拟地址
@@ -284,12 +284,12 @@ VOID *OsVmPageToVaddr(LosVmPage *page)//
 LosVmPage *OsVmVaddrToPage(VOID *ptr)
 {
     struct VmPhysSeg *seg = NULL;
-    PADDR_T pa = LOS_PaddrQuery(ptr);//通过虚拟地址查询物理地址
+    PADDR_T pa = LOS_PaddrQuery(ptr);//通过空间的虚拟地址查询物理地址
     UINT32 segID;
 
-    for (segID = 0; segID < g_vmPhysSegNum; segID++) {
+    for (segID = 0; segID < g_vmPhysSegNum; segID++) {//遍历所有段
         seg = &g_vmPhysSeg[segID];
-        if ((pa >= seg->start) && (pa < (seg->start + seg->size))) {
+        if ((pa >= seg->start) && (pa < (seg->start + seg->size))) {//找到物理地址所在的段
             return seg->pageBase + ((pa - seg->start) >> PAGE_SHIFT);//段基地址+页偏移索引 得到虚拟地址经映射所在物理页框
         }
     }
@@ -305,7 +305,7 @@ STATIC INLINE VOID OsVmRecycleExtraPages(LosVmPage *page, size_t startPage, size
 
     OsVmPhysPagesFreeContiguous(page, endPage - startPage);
 }
-
+/// 大块的物理内存分配
 STATIC LosVmPage *OsVmPhysLargeAlloc(struct VmPhysSeg *seg, size_t nPages)
 {
     struct VmFreeList *list = NULL;
@@ -315,11 +315,11 @@ STATIC LosVmPage *OsVmPhysLargeAlloc(struct VmPhysSeg *seg, size_t nPages)
     PADDR_T paEnd;
     size_t size = nPages << PAGE_SHIFT;
 
-    list = &seg->freeList[VM_LIST_ORDER_MAX - 1];
-    LOS_DL_LIST_FOR_EACH_ENTRY(page, &list->node, LosVmPage, node) {
+    list = &seg->freeList[VM_LIST_ORDER_MAX - 1];//先找伙伴算法中内存块最大的开撸
+    LOS_DL_LIST_FOR_EACH_ENTRY(page, &list->node, LosVmPage, node) {//遍历链表
         paStart = page->physAddr;
         paEnd = paStart + size;
-        if (paEnd > (seg->start + seg->size)) {
+        if (paEnd > (seg->start + seg->size)) {//匹配物理地址范围
             continue;
         }
 
@@ -351,13 +351,13 @@ STATIC LosVmPage *OsVmPhysPagesAlloc(struct VmPhysSeg *seg, size_t nPages)
     UINT32 newOrder;
 
     order = OsVmPagesToOrder(nPages);
-    if (order < VM_LIST_ORDER_MAX) {
-        for (newOrder = order; newOrder < VM_LIST_ORDER_MAX; newOrder++) {
+    if (order < VM_LIST_ORDER_MAX) {//按正常的伙伴算法分配
+        for (newOrder = order; newOrder < VM_LIST_ORDER_MAX; newOrder++) {//从小往大了撸
             list = &seg->freeList[newOrder];
-            if (LOS_ListEmpty(&list->node)) {
-                continue;
+            if (LOS_ListEmpty(&list->node)) {//这条链路上没有可分配的物理页框
+                continue;//继续往大的找
             }
-            page = LOS_DL_LIST_ENTRY(LOS_DL_LIST_FIRST(&list->node), LosVmPage, node);
+            page = LOS_DL_LIST_ENTRY(LOS_DL_LIST_FIRST(&list->node), LosVmPage, node);//找到了直接返回第一个节点
             goto DONE;
         }
     } else {
@@ -479,7 +479,7 @@ VOID *LOS_PhysPagesAllocContiguous(size_t nPages)
 
     return OsVmPageToVaddr(page);//通过物理页找虚拟地址
 }
-/// 释放多页地址连续的物理内存
+/// 释放指定页数地址连续的物理内存
 VOID LOS_PhysPagesFreeContiguous(VOID *ptr, size_t nPages)
 {
     UINT32 intSave;
@@ -530,12 +530,12 @@ VOID LOS_PhysPageFree(LosVmPage *page)
         return;
     }
 
-    if (LOS_AtomicDecRet(&page->refCounts) <= 0) {
+    if (LOS_AtomicDecRet(&page->refCounts) <= 0) {//减少引用数后不能小于0
         seg = &g_vmPhysSeg[page->segID];
         LOS_SpinLockSave(&seg->freeListLock, &intSave);
 
-        OsVmPhysPagesFreeContiguous(page, ONE_PAGE);
-        LOS_AtomicSet(&page->refCounts, 0);
+        OsVmPhysPagesFreeContiguous(page, ONE_PAGE);//释放一页
+        LOS_AtomicSet(&page->refCounts, 0);//只要物理内存被释放了,引用数就必须得重置为 0
 
         LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
     }
@@ -545,10 +545,17 @@ LosVmPage *LOS_PhysPageAlloc(VOID)
 {
     return OsVmPhysPagesGet(ONE_PAGE);//分配一页物理页
 }
-/******************************************************************************
- 分配nPages页个物理页框,并将页框挂入list
- 返回已分配的页面大小,不负责一定能分配到nPages的页框
-******************************************************************************/
+
+/*!
+ * @brief LOS_PhysPagesAlloc 分配nPages页个物理页框,并将页框挂入list
+ 	\n 返回已分配的页面大小,不负责一定能分配到nPages的页框	
+ *
+ * @param list	
+ * @param nPages	
+ * @return	
+ *
+ * @see
+ */
 size_t LOS_PhysPagesAlloc(size_t nPages, LOS_DL_LIST *list)
 {
     LosVmPage *page = NULL;

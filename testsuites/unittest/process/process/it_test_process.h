@@ -36,7 +36,7 @@
 #include "sys/wait.h"
 
 #define WAIT_PARENT_FIRST_TO_RUN(tick) usleep((tick)*10 * 1000) // 10, 1000, wait time.
-#include "bits/syscall.h"
+#include "sys/syscall.h"
 
 static inline int Syscall(int nbr, int parm1, int parm2, int parm3, int parm4)
 {

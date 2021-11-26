@@ -32,9 +32,6 @@
 #ifndef _SHERR_H
 #define _SHERR_H
 
-#include "sys/types.h"
-#include "bits/alltypes.h"
-
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {

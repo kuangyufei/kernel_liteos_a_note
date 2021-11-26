@@ -32,10 +32,6 @@
 #ifndef _SHELL_PRI_H
 #define _SHELL_PRI_H
 
-#include "sys/types.h"
-#include "bits/alltypes.h"
-#include "shcmd.h"
-
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {

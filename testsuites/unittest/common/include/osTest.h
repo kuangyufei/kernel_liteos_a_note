@@ -47,7 +47,6 @@
 #include <errno.h>
 #include <stdint.h>
 #include <stdarg.h>
-#include <bits/alltypes.h>
 #include <sys/prctl.h>
 #include <time.h>
 #include <search.h>
@@ -250,11 +249,11 @@ UINT32 LosTaskDelay(UINT32 tick);
 #define HUAWEI_ENV_NFS 0
 
 #ifndef TEST_RESOURCELEAK_CHECK
-#define TEST_RESOURCELEAK_CHECK YES
+#define TEST_RESOURCELEAK_CHECK 1
 #endif
 
 #ifndef TEST_MODULE_CHECK
-#define TEST_MODULE_CHECK YES
+#define TEST_MODULE_CHECK 1
 #endif
 
 extern UINT32 g_shellTestQueueID;

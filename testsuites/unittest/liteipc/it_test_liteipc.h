@@ -35,7 +35,7 @@
 #include "osTest.h"
 #include "sys/resource.h"
 
-#define USE_TIMESTAMP YES
+#define USE_TIMESTAMP 1
 
 extern void ItPosixLiteIpc001(void);
 extern void ItPosixLiteIpc002(void);

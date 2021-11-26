@@ -196,11 +196,10 @@ int chdir(const char *path)
 
 #ifdef VFS_USING_WORKDIR
     ret = SetWorkDir(fullpath, strlen(fullpath));
-    if (ret != 0)
-      {
+    if (ret != 0) {
         PRINT_ERR("chdir path error!\n");
         ret = -1;
-      }
+    }
 #endif
 
     /* release normalize directory path name */
@@ -235,19 +234,17 @@ char *getcwd(char *buf, size_t n)
 #ifdef VFS_USING_WORKDIR
     spin_lock_irqsave(&curr->files->workdir_lock, lock_flags);
     len = strlen(curr->files->workdir);
-    if (n <= len)
-      {
+    if (n <= len) {
         set_errno(ERANGE);
         spin_unlock_irqrestore(&curr->files->workdir_lock, lock_flags);
         return NULL;
-      }
+    }
     ret = memcpy_s(buf, n, curr->files->workdir, len + 1);
-    if (ret != EOK)
-      {
+    if (ret != EOK) {
         set_errno(ENAMETOOLONG);
         spin_unlock_irqrestore(&curr->files->workdir_lock, lock_flags);
         return NULL;
-      }
+    }
     spin_unlock_irqrestore(&curr->files->workdir_lock, lock_flags);
 #else
     PRINT_ERR("NO_WORKING_DIR\n");
@@ -393,8 +390,7 @@ static struct dirent **scandir_get_file_list(const char *dir, int *num, int(*fil
 
 int scandir(const char *dir, struct dirent ***namelist,
             int(*filter)(const struct dirent *),
-            int(*compar)(const struct dirent **,
-                         const struct dirent **))
+            int(*compar)(const struct dirent **, const struct dirent **))
 {
     int n = 0;
     struct dirent **list = NULL;
@@ -409,7 +405,6 @@ int scandir(const char *dir, struct dirent ***namelist,
     }
 
     /* Change to return to the array size */
-
     *namelist = (struct dirent **)malloc(n * sizeof(struct dirent *));
     if (*namelist == NULL && n > 0) {
         *namelist = list;
@@ -447,18 +442,16 @@ char *rindex(const char *s, int c)
 static char *ls_get_fullpath(const char *path, struct dirent *pdirent)
 {
     char *fullpath = NULL;
-    int ret = 0;
+    int ret;
 
     if (path[1] != '\0') {
-        /* 2: The position of the path character: / and the end character /0 */
-
+        /* 2, The position of the path character: / and the end character '/0' */
         fullpath = (char *)malloc(strlen(path) + strlen(pdirent->d_name) + 2);
         if (fullpath == NULL) {
             goto exit_with_nomem;
         }
 
-        /* 2: The position of the path character: / and the end character /0 */
-
+        /* 2, The position of the path character: / and the end character '/0' */
         ret = snprintf_s(fullpath, strlen(path) + strlen(pdirent->d_name) + 2,
                          strlen(path) + strlen(pdirent->d_name) + 1, "%s/%s", path, pdirent->d_name);
         if (ret < 0) {
@@ -467,15 +460,13 @@ static char *ls_get_fullpath(const char *path, struct dirent *pdirent)
             return NULL;
         }
     } else {
-        /* 2: The position of the path character: / and the end character /0 */
-
+        /* 2, The position of the path character: / and the end character '/0' */
         fullpath = (char *)malloc(strlen(pdirent->d_name) + 2);
         if (fullpath == NULL) {
             goto exit_with_nomem;
         }
 
-        /* 2: The position of the path character: / and the end character /0 */
-
+        /* 2, The position of the path character: / and the end character '/0' */
         ret = snprintf_s(fullpath, strlen(pdirent->d_name) + 2, strlen(pdirent->d_name) + 1,
                          "/%s", pdirent->d_name);
         if (ret < 0) {

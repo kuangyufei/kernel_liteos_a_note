@@ -225,7 +225,7 @@ STATIC INT32 OsReadEhdr(const CHAR *fileName, ELFInfo *elfInfo, BOOL isExecFile)
 
 #ifdef LOSCFG_DRIVERS_TZDRIVER
     if (isExecFile) {
-        struct file *filep;
+        struct file *filep = NULL;
         ret = fs_getfilep(GetAssociatedSystemFd(elfInfo->procfd), &filep);
         if (ret) {
             PRINT_ERR("%s[%d], Failed to get struct file %s!\n", __FUNCTION__, __LINE__, fileName);

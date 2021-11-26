@@ -71,8 +71,8 @@ static int EpollAllocSysFd(int maxfdp, struct epoll_head *head)
     fd_set *fdset = &g_epollFdSet;
 
     for (i = 0; i < maxfdp; i++) {
-        if (fdset && !(FD_ISSET(i + EPOLL_FD_OFFSET, fdset))) {
-            FD_SET(i + EPOLL_FD_OFFSET, fdset);
+        if (fdset && !(FD_ISSET(i, fdset))) {
+            FD_SET(i, fdset);
             if (!g_epPrivBuf[i]) {
                 g_epPrivBuf[i] = head;
                 return i + EPOLL_FD_OFFSET;
@@ -92,17 +92,17 @@ static int EpollAllocSysFd(int maxfdp, struct epoll_head *head)
  */
 static int EpollFreeSysFd(int fd)
 {
-    int id = fd - EPOLL_FD_OFFSET;
+    int efd = fd - EPOLL_FD_OFFSET;
 
-    if ((id < 0) || (id >= MAX_EPOLL_FD)) {
+    if ((efd < 0) || (efd >= MAX_EPOLL_FD)) {
         set_errno(EMFILE);
         return -1;
     }
 
     fd_set *fdset = &g_epollFdSet;
-    if (fdset && FD_ISSET(fd, fdset)) {
-        FD_CLR(id, fdset);
-        g_epPrivBuf[id] = NULL;
+    if (fdset && FD_ISSET(efd, fdset)) {
+        FD_CLR(efd, fdset);
+        g_epPrivBuf[efd] = NULL;
     }
 
     return 0;
@@ -159,7 +159,8 @@ static VOID DoEpollClose(struct epoll_head *epHead)
 
         free(epHead);
     }
-    return ;
+
+    return;
 }
 
 /**
@@ -236,7 +237,7 @@ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *ev)
     int ret = -1;
 
     epHead = EpollGetDataBuff(epfd);
-    if (epHead== NULL) {
+    if (epHead == NULL) {
         set_errno(EBADF);
         return ret;
     }
@@ -328,6 +329,7 @@ int epoll_wait(int epfd, FAR struct epoll_event *evs, int maxevents, int timeout
 
     ret = poll(pFd, pollSize, timeout);
     if (ret <= 0) {
+        free(pFd);
         return 0;
     }
 
@@ -339,6 +341,7 @@ int epoll_wait(int epfd, FAR struct epoll_event *evs, int maxevents, int timeout
         }
     }
 
+    free(pFd);
     return i;
 }
 

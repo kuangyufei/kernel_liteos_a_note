@@ -288,11 +288,6 @@ int OsShrinkInactiveList(LosVmPhysSeg *physSeg, int nScan, LOS_DL_LIST *list)
 
     return nrReclaimed;
 }
-///是否 未活动文件页少于活动文件页
-bool InactiveListIsLow(LosVmPhysSeg *physSeg)
-{
-    return (physSeg->lruSize[VM_LRU_ACTIVE_FILE] > physSeg->lruSize[VM_LRU_INACTIVE_FILE]) ? TRUE : FALSE;
-}
 
 #ifdef LOSCFG_FS_VFS
 int OsTryShrinkMemory(size_t nPage)//尝试收缩文件页
@@ -323,7 +318,7 @@ int OsTryShrinkMemory(size_t nPage)//尝试收缩文件页
             continue;//放过这一段,找下一段
         }
 
-        if (InactiveListIsLow(physSeg)) {//未活动页少于活动页的情况
+        if (OsInactiveListIsLow(physSeg)) {
             OsShrinkActiveList(physSeg, (nPage < VM_FILEMAP_MIN_SCAN) ? VM_FILEMAP_MIN_SCAN : nPage);//缩小活动页
         }
 
