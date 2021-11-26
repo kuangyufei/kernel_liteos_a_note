@@ -43,7 +43,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-/**
+/*!
  * @brief 
  * @verbatim
     LRU是Least Recently Used的缩写，即最近最少使用页面置换算法，是为虚拟页式存储管理服务的，
@@ -55,7 +55,7 @@ extern "C" {
 #define VM_PHYS_SEG_MAX    32	///< 最大支持32个段
 
 #ifndef min
-#define min(x, y) ((x) < (y) ? (x) : (y))
+#define min(x, y) ((x) < (y) ? (x) : (y)) 
 #endif
 
 #define VM_PAGE_TO_PHYS(page)    (page->physAddr) ///< 获取物理页框的物理基地址
@@ -64,11 +64,11 @@ extern "C" {
 #define VM_PHYS_TO_ORDER(phys)   (min(LOS_LowBitGet((phys) >> PAGE_SHIFT), VM_LIST_ORDER_MAX - 1)) ///< 通过物理地址定位到order
 
 struct VmFreeList {
-    LOS_DL_LIST node;	///< 双循环链表
-    UINT32 listCnt;		///< 双循环链表节点总数
+    LOS_DL_LIST node;	///< 双循环链表用于挂空闲物理内框节点,通过 VmPage->node 挂上来
+    UINT32 listCnt;		///< 空闲物理页总数
 };
 
-/**
+/*!
  * @brief Lru全称是Least Recently Used，即最近最久未使用的意思 针对匿名页和文件页各拆分成一个活跃，一个不活跃的链表。
  */
 enum OsLruList {
@@ -79,29 +79,29 @@ enum OsLruList {
     VM_LRU_UNEVICTABLE,			///< 保存的是此zone中所有禁止换出的页的描述符
     VM_NR_LRU_LISTS
 };
-/**
+/*!
  * @brief 物理段描述符
  */
 typedef struct VmPhysSeg {
     PADDR_T start;            /* The start of physical memory area | 物理内存段的开始地址*/
     size_t size;              /* The size of physical memory area | 物理内存段的大小*/
     LosVmPage *pageBase;      /* The first page address of this area | 本段首个物理页框地址*/
-    SPIN_LOCK_S freeListLock; /* The buddy list spinlock | 伙伴算法自旋锁,用于操作freeList上锁*/
+    SPIN_LOCK_S freeListLock; /* The buddy list spinlock | 伙伴算法自旋锁,用于操作freeList链表*/
     struct VmFreeList freeList[VM_LIST_ORDER_MAX];  /* The free pages in the buddy list | 伙伴算法的分组,默认分成10组 2^0,2^1,...,2^VM_LIST_ORDER_MAX*/
     SPIN_LOCK_S lruLock;		///< 用于置换的自旋锁,用于操作lruList
     size_t lruSize[VM_NR_LRU_LISTS];		///< 5个双循环链表大小，如此方便得到size
     LOS_DL_LIST lruList[VM_NR_LRU_LISTS];	///< 页面置换算法,5个双循环链表头，它们分别描述五中不同类型的链表
 } LosVmPhysSeg;
-/**
+/*!
  * @brief 物理区描述,仅用于方案商配置范围使用
  */
 struct VmPhysArea {
-    PADDR_T start;
-    size_t size;
+    PADDR_T start; ///< 物理内存区基地址
+    size_t size; ///< 物理内存总大小
 };
 
-extern struct VmPhysSeg g_vmPhysSeg[VM_PHYS_SEG_MAX];
-extern INT32 g_vmPhysSegNum;
+extern struct VmPhysSeg g_vmPhysSeg[VM_PHYS_SEG_MAX]; ///< 物理内存采用段页式管理,先切段后伙伴算法页
+extern INT32 g_vmPhysSegNum; ///< 段总数 
 
 UINT32 OsVmPagesToOrder(size_t nPages);
 struct VmPhysSeg *OsVmPhysSegGet(LosVmPage *page);

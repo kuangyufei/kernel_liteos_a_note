@@ -443,7 +443,7 @@ STATUS_T OsRegionOverlapCheck(LosVmSpace *space, LosVmMapRegion *region)
 VOID OsDumpPte(VADDR_T vaddr)
 {
     UINT32 l1Index = vaddr >> MMU_DESCRIPTOR_L1_SMALL_SHIFT;
-    LosVmSpace *space = LOS_SpaceGet(vaddr);
+    LosVmSpace *space = LOS_SpaceGet(vaddr);//通过虚拟地址获取空间,内核分三个空间 内核进程空间,内核堆空间,用户进程空间
     UINT32 ttEntry;
     LosVmPage *page = NULL;
     PTE_T *l2Table = NULL;

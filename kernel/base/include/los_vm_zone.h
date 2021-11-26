@@ -44,10 +44,10 @@ extern "C" {
  * @file los_vm_zone.h
  * @brief 
  * @verbatim
-    /@note_pic
-    	鸿蒙虚拟内存全景图 从 0x00000000U 至 0xFFFFFFFFU 
-    	鸿蒙源码分析系列篇: 			https://blog.csdn.net/kuangyufei 
-    						https://my.oschina.net/u/3751245
+	@note_pic
+	鸿蒙虚拟内存全景图 从 0x00000000U 至 0xFFFFFFFFU 
+	鸿蒙源码分析系列篇: 			https://blog.csdn.net/kuangyufei 
+						https://my.oschina.net/u/3751245
 
     +----------------------------+ 0xFFFFFFFFU
     |  IO设备未缓存                   |
@@ -146,7 +146,7 @@ extern "C" {
 #define UNCACHED_VMM_BASE       (KERNEL_VMM_BASE + KERNEL_VMM_SIZE) ///< 未缓存虚拟空间基地址,适用于DMA,LCD framebuf,
 #define UNCACHED_VMM_SIZE       DDR_MEM_SIZE ///<未缓存虚拟空间大小
 
-#define VMALLOC_START           (UNCACHED_VMM_BASE + UNCACHED_VMM_SIZE) ///< 动态分配基地址
+#define VMALLOC_START           (UNCACHED_VMM_BASE + UNCACHED_VMM_SIZE) ///< 堆区基地址
 #define VMALLOC_SIZE            0x08000000 ///< 128M
 //UART,LCD,摄像头,I2C,中断控制器统称为外部设备
 #ifdef LOSCFG_KERNEL_MMU	//使用MMU时,只是虚拟地址不一样,但映射的物理设备空间一致.

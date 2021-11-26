@@ -19,9 +19,9 @@
    即1个页帧；第8组的内存块包含2的8次方个页帧，即256个页帧。相同大小的内存块挂在同一个链表上进行管理。
    
 申请内存
-	系统申请12KiB内存，即3个页帧时，9个内存块组中索引为3的链表挂着一块大小为8个页帧的内存块满足要求，分配出12KiB内存后还剩余20KiB内存，
-	即5个页帧，将5个页帧分成2的幂次方之和，即4跟1，尝试查找伙伴进行合并。4个页帧的内存块没有伙伴则直接插到索引为2的链表上，
-	继续查找1个页帧的内存块是否有伙伴，索引为0的链表上此时有1个，如果两个内存块地址连续则进行合并，并将内存块挂到索引为1的链表上，否则不做处理。
+	系统申请20KiB内存，按一页帧4K算,即5个页帧时，9个内存块组中索引为2的链表挂着一块大小为8个页帧的内存块满足要求，分配出20KiB内存后还剩余12KiB内存，
+	即3个页帧，将3个页帧分成2的幂次方之和，即0跟1，尝试查找伙伴进行合并。2个页帧的内存块没有伙伴则直接插到索引为1的链表上，
+	继续查找1个页帧的内存块是否有伙伴，索引为0的链表上此时有1个，如果两个内存块地址连续则进行合并，并将内存块挂到索引为0的链表上，否则不做处理。
 释放内存
     系统释放12KiB内存，即3个页帧，将3个页帧分成2的幂次方之和，即2跟1，尝试查找伙伴进行合并，索引为1的链表上有1个内存块，
     若地址连续则合并，并将合并后的内存块挂到索引为2的链表上，索引为0的链表上此时也有1个，如果地址连续则进行合并，
@@ -76,8 +76,8 @@
 
 #define ONE_PAGE    1
 
-/* Physical memory area array */
-STATIC struct VmPhysArea g_physArea[] = {//这里只有一个区域,即只生成一个段
+/* Physical memory area array | 物理内存区数组 */
+STATIC struct VmPhysArea g_physArea[] = {///< 这里只有一个区域,即只生成一个段
     {
         .start = SYS_MEM_BASE, //整个物理内存基地址,#define SYS_MEM_BASE            DDR_MEM_ADDR ,  0x80000000
         .size = SYS_MEM_SIZE_DEFAULT,//整个物理内存总大小 0x07f00000
@@ -137,7 +137,7 @@ VOID OsVmPhysSegAdd(VOID)
         }
     }
 }
-///段区域大小调整
+/// 段区域大小调整
 VOID OsVmPhysAreaSizeAdjust(size_t size)
 {
     /*
@@ -148,7 +148,7 @@ VOID OsVmPhysAreaSizeAdjust(size_t size)
     g_physArea[0].size -= size;
 }
 
-//获得物理内存的总页数
+/// 获得物理内存的总页数
 UINT32 OsVmPhysPageNumGet(VOID)
 {
     UINT32 nPages = 0;
@@ -160,7 +160,7 @@ UINT32 OsVmPhysPageNumGet(VOID)
 
     return nPages;//返回所有物理内存总页数
 }
-///初始化空闲链表,分配物理页框使用伙伴算法
+/// 初始化空闲链表,分配物理页框使用伙伴算法
 STATIC INLINE VOID OsVmPhysFreeListInit(struct VmPhysSeg *seg)
 {
     int i;
@@ -177,7 +177,7 @@ STATIC INLINE VOID OsVmPhysFreeListInit(struct VmPhysSeg *seg)
     }
     LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
 }
-///物理段初始化
+/// 物理段初始化
 VOID OsVmPhysInit(VOID)
 {
     struct VmPhysSeg *seg = NULL;
@@ -192,8 +192,7 @@ VOID OsVmPhysInit(VOID)
         OsVmPhysLruInit(seg);		//初始化LRU置换链表
     }
 }
-///将页框挂入空闲链表,分配物理页框从空闲链表里拿
-
+/// 将页框挂入空闲链表,分配物理页框从空闲链表里拿
 STATIC VOID OsVmPhysFreeListAddUnsafe(LosVmPage *page, UINT8 order)
 {
     struct VmPhysSeg *seg = NULL;

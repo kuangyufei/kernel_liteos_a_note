@@ -228,30 +228,30 @@ BOOL OsKernVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)//内核空间页�
     vmSpace->mapBase = KERNEL_VMM_BASE;//内核空间映射区基地址
     vmSpace->mapSize = KERNEL_VMM_SIZE;//内核空间映射区大小
 #ifdef LOSCFG_DRIVERS_TZDRIVER
-    vmSpace->codeStart = 0;
-    vmSpace->codeEnd = 0;
+    vmSpace->codeStart = 0;	//代码区开始地址
+    vmSpace->codeEnd = 0;	//代码区结束地址
 #endif
     return OsVmSpaceInitCommon(vmSpace, virtTtb);//virtTtb 用于初始化 mmu
 }
 ///初始化内核堆空间
 BOOL OsVMallocSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)//内核动态空间的页表是动态申请得来，共用 L1表
 {
-    vmSpace->base = VMALLOC_START;//内核堆空间基地址
-    vmSpace->size = VMALLOC_SIZE;//内核堆空间大小
-    vmSpace->mapBase = VMALLOC_START;//内核堆空间映射基地址
-    vmSpace->mapSize = VMALLOC_SIZE;//内核堆空间映射区大小
+    vmSpace->base = VMALLOC_START;		//内核堆空间基地址
+    vmSpace->size = VMALLOC_SIZE;		//内核堆空间大小
+    vmSpace->mapBase = VMALLOC_START;	//内核堆空间映射基地址
+    vmSpace->mapSize = VMALLOC_SIZE;	//内核堆空间映射区大小
 #ifdef LOSCFG_DRIVERS_TZDRIVER
     vmSpace->codeStart = 0;
     vmSpace->codeEnd = 0;
 #endif
-    return OsVmSpaceInitCommon(vmSpace, virtTtb);
+    return OsVmSpaceInitCommon(vmSpace, virtTtb);//创建MMU,为后续的虚实映射做好初始化的工作
 }
-///用户虚拟空间初始化
+///内核进程虚拟空间初始化
 VOID OsKSpaceInit(VOID)
 {
-    OsVmMapInit();
-    OsKernVmSpaceInit(&g_kVmSpace, OsGFirstTableGet());
-    OsVMallocSpaceInit(&g_vMallocSpace, OsGFirstTableGet());
+    OsVmMapInit();//初始化后续操作 g_vmSpaceList 的互斥锁 
+    OsKernVmSpaceInit(&g_kVmSpace, OsGFirstTableGet()); //初始化内核进程虚拟空间
+    OsVMallocSpaceInit(&g_vMallocSpace, OsGFirstTableGet());//初始化内核动态分配空间
 }
 /*!
  * @brief OsUserVmSpaceInit	用户空间的TTB表是动态申请得来,每个进程有属于自己的L1,L2表
@@ -270,12 +270,12 @@ BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)
     vmSpace->mapSize = USER_MAP_SIZE;//用户空间映射大小
     vmSpace->heapBase = USER_HEAP_BASE;//用户堆区开始地址,只有用户进程需要设置这里，动态内存的开始地址
     vmSpace->heapNow = USER_HEAP_BASE;//堆区最新指向地址，用户堆空间大小可通过系统调用 do_brk()扩展
-    vmSpace->heap = NULL;
+    vmSpace->heap = NULL;	//用户空间的堆区基地址
 #ifdef LOSCFG_DRIVERS_TZDRIVER
     vmSpace->codeStart = 0;
     vmSpace->codeEnd = 0;
 #endif
-    return OsVmSpaceInitCommon(vmSpace, virtTtb);
+    return OsVmSpaceInitCommon(vmSpace, virtTtb);//创建MMU,为后续的虚实映射做好初始化的工作
 }
 /// 创建用户进程空间
 LosVmSpace *OsCreateUserVmSpace(VOID)

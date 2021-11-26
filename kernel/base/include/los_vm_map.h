@@ -112,7 +112,7 @@ struct VmMapRegion {
     VM_OFFSET_T         pgOff;          /**< region page offset to file | 以文件开始处的偏移量, 必须是分页大小的整数倍, 通常为0, 表示从文件头开始映射。*/
     UINT32              regionFlags;   /**< region flags: cow, user_wired | 线性区标签*/
     UINT32              shmid;          /**< shmid about shared region | shmid为共享线性区id,id背后就是共享线性区*/
-    UINT8               forkFlags;      /**< vm space fork flags: COPY, ZERO, | fork的方式*/
+    UINT8               forkFlags;      /**< vm space fork flags: COPY, ZERO, | 线性区标记方式*/
     UINT8               regionType;     /**< vm region type: ANON, FILE, DEV | 映射类型是匿名,文件,还是设备,所谓匿名可理解为内存映射*/
     union {
         struct VmRegionFile {//文件映射
@@ -129,7 +129,7 @@ struct VmMapRegion {
         } rd;
     } unTypeData;
 };
-
+/// 虚拟内存地址空间,每个进程都有一个虚拟内存地址空间
 typedef struct VmSpace {
     LOS_DL_LIST         node;           /**< vm space dl list | 节点,通过它挂到全局虚拟空间 g_vmSpaceList 链表上*/
     LosRbTree           regionRbTree;   /**< region red-black tree root | 采用红黑树方式管理本空间各个线性区*/
