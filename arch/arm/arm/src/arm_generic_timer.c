@@ -151,7 +151,7 @@ LITE_OS_SEC_TEXT_INIT VOID HalClockStart(VOID)
     TimerTvalWrite(OS_CYCLE_PER_TICK);//递减计时器,使能tick中断,产生周期性tick
     TimerCtlWrite(1);
 }
-
+/// 延迟微妙数 
 VOID HalDelayUs(UINT32 usecs)
 {
     UINT64 cycles = (UINT64)usecs * g_sysClock / OS_SYS_US_PER_SECOND;

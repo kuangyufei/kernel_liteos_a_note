@@ -119,7 +119,7 @@ STATIC VOID OsLockDepPrint(const CHAR *fmt, va_list ap)
 
     UartPuts(buf, len, 0);
 }
-
+/// 打印死锁检测信息
 STATIC VOID OsPrintLockDepInfo(const CHAR *fmt, ...)
 {
     va_list ap;

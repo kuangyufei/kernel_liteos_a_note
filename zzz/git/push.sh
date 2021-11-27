@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 同步官方源码,几处bug的修复
+git commit -m  ' 内核模块初始化等级说明
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)

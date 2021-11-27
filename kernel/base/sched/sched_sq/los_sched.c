@@ -1065,7 +1065,7 @@ STATIC VOID OsSchedTaskSwitch(LosTaskCB *runTask, LosTaskCB *newTask)
     runTask->schedStat.switchCount++;
 #endif
     /* do the task context switch */
-    OsTaskSchedule(newTask, runTask); //执行汇编代码
+    OsTaskSchedule(newTask, runTask); //执行汇编代码,,注意OsTaskSchedule是一个汇编函数 见于 los_dispatch.s
 }
 
 VOID OsSchedIrqEndCheckNeedSched(VOID)
