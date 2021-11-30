@@ -97,7 +97,7 @@ __attribute__((aligned(MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS))) \
     g_tempPageTable[MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS];
 UINT8 *g_mmuJumpPageTable = g_tempPageTable;
 #else
-extern CHAR __mmu_ttlb_begin; /* defined in .ld script */
+extern CHAR __mmu_ttlb_begin; /* defined in .ld script | 内核临时页表在系统使能mmu到使用虚拟地址运行这段期间使用,其虚拟地址保存在g_mmuJumpPageTable这个指针中*/
 UINT8 *g_mmuJumpPageTable = (UINT8 *)&__mmu_ttlb_begin; /* temp page table, this is only used when system power up | 临时页表,用于系统启动阶段*/
 #endif
 /// 获取页表基地址

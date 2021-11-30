@@ -112,9 +112,9 @@ LDM/STR架构中{∧}为可选后缀,当指令为LDM且寄存器列表中包含R
 
 /* macros to align and unalign the stack on 8 byte boundary for ABI compliance */
 .macro STACK_ALIGN, reg /* 栈对齐*/ 
-    MOV     \reg, sp 	@reg=sp
-    TST     SP, #4		@来检查是否设置了特定的位
-    SUBEQ   SP, #4		@表示相等时相减
+    MOV     \reg, sp 	//reg=sp
+    TST     SP, #4		//来检查是否设置了特定的位
+    SUBEQ   SP, #4		//表示相等时相减
     PUSH    { \reg }
 .endm
 
@@ -125,28 +125,28 @@ LDM/STR架构中{∧}为可选后缀,当指令为LDM且寄存器列表中包含R
 
 /* macros to save and restore fpu regs */ 
 .macro PUSH_FPU_REGS reg1 /* 保存fpu寄存器 */ 
-#if !defined(LOSCFG_ARCH_FPU_DISABLE) @FPU使能
+#if !defined(LOSCFG_ARCH_FPU_DISABLE) //FPU使能
     VMRS    \reg1, FPEXC 	
-    PUSH    {\reg1}			@对应 TaskContext->regFPEXC
+    PUSH    {\reg1}			//对应 TaskContext->regFPEXC
     VMRS    \reg1, FPSCR	
-    PUSH    {\reg1}			@对应 TaskContext->regFPSCR
+    PUSH    {\reg1}			//对应 TaskContext->regFPSCR
 #if defined(LOSCFG_ARCH_FPU_VFP_D32)
-    VPUSH   {D16-D31}		@对应 TaskContext->D
+    VPUSH   {D16-D31}		//对应 TaskContext->D
 #endif
-    VPUSH   {D0-D15}		@对应 TaskContext->D
+    VPUSH   {D0-D15}		//对应 TaskContext->D
 #endif
 .endm
 
 .macro POP_FPU_REGS reg1 /* 恢复fpu寄存器 */ 
 #if !defined(LOSCFG_ARCH_FPU_DISABLE)
-    VPOP    {D0-D15}	@对应 TaskContext->D
+    VPOP    {D0-D15}	//对应 TaskContext->D
 #if defined(LOSCFG_ARCH_FPU_VFP_D32)
-    VPOP    {D16-D31}	@对应 TaskContext->D
+    VPOP    {D16-D31}	//对应 TaskContext->D
 #endif
     POP     {\reg1}
-    VMSR    FPSCR, \reg1	@对应 TaskContext->regFPSCR
+    VMSR    FPSCR, \reg1	//对应 TaskContext->regFPSCR
     POP     {\reg1}
-    VMSR    FPEXC, \reg1	@对应 TaskContext->regFPEXC
+    VMSR    FPEXC, \reg1	//对应 TaskContext->regFPEXC
 #endif
 .endm
 
@@ -171,17 +171,17 @@ OsTaskSchedule:			/*任务调度,OsTaskSchedule的目的是将寄存器值按Tas
     PUSH_FPU_REGS   R2	/*保存fpu寄存器*/
 
     /* store sp on running task */
-    STR     SP, [R1] @在运行的任务栈中保存SP,即*runTask->stackPointer = sp
+    STR     SP, [R1] //在运行的任务栈中保存SP,即*runTask->stackPointer = sp
 
-OsTaskContextLoad: @加载上下文
-    /* clear the flag of ldrex */ @LDREX 可从内存加载数据,如果物理地址有共享TLB属性，则LDREX会将该物理地址标记为由当前处理器独占访问，并且会清除该处理器对其他任何物理地址的任何独占访问标记。
-    CLREX @清除ldrex指令的标记
+OsTaskContextLoad: //加载上下文
+    /* clear the flag of ldrex */ //LDREX 可从内存加载数据,如果物理地址有共享TLB属性，则LDREX会将该物理地址标记为由当前处理器独占访问，并且会清除该处理器对其他任何物理地址的任何独占访问标记。
+    CLREX //清除ldrex指令的标记
 
     /* switch to new task's sp */
-    LDR     SP, [R0] @ 即:sp =  *task->stackPointer
+    LDR     SP, [R0] // 即:sp =  *task->stackPointer
 
     /* restore fpu registers */
-    POP_FPU_REGS    R2 @恢复fpu寄存器,这里用了汇编宏R2是宏的参数
+    POP_FPU_REGS    R2 //恢复fpu寄存器,这里用了汇编宏R2是宏的参数
 
     LDMFD   SP!, {R4-R11}
     LDR     R3, [SP, #(11 * 4)]
@@ -204,16 +204,16 @@ OsTaskContextLoad: @加载上下文
     LDMFD   SP!, {R0-R3, R12, LR}
     RFEIA   SP!
 
-OsKernelTaskLoad: 			@内核任务的加载
+OsKernelTaskLoad: 			//内核任务的加载
     ADD     SP, SP, #(4 * 4)
     LDMFD   SP!, {R0-R3, R12, LR}
     RFEIA   SP!
 OsIrqHandler:
-    SUB     LR, LR, #4	@记录译码指令地址,以防切换过程丢失指令.
+    SUB     LR, LR, #4	//记录译码指令地址,以防切换过程丢失指令.
 
     /* Save pc and cpsr to svc sp, ARMv6 and above support */
     SRSFD   #0x13!
-    /* disable irq, switch to svc mode */@超级用户模式(SVC 模式)，主要用于 SWI(软件中断)和 OS(操作系统)。
+    /* disable irq, switch to svc mode *///超级用户模式(SVC 模式)，主要用于 SWI(软件中断)和 OS(操作系统)。
     CPSID   i, #0x13
 #ifdef LOSCFG_KERNEL_PERF
     PUSH    {R0-R3, R12, LR}
@@ -272,37 +272,37 @@ OsIrqHandler:
     LDMFD   SP!, {R0-R3, R12, LR}
     RFEIA   SP!
 
-FUNCTION(ArchSpinLock)	@非要拿到锁
-	mov 	r1, #1		@r1=1
-1:						@循环的作用,因SEV是广播事件.不一定lock->rawLock的值已经改变了
-	ldrex	r2, [r0]	@r0 = &lock->rawLock, 即 r2 = lock->rawLock
-	cmp 	r2, #0		@r2和0比较
-	wfene				@不相等时,说明资源被占用,CPU核进入睡眠状态
-	strexeq r2, r1, [r0]@此时CPU被重新唤醒,尝试令lock->rawLock=1,成功写入则r2=0
-	cmpeq	r2, #0		@再来比较r2是否等于0,如果相等则获取到了锁
-	bne 	1b			@如果不相等,继续进入循环
-	dmb 				@用DMB指令来隔离，以保证缓冲中的数据已经落实到RAM中
-	bx		lr			@此时是一定拿到锁了,跳回调用ArchSpinLock函数
+FUNCTION(ArchSpinLock)	//非要拿到锁
+	mov 	r1, #1		//r1=1
+1:						//循环的作用,因SEV是广播事件.不一定lock->rawLock的值已经改变了
+	ldrex	r2, [r0]	//r0 = &lock->rawLock, 即 r2 = lock->rawLock
+	cmp 	r2, #0		//r2和0比较
+	wfene				//不相等时,说明资源被占用,CPU核进入睡眠状态
+	strexeq r2, r1, [r0]//此时CPU被重新唤醒,尝试令lock->rawLock=1,成功写入则r2=0
+	cmpeq	r2, #0		//再来比较r2是否等于0,如果相等则获取到了锁
+	bne 	1b			//如果不相等,继续进入循环
+	dmb 				//用DMB指令来隔离，以保证缓冲中的数据已经落实到RAM中
+	bx		lr			//此时是一定拿到锁了,跳回调用ArchSpinLock函数
 
 
 
-FUNCTION(ArchSpinTrylock)	@尝试拿锁
-	mov 	r1, #1			@r1=1
-	mov 	r2, r0			@r2 = r0	   
-	ldrex	r0, [r2]		@r2 = &lock->rawLock, 即 r0 = lock->rawLock
-	cmp 	r0, #0			@r0和0比较
-	strexeq r0, r1, [r2]	@尝试令lock->rawLock=1,成功写入则r0=0,否则 r0 =1
-	dmb 					@数据存储隔离，以保证缓冲中的数据已经落实到RAM中
-	bx		lr				@跳回调用ArchSpinLock函数
+FUNCTION(ArchSpinTrylock)	//尝试拿锁
+	mov 	r1, #1			//r1=1
+	mov 	r2, r0			//r2 = r0	   
+	ldrex	r0, [r2]		//r2 = &lock->rawLock, 即 r0 = lock->rawLock
+	cmp 	r0, #0			//r0和0比较
+	strexeq r0, r1, [r2]	//尝试令lock->rawLock=1,成功写入则r0=0,否则 r0 =1
+	dmb 					//数据存储隔离，以保证缓冲中的数据已经落实到RAM中
+	bx		lr				//跳回调用ArchSpinLock函数
 
 
 
-FUNCTION(ArchSpinUnlock)	@释放锁
-	mov 	r1, #0			@r1=0				
-	dmb 					@数据存储隔离，以保证缓冲中的数据已经落实到RAM中
-	str 	r1, [r0]		@令lock->rawLock = 0
-	dsb 					@数据同步隔离
-	sev 					@给各CPU广播事件,唤醒沉睡的CPU们
-	bx		lr				@跳回调用ArchSpinLock函数
+FUNCTION(ArchSpinUnlock)	//释放锁
+	mov 	r1, #0			//r1=0				
+	dmb 					//数据存储隔离，以保证缓冲中的数据已经落实到RAM中
+	str 	r1, [r0]		//令lock->rawLock = 0
+	dsb 					//数据同步隔离
+	sev 					//给各CPU广播事件,唤醒沉睡的CPU们
+	bx		lr				//跳回调用ArchSpinLock函数
 
 
