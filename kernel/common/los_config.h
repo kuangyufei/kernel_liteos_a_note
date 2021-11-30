@@ -46,10 +46,10 @@ extern "C" {
 #endif /* __cplusplus */
 
 /**
- * @ingroup los_config
- * int stack start addr
+ * @ingroup los_config 
+ * int stack start addr | 值在链接时赋予,详见liteos.ld文件
  */
-extern CHAR __int_stack_start;	///< 运行系统函数栈的开始地址
+extern CHAR __int_stack_start;	///< 运行系统函数栈的开始地址 值来自于 liteos.ld中的 __int_stack_start = .;
 extern CHAR __rodata_start;		///< ROM开始地址 只读
 extern CHAR __rodata_end;		///< ROM结束地址
 extern CHAR __bss_start;		///< bss开始地址 __attribute__((section(".__bss_start")));

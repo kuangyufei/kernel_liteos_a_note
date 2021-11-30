@@ -500,18 +500,18 @@ typedef struct {//用户态栈信息,(按递减满栈方式注解)
  * Information of specified parameters passed in during task creation.
  */
 typedef struct tagTskInitParam {//Task的初始化参数
-    TSK_ENTRY_FUNC  pfnTaskEntry;  /**< Task entrance function */	//任务的入口函数
-    UINT16          usTaskPrio;    /**< Task priority */	//任务优先级
-    UINT16          policy;        /**< Task policy */		//任务调度方式
-    UINTPTR         auwArgs[4];    /**< Task parameters, of which the maximum number is four */	//入口函数的参数,最多四个
-    UINT32          uwStackSize;   /**< Task stack size */	//内核栈大小
-    CHAR            *pcName;       /**< Task name */		//任务名称
+    TSK_ENTRY_FUNC  pfnTaskEntry;  /**< Task entrance function | 任务的入口函数*/
+    UINT16          usTaskPrio;    /**< Task priority | 任务优先级*/
+    UINT16          policy;        /**< Task policy | 任务调度方式*/
+    UINTPTR         auwArgs[4];    /**< Task parameters, of which the maximum number is four | 入口函数的参数,最多四个*/
+    UINT32          uwStackSize;   /**< Task stack size | 内核栈大小*/
+    CHAR            *pcName;       /**< Task name | 任务名称*/
 #ifdef LOSCFG_KERNEL_SMP
-    UINT16          usCpuAffiMask; /**< Task cpu affinity mask         */	//任务cpu亲和力掩码
+    UINT16          usCpuAffiMask; /**< Task cpu affinity mask | 任务cpu亲和力掩码        */
 #endif
     UINT32          uwResved;      /**< It is automatically deleted if set to LOS_TASK_STATUS_DETACHED.
-                                        It is unable to be deleted if set to 0. */ //如果设置为LOS_TASK_STATUS_DETACHED，则自动删除。如果设置为0，则无法删除
-    UINT16          consoleID;     /**< The console id of task belongs  */ //任务的控制台id所属
+                                        It is unable to be deleted if set to 0. | 如果设置为LOS_TASK_STATUS_DETACHED，则自动删除。如果设置为0，则无法删除*/
+    UINT16          consoleID;     /**< The console id of task belongs  | 任务的控制台id所属*/
     UINT32          processID;	///< 进程ID
     UserTaskParam   userParam;	///< 任务用户态运行时栈参数
 } TSK_INIT_PARAM_S;

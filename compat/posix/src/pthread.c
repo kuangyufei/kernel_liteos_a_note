@@ -215,6 +215,17 @@ STATIC UINT32 InitPthreadData(pthread_t threadID, pthread_attr_t *userAttr,
     return ret;
 }
 
+/*!
+ * @brief pthread_create	
+ * 创建线程
+ * @param arg 传递给线程入口函数的参数	
+ * @param attr 指向线程属性的指针，如果使用 NULL，则使用默认的线程属性	
+ * @param startRoutine 线程入口函数地址
+ * @param thread 指向线程句柄 (线程标识符) 的指针，不能为 NULL	
+ * @return	
+ *
+ * @see
+ */
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
                    void *(*startRoutine)(void *), void *arg)
 {
@@ -222,7 +233,7 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
     UINT32 ret;
     CHAR name[PTHREAD_DATA_NAME_MAX] = {0};
     STATIC UINT16 pthreadNumber = 1;
-    TSK_INIT_PARAM_S taskInitParam = {0};
+    TSK_INIT_PARAM_S taskInitParam = {0};//posix线程对标鸿蒙内核的任务
     UINT32 taskHandle;
     _pthread_data *self = pthread_get_self_data();
 
@@ -413,6 +424,8 @@ int pthread_join(pthread_t thread, void **retVal)
 /*
  * Set the detachstate of the thread to "detached". The thread then does not
  * need to be joined and its resources will be freed when it exits.
+ * 调用此函数，如果 pthread 线程没有结束，则将 thread 线程属性的分离状态设置为 detached；
+ * 当 thread 线程已经结束时，系统将回收 pthread 线程占用的资源。
  */
 int pthread_detach(pthread_t thread)
 {

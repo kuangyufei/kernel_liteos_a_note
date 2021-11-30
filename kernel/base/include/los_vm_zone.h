@@ -4,7 +4,7 @@
  * @link
    @verbatim
    	@note_pic
-   鸿蒙地址空间全景图 从 0x00000000U 至 0xFFFFFFFFU ,外设和主存采用统一编址方式
+   虚拟地址空间全景图 从 0x00000000U 至 0xFFFFFFFFU ,外设和主存采用统一编址方式
    鸿蒙源码分析系列篇: 		   https://blog.csdn.net/kuangyufei 
 					   https://my.oschina.net/u/3751245
    
@@ -19,19 +19,20 @@
    |  PERIPH_PMM_SIZE			|
    +----------------------------+ 外围设备基地址 PERIPH_DEVICE_BASE
    |  Vmalloc段				  	|
-   |  kernel heap				|
+   |  kernel heap				|内核堆空间
    |  128M						|
    |  映射区 					  	|
    +----------------------------+ 内核动态分配开始地址 VMALLOC_START
    |   DDR_MEM_SIZE 			|
    |   Uncached段				|
-   +----------------------------+ 未缓存虚拟空间基地址 UNCACHED_VMM_BASE
+   +----------------------------+ 未缓存虚拟空间基地址 UNCACHED_VMM_BASE = KERNEL_VMM_BASE + KERNEL_VMM_SIZE
    |   内核虚拟空间					|
-   |   KERNEL_VMM_SIZE			|
-   |   .bss 					|
-   |   .rodata					|
-   |   .text					|
-   |  映射区 					  	|
+   |   mmu table 临时页表			|临时页表的作用详见开机阶段汇编代码注释
+   |   .bss					  	|Block Started by Symbol : 未初始化的全局变量,内核映射页表所在区 g_firstPageTable,这个表在内核启动后更新 
+   |   .data 可读写数据区 			| 
+   |   .rodata 只读数据区			|
+   |   .text 代码区				|
+   |  vectors 中断向量表 			|
    +----------------------------+ 内核空间开始地址 KERNEL_ASPACE_BASE = KERNEL_VMM_BASE
    |	16M预留区				  	|
    +----------------------------+ 用户空间栈顶 USER_ASPACE_TOP_MAX = USER_ASPACE_BASE + USER_ASPACE_SIZE
@@ -48,21 +49,28 @@
    +----------------------------+ 0x00000000U
    
    以下定义 可见于 ..\vendor\hi3516dv300\config\board\include\board.h
-#ifdef LOSCFG_KERNEL_MMU
-#ifdef LOSCFG_TEE_ENABLE
-#define KERNEL_VADDR_BASE		0x41000000
-#else
-#define KERNEL_VADDR_BASE		0x40000000
-#endif
-#else
-#define KERNEL_VADDR_BASE		DDR_MEM_ADDR
-#endif
-#define KERNEL_VADDR_SIZE		DDR_MEM_SIZE
+
+   在liteos_a中, KERNEL_VADDR_BASE 是一个很常用的地址, 可以叫内核的运行起始地址
+   内核的运行地址就是内核设计者希望内核运行时在内存中的位置，这个地址在内核源码中有地方可以配置，
+   并且链接脚本里也会用到这个地址，编译代码时所用到的跟地址相关的值都是以内核运行基址为基础进行计算的。
+   在liteos_a中，内核运行基址是在各个板子的board.h中配置的
+
    
-#define SYS_MEM_BASE			DDR_MEM_ADDR
-#define SYS_MEM_END 			(SYS_MEM_BASE + SYS_MEM_SIZE_DEFAULT)
-   
-#define EXC_INTERACT_MEM_SIZE	0x100000
+	#ifdef LOSCFG_KERNEL_MMU
+	#ifdef LOSCFG_TEE_ENABLE
+	#define KERNEL_VADDR_BASE		0x41000000
+	#else
+	#define KERNEL_VADDR_BASE		0x40000000
+	#endif
+	#else
+	#define KERNEL_VADDR_BASE		DDR_MEM_ADDR
+	#endif
+	#define KERNEL_VADDR_SIZE		DDR_MEM_SIZE
+
+	#define SYS_MEM_BASE			DDR_MEM_ADDR
+	#define SYS_MEM_END 			(SYS_MEM_BASE + SYS_MEM_SIZE_DEFAULT)
+
+	#define EXC_INTERACT_MEM_SIZE	0x100000
    
    内核空间范围: 0x40000000 ~ 0xFFFFFFFF
    用户空间氛围: 0x00000000 ~ 0x3FFFFFFF
@@ -123,19 +131,20 @@ extern "C" {
 #endif /* __cplusplus */
 
 
-#ifdef LOSCFG_KERNEL_MMU
+
+#ifdef LOSCFG_KERNEL_MMU	//
 #ifdef LOSCFG_TEE_ENABLE
 #define KERNEL_VADDR_BASE       0x41000000
 #else
 #define KERNEL_VADDR_BASE       0x40000000		
 #endif
-#else
-#define KERNEL_VADDR_BASE       DDR_MEM_ADDR	///< 主存基地址 Double Data Rate SDRAM
+#else	//没有MMU时,内核运行基址 = 内存的基地址,因为没有了MMU,所以也没有了虚拟内存和物理内存的说法,统一就是物理内存. 
+#define KERNEL_VADDR_BASE       DDR_MEM_ADDR	///< 内核运行基址 等于内存(        Double Data Rate SDRAM)基地址
 #endif
-#define KERNEL_VADDR_SIZE       DDR_MEM_SIZE	///< 主存大小
+#define KERNEL_VADDR_SIZE       DDR_MEM_SIZE	///< 真实主存的大小
 
 #define SYS_MEM_BASE            DDR_MEM_ADDR	///< 物理内存基地址
-#define SYS_MEM_END             (SYS_MEM_BASE + SYS_MEM_SIZE_DEFAULT)	///< 物理内存大小
+#define SYS_MEM_END             (SYS_MEM_BASE + SYS_MEM_SIZE_DEFAULT)	///< 物理内存结束地址
 
 
 #define _U32_C(X)  X##U

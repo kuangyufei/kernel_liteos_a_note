@@ -647,6 +647,19 @@ static int NfsMount(const char *serverIpAndPath, const char *mountPath,
 }
 #endif
 
+/*!
+ * @brief SysMount	挂载文件系统
+ * 挂载是指将一个存储设备挂接到一个已存在的路径上。我们要访问存储设备中的文件，必须将文件所在的分区挂载到一个已存在的路径上，
+ * 然后通过这个路径来访问存储设备。如果只有一个存储设备，则可以直接挂载到根目录 / 上,变成根文件系统
+ * @param data	特定文件系统的私有数据
+ * @param filesystemtype 挂载的文件系统类型	
+ * @param mountflags 读写标志位	
+ * @param source 已经格式化的块设备名称	
+ * @param target 挂载路径，即挂载点	
+ * @return	
+ *
+ * @see
+ */
 int SysMount(const char *source, const char *target, const char *filesystemtype, unsigned long mountflags,
              const void *data)
 {
@@ -714,7 +727,7 @@ OUT:
     }
     return ret;
 }
-///卸载文件系统
+///卸载文件系统,当某个文件系统不需要再使用了，那么可以将它卸载掉。
 int SysUmount(const char *target)
 {
     int ret;
@@ -1095,7 +1108,27 @@ static int SelectParamCheckCopy(fd_set *readfds, fd_set *writefds, fd_set *excep
 
     return 0;
 }
-///系统调用|文件系统|select .鸿蒙liteos目前不支持epoll方式
+
+/*!
+ * @brief SysSelect	系统调用|文件系统|select .鸿蒙liteos目前也支持epoll方式
+ *
+ * @param exceptfds	文件集将监视文件集中的任何文件是否发生错误，可用于其他的用途，
+ *					例如，监视带外数据OOB，带外数据使用MSG_OOB标志发送到套接字上。当select函数返回的时候，
+ *					exceptfds将清除其中的其他文件描述符，只留下标记有OOB数据的文件描述符。
+ * @param nfds	select监视的文件句柄数，一般设为要监视各文件中的最大文件描述符值加1。
+ * @param readfds 文件描述符集合监视文件集中的任何文件是否有数据可读，当select函数返回的时候，
+ *					readfds将清除其中不可读的文件描述符，只留下可读的文件描述符。	
+ * @param timeout	参数是一个指向 struct timeval 类型的指针，它可以使 select()在等待 timeout 时间后
+ *					若没有文件描述符准备好则返回。其timeval结构用于指定这段时间的秒数和微秒数。它可以使select处于三种状态：
+ *		(1) 若将NULL以形参传入，即不传入时间结构，就是将select置于阻塞状态，一定等到监视文件描述符集合中某个文件描述符发生变化为止；
+ *		(2) 若将时间值设为0秒0毫秒，就变成一个纯粹的非阻塞函数，不管文件描述符是否有变化，都立刻返回继续执行，文件无变化返回0，有变化返回一个正值； 
+ *		(3) timeout的值大于0，这就是等待的超时时间，即select在timeout时间内阻塞，超时时间之内有事件到来就返回了，否则在超时后不管怎样一定返回，返回值同上述。
+ * @param writefds	文件描述符集合监视文件集中的任何文件是否有数据可写，当select函数返回的时候，
+ *					writefds将清除其中不可写的文件描述符，只留下可写的文件描述符。
+ * @return	
+ *
+ * @see
+ */
 int SysSelect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
 {
     int ret;
@@ -1500,7 +1533,19 @@ OUT_FREE:
     (void)LOS_MemFree(OS_SYS_MEM_ADDR, iovRet);
     return ret;
 }
-///I/O多路转换
+
+/*!
+ * @brief SysPoll I/O多路转换	
+ *
+ * @param fds	fds是一个struct pollfd类型的数组，用于存放需要检测其状态的socket描述符，并且调用poll函数之后fds数组不会被清空；
+ *				一个pollfd结构体表示一个被监视的文件描述符，通过传递fds指示 poll() 监视多个文件描述符。
+ * @param nfds	记录数组fds中描述符的总数量。
+ * @param timeout	指定等待的毫秒数，无论 I/O 是否准备好，poll() 都会返回，和select函数是类似的。
+ * @return	函数返回fds集合中就绪的读、写，或出错的描述符数量，返回0表示超时，返回-1表示出错；
+ * 		poll改变了文件描述符集合的描述方式，使用了pollfd结构而不是select的fd_set结构，使得poll支持的文件描述符集合限制远大于select的1024。
+ * 		这也是和select不同的地方。
+ * @see
+ */
 int SysPoll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
     int ret;

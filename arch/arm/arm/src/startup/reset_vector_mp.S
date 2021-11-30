@@ -139,7 +139,7 @@ reset_vector: //鸿蒙开机代码
 #endif
 /*当内核被加载到内存中时，它的起始地址就叫做加载地址，因为内核是被uboot加载的，uboot中对mmu页表不会做太复杂的映射，
 一般也就是一一映射，也就是物理地址和虚拟地址值是一样的，所以可以认为内核加载地址值是物理地址。*/
-    MOV    r3, #0x40000000	//内存基地址 KERNEL_VADDR_BASE
+    MOV    r3, #0x40000000	//指定内核运行基地址 KERNEL_VADDR_BASE,也就是说将内核镜像文件放到这个位置.
     VMSR   FPEXC, r3	//VMRS/VMSR 在ARM寄存器与NEON和VFP系统寄存器之间传输内容
     /* r11: delta of physical address and virtual address | 内核运行虚拟地址和物理地址之间的差值 */
     adr     r11, pa_va_offset //获取pa_va_offset变量的当前运行地址，由于这时候mmu已经被关闭，所以这个值就表示pa_va_offset变量的物理地址
@@ -251,7 +251,7 @@ warm_reset://热启动
     cmp    r12, #0 //判断当前cpu是不是主核，如果是主核，则执行bss段清零，如果是从核则不需要执行bbs段清零
     bne    cpu_start //不等于 跳到从核处理	
 
-clear_bss:	//bss段清零
+clear_bss:	//主核时对 .bss段清零
     ldr    r0, =__bss_start
     ldr    r2, =__bss_end
     mov    r1, #0

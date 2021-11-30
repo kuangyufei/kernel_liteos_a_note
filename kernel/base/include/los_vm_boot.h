@@ -48,7 +48,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 #define OS_KHEAP_BLOCK_SIZE                 (512 * 1024UL) ///< 内核空间 堆内存部分大小, 512K
-
+//记录 MMU 映射关系
 typedef struct ArchMmuInitMapping {
     PADDR_T phys;///< 物理地址
     VADDR_T virt;///< 虚拟地址

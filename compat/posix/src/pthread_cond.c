@@ -137,7 +137,16 @@ int pthread_cond_destroy(pthread_cond_t *cond)
     cond->mutex = NULL;
     return ENOERR;
 }
-///初始化条件变量
+
+/*!
+ * @brief pthread_cond_init	初始化条件变量
+ *
+ * @param attr	指向条件变量属性的指针，若为 NULL 则使用默认属性值
+ * @param cond	条件变量句柄，不能为 NULL
+ * @return	
+ *
+ * @see
+ */
 int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
 {
     int ret = ENOERR;
@@ -199,7 +208,7 @@ int pthread_cond_broadcast(pthread_cond_t *cond)
 
     return ret;
 }
-///解除被阻塞的线程
+///解除被阻塞的线程/发送满足条件信号量
 int pthread_cond_signal(pthread_cond_t *cond)
 {
     int ret = ENOERR;
@@ -267,7 +276,18 @@ STATIC INT32 ProcessReturnVal(pthread_cond_t *cond, INT32 val)
     }
     return ret;
 }
-///等待条件 在指定的时间之前阻塞,函数会一直阻塞，直到该条件获得信号，或者最后一个参数所指定的时间已过为止。
+
+/*!
+ * @brief pthread_cond_timedwait	
+ * 等待条件 在指定的时间之前阻塞,函数会一直阻塞，直到该条件获得信号，或者最后一个参数所指定的时间已过为止。
+ * @param absTime	指定的等待时间，单位是操作系统时钟节拍（OS Tick）
+ * @param cond	条件变量句柄，不能为 NULL
+ * @param mutex	指向互斥锁控制块的指针，不能为 NULL
+ * @return	
+ *		此函数和 pthread_cond_wait() 函数唯一的差别在于，如果条件变量不可用，线程将被阻塞 abstime 时长，
+ *		超时后函数将直接返回 ETIMEDOUT 错误码，线程将会被唤醒进入就绪态。
+ * @see
+ */
 int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
                            const struct timespec *absTime)
 {
@@ -318,7 +338,7 @@ int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
     pthread_testcancel();
     return ret;
 }
-///基于条件变量阻塞,阻塞的线程可以通过 pthread_cond_signal() 或 pthread_cond_broadcast() 唤醒
+///阻塞方式获取条件变量,阻塞的线程可以通过 pthread_cond_signal() 或 pthread_cond_broadcast() 唤醒
 int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
     int ret;

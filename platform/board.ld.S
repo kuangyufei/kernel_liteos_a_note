@@ -57,13 +57,30 @@ SECTIONS
 
 USER_INIT_VM_START = 0x1000000;
 ***********************************************/
-#define TEXT_BASE  KERNEL_VADDR_BASE
+#define TEXT_BASE  KERNEL_VADDR_BASE //代码区为内核起始地址
 
 OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
 OUTPUT_ARCH(arm)
+/* 
+https://www.jianshu.com/p/42823b3b7c8e
+MEMORY：内存布局,描述板上的存储器位置
+语法为
+NAME1 [(ATTR)] : ORIGIN = ORIGIN1, LENGTH = LEN2
 
+NAME ：存储区域的名字。（自己可以随意命名）
+ATTR ：定义该存储区域的属性。ATTR属性内可以出现以下7 个字符：
+	R 只读section
+	W 读/写section
+	X 可执行section
+	A 可分配的section
+	I 初始化了的section
+	L 同I
+	! 不满足该字符之后的任何一个属性的section
+ORIGIN ：关键字，区域的开始地址，可简写成org 或o
+LENGTH ：关键字，区域的大小，可简写成len 或l
+*/
 MEMORY
-{
+{ //ram,sram为存储区域的名字,可以随意取
     ram : ORIGIN = KERNEL_VADDR_BASE, LENGTH = KERNEL_VADDR_SIZE
     sram : ORIGIN = 0x40000000, LENGTH = 0x1000
     user_ram : ORIGIN = 0x1000000, LENGTH = 0x100000

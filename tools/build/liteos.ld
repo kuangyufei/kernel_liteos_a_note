@@ -1,12 +1,14 @@
 
-ENTRY(reset_vector)
-INCLUDE board.ld
+// GNU 链接脚本语法 https://sourceware.org/binutils/docs/ld/LD-Index.html
+ENTRY(reset_vector) /*指定入口地址*/
+INCLUDE board.ld // > ram 指的是要大于 ram这个地址, ram在board.ld中定义
+/* 这是脚本中最重要的命令了，所有的LD脚本都会有这个命令，用来指定如何将输入文件映射到输出文件等等 */
 SECTIONS
 {
      _start = .;
     .set_sysinit_set : {
         __start_set_sysinit_set = ABSOLUTE(.);
-        KEEP (*(.set_sysinit_set))
+        KEEP (*(.set_sysinit_set))//在连接命令行内使用了选项–gc-sections后，连接器可能将某些它认为没用的section过滤掉，此时就有必要强制连接器保留一些特定的 section，可用KEEP()关键字达此目的。
         __stop_set_sysinit_set = ABSOLUTE(.);
     } > ram
 
@@ -126,34 +128,34 @@ SECTIONS
         __ram_data_end = .;
     } > ram
 
-    .user_init USER_INIT_VM_START : ALIGN(0x1000) {
+    .user_init USER_INIT_VM_START : ALIGN(0x1000) {//开始地址设为 USER_INIT_VM_START
         . = ALIGN(0x4);
-        __user_init_load_addr = LOADADDR(.user_init);
-        __user_init_entry = .;
+        __user_init_load_addr = LOADADDR(.user_init);//应用程序的加载地址
+        __user_init_entry = .;//应用程序的入口地址
         KEEP(libuserinit.O (.user.entry))
         KEEP(libuserinit.O (.user.text))
         KEEP(libuserinit.O (.user.rodata))
         . = ALIGN(0X4);
-        __user_init_data = .;
+        __user_init_data = .;//设置数据段开始位置 __user_init_data
         KEEP(libuserinit.O (.user.data))
         . = ALIGN(0X4);
-        __user_init_bss = .;
+        __user_init_bss = .;//将当前位置给__user_init_bss
         KEEP(libuserinit.O (.user.bss))
         . = ALIGN(0x1000);
-        __user_init_end = .;
+        __user_init_end = .;/	
     } > user_ram AT > ram
 
     __user_init_size = __user_init_end - __user_init_entry;
 
-    /* unintialized data (in same segment as writable data) */
+    /* unintialized data (in same segment as writable data)*/
     .bss : {
-        . = ALIGN(0x800);
-        __int_stack_start = .;
+        . = ALIGN(0x800); //当前位置按 0x800对齐
+        __int_stack_start = .; //将当前位置给__int_stack_start
         *(.int_stack);
         . = ALIGN(0x4);
         KEEP(*(.bss.prebss.*))
         . = ALIGN(0x8);
-        __bss_start = .;
+        __bss_start = .;	//将当前位置给__bss_start,将所有的目标*(.bss .bss.*) .. 链接到 .bss中
         *(.bss .bss.*)
         *(.gnu.linkonce.b.*)
         *(COMMON)

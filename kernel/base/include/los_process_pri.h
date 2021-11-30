@@ -457,10 +457,10 @@ STATIC INLINE User *OsCurrUserGet(VOID)
 #define OS_PROCESS_INFO_ALL 1
 #define OS_PROCESS_DEFAULT_UMASK 0022 ///< 系统默认的用户掩码(umask),大多数的Linux系统的默认掩码为022。
 //用户掩码的作用是用户在创建文件时从文件的默认权限中去除掩码中的权限。所以文件创建之后的权限实际为:创建文件的权限为：0666-0022=0644。创建文件夹的权限为：0777-0022=0755
-extern UINTPTR __user_init_entry;	///<  第一个用户态任务的入口地址 查看 LITE_USER_SEC_ENTRY
-extern UINTPTR __user_init_bss;		///<  查看 LITE_USER_SEC_BSS
-extern UINTPTR __user_init_end;		///<  用户空间结束虚拟地址
-extern UINTPTR __user_init_load_addr;///< 用户空间加载地址
+extern UINTPTR __user_init_entry;	///<  第一个用户态进程(init)的入口地址 查看 LITE_USER_SEC_ENTRY
+extern UINTPTR __user_init_bss;		///<  查看 LITE_USER_SEC_BSS ,赋值由liteos.ld完成
+extern UINTPTR __user_init_end;		///<  init 进程的用户空间初始化结束地址
+extern UINTPTR __user_init_load_addr;///< init进程的加载地址
 extern UINT32 OsSystemProcessCreate(VOID);
 extern VOID OsProcessCBRecycleToFree(VOID);
 extern VOID OsProcessResourcesToFree(LosProcessCB *processCB);

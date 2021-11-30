@@ -974,22 +974,22 @@ STATIC VOID OsSetKSectionAttr(UINTPTR virtAddr, BOOL uncached)
     UINTPTR ramDataStart = (UINTPTR)&__ram_data_start + offset;
     UINTPTR bssEnd = (UINTPTR)&__bss_end + offset;
     UINT32 bssEndBoundary = ROUNDUP(bssEnd, MB);
-    LosArchMmuInitMapping mmuKernelMappings[] = {
-        {
+    LosArchMmuInitMapping mmuKernelMappings[] = {//初始化映射关系
+        {	//映射代码区
             .phys = SYS_MEM_BASE + textStart - virtAddr,
             .virt = textStart,//内核代码区
             .size = ROUNDUP(textEnd - textStart, MMU_DESCRIPTOR_L2_SMALL_SIZE),//代码区大小
             .flags = VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_EXECUTE,//代码段只读，可执行
             .name = "kernel_text"
         },
-        {
+        {	//映射只读数据
             .phys = SYS_MEM_BASE + rodataStart - virtAddr,
             .virt = rodataStart,//内核常量区
             .size = ROUNDUP(rodataEnd - rodataStart, MMU_DESCRIPTOR_L2_SMALL_SIZE),//4K对齐
             .flags = VM_MAP_REGION_FLAG_PERM_READ,//常量段只读
             .name = "kernel_rodata"
         },
-        {
+        {	//映射全局未初始化区
             .phys = SYS_MEM_BASE + ramDataStart - virtAddr,
             .virt = ramDataStart,
             .size = ROUNDUP(bssEndBoundary - ramDataStart, MMU_DESCRIPTOR_L2_SMALL_SIZE),
