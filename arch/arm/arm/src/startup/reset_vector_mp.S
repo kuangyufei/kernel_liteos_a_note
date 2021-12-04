@@ -349,8 +349,8 @@ cpu_start:	/* CPU 启动 */
     bl     mmu_setup			/* 安装MMU */
 #endif
 
-    bl     HalSecondaryCpuStart
-    b      . //注意 b . 就会跳转到当前地址,相当于死循环
+    bl     HalSecondaryCpuStart	//跳到次核CPU执行
+    b      . //注意 b . 指在当前地址运行,相当于死循环
 
 secondary_cpu_init:	/* 次级CPU初始化 */
 #ifdef LOSCFG_TEE_ENABLE
