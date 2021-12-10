@@ -194,7 +194,7 @@ STATIC INT32 ConsoleCtrlCaptureLine(CONSOLE_CB *consoleCB)
 
     return LOS_OK;
 }
-
+///< 铺捉到 ctrl + 字符, 例如 ctrl + c 
 STATIC INT32 ConsoleCtrlCaptureChar(CONSOLE_CB *consoleCB)
 {
     struct termios consoleTermios = {0};
@@ -208,14 +208,15 @@ STATIC INT32 ConsoleCtrlCaptureChar(CONSOLE_CB *consoleCB)
 
     return LOS_OK;
 }
-
+///< 铺捉到 ctrl + 右方向键(>)
 STATIC INT32 ConsoleCtrlRightsCapture(CONSOLE_CB *consoleCB)
 {
     (VOID)LOS_SemPend(consoleCB->consoleSem, LOS_WAIT_FOREVER);
     if ((ConsoleRefcountGet(consoleCB) == 0) &&
-        (OsCurrTaskGet()->taskID != consoleCB->shellEntryId)) {
-        /* not 0:indicate that shellentry is in uart_read, suspend shellentry task directly */
-        (VOID)LOS_TaskSuspend(consoleCB->shellEntryId);
+        (OsCurrTaskGet()->taskID != consoleCB->shellEntryId)) { //控制台没有任务使用且当前任务不是接收终端输入的shell entry 任务
+        /* not 0:indicate that shellentry is in uart_read, suspend shellentry task directly 
+		| 表示shellentry在uart_read中，直接挂起shellentry任务*/
+        (VOID)LOS_TaskSuspend(consoleCB->shellEntryId);//挂起任务,意味着不接受输入
     }
     ConsoleRefcountSet(consoleCB, TRUE);
     return LOS_OK;
@@ -260,7 +261,7 @@ STATIC CONSOLE_CB *OsGetConsoleByDevice(const CHAR *deviceName)
         return NULL;
     }
 }
-///获取控制台ID,(/dev/serial = 1, /dev/telnet = 2)
+///获取控制台ID,(/dev/console1 = SERIAL, /dev/console2 = telnet)
 STATIC INT32 OsGetConsoleID(const CHAR *deviceName)
 {
     if ((deviceName != NULL) &&
@@ -374,7 +375,7 @@ STATIC INLINE VOID UserEndOfRead(CONSOLE_CB *consoleCB, struct file *filep,
 }
 ///根据VT终端标准 <ESC>[37m 为设置前景色
 enum {
-    STAT_NORMAL_KEY,	///< 普通按键
+    STAT_NORMAL_KEY,///< 普通按键
     STAT_ESC_KEY,	///< 控制按键,只有 ESC 是
     STAT_MULTI_KEY	///< 多个按键,只有 [ 是
 };
@@ -677,7 +678,7 @@ STATIC ssize_t DoRead(CONSOLE_CB *consoleCB, CHAR *buffer, size_t bufLen,
 
     return ret;
 }
-///用户任务从控制台读数据
+///任务从控制台读数据
 STATIC ssize_t ConsoleRead(struct file *filep, CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -808,8 +809,8 @@ STATIC ssize_t ConsoleWrite(struct file *filep, const CHAR *buffer, size_t bufLe
     cirBufSendCB = ((CONSOLE_CB *)filep->f_priv)->cirBufSendCB;
 
     /*
-     * adopt uart open function to read data from buffer
-     * and write data to filep (filep is
+     * adopt uart open function to read data from buffer | 用uart open函数从buffer中读取数据
+     * and write data to filep (filep is | 向filep写入数据（filep对应/dev/console的filep）
      * corresponding to filep of /dev/console)
      */
     sbuffer = userBuf ? LOS_MemAlloc(m_aucSysMem0, bufLen) : (CHAR *)buffer;
@@ -817,12 +818,12 @@ STATIC ssize_t ConsoleWrite(struct file *filep, const CHAR *buffer, size_t bufLe
         ret = ENOMEM;
         goto ERROUT;
     }
-
+	//将用户空间的数据拷贝进内核空间
     if (userBuf && (LOS_ArchCopyFromUser(sbuffer, buffer, bufLen) != 0)) {
         ret = EFAULT;
         goto ERROUT;
     }
-    ret = DoWrite(cirBufSendCB, sbuffer, bufLen);//真正的写操作
+    ret = DoWrite(cirBufSendCB, sbuffer, bufLen);//真正的写操作,向控制台任务发起写入事件
 
     if (userBuf) {
         LOS_MemFree(m_aucSysMem0, sbuffer);
@@ -906,7 +907,7 @@ INT32 ConsoleGetPgrp(CONSOLE_CB *consoleCB, unsigned long arg)
     }
     return LOS_OK;
 }
-
+///< 对控制台i/o操作
 STATIC INT32 ConsoleIoctl(struct file *filep, INT32 cmd, unsigned long arg)
 {
     INT32 ret;
@@ -944,7 +945,7 @@ STATIC INT32 ConsoleIoctl(struct file *filep, INT32 cmd, unsigned long arg)
         case CONSOLE_CONTROL_CAPTURE_CHAR:
             ret = ConsoleCtrlCaptureChar(consoleCB);
             break;
-        case CONSOLE_CONTROL_REG_USERTASK:
+        case CONSOLE_CONTROL_REG_USERTASK: //注册shell 客户端    http://weharmonyos.com/blog/72.html
             ret = ConsoleTaskReg(consoleCB->consoleID, arg);
             break;
         case TIOCGWINSZ:
@@ -1071,7 +1072,7 @@ STATIC INT32 OsConsoleFileInit(CONSOLE_CB *consoleCB)
         goto ERROUT;
     }
 
-    filep = files_allocate(vnode, O_RDWR, 0, consoleCB, FILE_START_FD);
+    filep = files_allocate(vnode, O_RDWR, 0, consoleCB, FILE_START_FD);//3号文件描述符分配给了控制台
     if (filep == NULL) {
         ret = EMFILE;
         goto ERROUT;
@@ -1288,7 +1289,7 @@ STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
     }
 
     ret = snprintf_s(consoleCB->name, CONSOLE_NAMELEN, CONSOLE_NAMELEN - 1,
-                     "%s%u", CONSOLE, consoleCB->consoleID);//通过printf方式得到name
+                     "%s%u", CONSOLE, consoleCB->consoleID);//通过printf方式得到name 例如: /dev/console1
     if (ret == -1) {
         PRINT_ERR("consoleCB->name snprintf_s failed\n");
         goto ERR_WITH_NAME;
@@ -1376,7 +1377,7 @@ INT32 system_console_init(const CHAR *deviceName)//deviceName: /dev/serial /dev/
     }
 
     LOS_SpinLockSave(&g_consoleSpin, &intSave);
-    g_console[consoleID - 1] = consoleCB;//全局变量,  g_console最大值只有2 ,代表当前0,1指向哪个任务.
+    g_console[consoleID - 1] = consoleCB;//全局变量,  g_console最大值只有2 ,所有任务共用控制台.
     if (OsCurrTaskGet() != NULL) {//当前task
         g_taskConsoleIDArray[OsCurrTaskGet()->taskID] = (UINT8)consoleID;//任务绑定控制台ID
     }
@@ -1467,15 +1468,15 @@ BOOL ConsoleEnable(VOID)
 
     return FALSE;
 }
-
+///<  ShellEntry是否在运行,其为负责接受来自终端敲入的一个个字符
 BOOL IsShellEntryRunning(UINT32 shellEntryId)
 {
     LosTaskCB *taskCB = NULL;
     if (shellEntryId == SHELL_ENTRYID_INVALID) {
         return FALSE;
     }
-    taskCB = OsGetTaskCB(shellEntryId);
-    return !OsTaskIsUnused(taskCB) &&
+    taskCB = OsGetTaskCB(shellEntryId);//获取任务
+    return !OsTaskIsUnused(taskCB) && //确定名为"ShellEntry"的任务
            (strlen(taskCB->taskName) == SHELL_ENTRY_NAME_LEN &&
             strncmp(taskCB->taskName, SHELL_ENTRY_NAME, SHELL_ENTRY_NAME_LEN) == 0);
 }
@@ -1485,8 +1486,8 @@ INT32 ConsoleTaskReg(INT32 consoleID, UINT32 taskID)
     UINT32 intSave;
 
     LOS_SpinLockSave(&g_consoleSpin, &intSave);
-    if (!IsShellEntryRunning(g_console[consoleID - 1]->shellEntryId)) {
-        g_console[consoleID - 1]->shellEntryId = taskID;	//ID捆绑
+    if (!IsShellEntryRunning(g_console[consoleID - 1]->shellEntryId)) {//如果控制台还没有捆绑shell客户端任务 
+        g_console[consoleID - 1]->shellEntryId = taskID;	//给控制台捆绑一个shell客户端任务,接受终端输入.
         LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
         (VOID)OsSetCurrProcessGroupID(OsGetUserInitProcessID());// @notethinking 为何要在此处设置当前进程的组ID?
         return LOS_OK;
@@ -1632,13 +1633,13 @@ STATIC ssize_t WriteToTerminal(const CONSOLE_CB *consoleCB, const CHAR *buffer, 
 
     fd = consoleCB->fd;//获取文件描述符
     ret = fs_getfilep(fd, &filep);//获取文件指针
-    ret = GetFilepOps(filep, &privFilep, &fileOps);//获取文件的操作方法
+    ret = GetFilepOps(filep, &privFilep, &fileOps);//获取终端设备私有操作方法
 
     if ((fileOps == NULL) || (fileOps->write == NULL)) {
         ret = EFAULT;
         goto ERROUT;
     }
-    (VOID)fileOps->write(privFilep, buffer, bufLen);//写入文件,控制台的本质就是一个文件，这里写入文件就是在终端设备上呈现出来
+    (VOID)fileOps->write(privFilep, buffer, bufLen);//写入终端设备,在终端设备上呈现出来
 
     return cnt;
 

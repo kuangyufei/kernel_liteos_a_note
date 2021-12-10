@@ -646,7 +646,7 @@ int ShellTaskInit(ShellCB *shellCB)
 
     return ret;
 }
-
+///< 给控制台注册一个shell客户端任务
 static int ShellKernelReg(unsigned int shellHandle)
 {
     return ioctl(STDIN_FILENO, CONSOLE_CONTROL_REG_USERTASK, shellHandle);
@@ -666,21 +666,21 @@ void *ShellEntry(void *argv)
 
     (void)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);
 
-    ret = prctl(PR_SET_NAME, "ShellEntry");
+    ret = prctl(PR_SET_NAME, "ShellEntry");//创建一个shell客户端任务
     if (ret != SH_OK) {
         return NULL;
     }
 
-    ret = ShellKernelReg((int)tid);
+    ret = ShellKernelReg((int)tid);///< 将shell客户端任务和控制台绑定
     if (ret != 0) {
         printf("another shell is already running!\n");
         exit(-1);
     }
 
     while (1) {
-        n = read(0, &ch, 1);
+        n = read(0, &ch, 1);//读取输入字符
         if (n == 1) {
-            ShellCmdLineParse(ch, (OutputFunc)printf, shellCB);
+            ShellCmdLineParse(ch, (OutputFunc)printf, shellCB);//对命令行内容进行解析
         }
     }
     return NULL;

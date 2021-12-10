@@ -3,8 +3,7 @@
  * @brief
  * @link
    @verbatim
-   	@note_pic
-   虚拟地址空间全景图 从 0x00000000U 至 0xFFFFFFFFU ,外设和主存采用统一编址方式
+   虚拟地址空间全景图 从 0x00000000U 至 0xFFFFFFFFU ,外设和主存采用统一编址方式 @note_pic
    鸿蒙源码分析系列篇: 		   https://blog.csdn.net/kuangyufei 
 					   https://my.oschina.net/u/3751245
    

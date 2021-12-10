@@ -46,7 +46,7 @@ extern "C" {
 
 #ifdef LOSCFG_FS_VFS //将设备虚拟为文件统一来操作,对鸿蒙来说一切皆为文件
 #define SERIAL         "/dev/serial"
-#define SERIAL_TTYGS0  "/dev/ttyGS0" 
+#define SERIAL_TTYGS0  "/dev/ttyGS0" //串口0 /dev/console映射到此
 #define SERIAL_UARTDEV "/dev/uartdev"
 
 #define SERIAL_TYPE_UART_DEV   1

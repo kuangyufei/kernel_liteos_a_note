@@ -1,3 +1,33 @@
+/*!
+ * @file    los_list.h
+ * @brief	双向链表由内联函数实现
+ * @link dll http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-apx-dll.html @endlink
+   @verbatim
+   基本概念
+	   双向链表是指含有往前和往后两个方向的链表，即每个结点中除存放下一个节点指针外，
+	   还增加一个指向前一个节点的指针。其头指针head是唯一确定的。
+   
+	   从双向链表中的任意一个结点开始，都可以很方便地访问它的前驱结点和后继结点，这种
+	   数据结构形式使得双向链表在查找时更加方便，特别是大量数据的遍历。由于双向链表
+	   具有对称性，能方便地完成各种插入、删除等操作，但需要注意前后方向的操作。
+   
+   双向链表的典型开发流程：
+	   调用LOS_ListInit/LOS_DL_LIST_HEAD初始双向链表。
+	   调用LOS_ListAdd/LOS_ListHeadInsert向链表头部插入节点。
+	   调用LOS_ListTailInsert向链表尾部插入节点。
+	   调用LOS_ListDelete删除指定节点。
+	   调用LOS_ListEmpty判断链表是否为空。
+	   调用LOS_ListDelInit删除指定节点并以此节点初始化链表。 
+   
+   注意事项
+	   需要注意节点指针前后方向的操作。
+	   链表操作接口，为底层接口，不对入参进行判空，需要使用者确保传参合法。
+	   如果链表节点的内存是动态申请的，删除节点时，要注意释放内存。
+   @endverbatim
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2021-12-7
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -44,31 +74,6 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-/**
- * @brief 删除链:删除由装入点管理的文件
- * @verbatim 
-    基本概念
-        双向链表是指含有往前和往后两个方向的链表，即每个结点中除存放下一个节点指针外，
-        还增加一个指向前一个节点的指针。其头指针head是唯一确定的。
-
-        从双向链表中的任意一个结点开始，都可以很方便地访问它的前驱结点和后继结点，这种
-        数据结构形式使得双向链表在查找时更加方便，特别是大量数据的遍历。由于双向链表
-        具有对称性，能方便地完成各种插入、删除等操作，但需要注意前后方向的操作。
-
-    双向链表的典型开发流程：
-        调用LOS_ListInit/LOS_DL_LIST_HEAD初始双向链表。
-        调用LOS_ListAdd/LOS_ListHeadInsert向链表头部插入节点。
-        调用LOS_ListTailInsert向链表尾部插入节点。
-        调用LOS_ListDelete删除指定节点。
-        调用LOS_ListEmpty判断链表是否为空。
-        调用LOS_ListDelInit删除指定节点并以此节点初始化链表。 
-
-    注意事项
-        需要注意节点指针前后方向的操作。
-        链表操作接口，为底层接口，不对入参进行判空，需要使用者确保传参合法。
-        如果链表节点的内存是动态申请的，删除节点时，要注意释放内存。
- * @endverbatim
- */
 
 /**
  * @ingroup los_list

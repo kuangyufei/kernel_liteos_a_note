@@ -465,12 +465,12 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntryInit(ShellCB *shellCB)
     initParam.usTaskPrio   = 9; /* 9:shell task priority */
     initParam.auwArgs[0]   = (UINTPTR)shellCB;
     initParam.uwStackSize  = 0x1000;
-    initParam.pcName       = name;
+    initParam.pcName       = name;	//任务名称
     initParam.uwResved     = LOS_TASK_STATUS_DETACHED;
 
-    ret = LOS_TaskCreate(&shellCB->shellEntryHandle, &initParam);//创建任务
+    ret = LOS_TaskCreate(&shellCB->shellEntryHandle, &initParam);//创建shell任务
 #ifdef LOSCFG_PLATFORM_CONSOLE
-    (VOID)ConsoleTaskReg((INT32)shellCB->consoleID, shellCB->shellEntryHandle);//将任务注册到控制台
+    (VOID)ConsoleTaskReg((INT32)shellCB->consoleID, shellCB->shellEntryHandle);//将shell注册到控制台
 #endif
 
     return ret;

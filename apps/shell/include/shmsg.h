@@ -40,24 +40,24 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define SHELL_ENTRY_STACKSIZE   0x1000
-#define SHELL_TASK_STACKSIZE    0x3000
+#define SHELL_ENTRY_STACKSIZE   0x1000	///< shell客户端栈大小 4K
+#define SHELL_TASK_STACKSIZE    0x3000  ///< shell服务端栈大小 12K
 
-#define SHELL_EXEC_COMMAND          "exec"
+#define SHELL_EXEC_COMMAND          "exec"	///< 运行 elf 命令 例如: exec bin/hello
 #define SHELL_EXEC_COMMAND_BYTES    4
 #define CMD_EXEC_COMMAND            SHELL_EXEC_COMMAND" "
 #define CMD_EXEC_COMMAND_BYTES      (SHELL_EXEC_COMMAND_BYTES+1)
-#define CMD_EXIT_COMMAND            "exit"
+#define CMD_EXIT_COMMAND            "exit" ///< 退出命令
 #define CMD_EXIT_COMMAND_BYTES      4
 #define CMD_EXIT_CODE_BASE_DEC      10
 
 #define CONSOLE_IOC_MAGIC   'c'
-#define CONSOLE_CONTROL_REG_USERTASK _IO(CONSOLE_IOC_MAGIC, 7)
+#define CONSOLE_CONTROL_REG_USERTASK _IO(CONSOLE_IOC_MAGIC, 7) ///< 注册用户任务 shell 客户端
 
 #define COLOR_NONE     "\e[0m"
 #define COLOR_RED      "\e[0;31m"
 #define COLOR_L_RED    "\e[1;31m"
-#define SHELL_PROMPT   COLOR_L_RED"OHOS # "COLOR_NONE
+#define SHELL_PROMPT   COLOR_L_RED"OHOS # "COLOR_NONE ///< shell 红色提示 OHOS # 	
 
 typedef void (*OutputFunc)(const char *fmt, ...);
 extern int ShellTaskInit(ShellCB *shellCB);

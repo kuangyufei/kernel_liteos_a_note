@@ -382,7 +382,7 @@ INT32 TelnetDevInit(INT32 clientFd)
         PRINT_ERR("Invalid telnet clientFd.\n");
         return -1;
     }
-    ret = system_console_init(TELNET);
+    ret = system_console_init(TELNET);//创建虚拟设备
     if (ret != 0) {
         PRINT_ERR("Telnet console init error.\n");
         return ret;

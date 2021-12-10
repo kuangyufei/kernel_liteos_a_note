@@ -75,7 +75,10 @@ typedef struct {
     LOS_DL_LIST exitProcessList; /**< List of closed processes (zombie processes) under this group | 进程组的僵死进程链表*/
     LOS_DL_LIST groupList;       /**< Process group list | 进程组链表,上面挂的都是进程组*/
 } ProcessGroup;
-/*! 进程控制块*/
+
+/**
+ *  进程控制块.
+ */
 typedef struct ProcessCB {
     CHAR                 processName[OS_PCB_NAME_LEN]; /**< Process name | 进程名称 */
     UINT32               processID;                    /**< Process ID = leader thread ID | 进程ID,由进程池分配,范围[0,64] */
@@ -115,8 +118,8 @@ typedef struct ProcessCB {
     timer_t             timerID;       /**< iTimer */
 
 #ifdef LOSCFG_SECURITY_CAPABILITY	//安全能力
-    User                *user;		//进程的拥有者
-    UINT32              capability;	//安全能力范围 对应 CAP_SETGID
+    User                *user;		///< 进程的拥有者
+    UINT32              capability;	///< 安全能力范围 对应 CAP_SETGID
 #endif
 #ifdef LOSCFG_SECURITY_VID	//虚拟ID映射功能
     TimerIdMap          timerIdMap;
@@ -124,7 +127,7 @@ typedef struct ProcessCB {
 #ifdef LOSCFG_DRIVERS_TZDRIVER
     struct Vnode        *execVnode;     /**< Exec bin of the process | 进程的可执行文件 */
 #endif
-    mode_t               umask;///< umask(user file-creatiopn mode mask)为用户文件创建掩码，是创建文件或文件夹时默认权限的基础。
+    mode_t               umask; ///< umask(user file-creatiopn mode mask)为用户文件创建掩码，是创建文件或文件夹时默认权限的基础。
 #ifdef LOSCFG_KERNEL_CPUP
     OsCpupBase           *processCpup; /**< Process cpu usage | 进程占用CPU情况统计*/
 #endif

@@ -34,7 +34,7 @@
 
 /**
  * @brief 
- * 内核入口函数,由汇编调用,见于reset_vector_up.S 和 reset_vector_mp.S \n
+ * 内核入口函数,由汇编调用,见于reset_vector_up.S 和 reset_vector_mp.S 
  * up指单核CPU, mp指多核CPU bl        main
  * @return LITE_OS_SEC_TEXT_INIT 
  */

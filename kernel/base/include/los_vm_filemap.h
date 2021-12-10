@@ -1,3 +1,23 @@
+/*!
+ * @file    los_vm_filemap.h
+ * @brief
+ * @link
+   @verbatim
+    磁盘高速缓存是一种软件机制，它允许系统把通常存放在磁盘上的一些数据保留在 RAM 中，以便对那些数据的
+    进一步访问不用再访问磁盘而能尽快得到满足。
+    页高速缓存中的信息单位是一个完整的页。
+    一个页包含的磁盘块在物理上不一定相邻，所以不能用设备号和块号标识，而是通过页的所有者和所有者数据中的索引来识别。
+    页高速缓存可以缓存以下内容
+	    A.普通文件数据
+	    B.含有目录的页 
+	    C.直接从快设备读取的页 
+	    D.用户进程数据的页
+	    E.特殊文件系统的文件页
+   @endverbatim
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2021-12-9
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -51,41 +71,26 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-/**
- * @brief 
- * @verbatim 
-    磁盘高速缓存是一种软件机制，它允许系统把通常存放在磁盘上的一些数据保留在 RAM 中，以便对那些数据的
-    进一步访问不用再访问磁盘而能尽快得到满足。
-    页高速缓存中的信息单位是一个完整的页。
-    一个页包含的磁盘块在物理上不一定相邻，所以不能用设备号和块号标识，而是通过页的所有者和所有者数据中的索引来识别。
-    页高速缓存可以缓存以下内容
-    A.普通文件数据
-    B.含有目录的页 
-    C.直接从快设备读取的页 
-    D.用户进程数据的页
-    E.特殊文件系统的文件页
- * @endverbatim
- * 
- */
 #if 0 //@note_#if0 
 //page_mapping描述的是一个文件在内存中被映射了多少页,<文件,文件页的关系>
 /* file mapped in VMM pages */
 struct page_mapping {//记录文件页和文件关系的结构体,叫文件页映射
-  LOS_DL_LIST                           page_list;    /* all pages */ //链表上挂的是属于该文件的所有FilePage，这些页的内容都来源同一个文件
-  SPIN_LOCK_S                           list_lock;    /* lock protecting it */ //操作page_list的自旋锁
-  LosMux                                mux_lock;     /* mutex lock */	//		//操作page_mapping的互斥量
-  unsigned long                         nrpages;      /* number of total pages */ //page_list的节点数量	
-  unsigned long                         flags;			//@note_why 全量代码中也没查到源码中对其操作	
-  Atomic                                ref;          /* reference counting */	//引用次数(自增/自减),对应add_mapping/dec_mapping
-  struct file                           *host;        /* owner of this mapping *///属于哪个文件的映射
+  LOS_DL_LIST                           page_list;    /* all pages | 链表上挂的是属于该文件的所有FilePage，这些页的内容都来源同一个文件*/
+  SPIN_LOCK_S                           list_lock;    /* lock protecting it | 操作page_list的自旋锁*/
+  LosMux                                mux_lock;     /* mutex lock | 操作page_mapping的互斥量*/
+  unsigned long                         nrpages;      /* number of total pages |page_list的节点数量 */
+  unsigned long                         flags;		  ///< @note_why 全量代码中也没查到源码中对其操作
+  Atomic                                ref;          /* reference counting | 引用次数(自增/自减),对应add_mapping/dec_mapping*/
+  struct Vnode                          *host;        /* owner of this mapping | 属于哪个文件的映射*/
 };
+
 
 /* map: full_path(owner) <-> mapping */ //叫文件映射
 struct file_map { //为在内核层面文件在内存的身份证,每个需映射到内存的文件必须创建一个file_map，都挂到全局g_file_mapping链表上
-  LOS_DL_LIST           head;		//链表节点,用于挂到g_file_mapping上
+  LOS_DL_LIST           head;		///< 链表节点,用于挂到g_file_mapping上
   LosMux                lock;         /* lock to protect this mapping */
-  struct page_mapping   mapping;	//每个文件都有唯一的page_mapping标识其在内存的身份
-  char                  *owner;     /* owner: full path of file *///文件全路径来标识唯一性
+  struct page_mapping   mapping;	///< 每个文件都有唯一的page_mapping标识其在内存的身份
+  char                  *owner;     /* owner: full path of file | 文件全路径来标识唯一性*/
 };
 
 #endif
