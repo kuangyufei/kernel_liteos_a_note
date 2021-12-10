@@ -236,12 +236,12 @@ STATIC VOID OsTraceCmdHandle(const TraceClientCmd *msg)
 
     switch (msg->cmd) {
         case TRACE_CMD_START:
-            LOS_TraceStart();
+            LOS_TraceStart();//启动trace
             break;
         case TRACE_CMD_STOP:
-            LOS_TraceStop();
+            LOS_TraceStop();//关闭trace
             break;
-        case TRACE_CMD_SET_EVENT_MASK:
+        case TRACE_CMD_SET_EVENT_MASK://设置事件掩码
             /* 4 params(UINT8) composition the mask(UINT32) */
             LOS_TraceEventMaskSet(TRACE_MASK_COMBINE(msg->param1, msg->param2, msg->param3, msg->param4));
             break;
@@ -252,7 +252,7 @@ STATIC VOID OsTraceCmdHandle(const TraceClientCmd *msg)
             break;
     }
 }
-///< trace任务的入口函数
+///< trace任务的入口函数,接收串口数据
 VOID TraceAgent(VOID)
 {
     UINT32 ret;
@@ -260,10 +260,10 @@ VOID TraceAgent(VOID)
 
     while (1) {
         (VOID)memset_s(&msg, sizeof(TraceClientCmd), 0, sizeof(TraceClientCmd));
-        ret = OsTraceDataWait();
+        ret = OsTraceDataWait();//等待数据到来
         if (ret == LOS_OK) {
             OsTraceDataRecv((UINT8 *)&msg, sizeof(TraceClientCmd), 0);
-            OsTraceCmdHandle(&msg);
+            OsTraceCmdHandle(&msg);//处理数据
         }
     }
 }

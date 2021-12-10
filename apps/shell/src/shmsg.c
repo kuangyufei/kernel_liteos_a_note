@@ -657,7 +657,7 @@ void *ShellEntry(void *argv)
     char ch;
     int ret;
     int n;
-    pid_t tid = syscall(__NR_gettid);
+    pid_t tid = syscall(__NR_gettid);//获取当前任务/线程ID, 即 "Shell Entry" 任务的ID
     ShellCB *shellCB = (ShellCB *)argv;
 
     if (shellCB == NULL) {
@@ -666,12 +666,12 @@ void *ShellEntry(void *argv)
 
     (void)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);
 
-    ret = prctl(PR_SET_NAME, "ShellEntry");//创建一个shell客户端任务
+    ret = prctl(PR_SET_NAME, "ShellEntry");//将任务的名称设置成 ShellEntry
     if (ret != SH_OK) {
         return NULL;
     }
 
-    ret = ShellKernelReg((int)tid);///< 将shell客户端任务和控制台绑定
+    ret = ShellKernelReg((int)tid);//向内核注册shell,和控制台捆绑在一块
     if (ret != 0) {
         printf("another shell is already running!\n");
         exit(-1);

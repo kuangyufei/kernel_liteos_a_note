@@ -401,7 +401,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellTask(UINTPTR param1,
     (VOID)param4;
 
     while (1) {
-        PRINTK("\nOHOS # ");//读取shell 输入事件 例如: cat weharmony.net 命令
+        PRINTK("\nOHOS # ");//在没有事件的时候,会一直停留在此, 读取shell 输入事件 例如: cat weharmony.net 命令
         ret = LOS_EventRead(&shellCB->shellEvent,
                             0xFFF, LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
         if (ret == SHELL_CMD_PARSE_EVENT) {//获得解析命令事件

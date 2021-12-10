@@ -53,7 +53,7 @@
 #define TELNET_EVENT_MORE_CMD   0x01 ///< 还有很多命令在FIFO中等待运行的事件
 #define TELNET_DEV_DRV_MODE     0666 ///< 文件权限 chmod = 666 
 
-STATIC TELNET_DEV_S g_telnetDev;
+STATIC TELNET_DEV_S g_telnetDev;	///< 远程登录设备
 STATIC EVENT_CB_S *g_event;
 STATIC struct Vnode *g_currentVnode;
 

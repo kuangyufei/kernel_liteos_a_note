@@ -58,7 +58,7 @@ UART 串口通信有几个重要的参数，分别是波特率、起始位、数
 */
 
 STATIC volatile UINT32 g_serialType = 0;
-STATIC struct file g_serialFilep;
+STATIC struct file g_serialFilep;// COM0 /dev/uartdev-0 在内核层的表述 属于 .bbs段
 
 //获取串口类型
 UINT32 SerialTypeGet(VOID)
@@ -125,13 +125,13 @@ STATIC ssize_t SerialRead(struct file *filep, CHAR *buffer, size_t bufLen)
     struct file *privFilep = NULL;
     const struct file_operations_vfs *fileOps = NULL;
 
-    ret = GetFilepOps(filep, &privFilep, &fileOps);//获取控制台file实例
+    ret = GetFilepOps(filep, &privFilep, &fileOps);//获取COM口在内核的file实例
     if (ret != ENOERR) {
         ret = -EINVAL;
         goto ERROUT;
     }
 
-    ret = FilepRead(privFilep, fileOps, buffer, bufLen);//从控制台读buf
+    ret = FilepRead(privFilep, fileOps, buffer, bufLen);//从COM口读buf
     if (ret < 0) {
         goto ERROUT;
     }
@@ -149,7 +149,7 @@ STATIC ssize_t SerialWrite(struct file *filep,  const CHAR *buffer, size_t bufLe
     struct file *privFilep = NULL;
     const struct file_operations_vfs *fileOps = NULL;
 
-    ret = GetFilepOps(filep, &privFilep, &fileOps);//获取控制台file实例
+    ret = GetFilepOps(filep, &privFilep, &fileOps);//获取COM口在内核的file实例
     if (ret != ENOERR) {
         ret = -EINVAL;
         goto ERROUT;
@@ -235,7 +235,7 @@ INT32 virtual_serial_init(const CHAR *deviceName)
         goto ERROUT;
     }
 
-    SerialTypeSet(deviceName);//设置串口类型
+    SerialTypeSet(deviceName);//例如: /dev/uartdev-0 <--> /dev/console1
 
     VnodeHold();
     ret = VnodeLookup(deviceName, &vnode, V_DUMMY);//由deviceName查询vnode节点
@@ -255,8 +255,8 @@ INT32 virtual_serial_init(const CHAR *deviceName)
         ret = EFAULT;
         PRINTK("virtual_serial_init %s open is NULL\n", deviceName);
         goto ERROUT;
-    }//这是真正的注册串口的驱动程序
-    (VOID)register_driver(SERIAL, &g_serialDevOps, DEFFILEMODE, &g_serialFilep);
+    }
+    (VOID)register_driver(SERIAL, &g_serialDevOps, DEFFILEMODE, &g_serialFilep);//这是真正的注册串口的驱动程序
 
     VnodeDrop();
     return ENOERR;

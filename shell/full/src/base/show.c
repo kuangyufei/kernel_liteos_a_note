@@ -46,7 +46,7 @@ STATIC UINT32 OsShellCmdInit(VOID)
 
     return OsShellSysCmdRegister();//系统自带的shell命令初始化
 }
-///创建shell任务
+///创建shell服务端任务
 STATIC UINT32 OsShellCreateTask(ShellCB *shellCB)
 {
     UINT32 ret = ShellTaskInit(shellCB);//执行shell命令的任务初始化

@@ -462,7 +462,7 @@ VOID KillPgrp(UINT16 consoleId)
     }
     (VOID)OsKillLock(consoleCB->pgrpId, SIGINT);//发送信号 SIGINT对应 键盘中断（ctrl + c）信号
 }
-///用户使用参数buffer将控制台的buf接走
+///使用参数buffer将控制台的buf接走
 STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const struct file_operations_vfs *fops,
                            CHAR *buffer, size_t bufLen)
 {
@@ -531,7 +531,7 @@ INT32 FilepRead(struct file *filep, const struct file_operations_vfs *fops, CHAR
      * adopt uart read function to read data from filep
      * and write data to buffer (filep is
      * corresponding to filep of /dev/console)
-     */
+     *///采用uart read函数从文件中读取数据，将数据写入缓冲区（文件对应/dev/console的filep）
     ret = fops->read(filep, buffer, bufLen);
     if (ret < 0) {
         return -EPERM;
@@ -721,7 +721,7 @@ STATIC ssize_t ConsoleRead(struct file *filep, CHAR *buffer, size_t bufLen)
         goto ERROUT;
     }
 
-    ret = DoRead(consoleCB, sbuffer, bufLen, privFilep, fileOps);//真正的读数据
+    ret = DoRead(consoleCB, sbuffer, bufLen, privFilep, fileOps);//从 console buf中取数据
     if (ret < 0) {
         goto ERROUT;
     }
@@ -1159,7 +1159,7 @@ ERROUT:
     set_errno(ret);
     return LOS_NOK;
 }
-/// 控制台设备去初始化
+/// 注销控制台设备
 STATIC UINT32 OsConsoleDevDeinit(const CONSOLE_CB *consoleCB)
 {
     return unregister_driver(consoleCB->name);//注销驱动
@@ -1240,7 +1240,7 @@ STATIC UINT32 OsConsoleBufInit(CONSOLE_CB *consoleCB)
     }//永久等待读取 CONSOLE_SEND_TASK_RUNNING 事件,CONSOLE_SEND_TASK_RUNNING 由 ConsoleSendTask 发出.
     (VOID)LOS_EventRead(&consoleCB->cirBufSendCB->sendEvent, CONSOLE_SEND_TASK_RUNNING,
                         LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
-
+	// ... 读取到 CONSOLE_SEND_TASK_RUNNING 事件才会往下执行  
     return LOS_OK;
 }
 /// 控制台buf去初始化
@@ -1313,17 +1313,17 @@ STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
         goto ERR_WITH_SEM;
     }
 
-    ret = OsConsoleFileInit(consoleCB);	//控制台文件初始化,其中file要绑定驱动程序
+    ret = OsConsoleFileInit(consoleCB);	//为 /dev/console(n|1:2)分配fd(3)
     if (ret != LOS_OK) {
         PRINT_ERR("console OsConsoleFileInit error. %d\n", ret);
         goto ERR_WITH_DEV;
     }
 
-    OsConsoleTermiosInit(consoleCB, deviceName);//控制台术语/控制初始化
+    OsConsoleTermiosInit(consoleCB, deviceName);//控制台行规程初始化
     return consoleCB;
 
 ERR_WITH_DEV:
-    ret = (INT32)OsConsoleDevDeinit(consoleCB);//控制台设备去初始化
+    ret = (INT32)OsConsoleDevDeinit(consoleCB);//控制台设备注销
     if (ret != LOS_OK) {
         PRINT_ERR("OsConsoleDevDeinit failed!\n");
     }
