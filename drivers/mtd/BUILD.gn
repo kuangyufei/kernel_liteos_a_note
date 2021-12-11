@@ -29,38 +29,6 @@
 
 import("//kernel/liteos_a/liteos.gni")
 
-group("extended") {
-  deps = [
-    "blackbox",
-    "cppsupport",
-    "cpup",
-    "dynload",
-    "hidumper",
-    "hilog",
-    "hook",
-    "liteipc",
-    "lms",
-    "perf",
-    "pipes",
-    "power",
-    "trace",
-    "vdso",
-  ]
-}
-
-config("public") {
-  configs = [
-    "blackbox:public",
-    "cpup:public",
-    "dynload:public",
-    "hidumper:public",
-    "hilog:public",
-    "hook:public",
-    "liteipc:public",
-    "pipes:public",
-    "vdso:public",
-    "perf:public",
-    "lms:public",
-    "power:public",
-  ]
+module_group("mtd") {
+  modules = [ "multi_partition" ]
 }

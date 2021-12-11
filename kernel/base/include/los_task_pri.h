@@ -212,6 +212,14 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 
 /**
  * @ingroup los_task
+ * Flag that indicates the task or task control block status.
+ *
+ * The delayed operation of this task is frozen.
+ */
+#define OS_TASK_FLAG_FREEZE          0x8000U
+
+/**
+ * @ingroup los_task
  * Flag that indicates the task property.
  *
  * Specifies the process creation task.

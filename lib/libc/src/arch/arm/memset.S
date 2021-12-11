@@ -31,10 +31,18 @@
     .syntax     unified
     .arch       armv7-a
     .fpu        neon
-    .globl      memset          @ -- Begin function memset
-    .p2align    2
-    .type       memset,%function
-memset:
+
+#define FUNCTION(x) \
+.globl x; \
+.p2align 2; \
+.type x,%function; \
+x:
+
+#if defined(LOSCFG_KERNEL_LMS)
+FUNCTION(__memset)
+#else
+FUNCTION(memset)
+#endif
     @ r0 = address
     @ r1 = char
     @ r2 = count

@@ -37,7 +37,7 @@ LOCAL_OBJS = $(addprefix $(OBJOUT)/,$(addsuffix .o,$(basename $(subst $(TOPDIR)/
 all : $(TARGET)
 
 ifeq ($(HIDE),@)
-ECHO = $1 = echo "  $1" $$(patsubst $$(OUT)/%,%,$$@) && $($1)
+ECHO = $1 = echo "  $1" $$(patsubst $$(OUT)/%,%,$$@) && $1(){ if ! $($1) "$$$$@"; then echo command details: $($1) "$$$$@"; false; fi;};$1
 $(foreach cmd,CC GPP AS AR LD,$(eval $(call ECHO,$(cmd))))
 endif
 

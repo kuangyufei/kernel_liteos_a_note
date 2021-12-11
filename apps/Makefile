@@ -34,14 +34,7 @@ export APPSTOPDIR
 
 include $(APPSTOPDIR)/config.mk
 
-all:
-ifneq ($(APP_SUBDIRS), )
-	$(HIDE) for dir in $(APP_SUBDIRS); do $(MAKE) -C $$dir all || exit 1; done
-endif
-
-clean:
-ifneq ($(APP_SUBDIRS), )
-	$(HIDE) for dir in $(APP_SUBDIRS); do $(MAKE) -C $$dir clean || exit 1; done
-endif
+all clean:
+	$(HIDE) for dir in $(APP_SUBDIRS); do $(MAKE) -C $$dir $@ || exit 1; done
 
 .PHONY: all clean

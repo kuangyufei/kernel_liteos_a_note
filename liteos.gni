@@ -41,28 +41,58 @@ if (defined(LOSCFG_ARCH_ARM_AARCH32)) {
 }
 
 template("kernel_module") {
+  build_gn = rebase_path("BUILD.gn")
+  cmd = "grep -c '^\s*\(kernel_module\|hdf_driver\)\s*(\s*\S*\s*)\s*{\s*\$' $build_gn"
+  modules_count = exec_script("//build/lite/run_shell_cmd.py", [ cmd ], "value")
+  if (modules_count == 1) {
+    auto_config = true
+  }
+
+  cmd = "if grep -q '^\s*\(config\s*(\s*\"public\"\s*)\|module_group\s*(\s*\"\S*\"\s*)\)\s*{\s*\$' $build_gn; then echo true; else echo false; fi"
+  has_public_config =
+      exec_script("//build/lite/run_shell_cmd.py", [ cmd ], "value")
+  if (!has_public_config && defined(auto_config)) {
+    config("public") {
+      configs = []
+    }
+  }
+
   current_dir_name = get_path_info(rebase_path("."), "file")
   if (target_name != current_dir_name) {
-    build_gn = rebase_path("BUILD.gn")
-    cmd = "if grep -q '^\s*group\s*(\s*\"$current_dir_name\"\s*)\s*{\s*\$' $build_gn; then echo true; else echo false; fi"
+    cmd = "if grep -q '^\s*\(module_group\|group\)\s*(\s*\"$current_dir_name\"\s*)\s*{\s*\$' $build_gn; then echo true; else echo false; fi"
     has_current_dir_group =
         exec_script("//build/lite/run_shell_cmd.py", [ cmd ], "value")
-    if (!has_current_dir_group) {
+    if (!has_current_dir_group && defined(auto_config)) {
       module_name = target_name
       group(current_dir_name) {
         public_deps = [ ":$module_name" ]
       }
     }
   }
+
   if (defined(invoker.module_switch) && !invoker.module_switch) {
     group(target_name) {
       not_needed(invoker, "*")
     }
   } else {
     source_set(target_name) {
+      public_configs = []
       forward_variables_from(invoker, "*")
+      if (has_public_config) {
+        included_public_config = false
+        foreach(cfg, public_configs) {
+          what = "label_no_toolchain"
+          if (get_label_info(cfg, what) == get_label_info(":public", what)) {
+            included_public_config = true
+          }
+        }
+        if (!included_public_config) {
+          public_configs += [ ":public" ]
+        }
+      }
     }
   }
+  not_needed([ "auto_config" ])
 }
 
 template("config") {
@@ -77,9 +107,37 @@ template("config") {
   }
 }
 
+template("module_group") {
+  assert(defined(invoker.modules), "modules are must")
+  group(target_name) {
+    deps = []
+    foreach(m, invoker.modules) {
+      deps += [ m ]
+    }
+    if (defined(invoker.deps)) {
+      deps += invoker.deps
+    }
+  }
+  config("public") {
+    configs = []
+    foreach(m, invoker.modules) {
+      configs += [ "$m:public" ]
+    }
+    if (defined(invoker.configs)) {
+      configs += invoker.configs
+    }
+  }
+}
+
 set_defaults("kernel_module") {
   configs = [
     "$LITEOSTOPDIR:public",
     "$LITEOSTOPDIR:los_config",
+  ]
+  visibility = [
+    "$LITEOSTOPDIR:*",
+    ":*",
+    "..:*",
+    "../..:*",
   ]
 }

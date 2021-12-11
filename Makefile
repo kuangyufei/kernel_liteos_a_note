@@ -61,12 +61,6 @@ endif
 
 KCONFIG_CONFIG ?= $(CONFIG)
 SYSROOT_PATH ?= $(OUT)/sysroot
-LITEOS_MENUCONFIG_H ?= $(LITEOSTOPDIR)/config.h
-LITEOS_CONFIG_FILE ?= $(LITEOSTOPDIR)/.config
-
-# export los_config.mk related environment variables
-export LITEOS_MENUCONFIG_H
-export LITEOS_CONFIG_FILE
 
 # export subdir Makefile related environment variables
 export SYSROOT_PATH
@@ -125,7 +119,6 @@ help:
 
 sysroot:
 	$(HIDE)echo "sysroot:" $(abspath $(SYSROOT_PATH))
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 ifeq ($(origin SYSROOT_PATH),file)
 	$(HIDE)mkdir -p $(SYSROOT_PATH)/build && cd $(SYSROOT_PATH)/build && \
 	ln -snf $(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/build/Makefile && \
@@ -135,10 +128,8 @@ ifeq ($(origin SYSROOT_PATH),file)
 		ARCH_CFLAGS="$(LITEOS_CORE_COPTS) -w" \
 		TOPDIR="$(LITEOSTOPDIR)/../.." \
 		SYSROOTDIR="$(SYSROOT_PATH)" \
-		CLANG="$(LITEOS_COMPILER_PATH)clang" \
-		BUILD_ALL_MULTILIB=false \
+		$(if $(LOSCFG_COMPILER_CLANG_LLVM),CLANG="$(LITEOS_COMPILER_PATH)clang",GCC="$(CC)") \
 		BUILD_DEBUG=$(if $(patsubst y,,$(or $(RELEASE:1=y),n)),true,false)
-endif
 endif
 
 $(filter-out menuconfig,$(KCONFIG_CMDS)):

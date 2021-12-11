@@ -37,10 +37,14 @@ LOCAL_SRCS += \
 
 LOCAL_CMACRO = \
 	-D__strlen_armv6t2=strlen \
-	-D__strcpy_arm=strcpy \
 	-D__strcmp_arm=strcmp \
-	-D__memcpy_arm=memcpy \
 	-D__memchr_arm=memchr
+
+ifeq ($(LOSCFG_KERNEL_LMS), y)
+LOCAL_CMACRO += -D__memcpy_arm=__memcpy -D__strcpy_arm=__strcpy
+else
+LOCAL_CMACRO += -D__memcpy_arm=memcpy -D__strcpy_arm=strcpy
+endif
 
 # Replace the general srcs of the same name with specially optimized srcs
 LOCAL_SRCS += $(LOCAL_OPT_SRCS)

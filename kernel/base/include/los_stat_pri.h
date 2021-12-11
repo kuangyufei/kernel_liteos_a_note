@@ -32,6 +32,8 @@
 #ifndef __LOS_STAT_PRI_H
 #define __LOS_STAT_PRI_H
 
+#include "los_typedef.h"
+
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {

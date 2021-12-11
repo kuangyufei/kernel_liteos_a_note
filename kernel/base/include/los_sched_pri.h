@@ -88,6 +88,7 @@ STATIC INLINE VOID OsSchedIrqStartTime(VOID)
 } while (0);
 
 #define OS_SCHEDULER_ACTIVE (g_taskScheduled & (1U << ArchCurrCpuid()))///< 用于判断当前cpu是否在调度中
+#define OS_SCHEDULER_ALL_ACTIVE (g_taskScheduled == LOSCFG_KERNEL_CPU_MASK)
 
 typedef enum {
     INT_NO_RESCH = 0x0,   /**< no needs to schedule | 不需要调度*/
@@ -163,6 +164,8 @@ extern VOID OsSchedSetIdleTaskSchedParam(LosTaskCB *idleTask);
 
 extern UINT32 OsSchedSwtmrScanRegister(SchedScan func);
 
+extern VOID OsSchedResetSchedResponseTime(UINT64 responseTime);
+
 extern VOID OsSchedUpdateExpireTime(UINT64 startTime);
 
 extern VOID OsSchedToUserReleaseLock(VOID);
@@ -178,6 +181,10 @@ extern VOID OsSchedTaskWake(LosTaskCB *resumedTask);
 extern BOOL OsSchedModifyTaskSchedParam(LosTaskCB *taskCB, UINT16 policy, UINT16 priority);
 
 extern BOOL OsSchedModifyProcessSchedParam(LosProcessCB *processCB, UINT16 policy, UINT16 priority);
+
+extern VOID OsSchedSuspend(LosTaskCB *taskCB);
+
+extern BOOL OsSchedResume(LosTaskCB *taskCB);
 
 extern VOID OsSchedDelay(LosTaskCB *runTask, UINT32 tick);
 

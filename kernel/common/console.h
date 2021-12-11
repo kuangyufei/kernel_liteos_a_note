@@ -96,7 +96,7 @@ extern "C" {
  */
 typedef struct {
     CirBuf cirBufCB;        /* Circular buffer CB | 循环缓冲控制块 */
-    EVENT_CB_S sendEvent;   /* Inform telnet send task | 通知telnet发送任务事件*/
+    EVENT_CB_S sendEvent;   /* Inform telnet send task | 例如: 给SendToSer任务发送事件*/
 } CirBufSendCB;
 
 /**
@@ -109,8 +109,8 @@ typedef struct {
     UINT32 consoleMask;	///< 控制台掩码
     struct Vnode *devVnode;	///< 索引节点
     CHAR *name;	///< 名称 例如: /dev/console1 
-    INT32 fd;	///< 系统文件句柄, 鸿蒙将 3 分配给了控制台
-    UINT32 refCount;	///< 引用次数
+    INT32 fd;	///< 系统文件句柄, 由内核分配
+    UINT32 refCount;	///< 引用次数,用于判断控制台是否被占用
     UINT32 shellEntryId; ///<  负责接受来自终端信息的 "ShellEntry"任务,这个值在运行过程中可能会被换掉,它始终指向当前正在运行的shell客户端
     INT32 pgrpId;	///< 进程组ID
     BOOL isNonBlock; ///< 是否无锁方式		

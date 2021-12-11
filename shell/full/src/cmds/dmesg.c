@@ -187,13 +187,17 @@ STATIC INT32 OsCopyToNew(const VOID *addr, UINT32 size)
     CHAR *newBuf = (CHAR *)addr + sizeof(DmesgInfo);
     UINT32 bufSize = size - sizeof(DmesgInfo);
     INT32 ret;
+    UINT32 intSave;
 
+    LOS_SpinLockSave(&g_dmesgSpin, &intSave);
     if (g_dmesgInfo->logSize == 0) {
+        LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
         return 0;
     }
 
     temp = (CHAR *)malloc(g_dmesgInfo->logSize);
     if (temp == NULL) {
+        LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
         return -1;
     }
 
@@ -205,21 +209,24 @@ STATIC INT32 OsCopyToNew(const VOID *addr, UINT32 size)
 
     ret = OsDmesgRead(temp, g_dmesgInfo->logSize);
     if (ret <= 0) {
-        PRINT_ERR("%s,%d failed, err:%d!\n", __FUNCTION__, __LINE__, ret);
-        free(temp);
-        return -1;
+        goto FREE_OUT;
     }
 
     /* if new buf size smaller than logSize */
     ret = memcpy_s(newBuf, bufSize, temp + copyStart, copyLen);
     if (ret != EOK) {
-        PRINT_ERR("%s,%d memcpy_s failed, err:%d!\n", __FUNCTION__, __LINE__, ret);
-        free(temp);
-        return -1;
+        goto FREE_OUT;
     }
+    LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
     free(temp);
 
     return (INT32)copyLen;
+
+FREE_OUT:
+    LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
+    PRINT_ERR("%s,%d failed, err:%d!\n", __FUNCTION__, __LINE__, ret);
+    free(temp);
+    return -1;
 }
 /// 重置内存
 STATIC UINT32 OsDmesgResetMem(const VOID *addr, UINT32 size)
@@ -234,12 +241,13 @@ STATIC UINT32 OsDmesgResetMem(const VOID *addr, UINT32 size)
 
     LOS_SpinLockSave(&g_dmesgSpin, &intSave);
     temp = g_dmesgInfo;
+    LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
     copyLen = OsCopyToNew(addr, size);
     if (copyLen < 0) {
-        LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
         return LOS_NOK;
     }
 
+    LOS_SpinLockSave(&g_dmesgSpin, &intSave);
     g_logBufSize = size - sizeof(DmesgInfo);
     g_dmesgInfo = (DmesgInfo *)addr;
     g_dmesgInfo->logBuf = (CHAR *)addr + sizeof(DmesgInfo);
@@ -249,11 +257,16 @@ STATIC UINT32 OsDmesgResetMem(const VOID *addr, UINT32 size)
 
     /* if old mem came from malloc */
     if (temp == g_mallocAddr) {
-        g_mallocAddr = NULL;
-        free(temp);
+        goto FREE_OUT;
     }
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
 
+    return LOS_OK;
+
+FREE_OUT:
+    g_mallocAddr = NULL;
+    LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
+    free(temp);
     return LOS_OK;
 }
 ///调整缓冲区大小,如下五个步骤
@@ -275,14 +288,14 @@ STATIC UINT32 OsDmesgChangeSize(UINT32 size)
 
     LOS_SpinLockSave(&g_dmesgSpin, &intSave);
     temp = g_dmesgInfo;
+    LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
 	//2.把旧人账目移交给新人
     copyLen = OsCopyToNew(newString, size + sizeof(DmesgInfo));
     if (copyLen < 0) {
-        LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
-        free(newString);
-        return LOS_NOK;
+        goto ERR_OUT;
     }
 	//3.以新换旧
+    LOS_SpinLockSave(&g_dmesgSpin, &intSave);
     g_logBufSize = size;
     g_dmesgInfo = (DmesgInfo *)newString;
     g_dmesgInfo->logBuf = (CHAR *)newString + sizeof(DmesgInfo);
@@ -291,12 +304,19 @@ STATIC UINT32 OsDmesgChangeSize(UINT32 size)
     g_dmesgInfo->logHead = 0;
 	//4. 有新欢了,释放旧人去找寻真爱
     if (temp == g_mallocAddr) {
-        g_mallocAddr = NULL;
-        free(temp);
+        goto FREE_OUT;
     }
     g_mallocAddr = newString;//5. 正式和新人媾和
     LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
 
+    return LOS_OK;
+ERR_OUT:
+    free(newString);
+    return LOS_NOK;
+FREE_OUT:
+    g_mallocAddr = newString;
+    LOS_SpinUnlockRestore(&g_dmesgSpin, intSave);
+    free(temp);
     return LOS_OK;
 }
 

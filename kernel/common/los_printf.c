@@ -111,7 +111,7 @@ VOID OutputControl(const CHAR *str, UINT32 len, OutputType type)
 #ifdef LOSCFG_PLATFORM_CONSOLE
             if (ConsoleEnable() == TRUE) {//POSIX 定义了 STDIN_FILENO、STDOUT_FILENO 和 STDERR_FILENO 来代替 0、1、2 
                 ConsoleOutput(str, len);//输出到控制台
-                break;//在三个文件会在 VFS中默认创建
+                break;
             }
 #endif
             /* fall-through */ //落空的情况下,会接着向串口打印数据
@@ -178,9 +178,9 @@ VOID OsVprintf(const CHAR *fmt, va_list ap, OutputType type)
     *(bBuf + len) = '\0';
 
     systemStatus = OsGetSystemStatus();//获取系统的状态
-    if ((systemStatus == OS_SYSTEM_NORMAL) || (systemStatus == OS_SYSTEM_EXC_OTHER_CPU)) {//当前CPU空闲或其他CPU运行时
+    if ((systemStatus == OS_SYSTEM_NORMAL) || (systemStatus == OS_SYSTEM_EXC_OTHER_CPU)) {//当前CPU正常或其他CPU出现异常时
         OutputControl(bBuf, len, type);//输出到终端
-    } else if (systemStatus == OS_SYSTEM_EXC_CURR_CPU) {//当前CPU正在执行
+    } else if (systemStatus == OS_SYSTEM_EXC_CURR_CPU) {//当前CPU出现异常
         OutputControl(bBuf, len, EXC_OUTPUT);//串口以无锁的方式输出
     }
     OsVprintfFree(bBuf, bufLen);

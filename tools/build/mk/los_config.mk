@@ -27,6 +27,9 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+LITEOS_MENUCONFIG_H ?= $(LITEOSTOPDIR)/config.h
+LITEOS_CONFIG_FILE ?= $(LITEOSTOPDIR)/.config
+
 -include $(LITEOS_CONFIG_FILE)
 
 ifeq ($(ARCH),)
@@ -46,7 +49,7 @@ get_compiler_path = $(or $(wildcard $(1)),$(dir $(shell which $(CROSS_COMPILE)as
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 CROSS_COMPILE ?= llvm-
 LITEOS_COMPILER_PATH ?= $(call get_compiler_path,$(LITEOSTOPDIR)/../../prebuilts/clang/ohos/linux-x86_64/llvm/bin/)
-LLVM_TARGET = $(if $(LOSCFG_LLVM_TARGET),-target $(LOSCFG_LLVM_TARGET),)
+LLVM_TARGET = $(if $(LOSCFG_LLVM_TARGET:"%"=%),--target=$(LOSCFG_LLVM_TARGET:"%"=%),)
 LLVM_SYSROOT = $(if $(SYSROOT_PATH),--sysroot=$(SYSROOT_PATH),)
 CC  = $(LITEOS_COMPILER_PATH)clang $(LLVM_TARGET) $(LLVM_SYSROOT)
 AS  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)as
@@ -59,7 +62,7 @@ SIZE = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)size
 NM = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)nm
 STRIP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)strip
 else ifeq ($(LOSCFG_COMPILER_GCC), y)
-CROSS_COMPILE ?= $(LOSCFG_CROSS_COMPILE)
+CROSS_COMPILE ?= $(LOSCFG_CROSS_COMPILE:"%"=%)
 LITEOS_COMPILER_PATH ?= $(call get_compiler_path,$(LITEOSTOPDIR)/../../prebuilts/gcc/linux-x86/arm/arm-linux-ohoseabi-gcc/bin/)
 CC  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)gcc
 AS  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)as
@@ -163,6 +166,12 @@ ifeq ($(LOSCFG_KERNEL_PERF), y)
     LITEOS_PERF_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/perf
 endif
 
+ifeq ($(LOSCFG_KERNEL_LMS), y)
+    LITEOS_BASELIB        += -llms
+    LIB_SUBDIRS           += kernel/extended/lms
+    LITEOS_LMS_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/lms
+endif
+
 ifeq ($(LOSCFG_KERNEL_LITEIPC), y)
     LITEOS_BASELIB     += -lliteipc
     LIB_SUBDIRS           += kernel/extended/liteipc
@@ -178,7 +187,7 @@ endif
 ifeq ($(LOSCFG_KERNEL_PM), y)
     LITEOS_BASELIB        += -lpower
     LIB_SUBDIRS           += kernel/extended/power
-    LITEOS_PIPE_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/power
+    LITEOS_PM_INCLUDE      = -I $(LITEOSTOPDIR)/kernel/extended/power
 endif
 
 ifeq ($(LOSCFG_KERNEL_SYSCALL), y)
@@ -507,7 +516,8 @@ LITEOS_EXTKERNEL_INCLUDE   := $(LITEOS_CPPSUPPORT_INCLUDE) $(LITEOS_DYNLOAD_INCL
                               $(LITEOS_TICKLESS_INCLUDE)   $(LITEOS_HOOK_INCLUDE)\
                               $(LITEOS_VDSO_INCLUDE)       $(LITEOS_LITEIPC_INCLUDE) \
                               $(LITEOS_PIPE_INCLUDE)       $(LITEOS_CPUP_INCLUDE) \
-                              $(LITEOS_PERF_INCLUDE)
+                              $(LITEOS_PERF_INCLUDE)       $(LITEOS_LMS_INCLUDE) \
+                              $(LITEOS_PM_INCLUDE)
 LITEOS_COMPAT_INCLUDE      := $(LITEOS_POSIX_INCLUDE) $(LITEOS_LINUX_INCLUDE) \
                               $(LITEOS_BSD_INCLUDE)
 LITEOS_FS_INCLUDE          := $(LITEOS_VFS_INCLUDE)        $(LITEOS_FAT_CACHE_INCLUDE) \
@@ -535,7 +545,7 @@ LITEOS_DFX_INCLUDE    := $(LITEOS_HILOG_INCLUDE) \
                          $(LITEOS_HIDUMPER_INCLUDE)
 
 LITEOS_SECURITY_INCLUDE    := $(LITEOS_SECURITY_CAP_INC) $(LITEOS_SECURITY_VID_INC)
-LOSCFG_TOOLS_DEBUG_INCLUDE := $(LITEOS_SHELL_INCLUDE)  $(LITEOS_UART_INCLUDE) \
+LITEOS_TOOLS_DEBUG_INCLUDE := $(LITEOS_SHELL_INCLUDE)  $(LITEOS_UART_INCLUDE) \
                               $(LITEOS_TELNET_INCLUDE)
 
 LITEOS_COMMON_OPTS  := -fno-pic -fno-builtin -nostdinc -nostdlib -Wall -Werror -fms-extensions -fno-omit-frame-pointer -Wno-address-of-packed-member -Winvalid-pch

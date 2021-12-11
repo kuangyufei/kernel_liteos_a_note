@@ -193,7 +193,7 @@ status_t OsDoCowFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
 
     newPage = LOS_PhysPageAlloc();//分配一个新页面
     if (newPage == NULL) {
-        VM_ERR("pmm_alloc_page fail");
+        VM_ERR("LOS_PhysPageAlloc failed");
         ret = LOS_ERRNO_VM_NO_MEMORY;
         goto ERR_OUT;
     }

@@ -29,29 +29,10 @@
 
 import("//kernel/liteos_a/liteos.gni")
 
-group("drivers") {
-  deps = [
-    "block/disk",
-    "char/bch",
-    "char/mem",
-    "char/perf",
-    "char/quickstart",
-    "char/random",
-    "char/trace",
-    "char/video",
-    "mtd/multi_partition",
-  ]
-}
-
-config("public") {
-  configs = [
-    "block/disk:public",
-    "char/bch:public",
-    "char/mem:public",
-    "char/quickstart:public",
-    "char/random:public",
-    "char/video:public",
-    "char/trace:public",
-    "mtd/multi_partition:public",
+module_group("drivers") {
+  modules = [
+    "block",
+    "char",
+    "mtd",
   ]
 }

@@ -143,6 +143,7 @@ enum LOS_MOUDLE_ID {
     LOS_MOD_CPUP = 0x1e,
     LOS_MOD_HOOK = 0x1f,
     LOS_MOD_PERF = 0x20,
+    LOS_MOD_PM = 0x21,
     LOS_MOD_SHELL = 0x31,
     LOS_MOD_DRIVER = 0x41,
     LOS_MOD_BUTT

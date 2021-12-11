@@ -2630,7 +2630,7 @@ int SysFstatfs(int fd, struct statfs *buf)
 
 int SysFstatfs64(int fd, size_t sz, struct statfs *buf)
 {
-    int ret = 0;
+    int ret;
 
     if (sz != sizeof(struct statfs)) {
         ret = -EINVAL;

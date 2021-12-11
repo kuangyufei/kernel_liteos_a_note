@@ -29,16 +29,13 @@
 
 import("//build/lite/config/component/lite_component.gni")
 
+LITEOS_MENUCONFIG_H = rebase_path("$root_out_dir/config.h")
+
 declare_args() {
   tee_enable = false
   liteos_name = "OHOS_Image"
   liteos_skip_make = false
 }
-
-cmd = "if [ -f $device_path/BUILD.gn ]; then echo true; else echo false; fi"
-HAVE_DEVICE_SDK = exec_script("//build/lite/run_shell_cmd.py", [ cmd ], "value")
-
-LITEOS_MENUCONFIG_H = rebase_path("$root_out_dir/config.h")
 
 tee = ""
 if (tee_enable) {
@@ -68,6 +65,8 @@ import("liteos.gni")
 assert(ARCH != "", "ARCH not set!")
 assert(ARCH == arch, "ARCH not match! details: $ARCH != $arch")
 assert(tee_enable == defined(LOSCFG_TEE_ENABLE), "TEE switch not match!")
+assert(ohos_build_compiler == "clang" == defined(LOSCFG_COMPILER_CLANG_LLVM),
+       "compiler not match!")
 
 generate_notice_file("kernel_notice_file") {
   module_name = "kernel"
@@ -175,7 +174,7 @@ config("optimize_config") {
     if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
       cflags += [ "-flto=thin" ]
     } else {
-      cflags += [ "-flto" ]
+      #cflags += [ "-flto" ]
     }
   }
   cflags += [ optimization_cflag ]
@@ -197,8 +196,10 @@ config("warn_config") {
     "-Wpointer-arith",
     "-Wstrict-prototypes",
     "-Winvalid-pch",
-    "-Wno-address-of-packed-member",
   ]
+  if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
+    cflags += [ "-Wno-address-of-packed-member" ]
+  }
   asmflags = cflags
 }
 
@@ -209,6 +210,7 @@ config("dialect_config") {
 
 config("misc_config") {
   defines = [ "__LITEOS__" ]
+  defines += [ "__LITEOS_A__" ]
   if (!defined(LOSCFG_DEBUG_VERSION)) {
     defines += [ "NDEBUG" ]
   }
@@ -248,62 +250,8 @@ config("los_config") {
   ]
 }
 
-executable("liteos") {
-  configs = []  # clear default configs
-  configs += [ ":arch_config" ]
-  configs += [ ":public" ]
-
-  ldflags = [
-    "-static",
-    "-nostdlib",
-    "-Wl,--gc-sections",
-    "-Wl,-Map=$liteos_name.map",
-    "-Wl,--no-eh-frame-hdr",
-  ]
-
-  libgcc = exec_script("//build/lite/run_shell_cmd.py",
-                       [ "$cc -print-libgcc-file-name" ],
-                       "trim string")
-  libs = [ libgcc ]
-  if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
-    ldflags +=
-        [ "-Wl,-T" + rebase_path("tools/build/liteos_llvm.ld", root_build_dir) ]
-    inputs = [ "tools/build/liteos_llvm.ld" ]
-  } else {
-    ldflags +=
-        [ "-Wl,-T" + rebase_path("tools/build/liteos.ld", root_build_dir) ]
-    ldflags += [ "-Wl,-nostartfiles" ]
-    inputs = [ "tools/build/liteos.ld" ]
-  }
-
-  inputs += [ "$root_out_dir/board.ld" ]
-
-  output_dir = target_out_dir
-
-  deps = [
-    ":modules",
-    "platform:copy_board.ld",
-  ]
-}
-
-copy("copy_liteos") {
-  deps = [ ":liteos" ]
-  sources = [ "$target_out_dir/unstripped/bin/liteos" ]
-  outputs = [ "$root_out_dir/$liteos_name" ]
-}
-
-build_ext_component("build_kernel_image") {
-  deps = [ ":copy_liteos" ]
-  exec_path = rebase_path(root_out_dir)
-
-  objcopy = "${compile_prefix}objcopy$toolchain_cmd_suffix"
-  objdump = "${compile_prefix}objdump$toolchain_cmd_suffix"
-
-  command = "$objcopy -O binary $liteos_name $liteos_name.bin"
-  command +=
-      " && sh -c '$objdump -t $liteos_name | sort >$liteos_name.sym.sorted'"
-  command += " && sh -c '$objdump -d $liteos_name >$liteos_name.asm'"
-}
+cmd = "if [ -f $device_path/BUILD.gn ]; then echo true; else echo false; fi"
+HAVE_DEVICE_SDK = exec_script("//build/lite/run_shell_cmd.py", [ cmd ], "value")
 
 config("public") {
   configs = [
@@ -367,11 +315,63 @@ group("kernel") {
 }
 
 group("liteos_a") {
-  deps = [
-    ":apps",
-    ":kernel",
-    ":tests",
+}
+
+executable("liteos") {
+  configs = []  # clear default configs
+  configs += [ ":arch_config" ]
+  configs += [ ":public" ]
+
+  ldflags = [
+    "-static",
+    "-nostdlib",
+    "-Wl,--gc-sections",
+    "-Wl,-Map=$liteos_name.map",
+    "-Wl,--no-eh-frame-hdr",
   ]
+
+  libgcc = exec_script("//build/lite/run_shell_cmd.py",
+                       [ "$cc -print-libgcc-file-name" ],
+                       "trim string")
+  libs = [ libgcc ]
+  if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
+    ldflags +=
+        [ "-Wl,-T" + rebase_path("tools/build/liteos_llvm.ld", root_build_dir) ]
+    inputs = [ "tools/build/liteos_llvm.ld" ]
+  } else {
+    ldflags +=
+        [ "-Wl,-T" + rebase_path("tools/build/liteos.ld", root_build_dir) ]
+    ldflags += [ "-Wl,-nostartfiles" ]
+    inputs = [ "tools/build/liteos.ld" ]
+  }
+
+  inputs += [ "$root_out_dir/board.ld" ]
+
+  output_dir = target_out_dir
+
+  deps = [
+    ":modules",
+    "platform:copy_board.ld",
+  ]
+}
+
+copy("copy_liteos") {
+  deps = [ ":liteos" ]
+  sources = [ "$target_out_dir/unstripped/bin/liteos" ]
+  outputs = [ "$root_out_dir/$liteos_name" ]
+}
+
+build_ext_component("build_kernel_image") {
+  deps = [ ":copy_liteos" ]
+  exec_path = rebase_path(root_out_dir)
+
+  objcopy = "${compile_prefix}objcopy$toolchain_cmd_suffix"
+  objdump = "${compile_prefix}objdump$toolchain_cmd_suffix"
+
+  command = "$objcopy -O binary $liteos_name $liteos_name.bin"
+  command +=
+      " && sh -c '$objdump -t $liteos_name | sort >$liteos_name.sym.sorted'"
+  command += " && sh -c '$objdump -d $liteos_name >$liteos_name.asm'"
 }
 
 build_ext_component("make") {

@@ -34,3 +34,7 @@ module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
   sources = [ "los_pm.c" ]
 }
+
+config("public") {
+  include_dirs = [ "." ]
+}

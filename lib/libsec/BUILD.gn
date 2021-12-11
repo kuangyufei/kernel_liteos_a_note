@@ -35,6 +35,22 @@ module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
   sources = libsec_sources
 
+  if (defined(LOSCFG_KERNEL_LMS)) {
+    if (ohos_build_compiler == "gcc") {
+      cflags_c = [ "-fsanitize=kernel-address" ]
+    } else {
+      cflags_c = [
+        "-fsanitize=kernel-address",
+        "-mllvm",
+        "-asan-instrumentation-with-call-threshold=0",
+        "-mllvm",
+        "-asan-stack=0",
+        "-mllvm",
+        "-asan-globals=0",
+      ]
+    }
+  }
+
   public_configs = [ ":public" ]
 }
 

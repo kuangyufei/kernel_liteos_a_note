@@ -63,11 +63,20 @@ kernel_module(module_name) {
     ]
     asmflags = [
       "-D__strlen_armv6t2=strlen",
-      "-D__strcpy_arm=strcpy",
       "-D__strcmp_arm=strcmp",
-      "-D__memcpy_arm=memcpy",
       "-D__memchr_arm=memchr",
     ]
+    if (defined(LOSCFG_KERNEL_LMS)) {
+      asmflags += [
+        "-D__memcpy_arm=__memcpy",
+        "-D__strcpy_arm=__strcpy",
+      ]
+    } else {
+      asmflags += [
+        "-D__memcpy_arm=memcpy",
+        "-D__strcpy_arm=strcpy",
+      ]
+    }
     sources += [
       "src/arch/arm/memcmp.S",
       "src/arch/arm/memset.S",

@@ -77,22 +77,33 @@ static int PowerModeWrite(struct ProcFile *pf, const char *buf, size_t count, lo
     (void)count;
     (void)ppos;
 
+    LOS_SysSleepEnum mode;
+
     if (buf == NULL) {
         return 0;
     }
 
-    if (strcmp(buf, "normal") != 0) {
-        return LOS_NOK;
+    if (strcmp(buf, "normal") == 0) {
+        mode = LOS_SYS_NORMAL_SLEEP;
+    } else if (strcmp(buf, "light") == 0) {
+        mode = LOS_SYS_LIGHT_SLEEP;
+    } else if (strcmp(buf, "deep") == 0) {
+        mode = LOS_SYS_DEEP_SLEEP;
+    } else if (strcmp(buf, "shutdown") == 0) {
+        mode = LOS_SYS_SHUTDOWN;
+    } else {
+        PRINT_ERR("Unsupported hibernation mode: %s\n", buf);
+        return -EINVAL;
     }
 
-    return 0;
+    return -LOS_PmModeSet(mode);
 }
 
 static int PowerModeRead(struct SeqBuf *m, void *v)
 {
     (void)v;
 
-    LosBufPrintf(m, "normal \n");
+    LosBufPrintf(m, "normal light deep shutdown\n");
     return 0;
 }
 
@@ -104,14 +115,30 @@ static const struct ProcFileOperations PowerMode = {
 static int PowerCountRead(struct SeqBuf *m, void *v)
 {
     (void)v;
-    UINT32 count = LOS_PmLockCountGet();
+    UINT32 count = LOS_PmReadLock();
 
     LosBufPrintf(m, "%u\n", count);
     return 0;
 }
 
+static int PowerCountWrite(struct ProcFile *pf, const char *buf, size_t count, loff_t *ppos)
+{
+    (void)pf;
+    (void)count;
+    (void)ppos;
+
+    int weakCount;
+
+    if (buf == NULL) {
+        return 0;
+    }
+
+    weakCount = atoi(buf);
+    return -LOS_PmSuspend(weakCount);
+}
+
 static const struct ProcFileOperations PowerCount = {
-    .write      = NULL,
+    .write      = PowerCountWrite,
     .read       = PowerCountRead,
 };
 

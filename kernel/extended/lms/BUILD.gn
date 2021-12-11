@@ -29,38 +29,15 @@
 
 import("//kernel/liteos_a/liteos.gni")
 
-group("extended") {
-  deps = [
-    "blackbox",
-    "cppsupport",
-    "cpup",
-    "dynload",
-    "hidumper",
-    "hilog",
-    "hook",
-    "liteipc",
-    "lms",
-    "perf",
-    "pipes",
-    "power",
-    "trace",
-    "vdso",
+module_switch = defined(LOSCFG_KERNEL_LMS)
+module_name = get_path_info(rebase_path("."), "name")
+kernel_module(module_name) {
+  sources = [
+    "lms_libc.c",
+    "los_lms.c",
   ]
 }
 
 config("public") {
-  configs = [
-    "blackbox:public",
-    "cpup:public",
-    "dynload:public",
-    "hidumper:public",
-    "hilog:public",
-    "hook:public",
-    "liteipc:public",
-    "pipes:public",
-    "vdso:public",
-    "perf:public",
-    "lms:public",
-    "power:public",
-  ]
+  include_dirs = [ "." ]
 }

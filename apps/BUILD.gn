@@ -55,4 +55,8 @@ group("apps") {
   if (defined(LOSCFG_DRIVERS_PERF)) {
     deps += [ "perf" ]
   }
+
+  if (defined(LOSCFG_KERNEL_LMS)) {
+    deps += [ "lms:sample_usr_lms" ]
+  }
 }

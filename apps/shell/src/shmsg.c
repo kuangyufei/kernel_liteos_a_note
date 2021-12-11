@@ -649,7 +649,7 @@ int ShellTaskInit(ShellCB *shellCB)
 ///< 给控制台注册一个shell客户端任务
 static int ShellKernelReg(unsigned int shellHandle)
 {
-    return ioctl(STDIN_FILENO, CONSOLE_CONTROL_REG_USERTASK, shellHandle);
+    return ioctl(STDIN_FILENO, CONSOLE_CONTROL_REG_USERTASK, shellHandle);//从标准输入中读取数据
 }
 
 void *ShellEntry(void *argv)

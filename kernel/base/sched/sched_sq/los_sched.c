@@ -47,8 +47,7 @@
 #ifdef LOSCFG_SCHED_DEBUG
 #include "los_stat_pri.h"
 #endif
-
-
+#include "los_pm_pri.h"
 
 #define OS_32BIT_MAX               0xFFFFFFFFUL
 #define OS_SCHED_FIFO_TIMEOUT      0x7FFFFFFF
@@ -60,6 +59,7 @@
 #define OS_SCHED_READY_MAX         30
 #define OS_TIME_SLICE_MIN          (INT32)((50 * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE) /* 50us */
 
+#define OS_CHECK_TASK_BLOCK (OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PENDING | OS_TASK_STATUS_SUSPENDED)
 /// 调度队列
 typedef struct {
     LOS_DL_LIST priQueueList[OS_PRIORITY_QUEUE_NUM];///< 各优先级任务调度队列,默认32级
@@ -775,6 +775,81 @@ BOOL OsSchedModifyProcessSchedParam(LosProcessCB *processCB, UINT16 policy, UINT
 
     return needSched;
 }
+
+STATIC VOID OsSchedFreezeTask(LosTaskCB *taskCB)
+{
+    UINT64 responseTime;
+
+    if (!OsIsPmMode()) {
+        return;
+    }
+
+    if (!(taskCB->taskStatus & (OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY))) {
+        return;
+    }
+
+    responseTime = GET_SORTLIST_VALUE(&taskCB->sortList);
+    OsDeleteSortLink(&taskCB->sortList, OS_SORT_LINK_TASK);
+    SET_SORTLIST_VALUE(&taskCB->sortList, responseTime);
+    taskCB->taskStatus |= OS_TASK_FLAG_FREEZE;
+    return;
+}
+
+STATIC VOID OsSchedUnfreezeTask(LosTaskCB *taskCB)
+{
+    UINT64 currTime, responseTime;
+    UINT32 remainTick;
+
+    if (!(taskCB->taskStatus & OS_TASK_FLAG_FREEZE)) {
+        return;
+    }
+
+    taskCB->taskStatus &= ~OS_TASK_FLAG_FREEZE;
+    currTime = OsGetCurrSchedTimeCycle();
+    responseTime = GET_SORTLIST_VALUE(&taskCB->sortList);
+    if (responseTime > currTime) {
+        remainTick = ((responseTime - currTime) + OS_CYCLE_PER_TICK - 1) / OS_CYCLE_PER_TICK;
+        OsAdd2SortLink(&taskCB->sortList, currTime, remainTick, OS_SORT_LINK_TASK);
+        return;
+    }
+
+    SET_SORTLIST_VALUE(&taskCB->sortList, OS_SORT_LINK_INVALID_TIME);
+    if (taskCB->taskStatus & OS_TASK_STATUS_PENDING) {
+        LOS_ListDelete(&taskCB->pendList);
+    }
+    taskCB->taskStatus &= ~(OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_PENDING);
+    return;
+}
+
+VOID OsSchedSuspend(LosTaskCB *taskCB)
+{
+    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {
+        OsSchedTaskDeQueue(taskCB);
+    }
+
+    OsSchedFreezeTask(taskCB);
+
+    taskCB->taskStatus |= OS_TASK_STATUS_SUSPENDED;
+    OsHookCall(LOS_HOOK_TYPE_MOVEDTASKTOSUSPENDEDLIST, taskCB);
+    if (taskCB == OsCurrTaskGet()) {
+        OsSchedResched();
+    }
+}
+
+BOOL OsSchedResume(LosTaskCB *taskCB)
+{
+    BOOL needSched = FALSE;
+
+    OsSchedUnfreezeTask(taskCB);
+
+    taskCB->taskStatus &= ~OS_TASK_STATUS_SUSPENDED;
+    if (!(taskCB->taskStatus & OS_CHECK_TASK_BLOCK)) {
+        OsSchedTaskEnQueue(taskCB);
+        needSched = TRUE;
+    }
+
+    return needSched;
+}
 //由时钟发起的调度
 VOID OsSchedTick(VOID)
 {
@@ -806,6 +881,12 @@ VOID OsSchedSetIdleTaskSchedParam(LosTaskCB *idleTask)
     idleTask->initTimeSlice = OS_SCHED_FIFO_TIMEOUT;
     idleTask->timeSlice = idleTask->initTimeSlice;
     OsSchedTaskEnQueue(idleTask);
+}
+
+VOID OsSchedResetSchedResponseTime(UINT64 responseTime)
+{
+    Percpu *cpu = OsPercpuGet();
+    cpu->responseTime = responseTime;
 }
 /// 向全局调度器注册扫描软件定时器的回调函数
 UINT32 OsSchedSwtmrScanRegister(SchedScan func)

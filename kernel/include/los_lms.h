@@ -29,8 +29,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_EXC_PRI_H
-#define _LOS_EXC_PRI_H
+#ifndef _LOS_LMS_H
+#define _LOS_LMS_H
 
 #include "los_typedef.h"
 
@@ -40,28 +40,14 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_SYSTEM_NORMAL        0	//当前CPU都处于正常状态
-#define OS_SYSTEM_EXC_CURR_CPU  1	//当前CPU处于异常状态
-#define OS_SYSTEM_EXC_OTHER_CPU 2	//其他CPU处于异常状态
+#ifdef LOSCFG_KERNEL_LMS
 
-#define REGION_PATH_MAX 32
+UINT32 LOS_LmsCheckPoolAdd(const VOID *pool, UINT32 size);
+VOID LOS_LmsCheckPoolDel(const VOID *pool);
+VOID LOS_LmsAddrProtect(UINTPTR addrStart, UINTPTR addrEnd);
+VOID LOS_LmsAddrDisableProtect(UINTPTR addrStart, UINTPTR addrEnd);
 
-typedef struct {
-#ifdef LOSCFG_KERNEL_VM
-    UINTPTR ip;
-    UINT32 len; /* f_path length */
-    CHAR f_path[REGION_PATH_MAX];
-#else
-    UINTPTR ip;
-#endif
-} IpInfo;
-
-extern UINT32 OsGetSystemStatus(VOID);
-extern VOID BackTraceSub(UINTPTR regFP);
-extern VOID OsExcInit(VOID);
-extern BOOL OsSystemExcIsReset(VOID);
-extern UINT32 BackTraceGet(UINTPTR regFP, IpInfo *callChain, UINT32 maxDepth);
-extern BOOL OsGetUsrIpInfo(UINTPTR ip, IpInfo *info);
+#endif /* LOSCFG_KERNEL_LMS */
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -69,4 +55,4 @@ extern BOOL OsGetUsrIpInfo(UINTPTR ip, IpInfo *info);
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#endif /* _LOS_EXC_PRI_H */
+#endif  /* _LOS_LMS_H */

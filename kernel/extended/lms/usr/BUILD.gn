@@ -27,40 +27,33 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import("//kernel/liteos_a/liteos.gni")
+import("//build/lite/config/component/lite_component.gni")
 
-group("extended") {
-  deps = [
-    "blackbox",
-    "cppsupport",
-    "cpup",
-    "dynload",
-    "hidumper",
-    "hilog",
-    "hook",
-    "liteipc",
-    "lms",
-    "perf",
-    "pipes",
-    "power",
-    "trace",
-    "vdso",
-  ]
+copy("usrlmslib") {
+  deps = [ ":usrlms" ]
+  sources = [ get_path_info(".", "out_dir") + "/libusrlms.a" ]
+  outputs = [ "$root_out_dir/libusrlms.a" ]
 }
 
-config("public") {
-  configs = [
-    "blackbox:public",
-    "cpup:public",
-    "dynload:public",
-    "hidumper:public",
-    "hilog:public",
-    "hook:public",
-    "liteipc:public",
-    "pipes:public",
-    "vdso:public",
-    "perf:public",
-    "lms:public",
-    "power:public",
+lite_library("usrlms") {
+  target_type = "static_library"
+  sources = [
+    "los_lms.c",
+    "los_lmslibc.c",
   ]
+
+  include_dirs = [ "." ]
+
+  cflags = [
+    "-fPIC",
+    "-funwind-tables",
+    "-fasynchronous-unwind-tables",
+  ]
+
+  ldflags = [
+    "-rdynamic",
+    "-lunwind",
+  ]
+
+  output_dir = target_out_dir
 }

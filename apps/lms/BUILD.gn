@@ -27,40 +27,51 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import("//kernel/liteos_a/liteos.gni")
-
-group("extended") {
-  deps = [
-    "blackbox",
-    "cppsupport",
-    "cpup",
-    "dynload",
-    "hidumper",
-    "hilog",
-    "hook",
-    "liteipc",
-    "lms",
-    "perf",
-    "pipes",
-    "power",
-    "trace",
-    "vdso",
-  ]
+import("//build/lite/config/component/lite_component.gni")
+lite_component("LMS-Sample") {
+  features = [ ":sample_usr_lms" ]
 }
-
-config("public") {
-  configs = [
-    "blackbox:public",
-    "cpup:public",
-    "dynload:public",
-    "hidumper:public",
-    "hilog:public",
-    "hook:public",
-    "liteipc:public",
-    "pipes:public",
-    "vdso:public",
-    "perf:public",
-    "lms:public",
-    "power:public",
+executable("sample_usr_lms") {
+  output_name = "sample_usr_lms"
+  sources = [ "src/sample_usr_lms.c" ]
+  include_dirs = []
+  defines = []
+  if (ohos_build_compiler == "gcc") {
+    cflags_c = [
+      "-O0",
+      "-fsanitize=kernel-address",
+      "-funwind-tables",
+      "-fasynchronous-unwind-tables",
+    ]
+  } else {
+    cflags_c = [
+      "-O0",
+      "-fsanitize=kernel-address",
+      "-mllvm",
+      "-asan-instrumentation-with-call-threshold=0",
+      "-mllvm",
+      "-asan-stack=0",
+      "-mllvm",
+      "-asan-globals=0",
+      "-funwind-tables",
+      "-fasynchronous-unwind-tables",
+    ]
+  }
+  ldflags = [
+    "-rdynamic",
+    "-lunwind",
+    "-lusrlms",
+    "-Wl,--wrap=realloc",
+    "-Wl,--wrap=calloc",
+    "-Wl,--wrap=malloc",
+    "-Wl,--wrap=free",
+    "-Wl,--wrap=valloc",
+    "-Wl,--wrap=aligned_alloc",
+    "-Wl,--wrap=memset",
+    "-Wl,--wrap=memcpy",
+    "-Wl,--wrap=memmove",
+    "-Wl,--wrap=strcpy",
+    "-Wl,--wrap=strcat",
   ]
+  deps = [ "//kernel/liteos_a/kernel/extended/lms/usr:usrlmslib" ]
 }

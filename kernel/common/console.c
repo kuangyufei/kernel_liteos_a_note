@@ -162,7 +162,7 @@ STATIC UINT32 ConsoleRefcountGet(const CONSOLE_CB *consoleCB)
 {
     return consoleCB->refCount;
 }
-///设置控制台引用次数
+///设置控制台引用次数,也表示占用控制台的数量
 STATIC VOID ConsoleRefcountSet(CONSOLE_CB *consoleCB, BOOL flag)
 {
     if (flag == TRUE) {
@@ -218,7 +218,7 @@ STATIC INT32 ConsoleCtrlRightsCapture(CONSOLE_CB *consoleCB)
 		| 表示shellentry在uart_read中，直接挂起shellentry任务*/
         (VOID)LOS_TaskSuspend(consoleCB->shellEntryId);//挂起任务,意味着不接受输入
     }
-    ConsoleRefcountSet(consoleCB, TRUE);
+    ConsoleRefcountSet(consoleCB, TRUE); //占用控制台
     return LOS_OK;
 }
 
@@ -229,7 +229,7 @@ STATIC INT32 ConsoleCtrlRightsRelease(CONSOLE_CB *consoleCB)
         (VOID)LOS_SemPost(consoleCB->consoleSem);
         return LOS_NOK;
     } else {
-        ConsoleRefcountSet(consoleCB, FALSE);
+        ConsoleRefcountSet(consoleCB, FALSE);//释放控制台
         if ((ConsoleRefcountGet(consoleCB) == 0) &&
             (OsCurrTaskGet()->taskID != consoleCB->shellEntryId)) {
             (VOID)LOS_TaskResume(consoleCB->shellEntryId);
@@ -665,9 +665,9 @@ STATIC ssize_t DoRead(CONSOLE_CB *consoleCB, CHAR *buffer, size_t bufLen,
     INT32 ret;
 
 #ifdef LOSCFG_SHELL
-    if (OsCurrTaskGet()->taskID == consoleCB->shellEntryId) {
-        ret = FilepRead(privFilep, fileOps, buffer, bufLen);
-    } else {
+    if (OsCurrTaskGet()->taskID == consoleCB->shellEntryId) {//shell Entry 任务读取内容
+        ret = FilepRead(privFilep, fileOps, buffer, bufLen);//直接从串口中读数据
+    } else {//其他任务读取内容,需经过行规程处理
 #endif
         (VOID)ConsoleCtrlRightsCapture(consoleCB);
         ret = UserFilepRead(consoleCB, privFilep, fileOps, buffer, bufLen);
@@ -678,7 +678,7 @@ STATIC ssize_t DoRead(CONSOLE_CB *consoleCB, CHAR *buffer, size_t bufLen,
 
     return ret;
 }
-///任务从控制台读数据
+///任务从控制台读数据,例如 Shell Entry 任务会从此读数据
 STATIC ssize_t ConsoleRead(struct file *filep, CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
@@ -753,14 +753,14 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
     UINT32 intSave;
 
 #ifdef LOSCFG_SHELL_DMESG 
-    (VOID)OsLogMemcpyRecord(buffer, bufLen); //写到内核缓冲区中
+    (VOID)OsLogMemcpyRecord(buffer, bufLen); //同时写到内核缓冲区中,这也导致 OHOS# dmesg 会输出相同的内容
     if (OsCheckConsoleLock()) {
         return 0;
     }
 #endif
     LOS_CirBufLock(&cirBufSendCB->cirBufCB, &intSave);
     while (written < (INT32)bufLen) {
-        /* Transform for CR/LR mode */
+        /* Transform for CR/LR mode | 回车(CR, ASCII 13, \r) 换行(LF, ASCII 10, \n)*/
         if ((buffer[written] == '\n') || (buffer[written] == '\r')) {
             (VOID)LOS_CirBufWrite(&cirBufSendCB->cirBufCB, "\r", 1);
         }
@@ -1072,7 +1072,7 @@ STATIC INT32 OsConsoleFileInit(CONSOLE_CB *consoleCB)
         goto ERROUT;
     }
 
-    filep = files_allocate(vnode, O_RDWR, 0, consoleCB, FILE_START_FD);//3号文件描述符分配给了控制台
+    filep = files_allocate(vnode, O_RDWR, 0, consoleCB, FILE_START_FD);//分配FD给了控制台
     if (filep == NULL) {
         ret = EMFILE;
         goto ERROUT;
@@ -1313,7 +1313,7 @@ STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
         goto ERR_WITH_SEM;
     }
 
-    ret = OsConsoleFileInit(consoleCB);	//为 /dev/console(n|1:2)分配fd(3)
+    ret = OsConsoleFileInit(consoleCB);	//为 /dev/console(n|1:2)分配fd(n)
     if (ret != LOS_OK) {
         PRINT_ERR("console OsConsoleFileInit error. %d\n", ret);
         goto ERR_WITH_DEV;

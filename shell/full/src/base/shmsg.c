@@ -348,7 +348,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntry(UINTPTR param)
     INT32 n = 0;
     ShellCB *shellCB = (ShellCB *)param;
 
-    CONSOLE_CB *consoleCB = OsGetConsoleByID((INT32)shellCB->consoleID);//获取控制台
+    CONSOLE_CB *consoleCB = OsGetConsoleByID((INT32)shellCB->consoleID);//获取绑定的控制台,目的是从控制台读数据
     if (consoleCB == NULL) {
         PRINT_ERR("Shell task init error!\n");
         return 1;
@@ -361,7 +361,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntry(UINTPTR param)
         if (!IsConsoleOccupied(consoleCB)) {//控制台是否被占用
 #endif
             /* is console ready for shell ? */
-            n = read(consoleCB->fd, &ch, 1);//从控制台读取一个字符内容,字符一个个处理
+            n = read(consoleCB->fd, &ch, 1);//系统调用,从控制台读取一个字符内容,字符一个个处理
             if (n == 1) {//如果能读到一个字符
                 ShellCmdLineParse(ch, (pf_OUTPUT)dprintf, shellCB);
             }

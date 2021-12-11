@@ -228,7 +228,14 @@ STATIC INLINE BOOL OsIsPageShared(LosVmPage *page)
     return BIT_GET(page->flags, FILE_PAGE_SHARED);
 }
 
+typedef struct ProcessCB LosProcessCB;
+
+#ifdef LOSCFG_FS_VFS
 INT32 OsVfsFileMmap(struct file *filep, LosVmMapRegion *region);
+STATUS_T OsNamedMMap(struct file *filep, LosVmMapRegion *region);
+VOID OsVmmFileRegionFree(struct file *filep, LosProcessCB *processCB);
+#endif
+
 LosFilePage *OsPageCacheAlloc(struct page_mapping *mapping, VM_OFFSET_T pgoff);
 LosFilePage *OsFindGetEntry(struct page_mapping *mapping, VM_OFFSET_T pgoff);
 LosMapInfo *OsGetMapInfo(LosFilePage *page, LosArchMmu *archMmu, VADDR_T vaddr);
@@ -243,14 +250,11 @@ VOID OsLruCacheDel(LosFilePage *fpage);
 LosFilePage *OsDumpDirtyPage(LosFilePage *oldPage);
 VOID OsDoFlushDirtyPage(LosFilePage *fpage);
 VOID OsDeletePageCacheLru(LosFilePage *page);
-STATUS_T OsNamedMMap(struct file *filep, LosVmMapRegion *region);
 VOID OsPageRefDecNoLock(LosFilePage *page);
 VOID OsPageRefIncLocked(LosFilePage *page);
 int OsTryShrinkMemory(size_t nPage);
 VOID OsMarkPageDirty(LosFilePage *fpage, LosVmMapRegion *region, int off, int len);
 
-typedef struct ProcessCB LosProcessCB;
-VOID OsVmmFileRegionFree(struct file *filep, LosProcessCB *processCB);
 #ifdef LOSCFG_DEBUG_VERSION
 VOID ResetPageCacheHitInfo(int *try, int *hit);
 struct file_map* GetFileMappingList(void);

@@ -29,28 +29,22 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/**
- * @defgroup los_pmm physical memory management
- * @ingroup kernel
- */
+#ifndef _LOS_PM_PRI_H
+#define _LOS_PM_PRI_H
 
-#ifndef __LOS_PMM_H__
-#define __LOS_PMM_H__
-
+#include "los_config.h"
 #include "los_typedef.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#ifdef  LOSCFG_KERNEL_PM
 
-BOOL OsIsPaddrValid(paddr_t pa);
+BOOL OsIsPmMode(VOID);
 
-#ifdef __cplusplus
-#if __cplusplus
+#else
+
+STATIC INLINE BOOL OsIsPmMode(VOID)
+{
+    return FALSE;
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
-#endif /* __LOS_PMM_H__ */
+#endif
+#endif
