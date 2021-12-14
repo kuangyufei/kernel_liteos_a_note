@@ -137,15 +137,15 @@
 #define TELNET_ACCEPT_INTERVAL  200
 
 /* client settings  | 客户端设置*/
-#define TELNET_CLIENT_POLL_TIMEOUT  2000	//超时时间设置
+#define TELNET_CLIENT_POLL_TIMEOUT  2000	//一次客户端链接的 超时时间,
 #define TELNET_CLIENT_READ_BUF_SIZE 256		//读buf大小
 #define TELNET_CLIENT_READ_FILTER_BUF_SIZE (8 * 1024) ///< buf大小
 
 /* limitation: only support 1 telnet client connection */
-STATIC volatile INT32 g_telnetClientFd = -1;  /* client fd */
+STATIC volatile INT32 g_telnetClientFd = -1;  /* client fd | 客户端文件句柄,仅支持一个客户端链接 */
 
 /* limitation: only support 1 telnet server */
-STATIC volatile INT32 g_telnetListenFd = -1;  /* listen fd of telnetd */
+STATIC volatile INT32 g_telnetListenFd = -1;  /* listen fd of telnetd | 服务端文件句柄,仅支持一个服务端*/
 
 /* each bit for a client connection, although only support 1 connection for now */
 STATIC volatile UINT32 g_telnetMask = 0; //记录有任务打开了远程登录
@@ -312,8 +312,15 @@ STATIC INT32 TelnetdInit(UINT16 port)
     INT32 listenFd;
     INT32 reuseAddr = 1;
     struct sockaddr_in inTelnetAddr;
-
-    listenFd = socket(AF_INET, SOCK_STREAM, 0);
+	/**
+		ai_family参数指定调用者期待返回的套接口地址结构的类型。它的值包括三种：AF_INET，AF_INET6和AF_UNSPEC
+			AF_INET:	不能返回任何IPV6相关的地址信息
+			AF_INET6:	不能返回任何IPV4地址信息
+			AF_UNSPEC: 	返回的是适用于指定主机名和服务名且适合任何协议族的地址。如果某个主机既有AAAA记录(IPV6)地址，
+					同时又有A记录(IPV4)地址，那么AAAA记录将作为sockaddr_in6结构返回，而A记录则作为sockaddr_in结构返回
+	*/
+	//SOCK_STREAM 表示TCP协议
+    listenFd = socket(AF_INET, SOCK_STREAM, 0);//打开一个socker fd 
     if (listenFd == -1) {
         PRINT_ERR("TelnetdInit : socket error.\n");
         goto ERR_OUT;
@@ -391,6 +398,14 @@ STATIC INT32 TelnetClientPrepare(INT32 clientFd)
     return 0;
 }
 
+/*!
+ * @brief TelnetClientLoop	处理远程客户端的请求任务的入口函数
+ *
+ * @param arg	
+ * @return	
+ *
+ * @see
+ */
 STATIC VOID *TelnetClientLoop(VOID *arg)
 {
     struct pollfd pollFd;
@@ -412,28 +427,64 @@ STATIC VOID *TelnetClientLoop(VOID *arg)
 
     while (1) {
         pollFd.fd = clientFd;
-        pollFd.events = POLLIN | POLLRDHUP;
+        pollFd.events = POLLIN | POLLRDHUP;//监听读数据和挂起事件
         pollFd.revents = 0;
-
-        ret = poll(&pollFd, 1, TELNET_CLIENT_POLL_TIMEOUT);
-        if (ret < 0) {
+		/*
+		POLLIN 普通或优先级带数据可读
+		POLLRDNORM 普通数据可读
+		POLLRDBAND 优先级带数据可读
+		POLLPRI 高优先级数据可读
+		POLLOUT 普通数据可写
+		POLLWRNORM 普通数据可写
+		POLLWRBAND 优先级带数据可写
+		POLLERR 发生错误
+		POLLHUP 发生挂起
+		POLLNVAL 描述字不是一个打开的文件
+		poll本质上和select没有区别，它将用户传入的数组拷贝到内核空间，然后查询每个fd对应的设备状态，
+		如果设备就绪则在设备等待队列中加入一项并继续遍历，如果遍历完所有fd后没有发现就绪设备，则挂起当前进程，
+		直到设备就绪或者主动超时，被唤醒后它又要再次遍历fd。
+	　　这个过程经历了多次无谓的遍历。
+	　　poll还有一个特点是“水平触发”，如果报告了fd后，没有被处理，那么下次poll时会再次报告该fd。
+	　　poll与select的不同，通过一个pollfd数组向内核传递需要关注的事件，故没有描述符个数的限制，
+			pollfd中的events字段和revents分别用于标示关注的事件和发生的事件，故pollfd数组只需要被初始化一次
+	　　poll的实现机制与select类似，其对应内核中的sys_poll，只不过poll向内核传递pollfd数组，
+			然后对pollfd中的每个描述符进行poll，相比处理fdset来说，poll效率更高。poll返回后，
+			需要对pollfd中的每个元素检查其revents值，来得指事件是否发生。
+			优点
+			1）poll() 不要求开发者计算最大文件描述符加一的大小。
+			2）poll() 在应付大数目的文件描述符的时候速度更快，相比于select。
+			3）它没有最大连接数的限制，原因是它是基于链表来存储的。
+			缺点
+			1）大量的fd的数组被整体复制于用户态和内核地址空间之间，而不管这样的复制是不是有意义。
+			2）与select一样，poll返回后，需要轮询pollfd来获取就绪的描述符
+		*/
+        ret = poll(&pollFd, 1, TELNET_CLIENT_POLL_TIMEOUT);//等2秒钟返回
+        if (ret < 0) {//失败时，poll()返回-1
             break;
+			/*	ret < 0 各值
+			　　EBADF　　		一个或多个结构体中指定的文件描述符无效。
+			　　EFAULTfds　　 指针指向的地址超出进程的地址空间。
+			　　EINTR　　　　  请求的事件之前产生一个信号，调用可以重新发起。
+			　　EINVALnfds　　参数超出PLIMIT_NOFILE值。
+			　　ENOMEM　　	   可用内存不足，无法完成请求
+
+			*/
         }
-        if (ret == 0) {
+        if (ret == 0) {//如果在超时前没有任何事件发生，poll()返回0
             continue;
         }
-        /* connection reset, maybe keepalive failed or reset by peer */
+        /* connection reset, maybe keepalive failed or reset by peer | 连接重置，可能keepalive失败或被peer重置*/
         if ((UINT16)pollFd.revents & (POLLERR | POLLHUP | POLLRDHUP)) {
             break;
         }
 
-        if ((UINT16)pollFd.revents & POLLIN) {
-            nRead = read(clientFd, buf, sizeof(buf));
+        if ((UINT16)pollFd.revents & POLLIN) {//数据事件
+            nRead = read(clientFd, buf, sizeof(buf));//读外面过来的数据
             if (nRead <= 0) {
                 /* telnet client shutdown */
                 break;
             }
-            cmdBuf = ReadFilter(buf, (UINT32)nRead, &len);
+            cmdBuf = ReadFilter(buf, (UINT32)nRead, &len);//对数据过滤
             if (len > 0) {
                 (VOID)TelnetTx((CHAR *)cmdBuf, len);
             }
@@ -450,16 +501,16 @@ STATIC VOID *TelnetClientLoop(VOID *arg)
 
 STATIC VOID TelnetClientTaskAttr(pthread_attr_t *threadAttr)
 {
-    (VOID)pthread_attr_init(threadAttr);
-    threadAttr->inheritsched = PTHREAD_EXPLICIT_SCHED;
-    threadAttr->schedparam.sched_priority = TELNET_TASK_PRIORITY;
-    threadAttr->detachstate = PTHREAD_CREATE_DETACHED;
-    (VOID)pthread_attr_setstacksize(threadAttr, TELNET_TASK_STACK_SIZE);
+    (VOID)pthread_attr_init(threadAttr);//初始化线程属性
+    threadAttr->inheritsched = PTHREAD_EXPLICIT_SCHED;//
+    threadAttr->schedparam.sched_priority = TELNET_TASK_PRIORITY;//线程优先级
+    threadAttr->detachstate = PTHREAD_CREATE_DETACHED;//任务分离模式
+    (VOID)pthread_attr_setstacksize(threadAttr, TELNET_TASK_STACK_SIZE);//设置任务内核栈大小
 }
 
 /*
- * Description : Handle the client connection request.
- *               Create a client connection if permitted.
+ * Description : Handle the client connection request. | 处理客户端连接请求
+ *               Create a client connection if permitted. | 如果允许，创建客户端连接
  * Return      : 0  --- please continue the server accept loop
  *             : -1 --- please stop the server accept loop.
  */
@@ -490,7 +541,7 @@ STATIC INT32 TelnetdAcceptClient(INT32 clientFd, const struct sockaddr_in *inTel
     }
 
     g_telnetClientFd = clientFd;
-
+	//创建一个线程处理客户端的请求
     if (pthread_create(&tmp, &useAttr, TelnetClientLoop, (VOID *)(UINTPTR)clientFd) != 0) {
         PRINT_ERR("Failed to create client handle task\n");
         g_telnetClientFd = -1;
@@ -509,6 +560,7 @@ ERROUT:
 
 /*
  * Waiting for client's connection. Only allow 1 connection, and others will be discarded.
+ * | 等待客户端的连接。 只允许1个连接，其他将被丢弃
  */
 STATIC VOID TelnetdAcceptLoop(INT32 listenFd)
 {
@@ -523,8 +575,8 @@ STATIC VOID TelnetdAcceptLoop(INT32 listenFd)
         TelnetUnlock();
 
         (VOID)memset_s(&inTelnetAddr, sizeof(inTelnetAddr), 0, sizeof(inTelnetAddr));
-        clientFd = accept(listenFd, (struct sockaddr *)&inTelnetAddr, (socklen_t *)&len);
-        if (TelnetdAcceptClient(clientFd, &inTelnetAddr) == 0) {
+        clientFd = accept(listenFd, (struct sockaddr *)&inTelnetAddr, (socklen_t *)&len);//接收数据
+        if (TelnetdAcceptClient(clientFd, &inTelnetAddr) == 0) {//
             /*
              * Sleep sometime before next loop: mostly we already have one connection here,
              * and the next connection will be declined. So don't waste our cpu.
@@ -539,10 +591,14 @@ STATIC VOID TelnetdAcceptLoop(INT32 listenFd)
 }
 
 /*!
- * @brief TelnetdMain	
- *	输入 telnet on
+ * @brief TelnetdMain
+ @verbatim
+ 	telnet启动要确保网络驱动及网络协议栈已经初始化完成，且板子的网卡是link up状态。
+	暂时无法支持多个客户端（telnet + IP）同时连接开发板。
+ 	输入 telnet on
 		OHOS # telnet on
 		OHOS # start telnet server successfully, waiting for connection.
+ @endverbatim
  * @return	
  *
  * @see
@@ -552,14 +608,14 @@ STATIC INT32 TelnetdMain(VOID)
     INT32 sock;
     INT32 ret;
 	//1.初始化
-    sock = TelnetdInit(TELNETD_PORT);
+    sock = TelnetdInit(TELNETD_PORT);//创建 socket ,socket的本质就是打开了一个虚拟文件
     if (sock == -1) {
         PRINT_ERR("telnet init error.\n");
         return -1;
     }
 	//2.注册
     TelnetLock();
-    ret = TelnetedRegister();
+    ret = TelnetedRegister();//注册驱动程序,ops
     TelnetUnlock();
 
     if (ret != 0) {
@@ -577,7 +633,7 @@ STATIC INT32 TelnetdMain(VOID)
  * Try to create telnetd task.
  */
 /*!
- * @brief TelnetdTaskInit 创建 telnet 任务	
+ * @brief TelnetdTaskInit 创建 telnet 服务端任务	
  * \n 1. telnet启动要确保网络驱动及网络协议栈已经初始化完成，且板子的网卡是link up状态。
  * \n 2. 暂时无法支持多个客户端（telnet + IP）同时连接开发板。
  		\n 须知： telnet属于调测功能，默认配置为关闭，正式产品中禁止使用该功能。
@@ -601,7 +657,7 @@ STATIC VOID TelnetdTaskInit(VOID)
         return;
     }
 
-    ret = LOS_TaskCreate((UINT32 *)&g_telnetTaskId, &initParam);//创建远程登录任务并发起调度
+    ret = LOS_TaskCreate((UINT32 *)&g_telnetTaskId, &initParam);//创建远程登录服务端任务并发起调度
     if (ret != LOS_OK) {
         PRINT_ERR("failed to create telnet server task!\n");
     }
@@ -640,12 +696,12 @@ INT32 TelnetCmd(UINT32 argc, const CHAR **argv)
 
     if (strcmp(argv[0], "on") == 0) {
         /* telnet on: try to start telnet server task */
-        TelnetdTaskInit();
+        TelnetdTaskInit(); //启动远程登录 服务端任务
         return 0;
     }
     if (strcmp(argv[0], "off") == 0) {
         /* telnet off: try to stop clients, then stop server task */
-        TelnetdTaskDeinit();
+        TelnetdTaskDeinit();//关闭所有的客户端,并关闭服务端任务
         return 0;
     }
 

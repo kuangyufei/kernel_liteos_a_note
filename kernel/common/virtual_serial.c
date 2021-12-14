@@ -67,7 +67,7 @@ UINT32 SerialTypeGet(VOID)
 }
 ///设置串口类型
 STATIC VOID SerialTypeSet(const CHAR *deviceName)
-{
+{///dev/uartdev-0
     if (!strncmp(deviceName, SERIAL_UARTDEV, strlen(SERIAL_UARTDEV))) {
         g_serialType = SERIAL_TYPE_UART_DEV;
     } else if (!strncmp(deviceName, SERIAL_TTYGS0, strlen(SERIAL_TTYGS0))) {
@@ -126,12 +126,17 @@ STATIC ssize_t SerialRead(struct file *filep, CHAR *buffer, size_t bufLen)
     const struct file_operations_vfs *fileOps = NULL;
 
     ret = GetFilepOps(filep, &privFilep, &fileOps);//获取COM口在内核的file实例
+    /*以 register_driver(SERIAL, &g_serialDevOps, DEFFILEMODE, &g_serialFilep);为例
+		privFilep = g_serialFilep
+		fileOps = g_serialDevOps
+    */
+    
     if (ret != ENOERR) {
         ret = -EINVAL;
         goto ERROUT;
     }
 
-    ret = FilepRead(privFilep, fileOps, buffer, bufLen);//从COM口读buf
+    ret = FilepRead(privFilep, fileOps, buffer, bufLen);//从USB或者UART 读buf
     if (ret < 0) {
         goto ERROUT;
     }
@@ -224,7 +229,7 @@ STATIC const struct file_operations_vfs g_serialDevOps = {
 #endif
     NULL,
 };
-//虚拟串口初始化,注册驱动程序
+//虚拟串口初始化,注册驱动程序 ,例如 : deviceName = "/dev/uartdev-0"
 INT32 virtual_serial_init(const CHAR *deviceName)
 {
     INT32 ret;
@@ -235,7 +240,7 @@ INT32 virtual_serial_init(const CHAR *deviceName)
         goto ERROUT;
     }
 
-    SerialTypeSet(deviceName);//例如: /dev/uartdev-0 <--> /dev/console1
+    SerialTypeSet(deviceName);//例如: /dev/uartdev-0 为 UART串口
 
     VnodeHold();
     ret = VnodeLookup(deviceName, &vnode, V_DUMMY);//由deviceName查询vnode节点
@@ -245,10 +250,10 @@ INT32 virtual_serial_init(const CHAR *deviceName)
     }
 	//接着是 vnode < -- > file 的绑定操作
     (VOID)memset_s(&g_serialFilep, sizeof(struct file), 0, sizeof(struct file));
-    g_serialFilep.f_oflags = O_RDWR;
-    g_serialFilep.f_vnode = vnode;
-    g_serialFilep.ops = ((struct drv_data *)vnode->data)->ops;
-
+    g_serialFilep.f_oflags = O_RDWR;//可读可写
+    g_serialFilep.f_vnode = vnode;	//
+    g_serialFilep.ops = ((struct drv_data *)vnode->data)->ops;//这里代表 访问 /dev/serial 意味着是访问 /dev/uartdev-0
+	
     if (g_serialFilep.ops->open != NULL) {//用于检测是否有默认的驱动程序
         (VOID)g_serialFilep.ops->open(&g_serialFilep);
     } else {
@@ -256,8 +261,9 @@ INT32 virtual_serial_init(const CHAR *deviceName)
         PRINTK("virtual_serial_init %s open is NULL\n", deviceName);
         goto ERROUT;
     }
-    (VOID)register_driver(SERIAL, &g_serialDevOps, DEFFILEMODE, &g_serialFilep);//这是真正的注册串口的驱动程序
-
+    (VOID)register_driver(SERIAL, &g_serialDevOps, DEFFILEMODE, &g_serialFilep);//注册虚拟串口驱动程序
+	//g_serialFilep作为私有数据给了 (drv_data)data->priv = g_serialFilep
+	//
     VnodeDrop();
     return ENOERR;
 

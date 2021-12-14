@@ -50,7 +50,7 @@
 #include "fs/driver.h"
 
 /* event: there are more commands left in the FIFO to run */
-#define TELNET_EVENT_MORE_CMD   0x01 ///< 还有很多命令在FIFO中等待运行的事件
+#define TELNET_EVENT_MORE_CMD   0x01 ///< 还有很多命令在FIFO中等待执行的事件
 #define TELNET_DEV_DRV_MODE     0666 ///< 文件权限 chmod = 666 
 
 STATIC TELNET_DEV_S g_telnetDev;	///< 远程登录设备
@@ -86,6 +86,8 @@ STATIC INLINE TELNET_DEV_S *GetTelnetDevByFile(const struct file *file, BOOL isO
 /*
  * Description : When receive user's input commands, first copy commands to the FIFO of the telnet device.
  *               Then, notify a command resolver task (an individual shell task) to take out and run commands.
+	 当接收到用户输入的命令时，首先将命令复制到telnet设备的FIFO中，然后通知一个命令解析器任务
+	 （一个单独的shell任务）取出并运行命令。
  * Return      : -1                   --- On failure
  *               Non-negative integer --- length of written commands
  */
@@ -103,16 +105,16 @@ INT32 TelnetTx(const CHAR *buf, UINT32 bufLen)
     }
 
     /* size limited */
-    if (bufLen > telnetDev->cmdFifo->fifoNum) {
-        bufLen = telnetDev->cmdFifo->fifoNum;
+    if (bufLen > telnetDev->cmdFifo->fifoNum) {//一次拿不完数据的情况
+        bufLen = telnetDev->cmdFifo->fifoNum;//只能装满
     }
 
-    if (bufLen == 0) {
+    if (bufLen == 0) { //参数要先判断 @note_thinking
         TelnetUnlock();
         return 0;
     }
 
-    /* copy commands to the fifo of the telnet device */
+    /* copy commands to the fifo of the telnet device | 复制命令到telnet设备的fifo*/
     for (i = 0; i < bufLen; i++) {
         telnetDev->cmdFifo->rxBuf[telnetDev->cmdFifo->rxIndex] = *buf;
         telnetDev->cmdFifo->rxIndex++;
@@ -194,6 +196,7 @@ STATIC INT32 TelnetClose(struct file *file)
  * Description : When a command resolver task trys to read the telnet device,
  *               this method is called, and it will take out user's commands from the FIFO to run.
  * 当命令解析器任务尝试读取 telnet 设备时，调用这个方法，它会从FIFO中取出用户的命令来运行。
+ * 读取远程终端输入的命令,比如: # task 
  * Return      : -1                   --- On failure
  *               Non-negative integer --- length of commands taken out from the FIFO of the telnet device.
  */
@@ -210,7 +213,7 @@ STATIC ssize_t TelnetRead(struct file *file, CHAR *buf, size_t bufLen)
         return -1;
     }
 
-    if (telnetDev->eventPend) {//挂起时,读取
+    if (telnetDev->eventPend) {//挂起时,说明没有数据可读,等待事件发生
         TelnetUnlock();
         (VOID)LOS_EventRead(g_event, TELNET_EVENT_MORE_CMD, LOS_WAITMODE_OR, LOS_WAIT_FOREVER);//等待读取 TELNET_EVENT_MORE_CMD 事件
         TelnetLock();
@@ -219,7 +222,7 @@ STATIC ssize_t TelnetRead(struct file *file, CHAR *buf, size_t bufLen)
     if (bufLen > (FIFO_MAX - telnetDev->cmdFifo->fifoNum)) {
         bufLen = FIFO_MAX - telnetDev->cmdFifo->fifoNum;
     }
-
+	//把远程终端过来的数据接走, 一般由 Shell Entry 任务中的 read(fd,&buf)读走数据
     for (i = 0; i < bufLen; i++) {
         *buf++ = telnetDev->cmdFifo->rxBuf[telnetDev->cmdFifo->rxOutIndex++];
         if (telnetDev->cmdFifo->rxOutIndex >= FIFO_MAX) {
@@ -227,9 +230,9 @@ STATIC ssize_t TelnetRead(struct file *file, CHAR *buf, size_t bufLen)
         }
     }
     telnetDev->cmdFifo->fifoNum += bufLen;
-    /* check if no more commands left to run */
+    /* check if no more commands left to run | 检查是否没有更多命令可以运行 */
     if (telnetDev->cmdFifo->fifoNum == FIFO_MAX) {
-        (VOID)LOS_EventClear(&telnetDev->eventTelnet, ~TELNET_EVENT_MORE_CMD);
+        (VOID)LOS_EventClear(&telnetDev->eventTelnet, ~TELNET_EVENT_MORE_CMD);//清除读取内容事件
     }
 
     TelnetUnlock();
@@ -260,25 +263,25 @@ STATIC ssize_t TelnetWrite(struct file *file, const CHAR *buf, const size_t bufL
         return ret;
     }
 
-    if (!OsPreemptable()) {
+    if (!OsPreemptable()) {//@note_thinking 这里为何要有这个判断?
         TelnetUnlock();
         return ret;
     }
 
     if (telnetDev->clientFd != 0) {
 #ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
-         /* DO NOT call blocking API in software timer task */
+         /* DO NOT call blocking API in software timer task | 不要在软件定时器任务中调用阻塞 API */
         if (((LosTaskCB*)OsCurrTaskGet())->taskEntry == (TSK_ENTRY_FUNC)OsSwtmrTask) {
             TelnetUnlock();
             return ret;
         }
 #endif
-        ret = send(telnetDev->clientFd, buf, bufLen, 0);
+        ret = send(telnetDev->clientFd, buf, bufLen, 0);//向 socket 发送
     }
     TelnetUnlock();
     return ret;
 }
-
+/// 远程登录控制操作
 STATIC INT32 TelnetIoctl(struct file *file, const INT32 cmd, unsigned long arg)
 {
     TELNET_DEV_S *telnetDev = NULL;
@@ -332,7 +335,7 @@ STATIC INT32 TelnetPoll(struct file *file, poll_table *table)
     TelnetUnlock();
     return 0;
 }
-
+//远程登录操作命令,一般供 Shell 使用
 STATIC const struct file_operations_vfs g_telnetOps = {
     TelnetOpen,
     TelnetClose,
@@ -357,7 +360,8 @@ INT32 TelnetedUnregister(VOID)
     return 0;
 }
 
-/* Once the telnet server started, setup the telnet device file. */
+/* Once the telnet server started, setup the telnet device file. 
+| telnet 服务器启动后，设置 telnet 设备文件*/
 INT32 TelnetedRegister(VOID)
 {
     INT32 ret;
@@ -365,7 +369,7 @@ INT32 TelnetedRegister(VOID)
     g_telnetDev.id = 0;
     g_telnetDev.cmdFifo = NULL;
     g_telnetDev.eventPend = TRUE;
-
+	//注册 telnet 驱动, g_telnetDev为私有数据
     ret = register_driver(TELNET, &g_telnetOps, TELNET_DEV_DRV_MODE, &g_telnetDev);
     if (ret != 0) {
         PRINT_ERR("Telnet register driver error.\n");
@@ -373,7 +377,8 @@ INT32 TelnetedRegister(VOID)
     return ret;
 }
 
-/* When a telnet client connection established, update the output console for tasks. */
+/* When a telnet client connection established, update the output console for tasks. 
+| 建立 telnet 客户端连接后，更新任务的输出控制台 */
 INT32 TelnetDevInit(INT32 clientFd)
 {
     INT32 ret;
@@ -382,12 +387,12 @@ INT32 TelnetDevInit(INT32 clientFd)
         PRINT_ERR("Invalid telnet clientFd.\n");
         return -1;
     }
-    ret = system_console_init(TELNET);//创建虚拟设备
+    ret = system_console_init(TELNET);//创建一个带远程登录功能的控制台
     if (ret != 0) {
         PRINT_ERR("Telnet console init error.\n");
         return ret;
     }
-    ret = ioctl(STDIN_FILENO, CFG_TELNET_SET_FD, clientFd);
+    ret = ioctl(STDIN_FILENO, CFG_TELNET_SET_FD, clientFd);//绑定FD,相当于shell和控制台绑定
     if (ret != 0) {
         PRINT_ERR("Telnet device ioctl error.\n");
         (VOID)system_console_deinit(TELNET);

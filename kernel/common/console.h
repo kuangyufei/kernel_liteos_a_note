@@ -118,25 +118,34 @@ typedef struct {
     VOID *shellHandle;	///< shell句柄,本质是 shell控制块 ShellCB
 #endif
     UINT32 sendTaskID;	///< 创建任务通过事件接收数据, 见于OsConsoleBufInit
-    /*--以下为 一家子 start---------*/
     CirBufSendCB *cirBufSendCB;	///< 循环缓冲发送控制块
-    UINT8 fifo[CONSOLE_FIFO_SIZE]; ///< 控制台缓冲区大小 1K
+    UINT8 fifo[CONSOLE_FIFO_SIZE]; ///< termios 规范模式(ICANON mode )下使用 size:1K
     UINT32 fifoOut;	///< 对fifo的标记,输出位置
     UINT32 fifoIn;	///< 对fifo的标记,输入位置
     UINT32 currentLen;	///< 当前fifo位置
-    /*---以上为 一家子 end------- https://man7.org/linux/man-pages/man3/tcflow.3.html */
     struct termios consoleTermios; ///< 行规程
 } CONSOLE_CB;
 
 /**
- * @brief termios 结构是在POSIX规范中定义的标准接口，它类似于系统V中的termio接口，通过设置termios类型的数据结构中的值和使用一小组函数调用，
-你就可以对终端接口进行控制。可以被调整来影响终端的值按照不同的模式被分为如下几组：
-1.输入模式
-2.输出模式
-3.控制模式
-4.本地模式
-5.特殊控制模式
-https://blog.csdn.net/wumenglu1018/article/details/53098794
+ * @brief https://man7.org/linux/man-pages/man3/tcflow.3.html
+ termios 是在POSIX规范中定义的标准接口，表示终端设备，包括虚拟终端、串口等。串口通过termios进行配置。
+	struct termios
+	{
+		unsigned short c_iflag;  // 输入模式标志
+		unsigned short c_oflag;  // 输出模式标志
+		unsigned short c_cflag;  // 控制模式标志
+		unsigned short c_lflag;  // 本地模式标志 例如: 设置非规范模式 tios.c_lflag = ~(ICANON | ECHO | ECHOE | ISIG);
+		unsigned char c_line;	 // 线路规程
+		unsigned char c_cc[NCC]; // 控制特性
+		speed_t c_ispeed;		 // 输入速度
+		speed_t c_ospeed;		 // 输出速度
+	}
+	终端有三种工作模式：
+		规范模式（canonical mode）、
+		非规范模式（non-canonical mode）
+		原始模式（raw mode）。
+	https://www.jianshu.com/p/fe5812469801
+	https://blog.csdn.net/wumenglu1018/article/details/53098794
  */
 
 extern INT32 system_console_init(const CHAR *deviceName);

@@ -100,7 +100,7 @@ INT32 GetFilepOps(const struct file *filep, struct file **privFilep, const struc
 	//通过 is_private 查找控制台设备的文件（现在是 *privFile）
     /* to find console device's filep(now it is *privFilep) throught i_private */
     struct drv_data *drv = (struct drv_data *)filep->f_vnode->data;
-    *privFilep = (struct file *)drv->priv;// file
+    *privFilep = (struct file *)drv->priv;// file 例如 g_serialFilep
     if (((*privFilep)->f_vnode == NULL) || ((*privFilep)->f_vnode->data == NULL)) {
         ret = EINVAL;
         goto ERROUT;
@@ -474,8 +474,8 @@ STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const stru
     if (fops->read == NULL) {
         return -EFAULT;
     }
-
-    /* Non-ICANON mode */
+	
+    /* Non-ICANON mode | 非规范模式 所有的输入即时有效，用户不需要另外输入行结束符，不能进行行编辑*/
     if ((consoleCB->consoleTermios.c_lflag & ICANON) == 0) {
         ret = fops->read(filep, buffer, bufLen);
         if (ret < 0) {
@@ -483,6 +483,13 @@ STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const stru
         }
         return ret;
     }
+	/** 
+		在规范模式下，输入数据基于行进行处理。
+		在用户输入一个行结束符（回车符、EOF等）之前，系统调用read()读不到用户输入的任何字符。
+		除了EOF之外的行结束符（回车符等），与普通字符一样会被read()读到缓冲区中。
+		在规范模式中，可以进行行编辑，而且一次调用read()最多只能读取一行数据。
+		如果read()请求读取的数据字节少于当前行可读取的字节，则read()只读取被请求的字节数，剩下的字节下次再读。
+	*/
     /* ICANON mode: store data to console buffer,  read data and stored data into console fifo */
     if (consoleCB->currentLen == 0) {//如果没有数据
         while (1) {//存储数据到控制台buf中
@@ -1143,8 +1150,7 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
         goto ERROUT;
     }
 
-    //更新驱动程序,其中再次对 达到操作/dev/ttyS0的目的
-    ret = register_driver(consoleCB->name, &g_consoleDevOps, DEFFILEMODE, filep);//注册字符设备驱动程序
+    ret = register_driver(consoleCB->name, &g_consoleDevOps, DEFFILEMODE, filep);//注册控制台设备驱动程序
     if (ret != LOS_OK) {
         goto ERROUT;
     }
@@ -1370,7 +1376,7 @@ INT32 system_console_init(const CHAR *deviceName)//deviceName: /dev/serial /dev/
         return VFS_ERROR;
     }
 
-    consoleCB = OsConsoleCreate((UINT32)consoleID, deviceName);//创建一个控制台控制块
+    consoleCB = OsConsoleCreate((UINT32)consoleID, deviceName);//创建一个控制台
     if (consoleCB == NULL) {
         PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
         return VFS_ERROR;

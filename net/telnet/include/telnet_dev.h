@@ -53,17 +53,17 @@ extern "C" {
 #define BLOCK_ENABLE           1
 //远程登录接发数据结构体.管理缓冲区
 typedef struct {
-    UINT32 rxIndex;         /* index for receiving user's commands */
-    UINT32 rxOutIndex;      /* index for taking out commands by a shell task to run */
-    UINT32 fifoNum;         /* unused size of the cmdBuf *///剩余buf大小
+    UINT32 rxIndex;         /* index for receiving user's commands | 接收用户命令的索引位置 */
+    UINT32 rxOutIndex;      /* index for taking out commands by a shell task to run | 用于通过 shell 任务取出命令以运行的索引 */
+    UINT32 fifoNum;         /* unused size of the cmdBuf | 剩余buf大小*/
     UINT32 lock;			//锁用于保证buf数据一致性
-    CHAR rxBuf[FIFO_MAX];   /* the real buffer to store user's commands */
+    CHAR rxBuf[FIFO_MAX];   /* the real buffer to store user's commands | 存储用户命令的真实缓冲区 */
 } TELNTE_FIFO_S;
 //远程登录设备结构体
 typedef struct {
     INT32 clientFd;	///< 客户端文件句柄
     UINT32 id;	
-    BOOL eventPend;	///< 事件是否挂起
+    BOOL eventPend;	///< 任务是否处于挂起
     EVENT_CB_S eventTelnet;	///< 远程登录事件
     wait_queue_head_t wait;
     TELNTE_FIFO_S *cmdFifo;  /* use a FIFO to store user's commands | 使用先进先出保存用户的命令*/

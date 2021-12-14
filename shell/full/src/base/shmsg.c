@@ -453,9 +453,9 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntryInit(ShellCB *shellCB)
     CHAR *name = NULL;
     TSK_INIT_PARAM_S initParam = {0};
 
-    if (shellCB->consoleID == CONSOLE_SERIAL) {
+    if (shellCB->consoleID == CONSOLE_SERIAL) {//带串口功能的控制台
         name = SERIAL_ENTRY_TASK_NAME;
-    } else if (shellCB->consoleID == CONSOLE_TELNET) {
+    } else if (shellCB->consoleID == CONSOLE_TELNET) {//带远程登录功能的控制台
         name = TELNET_ENTRY_TASK_NAME;
     } else {
         return LOS_NOK;
