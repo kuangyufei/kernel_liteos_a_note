@@ -207,7 +207,7 @@ STATIC ssize_t TelnetRead(struct file *file, CHAR *buf, size_t bufLen)
 
     TelnetLock();
 
-    telnetDev = GetTelnetDevByFile(file, FALSE);//获取远程登录实体
+    telnetDev = GetTelnetDevByFile(file, FALSE);//通过文件获取远程登录实体
     if ((buf == NULL) || (telnetDev == NULL) || (telnetDev->cmdFifo == NULL)) {
         TelnetUnlock();
         return -1;
@@ -370,7 +370,7 @@ INT32 TelnetedRegister(VOID)
     g_telnetDev.cmdFifo = NULL;
     g_telnetDev.eventPend = TRUE;
 	//注册 telnet 驱动, g_telnetDev为私有数据
-    ret = register_driver(TELNET, &g_telnetOps, TELNET_DEV_DRV_MODE, &g_telnetDev);
+    ret = register_driver(TELNET, &g_telnetOps, TELNET_DEV_DRV_MODE, &g_telnetDev);//翻译过来是当读TELNET时,真正要去操作的是 g_telnetDev
     if (ret != 0) {
         PRINT_ERR("Telnet register driver error.\n");
     }

@@ -65,7 +65,7 @@ UINT32 SerialTypeGet(VOID)
 {
     return g_serialType;
 }
-///设置串口类型
+///设置串口类型,从这里看鸿蒙暂时支持两种串口
 STATIC VOID SerialTypeSet(const CHAR *deviceName)
 {///dev/uartdev-0
     if (!strncmp(deviceName, SERIAL_UARTDEV, strlen(SERIAL_UARTDEV))) {
@@ -107,25 +107,25 @@ STATIC INT32 SerialClose(struct file *filep)
 {
     (VOID)filep;
 
-    if (g_serialType == SERIAL_TYPE_UART_DEV) {
-        HalIrqMask(NUM_HAL_INTERRUPT_UART);
+    if (g_serialType == SERIAL_TYPE_UART_DEV) {//如果是UART驱动
+        HalIrqMask(NUM_HAL_INTERRUPT_UART);//设置中断屏蔽
     }
 #if defined(LOSCFG_DRIVERS_USB_SERIAL_GADGET) || defined(LOSCFG_DRIVERS_USB_ETH_SER_GADGET)
-    else if (g_serialType == SERIAL_TYPE_USBTTY_DEV) {
-        userial_mask_set(0);
+    else if (g_serialType == SERIAL_TYPE_USBTTY_DEV) {//如果是USB驱动
+        userial_mask_set(0);//设置USB掩码为 0
     }
 #endif
 
     return ENOERR;
 }
-///读取串口数据
+///读取串口数据,参数 filep 是由 /dev/serial 打开获得的文件 
 STATIC ssize_t SerialRead(struct file *filep, CHAR *buffer, size_t bufLen)
 {
     INT32 ret;
     struct file *privFilep = NULL;
     const struct file_operations_vfs *fileOps = NULL;
 
-    ret = GetFilepOps(filep, &privFilep, &fileOps);//获取COM口在内核的file实例
+    ret = GetFilepOps(filep, &privFilep, &fileOps);//通过文件获取更底层设备的文件和驱动,例如 /dev/serial ---> /dev/uart 
     /*以 register_driver(SERIAL, &g_serialDevOps, DEFFILEMODE, &g_serialFilep);为例
 		privFilep = g_serialFilep
 		fileOps = g_serialDevOps
@@ -135,7 +135,8 @@ STATIC ssize_t SerialRead(struct file *filep, CHAR *buffer, size_t bufLen)
         ret = -EINVAL;
         goto ERROUT;
     }
-
+	//@note_thinking 觉得这里实现的有点饶,容易把人看懵逼,里面存在一个再次调用SerialRead的问题
+	//privFilep 可能是由 /dev/uartdev-0 或者 /dev/ttyGS0 打开的文件
     ret = FilepRead(privFilep, fileOps, buffer, bufLen);//从USB或者UART 读buf
     if (ret < 0) {
         goto ERROUT;
@@ -177,7 +178,7 @@ STATIC INT32 SerialIoctl(struct file *filep, INT32 cmd, unsigned long arg)
     struct file *privFilep = NULL;
     const struct file_operations_vfs *fileOps = NULL;
 
-    ret = GetFilepOps(filep, &privFilep, &fileOps);
+    ret = GetFilepOps(filep, &privFilep, &fileOps);//获取操作文件的驱动程序
     if (ret != ENOERR) {
         ret = -EINVAL;
         goto ERROUT;

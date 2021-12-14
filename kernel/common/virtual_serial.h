@@ -58,8 +58,8 @@ extern "C" {
 //UART（Universal Asynchronous Receiver/Transmitter）通用异步收发传输器，UART 作为异步串口通信协议的一种，
 //工作原理是将传输数据的每个字符一位接一位地传输。是在应用程序开发过程中使用频率最高的数据总线。
 
-#define SERIAL_TYPE_UART_DEV   1
-#define SERIAL_TYPE_USBTTY_DEV 2
+#define SERIAL_TYPE_UART_DEV   1	///< 两种串口类型之 UART
+#define SERIAL_TYPE_USBTTY_DEV 2	///< 两种串口类型之 USB
 
 extern INT32 virtual_serial_init(const CHAR *deviceName);
 extern INT32 virtual_serial_deinit(VOID);
