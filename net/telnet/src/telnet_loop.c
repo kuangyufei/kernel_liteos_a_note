@@ -418,14 +418,14 @@ STATIC VOID *TelnetClientLoop(VOID *arg)
 
     (VOID)prctl(PR_SET_NAME, "TelnetClientLoop", 0, 0, 0);
     TelnetLock();
-    if (TelnetClientPrepare(clientFd) != 0) {
+    if (TelnetClientPrepare(clientFd) != 0) {//做好准备工作
         TelnetUnlock();
         (VOID)close(clientFd);
         return NULL;
     }
     TelnetUnlock();
 
-    while (1) {
+    while (1) {//死循环接受远程输入的数据
         pollFd.fd = clientFd;
         pollFd.events = POLLIN | POLLRDHUP;//监听读数据和挂起事件
         pollFd.revents = 0;
@@ -479,14 +479,14 @@ STATIC VOID *TelnetClientLoop(VOID *arg)
         }
 
         if ((UINT16)pollFd.revents & POLLIN) {//数据事件
-            nRead = read(clientFd, buf, sizeof(buf));//读外面过来的数据
+            nRead = read(clientFd, buf, sizeof(buf));//读远程终端过来的数据
             if (nRead <= 0) {
                 /* telnet client shutdown */
                 break;
             }
             cmdBuf = ReadFilter(buf, (UINT32)nRead, &len);//对数据过滤
             if (len > 0) {
-                (VOID)TelnetTx((CHAR *)cmdBuf, len);
+                (VOID)TelnetTx((CHAR *)cmdBuf, len);//从数据加工处理
             }
         }
     }

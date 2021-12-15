@@ -130,17 +130,17 @@ extern "C" {
 #define QUOTES_STATUS_OPEN(qu)  ((qu) == TRUE)
 /*! shell 控制块 */
 typedef struct {
-    UINT32   consoleID;	        ///< 控制台ID
-    UINT32   shellTaskHandle;	///< shell服务端任务
-    UINT32   shellEntryHandle;	///< shell客户端任务
+    UINT32   consoleID;	        ///< 控制台ID,shell必须捆绑一个控制台(串口或远程登录),以便接收输入和发送执行结果信息
+    UINT32   shellTaskHandle;	///< shell服务端任务(负责解析和执行来自客户端的信息)
+    UINT32   shellEntryHandle;	///< shell客户端任务(负责接受来自串口或远程登录的信息)
     VOID     *cmdKeyLink;		///< 待处理的shell命令链表
-    VOID     *cmdHistoryKeyLink; ///< 已处理的历史记录链表,去重,10个
-    VOID     *cmdMaskKeyLink;	///< 主要用于方向键上下遍历历史命令
+    VOID     *cmdHistoryKeyLink; ///< 已处理的命令历史记录链表,去重,10个
+    VOID     *cmdMaskKeyLink;	///< 主要用于方向键上下遍历命令历史
     UINT32   shellBufOffset;	///< buf偏移量
     UINT32   shellKeyType;	    ///< 按键类型
     EVENT_CB_S shellEvent;	    ///< 事件类型触发
     pthread_mutex_t keyMutex;	///< 按键互斥量
-    pthread_mutex_t historyMutex;	    ///< 历史记录互斥量
+    pthread_mutex_t historyMutex;	    ///< 命令历史记录互斥量
     CHAR     shellBuf[SHOW_MAX_LEN];	///< shell命令buf,接受键盘的输入,需要对输入字符解析.
     CHAR     shellWorkingDirectory[PATH_MAX]; ///< shell的工作目录
 } ShellCB;

@@ -139,19 +139,19 @@ extern VOID PrintExcInfo(const CHAR *fmt, ...);
 
 /**
  * @ingroup los_base
- * Get a UINT8 value from addr.
+ * Get a UINT8 value from addr.| 从地址上获取8位值
  */
 #define GET_UINT8(addr)                             ({ UINT8 r = *((volatile UINT8 *)((UINTPTR)(addr))); DSB; r; })
 
 /**
  * @ingroup los_base
- * Get a UINT16 value from addr.
+ * Get a UINT16 value from addr.| 从地址上获取16位值
  */
 #define GET_UINT16(addr)                            ({ UINT16 r = *((volatile UINT16 *)((UINTPTR)(addr))); DSB; r; })
 
 /**
  * @ingroup los_base
- * Get a UINT32 value from addr.
+ * Get a UINT32 value from addr. | 从地址上获取32位值
  */
 #define GET_UINT32(addr)                            ({ UINT32 r = *((volatile UINT32 *)((UINTPTR)(addr))); DSB; r; })
 
