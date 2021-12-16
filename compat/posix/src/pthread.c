@@ -241,37 +241,37 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
         return EINVAL;
     }
 
-    SetPthreadAttr(self, attr, &userAttr);
+    SetPthreadAttr(self, attr, &userAttr);//设置线程属性(包括栈信息 ==)
 
     (VOID)snprintf_s(name, sizeof(name), sizeof(name) - 1, "pth%02d", pthreadNumber);
     pthreadNumber++;
 
     taskInitParam.pcName       = name;
-    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)startRoutine;
-    taskInitParam.auwArgs[0]   = (UINTPTR)arg;
-    taskInitParam.usTaskPrio   = (UINT16)userAttr.schedparam.sched_priority;
-    taskInitParam.uwStackSize  = userAttr.stacksize;
-    if (OsProcessIsUserMode(OsCurrProcessGet())) {
-        taskInitParam.processID = OsGetKernelInitProcessID();
+    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)startRoutine;//线程入口函数 类似 Java thread 的 run()函数
+    taskInitParam.auwArgs[0]   = (UINTPTR)arg;//参数
+    taskInitParam.usTaskPrio   = (UINT16)userAttr.schedparam.sched_priority;//任务优先级
+    taskInitParam.uwStackSize  = userAttr.stacksize;//栈大小
+    if (OsProcessIsUserMode(OsCurrProcessGet())) {//@note_thinking 是不是搞反了 ? 
+        taskInitParam.processID = OsGetKernelInitProcessID();//内核进程
     } else {
-        taskInitParam.processID = OsCurrProcessGet()->processID;
+        taskInitParam.processID = OsCurrProcessGet()->processID;//这里可以看出
     }
     if (userAttr.detachstate == PTHREAD_CREATE_DETACHED) {
-        taskInitParam.uwResved = LOS_TASK_STATUS_DETACHED;
+        taskInitParam.uwResved = LOS_TASK_STATUS_DETACHED;//detached状态的线程，在结束的时候，会自动释放该线程所占用的资源。
     } else {
         /* Set the pthread default joinable */
-        taskInitParam.uwResved = LOS_TASK_ATTR_JOINABLE;
-    }
+        taskInitParam.uwResved = LOS_TASK_ATTR_JOINABLE;//如果使用 PTHREAD_CREATE_JOINABLE 创建非分离线程，
+    }//则假设应用程序将等待线程完成。也就是说，程序将对线程执行 pthread_join()。
 
     PthreadReap();
-    ret = LOS_TaskCreateOnly(&taskHandle, &taskInitParam);
+    ret = LOS_TaskCreateOnly(&taskHandle, &taskInitParam);//创建线程但不调度
     if (ret == LOS_OK) {
         *thread = (pthread_t)taskHandle;
         ret = InitPthreadData(*thread, &userAttr, name, PTHREAD_DATA_NAME_MAX);
         if (ret != LOS_OK) {
             goto ERROR_OUT_WITH_TASK;
         }
-        (VOID)LOS_SetTaskScheduler(taskHandle, SCHED_RR, taskInitParam.usTaskPrio);
+        (VOID)LOS_SetTaskScheduler(taskHandle, SCHED_RR, taskInitParam.usTaskPrio);//设置调度器,等待调度
     }
 
     if (ret == LOS_OK) {

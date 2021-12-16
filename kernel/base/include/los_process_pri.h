@@ -383,11 +383,11 @@ STATIC INLINE LosProcessCB *OsCurrProcessGet(VOID)
     UINT32 intSave;
 
     intSave = LOS_IntLock();
-    LosProcessCB *runProcess = (LosProcessCB *)OsPercpuGet()->runProcess;
+    LosProcessCB *runProcess = (LosProcessCB *)OsPercpuGet()->runProcess;//当前CPU正在运行的进程
     LOS_IntRestore(intSave);
     return runProcess;
 }
-
+/// 设置当前进程
 STATIC INLINE VOID OsCurrProcessSet(const LosProcessCB *process)
 {
     OsPercpuGet()->runProcess = (UINTPTR)process;

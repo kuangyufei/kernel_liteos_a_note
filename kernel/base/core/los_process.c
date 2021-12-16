@@ -1,3 +1,22 @@
+/*!
+ * @file  los_process.c
+ * @brief 进程模块主文件
+ * @link
+   @verbatim
+   
+   并发（Concurrent）:多个线程在单个核心运行，同一时间只能一个线程运行，内核不停切换线程，
+		  看起来像同时运行，实际上是线程不停切换
+   并行（Parallel）每个线程分配给独立的CPU核心，线程同时运行
+   单核CPU多个进程或多个线程内能实现并发（微观上的串行，宏观上的并行）
+   多核CPU线程间可以实现宏观和微观上的并行
+   LITE_OS_SEC_BSS 和 LITE_OS_SEC_DATA_INIT 是告诉编译器这些全局变量放在哪个数据段
+
+   @endverbatim
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2021-12-15
+ */
+ 
 /*
  * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -55,34 +74,12 @@
 #include "los_vm_phys.h"
 #include "los_vm_syscall.h"
 
-/**@file  los_process.c
-* @brief       进程模块主文件
-* @details     主要包括进程的创建
-* @author      openharmony
-* @attention
-* @verbatim
- 并发（Concurrent）:多个线程在单个核心运行，同一时间只能一个线程运行，内核不停切换线程，
- 		看起来像同时运行，实际上是线程不停切换
- 并行（Parallel）每个线程分配给独立的CPU核心，线程同时运行
- 单核CPU多个进程或多个线程内能实现并发（微观上的串行，宏观上的并行）
- 多核CPU线程间可以实现宏观和微观上的并行
- LITE_OS_SEC_BSS 和 LITE_OS_SEC_DATA_INIT 是告诉编译器这些全局变量放在哪个数据段
- @endverbatim
-* @par 注解日志:
-* <table>
-* <tr><th>时间        <th>版本  <th>作者    <th>描述
-* <tr><td>2020/09/19  <td>1.0      <td>turing  <td>创建初始版本
-* </table>
-*
-**********************************************************************************
-*/
-
 LITE_OS_SEC_BSS LosProcessCB *g_processCBArray = NULL; ///< 进程池数组
 LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_freeProcess;///< 空闲状态下的进程链表, .个人觉得应该取名为 g_freeProcessList  @note_thinking
 LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_processRecycleList;///< 需要回收的进程列表
-LITE_OS_SEC_BSS UINT32 g_userInitProcess = OS_INVALID_VALUE;///< 用户态的初始init进程,用户态下其他进程由它 fork
-LITE_OS_SEC_BSS UINT32 g_kernelInitProcess = OS_INVALID_VALUE;///< 内核态初始Kprocess进程,内核态下其他进程由它 fork
-LITE_OS_SEC_BSS UINT32 g_kernelIdleProcess = OS_INVALID_VALUE;///< 内核态idle进程,由Kprocess fork
+LITE_OS_SEC_BSS UINT32 g_userInitProcess = OS_INVALID_VALUE;///< 1号进程 用户态的初始init进程,用户态下其他进程由它 fork
+LITE_OS_SEC_BSS UINT32 g_kernelInitProcess = OS_INVALID_VALUE;///< 2号进程 内核态初始Kprocess进程,内核态下其他进程由它 fork
+LITE_OS_SEC_BSS UINT32 g_kernelIdleProcess = OS_INVALID_VALUE;///< 0号进程 内核态idle进程,由Kprocess fork
 LITE_OS_SEC_BSS UINT32 g_processMaxNum;///< 进程最大数量,默认64个
 LITE_OS_SEC_BSS ProcessGroup *g_processGroup = NULL;///< 全局进程组,负责管理所有进程组
 
@@ -160,7 +157,7 @@ STATIC ProcessGroup *OsFindProcessGroup(UINT32 gid)
     if (g_processGroup->groupID == gid) {
         return g_processGroup;
     }
-
+	//变量进程组
     LOS_DL_LIST_FOR_EACH_ENTRY(group, &g_processGroup->groupList, ProcessGroup, groupList) {
         if (group->groupID == gid) {
             return group;

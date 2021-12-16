@@ -150,7 +150,7 @@ STATIC volatile INT32 g_telnetListenFd = -1;  /* listen fd of telnetd | 服务�
 /* each bit for a client connection, although only support 1 connection for now */
 STATIC volatile UINT32 g_telnetMask = 0; //记录有任务打开了远程登录
 /* taskID of telnetd */
-STATIC atomic_t g_telnetTaskId = 0;	///< 任务ID
+STATIC atomic_t g_telnetTaskId = 0;	///< telnet 服务端任务ID
 /* protect listenFd, clientFd etc. */
 pthread_mutex_t g_telnetMutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
@@ -370,19 +370,19 @@ STATIC INT32 TelnetClientPrepare(INT32 clientFd)
         return -1;
     }
     g_telnetClientFd = clientFd;
-    if (TelnetDevInit(clientFd) != 0) {
+    if (TelnetDevInit(clientFd) != 0) {//远程登录设备初始化
         g_telnetClientFd = -1;
         return -1;
     }
     g_telnetMask = 1;//表示有任务在远程登录
 
-    /* negotiate with client */
+    /* negotiate with client | 与客户协商*/
     (VOID)WriteToFd(clientFd, (CHAR *)doEcho, sizeof(doEcho));
     (VOID)WriteToFd(clientFd, (CHAR *)doNaws, sizeof(doNaws));
     (VOID)WriteToFd(clientFd, (CHAR *)willEcho, sizeof(willEcho));
     (VOID)WriteToFd(clientFd, (CHAR *)willSga, sizeof(willSga));
 
-    /* enable TCP keepalive to check whether telnet link is alive */
+    /* enable TCP keepalive to check whether telnet link is alive | 设置保持连接的方式 */
     if (setsockopt(clientFd, SOL_SOCKET, SO_KEEPALIVE, (VOID *)&keepAlive, sizeof(keepAlive)) < 0) {
         PRINT_ERR("telnet setsockopt SO_KEEPALIVE error.\n");
     }
@@ -486,7 +486,7 @@ STATIC VOID *TelnetClientLoop(VOID *arg)
             }
             cmdBuf = ReadFilter(buf, (UINT32)nRead, &len);//对数据过滤
             if (len > 0) {
-                (VOID)TelnetTx((CHAR *)cmdBuf, len);//从数据加工处理
+                (VOID)TelnetTx((CHAR *)cmdBuf, len);//对数据加工处理
             }
         }
     }
@@ -535,7 +535,7 @@ STATIC INT32 TelnetdAcceptClient(INT32 clientFd, const struct sockaddr_in *inTel
         goto ERROUT_UNLOCK;
     }
 
-    if (g_telnetClientFd >= 0) {
+    if (g_telnetClientFd >= 0) { //只接收一个客户端
         /* alreay connected and support only one */
         goto ERROUT_UNLOCK;
     }
@@ -571,7 +571,7 @@ STATIC VOID TelnetdAcceptLoop(INT32 listenFd)
     TelnetLock();
     g_telnetListenFd = listenFd;
 
-    while (g_telnetListenFd >= 0) {
+    while (g_telnetListenFd >= 0) {//必须启动监听
         TelnetUnlock();
 
         (VOID)memset_s(&inTelnetAddr, sizeof(inTelnetAddr), 0, sizeof(inTelnetAddr));
@@ -580,8 +580,10 @@ STATIC VOID TelnetdAcceptLoop(INT32 listenFd)
             /*
              * Sleep sometime before next loop: mostly we already have one connection here,
              * and the next connection will be declined. So don't waste our cpu.
+             | 在下一个循环来临之前休息片刻,因为鸿蒙只支持一个远程登录,此时已经有一个链接,
+             在TelnetdAcceptClient中创建线程不会立即调度, 休息下任务会挂起,重新调度
              */
-            LOS_Msleep(TELNET_ACCEPT_INTERVAL);
+            LOS_Msleep(TELNET_ACCEPT_INTERVAL);//以休息的方式发起调度. 直接申请调度也未尝不可吧 @note_thinking 
         } else {
             return;
         }
@@ -615,7 +617,7 @@ STATIC INT32 TelnetdMain(VOID)
     }
 	//2.注册
     TelnetLock();
-    ret = TelnetedRegister();//注册驱动程序,ops
+    ret = TelnetedRegister();//注册驱动程序 /dev/telnet ,ops
     TelnetUnlock();
 
     if (ret != 0) {
@@ -623,7 +625,7 @@ STATIC INT32 TelnetdMain(VOID)
         (VOID)close(sock);
         return -1;
     }
-	//3.接收
+	//3.等待连接,处理远程终端过来的命令 例如#task 命令
     PRINTK("start telnet server successfully, waiting for connection.\n");
     TelnetdAcceptLoop(sock);
     return 0;
