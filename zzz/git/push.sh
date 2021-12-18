@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 制作远程登录模型图 https://gitee.com/weharmonyos/resources/raw/master/75/telnet_model.png
+git commit -m  ' 更新 readme
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
