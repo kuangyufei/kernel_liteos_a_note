@@ -2074,45 +2074,18 @@ static UINT get_oldest_time(DIR_FILE df[], DWORD *oldest_time, UINT len)
     return index;
 }
 
-int fatfs_fscheck(struct Vnode* vp, struct fs_dirent_s *dir)
+static FRESULT fscheck(DIR *dp)
 {
-    FATFS *fs = (FATFS *)vp->originMount->data;
     DIR_FILE df[CHECK_FILE_NUM] = {0};
-    DIR *dp = NULL;
-    FILINFO *finfo = &(((DIR_FILE *)(vp->data))->fno);
     FILINFO fno;
-    DWORD old_time = -1;
-    DWORD time;
-    UINT count;
     UINT index = 0;
-    los_part *part = NULL;
+    UINT count;
+    DWORD time;
+    DWORD old_time = -1;
     FRESULT result;
-    int ret;
-
-    if (fs->fs_type != FS_FAT32) {
-        return -EINVAL;
-    }
-
-    if ((finfo->fattrib & AM_DIR) == 0) {
-        return -ENOTDIR;
-    }
-
-    ret = fatfs_opendir(vp, dir);
-    if (ret < 0) {
-        return ret;
-    }
-
-    ret = lock_fs(fs);
-    if (ret == FALSE) {
-        result = FR_TIMEOUT;
-        goto ERROR_WITH_DIR;
-    }
-
-    dp = (DIR *)dir->u.fs_dir;
-    dp->obj.id = fs->id;
     for (count = 0; count < CHECK_FILE_NUM; count++) {
         if ((result = f_readdir(dp, &fno)) != FR_OK) {
-            goto ERROR_UNLOCK;
+            return result;
         } else {
             if (fno.fname[0] == 0 || fno.fname[0] == (TCHAR)0xFF) {
                 break;
@@ -2137,15 +2110,50 @@ int fatfs_fscheck(struct Vnode* vp, struct fs_dirent_s *dir)
             index = get_oldest_time(df, &old_time, CHECK_FILE_NUM);
         }
     }
-    if (result != FR_OK) {
-        goto ERROR_UNLOCK;
+    index = 0;
+    while (result == FR_OK && index < count) {
+        result = f_fcheckfat(&df[index]);
+        ++index;
     }
 
-    for (index = 0; index < count; index++) {
-        result = f_fcheckfat(&df[index]);
-        if (result != FR_OK) {
-            goto ERROR_UNLOCK;
-        }
+    return result;
+}
+
+int fatfs_fscheck(struct Vnode* vp, struct fs_dirent_s *dir)
+{
+    FATFS *fs = (FATFS *)vp->originMount->data;
+    DIR *dp = NULL;
+    FILINFO *finfo = &(((DIR_FILE *)(vp->data))->fno);
+#ifdef LOSCFG_FS_FAT_CACHE
+    los_part *part = NULL;
+#endif
+    FRESULT result;
+    int ret;
+
+    if (fs->fs_type != FS_FAT32) {
+        return -EINVAL;
+    }
+
+    if ((finfo->fattrib & AM_DIR) == 0) {
+        return -ENOTDIR;
+    }
+
+    ret = fatfs_opendir(vp, dir);
+    if (ret < 0) {
+        return ret;
+    }
+
+    ret = lock_fs(fs);
+    if (ret == FALSE) {
+        result = FR_TIMEOUT;
+        goto ERROR_WITH_DIR;
+    }
+
+    dp = (DIR *)dir->u.fs_dir;
+    dp->obj.id = fs->id;
+    result = fscheck(dp);
+    if (result != FR_OK) {
+        goto ERROR_UNLOCK;
     }
 
     unlock_fs(fs, FR_OK);

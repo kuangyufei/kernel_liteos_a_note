@@ -165,6 +165,10 @@ extern "C" {
 #define DISK_ATA_GET_MODEL      21  /* Get model name */
 #define DISK_ATA_GET_SN         22  /* Get serial number */
 
+#ifdef LOSCFG_FS_FAT_CACHE
+#define DISK_DIRECT_BUFFER_SIZE 4   /* los_disk direct io buffer when bcache is off */
+#endif
+
 typedef enum _disk_status_ {
     STAT_UNUSED,
     STAT_INUSED,
@@ -187,6 +191,9 @@ typedef struct _los_disk_ {
     CHAR *disk_name;
     LOS_DL_LIST head;       /* link head of all the partitions */
     struct pthread_mutex disk_mutex;
+#ifndef LOSCFG_FS_FAT_CACHE
+    UINT8 *buff;
+#endif
 } los_disk;
 
 typedef struct _los_part_ {

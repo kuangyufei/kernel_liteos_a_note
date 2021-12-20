@@ -102,3 +102,6 @@ source "kernel/extended/perf/Kconfig"
 
 ######################### config options of lms #########################
 source "kernel/extended/lms/Kconfig"
+
+######################### config options of hilog #########################
+source "kernel/extended/hilog/Kconfig"

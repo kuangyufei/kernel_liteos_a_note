@@ -56,22 +56,6 @@ typedef struct {
     CirBufStatus status;//两种状态
     CHAR *fifo;			//顺序buffer ,1K
 } CirBuf;
-//锁循环buf
-STATIC INLINE VOID LOS_CirBufLock(CirBuf *cirbufCB, UINT32 *intSave)
-{
-    if (cirbufCB == NULL) {
-        return;
-    }
-    LOS_SpinLockSave(&cirbufCB->lock, intSave);
-}
-///解锁循环buf
-STATIC INLINE VOID LOS_CirBufUnlock(CirBuf *cirbufCB, UINT32 intSave)
-{
-    if (cirbufCB == NULL) {
-        return;
-    }
-    LOS_SpinUnlockRestore(&cirbufCB->lock, intSave);
-}
 
 extern UINT32 LOS_CirBufInit(CirBuf *cirbufCB, CHAR *fifo, UINT32 size);
 extern VOID LOS_CirBufDeinit(CirBuf *cirbufCB);

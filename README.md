@@ -162,7 +162,7 @@
 
 ### 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [codechina](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) 发布,并与官方源码按月保持同步，同步历史如下:
-* `2021/12/11` -- 增加LMS模块,完善PM
+* `2021/12/20` -- 增加LMS模块,完善PM,Fat Cache
 * `2021/11/12` -- 加入epoll支持,对shell模块有较大调整,微调process,task,更正单词拼写错误
 * `2021/10/21` -- 增加性能优化模块`perf`,优化了文件映射模块
 * `2021/09/14` -- common,extended等几个目录结构和Makefile调整

@@ -67,6 +67,7 @@ STATIC UINT32 ConsoleSendTask(UINTPTR param);
 
 STATIC UINT8 g_taskConsoleIDArray[LOSCFG_BASE_CORE_TSK_LIMIT];///< task 控制台ID池,同步task数量,理论上每个task都可以有一个自己的控制台
 STATIC SPIN_LOCK_INIT(g_consoleSpin);///< 初始化控制台自旋锁
+STATIC SPIN_LOCK_INIT(g_consoleWriteSpinLock);
 
 #define SHELL_ENTRYID_INVALID     0xFFFFFFFF	///< 默认值,SHELL_ENTRYID 一般为 任务ID
 #define SHELL_TASK_PRIORITY       9		///< shell 的优先级为 9
@@ -165,20 +166,13 @@ STATIC UINT32 ConsoleRefcountGet(const CONSOLE_CB *consoleCB)
 ///设置控制台引用次数,也表示占用控制台的数量
 STATIC VOID ConsoleRefcountSet(CONSOLE_CB *consoleCB, BOOL flag)
 {
-    if (flag == TRUE) {
-        ++(consoleCB->refCount);
-    } else {
-        --(consoleCB->refCount);
-    }
+    (consoleCB->refCount) += flag ? 1 : -1;
 }
+
 ///控制台是否被占用
 BOOL IsConsoleOccupied(const CONSOLE_CB *consoleCB)
 {
-    if (ConsoleRefcountGet(consoleCB) != FALSE) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
+    return ConsoleRefcountGet(consoleCB);
 }
 
 STATIC INT32 ConsoleCtrlCaptureLine(CONSOLE_CB *consoleCB)
@@ -306,10 +300,7 @@ STATIC INT32 OsConsoleFullpathToID(const CHAR *fullpath)
 
 STATIC BOOL ConsoleFifoEmpty(const CONSOLE_CB *console)
 {
-    if (console->fifoOut == console->fifoIn) {
-        return TRUE;
-    }
-    return FALSE;
+    return console->fifoOut == console->fifoIn;
 }
 
 STATIC VOID ConsoleFifoClearup(CONSOLE_CB *console)
@@ -355,11 +346,9 @@ INT32 FilepOpen(struct file *filep, const struct file_operations_vfs *fops)
      * corresponding to filep of /dev/console)
      */
     ret = fops->open(filep);
-    if (ret < 0) {
-        return -EPERM;
-    }
-    return ret;
+    return (ret < 0) ? -EPERM : ret;
 }
+
 ///向控制台buf中写入结束字符
 STATIC INLINE VOID UserEndOfRead(CONSOLE_CB *consoleCB, struct file *filep,
                                  const struct file_operations_vfs *fops)
@@ -478,10 +467,7 @@ STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const stru
     /* Non-ICANON mode | 非规范模式 所有的输入即时有效，用户不需要另外输入行结束符，不能进行行编辑*/
     if ((consoleCB->consoleTermios.c_lflag & ICANON) == 0) {
         ret = fops->read(filep, buffer, bufLen);
-        if (ret < 0) {
-            return -EPERM;
-        }
-        return ret;
+        return (ret < 0) ? -EPERM : ret;
     }
 	/** 
 		在规范模式下，输入数据基于行进行处理。
@@ -540,11 +526,9 @@ INT32 FilepRead(struct file *filep, const struct file_operations_vfs *fops, CHAR
      * corresponding to filep of /dev/console)
      *///采用uart read函数从文件中读取数据，将数据写入缓冲区（文件对应/dev/console的filep）
     ret = fops->read(filep, buffer, bufLen);
-    if (ret < 0) {
-        return -EPERM;
-    }
-    return ret;
+    return (ret < 0) ? -EPERM : ret;
 }
+
 ///写数据到串口或远程登录
 INT32 FilepWrite(struct file *filep, const struct file_operations_vfs *fops, const CHAR *buffer, size_t bufLen)
 {
@@ -554,11 +538,9 @@ INT32 FilepWrite(struct file *filep, const struct file_operations_vfs *fops, con
     }
 
     ret = fops->write(filep, buffer, bufLen);
-    if (ret < 0) {
-        return -EPERM;
-    }
-    return ret;
+    return (ret < 0) ? -EPERM : ret;
 }
+
 ///关闭串口或远程登录
 INT32 FilepClose(struct file *filep, const struct file_operations_vfs *fops)
 {
@@ -572,10 +554,7 @@ INT32 FilepClose(struct file *filep, const struct file_operations_vfs *fops)
      * corresponding to filep of /dev/console)
      */
     ret = fops->close(filep);
-    if (ret < 0) {
-        return -EPERM;
-    }
-    return ret;
+    return ret < 0 ? -EPERM : ret;
 }
 
 INT32 FilepIoctl(struct file *filep, const struct file_operations_vfs *fops, INT32 cmd, unsigned long arg)
@@ -586,10 +565,7 @@ INT32 FilepIoctl(struct file *filep, const struct file_operations_vfs *fops, INT
     }
 
     ret = fops->ioctl(filep, cmd, arg);
-    if (ret < 0) {
-        return -EPERM;
-    }
-    return ret;
+    return (ret < 0) ? -EPERM : ret;
 }
 
 INT32 FilepPoll(struct file *filep, const struct file_operations_vfs *fops, poll_table *fds)
@@ -604,11 +580,9 @@ INT32 FilepPoll(struct file *filep, const struct file_operations_vfs *fops, poll
      * corresponding to filep of /dev/serial)
      */
     ret = fops->poll(filep, fds);
-    if (ret < 0) {
-        return -EPERM;
-    }
-    return ret;
+    return (ret < 0) ? -EPERM : ret;
 }
+
 ///对 file_operations_vfs->open 的实现函数,也就是说这是 打开控制台的实体函数.
 STATIC INT32 ConsoleOpen(struct file *filep)
 {
@@ -765,7 +739,8 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
         return 0;
     }
 #endif
-    LOS_CirBufLock(&cirBufSendCB->cirBufCB, &intSave);
+
+    LOS_SpinLockSave(&g_consoleWriteSpinLock, &intSave);
     while (written < (INT32)bufLen) {
         /* Transform for CR/LR mode | 回车(CR, ASCII 13, \r) 换行(LF, ASCII 10, \n)*/
         if ((buffer[written] == '\n') || (buffer[written] == '\r')) {
@@ -779,7 +754,8 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
         toWrite -= cnt;
         written += cnt;
     }
-    LOS_CirBufUnlock(&cirBufSendCB->cirBufCB, intSave);
+    LOS_SpinUnlockRestore(&g_consoleWriteSpinLock, intSave);
+
     /* Log is cached but not printed when a system exception occurs */
     if (OsGetSystemStatus() == OS_SYSTEM_NORMAL) {
         (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_CIRBUF_EVENT);//发送数据事件
@@ -871,10 +847,8 @@ STATIC INT32 ConsoleGetWinSize(unsigned long arg)
         .ws_row = DEFAULT_WINDOW_SIZE_ROW
     };
 
-    if (LOS_CopyFromKernel((VOID *)arg, sizeof(struct winsize), &kws, sizeof(struct winsize)) != 0) {
-        return -EFAULT;
-    }
-    return LOS_OK;
+    return (LOS_CopyFromKernel((VOID *)arg, sizeof(struct winsize), &kws, sizeof(struct winsize)) != 0) ?
+        -EFAULT : LOS_OK;
 }
 
 STATIC INT32 ConsoleGetTermios(unsigned long arg)
@@ -892,11 +866,8 @@ STATIC INT32 ConsoleGetTermios(unsigned long arg)
         return -EFAULT;
     }
 
-    if(LOS_ArchCopyToUser((VOID *)arg, &consoleCB->consoleTermios, sizeof(struct termios)) != 0) {
-        return -EFAULT;
-    } else {
-        return LOS_OK;
-    }
+    return (LOS_ArchCopyToUser((VOID *)arg, &consoleCB->consoleTermios, sizeof(struct termios)) != 0) ?
+        -EFAULT : LOS_OK;
 }
 
 INT32 ConsoleSetPgrp(CONSOLE_CB *consoleCB, unsigned long arg)
@@ -909,11 +880,9 @@ INT32 ConsoleSetPgrp(CONSOLE_CB *consoleCB, unsigned long arg)
 
 INT32 ConsoleGetPgrp(CONSOLE_CB *consoleCB, unsigned long arg)
 {
-    if (LOS_ArchCopyToUser((VOID *)arg, &consoleCB->pgrpId, sizeof(INT32)) != 0) {
-        return -EFAULT;
-    }
-    return LOS_OK;
+    return (LOS_ArchCopyToUser((VOID *)arg, &consoleCB->pgrpId, sizeof(INT32)) != 0) ? -EFAULT : LOS_OK;
 }
+
 ///< 对控制台i/o操作
 STATIC INT32 ConsoleIoctl(struct file *filep, INT32 cmd, unsigned long arg)
 {
@@ -1231,11 +1200,7 @@ STATIC UINT32 OsConsoleBufInit(CONSOLE_CB *consoleCB)
     initParam.usTaskPrio   = SHELL_TASK_PRIORITY;	//优先级9
     initParam.auwArgs[0]   = (UINTPTR)consoleCB;	//入口函数的参数
     initParam.uwStackSize  = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;	//16K
-    if (consoleCB->consoleID == CONSOLE_SERIAL) {//控制台的两种方式
-        initParam.pcName   = "SendToSer";	//发送数据到串口 
-    } else {
-        initParam.pcName   = "SendToTelnet";//发送数据到远程登录
-    }
+    initParam.pcName = (consoleCB->consoleID == CONSOLE_SERIAL) ? "SendToSer" : "SendToTelnet"; //控制台的两种方式
     initParam.uwResved     = LOS_TASK_STATUS_DETACHED; //使用任务分离模式
 
     ret = LOS_TaskCreate(&consoleCB->sendTaskID, &initParam);//创建task 并加入就绪队列，申请立即调度
@@ -1460,10 +1425,7 @@ BOOL ConsoleEnable(VOID)
         if (consoleID == 0) {
             return FALSE;
         } else if ((consoleID == CONSOLE_TELNET) || (consoleID == CONSOLE_SERIAL)) {
-            if ((OsGetSystemStatus() == OS_SYSTEM_NORMAL) && !OsPreemptable()) {
-                return FALSE;
-            }
-            return TRUE;
+            return ((OsGetSystemStatus() == OS_SYSTEM_NORMAL) && !OsPreemptable()) ? FALSE : TRUE;
         }
 #if defined (LOSCFG_DRIVERS_USB_SERIAL_GADGET) || defined (LOSCFG_DRIVERS_USB_ETH_SER_GADGET)
         else if ((SerialTypeGet() == SERIAL_TYPE_USBTTY_DEV) && (userial_mask_get() == 1)) {
@@ -1499,69 +1461,46 @@ INT32 ConsoleTaskReg(INT32 consoleID, UINT32 taskID)
         return LOS_OK;
     }
     LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
-    return g_console[consoleID - 1]->shellEntryId == taskID ? LOS_OK : LOS_NOK;
+    return (g_console[consoleID - 1]->shellEntryId == taskID) ? LOS_OK : LOS_NOK;
 }
 ///无锁方式设置串口
 BOOL SetSerialNonBlock(const CONSOLE_CB *consoleCB)
 {
-    INT32 ret;
-
     if (consoleCB == NULL) {
         PRINT_ERR("%s: Input parameter is illegal\n", __FUNCTION__);
         return FALSE;
     }
-    ret = ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_SERIAL, CONSOLE_RD_NONBLOCK);
-    if (ret != 0) {
-        return FALSE;
-    }
-
-    return TRUE;
+    return ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_SERIAL, CONSOLE_RD_NONBLOCK) == 0;
 }
+
 ///锁方式设置串口
 BOOL SetSerialBlock(const CONSOLE_CB *consoleCB)
 {
-    INT32 ret;
-
     if (consoleCB == NULL) {
         PRINT_ERR("%s: Input parameter is illegal\n", __FUNCTION__);
         return TRUE;
     }
-    ret = ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_SERIAL, CONSOLE_RD_BLOCK);
-    if (ret != 0) {
-        return TRUE;
-    }
-
-    return FALSE;
+    return ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_SERIAL, CONSOLE_RD_BLOCK) != 0;
 }
+
 ///无锁方式设置远程登录
 BOOL SetTelnetNonBlock(const CONSOLE_CB *consoleCB)
 {
-    INT32 ret;
-
     if (consoleCB == NULL) {
         PRINT_ERR("%s: Input parameter is illegal\n", __FUNCTION__);
         return FALSE;
     }
-    ret = ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_TELNET, CONSOLE_RD_NONBLOCK);
-    if (ret != 0) {
-        return FALSE;
-    }
-    return TRUE;
+    return ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_TELNET, CONSOLE_RD_NONBLOCK) == 0;
 }
+
 ///锁方式设置远程登录
 BOOL SetTelnetBlock(const CONSOLE_CB *consoleCB)
 {
-    INT32 ret;
-
     if (consoleCB == NULL) {
         PRINT_ERR("%s: Input parameter is illegal\n", __FUNCTION__);
         return TRUE;
     }
-    ret = ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_TELNET, CONSOLE_RD_BLOCK);
-    if (ret != 0) {
-        return TRUE;
-    }
-    return FALSE;
+    return ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_TELNET, CONSOLE_RD_BLOCK) != 0;
 }
 
 BOOL is_nonblock(const CONSOLE_CB *consoleCB)
@@ -1598,12 +1537,9 @@ INT32 ConsoleUpdateFd(VOID)
         }
     }
 
-    if (g_console[consoleID - 1] == NULL) {
-        return -1;
-    }
-
-    return g_console[consoleID - 1]->fd;
+    return (g_console[consoleID - 1] != NULL) ? g_console[consoleID - 1]->fd : -1;
 }
+
 ///获取参数控制台ID 获取对应的控制台控制块(描述符)
 CONSOLE_CB *OsGetConsoleByID(INT32 consoleID)
 {
@@ -1660,7 +1596,6 @@ STATIC UINT32 ConsoleSendTask(UINTPTR param)
     CirBufSendCB *cirBufSendCB = consoleCB->cirBufSendCB;
     CirBuf *cirBufCB = &cirBufSendCB->cirBufCB;
     UINT32 ret, size;
-    UINT32 intSave;
     CHAR *buf = NULL;
 
     (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_SEND_TASK_RUNNING);//发送一个控制台任务正在运行的事件
@@ -1679,9 +1614,7 @@ STATIC UINT32 ConsoleSendTask(UINTPTR param)
             }
             (VOID)memset_s(buf, size + 1, 0, size + 1);//清0
 
-            LOS_CirBufLock(cirBufCB, &intSave);
             (VOID)LOS_CirBufRead(cirBufCB, buf, size);//读取循环cirBufCB至  buf
-            LOS_CirBufUnlock(cirBufCB, intSave);
 
             (VOID)WriteToTerminal(consoleCB, buf, size);//将buf数据写到控制台终端设备
             (VOID)LOS_MemFree(m_aucSysMem1, buf);//清除buf

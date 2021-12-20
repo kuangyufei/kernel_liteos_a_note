@@ -30,10 +30,16 @@
  */
 
 #include "los_vm_zone.h"
+#define TEXT_BASE  KERNEL_VADDR_BASE //代码区为内核起始地址
+
+OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+
 /***********************************************
 本文件经过
 python build.py ipcamera_hi3516dv300 
 编译后生成 board.ld,内容如下:
+#define TEXT_BASE  KERNEL_VADDR_BASE //代码区为内核起始地址
 
 OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
 OUTPUT_ARCH(arm)
@@ -57,10 +63,6 @@ SECTIONS
 
 USER_INIT_VM_START = 0x1000000;
 ***********************************************/
-#define TEXT_BASE  KERNEL_VADDR_BASE //代码区为内核起始地址
-
-OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
-OUTPUT_ARCH(arm)
 /* 
 https://www.jianshu.com/p/42823b3b7c8e
 MEMORY：内存布局,描述板上的存储器位置

@@ -36,6 +36,10 @@
 #include "sys/mount.h"
 #include "linux/spinlock.h"
 #include "path_cache.h"
+#ifndef LOSCFG_FS_FAT_CACHE
+#include "los_vm_common.h"
+#include "user_copy.h"
+#endif
 
 /**
  * @file disk.c
@@ -832,6 +836,77 @@ INT32 DiskPartitionRegister(los_disk *disk)
 
     return ENOERR;
 }
+#ifndef LOSCFG_FS_FAT_CACHE
+static INT32 disk_read_directly(los_disk *disk, VOID *buf, UINT64 sector, UINT32 count)
+{
+    INT32 result = VFS_ERROR;
+    struct block_operations *bops = (struct block_operations *)((struct drv_data *)disk->dev->data)->ops;
+    if ((bops == NULL) || (bops->read == NULL)) {
+        return VFS_ERROR;
+    }
+    if (LOS_IsUserAddressRange((VADDR_T)buf, count * disk->sector_size)) {
+        UINT32 cnt = 0;
+        UINT8 *buffer = disk->buff;
+        for (; count != 0; count -= cnt) {
+            cnt = (count > DISK_DIRECT_BUFFER_SIZE) ? DISK_DIRECT_BUFFER_SIZE : count;
+            result = bops->read(disk->dev, buffer, sector, cnt);
+            if (result == (INT32)cnt) {
+                result = ENOERR;
+            } else {
+                break;
+            }
+            if (LOS_CopyFromKernel(buf, disk->sector_size * cnt, buffer, disk->sector_size * cnt)) {
+                result = VFS_ERROR;
+                break;
+            }
+            buf = (UINT8 *)buf + disk->sector_size * cnt;
+            sector += cnt;
+        }
+    } else {
+        result = bops->read(disk->dev, buf, sector, count);
+        if (result == count) {
+            result = ENOERR;
+        }
+    }
+
+    return result;
+}
+
+static INT32 disk_write_directly(los_disk *disk, const VOID *buf, UINT64 sector, UINT32 count)
+{
+    struct block_operations *bops = (struct block_operations *)((struct drv_data *)disk->dev->data)->ops;
+    INT32 result = VFS_ERROR;
+    if ((bops == NULL) || (bops->read == NULL)) {
+        return VFS_ERROR;
+    }
+    if (LOS_IsUserAddressRange((VADDR_T)buf, count * disk->sector_size)) {
+        UINT32 cnt = 0;
+        UINT8 *buffer = disk->buff;
+        for (; count != 0; count -= cnt) {
+            cnt = (count > DISK_DIRECT_BUFFER_SIZE) ? DISK_DIRECT_BUFFER_SIZE : count;
+            if (LOS_CopyToKernel(buffer, disk->sector_size * cnt, buf, disk->sector_size * cnt)) {
+                result = VFS_ERROR;
+                break;
+            }
+            result = bops->write(disk->dev, buffer, sector, cnt);
+            if (result == (INT32)cnt) {
+                result = ENOERR;
+            } else {
+                break;
+            }
+            buf = (UINT8 *)buf + disk->sector_size * cnt;
+            sector += cnt;
+        }
+    } else {
+        result = bops->write(disk->dev, buf, sector, count);
+        if (result == count) {
+            result = ENOERR;
+        }
+    }
+
+    return result;
+}
+#endif
 ///读磁盘数据
 INT32 los_disk_read(INT32 drvID, VOID *buf, UINT64 sector, UINT32 count, BOOL useRead)
 {
@@ -871,19 +946,13 @@ INT32 los_disk_read(INT32 drvID, VOID *buf, UINT64 sector, UINT32 count, BOOL us
             PRINT_ERR("los_disk_read read err = %d, sector = %llu, len = %u\n", result, sector, len);
         }
     } else {
-#endif
+        result = VFS_ERROR;
+    }
+#else
     if (disk->dev == NULL) {
         goto ERROR_HANDLE;
     }
-    struct block_operations *bops = (struct block_operations *)((struct drv_data *)disk->dev->data)->ops;//获取块操作数据方式
-    if ((bops != NULL) && (bops->read != NULL)) {
-        result = bops->read(disk->dev, (UINT8 *)buf, sector, count);//读取绝对扇区内容至buf
-        if (result == (INT32)count) {
-            result = ENOERR;
-        }
-    }
-#ifdef LOSCFG_FS_FAT_CACHE
-    }
+    result = disk_read_directly(disk, buf, sector, count);
 #endif
 
     if (result != ENOERR) {
@@ -934,16 +1003,13 @@ INT32 los_disk_write(INT32 drvID, const VOID *buf, UINT64 sector, UINT32 count)
             PRINT_ERR("los_disk_write write err = %d, sector = %llu, len = %u\n", result, sector, len);
         }
     } else {
-#endif//无缓存情况下获取操作块实现函数指针结构体
-    struct block_operations *bops = (struct block_operations *)((struct drv_data *)disk->dev->data)->ops;
-    if ((bops != NULL) && (bops->write != NULL)) {
-        result = bops->write(disk->dev, (UINT8 *)buf, sector, count);//真正的写磁盘
-        if (result == (INT32)count) {
-            result = ENOERR;
-        }
+        result = VFS_ERROR;
     }
-#ifdef LOSCFG_FS_FAT_CACHE
+#else
+    if (disk->dev == NULL) {
+        goto ERROR_HANDLE;
     }
+    result = disk_write_directly(disk, buf, sector, count);
 #endif
 
     if (result != ENOERR) {
@@ -1187,7 +1253,8 @@ ERROR_HANDLE:
 
 INT32 los_disk_cache_clear(INT32 drvID)
 {
-    INT32 result;
+    INT32 result = ENOERR;
+#ifdef LOSCFG_FS_FAT_CACHE
     los_part *part = get_part(drvID);
     los_disk *disk = NULL;
 
@@ -1195,7 +1262,7 @@ INT32 los_disk_cache_clear(INT32 drvID)
         return VFS_ERROR;
     }
     result = OsSdSync(part->disk_id);
-    if (result != 0) {
+    if (result != ENOERR) {
         PRINTK("[ERROR]disk_cache_clear SD sync failed!\n");
         return result;
     }
@@ -1208,7 +1275,7 @@ INT32 los_disk_cache_clear(INT32 drvID)
     DISK_LOCK(&disk->disk_mutex);
     result = BcacheClearCache(disk->bcache);
     DISK_UNLOCK(&disk->disk_mutex);
-
+#endif
     return result;
 }
 
@@ -1358,6 +1425,10 @@ static INT32 DiskDeinit(los_disk *disk)
 
 #ifdef LOSCFG_FS_FAT_CACHE
     DiskCacheDeinit(disk);
+#else
+    if (disk->buff != NULL) {
+        free(disk->buff);
+    }
 #endif
 
     disk->dev = NULL;
@@ -1378,12 +1449,15 @@ static INT32 DiskDeinit(los_disk *disk)
     return ENOERR;
 }
 ///磁盘初始化
-static VOID OsDiskInitSub(const CHAR *diskName, INT32 diskID, los_disk *disk,
-                          struct geometry *diskInfo, struct Vnode *blkDriver)
+static UINT32 OsDiskInitSub(const CHAR *diskName, INT32 diskID, los_disk *disk,
+                            struct geometry *diskInfo, struct Vnode *blkDriver)
 {
     pthread_mutexattr_t attr;
-#ifdef LOSCFG_FS_FAT_CACHE //使能FAT缓存
+#ifdef LOSCFG_FS_FAT_CACHE
     OsBcache *bc = DiskCacheInit((UINT32)diskID, diskInfo, blkDriver);
+    if (bc == NULL) {
+        return VFS_ERROR;
+    }
     disk->bcache = bc;
 #endif
 
@@ -1392,6 +1466,16 @@ static VOID OsDiskInitSub(const CHAR *diskName, INT32 diskID, los_disk *disk,
     (VOID)pthread_mutex_init(&disk->disk_mutex, &attr);
 
     DiskStructInit(diskName, diskID, diskInfo, blkDriver, disk);
+
+#ifndef LOSCFG_FS_FAT_CACHE
+    disk->buff = malloc(diskInfo->geo_sectorsize * DISK_DIRECT_BUFFER_SIZE);
+    if (disk->buff == NULL) {
+        PRINT_ERR("OsDiskInitSub: direct buffer of disk init failed\n");
+        return VFS_ERROR;
+    }
+#endif
+
+    return ENOERR;
 }
 ///磁盘初始化
 INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
@@ -1416,22 +1500,25 @@ INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
     ret = VnodeLookup(diskName, &blkDriver, 0);
     if (ret < 0) {
         VnodeDrop();
-        PRINT_ERR("disk_init : find %s fail!\n", diskName);
         ret = ENOENT;
         goto DISK_FIND_ERROR;
     }
     struct block_operations *bops2 = (struct block_operations *)((struct drv_data *)blkDriver->data)->ops;
 	//块操作,块是文件系统层面的概念,块（Block）是文件系统存取数据的最小单位，一般大小是4KB
-    if ((bops2 == NULL) || (bops2->geometry == NULL) ||
-        (bops2->geometry(blkDriver, &diskInfo) != 0)) {//geometry 就是 CHS
+    if ((bops2 == NULL) || (bops2->geometry == NULL) || (bops2->geometry(blkDriver, &diskInfo) != 0)) {
         goto DISK_BLKDRIVER_ERROR;
     }
 
-    if (diskInfo.geo_sectorsize < DISK_MAX_SECTOR_SIZE) {//验证扇区大小
+    if (diskInfo.geo_sectorsize < DISK_MAX_SECTOR_SIZE) {
         goto DISK_BLKDRIVER_ERROR;
     }
 
-    OsDiskInitSub(diskName, diskID, disk, &diskInfo, blkDriver);//初始化磁盘描述符
+    ret = OsDiskInitSub(diskName, diskID, disk, &diskInfo, blkDriver);
+    if (ret != ENOERR) {
+        (VOID)DiskDeinit(disk);
+        VnodeDrop();
+        return VFS_ERROR;
+    }
     VnodeDrop();
     if (DiskDivideAndPartitionRegister(info, disk) != ENOERR) {
         (VOID)DiskDeinit(disk);

@@ -56,11 +56,15 @@ STATIC DevHandle g_wdHandle;
 
 STATIC void StartWatchdog(void)
 {
+    int32_t ret;
     if (g_wdStarted) {
         return;
     }
 
-    g_wdHandle = WatchdogOpen(0);
+    ret = WatchdogOpen(0, &g_wdHandle);
+    if (ret != HDF_SUCCESS) {
+        return;
+    }
     WatchdogSetTimeout(g_wdHandle, WATCHDOG_TIMER_INTERVAL);
 
     if (LOS_SwtmrCreate(LOSCFG_BASE_CORE_TICK_PER_SECOND * WATCHDOG_TIMER_INTERVAL_HALF, LOS_SWTMR_MODE_PERIOD,
