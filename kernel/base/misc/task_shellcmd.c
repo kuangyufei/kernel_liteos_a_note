@@ -112,7 +112,7 @@ LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellCmdProcessMode(UINT16 mode)
 
     return (UINT8 *)"ERROR";
 }
-
+/// 获取调度方式的名称
 LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellCmdSchedPolicy(UINT16 policy)
 {
     if (policy == LOS_SCHED_RR) {
@@ -125,7 +125,7 @@ LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellCmdSchedPolicy(UINT16 policy)
 
     return (UINT8 *)"ERROR";
 }
-
+/// 获取状态名称
 LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellProcessStatus(UINT16 status)
 {
     status = status & OS_PROCESS_STATUS_MASK;

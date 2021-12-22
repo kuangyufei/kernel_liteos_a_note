@@ -336,12 +336,12 @@ STATIC INT32 TelnetdInit(UINT16 port)
     inTelnetAddr.sin_family = AF_INET;
     inTelnetAddr.sin_addr.s_addr = INADDR_ANY;
     inTelnetAddr.sin_port = htons(port);
-
+	//绑定端口
     if (bind(listenFd, (const struct sockaddr *)&inTelnetAddr, sizeof(struct sockaddr_in)) == -1) {
         PRINT_ERR("TelnetdInit : bind error.\n");
         goto ERR_CLOSE_FD;
     }
-
+	//监听端口数据
     if (listen(listenFd, TELNET_LISTEN_BACKLOG) == -1) {
         PRINT_ERR("TelnetdInit : listen error.\n");
         goto ERR_CLOSE_FD;
@@ -609,15 +609,15 @@ STATIC INT32 TelnetdMain(VOID)
 {
     INT32 sock;
     INT32 ret;
-	//1.初始化
-    sock = TelnetdInit(TELNETD_PORT);//创建 socket ,socket的本质就是打开了一个虚拟文件
+
+    sock = TelnetdInit(TELNETD_PORT);//1.初始化 创建 socket ,socket的本质就是打开了一个虚拟文件
     if (sock == -1) {
         PRINT_ERR("telnet init error.\n");
         return -1;
     }
-	//2.注册
+
     TelnetLock();
-    ret = TelnetedRegister();//注册驱动程序 /dev/telnet ,ops
+    ret = TelnetedRegister();//2.注册驱动程序 /dev/telnet ,g_telnetOps g_telnetDev
     TelnetUnlock();
 
     if (ret != 0) {
@@ -625,9 +625,9 @@ STATIC INT32 TelnetdMain(VOID)
         (VOID)close(sock);
         return -1;
     }
-	//3.等待连接,处理远程终端过来的命令 例如#task 命令
+	
     PRINTK("start telnet server successfully, waiting for connection.\n");
-    TelnetdAcceptLoop(sock);
+    TelnetdAcceptLoop(sock);//3.等待连接,处理远程终端过来的命令 例如#task 命令
     return 0;
 }
 
@@ -654,7 +654,7 @@ STATIC VOID TelnetdTaskInit(VOID)
     initParam.usTaskPrio = TELNET_TASK_PRIORITY; //优先级 9,和 shell 的优先级一样
     initParam.uwResved = LOS_TASK_STATUS_DETACHED; //独立模式
 
-    if (atomic_read(&g_telnetTaskId) != 0) {
+    if (atomic_read(&g_telnetTaskId) != 0) {//只支持一个 telnet 服务任务
         PRINT_ERR("telnet server is already running!\n");
         return;
     }
@@ -688,7 +688,7 @@ STATIC VOID TelnetUsage(VOID)
     PRINTK("  on       Init the telnet server\n");
     PRINTK("  off      Deinit the telnet server\n");
 }
-/// 远程登录命令处理 
+/// 本命令用于启动或关闭telnet server服务
 INT32 TelnetCmd(UINT32 argc, const CHAR **argv)
 {
     if (argc != 1) {
@@ -696,12 +696,12 @@ INT32 TelnetCmd(UINT32 argc, const CHAR **argv)
         return 0;
     }
 
-    if (strcmp(argv[0], "on") == 0) {
+    if (strcmp(argv[0], "on") == 0) {// 输入 telnet on
         /* telnet on: try to start telnet server task */
         TelnetdTaskInit(); //启动远程登录 服务端任务
         return 0;
     }
-    if (strcmp(argv[0], "off") == 0) {
+    if (strcmp(argv[0], "off") == 0) {// 输入 telnet off
         /* telnet off: try to stop clients, then stop server task */
         TelnetdTaskDeinit();//关闭所有的客户端,并关闭服务端任务
         return 0;

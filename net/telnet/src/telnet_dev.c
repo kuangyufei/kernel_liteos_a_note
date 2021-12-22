@@ -144,7 +144,7 @@ STATIC INT32 TelnetOpen(struct file *file)
 
     TelnetLock();
 
-    telnetDev = GetTelnetDevByFile(file, TRUE);
+    telnetDev = GetTelnetDevByFile(file, TRUE);//获取标准file私有数据
     if (telnetDev == NULL) {
         TelnetUnlock();
         return -1;
@@ -152,7 +152,7 @@ STATIC INT32 TelnetOpen(struct file *file)
 
     if (telnetDev->cmdFifo == NULL) {
         wait = &telnetDev->wait;
-        (VOID)LOS_EventInit(&telnetDev->eventTelnet);
+        (VOID)LOS_EventInit(&telnetDev->eventTelnet);//初始化事件
         g_event = &telnetDev->eventTelnet;
         telnetDev->cmdFifo = (TELNTE_FIFO_S *)malloc(sizeof(TELNTE_FIFO_S));
         if (telnetDev->cmdFifo == NULL) {
@@ -335,7 +335,7 @@ STATIC INT32 TelnetPoll(struct file *file, poll_table *table)
     TelnetUnlock();
     return 0;
 }
-//远程登录操作命令,一般供 Shell 使用
+//远程登录操作命令
 STATIC const struct file_operations_vfs g_telnetOps = {
     TelnetOpen,
     TelnetClose,

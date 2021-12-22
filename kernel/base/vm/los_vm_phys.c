@@ -296,7 +296,7 @@ LosVmPage *OsVmVaddrToPage(VOID *ptr)
 
     return NULL;
 }
-
+/// 回收一定范围内的页框
 STATIC INLINE VOID OsVmRecycleExtraPages(LosVmPage *page, size_t startPage, size_t endPage)
 {
     if (startPage >= endPage) {
