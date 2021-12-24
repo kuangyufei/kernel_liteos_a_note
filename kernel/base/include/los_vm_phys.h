@@ -69,14 +69,14 @@ struct VmFreeList {
 };
 
 /*!
- * @brief Lru全称是Least Recently Used，即最近最久未使用的意思 针对匿名页和文件页各拆分成一个活跃，一个不活跃的链表。
+ * @brief Lru全称是Least Recently Used，即最近最久未使用的意思 针对匿名页和文件页各拆成对应链表。
  */
-enum OsLruList {
-    VM_LRU_INACTIVE_ANON = 0,	///< 非活动匿名页 LRU 链表（swap）
-    VM_LRU_ACTIVE_ANON,			///< 活动匿名页 LRU 链表（swap）
-    VM_LRU_INACTIVE_FILE,		///< 非活动文件页 LRU 链表（磁盘）
-    VM_LRU_ACTIVE_FILE,			///< 活动文件页 LRU 链表（磁盘）
-    VM_LRU_UNEVICTABLE,			///< 保存的是此zone中所有禁止换出的页的描述符
+enum OsLruList {// 页属性
+    VM_LRU_INACTIVE_ANON = 0,	///< 非活动匿名页（swap）
+    VM_LRU_ACTIVE_ANON,			///< 活动匿名页（swap）
+    VM_LRU_INACTIVE_FILE,		///< 非活动文件页（磁盘）
+    VM_LRU_ACTIVE_FILE,			///< 活动文件页（磁盘）
+    VM_LRU_UNEVICTABLE,			///< 禁止换出的页
     VM_NR_LRU_LISTS
 };
 /*!

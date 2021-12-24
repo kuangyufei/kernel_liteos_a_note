@@ -1,3 +1,24 @@
+/*!
+ * @file    shm.c
+ * @brief
+ * @link
+   @verbatim
+    什么是共享内存
+	顾名思义，共享内存就是允许两个不相关的进程访问同一个逻辑内存。共享内存是在两个正在运行的进程之间
+	共享和传递数据的一种非常有效的方式。不同进程之间共享的内存通常安排为同一段物理内存。进程可以将同
+	一段共享内存连接到它们自己的地址空间中，所有进程都可以访问共享内存中的地址，就好像它们是由用C语言
+	函数malloc()分配的内存一样。而如果某个进程向共享内存写入数据，所做的改动将立即影响到可以访问同一段
+	共享内存的任何其他进程。
+
+	特别提醒：共享内存并未提供同步机制，也就是说，在第一个进程结束对共享内存的写操作之前，并无自动机制
+	可以阻止第二个进程开始对它进行读取。所以我们通常需要用其他的机制来同步对共享内存的访问
+
+	共享线性区可以由任意的进程创建,每个使用共享线性区都必须经过映射.
+   @endverbatim
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2021-12-24
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -51,13 +72,6 @@
 #include "shell.h"
 #endif /* __cplusplus */
 
-/******************************************************************************
-共享内存是进程间通信中最简单的方式之一。共享内存允许两个或更多进程访问同一块内存
-不同进程返回了指向同一个物理内存区域的指针。当一个进程改变了这块地址中的内容的时候，
-其它进程都会察觉到这个更改。
-
-共享线性区可以由任意的进程创建,每个使用共享线性区都必须经过映射.
-******************************************************************************/
 #ifdef LOSCFG_KERNEL_SHM
 STATIC LosMux g_sysvShmMux; //互斥锁,共享内存本身并不保证操作的同步性,所以需用互斥锁
 
@@ -95,6 +109,7 @@ STATIC LosMux g_sysvShmMux; //互斥锁,共享内存本身并不保证操作的�
 
 #if 0 // @note_#if0
 
+//内核为每一个IPC对象保存一个ipc_perm结构体，该结构说明了IPC对象的权限和所有者
 struct ipc_perm {
 	key_t __ipc_perm_key;	//调用shmget()时给出的关键字
 	uid_t uid;				//共享内存所有者的有效用户ID
@@ -106,16 +121,16 @@ struct ipc_perm {
 	long __pad1;			//保留扩展用
 	long __pad2;
 };
-
+//每个共享内存段在内核中维护着一个内部结构shmid_ds
 struct shmid_ds {
-	struct ipc_perm shm_perm; //内核为每一个IPC对象保存一个ipc_perm结构体，该结构说明了IPC对象的权限和所有者
-	size_t shm_segsz;	//段大小
-	time_t shm_atime;	//访问时间	
-	time_t shm_dtime; 	//分离时间
-	time_t shm_ctime; 	//创建时间
-	pid_t shm_cpid;		//当前操作进程的ID
-	pid_t shm_lpid;		//最后一个操作的进程ID,常用于分离操作
-	unsigned long shm_nattch;	//绑定进程的数量
+	struct ipc_perm shm_perm;///< 操作许可，里面包含共享内存的用户ID、组ID等信息
+	size_t shm_segsz;	///< 共享内存段的大小，单位为字节
+	time_t shm_atime;	///< 最后一个进程访问共享内存的时间	
+	time_t shm_dtime; 	///< 最后一个进程离开共享内存的时间
+	time_t shm_ctime; 	///< 创建时间
+	pid_t shm_cpid;		///< 创建共享内存的进程ID
+	pid_t shm_lpid;		///< 最后操作共享内存的进程ID
+	unsigned long shm_nattch;	///< 当前使用该共享内存段的进程数量
 	unsigned long __pad1;	//保留扩展用
 	unsigned long __pad2;
 };
@@ -480,18 +495,23 @@ STATIC INT32 ShmPermCheck(struct shmIDSource *seg, mode_t mode)
         return EACCES;
     }
 }
-/*
-得到一个共享内存标识符或创建一个共享内存对象
-key_t:	建立新共享内存对象 标识符是IPC对象的内部名。为使多个合作进程能够在同一IPC对象上汇聚，需要提供一个外部命名方案。
+
+/*!
+ * @brief ShmGet	
+ *	得到一个共享内存标识符或创建一个共享内存对象
+ * @param key	建立新共享内存对象 标识符是IPC对象的内部名。为使多个合作进程能够在同一IPC对象上汇聚，需要提供一个外部命名方案。
 		为此，每个IPC对象都与一个键（key）相关联，这个键作为该对象的外部名,无论何时创建IPC结构（通过msgget、semget、shmget创建），
 		都应给IPC指定一个键, key_t由ftok创建,ftok当然在本工程里找不到,所以要写这么多.
-size: 新建的共享内存大小，以字节为单位
-shmflg: IPC_CREAT IPC_EXCL
-IPC_CREAT：	在创建新的IPC时，如果key参数是IPC_PRIVATE或者和当前某种类型的IPC结构无关，则需要指明flag参数的IPC_CREAT标志位，
-			则用来创建一个新的IPC结构。（如果IPC结构已存在，并且指定了IPC_CREAT，则IPC_CREAT什么都不做，函数也不出错）
-IPC_EXCL：	此参数一般与IPC_CREAT配合使用来创建一个新的IPC结构。如果创建的IPC结构已存在函数就出错返回，
-			返回EEXIST（这与open函数指定O_CREAT和O_EXCL标志原理相同）
-*/
+ * @param shmflg	IPC_CREAT IPC_EXCL
+			IPC_CREAT：	在创建新的IPC时，如果key参数是IPC_PRIVATE或者和当前某种类型的IPC结构无关，则需要指明flag参数的IPC_CREAT标志位，
+						则用来创建一个新的IPC结构。（如果IPC结构已存在，并且指定了IPC_CREAT，则IPC_CREAT什么都不做，函数也不出错）
+			IPC_EXCL：	此参数一般与IPC_CREAT配合使用来创建一个新的IPC结构。如果创建的IPC结构已存在函数就出错返回，
+						返回EEXIST（这与open函数指定O_CREAT和O_EXCL标志原理相同）
+ * @param size	新建的共享内存大小，以字节为单位
+ * @return	
+ *
+ * @see
+ */
 INT32 ShmGet(key_t key, size_t size, INT32 shmflg)
 {
     INT32 ret;
@@ -558,7 +578,7 @@ LosVmMapRegion *ShmatVmmAlloc(struct shmIDSource *seg, const VOID *shmaddr,
 {
     LosVmSpace *space = OsCurrProcessGet()->vmSpace;
     LosVmMapRegion *region = NULL;
-    UINT32 flags = MAP_ANONYMOUS | MAP_SHARED;
+    UINT32 flags = MAP_ANONYMOUS | MAP_SHARED;//本线性区为共享+匿名标签
     UINT32 mapFlags = flags | MAP_FIXED;
     VADDR_T vaddr;
     UINT32 regionFlags;
@@ -569,22 +589,22 @@ LosVmMapRegion *ShmatVmmAlloc(struct shmIDSource *seg, const VOID *shmaddr,
     }
     regionFlags = OsCvtProtFlagsToRegionFlags(prot, flags);
     (VOID)LOS_MuxAcquire(&space->regionMux);
-    if (shmaddr == NULL) {
-        region = LOS_RegionAlloc(space, 0, seg->ds.shm_segsz, regionFlags, 0);
-    } else {
+    if (shmaddr == NULL) {//未指定了共享内存连接到当前进程中的地址位置
+        region = LOS_RegionAlloc(space, 0, seg->ds.shm_segsz, regionFlags, 0);//分配线性区
+    } else {//指定时,就需要先找地址所在的线性区
         if ((UINT32)shmflg & SHM_RND) {
             vaddr = ROUNDDOWN((VADDR_T)(UINTPTR)shmaddr, SHMLBA);
         } else {
             vaddr = (VADDR_T)(UINTPTR)shmaddr;
-        }
+        }//找到线性区并重新映射,当指定地址时需贴上重新映射的标签
         if (!((UINT32)shmflg & SHM_REMAP) && (LOS_RegionFind(space, vaddr) ||
             LOS_RegionFind(space, vaddr + seg->ds.shm_segsz - 1) ||
             LOS_RegionRangeFind(space, vaddr, seg->ds.shm_segsz - 1))) {
             ret = EINVAL;
             goto ERROR;
         }
-        vaddr = (VADDR_T)LOS_MMap(vaddr, seg->ds.shm_segsz, prot, mapFlags, -1, 0);
-        region = LOS_RegionFind(space, vaddr);
+        vaddr = (VADDR_T)LOS_MMap(vaddr, seg->ds.shm_segsz, prot, mapFlags, -1, 0);//做好映射
+        region = LOS_RegionFind(space, vaddr);//重新查找线性区,用于返回.
     }
 
     if (region == NULL) {
@@ -599,12 +619,19 @@ ERROR:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return NULL;
 }
-/**************************************************
-连接共享内存标识符为shmid的共享内存，连接成功后把共享内存区对象映射到调用进程的地址空间，随后可像本地空间一样访问
-一旦创建/引用了一个共享存储段，那么进程就可调用shmat函数将其连接到它的地址空间中
-如果shmat成功执行，那么内核将使与该共享存储相关的shmid_ds结构中的shm_nattch计数器值加1
-shmid 就是个索引,就跟进程和线程的ID一样 g_shmSegs[shmid] shmid > 192个
-**************************************************/
+
+/*!
+ * @brief ShmAt	
+ * 第一次创建完共享内存时，它还不能被任何进程访问，shmat()函数的作用就是用来启动对该共享内存的访问，
+   并把共享内存连接到当前进程的地址空间。
+ * @param shm_flg 是一组标志位，通常为0。
+ * @param shmaddr 指定共享内存连接到当前进程中的地址位置，通常为空，表示让系统来选择共享内存的地址。
+ * @param shmid	是shmget()函数返回的共享内存标识符
+ * @return	
+ * 如果shmat成功执行，那么内核将使与该共享存储相关的shmid_ds结构中的shm_nattch计数器值加1
+   shmid 就是个索引,就跟进程和线程的ID一样 g_shmSegs[shmid] shmid > 192个
+ * @see
+ */
 VOID *ShmAt(INT32 shmid, const VOID *shmaddr, INT32 shmflg)
 {
     INT32 ret;
@@ -640,7 +667,7 @@ VOID *ShmAt(INT32 shmid, const VOID *shmaddr, INT32 shmflg)
     }
 
     seg->ds.shm_nattch++;//ds上记录有一个进程绑定上来
-    r = ShmatVmmAlloc(seg, shmaddr, shmflg, prot);
+    r = ShmatVmmAlloc(seg, shmaddr, shmflg, prot);//在当前进程空间分配一个线性区用于映射共享空间
     if (r == NULL) {
         seg->ds.shm_nattch--;
         SYSV_SHM_UNLOCK();
@@ -660,7 +687,20 @@ ERROR:
     PRINT_DEBUG("%s %d, ret = %d\n", __FUNCTION__, __LINE__, ret);
     return (VOID *)-1;
 }
-///此函数可以对shmid指定的共享存储进行多种操作（删除、取信息、加锁、解锁等）
+
+/*!
+ * @brief ShmCtl	
+ * 此函数可以对shmid指定的共享存储进行多种操作（删除、取信息、加锁、解锁等）
+ * @param buf	是一个结构指针，它指向共享内存模式和访问权限的结构。
+ * @param cmd	command是要采取的操作，它可以取下面的三个值 ：
+	IPC_STAT：把shmid_ds结构中的数据设置为共享内存的当前关联值，即用共享内存的当前关联值覆盖shmid_ds的值。
+	IPC_SET：如果进程有足够的权限，就把共享内存的当前关联值设置为shmid_ds结构中给出的值
+	IPC_RMID：删除共享内存段
+ * @param shmid	是shmget()函数返回的共享内存标识符
+ * @return	
+ *
+ * @see
+ */
 INT32 ShmCtl(INT32 shmid, INT32 cmd, struct shmid_ds *buf)
 {
     struct shmIDSource *seg = NULL;
