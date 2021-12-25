@@ -38,9 +38,9 @@
 
     ![](https://gitee.com/weharmonyos/resources/raw/master/13/sop.png)
 
-* 另外画了一些字符图方便理解，直接嵌入到头文件中，比如虚拟内存的全景图，因没有这些图是很难理解虚拟内存是如何管理的。
+* 另外针对每个知识点画了相对应的图理解,一图胜千言,有些知识点没有图很难理解,例如内核最重要的结构体`双向链表`,说它怎么重要都不为过,其插入删除操作被内核高频,灵活的使用,不理解透彻在分析源码过程中很容易卡壳.
 
-    ![](https://gitee.com/weharmonyos/resources/raw/master/13/vm.png)
+    ![](https://gitee.com/weharmonyos/resources/raw/master/1/LOS_ListInit.png)
 
 * 注解创建了一些特殊记号,可直接搜索查看
   - [x] 搜索 `@note_pic` 可查看绘制的全部字符图
@@ -53,8 +53,6 @@
 #### 二 : 官方文档 | 静态站点呈现
 
 研究鸿蒙需不断的翻阅资料,吸取别人的精华,其中官方文档必不可少, 为更好的呈现 **OpenHarmony开发者文档** , 特意做了静态站点 [ >> 鸿蒙研究站 | 官方文档](http://weharmonyos.com/openharmony) 来方便搜索,阅读官方资料.
-
-![](https://gitee.com/weharmonyos/resources/raw/master/52/2.png)
 
 左侧导航栏,右边索引区
 
@@ -246,4 +244,6 @@
 ![](https://gitee.com/weharmonyos/resources/raw/master/common/so1so.png)
 
 **QQ群 790015635 | 入群密码 666  | 存放重要文档资料**
+
 鸿蒙研究站( weharmonyos ) | 每天死磕一点点，原创不易，欢迎转载，请注明出处。若能支持点赞则更佳，感谢每一份支持。
+
