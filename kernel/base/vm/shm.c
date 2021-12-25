@@ -80,8 +80,8 @@ STATIC LosMux g_sysvShmMux; //互斥锁,共享内存本身并不保证操作的�
 #define SYSV_SHM_UNLOCK()   (VOID)LOS_MuxUnlock(&g_sysvShmMux)	//释放锁
 
 #define SHM_MAX_PAGES 4096
-#define SHM_MAX (SHM_MAX_PAGES * PAGE_SIZE) // 最大共享空间,12800*4K = 50M
-#define SHM_MIN 1	
+#define SHM_MAX (SHM_MAX_PAGES * PAGE_SIZE) // 最大共享空间,4096*4K = 16M
+#define SHM_MIN 1	//	
 #define SHM_MNI 192
 #define SHM_SEG 128
 #define SHM_ALL (SHM_MAX_PAGES)
@@ -134,7 +134,7 @@ struct shmid_ds {
 	unsigned long __pad1;	//保留扩展用
 	unsigned long __pad2;
 };
-
+// 共享内存模块设置信息
 struct shminfo {
 	unsigned long shmmax, shmmin, shmmni, shmseg, shmall, __unused[4];
 };
@@ -143,7 +143,7 @@ struct shminfo {
 
 
 struct shmIDSource {//共享内存描述符
-    struct shmid_ds ds; //是内核为每一个共享内存段维护的数据结构,包含权限,各进程最后操作的时间,进程ID等信息
+    struct shmid_ds ds; //是内核为每一个共享内存段维护的数据结构
     UINT32 status;	//状态 SHM_SEG_FREE ...
     LOS_DL_LIST node; //节点,挂vmPage
 #ifdef LOSCFG_SHELL
@@ -153,11 +153,11 @@ struct shmIDSource {//共享内存描述符
 
 /* private data */
 STATIC struct shminfo g_shmInfo = { //描述共享内存范围的全局变量
-    .shmmax = SHM_MAX,//最大的内存segment的大小 50M
-    .shmmin = SHM_MIN,//最小的内存segment的大小 1M
-    .shmmni = SHM_MNI,//整个系统的内存segment的总个数  :默认192     			ShmAllocSeg 
-    .shmseg = SHM_SEG,//每个进程可以使用的内存segment的最大个数 128
-    .shmall = SHM_ALL,//系统范围内共享内存的最大页数
+    .shmmax = SHM_MAX,//共享内存单个上限 4096页 即 16M
+    .shmmin = SHM_MIN,//共享内存单个下限 1页 即:4K
+    .shmmni = SHM_MNI,//共享内存总数 默认192 
+    .shmseg = SHM_SEG,//每个用户进程可以使用的最多的共享内存段的数目 128
+    .shmall = SHM_ALL,//系统范围内共享内存的总页数, 4096页 
 };
 
 STATIC struct shmIDSource *g_shmSegs = NULL;

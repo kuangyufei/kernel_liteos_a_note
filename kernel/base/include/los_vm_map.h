@@ -103,7 +103,17 @@ struct VmFileOps {
     int  (*fault)(struct VmMapRegion *region, LosVmPgFault *pageFault); ///< 缺页,OsVmmFileFault
     void (*remove)(struct VmMapRegion *region, LosArchMmu *archMmu, VM_OFFSET_T offset); ///< 删除 OsVmmFileRemove
 };
-/// 线性区描述符,内核通过线性区管理虚拟地址,而线性地址就是虚拟地址
+
+/*!
+	线性区描述符,内核通过线性区管理虚拟地址,而线性地址就是虚拟地址
+	在内核里,用户空间的进程要访问内存或磁盘里的数据要通过映射的方式将内存的物理地址和用户空间的虚拟地址联系起来. 
+	用户通过访问这样的虚拟地址就可以访问到实际的物理地址,也就是实际的物理内存. 映射在实现虚拟地址到物理地址中扮演
+	重要角色. 内核中映射分为文件映射和匿名映射. 文件映射就是磁盘中的数据通过文件系统映射到内存再通过文件映射映射到
+	虚拟空间.这样,用户就可以在用户空间通过 open ,read, write 等函数区操作文件内容. 匿名映射就是用户空间需要分配一定
+	的物理内存来存储数据,这部分内存不属于任何文件,内核就使用匿名映射将内存中的 某段物理地址与用户空间一一映射,
+	这样用户就可用直接操作虚拟地址来范围这段物理内存. 至于实际的代码,文件映射的操作就是: open,read,write,close,mmap...
+	操作的虚拟地址都属于文件映射. malloc 分配的虚拟地址属于匿名映射. 
+*/
 struct VmMapRegion {
     LosRbNode           rbNode;         /**< region red-black tree node | 红黑树节点,通过它将本线性区挂在VmSpace.regionRbTree*/
     LosVmSpace          *space;			///< 所属虚拟空间,虚拟空间由多个线性区组成
@@ -114,18 +124,19 @@ struct VmMapRegion {
     UINT32              shmid;          /**< shmid about shared region | shmid为共享线性区id,id背后就是共享线性区*/
     UINT8               forkFlags;      /**< vm space fork flags: COPY, ZERO, | 线性区标记方式*/
     UINT8               regionType;     /**< vm region type: ANON, FILE, DEV | 映射类型是匿名,文件,还是设备,所谓匿名可理解为内存映射*/
-    union {
-        struct VmRegionFile {//文件映射
+	union {
+        struct VmRegionFile {// <磁盘文件 , 物理内存, 用户进程虚拟地址空间 > 
             int f_oflags;
             struct Vnode *vnode;
-            const LosVmFileOps *vmFOps;///< 文件处理各操作接口
+            const LosVmFileOps *vmFOps;///< 文件处理各操作接口,open,read,write,close,mmap
         } rf;
-        struct VmRegionAnon {//匿名映射可理解为与物理内存的映射
+		//匿名映射是指那些没有关联到文件页，如进程堆、栈、数据段和任务已修改的共享库等与物理内存的映射
+        struct VmRegionAnon {//<swap区 , 物理内存, 用户进程虚拟地址空间 > 
             LOS_DL_LIST  node;          /**< region LosVmPage list | 线性区虚拟页链表*/
         } ra;
-        struct VmRegionDev {//设备映射
+        struct VmRegionDev {//设备映射,也是一种文件
             LOS_DL_LIST  node;          /**< region LosVmPage list | 线性区虚拟页链表*/
-            const LosVmFileOps *vmFOps; ///< 设备也是一种文件
+            const LosVmFileOps *vmFOps; ///< 操作设备像操作文件一样方便.
         } rd;
     } unTypeData;
 };

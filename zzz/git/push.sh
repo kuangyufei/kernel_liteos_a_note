@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 完善共享内存注解
+git commit -m  ' 一图胜千言, 开始补各模块图
     百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
