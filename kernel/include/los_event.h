@@ -159,12 +159,12 @@ extern "C" {
 
 /**
  * @ingroup los_event
- * Event control structure
+ * Event control structure | 事件控制块数据结构
  */
 typedef struct tagEvent {
-    UINT32 uwEventID;        /**< Event mask in the event control block,//标识发生的事件类型位,事件ID，每一位标识一种事件类型
-                                  indicating the event that has been logically processed. */
-    LOS_DL_LIST stEventList; /**< Event control block linked list *///读取事件任务链表
+    UINT32 uwEventID;        /**< Event mask in the event control block 
+                                  indicating the event that has been logically processed. | 事件集合，表示已经处理（写入和清零）的事件集合 */
+    LOS_DL_LIST stEventList; /**< Event control block linked list | 等待特定事件的任务链表,注意上面挂的是任务*/
 } EVENT_CB_S, *PEVENT_CB_S;//一个是结构体,一个是指针
 
 /**

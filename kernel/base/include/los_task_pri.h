@@ -224,7 +224,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * Specifies the process creation task.
  */
-#define OS_TASK_FLAG_SPECIFIES_PROCESS 0x0U ///< 创建指定任务 例如: cat weharmony.net 实现 
+#define OS_TASK_FLAG_SPECIFIES_PROCESS 0x0U ///< 创建指定任务 例如: cat weharmony.net 的实现 
 
 /**
  * @ingroup los_task
@@ -315,7 +315,7 @@ typedef struct {
     UINT16          policy;				///< 任务的调度方式(三种 .. LOS_SCHED_RR   		  LOS_SCHED_FIFO .. )
     UINT64          startTime;          /**< The start time of each phase of task | 任务开始时间  */
     UINT64          irqStartTime;       /**< Interrupt start time | 任务中断开始时间  */ 
-    UINT32          irqUsedTime;        /**< Interrupt consumption time | 任务中断恢复时间  */ 
+    UINT32          irqUsedTime;        /**< Interrupt consumption time | 任务中断消耗时间  */ 
     UINT32          initTimeSlice;      /**< Task init time slice | 任务初始的时间片  */ 
     INT32           timeSlice;          /**< Task remaining time slice | 任务剩余时间片  */ 
     UINT32          waitTimes;          /**< Task delay time, tick number | 设置任务调度延期时间  */ 
@@ -323,8 +323,8 @@ typedef struct {
     UINT32          stackSize;          /**< Task stack size | 内核态栈大小,内存来自内核空间  */		
     UINTPTR         topOfStack;         /**< Task stack top | 内核态栈顶 bottom = top + size */		
     UINT32          taskID;             /**< Task ID | 任务ID，任务池本质是一个大数组，ID就是数组的索引，默认 < 128 */				
-    TSK_ENTRY_FUNC  taskEntry;          /**< Task entrance function | 任务执行入口函数 */	
-    VOID            *joinRetval;        /**< pthread adaption | 用来存储join线程的返回值 */	
+    TSK_ENTRY_FUNC  taskEntry;          /**< Task entrance function | 任务执行入口地址 */	
+    VOID            *joinRetval;        /**< pthread adaption | 用来存储join线程的入口地址 */	
     VOID            *taskMux;           /**< Task-held mutex | task在等哪把锁 */		
     VOID            *taskEvent;         /**< Task-held event | task在等哪个事件 */		
     UINTPTR         args[4];            /**< Parameter, of which the maximum number is 4 | 入口函数的参数 例如 main (int argc,char *argv[]) */	
@@ -362,9 +362,9 @@ typedef struct {
     FutexNode       futex;				///< 实现快锁功能
     LOS_DL_LIST     joinList;           /**< join list | 联结链表,允许任务之间相互释放彼此 */
     LOS_DL_LIST     lockList;           /**< Hold the lock list | 该链表上挂的都是已持有的锁 */
-    UINTPTR         waitID;             /**< Wait for the PID or GID of the child process |  */
+    UINTPTR         waitID;             /**< Wait for the PID or GID of the child process | 等待子进程的PID或GID */
     UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
-                                             a specific child process, or any child process | 以什么样的方式等待子进程结束(OS_TASK_WAIT_PROCESS | OS_TASK_WAIT_GID | ..) */
+                                             a specific child process, or any child process | 等待的子进程以什么样的方式结束(OS_TASK_WAIT_PROCESS | OS_TASK_WAIT_GID | ..) */
 #ifdef LOSCFG_KERNEL_LITEIPC //轻量级进程间通信开关
     IpcTaskInfo     *ipcTaskInfo;	///< 任务间通讯信息结构体
 #endif

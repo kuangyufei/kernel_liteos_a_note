@@ -140,22 +140,22 @@ struct VmMapRegion {
         } rd;
     } unTypeData;
 };
-/// 虚拟内存地址空间,每个进程都有一个虚拟内存地址空间
+/// 进程空间,每个进程都有一个属于自己的虚拟内存地址空间
 typedef struct VmSpace {
     LOS_DL_LIST         node;           /**< vm space dl list | 节点,通过它挂到全局虚拟空间 g_vmSpaceList 链表上*/
     LosRbTree           regionRbTree;   /**< region red-black tree root | 采用红黑树方式管理本空间各个线性区*/
     LosMux              regionMux;      /**< region list mutex lock | 虚拟空间的互斥锁*/
     VADDR_T             base;           /**< vm space base addr | 虚拟空间的基地址,常用于判断地址是否在内核还是用户空间*/
     UINT32              size;           /**< vm space size | 虚拟空间大小*/
-    VADDR_T             heapBase;       /**< vm space heap base address | 用户进程专用，堆区基地址，表堆区范围起点*/
-    VADDR_T             heapNow;        /**< vm space heap base now | 用户进程专用，堆区结束地址，表堆区范围终点，do_brk()直接修改堆的大小返回新的堆区结束地址， heapNow >= heapBase*/
+    VADDR_T             heapBase;       /**< vm space heap base address | 堆区基地址，表堆区范围起点*/
+    VADDR_T             heapNow;        /**< vm space heap base now | 堆区现地址，表堆区范围终点，do_brk()直接修改堆的大小返回新的堆区结束地址， heapNow >= heapBase*/
     LosVmMapRegion      *heap;          /**< heap region | 堆区是个特殊的线性区，用于满足进程的动态内存需求，大家熟知的malloc,realloc,free其实就是在操作这个区*/				
     VADDR_T             mapBase;        /**< vm space mapping area base | 虚拟空间映射区基地址,L1，L2表存放在这个区 */
     UINT32              mapSize;        /**< vm space mapping area size | 虚拟空间映射区大小，映射区是个很大的区。*/
     LosArchMmu          archMmu;        /**< vm mapping physical memory | MMU记录<虚拟地址,物理地址>的映射情况 */
 #ifdef LOSCFG_DRIVERS_TZDRIVER
-    VADDR_T             codeStart;      /**< user process code area start | 用户进程代码区开始位置 */
-    VADDR_T             codeEnd;        /**< user process code area end | 用户进程代码区结束位置 */
+    VADDR_T             codeStart;      /**< user process code area start | 代码区开始位置 */
+    VADDR_T             codeEnd;        /**< user process code area end | 代码区结束位置 */
 #endif
 } LosVmSpace;
 

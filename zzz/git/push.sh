@@ -1,6 +1,6 @@
 git add -A
-git commit -m  ' 一图胜千言, 开始补各模块图
-    百万汉字注解 + 百篇博客分析 => 挖透鸿蒙内核源码
+git commit -m  ' 更正些不恰当的注释
+    百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
     oschina | https://my.oschina.net/weharmony

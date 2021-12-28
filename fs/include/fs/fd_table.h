@@ -89,7 +89,7 @@ struct fd_table_s {
     sem_t ft_sem; /* manage access to the file table | 管理对文件表的访问的信号量*/
 };
 /// 注:系统描述符的使用情况也是用bitmap管理见于 ..\third_party\third_party_NuttX\fs\inode\fs_files.c
-/// 进程文件表结构体 files_struct 为 进程 process->files 字段,包含一个进程的所有和VFS相关的内容 
+/// 进程文件表结构体 ,进程对文件操作在内存的表现 files_struct 为 进程 process->files 字段,包含一个进程的所有和VFS相关的内容 
 struct files_struct {
     int count;				///< 持有的文件数量
     struct fd_table_s *fdt; ///< 持有的文件表
