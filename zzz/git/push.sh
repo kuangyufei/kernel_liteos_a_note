@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 更新 readme
+git commit -m  ' 完成几个主要结构体图制作
     百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
