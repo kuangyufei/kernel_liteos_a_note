@@ -2,7 +2,7 @@
 
 [![](https://gitee.com/weharmonyos/resources/raw/master/common/io.png)](http://weharmonyos.com/)
 
-百篇博客分析。本篇为：(源码注释篇) | 每天死磕一点点
+百篇博客分析本篇为：(源码注释篇) | 每天死磕一点点
 
 **中文注解鸿蒙内核 | [kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在 `OpenHarmony` 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) 基础上给内核源码加上中文注解的版本。
 
@@ -11,26 +11,25 @@
 * 因为内核代码本身并不太多，都是浓缩的精华，精读是让各个知识点高频出现，不孤立成点状记忆，没有足够连接点的知识点是很容易忘的，点点成线，线面成体，连接越多，记得越牢，如此短时间内容易结成一张高浓度，高密度的系统化知识网，训练大脑肌肉记忆，驻入大脑直觉区，想抹都抹不掉，终生携带，随时调取。跟骑单车一样，一旦学会，即便多年不骑，照样跨上就走，游刃有余。
 ### 热爱是所有的理由和答案
 * 因大学时阅读 `linux 2.6` 内核痛并快乐的经历，一直有个心愿，如何让更多对内核感兴趣的朋友减少阅读时间，加速对计算机系统级的理解，而不至于过早的放弃。但因过程种种，多年一直没有行动，基本要放弃这件事了。恰逢 `2020/9/10` 鸿蒙正式开源，重新激活了多年的心愿，就有那么点如黄河之水一发不可收拾了。 
-* 目前对内核源码的注解已完成了 `80%` ，对内核源码的博客分析已完成了`70+篇`，百图画鸿蒙完成 30%，基本占用了所有空闲时间，但每天都很充实，很兴奋，连做梦内核代码都在鱼贯而入。加注并整理成档是件很有挑战的事，时间上以年为单位计，已持续一年有余，但正因为很难才值得去做! 干困难事，方有所得;专注聚焦，必有所获。 只因热爱，热爱是所有的理由和答案。 :P 
+* 目前对内核源码的注解完成 `80%` ，博客分析完成`70+篇`，百图画鸿蒙完成`20张`，所有空闲时间几乎被占用，每天很充实，时间不够用，连做梦内核代码都在鱼贯而入。加注并整理是件很有挑战的事，时间单位上以年计，已持续快一年半，不觉疲怠，期间得到众多小伙伴的支持与鼓励，让此念越发强烈，坚如磐石，干困难事，方有所得;专注聚焦，必有所获。做有兴趣有意思的事并不觉得有多难 :P 
 ### (〃･ิ‿･ิ)ゞ鸿蒙内核开发者
 * 感谢开放原子开源基金会，致敬鸿蒙内核开发者提供了如此优秀的源码，一了多年的夙愿，津津乐道于此。从内核一行行的代码中能深深感受到开发者各中艰辛与坚持，及鸿蒙生态对未来的价值，这些是张嘴就来的网络喷子们永远不能体会到的。可以毫不夸张的说鸿蒙内核源码可作为大学：C语言，数据结构，操作系统，汇编语言，计算机系统结构，计算机组成原理 六门课程的教学项目。如此宝库，不深入研究实在是暴殄天物，于心不忍，注者坚信鸿蒙大势所趋，未来可期，其必定成功，也必然成功，誓做其坚定的追随者和传播者。
   
 ### 理解内核的三个层级
 
-* 普通概念映射级：这一级不涉及专业知识，用大众所熟知的公共认知就能听明白是个什么概念，也就是说用一个普通人都懂的概念去诠释或者映射一个他们从没听过的概念。让陌生的知识点与大脑中烂熟于心的知识点建立多重链接，加深记忆。说别人能听得懂的话这很重要!!! 一个没学过计算机知识的卖菜大妈就不可能知道内核的基本运作了吗？不一定!在系列篇中试图用故事篇，去引导这一层级的认知，希望能卷入更多的人来关注基础软件，人多了场子热起来了创新就来了。
+* 普通概念映射级：这一级不涉及专业知识，用大众所熟知的公共认知就能听明白是个什么概念，也就是说用一个普通人都懂的概念去诠释或者映射一个他们从没听过的概念。让陌生的知识点与大脑中烂熟于心的知识点建立多重链接，加深记忆。说别人能听得懂的话这很重要。一个没学过计算机知识的卖菜大妈就不可能知道内核的基本运作了吗？不一定。在系列篇中试图用故事，打比方，去引导这一层级的认知，希望能卷入更多的人来关注基础软件，人多了场子热起来了创新就来了。
 * 专业概念抽象级：对抽象的专业逻辑概念具体化认知， 比如虚拟内存，老百姓是听不懂的，学过计算机的人都懂，具体怎么实现的很多人又都不懂了，但这并不妨碍成为一个优秀的上层应用开发者，因为虚拟内存已经被抽象出来，目的是要屏蔽上层对它具体实现的认知。试图用百篇博客系列篇去拆解那些已经被抽象出来的专业概念， 希望能卷入更多对内核感兴趣的应用软件人才流入基础软硬件生态， 应用软件咱们是无敌宇宙，但基础软件却很薄弱。
-* 具体微观代码级：这一级是具体到每一行代码的实现，到了用代码指令级的地步，这段代码是什么意思?为什么要这么设计？有没有更好的方案？[鸿蒙内核源码注解分析](https://gitee.com/weharmony/kernel_liteos_a_note) 试图从细微处去解释代码实现层，英文真的是天生适合设计成编程语言的人类语言，计算机的01码映射到人类世界的26个字母，诞生了太多的伟大奇迹。但我们的母语注定了很大部分人存在着自然语言层级的理解映射，希望内核注解分析能让更多爱好者快速的理解内核，共同进步。
+* 具体微观代码级：这一级是具体到每一行代码的实现，到了用代码指令级的地步，这段代码是什么意思?为什么要这么设计？有没有更好的方案？[鸿蒙内核源码注解分析](https://gitee.com/weharmony/kernel_liteos_a_note) 试图从细微处去解释代码实现层，英文真的是天生适合设计成编程语言的人类语言，计算机的01码映射到人类世界的26个字母，诞生了太多的伟大奇迹。但我们的母语注定了很大部分人存在着自然语言层级的理解映射，希望内核注解分析能让更多爱好者节约时间成本，哪怕节约一分钟也是这件事莫大的意义。
 
 ### 四个维度解剖内核
-为了很好的全方位剖析内核，在`主干百图`，`百篇博客`，`中文注释`，`参考手册`四个方向做了努力，试图以`讲故事`，`画图表`，`写文档`，`拆源码`立体的方式表述清楚内核。很喜欢易中天老师的一句话:研究方式不等于表述方式。底层技术并不枯燥，它可以就是我们生活中的场景。
+为了全方位剖析内核，在`画图`，`写文`，`注源`，`成册` 四个方向做了努力，试图以`讲故事`，`画图表`，`写文档`，`拆源码`立体的方式表述内核。很喜欢易中天老师的一句话:研究方式不等于表述方式。底层技术并不枯燥，它可以很有意思，它就是我们生活中的场景。
 
 #### 一: 百图画鸿蒙 | 一图一主干 | 骨骼系统
 
 * 如果把鸿蒙比作人，百图目的是要画出其骨骼系统。
 * 例如 `双向链表` 是内核最重要的结构体，说它怎么重要都不为过，其插入删除操作被内核高频，灵活的使用，若不理解透彻在分析源码过程中很容易卡壳。虽在网上能找到很多它的图,但怎么看都不是自己想要的,便重画了它的主要操作。
 * 百图系列每张图都是心血之作，耗时甚大，能用一张就绝不用两张，所以会画的比较复杂，高清图会很大，可以从 **公众号** 获取超高清图。如果喜欢也请分享给更多的人。
-
-![](https://gitee。com/weharmonyos/resources/raw/master/100pic/1_list.png) 
+* ![](https://gitee。com/weharmonyos/resources/raw/master/100pic/1_list.png) 
 
 #### 二: 百文说内核 | 抓住主脉络 | 肌肉器官
 
@@ -142,18 +141,14 @@
 
 #### 四 : 参考手册 | Doxygen呈现 | 诊断
 
-这里可以看到毛细血管级的网络图，注解遵循 [doxygen](https://www.doxygen.nl) 格式标准。
-下图为内核`main`的调用关系直观展现，如果没有这张图，光`main`一个函数就够喝一壶。 `main`本身是由汇编指令 `bl        main`调用
+在中文加注版基础上构建了参考手册，如此可以看到毛细血管级的网络图，注解支持 [doxygen](https://www.doxygen.nl) 格式标准。
+* 图为内核`main`的调用关系直观展现，如果没有这张图，光`main`一个函数就够喝一壶。 `main`本身是由汇编指令 `bl main`调用
+  ![](https://gitee。com/weharmonyos/resources/raw/master/73/1.png)
+  可前往 >> [鸿蒙研究站 | 参考手册 ](http://weharmonyos.com/doxygen/index.html) 体验
 
-![](https://gitee。com/weharmonyos/resources/raw/master/73/1.png)
-
-可前往 >> [鸿蒙研究站 | 参考手册 ](http://weharmonyos.com/doxygen/index.html) 体验
-
-下图为内核所有结构体索引，点击可查看每个结构变量细节
-
-![](https://gitee。com/weharmonyos/resources/raw/master/73/6.png)
-
-可前往 >> [鸿蒙研究站 | 结构体索引 ](http://weharmonyos.com/doxygen/classes.html) 体验
+* 图为内核所有结构体索引，点击可查看每个结构变量细节
+  ![](https://gitee。com/weharmonyos/resources/raw/master/73/6.png)
+  可前往 >> [鸿蒙研究站 | 结构体索引 ](http://weharmonyos.com/doxygen/classes.html) 体验
 
 ### 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [codechina](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
@@ -179,72 +174,27 @@
 * [文件系统 | NuttX](https://gitee.com/weharmony/third_party_NuttX)
 * [标准库 | musl](https://gitee.com/weharmony/third_party_musl) 
 
-### 内核目录结构
-```
-/kernel/liteos_a
-├── apps                   # 用户态的init和shell应用程序
-├── arch                   # 体系架构的目录，如arm等
-│   └── arm                # arm架构代码
-├── bsd                    # freebsd相关的驱动和适配层模块代码引入，例如USB等
-├── compat                 # 内核接口兼容性目录
-│   └── posix              # posix相关接口
-├── drivers                # 内核驱动
-│   └── char               # 字符设备
-│       ├── mem            # 访问物理IO设备驱动
-│       ├── quickstart     # 系统快速启动接口目录
-│       ├── random         # 随机数设备驱动
-│       └── video          # framebuffer驱动框架
-├── fs                     # 文件系统模块，主要来源于NuttX开源项目
-│   ├── fat                # fat文件系统
-│   ├── jffs2              # jffs2文件系统
-│   ├── include            # 对外暴露头文件存放目录
-│   ├── nfs                # nfs文件系统
-│   ├── proc               # proc文件系统
-│   ├── ramfs              # ramfs文件系统
-│   └── vfs                # vfs层
-├── kernel                 # 进程、内存、IPC等模块
-│   ├── base               # 基础内核，包括调度、内存等模块
-│   ├── common             # 内核通用组件
-│   ├── extended           # 扩展内核，包括动态加载、vdso、liteipc等模块
-│   ├── include            # 对外暴露头文件存放目录
-│   └── user               # 加载init进程
-├── lib                    # 内核的lib库
-├── net                    # 网络模块，主要来源于lwip开源项目
-├── platform               # 支持不同的芯片平台代码，如Hi3516DV300等
-│   ├── hw                 # 时钟与中断相关逻辑代码
-│   ├── include            # 对外暴露头文件存放目录
-│   └── uart               # 串口相关逻辑代码
-├── platform               # 支持不同的芯片平台代码，如Hi3516DV300等
-├── security               # 安全特性相关的代码，包括进程权限管理和虚拟id映射管理
-├── syscall                # 系统调用
-├── tools                  # 构建工具及相关配置和代码
-└── zzz                    # 中文加注版比官方版无新增文件，只多了一个zzz的目录，里面放了一些图片/文件/工具，
-                           # 它与内核代码无关，大家可以忽略它，取名zzz是为了排在最后，减少对原有代码目录级的侵入，
-                           # zzz 的想法源于微信中名称为AAA的那帮朋友，你的微信里应该也有他们熟悉的身影吧 :|P
-```
+### 关于 zzz 目录
+中文加注版比官方版无新增文件，只多了一个`zzz`的目录，里面放了一些加注所需文件，它与内核代码无关，可以忽略它，取名`zzz`是为了排在最后，减少对原有代码目录级的侵入，`zzz` 的想法源于微信中名称为`AAA`的那帮朋友，你的微信里应该也有他们熟悉的身影吧 :|P
+* ![](https://gitee.com/weharmonyos/resources/raw/master/13/cate.png)
 ### 官方文档 | 静态站点呈现
 
-研究鸿蒙需不断的翻阅资料，吸取别人的精华，其中官方文档必不可少， 为更好的呈现 **OpenHarmony开发者文档** ， 特意做了静态站点 [ >> 鸿蒙研究站 | 官方文档](http://weharmonyos.com/openharmony) 来方便搜索，阅读官方资料。
+* 研究鸿蒙需不断的翻阅资料，吸取别人的精华，其中官方文档必不可少， 为更好的呈现 **OpenHarmony开发者文档** ， 特意做了静态站点 [ >> 鸿蒙研究站 | 官方文档](http://weharmonyos.com/openharmony) 来方便搜索，阅读官方资料。
 
-左侧导航栏，右边索引区
+* 左侧导航栏，右边索引区
+  ![](https://gitee.com/weharmonyos/resources/raw/master/52/4.png)
 
-![](https://gitee.com/weharmonyos/resources/raw/master/52/4.png)
 
+ * [鸿蒙研究站](http://weharmonyos.com) 定位于做一个专注而靠谱的技术站， 没有广告，干净简洁，对鸿蒙研究会持续在上面输出。同时感谢资助鸿蒙研究和网站建设的小伙伴，很温暖。 [ >> 送温暖记录](http://weharmonyos.com/donate.html)
 
- [鸿蒙研究站](http://weharmonyos.com) 定位于做一个专注而靠谱的技术站， 没有广告，干净简洁，对鸿蒙研究会持续在上面输出。同时感谢资助鸿蒙研究和网站建设的小伙伴，很温暖。 [ >> 送温暖记录](http://weharmonyos.com/donate.html)
+### 百万注源码 | 处处扣细节
 
-### 其他
-
-* [微信 | QQ 群](http://weharmonyos.com/qun.html)
-* [离线文档 | PDF | CHM](http://weharmonyos.com/history.html)
-* [主流站点 | 全网覆盖](http://weharmonyos.com/extsite.html)
-* [送温暖 | 润心田](http://weharmonyos.com/donate.html)
-* [新建 Issue](https://gitee.com/weharmony/kernel_liteos_a_note/issues)
-* [新建 Pull Request](https://gitee.com/weharmony/kernel_liteos_a_note/pull/new/weharmony:master...weharmony:master)
-
+* 百万汉字注解内核目的是要看清楚其毛细血管，细胞结构，等于在拿放大镜看内核。内核并不神秘，带着问题去源码中找答案是很容易上瘾的，你会发现很多文章对一些问题的解读是错误的，或者说不深刻难以自圆其说，你会慢慢形成自己新的解读，而新的解读又会碰到新的问题，如此层层递进，滚滚向前，拿着放大镜根本不愿意放手。
+* [< gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [codechina >](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) 四大码仓推送 | 同步官方源码 
+[![](https://gitee.com/weharmony/kernel_liteos_a_note/widgets/widget_card.svg?colors=393222,ebdfc1,fffae5,d8ca9f,393222,a28b40)](https://gitee.com/weharmony/kernel_liteos_a_note)
 ### 关注不迷路 | 代码即人生
 
 ![](https://gitee.com/weharmonyos/resources/raw/master/common/so1so.png)
 
-鸿蒙研究站( weharmonyos ) | 每天死磕一点点，原创不易，欢迎转载，请注明出处。若能支持点赞则更佳，感谢每一份支持。
+原创不易，欢迎转载，也请注明出处。若能**点赞 | 分享**则更佳，感谢支持，一点微光，足以照亮前方。
 
