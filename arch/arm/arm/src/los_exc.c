@@ -306,7 +306,8 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
             break;
         }
         default:
-            ret = LOS_ERRNO_VM_NOT_FOUND;
+            OsArmWriteTlbimvaais(ROUNDDOWN(far, PAGE_SIZE));
+            ret = LOS_OK;
             break;
     }
 #if defined(LOSCFG_KERNEL_SMP) && defined(LOSCFG_DEBUG_VERSION)
@@ -1341,10 +1342,10 @@ __attribute__((noinline)) VOID LOS_Panic(const CHAR *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    UartVprintf(fmt, ap);
+    OsVprintf(fmt, ap, EXC_OUTPUT);
     va_end(ap);
     __asm__ __volatile__("swi 0"); //触发断异常
-    while (1);
+    while (1) {}
 }
 
 /* stack protector */

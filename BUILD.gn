@@ -315,6 +315,13 @@ group("kernel") {
 }
 
 group("liteos_a") {
+  deps = [
+    ":apps",
+    ":kernel",
+    ":make",
+    ":tests",
+    "//prebuilts/lite/sysroot/build:strip",
+  ]
 }
 
 executable("liteos") {

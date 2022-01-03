@@ -927,7 +927,7 @@ STATUS_T LOS_ArchMmuDestroy(LosArchMmu *archMmu)
         LOS_PhysPageFree(page);//释放物理页
     }
 
-    OsArmWriteTlbiasid(archMmu->asid);//写TLB
+    OsArmWriteTlbiasidis(archMmu->asid);
     OsFreeAsid(archMmu->asid);//释放asid
 #endif
     (VOID)LOS_MuxDestroy(&archMmu->mtx);

@@ -114,7 +114,7 @@ STATIC VOID OsMagicPanic(VOID)
 STATIC VOID OsMagicMemCheck(VOID)
 {
     if (LOS_MemIntegrityCheck(m_aucSysMem1) == LOS_OK) {
-        PRINTK("system memcheck over, all passed!\n");
+        PrintExcInfo("system memcheck over, all passed!\n");
     }
     return;
 }
@@ -134,9 +134,9 @@ INT32 CheckMagicKey(CHAR key, UINT16 consoleId)
 		// 则关闭魔法键检测功能，输出“Magic key off”。
         magicKeySwitch = ~magicKeySwitch;
         if (magicKeySwitch != 0) {
-            PRINTK("Magic key on\n");
+            PrintExcInfo("Magic key on\n");
         } else {
-            PRINTK("Magic key off\n");
+            PrintExcInfo("Magic key off\n");
         }
         return 1;
     }

@@ -47,7 +47,7 @@
 #include "los_excinfo_pri.h"
 #endif
 #include "los_exc_pri.h"
-
+#include "los_sched_pri.h"
 
 #define SIZEBUF  256
 
@@ -95,7 +95,7 @@ STATIC VOID ConsoleOutput(const CHAR *str, UINT32 len)
 	
     for (;;) {
         cnt = write(STDOUT_FILENO, str + written, (size_t)toWrite);//向控制台写入数据,STDOUT_FILENO = 1
-        if ((cnt < 0) || ((cnt == 0) && (OS_INT_ACTIVE)) || (toWrite == cnt)) {
+        if ((cnt < 0) || ((cnt == 0) && ((!OsPreemptable()) || (OS_INT_ACTIVE))) || (toWrite == cnt)) {
             break;
         }
         written += cnt;	//已写入数量增加

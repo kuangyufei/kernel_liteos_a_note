@@ -54,7 +54,7 @@ typedef unsigned short fmode_t;
 #define PROC_ERROR (-1)
 
 /* Default file mode for procfs */
-#define PROCFS_DEFAULT_MODE 0555
+#define PROCFS_DEFAULT_MODE 0550
 
 /* 64bit hashes as llseek() offset (for directories) */
 #define FMODE_64BITHASH   ((fmode_t)0x400)
