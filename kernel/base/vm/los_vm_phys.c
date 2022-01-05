@@ -115,7 +115,7 @@ STATIC INT32 OsVmPhysSegCreate(paddr_t start, size_t size)
     }
 
     seg = &g_vmPhysSeg[g_vmPhysSegNum++];//拿到一段数据
-    for (; (seg > g_vmPhysSeg) && ((seg - 1)->start > (start + size)); seg--) {
+    for (; (seg > g_vmPhysSeg) && ((seg - 1)->start > (start + size)); seg--) {//定位到合适的段
         *seg = *(seg - 1);
     }
     seg->start = start;

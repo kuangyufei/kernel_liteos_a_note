@@ -466,7 +466,7 @@ STATIC INLINE VOID OsSchedPriQueueDelete(UINT32 proPriority, LOS_DL_LIST *prique
         g_sched->queueBitmap &= ~(PRIQUEUE_PRIOR0_BIT >> proPriority);
     }
 }
-
+/// 唤醒因等待时间而阻塞的任务,例如在一个任务中执行 delay(100)这样的操作
 STATIC INLINE VOID OsSchedWakePendTimeTask(UINT64 currTime, LosTaskCB *taskCB, BOOL *needSchedule)
 {
 #ifndef LOSCFG_SCHED_DEBUG
@@ -475,11 +475,11 @@ STATIC INLINE VOID OsSchedWakePendTimeTask(UINT64 currTime, LosTaskCB *taskCB, B
 
     LOS_SpinLock(&g_taskSpin);
     UINT16 tempStatus = taskCB->taskStatus;
-    if (tempStatus & (OS_TASK_STATUS_PENDING | OS_TASK_STATUS_DELAY)) {
-        taskCB->taskStatus &= ~(OS_TASK_STATUS_PENDING | OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY);
-        if (tempStatus & OS_TASK_STATUS_PENDING) {
-            taskCB->taskStatus |= OS_TASK_STATUS_TIMEOUT;
-            LOS_ListDelete(&taskCB->pendList);
+    if (tempStatus & (OS_TASK_STATUS_PENDING | OS_TASK_STATUS_DELAY)) {//任务被挂起或被延迟执行
+        taskCB->taskStatus &= ~(OS_TASK_STATUS_PENDING | OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY);//去掉这些标签
+        if (tempStatus & OS_TASK_STATUS_PENDING) {//如果贴有阻塞标签
+            taskCB->taskStatus |= OS_TASK_STATUS_TIMEOUT;//贴上时间到了的标签
+            LOS_ListDelete(&taskCB->pendList);//从阻塞链表中删除
             taskCB->taskMux = NULL;
             OsTaskWakeClearPendMask(taskCB);
         }
@@ -489,7 +489,7 @@ STATIC INLINE VOID OsSchedWakePendTimeTask(UINT64 currTime, LosTaskCB *taskCB, B
             taskCB->schedStat.pendTime += currTime - taskCB->startTime;
             taskCB->schedStat.pendCount++;
 #endif
-            OsSchedTaskEnQueue(taskCB);
+            OsSchedTaskEnQueue(taskCB);//将任务加入就绪队列
             *needSchedule = TRUE;
         }
     }
@@ -502,7 +502,7 @@ STATIC INLINE BOOL OsSchedScanTimerList(VOID)
     Percpu *cpu = OsPercpuGet();
     BOOL needSchedule = FALSE;
     SortLinkAttribute *taskSortLink = &OsPercpuGet()->taskSortLink;//获取本CPU核上挂的所有等待的任务排序链表
-    LOS_DL_LIST *listObject = &taskSortLink->sortLink;
+    LOS_DL_LIST *listObject = &taskSortLink->sortLink;//按到达时间从前到后排序
     /*
      * When task is pended with timeout, the task block is on the timeout sortlink
      * (per cpu) and ipc(mutex,sem and etc.)'s block at the same time, it can be waken
@@ -519,25 +519,25 @@ STATIC INLINE BOOL OsSchedScanTimerList(VOID)
     }
 
     SortLinkList *sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);//获取每个优先级上的任务链表头节点
-    UINT64 currTime = OsGetCurrSchedTimeCycle();
-    while (sortList->responseTime <= currTime) {//
-        LosTaskCB *taskCB = LOS_DL_LIST_ENTRY(sortList, LosTaskCB, sortList);
-        OsDeleteNodeSortLink(taskSortLink, &taskCB->sortList);
-        LOS_SpinUnlock(&cpu->taskSortLinkSpin);
+    UINT64 currTime = OsGetCurrSchedTimeCycle();//获取当前时间
+    while (sortList->responseTime <= currTime) {//到达时间小于当前时间,说明任务时间过了,需要去执行了
+        LosTaskCB *taskCB = LOS_DL_LIST_ENTRY(sortList, LosTaskCB, sortList);//获取任务实体
+        OsDeleteNodeSortLink(taskSortLink, &taskCB->sortList);//从排序链表中删除
+        LOS_SpinUnlock(&cpu->taskSortLinkSpin);//释放自旋锁
 
-        OsSchedWakePendTimeTask(currTime, taskCB, &needSchedule);
+        OsSchedWakePendTimeTask(currTime, taskCB, &needSchedule);//需要唤醒任务,加入就绪队列
 
         LOS_SpinLock(&cpu->taskSortLinkSpin);
-        if (LOS_ListEmpty(listObject)) {
-            break;
+        if (LOS_ListEmpty(listObject)) {//因为上面已经执行了删除操作,所以此处可能有空
+            break;//为空则直接退出循环
         }
 
-        sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
+        sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);//处理下一个节点
     }
 
     LOS_SpinUnlock(&cpu->taskSortLinkSpin);
 
-    return needSchedule;
+    return needSchedule;//返回是否需要调度
 }
 
 /*!

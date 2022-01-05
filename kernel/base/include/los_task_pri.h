@@ -125,7 +125,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is suspended.
  */
-#define OS_TASK_STATUS_SUSPENDED    0x0008U ///< 任务状态: 暂停 ,意思是任务已经开始了, 不过现在要停了
+#define OS_TASK_STATUS_SUSPENDED    0x0008U ///< 任务状态: 暂停, 意思是发生了不需要等待资源的暂停,例如中断来了
 
 /**
  * @ingroup los_task
@@ -133,7 +133,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is blocked.
  */
-#define OS_TASK_STATUS_PENDING      0x0010U ///< 任务状态: 挂起 ,意思是任务还没开始,在等待其他条件成熟
+#define OS_TASK_STATUS_PENDING      0x0010U ///< 任务状态: 挂起 ,意思在需等待其他外在资源引起的停止,例如互斥锁/信号量 == 
 
 /**
  * @ingroup los_task
@@ -141,7 +141,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is delayed.
  */
-#define OS_TASK_STATUS_DELAY        0x0020U ///< 延期状态 ,见于 OsSchedDelay 延期调度
+#define OS_TASK_STATUS_DELAY        0x0020U ///< 延迟状态 ,例如 delay(100),因内部原因引起的等待 见于 OsSchedDelay 延期调度
 
 /**
  * @ingroup los_task
@@ -157,10 +157,10 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is pend for a period of time.
  */
-#define OS_TASK_STATUS_PEND_TIME    0x0080U ///< 任务状态: 挂起
+#define OS_TASK_STATUS_PEND_TIME    0x0080U ///< 任务状态: 有时间限制的阻塞,例如等待某个事件时设置为时间到了就不等了
 
 #define OS_TASK_STATUS_BLOCKED      (OS_TASK_STATUS_INIT | OS_TASK_STATUS_PENDING | \
-                                     OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME) ///< 任务状态: 屏蔽
+                                     OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME) ///< 任务状态: 已屏蔽
 
 /**
  * @ingroup los_task

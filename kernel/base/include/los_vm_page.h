@@ -50,7 +50,8 @@ extern "C" {
  \n 关于nPages和order的关系说明,当请求分配为5页时,order是等于3的,因为只有2^3才能满足5页的请求
  */
 typedef struct VmPage {
-    LOS_DL_LIST         node;        /**< vm object dl list | 物理内框节点,通过它挂/摘到全局g_vmPhysSeg[segID]->freeList[order]物理页框链表上*/
+    LOS_DL_LIST         node;        /**< vm object dl list | 物理内框节点,通过它挂/摘到全局g_vmPhysSeg[segID]->freeList[order]物理页框链表 或被使用的链表
+    									上, 例如 共享内存的shmIDSource.node*/
     PADDR_T             physAddr;    /**< vm page physical addr | 物理页框起始物理地址,只能用于计算,不会用于操作(读/写数据==)*/
     Atomic              refCounts;   /**< vm page ref count | 被引用次数,共享内存会有多次引用*/
     UINT32              flags;       /**< vm page flags | 页标签，同时可以有多个标签（共享/引用/活动/被锁==）*/
