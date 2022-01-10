@@ -775,7 +775,7 @@ BOOL OsSchedModifyProcessSchedParam(LosProcessCB *processCB, UINT16 policy, UINT
 
     return needSched;
 }
-
+//冻结任务
 STATIC VOID OsSchedFreezeTask(LosTaskCB *taskCB)
 {
     UINT64 responseTime;
@@ -794,7 +794,7 @@ STATIC VOID OsSchedFreezeTask(LosTaskCB *taskCB)
     taskCB->taskStatus |= OS_TASK_FLAG_FREEZE;
     return;
 }
-
+//解冻任务
 STATIC VOID OsSchedUnfreezeTask(LosTaskCB *taskCB)
 {
     UINT64 currTime, responseTime;

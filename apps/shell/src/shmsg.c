@@ -364,11 +364,13 @@ void ChildExec(const char *cmdName, char *const paramArray[])
     gid = getpgrp();
     if (gid < 0) {
         printf("get group id failed, pgrpid %d, errno %d\n", gid, errno);
+        exit(1);
     }
 
     ret = tcsetpgrp(STDIN_FILENO, gid);
     if (ret != 0) {
         printf("tcsetpgrp failed, errno %d\n", errno);
+        exit(1);
     }
 
     ret = execve(cmdName, paramArray, NULL);

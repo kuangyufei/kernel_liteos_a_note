@@ -50,7 +50,7 @@ config COMPILER_CLANG_LLVM
 config LLVM_TARGET
     string "Clang LLVM target"
     depends on COMPILER_CLANG_LLVM
-    default "arm-liteos" if ARCH_ARM_AARCH32
+    default "arm-liteos-ohos" if ARCH_ARM_AARCH32
 
 endchoice
 

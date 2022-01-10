@@ -319,7 +319,7 @@ static INT32 HiDumperIoctl(struct file *filep, INT32 cmd, unsigned long arg)
             break;
         case HIDUMPER_MEM_DATA:
             if (g_adapter.DumpMemData != NULL) {
-                g_adapter.DumpMemData((struct MemDumpParam *)arg);
+                g_adapter.DumpMemData((struct MemDumpParam *)((UINTPTR)arg));
             }
             break;
         default:

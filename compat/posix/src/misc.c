@@ -40,7 +40,6 @@
 #include "los_process_pri.h"
 #include "los_hw.h"
 
-static struct rlimit g_defaultLimit = { 0 };
 /*
  * Supply some suitable values for constants that may not be present
  * in all configurations.
@@ -168,7 +167,10 @@ int getrlimit(int resource, struct rlimit *rlim)
     }
 
     if (resourceLimit == NULL) {
-        resourceLimit = &g_defaultLimit;
+        rlim->rlim_cur = 0;
+        rlim->rlim_max = 0;
+
+        return 0;
     }
 
     SCHEDULER_LOCK(intSave);

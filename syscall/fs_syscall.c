@@ -2697,7 +2697,7 @@ int SysPselect6(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
     ((struct timeval *)timeout)->tv_usec = timeout->tv_nsec / 1000; /* 1000, convert ns to us */
 
     if (data != NULL) {
-        retVal = LOS_ArchCopyFromUser(&(setl.sig[0]), (int *)data[0], sizeof(sigset_t));
+        retVal = LOS_ArchCopyFromUser(&(setl.sig[0]), (int *)((UINTPTR)data[0]), sizeof(sigset_t));
         if (retVal != 0) {
             ret = -EFAULT;
             FREE_DUP(timeout);

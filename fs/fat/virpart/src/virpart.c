@@ -347,7 +347,7 @@ INT FatFsBindVirPart(void *handle, BYTE vol)
         return -EINVAL;
     }
 
-    ret = snprintf_s(path, sizeof(path), sizeof(path) - 1, "%d:/", vol);
+    ret = snprintf_s(path, sizeof(path), sizeof(path) - 1, "%u:/", vol);
     if (ret < 0) {
         return -EINVAL;
     }
@@ -420,7 +420,7 @@ INT FatFsMakeVirPart(void *handle, BYTE vol)
         return -EINVAL;
     }
 
-    ret = snprintf_s(path, sizeof(path), sizeof(path) - 1, "%d:/", vol);
+    ret = snprintf_s(path, sizeof(path), sizeof(path) - 1, "%u:/", vol);
     if (ret < 0) {
         return -EINVAL;
     }

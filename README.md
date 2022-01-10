@@ -150,7 +150,7 @@
 
 ### 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [codechina](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
-* `2022/01/03` -- 只有很少的几处修改同步
+* `2022/01/10` -- 只有很少的几处修改同步
 * `2021/12/20` -- 增加`LMS`模块，完善`PM，Fat Cache`
 * `2021/11/12` -- 加入`epoll`支持，对`shell`模块有较大调整，微调`process`，`task`，更正单词拼写错误
 * `2021/10/21` -- 增加性能优化模块`perf`，优化了文件映射模块
