@@ -53,10 +53,10 @@
 #define OS_SCHED_FIFO_TIMEOUT      0x7FFFFFFF
 #define OS_PRIORITY_QUEUE_NUM      32	///< 就绪队列数量
 #define PRIQUEUE_PRIOR0_BIT        0x80000000U
-#define OS_SCHED_TIME_SLICES_MIN   ((5000 * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE)  /* 5ms 调度最小时间片 */
-#define OS_SCHED_TIME_SLICES_MAX   ((LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE) ///< 调度最大时间片 
+#define OS_SCHED_TIME_SLICES_MIN   ((5000 * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE)  /* 5ms 产生的时钟周期数 调度最小时间片 */
+#define OS_SCHED_TIME_SLICES_MAX   ((LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE) ///< 调度最大时间片 20ms产生的时钟周期数
 #define OS_SCHED_TIME_SLICES_DIFF  (OS_SCHED_TIME_SLICES_MAX - OS_SCHED_TIME_SLICES_MIN) ///< 最大,最小二者差
-#define OS_SCHED_READY_MAX         30
+#define OS_SCHED_READY_MAX         30 ///< 某个任务优先级上挂的最大就绪任务数量
 #define OS_TIME_SLICE_MIN          (INT32)((50 * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE) /* 50us */
 
 #define OS_CHECK_TASK_BLOCK (OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PENDING | OS_TASK_STATUS_SUSPENDED)
@@ -69,29 +69,29 @@ typedef struct {
 
 /// 调度器
 typedef struct {
-    SchedQueue queueList[OS_PRIORITY_QUEUE_NUM];//进程优先级调度队列,默认32级
-    UINT32     queueBitmap;//进程优先级调度位图
-    SchedScan  taskScan;//函数指针,扫描任务的回调函数
-    SchedScan  swtmrScan;//函数指针,扫描定时器的回调函数
+    SchedQueue queueList[OS_PRIORITY_QUEUE_NUM];///< 进程优先级调度队列,默认32级
+    UINT32     queueBitmap;///< 进程优先级调度位图
+    SchedScan  taskScan;///< 函数指针,扫描任务的回调函数
+    SchedScan  swtmrScan;///< 函数指针,扫描定时器的回调函数
 } Sched;
 
-STATIC Sched *g_sched = NULL;//全局调度器
-STATIC UINT64 g_schedTickMaxResponseTime;
-UINT64 g_sysSchedStartTime = OS_64BIT_MAX;
+STATIC Sched *g_sched = NULL;///< 全局调度器
+STATIC UINT64 g_schedTickMaxResponseTime; //最大响应时间
+UINT64 g_sysSchedStartTime = OS_64BIT_MAX; ///< 系统调度开始时间
 
 #ifdef LOSCFG_SCHED_TICK_DEBUG
 #define OS_SCHED_DEBUG_DATA_NUM  1000
-typedef struct {
+typedef struct {//调试调度,每个CPU核一个
     UINT32 tickResporeTime[OS_SCHED_DEBUG_DATA_NUM];
     UINT32 index;
     UINT32 setTickCount;
     UINT64 oldResporeTime;
 } SchedTickDebug;
-STATIC SchedTickDebug *g_schedTickDebug = NULL;
-
+STATIC SchedTickDebug *g_schedTickDebug = NULL;///< 全局调度调试池
+/// 调试调度器初始化
 STATIC UINT32 OsSchedDebugInit(VOID)
 {
-    UINT32 size = sizeof(SchedTickDebug) * LOSCFG_KERNEL_CORE_NUM;
+    UINT32 size = sizeof(SchedTickDebug) * LOSCFG_KERNEL_CORE_NUM;//见核有份
     g_schedTickDebug = (SchedTickDebug *)LOS_MemAlloc(m_aucSysMem0, size);
     if (g_schedTickDebug == NULL) {
         return LOS_ERRNO_TSK_NO_MEMORY;
@@ -385,19 +385,19 @@ VOID OsSchedUpdateExpireTime(UINT64 startTime)
 
     OsSchedSetNextExpireTime(startTime, runTask->taskID, endTime, runTask->taskID);
 }
-/// 计算时间片
+/// 计算时间片,参数为进程优先级和任务优先级, 结论是同一个优先级下 任务越多,时间片越短
 STATIC INLINE UINT32 OsSchedCalculateTimeSlice(UINT16 proPriority, UINT16 priority)
 {
     UINT32 retTime;
     UINT32 readyTasks;
 
-    SchedQueue *queueList = &g_sched->queueList[proPriority];//拿到优先级调度队列
-    readyTasks = queueList->readyTasks[priority];
-    if (readyTasks > OS_SCHED_READY_MAX) {
-        return OS_SCHED_TIME_SLICES_MIN;
-    }
-    retTime = ((OS_SCHED_READY_MAX - readyTasks) * OS_SCHED_TIME_SLICES_DIFF) / OS_SCHED_READY_MAX;
-    return (retTime + OS_SCHED_TIME_SLICES_MIN);
+    SchedQueue *queueList = &g_sched->queueList[proPriority];//拿到进程优先级调度队列
+    readyTasks = queueList->readyTasks[priority];//获取指定优先级的任务数量
+    if (readyTasks > OS_SCHED_READY_MAX) {//如果就绪任务很多
+        return OS_SCHED_TIME_SLICES_MIN;//给个最小时间片 5ms
+    }// 0:15 | 1: 14.5 | 2:14 | 30: 0  
+    retTime = ((OS_SCHED_READY_MAX - readyTasks) * OS_SCHED_TIME_SLICES_DIFF) / OS_SCHED_READY_MAX;//时间片的算法
+    return (retTime + OS_SCHED_TIME_SLICES_MIN);// 20, 19.5, ... 5
 }
 
 STATIC INLINE VOID OsSchedPriQueueEnHead(UINT32 proPriority, LOS_DL_LIST *priqueueItem, UINT32 priority)
@@ -449,21 +449,21 @@ STATIC INLINE VOID OsSchedPriQueueEnTail(UINT32 proPriority, LOS_DL_LIST *prique
     LOS_ListTailInsert(&priQueueList[priority], priqueueItem);
     queueList->readyTasks[priority]++;
 }
-
+/// 1.找出指定优先级的调度队列 2.摘除指定任务优先级链表中的指定任务节点
 STATIC INLINE VOID OsSchedPriQueueDelete(UINT32 proPriority, LOS_DL_LIST *priqueueItem, UINT32 priority)
 {
-    SchedQueue *queueList = &g_sched->queueList[proPriority];
-    LOS_DL_LIST *priQueueList = &queueList->priQueueList[0];
-    UINT32 *bitMap = &queueList->queueBitmap;
+    SchedQueue *queueList = &g_sched->queueList[proPriority];//找到进程优先级对应的调度队列
+    LOS_DL_LIST *priQueueList = &queueList->priQueueList[0];//获取首个链表
+    UINT32 *bitMap = &queueList->queueBitmap;//获取位图
 
-    LOS_ListDelete(priqueueItem);
-    queueList->readyTasks[priority]--;
-    if (LOS_ListEmpty(&priQueueList[priority])) {
-        *bitMap &= ~(PRIQUEUE_PRIOR0_BIT >> priority);
-    }
+    LOS_ListDelete(priqueueItem);//摘除参数结点
+    queueList->readyTasks[priority]--;//对应任务数减少
+    if (LOS_ListEmpty(&priQueueList[priority])) {//如果该条线上没有了任务了
+        *bitMap &= ~(PRIQUEUE_PRIOR0_BIT >> priority);//将任务对应优先级的位 置0
+    }// ...111001110 --> ...111000110 
 
-    if (*bitMap == 0) {
-        g_sched->queueBitmap &= ~(PRIQUEUE_PRIOR0_BIT >> proPriority);
+    if (*bitMap == 0) {//如果变量变成0, 000000000
+        g_sched->queueBitmap &= ~(PRIQUEUE_PRIOR0_BIT >> proPriority);//将进程对应优先级的位 置0
     }
 }
 /// 唤醒因等待时间而阻塞的任务,例如在一个任务中执行 delay(100)这样的操作
@@ -477,9 +477,9 @@ STATIC INLINE VOID OsSchedWakePendTimeTask(UINT64 currTime, LosTaskCB *taskCB, B
     UINT16 tempStatus = taskCB->taskStatus;
     if (tempStatus & (OS_TASK_STATUS_PENDING | OS_TASK_STATUS_DELAY)) {//任务被挂起或被延迟执行
         taskCB->taskStatus &= ~(OS_TASK_STATUS_PENDING | OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY);//去掉这些标签
-        if (tempStatus & OS_TASK_STATUS_PENDING) {//如果贴有阻塞标签
+        if (tempStatus & OS_TASK_STATUS_PENDING) {//如果贴有挂起/待办标签
             taskCB->taskStatus |= OS_TASK_STATUS_TIMEOUT;//贴上时间到了的标签
-            LOS_ListDelete(&taskCB->pendList);//从阻塞链表中删除
+            LOS_ListDelete(&taskCB->pendList);//从挂起/待办链表中删除
             taskCB->taskMux = NULL;
             OsTaskWakeClearPendMask(taskCB);
         }
@@ -668,7 +668,7 @@ VOID OsSchedYield(VOID)
     runTask->timeSlice = 0;//时间片变成0,代表主动让出运行时间.
 
     runTask->startTime = OsGetCurrSchedTimeCycle();//重新获取开始时间
-    OsSchedTaskEnQueue(runTask);//跑队列尾部排队
+    OsSchedTaskEnQueue(runTask);//跑队尾排队
     OsSchedResched();//发起调度
 }
 ///延期调度
@@ -686,12 +686,12 @@ UINT32 OsSchedTaskWait(LOS_DL_LIST *list, UINT32 ticks, BOOL needSched)
     LosTaskCB *runTask = OsCurrTaskGet();//获取当前任务
     OsSchedTaskDeQueue(runTask);//将任务从就绪队列中删除
 
-    runTask->taskStatus |= OS_TASK_STATUS_PENDING;//任务状态改成阻塞
-    LOS_ListTailInsert(list, &runTask->pendList);//挂入阻塞链表
+    runTask->taskStatus |= OS_TASK_STATUS_PENDING;//任务状态改成挂起/待办
+    LOS_ListTailInsert(list, &runTask->pendList);//挂入挂起/待办链表
 
     if (ticks != LOS_WAIT_FOREVER) {//如果不是永久的等待
-        runTask->taskStatus |= OS_TASK_STATUS_PEND_TIME;//标记为有时间的阻塞
-        runTask->waitTimes = ticks;//要阻塞多久
+        runTask->taskStatus |= OS_TASK_STATUS_PEND_TIME;//标记为有时间的挂起/待办
+        runTask->waitTimes = ticks;//要挂起/待办多久
     }
 
     if (needSched == TRUE) {//是否需要调度
@@ -707,62 +707,62 @@ UINT32 OsSchedTaskWait(LOS_DL_LIST *list, UINT32 ticks, BOOL needSched)
 ///任务从等待链表中恢复,并从链表中摘除.
 VOID OsSchedTaskWake(LosTaskCB *resumedTask)
 {
-    LOS_ListDelete(&resumedTask->pendList);
-    resumedTask->taskStatus &= ~OS_TASK_STATUS_PENDING;
+    LOS_ListDelete(&resumedTask->pendList);// 1.先从待办链表上摘除
+    resumedTask->taskStatus &= ~OS_TASK_STATUS_PENDING;//撕掉挂起标签
 
-    if (resumedTask->taskStatus & OS_TASK_STATUS_PEND_TIME) {
-        OsDeleteSortLink(&resumedTask->sortList, OS_SORT_LINK_TASK);
-        resumedTask->taskStatus &= ~OS_TASK_STATUS_PEND_TIME;
+    if (resumedTask->taskStatus & OS_TASK_STATUS_PEND_TIME) {//如果是有时间限制的挂起
+        OsDeleteSortLink(&resumedTask->sortList, OS_SORT_LINK_TASK);//从任务的CPU执行链表上摘除任务节点
+        resumedTask->taskStatus &= ~OS_TASK_STATUS_PEND_TIME;//撕掉挂起有时间限制标签
     }
 
-    if (!(resumedTask->taskStatus & OS_TASK_STATUS_SUSPENDED)) {
+    if (!(resumedTask->taskStatus & OS_TASK_STATUS_SUSPENDED)) {//如果有暂停标签
 #ifdef LOSCFG_SCHED_DEBUG
-        resumedTask->schedStat.pendTime += OsGetCurrSchedTimeCycle() - resumedTask->startTime;
-        resumedTask->schedStat.pendCount++;
+        resumedTask->schedStat.pendTime += OsGetCurrSchedTimeCycle() - resumedTask->startTime;//记录暂停的时间
+        resumedTask->schedStat.pendCount++;//暂停的次数增加
 #endif
-        OsSchedTaskEnQueue(resumedTask);
+        OsSchedTaskEnQueue(resumedTask);//加入就绪链表
     }
 }
-
+/// 修改任务调度参数
 BOOL OsSchedModifyTaskSchedParam(LosTaskCB *taskCB, UINT16 policy, UINT16 priority)
 {
-    if (taskCB->policy != policy) {
+    if (taskCB->policy != policy) {//如果调度方式不一致
         taskCB->policy = policy;
-        taskCB->timeSlice = 0;
+        taskCB->timeSlice = 0;//时间片清0
     }
 
-    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {
-        OsSchedTaskDeQueue(taskCB);
-        taskCB->priority = priority;
-        OsSchedTaskEnQueue(taskCB);
+    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {//如果是就绪状态
+        OsSchedTaskDeQueue(taskCB);//从就绪队列删除
+        taskCB->priority = priority;//设置任务优先级
+        OsSchedTaskEnQueue(taskCB);//从尾部加入就绪队列
         return TRUE;
     }
 
-    taskCB->priority = priority;
-    OsHookCall(LOS_HOOK_TYPE_TASK_PRIMODIFY, taskCB, taskCB->priority); 
-    if (taskCB->taskStatus & OS_TASK_STATUS_INIT) {
-        OsSchedTaskEnQueue(taskCB);
+    taskCB->priority = priority;//设置任务优先级
+    OsHookCall(LOS_HOOK_TYPE_TASK_PRIMODIFY, taskCB, taskCB->priority);//向往通知某任务优先级改变了 
+    if (taskCB->taskStatus & OS_TASK_STATUS_INIT) {//如果任务处于初始状态
+        OsSchedTaskEnQueue(taskCB);//直接加入就绪队列, 进入就绪状态
         return TRUE;
     }
 
-    if (taskCB->taskStatus & OS_TASK_STATUS_RUNNING) {
+    if (taskCB->taskStatus & OS_TASK_STATUS_RUNNING) {//处于运行状态
         return TRUE;
     }
 
     return FALSE;
 }
-///修改进程调度参数
+/// 修改进程调度参数
 BOOL OsSchedModifyProcessSchedParam(LosProcessCB *processCB, UINT16 policy, UINT16 priority)
 {
     LosTaskCB *taskCB = NULL;
     BOOL needSched = FALSE;
     (VOID)policy;
 
-    if (processCB->processStatus & OS_PROCESS_STATUS_READY) {
-        LOS_DL_LIST_FOR_EACH_ENTRY(taskCB, &processCB->threadSiblingList, LosTaskCB, threadList) {
-            if (taskCB->taskStatus & OS_TASK_STATUS_READY) {
-                OsSchedPriQueueDelete(processCB->priority, &taskCB->pendList, taskCB->priority);
-                OsSchedPriQueueEnTail(priority, &taskCB->pendList, taskCB->priority);
+    if (processCB->processStatus & OS_PROCESS_STATUS_READY) {//如果是就绪状态
+        LOS_DL_LIST_FOR_EACH_ENTRY(taskCB, &processCB->threadSiblingList, LosTaskCB, threadList) {//遍历进程的任务链表
+            if (taskCB->taskStatus & OS_TASK_STATUS_READY) {//如果任务处于就绪状态
+                OsSchedPriQueueDelete(processCB->priority, &taskCB->pendList, taskCB->priority);//先从原任务优先级链表中摘除任务
+                OsSchedPriQueueEnTail(priority, &taskCB->pendList, taskCB->priority);//在根据新优先级插入对应优先级链表中
                 needSched = TRUE;
             }
         }
@@ -874,15 +874,15 @@ VOID OsSchedTick(VOID)
     currCpu->schedFlag |= INT_PEND_TICK; //贴上外因触发的调度,这个外因指的就是tick时间到了
     currCpu->responseTime = OS_SCHED_MAX_RESPONSE_TIME;//响应时间默认设最大
 }
-
+/// 设置空闲任务调度参数,空闲
 VOID OsSchedSetIdleTaskSchedParam(LosTaskCB *idleTask)
 {
-    idleTask->policy = LOS_SCHED_IDLE;
-    idleTask->initTimeSlice = OS_SCHED_FIFO_TIMEOUT;
-    idleTask->timeSlice = idleTask->initTimeSlice;
-    OsSchedTaskEnQueue(idleTask);
+    idleTask->policy = LOS_SCHED_IDLE; //空闲方式,CPU没事干的时候就跑这个任务
+    idleTask->initTimeSlice = OS_SCHED_FIFO_TIMEOUT;//初始时间片超大
+    idleTask->timeSlice = idleTask->initTimeSlice;//剩余时间片超大
+    OsSchedTaskEnQueue(idleTask);//加入就绪队列
 }
-
+/// 重置回应时间
 VOID OsSchedResetSchedResponseTime(UINT64 responseTime)
 {
     Percpu *cpu = OsPercpuGet();

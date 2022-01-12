@@ -322,23 +322,23 @@ STATIC VOID OsShellCmdProcessInfoData(const LosProcessCB *pcbArray, const INT32 
 
 LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellCmdConvertTskStatus(UINT16 taskStatus)
 {
-    if (taskStatus & OS_TASK_STATUS_INIT) {
+    if (taskStatus & OS_TASK_STATUS_INIT) {//初始化
         return (UINT8 *)"Init";
-    } else if (taskStatus & OS_TASK_STATUS_RUNNING) {
+    } else if (taskStatus & OS_TASK_STATUS_RUNNING) {//运行中
         return (UINT8 *)"Running";
-    } else if (taskStatus & OS_TASK_STATUS_READY) {
+    } else if (taskStatus & OS_TASK_STATUS_READY) {//已就绪
         return (UINT8 *)"Ready";
-    } else if (taskStatus & OS_TASK_STATUS_SUSPENDED) {
+    } else if (taskStatus & OS_TASK_STATUS_SUSPENDED) {//暂停
         return (UINT8 *)"Suspended";
-    } else if (taskStatus & OS_TASK_STATUS_DELAY) {
+    } else if (taskStatus & OS_TASK_STATUS_DELAY) {//延迟
         return (UINT8 *)"Delay";
-    } else if (taskStatus & OS_TASK_STATUS_PENDING) {
-        if (taskStatus & OS_TASK_STATUS_PEND_TIME) {
+    } else if (taskStatus & OS_TASK_STATUS_PENDING) {//挂起/待办
+        if (taskStatus & OS_TASK_STATUS_PEND_TIME) { //挂起/待办有时间限制
             return (UINT8 *)"PendTime";
         } else {
-            return (UINT8 *)"Pending";
+            return (UINT8 *)"Pending";//挂起/待办无时间限制
         }
-    } else if (taskStatus & OS_TASK_STATUS_EXIT) {
+    } else if (taskStatus & OS_TASK_STATUS_EXIT) {//退出
         return (UINT8 *)"Exit";
     }
 

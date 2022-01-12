@@ -1647,7 +1647,7 @@ VOID OsWaitConsoleSendTaskPend(UINT32 taskID)//等待控制台发送任务结束
 
         taskCB = OS_TCB_FROM_TID(console->sendTaskID);
         while ((waitTime > 0) && (taskCB->taskEvent == NULL) && (taskID != console->sendTaskID)) {
-            LOS_Mdelay(1); /* 1: wait console task pend */ //等待控制台任务阻塞
+            LOS_Mdelay(1); /* 1: wait console task pend */ //等待控制台任务挂起/待办
             --waitTime;
         }
     }

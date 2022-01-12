@@ -194,7 +194,7 @@ int OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info)
         /* If signal is in wait list and mask list, need unblock it */ //如果信号在等待列表和掩码列表中，需要解除阻止
         if (LOS_ListEmpty(&sigcb->waitList)  ||
            (!LOS_ListEmpty(&sigcb->waitList) && !OsSigIsMember(&sigcb->sigwaitmask, info->si_signo))) {
-            OsSigAddSet(&sigcb->sigPendFlag, info->si_signo);//将信号加入阻塞集
+            OsSigAddSet(&sigcb->sigPendFlag, info->si_signo);//将信号加入挂起/待办集
         }
     } else {//信号没有被屏蔽的处理
         /* unmasked signal actions */
@@ -217,7 +217,7 @@ void OsSigMaskSwitch(LosTaskCB * const rtcb, sigset_t set)
     if (unmaskset != NULL_SIGNAL_SET) {
         /* pendlist do */
         rtcb->sig.sigFlag |= unmaskset;	//加入不屏蔽信号集
-        rtcb->sig.sigPendFlag ^= unmaskset;//从阻塞集中去掉unmaskset
+        rtcb->sig.sigPendFlag ^= unmaskset;//从挂起/待办集中去掉unmaskset
     }
 }
 

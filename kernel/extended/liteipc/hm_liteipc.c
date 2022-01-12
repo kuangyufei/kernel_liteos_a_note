@@ -98,7 +98,7 @@ STATIC HandleInfo g_cmsTask;	///< 应该是Service管理器的意思,因借助�
 #else
 STATIC HandleInfo g_serviceHandleMap[MAX_SERVICE_NUM]; ///< 整个系统只能有一个 ServiceManager 用于管理 service
 #endif
-STATIC LOS_DL_LIST g_ipcPendlist;	///< 阻塞链表,上面挂等待读/写消息的任务LosTaskCB
+STATIC LOS_DL_LIST g_ipcPendlist;	///< 挂起/待办链表,上面挂等待读/写消息的任务LosTaskCB
 
 /* ipc lock */
 SPIN_LOCK_INIT(g_ipcSpin);//初始化IPC自旋锁
