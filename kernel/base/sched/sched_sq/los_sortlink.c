@@ -200,7 +200,7 @@ VOID OsDeleteSortLink(SortLinkList *node, SortLinkType type)
 }
 
 /*!
- * @brief OsGetNextExpireTime 获取下一个超时时间	
+ * @brief OsGetNextExpireTime 获取下一个最容易超时的任务	
  *
  * @param startTime	
  * @return	
@@ -211,15 +211,15 @@ UINT64 OsGetNextExpireTime(UINT64 startTime)
 {
     UINT32 intSave;
     Percpu *cpu = OsPercpuGet();//获取当前CPU
-    SortLinkAttribute *taskHeader = &cpu->taskSortLink;
-    SortLinkAttribute *swtmrHeader = &cpu->swtmrSortLink;
+    SortLinkAttribute *taskHeader = &cpu->taskSortLink;//获取当前CPU的任务排序链表
+    SortLinkAttribute *swtmrHeader = &cpu->swtmrSortLink;//获取当前CPU的软件定时器排序链表
 
     LOS_SpinLockSave(&cpu->taskSortLinkSpin, &intSave);
     UINT64 taskExpirTime = OsGetSortLinkNextExpireTime(taskHeader, startTime);//拿到下一个到期时间,注意此处拿到的一定是最短的时间
     LOS_SpinUnlockRestore(&cpu->taskSortLinkSpin, intSave);
 
     LOS_SpinLockSave(&cpu->swtmrSortLinkSpin, &intSave);
-    UINT64 swtmrExpirTime = OsGetSortLinkNextExpireTime(swtmrHeader, startTime);
+    UINT64 swtmrExpirTime = OsGetSortLinkNextExpireTime(swtmrHeader, startTime);//从软件定时器中拿
     LOS_SpinUnlockRestore(&cpu->swtmrSortLinkSpin, intSave);
 
     return (taskExpirTime < swtmrExpirTime) ? taskExpirTime : swtmrExpirTime;//比较返回更短的那个.

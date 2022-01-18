@@ -316,17 +316,17 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * @ingroup los_config
  * Max number of software timers ID
  *
- * 0xFFFF: max number of all software timers
+ * 0xFFFF: max number of all software timers | 所有软件定时器的最大数量
  */
 #ifndef OS_SWTMR_MAX_TIMERID
-#define OS_SWTMR_MAX_TIMERID ((0xFFFF / LOSCFG_BASE_CORE_SWTMR_LIMIT) * LOSCFG_BASE_CORE_SWTMR_LIMIT)//65535
+#define OS_SWTMR_MAX_TIMERID ((0xFFFF / LOSCFG_BASE_CORE_SWTMR_LIMIT) * LOSCFG_BASE_CORE_SWTMR_LIMIT) ///< 65535
 #endif
 /**
  * @ingroup los_config
  * Maximum size of a software timer queue
  */
 #ifndef OS_SWTMR_HANDLE_QUEUE_SIZE
-#define OS_SWTMR_HANDLE_QUEUE_SIZE LOSCFG_BASE_CORE_SWTMR_LIMIT //软时钟队列的大小
+#define OS_SWTMR_HANDLE_QUEUE_SIZE LOSCFG_BASE_CORE_SWTMR_LIMIT ///< 软时钟队列的大小
 #endif
 #endif
 

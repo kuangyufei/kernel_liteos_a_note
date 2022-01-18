@@ -283,7 +283,7 @@ STATIC INLINE VOID OsTimeSliceUpdate(LosTaskCB *taskCB, UINT64 currTime)
     taskCB->schedStat.allRuntime += incTime;
 #endif
 }
-
+/// 重置节拍器
 STATIC INLINE VOID OsSchedTickReload(Percpu *currCpu, UINT64 nextResponseTime, UINT32 responseID, BOOL isTimeSlice)
 {
     UINT64 currTime, nextExpireTime;
@@ -325,7 +325,7 @@ STATIC INLINE VOID OsSchedTickReload(Percpu *currCpu, UINT64 nextResponseTime, U
     }
 #endif
 }
-/// 设置下一个到期时间
+/// 设置指定任务下一个到期时间
 STATIC INLINE VOID OsSchedSetNextExpireTime(UINT64 startTime, UINT32 responseID,
                                             UINT64 taskEndTime, UINT32 oldResponseID)
 {
@@ -334,14 +334,15 @@ STATIC INLINE VOID OsSchedSetNextExpireTime(UINT64 startTime, UINT32 responseID,
     UINT64 nextResponseTime;
     BOOL isTimeSlice = FALSE;
 
-    currCpu->schedFlag &= ~INT_PEND_TICK;
+    currCpu->schedFlag &= ~INT_PEND_TICK; //撕掉调度标签
     if (currCpu->responseID == oldResponseID) {
-        /* This time has expired, and the next time the theory has expired is infinite */
+        /* This time has expired, and the next time the theory has expired is infinite | 这一次已经过期，下次从理论上讲是不过期*/
         currCpu->responseTime = OS_SCHED_MAX_RESPONSE_TIME;
     }
 
     /* The current thread's time slice has been consumed, but the current system lock task cannot
-     * trigger the schedule to release the CPU
+     * trigger the schedule to release the CPU 
+     * 当前任务的时间片没了,但内核锁住了任务无法释放CPU时需要将 isTimeSlice = TRUE
      */
     if ((nextExpireTime > taskEndTime) && ((nextExpireTime - taskEndTime) > OS_SCHED_MINI_PERIOD)) {
         nextExpireTime = taskEndTime;
@@ -362,21 +363,21 @@ STATIC INLINE VOID OsSchedSetNextExpireTime(UINT64 startTime, UINT32 responseID,
 
     OsSchedTickReload(currCpu, nextResponseTime, responseID, isTimeSlice);
 }
-
+/// 更新过期时间
 VOID OsSchedUpdateExpireTime(UINT64 startTime)
 {
     UINT64 endTime;
     Percpu *cpu = OsPercpuGet();
     LosTaskCB *runTask = OsCurrTaskGet();
 
-    if (!OS_SCHEDULER_ACTIVE || OS_INT_ACTIVE) {
-        cpu->schedFlag |= INT_PEND_TICK;
+    if (!OS_SCHEDULER_ACTIVE || OS_INT_ACTIVE) {//如果中断发生中或调度未发生
+        cpu->schedFlag |= INT_PEND_TICK;//因为时间到了,所以贴上因时间引起的调度标签
         return;
     }
 
-    if (runTask->policy == LOS_SCHED_RR) {
+    if (runTask->policy == LOS_SCHED_RR) {//抢占式调度计算出当前任务的到期时间,时间到了就需要切换到其他任务运行
         LOS_SpinLock(&g_taskSpin);
-        INT32 timeSlice = (runTask->timeSlice <= OS_TIME_SLICE_MIN) ? runTask->initTimeSlice : runTask->timeSlice;
+        INT32 timeSlice = (runTask->timeSlice <= OS_TIME_SLICE_MIN) ? runTask->initTimeSlice : runTask->timeSlice;//修改时间片,以时钟周期为单位
         LOS_SpinUnlock(&g_taskSpin);
         endTime = startTime + timeSlice;
     } else {
@@ -417,14 +418,14 @@ STATIC INLINE VOID OsSchedPriQueueEnHead(UINT32 proPriority, LOS_DL_LIST *prique
         g_sched->queueBitmap |= PRIQUEUE_PRIOR0_BIT >> proPriority;
     }
 
-    if (LOS_ListEmpty(&priQueueList[priority])) {
-        *bitMap |= PRIQUEUE_PRIOR0_BIT >> priority;
+    if (LOS_ListEmpty(&priQueueList[priority])) { //链表为空
+        *bitMap |= PRIQUEUE_PRIOR0_BIT >> priority;//对应位 置0
     }
 
-    LOS_ListHeadInsert(&priQueueList[priority], priqueueItem);
-    queueList->readyTasks[priority]++;
+    LOS_ListHeadInsert(&priQueueList[priority], priqueueItem);//从就绪任务链表头部插入
+    queueList->readyTasks[priority]++;//就绪任务数增加
 }
-
+/// 从就绪任务优先级链表尾部插入
 STATIC INLINE VOID OsSchedPriQueueEnTail(UINT32 proPriority, LOS_DL_LIST *priqueueItem, UINT32 priority)
 {
     SchedQueue *queueList = &g_sched->queueList[proPriority];
@@ -655,9 +656,9 @@ VOID OsSchedTaskExit(LosTaskCB *taskCB)
         taskCB->taskStatus &= ~OS_TASK_STATUS_PENDING;////任务贴上非挂起标签
     }
 
-    if (taskCB->taskStatus & (OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME)) {
-        OsDeleteSortLink(&taskCB->sortList, OS_SORT_LINK_TASK);
-        taskCB->taskStatus &= ~(OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME);
+    if (taskCB->taskStatus & (OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME)) {//如果任务延期或因时挂起
+        OsDeleteSortLink(&taskCB->sortList, OS_SORT_LINK_TASK);//从CPU的等待执行任务链表上摘除任务
+        taskCB->taskStatus &= ~(OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME);//撕掉这两个标签
     }
 }
 ///通过本函数可以看出 yield 的真正含义是主动让出CPU,那怎么安置自己呢? 跑到末尾重新排队. 真是个活雷锋,好同志啊!!!

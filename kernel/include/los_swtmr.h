@@ -269,7 +269,7 @@ typedef struct tagSwTmrCtrl {
     UINT8 ucState;      /**< Software timer state | 软件定时器的状态*/
     UINT8 ucMode;       /**< Software timer mode | 软件定时器的模式*/
     UINT16 usTimerID;   /**< Software timer ID | 软件定时器ID,唯一标识,由软件计时器池分配*/
-    UINT32 uwOverrun;    /**< Times that a software timer repeats timing */
+    UINT32 uwOverrun;    /**< Times that a software timer repeats timing | 软件定时器重复执行的次数*/
     UINT32 uwCount;     /**< Times that a software timer works | 软件定时器工作的时间*/
     UINT32 uwInterval;  /**< Timeout interval of a periodic software timer | 周期性软件定时器的超时间隔*/
     UINT32 uwExpiry;    /**< Timeout interval of an one-off software timer | 一次性软件定时器的超时间隔*/
@@ -277,7 +277,7 @@ typedef struct tagSwTmrCtrl {
                              that handles software timer timeout is called | 回调函数的参数*/
     SWTMR_PROC_FUNC pfnHandler; /**< Callback function that handles software timer timeout | 处理软件计时器超时的回调函数*/
     UINT32          uwOwnerPid; /**< Owner of this software timer | 软件定时器所属进程ID号*/
-    UINT64 startTime;  /**< Software timer start time */
+    UINT64 startTime;  /**< Software timer start time | 定时器开始时间 */
 } SWTMR_CTRL_S;
 
 /**

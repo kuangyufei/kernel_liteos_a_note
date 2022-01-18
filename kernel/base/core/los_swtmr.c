@@ -251,15 +251,15 @@ LITE_OS_SEC_TEXT VOID OsSwtmrStart(UINT64 currTime, SWTMR_CTRL_S *swtmr)
 
     if ((swtmr->uwOverrun == 0) && ((swtmr->ucMode == LOS_SWTMR_MODE_ONCE) ||
         (swtmr->ucMode == LOS_SWTMR_MODE_OPP) ||
-        (swtmr->ucMode == LOS_SWTMR_MODE_NO_SELFDELETE))) {
-        ticks = swtmr->uwExpiry;
+        (swtmr->ucMode == LOS_SWTMR_MODE_NO_SELFDELETE))) {//如果是一次性的定时器
+        ticks = swtmr->uwExpiry; //获取时间间隔
     } else {
-        ticks = swtmr->uwInterval;
+        ticks = swtmr->uwInterval;//获取周期性定时器时间间隔
     }
-    swtmr->ucState = OS_SWTMR_STATUS_TICKING;
+    swtmr->ucState = OS_SWTMR_STATUS_TICKING;//计数状态
 
-    OsAdd2SortLink(&swtmr->stSortList, swtmr->startTime, ticks, OS_SORT_LINK_SWTMR);
-    OsSchedUpdateExpireTime(currTime);
+    OsAdd2SortLink(&swtmr->stSortList, swtmr->startTime, ticks, OS_SORT_LINK_SWTMR);//加入链表中, 定时器任务将在tick处理函数中检查是否到期
+    OsSchedUpdateExpireTime(currTime);//更新过期时间
     return;
 }
 
@@ -288,8 +288,8 @@ STATIC INLINE VOID OsWakePendTimeSwtmr(Percpu *cpu, UINT64 currTime, SWTMR_CTRL_
         }
     }
 
-    if (swtmr->ucMode == LOS_SWTMR_MODE_ONCE) {
-        OsSwtmrDelete(swtmr);
+    if (swtmr->ucMode == LOS_SWTMR_MODE_ONCE) {//如果定时器只跑一次
+        OsSwtmrDelete(swtmr);//删除定时器
 
         if (swtmr->usTimerID < (OS_SWTMR_MAX_TIMERID - LOSCFG_BASE_CORE_SWTMR_LIMIT)) {
             swtmr->usTimerID += LOSCFG_BASE_CORE_SWTMR_LIMIT;
@@ -300,7 +300,7 @@ STATIC INLINE VOID OsWakePendTimeSwtmr(Percpu *cpu, UINT64 currTime, SWTMR_CTRL_
         swtmr->ucState = OS_SWTMR_STATUS_CREATED;
     } else {
         swtmr->uwOverrun++;
-        OsSwtmrStart(currTime, swtmr);
+        OsSwtmrStart(currTime, swtmr);//开始定时器
     }
 
     LOS_SpinUnlock(&g_swtmrSpin);
