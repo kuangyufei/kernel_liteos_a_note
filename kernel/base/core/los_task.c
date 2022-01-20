@@ -186,7 +186,7 @@ VOID OsSetMainTask()
 LITE_OS_SEC_TEXT WEAK VOID OsIdleTask(VOID)
 {
     while (1) {//只有一个死循环
-        WFI;
+        WFI;//WFI指令:arm core 立即进入low-power standby state，进入休眠模式，等待中断。
     }
 }
 
@@ -717,9 +717,6 @@ LITE_OS_SEC_TEXT LosTaskCB *OsGetFreeTaskCB(VOID)
     if (LOS_ListEmpty(&g_losFreeTask)) {//全局空闲task为空
         SCHEDULER_UNLOCK(intSave);
         PRINT_ERR("No idle TCB in the system!\n");
-#ifdef LOSCFG_DEBUG_VERSION
-	(VOID)OsShellCmdTskInfoGet(OS_ALL_TASK_MASK, NULL, OS_PROCESS_INFO_ALL);
-#endif
         return NULL;
     }
 

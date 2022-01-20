@@ -68,6 +68,11 @@ STATIC INLINE VOID OsClearPte1(PTE_T *pte1Ptr)
 {
     OsSavePte1(pte1Ptr, 0);
 }
+
+STATIC INLINE PADDR_T OsGetPte1Paddr(PADDR_T PhysTtb, vaddr_t va)
+{
+    return (PhysTtb + (OsGetPte1Index(va) * sizeof(PADDR_T)));
+}
 ///pte1BasePtr L1 转换页表基地址
 STATIC INLINE PTE_T *OsGetPte1Ptr(PTE_T *pte1BasePtr, vaddr_t va)
 {

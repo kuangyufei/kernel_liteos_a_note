@@ -5,15 +5,15 @@
 # are permitted provided that the following conditions are met:
 #
 # 1. Redistributions of source code must retain the above copyright notice, this list of
-# conditions and the following disclaimer.
+#    conditions and the following disclaimer.
 #
 # 2. Redistributions in binary form must reproduce the above copyright notice, this list
-# of conditions and the following disclaimer in the documentation and/or other materials
-# provided with the distribution.
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
 #
 # 3. Neither the name of the copyright holder nor the names of its contributors may be used
-# to endorse or promote products derived from this software without specific prior written
-# permission.
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
@@ -26,6 +26,8 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+TEST_UNITTEST_DIR = rebase_path(".")
 
 TEST_LEVEL_LOW = 1
 TEST_LEVEL_MIDDLE = 3
@@ -42,36 +44,83 @@ LOSCFG_USER_TEST_LEVEL = TEST_LEVEL_HIGH
 # "disable": those testsuites is disable
 LOSCFG_USER_TEST_SMP = "default"
 
-LOSCFG_USER_TEST_MISC = true
-LOSCFG_USER_TEST_DRIVERS_HID = true
-LOSCFG_USER_TEST_DRIVERS_STORAGE = true
+########## basic test ##########
+# Control switch for basic function test
+LOSCFG_USER_TEST_BASIC = true
+
+# Module list
 LOSCFG_USER_TEST_DYNLOAD = true
 LOSCFG_USER_TEST_EXC = true
+LOSCFG_USER_TEST_MEM_SHM = true
+LOSCFG_USER_TEST_MEM_VM = true
+
+########## process test ##########
+# Control switch for process&pthread function test
+LOSCFG_USER_TEST_PROCESS_THREAD = true
+
+# Module list
+LOSCFG_USER_TEST_MUTEX = true
+LOSCFG_USER_TEST_PROCESS = true
+LOSCFG_USER_TEST_PTHREAD = true
+LOSCFG_USER_TEST_RWLOCK = true
+LOSCFG_USER_TEST_SPINLOCK = true
+
+########## extended test ##########
+# Control switch for extended function test
+LOSCFG_USER_TEST_EXTENDED = true
+
+# Module list
+LOSCFG_USER_TEST_IPC = false
+LOSCFG_USER_TEST_LITEIPC = false
+LOSCFG_USER_TEST_SIGNAL = true
+LOSCFG_USER_TEST_TRACE = false
+
+########## drivers test ##########
+# Control switch for drivers function test
+LOSCFG_USER_TEST_DRIVERS = true
+
+# Module list
+LOSCFG_USER_TEST_DRIVERS_HID = true
+LOSCFG_USER_TEST_DRIVERS_STORAGE = true
+
+########## fs test ##########
+# Control switch for fs function test
+LOSCFG_USER_TEST_FS = true
+
+# Module list
 LOSCFG_USER_TEST_FS_JFFS = false
 LOSCFG_USER_TEST_FS_PROC = false
 LOSCFG_USER_TEST_FS_VFAT = false
+
+########## libc test ##########
+# Control switch for libc & posix function test
+LOSCFG_USER_TEST_LIBC = true
+
+# Module list
 LOSCFG_USER_TEST_IO = true
-LOSCFG_USER_TEST_IPC = false
-LOSCFG_USER_TEST_LITEIPC = false
-LOSCFG_USER_TEST_MEM_VM = true
-LOSCFG_USER_TEST_MEM_SHM = true
-LOSCFG_USER_TEST_NET_NETDB = true
-LOSCFG_USER_TEST_NET_RESOLV = true
-LOSCFG_USER_TEST_NET_SOCKET = true
-LOSCFG_USER_TEST_POSIX_PTHREAD = false
-LOSCFG_USER_TEST_POSIX_MQUEUE = true
+LOSCFG_USER_TEST_MISC = true
 LOSCFG_USER_TEST_POSIX_MEM = true
-LOSCFG_USER_TEST_SPINLOCK = true
-LOSCFG_USER_TEST_RWLOCK = true
-LOSCFG_USER_TEST_PTHREAD = true
-LOSCFG_USER_TEST_PROCESS = true
-LOSCFG_USER_TEST_MUTEX = true
-LOSCFG_USER_TEST_SECURITY_CAPABILITY = true
-LOSCFG_USER_TEST_SECURITY_VID = true
-LOSCFG_USER_TEST_SECURITY_REUGID = true
-LOSCFG_USER_TEST_SIGNAL = true
+LOSCFG_USER_TEST_POSIX_MQUEUE = true
+LOSCFG_USER_TEST_POSIX_PTHREAD = false
 LOSCFG_USER_TEST_SYS = true
 LOSCFG_USER_TEST_TIME_CLOCK = true
 LOSCFG_USER_TEST_TIME_TIMER = true
 LOSCFG_USER_TEST_UTIL = true
-LOSCFG_USER_TEST_TRACE = false
+
+########## net test ##########
+# Control switch for network function test
+LOSCFG_USER_TEST_NET = true
+
+# Module list
+LOSCFG_USER_TEST_NET_NETDB = true
+LOSCFG_USER_TEST_NET_RESOLV = true
+LOSCFG_USER_TEST_NET_SOCKET = true
+
+########## security test ##########
+# Control switch for security function test
+LOSCFG_USER_TEST_SECURITY = true
+
+# Module list
+LOSCFG_USER_TEST_SECURITY_CAPABILITY = true
+LOSCFG_USER_TEST_SECURITY_REUGID = true
+LOSCFG_USER_TEST_SECURITY_VID = true

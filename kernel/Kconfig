@@ -60,6 +60,13 @@ config KERNEL_SYSCALL
     help
       This option will enable syscall.
 
+config PAGE_TABLE_FINE_LOCK
+    bool "Enable fine lock for page table"
+    default n
+    depends on KERNEL_VM
+    help
+      This option will enable fine lock for page table.
+
 ######################### config options of extended #####################
 source "kernel/extended/Kconfig"
 

@@ -319,7 +319,7 @@ STATIC INLINE VOID OsWakePendTimeSwtmr(Percpu *cpu, UINT64 currTime, SWTMR_CTRL_
 LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)
 {
     Percpu *cpu = OsPercpuGet();//获取当前CPU
-    SortLinkAttribute* swtmrSortLink = &OsPercpuGet()->swtmrSortLink;//获取需由CPU处理的软件定时器总信息
+    SortLinkAttribute* swtmrSortLink = &cpu->swtmrSortLink;//获取需由CPU处理的软件定时器总信息
     LOS_DL_LIST *listObject = &swtmrSortLink->sortLink;//获取定时器链表,上面挂的是等待时间到触发的定时器
 
     /*
@@ -353,6 +353,33 @@ LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)
         sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);//继续下一个节点
     }
 
+    LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
+}
+
+LITE_OS_SEC_TEXT VOID OsSwtmrResponseTimeReset(UINT64 startTime)
+{
+    UINT32 intSave;
+    Percpu *cpu = OsPercpuGet();
+    SortLinkAttribute* swtmrSortLink = &cpu->swtmrSortLink;
+    LOS_DL_LIST *listHead = &swtmrSortLink->sortLink;
+    LOS_DL_LIST *listNext = listHead->pstNext;
+
+    LOS_SpinLock(&cpu->swtmrSortLinkSpin);
+    while (listNext != listHead) {
+        SortLinkList *sortList = LOS_DL_LIST_ENTRY(listNext, SortLinkList, sortLinkNode);
+        OsDeleteNodeSortLink(swtmrSortLink, sortList);
+        LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
+
+        SWTMR_CTRL_S *swtmr = LOS_DL_LIST_ENTRY(sortList, SWTMR_CTRL_S, stSortList);
+
+        SWTMR_LOCK(intSave);
+        swtmr->startTime = startTime;
+        OsSwtmrStart(startTime, swtmr);
+        SWTMR_UNLOCK(intSave);
+
+        LOS_SpinLock(&cpu->swtmrSortLinkSpin);
+        listNext = listNext->pstNext;
+    }
     LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
 }
 

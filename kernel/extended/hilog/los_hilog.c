@@ -239,7 +239,7 @@ static void HiLogHeadInit(struct HiLogEntry *header, size_t len)
 
     ret = clock_gettime(CLOCK_REALTIME, &now);//获取系统实时时间
     if (ret != 0) {
-        dprintf("In %s line %d,clock_gettime fail", __FUNCTION__, __LINE__);
+        dprintf("In %s line %d,clock_gettime fail\n", __FUNCTION__, __LINE__);
         return;
     }
 
@@ -256,7 +256,9 @@ static void HiLogCoverOldLog(size_t bufLen)
     int retval;
     struct HiLogEntry header;
     size_t totalSize = bufLen + sizeof(struct HiLogEntry);
-    int dropLogLines = 0;
+    static int dropLogLines = 0;
+    static int isLastTimeFull = 0;
+    int isThisTimeFull = 0;
 
     while (totalSize + g_hiLogDev.size > HILOG_BUFFER) {
         retval = HiLogReadRingBuffer((unsigned char *)&header, sizeof(header));
@@ -265,11 +267,18 @@ static void HiLogCoverOldLog(size_t bufLen)
         }
 
         dropLogLines++;
+        isThisTimeFull = 1;
+        isLastTimeFull = 1;
         HiLogBufferDec(sizeof(header));
         HiLogBufferDec(header.len);
     }
-    if (dropLogLines > 0) {
-        dprintf("hilog ringbuffer full, drop %d line(s) log", dropLogLines);
+    if (isLastTimeFull == 1 && isThisTimeFull == 0) {
+        /* so we can only print one log if hilog ring buffer is full in a short time */
+        if (dropLogLines > 0) {
+            dprintf("hilog ringbuffer full, drop %d line(s) log\n", dropLogLines);
+        }
+        isLastTimeFull = 0;
+        dropLogLines = 0;
     }
 }
 ///将外部buf写入hilog设备分两步完成
@@ -331,7 +340,7 @@ static void HiLogDeviceInit(void)
 {
     g_hiLogDev.buffer = LOS_MemAlloc((VOID *)OS_SYS_MEM_ADDR, HILOG_BUFFER);//分配内核空间
     if (g_hiLogDev.buffer == NULL) {
-        dprintf("In %s line %d,LOS_MemAlloc fail", __FUNCTION__, __LINE__);
+        dprintf("In %s line %d,LOS_MemAlloc fail\n", __FUNCTION__, __LINE__);
     }
 	//初始化waitqueue头,请确保输入参数wait有效，否则系统将崩溃。
     init_waitqueue_head(&g_hiLogDev.wq);//见于..\third_party\FreeBSD\sys\compat\linuxkpi\common\src\linux_semaphore.c

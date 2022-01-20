@@ -1,0 +1,84 @@
+# Copyright (c) 2022-2022 Huawei Device Co., Ltd. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import("//kernel/liteos_a/testsuites/unittest/config.gni")
+
+io_include_dirs = [ "$TEST_UNITTEST_DIR/libc/io" ]
+
+io_sources_entry = [ "$TEST_UNITTEST_DIR/libc/io/io_test.cpp" ]
+
+io_sources_smoke = [
+  "$TEST_UNITTEST_DIR/libc/io/smoke/IO_test_005.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/smoke/IO_test_008.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/smoke/IO_test_010.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/smoke/IO_test_013.cpp",
+]
+
+io_sources_full = [
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_confstr_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_dcgettext_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_dcgettext_002.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_dcngettext_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_dcngettext_002.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_dngettext_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_dngettext_002.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_duplocale_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_locale_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_locale_002.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_ngettext_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_nl_langinfo_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_nl_langinfo_l_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_strcasecmp_l_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_strcasecmp_l_002.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_strfmon_l_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_strfmon_l_002.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/It_locale_localeconv_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/It_stdio_fputws_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/It_stdio_fwprintf_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/It_stdio_getc_unlocked_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/It_stdio_hasmntopt_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/It_stdio_mblen_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/It_stdio_mbrlen_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/It_stdio_putwc_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/It_stdio_readv_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/It_stdio_rindex_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/It_stdio_setlogmask_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/It_stdlib_gcvt_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/It_stdlib_poll_002.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/It_stdlib_poll_003.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_gettext_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_strncasecmp_l_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_strncasecmp_l_002.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_ppoll_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_ppoll_002.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_ppoll_003.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_pselect_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_pselect_002.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_epoll_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/io/full/IO_test_epoll_002.cpp",
+]

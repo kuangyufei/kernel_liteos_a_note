@@ -104,6 +104,7 @@ extern VOID OsSwtmrScan(VOID);
 extern UINT32 OsSwtmrInit(VOID);
 extern VOID OsSwtmrTask(VOID);
 extern VOID OsSwtmrRecycle(UINT32 processID);
+extern VOID OsSwtmrResponseTimeReset(UINT64 startTime);
 extern SPIN_LOCK_S g_swtmrSpin;
 #ifdef __cplusplus
 #if __cplusplus

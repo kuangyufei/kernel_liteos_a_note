@@ -50,6 +50,9 @@ STATIC VOID OsVmPageInit(LosVmPage *page, paddr_t pa, UINT8 segID)
     page->segID = segID;				//物理地址使用段管理，段ID
     page->order = VM_LIST_ORDER_MAX;	//初始化值,不属于任何块组
     page->nPages = 0;
+#ifdef LOSCFG_PAGE_TABLE_FINE_LOCK
+    LOS_SpinInit(&page->lock);
+#endif
 }
 ///伙伴算法初始化
 STATIC INLINE VOID OsVmPageOrderListInit(LosVmPage *page, size_t nPages)

@@ -420,7 +420,7 @@ STATIC UINTPTR OsDoMmapFile(INT32 fd, UINTPTR addr, const LD_ELF_PHDR *elfPhdr, 
     return mapAddr;
 }
 
-INT32 OsGetKernelVaddr(const LosVmSpace *space, VADDR_T vaddr, VADDR_T *kvaddr)
+INT32 OsGetKernelVaddr(LosVmSpace *space, VADDR_T vaddr, VADDR_T *kvaddr)
 {
     INT32 ret;
     PADDR_T paddr = 0;

@@ -1,0 +1,121 @@
+# Copyright (c) 2022-2022 Huawei Device Co., Ltd. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import("//build/lite/config/test.gni")
+import("//kernel/liteos_a/testsuites/unittest/config.gni")
+
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../common/include",
+]
+
+sources_entry = [ "../common/osTest.cpp" ]
+
+sources_smoke = []
+
+sources_full = []
+
+# io module
+if (LOSCFG_USER_TEST_IO == true) {
+  import("./io/config.gni")
+  common_include_dirs += io_include_dirs
+  sources_entry += io_sources_entry
+  sources_smoke += io_sources_smoke
+  sources_full += io_sources_full
+}
+
+# misc module
+if (LOSCFG_USER_TEST_MISC == true) {
+  import("./misc/config.gni")
+  common_include_dirs += misc_include_dirs
+  sources_entry += misc_sources_entry
+  sources_smoke += misc_sources_smoke
+  sources_full += misc_sources_full
+}
+
+# posix mem module
+if (LOSCFG_USER_TEST_POSIX_MEM == true) {
+  import("./posix/mem/config.gni")
+  common_include_dirs += posix_mem_include_dirs
+  sources_entry += posix_mem_sources_entry
+  sources_smoke += posix_mem_sources_smoke
+  sources_full += posix_mem_sources_full
+}
+
+# posix mqueue module
+if (LOSCFG_USER_TEST_POSIX_MQUEUE == true) {
+  import("./posix/mqueue/config.gni")
+  common_include_dirs += posix_mqueue_include_dirs
+  sources_entry += posix_mqueue_sources_entry
+  sources_smoke += posix_mqueue_sources_smoke
+  sources_full += posix_mqueue_sources_full
+}
+
+# posix pthread module
+if (LOSCFG_USER_TEST_POSIX_PTHREAD == true) {
+  import("./posix/pthread/config.gni")
+  common_include_dirs += posix_pthread_include_dirs
+  sources_entry += posix_pthread_sources_entry
+  sources_smoke += posix_pthread_sources_smoke
+  sources_full += posix_pthread_sources_full
+}
+
+# sys module
+if (LOSCFG_USER_TEST_SYS == true) {
+  import("./sys/config.gni")
+  common_include_dirs += sys_include_dirs
+  sources_entry += sys_sources_entry
+  sources_smoke += sys_sources_smoke
+  sources_full += sys_sources_full
+}
+
+# time module
+if (LOSCFG_USER_TEST_TIME_CLOCK == true) {
+  import("./time/clock/config.gni")
+  common_include_dirs += time_clock_include_dirs
+  sources_entry += time_clock_sources_entry
+  sources_smoke += time_clock_sources_smoke
+  sources_full += time_clock_sources_full
+}
+
+if (LOSCFG_USER_TEST_TIME_TIMER == true) {
+  import("./time/timer/config.gni")
+  common_include_dirs += time_timer_include_dirs
+  sources_entry += time_timer_sources_entry
+  sources_smoke += time_timer_sources_smoke
+  sources_full += time_timer_sources_full
+}
+
+# util module
+if (LOSCFG_USER_TEST_UTIL == true) {
+  import("./util/config.gni")
+  common_include_dirs += util_include_dirs
+  sources_entry += util_sources_entry
+  sources_smoke += util_sources_smoke
+  sources_full += util_sources_full
+}

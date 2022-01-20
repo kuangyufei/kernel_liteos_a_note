@@ -208,6 +208,7 @@ OsKernelTaskLoad: 			//内核任务的加载
     ADD     SP, SP, #(4 * 4)
     LDMFD   SP!, {R0-R3, R12, LR}
     RFEIA   SP!
+
 OsIrqHandler:
     SUB     LR, LR, #4	//记录译码指令地址,以防切换过程丢失指令.
 
@@ -215,6 +216,7 @@ OsIrqHandler:
     SRSFD   #0x13!
     /* disable irq, switch to svc mode *///超级用户模式(SVC 模式)，主要用于 SWI(软件中断)和 OS(操作系统)。
     CPSID   i, #0x13
+
 #ifdef LOSCFG_KERNEL_PERF
     PUSH    {R0-R3, R12, LR}
     MOV     R0, LR

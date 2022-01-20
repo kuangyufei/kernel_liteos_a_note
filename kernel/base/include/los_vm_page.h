@@ -36,6 +36,7 @@
 #include "los_bitmap.h"
 #include "los_list.h"
 #include "los_atomic.h"
+#include "los_spinlock.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -58,6 +59,9 @@ typedef struct VmPage {
     UINT8               order;       /**< vm page in which order list | 被安置在伙伴算法的几号序列(              2^0,2^1,2^2,...,2^order)*/
     UINT8               segID;       /**< the segment id of vm page | 所属物理内存段编号ID*/
     UINT16              nPages;      /**< the vm page is used for kernel heap | 分配页数,标识从本页开始连续的几页将一块被分配*/
+#ifdef LOSCFG_PAGE_TABLE_FINE_LOCK
+    SPIN_LOCK_S         lock;        /**< lock for page table entry */
+#endif
 } LosVmPage;
 
 extern LosVmPage *g_vmPageArray;    ///< 物理页框(page frame)池,在g_vmPageArray中:不可能存在两个物理地址一样的物理页框,

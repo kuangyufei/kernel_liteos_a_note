@@ -85,30 +85,7 @@ STATIC INLINE VOID OsAddNode2SortLink(SortLinkAttribute *sortLinkHeader, SortLin
         prevNode = prevNode->pstPrev;//再拿上一个更小的responseTime进行比较
     } while (1);//死循环
 }
-/// 从排序链表上摘除指定节点
-VOID OsDeleteNodeSortLink(SortLinkAttribute *sortLinkHeader, SortLinkList *sortList)
-{
-    LOS_ListDelete(&sortList->sortLinkNode);//摘除工作量
-    SET_SORTLIST_VALUE(sortList, OS_SORT_LINK_INVALID_TIME);//重置响应时间
-    sortLinkHeader->nodeNum--;//cpu的工作量减少一份
-}
-/// 获取下一个结点的到期时间
-STATIC INLINE UINT64 OsGetSortLinkNextExpireTime(SortLinkAttribute *sortHeader, UINT64 startTime)
-{
-    LOS_DL_LIST *head = &sortHeader->sortLink;
-    LOS_DL_LIST *list = head->pstNext;
 
-    if (LOS_ListEmpty(head)) {//链表为空
-        return OS_SCHED_MAX_RESPONSE_TIME - OS_TICK_RESPONSE_PRECISION;
-    }
-
-    SortLinkList *listSorted = LOS_DL_LIST_ENTRY(list, SortLinkList, sortLinkNode);//获取结点实体
-    if (listSorted->responseTime <= (startTime + OS_TICK_RESPONSE_PRECISION)) { //没看明白 @note_thinking 
-        return startTime + OS_TICK_RESPONSE_PRECISION;
-    }
-
-    return listSorted->responseTime;
-}
 /// 根据函数的具体实现,这个函数应该是找出最空闲的CPU, 函数的实现有待优化, @note_thinking 
 STATIC Percpu *OsFindIdleCpu(UINT16 *idleCpuID)
 {
@@ -136,7 +113,6 @@ STATIC Percpu *OsFindIdleCpu(UINT16 *idleCpuID)
 /// 向cpu的排序链表上添加指定节点
 VOID OsAdd2SortLink(SortLinkList *node, UINT64 startTime, UINT32 waitTicks, SortLinkType type)
 {
-    UINT32 intSave;
     Percpu *cpu = NULL;
     SortLinkAttribute *sortLinkHeader = NULL;
     SPIN_LOCK_S *spinLock = NULL;
@@ -159,7 +135,7 @@ VOID OsAdd2SortLink(SortLinkList *node, UINT64 startTime, UINT32 waitTicks, Sort
         LOS_Panic("Sort link type error : %u\n", type);
     }
 
-    LOS_SpinLockSave(spinLock, &intSave);
+    LOS_SpinLock(spinLock);
     SET_SORTLIST_VALUE(node, startTime + (UINT64)waitTicks * OS_CYCLE_PER_TICK);//设置节点响应时间
     OsAddNode2SortLink(sortLinkHeader, node);//插入节点
 #ifdef LOSCFG_KERNEL_SMP
@@ -168,12 +144,11 @@ VOID OsAdd2SortLink(SortLinkList *node, UINT64 startTime, UINT32 waitTicks, Sort
         LOS_MpSchedule(CPUID_TO_AFFI_MASK(idleCpu));//核间中断,对该CPU发生一次调度申请
     }
 #endif
-    LOS_SpinUnlockRestore(spinLock, intSave);
+    LOS_SpinUnlock(spinLock);
 }
 /// 从cpu的排序链表上摘除指定节点
 VOID OsDeleteSortLink(SortLinkList *node, SortLinkType type)
 {
-    UINT32 intSave;
 #ifdef LOSCFG_KERNEL_SMP
     Percpu *cpu = OsPercpuGetByID(node->cpuid);//获取CPU
 #else
@@ -192,37 +167,11 @@ VOID OsDeleteSortLink(SortLinkList *node, SortLinkType type)
         LOS_Panic("Sort link type error : %u\n", type);
     }
 
-    LOS_SpinLockSave(spinLock, &intSave);
+    LOS_SpinLock(spinLock);
     if (node->responseTime != OS_SORT_LINK_INVALID_TIME) {
         OsDeleteNodeSortLink(sortLinkHeader, node);//从CPU的执行链表上摘除
     }
-    LOS_SpinUnlockRestore(spinLock, intSave);
-}
-
-/*!
- * @brief OsGetNextExpireTime 获取下一个最容易超时的任务	
- *
- * @param startTime	
- * @return	
- *
- * @see
- */
-UINT64 OsGetNextExpireTime(UINT64 startTime)
-{
-    UINT32 intSave;
-    Percpu *cpu = OsPercpuGet();//获取当前CPU
-    SortLinkAttribute *taskHeader = &cpu->taskSortLink;//获取当前CPU的任务排序链表
-    SortLinkAttribute *swtmrHeader = &cpu->swtmrSortLink;//获取当前CPU的软件定时器排序链表
-
-    LOS_SpinLockSave(&cpu->taskSortLinkSpin, &intSave);
-    UINT64 taskExpirTime = OsGetSortLinkNextExpireTime(taskHeader, startTime);//拿到下一个到期时间,注意此处拿到的一定是最短的时间
-    LOS_SpinUnlockRestore(&cpu->taskSortLinkSpin, intSave);
-
-    LOS_SpinLockSave(&cpu->swtmrSortLinkSpin, &intSave);
-    UINT64 swtmrExpirTime = OsGetSortLinkNextExpireTime(swtmrHeader, startTime);//从软件定时器中拿
-    LOS_SpinUnlockRestore(&cpu->swtmrSortLinkSpin, intSave);
-
-    return (taskExpirTime < swtmrExpirTime) ? taskExpirTime : swtmrExpirTime;//比较返回更短的那个.
+    LOS_SpinUnlock(spinLock);
 }
 
 /*!

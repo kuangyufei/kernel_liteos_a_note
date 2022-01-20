@@ -1,0 +1,114 @@
+# Copyright (c) 2022-2022 Huawei Device Co., Ltd. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import("//kernel/liteos_a/testsuites/unittest/config.gni")
+
+process_include_dirs = [ "$TEST_UNITTEST_DIR/process/basic/process" ]
+
+process_sources_entry =
+    [ "$TEST_UNITTEST_DIR/process/basic/process/process_process_test.cpp" ]
+
+process_sources_smoke = [
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_001.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_002.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_004.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_005.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_006.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_008.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_009.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_010.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_011.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_012.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_013.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_014.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_015.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_016.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_017.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_018.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_019.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_020.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_021.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_022.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_023.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_024.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_025.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_026.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_027.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_029.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_030.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_038.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_039.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_043.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_044.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_045.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_046.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_047.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_048.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_054.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_061.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smp/process_test_smp_001.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smp/process_test_smp_002.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smp/process_test_smp_003.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smp/process_test_smp_004.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smp/process_test_smp_005.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smp/process_test_smp_006.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smp/process_test_smp_007.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/smp/process_test_smp_008.cpp",
+]
+
+process_sources_full = [
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_007.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_031.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_032.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_033.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_034.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_035.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_036.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_037.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_040.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_041.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_042.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_049.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_050.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_051.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_055.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_056.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_057.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_058.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_059.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_060.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_063.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_064.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_065.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_066.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_067.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_068.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_069.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_053.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_062.cpp",
+]

@@ -72,7 +72,10 @@
 #define __LOS_ARCH_MMU_H__
 
 #include "los_typedef.h"
-#include "los_mux.h"
+#include "los_vm_phys.h"
+#ifndef LOSCFG_PAGE_TABLE_FINE_LOCK
+#include "los_spinlock.h"
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -80,9 +83,10 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-
 typedef struct ArchMmu {//内存管理单元
-    LosMux              mtx;            /**< arch mmu page table entry modification mutex lock | 对页表操作的互斥量*/
+#ifndef LOSCFG_PAGE_TABLE_FINE_LOCK
+    SPIN_LOCK_S         lock;           /**< arch mmu page table entry modification spin lock */
+#endif
     VADDR_T             *virtTtb;       /**< translation table base virtual addr | 注意:这里是个指针,内核操作都用这个地址*/
     PADDR_T             physTtb;        /**< translation table base phys addr | 注意:这里是个值,这个值是记录给MMU使用的,MMU只认它,内核是无法使用的*/
     UINT32              asid;           /**< TLB asid | 标识进程用的，由mmu初始化阶段申请分配，有了它在mmu层面才知道是哪个进程的虚拟地址*/
@@ -106,5 +110,5 @@ VADDR_T *OsGFirstTableGet(VOID);
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#endif /* __LOS_VM_PAGE_H__ */
+#endif /* __LOS_ARCH_MMU_H__ */
 

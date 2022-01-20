@@ -1,0 +1,65 @@
+# Copyright (c) 2022-2022 Huawei Device Co., Ltd. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import("//kernel/liteos_a/testsuites/unittest/config.gni")
+
+mutex_include_dirs = [ "$TEST_UNITTEST_DIR/process/lock/mutex" ]
+
+mutex_sources_entry =
+    [ "$TEST_UNITTEST_DIR/process/lock/mutex/process_mutex_test.cpp" ]
+
+mutex_sources_smoke = [
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_001.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_002.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_003.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_004.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_005.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_006.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_007.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_008.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_009.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_010.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_011.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_012.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_013.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_014.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_015.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_016.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_017.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_019.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_020.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_021.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/smoke/pthread_mutex_test_022.cpp",
+]
+
+mutex_sources_full = [
+  "$TEST_UNITTEST_DIR/process/lock/mutex/full/pthread_mutex_test_018.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/full/pthread_mutex_test_023.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/full/pthread_mutex_test_024.cpp",
+  "$TEST_UNITTEST_DIR/process/lock/mutex/full/pthread_mutex_test_025.cpp",
+]

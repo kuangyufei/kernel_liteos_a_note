@@ -67,7 +67,6 @@ extern "C" {
 #define QUOTES_STATUS_CLOSE(qu) ((qu) == FALSE)
 #define QUOTES_STATUS_OPEN(qu)  ((qu) == TRUE)
 
-typedef size_t bool;
 
 typedef struct {
     unsigned int   consoleID;	///< 控制台ID

@@ -1,0 +1,155 @@
+# Copyright (c) 2022-2022 Huawei Device Co., Ltd. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import("//kernel/liteos_a/testsuites/unittest/config.gni")
+
+posix_pthread_include_dirs = [ "$TEST_UNITTEST_DIR/libc/posix/pthread" ]
+
+posix_pthread_sources_entry =
+    [ "$TEST_UNITTEST_DIR/libc/posix/pthread/posix_pthread_test.cpp" ]
+
+posix_pthread_sources_smoke = [
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/smoke/It_posix_pthread_003.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/smoke/It_posix_pthread_004.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/smoke/It_posix_pthread_005.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/smoke/It_posix_pthread_006.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/smoke/It_posix_pthread_018.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/smoke/It_posix_pthread_019.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/smoke/It_posix_pthread_020.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/smoke/It_posix_pthread_021.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/smoke/It_posix_pthread_022.cpp",
+]
+
+posix_pthread_sources_full = [
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_001.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_002.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_007.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_010.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_011.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_013.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_023.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_025.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_026.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_027.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_028.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_029.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_030.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_031.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_034.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_035.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_039.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_040.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_042.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_044.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_045.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_046.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_051.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_052.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_053.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_054.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_055.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_057.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_059.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_060.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_061.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_062.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_063.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_064.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_066.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_069.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_070.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_071.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_072.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_073.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_074.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_078.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_079.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_080.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_081.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_082.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_083.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_084.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_085.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_087.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_088.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_089.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_090.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_091.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_092.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_094.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_095.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_106.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_107.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_116.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_123.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_124.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_125.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_127.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_129.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_132.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_133.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_134.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_136.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_138.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_141.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_142.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_144.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_152.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_154.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_166.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_167.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_173.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_175.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_176.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_177.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_182.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_185.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_186.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_187.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_188.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_193.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_194.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_200.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_203.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_204.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_205.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_206.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_209.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_213.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_217.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_218.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_219.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_221.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_224.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_226.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_233.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_238.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_239.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_240.cpp",
+  "$TEST_UNITTEST_DIR/libc/posix/pthread/full/It_posix_pthread_241.cpp",
+]

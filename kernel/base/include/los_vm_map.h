@@ -39,6 +39,7 @@
 
 #include "los_typedef.h"
 #include "los_arch_mmu.h"
+#include "los_mux.h"
 #include "los_rbtree.h"
 #include "los_vm_syscall.h"
 #include "los_vm_zone.h"

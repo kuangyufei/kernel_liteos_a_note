@@ -115,6 +115,7 @@ LosVmPage *OsVmVaddrToPage(VOID *ptr);
 VOID OsPhysSharePageCopy(PADDR_T oldPaddr, PADDR_T *newPaddr, LosVmPage *newPage);
 VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages);
 LosVmPage *OsVmPhysToPage(paddr_t pa, UINT8 segID);
+LosVmPage *OsVmPaddrToPage(paddr_t paddr);
 
 LosVmPage *LOS_PhysPageAlloc(VOID);
 VOID LOS_PhysPageFree(LosVmPage *page);
@@ -123,6 +124,7 @@ size_t LOS_PhysPagesFree(LOS_DL_LIST *list);
 VOID *LOS_PhysPagesAllocContiguous(size_t nPages);
 VOID LOS_PhysPagesFreeContiguous(VOID *ptr, size_t nPages);
 VADDR_T *LOS_PaddrToKVaddr(PADDR_T paddr);
+PADDR_T OsKVaddrToPaddr(VADDR_T kvaddr);
 
 #ifdef __cplusplus
 #if __cplusplus

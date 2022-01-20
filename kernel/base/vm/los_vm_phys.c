@@ -264,6 +264,19 @@ LosVmPage *OsVmPhysToPage(paddr_t pa, UINT8 segID)
     return (seg->pageBase + (offset >> PAGE_SHIFT));//得到对应的物理页框
 }
 
+LosVmPage *OsVmPaddrToPage(paddr_t paddr)
+{
+    INT32 segID;
+    LosVmPage *vmPage = NULL;
+
+    for (segID = 0; segID < g_vmPhysSegNum; segID++) {
+        vmPage = OsVmPhysToPage(paddr, segID);
+        if (vmPage != NULL) {
+            return vmPage;
+        }
+    }
+    return NULL;
+}
 /*!
  * @brief 通过page获取内核空间的虚拟地址 参考OsArchMmuInit
  \n #define SYS_MEM_BASE            DDR_MEM_ADDR /* physical memory base 物理地址的起始地址 * /
@@ -505,11 +518,22 @@ VOID LOS_PhysPagesFreeContiguous(VOID *ptr, size_t nPages)
     LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
 }
 
+PADDR_T OsKVaddrToPaddr(VADDR_T kvaddr)
+{
+    if (kvaddr == 0) {
+        return 0;
+    }
+    return (kvaddr - KERNEL_ASPACE_BASE + SYS_MEM_BASE);
+}
 /// 通过物理地址获取内核虚拟地址
 VADDR_T *LOS_PaddrToKVaddr(PADDR_T paddr)
 {
     struct VmPhysSeg *seg = NULL;
     UINT32 segID;
+
+    if (paddr == 0) {
+        return NULL;
+    }
 
     for (segID = 0; segID < g_vmPhysSegNum; segID++) {
         seg = &g_vmPhysSeg[segID];
