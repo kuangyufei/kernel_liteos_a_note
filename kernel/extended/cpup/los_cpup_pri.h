@@ -47,7 +47,7 @@ extern "C" {
 #define OS_CPUP_HISTORY_RECORD_NUM   11
 
 typedef struct {
-    UINT64 allTime;    /**< Total running time */
+    UINT64 allTime;    /**< Total running time | 总运行时间*/
     UINT64 startTime;  /**< Time before a task is invoked */
     UINT64 historyTime[OS_CPUP_HISTORY_RECORD_NUM + 1]; /**< Historical running time, the last one saves zero */
 } OsCpupBase;

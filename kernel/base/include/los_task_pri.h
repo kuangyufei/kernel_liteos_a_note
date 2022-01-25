@@ -452,10 +452,10 @@ STATIC INLINE BOOL OsTaskIsRunning(const LosTaskCB *taskCB)
 
     return FALSE;
 }
-/// 任务是否不再活动
+/// 任务是否不再活跃
 STATIC INLINE BOOL OsTaskIsInactive(const LosTaskCB *taskCB)
 {
-    if (taskCB->taskStatus & (OS_TASK_STATUS_UNUSED | OS_TASK_STATUS_INIT | OS_TASK_STATUS_EXIT)) {//三个标签有一个代表不在活动
+    if (taskCB->taskStatus & (OS_TASK_STATUS_UNUSED | OS_TASK_STATUS_INIT | OS_TASK_STATUS_EXIT)) {//三个标签有一个 代表不在活动
         return TRUE;
     }
 

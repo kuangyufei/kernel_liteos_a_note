@@ -755,33 +755,33 @@ LITE_OS_SEC_TEXT STATIC BOOL IsCmsTask(UINT32 taskID)
     (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
     return ret;
 }
-
+/// 任务是否活跃
 LITE_OS_SEC_TEXT STATIC BOOL IsTaskAlive(UINT32 taskID)
 {
     LosTaskCB *tcb = NULL;
-    if (OS_TID_CHECK_INVALID(taskID)) {
+    if (OS_TID_CHECK_INVALID(taskID)) { //检查是否存在
         return FALSE;
     }
-    tcb = OS_TCB_FROM_TID(taskID);
-    if (!OsProcessIsUserMode(OS_PCB_FROM_PID(tcb->processID))) {
+    tcb = OS_TCB_FROM_TID(taskID); //获取任务控制块
+    if (!OsProcessIsUserMode(OS_PCB_FROM_PID(tcb->processID))) {//判断是否为用户进程
         return FALSE;
     }
-    if (OsTaskIsInactive(tcb)) {
+    if (OsTaskIsInactive(tcb)) {//任务是否活跃
         return FALSE;
     }
     return TRUE;
 }
-
+/// 按句柄方式处理, 参数 processID 往往不是当前进程
 LITE_OS_SEC_TEXT STATIC UINT32 HandleFd(UINT32 processID, SpecialObj *obj, BOOL isRollback)
 {
     int ret;
-    if (isRollback == FALSE) {
-        ret = CopyFdToProc(obj->content.fd, processID);
-        if (ret < 0) {
+    if (isRollback == FALSE) { // 不回滚
+        ret = CopyFdToProc(obj->content.fd, processID);//两个不同进程fd都指向同一个系统fd
+        if (ret < 0) {//返回 processID 的 新 fd
             return ret;
         }
-        obj->content.fd = ret;
-    } else {
+        obj->content.fd = ret; // 记录 processID 的新FD, 可用于回滚
+    } else {// 回滚时关闭进程FD
         ret = CloseProcFd(obj->content.fd, processID);
         if (ret < 0) {
             return ret;
@@ -790,7 +790,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleFd(UINT32 processID, SpecialObj *obj, BOOL 
 
     return LOS_OK;
 }
-
+/// 按指针方式处理
 LITE_OS_SEC_TEXT STATIC UINT32 HandlePtr(UINT32 processID, SpecialObj *obj, BOOL isRollback)
 {
     VOID *buf = NULL;
@@ -799,28 +799,28 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandlePtr(UINT32 processID, SpecialObj *obj, BOOL
         return -EINVAL;
     }
     if (isRollback == FALSE) {
-        if (LOS_IsUserAddress((vaddr_t)(UINTPTR)(obj->content.ptr.buff)) == FALSE) {
-            PRINT_ERR("Liteipc Bad ptr address\n");
+        if (LOS_IsUserAddress((vaddr_t)(UINTPTR)(obj->content.ptr.buff)) == FALSE) { // 判断是否为用户空间地址
+            PRINT_ERR("Liteipc Bad ptr address\n"); //不在用户空间时
             return -EINVAL;
         }
-        buf = LiteIpcNodeAlloc(processID, obj->content.ptr.buffSz);
+        buf = LiteIpcNodeAlloc(processID, obj->content.ptr.buffSz);//在内核空间分配内存
         if (buf == NULL) {
             PRINT_ERR("Liteipc DealPtr alloc mem failed\n");
             return -EINVAL;
         }
-        ret = copy_from_user(buf, obj->content.ptr.buff, obj->content.ptr.buffSz);
+        ret = copy_from_user(buf, obj->content.ptr.buff, obj->content.ptr.buffSz);//从用户空间拷贝数据到内核空间
         if (ret != LOS_OK) {
             LiteIpcNodeFree(processID, buf);
             return ret;
         }
-        obj->content.ptr.buff = (VOID *)GetIpcUserAddr(processID, (INTPTR)buf);
-        EnableIpcNodeFreeByUser(processID, (VOID *)buf);
+        obj->content.ptr.buff = (VOID *)GetIpcUserAddr(processID, (INTPTR)buf);//获取进程 processID 的用户空间地址
+        EnableIpcNodeFreeByUser(processID, (VOID *)buf);//创建一个IPC节点,挂到已读取链表上
     } else {
-        (VOID)LiteIpcNodeFree(processID, (VOID *)GetIpcKernelAddr(processID, (INTPTR)obj->content.ptr.buff));
+        (VOID)LiteIpcNodeFree(processID, (VOID *)GetIpcKernelAddr(processID, (INTPTR)obj->content.ptr.buff));//在内核空间释放IPC节点
     }
     return LOS_OK;
 }
-
+/// 按服务的方式处理
 LITE_OS_SEC_TEXT STATIC UINT32 HandleSvc(UINT32 dstTid, const SpecialObj *obj, BOOL isRollback)
 {
     UINT32 taskID = 0;
@@ -850,10 +850,10 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleObj(UINT32 dstTid, SpecialObj *obj, BOOL is
         case OBJ_FD://fd:文件描述符
             ret = HandleFd(processID, obj, isRollback);
             break;
-        case OBJ_PTR://指针
+        case OBJ_PTR://指针方式
             ret = HandlePtr(processID, obj, isRollback);
             break;
-        case OBJ_SVC:
+        case OBJ_SVC://服务方式
             ret = HandleSvc(dstTid, (const SpecialObj *)obj, isRollback);
             break;
         default:

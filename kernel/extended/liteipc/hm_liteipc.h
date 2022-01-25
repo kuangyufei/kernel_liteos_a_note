@@ -102,26 +102,26 @@ typedef struct {
 } IpcTaskInfo;
 
 typedef enum {
-    OBJ_FD,
-    OBJ_PTR,
-    OBJ_SVC
+    OBJ_FD,		///< 文件句柄
+    OBJ_PTR,	///< 指针
+    OBJ_SVC		///< 服务
 } ObjType;
 
 typedef struct {
-    UINT32         buffSz;
-    VOID           *buff;
+    UINT32         buffSz;  //大小
+    VOID           *buff;	//内容
 } BuffPtr;
-/// svc 是啥哩? @note_thinking 
+/// SVC(service)服务身份证 
 typedef struct {
-    UINT32         handle; 
+    UINT32         handle; //一般为任务ID | taskid
     UINT32         token;
     UINT32         cookie;
 } SvcIdentity;
-/// 对象内容体
+/// 对象内容体,注意是个联合体
 typedef union {
-    UINT32      fd; ///< 文件描述符
-    BuffPtr     ptr;///< 缓存的开始地址,即:指针
-    SvcIdentity  svc;
+    UINT32      fd; 	///< 文件描述符
+    BuffPtr     ptr;	///< 缓存的开始地址,即:指针
+    SvcIdentity  svc;	///< 服务身份
 } ObjContent;
 /// 特殊对象
 typedef struct {
@@ -154,17 +154,17 @@ typedef enum {
 } CmsCmd;
 
 typedef struct {
-    CmsCmd        cmd;
+    CmsCmd        cmd;	/// 命令
     UINT32        taskID;
     UINT32        serviceHandle;
 } CmsCmdContent;
 
 typedef enum {
-    LITEIPC_FLAG_DEFAULT = 0, // send and reply
-    LITEIPC_FLAG_ONEWAY,      // send message only
+    LITEIPC_FLAG_DEFAULT = 0, // send and reply | 发送并回复
+    LITEIPC_FLAG_ONEWAY,      // send message only | 仅发送信息
 } IpcFlag;
 
-typedef struct {
+typedef struct {//IPC 消息结构体
     MsgType        type;       	/**< cmd type, decide the data structure below | 命令类型，决定下面的数据结构*/
     SvcIdentity    target;    	/**< serviceHandle or targetTaskId, depending on type | 因命令类型不同而异*/
     UINT32         code;      	/**< service function code | 服务功能代码*/

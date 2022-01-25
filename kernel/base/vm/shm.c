@@ -4,7 +4,7 @@
  * @link
    @verbatim
     什么是共享内存
-	顾名思义，共享内存就是允许两个不相关的进程访问同一个逻辑内存。共享内存是在两个正在运行的进程之间
+	顾名思义，共享内存就是允许两个不相关的进程访问同一个物理内存。共享内存是在两个正在运行的进程之间
 	共享和传递数据的一种非常有效的方式。不同进程之间共享的内存通常安排为同一段物理内存。进程可以将同
 	一段共享内存连接到它们自己的地址空间中，所有进程都可以访问共享内存中的地址，就好像它们是由用C语言
 	函数malloc()分配的内存一样。而如果某个进程向共享内存写入数据，所做的改动将立即影响到可以访问同一段
@@ -145,7 +145,7 @@ struct shminfo {
 struct shmIDSource {//共享内存描述符
     struct shmid_ds ds; //是内核为每一个共享内存段维护的数据结构
     UINT32 status;	//状态 SHM_SEG_FREE ...
-    LOS_DL_LIST node; //节点,挂vmPage
+    LOS_DL_LIST node; //节点,挂VmPage
 #ifdef LOSCFG_SHELL
     CHAR ownerName[OS_PCB_NAME_LEN];
 #endif
@@ -522,13 +522,13 @@ INT32 ShmGet(key_t key, size_t size, INT32 shmflg)
     if (key == IPC_PRIVATE) {
         ret = ShmAllocSeg(key, size, shmflg);
     } else {
-        ret = ShmFindSegByKey(key);
+        ret = ShmFindSegByKey(key);//通过key查找资源ID
         if (ret < 0) {
-            if (((UINT32)shmflg & IPC_CREAT) == 0) {
+            if (((UINT32)shmflg & IPC_CREAT) == 0) {//
                 ret = -ENOENT;
                 goto ERROR;
             } else {
-                ret = ShmAllocSeg(key, size, shmflg);
+                ret = ShmAllocSeg(key, size, shmflg);//分配一个共享内存
             }
         } else {
             shmid = ret;
@@ -537,7 +537,7 @@ INT32 ShmGet(key_t key, size_t size, INT32 shmflg)
                 ret = -EEXIST;
                 goto ERROR;
             }
-            ret = ShmPermCheck(ShmFindSeg(shmid), (UINT32)shmflg & ACCESSPERMS);
+            ret = ShmPermCheck(ShmFindSeg(shmid), (UINT32)shmflg & ACCESSPERMS);//对共享内存权限检查
             if (ret != 0) {
                 ret = -ret;
                 goto ERROR;
@@ -572,7 +572,7 @@ INT32 ShmatParamCheck(const VOID *shmaddr, INT32 shmflg)
 
     return 0;
 }
-///分配一个共享线性区
+///分配一个共享线性区并映射好
 LosVmMapRegion *ShmatVmmAlloc(struct shmIDSource *seg, const VOID *shmaddr,
                               INT32 shmflg, UINT32 prot)
 {
@@ -622,8 +622,7 @@ ERROR:
 
 /*!
  * @brief ShmAt	
- * 第一次创建完共享内存时，它还不能被任何进程访问，shmat()函数的作用就是用来启动对该共享内存的访问，
-   并把共享内存连接到当前进程的地址空间。
+ * 用来启动对该共享内存的访问，并把共享内存连接到当前进程的地址空间。
  * @param shm_flg 是一组标志位，通常为0。
  * @param shmaddr 指定共享内存连接到当前进程中的地址位置，通常为空，表示让系统来选择共享内存的地址。
  * @param shmid	是shmget()函数返回的共享内存标识符
@@ -667,7 +666,7 @@ VOID *ShmAt(INT32 shmid, const VOID *shmaddr, INT32 shmflg)
     }
 
     seg->ds.shm_nattch++;//ds上记录有一个进程绑定上来
-    r = ShmatVmmAlloc(seg, shmaddr, shmflg, prot);//在当前进程空间分配一个线性区用于映射共享空间
+    r = ShmatVmmAlloc(seg, shmaddr, shmflg, prot);//在当前进程空间分配一个线性区并映射到共享内存
     if (r == NULL) {
         seg->ds.shm_nattch--;
         SYSV_SHM_UNLOCK();

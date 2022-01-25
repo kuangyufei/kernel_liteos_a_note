@@ -132,19 +132,19 @@ int CheckProcessFd(int procFd)
 ///获取绑定的系统描述符
 int GetAssociatedSystemFd(int procFd)
 {
-    struct fd_table_s *fdt = GetFdTable();
+    struct fd_table_s *fdt = GetFdTable();//获取当前进程FD表
 
     if (!IsValidProcessFd(fdt, procFd)) {
         return VFS_ERROR;
     }
 
-    FileTableLock(fdt);
+    FileTableLock(fdt);//锁表
     if (fdt->ft_fds[procFd].sysFd < 0) {
         FileTableUnLock(fdt);
         return VFS_ERROR;
     }
     int sysFd = fdt->ft_fds[procFd].sysFd;//进程FD捆绑系统FD
-    FileTableUnLock(fdt);
+    FileTableUnLock(fdt);//解锁表
 
     return sysFd;
 }
@@ -374,7 +374,7 @@ static struct fd_table_s *GetProcessFTable(unsigned int pid, sem_t *semId)
 
     return procFiles->fdt;
 }
-///拷贝一个进程FD给指定的进程
+///拷贝一个进程FD给指定的进程,使两个进程的FD都指向同一个系统FD
 int CopyFdToProc(int fd, unsigned int targetPid)
 {
 #if !defined(LOSCFG_NET_LWIP_SACK) && !defined(LOSCFG_COMPAT_POSIX) && !defined(LOSCFG_FS_VFS)
