@@ -70,7 +70,7 @@
 #include "los_vm_phys.h"
 #include "los_hook.h"
 
-#define USE_TASKID_AS_HANDLE 1 	///< 使用任务ID作为句柄
+#define USE_TASKID_AS_HANDLE 1 	///< 将任务ID当服务ID使用
 #define USE_MMAP 1				///< 使用映射( 用户空间 <--> 物理地址 <--> 内核空间 ) ==> 用户空间 <-映射-> 内核空间 
 #define IPC_IO_DATA_MAX 8192UL	///< 最大的消息内容 8K ,posix最大消息内容 64个字节
 #define IPC_MSG_DATA_SZ_MAX (IPC_IO_DATA_MAX * sizeof(SpecialObj) / (sizeof(SpecialObj) + sizeof(size_t))) ///< 消息内容上限
@@ -298,11 +298,11 @@ ERROR_REGION_OUT:
 ///初始化进程的IPC消息内存池
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 LiteIpcPoolInit(ProcIpcInfo *ipcInfo)
 {
-    ipcInfo->pool.uvaddr = NULL;//无用户空间地址
-    ipcInfo->pool.kvaddr = NULL;//无内核空间地址
+    ipcInfo->pool.uvaddr = NULL;
+    ipcInfo->pool.kvaddr = NULL
     ipcInfo->pool.poolSize = 0;
     ipcInfo->ipcTaskID = INVAILD_ID;
-    LOS_ListInit(&ipcInfo->ipcUsedNodelist);//上面将挂已被读取的节点
+    LOS_ListInit(&ipcInfo->ipcUsedNodelist);//上面将挂已使用的节点
     return LOS_OK;
 }
 ///创建IPC消息内存池
@@ -394,7 +394,7 @@ LITE_OS_SEC_TEXT_INIT STATIC IpcTaskInfo *LiteIpcTaskInit(VOID)
 }
 
 /* Only when kernel no longer access ipc node content, can user free the ipc node 
-| 只有当内核不再访问ipc节点内容时，用户才能释放ipc节点*/
+| 使能一个空闲的IPC节点 */
 LITE_OS_SEC_TEXT STATIC VOID EnableIpcNodeFreeByUser(UINT32 processID, VOID *buf)
 {
     UINT32 intSave;
@@ -422,16 +422,16 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcNodeFree(UINT32 processID, VOID *buf)
                processID, OS_PCB_FROM_PID(processID)->ipcInfo->pool.kvaddr, buf);
     return LOS_MemFree(OS_PCB_FROM_PID(processID)->ipcInfo->pool.kvaddr, buf);
 }
-///是否是IPC节点
+///指定buf 是否是IPC节点
 LITE_OS_SEC_TEXT STATIC BOOL IsIpcNode(UINT32 processID, const VOID *buf)
 {
     IpcUsedNode *node = NULL;
     UINT32 intSave;
-    ProcIpcInfo *ipcInfo = OS_PCB_FROM_PID(processID)->ipcInfo;
+    ProcIpcInfo *ipcInfo = OS_PCB_FROM_PID(processID)->ipcInfo;//获取进程的IPC信息
     IPC_LOCK(intSave);
-    LOS_DL_LIST_FOR_EACH_ENTRY(node, &ipcInfo->ipcUsedNodelist, IpcUsedNode, list) {
-        if (node->ptr == buf) {
-            LOS_ListDelete(&node->list);
+    LOS_DL_LIST_FOR_EACH_ENTRY(node, &ipcInfo->ipcUsedNodelist, IpcUsedNode, list) {//遍历IPC节点
+        if (node->ptr == buf) {//地址相等处理,但为啥要删除节点呢? 这只是个判断而已 ,强烈建议不这么骚操作!!!                                   @note_why 
+            LOS_ListDelete(&node->list); // 强烈反对!!!
             IPC_UNLOCK(intSave);
             free(node);
             return TRUE;
@@ -440,35 +440,35 @@ LITE_OS_SEC_TEXT STATIC BOOL IsIpcNode(UINT32 processID, const VOID *buf)
     IPC_UNLOCK(intSave);
     return FALSE;
 }
-///获得IPC用户空间地址
+/// 获得IPC用户空间地址
 LITE_OS_SEC_TEXT STATIC INTPTR GetIpcUserAddr(UINT32 processID, INTPTR kernelAddr)
 {
     IpcPool pool = OS_PCB_FROM_PID(processID)->ipcInfo->pool;
-    INTPTR offset = (INTPTR)(pool.uvaddr) - (INTPTR)(pool.kvaddr);
-    return kernelAddr + offset;
+    INTPTR offset = (INTPTR)(pool.uvaddr) - (INTPTR)(pool.kvaddr);//先计算偏移量,注意这里应该是个负数,因为内核空间在高地址位
+    return kernelAddr + offset; //再获取用户空间地址
 }
-///获得IPC内核空间地址
+/// 获得IPC内核空间地址
 LITE_OS_SEC_TEXT STATIC INTPTR GetIpcKernelAddr(UINT32 processID, INTPTR userAddr)
 {
     IpcPool pool = OS_PCB_FROM_PID(processID)->ipcInfo->pool;
-    INTPTR offset = (INTPTR)(pool.uvaddr) - (INTPTR)(pool.kvaddr);
+    INTPTR offset = (INTPTR)(pool.uvaddr) - (INTPTR)(pool.kvaddr); //先计算偏移量,注意这里应该是个负数,因为用户空间在低地址位
     return userAddr - offset;
 }
-
+/// 检查指定地址在当前进程 可使用的BUF
 LITE_OS_SEC_TEXT STATIC UINT32 CheckUsedBuffer(const VOID *node, IpcListNode **outPtr)
 {
     VOID *ptr = NULL;
     LosProcessCB *pcb = OsCurrProcessGet();
-    IpcPool pool = pcb->ipcInfo->pool;
+    IpcPool pool = pcb->ipcInfo->pool;//获取进程IPC
     if ((node == NULL) || ((INTPTR)node < (INTPTR)(pool.uvaddr)) ||
         ((INTPTR)node > (INTPTR)(pool.uvaddr) + pool.poolSize)) {
         return -EINVAL;
     }
-    ptr = (VOID *)GetIpcKernelAddr(pcb->processID, (INTPTR)(node));
-    if (IsIpcNode(pcb->processID, ptr) != TRUE) {
+    ptr = (VOID *)GetIpcKernelAddr(pcb->processID, (INTPTR)(node));//通过用户空间地址获取内核空间地址
+    if (IsIpcNode(pcb->processID, ptr) != TRUE) {//不是节点
         return -EFAULT;
     }
-    *outPtr = (IpcListNode *)ptr;
+    *outPtr = (IpcListNode *)ptr;//参数带走节点,内核空间地址
     return LOS_OK;
 }
 /// 获取任务ID
@@ -492,22 +492,22 @@ LITE_OS_SEC_TEXT STATIC UINT32 GetTid(UINT32 serviceHandle, UINT32 *taskID)
     return -EINVAL;
 #endif
 }
-
+/// 任务 注册服务,`LiteIPC`的核心思想就是在内核态为每个`Service`任务维护一个`IPC`消息队列, 一个任务可以创建多个服务
 LITE_OS_SEC_TEXT STATIC UINT32 GenerateServiceHandle(UINT32 taskID, HandleStatus status, UINT32 *serviceHandle)
 {
     (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
 #if (USE_TASKID_AS_HANDLE == 1)
-    *serviceHandle = taskID ? taskID : LOS_CurTaskIDGet(); /* if taskID is 0, return curTaskID */
+    *serviceHandle = taskID ? taskID : LOS_CurTaskIDGet(); /* if taskID is 0, return curTaskID | 如果任务ID为0,返回当地任务ID ,那么请问0号任务是谁 ???*/
     if (*serviceHandle != g_cmsTask.taskID) {
         (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
         return LOS_OK;
     }
 #else
-    for (UINT32 i = 1; i < MAX_SERVICE_NUM; i++) {
-        if (g_serviceHandleMap[i].status == HANDLE_NOT_USED) {
-            g_serviceHandleMap[i].taskID = taskID;
-            g_serviceHandleMap[i].status = status;
-            *serviceHandle = i;
+    for (UINT32 i = 1; i < MAX_SERVICE_NUM; i++) {//每个任务都可以注册成一个服务,所有服务的上限等于任务的数量
+        if (g_serviceHandleMap[i].status == HANDLE_NOT_USED) {//找一个可用的服务
+            g_serviceHandleMap[i].taskID = taskID;//为哪个任务所占有
+            g_serviceHandleMap[i].status = status;//修改状态  
+            *serviceHandle = i;//带走占用第几个服务, 注意这里服务的ID和任务的ID并不一致 
             (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
             return LOS_OK;
         }
@@ -516,15 +516,15 @@ LITE_OS_SEC_TEXT STATIC UINT32 GenerateServiceHandle(UINT32 taskID, HandleStatus
     (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
     return -EINVAL;
 }
-
+/// 刷新指定服务, 多刷几次状态就变了, result != 0 时,服务停止
 LITE_OS_SEC_TEXT STATIC VOID RefreshServiceHandle(UINT32 serviceHandle, UINT32 result)
 {
 #if (USE_TASKID_AS_HANDLE == 0)
     (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
-    if ((result == LOS_OK) && (g_serviceHandleMap[serviceHandle].status == HANDLE_REGISTING)) {
-        g_serviceHandleMap[serviceHandle].status = HANDLE_REGISTED;
+    if ((result == LOS_OK) && (g_serviceHandleMap[serviceHandle].status == HANDLE_REGISTING)) {//如果状态为注册中
+        g_serviceHandleMap[serviceHandle].status = HANDLE_REGISTED; // 变成已注册
     } else {
-        g_serviceHandleMap[serviceHandle].status = HANDLE_NOT_USED;
+        g_serviceHandleMap[serviceHandle].status = HANDLE_NOT_USED; // 变成未使用
     }
     (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
 #endif
@@ -533,7 +533,7 @@ LITE_OS_SEC_TEXT STATIC VOID RefreshServiceHandle(UINT32 serviceHandle, UINT32 r
 /*!
  * @brief AddServiceAccess	配置访问权限
  *
- * @param serviceHandle	
+ * @param serviceHandle	服务ID
  * @param taskID	
  * @return	
  *
@@ -542,7 +542,7 @@ LITE_OS_SEC_TEXT STATIC VOID RefreshServiceHandle(UINT32 serviceHandle, UINT32 r
 LITE_OS_SEC_TEXT STATIC UINT32 AddServiceAccess(UINT32 taskID, UINT32 serviceHandle)
 {
     UINT32 serviceTid = 0;
-    UINT32 ret = GetTid(serviceHandle, &serviceTid);//通过服务获取所在任务
+    UINT32 ret = GetTid(serviceHandle, &serviceTid);//通过服务获取任务 ,注意 任务:服务 = 1:N 
     if (ret != LOS_OK) {
         PRINT_ERR("Liteipc AddServiceAccess GetTid failed\n");
         return ret;
@@ -554,11 +554,11 @@ LITE_OS_SEC_TEXT STATIC UINT32 AddServiceAccess(UINT32 taskID, UINT32 serviceHan
         PRINT_ERR("Liteipc AddServiceAccess ipc not create! pid %u tid %u\n", processID, tcb->taskID);
         return -EINVAL;
     }
-    tcb->ipcTaskInfo->accessMap[processID] = TRUE;//允许任务给进程发送IPC消息,此处为任务所在的进程
-    pcb->ipcInfo->access[serviceTid] = TRUE;//允许进程访问任务
+    tcb->ipcTaskInfo->accessMap[processID] = TRUE;//允许任务访问所属进程,此处为任务所在的进程
+    pcb->ipcInfo->access[serviceTid] = TRUE;//允许所属进程访问任务
     return LOS_OK;
 }
-/// 参数服务是否有访问当前进程的权限,实际中会有 A进程的任务去给B进程发送IPC信息,所以需要鉴权 
+/// 参数服务是否有访问当前进程的权限,实际中会有A进程的任务去给B进程发送IPC信息,所以需要鉴权 
 LITE_OS_SEC_TEXT STATIC BOOL HasServiceAccess(UINT32 serviceHandle)
 {
     UINT32 serviceTid = 0;
@@ -704,7 +704,7 @@ LITE_OS_SEC_TEXT VOID LiteIpcRemoveServiceHandle(UINT32 taskID)
     (VOID)LOS_MemFree(m_aucSysMem1, ipcTaskInfo);
     taskCB->ipcTaskInfo = NULL;
 }
-
+/// 设置CMS
 LITE_OS_SEC_TEXT STATIC UINT32 SetCms(UINTPTR maxMsgSize)
 {
     if (maxMsgSize < sizeof(IpcMsg)) {
@@ -1307,41 +1307,41 @@ BUFFER_FREE:
     }
     return ret;
 }
-
+/// 处理命令
 LITE_OS_SEC_TEXT STATIC UINT32 HandleCmsCmd(CmsCmdContent *content)
 {
     UINT32 ret = LOS_OK;
-    CmsCmdContent localContent;
+    CmsCmdContent localContent;//接受用户空间数据的栈空间
     if (content == NULL) {
         return -EINVAL;
     }
     if (IsCmsTask(LOS_CurTaskIDGet()) == FALSE) {
         return -EACCES;
     }
-    if (copy_from_user((void *)(&localContent), (const void *)content, sizeof(CmsCmdContent)) != LOS_OK) {
+    if (copy_from_user((void *)(&localContent), (const void *)content, sizeof(CmsCmdContent)) != LOS_OK) {//将数据从用户空间拷贝到内核栈空间
         PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
         return -EINVAL;
     }
     switch (localContent.cmd) {
-        case CMS_GEN_HANDLE:
+        case CMS_GEN_HANDLE: // 创建服务
             if ((localContent.taskID != 0) && (IsTaskAlive(localContent.taskID) == FALSE)) {
                 return -EINVAL;
             }
-            ret = GenerateServiceHandle(localContent.taskID, HANDLE_REGISTED, &(localContent.serviceHandle));
+            ret = GenerateServiceHandle(localContent.taskID, HANDLE_REGISTED, &(localContent.serviceHandle));//注册服务,得到服务ID
             if (ret == LOS_OK) {
-                ret = copy_to_user((void *)content, (const void *)(&localContent), sizeof(CmsCmdContent));
+                ret = copy_to_user((void *)content, (const void *)(&localContent), sizeof(CmsCmdContent));//多了个服务ID,将数据拷贝回用户空间,
             }
             (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
             AddServiceAccess(g_cmsTask.taskID, localContent.serviceHandle);
             (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
             break;
-        case CMS_REMOVE_HANDLE:
+        case CMS_REMOVE_HANDLE: // 删除服务
             if (localContent.serviceHandle >= MAX_SERVICE_NUM) {
                 return -EINVAL;
             }
-            RefreshServiceHandle(localContent.serviceHandle, -1);
+            RefreshServiceHandle(localContent.serviceHandle, -1);// -1 代表服务停止/清空,可供其他任务使用
             break;
-        case CMS_ADD_ACCESS:
+        case CMS_ADD_ACCESS: //添加权限
             if (IsTaskAlive(localContent.taskID) == FALSE) {
                 return -EINVAL;
             }

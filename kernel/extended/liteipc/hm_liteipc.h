@@ -80,8 +80,8 @@ typedef struct {
  * 用户态程序分别提供代表收取IPC消息的读操作和代表发送IPC消息的写操作。
  */
 typedef struct {
-    VOID   *uvaddr;	///< 用户态空间地址,由kvaddr映射而来的地址,这两个地址的关系一定要搞清楚,否则无法理解IPC的核心思想
-    VOID   *kvaddr;	///< 内核态空间地址,IPC申请的是内核空间,但是会通过 DoIpcMmap 将这个地址映射到用户空间
+    VOID   *uvaddr;	///< 用户空间地址,由kvaddr映射而来的地址,这两个地址的关系一定要搞清楚,否则无法理解IPC的核心思想
+    VOID   *kvaddr;	///< 内核空间地址,IPC申请的是内核空间,但是会通过 DoIpcMmap 将这个地址映射到用户空间
     UINT32 poolSize; ///< ipc池大小
 } IpcPool;
 
@@ -90,9 +90,9 @@ typedef struct {
  * @brief 进程IPC信息,见于进程结构体:	LosProcessCB.ipcInfo
  */
 typedef struct {
-    IpcPool pool;				///< ipc池
+    IpcPool pool;				///< ipc池,用户空间地址
     UINT32 ipcTaskID;			///< 当前由哪个任务在操作进程的IPC 通过 SetIpcTask 操作
-    LOS_DL_LIST ipcUsedNodelist;///< 已使用节点链表
+    LOS_DL_LIST ipcUsedNodelist;///< 已使用节点链表,上面挂 IpcUsedNode 节点
     UINT32 access[LOSCFG_BASE_CORE_TSK_LIMIT];	///< 允许进程通过IPC访问哪些任务
 } ProcIpcInfo;
 typedef struct {
@@ -147,16 +147,16 @@ typedef enum {
 #define IPC_SET_IPC_THREAD  _IO(IPC_IOC_MAGIC, 3)	///< 为进程设置IPC任务
 #define IPC_SEND_RECV_MSG   _IOWR(IPC_IOC_MAGIC, 4, IpcContent) ///< 对IPC的读写处理
 
-typedef enum {
-    CMS_GEN_HANDLE,
-    CMS_REMOVE_HANDLE,
-    CMS_ADD_ACCESS
+typedef enum {//CMS 命令类型
+    CMS_GEN_HANDLE, ///< 创建/注册服务
+    CMS_REMOVE_HANDLE, ///< 删除服务
+    CMS_ADD_ACCESS ///< 为服务添加权限
 } CmsCmd;
 
 typedef struct {
-    CmsCmd        cmd;	/// 命令
-    UINT32        taskID;
-    UINT32        serviceHandle;
+    CmsCmd        cmd;	///< 命令
+    UINT32        taskID; ///< 任务ID
+    UINT32        serviceHandle;///< 服务ID
 } CmsCmdContent;
 
 typedef enum {
