@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' LiteIPC 注释完善, 它内核提供的一种新型IPC通讯机制
+git commit -m  ' 注解用户空间/内核空间如何划分
     百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)

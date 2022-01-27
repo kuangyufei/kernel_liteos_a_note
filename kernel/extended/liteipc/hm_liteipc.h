@@ -91,7 +91,7 @@ typedef struct {
  */
 typedef struct {
     IpcPool pool;				///< ipc池
-    UINT32 ipcTaskID;			///< 当前由哪个任务ID在操作进程的IPC 通过 SetIpcTask 操作
+    UINT32 ipcTaskID;			///< 当前由哪个任务在操作进程的IPC 通过 SetIpcTask 操作
     LOS_DL_LIST ipcUsedNodelist;///< 已使用节点链表
     UINT32 access[LOSCFG_BASE_CORE_TSK_LIMIT];	///< 允许进程通过IPC访问哪些任务
 } ProcIpcInfo;
@@ -174,10 +174,10 @@ typedef struct {//IPC 消息结构体
 #endif
     UINT32         dataSz;    	/**< size of data | 消息内容大小*/
     VOID           *data;		///< 消息的内容,真正要传递的消息
-    UINT32         spObjNum;	// ..
-    VOID           *offsets;	// ..
-    UINT32         processID; 	/**< filled by kernel, processId of sender/reciever | 由内核填充,发送/接收消息的进程ID*/
-    UINT32         taskID;    	/**< filled by kernel, taskId of sender/reciever | 由内核填充,发送/接收消息的任务ID*/
+    UINT32         spObjNum;	///< 对象数量
+    VOID           *offsets;	///< 偏移量
+    UINT32         processID; 	/**< filled by kernel, processId of sender/reciever | 由内核提供,发送/接收消息的进程ID*/
+    UINT32         taskID;    	/**< filled by kernel, taskId of sender/reciever | 由内核提供,发送/接收消息的任务ID*/
 #ifdef LOSCFG_SECURITY_CAPABILITY	
     UINT32         userID;		///< 用户ID
     UINT32         gid;			///< 组ID
@@ -198,7 +198,7 @@ typedef struct {	//IPC 内容节点
  */
 typedef struct {
     UINT32               flag;      /**< size of writeData | IPC标签 (SEND,RECV,BUFF_FREE)*/
-    IpcMsg               *outMsg;   /**< data to send to target | 发给给目标任务的消息内容*/
+    IpcMsg               *outMsg;   /**< data to send to target | 发给目标任务的消息内容*/
     IpcMsg               *inMsg;    /**< data reply by target | 目标任务回复的消息内容*/
     VOID                 *buffToFree;
 } IpcContent;

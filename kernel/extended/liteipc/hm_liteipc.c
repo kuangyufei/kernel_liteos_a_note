@@ -188,6 +188,7 @@ LITE_OS_SEC_TEXT STATIC BOOL IsPoolMapped(ProcIpcInfo *ipcInfo)
 /*!
  * @brief DoIpcMmap	
  * 做IPC层映射,将内核空间虚拟地址映射到用户空间,这样的好处是用户态下操作读写的背后是在读写内核态空间
+ * 如此用户地址和内核地址指向同一个物理地址
  * @param pcb	
  * @param region	
  * @return	
@@ -206,7 +207,7 @@ LITE_OS_SEC_TEXT STATIC INT32 DoIpcMmap(LosProcessCB *pcb, LosVmMapRegion *regio
 
     (VOID)LOS_MuxAcquire(&pcb->vmSpace->regionMux);
 
-    for (i = 0; i < (region->range.size >> PAGE_SHIFT); i++) {//获取线性区页数
+    for (i = 0; i < (region->range.size >> PAGE_SHIFT); i++) {//获取线性区页数,一页一页映射
         pa = LOS_PaddrQuery((VOID *)(UINTPTR)(kva + (i << PAGE_SHIFT)));//通过内核空间查找物理地址
         if (pa == 0) {
             PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
@@ -226,7 +227,7 @@ LITE_OS_SEC_TEXT STATIC INT32 DoIpcMmap(LosProcessCB *pcb, LosVmMapRegion *regio
             break;
         }
     }
-    /* if any failure happened, rollback | 如果发生失败,则回滚*/
+    /* if any failure happened, rollback | 如果中间发生映射失败,则回滚*/
     if (i != (region->range.size >> PAGE_SHIFT)) {
         while (i--) {
             pa = LOS_PaddrQuery((VOID *)(UINTPTR)(kva + (i << PAGE_SHIFT)));//查询物理地址
@@ -246,7 +247,7 @@ LITE_OS_SEC_TEXT STATIC int LiteIpcMmap(struct file *filep, LosVmMapRegion *regi
     LosVmMapRegion *regionTemp = NULL;
     LosProcessCB *pcb = OsCurrProcessGet();
     ProcIpcInfo *ipcInfo = pcb->ipcInfo;
-
+	//被映射的线性区不能在常量和私有数据区
     if ((ipcInfo == NULL) || (region == NULL) || (region->range.size > LITE_IPC_POOL_MAX_SIZE) ||
         (!LOS_IsRegionPermUserReadOnly(region)) || (!LOS_IsRegionFlagPrivateOnly(region))) {
         ret = -EINVAL;
@@ -256,20 +257,21 @@ LITE_OS_SEC_TEXT STATIC int LiteIpcMmap(struct file *filep, LosVmMapRegion *regi
         return -EEXIST;
     }
     if (ipcInfo->pool.uvaddr != NULL) {//ipc池已在进程空间有地址
-        regionTemp = LOS_RegionFind(pcb->vmSpace, (VADDR_T)(UINTPTR)ipcInfo->pool.uvaddr);//找到所在线性区
+        regionTemp = LOS_RegionFind(pcb->vmSpace, (VADDR_T)(UINTPTR)ipcInfo->pool.uvaddr);//在指定进程空间中找到所在线性区
         if (regionTemp != NULL) {
             (VOID)LOS_RegionFree(pcb->vmSpace, regionTemp);//先释放线性区
         }
+		// 建议加上 ipcInfo->pool.uvaddr = NULL; 同下
     }
     ipcInfo->pool.uvaddr = (VOID *)(UINTPTR)region->range.base;//将指定的线性区和ipc池虚拟地址绑定
-    if (ipcInfo->pool.kvaddr != NULL) {//如果
-        LOS_VFree(ipcInfo->pool.kvaddr);
-        ipcInfo->pool.kvaddr = NULL;
+    if (ipcInfo->pool.kvaddr != NULL) {//如果存在内核空间地址
+        LOS_VFree(ipcInfo->pool.kvaddr);//因为要重新映射,所以必须先释放掉物理内存
+        ipcInfo->pool.kvaddr = NULL; //从效果上看, 这句话可以不加,但加上看着更舒服,    uvaddr 和 kvaddr 一对新人迎接美好未来
     }
     /* use vmalloc to alloc phy mem */
-    ipcInfo->pool.kvaddr = LOS_VMalloc(region->range.size);//分配物理内存
-    if (ipcInfo->pool.kvaddr == NULL) {
-        ret = -ENOMEM;
+    ipcInfo->pool.kvaddr = LOS_VMalloc(region->range.size);//从内核动态空间中申请线性区,分配同等量的物理内存,做好 内核 <-->物理内存的映射
+    if (ipcInfo->pool.kvaddr == NULL) {//申请物理内存失败, 肯定是玩不下去了.
+        ret = -ENOMEM; //返回没有内存了
         goto ERROR_REGION_OUT;
     }
     /* do mmap */
@@ -472,7 +474,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckUsedBuffer(const VOID *node, IpcListNode **o
 /// 获取任务ID
 LITE_OS_SEC_TEXT STATIC UINT32 GetTid(UINT32 serviceHandle, UINT32 *taskID)
 {
-    if (serviceHandle >= MAX_SERVICE_NUM) {
+    if (serviceHandle >= MAX_SERVICE_NUM) {//超过任务数
         return -EINVAL;
     }
     (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
@@ -577,11 +579,11 @@ LITE_OS_SEC_TEXT STATIC BOOL HasServiceAccess(UINT32 serviceHandle)
         return TRUE;
     }
 
-    if (OS_TCB_FROM_TID(serviceTid)->ipcTaskInfo == NULL) {
+    if (OS_TCB_FROM_TID(serviceTid)->ipcTaskInfo == NULL) {//如果参数任务没有开通处理IPC信息功能
         return FALSE;
     }
 
-    return OS_TCB_FROM_TID(serviceTid)->ipcTaskInfo->accessMap[curProcessID];
+    return OS_TCB_FROM_TID(serviceTid)->ipcTaskInfo->accessMap[curProcessID];//返回任务访问进程的权限
 }
 ///设置ipc任务ID
 LITE_OS_SEC_TEXT STATIC UINT32 SetIpcTask(VOID)
@@ -610,14 +612,14 @@ LITE_OS_SEC_TEXT STATIC UINT32 GetIpcTaskID(UINT32 processID, UINT32 *ipcTaskID)
     *ipcTaskID = OS_PCB_FROM_PID(processID)->ipcInfo->ipcTaskID;
     return LOS_OK;
 }
-/// 发送死亡消息
+/// serviceHandle 给 processID 发送死亡/结束消息, serviceHandle 为 taskID
 LITE_OS_SEC_TEXT STATIC UINT32 SendDeathMsg(UINT32 processID, UINT32 serviceHandle)
 {
     UINT32 ipcTaskID;
     UINT32 ret;
     IpcContent content;
     IpcMsg msg;
-    LosProcessCB *pcb = OS_PCB_FROM_PID(processID);
+    LosProcessCB *pcb = OS_PCB_FROM_PID(processID);//获取指定进程控制块
 
     if (pcb->ipcInfo == NULL) {
         return -EINVAL;
@@ -625,7 +627,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 SendDeathMsg(UINT32 processID, UINT32 serviceHand
 
     pcb->ipcInfo->access[serviceHandle] = FALSE;
 
-    ret = GetIpcTaskID(processID, &ipcTaskID);
+    ret = GetIpcTaskID(processID, &ipcTaskID);//获取操作该进程IPC的任务ID, processID 下的某个 taskID 
     if (ret != LOS_OK) {
         return -EINVAL;
     }
@@ -648,7 +650,7 @@ LITE_OS_SEC_TEXT VOID LiteIpcRemoveServiceHandle(UINT32 taskID)
         return;
     }
 
-#if (USE_TASKID_AS_HANDLE == 1)
+#if (USE_TASKID_AS_HANDLE == 1) // 任务ID当做句柄使用
 
     UINT32 intSave;
     LOS_DL_LIST *listHead = NULL;
@@ -656,19 +658,19 @@ LITE_OS_SEC_TEXT VOID LiteIpcRemoveServiceHandle(UINT32 taskID)
     IpcListNode *node = NULL;
     UINT32 processID = taskCB->processID;
 
-    listHead = &(ipcTaskInfo->msgListHead);
-    do {
+    listHead = &(ipcTaskInfo->msgListHead);// ipc 节点链表
+    do {// 循环删除 任务IPC上挂的各个节点
         SCHEDULER_LOCK(intSave);
-        if (LOS_ListEmpty(listHead)) {
+        if (LOS_ListEmpty(listHead)) {//空判
             SCHEDULER_UNLOCK(intSave);
             break;
         } else {
-            listNode = LOS_DL_LIST_FIRST(listHead);
-            LOS_ListDelete(listNode);
-            node = LOS_DL_LIST_ENTRY(listNode, IpcListNode, listNode);
+            listNode = LOS_DL_LIST_FIRST(listHead); //拿到首个节点
+            LOS_ListDelete(listNode); //删除节点
+            node = LOS_DL_LIST_ENTRY(listNode, IpcListNode, listNode);//获取节点所在结构体 IpcListNode
             SCHEDULER_UNLOCK(intSave);
-            (VOID)HandleSpecialObjects(taskCB->taskID, node, TRUE);
-            (VOID)LiteIpcNodeFree(processID, (VOID *)node);
+            (VOID)HandleSpecialObjects(taskCB->taskID, node, TRUE);//处理节点
+            (VOID)LiteIpcNodeFree(processID, (VOID *)node);//释放节点占用的进程空间
         }
     } while (1);
 
@@ -676,10 +678,10 @@ LITE_OS_SEC_TEXT VOID LiteIpcRemoveServiceHandle(UINT32 taskID)
     for (j = 0; j < MAX_SERVICE_NUM; j++) {
         if (ipcTaskInfo->accessMap[j] == TRUE) {
             ipcTaskInfo->accessMap[j] = FALSE;
-            (VOID)SendDeathMsg(j, taskCB->taskID);
+            (VOID)SendDeathMsg(j, taskCB->taskID); //给进程发送taskCB死亡的消息
         }
     }
-#else
+#else 
     (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
     for (UINT32 i = 1; i < MAX_SERVICE_NUM; i++) {
         if ((g_serviceHandleMap[i].status != HANDLE_NOT_USED) && (g_serviceHandleMap[i].taskID == taskCB->taskID)) {
@@ -862,7 +864,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleObj(UINT32 dstTid, SpecialObj *obj, BOOL is
     }
     return ret;
 }
-
+//处理指定任务的某个IPC节点
 LITE_OS_SEC_TEXT STATIC UINT32 HandleSpecialObjects(UINT32 dstTid, IpcListNode *node, BOOL isRollback)
 {
     UINT32 ret = LOS_OK;
@@ -901,7 +903,7 @@ EXIT:
     }
     return ret;
 }
-
+/// 检查消息内容大小
 LITE_OS_SEC_TEXT STATIC UINT32 CheckMsgSize(IpcMsg *msg)
 {
     UINT64 totalSize;
@@ -936,7 +938,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckMsgSize(IpcMsg *msg)
     (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
     return LOS_OK;
 }
-
+///< 从用户空间拷贝数据
 LITE_OS_SEC_TEXT STATIC UINT32 CopyDataFromUser(IpcListNode *node, UINT32 bufSz, const IpcMsg *msg)
 {
     UINT32 ret;
@@ -999,7 +1001,7 @@ LITE_OS_SEC_TEXT STATIC BOOL IsValidReply(const IpcContent *content)
     }
     return TRUE;
 }
-
+/// 检查参数,并获取目标 任务ID
 LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
 {
     UINT32 ret;
@@ -1015,9 +1017,9 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
         (msg->dataSz < msg->spObjNum * sizeof(SpecialObj))) {
         return -EINVAL;
     }
-    switch (msg->type) {
-        case MT_REQUEST:
-            if (HasServiceAccess(msg->target.handle)) {
+    switch (msg->type) {//消息类型
+        case MT_REQUEST: //请求
+            if (HasServiceAccess(msg->target.handle)) {//检查参数任务是否有权限访问当前进程
                 ret = GetTid(msg->target.handle, dstTid);
                 if (ret != LOS_OK) {
                     return -EINVAL;
@@ -1030,8 +1032,8 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
             msg->timestamp = now;
 #endif
             break;
-        case MT_REPLY:
-        case MT_FAILED_REPLY:
+        case MT_REPLY://回复
+        case MT_FAILED_REPLY: //回复失败消息
             if ((flag & BUFF_FREE) != BUFF_FREE) {
                 return -EINVAL;
             }
@@ -1054,7 +1056,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
 #endif
             *dstTid = msg->target.handle;
             break;
-        case MT_DEATH_NOTIFY:
+        case MT_DEATH_NOTIFY://死亡消息
             *dstTid = msg->target.handle;
 #if (USE_TIMESTAMP == 1)
             msg->timestamp = now;
@@ -1235,7 +1237,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcRead(IpcContent *content)
     EnableIpcNodeFreeByUser(LOS_GetCurrProcessID(), (VOID *)node);
     return LOS_OK;
 }
-
+/// 处理 IPC 消息
 LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcMsgHandle(IpcContent *con)
 {
     UINT32 ret = LOS_OK;
@@ -1250,7 +1252,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcMsgHandle(IpcContent *con)
         return -EINVAL;
     }
 
-    if ((content->flag & BUFF_FREE) == BUFF_FREE) {
+    if ((content->flag & BUFF_FREE) == BUFF_FREE) { // 空闲
         ret = CheckUsedBuffer(content->buffToFree, &nodeNeedFree);
         if (ret != LOS_OK) {
             PRINT_ERR("CheckUsedBuffer failed:%d\n", ret);
@@ -1258,18 +1260,18 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcMsgHandle(IpcContent *con)
         }
     }
 
-    if ((content->flag & SEND) == SEND) {
+    if ((content->flag & SEND) == SEND) { // 向外发送
         if (content->outMsg == NULL) {
             PRINT_ERR("content->outmsg is null\n");
             ret = -EINVAL;
             goto BUFFER_FREE;
-        }
+        }// 1. 先将用户空间过来的消息拷贝到内核空间 (先拷贝壳)
         if (copy_from_user((void *)msg, (const void *)content->outMsg, sizeof(IpcMsg)) != LOS_OK) {
             PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
             ret = -EINVAL;
             goto BUFFER_FREE;
         }
-        content->outMsg = msg;
+        content->outMsg = msg;// outMsg 指向内核空间
         if ((content->outMsg->type < 0) || (content->outMsg->type >= MT_DEATH_NOTIFY)) {
             PRINT_ERR("LiteIpc unknow msg type:%d\n", content->outMsg->type);
             ret = -EINVAL;
@@ -1290,7 +1292,7 @@ BUFFER_FREE:
         return ret;
     }
 
-    if ((content->flag & RECV) == RECV) {
+    if ((content->flag & RECV) == RECV) {//接收到消息
         ret = LiteIpcRead(content);
         if (ret != LOS_OK) {
             PRINT_ERR("LiteIpcRead failed ERROR: %d\n", (INT32)ret);

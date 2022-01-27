@@ -146,7 +146,7 @@ typedef struct VmSpace {
     LOS_DL_LIST         node;           /**< vm space dl list | 节点,通过它挂到全局虚拟空间 g_vmSpaceList 链表上*/
     LosRbTree           regionRbTree;   /**< region red-black tree root | 采用红黑树方式管理本空间各个线性区*/
     LosMux              regionMux;      /**< region list mutex lock | 虚拟空间的互斥锁*/
-    VADDR_T             base;           /**< vm space base addr | 虚拟空间的基地址,常用于判断地址是否在内核还是用户空间*/
+    VADDR_T             base;           /**< vm space base addr | 虚拟空间的基地址,线性区的分配范围,常用于判断地址是否在内核还是用户空间*/
     UINT32              size;           /**< vm space size | 虚拟空间大小*/
     VADDR_T             heapBase;       /**< vm space heap base address | 堆区基地址，表堆区范围起点*/
     VADDR_T             heapNow;        /**< vm space heap base now | 堆区现地址，表堆区范围终点，do_brk()直接修改堆的大小返回新的堆区结束地址， heapNow >= heapBase*/
@@ -172,10 +172,10 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_UNCACHED_DEVICE      (2<<0) /* only exists on some arches, otherwise UNCACHED */
 #define     VM_MAP_REGION_FLAG_STRONGLY_ORDERED     (3<<0) /* only exists on some arches, otherwise UNCACHED */
 #define     VM_MAP_REGION_FLAG_CACHE_MASK           (3<<0)		///< 缓冲区掩码
-#define     VM_MAP_REGION_FLAG_PERM_USER            (1<<2)		///< 用户空间区
-#define     VM_MAP_REGION_FLAG_PERM_READ            (1<<3)		///< 可读取区
-#define     VM_MAP_REGION_FLAG_PERM_WRITE           (1<<4)		///< 可写入区
-#define     VM_MAP_REGION_FLAG_PERM_EXECUTE         (1<<5)		///< 可被执行区
+#define     VM_MAP_REGION_FLAG_PERM_USER            (1<<2)		///< 用户空间永久区,PERM表示常驻区,可理解为非栈,非堆区
+#define     VM_MAP_REGION_FLAG_PERM_READ            (1<<3)		///< 永久可读取区
+#define     VM_MAP_REGION_FLAG_PERM_WRITE           (1<<4)		///< 永久可写入区
+#define     VM_MAP_REGION_FLAG_PERM_EXECUTE         (1<<5)		///< 永久可被执行区
 #define     VM_MAP_REGION_FLAG_PROT_MASK            (0xF<<2)	///< 访问权限掩码
 #define     VM_MAP_REGION_FLAG_NS                   (1<<6) 		/* NON-SECURE */
 #define     VM_MAP_REGION_FLAG_SHARED               (1<<7)		///< MAP_SHARED：把对该内存段的修改保存到磁盘文件中 详见 OsCvtProtFlagsToRegionFlags ,要和 VM_MAP_REGION_FLAG_SHM区别理解
@@ -185,19 +185,19 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_HEAP                 (1<<10)		///< 线性区的类型:堆区
 #define     VM_MAP_REGION_FLAG_DATA                 (1<<11)		///< data数据区 编译在ELF中
 #define     VM_MAP_REGION_FLAG_TEXT                 (1<<12)		///< 代码区
-#define     VM_MAP_REGION_FLAG_BSS                  (1<<13)		///< bbs数据区 由运行时动态分配
+#define     VM_MAP_REGION_FLAG_BSS                  (1<<13)		///< bbs数据区 由运行时动态分配,bss段（Block Started by Symbol segment）通常是指用来存放程序中未初始化的全局变量的一块内存区域。
 #define     VM_MAP_REGION_FLAG_VDSO                 (1<<14)		///< VDSO（Virtual Dynamic Shared Object，虚拟动态共享库）由内核提供的虚拟.so文件，它不在磁盘上，而在内核里，内核将其映射到一个地址空间中，被所有程序共享，正文段大小为一个页面。
 #define     VM_MAP_REGION_FLAG_MMAP                 (1<<15)		///< 映射区,虚拟空间内有专门用来存储<虚拟地址-物理地址>映射的区域
 #define     VM_MAP_REGION_FLAG_SHM                  (1<<16) 	///< 共享内存区,和代码区同级概念,意思是整个线性区被贴上共享标签
-#define     VM_MAP_REGION_FLAG_FIXED                (1<<17)
-#define     VM_MAP_REGION_FLAG_FIXED_NOREPLACE      (1<<18)
+#define     VM_MAP_REGION_FLAG_FIXED                (1<<17)		///< 填满线性区
+#define     VM_MAP_REGION_FLAG_FIXED_NOREPLACE      (1<<18)		///< 	
 #define     VM_MAP_REGION_FLAG_INVALID              (1<<19) /* indicates that flags are not specified */
 /// 从外部权限标签转化为线性区权限标签
 STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned long flags)
 {
     UINT32 regionFlags = 0;
 
-    regionFlags |= VM_MAP_REGION_FLAG_PERM_USER;								//必须是可用区
+    regionFlags |= VM_MAP_REGION_FLAG_PERM_USER;								//必须是用户空间区
     regionFlags |= (prot & PROT_READ) ? VM_MAP_REGION_FLAG_PERM_READ : 0; 		//映射区可被读
     regionFlags |= (prot & PROT_WRITE) ? (VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE) : 0;
     regionFlags |= (prot & PROT_EXEC) ? (VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_EXECUTE) : 0;
@@ -234,7 +234,7 @@ STATIC INLINE BOOL LOS_IsRegionTypeFile(LosVmMapRegion* region)
 {
     return region->regionType == VM_MAP_REGION_TYPE_FILE;
 }
-/// permanent 用户进程常量区
+/// permanent 用户进程永久/常驻区
 STATIC INLINE BOOL LOS_IsRegionPermUserReadOnly(LosVmMapRegion* region)
 {
     return ((region->regionFlags & VM_MAP_REGION_FLAG_PROT_MASK) ==

@@ -223,7 +223,7 @@ VOID OsVmMapInit(VOID)
 ///初始化内核虚拟空间
 BOOL OsKernVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)//内核空间页表是编译时放在bbs段指定的,共用 L1表
 {
-    vmSpace->base = KERNEL_ASPACE_BASE;//内核空间基地址
+    vmSpace->base = KERNEL_ASPACE_BASE;//内核空间基地址, 线性区将分配在此范围
     vmSpace->size = KERNEL_ASPACE_SIZE;//内核空间大小
     vmSpace->mapBase = KERNEL_VMM_BASE;//内核空间映射区基地址
     vmSpace->mapSize = KERNEL_VMM_SIZE;//内核空间映射区大小
@@ -439,7 +439,7 @@ VADDR_T OsAllocRange(LosVmSpace *vmSpace, size_t len)
     LosRbNode *pstRbNode = NULL;
     LosRbNode *pstRbNodeTmp = NULL;
     LosRbTree *regionRbTree = &vmSpace->regionRbTree;
-    VADDR_T curEnd = vmSpace->mapBase;
+    VADDR_T curEnd = vmSpace->mapBase;//获取映射区基地址
     VADDR_T nextStart;
 
     curRegion = LOS_RegionFind(vmSpace, vmSpace->mapBase);
@@ -486,23 +486,23 @@ VADDR_T OsAllocSpecificRange(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len, UIN
 {
     STATUS_T status;
 
-    if (LOS_IsRangeInSpace(vmSpace, vaddr, len) == FALSE) {
+    if (LOS_IsRangeInSpace(vmSpace, vaddr, len) == FALSE) {//虚拟地址是否在进程空间范围内
         return 0;
     }
 
     if ((LOS_RegionFind(vmSpace, vaddr) != NULL) ||
         (LOS_RegionFind(vmSpace, vaddr + len - 1) != NULL) ||
-        (LOS_RegionRangeFind(vmSpace, vaddr, len - 1) != NULL)) {
+        (LOS_RegionRangeFind(vmSpace, vaddr, len - 1) != NULL)) {//没找到的情况
         if ((regionFlags & VM_MAP_REGION_FLAG_FIXED_NOREPLACE) != 0) {
             return 0;
-        } else if ((regionFlags & VM_MAP_REGION_FLAG_FIXED) != 0) {
-            status = LOS_UnMMap(vaddr, len);
+        } else if ((regionFlags & VM_MAP_REGION_FLAG_FIXED) != 0) {//线性区未填满,则解除这部分空间的映射
+            status = LOS_UnMMap(vaddr, len);//解除映射
             if (status != LOS_OK) {
                 VM_ERR("unmap specific range va: %#x, len: %#x failed, status: %d", vaddr, len, status);
                 return 0;
             }
         } else {
-            return OsAllocRange(vmSpace, len);
+            return OsAllocRange(vmSpace, len);//默认分配一个
         }
     }
 
@@ -589,11 +589,11 @@ LosVmMapRegion *LOS_RegionAlloc(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len, 
      * then the kernel takes it as where to place the mapping;
      */
     (VOID)LOS_MuxAcquire(&vmSpace->regionMux);//获得互斥锁
-    if (vaddr == 0) {//如果地址是0，则由内核选择创建映射的虚拟地址，    这是创建新映射的最便捷的方法。
+    if (vaddr == 0) {//如果地址是0，根据线性区管理的实际情况,自动创建虚拟地址，    这是创建新映射的最便捷的方法。
         rstVaddr = OsAllocRange(vmSpace, len);
     } else {
         /* if it is already mmapped here, we unmmap it */
-        rstVaddr = OsAllocSpecificRange(vmSpace, vaddr, len, regionFlags);
+        rstVaddr = OsAllocSpecificRange(vmSpace, vaddr, len, regionFlags);//创建包含指定虚拟地址的线性区,       rstVaddr !=        vaddr || rstVaddr == vaddr
         if (rstVaddr == 0) {
             VM_ERR("alloc specific range va: %#x, len: %#x failed", vaddr, len);
             goto OUT;
@@ -603,7 +603,7 @@ LosVmMapRegion *LOS_RegionAlloc(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len, 
         goto OUT;
     }
 
-    newRegion = OsCreateRegion(rstVaddr, len, regionFlags, pgoff);//从内存池中创建一个线性区
+    newRegion = OsCreateRegion(rstVaddr, len, regionFlags, pgoff);//创建一个线性区,指定线性区的开始地址rstVaddr ...
     if (newRegion == NULL) {
         goto OUT;
     }
@@ -1094,9 +1094,9 @@ STATUS_T LOS_VaddrToPaddrMmap(LosVmSpace *space, VADDR_T vaddr, PADDR_T paddr, s
 }
 
 //对外接口|申请内核堆空间内存
-VOID *LOS_VMalloc(size_t size)//从g_vMallocSpace中申请物理内存
+VOID *LOS_VMalloc(size_t size)
 {
-    LosVmSpace *space = &g_vMallocSpace;
+    LosVmSpace *space = &g_vMallocSpace;//从内核动态空间申请
     LosVmMapRegion *region = NULL;
     size_t sizeCount;
     size_t count;
