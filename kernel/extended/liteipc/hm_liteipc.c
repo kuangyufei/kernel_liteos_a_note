@@ -299,7 +299,7 @@ ERROR_REGION_OUT:
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 LiteIpcPoolInit(ProcIpcInfo *ipcInfo)
 {
     ipcInfo->pool.uvaddr = NULL;
-    ipcInfo->pool.kvaddr = NULL
+    ipcInfo->pool.kvaddr = NULL;
     ipcInfo->pool.poolSize = 0;
     ipcInfo->ipcTaskID = INVAILD_ID;
     LOS_ListInit(&ipcInfo->ipcUsedNodelist);//上面将挂已使用的节点
@@ -765,7 +765,10 @@ LITE_OS_SEC_TEXT STATIC BOOL IsTaskAlive(UINT32 taskID)
         return FALSE;
     }
     tcb = OS_TCB_FROM_TID(taskID); //获取任务控制块
-    if (!OsProcessIsUserMode(OS_PCB_FROM_PID(tcb->processID))) {//判断是否为用户进程
+    if (!OsTaskIsUserMode(tcb)) {
+        return FALSE;
+    }
+    if (OsTaskIsUnused(tcb)) {
         return FALSE;
     }
     if (OsTaskIsInactive(tcb)) {//任务是否活跃

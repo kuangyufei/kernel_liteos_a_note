@@ -30,8 +30,8 @@
 import("//kernel/liteos_a/liteos.gni")
 
 MUSLDIR = "$LITEOSTHIRDPARTY/musl"
-OPTRTDIR = "$LITEOSTHIRDPARTY/optimized-routines"
 
+import("//third_party/optimized-routines/optimized-routines.gni")
 import("$MUSLDIR/porting/liteos_a/kernel/musl.gni")
 
 module_switch = defined(LOSCFG_LIB_LIBC)
@@ -54,13 +54,7 @@ kernel_module(module_name) {
       "$MUSLPORTINGDIR/src/string/strcpy.c",
       "$MUSLPORTINGDIR/src/string/strlen.c",
     ]
-    sources += [
-      "$OPTRTDIR/string/arm/memchr.S",
-      "$OPTRTDIR/string/arm/memcpy.S",
-      "$OPTRTDIR/string/arm/strcmp.S",
-      "$OPTRTDIR/string/arm/strcpy.c",
-      "$OPTRTDIR/string/arm/strlen-armv6t2.S",
-    ]
+    sources += OPTRT_STRING_ARM_SRC_FILES
     asmflags = [
       "-D__strlen_armv6t2=strlen",
       "-D__strcmp_arm=strcmp",

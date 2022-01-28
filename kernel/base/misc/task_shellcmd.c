@@ -112,7 +112,7 @@ LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellCmdProcessMode(UINT16 mode)
 
     return (UINT8 *)"ERROR";
 }
-/// 获取调度方式的名称
+/// 获取调度方式的名�?
 LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellCmdSchedPolicy(UINT16 policy)
 {
     if (policy == LOS_SCHED_RR) {
@@ -125,10 +125,9 @@ LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellCmdSchedPolicy(UINT16 policy)
 
     return (UINT8 *)"ERROR";
 }
-/// 获取状态名称
+
 LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellProcessStatus(UINT16 status)
 {
-    status = status & OS_PROCESS_STATUS_MASK;
     if (status & OS_PROCESS_STATUS_ZOMBIES) {
         return (UINT8 *)"Zombies";
     } else if (status & OS_PROCESS_STATUS_INIT) {
@@ -137,11 +136,8 @@ LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellProcessStatus(UINT16 status)
         return (UINT8 *)"Running";
     } else if (status & OS_PROCESS_STATUS_READY) {
         return (UINT8 *)"Ready";
-    } else if (status & OS_PROCESS_STATUS_PENDING) {
-        return (UINT8 *)"Pending";
     }
-
-    return (UINT8 *)"Invalid";
+    return (UINT8 *)"Pending";
 }
 
 STATIC VOID OsShellCmdProcessTitle(VOID *seqBuf, UINT16 flag)
@@ -189,7 +185,7 @@ STATIC VOID OsShellCmdProcessInfoShow(const LosProcessCB *processCB, const INT32
                           processCpup1s[pid].usage % LOS_CPUP_PRECISION_MULT);
 #endif /* LOSCFG_KERNEL_CPUP */
         PROCESS_INFO_SHOW(seqBuf, "%6s%9u%5d%10u%7s ",
-                          OsShellCmdSchedPolicy(LOS_SCHED_RR), processCB->priority,
+                          OsShellCmdSchedPolicy(LOS_SCHED_RR), OS_TCB_FROM_TID(processCB->threadGroupID)->basePrio,
                           (INT32)processCB->threadGroupID, processCB->threadNumber,
                           OsShellCmdProcessMode(processCB->processMode));
     } else {
@@ -246,17 +242,28 @@ STATIC VOID OsProcessMemUsageGet(UINT32 *memArray)
 }
 #endif
 
-STATIC UINT32 OsProcessInfoGet(LosProcessCB **pcbArray, INT32 **group, UINT32 **memArray, UINT16 flag)
+#define OS_TASK_STATUS_MASK 0x00FF
+STATIC VOID OsProcessInfoGet(LosProcessCB **pcbArray, INT32 **group,
+                             UINT32 **memArray, LosTaskCB **tcbArray,
+                             UINT16 flag)
 {
-    UINT32 len = OS_PROCESS_ALL_INFO_LEN;
-    LosProcessCB *processCB = NULL;
-    INT32 *user = NULL;
-
-    (VOID)memcpy_s(*pcbArray, OS_PROCESS_INFO_LEN, g_processCBArray, OS_PROCESS_INFO_LEN);
     *group = (INT32 *)((UINTPTR)*pcbArray + OS_PROCESS_INFO_LEN);
-    user = (INT32 *)((UINTPTR)*group + OS_PROCESS_GROUP_INFO_LEN);
+    INT32 *user = (INT32 *)((UINTPTR)*group + OS_PROCESS_GROUP_INFO_LEN);
+
+    for (UINT32 tid = 0; tid < g_taskMaxNum; tid++) {
+        LosTaskCB *taskCB = *tcbArray + tid;
+        if (OsTaskIsUnused(taskCB)) {
+            continue;
+        }
+
+        LosProcessCB *processCB = *pcbArray + taskCB->processID;
+        if (!OsProcessIsDead(processCB) && !OsProcessIsInit(processCB)) {
+            processCB->processStatus |= (taskCB->taskStatus & OS_TASK_STATUS_MASK);
+        }
+    }
+
     for (UINT32 pid = 0; pid < g_processMaxNum; ++pid) {
-        processCB = *pcbArray + pid;
+        LosProcessCB *processCB = *pcbArray + pid;
         if (OsProcessIsUnused(processCB)) {
             continue;
         }
@@ -295,11 +302,8 @@ STATIC UINT32 OsProcessInfoGet(LosProcessCB **pcbArray, INT32 **group, UINT32 **
     if (flag & OS_PROCESS_MEM_INFO) {
         *memArray = (UINT32 *)((UINTPTR)*pcbArray + OS_PROCESS_ALL_INFO_LEN);
         OsProcessMemUsageGet(*memArray);
-        len += OS_PROCESS_MEM_ALL_INFO_LEN;
     }
 #endif
-
-    return len;
 }
 
 STATIC VOID OsShellCmdProcessInfoData(const LosProcessCB *pcbArray, const INT32 *group,
@@ -322,23 +326,23 @@ STATIC VOID OsShellCmdProcessInfoData(const LosProcessCB *pcbArray, const INT32 
 
 LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellCmdConvertTskStatus(UINT16 taskStatus)
 {
-    if (taskStatus & OS_TASK_STATUS_INIT) {//初始化
+    if (taskStatus & OS_TASK_STATUS_INIT) {//初始�?
         return (UINT8 *)"Init";
-    } else if (taskStatus & OS_TASK_STATUS_RUNNING) {//运行中
+    } else if (taskStatus & OS_TASK_STATUS_RUNNING) {//运行�?
         return (UINT8 *)"Running";
-    } else if (taskStatus & OS_TASK_STATUS_READY) {//已就绪
+    } else if (taskStatus & OS_TASK_STATUS_READY) {//已就�?
         return (UINT8 *)"Ready";
     } else if (taskStatus & OS_TASK_STATUS_SUSPENDED) {//暂停
         return (UINT8 *)"Suspended";
     } else if (taskStatus & OS_TASK_STATUS_DELAY) {//延迟
         return (UINT8 *)"Delay";
     } else if (taskStatus & OS_TASK_STATUS_PENDING) {//挂起/待办
-        if (taskStatus & OS_TASK_STATUS_PEND_TIME) { //挂起/待办有时间限制
+        if (taskStatus & OS_TASK_STATUS_PEND_TIME) { //挂起/待办有时间限�?
             return (UINT8 *)"PendTime";
         } else {
-            return (UINT8 *)"Pending";//挂起/待办无时间限制
+            return (UINT8 *)"Pending";//挂起/待办无时间限�?
         }
-    } else if (taskStatus & OS_TASK_STATUS_EXIT) {//退出
+    } else if (taskStatus & OS_TASK_STATUS_EXIT) {//退�?
         return (UINT8 *)"Exit";
     }
 
@@ -363,7 +367,7 @@ STATIC VOID OsShellCmdTaskWaterLineGet(const LosTaskCB *allTaskArray)
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 #define OS_PEND_REASON_MAX_LEN 20
-//shell检查任务等待标�?
+//shell检查任务等待标�?
 STATIC CHAR *OsShellCheckTaskWaitFlag(const LosTaskCB *taskCB, UINTPTR *lockID)
 {
     *lockID = taskCB->waitID;
@@ -522,16 +526,24 @@ STATIC VOID OsProcessAndTaskInfoGet(LosProcessCB **pcbArray, INT32 **group, LosT
 {
     BOOL lockFlag = FALSE;
     UINT32 intSave = 0;
-    UINT32 processInfoLen;
+    UINT32 processInfoLen = OS_PROCESS_ALL_INFO_LEN;
 
     if (LOS_SpinHeld(&g_taskSpin) == FALSE) {
         SCHEDULER_LOCK(intSave);
         lockFlag = TRUE;
     }
 
-    processInfoLen = OsProcessInfoGet(pcbArray, group, memArray, flag);
+#ifdef LOSCFG_KERNEL_VM
+    if (flag & OS_PROCESS_MEM_INFO) {
+        processInfoLen += OS_PROCESS_MEM_ALL_INFO_LEN;
+    }
+#endif
+
+    (VOID)memcpy_s(*pcbArray, OS_PROCESS_INFO_LEN, g_processCBArray, OS_PROCESS_INFO_LEN);
     *tcbArray = (LosTaskCB *)((UINTPTR)*pcbArray + processInfoLen);
     (VOID)memcpy_s(*tcbArray, OS_TASK_INFO_LEN, g_taskCBArray, OS_TASK_INFO_LEN);
+
+    OsProcessInfoGet(pcbArray, group, memArray, tcbArray, flag);
     taskWaterLine = (UINT32 *)((UINTPTR)*tcbArray + OS_TASK_INFO_LEN);
     OsShellCmdTaskWaterLineGet(*tcbArray);
     if (lockFlag == TRUE) {

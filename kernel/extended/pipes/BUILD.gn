@@ -28,19 +28,16 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
+import("//third_party/NuttX/NuttX.gni")
 
 module_switch = defined(LOSCFG_KERNEL_PIPE)
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
-  sources = [
-    "//third_party/NuttX/drivers/pipes/fifo.c",
-    "//third_party/NuttX/drivers/pipes/pipe.c",
-    "//third_party/NuttX/drivers/pipes/pipe_common.c",
-  ]
+  sources = NUTTX_DRIVERS_PIPES_SRC_FILES
 
   public_configs = [ ":public" ]
 }
 
 config("public") {
-  include_dirs = [ "//third_party/NuttX/drivers/pipes" ]
+  include_dirs = NUTTX_DRIVERS_PIPES_INCLUDE_DIRS
 }

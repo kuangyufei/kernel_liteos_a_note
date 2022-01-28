@@ -73,4 +73,205 @@ HWTEST_F(NetDbTest, NetNetDbTest013, TestSize.Level0)
 }
 
 #endif
+
+#if defined(LOSCFG_USER_TEST_FULL)
+/* *
+ * @tc.name: NetNetDbTest018
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest018, TestSize.Level0)
+{
+    NetNetDbTest018();
+}
+
+/* *
+ * @tc.name: NetNetDbTest002
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest002, TestSize.Level0)
+{
+    NetNetDbTest002();
+}
+
+/* *
+ * @tc.name: NetNetDbTest003
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest003, TestSize.Level0)
+{
+    NetNetDbTest003();
+}
+
+/* *
+ * @tc.name: NetNetDbTest004
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest004, TestSize.Level0)
+{
+    NetNetDbTest004();
+}
+
+/* *
+ * @tc.name: NetNetDbTest006
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest006, TestSize.Level0)
+{
+    NetNetDbTest006();
+}
+
+/* *
+ * @tc.name: NetNetDbTest007
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest007, TestSize.Level0)
+{
+    NetNetDbTest007();
+}
+
+/* *
+ * @tc.name: NetNetDbTest008
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest008, TestSize.Level0)
+{
+    NetNetDbTest008();
+}
+
+/* *
+ * @tc.name: NetNetDbTest009
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest009, TestSize.Level0)
+{
+    NetNetDbTest009();
+}
+
+/* *
+ * @tc.name: NetNetDbTest010
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest010, TestSize.Level0)
+{
+    NetNetDbTest010();
+}
+
+/* *
+ * @tc.name: NetNetDbTest011
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest011, TestSize.Level0)
+{
+    NetNetDbTest011();
+}
+
+/* *
+ * @tc.name: NetNetDbTest012
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest012, TestSize.Level0)
+{
+    NetNetDbTest012();
+}
+
+/* *
+ * @tc.name: NetNetDbTest015
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest015, TestSize.Level0)
+{
+    NetNetDbTest015();
+}
+
+/* *
+ * @tc.name: NetNetDbTest016
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest016, TestSize.Level0)
+{
+    NetNetDbTest016();
+}
+
+/* *
+ * @tc.name: NetNetDbTest017
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest017, TestSize.Level0)
+{
+    NetNetDbTest017();
+}
+
+/* *
+ * @tc.name: NetNetDbTest019
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest019, TestSize.Level0)
+{
+    NetNetDbTest019();
+}
+
+/* *
+ * @tc.name: NetNetDbTest020
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest020, TestSize.Level0)
+{
+    NetNetDbTest020();
+}
+
+/* *
+ * @tc.name: NetNetDbTest021
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest021, TestSize.Level0)
+{
+    NetNetDbTest021();
+}
+
+/* *
+ * @tc.name: NetNetDbTest022
+ * @tc.desc: function for NetDbTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(NetDbTest, NetNetDbTest022, TestSize.Level0)
+{
+    NetNetDbTest022();
+}
+
+#endif
 }

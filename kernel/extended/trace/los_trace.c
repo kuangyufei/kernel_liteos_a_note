@@ -72,6 +72,7 @@
 #include "trace_cnv.h"
 #include "los_init.h"
 #include "los_process.h"
+#include "los_sched_pri.h"
 
 #ifdef LOSCFG_KERNEL_SMP
 #include "los_mp.h"
@@ -137,7 +138,7 @@ STATIC VOID OsTraceSetFrame(TraceEventFrame *frame, UINT32 eventType, UINTPTR id
 #ifdef LOSCFG_TRACE_FRAME_CORE_MSG
     frame->core.cpuId      = ArchCurrCpuid();
     frame->core.hwiActive  = OS_INT_ACTIVE ? TRUE : FALSE;
-    frame->core.taskLockCnt = MIN(OsPercpuGet()->taskLockCnt, 0xF); /* taskLockCnt is 4 bits, max value = 0xF */
+    frame->core.taskLockCnt = MIN(OsSchedLockCountGet(), 0xF); /* taskLockCnt is 4 bits, max value = 0xF */
     frame->core.paramCount = paramCount;
 #endif
 

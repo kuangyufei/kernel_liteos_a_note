@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
+import("//third_party/FreeBSD/FreeBSD.gni")
 
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
@@ -38,7 +39,7 @@ kernel_module(module_name) {
     "src/los_seq_buf.c",
   ]
 
-  sources += [ "$LITEOSTHIRDPARTY/FreeBSD/sys/libkern/crc32.c" ]
+  sources += FREEBSD_SYS_LIBKERN_SRC_FILES
 
   public_configs = [ ":public" ]
 }

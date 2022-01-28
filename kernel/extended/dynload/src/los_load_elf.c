@@ -716,18 +716,18 @@ STATIC INT32 OsGetParamNum(CHAR *const *argv)
     return count;
 }
 
-STATIC UINT32 OsGetRndOffset(const ELFLoadInfo *loadInfo)
+UINT32 OsGetRndOffset(INT32 randomDevFD)
 {
     UINT32 randomValue = 0;
 
 #ifdef LOSCFG_ASLR
-    if (read(loadInfo->randomDevFD, &randomValue, sizeof(UINT32)) == sizeof(UINT32)) {
+    if (read(randomDevFD, &randomValue, sizeof(UINT32)) == sizeof(UINT32)) {
         randomValue &= RANDOM_MASK;
     } else {
         randomValue = (UINT32)random() & RANDOM_MASK;
     }
 #else
-    (VOID)loadInfo;
+    (VOID)randomDevFD;
 #endif
 
     return ROUNDDOWN(randomValue, PAGE_SIZE);
@@ -805,7 +805,7 @@ STATIC INT32 OsSetArgParams(ELFLoadInfo *loadInfo, CHAR *const *argv, CHAR *cons
     if (((UINT32)loadInfo->stackProt & (PROT_READ | PROT_WRITE)) != (PROT_READ | PROT_WRITE)) {
         return -ENOEXEC;
     }
-    loadInfo->stackTopMax = USER_STACK_TOP_MAX - OsGetRndOffset(loadInfo);
+    loadInfo->stackTopMax = USER_STACK_TOP_MAX - OsGetRndOffset(loadInfo->randomDevFD);
     loadInfo->stackBase = loadInfo->stackTopMax - USER_STACK_SIZE;
     loadInfo->stackSize = USER_STACK_SIZE;
     loadInfo->stackParamBase = loadInfo->stackTopMax - USER_PARAM_BYTE_MAX;
@@ -963,7 +963,7 @@ STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
     loadInfo->loadAddr = 0;
 
     if (loadInfo->execInfo.elfEhdr.elfType == LD_ET_DYN) {
-        loadBase = EXEC_MMAP_BASE + OsGetRndOffset(loadInfo);
+        loadBase = EXEC_MMAP_BASE + OsGetRndOffset(loadInfo->randomDevFD);
         mapSize = OsGetAllocSize(elfPhdrTemp, loadInfo->execInfo.elfEhdr.elfPhNum);
         if (mapSize == 0) {
             PRINT_ERR("%s[%d], Failed to get allocation size of file: %s!\n", __FUNCTION__, __LINE__,
@@ -1009,17 +1009,7 @@ STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
 
 STATIC VOID OsFlushAspace(ELFLoadInfo *loadInfo)
 {
-    LosProcessCB *processCB = OsCurrProcessGet();
-
-    OsExecDestroyTaskGroup();
-
-    loadInfo->oldSpace = processCB->vmSpace;
-    processCB->vmSpace = loadInfo->newSpace;
-    processCB->vmSpace->heapBase += OsGetRndOffset(loadInfo);
-    processCB->vmSpace->heapNow = processCB->vmSpace->heapBase;
-    processCB->vmSpace->mapBase += OsGetRndOffset(loadInfo);
-    processCB->vmSpace->mapSize = loadInfo->stackBase - processCB->vmSpace->mapBase;
-    LOS_ArchMmuContextSwitch(&OsCurrProcessGet()->vmSpace->archMmu);
+    loadInfo->oldSpace = OsExecProcessVmSpaceReplace(loadInfo->newSpace, loadInfo->stackBase, loadInfo->randomDevFD);
 }
 
 STATIC VOID OsDeInitLoadInfo(ELFLoadInfo *loadInfo)
@@ -1079,8 +1069,7 @@ INT32 OsLoadELFFile(ELFLoadInfo *loadInfo)
 
     ret = OsLoadELFSegment(loadInfo);
     if (ret != LOS_OK) {
-        OsCurrProcessGet()->vmSpace = loadInfo->oldSpace;
-        LOS_ArchMmuContextSwitch(&OsCurrProcessGet()->vmSpace->archMmu);
+        OsExecProcessVmSpaceRestore(loadInfo->oldSpace);
         goto OUT;
     }
 

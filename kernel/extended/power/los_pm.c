@@ -224,7 +224,6 @@ STATIC UINT32 OsPmSuspendSleep(LosPmCB *pm)
     LOS_SysSleepEnum mode;
     UINT32 prepare = 0;
     BOOL tickTimerStop = FALSE;
-    UINT64 currTime;
 
     ret = OsPmSuspendCheck(pm, &sysSuspendEarly, &deviceSuspend, &mode);
     if (ret != LOS_OK) {
@@ -247,9 +246,8 @@ STATIC UINT32 OsPmSuspendSleep(LosPmCB *pm)
 
     tickTimerStop = OsPmTickTimerStop(pm);
     if (!tickTimerStop) {
-        currTime = OsGetCurrSchedTimeCycle();
         OsSchedResetSchedResponseTime(0);
-        OsSchedUpdateExpireTime(currTime);
+        OsSchedUpdateExpireTime();
     }
 
     OsPmCpuSuspend(pm);

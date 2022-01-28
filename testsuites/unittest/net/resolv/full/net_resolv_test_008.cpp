@@ -35,6 +35,17 @@
 static int EtherNtohostTest(void)
 {
     // suppose "0:0:0:0:0:0 localhost" in `/etc/ethers' file.
+    char ether_file[] = "0:0:0:0:0:0 localhost";
+    char *pathList[] = {"/etc/ethers"};
+    char *streamList[] = {static_cast<char *>(ether_file)};
+    int streamLen[] = {sizeof(ether_file)};
+    const int file_number = 1;
+    int flag = PrepareFileEnv(pathList, streamList, streamLen, file_number);
+    if (flag != 0) {
+        RecoveryFileEnv(pathList, file_number);
+        return -1;
+    }
+
     struct ether_addr addr = {{0,0,0,0,0,0}}, *eaddr = &addr;
     char buf[100];
     int ret = ether_ntohost(buf, eaddr);
@@ -42,6 +53,7 @@ static int EtherNtohostTest(void)
     ICUNIT_ASSERT_EQUAL(ret, 0, -1);
     ICUNIT_ASSERT_EQUAL(strcmp("localhost", buf), 0, -1);
 
+    RecoveryFileEnv(pathList, file_number);
     return ICUNIT_SUCCESS;
 }
 

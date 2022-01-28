@@ -69,6 +69,9 @@
 #ifdef LOSCFG_SECURITY_CAPABILITY
 #include "capability_api.h"
 #endif
+#ifdef LOSCFG_KERNEL_DYNLOAD
+#include "los_load_elf.h"
+#endif
 #include "los_swtmr_pri.h"
 #include "los_vm_map.h"
 #include "los_vm_phys.h"
@@ -99,6 +102,50 @@ STATIC INLINE VOID OsInsertPCBToFreeList(LosProcessCB *processCB)
     processCB->processStatus = OS_PROCESS_FLAG_UNUSED;//设置为进程未使用
     processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;//timeID初始化值
     LOS_ListTailInsert(&g_freeProcess, &processCB->pendList);//进程节点挂入g_freeProcess以分配给后续进程使用
+}
+
+VOID OsDeleteTaskFromProcess(LosTaskCB *taskCB)
+{
+    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
+
+    LOS_ListDelete(&taskCB->threadList);
+    processCB->threadNumber--;
+    OsTaskInsertToRecycleList(taskCB);
+}
+
+UINT32 OsProcessAddNewTask(UINT32 pid, LosTaskCB *taskCB)
+{
+    UINT32 intSave;
+    UINT16 numCount;
+    LosProcessCB *processCB = OS_PCB_FROM_PID(pid);
+
+    SCHEDULER_LOCK(intSave);
+    taskCB->processID = pid;
+    LOS_ListTailInsert(&(processCB->threadSiblingList), &(taskCB->threadList));
+
+    if (OsProcessIsUserMode(processCB)) {
+        taskCB->taskStatus |= OS_TASK_FLAG_USER_MODE;
+        if (processCB->threadNumber > 0) {
+            taskCB->basePrio = OS_TCB_FROM_TID(processCB->threadGroupID)->basePrio;
+        } else {
+            taskCB->basePrio = OS_USER_PROCESS_PRIORITY_HIGHEST;
+        }
+    } else {
+        taskCB->basePrio = OsCurrTaskGet()->basePrio;
+    }
+
+#ifdef LOSCFG_KERNEL_VM
+    taskCB->archMmu = (UINTPTR)&processCB->vmSpace->archMmu;
+#endif
+    if (!processCB->threadNumber) {
+        processCB->threadGroupID = taskCB->taskID;
+    }
+    processCB->threadNumber++;
+
+    numCount = processCB->threadCount;
+    processCB->threadCount++;
+    SCHEDULER_UNLOCK(intSave);
+    return numCount;
 }
 /**
  * @brief 创建进程组
@@ -381,11 +428,6 @@ STATIC VOID OsWaitCheckAndWakeParentProcess(LosProcessCB *parentCB, const LosPro
 /*! 回收指定进程的资源 */
 LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 {
-    if (!(processCB->processStatus & (OS_PROCESS_STATUS_INIT | OS_PROCESS_STATUS_RUNNING))) {//初始化和正在运行的进程,不用/能回收
-        PRINT_ERR("The process(%d) has no permission to release process(%d) resources!\n",// @note_thinking 此处应该直接 return回去吧 !
-                  OsCurrProcessGet()->processID, processCB->processID);
-    }
-
 #ifdef LOSCFG_KERNEL_VM
     if (OsProcessIsUserMode(processCB)) {
         (VOID)OsVmSpaceRegionFree(processCB->vmSpace);
@@ -440,6 +482,7 @@ LITE_OS_SEC_TEXT STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, Proc
     OsExitProcessGroup(childCB, group);//退出进程组
     LOS_ListDelete(&childCB->siblingList);//从父亲大人的子孙链表上摘除
     if (childCB->processStatus & OS_PROCESS_STATUS_ZOMBIES) {//如果身上僵死状态的标签
+        OsDeleteTaskFromProcess(OS_TCB_FROM_TID(childCB->threadGroupID));
         childCB->processStatus &= ~OS_PROCESS_STATUS_ZOMBIES;//去掉僵死标签
         childCB->processStatus |= OS_PROCESS_FLAG_UNUSED;//贴上没使用标签，进程由进程池分配，进程退出后重新回到空闲进程池
     }
@@ -502,12 +545,9 @@ STATIC VOID OsChildProcessResourcesFree(const LosProcessCB *processCB)
 }
 
 /*! 一个进程的自然消亡过程,参数是当前运行的任务*/
-STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
+VOID OsProcessNaturalExit(LosProcessCB *processCB, UINT32 status)
 {
-    LosProcessCB *processCB = OS_PCB_FROM_PID(runTask->processID);//通过task找到所属PCB
     LosProcessCB *parentCB = NULL;
-
-    LOS_ASSERT(processCB->processStatus & OS_PROCESS_STATUS_RUNNING);//断言必须为正在运行的进程
 
     OsChildProcessResourcesFree(processCB);//释放孩子进程的资源
 
@@ -533,7 +573,6 @@ STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
         (VOID)OsKill(processCB->parentProcessID, SIGCHLD, OS_KERNEL_KILL_PERMISSION);//以内核权限发送SIGCHLD(子进程退出)信号.
 #endif
         LOS_ListHeadInsert(&g_processRecycleList, &processCB->pendList);//将进程通过其阻塞节点挂入全局进程回收链表
-        OsRunTaskToDelete(runTask);//删除正在运行的任务
         return;
     }
 
@@ -693,13 +732,12 @@ UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name)
 }
 
 /*! 初始化PCB(进程控制块)*/
-STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, const CHAR *name)
+STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, const CHAR *name)
 {
     processCB->processMode = mode;						//用户态进程还是内核态进程
     processCB->processStatus = OS_PROCESS_STATUS_INIT;	//进程初始状态
     processCB->parentProcessID = OS_INVALID_VALUE;		//爸爸进程，外面指定
     processCB->threadGroupID = OS_INVALID_VALUE;		//所属线程组
-    processCB->priority = priority;						//进程优先级
     processCB->umask = OS_PROCESS_DEFAULT_UMASK;		//掩码
     processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;
 
@@ -816,10 +854,10 @@ LITE_OS_SEC_TEXT INT32 LOS_GetGroupID(VOID)
 }
 
 /*! 进程创建初始化*/
-STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const CHAR *name, UINT16 priority)
+STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const CHAR *name)
 {
     ProcessGroup *group = NULL;
-    UINT32 ret = OsInitPCB(processCB, flags, priority, name);//初始化进程控制块
+    UINT32 ret = OsInitPCB(processCB, flags, name);
     if (ret != LOS_OK) {
         goto EXIT;
     }
@@ -861,7 +899,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSystemProcessCreate(VOID)
     }
 
     LosProcessCB *kerInitProcess = OS_PCB_FROM_PID(g_kernelInitProcess);//获取进程池中2号实体
-    ret = OsProcessCreateInit(kerInitProcess, OS_KERNEL_MODE, "KProcess", 0);//创建内核态祖宗进程
+    ret = OsProcessCreateInit(kerInitProcess, OS_KERNEL_MODE, "KProcess");//创建内核态祖宗进程
     if (ret != LOS_OK) {
         return ret;
     }
@@ -869,10 +907,9 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSystemProcessCreate(VOID)
     kerInitProcess->processStatus &= ~OS_PROCESS_STATUS_INIT;//去掉初始化标签
     g_processGroup = kerInitProcess->group;//进程组ID就是2号进程本身
     LOS_ListInit(&g_processGroup->groupList);//初始化进程组链表
-    OsCurrProcessSet(kerInitProcess);//设置为当前进程,注意当前进程是内核的视角,并不代表一旦设置就必须执行进程的任务.
 
     LosProcessCB *idleProcess = OS_PCB_FROM_PID(g_kernelIdleProcess);//获取进程池中0号实体
-    ret = OsInitPCB(idleProcess, OS_KERNEL_MODE, OS_TASK_PRIORITY_LOWEST, "KIdle");//创建内核态0号进程
+    ret = OsInitPCB(idleProcess, OS_KERNEL_MODE, "KIdle");//创建内核态0号进程
     if (ret != LOS_OK) {
         return ret;
     }
@@ -886,12 +923,13 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSystemProcessCreate(VOID)
 #ifdef LOSCFG_FS_VFS
     idleProcess->files = kerInitProcess->files;//共享文件
 #endif
+    idleProcess->processStatus &= ~OS_PROCESS_STATUS_INIT;
 
     ret = OsIdleTaskCreate();//创建cpu的idle任务,从此当前CPU OsPercpuGet()->idleTaskID 有了休息的地方.
     if (ret != LOS_OK) {
         return ret;
     }
-    idleProcess->threadGroupID = OsPercpuGet()->idleTaskID;//设置进程的多线程组长
+    idleProcess->threadGroupID = OsGetIdleTaskId();
 
     return LOS_OK;
 }
@@ -928,7 +966,7 @@ STATIC BOOL OsProcessCapPermitCheck(const LosProcessCB *processCB, UINT16 prio)
     }
 
     /* user mode process can reduce the priority of itself */
-    if ((runProcess->processID == processCB->processID) && (prio > processCB->priority)) {//用户模式下进程阔以降低自己的优先级
+    if ((runProcess->processID == processCB->processID) && (prio > OsCurrTaskGet()->basePrio)) {
         return TRUE;
     }
 
@@ -966,7 +1004,7 @@ LITE_OS_SEC_TEXT INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio
     }
 #endif
 
-    needSched = OsSchedModifyProcessSchedParam(processCB, policy, prio);
+    needSched = OsSchedModifyProcessSchedParam(pid, policy, prio);
     SCHEDULER_UNLOCK(intSave);//还锁
 
     LOS_MpSchedule(OS_MP_CPU_ALL);//核间中断
@@ -1012,7 +1050,6 @@ LITE_OS_SEC_TEXT INT32 LOS_SetProcessPriority(INT32 pid, UINT16 prio)
 /// 接口封装 - 获取进程优先级 which:标识进程,进程组,用户
 LITE_OS_SEC_TEXT INT32 OsGetProcessPriority(INT32 which, INT32 pid)
 {
-    LosProcessCB *processCB = NULL;
     INT32 prio;
     UINT32 intSave;
     (VOID)which;
@@ -1025,14 +1062,14 @@ LITE_OS_SEC_TEXT INT32 OsGetProcessPriority(INT32 which, INT32 pid)
         return -LOS_EINVAL;
     }
 
+    LosProcessCB *processCB = OS_PCB_FROM_PID(pid);
     SCHEDULER_LOCK(intSave);
-    processCB = OS_PCB_FROM_PID(pid);
     if (OsProcessIsUnused(processCB)) {
         prio = -LOS_ESRCH;
         goto OUT;
     }
 
-    prio = (INT32)processCB->priority;
+    prio = (INT32)OS_TCB_FROM_TID(processCB->threadGroupID)->basePrio;
 
 OUT:
     SCHEDULER_UNLOCK(intSave);
@@ -1490,6 +1527,36 @@ STATIC VOID *OsUserInitStackAlloc(LosProcessCB *processCB, UINT32 *size)
     return (VOID *)(UINTPTR)region->range.base;
 }
 
+#ifdef LOSCFG_KERNEL_DYNLOAD
+LITE_OS_SEC_TEXT VOID OsExecProcessVmSpaceRestore(LosVmSpace *oldSpace)
+{
+    LosProcessCB *processCB = OsCurrProcessGet();
+    LosTaskCB *runTask = OsCurrTaskGet();
+
+    processCB->vmSpace = oldSpace;
+    runTask->archMmu = (UINTPTR)&processCB->vmSpace->archMmu;
+    LOS_ArchMmuContextSwitch((LosArchMmu *)runTask->archMmu);
+}
+
+LITE_OS_SEC_TEXT LosVmSpace *OsExecProcessVmSpaceReplace(LosVmSpace *newSpace, UINTPTR stackBase, INT32 randomDevFD)
+{
+    LosProcessCB *processCB = OsCurrProcessGet();
+    LosTaskCB *runTask = OsCurrTaskGet();
+
+    OsProcessThreadGroupDestroy();
+    OsTaskCBRecycleToFree();
+
+    LosVmSpace *oldSpace = processCB->vmSpace;
+    processCB->vmSpace = newSpace;
+    processCB->vmSpace->heapBase += OsGetRndOffset(randomDevFD);
+    processCB->vmSpace->heapNow = processCB->vmSpace->heapBase;
+    processCB->vmSpace->mapBase += OsGetRndOffset(randomDevFD);
+    processCB->vmSpace->mapSize = stackBase - processCB->vmSpace->mapBase;
+    runTask->archMmu = (UINTPTR)&processCB->vmSpace->archMmu;
+    LOS_ArchMmuContextSwitch((LosArchMmu *)runTask->archMmu);
+    return oldSpace;
+}
+
 /**
  * @brief 进程的回收再利用,被LOS_DoExecveFile调用
  * @param processCB 
@@ -1576,27 +1643,39 @@ LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINT
     SCHEDULER_UNLOCK(intSave);//解锁
     return LOS_OK;
 }
+#endif
 /// 用户进程开始初始化
-STATIC UINT32 OsUserInitProcessStart(UINT32 processID, TSK_INIT_PARAM_S *param)
+STATIC UINT32 OsUserInitProcessStart(LosProcessCB *processCB, TSK_INIT_PARAM_S *param)
 {
     UINT32 intSave;
-    UINT32 taskID;
     INT32 ret;
 
-    taskID = OsCreateUserTask(processID, param);//创建一个用户态任务
+    UINT32 taskID = OsCreateUserTask(processCB->processID, param);
     if (taskID == OS_INVALID_VALUE) {
         return LOS_NOK;
     }
 
+    ret = LOS_SetProcessPriority(processCB->processID, OS_PROCESS_USERINIT_PRIORITY);
+    if (ret != LOS_OK) {
+        PRINT_ERR("User init process set priority failed! ERROR:%d \n", ret);
+        goto EXIT;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    processCB->processStatus &= ~OS_PROCESS_STATUS_INIT;
+    SCHEDULER_UNLOCK(intSave);
+
     ret = LOS_SetTaskScheduler(taskID, LOS_SCHED_RR, OS_TASK_PRIORITY_LOWEST);//调度器:设置为抢占式调度和最低任务优先级(31级)
     if (ret != LOS_OK) {
         PRINT_ERR("User init process set scheduler failed! ERROR:%d \n", ret);
-        SCHEDULER_LOCK(intSave);
-        (VOID)OsTaskDeleteUnsafe(OS_TCB_FROM_TID(taskID), OS_PRO_EXIT_OK, intSave);
-        return LOS_NOK;
+        goto EXIT;
     }
 
     return LOS_OK;
+
+EXIT:
+    (VOID)LOS_TaskDelete(taskID);
+    return ret;
 }
 
 STATIC UINT32 OsLoadUserInit(LosProcessCB *processCB)
@@ -1672,7 +1751,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
     VOID *stack = NULL;
 
     LosProcessCB *processCB = OS_PCB_FROM_PID(g_userInitProcess);
-    ret = OsProcessCreateInit(processCB, OS_USER_MODE, "Init", OS_PROCESS_USERINIT_PRIORITY);
+    ret = OsProcessCreateInit(processCB, OS_USER_MODE, "Init");
     if (ret != LOS_OK) {
         return ret;
     }
@@ -1693,7 +1772,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
     param.userParam.userMapBase = (UINTPTR)stack;
     param.userParam.userMapSize = size;
     param.uwResved = OS_TASK_FLAG_PTHREAD_JOIN;
-    ret = OsUserInitProcessStart(g_userInitProcess, &param);
+    ret = OsUserInitProcessStart(processCB, &param);
     if (ret != LOS_OK) {
         (VOID)OsUnMMap(processCB->vmSpace, param.userParam.userMapBase, param.userParam.userMapSize);
         goto ERROR;
@@ -1770,6 +1849,7 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
 
     LosTaskCB *childTaskCB = OS_TCB_FROM_TID(taskID);
     childTaskCB->taskStatus = runTask->taskStatus;//任务状态先同步,注意这里是赋值操作. ...01101001 
+    childTaskCB->basePrio = runTask->basePrio;
     if (childTaskCB->taskStatus & OS_TASK_STATUS_RUNNING) {//因只能有一个运行的task,所以如果一样要改4号位
         childTaskCB->taskStatus &= ~OS_TASK_STATUS_RUNNING;//将四号位清0 ,变成 ...01100001 
     } else {//非运行状态下会发生什么?
@@ -1777,7 +1857,6 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
             LOS_Panic("Clone thread status not running error status: 0x%x\n", childTaskCB->taskStatus);
         }
         childTaskCB->taskStatus &= ~OS_TASK_STATUS_UNUSED;//干净的Task
-        childProcessCB->priority = OS_PROCESS_PRIORITY_LOWEST;//进程设为最低优先级
     }
 
     if (OsProcessIsUserMode(childProcessCB)) {//是否是用户进程
@@ -1795,7 +1874,6 @@ STATIC UINT32 OsCopyParent(UINT32 flags, LosProcessCB *childProcessCB, LosProces
     LosProcessCB *parentProcessCB = NULL;
 
     SCHEDULER_LOCK(intSave);
-    childProcessCB->priority = runProcessCB->priority;	//当前进程所处阶级
 
     if (flags & CLONE_PARENT) { //这里指明 childProcessCB 和 runProcessCB 有同一个父亲，是兄弟关系
         parentProcessCB = OS_PCB_FROM_PID(runProcessCB->parentProcessID);//找出当前进程的父亲大人
@@ -1860,7 +1938,7 @@ STATIC UINT32 OsForkInitPCB(UINT32 flags, LosProcessCB *child, const CHAR *name,
     UINT32 ret;
     LosProcessCB *run = OsCurrProcessGet();//获取当前进程
 
-    ret = OsInitPCB(child, run->processMode, OS_PROCESS_PRIORITY_LOWEST, name);
+    ret = OsInitPCB(child, run->processMode, name);
     if (ret != LOS_OK) {
         return ret;
     }
@@ -1888,6 +1966,7 @@ STATIC UINT32 OsChildSetProcessGroupAndSched(LosProcessCB *child, LosProcessCB *
         }
     }
 
+    child->processStatus &= ~OS_PROCESS_STATUS_INIT;
     OsSchedTaskEnQueue(OS_TCB_FROM_TID(child->threadGroupID));
     SCHEDULER_UNLOCK(intSave);
 
@@ -1927,7 +2006,7 @@ STATIC UINT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProce
 /// 拷贝进程
 STATIC INT32 OsCopyProcess(UINT32 flags, const CHAR *name, UINTPTR sp, UINT32 size)
 {
-    UINT32 intSave, ret, processID;
+    UINT32 ret, processID;
     LosProcessCB *run = OsCurrProcessGet();//获取当前进程
 
     LosProcessCB *child = OsGetFreePCB();//从进程池中申请一个进程控制块，鸿蒙进程池默认64
@@ -1959,8 +2038,7 @@ STATIC INT32 OsCopyProcess(UINT32 flags, const CHAR *name, UINTPTR sp, UINT32 si
     return processID;
 
 ERROR_TASK:
-    SCHEDULER_LOCK(intSave);
-    (VOID)OsTaskDeleteUnsafe(OS_TCB_FROM_TID(child->threadGroupID), OS_PRO_EXIT_OK, intSave);
+    (VOID)LOS_TaskDelete(child->threadGroupID);
 ERROR_INIT:
     OsDeInitPCB(child);
     return -ret;
@@ -2026,8 +2104,9 @@ LITE_OS_SEC_TEXT VOID LOS_Exit(INT32 status)
         return;
     }
     SCHEDULER_UNLOCK(intSave);
-    OsTaskExitGroup((UINT32)status);//退出进程组
-    OsProcessExit(OsCurrTaskGet(), (UINT32)status);//进程退出
+
+    OsProcessThreadGroupDestroy();
+    OsRunningTaskToExit(OsCurrTaskGet(), OS_PRO_EXIT_OK);
 }
 
 
@@ -2091,17 +2170,77 @@ LITE_OS_SEC_TEXT UINT32 LOS_GetCurrProcessID(VOID)
     return OsCurrProcessGet()->processID;
 }
 /// 按指定状态退出指定进程
-LITE_OS_SEC_TEXT VOID OsProcessExit(LosTaskCB *runTask, INT32 status)
+#ifdef LOSCFG_KERNEL_VM
+STATIC VOID ThreadGroupActiveTaskKilled(LosTaskCB *taskCB)
 {
+    INT32 ret;
+
+    taskCB->taskStatus |= OS_TASK_FLAG_EXIT_KILL;
+#ifdef LOSCFG_KERNEL_SMP
+    /** The other core that the thread is running on and is currently running in a non-system call */
+    if (!taskCB->sig.sigIntLock && (taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {
+        taskCB->signal = SIGNAL_KILL;
+        LOS_MpSchedule(taskCB->currCpu);
+    } else
+#endif
+    {
+        ret = OsTaskKillUnsafe(taskCB->taskID, SIGKILL);
+        if (ret != LOS_OK) {
+            PRINT_ERR("pid %u exit, Exit task group %u kill %u failed! ERROR: %d\n",
+                      taskCB->processID, OsCurrTaskGet()->taskID, taskCB->taskID, ret);
+        }
+    }
+
+    if (!(taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN)) {
+        taskCB->taskStatus |= OS_TASK_FLAG_PTHREAD_JOIN;
+        LOS_ListInit(&taskCB->joinList);
+    }
+
+    ret = OsTaskJoinPendUnsafe(taskCB);
+    if (ret != LOS_OK) {
+        PRINT_ERR("pid %u exit, Exit task group %u to wait others task %u(0x%x) exit failed! ERROR: %d\n",
+                  taskCB->processID, OsCurrTaskGet()->taskID, taskCB->taskID, taskCB->taskStatus, ret);
+    }
+}
+#endif
+
+LITE_OS_SEC_TEXT VOID OsProcessThreadGroupDestroy(VOID)
+{
+#ifdef LOSCFG_KERNEL_VM
     UINT32 intSave;
-    LOS_ASSERT(runTask == OsCurrTaskGet());//只有当前进程才能调用这个函数,即进程最后的退出不假手他人
 
-    OsTaskResourcesToFree(runTask);//释放任务资源
-    OsProcessResourcesToFree(OsCurrProcessGet());//释放进程资源
-
+    LosProcessCB *processCB = OsCurrProcessGet();
+    LosTaskCB *currTask = OsCurrTaskGet();
     SCHEDULER_LOCK(intSave);
-    OsProcessNaturalExit(runTask, status);//进程自然退出
+    if ((processCB->processStatus & OS_PROCESS_FLAG_EXIT) || !OsProcessIsUserMode(processCB)) {
+        SCHEDULER_UNLOCK(intSave);
+        return;
+    }
+
+    processCB->processStatus |= OS_PROCESS_FLAG_EXIT;
+    processCB->threadGroupID = currTask->taskID;
+
+    LOS_DL_LIST *list = &processCB->threadSiblingList;
+    LOS_DL_LIST *head = list;
+    do {
+        LosTaskCB *taskCB = LOS_DL_LIST_ENTRY(list->pstNext, LosTaskCB, threadList);
+        if ((OsTaskIsInactive(taskCB) ||
+            ((taskCB->taskStatus & OS_TASK_STATUS_READY) && !taskCB->sig.sigIntLock)) &&
+            !(taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {
+            OsInactiveTaskDelete(taskCB);
+        } else if (taskCB != currTask) {
+            ThreadGroupActiveTaskKilled(taskCB);
+        } else {
+            /* Skip the current task */
+            list = list->pstNext;
+        }
+    } while (head != list->pstNext);
+
     SCHEDULER_UNLOCK(intSave);
+
+    LOS_ASSERT(processCB->threadNumber == 1);
+#endif
+    return;
 }
 /// 获取系统支持的最大进程数目
 LITE_OS_SEC_TEXT UINT32 LOS_GetSystemProcessMaximum(VOID)

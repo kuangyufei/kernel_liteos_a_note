@@ -34,6 +34,17 @@
 
 static int GetHostByNameRTest(void)
 {
+    char host_file[] = "127.0.0.1 localhost\n";
+    char *pathList[] = {"/etc/hosts"};
+    char *streamList[] = {static_cast<char *>(host_file)};
+    int streamLen[] = {sizeof(host_file)};
+    const int file_number = 1;
+    int flag = PrepareFileEnv(pathList, streamList, streamLen, file_number);
+    if (flag != 0) {
+        RecoveryFileEnv(pathList, file_number);
+        return -1;
+    }
+
     struct hostent addr, *result = NULL;
     char buf[1024];
     char buf1[1];
@@ -60,6 +71,7 @@ static int GetHostByNameRTest(void)
     ret = gethostbyname_r("lo", &addr, buf, sizeof buf, &result, &err);
     ICUNIT_ASSERT_NOT_EQUAL(ret, 0, ret);
 
+    RecoveryFileEnv(pathList, file_number);
     return ICUNIT_SUCCESS;
 }
 

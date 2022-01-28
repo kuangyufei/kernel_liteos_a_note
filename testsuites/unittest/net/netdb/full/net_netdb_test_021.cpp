@@ -32,6 +32,18 @@
 
 static int GetNetBynametTest(void)
 {
+    char network_file[] = "# symbolic names for networks, see networks(5) for more information\n"
+                          "link-local 169.254.0.0\n";
+    char *pathList[] = {"/etc/networks"};
+    char *streamList[] = {static_cast<char *>(network_file)};
+    int streamLen[] = {sizeof(network_file)};
+    const int file_number = 1;
+    int flag = PrepareFileEnv(pathList, streamList, streamLen, file_number);
+    if (flag != 0) {
+        RecoveryFileEnv(pathList, file_number);
+        return -1;
+    }
+
     struct netent *se1 = nullptr;
     struct netent *se2 = nullptr;
     struct netent *se3 = nullptr;
@@ -39,7 +51,7 @@ static int GetNetBynametTest(void)
     se1 = getnetbyname("link-local");
     ICUNIT_ASSERT_NOT_EQUAL(se1, nullptr, -1);
     ICUNIT_ASSERT_STRING_EQUAL(se1->n_name, "link-local", -1);
-    ICUNIT_ASSERT_EQUAL(se1->n_addrtype, 2, -1);
+    ICUNIT_ASSERT_EQUAL(se1->n_addrtype, AF_INET, -1);
     ICUNIT_ASSERT_EQUAL(se1->n_net, inet_network("169.254.0.0"), -1);
 
     se2 = getnetbyname("link");
@@ -48,6 +60,7 @@ static int GetNetBynametTest(void)
     se3 = getnetbyname("hs");
     ICUNIT_ASSERT_EQUAL(se3, nullptr, -1);
 
+    RecoveryFileEnv(pathList, file_number);
     return ICUNIT_SUCCESS;
 }
 

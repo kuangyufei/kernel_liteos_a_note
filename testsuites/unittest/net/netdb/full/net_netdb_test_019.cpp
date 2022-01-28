@@ -29,21 +29,37 @@
  */
 
 #include "lt_net_netdb.h"
+#include<arpa/nameser.h>
 
 static int GetHostEntTest(void)
 {
+    char host_file[] = "127.0.0.1 localhost #localhost\n"
+                       "::1      ip6-localhost\n"
+                       "10.0.0.0 example example.com example.cn\n"
+                       "10.0.0.0\n"
+                       "10.0.0  example.com";
+    char *pathList[] = {"/etc/hosts"};
+    char *streamList[] = {static_cast<char *>(host_file)};
+    int streamLen[] = {sizeof(host_file)};
+    const int file_number = 1;
+    int flag = PrepareFileEnv(pathList, streamList, streamLen, file_number);
+    if (flag != 0) {
+        RecoveryFileEnv(pathList, file_number);
+        return -1;
+    }
+
     struct hostent *se1 = nullptr;
     struct hostent *se2 = nullptr;
     struct hostent *se3 = nullptr;
-    int type = 2;
-    int length1 = 4;
-    int length2 = 16;
+    char addr[INET6_ADDRSTRLEN];
 
     se1 = gethostent();
     ICUNIT_ASSERT_NOT_EQUAL(se1, nullptr, -1);
     ICUNIT_ASSERT_STRING_EQUAL(se1->h_name, "localhost", -1);
-    ICUNIT_ASSERT_EQUAL(se1->h_addrtype, type, -1);
-    ICUNIT_ASSERT_EQUAL(se1->h_length, length1, -1);
+    ICUNIT_ASSERT_EQUAL(se1->h_addrtype, AF_INET, -1);
+    ICUNIT_ASSERT_EQUAL(se1->h_length, INADDRSZ, -1);
+    ICUNIT_ASSERT_STRING_EQUAL("127.0.0.1", inet_ntop(AF_INET, se1->h_addr_list[0], addr, INET_ADDRSTRLEN), -1);
+    ICUNIT_ASSERT_EQUAL(se1->h_aliases[0], nullptr, -1);
 
     endhostent();
     se2 = gethostent();
@@ -62,15 +78,24 @@ static int GetHostEntTest(void)
     se3 = gethostent();
     ICUNIT_ASSERT_NOT_EQUAL(se3, nullptr, -1);
     ICUNIT_ASSERT_EQUAL(se3->h_addrtype, AF_INET6, -1);
-    ICUNIT_ASSERT_STRING_EQUAL(se3->h_name, "localhost", -1);
-    ICUNIT_ASSERT_EQUAL(se3->h_length, length2, -1);
+    ICUNIT_ASSERT_STRING_EQUAL(se3->h_name, "ip6-localhost", -1);
+    ICUNIT_ASSERT_EQUAL(se3->h_length, IN6ADDRSZ, -1);
+    ICUNIT_ASSERT_STRING_EQUAL("::1", inet_ntop(AF_INET6, se3->h_addr_list[0], addr, INET6_ADDRSTRLEN), -1);
 
     se3 = gethostent();
     ICUNIT_ASSERT_NOT_EQUAL(se3, nullptr, -1);
     ICUNIT_ASSERT_EQUAL(se3->h_addrtype, AF_INET, -1);
-    ICUNIT_ASSERT_STRING_EQUAL(se3->h_name, "szvphisprb93341", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(se3->h_aliases[0], "szvphisprb93341.huawei.com", -1);
+    ICUNIT_ASSERT_STRING_EQUAL(se3->h_name, "example", -1);
+    ICUNIT_ASSERT_STRING_EQUAL("10.0.0.0", inet_ntop(AF_INET, se3->h_addr_list[0], addr, INET_ADDRSTRLEN), -1);
+    ICUNIT_ASSERT_STRING_EQUAL(se3->h_aliases[0], "example.com", -1);
+    ICUNIT_ASSERT_STRING_EQUAL(se3->h_aliases[1], "example.cn", -1);
+    ICUNIT_ASSERT_EQUAL(se3->h_aliases[2], nullptr, -1);
 
+    se3 = gethostent();
+    ICUNIT_ASSERT_EQUAL(se3, nullptr, -1);
+    endhostent();
+
+    RecoveryFileEnv(pathList, file_number);
     return ICUNIT_SUCCESS;
 }
 

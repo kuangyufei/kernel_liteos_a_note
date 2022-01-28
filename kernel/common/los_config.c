@@ -48,6 +48,7 @@
 #include "los_spinlock.h"
 #include "los_swtmr_pri.h"
 #include "los_task_pri.h"
+#include "los_sched_pri.h"
 #include "los_tick.h"
 #include "los_vm_boot.h"
 #include "los_smp.h"
@@ -72,6 +73,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 EarliestInit(VOID)
     /* Must be placed at the beginning of the boot process *///必须放在启动过程的开头
     OsSetMainTask();//为每个CPU核设置临时主任务
     OsCurrTaskSet(OsGetMainTask());//设置当前任务
+    OsSchedRunQueInit();
 
     g_sysClock = OS_SYS_CLOCK;
     g_tickPerSecond =  LOSCFG_BASE_CORE_TICK_PER_SECOND;

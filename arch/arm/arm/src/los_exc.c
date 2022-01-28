@@ -83,6 +83,7 @@
 #include "los_memory_pri.h"
 #include "los_printf_pri.h"
 #include "los_task_pri.h"
+#include "los_percpu_pri.h"
 #include "los_hw_pri.h"
 #ifdef LOSCFG_SAVE_EXCINFO
 #include "los_excinfo_pri.h"
@@ -108,10 +109,10 @@
 #include "los_bitmap.h"
 #include "los_process_pri.h"
 #include "los_exc_pri.h"
+#include "los_sched_pri.h"
 #ifdef LOSCFG_FS_VFS
 #include "console.h"
 #endif
-
 #ifdef LOSCFG_BLACKBOX
 #include "los_blackbox.h"
 #endif
@@ -269,7 +270,7 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
         return LOS_ERRNO_VM_NOT_FOUND;
     }
 #if defined(LOSCFG_KERNEL_SMP) && defined(LOSCFG_DEBUG_VERSION)
-    BOOL irqEnable = !(LOS_SpinHeld(&g_taskSpin) && (OsPercpuGet()->taskLockCnt != 0));
+    BOOL irqEnable = !(LOS_SpinHeld(&g_taskSpin) && OsSchedIsLock());
     if (irqEnable) {
         ArchIrqEnable();
     } else {
@@ -632,9 +633,9 @@ STATIC VOID OsExcRestore(VOID)
     g_intCount[currCpuID] = 0;            //CPU对应的中断数量清0
     g_curNestCount[currCpuID] = 0;
 #ifdef LOSCFG_KERNEL_SMP
-    OsPercpuGet()->excFlag = CPU_RUNNING;
+    OsCpuStatusSet(CPU_RUNNING);
 #endif
-    OsPercpuGet()->taskLockCnt = 0;
+    OsSchedLockSet(0);
 }
 ///用户态异常处理函数
 STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
@@ -684,7 +685,7 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
         SCHEDULER_UNLOCK(intSave);
         /* Exception handling All operations should be kept prior to that operation */
         OsExcRestore();
-        OsTaskToExit(runTask, OS_PRO_EXIT_OK);
+        OsRunningTaskToExit(runTask, OS_PRO_EXIT_OK);
     } else {
         SCHEDULER_UNLOCK(intSave);
 
@@ -1081,28 +1082,7 @@ VOID OsDataAbortExcHandleEntry(ExcContext *excBufAddr)
 #ifdef LOSCFG_KERNEL_SMP
 #define EXC_WAIT_INTER 50U  //异常等待间隔时间
 #define EXC_WAIT_TIME 2000U //异常等待时间
-//打印所有CPU的状态信息
-STATIC VOID OsAllCpuStatusOutput(VOID)
-{
-    UINT32 i;
 
-    for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
-        switch (g_percpu[i].excFlag) {
-        case CPU_RUNNING: //处于运行状态
-            PrintExcInfo("cpu%u is running.\n", i);
-            break;
-        case CPU_HALT: //处于停止状态
-            PrintExcInfo("cpu%u is halted.\n", i);
-            break;
-        case CPU_EXC: //处于异常接管状态
-            PrintExcInfo("cpu%u is in exc.\n", i);
-            break;
-        default:
-            break;
-        }
-    }
-    PrintExcInfo("The current handling the exception is cpu%u !\n", ArchCurrCpuid()); //当前正在处理异常的CPU是:
-}
 ///等待所有CPU停止
 STATIC VOID WaitAllCpuStop(UINT32 cpuID)
 {
@@ -1111,7 +1091,7 @@ STATIC VOID WaitAllCpuStop(UINT32 cpuID)
 
     while (time < EXC_WAIT_TIME) {
         for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
-            if ((i != cpuID) && (g_percpu[i].excFlag != CPU_HALT)) {
+            if ((i != cpuID) && !OsCpuStatusIsHalt(i)) {
                 LOS_Mdelay(EXC_WAIT_INTER);
                 time += EXC_WAIT_INTER;
                 break;
@@ -1149,7 +1129,7 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
     UINT32 currCpuID = ArchCurrCpuid();
     UINT32 ret, target;
 
-    OsPercpuGet()->excFlag = CPU_EXC; //CPU处于异常接管状态
+    OsCpuStatusSet(CPU_EXC);
     LOCKDEP_CLEAR_LOCKS();
 
     LOS_SpinLock(&g_excSerializerSpin);
@@ -1257,15 +1237,15 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
 STATIC VOID OsSysStateSave(UINT32 *intCount, UINT32 *lockCount)
 {
     *intCount = g_intCount[ArchCurrCpuid()];
-    *lockCount = OsPercpuGet()->taskLockCnt;
+    *lockCount = OsSchedLockCountGet();
     g_intCount[ArchCurrCpuid()] = 0;
-    OsPercpuGet()->taskLockCnt = 0;
+    OsSchedLockSet(0);
 }
 
 STATIC VOID OsSysStateRestore(UINT32 intCount, UINT32 lockCount)
 {
     g_intCount[ArchCurrCpuid()] = intCount;
-    OsPercpuGet()->taskLockCnt = lockCount;
+    OsSchedLockSet(lockCount);
 }
 #endif
 
@@ -1281,7 +1261,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
     UINT32 lockCount;
 #endif
     /* Task scheduling is not allowed during exception handling */
-    OsPercpuGet()->taskLockCnt++;
+    OsSchedLock();
 
     g_curNestCount[ArchCurrCpuid()]++;
 

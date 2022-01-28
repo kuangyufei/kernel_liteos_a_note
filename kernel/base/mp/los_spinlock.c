@@ -50,7 +50,7 @@ BOOL LOS_SpinHeld(const SPIN_LOCK_S *lock)
 VOID LOS_SpinLock(SPIN_LOCK_S *lock)
 {
     UINT32 intSave = LOS_IntLock();
-    OsCpuSchedLock(OsPercpuGet());
+    OsSchedLock();
     LOS_IntRestore(intSave);
 
     LOCKDEP_CHECK_IN(lock);
@@ -60,17 +60,22 @@ VOID LOS_SpinLock(SPIN_LOCK_S *lock)
 
 INT32 LOS_SpinTrylock(SPIN_LOCK_S *lock)
 {
-    Percpu *cpu = OsPercpuGet();
     UINT32 intSave = LOS_IntLock();
-    OsCpuSchedLock(cpu);
+    OsSchedLock();
     LOS_IntRestore(intSave);
 
     INT32 ret = ArchSpinTrylock(&lock->rawLock);
     if (ret == LOS_OK) {
         LOCKDEP_CHECK_IN(lock);
         LOCKDEP_RECORD(lock);
-    } else {
-        OsCpuSchedUnlock(cpu, LOS_IntLock());
+        return ret;
+    }
+
+    intSave = LOS_IntLock();
+    BOOL needSched = OsSchedUnlockResch();
+    LOS_IntRestore(intSave);
+    if (needSched) {
+        LOS_Schedule();
     }
 
     return ret;
@@ -78,16 +83,22 @@ INT32 LOS_SpinTrylock(SPIN_LOCK_S *lock)
 
 VOID LOS_SpinUnlock(SPIN_LOCK_S *lock)
 {
+    UINT32 intSave;
     LOCKDEP_CHECK_OUT(lock);
     ArchSpinUnlock(&lock->rawLock);
 
-    OsCpuSchedUnlock(OsPercpuGet(), LOS_IntLock());
+    intSave = LOS_IntLock();
+    BOOL needSched = OsSchedUnlockResch();
+    LOS_IntRestore(intSave);
+    if (needSched) {
+        LOS_Schedule();
+    }
 }
 
 VOID LOS_SpinLockSave(SPIN_LOCK_S *lock, UINT32 *intSave)
 {
     *intSave = LOS_IntLock();
-    OsCpuSchedLock(OsPercpuGet());
+    OsSchedLock();
 
     LOCKDEP_CHECK_IN(lock);
     ArchSpinLock(&lock->rawLock);
@@ -99,7 +110,11 @@ VOID LOS_SpinUnlockRestore(SPIN_LOCK_S *lock, UINT32 intSave)
     LOCKDEP_CHECK_OUT(lock);
     ArchSpinUnlock(&lock->rawLock);
 
-    OsCpuSchedUnlock(OsPercpuGet(), intSave);
+    BOOL needSched = OsSchedUnlockResch();
+    LOS_IntRestore(intSave);
+    if (needSched) {
+        LOS_Schedule();
+    }
 }
 #endif
 

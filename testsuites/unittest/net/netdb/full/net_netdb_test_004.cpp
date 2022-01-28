@@ -34,8 +34,19 @@
 
 static int GetHostByAddrTest(void)
 {
+    char host_file[] = "127.0.0.1 localhost\n100.0.0.0 example.com example\n";
+    char *pathList[] = {"/etc/hosts"};
+    char *streamList[] = {host_file};
+    int streamLen[] = {sizeof(host_file)};
+    const int file_number = 1;
+    int flag = PrepareFileEnv(pathList, streamList, streamLen, file_number);
+    if (flag != 0) {
+        RecoveryFileEnv(pathList, file_number);
+        return -1;
+    }
+
     struct in_addr ia;
-    int length = 4;
+    int length = 4; // the address length is 4;
     ia.s_addr = inet_addr("127.0.0.1");
     struct hostent *addr = gethostbyaddr(&ia, sizeof ia, AF_INET);
     ICUNIT_ASSERT_NOT_EQUAL(addr, NULL, -1);
@@ -43,19 +54,18 @@ static int GetHostByAddrTest(void)
     ICUNIT_ASSERT_STRING_EQUAL(addr->h_name, "localhost", -1);
     ICUNIT_ASSERT_EQUAL(addr->h_length, length, -1);
 
-    ia.s_addr = inet_addr("100.109.180.184");
+    ia.s_addr = inet_addr("100.0.0.0");
     addr = gethostbyaddr(&ia, sizeof ia, AF_INET);
     ICUNIT_ASSERT_NOT_EQUAL(addr, NULL, -1);
     ICUNIT_ASSERT_EQUAL(addr->h_addrtype, AF_INET, addr->h_addrtype);
-    ICUNIT_ASSERT_STRING_EQUAL(addr->h_name, "szvphisprb93341", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(addr->h_aliases[0], "szvphisprb93341", -1);
+    ICUNIT_ASSERT_STRING_EQUAL(addr->h_name, "example.com", -1);
 
     errno = 0;
     ia.s_addr = inet_addr("127.0.0.0");
     addr = gethostbyaddr(&ia, sizeof ia, AF_INET);
     ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
 
-    return ICUNIT_SUCCESS;
+    RecoveryFileEnv(pathList, file_number);
     return ICUNIT_SUCCESS;
 }
 

@@ -35,6 +35,7 @@
 #include "los_cpup_pri.h"
 #endif
 #include "los_hwi_pri.h"
+#include "los_sys_pri.h"
 #include "shcmd.h"
 
 

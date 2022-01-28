@@ -35,6 +35,17 @@
 static int AddrInfoTest(void)
 {
     // Prerequisite: correct DNS servers must be configured.
+    char host_file[] = "127.0.0.2 example.com\n", serv_file[] = "ftp		21/tcp\n";
+    char *pathList[] = {"/etc/hosts", "/etc/services"};
+    char *streamList[] = {host_file, serv_file};
+    int streamLen[] = {sizeof(host_file), sizeof(serv_file)};
+    const int file_number = 2;
+    int flag = PrepareFileEnv(pathList, streamList, streamLen, file_number);
+    if (flag != 0) {
+        RecoveryFileEnv(pathList, file_number);
+        return -1;
+    }
+
     struct addrinfo *addr = NULL;
     int ret = getaddrinfo("example.com", "ftp", NULL, &addr);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
@@ -50,6 +61,7 @@ static int AddrInfoTest(void)
     const char *p = gai_strerror(EAI_AGAIN);
     ICUNIT_ASSERT_NOT_EQUAL(p, NULL, -1);
 
+    RecoveryFileEnv(pathList, file_number);
     return ICUNIT_SUCCESS;
 }
 

@@ -28,12 +28,10 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
+import("//third_party/NuttX/NuttX.gni")
 
 module_switch = defined(LOSCFG_FS_ROMFS)
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
-  sources = [
-    "$LITEOSTHIRDPARTY/NuttX/fs/romfs/fs_romfs.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/romfs/fs_romfsutil.c",
-  ]
+  sources = NUTTX_FS_ROMFS_SRC_FILES
 }

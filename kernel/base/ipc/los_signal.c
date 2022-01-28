@@ -737,8 +737,8 @@ VOID *OsSaveSignalContext(VOID *sp, VOID *newSp)
         return sp;
     }
 
-    if (task->taskStatus & OS_TASK_FLAG_EXIT_KILL) {
-        OsTaskToExit(task, 0);
+    if (OsTaskIsKilled(task)) {
+        OsRunningTaskToExit(task, 0);
         return sp;
     }
 

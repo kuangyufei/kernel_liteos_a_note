@@ -55,33 +55,60 @@ static int ProcessTest001(void)
     return 0;
 }
 
+static int Child(void)
+{
+    int count = TEST_COUNT;
+    int status = 0;
+
+    while (count > 0) {
+        int ret = fork();
+        if (ret == 0) {
+            ret = ProcessTest001();
+            exit(ret);
+        } else if (ret > 0) {
+            int pid = ret;
+            ret = wait(&status);
+            status = WEXITSTATUS(status);
+            if (ret != pid) {
+                printf("wait child %d failed, is %u!\n", pid, ret);
+                exit(__LINE__);
+            }
+            if (status != 255) { // 255, assert that function Result is equal to this.
+                printf("wait child status is 255, but is %d， child is error line :%d \n", status, status);
+                exit(__LINE__);
+            }
+        } else {
+            printf("fork failed!\n");
+            exit(__LINE__);
+        }
+
+        count--;
+    }
+
+    return 0;
+}
+
 static int Testcase(void)
 {
     int ret;
     int status;
     int pid;
-    int count = TEST_COUNT;
 
     int temp = GetCpuCount();
     if (temp <= 1) {
         return 0;
     }
 
-    while (count > 0) {
-        ret = fork();
-        if (ret == 0) {
-            ret = ProcessTest001();
-            exit(10); // 10, exit args
-        } else if (ret > 0) {
-            pid = ret;
-            ret = wait(&status);
-            status = WEXITSTATUS(status);
-            ICUNIT_ASSERT_EQUAL(ret, pid, ret);
-            ICUNIT_ASSERT_EQUAL(status, 255, status); // 255, assert that function Result is equal to this.
-        }
-
-        ICUNIT_ASSERT_WITHIN_EQUAL(ret, 0, 100000, ret); // 100000, assert that function Result is equal to this.
-        count--;
+    ret = fork();
+    ICUNIT_ASSERT_WITHIN_EQUAL(ret, 0, 100000, ret); // 100000, assert that function Result is equal to this.
+    if (ret == 0) {
+        exit(Child());
+    } else if (ret > 0) {
+        pid = ret;
+        ret = waitpid(pid, &status, NULL);
+        status = WEXITSTATUS(status);
+        ICUNIT_ASSERT_EQUAL(ret, pid, ret);
+        ICUNIT_ASSERT_EQUAL(status, 0, status);
     }
 
     return 0;

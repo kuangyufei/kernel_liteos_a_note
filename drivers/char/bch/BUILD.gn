@@ -28,21 +28,12 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
+import("//third_party/NuttX/NuttX.gni")
 
 module_switch = defined(LOSCFG_FS_VFS_BLOCK_DEVICE)
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
-  sources = [
-    "$LITEOSTHIRDPARTY/NuttX/drivers/bch/bchdev_driver.c",
-    "$LITEOSTHIRDPARTY/NuttX/drivers/bch/bchdev_register.c",
-    "$LITEOSTHIRDPARTY/NuttX/drivers/bch/bchdev_unregister.c",
-    "$LITEOSTHIRDPARTY/NuttX/drivers/bch/bchlib_cache.c",
-    "$LITEOSTHIRDPARTY/NuttX/drivers/bch/bchlib_read.c",
-    "$LITEOSTHIRDPARTY/NuttX/drivers/bch/bchlib_sem.c",
-    "$LITEOSTHIRDPARTY/NuttX/drivers/bch/bchlib_setup.c",
-    "$LITEOSTHIRDPARTY/NuttX/drivers/bch/bchlib_teardown.c",
-    "$LITEOSTHIRDPARTY/NuttX/drivers/bch/bchlib_write.c",
-  ]
+  sources = NUTTX_DRIVERS_BCH_SRC_FILES
 
   public_configs = [ ":public" ]
 }

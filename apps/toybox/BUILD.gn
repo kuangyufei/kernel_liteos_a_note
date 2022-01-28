@@ -29,13 +29,14 @@
 
 import("//build/lite/config/component/lite_component.gni")
 import("//kernel/liteos_a/liteos.gni")
+import("//third_party/toybox/toybox.gni")
 
 group("toybox") {
   deps = [ ":build_toybox" ]
 }
 
 copy("copy_toybox_src") {
-  sources = [ "$LITEOSTHIRDPARTY/toybox" ]
+  sources = TOYBOX_SRC_DIR
   outputs = [ "$target_out_dir/toybox_build" ]
 }
 

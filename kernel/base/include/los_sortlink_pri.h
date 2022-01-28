@@ -34,7 +34,7 @@
 
 #include "los_typedef.h"
 #include "los_list.h"
-#include "los_sys_pri.h"
+#include "los_spinlock.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -42,13 +42,6 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-/*!  \enum SortLinkType
-* @brief  因为任务和定时器都是吃CPU的,让CPU不停工作的主要就是这两宝贝.
-*/
-typedef enum {
-    OS_SORT_LINK_TASK = 1,	///< 任务
-    OS_SORT_LINK_SWTMR = 2,	///< 定时器
-} SortLinkType;
 
 /*!  \struct SortLinkList
 *   
@@ -67,6 +60,7 @@ typedef struct {
 typedef struct {
     LOS_DL_LIST sortLink; ///< 排序链表,上面挂的任务/软件定时器
     UINT32      nodeNum;	///< 链表结点数量
+    SPIN_LOCK_S spinLock;     /* swtmr sort link spin lock */
 } SortLinkAttribute;
 
 #define OS_SORT_LINK_INVALID_TIME ((UINT64)-1)
@@ -97,11 +91,16 @@ STATIC INLINE UINT64 OsGetSortLinkNextExpireTime(SortLinkAttribute *sortHeader, 
     return listSorted->responseTime;
 }
 
-extern UINT32 OsSortLinkInit(SortLinkAttribute *sortLinkHeader);
-extern VOID OsAdd2SortLink(SortLinkList *node, UINT64 startTime, UINT32 waitTicks, SortLinkType type);
-extern VOID OsDeleteSortLink(SortLinkList *node, SortLinkType type);
-extern UINT32 OsSortLinkGetTargetExpireTime(const SortLinkList *targetSortList);
-extern UINT32 OsSortLinkGetNextExpireTime(const SortLinkAttribute *sortLinkHeader);
+STATIC INLINE UINT32 OsGetSortLinkNodeNum(SortLinkAttribute *head)
+{
+    return head->nodeNum;
+}
+
+VOID OsSortLinkInit(SortLinkAttribute *sortLinkHeader);
+VOID OsAdd2SortLink(SortLinkAttribute *head, SortLinkList *node, UINT64 responseTime, UINT16 idleCpu);
+VOID OsDeleteFromSortLink(SortLinkAttribute *head, SortLinkList *node);
+UINT64 OsSortLinkGetTargetExpireTime(UINT64 currTime, const SortLinkList *targetSortList);
+UINT64 OsSortLinkGetNextExpireTime(UINT64 currTime, const SortLinkAttribute *sortLinkHeader);
 
 #ifdef __cplusplus
 #if __cplusplus

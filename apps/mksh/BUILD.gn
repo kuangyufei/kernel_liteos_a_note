@@ -29,13 +29,14 @@
 
 import("//build/lite/config/component/lite_component.gni")
 import("//kernel/liteos_a/liteos.gni")
+import("//third_party/mksh/mksh.gni")
 
 group("mksh") {
   deps = [ ":build_mksh" ]
 }
 
 copy("copy_mksh_src") {
-  sources = [ "$LITEOSTHIRDPARTY/mksh" ]
+  sources = MKSH_SRC_DIR
   outputs = [ "$target_out_dir/mksh_build" ]
 }
 

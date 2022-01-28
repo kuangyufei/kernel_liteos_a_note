@@ -49,7 +49,6 @@ netdb_sources_full = [
   "$TEST_UNITTEST_DIR/net/netdb/full/net_netdb_test_010.cpp",
   "$TEST_UNITTEST_DIR/net/netdb/full/net_netdb_test_011.cpp",
   "$TEST_UNITTEST_DIR/net/netdb/full/net_netdb_test_012.cpp",
-  "$TEST_UNITTEST_DIR/net/netdb/full/net_netdb_test_014.cpp",
   "$TEST_UNITTEST_DIR/net/netdb/full/net_netdb_test_015.cpp",
   "$TEST_UNITTEST_DIR/net/netdb/full/net_netdb_test_016.cpp",
   "$TEST_UNITTEST_DIR/net/netdb/full/net_netdb_test_017.cpp",

@@ -34,6 +34,17 @@
 
 static int GetHostByName2Test(void)
 {
+    char host_file[] = "127.0.0.1 localhost\n";
+    char *pathList[] = {"/etc/hosts"};
+    char *streamList[] = {static_cast<char *>(host_file)};
+    int streamLen[] = {sizeof(host_file)};
+    const int file_number = 1;
+    int flag = PrepareFileEnv(pathList, streamList, streamLen, file_number);
+    if (flag != 0) {
+        RecoveryFileEnv(pathList, file_number);
+        return -1;
+    }
+
     struct hostent *addr = gethostbyname2("localhost", AF_INET);
     ICUNIT_ASSERT_NOT_EQUAL(addr, NULL, -1);
     ICUNIT_ASSERT_EQUAL(strcmp(addr->h_name, "localhost"), 0, -1);
@@ -51,6 +62,7 @@ static int GetHostByName2Test(void)
     addr = gethostbyname2("localh", AF_INET);
     ICUNIT_ASSERT_EQUAL(addr, NULL, -1);
 
+    RecoveryFileEnv(pathList, file_number);
     return ICUNIT_SUCCESS;
 }
 

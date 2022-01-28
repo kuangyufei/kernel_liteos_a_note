@@ -28,11 +28,17 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
+import("//third_party/NuttX/NuttX.gni")
 
 module_switch = defined(LOSCFG_FS_VFS)
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
   sources = [
+    "$LITEOSTOPDIR/fs/vfs/epoll/fs_epoll.c",
+    "$LITEOSTOPDIR/fs/vfs/mount.c",
+    "$LITEOSTOPDIR/fs/vfs/path_cache.c",
+    "$LITEOSTOPDIR/fs/vfs/vnode.c",
+    "$LITEOSTOPDIR/fs/vfs/vnode_hash.c",
     "operation/fullpath.c",
     "operation/vfs_chattr.c",
     "operation/vfs_check.c",
@@ -51,65 +57,11 @@ kernel_module(module_name) {
     "operation/vfs_writev.c",
     "vfs_cmd/vfs_shellcmd.c",
   ]
-
-  sources += [
-    "$LITEOSTHIRDPARTY/NuttX/fs/dirent/fs_closedir.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/dirent/fs_opendir.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/dirent/fs_readdir.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/dirent/fs_rewinddir.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/dirent/fs_seekdir.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/dirent/fs_telldir.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/driver/fs_blockproxy.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/driver/fs_closeblockdriver.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/driver/fs_findblockdriver.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/driver/fs_openblockdriver.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/driver/fs_registerblockdriver.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/driver/fs_registerdriver.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/driver/fs_unregisterblockdriver.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/driver/fs_unregisterdriver.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/inode/fs_files.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/mount/fs_foreachmountpoint.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/mount/fs_mount.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/mount/fs_sync.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/mount/fs_umount.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_close.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_dup.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_dup2.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_dupfd.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_dupfd2.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_fcntl.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_fsync.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_getfilep.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_ioctl.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_link.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_lseek.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_lseek64.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_mkdir.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_open.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_poll.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_pread.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_pread64.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_pwrite.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_pwrite64.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_read.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_readlink.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_rename.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_rmdir.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_select.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_sendfile.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_stat.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_statfs.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_symlink.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_truncate.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_truncate64.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_unlink.c",
-    "$LITEOSTHIRDPARTY/NuttX/fs/vfs/fs_write.c",
-    "$LITEOSTOPDIR/fs/vfs/epoll/fs_epoll.c",
-    "$LITEOSTOPDIR/fs/vfs/mount.c",
-    "$LITEOSTOPDIR/fs/vfs/path_cache.c",
-    "$LITEOSTOPDIR/fs/vfs/vnode.c",
-    "$LITEOSTOPDIR/fs/vfs/vnode_hash.c",
-  ]
+  sources += NUTTX_FS_DIRENT_SRC_FILES
+  sources += NUTTX_FS_DRIVER_SRC_FILES
+  sources += NUTTX_FS_INODE_SRC_FILES
+  sources += NUTTX_FS_MOUNT_SRC_FILES
+  sources += NUTTX_FS_VFS_SRC_FILES
 
   include_dirs = [
     "$LITEOSTOPDIR/syscall",

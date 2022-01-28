@@ -32,6 +32,17 @@
 
 static int GetServByNameRTest(void)
 {
+    char serv_file[] = "ssh		22/tcp\n";
+    char *pathList[] = {"/etc/services"};
+    char *streamList[] = {static_cast<char *>(serv_file)};
+    int streamLen[] = {sizeof(serv_file)};
+    const int file_number = 1;
+    int flag = PrepareFileEnv(pathList, streamList, streamLen, file_number);
+    if (flag != 0) {
+        RecoveryFileEnv(pathList, file_number);
+        return -1;
+    }
+
     struct servent se;
     struct servent *result = NULL;
     char buf1[1024] = { 0 };
@@ -58,6 +69,7 @@ static int GetServByNameRTest(void)
     ret = getservbyname_r("sh", "tcp", &se, buf1, sizeof buf1, &result);
     ICUNIT_ASSERT_EQUAL(ret, ENOENT, ret);
 
+    RecoveryFileEnv(pathList, file_number);
     return ICUNIT_SUCCESS;
 }
 

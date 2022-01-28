@@ -84,10 +84,8 @@ typedef struct ProcessCB {
     UINT32               processID;                    /**< Process ID = leader thread ID | 进程ID,由进程池分配,范围[0,64] */
     UINT16               processStatus;                /**< [15:4] Process Status; [3:0] The number of threads currently
                                                             running in the process | 这里设计很巧妙.用一个变量表示了两层逻辑 数量和状态,点赞! @note_good 从这里也可以看出一个进程可以有多个正在运行的任务*/
-    UINT16               priority;                     /**< Process priority | 进程优先级*/
     UINT16               consoleID;                    /**< The console id of task belongs | 任务的控制台id归属 */
     UINT16               processMode;                  /**< Kernel Mode:0; User Mode:1; | 模式指定为内核还是用户进程 */
-    UINT16               readyTaskNum;                 /**< The number of ready tasks in the current process */
     UINT32               parentProcessID;              /**< Parent process ID | 父进程ID*/
     UINT32               exitCode;                     /**< Process exit status | 进程退出状态码*/
     LOS_DL_LIST          pendList;                     /**< Block list to which the process belongs | 进程所在的阻塞列表,进程因阻塞挂入相应的链表.*/
@@ -154,7 +152,7 @@ typedef struct ProcessCB {
  *
  * The process is created but does not participate in scheduling.
  */
-#define OS_PROCESS_STATUS_INIT           0x0010U	///< 进程初始状态
+#define OS_PROCESS_STATUS_INIT           OS_TASK_STATUS_INIT
 
 /**
  * @ingroup los_process
@@ -162,7 +160,7 @@ typedef struct ProcessCB {
  *
  * The process is ready.
  */
-#define OS_PROCESS_STATUS_READY          0x0020U	///< 进程就绪状态
+#define OS_PROCESS_STATUS_READY          OS_TASK_STATUS_READY
 
 /**
  * @ingroup los_process
@@ -170,7 +168,7 @@ typedef struct ProcessCB {
  *
  * The process is running.
  */
-#define OS_PROCESS_STATUS_RUNNING        0x0040U	///< 进程状态: 运行中...
+#define OS_PROCESS_STATUS_RUNNING        OS_TASK_STATUS_RUNNING
 
 /**
  * @ingroup los_process
@@ -178,7 +176,7 @@ typedef struct ProcessCB {
  *
  * The process is pending
  */
-#define OS_PROCESS_STATUS_PENDING       0x0080U ///< 进程状态: 挂起中... ,意思是进程还没开始,在等待其他条件成熟
+#define OS_PROCESS_STATUS_PENDING       (OS_TASK_STATUS_PENDING | OS_TASK_STATUS_DELAY | OS_TASK_STATUS_SUSPENDED)
 
 /**
  * @ingroup los_process
@@ -186,23 +184,7 @@ typedef struct ProcessCB {
  *
  * The process is run out but the resources occupied by the process are not recovered.
  */
-#define OS_PROCESS_STATUS_ZOMBIES        0x100U		///< 进程状态: 僵死
-
-/**
- * @ingroup los_process
- * Flag that indicates the process or process control block status.
- *
- * The number of task currently running under the process, it only works with multiple cores.
- */
-#define OS_PROCESS_RUNTASK_COUNT_MASK    0x000FU	///< 进程处于运行状态的数量掩码
-//进程当前运行的任务数，它只适用于多个内核,这里注意 一个进程的多个任务是可以同时给多个内核运行的.
-/**
- * @ingroup los_process
- * Flag that indicates the process or process control block status.
- *
- * The process status mask.
- */
-#define OS_PROCESS_STATUS_MASK           0xFFF0U	///< 进程状态掩码
+#define OS_PROCESS_STATUS_ZOMBIES        0x0100U		///< 进程状态: 僵死
 
 /**
  * @ingroup los_process
@@ -272,6 +254,11 @@ STATIC INLINE BOOL OsProcessIsDead(const LosProcessCB *processCB)//查下进程�
     return ((processCB->processStatus & (OS_PROCESS_FLAG_UNUSED | OS_PROCESS_STATUS_ZOMBIES)) != 0);
 }
 
+STATIC INLINE BOOL OsProcessIsInit(const LosProcessCB *processCB)
+{
+    return (processCB->processStatus & OS_PROCESS_STATUS_INIT);
+}
+
 /**
  * @ingroup los_process
  * The highest priority of a kernel mode process.
@@ -301,16 +288,6 @@ STATIC INLINE BOOL OsProcessIsDead(const LosProcessCB *processCB)//查下进程�
  * User state root process default priority
  */
 #define OS_PROCESS_USERINIT_PRIORITY     28	///< 用户进程默认的优先级,28级好低啊
-
-#define OS_GET_PROCESS_STATUS(status) ((UINT16)((UINT16)(status) & OS_PROCESS_STATUS_MASK))
-/// 获取进程处于运行中的任务数量
-#define OS_PROCESS_GET_RUNTASK_COUNT(status) ((UINT16)(((UINT16)(status)) & OS_PROCESS_RUNTASK_COUNT_MASK))
-/// 进程运行中的任务数量加1
-#define OS_PROCESS_RUNTASK_COUNT_ADD(status) ((UINT16)(((UINT16)(status)) & OS_PROCESS_STATUS_MASK) | \
-        ((OS_PROCESS_GET_RUNTASK_COUNT(status) + 1) & OS_PROCESS_RUNTASK_COUNT_MASK))
-/// 进程运行中的任务数量减1        
-#define OS_PROCESS_RUNTASK_COUNT_DEC(status) ((UINT16)(((UINT16)(status)) & OS_PROCESS_STATUS_MASK) | \
-        ((OS_PROCESS_GET_RUNTASK_COUNT(status) - 1) & OS_PROCESS_RUNTASK_COUNT_MASK))
 
 #define OS_TASK_DEFAULT_STACK_SIZE      0x2000	///< task默认栈大小 8K
 #define OS_USER_TASK_SYSCALL_STACK_SIZE 0x3000	///< 用户通过系统调用的栈大小 12K ,这时是运行在内核模式下
@@ -383,14 +360,9 @@ STATIC INLINE LosProcessCB *OsCurrProcessGet(VOID)
     UINT32 intSave;
 
     intSave = LOS_IntLock();
-    LosProcessCB *runProcess = (LosProcessCB *)OsPercpuGet()->runProcess;//当前CPU正在运行的进程
+    LosProcessCB *runProcess = OS_PCB_FROM_PID(OsCurrTaskGet()->processID);
     LOS_IntRestore(intSave);
     return runProcess;
-}
-/// 设置当前进程
-STATIC INLINE VOID OsCurrProcessSet(const LosProcessCB *process)
-{
-    OsPercpuGet()->runProcess = (UINTPTR)process;
 }
 
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -405,8 +377,44 @@ STATIC INLINE User *OsCurrUserGet(VOID)
     LOS_IntRestore(intSave);
     return user;
 }
+
+STATIC INLINE UINT32 OsProcessUserIDGet(const LosTaskCB *taskCB)
+{
+    UINT32 intSave = LOS_IntLock();
+    UINT32 uid = OS_INVALID;
+
+    LosProcessCB *process = OS_PCB_FROM_PID(taskCB->processID);
+    if (process->user != NULL) {
+        uid = process->user->userID;
+    }
+    LOS_IntRestore(intSave);
+    return uid;
+}
 #endif
 
+STATIC INLINE UINT32 OsProcessThreadGroupIDGet(const LosTaskCB *taskCB)
+{
+    return OS_PCB_FROM_PID(taskCB->processID)->threadGroupID;
+}
+
+STATIC INLINE UINT32 OsProcessThreadNumberGet(const LosTaskCB *taskCB)
+{
+    return OS_PCB_FROM_PID(taskCB->processID)->threadNumber;
+}
+
+#ifdef LOSCFG_KERNEL_VM
+STATIC INLINE LosVmSpace *OsProcessVmSpaceGet(const LosProcessCB *processCB)
+{
+    return processCB->vmSpace;
+}
+#endif
+
+#ifdef LOSCFG_DRIVERS_TZDRIVER
+STATIC INLINE struct Vnode *OsProcessExecVnodeGet(const LosProcessCB *processCB)
+{
+    return processCB->execVnode;
+}
+#endif
 /*
  * return immediately if no child has exited.
  */
@@ -465,15 +473,14 @@ extern UINTPTR __user_init_bss;		///<  查看 LITE_USER_SEC_BSS ,赋值由liteos
 extern UINTPTR __user_init_end;		///<  init 进程的用户空间初始化结束地址
 extern UINTPTR __user_init_load_addr;///< init进程的加载地址
 extern UINT32 OsSystemProcessCreate(VOID);
+extern VOID OsProcessNaturalExit(LosProcessCB *processCB, UINT32 status);
 extern VOID OsProcessCBRecycleToFree(VOID);
 extern VOID OsProcessResourcesToFree(LosProcessCB *processCB);
-extern VOID OsProcessExit(LosTaskCB *runTask, INT32 status);
 extern UINT32 OsUserInitProcess(VOID);
-extern VOID OsTaskSchedQueueDequeue(LosTaskCB *taskCB, UINT16 status);
-extern VOID OsTaskSchedQueueEnqueue(LosTaskCB *taskCB, UINT16 status);
 extern INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size);
-extern UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR *name,
-                                   LosVmSpace *oldAspace, UINTPTR oldFiles);
+extern VOID OsExecProcessVmSpaceRestore(LosVmSpace *oldSpace);
+extern LosVmSpace *OsExecProcessVmSpaceReplace(LosVmSpace *newSpace, UINTPTR stackBase, INT32 randomDevFD);
+extern UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR *name, LosVmSpace *oldAspace, UINTPTR oldFiles);
 extern UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBase, UINT32 mapSize);
 extern UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name);
 extern INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio, UINT16 policy);
@@ -488,6 +495,9 @@ extern UINTPTR OsGetSigHandler(VOID);
 extern VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID);
 extern INT32 OsSendSignalToProcessGroup(INT32 pid, siginfo_t *info, INT32 permission);
 extern INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permission);
+extern UINT32 OsProcessAddNewTask(UINT32 pid, LosTaskCB *taskCB);
+extern VOID OsDeleteTaskFromProcess(LosTaskCB *taskCB);
+extern VOID OsProcessThreadGroupDestroy(VOID);
 
 #ifdef __cplusplus
 #if __cplusplus

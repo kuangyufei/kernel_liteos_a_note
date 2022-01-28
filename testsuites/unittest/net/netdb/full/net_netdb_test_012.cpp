@@ -35,26 +35,42 @@
 static int GetServByPortRTest(void)
 {
     // refer to the `/etc/services' file.
+    char serv_file[] = "ssh		22/tcp\n";
+    char *pathList[] = {"/etc/services"};
+    char *streamList[] = {static_cast<char *>(serv_file)};
+    int streamLen[] = {sizeof(serv_file)};
+    const int file_number = 1;
+    int flag = PrepareFileEnv(pathList, streamList, streamLen, file_number);
+    if (flag != 0) {
+        RecoveryFileEnv(pathList, file_number);
+        return -1;
+    }
+
     struct servent se, *result = NULL;
     char buf[1024];
     char buf1[2];
 
-    int ret = getservbyport_r(htons(22), "udp", &se, buf, sizeof buf, &result);
+    const int test_port_no = 22;   // ssh port number is 22
+    int ret = getservbyport_r(htons(test_port_no), "tcp", &se, buf, sizeof buf, &result);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     ICUNIT_ASSERT_NOT_EQUAL(result, NULL, -1);
     ICUNIT_ASSERT_STRING_EQUAL(se.s_name, "ssh", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(se.s_proto, "udp", -1);
+    ICUNIT_ASSERT_STRING_EQUAL(se.s_proto, "tcp", -1);
     ICUNIT_ASSERT_STRING_EQUAL(se.s_aliases[0], "ssh", -1);
     ICUNIT_ASSERT_STRING_EQUAL(result->s_name, "ssh", -1);
-    ICUNIT_ASSERT_STRING_EQUAL(result->s_proto, "udp", -1);
+    ICUNIT_ASSERT_STRING_EQUAL(result->s_proto, "tcp", -1);
     ICUNIT_ASSERT_STRING_EQUAL(result->s_aliases[0], "ssh", -1);
 
-    ret = getservbyport_r(htons(22), "udp", &se, buf1, sizeof buf1, &result);
+    ret = getservbyport_r(htons(test_port_no), "udp", &se, buf, sizeof buf, &result);
+    ICUNIT_ASSERT_EQUAL(ret, ENOENT, -1);
+
+    ret = getservbyport_r(htons(test_port_no), "udp", &se, buf1, sizeof buf1, &result);
     ICUNIT_ASSERT_EQUAL(ret, ERANGE, ret);
 
-    ret = getservbyport_r(htons(22), "ud", &se, buf, sizeof buf, &result);
+    ret = getservbyport_r(htons(test_port_no), "ud", &se, buf, sizeof buf, &result);
     ICUNIT_ASSERT_EQUAL(ret, EINVAL, ret);
 
+    RecoveryFileEnv(pathList, file_number);
     return ICUNIT_SUCCESS;
 }
 

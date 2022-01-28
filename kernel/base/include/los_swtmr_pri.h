@@ -34,6 +34,7 @@
 
 #include "los_swtmr.h"
 #include "los_spinlock.h"
+#include "los_sched_pri.h"
 
 #ifdef LOSCFG_SECURITY_VID
 #include "vid_api.h"
@@ -75,7 +76,6 @@ typedef SwtmrHandlerItem *SwtmrHandlerItemPtr;
 
 extern SWTMR_CTRL_S *g_swtmrCBArray;//软件定时器数组,后续统一注解为定时器池
 
-extern SortLinkAttribute g_swtmrSortLink; /* The software timer count list */	//软件计时器计数链表	
 //通过参数ID找到对应定时器描述体
 #define OS_SWT_FROM_SID(swtmrID) ((SWTMR_CTRL_S *)g_swtmrCBArray + ((swtmrID) % LOSCFG_BASE_CORE_SWTMR_LIMIT))
 
@@ -100,11 +100,13 @@ extern SortLinkAttribute g_swtmrSortLink; /* The software timer count list */	//
  * <ul><li>los_swtmr_pri.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_SwtmrStop
  */
-extern VOID OsSwtmrScan(VOID);
+
+extern BOOL OsIsSwtmrTask(const LosTaskCB *taskCB);
+extern VOID OsSwtmrRestart(UINT64 startTime, SortLinkList *sortList);
+extern VOID OsSwtmrWake(SchedRunQue *rq, UINT64 currTime, SortLinkList *sortList);
 extern UINT32 OsSwtmrInit(VOID);
-extern VOID OsSwtmrTask(VOID);
 extern VOID OsSwtmrRecycle(UINT32 processID);
-extern VOID OsSwtmrResponseTimeReset(UINT64 startTime);
+extern BOOL OsSwtmrWorkQueueFind(SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg);
 extern SPIN_LOCK_S g_swtmrSpin;
 #ifdef __cplusplus
 #if __cplusplus

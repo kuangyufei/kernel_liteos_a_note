@@ -28,15 +28,16 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
+import("//third_party/NuttX/NuttX.gni")
 
 module_switch = defined(LOSCFG_DRIVERS_VIDEO)
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
-  sources = [ "$LITEOSTHIRDPARTY/NuttX/drivers/video/fb.c" ]
+  sources = NUTTX_DRIVERS_VIDEO_SRC_FILES
 
   public_configs = [ ":public" ]
 }
 
 config("public") {
-  include_dirs = [ "$LITEOSTHIRDPARTY/NuttX/include/nuttx/video" ]
+  include_dirs = NUTTX_DRIVERS_VIDEO_INCLUDE_DIRS
 }

@@ -44,10 +44,6 @@ static int IfNameToIndexTest(void)
     ICUNIT_ASSERT_NOT_EQUAL(str, nullptr, -1);
     ICUNIT_ASSERT_STRING_EQUAL(if_name, "lo", -1);
 
-    str = if_indextoname(3, if_name);
-    ICUNIT_ASSERT_EQUAL(str, nullptr, -1);
-    ICUNIT_ASSERT_EQUAL(errno, ENXIO, errno);
-
     ret = if_nametoindex("eth1");
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     ICUNIT_ASSERT_EQUAL(errno, ENODEV, errno);

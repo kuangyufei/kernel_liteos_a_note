@@ -34,6 +34,17 @@
 static int EtherHosttonTest(void)
 {
     // suppose "0:0:0:0:0:0 localhost" in `/etc/ethers' file.
+    char ether_file[] = "0:0:0:0:0:0 localhost";
+    char *pathList[] = {"/etc/ethers"};
+    char *streamList[] = {static_cast<char *>(ether_file)};
+    int streamLen[] = {sizeof(ether_file)};
+    const int file_number = 1;
+    int flag = PrepareFileEnv(pathList, streamList, streamLen, file_number);
+    if (flag != 0) {
+        RecoveryFileEnv(pathList, file_number);
+        return -1;
+    }
+
     struct ether_addr addr, *eaddr = &addr;
     int ret = ether_hostton("localhost", eaddr);
 
@@ -45,6 +56,7 @@ static int EtherHosttonTest(void)
     ICUNIT_ASSERT_EQUAL(eaddr->ether_addr_octet[4], 0x00, eaddr->ether_addr_octet[4]);
     ICUNIT_ASSERT_EQUAL(eaddr->ether_addr_octet[5], 0x00, eaddr->ether_addr_octet[5]);
 
+    RecoveryFileEnv(pathList, file_number);
     return ICUNIT_SUCCESS;
 }
 

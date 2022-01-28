@@ -32,6 +32,23 @@
 
 static int GetServByNameTest(void)
 {
+    char serv_file[] = "echo		7/tcp\n"
+                       "echo		7/udp\n"
+                       "discard		9/tcp		sink null\n"
+                       "discard		9/udp		sink null\n"
+                       "systat		11/tcp		users\n"
+                       "ssh		22/tcp\n";
+
+    char *pathList[] = {"/etc/services"};
+    char *streamList[] = {static_cast<char *>(serv_file)};
+    int streamLen[] = {sizeof(serv_file)};
+    const int file_number = 1;
+    int flag = PrepareFileEnv(pathList, streamList, streamLen, file_number);
+    if (flag != 0) {
+        RecoveryFileEnv(pathList, file_number);
+        return -1;
+    }
+
     struct servent *se1 = nullptr;
     struct servent *se2 = nullptr;
 
@@ -53,6 +70,7 @@ static int GetServByNameTest(void)
     se2 = getservbyname("systat", "udp");
     ICUNIT_ASSERT_EQUAL(se2, nullptr, -1);
 
+    RecoveryFileEnv(pathList, file_number);
     return ICUNIT_SUCCESS;
 }
 

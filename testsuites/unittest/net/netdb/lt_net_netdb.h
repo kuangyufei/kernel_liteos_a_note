@@ -52,7 +52,6 @@ void NetNetDbTest010(void);
 void NetNetDbTest011(void);
 void NetNetDbTest012(void);
 void NetNetDbTest013(void);
-void NetNetDbTest014(void);
 void NetNetDbTest015(void);
 void NetNetDbTest016(void);
 void NetNetDbTest017(void);

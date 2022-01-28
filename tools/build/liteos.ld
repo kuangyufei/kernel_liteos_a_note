@@ -142,7 +142,7 @@ SECTIONS
         __user_init_bss = .;//将当前位置给__user_init_bss
         KEEP(libuserinit.O (.user.bss))
         . = ALIGN(0x1000);
-        __user_init_end = .;/	
+        __user_init_end = .;
     } > user_ram AT > ram
 
     __user_init_size = __user_init_end - __user_init_entry;

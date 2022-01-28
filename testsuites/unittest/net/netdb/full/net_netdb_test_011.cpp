@@ -35,16 +35,29 @@
 static int GetServByPortTest(void)
 {
     // refer to the `/etc/services' file.
+    char serv_file[] = "ssh		22/tcp\n";
+    char *pathList[] = {"/etc/services"};
+    char *streamList[] = {static_cast<char *>(serv_file)};
+    int streamLen[] = {sizeof(serv_file)};
+    const int file_number = 1;
+    int flag = PrepareFileEnv(pathList, streamList, streamLen, file_number);
+    if (flag != 0) {
+        RecoveryFileEnv(pathList, file_number);
+        return -1;
+    }
+
+    const int test_port_no = 22; // ssh port number is 22
     struct servent *se1 = nullptr;
-    struct servent *se = getservbyport(htons(22), "tcp");
+    struct servent *se = getservbyport(htons(test_port_no), "tcp");
     ICUNIT_ASSERT_NOT_EQUAL(se, NULL, -1);
     ICUNIT_ASSERT_STRING_EQUAL(se->s_name, "ssh", -1);
     ICUNIT_ASSERT_STRING_EQUAL(se->s_proto, "tcp", -1);
     ICUNIT_ASSERT_STRING_EQUAL(se->s_aliases[0], "ssh", -1);
 
-    se1 = getservbyport(htons(22), "tp");
+    se1 = getservbyport(htons(test_port_no), "tp");
     ICUNIT_ASSERT_EQUAL(se1, nullptr, -1);
 
+    RecoveryFileEnv(pathList, file_number);
     return ICUNIT_SUCCESS;
 }
 

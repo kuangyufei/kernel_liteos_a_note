@@ -653,18 +653,18 @@ STATIC INT32 OsFutexWaitTask(const UINT32 *userVaddr, const UINT32 flags, const 
     SCHEDULER_LOCK(intSave);
     OsTaskWaitSetPendMask(OS_TASK_WAIT_FUTEX, futexKey, timeOut);
     OsSchedTaskWait(&(node->pendList), timeOut, FALSE);
-    OsPercpuGet()->taskLockCnt++;
+    OsSchedLock();
     LOS_SpinUnlock(&g_taskSpin);
 
     futexRet = OsFutexUnlock(&hashNode->listLock);
     if (futexRet) {
-        OsPercpuGet()->taskLockCnt--;
+        OsSchedUnlock();
         LOS_IntRestore(intSave);
         goto EXIT_UNLOCK_ERR;
     }
 
     LOS_SpinLock(&g_taskSpin);
-    OsPercpuGet()->taskLockCnt--;
+    OsSchedUnlock();
 
     /*
      * it will immediately do the scheduling, so there's no need to release the

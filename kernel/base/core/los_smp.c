@@ -45,8 +45,6 @@ STATIC VOID OsSmpSecondaryInit(VOID *arg)
 {
     UNUSED(arg);
 
-    OsCurrProcessSet(OS_PCB_FROM_PID(OsGetKernelInitProcessID()));
-
 #ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
     OsSwtmrInit();
 #endif

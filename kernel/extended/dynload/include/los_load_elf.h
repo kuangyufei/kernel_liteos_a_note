@@ -129,6 +129,7 @@ STATIC INLINE BOOL OsIsBadUserAddress(VADDR_T vaddr)
     return (vaddr >= USER_STACK_TOP_MAX);
 }
 
+extern UINT32 OsGetRndOffset(INT32 randomDevFD);
 extern INT32 OsLoadELFFile(ELFLoadInfo *loadInfo);
 
 #ifdef __cplusplus

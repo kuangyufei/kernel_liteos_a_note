@@ -30,7 +30,30 @@
  */
 
 #include "los_percpu_pri.h"
+#include "los_printf.h"
 
-
+#ifdef LOSCFG_KERNEL_SMP
 Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM]; ///< CPU池,池大小由CPU核数决定
 
+VOID OsAllCpuStatusOutput(VOID)
+{
+    UINT32 i;
+
+    for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
+        switch (g_percpu[i].excFlag) {
+            case CPU_RUNNING:
+                PrintExcInfo("cpu%u is running.\n", i);
+                break;
+            case CPU_HALT:
+                PrintExcInfo("cpu%u is halted.\n", i);
+                break;
+            case CPU_EXC:
+                PrintExcInfo("cpu%u is in exc.\n", i);
+                break;
+            default:
+                break;
+        }
+    }
+    PrintExcInfo("The current handling the exception is cpu%u !\n", ArchCurrCpuid());
+}
+#endif

@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
+import("//third_party/Linux_Kernel/Linux_Kernel.gni")
 
 module_switch = defined(LOSCFG_FS_JFFS)
 module_name = get_path_info(rebase_path("."), "name")
@@ -37,35 +38,9 @@ kernel_module(module_name) {
     "src/vfs_jffs2.c",
   ]
 
-  sources += [
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/background.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/build.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/compr.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/compr_rtime.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/compr_rubin.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/compr_zlib.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/debug.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/dir.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/erase.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/file.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/fs.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/gc.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/malloc.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/nodelist.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/nodemgmt.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/read.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/readinode.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/scan.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/summary.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/super.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/write.c",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2/writev.c",
-  ]
+  sources += LINUX_KERNEL_FS_JFFS2_SRC_FILES
 
-  include_dirs = [
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs/jffs2",
-    "$LITEOSTHIRDPARTY/Linux_Kernel/fs",
-  ]
+  include_dirs = LINUX_KERNEL_FS_JFFS2_INCLUDE_DIRS
 
   public_configs = [ ":public" ]
 }
