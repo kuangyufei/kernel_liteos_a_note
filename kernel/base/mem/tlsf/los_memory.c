@@ -200,7 +200,7 @@ struct OsMemPoolInfo {
     UINT32 curUsedSize; /* Current usage size in a memory pool | 当前已使用大小*/
 #endif
 };
-/// 内存池总结构体
+/// 内存池控制结构体
 struct OsMemPoolHead {
     struct OsMemPoolInfo info; ///< 记录内存池的信息
     UINT32 freeListBitmap[OS_MEM_BITMAP_WORDS]; ///< 空闲位图 int[7] = 32 * 7 = 224 > 223 
@@ -1115,10 +1115,10 @@ retry: //这种写法也挺赞的 @note_good
 #endif
     return OsMemCreateUsedNode((VOID *)allocNode);//创建已使用节点
 }
-/// 从指定动态内存池中申请size长度的内存
+/// 从指定内存池中申请size长度的内存,注意这可不是从内核堆空间中申请内存
 VOID *LOS_MemAlloc(VOID *pool, UINT32 size)
 {
-    if ((pool == NULL) || (size == 0)) {
+    if ((pool == NULL) || (size == 0)) {//没提供内存池时
         return (size > 0) ? OsVmBootMemAlloc(size) : NULL;
     }
 
@@ -1135,14 +1135,14 @@ VOID *LOS_MemAlloc(VOID *pool, UINT32 size)
             break;
         }
         MEM_LOCK(poolHead, intSave);
-        ptr = OsMemAlloc(poolHead, size, intSave);//真正的分配内存函数
+        ptr = OsMemAlloc(poolHead, size, intSave);//真正的分配内存函数,详细查看 鸿蒙内核源码分析(内存池篇)
         MEM_UNLOCK(poolHead, intSave);
     } while (0);
 
     OsHookCall(LOS_HOOK_TYPE_MEM_ALLOC, pool, ptr, size);//打印日志,到此一游
     return ptr;
 }
-/// 从指定动态内存池中申请长度为size且地址按boundary字节对齐的内存
+/// 从指定内存池中申请size长度的内存且地址按boundary字节对齐的内存
 VOID *LOS_MemAllocAlign(VOID *pool, UINT32 size, UINT32 boundary)
 {
     UINT32 gapSize;
@@ -1202,7 +1202,7 @@ VOID *LOS_MemAllocAlign(VOID *pool, UINT32 size, UINT32 boundary)
     OsHookCall(LOS_HOOK_TYPE_MEM_ALLOCALIGN, pool, ptr, size, boundary);//打印对齐日志,表示程序曾临幸过此处
     return ptr;
 }
-
+/// 内存池有效性检查
 STATIC INLINE BOOL OsMemAddrValidCheck(const struct OsMemPoolHead *pool, const VOID *addr)
 {
     UINT32 size;
@@ -1216,7 +1216,7 @@ STATIC INLINE BOOL OsMemAddrValidCheck(const struct OsMemPoolHead *pool, const V
     if (OS_MEM_MIDDLE_ADDR_OPEN_END(pool + 1, addr, (UINTPTR)pool + size)) {
         return TRUE;
     }
-#if OS_MEM_EXPAND_ENABLE
+#if OS_MEM_EXPAND_ENABLE //如果支持可扩展
     struct OsMemNodeHead *node = NULL;
     struct OsMemNodeHead *sentinel = OS_MEM_END_NODE(pool, size);
     while (OsMemIsLastSentinelNode(sentinel) == FALSE) {

@@ -412,7 +412,8 @@ typedef struct {
     LOS_DL_LIST     lockList;           /**< Hold the lock list | 该链表上挂的都是已持有的锁 */
     UINTPTR         waitID;             /**< Wait for the PID or GID of the child process | 等待子进程的PID或GID */
     UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
-                                             a specific child process, or any child process | 任务在等待什么信息 ? (OS_TASK_WAIT_PROCESS | OS_TASK_WAIT_GID | OS_TASK_WAIT_LITEIPC  ..) */
+                                             a specific child process, or any child process | 任务在等待什么信息 ? (OS_TASK_WAIT_PROCESS | OS_TASK_WAIT_GID | OS_TASK_WAIT_LITEIPC  ..) 
+                                        往往用于被其他任务查看该任务在等待什么事件,如果事件到了就可以唤醒任务*/
 #ifdef LOSCFG_KERNEL_LITEIPC //轻量级进程间通信开关
     IpcTaskInfo     *ipcTaskInfo;	///< 任务间通讯信息结构体
 #endif
