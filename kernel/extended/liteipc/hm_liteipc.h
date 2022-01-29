@@ -153,9 +153,9 @@ typedef enum {//CMS 命令类型
     CMS_ADD_ACCESS ///< 为服务添加权限
 } CmsCmd;
 
-typedef struct {
-    CmsCmd        cmd;	///< 命令
-    UINT32        taskID; ///< 任务ID
+typedef struct {//命令结构体
+    CmsCmd        cmd;	///< 命令 例如注册命令:给taskID注册一个serviceHandle返回用户空间
+    UINT32        taskID; ///< 任务ID 
     UINT32        serviceHandle;///< 服务ID
 } CmsCmdContent;
 

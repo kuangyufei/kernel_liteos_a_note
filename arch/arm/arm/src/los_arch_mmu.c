@@ -624,9 +624,9 @@ STATUS_T LOS_ArchMmuUnmap(LosArchMmu *archMmu, VADDR_T vaddr, size_t count)
     INT32 tryTime = TRY_MAX_TIMES;
 
     while (count > 0) {
-        l1Entry = OsGetPte1Ptr(archMmu->virtTtb, vaddr);
-        if (OsIsPte1Invalid(*l1Entry)) {
-            unmapCount = OsUnmapL1Invalid(&vaddr, &count);
+        l1Entry = OsGetPte1Ptr(archMmu->virtTtb, vaddr);//获取L1表
+        if (OsIsPte1Invalid(*l1Entry)) {//L1表是否有效
+            unmapCount = OsUnmapL1Invalid(&vaddr, &count);//取消L1表内的映射
         } else if (OsIsPte1Section(*l1Entry)) {
             if (MMU_DESCRIPTOR_IS_L1_SIZE_ALIGNED(vaddr) && count >= MMU_DESCRIPTOR_L2_NUMBERS_PER_L1) {
                 unmapCount = OsUnmapSection(archMmu, l1Entry, &vaddr, &count);
@@ -634,7 +634,7 @@ STATUS_T LOS_ArchMmuUnmap(LosArchMmu *archMmu, VADDR_T vaddr, size_t count)
                 LOS_Panic("%s %d, unimplemented\n", __FUNCTION__, __LINE__);
             }
         } else if (OsIsPte1PageTable(*l1Entry)) {
-            unmapCount = OsUnmapL2PTE(archMmu, l1Entry, vaddr, &count);
+            unmapCount = OsUnmapL2PTE(archMmu, l1Entry, vaddr, &count);//取消L2表的映射
             OsTryUnmapL1PTE(archMmu, l1Entry, vaddr, OsGetPte2Index(vaddr) + unmapCount,
                             MMU_DESCRIPTOR_L2_NUMBERS_PER_L1);
             vaddr += unmapCount << MMU_DESCRIPTOR_L2_SMALL_SHIFT;

@@ -102,8 +102,8 @@
 #define VM_MAP_WASTE_MEM_LEVEL          (PAGE_SIZE >> 2) ///<	浪费内存大小(1K)
 LosMux g_vmSpaceListMux;				///< 用于锁g_vmSpaceList的互斥量
 LOS_DL_LIST_HEAD(g_vmSpaceList);		///< 初始化全局虚拟空间节点,所有虚拟空间都挂到此节点上.
-LosVmSpace g_kVmSpace;					///< 内核空间地址
-LosVmSpace g_vMallocSpace;				///< 内核堆空间地址
+LosVmSpace g_kVmSpace;					///< 内核空间,用于内核运行栈,代码区,数据区
+LosVmSpace g_vMallocSpace;				///< 内核堆空间,用于内核分配内存
 
 /************************************************************
 * 获取进程空间系列接口
@@ -690,7 +690,7 @@ STATIC VOID OsFilePagesRemove(LosVmSpace *space, LosVmMapRegion *region)
     }
 }
 #endif
-////释放线性区
+/// 释放进程空间指定线性区
 STATUS_T LOS_RegionFree(LosVmSpace *space, LosVmMapRegion *region)
 {
     if ((space == NULL) || (region == NULL)) {
@@ -700,34 +700,34 @@ STATUS_T LOS_RegionFree(LosVmSpace *space, LosVmMapRegion *region)
 
     (VOID)LOS_MuxAcquire(&space->regionMux);
 
-#ifdef LOSCFG_FS_VFS
-    if (LOS_IsRegionFileValid(region)) {
-        OsFilePagesRemove(space, region);
+#ifdef LOSCFG_FS_VFS //文件开关
+    if (LOS_IsRegionFileValid(region)) {//是否为文件线性区
+        OsFilePagesRemove(space, region);//删除文件页
         VnodeHold();
         region->unTypeData.rf.vnode->useCount--;
         VnodeDrop();
     } else
 #endif
-#ifdef LOSCFG_KERNEL_SHM
-    if (OsIsShmRegion(region)) {
-        OsShmRegionFree(space, region);
+#ifdef LOSCFG_KERNEL_SHM	//共享内存开关
+    if (OsIsShmRegion(region)) { //是否为共享内存线性区
+        OsShmRegionFree(space, region);//释放共享线性区
     } else if (LOS_IsRegionTypeDev(region)) {
 #else
-    if (LOS_IsRegionTypeDev(region)) {
+    if (LOS_IsRegionTypeDev(region)) {//如果是设备线性区
 #endif
-        OsDevPagesRemove(&space->archMmu, region->range.base, region->range.size >> PAGE_SHIFT);
+        OsDevPagesRemove(&space->archMmu, region->range.base, region->range.size >> PAGE_SHIFT);//删除映射设备
     } else {
-        OsAnonPagesRemove(&space->archMmu, region->range.base, region->range.size >> PAGE_SHIFT);
+        OsAnonPagesRemove(&space->archMmu, region->range.base, region->range.size >> PAGE_SHIFT);//删除匿名映射
     }
 
     /* remove it from space */
-    LOS_RbDelNode(&space->regionRbTree, &region->rbNode);
+    LOS_RbDelNode(&space->regionRbTree, &region->rbNode);//从红黑树中删除线性区
     /* free it */
-    LOS_MemFree(m_aucSysMem0, region);
+    LOS_MemFree(m_aucSysMem0, region);//释放线性区结构体占用的内存
     (VOID)LOS_MuxRelease(&space->regionMux);
     return LOS_OK;
 }
-
+/// 复制线性区
 LosVmMapRegion *OsVmRegionDup(LosVmSpace *space, LosVmMapRegion *oldRegion, VADDR_T vaddr, size_t size)
 {
     LosVmMapRegion *newRegion = NULL;
@@ -735,31 +735,31 @@ LosVmMapRegion *OsVmRegionDup(LosVmSpace *space, LosVmMapRegion *oldRegion, VADD
 
     (VOID)LOS_MuxAcquire(&space->regionMux);
     regionFlags = oldRegion->regionFlags;
-    if (vaddr == 0) {
-        regionFlags &= ~(VM_MAP_REGION_FLAG_FIXED | VM_MAP_REGION_FLAG_FIXED_NOREPLACE);
+    if (vaddr == 0) {//不指定地址
+        regionFlags &= ~(VM_MAP_REGION_FLAG_FIXED | VM_MAP_REGION_FLAG_FIXED_NOREPLACE); //撕掉两个标签
     } else {
-        regionFlags |= VM_MAP_REGION_FLAG_FIXED;
+        regionFlags |= VM_MAP_REGION_FLAG_FIXED; //贴上填满线性区标签
     }
-    newRegion = LOS_RegionAlloc(space, vaddr, size, regionFlags, oldRegion->pgOff);
+    newRegion = LOS_RegionAlloc(space, vaddr, size, regionFlags, oldRegion->pgOff); //分配一个线性区
     if (newRegion == NULL) {
         VM_ERR("LOS_RegionAlloc failed");
         goto REGIONDUPOUT;
     }
-    newRegion->regionType = oldRegion->regionType;
+    newRegion->regionType = oldRegion->regionType;//复制线性区类型(文件,设备,匿名)
 
 #ifdef LOSCFG_KERNEL_SHM
-    if (OsIsShmRegion(oldRegion)) {
-        newRegion->shmid = oldRegion->shmid;
+    if (OsIsShmRegion(oldRegion)) {//如果是共享内存
+        newRegion->shmid = oldRegion->shmid;//复制共享ID
     }
 #endif
 
-#ifdef LOSCFG_FS_VFS
-    if (LOS_IsRegionTypeFile(oldRegion)) {
-        newRegion->unTypeData.rf.vmFOps = oldRegion->unTypeData.rf.vmFOps;
-        newRegion->unTypeData.rf.vnode = oldRegion->unTypeData.rf.vnode;
-        newRegion->unTypeData.rf.f_oflags = oldRegion->unTypeData.rf.f_oflags;
+#ifdef LOSCFG_FS_VFS //文件开关
+    if (LOS_IsRegionTypeFile(oldRegion)) {//如果是文件线性区
+        newRegion->unTypeData.rf.vmFOps = oldRegion->unTypeData.rf.vmFOps; //文件操作接口
+        newRegion->unTypeData.rf.vnode = oldRegion->unTypeData.rf.vnode; //文件索引节点
+        newRegion->unTypeData.rf.f_oflags = oldRegion->unTypeData.rf.f_oflags;//读写标签
         VnodeHold();
-        newRegion->unTypeData.rf.vnode->useCount++;
+        newRegion->unTypeData.rf.vnode->useCount++;//索引节点使用数增加
         VnodeDrop();
     }
 #endif
@@ -768,14 +768,14 @@ REGIONDUPOUT:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return newRegion;
 }
-
+/// 劈开线性区
 STATIC LosVmMapRegion *OsVmRegionSplit(LosVmMapRegion *oldRegion, VADDR_T newRegionStart)
 {
     LosVmMapRegion *newRegion = NULL;
     LosVmSpace *space = oldRegion->space;
-    size_t size = LOS_RegionSize(newRegionStart, LOS_RegionEndAddr(oldRegion));
+    size_t size = LOS_RegionSize(newRegionStart, LOS_RegionEndAddr(oldRegion));//获取线性区大小
 
-    oldRegion->range.size = LOS_RegionSize(oldRegion->range.base, newRegionStart - 1);
+    oldRegion->range.size = LOS_RegionSize(oldRegion->range.base, newRegionStart - 1);//获取旧线性区大小
     if (oldRegion->range.size == 0) {
         LOS_RbDelNode(&space->regionRbTree, &oldRegion->rbNode);
     }
@@ -828,7 +828,7 @@ STATUS_T OsRegionsRemove(LosVmSpace *space, VADDR_T regionBase, size_t size)
 
     (VOID)LOS_MuxAcquire(&space->regionMux);
 
-    status = OsVmRegionAdjust(space, regionBase, size);
+    status = OsVmRegionAdjust(space, regionBase, size);//线性区调整
     if (status != LOS_OK) {
         goto ERR_REGION_SPLIT;
     }
@@ -923,28 +923,28 @@ ERR_REGION_SPLIT:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return status;
 }
-
+/// 释放所有线性区
 STATIC VOID OsVmSpaceAllRegionFree(LosVmSpace *space)
 {
     LosRbNode *pstRbNode = NULL;
     LosRbNode *pstRbNodeNext = NULL;
 
     /* free all of the regions */
-    RB_SCAN_SAFE(&space->regionRbTree, pstRbNode, pstRbNodeNext)
-        LosVmMapRegion *region = (LosVmMapRegion *)pstRbNode;
+    RB_SCAN_SAFE(&space->regionRbTree, pstRbNode, pstRbNodeNext) //遍历红黑树
+        LosVmMapRegion *region = (LosVmMapRegion *)pstRbNode;//拿到线性区
         if (region->range.size == 0) {
             VM_ERR("space free, region: %#x flags: %#x, base:%#x, size: %#x",
                    region, region->regionFlags, region->range.base, region->range.size);
         }
-        STATUS_T ret = LOS_RegionFree(space, region);
+        STATUS_T ret = LOS_RegionFree(space, region);//释放线性区
         if (ret != LOS_OK) {
             VM_ERR("free region error, space %p, region %p", space, region);
         }
-    RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNode, pstRbNodeNext)
+    RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNode, pstRbNodeNext)//要好好研究下这几个宏,有点意思
 
     return;
 }
-
+/// 释放虚拟空间
 STATUS_T OsVmSpaceRegionFree(LosVmSpace *space)
 {
     if (space == NULL) {

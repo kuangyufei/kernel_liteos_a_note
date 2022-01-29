@@ -4,8 +4,7 @@
  * @link
    @verbatim
    虚拟地址空间全景图 从 0x00000000U 至 0xFFFFFFFFU ,外设和主存采用统一编址方式 @note_pic
-   鸿蒙源码分析系列篇: 		   https://blog.csdn.net/kuangyufei 
-					   https://my.oschina.net/u/3751245
+   鸿蒙源码分析系列篇: http://weharmonyos.com | https://my.oschina.net/weharmony 		   
    
    +----------------------------+ 0xFFFFFFFFU
    |  IO设备未缓存 				  	|
@@ -152,15 +151,15 @@ extern "C" {
 #define KERNEL_VMM_BASE         U32_C(KERNEL_VADDR_BASE) ///< 速度快,使用cache
 #define KERNEL_VMM_SIZE         U32_C(KERNEL_VADDR_SIZE)
 
-#define KERNEL_ASPACE_BASE      KERNEL_VMM_BASE ///< 内核空间开始地址
+#define KERNEL_ASPACE_BASE      KERNEL_VMM_BASE ///< 内核空间基地址
 #define KERNEL_ASPACE_SIZE      KERNEL_VMM_SIZE ///< 内核空间大小
 
 /* Uncached vmm aspace */
 #define UNCACHED_VMM_BASE       (KERNEL_VMM_BASE + KERNEL_VMM_SIZE) ///< 未缓存虚拟空间基地址,适用于DMA,LCD framebuf,
 #define UNCACHED_VMM_SIZE       DDR_MEM_SIZE ///<未缓存虚拟空间大小
 
-#define VMALLOC_START           (UNCACHED_VMM_BASE + UNCACHED_VMM_SIZE) ///< 堆区基地址
-#define VMALLOC_SIZE            0x08000000 ///< 128M
+#define VMALLOC_START           (UNCACHED_VMM_BASE + UNCACHED_VMM_SIZE) ///< 内核堆空间基地址
+#define VMALLOC_SIZE            0x08000000 ///< 内核堆空间大小, 128M
 //UART,LCD,摄像头,I2C,中断控制器统称为外部设备, 统一编址
 #ifdef LOSCFG_KERNEL_MMU	//使用MMU时,只是虚拟地址不一样,但映射的物理设备空间一致.
 #define PERIPH_DEVICE_BASE      (VMALLOC_START + VMALLOC_SIZE)	///< 不使用buffer,cache

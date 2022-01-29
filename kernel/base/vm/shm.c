@@ -420,7 +420,7 @@ VOID OsShmRegionFree(LosVmSpace *space, LosVmMapRegion *region)
         return;
     }
 
-    LOS_ArchMmuUnmap(&space->archMmu, region->range.base, region->range.size >> PAGE_SHIFT);
+    LOS_ArchMmuUnmap(&space->archMmu, region->range.base, region->range.size >> PAGE_SHIFT);//解除线性区的映射
     ShmPagesRefDec(seg);//ref -- 
     seg->ds.shm_nattch--;//附在共享线性区上的进程数--
     if (seg->ds.shm_nattch <= 0 && (seg->status & SHM_SEG_REMOVE)) {

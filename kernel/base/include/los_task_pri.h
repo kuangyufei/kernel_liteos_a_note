@@ -279,7 +279,7 @@ STATIC INLINE BOOL OsTaskIsUserMode(const LosTaskCB *taskCB)
 
 /* get task info */
 #define OS_ALL_TASK_MASK  0xFFFFFFFF
-/// 任务的信号列表
+/// 任务的等待事件/信号列表
 #define OS_TASK_WAIT_ANYPROCESS (1 << 0U)					///< 等待任意进程出现
 #define OS_TASK_WAIT_PROCESS    (1 << 1U)					///< 等待指定进程出现
 #define OS_TASK_WAIT_GID        (1 << 2U)					///< 等待组ID
@@ -297,8 +297,8 @@ STATIC INLINE BOOL OsTaskIsUserMode(const LosTaskCB *taskCB)
 STATIC INLINE VOID OsTaskWaitSetPendMask(UINT16 mask, UINTPTR lockID, UINT32 timeout)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
-    runTask->waitID = lockID;
-    runTask->waitFlag = mask;
+    runTask->waitID = lockID; //
+    runTask->waitFlag = mask; //当前任务在等待什么东东到来 例如: OS_TASK_WAIT_LITEIPC
     (VOID)timeout;
 }
 

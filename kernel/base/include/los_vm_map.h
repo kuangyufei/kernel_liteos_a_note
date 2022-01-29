@@ -121,14 +121,14 @@ struct VmMapRegion {
     LOS_DL_LIST         node;           /**< region dl list | 链表节点,通过它将本线性区挂在VmSpace.regions上*/				
     LosVmMapRange       range;          /**< region address range | 记录线性区的范围*/
     VM_OFFSET_T         pgOff;          /**< region page offset to file | 以文件开始处的偏移量, 必须是分页大小的整数倍, 通常为0, 表示从文件头开始映射。*/
-    UINT32              regionFlags;   /**< region flags: cow, user_wired | 线性区标签*/
+    UINT32              regionFlags;    /**< region flags: cow, user_wired | 线性区标签*/
     UINT32              shmid;          /**< shmid about shared region | shmid为共享线性区id,id背后就是共享线性区*/
     UINT8               forkFlags;      /**< vm space fork flags: COPY, ZERO, | 线性区标记方式*/
     UINT8               regionType;     /**< vm region type: ANON, FILE, DEV | 映射类型是匿名,文件,还是设备,所谓匿名可理解为内存映射*/
 	union {
         struct VmRegionFile {// <磁盘文件 , 物理内存, 用户进程虚拟地址空间 > 
-            int f_oflags;
-            struct Vnode *vnode;
+            int f_oflags; ///< 读写标签
+            struct Vnode *vnode;///< 文件索引节点
             const LosVmFileOps *vmFOps;///< 文件处理各操作接口,open,read,write,close,mmap
         } rf;
 		//匿名映射是指那些没有关联到文件页，如进程堆、栈、数据段和任务已修改的共享库等与物理内存的映射
@@ -141,11 +141,11 @@ struct VmMapRegion {
         } rd;
     } unTypeData;
 };
-/// 进程空间,每个进程都有一个属于自己的虚拟内存地址空间
+/// 虚拟空间,每个进程都有一个属于自己的虚拟内存地址空间
 typedef struct VmSpace {
     LOS_DL_LIST         node;           /**< vm space dl list | 节点,通过它挂到全局虚拟空间 g_vmSpaceList 链表上*/
     LosRbTree           regionRbTree;   /**< region red-black tree root | 采用红黑树方式管理本空间各个线性区*/
-    LosMux              regionMux;      /**< region list mutex lock | 虚拟空间的互斥锁*/
+    LosMux              regionMux;      /**< region list mutex lock | 虚拟空间操作红黑树互斥锁*/
     VADDR_T             base;           /**< vm space base addr | 虚拟空间的基地址,线性区的分配范围,常用于判断地址是否在内核还是用户空间*/
     UINT32              size;           /**< vm space size | 虚拟空间大小*/
     VADDR_T             heapBase;       /**< vm space heap base address | 堆区基地址，表堆区范围起点*/
@@ -188,9 +188,9 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_BSS                  (1<<13)		///< bbs数据区 由运行时动态分配,bss段（Block Started by Symbol segment）通常是指用来存放程序中未初始化的全局变量的一块内存区域。
 #define     VM_MAP_REGION_FLAG_VDSO                 (1<<14)		///< VDSO（Virtual Dynamic Shared Object，虚拟动态共享库）由内核提供的虚拟.so文件，它不在磁盘上，而在内核里，内核将其映射到一个地址空间中，被所有程序共享，正文段大小为一个页面。
 #define     VM_MAP_REGION_FLAG_MMAP                 (1<<15)		///< 映射区,虚拟空间内有专门用来存储<虚拟地址-物理地址>映射的区域
-#define     VM_MAP_REGION_FLAG_SHM                  (1<<16) 	///< 共享内存区,和代码区同级概念,意思是整个线性区被贴上共享标签
-#define     VM_MAP_REGION_FLAG_FIXED                (1<<17)		///< 填满线性区
-#define     VM_MAP_REGION_FLAG_FIXED_NOREPLACE      (1<<18)		///< 	
+#define     VM_MAP_REGION_FLAG_SHM                  (1<<16) 	///< 共享内存区, 被多个进程线性区映射
+#define     VM_MAP_REGION_FLAG_FIXED                (1<<17)		///< 线性区被填满
+#define     VM_MAP_REGION_FLAG_FIXED_NOREPLACE      (1<<18)		///< 线性区不被替换	
 #define     VM_MAP_REGION_FLAG_INVALID              (1<<19) /* indicates that flags are not specified */
 /// 从外部权限标签转化为线性区权限标签
 STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned long flags)
@@ -219,7 +219,7 @@ STATIC INLINE BOOL LOS_IsKernelAddressRange(VADDR_T vaddr, size_t len)
 {
     return (vaddr + len > vaddr) && LOS_IsKernelAddress(vaddr) && (LOS_IsKernelAddress(vaddr + len - 1));
 }
-/// 获取区的结束地址
+/// 获取线性区的结束地址
 STATIC INLINE VADDR_T LOS_RegionEndAddr(LosVmMapRegion *region)
 {
     return (region->range.base + region->range.size - 1);
