@@ -853,7 +853,7 @@ ERROUT_UNLOCK:
 ERROUT:
     return -1;
 }
-
+/// 例如: 软总线适配层 WriteMsgQue - mq_send
 /* not support the prio */
 int mq_send(mqd_t personal, const char *msg_ptr, size_t msg_len, unsigned int msg_prio)
 {

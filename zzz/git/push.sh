@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 注解LiteIpc消息封装机制 
+git commit -m  ' 注解LiteIpc消息映射 
     百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)

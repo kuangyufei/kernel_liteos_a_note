@@ -913,7 +913,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleSpecialObjects(UINT32 dstTid, IpcListNode *
         }
     }
     return LOS_OK;
-EXIT:
+EXIT://异常回滚处理
     for (i--; i >= 0; i--) {
         obj = (SpecialObj *)((UINTPTR)msg->data + offset[i]);
         (VOID)HandleObj(dstTid, obj, TRUE);
@@ -931,7 +931,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckMsgSize(IpcMsg *msg)
         return LOS_OK;
     }
     /* msg send to cms, check the msg size */
-    totalSize = (UINT64)sizeof(IpcMsg) + msg->dataSz + msg->spObjNum * sizeof(UINT32);
+    totalSize = (UINT64)sizeof(IpcMsg) + msg->dataSz + msg->spObjNum * sizeof(UINT32);//缓冲总大小
     for (i = 0; i < msg->spObjNum; i++) {
         if (offset[i] > msg->dataSz - sizeof(SpecialObj)) {
             return -EINVAL;
@@ -944,7 +944,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckMsgSize(IpcMsg *msg)
             return -EINVAL;
         }
         if (obj->type == OBJ_PTR) {
-            totalSize += obj->content.ptr.buffSz;
+            totalSize += obj->content.ptr.buffSz;//指针指向的buf存储在用户空间其他地方
         }
     }
     (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
@@ -999,16 +999,16 @@ LITE_OS_SEC_TEXT STATIC UINT32 CopyDataFromUser(IpcListNode *node, UINT32 bufSz,
 #endif
     return LOS_OK;
 }
-
+/// 是否有效回复
 LITE_OS_SEC_TEXT STATIC BOOL IsValidReply(const IpcContent *content)
 {
     UINT32 curProcessID = LOS_GetCurrProcessID();
-    IpcListNode *node = (IpcListNode *)GetIpcKernelAddr(curProcessID, (INTPTR)(content->buffToFree));
+    IpcListNode *node = (IpcListNode *)GetIpcKernelAddr(curProcessID, (INTPTR)(content->buffToFree));//通过用户空间地址获取内核地址
     IpcMsg *requestMsg = &node->msg;
     IpcMsg *replyMsg = content->outMsg;
     UINT32 reqDstTid = 0;
     /* Check whether the reply matches the request */
-    if ((requestMsg->type != MT_REQUEST)  ||
+    if ((requestMsg->type != MT_REQUEST)  || //判断条件
         (requestMsg->flag == LITEIPC_FLAG_ONEWAY) ||
         (replyMsg->timestamp != requestMsg->timestamp) ||
         (replyMsg->target.handle != requestMsg->taskID) ||
@@ -1089,7 +1089,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
     }
     return LOS_OK;
 }
-///写IPC消息队列,从用户空间到内核空间
+/// 写IPC消息队列,从用户空间到内核空间
 LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcWrite(IpcContent *content)
 {
     UINT32 ret, intSave;
@@ -1199,7 +1199,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckRecievedMsg(IpcListNode *node, IpcContent *c
     }
     return ret;
 }
-//读取IPC消息
+/// 读取IPC消息
 LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcRead(IpcContent *content)
 {
     UINT32 intSave, ret;

@@ -49,7 +49,7 @@ extern "C" {
 从形象意义的理解,跟门的把柄一样,握住门柄就控制了整个大门.句柄是给用户程序使用的一个数字凭证,
 能以小博大,通过句柄能牵动内核模块工作.
  */
-#define LITEIPC_DRIVER "/dev/lite_ipc"	///< 虚拟设备
+#define LITEIPC_DRIVER "/dev/lite_ipc"	///< 虚拟设备,文件访问读取
 #define LITEIPC_DRIVER_MODE 0644 ///< 对虚拟设备的访问权限 110100100 表示只有所属用户才有读写权限,其余都只能读
 #define MAX_SERVICE_NUM LOSCFG_BASE_CORE_TSK_LIMIT ///< 最大服务数等于任务数 默认128
 #define USE_TIMESTAMP 1 	///< 使用时间戳
@@ -136,14 +136,14 @@ typedef enum {
     MT_REQUEST,	///< 请求
     MT_REPLY,	///< 回复
     MT_FAILED_REPLY,///< 回复失败
-    MT_DEATH_NOTIFY,///< 通知死亡
+    MT_DEATH_NOTIFY,///< 死亡通知
     MT_NUM
 } MsgType;
 
 /* lite ipc ioctl | 控制命令*/
 #define IPC_IOC_MAGIC       'i'
-#define IPC_SET_CMS         _IO(IPC_IOC_MAGIC, 1)
-#define IPC_CMS_CMD         _IOWR(IPC_IOC_MAGIC, 2, CmsCmdContent)
+#define IPC_SET_CMS         _IO(IPC_IOC_MAGIC, 1) ///< 设置ServiceManager的命令
+#define IPC_CMS_CMD         _IOWR(IPC_IOC_MAGIC, 2, CmsCmdContent)///< 控制命令,创建/删除 服务 添加服务权限
 #define IPC_SET_IPC_THREAD  _IO(IPC_IOC_MAGIC, 3)	///< 为进程设置IPC任务
 #define IPC_SEND_RECV_MSG   _IOWR(IPC_IOC_MAGIC, 4, IpcContent) ///< 对IPC的读写处理
 

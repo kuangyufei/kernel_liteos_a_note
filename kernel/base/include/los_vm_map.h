@@ -208,7 +208,7 @@ STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned lo
 
     return regionFlags;
 }
-/// 是否为内核空间的地址
+/// 虚拟地址是否在内核空间
 STATIC INLINE BOOL LOS_IsKernelAddress(VADDR_T vaddr)
 {
     return ((vaddr >= (VADDR_T)KERNEL_ASPACE_BASE) &&
@@ -270,7 +270,7 @@ STATIC INLINE VOID LOS_SetRegionTypeAnon(LosVmMapRegion* region)
 {
     region->regionType = VM_MAP_REGION_TYPE_ANON;
 }
-/// 虚拟地址是否在用户空间, 真为在用户空间
+/// 虚拟地址是否在用户空间
 STATIC INLINE BOOL LOS_IsUserAddress(VADDR_T vaddr)
 {
     return ((vaddr >= USER_ASPACE_BASE) &&
