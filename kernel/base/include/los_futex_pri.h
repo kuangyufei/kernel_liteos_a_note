@@ -67,8 +67,9 @@
 		使用通过FUTEX_BITSET_MATCH_ANY特殊定义的val3传入FUTEX_WAIT_BITSET可以获得附带timeout的FUTEX_WAIT的值。		
    @endverbatim	
 */
-#define FUTEX_WAIT        0	///< 因等锁而被阻塞的线程
-#define FUTEX_WAKE        1 ///< 唤醒一个被指定锁阻塞的线程
+#define FUTEX_WAIT        0	///< 原子性的检查 uaddr 中计数器的值是否为 val，如果是则让任务休眠，直到 FUTEX_WAKE 或者超时（time-out）。
+							//也就是把任务挂到 uaddr 相对应的等待队列上去。
+#define FUTEX_WAKE        1 ///< 最多唤醒 val 个等待在 uaddr 上任务。
 #define FUTEX_REQUEUE     3	///< 调整指定锁在Futex表中的位置
 #define FUTEX_WAKE_OP     5 
 #define FUTEX_LOCK_PI     6
@@ -80,7 +81,7 @@
 #define FUTEX_MASK        0x3U
 
 typedef struct {
-    UINTPTR      key;           /* private:uvaddr | 私有锁    shared:paddr | 共享锁,物理地址 */
+    UINTPTR      key;           /* private:uvaddr | 私有锁,用虚拟地址         shared:paddr | 共享锁,用物理地址 */
     UINT32       index;         /* hash bucket index | 哈希桶索引 */
     UINT32       pid;           /* private:process id   shared:OS_INVALID(-1) | 私有锁:进程ID     , 共享锁为 -1 */
     LOS_DL_LIST  pendList;      /* point to pendList in TCB struct | 挂到任务阻塞链表上*/

@@ -104,17 +104,18 @@
 #define FUTEX_INDEX_SHARED_MAX      16	///< 64~79号桶用于存放共享锁（以物理地址进行哈希）,不同进程间通过文件共享futex变量，表明该变量在文件中的位置
 #define FUTEX_INDEX_MAX             (FUTEX_INDEX_PRIVATE_MAX + FUTEX_INDEX_SHARED_MAX) ///< 80个哈希桶
 
-#define FUTEX_INDEX_SHARED_POS      FUTEX_INDEX_PRIVATE_MAX
+#define FUTEX_INDEX_SHARED_POS      FUTEX_INDEX_PRIVATE_MAX ///< 共享锁开始位置
 #define FUTEX_HASH_PRIVATE_MASK     (FUTEX_INDEX_PRIVATE_MAX - 1)
 #define FUTEX_HASH_SHARED_MASK      (FUTEX_INDEX_SHARED_MAX - 1)
-
+/// 单独哈希桶
 typedef struct {
-    LosMux      listLock;///< 操作lockList的互斥锁
+    LosMux      listLock;///< 内核操作lockList的互斥锁
     LOS_DL_LIST lockList;///< 用于挂载Futex(Fast userspace mutex，用户态快速互斥锁)
 } FutexHash;
 
 FutexHash g_futexHash[FUTEX_INDEX_MAX];///< 80个哈希桶
 
+/// 对互斥锁封装
 STATIC INT32 OsFutexLock(LosMux *lock)
 {
     UINT32 ret = LOS_MuxLock(lock, LOS_WAIT_FOREVER);
@@ -139,10 +140,10 @@ UINT32 OsFutexInit(VOID)
 {
     INT32 count;
     UINT32 ret;
-	// 初始化 80个双向链表和互斥锁
+	// 初始化 80个哈希桶 
     for (count = 0; count < FUTEX_INDEX_MAX; count++) {
-        LOS_ListInit(&g_futexHash[count].lockList);
-        ret = LOS_MuxInit(&(g_futexHash[count].listLock), NULL);
+        LOS_ListInit(&g_futexHash[count].lockList); // 初始化双向链表,上面挂 FutexNode
+        ret = LOS_MuxInit(&(g_futexHash[count].listLock), NULL);//初始化互斥锁
         if (ret) {
             return ret;
         }
@@ -619,7 +620,7 @@ STATIC INT32 OsFutexInsertTaskToHash(LosTaskCB **taskCB, FutexNode **node, const
     LOS_ListInit(&((*node)->pendList));
     return LOS_OK;
 }
-
+//将当前任务挂入等待链表中
 STATIC INT32 OsFutexWaitTask(const UINT32 *userVaddr, const UINT32 flags, const UINT32 val, const UINT32 timeOut)
 {
     INT32 futexRet;
@@ -686,7 +687,7 @@ EXIT_ERR:
 EXIT_UNLOCK_ERR:
     return futexRet;
 }
-/// 向Futex表中插入代表被阻塞的线程的node
+/// 设置线程等待 | 向Futex表中插入代表被阻塞的线程的node
 INT32 OsFutexWait(const UINT32 *userVaddr, UINT32 flags, UINT32 val, UINT32 absTime)
 {
     INT32 ret;

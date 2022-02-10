@@ -1011,7 +1011,7 @@ void SysThreadExit(int status)
  * @param absTime	绝对时间
  * @param flags	操作标识
  * @param newUserAddr FUTEX_REQUEUE下调整后带回新的用户空间地址	
- * @param uAddr	用户空间地址 
+ * @param uAddr	用户态下共享内存的地址,里面存放的是一个对齐的整型计数器 
  * @param val 	
  * @return	
  *
@@ -1028,7 +1028,7 @@ int SysFutex(const unsigned int *uAddr, unsigned int flags, int val,
         return -OsFutexWake(uAddr, flags, val);
     }
 
-    return -OsFutexWait(uAddr, flags, val, absTime);//等待标识
+    return -OsFutexWait(uAddr, flags, val, absTime);//设置线程等待
 }
 
 unsigned int SysGetTid(void)
