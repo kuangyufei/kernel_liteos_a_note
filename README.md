@@ -65,7 +65,7 @@
 * [v24.03 鸿蒙内核源码分析(进程概念) | 如何更好的理解进程](https://my.oschina.net/weharmony/blog/4937521)
 * [v25.05 鸿蒙内核源码分析(并发并行) | 听过无数遍的两个概念](https://my.oschina.net/weharmony/blog/4940329)
 * [v26.08 鸿蒙内核源码分析(自旋锁) | 当立贞节牌坊的好同志](https://my.oschina.net/weharmony/blog/4944129)
-* [v27.05 鸿蒙内核源码分析(互斥锁) | 同样是锁它确更丰满](https://my.oschina.net/weharmony/blog/4945465)
+* [v27.05 鸿蒙内核源码分析(互斥锁) | 同样是锁它却更丰满](https://my.oschina.net/weharmony/blog/4945465)
 * [v28.04 鸿蒙内核源码分析(进程通讯) | 九种进程间通讯方式速揽](https://my.oschina.net/weharmony/blog/4947398)
 * [v29.05 鸿蒙内核源码分析(信号量) | 谁在解决任务间的同步](https://my.oschina.net/weharmony/blog/4949720)
 * [v30.07 鸿蒙内核源码分析(事件控制) | 多对多任务如何同步](https://my.oschina.net/weharmony/blog/4950956)
@@ -115,7 +115,9 @@
 * [v74.01 鸿蒙内核源码分析(控制台) | 一个让很多人模糊的概念](https://my.oschina.net/weharmony/blog/5356308)
 * [v75.01 鸿蒙内核源码分析(远程登录) | 内核如何接待远方的客人](https://my.oschina.net/weharmony/blog/5375838)
 * [v76.01 鸿蒙内核源码分析(共享内存) | 进程间最快通讯方式](https://my.oschina.net/weharmony/blog/5412148)
-* [v77.01 鸿蒙内核源码分析(消息封装) | 剖析LiteIpc进程通讯内容](https://my.oschina.net/weharmony/blog/5421867)
+* [v77.02 鸿蒙内核源码分析(消息封装) | 剖析LiteIpc(上)进程通讯内容](https://my.oschina.net/weharmony/blog/5421867)
+* [v78.01 鸿蒙内核源码分析(消息映射) | 剖析LiteIpc(下)进程通讯机制](https://my.oschina.net/weharmony/blog/5436744)
+* [v79.01 鸿蒙内核源码分析(用户态锁) | 如何使用快锁Futex(上)](https://my.oschina.net/weharmony/blog/5446656)
 
 #### 三： 百万注内核 | 处处扣细节 | 细胞血管
 * 百万汉字注解内核目的是要看清楚其毛细血管，细胞结构，等于在拿放大镜看内核。内核并不神秘，带着问题去源码中找答案是很容易上瘾的，你会发现很多文章对一些问题的解读是错误的，或者说不深刻难以自圆其说，你会慢慢形成自己新的解读，而新的解读又会碰到新的问题，如此层层递进，滚滚向前，拿着放大镜根本不愿意放手。

@@ -1009,7 +1009,7 @@ void SysThreadExit(int status)
  * @brief SysFutex	操作用户态快速互斥锁
  * 系统调用
  * @param absTime	绝对时间
- * @param flags	操作标识
+ * @param flags	操作标识(FUTEX_WAKE | FUTEX_WAIT)
  * @param newUserAddr FUTEX_REQUEUE下调整后带回新的用户空间地址	
  * @param uAddr	用户态下共享内存的地址,里面存放的是一个对齐的整型计数器 
  * @param val 	
@@ -1020,17 +1020,18 @@ void SysThreadExit(int status)
 int SysFutex(const unsigned int *uAddr, unsigned int flags, int val,
              unsigned int absTime, const unsigned int *newUserAddr)
 {
-    if ((flags & FUTEX_MASK) == FUTEX_REQUEUE) {//调整标识
+    if ((flags & FUTEX_MASK) == FUTEX_REQUEUE) {//调整队列标识
         return -OsFutexRequeue(uAddr, flags, val, absTime, newUserAddr);
     }
 
     if ((flags & FUTEX_MASK) == FUTEX_WAKE) {//唤醒标识
-        return -OsFutexWake(uAddr, flags, val);
+        return -OsFutexWake(uAddr, flags, val);//最多唤醒val个等待在uaddr上进程
     }
-
-    return -OsFutexWait(uAddr, flags, val, absTime);//设置线程等待
+	//FUTEX_WAIT
+    return -OsFutexWait(uAddr, flags, val, absTime);//设置线程等待 原子性的检查uaddr中计数器的值是否为val,
+    //如果是则让进程休眠，直到FUTEX_WAKE或者超时(time-out)。也就是把进程挂到uaddr相对应的等待队列上去。
 }
-
+///获取当前任务ID
 unsigned int SysGetTid(void)
 {
     return OsCurrTaskGet()->taskID;

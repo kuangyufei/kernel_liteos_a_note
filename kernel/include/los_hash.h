@@ -40,6 +40,35 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+/*
+http://www.isthe.com/chongo/tech/comp/fnv/
+FNV算法简介
+FNV算法属于非密码学哈希函数，它最初由Glenn Fowler和Kiem-Phong Vo于1991年在IEEE POSIX P1003.2上首先提出，
+最后由Landon Curt Noll 完善，故该算法以三人姓的首字母命名。
+
+FNV算法目前有三种，分别是FNV-1，FNV-1a和FNV-0，但是FNV-0算法已经被丢弃了。FNV算法的哈希结果有32、64、128、256、512和1024位等长度。
+如果需要哈希结果长度不属于以上任意一种，也可以采用根据Changing the FNV hash size - xor-folding上面的指导进行变换得到。
+FNV-1算法过程如下:
+	hash = offset_basis
+	for each octet_of_data to be hashed
+	hash = hash * FNV_prime
+	hash = hash xor octet_of_data
+	return hash
+	
+FNV-1a算法过程如下:
+	hash = offset_basis
+	for each octet_of_data to be hashed
+	hash = hash xor octet_of_data
+	hash = hash * FNV_prime
+	return hash
+FNV-0算法过程如下:	
+	hash = 0
+	for each octet_of_data to be hashed
+	hash = hash * FNV_prime
+	hash = hash XOR octet_of_data
+	return hash
+*/
+
 #define FNV1_32A_INIT ((UINT32)0x811c9dc5)
 
 /*

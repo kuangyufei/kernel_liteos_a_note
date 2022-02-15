@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 注解Futex(Fast userspace mutex，用户态快速互斥锁)模块实现 
+git commit -m  ' 注解Futex内核态实现 
     百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)

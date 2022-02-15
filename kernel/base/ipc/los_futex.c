@@ -4,6 +4,11 @@
  * @link mutex http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-basic-trans-user-mutex.html @endlink
  * @link d17a6152740c https://www.jianshu.com/p/d17a6152740c @endlink
    @verbatim
+   Futex 由一块能够被多个进程共享的内存空间（一个对齐后的整型变量）组成；这个整型变量的值能够通过汇编语言调用CPU提供的原子操作指令来增加或减少，
+   并且一个进程可以等待直到那个值变成正数。Futex 的操作几乎全部在用户空间完成；只有当操作结果不一致从而需要仲裁时，才需要进入操作系统内核空间执行。
+   这种机制允许使用 futex 的锁定原语有非常高的执行效率：由于绝大多数的操作并不需要在多个进程之间进行仲裁，所以绝大多数操作都可以在应用程序空间执行，
+   而不需要使用（相对高代价的）内核系统调用。
+   
    基本概念
 	   Futex(Fast userspace mutex，用户态快速互斥锁)是内核提供的一种系统调用能力，通常作为基础组件与用户态的相关
 	   锁逻辑结合组成用户态锁，是一种用户态与内核态共同作用的锁，例如用户态mutex锁、barrier与cond同步锁、读写锁。
@@ -107,10 +112,10 @@
 #define FUTEX_INDEX_SHARED_POS      FUTEX_INDEX_PRIVATE_MAX ///< 共享锁开始位置
 #define FUTEX_HASH_PRIVATE_MASK     (FUTEX_INDEX_PRIVATE_MAX - 1)
 #define FUTEX_HASH_SHARED_MASK      (FUTEX_INDEX_SHARED_MAX - 1)
-/// 单独哈希桶
+/// 单独哈希桶,上面挂了一个个 FutexNode
 typedef struct {
     LosMux      listLock;///< 内核操作lockList的互斥锁
-    LOS_DL_LIST lockList;///< 用于挂载Futex(Fast userspace mutex，用户态快速互斥锁)
+    LOS_DL_LIST lockList;///< 用于挂载 FutexNode (Fast userspace mutex，用户态快速互斥锁)
 } FutexHash;
 
 FutexHash g_futexHash[FUTEX_INDEX_MAX];///< 80个哈希桶
@@ -203,39 +208,39 @@ VOID OsFutexHashShow(VOID)
     }
 }
 #endif
-
+/// 通过用户空间地址获取哈希key
 STATIC INLINE UINTPTR OsFutexFlagsToKey(const UINT32 *userVaddr, const UINT32 flags)
 {
     UINTPTR futexKey;
 
     if (flags & FUTEX_PRIVATE) {
-        futexKey = (UINTPTR)userVaddr;
+        futexKey = (UINTPTR)userVaddr;//私有锁（以虚拟地址进行哈希）
     } else {
-        futexKey = (UINTPTR)LOS_PaddrQuery((UINT32 *)userVaddr);
+        futexKey = (UINTPTR)LOS_PaddrQuery((UINT32 *)userVaddr);//共享锁（以物理地址进行哈希）
     }
 
     return futexKey;
 }
-
+/// 通过哈希key获取索引
 STATIC INLINE UINT32 OsFutexKeyToIndex(const UINTPTR futexKey, const UINT32 flags)
 {
-    UINT32 index = LOS_HashFNV32aBuf(&futexKey, sizeof(UINTPTR), FNV1_32A_INIT);
+    UINT32 index = LOS_HashFNV32aBuf(&futexKey, sizeof(UINTPTR), FNV1_32A_INIT);//获取哈希桶索引
 
     if (flags & FUTEX_PRIVATE) {
         index &= FUTEX_HASH_PRIVATE_MASK;
     } else {
         index &= FUTEX_HASH_SHARED_MASK;
-        index += FUTEX_INDEX_SHARED_POS;
+        index += FUTEX_INDEX_SHARED_POS;//共享锁索引
     }
 
     return index;
 }
-
+/// 设置快锁哈希key
 STATIC INLINE VOID OsFutexSetKey(UINTPTR futexKey, UINT32 flags, FutexNode *node)
 {
-    node->key = futexKey;
-    node->index = OsFutexKeyToIndex(futexKey, flags);
-    node->pid = (flags & FUTEX_PRIVATE) ? LOS_GetCurrProcessID() : OS_INVALID;
+    node->key = futexKey;//哈希key
+    node->index = OsFutexKeyToIndex(futexKey, flags);//哈希桶索引
+    node->pid = (flags & FUTEX_PRIVATE) ? LOS_GetCurrProcessID() : OS_INVALID;//获取进程ID,共享快锁时 快锁节点没有进程ID
 }
 
 STATIC INLINE VOID OsFutexDeinitFutexNode(FutexNode *node)
@@ -492,7 +497,7 @@ STATIC INT32 OsFutexInsertTasktoPendList(FutexNode **firstNode, FutexNode *node,
 
     return OsFutexInsertFindFromFrontToBack(queueList, run, node);
 }
-/// 由参数快锁找到对应哈希桶
+/// 由指定快锁找到对应哈希桶
 STATIC FutexNode *OsFindFutexNode(const FutexNode *node)
 {
     FutexHash *hashNode = &g_futexHash[node->index];//先找到所在哈希桶
@@ -519,7 +524,7 @@ STATIC INT32 OsFindAndInsertToHash(FutexNode *node)
     INT32 ret;
 
     headNode = OsFindFutexNode(node);
-    if (headNode == NULL) {
+    if (headNode == NULL) {//没有找到
         OsFutexInsertNewFutexKeyToHash(node);
         LOS_ListInit(&(node->queueList));
         return LOS_OK;
@@ -538,14 +543,14 @@ STATIC INT32 OsFindAndInsertToHash(FutexNode *node)
 
     return ret;
 }
-
+/// 共享内存检查
 STATIC INT32 OsFutexKeyShmPermCheck(const UINT32 *userVaddr, const UINT32 flags)
 {
     PADDR_T paddr;
 
     /* Check whether the futexKey is a shared lock */
-    if (!(flags & FUTEX_PRIVATE)) {
-        paddr = (UINTPTR)LOS_PaddrQuery((UINT32 *)userVaddr);
+    if (!(flags & FUTEX_PRIVATE)) {//非私有快锁
+        paddr = (UINTPTR)LOS_PaddrQuery((UINT32 *)userVaddr);//能否查询到物理地址
         if (paddr == 0) return LOS_NOK;
     }
 
@@ -693,15 +698,15 @@ INT32 OsFutexWait(const UINT32 *userVaddr, UINT32 flags, UINT32 val, UINT32 absT
     INT32 ret;
     UINT32 timeOut = LOS_WAIT_FOREVER;
 
-    ret = OsFutexWaitParamCheck(userVaddr, flags, absTime);
+    ret = OsFutexWaitParamCheck(userVaddr, flags, absTime);//参数检查
     if (ret) {
         return ret;
     }
-    if (absTime != LOS_WAIT_FOREVER) {
-        timeOut = OsNS2Tick((UINT64)absTime * OS_SYS_NS_PER_US);
+    if (absTime != LOS_WAIT_FOREVER) {//转换时间 , 内核的时间单位是 tick
+        timeOut = OsNS2Tick((UINT64)absTime * OS_SYS_NS_PER_US); //转成 tick
     }
 
-    return OsFutexWaitTask(userVaddr, flags, val, timeOut);
+    return OsFutexWaitTask(userVaddr, flags, val, timeOut);//将任务挂起 timeOut 时长
 }
 
 STATIC INT32 OsFutexWakeParamCheck(const UINT32 *userVaddr, UINT32 flags)
@@ -712,12 +717,12 @@ STATIC INT32 OsFutexWakeParamCheck(const UINT32 *userVaddr, UINT32 flags)
         PRINT_ERR("Futex wake param check failed! error flags: 0x%x\n", flags);
         return LOS_EINVAL;
     }
-
+	//地址必须在用户空间
     if ((vaddr % sizeof(INT32)) || (vaddr < OS_FUTEX_KEY_BASE) || (vaddr >= OS_FUTEX_KEY_MAX)) {
         PRINT_ERR("Futex wake param check failed! error userVaddr: 0x%x\n", userVaddr);
         return LOS_EINVAL;
     }
-
+	//必须得是个共享内存地址
     if (flags && (OsFutexKeyShmPermCheck(userVaddr, flags) != LOS_OK)) {
         PRINT_ERR("Futex wake param check failed! error shared memory perm userVaddr: 0x%x\n", userVaddr);
         return LOS_EINVAL;
