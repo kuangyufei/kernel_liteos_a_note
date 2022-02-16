@@ -160,17 +160,17 @@ STATIC UINT32 OsPendingTaskWake(LosTaskCB *taskCB, INT32 signo)
             OsTaskWakeClearPendMask(taskCB);
             OsSchedTaskWake(taskCB);
             break;
-        case OS_TASK_WAIT_SIGNAL:
+        case OS_TASK_WAIT_SIGNAL://等待普通信号
             OsSigWaitTaskWake(taskCB, signo);
             break;
-        case OS_TASK_WAIT_LITEIPC:
-            OsTaskWakeClearPendMask(taskCB);
-            OsSchedTaskWake(taskCB);
+        case OS_TASK_WAIT_LITEIPC://等待liteipc信号
+            OsTaskWakeClearPendMask(taskCB);//重置任务的等待信息
+            OsSchedTaskWake(taskCB);//唤醒任务
             break;
-        case OS_TASK_WAIT_FUTEX:
-            OsFutexNodeDeleteFromFutexHash(&taskCB->futex, TRUE, NULL, NULL);
-            OsTaskWakeClearPendMask(taskCB);
-            OsSchedTaskWake(taskCB);
+        case OS_TASK_WAIT_FUTEX://等待快锁信号
+            OsFutexNodeDeleteFromFutexHash(&taskCB->futex, TRUE, NULL, NULL);//从哈希桶中删除快锁
+            OsTaskWakeClearPendMask(taskCB);//重置任务的等待信息
+            OsSchedTaskWake(taskCB);//唤醒任务
             break;
         default:
             break;

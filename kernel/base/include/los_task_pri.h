@@ -285,8 +285,8 @@ STATIC INLINE BOOL OsTaskIsUserMode(const LosTaskCB *taskCB)
 #define OS_TASK_WAIT_GID        (1 << 2U)					///< 等待组ID
 #define OS_TASK_WAIT_SEM        (OS_TASK_WAIT_GID + 1)		///< 等待信号量发生
 #define OS_TASK_WAIT_QUEUE      (OS_TASK_WAIT_SEM + 1)		///< 等待队列到来
-#define OS_TASK_WAIT_JOIN       (OS_TASK_WAIT_QUEUE + 1)	///< 等待
-#define OS_TASK_WAIT_SIGNAL     (OS_TASK_WAIT_JOIN + 1) 	///< 
+#define OS_TASK_WAIT_JOIN       (OS_TASK_WAIT_QUEUE + 1)	///< 等待联结到来
+#define OS_TASK_WAIT_SIGNAL     (OS_TASK_WAIT_JOIN + 1) 	///< 等待普通信号到来
 #define OS_TASK_WAIT_LITEIPC    (OS_TASK_WAIT_SIGNAL + 1)	///< 等待liteipc到来
 #define OS_TASK_WAIT_MUTEX      (OS_TASK_WAIT_LITEIPC + 1)	///< 等待MUTEX到来
 #define OS_TASK_WAIT_FUTEX      (OS_TASK_WAIT_MUTEX + 1)	///< 等待FUTEX到来

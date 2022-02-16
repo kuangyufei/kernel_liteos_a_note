@@ -97,8 +97,8 @@
 
 #ifdef LOSCFG_KERNEL_VM
 
-#define OS_FUTEX_FROM_FUTEXLIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, futexList)
-#define OS_FUTEX_FROM_QUEUELIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, queueList)
+#define OS_FUTEX_FROM_FUTEXLIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, futexList) // 通过快锁节点找到结构体
+#define OS_FUTEX_FROM_QUEUELIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, queueList) // 通过队列节点找到结构体
 #define OS_FUTEX_KEY_BASE USER_ASPACE_BASE	///< 进程用户空间基址
 #define OS_FUTEX_KEY_MAX (USER_ASPACE_BASE + USER_ASPACE_SIZE) ///< 进程用户空间尾址
 
@@ -227,10 +227,10 @@ STATIC INLINE UINT32 OsFutexKeyToIndex(const UINTPTR futexKey, const UINT32 flag
     UINT32 index = LOS_HashFNV32aBuf(&futexKey, sizeof(UINTPTR), FNV1_32A_INIT);//获取哈希桶索引
 
     if (flags & FUTEX_PRIVATE) {
-        index &= FUTEX_HASH_PRIVATE_MASK;
+        index &= FUTEX_HASH_PRIVATE_MASK;//将index锁定在 0 ~ 63号 
     } else {
         index &= FUTEX_HASH_SHARED_MASK;
-        index += FUTEX_INDEX_SHARED_POS;//共享锁索引
+        index += FUTEX_INDEX_SHARED_POS;//共享锁索引,将index锁定在 64 ~ 79号
     }
 
     return index;
@@ -242,29 +242,29 @@ STATIC INLINE VOID OsFutexSetKey(UINTPTR futexKey, UINT32 flags, FutexNode *node
     node->index = OsFutexKeyToIndex(futexKey, flags);//哈希桶索引
     node->pid = (flags & FUTEX_PRIVATE) ? LOS_GetCurrProcessID() : OS_INVALID;//获取进程ID,共享快锁时 快锁节点没有进程ID
 }
-
+//析构参数节点
 STATIC INLINE VOID OsFutexDeinitFutexNode(FutexNode *node)
 {
     node->index = OS_INVALID_VALUE;
     node->pid = 0;
     LOS_ListDelete(&node->queueList);
 }
-
+/// 新旧两个节点交换 futexList 位置 
 STATIC INLINE VOID OsFutexReplaceQueueListHeadNode(FutexNode *oldHeadNode, FutexNode *newHeadNode)
 {
     LOS_DL_LIST *futexList = oldHeadNode->futexList.pstPrev;
-    LOS_ListDelete(&oldHeadNode->futexList);
-    LOS_ListHeadInsert(futexList, &newHeadNode->futexList);
-    if ((newHeadNode->queueList.pstNext == NULL) || (newHeadNode->queueList.pstPrev == NULL)) {
-        LOS_ListInit(&newHeadNode->queueList);
+    LOS_ListDelete(&oldHeadNode->futexList);//将旧节点从futexList链表上摘除
+    LOS_ListHeadInsert(futexList, &newHeadNode->futexList);//将新节点从头部插入futexList链表
+    if ((newHeadNode->queueList.pstNext == NULL) || (newHeadNode->queueList.pstPrev == NULL)) {//新节点前后没有等待这把锁的任务
+        LOS_ListInit(&newHeadNode->queueList);//初始化等锁任务链表
     }
 }
-
+/// 将参数节点从futexList上摘除
 STATIC INLINE VOID OsFutexDeleteKeyFromFutexList(FutexNode *node)
 {
     LOS_ListDelete(&node->futexList);
 }
-
+/// 从哈希桶中删除快锁节点
 STATIC VOID OsFutexDeleteKeyNodeFromHash(FutexNode *node, BOOL isDeleteHead, FutexNode **headNode, BOOL *queueFlags)
 {
     FutexNode *nextNode = NULL;
@@ -273,8 +273,8 @@ STATIC VOID OsFutexDeleteKeyNodeFromHash(FutexNode *node, BOOL isDeleteHead, Fut
         return;
     }
 
-    if (LOS_ListEmpty(&node->queueList)) {
-        OsFutexDeleteKeyFromFutexList(node);
+    if (LOS_ListEmpty(&node->queueList)) {//如果没有任务在等锁
+        OsFutexDeleteKeyFromFutexList(node);//从快锁链表上摘除
         if (queueFlags != NULL) {
             *queueFlags = TRUE;
         }
@@ -282,10 +282,10 @@ STATIC VOID OsFutexDeleteKeyNodeFromHash(FutexNode *node, BOOL isDeleteHead, Fut
     }
 
     /* FutexList is not NULL, but the header node of queueList */
-    if (node->futexList.pstNext != NULL) {
-        if (isDeleteHead == TRUE) {
-            nextNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_FIRST(&node->queueList));
-            OsFutexReplaceQueueListHeadNode(node, nextNode);
+    if (node->futexList.pstNext != NULL) {//是头节点
+        if (isDeleteHead == TRUE) {//是否要删除头节点
+            nextNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_FIRST(&node->queueList));//取出第一个快锁节点
+            OsFutexReplaceQueueListHeadNode(node, nextNode);//两个节点交换位置
             if (headNode != NULL) {
                 *headNode = nextNode;
             }
@@ -302,18 +302,18 @@ EXIT:
 VOID OsFutexNodeDeleteFromFutexHash(FutexNode *node, BOOL isDeleteHead, FutexNode **headNode, BOOL *queueFlags)
 {
     FutexHash *hashNode = NULL;
-
+	//通过key找到桶号
     UINT32 index = OsFutexKeyToIndex(node->key, (node->pid == OS_INVALID) ? 0 : FUTEX_PRIVATE);
     if (index >= FUTEX_INDEX_MAX) {
         return;
     }
 
-    hashNode = &g_futexHash[index];
+    hashNode = &g_futexHash[index];//找到hash桶
     if (OsMuxLockUnsafe(&hashNode->listLock, LOS_WAIT_FOREVER)) {
         return;
     }
 
-    if (node->index != index) {
+    if (node->index != index) {//快锁节点桶号需和哈希桶号一致
         goto EXIT;
     }
 
@@ -348,7 +348,7 @@ STATIC FutexNode *OsFutexDeleteAlreadyWakeTaskAndGetNext(const FutexNode *node, 
 
     return tempNode;
 }
-/// 插入一把新Futex锁进哈希
+/// 插入一把新Futex锁到哈希桶中
 STATIC VOID OsFutexInsertNewFutexKeyToHash(FutexNode *node)
 {
     FutexNode *headNode = NULL;
@@ -505,12 +505,12 @@ STATIC FutexNode *OsFindFutexNode(const FutexNode *node)
     FutexNode *headNode = NULL;
 
     for (futexList = futexList->pstNext;
-         futexList != &(hashNode->lockList);
+         futexList != &(hashNode->lockList);//判断循环结束条件,相等时说明跑完一轮了
          futexList = futexList->pstNext) {
-        headNode = OS_FUTEX_FROM_FUTEXLIST(futexList);
-        if ((headNode->key == node->key) && (headNode->pid == node->pid)) {
-            return headNode;
-        }
+        headNode = OS_FUTEX_FROM_FUTEXLIST(futexList);//拿到快锁节点实体
+        if ((headNode->key == node->key) && (headNode->pid == node->pid)) {//已经存在这个节点,注意这里的比较
+            return headNode;//是key和pid 一起比较,因为只有这样才能确定唯一性
+        }//详细讲解请查看 鸿蒙内核源码分析(内核态锁篇) | 如何实现快锁Futex(下)
     }
 
     return NULL;
@@ -524,7 +524,7 @@ STATIC INT32 OsFindAndInsertToHash(FutexNode *node)
     INT32 ret;
 
     headNode = OsFindFutexNode(node);
-    if (headNode == NULL) {//没有找到
+    if (headNode == NULL) {//没有找到,说明这是一把新锁
         OsFutexInsertNewFutexKeyToHash(node);
         LOS_ListInit(&(node->queueList));
         return LOS_OK;
@@ -609,13 +609,13 @@ STATIC INT32 OsFutexDeleteTimeoutTaskNode(FutexHash *hashNode, FutexNode *node)
     }
     return LOS_ETIMEDOUT;
 }
-
+/// 将快锁节点插入任务
 STATIC INT32 OsFutexInsertTaskToHash(LosTaskCB **taskCB, FutexNode **node, const UINTPTR futexKey, const UINT32 flags)
 {
     INT32 ret;
-    *taskCB = OsCurrTaskGet();
-    *node = &((*taskCB)->futex);
-    OsFutexSetKey(futexKey, flags, *node);
+    *taskCB = OsCurrTaskGet(); //获取当前任务
+    *node = &((*taskCB)->futex); //获取当前任务的快锁节点 
+    OsFutexSetKey(futexKey, flags, *node);//设置参数 key index pid 
 
     ret = OsFindAndInsertToHash(*node);
     if (ret) {
@@ -625,33 +625,33 @@ STATIC INT32 OsFutexInsertTaskToHash(LosTaskCB **taskCB, FutexNode **node, const
     LOS_ListInit(&((*node)->pendList));
     return LOS_OK;
 }
-//将当前任务挂入等待链表中
+/// 将当前任务挂入等待链表中
 STATIC INT32 OsFutexWaitTask(const UINT32 *userVaddr, const UINT32 flags, const UINT32 val, const UINT32 timeOut)
 {
     INT32 futexRet;
     UINT32 intSave, lockVal;
     LosTaskCB *taskCB = NULL;
     FutexNode *node = NULL;
-    UINTPTR futexKey = OsFutexFlagsToKey(userVaddr, flags);
-    UINT32 index = OsFutexKeyToIndex(futexKey, flags);
+    UINTPTR futexKey = OsFutexFlagsToKey(userVaddr, flags);//通过地址和flags 找到 key
+    UINT32 index = OsFutexKeyToIndex(futexKey, flags);//通过key找到哈希桶
     FutexHash *hashNode = &g_futexHash[index];
 
-    if (OsFutexLock(&hashNode->listLock)) {
+    if (OsFutexLock(&hashNode->listLock)) {//操作快锁节点链表前先上互斥锁
         return LOS_EINVAL;
     }
-
-    if (LOS_ArchCopyFromUser(&lockVal, userVaddr, sizeof(UINT32))) {
+	//userVaddr必须是用户空间虚拟地址
+    if (LOS_ArchCopyFromUser(&lockVal, userVaddr, sizeof(UINT32))) {//将值拷贝到内核空间
         PRINT_ERR("Futex wait param check failed! copy from user failed!\n");
         futexRet = LOS_EINVAL;
         goto EXIT_ERR;
     }
 
-    if (lockVal != val) {
+    if (lockVal != val) {//对参数内部逻辑检查
         futexRet = LOS_EBADF;
         goto EXIT_ERR;
     }
-
-    if (OsFutexInsertTaskToHash(&taskCB, &node, futexKey, flags)) {
+	//注意第二个参数 FutexNode *node = NULL 
+    if (OsFutexInsertTaskToHash(&taskCB, &node, futexKey, flags)) {// node = taskCB->futex
         futexRet = LOS_NOK;
         goto EXIT_ERR;
     }
@@ -662,7 +662,7 @@ STATIC INT32 OsFutexWaitTask(const UINT32 *userVaddr, const UINT32 flags, const 
     OsSchedLock();
     LOS_SpinUnlock(&g_taskSpin);
 
-    futexRet = OsFutexUnlock(&hashNode->listLock);
+    futexRet = OsFutexUnlock(&hashNode->listLock);//
     if (futexRet) {
         OsSchedUnlock();
         LOS_IntRestore(intSave);
