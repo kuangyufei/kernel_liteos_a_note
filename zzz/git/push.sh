@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 注解 Futex 内核态实现 
+git commit -m  ' 围绕FutexNode注解相关逻辑 
     百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)

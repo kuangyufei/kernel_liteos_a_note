@@ -405,7 +405,7 @@ typedef struct {
     UINTPTR         userArea;			///< 用户空间的堆区开始位置
     UINTPTR         userMapBase;		///< 用户空间的栈顶位置,内存来自用户空间,和topOfStack有本质的区别.
     UINT32          userMapSize;        /**< user thread stack size ,real size : userMapSize + USER_STACK_MIN_SIZE | 用户栈大小 */
-    FutexNode       futex;				///< 实现快锁功能
+    FutexNode       futex;				///< 快锁节点功能 , 一个任务只能等一把快锁
 #endif
     UINT32          processID;          /**< Which belong process */
     LOS_DL_LIST     joinList;           /**< join list | 联结链表,允许任务之间相互释放彼此 */

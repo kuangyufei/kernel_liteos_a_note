@@ -326,7 +326,7 @@ EXIT:
 
     return;
 }
-
+///< 这块代码谁写的? 这种命名 ... 
 STATIC FutexNode *OsFutexDeleteAlreadyWakeTaskAndGetNext(const FutexNode *node, FutexNode **headNode, BOOL isDeleteHead)
 {
     FutexNode *tempNode = (FutexNode *)node;
@@ -388,7 +388,7 @@ STATIC VOID OsFutexInsertNewFutexKeyToHash(FutexNode *node)
 EXIT:
     return;
 }
-///< 
+///< 从后往前插入快锁 Form写错了 @note_thinking 
 STATIC INT32 OsFutexInsertFindFormBackToFront(LOS_DL_LIST *queueList, const LosTaskCB *runTask, FutexNode *node)
 {
     LOS_DL_LIST *listHead = queueList;
@@ -469,33 +469,33 @@ STATIC INT32 OsFutexRecycleAndFindHeadNode(FutexNode *headNode, FutexNode *node,
 ///< 将快锁挂到任务的阻塞链表上
 STATIC INT32 OsFutexInsertTasktoPendList(FutexNode **firstNode, FutexNode *node, const LosTaskCB *run)
 {
-    LosTaskCB *taskHead = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&((*firstNode)->pendList)));
+    LosTaskCB *taskHead = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&((*firstNode)->pendList)));//获取阻塞链表首个任务
     LOS_DL_LIST *queueList = &((*firstNode)->queueList);
     FutexNode *tailNode = NULL;
     LosTaskCB *taskTail = NULL;
 
-    if (run->priority < taskHead->priority) {
+    if (run->priority < taskHead->priority) {//任务的优先级比较
         /* The one with the highest priority is inserted at the top of the queue */
-        LOS_ListTailInsert(queueList, &(node->queueList));
-        OsFutexReplaceQueueListHeadNode(*firstNode, node);
+        LOS_ListTailInsert(queueList, &(node->queueList));//查到queueList的尾部
+        OsFutexReplaceQueueListHeadNode(*firstNode, node);//同时交换futexList链表上的位置
         *firstNode = node;
         return LOS_OK;
     }
-
+	//如果等锁链表上没有任务或者当前任务大于链表首个任务
     if (LOS_ListEmpty(queueList) && (run->priority >= taskHead->priority)) {
         /* Insert the next position in the queue with equal priority */
-        LOS_ListHeadInsert(queueList, &(node->queueList));
+        LOS_ListHeadInsert(queueList, &(node->queueList));//从头部插入当前任务,当前任务是要被挂起的
         return LOS_OK;
     }
-
-    tailNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_LAST(queueList));
-    taskTail = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(tailNode->pendList)));
-    if ((run->priority >= taskTail->priority) ||
-        ((run->priority - taskHead->priority) > (taskTail->priority - run->priority))) {
-        return OsFutexInsertFindFormBackToFront(queueList, run, node);
+	
+    tailNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_LAST(queueList));//获取尾部节点
+    taskTail = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(tailNode->pendList)));//获取阻塞任务的最后一个
+    if ((run->priority >= taskTail->priority) ||//当前任务优先级比最后一个更高,或者 ... 没看懂, 为啥要这样 ? @notethinking
+        ((run->priority - taskHead->priority) > (taskTail->priority - run->priority))) {//跟最后一个比较优先级
+        return OsFutexInsertFindFormBackToFront(queueList, run, node);//从后往前插入
     }
 
-    return OsFutexInsertFindFromFrontToBack(queueList, run, node);
+    return OsFutexInsertFindFromFrontToBack(queueList, run, node);//否则从前往后插入
 }
 /// 由指定快锁找到对应哈希桶
 STATIC FutexNode *OsFindFutexNode(const FutexNode *node)

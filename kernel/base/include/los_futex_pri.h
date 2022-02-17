@@ -79,7 +79,8 @@ typedef struct {
     UINT32       index;         /* hash bucket index | 哈希桶索引 OsFutexKeyToIndex */
     UINT32       pid;           /* private:process id   shared:OS_INVALID(-1) | 私有锁:进程ID     , 共享锁为 -1 */
     LOS_DL_LIST  pendList;      /* point to pendList in TCB struct | 指向 TCB 结构中的 pendList, 通过它找到任务*/
-    LOS_DL_LIST  queueList;     /* thread list blocked by this lock | 挂等待这把锁的任务,上面挂的是 FutexNode.queueList*/
+    LOS_DL_LIST  queueList;     /* thread list blocked by this lock | 挂等待这把锁的任务，其实这里挂到是FutexNode.queueList , 
+    							通过 queueList 可以找到 pendList ,通过 pendList又可以找到真正的任务*/
     LOS_DL_LIST  futexList;     /* point to the next FutexNode | 下一把Futex锁*/
 } FutexNode;
 
