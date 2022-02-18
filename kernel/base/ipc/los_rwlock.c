@@ -1,3 +1,29 @@
+/*!
+ * @file    los_rwlock.c
+ * @brief
+ * @link rwlock https://weharmony.github.io/openharmony/zh-cn/device-dev/kernel/kernel-small-basic-trans-rwlock.html @endlink
+   @verbatim
+   基本概念
+	   读写锁与互斥锁类似，可用来同步同一进程中的各个任务，但与互斥锁不同的是，其允许多个读操作并发重入，而写操作互斥。
+	   相对于互斥锁的开锁或闭锁状态，读写锁有三种状态：读模式下的锁，写模式下的锁，无锁。
+	   读写锁的使用规则：
+			保护区无写模式下的锁，任何任务均可以为其增加读模式下的锁。
+			保护区处于无锁状态下，才可增加写模式下的锁。
+			多任务环境下往往存在多个任务访问同一共享资源的应用场景，读模式下的锁以共享状态对保护区访问，
+			而写模式下的锁可被用于对共享资源的保护从而实现独占式访问。
+			这种共享-独占的方式非常适合多任务中读数据频率远大于写数据频率的应用中，提高应用多任务并发度。
+   运行机制
+	   相较于互斥锁，读写锁如何实现读模式下的锁及写模式下的锁来控制多任务的读写访问呢？
+	   若A任务首次获取了写模式下的锁，有其他任务来获取或尝试获取读模式下的锁，均无法再上锁。
+	   若A任务获取了读模式下的锁，当有任务来获取或尝试获取读模式下的锁时，读写锁计数均加一。
+   @endverbatim
+   @image html 
+ * @attention  
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2022-02-18
+ */
+
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.

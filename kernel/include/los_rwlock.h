@@ -49,13 +49,14 @@ extern "C" {
  * @ingroup los_rwlock
  * Rwlock object.
  */
-typedef struct OsRwlock {
-    INT32 magic:24;        /**< Magic number */
+typedef struct OsRwlock {//读写锁
+    INT32 magic:24;        /**< Magic number | 魔法数字 为什么要用魔法数字 ? */
     INT32 rwCount:8;       /**< Times of locking the rwlock, rwCount > 0 when rwkick is read mode, rwCount < 0
-                                when the rwlock is write mode, rwCount = 0 when the lock is free. */
-    VOID *writeOwner;      /**< The current write thread that is locking the rwlock */
-    LOS_DL_LIST readList;  /**< Read waiting list */
-    LOS_DL_LIST writeList; /**< Write waiting list */
+                                when the rwlock is write mode, rwCount = 0 when the lock is free. 
+                                大于0时为读模式 , 小于0时为写模式 等于0为自由模式*/
+    VOID *writeOwner;      /**< The current write thread that is locking the rwlock | 拥有写权限的任务*/
+    LOS_DL_LIST readList;  /**< Read waiting list | 等待读锁的任务链表*/
+    LOS_DL_LIST writeList; /**< Write waiting list | 等待写*/
 } LosRwlock;
 
 extern BOOL LOS_RwlockIsValid(const LosRwlock *rwlock);
