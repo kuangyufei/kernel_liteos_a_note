@@ -56,6 +56,7 @@ static UINT32 testcase1(VOID)
     s = gettext("Monday/n\n");
 
     ICUNIT_ASSERT_STRING_EQUAL(s, "Monday/n\n", s);
+    setlocale(LC_ALL, "C");
 
     return LOS_OK;
 OUT:

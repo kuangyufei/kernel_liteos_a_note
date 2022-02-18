@@ -121,6 +121,7 @@ static UINT32 testcase(VOID)
     testcase1(); /* test the domain is NULL */
     testcase2(); /* test the domain is different with the setlocale */
     testcase3(); /* if n != 1,then dngettext will choose msgid2's string */
+    setlocale(LC_ALL, "C");
 
     return LOS_OK;
 }

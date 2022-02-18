@@ -49,6 +49,7 @@ static UINT32 Testcase(VOID)
 
     len3 = mbrlen(str + 1, sz - 1, &mb);
     ICUNIT_GOTO_EQUAL(len3, -1, len3, EXIT);
+    setlocale(LC_ALL, "C");
 
     return LOS_OK;
 EXIT:

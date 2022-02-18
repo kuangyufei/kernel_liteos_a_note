@@ -58,6 +58,7 @@ static UINT32 testcase(VOID) {
 
     char *string = nl_langinfo_l(CRNCYSTR, (locale_t)"zh_CN.UTF-8");
     ICUNIT_ASSERT_NOT_EQUAL_NULL(string, NULL, string);
+    setlocale(LC_ALL, "C");
 
     return LOS_OK;
 }

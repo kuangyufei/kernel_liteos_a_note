@@ -92,6 +92,7 @@ static UINT32 testcase(VOID)
 {
     testcase1();
     testcase2();
+    setlocale(LC_ALL, "C");
 
     return LOS_OK;
 }

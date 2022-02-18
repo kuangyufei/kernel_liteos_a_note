@@ -348,7 +348,7 @@ STATIC FutexNode *OsFutexDeleteAlreadyWakeTaskAndGetNext(const FutexNode *node, 
 
     return tempNode;
 }
-/// 插入一把新Futex锁到哈希桶中
+/// 插入一把新Futex锁到哈希桶中,只有是新的key时才会插入,因为其实存在多个FutexNode是一个key 
 STATIC VOID OsFutexInsertNewFutexKeyToHash(FutexNode *node)
 {
     FutexNode *headNode = NULL;

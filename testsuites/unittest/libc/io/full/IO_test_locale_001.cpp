@@ -58,6 +58,7 @@ static UINT32 testcase(VOID)
     strftime(buffer, 80, "%c", timer);
     printf("Date is: %s\n", buffer);
     ICUNIT_ASSERT_NOT_EQUAL_NULL(buffer, NULL, -1);
+    setlocale(LC_ALL, "C");
 
     return LOS_OK;
 }

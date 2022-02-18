@@ -46,6 +46,7 @@ static UINT32 testcase(VOID)
 
     s = ngettext("0123456789", "0123456789", 2);
     ICUNIT_ASSERT_STRING_EQUAL(s, "0123456789", s);
+    setlocale(LC_ALL, "C");
 
     return LOS_OK;
 }

@@ -69,6 +69,7 @@ static UINT32 testcase1(VOID)
     TEST_PRINT("[INFO]%s:%d,%s,ret=%d,buf=%s\n", __FILE__, __LINE__, __func__, ret, buf);
     ICUNIT_GOTO_EQUAL(ret, 23, ret, OUT);
     ICUNIT_GOTO_EQUAL(errno, 0, errno, OUT);
+    setlocale(LC_ALL, "C");
 
     return LOS_OK;
 OUT:

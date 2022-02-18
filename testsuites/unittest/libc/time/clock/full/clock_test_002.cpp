@@ -34,6 +34,7 @@ static void *ThreadFuncTest(void *arg)
 {
     printf("Subthread starting infinite loop\n");
     while (1) {
+        pthread_testcancel();
     }
 }
 
@@ -78,6 +79,9 @@ static int ClockTest(void)
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     ret = ThreadClock("Subthread CPU time:   ", clockid);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+
+    ret = pthread_cancel(thread);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     return 0;

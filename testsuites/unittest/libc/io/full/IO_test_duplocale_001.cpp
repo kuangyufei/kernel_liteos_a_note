@@ -143,6 +143,7 @@ static UINT32 testcase(VOID)
     (VOID)RecoveryFileEnv(pathList, 1);
     status = WEXITSTATUS(status);
     ICUNIT_ASSERT_EQUAL(status, 0, status);
+    setlocale(LC_ALL, "C");
 
     return LOS_OK;
 }

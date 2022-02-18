@@ -51,6 +51,7 @@ static UINT32 testcase(VOID)
     s = dngettext("www.huawei.com", "TestString1\n", "TestString2\n", 2);
     printf("[INFO]%s:%d,%s,s=%s\n", __FILE__, __LINE__, __func__, s);
     ICUNIT_ASSERT_STRING_EQUAL(s, "TestString2\n", s);
+    setlocale(LC_ALL, "C");
 
     return LOS_OK;
 }

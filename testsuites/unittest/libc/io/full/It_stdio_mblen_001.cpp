@@ -49,6 +49,7 @@ static UINT32 Testcase(VOID)
         ++result;
     }
     ICUNIT_GOTO_EQUAL(result, 4, result, EXIT); // 4, except value
+    setlocale(LC_ALL, "C");
 
     return LOS_OK;
 EXIT:

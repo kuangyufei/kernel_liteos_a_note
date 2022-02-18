@@ -46,6 +46,7 @@ static UINT32 testcase(VOID)
     s = dcgettext("www.huawei.com", "TestString1\n", LC_MESSAGES);
     printf("[INFO]%s:%d,%s,s=%s\n", __FILE__, __LINE__, __func__, s);
     ICUNIT_ASSERT_STRING_EQUAL(s, "TestString1\n", s);
+    setlocale(LC_ALL, "C");
 
     return LOS_OK;
 }

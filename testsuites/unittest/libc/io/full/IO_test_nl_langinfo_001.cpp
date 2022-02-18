@@ -90,6 +90,7 @@ static UINT32 testcase(VOID)
 
     char *string = nl_langinfo(CRNCYSTR);
     ICUNIT_ASSERT_NOT_EQUAL_NULL(string, NULL, string);
+    setlocale(LC_ALL, "C");
 
     return LOS_OK;
 }
