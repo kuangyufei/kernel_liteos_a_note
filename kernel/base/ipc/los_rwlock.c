@@ -66,7 +66,7 @@
 
 #ifdef LOSCFG_BASE_IPC_RWLOCK
 #define RWLOCK_COUNT_MASK 0x00FFFFFFU
-
+/// 判断读写锁有效性
 BOOL LOS_RwlockIsValid(const LosRwlock *rwlock)
 {
     if ((rwlock != NULL) && ((rwlock->magic & RWLOCK_COUNT_MASK) == OS_RWLOCK_MAGIC)) {
@@ -75,7 +75,7 @@ BOOL LOS_RwlockIsValid(const LosRwlock *rwlock)
 
     return FALSE;
 }
-/// 创建读写锁
+/// 创建读写锁,初始化锁信息
 UINT32 LOS_RwlockInit(LosRwlock *rwlock)
 {
     UINT32 intSave;
@@ -98,7 +98,7 @@ UINT32 LOS_RwlockInit(LosRwlock *rwlock)
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
-
+/// 删除指定的读写锁
 UINT32 LOS_RwlockDestroy(LosRwlock *rwlock)
 {
     UINT32 intSave;
@@ -122,18 +122,18 @@ UINT32 LOS_RwlockDestroy(LosRwlock *rwlock)
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
-
+/// 读写锁检查
 STATIC UINT32 OsRwlockCheck(LosRwlock *rwlock)
 {
     if (rwlock == NULL) {
         return LOS_EINVAL;
     }
 
-    if (OS_INT_ACTIVE) {
+    if (OS_INT_ACTIVE) { // 读写锁不能在中断服务程序中使用。请想想为什么 ?
         return LOS_EINTR;
     }
 
-    /* DO NOT Call blocking API in system tasks */
+    /* DO NOT Call blocking API in system tasks | 系统任务不能使用读写锁 */
     LosTaskCB *runTask = (LosTaskCB *)OsCurrTaskGet();
     if (runTask->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {
         return LOS_EPERM;
@@ -141,19 +141,23 @@ STATIC UINT32 OsRwlockCheck(LosRwlock *rwlock)
 
     return LOS_OK;
 }
-
+/// 指定任务优先级优先级是否低于 写锁任务最高优先级   
 STATIC BOOL OsRwlockPriCompare(LosTaskCB *runTask, LOS_DL_LIST *rwList)
 {
     if (!LOS_ListEmpty(rwList)) {
-        LosTaskCB *highestTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(rwList));
-        if (runTask->priority < highestTask->priority) {
+        LosTaskCB *highestTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(rwList));//首个写锁任务优先级是最高的
+        if (runTask->priority < highestTask->priority) {//如果当前任务优先级低于等待写锁任务
             return TRUE;
         }
         return FALSE;
     }
     return TRUE;
 }
-
+/* 申请读模式下的锁,分三种情况：  
+1. 若无人持有锁，读任务可获得锁。
+2. 若有人持有锁，读任务可获得锁，读取顺序按照任务优先级。
+3. 若有人（非自己）持有写模式下的锁，则当前任务无法获得锁，直到写模式下的锁释放。
+*/
 STATIC UINT32 OsRwlockRdPendOp(LosTaskCB *runTask, LosRwlock *rwlock, UINT32 timeout)
 {
     UINT32 ret;
@@ -162,12 +166,12 @@ STATIC UINT32 OsRwlockRdPendOp(LosTaskCB *runTask, LosRwlock *rwlock, UINT32 tim
      * When the rwlock mode is read mode or free mode and the priority of the current read task
      * is higher than the first pended write task. current read task can obtain this rwlock.
      */
-    if (rwlock->rwCount >= 0) {
-        if (OsRwlockPriCompare(runTask, &(rwlock->writeList))) {
-            if (rwlock->rwCount == INT8_MAX) {
+    if (rwlock->rwCount >= 0) {//第一和第二种情况
+        if (OsRwlockPriCompare(runTask, &(rwlock->writeList))) {//读优先级低于写优先级,意思就是必须先写再读
+            if (rwlock->rwCount == INT8_MAX) {//读锁任务达到上限
                 return LOS_EINVAL;
             }
-            rwlock->rwCount++;
+            rwlock->rwCount++;//读锁
             return LOS_OK;
         }
     }
@@ -176,45 +180,51 @@ STATIC UINT32 OsRwlockRdPendOp(LosTaskCB *runTask, LosRwlock *rwlock, UINT32 tim
         return LOS_EINVAL;
     }
 
-    if (!OsPreemptableInSched()) {
+    if (!OsPreemptableInSched()) {//不可抢占时
         return LOS_EDEADLK;
     }
 
-    /* The current task is not allowed to obtain the write lock when it obtains the read lock. */
-    if ((LosTaskCB *)(rwlock->writeOwner) == runTask) {
+    /* The current task is not allowed to obtain the write lock when it obtains the read lock. 
+    | 当前任务在获得读锁时不允许获得写锁 */
+    if ((LosTaskCB *)(rwlock->writeOwner) == runTask) { //拥有写锁任务是否为当前任务
         return LOS_EINVAL;
     }
 
     /*
      * When the rwlock mode is write mode or the priority of the current read task
      * is lower than the first pended write task, current read task will be pended.
+     | 当 rwlock 模式为写模式或当前读任务的优先级低于第一个挂起的写任务时，当前读任务将被挂起。
+     反正就是写锁任务优先
      */
-    LOS_DL_LIST *node = OsSchedLockPendFindPos(runTask, &(rwlock->readList));
-    ret = OsSchedTaskWait(node, timeout, TRUE);
+    LOS_DL_LIST *node = OsSchedLockPendFindPos(runTask, &(rwlock->readList));//找到要挂入的位置
+    //例如现有链表内任务优先级为 0 3 8 9 23 当前为 10 时, 返回的是 9 这个节点 
+    ret = OsSchedTaskWait(node, timeout, TRUE);//从尾部插入读锁链表 由此变成了 0 3 8 9 10 23
     if (ret == LOS_ERRNO_TSK_TIMEOUT) {
         return LOS_ETIMEDOUT;
     }
 
     return ret;
 }
-
+/// 申请写模式下的锁
 STATIC UINT32 OsRwlockWrPendOp(LosTaskCB *runTask, LosRwlock *rwlock, UINT32 timeout)
 {
     UINT32 ret;
 
-    /* When the rwlock is free mode, current write task can obtain this rwlock. */
+    /* When the rwlock is free mode, current write task can obtain this rwlock. 
+	| 若该锁当前没有任务持有，或者持有该读模式下的锁的任务和申请该锁的任务为同一个任务，则申请成功，可立即获得写模式下的锁。*/
     if (rwlock->rwCount == 0) {
         rwlock->rwCount = -1;
-        rwlock->writeOwner = (VOID *)runTask;
+        rwlock->writeOwner = (VOID *)runTask;//直接给当前进程锁
         return LOS_OK;
     }
 
-    /* Current write task can use one rwlock once again if the rwlock owner is it. */
+    /* Current write task can use one rwlock once again if the rwlock owner is it. 
+	| 如果 rwlock 拥有者是当前写入任务，则它可以再次使用该锁。*/
     if ((rwlock->rwCount < 0) && ((LosTaskCB *)(rwlock->writeOwner) == runTask)) {
         if (rwlock->rwCount == INT8_MIN) {
             return LOS_EINVAL;
         }
-        rwlock->rwCount--;
+        rwlock->rwCount--;//注意再次拥有算是两把锁了.
         return LOS_OK;
     }
 
@@ -228,10 +238,10 @@ STATIC UINT32 OsRwlockWrPendOp(LosTaskCB *runTask, LosRwlock *rwlock, UINT32 tim
 
     /*
      * When the rwlock is read mode or other write task obtains this rwlock, current
-     * write task will be pended.
+     * write task will be pended. | 当 rwlock 为读模式或其他写任务获得该 rwlock 时，当前的写任务将被挂起。直到读模式下的锁释放
      */
-    LOS_DL_LIST *node =  OsSchedLockPendFindPos(runTask, &(rwlock->writeList));
-    ret = OsSchedTaskWait(node, timeout, TRUE);
+    LOS_DL_LIST *node =  OsSchedLockPendFindPos(runTask, &(rwlock->writeList));//找到要挂入的位置
+    ret = OsSchedTaskWait(node, timeout, TRUE);//从尾部插入写锁链表
     if (ret == LOS_ERRNO_TSK_TIMEOUT) {
         ret = LOS_ETIMEDOUT;
     }
@@ -305,7 +315,7 @@ UINT32 OsRwlockTryWrUnsafe(LosRwlock *rwlock, UINT32 timeout)
 
     return OsRwlockWrPendOp(runTask, rwlock, timeout);
 }
-
+/// 申请指定的读模式下的锁
 UINT32 LOS_RwlockRdLock(LosRwlock *rwlock, UINT32 timeout)
 {
     UINT32 intSave;
@@ -320,7 +330,7 @@ UINT32 LOS_RwlockRdLock(LosRwlock *rwlock, UINT32 timeout)
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-
+/// 尝试申请指定的读模式下的锁
 UINT32 LOS_RwlockTryRdLock(LosRwlock *rwlock)
 {
     UINT32 intSave;
@@ -335,7 +345,7 @@ UINT32 LOS_RwlockTryRdLock(LosRwlock *rwlock)
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-
+/// 申请指定的写模式下的锁
 UINT32 LOS_RwlockWrLock(LosRwlock *rwlock, UINT32 timeout)
 {
     UINT32 intSave;
@@ -350,7 +360,7 @@ UINT32 LOS_RwlockWrLock(LosRwlock *rwlock, UINT32 timeout)
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-
+/// 尝试申请指定的写模式下的锁
 UINT32 LOS_RwlockTryWrLock(LosRwlock *rwlock)
 {
     UINT32 intSave;
@@ -365,26 +375,26 @@ UINT32 LOS_RwlockTryWrLock(LosRwlock *rwlock)
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-
+/// 获取读写锁模式
 STATIC UINT32 OsRwlockGetMode(LOS_DL_LIST *readList, LOS_DL_LIST *writeList)
 {
     BOOL isReadEmpty = LOS_ListEmpty(readList);
     BOOL isWriteEmpty = LOS_ListEmpty(writeList);
-    if (isReadEmpty && isWriteEmpty) {
-        return RWLOCK_NONE_MODE;
+    if (isReadEmpty && isWriteEmpty) { //读写链表都没有内容
+        return RWLOCK_NONE_MODE; //自由模式
     }
-    if (!isReadEmpty && isWriteEmpty) {
+    if (!isReadEmpty && isWriteEmpty) { //读链表有数据,写链表没有数据
         return RWLOCK_READ_MODE;
     }
-    if (isReadEmpty && !isWriteEmpty) {
+    if (isReadEmpty && !isWriteEmpty) { //写链表有数据,读链表没有数据
         return RWLOCK_WRITE_MODE;
     }
     LosTaskCB *pendedReadTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(readList));
     LosTaskCB *pendedWriteTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(writeList));
-    if (pendedWriteTask->priority <= pendedReadTask->priority) {
-        return RWLOCK_WRITEFIRST_MODE;
+    if (pendedWriteTask->priority <= pendedReadTask->priority) { //都有数据比优先级
+        return RWLOCK_WRITEFIRST_MODE; //写的优先级高时,为写优先模式
     }
-    return RWLOCK_READFIRST_MODE;
+    return RWLOCK_READFIRST_MODE; //读的优先级高时,为读优先模式
 }
 
 STATIC UINT32 OsRwlockPostOp(LosRwlock *rwlock, BOOL *needSched)
@@ -465,7 +475,7 @@ UINT32 OsRwlockUnlockUnsafe(LosRwlock *rwlock, BOOL *needSched)
 
     return OsRwlockPostOp(rwlock, needSched);
 }
-
+/// 释放指定读写锁
 UINT32 LOS_RwlockUnLock(LosRwlock *rwlock)
 {
     UINT32 intSave;

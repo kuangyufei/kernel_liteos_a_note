@@ -41,14 +41,14 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_RWLOCK_MAGIC 0xBEFDCAU
+#define OS_RWLOCK_MAGIC 0xBEFDCAU ///< 读写锁魔法数字
 
 enum RwlockMode {
-    RWLOCK_NONE_MODE,
-    RWLOCK_READ_MODE,
-    RWLOCK_WRITE_MODE,
-    RWLOCK_READFIRST_MODE,
-    RWLOCK_WRITEFIRST_MODE
+    RWLOCK_NONE_MODE,	///< 自由模式: 读写链表都没有内容 
+    RWLOCK_READ_MODE,	///< 读模式: 读链表有数据,写链表没有数据
+    RWLOCK_WRITE_MODE,  ///< 写模式: 写链表有数据,读链表没有数据
+    RWLOCK_READFIRST_MODE,	///< 读优先模式: 读链表中的任务最高优先级高于写链表中任务最高优先级
+    RWLOCK_WRITEFIRST_MODE	///< 写优先模式: 写链表中的任务最高优先级高于读链表中任务最高优先级
 };
 
 extern UINT32 OsRwlockRdUnsafe(LosRwlock *rwlock, UINT32 timeout);

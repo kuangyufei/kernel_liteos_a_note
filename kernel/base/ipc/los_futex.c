@@ -326,7 +326,7 @@ EXIT:
 
     return;
 }
-///< 这块代码谁写的? 这种命名 ... 
+/// 这块代码谁写的? 这种命名 ... 
 STATIC FutexNode *OsFutexDeleteAlreadyWakeTaskAndGetNext(const FutexNode *node, FutexNode **headNode, BOOL isDeleteHead)
 {
     FutexNode *tempNode = (FutexNode *)node;

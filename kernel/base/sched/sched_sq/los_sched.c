@@ -1194,19 +1194,19 @@ VOID LOS_Schedule(VOID)
 
     SCHEDULER_UNLOCK(intSave);
 }
-
+/// 找到合适的位置 将当前任务插入到 读/写锁链表中
 STATIC INLINE LOS_DL_LIST *OsSchedLockPendFindPosSub(const LosTaskCB *runTask, const LOS_DL_LIST *lockList)
 {
     LosTaskCB *pendedTask = NULL;
     LOS_DL_LIST *node = NULL;
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(pendedTask, lockList, LosTaskCB, pendList) {
-        if (pendedTask->priority < runTask->priority) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(pendedTask, lockList, LosTaskCB, pendList) {//遍历阻塞链表
+        if (pendedTask->priority < runTask->priority) {//当前优先级更小,位置不宜,继续
             continue;
-        } else if (pendedTask->priority > runTask->priority) {
+        } else if (pendedTask->priority > runTask->priority) {//找到合适位置
             node = &pendedTask->pendList;
             break;
-        } else {
+        } else {//找到合适位置
             node = pendedTask->pendList.pstNext;
             break;
         }
@@ -1214,7 +1214,7 @@ STATIC INLINE LOS_DL_LIST *OsSchedLockPendFindPosSub(const LosTaskCB *runTask, c
 
     return node;
 }
-
+/// 找到合适的位置 将当前任务插入到 读/写锁链表中
 LOS_DL_LIST *OsSchedLockPendFindPos(const LosTaskCB *runTask, LOS_DL_LIST *lockList)
 {
     LOS_DL_LIST *node = NULL;
@@ -1222,14 +1222,14 @@ LOS_DL_LIST *OsSchedLockPendFindPos(const LosTaskCB *runTask, LOS_DL_LIST *lockL
     if (LOS_ListEmpty(lockList)) {
         node = lockList;
     } else {
-        LosTaskCB *pendedTask1 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(lockList));
-        LosTaskCB *pendedTask2 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_LAST(lockList));
-        if (pendedTask1->priority > runTask->priority) {
-            node = lockList->pstNext;
-        } else if (pendedTask2->priority <= runTask->priority) {
+        LosTaskCB *pendedTask1 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(lockList));//找到首任务
+        LosTaskCB *pendedTask2 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_LAST(lockList)); //找到尾任务
+        if (pendedTask1->priority > runTask->priority) { //首任务比当前任务优先级低 ,所以runTask可以排第一
+            node = lockList->pstNext;//下一个,注意priority越大 优先级越低
+        } else if (pendedTask2->priority <= runTask->priority) {//尾任务比当前任务优先级高 ,所以runTask排最后
             node = lockList;
-        } else {
-            node = OsSchedLockPendFindPosSub(runTask, lockList);
+        } else {//两头比较没结果,陷入中间比较
+            node = OsSchedLockPendFindPosSub(runTask, lockList);//进入子级循环找
         }
     }
 

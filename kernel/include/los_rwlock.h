@@ -56,7 +56,7 @@ typedef struct OsRwlock {//读写锁
                                 大于0时为读模式 , 小于0时为写模式 等于0为自由模式*/
     VOID *writeOwner;      /**< The current write thread that is locking the rwlock | 拥有写权限的任务*/
     LOS_DL_LIST readList;  /**< Read waiting list | 等待读锁的任务链表*/
-    LOS_DL_LIST writeList; /**< Write waiting list | 等待写*/
+    LOS_DL_LIST writeList; /**< Write waiting list | 等待写锁的任务链表*/
 } LosRwlock;
 
 extern BOOL LOS_RwlockIsValid(const LosRwlock *rwlock);
