@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 注解读写锁
+git commit -m  ' 完成读写锁模块注解
     百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
@@ -12,12 +12,12 @@ git commit -m  ' 注解读写锁
     公众号 | 鸿蒙研究站 (weharmonyos)
 '
 
-git push  origin master
 git push  gitee_origin master
 git push  github_origin master
+git push  gitcode_origin master
 git push  coding_origin master
 
-#git remote add github_origin git@github.com:kuangyufei/kernel_liteos_a_note.git 
 #git remote add gitee_origin git@gitee.com:weharmony/kernel_liteos_a_note.git
-#git remote add origin git@codechina.csdn.net:kuangyufei/kernel_liteos_a_note.git
+#git remote add github_origin git@github.com:kuangyufei/kernel_liteos_a_note.git 
+#git remote add gitcode_origin git@gitcode.net:kuangyufei/kernel_liteos_a_note.git
 #git remote add coding_origin git@e.coding.net:weharmony/harmony/kernel_liteos_a_note.git

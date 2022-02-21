@@ -171,7 +171,7 @@ STATIC UINT32 OsRwlockRdPendOp(LosTaskCB *runTask, LosRwlock *rwlock, UINT32 tim
             if (rwlock->rwCount == INT8_MAX) {//读锁任务达到上限
                 return LOS_EINVAL;
             }
-            rwlock->rwCount++;//读锁
+            rwlock->rwCount++;//拿读锁成功
             return LOS_OK;
         }
     }
@@ -224,7 +224,7 @@ STATIC UINT32 OsRwlockWrPendOp(LosTaskCB *runTask, LosRwlock *rwlock, UINT32 tim
         if (rwlock->rwCount == INT8_MIN) {
             return LOS_EINVAL;
         }
-        rwlock->rwCount--;//注意再次拥有算是两把锁了.
+        rwlock->rwCount--;//注意再次拥有算是两把写锁了.
         return LOS_OK;
     }
 
@@ -302,18 +302,20 @@ UINT32 OsRwlockTryWrUnsafe(LosRwlock *rwlock, UINT32 timeout)
         return LOS_EBADF;
     }
 
-    /* When the rwlock is read mode, current write task will be pended. */
+    /* When the rwlock is read mode, current write task will be pended.
+    | 当 rwlock 为读模式时，当前的写任务将被挂起。*/
     if (rwlock->rwCount > 0) {
         return LOS_EBUSY;
     }
 
-    /* When other write task obtains this rwlock, current write task will be pended. */
+    /* When other write task obtains this rwlock, current write task will be pended. 
+	| 当其他写任务获得这个rwlock时，当前的写任务将被挂起。*/
     LosTaskCB *runTask = OsCurrTaskGet();
     if ((rwlock->rwCount < 0) && ((LosTaskCB *)(rwlock->writeOwner) != runTask)) {
         return LOS_EBUSY;
     }
 
-    return OsRwlockWrPendOp(runTask, rwlock, timeout);
+    return OsRwlockWrPendOp(runTask, rwlock, timeout);//
 }
 /// 申请指定的读模式下的锁
 UINT32 LOS_RwlockRdLock(LosRwlock *rwlock, UINT32 timeout)
@@ -341,7 +343,7 @@ UINT32 LOS_RwlockTryRdLock(LosRwlock *rwlock)
     }
 
     SCHEDULER_LOCK(intSave);
-    ret = OsRwlockTryRdUnsafe(rwlock, 0);
+    ret = OsRwlockTryRdUnsafe(rwlock, 0);//所谓尝试就是没锁爷就返回,不等待,不纠结.当前任务也不会被挂起
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
@@ -371,7 +373,7 @@ UINT32 LOS_RwlockTryWrLock(LosRwlock *rwlock)
     }
 
     SCHEDULER_LOCK(intSave);
-    ret = OsRwlockTryWrUnsafe(rwlock, 0);
+    ret = OsRwlockTryWrUnsafe(rwlock, 0);//所谓尝试就是没锁爷就返回,不等待,不纠结.当前任务也不会被挂起
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
@@ -396,7 +398,7 @@ STATIC UINT32 OsRwlockGetMode(LOS_DL_LIST *readList, LOS_DL_LIST *writeList)
     }
     return RWLOCK_READFIRST_MODE; //读的优先级高时,为读优先模式
 }
-
+/// 释放锁
 STATIC UINT32 OsRwlockPostOp(LosRwlock *rwlock, BOOL *needSched)
 {
     UINT32 rwlockMode;
@@ -405,45 +407,46 @@ STATIC UINT32 OsRwlockPostOp(LosRwlock *rwlock, BOOL *needSched)
 
     rwlock->rwCount = 0;
     rwlock->writeOwner = NULL;
-    rwlockMode = OsRwlockGetMode(&(rwlock->readList), &(rwlock->writeList));
-    if (rwlockMode == RWLOCK_NONE_MODE) {
+    rwlockMode = OsRwlockGetMode(&(rwlock->readList), &(rwlock->writeList));//先获取模式
+    if (rwlockMode == RWLOCK_NONE_MODE) {//自由模式则正常返回
         return LOS_OK;
     }
-    /* In this case, rwlock will wake the first pended write task. */
-    if ((rwlockMode == RWLOCK_WRITE_MODE) || (rwlockMode == RWLOCK_WRITEFIRST_MODE)) {
-        resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->writeList)));
-        rwlock->rwCount = -1;
-        rwlock->writeOwner = (VOID *)resumedTask;
+    /* In this case, rwlock will wake the first pended write task. | 在这种情况下，rwlock 将唤醒第一个挂起的写任务。 */
+    if ((rwlockMode == RWLOCK_WRITE_MODE) || (rwlockMode == RWLOCK_WRITEFIRST_MODE)) {//如果当前是写模式 (有任务在等写锁涅)
+        resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->writeList)));//获取任务实体
+        rwlock->rwCount = -1;//直接干成-1,注意这里并不是 --
+        rwlock->writeOwner = (VOID *)resumedTask;//有锁了则唤醒等锁的任务(写模式)
         OsSchedTaskWake(resumedTask);
         if (needSched != NULL) {
             *needSched = TRUE;
         }
         return LOS_OK;
     }
-    /* In this case, rwlock will wake the valid pended read task. */
-    if (rwlockMode == RWLOCK_READFIRST_MODE) {
-        pendedWriteTaskPri = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->writeList)))->priority;
+    /* In this case, rwlock will wake the valid pended read task. 在这种情况下，rwlock 将唤醒有效的挂起读取任务。 */
+    if (rwlockMode == RWLOCK_READFIRST_MODE) { //如果是读优先模式
+        pendedWriteTaskPri = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->writeList)))->priority;//取出写锁任务的最高优先级
     }
-    resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->readList)));
-    rwlock->rwCount = 1;
-    OsSchedTaskWake(resumedTask);
-    while (!LOS_ListEmpty(&(rwlock->readList))) {
+    resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->readList)));//获取最高优先级读锁任务
+    rwlock->rwCount = 1; //直接干成1,因为是释放操作 
+    OsSchedTaskWake(resumedTask);//有锁了则唤醒等锁的任务(读模式)
+    while (!LOS_ListEmpty(&(rwlock->readList))) {//遍历读链表,目的是要唤醒其他读模式的任务(优先级得要高于pendedWriteTaskPri才行)
         resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->readList)));
-        if ((rwlockMode == RWLOCK_READFIRST_MODE) && (resumedTask->priority >= pendedWriteTaskPri)) {
-            break;
+        if ((rwlockMode == RWLOCK_READFIRST_MODE) && (resumedTask->priority >= pendedWriteTaskPri)) {//低于写模式的优先级
+            break;//跳出循环
         }
         if (rwlock->rwCount == INT8_MAX) {
             return EINVAL;
         }
-        rwlock->rwCount++;
-        OsSchedTaskWake(resumedTask);
+        rwlock->rwCount++;//读锁任务数量增加
+        OsSchedTaskWake(resumedTask);//不断唤醒读锁任务,由此实现了允许多个读操作并发,因为在多核情况下resumedTask很大可能
+        //与当前任务并不在同一个核上运行, 此处非常的有意思,点赞! @note_good
     }
     if (needSched != NULL) {
         *needSched = TRUE;
     }
     return LOS_OK;
 }
-
+/// 释放锁,唤醒任务
 UINT32 OsRwlockUnlockUnsafe(LosRwlock *rwlock, BOOL *needSched)
 {
     if ((rwlock->magic & RWLOCK_COUNT_MASK) != OS_RWLOCK_MAGIC) {
@@ -455,20 +458,21 @@ UINT32 OsRwlockUnlockUnsafe(LosRwlock *rwlock, BOOL *needSched)
     }
 
     LosTaskCB *runTask = OsCurrTaskGet();
-    if ((rwlock->rwCount < 0) && ((LosTaskCB *)(rwlock->writeOwner) != runTask)) {
+    if ((rwlock->rwCount < 0) && ((LosTaskCB *)(rwlock->writeOwner) != runTask)) {//写模式时,当前任务未持有锁
         return LOS_EPERM;
     }
 
     /*
      * When the rwCount of the rwlock more than 1 or less than -1, the rwlock mode will
      * not changed after current unlock operation, so pended tasks can not be waken.
+     | 当 rwlock 的 rwCount 大于 1 或小于 -1 时，当前解锁操作后 rwlock 模式不会改变，因此挂起的任务不能被唤醒。
      */
-    if (rwlock->rwCount > 1) {
+    if (rwlock->rwCount > 1) {//读模式
         rwlock->rwCount--;
         return LOS_OK;
     }
 
-    if (rwlock->rwCount < -1) {
+    if (rwlock->rwCount < -1) {//写模式
         rwlock->rwCount++;
         return LOS_OK;
     }
@@ -489,9 +493,9 @@ UINT32 LOS_RwlockUnLock(LosRwlock *rwlock)
     SCHEDULER_LOCK(intSave);
     ret = OsRwlockUnlockUnsafe(rwlock, &needSched);
     SCHEDULER_UNLOCK(intSave);
-    LOS_MpSchedule(OS_MP_CPU_ALL);
-    if (needSched == TRUE) {
-        LOS_Schedule();
+    LOS_MpSchedule(OS_MP_CPU_ALL);//设置调度CPU的方式,所有CPU参与调度
+    if (needSched == TRUE) {//是否需要调度
+        LOS_Schedule();//产生调度,切换任务执行
     }
     return ret;
 }
