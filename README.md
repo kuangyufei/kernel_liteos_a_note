@@ -2,8 +2,6 @@
 
 [![](https://gitee.com/weharmonyos/resources/raw/master/common/io.png)](http://weharmonyos.com/)
 
-百篇博客分析｜本篇为：(源码注释篇) | 每天死磕一点点
-
 **中文注解鸿蒙内核 | [kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在 `OpenHarmony` 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) 基础上给内核源码加上中文注解的版本，同步官方代码迭代推进。
 
 ### 为何要精读内核源码？
@@ -27,7 +25,7 @@
 #### 一： 百图画鸿蒙 | 一图一主干 | 骨骼系统
 * 如果把鸿蒙比作人，百图目的是要画出其骨骼系统。
 * 百图系列每张图都是心血之作，耗时甚大，能用一张就绝不用两张，所以会画的比较复杂，高清图会很大，可在公众号中回复 **百图** 获取`3`倍超高清最新图。`v**.xx`代表图的版本，请留意图的更新。
-* **双向链表** 是内核最重要的结构体，站长更愿意将它比喻成人的左右手，其意义是通过寄生在宿主结构体上来体现，可想象成在宿主结构体装上一对对勤劳的双手，它真的很会来事，超级活跃分子，为宿主到处拉朋友，建圈子。其插入 | 删除 | 遍历操作是它最常用的社交三大件，若不理解透彻在分析源码过程中很容易卡壳。虽在网上能找到很多它的图,但怎么看都不是自己想要的，干脆重画了它的主要操作。
+* 例如： **双向链表** 是内核最重要的结构体，站长更愿意将它比喻成人的左右手，其意义是通过寄生在宿主结构体上来体现，可想象成在宿主结构体装上一对对勤劳的双手，它真的很会来事，超级活跃分子，为宿主到处拉朋友，建圈子。其插入 | 删除 | 遍历操作是它最常用的社交三大件，若不理解透彻在分析源码过程中很容易卡壳。虽在网上能找到很多它的图,但怎么看都不是自己想要的，干脆重画了它的主要操作。
 * ![](https://gitee.com/weharmonyos/resources/raw/master/100pic/1_list.png) 
 
 #### 二： 百文说内核 | 抓住主脉络 | 肌肉器官
@@ -35,90 +33,135 @@
 * 百文相当于摸出内核的肌肉和器官系统，让人开始丰满有立体感，因是直接从注释源码起步，在加注释过程中，每每有心得处就整理,慢慢形成了以下文章。内容立足源码，常以生活场景打比方尽可能多的将内核知识点置入某种场景，具有画面感，容易理解记忆。说别人能听得懂的话很重要! 百篇博客绝不是百度教条式的在说一堆诘屈聱牙的概念，那没什么意思。更希望让内核变得栩栩如生，倍感亲切。
 * 与代码需不断`debug`一样，文章内容会存在不少错漏之处，请多包涵，但会反复修正，持续更新，`v**.xx` 代表文章序号和修改的次数，精雕细琢，言简意赅，力求打造精品内容。
 * 百文在 < 鸿蒙研究站 | 开源中国 | 博客园 | 51cto | csdn | 知乎 | 掘金 > 站点发布，公众号回复 **百文** 可方便阅读。
+  
+* ![](https://gitee.com/weharmonyos/resources/raw/master/common/cate.png)
+  
 
+**基础知识** 
+* [v01.12 鸿蒙内核源码分析(双向链表) | 谁是内核最重要结构体](http://weharmonyos.com/blog/01.html)
+* [v02.01 鸿蒙内核源码分析(内核概念) | 名不正则言不顺](http://weharmonyos.com/blog/02.html)
+* [v03.02 鸿蒙内核源码分析(源码结构) | 宏观尺度看内核结构](http://weharmonyos.com/blog/03.html)
+* [v04.01 鸿蒙内核源码分析(地址空间) | 内核如何看待空间](http://weharmonyos.com/blog/04.html)
+* [v05.03 鸿蒙内核源码分析(计时单位) | 内核如何看待时间](http://weharmonyos.com/blog/05.html)
+* [v06.01 鸿蒙内核源码分析(宏的使用) | 为什么被翻译成了宏 ](http://weharmonyos.com/blog/06.html)
+* [v07.01 鸿蒙内核源码分析(钩子框架) | 万物皆可HOOK ](http://weharmonyos.com/blog/07.html)
+* [v08.04 鸿蒙内核源码分析(位图管理) | 一分钱被掰成八半使用](http://weharmonyos.com/blog/08.html)
+* [v09.01 鸿蒙内核源码分析(POSIX) | 操作系统界的话事人 ](http://weharmonyos.com/blog/09.html)
+* [v10.01 鸿蒙内核源码分析(main函数) | 要走了无数码农的第一次 ](http://weharmonyos.com/blog/10.html)
 
-按时间顺序:
+**进程管理** 
+* [v11.04 鸿蒙内核源码分析(调度故事) | 大郎，该喝药了](http://weharmonyos.com/blog/11.html)
+* [v12.03 鸿蒙内核源码分析(进程控制块) | 可怜天下父母心](http://weharmonyos.com/blog/12.html)
+* [v13.01 鸿蒙内核源码分析(进程空间) | 有爱的地方才叫家 ](http://weharmonyos.com/blog/13.html)
+* [v14.01 鸿蒙内核源码分析(线性区) | 人要有空间才能好好相处](http://weharmonyos.com/blog/14.html)
+* [v15.01 鸿蒙内核源码分析(红黑树) | 众里寻他千百度 ](http://weharmonyos.com/blog/15.html)
+* [v16.06 鸿蒙内核源码分析(进程管理) | 家家有本难念的经](http://weharmonyos.com/blog/16.html)
+* [v17.05 鸿蒙内核源码分析(Fork进程) | 一次调用 两次返回](http://weharmonyos.com/blog/17.html)
+* [v18.02 鸿蒙内核源码分析(进程回收) | 临终托孤的短命娃](http://weharmonyos.com/blog/18.html)
+* [v19.03 鸿蒙内核源码分析(Shell编辑) | 两个任务 三个阶段](http://weharmonyos.com/blog/19.html)
+* [v20.01 鸿蒙内核源码分析(Shell解析) | 应用窥伺内核的窗口](http://weharmonyos.com/blog/20.html)
 
-* [v01.12 鸿蒙内核源码分析(双向链表) | 谁是内核最重要结构体](https://my.oschina.net/weharmony/blog/4572304)
-* [v02.06 鸿蒙内核源码分析(进程管理) | 谁在管理内核资源](https://my.oschina.net/weharmony/blog/4574429)
-* [v03.06 鸿蒙内核源码分析(时钟任务) | 调度的源动力从哪来](https://my.oschina.net/weharmony/blog/4574493)
-* [v04.03 鸿蒙内核源码分析(任务调度) | 内核调度的单元是谁](https://my.oschina.net/weharmony/blog/4595539)
-* [v05.05 鸿蒙内核源码分析(任务管理) | 如何管理任务池](https://my.oschina.net/weharmony/blog/4603919)
-* [v06.03 鸿蒙内核源码分析(调度队列) | 内核调度也需要排队](https://my.oschina.net/weharmony/blog/4606916)
-* [v07.08 鸿蒙内核源码分析(调度机制) | 任务是如何被调度执行的](https://my.oschina.net/weharmony/blog/4623040)
-* [v08.03 鸿蒙内核源码分析(总目录) | 百万汉字注解 百篇博客分析](https://my.oschina.net/weharmony/blog/4626852)
-* [v09.04 鸿蒙内核源码分析(调度故事) | 用故事说内核调度](https://my.oschina.net/weharmony/blog/4634668)
-* [v10.03 鸿蒙内核源码分析(内存主奴) | 皇上和奴才如何相处](https://my.oschina.net/weharmony/blog/4646802)
-* [v11.03 鸿蒙内核源码分析(内存分配) | 内存有哪些分配方式](https://my.oschina.net/weharmony/blog/4646802)
-* [v12.04 鸿蒙内核源码分析(内存管理) | 虚拟内存全景图是怎样的](https://my.oschina.net/weharmony/blog/4652284)
-* [v13.05 鸿蒙内核源码分析(源码注释) | 每天死磕一点点](https://my.oschina.net/weharmony/blog/4686747)
-* [v14.02 鸿蒙内核源码分析(内存汇编) | 谁是虚拟内存实现的基础](https://my.oschina.net/weharmony/blog/4692156)
-* [v15.03 鸿蒙内核源码分析(内存映射) | 映射真是个好东西](https://my.oschina.net/weharmony/blog/4694841)
-* [v16.02 鸿蒙内核源码分析(内存规则) | 内存管理到底在管什么](https://my.oschina.net/weharmony/blog/4698384)
-* [v17.04 鸿蒙内核源码分析(物理内存) | 怎么管理物理内存](https://my.oschina.net/weharmony/blog/4842408)
-* [v18.02 鸿蒙内核源码分析(源码结构) | 内核文件各自含义](https://my.oschina.net/weharmony/blog/4869137)
-* [v19.04 鸿蒙内核源码分析(位图管理) | 特节俭的苦命孩子](https://my.oschina.net/weharmony/blog/4888467)
-* [v20.03 鸿蒙内核源码分析(用栈方式) | 谁来提供程序运行场地](https://my.oschina.net/weharmony/blog/4893388)
-* [v21.07 鸿蒙内核源码分析(线程概念) | 是谁在不断的折腾CPU](https://my.oschina.net/weharmony/blog/4915543)
-* [v22.03 鸿蒙内核源码分析(汇编基础) | CPU上班也要打卡](https://my.oschina.net/weharmony/blog/4920361)
-* [v23.04 鸿蒙内核源码分析(汇编传参) | 如何传递复杂的参数](https://my.oschina.net/weharmony/blog/4927892)
-* [v24.03 鸿蒙内核源码分析(进程概念) | 如何更好的理解进程](https://my.oschina.net/weharmony/blog/4937521)
-* [v25.05 鸿蒙内核源码分析(并发并行) | 听过无数遍的两个概念](https://my.oschina.net/weharmony/blog/4940329)
-* [v26.08 鸿蒙内核源码分析(自旋锁) | 当立贞节牌坊的好同志](https://my.oschina.net/weharmony/blog/4944129)
-* [v27.05 鸿蒙内核源码分析(互斥锁) | 同样是锁它却更丰满](https://my.oschina.net/weharmony/blog/4945465)
-* [v28.04 鸿蒙内核源码分析(进程通讯) | 九种进程间通讯方式速揽](https://my.oschina.net/weharmony/blog/4947398)
-* [v29.05 鸿蒙内核源码分析(信号量) | 谁在解决任务间的同步](https://my.oschina.net/weharmony/blog/4949720)
-* [v30.07 鸿蒙内核源码分析(事件控制) | 多对多任务如何同步](https://my.oschina.net/weharmony/blog/4950956)
-* [v31.02 鸿蒙内核源码分析(定时器) | 内核最高级任务竟是它](https://my.oschina.net/weharmony/blog/4951625)
-* [v32.03 鸿蒙内核源码分析(CPU) | 整个内核是一个死循环](https://my.oschina.net/weharmony/blog/4952034)
-* [v33.03 鸿蒙内核源码分析(消息队列) | 进程间如何异步传递大数据](https://my.oschina.net/weharmony/blog/4952961)
-* [v34.04 鸿蒙内核源码分析(原子操作) | 谁在为完整性保驾护航](https://my.oschina.net/weharmony/blog/4955290)
-* [v35.03 鸿蒙内核源码分析(时间管理) | 内核基本时间单位是谁](https://my.oschina.net/weharmony/blog/4956163)
-* [v36.05 鸿蒙内核源码分析(工作模式) | 程序界的韦小宝是谁](https://my.oschina.net/weharmony/blog/4965052)
-* [v37.06 鸿蒙内核源码分析(系统调用) | 开发者永远的口头禅](https://my.oschina.net/weharmony/blog/4967613)
-* [v38.06 鸿蒙内核源码分析(寄存器) | 讲真 全宇宙只佩服它](https://my.oschina.net/weharmony/blog/4969487)
-* [v39.06 鸿蒙内核源码分析(异常接管) | 社会很单纯 复杂的是人](https://my.oschina.net/weharmony/blog/4973016)
-* [v40.03 鸿蒙内核源码分析(汇编汇总) | 汇编可爱如邻家女孩](https://my.oschina.net/weharmony/blog/4977924)
-* [v41.03 鸿蒙内核源码分析(任务切换) | 看汇编如何切换任务](https://my.oschina.net/weharmony/blog/4988628)
-* [v42.05 鸿蒙内核源码分析(中断切换) | 系统因中断活力四射](https://my.oschina.net/weharmony/blog/4990948)
-* [v43.05 鸿蒙内核源码分析(中断概念) | 海公公的日常工作](https://my.oschina.net/weharmony/blog/4992750)
-* [v44.04 鸿蒙内核源码分析(中断管理) | 没中断太可怕](https://my.oschina.net/weharmony/blog/4995800)
-* [v45.05 鸿蒙内核源码分析(Fork) | 一次调用 两次返回](https://my.oschina.net/weharmony/blog/5010301)
-* [v46.05 鸿蒙内核源码分析(特殊进程) | 老鼠生儿会打洞](https://my.oschina.net/weharmony/blog/5014444)
-* [v47.02 鸿蒙内核源码分析(进程回收) | 临终托孤的短命娃](https://my.oschina.net/weharmony/blog/5017716)
-* [v48.05 鸿蒙内核源码分析(信号生产) | 年过半百 活力十足](https://my.oschina.net/weharmony/blog/5022149)
-* [v49.03 鸿蒙内核源码分析(信号消费) | 谁让CPU连续四次换栈运行](https://my.oschina.net/weharmony/blog/5027224)
-* [v50.03 鸿蒙内核源码分析(编译环境) | 编译鸿蒙防掉坑指南](https://my.oschina.net/weharmony/blog/5028613)
-* [v51.04 鸿蒙内核源码分析(ELF格式) | 应用程序入口并非main](https://my.oschina.net/weharmony/blog/5030288)
-* [v52.05 鸿蒙内核源码分析(静态站点) | 码农都不爱写注释和文档](https://my.oschina.net/weharmony/blog/5042657)
-* [v53.03 鸿蒙内核源码分析(ELF解析) | 敢忘了她姐俩你就不是银](https://my.oschina.net/weharmony/blog/5048746)
-* [v54.04 鸿蒙内核源码分析(静态链接) | 一个小项目看中间过程](https://my.oschina.net/weharmony/blog/5049918)
-* [v55.04 鸿蒙内核源码分析(重定位) | 与国际接轨的对外发言人](https://my.oschina.net/weharmony/blog/5055124)
-* [v56.05 鸿蒙内核源码分析(进程映像) | 程序是如何被加载运行的](https://my.oschina.net/weharmony/blog/5060359)
-* [v57.02 鸿蒙内核源码分析(编译过程) | 简单案例说透中间过程](https://my.oschina.net/weharmony/blog/5064209)
-* [v58.03 鸿蒙内核源码分析(环境脚本) | 编译鸿蒙原来很简单](https://my.oschina.net/weharmony/blog/5132725)
-* [v59.04 鸿蒙内核源码分析(构建工具) | 顺瓜摸藤调试构建过程](https://my.oschina.net/weharmony/blog/5135157)
-* [v60.04 鸿蒙内核源码分析(gn应用) | 如何构建鸿蒙系统](https://my.oschina.net/weharmony/blog/5137565)
-* [v61.03 鸿蒙内核源码分析(忍者ninja) | 忍者的特点就是一个字](https://my.oschina.net/weharmony/blog/5139034)
-* [v62.02 鸿蒙内核源码分析(文件概念) | 为什么说一切皆是文件](https://my.oschina.net/weharmony/blog/5152858)
-* [v63.04 鸿蒙内核源码分析(文件系统) | 用图书管理说文件系统](https://my.oschina.net/weharmony/blog/5165752)
-* [v64.06 鸿蒙内核源码分析(索引节点) | 谁是文件系统最重要的概念](https://my.oschina.net/weharmony/blog/5168716)
-* [v65.05 鸿蒙内核源码分析(挂载目录) | 为何文件系统需要挂载](https://my.oschina.net/weharmony/blog/5172566)
-* [v66.07 鸿蒙内核源码分析(根文件系统) | 谁先挂到`/`谁就是根总](https://my.oschina.net/weharmony/blog/5177087)
-* [v67.03 鸿蒙内核源码分析(字符设备) | 绝大多数设备都是这类](https://my.oschina.net/weharmony/blog/5200946)
-* [v68.02 鸿蒙内核源码分析(VFS) | 文件系统是个大家庭](https://my.oschina.net/weharmony/blog/5211662)
-* [v69.04 鸿蒙内核源码分析(文件句柄) | 你为什么叫句柄](https://my.oschina.net/weharmony/blog/5253251)
-* [v70.05 鸿蒙内核源码分析(管道文件) | 如何降低数据流动成本](https://my.oschina.net/weharmony/blog/5258434)
-* [v71.03 鸿蒙内核源码分析(Shell编辑) | 两个任务 三个阶段](https://my.oschina.net/weharmony/blog/5269307)
-* [v72.01 鸿蒙内核源码分析(Shell解析) | 应用窥伺内核的窗口](https://my.oschina.net/weharmony/blog/5282207)
-* [v73.01 鸿蒙内核源码分析(参考文档) | 阅读内核源码必备工具](https://my.oschina.net/weharmony/blog/5346868)
-* [v74.01 鸿蒙内核源码分析(控制台) | 一个让很多人模糊的概念](https://my.oschina.net/weharmony/blog/5356308)
-* [v75.01 鸿蒙内核源码分析(远程登录) | 内核如何接待远方的客人](https://my.oschina.net/weharmony/blog/5375838)
-* [v76.01 鸿蒙内核源码分析(共享内存) | 进程间最快通讯方式](https://my.oschina.net/weharmony/blog/5412148)
-* [v77.02 鸿蒙内核源码分析(消息封装) | 剖析LiteIpc(上)进程通讯内容](https://my.oschina.net/weharmony/blog/5421867)
-* [v78.01 鸿蒙内核源码分析(消息映射) | 剖析LiteIpc(下)进程通讯机制](https://my.oschina.net/weharmony/blog/5436744)
-* [v79.02 鸿蒙内核源码分析(快锁使用篇) | 用户态下的快锁Futex(上)](https://my.oschina.net/weharmony/blog/5446656)
-* [v80.02 鸿蒙内核源码分析(快锁实现篇) | 内核态下的快锁Futex(下)](https://my.oschina.net/weharmony/blog/5452186)
+**任务管理** 
+* [v21.07 鸿蒙内核源码分析(任务控制块) | 内核最重要的概念](http://weharmonyos.com/blog/21.html)
+* [v22.05 鸿蒙内核源码分析(并发并行) | 如何搞清楚它俩区分](http://weharmonyos.com/blog/22.html)
+* [v23.03 鸿蒙内核源码分析(就绪队列) | 内核调度也需要排队](http://weharmonyos.com/blog/23.html)
+* [v24.08 鸿蒙内核源码分析(调度机制) | 任务是如何被调度执行的](http://weharmonyos.com/blog/24.html)
+* [v25.05 鸿蒙内核源码分析(任务管理) | 如何管理任务池](http://weharmonyos.com/blog/25.html)
+* [v26.03 鸿蒙内核源码分析(用栈方式) | 谁来提供程序运行场地](http://weharmonyos.com/blog/26.html)
+* [v27.02 鸿蒙内核源码分析(软件定时器) | 内核最高级任务竟是它](http://weharmonyos.com/blog/27.html)
+* [v28.01 鸿蒙内核源码分析(控制台) | 一个让很多人模糊的概念](http://weharmonyos.com/blog/28.html)
+* [v29.01 鸿蒙内核源码分析(远程登录) | 内核如何接待远方的客人](http://weharmonyos.com/blog/29.html)
+* [v30.01 鸿蒙内核源码分析(协议栈) | 正在制作中 ... ](http://weharmonyos.com/blog/30.html)
+
+**内存管理** 
+* [v31.02 鸿蒙内核源码分析(内存规则) | 内存管理到底在管什么](http://weharmonyos.com/blog/31.html)
+* [v32.04 鸿蒙内核源码分析(物理内存) | 怎么管理物理内存](http://weharmonyos.com/blog/32.html)
+* [v33.04 鸿蒙内核源码分析(虚拟内存) | 虚拟内存全景图是怎样的](http://weharmonyos.com/blog/33.html)
+* [v34.03 鸿蒙内核源码分析(虚实映射) | 映射真是个好东西](http://weharmonyos.com/blog/34.html)
+* [v35.03 鸿蒙内核源码分析(静态分配) | 内存有哪些分配方式](http://weharmonyos.com/blog/35.html)
+* [v36.01 鸿蒙内核源码分析(动态分配) | 正在制作中 ... ](http://weharmonyos.com/blog/36.html)
+* [v37.04 鸿蒙内核源码分析(原子操作) | 谁在为完整性保驾护航](http://weharmonyos.com/blog/37.html)
+* [v38.02 鸿蒙内核源码分析(页表管理) | 谁是虚拟内存实现的基础](http://weharmonyos.com/blog/38.html)
+* [v39.01 鸿蒙内核源码分析(I/O映射) | 正在制作中 ... ](http://weharmonyos.com/blog/39.html)
+* [v40.01 鸿蒙内核源码分析(圆整对齐) | 正在制作中 ... ](http://weharmonyos.com/blog/40.html)
+
+**通讯机制** 
+* [v41.04 鸿蒙内核源码分析(通讯总览) | 内核跟人一样都喜欢八卦](http://weharmonyos.com/blog/41.html)
+* [v42.08 鸿蒙内核源码分析(自旋锁) | 死等丈夫归来的贞洁烈女](http://weharmonyos.com/blog/42.html)
+* [v43.05 鸿蒙内核源码分析(互斥锁) | 同样是锁它却更丰满](http://weharmonyos.com/blog/43.html)
+* [v44.02 鸿蒙内核源码分析(快锁使用) | 用户态下的快锁Futex(上)](http://weharmonyos.com/blog/44.html)
+* [v45.02 鸿蒙内核源码分析(快锁实现) | 内核态下的快锁Futex(下)](http://weharmonyos.com/blog/45.html)
+* [v46.01 鸿蒙内核源码分析(读写锁) | 内核如何实现多读单写](http://weharmonyos.com/blog/46.html)
+* [v47.05 鸿蒙内核源码分析(信号量) | 谁在解决任务间的同步](http://weharmonyos.com/blog/47.html)
+* [v48.07 鸿蒙内核源码分析(事件机制) | 多对多任务如何同步](http://weharmonyos.com/blog/48.html)
+* [v49.05 鸿蒙内核源码分析(信号生产) | 年过半百 活力十足](http://weharmonyos.com/blog/49.html)
+* [v50.03 鸿蒙内核源码分析(信号消费) | 谁让CPU连续四次换栈运行](http://weharmonyos.com/blog/50.html)
+* [v51.03 鸿蒙内核源码分析(消息队列) | 进程间如何异步传递大数据](http://weharmonyos.com/blog/51.html)
+* [v52.02 鸿蒙内核源码分析(消息封装) | 剖析LiteIpc(上)进程通讯内容](http://weharmonyos.com/blog/52.html)
+* [v53.01 鸿蒙内核源码分析(消息映射) | 剖析LiteIpc(下)进程通讯机制](http://weharmonyos.com/blog/53.html)
+* [v54.01 鸿蒙内核源码分析(共享内存) | 进程间最快通讯方式](http://weharmonyos.com/blog/54.html)
+
+**文件系统** 
+* [v55.02 鸿蒙内核源码分析(文件概念) | 为什么说一切皆是文件](http://weharmonyos.com/blog/55.html)
+* [v56.04 鸿蒙内核源码分析(文件故事) | 用图书管理说文件系统](http://weharmonyos.com/blog/56.html)
+* [v57.06 鸿蒙内核源码分析(索引节点) | 谁是文件系统最重要的概念](http://weharmonyos.com/blog/57.html)
+* [v58.02 鸿蒙内核源码分析(VFS) | 文件系统是个大家庭](http://weharmonyos.com/blog/58.html)
+* [v59.04 鸿蒙内核源码分析(文件句柄) | 你为什么叫句柄](http://weharmonyos.com/blog/59.html)
+* [v60.07 鸿蒙内核源码分析(根文件系统) | 谁先挂到`/`谁就是根总](http://weharmonyos.com/blog/60.html)
+* [v61.05 鸿蒙内核源码分析(挂载机制) | 为何文件系统需要挂载](http://weharmonyos.com/blog/61.html)
+* [v62.05 鸿蒙内核源码分析(管道文件) | 如何降低数据流动成本](http://weharmonyos.com/blog/62.html)
+* [v63.03 鸿蒙内核源码分析(文件映射) | 正在制作中 ... ](http://weharmonyos.com/blog/63.html)
+* [v64.01 鸿蒙内核源码分析(写时拷贝) | 正在制作中 ... ](http://weharmonyos.com/blog/64.html)
+
+**软硬相接** 
+* [v65.03 鸿蒙内核源码分析(CPU结构) | 正在制作中 ...  ](http://weharmonyos.com/blog/65.html)
+* [v66.01 鸿蒙内核源码分析(协处理器) | 正在制作中 ... ](http://weharmonyos.com/blog/66.html)
+* [v67.05 鸿蒙内核源码分析(工作模式) | 程序界的韦小宝是谁](http://weharmonyos.com/blog/67.html)
+* [v68.01 鸿蒙内核源码分析(异常处理) | 正在制作中 ... ](http://weharmonyos.com/blog/68.html)
+* [v69.06 鸿蒙内核源码分析(寄存器) | 讲真 全宇宙只佩服它](http://weharmonyos.com/blog/69.html)
+* [v70.03 鸿蒙内核源码分析(多核管理) | 整个内核是一个死循环](http://weharmonyos.com/blog/70.html)
+* [v71.05 鸿蒙内核源码分析(中断概念) | 海公公的日常工作](http://weharmonyos.com/blog/71.html)
+* [v72.04 鸿蒙内核源码分析(中断管理) | 没中断太可怕](http://weharmonyos.com/blog/72.html)
+* [v73.01 鸿蒙内核源码分析(移值适配) | 正在制作中 ... ](http://weharmonyos.com/blog/73.html)
+
+**内核汇编** 
+* [v74.01 鸿蒙内核源码分析(汇编指令) | 正在制作中 ... ](http://weharmonyos.com/blog/74.html)
+* [v75.03 鸿蒙内核源码分析(汇编基础) | CPU上班也要打卡](http://weharmonyos.com/blog/75.html)
+* [v76.04 鸿蒙内核源码分析(汇编传参) | 如何传递复杂的参数](http://weharmonyos.com/blog/76.html)
+* [v77.01 鸿蒙内核源码分析(可变参数) | 正在制作中 ... ](http://weharmonyos.com/blog/77.html)
+* [v78.01 鸿蒙内核源码分析(开机启动) | 正在制作中 ... ](http://weharmonyos.com/blog/78.html)
+* [v79.01 鸿蒙内核源码分析(进程切换) | 正在制作中 ... ](http://weharmonyos.com/blog/79.html)
+* [v80.03 鸿蒙内核源码分析(任务切换) | 看汇编如何切换任务](http://weharmonyos.com/blog/80.html)
+* [v81.05 鸿蒙内核源码分析(中断切换) | 系统因中断活力四射](http://weharmonyos.com/blog/81.html)
+* [v82.06 鸿蒙内核源码分析(异常接管) | 社会很单纯 复杂的是人](http://weharmonyos.com/blog/82.html)
+* [v83.01 鸿蒙内核源码分析(缺页中断) | 正在制作中 ... ](http://weharmonyos.com/blog/83.html)
+
+**编译运行** 
+* [v84.02 鸿蒙内核源码分析(编译过程) | 简单案例说透中间过程](http://weharmonyos.com/blog/84.html)
+* [v85.03 鸿蒙内核源码分析(编译构建) | 编译鸿蒙防掉坑指南](http://weharmonyos.com/blog/85.html)
+* [v86.04 鸿蒙内核源码分析(GN语法) | 如何构建鸿蒙系统](http://weharmonyos.com/blog/86.html)
+* [v87.03 鸿蒙内核源码分析(忍者无敌) | 忍者的特点就是一个字](http://weharmonyos.com/blog/87.html)
+* [v88.04 鸿蒙内核源码分析(ELF格式) | 应用程序入口并非main](http://weharmonyos.com/blog/88.html)
+* [v89.03 鸿蒙内核源码分析(ELF解析) | 敢忘了她姐俩你就不是银](http://weharmonyos.com/blog/89.html)
+* [v90.04 鸿蒙内核源码分析(静态链接) | 一个小项目看中间过程](http://weharmonyos.com/blog/90.html)
+* [v91.04 鸿蒙内核源码分析(重定位) | 与国际接轨的对外发言人](http://weharmonyos.com/blog/91.html)
+* [v92.01 鸿蒙内核源码分析(动态链接) | 正在制作中 ... ](http://weharmonyos.com/blog/92.html)
+* [v93.05 鸿蒙内核源码分析(进程映像) | 程序是如何被加载运行的](http://weharmonyos.com/blog/93.html)
+* [v94.01 鸿蒙内核源码分析(应用启动) | 正在制作中 ... ](http://weharmonyos.com/blog/94.html)
+* [v95.06 鸿蒙内核源码分析(系统调用) | 开发者永远的口头禅](http://weharmonyos.com/blog/95.html)
+* [v96.01 鸿蒙内核源码分析(VDSO) | 正在制作中 ... ](http://weharmonyos.com/blog/96.html)
+
+**调测工具** 
+* [v97.01 鸿蒙内核源码分析(模块监控) | 正在制作中 ... ](http://weharmonyos.com/blog/97.html)
+* [v98.01 鸿蒙内核源码分析(日志跟踪) | 正在制作中 ... ](http://weharmonyos.com/blog/98.html)
+* [v99.01 鸿蒙内核源码分析(系统安全) | 正在制作中 ... ](http://weharmonyos.com/blog/99.html)
+* [v100.01 鸿蒙内核源码分析(测试用例) | 正在制作中 ... ](http://weharmonyos.com/blog/100.html)
+
+**前因后果** 
+* [v101.03 鸿蒙内核源码分析(总目录) | 百万汉字注解 百篇博客分析](http://weharmonyos.com/blog/101.html)
+* [v102.05 鸿蒙内核源码分析(源码注释) | 每天死磕一点点](http://weharmonyos.com/blog/102.html)
+* [v103.05 鸿蒙内核源码分析(静态站点) | 码农都不爱写注释和文档](http://weharmonyos.com/blog/103.html)
+* [v104.01 鸿蒙内核源码分析(参考文档) | 阅读内核源码必备工具](http://weharmonyos.com/blog/104.html)
 
 #### 三： 百万注内核 | 处处扣细节 | 细胞血管
 * 百万汉字注解内核目的是要看清楚其毛细血管，细胞结构，等于在拿放大镜看内核。内核并不神秘，带着问题去源码中找答案是很容易上瘾的，你会发现很多文章对一些问题的解读是错误的，或者说不深刻难以自圆其说，你会慢慢形成自己新的解读，而新的解读又会碰到新的问题，如此层层递进，滚滚向前，拿着放大镜根本不愿意放手。
@@ -154,7 +197,7 @@
   可前往 >> [鸿蒙研究站 | 结构体索引 ](http://weharmonyos.com/doxygen/classes.html) 体验
 
 ### 四大码仓发布 | 源码同步官方
-内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [codechina](https://codechina.csdn.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
+内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [gitcode](https://gitcode.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
 * `2022/02/18` -- 官方无代码更新, 只有测试用例的完善
 * `2022/01/20` -- 同步官方代码,本次官方对测试用例和MMU做了较大调整
 * `2021/12/20` -- 增加`LMS`模块，完善`PM，Fat Cache`
@@ -192,7 +235,10 @@
 
  * [鸿蒙研究站](http://weharmonyos.com) 定位于做一个专注而靠谱的技术站， 没有广告，干净简洁，对鸿蒙研究会持续在上面输出。同时感谢资助鸿蒙研究和网站建设的小伙伴，很温暖。 [ >> 送温暖记录](http://weharmonyos.com/donate.html)
 
+
+
 ### 关注不迷路 | 代码即人生
 
 ![](https://gitee.com/weharmonyos/resources/raw/master/common/so1so.png)
 
+道阻且长，行则将至，原创不易，欢迎转载，请注明出处。

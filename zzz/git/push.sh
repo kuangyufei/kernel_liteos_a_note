@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 完成读写锁模块注解
+git commit -m  ' 确定百篇博客目录结构,重新整理文档 .  
     百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)

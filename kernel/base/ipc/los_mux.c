@@ -258,7 +258,7 @@ STATIC UINT32 OsCheckMutexAttr(const LosMuxAttr *attr)
     }
     return LOS_OK;
 }
-/// 初始化互斥量
+/// 初始化互斥锁
 LITE_OS_SEC_TEXT UINT32 LOS_MuxInit(LosMux *mutex, const LosMuxAttr *attr)
 {
     UINT32 intSave;
