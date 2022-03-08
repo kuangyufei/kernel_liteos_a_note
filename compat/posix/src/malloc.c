@@ -62,7 +62,7 @@ void *calloc(size_t nitems, size_t size)
  * If ptr points to a memory block that was not allocated with calloc, malloc,
  * or realloc, or is a space that has been deallocated, then the result is undefined.
  */
-
+/// 释放ptr所指向的内存空间
 void free(void *ptr)
 {
     if (ptr == NULL) {
@@ -75,8 +75,9 @@ void free(void *ptr)
 /*
  * Allocates the requested memory and returns a pointer to it. The requested
  * size is size bytes. The value of the space is indeterminate.
+ * 分配请求的内存并返回指向它的指针。 请求的大小是 size 字节。 内存值是不确定的。
  */
-
+/// 动态分配内存块大小
 void *malloc(size_t size)
 { /*lint !e31 !e10*/
     if (size == 0) {
@@ -85,7 +86,8 @@ void *malloc(size_t size)
 
     return LOS_KernelMalloc((UINT32) size);
 }
-
+/// 分配请求的内存并返回指向它的指针。 请求的大小是 size 字节。 内存值是0。
+/// 原来 zalloc的含义是 zero malloc  
 void *zalloc(size_t size)
 { /*lint !e10*/
     void *ptr = NULL;
@@ -104,6 +106,7 @@ void *zalloc(size_t size)
 /*
  * allocates a block of size bytes whose address is a multiple of boundary.
  * The boundary must be a power of two!
+ * 分配一个大小字节的块，其地址是边界的倍数。边界必须是 2 的幂！
  */
 
 void *memalign(size_t boundary, size_t size)
@@ -127,8 +130,14 @@ void *memalign(size_t boundary, size_t size)
  * undefined. If the new space cannot be allocated, then the contents pointed
  * to by ptr are unchanged. If size is zero, then the memory block is completely
  * freed.
+ * 尝试调整先前通过调用 malloc 或 calloc 分配的 ptr 指向的内存块的大小。 
+ * ptr 指向的内容不变。 如果 size 的值大于块的先前大小，则附加字节具有不确定的值。 
+ * 如果 size 的值小于块的先前大小，则释放块末尾的字节差。 如果 ptr 为 null，
+ * 则它的行为类似于 malloc。 如果 ptr 指向未使用 calloc 或 malloc 分配的内存块，
+ * 或者是已释放的空间，则结果未定义。 如果无法分配新空间，则 ptr 指向的内容不变。 
+ * 如果大小为零，则内存块被完全释放。
  */
-
+/// 重分配内存
 void *realloc(void *ptr, size_t size)
 {
     if (ptr == NULL) {

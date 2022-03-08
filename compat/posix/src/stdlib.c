@@ -39,12 +39,12 @@ char *getenv(const char *name)
 {
     return NULL;
 }
-
+/// 初始化随机数生成器
 void srand(unsigned s)
 {
     return srandom(s);
 }
-
+/// 生成伪随机数
 int rand(void)
 {
    return random();
@@ -63,7 +63,7 @@ void exit(int status)
     errno = ENOSYS;
     while (1);
 }
-
+/// 中止线程执行
 void abort(void)
 {
     LOS_Panic("System was being aborted\n");

@@ -64,8 +64,8 @@
 **任务管理** 
 * [v21.07 鸿蒙内核源码分析(任务控制块) | 内核最重要的概念](http://weharmonyos.com/blog/21.html)
 * [v22.05 鸿蒙内核源码分析(并发并行) | 如何搞清楚它俩区分](http://weharmonyos.com/blog/22.html)
-* [v23.03 鸿蒙内核源码分析(就绪队列) | 内核调度也需要排队](http://weharmonyos.com/blog/23.html)
-* [v24.08 鸿蒙内核源码分析(调度机制) | 任务是如何被调度执行的](http://weharmonyos.com/blog/24.html)
+* [v23.03 鸿蒙内核源码分析(就绪队列) | 美好的事物永远值得等待](http://weharmonyos.com/blog/23.html)
+* [v24.08 鸿蒙内核源码分析(调度机制) | 公平是相对的](http://weharmonyos.com/blog/24.html)
 * [v25.05 鸿蒙内核源码分析(任务管理) | 如何管理任务池](http://weharmonyos.com/blog/25.html)
 * [v26.03 鸿蒙内核源码分析(用栈方式) | 谁来提供程序运行场地](http://weharmonyos.com/blog/26.html)
 * [v27.02 鸿蒙内核源码分析(软件定时器) | 内核最高级任务竟是它](http://weharmonyos.com/blog/27.html)
@@ -75,9 +75,9 @@
 
 **内存管理** 
 * [v31.02 鸿蒙内核源码分析(内存规则) | 内存管理到底在管什么](http://weharmonyos.com/blog/31.html)
-* [v32.04 鸿蒙内核源码分析(物理内存) | 怎么管理物理内存](http://weharmonyos.com/blog/32.html)
-* [v33.04 鸿蒙内核源码分析(虚拟内存) | 虚拟内存全景图是怎样的](http://weharmonyos.com/blog/33.html)
-* [v34.03 鸿蒙内核源码分析(虚实映射) | 映射真是个好东西](http://weharmonyos.com/blog/34.html)
+* [v32.04 鸿蒙内核源码分析(物理内存) | 真实的可不一定精彩](http://weharmonyos.com/blog/32.html)
+* [v33.04 鸿蒙内核源码分析(虚拟内存) | 虚拟的也是真实的](http://weharmonyos.com/blog/33.html)
+* [v34.03 鸿蒙内核源码分析(虚实映射) | 映射是种伟大的思想](http://weharmonyos.com/blog/34.html)
 * [v35.03 鸿蒙内核源码分析(静态分配) | 内存有哪些分配方式](http://weharmonyos.com/blog/35.html)
 * [v36.01 鸿蒙内核源码分析(动态分配) | 正在制作中 ... ](http://weharmonyos.com/blog/36.html)
 * [v37.04 鸿蒙内核源码分析(原子操作) | 谁在为完整性保驾护航](http://weharmonyos.com/blog/37.html)
@@ -105,10 +105,10 @@
 * [v55.02 鸿蒙内核源码分析(文件概念) | 为什么说一切皆是文件](http://weharmonyos.com/blog/55.html)
 * [v56.04 鸿蒙内核源码分析(文件故事) | 用图书管理说文件系统](http://weharmonyos.com/blog/56.html)
 * [v57.06 鸿蒙内核源码分析(索引节点) | 谁是文件系统最重要的概念](http://weharmonyos.com/blog/57.html)
-* [v58.02 鸿蒙内核源码分析(VFS) | 文件系统是个大家庭](http://weharmonyos.com/blog/58.html)
+* [v58.02 鸿蒙内核源码分析(VFS) | 文件系统的话事人](http://weharmonyos.com/blog/58.html)
 * [v59.04 鸿蒙内核源码分析(文件句柄) | 你为什么叫句柄](http://weharmonyos.com/blog/59.html)
-* [v60.07 鸿蒙内核源码分析(根文件系统) | 谁先挂到`/`谁就是根总](http://weharmonyos.com/blog/60.html)
-* [v61.05 鸿蒙内核源码分析(挂载机制) | 为何文件系统需要挂载](http://weharmonyos.com/blog/61.html)
+* [v60.07 鸿蒙内核源码分析(根文件系统) | 谁先挂到`/`谁就是老大](http://weharmonyos.com/blog/60.html)
+* [v61.05 鸿蒙内核源码分析(挂载机制) | 谁根逐流不掉队](http://weharmonyos.com/blog/61.html)
 * [v62.05 鸿蒙内核源码分析(管道文件) | 如何降低数据流动成本](http://weharmonyos.com/blog/62.html)
 * [v63.03 鸿蒙内核源码分析(文件映射) | 正在制作中 ... ](http://weharmonyos.com/blog/63.html)
 * [v64.01 鸿蒙内核源码分析(写时拷贝) | 正在制作中 ... ](http://weharmonyos.com/blog/64.html)
@@ -116,10 +116,10 @@
 **软硬相接** 
 * [v65.03 鸿蒙内核源码分析(CPU结构) | 正在制作中 ...  ](http://weharmonyos.com/blog/65.html)
 * [v66.01 鸿蒙内核源码分析(协处理器) | 正在制作中 ... ](http://weharmonyos.com/blog/66.html)
-* [v67.05 鸿蒙内核源码分析(工作模式) | 程序界的韦小宝是谁](http://weharmonyos.com/blog/67.html)
-* [v68.01 鸿蒙内核源码分析(异常处理) | 正在制作中 ... ](http://weharmonyos.com/blog/68.html)
-* [v69.06 鸿蒙内核源码分析(寄存器) | 讲真 全宇宙只佩服它](http://weharmonyos.com/blog/69.html)
-* [v70.03 鸿蒙内核源码分析(多核管理) | 整个内核是一个死循环](http://weharmonyos.com/blog/70.html)
+* [v67.05 鸿蒙内核源码分析(工作模式) | 羡慕韦小宝这么多老婆](http://weharmonyos.com/blog/67.html)
+* [v68.01 鸿蒙内核源码分析(异常处理) | 不如意事十之八九 ](http://weharmonyos.com/blog/68.html)
+* [v69.06 鸿蒙内核源码分析(寄存器) | 真牛把世界玩出花来了](http://weharmonyos.com/blog/69.html)
+* [v70.03 鸿蒙内核源码分析(多核管理) | 真正并发的基础](http://weharmonyos.com/blog/70.html)
 * [v71.05 鸿蒙内核源码分析(中断概念) | 海公公的日常工作](http://weharmonyos.com/blog/71.html)
 * [v72.04 鸿蒙内核源码分析(中断管理) | 没中断太可怕](http://weharmonyos.com/blog/72.html)
 * [v73.01 鸿蒙内核源码分析(移值适配) | 正在制作中 ... ](http://weharmonyos.com/blog/73.html)
@@ -241,4 +241,6 @@
 
 ![](https://gitee.com/weharmonyos/resources/raw/master/common/so1so.png)
 
-道阻且长，行则将至，原创不易，欢迎转载，请注明出处。
+道阻且长，行则将至，感谢支持与鼓励。前往 [>> 捐助作者 ](http://weharmonyos.com/donate.html)
+原创不易，欢迎转载，请注明出处。
+

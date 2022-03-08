@@ -56,7 +56,7 @@ int sem_init(sem_t *sem, int shared, unsigned int value)//初始化信号量，H
 
     return 0;
 }
-///销毁指定的无名信号量
+///销毁指定的信号量
 int sem_destroy(sem_t *sem)
 {
     UINT32 ret;

@@ -72,7 +72,7 @@ STATIC INLINE INT32 CondInitCheck(const pthread_cond_t *cond)
     }
     return 0;
 }
-///获取条件变量的范围  
+///获取条件变量的范围，目前只支持获取PTHREAD_PROCESS_PRIVATE条件变量属性  
 int pthread_condattr_getpshared(const pthread_condattr_t *attr, int *shared)
 {
     if ((attr == NULL) || (shared == NULL)) {

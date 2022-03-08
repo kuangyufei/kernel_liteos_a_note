@@ -482,7 +482,7 @@ STATIC INT32 GetMqueueAttr(struct mq_attr *defaultAttr, struct mq_attr *attr)
     }
     return 0;
 }
-
+/// 打开一个具有指定名称的已有消息队列或创建一个新的消息队列
 mqd_t mq_open(const char *mqName, int openFlag, ...)
 {
     struct mqarray *mqueueCB = NULL;
@@ -546,7 +546,7 @@ OUT:
     (VOID)pthread_mutex_unlock(&g_mqueueMutex);
     return mqFd;
 }
-
+/// 用于关闭具有指定描述符的消息队列
 int mq_close(mqd_t personal)
 {
     INT32 ret = -1;
@@ -652,7 +652,7 @@ int mq_getsetattr(mqd_t mqd, const struct mq_attr *new, struct mq_attr *old)
     }
     return OsMqSetAttr(mqd, new, old);
 }
-
+/// 删除具有指定名称的消息队列
 int mq_unlink(const char *mqName)
 {
     INT32 ret = 0;
@@ -756,6 +756,7 @@ static void MqSendNotify(struct mqarray *mqueueCB)
         errno = errcode;                 \
         goto ERROUT;                     \
     }
+/// 用于在预定时间将具有指定内容和长度的消息放入具有描述符的消息队列中	
 int mq_timedsend(mqd_t personal, const char *msg, size_t msgLen, unsigned int msgPrio,
                  const struct timespec *absTimeout)
 {
@@ -797,7 +798,7 @@ ERROUT_UNLOCK:
 ERROUT:
     return -1;
 }
-
+/// 用于从具有指定描述符的消息队列消息中获取具有指定消息内容和长度的消息
 ssize_t mq_timedreceive(mqd_t personal, char *msg, size_t msgLen, unsigned int *msgPrio,
                         const struct timespec *absTimeout)
 {
@@ -853,13 +854,14 @@ ERROUT_UNLOCK:
 ERROUT:
     return -1;
 }
+/// 将具有指定内容和长度的消息放入具有指定描述符的消息队列中 
 /// 例如: 软总线适配层 WriteMsgQue - mq_send
 /* not support the prio */
 int mq_send(mqd_t personal, const char *msg_ptr, size_t msg_len, unsigned int msg_prio)
 {
     return mq_timedsend(personal, msg_ptr, msg_len, msg_prio, NULL);
 }
-
+/// 用于从具有指定描述符的消息队列中删除最老的消息，并将其放入msg_ptr所指向的缓冲区中
 ssize_t mq_receive(mqd_t personal, char *msg_ptr, size_t msg_len, unsigned int *msg_prio)
 {
     return mq_timedreceive(personal, msg_ptr, msg_len, msg_prio, NULL);
