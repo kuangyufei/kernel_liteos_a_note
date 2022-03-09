@@ -287,7 +287,7 @@ ERROR_OUT:
 
     return map_errno(ret);
 }
-
+/// 线程退出
 void pthread_exit(void *retVal)
 {
     _pthread_data *self = pthread_get_self_data();
@@ -793,7 +793,7 @@ void pthread_cleanup_pop_inner(struct pthread_cleanup_buffer *buffer, int execut
 }
 
 /*
- * Set the cpu affinity mask for the thread
+ * Set the cpu affinity mask for the thread | 设置线程与CPU的亲和性
  */
 int pthread_setaffinity_np(pthread_t thread, size_t cpusetsize, const cpu_set_t* cpuset)
 {
@@ -806,7 +806,7 @@ int pthread_setaffinity_np(pthread_t thread, size_t cpusetsize, const cpu_set_t*
 }
 
 /*
- * Get the cpu affinity mask from the thread
+ * Get the cpu affinity mask from the thread | 获取线程与CPU的亲和性
  */
 int pthread_getaffinity_np(pthread_t thread, size_t cpusetsize, cpu_set_t* cpuset)
 {

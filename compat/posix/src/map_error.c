@@ -38,7 +38,7 @@
 int map_errno(UINT32 err)
 {
     if (err == LOS_OK) {
-        return ENOERR;
+        return ENOERR; //成功
     }
     switch (err) {
         case LOS_ERRNO_QUEUE_INVALID:
@@ -48,24 +48,24 @@ int map_errno(UINT32 err)
         case LOS_ERRNO_QUEUE_CREAT_PTR_NULL:
         case LOS_ERRNO_QUEUE_PARA_ISZERO:
         case LOS_ERRNO_QUEUE_WRITE_SIZE_TOO_BIG:
-            errno = EINVAL;
+            errno = EINVAL; //Invalid argument	无效的参数
             break;
         case LOS_ERRNO_QUEUE_ISFULL:
         case LOS_ERRNO_QUEUE_ISEMPTY:
-            errno = EAGAIN;
+            errno = EAGAIN;//资源暂时不可用
             break;
         case LOS_ERRNO_QUEUE_CREATE_NO_MEMORY:
-            errno = ENOSPC;
+            errno = ENOSPC;//	No space left on device	设备上没有空间
             break;
         case LOS_ERRNO_QUEUE_TIMEOUT:
             errno = ETIMEDOUT;
             break;
         case LOS_ERRNO_QUEUE_CB_UNAVAILABLE:
-            errno = ENFILE;
+            errno = ENFILE;//File table overflow	打开太多的文件系统
             break;
         case LOS_ERRNO_QUEUE_READ_IN_INTERRUPT:
         case LOS_ERRNO_QUEUE_WRITE_IN_INTERRUPT:
-            errno = EINTR;
+            errno = EINTR;//Interrupted system call	系统调用被中断
             break;
         case LOS_ERRNO_TSK_ID_INVALID:
         case LOS_ERRNO_TSK_PTR_NULL:

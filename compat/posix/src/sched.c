@@ -138,7 +138,7 @@ int __sched_cpucount(size_t set_size, const cpu_set_t* set)
 
     return count;
 }
-
+/// 任务让出CPU
 int sched_yield()
 {
     (void)LOS_TaskYield();

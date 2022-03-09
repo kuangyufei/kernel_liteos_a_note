@@ -109,61 +109,61 @@ typedef size_t             BOOL;
 #ifndef USER
 #define USER
 #endif
-
+/// 常用错误码对照表
 #ifndef LOS_OK
-#define LOS_OK             0
+#define LOS_OK             0 ///< Success	成功
 #endif
 
 #ifndef LOS_NOK
-#define LOS_NOK            1
+#define LOS_NOK            1 ///< fail 失败
 #endif
 
 #ifndef LOS_EPERM
-#define LOS_EPERM          1
+#define LOS_EPERM          1 ///< 操作不允许 Operation not permitted
 #endif
 
 #ifndef LOS_ESRCH
-#define LOS_ESRCH          3
+#define LOS_ESRCH          3 ///< No such process	没有这样的进程(暂不支持)
 #endif
 
 #ifndef LOS_EINTR
-#define LOS_EINTR          4
+#define LOS_EINTR          4 ///< Interrupted system call	系统调用被中断
 #endif
 
 #ifndef LOS_EBADF
-#define LOS_EBADF          9
+#define LOS_EBADF          9 ///< Bad file number	坏的文件描述符
 #endif
 
 #ifndef LOS_ECHILD
-#define LOS_ECHILD         10
+#define LOS_ECHILD         10 ///< 	No child processes	没有子进程(暂不支持)
 #endif
 
 #ifndef LOS_EAGAIN
-#define LOS_EAGAIN         11
+#define LOS_EAGAIN         11 ///< Try again	资源暂时不可用
 #endif
 
 #ifndef LOS_ENOMEM
-#define LOS_ENOMEM         12
+#define LOS_ENOMEM         12 ///< Out of memory	内存溢出
 #endif
 
 #ifndef LOS_EACCES
-#define LOS_EACCES         13
+#define LOS_EACCES         13 ///< Permission denied	拒绝许可
 #endif
 
 #ifndef LOS_EFAULT
-#define LOS_EFAULT         14
+#define LOS_EFAULT         14 ///< Bad address	错误的地址
 #endif
 
 #ifndef LOS_EBUSY
-#define LOS_EBUSY          16
+#define LOS_EBUSY          16 ///< 	Device or resource busy	设备或资源忙
 #endif
 
 #ifndef LOS_EINVAL
-#define LOS_EINVAL         22
+#define LOS_EINVAL         22 ///< 	Invalid argument	无效的参数
 #endif
 
 #ifndef LOS_EDEADLK
-#define LOS_EDEADLK        35
+#define LOS_EDEADLK        35 ///< Resource deadlock would occur	资源死锁错误
 #endif
 
 #ifndef LOS_EOPNOTSUPP

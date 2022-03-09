@@ -129,7 +129,7 @@ typedef struct ProcessCB {
 #ifdef LOSCFG_KERNEL_CPUP
     OsCpupBase           *processCpup; /**< Process cpu usage | 进程占用CPU情况统计*/
 #endif
-    struct rlimit        *resourceLimit;
+    struct rlimit        *resourceLimit; ///< 每个进程在运行时系统不会无限制的允许单个进程不断的消耗资源，因此都会设置资源限制。
 } LosProcessCB;
 
 #define CLONE_VM       0x00000100	///< 子进程与父进程运行于相同的内存空间

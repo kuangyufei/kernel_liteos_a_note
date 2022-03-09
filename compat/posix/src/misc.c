@@ -146,12 +146,12 @@ long sysconf(int name)
             return -1;
     }
 }
-
+/// 获取当前任务ID
 pid_t getpid(void)
 {
     return ((LosTaskCB *)(OsCurrTaskGet()))->taskID;
 }
-
+/// 获取当前进程资源限制。
 int getrlimit(int resource, struct rlimit *rlim)
 {
     unsigned int intSave;
@@ -185,6 +185,7 @@ int getrlimit(int resource, struct rlimit *rlim)
 #ifndef NR_OPEN_DEFAULT
 #define NR_OPEN_DEFAULT 1024
 #endif
+/// 重新设置当前进程资源限制。
 int setrlimit(int resource, const struct rlimit *rlim)
 {
     unsigned int intSave;

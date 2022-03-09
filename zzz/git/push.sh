@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' Posix 接口注释  
+git commit -m  ' Posix | 系统调用 接口注释  
     百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
