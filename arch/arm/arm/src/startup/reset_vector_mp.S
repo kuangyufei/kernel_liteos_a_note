@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
@@ -63,27 +63,27 @@
     .syntax unified
     .arch armv7-a
     .arm
-/* 参数顺序:栈底,栈大小,r12:保存了cpuid*/
+/* 参数顺序:栈底,栈大小,r12:保存了cpuid */
 /* param0 is stack bottom, param1 is stack size, r12 hold cpu id */
 .macro EXC_SP_SET param0, param1
     ldr    r1, =\param0 
     mov    r0, \param1
     bl     sp_set
 .endm
-/* 参数顺序:栈顶,栈大小,魔法数字*/
-/* param0 is stack top, param1 is stack size, param2 is magic num */
+
+/* param0 is stack bottom, param1 is stack size, param2 is magic num */
 .macro STACK_MAGIC_SET param0, param1, param2
     ldr     r0, =\param0
     mov     r1, \param1
     ldr     r2, =\param2
-    bl      excstack_magic //初始化栈
+    bl      excstack_magic
 .endm
 
-    .code   32
-    .section ".vectors","ax" //中断向量表在系统镜像中的位置
+    .code   32               /* 用arm指令集 */
+    .section ".vectors","ax" /* 指定以下代码段必须存放在.vectors段里，“ax”表示该段可执行并且可分配 */
 
-    .global __exception_handlers
-__exception_handlers://异常处理
+    .global __exception_handlers /* 代表全局函数 */
+__exception_handlers:
     /* 
     *Assumption:  ROM code has these vectors at the hardware reset address.
     *A simple jump removes any address-space dependencies [i.e. safer]
@@ -117,86 +117,91 @@ OsGetArgsAddr:
 reset_vector: //鸿蒙开机代码
     /* clear register TPIDRPRW */
     mov     r0, #0					//r0 = 0
-    mcr     p15, 0, r0, c13, c0, 4 	//c0,c13 = 0, C13为进程标识符 含义见 ARM720T.PDF 第64页
-    /* do some early cpu setup: i/d cache disable, mmu disabled | 禁用MMU, i/d缓存*/
-    mrc     p15, 0, r0, c1, c0, 0  	//r0 = c1 ,c1寄存器详细解释见第64页
-    bic     r0, #(1<<12) 			//位清除指令,清除r0的第11位
-    bic     r0, #(1<<2 | 1<<0)		//清除第0和2位 ,禁止 MMU和缓存 0位:MMU enable/disable 2位:Cache enable/disable
-    mcr     p15, 0, r0, c1, c0, 0 	//c1=r0 
-									//adr指令 寄存器小范围的转变
+    mcr     p15, 0, r0, c13, c0, 4	//清除线程标识符寄存器TPIDRPRW为0
+    /* do some early cpu setup: i/d cache disable, mmu disabled */
+    mrc     p15, 0, r0, c1, c0, 0	//System Control Register-SCTLR
+    bic     r0, #(1<<12)			//不使能指令缓存功能
+    bic     r0, #(1<<2 | 1<<0)		//不使能数据和TLB的缓存功能(bit2) | 不使能mmu功能(bit0)
+    mcr     p15, 0, r0, c1, c0, 0
+
     /* enable fpu+neon 一些系统寄存器的操作
     | 使能浮点运算(floating point unit)和 NEON就是一种基于SIMD思想的ARM技术，相比于ARMv6或之前的架构，
     NEON结合了64-bit和128-bit的SIMD指令集，提供128-bit宽的向量运算(vector operations)*/
-#ifndef LOSCFG_TEE_ENABLE // Trusted Execution Environment   可信执行环境
-    MRC    p15, 0, r0, c1, c1, 2
-    ORR    r0, r0, #0xC00
-    BIC    r0, r0, #0xC000
+#ifndef LOSCFG_TEE_ENABLE        //Trusted Execution Environment   可信执行环境
+    MRC    p15, 0, r0, c1, c1, 2 //Non-Secure Access Control Register - NSACR
+    ORR    r0, r0, #0xC00        //使能安全和非安全访问协处理器10和11(Coprocessor 10和11)
+    BIC    r0, r0, #0xC000       //设置bit15为0，不会影响修改CPACR.ASEDIS寄存器位（控制Advanced SIMD功能）| bit14 reserved
     MCR    p15, 0, r0, c1, c1, 2
 
-    LDR    r0, =(0xF << 20)
+    LDR    r0, =(0xF << 20)      //允许在EL0和EL1下，访问协处理器10和11(控制Floating-point和Advanced SIMD特性)
     MCR    p15, 0, r0, c1, c0, 2
     ISB
 #endif
-/*当内核被加载到内存中时，它的起始地址就叫做加载地址，因为内核是被uboot加载的，uboot中对mmu页表不会做太复杂的映射，
-一般也就是一一映射，也就是物理地址和虚拟地址值是一样的，所以可以认为内核加载地址值是物理地址。*/
-    MOV    r3, #0x40000000	//指定内核运行基地址 KERNEL_VADDR_BASE,也就是说将内核镜像文件放到这个位置.
-    VMSR   FPEXC, r3	//VMRS/VMSR 在ARM寄存器与NEON和VFP系统寄存器之间传输内容
+    MOV    r3, #0x40000000	    //设置FPEXC的EN位来使能FPU
+    VMSR   FPEXC, r3
+
     /* r11: delta of physical address and virtual address | 内核运行虚拟地址和物理地址之间的差值 */
-    adr     r11, pa_va_offset //获取pa_va_offset变量的当前运行地址，由于这时候mmu已经被关闭，所以这个值就表示pa_va_offset变量的物理地址
+    adr     r11, pa_va_offset //获取pa_va_offset变量的当前物理地址
+                              /* adr是伪指令被汇编为sub机器指令；程序链接过程中pa_va_offset标识虚拟地址和adr伪指令的虚拟									
+                               * 地址是相对固定的，所以二者偏移量就是确定的offset值；adr伪指令在Rn不为pc时结果就如sub Rn pc #offset，即									
+                               * sub R11 pc #offset //pc是当前指令的物理地址
+                               */
     ldr     r0, [r11]		  //r0 = *r11 获取pa_va_offset变量的虚拟地址
-    sub     r11, r11, r0	  //r11 = r11 - r0	将pa_va_offset变量物理地址-虚拟地址得到差值
+    sub     r11, r11, r0
 
-    mrc     p15, 0, r12, c0, c0, 5              /* r12: get cpuid | 获取CPUID*/ 
-    and     r12, r12, #MPIDR_CPUID_MASK //r12经过掩码过滤
-    cmp     r12, #0	// cpu id 和 0 比较
-    bne     secondary_cpu_init //不是0号主CPU则调用secondary_cpu_init
+    mrc     p15, 0, r12, c0, c0, 5      /* Multiprocessor Affinity Register-MPIDR */
+    and     r12, r12, #MPIDR_CPUID_MASK
+    cmp     r12, #0	                    //主控核0判断
+    bne     secondary_cpu_init
 	/*
-	adr是小范围的地址读取伪指令,它将基于PC寄存器相对偏移的地址值读取到寄存器中
-	例如: 0x00000004 	 : adr     r4, __exception_handlers
-	则此时PC寄存器的值为: 0x00000004 + 8(在三级流水线时,PC和执行地址相差8)
-	最后r4 = (0x00000004 + 8) + __exception_handlers
+	 * adr是小范围的地址读取伪指令,它将基于PC寄存器相对偏移的地址值读取到寄存器中，
+	 * 例如: 0x00000004 	 : adr     r4, __exception_handlers
+	 * 则此时PC寄存器的值为: 0x00000004 + 8(在三级流水线时,PC和执行地址相差8)，
+     * adr指令和标识__exception_handlers的地址相对固定，二者偏移量若为offset,
+	 * 最后r4 = (0x00000004 + 8) + offset
 	*/
+    /* 当内核被加载到内存中时，它的起始地址就叫做加载地址，因为内核是被uboot加载的，uboot中对mmu页表不会做太复杂的映射，
+     * 一般也就是一一映射，也就是物理地址和虚拟地址值是一样的，所以可以认为内核加载地址值是物理地址
+     */
     /* if we need to relocate to proper location or not | 如果需要重新安装到合适的位置*/
-    adr     r4, __exception_handlers            /* r4: base of load address | r4记录加载基地址,即:各异常的跳转指令*/
-    ldr     r5, =SYS_MEM_BASE                   /* r5: base of physical address | r5获得物理内存基地址 SYS_MEM_BASE = 0x80000000*/
-												//subs中的s表示把进位结果写入CPSR r12 = r4-r5
-	subs    r12, r4, r5                         /* r12: delta of load address and physical address */ 
-    beq     reloc_img_to_bottom_done            /* if we load image at the bottom of physical address | 不相等就需要重定位*/
+    adr     r4, __exception_handlers            /* r4: base of load address */
+    ldr     r5, =SYS_MEM_BASE                   /* r5: base of physical address */
+    subs    r12, r4, r5                         /* r12: delta of load address and physical address */
+    beq     reloc_img_to_bottom_done            /* if we load image at the bottom of physical address | 不相等就需要重定位 */
 	
-    /* we need to relocate image at the bottom of physical address | 在物理地址的底部重新定位镜像*/
+    /* we need to relocate image at the bottom of physical address */
     ldr     r7, =__exception_handlers           /* r7: base of linked address (or vm address) | 链接地址基地址*/
-    ldr     r6, =__bss_start                    /* r6: end of linked address (or vm address) 
-											    | 链接地址结束地址,由于目前阶段有用的数据就是中断向量表+代码段+只读数据段+数据段，
-											    所以只需要复制 [__exception_handlers,__bss_start]这么多数据到内存基址处就行了*/
-    sub     r6, r7                              /* r6: delta of linked address (or vm address) | 链接地址范围*/
-    add     r6, r4                              /* r6: end of load address | 加载地址结束地址*/
+    ldr     r6, =__bss_start                    /* r6: end of linked address (or vm address)，由于目前阶段有用的数据是中断向量表+代码段+只读数据段+数据段，
+											       所以只需复制[__exception_handlers,__bss_start]这段数据到内存基址处 */
+    sub     r6, r7                              /* r6: delta of linked address (or vm address) */
+    add     r6, r4                              /* r6: end of load address */
 
-reloc_img_to_bottom_loop://循环处理重定位镜像到底部,将内核从加载地址拷贝到内存基址处
+reloc_img_to_bottom_loop://重定位镜像到内核物理内存基地址,将内核从加载地址拷贝到内存基址处
     ldr     r7, [r4], #4
     str     r7, [r5], #4
-    cmp     r4, r6
+    cmp     r4, r6                              /* r4代表的加载地址开始偏移（+4），直到r6(加载结束地址) */
     bne     reloc_img_to_bottom_loop
-    sub     pc, r12
+    sub     pc, r12                             /* 重新校准pc，r12是重定位镜像前内核加载基地址和内核物理内存基地址的差值 */
     nop
-    sub     r11, r11, r12                       /* r11: eventual address offset */
+    sub     r11, r11, r12                       /* r11: eventual address offset */ /* 重新校准虚拟地址和物理地址的差值 */
 //内核总大小 __bss_start - __exception_handlers
-reloc_img_to_bottom_done://重定位镜像到底部完成后跳到新地址处运行并且校正r11的值
+reloc_img_to_bottom_done:
 #ifdef LOSCFG_KERNEL_MMU
     ldr     r4, =g_firstPageTable               /* r4: physical address of translation table and clear it |
-    											内核页表是用数组g_firstPageTable来表示 见于 los_arch_mmu.c*/
-    add     r4, r4, r11`//内核页表虚拟地址+r11=内核页表物理地址，保存在r4中
+												   内核页表是用数组g_firstPageTable存储 见于los_arch_mmu.c */
+    add     r4, r4, r11                         //内核页表虚拟地址+r11=内核页表物理地址，保存在r4中
     mov     r0, r4
     mov     r1, #0
     mov     r2, #MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS
-    bl      memset_optimized                    /* optimized memset since r0 is 64-byte aligned | 将内核页表内存清零*/
+    bl      memset_optimized                    /* optimized memset since r0 is 64-byte aligned | 将内核页表空间清零*/
 
-    ldr     r5, =g_archMmuInitMapping	//获取映射基址,初始化映射,目的是为建立后续物理地址和虚拟地址之间的映射
-    add     r5, r5, r11 //获取物理地址
-init_mmu_loop:	//接着对内核页表进行清零，然后初始化页表
+    ldr     r5, =g_archMmuInitMapping	        //存储内核空间的地址相关信息
+    add     r5, r5, r11                         //获取数组的物理地址
+init_mmu_loop:	                                //初始化内核页表
     ldmia   r5!, {r6-r10}                       /* r6 = phys, r7 = virt, r8 = size, r9 = mmu_flags, r10 = name | 物理地址、虚拟地址、映射大小、映射属性、名称*/
     cmp     r8, 0                               /* if size = 0, the mmu init done */
-    beq     init_mmu_done		//标志寄存器中Z标志位等于零时跳转到 	init_mmu_done处执行
-    bl      page_table_build	//创建页表	
+    beq     init_mmu_done		                //标志寄存器中Z标志位等于零时跳转到 	init_mmu_done处执行
+    bl      page_table_build	                //创建页表
     b       init_mmu_loop
 init_mmu_done:
     orr     r8, r4, #MMU_TTBRx_FLAGS            /* r8 = r4 and set cacheable attributes on translation walk */
@@ -206,52 +211,54 @@ init_mmu_done:
     add     r4, r4, r11                         /* r4: jump pagetable paddr */
 
     /* build 1M section mapping, in order to jump va during turing on mmu:pa == pa, va == pa */
+    /* 从当前PC开始建立1MB空间的段映射，分别建立物理地址和虚拟地址方式的段映射页表项
+     * 内核临时页表在系统 使能mmu -> 切换到虚拟地址运行 这段时间使用
+     */
     mov     r6, pc
     mov     r7, r6                              /* r7: pa (MB aligned)*/
-    lsr     r6, r6, #20                         /* r6: va l1 index */
+    lsr     r6, r6, #20                         /* r6: pa l1 index */
     ldr     r10, =MMU_DESCRIPTOR_KERNEL_L1_PTE_FLAGS
     add     r12, r10, r6, lsl #20               /* r12: pa |flags */
     str     r12, [r4, r7, lsr #(20 - 2)]        /* jumpTable[paIndex] = pt entry */
     rsb     r7, r11, r6, lsl #20                /* r7: va */
     str     r12, [r4, r7, lsr #(20 - 2)]        /* jumpTable[vaIndex] = pt entry */
 
-    bl      mmu_setup                           /* set up the mmu | 设置mmu*/
+    bl      mmu_setup                           /* set up the mmu */
 #endif
-    /* clear out the interrupt and exception stack and set magic num to check the overflow
-    | 清除中断栈到异常栈的数据,并设置魔法数字为后续检查栈溢出 */
-    ldr     r0, =__svc_stack	//中断栈的底部,从这里可以看出,中断栈处于最高位
+    /* clear out the interrupt and exception stack and set magic num to check the overflow */
+    ldr     r0, =__svc_stack	    //中断栈的底部,从这里可以看出中断栈处于最高位
     ldr     r1, =__exc_stack_top	//异常栈的顶部
-    bl      stack_init //初始化各个cpu模式下的栈
+    bl      stack_init              //初始化各个cpu不同模式下的栈空间
 	//设置各个栈顶魔法数字
-    STACK_MAGIC_SET __svc_stack, #OS_EXC_SVC_STACK_SIZE, OS_STACK_MAGIC_WORD //中断栈底设成 烫烫烫烫烫烫
-    STACK_MAGIC_SET __exc_stack, #OS_EXC_STACK_SIZE, OS_STACK_MAGIC_WORD //异常栈底设成 烫烫烫烫烫烫
+    STACK_MAGIC_SET __svc_stack, #OS_EXC_SVC_STACK_SIZE, OS_STACK_MAGIC_WORD //中断栈底设成"烫烫烫烫烫烫"
+    STACK_MAGIC_SET __exc_stack, #OS_EXC_STACK_SIZE, OS_STACK_MAGIC_WORD     //异常栈底设成"烫烫烫烫烫烫"
 
-warm_reset://热启动
-    /* initialize CPSR (machine state register) */
-    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_SVC_MODE)
-    msr    cpsr, r0 //设置为管理模式和栈
+warm_reset:
+    /* initialize CPSR(Current Program Status Register) */
+    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_SVC_MODE) /* 禁止IRQ中断 | 禁止FIQ中断 | 管理模式-操作系统使用的保护模式 */
+    msr    cpsr, r0
 
     /* Note: some functions in LIBGCC1 will cause a "restore from SPSR"!! */
-    msr    spsr, r0 //同步设置spsr
+    msr    spsr, r0
 
     /* get cpuid and keep it in r12 */
     mrc     p15, 0, r12, c0, c0, 5		//R12保存CPUID 
     and     r12, r12, #MPIDR_CPUID_MASK //掩码操作获取当前cpu id
 
-    /* set svc stack, every cpu has OS_EXC_SVC_STACK_SIZE stack | 设置SVC模式 中断栈,每个CPU核都有自己的中断栈 */
+    /* set svc stack, every cpu has OS_EXC_SVC_STACK_SIZE stack */
     ldr    r0, =__svc_stack_top
     mov    r2, #OS_EXC_SVC_STACK_SIZE
     mul    r2, r2, r12
-    sub    r0, r0, r2
+    sub    r0, r0, r2                   /* 算出当前core的中断栈栈顶位置，写入所属core的sp */
     mov    sp, r0
 
     LDR    r0, =__exception_handlers
-    MCR    p15, 0, r0, c12, c0, 0
+    MCR    p15, 0, r0, c12, c0, 0       /* Vector Base Address Register - VBAR */
 
-    cmp    r12, #0 //判断当前cpu是不是主核，如果是主核，则执行bss段清零，如果是从核则不需要执行bbs段清零
-    bne    cpu_start //不等于 跳到从核处理	
+    cmp    r12, #0
+    bne    cpu_start                    //从核处理分支
 
-clear_bss:	//主核时对 .bss段清零
+clear_bss:	                            //主核处理.bss段清零
     ldr    r0, =__bss_start
     ldr    r2, =__bss_end
     mov    r1, #0
@@ -270,55 +277,64 @@ clear_bss:	//主核时对 .bss段清零
     .word  0xe7ffdeff
 #endif
 
-    bl     main  //带LR的子程序跳转, LR = pc - 4 ,执行C层main函数
+    bl     main                //带LR的子程序跳转, LR = pc - 4, 执行C层main函数
 
-_start_hang: //悬停 ,相当于死循环,不再往下走了.
+_start_hang:                   //悬停,相当于死循环,不再往下走了.
     b      _start_hang
 #ifdef LOSCFG_KERNEL_MMU
-mmu_setup:			//设置MMU,初始化MMU操作
-    mov     r12, #0 							// r12 = 0的目的是 将c8设置为控制TLB，并将映射设置为无效
+mmu_setup:
+    mov     r12, #0                             /* TLB Invalidate All entries - TLBIALL */
     mcr     p15, 0, r12, c8, c7, 0              /* Set c8 to control the TLB and set the mapping to invalid */
-    isb											//C8为TLB控制,C7位高速缓存控制
-    mcr     p15, 0, r12, c2, c0, 2              /* Initialize the c2 register */
-    isb											//初始化C2 地址转换表基地址
-    orr     r12, r4, #MMU_TTBRx_FLAGS			//将属性和临时页表设置到页表基址寄存器中,注意此处只是设置了内核临时页表基址，mmu还未使能
-    mcr     p15, 0, r12, c2, c0, 0              /* Set attributes and set temp page table */
-    isb											//初始化C3 设置DACR为0b0111
-    mov     r12, #0x7                           /* 0b0111 */
-    mcr     p15, 0, r12, c3, c0, 0              /* Set DACR with 0b0111, client and manager domian */
-    isb											//辅助控制寄存器
-    mrc    p15, 0, r12, c1, c0, 1               /* ACTLR, Auxlliary Control Register */
+    isb
+    mcr     p15, 0, r12, c2, c0, 2              /* Translation Table Base Control Register(TTBCR) = 0x0
+                                                   [31] :0 - Use the 32-bit translation system(虚拟地址是32位)
+                                                   [5:4]:0 - use TTBR0和TTBR1
+                                                   [2:0]:0 - TTBCR.N为0；
+                                                   例如：TTBCR.N为0，TTBR0[31:14-0] | VA[31-0:20] | descriptor-type[1:0]组成32位页表描述符的地址,
+                                                         VA[31:20]可以覆盖4GB的地址空间，所以TTBR0页表是16KB，不使用TTBR1;
+                                                   例如：TTBCR.N为1，TTBR0[31:14-1] | VA[31-1:20] | descriptor-type[1:0]组成32位页表描述符的地址,
+                                                         VA[30:20]可以覆盖2GB的地址空间，所以TTBR0页表是8KB，TTBR1页表是8KB(页表地址必须16KB对齐);
+                                                */
+    isb
+    orr     r12, r4, #MMU_TTBRx_FLAGS			//将临时页表属性[6:0]和基地址[31:14]放到r12
+    mcr     p15, 0, r12, c2, c0, 0              /* Set attributes and set temp page table to TTBR0(Translation Table Base Register 0) */
+    isb
+    mov     r12, #0x7
+    mcr     p15, 0, r12, c3, c0, 0              /* Set DACR(Domain access control register) with 0b0111, client[3:2] and manager[1:0] domian */
+    isb
+    mrc    p15, 0, r12, c1, c0, 1
     orr    r12, r12, #(1 << 6)                  /* SMP, Enables coherent requests to the processor. */
     orr    r12, r12, #(1 << 2)                  /* Enable D-side prefetch */
     orr    r12, r12, #(1 << 11)                 /* Global BP Enable bit */
     mcr    p15, 0, r12, c1, c0, 1               /* ACTLR, Auxlliary Control Register */
     dsb
     /*
-	开始使能MMU，使用的是内核临时页表，这时cpu访问内存不管是取指令还是访问数据都是需要经过mmu来翻译，
-	但是在mmu使能之前cpu使用的都是内核的物理地址，即使现在使能了mmu，cpu访问的地址值还是内核的物理地址值(这里仅仅从数值上来看)，
-	而又由于mmu使能了，所以cpu会把这个值当做虚拟地址的值到页表中去找其对应的物理地址来访问。
-	所以现在明白了为什么要在内核临时页表里建立一个内核物理地址和虚拟地址一一映射的页表项了吧，因为建立了一一映射，
-	cpu访问的地址经过mmu翻译得到的还是和原来一样的值，这样在cpu真正使用虚拟地址之前也能正常运行。
-    */
-    mrc     p15, 0, r12, c1, c0, 0	//使能mmu和i/d cache
-    bic     r12, #(1 << 29 | 1 << 28)
-    orr     r12, #(1 << 0)
-    bic     r12, #(1 << 1)
-    orr     r12, #(1 << 2)
-    orr     r12, #(1 << 12)
-    mcr     p15, 0, r12, c1, c0, 0              /* Set SCTLR with r12: Turn on the MMU, I/D cache Disable TRE/AFE */
+	 * 开始使能MMU，使用的是内核临时页表，这时cpu访问内存不管是取指令还是访问数据都是需要经过mmu来翻译，
+	 * 但是在mmu使能之前cpu使用的都是内核的物理地址，即使现在使能了mmu，cpu访问的地址值还是内核的物理地址值(这里仅仅从数值上来看)，
+	 * 而又由于mmu使能了，所以cpu会把这个值当做虚拟地址的值到页表中去找其对应的物理地址来访问。
+	 * 所以现在明白了为什么要在内核临时页表里建立一个内核物理地址和虚拟地址一一映射的页表项了吧，因为建立了一一映射，
+	 * cpu访问的地址经过mmu翻译得到的还是和原来一样的值，这样在cpu真正使用虚拟地址之前也能正常运行。
+     */
+    mrc     p15, 0, r12, c1, c0, 0
+    bic     r12, #(1 << 29 | 1 << 28)           /* disable access flag[bit29]，ap[0]是访问权限位，支持全部的访问权限类型
+                                                   disable TEX remap[bit28]，使用TEX[2:0]与C Bbit控制memory region属性 */
+    orr     r12, #(1 << 0)                      /* MMU enable */
+    bic     r12, #(1 << 1)                      /* enable alignment fault checking */
+    orr     r12, #(1 << 2)                      /* enable data and unified cache */
+    orr     r12, #(1 << 12)                     /* enabled instruction cache */
+    mcr     p15, 0, r12, c1, c0, 0              /* Set SCTLR with r12: Turn on the MMU, I/D cache enable TRE/AFE */
     isb
-    ldr     pc,  =1f                            /* Convert to VA | 强制将cpu切到虚拟地址工作，
-    因为之前已经在内核临时页表中建立了内核虚拟地址和物理地址的映射关系，所以这时候cpu能正常工作*/
-1:	//CPU将从此处开始运行
+    ldr     pc,  =1f                            /* Convert to VA | 1表示标号，f表示forward(往下) - pc值取往下标识符“1”的虚拟地址(跳转到标识符“1”处)
+                                                   因为之前已经在内核临时页表中建立了内核虚拟地址和物理地址的映射关系，所以接下来cpu切换到虚拟地址空间 */
+1:
     mcr     p15, 0, r8, c2, c0, 0               /* Go to the base address saved in C2: Jump to the page table */
-    isb		//清除流水线指令 r8中保存的是内核真正工作页表的初始化值，通过设置系统寄存器进行页表的切换
+    isb                                         //r8中保存的是内核L1页表基地址和flags，r8写入到TTBR0实现临时页表和内核页表的切换
     mov     r12, #0
-    mcr     p15, 0, r12, c8, c7, 0
+    mcr     p15, 0, r12, c8, c7, 0              /* TLB Invalidate All entries - TLBIALL(Invalidate all EL1&0 regime stage 1 and 2 TLB entries) */
     isb
     sub     lr,  r11                            /* adjust lr with delta of physical address and virtual address | 
-    		lr中保存的是mmu使能之前返回地址的物理地址值，这时需要转换为虚拟地址，转换算法也很简单，虚拟地址 = 物理地址 - r11，*/
-    bx      lr //然后返回即可
+                                                   lr中保存的是mmu使能之前返回地址的物理地址值，这时需要转换为虚拟地址，转换算法也很简单，虚拟地址 = 物理地址 - r11 */
+    bx      lr                                  //返回
 #endif
     .code  32
 
@@ -334,38 +350,40 @@ reset_platform:		//平台复位
     mov    r0, #0
     mov    pc, r0   // Jump to reset vector //跳到重置向量表处
 #endif
-cpu_start:	/* CPU 启动 */
+cpu_start:
 #ifdef LOSCFG_KERNEL_MMU
     ldr     r4, =g_firstPageTable               /* r4 = physical address of translation table and clear it */
     add     r4, r4, r11
-    orr     r8, r4, #MMU_TTBRx_FLAGS //内核页表物理基址值或将mmu属性标志后的值保存在r8中，这个值也就是页表寄存器的初始化值
-	//内核临时页表在系统使能mmu到使用虚拟地址运行这段期间使用。内核临时页表使用__mmu_ttlb_begin来表示，
-	//其虚拟地址保存在g_mmuJumpPageTable这个指针中系统首先将内核临时页表清零，这个操作和之前清零内核页表是一样的
+    orr     r8, r4, #MMU_TTBRx_FLAGS            //内核页表物理基址值或将mmu属性标志后的值保存在r8，这个值也就是页表寄存器的初始化值
+
     ldr     r4, =g_mmuJumpPageTable             /* r4 = tt_trampoline vaddr */
     add     r4, r4, r11
     ldr     r4, [r4]
     add     r4, r4, r11                         /* r4 = tt_trampoline paddr */
 
-    bl     mmu_setup			/* 安装MMU */
+    bl     mmu_setup                            /* 安装MMU */
 #endif
 
-    bl     HalSecondaryCpuStart	//跳到次核CPU执行
-    b      . //注意 b . 指在当前地址运行,相当于死循环
+    bl     HalSecondaryCpuStart	                //跳到从核CPU执行
+    b      .                                    //注意 b . 指在当前地址运行,相当于死循环
 
-secondary_cpu_init:	/* 次级CPU初始化 */
+secondary_cpu_init:                         	/* 从核初始化 */
 #ifdef LOSCFG_TEE_ENABLE
     /* enable fpu+neon */
-    ldr    r0, =0x60c00
+    ldr    r0, =0x60c00                         /* [11:10]使能安全和非安全访问协处理器10和11(Coprocessor 10和11)
+                                                   [18:16]IMP DEF = 0x6 */
     MCR    p15, 0, r0, c1, c1, 2
 
-    LDR    r0, =(0xF << 20)
+    LDR    r0, =(0xF << 20)                     //允许在EL0和EL1下，访问协处理器10和11(控制Floating-point和Advanced SIMD特性)
     MCR    p15, 0, r0, c1, c0, 2
-    cps    #0x16
-    mov    r1, #0x25
-    mcr    p15, 0, r1, c1, c1, 0
-    cps    #0x13
+    cps    #0x16                                //CPSR寄存器的bit4-0更改为0x16,让处理器进入Monitor模式
+    mov    r1, #0x25                            /* [5]:1 来自安全态的外部异常通过CPSA.A=1时屏蔽掉
+                                                 * [2]:1 在monitor模式下采用FIQ异常
+                                                 * [0]:1 cpu在非安全态 */
+    mcr    p15, 0, r1, c1, c1, 0                //Secure Configuration Register - SCR
+    cps    #0x13                                //CPSR寄存器的bit4-0更改为0x13,让处理器进入svc(supervisor)模式
 #endif
-    bl      warm_reset //热启动
+    bl      warm_reset                          //热启动
 
 /*
  * set sp for current cpu
@@ -391,20 +409,23 @@ sp_set: /* 设置当前cpu 栈顶指针 ,r1是栈底 ,r0是栈大小,r12是cpuid
 /**
  * 将物理地址、虚拟地址还有映射大小都对齐到1MB，因为内核页表是进行1MB段式映射，然后根据虚拟地址得到页表项索引，
  * 将物理地址和映射属性组合后填入对应的页表项,这是虚拟地址空间和物理地址空间的映射
-*/
-page_table_build:	//创建页表
+ */
+/* 页表映射时，实际pa地址需要向下对齐到MB，size需要向上对齐到MB，这样才能保证映射范围包含pa~pa+size；下面是具体的计算过程 */
+page_table_build:
     mov     r10, r6
     bfc     r10, #20, #12                       /* r9: pa % MB */
-    add     r8, r8, r10
+    add     r8, r8, r10                         //size + 物理地址的低20bit位
     add     r8, r8, #(1 << 20)
     sub     r8, r8, #1
-    lsr     r6, #20                             /* r6 = physical address / MB */
-    lsr     r7, #20                             /* r7 = virtual address / MB */
+    lsr     r6, #20                             /* r6 = physical address/MB */
+    lsr     r7, #20                             /* r7 = virtual address/MB */
     lsr     r8, #20                             /* r8 = roundup(size, MB) */
 
 page_table_build_loop:
-    orr     r12, r9, r6, lsl #20                /* r12: flags | physAddr */
+    orr     r12, r9, r6, lsl #20                /* r12: physAddr | flags */
     str     r12, [r4, r7, lsl #2]               /* gPgTable[l1Index] = physAddr | flags */
+                                                /* r7是va的l1index, [r7, lsl #2]表示每次地址偏移4，例如r7是1表示l1index是1；
+                                                  页表项的存储地址为r4+(1<<2)，因为每个页表项是4个字节数据 */
     add     r6, #1                              /* physAddr+ */
     add     r7, #1                              /* l1Index++ */
     subs    r8, #1                              /* sizes-- */
@@ -414,19 +435,19 @@ page_table_build_loop:
 /*
  * init stack to initial value 
  * r0 is stack mem start, r1 is stack mem end
- *///初始化栈,前置条件:r0和r1分别为栈顶和栈底
-stack_init://初始化栈,注意这里执行完 stack_init后会接着执行stack_init_loop,因为pc寄存器会一直往下走,直到有指令令它改变走向
-    ldr     r2, =OS_STACK_INIT	//魔法数字
-    ldr     r3, =OS_STACK_INIT	//魔法数字
+ */
+stack_init:
+    ldr     r2, =OS_STACK_INIT
+    ldr     r3, =OS_STACK_INIT
     /* Main loop sets 32 bytes at a time. */
-stack_init_loop://循环初始化栈空间
-    .irp    offset, #0, #8, #16, #24 //等价于 strd    r2, r3, [r0, 0],...,strd    r2, r3, [r0, 24]
-    strd    r2, r3, [r0, \offset]
+stack_init_loop:
+    .irp    offset, #0, #8, #16, #24
+    strd    r2, r3, [r0, \offset]    /* 等价于strd r2, r3, [r0, 0], strd r2, r3, [r0, 8], ... , strd r2, r3, [r0, 24] */
     .endr
     add     r0, #32
     cmp     r0, r1
     blt     stack_init_loop
-    bx      lr // mov pc lr 改变走向
+    bx      lr
 
 /*
  * 内核的运行地址和物理地址是什么意思呢？
@@ -434,21 +455,21 @@ stack_init_loop://循环初始化栈空间
  * 并且链接脚本里也会用到这个地址，编译代码时所用到的跟地址相关的值都是以内核运行基址为基础进行计算的。
 */
 pa_va_offset:	//物理地址和虚拟地址偏移量
-    .word   .   //表示无偏移,开始之初,一一映射,无偏差
+    .word   .   //存放当前变量的运行地址（虚拟地址），链接时确定的地址（一般是不同于物理地址，由链接脚本确定）
 
 /*
- * set magic num to stack top for all cpu
- * r0 is stack top, r1 is stack size, r2 is magic num
+ * set magic num to stack bottom for all cpu
+ * r0 is stack bottom, r1 is stack size, r2 is magic num
  */
-excstack_magic:	//开始设置魔法数字
-    mov     r3, #0 //用作记录CPU id
-excstack_magic_loop://给所有CPU栈顶位置设置魔法数字
-    str     r2, [r0] //栈顶设置魔法数字  ,等同于  *r0 = r2
+excstack_magic:
+    mov     r3, #0
+excstack_magic_loop:
+    str     r2, [r0]   //栈顶设置魔法数字
     add     r0, r0, r1 //定位到栈底
-    add     r3, r3, #1 //r3++
-    cmp     r3, #CORE_NUM //比较cpu个数 
-    blt     excstack_magic_loop //循环来
-    bx      lr //跳回调用处
+    add     r3, r3, #1
+    cmp     r3, #CORE_NUM //栈空间等分成core_num个空间，所以每个core的栈顶需要magic num
+    blt     excstack_magic_loop
+    bx      lr
 
 #ifdef LOSCFG_KERNEL_MMU
 memset_optimized:
@@ -474,11 +495,24 @@ init_flag:
     .long   0
 
     /*
-    * Temporary interrupt stack | 临时中断栈
+    * Temporary interrupt stack
     */
     .section ".int_stack", "wa", %nobits //见 liteos.ld 第 152 行
     .align  3
 //CPU各个模式下的栈空间(目前是两个模式,早先代码是6个模式都有自己的栈空间),每个CPU核都有自己的中断栈和异常栈
+/*
+ * svc栈空间的分布布局
+ *
+    ------------------------  __svc_stack_top
+    +     CORE_NUM - 1     +
+    ------------------------
+    +     CORE_NUM - 2     +      ^
+    ------------------------      ^
+    +         ...          +      ^
+    ------------------------
+    +          0           +
+    ------------------------  __svc_stack
+ */
 __svc_stack:
     .space OS_EXC_SVC_STACK_SIZE * CORE_NUM //中断栈 8K
 __svc_stack_top:
