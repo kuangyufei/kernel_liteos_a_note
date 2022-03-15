@@ -357,7 +357,7 @@ static inline void SH_ListHeadInsertList(SH_List *oldList, SH_List *newList)
  * @par Dependency:
  * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
  * @see
- */
+ *///获取指定结构体内的成员相对于结构体起始地址的偏移量
 #define LOS_OFF_SET_OF(type, member) ((uintptr_t)&((type *)0)->member)
 
 /**

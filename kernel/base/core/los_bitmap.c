@@ -122,7 +122,7 @@ VOID LOS_BitmapSetNBits(UINTPTR *bitmap, UINT32 start, UINT32 numsSet)
         *p |= maskToSet;
     }
 }
-///从start位置开始清除numsSet个bit位 置0
+///从start位置开始 清除numsSet个bit位置0 ,对状态字的连续标志位进行清0操作
 VOID LOS_BitmapClrNBits(UINTPTR *bitmap, UINT32 start, UINT32 numsClear)
 {
     UINTPTR *p = bitmap + BITMAP_WORD(start);
