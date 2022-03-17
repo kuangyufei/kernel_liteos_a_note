@@ -47,7 +47,6 @@ public:
  * @tc.name: It_Test_Cap_001
  * @tc.desc: function for SecurityCapbilityTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SecurityCapabilityTest, ItTestCap001, TestSize.Level0)
 {

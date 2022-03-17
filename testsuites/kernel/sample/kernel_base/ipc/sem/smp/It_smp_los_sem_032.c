@@ -83,7 +83,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_SemPost(g_semID); // post sem before 10 ticks timeout
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    TestAssertBusyTaskDelay(100, LOSCFG_KERNEL_CORE_NUM * 3); // 100, Set the timeout of runtime; LOSCFG_KERNEL_CORE_NUM * 3, test runing count
+    TestAssertBusyTaskDelay(100, LOSCFG_KERNEL_CORE_NUM * 3); // 100, Set the timeout of runtime; LOSCFG_KERNEL_CORE_NUM * 3, test running count
     ICUNIT_GOTO_EQUAL(g_testCount, LOSCFG_KERNEL_CORE_NUM * 3, g_testCount, EXIT); // 3, Here, assert that g_testCount is equal to
 
 EXIT:

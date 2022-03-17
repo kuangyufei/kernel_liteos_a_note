@@ -33,10 +33,11 @@
 
 static void SigPrint(int sig)
 {
-    printf("%s\n", __FUNCTION__, __LINE__);
+    (void)sig;
+    printf("%s%d\n", __FUNCTION__, __LINE__);
 }
 
-static int TestSigTimeWaitDirectKillChild()
+static int TestSigTimeWaitDirectKillChild(void)
 {
     sigset_t set;
     int sig, fpid, retValue, status;

@@ -46,7 +46,6 @@ public:
  * @tc.name: it_test_pthread_rwlock_001
  * @tc.desc: function for ProcessRwlockTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessRwlockTest, ItTestPthreadRwlock001, TestSize.Level0)
 {
@@ -59,7 +58,6 @@ HWTEST_F(ProcessRwlockTest, ItTestPthreadRwlock001, TestSize.Level0)
  * @tc.name: it_test_pthread_rwlock_002
  * @tc.desc: function for ProcessRwlockTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessRwlockTest, ItTestPthreadRwlock002, TestSize.Level0)
 {

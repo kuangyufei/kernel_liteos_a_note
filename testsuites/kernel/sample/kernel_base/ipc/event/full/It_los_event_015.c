@@ -86,7 +86,7 @@ static UINT32 Testcase(VOID)
     LOS_EventWrite(&g_event, 0x1111);
     ICUNIT_GOTO_EQUAL(g_testCount, 1, g_testCount, EXIT);
 
-    TestAssertBusyTaskDelay(100, 4); // 100, Set the timeout of runtime; 4, test runing count
+    TestAssertBusyTaskDelay(100, 4); // 100, Set the timeout of runtime; 4, test running count
     ICUNIT_GOTO_EQUAL(g_testCount, 4, g_testCount, EXIT1); // 4, Here, assert that g_testCount is equal to 4.
 
 EXIT1:

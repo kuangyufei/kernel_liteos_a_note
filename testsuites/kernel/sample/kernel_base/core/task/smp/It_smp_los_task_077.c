@@ -73,7 +73,7 @@ static UINT32 Testcase(void)
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
     /* wait for other core's task being scheduled */
-    TestAssertBusyTaskDelay(100, 1); // 100, Set the timeout of runtime; 1, test runing count
+    TestAssertBusyTaskDelay(100, 1); // 100, Set the timeout of runtime; 1, test running count
 
     TestBusyTaskDelay(2); // 2, set delay time
 
@@ -98,7 +98,7 @@ static UINT32 Testcase(void)
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
     /* wait for other core's task executed */
-    TestAssertBusyTaskDelay(100, 3); // 100, Set the timeout of runtime; 3, test runing count
+    TestAssertBusyTaskDelay(100, 3); // 100, Set the timeout of runtime; 3, test running count
 
     TestBusyTaskDelay(4); // 4, set delay time
 

@@ -73,7 +73,7 @@ static UINT32 Testcase(void)
     ICUNIT_GOTO_EQUAL(g_testCount, 0, g_testCount, EXIT);
 
     for (i = 0; i < 100; i++) { // 100, Number of cycles.
-        TestBusyTaskDelay(LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT - 1);
+        TestBusyTaskDelay((LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT / LOS_US_PER_TICK) - 1);
 
         /* if same priority task is executed£¬break loop */
         if (g_testCount != i) {

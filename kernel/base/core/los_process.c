@@ -2095,6 +2095,7 @@ LITE_OS_SEC_TEXT VOID LOS_Exit(INT32 status)
 {
     UINT32 intSave;
 
+    (void)status;
     /* The exit of a kernel - state process must be kernel - state and all threads must actively exit */
     LosProcessCB *processCB = OsCurrProcessGet();
     SCHEDULER_LOCK(intSave);

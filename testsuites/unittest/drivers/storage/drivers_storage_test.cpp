@@ -45,7 +45,6 @@ public:
  * @tc.name: it_test_storage_001
  * @tc.desc: function for drivers storage
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(DriversStorageTest, ItTestStorage001, TestSize.Level0)
 {

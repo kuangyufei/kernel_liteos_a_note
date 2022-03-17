@@ -70,7 +70,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(len, JFFS_SHORT_ARRAY_LENGTH, len, EXIT3);
     ICUNIT_GOTO_STRING_EQUAL(readbuf, filebuf, readbuf, EXIT3);
 
-    strcpy_s(filebuf, sizeof(filebuf), "abcdeabcde1");
+    (void)strcpy_s(filebuf, sizeof(filebuf), "abcdeabcde1");
     len = write(fd[1], filebuf, strlen(filebuf)); // 1 means second fd
     ICUNIT_GOTO_EQUAL(len, 11, len, EXIT3); // 11 means write len
 
@@ -82,11 +82,11 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(len, 11, len, EXIT3); // 11 means read len
     ICUNIT_GOTO_STRING_EQUAL(readbuf, filebuf, readbuf, EXIT3);
 
-    strcpy_s(filebuf, sizeof(filebuf), "fghjkfghjk12");
+    (void)strcpy_s(filebuf, sizeof(filebuf), "fghjkfghjk12");
     len = write(fd[0], filebuf, strlen(filebuf)); // 0 means first fd
     ICUNIT_GOTO_EQUAL(len, 12, len, EXIT3); // 12 means write len
 
-    strcpy_s(filebuf, sizeof(filebuf), "qqqqqppppp12");
+    (void)strcpy_s(filebuf, sizeof(filebuf), "qqqqqppppp12");
     len = write(fd[2], filebuf, strlen(filebuf)); // 2 means third fd
     ICUNIT_GOTO_EQUAL(len, 12, len, EXIT3); // 12 means write len
 

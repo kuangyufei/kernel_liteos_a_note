@@ -298,7 +298,7 @@ extern int SysFstatfs64(int fd, size_t sz, struct statfs *buf);
 
 extern int SysStat(const char *path, struct kstat *buf);
 extern int SysLstat(const char *path, struct kstat *buffer);
-extern int SysFstat(int fildes, struct kstat *buf);
+extern int SysFstat(int fields, struct kstat *buf);
 extern int SysStatx(int fd, const char *restrict path, int flag, unsigned mask, struct statx *restrict stx);
 extern int SysFsync(int fd);
 extern ssize_t SysReadv(int fd, const struct iovec *iov, int iovcnt);

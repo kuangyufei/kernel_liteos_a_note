@@ -47,7 +47,6 @@ public:
  * @tc.name: IT_TEST_TRACE_001
  * @tc.desc: function for TraceTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TraceTest, ItTestTrace001, TestSize.Level0)
 {
@@ -58,7 +57,6 @@ HWTEST_F(TraceTest, ItTestTrace001, TestSize.Level0)
  * @tc.name: IT_TEST_TRACE_002
  * @tc.desc: function for TraceTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TraceTest, ItTestTrace002, TestSize.Level0)
 {
@@ -69,7 +67,6 @@ HWTEST_F(TraceTest, ItTestTrace002, TestSize.Level0)
  * @tc.name: IT_TEST_TRACE_003
  * @tc.desc: function for TraceTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TraceTest, ItTestTrace003, TestSize.Level0)
 {
@@ -80,7 +77,6 @@ HWTEST_F(TraceTest, ItTestTrace003, TestSize.Level0)
  * @tc.name: IT_TEST_TRACE_004
  * @tc.desc: function for TraceTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TraceTest, ItTestTrace004, TestSize.Level0)
 {

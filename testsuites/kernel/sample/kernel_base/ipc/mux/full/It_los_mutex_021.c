@@ -60,14 +60,14 @@ static VOID TaskF01(void)
 VOID TaskF02(void)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S task1;
+    TSK_INIT_PARAM_S task1 = {0};
 
     g_testCount++;
 
     task1.pfnTaskEntry = (TSK_ENTRY_FUNC)TaskF01;
     task1.pcName = "LosMB2_2";
     task1.uwStackSize = TASK_STACK_SIZE_TEST;
-    task1.usTaskPrio = TASK_PRIO_TEST - 3; // 3, set reasonable priority.
+    task1.usTaskPrio = TASK_PRIO_TEST_TASK - 3; // 3, set reasonable priority.
     task1.uwResved = 0;
 #ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
@@ -97,7 +97,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
     task.pfnTaskEntry = (TSK_ENTRY_FUNC)TaskF02;
-    task.usTaskPrio = (TASK_PRIO_TEST - 1);
+    task.usTaskPrio = (TASK_PRIO_TEST_TASK - 1);
     task.pcName = "LosMB2_1";
     task.uwStackSize = 0x900;
     task.uwResved = 0;
@@ -116,8 +116,8 @@ static UINT32 Testcase(VOID)
 
     ret = LOS_TaskDelete(g_testTaskID02);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
-    ret = LOS_TaskDelete(g_testTaskID01);
-    ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
+
+    LOS_TaskDelete(g_testTaskID01);
     return LOS_OK;
 }
 

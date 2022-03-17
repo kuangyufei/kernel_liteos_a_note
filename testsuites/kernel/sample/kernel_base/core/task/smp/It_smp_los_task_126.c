@@ -30,6 +30,7 @@
  */
 
 #include "It_los_task.h"
+#include "los_swtmr_pri.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -53,7 +54,7 @@ static void HwiF01(void)
 
     LOS_AtomicInc(&g_testCount);
 
-    gTestSwtmrTaskID = g_percpu[cpuid].swtmrTaskID;
+    gTestSwtmrTaskID = OsSwtmrTaskIdByCpuId(cpuid);
 
     ret = LOS_TaskDelete(gTestSwtmrTaskID);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_ERRNO_TSK_YIELD_IN_INT, ret);

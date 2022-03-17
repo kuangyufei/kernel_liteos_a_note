@@ -89,7 +89,7 @@ static UINT32 Testcase(void)
     ret = LOS_TaskCreate(&g_testTaskID01, &task1);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test runing count
+    TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test running count
 
     TestBusyTaskDelay(2); // 2, set delay time
 
@@ -116,7 +116,7 @@ static UINT32 Testcase(void)
     ret = LOS_SemPost(g_semID);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    TestAssertBusyTaskDelay(100, 5); // 100, Set the timeout of runtime; 5, test runing count
+    TestAssertBusyTaskDelay(100, 5); // 100, Set the timeout of runtime; 5, test running count
 
     ICUNIT_ASSERT_EQUAL(g_testCount, 5, g_testCount); // 5, assert that g_testCount is equal to this.
 

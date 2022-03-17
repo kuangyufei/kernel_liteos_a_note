@@ -57,40 +57,40 @@ static VOID *PthreadF01(void *arg)
     printf("[%d] Thread1 Start get lock 1\n", __LINE__);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    memset_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+    (void)memset_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
     strcat_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, pathname1);
 
     g_TestCnt++;
     g_jffsFlagF01++;
 
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
-        memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
-        memset_s(g_jffs1650Pathname4[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        memset_s(g_jffs1650Pathname5[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
+        (void)memset_s(g_jffs1650Pathname4[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(g_jffs1650Pathname5[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
 
         snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
         strcat_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, bufname);
-        strcpy_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname6);
+        (void)strcpy_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname6);
 
         ret = mkdir(g_jffsPathname11[i], HIGHEST_AUTHORITY);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
 
         for (j = 0; j < JFFS_SHORT_ARRAY_LENGTH; j++) {
-            memset_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-            memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
+            (void)memset_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+            (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
 
             snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", j);
             strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, g_jffsPathname6);
             strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, bufname);
             strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, ".txt");
-            strcpy_s(g_jffs1650Pathname4[i][j], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname7);
+            (void)strcpy_s(g_jffs1650Pathname4[i][j], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname7);
 
-            memset_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+            (void)memset_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
             strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, g_jffsPathname6);
             strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, bufname);
             strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, ".cpp");
-            strcpy_s(g_jffs1650Pathname5[i][j], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname7);
+            (void)strcpy_s(g_jffs1650Pathname5[i][j], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname7);
 
             g_jffsFd12[i][j] = open(g_jffs1650Pathname4[i][j], O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL,
                 HIGHEST_AUTHORITY);
@@ -111,7 +111,7 @@ static VOID *PthreadF01(void *arg)
 
     bufR = (CHAR *)malloc(BYTES_PER_KBYTE + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufR, NULL, 0, EXIT1);
-    memset_s(bufR, BYTES_PER_KBYTE + 1, 0, BYTES_PER_KBYTE + 1);
+    (void)memset_s(bufR, BYTES_PER_KBYTE + 1, 0, BYTES_PER_KBYTE + 1);
 
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
         for (j = 0; j < JFFS_SHORT_ARRAY_LENGTH; j++) {
@@ -192,7 +192,7 @@ static VOID *PthreadF02(void *arg)
 
     bufW = (CHAR *)malloc(bufWLen + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW, NULL, 0, EXIT1);
-    memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
+    (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (j = 0; j < bufWLen / strlen(filebuf); j++) {
         strcat_s(bufW, bufWLen + 1, filebuf);

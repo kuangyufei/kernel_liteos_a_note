@@ -40,8 +40,13 @@ static UINT32 Testcase(VOID)
     char buffer[20]; // 20, target buffer size
     char pathname[NAME_BUF_SIZE];
     char *filename = "/mkfifotest3";
-    strncpy(pathname, "/dev", NAME_BUF_SIZE);
-    strcat(pathname, filename);
+    char *dir = "/dev";
+    errno_t ret1 = strncpy_s(pathname, NAME_BUF_SIZE, dir, strlen(dir));
+    ICUNIT_ASSERT_EQUAL(ret1, EOK, ret1);
+
+    ret1 = strcat_s(pathname, NAME_BUF_SIZE, filename);
+    ICUNIT_ASSERT_EQUAL(ret1, EOK, ret1);
+
     ret = mkfifo(pathname, 0777); // 0777, file athurioty
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
     spid = fork();

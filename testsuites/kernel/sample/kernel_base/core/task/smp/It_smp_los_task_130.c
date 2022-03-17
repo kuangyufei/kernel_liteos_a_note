@@ -62,15 +62,13 @@ static UINT32 Testcase(void)
     TSK_INIT_PARAM_S task1 = { 0 };
     g_testCount = 0;
 
-    TEST_TASK_PARAM_INIT(task1, "it_smp_task_130", (TSK_ENTRY_FUNC)TaskF01, TASK_PRIO_TEST_TASK);
+    UINT16 prio = LOS_TaskPriGet(LOS_CurTaskIDGet());
+    TEST_TASK_PARAM_INIT(task1, "it_smp_task_130", (TSK_ENTRY_FUNC)TaskF01, prio);
     int i;
 
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
     ret = LOS_TaskCreate(&g_testTaskID01, &task1);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
-
-    ret = OS_TCB_FROM_TID(g_testTaskID01)->taskStatus;
-    ICUNIT_GOTO_NOT_EQUAL((ret & OS_TASK_STATUS_READY), 0, ret, EXIT);
 
     /* Wait TaskF01 to yield, then testTask timeslice is LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT */
     if (g_testCount != 1) {
@@ -93,7 +91,7 @@ static UINT32 Testcase(void)
     ret = LOS_TaskYield();
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    TestAssertBusyTaskDelay(100, 3); // 100, Set the timeout of runtime; 3, test runing count
+    TestAssertBusyTaskDelay(100, 3); // 100, Set the timeout of runtime; 3, test running count
 
     ICUNIT_GOTO_EQUAL(g_testCount, 3, g_testCount, EXIT); // 3, assert that g_testCount is equal to this.
 

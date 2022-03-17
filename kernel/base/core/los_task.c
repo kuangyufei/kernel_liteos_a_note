@@ -208,11 +208,9 @@ VOID OsTaskInsertToRecycleList(LosTaskCB *taskCB)
  */
 LITE_OS_SEC_TEXT_INIT VOID OsTaskJoinPostUnsafe(LosTaskCB *taskCB)
 {
-    LosTaskCB *resumedTask = NULL;
-
     if (taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {//join任务处理
         if (!LOS_ListEmpty(&taskCB->joinList)) {//注意到了这里 joinList中的节点身上都有阻塞标签
-            resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(taskCB->joinList)));//通过贴有JOIN标签链表的第一个节点找到Task
+            LosTaskCB *resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(taskCB->joinList)));//通过贴有JOIN标签链表的第一个节点找到Task
             OsTaskWakeClearPendMask(resumedTask);//清除任务的挂起标记
             OsSchedTaskWake(resumedTask);//唤醒任务
         }
@@ -466,12 +464,11 @@ STATIC VOID OsTaskResourcesToFree(LosTaskCB *taskCB)
 
 LITE_OS_SEC_TEXT VOID OsTaskCBRecycleToFree()
 {
-    LosTaskCB *taskCB = NULL;
     UINT32 intSave;
 
     SCHEDULER_LOCK(intSave);
     while (!LOS_ListEmpty(&g_taskRecycleList)) {
-        taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_taskRecycleList));
+        LosTaskCB *taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_taskRecycleList));
         LOS_ListDelete(&taskCB->pendList);
         SCHEDULER_UNLOCK(intSave);
 
@@ -488,8 +485,6 @@ LITE_OS_SEC_TEXT VOID OsTaskCBRecycleToFree()
  *///所有任务的入口函数,OsTaskEntry是在new task OsTaskStackInit 时指定的
 LITE_OS_SEC_TEXT_INIT VOID OsTaskEntry(UINT32 taskID)
 {
-    LosTaskCB *taskCB = NULL;
-
     LOS_ASSERT(!OS_TID_CHECK_INVALID(taskID));
 
     /*
@@ -500,7 +495,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskEntry(UINT32 taskID)
     LOS_SpinUnlock(&g_taskSpin);//释放任务自旋锁
     (VOID)LOS_IntUnLock();//恢复中断
 
-    taskCB = OS_TCB_FROM_TID(taskID);
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(taskID);
     taskCB->joinRetval = taskCB->taskEntry(taskCB->args[0], taskCB->args[1],//调用任务的入口函数
                                            taskCB->args[2], taskCB->args[3]); /* 2 & 3: just for args array index */
     if (!(taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN)) {
@@ -981,6 +976,9 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskDelete(UINT32 taskID)
 
     LosTaskCB *taskCB = OS_TCB_FROM_TID(taskID);
     if (taskCB == OsCurrTaskGet()) {
+        if (!OsPreemptable()) {
+            return LOS_ERRNO_TSK_DELETE_LOCKED;
+        }
         OsRunningTaskToExit(taskCB, OS_PRO_EXIT_OK);
         return LOS_NOK;
     }
@@ -1009,20 +1007,22 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskDelete(UINT32 taskID)
 
 LOS_ERREND:
     SCHEDULER_UNLOCK(intSave);
+    if (ret == LOS_OK) {
+        LOS_Schedule();
+    }
     return ret;
 }
 ///任务延时等待，释放CPU，等待时间到期后该任务会重新进入ready状态
 LITE_OS_SEC_TEXT UINT32 LOS_TaskDelay(UINT32 tick)
 {
     UINT32 intSave;
-    LosTaskCB *runTask = NULL;
 
     if (OS_INT_ACTIVE) {
         PRINT_ERR("In interrupt not allow delay task!\n");
         return LOS_ERRNO_TSK_DELAY_IN_INT;
     }
 
-    runTask = OsCurrTaskGet();
+    LosTaskCB *runTask = OsCurrTaskGet();
     if (runTask->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {
         OsBackTrace();
         return LOS_ERRNO_TSK_OPERATE_SYSTEM_TASK;
@@ -1047,14 +1047,13 @@ LITE_OS_SEC_TEXT UINT32 LOS_TaskDelay(UINT32 tick)
 LITE_OS_SEC_TEXT_MINOR UINT16 LOS_TaskPriGet(UINT32 taskID)
 {
     UINT32 intSave;
-    LosTaskCB *taskCB = NULL;
     UINT16 priority;
 
     if (OS_TID_CHECK_INVALID(taskID)) {
         return (UINT16)OS_INVALID;
     }
 
-    taskCB = OS_TCB_FROM_TID(taskID);
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(taskID);
     SCHEDULER_LOCK(intSave);
     if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {//就这么一句话也要来个自旋锁，内核代码自旋锁真是无处不在啊
         SCHEDULER_UNLOCK(intSave);
@@ -1501,8 +1500,18 @@ LITE_OS_SEC_TEXT INT32 LOS_SetTaskScheduler(INT32 taskID, UINT16 policy, UINT16 
         return LOS_EINVAL;
     }
 
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(taskID);
+    if (taskCB->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {
+        return LOS_EPERM;
+    }
+
     SCHEDULER_LOCK(intSave);
-    needSched = OsSchedModifyTaskSchedParam(OS_TCB_FROM_TID(taskID), policy, priority);
+    if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {
+         SCHEDULER_UNLOCK(intSave);
+         return LOS_EINVAL;
+    }
+
+    needSched = OsSchedModifyTaskSchedParam(taskCB, policy, priority);
     SCHEDULER_UNLOCK(intSave);
 
     LOS_MpSchedule(OS_MP_CPU_ALL);
@@ -1527,9 +1536,15 @@ STATIC UINT32 OsTaskJoinCheck(UINT32 taskID)
         return LOS_EINVAL;
     }
 
-    if (taskID == OsCurrTaskGet()->taskID) {
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(taskID);
+    if (taskCB->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {
+        return LOS_EPERM;
+    }
+
+    if (taskCB == OsCurrTaskGet()) {
         return LOS_EDEADLK;
     }
+
     return LOS_OK;
 }
 
@@ -1537,7 +1552,6 @@ UINT32 LOS_TaskJoin(UINT32 taskID, UINTPTR *retval)
 {
     UINT32 intSave;
     LosTaskCB *runTask = OsCurrTaskGet();
-    LosTaskCB *taskCB = NULL;
     UINT32 errRet;
 
     errRet = OsTaskJoinCheck(taskID);
@@ -1545,7 +1559,7 @@ UINT32 LOS_TaskJoin(UINT32 taskID, UINTPTR *retval)
         return errRet;
     }
 
-    taskCB = OS_TCB_FROM_TID(taskID);
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(taskID);
     SCHEDULER_LOCK(intSave);
     if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {
         SCHEDULER_UNLOCK(intSave);

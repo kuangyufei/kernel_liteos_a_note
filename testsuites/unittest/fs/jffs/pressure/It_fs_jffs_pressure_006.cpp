@@ -63,7 +63,7 @@ static UINT32 TestCase(VOID)
     JffsStatPrintf(buf1);
 
     for (i = 0; i < JFFS_PRESSURE_CYCLES; i++) {
-        memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
+        (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
         JffsStrcat2(pathname2, "/", strlen(pathname2));
 
         for (j = 0; j < 40; j++) { // loop times: 40

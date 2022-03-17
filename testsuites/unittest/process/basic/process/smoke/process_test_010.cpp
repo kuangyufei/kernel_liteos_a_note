@@ -70,11 +70,11 @@ static int Child(void)
             ret = wait(&status);
             status = WEXITSTATUS(status);
             if (ret != pid) {
-                printf("wait child %d failed, is %u!\n", pid, ret);
+                printf("wait child %d failed, is %d!\n", pid, ret);
                 exit(__LINE__);
             }
             if (status != 255) { // 255, assert that function Result is equal to this.
-                printf("wait child status is 255, but is %d， child is error line :%d \n", status, status);
+                printf("child is error line :%d \n", status);
                 exit(__LINE__);
             }
         } else {

@@ -519,7 +519,7 @@ int ProcOpen(struct ProcFile *procFile)
 
 static int ProcRead(struct ProcDirEntry *pde, char *buf, size_t len)
 {
-    if (pde == NULL || pde == NULL || pde->pf == NULL) {
+    if (pde == NULL || pde->pf == NULL) {
         return PROC_ERROR;
     }
     struct ProcFile *procFile = pde->pf;

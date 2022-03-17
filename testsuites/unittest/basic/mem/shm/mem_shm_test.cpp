@@ -46,7 +46,6 @@ public:
  * @tc.name: it_test_shm_001
  * @tc.desc: function for MemShmTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(MemShmTest, ItTestShm001, TestSize.Level0)
 {
@@ -57,7 +56,6 @@ HWTEST_F(MemShmTest, ItTestShm001, TestSize.Level0)
  * @tc.name: it_test_shm_002
  * @tc.desc: function for MemShmTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(MemShmTest, ItTestShm002, TestSize.Level0)
 {
@@ -68,7 +66,6 @@ HWTEST_F(MemShmTest, ItTestShm002, TestSize.Level0)
  * @tc.name: it_test_shm_003
  * @tc.desc: function for MemShmTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(MemShmTest, ItTestShm003, TestSize.Level0)
 {
@@ -79,7 +76,6 @@ HWTEST_F(MemShmTest, ItTestShm003, TestSize.Level0)
  * @tc.name: it_test_shm_004
  * @tc.desc: function for MemShmTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(MemShmTest, ItTestShm004, TestSize.Level0)
 {
@@ -90,7 +86,6 @@ HWTEST_F(MemShmTest, ItTestShm004, TestSize.Level0)
  * @tc.name: it_test_shm_005
  * @tc.desc: function for MemShmTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(MemShmTest, ItTestShm005, TestSize.Level0)
 {
@@ -101,7 +96,6 @@ HWTEST_F(MemShmTest, ItTestShm005, TestSize.Level0)
  * @tc.name: it_test_shm_006
  * @tc.desc: function for MemShmTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(MemShmTest, ItTestShm006, TestSize.Level0)
 {
@@ -112,7 +106,6 @@ HWTEST_F(MemShmTest, ItTestShm006, TestSize.Level0)
  * @tc.name: it_test_shm_007
  * @tc.desc: function for MemShmTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(MemShmTest, ItTestShm007, TestSize.Level0)
 {
@@ -123,7 +116,6 @@ HWTEST_F(MemShmTest, ItTestShm007, TestSize.Level0)
  * @tc.name: it_test_shm_008
  * @tc.desc: function for MemShmTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(MemShmTest, ItTestShm008, TestSize.Level0)
 {
@@ -134,7 +126,6 @@ HWTEST_F(MemShmTest, ItTestShm008, TestSize.Level0)
  * @tc.name: it_test_shm_009
  * @tc.desc: function for MemShmTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(MemShmTest, ItTestShm009, TestSize.Level0)
 {
@@ -145,7 +136,6 @@ HWTEST_F(MemShmTest, ItTestShm009, TestSize.Level0)
  * @tc.name: it_test_shm_010
  * @tc.desc: function for MemShmTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(MemShmTest, ItTestShm010, TestSize.Level0)
 {
@@ -158,7 +148,6 @@ HWTEST_F(MemShmTest, ItTestShm010, TestSize.Level0)
  * @tc.name: it_test_shm_011
  * @tc.desc: function for MemShmTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(MemShmTest, ItTestShm011, TestSize.Level0)
 {

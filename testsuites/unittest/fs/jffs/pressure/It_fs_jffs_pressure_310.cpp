@@ -50,8 +50,8 @@ static UINT32 TestCase(VOID)
     ret = chdir(pathname1);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
-    memset_s(pathname2, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-    memset_s(pathname3, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+    (void)memset_s(pathname2, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+    (void)memset_s(pathname3, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
     strcat_s(pathname6, JFFS_NAME_LIMITTED_SIZE, "/");
     // PATH_MAX test. The dirname has occupied 14 bytes.
     while (i < 241) { // loop times: 241

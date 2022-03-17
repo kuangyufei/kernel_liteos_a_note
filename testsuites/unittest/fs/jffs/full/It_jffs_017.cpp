@@ -43,7 +43,7 @@ static INT32 DisplayInfo(const char *fpath, const struct stat *sb, int tflag, st
     if (tflag == FTW_NS) {
         printf("-------");
     } else {
-        printf("%7jd", (intmax_t)sb->st_size);
+        printf("%7d", (intmax_t)sb->st_size);
     }
 
     printf("   %-40s %d %s\n", fpath, ftwbuf->base, fpath + ftwbuf->base);

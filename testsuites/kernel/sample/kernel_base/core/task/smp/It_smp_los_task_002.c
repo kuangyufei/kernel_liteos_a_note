@@ -61,14 +61,14 @@ static UINT32 Testcase(void)
 
     LOS_TaskDelay(2); // 2, set delay time.
     ret = LOS_TaskDelete(testid);
+    ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
 #ifndef LOSCFG_KERNEL_SMP_TASK_SYNC
     /* delay and check */
     LOS_TaskDelay(10); // 10, set delay time.
 #endif
-
-    ret = OS_TCB_FROM_TID(testid)->taskStatus;
-    ICUNIT_ASSERT_EQUAL(ret & OS_TASK_STATUS_UNUSED, OS_TASK_STATUS_UNUSED, ret);
+    ret = LOS_TaskDelete(testid);
+    ICUNIT_ASSERT_EQUAL(ret, LOS_ERRNO_TSK_NOT_CREATED, ret);
 
     return LOS_OK;
 }

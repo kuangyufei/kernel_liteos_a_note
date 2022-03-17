@@ -43,10 +43,10 @@ static UINT32 TestCase(VOID)
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
-        memset_s(bufname, sizeof(bufname), 0, strlen(bufname));
+        (void)memset_s(bufname, sizeof(bufname), 0, strlen(bufname));
         snprintf_s(bufname, sizeof(bufname), sizeof(bufname) - 1, "/test_%d", i);
         strcat_s(pathname1, sizeof(pathname1), bufname);
-        strcpy_s(pathname2[i], sizeof(pathname2[i]), pathname1);
+        (void)strcpy_s(pathname2[i], sizeof(pathname2[i]), pathname1);
 
         ret = mkdir(pathname2[i], HIGHEST_AUTHORITY);
         ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);

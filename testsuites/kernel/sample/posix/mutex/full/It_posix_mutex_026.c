@@ -54,28 +54,6 @@ struct _scenar_028 {
 
 #define NSCENAR (sizeof(g_scenarii028) / sizeof(g_scenarii028[0]))
 
-/* pthread_mutex_destroy 2-2.c
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it would be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
- * This sample test aims to check the following assertion:
- *
- * pthread_mutex_init() can be used to re-initialize a destroyed mutex.
-
- * The steps are:
- * -> Initialize a mutex with a given attribute.
- * -> Destroy the mutex
- * -> Initialize again the mutex with another attribute.
- */
 static UINT32 Testcase(VOID)
 {
     int ret;
@@ -85,25 +63,20 @@ static UINT32 Testcase(VOID)
     pthread_mutexattr_t *pma[NSCENAR + 2];
     long pshared;
 
-    /* System abilities */
     pshared = sysconf(_SC_THREAD_PROCESS_SHARED);
 
-    /* Initialize the mutex attributes objects */
     for (i = 0; i < NSCENAR; i++) {
         ret = pthread_mutexattr_init(&ma[i]);
         ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     }
-    /* Default mutexattr object */
+
     ret = pthread_mutexattr_init(&ma[i]);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    /* Initialize the pointer array */
-    /* 2, The loop frequency. */
-    for (i = 0; i < NSCENAR + 2; i++)
+    for (i = 0; i < NSCENAR + 2; i++) // 2, The loop frequency.
         /* NULL pointer */
         pma[i] = NULL;
 
-    /* Ok, we can now proceed to the test */
     for (i = 0; i < NSCENAR + 2; i++) { // 2, The loop frequency.
         for (j = 0; j < NSCENAR + 2; j++) { // 2, The loop frequency.
             ret = pthread_mutex_init(&mtx, pma[i]);

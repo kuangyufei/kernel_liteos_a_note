@@ -27,122 +27,73 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import("//build/lite/config/component/lite_component.gni")
+import("//kernel/liteos_a/liteos.gni")
 
-static_library("test_base") {
-  sources = [
-    "src/ChipTest.c",
-    "src/iCunit.c",
-    "src/osTest.c",
-    "src/testrun_shellcmd.c",
-    "src/testusb_shellcmd.c",
-  ]
+declare_args() {
+  LOSCFG_ENABLE_KERNEL_TEST = false
+  LOSCFG_TEST_KERNEL_BASE = true
+  LOSCFG_TEST_KERNEL_EXTEND_CPUP = false
+  LOSCFG_TEST_POSIX = false
+}
 
+config("liteos_kernel_test_public") {
+  cflags = [ "-Wno-error" ]
   include_dirs = [
-    "../kernel/base/includ",
-    "../kernel/include",
-    "../kernel/extended/include",
-    "include",
-    "../fs/vfs",
-    "../fs/proc/include",
-    "../fs/jffs2/include",
-    "../fs/nfs/include",
-    "../bsd/compat/linuxkpi/include",
+    "//kernel/liteos_a/kernel/include",
+    "//kernel/liteos_a/kernel/base/include",
+    "//kernel/liteos_a/kernel/common",
+    "//kernel/liteos_a/arch/arm/arm/include",
+    "//kernel/liteos_a/arch/arm/include",
+    "//kernel/liteos_a/extended/include",
+    "//third_party/musl/porting/liteos_a/kernel/include",
+    "//third_party/bounds_checking_function/include/",
+    "//kernel/liteos_a/lib/libscrew/include",
+    "//kernel/liteos_a/fs/vfs",
+    "//kernel/liteos_a/fs/proc/include",
+    "//kernel/liteos_a/fs/jffs2/include",
+    "//kernel/liteos_a/fs/nfs/include",
+    "//kernel/liteos_a/bsd/compat/linuxkpi/include",
+    "//kernel/liteos_a/testsuites/kernel/include",
   ]
 
-  public_configs = [ ":public" ]
-}
-
-config("public") {
-  include_dirs = [ "include" ]
-}
-
-lite_component("test") {
-  features = [ ":test_base" ]
-
-  # KERNEL BASE TEST
-  if (LOSCFG_TEST_KERNEL_BASE_IPC) {
-    features += [ "sample/kernel_base/ipc:test_ipc" ]
-  }
-  if (LOSCFG_TEST_KERNEL_BASE_CORE) {
-    features += [ "sample/kernel_base/core:test_core" ]
-  }
-  if (LOSCFG_TEST_KERNEL_BASE_MP) {
-    features += [ "sample/kernel_base/mp:test_mp" ]
-  }
-  if (LOSCFG_TEST_KERNEL_BASE_MEM) {
-    features += [ "sample/kernel_base/mem:test_mem" ]
-  }
-  if (LOSCFG_TEST_KERNEL_BASE_MISC) {
-    features += [ "sample/kernel_base/misc:test_misc" ]
-  }
-  if (LOSCFG_TEST_KERNEL_BASE_OM) {
-    features += [ "sample/kernel_base/om:test_om" ]
-  }
-  if (LOSCFG_TEST_KERNEL_BASE_ATOMIC) {
-    features += [ "sample/kernel_base/atomic:test_atomic" ]
-  }
-
-  # KERNEL EXTEND TEST
-  if (LOSCFG_TEST_KERNEL_EXTEND_CPP) {
-    features += [ "sample/kernel_extend/cpp:test_cpp" ]
+  if (LOSCFG_TEST_KERNEL_BASE) {
+    cflags += [ "-DLOSCFG_TEST_KERNEL_BASE=1" ]
   }
   if (LOSCFG_TEST_KERNEL_EXTEND_CPUP) {
-    features += [ "sample/kernel_extend/cpup:test_cpup" ]
+    cflags += [ "-DLOSCFG_TEST_KERNEL_EXTEND_CPUP=1" ]
   }
-  if (LOSCFG_TEST_KERNEL_EXTEND_MMU) {
-    features += [ "sample/kernel_extend/mmu:test_mmu" ]
-  }
-
-  # COMPAT TEST
   if (LOSCFG_TEST_POSIX) {
-    features += [
-      "sample/posix:test_posix",
-      # "sample/posix/smp:test_posix_smp",
-    ]
+    cflags += [ "-DLOSCFG_TEST_POSIX=1" ]
   }
+}
 
-  # if (LOSCFG_TEST_POSIX_MEM) {
-  #     features += [ "sample/posix/mem:test_posix_mem" ]
-  # }
-  # if (LOSCFG_TEST_POSIX_MQUEUE) {
-  #     features += [ "sample/posix/mqueue:test_posix_mqueue" ]
-  # }
-  # if (LOSCFG_TEST_POSIX_MUTEX) {
-  #     features += [ "sample/posix/mutex:test_posix_mutex" ]
-  # }
-  # if (LOSCFG_TEST_POSIX_PTHREAD) {
-  #     features += [ "sample/posix/pthread:test_posix_pthread" ]
-  # }
-  # if (LOSCFG_TEST_POSIX_SCHED) {
-  #     features += [ "sample/posix/sched:test_posix_sched" ]
-  # }
-  # if (LOSCFG_TEST_POSIX_SEM) {
-  #     features += [ "sample/posix/sem:test_posix_sem" ]
-  # }
-  # if (LOSCFG_TEST_POSIX_SWTMR) {
-  #     features += [ "sample/posix/swtmr:test_posix_swtmr" ]
-  # }
-  if (LOSCFG_TEST_LINUX) {
-    features += [ "sample/linux:test_linux" ]
+group("kernel_test") {
+  deps = []
+
+  if (LOSCFG_ENABLE_KERNEL_TEST) {
+    deps += [ ":test_base" ]
+
+    if (LOSCFG_TEST_KERNEL_BASE) {
+      deps += [ "sample/kernel_base:kernel_base" ]
+    }
+
+    # KERNEL EXTEND TEST
+    if (LOSCFG_TEST_KERNEL_EXTEND_CPUP) {
+      deps += [ "sample/kernel_extend/cpup:test_cpup" ]
+    }
+
+    # COMPAT TEST
+    if (LOSCFG_TEST_POSIX) {
+      deps += [ "sample/posix:test_posix" ]
+    }
   }
+}
 
-  #if (LOSCFG_TEST_LINUX_HRTIMER) {
-  #    features += [ "sample/linux/hrtimer:test_linux_hrtimer" ]
-  #}
+kernel_module("test_base") {
+  sources = [
+    "src/iCunit.c",
+    "src/osTest.c",
+  ]
 
-  # LIBC TEST
-  if (LOSCFG_TEST_LIBC) {
-    features += [ "sample/libc:test_libc" ]
-  }
-
-  # LIBM TEST
-  if (LOSCFG_TEST_LIBM) {
-    features += [ "sample/libm:test_libm" ]
-  }
-
-  # SHELL TEST
-  if (LOSCFG_TEST_SHELL) {
-    features += [ "sample/shell:test_shell" ]
-  }
+  public_configs = [ ":liteos_kernel_test_public" ]
 }

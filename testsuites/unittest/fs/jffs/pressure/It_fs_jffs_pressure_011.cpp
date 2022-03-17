@@ -65,14 +65,14 @@ static UINT32 TestCase(VOID)
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
         snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
         JffsStrcat2(pathname2, bufname, strlen(pathname2));
-        strcpy_s(pathname[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
+        (void)strcpy_s(pathname[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
 
         ret = mkdir(pathname[i], HIGHEST_AUTHORITY);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
 
         snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/1016_%d", i);
         JffsStrcat2(pathname2, bufname, strlen(pathname2));
-        strcpy_s(pathname3[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
+        (void)strcpy_s(pathname3[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
     }
     for (j = 0; j < JFFS_PRESSURE_CYCLES; j++) {
         for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {

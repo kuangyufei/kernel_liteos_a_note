@@ -76,7 +76,7 @@ static VOID TaskF02(VOID)
 static UINT32 Testcase(VOID)
 {
     UINT32 ret, currCpuid, i, j;
-    TSK_INIT_PARAM_S testTask;
+    TSK_INIT_PARAM_S testTask = {0};
 
     g_testCount = 0;
     currCpuid = (ArchCurrCpuid() + 1) % (LOSCFG_KERNEL_CORE_NUM);
@@ -89,12 +89,12 @@ static UINT32 Testcase(VOID)
         ret = LOS_MuxLock(&g_mutexkernelTest, LOS_WAIT_FOREVER);
         ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-        TEST_TASK_PARAM_INIT_AFFI(testTask, "it_smp_event_037_task1", TaskF01, TASK_PRIO_TEST - 1,
+        TEST_TASK_PARAM_INIT_AFFI(testTask, "it_smp_event_037_task1", TaskF01, TASK_PRIO_TEST_TASK - 1,
             CPUID_TO_AFFI_MASK(ArchCurrCpuid())); // current cpu
         ret = LOS_TaskCreate(&g_testTaskID01, &testTask);
         ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-        TEST_TASK_PARAM_INIT_AFFI(testTask, "it_smp_event_037_task2", TaskF02, TASK_PRIO_TEST - 1,
+        TEST_TASK_PARAM_INIT_AFFI(testTask, "it_smp_event_037_task2", TaskF02, TASK_PRIO_TEST_TASK - 1,
             CPUID_TO_AFFI_MASK(currCpuid)); // other cpu
         ret = LOS_TaskCreate(&g_testTaskID02, &testTask);
         ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
@@ -123,8 +123,6 @@ static UINT32 Testcase(VOID)
 
         PRINT_DEBUG("g_testCount = %d ,g_ret = 0x%x\n", g_testCount, g_ret);
 
-        ret = OS_TCB_FROM_TID(g_testTaskID02)->taskStatus;
-        ICUNIT_GOTO_NOT_EQUAL(ret & OS_TASK_STATUS_UNUSED, 0, ret, EXIT);
         LOS_MuxDestroy(&g_mutexkernelTest);
     }
 EXIT:

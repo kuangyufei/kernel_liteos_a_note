@@ -215,7 +215,7 @@ static void HandleServiceRegAndGet(int fd, IpcMsg *data)
                     SendReply(fd, data, 0, content.serviceHandle);
                 }
             }else {
-                printf("this service already registed\n");
+                printf("this service already registered\n");
                 goto ERROR_EXIT;
             }
             break;

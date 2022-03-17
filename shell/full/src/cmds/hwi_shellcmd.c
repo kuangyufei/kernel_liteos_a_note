@@ -40,15 +40,54 @@
 
 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
-STATIC CPUP_INFO_S hwiCpupAll[OS_HWI_MAX_NUM];
-STATIC CPUP_INFO_S hwiCpup10s[OS_HWI_MAX_NUM];
-STATIC CPUP_INFO_S hwiCpup1s[OS_HWI_MAX_NUM];
+#define IRQ_CPUP_INFO_SIZE     (sizeof(CPUP_INFO_S) * OS_HWI_MAX_NUM * LOSCFG_KERNEL_CORE_NUM)
+#define IRQ_CPUP_ALL_INFO_SIZE (3 * IRQ_CPUP_INFO_SIZE)
+#define IRQ_DATA_SZIE          (sizeof(OsIrqCpupCB) * LOSCFG_KERNEL_CORE_NUM)
+#define CPUP_PRECISION_MULT    LOS_CPUP_PRECISION_MULT
+
+STATIC VOID ShellCmdHwiInfoShow(OsIrqCpupCB *irqData, CPUP_INFO_S *hwiCpup1s,
+                                CPUP_INFO_S *hwiCpup10s, CPUP_INFO_S *hwiCpupAll)
+{
+    UINT32 intSave;
+    OsIrqCpupCB *irqDataBase = OsGetIrqCpupArrayBase();
+
+    for (UINT32 i = OS_HWI_FORM_EXC_NUM; i < OS_HWI_MAX_NUM + OS_HWI_FORM_EXC_NUM; i++) {
+        if (!HWI_IS_REGISTED(i)) {
+            continue;
+        }
+
+        intSave = LOS_IntLock();
+        (VOID)memcpy_s(irqData, IRQ_DATA_SZIE, &irqDataBase[i * LOSCFG_KERNEL_CORE_NUM], IRQ_DATA_SZIE);
+        LOS_IntRestore(intSave);
+
+        for (UINT32 cpu = 0; cpu < LOSCFG_KERNEL_CORE_NUM; cpu++) {
+            UINT64 cycles = 0;
+            UINT64 timeMax = 0;
+            OsIrqCpupCB *data = &irqData[cpu];
+            if (data->status == 0) {
+                continue;
+            }
+            UINT32 count = OsGetHwiFormCnt(cpu, i);
+            if (count != 0) {
+                if (data->count != 0) {
+                    cycles = (data->allTime * OS_NS_PER_CYCLE) / (data->count * OS_SYS_NS_PER_US);
+                }
+                timeMax = (data->timeMax * OS_NS_PER_CYCLE) / 1000;
+            }
+            CHAR *irqName = OsGetHwiFormName(i);
+            UINT32 index = (i * LOSCFG_KERNEL_CORE_NUM) + cpu;
+            PRINTK(" %10u:%5u%11u%11llu%10llu%6u.%-2u%8u.%-2u%7u.%-2u%7s %-12s\n", i, cpu, count, cycles, timeMax,
+                   hwiCpupAll[index].usage / CPUP_PRECISION_MULT, hwiCpupAll[index].usage % CPUP_PRECISION_MULT,
+                   hwiCpup10s[index].usage / CPUP_PRECISION_MULT, hwiCpup10s[index].usage % CPUP_PRECISION_MULT,
+                   hwiCpup1s[index].usage / CPUP_PRECISION_MULT, hwiCpup1s[index].usage % CPUP_PRECISION_MULT,
+                   (g_hwiForm[index].uwParam == IRQF_SHARED) ? "shared" : "normal", (irqName != NULL) ? irqName : "");
+        }
+    }
+}
+
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdHwi(INT32 argc, const CHAR **argv)
 {
-    UINT32 i;
-    UINT64 cycles;
-    size_t size = sizeof(CPUP_INFO_S) * OS_HWI_MAX_NUM;
-    OsIrqCpupCB *irqCpup = OsGetIrqCpupArrayBase();
+    UINT32 size;
 
     (VOID)argv;
     if (argc > 0) {
@@ -56,38 +95,24 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdHwi(INT32 argc, const CHAR **argv)
         return OS_ERROR;
     }
 
+    size = IRQ_CPUP_ALL_INFO_SIZE + IRQ_DATA_SZIE;
+    CHAR *irqCpup = LOS_MemAlloc(m_aucSysMem0, size);
     if (irqCpup == NULL) {
         return OS_ERROR;
     }
 
-    (VOID)LOS_GetAllIrqCpuUsage(CPUP_ALL_TIME, hwiCpupAll, size);
-    (VOID)LOS_GetAllIrqCpuUsage(CPUP_LAST_TEN_SECONDS, hwiCpup10s, size);
-    (VOID)LOS_GetAllIrqCpuUsage(CPUP_LAST_ONE_SECONDS, hwiCpup1s, size);
+    CPUP_INFO_S *hwiCpupAll = (CPUP_INFO_S *)irqCpup;
+    CPUP_INFO_S *hwiCpup10s = (CPUP_INFO_S *)(irqCpup + IRQ_CPUP_INFO_SIZE);
+    CPUP_INFO_S *hwiCpup1s = (CPUP_INFO_S *)(irqCpup + 2 * IRQ_CPUP_INFO_SIZE); /* 2: offset */
+    OsIrqCpupCB *irqData = (OsIrqCpupCB *)(irqCpup + IRQ_CPUP_ALL_INFO_SIZE);
 
-    PRINTK(" InterruptNo      Count  ATime(us)   CPUUSE  CPUUSE10s  CPUUSE1s   Mode Name\n");
-    for (i = OS_HWI_FORM_EXC_NUM; i < OS_HWI_MAX_NUM + OS_HWI_FORM_EXC_NUM; i++) {
-        UINT32 count = OsGetHwiFormCnt(i);
-        if (count) {
-            cycles = (((OsIrqCpupCB *)(&irqCpup[i]))->cpup.allTime * OS_NS_PER_CYCLE) / (count * OS_SYS_NS_PER_US);
-        } else {
-            cycles = 0;
-        }
-        /* Different cores has different hwi form implementation */
-        if (HWI_IS_REGISTED(i)) {
-            PRINTK(" %10d:%11u%11llu", i, count, cycles);
-        } else {
-            continue;
-        }
-        PRINTK("%6u.%-2u%8u.%-2u%7u.%-2u%7s %-12s\n",
-               hwiCpupAll[i].usage / LOS_CPUP_PRECISION_MULT,
-               hwiCpupAll[i].usage % LOS_CPUP_PRECISION_MULT,
-               hwiCpup10s[i].usage / LOS_CPUP_PRECISION_MULT,
-               hwiCpup10s[i].usage % LOS_CPUP_PRECISION_MULT,
-               hwiCpup1s[i].usage / LOS_CPUP_PRECISION_MULT,
-               hwiCpup1s[i].usage % LOS_CPUP_PRECISION_MULT,
-               (g_hwiForm[i].uwParam == IRQF_SHARED) ? "shared" : "normal",
-               (OsGetHwiFormName(i) != NULL) ? OsGetHwiFormName(i) : "");
-    }
+    (VOID)LOS_GetAllIrqCpuUsage(CPUP_ALL_TIME, hwiCpupAll, IRQ_CPUP_INFO_SIZE);
+    (VOID)LOS_GetAllIrqCpuUsage(CPUP_LAST_TEN_SECONDS, hwiCpup10s, IRQ_CPUP_INFO_SIZE);
+    (VOID)LOS_GetAllIrqCpuUsage(CPUP_LAST_ONE_SECONDS, hwiCpup1s, IRQ_CPUP_INFO_SIZE);
+
+    PRINTK(" InterruptNo  cpu      Count  ATime(us) MTime(us)   CPUUSE  CPUUSE10s  CPUUSE1s   Mode Name\n");
+    ShellCmdHwiInfoShow(irqData, hwiCpup1s, hwiCpup10s, hwiCpupAll);
+    (VOID)LOS_MemFree(m_aucSysMem0, irqCpup);
     return 0;
 }
 #else

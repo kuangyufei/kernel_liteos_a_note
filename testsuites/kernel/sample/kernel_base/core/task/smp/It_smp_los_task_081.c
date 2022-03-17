@@ -49,7 +49,7 @@ static UINT32 Testcase(void)
     ret = LOS_TaskSuspend(gTestIdleTaskID);
     ICUNIT_ASSERT_EQUAL(ret, LOS_ERRNO_TSK_OPERATE_SYSTEM_TASK, ret);
 
-    gTestSwtmrTaskID = g_percpu[cpuid].swtmrTaskID;
+    gTestSwtmrTaskID = OsSwtmrTaskIdByCpuId(cpuid);
 
     ret = LOS_TaskSuspend(gTestSwtmrTaskID);
     ICUNIT_ASSERT_EQUAL(ret, LOS_ERRNO_TSK_OPERATE_SYSTEM_TASK, ret);

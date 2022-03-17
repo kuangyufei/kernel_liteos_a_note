@@ -33,19 +33,22 @@
 
 static void SigPrint(int sig)
 {
-    printf("%s\n", __FUNCTION__, __LINE__);
+    (void)sig;
+    printf("%s%d\n", __FUNCTION__, __LINE__);
     return;
 }
 
 static void SigPrint1(int sig)
 {
-    printf("%s\n", __FUNCTION__, __LINE__);
+    (void)sig;
+    printf("%s%d\n", __FUNCTION__, __LINE__);
     return;
 }
 
 static int g_sigCount = 0;
 static void SigPrint2(int sig)
 {
+    (void)sig;
     g_sigCount = 1;
     printf("%s, count = %d\n", __FUNCTION__, g_sigCount);
     return;
@@ -53,6 +56,7 @@ static void SigPrint2(int sig)
 
 static void *ThreadSetFunc2(void *arg)
 {
+    (void)arg;
     void (*retSig)(int);
     retSig = signal(SIGALRM, SigPrint2);
     ICUNIT_GOTO_NOT_EQUAL(retSig, SIG_ERR, retSig, EXIT);
@@ -65,6 +69,7 @@ EXIT:
 
 static void *ThreadSetDfl(void *arg)
 {
+    (void)arg;
     void (*retSig)(int);
     retSig = signal(SIGALRM, SIG_DFL);
     ICUNIT_GOTO_NOT_EQUAL(retSig, SIG_ERR, retSig, EXIT);
@@ -77,6 +82,7 @@ EXIT:
 
 static void *ThreadKill(void *arg)
 {
+    (void)arg;
     int retValue;
 
     retValue = raise(SIGALRM);
@@ -88,7 +94,7 @@ EXIT:
     return (void *)-1;
 }
 
-static int TestSigMultiPthread()
+static int TestSigMultiPthread(void)
 {
     int fpid;
     int status;

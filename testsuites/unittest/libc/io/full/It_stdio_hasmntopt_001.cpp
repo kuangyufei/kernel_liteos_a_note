@@ -35,6 +35,7 @@ static UINT32 testcase(VOID)
     struct mntent* mnt = nullptr;
     struct mntent* mnt_new = nullptr;
     FILE *fp = nullptr;
+    FILE *fp2 = nullptr;
     char *argv[2] = {nullptr};
     argv[0] = "/etc/fstab";
     argv[1] = "errors";
@@ -45,14 +46,14 @@ static UINT32 testcase(VOID)
     char *pathList[] = {"/etc/fstab"};
     char *streamList[] = {(char *)fileWords};
     int streamLen[] = {sizeof(fileWords)};
-    
+
     int flag = PrepareFileEnv(pathList, streamList, streamLen, 1);
     if (flag != 0) {
         printf("error: need some env file, but prepare is not ok");
         (VOID)RecoveryFileEnv(pathList, 1);
         return -1;
     }
-    
+
     mnt_new = (struct mntent *)malloc(sizeof(struct mntent));
     mnt_new->mnt_fsname = "UUID=c4992556-a86e-45e8-ba5f-190b16a9073x";
     mnt_new->mnt_dir = "/usr1";
@@ -64,6 +65,7 @@ static UINT32 testcase(VOID)
     fp = setmntent("/etc/fstab", "r");
     if (!fp) {
         printf("fp=0x%x\n", fp);
+        free(mnt_new);
         return LOS_NOK;
     }
 
@@ -81,7 +83,8 @@ static UINT32 testcase(VOID)
 
     /* test the addmntent below */
     fp = setmntent(argv[0], "a");
-    if (fopen("/lib/libc.so", "r")) {
+    fp2 = fopen("/lib/libc.so", "r");
+    if (fp2 != NULL) {
         printf("aha I found you are OHOS!!!\n");
         if (addmntent(fp, mnt_new)) {
             printf("a new mnt is added to %s\n", argv[0]);
@@ -90,6 +93,9 @@ static UINT32 testcase(VOID)
 
     if (fp != NULL) {
         endmntent(fp);
+    }
+    if (fp2 != NULL) {
+        fclose(fp2);
     }
     (VOID)RecoveryFileEnv(pathList, 1);
     return LOS_OK;

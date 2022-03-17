@@ -35,12 +35,7 @@ MODULE_NAME := ktest
 LOCAL_INCLUDE := -I $(LITEOSTESTTOPDIR)/kernel/include
 
 LOCAL_SRCS := $(wildcard src/osTest.c) \
-              $(wildcard src/runstop_osTest.c) \
-              $(wildcard src/scatter_osTest.c) \
               $(wildcard src/iCunit.c) \
-              $(wildcard src/ChipTest.c) \
-              $(wildcard src/testusb_shellcmd.c) \
-              $(wildcard src/testrun_shellcmd.c)
 
 LOCAL_FLAGS :=  $(LOCAL_INCLUDE) -Wno-error  -I $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH)/include \
                 -I $(LITEOSTOPDIR)/fs/fat/os_adapt

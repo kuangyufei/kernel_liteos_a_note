@@ -163,7 +163,7 @@ EXIT:
 1. Return successed
 2. Return successed
 3. Return failure
-4. Sucessful operation
+4. Successful operation
 * -@tprior 1
 * -@tauto TRUE
 * -@tremark

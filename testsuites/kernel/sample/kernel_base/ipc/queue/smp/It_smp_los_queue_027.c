@@ -103,7 +103,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_TaskCreate(&g_testTaskID01, &testTask);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    TestAssertBusyTaskDelay(100, 2);                      // 100, Set the timeout of runtime; 2, test runing count.
+    TestAssertBusyTaskDelay(100, 2);                      // 100, Set the timeout of runtime; 2, test running count.
     ICUNIT_GOTO_EQUAL(g_testCount, 2, g_testCount, EXIT); // 2, Here, assert that g_testCount is equal to 2.
 
     /* wait for task01 to pend sem */
@@ -129,7 +129,7 @@ static UINT32 Testcase(VOID)
     g_runFlag = 0; // unlock the other cpu
 
     PRINT_DEBUG("finally\n");
-    TestAssertBusyTaskDelay(100, 4);                      // 100, Set the timeout of runtime; 4, test runing count.
+    TestAssertBusyTaskDelay(100, 4);                      // 100, Set the timeout of runtime; 4, test running count.
     ICUNIT_GOTO_EQUAL(g_testCount, 4, g_testCount, EXIT); // 4, Here, assert that g_testCount is equal to 4.
 
 EXIT:

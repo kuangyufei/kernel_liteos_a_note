@@ -51,7 +51,7 @@ static UINT32 Testcase(VOID)
     len = pwrite(fd, filebuf, strlen(filebuf), 0);
     ICUNIT_GOTO_EQUAL(len, JFFS_SHORT_ARRAY_LENGTH, len, EXIT1);
 
-    memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     len = read(fd, readbuf, JFFS_STANDARD_NAME_LENGTH);
     ICUNIT_GOTO_EQUAL(len, 10, len, EXIT); // 10 means length of actually read data
     ICUNIT_GOTO_STRING_EQUAL(readbuf, "abcdeabcde", readbuf, EXIT1);
@@ -62,7 +62,7 @@ static UINT32 Testcase(VOID)
     off = lseek(fd, 0, SEEK_SET);
     ICUNIT_GOTO_NOT_EQUAL(off, -1, off, EXIT1);
 
-    memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     len = read(fd, readbuf, JFFS_STANDARD_NAME_LENGTH);
     ICUNIT_GOTO_EQUAL(len, JFFS_SHORT_ARRAY_LENGTH, len, EXIT1);
     ICUNIT_GOTO_STRING_EQUAL(readbuf, "abcdeabcde", readbuf, EXIT1);
@@ -95,7 +95,7 @@ static UINT32 Testcase(VOID)
     len = pwrite64(fd, filebuf, strlen(filebuf), 0);
     ICUNIT_GOTO_EQUAL(len, JFFS_SHORT_ARRAY_LENGTH, len, EXIT1);
 
-    memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     len = read(fd, readbuf, JFFS_STANDARD_NAME_LENGTH);
     ICUNIT_GOTO_EQUAL(len, 10, len, EXIT); // 10 means length of actually read data
     ICUNIT_GOTO_STRING_EQUAL(readbuf, "abcdeabcde", readbuf, EXIT1);
@@ -106,7 +106,7 @@ static UINT32 Testcase(VOID)
     off = lseek(fd, 0, SEEK_SET);
     ICUNIT_GOTO_NOT_EQUAL(off, -1, off, EXIT1);
 
-    memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     len = read(fd, readbuf, JFFS_STANDARD_NAME_LENGTH);
     ICUNIT_GOTO_EQUAL(len, JFFS_SHORT_ARRAY_LENGTH, len, EXIT1);
     ICUNIT_GOTO_STRING_EQUAL(readbuf, "abcdeabcde", readbuf, EXIT1);

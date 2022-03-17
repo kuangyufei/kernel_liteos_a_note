@@ -66,7 +66,7 @@ static VOID TaskF01(void)
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S task = { 0 };
+    TSK_INIT_PARAM_S task = {0};
 
     ret = LosMuxCreate(&g_mutexkernelTest);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
@@ -74,7 +74,7 @@ static UINT32 Testcase(VOID)
     g_testCount = 0;
 
     task.pfnTaskEntry = (TSK_ENTRY_FUNC)TaskF01;
-    task.usTaskPrio = (TASK_PRIO_TEST - 1);
+    task.usTaskPrio = (TASK_PRIO_TEST_TASK - 1);
     task.pcName = "VMuteB010";
     task.uwStackSize = TASK_STACK_SIZE_TEST;
     task.uwResved = 0;
@@ -86,15 +86,14 @@ static UINT32 Testcase(VOID)
     ret = LOS_MuxUnlock(&g_mutexkernelTest);
     ICUNIT_ASSERT_EQUAL(ret, EPERM, ret);
 
-    LOS_TaskDelay(10);     // 10, delay for Timing control.
-    TestExtraTaskDelay(5); // 5, delay for Timing control.
+    LOS_TaskDelay(15);     // 15, delay for Timing control.
 
     ICUNIT_ASSERT_EQUAL(g_testCount, 1, g_testCount);
 
     ret = LOS_MuxUnlock(&g_mutexkernelTest);
     ICUNIT_ASSERT_EQUAL(ret, EPERM, ret);
 
-    LOS_TaskDelay(10); // 10, delay for Timing control.
+    LOS_TaskDelay(20); // 20, delay for Timing control.
 
     ret = LOS_MuxUnlock(&g_mutexkernelTest);
     ICUNIT_ASSERT_EQUAL(ret, EPERM, ret);
@@ -104,8 +103,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_MuxDestroy(&g_mutexkernelTest);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    ret = LOS_TaskDelete(g_testTaskID01);
-    ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
+    LOS_TaskDelete(g_testTaskID01);
 
     return LOS_OK;
 }

@@ -102,9 +102,6 @@ static UINT32 Testcase(void)
     ret = LOS_TaskDelete(g_testTaskID01);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_TSK_NOT_CREATED, ret, EXIT);
 
-    ret = LOS_TaskDelete(g_testTaskID02);
-    ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
-
     return LOS_OK;
 
 EXIT:

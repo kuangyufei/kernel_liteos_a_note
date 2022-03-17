@@ -47,7 +47,6 @@ public:
  * @tc.name: ClockTestSmoke
  * @tc.desc: function for TimeClockTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeClockTest, ClockTestSmoke, TestSize.Level0)
 {
@@ -60,7 +59,6 @@ HWTEST_F(TimeClockTest, ClockTestSmoke, TestSize.Level0)
  * @tc.name: ClockTest001
  * @tc.desc: function for TimeClockTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeClockTest, ClockTest001, TestSize.Level0)
 {
@@ -71,7 +69,6 @@ HWTEST_F(TimeClockTest, ClockTest001, TestSize.Level0)
  * @tc.name: ClockTest002
  * @tc.desc: function for TimeClockTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeClockTest, ClockTest002, TestSize.Level0)
 {
@@ -82,7 +79,6 @@ HWTEST_F(TimeClockTest, ClockTest002, TestSize.Level0)
  * @tc.name: ClockTest003
  * @tc.desc: function for TimeClockTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeClockTest, ClockTest003, TestSize.Level0)
 {
@@ -93,7 +89,6 @@ HWTEST_F(TimeClockTest, ClockTest003, TestSize.Level0)
  * @tc.name: ClockTest004
  * @tc.desc: function for TimeClockTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeClockTest, ClockTest004, TestSize.Level0)
 {
@@ -104,7 +99,6 @@ HWTEST_F(TimeClockTest, ClockTest004, TestSize.Level0)
  * @tc.name: ClockTest005
  * @tc.desc: function for TimeClockTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeClockTest, ClockTest005, TestSize.Level0)
 {
@@ -115,7 +109,6 @@ HWTEST_F(TimeClockTest, ClockTest005, TestSize.Level0)
  * @tc.name: ClockTest006
  * @tc.desc: function for TimeClockTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeClockTest, ClockTest006, TestSize.Level0)
 {
@@ -126,7 +119,6 @@ HWTEST_F(TimeClockTest, ClockTest006, TestSize.Level0)
  * @tc.name: ClockTest007
  * @tc.desc: function for TimeClockTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeClockTest, ClockTest007, TestSize.Level0)
 {
@@ -137,7 +129,6 @@ HWTEST_F(TimeClockTest, ClockTest007, TestSize.Level0)
  * @tc.name: ClockTest008
  * @tc.desc: function for TimeClockTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeClockTest, ClockTest008, TestSize.Level0)
 {
@@ -148,7 +139,6 @@ HWTEST_F(TimeClockTest, ClockTest008, TestSize.Level0)
  * @tc.name: ClockTest009
  * @tc.desc: function for TimeClockTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeClockTest, ClockTest009, TestSize.Level0)
 {
@@ -159,7 +149,6 @@ HWTEST_F(TimeClockTest, ClockTest009, TestSize.Level0)
  * @tc.name: ClockTest010
  * @tc.desc: function for TimeClockTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeClockTest, ClockTest010, TestSize.Level0)
 {

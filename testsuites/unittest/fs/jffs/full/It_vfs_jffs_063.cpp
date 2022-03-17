@@ -61,7 +61,7 @@ static UINT32 Testcase(VOID)
     ret = write(fd, writebuf, strlen(writebuf));
     ICUNIT_GOTO_EQUAL(ret, FILE_NAME_LEN, ret, EXIT1);
 
-    memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     ret = read(fd, readbuf, FILE_NAME_LEN);
     ICUNIT_GOTO_EQUAL(ret, -1, ret, EXIT1);
 
@@ -77,7 +77,7 @@ static UINT32 Testcase(VOID)
     ret = write(fd, writebuf, strlen(writebuf));
     ICUNIT_GOTO_EQUAL(ret, -1, ret, EXIT1);
 
-    memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     ret = read(fd, readbuf, FILE_NAME_LEN);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 
@@ -93,7 +93,7 @@ static UINT32 Testcase(VOID)
     ret = write(fd, writebuf, strlen(writebuf));
     ICUNIT_GOTO_EQUAL(ret, FILE_NAME_LEN, ret, EXIT1);
 
-    memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     ret = read(fd, readbuf, FILE_NAME_LEN);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 

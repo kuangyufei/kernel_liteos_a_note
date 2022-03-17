@@ -71,7 +71,7 @@
     bl     sp_set
 .endm
 
-/* param0 is stack bottom, param1 is stack size, param2 is magic num */
+/* param0 is stack top, param1 is stack size, param2 is magic num */
 .macro STACK_MAGIC_SET param0, param1, param2
     ldr     r0, =\param0
     mov     r1, \param1
@@ -234,7 +234,7 @@ init_mmu_done:
     STACK_MAGIC_SET __exc_stack, #OS_EXC_STACK_SIZE, OS_STACK_MAGIC_WORD     //异常栈底设成"烫烫烫烫烫烫"
 
 warm_reset:
-    /* initialize CPSR(Current Program Status Register) */
+    /* initialize CPSR (machine state register) */
     mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_SVC_MODE) /* 禁止IRQ中断 | 禁止FIQ中断 | 管理模式-操作系统使用的保护模式 */
     msr    cpsr, r0
 
@@ -297,12 +297,12 @@ mmu_setup:
                                                 */
     isb
     orr     r12, r4, #MMU_TTBRx_FLAGS			//将临时页表属性[6:0]和基地址[31:14]放到r12
-    mcr     p15, 0, r12, c2, c0, 0              /* Set attributes and set temp page table to TTBR0(Translation Table Base Register 0) */
+    mcr     p15, 0, r12, c2, c0, 0              /* Set attributes and set temp page table */
     isb
-    mov     r12, #0x7
-    mcr     p15, 0, r12, c3, c0, 0              /* Set DACR(Domain access control register) with 0b0111, client[3:2] and manager[1:0] domian */
+    mov     r12, #0x7                           /* 0b0111 */
+    mcr     p15, 0, r12, c3, c0, 0              /* Set DACR with 0b0111, client and manager domian */
     isb
-    mrc    p15, 0, r12, c1, c0, 1
+    mrc    p15, 0, r12, c1, c0, 1               /* ACTLR, Auxlliary Control Register */
     orr    r12, r12, #(1 << 6)                  /* SMP, Enables coherent requests to the processor. */
     orr    r12, r12, #(1 << 2)                  /* Enable D-side prefetch */
     orr    r12, r12, #(1 << 11)                 /* Global BP Enable bit */
@@ -318,11 +318,11 @@ mmu_setup:
     mrc     p15, 0, r12, c1, c0, 0
     bic     r12, #(1 << 29 | 1 << 28)           /* disable access flag[bit29]，ap[0]是访问权限位，支持全部的访问权限类型
                                                    disable TEX remap[bit28]，使用TEX[2:0]与C Bbit控制memory region属性 */
-    orr     r12, #(1 << 0)                      /* MMU enable */
-    bic     r12, #(1 << 1)                      /* enable alignment fault checking */
-    orr     r12, #(1 << 2)                      /* enable data and unified cache */
-    orr     r12, #(1 << 12)                     /* enabled instruction cache */
-    mcr     p15, 0, r12, c1, c0, 0              /* Set SCTLR with r12: Turn on the MMU, I/D cache enable TRE/AFE */
+    orr     r12, #(1 << 0)                      /* mmu enable */
+    bic     r12, #(1 << 1)
+    orr     r12, #(1 << 2)                     /* D cache enable */
+    orr     r12, #(1 << 12)                    /* I cache enable */
+    mcr     p15, 0, r12, c1, c0, 0              /* Set SCTLR with r12: Turn on the MMU, I/D cache Disable TRE/AFE */
     isb
     ldr     pc,  =1f                            /* Convert to VA | 1表示标号，f表示forward(往下) - pc值取往下标识符“1”的虚拟地址(跳转到标识符“1”处)
                                                    因为之前已经在内核临时页表中建立了内核虚拟地址和物理地址的映射关系，所以接下来cpu切换到虚拟地址空间 */
@@ -422,7 +422,7 @@ page_table_build:
     lsr     r8, #20                             /* r8 = roundup(size, MB) */
 
 page_table_build_loop:
-    orr     r12, r9, r6, lsl #20                /* r12: physAddr | flags */
+    orr     r12, r9, r6, lsl #20                /* r12: flags | physAddr */
     str     r12, [r4, r7, lsl #2]               /* gPgTable[l1Index] = physAddr | flags */
                                                 /* r7是va的l1index, [r7, lsl #2]表示每次地址偏移4，例如r7是1表示l1index是1；
                                                   页表项的存储地址为r4+(1<<2)，因为每个页表项是4个字节数据 */

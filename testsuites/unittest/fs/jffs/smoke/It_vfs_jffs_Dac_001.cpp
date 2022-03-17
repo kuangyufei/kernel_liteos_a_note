@@ -49,7 +49,7 @@ static int TestUmask(const char *path)
     ICUNIT_ASSERT_EQUAL(mode, 0022, mode); // mode: 0022
     mode = umask(0022); // umask: 0022
     ICUNIT_ASSERT_EQUAL(mode, 0044, mode); // mode: 0044
-    sprintf(filename, "%s/%s", path, g_testDIR);
+    (void)sprintf_s(filename, sizeof(filename), "%s/%s", path, g_testDIR);
     ret = mkdir(filename, HIGHEST_AUTHORITY);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     ret = stat(filename, &buf);
@@ -74,10 +74,10 @@ static int TestOpen(const char *path)
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     // uid 111, gid 111,home dir 0 0 757
 
-    sprintf(filename, "%s/%s", path, g_testDIR);
+    (void)sprintf_s(filename, sizeof(filename), "%s/%s", path, g_testDIR);
     ret = mkdir(filename, 0753); // mode: 0753
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    sprintf(filename1, "%s/%s", filename, "f1");
+    (void)sprintf_s(filename1, sizeof(filename1), "%s/%s", filename, "f1");
     ret = open(filename1, O_CREAT | O_WRONLY, 0755); // mode: 0755
     ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);
     close(ret);
@@ -88,7 +88,7 @@ static int TestOpen(const char *path)
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     // uid 222, gid 111,home dir 111 111 753
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    sprintf(filename2, "%s/%s", filename, "f2");
+    (void)sprintf_s(filename2, sizeof(filename2), "%s/%s", filename, "f2");
     ret = open(filename2, O_CREAT | O_WRONLY, 0755); // mode: 0755
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
     ret = open(filename1, O_WRONLY);
@@ -98,7 +98,7 @@ static int TestOpen(const char *path)
     ret = setgid(g_testUID2);
     // uid 222, gid 222,home dir 111 111 753
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    sprintf(filename3, "%s/%s", filename, "f3");
+    (void)sprintf_s(filename3, sizeof(filename3), "%s/%s", filename, "f3");
     ret = open(filename3, O_CREAT | O_WRONLY, 0755); // mode: 0755
     printf("%s, %d ret %d\n", __FUNCTION__, __LINE__, ret);
     ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);
@@ -135,10 +135,10 @@ static int TestUnlink(const char *path)
 
     printf("%s, %d\n", __FUNCTION__, __LINE__);
     // uid 0, gid 0, home dir 0 0 757
-    sprintf(filename, "%s/%s", path, g_testDIR);
+    (void)sprintf_s(filename, sizeof(filename), "%s/%s", path, g_testDIR);
     ret = mkdir(filename, 0757); // mode 757
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    sprintf(filename1, "%s/%s", filename, "f1");
+    (void)sprintf_s(filename1, sizeof(filename1), "%s/%s", filename, "f1");
 
     ret = open(filename1, O_CREAT | O_WRONLY, 0755); // mode: 0755
     ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);
@@ -174,7 +174,7 @@ static int TestMkdir(const char *path)
 
     printf("%s, %d\n", __FUNCTION__, __LINE__);
     // uid 0, gid 0, home dir 0 0 757
-    sprintf(filename, "%s/%s", path, g_testDIR);
+    (void)sprintf_s(filename, sizeof(filename), "%s/%s", path, g_testDIR);
     ret = mkdir(filename, 0735); // mode 735
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
@@ -204,10 +204,10 @@ static int TestChmod(const char *path)
 
     printf("%s, %d\n", __FUNCTION__, __LINE__);
     // uid 0, gid 0, home dir 0 0 757
-    sprintf(filename, "%s/%s", path, g_testDIR);
+    (void)sprintf_s(filename, sizeof(filename), "%s/%s", path, g_testDIR);
     ret = mkdir(filename, 0757); // mode 757
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    sprintf(filename1, "%s/%s", filename, "f1");
+    (void)sprintf_s(filename1, sizeof(filename1), "%s/%s", filename, "f1");
 
     setuid(g_testUID2);
     ret = chmod(filename, 0111); // mode: 0111
@@ -238,10 +238,10 @@ static int TestStatChdir(const char *path)
 
     printf("%s, %d\n", __FUNCTION__, __LINE__);
     // uid 0, gid 0, home dir 0 0 757
-    sprintf(filename, "%s/%s", path, g_testDIR);
+    (void)sprintf_s(filename, sizeof(filename), "%s/%s", path, g_testDIR);
     ret = mkdir(filename, 0700); // mode: 0700
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    sprintf(filename1, "%s/%s", filename, "f1");
+    (void)sprintf_s(filename1, sizeof(filename1)"%s/%s", filename, "f1");
 
     ret = mkdir(filename1, 0755); // mode: 0755
     ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);
@@ -294,15 +294,15 @@ static int TestRename(const char *path)
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     // uid 111, gid 111,home dir 0 0 757
 
-    sprintf(filename, "%s/%s", path, g_testDIR);
+    (void)sprintf_s(filename, sizeof(filename), "%s/%s", path, g_testDIR);
     ret = mkdir(filename, 0711); // mode: 0711
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    sprintf(filename1, "%s/%s", filename, "f1");
+    (void)sprintf_s(filename1, sizeof(filename1), "%s/%s", filename, "f1");
     ret = mkdir(filename1, 0755); // mode: 0755
     ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);
     close(ret);
 
-    sprintf(filename2, "%s/%s", filename, "f2");
+    (void)sprintf_s(filename2, sizeof(filename2), "%s/%s", filename, "f2");
     ret = rename(filename1, filename2);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
@@ -310,7 +310,7 @@ static int TestRename(const char *path)
     // uid 222, gid 222,home dir 111 111 753
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    sprintf(filename2, "%s/%s", filename, "f2");
+    (void)sprintf_s(filename2, sizeof(filename2), "%s/%s", filename, "f2");
     ret = rename(filename2, filename1);
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
@@ -338,7 +338,7 @@ static int TestAccess(const char *path)
 
     printf("%s, %d\n", __FUNCTION__, __LINE__);
     // uid 0, gid 0, home dir 0 0 757
-    sprintf(filename, "%s/%s", path, g_testDIR);
+    (void)sprintf_s(filename, sizeof(filename), "%s/%s", path, g_testDIR);
     ret = mkdir(filename, 0757); // mode 757
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
@@ -406,8 +406,8 @@ static int TestCapReadSearch()
 
     ret = mkdir("/storage/test_jffs2", 0757); // mode 0757
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    sprintf(filenameParent, "%s/%s", "/storage/test_jffs2", "testParent");
-    sprintf(filenameChild, "%s/%s", filenameParent, "testChild");
+    (void)sprintf_s(filenameParent, sizeof(filenameParent), "%s/%s", "/storage/test_jffs2", "testParent");
+    (void)sprintf_s(filenameChild, sizeof(filenameChild), "%s/%s", filenameParent, "testChild");
     ret = mkdir(filenameParent, 0222); // mode 0222
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     SetReadAndSearch();
@@ -521,7 +521,6 @@ static int testcase(VOID)
 EXIT:
     return 1;
 }
-
 
 void ItTestDac001(void)
 {

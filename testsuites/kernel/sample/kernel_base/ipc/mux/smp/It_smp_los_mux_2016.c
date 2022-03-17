@@ -55,7 +55,7 @@ static VOID TaskF01(VOID)
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S testTask;
+    TSK_INIT_PARAM_S testTask = {0};
 
     g_testCount = 0;
 
@@ -65,7 +65,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_MuxLock(&g_mutexkernelTest, LOS_WAIT_FOREVER);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    TEST_TASK_PARAM_INIT_AFFI(testTask, "it_event_001_task", TaskF01, TASK_PRIO_TEST - 1,
+    TEST_TASK_PARAM_INIT_AFFI(testTask, "it_event_001_task", TaskF01, TASK_PRIO_TEST_TASK - 1,
         CPUID_TO_AFFI_MASK(ArchCurrCpuid()));
     ret = LOS_TaskCreate(&g_testTaskID01, &testTask);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);

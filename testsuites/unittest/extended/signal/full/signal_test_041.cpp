@@ -35,15 +35,18 @@
 
 static void Sigprint(int sig)
 {
+    (void)sig;
     printf("enter sighandle : -------------------------\n");
 }
 static void Sigprint111(int sig)
 {
+    (void)sig;
     printf("enter sighandle : ---111----------------------\n");
 }
 
 static void *ThreadFunc7(void *arg)
 {
+    (void)arg;
     int retval;
     sigset_t set, oldset;
     sighandler_t sigret;

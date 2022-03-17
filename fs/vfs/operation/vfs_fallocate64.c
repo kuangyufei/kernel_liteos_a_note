@@ -133,7 +133,7 @@ int fallocate64(int fd, int mode, off64_t offset, off64_t len)
         return VFS_ERROR;
     }
 
-    if (filep->f_oflags & O_DIRECTORY) {
+    if ((unsigned int)filep->f_oflags & O_DIRECTORY) {
         set_errno(EBADF);
         return VFS_ERROR;
     }

@@ -100,13 +100,13 @@ static UINT32 Testcase(VOID)
     ret = LOS_EventWrite(&g_event, 0x11); // try to wake task f01
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    // 100, Set the timeout of runtime; 2, test runing count
+    // 100, Set the timeout of runtime; 2, test running count
     TestAssertBusyTaskDelay(100, 2); // cause tasklock on other cpu ,so task f01 wake failed
 
     LOS_AtomicInc(&g_testCount);
 
     g_runFlag = 0;                     // unlock the other cpu
-    // 100, Set the timeout of runtime; 4, test runing count
+    // 100, Set the timeout of runtime; 4, test running count
     TestAssertBusyTaskDelay(100, 4); // not schedule in current cpu cause tasklock
 EXIT:
 

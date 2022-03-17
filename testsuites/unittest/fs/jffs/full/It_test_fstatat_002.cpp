@@ -42,11 +42,6 @@ static UINT32 testcase8(VOID)
     int fd = 0;
 
     /* omit to create test file dynamicly,use prepared test files in /storage instand. */
-    #if 0
-    errno = 0;
-    sprintf(pathname, "%s%s", __func__, ".tmp");
-    #endif
-
     errno = 0;
     fd = open(pathname, O_CREAT, 0777);
     TEST_PRINT("[INFO]%s:%d,%s,fd=%d,errno=%d,errstr=%s\n", __FILE__, __LINE__, __func__, fd, errno, strerror(errno));

@@ -58,7 +58,7 @@ int TestPipeSingleProcessFcntl()
             errno = 0;
             char sentence1[15] = "Hello World";
             char a[4] = {0};
-            sprintf(a, "%d", i);
+            (void)sprintf_s(a, sizeof(a), "%d", i);
             strcat(sentence1, a);
             int ret = write(*writeFd, sentence1, strlen(sentence1) + 1);
             usleep(100000); // 100000, Used to calculate the delay time.

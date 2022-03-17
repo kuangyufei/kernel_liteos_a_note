@@ -395,8 +395,8 @@ extern TRACE_EVENT_HOOK g_traceEventHook;
 #define QUEUE_CREATE_PARAMS(queueId, queueSz, itemSz, queueAddr, memType) \
     queueId, queueSz, itemSz, queueAddr, memType
 #define QUEUE_DELETE_PARAMS(queueId, state, readable)   queueId, state, readable
-#define QUEUE_RW_PARAMS(queueId, queueSize, bufSize, operateType, readable, writeable, timeout) \
-    queueId, queueSize, bufSize, operateType, readable, writeable, timeout
+#define QUEUE_RW_PARAMS(queueId, queueSize, bufSize, operateType, readable, writable, timeout) \
+    queueId, queueSize, bufSize, operateType, readable, writable, timeout
 
 #define SEM_CREATE_PARAMS(semId, type, count)           semId, type, count
 #define SEM_DELETE_PARAMS(semId, delRetCode)            semId, delRetCode

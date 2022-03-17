@@ -58,10 +58,6 @@ static UINT32 Testcase(void)
     while (g_testCount == 0) {
     }
     ICUNIT_ASSERT_EQUAL(g_testCount, 1, g_testCount);
-    LosTaskCB *runTask;
-
-    runTask = OsCurrTaskGet();
-    ICUNIT_ASSERT_EQUAL(strcmp(runTask->taskName, "IT_TST_INI"), 0, 1);
 
     return LOS_OK;
 

@@ -57,7 +57,7 @@ static void *pthread_01(void *arg)
     
     /* 判断revents */
     if (pfd.revents & POLLIN) {
-        memset_s(buf, sizeof(buf), 0, sizeof(buf));
+        (void)memset_s(buf, sizeof(buf), 0, sizeof(buf));
         retVal = read(pfd.fd, buf, BUF_SIZE);
         ICUNIT_ASSERT_NOT_EQUAL_NULL(retVal, -1, retVal);
         retVal = strcmp(strBuf, buf);

@@ -63,7 +63,7 @@ static VOID TaskFe7Func(VOID)
     ret = LOS_MuxLock(&g_testMux1, LOS_WAIT_FOREVER);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_OK, ret);
 
-    ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 19, g_testCount); // 19, here assert the result.
+    ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 21, g_testCount); // 21, here assert the result.
     g_testCount++;
     return;
 }
@@ -79,13 +79,13 @@ static VOID TaskFe8Func(VOID)
     ret = LOS_MuxLock(&g_testMux3, LOS_WAIT_FOREVER);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_OK, ret);
 
-    ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 20, g_testCount); // 20, here assert the result.
+    ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 18, g_testCount); // 18, here assert the result.
     g_testCount++;
 
     ret = LOS_MuxLock(&g_testMux1, LOS_WAIT_FOREVER);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_OK, ret);
 
-    ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 21, g_testCount); // 21, here assert the result.
+    ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 22, g_testCount); // 22, here assert the result.
     g_testCount++;
     return;
 }
@@ -100,7 +100,7 @@ static VOID TaskFe9Func(VOID)
     ret = LOS_MuxLock(&g_testMux2, LOS_WAIT_FOREVER);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_OK, ret);
 
-    ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 22, g_testCount); // 22, here assert the result.
+    ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 19, g_testCount); // 19, here assert the result.
     g_testCount++;
 
     ret = LOS_MuxLock(&g_testMux1, LOS_WAIT_FOREVER);
@@ -114,7 +114,6 @@ static VOID TaskFe9Func(VOID)
 static VOID TaskMisc10Func(VOID)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S task1, task2, task3;
 
     g_testCount++;
 
@@ -174,7 +173,7 @@ static VOID TaskMisc10Func(VOID)
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S task;
+    TSK_INIT_PARAM_S task = {0};
     g_testCount = 0;
 
     ret = LosMuxCreate(&g_testMux1);
@@ -257,7 +256,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_TaskDelete(g_testTaskID01);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    ICUNIT_GOTO_EQUAL(g_testCount, 18, g_testCount, EXIT); // 18, here assert the result.
+    ICUNIT_GOTO_EQUAL(g_testCount, 20, g_testCount, EXIT); // 20, here assert the result.
     g_testCount++;
 
     ret = LOS_MuxUnlock(&g_testMux1);
@@ -286,7 +285,8 @@ EXIT:
     ret = LOS_MuxUnlock(&g_testMux4);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    ICUNIT_ASSERT_EQUAL(OsCurrTaskGet()->priority, TASK_PRIO_TEST, OsCurrTaskGet()->priority);
+    UINT16 priority = LOS_TaskPriGet(OsCurrTaskGet()->taskID);
+    ICUNIT_ASSERT_EQUAL(priority, TASK_PRIO_TEST_TASK, priority);
 
     ret = LOS_MuxDestroy(&g_testMux1);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);

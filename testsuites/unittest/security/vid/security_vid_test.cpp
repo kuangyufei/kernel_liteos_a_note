@@ -47,7 +47,6 @@ public:
  * @tc.name: It_Sec_Vid_001
  * @tc.desc: function for SecurityVidTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SecurityVidTest, ItSecVid001, TestSize.Level0)
 {

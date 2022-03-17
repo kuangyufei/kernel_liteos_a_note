@@ -35,15 +35,17 @@
 
 static void SigPrint(int signum)
 {
+    (void)signum;
     printf("Catch signal %d\n", signum);
 }
 
 static void SigQuit(int signum)
 {
+    (void)signum;
     printf("QUIT\n");
 }
 
-static int TestSignal()
+static int TestSignal(void)
 {
     int sigI = SIGINT;
     int sigQ = SIGQUIT;

@@ -51,7 +51,6 @@ public:
  * @tc.name: IT_TEST_SYS_004
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys004, TestSize.Level0)
 {
@@ -62,7 +61,6 @@ HWTEST_F(SysTest, ItTestSys004, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_005
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys005, TestSize.Level0)
 {
@@ -73,7 +71,6 @@ HWTEST_F(SysTest, ItTestSys005, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_006
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys006, TestSize.Level0)
 {
@@ -84,7 +81,6 @@ HWTEST_F(SysTest, ItTestSys006, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_007
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys007, TestSize.Level0)
 {
@@ -95,7 +91,6 @@ HWTEST_F(SysTest, ItTestSys007, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_008
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys008, TestSize.Level0)
 {
@@ -106,7 +101,6 @@ HWTEST_F(SysTest, ItTestSys008, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_009
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys009, TestSize.Level0)
 {
@@ -117,7 +111,6 @@ HWTEST_F(SysTest, ItTestSys009, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_010
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys010, TestSize.Level0)
 {
@@ -128,7 +121,6 @@ HWTEST_F(SysTest, ItTestSys010, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_012
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys012, TestSize.Level0)
 {
@@ -139,7 +131,6 @@ HWTEST_F(SysTest, ItTestSys012, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_013
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys013, TestSize.Level0)
 {
@@ -150,7 +141,6 @@ HWTEST_F(SysTest, ItTestSys013, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_014
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys014, TestSize.Level0)
 {
@@ -161,7 +151,6 @@ HWTEST_F(SysTest, ItTestSys014, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_015
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys015, TestSize.Level0)
 {
@@ -172,7 +161,6 @@ HWTEST_F(SysTest, ItTestSys015, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_016
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys016, TestSize.Level0)
 {
@@ -183,7 +171,6 @@ HWTEST_F(SysTest, ItTestSys016, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_017
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys017, TestSize.Level0)
 {
@@ -194,7 +181,6 @@ HWTEST_F(SysTest, ItTestSys017, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_029
  * @tc.desc: function for ftok exception test
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys029, TestSize.Level0)
 {
@@ -205,7 +191,6 @@ HWTEST_F(SysTest, ItTestSys029, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_030
  * @tc.desc: function for sigsetjmp siglongjmp test
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, IT_TEST_SYS_030, TestSize.Level0)
 {
@@ -216,7 +201,6 @@ HWTEST_F(SysTest, IT_TEST_SYS_030, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_031
  * @tc.desc: function for ctermid test
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, IT_TEST_SYS_031, TestSize.Level0)
 {
@@ -229,7 +213,6 @@ HWTEST_F(SysTest, IT_TEST_SYS_031, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_001
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys001, TestSize.Level0)
 {
@@ -240,7 +223,6 @@ HWTEST_F(SysTest, ItTestSys001, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_018
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys018, TestSize.Level0)
 {
@@ -251,7 +233,6 @@ HWTEST_F(SysTest, ItTestSys018, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_019
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys019, TestSize.Level0)
 {
@@ -262,7 +243,6 @@ HWTEST_F(SysTest, ItTestSys019, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_020
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys020, TestSize.Level0)
 {
@@ -273,7 +253,6 @@ HWTEST_F(SysTest, ItTestSys020, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_021
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys021, TestSize.Level0)
 {
@@ -284,7 +263,6 @@ HWTEST_F(SysTest, ItTestSys021, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_022
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys022, TestSize.Level0)
 {
@@ -295,7 +273,6 @@ HWTEST_F(SysTest, ItTestSys022, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_023
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys023, TestSize.Level0)
 {
@@ -306,7 +283,6 @@ HWTEST_F(SysTest, ItTestSys023, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_024
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys024, TestSize.Level0)
 {
@@ -317,7 +293,6 @@ HWTEST_F(SysTest, ItTestSys024, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_025
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys025, TestSize.Level0)
 {
@@ -328,7 +303,6 @@ HWTEST_F(SysTest, ItTestSys025, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_025
  * @tc.desc: function for SysTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys026, TestSize.Level0)
 {
@@ -339,7 +313,6 @@ HWTEST_F(SysTest, ItTestSys026, TestSize.Level0)
  * @tc.name: IT_TEST_SYS_027
  * @tc.desc: function for ftok normal test
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys027, TestSize.Level0)
 {
@@ -350,7 +323,6 @@ HWTEST_F(SysTest, ItTestSys027, TestSize.Level0)
  * @tc.name: ItTestSys028
  * @tc.desc: function for nice:set pthread priority
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SysTest, ItTestSys028, TestSize.Level0)
 {

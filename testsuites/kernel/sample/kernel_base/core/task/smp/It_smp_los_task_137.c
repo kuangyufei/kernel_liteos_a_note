@@ -75,7 +75,7 @@ static UINT32 Testcase(void)
     ret = OS_TCB_FROM_TID(g_testTaskID02)->taskStatus;
     ICUNIT_ASSERT_NOT_EQUAL((ret & OS_TASK_STATUS_READY), 0, ret);
 
-    TestAssertBusyTaskDelay(100, 1); // 100, Set the timeout of runtime; 1, test runing count
+    TestAssertBusyTaskDelay(100, 1); // 100, Set the timeout of runtime; 1, test running count
 
     ICUNIT_ASSERT_NOT_EQUAL(g_testCount, 0, g_testCount);
 

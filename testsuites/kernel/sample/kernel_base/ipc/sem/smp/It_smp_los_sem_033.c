@@ -103,7 +103,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_SemPost(g_semID);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    TestAssertBusyTaskDelay(200, 3); // 200, Set the timeout of runtime; 3, test runing count
+    TestAssertBusyTaskDelay(200, 3); // 200, Set the timeout of runtime; 3, test running count
     ICUNIT_GOTO_EQUAL(g_testCount, 3, g_testCount, EXIT1); // 3, Here, assert that g_testCount is equal to
 
     ret = LOS_SemPost(g_semID);

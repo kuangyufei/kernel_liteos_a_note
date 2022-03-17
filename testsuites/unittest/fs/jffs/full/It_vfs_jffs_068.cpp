@@ -93,7 +93,7 @@ static UINT32 Testcase(VOID)
     fd = open(pathname1, O_NONBLOCK | O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT5);
 
-    memset_s(readbuf, sizeof(readbuf), 0, strlen(readbuf));
+    (void)memset_s(readbuf, sizeof(readbuf), 0, strlen(readbuf));
     len = read(fd, readbuf, MAX_FILE_NAME_LEN);
     printf("[%d] fd:%d, errno:%d,readbuf:%s\n", __LINE__, fd, errno, readbuf);
     ICUNIT_GOTO_EQUAL(len, strlen(filebuf1) + strlen(filebuf2), len, EXIT5);

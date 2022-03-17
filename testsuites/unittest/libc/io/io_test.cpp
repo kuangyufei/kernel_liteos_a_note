@@ -48,7 +48,6 @@ public:
  * @tc.name: IT_TEST_IO_005
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItTestIo005, TestSize.Level0)
 {
@@ -60,7 +59,6 @@ HWTEST_F(IoTest, ItTestIo005, TestSize.Level0)
  * @tc.name: IT_TEST_IO_008
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItTestIo008, TestSize.Level0)
 {
@@ -73,7 +71,6 @@ HWTEST_F(IoTest, ItTestIo008, TestSize.Level0)
  * @tc.name: IT_TEST_IO_010
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItTestIo010, TestSize.Level0)
 {
@@ -84,7 +81,6 @@ HWTEST_F(IoTest, ItTestIo010, TestSize.Level0)
  * @tc.name: IT_TEST_IO_013
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItTestIo013, TestSize.Level0)
 {
@@ -97,7 +93,6 @@ HWTEST_F(IoTest, ItTestIo013, TestSize.Level0)
  * @tc.name: IO_TEST_PSELECT_001
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_PSELECT_001, TestSize.Level0)
 {
@@ -108,7 +103,6 @@ HWTEST_F(IoTest, IO_TEST_PSELECT_001, TestSize.Level0)
  * @tc.name: IO_TEST_PSELECT_002
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_PSELECT_002, TestSize.Level0)
 {
@@ -119,7 +113,6 @@ HWTEST_F(IoTest, IO_TEST_PSELECT_002, TestSize.Level0)
  * @tc.name: IO_TEST_PPOLL_001
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_PPOLL_001, TestSize.Level0)
 {
@@ -130,7 +123,6 @@ HWTEST_F(IoTest, IO_TEST_PPOLL_001, TestSize.Level0)
  * @tc.name: IO_TEST_PPOLL_002
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_PPOLL_002, TestSize.Level0)
 {
@@ -141,7 +133,6 @@ HWTEST_F(IoTest, IO_TEST_PPOLL_002, TestSize.Level0)
  * @tc.name: IO_TEST_PPOLL_003
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_PPOLL_003, TestSize.Level0)
 {
@@ -152,7 +143,6 @@ HWTEST_F(IoTest, IO_TEST_PPOLL_003, TestSize.Level0)
  * @tc.name: IO_TEST_EPOLL_001
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
  
 HWTEST_F(IoTest, IO_TEST_EPOLL_001, TestSize.Level0)
@@ -164,7 +154,6 @@ HWTEST_F(IoTest, IO_TEST_EPOLL_001, TestSize.Level0)
  * @tc.name: IO_TEST_EPOLL_002
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_EPOLL_002, TestSize.Level0)
 {
@@ -175,7 +164,6 @@ HWTEST_F(IoTest, IO_TEST_EPOLL_002, TestSize.Level0)
  * @tc.name: IT_STDLIB_POLL_002
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItStdlibPoll002, TestSize.Level0)
 {
@@ -186,7 +174,6 @@ HWTEST_F(IoTest, ItStdlibPoll002, TestSize.Level0)
  * @tc.name: IT_STDLIB_POLL_003
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItStdlibPoll003, TestSize.Level0)
 {
@@ -197,7 +184,6 @@ HWTEST_F(IoTest, ItStdlibPoll003, TestSize.Level0)
  * @tc.name: IT_STDIO_PUTWC_001
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItStdioPutwc001, TestSize.Level0)
 {
@@ -208,7 +194,6 @@ HWTEST_F(IoTest, ItStdioPutwc001, TestSize.Level0)
  * @tc.name: IT_STDIO_READV_001
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItStdioReadv001, TestSize.Level0)
 {
@@ -219,7 +204,6 @@ HWTEST_F(IoTest, ItStdioReadv001, TestSize.Level0)
  * @tc.name: IT_STDIO_RINDEX_001
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItStdioRindex001, TestSize.Level0)
 {
@@ -230,7 +214,6 @@ HWTEST_F(IoTest, ItStdioRindex001, TestSize.Level0)
  * @tc.name: IT_STDIO_SETLOGMASK_001
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItStdioSetlogmask001, TestSize.Level0)
 {
@@ -241,7 +224,6 @@ HWTEST_F(IoTest, ItStdioSetlogmask001, TestSize.Level0)
  * @tc.name: IT_STDLIB_GCVT_001
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItStdlibGcvt001, TestSize.Level0)
 {
@@ -252,7 +234,6 @@ HWTEST_F(IoTest, ItStdlibGcvt001, TestSize.Level0)
  * @tc.name: IT_LOCALE_LOCALECONV_001
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItLocaleLocaleconv001, TestSize.Level0)
 {
@@ -263,7 +244,6 @@ HWTEST_F(IoTest, ItLocaleLocaleconv001, TestSize.Level0)
  * @tc.name: IT_STDIO_FPUTWS_001
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItStdioFputws001, TestSize.Level0)
 {
@@ -274,7 +254,6 @@ HWTEST_F(IoTest, ItStdioFputws001, TestSize.Level0)
  * @tc.name: IT_STDIO_FWPRINTF_001
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItStdioFwprintf001, TestSize.Level0)
 {
@@ -285,7 +264,6 @@ HWTEST_F(IoTest, ItStdioFwprintf001, TestSize.Level0)
  * @tc.name: IT_STDIO_GETC_UNLOCKED_001
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItStdioGetcUnlocked001, TestSize.Level0)
 {
@@ -296,7 +274,6 @@ HWTEST_F(IoTest, ItStdioGetcUnlocked001, TestSize.Level0)
  * @tc.name: IT_STDIO_MBLEN_001
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItStdioMblen001, TestSize.Level0)
 {
@@ -307,7 +284,6 @@ HWTEST_F(IoTest, ItStdioMblen001, TestSize.Level0)
  * @tc.name: IT_STDIO_MBRLEN_001
  * @tc.desc: function for IoTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, ItStdioMbrlen001, TestSize.Level0)
 {
@@ -318,7 +294,6 @@ HWTEST_F(IoTest, ItStdioMbrlen001, TestSize.Level0)
  * @tc.name: IT_STDIO_HASMNTOPT_001
  * @tc.desc: function for IoTest-normal testcase
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IT_STDIO_HASMNTOPT_001, TestSize.Level0)
 {
@@ -329,7 +304,6 @@ HWTEST_F(IoTest, IT_STDIO_HASMNTOPT_001, TestSize.Level0)
  * @tc.name: IO_TEST_DUPLOCALE_001
  * @tc.desc: function for IoTest-dup the locale global pointer
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_DUPLOCALE_001, TestSize.Level0)
 {
@@ -340,7 +314,6 @@ HWTEST_F(IoTest, IO_TEST_DUPLOCALE_001, TestSize.Level0)
  * @tc.name: IO_TEST_NL_LANGINFO_001
  * @tc.desc: function for IoTest-normal testcase
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_NL_LANGINFO_001, TestSize.Level0)
 {
@@ -351,7 +324,6 @@ HWTEST_F(IoTest, IO_TEST_NL_LANGINFO_001, TestSize.Level0)
  * @tc.name: IO_TEST_STRCASECMP_L_001
  * @tc.desc: function for IoTest-normal testcase
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_STRCASECMP_L_001, TestSize.Level0)
 {
@@ -362,7 +334,6 @@ HWTEST_F(IoTest, IO_TEST_STRCASECMP_L_001, TestSize.Level0)
  * @tc.name: IO_TEST_STRCASECMP_L_002
  * @tc.desc: function for IoTest-normal testcase
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_STRCASECMP_L_002, TestSize.Level0)
 {
@@ -373,7 +344,6 @@ HWTEST_F(IoTest, IO_TEST_STRCASECMP_L_002, TestSize.Level0)
  * @tc.name: IO_TEST_STRNCASECMP_L_001
  * @tc.desc: function for IoTest-normal testcase
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_STRNCASECMP_L_001, TestSize.Level0)
 {
@@ -384,7 +354,6 @@ HWTEST_F(IoTest, IO_TEST_STRNCASECMP_L_001, TestSize.Level0)
  * @tc.name: IO_TEST_STRNCASECMP_L_002
  * @tc.desc: function for IoTest-normal testcase
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_STRNCASECMP_L_002, TestSize.Level0)
 {
@@ -395,7 +364,6 @@ HWTEST_F(IoTest, IO_TEST_STRNCASECMP_L_002, TestSize.Level0)
  * @tc.name: IO_TEST_NL_LANGINFO_l_001
  * @tc.desc: function for IoTest-query language and locale information
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_NL_LANGINFO_l_001, TestSize.Level0)
 {
@@ -406,7 +374,6 @@ HWTEST_F(IoTest, IO_TEST_NL_LANGINFO_l_001, TestSize.Level0)
  * @tc.name: IO_TEST_DNGETTEXT_001
  * @tc.desc: function for IoTest-print the translated string1 or string2
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_DNGETTEXT_001, TestSize.Level0)
 {
@@ -417,7 +384,6 @@ HWTEST_F(IoTest, IO_TEST_DNGETTEXT_001, TestSize.Level0)
  * @tc.name: IO_TEST_DNGETTEXT_002
  * @tc.desc: function for IoTest-innormal testcases
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_DNGETTEXT_002, TestSize.Level0)
 {
@@ -428,7 +394,6 @@ HWTEST_F(IoTest, IO_TEST_DNGETTEXT_002, TestSize.Level0)
  * @tc.name: IO_TEST_DCNGETTEXT_001
  * @tc.desc: function for IoTest-print the translated string1 or string2 with locale parameter
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_DCNGETTEXT_001, TestSize.Level0)
 {
@@ -439,7 +404,6 @@ HWTEST_F(IoTest, IO_TEST_DCNGETTEXT_001, TestSize.Level0)
  * @tc.name: IO_TEST_DCNGETTEXT_002
  * @tc.desc: function for IoTest-innormal testcases
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_DCNGETTEXT_002, TestSize.Level0)
 {
@@ -449,7 +413,6 @@ HWTEST_F(IoTest, IO_TEST_DCNGETTEXT_002, TestSize.Level0)
  * @tc.name: IO_TEST_DCGETTEXT_001
  * @tc.desc: function for IoTest-print the translated string with locale parameter
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_DCGETTEXT_001, TestSize.Level0)
 {
@@ -460,7 +423,6 @@ HWTEST_F(IoTest, IO_TEST_DCGETTEXT_001, TestSize.Level0)
  * @tc.name: IO_TEST_DCGETTEXT_002
  * @tc.desc: function for IoTest-innormal testcases
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_DCGETTEXT_002, TestSize.Level0)
 {
@@ -471,7 +433,6 @@ HWTEST_F(IoTest, IO_TEST_DCGETTEXT_002, TestSize.Level0)
  * @tc.name: IO_TEST_GETTEXT_001
  * @tc.desc: function for IoTest-normal testcases
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_GETTEXT_001, TestSize.Level0)
 {
@@ -482,7 +443,6 @@ HWTEST_F(IoTest, IO_TEST_GETTEXT_001, TestSize.Level0)
  * @tc.name: IO_TEST_LOCALE_001
  * @tc.desc: function for IoTest-normal testcases
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_LOCALE_001, TestSize.Level0)
 {
@@ -493,7 +453,6 @@ HWTEST_F(IoTest, IO_TEST_LOCALE_001, TestSize.Level0)
  * @tc.name: IO_TEST_LOCALE_002
  * @tc.desc: function for IoTest-innormal testcases
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_LOCALE_002, TestSize.Level0)
 {
@@ -504,7 +463,6 @@ HWTEST_F(IoTest, IO_TEST_LOCALE_002, TestSize.Level0)
  * @tc.name: IO_TEST_STRFMON_L_001
  * @tc.desc: function for IoTest-normal testcases
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_STRFMON_L_001, TestSize.Level0)
 {
@@ -515,7 +473,6 @@ HWTEST_F(IoTest, IO_TEST_STRFMON_L_001, TestSize.Level0)
  * @tc.name: IO_TEST_STRFMON_L_002
  * @tc.desc: function for IoTest-innormal testcases
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_STRFMON_L_002, TestSize.Level0)
 {
@@ -526,7 +483,6 @@ HWTEST_F(IoTest, IO_TEST_STRFMON_L_002, TestSize.Level0)
  * @tc.name: IO_TEST_NGETTEXT_001
  * @tc.desc: function for IoTest-normal testcases
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(IoTest, IO_TEST_NGETTEXT_001, TestSize.Level0)
 {

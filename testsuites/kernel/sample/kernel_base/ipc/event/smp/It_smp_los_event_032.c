@@ -111,7 +111,7 @@ static UINT32 Testcase(void)
         } else if ((g_ret1 == 0x00) && (g_ret2 == LOS_OK) && (g_ret3 == LOS_OK)) {
             /*
              * (g_ret1 == 0) && (g_ret2 == 0) && (uwRet3 == 0)
-             * try read -->write event ---resume read---> destory event ---> read event [fail]
+             * try read -->write event ---resume read---> destroy event ---> read event [fail]
              */
         } else {
             ICUNIT_GOTO_EQUAL(1, 0, g_ret1, EXIT);

@@ -48,8 +48,8 @@ static UINT32 Testcase(VOID)
     ret = chdir(pathname2);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
-    memset_s(pathname4, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-    memset_s(pathname5, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+    (void)memset_s(pathname4, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+    (void)memset_s(pathname5, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
     strcat_s(pathname3, sizeof(pathname3), "/");
 
     while (i < 252) { // 252 means loop times

@@ -55,10 +55,10 @@ static VOID *PthreadF01(void *arg)
     g_jffsFlagF01++;
 
     for (j = 0; j < fileNum; j++) {
-        memset_s(g_jffsPathname11[j], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        memset_s(g_jffsPathname12[j], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        memset_s(g_jffsPathname13[j], JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
+        (void)memset_s(g_jffsPathname11[j], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(g_jffsPathname12[j], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(g_jffsPathname13[j], JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
         snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", j);
         strcat_s(g_jffsPathname11[j], JFFS_NAME_LIMITTED_SIZE, pathname);
         strcat_s(g_jffsPathname12[j], JFFS_NAME_LIMITTED_SIZE, pathname);
@@ -186,7 +186,7 @@ static VOID *PthreadF02(void *arg)
 
     bufW = (CHAR *)malloc(bufWLen + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW, NULL, 0, EXIT2);
-    memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
+    (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (j = 0; j < fileNum; j++) {
         strcat_s(bufW, bufWLen + 1, filebuf);

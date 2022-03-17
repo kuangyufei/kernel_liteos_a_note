@@ -56,7 +56,6 @@ public:
  * @tc.name: NetSocketTest001
  * @tc.desc: function for NetSocketTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetSocketTest, NetSocketTest001, TestSize.Level0)
 {
@@ -67,7 +66,6 @@ HWTEST_F(NetSocketTest, NetSocketTest001, TestSize.Level0)
  * @tc.name: NetSocketTest002
  * @tc.desc: function for NetSocketTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetSocketTest, NetSocketTest002, TestSize.Level0)
 {
@@ -79,7 +77,6 @@ HWTEST_F(NetSocketTest, NetSocketTest002, TestSize.Level0)
  * @tc.name: NetSocketTest003
  * @tc.desc: function for NetSocketTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetSocketTest, NetSocketTest003, TestSize.Level0)
 {
@@ -91,7 +88,6 @@ HWTEST_F(NetSocketTest, NetSocketTest003, TestSize.Level0)
  * @tc.name: NetSocketTest004
  * @tc.desc: function for NetSocketTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetSocketTest, NetSocketTest004, TestSize.Level0)
 {
@@ -102,7 +98,6 @@ HWTEST_F(NetSocketTest, NetSocketTest004, TestSize.Level0)
  * @tc.name: NetSocketTest005
  * @tc.desc: function for NetSocketTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetSocketTest, NetSocketTest005, TestSize.Level0)
 {
@@ -113,7 +108,6 @@ HWTEST_F(NetSocketTest, NetSocketTest005, TestSize.Level0)
  * @tc.name: NetSocketTest006
  * @tc.desc: function for NetSocketTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetSocketTest, NetSocketTest006, TestSize.Level0)
 {
@@ -125,7 +119,6 @@ HWTEST_F(NetSocketTest, NetSocketTest006, TestSize.Level0)
  * @tc.name: NetSocketTest007
  * @tc.desc: function for NetSocketTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetSocketTest, NetSocketTest007, TestSize.Level0)
 {
@@ -137,7 +130,6 @@ HWTEST_F(NetSocketTest, NetSocketTest007, TestSize.Level0)
  * @tc.name: NetSocketTest008
  * @tc.desc: function for NetSocketTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetSocketTest, NetSocketTest008, TestSize.Level0)
 {
@@ -148,7 +140,6 @@ HWTEST_F(NetSocketTest, NetSocketTest008, TestSize.Level0)
  * @tc.name: NetSocketTest009
  * @tc.desc: function for NetSocketTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetSocketTest, NetSocketTest009, TestSize.Level0)
 {
@@ -159,7 +150,6 @@ HWTEST_F(NetSocketTest, NetSocketTest009, TestSize.Level0)
  * @tc.name: NetSocketTest010
  * @tc.desc: function for NetSocketTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetSocketTest, NetSocketTest010, TestSize.Level0)
 {
@@ -170,7 +160,6 @@ HWTEST_F(NetSocketTest, NetSocketTest010, TestSize.Level0)
  * @tc.name: NetSocketTest011
  * @tc.desc: function for NetSocketTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetSocketTest, NetSocketTest011, TestSize.Level0)
 {
@@ -181,7 +170,6 @@ HWTEST_F(NetSocketTest, NetSocketTest011, TestSize.Level0)
  * @tc.name: NetSocketTest012
  * @tc.desc: function for NetSocketTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetSocketTest, NetSocketTest012, TestSize.Level0)
 {
@@ -192,7 +180,6 @@ HWTEST_F(NetSocketTest, NetSocketTest012, TestSize.Level0)
  * @tc.name: NetSocketTest013
  * @tc.desc: function for NetSocketTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 /*
 HWTEST_F(NetSocketTest, NetSocketTest013, TestSize.Level0)

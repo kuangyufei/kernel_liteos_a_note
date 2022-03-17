@@ -101,7 +101,7 @@ static UINT32 Testcase(void)
     TestBusyTaskDelay(10); // 10, set delay time
 
     ret = OS_TCB_FROM_TID(g_testTaskID02)->taskStatus;
-    ICUNIT_GOTO_EQUAL(ret, OS_TASK_STATUS_SUSPEND | OS_TASK_STATUS_DETACHED, ret, EXIT);
+    ICUNIT_GOTO_EQUAL(ret & OS_TASK_STATUS_SUSPEND, OS_TASK_STATUS_SUSPEND, ret, EXIT);
 
     ICUNIT_GOTO_EQUAL(g_testCount, 4, g_testCount, EXIT); // 4, assert that g_testCount is equal to this.
 

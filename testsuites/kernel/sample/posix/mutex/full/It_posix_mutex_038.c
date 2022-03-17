@@ -40,51 +40,15 @@ extern "C" {
 static pthread_mutex_t g_mutex038;
 static sem_t g_sem038;
 
-/* pthread_mutex_lock 4-1.c
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it would be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
- * This sample test aims to check the following assertion:
- *
- * If the mutex type is PTHREAD_MUTEX_RECURSIVE,
- * then the mutex maintains the concept of a lock count.
- * When a thread successfully acquires a mutex for the first time,
- * the lock count is set to one. Every time a thread relocks this mutex,
- * the lock count is incremented by one.
- * Each time the thread unlocks the mutex,
- * the lock count is decremented by one.
- * When the lock count reaches zero,
- * the mutex becomes available and others threads can acquire it.
-
- * The steps are:
- * ->Create a mutex with recursive attribute
- * ->Create a threads
- * ->Parent locks the mutex twice, unlocks once.
- * ->Child attempts to lock the mutex.
- * ->Parent unlocks the mutex.
- * ->Parent unlocks the mutex (shall fail)
- * ->Child unlocks the mutex.
- */
 static void *TaskF01(void *arg)
 {
     int ret;
 
-    /* Try to lock the mutex once. The call must fail here. */
     ret = pthread_mutex_trylock(&g_mutex038);
     if (ret == 0) {
         ICUNIT_GOTO_EQUAL(1, 0, ret, EXIT);
     }
 
-    /* Free the parent thread and lock the mutex (must success) */
     if ((ret = sem_post(&g_sem038))) {
         ICUNIT_GOTO_EQUAL(1, 0, ret, EXIT);
     }
@@ -93,12 +57,10 @@ static void *TaskF01(void *arg)
         ICUNIT_GOTO_EQUAL(1, 0, ret, EXIT);
     }
 
-    /* Wait for the parent to let us go on */
     if ((ret = sem_post(&g_sem038))) {
         ICUNIT_GOTO_EQUAL(1, 0, ret, EXIT);
     }
 
-    /* Unlock and exit */
     if ((ret = pthread_mutex_unlock(&g_mutex038))) {
         ICUNIT_GOTO_EQUAL(1, 0, ret, EXIT);
     }
@@ -113,12 +75,10 @@ static UINT32 Testcase(VOID)
     pthread_mutexattr_t ma;
     pthread_t child;
 
-    /* Initialize the semaphore */
     if ((ret = sem_init(&g_sem038, 0, 0))) {
         ICUNIT_ASSERT_EQUAL(1, 0, ret);
     }
 
-    /* We initialize the recursive mutex */
     if ((ret = pthread_mutexattr_init(&ma))) {
         ICUNIT_ASSERT_EQUAL(1, 0, ret);
     }
@@ -135,9 +95,6 @@ static UINT32 Testcase(VOID)
         ICUNIT_ASSERT_EQUAL(1, 0, ret);
     }
 
-    /* -- The mutex is now ready for testing -- */
-
-    /* First, we lock it twice and unlock once */
     if ((ret = pthread_mutex_lock(&g_mutex038))) {
         ICUNIT_ASSERT_EQUAL(1, 0, ret);
     }
@@ -150,40 +107,31 @@ static UINT32 Testcase(VOID)
         ICUNIT_ASSERT_EQUAL(1, 0, ret);
     }
 
-    /* Here this thread owns the mutex and the internal count is "1" */
-
-    /* We create the child thread */
     if ((ret = pthread_create(&child, NULL, TaskF01, NULL))) {
         ICUNIT_ASSERT_EQUAL(1, 0, ret);
     }
 
-    /* then wait for child to be ready */
     if ((ret = sem_wait(&g_sem038))) {
         ICUNIT_ASSERT_EQUAL(1, 0, ret);
     }
 
-    /* We can now unlock the mutex */
     if ((ret = pthread_mutex_unlock(&g_mutex038))) {
         ICUNIT_ASSERT_EQUAL(1, 0, ret);
     }
 
-    /* We wait for the child to lock the mutex */
     if ((ret = sem_wait(&g_sem038))) {
         ICUNIT_ASSERT_EQUAL(1, 0, ret);
     }
 
-    /* Then, try to unlock the mutex (owned by the child or unlocked) */
     ret = pthread_mutex_unlock(&g_mutex038);
     if (ret == ENOERR) {
         ICUNIT_ASSERT_EQUAL(1, 0, ret);
     }
 
-    /* Everything seems OK here */
     if ((ret = pthread_join(child, NULL))) {
         ICUNIT_ASSERT_EQUAL(1, 0, ret);
     }
 
-    /* Simple loop to double-check */
     for (i = 0; i < 50; i++) { // 50, The loop frequency.
         if ((ret = pthread_mutex_lock(&g_mutex038))) {
             ICUNIT_ASSERT_EQUAL(1, 0, ret);
@@ -199,7 +147,6 @@ static UINT32 Testcase(VOID)
     if (ret == 0) {
         ICUNIT_ASSERT_EQUAL(1, 0, ret);
     }
-    /* The test passed, we destroy the mutex */
     if ((ret = pthread_mutex_destroy(&g_mutex038))) {
         ICUNIT_ASSERT_EQUAL(1, 0, ret);
     }

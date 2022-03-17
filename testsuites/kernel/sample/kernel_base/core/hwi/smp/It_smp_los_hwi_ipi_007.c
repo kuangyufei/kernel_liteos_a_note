@@ -109,7 +109,7 @@ static UINT32 Testcase(void)
         LOS_TaskDelay(1);
         PRINTK("sent %u time\n", g_ipiTriggerTimes);
         for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
-            PRINTK("    cpu%d recieved %u times\n", i, g_ipiRecieveTimes[i]);
+            PRINTK("    cpu%d received %u times\n", i, g_ipiRecieveTimes[i]);
         }
 
         ICUNIT_GOTO_EQUAL(g_testCount, LOSCFG_KERNEL_CORE_NUM * (j + 1), g_testCount, EXIT);

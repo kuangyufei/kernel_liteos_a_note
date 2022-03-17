@@ -60,7 +60,6 @@ static VOID TaskFe4Func(VOID)
 static VOID TaskMisc10Func(VOID)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S task1, task2, task3;
 
     g_testCount++;
     for (INT32 i = 0; i < OS_MUX_NUM; i++) {
@@ -76,7 +75,7 @@ static VOID TaskMisc10Func(VOID)
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S task;
+    TSK_INIT_PARAM_S task = {0};
     g_testCount = 0;
 
     ret = LosMuxCreate(&g_testMux1);

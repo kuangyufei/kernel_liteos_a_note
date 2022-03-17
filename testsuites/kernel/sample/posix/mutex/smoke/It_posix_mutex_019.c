@@ -41,38 +41,6 @@ static pthread_mutex_t *g_mtx;
 static sem_t g_semA, g_semB;
 static pthread_mutex_t g_mtxNull, g_mtxDef;
 
-/* pthread_mutex_init 1-2.c
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it would be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
- * This sample test aims to check the following assertion:
- *
- * If the mutex attribute pointer passed to pthread_mutex_init is NULL,
- * the effects on the mutex are the same as if a default mutex attribute object had been passed.
- *
- * The steps are:
- *  * create two mutexes. One is initialized with NULL attribute, the other with a default attribute object.
- *  * Compare the following features between the two mutexes:
- *      -> Can it cause / detect a deadlock? (attempt to lock a mutex the thread already owns).
- *            If detected, do both mutexes cause the same uwErr code?
- *      -> Is an uwErr returned when unlocking the mutex in unlocked state?
- *            When unlocking the mutex owned by another thread?
- *
- * The test will pass if the results of each feature are the same for the two mutexes
- * (making no assumption on what is the default behavior).
- * The test will be unresolved if any initialization fails.
- * The test will fail if a feature differs between the two mutex objects.
- */
-
 static void *TaskF01(void *arg)
 {
     int ret;

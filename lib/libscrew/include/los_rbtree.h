@@ -75,10 +75,10 @@ typedef struct TagRbWalk {
     LosRbNode *pstCurrNode;
     struct TagRbTree *pstTree;
 } LosRbWalk;
-
-#define RB_EQUAL (0)
-#define RB_BIGGER (1)
-#define RB_SMALLER (2)
+// 常用于两个线性区的虚拟地址的大小和范围
+#define RB_EQUAL (0) //相等
+#define RB_BIGGER (1) //更大
+#define RB_SMALLER (2) //更小
 
 #define RB_SCAN(pstTree, pstNode) do {                                     \
         (pstNode) = LOS_RbFirstNode((pstTree)); \

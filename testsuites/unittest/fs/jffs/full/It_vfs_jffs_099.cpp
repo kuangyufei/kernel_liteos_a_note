@@ -83,7 +83,7 @@ static UINT32 Testcase(VOID)
     fd = open(pathname1, O_NONBLOCK | O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(fd, -1, fd, EXIT1);
 
-    strcpy_s(readbuf, JFFS_STANDARD_NAME_LENGTH, "liteos");
+    (void)strcpy_s(readbuf, JFFS_STANDARD_NAME_LENGTH, "liteos");
 
     fd = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT1);

@@ -51,8 +51,8 @@ void child1(void)
         }
 
         if (newPolicy != policy || pri != param.sched_priority) {
-            printf("pthread_getschedparam failed  ! %d policy %d newPolicy pri %d param.sched_priority :%d\n", __LINE__,
-                policy, newPolicy, pri, param.sched_priority);
+            printf("pthread_getschedparam failed  ! %d policy %d newPolicy %d pri %d param.sched_priority :%d\n",
+                   __LINE__, policy, newPolicy, pri, param.sched_priority);
             exit(255); // 255, set a special exit code.
         }
 

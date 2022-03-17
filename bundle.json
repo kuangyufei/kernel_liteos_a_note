@@ -1,0 +1,66 @@
+{
+    "name": "@ohos/liteos_a",
+    "version": "3.1.0",
+    "description": "liteos-a kernel",
+    "homePage": "https://gitee.com/openharmony",
+    "license": "BSD 3-clause",
+    "repository": "https://gitee.com/openharmony/kernel_liteos_a",
+    "domain": "os",
+    "language": "",
+    "publishAs": "code-segment",
+    "private": false,
+    "scripts": {},
+    "tags": [
+        "kernel"
+    ],
+    "keywords": [
+        "kernel",
+        "liteos-a"
+    ],
+    "envs": [],
+    "dirs": [],
+    "author": {},
+    "contributors": [],
+    "segment": {
+        "destPath": "kernel/liteos_a"
+    },
+    "component": {
+        "name": "liteos_a",
+        "subsystem": "kernel",
+        "syscap": [
+            "SystemCapability.Kernel.liteos-a"
+        ],
+        "features": [],
+        "adated_system_type": [
+            "small"
+        ],
+        "rom": "1.5MB",
+        "ram": "2MB",
+        "deps": {
+            "components": [
+            ], 
+            "third_party": [
+                "bounds_checking_function",
+                "toybox",
+                "NuttX",
+                "Linux_Kernel",
+                "FatFs",
+                "mksh",
+                "musl",
+                "mbedtls",
+                "FreeBSD",
+                "zlib",
+                "lwip",
+                "optimized-routines",
+                "googletest"
+            ]
+        },
+        "build": {
+            "sub_component": [
+                "//kernel/liteos_a:liteos_a"
+            ],
+            "inner_kits": [],
+            "test": []
+        }
+    }
+}

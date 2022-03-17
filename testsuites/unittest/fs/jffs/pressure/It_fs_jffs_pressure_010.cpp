@@ -71,7 +71,7 @@ static UINT32 TestCase(VOID)
     ICUNIT_GOTO_EQUAL(off, 0, off, EXIT2);
 
     for (i = 0; i < JFFS_PRESSURE_CYCLES; i++) {
-        memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, strlen(readbuf));
+        (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, strlen(readbuf));
 
         fd = open(pathname2, O_NONBLOCK | O_TRUNC | O_RDWR, HIGHEST_AUTHORITY);
         ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT2);

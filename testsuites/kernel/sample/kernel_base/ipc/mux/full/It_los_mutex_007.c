@@ -85,7 +85,7 @@ static UINT32 Testcase(VOID)
     g_testCount = 0;
 
     task.pfnTaskEntry = (TSK_ENTRY_FUNC)TaskF01;
-    task.usTaskPrio = (TASK_PRIO_TEST - 1);
+    task.usTaskPrio = (TASK_PRIO_TEST_TASK - 1);
     task.pcName = "VMuteB2_1";
     task.uwStackSize = 0x900;
     task.uwResved = 0;
@@ -98,7 +98,7 @@ static UINT32 Testcase(VOID)
     TestExtraTaskDelay(2); // 2, delay for Timing control.
 
     task2.pfnTaskEntry = (TSK_ENTRY_FUNC)TaskF02;
-    task2.usTaskPrio = (TASK_PRIO_TEST - 2); // 2, set reasonable priority.
+    task2.usTaskPrio = (TASK_PRIO_TEST_TASK - 2); // 2, set reasonable priority.
     task2.pcName = "VMuteB2_2";
     task2.uwStackSize = 0x900;
     task2.uwResved = 0;
@@ -115,8 +115,7 @@ static UINT32 Testcase(VOID)
 
     ret = LOS_TaskDelete(g_testTaskID01);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
-    ret = LOS_TaskDelete(g_testTaskID02);
-    ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
+    LOS_TaskDelete(g_testTaskID02);
     return LOS_OK;
 }
 
@@ -130,4 +129,4 @@ VOID ItLosMux007(void)
 #if __cplusplus
 }
 #endif /* __cpluscplus */
-#endif /* __cpluscplus */
+#endif

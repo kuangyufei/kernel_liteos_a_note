@@ -139,7 +139,7 @@ EXIT:
 * -@texpect
 1. Return successed
 2. Return successed
-3. Sucessful operation
+3. Successful operation
 4. N/A;
 * -@tprior 1
 * -@tauto TRUE

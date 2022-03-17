@@ -48,6 +48,7 @@
 #endif
 int main(int argc, char * const *argv)
 {
+    (void)argv;
     int ret;
     pid_t gid;
     const char *shellPath = "/bin/mksh";

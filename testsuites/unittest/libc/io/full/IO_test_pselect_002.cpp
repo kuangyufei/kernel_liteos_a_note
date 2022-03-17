@@ -38,6 +38,7 @@
 
 static void SigPrint(int sig)
 {
+    (void)sig;
     return;
 }
 

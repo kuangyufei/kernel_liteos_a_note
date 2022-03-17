@@ -1361,7 +1361,9 @@ INT32 system_console_init(const CHAR *deviceName)//deviceName: /dev/serial /dev/
         LOS_SpinLockSave(&g_consoleSpin, &intSave);
         (VOID)OsConsoleDelete(consoleCB);//删除控制台
         g_console[consoleID - 1] = NULL;
-        g_taskConsoleIDArray[OsCurrTaskGet()->taskID] = 0;//表示当前任务还没有控制台。
+        if (OsCurrTaskGet() != NULL) {
+            g_taskConsoleIDArray[OsCurrTaskGet()->taskID] = 0;//表示当前任务还没有控制台。
+        }
         LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
         return VFS_ERROR;
     }

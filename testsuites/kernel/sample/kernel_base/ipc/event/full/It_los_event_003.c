@@ -77,7 +77,7 @@ static UINT32 Testcase(VOID)
 
     g_testCount++;
 
-    TestAssertBusyTaskDelay(100, 3); // 100, Set the timeout of runtime; 3, test runing count
+    TestAssertBusyTaskDelay(100, 3); // 100, Set the timeout of runtime; 3, test running count
     ICUNIT_GOTO_EQUAL(g_testCount, 3, g_testCount, EXIT); // 3, Here, assert that g_testCount is equal to 3.
 EXIT:
     LOS_TaskDelete(g_testTaskID01);

@@ -153,26 +153,17 @@ LITE_OS_SEC_BSS  SPIN_LOCK_INIT(g_hwiSpin); ///< 注意全局变量 g_hwiSpin �
 size_t g_intCount[LOSCFG_KERNEL_CORE_NUM] = {0};///< 记录每个CPUcore的中断数量 
 HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];		///< 中断注册表        @note_why 用 form 来表示？有种写 HTML的感觉
 STATIC CHAR *g_hwiFormName[OS_HWI_MAX_NUM] = {0};///< 记录每个硬中断的名称
-STATIC UINT32 g_hwiFormCnt[OS_HWI_MAX_NUM] = {0};///< 记录每个硬中断的总数量
-/**
- * @brief 增加一个中断数,递增的，所以只有++ ,没有--
- * 
- * @param index 
- * @return VOID 
- */
-VOID OsIncHwiFormCnt(UINT32 index)
-{
-    g_hwiFormCnt[index]++;
-}
+STATIC UINT32 g_hwiFormCnt[LOSCFG_KERNEL_CORE_NUM][OS_HWI_MAX_NUM] = {0};
+
 /**
  * @brief 获取某个中断的中断次数
  * 
  * @param index 
  * @return UINT32 
  */
-UINT32 OsGetHwiFormCnt(UINT32 index)
+UINT32 OsGetHwiFormCnt(UINT16 cpuId, UINT32 index)
 {
-    return g_hwiFormCnt[index];
+    return g_hwiFormCnt[cpuId][index];
 }
 
 CHAR *OsGetHwiFormName(UINT32 index)//获取某个中断的名称
@@ -190,14 +181,16 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
 {
     HwiHandleForm *hwiForm = NULL;
     UINT32 *intCnt = NULL;
+    UINT16 cpuId = ArchCurrCpuid();
 
-    intCnt = &g_intCount[ArchCurrCpuid()];//当前CPU的中断总数量 ++
+    /* Must keep the operation at the beginning of the interface */
+    intCnt = &g_intCount[cpuId];//当前CPU的中断总数量 ++
     *intCnt = *intCnt + 1;//@note_why 这里没看明白为什么要 +1
 
-    OsSchedIrqStartTime();
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ //开启查询系统CPU的占用率的中断
-    OsCpupIrqStart();//记录本次中断处理开始时间
+    OsCpupIrqStart(cpuId);
 #endif
+    OsSchedIrqStartTime();
     OsHookCall(LOS_HOOK_TYPE_ISR_ENTER, intNum);
     hwiForm = (&g_hwiForm[intNum]);//获取对应中断的实体
 #ifndef LOSCFG_NO_SHARED_IRQ	//如果没有定义不共享中断 ，意思就是如果是共享中断
@@ -219,14 +212,14 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
 #ifndef LOSCFG_NO_SHARED_IRQ
     }
 #endif
-    ++g_hwiFormCnt[intNum];//对应中断号计数器总数累加
+    ++g_hwiFormCnt[cpuId][intNum];
 
     OsHookCall(LOS_HOOK_TYPE_ISR_EXIT, intNum);
-#ifdef LOSCFG_CPUP_INCLUDE_IRQ
-    OsCpupIrqEnd(intNum);
-#endif
     OsSchedIrqUpdateUsedTime();
 
+#ifdef LOSCFG_CPUP_INCLUDE_IRQ
+    OsCpupIrqEnd(cpuId, intNum);
+#endif
     /* Must keep the operation at the end of the interface */
     *intCnt = *intCnt - 1;
 }

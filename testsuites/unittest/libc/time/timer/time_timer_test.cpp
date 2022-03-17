@@ -47,7 +47,6 @@ public:
  * @tc.name: TimerTest001
  * @tc.desc: function for TimeTimerTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeTimerTest, TimerTest001, TestSize.Level0)
 {
@@ -58,7 +57,6 @@ HWTEST_F(TimeTimerTest, TimerTest001, TestSize.Level0)
  * @tc.name: TimerTest002
  * @tc.desc: function for TimeTimerTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeTimerTest, TimerTest002, TestSize.Level0)
 {
@@ -69,7 +67,6 @@ HWTEST_F(TimeTimerTest, TimerTest002, TestSize.Level0)
  * @tc.name: TimerTest003
  * @tc.desc: function for TimeTimerTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeTimerTest, TimerTest003, TestSize.Level0)
 {
@@ -77,21 +74,9 @@ HWTEST_F(TimeTimerTest, TimerTest003, TestSize.Level0)
 }
 
 /* *
- * @tc.name: TimerTest004
- * @tc.desc: function for TimeTimerTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-/*HWTEST_F(TimeTimerTest, TimerTest004, TestSize.Level0)
-{
-    TimerTest004(); // TODO: musl sigaction handler have only one param.
-}*/
-
-/* *
  * @tc.name: TimerTest005
  * @tc.desc: function for timer_create SIGEV_THREAD.
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeTimerTest, TimerTest005, TestSize.Level0)
 {
@@ -102,7 +87,6 @@ HWTEST_F(TimeTimerTest, TimerTest005, TestSize.Level0)
  * @tc.name: TIME_TEST_TZSET_001
  * @tc.desc: function for TIME_TEST_TZSET_001
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeTimerTest, TIME_TEST_TZSET_001, TestSize.Level0)
 {
@@ -113,7 +97,6 @@ HWTEST_F(TimeTimerTest, TIME_TEST_TZSET_001, TestSize.Level0)
  * @tc.name: TIME_TEST_TZSET_002
  * @tc.desc: function for TimeTimerTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(TimeTimerTest, TIME_TEST_TZSET_002, TestSize.Level0)
 {

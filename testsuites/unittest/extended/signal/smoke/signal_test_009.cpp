@@ -34,15 +34,17 @@
 static int g_sigCount = 0;
 static void SigPrint(int sig)
 {
+    (void)sig;
     g_sigCount++;
 }
 
 static void SigPrint1(int sig)
 {
+    (void)sig;
     g_sigCount += 100; // 100, Used to calculate the progress of the program.
 }
 
-static int TestSigSet()
+static int TestSigSet(void)
 {
     sigset_t set = { 0 };
     sigset_t set1 = { 0 };

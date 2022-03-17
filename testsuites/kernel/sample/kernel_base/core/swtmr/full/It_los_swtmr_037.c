@@ -66,8 +66,8 @@ static UINT32 Testcase(VOID)
 
     ret = LOS_TaskDelay(12); // 12, set delay time
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
-    if (g_testCount < 10) {                                    // 10, if g_testCount < 10 set a erro code, then exit
-        ICUNIT_GOTO_EQUAL(g_testCount, 10, g_testCount, EXIT); // 10, if g_testCount < 10 set a erro code, then exit
+    if (g_testCount < 10) {                                    // 10, if g_testCount < 10 set an erro code, then exit
+        ICUNIT_GOTO_EQUAL(g_testCount, 10, g_testCount, EXIT); // 10, if g_testCount < 10 set an erro code, then exit
     }
 
 EXIT:

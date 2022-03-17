@@ -52,7 +52,7 @@ STATIC VOID OsRbLeftRotateNode(LosRbTree *pstTree, LosRbNode *pstX)
     LosRbNode *pstNilT = NULL;
     LosRbNode *pstParent = NULL;
 
-    if (NULL == pstTree || NULL == pstX) {
+    if (pstTree == NULL || pstX == NULL) {
         return;
     }
     pstNilT = &(pstTree->stNilT);
@@ -758,5 +758,3 @@ ULONG_T LOS_RbAddNode(LosRbTree *pstTree, LosRbNode *pstNew)
 
     return TRUE;
 }
-
-

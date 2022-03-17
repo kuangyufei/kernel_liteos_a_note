@@ -39,36 +39,6 @@ extern "C" {
 static pthread_mutex_t g_mutex046;
 static UINT32 g_nID;
 
-/* pthread_mutex_trylock 2-1.c
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it would be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
- * This sample test aims to check the following assertion:
- *
- * If the mutex is of type PTHREAD_MUTEX_RECURSIVE,
- * and the calling thread already owns the mutex,
- * the call is successful (the lock count is incremented).
-
- * The steps are:
- *
- *   -> trylock the mutex. It shall suceed.
- *   -> trylock the mutex again. It shall suceed again
- *   -> unlock once
- *   -> create a new child (either thread or process)
- *      -> the new child trylock the mutex. It shall fail.
- *   -> Unlock. It shall succeed.
- *   -> Unlock again. It shall fail.
- *   -> undo everything.
- */
 static void *TaskF01(void *arg)
 {
     int ret;

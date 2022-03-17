@@ -50,7 +50,7 @@ static VOID HwiF01(VOID)
 static UINT32 Testcase(VOID)
 {
     UINT32 ret, currCpuid;
-    TSK_INIT_PARAM_S testTask;
+    TSK_INIT_PARAM_S testTask = {0};
 
     g_testCount = 0;
 

@@ -116,6 +116,131 @@ LITE_OS_SEC_BSS  SPIN_LOCK_INIT(g_swtmrSpin);///< 初始化软时钟自旋锁,�
 #define SWTMR_LOCK(state)       LOS_SpinLockSave(&g_swtmrSpin, &(state))///< 持有软时钟自旋锁
 #define SWTMR_UNLOCK(state)     LOS_SpinUnlockRestore(&g_swtmrSpin, (state))///< 释放软时钟自旋锁
 
+#ifdef LOSCFG_SWTMR_DEBUG
+#define OS_SWTMR_PERIOD_TO_CYCLE(period) (((UINT64)(period) * OS_NS_PER_TICK) / OS_NS_PER_CYCLE)
+STATIC SwtmrDebugData *g_swtmrDebugData = NULL;
+
+BOOL OsSwtmrDebugDataUsed(UINT32 swtmrID)
+{
+    if (swtmrID > LOSCFG_BASE_CORE_SWTMR_LIMIT) {
+        return FALSE;
+    }
+
+    return g_swtmrDebugData[swtmrID].swtmrUsed;
+}
+
+UINT32 OsSwtmrDebugDataGet(UINT32 swtmrID, SwtmrDebugData *data, UINT32 len, UINT8 *mode)
+{
+    UINT32 intSave;
+    errno_t ret;
+
+    if ((swtmrID > LOSCFG_BASE_CORE_SWTMR_LIMIT) || (data == NULL) ||
+        (mode == NULL) || (len < sizeof(SwtmrDebugData))) {
+        return LOS_NOK;
+    }
+
+    SWTMR_CTRL_S *swtmr = &g_swtmrCBArray[swtmrID];
+    SWTMR_LOCK(intSave);
+    ret = memcpy_s(data, len, &g_swtmrDebugData[swtmrID], sizeof(SwtmrDebugData));
+    *mode = swtmr->ucMode;
+    SWTMR_UNLOCK(intSave);
+    if (ret != EOK) {
+        return LOS_NOK;
+    }
+    return LOS_OK;
+}
+#endif
+
+STATIC VOID SwtmrDebugDataInit(VOID)
+{
+#ifdef LOSCFG_SWTMR_DEBUG
+    UINT32 size = sizeof(SwtmrDebugData) * LOSCFG_BASE_CORE_SWTMR_LIMIT;
+    g_swtmrDebugData = (SwtmrDebugData *)LOS_MemAlloc(m_aucSysMem1, size);
+    if (g_swtmrDebugData == NULL) {
+        PRINT_ERR("SwtmrDebugDataInit malloc failed!\n");
+        return;
+    }
+    (VOID)memset_s(g_swtmrDebugData, size, 0, size);
+#endif
+}
+
+STATIC INLINE VOID SwtmrDebugDataUpdate(SWTMR_CTRL_S *swtmr, UINT32 ticks)
+{
+#ifdef LOSCFG_SWTMR_DEBUG
+    SwtmrDebugData *data = &g_swtmrDebugData[swtmr->usTimerID];
+    data->startTime = swtmr->startTime;
+    if (data->period != ticks) {
+        data->waitCount = 0;
+        data->runCount = 0;
+        data->waitTime = 0;
+        data->waitTimeMax = 0;
+        data->runTime = 0;
+        data->runTimeMax = 0;
+        data->readyTime = 0;
+        data->readyTimeMax = 0;
+        data->period = ticks;
+    }
+#endif
+}
+
+STATIC INLINE VOID SwtmrDebugDataStart(SWTMR_CTRL_S *swtmr, UINT16 cpuId)
+{
+#ifdef LOSCFG_SWTMR_DEBUG
+    SwtmrDebugData *data = &g_swtmrDebugData[swtmr->usTimerID];
+    data->swtmrUsed = TRUE;
+    data->handler = swtmr->pfnHandler;
+    data->cpuId = cpuId;
+#endif
+}
+
+STATIC INLINE VOID SwtmrDebugWaitTimeCalculate(UINT32 timerId, SwtmrHandlerItemPtr swtmrHandler)
+{
+#ifdef LOSCFG_SWTMR_DEBUG
+    SwtmrDebugData *data = &g_swtmrDebugData[timerId];
+    swtmrHandler->swtmrId = timerId;
+    UINT64 currTime = OsGetCurrSchedTimeCycle();
+    UINT64 waitTime = currTime - data->startTime;
+    data->waitTime += waitTime;
+    if (waitTime > data->waitTimeMax) {
+        data->waitTimeMax = waitTime;
+    }
+    data->readyStartTime = currTime;
+    LOS_ASSERT(waitTime >= OS_SWTMR_PERIOD_TO_CYCLE(data->period));
+    data->waitCount++;
+#endif
+}
+
+STATIC INLINE VOID SwtmrDebugDataClear(UINT32 timerId)
+{
+#ifdef LOSCFG_SWTMR_DEBUG
+    (VOID)memset_s(&g_swtmrDebugData[timerId], sizeof(SwtmrDebugData), 0, sizeof(SwtmrDebugData));
+#endif
+}
+
+STATIC INLINE VOID SwtmrHandler(SwtmrHandlerItemPtr swtmrHandle)
+{
+#ifdef LOSCFG_SWTMR_DEBUG
+    UINT32 intSave;
+    SwtmrDebugData *data = &g_swtmrDebugData[swtmrHandle->swtmrId];
+    UINT64 startTime = OsGetCurrSchedTimeCycle();
+#endif
+    swtmrHandle->handler(swtmrHandle->arg);
+#ifdef LOSCFG_SWTMR_DEBUG
+    UINT64 runTime = OsGetCurrSchedTimeCycle() - startTime;
+    SWTMR_LOCK(intSave);
+    data->runTime += runTime;
+    if (runTime > data->runTimeMax) {
+        data->runTimeMax = runTime;
+    }
+    runTime = startTime - data->readyStartTime;
+    data->readyTime += runTime;
+    if (runTime > data->readyTimeMax) {
+        data->readyTimeMax = runTime;
+    }
+    data->runCount++;
+    SWTMR_UNLOCK(intSave);
+#endif
+}
 /**
  * @brief 软时钟的入口函数,拥有任务的最高优先级 0 级!
  * 
@@ -131,15 +256,13 @@ STATIC VOID SwtmrTask(VOID)
     for (;;) {//死循环获取队列item,一直读干净为止
         ret = LOS_QueueRead(swtmrHandlerQueue, &swtmrHandlePtr, sizeof(CHAR *), LOS_WAIT_FOREVER);//一个一个读队列
         if ((ret == LOS_OK) && (swtmrHandlePtr != NULL)) {
-            swtmrHandle.handler = swtmrHandlePtr->handler;//超时中断处理函数,也称回调函数
-            swtmrHandle.arg = swtmrHandlePtr->arg;//回调函数的参数
+            (VOID)memcpy_s(&swtmrHandle, sizeof(SwtmrHandlerItem), swtmrHandlePtr, sizeof(SwtmrHandlerItem));
             (VOID)LOS_MemboxFree(g_swtmrHandlerPool, swtmrHandlePtr);//静态释放内存,注意在鸿蒙内核只有软时钟注册用到了静态内存
-            if (swtmrHandle.handler != NULL) {
-                swtmrHandle.handler(swtmrHandle.arg);//回调函数处理函数
+            SwtmrHandler(&swtmrHandle);
             }
         }
     }
-}
+
 ///创建软时钟任务,每个cpu core都可以拥有自己的软时钟任务
 STATIC UINT32 SwtmrTaskCreate(UINT16 cpuid, UINT32 *swtmrTaskID)
 {
@@ -218,6 +341,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
             ret = LOS_ERRNO_SWTMR_HANDLER_POOL_NO_MEM;
             goto ERROR;
         }
+        SwtmrDebugDataInit();
     }
 
 	//每个CPU都会创建一个属于自己的 OS_SWTMR_HANDLE_QUEUE_SIZE 的队列
@@ -258,7 +382,7 @@ LITE_OS_SEC_TEXT VOID OsSwtmrStart(SWTMR_CTRL_S *swtmr)
     swtmr->ucState = OS_SWTMR_STATUS_TICKING;//计数状态
 
     OsSchedAddSwtmr2TimeList(&swtmr->stSortList, swtmr->startTime, ticks);//加入链表中, 定时器任务将在tick处理函数中检查是否到期
-
+    SwtmrDebugDataUpdate(swtmr, ticks);
     OsSchedUpdateExpireTime();//更新过期时间
     return;
 }
@@ -273,6 +397,7 @@ STATIC INLINE VOID OsSwtmrDelete(SWTMR_CTRL_S *swtmr)
     LOS_ListTailInsert(&g_swtmrFreeList, &swtmr->stSortList.sortLinkNode);//直接插入空闲链表中,回收再利用
     swtmr->ucState = OS_SWTMR_STATUS_UNUSED;//又干净着呢
     swtmr->uwOwnerPid = 0;//谁拥有这个定时器? 是 0号进程
+    SwtmrDebugDataClear(swtmr->usTimerID);
 }
 
 VOID OsSwtmrWake(SchedRunQue *rq, UINT64 startTime, SortLinkList *sortList)
@@ -285,6 +410,7 @@ VOID OsSwtmrWake(SchedRunQue *rq, UINT64 startTime, SortLinkList *sortList)
     if (swtmrHandler != NULL) {
         swtmrHandler->handler = swtmr->pfnHandler;
         swtmrHandler->arg = swtmr->uwArg;
+        SwtmrDebugWaitTimeCalculate(swtmr->usTimerID, swtmrHandler);
 
         if (LOS_QueueWrite(rq->swtmrHandlerQueue, swtmrHandler, sizeof(CHAR *), LOS_NO_WAIT)) {
             (VOID)LOS_MemboxFree(g_swtmrHandlerPool, swtmrHandler);
@@ -458,6 +584,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStart(UINT16 swtmrID)
             /* fall-through */
         case OS_SWTMR_STATUS_CREATED://已经创建好了
             swtmr->startTime = OsGetCurrSchedTimeCycle();
+            SwtmrDebugDataStart(swtmr, ArchCurrCpuid());
             OsSwtmrStart(swtmr);
             break;
         default:

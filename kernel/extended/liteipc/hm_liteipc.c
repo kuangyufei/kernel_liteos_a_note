@@ -1292,7 +1292,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcMsgHandle(IpcContent *con)
         }
         content->outMsg = msg;// outMsg 指向内核空间
         if ((content->outMsg->type < 0) || (content->outMsg->type >= MT_DEATH_NOTIFY)) {
-            PRINT_ERR("LiteIpc unknow msg type:%d\n", content->outMsg->type);
+            PRINT_ERR("LiteIpc unknown msg type:%d\n", content->outMsg->type);
             ret = -EINVAL;
             goto BUFFER_FREE;
         }
@@ -1391,15 +1391,15 @@ LITE_OS_SEC_TEXT int LiteIpcIoctl(struct file *filep, int cmd, unsigned long arg
 	// 二是负责管理Service的访问权限（只有有权限的任务（Task）可以向对应的Service发送IPC消息）。
     switch (cmd) {
         case IPC_SET_CMS:
-            return SetCms(arg); //设置ServiceManager , 整个系统只能有一个ServiceManager
+            return (INT32)SetCms(arg); //设置ServiceManager , 整个系统只能有一个ServiceManager
         case IPC_CMS_CMD: // 控制命令,创建/删除/添加权限 
-            return HandleCmsCmd((CmsCmdContent *)(UINTPTR)arg);
+            return (INT32)HandleCmsCmd((CmsCmdContent *)(UINTPTR)arg);
         case IPC_SET_IPC_THREAD://
             if (IsCmsSet() == FALSE) {//如果还没有指定 ServiceManager 
                 PRINT_ERR("Liteipc ServiceManager not set!\n");
                 return -EINVAL;
             }
-            return SetIpcTask();//将当前任务设置成当前进程的IPC任务ID
+            return (INT32)SetIpcTask();//将当前任务设置成当前进程的IPC任务ID
         case IPC_SEND_RECV_MSG://发送和接受消息,代表消息内容
             if (arg == 0) {
                 return -EINVAL;
@@ -1410,12 +1410,12 @@ LITE_OS_SEC_TEXT int LiteIpcIoctl(struct file *filep, int cmd, unsigned long arg
             }
             ret = LiteIpcMsgHandle((IpcContent *)(UINTPTR)arg);//处理IPC消息
             if (ret != LOS_OK) {
-                return ret;
+                return (INT32)ret;
             }
             break;
         default:
             PRINT_ERR("Unknow liteipc ioctl cmd:%d\n", cmd);
             return -EINVAL;
     }
-    return ret;
+    return (INT32)ret;
 }

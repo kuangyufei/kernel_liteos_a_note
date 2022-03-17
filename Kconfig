@@ -189,7 +189,7 @@ config DEBUG_VERSION
       It also means you do not want to use debug modules, like shell,telnet,tftp,nfs and
       memory check, etc.
       If you select this option that means you enable a debug version for LiteOS.
-      That means you want a opposite behaviour compared to release version.
+      That means you want an opposite behaviour compared to release version.
 
 config DEBUG_KERNEL
     bool "Enable Debug LiteOS Kernel Resource"
@@ -198,7 +198,7 @@ config DEBUG_KERNEL
     help
       If you select this option that means you enable debugging kernel resource.
       It also means you want to get queue, mutex, semaphore, memory debug information.
-      That means you want a opposite behaviour compared to release version.
+      That means you want an opposite behaviour compared to release version.
 
 config DEBUG_QUEUE
     bool "Enable Queue Debugging"
@@ -265,7 +265,7 @@ config MEM_LEAKCHECK
     default n
     depends on DEBUG_VERSION && MEM_DEBUG
     help
-      Answer Y to enable record the LR of Function call stack of Mem operation, it can check the mem leak through the infomations of mem node.
+      Answer Y to enable record the LR of Function call stack of Mem operation, it can check the mem leak through the informations of mem node.
 config BASE_MEM_NODE_INTEGRITY_CHECK
     bool "Enable integrity check or not"
     default n

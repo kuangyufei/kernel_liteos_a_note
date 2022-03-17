@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -43,27 +43,15 @@ volatile INT32 g_timesliceTestCount = 0;
 
 void ItSuiteLosTask(void)
 {
-    int ret = LOS_SetProcessScheduler(LOS_GetCurrProcessID(), LOS_SCHED_RR, TASK_PRIO_TEST_TASK);
-    if (ret != LOS_OK) {
-        dprintf("%s set test process schedule failed! %d\n", ret);
-    }
-    ret = LOS_SetTaskScheduler(LOS_CurTaskIDGet(), LOS_SCHED_RR, TASK_PRIO_TEST_TASK);
-    if (ret != LOS_OK) {
-        dprintf("%s set test task schedule failed! %d\n", ret);
-    }
 #if defined(LOSCFG_TEST_SMOKE)
     ItLosTask045();
     ItLosTask046();
-    ItLosTask049();
-    ItLosTask081();
     ItLosTask089();
     ItLosTask097();
     ItLosTask101();
-    ItLosTask105();
     ItLosTask099();
     ItLosTaskTimeslice001();
 #ifdef LOSCFG_KERNEL_SMP
-    // reserved 20 for smoke test
     ItSmpLosTask001(); /* Task Affinity */
     ItSmpLosTask002(); /* Task Deletion Across Cores */
     ItSmpLosTask003(); /* Task Suspend Across Cores */
@@ -72,138 +60,6 @@ void ItSuiteLosTask(void)
 #endif
 
 #if defined(LOSCFG_TEST_FULL)
-    ItLosTask001();
-    ItLosTask002();
-    ItLosTask004();
-    ItLosTask007();
-    ItLosTask008();
-    ItLosTask009();
-    ItLosTask010();
-    ItLosTask011();
-    ItLosTask012();
-    ItLosTask013();
-    ItLosTask014();
-    ItLosTask015();
-    ItLosTask016();
-    ItLosTask017();
-    ItLosTask018();
-    ItLosTask019();
-    ItLosTask020();
-    ItLosTask021();
-    ItLosTask022();
-    ItLosTask023();
-    ItLosTask024();
-    ItLosTask025();
-    ItLosTask026();
-    ItLosTask027();
-    ItLosTask028();
-    ItLosTask029();
-    ItLosTask031();
-    ItLosTask032();
-    ItLosTask033();
-    ItLosTask034();
-    ItLosTask035();
-    ItLosTask036();
-    ItLosTask037();
-    ItLosTask038();
-    ItLosTask039();
-#ifndef TESTHI1980IMU
-    ItLosTask040();
-#endif
-    ItLosTask041();
-    ItLosTask042();
-    ItLosTask043();
-    ItLosTask047();
-    ItLosTask048();
-    ItLosTask050();
-    ItLosTask051();
-    ItLosTask052();
-    ItLosTask053();
-    ItLosTask054();
-    ItLosTask055();
-    ItLosTask056();
-    ItLosTask057();
-    ItLosTask058();
-    ItLosTask060();
-    ItLosTask061();
-    ItLosTask063();
-    ItLosTask064();
-    ItLosTask065();
-    ItLosTask066();
-    ItLosTask067();
-    ItLosTask068();
-    ItLosTask069();
-    ItLosTask071();
-    ItLosTask072();
-    ItLosTask073();
-    ItLosTask074();
-#ifndef LOSCFG_KERNEL_SMP
-    ItLosTask075();
-#endif
-    ItLosTask076();
-    ItLosTask077();
-    ItLosTask078();
-    ItLosTask079();
-    ItLosTask080(); // LOS_TaskYeild is not allowed in irq
-    ItLosTask082();
-    ItLosTask090();
-    ItLosTask092();
-    ItLosTask093();
-    ItLosTask094();
-    ItLosTask095();
-    ItLosTask096();
-    ItLosTask098();
-    ItLosTask100();
-    ItLosTask102();
-    ItLosTask103();
-    ItLosTask104();
-    ItLosTask106();
-    ItLosTask107();
-    ItLosTask108();
-    ItLosTask109();
-    ItLosTask110();
-    ItLosTask111();
-    ItLosTask112();
-    ItLosTask113();
-    ItLosTask114();
-    ItLosTask115();
-    ItLosTask116(); // Not used the API LOS_CurTaskPriSet to change the task priority for the software timer
-    ItLosTask119();
-    ItLosTask120();
-    ItLosTask121();
-    ItLosTask122();
-    ItLosTask123();
-    ItLosTask124();
-    ItLosTask125();
-    ItLosTask126();
-    ItLosTask127();
-    ItLosTask128();
-    ItLosTask129();
-    ItLosTask130();
-    ItLosTask131();
-    ItLosTask132();
-    ItLosTask133();
-    ItLosTask134();
-    ItLosTask135();
-    ItLosTask136();
-#ifndef LOSCFG_ARCH_FPU_DISABLE
-    ItLosTask141(); /* fpu regs check in task switch */
-    ItLosTask142(); /* fpu regs check in irq context switch */
-#endif
-    ItLosTaskTimeslice002();
-    ItLosTaskTimeslice003();
-    ItLosTaskTimeslice004();
-#ifdef LOSCFG_KERNEL_SMP
-#ifndef LOSCFG_ARCH_FPU_DISABLE
-
-    ItSmpLosFloatSwitch001();
-    ItSmpLosFloatSwitch002();
-    ItSmpLosFloatSwitch003();
-    ItSmpLosFloatSwitch004();
-    ItSmpLosFloatSwitch005();
-    ItSmpLosFloatSwitch006();
-    ItSmpLosFloatSwitch007();
-#endif
     // fixed
     ItSmpLosTask099();
     ItSmpLosTask049();
@@ -211,7 +67,6 @@ void ItSuiteLosTask(void)
     ItSmpLosTask159();
     ItSmpLosTask161();
     ItSmpLosTask137();
-    ItSmpLosTask158();
     ItSmpLosTask021();
     ItSmpLosTask022();
     ItSmpLosTask023();
@@ -235,7 +90,6 @@ void ItSuiteLosTask(void)
     ItSmpLosTask047();
     ItSmpLosTask048();
     ItSmpLosTask050();
-    ItSmpLosTask051();
     ItSmpLosTask052();
     ItSmpLosTask053();
     ItSmpLosTask054();
@@ -263,7 +117,6 @@ void ItSuiteLosTask(void)
     ItSmpLosTask078();
     ItSmpLosTask079();
     ItSmpLosTask081();
-    ItSmpLosTask082();
     ItSmpLosTask084();
     ItSmpLosTask087();
     ItSmpLosTask088();
@@ -275,7 +128,6 @@ void ItSuiteLosTask(void)
     ItSmpLosTask094();
     ItSmpLosTask095();
     ItSmpLosTask096();
-    ItSmpLosTask097();
     ItSmpLosTask098();
     ItSmpLosTask100();
     ItSmpLosTask101();
@@ -323,21 +175,6 @@ void ItSuiteLosTask(void)
     ItSmpLosTask156();
     ItSmpLosTask157();
 #endif
-#endif
-
-#ifdef LOSCFG_KERNEL_SMP
-    HalIrqSetAffinity(HWI_NUM_TEST, 1);
-    HalIrqSetAffinity(HWI_NUM_TEST1, 1);
-    HalIrqSetAffinity(HWI_NUM_TEST3, 1);
-#endif
-    ret = LOS_SetProcessScheduler(LOS_GetCurrProcessID(), LOS_SCHED_RR, 20); // 20, set a reasonable priority.
-    if (ret != LOS_OK) {
-        dprintf("%s set test process schedule failed! %d\n", ret);
-    }
-    ret = LOS_SetTaskScheduler(LOS_CurTaskIDGet(), LOS_SCHED_RR, TASK_PRIO_TEST);
-    if (ret != LOS_OK) {
-        dprintf("%s set test task schedule failed! %d\n", ret);
-    }
 }
 #ifdef __cplusplus
 #if __cplusplus

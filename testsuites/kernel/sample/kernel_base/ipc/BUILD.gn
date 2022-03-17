@@ -26,42 +26,86 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import("//kernel/liteos_a/liteos.gni")
 
-static_library("test_ipc") {
-  sources = [
-    "event/It_los_event.c",
-    "mux/It_los_mux.c",
-    "queue/It_los_queue.c",
-    "sem/It_los_sem.c",
+kernel_module("test_ipc") {
+  sources = [ "mux/It_los_mux.c" ]
+
+  sources += [
+    "mux/full/It_los_mutex_006.c",
+    "mux/full/It_los_mutex_007.c",
+    "mux/full/It_los_mutex_008.c",
+    "mux/full/It_los_mutex_009.c",
+    "mux/full/It_los_mutex_010.c",
+    "mux/full/It_los_mutex_011.c",
+    "mux/full/It_los_mutex_012.c",
+    "mux/full/It_los_mutex_013.c",
+    "mux/full/It_los_mutex_015.c",
+    "mux/full/It_los_mutex_016.c",
+    "mux/full/It_los_mutex_017.c",
+    "mux/full/It_los_mutex_018.c",
+    "mux/full/It_los_mutex_020.c",
+    "mux/full/It_los_mutex_021.c",
+    "mux/full/It_los_mutex_025.c",
+    "mux/full/It_los_mutex_026.c",
+    "mux/full/It_los_mutex_027.c",
+    "mux/full/It_los_mutex_028.c",
+    "mux/full/It_los_mutex_029.c",
+    "mux/full/It_los_mutex_031.c",
+    "mux/full/It_los_mutex_035.c",
+    "mux/full/It_los_mutex_036.c",
+    "mux/full/It_los_mutex_037.c",
+    "mux/full/It_los_mutex_038.c",
+    "mux/full/It_los_mutex_039.c",
+    "mux/full/It_los_mutex_040.c",
+    "mux/full/It_los_mutex_041.c",
+    "mux/full/It_los_mutex_042.c",
+    "mux/full/It_los_mutex_043.c",
+    "mux/smoke/It_los_mutex_001.c",
+    "mux/smoke/It_los_mutex_002.c",
+    "mux/smoke/It_los_mutex_003.c",
+    "mux/smoke/It_los_mutex_004.c",
+    "mux/smp/It_smp_los_mux_001.c",
+    "mux/smp/It_smp_los_mux_002.c",
+    "mux/smp/It_smp_los_mux_003.c",
+    "mux/smp/It_smp_los_mux_004.c",
+    "mux/smp/It_smp_los_mux_005.c",
+    "mux/smp/It_smp_los_mux_006.c",
+    "mux/smp/It_smp_los_mux_007.c",
+    "mux/smp/It_smp_los_mux_2001.c",
+    "mux/smp/It_smp_los_mux_2002.c",
+    "mux/smp/It_smp_los_mux_2003.c",
+    "mux/smp/It_smp_los_mux_2004.c",
+    "mux/smp/It_smp_los_mux_2005.c",
+    "mux/smp/It_smp_los_mux_2006.c",
+    "mux/smp/It_smp_los_mux_2007.c",
+    "mux/smp/It_smp_los_mux_2008.c",
+    "mux/smp/It_smp_los_mux_2009.c",
+    "mux/smp/It_smp_los_mux_2010.c",
+    "mux/smp/It_smp_los_mux_2011.c",
+    "mux/smp/It_smp_los_mux_2012.c",
+    "mux/smp/It_smp_los_mux_2013.c",
+    "mux/smp/It_smp_los_mux_2014.c",
+    "mux/smp/It_smp_los_mux_2015.c",
+    "mux/smp/It_smp_los_mux_2016.c",
+    "mux/smp/It_smp_los_mux_2017.c",
+    "mux/smp/It_smp_los_mux_2018.c",
+    "mux/smp/It_smp_los_mux_2021.c",
+    "mux/smp/It_smp_los_mux_2022.c",
+    "mux/smp/It_smp_los_mux_2024.c",
+    "mux/smp/It_smp_los_mux_2025.c",
+    "mux/smp/It_smp_los_mux_2026.c",
+    "mux/smp/It_smp_los_mux_2027.c",
+    "mux/smp/It_smp_los_mux_2028.c",
+    "mux/smp/It_smp_los_mux_2029.c",
   ]
-
-  if (LOSCFG_TEST_SMOKE) {
-    sources += [
-      "event/smoke/It_los_event_031.c",
-      "event/smoke/It_los_event_035.c",
-      "event/smoke/It_los_event_036.c",
-      "event/smoke/It_los_event_041.c",
-      "mux/smoke/It_los_mutex_001.c",
-      "mux/smoke/It_los_mutex_002.c",
-      "mux/smoke/It_los_mutex_003.c",
-      "mux/smoke/It_los_mutex_004.c",
-      "queue/smoke/It_los_queue_001.c",
-      "queue/smoke/It_los_queue_097.c",
-      "queue/smoke/It_los_queue_100.c",
-      "queue/smoke/It_los_queue_105.c",
-      "queue/smoke/It_los_queue_head_002.c",
-      "sem/smoke/It_los_sem_001.c",
-      "sem/smoke/It_los_sem_003.c",
-      "sem/smoke/It_los_sem_006.c",
-    ]
-  }
   include_dirs = [
-    "../../../include/",
     "sem",
     "event",
     "mux",
     "queue",
   ]
 
-  cflags = [ "-Wno-error" ]
+  public_configs =
+      [ "//kernel/liteos_a/testsuites/kernel:liteos_kernel_test_public" ]
 }

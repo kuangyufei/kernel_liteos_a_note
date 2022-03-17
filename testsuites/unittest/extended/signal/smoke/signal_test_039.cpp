@@ -57,12 +57,6 @@ static UINT32 TestCase(VOID)
         exit(0);
     }
 
-    /*  // EFAULT no support
-    ret = setitimer(ITIMER_VIRTUAL, NULL, &oldValue);
-    printf("ret = %d    errno = %d   EFAULT = %d\n", ret, errno, EFAULT);
-    ICUNIT_ASSERT_EQUAL(ret, -1, ret);
-    ICUNIT_ASSERT_EQUAL(errno, EFAULT, errno); */
-
     ret = waitpid(fpid, &status, 0);
     ICUNIT_ASSERT_EQUAL(ret, fpid, ret);
     ICUNIT_ASSERT_EQUAL(WEXITSTATUS(status), 0, WEXITSTATUS(status));

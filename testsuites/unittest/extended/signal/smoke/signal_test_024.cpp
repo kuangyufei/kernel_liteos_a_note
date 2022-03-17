@@ -33,15 +33,17 @@
 
 static void OldAction(int signum)
 {
+    (void)signum;
     printf("Here is the old action\n");
 }
 
 static void NewAction(int signum)
 {
+    (void)signum;
     printf("Here is the new action\n");
 }
 
-static int TestSigaction()
+static int TestSigaction(void)
 {
     int retValue, status;
     int fpid = fork();

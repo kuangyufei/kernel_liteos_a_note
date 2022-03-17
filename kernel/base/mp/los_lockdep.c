@@ -36,7 +36,6 @@
 #include "los_atomic.h"
 #include "los_exc.h"
 
-
 #ifdef LOSCFG_KERNEL_SMP_LOCKDEP
 
 #define PRINT_BUF_SIZE 256
@@ -88,7 +87,7 @@ STATIC INLINE CHAR *OsLockDepErrorStringGet(enum LockDepErrType type)
             errorString = "lockdep overflow";
             break;
         default:
-            errorString = "unknow error code";
+            errorString = "unknown error code";
             break;
     }
 
@@ -119,7 +118,7 @@ STATIC VOID OsLockDepPrint(const CHAR *fmt, va_list ap)
 
     UartPuts(buf, len, 0);
 }
-/// 打印死锁检测信息
+
 STATIC VOID OsPrintLockDepInfo(const CHAR *fmt, ...)
 {
     va_list ap;
@@ -143,7 +142,7 @@ STATIC VOID OsLockDepDumpLock(const LosTaskCB *task, const SPIN_LOCK_S *lock,
         OsPrintLockDepInfo("task name    : %s\n", temp->taskName);
         OsPrintLockDepInfo("task id      : %u\n", temp->taskID);
         OsPrintLockDepInfo("cpu num      : %u\n", temp->currCpu);
-        OsPrintLockDepInfo("start dumping lockdep infomation\n");
+        OsPrintLockDepInfo("start dumping lockdep information\n");
         for (i = 0; i < lockDep->lockDepth; i++) {
             if (lockDep->heldLocks[i].lockPtr == lock) {
                 OsPrintLockDepInfo("[%d] %s <-- addr:0x%x\n", i, LOCKDEP_GET_NAME(lockDep, i),
@@ -227,7 +226,7 @@ OUT:
     if (checkResult == LOCKDEP_SUCCESS) {
         /*
          * though the check may succeed, the waitLock still need to be set.
-         * because the OsLockDepCheckIn and OsLockDepRecord is not strictly muti-core
+         * because the OsLockDepCheckIn and OsLockDepRecord is not strictly multi-core
          * sequential, there would be more than two tasks can pass the checking, but
          * only one task can successfully obtain the lock.
          */
@@ -314,7 +313,7 @@ VOID OsLockDepCheckOut(SPIN_LOCK_S *lock)
     /* record lock holding time */
     heldlocks[depth].holdTime = OsLockDepGetCycles() - heldlocks[depth].holdTime;
 
-    /* if unlock a older lock, needs move heldLock records */
+    /* if unlock an older lock, needs move heldLock records */
     while (depth < lockDep->lockDepth - 1) {
         lockDep->heldLocks[depth] = lockDep->heldLocks[depth + 1];
         depth++;

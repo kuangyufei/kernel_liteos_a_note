@@ -88,7 +88,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_ASSERT_EQUAL(rc, 0, rc);
 
     ICUNIT_ASSERT_EQUAL(g_t1Start, 2, g_t1Start);
-    g_signaled = 0; // add by d00346846
+    g_signaled = 0;
 
     rc = pthread_cond_destroy(&g_td.cond);
     ICUNIT_ASSERT_EQUAL(rc, ENOERR, rc);

@@ -69,15 +69,15 @@ static UINT32 TestCase(VOID)
         snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/test%d", i);
         strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, bufname);
 
-        strcpy_s(pathname3[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
+        (void)strcpy_s(pathname3[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
 
         ret = mkdir(pathname3[i], HIGHEST_AUTHORITY);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-        strcpy_s(pathname4[i], JFFS_NAME_LIMITTED_SIZE, pathname3[i]);
+        (void)strcpy_s(pathname4[i], JFFS_NAME_LIMITTED_SIZE, pathname3[i]);
         strcat_s(pathname4[i], JFFS_NAME_LIMITTED_SIZE, ".txt");
 
-        strcpy_s(pathname5[i], JFFS_NAME_LIMITTED_SIZE, pathname3[i]);
+        (void)strcpy_s(pathname5[i], JFFS_NAME_LIMITTED_SIZE, pathname3[i]);
         strcat_s(pathname5[i], JFFS_NAME_LIMITTED_SIZE, ".c");
 
         fd[i] = open(pathname4[i], O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);

@@ -78,7 +78,7 @@ static UINT32 Testcase(void)
     ret = LOS_TaskCreate(&g_testTaskID01, &task1);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test runing count
+    TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test running count
 
     TestBusyTaskDelay(2); // 2, set delay time
     ICUNIT_ASSERT_EQUAL(g_testCount, 2, g_testCount); // 2, assert that g_testCount is equal to this.

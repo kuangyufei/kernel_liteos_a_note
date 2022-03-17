@@ -70,11 +70,16 @@ static void LmsReallocTest(void)
     printf("[LmsReallocTest] malloc addr:%p size:%d\n", buf, 64);
     printf("[LmsReallocTest] read overflow & underflow error should be triggered, read range[-1,64]\n");
     BufReadTest(buf, -1, 64);
-    buf = (char *)realloc(buf, 32);
-    printf("[LmsReallocTest] realloc addr:%p size:%d\n", buf, 32);
+    char *buf1 = (char *)realloc(buf, 32);
+    if (buf1 == NULL) {
+        free(buf);
+        return;
+    }
+    buf = NULL;
+    printf("[LmsReallocTest] realloc addr:%p size:%d\n", buf1, 32);
     printf("[LmsReallocTest] read overflow & underflow error should be triggered, read range[-1,32]\n");
-    BufReadTest(buf, -1, 32);
-    free(buf);
+    BufReadTest(buf1, -1, 32);
+    free(buf1);
     printf("\n-------- LmsReallocTest End --------\n");
 }
 
@@ -180,7 +185,7 @@ static void LmsFreeTest(void)
     printf("\n-------- LmsFreeTest Start --------\n");
     char *buf = (char *)malloc(16);
     printf("[LmsFreeTest] malloc addr:%p size:%d\n", buf, 16);
-    printf("[LmsFreeTest] free addr:%p\n", buf, 16);
+    printf("[LmsFreeTest] free addr:%p size:%d\n", buf, 16);
     free(buf);
     printf("[LmsFreeTest] Use after free error should be triggered, read addr:%p range[1,1]\n", buf);
     BufReadTest(buf, 1, 1);
@@ -204,5 +209,6 @@ int main(int argc, char * const * argv)
     LmsStrcpyTest();
     LmsStrcatTest();
     LmsFreeTest();
+    free(tmp);
     printf("\n############### Lms Test End ###############\n");
 }

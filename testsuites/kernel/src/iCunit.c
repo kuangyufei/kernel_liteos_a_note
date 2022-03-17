@@ -314,7 +314,7 @@ iUINT32 ICunitRunF(ICUNIT_CASE_S *psubCase)
             (strcmp(psubCase->pcCaseID, "IT_FS_FAT_363") == 0) || (strcmp(psubCase->pcCaseID, "LLT_FS_VFS_004") == 0) ||
             (strcmp(psubCase->pcCaseID, "LLT_FS_RAMFS_003") == 0) ||
             (strcmp(psubCase->pcCaseID, "LLT_FS_RAMFS_001") == 0)) {
-            dprintf("  [Case]-%s-%s-%s-%s-%s,unruning!!!\n", psubCase->pcCaseID, g_strLayer[psubCase->testcase_layer],
+            dprintf("  [Case]-%s-%s-%s-%s-%s,unrunning!!!\n", psubCase->pcCaseID, g_strLayer[psubCase->testcase_layer],
                 g_strModule[psubCase->testcase_module], g_strLevel[psubCase->testcase_level],
                 g_strType[psubCase->testcase_type]);
             goto ENDING;

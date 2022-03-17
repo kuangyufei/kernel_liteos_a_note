@@ -44,7 +44,7 @@ static UINT32 Testcase(VOID)
     prioceiling = sched_get_priority_max(SCHED_RR);
     prioceiling++;
 
-    /* Set the prioceiling of an unintialized mutex attr. */
+    /* Set the prioceiling of an uninitialized mutex attr. */
     ret = pthread_mutexattr_setprioceiling(&mta, prioceiling);
     ICUNIT_GOTO_EQUAL(ret, EINVAL, ret, EXIT);
 

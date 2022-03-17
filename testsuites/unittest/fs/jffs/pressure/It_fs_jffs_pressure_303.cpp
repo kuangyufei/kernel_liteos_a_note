@@ -49,8 +49,8 @@ static UINT32 TestCase(VOID)
     ICUNIT_GOTO_NOT_EQUAL(dir, NULL, dir, EXIT1);
 
     for (i = 0; i < JFFS_MIDDLE_ARRAY_LENGTH; i++) {
-        memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
-        memset_s(pathname2[i], JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
+        (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
+        (void)memset_s(pathname2[i], JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
         snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
         JffsStrcat2(pathname2[i], bufname, strlen(bufname));
 

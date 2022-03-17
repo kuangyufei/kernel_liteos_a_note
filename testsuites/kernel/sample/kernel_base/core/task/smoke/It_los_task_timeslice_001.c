@@ -67,7 +67,7 @@ static UINT32 Testcase(void)
     g_itTimesliceTestCount1 = 0;
     g_timesliceTestCount = 0;
     LOS_TaskLock();
-    TSK_INIT_PARAM_S task;
+    TSK_INIT_PARAM_S task = { 0 };
 
     task.pfnTaskEntry = (TSK_ENTRY_FUNC)TaskF01;
     task.pcName = "TimesTsk001A";

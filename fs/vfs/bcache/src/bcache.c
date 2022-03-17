@@ -351,7 +351,7 @@ static INT32 BcacheSyncBlock(OsBcache *bc, OsBcacheBlock *block)
     UINT32 len, start, end;
 
     if (block->modified == TRUE) {
-        D(("bcache writting block = %llu\n", block->num));
+        D(("bcache writing block = %llu\n", block->num));
 
         ret = FindFlagPos(block->flag, bc->sectorPerBlock >> UNINT_LOG2_SHIFT, &start, &end);
         if (ret == ENOERR) {

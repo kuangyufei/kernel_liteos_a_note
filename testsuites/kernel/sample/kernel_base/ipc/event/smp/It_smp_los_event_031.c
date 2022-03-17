@@ -45,7 +45,7 @@ static VOID TaskF01(VOID)
     LOS_AtomicInc(&g_testCount);
     ret = LOS_EventRead(&g_event, 0x11, LOS_WAITMODE_AND, LOS_WAIT_FOREVER);
     /*
-     * write event ---> read event ---> destory event [pass]
+     * write event ---> read event ---> destroy event [pass]
      * write event ---> destroy event ---> read event [fail]
      */
     LOS_AtomicInc(&g_testCount);

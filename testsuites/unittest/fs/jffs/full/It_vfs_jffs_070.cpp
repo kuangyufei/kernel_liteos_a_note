@@ -59,7 +59,7 @@ static UINT32 Testcase(VOID)
     off = lseek(fd, 0, SEEK_SET);
     ICUNIT_GOTO_EQUAL(off, 0, off, EXIT1);
 
-    memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     len = read(fd1, readbuf, JFFS_STANDARD_NAME_LENGTH);
     ICUNIT_GOTO_EQUAL(len, 0, len, EXIT1);
 
@@ -69,7 +69,7 @@ static UINT32 Testcase(VOID)
     fd1 = open(pathname, O_NONBLOCK | O_TRUNC | O_RDONLY, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd1, -1, fd1, EXIT1);
 
-    memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     len = read(fd1, readbuf, JFFS_STANDARD_NAME_LENGTH);
     ICUNIT_GOTO_EQUAL(len, 0, len, EXIT1);
 

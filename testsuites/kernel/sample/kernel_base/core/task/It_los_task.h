@@ -39,6 +39,7 @@
 #include "los_list.h"
 #include "los_process_pri.h"
 #include "los_percpu_pri.h"
+#include "los_swtmr_pri.h"
 
 #ifdef __cplusplus
 #if __cplusplus

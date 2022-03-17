@@ -65,7 +65,7 @@ static int Testcase(void)
     newAddr = mremap(p, pageSize, size, MREMAP_MAYMOVE, 0);
     ICUNIT_ASSERT_EQUAL(newAddr, p, newAddr);
 
-    /* New region overlaping with the old one */
+    /* New region overlapping with the old one */
     newAddr = mremap(p, size, pageSize, MREMAP_MAYMOVE | MREMAP_FIXED, p + pageSize);
     ICUNIT_ASSERT_EQUAL(newAddr, MAP_FAILED, newAddr);
     ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);

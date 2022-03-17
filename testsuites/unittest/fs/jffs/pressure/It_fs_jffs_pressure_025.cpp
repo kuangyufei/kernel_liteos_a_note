@@ -65,19 +65,19 @@ static UINT32 TestCase(VOID)
     JffsStatPrintf(buf1);
 
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
-        memset_s(pathname2, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        memset_s(pathname3[i], JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        memset_s(pathname4[i], JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(pathname2, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(pathname3[i], JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(pathname4[i], JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
 
-        strcpy_s(pathname2, JFFS_STANDARD_NAME_LENGTH, pathname1);
+        (void)strcpy_s(pathname2, JFFS_STANDARD_NAME_LENGTH, pathname1);
         snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/1623_%d.txt", i);
         strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, bufname);
         strcat_s(pathname3[i], JFFS_STANDARD_NAME_LENGTH, pathname2);
 
-        memset_s(pathname2, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        strcpy_s(pathname2, JFFS_STANDARD_NAME_LENGTH, pathname1);
+        (void)memset_s(pathname2, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)strcpy_s(pathname2, JFFS_STANDARD_NAME_LENGTH, pathname1);
         snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/test_%d.c", i);
         strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, bufname);
         strcat_s(pathname4[i], JFFS_STANDARD_NAME_LENGTH, pathname2);

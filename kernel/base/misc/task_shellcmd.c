@@ -52,7 +52,7 @@
 #include "fs/file.h"
 #endif
 #include "los_sched_pri.h"
-
+#include "los_swtmr_pri.h"
 
 #define OS_PROCESS_MEM_INFO 0x2U
 #define OS_PROCESS_INFO_LEN          (g_processMaxNum * (sizeof(LosProcessCB)))
@@ -102,7 +102,7 @@ STATIC UINT32 *taskWaterLine = NULL;
 #define PROCESS_INFO_SHOW(seqBuf, arg...) PRINTK(arg)
 #endif
 
-LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellCmdProcessMode(UINT16 mode)
+STATIC UINT8 *ConvertProcessModeToString(UINT16 mode)
 {
     if (mode == OS_KERNEL_MODE) {
         return (UINT8 *)"kernel";
@@ -112,8 +112,8 @@ LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellCmdProcessMode(UINT16 mode)
 
     return (UINT8 *)"ERROR";
 }
-/// 获取调度方式的名�?
-LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellCmdSchedPolicy(UINT16 policy)
+
+STATIC UINT8 *ConvertSchedPolicyToString(UINT16 policy)
 {
     if (policy == LOS_SCHED_RR) {
         return (UINT8 *)"RR";
@@ -126,7 +126,7 @@ LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellCmdSchedPolicy(UINT16 policy)
     return (UINT8 *)"ERROR";
 }
 
-LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellProcessStatus(UINT16 status)
+STATIC UINT8 *ConvertProcessStatusToString(UINT16 status)
 {
     if (status & OS_PROCESS_STATUS_ZOMBIES) {
         return (UINT8 *)"Zombies";
@@ -140,41 +140,43 @@ LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellProcessStatus(UINT16 status)
     return (UINT8 *)"Pending";
 }
 
-STATIC VOID OsShellCmdProcessTitle(VOID *seqBuf, UINT16 flag)
+STATIC VOID ProcessInfoTitle(VOID *seqBuf, UINT16 flag)
 {
-    PROCESS_INFO_SHOW(seqBuf, "\r\n  PID  PPID PGID       UID  Status ");
-    if (flag & OS_PROCESS_MEM_INFO) {
-        PROCESS_INFO_SHOW(seqBuf, "VirtualMem ShareMem PhysicalMem ");
-    }
-
+    PROCESS_INFO_SHOW(seqBuf, "\r\n  PID  PPID PGID   UID   Mode  Status Policy Priority MTID TTotal");
     if (flag & OS_PROCESS_INFO_ALL) {
+        if (flag & OS_PROCESS_MEM_INFO) {
+            PROCESS_INFO_SHOW(seqBuf, " VirtualMem ShareMem PhysicalMem");
+        }
 #ifdef LOSCFG_KERNEL_CPUP
-        PROCESS_INFO_SHOW(seqBuf, "CPUUSE CPUUSE10s CPUUSE1s ");
+        PROCESS_INFO_SHOW(seqBuf, " CPUUSE CPUUSE10s CPUUSE1s");
 #endif /* LOSCFG_KERNEL_CPUP */
-        PROCESS_INFO_SHOW(seqBuf, "Policy Priority MTID TaskTotal   Mode ");
     } else {
 #ifdef LOSCFG_KERNEL_CPUP
-        PROCESS_INFO_SHOW(seqBuf, "CPUUSE10s ");
+        PROCESS_INFO_SHOW(seqBuf, " CPUUSE10s");
 #endif /* LOSCFG_KERNEL_CPUP */
     }
     PROCESS_INFO_SHOW(seqBuf, " PName\n");
 }
 
-STATIC VOID OsShellCmdProcessInfoShow(const LosProcessCB *processCB, const INT32 *group,
-                                      const UINT32 *memArray, VOID *seqBuf, UINT16 flag)
+STATIC VOID ProcessDataShow(const LosProcessCB *processCB, const INT32 *group,
+                            const UINT32 *memArray, VOID *seqBuf, UINT16 flag)
 {
     const UINT32 *procMemUsage = NULL;
     const INT32 *user = (const INT32 *)((UINTPTR)group + OS_PROCESS_GROUP_INFO_LEN);
     UINT32 pid = processCB->processID;
-    PROCESS_INFO_SHOW(seqBuf, "%5u%6d%5d%10d%8s", pid, (INT32)processCB->parentProcessID, group[pid], user[pid],
-                      OsShellProcessStatus(processCB->processStatus));
+    PROCESS_INFO_SHOW(seqBuf, "%5u%6d%5d%6d%7s%8s%7s%9u%5d%7u",
+                      pid, (INT32)processCB->parentProcessID, group[pid], user[pid],
+                      ConvertProcessModeToString(processCB->processMode),
+                      ConvertProcessStatusToString(processCB->processStatus),
+                      ConvertSchedPolicyToString(LOS_SCHED_RR), OS_TCB_FROM_TID(processCB->threadGroupID)->basePrio,
+                      (INT32)processCB->threadGroupID, processCB->threadNumber);
 
-    if (flag & OS_PROCESS_MEM_INFO) {
-        procMemUsage = &memArray[pid * PROCESS_VM_INDEX_MAX];
-        PROCESS_INFO_SHOW(seqBuf, "%#11x%#9x%#12x", procMemUsage[PROCESS_VM_INDEX], procMemUsage[PROCESS_SM_INDEX],
-                          procMemUsage[PROCESS_PM_INDEX]);
-    }
     if (flag & OS_PROCESS_INFO_ALL) {
+        if (flag & OS_PROCESS_MEM_INFO) {
+            procMemUsage = &memArray[pid * PROCESS_VM_INDEX_MAX];
+            PROCESS_INFO_SHOW(seqBuf, "%#11x%#9x%#12x", procMemUsage[PROCESS_VM_INDEX], procMemUsage[PROCESS_SM_INDEX],
+                              procMemUsage[PROCESS_PM_INDEX]);
+        }
 #ifdef LOSCFG_KERNEL_CPUP
         PROCESS_INFO_SHOW(seqBuf, "%4u.%-2u%7u.%-2u%6u.%-2u ",
                           processCpupAll[pid].usage / LOS_CPUP_PRECISION_MULT,
@@ -184,10 +186,6 @@ STATIC VOID OsShellCmdProcessInfoShow(const LosProcessCB *processCB, const INT32
                           processCpup1s[pid].usage / LOS_CPUP_PRECISION_MULT,
                           processCpup1s[pid].usage % LOS_CPUP_PRECISION_MULT);
 #endif /* LOSCFG_KERNEL_CPUP */
-        PROCESS_INFO_SHOW(seqBuf, "%6s%9u%5d%10u%7s ",
-                          OsShellCmdSchedPolicy(LOS_SCHED_RR), OS_TCB_FROM_TID(processCB->threadGroupID)->basePrio,
-                          (INT32)processCB->threadGroupID, processCB->threadNumber,
-                          OsShellCmdProcessMode(processCB->processMode));
     } else {
 #ifdef LOSCFG_KERNEL_CPUP
         PROCESS_INFO_SHOW(seqBuf, "%7u.%-2u ",
@@ -195,63 +193,73 @@ STATIC VOID OsShellCmdProcessInfoShow(const LosProcessCB *processCB, const INT32
                           processCpup10s[pid].usage % LOS_CPUP_PRECISION_MULT);
 #endif /* LOSCFG_KERNEL_CPUP */
     }
-    PROCESS_INFO_SHOW(seqBuf, " %-32s\n", processCB->processName);
+    PROCESS_INFO_SHOW(seqBuf, "%-32s\n", processCB->processName);
 }
 
-STATIC VOID OsShellCmdAllProcessInfoShow(const LosProcessCB *pcbArray, const INT32 *group,
-                                         const UINT32 *memArray, VOID *seqBuf, UINT16 flag)
+STATIC VOID AllProcessDataShow(const LosProcessCB *pcbArray, const INT32 *group,
+                               const UINT32 *memArray, VOID *seqBuf, UINT16 flag)
 {
-    const LosProcessCB *processCB = NULL;
-    UINT32 pid;
-
-    for (pid = 1; pid < g_processMaxNum; ++pid) {
-        processCB = pcbArray + pid;
+    for (UINT32 pid = 1; pid < g_processMaxNum; ++pid) {
+        const LosProcessCB *processCB = pcbArray + pid;
         if (OsProcessIsUnused(processCB)) {
             continue;
         }
 
-        OsShellCmdProcessInfoShow(processCB, group, memArray, seqBuf, flag);
+        ProcessDataShow(processCB, group, memArray, seqBuf, flag);
     }
 }
 
 #ifdef LOSCFG_KERNEL_VM
-STATIC VOID OsProcessMemUsageGet(UINT32 *memArray)
+STATIC VOID ProcessMemUsageGet(UINT32 *memArray, LosProcessCB *pcbArray)
 {
-    UINT32 pid;
-    LosProcessCB *processCB = NULL;
-    UINT32 *proMemUsage = NULL;
+    UINT32 intSave, memUsed;
 
-    for (pid = 0; pid < g_processMaxNum; ++pid) {
-        processCB = g_processCBArray + pid;
+    for (UINT32 pid = 0; pid < g_processMaxNum; ++pid) {
+        const LosProcessCB *processCB = g_processCBArray + pid;
+        UINT32 *proMemUsage = &memArray[pid * PROCESS_VM_INDEX_MAX];
+
+        SCHEDULER_LOCK(intSave);
         if (OsProcessIsUnused(processCB)) {
+            SCHEDULER_UNLOCK(intSave);
+            pcbArray[pid].processStatus = OS_PROCESS_FLAG_UNUSED;
             continue;
         }
-        proMemUsage = &memArray[pid * PROCESS_VM_INDEX_MAX];
+
+        LosVmSpace *vmSpace  = processCB->vmSpace;
+        SCHEDULER_UNLOCK(intSave);
 
         /* Process memory usage statistics, idle task defaults to 0 */
         if (pid == OsGetIdleProcessID()) {
             proMemUsage[PROCESS_VM_INDEX] = 0;
             proMemUsage[PROCESS_SM_INDEX] = 0;
             proMemUsage[PROCESS_PM_INDEX] = 0;
+        } else if (vmSpace == LOS_GetKVmSpace()) {
+            (VOID)OsShellCmdProcessPmUsage(vmSpace, &proMemUsage[PROCESS_SM_INDEX], &proMemUsage[PROCESS_PM_INDEX]);
+            proMemUsage[PROCESS_VM_INDEX] = proMemUsage[PROCESS_PM_INDEX];
         } else {
-            proMemUsage[PROCESS_VM_INDEX] = OsShellCmdProcessVmUsage(processCB->vmSpace);
-            OsShellCmdProcessPmUsage(processCB->vmSpace, &proMemUsage[PROCESS_SM_INDEX],
-                                     &proMemUsage[PROCESS_PM_INDEX]);
+            memUsed = OsShellCmdProcessVmUsage(vmSpace);
+            if (memUsed == 0) {
+                pcbArray[pid].processStatus = OS_PROCESS_FLAG_UNUSED;
+                continue;
+            }
+            proMemUsage[PROCESS_VM_INDEX] = memUsed;
+            memUsed = OsShellCmdProcessPmUsage(vmSpace, &proMemUsage[PROCESS_SM_INDEX], &proMemUsage[PROCESS_PM_INDEX]);
+            if (memUsed == 0) {
+                pcbArray[pid].processStatus = OS_PROCESS_FLAG_UNUSED;
+            }
         }
     }
 }
 #endif
 
 #define OS_TASK_STATUS_MASK 0x00FF
-STATIC VOID OsProcessInfoGet(LosProcessCB **pcbArray, INT32 **group,
-                             UINT32 **memArray, LosTaskCB **tcbArray,
-                             UINT16 flag)
+STATIC VOID ProcessInfoGet(LosProcessCB **pcbArray, INT32 **group, LosTaskCB **tcbArray)
 {
     *group = (INT32 *)((UINTPTR)*pcbArray + OS_PROCESS_INFO_LEN);
     INT32 *user = (INT32 *)((UINTPTR)*group + OS_PROCESS_GROUP_INFO_LEN);
 
     for (UINT32 tid = 0; tid < g_taskMaxNum; tid++) {
-        LosTaskCB *taskCB = *tcbArray + tid;
+        const LosTaskCB *taskCB = *tcbArray + tid;
         if (OsTaskIsUnused(taskCB)) {
             continue;
         }
@@ -263,7 +271,7 @@ STATIC VOID OsProcessInfoGet(LosProcessCB **pcbArray, INT32 **group,
     }
 
     for (UINT32 pid = 0; pid < g_processMaxNum; ++pid) {
-        LosProcessCB *processCB = *pcbArray + pid;
+        const LosProcessCB *processCB = *pcbArray + pid;
         if (OsProcessIsUnused(processCB)) {
             continue;
         }
@@ -284,30 +292,10 @@ STATIC VOID OsProcessInfoGet(LosProcessCB **pcbArray, INT32 **group,
         user[processCB->processID] = 0;
 #endif
     }
-
-#ifdef LOSCFG_KERNEL_CPUP
-    processCpupAll = (CPUP_INFO_S *)((UINTPTR)user + OS_PROCESS_UID_INFO_LEN);
-    taskCpupAll = (CPUP_INFO_S *)((UINTPTR)processCpupAll + OS_PROCESS_CPUP_LEN);
-    processCpup10s = (CPUP_INFO_S *)((UINTPTR)processCpupAll + OS_PROCESS_AND_TASK_CPUP_LEN);
-    taskCpup10s = (CPUP_INFO_S *)((UINTPTR)processCpup10s + OS_PROCESS_CPUP_LEN);
-    processCpup1s = (CPUP_INFO_S *)((UINTPTR)processCpup10s + OS_PROCESS_AND_TASK_CPUP_LEN);
-    taskCpup1s = (CPUP_INFO_S *)((UINTPTR)processCpup1s + OS_PROCESS_CPUP_LEN);
-
-    (VOID)OsGetAllProcessAndTaskCpuUsageUnsafe(CPUP_ALL_TIME, processCpupAll, OS_PROCESS_AND_TASK_CPUP_LEN);
-    (VOID)OsGetAllProcessAndTaskCpuUsageUnsafe(CPUP_LAST_TEN_SECONDS, processCpup10s, OS_PROCESS_AND_TASK_CPUP_LEN);
-    (VOID)OsGetAllProcessAndTaskCpuUsageUnsafe(CPUP_LAST_ONE_SECONDS, processCpup1s, OS_PROCESS_AND_TASK_CPUP_LEN);
-#endif
-
-#ifdef LOSCFG_KERNEL_VM
-    if (flag & OS_PROCESS_MEM_INFO) {
-        *memArray = (UINT32 *)((UINTPTR)*pcbArray + OS_PROCESS_ALL_INFO_LEN);
-        OsProcessMemUsageGet(*memArray);
-    }
-#endif
 }
 
-STATIC VOID OsShellCmdProcessInfoData(const LosProcessCB *pcbArray, const INT32 *group,
-                                      const UINT32 *memArray, VOID *seqBuf, UINT16 flag)
+STATIC VOID ProcessInfoShow(const LosProcessCB *pcbArray, const INT32 *group,
+                            const UINT32 *memArray, VOID *seqBuf, UINT16 flag)
 {
 #ifdef LOSCFG_KERNEL_CPUP
     UINT32 pid = OsGetIdleProcessID();
@@ -320,55 +308,59 @@ STATIC VOID OsShellCmdProcessInfoData(const LosProcessCB *pcbArray, const INT32 
                       processCpupAll[pid].usage % LOS_CPUP_PRECISION_MULT);
 #endif
 
-    OsShellCmdProcessTitle(seqBuf, flag);
-    OsShellCmdAllProcessInfoShow(pcbArray, group, memArray, seqBuf, flag);
+    ProcessInfoTitle(seqBuf, flag);
+    AllProcessDataShow(pcbArray, group, memArray, seqBuf, flag);
 }
 
-LITE_OS_SEC_TEXT_MINOR UINT8 *OsShellCmdConvertTskStatus(UINT16 taskStatus)
+STATIC UINT8 *ConvertTaskStatusToString(UINT16 taskStatus)
 {
-    if (taskStatus & OS_TASK_STATUS_INIT) {//初始�?
+    if (taskStatus & OS_TASK_STATUS_INIT) {
         return (UINT8 *)"Init";
-    } else if (taskStatus & OS_TASK_STATUS_RUNNING) {//运行�?
+    } else if (taskStatus & OS_TASK_STATUS_RUNNING) {
         return (UINT8 *)"Running";
-    } else if (taskStatus & OS_TASK_STATUS_READY) {//已就�?
+    } else if (taskStatus & OS_TASK_STATUS_READY) {
         return (UINT8 *)"Ready";
-    } else if (taskStatus & OS_TASK_STATUS_SUSPENDED) {//暂停
+    } else if (taskStatus & OS_TASK_STATUS_SUSPENDED) {
         return (UINT8 *)"Suspended";
-    } else if (taskStatus & OS_TASK_STATUS_DELAY) {//延迟
+    } else if (taskStatus & OS_TASK_STATUS_DELAY) {
         return (UINT8 *)"Delay";
-    } else if (taskStatus & OS_TASK_STATUS_PENDING) {//挂起/待办
-        if (taskStatus & OS_TASK_STATUS_PEND_TIME) { //挂起/待办有时间限�?
+    } else if (taskStatus & OS_TASK_STATUS_PENDING) {
+        if (taskStatus & OS_TASK_STATUS_PEND_TIME) {
             return (UINT8 *)"PendTime";
         } else {
-            return (UINT8 *)"Pending";//挂起/待办无时间限�?
+            return (UINT8 *)"Pending";
         }
-    } else if (taskStatus & OS_TASK_STATUS_EXIT) {//退�?
+    } else if (taskStatus & OS_TASK_STATUS_EXIT) {
         return (UINT8 *)"Exit";
     }
 
     return (UINT8 *)"Invalid";
 }
 
-STATIC VOID OsShellCmdTaskWaterLineGet(const LosTaskCB *allTaskArray)
+STATIC VOID TaskWaterLineGet(UINTPTR waterLineBase, LosTaskCB *tcbArray)
 {
-    const LosTaskCB *taskCB = NULL;
-    UINT32 loop;
+    UINT32 intSave;
+    taskWaterLine = (UINT32 *)waterLineBase;
 
-    for (loop = 0; loop < g_taskMaxNum; ++loop) {
-        taskCB = allTaskArray + loop;
+    for (UINT32 tid = 0; tid < g_taskMaxNum; ++tid) {
+        const LosTaskCB *taskCB = g_taskCBArray + tid;
+        SCHEDULER_LOCK(intSave);
         if (OsTaskIsUnused(taskCB)) {
+            SCHEDULER_UNLOCK(intSave);
+            tcbArray[tid].taskStatus = OS_TASK_STATUS_UNUSED;
             continue;
         }
 
         (VOID)OsStackWaterLineGet((const UINTPTR *)((UINTPTR)taskCB->topOfStack + taskCB->stackSize),
                                   (const UINTPTR *)taskCB->topOfStack, &taskWaterLine[taskCB->taskID]);
+        SCHEDULER_UNLOCK(intSave);
     }
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 #define OS_PEND_REASON_MAX_LEN 20
-//shell检查任务等待标�?
-STATIC CHAR *OsShellCheckTaskWaitFlag(const LosTaskCB *taskCB, UINTPTR *lockID)
+
+STATIC CHAR *CheckTaskWaitFlag(const LosTaskCB *taskCB, UINTPTR *lockID)
 {
     *lockID = taskCB->waitID;
     switch (taskCB->waitFlag) {
@@ -403,24 +395,23 @@ STATIC CHAR *OsShellCheckTaskWaitFlag(const LosTaskCB *taskCB, UINTPTR *lockID)
     return NULL;
 }
 
-STATIC VOID OsShellCmdCheckTaskPend(const LosTaskCB *taskCB, CHAR *pendReason, UINT32 maxLen, UINTPTR *lockID)
+STATIC VOID TaskPendingReasonInfoGet(const LosTaskCB *taskCB, CHAR *pendReason, UINT32 maxLen, UINTPTR *lockID)
 {
     CHAR *reason = NULL;
-    LosTaskCB *owner = NULL;
 
     if (!(taskCB->taskStatus & OS_TASK_STATUS_PENDING)) {
-        reason = (CHAR *)OsShellCmdConvertTskStatus(taskCB->taskStatus);
+        reason = (CHAR *)ConvertTaskStatusToString(taskCB->taskStatus);
         goto EXIT;
     }
 
-    reason = OsShellCheckTaskWaitFlag(taskCB, lockID);
+    reason = CheckTaskWaitFlag(taskCB, lockID);
     if (reason == NULL) {
         reason = "Others";
     }
 
     if (taskCB->taskMux != NULL) {
         *lockID = (UINTPTR)taskCB->taskMux;
-        owner = ((LosMux *)taskCB->taskMux)->owner;
+        LosTaskCB *owner = ((LosMux *)taskCB->taskMux)->owner;
         if (owner != NULL) {
             if (snprintf_s(pendReason, maxLen, maxLen - 1, "Mutex-%u", owner->taskID) == EOK) {
                 return;
@@ -435,30 +426,29 @@ EXIT:
 }
 #endif
 
-STATIC VOID OsShellCmdTskInfoTitle(VOID *seqBuf, UINT16 flag)
+STATIC VOID TaskInfoTitle(VOID *seqBuf, UINT16 flag)
 {
-    PROCESS_INFO_SHOW(seqBuf, "\r\n  TID  PID ");
+    PROCESS_INFO_SHOW(seqBuf, "\r\n  TID  PID");
 #ifdef LOSCFG_KERNEL_SMP
-    PROCESS_INFO_SHOW(seqBuf, "Affi CPU  ");
+    PROCESS_INFO_SHOW(seqBuf, " Affi CPU");
 #endif
-    PROCESS_INFO_SHOW(seqBuf, "     Status StackSize WaterLine ");
+    PROCESS_INFO_SHOW(seqBuf, "    Status Policy Priority StackSize WaterLine");
     if (flag & OS_PROCESS_INFO_ALL) {
 #ifdef LOSCFG_KERNEL_CPUP
-        PROCESS_INFO_SHOW(seqBuf, "CPUUSE CPUUSE10s CPUUSE1s ");
+        PROCESS_INFO_SHOW(seqBuf, " CPUUSE CPUUSE10s CPUUSE1s");
 #endif /* LOSCFG_KERNEL_CPUP */
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-        PROCESS_INFO_SHOW(seqBuf, "  StackPoint  TopOfStack PendReason     LockID ");
+        PROCESS_INFO_SHOW(seqBuf, "   StackPoint  TopOfStack PendReason     LockID");
 #endif
-        PROCESS_INFO_SHOW(seqBuf, "Policy Priority ");
     } else {
 #ifdef LOSCFG_KERNEL_CPUP
-        PROCESS_INFO_SHOW(seqBuf, "CPUUSE10s ");
+        PROCESS_INFO_SHOW(seqBuf, "  CPUUSE10s ");
 #endif /* LOSCFG_KERNEL_CPUP */
     }
-    PROCESS_INFO_SHOW(seqBuf, "   MEMUSE  TaskName\n");
+    PROCESS_INFO_SHOW(seqBuf, "  TaskName\n");
 }
 
-STATIC INLINE VOID OsShellTskInfoData(const LosTaskCB *taskCB, VOID *seqBuf, UINT16 flag)
+STATIC INLINE VOID TaskDataShow(const LosTaskCB *taskCB, VOID *seqBuf, UINT16 flag)
 {
 #ifdef LOSCFG_SHELL_CMD_DEBUG
     UINTPTR lockID = 0;
@@ -470,7 +460,8 @@ STATIC INLINE VOID OsShellTskInfoData(const LosTaskCB *taskCB, VOID *seqBuf, UIN
     PROCESS_INFO_SHOW(seqBuf, "%#5x%4d ", taskCB->cpuAffiMask, (INT16)(taskCB->currCpu));
 #endif
 
-    PROCESS_INFO_SHOW(seqBuf, "%12s%#10x%#10x", OsShellCmdConvertTskStatus(taskCB->taskStatus),
+    PROCESS_INFO_SHOW(seqBuf, "%9s%7s%9u%#10x%#10x", ConvertTaskStatusToString(taskCB->taskStatus),
+                      ConvertSchedPolicyToString(taskCB->policy), taskCB->priority,
                       taskCB->stackSize, taskWaterLine[taskCB->taskID]);
     if (flag & OS_PROCESS_INFO_ALL) {
 #ifdef LOSCFG_KERNEL_CPUP
@@ -483,55 +474,73 @@ STATIC INLINE VOID OsShellTskInfoData(const LosTaskCB *taskCB, VOID *seqBuf, UIN
                           taskCpup1s[taskCB->taskID].usage % LOS_CPUP_PRECISION_MULT);
 #endif /* LOSCFG_KERNEL_CPUP */
 #ifdef LOSCFG_SHELL_CMD_DEBUG
-        OsShellCmdCheckTaskPend(taskCB, pendReason, OS_PEND_REASON_MAX_LEN, &lockID);
+        TaskPendingReasonInfoGet(taskCB, pendReason, OS_PEND_REASON_MAX_LEN, &lockID);
         PROCESS_INFO_SHOW(seqBuf, "%#12x%#12x%11s%#11x", taskCB->stackPointer, taskCB->topOfStack, pendReason, lockID);
 #endif
-        PROCESS_INFO_SHOW(seqBuf, "%7s%9u", OsShellCmdSchedPolicy(taskCB->policy), taskCB->priority);
     } else {
 #ifdef LOSCFG_KERNEL_CPUP
-        PROCESS_INFO_SHOW(seqBuf, "%7u.%-2u ",
+        PROCESS_INFO_SHOW(seqBuf, "%8u.%-2u ",
                           taskCpup10s[taskCB->taskID].usage / LOS_CPUP_PRECISION_MULT,
                           taskCpup10s[taskCB->taskID].usage % LOS_CPUP_PRECISION_MULT);
 #endif /* LOSCFG_KERNEL_CPUP */
     }
-    PROCESS_INFO_SHOW(seqBuf, "%#10x  %-32s\n", OsTaskMemUsage(taskCB->taskID), taskCB->taskName);
+    PROCESS_INFO_SHOW(seqBuf, "  %-32s\n", taskCB->taskName);
 }
 
-STATIC VOID OsShellCmdAllTaskInfoData(const LosTaskCB *allTaskArray, VOID *seqBuf, UINT16 flag)
+STATIC VOID AllTaskInfoDataShow(const LosTaskCB *allTaskArray, VOID *seqBuf, UINT16 flag)
 {
-    const LosTaskCB *taskCB = NULL;
-    UINT32 pid;
-    UINT32 loop;
-
-    for (pid = 1; pid < g_processMaxNum; ++pid) {
-        for (loop = 0; loop < g_taskMaxNum; ++loop) {
-            taskCB = allTaskArray + loop;
+    for (UINT32 pid = 1; pid < g_processMaxNum; ++pid) {
+        for (UINT32 tid = 0; tid < g_taskMaxNum; ++tid) {
+            const LosTaskCB *taskCB = allTaskArray + tid;
             if (OsTaskIsUnused(taskCB) || (taskCB->processID != pid)) {
                 continue;
             }
 
-            OsShellTskInfoData(taskCB, seqBuf, flag);
+            TaskDataShow(taskCB, seqBuf, flag);
         }
     }
 }
 
-STATIC VOID OsShellCmdTskInfoData(const LosTaskCB *allTaskArray, VOID *seqBuf, UINT16 flag)
+STATIC VOID TaskInfoData(const LosTaskCB *allTaskArray, VOID *seqBuf, UINT16 flag)
 {
-    OsShellCmdTskInfoTitle(seqBuf, flag);
-    OsShellCmdAllTaskInfoData(allTaskArray, seqBuf, flag);
+    TaskInfoTitle(seqBuf, flag);
+    AllTaskInfoDataShow(allTaskArray, seqBuf, flag);
 }
 
-STATIC VOID OsProcessAndTaskInfoGet(LosProcessCB **pcbArray, INT32 **group, LosTaskCB **tcbArray,
-                                    UINT32 **memArray, UINT16 flag)
+#ifdef LOSCFG_KERNEL_CPUP
+STATIC VOID TaskCpupInfoGet(UINTPTR base)
 {
-    BOOL lockFlag = FALSE;
-    UINT32 intSave = 0;
-    UINT32 processInfoLen = OS_PROCESS_ALL_INFO_LEN;
+    UINT32 intSave;
 
-    if (LOS_SpinHeld(&g_taskSpin) == FALSE) {
-        SCHEDULER_LOCK(intSave);
-        lockFlag = TRUE;
-    }
+    processCpupAll = (CPUP_INFO_S *)(base + OS_PROCESS_UID_INFO_LEN);
+    taskCpupAll = (CPUP_INFO_S *)((UINTPTR)processCpupAll + OS_PROCESS_CPUP_LEN);
+    processCpup10s = (CPUP_INFO_S *)((UINTPTR)processCpupAll + OS_PROCESS_AND_TASK_CPUP_LEN);
+    taskCpup10s = (CPUP_INFO_S *)((UINTPTR)processCpup10s + OS_PROCESS_CPUP_LEN);
+    processCpup1s = (CPUP_INFO_S *)((UINTPTR)processCpup10s + OS_PROCESS_AND_TASK_CPUP_LEN);
+    taskCpup1s = (CPUP_INFO_S *)((UINTPTR)processCpup1s + OS_PROCESS_CPUP_LEN);
+
+    SCHEDULER_LOCK(intSave);
+    (VOID)OsGetAllProcessAndTaskCpuUsageUnsafe(CPUP_ALL_TIME, processCpupAll, OS_PROCESS_AND_TASK_CPUP_LEN);
+    SCHEDULER_UNLOCK(intSave);
+
+    SCHEDULER_LOCK(intSave);
+    (VOID)OsGetAllProcessAndTaskCpuUsageUnsafe(CPUP_LAST_TEN_SECONDS, processCpup10s, OS_PROCESS_AND_TASK_CPUP_LEN);
+    SCHEDULER_UNLOCK(intSave);
+
+    SCHEDULER_LOCK(intSave);
+    (VOID)OsGetAllProcessAndTaskCpuUsageUnsafe(CPUP_LAST_ONE_SECONDS, processCpup1s, OS_PROCESS_AND_TASK_CPUP_LEN);
+    SCHEDULER_UNLOCK(intSave);
+}
+#endif
+
+/*
+ * | all pcb info | group | user info | task and process cpup info | process mem info | all tcb info | task water line |
+ */
+STATIC VOID ProcessAndTaskInfoGet(LosProcessCB **pcbArray, INT32 **group, LosTaskCB **tcbArray,
+                                  UINT32 **memArray, UINT16 flag)
+{
+    UINT32 intSave;
+    UINT32 processInfoLen = OS_PROCESS_ALL_INFO_LEN;
 
 #ifdef LOSCFG_KERNEL_VM
     if (flag & OS_PROCESS_MEM_INFO) {
@@ -539,18 +548,28 @@ STATIC VOID OsProcessAndTaskInfoGet(LosProcessCB **pcbArray, INT32 **group, LosT
     }
 #endif
 
+    SCHEDULER_LOCK(intSave);
     (VOID)memcpy_s(*pcbArray, OS_PROCESS_INFO_LEN, g_processCBArray, OS_PROCESS_INFO_LEN);
     *tcbArray = (LosTaskCB *)((UINTPTR)*pcbArray + processInfoLen);
     (VOID)memcpy_s(*tcbArray, OS_TASK_INFO_LEN, g_taskCBArray, OS_TASK_INFO_LEN);
 
-    OsProcessInfoGet(pcbArray, group, memArray, tcbArray, flag);
-    taskWaterLine = (UINT32 *)((UINTPTR)*tcbArray + OS_TASK_INFO_LEN);
-    OsShellCmdTaskWaterLineGet(*tcbArray);
-    if (lockFlag == TRUE) {
-        SCHEDULER_UNLOCK(intSave);
+    ProcessInfoGet(pcbArray, group, tcbArray);
+    SCHEDULER_UNLOCK(intSave);
+
+#ifdef LOSCFG_KERNEL_CPUP
+    TaskCpupInfoGet((UINTPTR)*pcbArray + OS_PROCESS_INFO_LEN + OS_PROCESS_GROUP_INFO_LEN);
+#endif
+
+#ifdef LOSCFG_KERNEL_VM
+    if (flag & OS_PROCESS_MEM_INFO) {
+        *memArray = (UINT32 *)((UINTPTR)*pcbArray + OS_PROCESS_ALL_INFO_LEN);
+        ProcessMemUsageGet(*memArray, *pcbArray);
     }
+#endif
+
+    TaskWaterLineGet((UINTPTR)*tcbArray + OS_TASK_INFO_LEN, *tcbArray);
 }
-///获取任务相关信息
+
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdTskInfoGet(UINT32 taskID, VOID *seqBuf, UINT16 flag)
 {
     UINT32 size;
@@ -571,9 +590,9 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdTskInfoGet(UINT32 taskID, VOID *seqBuf, 
             return LOS_NOK;
         }
         (VOID)memset_s(pcbArray, size, 0, size);
-        OsProcessAndTaskInfoGet(&pcbArray, &group, &tcbArray, &memArray, flag);
-        OsShellCmdProcessInfoData(pcbArray, group, memArray, seqBuf, flag);
-        OsShellCmdTskInfoData(tcbArray, seqBuf, flag);
+        ProcessAndTaskInfoGet(&pcbArray, &group, &tcbArray, &memArray, flag);
+        ProcessInfoShow(pcbArray, group, memArray, seqBuf, flag);
+        TaskInfoData(tcbArray, seqBuf, flag);
 
         (VOID)LOS_MemFree(m_aucSysMem1, pcbArray);
     }
@@ -595,16 +614,20 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpTask(INT32 argc, const CHAR **argv)
     if (argc == 1) {
         if (strcmp("-a", argv[0]) == 0) {
             flag |= OS_PROCESS_INFO_ALL;
+#ifdef LOSCFG_SCHED_DEBUG
+#ifdef LOSCFG_SCHED_TICK_DEBUG
         } else if (strcmp("-i", argv[0]) == 0) {
             if (!OsShellShowTickRespo()) {
                 return LOS_OK;
             }
             goto TASK_HELP;
+#endif
         } else if (strcmp("-t", argv[0]) == 0) {
             if (!OsShellShowSchedParam()) {
                 return LOS_OK;
             }
             goto TASK_HELP;
+#endif
         } else {
             goto TASK_HELP;
         }
@@ -614,7 +637,9 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpTask(INT32 argc, const CHAR **argv)
 
 TASK_HELP:
     PRINTK("Unknown option: %s\n", argv[0]);
-    PRINTK("usage: task or task -a\n");
+    PRINTK("Usage:\n");
+    PRINTK(" task    --- Basic information about all created processes.\n");
+    PRINTK(" task -a --- Complete information about all created processes.\n");
     return LOS_NOK;
 }
 

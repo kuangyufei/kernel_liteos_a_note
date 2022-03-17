@@ -774,7 +774,9 @@ BOOL OsSchedSwtmrTimeListFind(SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg)
     for (UINT16 cpuid = 0; cpuid < LOSCFG_KERNEL_CORE_NUM; cpuid++) {
         SchedRunQue *rq = OsSchedRunQueByID(cpuid);
         SortLinkAttribute *swtmrSortLink = &rq->swtmrSortLink;
-        return SchedSwtmrRunQueFind(swtmrSortLink, checkFunc, arg);
+        if (SchedSwtmrRunQueFind(swtmrSortLink, checkFunc, arg)) {
+            return TRUE;
+        }
     }
     return FALSE;
 }

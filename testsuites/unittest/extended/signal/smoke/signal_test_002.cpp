@@ -35,10 +35,11 @@
 static int g_sigCount = 0;
 static void SigPrint(int sig)
 {
+    (void)sig;
     g_sigCount++;
 }
 
-static int TestRaiseIgnore()
+static int TestRaiseIgnore(void)
 {
     int sig = SIGPWR;
     void *ret;

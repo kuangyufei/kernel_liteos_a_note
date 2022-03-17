@@ -50,7 +50,8 @@ static VOID TaskD2Func(VOID)
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_OK, ret);
 
     ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 6, g_testCount);                              // 6, here assert the result.
-    ICUNIT_ASSERT_EQUAL_VOID(OsCurrTaskGet()->priority, 10, OsCurrTaskGet()->priority); // 10, here assert the result.
+    UINT16 priority = LOS_TaskPriGet(OsCurrTaskGet()->taskID);
+    ICUNIT_ASSERT_EQUAL_VOID(priority, 10, priority); // 10, here assert the result.
     g_testCount++;
 }
 
@@ -67,7 +68,8 @@ static VOID TaskC2Func(VOID)
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_OK, ret);
 
     ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 5, g_testCount);                              // 5, here assert the result.
-    ICUNIT_ASSERT_EQUAL_VOID(OsCurrTaskGet()->priority, 10, OsCurrTaskGet()->priority); // 10, here assert the result.
+    UINT16 priority = LOS_TaskPriGet(OsCurrTaskGet()->taskID);
+    ICUNIT_ASSERT_EQUAL_VOID(priority, 10, priority); // 10, here assert the result.
     g_testCount++;
 }
 
@@ -84,14 +86,17 @@ static VOID TaskB2Func(VOID)
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_OK, ret);
 
     ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 4, g_testCount);                              // 4, here assert the result.
-    ICUNIT_ASSERT_EQUAL_VOID(OsCurrTaskGet()->priority, 10, OsCurrTaskGet()->priority); // 10, here assert the result.
+    UINT16 priority = LOS_TaskPriGet(OsCurrTaskGet()->taskID);
+    ICUNIT_ASSERT_EQUAL_VOID(priority, 10, priority); // 10, here assert the result.
     g_testCount++;
 }
 
 static VOID TaskA2Func(VOID)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S task1, task2, task3;
+    TSK_INIT_PARAM_S task1 = {0};
+    TSK_INIT_PARAM_S task2 = {0};
+    TSK_INIT_PARAM_S task3 = {0};
     g_testCount++;
 
     ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 1, g_testCount);
@@ -142,9 +147,8 @@ static VOID TaskA2Func(VOID)
     ret = LOS_MuxDestroy(&g_mutexTest1);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_OK, ret);
 
-    ICUNIT_ASSERT_EQUAL_VOID(OsCurrTaskGet()->priority, 10, OsCurrTaskGet()->priority); // 10, here assert the result.
-    ICUNIT_ASSERT_EQUAL_VOID(LOS_HighBitGet(OsCurrTaskGet()->priBitMap), LOS_INVALID_BIT_INDEX,
-        LOS_HighBitGet(OsCurrTaskGet()->priBitMap));
+    UINT16 priority = LOS_TaskPriGet(OsCurrTaskGet()->taskID);
+    ICUNIT_ASSERT_EQUAL_VOID(priority, 10, priority); // 10, here assert the result.
     ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 8, g_testCount); // 8, here assert the result.
     g_testCount++;
 }
@@ -153,7 +157,7 @@ static VOID TaskA2Func(VOID)
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S task;
+    TSK_INIT_PARAM_S task = {0};
     g_testCount = 0;
 
     ret = LosMuxCreate(&g_mutexTest1);

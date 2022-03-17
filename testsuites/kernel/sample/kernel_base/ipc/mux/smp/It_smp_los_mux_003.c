@@ -78,7 +78,7 @@ static UINT32 Testcase(VOID)
     task.pfnTaskEntry = (TSK_ENTRY_FUNC)Task01;
     task.pcName = "Test Case 1";
     task.uwStackSize = TASK_STACK_SIZE_TEST;
-    task.usTaskPrio = TASK_PRIO_TEST;
+    task.usTaskPrio = TASK_PRIO_TEST_TASK;
     task.uwResved = LOS_TASK_STATUS_DETACHED;
     task.usCpuAffiMask = CPUID_TO_AFFI_MASK(currCpuid);
 

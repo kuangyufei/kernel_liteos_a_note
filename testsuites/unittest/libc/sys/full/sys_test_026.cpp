@@ -33,8 +33,7 @@
 static int TestCase(void)
 {
     char *name = getlogin();
-    ICUNIT_ASSERT_NOT_EQUAL(name, "USER1", NULL);
-    int ret = getlogin_r(name, sizeof(name));
+    int ret = getlogin_r(name, sizeof(name)); // Abnormal Scenario Testing
     ICUNIT_ASSERT_EQUAL(ret, 6, ret);
     ret = setenv("LOGNAME", "USER1", 1);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);

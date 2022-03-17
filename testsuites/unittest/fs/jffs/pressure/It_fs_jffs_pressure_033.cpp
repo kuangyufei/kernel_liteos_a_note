@@ -58,25 +58,25 @@ static VOID *PthreadF01(void *arg)
 
     bufW = (CHAR *)malloc(bufWLen + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW, NULL, 0, EXIT2);
-    memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
+    (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
         strcat_s(bufW, bufWLen + 1, filebuf);
     }
 
     for (i = 0; i < JFFS_MAXIMUM_SIZES; i++) {
-        memset_s(g_jffsPathname2, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        memset_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(g_jffsPathname2, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
 
         snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
         strcat_s(g_jffsPathname2, JFFS_STANDARD_NAME_LENGTH, pathname1);
         strcat_s(g_jffsPathname2, JFFS_STANDARD_NAME_LENGTH, bufname);
-        strcpy_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname2);
+        (void)strcpy_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname2);
         strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, ".cpp");
 
         strcat_s(g_jffsPathname2, JFFS_STANDARD_NAME_LENGTH, ".txt");
-        strcpy_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname2);
+        (void)strcpy_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname2);
 
         g_jffsFd11[i] = open(g_jffsPathname12[i], O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         ICUNIT_GOTO_NOT_EQUAL(g_jffsFd11[i], -1, g_jffsFd11[i], EXIT3);
@@ -106,7 +106,7 @@ static VOID *PthreadF01(void *arg)
         g_jffsFd11[i] = open(g_jffsPathname11[i], O_NONBLOCK | O_APPEND | O_RDWR, HIGHEST_AUTHORITY);
         ICUNIT_GOTO_NOT_EQUAL(g_jffsFd11[i], -1, g_jffsFd11[i], EXIT2);
     }
-    memset_s(writebuf, sizeof(writebuf), 0, strlen(writebuf));
+    (void)memset_s(writebuf, sizeof(writebuf), 0, strlen(writebuf));
 
     for (i = 0; i < g_testNum; i++) {
         strcat_s(writebuf, sizeof(writebuf), "a");
@@ -180,7 +180,7 @@ static VOID *PthreadF02(void *arg)
 
     bufR = (CHAR *)malloc(BYTES_PER_KBYTE + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufR, NULL, 0, EXIT3);
-    memset_s(bufR, BYTES_PER_KBYTE + 1, 0, BYTES_PER_KBYTE + 1);
+    (void)memset_s(bufR, BYTES_PER_KBYTE + 1, 0, BYTES_PER_KBYTE + 1);
 
     for (i = 0; i < JFFS_MAXIMUM_SIZES; i++) {
         len = read(g_jffsFd11[i], readbuf, 10); // read length: 10
@@ -215,7 +215,7 @@ static VOID *PthreadF02(void *arg)
 
     bufR = (CHAR *)malloc(bufRSize);
     ICUNIT_TRACK_NOT_EQUAL(bufR, NULL, 0);
-    memset_s(bufR, bufRSize, 0, bufRSize);
+    (void)memset_s(bufR, bufRSize, 0, bufRSize);
 
     for (i = 0; i < g_testNum; i++) {
         for (j = 0; j < JFFS_MAXIMUM_SIZES; j++) {

@@ -116,8 +116,9 @@ __exception_handlers:
 reset_vector: @单核cpu时,鸿蒙开机代码
     /* do some early cpu setup: i/d cache disable, mmu disabled */
     mrc     p15, 0, r0, c1, c0, 0
-    bic     r0, #(1<<12)
-    bic     r0, #(1<<2 | 1<<0)
+    bic     r0, #(1 << 12)          /* i cache */
+    bic     r0, #(1 << 2)           /* d cache */
+    bic     r0, #(1 << 0)           /* mmu */
     mcr     p15, 0, r0, c1, c0, 0
 
     /* enable fpu+neon */
@@ -221,7 +222,7 @@ warm_reset:
     msr    spsr, r0 @保存程序状态寄存器值,用于后续的恢复
 	@设置SVC栈,每个CPU都有自己的SVC栈
     /* set svc stack, every cpu has OS_EXC_SVC_STACK_SIZE stack */
-    ldr    r0, =__svc_stack_top @
+    ldr    r0, =__svc_stack_top
     mov    r2, #OS_EXC_SVC_STACK_SIZE
     mul    r2, r2, r11 @r2 = OS_EXC_SVC_STACK_SIZE * r11(存放了CPUID)
     sub    r0, r0, r2 @r0=r0-r2,此时r2是偏移量,计算出SP的位置
@@ -305,11 +306,11 @@ mmu_setup: //安装MMU
     isb
 
     mrc     p15, 0, r12, c1, c0, 0
-    bic     r12, #(1 << 29 | 1 << 28)
-    orr     r12, #(1 << 0)
+    bic     r12, #(1 << 29 | 1 << 28)           /* Disable TRE/AFE */
+    orr     r12, #(1 << 0)                      /* mmu enable */
     bic     r12, #(1 << 1)
-    orr     r12, #(1 << 2)
-    orr     r12, #(1 << 12)
+    orr     r12, #(1 << 2)                      /* D cache enable */
+    orr     r12, #(1 << 12)                     /* I cache enable */
     mcr     p15, 0, r12, c1, c0, 0              /* Set SCTLR with r12: Turn on the MMU, I/D cache Disable TRE/AFE */
     isb
 

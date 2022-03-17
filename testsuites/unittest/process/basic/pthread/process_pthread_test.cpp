@@ -56,7 +56,6 @@ public:
  * @tc.name: it_test_pthread_003
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread003, TestSize.Level0)
 {
@@ -68,7 +67,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread003, TestSize.Level0)
  * @tc.name: it_test_pthread_006
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread006, TestSize.Level0)
 {
@@ -80,7 +78,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread006, TestSize.Level0)
  * @tc.name: it_test_pthread_007
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread007, TestSize.Level0)
 {
@@ -91,7 +88,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread007, TestSize.Level0)
  * @tc.name: it_test_pthread_008
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread008, TestSize.Level0)
 {
@@ -102,7 +98,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread008, TestSize.Level0)
  * @tc.name: it_test_pthread_009
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread009, TestSize.Level0)
 {
@@ -114,7 +109,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread009, TestSize.Level0)
  * @tc.name: it_test_pthread_010
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread010, TestSize.Level0)
 {
@@ -126,7 +120,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread010, TestSize.Level0)
  * @tc.name: it_test_pthread_011
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread011, TestSize.Level0)
 {
@@ -137,7 +130,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread011, TestSize.Level0)
  * @tc.name: it_test_pthread_012
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread012, TestSize.Level0)
 {
@@ -148,7 +140,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread012, TestSize.Level0)
  * @tc.name: it_test_pthread_013
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread013, TestSize.Level0)
 {
@@ -159,7 +150,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread013, TestSize.Level0)
  * @tc.name: it_test_pthread_015
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread015, TestSize.Level0)
 {
@@ -170,7 +160,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread015, TestSize.Level0)
  * @tc.name: it_test_pthread_016
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread016, TestSize.Level0)
 {
@@ -181,7 +170,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread016, TestSize.Level0)
  * @tc.name: it_test_pthread_018
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread018, TestSize.Level0)
 {
@@ -192,7 +180,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread018, TestSize.Level0)
  * @tc.name: it_test_pthread_019
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread019, TestSize.Level0)
 {
@@ -203,7 +190,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread019, TestSize.Level0)
  * @tc.name: it_test_pthread_017
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread017, TestSize.Level0)
 {
@@ -215,7 +201,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread017, TestSize.Level0)
  * @tc.name: it_test_pthread_once_001
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthreadOnce001, TestSize.Level0)
 {
@@ -226,7 +211,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthreadOnce001, TestSize.Level0)
  * @tc.name: it_test_pthread_atfork_001
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthreadAtfork001, TestSize.Level0)
 {
@@ -237,7 +221,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthreadAtfork001, TestSize.Level0)
  * @tc.name: it_test_pthread_atfork_002
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthreadAtfork002, TestSize.Level0)
 {
@@ -248,7 +231,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthreadAtfork002, TestSize.Level0)
  * @tc.name: it_test_pthread_cond_001
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthreadCond001, TestSize.Level0)
 {
@@ -259,7 +241,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthreadCond001, TestSize.Level0)
  * @tc.name: it_test_pthread_cond_002
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthreadCond002, TestSize.Level0)
 {
@@ -270,7 +251,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthreadCond002, TestSize.Level0)
  * @tc.name: it_test_pthread_cond_003
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthreadCond003, TestSize.Level0)
 {
@@ -281,7 +261,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthreadCond003, TestSize.Level0)
  * @tc.name: it_test_pthread_cond_004
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthreadCond004, TestSize.Level0)
 {
@@ -295,7 +274,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthreadCond004, TestSize.Level0)
  * @tc.name: it_test_pthread_001
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread001, TestSize.Level0)
 {
@@ -307,7 +285,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread001, TestSize.Level0)
  * @tc.name: it_test_pthread_002
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread002, TestSize.Level0)
 {
@@ -318,7 +295,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread002, TestSize.Level0)
  * @tc.name: it_test_pthread_004
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread004, TestSize.Level0)
 {
@@ -329,7 +305,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread004, TestSize.Level0)
  * @tc.name: it_test_pthread_005
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread005, TestSize.Level0)
 {
@@ -341,7 +316,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread005, TestSize.Level0)
  * @tc.name: it_test_pthread_014
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessPthreadTest, ItTestPthread014, TestSize.Level0)
 {

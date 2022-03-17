@@ -38,6 +38,7 @@ extern "C" {
 #endif /* __cpluscplus */
 
 static TSK_INFO_S g_taskInfo;
+static UINT16 g_testPrio;
 static void TaskF01(void)
 {
     UINT32 ret;
@@ -56,7 +57,7 @@ static void TaskF01(void)
     ICUNIT_GOTO_STRING_EQUAL(g_taskInfo.acName, "Tsk049A", g_taskInfo.acName, EXIT1);
     ICUNIT_GOTO_EQUAL(g_taskInfo.uwTaskID, g_testTaskID01, g_taskInfo.uwTaskID, EXIT1);
     // 2, assert usTaskPrio change.
-    ICUNIT_GOTO_EQUAL(g_taskInfo.usTaskPrio, TASK_PRIO_TEST_TASK - 2, g_taskInfo.usTaskPrio, EXIT1);
+    ICUNIT_GOTO_EQUAL(g_taskInfo.usTaskPrio, g_testPrio - 2, g_taskInfo.usTaskPrio, EXIT1);
     ICUNIT_GOTO_EQUAL(OS_TASK_STATUS_RUNNING & g_taskInfo.usTaskStatus, OS_TASK_STATUS_RUNNING,
         OS_TASK_STATUS_RUNNING & g_taskInfo.usTaskStatus, EXIT1);
     ICUNIT_GOTO_EQUAL(g_taskInfo.uwBottomOfStack, g_taskInfo.uwSP + g_taskInfo.uwCurrUsed, g_taskInfo.uwBottomOfStack,
@@ -77,11 +78,12 @@ static UINT32 Testcase(void)
     UINT32 ret;
     TSK_INIT_PARAM_S task1 = { 0 };
 
+    g_testPrio = TASK_PRIO_TEST_TASK;
     task1.pfnTaskEntry = (TSK_ENTRY_FUNC)TaskF01;
     task1.uwStackSize = TASK_STACK_SIZE_TEST;
     task1.pcName = "Tsk049A";
     // 2, It is used to calculate a priority relative to TASK_PRIO_TEST_TASK.
-    task1.usTaskPrio = TASK_PRIO_TEST_TASK - 2;
+    task1.usTaskPrio = g_testPrio - 2;
     task1.uwResved = LOS_TASK_STATUS_DETACHED;
 #ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());

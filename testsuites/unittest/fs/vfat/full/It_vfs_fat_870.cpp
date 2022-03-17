@@ -168,7 +168,7 @@ EXIT:
  * @brief  function 操作超过2G大小的文件
  * @par description：write the file size to 2GB and function it
  * @par precon: task moudle open
- * @par step: see decription
+ * @par step: see description
  * create 2GB file \n
  * function this file
  * @par expect: nothing

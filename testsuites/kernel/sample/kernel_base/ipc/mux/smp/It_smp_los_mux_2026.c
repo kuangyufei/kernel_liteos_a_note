@@ -77,7 +77,7 @@ static VOID TaskF02(VOID)
 static UINT32 Testcase(VOID)
 {
     UINT32 ret, currCpuid, i, uvIntSave;
-    TSK_INIT_PARAM_S testTask;
+    TSK_INIT_PARAM_S testTask = {0};
 
     g_testCount = 0;
 
@@ -90,7 +90,7 @@ static UINT32 Testcase(VOID)
     currCpuid = (ArchCurrCpuid() + 1) % (LOSCFG_KERNEL_CORE_NUM);
 
     // 3, set reasonable priority.
-    TEST_TASK_PARAM_INIT_AFFI(testTask, "it_MUX_2026_task2", TaskF02, TASK_PRIO_TEST - 3,
+    TEST_TASK_PARAM_INIT_AFFI(testTask, "it_MUX_2026_task2", TaskF02, TASK_PRIO_TEST_TASK - 3,
         CPUID_TO_AFFI_MASK(currCpuid)); // let the task f02 pend mux first
     ret = LOS_TaskCreate(&g_testTaskID02, &testTask);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
@@ -98,12 +98,12 @@ static UINT32 Testcase(VOID)
     TestAssertBusyTaskDelay(100, 1); // 100, delay for Timing control.
     ICUNIT_GOTO_EQUAL(g_testCount, 1, g_testCount, EXIT);
 
-    TEST_TASK_PARAM_INIT_AFFI(testTask, "it_MUX_2026_task1", TaskF01, TASK_PRIO_TEST - 1,
+    TEST_TASK_PARAM_INIT_AFFI(testTask, "it_MUX_2026_task1", TaskF01, TASK_PRIO_TEST_TASK - 1,
         CPUID_TO_AFFI_MASK(ArchCurrCpuid()));
     ret = LOS_TaskCreate(&g_testTaskID01, &testTask);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    LOS_TaskDelay(2); // test task's prio be seted 22
+    LOS_TaskDelay(2); // test task's prio be set 22
     ICUNIT_GOTO_EQUAL(g_testCount, 2, g_testCount, EXIT);
 
     LOS_TaskLock();

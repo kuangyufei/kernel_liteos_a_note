@@ -123,7 +123,7 @@
 LITE_OS_SEC_BSS STATIC UINT16 cpupSwtmrID;	///< 监测CPU使用情况定时器s
 LITE_OS_SEC_BSS STATIC UINT16 cpupInitFlg = 0;
 LITE_OS_SEC_BSS OsIrqCpupCB *g_irqCpup = NULL;
-LITE_OS_SEC_BSS STATIC UINT16 cpupMaxNum;
+LITE_OS_SEC_BSS STATIC UINT32 cpupMaxNum;
 LITE_OS_SEC_BSS STATIC UINT16 cpupHisPos = 0; /* current Sampling point of historyTime */
 LITE_OS_SEC_BSS STATIC UINT64 cpuHistoryTime[OS_CPUP_HISTORY_RECORD_NUM + 1];
 LITE_OS_SEC_BSS STATIC UINT32 runningTasks[LOSCFG_KERNEL_CORE_NUM]; 
@@ -182,6 +182,9 @@ LITE_OS_SEC_TEXT_INIT VOID OsCpupGuard(VOID)
 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
     for (loop = 0; loop < cpupMaxNum; loop++) {
+        if (g_irqCpup[loop].status == OS_CPUP_UNUSED) {
+            continue;
+        }
         g_irqCpup[loop].cpup.historyTime[prevPos] = g_irqCpup[loop].cpup.allTime;
     }
 #endif
@@ -242,7 +245,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsCpupInit(VOID)
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
     UINT32 size;
 
-    cpupMaxNum = OS_HWI_MAX_NUM;
+    cpupMaxNum = OS_HWI_MAX_NUM * LOSCFG_KERNEL_CORE_NUM;
 
     /* every process has only one record, and it won't operated at the same time */
     size = cpupMaxNum * sizeof(OsIrqCpupCB);
@@ -309,6 +312,7 @@ LITE_OS_SEC_TEXT_INIT VOID LOS_CpupReset(VOID)
     if (g_irqCpup != NULL) {
         for (index = 0; index < cpupMaxNum; index++) {
             OsResetCpup(&g_irqCpup[index].cpup, cycle);
+            g_irqCpup[index].timeMax = 0;
         }
 
         for (index = 0; index < LOSCFG_KERNEL_CORE_NUM; index++) {
@@ -628,31 +632,41 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsGetAllProcessAndTaskCpuUsageUnsafe(UINT16 mode, 
 }
 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
-LITE_OS_SEC_TEXT_MINOR VOID OsCpupIrqStart(VOID)
+LITE_OS_SEC_TEXT_MINOR VOID OsCpupIrqStart(UINT16 cpuId)
 {
     UINT32 high;
     UINT32 low;
 
     LOS_GetCpuCycle(&high, &low);
-    cpupIntTimeStart[ArchCurrCpuid()] = ((UINT64)high << HIGH_BITS) + low;
+    cpupIntTimeStart[cpuId] = ((UINT64)high << HIGH_BITS) + low;
     return;
 }
 
-LITE_OS_SEC_TEXT_MINOR VOID OsCpupIrqEnd(UINT32 intNum)
+LITE_OS_SEC_TEXT_MINOR VOID OsCpupIrqEnd(UINT16 cpuId, UINT32 intNum)
 {
     UINT32 high;
     UINT32 low;
     UINT64 intTimeEnd;
-    UINT32 cpuID = ArchCurrCpuid();
+    UINT64 usedTime;
 
     LOS_GetCpuCycle(&high, &low);
     intTimeEnd = ((UINT64)high << HIGH_BITS) + low;
-
-    g_irqCpup[intNum].id = intNum;
-    g_irqCpup[intNum].status = OS_CPUP_USED;
-    timeInIrqSwitch[cpuID] += (intTimeEnd - cpupIntTimeStart[cpuID]);
-    g_irqCpup[intNum].cpup.allTime += (intTimeEnd - cpupIntTimeStart[cpuID]);
-
+    OsIrqCpupCB *irqCb = &g_irqCpup[(intNum * LOSCFG_KERNEL_CORE_NUM) + cpuId];
+    irqCb->id = intNum;
+    irqCb->status = OS_CPUP_USED;
+    usedTime = intTimeEnd - cpupIntTimeStart[cpuId];
+    timeInIrqSwitch[cpuId] += usedTime;
+    irqCb->cpup.allTime += usedTime;
+    if (irqCb->count <= 100) { /* Take 100 samples */
+        irqCb->allTime += usedTime;
+        irqCb->count++;
+    } else {
+        irqCb->allTime = 0;
+        irqCb->count = 0;
+    }
+    if (usedTime > irqCb->timeMax) {
+        irqCb->timeMax = usedTime;
+    }
     return;
 }
 

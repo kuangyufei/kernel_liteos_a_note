@@ -57,7 +57,6 @@ public:
  * @tc.name: NetResolvTest001
  * @tc.desc: function for NetResolvTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetResolvTest, NetResolvTest001, TestSize.Level0)
 {
@@ -68,7 +67,6 @@ HWTEST_F(NetResolvTest, NetResolvTest001, TestSize.Level0)
  * @tc.name: NetResolvTest002
  * @tc.desc: function for NetResolvTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetResolvTest, NetResolvTest002, TestSize.Level0)
 {
@@ -79,7 +77,6 @@ HWTEST_F(NetResolvTest, NetResolvTest002, TestSize.Level0)
  * @tc.name: NetResolvTest003
  * @tc.desc: function for NetResolvTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetResolvTest, NetResolvTest003, TestSize.Level0)
 {
@@ -90,7 +87,6 @@ HWTEST_F(NetResolvTest, NetResolvTest003, TestSize.Level0)
  * @tc.name: NetResolvTest006
  * @tc.desc: function for NetResolvTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetResolvTest, NetResolvTest006, TestSize.Level0)
 {
@@ -101,7 +97,6 @@ HWTEST_F(NetResolvTest, NetResolvTest006, TestSize.Level0)
  * @tc.name: NetResolvTest007
  * @tc.desc: function for NetResolvTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(NetResolvTest, NetResolvTest007, TestSize.Level0)
 {

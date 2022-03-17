@@ -242,6 +242,11 @@ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *ev)
         return ret;
     }
 
+    if (ev == NULL) {
+        set_errno(EINVAL);
+        return -1;
+    }
+
     switch (op) {
         case EPOLL_CTL_ADD:
             ret = CheckFdExist(epHead, fd);
@@ -304,7 +309,7 @@ int epoll_wait(int epfd, FAR struct epoll_event *evs, int maxevents, int timeout
         return -1;
     }
 
-    if (maxevents <= 0) {
+    if ((maxevents <= 0) || (evs == NULL)) {
         set_errno(EINVAL);
         return -1;
     }

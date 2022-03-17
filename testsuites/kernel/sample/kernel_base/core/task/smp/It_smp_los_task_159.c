@@ -94,7 +94,7 @@ static UINT32 Testcase(void)
         ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
         /* wait for task02 start */
-        TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test runing count
+        TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test running count
 
         for (j = 0; j < TRandom() % 200; j++) { // 200, Number of cycles.
         }

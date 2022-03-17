@@ -64,21 +64,21 @@ static UINT32 TestCase(VOID)
     JffsStatPrintf(buf1);
 
     for (i = 0; i < JFFS_PRESSURE_CYCLES; i++) {
-        memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, strlen(readbuf));
-        memset_s(pathname2, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, strlen(readbuf));
+        (void)memset_s(pathname2, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
         strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, pathname6);
 
         for (j = 0; j < JFFS_SHORT_ARRAY_LENGTH; j++) {
-            memset_s(pathname3[j], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+            (void)memset_s(pathname3[j], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
 
             snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", j);
             strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, bufname);
-            strcpy_s(pathname3[j], JFFS_NAME_LIMITTED_SIZE, pathname2);
+            (void)strcpy_s(pathname3[j], JFFS_NAME_LIMITTED_SIZE, pathname2);
 
             ret = mkdir(pathname3[j], HIGHEST_AUTHORITY);
             ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
 
-            strcpy_s(pathname4[j], JFFS_NAME_LIMITTED_SIZE, pathname3[j]);
+            (void)strcpy_s(pathname4[j], JFFS_NAME_LIMITTED_SIZE, pathname3[j]);
             strcat_s(pathname4[j], JFFS_NAME_LIMITTED_SIZE, ".txt");
         }
 

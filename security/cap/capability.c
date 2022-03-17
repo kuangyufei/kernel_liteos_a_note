@@ -44,7 +44,7 @@ BOOL IsCapPermit(UINT32 capIndex)
 {
     UINT32 capability = OsCurrProcessGet()->capability;
     if (capIndex > CAPABILITY_MAX || capIndex < 0) {
-        PRINTK("%s,%d, get invalid capIndex %d\n", __FUNCTION__, __LINE__, capIndex);
+        PRINTK("%s,%d, get invalid capIndex %u\n", __FUNCTION__, __LINE__, capIndex);
         return FALSE;
     }
 

@@ -43,7 +43,7 @@ static VOID *PthreadF01(void *arg)
 
     writeBuf = (CHAR *)malloc(writeSize);
     ICUNIT_GOTO_NOT_EQUAL(writeBuf, NULL, writeBuf, EXIT);
-    memset_s(writeBuf, writeSize, 0x61, writeSize);
+    (void)memset_s(writeBuf, writeSize, 0x61, writeSize);
 
     g_jffsFd = open64(pathname1, O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(g_jffsFd, JFFS_IS_ERROR, g_jffsFd, EXIT1);

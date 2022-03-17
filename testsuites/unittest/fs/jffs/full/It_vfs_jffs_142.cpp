@@ -52,7 +52,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(len, 10, len, EXIT1); // 10 means write len
 
     off = lseek(fd, -1, SEEK_CUR);
-    ICUNIT_GOTO_EQUAL(off, 9, off, EXIT1); // 9 means current file positon
+    ICUNIT_GOTO_EQUAL(off, 9, off, EXIT1); // 9 means current file position
 
     len = read(fd, readbuf, 20); // 20 means read len
     ICUNIT_GOTO_EQUAL(len, 1, len, EXIT1);

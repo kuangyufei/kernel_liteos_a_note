@@ -73,7 +73,7 @@ static UINT32 Testcase(VOID)
 
     TestHwiTrigger(HWI_NUM_TEST);
 
-    TestAssertBusyTaskDelay(100, 2);                      // 100, Set the timeout of runtime; 2, test runing count.
+    TestAssertBusyTaskDelay(100, 2);                      // 100, Set the timeout of runtime; 2, test running count.
     ICUNIT_GOTO_EQUAL(g_testCount, 2, g_testCount, EXIT); // 2, Here, assert that g_testCount is equal to 2.
 
     ret = LOS_QueueDelete(g_testQueueID01);

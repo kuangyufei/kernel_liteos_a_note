@@ -42,7 +42,7 @@ extern "C" {
 
 #define TFTP_NULL_UINT32        ((u32_t)0xffffffffUL)
 
-#define TFTP_NULL_INT32       -1
+#define TFTP_NULL_INT32         (-1)
 
 /** @cond liteos
 * @defgroup TFTP_Interfaces

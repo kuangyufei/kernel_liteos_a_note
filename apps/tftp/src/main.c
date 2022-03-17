@@ -50,11 +50,11 @@ static char *TftpError[] = {
     "Error while sending data to the peer\n",
     "Requested file is not found\n",
     "This is the error sent by the server when hostname cannot be resolved\n",
-    "Input paramters passed to TFTP interfaces are invalid\n",
+    "Input parameters passed to TFTP interfaces are invalid\n",
     "Error detected in TFTP packet or the error received from the TFTP server\n",
     "Error during packet synhronization while sending or unexpected packet is received\n",
     "File size limit crossed, Max block can be 0xFFFF, each block containing 512 bytes\n",
-    "File name lenght greater than 256\n",
+    "File name length greater than 256\n",
     "Hostname IP is not valid\n",
     "TFTP server returned file access error\n",
     "TFTP server returned error signifying that the DISK is full to write\n",
@@ -66,11 +66,11 @@ static char *TftpError[] = {
     "File create error\n",
     "File write error\n",
     "Max time expired while waiting for file to be recived\n",
-    "Error when the received packet is less than 4bytes(error lenght) or greater than 512bytes\n",
+    "Error when the received packet is less than 4bytes(error length) or greater than 512bytes\n",
     "Returned by TFTP server for protocol user error\n",
     "The destination file path length greater than 256\n",
     "Returned by TFTP server for undefined transfer ID\n",
-    "IOCTL fucntion failed at TFTP client while setting the socket to non-block\n",
+    "IOCTL function failed at TFTP client while setting the socket to non-block\n",
 };
 
 #ifndef ARRAY_SIZE

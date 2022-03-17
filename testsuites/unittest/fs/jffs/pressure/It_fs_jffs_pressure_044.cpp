@@ -51,7 +51,7 @@ static VOID *PthreadF01(void *arg)
     off = lseek(fd, -10, SEEK_END); // seek offset: -10
     ICUNIT_GOTO_EQUAL(len, strlen(writebuf), len, EXIT);
 
-    memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     len = read(fd, readbuf, JFFS_STANDARD_NAME_LENGTH - 1);
     ICUNIT_GOTO_EQUAL(len, strlen(writebuf), len, EXIT);
     ICUNIT_GOTO_STRING_EQUAL(readbuf, writebuf, readbuf, EXIT);
@@ -78,7 +78,7 @@ static VOID *PthreadF02(void *arg)
     len = write(fd, writebuf, strlen(writebuf));
     ICUNIT_GOTO_EQUAL(len, -1, len, EXIT);
 
-    memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     len = read(fd, readbuf, JFFS_STANDARD_NAME_LENGTH - 1);
     ICUNIT_GOTO_EQUAL(len, strlen(writebuf), len, EXIT);
 
@@ -114,7 +114,7 @@ static UINT32 TestCase(VOID)
         len = write(fd, writebuf, strlen(writebuf));
         ICUNIT_GOTO_EQUAL(len, strlen(writebuf), len, EXIT3);
 
-        memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
         len = read(fd, readbuf, JFFS_STANDARD_NAME_LENGTH - 1);
         ICUNIT_GOTO_EQUAL(len, 0, len, EXIT3);
 

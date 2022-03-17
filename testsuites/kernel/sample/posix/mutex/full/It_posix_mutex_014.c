@@ -55,7 +55,7 @@ static UINT32 Testcase(VOID)
     pthread_mutexattr_t mta;
     int prioceiling, ret;
 
-    /* Set 'prioceiling' out of SCHED_FIFO boundry. */
+    /* Set 'prioceiling' out of SCHED_FIFO boundary. */
     prioceiling = sched_get_priority_min(SCHED_RR);
     prioceiling--;
 

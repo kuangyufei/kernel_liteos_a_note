@@ -55,7 +55,7 @@ static VOID TaskF01(VOID)
 static UINT32 Testcase(VOID)
 {
     UINT32 ret, currCpuid;
-    TSK_INIT_PARAM_S testTask;
+    TSK_INIT_PARAM_S testTask = {0};
 
     g_testCount = 0;
 
@@ -67,7 +67,7 @@ static UINT32 Testcase(VOID)
 
     currCpuid = (ArchCurrCpuid() + 1) % (LOSCFG_KERNEL_CORE_NUM);
 
-    TEST_TASK_PARAM_INIT_AFFI(testTask, "it_event_001_task", TaskF01, TASK_PRIO_TEST - 1,
+    TEST_TASK_PARAM_INIT_AFFI(testTask, "it_event_001_task", TaskF01, TASK_PRIO_TEST_TASK - 1,
         CPUID_TO_AFFI_MASK(currCpuid)); // other cpu
     ret = LOS_TaskCreate(&g_testTaskID01, &testTask);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
@@ -94,7 +94,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(g_testCount, 1, g_testCount, EXIT);
 
 EXIT:
-    LOS_TaskPriSet(g_testTskHandle, TASK_PRIO_TEST); // recovery test task's prio
+    LOS_TaskPriSet(g_testTskHandle, TASK_PRIO_TEST_TASK); // recovery test task's prio
     LOS_TaskDelete(g_testTaskID01);
     ret = LOS_MuxDestroy(&g_mutexkernelTest);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);

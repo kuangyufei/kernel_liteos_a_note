@@ -96,13 +96,13 @@ static UINT32 Testcase(VOID)
     ret = LOS_TaskCreate(&g_testTaskID02, &testTask);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test runing count
+    TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test running count
     ICUNIT_GOTO_EQUAL(g_testCount, 2, g_testCount, EXIT); // 2, Here, assert that g_testCount is equal to
 
     ret = LOS_SemPost(g_semID);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    TestAssertBusyTaskDelay(100, 3); // 100, Set the timeout of runtime; 3, test runing count
+    TestAssertBusyTaskDelay(100, 3); // 100, Set the timeout of runtime; 3, test running count
     ICUNIT_GOTO_EQUAL(g_testCount, 3, g_testCount, EXIT); // 3, Here, assert that g_testCount is equal to
     if ((g_ret1 + g_ret2 == 0xff) && (TestAbs(g_ret1, g_ret2) == 0xff))
         ICUNIT_GOTO_EQUAL(1, 1, g_ret1, EXIT);

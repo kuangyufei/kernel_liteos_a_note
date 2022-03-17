@@ -59,6 +59,9 @@ typedef struct {
 typedef struct {
     UINT32 id;         /**< irq ID */
     UINT16 status;     /**< irq status */
+    UINT64 allTime;
+    UINT64 timeMax;
+    UINT64 count;
     OsCpupBase cpup;   /**< irq cpup base */
 } OsIrqCpupCB;
 
@@ -70,8 +73,8 @@ extern UINT32 OsGetAllProcessCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S *cpupInfo, 
 extern UINT32 OsGetAllProcessAndTaskCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len);
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
 extern UINT32 OsGetAllIrqCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len);
-extern VOID OsCpupIrqStart(VOID);
-extern VOID OsCpupIrqEnd(UINT32);
+extern VOID OsCpupIrqStart(UINT16);
+extern VOID OsCpupIrqEnd(UINT16, UINT32);
 extern OsIrqCpupCB *OsGetIrqCpupArrayBase(VOID);
 #endif
 

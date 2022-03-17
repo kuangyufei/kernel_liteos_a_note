@@ -47,7 +47,7 @@ static VOID *PthreadF01(void *arg)
     off = lseek(g_jffsFd, -10, SEEK_END); // seek offset: -10
     ICUNIT_GOTO_EQUAL(off, 10, off, EXIT); // file position: 10
 
-    memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     len = read(g_jffsFd, readbuf, JFFS_STANDARD_NAME_LENGTH - 1);
     ICUNIT_GOTO_EQUAL(len, strlen(writebuf), len, EXIT);
     ICUNIT_GOTO_STRING_EQUAL(readbuf, writebuf, readbuf, EXIT);
@@ -75,7 +75,7 @@ static VOID *PthreadF02(void *arg)
     off = lseek(g_jffsFd, -10, SEEK_END);    // seek offset: -10
     ICUNIT_GOTO_EQUAL(off, 10, off, EXIT); // file position: 10
 
-    memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     len = read(g_jffsFd, readbuf, JFFS_STANDARD_NAME_LENGTH - 1);
     ICUNIT_GOTO_EQUAL(len, 10, len, EXIT); // file size: 10
     ICUNIT_GOTO_STRING_EQUAL(readbuf, "LLLLLLLLLL", readbuf, EXIT);
@@ -86,7 +86,7 @@ static VOID *PthreadF02(void *arg)
     off = lseek(g_jffsFd, -10, SEEK_END);    // seek offset: -10
     ICUNIT_GOTO_EQUAL(off, 20, off, EXIT); // file position: 20
 
-    memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     len = read(g_jffsFd, readbuf, JFFS_STANDARD_NAME_LENGTH - 1);
     ICUNIT_GOTO_EQUAL(len, 10, len, EXIT); // file size: 10
     ICUNIT_GOTO_STRING_EQUAL(readbuf, writebuf, readbuf, EXIT);
@@ -126,7 +126,7 @@ static UINT32 TestCase(VOID)
         len = write(g_jffsFd, writebuf, strlen(writebuf));
         ICUNIT_GOTO_EQUAL(len, strlen(writebuf), len, EXIT3);
 
-        memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
         len = read(g_jffsFd, readbuf, JFFS_STANDARD_NAME_LENGTH - 1);
         ICUNIT_GOTO_EQUAL(len, 0, len, EXIT3);
 

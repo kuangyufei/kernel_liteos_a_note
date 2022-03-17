@@ -46,7 +46,7 @@ static UINT32 Testcase(VOID)
         memset_s(bufname, sizeof(bufname), 0, strlen(bufname));
         snprintf_s(bufname, sizeof(bufname) - 1, sizeof(bufname), "/%d", i);
         strcat_s(pathname1, sizeof(pathname1), bufname);
-        strcpy_s(pathname2[i], sizeof(pathname2[i]), pathname1);
+        (void)strcpy_s(pathname2[i], sizeof(pathname2[i]), pathname1);
 
         ret = mkdir(pathname2[i], HIGHEST_AUTHORITY);
         ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);

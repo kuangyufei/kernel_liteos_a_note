@@ -65,25 +65,22 @@ static UINT32 Testcase(void)
 
     ret = OS_TCB_FROM_TID(g_testTaskID01)->taskStatus;
     ICUNIT_GOTO_NOT_EQUAL(ret & OS_TASK_STATUS_RUNNING, 0, ret, EXIT);
-    ICUNIT_GOTO_NOT_EQUAL(ret & OS_TASK_STATUS_DETACHED, 0, ret, EXIT);
 
     ret = LOS_TaskSuspend(g_testTaskID01);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    TestBusyTaskDelay(10); // 10, set delay time
+    TestBusyTaskDelay(100); // 100, set delay time
 
     ret = OS_TCB_FROM_TID(g_testTaskID01)->taskStatus;
     ICUNIT_GOTO_NOT_EQUAL(ret & OS_TASK_STATUS_SUSPEND, 0, ret, EXIT);
-    ICUNIT_GOTO_NOT_EQUAL(ret & OS_TASK_STATUS_DETACHED, 0, ret, EXIT);
 
     ret = LOS_TaskResume(g_testTaskID01);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    TestBusyTaskDelay(10); // 10, set delay time
+    TestBusyTaskDelay(100); // 100, set delay time
 
     ret = OS_TCB_FROM_TID(g_testTaskID01)->taskStatus;
     ICUNIT_GOTO_NOT_EQUAL(ret & OS_TASK_STATUS_RUNNING, 0, ret, EXIT);
-    ICUNIT_GOTO_NOT_EQUAL(ret & OS_TASK_STATUS_DETACHED, 0, ret, EXIT);
 
     ret = LOS_TaskDelete(g_testTaskID01);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);

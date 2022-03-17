@@ -97,7 +97,7 @@ Targets:
     cleanall:   clean all build outputs
     all:        make liteos kernel image and rootfs image (Default target)
     $(APPS):       build all apps
-    $(ROOTFS):     make a original rootfs image
+    $(ROOTFS):     make an original rootfs image
     $(LITEOS_LIBS_TARGET):       compile all kernel modules (libraries)
     $(LITEOS_TARGET):     make liteos kernel image
     update_config:  update product kernel config (use menuconfig)

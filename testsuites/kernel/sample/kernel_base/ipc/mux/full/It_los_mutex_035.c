@@ -87,7 +87,7 @@ static VOID TaskService3Func(VOID)
 static VOID TaskMisc10Func(VOID)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S task1, task2, task3;
+    TSK_INIT_PARAM_S task1 = {0};
 
     g_testCount++;
     ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 1, g_testCount);
@@ -99,7 +99,7 @@ static VOID TaskMisc10Func(VOID)
     task1.usTaskPrio = 3; // 3, set reasonable priority.
     task1.pcName = "TaskService_3";
     task1.uwStackSize = LOS_TASK_MIN_STACK_SIZE;
-    task1.uwResved = 0;
+    task1.uwResved = LOS_TASK_ATTR_JOINABLE;
 #ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
@@ -120,7 +120,7 @@ static VOID TaskMisc10Func(VOID)
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S task;
+    TSK_INIT_PARAM_S task = {0};
     g_testCount = 0;
 
     ret = LosMuxCreate(&g_mutexTest1);
@@ -133,7 +133,7 @@ static UINT32 Testcase(VOID)
     task.usTaskPrio = 10; // 10, set reasonable priority.
     task.pcName = "TaskMisc_10";
     task.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
-    task.uwResved = 0;
+    task.uwResved = LOS_TASK_ATTR_JOINABLE;
 #ifdef LOSCFG_KERNEL_SMP
     task.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
@@ -145,7 +145,7 @@ static UINT32 Testcase(VOID)
     task.usTaskPrio = 2; // 2, set reasonable priority.
     task.pcName = "TaskFe_2";
     task.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
-    task.uwResved = 0;
+    task.uwResved = LOS_TASK_ATTR_JOINABLE;
 #ifdef LOSCFG_KERNEL_SMP
     task.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
@@ -163,6 +163,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_MuxDestroy(&g_mutexTest2);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
+    OsShellCmdTskInfoGet(0xffffffff, NULL, 0);
     // 10, here assert the result.
     ICUNIT_GOTO_EQUAL(LOS_TaskPriGet(g_testTaskID01), 10, LOS_TaskPriGet(g_testTaskID01), EXIT);
     // 3, here assert the result.
@@ -170,11 +171,11 @@ static UINT32 Testcase(VOID)
     // 2, here assert the result.
     ICUNIT_GOTO_EQUAL(LOS_TaskPriGet(g_testTaskID03), 2, LOS_TaskPriGet(g_testTaskID03), EXIT);
 EXIT:
-    ret = LOS_TaskDelete(g_testTaskID01);
+    ret = LOS_TaskJoin(g_testTaskID01, NULL);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
-    ret = LOS_TaskDelete(g_testTaskID02);
+    ret = LOS_TaskJoin(g_testTaskID02, NULL);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
-    ret = LOS_TaskDelete(g_testTaskID03);
+    ret = LOS_TaskJoin(g_testTaskID03, NULL);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
     return LOS_OK;

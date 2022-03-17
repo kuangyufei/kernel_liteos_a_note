@@ -94,7 +94,7 @@ VOID *ShmWriteFunc(VOID *ptr)
     shm = shmat(shmid, (void *)0, 0);
     ICUNIT_ASSERT_NOT_EQUAL_NULL_VOID(shm, INVALID_PTR, shm);
 
-    printf("Memory attched at %p\n", shm);
+    printf("Memory attached at %p\n", shm);
 
     shared = (struct shared_use_st *)shm;
     while (1) {

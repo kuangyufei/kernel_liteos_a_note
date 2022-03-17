@@ -53,56 +53,6 @@ static int TestMkfifoReturn()
     ICUNIT_GOTO_EQUAL(retValue, -1, retValue, EXIT);
     ICUNIT_GOTO_EQUAL(errno, EEXIST, errno, EXIT);
 
-    /*  // no support errno EDQUOT ENOENT EROFS ENAMETOOLONG
-    retValue = mkfifo("/dev/fifo0/fifo1", 0777);
-    ICUNIT_GOTO_EQUAL(retValue, -1, retValue, EXIT);
-    ICUNIT_GOTO_EQUAL(errno, ENOENT, errno, EXIT);
-
-    mkdir("/dev/usr", 0444);
-    ICUNIT_GOTO_EQUAL(retValue, 0, retValue,EXIT);
-    retValue = mkfifo("/dev/usr/fifo0", 0777);
-    ICUNIT_GOTO_EQUAL(retValue, -1, retValue, EXIT);
-    ICUNIT_GOTO_EQUAL(errno, EROFS, errno, EXIT);
-
-    sprintf(pathname, "/dev/");
-    for (i = 5; i < NAME_BUF_SIZE - 4; i = i + 4) {
-        sprintf(&pathname[i], "fifo");
-    }
-    printf("pathname : %s\n", pathname);
-    retValue = mkfifo(pathname, 0777);
-    ICUNIT_GOTO_EQUAL(retValue, -1, retValue, EXIT);
-    ICUNIT_GOTO_EQUAL(errno, ENAMETOOLONG, errno, EXIT);
-
-    retValue = mkfifo("/usr/fifo0", 0777);
-    ICUNIT_GOTO_EQUAL(retValue, -1, retValue, EXIT);
-
-    pid = fork();
-    if (pid < 0) {
-        printf("Fork error\n");
-        return LOS_NOK;
-    } else if (pid == 0) {
-        for (i = 1; i <= 100024; i++) {
-            sprintf(pathname, "/dev/fifo%d", i);
-            mkfifo(pathname, 0777);
-        }
-        retValue = mkfifo("/dev/fifo100025", 0777);
-        if (retValue != -1) {
-            printf("error: unexpect return mkfifo\n");
-            exit(FAULT1);
-        }
-        if (errno != EDQUOT) {
-            printf("error: unexpect errno mkfifo\n");
-            exit(FAULT2);
-        }
-        exit(LOS_OK);
-    }
-    wait(&status);
-    ICUNIT_GOTO_EQUAL(WEXITSTATUS(status),LOS_OK,WEXITSTATUS(status), EXIT);
-
-    for (i = 0; i <= 100025; i++) {
-        sprintf(pathname, "/dev/fifo%d", i);
-        unlink(pathname);
-    } */
     unlink("/usr/fifo0");
     unlink("/dev/fifo0/fifo1");
     unlink("/dev/usr/fifo0");

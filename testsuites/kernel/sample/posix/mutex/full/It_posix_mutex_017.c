@@ -57,7 +57,7 @@ static UINT32 Testcase(VOID)
     int prioceiling, ret;
     pthread_mutexattr_t mta;
 
-    /* Get the prioceiling of an unintialized mutex attr. */
+    /* Get the prioceiling of an uninitialized mutex attr. */
     ret = pthread_mutexattr_getprioceiling(&mta, &prioceiling);
     ICUNIT_ASSERT_EQUAL(ret, ENOERR, ret);
 

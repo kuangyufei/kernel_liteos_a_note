@@ -55,8 +55,6 @@ static int TestCase(void)
     ret = unlinkat(dirFd, FILEPATH, AT_REMOVEDIR);
     ICUNIT_GOTO_NOT_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT1);
 
-    return JFFS_NO_ERROR;
-
 EXIT1:
     close(fd);
     unlink(DIRPATH);

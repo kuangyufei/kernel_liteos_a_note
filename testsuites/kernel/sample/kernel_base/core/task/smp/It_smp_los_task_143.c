@@ -84,7 +84,7 @@ static UINT32 Testcase(void)
     LOS_TaskUnlock();
 
     /* wait for TaskF01 is finished */
-    TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test runing count
+    TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test running count
 
     ICUNIT_ASSERT_EQUAL(g_testCount, 1, g_testCount);
 

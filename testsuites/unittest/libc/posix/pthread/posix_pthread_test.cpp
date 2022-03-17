@@ -232,7 +232,6 @@ public:
  * @tc.name: IT_POSIX_PTHREAD_003
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread003, TestSize.Level0)
 {
@@ -243,7 +242,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread003, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_004
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread004, TestSize.Level0)
 {
@@ -254,7 +252,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread004, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_005
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread005, TestSize.Level0)
 {
@@ -265,7 +262,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread005, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_006
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread006, TestSize.Level0)
 {
@@ -276,7 +272,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread006, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_018
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread018, TestSize.Level0)
 {
@@ -287,7 +282,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread018, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_019
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread019, TestSize.Level0)
 {
@@ -298,7 +292,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread019, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_020
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread020, TestSize.Level0)
 {
@@ -309,7 +302,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread020, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_021
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread021, TestSize.Level0)
 {
@@ -320,7 +312,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread021, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_022
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread022, TestSize.Level0)
 {
@@ -334,7 +325,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread022, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_001
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread001, TestSize.Level0)
 {
@@ -345,7 +335,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread001, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_002
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread002, TestSize.Level0)
 {
@@ -356,7 +345,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread002, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_007
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread007, TestSize.Level0)
 {
@@ -367,7 +355,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread007, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_010
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread010, TestSize.Level0)
 {
@@ -378,7 +365,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread010, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_011
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread011, TestSize.Level0)
 {
@@ -389,7 +375,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread011, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_013
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread013, TestSize.Level0)
 {
@@ -400,7 +385,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread013, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_023
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread023, TestSize.Level0)
 {
@@ -411,7 +395,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread023, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_025
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread025, TestSize.Level0)
 {
@@ -422,7 +405,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread025, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_026
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread026, TestSize.Level0)
 {
@@ -433,7 +415,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread026, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_027
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread027, TestSize.Level0)
 {
@@ -444,7 +425,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread027, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_028
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread028, TestSize.Level0)
 {
@@ -455,7 +435,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread028, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_029
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread029, TestSize.Level0)
 {
@@ -466,7 +445,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread029, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_030
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread030, TestSize.Level0)
 {
@@ -477,7 +455,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread030, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_031
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread031, TestSize.Level0)
 {
@@ -488,7 +465,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread031, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_034
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread034, TestSize.Level0)
 {
@@ -499,7 +475,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread034, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_035
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread035, TestSize.Level0)
 {
@@ -510,7 +485,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread035, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_039
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread039, TestSize.Level0)
 {
@@ -521,7 +495,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread039, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_040
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread040, TestSize.Level0)
 {
@@ -532,7 +505,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread040, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_042
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread042, TestSize.Level0)
 {
@@ -543,7 +515,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread042, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_044
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread044, TestSize.Level0)
 {
@@ -554,7 +525,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread044, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_045
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread045, TestSize.Level0)
 {
@@ -565,7 +535,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread045, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_046
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread046, TestSize.Level0)
 {
@@ -576,7 +545,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread046, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_051
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread051, TestSize.Level0)
 {
@@ -587,7 +555,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread051, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_052
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread052, TestSize.Level0)
 {
@@ -598,7 +565,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread052, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_053
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread053, TestSize.Level0)
 {
@@ -609,7 +575,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread053, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_054
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread054, TestSize.Level0)
 {
@@ -620,7 +585,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread054, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_055
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread055, TestSize.Level0)
 {
@@ -631,7 +595,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread055, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_057
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread057, TestSize.Level0)
 {
@@ -642,7 +605,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread057, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_059
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread059, TestSize.Level0)
 {
@@ -653,7 +615,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread059, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_060
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread060, TestSize.Level0)
 {
@@ -664,7 +625,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread060, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_069
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread069, TestSize.Level0)
 {
@@ -675,7 +635,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread069, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_070
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread070, TestSize.Level0)
 {
@@ -686,7 +645,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread070, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_071
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread071, TestSize.Level0)
 {
@@ -697,7 +655,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread071, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_072
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread072, TestSize.Level0)
 {
@@ -708,7 +665,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread072, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_073
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread073, TestSize.Level0)
 {
@@ -719,7 +675,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread073, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_074
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread074, TestSize.Level0)
 {
@@ -730,7 +685,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread074, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_078
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread078, TestSize.Level0)
 {
@@ -741,7 +695,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread078, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_079
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread079, TestSize.Level0)
 {
@@ -752,7 +705,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread079, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_080
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread080, TestSize.Level0)
 {
@@ -763,7 +715,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread080, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_081
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread081, TestSize.Level0)
 {
@@ -774,7 +725,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread081, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_082
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread082, TestSize.Level0)
 {
@@ -785,7 +735,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread082, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_083
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread083, TestSize.Level0)
 {
@@ -796,7 +745,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread083, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_084
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread084, TestSize.Level0)
 {
@@ -807,7 +755,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread084, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_085
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread085, TestSize.Level0)
 {
@@ -818,7 +765,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread085, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_087
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread087, TestSize.Level0)
 {
@@ -829,7 +775,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread087, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_088
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread088, TestSize.Level0)
 {
@@ -840,7 +785,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread088, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_089
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread089, TestSize.Level0)
 {
@@ -851,7 +795,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread089, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_090
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread090, TestSize.Level0)
 {
@@ -862,7 +805,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread090, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_092
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread092, TestSize.Level0)
 {
@@ -873,7 +815,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread092, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_091
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread091, TestSize.Level0)
 {
@@ -885,7 +826,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread091, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_094
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread094, TestSize.Level0)
 {
@@ -897,7 +837,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread094, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_095
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread095, TestSize.Level0)
 {
@@ -908,7 +847,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread095, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_106
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread106, TestSize.Level0)
 {
@@ -919,7 +857,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread106, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_107
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread107, TestSize.Level0)
 {
@@ -930,7 +867,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread107, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_116
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread116, TestSize.Level0)
 {
@@ -941,7 +877,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread116, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_123
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread123, TestSize.Level0)
 {
@@ -952,7 +887,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread123, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_124
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread124, TestSize.Level0)
 {
@@ -963,7 +897,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread124, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_125
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread125, TestSize.Level0)
 {
@@ -974,7 +907,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread125, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_127
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread127, TestSize.Level0)
 {
@@ -985,7 +917,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread127, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_129
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread129, TestSize.Level0)
 {
@@ -996,7 +927,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread129, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_132
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread132, TestSize.Level0)
 {
@@ -1007,7 +937,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread132, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_133
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread133, TestSize.Level0)
 {
@@ -1018,7 +947,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread133, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_134
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread134, TestSize.Level0)
 {
@@ -1029,7 +957,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread134, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_136
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread136, TestSize.Level0)
 {
@@ -1040,7 +967,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread136, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_138
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread138, TestSize.Level0)
 {
@@ -1051,7 +977,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread138, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_141
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread141, TestSize.Level0)
 {
@@ -1062,7 +987,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread141, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_142
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread142, TestSize.Level0)
 {
@@ -1073,7 +997,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread142, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_144
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread144, TestSize.Level0)
 {
@@ -1084,7 +1007,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread144, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_152
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread152, TestSize.Level0)
 {
@@ -1095,7 +1017,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread152, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_154
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread154, TestSize.Level0)
 {
@@ -1106,7 +1027,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread154, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_166
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread166, TestSize.Level0)
 {
@@ -1117,7 +1037,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread166, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_167
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread167, TestSize.Level0)
 {
@@ -1128,7 +1047,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread167, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_173
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread173, TestSize.Level0)
 {
@@ -1139,7 +1057,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread173, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_175
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread175, TestSize.Level0)
 {
@@ -1150,7 +1067,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread175, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_176
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread176, TestSize.Level0)
 {
@@ -1161,7 +1077,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread176, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_177
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread177, TestSize.Level0)
 {
@@ -1172,7 +1087,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread177, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_182
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread182, TestSize.Level0)
 {
@@ -1183,7 +1097,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread182, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_185
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread185, TestSize.Level0)
 {
@@ -1194,7 +1107,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread185, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_186
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread186, TestSize.Level0)
 {
@@ -1205,7 +1117,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread186, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_187
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread187, TestSize.Level0)
 {
@@ -1216,7 +1127,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread187, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_188
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread188, TestSize.Level0)
 {
@@ -1227,7 +1137,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread188, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_193
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread193, TestSize.Level0)
 {
@@ -1238,7 +1147,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread193, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_194
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread194, TestSize.Level0)
 {
@@ -1249,7 +1157,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread194, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_200
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread200, TestSize.Level0)
 {
@@ -1260,7 +1167,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread200, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_203
  * @tc.desc: function for pthread concurrency
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread203, TestSize.Level0)
 {
@@ -1271,7 +1177,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread203, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_204
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread204, TestSize.Level0)
 {
@@ -1282,7 +1187,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread204, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_205
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread205, TestSize.Level0)
 {
@@ -1293,7 +1197,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread205, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_206
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread206, TestSize.Level0)
 {
@@ -1304,7 +1207,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread206, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_209
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread209, TestSize.Level0)
 {
@@ -1315,7 +1217,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread209, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_213
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread213, TestSize.Level0)
 {
@@ -1326,7 +1227,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread213, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_217
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread217, TestSize.Level0)
 {
@@ -1337,7 +1237,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread217, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_218
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread218, TestSize.Level0)
 {
@@ -1348,7 +1247,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread218, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_224
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread224, TestSize.Level0)
 {
@@ -1359,7 +1257,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread224, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_226
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread226, TestSize.Level0)
 {
@@ -1370,7 +1267,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread226, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_233
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread233, TestSize.Level0)
 {
@@ -1381,7 +1277,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread233, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_238
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread238, TestSize.Level0)
 {
@@ -1392,7 +1287,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread238, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_239
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread239, TestSize.Level0)
 {
@@ -1403,7 +1297,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread239, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_240
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread240, TestSize.Level0)
 {
@@ -1414,7 +1307,6 @@ HWTEST_F(PosixPthreadTest, ItPosixPthread240, TestSize.Level0)
  * @tc.name: IT_POSIX_PTHREAD_241
  * @tc.desc: function for PosixPthreadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixPthreadTest, ItPosixPthread241, TestSize.Level0)
 {

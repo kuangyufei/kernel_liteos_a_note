@@ -45,8 +45,8 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
     for (i = 0; i < JFFS_NAME_LIMITTED_SIZE; i++) {
-        memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
-        memset_s(pathname2[i], JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
+        (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
+        (void)memset_s(pathname2[i], JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
         snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH - 1, JFFS_SHORT_ARRAY_LENGTH, "/test%d", i);
         JffsStrcat2(pathname2[i], bufname, strlen(bufname));
 

@@ -38,16 +38,6 @@ static UINT32 TestCase(VOID)
     int ret = 0;
     sigset_t set;
 
-    /*  // EINVAL no support
-    ret = sigemptyset(NULL);
-    ICUNIT_ASSERT_EQUAL(ret, -1, ret);
-    ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
-
-    ret = sigfillset(NULL);
-    ICUNIT_ASSERT_EQUAL(ret, -1, ret);
-    ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
-
-    */
     int status;
     int fpid = fork();
     if (fpid == 0) {

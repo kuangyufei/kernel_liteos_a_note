@@ -89,7 +89,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_TaskCreate(&g_testTaskID02, &testTask);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    TestAssertBusyTaskDelay(100, 2);                      // 100, Set the timeout of runtime; 2, test runing count.
+    TestAssertBusyTaskDelay(100, 2);                      // 100, Set the timeout of runtime; 2, test running count.
     ICUNIT_GOTO_EQUAL(g_testCount, 2, g_testCount, EXIT); // 2, Here, assert that g_testCount is equal to 2.
 
     /* wait for task01 to pend sem */
@@ -104,7 +104,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_QueueWrite(g_testQueueID01, &g_buff1, 8, LOS_WAIT_FOREVER); // 8, Write the setting size of queue buffer.
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    TestAssertBusyTaskDelay(100, 3);                      // 100, Set the timeout of runtime; 3, test runing count.
+    TestAssertBusyTaskDelay(100, 3);                      // 100, Set the timeout of runtime; 3, test running count.
     ICUNIT_GOTO_EQUAL(g_testCount, 3, g_testCount, EXIT); // 3, Here, assert that g_testCount is equal to 3.
 
 EXIT:

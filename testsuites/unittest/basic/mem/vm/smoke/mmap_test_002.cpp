@@ -123,7 +123,6 @@ static int Testcase(void)
     ret = CheckedMmap(PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    /* MAP_ANONYMOUS should require an fd of -1. */
     ret = CheckedMmap(PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, 0);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 

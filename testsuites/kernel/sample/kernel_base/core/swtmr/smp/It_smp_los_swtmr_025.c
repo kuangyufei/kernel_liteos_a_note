@@ -38,10 +38,10 @@ extern "C" {
 #endif /* __cpluscplus */
 
 static UINT32 g_szId[LOSCFG_KERNEL_CORE_NUM] = {0};
-
+static UINT32 g_testSwtmtCount = 0;
 static VOID SwtmrF01(void)
 {
-    LOS_AtomicInc(&g_testCount);
+    LOS_AtomicInc(&g_testSwtmtCount);
 }
 
 static void TaskF01(UINT32 index)
@@ -61,26 +61,31 @@ static UINT32 Testcase(void)
     UINT32 ret;
     UINT32 currCpuid;
     UINT32 i;
-
-    g_testCount = 0;
+    UINT32 taskID[LOSCFG_KERNEL_CORE_NUM];
+    g_testSwtmtCount = 0;
     g_testPeriod = 10; // period is 10
 
     for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
         TEST_TASK_PARAM_INIT_AFFI(testTask, "it_swtmr_025_task1", TaskF01, TASK_PRIO_TEST_SWTMR + 1, CPUID_TO_AFFI_MASK(i));
         testTask.auwArgs[0] = i;
-        ret = LOS_TaskCreate(&g_testTaskID01, &testTask);
+        testTask.uwResved = LOS_TASK_ATTR_JOINABLE;
+        ret = LOS_TaskCreate(&taskID[i], &testTask);
         ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
     }
 
-    LOS_TaskDelay(1);
-
     for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
-        LOS_SwtmrStart(g_szId[i]);
+        ret = LOS_TaskJoin(taskID[i], NULL);
+        ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
     }
 
-    LOS_TaskDelay(g_testPeriod);
+    for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
+        ret = LOS_SwtmrStart(g_szId[i]);
+        ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
+    }
 
-    ICUNIT_GOTO_EQUAL(g_testCount, LOSCFG_KERNEL_CORE_NUM, g_testCount, EXIT);
+    LOS_TaskDelay(g_testPeriod + 5); /* 5 ticks */
+
+    ICUNIT_GOTO_EQUAL(g_testSwtmtCount, LOSCFG_KERNEL_CORE_NUM, g_testSwtmtCount, EXIT);
 
     for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
         ret = LOS_SwtmrDelete(g_szId[i]);

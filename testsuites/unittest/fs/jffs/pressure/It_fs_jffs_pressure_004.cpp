@@ -62,15 +62,15 @@ static UINT32 TestCase(VOID)
     JffsStatPrintf(buf1);
 
     for (j = 0; j < JFFS_PRESSURE_CYCLES; j++) {
-        memset_s(pathname1, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
-        strcpy_s(pathname1, JFFS_NAME_LIMITTED_SIZE, pathname2);
+        (void)memset_s(pathname1, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
+        (void)strcpy_s(pathname1, JFFS_NAME_LIMITTED_SIZE, pathname2);
 
         for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
-            memset_s(pathname[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+            (void)memset_s(pathname[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
             snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/1603_%d", i);
             strcat_s(pathname1, JFFS_NAME_LIMITTED_SIZE, bufname);
-            strcpy_s(pathname[i], JFFS_NAME_LIMITTED_SIZE, pathname1);
+            (void)strcpy_s(pathname[i], JFFS_NAME_LIMITTED_SIZE, pathname1);
 
             ret = mkdir(pathname[i], HIGHEST_AUTHORITY);
             ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);

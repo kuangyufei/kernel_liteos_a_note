@@ -41,14 +41,6 @@ EVENT_CB_S g_eventCB1, g_eventCB2, g_eventCB3;
 
 VOID ItSuiteLosSwtmr(VOID)
 {
-    int ret = LOS_SetProcessScheduler(LOS_GetCurrProcessID(), LOS_SCHED_RR, TASK_PRIO_TEST_SWTMR);
-    if (ret != LOS_OK) {
-        dprintf("%s set test process schedule failed! %d\n", ret);
-    }
-    ret = LOS_SetTaskScheduler(LOS_CurTaskIDGet(), LOS_SCHED_RR, TASK_PRIO_TEST_SWTMR);
-    if (ret != LOS_OK) {
-        dprintf("%s set test task schedule failed! %d\n", ret);
-    }
 #if defined(LOSCFG_TEST_SMOKE)
     ItLosSwtmr053();
     ItLosSwtmr058();
@@ -75,10 +67,8 @@ VOID ItSuiteLosSwtmr(VOID)
     ItSmpLosSwtmr019();
     ItSmpLosSwtmr020();
     ItSmpLosSwtmr021();
-    ItSmpLosSwtmr022();
     ItSmpLosSwtmr023();
     ItSmpLosSwtmr024();
-    ItSmpLosSwtmr025();
     ItSmpLosSwtmr026();
     ItSmpLosSwtmr027();
     ItSmpLosSwtmr028();
@@ -86,7 +76,6 @@ VOID ItSuiteLosSwtmr(VOID)
     ItSmpLosSwtmr030();
     ItSmpLosSwtmr031();
     ItSmpLosSwtmr032();
-    ItSmpLosSwtmr033();
     ItSmpLosSwtmr034();
     ItSmpLosSwtmr035();
 #endif
@@ -112,16 +101,10 @@ VOID ItSuiteLosSwtmr(VOID)
     ItLosSwtmr019();
     ItLosSwtmr020();
     ItLosSwtmr021();
-    ItLosSwtmr022();
     ItLosSwtmr030();
-    ItLosSwtmr033();
     ItLosSwtmr036();
     ItLosSwtmr037();
-    ItLosSwtmr039();
-    ItLosSwtmr040();
-    ItLosSwtmr041();
     ItLosSwtmr042();
-    ItLosSwtmr043();
     ItLosSwtmr044();
     ItLosSwtmr045();
     ItLosSwtmr046();
@@ -136,12 +119,9 @@ VOID ItSuiteLosSwtmr(VOID)
     ItLosSwtmr056();
     ItLosSwtmr057();
     ItLosSwtmr059();
-    ItLosSwtmr060();
     ItLosSwtmr061();
     ItLosSwtmr062();
     ItLosSwtmr063();
-    ItLosSwtmr064();
-    ItLosSwtmr065();
     ItLosSwtmr066();
     ItLosSwtmr067();
     ItLosSwtmr068();
@@ -179,14 +159,6 @@ VOID ItSuiteLosSwtmr(VOID)
     ItLosSwtmr080();
     ItLosSwtmr023();
 #endif
-    ret = LOS_SetProcessScheduler(LOS_GetCurrProcessID(), LOS_SCHED_RR, 20); // 20, set a reasonable priority.
-    if (ret != LOS_OK) {
-        dprintf("%s set test process schedule failed! %d\n", ret);
-    }
-    ret = LOS_SetTaskScheduler(LOS_CurTaskIDGet(), LOS_SCHED_RR, TASK_PRIO_TEST);
-    if (ret != LOS_OK) {
-        dprintf("%s set test task schedule failed! %d\n", ret);
-    }
 }
 
 #ifdef __cplusplus

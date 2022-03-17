@@ -58,7 +58,7 @@ static UINT32 TestCase(VOID)
 
     writebuf = (CHAR *)malloc(bufLen + 1);
     ICUNIT_GOTO_NOT_EQUAL(writebuf, NULL, writebuf, EXIT2);
-    memset_s(writebuf, bufLen + 1, 0, bufLen + 1);
+    (void)memset_s(writebuf, bufLen + 1, 0, bufLen + 1);
 
     for (i = 0; i < bufLen / strlen(filebuf); i++) {
         strcat_s(writebuf, bufLen + 1, filebuf);
@@ -67,12 +67,12 @@ static UINT32 TestCase(VOID)
 
     readbuf = (CHAR *)malloc(bufLen + 1);
     ICUNIT_GOTO_NOT_EQUAL(readbuf, NULL, readbuf, EXIT3);
-    memset_s(readbuf, bufLen + 1, 0, bufLen + 1);
+    (void)memset_s(readbuf, bufLen + 1, 0, bufLen + 1);
 
     len = write(fd, writebuf, bufLen - 1);
     ICUNIT_GOTO_EQUAL(len, bufLen - 1, len, EXIT4);
 
-    memset_s(readbuf, bufLen + 1, 0, bufLen + 1);
+    (void)memset_s(readbuf, bufLen + 1, 0, bufLen + 1);
     len = pread(fd, readbuf, bufLen - 1, 0);
     ICUNIT_GOTO_EQUAL(len, bufLen - 1, len, EXIT4);
 

@@ -55,19 +55,19 @@ static VOID *PthreadF01(void *arg)
     ret = pthread_mutex_lock(&g_jffs2GlobalLock1);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    memset_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+    (void)memset_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
     strcat_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, pathname1);
 
     g_TestCnt++;
     g_jffsFlagF01++;
 
     for (i = 0; i < JFFS_MAX_CYCLES; i++) {
-        memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
-        memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
+        (void)memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
 
         snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
         strcat_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, bufname);
-        strcpy_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname6);
+        (void)strcpy_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname6);
 
         ret = mkdir(g_jffsPathname11[i], HIGHEST_AUTHORITY);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT2);
@@ -82,7 +82,7 @@ static VOID *PthreadF01(void *arg)
 
     bufW = (CHAR *)malloc(bufWLen + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW, NULL, 0, EXIT2);
-    memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
+    (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
         strcat_s(bufW, bufWLen + 1, filebuf);
@@ -111,7 +111,7 @@ static VOID *PthreadF01(void *arg)
 
     bufR = (CHAR *)malloc(BYTES_PER_KBYTE + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufR, NULL, 0, EXIT2);
-    memset_s(bufR, BYTES_PER_KBYTE + 1, 0, BYTES_PER_KBYTE + 1);
+    (void)memset_s(bufR, BYTES_PER_KBYTE + 1, 0, BYTES_PER_KBYTE + 1);
 
     for (i = 0; i < JFFS_MAX_CYCLES; i++) {
         for (j = 0; j < JFFS_MAXIMUM_SIZES; j++) {
@@ -207,22 +207,22 @@ static VOID *PthreadF02(void *arg)
 
     for (i = 0; i < JFFS_MAX_CYCLES; i++) {
         for (j = 0; j < JFFS_MAXIMUM_SIZES; j++) {
-            memset_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-            memset_s(g_jffsPathname8, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-            memset_s(g_jffs1648Pathname4[i][j], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-            memset_s(g_jffs1648Pathname5[i][j], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-            memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
+            (void)memset_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+            (void)memset_s(g_jffsPathname8, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+            (void)memset_s(g_jffs1648Pathname4[i][j], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+            (void)memset_s(g_jffs1648Pathname5[i][j], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+            (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
 
             snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", j);
             strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, g_jffsPathname11[i]);
             strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, bufname);
             strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, ".txt");
-            strcpy_s(g_jffs1648Pathname4[i][j], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname7);
+            (void)strcpy_s(g_jffs1648Pathname4[i][j], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname7);
 
             strcat_s(g_jffsPathname8, JFFS_NAME_LIMITTED_SIZE, g_jffsPathname11[i]);
             strcat_s(g_jffsPathname8, JFFS_NAME_LIMITTED_SIZE, bufname);
             strcat_s(g_jffsPathname8, JFFS_NAME_LIMITTED_SIZE, ".cpp");
-            strcpy_s(g_jffs1648Pathname5[i][j], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname8);
+            (void)strcpy_s(g_jffs1648Pathname5[i][j], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname8);
             g_jffsFd12[i][j] = open(g_jffs1648Pathname4[i][j], O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL,
                 HIGHEST_AUTHORITY);
             ICUNIT_GOTO_NOT_EQUAL(g_jffsFd12[i][j], -1, g_jffsFd12[i][j], EXIT2);

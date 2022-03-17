@@ -48,7 +48,6 @@ public:
  * @tc.name: IT_POSIX_MEM_001
  * @tc.desc: function for PosixMemTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixMemTest, ItPosixMem001, TestSize.Level0)
 {
@@ -59,7 +58,6 @@ HWTEST_F(PosixMemTest, ItPosixMem001, TestSize.Level0)
  * @tc.name: IT_POSIX_MEM_003
  * @tc.desc: function for PosixMemTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(PosixMemTest, ItPosixMem003, TestSize.Level0)
 {

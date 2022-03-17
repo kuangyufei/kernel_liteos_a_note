@@ -59,9 +59,9 @@ extern "C" {
 const CHAR *OsGetRegionNameOrFilePath(LosVmMapRegion *region);
 INT32 OsRegionOverlapCheckUnlock(LosVmSpace *space, LosVmMapRegion *region);
 UINT32 OsShellCmdProcessVmUsage(LosVmSpace *space);
-VOID OsShellCmdProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm);
-VOID OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm);
-VOID OsKProcessPmUsage(LosVmSpace *kAspace, UINT32 *actualPm);
+UINT32 OsShellCmdProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm);
+UINT32 OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm);
+UINT32 OsKProcessPmUsage(LosVmSpace *kAspace, UINT32 *actualPm);
 VOID OsDumpAspace(LosVmSpace *space);
 UINT32 OsCountRegionPages(LosVmSpace *space, LosVmMapRegion *region, UINT32 *pssPages);
 UINT32 OsCountAspacePages(LosVmSpace *space);

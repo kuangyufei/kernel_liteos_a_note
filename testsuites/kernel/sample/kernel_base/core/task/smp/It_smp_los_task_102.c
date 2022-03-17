@@ -84,7 +84,7 @@ static UINT32 Testcase(void)
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
     /* wait for other core's task to suspend */
-    TestAssertBusyTaskDelay(100, 1); // 100, Set the timeout of runtime; 1, test runing count
+    TestAssertBusyTaskDelay(100, 1); // 100, Set the timeout of runtime; 1, test running count
 
     TestBusyTaskDelay(2); // 2, set delay time
 
@@ -99,7 +99,7 @@ static UINT32 Testcase(void)
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
     /* wait for other core's task being running */
-    TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test runing count
+    TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test running count
     TestBusyTaskDelay(10); // 10, set delay time
 
     ICUNIT_GOTO_EQUAL(g_testCount, 2, g_testCount, EXIT); // 2, assert that g_testCount is equal to this.

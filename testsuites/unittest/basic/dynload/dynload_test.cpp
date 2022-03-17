@@ -46,7 +46,6 @@ public:
  * @tc.name: it_test_dynload_002
  * @tc.desc: function for DynloadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(DynloadTest, ItTestDynload002, TestSize.Level0)
 {
@@ -57,7 +56,6 @@ HWTEST_F(DynloadTest, ItTestDynload002, TestSize.Level0)
  * @tc.name: it_test_dynload_004
  * @tc.desc: function for DynloadTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(DynloadTest, ItTestDynload004, TestSize.Level0)
 {

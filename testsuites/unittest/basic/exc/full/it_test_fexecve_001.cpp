@@ -82,16 +82,21 @@ static int TestCase(void)
     printf("fd=%d\n", fd);
     if (fd == -1) {
         perror("openls");
+        munmap(p, st.st_size);
         return -1;
     }
 
     rc = read(fd, p, st.st_size);
     if (rc == -1) {
         perror("read");
+        munmap(p, st.st_size);
+        close(shmFd);
         return -1;
     }
     if (rc != st.st_size) {
         fputs("Strange situation!\n", stderr);
+        munmap(p, st.st_size);
+        close(shmFd);
         return -1;
     }
 

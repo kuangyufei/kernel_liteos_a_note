@@ -114,7 +114,7 @@ static UINT32 Testcase(VOID)
         ret = LOS_SemPost(g_semID); // sem post in task
         ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-        TestAssertBusyTaskDelay(100, 4); // 100, Set the timeout of runtime; 4, test runing count
+        TestAssertBusyTaskDelay(100, 4); // 100, Set the timeout of runtime; 4, test running count
         ICUNIT_GOTO_EQUAL(g_testCount, 4, g_testCount, EXIT); // 4, Here, assert that g_testCount is equal to
 
         ret = LOS_SemDelete(g_semID);

@@ -101,7 +101,7 @@ static UINT32 Testcase(VOID)
         ret = LOS_SemPost(g_semID); // post sem  in other cpu
         ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-        TestAssertBusyTaskDelay(100, 4); // 100, Set the timeout of runtime; 4, test runing count
+        TestAssertBusyTaskDelay(100, 4); // 100, Set the timeout of runtime; 4, test running count
         ICUNIT_GOTO_EQUAL(g_testCount, 4, g_testCount, EXIT); // 4, Here, assert that g_testCount is equal to
 
         if ((g_ret != LOS_OK) && (g_ret != LOS_ERRNO_SEM_PENDED)) {

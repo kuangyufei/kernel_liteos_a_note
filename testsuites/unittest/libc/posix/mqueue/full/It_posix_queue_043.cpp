@@ -86,7 +86,7 @@ EXIT:
 2. Return successed
 3. Return successed
 4. Return successed
-5. Sucessful operation
+5. Successful operation
 *-@tprior 1
 *-@tauto TRUE
 *-@tremark

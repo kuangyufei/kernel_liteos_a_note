@@ -36,20 +36,22 @@
 extern "C" {
 #endif /* __cpluscplus */
 #endif /* __cpluscplus */
+
+static UINT32 g_testSwtmrCount;
 static VOID SwtmrF01(UINT32 arg)
 {
     if (arg != 0xffff) {
         return;
     }
 
-    g_testCount++;
+    g_testSwtmrCount++;
     return;
 }
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
     UINT16 swTmrID;
-    g_testCount = 0;
+    g_testSwtmrCount = 0;
 
     ret = LOS_SwtmrCreate(1, LOS_SWTMR_MODE_ONCE, SwtmrF01, &swTmrID, 0xffff);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
@@ -62,7 +64,8 @@ static UINT32 Testcase(VOID)
 
     ret = LOS_TaskDelay(10); // 10, set delay time
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
-    ICUNIT_GOTO_EQUAL(g_testCount, 1, g_testCount, EXIT);
+    ICUNIT_GOTO_EQUAL(g_testSwtmrCount, 1, g_testSwtmrCount, EXIT);
+
 #if SELF_DELETED
     ret = LOS_SwtmrDelete(swTmrID);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);

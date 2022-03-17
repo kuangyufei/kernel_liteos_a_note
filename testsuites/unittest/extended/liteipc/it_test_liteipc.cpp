@@ -45,7 +45,6 @@ public:
  * @tc.name: ItPosixLiteIpc001
  * @tc.desc: function test for liteipc
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(LiteIpcTest, ItPosixLiteIpc001, TestSize.Level0)
 {
@@ -56,7 +55,6 @@ HWTEST_F(LiteIpcTest, ItPosixLiteIpc001, TestSize.Level0)
  * @tc.name: ItPosixLiteIpc002
  * @tc.desc: function test for liteipc
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(LiteIpcTest, ItPosixLiteIpc002, TestSize.Level0)
 {

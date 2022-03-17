@@ -56,7 +56,7 @@ static UINT32 Testcase(VOID)
     ret = close(fd);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
 
-    memset_s(readbuf, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
+    (void)memset_s(readbuf, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
 
     len = read(fd, readbuf, 2); // 2 means read len
     ICUNIT_GOTO_EQUAL(len, -1, len, EXIT);

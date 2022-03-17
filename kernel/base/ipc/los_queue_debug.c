@@ -82,7 +82,7 @@ VOID OsQueueDbgUpdate(UINT32 queueID, TSK_ENTRY_FUNC entry)
 STATIC INLINE VOID OsQueueInfoOutPut(const LosQueueCB *node)
 {
     PRINTK("Queue ID <0x%x> may leak, queue len is 0x%x, "
-           "readable cnt:0x%x, writeable cnt:0x%x, ",
+           "readable cnt:0x%x, writable cnt:0x%x, ",
            node->queueID,
            node->queueLen,
            node->readWriteableCnt[OS_QUEUE_READ],

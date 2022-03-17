@@ -56,14 +56,14 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(len, 3, len, EXIT1); // 3 means write len
 
     off = lseek(fd, 10, SEEK_SET); // 10 means file seek len
-    ICUNIT_GOTO_EQUAL(off, 10, off, EXIT1); // 10 means current file positon
+    ICUNIT_GOTO_EQUAL(off, 10, off, EXIT1); // 10 means current file position
 
     len = read(fd, readbuf, 6); // 6 means read len
     ICUNIT_GOTO_EQUAL(len, 6, len, EXIT1); // 6 means read len
     ICUNIT_GOTO_STRING_EQUAL(readbuf, "abcde&", readbuf, EXIT1);
 
     off = lseek(fd, 2, SEEK_CUR); // 2 means file seek len
-    ICUNIT_GOTO_EQUAL(off, 18, off, EXIT1); // 18 means current file positon
+    ICUNIT_GOTO_EQUAL(off, 18, off, EXIT1); // 18 means current file position
 
     memset_s(readbuf, sizeof(readbuf), 0, sizeof(readbuf));
 
@@ -72,14 +72,14 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_STRING_EQUAL(readbuf, "34567", readbuf, EXIT1);
 
     off = lseek(fd, 0, SEEK_CUR);
-    ICUNIT_GOTO_EQUAL(off, 23, off, EXIT1); // 23 means current file positon
+    ICUNIT_GOTO_EQUAL(off, 23, off, EXIT1); // 23 means current file position
 
     len = read(fd, readbuf, 5); // 5 means read len
     ICUNIT_GOTO_EQUAL(len, 5, len, EXIT1); // 5 means read len
     ICUNIT_GOTO_STRING_EQUAL(readbuf, "890ab", readbuf, EXIT1);
 
     off = lseek(fd, -2, SEEK_CUR); // -2 means file seek back len
-    ICUNIT_GOTO_EQUAL(off, 26, off, EXIT1); // 26 means current file positon
+    ICUNIT_GOTO_EQUAL(off, 26, off, EXIT1); // 26 means current file position
 
     len = read(fd, readbuf, 6); // 6 means read len
     ICUNIT_GOTO_EQUAL(len, 6, len, EXIT1); // 6 means read len
@@ -88,20 +88,20 @@ static UINT32 Testcase(VOID)
     memset_s(readbuf, sizeof(readbuf), 0, sizeof(readbuf));
 
     off = lseek(fd, -2, SEEK_END); // -2 means file seek back len
-    ICUNIT_GOTO_EQUAL(off, 49, off, EXIT1); // 49 means current file positon
+    ICUNIT_GOTO_EQUAL(off, 49, off, EXIT1); // 49 means current file position
 
     len = read(fd, readbuf, 5); // 5 means read len
     ICUNIT_GOTO_EQUAL(len, 2, len, EXIT1); // 2 means read len
     ICUNIT_GOTO_STRING_EQUAL(readbuf, "ND", readbuf, EXIT1);
 
     off = lseek(fd, 0, SEEK_END);
-    ICUNIT_GOTO_EQUAL(off, 51, off, EXIT1); // 51 means current file positon
+    ICUNIT_GOTO_EQUAL(off, 51, off, EXIT1); // 51 means current file position
 
     len = read(fd, readbuf, 6); // 6 means read len
     ICUNIT_GOTO_EQUAL(len, 0, len, EXIT1);
 
     off = lseek(fd, 2, SEEK_END); // 2 means file seek len
-    ICUNIT_GOTO_EQUAL(off, 53, off, EXIT1); // 53 means current file positon
+    ICUNIT_GOTO_EQUAL(off, 53, off, EXIT1); // 53 means current file position
     len = read(fd, readbuf, 6); // 6 means read len
     ICUNIT_GOTO_EQUAL(len, 0, len, EXIT1);
 
@@ -109,7 +109,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(len, 3, len, EXIT1); // 3 means write len
 
     off = lseek(fd, -3, SEEK_END); // -3 means file seek back len
-    ICUNIT_GOTO_EQUAL(off, 53, off, EXIT1); // 53 means current file positon
+    ICUNIT_GOTO_EQUAL(off, 53, off, EXIT1); // 53 means current file position
 
     len = read(fd, readbuf, 5); // 5 means read len
     ICUNIT_GOTO_EQUAL(len, 3, len, EXIT1); // 3 means length of actually read data

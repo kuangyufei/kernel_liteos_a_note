@@ -67,6 +67,12 @@ config PAGE_TABLE_FINE_LOCK
     help
       This option will enable fine lock for page table.
 
+config ENABLE_KERNEL_TEST
+    bool "Enable kernel test"
+    default n
+    help
+      This option will enable kernel test.
+
 ######################### config options of extended #####################
 source "kernel/extended/Kconfig"
 

@@ -34,6 +34,7 @@
 static int g_sigCount = 0;
 static void SigPrint(int sig)
 {
+    (void)sig;
     g_sigCount++;
 }
 

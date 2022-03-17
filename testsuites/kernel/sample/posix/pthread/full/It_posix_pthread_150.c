@@ -69,7 +69,7 @@ static UINT32 Testcase(VOID)
     pthreadData = pthread_get_data(newTh);
     ICUNIT_ASSERT_EQUAL(pthreadData, NULL, pthreadData);
 
-    /* Detach the non-existant thread. */
+    /* Detach the non-existent thread. */
     ret = pthread_detach(newTh);
     ICUNIT_ASSERT_EQUAL(ret, ESRCH, ret);
 

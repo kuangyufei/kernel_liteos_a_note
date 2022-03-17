@@ -39,7 +39,9 @@ static UINT32 Testcase(VOID)
     struct mntent *mnt = NULL;
     FILE *fp = NULL;
 
-    strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "test12");
+    ret1 = strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "test12");
+    ICUNIT_ASSERT_EQUAL(ret1, EOK, ret1);
+
     fp = setmntent(pathname1, "w+b");
     ICUNIT_GOTO_NOT_EQUAL(fp, NULL, fp, EXIT);
 

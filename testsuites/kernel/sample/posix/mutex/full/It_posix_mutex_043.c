@@ -36,31 +36,6 @@ extern "C" {
 #endif /* __cpluscplus */
 #endif /* __cpluscplus */
 
-
-/* pthread_mutex_unlock 5-2.c
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it would be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
-
- * This sample test aims to check the following assertion:
- * If the mutex type is PTHREAD_MUTEX_RECURSIVE,
- * and a thread attempts to unlock an unlocked mutex,
- * an uwErr is returned.
-
- * The steps are:
- *  -> Initialize a recursive mutex
- *  -> Attempt to unlock the mutex when it is unlocked
- *      and when it has been locked then unlocked.
- */
 static UINT32 Testcase(VOID)
 {
     int ret;

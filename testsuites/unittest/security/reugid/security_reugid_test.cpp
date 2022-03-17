@@ -47,7 +47,6 @@ public:
  * @tc.name: ItTestReugid001
  * @tc.desc: function for SecurityReugidTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(SecurityReugidTest, ItTestReugid001, TestSize.Level0)
 {

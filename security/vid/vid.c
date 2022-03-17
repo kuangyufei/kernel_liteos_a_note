@@ -35,7 +35,7 @@
 //虚拟ID映射链表初始化
 UINT32 VidMapListInit(LosProcessCB *processCB)
 {
-    memset_s(&processCB->timerIdMap, sizeof(TimerIdMap), 0, sizeof(TimerIdMap));
+    (void)memset_s(&processCB->timerIdMap, sizeof(TimerIdMap), 0, sizeof(TimerIdMap));
     LOS_ListInit(&processCB->timerIdMap.head);
     processCB->timerIdMap.bitMap = (UINT32*)LOS_MemAlloc(m_aucSysMem0, sizeof(UINT32));
     if (processCB->timerIdMap.bitMap == NULL) {

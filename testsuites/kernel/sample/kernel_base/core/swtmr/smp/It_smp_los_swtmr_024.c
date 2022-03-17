@@ -88,19 +88,27 @@ static UINT32 Testcase(void)
     ret = LOS_SwtmrCreate(g_testPeriod, LOS_SWTMR_MODE_PERIOD, (SWTMR_PROC_FUNC)SwtmrF01, &g_swTmrID, 0);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    TEST_TASK_PARAM_INIT(testTask, "it_swtmr_024_task1", TaskF01,
-        TASK_PRIO_TEST_SWTMR + 1); // not set cpuaffi
+    TEST_TASK_PARAM_INIT_AFFI(testTask, "it_swtmr_024_task1", TaskF01,
+        TASK_PRIO_TEST_SWTMR + 1, CPUID_TO_AFFI_MASK(ArchCurrCpuid()));
+    testTask.uwResved = LOS_TASK_ATTR_JOINABLE;
     ret = LOS_TaskCreate(&g_testTaskID01, &testTask);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    TEST_TASK_PARAM_INIT(testTask, "it_swtmr_024_task2", TaskF02,
-        TASK_PRIO_TEST_SWTMR + 1); // not set cpuaffi
+    TEST_TASK_PARAM_INIT_AFFI(testTask, "it_swtmr_024_task2", TaskF02,
+        TASK_PRIO_TEST_SWTMR + 1, CPUID_TO_AFFI_MASK((ArchCurrCpuid() + 1) % LOSCFG_KERNEL_CORE_NUM));
+    testTask.uwResved = LOS_TASK_ATTR_JOINABLE;
     ret = LOS_TaskCreate(&g_testTaskID02, &testTask);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
     LOS_TaskDelay(g_testPeriod + 1);
 
     ICUNIT_GOTO_EQUAL(g_testCount, 1, g_testCount, EXIT);
+
+    ret = LOS_TaskJoin(g_testTaskID01, NULL);
+    ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
+
+    ret = LOS_TaskJoin(g_testTaskID02, NULL);
+    ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
     LOS_SwtmrDelete(g_swTmrID);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);

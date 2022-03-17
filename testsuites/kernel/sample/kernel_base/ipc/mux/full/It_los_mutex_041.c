@@ -45,11 +45,9 @@ static UINT32 g_mainTaskID;
 static VOID TaskMisc10Func(VOID)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S task1, task2, task3;
-    LosTaskCB *taskCB = OS_TCB_FROM_TID(g_mainTaskID);
     g_testCount++;
 
-    ret = LOS_MuxLock(&g_testMux1, 10); // 10, init mutex.
+    ret = LOS_MuxLock(&g_testMux1, 100); // 100, init mutex.
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_ETIMEDOUT, ret);
 
     ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 3, g_testCount); // 3, here assert the result.
@@ -58,14 +56,13 @@ static VOID TaskMisc10Func(VOID)
     return;
 }
 
-
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S taskParam;
+    TSK_INIT_PARAM_S taskParam = {0};
     g_testCount = 0;
     LosTaskCB *task = NULL;
-    UINT16 prio = OsCurrTaskGet()->priority;
+    UINT16 prio = LOS_TaskPriGet(OsCurrTaskGet()->taskID);
     g_mainTaskID = OsCurrTaskGet()->taskID;
 
     ret = LosMuxCreate(&g_testMux1);
@@ -88,11 +85,12 @@ static UINT32 Testcase(VOID)
     ret = LOS_TaskCreate(&g_testTaskID01, &taskParam);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    ICUNIT_GOTO_EQUAL(OsCurrTaskGet()->priority, 10, OsCurrTaskGet()->priority, EXIT); // 10, here assert the result.
+    UINT16 priority = LOS_TaskPriGet(OsCurrTaskGet()->taskID);
+    ICUNIT_GOTO_EQUAL(priority, 10, priority, EXIT); // 10, here assert the result.
     ICUNIT_GOTO_EQUAL(g_testCount, 2, g_testCount, EXIT);                              // 2, here assert the result.
     g_testCount++;
 
-    LOS_TaskDelay(11); // 11, set delay time.
+    LOS_TaskDelay(110); // 110, set delay time.
 
     ICUNIT_GOTO_EQUAL(g_testCount, 4, g_testCount, EXIT); // 4, here assert the result.
     g_testCount++;
@@ -100,7 +98,8 @@ static UINT32 Testcase(VOID)
     ret = LOS_MuxUnlock(&g_testMux1);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    ICUNIT_GOTO_EQUAL(OsCurrTaskGet()->priority, prio, OsCurrTaskGet()->priority, EXIT);
+    priority = LOS_TaskPriGet(OsCurrTaskGet()->taskID);
+    ICUNIT_GOTO_EQUAL(priority, prio, priority, EXIT);
 
 EXIT:
     LOS_MuxUnlock(&g_testMux1);

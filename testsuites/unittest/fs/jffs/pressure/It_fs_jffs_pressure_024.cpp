@@ -61,15 +61,15 @@ static UINT32 TestCase(VOID)
 
     bufW = (CHAR *)malloc(bufWLen + 1);
     ICUNIT_ASSERT_NOT_EQUAL(bufW, NULL, 0);
-    memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
+    (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     bufW1 = (CHAR *)malloc(bufW1Len + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW1, NULL, 0, EXIT2);
-    memset_s(bufW1, bufW1Len + 1, 0, bufW1Len + 1);
+    (void)memset_s(bufW1, bufW1Len + 1, 0, bufW1Len + 1);
 
     bufW2 = (CHAR *)malloc(bufW2Len + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW2, NULL, 0, EXIT3);
-    memset_s(bufW2, bufW2Len + 1, 0, bufW2Len + 1);
+    (void)memset_s(bufW2, bufW2Len + 1, 0, bufW2Len + 1);
 
     for (j = 0; j < bufW2Len / strlen(filebuf); j++) {
         strcat_s(bufW2, bufW2Len + 1, filebuf);

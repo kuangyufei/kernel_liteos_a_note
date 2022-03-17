@@ -74,7 +74,7 @@ static UINT32 Testcase(VOID)
         rc = pthread_mutexattr_getprioceiling(&mta, &prioceiling);
         ICUNIT_GOTO_EQUAL(rc, ENOERR, rc, EXIT);
 
-        /* Make sure that prioceiling is withing the legal SCHED_FIFO boundries. */
+        /* Make sure that prioceiling is within the legal SCHED_FIFO boundries. */
         if (prioceiling != i) {
             rc = pthread_mutexattr_destroy(&mta);
             ICUNIT_GOTO_EQUAL(rc, ENOERR, rc, EXIT);

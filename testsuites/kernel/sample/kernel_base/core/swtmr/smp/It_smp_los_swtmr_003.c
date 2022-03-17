@@ -71,7 +71,8 @@ static UINT32 Testcase(void)
         CPUID_TO_AFFI_MASK(ArchCurrCpuid()));
     ret = LOS_TaskCreate(&g_testTaskID01, &testTask);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
-    LOS_TaskDelay(g_testPeriod + 1);
+
+    LOS_TaskDelay(g_testPeriod + 10); // period is 10
 
     ICUNIT_GOTO_EQUAL(g_testCount, 1, g_testCount, EXIT);
 

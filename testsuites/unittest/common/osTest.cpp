@@ -251,7 +251,7 @@ UINT64 TestTickCountByCurrCpuid(VOID)
 
 /*
  * different from calling LOS_TaskDelay,
- * this func will not yeild this task to another one.
+ * this func will not yield this task to another one.
  */
 VOID TestBusyTaskDelay(UINT32 tick)
 {
@@ -460,6 +460,7 @@ int RemoveDir(const char *dir)
             ret = sprintf_s(dir_name, sizeof(dir_name), "%s/%s", dir, dp->d_name);
             if (ret < 0) {
                 perror("sprintf dir_name error");
+                closedir(dirp);
                 return -1;
             }
             RemoveDir(dir_name);
@@ -468,7 +469,7 @@ int RemoveDir(const char *dir)
 
         rmdir(dir); /* now dir is empty */
     } else {
-        perror("unknow file type!");
+        perror("unknown file type!");
     }
     return 0;
 }

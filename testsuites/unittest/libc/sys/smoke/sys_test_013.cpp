@@ -39,7 +39,10 @@ struct q {
 static struct q *New(int i)
 {
     struct q *q = (struct q *)malloc(sizeof *q);
-    q->i = i;
+    if (q != NULL) {
+        q->i = i;
+    }
+
     return q;
 }
 

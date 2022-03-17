@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,7 +36,6 @@
 #define SWTMR_TEST
 #endif
 
-#include "test_menuconfig.h"
 #include "stdarg.h"
 #include "los_config.h"
 #include "iCunit.h"
@@ -74,6 +73,7 @@
 #include "los_process_pri.h"
 #include "pthread.h"
 
+#define LOSCFG_TEST 1
 #ifdef LOSCFG_PLATFORM_HI3516DV300
 #define TEST3516DV300
 #elif LOSCFG_PLATFORM_HI3518EV300
@@ -90,7 +90,7 @@ extern "C" {
     do {                                                           \
         memset(&testTask, 0, sizeof(TSK_INIT_PARAM_S));            \
         testTask.pfnTaskEntry = (TSK_ENTRY_FUNC)entry;             \
-        testTask.uwStackSize = LOS_TASK_MIN_STACK_SIZE;            \
+        testTask.uwStackSize = 0x1000;                             \
         testTask.pcName = task_name;                               \
         testTask.usTaskPrio = prio;                                \
         testTask.uwResved = LOS_TASK_STATUS_DETACHED;              \
@@ -108,8 +108,8 @@ extern "C" {
 #define JFFS_BASE_MTD_LEN 0x600000
 
 
-#define TASK_PRIO_TEST 25
-#define TASK_PRIO_TEST_TASK 4
+#define TASK_PRIO_TEST (LOS_TaskPriGet(LOS_CurTaskIDGet())) // 25
+#define TASK_PRIO_TEST_TASK 25
 #define TASK_PRIO_TEST_SWTMR 4
 #ifdef LOSCFG_AARCH64
 #define TASK_STACK_SIZE_TEST (LOS_TASK_MIN_STACK_SIZE * 3)
@@ -117,6 +117,7 @@ extern "C" {
 #define TASK_STACK_SIZE_TEST LOS_TASK_MIN_STACK_SIZE
 #endif
 #define LOS_MS_PER_TICK (OS_SYS_MS_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND)
+#define LOS_US_PER_TICK (OS_SYS_US_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND)
 
 #define HWI_NUM_INTVALID OS_HWI_MAX_NUM
 #define writel(g_value, address) WRITE_UINT32(g_value, address)
@@ -313,7 +314,7 @@ extern void msleep(unsigned int msecs);
 extern unsigned int sleep(unsigned int seconds);
 extern int usleep(unsigned useconds);
 
-#define OS_TASK_STATUS_DETACHED OS_TASK_FLAG_DETACHED
+#define OS_TASK_STATUS_DETACHED 0
 extern UINT32 LOS_MemTotalUsedGet(VOID *pool);
 extern VOID ptestTickConsume(VOID);
 extern UINT32 TEST_TskDelete(UINT32 taskID);
@@ -342,6 +343,8 @@ extern void TestSystemInit(void);
 extern void TEST_DT_COMMON(void);
 extern VOID dprintf(const char *fmt, ...);
 
+extern UINT32 OsSwtmrTaskIdByCpuId(UINT16 cpuId);
+
 #define BIG_FD 512
 typedef struct testrunParam {
     CHAR testcase_sequence[16];
@@ -365,6 +368,8 @@ typedef struct testrunParam {
 
 extern void InitRebootHook(void);
 
+#define LOSCFG_TEST_SMOKE
+#define LOSCFG_TEST_FULL
 #ifdef __cplusplus
 #if __cplusplus
 }

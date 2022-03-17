@@ -63,7 +63,7 @@ static UINT32 Testcase(VOID)
 
     ret = LOS_SwtmrTimeGet(swTmrID, &tick);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
-    if (tick > 4) { // 4, if tick > 4, set a erro code, then exit
+    if (tick > 4) { // 4, if tick > 4, set an erro code, then exit
         ICUNIT_GOTO_EQUAL(1, 0, tick, EXIT);
     }
 

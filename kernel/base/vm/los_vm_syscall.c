@@ -280,7 +280,7 @@ VOID *LOS_DoBrk(VOID *addr)
 
     (VOID)LOS_MuxAcquire(&space->regionMux);
     if (addr < (VOID *)(UINTPTR)space->heapNow) {
-        shrinkAddr = OsShrinkHeap(addr, space);
+        shrinkAddr = OsShrinkHeap(addr, space);//收缩堆区
         (VOID)LOS_MuxRelease(&space->regionMux);
         return shrinkAddr;
     }
@@ -291,7 +291,7 @@ VOID *LOS_DoBrk(VOID *addr)
         goto REGION_ALLOC_FAILED;
     }
 
-    if (space->heapBase == space->heapNow) {//往往是第一次调用this函数才会出现，因为初始化时 heapBase = heapNow
+    if (space->heapBase == space->heapNow) {//往往是第一次调用本函数才会出现，因为初始化时 heapBase = heapNow
         region = LOS_RegionAlloc(space, space->heapBase, size,//分配一个可读/可写/可使用的线性区，只需分配一次
                                  VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE |//线性区的大小由range.size决定
                                  VM_MAP_REGION_FLAG_FIXED | VM_MAP_REGION_FLAG_PERM_USER, 0);

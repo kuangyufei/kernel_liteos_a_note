@@ -62,7 +62,7 @@ static UINT32 Testcase(void)
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
     /* Wait TaskF01 to start */
-    TestAssertBusyTaskDelay(100, 1); // 100, Set the timeout of runtime; 1, test runing count
+    TestAssertBusyTaskDelay(100, 1); // 100, Set the timeout of runtime; 1, test running count
     TestBusyTaskDelay(2); // 2, set delay time
 
     ret = OS_TCB_FROM_TID(testid)->taskStatus;

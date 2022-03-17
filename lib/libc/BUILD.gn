@@ -54,7 +54,11 @@ kernel_module(module_name) {
       "$MUSLPORTINGDIR/src/string/strcpy.c",
       "$MUSLPORTINGDIR/src/string/strlen.c",
     ]
-    sources += OPTRT_STRING_ARM_SRC_FILES
+    sources += [
+      "src/arch/arm/memcmp.S",
+      "src/arch/arm/memset.S",
+    ]
+    sources += OPTRT_STRING_ARM_SRC_FILES_FOR_ARMV7_A
     asmflags = [
       "-D__strlen_armv6t2=strlen",
       "-D__strcmp_arm=strcmp",
@@ -71,11 +75,8 @@ kernel_module(module_name) {
         "-D__strcpy_arm=strcpy",
       ]
     }
-    sources += [
-      "src/arch/arm/memcmp.S",
-      "src/arch/arm/memset.S",
-    ]
   } else {
+    # arch is not armv7-a
     sources += [
       "src/memcmp.c",
       "src/memset.c",

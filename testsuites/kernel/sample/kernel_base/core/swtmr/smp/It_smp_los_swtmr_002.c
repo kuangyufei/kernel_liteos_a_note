@@ -82,11 +82,14 @@ static UINT32 Testcase(void)
         TEST_TASK_PARAM_INIT(testTask, "it_swtmr_002_task", TaskF01,
             TASK_PRIO_TEST_SWTMR + 1); // not set cpuaffi
         testTask.auwArgs[0] = g_swtmrHandle[i];
+        testTask.usCpuAffiMask = CPUID_TO_AFFI_MASK(i);
         ret = LOS_TaskCreate(&testid, &testTask);
         ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
     }
 
+    UINT64 startTime = LOS_CurrNanosec();
     LOS_TaskDelay(g_testPeriod * g_testTimes + 5); // g_testPeriod * g_testTimes + 5, set delay time
+    UINT64 usedTime = LOS_CurrNanosec() - startTime;
 
     ICUNIT_ASSERT_EQUAL(g_testCount, g_testTimes * LOSCFG_KERNEL_CORE_NUM, g_testCount);
 

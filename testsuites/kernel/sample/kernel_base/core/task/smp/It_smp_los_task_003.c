@@ -60,10 +60,11 @@ static UINT32 Testcase(void)
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
     LOS_TaskDelay(2); // 2, set delay time.
-    LOS_TaskSuspend(testid);
+    ret = LOS_TaskSuspend(testid);
+    ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
     /* delay and check */
-    LOS_TaskDelay(10); // 10, set delay time.
+    LOS_TaskDelay(100); // 10, set delay time.
 
     ret = OS_TCB_FROM_TID(testid)->taskStatus;
     ICUNIT_GOTO_EQUAL(ret & OS_TASK_STATUS_SUSPEND, OS_TASK_STATUS_SUSPEND, ret, EXIT);

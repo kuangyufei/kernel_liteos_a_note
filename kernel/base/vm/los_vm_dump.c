@@ -121,17 +121,21 @@ UINT32 OsShellCmdProcessVmUsage(LosVmSpace *space)
 
     if (space == LOS_GetKVmSpace()) {//内核空间
         OsShellCmdProcessPmUsage(space, NULL, &used);
-    } else {//用户空间
+        return used;
+    }
+    UINT32 ret = LOS_MuxAcquire(&space->regionMux);
+    if (ret != 0) {
+        return 0;
+    }
         RB_SCAN_SAFE(&space->regionRbTree, pstRbNode, pstRbNodeNext)//开始扫描红黑树
             region = (LosVmMapRegion *)pstRbNode;//拿到线性区,注意LosVmMapRegion结构体的第一个变量就是pstRbNode,所以可直接(LosVmMapRegion *)转
             used += region->range.size;//size叠加,算出总使用
         RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNode, pstRbNodeNext)//结束扫描红黑树
-    }
-
+    (VOID)LOS_MuxRelease(&space->regionMux);
     return used;
 }
 ///内核空间物理内存使用情况统计
-VOID OsKProcessPmUsage(LosVmSpace *kSpace, UINT32 *actualPm)
+UINT32 OsKProcessPmUsage(LosVmSpace *kSpace, UINT32 *actualPm)
 {
     UINT32 memUsed;
     UINT32 totalMem;
@@ -144,7 +148,7 @@ VOID OsKProcessPmUsage(LosVmSpace *kSpace, UINT32 *actualPm)
     UINT32 pmTmp;
 
     if (actualPm == NULL) {
-        return;
+        return 0;
     }
 
     memUsed = LOS_MemTotalUsedGet(m_aucSysMem1);
@@ -156,13 +160,16 @@ VOID OsKProcessPmUsage(LosVmSpace *kSpace, UINT32 *actualPm)
     memUsed = SYS_MEM_SIZE_DEFAULT - (totalCount << PAGE_SHIFT);
 
     spaceList = LOS_GetVmSpaceList();//获取虚拟空间链表,上面挂了所有虚拟空间
+    LosMux *vmSpaceListMux = OsGVmSpaceMuxGet();
+    (VOID)LOS_MuxAcquire(vmSpaceListMux);
     LOS_DL_LIST_FOR_EACH_ENTRY(space, spaceList, LosVmSpace, node) {//遍历链表
         if (space == LOS_GetKVmSpace()) {//内核空间不统计
             continue;
         }
-        OsUProcessPmUsage(space, NULL, &pmTmp);//统计用户空间物理内存的使用情况
+        (VOID)OsUProcessPmUsage(space, NULL, &pmTmp);//统计用户空间物理内存的使用情况
         UProcessUsed += pmTmp;//用户空间物理内存叠加
     }
+    (VOID)LOS_MuxRelease(vmSpaceListMux);
 
     /* Kernel dynamic memory, include extended heap memory */	//内核动态内存，包括扩展堆内存
     memUsed += ((usedCount << PAGE_SHIFT) - UProcessUsed);
@@ -170,26 +177,26 @@ VOID OsKProcessPmUsage(LosVmSpace *kSpace, UINT32 *actualPm)
     memUsed -= freeMem;
 
     *actualPm = memUsed;
+    return memUsed;
 }
 ///shell task 物理内存的使用情况
-VOID OsShellCmdProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
+UINT32 OsShellCmdProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
 {
     if (space == NULL) {
-        return;
+        return 0;
     }
 
     if ((sharePm == NULL) && (actualPm == NULL)) {
-        return;
+        return 0;
     }
 
-    if (space == LOS_GetKVmSpace()) {//内核空间
-        OsKProcessPmUsage(space, actualPm);//内核空间物理内存使用情况统计
-    } else {//用户空间
-        OsUProcessPmUsage(space, sharePm, actualPm);//用户空间物理内存使用情况统计
+    if (space == LOS_GetKVmSpace()) {
+        return OsKProcessPmUsage(space, actualPm);
     }
+    return OsUProcessPmUsage(space, sharePm, actualPm);
 }
 ///虚拟空间物理内存的使用情况,参数同时带走共享物理内存 sharePm和actualPm 单位是字节
-VOID OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
+UINT32 OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
 {
     LosVmMapRegion *region = NULL;
     LosRbNode *pstRbNode = NULL;
@@ -209,6 +216,10 @@ VOID OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
         *actualPm = 0;
     }
 
+    ret = LOS_MuxAcquire(&space->regionMux);
+    if (ret != 0) {
+        return 0;
+    }
     RB_SCAN_SAFE(&space->regionRbTree, pstRbNode, pstRbNodeNext)
         region = (LosVmMapRegion *)pstRbNode;
         vaddr = region->range.base;
@@ -238,6 +249,8 @@ VOID OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
             }
         }
     RB_SCAN_SAFE_END(&oldVmSpace->regionRbTree, pstRbNode, pstRbNodeNext)
+    (VOID)LOS_MuxRelease(&space->regionMux);
+    return *actualPm;
 }
 ///通过虚拟空间获取进程实体
 LosProcessCB *OsGetPIDByAspace(LosVmSpace *space)

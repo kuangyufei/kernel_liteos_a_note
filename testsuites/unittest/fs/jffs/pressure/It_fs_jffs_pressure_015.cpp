@@ -66,7 +66,7 @@ static UINT32 TestCase(VOID)
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
         snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/1614_%d", i);
         strcat_s(pathname1, JFFS_NAME_LIMITTED_SIZE, bufname);
-        strcpy_s(pathname[i], JFFS_NAME_LIMITTED_SIZE, pathname1);
+        (void)strcpy_s(pathname[i], JFFS_NAME_LIMITTED_SIZE, pathname1);
 
         ret = mkdir(pathname[i], HIGHEST_AUTHORITY);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);

@@ -46,7 +46,6 @@ public:
  * @tc.name: IT_TEST_UTIL_001
  * @tc.desc: function for UtilTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(UtilTest, ItTestUtil001, TestSize.Level0)
 {
@@ -57,7 +56,6 @@ HWTEST_F(UtilTest, ItTestUtil001, TestSize.Level0)
  * @tc.name: IT_TEST_UTIL_002
  * @tc.desc: function for UtilTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(UtilTest, ItTestUtil002, TestSize.Level0)
 {
@@ -68,7 +66,6 @@ HWTEST_F(UtilTest, ItTestUtil002, TestSize.Level0)
  * @tc.name: IT_TEST_UTIL_003
  * @tc.desc: function for UtilTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(UtilTest, ItTestUtil003, TestSize.Level0)
 {
@@ -79,7 +76,6 @@ HWTEST_F(UtilTest, ItTestUtil003, TestSize.Level0)
  * @tc.name: IT_TEST_UTIL_004
  * @tc.desc: function for UtilTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(UtilTest, ItTestUtil004, TestSize.Level0)
 {
@@ -90,7 +86,6 @@ HWTEST_F(UtilTest, ItTestUtil004, TestSize.Level0)
  * @tc.name: IT_TEST_UTIL_005
  * @tc.desc: function for UtilTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(UtilTest, ItTestUtil005, TestSize.Level0)
 {
@@ -101,7 +96,6 @@ HWTEST_F(UtilTest, ItTestUtil005, TestSize.Level0)
  * @tc.name: IT_TEST_UTIL_006
  * @tc.desc: function for UtilTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(UtilTest, ItTestUtil006, TestSize.Level0)
 {
@@ -112,7 +106,6 @@ HWTEST_F(UtilTest, ItTestUtil006, TestSize.Level0)
  * @tc.name: IT_TEST_UTIL_007
  * @tc.desc: function for UtilTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(UtilTest, ItTestUtil007, TestSize.Level0)
 {
@@ -123,7 +116,6 @@ HWTEST_F(UtilTest, ItTestUtil007, TestSize.Level0)
  * @tc.name: IT_TEST_UTIL_101
  * @tc.desc: function for UtilTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(UtilTest, ItTestUtil101, TestSize.Level0)
 {

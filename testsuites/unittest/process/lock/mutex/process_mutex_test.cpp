@@ -54,7 +54,6 @@ public:
  * @tc.name: it_test_pthread_mutex_001
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex001, TestSize.Level0)
 {
@@ -65,7 +64,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex001, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_002
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex002, TestSize.Level0)
 {
@@ -76,7 +74,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex002, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_003
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex003, TestSize.Level0)
 {
@@ -87,7 +84,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex003, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_004
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex004, TestSize.Level0)
 {
@@ -98,7 +94,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex004, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_005
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex005, TestSize.Level0)
 {
@@ -109,7 +104,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex005, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_006
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex006, TestSize.Level0)
 {
@@ -120,7 +114,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex006, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_007
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex007, TestSize.Level0)
 {
@@ -131,7 +124,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex007, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_008
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex008, TestSize.Level0)
 {
@@ -142,7 +134,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex008, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_009
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex009, TestSize.Level0)
 {
@@ -153,7 +144,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex009, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_010
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex010, TestSize.Level0)
 {
@@ -164,7 +154,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex010, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_011
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex011, TestSize.Level0)
 {
@@ -175,7 +164,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex011, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_012
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex012, TestSize.Level0)
 {
@@ -186,7 +174,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex012, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_013
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex013, TestSize.Level0)
 {
@@ -197,7 +184,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex013, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_014
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex014, TestSize.Level0)
 {
@@ -208,7 +194,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex014, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_015
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex015, TestSize.Level0)
 {
@@ -219,7 +204,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex015, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_016
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex016, TestSize.Level0)
 {
@@ -230,7 +214,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex016, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_017
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex017, TestSize.Level0)
 {
@@ -242,7 +225,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex017, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_019
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex019, TestSize.Level0)
 {
@@ -254,7 +236,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex019, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_020
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex020, TestSize.Level0)
 {
@@ -265,7 +246,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex020, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_021
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex021, TestSize.Level0)
 {
@@ -276,7 +256,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex021, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_022
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex022, TestSize.Level0)
 {
@@ -290,7 +269,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex022, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_018
  * @tc.desc: function for ProcessMutexTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex018, TestSize.Level0)
 {
@@ -302,7 +280,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex018, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_023
  * @tc.desc: function for test mutexattr robust
  * @tc.type: FUNC
- * @tc.require: AR000E0QAB
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex023, TestSize.Level0)
 {
@@ -313,7 +290,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex023, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_024
  * @tc.desc: function for test mutexattr robust:error return value
  * @tc.type: FUNC
- * @tc.require: AR000E0QAB
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex024, TestSize.Level0)
 {
@@ -324,7 +300,6 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex024, TestSize.Level0)
  * @tc.name: it_test_pthread_mutex_025
  * @tc.desc: test mutexattr robust:robustness product deadlock is not set
  * @tc.type: FUNC
- * @tc.require: AR000E0QAB
  */
 HWTEST_F(ProcessMutexTest, ItTestPthreadMutex025, TestSize.Level0)
 {

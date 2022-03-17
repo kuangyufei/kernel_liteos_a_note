@@ -82,7 +82,7 @@ EXIT:
 4. N/A.
 * -@texpect
 1. Return successed
-2. Sucessful operation
+2. Successful operation
 3. N/A
 4. N/A
 * -@tprior 1

@@ -84,7 +84,7 @@ static UINT32 Testcase(void)
     ret = LOS_TaskCreate(&g_testTaskID02, &task1);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    TestAssertBusyTaskDelay(100, 1); // 100, Set the timeout of runtime; 1, test runing count
+    TestAssertBusyTaskDelay(100, 1); // 100, Set the timeout of runtime; 1, test running count
 
     TestBusyTaskDelay(2); // 2, set delay time
 
@@ -97,7 +97,7 @@ static UINT32 Testcase(void)
     ICUNIT_GOTO_NOT_EQUAL((ret & OS_TASK_STATUS_READY), 0, ret, EXIT);
 
     /* check if other core is Task_locked */
-    gTestTaskLock = g_percpu[(ArchCurrCpuid() + 1) % (LOSCFG_KERNEL_CORE_NUM)].taskLockCnt;
+    gTestTaskLock = OsSchedRunQueByID((ArchCurrCpuid() + 1) % (LOSCFG_KERNEL_CORE_NUM))->taskLockCnt;
     ICUNIT_ASSERT_NOT_EQUAL(gTestTaskLock, 0, gTestTaskLock);
 
     ret = LOS_TaskSuspend(g_testTaskID02);
@@ -111,7 +111,7 @@ static UINT32 Testcase(void)
     /* unlock other core's tasklock */
     g_flag = 1;
 
-    TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test runing count
+    TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test running count
 
     TestBusyTaskDelay(2); // 2, set delay time
 

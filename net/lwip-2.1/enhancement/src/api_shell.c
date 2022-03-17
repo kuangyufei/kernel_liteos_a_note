@@ -168,7 +168,7 @@ typedef struct ping6_stats {
     u32_t max_rtt;
     float avg_rtt;
 } ping6_stats_t;
-LWIP_STATIC void update_ping6_stats(ping6_stats_t *ping6_stats, u32_t rtt, u32_t nrecieved);
+LWIP_STATIC void update_ping6_stats(ping6_stats_t *ping6_stats, u32_t rtt, u32_t nreceived);
 LWIP_STATIC int parse_args_ping6(int argc, const char **argv, ping6_args_t *ping6_params);
 
 u32_t osShellPing6(int argc, const char **argv);
@@ -734,7 +734,7 @@ u32_t lwip_ifconfig(int argc, const char **argv)
         LWIP:
             So in our case,
             while receiving a packet RX case, if the buffer is full (trypost - it is sys_mbox_trypost)
-            the error will be returned, we can consider that an overflow has happend.
+            the error will be returned, we can consider that an overflow has happened.
             So this can be RX overrun.
 
             But while transmitting a packet TX case, underrun cannot happen because it block on the
@@ -1750,7 +1750,7 @@ LWIP_STATIC int osPingFunc(u32_t destip, u32_t cnt, u32_t interval, u32_t data_l
                     PRINTK("\nPing: parameter problem ...");
                     break;
                 default :
-                    PRINTK("\nPing: unknow error ...");
+                    PRINTK("\nPing: unknown error ...");
                     break;
             }
             i++;
@@ -2086,7 +2086,7 @@ u32_t osShellPing6(int argc, const char **argv)
     u16_t icmpv6_seq;
     u32_t nsent;
     u32_t nrecieve;
-    u32_t last_recieved;
+    u32_t last_received;
     struct timespec start, end, start_in_reply;
     struct timespec first, last;
     long rtt;
@@ -2170,7 +2170,7 @@ u32_t osShellPing6(int argc, const char **argv)
     ping6_stats.avg_rtt = 0;
     ping6_stats.max_rtt = 0;
     ping6_stats.min_rtt = 0;
-    last_recieved = LWIP_PING6_STARTING_SEQ_NUM + LWIP_PING6_OUT_OF_ORDER_MAGNITUDE + 1;
+    last_received = LWIP_PING6_STARTING_SEQ_NUM + LWIP_PING6_OUT_OF_ORDER_MAGNITUDE + 1;
     icmpv6_id = (u16_t)LWIP_RAND();
     icmpv6_seq = LWIP_PING6_STARTING_SEQ_NUM;
     /* Setting the start time of the entire ping task for statistics */
@@ -2253,14 +2253,14 @@ u32_t osShellPing6(int argc, const char **argv)
                     }
                     /* Accept and process only those delayed EREP only if its sequence num is within out-of-order magnitude */
                     if (nsent && iecho_resp->seqno != icmpv6_seq &&
-                        (iecho_resp->seqno<(u16_t)(last_recieved - LWIP_PING6_OUT_OF_ORDER_MAGNITUDE) ||
+                        (iecho_resp->seqno<(u16_t)(last_received - LWIP_PING6_OUT_OF_ORDER_MAGNITUDE) ||
                                            iecho_resp->seqno>(u16_t)(
-                            last_recieved + LWIP_PING6_OUT_OF_ORDER_MAGNITUDE))) {
+                            last_received + LWIP_PING6_OUT_OF_ORDER_MAGNITUDE))) {
                         /* Otherwise drop it and wait for more packets */
                         goto REDUCE_SELECT_TIME;
                     }
                     ++nrecieve;
-                    last_recieved = iecho_resp->seqno;
+                    last_received = iecho_resp->seqno;
                     /* Retrieving the start_tick from the packet which was embedded when the request was transmitted */
                     (void)pbuf_header(pbuf_resp, (s16_t)(-(s16_t)(sizeof(struct icmp6_echo_hdr))));
                     if (memcpy_s((void *)&start_in_reply, sizeof(start_in_reply),
@@ -2371,7 +2371,7 @@ LWIP_STATIC int create_ping6_socket(u8_t type, const void *param)
             ret = lwip_setsockopt(sfd, SOL_SOCKET, SO_BINDTODEVICE, (char *)(param), strlen((char *)(param)));
             if (ret == -1) {
                 (void)lwip_close(sfd);
-                PRINTK("ping6: unknown iface %s\n", (char *)(param));
+                PRINTK("ping6: unknownn iface %s\n", (char *)(param));
                 return ret;
             }
         }
@@ -2550,7 +2550,7 @@ exit:
  * Function to update ping6_stats
  * stats is maintained in ping6_stats structure
  */
-LWIP_STATIC void update_ping6_stats(ping6_stats_t *ping6_stats, u32_t rtt, u32_t nrecieved)
+LWIP_STATIC void update_ping6_stats(ping6_stats_t *ping6_stats, u32_t rtt, u32_t nreceived)
 {
     if (rtt > ping6_stats->max_rtt) {
         ping6_stats->max_rtt = rtt;
@@ -2562,7 +2562,7 @@ LWIP_STATIC void update_ping6_stats(ping6_stats_t *ping6_stats, u32_t rtt, u32_t
     }
 
     ping6_stats->avg_rtt = (float)(ping6_stats->avg_rtt +
-                                   (float)((float)((float)rtt - ping6_stats->avg_rtt) / (float)(nrecieved)));
+                                   (float)((float)((float)rtt - ping6_stats->avg_rtt) / (float)(nreceived)));
 }
 
 LWIP_STATIC const char *convert_icmpv6_err_to_string(u8_t err_type)
@@ -3015,7 +3015,7 @@ int netstat_netconn_sendq(struct netconn *conn)
             retVal = netstat_tcp_sendq(conn->pcb.tcp);
             break;
         case NETCONN_RAW:
-            retVal = 0; /* todo */
+            retVal = 0;
             break;
 #if PF_PKT_SUPPORT
         case NETCONN_PKT_RAW:

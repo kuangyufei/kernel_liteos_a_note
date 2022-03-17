@@ -37,6 +37,7 @@ extern "C" {
 #endif /* __cpluscplus */
 #endif /* __cpluscplus */
 
+static UINT32 g_testPrio;
 static void TaskF01(void)
 {
     UINT32 ret;
@@ -46,7 +47,7 @@ static void TaskF01(void)
     ICUNIT_ASSERT_EQUAL_VOID(g_testCount, 1, g_testCount);
 
     ret = LOS_TaskPriGet(g_testTaskID01);
-    ICUNIT_ASSERT_EQUAL_VOID(ret, TASK_PRIO_TEST_TASK - 1, ret);
+    ICUNIT_ASSERT_EQUAL_VOID(ret, g_testPrio, ret);
 
     g_testCount++;
 }
@@ -55,10 +56,11 @@ static UINT32 Testcase(void)
 {
     UINT32 ret;
     TSK_INIT_PARAM_S task1 = { 0 };
+    g_testPrio = TASK_PRIO_TEST_TASK - 1;
     task1.pfnTaskEntry = (TSK_ENTRY_FUNC)TaskF01;
     task1.uwStackSize = TASK_STACK_SIZE_TEST;
     task1.pcName = "Tsk101A";
-    task1.usTaskPrio = TASK_PRIO_TEST_TASK - 1;
+    task1.usTaskPrio = g_testPrio;
     task1.uwResved = LOS_TASK_STATUS_DETACHED;
 #ifdef LOSCFG_KERNEL_SMP
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());

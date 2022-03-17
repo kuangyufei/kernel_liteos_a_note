@@ -139,7 +139,7 @@ INT32 los_alloc_diskid_byname(const CHAR *diskName)
     size_t nameLen;
 
     if (diskName == NULL) {
-        PRINT_ERR("The paramter disk_name is NULL");
+        PRINT_ERR("The parameter disk_name is NULL");
         return VFS_ERROR;
     }
 
@@ -195,7 +195,7 @@ INT32 los_get_diskid_byname(const CHAR *diskName)
     size_t diskNameLen;
 
     if (diskName == NULL) {
-        PRINT_ERR("The paramter diskName is NULL");
+        PRINT_ERR("The parameter diskName is NULL");
         return VFS_ERROR;
     }
 

@@ -2697,7 +2697,9 @@ int SysPselect6(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
     CPY_FROM_USER(exceptfds);
     DUP_FROM_USER(timeout, sizeof(struct timeval));
 
-    ((struct timeval *)timeout)->tv_usec = timeout->tv_nsec / 1000; /* 1000, convert ns to us */
+    if (timeout != NULL) {
+        ((struct timeval *)timeout)->tv_usec = timeout->tv_nsec / 1000; /* 1000, convert ns to us */
+    }
 
     if (data != NULL) {
         retVal = LOS_ArchCopyFromUser(&(setl.sig[0]), (int *)((UINTPTR)data[0]), sizeof(sigset_t));

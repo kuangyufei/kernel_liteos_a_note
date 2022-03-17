@@ -290,6 +290,7 @@ group("modules") {
     "security",
     "shell",
     "syscall",
+    "testsuites/kernel:kernel_test",
   ]
 
   deps += [
@@ -318,10 +319,12 @@ group("liteos_a") {
   deps = [
     ":apps",
     ":kernel",
-    ":make",
     ":tests",
     "//prebuilts/lite/sysroot/build:strip",
   ]
+  if (liteos_skip_make == false) {
+    deps += [ ":make" ]
+  }
 }
 
 executable("liteos") {

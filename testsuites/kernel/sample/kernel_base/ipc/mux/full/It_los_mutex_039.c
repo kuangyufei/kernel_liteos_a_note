@@ -66,7 +66,6 @@ static VOID TaskFe4Func(VOID)
 static VOID TaskMisc10Func(VOID)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S task1, task2, task3;
 
     g_testCount++;
 
@@ -87,7 +86,7 @@ static VOID TaskMisc10Func(VOID)
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S task;
+    TSK_INIT_PARAM_S task = {0};
     g_testCount = 0;
 
     ret = LosMuxCreate(&g_testMux1);
@@ -158,7 +157,8 @@ EXIT:
     ret = LOS_MuxUnlock(&g_testMux2);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    ICUNIT_ASSERT_EQUAL(OsCurrTaskGet()->priority, TASK_PRIO_TEST, OsCurrTaskGet()->priority);
+    UINT16 priority = LOS_TaskPriGet(OsCurrTaskGet()->taskID);
+    ICUNIT_ASSERT_EQUAL(priority, TASK_PRIO_TEST_TASK, priority);
 
     ret = LOS_MuxDestroy(&g_testMux1);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);

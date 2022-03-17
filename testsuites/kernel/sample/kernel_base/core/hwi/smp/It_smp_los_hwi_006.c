@@ -82,7 +82,7 @@ static UINT32 Testcase(void)
 
     TestHwiTrigger(HWI_NUM_TEST);
 
-    TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test runing count
+    TestAssertBusyTaskDelay(100, 2); // 100, Set the timeout of runtime; 2, test running count
 
     ICUNIT_GOTO_EQUAL(g_testCount, 1, g_testCount, EXIT);
 EXIT:

@@ -69,7 +69,7 @@ static UINT32 Testcase(VOID)
 
     tickNum = (osEndTime - osStartTime) * LOSCFG_BASE_CORE_TICK_PER_SECOND / OS_SYS_CLOCK;
 
-    if (tickNum < (10 - 2) && tickNum > (10 + 2)) { // when tick num in 10 - 2 or 10 + 2 interval
+    if (tickNum < (10 - 2) || tickNum > (10 + 2)) { // when tick num in 10 - 2 or 10 + 2 interval
         ICUNIT_ASSERT_EQUAL(tickNum, 0, tickNum);
     }
     ret = LOS_EventClear(&g_event, 0);

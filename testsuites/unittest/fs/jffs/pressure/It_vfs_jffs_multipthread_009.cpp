@@ -52,7 +52,7 @@ static VOID *PthreadF01(void *arg)
 
     bufW = (CHAR *)malloc(bufWLen + 1);
     ICUNIT_ASSERT_NOT_EQUAL_NULL(bufW, NULL, NULL);
-    memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
+    (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
         strcat_s(bufW, bufWLen + 1, filebuf);
@@ -142,7 +142,7 @@ static VOID *PthreadF02(void *arg)
 
     bufW = (CHAR *)malloc(bufWLen + 1);
     ICUNIT_ASSERT_NOT_EQUAL_NULL(bufW, NULL, NULL);
-    memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
+    (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
         strcat_s(bufW, bufWLen + 1, filebuf);
@@ -235,7 +235,7 @@ static VOID *PthreadF03(void *arg)
 
     bufW = (CHAR *)malloc(bufWLen + 1);
     ICUNIT_ASSERT_NOT_EQUAL_NULL(bufW, NULL, NULL);
-    memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
+    (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
         strcat_s(bufW, bufWLen + 1, filebuf);

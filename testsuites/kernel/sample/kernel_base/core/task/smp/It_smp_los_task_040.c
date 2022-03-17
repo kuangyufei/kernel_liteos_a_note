@@ -63,7 +63,7 @@ static UINT32 Testcase(void)
         ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
     }
 
-    /* wait for task to yeild */
+    /* wait for task to yield */
     TestBusyTaskDelay(LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT * 2); // 2, used to calculate delay time
 
     ICUNIT_GOTO_EQUAL(g_testCount, LOSCFG_KERNEL_CORE_NUM, g_testCount, EXIT);

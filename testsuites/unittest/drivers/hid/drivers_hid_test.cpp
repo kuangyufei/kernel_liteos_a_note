@@ -45,7 +45,6 @@ public:
  * @tc.name: it_test_hid_001
  * @tc.desc: function for drivers hid
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(DriversHidTest, ItTestHid001, TestSize.Level0)
 {

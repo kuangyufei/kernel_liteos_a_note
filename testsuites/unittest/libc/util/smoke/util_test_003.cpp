@@ -55,7 +55,7 @@ static UINT32 TestCase(VOID)
     INT32 countRight = 0;
     INT32 countErr = 0;
 
-    strcpy_s(buf, TEST_BUF_SIZE, a);
+    (void)strcpy_s(buf, TEST_BUF_SIZE, a);
     subopts = buf;
 
     while (*subopts != '\0' && !err) {
@@ -78,7 +78,7 @@ static UINT32 TestCase(VOID)
                 if (value) {
                     countErr++;
                 } else {
-                    countErr++;
+                    countRight++;
                 }
                 break;
             default:

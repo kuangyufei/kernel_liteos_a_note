@@ -53,7 +53,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(len, strlen(filebuf1), len, EXIT2);
 
     off = lseek(fd, 3, SEEK_SET); // 3 means seek len
-    ICUNIT_GOTO_EQUAL(off, 3, off, EXIT2); // 3 means current file positon
+    ICUNIT_GOTO_EQUAL(off, 3, off, EXIT2); // 3 means current file position
 
     pfd2 = dup(fd);
     ICUNIT_GOTO_NOT_EQUAL(pfd2, -1, pfd2, EXIT3);
@@ -64,7 +64,7 @@ static UINT32 Testcase(VOID)
     fd = open(pathname, O_NONBLOCK | O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT1);
 
-    memset_s(readbuf, sizeof(readbuf), 0, sizeof(readbuf));
+    (void)memset_s(readbuf, sizeof(readbuf), 0, sizeof(readbuf));
     len = read(fd, readbuf, 50); // 50 means read len
     ICUNIT_GOTO_EQUAL(len, 7, len, EXIT1); // 7 means length of actually read data
     ICUNIT_GOTO_STRING_EQUAL(readbuf, "liteos ", readbuf, EXIT1);

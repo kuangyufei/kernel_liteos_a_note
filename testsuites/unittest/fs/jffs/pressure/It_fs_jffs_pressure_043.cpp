@@ -57,9 +57,9 @@ static VOID *PthreadF01(void *arg)
     g_jffsFlagF01++;
 
     for (j = 0; j < fileNum; j++) {
-        memset_s(g_jffsPathname11[j], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        memset_s(g_jffsPathname12[j], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
+        (void)memset_s(g_jffsPathname11[j], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(g_jffsPathname12[j], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
 
         snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", j);
         strcat_s(g_jffsPathname11[j], JFFS_NAME_LIMITTED_SIZE, pathname);
@@ -85,15 +85,15 @@ static VOID *PthreadF01(void *arg)
 
     bufR1 = (CHAR *)malloc(BYTES_PER_KBYTE + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufR1, NULL, 0, EXIT2);
-    memset_s(bufR1, BYTES_PER_KBYTE + 1, 0, BYTES_PER_KBYTE + 1);
+    (void)memset_s(bufR1, BYTES_PER_KBYTE + 1, 0, BYTES_PER_KBYTE + 1);
 
     bufR2 = (CHAR *)malloc(BYTES_PER_KBYTE + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufR2, NULL, 0, EXIT3);
-    memset_s(bufR2, BYTES_PER_KBYTE + 1, 0, BYTES_PER_KBYTE + 1);
+    (void)memset_s(bufR2, BYTES_PER_KBYTE + 1, 0, BYTES_PER_KBYTE + 1);
 
     bufR3 = (CHAR *)malloc(BYTES_PER_KBYTE + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufR3, NULL, 0, EXIT4);
-    memset_s(bufR3, BYTES_PER_KBYTE + 1, 0, BYTES_PER_KBYTE + 1);
+    (void)memset_s(bufR3, BYTES_PER_KBYTE + 1, 0, BYTES_PER_KBYTE + 1);
 
     for (j = 0; j < fileNum; j++) {
         off = lseek(g_jffsFd11[j], 0, SEEK_END);
@@ -203,15 +203,15 @@ static VOID *PthreadF02(void *arg)
 
     bufW1 = (CHAR *)malloc(bufWLen + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW1, NULL, 0, EXIT2);
-    memset_s(bufW1, bufWLen + 1, 0, bufWLen + 1);
+    (void)memset_s(bufW1, bufWLen + 1, 0, bufWLen + 1);
 
     bufW2 = (CHAR *)malloc(bufWLen + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW2, NULL, 0, EXIT3);
-    memset_s(bufW2, bufWLen + 1, 0, bufWLen + 1);
+    (void)memset_s(bufW2, bufWLen + 1, 0, bufWLen + 1);
 
     bufW3 = (CHAR *)malloc(bufWLen + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW3, NULL, 0, EXIT4);
-    memset_s(bufW3, bufWLen + 1, 0, bufWLen + 1);
+    (void)memset_s(bufW3, bufWLen + 1, 0, bufWLen + 1);
 
     for (j = 0; j < bufWLen / strlen(filebuf1); j++) {
         strcat_s(bufW1, bufWLen + 1, filebuf1);

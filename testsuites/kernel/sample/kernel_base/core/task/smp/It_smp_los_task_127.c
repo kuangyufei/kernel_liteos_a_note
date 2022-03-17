@@ -44,12 +44,12 @@ static void HwiF01(void)
     UINT32 gTestSwtmrTaskID;
     UINT32 cpuid = (ArchCurrCpuid() + 1) % (LOSCFG_KERNEL_CORE_NUM);
 
-    gTestIdleTaskID = g_percpu[cpuid].idleTaskID;
+    gTestIdleTaskID = OsSchedRunQueByID(cpuid)->idleTaskID;
 
     ret = LOS_TaskDelete(gTestIdleTaskID);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_ERRNO_TSK_YIELD_IN_INT, ret);
 
-    gTestSwtmrTaskID = g_percpu[cpuid].swtmrTaskID;
+    gTestSwtmrTaskID = OsSwtmrTaskIdByCpuId(cpuid);
 
     ret = LOS_TaskDelete(gTestSwtmrTaskID);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_ERRNO_TSK_YIELD_IN_INT, ret);

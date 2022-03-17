@@ -46,7 +46,6 @@ public:
  * @tc.name: it_test_pthread_spinlock_001
  * @tc.desc: function for ProcessSpinlockTest
  * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
  */
 HWTEST_F(ProcessSpinlockTest, ItTestPthreadSpinlock001, TestSize.Level0)
 {

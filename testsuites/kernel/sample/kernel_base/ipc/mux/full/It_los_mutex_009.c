@@ -58,7 +58,7 @@ static UINT32 Testcase(VOID)
     g_testCount = 0;
 
     task.pfnTaskEntry = (TSK_ENTRY_FUNC)TestHook091;
-    task.usTaskPrio = (TASK_PRIO_TEST - 1);
+    task.usTaskPrio = (TASK_PRIO_TEST_TASK - 1);
     task.pcName = "VMutexB4";
     task.uwStackSize = TASK_STACK_SIZE_TEST;
     task.uwResved = 0;
@@ -70,8 +70,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_MuxDestroy(&g_mutexkernelTest);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    ret = LOS_TaskDelete(g_testTaskID01);
-    ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
+    LOS_TaskDelete(g_testTaskID01);
 
     return LOS_OK;
 }

@@ -49,7 +49,7 @@ INT32 LOS_StrncpyFromUser(CHAR *dst, const CHAR *src, INT32 count)
     }
 
     maxCount = (LOS_IsUserAddressRange((VADDR_T)(UINTPTR)src, (size_t)count)) ? \
-                count : (USER_ASPACE_TOP_MAX - (UINTPTR)src);//最大能拷贝的数据量,结束地址不能超过 USER_ASPACE_TOP_MAX
+                count : (INT32)(USER_ASPACE_TOP_MAX - (UINTPTR)src);//最大能拷贝的数据量,结束地址不能超过 USER_ASPACE_TOP_MAX
 															//USER_ASPACE_TOP_MAX 是用户空间能触及的最大虚拟内存空间地址
     for (i = 0; i < maxCount; ++i) {//一个个字符拷贝
         if (LOS_GetUser(&character, src + offset) != LOS_OK) {

@@ -39,33 +39,6 @@ extern "C" {
 
 static pthread_mutex_t g_mutex045;
 
-/* pthread_mutex_trylock 1-2.c
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it would be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
- * This sample test aims to check the following assertion:
- *
- * The pthread_mutex_trylock() function locks the mutex object
- * when it is unlocked.
-
- * The steps are:
- *
- * -> For each kind of mutex,
- *   -> trylock the mutex. It shall suceed.
- *   -> trylock the mutex again. It shall fail (except in case of recursive mutex).
- *   -> create a new child (either thread or process)
- *      -> the new child trylock the mutex. It shall fail.
- *   -> undo everything.
- */
 static VOID *TaskF01(void *argument)
 {
     int ret;

@@ -29,9 +29,13 @@
 
 import("//kernel/liteos_a/liteos.gni")
 
+declare_args() {
+  liteos_kernel_unittest = true
+}
+
 group("testsuites") {
-  deps = [
-    #"kernel",
-    "unittest",
-  ]
+  deps = []
+  if (liteos_kernel_unittest) {
+    deps += [ "unittest" ]
+  }
 }

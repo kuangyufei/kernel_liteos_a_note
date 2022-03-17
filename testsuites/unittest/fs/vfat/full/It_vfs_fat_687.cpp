@@ -129,18 +129,18 @@ EXIT:
 /* *
 * -@test IT_FS_FAT_687
 * -@tspec The function test for fallocate
-* -@ttitle Fallocate allocates space while the postion is end of the file
+* -@ttitle Fallocate allocates space while the position is end of the file
 * -@tprecon The filesystem module is open
 * -@tbrief
 1. use the open to open one non-empty file;
-2. use the function fallocate to allocates space while the postion is end of the file ;
+2. use the function fallocate to allocates space while the position is end of the file ;
 3. compare the file size before and after fallocate;
 4. close and remove the file.
 * -@texpect
 1. Return successed
 2. Return successed
 3. Return successed
-4. Sucessful operation
+4. Successful operation
 * -@tprior 1
 * -@tauto TRUE
 * -@tremark

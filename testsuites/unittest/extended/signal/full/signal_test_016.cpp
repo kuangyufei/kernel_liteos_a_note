@@ -33,7 +33,8 @@
 
 static void SigPrint(int sig)
 {
-    printf("%s\n", __FUNCTION__, __LINE__);
+    (void)sig;
+    printf("%s%d\n", __FUNCTION__, __LINE__);
 }
 
 static void *ThreadSetFunc2(void *arg)

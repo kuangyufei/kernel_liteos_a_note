@@ -138,28 +138,28 @@ STATIC INLINE BOOL OsSchedIsLock(VOID)
     return (OsSchedRunQue()->taskLockCnt != 0);
 }
 
-/* Check if preemptable with counter flag */
+/* Check if preemptible with counter flag */
 STATIC INLINE BOOL OsPreemptable(VOID)
 {
     SchedRunQue *rq = OsSchedRunQue();
     /*
      * Unlike OsPreemptableInSched, the int may be not disabled when OsPreemptable
-     * is called, needs mannually disable interrupt, to prevent current task from
-     * being migrated to another core, and get the wrong preeptable status.
+     * is called, needs manually disable interrupt, to prevent current task from
+     * being migrated to another core, and get the wrong preemptable status.
      */
     UINT32 intSave = LOS_IntLock();
-    BOOL preemptable = (rq->taskLockCnt == 0);
-    if (!preemptable) {
+    BOOL preemptible = (rq->taskLockCnt == 0);
+    if (!preemptible) {
         /* Set schedule flag if preemption is disabled */
         rq->schedFlag |= INT_PEND_RESCH;
     }
     LOS_IntRestore(intSave);
-    return preemptable;
+    return preemptible;
 }
 
 STATIC INLINE BOOL OsPreemptableInSched(VOID)
 {
-    BOOL preemptable = FALSE;
+    BOOL preemptible = FALSE;
     SchedRunQue *rq = OsSchedRunQue();
 
 #ifdef LOSCFG_KERNEL_SMP
@@ -167,17 +167,17 @@ STATIC INLINE BOOL OsPreemptableInSched(VOID)
      * For smp systems, schedule must hold the task spinlock, and this counter
      * will increase by 1 in that case.
      */
-    preemptable = (rq->taskLockCnt == 1);
+    preemptible = (rq->taskLockCnt == 1);
 
 #else
-    preemptable = (rq->taskLockCnt == 0);
+    preemptible = (rq->taskLockCnt == 0);
 #endif
-    if (!preemptable) {
+    if (!preemptible) {
         /* Set schedule flag if preemption is disabled */
         rq->schedFlag |= INT_PEND_RESCH;
     }
 
-    return preemptable;
+    return preemptible;
 }
 
 STATIC INLINE UINT32 OsSchedGetRunQueIdle(VOID)

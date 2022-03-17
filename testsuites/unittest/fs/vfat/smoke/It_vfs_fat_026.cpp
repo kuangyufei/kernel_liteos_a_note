@@ -167,7 +167,7 @@ EXIT0:
 * -@tprior 1
 * -@tauto TRUE
 * -@tremark
-* Sucessful operation
+* Successful operation
 * -@tprior 1
 * -@tauto TRUE
 * -@tremark

@@ -46,6 +46,7 @@
 #include "los_mux_pri.h"
 #include "los_queue_pri.h"
 #include "los_swtmr_pri.h"
+#include "los_init.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -234,6 +235,7 @@ UINT32 SwtmrCountGetTest(VOID)
     (VOID)LOS_IntRestore(intSave);
     return swTmrCnt;
 }
+
 #ifdef TEST1980
 VOID TestHwiTrigger(unsigned int irq)
 {
@@ -283,7 +285,7 @@ UINT64 TestTickCountByCurrCpuid(VOID)
 
 /*
  * different from calling LOS_TaskDelay,
- * this func will not yeild this task to another one.
+ * this func will not yield this task to another one.
  */
 VOID TestBusyTaskDelay(UINT32 tick)
 {
@@ -294,7 +296,6 @@ VOID TestBusyTaskDelay(UINT32 tick)
         if (runtime <= TestTickCountByCurrCpuid()) {
             break;
         }
-        WFI;
     }
 }
 
@@ -307,7 +308,6 @@ VOID TestAssertBusyTaskDelay(UINT32 timeout, UINT32 flag)
         if ((runtime <= TestTickCountGet()) || (g_testCount == flag)) {
             break;
         }
-        WFI;
     }
 }
 
@@ -372,33 +372,12 @@ NOK:
 }
 #endif
 
-
-VOID TestKernelBaseCore(VOID)
-{
-#if defined(LOSCFG_TEST_KERNEL_BASE_CORE)
-    ItSuiteLosTask();
-    ItSuiteLosSwtmr();
-    ItSuiteSmpHwi();
-    ItSuiteHwiNesting();
-#endif
-}
-
-VOID TestKernelBaseIpc(VOID)
-{
-#if defined(LOSCFG_TEST_KERNEL_BASE_IPC)
-    ItSuiteLosEvent();
-    ItSuiteLosMux();
-    ItSuiteLosSem();
-    ItSuiteLosQueue();
-#endif
-}
-
 VOID TestKernelBase(VOID)
 {
-
 #if defined(LOSCFG_TEST_KERNEL_BASE)
-    TestKernelBaseCore();
-    TestKernelBaseIpc();
+    ItSuiteLosTask();
+    ItSuiteLosSwtmr();
+    ItSuiteLosMux();
 #endif
 }
 
@@ -450,19 +429,9 @@ VOID TestReset(VOID)
 #endif
 }
 
-VOID TestTaskEntry(UINT32 param1, UINT32 param2, UINT32 param3, UINT32 param4)
+VOID TestTaskEntry(VOID)
 {
     UINT32 i;
-
-    INT32 ret = LOS_SetProcessScheduler(LOS_GetCurrProcessID(), LOS_SCHED_RR, 20); // 20, set a reasonable priority.
-    if (ret != LOS_OK) {
-        dprintf("%s set test process schedule failed! %d\n", ret);
-    }
-
-    ret = LOS_SetTaskScheduler(LOS_CurTaskIDGet(), LOS_SCHED_RR, TASK_PRIO_TEST);
-    if (ret != LOS_OK) {
-        dprintf("%s set test task schedule failed! %d\n", ret);
-    }
 
     g_testCircleCount = 0;
     dprintf("\t\n --- Test start--- \n");
@@ -474,7 +443,6 @@ VOID TestTaskEntry(UINT32 param1, UINT32 param2, UINT32 param3, UINT32 param4)
     LOS_MemAlloc(OS_SYS_MEM_ADDR, status.uwTotalFreeSize - memusedfirst);
 #endif
 
-#if defined(LOSCFG_TEST)
     for (i = 0; i < 1; i++) {
         g_testCircleCount++;
         ICunitInit();
@@ -483,7 +451,7 @@ VOID TestTaskEntry(UINT32 param1, UINT32 param2, UINT32 param3, UINT32 param4)
         TestKernelBase();
         TestPosix();
 
-#if (TEST_MODULE_CHECK == 1) && defined(LOSCFG_TEST)
+#if (TEST_MODULE_CHECK == 1)
         for (int i = 0; i < g_modelNum - 1; i++) {
             if (g_executModelNum[i] != 0) {
                 dprintf("\nExecuted Model: %s, Executed Model_Num: %d ,failed_count: %d , sucess_count :%d",
@@ -512,28 +480,26 @@ VOID TestTaskEntry(UINT32 param1, UINT32 param2, UINT32 param3, UINT32 param4)
             g_passResult);
     }
     LOS_Msleep(200); // 200, delay.
-#endif
     dprintf("\t\n --- Test End--- \n");
 }
 
-void TestSystemInit(void)
+static void TestSystemInit(void)
 {
-    INT32 pid;
-    LosProcessCB *testProcess = NULL;
+    TSK_INIT_PARAM_S sysTask;
 
-    InitRebootHook();
-
-    pid = LOS_Fork(0, "IT_TST_INI", (TSK_ENTRY_FUNC)TestTaskEntry, 0x30000);
-    if (pid < 0) {
-        return;
-    }
-
-    testProcess = OS_PCB_FROM_PID(pid);
-    g_testTskHandle = testProcess->threadGroupID;
+    (VOID)memset_s(&sysTask, sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
+    sysTask.pfnTaskEntry = (TSK_ENTRY_FUNC)TestTaskEntry;
+    sysTask.uwStackSize = 0x3000; /* 0x3000: stack size */
+    sysTask.pcName = "TestTask";
+    sysTask.usTaskPrio = TASK_PRIO_TEST_TASK;
+    sysTask.uwResved = LOS_TASK_ATTR_JOINABLE;
 #ifdef LOSCFG_KERNEL_SMP
-    ((LosTaskCB *)OS_TCB_FROM_TID(g_testTskHandle))->cpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
+    sysTask.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
+    LOS_TaskCreate(&g_testTskHandle, &sysTask);
 }
+
+LOS_MODULE_INIT(TestSystemInit, LOS_INIT_LEVEL_KMOD_TASK);
 
 #ifdef __cplusplus
 #if __cplusplus

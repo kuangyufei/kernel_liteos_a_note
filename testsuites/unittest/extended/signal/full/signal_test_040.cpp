@@ -35,6 +35,7 @@ static int g_sigCount = 0;
 static int g_sigCount1 = 0;
 static void SigPrint(int sig)
 {
+    (void)sig;
     g_sigCount++;
     printf("signal receive sucess\n");
 }

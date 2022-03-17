@@ -157,7 +157,7 @@ VOID *OsRegionRbGetKeyFn(LosRbNode *pstNode)
     LosVmMapRegion *region = (LosVmMapRegion *)LOS_DL_LIST_ENTRY(pstNode, LosVmMapRegion, rbNode);
     return (VOID *)&region->range;
 }
-///拷贝一个红黑树节点
+///比较两个红黑树节点
 ULONG_T OsRegionRbCmpKeyFn(const VOID *pNodeKeyA, const VOID *pNodeKeyB)
 {
     LosVmMapRange rangeA = *(LosVmMapRange *)pNodeKeyA;
@@ -167,22 +167,22 @@ ULONG_T OsRegionRbCmpKeyFn(const VOID *pNodeKeyA, const VOID *pNodeKeyB)
     UINT32 startB = rangeB.base;
     UINT32 endB = rangeB.base + rangeB.size - 1;
 
-    if (startA > endB) {
-        return RB_BIGGER;
+    if (startA > endB) {// A基地址大于B的结束地址
+        return RB_BIGGER; //说明线性区A更大,在右边
     } else if (startA >= startB) {
         if (endA <= endB) {
-            return RB_EQUAL;
+            return RB_EQUAL; //相等,说明 A在B中
         } else {
-            return RB_BIGGER;
+            return RB_BIGGER; //说明 A的结束地址更大
         }
-    } else if (startA <= startB) {
+    } else if (startA <= startB) { //A基地址小于等于B的基地址
         if (endA >= endB) {
-            return RB_EQUAL;
+            return RB_EQUAL; //相等 说明 B在A中
         } else {
-            return RB_SMALLER;
+            return RB_SMALLER;//说明A的结束地址更小
         }
-    } else if (endA < startB) {
-        return RB_SMALLER;
+    } else if (endA < startB) {//A结束地址小于B的开始地址
+        return RB_SMALLER;//说明A在
     }
     return RB_EQUAL;
 }
@@ -270,7 +270,7 @@ BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)
     vmSpace->mapSize = USER_MAP_SIZE;//用户空间映射大小
     vmSpace->heapBase = USER_HEAP_BASE;//用户堆区开始地址,只有用户进程需要设置这里，动态内存的开始地址
     vmSpace->heapNow = USER_HEAP_BASE;//堆区最新指向地址，用户堆空间大小可通过系统调用 do_brk()扩展
-    vmSpace->heap = NULL;	//用户空间的堆区基地址
+    vmSpace->heap = NULL;	//最近分配的一个堆线性区
 #ifdef LOSCFG_DRIVERS_TZDRIVER
     vmSpace->codeStart = 0;
     vmSpace->codeEnd = 0;
