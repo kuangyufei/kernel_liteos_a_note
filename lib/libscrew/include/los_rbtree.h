@@ -48,32 +48,32 @@ extern "C" {
 #define LOS_RB_RED 0
 #define LOS_RB_BLACK 1
 
-typedef struct TagRbNode {
-    struct TagRbNode *pstParent;
-    struct TagRbNode *pstRight;
-    struct TagRbNode *pstLeft;
-    ULONG_T lColor;
+typedef struct TagRbNode {//节点
+    struct TagRbNode *pstParent; ///< 爸爸是谁 ?
+    struct TagRbNode *pstRight;  ///< 右孩子是谁 ?
+    struct TagRbNode *pstLeft;	 ///< 左孩子是谁 ?
+    ULONG_T lColor; //是红还是黑节点
 } LosRbNode;
 
 typedef ULONG_T (*pfRBCmpKeyFn)(const VOID *, const VOID *);
 typedef ULONG_T (*pfRBFreeFn)(LosRbNode *);
 typedef VOID *(*pfRBGetKeyFn)(LosRbNode *);
 
-typedef struct TagRbTree {
-    LosRbNode *pstRoot;
-    LosRbNode stNilT;
+typedef struct TagRbTree {//红黑树控制块
+    LosRbNode *pstRoot;//根节点
+    LosRbNode stNilT;//叶子节点
     LOS_DL_LIST stWalkHead;
     ULONG_T ulNodes;
 
-    pfRBCmpKeyFn pfCmpKey;
-    pfRBFreeFn pfFree;
-    pfRBGetKeyFn pfGetKey;
+    pfRBCmpKeyFn pfCmpKey; //比较大小处理函数
+    pfRBFreeFn pfFree;	//释放结点处理函数
+    pfRBGetKeyFn pfGetKey;//获取节点内容处理函数
 } LosRbTree;
-
+///记录步数
 typedef struct TagRbWalk {
     LOS_DL_LIST stLink;
-    LosRbNode *pstCurrNode;
-    struct TagRbTree *pstTree;
+    LosRbNode *pstCurrNode; //当前节点
+    struct TagRbTree *pstTree;//红黑树
 } LosRbWalk;
 // 常用于两个线性区的虚拟地址的大小和范围
 #define RB_EQUAL (0) //相等

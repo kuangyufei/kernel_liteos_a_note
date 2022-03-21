@@ -91,6 +91,11 @@ void *SysMremap(void *oldAddr, size_t oldLen, size_t newLen, int flags, void *ne
 {
     return (void *)LOS_DoMremap((vaddr_t)oldAddr, oldLen, newLen, flags, (vaddr_t)newAddr);
 }
+/**
+ * @brief 修改访问权限
+ * @param addr 
+ * @return void* 
+ */
 
 int SysMprotect(void *vaddr, size_t len, int prot)
 {

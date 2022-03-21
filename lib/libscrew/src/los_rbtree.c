@@ -124,7 +124,7 @@ STATIC VOID OsRbRightRotateNode(LosRbTree *pstTree, LosRbNode *pstY)
     pstNilT->pstParent = pstParent;
     return;
 }
-
+/// 红黑树调整
 STATIC VOID OsRbInsertNodeFixup(LosRbTree *pstTree, VOID *pstData)
 {
     LosRbNode *pstParent = NULL;
@@ -419,9 +419,9 @@ STATIC VOID OsRbInitTree(LosRbTree *pstTree)
     }
 
     pstTree->ulNodes = 0;
-    pstTree->pstRoot = &(pstTree->stNilT);
-    pstTree->stNilT.lColor = LOS_RB_BLACK;
-    pstTree->stNilT.pstLeft = NULL;   /* Always NULL */
+    pstTree->pstRoot = &(pstTree->stNilT); //初始时只有一个结点
+    pstTree->stNilT.lColor = LOS_RB_BLACK; //默认根节点是黑色
+    pstTree->stNilT.pstLeft = NULL;   /* Always NULL | 总是空 又叫NIL结点*/
     pstTree->stNilT.pstRight = NULL;  /* Always NULL */
     pstTree->stNilT.pstParent = NULL; /* Not NULL when tree isn't empty */
     LOS_ListInit(&pstTree->stWalkHead);
@@ -543,7 +543,7 @@ VOID LOS_RbInsertOneNodeProcess(LosRbTree *pstTree, LosRbNode *pstParent, LosRbN
 
     return;
 }
-
+/// 初始化进程红黑树
 VOID LOS_RbInitTree(LosRbTree *pstTree, pfRBCmpKeyFn pfCmpKey, pfRBFreeFn pfFree, pfRBGetKeyFn pfGetKey)
 {
     if (NULL == pstTree) {
@@ -558,7 +558,7 @@ VOID LOS_RbInitTree(LosRbTree *pstTree, pfRBCmpKeyFn pfCmpKey, pfRBFreeFn pfFree
 
     return;
 }
-
+/// 销毁进程红黑树
 VOID LOS_RbDestroyTree(LosRbTree *pstTree)
 {
     LosRbNode *pstNode = NULL;
@@ -744,7 +744,7 @@ ULONG_T LOS_RbAddNode(LosRbTree *pstTree, LosRbNode *pstNew)
         return FALSE;
     }
 
-    pNodeKey = pstTree->pfGetKey(pstNew);
+    pNodeKey = pstTree->pfGetKey(pstNew);//获取线性区范围
     ulSearchNode = LOS_RbGetNode(pstTree, pNodeKey, &pstX);
     if (TRUE == ulSearchNode) {
         return FALSE;

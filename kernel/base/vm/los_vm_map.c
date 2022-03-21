@@ -188,7 +188,7 @@ ULONG_T OsRegionRbCmpKeyFn(const VOID *pNodeKeyA, const VOID *pNodeKeyB)
 }
 
 /*!
- * @brief OsVmSpaceInitCommon	初始化虚拟空间，必须提供L1表的虚拟内存地址
+ * @brief OsVmSpaceInitCommon	初始化进程虚拟空间，必须提供L1表的虚拟内存地址
  *
  * @param virtTtb L1表的地址，TTB表地址	
  * @param vmSpace	
@@ -852,7 +852,7 @@ ERR_REGION_SPLIT:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return status;
 }
-///释放用户空间的堆区
+///根据指定参数范围[addr,addr+len] 释放用户空间中堆区所占用的物理内存
 INT32 OsUserHeapFree(LosVmSpace *vmSpace, VADDR_T addr, size_t len)
 {
     LosVmMapRegion *vmRegion = NULL;
@@ -870,7 +870,7 @@ INT32 OsUserHeapFree(LosVmSpace *vmSpace, VADDR_T addr, size_t len)
         return -1;
     }
 
-    if (vmRegion == vmSpace->heap) {//虚拟空间的堆区和找到的线性区虚拟地址一致,确定是找到了堆区的线性区
+    if (vmRegion == vmSpace->heap) {//地址所在的线性区为堆区
         vaddr = addr;
         while (len > 0) {//参数0 代表不获取 flags 信息
             if (LOS_ArchMmuQuery(&vmSpace->archMmu, vaddr, &paddr, 0) == LOS_OK) {//通过虚拟地址查到物理地址

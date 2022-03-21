@@ -109,7 +109,8 @@ STATIC LmsMemListNode *OsLmsCheckPoolCreate(VOID)
     }
     return NULL;
 }
-
+/// 将指定内存池的地址范围添加到LMS的内存检测链表上，当访问的地址在链表范围内时，LMS才进行合法性校验；
+/// 且LOS_MemInit接口会调用该接口，默认将初始化的内存池挂入到检测链表中。
 UINT32 LOS_LmsCheckPoolAdd(const VOID *pool, UINT32 size)
 {
     UINT32 intSave;

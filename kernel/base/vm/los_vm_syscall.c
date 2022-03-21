@@ -180,7 +180,7 @@ VADDR_T LOS_MMap(VADDR_T vaddr, size_t len, unsigned prot, unsigned long flags, 
         resultVaddr = vaddr;
         goto MMAP_DONE;
     }
-
+	//地址不在堆区
     regionFlags = OsCvtProtFlagsToRegionFlags(prot, flags);//将参数flag转换Region的flag
     newRegion = LOS_RegionAlloc(vmSpace, vaddr, len, regionFlags, pgoff);//分配一个线性区
     if (newRegion == NULL) {
@@ -188,7 +188,7 @@ VADDR_T LOS_MMap(VADDR_T vaddr, size_t len, unsigned prot, unsigned long flags, 
         goto MMAP_DONE;
     }
     newRegion->regionFlags |= VM_MAP_REGION_FLAG_MMAP;
-    resultVaddr = newRegion->range.base;
+    resultVaddr = newRegion->range.base;//线性区基地址为分配的地址
 
     if (LOS_IsNamedMapping(flags)) {
         status = OsNamedMMap(filep, newRegion);//文件映射
@@ -229,17 +229,17 @@ STATIC INLINE BOOL OsProtMprotectPermCheck(unsigned long prot, LosVmMapRegion *r
 
     return ((protFlags & permFlags) == protFlags);
 }
-
+/// 收缩堆区
 VOID *OsShrinkHeap(VOID *addr, LosVmSpace *space)
 {
     VADDR_T newBrk, oldBrk;
 
-    newBrk = LOS_Align((VADDR_T)(UINTPTR)addr, PAGE_SIZE);
-    oldBrk = LOS_Align(space->heapNow, PAGE_SIZE);
-    if (LOS_UnMMap(newBrk, (oldBrk - newBrk)) < 0) {
-        return (void *)(UINTPTR)space->heapNow;
+    newBrk = LOS_Align((VADDR_T)(UINTPTR)addr, PAGE_SIZE);//新堆顶
+    oldBrk = LOS_Align(space->heapNow, PAGE_SIZE);//旧堆顶
+    if (LOS_UnMMap(newBrk, (oldBrk - newBrk)) < 0) {//解除相差区的映射
+        return (void *)(UINTPTR)space->heapNow;//解除失败就持续现有的
     }
-    space->heapNow = (VADDR_T)(UINTPTR)addr;
+    space->heapNow = (VADDR_T)(UINTPTR)addr;//返回新堆顶
     return addr;
 }
 
@@ -279,14 +279,14 @@ VOID *LOS_DoBrk(VOID *addr)
     PRINT_INFO("brk addr %p , size 0x%x, alignAddr %p, align %d\n", addr, size, alignAddr, PAGE_SIZE);
 
     (VOID)LOS_MuxAcquire(&space->regionMux);
-    if (addr < (VOID *)(UINTPTR)space->heapNow) {
+    if (addr < (VOID *)(UINTPTR)space->heapNow) {//如果地址小于堆区现地址
         shrinkAddr = OsShrinkHeap(addr, space);//收缩堆区
         (VOID)LOS_MuxRelease(&space->regionMux);
         return shrinkAddr;
     }
 
-    if ((UINTPTR)alignAddr >= space->mapBase) {
-        VM_ERR("Process heap memory space is insufficient");
+    if ((UINTPTR)alignAddr >= space->mapBase) {//参数地址 大于映射区地址
+        VM_ERR("Process heap memory space is insufficient");//进程堆空间不足
         ret = (VOID *)-ENOMEM;
         goto REGION_ALLOC_FAILED;
     }
@@ -301,24 +301,24 @@ VOID *LOS_DoBrk(VOID *addr)
             goto REGION_ALLOC_FAILED;
         }
         region->regionFlags |= VM_MAP_REGION_FLAG_HEAP;//贴上线性区类型为堆区的标签,注意一个线性区可以有多种标签
-        space->heap = region;//更新虚拟空间堆区为分配的线性区
+        space->heap = region;//指定线性区为堆区
     }
 
-    space->heapNow = (VADDR_T)(UINTPTR)alignAddr;//更新线性区结束地址
+    space->heapNow = (VADDR_T)(UINTPTR)alignAddr;//更新堆区顶部位置
     space->heap->range.size = size;	//更新堆区大小,经此操作线性区变大或缩小了
-    ret = (VOID *)(UINTPTR)space->heapNow;//返回线性区最新的地址
+    ret = (VOID *)(UINTPTR)space->heapNow;//返回堆顶
 
 REGION_ALLOC_FAILED:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return ret;
 }
-
+/// 继承老线性区的标签
 STATIC UINT32 OsInheritOldRegionName(UINT32 oldRegionFlags)
 {
     UINT32 vmFlags = 0;
 
-    if (oldRegionFlags & VM_MAP_REGION_FLAG_HEAP) {
-        vmFlags |= VM_MAP_REGION_FLAG_HEAP;
+    if (oldRegionFlags & VM_MAP_REGION_FLAG_HEAP) { //如果是从大堆区中申请的
+        vmFlags |= VM_MAP_REGION_FLAG_HEAP; //线性区则贴上堆区标签
     } else if (oldRegionFlags & VM_MAP_REGION_FLAG_STACK) {
         vmFlags |= VM_MAP_REGION_FLAG_STACK;
     } else if (oldRegionFlags & VM_MAP_REGION_FLAG_TEXT) {

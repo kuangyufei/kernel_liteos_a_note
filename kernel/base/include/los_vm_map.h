@@ -79,7 +79,7 @@ struct page_mapping {
 #endif
 /* If the kernel malloc size is less than 16k, use heap, otherwise use physical pages */
 #define KMALLOC_LARGE_SIZE    (PAGE_SIZE << 2)
-typedef struct VmMapRange {
+typedef struct VmMapRange {//线性区范围结构体
     VADDR_T             base;           /**< vm region base addr | 线性区基地址*/
     UINT32              size;           /**< vm region size | 线性区大小*/
 } LosVmMapRange;
@@ -118,7 +118,7 @@ struct VmFileOps {
 struct VmMapRegion {
     LosRbNode           rbNode;         /**< region red-black tree node | 红黑树节点,通过它将本线性区挂在VmSpace.regionRbTree*/
     LosVmSpace          *space;			///< 所属虚拟空间,虚拟空间由多个线性区组成
-    LOS_DL_LIST         node;           /**< region dl list | 链表节点,通过它将本线性区挂在VmSpace.regions上*/				
+    LOS_DL_LIST         node;           /**< region dl list | 链表节点,通过它将本线性区挂在VmSpace.regions上 ,但最新版本没有regions了,可以删除了 */				
     LosVmMapRange       range;          /**< region address range | 记录线性区的范围*/
     VM_OFFSET_T         pgOff;          /**< region page offset to file | 以文件开始处的偏移量, 必须是分页大小的整数倍, 通常为0, 表示从文件头开始映射。*/
     UINT32              regionFlags;    /**< region flags: cow, user_wired | 线性区标签*/
@@ -148,9 +148,9 @@ typedef struct VmSpace {
     LosMux              regionMux;      /**< region list mutex lock | 虚拟空间操作红黑树互斥锁*/
     VADDR_T             base;           /**< vm space base addr | 虚拟空间的基地址,线性区的分配范围,常用于判断地址是否在内核还是用户空间*/
     UINT32              size;           /**< vm space size | 虚拟空间大小*/
-    VADDR_T             heapBase;       /**< vm space heap base address | 堆区基地址，表堆区范围起点*/
-    VADDR_T             heapNow;        /**< vm space heap base now | 堆区现地址，表堆区范围终点，do_brk()直接修改堆的大小返回新的堆区结束地址， heapNow >= heapBase*/
-    LosVmMapRegion      *heap;          /**< heap region | 堆区是个特殊的线性区，用于满足进程的动态内存需求，大家熟知的malloc,realloc,free其实就是在操作这个区*/				
+    VADDR_T             heapBase;       /**< vm space heap base address | 堆区基地址，指向堆区起点*/
+    VADDR_T             heapNow;        /**< vm space heap base now | 堆顶地址，指向堆区终点，do_brk()直接修改堆的大小返回新的堆区结束地址， heapNow >= heapBase*/
+    LosVmMapRegion      *heap;          /**< heap region | 传说中的堆区，用于满足进程的动态内存需求，大家熟知的malloc,realloc,free其实就是在操作这个区*/				
     VADDR_T             mapBase;        /**< vm space mapping area base | 虚拟空间映射区基地址,L1，L2表存放在这个区 */
     UINT32              mapSize;        /**< vm space mapping area size | 虚拟空间映射区大小，映射区是个很大的区。*/
     LosArchMmu          archMmu;        /**< vm mapping physical memory | MMU记录<虚拟地址,物理地址>的映射情况 */

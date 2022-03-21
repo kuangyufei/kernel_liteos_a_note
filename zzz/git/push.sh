@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 同步官方最新代码 | 新增各CPU核自主管理中断 
+git commit -m  ' 堆区相关代码注释
     百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
