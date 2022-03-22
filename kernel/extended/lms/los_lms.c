@@ -1,3 +1,29 @@
+/*!
+ * @file  los_lms.c
+ * @brief 检测内存主文件
+ * @link
+   @verbatim
+    基本概念
+		LMS全称为Lite Memory Sanitizer，是一种实时检测内存操作合法性的调测工具。LMS能够实时检测缓冲区溢出（buffer overflow），
+		释放后使用（use after free) 和重复释放（double Free), 在异常发生的第一时间通知操作系统，结合backtrace等定位手段，
+		能准确定位到产生内存问题的代码行，极大提升内存问题定位效率。
+		OpenHarmony LiteOS-M内核的LMS模块提供下面几种功能：
+		支持多内存池检测。
+		支持LOS_MemAlloc、LOS_MemAllocAlign、LOS_MemRealloc申请出的内存检测。
+		支持安全函数的访问检测（默认开启）。
+		支持libc 高频函数的访问检测，包括：memset、memcpy、memmove、strcat、strcpy、strncat、strncpy。
+	运行机制
+		LMS使用影子内存映射标记系统内存的状态，一共可标记为三个状态：可读写，不可读写，已释放。影子内存存放在内存池的尾部。
+		内存从堆上申请后，会将数据区的影子内存设置为“可读写”状态，并将头结点区的影子内存设置为“不可读写”状态。
+		内存在堆上被释放时，会将被释放内存的影子内存设置为“已释放”状态。
+		编译代码时，会在代码中的读写指令前插入检测函数，对地址的合法性进行检验。主要是检测访问内存的影子内存的状态值，
+		若检测到影子内存为不可读写，则会报溢出错误；若检测到影子内存为已释放，则会报释放后使用错误。
+		在内存释放时，会检测被释放地址的影子内存状态值，若检测到影子内存非可读写，则会报重复释放错误。
+   @endverbatim
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2022-03-22
+ */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -109,6 +135,7 @@ STATIC LmsMemListNode *OsLmsCheckPoolCreate(VOID)
     }
     return NULL;
 }
+/// 添加指定内存池被检测
 /// 将指定内存池的地址范围添加到LMS的内存检测链表上，当访问的地址在链表范围内时，LMS才进行合法性校验；
 /// 且LOS_MemInit接口会调用该接口，默认将初始化的内存池挂入到检测链表中。
 UINT32 LOS_LmsCheckPoolAdd(const VOID *pool, UINT32 size)
@@ -177,7 +204,7 @@ VOID LOS_LmsCheckPoolDel(const VOID *pool)
 Release:
     LMS_UNLOCK(intSave);
 }
-
+/// 初始化 LMS全称为Lite Memory Sanitizer，是一种实时检测内存操作合法性的调测工具
 STATIC UINT32 OsLmsInit(VOID)
 {
     (VOID)memset(g_lmsCheckPoolArray, 0, sizeof(g_lmsCheckPoolArray));
