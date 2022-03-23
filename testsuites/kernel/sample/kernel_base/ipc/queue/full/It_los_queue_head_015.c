@@ -57,8 +57,6 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
     ret = LOS_QueueCreate("Q1", 3, &queueID[index], 0, 8); // 3, Set the queue length; 8, Set the node size of the queue.
-
-    ret = LOS_QueueCreate("Q1", 3, &queueID[index], 0, 8); // 3, Set the queue length; 8, Set the node size of the queue.
     ICUNIT_GOTO_NOT_EQUAL(ret, LOS_OK, ret, EXIT);
 EXIT:
     for (index = 0; index < LOSCFG_BASE_IPC_QUEUE_CONFIG - exsitedQueue; index++) {

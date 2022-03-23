@@ -149,17 +149,20 @@ static int TestSpawnAttr(short flag)
     ICUNIT_GOTO_EQUAL(status, 0, status, EXIT);
 
     fd = open("/storage/testspawnattr.txt", O_RDWR | O_CREAT, 0644); // 0644, open config
+    if (fd < 0) {
+        goto EXIT;
+    }
     ret = read(fd, temp, NUMMAX);
     ICUNIT_GOTO_EQUAL(ret, NUMMAX, ret, EXIT1);
 
     if (POSIX_SPAWN_SETPGROUP == flag) {
-        sprintf_s(temp1, NUMMAX, "pgid = %d", attr.__pgrp);
+        (void)sprintf_s(temp1, NUMMAX, "pgid = %d", attr.__pgrp);
     } else if (POSIX_SPAWN_SETSCHEDPARAM == flag) {
-        sprintf_s(temp1, NUMMAX, "prio = %d", attr.__prio);
+        (void)sprintf_s(temp1, NUMMAX, "prio = %d", attr.__prio);
     } else if (POSIX_SPAWN_SETSCHEDULER == flag) {
-        sprintf_s(temp1, NUMMAX, "pol = %d", attr.__pol);
+        (void)sprintf_s(temp1, NUMMAX, "pol = %d", attr.__pol);
     } else if (POSIX_SPAWN_RESETIDS == flag) {
-        sprintf_s(temp1, NUMMAX, "uid = %d", getuid());
+        (void)sprintf_s(temp1, NUMMAX, "uid = %d", getuid());
     }
     ret = strncmp(temp, temp1, strlen(temp));
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);

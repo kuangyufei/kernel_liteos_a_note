@@ -117,8 +117,8 @@ STATIC VOID OsSwtmrTimeInfoShow(VOID)
     UINT8 mode;
     SwtmrDebugData data;
 
-    PRINTK("SwtmrID  CpuId   Mode    Period(us) WaitTime(us) WaitMax(us) RTime(us) RTimeMax(us) ReTime(us)"
-           " ReTimeMax(us)      RunCount     Handler\n");
+    PRINTK("SwtmrID  Cpuid   Mode    Period(us) WaitTime(us) WaitMax(us) RTime(us) RTimeMax(us) ReTime(us)"
+           " ReTimeMax(us)      RunCount    LostNum     Handler\n");
     for (UINT32 index = 0; index < LOSCFG_BASE_CORE_SWTMR_LIMIT; index++) {
         if (!OsSwtmrDebugDataUsed(index)) {
             continue;
@@ -129,15 +129,16 @@ STATIC VOID OsSwtmrTimeInfoShow(VOID)
             break;
         }
 
-        UINT64 waitTime = ((data.waitTime / data.waitCount) * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-        UINT64 waitTimeMax = (data.waitTimeMax * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-        UINT64 runTime = ((data.runTime / data.runCount) * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-        UINT64 runTimeMax = (data.runTimeMax * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-        UINT64 readyTime = ((data.readyTime / data.runCount) * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-        UINT64 readyTimeMax = (data.readyTimeMax * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-        PRINTK("%4u%10u%7s%14u%13llu%12llu%10llu%13llu%10llu%14llu%15llu%#12x\n",
-               index, data.cpuId, g_shellSwtmrMode[mode], data.period * OS_US_PER_TICK, waitTime, waitTimeMax,
-               runTime, runTimeMax, readyTime, readyTimeMax, data.runCount, data.handler);
+        SwtmrDebugBase *base = &data.base;
+        UINT64 waitTime = ((base->waitTime / base->waitCount) * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+        UINT64 waitTimeMax = (base->waitTimeMax * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+        UINT64 runTime = ((base->runTime / base->runCount) * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+        UINT64 runTimeMax = (base->runTimeMax * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+        UINT64 readyTime = ((base->readyTime / base->runCount) * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+        UINT64 readyTimeMax = (base->readyTimeMax * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+        PRINTK("%4u%10u%7s%14u%13llu%12llu%10llu%13llu%10llu%14llu%15llu%11u%#12x\n",
+               index, data.cpuid, g_shellSwtmrMode[mode], data.period * OS_US_PER_TICK, waitTime, waitTimeMax,
+               runTime, runTimeMax, readyTime, readyTimeMax, base->runCount, base->times, data.handler);
     }
 }
 #endif

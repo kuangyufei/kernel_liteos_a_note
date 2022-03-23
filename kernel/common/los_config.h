@@ -461,7 +461,7 @@ typedef VOID (*log_read_write_fn)(UINT32 startAddr, UINT32 space, UINT32 rwFlag,
 VOID LOS_ExcInfoRegHook(UINT32 startAddr, UINT32 space, CHAR *buf, log_read_write_fn hook);
 #endif
 
-extern INT32 OsMain(VOID);
+extern UINT32 OsMain(VOID);
 
 typedef VOID (*SystemRebootFunc)(VOID);
 VOID OsSetRebootHook(SystemRebootFunc func);

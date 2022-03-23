@@ -335,16 +335,16 @@ CHAR *OsArchFlagsToStr(const UINT32 archFlags)
     (VOID)memset_s(archMmuFlagsStr, flagSize, 0, flagSize);
     switch (cacheFlags) {
         case 0UL:
-            strcat_s(archMmuFlagsStr, flagSize, " CH\0");
+            (VOID)strcat_s(archMmuFlagsStr, flagSize, " CH\0");
             break;
         case 1UL:
-            strcat_s(archMmuFlagsStr, flagSize, " UC\0");
+            (VOID)strcat_s(archMmuFlagsStr, flagSize, " UC\0");
             break;
         case 2UL:
-            strcat_s(archMmuFlagsStr, flagSize, " UD\0");
+            (VOID)strcat_s(archMmuFlagsStr, flagSize, " UD\0");
             break;
         case 3UL:
-            strcat_s(archMmuFlagsStr, flagSize, " WC\0");
+            (VOID)strcat_s(archMmuFlagsStr, flagSize, " WC\0");
             break;
         default:
             break;

@@ -65,7 +65,6 @@
 #include "lwip/api_shell.h"
 
 #include "lwip/dns.h"
-#include "lwip/netdb.h"
 #include "lwip/udp.h"
 #include "lwip/priv/tcp_priv.h"
 
@@ -1338,10 +1337,10 @@ out:
 
 LWIP_STATIC void lwip_arp_usage(const char *cmd)
 {
-    PRINTK("Usage:"\
-         "\n%s"
-           "\n%s [-i IF] -s IPADDR HWADDR"\
-         "\n%s [-i IF] -d IPADDR\n",
+    PRINTK("Usage:"
+           "\n%s"
+           "\n%s [-i IF] -s IPADDR HWADDR"
+           "\n%s [-i IF] -d IPADDR\n",
            cmd, cmd, cmd);
 }
 

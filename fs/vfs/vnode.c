@@ -239,7 +239,7 @@ int VnodeFree(struct Vnode *vnode)
         g_totalVnodeSize--;
     } else {
         /* for normal vnode, reclaim it to g_VnodeFreeList */
-    	memset_s(vnode, sizeof(struct Vnode), 0, sizeof(struct Vnode));//节点再利用
+        (void)memset_s(vnode, sizeof(struct Vnode), 0, sizeof(struct Vnode));
     	LOS_ListAdd(&g_vnodeFreeList, &vnode->actFreeEntry);//actFreeEntry换个地方挂,从活动链接换到空闲链表上. 
     	g_freeVnodeSize++;//空闲链表节点数量增加
     }

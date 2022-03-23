@@ -83,7 +83,7 @@ static int SampleTcpServer()
     ICUNIT_ASSERT_NOT_EQUAL(sfd, -1, sfd);
 
     /* send */
-    ret = memset_s(gBuf, BUF_SIZE - 1, 0, BUF_SIZE - 1);
+    ret = memset_s(gBuf, BUF_SIZE + 1, 0, BUF_SIZE + 1);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     gBuf[BUF_SIZE - 1] = '\0';
     ret = strcpy_s(gBuf, BUF_SIZE - 1, SRV_MSG);
@@ -94,7 +94,7 @@ static int SampleTcpServer()
     ICUNIT_ASSERT_EQUAL(ret, strlen(SRV_MSG), ret);
 
     /* recv */
-    ret = memset_s(gBuf, BUF_SIZE - 1, 0, BUF_SIZE - 1);
+    ret = memset_s(gBuf, BUF_SIZE + 1, 0, BUF_SIZE + 1);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     gBuf[BUF_SIZE - 1] = '\0';
     ret = recv(sfd, gBuf, sizeof(gBuf), 0);
@@ -107,7 +107,7 @@ static int SampleTcpServer()
     clnAddr.sin_family = AF_INET;
     clnAddr.sin_addr.s_addr = inet_addr(PEER_IP);
     clnAddr.sin_port = htons(PEER_PORT);
-    ret = memset_s(gBuf, BUF_SIZE - 1, 0, BUF_SIZE - 1);
+    ret = memset_s(gBuf, BUF_SIZE + 1, 0, BUF_SIZE + 1);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     gBuf[BUF_SIZE - 1] = '\0';
     ret = strcpy_s(gBuf, BUF_SIZE - 1, SRV_MSG);
@@ -128,7 +128,7 @@ static int SampleTcpServer()
     Wait();
 
     /* recvmsg */
-    ret = memset_s(gBuf, BUF_SIZE - 1, 0, BUF_SIZE - 1);
+    ret = memset_s(gBuf, BUF_SIZE + 1, 0, BUF_SIZE + 1);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     gBuf[BUF_SIZE - 1] = '\0';
     ret = memset_s(&msg, sizeof(msg), 0, sizeof(msg));
@@ -196,7 +196,7 @@ static int SampleTcpClient()
         inet_addr(STACK_IP), ((struct sockaddr_in*)&addr)->sin_addr.s_addr);
 
     /* send */
-    ret = memset_s(gBuf, BUF_SIZE - 1, 0, BUF_SIZE - 1);
+    ret = memset_s(gBuf, BUF_SIZE + 1, 0, BUF_SIZE + 1);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     gBuf[BUF_SIZE - 1] = '\0';
     ret = strcpy_s(gBuf, BUF_SIZE - 1, CLI_MSG);
@@ -207,7 +207,7 @@ static int SampleTcpClient()
     ICUNIT_ASSERT_EQUAL(ret, strlen(CLI_MSG), ret);
 
     /* recv */
-    ret = memset_s(gBuf, BUF_SIZE - 1, 0, BUF_SIZE - 1);
+    ret = memset_s(gBuf, BUF_SIZE + 1, 0, BUF_SIZE + 1);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     gBuf[BUF_SIZE - 1] = '\0';
     ret = recv(sfd, gBuf, sizeof(gBuf), 0);
@@ -220,7 +220,7 @@ static int SampleTcpClient()
     clnAddr.sin_family = AF_INET;
     clnAddr.sin_addr.s_addr = inet_addr(PEER_IP);
     clnAddr.sin_port = htons(PEER_PORT);
-    ret = memset_s(gBuf, BUF_SIZE - 1, 0, BUF_SIZE - 1);
+    ret = memset_s(gBuf, BUF_SIZE + 1, 0, BUF_SIZE + 1);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     gBuf[BUF_SIZE - 1] = '\0';
     ret = strcpy_s(gBuf, BUF_SIZE - 1, CLI_MSG);
@@ -241,7 +241,7 @@ static int SampleTcpClient()
     Wait();
 
     /* recvmsg */
-    ret = memset_s(gBuf, BUF_SIZE - 1, 0, BUF_SIZE - 1);
+    ret = memset_s(gBuf, BUF_SIZE + 1, 0, BUF_SIZE + 1);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     gBuf[BUF_SIZE - 1] = '\0';
     ret = memset_s(&msg, sizeof(msg), 0, sizeof(msg));

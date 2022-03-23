@@ -40,30 +40,4 @@ public:
     static void SetUpTestCase(void) {}
     static void TearDownTestCase(void) {}
 };
-
-#if defined(LOSCFG_USER_TEST_FULL)
-/* *
- * @tc.name: IPC_TEST_MKFIFOAT_001
- * @tc.desc: function for IoTest:mkfifoat-normal test
- * @tc.type: FUNC
- */
-#if 0
-HWTEST_F(IoTest, IPC_TEST_MKFIFOAT_001, TestSize.Level0)
-{
-    IPC_TEST_MKFIFOAT_001();
-}
-#endif
-
-/* *
- * @tc.name: IPC_TEST_MKFIFOAT_002
- * @tc.desc: function for IoTest:mkfifoat-innormal test
- * @tc.type: FUNC
- */
-#if 0
-HWTEST_F(IoTest, IPC_TEST_MKFIFOAT_002, TestSize.Level0)
-{
-    IPC_TEST_MKFIFOAT_002();
-}
-#endif
-#endif
 } // namespace OHOS

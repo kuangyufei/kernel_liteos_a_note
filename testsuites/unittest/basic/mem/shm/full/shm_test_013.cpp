@@ -44,21 +44,27 @@ static int testcase(void)
     ICUNIT_ASSERT_NOT_EQUAL(shmfd, -1, shmfd);
 
     writebuf = (char*)malloc(pageSize);
-    ICUNIT_ASSERT_NOT_EQUAL(writebuf, NULL, writebuf);    
+    ICUNIT_ASSERT_NOT_EQUAL(writebuf, NULL, writebuf);
     readbuf = (char*)malloc(pageSize);
-    ICUNIT_ASSERT_NOT_EQUAL(readbuf, NULL, readbuf);
+    ICUNIT_GOTO_NOT_EQUAL(readbuf, NULL, readbuf, EXIT);
 
     (void)memset_s(writebuf, pageSize, 0xf, pageSize);
 
     count = write(shmfd, writebuf, pageSize);
-    ICUNIT_ASSERT_EQUAL(count, pageSize, count);
+    ICUNIT_GOTO_EQUAL(count, pageSize, count, EXIT);
 
     ret = lseek(shmfd, 0, SEEK_SET);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     count = read(shmfd, readbuf, pageSize);
-    ICUNIT_ASSERT_EQUAL(count, pageSize, count);
-    free(readbuf);
-    free(writebuf);
+    ICUNIT_GOTO_EQUAL(count, pageSize, count, EXIT);
+
+EXIT:
+    if (readbuf != NULL) {
+        free(readbuf);
+    }
+    if (writebuf != NULL) {
+        free(writebuf);
+    }
     close(shmfd);
     ret = shm_unlink("test_1");
     return 0;

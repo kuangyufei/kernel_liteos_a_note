@@ -91,12 +91,6 @@ VOID OsAdd2SortLink(SortLinkAttribute *head, SortLinkList *node, UINT64 response
     node->cpuid = idleCpu;
 #endif
     LOS_SpinUnlock(&head->spinLock);
-
-#ifdef LOSCFG_KERNEL_SMP
-    if (idleCpu != ArchCurrCpuid()) {
-        LOS_MpSchedule(CPUID_TO_AFFI_MASK(idleCpu));
-    }
-#endif
 }
 
 VOID OsDeleteFromSortLink(SortLinkAttribute *head, SortLinkList *node)
@@ -106,6 +100,21 @@ VOID OsDeleteFromSortLink(SortLinkAttribute *head, SortLinkList *node)
         OsDeleteNodeSortLink(head, node);
     }
     LOS_SpinUnlock(&head->spinLock);
+}
+
+UINT32 OsSortLinkAdjustNodeResponseTime(SortLinkAttribute *head, SortLinkList *node, UINT64 responseTime)
+{
+    UINT32 ret = LOS_NOK;
+
+    LOS_SpinLock(&head->spinLock);
+    if (node->responseTime != OS_SORT_LINK_INVALID_TIME) {
+        OsDeleteNodeSortLink(head, node);
+        SET_SORTLIST_VALUE(node, responseTime);
+        AddNode2SortLink(head, node);
+        ret = LOS_OK;
+    }
+    LOS_SpinUnlock(&head->spinLock);
+    return ret;
 }
 
 UINT64 OsSortLinkGetTargetExpireTime(UINT64 currTime, const SortLinkList *targetSortList)

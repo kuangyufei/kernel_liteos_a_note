@@ -55,6 +55,10 @@ static UINT32 testcase(VOID)
     }
 
     mnt_new = (struct mntent *)malloc(sizeof(struct mntent));
+    if (mnt_new == NULL) {
+        (VOID)RecoveryFileEnv(pathList, 1);
+        return LOS_NOK;
+    }
     mnt_new->mnt_fsname = "UUID=c4992556-a86e-45e8-ba5f-190b16a9073x";
     mnt_new->mnt_dir = "/usr1";
     mnt_new->mnt_type = "ext3";

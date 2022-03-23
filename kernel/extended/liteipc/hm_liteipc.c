@@ -146,7 +146,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsLiteIpcInit(VOID)
 #if (USE_TASKID_AS_HANDLE == 1) //两种管理方式,一种是 任务ID == service ID 
     g_cmsTask.status = HANDLE_NOT_USED;//默认未使用
 #else
-    memset_s(g_serviceHandleMap, sizeof(g_serviceHandleMap), 0, sizeof(g_serviceHandleMap));//默认未使用
+    (void)memset_s(g_serviceHandleMap, sizeof(g_serviceHandleMap), 0, sizeof(g_serviceHandleMap));
 #endif
     ret = LOS_MuxInit(&g_serviceHandleMapMux, NULL);
     if (ret != LOS_OK) {
@@ -646,7 +646,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 SendDeathMsg(UINT32 processID, UINT32 serviceHand
     }
     content.flag = SEND;
     content.outMsg = &msg;
-    memset_s(content.outMsg, sizeof(IpcMsg), 0, sizeof(IpcMsg));
+    (void)memset_s(content.outMsg, sizeof(IpcMsg), 0, sizeof(IpcMsg));
     content.outMsg->type = MT_DEATH_NOTIFY;
     content.outMsg->target.handle = ipcTaskID;
     content.outMsg->target.token = serviceHandle;

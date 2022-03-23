@@ -127,6 +127,10 @@ static void TraceRead(int fd, size_t size)
 {
     ssize_t i;
     ssize_t len;
+    if (size <= 0) {
+        return;
+    }
+
     char *buffer = (char *)malloc(size);
     if (buffer == NULL) {
         printf("Read buffer malloc failed.\n");
@@ -145,11 +149,13 @@ static void TraceWrite(int fd, int argc, char **argv)
 {
     int i;
     UsrEventInfo info = {0};
-    info.eventType = strtoul(argv[2], NULL, 0);
-    info.identity = strtoul(argv[3], NULL, 0);
+    info.eventType = strtoul(argv[2], NULL, 0); /* 2, argv number  */
+    info.identity = strtoul(argv[3], NULL, 0); /* 3, argv number  */
+    /* 4, argc -4 means user argv that does not contain argv[0]~argv[3] */
     int paramNum = (argc - 4) > TRACE_USR_MAX_PARAMS ? TRACE_USR_MAX_PARAMS : (argc - 4);
-    
+
     for (i = 0; i < paramNum; i++) {
+        /* 4, argc -4 means user argv that does not contain argv[0]~argv[3] */
         info.params[i] = strtoul(argv[4 + i], NULL, 0);
     }
     (void)write(fd, &info, sizeof(UsrEventInfo));
@@ -191,22 +197,22 @@ int main(int argc, char **argv)
 
     if (argc == 1) {
         TraceUsage();
-    } else if (argc == 2 && strcmp(argv[1], "start") == 0) {
+    } else if (argc == 2 && strcmp(argv[1], "start") == 0) { /* 2, argv num, no special meaning */
         ioctl(fd, TRACE_START, NULL);
-    } else if (argc == 2 && strcmp(argv[1], "stop") == 0) {
+    } else if (argc == 2 && strcmp(argv[1], "stop") == 0) { /* 2, argv num, no special meaning */
         ioctl(fd, TRACE_STOP, NULL);
-    } else if (argc == 2 && strcmp(argv[1], "reset") == 0) {
+    } else if (argc == 2 && strcmp(argv[1], "reset") == 0) { /* 2, argv num, no special meaning */
         ioctl(fd, TRACE_RESET, NULL);
-    } else if (argc == 3 && strcmp(argv[1], "mask") == 0) {
+    } else if (argc == 3 && strcmp(argv[1], "mask") == 0) { /* 3, argv num, no special meaning */
         size_t mask = strtoul(argv[2], NULL, 0);
         ioctl(fd, TRACE_SET_MASK, mask);
-    } else if (argc == 3 && strcmp(argv[1], "dump") == 0) {
+    } else if (argc == 3 && strcmp(argv[1], "dump") == 0) { /* 3, argv num, no special meaning */
         size_t flag = strtoul(argv[2], NULL, 0);
         ioctl(fd, TRACE_DUMP, flag);
-    } else if (argc == 3 && strcmp(argv[1], "read") == 0) {
+    } else if (argc == 3 && strcmp(argv[1], "read") == 0) { /* 3, argv num, no special meaning */
         size_t size = strtoul(argv[2], NULL, 0);
         TraceRead(fd, size);
-    } else if (argc >= 4 && strcmp(argv[1], "write") == 0) {
+    } else if (argc >= 4 && strcmp(argv[1], "write") == 0) { /* 4, argv num, no special meaning */
         TraceWrite(fd, argc, argv);
     } else {
         printf("Unsupported trace command.\n");

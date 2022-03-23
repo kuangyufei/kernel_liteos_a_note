@@ -40,7 +40,7 @@ static UINT32 Testcase(VOID)
     int nType;
     char pathname[50]; // 50, path name buffer size
     FILE *testFile;
-    strncpy(pathname, g_ioTestPath, 50); // 50, path name buffer size
+    (void)strncpy_s(pathname, 50, g_ioTestPath, 50); // 50, path name buffer size
     char *filename = "/crtfputwstest1";
     strcat(pathname, filename);
     for (nType = 0; nType < 6; nType++) { // 6, test loop num

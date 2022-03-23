@@ -76,8 +76,10 @@ static int Testcase(void)
     (void)memset_s(buf, pageSize, 0xf, pageSize);
 
     count = write(shmfd, buf, pageSize);
-    ICUNIT_ASSERT_EQUAL(count, pageSize, count);
-
+    if (count != pageSize) {
+        free(buf);
+        ICUNIT_ASSERT_EQUAL(count, pageSize, count);
+    }
     free(buf);
 
     /* Simple MAP_ANONYMOUS */

@@ -51,7 +51,6 @@ static int Testcase(void)
         CPU_SET(1, &cpuset); /* cpu1 unsupported operation */
         ret = sched_setaffinity(getpid(), sizeof(cpu_set_t), &cpuset);
         ICUNIT_GOTO_EQUAL(ret, -1, ret, ERROR_OUT);
-        CPU_ZERO(&cpuset);
 
         CPU_ZERO(&cpuset);
         CPU_SET(0, &cpuset); /* cpu0 */

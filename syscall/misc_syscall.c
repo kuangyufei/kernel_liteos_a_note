@@ -44,9 +44,6 @@
 #include "shmsg.h"
 #endif
 #include "user_copy.h"
-#include "los_strncpy_from_user.h"
-#include "capability_type.h"
-#include "capability_api.h"
 #include "unistd.h"
 
 //这里放的是一些不好归类(或称杂项)的系统调用

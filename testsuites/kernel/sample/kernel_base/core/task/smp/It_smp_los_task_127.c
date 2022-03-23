@@ -49,7 +49,7 @@ static void HwiF01(void)
     ret = LOS_TaskDelete(gTestIdleTaskID);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_ERRNO_TSK_YIELD_IN_INT, ret);
 
-    gTestSwtmrTaskID = OsSwtmrTaskIdByCpuId(cpuid);
+    gTestSwtmrTaskID = OsSwtmrTaskIDGetByCpuid(cpuid);
 
     ret = LOS_TaskDelete(gTestSwtmrTaskID);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_ERRNO_TSK_YIELD_IN_INT, ret);

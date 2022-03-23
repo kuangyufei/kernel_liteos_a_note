@@ -51,7 +51,6 @@ static VOID *PthreadF01(void *argument)
 
     pthread_cleanup_push(PthreadCleanF01, (void *)8); // 8, here set value.
     return (void *)8; // 8, here set value about the return status.
-    pthread_cleanup_pop(0)
 }
 
 static UINT32 Testcase(VOID)

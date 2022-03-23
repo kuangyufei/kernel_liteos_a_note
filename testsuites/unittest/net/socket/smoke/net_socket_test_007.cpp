@@ -139,13 +139,17 @@ static int TcpTest()
     } else {
         printf("malloc 20M success\n");
         ret = memset_s(buf, bufSiz, 0, bufSiz);
-        ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+        ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
         ret = send(lsfd, buf, bufSiz, 0);
         printf("send ret = %d, errno :%d\n", ret, errno);
-        ICUNIT_ASSERT_EQUAL(ret, -1, ret);
+        ICUNIT_GOTO_EQUAL(ret, -1, ret, EXIT);
+    }
+
+EXIT:
+    if (buf != NULL) {
+        free(buf);
     }
 #endif
-
     close(lsfd);
     return 0;
 }

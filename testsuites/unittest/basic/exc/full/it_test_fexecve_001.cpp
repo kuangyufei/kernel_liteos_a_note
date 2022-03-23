@@ -62,6 +62,7 @@ static int TestCase(void)
     rc = stat("/bin/shell", &st);
     if (rc == -1) {
         perror("stat");
+        close(shmFd);
         return -1;
     }
 
@@ -69,12 +70,14 @@ static int TestCase(void)
     rc = ftruncate(shmFd, st.st_size);
     if (rc == -1) {
         perror("ftruncate");
+        close(shmFd);
         return -1;
     }
 
     p = mmap(nullptr, st.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, shmFd, 0);
     if (p == MAP_FAILED) {
         perror("mmap");
+        close(shmFd);
         return -1;
     }
 
@@ -83,6 +86,7 @@ static int TestCase(void)
     if (fd == -1) {
         perror("openls");
         munmap(p, st.st_size);
+        close(shmFd);
         return -1;
     }
 

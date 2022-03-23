@@ -744,7 +744,7 @@ STATIC VOID OsGetStackProt(ELFLoadInfo *loadInfo)
         }
     }
 }
-
+/// 分配栈区
 STATIC UINT32 OsStackAlloc(LosVmSpace *space, VADDR_T vaddr, UINT32 vsize, UINT32 psize, UINT32 regionFlags)
 {
     LosVmPage *vmPage = NULL;
@@ -805,14 +805,14 @@ STATIC INT32 OsSetArgParams(ELFLoadInfo *loadInfo, CHAR *const *argv, CHAR *cons
     if (((UINT32)loadInfo->stackProt & (PROT_READ | PROT_WRITE)) != (PROT_READ | PROT_WRITE)) {
         return -ENOEXEC;
     }
-    loadInfo->stackTopMax = USER_STACK_TOP_MAX - OsGetRndOffset(loadInfo->randomDevFD);
-    loadInfo->stackBase = loadInfo->stackTopMax - USER_STACK_SIZE;
-    loadInfo->stackSize = USER_STACK_SIZE;
-    loadInfo->stackParamBase = loadInfo->stackTopMax - USER_PARAM_BYTE_MAX;
+    loadInfo->stackTopMax = USER_STACK_TOP_MAX - OsGetRndOffset(loadInfo->randomDevFD);//计算栈底位置
+    loadInfo->stackBase = loadInfo->stackTopMax - USER_STACK_SIZE;//计算栈基位置
+    loadInfo->stackSize = USER_STACK_SIZE; //用户态栈大小
+    loadInfo->stackParamBase = loadInfo->stackTopMax - USER_PARAM_BYTE_MAX; //栈参数空间
     vmFlags = OsCvtProtFlagsToRegionFlags(loadInfo->stackProt, MAP_FIXED);
-    vmFlags |= VM_MAP_REGION_FLAG_STACK;
+    vmFlags |= VM_MAP_REGION_FLAG_STACK; //标记映射区为栈区
     ret = OsStackAlloc((VOID *)loadInfo->newSpace, loadInfo->stackBase, USER_STACK_SIZE,
-                       USER_PARAM_BYTE_MAX, vmFlags);
+                       USER_PARAM_BYTE_MAX, vmFlags);//分配映射区
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d], Failed to alloc memory for user stack!\n", __FUNCTION__, __LINE__);
         return -ENOMEM;

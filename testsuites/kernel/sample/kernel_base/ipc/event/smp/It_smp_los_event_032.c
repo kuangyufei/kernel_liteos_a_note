@@ -103,7 +103,6 @@ static UINT32 Testcase(void)
         PRINT_DEBUG("ret1= 0x%x,ret2 = 0x%x,ret3=0x%x\n", g_ret1, g_ret2, g_ret3);
 
         if ((g_ret1 == 0x11) && (g_ret2 == LOS_OK) && (g_ret3 == LOS_OK)) { // pend-post-del ///post-pend-del
-        } else if ((g_ret1 == 0x11) && (g_ret2 == LOS_OK) && (g_ret3 == LOS_OK)) { // del-pend-post//del-post-pend
         } else if ((g_ret1 == 0x11) && (g_ret2 == LOS_OK) &&
             (g_ret3 == LOS_ERRNO_EVENT_SHOULD_NOT_DESTROY)) { // pend-delete-post
         } else if ((g_ret1 == 0xff) && (g_ret2 == LOS_OK) && (g_ret3 == LOS_OK)) { // post-del-pend

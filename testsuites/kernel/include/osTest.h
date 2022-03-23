@@ -343,7 +343,7 @@ extern void TestSystemInit(void);
 extern void TEST_DT_COMMON(void);
 extern VOID dprintf(const char *fmt, ...);
 
-extern UINT32 OsSwtmrTaskIdByCpuId(UINT16 cpuId);
+extern UINT32 OsSwtmrTaskIDGetByCpuid(UINT16 cpuid);
 
 #define BIG_FD 512
 typedef struct testrunParam {

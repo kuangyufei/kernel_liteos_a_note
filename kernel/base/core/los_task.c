@@ -625,7 +625,6 @@ STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam,
 LITE_OS_SEC_TEXT LosTaskCB *OsGetFreeTaskCB(VOID)
 {
     UINT32 intSave;
-    LosTaskCB *taskCB = NULL;
 
     SCHEDULER_LOCK(intSave);
     if (LOS_ListEmpty(&g_losFreeTask)) {//全局空闲task为空
@@ -634,7 +633,7 @@ LITE_OS_SEC_TEXT LosTaskCB *OsGetFreeTaskCB(VOID)
         return NULL;
     }
 
-    taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_losFreeTask));//拿到第一节点并通过pendlist拿到完整的TCB
+    LosTaskCB *taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_losFreeTask));
     LOS_ListDelete(LOS_DL_LIST_FIRST(&g_losFreeTask));//从g_losFreeTask链表中摘除自己
     SCHEDULER_UNLOCK(intSave);
 
@@ -850,14 +849,13 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsTaskSuspend(LosTaskCB *taskCB)
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskSuspend(UINT32 taskID)
 {
     UINT32 intSave;
-    LosTaskCB *taskCB = NULL;
     UINT32 errRet;
 
     if (OS_TID_CHECK_INVALID(taskID)) {
         return LOS_ERRNO_TSK_ID_INVALID;
     }
 
-    taskCB = OS_TCB_FROM_TID(taskID);
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(taskID);
     if (taskCB->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {
         return LOS_ERRNO_TSK_OPERATE_SYSTEM_TASK;
     }
@@ -1037,7 +1035,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_TaskDelay(UINT32 tick)
     }
 
     SCHEDULER_LOCK(intSave);
-    OsSchedDelay(runTask, tick);
+    OsSchedDelay(runTask, OS_SCHED_TICK_TO_CYCLE(tick));
     OsHookCall(LOS_HOOK_TYPE_MOVEDTASKTODELAYEDLIST, runTask);
     SCHEDULER_UNLOCK(intSave);
 
@@ -1068,7 +1066,6 @@ LITE_OS_SEC_TEXT_MINOR UINT16 LOS_TaskPriGet(UINT32 taskID)
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskPriSet(UINT32 taskID, UINT16 taskPrio)
 {
     UINT32 intSave;
-    LosTaskCB *taskCB = NULL;
 
     if (taskPrio > OS_TASK_PRIORITY_LOWEST) {
         return LOS_ERRNO_TSK_PRIOR_ERROR;
@@ -1078,7 +1075,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskPriSet(UINT32 taskID, UINT16 taskPrio)
         return LOS_ERRNO_TSK_ID_INVALID;
     }
 
-    taskCB = OS_TCB_FROM_TID(taskID);
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(taskID);
     if (taskCB->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {
         return LOS_ERRNO_TSK_OPERATE_SYSTEM_TASK;
     }

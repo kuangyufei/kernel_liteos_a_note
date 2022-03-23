@@ -58,7 +58,7 @@ extern "C" {
 #define min(x, y) ((x) < (y) ? (x) : (y)) 
 #endif
 
-#define VM_PAGE_TO_PHYS(page)    (page->physAddr) ///< 获取物理页框的物理基地址
+#define VM_PAGE_TO_PHYS(page)    ((page)->physAddr) ///< 获取物理页框的物理基地址
 #define VM_ORDER_TO_PAGES(order) (1 << (order)) ///< 伙伴算法由order 定位到该块组的页面单位,例如:order=2时，page[4]
 #define VM_ORDER_TO_PHYS(order)  (1 << (PAGE_SHIFT + (order))) ///< 通过order块组跳到物理地址
 #define VM_PHYS_TO_ORDER(phys)   (min(LOS_LowBitGet((phys) >> PAGE_SHIFT), VM_LIST_ORDER_MAX - 1)) ///< 通过物理地址定位到order

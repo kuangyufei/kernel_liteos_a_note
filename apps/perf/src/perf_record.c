@@ -113,7 +113,6 @@ ssize_t PerfWriteFile(const char *filePath, const char *buf, ssize_t bufSize)
     ssize_t totalWrite = 0;
 
     if (filePath == NULL || buf == NULL || bufSize == 0) {
-        printf("filePath: %p, buf: %p, bufSize: %u!\n", filePath, buf, bufSize);
         return -1;
     }
 

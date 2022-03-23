@@ -214,7 +214,7 @@ UINT64 LOS_SizeStrToNum(CHAR *value)
     UINT64 num = 0;
 
     /* If the string is a hexadecimal value */
-    if (sscanf_s(value, "0x%x", &num) > 0) {
+    if (sscanf_s(value, "0x%llx", &num) > 0) {
         value += strlen("0x");
         if (strspn(value, "0123456789abcdefABCDEF") < strlen(value)) {
             goto ERROUT;

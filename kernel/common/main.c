@@ -40,11 +40,9 @@
  */
 LITE_OS_SEC_TEXT_INIT INT32 main(VOID)//由主CPU执行,默认0号CPU 为主CPU 
 {
-    UINT32 uwRet;
-
-    uwRet = OsMain();// 内核各模块初始化
-    if (uwRet != LOS_OK) {
-        return LOS_NOK;
+    UINT32 ret = OsMain();
+    if (ret != LOS_OK) {
+        return (INT32)LOS_NOK;
     }
 
     CPU_MAP_SET(0, OsHwIDGet());//设置CPU映射,参数0 代表0号CPU

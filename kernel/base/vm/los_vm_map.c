@@ -536,7 +536,7 @@ LosVmMapRegion *OsCreateRegion(VADDR_T vaddr, size_t len, UINT32 regionFlags, un
         return region;
     }
 	//创建线性区的本质就是在画饼，见如下操作:
-    memset_s(region, sizeof(LosVmMapRegion), 0, sizeof(LosVmMapRegion));
+    (void)memset_s(region, sizeof(LosVmMapRegion), 0, sizeof(LosVmMapRegion));
     region->range.base = vaddr;	//虚拟地址作为线性区的基地址
     region->range.size = len;	//线性区大小，这是线性区构思最巧妙的地方，只要不过分，蓝图随便画。
     region->pgOff = offset;		//页标

@@ -35,115 +35,174 @@
 #include "path_cache.h"
 
 /* vnode operations returns EIO */
-static int ErrorVopCreate (struct Vnode *parent, const char *name, int mode, struct Vnode **vnode)
+static int ErrorVopCreate(struct Vnode *parent, const char *name, int mode, struct Vnode **vnode)
 {
+    (void)parent;
+    (void)name;
+    (void)mode;
+    (void)vnode;
     return -EIO;
 }
 
-static int ErrorVopLookup (struct Vnode *parent, const char *name, int len, struct Vnode **vnode)
+static int ErrorVopLookup(struct Vnode *parent, const char *name, int len, struct Vnode **vnode)
 {
+    (void)parent;
+    (void)name;
+    (void)len;
+    (void)vnode;
     return -EIO;
 }
 
-static int ErrorVopOpen (struct Vnode *vnode, int fd, int mode, int flags)
+static int ErrorVopOpen(struct Vnode *vnode, int fd, int mode, int flags)
 {
+    (void)vnode;
+    (void)fd;
+    (void)mode;
+    (void)flags;
     return -EIO;
 }
 
-static int ErrorVopClose (struct Vnode *vnode)
+static int ErrorVopClose(struct Vnode *vnode)
 {
+    (void)vnode;
     /* already closed at force umount, do nothing here */
     return OK;
 }
 
-static int ErrorVopReclaim (struct Vnode *vnode)
+static int ErrorVopReclaim(struct Vnode *vnode)
 {
+    (void)vnode;
     return -EIO;
 }
 
-static int ErrorVopUnlink (struct Vnode *parent, struct Vnode *vnode, const char *fileName)
+static int ErrorVopUnlink(struct Vnode *parent, struct Vnode *vnode, const char *fileName)
 {
+    (void)parent;
+    (void)vnode;
+    (void)fileName;
     return -EIO;
 }
 
-static int ErrorVopRmdir (struct Vnode *parent, struct Vnode *vnode, const char *dirName)
+static int ErrorVopRmdir(struct Vnode *parent, struct Vnode *vnode, const char *dirName)
 {
+    (void)parent;
+    (void)vnode;
+    (void)dirName;
     return -EIO;
 }
 
-static int ErrorVopMkdir (struct Vnode *parent, const char *dirName, mode_t mode, struct Vnode **vnode)
+static int ErrorVopMkdir(struct Vnode *parent, const char *dirName, mode_t mode, struct Vnode **vnode)
 {
+    (void)parent;
+    (void)dirName;
+    (void)mode;
+    (void)vnode;
     return -EIO;
 }
 
-static int ErrorVopReaddir (struct Vnode *vnode, struct fs_dirent_s *dir)
+static int ErrorVopReaddir(struct Vnode *vnode, struct fs_dirent_s *dir)
 {
+    (void)vnode;
+    (void)dir;
     return -EIO;
 }
 
-static int ErrorVopOpendir (struct Vnode *vnode, struct fs_dirent_s *dir)
+static int ErrorVopOpendir(struct Vnode *vnode, struct fs_dirent_s *dir)
 {
+    (void)vnode;
+    (void)dir;
     return -EIO;
 }
 
-static int ErrorVopRewinddir (struct Vnode *vnode, struct fs_dirent_s *dir)
+static int ErrorVopRewinddir(struct Vnode *vnode, struct fs_dirent_s *dir)
 {
+    (void)vnode;
+    (void)dir;
     return -EIO;
 }
 
-static int ErrorVopClosedir (struct Vnode *vnode, struct fs_dirent_s *dir)
+static int ErrorVopClosedir(struct Vnode *vnode, struct fs_dirent_s *dir)
 {
+    (void)vnode;
+    (void)dir;
     /* already closed at force umount, do nothing here */
     return OK;
 }
 
-static int ErrorVopGetattr (struct Vnode *vnode, struct stat *st)
+static int ErrorVopGetattr(struct Vnode *vnode, struct stat *st)
 {
+    (void)vnode;
+    (void)st;
     return -EIO;
 }
 
-static int ErrorVopSetattr (struct Vnode *vnode, struct stat *st)
+static int ErrorVopSetattr(struct Vnode *vnode, struct stat *st)
 {
+    (void)vnode;
+    (void)st;
     return -EIO;
 }
 
-static int ErrorVopChattr (struct Vnode *vnode, struct IATTR *attr)
+static int ErrorVopChattr(struct Vnode *vnode, struct IATTR *attr)
 {
+    (void)vnode;
+    (void)attr;
     return -EIO;
 }
 
-static int ErrorVopRename (struct Vnode *src, struct Vnode *dstParent, const char *srcName, const char *dstName)
+static int ErrorVopRename(struct Vnode *src, struct Vnode *dstParent, const char *srcName, const char *dstName)
 {
+    (void)src;
+    (void)dstParent;
+    (void)srcName;
+    (void)dstName;
     return -EIO;
 }
 
-static int ErrorVopTruncate (struct Vnode *vnode, off_t len)
+static int ErrorVopTruncate(struct Vnode *vnode, off_t len)
 {
+    (void)vnode;
+    (void)len;
     return -EIO;
 }
 
-static int ErrorVopTruncate64 (struct Vnode *vnode, off64_t len)
+static int ErrorVopTruncate64(struct Vnode *vnode, off64_t len)
 {
+    (void)vnode;
+    (void)len;
     return -EIO;
 }
 
-static int ErrorVopFscheck (struct Vnode *vnode, struct fs_dirent_s *dir)
+static int ErrorVopFscheck(struct Vnode *vnode, struct fs_dirent_s *dir)
 {
+    (void)vnode;
+    (void)dir;
     return -EIO;
 }
 
-static int ErrorVopLink (struct Vnode *src, struct Vnode *dstParent, struct Vnode **dst, const char *dstName)
+static int ErrorVopLink(struct Vnode *src, struct Vnode *dstParent, struct Vnode **dst, const char *dstName)
 {
+    (void)src;
+    (void)dstParent;
+    (void)dst;
+    (void)dstName;
     return -EIO;
 }
 
-static int ErrorVopSymlink (struct Vnode *parentVnode, struct Vnode **newVnode, const char *path, const char *target)
+static int ErrorVopSymlink(struct Vnode *parentVnode, struct Vnode **newVnode, const char *path, const char *target)
 {
+    (void)parentVnode;
+    (void)newVnode;
+    (void)path;
+    (void)target;
     return -EIO;
 }
 
-static ssize_t ErrorVopReadlink (struct Vnode *vnode, char *buffer, size_t bufLen)
+static ssize_t ErrorVopReadlink(struct Vnode *vnode, char *buffer, size_t bufLen)
 {
+    (void)vnode;
+    (void)buffer;
+    (void)bufLen;
     return -EIO;
 }
 
@@ -173,74 +232,107 @@ static struct VnodeOps g_errorVnodeOps = {
 };
 
 /* file operations returns EIO */
-static int ErrorFopOpen (struct file *filep)
+static int ErrorFopOpen(struct file *filep)
 {
+    (void)filep;
     return -EIO;
 }
 
-static int ErrorFopClose (struct file *filep)
+static int ErrorFopClose(struct file *filep)
 {
+    (void)filep;
     /* already closed at force umount, do nothing here */
     return OK;
 }
 
-static ssize_t ErrorFopRead (struct file *filep, char *buffer, size_t buflen)
+static ssize_t ErrorFopRead(struct file *filep, char *buffer, size_t buflen)
 {
+    (void)filep;
+    (void)buffer;
+    (void)buflen;
     return -EIO;
 }
 
-static ssize_t ErrorFopWrite (struct file *filep, const char *buffer, size_t buflen)
+static ssize_t ErrorFopWrite(struct file *filep, const char *buffer, size_t buflen)
 {
+    (void)filep;
+    (void)buffer;
+    (void)buflen;
     return -EIO;
 }
 
-static off_t ErrorFopSeek (struct file *filep, off_t offset, int whence)
+static off_t ErrorFopSeek(struct file *filep, off_t offset, int whence)
 {
+    (void)filep;
+    (void)offset;
+    (void)whence;
     return -EIO;
 }
 
-static int ErrorFopIoctl (struct file *filep, int cmd, unsigned long arg)
+static int ErrorFopIoctl(struct file *filep, int cmd, unsigned long arg)
 {
+    (void)filep;
+    (void)cmd;
+    (void)arg;
     return -EIO;
 }
 
-static int ErrorFopMmap (struct file* filep, struct VmMapRegion *region)
+static int ErrorFopMmap(struct file* filep, struct VmMapRegion *region)
 {
+    (void)filep;
+    (void)region;
     return -EIO;
 }
 
-static int ErrorFopPoll (struct file *filep, poll_table *fds)
+static int ErrorFopPoll(struct file *filep, poll_table *fds)
 {
+    (void)filep;
+    (void)fds;
     return -EIO;
 }
 
-static int ErrorFopStat (struct file *filep, struct stat* st)
+static int ErrorFopStat(struct file *filep, struct stat* st)
 {
+    (void)filep;
+    (void)st;
     return -EIO;
 }
 
-static int ErrorFopFallocate (struct file* filep, int mode, off_t offset, off_t len)
+static int ErrorFopFallocate(struct file* filep, int mode, off_t offset, off_t len)
 {
+    (void)filep;
+    (void)mode;
+    (void)offset;
+    (void)len;
     return -EIO;
 }
 
-static int ErrorFopFallocate64 (struct file *filep, int mode, off64_t offset, off64_t len)
+static int ErrorFopFallocate64(struct file *filep, int mode, off64_t offset, off64_t len)
 {
+    (void)filep;
+    (void)mode;
+    (void)offset;
+    (void)len;
     return -EIO;
 }
 
-static int ErrorFopFsync (struct file *filep)
+static int ErrorFopFsync(struct file *filep)
 {
+    (void)filep;
     return -EIO;
 }
 
-static ssize_t ErrorFopReadpage (struct file *filep, char *buffer, size_t buflen)
+static ssize_t ErrorFopReadpage(struct file *filep, char *buffer, size_t buflen)
 {
+    (void)filep;
+    (void)buffer;
+    (void)buflen;
     return -EIO;
 }
 
-static int ErrorFopUnlink (struct Vnode *vnode)
+static int ErrorFopUnlink(struct Vnode *vnode)
 {
+    (void)vnode;
     return -EIO;
 }
 

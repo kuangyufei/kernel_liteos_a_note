@@ -55,14 +55,15 @@ INT32 OsMountPatchFs(VOID)
     }
     partInfo.fsType      = strdup(FS_TYPE);
     if (partInfo.fsType == NULL) {
-        return LOS_NOK;
+        ret = LOS_NOK;
+        goto EXIT;
     }
     partInfo.startAddr   = PATCHFS_FLASH_ADDR;
     partInfo.partSize    = PATCHFS_FLASH_SIZE;
 #else
     ret = GetPartitionInfo(&partInfo);
     if (ret != LOS_OK) {
-        return ret;
+        goto EXIT;
     }
     partInfo.startAddr = (partInfo.startAddr >= 0) ? partInfo.startAddr : PATCHFS_FLASH_ADDR;
     partInfo.partSize = (partInfo.partSize >= 0) ? partInfo.partSize : PATCHFS_FLASH_SIZE;
@@ -71,7 +72,7 @@ INT32 OsMountPatchFs(VOID)
     ret = LOS_NOK;
     partInfo.devName = strdup(PATCH_FLASH_DEV_NAME);
     if (partInfo.devName == NULL) {
-        return LOS_NOK;
+        goto EXIT;
     }
     const CHAR *devName = GetDevNameOfPartition(&partInfo);
     if (devName != NULL) {
@@ -92,9 +93,13 @@ INT32 OsMountPatchFs(VOID)
         ResetDevNameofPartition(&partInfo);
     }
 
+EXIT:
     free(partInfo.devName);
+    partInfo.devName = NULL;
     free(partInfo.storageType);
+    partInfo.storageType = NULL;
     free(partInfo.fsType);
+    partInfo.fsType = NULL;
     return ret;
 }
 

@@ -117,7 +117,6 @@ EXIT:
     LOS_TaskDelete(g_testTaskID01);
 
     return LOS_OK;
-    return LOS_OK;
 }
 
 VOID ItLosEvent022(VOID) // IT_Layer_ModuleORFeature_No

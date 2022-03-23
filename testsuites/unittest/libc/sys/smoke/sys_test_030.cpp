@@ -42,18 +42,6 @@ static void sig_alarm(int signum)
 
 static UINT32 TestCase(VOID)
 {
-#if 0
-   int alarm_time = 1;
-    int ret;
-    
-    signal(SIGALRM, sig_alarm);
-    alarm(alarm_time);
-    ret = sigsetjmp(jmp_env, 1);
-    if (ret) {
-      ICUNIT_ASSERT_EQUAL(ret, val, ret);
-    }
-    sleep(3);
-#endif
     return 0;
 }
 

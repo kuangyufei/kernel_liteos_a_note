@@ -57,6 +57,9 @@ UINT32 SerialPipelineInit(VOID)
 
 UINT32 SerialDataReceive(UINT8 *data, UINT32 size, UINT32 timeout)
 {
+    (VOID)data;
+    (VOID)size;
+    (VOID)timeout;
     return LOS_OK;
 }
 

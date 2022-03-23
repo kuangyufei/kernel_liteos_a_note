@@ -45,8 +45,6 @@
 #include "bcache.h"
 #endif
 
-#include "pthread.h"
-
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
@@ -253,7 +251,7 @@ struct disk_divide_info {
  * </ul>
  *
  * @param  diskName  [IN] Type #const CHAR *                      disk driver name.
- * @param  bops      [IN] Type #const struct block_operations *   block driver control sturcture.
+ * @param  bops      [IN] Type #const struct block_operations *   block driver control structure.
  * @param  priv      [IN] Type #VOID *                            private data of vnode.
  * @param  diskID    [IN] Type #INT32                             disk id number, less than SYS_MAX_DISK.
  * @param  info      [IN] Type #VOID *                            disk driver partition information.
@@ -712,7 +710,7 @@ INT32 los_alloc_diskid_byname(const CHAR *diskName);
  * @brief get the INUSED disk id.
  *
  * @par Description:
- * Get the correponding INUSED disk id by diskName.
+ * Get the corresponding INUSED disk id by diskName.
  *
  * @attention
  * <ul>

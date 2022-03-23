@@ -932,7 +932,7 @@ INT32 BlockCacheWrite(OsBcache *bc, const UINT8 *buf, UINT32 *len, UINT64 sector
             bc->modifiedBlock++;
         }
         if ((pos == 0) && (currentSize == bc->blockSize)) {
-            memset_s(block->flag, sizeof(block->flag), 0xFF, sizeof(block->flag));
+            (void)memset_s(block->flag, sizeof(block->flag), 0xFF, sizeof(block->flag));
             block->allDirty = TRUE;
         } else {
             BcacheSetFlag(bc, block, (UINT32)pos, currentSize);

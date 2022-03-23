@@ -87,11 +87,13 @@ static UINT32 TestCase(VOID)
         ptr = (int *)Xmalloc(sizeof(int));
         *ptr = rand() & 0xff;
         val = tsearch((void *)ptr, &g_root, Compare);
-        if (val == NULL)
+        if (val == NULL) {
             exit(EXIT_FAILURE);
-        else if ((*(int **)val) != ptr)
+        } else if ((*(int **)val) != ptr) {
             free(ptr);
+        }
     }
+
     twalk(g_root, Action);
     tdestroy(g_root, free);
 

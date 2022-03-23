@@ -43,7 +43,6 @@ static VOID *pthread_f02(void *argument)
 
     ret = pthread_getschedparam(pthread_self(), &policy, &param);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
-    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     ICUNIT_GOTO_EQUAL(policy, SCHED_RR, policy, EXIT); //
     ICUNIT_GOTO_EQUAL(param.sched_priority, 3, param.sched_priority, EXIT);
 
@@ -62,7 +61,6 @@ static VOID *pthread_f01(void *argument)
     g_testCount++;
 
     ret = pthread_getschedparam(pthread_self(), &policy, &param);
-    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     ICUNIT_GOTO_EQUAL(policy, SCHED_RR, policy, EXIT); //
     ICUNIT_GOTO_EQUAL(param.sched_priority, 4, param.sched_priority, EXIT);

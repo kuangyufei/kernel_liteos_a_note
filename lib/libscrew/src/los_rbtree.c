@@ -124,7 +124,7 @@ STATIC VOID OsRbRightRotateNode(LosRbTree *pstTree, LosRbNode *pstY)
     pstNilT->pstParent = pstParent;
     return;
 }
-/// 红黑树调整
+
 STATIC VOID OsRbInsertNodeFixup(LosRbTree *pstTree, VOID *pstData)
 {
     LosRbNode *pstParent = NULL;
@@ -132,11 +132,10 @@ STATIC VOID OsRbInsertNodeFixup(LosRbTree *pstTree, VOID *pstData)
     LosRbNode *pstY = NULL;
     LosRbNode *pstX = NULL;
 
-    /* begin: for erase pc-lint warning */
     if ((NULL == pstTree) || (NULL == pstData)) {
         return;
     }
-    /* end */
+
     pstX = (LosRbNode *)pstData;
     /* NilT is forbidden. */
     (pstTree->ulNodes)++;
@@ -183,13 +182,7 @@ STATIC VOID OsRbInsertNodeFixup(LosRbTree *pstTree, VOID *pstData)
         }
     }
 
-    /* if we arrive here, pstTree is not NULL, sp we can close pc-lint warning */
-    /*lint -e613 */
-    /*lint -e831 */
     pstTree->pstRoot->lColor = LOS_RB_BLACK;
-
-    /*lint -e613 */
-    /*lint -e831 */
 
     return;
 }
@@ -271,11 +264,9 @@ STATIC VOID OsRbDeleteNode(LosRbTree *pstTree, VOID *pstData)
     LosRbNode *pstZ = NULL;
     LOS_DL_LIST *pstNode = NULL;
 
-    /* begin: for erase pc-lint warning */
     if ((NULL == pstTree) || (NULL == pstData)) {
         return;
     }
-    /* End */
 
     pstZ = (LosRbNode *)pstData;
     pstNilT = &(pstTree->stNilT);
@@ -312,12 +303,7 @@ STATIC VOID OsRbDeleteNode(LosRbTree *pstTree, VOID *pstData)
         pstChild->pstParent = pstZ->pstParent;
 
         if (pstNilT == pstZ->pstParent) {
-            /* if we arrive here, pstTree is no NULL, so we can close pclint warning */
-            /*lint -e613 */
-            /*lint -e831 */
             pstTree->pstRoot = pstChild;
-            /*lint +e831 */
-            /*lint +e613 */
         } else {
             if (pstZ->pstParent->pstLeft == pstZ) {
                 pstZ->pstParent->pstLeft = pstChild;
@@ -363,12 +349,7 @@ STATIC VOID OsRbDeleteNode(LosRbTree *pstTree, VOID *pstData)
 
     if (pstNilT == pstZ->pstParent) {
         /* In fact, we never go here. */
-        /* if we arrive here, pstTree is no NULL, so we can close pclint warning */
-        /*lint -e613 */
-        /*lint -e831 */
         pstTree->pstRoot = pstChild;
-        /*lint +e831 */
-        /*lint +e613 */
     } else {
         if (pstZ->pstParent->pstLeft == pstZ) {
             pstZ->pstParent->pstLeft = pstChild;
@@ -384,12 +365,8 @@ STATIC VOID OsRbDeleteNode(LosRbTree *pstTree, VOID *pstData)
     pstZ->pstLeft = pstDel->pstLeft;
 
     if (pstNilT == pstDel->pstParent) {
-        /* if we arrive here, pstTree is no NULL, so we can close pclint warning */
-        /*lint -e613 */
-        /*lint -e831 */
+        /* if we arrive here, pstTree is no NULL */
         pstTree->pstRoot = pstZ;
-        /*lint +e831 */
-        /*lint +e613 */
     } else {
         if (pstDel->pstParent->pstLeft == pstDel) {
             pstDel->pstParent->pstLeft = pstZ;
@@ -419,9 +396,9 @@ STATIC VOID OsRbInitTree(LosRbTree *pstTree)
     }
 
     pstTree->ulNodes = 0;
-    pstTree->pstRoot = &(pstTree->stNilT); //初始时只有一个结点
-    pstTree->stNilT.lColor = LOS_RB_BLACK; //默认根节点是黑色
-    pstTree->stNilT.pstLeft = NULL;   /* Always NULL | 总是空 又叫NIL结点*/
+    pstTree->pstRoot = &(pstTree->stNilT);
+    pstTree->stNilT.lColor = LOS_RB_BLACK;
+    pstTree->stNilT.pstLeft = NULL;   /* Always NULL */
     pstTree->stNilT.pstRight = NULL;  /* Always NULL */
     pstTree->stNilT.pstParent = NULL; /* Not NULL when tree isn't empty */
     LOS_ListInit(&pstTree->stWalkHead);
@@ -543,7 +520,7 @@ VOID LOS_RbInsertOneNodeProcess(LosRbTree *pstTree, LosRbNode *pstParent, LosRbN
 
     return;
 }
-/// 初始化进程红黑树
+
 VOID LOS_RbInitTree(LosRbTree *pstTree, pfRBCmpKeyFn pfCmpKey, pfRBFreeFn pfFree, pfRBGetKeyFn pfGetKey)
 {
     if (NULL == pstTree) {
@@ -558,7 +535,7 @@ VOID LOS_RbInitTree(LosRbTree *pstTree, pfRBCmpKeyFn pfCmpKey, pfRBFreeFn pfFree
 
     return;
 }
-/// 销毁进程红黑树
+
 VOID LOS_RbDestroyTree(LosRbTree *pstTree)
 {
     LosRbNode *pstNode = NULL;
@@ -614,11 +591,9 @@ VOID *LOS_RbSuccessorNode(LosRbTree *pstTree, VOID *pstData)
     LosRbNode *pstNilT = NULL;
     LosRbNode *pstNode = NULL;
 
-    /* begin: for erase pc_lint warning */
     if (NULL == pstTree) {
         return NULL;
     }
-    /* end */
 
     pstNode = (LosRbNode *)pstData;
 
@@ -631,12 +606,8 @@ VOID *LOS_RbSuccessorNode(LosRbTree *pstTree, VOID *pstData)
         return NULL;
     }
 
-    /* if we arrive here, pstTree is no NULL, so we can close pclint warning */
-    /*lint -e613 */
-    /*lint -e831 */
+    /* if we arrive here, pstTree is no NULL */
     pstNilT = &(pstTree->stNilT);
-    /*lint +e831 */
-    /*lint +e613 */
 
     if (pstNilT != pstNode->pstRight) {
         pstNode = pstNode->pstRight;
@@ -744,7 +715,7 @@ ULONG_T LOS_RbAddNode(LosRbTree *pstTree, LosRbNode *pstNew)
         return FALSE;
     }
 
-    pNodeKey = pstTree->pfGetKey(pstNew);//获取线性区范围
+    pNodeKey = pstTree->pfGetKey(pstNew);
     ulSearchNode = LOS_RbGetNode(pstTree, pNodeKey, &pstX);
     if (TRUE == ulSearchNode) {
         return FALSE;

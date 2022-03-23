@@ -123,7 +123,7 @@
 
 STATIC UINTPTR g_minAddr;
 STATIC UINTPTR g_maxAddr;
-STATIC UINT32 g_currHandleExcCpuID = INVALID_CPUID;
+STATIC UINT32 g_currHandleExcCpuid = INVALID_CPUID;
 VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr);
 UINT32 g_curNestCount[LOSCFG_KERNEL_CORE_NUM] = {0};       ///< 记录当前嵌套异常的数量
 BOOL g_excFromUserMode[LOSCFG_KERNEL_CORE_NUM];            ///< 记录CPU core 异常来自用户态还是内核态 TRUE为用户态,默认为内核态
@@ -180,11 +180,11 @@ STATIC const StackInfo g_excStack[] = {
 UINT32 OsGetSystemStatus(VOID)
 {
     UINT32 flag;
-    UINT32 cpuID = g_currHandleExcCpuID; //全局变量 当前执行CPU ID
+    UINT32 cpuid = g_currHandleExcCpuid; //全局变量 当前执行CPU ID
 
-    if (cpuID == INVALID_CPUID) { //当前CPU处于空闲状态的情况
+    if (cpuid == INVALID_CPUID) { //当前CPU处于空闲状态的情况
         flag = OS_SYSTEM_NORMAL;
-    } else if (cpuID == ArchCurrCpuid()) { //碰到了正在执行此处代码的CPU core
+    } else if (cpuid == ArchCurrCpuid()) { //碰到了正在执行此处代码的CPU core
         flag = OS_SYSTEM_EXC_CURR_CPU; //当前CPU
     } else {
         flag = OS_SYSTEM_EXC_OTHER_CPU; //其他CPU
@@ -627,11 +627,11 @@ VOID OsDumpContextMem(const ExcContext *excBufAddr)
 ///异常恢复,继续执行
 STATIC VOID OsExcRestore(VOID)
 {
-    UINT32 currCpuID = ArchCurrCpuid(); //获取当前CPU ID
+    UINT32 currCpuid = ArchCurrCpuid();
 
-    g_excFromUserMode[currCpuID] = FALSE; //CPU内核态运行
-    g_intCount[currCpuID] = 0;            //CPU对应的中断数量清0
-    g_curNestCount[currCpuID] = 0;
+    g_excFromUserMode[currCpuid] = FALSE;
+    g_intCount[currCpuid] = 0;
+    g_curNestCount[currCpuid] = 0;
 #ifdef LOSCFG_KERNEL_SMP
     OsCpuStatusSet(CPU_RUNNING);
 #endif
@@ -652,15 +652,15 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 #ifdef LOSCFG_KERNEL_SMP
     LOS_SpinLock(&g_excSerializerSpin);
     if (g_nextExcWaitCpu != INVALID_CPUID) {
-        g_currHandleExcCpuID = g_nextExcWaitCpu;
+        g_currHandleExcCpuid = g_nextExcWaitCpu;
         g_nextExcWaitCpu = INVALID_CPUID;
     } else {
-        g_currHandleExcCpuID = INVALID_CPUID;
+        g_currHandleExcCpuid = INVALID_CPUID;
     }
     g_currHandleExcPID = OS_INVALID_VALUE;
     LOS_SpinUnlock(&g_excSerializerSpin);
 #else
-    g_currHandleExcCpuID = INVALID_CPUID;
+    g_currHandleExcCpuid = INVALID_CPUID;
 #endif
 
 #ifdef LOSCFG_KERNEL_SMP
@@ -1084,14 +1084,14 @@ VOID OsDataAbortExcHandleEntry(ExcContext *excBufAddr)
 #define EXC_WAIT_TIME 2000U //异常等待时间
 
 ///等待所有CPU停止
-STATIC VOID WaitAllCpuStop(UINT32 cpuID)
+STATIC VOID WaitAllCpuStop(UINT32 cpuid)
 {
     UINT32 i;
     UINT32 time = 0;
 
     while (time < EXC_WAIT_TIME) {
         for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
-            if ((i != cpuID) && !OsCpuStatusIsHalt(i)) {
+            if ((i != cpuid) && !OsCpuStatusIsHalt(i)) {
                 LOS_Mdelay(EXC_WAIT_INTER);
                 time += EXC_WAIT_INTER;
                 break;
@@ -1105,19 +1105,19 @@ STATIC VOID WaitAllCpuStop(UINT32 cpuID)
     return;
 }
 
-STATIC VOID OsWaitOtherCoresHandleExcEnd(UINT32 currCpuID)
+STATIC VOID OsWaitOtherCoresHandleExcEnd(UINT32 currCpuid)
 {
     while (1) {
         LOS_SpinLock(&g_excSerializerSpin);
-        if ((g_currHandleExcCpuID == INVALID_CPUID) || (g_currHandleExcCpuID == currCpuID)) {
-            g_currHandleExcCpuID = currCpuID;
+        if ((g_currHandleExcCpuid == INVALID_CPUID) || (g_currHandleExcCpuid == currCpuid)) {
+            g_currHandleExcCpuid = currCpuid;
             g_currHandleExcPID = OsCurrProcessGet()->processID;
             LOS_SpinUnlock(&g_excSerializerSpin);
             break;
         }
 
         if (g_nextExcWaitCpu == INVALID_CPUID) {
-            g_nextExcWaitCpu = currCpuID;
+            g_nextExcWaitCpu = currCpuid;
         }
         LOS_SpinUnlock(&g_excSerializerSpin);
         LOS_Mdelay(EXC_WAIT_INTER);
@@ -1126,7 +1126,7 @@ STATIC VOID OsWaitOtherCoresHandleExcEnd(UINT32 currCpuID)
 ///检查所有CPU的状态
 STATIC VOID OsCheckAllCpuStatus(VOID)
 {
-    UINT32 currCpuID = ArchCurrCpuid();
+    UINT32 currCpuid = ArchCurrCpuid();
     UINT32 ret, target;
 
     OsCpuStatusSet(CPU_EXC);
@@ -1134,17 +1134,17 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
 
     LOS_SpinLock(&g_excSerializerSpin);
     /* Only the current CPU anomaly */
-    if (g_currHandleExcCpuID == INVALID_CPUID) {
-        g_currHandleExcCpuID = currCpuID;
+    if (g_currHandleExcCpuid == INVALID_CPUID) {
+        g_currHandleExcCpuid = currCpuid;
         g_currHandleExcPID = OsCurrProcessGet()->processID;
         LOS_SpinUnlock(&g_excSerializerSpin);
 #ifndef LOSCFG_SAVE_EXCINFO
-        if (g_excFromUserMode[currCpuID] == FALSE) {
-            target = (UINT32)(OS_MP_CPU_ALL & ~CPUID_TO_AFFI_MASK(currCpuID));
-            HalIrqSendIpi(target, LOS_MP_IPI_HALT); //向目标CPU发送停止消息
+        if (g_excFromUserMode[currCpuid] == FALSE) {
+            target = (UINT32)(OS_MP_CPU_ALL & ~CPUID_TO_AFFI_MASK(currCpuid));
+            HalIrqSendIpi(target, LOS_MP_IPI_HALT);
         }
 #endif
-    } else if (g_excFromUserMode[currCpuID] == TRUE) {
+    } else if (g_excFromUserMode[currCpuid] == TRUE) {
         /* Both cores raise exceptions, and the current core is a user-mode exception.
          * Both cores are abnormal and come from the same process
          */
@@ -1156,12 +1156,12 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
         }
         LOS_SpinUnlock(&g_excSerializerSpin);
 
-        OsWaitOtherCoresHandleExcEnd(currCpuID);
+        OsWaitOtherCoresHandleExcEnd(currCpuid);
     } else {
-        if ((g_currHandleExcCpuID < LOSCFG_KERNEL_CORE_NUM) && (g_excFromUserMode[g_currHandleExcCpuID] == TRUE)) {
-            g_currHandleExcCpuID = currCpuID;
+        if ((g_currHandleExcCpuid < LOSCFG_KERNEL_CORE_NUM) && (g_excFromUserMode[g_currHandleExcCpuid] == TRUE)) {
+            g_currHandleExcCpuid = currCpuid;
             LOS_SpinUnlock(&g_excSerializerSpin);
-            target = (UINT32)(OS_MP_CPU_ALL & ~CPUID_TO_AFFI_MASK(currCpuID));
+            target = (UINT32)(OS_MP_CPU_ALL & ~CPUID_TO_AFFI_MASK(currCpuid));
             HalIrqSendIpi(target, LOS_MP_IPI_HALT);
         } else {
             LOS_SpinUnlock(&g_excSerializerSpin);
@@ -1171,7 +1171,7 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
 #ifndef LOSCFG_SAVE_EXCINFO
     /* use halt ipi to stop other active cores */
     if (g_excFromUserMode[ArchCurrCpuid()] == FALSE) {
-        WaitAllCpuStop(currCpuID);
+        WaitAllCpuStop(currCpuid);
     }
 #endif
 }
@@ -1182,7 +1182,7 @@ STATIC VOID OsCheckCpuStatus(VOID)
 #ifdef LOSCFG_KERNEL_SMP
     OsCheckAllCpuStatus();
 #else
-    g_currHandleExcCpuID = ArchCurrCpuid();
+    g_currHandleExcCpuid = ArchCurrCpuid();
 #endif
 }
 ///执行期间的优先处理 excBufAddr为CPU异常上下文，

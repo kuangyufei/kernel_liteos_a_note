@@ -56,11 +56,17 @@ static int TestMkfifo()
         return -1;
     } else if (pid == 0) {
         fd = open("/dev/fifo", O_WRONLY);
+        if (fd < 0) {
+            return -1;
+        }
         write(fd, sentence, sizeof(sentence) + 1);
         close(fd);
         exit(0);
     } else {
         fd = open("/dev/fifo", O_RDONLY);
+        if (fd < 0) {
+            return -1;
+        }
         read(fd, buffer, sizeof(buffer));
         printf("Receive data: %s\n", buffer);
         close(fd);

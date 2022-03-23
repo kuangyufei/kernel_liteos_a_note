@@ -1507,7 +1507,7 @@ static int do_ioctl_SIOCGIFCONF(int sockfd, long cmd, void *argp)
         return -1;
     }
     nbytes = ifc.ifc_len;
-    if (nbytes < 0) {
+    if (nbytes <= 0) {
         set_errno(EINVAL);
         return -1;
     }

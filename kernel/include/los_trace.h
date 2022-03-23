@@ -260,7 +260,7 @@ typedef struct {
     UINTPTR identity;                                /**< subject of the event description | 描述事件*/
 #ifdef LOSCFG_TRACE_FRAME_CORE_MSG //跟踪CPU信息
     struct CoreStatus {
-        UINT32 cpuId      : 8,                       /**< cpuid | CPU 核 ID*/
+        UINT32 cpuid      : 8,                       /**< cpuid | CPU 核 ID*/
                hwiActive  : 4,                       /**< whether is in hwi response | 是否在等硬中断回应*/
                taskLockCnt : 4,                      /**< task lock count | 等锁任务数量*/
                paramCount : 4,                       /**< event frame params' number | */

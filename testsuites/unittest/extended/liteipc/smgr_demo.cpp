@@ -210,7 +210,7 @@ static void HandleServiceRegAndGet(int fd, IpcMsg *data)
                     printf("the task has already a service named:%s\n", g_serviceNameMap[content.serviceHandle].serviceName);
                     goto ERROR_REG;
                 } else {
-                    memcpy(g_serviceNameMap[content.serviceHandle].serviceName, info->serviceName, info->nameLen);
+                    (void)memcpy_s(g_serviceNameMap[content.serviceHandle].serviceName, info->nameLen, info->serviceName, info->nameLen);
                     g_serviceNameMap[content.serviceHandle].nameLen = info->nameLen;
                     SendReply(fd, data, 0, content.serviceHandle);
                 }

@@ -336,7 +336,7 @@ VOID OsCpupCycleEndStart(UINT32 runTaskID, UINT32 newTaskID)
     OsCpupBase *newTaskCpup = (OsCpupBase *)&(OS_TCB_FROM_TID(newTaskID)->taskCpup);
     OsCpupBase *processCpup = OS_PCB_FROM_PID(runTask->processID)->processCpup;
     UINT64 cpuCycle, cycleIncrement;
-    UINT16 cpuID = ArchCurrCpuid();
+    UINT16 cpuid = ArchCurrCpuid();
 
     if (cpupInitFlg == 0) {
         return;
@@ -346,8 +346,8 @@ VOID OsCpupCycleEndStart(UINT32 runTaskID, UINT32 newTaskID)
     if (runTaskCpup->startTime != 0) {
         cycleIncrement = cpuCycle - runTaskCpup->startTime;
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
-        cycleIncrement -= timeInIrqSwitch[cpuID];
-        timeInIrqSwitch[cpuID] = 0;
+        cycleIncrement -= timeInIrqSwitch[cpuid];
+        timeInIrqSwitch[cpuid] = 0;
 #endif
         runTaskCpup->allTime += cycleIncrement;
         if (processCpup != NULL) {
@@ -357,7 +357,7 @@ VOID OsCpupCycleEndStart(UINT32 runTaskID, UINT32 newTaskID)
     }
 
     newTaskCpup->startTime = cpuCycle;
-    runningTasks[cpuID] = newTaskID;
+    runningTasks[cpuid] = newTaskID;
 }
 
 LITE_OS_SEC_TEXT_MINOR STATIC VOID OsCpupGetPos(UINT16 mode, UINT16 *curPosPointer, UINT16 *prePosPointer)
@@ -632,17 +632,17 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsGetAllProcessAndTaskCpuUsageUnsafe(UINT16 mode, 
 }
 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
-LITE_OS_SEC_TEXT_MINOR VOID OsCpupIrqStart(UINT16 cpuId)
+LITE_OS_SEC_TEXT_MINOR VOID OsCpupIrqStart(UINT16 cpuid)
 {
     UINT32 high;
     UINT32 low;
 
     LOS_GetCpuCycle(&high, &low);
-    cpupIntTimeStart[cpuId] = ((UINT64)high << HIGH_BITS) + low;
+    cpupIntTimeStart[cpuid] = ((UINT64)high << HIGH_BITS) + low;
     return;
 }
 
-LITE_OS_SEC_TEXT_MINOR VOID OsCpupIrqEnd(UINT16 cpuId, UINT32 intNum)
+LITE_OS_SEC_TEXT_MINOR VOID OsCpupIrqEnd(UINT16 cpuid, UINT32 intNum)
 {
     UINT32 high;
     UINT32 low;
@@ -651,11 +651,11 @@ LITE_OS_SEC_TEXT_MINOR VOID OsCpupIrqEnd(UINT16 cpuId, UINT32 intNum)
 
     LOS_GetCpuCycle(&high, &low);
     intTimeEnd = ((UINT64)high << HIGH_BITS) + low;
-    OsIrqCpupCB *irqCb = &g_irqCpup[(intNum * LOSCFG_KERNEL_CORE_NUM) + cpuId];
+    OsIrqCpupCB *irqCb = &g_irqCpup[(intNum * LOSCFG_KERNEL_CORE_NUM) + cpuid];
     irqCb->id = intNum;
     irqCb->status = OS_CPUP_USED;
-    usedTime = intTimeEnd - cpupIntTimeStart[cpuId];
-    timeInIrqSwitch[cpuId] += usedTime;
+    usedTime = intTimeEnd - cpupIntTimeStart[cpuid];
+    timeInIrqSwitch[cpuid] += usedTime;
     irqCb->cpup.allTime += usedTime;
     if (irqCb->count <= 100) { /* Take 100 samples */
         irqCb->allTime += usedTime;

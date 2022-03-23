@@ -55,7 +55,14 @@ static void ChildFunc()
     ent.sigev_signo = SIGUSR1;
 
     tid2 = (timer_t *)malloc(sizeof(UINTPTR) * 1024);
+    if (tid2 == NULL) {
+        return;
+    }
     ret1 = (int *)malloc(sizeof(int) * 1024);
+    if (ret1 == NULL) {
+        free(tid2);
+        return;
+    }
     (void)memset_s(tid2, sizeof(char *) * 1024, 0, sizeof(char *) * 1024);
     (void)memset_s(ret1, sizeof(int) * 1024, 0xff, sizeof(int) * 1024);
     while (i < 1024) {

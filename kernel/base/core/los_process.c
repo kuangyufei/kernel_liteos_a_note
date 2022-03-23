@@ -211,7 +211,7 @@ STATIC ProcessGroup *OsFindProcessGroup(UINT32 gid)
         }
     }
 
-    PRINT_INFO("%s is find group : %u failed!\n", __FUNCTION__, gid);
+    PRINT_INFO("%s failed! group id = %u\n", __FUNCTION__, gid);
     return NULL;
 }
 

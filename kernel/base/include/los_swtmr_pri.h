@@ -66,8 +66,9 @@ typedef struct {//处理软件定时器超时的回调函数的结构体
     SWTMR_PROC_FUNC handler;    /**< Callback function that handles software timer timeout  */	//处理软件定时器超时的回调函数
     UINTPTR arg;                /**< Parameter passed in when the callback function
                                      that handles software timer timeout is called */	//调用处理软件计时器超时的回调函数时传入的参数
+    LOS_DL_LIST node;
 #ifdef LOSCFG_SWTMR_DEBUG
-    UINT32 swtmrId;
+    UINT32 swtmrID;
 #endif
 } SwtmrHandlerItem;
 
@@ -104,29 +105,35 @@ extern SWTMR_CTRL_S *g_swtmrCBArray;//软件定时器数组,后续统一注解�
  * @see LOS_SwtmrStop
  */
 
+extern UINT32 OsSwtmrGetNextTimeout(VOID);
 extern BOOL OsIsSwtmrTask(const LosTaskCB *taskCB);
-extern VOID OsSwtmrRestart(UINT64 startTime, SortLinkList *sortList);
-extern VOID OsSwtmrWake(SchedRunQue *rq, UINT64 currTime, SortLinkList *sortList);
+extern VOID OsSwtmrResponseTimeReset(UINT64 startTime);
 extern UINT32 OsSwtmrInit(VOID);
 extern VOID OsSwtmrRecycle(UINT32 processID);
 extern BOOL OsSwtmrWorkQueueFind(SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg);
 extern SPIN_LOCK_S g_swtmrSpin;
+extern UINT32 OsSwtmrTaskIDGetByCpuid(UINT16 cpuid);
 
 #ifdef LOSCFG_SWTMR_DEBUG
 typedef struct {
-    UINT64          startTime;
-    UINT64          waitTimeMax;
-    UINT64          waitTime;
-    UINT64          waitCount;
-    UINT64          readyStartTime;
-    UINT64          readyTime;
-    UINT64          readyTimeMax;
-    UINT64          runTime;
-    UINT64          runTimeMax;
-    UINT64          runCount;
+    UINT64 startTime;
+    UINT64 waitTimeMax;
+    UINT64 waitTime;
+    UINT64 waitCount;
+    UINT64 readyStartTime;
+    UINT64 readyTime;
+    UINT64 readyTimeMax;
+    UINT64 runTime;
+    UINT64 runTimeMax;
+    UINT64 runCount;
+    UINT32 times;
+} SwtmrDebugBase;
+
+typedef struct {
+    SwtmrDebugBase  base;
     SWTMR_PROC_FUNC handler;
     UINT32          period;
-    UINT32          cpuId;
+    UINT32          cpuid;
     BOOL            swtmrUsed;
 } SwtmrDebugData;
 

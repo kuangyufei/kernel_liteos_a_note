@@ -237,8 +237,6 @@ extern void ICunitSaveErr(iiUINT32 line, iiUINT32 retCode);
 
 #define ICUNIT_SUCCESS 0x00000000
 
-#if 1
-
 #define ICUNIT_TRACK_EQUAL(param, g_value, retcode)     \
     do {                                                \
         if ((param) != (g_value)) {                     \
@@ -413,114 +411,6 @@ extern void ICunitSaveErr(iiUINT32 line, iiUINT32 retCode);
             goto label;                                          \
         }                                                        \
     } while (0)
-
-#else
-
-#define ICUNIT_TRACK_EQUAL(param, g_value, retcode)                                         \
-    do {                                                                                    \
-        if ((param) != (g_value)) {                                                         \
-            g_iCunitErrLineNo = (g_iCunitErrLineNo == 0) ? __LINE__ : g_iCunitErrLineNo;    \
-            g_iCunitErrCode = (g_iCunitErrCode == 0) ? (iiUINT32)retcode : g_iCunitErrCode; \
-        }                                                                                   \
-    } while (0)
-
-#define ICUNIT_TRACK_NOT_EQUAL(param, g_value, retcode)                                     \
-    do {                                                                                    \
-        if ((param) == (g_value)) {                                                         \
-            g_iCunitErrLineNo = (g_iCunitErrLineNo == 0) ? __LINE__ : g_iCunitErrLineNo;    \
-            g_iCunitErrCode = (g_iCunitErrCode == 0) ? (iiUINT32)retcode : g_iCunitErrCode; \
-        }                                                                                   \
-    } while (0)
-
-#define ICUNIT_ASSERT_EQUAL_VOID(param, g_value, retcode)                                   \
-    do {                                                                                    \
-        if ((param) != (g_value)) {                                                         \
-            g_iCunitErrLineNo = (g_iCunitErrLineNo == 0) ? __LINE__ : g_iCunitErrLineNo;    \
-            g_iCunitErrCode = (g_iCunitErrCode == 0) ? (iiUINT32)retcode : g_iCunitErrCode; \
-            return;                                                                         \
-        }                                                                                   \
-    } while (0)
-
-#define ICUNIT_ASSERT_NOT_EQUAL_VOID(param, g_value, retcode)                               \
-    do {                                                                                    \
-        if ((param) == (g_value)) {                                                         \
-            g_iCunitErrLineNo = (g_iCunitErrLineNo == 0) ? __LINE__ : g_iCunitErrLineNo;    \
-            g_iCunitErrCode = (g_iCunitErrCode == 0) ? (iiUINT32)retcode : g_iCunitErrCode; \
-            return;                                                                         \
-        }                                                                                   \
-    } while (0)
-#define ICUNIT_ASSERT_EQUAL(param, g_value, retcode)                                        \
-    do {                                                                                    \
-        if ((param) != (g_value)) {                                                         \
-            g_iCunitErrLineNo = (g_iCunitErrLineNo == 0) ? __LINE__ : g_iCunitErrLineNo;    \
-            g_iCunitErrCode = (g_iCunitErrCode == 0) ? (iiUINT32)retcode : g_iCunitErrCode; \
-            return 1;                                                                       \
-        }                                                                                   \
-    } while (0)
-
-#define ICUNIT_ASSERT_NOT_EQUAL(param, g_value, retcode)                                    \
-    do {                                                                                    \
-        if ((param) == (g_value)) {                                                         \
-            g_iCunitErrLineNo = (g_iCunitErrLineNo == 0) ? __LINE__ : g_iCunitErrLineNo;    \
-            g_iCunitErrCode = (g_iCunitErrCode == 0) ? (iiUINT32)retcode : g_iCunitErrCode; \
-            return 1;                                                                       \
-        }                                                                                   \
-    } while (0)
-
-#define ICUNIT_ASSERT_STRING_EQUAL(str1, str2, retcode)                                     \
-    do {                                                                                    \
-        if (strcmp(str1, str2) != 0) {                                                      \
-            g_iCunitErrLineNo = (g_iCunitErrLineNo == 0) ? __LINE__ : g_iCunitErrLineNo;    \
-            g_iCunitErrCode = (g_iCunitErrCode == 0) ? (iiUINT32)retcode : g_iCunitErrCode; \
-            return 1;                                                                       \
-        }                                                                                   \
-    } while (0)
-
-#define ICUNIT_ASSERT_STRING_NOT_EQUAL(str1, str2, retcode)                                 \
-    do {                                                                                    \
-        if (strcmp(str1, str2) == 0) {                                                      \
-            g_iCunitErrLineNo = (g_iCunitErrLineNo == 0) ? __LINE__ : g_iCunitErrLineNo;    \
-            g_iCunitErrCode = (g_iCunitErrCode == 0) ? (iiUINT32)retcode : g_iCunitErrCode; \
-            return 1;                                                                       \
-        }                                                                                   \
-    } while (0)
-
-#define ICUNIT_GOTO_EQUAL(param, g_value, retcode, label)                                   \
-    do {                                                                                    \
-        if ((param) != (g_value)) {                                                         \
-            g_iCunitErrLineNo = (g_iCunitErrLineNo == 0) ? __LINE__ : g_iCunitErrLineNo;    \
-            g_iCunitErrCode = (g_iCunitErrCode == 0) ? (iiUINT32)retcode : g_iCunitErrCode; \
-            goto label;                                                                     \
-        }                                                                                   \
-    } while (0)
-
-#define ICUNIT_GOTO_NOT_EQUAL(param, g_value, retcode, label)                               \
-    do {                                                                                    \
-        if ((param) == (g_value)) {                                                         \
-            g_iCunitErrLineNo = (g_iCunitErrLineNo == 0) ? __LINE__ : g_iCunitErrLineNo;    \
-            g_iCunitErrCode = (g_iCunitErrCode == 0) ? (iiUINT32)retcode : g_iCunitErrCode; \
-            goto label;                                                                     \
-        }                                                                                   \
-    } while (0)
-
-#define ICUNIT_GOTO_STRING_EQUAL(str1, str2, retcode, label)                                \
-    do {                                                                                    \
-        if (strcmp(str1, str2) != 0) {                                                      \
-            g_iCunitErrLineNo = (g_iCunitErrLineNo == 0) ? __LINE__ : g_iCunitErrLineNo;    \
-            g_iCunitErrCode = (g_iCunitErrCode == 0) ? (iiUINT32)retcode : g_iCunitErrCode; \
-            goto label;                                                                     \
-        }                                                                                   \
-    } while (0)
-
-#define ICUNIT_GOTO_STRING_NOT_EQUAL(str1, str2, retcode, label)                            \
-    do {                                                                                    \
-        if (strcmp(str1, str2) == 0) {                                                      \
-            g_iCunitErrLineNo = (g_iCunitErrLineNo == 0) ? __LINE__ : g_iCunitErrLineNo;    \
-            g_iCunitErrCode = (g_iCunitErrCode == 0) ? (iiUINT32)retcode : g_iCunitErrCode; \
-            goto label;                                                                     \
-        }                                                                                   \
-    } while (0)
-#endif
 
 #ifdef LOSCFG_KERNEL_SMP
 extern SPIN_LOCK_S g_testSuitSpin;

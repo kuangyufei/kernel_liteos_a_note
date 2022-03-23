@@ -41,32 +41,3 @@ sources_smoke = []
 sources_pressure = []
 
 sources_full = []
-
-# jffs module
-if (LOSCFG_USER_TEST_FS_JFFS == true) {
-  import("./jffs/config.gni")
-  common_include_dirs += jffs_include_dirs
-  sources_entry += jffs_sources_entry
-  sources_smoke += jffs_sources_smoke
-  sources_pressure += jffs_sources_pressure
-  sources_full += jffs_sources_full
-}
-
-# proc module
-if (LOSCFG_USER_TEST_FS_PROC == true) {
-  import("./proc/config.gni")
-  common_include_dirs += proc_include_dirs
-  sources_entry += proc_sources_entry
-  sources_smoke += proc_sources_smoke
-  sources_full += proc_sources_full
-}
-
-# vfat module
-if (LOSCFG_USER_TEST_FS_VFAT == true) {
-  import("./vfat/config.gni")
-  common_include_dirs += vfat_include_dirs
-  sources_entry += vfat_sources_entry
-  sources_smoke += vfat_sources_smoke
-  sources_pressure += vfat_sources_pressure
-  sources_full += vfat_sources_full
-}

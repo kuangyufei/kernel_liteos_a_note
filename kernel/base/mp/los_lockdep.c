@@ -165,7 +165,7 @@ STATIC VOID OsLockDepDumpLock(const LosTaskCB *task, const SPIN_LOCK_S *lock,
     }
 }
 
-STATIC BOOL OsLockDepCheckDependancy(const LosTaskCB *current, LosTaskCB *lockOwner)
+STATIC BOOL OsLockDepCheckDependency(const LosTaskCB *current, LosTaskCB *lockOwner)
 {
     BOOL checkResult = TRUE;
     SPIN_LOCK_S *lockTemp = NULL;
@@ -217,7 +217,7 @@ VOID OsLockDepCheckIn(SPIN_LOCK_S *lock)
         goto OUT;
     }
 
-    if (OsLockDepCheckDependancy(current, lockOwner) != TRUE) {
+    if (OsLockDepCheckDependency(current, lockOwner) != TRUE) {
         checkResult = LOCKDEP_ERR_DEAD_LOCK;
         goto OUT;
     }

@@ -46,7 +46,7 @@ void RandomOperationsInit(const RandomOperations *r)//随机数操作集初始�
     if (r != NULL) {
         (void)memcpy_s(&g_randomOp, sizeof(RandomOperations), r, sizeof(RandomOperations));
     } else {
-        PRINT_ERR("param is invalid\n", __FUNCTION__, __LINE__);
+        PRINT_ERR("%s %d param is invalid\n", __FUNCTION__, __LINE__);
     }
     return;
 }

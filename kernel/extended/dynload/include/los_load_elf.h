@@ -45,7 +45,6 @@
 #ifdef LOSCFG_DRIVERS_TZDRIVER
 #include "fs/file.h"
 #endif
-#include "fs/file.h"
 #include "unistd.h"
 
 #ifdef __cplusplus
@@ -68,7 +67,7 @@ extern "C" {
 #define FILE_PATH_MIN                       2
 #endif
 
-#define USER_STACK_SIZE                     0x100000	///< 用户空间栈大小 1M
+#define USER_STACK_SIZE                     0x100000	///< 用户态空间栈大小1M 
 #define USER_PARAM_BYTE_MAX                 0x1000		///< 4K
 #define USER_STACK_TOP_MAX                  USER_ASPACE_TOP_MAX	///< 用户空间栈顶位置
 
@@ -110,7 +109,7 @@ typedef struct {
     CHAR *const  *envp;		///< 环境变量数组
     UINTPTR      stackTop;	///< 栈底位置,递减满栈下,stackTop是高地址位
     UINTPTR      stackTopMax;///< 栈最大上限
-    UINTPTR      stackBase;	///< 栈顶位置
+    UINTPTR      stackBase;	///< 栈顶位置,栈基地址
     UINTPTR      stackParamBase;///< 栈参数空间,放置启动ELF时的外部参数,大小为 USER_PARAM_BYTE_MAX 4K
     UINT32       stackSize;	///< 栈大小
     INT32        stackProt;	///< LD_PT_GNU_STACK栈的权限 ,例如(RW)

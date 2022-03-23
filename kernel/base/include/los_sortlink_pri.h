@@ -79,21 +79,34 @@ STATIC INLINE UINT64 OsGetSortLinkNextExpireTime(SortLinkAttribute *sortHeader, 
     LOS_DL_LIST *head = &sortHeader->sortLink;
     LOS_DL_LIST *list = head->pstNext;
 
+    LOS_SpinLock(&sortHeader->spinLock);
     if (LOS_ListEmpty(head)) {
+        LOS_SpinUnlock(&sortHeader->spinLock);
         return OS_SORT_LINK_INVALID_TIME - tickPrecision;
     }
 
     SortLinkList *listSorted = LOS_DL_LIST_ENTRY(list, SortLinkList, sortLinkNode);
     if (listSorted->responseTime <= (startTime + tickPrecision)) {
+        LOS_SpinUnlock(&sortHeader->spinLock);
         return startTime + tickPrecision;
     }
 
+    LOS_SpinUnlock(&sortHeader->spinLock);
     return listSorted->responseTime;
 }
 
-STATIC INLINE UINT32 OsGetSortLinkNodeNum(SortLinkAttribute *head)
+STATIC INLINE UINT32 OsGetSortLinkNodeNum(const SortLinkAttribute *head)
 {
     return head->nodeNum;
+}
+
+STATIC INLINE UINT16 OsGetSortLinkNodeCpuid(const SortLinkList *node)
+{
+#ifdef LOSCFG_KERNEL_SMP
+    return node->cpuid;
+#else
+    return 0;
+#endif
 }
 
 VOID OsSortLinkInit(SortLinkAttribute *sortLinkHeader);
@@ -101,6 +114,7 @@ VOID OsAdd2SortLink(SortLinkAttribute *head, SortLinkList *node, UINT64 response
 VOID OsDeleteFromSortLink(SortLinkAttribute *head, SortLinkList *node);
 UINT64 OsSortLinkGetTargetExpireTime(UINT64 currTime, const SortLinkList *targetSortList);
 UINT64 OsSortLinkGetNextExpireTime(UINT64 currTime, const SortLinkAttribute *sortLinkHeader);
+UINT32 OsSortLinkAdjustNodeResponseTime(SortLinkAttribute *head, SortLinkList *node, UINT64 responseTime);
 
 #ifdef __cplusplus
 #if __cplusplus

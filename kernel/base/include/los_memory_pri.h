@@ -54,7 +54,7 @@ extern BOOL OsMemIsHeapNode(const VOID *ptr);
 extern UINT32 OsShellCmdMemCheck(INT32 argc, const CHAR *argv[]);
 
 /* memory expand size at least 1/8 of pool size if we can */
-#define MEM_EXPAND_SIZE(poolSize)     (poolSize >> 3)
+#define MEM_EXPAND_SIZE(poolSize)     ((poolSize) >> 3)
 
 #ifdef __cplusplus
 #if __cplusplus

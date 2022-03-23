@@ -161,9 +161,9 @@ STATIC UINT32 g_hwiFormCnt[LOSCFG_KERNEL_CORE_NUM][OS_HWI_MAX_NUM] = {0};
  * @param index 
  * @return UINT32 
  */
-UINT32 OsGetHwiFormCnt(UINT16 cpuId, UINT32 index)
+UINT32 OsGetHwiFormCnt(UINT16 cpuid, UINT32 index)
 {
-    return g_hwiFormCnt[cpuId][index];
+    return g_hwiFormCnt[cpuid][index];
 }
 
 CHAR *OsGetHwiFormName(UINT32 index)//获取某个中断的名称
@@ -181,14 +181,14 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
 {
     HwiHandleForm *hwiForm = NULL;
     UINT32 *intCnt = NULL;
-    UINT16 cpuId = ArchCurrCpuid();
+    UINT16 cpuid = ArchCurrCpuid();
 
     /* Must keep the operation at the beginning of the interface */
-    intCnt = &g_intCount[cpuId];//当前CPU的中断总数量 ++
+    intCnt = &g_intCount[cpuid];//当前CPU的中断总数量 ++
     *intCnt = *intCnt + 1;//@note_why 这里没看明白为什么要 +1
 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ //开启查询系统CPU的占用率的中断
-    OsCpupIrqStart(cpuId);
+    OsCpupIrqStart(cpuid);
 #endif
     OsSchedIrqStartTime();
     OsHookCall(LOS_HOOK_TYPE_ISR_ENTER, intNum);
@@ -212,13 +212,13 @@ VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
 #ifndef LOSCFG_NO_SHARED_IRQ
     }
 #endif
-    ++g_hwiFormCnt[cpuId][intNum];
+    ++g_hwiFormCnt[cpuid][intNum];
 
     OsHookCall(LOS_HOOK_TYPE_ISR_EXIT, intNum);
     OsSchedIrqUpdateUsedTime();
 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
-    OsCpupIrqEnd(cpuId, intNum);
+    OsCpupIrqEnd(cpuid, intNum);
 #endif
     /* Must keep the operation at the end of the interface */
     *intCnt = *intCnt - 1;

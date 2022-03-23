@@ -55,6 +55,8 @@ static UINT32 Testcase(VOID)
         fclose(putwcFile);
 
         putwcFile = fopen(pathname, "r");
+        ICUNIT_GOTO_NOT_EQUAL(putwcFile, NULL, putwcFile, EXIT);
+
         tarWc = getwc(putwcFile);
         ICUNIT_GOTO_EQUAL(tarWc, L'H', tarWc, EXIT);
 

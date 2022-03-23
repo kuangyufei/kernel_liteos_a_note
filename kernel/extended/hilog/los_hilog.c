@@ -148,7 +148,7 @@ static int HiLogBufferCopy(unsigned char *dst, unsigned dstLen, const unsigned c
 ///读取ring buffer
 static int HiLogReadRingBuffer(unsigned char *buffer, size_t bufLen)
 {
-    size_t retval;
+    int retval;
     size_t bufLeft = HILOG_BUFFER - g_hiLogDev.headOffset;
     if (bufLeft > bufLen) {//计算出读取方向
         retval = HiLogBufferCopy(buffer, bufLen, HiLogBufferHead(), bufLen);
@@ -165,7 +165,7 @@ static int HiLogReadRingBuffer(unsigned char *buffer, size_t bufLen)
 
 static ssize_t HiLogRead(struct file *filep, char *buffer, size_t bufLen)
 {
-    size_t retval;
+    int retval;
     struct HiLogEntry header;
 
     (void)filep;
@@ -210,7 +210,7 @@ out:
         g_hiLogDev.count = 0;
     }
     (VOID)LOS_MuxRelease(&g_hiLogDev.mtx);//临界区操作结束
-    return retval;
+    return (ssize_t)retval;
 }
 ///写入 RingBuffer环形缓冲，也叫 circleBuffer
 static int HiLogWriteRingBuffer(unsigned char *buffer, size_t bufLen)

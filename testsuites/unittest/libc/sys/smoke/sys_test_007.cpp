@@ -43,7 +43,7 @@ static UINT32 TestCase(VOID)
     ICUNIT_GOTO_NOT_EQUAL(p, NULL, p, EXIT);
 
     x = drand48();
-    printf("x= %d\n", x);
+    printf("x= %lf\n", x);
 
     return 0;
 EXIT:

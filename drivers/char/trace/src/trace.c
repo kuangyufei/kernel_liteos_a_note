@@ -103,7 +103,7 @@ static ssize_t TraceWrite(struct file *filep, const char *buffer, size_t buflen)
     if (info == NULL) {
         return -ENOMEM;
     }
-    memset_s(info, infoLen, 0, infoLen);
+    (void)memset_s(info, infoLen, 0, infoLen);
 
     ret = LOS_CopyToKernel(info, infoLen, buffer, buflen);
     if (ret != 0) {

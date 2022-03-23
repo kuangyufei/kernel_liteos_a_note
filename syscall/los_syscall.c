@@ -83,8 +83,6 @@
 #include "sys/prctl.h"
 #include "sys/socket.h"
 #include "sys/utsname.h"
-#include "poll.h"
-#include "sys/uio.h"
 #ifdef LOSCFG_SHELL
 #include "shmsg.h"
 #endif

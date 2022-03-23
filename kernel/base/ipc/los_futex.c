@@ -581,7 +581,7 @@ STATIC INT32 OsFutexWaitParamCheck(const UINT32 *userVaddr, UINT32 flags, UINT32
     }
 
     if (!absTime) {
-        return LOS_EINVAL;
+        return LOS_ETIMEDOUT;
     }
 
     return LOS_OK;

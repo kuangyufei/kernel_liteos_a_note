@@ -51,13 +51,17 @@ static UINT32 Testcase(VOID)
     ICUNIT_ASSERT_EQUAL(rc, 0, rc);
 
     rc = pthread_cond_init(&cond2, NULL);
-    ICUNIT_ASSERT_EQUAL(rc, 0, rc);
+    ICUNIT_GOTO_EQUAL(rc, 0, rc, EXIT);
 
     rc = pthread_cond_destroy(&cond1);
-    ICUNIT_ASSERT_EQUAL(rc, ENOERR, rc);
+    ICUNIT_GOTO_EQUAL(rc, ENOERR, rc, EXIT);
     rc = pthread_cond_destroy(&cond2);
-    ICUNIT_ASSERT_EQUAL(rc, ENOERR, rc);
+    ICUNIT_GOTO_EQUAL(rc, ENOERR, rc, EXIT);
+
     return PTHREAD_NO_ERROR;
+EXIT:
+    (void)pthread_cond_destroy(&cond1);
+    (void)pthread_cond_destroy(&cond2);
 }
 
 VOID ItPosixPthread069(VOID) // IT_Layer_ModuleORFeature_No

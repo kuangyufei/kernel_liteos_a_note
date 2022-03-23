@@ -51,37 +51,6 @@ HWTEST_F(MemVmTest, ItTestMmap001, TestSize.Level0)
 {
     ItTestMmap001();
 }
-#if 0 // need tmpfs
-/* *
- * @tc.name: it_test_mmap_002
- * @tc.desc: function for MemVmTest
- * @tc.type: FUNC
- */
-HWTEST_F(MemVmTest, ItTestMmap002, TestSize.Level0)
-{
-    ItTestMmap002();
-}
-
-/* *
- * @tc.name: it_test_mmap_003
- * @tc.desc: function for MemVmTest
- * @tc.type: FUNC
- */
-HWTEST_F(MemVmTest, ItTestMmap003, TestSize.Level0)
-{
-    ItTestMmap003();
-}
-
-/* *
- * @tc.name: it_test_mmap_004
- * @tc.desc: function for MemVmTest
- * @tc.type: FUNC
- */
-HWTEST_F(MemVmTest, ItTestMmap004, TestSize.Level0)
-{
-    ItTestMmap004();
-}
-#endif
 
 /* *
  * @tc.name: it_test_mmap_005

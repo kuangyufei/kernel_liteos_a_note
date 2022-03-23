@@ -175,7 +175,7 @@ STATIC VOID OsTraceInfoEventTitle(VOID)
 
     PRINTK("Index   Time(cycles)      EventType      CurPid   CurTask   Identity      ");
 #ifdef LOSCFG_TRACE_FRAME_CORE_MSG
-    PRINTK("cpuId    hwiActive    taskLockCnt    ");
+    PRINTK("cpuid    hwiActive    taskLockCnt    ");
 #endif
 #ifdef LOSCFG_TRACE_FRAME_EVENT_COUNT
     PRINTK("eventCount    ");
@@ -210,7 +210,7 @@ STATIC VOID OsTraceInfoEventData(VOID)
          */
         taskLockCnt -= 1;
 #endif
-        PRINTK("%-11u %-11u %-11u", frame->core.cpuId, frame->core.hwiActive, taskLockCnt);
+        PRINTK("%-11u %-11u %-11u", frame->core.cpuid, frame->core.hwiActive, taskLockCnt);
 #endif
 #ifdef LOSCFG_TRACE_FRAME_EVENT_COUNT
         PRINTK("%-11u", frame->eventCount);

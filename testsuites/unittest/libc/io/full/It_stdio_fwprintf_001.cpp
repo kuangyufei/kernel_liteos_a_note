@@ -60,6 +60,8 @@ static UINT32 Testcase(VOID)
         fclose(testFile);
 
         testFile = fopen(pathname, "r");
+        ICUNIT_GOTO_NOT_EQUAL(testFile, NULL, testFile, EXIT);
+
         p = fgetws(tarStr, 16, testFile); // 16， read size,total write and '\0'
         nRet = wcscmp(L"hello world 666", tarStr);
         ICUNIT_GOTO_EQUAL(nRet, 0, nRet, EXIT);

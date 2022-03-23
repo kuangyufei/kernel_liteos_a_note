@@ -48,8 +48,7 @@ static VOID *PthreadF01(void *argument)
     ret = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldstate);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     ICUNIT_GOTO_EQUAL(oldstate, PTHREAD_CANCEL_DEFERRED, oldstate, EXIT);
-    LOS_TaskDelay(2); // 2, delay for Timing control.
-    LOS_TaskDelay(2); // 2, delay for Timing control.
+    LOS_TaskDelay(4); // 4, delay for Timing control.
 
 EXIT:
     return (void *)9; // 9, here set value about the return status.

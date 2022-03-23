@@ -42,6 +42,8 @@ static int TestCase(void)
     wchar_t *p, *pnew;
 
     pnew = (wchar_t*)malloc(sizeof(wchar_t) * (wcslen(res) + wcslen(res1)));
+    ICUNIT_ASSERT_NOT_EQUAL(pnew, NULL, pnew);
+
     p = wmempcpy(pnew, res, wcslen(res));
     wmempcpy(p, res1, wcslen(res1));
     flag = wmemcmp(pnew, res2, wcslen(res));

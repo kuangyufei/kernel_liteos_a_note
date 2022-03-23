@@ -45,8 +45,6 @@ static void TaskF02(void const * argument)
     ICUNIT_GOTO_EQUAL(g_timesliceTestCount, 1, ret, EXIT);
     g_timesliceTestCount++;
     return;
-
-EXIT:;
 }
 
 static void SwtmrF01(UINT32 *arg)

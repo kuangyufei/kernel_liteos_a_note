@@ -132,7 +132,7 @@ VOID OsTraceDataSend(UINT8 type, UINT16 len, UINT8 *data)
     UINT32 intSave;
     UINT8 outBuf[LOSCFG_TRACE_TLV_BUF_SIZE] = {0};
 
-    if ((type > TRACE_MSG_MAX) || (len > LOSCFG_TRACE_TLV_BUF_SIZE)) {
+    if ((type >= TRACE_MSG_MAX) || (len > LOSCFG_TRACE_TLV_BUF_SIZE)) {
         return;
     }
 

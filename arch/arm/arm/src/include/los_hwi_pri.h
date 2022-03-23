@@ -55,8 +55,8 @@ extern "C" {
 #define HWI_IS_REGISTED(num)             ((&g_hwiForm[num])->pstNext != NULL)
 #endif
 extern VOID OsHwiInit(VOID);
-extern VOID OsIncHwiFormCnt(UINT16 cpuId, UINT32 index);
-extern UINT32 OsGetHwiFormCnt(UINT16 cpuId, UINT32 index);
+extern VOID OsIncHwiFormCnt(UINT16 cpuid, UINT32 index);
+extern UINT32 OsGetHwiFormCnt(UINT16 cpuid, UINT32 index);
 extern CHAR *OsGetHwiFormName(UINT32 index);
 extern VOID OsInterrupt(UINT32 intNum);
 extern VOID OsSyscallHandleInit(VOID);

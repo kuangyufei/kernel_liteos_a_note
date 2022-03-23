@@ -198,7 +198,7 @@
 
 ### 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [gitcode](https://gitcode.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
-* `2022/03/17` -- 新增各CPU核自主管理中断
+* `2022/03/23` -- 新增各CPU核自主管理中断, 定时器模块较大调整
 * `2022/02/18` -- 官方无代码更新, 只有测试用例的完善
 * `2022/01/20` -- 同步官方代码,本次官方对测试用例和MMU做了较大调整
 * `2021/12/20` -- 增加`LMS`模块，完善`PM，Fat Cache`

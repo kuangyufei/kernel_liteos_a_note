@@ -46,7 +46,7 @@ UINT32 TestGetSingleHwiCpup(UINT32 hwi, UINT32 mode)
 {
     UINT32 size;
     UINT32 tempHwi;
-    if (hwi < 0 || hwi > OS_HWI_MAX_NUM) {
+    if (hwi > OS_HWI_MAX_NUM) {
         return -1;
     }
 

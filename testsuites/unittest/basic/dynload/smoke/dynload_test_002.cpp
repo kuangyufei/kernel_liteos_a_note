@@ -56,8 +56,8 @@ static int Testcase(void)
     ICUNIT_ASSERT_NOT_EQUAL(handle, NULL, handle);
 
     func = (int (*)(int))dlsym(handle, SYMBOL_TO_FIND);
-    ICUNIT_ASSERT_NOT_EQUAL(func, NULL, func);
-    ICUNIT_ASSERT_EQUAL(func, SYMBOL_TO_MATCH, func);
+    ICUNIT_GOTO_NOT_EQUAL(func, NULL, func, EXIT);
+    ICUNIT_GOTO_EQUAL(func, SYMBOL_TO_MATCH, func, EXIT);
 
     ret = dlclose(handle);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
@@ -66,11 +66,15 @@ static int Testcase(void)
     ICUNIT_ASSERT_NOT_EQUAL(handle, NULL, handle);
 
     func = (int (*)(int))dlsym(handle, SYMBOL_TO_FIND);
-    ICUNIT_ASSERT_NOT_EQUAL(func, NULL, func);
+    ICUNIT_GOTO_NOT_EQUAL(func, NULL, func, EXIT);
 
     ret = dlclose(handle);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
+    return 0;
+
+EXIT:
+    dlclose(handle);
     return 0;
 }
 

@@ -50,14 +50,16 @@ static void BufReadTest(void *buf, int start, int end)
 
 static void LmsMallocTest(void)
 {
+#define TEST_SIZE 16
     printf("\n-------- LmsMallocTest Start --------\n");
-    char *buf = (char *)malloc(16);
-    printf("[LmsMallocTest] malloc addr:%p    size:%d\n", buf, 16);
-
-    printf("[LmsMallocTest] read overflow & underflow error should be triggered, read range[-1,16]\n");
-    BufReadTest(buf, -1, 16);
-    printf("[LmsMallocTest] write overflow error should be triggered, write range[0,16]\n");
-    BufWriteTest(buf, 0, 16);
+    char *buf = (char *)malloc(TEST_SIZE);
+    if (buf == NULL) {
+        return;
+    }
+    printf("[LmsMallocTest] read overflow & underflow error should be triggered, read range[-1, TEST_SIZE]\n");
+    BufReadTest(buf, -1, TEST_SIZE);
+    printf("[LmsMallocTest] write overflow error should be triggered, write range[0, TEST_SIZE]\n");
+    BufWriteTest(buf, 0, TEST_SIZE);
 
     free(buf);
     printf("\n-------- LmsMallocTest End --------\n");
@@ -65,51 +67,61 @@ static void LmsMallocTest(void)
 
 static void LmsReallocTest(void)
 {
+#define TEST_SIZE     64
+#define TEST_SIZE_MIN 32
     printf("\n-------- LmsReallocTest Start --------\n");
-    char *buf = (char *)malloc(64);
-    printf("[LmsReallocTest] malloc addr:%p size:%d\n", buf, 64);
-    printf("[LmsReallocTest] read overflow & underflow error should be triggered, read range[-1,64]\n");
-    BufReadTest(buf, -1, 64);
-    char *buf1 = (char *)realloc(buf, 32);
+    char *buf = (char *)malloc(TEST_SIZE);
+    printf("[LmsReallocTest] read overflow & underflow error should be triggered, read range[-1, TEST_SIZE]\n");
+    BufReadTest(buf, -1, TEST_SIZE);
+    char *buf1 = (char *)realloc(buf, TEST_SIZE_MIN);
     if (buf1 == NULL) {
         free(buf);
         return;
     }
     buf = NULL;
-    printf("[LmsReallocTest] realloc addr:%p size:%d\n", buf1, 32);
-    printf("[LmsReallocTest] read overflow & underflow error should be triggered, read range[-1,32]\n");
-    BufReadTest(buf1, -1, 32);
+    printf("[LmsReallocTest] read overflow & underflow error should be triggered, read range[-1, TEST_SIZE_MIN]\n");
+    BufReadTest(buf1, -1, TEST_SIZE_MIN);
     free(buf1);
     printf("\n-------- LmsReallocTest End --------\n");
 }
 
 static void LmsCallocTest(void)
 {
+#define TEST_SIZE 16
     printf("\n-------- LmsCallocTest Start --------\n");
-    char *buf = (char *)calloc(4, 4);
-    printf("[LmsCallocTest] calloc addr:%p size:%d\n", buf, 16);
-    printf("[LmsCallocTest] read overflow & underflow error should be triggered, read range[-1,16]\n");
-    BufReadTest(buf, -1, 16);
+    char *buf = (char *)calloc(4, 4); /* 4: test size */
+    if (buf == NULL) {
+        return;
+    }
+    printf("[LmsCallocTest] read overflow & underflow error should be triggered, read range[-1, TEST_SIZE]\n");
+    BufReadTest(buf, -1, TEST_SIZE);
     free(buf);
     printf("\n-------- LmsCallocTest End --------\n");
 }
 
 static void LmsVallocTest(void)
 {
+#define TEST_SIZE 4096
     printf("\n-------- LmsVallocTest Start --------\n");
-    char *buf = (char *)valloc(4096);
-    printf("[LmsVallocTest] valloc addr:%p size:%d\n", buf, 4096);
-    printf("[LmsVallocTest] read overflow & underflow error should be triggered, read range[-1,4096]\n");
-    BufReadTest(buf, -1, 4096);
+    char *buf = (char *)valloc(TEST_SIZE);
+    if (buf == NULL) {
+        return;
+    }
+    printf("[LmsVallocTest] read overflow & underflow error should be triggered, read range[-1, TEST_SIZE]\n");
+    BufReadTest(buf, -1, TEST_SIZE);
     free(buf);
     printf("\n-------- LmsVallocTest End --------\n");
 }
 
 static void LmsAlignedAllocTest(void)
 {
+#define TEST_ALIGN_SIZE 64
+#define TEST_SIZE       128
     printf("\n-------- LmsAlignedAllocTest Start --------\n");
-    char *buf = (char *)aligned_alloc(64, 128);
-    printf("[LmsAlignedAllocTest] aligned_alloc boundsize:%d addr:%p size:%d\n", 64, buf, 128);
+    char *buf = (char *)aligned_alloc(TEST_ALIGN_SIZE, TEST_SIZE);
+    if (buf == NULL) {
+        return;
+    }
     printf("[LmsAlignedAllocTest] read overflow & underflow error should be triggered, read range[-1,128]\n");
     BufReadTest(buf, -1, 128);
     free(buf);
@@ -118,44 +130,55 @@ static void LmsAlignedAllocTest(void)
 
 static void LmsMemsetTest(void)
 {
+#define TEST_SIZE 32
     printf("\n-------- LmsMemsetTest Start --------\n");
-    char *buf = (char *)malloc(32);
-    printf("[LmsMemsetTest] malloc addr:%p size:%d\n", buf, 32);
-    printf("[LmsMemsetTest] memset overflow & underflow error should be triggered, memset size:%d\n", 33);
-    memset(buf, 0, 33);
+    char *buf = (char *)malloc(TEST_SIZE);
+    if (buf == NULL) {
+        return;
+    }
+    printf("[LmsMemsetTest] memset overflow & underflow error should be triggered, memset size:%d\n", TEST_SIZE + 1);
+    memset(buf, 0, TEST_SIZE + 1);
     free(buf);
     printf("\n-------- LmsMemsetTest End --------\n");
 }
 
 static void LmsMemcpyTest(void)
 {
+#define TEST_SIZE 20
     printf("\n-------- LmsMemcpyTest Start --------\n");
-    char *buf = (char *)malloc(20);
-    printf("[LmsMemcpyTest] malloc addr:%p size:%d\n", buf, 20);
-    char localBuf[32] = {0};
-    printf("[LmsMemcpyTest] memcpy overflow error should be triggered, memcpy size:%d\n", 21);
-    memcpy(buf, localBuf, 21);
+    char *buf = (char *)malloc(TEST_SIZE);
+    if (buf == NULL) {
+        return;
+    }
+    char localBuf[32] = {0}; /* 32: test size */
+    printf("[LmsMemcpyTest] memcpy overflow error should be triggered, memcpy size:%d\n", TEST_SIZE + 1);
+    memcpy(buf, localBuf, TEST_SIZE + 1);
     free(buf);
     printf("\n-------- LmsMemcpyTest End --------\n");
 }
 
 static void LmsMemmoveTest(void)
 {
+#define TEST_SIZE 20
     printf("\n-------- LmsMemmoveTest Start --------\n");
-    char *buf = (char *)malloc(20);
-    printf("[LmsMemmoveTest] malloc addr:%p size:%d\n", buf, 20);
-    printf("[LmsMemmoveTest] memmove overflow error should be triggered, dest addr:%p src addr:%p size:%d\n", buf + 12,
-        buf, 10);
-    memmove(buf + 12, buf, 10);
+    char *buf = (char *)malloc(TEST_SIZE);
+    if (buf == NULL) {
+        return;
+    }
+    printf("[LmsMemmoveTest] memmove overflow error should be triggered\n");
+    memmove(buf + 12, buf, 10); /* 12 and 10: test size */
     free(buf);
     printf("\n-------- LmsMemmoveTest End --------\n");
 }
 
 static void LmsStrcpyTest(void)
 {
+#define TEST_SIZE 16
     printf("\n-------- LmsStrcpyTest Start --------\n");
-    char *buf = (char *)malloc(16);
-    printf("[LmsStrcpyTest] malloc addr:%p size:%d\n", buf, 16);
+    char *buf = (char *)malloc(TEST_SIZE);
+    if (buf == NULL) {
+        return;
+    }
     char *testStr = "bbbbbbbbbbbbbbbbb";
     printf("[LmsStrcpyTest] strcpy overflow error should be triggered, src string buf size:%d\n", strlen(testStr) + 1);
     strcpy(buf, testStr);
@@ -165,9 +188,12 @@ static void LmsStrcpyTest(void)
 
 static void LmsStrcatTest(void)
 {
+#define TEST_SIZE 16
     printf("\n-------- LmsStrcatTest Start --------\n");
-    char *buf = (char *)malloc(16);
-    printf("[LmsStrcatTest] malloc addr:%p size:%d\n", buf, 16);
+    char *buf = (char *)malloc(TEST_SIZE);
+    if (buf == NULL) {
+        return;
+    }
     buf[0] = 'a';
     buf[1] = 'b';
     buf[2] = 0;
@@ -182,22 +208,30 @@ static void LmsStrcatTest(void)
 
 static void LmsFreeTest(void)
 {
+#define TEST_SIZE 16
     printf("\n-------- LmsFreeTest Start --------\n");
-    char *buf = (char *)malloc(16);
-    printf("[LmsFreeTest] malloc addr:%p size:%d\n", buf, 16);
-    printf("[LmsFreeTest] free addr:%p size:%d\n", buf, 16);
+    char *buf = (char *)malloc(TEST_SIZE);
+    if (buf == NULL) {
+        return;
+    }
+    printf("[LmsFreeTest] free size:%d\n", TEST_SIZE);
     free(buf);
-    printf("[LmsFreeTest] Use after free error should be triggered, read addr:%p range[1,1]\n", buf);
+    printf("[LmsFreeTest] Use after free error should be triggered, read range[1,1]\n");
     BufReadTest(buf, 1, 1);
-    printf("[LmsFreeTest] double free error should be triggered, free addr:%p\n", buf);
+    printf("[LmsFreeTest] double free error should be triggered\n");
     free(buf);
     printf("\n-------- LmsFreeTest End --------\n");
 }
 
-int main(int argc, char * const * argv)
+int main(int argc, char * const *argv)
 {
+    (void)argc;
+    (void)argv;
     printf("\n############### Lms Test start ###############\n");
-    char *tmp = (char *)malloc(5000);
+    char *tmp = (char *)malloc(5000); /* 5000: test mem size */
+    if (tmp == NULL) {
+        return;
+    }
     LmsMallocTest();
     LmsReallocTest();
     LmsCallocTest();

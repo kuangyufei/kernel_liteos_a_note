@@ -37,7 +37,7 @@ static UINT32 Testcase(VOID)
     unsigned int nPos;
     int ret;
     char pathname[50]; // 50, enough space.
-    strncpy(pathname, g_ioTestPath, sizeof(pathname));
+    (void)strncpy_s(pathname, sizeof(pathname), g_ioTestPath, sizeof(pathname));
     char *filename = "/crt_getc_unlocked_test1";
     FILE *testFile = NULL;
 

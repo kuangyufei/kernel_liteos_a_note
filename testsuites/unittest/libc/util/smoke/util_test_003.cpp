@@ -48,6 +48,9 @@ static UINT32 TestCase(VOID)
         NULL
     };
     CHAR *buf = (char *)malloc(TEST_BUF_SIZE);
+    if (buf == NULL) {
+        return -1;
+    }
     CHAR *a = TEST_STR;
     CHAR *value = NULL;
     CHAR *subopts = NULL;
