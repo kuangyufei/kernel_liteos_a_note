@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 官方源码同步 定时器模块较大调整
+git commit -m  ' 更正动态内存(tlfs)不当的注解
     百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)

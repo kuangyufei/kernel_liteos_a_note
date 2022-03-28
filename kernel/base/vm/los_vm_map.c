@@ -592,7 +592,7 @@ LosVmMapRegion *LOS_RegionAlloc(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len, 
     if (vaddr == 0) {//如果地址是0，根据线性区管理的实际情况,自动创建虚拟地址，    这是创建新映射的最便捷的方法。
         rstVaddr = OsAllocRange(vmSpace, len);
     } else {
-        /* if it is already mmapped here, we unmmap it */
+        /* if it is already mmapped here, we unmmap it | 如果已经被映射了, 则解除映射关系*/
         rstVaddr = OsAllocSpecificRange(vmSpace, vaddr, len, regionFlags);//创建包含指定虚拟地址的线性区,       rstVaddr !=        vaddr || rstVaddr == vaddr
         if (rstVaddr == 0) {
             VM_ERR("alloc specific range va: %#x, len: %#x failed", vaddr, len);

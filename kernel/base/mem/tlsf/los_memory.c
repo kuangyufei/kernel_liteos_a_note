@@ -116,7 +116,7 @@ VOID *g_poolHead = NULL;	///内存池头,由它牵引多个内存池
 /* Supposing a Second Level Index: SLI = 3. */
 #define OS_MEM_SLI                      3 ///< 二级小区间级数,
 /* Giving 1 free list for each small bucket: 4, 8, 12, up to 124. */
-#define OS_MEM_SMALL_BUCKET_COUNT       31 ///< 小桶的偏移单位 从 4 ~ 124 ,共31级
+#define OS_MEM_SMALL_BUCKET_COUNT       31 ///< 小桶的偏移单位 从 4 ~ 124 ,共32级
 #define OS_MEM_SMALL_BUCKET_MAX_SIZE    128 ///< 小桶的最大数量 
 /* Giving OS_MEM_FREE_LIST_NUM free lists for each large bucket.  */
 #define OS_MEM_LARGE_BUCKET_COUNT       24	/// 为每个大存储桶空闲列表数量 大桶范围: [2^7, 2^31] ,每个小区间有分为 2^3个小区间
@@ -125,10 +125,10 @@ VOID *g_poolHead = NULL;	///内存池头,由它牵引多个内存池
 #define OS_MEM_LARGE_START_BUCKET       7 /// 大桶的开始下标
 
 /* The count of free list. */
-#define OS_MEM_FREE_LIST_COUNT  (OS_MEM_SMALL_BUCKET_COUNT + (OS_MEM_LARGE_BUCKET_COUNT << OS_MEM_SLI)) ///< 总链表的数量 31 + 24 * 8 = 223  
+#define OS_MEM_FREE_LIST_COUNT  (OS_MEM_SMALL_BUCKET_COUNT + (OS_MEM_LARGE_BUCKET_COUNT << OS_MEM_SLI)) ///< 总链表的数量 32 + 24 * 8 = 224  
 /* The bitmap is used to indicate whether the free list is empty, 1: not empty, 0: empty. */
-#define OS_MEM_BITMAP_WORDS     ((OS_MEM_FREE_LIST_COUNT >> 5) + 1) ///< 223 >> 5 + 1 = 7 ,为什么要右移 5 因为 2^5 = 32 是一个32位整型的大小 
-								///< 而 32 * 7 = 224 ,也就是说用 int[7]当位图就能表示完 223个链表 ,此处,一定要理解好,因为这是理解 TLSF 算法的关键. 
+#define OS_MEM_BITMAP_WORDS     ((OS_MEM_FREE_LIST_COUNT >> 5) + 1) ///< 224 >> 5 + 1 = 7 ,为什么要右移 5 因为 2^5 = 32 是一个32位整型的大小 
+								///< 而 32 * 7 = 224 ,也就是说用 int[7]当位图就能表示完 224个链表 ,此处,一定要理解好,因为这是理解 TLSF 算法的关键. 
 #define OS_MEM_BITMAP_MASK 0x1FU ///< 因为一个int型为 32位, 2^5 = 32,所以此处 0x1FU = 5个1 足以. 
 
 /* Used to find the first bit of 1 in bitmap. */
@@ -149,7 +149,7 @@ STATIC INLINE UINT32 OsMemLog2(UINT32 size)
     return OsMemFLS(size);
 }
 
-/* Get the first level: f = log2(size). */
+/* Get the first level: f = log2(size). | 获取第一级*/
 STATIC INLINE UINT32 OsMemFlGet(UINT32 size)
 {
     if (size < OS_MEM_SMALL_BUCKET_MAX_SIZE) {
@@ -158,7 +158,7 @@ STATIC INLINE UINT32 OsMemFlGet(UINT32 size)
     return OsMemLog2(size);
 }
 
-/* Get the second level: s = (size - 2^f) * 2^SLI / 2^f. */
+/* Get the second level: s = (size - 2^f) * 2^SLI / 2^f. | 获取第二级 */
 STATIC INLINE UINT32 OsMemSlGet(UINT32 size, UINT32 fl)
 {
     return (((size << OS_MEM_SLI) >> fl) - OS_MEM_FREE_LIST_NUM);
@@ -168,16 +168,16 @@ STATIC INLINE UINT32 OsMemSlGet(UINT32 size, UINT32 fl)
 /// 内存池节点
 struct OsMemNodeHead {
     UINT32 magic;	///< 魔法数字 0xABCDDCBA
-    union {
-        struct OsMemNodeHead *prev; /* The prev is used for current node points to the previous node */
-        struct OsMemNodeHead *next; /* The next is used for last node points to the expand node */
+    union {//注意这里的前后指向的是连续的地址节点,用于分割和合并
+        struct OsMemNodeHead *prev; /* The prev is used for current node points to the previous node | prev 用于当前节点指向前一个节点*/
+        struct OsMemNodeHead *next; /* The next is used for last node points to the expand node | next 用于最后一个节点指向展开节点*/
     } ptr;
 #ifdef LOSCFG_MEM_LEAKCHECK //内存泄漏检测
-    UINTPTR linkReg[LOS_RECORD_LR_CNT];///< 存放地址,用于检测
+    UINTPTR linkReg[LOS_RECORD_LR_CNT];///< 存放左右节点地址,用于检测
 #endif
     UINT32 sizeAndFlag;	///< 数据域大小
 };
-/// 已使用内存节点
+/// 已使用内存池节点
 struct OsMemUsedNodeHead {
     struct OsMemNodeHead header;///< 已被使用节点
 #if OS_MEM_FREE_BY_TASKID
@@ -187,8 +187,8 @@ struct OsMemUsedNodeHead {
 /// 内存池空闲节点
 struct OsMemFreeNodeHead {
     struct OsMemNodeHead header;	///< 内存池节点
-    struct OsMemFreeNodeHead *prev;	///< 前驱节点
-    struct OsMemFreeNodeHead *next;	///< 后继节点
+    struct OsMemFreeNodeHead *prev;	///< 前一个空闲前驱节点
+    struct OsMemFreeNodeHead *next;	///< 后一个空闲后继节点
 };
 /// 内存池信息
 struct OsMemPoolInfo {
@@ -200,11 +200,11 @@ struct OsMemPoolInfo {
     UINT32 curUsedSize; /* Current usage size in a memory pool | 当前已使用大小*/
 #endif
 };
-/// 内存池控制结构体
+/// 内存池头信息
 struct OsMemPoolHead {
     struct OsMemPoolInfo info; ///< 记录内存池的信息
     UINT32 freeListBitmap[OS_MEM_BITMAP_WORDS]; ///< 空闲位图 int[7] = 32 * 7 = 224 > 223 
-    struct OsMemFreeNodeHead *freeList[OS_MEM_FREE_LIST_COUNT];///< 空闲节点链表 31 + 24 * 8 = 223  
+    struct OsMemFreeNodeHead *freeList[OS_MEM_FREE_LIST_COUNT];///< 空闲节点链表 32 + 24 * 8 = 224  
     SPIN_LOCK_S spinlock;	///< 操作本池的自旋锁,涉及CPU多核竞争,所以必须得是自旋锁
 #ifdef LOSCFG_MEM_MUL_POOL
     VOID *nextPool;	///< 指向下一个内存池 OsMemPoolHead 类型
@@ -309,7 +309,7 @@ STATIC INLINE struct OsMemNodeHead *OsMemLastSentinelNodeGet(const struct OsMemN
 
     return node;
 }
-
+/// 检查哨兵节点
 STATIC INLINE BOOL OsMemSentinelNodeCheck(struct OsMemNodeHead *sentinelNode)
 {
     if (!OS_MEM_NODE_GET_USED_FLAG(sentinelNode->sizeAndFlag)) {
@@ -322,7 +322,7 @@ STATIC INLINE BOOL OsMemSentinelNodeCheck(struct OsMemNodeHead *sentinelNode)
 
     return TRUE;
 }
-
+/// 是否为最后一个哨兵节点
 STATIC INLINE BOOL OsMemIsLastSentinelNode(struct OsMemNodeHead *sentinelNode)
 {
     if (OsMemSentinelNodeCheck(sentinelNode) == FALSE) {
@@ -337,7 +337,7 @@ STATIC INLINE BOOL OsMemIsLastSentinelNode(struct OsMemNodeHead *sentinelNode)
 
     return FALSE;
 }
-
+/// 
 STATIC INLINE VOID OsMemSentinelNodeSet(struct OsMemNodeHead *sentinelNode, VOID *newNode, UINT32 size)
 {
     if (sentinelNode->ptr.next != NULL) {
@@ -861,22 +861,22 @@ STATIC INLINE VOID OsMemSplitNode(VOID *pool, struct OsMemNodeHead *allocNode, U
 
     OsMemFreeNodeAdd(pool, newFreeNode);
 }
-
+//
 STATIC INLINE VOID *OsMemCreateUsedNode(VOID *addr)
 {
-    struct OsMemUsedNodeHead *node = (struct OsMemUsedNodeHead *)addr;
-
+    struct OsMemUsedNodeHead *node = (struct OsMemUsedNodeHead *)addr;//直接将地址转成使用节点,说明节点信息也存在内存池中
+    //这种用法是非常巧妙的
 #if OS_MEM_FREE_BY_TASKID
-    OsMemNodeSetTaskID(node);
+    OsMemNodeSetTaskID(node);//设置使用内存节点的任务
 #endif
 
-#ifdef LOSCFG_KERNEL_LMS
+#ifdef LOSCFG_KERNEL_LMS //检测内存泄漏
     struct OsMemNodeHead *newNode = (struct OsMemNodeHead *)node;
     if (g_lms != NULL) {
         g_lms->mallocMark(newNode, OS_MEM_NEXT_NODE(newNode), OS_MEM_NODE_HEAD_SIZE);
     }
 #endif
-    return node + 1; //@note_good 这个地方挺有意思的,只是将结构体扩展下,留一个 int 位 ,变成了已使用节点
+    return node + 1; //@note_good 这个地方挺有意思的,只是将结构体扩展下,留一个 int 位 ,变成了已使用节点,返回的地址正是要分配给应用的地址
 }
 
 /*!
