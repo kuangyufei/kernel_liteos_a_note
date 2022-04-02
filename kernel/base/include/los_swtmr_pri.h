@@ -39,7 +39,7 @@
 #ifdef LOSCFG_SECURITY_VID
 #include "vid_api.h"
 #else
-#define MAX_INVALID_TIMER_VID OS_SWTMR_MAX_TIMERID //最大支持的软件定时器数量 <65535
+#define MAX_INVALID_TIMER_VID OS_SWTMR_MAX_TIMERID //最大支持的软件定时器数量 < 65535
 #endif
 
 #ifdef __cplusplus
@@ -53,9 +53,9 @@ extern "C" {
  * Software timer state
  */
 enum SwtmrState {	//定时器状态
-    OS_SWTMR_STATUS_UNUSED,     /**< The software timer is not used.    */	//定时器未使用,系统在定时器模块初始化时，会将系统中所有定时器资源初始化成该状态。
-    OS_SWTMR_STATUS_CREATED,    /**< The software timer is created.     */	//定时器创建后未启动，或已停止.定时器创建后，不处于计数状态时，定时器将变成该状态。
-    OS_SWTMR_STATUS_TICKING     /**< The software timer is timing.      */	//定时器处于计数状态,在定时器创建后调用LOS_SwtmrStart接口启动，定时器将变成该状态，是定时器运行时的状态。
+    OS_SWTMR_STATUS_UNUSED,     /**< The software timer is not used. | 定时器未使用,系统在定时器模块初始化时，会将系统中所有定时器资源初始化成该状态。   */
+    OS_SWTMR_STATUS_CREATED,    /**< The software timer is created.   | 定时器创建后未启动，或已停止.定时器创建后，不处于计数状态时，定时器将变成该状态。  */
+    OS_SWTMR_STATUS_TICKING     /**< The software timer is timing.    | 定时器处于计数状态,在定时器创建后调用LOS_SwtmrStart接口启动，定时器将变成该状态，是定时器运行时的状态。  */
 };
 
 /**
@@ -63,10 +63,10 @@ enum SwtmrState {	//定时器状态
  * Structure of the callback function that handles software timer timeout
  */
 typedef struct {//处理软件定时器超时的回调函数的结构体
-    SWTMR_PROC_FUNC handler;    /**< Callback function that handles software timer timeout  */	//处理软件定时器超时的回调函数
+    SWTMR_PROC_FUNC handler;    /**< Callback function that handles software timer timeout  | 处理软件定时器超时的回调函数*/
     UINTPTR arg;                /**< Parameter passed in when the callback function
-                                     that handles software timer timeout is called */	//调用处理软件计时器超时的回调函数时传入的参数
-    LOS_DL_LIST node;
+                                     that handles software timer timeout is called | 调用处理软件计时器超时的回调函数时传入的参数*/
+    LOS_DL_LIST node;	///< 挂入定时器超时队列，详见 SwtmrWake( ... )
 #ifdef LOSCFG_SWTMR_DEBUG
     UINT32 swtmrID;
 #endif

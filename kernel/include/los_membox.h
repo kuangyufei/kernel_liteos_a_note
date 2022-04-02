@@ -54,18 +54,18 @@ extern "C" {
  * Structure of a free node in a memory pool
  */
 typedef struct tagMEMBOX_NODE { //内存池中空闲节点的结构,是个单向的链表
-    struct tagMEMBOX_NODE *pstNext; /**< Free node's pointer to the next node in a memory pool *///指向内存池中下一个空闲节点的指针
+    struct tagMEMBOX_NODE *pstNext; /**< Free node's pointer to the next node in a memory pool | 指向内存池中下一个空闲节点的指针*/
 } LOS_MEMBOX_NODE;
 
 /**
  * @ingroup los_membox
  * Memory pool information structure
  */
-typedef struct {//静态内存池信息结构体
-    UINT32 uwBlkSize;           /**< Block size */ //块大小
-    UINT32 uwBlkNum;            /**< Block number */	//块数量
-    UINT32 uwBlkCnt;            /**< The number of allocated blocks */ //已经被分配的块数量
-    LOS_MEMBOX_NODE stFreeList; /**< Free list */	//空闲链表
+typedef struct {//静态内存池头结构体
+    UINT32 uwBlkSize;           /**< Block size | 块大小*/
+    UINT32 uwBlkNum;            /**< Block number | 块数量*/
+    UINT32 uwBlkCnt;            /**< The number of allocated blocks | 已经被分配的块数量*/
+    LOS_MEMBOX_NODE stFreeList; /**< Free list | 空闲链表*/
 } LOS_MEMBOX_INFO;
 
 typedef LOS_MEMBOX_INFO OS_MEMBOX_S;

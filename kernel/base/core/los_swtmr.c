@@ -120,8 +120,8 @@ LITE_OS_SEC_BSS  SPIN_LOCK_INIT(g_swtmrSpin);///< 初始化软时钟自旋锁,�
 
 typedef struct {
     SortLinkAttribute swtmrSortLink;
-    LosTaskCB         *swtmrTask;           /* software timer task id */
-    LOS_DL_LIST       swtmrHandlerQueue;     /* software timer timeout queue id */
+    LosTaskCB         *swtmrTask;           /* software timer task id | 定时器任务ID */
+    LOS_DL_LIST       swtmrHandlerQueue;     /* software timer timeout queue id | 定时器超时队列*/
 } SwtmrRunQue;
 
 STATIC SwtmrRunQue g_swtmrRunQue[LOSCFG_KERNEL_CORE_NUM];

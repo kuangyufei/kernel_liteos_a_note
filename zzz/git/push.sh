@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 对动态内存切割，合并，扩展功能注解
+git commit -m  ' 对静态内存实现注解
     百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
