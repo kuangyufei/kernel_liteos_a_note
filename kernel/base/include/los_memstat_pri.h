@@ -42,7 +42,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 typedef struct {
-    UINT32 memUsed;
+    UINT32 memUsed; ///< 记录任务内存使用量
 } TskMemUsedInfo;
 
 extern VOID OsTaskMemUsedInc(UINT32 usedSize, UINT32 taskID);
@@ -53,7 +53,7 @@ extern VOID OsTaskMemClear(UINT32 taskID);
 
 #ifdef LOS_MEM_SLAB
 typedef struct {
-    UINT32 slabUsed;
+    UINT32 slabUsed; ///< 任务占用以slab分配方式内存量
 } TskSlabUsedInfo;
 
 extern VOID OsTaskSlabUsedInc(UINT32 usedSize, UINT32 taskID);

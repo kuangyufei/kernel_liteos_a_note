@@ -509,7 +509,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCreateParamCheck(const UINT32 *taskID,
     TSK_INIT_PARAM_S *initParam, VOID **pool)
 {
     UINT32 poolSize = OS_SYS_MEM_SIZE;
-    *pool = (VOID *)m_aucSysMem1;//默认使用
+    *pool = (VOID *)m_aucSysMem1;//默认使用 系统动态内存池地址的起始地址
 
     if (taskID == NULL) {
         return LOS_ERRNO_TSK_ID_INVALID;
@@ -657,7 +657,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *taskID, TSK_INIT_PARAM_S
     LosTaskCB *taskCB = NULL;
     VOID *pool = NULL;
 
-    errRet = OsTaskCreateParamCheck(taskID, initParam, &pool);//参数检查
+    errRet = OsTaskCreateParamCheck(taskID, initParam, &pool);//参数检查,获取内存池 *pool = (VOID *)m_aucSysMem1;
     if (errRet != LOS_OK) {
         return errRet;
     }
@@ -719,8 +719,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreate(UINT32 *taskID, TSK_INIT_PARAM_S *in
         return LOS_ERRNO_TSK_YIELD_IN_INT;
     }
 
-    if (OsProcessIsUserMode(OsCurrProcessGet())) {
-        initParam->processID = OsGetKernelInitProcessID();
+    if (OsProcessIsUserMode(OsCurrProcessGet())) { //当前进程为用户进程
+        initParam->processID = OsGetKernelInitProcessID();//@note_thinking 为什么进程ID变成了内核态根进程
     } else {
         initParam->processID = OsCurrProcessGet()->processID;
     }

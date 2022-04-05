@@ -32,9 +32,9 @@
 #include "los_memstat_pri.h"
 #include "los_task_pri.h"
 
-
+/// 记录每个任务对内存的使用情况
 LITE_OS_SEC_BSS_MINOR STATIC TskMemUsedInfo g_tskMemUsedInfo[LOSCFG_BASE_CORE_TSK_LIMIT];
-
+/// 计算指定任务对内存使用增加量
 LITE_OS_SEC_TEXT_MINOR VOID OsTaskMemUsedInc(UINT32 usedSize, UINT32 taskID)
 {
     if (taskID >= LOSCFG_BASE_CORE_TSK_LIMIT) {
@@ -43,9 +43,9 @@ LITE_OS_SEC_TEXT_MINOR VOID OsTaskMemUsedInc(UINT32 usedSize, UINT32 taskID)
     if (OS_INT_ACTIVE) {
         return;
     }
-    g_tskMemUsedInfo[taskID].memUsed += usedSize;
+    g_tskMemUsedInfo[taskID].memUsed += usedSize; ///< 叠加
 }
-
+/// 计算指定任务对内存使用减少量
 LITE_OS_SEC_TEXT_MINOR VOID OsTaskMemUsedDec(UINT32 usedSize, UINT32 taskID)
 {
     if (taskID >= LOSCFG_BASE_CORE_TSK_LIMIT) {
@@ -59,9 +59,9 @@ LITE_OS_SEC_TEXT_MINOR VOID OsTaskMemUsedDec(UINT32 usedSize, UINT32 taskID)
                    OsCurrTaskGet()->taskName, g_tskMemUsedInfo[taskID].memUsed, usedSize);
         return;
     }
-    g_tskMemUsedInfo[taskID].memUsed -= usedSize;
+    g_tskMemUsedInfo[taskID].memUsed -= usedSize; ///< 递减
 }
-
+/// 获取指定任务对内存的使用情况
 LITE_OS_SEC_TEXT_MINOR UINT32 OsTaskMemUsage(UINT32 taskID)
 {
     if (taskID >= LOSCFG_BASE_CORE_TSK_LIMIT) {
@@ -70,7 +70,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsTaskMemUsage(UINT32 taskID)
 
     return g_tskMemUsedInfo[taskID].memUsed;
 }
-
+/// 清空任务内存使用记录
 LITE_OS_SEC_TEXT_MINOR VOID OsTaskMemClear(UINT32 taskID)
 {
     if (taskID >= LOSCFG_BASE_CORE_TSK_LIMIT) {
@@ -82,8 +82,8 @@ LITE_OS_SEC_TEXT_MINOR VOID OsTaskMemClear(UINT32 taskID)
     }
     g_tskMemUsedInfo[taskID].memUsed = 0;
 }
-
-#ifdef LOS_MEM_SLAB
+// Slab是一种内存分配器，通过将内存划分不同大小的空间分配给对象使用来进行缓存管理，应用于内核对象的缓存。
+#ifdef LOS_MEM_SLAB //
 
 LITE_OS_SEC_BSS_MINOR STATIC TskSlabUsedInfo g_tskSlabUsedInfo[LOSCFG_BASE_CORE_TSK_LIMIT];
 LITE_OS_SEC_TEXT_MINOR VOID OsTaskSlabUsedInc(UINT32 usedSize, UINT32 taskID)

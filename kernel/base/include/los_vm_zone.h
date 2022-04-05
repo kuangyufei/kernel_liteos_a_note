@@ -16,8 +16,8 @@
    |  包括 IO设备					|
    |  PERIPH_PMM_SIZE			|
    +----------------------------+ 外围设备基地址 PERIPH_DEVICE_BASE
-   |  Vmalloc段				  	|
-   |  kernel heap				|内核堆空间
+   |  Vmalloc 空间				|
+   |  内核栈 内核堆   				|内核动态分配空间
    |  128M						|
    |  映射区 					  	|
    +----------------------------+ 内核动态分配开始地址 VMALLOC_START

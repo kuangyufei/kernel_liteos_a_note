@@ -291,7 +291,7 @@ LITE_OS_SEC_TEXT STATIC int LiteIpcMmap(struct file *filep, LosVmMapRegion *regi
     if (ret) {
         goto ERROR_MAP_OUT;
     }
-    /* ipc pool init */
+    /* ipc pool init | ipc单独创建了内存池管理*/
     if (LOS_MemInit(ipcInfo->pool.kvaddr, region->range.size) != LOS_OK) {//初始化ipc池
         ret = -EINVAL;
         goto ERROR_MAP_OUT;

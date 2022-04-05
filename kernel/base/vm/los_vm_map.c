@@ -102,8 +102,8 @@
 #define VM_MAP_WASTE_MEM_LEVEL          (PAGE_SIZE >> 2) ///<	浪费内存大小(1K)
 LosMux g_vmSpaceListMux;				///< 用于锁g_vmSpaceList的互斥量
 LOS_DL_LIST_HEAD(g_vmSpaceList);		///< 初始化全局虚拟空间节点,所有虚拟空间都挂到此节点上.
-LosVmSpace g_kVmSpace;					///< 内核空间,用于内核运行栈,代码区,数据区
-LosVmSpace g_vMallocSpace;				///< 内核堆空间,用于内核分配内存
+LosVmSpace g_kVmSpace;					///< 内核非分配空间,用于内核运行栈,代码区,数据区
+LosVmSpace g_vMallocSpace;				///< 内核分配空间,用于内核分配内存
 
 /************************************************************
 * 获取进程空间系列接口
@@ -120,8 +120,8 @@ LosVmSpace *LOS_SpaceGet(VADDR_T vaddr)
         return LOS_GetKVmSpace();		//获取内核空间
     } else if (LOS_IsUserAddress(vaddr)) {//是否为用户空间
         return LOS_CurrSpaceGet();
-    } else if (LOS_IsVmallocAddress(vaddr)) {//是否为内核堆空间
-        return LOS_GetVmallocSpace();//获取内核堆空间
+    } else if (LOS_IsVmallocAddress(vaddr)) {//是否为内核分配空间
+        return LOS_GetVmallocSpace();//获取内核分配空间
     } else {
         return NULL;
     }
@@ -246,7 +246,7 @@ BOOL OsVMallocSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)//内核动态空�
 #endif
     return OsVmSpaceInitCommon(vmSpace, virtTtb);//创建MMU,为后续的虚实映射做好初始化的工作
 }
-///内核进程虚拟空间初始化
+///内核虚拟空间初始化
 VOID OsKSpaceInit(VOID)
 {
     OsVmMapInit();//初始化后续操作 g_vmSpaceList 的互斥锁 
@@ -286,22 +286,22 @@ LosVmSpace *OsCreateUserVmSpace(VOID)
     if (space == NULL) {
         return NULL;
     }
-
-    VADDR_T *ttb = LOS_PhysPagesAllocContiguous(1);//分配一个物理页用于存放虚实内存映射关系, 即:L1表
-    if (ttb == NULL) {//若连映射页都没有,剩下的也别玩了.
+	//此处为何直接申请物理页帧存放用户进程的页表,大概是因为所有页表都被存放在内核空间(g_kVmSpace)而非内核分配空间(g_vMallocSpace)
+    VADDR_T *ttb = LOS_PhysPagesAllocContiguous(1);//分配一个物理页用于存放虚实映射关系表, 即:L1表
+    if (ttb == NULL) {//若连页表都没有,剩下的也别玩了.
         (VOID)LOS_MemFree(m_aucSysMem0, space);
         return NULL;
     }
-
-    (VOID)memset_s(ttb, PAGE_SIZE, 0, PAGE_SIZE);
+	
+    (VOID)memset_s(ttb, PAGE_SIZE, 0, PAGE_SIZE);//4K空间置0
     retVal = OsUserVmSpaceInit(space, ttb);//初始化用户空间,mmu
-    LosVmPage *vmPage = OsVmVaddrToPage(ttb);
+    LosVmPage *vmPage = OsVmVaddrToPage(ttb);//找到所在物理页框
     if ((retVal == FALSE) || (vmPage == NULL)) {
         (VOID)LOS_MemFree(m_aucSysMem0, space);
         LOS_PhysPagesFreeContiguous(ttb, 1);
         return NULL;
     }
-    LOS_ListAdd(&space->archMmu.ptList, &(vmPage->node));
+    LOS_ListAdd(&space->archMmu.ptList, &(vmPage->node));//页表链表,先挂上L1,后续还会挂上 N个L2表
 
     return space;
 }
@@ -1222,7 +1222,7 @@ VOID *LOS_KernelMallocAlign(UINT32 size, UINT32 boundary)
 {
     VOID *ptr = NULL;
 
-#ifdef LOSCFG_KERNEL_VM
+#ifdef LOSCFG_KERNEL_VM 
     if (OsMemLargeAlloc(size) && IS_ALIGNED(PAGE_SIZE, boundary)) {
         ptr = LOS_PhysPagesAllocContiguous(ROUNDUP(size, PAGE_SIZE) >> PAGE_SHIFT);
     } else
@@ -1278,7 +1278,7 @@ VOID LOS_KernelFree(VOID *ptr)
 {
 #ifdef LOSCFG_KERNEL_VM
     UINT32 ret;
-    if (OsMemIsHeapNode(ptr) == FALSE) {
+    if (OsMemIsHeapNode(ptr) == FALSE) {//判断地址是否在堆区
         ret = OsMemLargeNodeFree(ptr);
         if (ret != LOS_OK) {
             VM_ERR("KernelFree %p failed", ptr);
@@ -1287,7 +1287,7 @@ VOID LOS_KernelFree(VOID *ptr)
     } else
 #endif
     {
-        (VOID)LOS_MemFree(OS_SYS_MEM_ADDR, ptr);
+        (VOID)LOS_MemFree(OS_SYS_MEM_ADDR, ptr);//从内存池中释放
     }
 }
 

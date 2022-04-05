@@ -105,7 +105,7 @@
 #define OS_MEM_COLUMN_NUM       8
 
 UINT8 *m_aucSysMem0 = NULL;	///< 异常交互动态内存池地址的起始地址，当不支持异常交互特性时，m_aucSysMem0等于m_aucSysMem1。
-UINT8 *m_aucSysMem1 = NULL;	///< 系统动态内存池地址的起始地址
+UINT8 *m_aucSysMem1 = NULL;	///< 系统动态内存池地址的起始地址 @note_thinking 能否不要用 0,1来命名核心变量 ??? 
 
 #ifdef LOSCFG_MEM_MUL_POOL
 VOID *g_poolHead = NULL;	///内存池头,由它牵引多个内存池
@@ -378,14 +378,14 @@ STATIC INLINE struct OsMemNodeHead *PreSentinelNodeGet(const VOID *pool, const s
 
     return NULL;
 }
-
+/// 大内存释放
 UINT32 OsMemLargeNodeFree(const VOID *ptr)
 {
-    LosVmPage *page = OsVmVaddrToPage((VOID *)ptr);
+    LosVmPage *page = OsVmVaddrToPage((VOID *)ptr);//获取物理页
     if ((page == NULL) || (page->nPages == 0)) {
         return LOS_NOK;
     }
-    LOS_PhysPagesFreeContiguous((VOID *)ptr, page->nPages);
+    LOS_PhysPagesFreeContiguous((VOID *)ptr, page->nPages);//释放连续的几个物理页
 
     return LOS_OK;
 }
@@ -2091,7 +2091,7 @@ UINT32 LOS_MemFreeNodeShow(VOID *pool)
 
     return LOS_OK;
 }
-///内核空间动态内存(堆内存)初始化
+///内核空间动态内存(堆内存)初始化 , 争取系统动态内存池
 STATUS_T OsKHeapInit(size_t size)
 {
     STATUS_T ret;
@@ -2110,38 +2110,38 @@ STATUS_T OsKHeapInit(size_t size)
         return -1;
     }
 
-    m_aucSysMem0 = m_aucSysMem1 = ptr;
-    ret = LOS_MemInit(m_aucSysMem0, size); //初始化内存池
+    m_aucSysMem0 = m_aucSysMem1 = ptr;// 指定内核内存池的位置
+    ret = LOS_MemInit(m_aucSysMem0, size); //初始化内存池,供内核分配动态内存
     if (ret != LOS_OK) {
         PRINT_ERR("vmm_kheap_init LOS_MemInit failed!\n");
         g_vmBootMemBase -= size;
         return ret;
     }
 #if OS_MEM_EXPAND_ENABLE
-    LOS_MemExpandEnable(OS_SYS_MEM_ADDR);
+    LOS_MemExpandEnable(OS_SYS_MEM_ADDR);//支持扩展系统动态内存
 #endif
     return LOS_OK;
 }
-
+///< 判断地址是否在堆区
 BOOL OsMemIsHeapNode(const VOID *ptr)
 {
-    struct OsMemPoolHead *pool = (struct OsMemPoolHead *)m_aucSysMem1;
-    struct OsMemNodeHead *firstNode = OS_MEM_FIRST_NODE(pool);
-    struct OsMemNodeHead *endNode = OS_MEM_END_NODE(pool, pool->info.totalSize);
+    struct OsMemPoolHead *pool = (struct OsMemPoolHead *)m_aucSysMem1;//内核堆区开始地址
+    struct OsMemNodeHead *firstNode = OS_MEM_FIRST_NODE(pool);//获取内存池首个节点
+    struct OsMemNodeHead *endNode = OS_MEM_END_NODE(pool, pool->info.totalSize);//获取内存池的尾节点
 
-    if (OS_MEM_MIDDLE_ADDR(firstNode, ptr, endNode)) {
+    if (OS_MEM_MIDDLE_ADDR(firstNode, ptr, endNode)) {//如果在首尾范围内
         return TRUE;
     }
 
-#if OS_MEM_EXPAND_ENABLE
-    UINT32 intSave;
-    UINT32 size;
-    MEM_LOCK(pool, intSave);
-    while (OsMemIsLastSentinelNode(endNode) == FALSE) {
-        size = OS_MEM_NODE_GET_SIZE(endNode->sizeAndFlag);
-        firstNode = OsMemSentinelNodeGet(endNode);
-        endNode = OS_MEM_END_NODE(firstNode, size);
-        if (OS_MEM_MIDDLE_ADDR(firstNode, ptr, endNode)) {
+#if OS_MEM_EXPAND_ENABLE//内存池经过扩展后,新旧块的虚拟地址是不连续的,所以需要跳块判断
+    UINT32 intSave; 
+    UINT32 size;//详细查看百篇博客系列篇之 鸿蒙内核源码分析(内存池篇)
+    MEM_LOCK(pool, intSave); //获取自旋锁
+    while (OsMemIsLastSentinelNode(endNode) == FALSE) { //哨兵节点是内存池结束的标记
+        size = OS_MEM_NODE_GET_SIZE(endNode->sizeAndFlag);//获取节点大小
+        firstNode = OsMemSentinelNodeGet(endNode);//获取下一块的开始地址
+        endNode = OS_MEM_END_NODE(firstNode, size);//获取下一块的尾节点
+        if (OS_MEM_MIDDLE_ADDR(firstNode, ptr, endNode)) {//判断地址是否在该块中
             MEM_UNLOCK(pool, intSave);
             return TRUE;
         }
