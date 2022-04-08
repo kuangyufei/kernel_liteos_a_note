@@ -69,26 +69,26 @@ extern "C" {
 
 /* L1 descriptor type */
 #define MMU_DESCRIPTOR_L1_TYPE_INVALID                          (0x0 << 0)
-#define MMU_DESCRIPTOR_L1_TYPE_PAGE_TABLE                       (0x1 << 0)
-#define MMU_DESCRIPTOR_L1_TYPE_SECTION                          (0x2 << 0)
+#define MMU_DESCRIPTOR_L1_TYPE_PAGE_TABLE                       (0x1 << 0) ///< 一级条目类型按页分
+#define MMU_DESCRIPTOR_L1_TYPE_SECTION                          (0x2 << 0) ///< 1MB 一级条目类型按段分
 #define MMU_DESCRIPTOR_L1_TYPE_MASK                             (0x3 << 0)
 
 /* L2 descriptor type */
 #define MMU_DESCRIPTOR_L2_TYPE_INVALID                          (0x0 << 0)
-#define MMU_DESCRIPTOR_L2_TYPE_LARGE_PAGE                       (0x1 << 0)
-#define MMU_DESCRIPTOR_L2_TYPE_SMALL_PAGE                       (0x2 << 0)
-#define MMU_DESCRIPTOR_L2_TYPE_SMALL_PAGE_XN                    (0x3 << 0)
+#define MMU_DESCRIPTOR_L2_TYPE_LARGE_PAGE                       (0x1 << 0) ///< 64KB 二级条目类型按大页分
+#define MMU_DESCRIPTOR_L2_TYPE_SMALL_PAGE                       (0x2 << 0) ///< 4KB 二级条目类型按小页分
+#define MMU_DESCRIPTOR_L2_TYPE_SMALL_PAGE_XN                    (0x3 << 0) ///< 1KB 二级条目类型按极小页分
 #define MMU_DESCRIPTOR_L2_TYPE_MASK                             (0x3 << 0)
 
 #define MMU_DESCRIPTOR_IS_L1_SIZE_ALIGNED(x)                    IS_ALIGNED(x, MMU_DESCRIPTOR_L1_SMALL_SIZE)
-#define MMU_DESCRIPTOR_L1_SMALL_SIZE                            0x100000
+#define MMU_DESCRIPTOR_L1_SMALL_SIZE                            0x100000 // 1M 页表L1大小
 #define MMU_DESCRIPTOR_L1_SMALL_MASK                            (MMU_DESCRIPTOR_L1_SMALL_SIZE - 1)
 #define MMU_DESCRIPTOR_L1_SMALL_FRAME                           (~MMU_DESCRIPTOR_L1_SMALL_MASK)
-#define MMU_DESCRIPTOR_L1_SMALL_SHIFT                           20
+#define MMU_DESCRIPTOR_L1_SMALL_SHIFT                           20 //移动位数
 #define MMU_DESCRIPTOR_L1_SECTION_ADDR(x)                       ((x) & MMU_DESCRIPTOR_L1_SMALL_FRAME)
 #define MMU_DESCRIPTOR_L1_PAGE_TABLE_ADDR(x)                    ((x) & ~((1 << 10)-1))
 #define MMU_DESCRIPTOR_L1_SMALL_L2_TABLES_PER_PAGE              4
-#define MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS                   0x4000U
+#define MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS                   0x4000U ///< 16Kb 小页页表条目(4096个页表项)
 #define MMU_DESCRIPTOR_L1_SMALL_DOMAIN_MASK                     (~(0x0f << 5)) /* 4k page section domain mask */
 #define MMU_DESCRIPTOR_L1_SMALL_DOMAIN_CLIENT                   (MMU_DESCRIPTOR_DOMAIN_CLIENT << 5)
 

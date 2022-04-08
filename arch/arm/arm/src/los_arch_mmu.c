@@ -1058,12 +1058,12 @@ VOID LOS_ArchMmuContextSwitch(LosArchMmu *archMmu)
 #ifdef LOSCFG_KERNEL_VM
     /* from armv7a arm B3.10.4, we should do synchronization changes of ASID and TTBR. */
     OsArmWriteContextidr(LOS_GetKVmSpace()->archMmu.asid);//这里先把asid切到内核空间的ID
-    ISB;
+    ISB; //指令必须同步 ，清楚流水线中未执行指令
 #endif
     OsArmWriteTtbr0(ttbr);//通过r0寄存器将进程页面基址写入TTB
-    ISB;
+    ISB; //指令必须同步
     OsArmWriteTtbcr(ttbcr);//写入TTB状态位
-    ISB;
+    ISB; //指令必须同步
 #ifdef LOSCFG_KERNEL_VM
     if (archMmu) {
         OsArmWriteContextidr(archMmu->asid);//通过R0寄存器写入进程标识符至C13寄存器

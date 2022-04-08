@@ -104,7 +104,7 @@ extern "C" {
 #define CP15_REG64(CRn, Op1)            "p15, "#Op1", %0,    %H0,"#CRn
 //CP15 协处理器各寄存器信息
 /*!
- * Identification registers (c0)	| c0 - 身份寄存器
+ * Identification registers (c0)	| c0 - 身份寄存器 详见 鸿蒙内核源码分析(协处理器篇)
  */
 #define MIDR                CP15_REG(c0, 0, c0, 0)    /*! Main ID Register | 主ID寄存器 */
 #define MPIDR               CP15_REG(c0, 0, c0, 5)    /*! Multiprocessor Affinity Register | 多处理器关联寄存器给每个CPU制定一个逻辑地址*/

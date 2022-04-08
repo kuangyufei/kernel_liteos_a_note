@@ -82,7 +82,7 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+/// 内存管理单元（英语：memory management unit，缩写为MMU），有时称作分页内存管理单元（英语：paged memory management unit，缩写为PMMU）。
 typedef struct ArchMmu {//内存管理单元
 #ifndef LOSCFG_PAGE_TABLE_FINE_LOCK
     SPIN_LOCK_S         lock;           /**< arch mmu page table entry modification spin lock */

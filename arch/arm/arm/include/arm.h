@@ -35,14 +35,14 @@
 
 #define CPSR_MODE_USR  0x10
 #define CPSR_MODE_MASK 0x1f
-
+/// 读CP15的系统控制寄存器到 R0寄存器
 STATIC INLINE UINT32 OsArmReadSctlr(VOID)
 {
     UINT32 val;
     __asm__ volatile("mrc p15, 0, %0, c1,c0,0" : "=r"(val));
     return val;
 }
-
+/// R0寄存器写入CP15的系统控制寄存器
 STATIC INLINE VOID OsArmWriteSctlr(UINT32 val)
 {
     __asm__ volatile("mcr p15, 0, %0, c1,c0,0" ::"r"(val));

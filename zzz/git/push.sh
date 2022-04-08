@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 页表部分注解 , 博客见于 鸿蒙内核源码分析(页表管理)
+git commit -m  ' cp15 协处理代码注解
     百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
