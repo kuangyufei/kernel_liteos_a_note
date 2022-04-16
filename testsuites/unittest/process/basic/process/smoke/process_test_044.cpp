@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -51,7 +51,7 @@ static int GroupProcess(void)
     ret = sched_rr_get_interval(getpid(), &ts);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     ICUNIT_ASSERT_EQUAL(ts.tv_sec, 0, ts.tv_sec);
-    if (ts.tv_nsec <= 5000000 || ts.tv_nsec > 20000000) { // 5000000, 20000000, expected range of tv_nsec.
+    if (ts.tv_nsec < 5000000 || ts.tv_nsec > 20000000) { // 5000000, 20000000, expected range of tv_nsec.
         ICUNIT_ASSERT_EQUAL(ts.tv_nsec, -1, ts.tv_nsec);
     }
 
@@ -61,7 +61,7 @@ static int GroupProcess(void)
     ret = sched_rr_get_interval(getpid(), &ts);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     ICUNIT_ASSERT_EQUAL(ts.tv_sec, 0, ts.tv_sec);
-    if (ts.tv_nsec <= 10000000 || ts.tv_nsec > 40000000) { // 10000000, 40000000, expected range of tv_nsec.
+    if (ts.tv_nsec < 10000000 || ts.tv_nsec > 40000000) { // 10000000, 40000000, expected range of tv_nsec.
         ICUNIT_ASSERT_EQUAL(ts.tv_nsec, -1, ts.tv_nsec);
     }
 

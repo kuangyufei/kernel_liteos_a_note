@@ -43,7 +43,7 @@ extern "C" {
 
 #define OS_MUX_MAGIC 0xEBCFDEA0
 
-extern VOID OsMuxBitmapRestore(const LosMux *mutex, const LosTaskCB *taskCB, LosTaskCB *owner);
+extern VOID OsMuxBitmapRestore(const LosMux *mutex, const LOS_DL_LIST *list, const LosTaskCB *runTask);
 extern UINT32 OsMuxLockUnsafe(LosMux *mutex, UINT32 timeout);
 extern UINT32 OsMuxTrylockUnsafe(LosMux *mutex, UINT32 timeout);
 extern UINT32 OsMuxUnlockUnsafe(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched);

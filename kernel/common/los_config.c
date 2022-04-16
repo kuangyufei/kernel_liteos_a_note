@@ -70,7 +70,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 EarliestInit(VOID)
     /* Must be placed at the beginning of the boot process *///必须放在启动过程的开头
     OsSetMainTask();//为每个CPU核设置临时主任务
     OsCurrTaskSet(OsGetMainTask());//设置当前任务
-    OsSchedRunQueInit();
+    OsSchedRunqueueInit();
 
     g_sysClock = OS_SYS_CLOCK;
     g_tickPerSecond =  LOSCFG_BASE_CORE_TICK_PER_SECOND;

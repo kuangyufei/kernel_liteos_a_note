@@ -146,7 +146,7 @@ STATIC BOOL OsRwlockPriCompare(LosTaskCB *runTask, LOS_DL_LIST *rwList)
 {
     if (!LOS_ListEmpty(rwList)) {
         LosTaskCB *highestTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(rwList));//首个写锁任务优先级是最高的
-        if (runTask->priority < highestTask->priority) {//如果当前任务优先级低于等待写锁任务
+        if (OsSchedParamCompare(runTask, highestTask) < 0) {//如果当前任务优先级低于等待写锁任务
             return TRUE;
         }
         return FALSE;
@@ -198,7 +198,7 @@ STATIC UINT32 OsRwlockRdPendOp(LosTaskCB *runTask, LosRwlock *rwlock, UINT32 tim
      */
     LOS_DL_LIST *node = OsSchedLockPendFindPos(runTask, &(rwlock->readList));//找到要挂入的位置
     //例如现有链表内任务优先级为 0 3 8 9 23 当前为 10 时, 返回的是 9 这个节点 
-    ret = OsSchedTaskWait(node, timeout, TRUE);//从尾部插入读锁链表 由此变成了 0 3 8 9 10 23
+    ret = runTask->ops->wait(runTask, node, timeout);//从尾部插入读锁链表 由此变成了 0 3 8 9 10 23
     if (ret == LOS_ERRNO_TSK_TIMEOUT) {
         return LOS_ETIMEDOUT;
     }
@@ -241,7 +241,7 @@ STATIC UINT32 OsRwlockWrPendOp(LosTaskCB *runTask, LosRwlock *rwlock, UINT32 tim
      * write task will be pended. | 当 rwlock 为读模式或其他写任务获得该 rwlock 时，当前的写任务将被挂起。直到读模式下的锁释放
      */
     LOS_DL_LIST *node =  OsSchedLockPendFindPos(runTask, &(rwlock->writeList));//找到要挂入的位置
-    ret = OsSchedTaskWait(node, timeout, TRUE);//从尾部插入写锁链表
+    ret = runTask->ops->wait(runTask, node, timeout);
     if (ret == LOS_ERRNO_TSK_TIMEOUT) {
         ret = LOS_ETIMEDOUT;
     }
@@ -393,7 +393,7 @@ STATIC UINT32 OsRwlockGetMode(LOS_DL_LIST *readList, LOS_DL_LIST *writeList)
     }
     LosTaskCB *pendedReadTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(readList));
     LosTaskCB *pendedWriteTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(writeList));
-    if (pendedWriteTask->priority <= pendedReadTask->priority) { //都有数据比优先级
+    if (OsSchedParamCompare(pendedWriteTask, pendedReadTask) <= 0) {
         return RWLOCK_WRITEFIRST_MODE; //写的优先级高时,为写优先模式
     }
     return RWLOCK_READFIRST_MODE; //读的优先级高时,为读优先模式
@@ -403,7 +403,6 @@ STATIC UINT32 OsRwlockPostOp(LosRwlock *rwlock, BOOL *needSched)
 {
     UINT32 rwlockMode;
     LosTaskCB *resumedTask = NULL;
-    UINT16 pendedWriteTaskPri;
 
     rwlock->rwCount = 0;
     rwlock->writeOwner = NULL;
@@ -416,30 +415,30 @@ STATIC UINT32 OsRwlockPostOp(LosRwlock *rwlock, BOOL *needSched)
         resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->writeList)));//获取任务实体
         rwlock->rwCount = -1;//直接干成-1,注意这里并不是 --
         rwlock->writeOwner = (VOID *)resumedTask;//有锁了则唤醒等锁的任务(写模式)
-        OsSchedTaskWake(resumedTask);
+        resumedTask->ops->wake(resumedTask);
         if (needSched != NULL) {
             *needSched = TRUE;
         }
         return LOS_OK;
     }
-    /* In this case, rwlock will wake the valid pended read task. 在这种情况下，rwlock 将唤醒有效的挂起读取任务。 */
-    if (rwlockMode == RWLOCK_READFIRST_MODE) { //如果是读优先模式
-        pendedWriteTaskPri = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->writeList)))->priority;//取出写锁任务的最高优先级
-    }
-    resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->readList)));//获取最高优先级读锁任务
+
     rwlock->rwCount = 1; //直接干成1,因为是释放操作 
-    OsSchedTaskWake(resumedTask);//有锁了则唤醒等锁的任务(读模式)
+    resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->readList)));
+    resumedTask->ops->wake(resumedTask);
     while (!LOS_ListEmpty(&(rwlock->readList))) {//遍历读链表,目的是要唤醒其他读模式的任务(优先级得要高于pendedWriteTaskPri才行)
         resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->readList)));
-        if ((rwlockMode == RWLOCK_READFIRST_MODE) && (resumedTask->priority >= pendedWriteTaskPri)) {//低于写模式的优先级
+        if (rwlockMode == RWLOCK_READFIRST_MODE) {
+            LosTaskCB *pendedWriteTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->writeList)));
+            if (OsSchedParamCompare(resumedTask, pendedWriteTask) >= 0) {
             break;//跳出循环
+        }
         }
         if (rwlock->rwCount == INT8_MAX) {
             return EINVAL;
         }
         rwlock->rwCount++;//读锁任务数量增加
-        OsSchedTaskWake(resumedTask);//不断唤醒读锁任务,由此实现了允许多个读操作并发,因为在多核情况下resumedTask很大可能
-        //与当前任务并不在同一个核上运行, 此处非常的有意思,点赞! @note_good
+        resumedTask->ops->wake(resumedTask);//不断唤醒读锁任务,由此实现了允许多个读操作并发,因为在多核情况下resumedTask很大可能
+        //与当前任务并不在同一个核上运行, 此处非常有意思,点赞! @note_good
     }
     if (needSched != NULL) {
         *needSched = TRUE;

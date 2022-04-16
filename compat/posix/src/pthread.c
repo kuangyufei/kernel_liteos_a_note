@@ -159,7 +159,7 @@ STATIC VOID SetPthreadAttr(const _pthread_data *self, const pthread_attr_t *attr
     }
     if (outAttr->inheritsched == PTHREAD_INHERIT_SCHED) {
         if (self->task == NULL) {
-            outAttr->schedparam.sched_priority = ((LosTaskCB *)(OsCurrTaskGet()))->priority;
+            outAttr->schedparam.sched_priority = LOS_TaskPriGet(OsCurrTaskGet()->taskID);
         } else {
             outAttr->schedpolicy = self->attr.schedpolicy;
             outAttr->schedparam  = self->attr.schedparam;

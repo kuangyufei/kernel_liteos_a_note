@@ -30,7 +30,6 @@
  */
 
 #include "los_sortlink_pri.h"
-#include "los_mp.h"
 /// 排序链表初始化
 VOID OsSortLinkInit(SortLinkAttribute *sortLinkHeader)
 {

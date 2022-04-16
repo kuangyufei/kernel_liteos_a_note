@@ -97,7 +97,7 @@ static UINT32 Testcase(void)
     ICUNIT_GOTO_NOT_EQUAL((ret & OS_TASK_STATUS_READY), 0, ret, EXIT);
 
     /* check if other core is Task_locked */
-    gTestTaskLock = OsSchedRunQueByID((ArchCurrCpuid() + 1) % (LOSCFG_KERNEL_CORE_NUM))->taskLockCnt;
+    gTestTaskLock = OsSchedRunqueueByID((ArchCurrCpuid() + 1) % (LOSCFG_KERNEL_CORE_NUM))->taskLockCnt;
     ICUNIT_ASSERT_NOT_EQUAL(gTestTaskLock, 0, gTestTaskLock);
 
     ret = LOS_TaskSuspend(g_testTaskID02);

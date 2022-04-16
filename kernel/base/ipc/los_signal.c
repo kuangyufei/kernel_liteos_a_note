@@ -135,7 +135,7 @@ STATIC INLINE VOID OsSigWaitTaskWake(LosTaskCB *taskCB, INT32 signo)
     if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, signo)) {
         OsMoveTmpInfoToUnbInfo(sigcb, signo);
         OsTaskWakeClearPendMask(taskCB);
-        OsSchedTaskWake(taskCB);
+        taskCB->ops->wake(taskCB);
         OsSigEmptySet(&sigcb->sigwaitmask);
     }
 }
@@ -158,19 +158,19 @@ STATIC UINT32 OsPendingTaskWake(LosTaskCB *taskCB, INT32 signo)
             break;
         case OS_TASK_WAIT_JOIN:
             OsTaskWakeClearPendMask(taskCB);
-            OsSchedTaskWake(taskCB);
+            taskCB->ops->wake(taskCB);
             break;
         case OS_TASK_WAIT_SIGNAL://等待普通信号
             OsSigWaitTaskWake(taskCB, signo);
             break;
         case OS_TASK_WAIT_LITEIPC://等待liteipc信号
             OsTaskWakeClearPendMask(taskCB);//重置任务的等待信息
-            OsSchedTaskWake(taskCB);//唤醒任务
+            taskCB->ops->wake(taskCB);
             break;
         case OS_TASK_WAIT_FUTEX://等待快锁信号
             OsFutexNodeDeleteFromFutexHash(&taskCB->futex, TRUE, NULL, NULL);//从哈希桶中删除快锁
             OsTaskWakeClearPendMask(taskCB);//重置任务的等待信息
-            OsSchedTaskWake(taskCB);//唤醒任务
+            taskCB->ops->wake(taskCB);
             break;
         default:
             break;
@@ -589,7 +589,7 @@ int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
 
         sigcb->sigwaitmask |= *set;//按位加到等待集上,也就是说sigwaitmask的信号来了都是要处理的.
         OsTaskWaitSetPendMask(OS_TASK_WAIT_SIGNAL, sigcb->sigwaitmask, timeout);
-        ret = OsSchedTaskWait(&sigcb->waitList, timeout, TRUE);
+        ret = task->ops->wait(task, &sigcb->waitList, timeout);
         if (ret == LOS_ERRNO_TSK_TIMEOUT) {
             ret = -EAGAIN;
         }

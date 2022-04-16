@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' cp15 协处理代码注解
+git commit -m  ' 同步官方代码，任务调度模块改动很大
     百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)

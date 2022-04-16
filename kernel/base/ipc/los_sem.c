@@ -274,7 +274,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SemPend(UINT32 semHandle, UINT32 timeout)
 
     OsHookCall(LOS_HOOK_TYPE_SEM_PEND, semPended, runTask, timeout);
     OsTaskWaitSetPendMask(OS_TASK_WAIT_SEM, semPended->semID, timeout);
-    retErr = OsSchedTaskWait(&semPended->semList, timeout, TRUE);
+    retErr = runTask->ops->wait(runTask, &semPended->semList, timeout);
     if (retErr == LOS_ERRNO_TSK_TIMEOUT) {//注意:这里是涉及到task切换的,把自己挂起,唤醒其他task 
         retErr = LOS_ERRNO_SEM_TIMEOUT;
     }
@@ -286,10 +286,8 @@ OUT:
 ///以不安全的方式释放指定的信号量,所谓不安全指的是不用自旋锁
 LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)
 {
-    LosSemCB *semPosted = NULL;
     LosTaskCB *resumedTask = NULL;
-
-    semPosted = GET_SEM(semHandle);
+    LosSemCB *semPosted = GET_SEM(semHandle);
     if ((semPosted->semID != semHandle) || (semPosted->semStat == OS_SEM_UNUSED)) {
         return LOS_ERRNO_SEM_INVALID;
     }
@@ -303,7 +301,7 @@ LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)
     if (!LOS_ListEmpty(&semPosted->semList)) {//当前有任务挂在semList上,要去唤醒任务
         resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(semPosted->semList)));//semList上面挂的都是task->pendlist节点,取第一个task下来唤醒
         OsTaskWakeClearPendMask(resumedTask);
-        OsSchedTaskWake(resumedTask);
+        resumedTask->ops->wake(resumedTask);
         if (needSched != NULL) {//参数不为空,就返回需要调度的标签
             *needSched = TRUE;//TRUE代表需要调度
         }

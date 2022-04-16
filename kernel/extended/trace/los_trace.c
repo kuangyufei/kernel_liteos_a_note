@@ -161,10 +161,12 @@ STATIC VOID OsTraceSetFrame(TraceEventFrame *frame, UINT32 eventType, UINTPTR id
 VOID OsTraceSetObj(ObjData *obj, const LosTaskCB *tcb)
 {
     errno_t ret;
+    SchedParam param = { 0 };
     (VOID)memset_s(obj, sizeof(ObjData), 0, sizeof(ObjData));
 
     obj->id   = OsTraceGetMaskTid(tcb->taskID);
-    obj->prio = tcb->priority;
+    tcb->ops->schedParamGet(tcb, &param);
+    obj->prio = param.priority;
 
     ret = strncpy_s(obj->name, LOSCFG_TRACE_OBJ_MAX_NAME_SIZE, tcb->taskName, LOSCFG_TRACE_OBJ_MAX_NAME_SIZE - 1);
     if (ret != EOK) {

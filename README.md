@@ -1,6 +1,5 @@
-子曰：“里仁为美。择不处仁，焉得知？”《论语》：里仁篇
 
-[![](https://gitee.com/weharmonyos/resources/raw/master/common/io.png)](http://weharmonyos.com/)
+[![](http://weharmonyos.com/resources/common/io.png)](http://weharmonyos.com/)
 
 **中文注解鸿蒙内核 | [kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在 `OpenHarmony` 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) 基础上给内核源码加上中文注解的版本，同步官方代码迭代推进。
 
@@ -26,7 +25,7 @@
 * 如果把鸿蒙比作人，百图目的是要画出其骨骼系统。
 * 百图系列每张图都是心血之作，耗时甚大，能用一张就绝不用两张，所以会画的比较复杂，高清图会很大，可在公众号中回复 **百图** 获取`3`倍超高清最新图。`v**.xx`代表图的版本，请留意图的更新。
 * 例如： **双向链表** 是内核最重要的结构体，站长更愿意将它比喻成人的左右手，其意义是通过寄生在宿主结构体上来体现，可想象成在宿主结构体装上一对对勤劳的双手，它真的很会来事，超级活跃分子，为宿主到处拉朋友，建圈子。其插入 | 删除 | 遍历操作是它最常用的社交三大件，若不理解透彻在分析源码过程中很容易卡壳。虽在网上能找到很多它的图,但怎么看都不是自己想要的，干脆重画了它的主要操作。
-* ![](https://gitee.com/weharmonyos/resources/raw/master/100pic/1_list.png) 
+* ![](http://weharmonyos.com/resources/100pic/1_list.png) 
 
 #### 二： 百文说内核 | 抓住主脉络 | 肌肉器官
 
@@ -34,7 +33,7 @@
 * 与代码需不断`debug`一样，文章内容会存在不少错漏之处，请多包涵，但会反复修正，持续更新，`v**.xx` 代表文章序号和修改的次数，精雕细琢，言简意赅，力求打造精品内容。
 * 百文在 < 鸿蒙研究站 | 开源中国 | 博客园 | 51cto | csdn | 知乎 | 掘金 > 站点发布，公众号回复 **百文** 可方便阅读。
   
-* ![](https://gitee.com/weharmonyos/resources/raw/master/common/cate.png)
+* ![](http://weharmonyos.com/resources/common/cate.png)
   
 
 **基础知识** 
@@ -77,20 +76,20 @@
 * [v31.02 鸿蒙内核源码分析(内存规则) | 内存管理到底在管什么](http://weharmonyos.com/blog/31.html)
 * [v32.04 鸿蒙内核源码分析(物理内存) | 真实的可不一定精彩](http://weharmonyos.com/blog/32.html)
 * [v33.04 鸿蒙内核源码分析(虚拟内存) | 虚拟的也是真实的](http://weharmonyos.com/blog/33.html)
-* [v34.03 鸿蒙内核源码分析(虚实映射) | 映射是种伟大的思想](http://weharmonyos.com/blog/34.html)
-* [v35.03 鸿蒙内核源码分析(静态分配) | 内存有哪些分配方式](http://weharmonyos.com/blog/35.html)
-* [v36.01 鸿蒙内核源码分析(动态分配) | 正在制作中 ... ](http://weharmonyos.com/blog/36.html)
-* [v37.04 鸿蒙内核源码分析(原子操作) | 谁在为完整性保驾护航](http://weharmonyos.com/blog/37.html)
-* [v38.02 鸿蒙内核源码分析(页表管理) | 谁是虚拟内存实现的基础](http://weharmonyos.com/blog/38.html)
-* [v39.01 鸿蒙内核源码分析(I/O映射) | 正在制作中 ... ](http://weharmonyos.com/blog/39.html)
+* [v34.03 鸿蒙内核源码分析(虚实映射) | 映射是伟大的发明](http://weharmonyos.com/blog/34.html)
+* [v35.02 鸿蒙内核源码分析(页表管理) | 映射关系保存在哪](http://weharmonyos.com/blog/35.html)
+* [v36.03 鸿蒙内核源码分析(静态分配) | 很简单的一位小朋友](http://weharmonyos.com/blog/36.html)
+* [v37.01 鸿蒙内核源码分析(TLFS算法) | 用图解读TLFS原理 ](http://weharmonyos.com/blog/37.html)
+* [v38.01 鸿蒙内核源码分析(内存池管理) | 如何高效切割合并内存块 ](http://weharmonyos.com/blog/38.html)
+* [v39.04 鸿蒙内核源码分析(原子操作) | 谁在守护指令执行的完整性](http://weharmonyos.com/blog/39.html)
 * [v40.01 鸿蒙内核源码分析(圆整对齐) | 正在制作中 ... ](http://weharmonyos.com/blog/40.html)
 
 **通讯机制** 
 * [v41.04 鸿蒙内核源码分析(通讯总览) | 内核跟人一样都喜欢八卦](http://weharmonyos.com/blog/41.html)
 * [v42.08 鸿蒙内核源码分析(自旋锁) | 死等丈夫归来的贞洁烈女](http://weharmonyos.com/blog/42.html)
-* [v43.05 鸿蒙内核源码分析(互斥锁) | 同样是锁它却更丰满](http://weharmonyos.com/blog/43.html)
-* [v44.02 鸿蒙内核源码分析(快锁使用) | 用户态下的快锁Futex(上)](http://weharmonyos.com/blog/44.html)
-* [v45.02 鸿蒙内核源码分析(快锁实现) | 内核态下的快锁Futex(下)](http://weharmonyos.com/blog/45.html)
+* [v43.05 鸿蒙内核源码分析(互斥锁) | 有你没她 相安无事](http://weharmonyos.com/blog/43.html)
+* [v44.02 鸿蒙内核源码分析(快锁使用) | 用户态负责快锁逻辑](http://weharmonyos.com/blog/44.html)
+* [v45.02 鸿蒙内核源码分析(快锁实现) | 内核态负责快锁调度](http://weharmonyos.com/blog/45.html)
 * [v46.01 鸿蒙内核源码分析(读写锁) | 内核如何实现多读单写](http://weharmonyos.com/blog/46.html)
 * [v47.05 鸿蒙内核源码分析(信号量) | 谁在解决任务间的同步](http://weharmonyos.com/blog/47.html)
 * [v48.07 鸿蒙内核源码分析(事件机制) | 多对多任务如何同步](http://weharmonyos.com/blog/48.html)
@@ -113,19 +112,19 @@
 * [v63.03 鸿蒙内核源码分析(文件映射) | 正在制作中 ... ](http://weharmonyos.com/blog/63.html)
 * [v64.01 鸿蒙内核源码分析(写时拷贝) | 正在制作中 ... ](http://weharmonyos.com/blog/64.html)
 
-**软硬相接** 
-* [v65.03 鸿蒙内核源码分析(CPU结构) | 正在制作中 ...  ](http://weharmonyos.com/blog/65.html)
-* [v66.01 鸿蒙内核源码分析(协处理器) | 正在制作中 ... ](http://weharmonyos.com/blog/66.html)
-* [v67.05 鸿蒙内核源码分析(工作模式) | 羡慕韦小宝这么多老婆](http://weharmonyos.com/blog/67.html)
-* [v68.01 鸿蒙内核源码分析(异常处理) | 不如意事十之八九 ](http://weharmonyos.com/blog/68.html)
-* [v69.06 鸿蒙内核源码分析(寄存器) | 真牛把世界玩出花来了](http://weharmonyos.com/blog/69.html)
-* [v70.03 鸿蒙内核源码分析(多核管理) | 真正并发的基础](http://weharmonyos.com/blog/70.html)
-* [v71.05 鸿蒙内核源码分析(中断概念) | 海公公的日常工作](http://weharmonyos.com/blog/71.html)
-* [v72.04 鸿蒙内核源码分析(中断管理) | 没中断太可怕](http://weharmonyos.com/blog/72.html)
-* [v73.01 鸿蒙内核源码分析(移值适配) | 正在制作中 ... ](http://weharmonyos.com/blog/73.html)
+**硬件架构** 
+* [v65.01 鸿蒙内核源码分析(芯片模式) | 回顾芯片行业各位大佬](http://weharmonyos.com/blog/65.html)
+* [v66.03 鸿蒙内核源码分析(ARM架构) | ARMv7 & Cortex(A|R|M)](http://weharmonyos.com/blog/66.html)
+* [v67.01 鸿蒙内核源码分析(指令集) | CICS PK RICS](http://weharmonyos.com/blog/67.html)
+* [v68.01 鸿蒙内核源码分析(协处理器) | CPU的好帮手 ](http://weharmonyos.com/blog/68.html)
+* [v69.05 鸿蒙内核源码分析(工作模式) | 角色不同 责任不同](http://weharmonyos.com/blog/69.html)
+* [v70.06 鸿蒙内核源码分析(寄存器) | 世界被它们玩出了花](http://weharmonyos.com/blog/70.html)
+* [v71.03 鸿蒙内核源码分析(多核管理) | 并发真正的基础](http://weharmonyos.com/blog/71.html)
+* [v72.05 鸿蒙内核源码分析(中断概念) | 海公公的日常工作](http://weharmonyos.com/blog/72.html)
+* [v73.04 鸿蒙内核源码分析(中断管理) | 没中断太可怕](http://weharmonyos.com/blog/73.html)
 
 **内核汇编** 
-* [v74.01 鸿蒙内核源码分析(汇编指令) | 正在制作中 ... ](http://weharmonyos.com/blog/74.html)
+* [v74.01 鸿蒙内核源码分析(编码方式) | 机器指令是如何编码的 ](http://weharmonyos.com/blog/74.html)
 * [v75.03 鸿蒙内核源码分析(汇编基础) | CPU上班也要打卡](http://weharmonyos.com/blog/75.html)
 * [v76.04 鸿蒙内核源码分析(汇编传参) | 如何传递复杂的参数](http://weharmonyos.com/blog/76.html)
 * [v77.01 鸿蒙内核源码分析(可变参数) | 正在制作中 ... ](http://weharmonyos.com/blog/77.html)
@@ -158,24 +157,24 @@
 * [v100.01 鸿蒙内核源码分析(测试用例) | 正在制作中 ... ](http://weharmonyos.com/blog/100.html)
 
 **前因后果** 
-* [v101.03 鸿蒙内核源码分析(总目录) | 百万汉字注解 百篇博客分析](http://weharmonyos.com/blog/101.html)
+* [v101.03 鸿蒙内核源码分析(总目录) | 精雕细琢 锤炼精品](http://weharmonyos.com/blog/101.html)
 * [v102.05 鸿蒙内核源码分析(源码注释) | 每天死磕一点点](http://weharmonyos.com/blog/102.html)
 * [v103.05 鸿蒙内核源码分析(静态站点) | 码农都不爱写注释和文档](http://weharmonyos.com/blog/103.html)
-* [v104.01 鸿蒙内核源码分析(参考文档) | 阅读内核源码必备工具](http://weharmonyos.com/blog/104.html)
+* [v104.01 鸿蒙内核源码分析(参考手册) | 阅读内核源码必备工具](http://weharmonyos.com/blog/104.html)
 
 #### 三： 百万注内核 | 处处扣细节 | 细胞血管
 * 百万汉字注解内核目的是要看清楚其毛细血管，细胞结构，等于在拿放大镜看内核。内核并不神秘，带着问题去源码中找答案是很容易上瘾的，你会发现很多文章对一些问题的解读是错误的，或者说不深刻难以自圆其说，你会慢慢形成自己新的解读，而新的解读又会碰到新的问题，如此层层递进，滚滚向前，拿着放大镜根本不愿意放手。
 * 因鸿蒙内核6W+代码量，本身只有较少的注释， 中文注解以不对原有代码侵入为前提，源码中所有英文部分都是原有注释，所有中文部分都是中文版的注释，同时为方便同步官方版本的更新，尽量不去增加代码的行数，不破坏文件的结构，注释多类似以下的方式:
 
-    在重要模块的`.c/.h`文件开始位置先对模块功能做整体的介绍，例如异常接管模块注解如图所示:
-
-    ![](https://gitee.com/weharmonyos/resources/raw/master/13/ycjg.png)
-
+  * 在重要模块的`.c/.h`文件开始位置先对模块功能做整体的介绍，例如异常接管模块注解如图所示:
+  
+    ![](http://weharmonyos.com/resources/13/ycjg.png)
     注解过程中查阅了很多的资料和书籍，在具体代码处都附上了参考链接。
-
-* 而函数级注解会详细到重点行，甚至每一行， 例如申请互斥锁的主体函数，不可谓不重要，而官方注释仅有一行，如图所示
-
-    ![](https://gitee.com/weharmonyos/resources/raw/master/13/sop.png)
+  * 绘制字符图帮助理解模块 ，例如 虚拟内存区域分布没有图很难理解。
+    ![](http://weharmonyos.com/resources/13/vm.png)
+  * 而函数级注解会详细到重点行，甚至每一行， 例如申请互斥锁的主体函数，不可谓不重要，而官方注释仅有一行，如图所示
+    
+    ![](http://weharmonyos.com/resources/13/sop.png)
 
 * 注解创建了一些特殊记号，可直接搜索查看
   - [x] 搜索 `@note_pic` 可查看绘制的全部字符图
@@ -189,15 +188,16 @@
 
 在中文加注版基础上构建了参考手册，如此可以看到毛细血管级的网络图，注解支持 [doxygen](https://www.doxygen.nl) 格式标准。
 * 图为内核`main`的调用关系直观展现，如果没有这张图，光`main`一个函数就够喝一壶。 `main`本身是由汇编指令 `bl main`调用
-  ![](https://gitee.com/weharmonyos/resources/raw/master/73/1.png)
+  ![](http://weharmonyos.com/resources/73/1.png)
   可前往 >> [鸿蒙研究站 | 参考手册 ](http://weharmonyos.com/doxygen/index.html) 体验
 
 * 图为内核所有结构体索引，点击可查看每个结构变量细节
-  ![](https://gitee.com/weharmonyos/resources/raw/master/73/6.png)
+  ![](http://weharmonyos.com/resources/73/6.png)
   可前往 >> [鸿蒙研究站 | 结构体索引 ](http://weharmonyos.com/doxygen/classes.html) 体验
 
 ### 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [gitcode](https://gitcode.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
+* `2022/04/16` -- 任务调度模块有很大更新
 * `2022/03/23` -- 新增各CPU核自主管理中断, 定时器模块较大调整
 * `2022/02/18` -- 官方无代码更新, 只有测试用例的完善
 * `2022/01/20` -- 同步官方代码,本次官方对测试用例和MMU做了较大调整
@@ -225,13 +225,13 @@
 
 ### 关于 zzz 目录
 中文加注版比官方版无新增文件，只多了一个`zzz`的目录，里面放了一些加注所需文件，它与内核代码无关，可以忽略它，取名`zzz`是为了排在最后，减少对原有代码目录级的侵入，`zzz` 的想法源于微信中名称为`AAA`的那帮朋友，你的微信里应该也有他们熟悉的身影吧 :|P
-* ![](https://gitee.com/weharmonyos/resources/raw/master/13/cate.png)
+* ![](http://weharmonyos.com/resources/13/cate.png)
 ### 官方文档 | 静态站点呈现
 
 * 研究鸿蒙需不断的翻阅资料，吸取别人的精华，其中官方文档必不可少， 为更好的呈现 **OpenHarmony开发者文档** ， 特意做了静态站点 [ >> 鸿蒙研究站 | 官方文档](http://weharmonyos.com/openharmony) 来方便搜索，阅读官方资料。
 
 * 左侧导航栏，右边索引区
-  ![](https://gitee.com/weharmonyos/resources/raw/master/52/4.png)
+  ![](http://weharmonyos.com/resources/52/4.png)
 
 
  * [鸿蒙研究站](http://weharmonyos.com) 定位于做一个专注而靠谱的技术站， 没有广告，干净简洁，对鸿蒙研究会持续在上面输出。同时感谢资助鸿蒙研究和网站建设的小伙伴，很温暖。 [ >> 送温暖记录](http://weharmonyos.com/donate.html)
@@ -240,7 +240,7 @@
 
 ### 关注不迷路 | 代码即人生
 
-![](https://gitee.com/weharmonyos/resources/raw/master/common/so1so.png)
+![](http://weharmonyos.com/resources/common/so1so.png)
 
-原创不易，欢迎转载，请注明出处。
+据说喜欢点赞分享的,后来都成了大神。:)
 

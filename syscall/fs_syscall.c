@@ -2728,18 +2728,15 @@ int SysPselect6(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
     return ret;
 }
 
-int SysEpollCreate(int size)
+static int DoEpollCreate1(int flags)
 {
     int ret;
     int procFd;
 
-    if (size <= 0) {
-        return -EINVAL;
-    }
-
-    ret = epoll_create(size);
+    ret = epoll_create1(flags);
     if (ret < 0) {
         ret = -get_errno();
+        return ret;
     }
 
     procFd = AllocAndAssocProcessFd((INTPTR)(ret), MIN_START_FD);
@@ -2751,23 +2748,15 @@ int SysEpollCreate(int size)
     return procFd;
 }
 
+int SysEpollCreate(int size)
+{
+    (void)size;
+    return DoEpollCreate1(0);
+}
+
 int SysEpollCreate1(int flags)
 {
-    int ret;
-    int procFd;
-
-    ret = epoll_create(flags);
-    if (ret < 0) {
-        ret = -get_errno();
-    }
-
-    procFd = AllocAndAssocProcessFd((INTPTR)(ret), MIN_START_FD);
-    if (procFd == -1) {
-        epoll_close(ret);
-        return -EMFILE;
-    }
-
-    return procFd;
+    return DoEpollCreate1(flags);
 }
 
 int SysEpollCtl(int epfd, int op, int fd, struct epoll_event *ev)
@@ -2786,13 +2775,13 @@ int SysEpollCtl(int epfd, int op, int fd, struct epoll_event *ev)
 
     ret = epoll_ctl(epfd, op, fd, ev);
     if (ret < 0) {
-        ret =-EBADF;
+        ret = -EBADF;
         goto OUT;
     }
 
     CPY_TO_USER(ev);
 OUT:
-    return (ret == -1)? -get_errno():ret;
+    return (ret == -1) ? -get_errno() : ret;
 }
 
 int SysEpollWait(int epfd, struct epoll_event *evs, int maxevents, int timeout)

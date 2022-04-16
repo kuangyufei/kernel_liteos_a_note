@@ -301,11 +301,6 @@ STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)
     return (processCB->processMode == OS_USER_MODE);
 }
 
-#define LOS_SCHED_NORMAL  0U	///< 正常调度
-#define LOS_SCHED_FIFO    1U 	///< 先进先出，按顺序
-#define LOS_SCHED_RR      2U 	///< 抢占式调度,鸿蒙默认调度方式
-#define LOS_SCHED_IDLE    3U	///< 空闲不调度
-
 #define LOS_PRIO_PROCESS  0U 	///< 进程标识
 #define LOS_PRIO_PGRP     1U	///< 进程组标识	
 #define LOS_PRIO_USER     2U	///< 用户标识
@@ -495,7 +490,7 @@ extern UINTPTR OsGetSigHandler(VOID);
 extern VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID);
 extern INT32 OsSendSignalToProcessGroup(INT32 pid, siginfo_t *info, INT32 permission);
 extern INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permission);
-extern UINT32 OsProcessAddNewTask(UINT32 pid, LosTaskCB *taskCB);
+extern UINT32 OsProcessAddNewTask(UINT32 pid, LosTaskCB *taskCB, SchedParam *param);
 extern VOID OsDeleteTaskFromProcess(LosTaskCB *taskCB);
 extern VOID OsProcessThreadGroupDestroy(VOID);
 

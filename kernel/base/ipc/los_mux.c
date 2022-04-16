@@ -310,41 +310,37 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxDestroy(LosMux *mutex)
     return LOS_OK;
 }
 ///设置互斥锁位图
-STATIC VOID OsMuxBitmapSet(const LosMux *mutex, const LosTaskCB *runTask, LosTaskCB *owner)
-{	//当前任务优先级高于锁持有task时的处理
-    if ((owner->priority > runTask->priority) && (mutex->attr.protocol == LOS_MUX_PRIO_INHERIT)) {//协议用继承方式是怎么的呢?
-        LOS_BitmapSet(&(owner->priBitMap), owner->priority);//1.priBitMap是记录任务优先级变化的位图，这里把持有锁任务优先级记录在自己的priBitMap中
-        (VOID)OsSchedModifyTaskSchedParam(owner, owner->policy, runTask->priority);
-    }//注意任务优先级有32个, 是0最高,31最低!!!这里等于提高了持有锁任务的优先级,目的是让其在下次调度中提高选中的概率,从而快速的释放锁.您明白了吗? :|)
-}
-///恢复互斥锁位图
-VOID OsMuxBitmapRestore(const LosMux *mutex, const LosTaskCB *taskCB, LosTaskCB *owner)
+STATIC VOID OsMuxBitmapSet(const LosMux *mutex, const LosTaskCB *runTask)
 {
-    UINT16 bitMapPri;
-
     if (mutex->attr.protocol != LOS_MUX_PRIO_INHERIT) {
         return;
     }
 
-    if (owner->priority >= taskCB->priority) {
-        bitMapPri = LOS_LowBitGet(owner->priBitMap);
-        if (bitMapPri != LOS_INVALID_BIT_INDEX) {
-            LOS_BitmapClr(&(owner->priBitMap), bitMapPri);
-            OsSchedModifyTaskSchedParam(owner, owner->policy, bitMapPri);
-        }
-    } else {
-        if (LOS_HighBitGet(owner->priBitMap) != taskCB->priority) {
-            LOS_BitmapClr(&(owner->priBitMap), taskCB->priority);
-        }
+    SchedParam param = { 0 };
+    LosTaskCB *owner = (LosTaskCB *)mutex->owner;
+    INT32 ret = OsSchedParamCompare(owner, runTask);
+    if (ret > 0) {
+        runTask->ops->schedParamGet(runTask, &param);
+        owner->ops->priorityInheritance(owner, &param);
     }
+}
+///恢复互斥锁位图
+VOID OsMuxBitmapRestore(const LosMux *mutex, const LOS_DL_LIST *list, const LosTaskCB *runTask)
+{
+    if (mutex->attr.protocol != LOS_MUX_PRIO_INHERIT) {
+        return;
+    }
+
+    SchedParam param = { 0 };
+    LosTaskCB *owner = (LosTaskCB *)mutex->owner;
+    runTask->ops->schedParamGet(runTask, &param);
+    owner->ops->priorityRestore(owner, list, &param);
 }
 
 /// 最坏情况就是拿锁失败,让出CPU,变成阻塞任务,等别的任务释放锁后排到自己了接着执行. 
 STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
 {
     UINT32 ret;
-    LOS_DL_LIST *node = NULL;
-    LosTaskCB *owner = NULL;
 
     if ((mutex->muxList.pstPrev == NULL) || (mutex->muxList.pstNext == NULL)) {//列表为空时的处理
         /* This is for mutex macro initialization. */
@@ -357,9 +353,11 @@ STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
         mutex->muxCount++;				//互斥锁计数器加1
         mutex->owner = (VOID *)runTask;	//当前任务拿到锁
         LOS_ListTailInsert(&runTask->lockList, &mutex->holdList);
-        if ((mutex->attr.protocol == LOS_MUX_PRIO_PROTECT) && (runTask->priority > mutex->attr.prioceiling)) {
-            LOS_BitmapSet(&runTask->priBitMap, runTask->priority);
-            (VOID)OsSchedModifyTaskSchedParam(runTask, runTask->policy, mutex->attr.prioceiling);
+        if (mutex->attr.protocol == LOS_MUX_PRIO_PROTECT) {
+            SchedParam param = { 0 };
+            runTask->ops->schedParamGet(runTask, &param);
+            param.priority = mutex->attr.prioceiling;
+            runTask->ops->priorityInheritance(runTask, &param);
         }
         return LOS_OK;
     }
@@ -377,25 +375,21 @@ STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
         return LOS_EDEADLK;//返回错误,自旋锁被别的CPU core 持有
     }
 
-    OsMuxBitmapSet(mutex, runTask, (LosTaskCB *)mutex->owner);//设置锁位图,尽可能的提高锁持有任务的优先级
+    OsMuxBitmapSet(mutex, runTask);//设置锁位图,尽可能的提高锁持有任务的优先级
 
-    owner = (LosTaskCB *)mutex->owner;	//记录持有锁的任务
     runTask->taskMux = (VOID *)mutex;	//记下当前任务在等待这把锁
-    node = OsSchedLockPendFindPos(runTask, &mutex->muxList);
+    LOS_DL_LIST *node = OsSchedLockPendFindPos(runTask, &mutex->muxList);
     if (node == NULL) {
         ret = LOS_NOK;
         return ret;
     }
 
     OsTaskWaitSetPendMask(OS_TASK_WAIT_MUTEX, (UINTPTR)mutex, timeout);
-    ret = OsSchedTaskWait(node, timeout, TRUE);
+    ret = runTask->ops->wait(runTask, node, timeout);
     if (ret == LOS_ERRNO_TSK_TIMEOUT) {//这行代码虽和OsTaskWait挨在一起,但要过很久才会执行到,因为在OsTaskWait中CPU切换了任务上下文
+        OsMuxBitmapRestore(mutex, NULL, runTask);
         runTask->taskMux = NULL;// 所以重新回到这里时可能已经超时了
         ret = LOS_ETIMEDOUT;//返回超时
-    }
-
-    if (timeout != LOS_WAIT_FOREVER) {//不是永远等待的情况
-        OsMuxBitmapRestore(mutex, runTask, owner);//恢复锁的位图
     }
 
     return ret;
@@ -493,24 +487,6 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxTrylock(LosMux *mutex)
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
-///降低参数任务的优先级上限
-STATIC VOID OsMuxPostOpSub(LosTaskCB *taskCB, LosMux *mutex)
-{
-    LosTaskCB *pendedTask = NULL;
-    UINT16 bitMapPri;
-	//理解OsMuxPostOpSub之前要先理解一个task在运行过程中优先级会变化,这些变化都记录在taskCB->priBitMap中
-    if (!LOS_ListEmpty(&mutex->muxList)) {//还有任务在等锁
-        bitMapPri = LOS_HighBitGet(taskCB->priBitMap);//获取参数任务bitmap中优先级下限(意思是最低优先级记录)
-        LOS_DL_LIST_FOR_EACH_ENTRY(pendedTask, (&mutex->muxList), LosTaskCB, pendList) {//循环拿等锁任务
-            if (bitMapPri != pendedTask->priority) {//等锁任务优先级不等于参数任务优先级下限的情况
-                LOS_BitmapClr(&taskCB->priBitMap, pendedTask->priority);//在bitmap的pendedTask->priority位上置0
-            }
-        }
-    }
-    bitMapPri = LOS_LowBitGet(taskCB->priBitMap);//拿低位优先级,也就是最高优先级的记录
-    LOS_BitmapClr(&taskCB->priBitMap, bitMapPri);//把taskCB已知的最高优先级记录位清0,实际等于降低了taskCB优先级的上限
-    (VOID)OsSchedModifyTaskSchedParam((LosTaskCB *)mutex->owner, ((LosTaskCB *)mutex->owner)->policy, bitMapPri);
-}
 
 /*!
  * @brief OsMuxPostOp	
@@ -525,30 +501,21 @@ STATIC VOID OsMuxPostOpSub(LosTaskCB *taskCB, LosMux *mutex)
  */
 STATIC UINT32 OsMuxPostOp(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched)
 {
-    LosTaskCB *resumedTask = NULL;
-
     if (LOS_ListEmpty(&mutex->muxList)) {//如果互斥锁列表为空
         LOS_ListDelete(&mutex->holdList);//把持有互斥锁的节点摘掉
         mutex->owner = NULL;
         return LOS_OK;
     }
 
-    resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(mutex->muxList)));//拿到等待互斥锁链表的第一个任务实体,接下来要唤醒任务
-    if (mutex->attr.protocol == LOS_MUX_PRIO_INHERIT) {//互斥锁属性协议是继承会怎么操作?
-        if (resumedTask->priority > taskCB->priority) {//拿到锁的任务优先级低于参数任务优先级
-            if (LOS_HighBitGet(taskCB->priBitMap) != resumedTask->priority) {//参数任务bitmap中最低的优先级不等于等待锁的任务优先级
-                LOS_BitmapClr(&taskCB->priBitMap, resumedTask->priority);//把等待任务锁的任务的优先级记录在参数任务的bitmap中
-            }
-        } else if (taskCB->priBitMap != 0) {//如果bitmap不等于0说明参数任务至少有任务调度的优先级
-            OsMuxPostOpSub(taskCB, mutex);//
-        }
-    }
+    LosTaskCB *resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(mutex->muxList)));//拿到等待互斥锁链表的第一个任务实体,接下来要唤醒任务
+    OsMuxBitmapRestore(mutex, &mutex->muxList, resumedTask);
+
     mutex->muxCount = 1;//互斥锁数量为1
     mutex->owner = (VOID *)resumedTask;//互斥锁的持有人换了
     LOS_ListDelete(&mutex->holdList);//自然要从等锁链表中把自己摘出去
     LOS_ListTailInsert(&resumedTask->lockList, &mutex->holdList);//把锁挂到恢复任务的锁链表上,lockList是任务持有的所有锁记录
     OsTaskWakeClearPendMask(resumedTask);
-    OsSchedTaskWake(resumedTask);
+    resumedTask->ops->wake(resumedTask);
     resumedTask->taskMux = NULL;
     if (needSched != NULL) {//如果不为空
         *needSched = TRUE;//就走起再次调度流程
@@ -559,8 +526,6 @@ STATIC UINT32 OsMuxPostOp(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched)
 
 UINT32 OsMuxUnlockUnsafe(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched)
 {
-    UINT16 bitMapPri;
-
     if (mutex->magic != OS_MUX_MAGIC) {
         return LOS_EBADF;
     }
@@ -582,11 +547,9 @@ UINT32 OsMuxUnlockUnsafe(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched)
     }
 
     if (mutex->attr.protocol == LOS_MUX_PRIO_PROTECT) {//属性协议为保护时
-        bitMapPri = LOS_HighBitGet(taskCB->priBitMap);//找priBitMap记录中最高的那个优先级
-        if (bitMapPri != LOS_INVALID_BIT_INDEX) {
-            LOS_BitmapClr(&taskCB->priBitMap, bitMapPri);//找priBitMap记录中最高的那个优先级
-            (VOID)OsSchedModifyTaskSchedParam(taskCB, taskCB->policy, bitMapPri);
-        }
+        SchedParam param = { 0 };
+        taskCB->ops->schedParamGet(taskCB, &param);
+        taskCB->ops->priorityRestore(taskCB, NULL, &param);
     }
 
     /* Whether a task block the mutex lock. *///任务是否阻塞互斥锁

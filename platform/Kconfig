@@ -27,6 +27,7 @@ choice
        - hi3518ev300
       Qemu ARM Virt variants (based on different CPU types):
        - qemu_arm_virt_ca7
+       - stm32mp157
 
 config PLATFORM_HI3516DV300
     bool "hi3516dv300"
@@ -41,7 +42,9 @@ config PLATFORM_QEMU_ARM_VIRT_CA7
     select ARCH_CORTEX_A7
     help
         QEMU ARM Virtual Platform using Cortex-A7 CPU.
-
+config PLATFORM_STM32MP157
+    bool "stm32mp157"
+    select ARCH_CORTEX_A7
 endchoice
 
 choice
@@ -61,6 +64,9 @@ config PRODUCT_HISPARK_ARIES
 
 config PRODUCT_QEMU_ARM
     bool "arm_virt" if PLATFORM_QEMU_ARM_VIRT_CA7
+
+config LOSCFG_PRODUCT_BEARPI_HM_MICRO
+    bool "bearpi_hm_micro" if PLATFORM_STM32MP157
 endchoice
 
 config BOARD_CONFIG_PATH

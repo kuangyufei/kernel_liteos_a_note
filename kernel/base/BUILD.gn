@@ -1,5 +1,5 @@
 # Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -65,10 +65,12 @@ kernel_module(module_name) {
     "mp/los_mp.c",
     "mp/los_percpu.c",
     "mp/los_spinlock.c",
-    "mp/los_stat.c",
     "om/los_err.c",
-    "sched/sched_sq/los_sched.c",
-    "sched/sched_sq/los_sortlink.c",
+    "sched/los_idle.c",
+    "sched/los_priority.c",
+    "sched/los_sched.c",
+    "sched/los_sortlink.c",
+    "sched/los_statistics.c",
     "vm/los_vm_boot.c",
     "vm/los_vm_dump.c",
     "vm/los_vm_fault.c",

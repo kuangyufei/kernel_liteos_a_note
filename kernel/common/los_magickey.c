@@ -32,6 +32,7 @@
 #include "los_magickey.h"
 #include "console.h"
 #include "los_task_pri.h"
+#include "los_process_pri.h"
 
 /// 魔法键依赖于宏LOSCFG_ENABLE_MAGICKEY，使用时通过menuconfig在配置项中开启“Enable MAGIC KEY”：
 /// Debug ---> Enable MAGIC KEY；若关闭该选项，则魔法键失效。
@@ -99,9 +100,7 @@ STATIC VOID OsMagicHelp(VOID)//遍历一下 g_magicOpTable
 ///执行 shell task -a 命令 
 STATIC VOID OsMagicTaskShow(VOID)
 {
-    const CHAR *arg = "-a";
-
-    (VOID)OsShellCmdDumpTask(1, &arg);
+    (VOID)OsShellCmdTskInfoGet(OS_ALL_TASK_MASK, NULL, OS_PROCESS_INFO_ALL);
     return;
 }
 

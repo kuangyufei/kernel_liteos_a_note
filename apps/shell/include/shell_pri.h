@@ -32,13 +32,15 @@
 #ifndef _SHELL_PRI_H
 #define _SHELL_PRI_H
 
+#include "shell.h"
+
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-extern void *ShellEntry(void *argv);
+extern void ShellEntry(ShellCB *shellCB);
 extern void *ShellTask(void *argv);
 
 #ifdef __cplusplus

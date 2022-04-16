@@ -246,8 +246,8 @@ STATIC UINT32 OsPmSuspendSleep(LosPmCB *pm)
 
     tickTimerStop = OsPmTickTimerStop(pm);
     if (!tickTimerStop) {
-        OsSchedResetSchedResponseTime(0);
-        OsSchedUpdateExpireTime();
+        OsSchedResponseTimeReset(0);
+        OsSchedExpireTimeUpdate();
     }
 
     OsPmCpuSuspend(pm);

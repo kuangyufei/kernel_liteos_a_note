@@ -37,7 +37,7 @@ LOCAL_SRCS := 	$(wildcard ipc/*.c) $(wildcard core/*.c) $(wildcard mem/membox/*.
 		$(wildcard misc/*.c)\
 		$(wildcard mem/tlsf/*.c) \
 		$(wildcard mp/*.c) \
-		$(wildcard sched/sched_sq/*.c) \
+		$(wildcard sched/*.c) \
 		$(wildcard vm/*.c)
 
 LOCAL_FLAGS := $(LITEOS_CFLAGS_INTERWORK)

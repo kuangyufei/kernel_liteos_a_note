@@ -44,7 +44,7 @@ static void HwiF01(void)
     UINT32 gTestSwtmrTaskID;
     UINT32 cpuid = (ArchCurrCpuid() + 1) % (LOSCFG_KERNEL_CORE_NUM);
 
-    gTestIdleTaskID = OsSchedRunQueByID(cpuid)->idleTaskID;
+    gTestIdleTaskID = OsSchedRunqueueByID(cpuid)->idleTaskID;
 
     ret = LOS_TaskDelete(gTestIdleTaskID);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_ERRNO_TSK_YIELD_IN_INT, ret);

@@ -88,7 +88,7 @@ extern "C" {
 #define MMU_DESCRIPTOR_L1_SECTION_ADDR(x)                       ((x) & MMU_DESCRIPTOR_L1_SMALL_FRAME)
 #define MMU_DESCRIPTOR_L1_PAGE_TABLE_ADDR(x)                    ((x) & ~((1 << 10)-1))
 #define MMU_DESCRIPTOR_L1_SMALL_L2_TABLES_PER_PAGE              4
-#define MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS                   0x4000U ///< 16Kb 小页页表条目(4096个页表项)
+#define MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS                   0x4000U ///< 页表必须按16Kb对齐,因为C2寄存器低14位得为0
 #define MMU_DESCRIPTOR_L1_SMALL_DOMAIN_MASK                     (~(0x0f << 5)) /* 4k page section domain mask */
 #define MMU_DESCRIPTOR_L1_SMALL_DOMAIN_CLIENT                   (MMU_DESCRIPTOR_DOMAIN_CLIENT << 5)
 
@@ -131,10 +131,10 @@ extern "C" {
 #define MMU_DESCRIPTOR_L1_AP_P_RO_U_NA                          (MMU_DESCRIPTOR_L1_AP2_1 | MMU_DESCRIPTOR_L1_AP01_1)
 #define MMU_DESCRIPTOR_L1_AP_MASK                               (MMU_DESCRIPTOR_L1_AP2_1 | MMU_DESCRIPTOR_L1_AP01_3)
 
-#define MMU_DESCRIPTOR_L2_SMALL_SIZE                            0x1000
+#define MMU_DESCRIPTOR_L2_SMALL_SIZE                            0x1000 // L2 小页大小 4K
 #define MMU_DESCRIPTOR_L2_SMALL_MASK                            (MMU_DESCRIPTOR_L2_SMALL_SIZE - 1)
 #define MMU_DESCRIPTOR_L2_SMALL_FRAME                           (~MMU_DESCRIPTOR_L2_SMALL_MASK)
-#define MMU_DESCRIPTOR_L2_SMALL_SHIFT                           12
+#define MMU_DESCRIPTOR_L2_SMALL_SHIFT                           12 //小页偏移 12位 
 #define MMU_DESCRIPTOR_L2_NUMBERS_PER_L1                        \
     (MMU_DESCRIPTOR_L1_SMALL_SIZE >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)
 #define MMU_DESCRIPTOR_IS_L2_SIZE_ALIGNED(x)                    IS_ALIGNED(x, MMU_DESCRIPTOR_L2_SMALL_SIZE)

@@ -79,6 +79,7 @@ struct page_mapping {
 #endif
 /* If the kernel malloc size is less than 16k, use heap, otherwise use physical pages */
 #define KMALLOC_LARGE_SIZE    (PAGE_SIZE << 2)
+
 typedef struct VmMapRange {//线性区范围结构体
     VADDR_T             base;           /**< vm region base addr | 线性区基地址*/
     UINT32              size;           /**< vm region size | 线性区大小*/

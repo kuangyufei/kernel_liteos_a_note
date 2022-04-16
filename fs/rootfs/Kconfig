@@ -29,10 +29,9 @@ endchoice
 config BOOTENV_ADDR
     int "Address of boot command line (KB)"
     depends on PLATFORM_ROOTFS && (STORAGE_SPINOR || STORAGE_SPINAND || STORAGE_EMMC)
-    range 0 1024
     default 512
     help
-      Boot command line addr, range from 0 to 1MB.
+      Boot command line addr.
 
 config BOOTENV_RAM
     bool "Read bootenv from RAM"

@@ -91,7 +91,7 @@ VOID OsMpScheduleHandler(VOID)
      * set schedule flag to differ from wake function,
      * so that the scheduler can be triggered at the end of irq.
      */
-    OsSchedRunQuePendingSet();
+    OsSchedRunqueuePendingSet();
 }
 ///硬中断暂停处理函数
 VOID OsMpHaltHandler(VOID)

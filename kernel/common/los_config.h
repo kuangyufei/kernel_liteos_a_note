@@ -272,6 +272,15 @@ extern UINT32 __heap_end;		///< 堆区结束地址
 #define LOSCFG_BASE_IPC_MUX
 #endif
 
+/****************************** rwlock module configuration ******************************/
+/**
+ * @ingroup los_config
+ * Configuration item for rwlock module tailoring
+ */
+#ifndef LOSCFG_BASE_IPC_RWLOCK
+#define LOSCFG_BASE_IPC_RWLOCK
+#endif
+
 /****************************** Queue module configuration ********************************/
 /**
  * @ingroup los_config

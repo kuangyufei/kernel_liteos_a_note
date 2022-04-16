@@ -275,6 +275,7 @@ STATIC VOID OsQueueBufferOperate(LosQueueCB *queueCB, UINT32 operateType, VOID *
             PRINT_ERR("get msgdatasize failed\n");
             return;
         }
+        msgDataSize = (*bufferSize < msgDataSize) ? *bufferSize : msgDataSize;
         if (memcpy_s(bufferAddr, *bufferSize, queueNode, msgDataSize) != EOK) {//2.读表示读走已有数据,所以相当于bufferAddr接着了queueNode的数据
             PRINT_ERR("copy message to buffer failed\n");
             return;
@@ -301,9 +302,7 @@ STATIC UINT32 OsQueueOperateParamCheck(const LosQueueCB *queueCB, UINT32 queueID
         return LOS_ERRNO_QUEUE_NOT_CREATE;
     }
 
-    if (OS_QUEUE_IS_READ(operateType) && (*bufferSize < (queueCB->queueSize - sizeof(UINT32)))) {//读时判断
-        return LOS_ERRNO_QUEUE_READ_SIZE_TOO_SMALL;//接走队列数据的buffer太小了,接不走整个消息数据
-    } else if (OS_QUEUE_IS_WRITE(operateType) && (*bufferSize > (queueCB->queueSize - sizeof(UINT32)))) {//写时判断
+    if (OS_QUEUE_IS_WRITE(operateType) && (*bufferSize > (queueCB->queueSize - sizeof(UINT32)))) {//写时判断
         return LOS_ERRNO_QUEUE_WRITE_SIZE_TOO_BIG;//塞进来的数据太大,大于队列节点能承受的范围
     }
     return LOS_OK;
@@ -322,15 +321,13 @@ STATIC UINT32 OsQueueOperateParamCheck(const LosQueueCB *queueCB, UINT32 queueID
  */
 UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT32 *bufferSize, UINT32 timeout)
 {
-    LosQueueCB *queueCB = NULL;
-    LosTaskCB *resumedTask = NULL;
     UINT32 ret;
     UINT32 readWrite = OS_QUEUE_READ_WRITE_GET(operateType);//获取读/写操作标识
     UINT32 intSave;
     OsHookCall(LOS_HOOK_TYPE_QUEUE_READ, (LosQueueCB *)GET_QUEUE_HANDLE(queueID), operateType, *bufferSize, timeout);
 
     SCHEDULER_LOCK(intSave);
-    queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);//获取对应的队列控制块
+    LosQueueCB *queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);//获取对应的队列控制块
     ret = OsQueueOperateParamCheck(queueCB, queueID, operateType, bufferSize);//参数检查
     if (ret != LOS_OK) {
         goto QUEUE_END;
@@ -347,8 +344,9 @@ UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT
             goto QUEUE_END;
         }
 		//任务等待,这里很重要啊,将自己从就绪列表摘除,让出了CPU并发起了调度,并挂在readWriteList[readWrite]上,挂的都等待读/写消息的task
+        LosTaskCB *runTask = OsCurrTaskGet();
         OsTaskWaitSetPendMask(OS_TASK_WAIT_QUEUE, queueCB->queueID, timeout);
-        ret = OsSchedTaskWait(&queueCB->readWriteList[readWrite], timeout, TRUE);
+        ret = runTask->ops->wait(runTask, &queueCB->readWriteList[readWrite], timeout);
         if (ret == LOS_ERRNO_TSK_TIMEOUT) {//唤醒后如果超时了,返回读/写消息失败
             ret = LOS_ERRNO_QUEUE_TIMEOUT;
             goto QUEUE_END;//
@@ -360,9 +358,9 @@ UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT
     OsQueueBufferOperate(queueCB, operateType, bufferAddr, bufferSize);//发起读或写队列操作
 
     if (!LOS_ListEmpty(&queueCB->readWriteList[!readWrite])) {//如果还有任务在排着队等待读/写入消息(当时不能读/写的原因有可能当时队列满了==)
-        resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&queueCB->readWriteList[!readWrite]));//取出要读/写消息的任务
+        LosTaskCB *resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&queueCB->readWriteList[!readWrite]));//取出要读/写消息的任务
         OsTaskWakeClearPendMask(resumedTask);
-        OsSchedTaskWake(resumedTask);
+        resumedTask->ops->wake(resumedTask);
         SCHEDULER_UNLOCK(intSave);
         LOS_MpSchedule(OS_MP_CPU_ALL);//让所有CPU发出调度申请,因为很可能那个要读/写消息的队列是由其他CPU执行
         LOS_Schedule();//申请调度

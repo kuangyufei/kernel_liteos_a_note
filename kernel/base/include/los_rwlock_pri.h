@@ -41,7 +41,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_RWLOCK_MAGIC 0xBEFDCAU ///< 读写锁魔法数字
+#define OS_RWLOCK_MAGIC 0xEFDCAU ///< 读写锁魔法数字
 
 enum RwlockMode {
     RWLOCK_NONE_MODE,	///< 自由模式: 读写链表都没有内容 

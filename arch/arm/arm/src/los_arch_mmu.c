@@ -1094,16 +1094,16 @@ STATUS_T LOS_ArchMmuDestroy(LosArchMmu *archMmu)
 #endif
     return LOS_OK;
 }
-
+/// 切换临时页表
 STATIC VOID OsSwitchTmpTTB(VOID)
 {
     PTE_T *tmpTtbase = NULL;
     errno_t err;
     LosVmSpace *kSpace = LOS_GetKVmSpace();
 
-    /* ttbr address should be 16KByte align */
+    /* ttbr address should be 16KByte align | 页表应该 16Kb对齐,因为 TTB寄存器的低14位为 0 */
     tmpTtbase = LOS_MemAllocAlign(m_aucSysMem0, MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS,
-                                  MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS);
+                                  MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS);//分配页表
     if (tmpTtbase == NULL) {
         VM_ERR("memory alloc failed");
         return;
@@ -1166,7 +1166,7 @@ STATIC VOID OsSetKSectionAttr(UINTPTR virtAddr, BOOL uncached)
     UINT32 kmallocLength;
     UINT32 flags;
 
-    /* use second-level mapping of default READ and WRITE */
+    /* use second-level mapping of default READ and WRITE | 使用二级映射*/
     kSpace->archMmu.virtTtb = (PTE_T *)g_firstPageTable;//__attribute__((section(".bss.prebss.translation_table"))) UINT8 g_firstPageTable[MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS];
     kSpace->archMmu.physTtb = LOS_PaddrQuery(kSpace->archMmu.virtTtb);//通过TTB虚拟地址查询TTB物理地址
     status = LOS_ArchMmuUnmap(&kSpace->archMmu, virtAddr,
@@ -1266,8 +1266,8 @@ VOID OsInitMappingStartUp(VOID)
 
     OsSwitchTmpTTB();//切换到临时TTB ,请想想为何要切换到临时 @note_thinking
 
-    OsSetKSectionAttr(KERNEL_VMM_BASE, FALSE);
-    OsSetKSectionAttr(UNCACHED_VMM_BASE, TRUE);
+    OsSetKSectionAttr(KERNEL_VMM_BASE, FALSE);//设置内核空间属性
+    OsSetKSectionAttr(UNCACHED_VMM_BASE, TRUE);//设置未缓存空间属性
     OsKSectionNewAttrEnable();
 }
 #endif

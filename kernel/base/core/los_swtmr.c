@@ -122,9 +122,10 @@ typedef struct {
     SortLinkAttribute swtmrSortLink;
     LosTaskCB         *swtmrTask;           /* software timer task id | 定时器任务ID */
     LOS_DL_LIST       swtmrHandlerQueue;     /* software timer timeout queue id | 定时器超时队列*/
-} SwtmrRunQue;
+} SwtmrRunqueue;
 
-STATIC SwtmrRunQue g_swtmrRunQue[LOSCFG_KERNEL_CORE_NUM];
+STATIC SwtmrRunqueue g_swtmrRunqueue[LOSCFG_KERNEL_CORE_NUM];
+
 #ifdef LOSCFG_SWTMR_DEBUG
 #define OS_SWTMR_PERIOD_TO_CYCLE(period) (((UINT64)(period) * OS_NS_PER_TICK) / OS_NS_PER_CYCLE)
 STATIC SwtmrDebugData *g_swtmrDebugData = NULL;
@@ -244,7 +245,7 @@ STATIC INLINE VOID SwtmrHandler(SwtmrHandlerItemPtr swtmrHandle)
 #endif
 }
 
-STATIC INLINE VOID SwtmrWake(SwtmrRunQue *srq, UINT64 startTime, SortLinkList *sortList)
+STATIC INLINE VOID SwtmrWake(SwtmrRunqueue *srq, UINT64 startTime, SortLinkList *sortList)
 {
     UINT32 intSave;
     SWTMR_CTRL_S *swtmr = LOS_DL_LIST_ENTRY(sortList, SWTMR_CTRL_S, stSortList);
@@ -278,7 +279,7 @@ STATIC INLINE VOID SwtmrWake(SwtmrRunQue *srq, UINT64 startTime, SortLinkList *s
     SWTMR_UNLOCK(intSave);
 }
 
-STATIC INLINE VOID ScanSwtmrTimeList(SwtmrRunQue *srq)
+STATIC INLINE VOID ScanSwtmrTimeList(SwtmrRunqueue *srq)
 {
     UINT32 intSave;
     SortLinkAttribute *swtmrSortLink = &srq->swtmrSortLink;
@@ -327,13 +328,13 @@ STATIC VOID SwtmrTask(VOID)
     UINT32 intSave;
     UINT64 waitTime;
 
-    SwtmrRunQue *srq = &g_swtmrRunQue[ArchCurrCpuid()];
+    SwtmrRunqueue *srq = &g_swtmrRunqueue[ArchCurrCpuid()];
     LOS_DL_LIST *head = &srq->swtmrHandlerQueue;
     for (;;) {//死循环获取队列item,一直读干净为止
         waitTime = OsSortLinkGetNextExpireTime(OsGetCurrSchedTimeCycle(), &srq->swtmrSortLink);
         if (waitTime != 0) {
             SCHEDULER_LOCK(intSave);
-            OsSchedDelay(srq->swtmrTask, waitTime);
+            srq->swtmrTask->ops->delay(srq->swtmrTask, waitTime);
             OsHookCall(LOS_HOOK_TYPE_MOVEDTASKTODELAYEDLIST, srq->swtmrTask);
             SCHEDULER_UNLOCK(intSave);
         }
@@ -376,7 +377,7 @@ STATIC UINT32 SwtmrTaskCreate(UINT16 cpuid, UINT32 *swtmrTaskID)
 
 UINT32 OsSwtmrTaskIDGetByCpuid(UINT16 cpuid)
 {
-    return g_swtmrRunQue[cpuid].swtmrTask->taskID;
+    return g_swtmrRunqueue[cpuid].swtmrTask->taskID;
 }
 
 BOOL OsIsSwtmrTask(const LosTaskCB *taskCB)
@@ -425,7 +426,7 @@ STATIC UINT32 SwtmrBaseInit(VOID)
     }
 
     for (UINT16 index = 0; index < LOSCFG_KERNEL_CORE_NUM; index++) {
-        SwtmrRunQue *srq = &g_swtmrRunQue[index];
+        SwtmrRunqueue *srq = &g_swtmrRunqueue[index];
         /* The linked list of all cores must be initialized at core 0 startup for load balancing */
         OsSortLinkInit(&srq->swtmrSortLink);
         LOS_ListInit(&srq->swtmrHandlerQueue);
@@ -456,7 +457,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
         goto ERROR;
     }
 
-    SwtmrRunQue *srq = &g_swtmrRunQue[cpuid];
+    SwtmrRunqueue *srq = &g_swtmrRunqueue[cpuid];
     srq->swtmrTask = OsGetTaskCB(swtmrTaskID);
     return LOS_OK;
 
@@ -470,13 +471,13 @@ ERROR:
 }
 
 #ifdef LOSCFG_KERNEL_SMP
-STATIC INLINE VOID FindIdleSwtmrRunQue(UINT16 *idleCpuid)
+STATIC INLINE VOID FindIdleSwtmrRunqueue(UINT16 *idleCpuid)
 {
-    SwtmrRunQue *idleRq = &g_swtmrRunQue[0];
+    SwtmrRunqueue *idleRq = &g_swtmrRunqueue[0];
     UINT32 nodeNum = OsGetSortLinkNodeNum(&idleRq->swtmrSortLink);
     UINT16 cpuid = 1;
     do {
-        SwtmrRunQue *srq = &g_swtmrRunQue[cpuid];
+        SwtmrRunqueue *srq = &g_swtmrRunqueue[cpuid];
         UINT32 temp = OsGetSortLinkNodeNum(&srq->swtmrSortLink);
         if (nodeNum > temp) {
             *idleCpuid = cpuid;
@@ -489,7 +490,7 @@ STATIC INLINE VOID FindIdleSwtmrRunQue(UINT16 *idleCpuid)
 
 STATIC INLINE VOID AddSwtmr2TimeList(SortLinkList *node, UINT64 responseTime, UINT16 cpuid)
 {
-    SwtmrRunQue *srq = &g_swtmrRunQue[cpuid];
+    SwtmrRunqueue *srq = &g_swtmrRunqueue[cpuid];
     OsAdd2SortLink(&srq->swtmrSortLink, node, responseTime, cpuid);
 }
 
@@ -500,7 +501,7 @@ STATIC INLINE VOID DeSwtmrFromTimeList(SortLinkList *node)
 #else
     UINT16 cpuid = 0;
 #endif
-    SwtmrRunQue *srq = &g_swtmrRunQue[cpuid];
+    SwtmrRunqueue *srq = &g_swtmrRunqueue[cpuid];
     OsDeleteFromSortLink(&srq->swtmrSortLink, node);
     return;
 }
@@ -509,7 +510,7 @@ STATIC VOID SwtmrAdjustCheck(UINT16 cpuid, UINT64 responseTime)
 {
     UINT32 ret;
     UINT32 intSave;
-    SwtmrRunQue *srq = &g_swtmrRunQue[cpuid];
+    SwtmrRunqueue *srq = &g_swtmrRunqueue[cpuid];
     SCHEDULER_LOCK(intSave);
     if ((srq->swtmrTask == NULL) || !OsTaskIsBlocked(srq->swtmrTask)) {
         SCHEDULER_UNLOCK(intSave);
@@ -521,14 +522,14 @@ STATIC VOID SwtmrAdjustCheck(UINT16 cpuid, UINT64 responseTime)
         return;
     }
 
-    ret = OsSchedAdjustTaskFromTimeList(srq->swtmrTask, responseTime);
+    ret = OsSchedTimeoutQueueAdjust(srq->swtmrTask, responseTime);
     SCHEDULER_UNLOCK(intSave);
     if (ret != LOS_OK) {
         return;
     }
 
     if (cpuid == ArchCurrCpuid()) {
-        OsSchedUpdateExpireTime();
+        OsSchedExpireTimeUpdate();
     } else {
         LOS_MpSchedule(CPUID_TO_AFFI_MASK(cpuid));
     }
@@ -572,7 +573,7 @@ STATIC INLINE VOID SwtmrStart(SWTMR_CTRL_S *swtmr)
     UINT64 responseTime;
     UINT16 idleCpu = 0;
 #ifdef LOSCFG_KERNEL_SMP
-    FindIdleSwtmrRunQue(&idleCpu);
+    FindIdleSwtmrRunqueue(&idleCpu);
 #endif
     swtmr->startTime = OsGetCurrSchedTimeCycle();
     responseTime = SwtmrToStart(swtmr, idleCpu);
@@ -609,7 +610,7 @@ STATIC INLINE VOID SwtmrRestart(UINT64 startTime, SortLinkList *sortList, UINT16
 VOID OsSwtmrResponseTimeReset(UINT64 startTime)
 {
     UINT16 cpuid = ArchCurrCpuid();
-    SortLinkAttribute *swtmrSortLink = &g_swtmrRunQue[cpuid].swtmrSortLink;
+    SortLinkAttribute *swtmrSortLink = &g_swtmrRunqueue[cpuid].swtmrSortLink;
     LOS_DL_LIST *listHead = &swtmrSortLink->sortLink;
     LOS_DL_LIST *listNext = listHead->pstNext;
 
@@ -627,7 +628,7 @@ VOID OsSwtmrResponseTimeReset(UINT64 startTime)
     LOS_SpinUnlock(&swtmrSortLink->spinLock);
 }
 
-STATIC INLINE BOOL SwtmrRunQueFind(SortLinkAttribute *swtmrSortLink, SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg)
+STATIC INLINE BOOL SwtmrRunqueueFind(SortLinkAttribute *swtmrSortLink, SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg)
 {
     LOS_DL_LIST *listObject = &swtmrSortLink->sortLink;
     LOS_DL_LIST *list = listObject->pstNext;
@@ -649,8 +650,8 @@ STATIC INLINE BOOL SwtmrRunQueFind(SortLinkAttribute *swtmrSortLink, SCHED_TL_FI
 STATIC BOOL SwtmrTimeListFind(SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg)
 {
     for (UINT16 cpuid = 0; cpuid < LOSCFG_KERNEL_CORE_NUM; cpuid++) {
-        SortLinkAttribute *swtmrSortLink = &g_swtmrRunQue[ArchCurrCpuid()].swtmrSortLink;
-        if (SwtmrRunQueFind(swtmrSortLink, checkFunc, arg)) {
+        SortLinkAttribute *swtmrSortLink = &g_swtmrRunqueue[ArchCurrCpuid()].swtmrSortLink;
+        if (SwtmrRunqueueFind(swtmrSortLink, checkFunc, arg)) {
             return TRUE;
         }
     }
@@ -674,7 +675,7 @@ BOOL OsSwtmrWorkQueueFind(SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg)
 LITE_OS_SEC_TEXT UINT32 OsSwtmrGetNextTimeout(VOID)
 {
     UINT64 currTime = OsGetCurrSchedTimeCycle();
-    SwtmrRunQue *srq = &g_swtmrRunQue[ArchCurrCpuid()];
+    SwtmrRunqueue *srq = &g_swtmrRunqueue[ArchCurrCpuid()];
     UINT64 time = (OsSortLinkGetNextExpireTime(currTime, &srq->swtmrSortLink) / OS_CYCLE_PER_TICK);
     if (time > OS_INVALID_VALUE) {
         time = OS_INVALID_VALUE;

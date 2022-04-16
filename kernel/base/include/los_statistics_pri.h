@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,45 +29,43 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <string.h>
-#include <stdint.h>
+#ifndef __LOS_STAT_PRI_H
+#define __LOS_STAT_PRI_H
 
-#define SIZE_U64    (sizeof(uint64_t))
-#define SIZE_U32    (sizeof(uint32_t))
+#include "los_typedef.h"
 
-int memcmp(const void *str1, const void *str2, size_t n)
-{
+#ifdef __cplusplus
+#if __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+#endif /* __cplusplus */
 
-    const unsigned char *s1 = str1;
-    const unsigned char *s2 = str2;
-    size_t num = n;
+typedef struct {
+    UINT64      allRuntime;
+    UINT64      runTime;
+    UINT64      switchCount;          /* sched switch count */
+    UINT64      timeSliceRealTime;    /* The actual usage time of each time slice */
+    UINT64      timeSliceTime;
+    UINT64      timeSliceCount;       /* The number of time slices allocated */
+    UINT64      pendTime;
+    UINT64      pendCount;
+    UINT64      waitSchedTime;        /* task status is ready to running times */
+    UINT64      waitSchedCount;
+} SchedStat;
 
-    while (num >= SIZE_U64) {
-        if (*(const uint64_t *)(s1) != *(const uint64_t *)(s2)) {
-            goto L4_byte_cmp;
-        }
-        s1 += SIZE_U64;
-        s2 += SIZE_U64;
-        num -= SIZE_U64;
-    }
-    if (num == 0) {
-        return 0;
-    }
+#ifdef LOSCFG_SCHED_DEBUG
+#ifdef LOSCFG_SCHED_TICK_DEBUG
+VOID OsSchedDebugRecordData(VOID);
+UINT32 OsShellShowTickResponse(VOID);
+UINT32 OsShellShowSchedStatistics(VOID);
+UINT32 OsSchedDebugInit(VOID);
+#endif
+#endif
 
-L4_byte_cmp:
-    if (num >= SIZE_U32) {
-        if (*(const uint32_t *)(s1) != *(const uint32_t *)(s2)) {
-            goto L4_byte_diff;
-        }
-        s1 += SIZE_U32;
-        s2 += SIZE_U32;
-        num -= SIZE_U32;
-    }
-    if (num == 0) {
-        return 0;
-    }
-L4_byte_diff:
-    for (; num && (*s1 == *s2); num--, s1++, s2++) {
-    }
-    return num ? *s1 - *s2 : 0;
+#ifdef __cplusplus
+#if __cplusplus
 }
+#endif /* __cplusplus */
+#endif /* __cplusplus */
+
+#endif /* __LOS_STAT_PRI_H */

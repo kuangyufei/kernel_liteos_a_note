@@ -947,7 +947,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckMsgSize(IpcMsg *msg)
             totalSize += obj->content.ptr.buffSz;//指针指向的buf存储在用户空间其他地方
         }
     }
-    (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
+    (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
     if (totalSize > g_cmsTask.maxMsgSize) {
         (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
         return -EINVAL;
@@ -1136,7 +1136,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcWrite(IpcContent *content)
     OsHookCall(LOS_HOOK_TYPE_IPC_WRITE, &buf->msg, dstTid, tcb->processID, tcb->waitFlag);
     if (tcb->waitFlag == OS_TASK_WAIT_LITEIPC) {//如果这个任务在等这个消息,注意这个tcb可不是当前任务
         OsTaskWakeClearPendMask(tcb);//撕掉对应标签
-        OsSchedTaskWake(tcb);//唤醒任务执行,因为任务在等待读取 IPC消息
+        tcb->ops->wake(tcb);
         SCHEDULER_UNLOCK(intSave);
         LOS_MpSchedule(OS_MP_CPU_ALL);//设置调度方式,所有CPU核发生一次调度,这里非要所有CPU都调度吗? 
         //可不可以查询下该任务挂在哪个CPU上,只调度对应CPU呢?   注者在此抛出思考 @note_thinking
@@ -1221,7 +1221,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcRead(IpcContent *content)
         if (LOS_ListEmpty(listHead)) {//链表为空 ?
             OsTaskWaitSetPendMask(OS_TASK_WAIT_LITEIPC, OS_INVALID_VALUE, timeout);//设置当前任务要等待的信息
             OsHookCall(LOS_HOOK_TYPE_IPC_TRY_READ, syncFlag ? MT_REPLY : MT_REQUEST, tcb->waitFlag);//向hook模块输入等待日志信息
-            ret = OsSchedTaskWait(&g_ipcPendlist, timeout, TRUE);//将任务挂到全局链表上,任务进入等IPC信息,等待时间(timeout),此处产生调度,将切换到别的任务执行
+            ret = tcb->ops->wait(tcb, &g_ipcPendlist, timeout);//将任务挂到全局链表上,任务进入等IPC信息,等待时间(timeout),此处产生调度,将切换到别的任务执行
 			//如果一个消息在超时前到达,则任务会被唤醒执行,返回就不是LOS_ERRNO_TSK_TIMEOUT
 			if (ret == LOS_ERRNO_TSK_TIMEOUT) {//如果发生指定的时间还没有IPC到达时
                 OsHookCall(LOS_HOOK_TYPE_IPC_READ_TIMEOUT, syncFlag ? MT_REPLY : MT_REQUEST, tcb->waitFlag);//打印任务等待IPC时发生 回复/请求超时

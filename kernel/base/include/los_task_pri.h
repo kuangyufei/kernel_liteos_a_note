@@ -73,7 +73,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task control block is unused.
  */
-#define OS_TASK_STATUS_UNUSED       0x0200U ///< 任务状态:未使用
+#define OS_TASK_STATUS_UNUSED       0x0400U ///< 任务状态:未使用
 
 /**
  * @ingroup los_task
@@ -81,7 +81,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is joinable.
  */
-#define OS_TASK_FLAG_PTHREAD_JOIN   0x0400U ///< 主task和子task连在一块不分离
+#define OS_TASK_FLAG_PTHREAD_JOIN   0x0800U ///< 主task和子task连在一块不分离
 
 /**
  * @ingroup los_task
@@ -89,7 +89,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is user mode task.
  */
-#define OS_TASK_FLAG_USER_MODE      0x0800U
+#define OS_TASK_FLAG_USER_MODE      0x1000U
 
 /**
  * @ingroup los_task
@@ -97,7 +97,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is system-level task, like idle, swtmr and etc.
  */
-#define OS_TASK_FLAG_SYSTEM_TASK    0x1000U	///< 系统任务
+#define OS_TASK_FLAG_SYSTEM_TASK    0x2000U	///< 系统任务
 
 /**
  * @ingroup los_task
@@ -105,7 +105,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * The task is no-delete system task, like resourceTask. 
  */
-#define OS_TASK_FLAG_NO_DELETE    0x2000U ///< 该任务是不可删除的系统任务，如资源回收任务
+#define OS_TASK_FLAG_NO_DELETE    0x4000U ///< 该任务是不可删除的系统任务，如资源回收任务
 
 /**
  * @ingroup los_task
@@ -113,15 +113,7 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
  *
  * Kills the thread during process exit.
  */
-#define OS_TASK_FLAG_EXIT_KILL       0x4000U ///< 在进程退出期间一同被干掉的任务
-
-/**
- * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The delayed operation of this task is frozen.
- */
-#define OS_TASK_FLAG_FREEZE          0x8000U
+#define OS_TASK_FLAG_EXIT_KILL       0x8000U ///< 在进程退出期间一同被干掉的任务
 
 /**
  * @ingroup los_task
@@ -329,8 +321,8 @@ extern UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam);
 extern INT32 OsSetTaskName(LosTaskCB *taskCB, const CHAR *name, BOOL setPName);
 extern VOID OsTaskCBRecycleToFree(VOID);
 extern VOID OsRunningTaskToExit(LosTaskCB *runTask, UINT32 status);
-extern UINT32 OsUserTaskOperatePermissionsCheck(LosTaskCB *taskCB);
-extern UINT32 OsUserProcessOperatePermissionsCheck(LosTaskCB *taskCB, UINT32 processID);
+extern INT32 OsUserTaskOperatePermissionsCheck(const LosTaskCB *taskCB);
+extern INT32 OsUserProcessOperatePermissionsCheck(const LosTaskCB *taskCB, UINT32 processID);
 extern INT32 OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info);
 extern VOID OsWriteResourceEvent(UINT32 events);
 extern VOID OsWriteResourceEventUnsafe(UINT32 events);

@@ -66,6 +66,7 @@ static int OsUserTaskSchedulerSet(unsigned int tid, unsigned short policy, unsig
     int ret;
     unsigned int intSave;
     bool needSched = false;
+    SchedParam param = { 0 };
 
     if (OS_TID_CHECK_INVALID(tid)) {
         return EINVAL;
@@ -79,16 +80,18 @@ static int OsUserTaskSchedulerSet(unsigned int tid, unsigned short policy, unsig
         return EINVAL;
     }
 
-    SCHEDULER_LOCK(intSave);
     LosTaskCB *taskCB = OS_TCB_FROM_TID(tid);
+    SCHEDULER_LOCK(intSave);
     ret = OsUserTaskOperatePermissionsCheck(taskCB);
     if (ret != LOS_OK) {
         SCHEDULER_UNLOCK(intSave);
         return ret;
     }
 
-    policy = (policyFlag == true) ? policy : taskCB->policy;
-    needSched = OsSchedModifyTaskSchedParam(taskCB, policy, priority);
+    taskCB->ops->schedParamGet(taskCB, &param);
+    param.policy = (policyFlag == true) ? policy : param.policy;
+    param.priority = priority;
+    needSched = taskCB->ops->schedParamModify(taskCB, &param);
     SCHEDULER_UNLOCK(intSave);
 
     LOS_MpSchedule(OS_MP_CPU_ALL);
@@ -101,15 +104,16 @@ static int OsUserTaskSchedulerSet(unsigned int tid, unsigned short policy, unsig
 
 void SysSchedYield(int type)
 {
+    (void)type;
+
     (void)LOS_TaskYield();
     return;
 }
 
 int SysSchedGetScheduler(int id, int flag)
 {
-    LosTaskCB *taskCB = NULL;
     unsigned int intSave;
-    int policy;
+    SchedParam param = { 0 };
     int ret;
 
     if (flag < 0) {
@@ -117,17 +121,17 @@ int SysSchedGetScheduler(int id, int flag)
             return -EINVAL;
         }
 
+        LosTaskCB *taskCB = OS_TCB_FROM_TID(id);
         SCHEDULER_LOCK(intSave);
-        taskCB = OS_TCB_FROM_TID(id);
         ret = OsUserTaskOperatePermissionsCheck(taskCB);
         if (ret != LOS_OK) {
             SCHEDULER_UNLOCK(intSave);
             return -ret;
         }
 
-        policy = taskCB->policy;
+        taskCB->ops->schedParamGet(taskCB, &param);
         SCHEDULER_UNLOCK(intSave);
-        return policy;
+        return (int)param.policy;
     }
 
     return LOS_GetProcessScheduler(id);
@@ -159,8 +163,7 @@ int SysSchedSetScheduler(int id, int policy, int prio, int flag)
 
 int SysSchedGetParam(int id, int flag)
 {
-    LosTaskCB *taskCB = NULL;
-    int pri;
+    SchedParam param = { 0 };
     unsigned int intSave;
 
     if (flag < 0) {
@@ -168,17 +171,17 @@ int SysSchedGetParam(int id, int flag)
             return -EINVAL;
         }
 
+        LosTaskCB *taskCB = OS_TCB_FROM_TID(id);
         SCHEDULER_LOCK(intSave);
-        taskCB = OS_TCB_FROM_TID(id);
-        pri = OsUserTaskOperatePermissionsCheck(taskCB);
-        if (pri != LOS_OK) {
+        int ret = OsUserTaskOperatePermissionsCheck(taskCB);
+        if (ret != LOS_OK) {
             SCHEDULER_UNLOCK(intSave);
-            return -pri;
+            return -ret;
         }
 
-        pri = taskCB->priority;
+        taskCB->ops->schedParamGet(taskCB, &param);
         SCHEDULER_UNLOCK(intSave);
-        return pri;
+        return (int)param.priority;
     }
 
     if (id == 0) {
@@ -191,7 +194,7 @@ int SysSchedGetParam(int id, int flag)
 
     return OsGetProcessPriority(LOS_PRIO_PROCESS, id);
 }
-///设置进程优先级
+
 int SysSetProcessPriority(int which, int who, unsigned int prio)
 {
     int ret;
@@ -252,6 +255,7 @@ int SysSchedRRGetInterval(int pid, struct timespec *tp)
 {
     unsigned int intSave;
     int ret;
+    SchedParam param = { 0 };
     time_t timeSlice = 0;
     struct timespec tv;
     LosTaskCB *taskCB = NULL;
@@ -279,8 +283,11 @@ int SysSchedRRGetInterval(int pid, struct timespec *tp)
     }
 
     LOS_DL_LIST_FOR_EACH_ENTRY(taskCB, &processCB->threadSiblingList, LosTaskCB, threadList) {
-        if (!OsTaskIsInactive(taskCB) && (taskCB->policy == LOS_SCHED_RR)) {
-            timeSlice += taskCB->initTimeSlice;
+        if (!OsTaskIsInactive(taskCB)) {
+            taskCB->ops->schedParamGet(taskCB, &param);
+            if (param.policy == LOS_SCHED_RR) {
+                timeSlice += param.timeSlice;
+            }
         }
     }
 
@@ -895,17 +902,15 @@ unsigned int SysCreateUserThread(const TSK_ENTRY_FUNC func, const UserTaskParam 
 int SysSetThreadArea(const char *area)
 {
     unsigned int intSave;
-    LosTaskCB *taskCB = NULL;
-    LosProcessCB *processCB = NULL;
-    unsigned int ret = LOS_OK;
+    int ret = LOS_OK;
 
     if (!LOS_IsUserAddress((unsigned long)(uintptr_t)area)) {
         return EINVAL;
     }
 
+    LosTaskCB *taskCB = OsCurrTaskGet();
     SCHEDULER_LOCK(intSave);
-    taskCB = OsCurrTaskGet();
-    processCB = OS_PCB_FROM_PID(taskCB->processID);
+    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
     if (processCB->processMode != OS_USER_MODE) {
         ret = EPERM;
         goto OUT;
@@ -926,20 +931,19 @@ int SysUserThreadSetDetach(unsigned int taskID)
 {
     unsigned int intSave;
     int ret;
-    LosTaskCB *taskCB = NULL;
 
     if (OS_TID_CHECK_INVALID(taskID)) {
         return EINVAL;
     }
 
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(taskID);
     SCHEDULER_LOCK(intSave);
-    taskCB = OS_TCB_FROM_TID(taskID);
     ret = OsUserTaskOperatePermissionsCheck(taskCB);
     if (ret != LOS_OK) {
         goto EXIT;
     }
 
-    ret = OsTaskSetDetachUnsafe(taskCB);
+    ret = (int)OsTaskSetDetachUnsafe(taskCB);
 
 EXIT:
     SCHEDULER_UNLOCK(intSave);
@@ -949,7 +953,7 @@ EXIT:
 int SysUserThreadDetach(unsigned int taskID)
 {
     unsigned int intSave;
-    unsigned int ret;
+    int ret;
 
     if (OS_TID_CHECK_INVALID(taskID)) {
         return EINVAL;
@@ -962,8 +966,7 @@ int SysUserThreadDetach(unsigned int taskID)
         return ret;
     }
 
-    ret = LOS_TaskDelete(taskID);
-    if (ret != LOS_OK) {
+    if (LOS_TaskDelete(taskID) != LOS_OK) {
         return ESRCH;
     }
 
@@ -973,21 +976,20 @@ int SysUserThreadDetach(unsigned int taskID)
 int SysThreadJoin(unsigned int taskID)
 {
     unsigned int intSave;
-    unsigned int ret;
-    LosTaskCB *taskCB = NULL;
+    int ret;
 
     if (OS_TID_CHECK_INVALID(taskID)) {
         return EINVAL;
     }
 
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(taskID);
     SCHEDULER_LOCK(intSave);
-    taskCB = OS_TCB_FROM_TID(taskID);
     ret = OsUserTaskOperatePermissionsCheck(taskCB);
     if (ret != LOS_OK) {
         goto EXIT;
     }
 
-    ret = OsTaskJoinPendUnsafe(OS_TCB_FROM_TID(taskID));
+    ret = (int)OsTaskJoinPendUnsafe(OS_TCB_FROM_TID(taskID));
 
 EXIT:
     SCHEDULER_UNLOCK(intSave);

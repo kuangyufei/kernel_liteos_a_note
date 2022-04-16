@@ -164,22 +164,22 @@ static VOID DoEpollClose(struct epoll_head *epHead)
 }
 
 /**
- * epoll_create,
+ * epoll_create unsupported api
+ *
+ * epoll_create is implemented by calling epoll_create1, it's parameter 'size' is useless.
+ *
+ * epoll_create1,
  * The simple version of epoll does not use red-black trees,
  * so when fd is normal value (greater than 0),
  * actually allocated epoll can manage num of EPOLL_DEFAULT_SIZE
  *
- * @param size: not actually used
+ * @param flags: not actually used
  * @return epoll fd
  */
-int epoll_create(int size)
+int epoll_create1(int flags)
 {
+    (void)flags;
     int fd = -1;
-
-    if (size <= 0) {
-        set_errno(EINVAL);
-        return fd;
-    }
 
     struct epoll_head *epHead = (struct epoll_head *)malloc(sizeof(struct epoll_head));
     if (epHead == NULL) {

@@ -351,7 +351,7 @@ char *GetCmdName(const char *cmdline, unsigned int len)
     return cmdName;
 }
 
-void ChildExec(const char *cmdName, char *const paramArray[])
+void ChildExec(const char *cmdName, char *const paramArray[], bool foreground)
 {
     int ret;
     pid_t gid;
@@ -367,10 +367,12 @@ void ChildExec(const char *cmdName, char *const paramArray[])
         exit(1);
     }
 
-    ret = tcsetpgrp(STDIN_FILENO, gid);
-    if (ret != 0) {
-        printf("tcsetpgrp failed, errno %d\n", errno);
-        exit(1);
+    if (!foreground) {
+        ret = tcsetpgrp(STDIN_FILENO, gid);
+        if (ret != 0) {
+            printf("tcsetpgrp failed, errno %d\n", errno);
+            exit(1);
+        }
     }
 
     ret = execve(cmdName, paramArray, NULL);
@@ -404,20 +406,30 @@ int CheckExit(const char *cmdName, const CmdParsed *cmdParsed)
     exit(ret);
 }
 
-static void DoCmdExec(const char *cmdName, const char *cmdline, unsigned int len, const CmdParsed *cmdParsed)
+static void DoCmdExec(const char *cmdName, const char *cmdline, unsigned int len, CmdParsed *cmdParsed)
 {
+    bool foreground = FALSE;
     int ret;
     pid_t forkPid;
 
     if (strncmp(cmdline, CMD_EXEC_COMMAND, CMD_EXEC_COMMAND_BYTES) == 0) {
+        if ((cmdParsed->paramCnt > 1) && (strcmp(cmdParsed->paramArray[cmdParsed->paramCnt - 1], "&") == 0)) {
+            free(cmdParsed->paramArray[cmdParsed->paramCnt - 1]);
+            cmdParsed->paramArray[cmdParsed->paramCnt - 1] = NULL;
+            cmdParsed->paramCnt--;
+            foreground = TRUE;
+        }
+
         forkPid = fork();
         if (forkPid < 0) {
             printf("Faild to fork from shell\n");
             return;
         } else if (forkPid == 0) {
-            ChildExec(cmdParsed->paramArray[0], cmdParsed->paramArray);
+            ChildExec(cmdParsed->paramArray[0], cmdParsed->paramArray, foreground);
         } else {
-            waitpid(forkPid, 0, 0);
+            if (!foreground) {
+                (void)waitpid(forkPid, 0, 0);
+            }
             ret = tcsetpgrp(STDIN_FILENO, getpid());
             if (ret != 0) {
                 printf("tcsetpgrp failed, errno %d\n", errno);
@@ -567,20 +579,10 @@ static void ExecCmdline(const char *cmdline)
     free(output);
 }
 
-void RecycleZombieChild(void)
-{
-    while (waitpid(-1, NULL, WNOHANG) > 0) {
-        continue;
-    }
-}
-
 static void ShellCmdProcess(ShellCB *shellCB)
 {
-    char *buf = NULL;
     while (1) {
-        /* recycle zombine child process */
-        RecycleZombieChild();
-        buf = GetCmdline(shellCB);
+        char *buf = GetCmdline(shellCB);
         if (buf == NULL) {
             break;
         }
@@ -654,24 +656,18 @@ static int ShellKernelReg(unsigned int shellHandle)
     return ioctl(STDIN_FILENO, CONSOLE_CONTROL_REG_USERTASK, shellHandle);//Shell Entry 任务将从标准输入中读取数据
 }
 
-void *ShellEntry(void *argv)
+void ShellEntry(ShellCB *shellCB)
 {
     char ch;
     int ret;
     int n;
     pid_t tid = syscall(__NR_gettid);//获取当前任务/线程ID, 即 "Shell Entry" 任务的ID
-    ShellCB *shellCB = (ShellCB *)argv;
 
     if (shellCB == NULL) {
-        return NULL;
+        return;
     }
 
     (void)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);
-
-    ret = prctl(PR_SET_NAME, "ShellEntry");//将任务的名称设置成 ShellEntry
-    if (ret != SH_OK) {
-        return NULL;
-    }
 
     ret = ShellKernelReg((int)tid);//向内核注册shell,和控制台捆绑在一块
     if (ret != 0) {
@@ -685,32 +681,5 @@ void *ShellEntry(void *argv)
             ShellCmdLineParse(ch, (OutputFunc)printf, shellCB);//对命令行内容进行解析
         }
     }
-    return NULL;
+    return;
 }
-
-int ShellEntryInit(ShellCB *shellCB)
-{
-    int ret;
-    size_t stackSize = SHELL_ENTRY_STACKSIZE;
-    void *arg = NULL;
-    pthread_attr_t attr;
-
-    if (shellCB == NULL) {
-        return SH_NOK;
-    }
-
-    ret = pthread_attr_init(&attr);
-    if (ret != SH_OK) {
-        return SH_NOK;
-    }
-
-    pthread_attr_setstacksize(&attr, stackSize);
-    arg = (void *)shellCB;
-    ret = pthread_create(&shellCB->shellEntryHandle, &attr, &ShellEntry, arg);
-    if (ret != SH_OK) {
-        return SH_NOK;
-    }
-
-    return ret;
-}
-

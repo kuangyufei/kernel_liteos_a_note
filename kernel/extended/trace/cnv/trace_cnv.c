@@ -155,12 +155,25 @@ STATIC VOID LOS_TraceMuxDelete(const LosMux *muxCB)
 
 STATIC VOID LOS_TraceTaskCreate(const LosTaskCB *taskCB)
 {
-    LOS_TRACE(TASK_CREATE, taskCB->taskID, taskCB->taskStatus, taskCB->priority);
+#ifdef LOSCFG_KERNEL_TRACE
+    SchedParam param = { 0 };
+    taskCB->ops->schedParamGet(taskCB, &param);
+    LOS_TRACE(TASK_CREATE, taskCB->taskID, taskCB->taskStatus, param.priority);
+#else
+    (VOID)taskCB;
+#endif
 }
 
 STATIC VOID LOS_TraceTaskPriModify(const LosTaskCB *taskCB, UINT32 prio)
 {
-    LOS_TRACE(TASK_PRIOSET, taskCB->taskID, taskCB->taskStatus, taskCB->priority, prio);
+#ifdef LOSCFG_KERNEL_TRACE
+    SchedParam param = { 0 };
+    taskCB->ops->schedParamGet(taskCB, &param);
+    LOS_TRACE(TASK_PRIOSET, taskCB->taskID, taskCB->taskStatus, param.priority, prio);
+#else
+    (VOID)taskCB;
+    (VOID)prio;
+#endif
 }
 
 STATIC VOID LOS_TraceTaskDelete(const LosTaskCB *taskCB)
@@ -170,13 +183,28 @@ STATIC VOID LOS_TraceTaskDelete(const LosTaskCB *taskCB)
 
 STATIC VOID LOS_TraceTaskSwitchedIn(const LosTaskCB *newTask, const LosTaskCB *runTask)
 {
-    LOS_TRACE(TASK_SWITCH, newTask->taskID, runTask->priority, runTask->taskStatus,
-        newTask->priority, newTask->taskStatus);
+#ifdef LOSCFG_KERNEL_TRACE
+    SchedParam runParam = { 0 };
+    SchedParam newParam = { 0 };
+    runTask->ops->schedParamGet(runTask, &runParam);
+    newTask->ops->schedParamGet(newTask, &newParam);
+    LOS_TRACE(TASK_SWITCH, newTask->taskID, runParam.priority, runTask->taskStatus,
+              newParam.priority, newTask->taskStatus);
+#else
+    (VOID)newTask;
+    (VOID)runTask;
+#endif
 }
 
 STATIC VOID LOS_TraceTaskResume(const LosTaskCB *taskCB)
 {
-    LOS_TRACE(TASK_RESUME, taskCB->taskID, taskCB->taskStatus, taskCB->priority);
+#ifdef LOSCFG_KERNEL_TRACE
+    SchedParam param = { 0 };
+    taskCB->ops->schedParamGet(taskCB, &param);
+    LOS_TRACE(TASK_RESUME, taskCB->taskID, taskCB->taskStatus, param.priority);
+#else
+    (VOID)taskCB;
+#endif
 }
 
 STATIC VOID LOS_TraceTaskSuspend(const LosTaskCB *taskCB)
@@ -266,7 +294,7 @@ STATIC VOID LOS_TraceUsrEvent(VOID *buffer, UINT32 len)
     LOS_MemFree(m_aucSysMem0, buffer);
 #endif
 }
-///< 将事件的钩子函数注册进HOOK框架 ,但谁能告诉我 cnv 是啥意思 ?  @note_thinking
+///< 将事件的钩子函数注册进HOOK框架 ,但谁能告诉我 cnv 是啥意�??  @note_thinking
 VOID OsTraceCnvInit(VOID)
 {
     LOS_HookReg(LOS_HOOK_TYPE_MEM_ALLOC, LOS_TraceMemAlloc);
