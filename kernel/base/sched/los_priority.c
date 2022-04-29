@@ -43,6 +43,8 @@
 #define OS_SCHED_READY_MAX         30
 #define OS_TIME_SLICE_MIN          (INT32)((50 * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE) /* 50us */
 
+//基于优先数调度算法 Highest-Priority-First(HPF)
+
 STATIC HPFRunqueue g_schedHPF;
 
 STATIC VOID HPFDequeue(SchedRunqueue *rq, LosTaskCB *taskCB);
@@ -526,7 +528,7 @@ VOID HPFProcessDefaultSchedParamGet(SchedParam *param)
 {
     param->basePrio = OS_USER_PROCESS_PRIORITY_HIGHEST;
 }
-
+//HPF 调度策略初始化
 VOID HPFSchedPolicyInit(SchedRunqueue *rq)
 {
     if (ArchCurrCpuid() > 0) {

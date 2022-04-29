@@ -86,7 +86,12 @@
 #define WRITE_TIMER_REG64(reg, val) ARM_SYSREG64_WRITE(reg, val)
 
 #endif
-
+/* 
+* 见于 << arm 架构参考手册>> B4.1.21 处 CNTFRQ寄存器表示系统计数器的时钟频率。
+* 这个寄存器是一个通用的计时器寄存器。
+* MRC p15, 0, <Rt>, c14, c0, 0 ; Read CNTFRQ into Rt
+* MCR p15, 0, <Rt>, c14, c0, 0 ; Write Rt to CNTFRQ
+*/
 UINT32 HalClockFreqRead(VOID)
 {
     return READ_TIMER_REG32(TIMER_REG_CNTFRQ);
@@ -124,13 +129,13 @@ UINT64 HalClockGetCycles(VOID)
     cntpct = READ_TIMER_REG64(TIMER_REG_CT);
     return cntpct;
 }
-
+//硬时钟初始化
 LITE_OS_SEC_TEXT_INIT VOID HalClockInit(VOID)
 {
     UINT32 ret;
 
-    g_sysClock = HalClockFreqRead();
-    ret = LOS_HwiCreate(OS_TICK_INT_NUM, MIN_INTERRUPT_PRIORITY, 0, OsTickHandler, 0);
+    g_sysClock = HalClockFreqRead();//读取CPU的时钟频率
+    ret = LOS_HwiCreate(OS_TICK_INT_NUM, MIN_INTERRUPT_PRIORITY, 0, OsTickHandler, 0);//创建硬中断定时器
     if (ret != LOS_OK) {
         PRINT_ERR("%s, %d create tick irq failed, ret:0x%x\n", __FUNCTION__, __LINE__, ret);
     }

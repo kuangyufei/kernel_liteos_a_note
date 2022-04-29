@@ -44,7 +44,7 @@ STATIC VOID IdleTimeSliceUpdate(SchedRunqueue *rq, LosTaskCB *taskCB, UINT64 cur
 STATIC INT32 IdleParamCompare(const SchedPolicy *sp1, const SchedPolicy *sp2);
 STATIC VOID IdlePriorityInheritance(LosTaskCB *owner, const SchedParam *param);
 STATIC VOID IdlePriorityRestore(LosTaskCB *owner, const LOS_DL_LIST *list, const SchedParam *param);
-
+//空闲调度
 const STATIC SchedOps g_idleOps = {
     .dequeue = IdleDequeue,
     .enqueue = IdleEnqueue,

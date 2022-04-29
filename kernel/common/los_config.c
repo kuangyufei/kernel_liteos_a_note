@@ -77,14 +77,14 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 EarliestInit(VOID)
 
     return LOS_OK;
 }
-
+//硬件早期初始化
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 ArchEarlyInit(VOID)
 {
     UINT32 ret;
 
-    /* set system counter freq */
+    /* set system counter freq | 设置系统计数器频率*/
 #ifndef LOSCFG_TEE_ENABLE
-    HalClockFreqWrite(OS_SYS_CLOCK);
+    HalClockFreqWrite(OS_SYS_CLOCK); //写寄存器 MCR p15, 0, <Rt>, c14, c0, 0 ; Write Rt to CNTFRQ
 #endif
 
 #ifdef LOSCFG_PLATFORM_HWI
@@ -101,11 +101,11 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 ArchEarlyInit(VOID)
 
     return LOS_OK;
 }
-
+//平台早期初始化
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 PlatformEarlyInit(VOID)
 {
 #if defined(LOSCFG_PLATFORM_UART_WITHOUT_VFS) && defined(LOSCFG_DRIVERS)
-    uart_init();
+    uart_init(); //初始化串口
 #endif /* LOSCFG_PLATFORM_UART_WITHOUT_VFS */
 
     return LOS_OK;

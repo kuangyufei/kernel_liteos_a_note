@@ -76,23 +76,23 @@ STATIC INLINE UINT64 OsGetCurrSchedTimeCycle(VOID)
 }
 
 typedef enum {
-    INT_NO_RESCH = 0x0,   /* no needs to schedule */
-    INT_PEND_RESCH = 0x1, /* pending schedule flag */
-    INT_PEND_TICK = 0x2,  /* pending tick */
+    INT_NO_RESCH = 0x0,   /* no needs to schedule | 无需调度*/
+    INT_PEND_RESCH = 0x1, /* pending schedule flag | 因阻塞而引起的调度*/
+    INT_PEND_TICK = 0x2,  /* pending tick | 因Tick而引起的调度*/
 } SchedFlag;
 
-#define OS_PRIORITY_QUEUE_NUM 32
+#define OS_PRIORITY_QUEUE_NUM 32 //队列优先级
 typedef struct {
-    LOS_DL_LIST priQueList[OS_PRIORITY_QUEUE_NUM];
-    UINT32      readyTasks[OS_PRIORITY_QUEUE_NUM];
-    UINT32      queueBitmap;
+    LOS_DL_LIST priQueList[OS_PRIORITY_QUEUE_NUM];	//任务
+    UINT32      readyTasks[OS_PRIORITY_QUEUE_NUM];  //已就绪任务
+    UINT32      queueBitmap;	//位图
 } HPFQueue;
 
 typedef struct {
-    HPFQueue queueList[OS_PRIORITY_QUEUE_NUM];
+    HPFQueue queueList[OS_PRIORITY_QUEUE_NUM]; //
     UINT32   queueBitmap;
 } HPFRunqueue;
-
+//调度运行队列
 typedef struct {
     SortLinkAttribute timeoutQueue; /* task timeout queue */
     HPFRunqueue       *hpfRunqueue;
@@ -103,10 +103,10 @@ typedef struct {
     UINT32            schedFlag;             /* pending scheduler flag */
 } SchedRunqueue;
 
-extern SchedRunqueue g_schedRunqueue[LOSCFG_KERNEL_CORE_NUM];
+extern SchedRunqueue g_schedRunqueue[LOSCFG_KERNEL_CORE_NUM];//每个CPU核都有一个属于自己的调度队列
 
 VOID OsSchedExpireTimeUpdate(VOID);
-
+//获取当前CPU
 STATIC INLINE SchedRunqueue *OsSchedRunqueue(VOID)
 {
     return &g_schedRunqueue[ArchCurrCpuid()];
@@ -220,37 +220,39 @@ typedef struct {
 } SchedParam;
 
 typedef struct {
-    UINT16  policy; /* This field must be present for all scheduling policies and must be the first in the structure */
-    UINT16  basePrio;
-    UINT16  priority;
-    UINT32  initTimeSlice;
-    UINT32  priBitmap; /**< Bitmap for recording the change of task priority, the priority can not be greater than 31 */
+    UINT16  policy; /* This field must be present for all scheduling policies and must be the first in the structure 
+					| 所有调度策略都必须存在此字段，并且必须是结构中的第一个字段*/
+    UINT16  basePrio; ///< 起始优先级
+    UINT16  priority; ///< 当前优先级
+    UINT32  initTimeSlice;///< 初始化时间片
+    UINT32  priBitmap; /**< Bitmap for recording the change of task priority, the priority can not be greater than 31 
+	| 记录任务优先级变化的位图，优先级不能大于31 */
 } SchedHPF;
 
-typedef struct {
+typedef struct { //调度策略
     union {
-        SchedHPF hpf;
+        SchedHPF hpf; // 目前只支持 优先级策略（Highest-Priority-First，HPF）
     } Policy;
 } SchedPolicy;
 
-typedef struct {
-    VOID (*dequeue)(SchedRunqueue *rq, LosTaskCB *taskCB);
-    VOID (*enqueue)(SchedRunqueue *rq, LosTaskCB *taskCB);
-    VOID (*start)(SchedRunqueue *rq, LosTaskCB *taskCB);
-    VOID (*exit)(LosTaskCB *taskCB);
-    UINT32 (*wait)(LosTaskCB *runTask, LOS_DL_LIST *list, UINT32 timeout);
-    VOID (*wake)(LosTaskCB *taskCB);
-    BOOL (*schedParamModify)(LosTaskCB *taskCB, const SchedParam *param);
-    UINT32 (*schedParamGet)(const LosTaskCB *taskCB, SchedParam *param);
-    UINT32 (*delay)(LosTaskCB *taskCB, UINT64 waitTime);
-    VOID (*yield)(LosTaskCB *taskCB);
-    UINT32 (*suspend)(LosTaskCB *taskCB);
-    UINT32 (*resume)(LosTaskCB *taskCB, BOOL *needSched);
-    UINT64 (*deadlineGet)(const LosTaskCB *taskCB);
-    VOID (*timeSliceUpdate)(SchedRunqueue *rq, LosTaskCB *taskCB, UINT64 currTime);
-    INT32 (*schedParamCompare)(const SchedPolicy *sp1, const SchedPolicy *sp2);
-    VOID (*priorityInheritance)(LosTaskCB *owner, const SchedParam *param);
-    VOID (*priorityRestore)(LosTaskCB *owner, const LOS_DL_LIST *list, const SchedParam *param);
+typedef struct {//调度接口函数
+    VOID (*dequeue)(SchedRunqueue *rq, LosTaskCB *taskCB); 	///< 出队列
+    VOID (*enqueue)(SchedRunqueue *rq, LosTaskCB *taskCB); 	///< 入队列
+    VOID (*start)(SchedRunqueue *rq, LosTaskCB *taskCB); 	///< 开始执行任务
+    VOID (*exit)(LosTaskCB *taskCB);	///< 任务退出
+    UINT32 (*wait)(LosTaskCB *runTask, LOS_DL_LIST *list, UINT32 timeout); ///< 任务等待
+    VOID (*wake)(LosTaskCB *taskCB);///< 任务唤醒
+    BOOL (*schedParamModify)(LosTaskCB *taskCB, const SchedParam *param);///< 修改调度参数
+    UINT32 (*schedParamGet)(const LosTaskCB *taskCB, SchedParam *param);///< 获取调度参数
+    UINT32 (*delay)(LosTaskCB *taskCB, UINT64 waitTime);///< 延时执行
+    VOID (*yield)(LosTaskCB *taskCB);///< 让出控制权
+    UINT32 (*suspend)(LosTaskCB *taskCB);///< 挂起任务
+    UINT32 (*resume)(LosTaskCB *taskCB, BOOL *needSched);///< 恢复任务
+    UINT64 (*deadlineGet)(const LosTaskCB *taskCB);///< 获取最后期限
+    VOID (*timeSliceUpdate)(SchedRunqueue *rq, LosTaskCB *taskCB, UINT64 currTime);///< 更新时间片
+    INT32 (*schedParamCompare)(const SchedPolicy *sp1, const SchedPolicy *sp2); ///< 比较调度参数
+    VOID (*priorityInheritance)(LosTaskCB *owner, const SchedParam *param);//继承调度参数
+    VOID (*priorityRestore)(LosTaskCB *owner, const LOS_DL_LIST *list, const SchedParam *param);///< 恢复调度参数
 } SchedOps;
 
 /**
@@ -605,7 +607,7 @@ STATIC INLINE VOID SchedTaskUnfreeze(LosTaskCB *taskCB)
 #define OS_SCHEDULER_CLR(cpuid) do {     \
     g_taskScheduled &= ~(1U << (cpuid)); \
 } while (0);
-
+//获取最高优先级任务
 STATIC INLINE LosTaskCB *HPFRunqueueTopTaskGet(HPFRunqueue *rq)
 {
     LosTaskCB *newTask = NULL;

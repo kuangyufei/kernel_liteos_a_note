@@ -67,7 +67,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * System clock (unit: HZ)
  */
 #ifndef OS_SYS_CLOCK	///< HZ:是每秒中的周期性变动重复次数的计量
-#define OS_SYS_CLOCK (get_bus_clk()) ///< 系统主时钟频率 例如:50000000 即50微秒 
+#define OS_SYS_CLOCK (get_bus_clk()) ///< 系统主时钟频率  例如:50000000 即20纳秒 
 #endif
 /**
  * @ingroup los_config
