@@ -43,7 +43,6 @@
                 "bounds_checking_function",
                 "toybox",
                 "NuttX",
-                "Linux_Kernel",
                 "FatFs",
                 "mksh",
                 "musl",

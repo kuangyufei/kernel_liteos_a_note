@@ -1,5 +1,4 @@
-# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2022-2022 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -28,32 +27,32 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
+import("//third_party/musl/porting/liteos_a_newlib/kernel/newlib.gni")
 
-group("fs") {
-  deps = [
-    "fat",
-    "fat/virpart",
-    "nfs",
-    "patchfs",
-    "proc",
-    "ramfs",
-    "romfs",
-    "rootfs",
-    "vfs",
-    "vfs/bcache",
-    "zpfs",
-  ]
+module_switch = defined(LOSCFG_LIBC_NEWLIB)
+module_name = get_path_info(rebase_path("."), "name")
+kernel_module(module_name) {
+  sources = NEWLIB_ADAPT_SRC_COMMON
+  configs += [ "$LITEOSTOPDIR:warn_config" ]
+
+  configs += [ ":private" ]
 }
 
 config("public") {
-  include_dirs = [ "include" ]
-  configs = [
-    "vfs:public",
-    "vfs/bcache:public",
-    "fat:public",
-    "fat/virpart:public",
-    "proc:public",
-    "patchfs:public",
-    "rootfs:public",
+  include_dirs = [ "porting/include" ]
+  include_dirs += NEWLIB_ADAPT_INCLUDE_DIRS
+}
+
+config("private") {
+  cflags = [
+    "-frounding-math",
+    "-Wno-unused-but-set-variable",
+    "-Wno-unknown-pragmas",
+  ]
+
+  cflags += [
+    "-Wno-shift-op-parentheses",
+    "-Wno-logical-op-parentheses",
+    "-Wno-bitwise-op-parentheses",
   ]
 }

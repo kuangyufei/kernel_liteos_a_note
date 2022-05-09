@@ -28,7 +28,6 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
-import("//third_party/Linux_Kernel/Linux_Kernel.gni")
 
 module_switch = defined(LOSCFG_FS_JFFS)
 module_name = get_path_info(rebase_path("."), "name")

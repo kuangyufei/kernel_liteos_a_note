@@ -137,6 +137,7 @@ STATIC UINT32 g_nextExcWaitCpu = INVALID_CPUID;
 #define OS_MAX_BACKTRACE 15U //打印栈内容的数目
 #define DUMPSIZE 128U
 #define DUMPREGS 12U
+#define COM_REGS            4U
 #define INSTR_SET_MASK 0x01000020U
 #define THUMB_INSTR_LEN 2U
 #define ARM_INSTR_LEN 4U
@@ -612,13 +613,22 @@ VOID OsDumpContextMem(const ExcContext *excBufAddr)
         return;
     }
 
-    for (excReg = &(excBufAddr->R0); count <= DUMPREGS; excReg++, count++) {
+    for (excReg = &(excBufAddr->R0); count < COM_REGS; excReg++, count++) {
         if (IS_VALID_ADDR(*excReg)) {
             PrintExcInfo("\ndump mem around R%u:%p", count, (*excReg));
             OsDumpMemByte(DUMPSIZE, ((*excReg) - (DUMPSIZE >> 1)));
         }
     }
-
+    for (excReg = &(excBufAddr->R4); count < DUMPREGS; excReg++, count++) {
+        if (IS_VALID_ADDR(*excReg)) {
+            PrintExcInfo("\ndump mem around R%u:%p", count, (*excReg));
+            OsDumpMemByte(DUMPSIZE, ((*excReg) - (DUMPSIZE >> 1)));
+        }
+    }
+    if (IS_VALID_ADDR(excBufAddr->R12)) {
+        PrintExcInfo("\ndump mem around R12:%p", excBufAddr->R12);
+        OsDumpMemByte(DUMPSIZE, (excBufAddr->R12 - (DUMPSIZE >> 1)));
+    }
     if (IS_VALID_ADDR(excBufAddr->SP)) {
         PrintExcInfo("\ndump mem around SP:%p", excBufAddr->SP);
         OsDumpMemByte(DUMPSIZE, (excBufAddr->SP - (DUMPSIZE >> 1)));
@@ -742,6 +752,7 @@ STATIC INLINE BOOL FindSuitableStack(UINTPTR regFP, UINTPTR *start, UINTPTR *end
     const StackInfo *stack = NULL;
     vaddr_t kvaddr;
 
+#ifdef LOSCFG_KERNEL_VM
     if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {//当前CPU在用户态执行发生异常
         taskCB = OsCurrTaskGet();
         stackStart = taskCB->userMapBase;                     //用户态栈基地址,即用户态栈顶
@@ -752,6 +763,7 @@ STATIC INLINE BOOL FindSuitableStack(UINTPTR regFP, UINTPTR *start, UINTPTR *end
         }
         return found;
     }
+#endif
 
     /* Search in the task stacks | 找任务的内核态栈*/
     for (index = 0; index < g_taskMaxNum; index++) {

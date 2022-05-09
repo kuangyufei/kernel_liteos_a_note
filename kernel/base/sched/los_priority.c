@@ -43,7 +43,7 @@
 #define OS_SCHED_READY_MAX         30
 #define OS_TIME_SLICE_MIN          (INT32)((50 * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE) /* 50us */
 
-//基于优先数调度算法 Highest-Priority-First(HPF)
+//基于优先数调度算法 Highest-Priority-First (HPF)
 
 STATIC HPFRunqueue g_schedHPF;
 
@@ -64,7 +64,7 @@ STATIC VOID HPFTimeSliceUpdate(SchedRunqueue *rq, LosTaskCB *taskCB, UINT64 curr
 STATIC INT32 HPFParamCompare(const SchedPolicy *sp1, const SchedPolicy *sp2);
 STATIC VOID HPFPriorityInheritance(LosTaskCB *owner, const SchedParam *param);
 STATIC VOID HPFPriorityRestore(LosTaskCB *owner, const LOS_DL_LIST *list, const SchedParam *param);
-
+//优先级调度算法操作
 const STATIC SchedOps g_priorityOps = {
     .dequeue = HPFDequeue,
     .enqueue = HPFEnqueue,
@@ -240,7 +240,7 @@ STATIC INLINE VOID PriQueInsert(HPFRunqueue *rq, LosTaskCB *taskCB)
     taskCB->taskStatus &= ~OS_TASK_STATUS_BLOCKED;
     taskCB->taskStatus |= OS_TASK_STATUS_READY;
 }
-
+//入就绪队列
 STATIC VOID HPFEnqueue(SchedRunqueue *rq, LosTaskCB *taskCB)
 {
 #ifdef LOSCFG_SCHED_DEBUG
@@ -250,14 +250,14 @@ STATIC VOID HPFEnqueue(SchedRunqueue *rq, LosTaskCB *taskCB)
 #endif
     PriQueInsert(rq->hpfRunqueue, taskCB);
 }
-
+//出就绪队列
 STATIC VOID HPFDequeue(SchedRunqueue *rq, LosTaskCB *taskCB)
 {
     SchedHPF *sched = (SchedHPF *)&taskCB->sp;
 
-    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {
+    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {//是否有就绪状态
         PriQueDelete(rq->hpfRunqueue, sched->basePrio, &taskCB->pendList, sched->priority);
-        taskCB->taskStatus &= ~OS_TASK_STATUS_READY;
+        taskCB->taskStatus &= ~OS_TASK_STATUS_READY;//更新成非就绪状态
     }
 }
 
@@ -466,7 +466,7 @@ STATIC VOID HPFPriorityInheritance(LosTaskCB *owner, const SchedParam *param)
     LOS_BitmapSet(&sp->priBitmap, sp->priority);
     sp->priority = param->priority;
 }
-
+/// 恢复任务优先级
 STATIC VOID HPFPriorityRestore(LosTaskCB *owner, const LOS_DL_LIST *list, const SchedParam *param)
 {
     UINT16 priority;
@@ -489,8 +489,8 @@ STATIC VOID HPFPriorityRestore(LosTaskCB *owner, const LOS_DL_LIST *list, const 
     }
 
     if ((list != NULL) && !LOS_ListEmpty((LOS_DL_LIST *)list)) {
-        priority = LOS_HighBitGet(sp->priBitmap);
-        LOS_DL_LIST_FOR_EACH_ENTRY(pendedTask, list, LosTaskCB, pendList) {
+        priority = LOS_HighBitGet(sp->priBitmap);//获取在历史调度中最高优先级
+        LOS_DL_LIST_FOR_EACH_ENTRY(pendedTask, list, LosTaskCB, pendList) {//遍历链表
             SchedHPF *pendSp = (SchedHPF *)&pendedTask->sp;
             if ((pendedTask->ops == owner->ops) && (priority != pendSp->priority)) {
                 LOS_BitmapClr(&sp->priBitmap, pendSp->priority);

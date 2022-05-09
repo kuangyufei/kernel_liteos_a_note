@@ -1,0 +1,121 @@
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import("//kernel/liteos_a/liteos.gni")
+
+MUSLDIR = "$LITEOSTHIRDPARTY/musl"
+
+import("//third_party/optimized-routines/optimized-routines.gni")
+import("$MUSLDIR/porting/liteos_a/kernel/musl.gni")
+
+module_switch = defined(LOSCFG_LIBC_MUSL)
+module_name = get_path_info(rebase_path("."), "name")
+kernel_module(module_name) {
+  sources = MUSL_SRC_COMMON
+
+  if (defined(LOSCFG_ARCH_ARM_AARCH32)) {
+    sources += MUSL_SRC_ARM
+    foreach(f, MUSL_SRC_ARM) {
+      sources -= [ string_replace(f, "/arm/", "/") ]
+    }
+  }
+
+  if (LOSCFG_ARCH_ARM_VER == "armv7-a") {
+    sources -= [
+      "$MUSLPORTINGDIR/src/string/memchr.c",
+      "$MUSLPORTINGDIR/src/string/memcpy.c",
+      "$MUSLPORTINGDIR/src/string/strcmp.c",
+      "$MUSLPORTINGDIR/src/string/strcpy.c",
+      "$MUSLPORTINGDIR/src/string/strlen.c",
+    ]
+    sources += [
+      "src/arch/arm/memcmp.S",
+      "src/arch/arm/memset.S",
+    ]
+    sources += OPTRT_STRING_ARM_SRC_FILES_FOR_ARMV7_A
+    asmflags = [
+      "-D__strlen_armv6t2=strlen",
+      "-D__strcmp_arm=strcmp",
+      "-D__memchr_arm=memchr",
+    ]
+    if (defined(LOSCFG_KERNEL_LMS)) {
+      asmflags += [
+        "-D__memcpy_arm=__memcpy",
+        "-D__strcpy_arm=__strcpy",
+      ]
+    } else {
+      asmflags += [
+        "-D__memcpy_arm=memcpy",
+        "-D__strcpy_arm=strcpy",
+      ]
+    }
+  } else {
+    # arch is not armv7-a
+    sources += [
+      "src/memcmp.c",
+      "src/memset.c",
+    ]
+  }
+
+  include_dirs = [
+    "$MUSLPORTINGDIR/src/include",
+    "$MUSLPORTINGDIR/src/internal",
+  ]
+
+  public_configs = [ ":public" ]
+  configs += [ ":private" ]
+}
+
+config("public") {
+  cflags = [
+    "-isystem",
+    rebase_path("$MUSLPORTINGDIR/include"),
+  ]
+}
+
+config("private") {
+  if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
+    cflags = [
+      "-Wno-char-subscripts",
+      "-Wno-unknown-pragmas",
+    ]
+  } else {
+    cflags = [
+      "-frounding-math",
+      "-Wno-unused-but-set-variable",
+      "-Wno-unknown-pragmas",
+    ]
+  }
+
+  cflags += [
+    "-Wno-shift-op-parentheses",
+    "-Wno-logical-op-parentheses",
+    "-Wno-bitwise-op-parentheses",
+  ]
+}

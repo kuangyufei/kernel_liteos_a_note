@@ -140,12 +140,16 @@ typedef enum {
     MT_NUM
 } MsgType;
 
+typedef struct {
+    int32_t driverVersion;
+} IpcVersion;
 /* lite ipc ioctl | 控制命令*/
 #define IPC_IOC_MAGIC       'i'
 #define IPC_SET_CMS         _IO(IPC_IOC_MAGIC, 1) ///< 设置ServiceManager的命令
 #define IPC_CMS_CMD         _IOWR(IPC_IOC_MAGIC, 2, CmsCmdContent)///< 控制命令,创建/删除 服务 添加服务权限
 #define IPC_SET_IPC_THREAD  _IO(IPC_IOC_MAGIC, 3)	///< 为进程设置IPC任务
 #define IPC_SEND_RECV_MSG   _IOWR(IPC_IOC_MAGIC, 4, IpcContent) ///< 对IPC的读写处理
+#define IPC_GET_VERSION     _IOR(IPC_IOC_MAGIC, 5, IpcVersion)
 
 typedef enum {//CMS 命令类型
     CMS_GEN_HANDLE, ///< 创建/注册服务

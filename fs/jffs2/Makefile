@@ -32,11 +32,11 @@ include $(LITEOSTOPDIR)/config.mk
 MODULE_NAME := $(notdir $(shell pwd))
 
 LOCAL_SRCS := $(wildcard src/*.c) \
-		$(wildcard $(LITEOSTHIRDPARTY)/Linux_Kernel/fs/jffs2/*.c)
+		$(wildcard $(LITEOSTOPDIR)/../linux/linux-5.10/fs/jffs2/*.c)
 LOCAL_INCLUDE := \
 		-I $(LITEOSTOPDIR)/fs/jffs2/include \
-		-I $(LITEOSTHIRDPARTY)/Linux_Kernel/fs/jffs2 \
-		-I $(LITEOSTHIRDPARTY)/Linux_Kernel/fs
+		-I $(LITEOSTOPDIR)/../linux/linux-5.10/fs/jffs2 \
+		-I $(LITEOSTOPDIR)/../linux/linux-5.10/fs
 LOCAL_FLAGS := $(LOCAL_INCLUDE)
 
 include $(MODULE)

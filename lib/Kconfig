@@ -5,6 +5,20 @@ config LIB_LIBC
     help
       Answer Y to enable libc for full code.
 
+choice
+    prompt "choose libc"
+    default LIBC_MUSL
+    depends on LIB_LIBC
+    help
+      Choose libc.
+
+config LIBC_NEWLIB
+    bool "newlibc"
+
+config LIBC_MUSL
+    bool "musl libc"
+endchoice
+
 config LIB_ZLIB
     bool "Enable Zlib"
     default y

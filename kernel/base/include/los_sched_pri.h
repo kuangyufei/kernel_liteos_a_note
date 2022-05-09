@@ -41,7 +41,9 @@
 #endif
 #include "los_stackinfo_pri.h"
 #include "los_futex_pri.h"
+#ifdef LOSCFG_KERNEL_PM
 #include "los_pm_pri.h"
+#endif
 #include "los_signal.h"
 #ifdef LOSCFG_KERNEL_CPUP
 #include "los_cpup_pri.h"
@@ -219,7 +221,7 @@ typedef struct {
     UINT32 timeSlice;
 } SchedParam;
 
-typedef struct {
+typedef struct {//记录任务调度信息
     UINT16  policy; /* This field must be present for all scheduling policies and must be the first in the structure 
 					| 所有调度策略都必须存在此字段，并且必须是结构中的第一个字段*/
     UINT16  basePrio; ///< 起始优先级
@@ -261,7 +263,7 @@ typedef struct {//调度接口函数
  *
  * Highest task priority.
  */
-#define OS_TASK_PRIORITY_HIGHEST    0
+#define OS_TASK_PRIORITY_HIGHEST    0	/// 任务最高优先级
 
 /**
  * @ingroup los_sched
@@ -269,7 +271,7 @@ typedef struct {//调度接口函数
  *
  * Lowest task priority.
  */
-#define OS_TASK_PRIORITY_LOWEST     31
+#define OS_TASK_PRIORITY_LOWEST     31 /// 任务最低优先级
 
 /**
  * @ingroup los_sched
@@ -277,7 +279,7 @@ typedef struct {//调度接口函数
  *
  * The task is init.
  */
-#define OS_TASK_STATUS_INIT         0x0001U
+#define OS_TASK_STATUS_INIT         0x0001U /// 任务初始状态
 
 /**
  * @ingroup los_sched
@@ -558,9 +560,11 @@ STATIC INLINE VOID SchedTaskFreeze(LosTaskCB *taskCB)
 {
     UINT64 responseTime;
 
+#ifdef LOSCFG_KERNEL_PM
     if (!OsIsPmMode()) {
         return;
     }
+#endif
 
     if (!(taskCB->taskStatus & (OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY))) {
         return;
@@ -596,6 +600,7 @@ STATIC INLINE VOID SchedTaskUnfreeze(LosTaskCB *taskCB)
     taskCB->taskStatus &= ~OS_TASK_STATUS_BLOCKED;
     return;
 }
+
 /*
  * Schedule flag, one bit represents one core.
  * This flag is used to prevent kernel scheduling before OSStartToRun.

@@ -314,6 +314,9 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
     taskInitParam.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());//每个idle任务只在单独的cpu上运行
 #endif
     ret = LOS_TaskCreateOnly(&idleTaskID, &taskInitParam);
+    if (ret != LOS_OK) {
+        return ret;
+    }
     LosTaskCB *idleTask = OS_TCB_FROM_TID(idleTaskID);
     idleTask->taskStatus |= OS_TASK_FLAG_SYSTEM_TASK; //标记为系统任务,idle任务是给CPU休息用的,当然是个系统任务
     OsSchedRunqueueIdleInit(idleTaskID);

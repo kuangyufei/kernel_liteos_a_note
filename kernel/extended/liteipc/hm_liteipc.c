@@ -96,6 +96,10 @@
 
 #define LITEIPC_TIMEOUT_MS 5000UL			///< 超时时间单位毫秒
 #define LITEIPC_TIMEOUT_NS 5000000000ULL	///< 超时时间单位纳秒
+
+#define MAJOR_VERSION (2)
+#define MINOR_VERSION (0)
+#define DRIVER_VERSION (MAJOR_VERSION | MINOR_VERSION << 16)
 /// 注意 ipc节点和消息是两个概念, 一个消息会包含多个节点
 typedef struct {//已使用节点链表
     LOS_DL_LIST list;	///< 通过它挂到对应 ProcIpcInfo.ipUsedNodeList 上
@@ -840,22 +844,45 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandlePtr(UINT32 processID, SpecialObj *obj, BOOL
     return LOS_OK;
 }
 /// 按服务的方式处理,此处推断 Svc 应该是 service 的简写 @note_thinking
-LITE_OS_SEC_TEXT STATIC UINT32 HandleSvc(UINT32 dstTid, const SpecialObj *obj, BOOL isRollback)
+LITE_OS_SEC_TEXT STATIC UINT32 HandleSvc(UINT32 dstTid, SpecialObj *obj, BOOL isRollback)
 {
     UINT32 taskID = 0;
     if (isRollback == FALSE) {
+        if (obj->content.svc.handle == -1) {
+            if (obj->content.svc.token != 1) {
+                PRINT_ERR("Liteipc HandleSvc wrong svc token\n");
+                return -EINVAL;
+            }
+            UINT32 selfTid = LOS_CurTaskIDGet();
+            LosTaskCB *tcb = OS_TCB_FROM_TID(selfTid);
+            if (tcb->ipcTaskInfo == NULL) {
+                tcb->ipcTaskInfo = LiteIpcTaskInit();
+            }
+            uint32_t serviceHandle = 0;
+            UINT32 ret = GenerateServiceHandle(selfTid, HANDLE_REGISTED, &serviceHandle);
+            if (ret != LOS_OK) {
+                PRINT_ERR("Liteipc GenerateServiceHandle failed.\n");
+                return ret;
+            }
+            obj->content.svc.handle = serviceHandle;
+            (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
+            AddServiceAccess(dstTid, serviceHandle);
+            (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
+        }
         if (IsTaskAlive(obj->content.svc.handle) == FALSE) {
             PRINT_ERR("Liteipc HandleSvc wrong svctid\n");
             return -EINVAL;
         }
         if (HasServiceAccess(obj->content.svc.handle) == FALSE) {
-            PRINT_ERR("Liteipc %s, %d\n", __FUNCTION__, __LINE__);
+            PRINT_ERR("Liteipc %s, %d, svchandle:%d, tid:%d\n", __FUNCTION__, __LINE__, obj->content.svc.handle, LOS_CurTaskIDGet());
             return -EACCES;
         }
+        LosTaskCB *taskCb = OS_TCB_FROM_TID(obj->content.svc.handle);
+        if (taskCb->ipcTaskInfo == NULL) {
+            taskCb->ipcTaskInfo = LiteIpcTaskInit();
+        }
         if (GetTid(obj->content.svc.handle, &taskID) == 0) {//获取参数消息服务ID所属任务
-            if (taskID == OS_PCB_FROM_PID(OS_TCB_FROM_TID(taskID)->processID)->ipcInfo->ipcTaskID) {//如果任务ID一样,即任务ID为ServiceManager
-                AddServiceAccess(dstTid, obj->content.svc.handle);
-            }
+            AddServiceAccess(dstTid, obj->content.svc.handle);
         }
     }
     return LOS_OK;
@@ -873,7 +900,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleObj(UINT32 dstTid, SpecialObj *obj, BOOL is
             ret = HandlePtr(processID, obj, isRollback);
             break;
         case OBJ_SVC://服务类消息
-            ret = HandleSvc(dstTid, (const SpecialObj *)obj, isRollback);
+            ret = HandleSvc(dstTid, (SpecialObj *)obj, isRollback);
             break;
         default:
             ret = -EINVAL;
@@ -1371,6 +1398,22 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleCmsCmd(CmsCmdContent *content)
     }
     return ret;
 }
+
+LITE_OS_SEC_TEXT STATIC UINT32 HandleGetVersion(IpcVersion *version)
+{
+    UINT32 ret = LOS_OK;
+    IpcVersion localIpcVersion;
+    if (version == NULL) {
+        return -EINVAL;
+    }
+
+    localIpcVersion.driverVersion = DRIVER_VERSION;
+    ret = copy_to_user((void *)version, (const void *)(&localIpcVersion), sizeof(IpcVersion));
+    if (ret != LOS_OK) {
+        PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
+    }
+    return ret; 
+}
 ///真正的 IPC 控制操作 
 LITE_OS_SEC_TEXT int LiteIpcIoctl(struct file *filep, int cmd, unsigned long arg)
 {
@@ -1394,6 +1437,8 @@ LITE_OS_SEC_TEXT int LiteIpcIoctl(struct file *filep, int cmd, unsigned long arg
             return (INT32)SetCms(arg); //设置ServiceManager , 整个系统只能有一个ServiceManager
         case IPC_CMS_CMD: // 控制命令,创建/删除/添加权限 
             return (INT32)HandleCmsCmd((CmsCmdContent *)(UINTPTR)arg);
+        case IPC_GET_VERSION:
+            return (INT32)HandleGetVersion((IpcVersion *)(UINTPTR)arg);
         case IPC_SET_IPC_THREAD://
             if (IsCmsSet() == FALSE) {//如果还没有指定 ServiceManager 
                 PRINT_ERR("Liteipc ServiceManager not set!\n");

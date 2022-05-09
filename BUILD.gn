@@ -35,6 +35,7 @@ declare_args() {
   tee_enable = false
   liteos_name = "OHOS_Image"
   liteos_skip_make = false
+  liteos_is_mini = false
 }
 
 tee = ""
@@ -75,7 +76,6 @@ generate_notice_file("kernel_notice_file") {
     "$LITEOSTHIRDPARTY/musl",
     "$LITEOSTHIRDPARTY/zlib",
     "$LITEOSTHIRDPARTY/FatFs",
-    "$LITEOSTHIRDPARTY/Linux_Kernel",
     "$LITEOSTHIRDPARTY/lwip",
     "$LITEOSTHIRDPARTY/NuttX",
     "$LITEOSTHIRDPARTY/mtd-utils",
@@ -129,7 +129,9 @@ config("stdinc_config") {
     "-isystem",
     std_include,
   ]
-  cflags += [ "-nostdinc" ]
+  if (!defined(LOSCFG_LIBC_NEWLIB)) {
+    cflags += [ "-nostdinc" ]
+  }
   asmflags = cflags
 }
 
@@ -316,14 +318,16 @@ group("kernel") {
 }
 
 group("liteos_a") {
-  deps = [
-    ":apps",
-    ":kernel",
-    ":tests",
-    "//prebuilts/lite/sysroot/build:strip",
-  ]
-  if (liteos_skip_make == false) {
-    deps += [ ":make" ]
+  deps = [ ":kernel" ]
+  if (!liteos_is_mini) {
+    deps += [
+      ":apps",
+      ":tests",
+      "//prebuilts/lite/sysroot/build:strip",
+    ]
+    if (liteos_skip_make == false) {
+      deps += [ ":make" ]
+    }
   }
 }
 
@@ -340,6 +344,17 @@ executable("liteos") {
     "-Wl,--no-eh-frame-hdr",
   ]
 
+  if (defined(LOSCFG_LIBC_NEWLIB)) {
+    ldflags += [
+      "-Wl,--wrap=_free_r",
+      "-Wl,--wrap,_malloc_usable_size_r",
+      "-Wl,--wrap,_malloc_r",
+      "-Wl,--wrap,_memalign_r",
+      "-Wl,--wrap,_realloc_r",
+      "-Wl,--wrap,_fseeko_r",
+    ]
+    ldflags -= [ "-nostdlib" ]
+  }
   libgcc = exec_script("//build/lite/run_shell_cmd.py",
                        [ "$cc -print-libgcc-file-name" ],
                        "trim string")
@@ -351,7 +366,7 @@ executable("liteos") {
   } else {
     ldflags +=
         [ "-Wl,-T" + rebase_path("tools/build/liteos.ld", root_build_dir) ]
-    ldflags += [ "-Wl,-nostartfiles" ]
+    ldflags += [ "-nostartfiles" ]
     inputs = [ "tools/build/liteos.ld" ]
   }
 

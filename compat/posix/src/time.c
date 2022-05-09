@@ -397,7 +397,6 @@ int gettimeofday64(struct timeval64 *tv, struct timezone *tz)
     return OsGetTimeOfDay(tv, tz);
 }
 #endif
-
 /*!
  * @brief gettimeofday	
  @verbatim
@@ -416,9 +415,17 @@ int gettimeofday64(struct timeval64 *tv, struct timezone *tz)
  *
  * @see
  */
+
+#ifdef LOSCFG_LIBC_NEWLIB
+int gettimeofday(struct timeval *tv, void *_tz)
+#else
 int gettimeofday(struct timeval *tv, struct timezone *tz)
+#endif
 {
     struct timeval64 stTimeVal64 = {0};
+#ifdef LOSCFG_LIBC_NEWLIB
+    struct timezone *tz = (struct timezone *)_tz;
+#endif
 
     if (tv == NULL) {
         TIME_RETURN(EINVAL);
@@ -747,6 +754,7 @@ typedef struct {
 
 static VOID SwtmrProc(UINTPTR tmrArg)
 {
+#ifdef LOSCFG_KERNEL_VM
     INT32 sig, ret;
     UINT32 intSave;
     pid_t pid;
@@ -790,7 +798,45 @@ static VOID SwtmrProc(UINTPTR tmrArg)
     return;
 EXIT:
     PRINT_ERR("Dispatch signals failed!, ret: %d\r\n", ret);
+#endif
     return;
+}
+
+int timer_create(clockid_t clockID, struct sigevent *restrict evp, timer_t *restrict timerID)
+{
+    UINT32 ret;
+    UINT16 swtmrID;
+#ifdef LOSCFG_SECURITY_VID
+    UINT16 vid;
+#endif
+
+    if (!timerID || (clockID != CLOCK_REALTIME) || !evp) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if ((evp->sigev_notify != SIGEV_THREAD) || evp->sigev_notify_attributes) {
+        errno = ENOTSUP;
+        return -1;
+    }
+
+    ret = LOS_SwtmrCreate(1, LOS_SWTMR_MODE_ONCE, (SWTMR_PROC_FUNC)evp->sigev_notify_function,
+                          &swtmrID, (UINTPTR)evp->sigev_value.sival_ptr);
+    if (ret != LOS_OK) {
+        errno = (ret == LOS_ERRNO_SWTMR_MAXSIZE) ? EAGAIN : EINVAL;
+        return -1;
+    }
+
+#ifdef LOSCFG_SECURITY_VID
+    vid = AddNodeByRid(swtmrID);
+    if (vid == MAX_INVALID_TIMER_VID) {
+        (VOID)LOS_SwtmrDelete(swtmrID);
+        return -1;
+    }
+    swtmrID = vid;
+#endif
+    *timerID = (timer_t)(UINTPTR)swtmrID;
+    return 0;
 }
 
 int OsTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID)
@@ -852,6 +898,7 @@ int timer_delete(timer_t timerID)
 {
     UINT16 swtmrID = (UINT16)(UINTPTR)timerID;
     VOID *arg = NULL;
+    UINTPTR swtmrProc;
 
 #ifdef LOSCFG_SECURITY_VID
     swtmrID = GetRidByVid(swtmrID);
@@ -861,10 +908,11 @@ int timer_delete(timer_t timerID)
     }
 
     arg = (VOID *)OS_SWT_FROM_SID(swtmrID)->uwArg;
+    swtmrProc = (UINTPTR)OS_SWT_FROM_SID(swtmrID)->pfnHandler;
     if (LOS_SwtmrDelete(swtmrID)) {
         goto ERROUT;
     }
-    if (arg != NULL) {
+    if ((swtmrProc == (UINTPTR)SwtmrProc) && (arg != NULL)) {
         free(arg);
     }
 
@@ -1008,7 +1056,11 @@ STATIC INT32 DoNanoSleep(UINT64 nanoseconds)
     return -1;
 }
 
+#ifdef LOSCFG_LIBC_NEWLIB
+int usleep(unsigned long useconds)
+#else
 int usleep(unsigned useconds)
+#endif
 {
     return DoNanoSleep((UINT64)useconds * OS_SYS_NS_PER_US);
 }

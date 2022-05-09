@@ -88,9 +88,9 @@ typedef VOID (*pf_OUTPUT)(const CHAR *fmt, ...);
  * <ul><li>los_printf.h: the header file that contains the API declaration.</li></ul>
  * @see printf
  */
+#ifndef LOSCFG_LIBC_NEWLIB
 extern void dprintf(const char *fmt, ...);
-
-#define diag_printf      dprintf
+#endif
 
 #define PRINT_DEBUG(fmt, args...)    LOS_LkPrint(LOS_DEBUG_LEVEL, __FUNCTION__, __LINE__, fmt, ##args)
 #define PRINT_INFO(fmt, args...)     LOS_LkPrint(LOS_INFO_LEVEL, __FUNCTION__, __LINE__, fmt, ##args)
