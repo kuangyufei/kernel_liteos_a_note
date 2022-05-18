@@ -117,18 +117,18 @@ OsGetArgsAddr:
 reset_vector: //鸿蒙开机代码
     /* clear register TPIDRPRW */
     mov     r0, #0					//r0 = 0
-    mcr     p15, 0, r0, c13, c0, 4	//清除线程标识符寄存器TPIDRPRW为0
+    mcr     p15, 0, r0, c13, c0, 4	//复位线程标识符寄存器TPIDRPRW , 不复位将导致系统不能启动
     /* do some early cpu setup: i/d cache disable, mmu disabled */
-    mrc     p15, 0, r0, c1, c0, 0	//System Control Register-SCTLR
-    bic     r0, #(1<<12)			//不使能指令缓存功能
-    bic     r0, #(1<<2 | 1<<0)		//不使能数据和TLB的缓存功能(bit2) | 不使能mmu功能(bit0)
-    mcr     p15, 0, r0, c1, c0, 0
+    mrc     p15, 0, r0, c1, c0, 0	//System Control Register-SCTLR | 读取系统控制寄存器内容
+    bic     r0, #(1<<12)			//禁用指令缓存功能
+    bic     r0, #(1<<2 | 1<<0)		//禁用数据和TLB的缓存功能(bit2) | mmu功能(bit0)
+    mcr     p15, 0, r0, c1, c0, 0	//写系统控制寄存器
 
     /* enable fpu+neon 一些系统寄存器的操作
     | 使能浮点运算(floating point unit)和 NEON就是一种基于SIMD思想的ARM技术，相比于ARMv6或之前的架构，
     NEON结合了64-bit和128-bit的SIMD指令集，提供128-bit宽的向量运算(vector operations)*/
 #ifndef LOSCFG_TEE_ENABLE        //Trusted Execution Environment   可信执行环境
-    MRC    p15, 0, r0, c1, c1, 2 //Non-Secure Access Control Register - NSACR
+    MRC    p15, 0, r0, c1, c1, 2 //非安全模式访问寄存器 (Non-Secure Access Control Register - NSACR)
     ORR    r0, r0, #0xC00        //使能安全和非安全访问协处理器10和11(Coprocessor 10和11)
     BIC    r0, r0, #0xC000       //设置bit15为0，不会影响修改CPACR.ASEDIS寄存器位（控制Advanced SIMD功能）| bit14 reserved
     MCR    p15, 0, r0, c1, c1, 2
@@ -137,22 +137,22 @@ reset_vector: //鸿蒙开机代码
     MCR    p15, 0, r0, c1, c0, 2
     ISB
 #endif
-    MOV    r3, #0x40000000	    //设置FPEXC的EN位来使能FPU
-    VMSR   FPEXC, r3
+    MOV    r3, #0x40000000	    //EN, bit[30] 设置FPEXC的EN位来使能FPU
+    VMSR   FPEXC, r3			//浮点异常控制寄存器 (Floating-Point Exception Control register | B4.1.57) 
 
     /* r11: delta of physical address and virtual address | 内核运行虚拟地址和物理地址之间的差值 */
-    adr     r11, pa_va_offset //获取pa_va_offset变量的当前物理地址
-                              /* adr是伪指令被汇编为sub机器指令；程序链接过程中pa_va_offset标识虚拟地址和adr伪指令的虚拟									
-                               * 地址是相对固定的，所以二者偏移量就是确定的offset值；adr伪指令在Rn不为pc时结果就如sub Rn pc #offset，即									
-                               * sub R11 pc #offset //pc是当前指令的物理地址
+    adr     r11, pa_va_offset //获取pa_va_offset变量物理地址，由于这时候mmu已经被关闭，所以这个值就表示pa_va_offset变量的物理地址。
+                              /*adr 是一条小范围的地址读取伪指令,它将基于PC的相对偏移的地址值读到目标寄存器中。
+                               *编译源程序时，汇编器首先计算当前PC值（当前指令位置）到exper的距离,然后用一条ADD或者SUB指令替换这条伪指令，
+                               *例如:ADD register,PC,#offset_to_exper 注意，标号exper与指令必须在同一代码段
                                */
-    ldr     r0, [r11]		  //r0 = *r11 获取pa_va_offset变量的虚拟地址
-    sub     r11, r11, r0
+    ldr     r0, [r11]		  //r0 = *r11 获取pa_va_offset变量虚拟地址
+    sub     r11, r11, r0	  //物理地址-虚拟地址 = 偏移量 放入r11
 
     mrc     p15, 0, r12, c0, c0, 5      /* Multiprocessor Affinity Register-MPIDR */
-    and     r12, r12, #MPIDR_CPUID_MASK
+    and     r12, r12, #MPIDR_CPUID_MASK //掩码过滤
     cmp     r12, #0	                    //主控核0判断
-    bne     secondary_cpu_init
+    bne     secondary_cpu_init	//初始化CPU次核
 	/*
 	 * adr是小范围的地址读取伪指令,它将基于PC寄存器相对偏移的地址值读取到寄存器中，
 	 * 例如: 0x00000004 	 : adr     r4, __exception_handlers
@@ -164,9 +164,9 @@ reset_vector: //鸿蒙开机代码
      * 一般也就是一一映射，也就是物理地址和虚拟地址值是一样的，所以可以认为内核加载地址值是物理地址
      */
     /* if we need to relocate to proper location or not | 如果需要重新安装到合适的位置*/
-    adr     r4, __exception_handlers            /* r4: base of load address */
-    ldr     r5, =SYS_MEM_BASE                   /* r5: base of physical address */
-    subs    r12, r4, r5                         /* r12: delta of load address and physical address */
+    adr     r4, __exception_handlers            /* r4: base of load address | 加载基址*/
+    ldr     r5, =SYS_MEM_BASE                   /* r5: base of physical address | 物理基址*/
+    subs    r12, r4, r5                         /* r12: delta of load address and physical address | 二者偏移量*/
     beq     reloc_img_to_bottom_done            /* if we load image at the bottom of physical address | 不相等就需要重定位 */
 	
     /* we need to relocate image at the bottom of physical address */
@@ -223,7 +223,7 @@ init_mmu_done:
     rsb     r7, r11, r6, lsl #20                /* r7: va */
     str     r12, [r4, r7, lsr #(20 - 2)]        /* jumpTable[vaIndex] = pt entry */
 
-    bl      mmu_setup                           /* set up the mmu */
+    bl      mmu_setup                           /* set up the mmu | 设置MMU*/
 #endif
     /* clear out the interrupt and exception stack and set magic num to check the overflow */
     ldr     r0, =__svc_stack	    //中断栈的底部,从这里可以看出中断栈处于最高位

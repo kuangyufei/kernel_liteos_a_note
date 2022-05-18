@@ -461,7 +461,7 @@ STATIC INLINE LosTaskCB *OsCurrTaskGet(VOID)
 {
     return (LosTaskCB *)ArchCurrTaskGet();
 }
-
+/// 注意任务地址由硬件保存,见于 CP15 | TPIDRPRW
 STATIC INLINE VOID OsCurrTaskSet(LosTaskCB *task)
 {
     ArchCurrTaskSet(task);

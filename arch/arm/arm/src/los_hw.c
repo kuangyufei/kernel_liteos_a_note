@@ -44,7 +44,7 @@ CpuVendor g_cpuTable[] = {
 /* logical cpu mapping | cpu 逻辑层映射*/
 UINT64 g_cpuMap[LOSCFG_KERNEL_CORE_NUM] = {
     [0 ... LOSCFG_KERNEL_CORE_NUM - 1] = (UINT64)(-1) //统一赋值,这个赋值方式还挺别致的.
-};
+};//此处可查看鸿蒙内核源码分析(编码方式篇) https://my.oschina.net/weharmony/blog/5516143
 
 /* bit[30] is enable FPU */
 #define FP_EN (1U << 30)

@@ -28,13 +28,6 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#include "los_vm_zone.h"
-#define TEXT_BASE  KERNEL_VADDR_BASE //代码区为内核起始地址
-
-OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
-OUTPUT_ARCH(arm)
-
 /***********************************************
 本文件经过
 python build.py ipcamera_hi3516dv300 
@@ -81,6 +74,14 @@ ATTR ：定义该存储区域的属性。ATTR属性内可以出现以下7 个字
 ORIGIN ：关键字，区域的开始地址，可简写成org 或o
 LENGTH ：关键字，区域的大小，可简写成len 或l
 */
+
+#include "los_vm_zone.h"
+#define TEXT_BASE  KERNEL_VADDR_BASE //代码区为内核起始地址
+
+OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+
+
 MEMORY
 { //ram,sram为存储区域的名字,可以随意取
     ram : ORIGIN = KERNEL_VADDR_BASE, LENGTH = KERNEL_VADDR_SIZE
@@ -89,7 +90,7 @@ MEMORY
 }
 SECTIONS
 {
-    /DISCARD/ : { *(.comment .note) }
+    /DISCARD/ : { *(.comment .note) } //过滤掉 .comment .note 段
 
     .ram_vectors TEXT_BASE : {
         __ram_vectors_vma = .;

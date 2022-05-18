@@ -283,7 +283,7 @@ FUNCTION(ArchSpinLock)	//非要拿到锁
 	strexeq r2, r1, [r0]//此时CPU被重新唤醒,尝试令lock->rawLock=1,成功写入则r2=0
 	cmpeq	r2, #0		//再来比较r2是否等于0,如果相等则获取到了锁
 	bne 	1b			//如果不相等,继续进入循环
-	dmb 				//用DMB指令来隔离，以保证缓冲中的数据已经落实到RAM中
+	dmb 				//用DMB指令来隔离，以保证缓冲中的数据已经落地到RAM中
 	bx		lr			//此时是一定拿到锁了,跳回调用ArchSpinLock函数
 
 
@@ -294,7 +294,7 @@ FUNCTION(ArchSpinTrylock)	//尝试拿锁
 	ldrex	r0, [r2]		//r2 = &lock->rawLock, 即 r0 = lock->rawLock
 	cmp 	r0, #0			//r0和0比较
 	strexeq r0, r1, [r2]	//尝试令lock->rawLock=1,成功写入则r0=0,否则 r0 =1
-	dmb 					//数据存储隔离，以保证缓冲中的数据已经落实到RAM中
+	dmb 					//数据存储隔离，以保证缓冲中的数据已经落地到RAM中
 	bx		lr				//跳回调用ArchSpinLock函数
 
 
@@ -304,7 +304,7 @@ FUNCTION(ArchSpinUnlock)	//释放锁
 	dmb 					//数据存储隔离，以保证缓冲中的数据已经落实到RAM中
 	str 	r1, [r0]		//令lock->rawLock = 0
 	dsb 					//数据同步隔离
-	sev 					//给各CPU广播事件,唤醒沉睡的CPU们
+	sev 					//sev为发送事件指令,这种事件指的是CPU核与核之间的事件,广播事件给各个CPU核
 	bx		lr				//跳回调用ArchSpinLock函数
 
 

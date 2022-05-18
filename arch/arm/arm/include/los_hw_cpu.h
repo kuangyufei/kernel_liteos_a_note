@@ -146,12 +146,12 @@ extern "C" {
 #define TPIDRPRW            CP15_REG(c13, 0, c0, 4)    /*! PL1 only Thread ID Register | 仅PL1线程ID寄存器*/	
 
 #define MPIDR_CPUID_MASK    (0xffU)
-/// 获取当前task
+/// 获取当前task的地址
 STATIC INLINE VOID *ArchCurrTaskGet(VOID)
 {
     return (VOID *)(UINTPTR)ARM_SYSREG_READ(TPIDRPRW);//读c13寄存器
 }
-/// 设置当前task ID
+/// 向CP15 - > C13 保存当前任务的地址
 STATIC INLINE VOID ArchCurrTaskSet(VOID *val)
 {
     ARM_SYSREG_WRITE(TPIDRPRW, (UINT32)(UINTPTR)val);

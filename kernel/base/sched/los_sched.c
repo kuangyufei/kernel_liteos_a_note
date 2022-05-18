@@ -307,14 +307,14 @@ VOID OsSchedStart(VOID)
     newTask->taskStatus |= OS_TASK_STATUS_RUNNING;
 
 #ifdef LOSCFG_KERNEL_SMP
-    /*
+    /* 注意：需要设置当前cpu，以防第一个任务删除失败，因为这个标志与真实的当前cpu不匹配
      * attention: current cpu needs to be set, in case first task deletion
      * may fail because this flag mismatch with the real current cpu.
      */
-    newTask->currCpu = cpuid;
+    newTask->currCpu = cpuid;//记录本次运行交给哪个CPU核
 #endif
 
-    OsCurrTaskSet((VOID *)newTask);
+    OsCurrTaskSet((VOID *)newTask);//设置新任务,背后的逻辑是将新任务的地址交给硬件保存
 
     newTask->startTime = OsGetCurrSchedTimeCycle();
 

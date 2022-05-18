@@ -70,10 +70,10 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 EarliestInit(VOID)
     /* Must be placed at the beginning of the boot process *///必须放在启动过程的开头
     OsSetMainTask();//为每个CPU核设置临时主任务
     OsCurrTaskSet(OsGetMainTask());//设置当前任务
-    OsSchedRunqueueInit();
+    OsSchedRunqueueInit();//初始化调度队列
 
-    g_sysClock = OS_SYS_CLOCK;
-    g_tickPerSecond =  LOSCFG_BASE_CORE_TICK_PER_SECOND;
+    g_sysClock = OS_SYS_CLOCK; //设置系统时钟
+    g_tickPerSecond =  LOSCFG_BASE_CORE_TICK_PER_SECOND; // 设置TICK间隔
 
     return LOS_OK;
 }
@@ -88,10 +88,10 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 ArchEarlyInit(VOID)
 #endif
 
 #ifdef LOSCFG_PLATFORM_HWI
-    OsHwiInit();
+    OsHwiInit(); // 硬中断初始化
 #endif
 
-    OsExcInit();
+    OsExcInit(); // 异常初始化
 
     ret = OsTickInit(g_sysClock, LOSCFG_BASE_CORE_TICK_PER_SECOND);
     if (ret != LOS_OK) {
