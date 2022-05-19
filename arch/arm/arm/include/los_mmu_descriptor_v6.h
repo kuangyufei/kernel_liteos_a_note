@@ -88,7 +88,7 @@ extern "C" {
 #define MMU_DESCRIPTOR_L1_SECTION_ADDR(x)                       ((x) & MMU_DESCRIPTOR_L1_SMALL_FRAME)
 #define MMU_DESCRIPTOR_L1_PAGE_TABLE_ADDR(x)                    ((x) & ~((1 << 10)-1))
 #define MMU_DESCRIPTOR_L1_SMALL_L2_TABLES_PER_PAGE              4
-#define MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS                   0x4000U ///< 页表必须按16Kb对齐,因为C2寄存器低14位得为0
+#define MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS                   0x4000U ///< 页表必须按16Kb对齐,因为C2寄存器低14位为0
 #define MMU_DESCRIPTOR_L1_SMALL_DOMAIN_MASK                     (~(0x0f << 5)) /* 4k page section domain mask */
 #define MMU_DESCRIPTOR_L1_SMALL_DOMAIN_CLIENT                   (MMU_DESCRIPTOR_DOMAIN_CLIENT << 5)
 

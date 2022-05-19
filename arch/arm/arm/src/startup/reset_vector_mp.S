@@ -83,7 +83,7 @@
     .section ".vectors","ax" /* 指定以下代码段必须存放在.vectors段里，“ax”表示该段可执行并且可分配 */
 
     .global __exception_handlers /* 代表全局函数 */
-__exception_handlers:
+__exception_handlers: //加载基地址
     /* 
     *Assumption:  ROM code has these vectors at the hardware reset address.
     *A simple jump removes any address-space dependencies [i.e. safer]
@@ -147,7 +147,7 @@ reset_vector: //鸿蒙开机代码
                                *例如:ADD register,PC,#offset_to_exper 注意，标号exper与指令必须在同一代码段
                                */
     ldr     r0, [r11]		  //r0 = *r11 获取pa_va_offset变量虚拟地址
-    sub     r11, r11, r0	  //物理地址-虚拟地址 = 偏移量 放入r11
+    sub     r11, r11, r0	  //物理地址-虚拟地址 = 映射偏移量 放入r11
 
     mrc     p15, 0, r12, c0, c0, 5      /* Multiprocessor Affinity Register-MPIDR */
     and     r12, r12, #MPIDR_CPUID_MASK //掩码过滤
@@ -160,55 +160,53 @@ reset_vector: //鸿蒙开机代码
      * adr指令和标识__exception_handlers的地址相对固定，二者偏移量若为offset,
 	 * 最后r4 = (0x00000004 + 8) + offset
 	*/
-    /* 当内核被加载到内存中时，它的起始地址就叫做加载地址，因为内核是被uboot加载的，uboot中对mmu页表不会做太复杂的映射，
-     * 一般也就是一一映射，也就是物理地址和虚拟地址值是一样的，所以可以认为内核加载地址值是物理地址
-     */
+
     /* if we need to relocate to proper location or not | 如果需要重新安装到合适的位置*/
     adr     r4, __exception_handlers            /* r4: base of load address | 加载基址*/
     ldr     r5, =SYS_MEM_BASE                   /* r5: base of physical address | 物理基址*/
     subs    r12, r4, r5                         /* r12: delta of load address and physical address | 二者偏移量*/
     beq     reloc_img_to_bottom_done            /* if we load image at the bottom of physical address | 不相等就需要重定位 */
 	
-    /* we need to relocate image at the bottom of physical address */
+    /* we need to relocate image at the bottom of physical address | 需要知道拷贝的大小*/
     ldr     r7, =__exception_handlers           /* r7: base of linked address (or vm address) | 链接地址基地址*/
     ldr     r6, =__bss_start                    /* r6: end of linked address (or vm address)，由于目前阶段有用的数据是中断向量表+代码段+只读数据段+数据段，
 											       所以只需复制[__exception_handlers,__bss_start]这段数据到内存基址处 */
-    sub     r6, r7                              /* r6: delta of linked address (or vm address) */
-    add     r6, r4                              /* r6: end of load address */
+    sub     r6, r7                              /* r6: delta of linked address (or vm address) | 内核镜像大小 */
+    add     r6, r4                              /* r6: end of load address | 说明需拷贝[ r4,r4+r6 ] 区间内容到 [ r5,r5+r6 ]*/
 
 reloc_img_to_bottom_loop://重定位镜像到内核物理内存基地址,将内核从加载地址拷贝到内存基址处
-    ldr     r7, [r4], #4
-    str     r7, [r5], #4
-    cmp     r4, r6                              /* r4代表的加载地址开始偏移（+4），直到r6(加载结束地址) */
+    ldr     r7, [r4], #4	// 类似C语言 *r5 = *r4 , r4++ , r5++ 
+    str     r7, [r5], #4	// #4 代表32位的指令长度,此时在拷贝内核代码区内容
+    cmp     r4, r6          /* 拷贝完成条件. r4++ 直到等于r6 (加载结束地址) 完成拷贝动作 */
     bne     reloc_img_to_bottom_loop
-    sub     pc, r12                             /* 重新校准pc，r12是重定位镜像前内核加载基地址和内核物理内存基地址的差值 */
-    nop
-    sub     r11, r11, r12                       /* r11: eventual address offset */ /* 重新校准虚拟地址和物理地址的差值 */
+    sub     pc, r12                             /* 重新校准pc寄存器, 无缝跳到了拷贝后的指令地址处执行 r12是重定位镜像前内核加载基地址和内核物理内存基地址的差值 */
+    nop		// 注意执行完成sub       pc, r12后,新的PC寄存器也指向了 	nop ,nop是伪汇编指令,等同于 mov r0 r0 通常用于控制时序的目的，强制内存对齐，防止流水线灾难，占据分支指令延迟						
+    sub     r11, r11, r12                       /* r11: eventual address offset | 最终地址映射偏移量, 用于MMU打开后使用 */
 //内核总大小 __bss_start - __exception_handlers
 reloc_img_to_bottom_done:
-#ifdef LOSCFG_KERNEL_MMU
-    ldr     r4, =g_firstPageTable               /* r4: physical address of translation table and clear it |
+#ifdef LOSCFG_KERNEL_MMU 
+    ldr     r4, =g_firstPageTable               /* r4: physical address of translation table and clear it
 												   内核页表是用数组g_firstPageTable存储 见于los_arch_mmu.c */
-    add     r4, r4, r11                         //内核页表虚拟地址+r11=内核页表物理地址，保存在r4中
-    mov     r0, r4
-    mov     r1, #0
-    mov     r2, #MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS
+    add     r4, r4, r11                         //计算g_firstPageTable页表物理地址
+    mov     r0, r4								//因为默认r0 将作为memset_optimized的第一个参数
+    mov     r1, #0								//第二个参数,清0
+    mov     r2, #MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS //第三个参数是L1表的长度
     bl      memset_optimized                    /* optimized memset since r0 is 64-byte aligned | 将内核页表空间清零*/
 
-    ldr     r5, =g_archMmuInitMapping	        //存储内核空间的地址相关信息
-    add     r5, r5, r11                         //获取数组的物理地址
+    ldr     r5, =g_archMmuInitMapping	        //记录映射关系表
+    add     r5, r5, r11                         //获取g_archMmuInitMapping的物理地址
 init_mmu_loop:	                                //初始化内核页表
     ldmia   r5!, {r6-r10}                       /* r6 = phys, r7 = virt, r8 = size, r9 = mmu_flags, r10 = name | 物理地址、虚拟地址、映射大小、映射属性、名称*/
     cmp     r8, 0                               /* if size = 0, the mmu init done */
     beq     init_mmu_done		                //标志寄存器中Z标志位等于零时跳转到 	init_mmu_done处执行
     bl      page_table_build	                //创建页表
-    b       init_mmu_loop
+    b       init_mmu_loop						//循环继续
 init_mmu_done:
-    orr     r8, r4, #MMU_TTBRx_FLAGS            /* r8 = r4 and set cacheable attributes on translation walk */
-    ldr     r4, =g_mmuJumpPageTable             /* r4: jump pagetable vaddr */
-    add     r4, r4, r11
+    orr     r8, r4, #MMU_TTBRx_FLAGS            /* r8 = r4 and set cacheable attributes on translation walk | 设置缓存*/
+    ldr     r4, =g_mmuJumpPageTable             /* r4: jump pagetable vaddr | 页表虚拟地址*/
+    add     r4, r4, r11				
     ldr     r4, [r4]
-    add     r4, r4, r11                         /* r4: jump pagetable paddr */
+    add     r4, r4, r11                         /* r4: jump pagetable paddr | 页表物理地址*/
 
     /* build 1M section mapping, in order to jump va during turing on mmu:pa == pa, va == pa */
     /* 从当前PC开始建立1MB空间的段映射，分别建立物理地址和虚拟地址方式的段映射页表项
@@ -223,7 +221,7 @@ init_mmu_done:
     rsb     r7, r11, r6, lsl #20                /* r7: va */
     str     r12, [r4, r7, lsr #(20 - 2)]        /* jumpTable[vaIndex] = pt entry */
 
-    bl      mmu_setup                           /* set up the mmu | 设置MMU*/
+    bl      mmu_setup                           /* set up the mmu | 内核映射表已经创建好了,此时可以启动MMU工作了*/
 #endif
     /* clear out the interrupt and exception stack and set magic num to check the overflow */
     ldr     r0, =__svc_stack	    //中断栈的底部,从这里可以看出中断栈处于最高位
@@ -282,7 +280,7 @@ clear_bss:	                            //主核处理.bss段清零
 _start_hang:                   //悬停,相当于死循环,不再往下走了.
     b      _start_hang
 #ifdef LOSCFG_KERNEL_MMU
-mmu_setup:
+mmu_setup:	//启动MMU工作
     mov     r12, #0                             /* TLB Invalidate All entries - TLBIALL */
     mcr     p15, 0, r12, c8, c7, 0              /* Set c8 to control the TLB and set the mapping to invalid */
     isb
@@ -455,7 +453,7 @@ stack_init_loop:
  * 并且链接脚本里也会用到这个地址，编译代码时所用到的跟地址相关的值都是以内核运行基址为基础进行计算的。
 */
 pa_va_offset:	//物理地址和虚拟地址偏移量
-    .word   .   //存放当前变量的运行地址（虚拟地址），链接时确定的地址（一般是不同于物理地址，由链接脚本确定）
+    .word   .   ////定义一个4字节的pa_va_offset 变量， 链接器生成一个链接地址， . 表示 pa_va_offset = 链接地址 举例: 在地址 0x17321796 中保存了 0x17321796 值
 
 /*
  * set magic num to stack bottom for all cpu
