@@ -117,7 +117,7 @@
 #endif
 
 /* Initial bit32 stack value. */
-#define OS_STACK_INIT            0xCACACACA	///< 栈指针初始化值 0b 1010 1010 1010
+#define OS_STACK_INIT            0xCACACACA	///< 栈内区域初始化成 0b 1010 1010 1010
 /* Bit32 stack top magic number. */
 #define OS_STACK_MAGIC_WORD      0xCCCCCCCC ///< 用于栈底值,可标识为栈是否被溢出过,神奇的 "烫烫烫烫"的根源所在! 0b 1100 1100 1100
 
@@ -142,9 +142,9 @@
 	+-------------------+	//5.一旦栈顶不是0xCCCCCCCC,说明已经溢出了,检测栈的溢出就是通过 栈顶值是否等于0xCCCCCCCC
 	|  0xCACACACA       |
 	+-------------------+0x000000FF8 <--- sp
-	|  0xC32F9876       |
+	|  0xC32F9158       |
 	+-------------------+0x000000FFB
-	|  0x6543EB6        |
+	|  0x17321796        |
 	+-------------------+0x000001000 <---- stack bottom
  * @endverbatim
  */
@@ -158,8 +158,8 @@
 #endif
 #define OS_EXC_FIQ_STACK_SIZE    64
 #define OS_EXC_IRQ_STACK_SIZE    64
-#define OS_EXC_SVC_STACK_SIZE    0x2000	///< 8K
-#define OS_EXC_STACK_SIZE        0x1000	///< 4K
+#define OS_EXC_SVC_STACK_SIZE    0x2000	///< 8K ,每个CPU核都有自己的 SVC 栈
+#define OS_EXC_STACK_SIZE        0x1000	///< 4K ,每个CPU核都有自己的 EXC 栈
 
 #define REG_R0   0 			///< 高频寄存器,传参/保存返回值
 #define REG_R1   1
@@ -174,9 +174,9 @@
 #define REG_R10  10
 #define REG_R11  11			///< 特殊情况下用于 FP寄存器
 #define REG_R12  12
-#define REG_R13  13		
-#define REG_R14  14
-#define REG_R15  15			
+#define REG_R13  13	        ///< SP	
+#define REG_R14  14			///< LR
+#define REG_R15  15			///< PC
 #define REG_CPSR 16 		///< 程序状态寄存器(current program status register) (当前程序状态寄存器)
 #define REG_SP   REG_R13 	///< 堆栈指针 当不使用堆栈时，R13 也可以用做通用数据寄存器
 #define REG_LR   REG_R14 	///< 连接寄存器。当执行子程序或者异常中断时，跳转指令会自动将当前地址存入LR寄存器中，当执行完子程 序或者中断后，根据LR中的值，恢复或者说是返回之前被打断的地址继续执行

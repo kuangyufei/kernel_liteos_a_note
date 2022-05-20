@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 注解由汇编实现的内核自身虚拟地址与物理地址映射
+git commit -m  ' 继续完善对开机启动汇编代码注释
     百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)

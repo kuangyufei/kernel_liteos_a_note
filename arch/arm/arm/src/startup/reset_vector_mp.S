@@ -35,10 +35,21 @@
 #include "los_mmu_descriptor_v6.h"
 #undef ASSEMBLY
 
-
+/*
+.global symbol: 定义一个全局符号, 通常是为 ld/链接器 使用.
+.macro: 定义一段宏代码, .macro 表示代码的开始, .endm 表示代码的结束.
+.ascii "string": 定义一个字符串并为之分配空间.
+.byte expressions: 定义一个字节, 并为之分配空间
+.short expressions: 定义一个短整型,  并为之分配空间
+.word expressions: 定义一个字,并为之分配空间, 4bytes
+.extern symbol 使用外部定义
+.equ 相当于 #define
+.abort 停止汇编
+.comm symbol, length:在bss段申请一段命名空间,该段空间的名称叫symbol, 长度为length. Ld连接器在连接会为它留出空间
+*/
     .global __exc_stack_top
     .global __svc_stack_top
-    .global __exc_stack
+    .global __exc_stack 
     .global __svc_stack
 
     .extern __bss_start
@@ -57,12 +68,13 @@
     .extern g_archMmuInitMapping
     .extern HalSecondaryCpuStart
 
-    .equ MPIDR_CPUID_MASK, 0xffU
+    .equ MPIDR_CPUID_MASK, 0xffU //#define MPIDR_CPUID_MASK 0xffU
 
-    .fpu neon-vfpv4
+    .fpu neon-vfpv4 //支持的浮点处理器
     .syntax unified
-    .arch armv7-a
-    .arm
+    .arch armv7-a //支持芯片指令集
+    .arm //支持CPU架构
+    
 /* 参数顺序:栈底,栈大小,r12:保存了cpuid */
 /* param0 is stack bottom, param1 is stack size, r12 hold cpu id */
 .macro EXC_SP_SET param0, param1
@@ -196,8 +208,8 @@ reloc_img_to_bottom_done:
     ldr     r5, =g_archMmuInitMapping	        //记录映射关系表
     add     r5, r5, r11                         //获取g_archMmuInitMapping的物理地址
 init_mmu_loop:	                                //初始化内核页表
-    ldmia   r5!, {r6-r10}                       /* r6 = phys, r7 = virt, r8 = size, r9 = mmu_flags, r10 = name | 物理地址、虚拟地址、映射大小、映射属性、名称*/
-    cmp     r8, 0                               /* if size = 0, the mmu init done */
+    ldmia   r5!, {r6-r10}                       /* r6 = phys, r7 = virt, r8 = size, r9 = mmu_flags, r10 = name | 传参: 物理地址、虚拟地址、映射大小、映射属性、名称*/
+    cmp     r8, 0                               /* if size = 0, the mmu init done | 完成条件 */
     beq     init_mmu_done		                //标志寄存器中Z标志位等于零时跳转到 	init_mmu_done处执行
     bl      page_table_build	                //创建页表
     b       init_mmu_loop						//循环继续
@@ -223,38 +235,41 @@ init_mmu_done:
 
     bl      mmu_setup                           /* set up the mmu | 内核映射表已经创建好了,此时可以启动MMU工作了*/
 #endif
-    /* clear out the interrupt and exception stack and set magic num to check the overflow */
-    ldr     r0, =__svc_stack	    //中断栈的底部,从这里可以看出中断栈处于最高位
-    ldr     r1, =__exc_stack_top	//异常栈的顶部
+    /* clear out the interrupt and exception stack and set magic num to check the overflow 
+    |exc_stack|地址高位
+    |svc_stack|地址低位
+	清除中断和异常堆栈并设置magic num检查溢出 */
+    ldr     r0, =__svc_stack	    //stack_init的第一个参数 __svc_stack表示栈顶
+    ldr     r1, =__exc_stack_top	//stack_init的第二个参数 __exc_stack_top表示栈底, 这里会有点绕, top表高地址位
     bl      stack_init              //初始化各个cpu不同模式下的栈空间
 	//设置各个栈顶魔法数字
     STACK_MAGIC_SET __svc_stack, #OS_EXC_SVC_STACK_SIZE, OS_STACK_MAGIC_WORD //中断栈底设成"烫烫烫烫烫烫"
     STACK_MAGIC_SET __exc_stack, #OS_EXC_STACK_SIZE, OS_STACK_MAGIC_WORD     //异常栈底设成"烫烫烫烫烫烫"
 
-warm_reset:
+warm_reset: //热启动 Warm Reset, warm reboot, soft reboot, 在不关闭电源的情况，由软件控制重启计算机
     /* initialize CPSR (machine state register) */
     mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_SVC_MODE) /* 禁止IRQ中断 | 禁止FIQ中断 | 管理模式-操作系统使用的保护模式 */
-    msr    cpsr, r0
+    msr    cpsr, r0	//设置CPSR寄存器
 
     /* Note: some functions in LIBGCC1 will cause a "restore from SPSR"!! */
-    msr    spsr, r0
+    msr    spsr, r0 //设置SPSR寄存器
 
     /* get cpuid and keep it in r12 */
     mrc     p15, 0, r12, c0, c0, 5		//R12保存CPUID 
     and     r12, r12, #MPIDR_CPUID_MASK //掩码操作获取当前cpu id
 
-    /* set svc stack, every cpu has OS_EXC_SVC_STACK_SIZE stack */
-    ldr    r0, =__svc_stack_top
-    mov    r2, #OS_EXC_SVC_STACK_SIZE
-    mul    r2, r2, r12
+    /* set svc stack, every cpu has OS_EXC_SVC_STACK_SIZE stack | 设置 SVC栈 */
+    ldr    r0, =__svc_stack_top //注意这是栈底,高地址位
+    mov    r2, #OS_EXC_SVC_STACK_SIZE //栈大小
+    mul    r2, r2, r12 
     sub    r0, r0, r2                   /* 算出当前core的中断栈栈顶位置，写入所属core的sp */
     mov    sp, r0
 
-    LDR    r0, =__exception_handlers
+    LDR    r0, =__exception_handlers    
     MCR    p15, 0, r0, c12, c0, 0       /* Vector Base Address Register - VBAR */
 
-    cmp    r12, #0
-    bne    cpu_start                    //从核处理分支
+    cmp    r12, #0						//CPU是否为主核
+    bne    cpu_start                    //不相等就跳到从核处理分支
 
 clear_bss:	                            //主核处理.bss段清零
     ldr    r0, =__bss_start
@@ -348,7 +363,7 @@ reset_platform:		//平台复位
     mov    r0, #0
     mov    pc, r0   // Jump to reset vector //跳到重置向量表处
 #endif
-cpu_start:
+cpu_start: //由CPU从核启动系统
 #ifdef LOSCFG_KERNEL_MMU
     ldr     r4, =g_firstPageTable               /* r4 = physical address of translation table and clear it */
     add     r4, r4, r11
@@ -409,7 +424,7 @@ sp_set: /* 设置当前cpu 栈顶指针 ,r1是栈底 ,r0是栈大小,r12是cpuid
  * 将物理地址和映射属性组合后填入对应的页表项,这是虚拟地址空间和物理地址空间的映射
  */
 /* 页表映射时，实际pa地址需要向下对齐到MB，size需要向上对齐到MB，这样才能保证映射范围包含pa~pa+size；下面是具体的计算过程 */
-page_table_build:
+page_table_build: //创建页表
     mov     r10, r6
     bfc     r10, #20, #12                       /* r9: pa % MB */
     add     r8, r8, r10                         //size + 物理地址的低20bit位
@@ -431,19 +446,19 @@ page_table_build_loop:
     bx      lr
 #endif
 /*
- * init stack to initial value 
- * r0 is stack mem start, r1 is stack mem end
+ * init stack to initial value | 初始化栈
+ * r0 is stack mem start, r1 is stack mem end | 初始化范围 [ r0 = __svc_stack , r1 = __exc_stack_top ]
  */
 stack_init:
-    ldr     r2, =OS_STACK_INIT
+    ldr     r2, =OS_STACK_INIT	//0xCACACACA
     ldr     r3, =OS_STACK_INIT
-    /* Main loop sets 32 bytes at a time. */
+    /* Main loop sets 32 bytes at a time. | 主循环一次设置 32 个字节*/
 stack_init_loop:
     .irp    offset, #0, #8, #16, #24
     strd    r2, r3, [r0, \offset]    /* 等价于strd r2, r3, [r0, 0], strd r2, r3, [r0, 8], ... , strd r2, r3, [r0, 24] */
     .endr
-    add     r0, #32
-    cmp     r0, r1
+    add     r0, #32			//加跳32个字节,说明在地址范围上 r1 > r0 ==> __exc_stack_top > __svc_stack
+    cmp     r0, r1			//是否到栈底
     blt     stack_init_loop
     bx      lr
 
@@ -456,21 +471,21 @@ pa_va_offset:	//物理地址和虚拟地址偏移量
     .word   .   ////定义一个4字节的pa_va_offset 变量， 链接器生成一个链接地址， . 表示 pa_va_offset = 链接地址 举例: 在地址 0x17321796 中保存了 0x17321796 值
 
 /*
- * set magic num to stack bottom for all cpu
+ * set magic num to stack bottom for all cpu | 给所有CPU核设置魔法数字到栈底
  * r0 is stack bottom, r1 is stack size, r2 is magic num
  */
 excstack_magic:
-    mov     r3, #0
+    mov     r3, #0 //r3 = 0
 excstack_magic_loop:
     str     r2, [r0]   //栈顶设置魔法数字
     add     r0, r0, r1 //定位到栈底
-    add     r3, r3, #1
+    add     r3, r3, #1 //r3++
     cmp     r3, #CORE_NUM //栈空间等分成core_num个空间，所以每个core的栈顶需要magic num
     blt     excstack_magic_loop
     bx      lr
 
 #ifdef LOSCFG_KERNEL_MMU
-memset_optimized:
+memset_optimized:	//初始化页表
     mov     r3, r0
     vdup.8  q0, r1
     vmov    q1, q0
