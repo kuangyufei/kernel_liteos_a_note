@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 继续完善对开机启动汇编代码注释
+git commit -m  ' 汇编切到main后的模块注释
     百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)

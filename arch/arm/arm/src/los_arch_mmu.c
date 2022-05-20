@@ -1043,16 +1043,16 @@ STATUS_T LOS_ArchMmuMove(LosArchMmu *archMmu, VADDR_T oldVaddr, VADDR_T newVaddr
  */
 VOID LOS_ArchMmuContextSwitch(LosArchMmu *archMmu)
 {
-    UINT32 ttbr;
+    UINT32 ttbr;//B4.1.153 TTBCR, Translation Table Base Control Register,
     UINT32 ttbcr = OsArmReadTtbcr();//读取TTB寄存器的状态值
     if (archMmu) {
-        ttbr = MMU_TTBRx_FLAGS | (archMmu->physTtb);//进程TTB物理地址值
+        ttbr = MMU_TTBRx_FLAGS | (archMmu->physTtb);//提供进程的映射页表地址,切换MMU代表要换进程,同一进程的线程切换并不需要切MMU
         /* enable TTBR0 */
-        ttbcr &= ~MMU_DESCRIPTOR_TTBCR_PD0;//使能TTBR0
+        ttbcr &= ~MMU_DESCRIPTOR_TTBCR_PD0;//使能TTBR0 B4.1.154 TTBR0, Translation Table Base Register 0
     } else {
         ttbr = 0;
         /* disable TTBR0 */
-        ttbcr |= MMU_DESCRIPTOR_TTBCR_PD0;
+        ttbcr |= MMU_DESCRIPTOR_TTBCR_PD0;//禁用TTBR0
     }
 
 #ifdef LOSCFG_KERNEL_VM
@@ -1061,13 +1061,13 @@ VOID LOS_ArchMmuContextSwitch(LosArchMmu *archMmu)
     ISB; //指令必须同步 ，清楚流水线中未执行指令
 #endif
     OsArmWriteTtbr0(ttbr);//通过r0寄存器将进程页面基址写入TTB
-    ISB; //指令必须同步
+    ISB; 
     OsArmWriteTtbcr(ttbcr);//写入TTB状态位
-    ISB; //指令必须同步
+    ISB; 
 #ifdef LOSCFG_KERNEL_VM
     if (archMmu) {
         OsArmWriteContextidr(archMmu->asid);//通过R0寄存器写入进程标识符至C13寄存器
-        ISB;
+        ISB; // 可查看 鸿蒙内核源码分析(优雅的宏篇)
     }
 #endif
 }

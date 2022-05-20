@@ -35,7 +35,7 @@
 
 #define CPSR_MODE_USR  0x10
 #define CPSR_MODE_MASK 0x1f
-/// 读CP15的系统控制寄存器到 R0寄存器
+/// 读CP15的系统控制寄存器到 R0寄存器 请翻看 鸿蒙内核源码分析(协处理器篇)
 STATIC INLINE UINT32 OsArmReadSctlr(VOID)
 {
     UINT32 val;
@@ -510,7 +510,7 @@ STATIC INLINE UINT32 OsArmReadTlbiasidis(VOID)
     __asm__ volatile("mrc p15, 0, %0, c8,c3,2" : "=r"(val));
     return val;
 }
-
+/// 记录由协处理器记录当前是哪个进程在跑
 STATIC INLINE VOID OsArmWriteTlbiasidis(UINT32 val)
 {
     __asm__ volatile("mcr p15, 0, %0, c8,c3,2" ::"r"(val));

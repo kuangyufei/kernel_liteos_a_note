@@ -45,7 +45,7 @@ LITE_OS_SEC_TEXT_INIT INT32 main(VOID)//由主CPU执行,默认0号CPU 为主CPU
         return (INT32)LOS_NOK;
     }
 
-    CPU_MAP_SET(0, OsHwIDGet());//设置CPU映射,参数0 代表0号CPU
+    CPU_MAP_SET(0, OsHwIDGet());//设置主CPU映射信息
 
     OsSchedStart();//调度开始
 

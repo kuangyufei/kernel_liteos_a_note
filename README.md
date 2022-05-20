@@ -1,5 +1,5 @@
 
-[![](https://gitee.com/weharmonyos/resources/raw/master/common/io.png)](http://weharmonyos.com/)
+[![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/io.png)](http://weharmonyos.com/)
 
 **中文注解鸿蒙内核 | [kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在 `OpenHarmony` 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) 基础上给内核源码加上中文注解的版本，同步官方代码迭代推进。
 
@@ -26,7 +26,7 @@
 * 如果把鸿蒙比作人，百图目的是要画出其骨骼系统。
 * 百图系列每张图都是心血之作，耗时甚大，能用一张就绝不用两张，所以会画的比较复杂，高清图会很大，可在公众号中回复 **百图** 获取`3`倍超高清最新图。`v**.xx`代表图的版本，请留意图的更新。
 * 例如： **双向链表** 是内核最重要的结构体，站长更愿意将它比喻成人的左右手，其意义是通过寄生在宿主结构体上来体现，可想象成在宿主结构体装上一对对勤劳的双手，它真的很会来事，超级活跃分子，为宿主到处拉朋友，建圈子。其插入 | 删除 | 遍历操作是它最常用的社交三大件，若不理解透彻在分析源码过程中很容易卡壳。虽在网上能找到很多它的图,但怎么看都不是自己想要的，干脆重画了它的主要操作。
-* ![](https://gitee.com/weharmonyos/resources/raw/master/100pic/1_list.png) 
+* ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/100pic/1_list.png) 
 
 #### 二： 百文说内核 | 抓住主脉络 | 肌肉器官
 
@@ -34,7 +34,7 @@
 * 与代码需不断`debug`一样，文章内容会存在不少错漏之处，请多包涵，但会反复修正，持续更新，`v**.xx` 代表文章序号和修改的次数，精雕细琢，言简意赅，力求打造精品内容。
 * 百文在 < 鸿蒙研究站 | 开源中国 | 博客园 | 51cto | csdn | 知乎 | 掘金 > 站点发布，公众号回复 **百文** 可方便阅读。
   
-* ![](https://gitee.com/weharmonyos/resources/raw/master/common/cate.png)
+* ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/cate.png)
   
 
 **基础知识** 
@@ -169,13 +169,13 @@
 
   * 在重要模块的`.c/.h`文件开始位置先对模块功能做整体的介绍，例如异常接管模块注解如图所示:
   
-    ![](https://gitee.com/weharmonyos/resources/raw/master/13/ycjg.png)
+    ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/13/ycjg.png)
     注解过程中查阅了很多的资料和书籍，在具体代码处都附上了参考链接。
   * 绘制字符图帮助理解模块 ，例如 虚拟内存区域分布没有图很难理解。
-    ![](https://gitee.com/weharmonyos/resources/raw/master/13/vm.png)
+    ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/13/vm.png)
   * 而函数级注解会详细到重点行，甚至每一行， 例如申请互斥锁的主体函数，不可谓不重要，而官方注释仅有一行，如图所示
     
-    ![](https://gitee.com/weharmonyos/resources/raw/master/13/sop.png)
+    ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/13/sop.png)
 
 * 注解创建了一些特殊记号，可直接搜索查看
   - [x] 搜索 `@note_pic` 可查看绘制的全部字符图
@@ -189,16 +189,15 @@
 
 在中文加注版基础上构建了参考手册，如此可以看到毛细血管级的网络图，注解支持 [doxygen](https://www.doxygen.nl) 格式标准。
 * 图为内核`main`的调用关系直观展现，如果没有这张图，光`main`一个函数就够喝一壶。 `main`本身是由汇编指令 `bl main`调用
-  ![](https://gitee.com/weharmonyos/resources/raw/master/73/1.png)
+  ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/73/1.png)
   可前往 >> [鸿蒙研究站 | 参考手册 ](http://weharmonyos.com/doxygen/index.html) 体验
 
 * 图为内核所有结构体索引，点击可查看每个结构变量细节
-  ![](https://gitee.com/weharmonyos/resources/raw/master/73/6.png)
+  ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/73/6.png)
   可前往 >> [鸿蒙研究站 | 结构体索引 ](http://weharmonyos.com/doxygen/classes.html) 体验
 
 ### 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [gitcode](https://gitcode.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
-* `2022/05/09` -- 标准库(musl , newlib) 目录调整
 * `2022/04/16` -- 任务调度模块有很大更新
 * `2022/03/23` -- 新增各CPU核自主管理中断, 定时器模块较大调整
 * `2022/02/18` -- 官方无代码更新, 只有测试用例的完善
@@ -272,7 +271,7 @@
 * 研究鸿蒙需不断的翻阅资料，吸取别人的精华，其中官方文档必不可少， 为更好的呈现 **OpenHarmony开发者文档** ， 特意做了静态站点 [ >> 鸿蒙研究站 | 官方文档](http://weharmonyos.com/openharmony) 来方便搜索，阅读官方资料。
 
 * 左侧导航栏，右边索引区
-  ![](https://gitee.com/weharmonyos/resources/raw/master/52/4.png)
+  ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/52/4.png)
 
 
  * [鸿蒙研究站](http://weharmonyos.com) 定位于做一个专注而靠谱的技术站，没有广告，干净简洁，极佳阅读体验，持续输出，周周更新。同时感谢资助网站建设的各位小伙伴。 [ >> 我要捐助](http://weharmonyos.com/donate.html)
@@ -281,7 +280,7 @@
 
 ### 关注不迷路 | 代码即人生
 
-![](https://gitee.com/weharmonyos/resources/raw/master/common/so1so.png)
+![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/so1so.png)
 
 据说喜欢点赞分享的,后来都成了大神。:)
 

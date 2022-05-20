@@ -145,11 +145,11 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 PlatformInit(VOID)
 {
     return LOS_OK;
 }
-
+//内核关键模块初始化
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 KModInit(VOID)
 {
 #ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
-    OsSwtmrInit();
+    OsSwtmrInit(); //软件定时器模块 , 软定由专门的 0 级任务实现
 #endif
     return LOS_OK;
 }
@@ -196,13 +196,13 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsMain(VOID)
     }
     OsInitCall(LOS_INIT_LEVEL_EARLIEST);
 
-    ret = ArchEarlyInit();
+    ret = ArchEarlyInit(); //架构级初始化,包括硬中断
     if (ret != LOS_OK) {
         return ret;
     }
     OsInitCall(LOS_INIT_LEVEL_ARCH_EARLY);
 
-    ret = PlatformEarlyInit();
+    ret = PlatformEarlyInit();//平台级初始化
     if (ret != LOS_OK) {
         return ret;
     }

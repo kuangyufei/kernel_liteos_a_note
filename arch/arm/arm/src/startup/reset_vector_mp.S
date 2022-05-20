@@ -152,7 +152,7 @@ reset_vector: //鸿蒙开机代码
     MOV    r3, #0x40000000	    //EN, bit[30] 设置FPEXC的EN位来使能FPU
     VMSR   FPEXC, r3			//浮点异常控制寄存器 (Floating-Point Exception Control register | B4.1.57) 
 
-    /* r11: delta of physical address and virtual address | 内核运行虚拟地址和物理地址之间的差值 */
+    /* r11: delta of physical address and virtual address | 计算虚拟地址和物理地址之间的差值,目的是为了建立映射关系表 */
     adr     r11, pa_va_offset //获取pa_va_offset变量物理地址，由于这时候mmu已经被关闭，所以这个值就表示pa_va_offset变量的物理地址。
                               /*adr 是一条小范围的地址读取伪指令,它将基于PC的相对偏移的地址值读到目标寄存器中。
                                *编译源程序时，汇编器首先计算当前PC值（当前指令位置）到exper的距离,然后用一条ADD或者SUB指令替换这条伪指令，
@@ -164,7 +164,7 @@ reset_vector: //鸿蒙开机代码
     mrc     p15, 0, r12, c0, c0, 5      /* Multiprocessor Affinity Register-MPIDR */
     and     r12, r12, #MPIDR_CPUID_MASK //掩码过滤
     cmp     r12, #0	                    //主控核0判断
-    bne     secondary_cpu_init	//初始化CPU次核
+    bne     secondary_cpu_init	        //初始化CPU次核
 	/*
 	 * adr是小范围的地址读取伪指令,它将基于PC寄存器相对偏移的地址值读取到寄存器中，
 	 * 例如: 0x00000004 	 : adr     r4, __exception_handlers
@@ -193,7 +193,7 @@ reloc_img_to_bottom_loop://重定位镜像到内核物理内存基地址,将内�
     bne     reloc_img_to_bottom_loop
     sub     pc, r12                             /* 重新校准pc寄存器, 无缝跳到了拷贝后的指令地址处执行 r12是重定位镜像前内核加载基地址和内核物理内存基地址的差值 */
     nop		// 注意执行完成sub       pc, r12后,新的PC寄存器也指向了 	nop ,nop是伪汇编指令,等同于 mov r0 r0 通常用于控制时序的目的，强制内存对齐，防止流水线灾难，占据分支指令延迟						
-    sub     r11, r11, r12                       /* r11: eventual address offset | 最终地址映射偏移量, 用于MMU打开后使用 */
+    sub     r11, r11, r12                       /* r11: eventual address offset | 最终地址映射偏移量, 用于构建MMU页表 */
 //内核总大小 __bss_start - __exception_handlers
 reloc_img_to_bottom_done:
 #ifdef LOSCFG_KERNEL_MMU 
