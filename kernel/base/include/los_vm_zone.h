@@ -132,7 +132,7 @@ extern "C" {
 
 #ifdef LOSCFG_KERNEL_MMU	//
 #ifdef LOSCFG_TEE_ENABLE
-#define KERNEL_VADDR_BASE       0x41000000
+#define KERNEL_VADDR_BASE       0x41000000 //用于链接器层面的宏配置 | 基地址
 #else
 #define KERNEL_VADDR_BASE       0x40000000		
 #endif
@@ -148,10 +148,10 @@ extern "C" {
 #define _U32_C(X)  X##U
 #define U32_C(X)   _U32_C(X)
 
-#define KERNEL_VMM_BASE         U32_C(KERNEL_VADDR_BASE) ///< 速度快,使用cache
-#define KERNEL_VMM_SIZE         U32_C(KERNEL_VADDR_SIZE)
+#define KERNEL_VMM_BASE         U32_C(KERNEL_VADDR_BASE) ///< 内核内存管理层面的宏配置 | 基地址
+#define KERNEL_VMM_SIZE         U32_C(KERNEL_VADDR_SIZE) ///< 内核大小
 
-#define KERNEL_ASPACE_BASE      KERNEL_VMM_BASE ///< 内核空间基地址
+#define KERNEL_ASPACE_BASE      KERNEL_VMM_BASE ///< 内核运行空间层面的宏配置 | 基地址
 #define KERNEL_ASPACE_SIZE      KERNEL_VMM_SIZE ///< 内核空间大小
 
 /* Uncached vmm aspace */

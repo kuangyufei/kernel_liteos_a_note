@@ -71,7 +71,8 @@
     .equ MPIDR_CPUID_MASK, 0xffU //#define MPIDR_CPUID_MASK 0xffU
 
     .fpu neon-vfpv4 //支持的浮点处理器
-    .syntax unified
+    .syntax unified //.syntax命令是ARM架构独有的命令,指按照怎样的语法规则进行汇编 , unified表示ARM和THUMB指令使用统一的语法 
+    				//一般会使用unified , 以减少汇编器的报错
     .arch armv7-a //支持芯片指令集
     .arm //支持CPU架构
     
@@ -454,8 +455,8 @@ stack_init:
     ldr     r3, =OS_STACK_INIT
     /* Main loop sets 32 bytes at a time. | 主循环一次设置 32 个字节*/
 stack_init_loop:
-    .irp    offset, #0, #8, #16, #24
-    strd    r2, r3, [r0, \offset]    /* 等价于strd r2, r3, [r0, 0], strd r2, r3, [r0, 8], ... , strd r2, r3, [r0, 24] */
+    .irp    offset, #0, #8, #16, #24 //.irp指令语法 .irp symbol,values . . . 这一串values会被逐一赋给symbol
+    strd    r2, r3, [r0, \offset]    /* 等价于strd r2, r3, [r0, 0], strd r2, r3, [r0, 8], strd r2, r3, [r0, 16] , strd r2, r3, [r0, 24] */
     .endr
     add     r0, #32			//加跳32个字节,说明在地址范围上 r1 > r0 ==> __exc_stack_top > __svc_stack
     cmp     r0, r1			//是否到栈底

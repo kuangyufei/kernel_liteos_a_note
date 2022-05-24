@@ -29,17 +29,21 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// GNU 链接脚本语法 https://sourceware.org/binutils/docs/ld/LD-Index.html
-ENTRY(reset_vector) /*指定入口地址*/
+/* 
+	链接脚本, 各板子按自己实际情况修改
+	GNU 链接脚本语法 https://sourceware.org/binutils/docs/ld/LD-Index.html
+*/
+ENTRY(reset_vector) /*指定程序入口地址*/
 INCLUDE board.ld // > ram 指的是要大于 ram这个地址, ram在board.ld中定义
-/* 这是脚本中最重要的命令了，所有的LD脚本都会有这个命令，用来指定如何将输入文件映射到输出文件等等 */
-SECTIONS
-{
-     _start = .;
+/* SECTIONS 是脚本中最重要的命令，所有的LD脚本都会有这个命令，用来指定如何将输入文件映射到输出文件等等 */
+SECTIONS 
+{		 
+	 //节地址是指该节的VMA地址。如果改地未明确指定，连接器会在考虑严格对齐情况下，首先按照region参数分配内存，其次根据当前位置计数器向下分地址。
+     _start = .; //特殊符号.指示当前位置计数器 此处刚开始表示为 0 
     .set_sysinit_set : {
         __start_set_sysinit_set = ABSOLUTE(.);
-        KEEP (*(.set_sysinit_set))//在连接命令行内使用了选项–gc-sections后，连接器可能将某些它认为没用的section过滤掉，此时就有必要强制连接器保留一些特定的 section，可用KEEP()关键字达此目的。
-        __stop_set_sysinit_set = ABSOLUTE(.);
+        KEEP (*(.set_sysinit_set))//在连接命令行内使用了选项–gc-sections后，连接器可能将某些它认为没用的section过滤掉
+        __stop_set_sysinit_set = ABSOLUTE(.);//此时就有必要强制连接器保留一些特定的 section，可用KEEP()关键字达此目的。
     } > ram
 
     .got ALIGN(0x4) : { *(.got.plt) *(.got) } > ram
@@ -53,9 +57,9 @@ SECTIONS
     .ARM.exidx ALIGN(0x8) : { __exidx_start = .; *(.ARM.exidx* .gnu.linkonce.armexidx.*) ;__exidx_end = .;} > ram
 
     /* text/read-only data */
-    .text ALIGN(0x1000) : {
-        __text_start = .;
-        *(.text* .sram.text.glue_7* .gnu.linkonce.t.*)
+    .text ALIGN(0x1000) : { //代码区 按4K对齐
+        __text_start = .; //当前位置为 __text_start 开始位置
+        *(.text* .sram.text.glue_7* .gnu.linkonce.t.*) //*(.text)
     } > ram
 
     .rel.text : { *(.rel.text) *(.rel.text.*) *(.rel.gnu.linkonce.t*) } > ram
