@@ -84,9 +84,9 @@ OUTPUT_ARCH(arm)
 
 MEMORY //链接器的默认配置允许分配所有可用内存,描述链接器可以使用哪些内存区域
 { //ram,sram为存储区域的名字,可以随意取
-    ram : ORIGIN = KERNEL_VADDR_BASE, LENGTH = KERNEL_VADDR_SIZE //用户空间范围
+    ram : ORIGIN = KERNEL_VADDR_BASE, LENGTH = KERNEL_VADDR_SIZE //内核运行空间范围
     sram : ORIGIN = 0x40000000, LENGTH = 0x1000 
-    user_ram : ORIGIN = 0x1000000, LENGTH = 0x100000 //用户空间内存范围 USER_ASPACE_BASE ,此大小不是真正最后映射到用户空间的大小
+    user_ram : ORIGIN = 0x1000000, LENGTH = 0x100000 //用户运行空间范围 USER_ASPACE_BASE ,此大小不是真正最后映射到用户空间的大小
 }
 SECTIONS
 {
@@ -95,8 +95,8 @@ SECTIONS
     .ram_vectors TEXT_BASE : { //内核代码段开始位置
         __ram_vectors_vma = .; //定位到当前位置,即TEXT_BASE处
         KEEP (*(.vectors)) //告诉链接器 强制保留所有输入文件中的 .vectors 节
-    } > ram
-    __ram_vectors_lma = LOADADDR(.ram_vectors);//加载地址和链接地址一致,说明内核设计者希望从加载地址处运行指令
+    } > ram //中断向量是开机代码的位置 , 可翻看 鸿蒙内核源码分析(开机启动篇) 和 (中断管理篇)
+    __ram_vectors_lma = LOADADDR(.ram_vectors);//启动时对向量的初始化,加载地址和链接地址一致,说明内核设计者希望从加载地址处运行指令
 }
 //LMA：加载存储地址，指加载到存储器的地址，即加载或烧写到哪里
 //VMA：虚拟存储地址，也就是链接地址，即代码和数据运行的时候应在哪里

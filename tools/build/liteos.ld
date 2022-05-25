@@ -34,7 +34,7 @@
 	GNU 链接脚本语法 https://sourceware.org/binutils/docs/ld/LD-Index.html
 */
 ENTRY(reset_vector) /*指定程序入口地址*/
-INCLUDE board.ld // > ram 指的是要大于 ram这个地址, ram在board.ld中定义
+INCLUDE board.ld // > ram 指放入ram这个地址范围中, ram在board.ld中定义
 /* SECTIONS 是脚本中最重要的命令，所有的LD脚本都会有这个命令，用来指定如何将输入文件映射到输出文件等等 */
 SECTIONS 
 {		 
