@@ -466,7 +466,7 @@ STATIC INLINE struct Vnode *OsProcessExecVnodeGet(const LosProcessCB *processCB)
 extern UINTPTR __user_init_entry;	///<  第一个用户态进程(init)的入口地址 查看 LITE_USER_SEC_ENTRY
 extern UINTPTR __user_init_bss;		///<  查看 LITE_USER_SEC_BSS ,赋值由liteos.ld完成
 extern UINTPTR __user_init_end;		///<  init 进程的用户空间初始化结束地址
-extern UINTPTR __user_init_load_addr;///< init进程的加载地址
+extern UINTPTR __user_init_load_addr;///< init 进程的加载地址 ,由链接器赋值
 extern UINT32 OsSystemProcessCreate(VOID);
 extern VOID OsProcessNaturalExit(LosProcessCB *processCB, UINT32 status);
 extern VOID OsProcessCBRecycleToFree(VOID);

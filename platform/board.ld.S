@@ -92,7 +92,7 @@ SECTIONS
 {
     /DISCARD/ : { *(.comment .note) } //过滤掉所有输入文件的 .comment .note 段
 
-    .ram_vectors TEXT_BASE : { //内核代码段开始位置
+    .ram_vectors TEXT_BASE : { //内核中断向量区开始位置,此处用 TEXT_BASE 宏有误导嫌疑, 因为真正的(.text)并不在此 @notethinking 
         __ram_vectors_vma = .; //定位到当前位置,即TEXT_BASE处
         KEEP (*(.vectors)) //告诉链接器 强制保留所有输入文件中的 .vectors 节
     } > ram //中断向量是开机代码的位置 , 可翻看 鸿蒙内核源码分析(开机启动篇) 和 (中断管理篇)

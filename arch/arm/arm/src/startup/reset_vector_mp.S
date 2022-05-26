@@ -127,7 +127,7 @@ OsGetArgsAddr:
     bx      lr
 #endif
 
-reset_vector: //鸿蒙开机代码
+reset_vector: //内核启动入口
     /* clear register TPIDRPRW */
     mov     r0, #0					//r0 = 0
     mcr     p15, 0, r0, c13, c0, 4	//复位线程标识符寄存器TPIDRPRW , 不复位将导致系统不能启动
