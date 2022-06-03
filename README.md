@@ -277,7 +277,7 @@
 ### 鸿蒙论坛 | 有营养是前提
 * 固执的认为论坛是技术人最好的沟通方式 , 不直接碰撞 , 有空间思考 , 让步子迈的慢一点。不奢望会有多少人知道, 但一直会存在。
   
- ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/bbs_logo.png)
+ [![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/bbs_logo.png)](http://bbs.weharmonyos.com)
  
 
 
