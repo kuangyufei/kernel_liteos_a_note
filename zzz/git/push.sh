@@ -1,15 +1,11 @@
 git add -A
-git commit -m  ' 补充链接脚本的注解
-    百图画鸿蒙 + 百文说内核 + 百万注源码  => 挖透鸿蒙内核源码
+git commit -m  ' bbs.weharmonyos.com 上线 
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
-    oschina | https://my.oschina.net/weharmony
-    博客园 | https://www.cnblogs.com/weharmony/
-    知乎 | https://www.zhihu.com/people/weharmonyos
-    csdn | https://blog.csdn.net/kuangyufei
-    51cto | https://harmonyos.51cto.com/column/34
-    掘金 | https://juejin.cn/user/756888642000808
-    公众号 | 鸿蒙研究站 (weharmonyos)
+    论坛 | http://bbs.weharmonyos.com
+    文档中心 | http://open.weharmonyos.com
+    参考手册 | http://doxygen.weharmonyos.com
+    
 '
 
 git push  gitee_origin master
