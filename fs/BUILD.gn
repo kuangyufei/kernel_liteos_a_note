@@ -33,6 +33,7 @@ group("fs") {
   deps = [
     "fat",
     "fat/virpart",
+    "jffs2",
     "nfs",
     "patchfs",
     "proc",

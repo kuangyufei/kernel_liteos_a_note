@@ -198,6 +198,8 @@
 
 ### 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [gitcode](https://gitcode.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
+
+* `2022/06/03` -- 增加 jffs2 编译选项
 * `2022/05/09` -- 标准库(musl , newlib) 目录调整
 * `2022/04/16` -- 任务调度模块有很大更新
 * `2022/03/23` -- 新增各CPU核自主管理中断, 定时器模块较大调整

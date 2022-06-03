@@ -15,7 +15,7 @@
 -->
 
 <!--
-   This is the configuration file template for OpenHarmony OSS Audit Tool, please copy it to your project root dir and modify it refer to OpenHarmony/tools_oat/README.
+   This is the configuration file template for OpenHarmony OSS Audit Tool. Please copy it to your project root dir and modify it by referring to OpenHarmony/tools_oat/README.
 -->
 
 <configuration>
@@ -23,7 +23,7 @@
         <licensefile></licensefile>
         <policylist>
             <policy name="projectPolicy" desc="">
-                <policyitem type="copyright" name="Huawei Technologies Co., Ltd. All rights reserved." path=".*" desc="original liteos copyright"/>
+                <policyitem type="copyright" name="Huawei Device Co., Ltd. All rights reserved." path=".*" desc="original liteos copyright"/>
                 <policyitem type="license" name="BSD-3-Clause" path=".*" desc="Liteos kernel use bsd3 license"/>
             </policy>
         </policylist>
@@ -38,7 +38,7 @@
                 <!--filteritem type="filepath" name="abcdefg/.*.uvwxyz" desc="Describe the reason for filtering scan results"/-->
                 <!--filteritem type="filepath" name="projectroot/[a-zA-Z0-9]{20,}.sh" desc="Temp files"/-->
             </filefilter>
-            <filefilter name="defaultPolicyFilter" desc="Filters for compatibility，license header policies">
+            <filefilter name="defaultPolicyFilter" desc="Filters for license header policies">
                 <!--filteritem type="filename" name="*.uvwxyz" desc="Describe the reason for filtering scan results"/-->
                 <!--filteritem type="filepath" name="abcdefg/.*.uvwxyz" desc="Describe the reason for filtering scan results"/-->
                 <!--filteritem type="filepath" name="projectroot/[a-zA-Z0-9]{20,}.sh" desc="Temp files"/-->
