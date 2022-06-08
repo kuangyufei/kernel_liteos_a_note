@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 同步官方代码,增加 jffs2 编译选项
+git commit -m  ' 鸿蒙论坛 | 干净.营养.不盲从
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com

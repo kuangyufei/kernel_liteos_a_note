@@ -196,9 +196,12 @@
   ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/73/6.png)
   可前往 >> [鸿蒙研究站 | 结构体索引 ](http://doxygen.weharmonyos.com/classes.html) 体验
 
+### 鸿蒙论坛 | 干净.营养.不盲从
+* 搭个论坛貌似不合时宜, 但站长却固执的认为它是技术人最好的沟通方式, 它不像群各种叨絮使人焦虑被逼的屏蔽它, 它更像个异性知己,懂你给你留足空间思考,从不扰乱你的生活,鸿蒙论坛会一直存在,并坚持自己的风格(干净.营养.不盲从)。选择 Discuz 是因为它太优秀, 一个沉淀了20年的开源平台,被所谓的时代遗忘实在是太过可惜。哪天您得空了就去逛逛吧 , 它可能并没有那么糟糕。
+*  [![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/bbs/bbs.png)](http://bbs.weharmonyos.com)
+  
 ### 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [gitcode](https://gitcode.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
-
 * `2022/06/03` -- 增加 jffs2 编译选项
 * `2022/05/09` -- 标准库(musl , newlib) 目录调整
 * `2022/04/16` -- 任务调度模块有很大更新
@@ -276,10 +279,7 @@
 * 左侧导航栏，右边索引区
   ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/52/4.png)
 
-### 鸿蒙论坛 | 有营养是前提
-* 固执的认为论坛是技术人最好的沟通方式 , 不直接碰撞 , 有空间思考 , 让步子迈的慢一点。不奢望会有多少人知道, 但一直会存在。
-  
- [![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/bbs_logo.png)](http://bbs.weharmonyos.com)
+
  
 
 
