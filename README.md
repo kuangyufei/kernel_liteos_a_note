@@ -279,11 +279,8 @@
 * 左侧导航栏，右边索引区
   ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/52/4.png)
 
-
- 
-
-
 ### 关注不迷路 | 代码即人生
+期间不断得到小伙伴的支持，有学生，有职场新人，也有老江湖，在此一并感谢，大家的支持是前进的动力。尤其每次收到学生的赞助很感慨，后生可敬。[ >> 查看捐助名单](./donate.md)
 
 ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/so1so.png)
 

@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 鸿蒙论坛 | 干净.营养.不盲从
+git commit -m  ' 感谢这十二位小伙伴的赞助!
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com
