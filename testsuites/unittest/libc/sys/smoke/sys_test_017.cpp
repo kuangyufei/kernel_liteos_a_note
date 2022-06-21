@@ -30,7 +30,7 @@
  */
 #include "It_test_sys.h"
 
-#define TEST_PASSWORD (char *)"test1234"
+const int password_length = 10;
 
 static UINT32 TestCase(VOID)
 {
@@ -39,14 +39,24 @@ static UINT32 TestCase(VOID)
     char *key = NULL;
     char slat[2];
     int ret;
+    char test_password[password_length];
+    srand(time(NULL));
+    for (int i = 0, r = 0; i < password_length; i++) {
+        r = rand() % 36; // 36: 0-9 and a-z
+        if (r < 10) {    // 10: 0-9
+            test_password[i] = '0' + r;
+        } else {
+            test_password[i] = 'a' + r;
+        }
+    }
 
-    key = TEST_PASSWORD;
+    key = test_password;
     slat[0] = key[0];
     slat[1] = key[1];
     passwd1 = crypt(key, slat);
     ICUNIT_GOTO_NOT_EQUAL(passwd1, NULL, passwd1, EXIT);
 
-    key = TEST_PASSWORD;
+    key = test_password;
     slat[0] = passwd1[0];
     slat[1] = passwd1[1];
     passwd2 = crypt(key, slat);

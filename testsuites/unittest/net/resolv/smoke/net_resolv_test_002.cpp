@@ -32,21 +32,31 @@
 
 #include <lt_net_resolv.h>
 
+const int buffer_size = 20;
+
 static int EtherAtonTest(void)
 {
     struct ether_addr *eaddr = ether_aton("01::EF");
 
     ICUNIT_ASSERT_EQUAL(eaddr, NULL, -1);
 
-    eaddr = ether_aton("2C:9D:1E:4A:41:55");
+    char mac_addr[buffer_size], *tmp = mac_addr;
+    int r[ETH_ALEN];
+    srand(time(NULL));
+    for (int i = 0; i < ETH_ALEN; i++) {
+        r[i] = rand() % 0xff;
+    }
+    // 0, 1, 2, 3, 4, 5: 6 elements of mac address.
+    (void)sprintf_s(mac_addr, sizeof(mac_addr), "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x", r[0], r[1], r[2], r[3], r[4], r[5]);
+    eaddr = ether_aton(mac_addr);
     ICUNIT_ASSERT_NOT_EQUAL(eaddr, NULL, -1);
 
-    ICUNIT_ASSERT_EQUAL(eaddr->ether_addr_octet[0], 0x2C, eaddr->ether_addr_octet[0]);
-    ICUNIT_ASSERT_EQUAL(eaddr->ether_addr_octet[1], 0x9D, eaddr->ether_addr_octet[1]);
-    ICUNIT_ASSERT_EQUAL(eaddr->ether_addr_octet[2], 0x1E, eaddr->ether_addr_octet[2]);
-    ICUNIT_ASSERT_EQUAL(eaddr->ether_addr_octet[3], 0x4A, eaddr->ether_addr_octet[3]);
-    ICUNIT_ASSERT_EQUAL(eaddr->ether_addr_octet[4], 0x41, eaddr->ether_addr_octet[4]);
-    ICUNIT_ASSERT_EQUAL(eaddr->ether_addr_octet[5], 0x55, eaddr->ether_addr_octet[5]);
+    ICUNIT_ASSERT_EQUAL(eaddr->ether_addr_octet[0], r[0], eaddr->ether_addr_octet[0]);
+    ICUNIT_ASSERT_EQUAL(eaddr->ether_addr_octet[1], r[1], eaddr->ether_addr_octet[1]);
+    ICUNIT_ASSERT_EQUAL(eaddr->ether_addr_octet[2], r[2], eaddr->ether_addr_octet[2]); // 2: compare r[2] with eaddr
+    ICUNIT_ASSERT_EQUAL(eaddr->ether_addr_octet[3], r[3], eaddr->ether_addr_octet[3]); // 3: compare r[3] with eaddr
+    ICUNIT_ASSERT_EQUAL(eaddr->ether_addr_octet[4], r[4], eaddr->ether_addr_octet[4]); // 4: compare r[4] with eaddr
+    ICUNIT_ASSERT_EQUAL(eaddr->ether_addr_octet[5], r[5], eaddr->ether_addr_octet[5]); // 5: compare r[5] with eaddr
 
     return ICUNIT_SUCCESS;
 }

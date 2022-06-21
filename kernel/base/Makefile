@@ -28,7 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 include $(LITEOSTOPDIR)/config.mk
-include $(LITEOSTOPDIR)/../../drivers/adapter/khdf/liteos/lite.mk
+include $(LITEOSTOPDIR)/../../drivers/hdf_core/adapter/khdf/liteos/lite.mk
 
 MODULE_NAME := $(notdir $(shell pwd))
 
@@ -40,6 +40,6 @@ LOCAL_SRCS := 	$(wildcard ipc/*.c) $(wildcard core/*.c) $(wildcard mem/membox/*.
 		$(wildcard sched/*.c) \
 		$(wildcard vm/*.c)
 
-LOCAL_FLAGS := $(LITEOS_CFLAGS_INTERWORK)
+LOCAL_FLAGS := $(LITEOS_CFLAGS_INTERWORK) -Wno-frame-address
 
 include $(MODULE)

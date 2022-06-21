@@ -103,13 +103,13 @@ config("private") {
   if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
     cflags = [
       "-Wno-char-subscripts",
-      "-Wno-unknown-pragmas",
+      "-Wno-ignored-pragmas",
+      "-Wno-strict-prototypes",
     ]
   } else {
     cflags = [
       "-frounding-math",
       "-Wno-unused-but-set-variable",
-      "-Wno-unknown-pragmas",
     ]
   }
 
@@ -117,5 +117,6 @@ config("private") {
     "-Wno-shift-op-parentheses",
     "-Wno-logical-op-parentheses",
     "-Wno-bitwise-op-parentheses",
+    "-Wno-unknown-pragmas",
   ]
 }

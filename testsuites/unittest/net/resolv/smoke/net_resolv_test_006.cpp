@@ -32,13 +32,26 @@
 
 #include <lt_net_resolv.h>
 
+const int buffer_size = 20;
+
 static int EtherNtoaTest(void)
 {
-    struct ether_addr addr = {{11,12,13,14,15,16}}, *eaddr = &addr;
+    struct ether_addr addr, *eaddr = &addr;
+    srand(time(NULL));
+    int r[ETH_ALEN];
+    for (int i = 0; i < ETH_ALEN; i++) {
+        r[i] = rand() % 16; // 16: 0x0-0xf
+        eaddr->ether_addr_octet[i] = r[i];
+    }
     char *buf = ether_ntoa(eaddr);
+    char str1[buffer_size], str2[buffer_size];
+    // 0, 1, 2, 3, 4, 5: 6 elements of mac address.
+    (void)sprintf_s(str1, sizeof(str1), "%x:%x:%x:%x:%x:%x", r[0], r[1], r[2], r[3], r[4], r[5]);
+    // 0, 1, 2, 3, 4, 5: 6 elements of mac address.
+    (void)sprintf_s(str2, sizeof(str2), "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x", r[0], r[1], r[2], r[3], r[4], r[5]);
 
     ICUNIT_ASSERT_NOT_EQUAL(buf, 0, -1);
-    ICUNIT_ASSERT_EQUAL((stricmp("b:c:d:e:f:10", buf) == 0 || stricmp("0b:0c:0d:0e:0f:10", buf) == 0), 1, printf("%s\n", buf));
+    ICUNIT_ASSERT_EQUAL((stricmp(str1, buf) == 0 || stricmp(str2, buf) == 0), 1, printf("%s\n", buf));
 
     return ICUNIT_SUCCESS;
 }

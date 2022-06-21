@@ -32,18 +32,36 @@
 #include <libintl.h>
 #include <locale.h>
 
+const int domain_name_length = 10;
+const int buffer_size = 50;
+
 static UINT32 testcase(VOID)
 {
     char *s = "";
+    char domain[buffer_size], tmp[domain_name_length];
+    srand(time(NULL));
+    for (int i = 0, r = 0; i < domain_name_length; i++) {
+        r = rand() % 36; // 36: 0-9 and a-z
+        if (r < 10) {    // 10: 0-9
+            tmp[i] = '0' + r;
+        } else {
+            tmp[i] = 'a' + r;
+        }
+    }
+    int ret = sprintf_s(domain, sizeof(domain), "www.%s.com", tmp);
+    if (ret == 0) {
+        printf("sprinf_s failed\n");
+        return LOS_NOK;
+    }
 
     setlocale(LC_ALL, "");
     textdomain("gettext_demo");
     bindtextdomain("gettext_demo", ".");
     bind_textdomain_codeset("gettext_demo", "UTF-8");
 
-    printf(dcgettext("www.huawei.com", "TestString1\n", LC_MESSAGES));
+    printf(dcgettext(domain, "TestString1\n", LC_MESSAGES));
 
-    s = dcgettext("www.huawei.com", "TestString1\n", LC_MESSAGES);
+    s = dcgettext(domain, "TestString1\n", LC_MESSAGES);
     printf("[INFO]%s:%d,%s,s=%s\n", __FILE__, __LINE__, __func__, s);
     ICUNIT_ASSERT_STRING_EQUAL(s, "TestString1\n", s);
     setlocale(LC_ALL, "C");

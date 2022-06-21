@@ -90,8 +90,13 @@ kernel_module(module_name) {
   }
 
   public_configs = [ ":public" ]
+  configs += [ ":private" ]
 }
 
 config("public") {
   include_dirs = [ "include" ]
+}
+
+config("private") {
+  cflags = [ "-Wno-frame-address" ]
 }

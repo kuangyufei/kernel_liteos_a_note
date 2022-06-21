@@ -190,11 +190,7 @@ VOID OsLockDepCheckIn(SPIN_LOCK_S *lock)
 {
     UINT32 intSave;
     enum LockDepErrType checkResult = LOCKDEP_SUCCESS;
-#ifdef LOSCFG_COMPILER_CLANG_LLVM
     VOID *requestAddr = (VOID *)__builtin_return_address(1);
-#else
-    VOID *requestAddr = (VOID *)__builtin_return_address(0);
-#endif
     LosTaskCB *current = OsCurrTaskGet();
     LockDep *lockDep = &current->lockDep;
     LosTaskCB *lockOwner = NULL;
@@ -276,11 +272,7 @@ VOID OsLockDepCheckOut(SPIN_LOCK_S *lock)
     UINT32 intSave;
     INT32 depth;
     enum LockDepErrType checkResult = LOCKDEP_SUCCESS;
-#ifdef LOSCFG_COMPILER_CLANG_LLVM
     VOID *requestAddr = (VOID *)__builtin_return_address(1);
-#else
-    VOID *requestAddr = (VOID *)__builtin_return_address(0);
-#endif
     LosTaskCB *current = OsCurrTaskGet();
     LosTaskCB *owner = NULL;
     LockDep *lockDep = NULL;

@@ -59,10 +59,10 @@ LOCAL_INCLUDE += $(addprefix -I$(MUSLPORTINGDIR)/, src/include src/internal)
 
 LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LOCAL_CMACRO)
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LOCAL_FLAGS +=-Wno-char-subscripts -Wno-unknown-pragmas
+LOCAL_FLAGS +=-Wno-char-subscripts -Wno-ignored-pragmas -Wno-strict-prototypes
 else
-LOCAL_FLAGS += -frounding-math -Wno-unused-but-set-variable -Wno-unknown-pragmas
+LOCAL_FLAGS += -frounding-math -Wno-unused-but-set-variable
 endif
-LOCAL_FLAGS += -Wno-shift-op-parentheses -Wno-logical-op-parentheses -Wno-bitwise-op-parentheses
+LOCAL_FLAGS += -Wno-shift-op-parentheses -Wno-logical-op-parentheses -Wno-bitwise-op-parentheses -Wno-unknown-pragmas
 
 include $(MODULE)

@@ -355,7 +355,7 @@ endif
 LITEOS_DRIVERS_BASE_PATH := $(LITEOSTOPDIR)/../../drivers/liteos
 ################################## Driver Option Begin #################################
 ifeq ($(LOSCFG_DRIVERS_HDF), y)
-include $(LITEOSTOPDIR)/../../drivers/adapter/khdf/liteos/hdf_lite.mk
+include $(LITEOSTOPDIR)/../../drivers/hdf_core/adapter/khdf/liteos/hdf_lite.mk
 endif
 
 ifeq ($(LOSCFG_DRIVERS_HIEVENT), y)

@@ -454,7 +454,7 @@ VOID TestTaskEntry(VOID)
 #if (TEST_MODULE_CHECK == 1)
         for (int i = 0; i < g_modelNum - 1; i++) {
             if (g_executModelNum[i] != 0) {
-                dprintf("\nExecuted Model: %s, Executed Model_Num: %d ,failed_count: %d , sucess_count :%d",
+                dprintf("\nExecuted Model: %s, Executed Model_Num: %d ,failed_count: %d , success_count :%d",
                     g_strModule[i], g_executModelNum[i], g_failModelResult[i], g_passModelResult[i]);
             }
             for (int j = 0; j < g_failResult && j < 50; j++) { // 50

@@ -35,7 +35,7 @@ static int g_sigCount = 0;
 static void SigPrint(int signum)
 {
     g_sigCount++;
-    printf("signal receive sucess\n");
+    printf("signal receive success\n");
 }
 
 static UINT32 TestCase(VOID)
@@ -101,7 +101,7 @@ static UINT32 TestCase(VOID)
     sleep(1);
     ret = kill(pid, SIGUSR1);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    printf("kill sucess\n");
+    printf("kill success\n");
     ret = waitpid(pid, &status, 0);
     ICUNIT_ASSERT_EQUAL(ret, pid, ret);
     ICUNIT_ASSERT_EQUAL(WEXITSTATUS(status), LOS_OK, WEXITSTATUS(status));
