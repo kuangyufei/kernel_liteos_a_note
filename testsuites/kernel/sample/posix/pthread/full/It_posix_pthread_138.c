@@ -67,7 +67,7 @@ static UINT32 Testcase(VOID)
     /*
      * Check to make sure that 'value_ptr' that was passed to
      * pthread_join() and the pthread_exit() return code that
-     * was used in the thread funciton are the same.
+     * was used in the thread function are the same.
      */
     ICUNIT_ASSERT_EQUAL(valuePtr, PTHREAD_EXIT_VALUE, errno);
 

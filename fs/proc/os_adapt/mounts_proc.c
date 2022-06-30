@@ -91,7 +91,7 @@ void ProcMountsInit(void)
 {
     struct ProcDirEntry *pde = CreateProcEntry("mounts", 0, NULL);
     if (pde == NULL) {
-        PRINT_ERR("creat mounts error!\n");
+        PRINT_ERR("create mounts error!\n");
         return;
     }
 

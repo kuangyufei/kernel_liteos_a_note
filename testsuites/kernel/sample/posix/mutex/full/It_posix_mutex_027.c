@@ -39,7 +39,7 @@ extern "C" {
 
 /* pthread_mutex_destroy 3-1.c
  * Test that pthread_mutex_destroy()
- * Upon succesful completion, it shall return a 0
+ * Upon successful completion, it shall return a 0
  *
  */
 static UINT32 Testcase(VOID)

@@ -40,7 +40,7 @@ static UINT32 TestCase(VOID)
     lcong48(seed);
     x = mrand48();
     if ((x < -MRAND48_NUM) || (x > MRAND48_NUM)) {
-        printf("[IN %s][line %d] x = %d\n", __FUNCTION__, __LINE__, x);
+        printf("[IN %s][line %d] x = %ld\n", __FUNCTION__, __LINE__, x);
         goto EXIT;
     }
 

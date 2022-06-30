@@ -39,7 +39,7 @@ static UINT32 TestCase(VOID)
 
     x = nrand48(seed);
     if ((x < 0) || (x > MAX_NRAND48)) {
-        printf("[IN %s][line %d] x = %d\n", __FUNCTION__, __LINE__, x);
+        printf("[IN %s][line %d] x = %ld\n", __FUNCTION__, __LINE__, x);
         goto EXIT;
     }
 

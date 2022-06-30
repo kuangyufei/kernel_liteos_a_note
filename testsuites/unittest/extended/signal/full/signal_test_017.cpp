@@ -131,7 +131,7 @@ static int TestMultiPthreadFatherProcessExit()
         sleep(1);
         retValue = waitpid(fpids, &status, 0);
         // grandchild process kill father process, so child process is recovered by init process
-        // child process doesn't receive termination singal from grandchild process
+        // child process doesn't receive termination signal from grandchild process
         // so waitpid() returns -1
         ICUNIT_ASSERT_EQUAL(retValue, -1, retValue);
         exit(1);

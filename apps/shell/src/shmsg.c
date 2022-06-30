@@ -422,7 +422,7 @@ static void DoCmdExec(const char *cmdName, const char *cmdline, unsigned int len
 
         forkPid = fork();
         if (forkPid < 0) {
-            printf("Faild to fork from shell\n");
+            printf("Failed to fork from shell\n");
             return;
         } else if (forkPid == 0) {
             ChildExec(cmdParsed->paramArray[0], cmdParsed->paramArray, foreground);

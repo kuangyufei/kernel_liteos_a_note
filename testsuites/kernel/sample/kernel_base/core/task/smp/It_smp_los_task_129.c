@@ -57,7 +57,7 @@ static UINT32 Testcase(void)
     int i;
 
     for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
-        /* creat core_num same priority tasks  */
+        /* create core_num same priority tasks  */
         task1.usCpuAffiMask = 0;
         ret = LOS_TaskCreate(&testTaskIDSmp[i], &task1);
         ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
@@ -72,7 +72,7 @@ static UINT32 Testcase(void)
 
     timesliceCount2 = TestTickCountGet();
 
-    /* Check if task yield definitely successed */
+    /* Check if task yield definitely succeeded */
     ICUNIT_GOTO_NOT_EQUAL(timesliceCount2, timesliceCount1, timesliceCount2 - timesliceCount1, EXIT);
 
     for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {

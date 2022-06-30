@@ -61,7 +61,7 @@ static UINT32 Testcase(void)
     TEST_TASK_PARAM_INIT(task1, "it_smp_task_042", (TSK_ENTRY_FUNC)TaskF01, TASK_PRIO_TEST_TASK);
     int i;
 
-    /* creat high prio task on every cores */
+    /* create high prio task on every cores */
     for (i = 0; i < LOSCFG_KERNEL_CORE_NUM - 1; i++) {
         /* take control of every cores */
         task1.usCpuAffiMask = CPUID_TO_AFFI_MASK((ArchCurrCpuid() + i + 1) % (LOSCFG_KERNEL_CORE_NUM));

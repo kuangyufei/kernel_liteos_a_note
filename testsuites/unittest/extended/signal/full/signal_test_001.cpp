@@ -162,8 +162,8 @@ static int TestCase(void)
             exit(-1);
         }
 
-        printf("1 pending=%d\n", pending.__bits[0]);
-        printf("1 oldmask=%d\n", oldmask.__bits[0]);
+        printf("1 pending=%lu\n", pending.__bits[0]);
+        printf("1 oldmask=%lu\n", oldmask.__bits[0]);
         printf("before raise\n");
         raise(SIGALRM);
         printf("after raise\n");
@@ -172,7 +172,7 @@ static int TestCase(void)
             printf("errline  = %d\n", __LINE__);
             exit(-1);
         }
-        printf("pending=%d,sigismem = %d\n", pending.__bits[0], sigismember(&pending, SIGALRM));
+        printf("pending=%d,sigismem = %lu\n", pending.__bits[0], sigismember(&pending, SIGALRM));
         exit(0);
     }
     sleep(1);

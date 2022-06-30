@@ -1274,7 +1274,7 @@ STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
 
     ret = (INT32)LOS_SemCreate(1, &consoleCB->consoleSem);//创建控制台信号量
     if (ret != LOS_OK) {
-        PRINT_ERR("creat sem for uart failed\n");
+        PRINT_ERR("create sem for uart failed\n");
         goto ERR_WITH_BUF;
     }
 

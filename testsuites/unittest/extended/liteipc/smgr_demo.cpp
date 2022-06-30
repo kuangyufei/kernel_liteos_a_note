@@ -196,7 +196,7 @@ static void HandleServiceRegAndGet(int fd, IpcMsg *data)
             }
         }
     }
-    printf("recieve service request, code:%d, service name:%s\n", data->code, info->serviceName);
+    printf("receive service request, code:%d, service name:%s\n", data->code, info->serviceName);
     switch (data->code) {
         case REG_CODE:
             if (i == MAX_SREVICE_NUM) {

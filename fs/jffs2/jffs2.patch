@@ -5499,7 +5499,7 @@ diff -Nupr old/fs/jffs2/readinode.c new/fs/jffs2/readinode.c
  			break;
  
  		default:
-+		    JFFS2_ERROR("Unknow f->inocache->state %d!\n", f->inocache->state);
++		    JFFS2_ERROR("Unknown f->inocache->state %d!\n", f->inocache->state);
  			BUG();
  		}
  	}

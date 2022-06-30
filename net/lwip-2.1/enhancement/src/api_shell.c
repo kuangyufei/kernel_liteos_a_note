@@ -1326,7 +1326,7 @@ out:
         } else if (ret == ERR_RTE) {
             (void)snprintf_s(arp_cmd->cb_print_buf, PRINT_BUF_LEN, (PRINT_BUF_LEN - 1), "Network is unreachable\n");
         } else {
-            (void)snprintf_s(arp_cmd->cb_print_buf, PRINT_BUF_LEN, (PRINT_BUF_LEN - 1), "Successed\n");
+            (void)snprintf_s(arp_cmd->cb_print_buf, PRINT_BUF_LEN, (PRINT_BUF_LEN - 1), "Succeeded\n");
         }
     }
 #endif

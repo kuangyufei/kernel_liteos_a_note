@@ -78,7 +78,7 @@ void ProcUptimeInit(void)
 {
     struct ProcDirEntry *pde = CreateProcEntry("uptime", 0, NULL);
     if (pde == NULL) {
-        PRINT_ERR("creat /proc/uptime error!\n");
+        PRINT_ERR("create /proc/uptime error!\n");
         return;
     }
 

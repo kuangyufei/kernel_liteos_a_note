@@ -366,7 +366,7 @@ VOID TestInitUartDev(VOID) {}
 
 /* ****************************************
 Function:Test_PartInit
-Description: creat a partition for testing,partition num is 0,mount point is jffs0
+Description: create a partition for testing,partition num is 0,mount point is jffs0
 Input:
  [1]type: "spinor"
  [2]start_addr: the partition start address

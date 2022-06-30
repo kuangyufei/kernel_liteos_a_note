@@ -42,7 +42,7 @@ extern "C" {
  *   shall release the mutex object 'mutex'.
 
  * Steps:
- *   -- Initilize a mutex object
+ *   -- initialize a mutex object
  *   -- Get the mutex using pthread_mutex_lock()
  *   -- Release the mutex using pthread_mutex_unlock()
  *   -- Try to get the mutex using pthread_mutex_trylock()

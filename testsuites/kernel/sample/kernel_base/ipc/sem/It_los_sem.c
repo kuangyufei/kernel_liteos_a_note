@@ -115,7 +115,7 @@ VOID ItSuiteLosSem(void)
     ItLosSem037();
     ItLosSem038();
 #ifndef LOSCFG_KERNEL_SMP_TASK_SYNC
-    // LOSCFG_KERNEL_SMP_TASK_SYNC is opened ,create task success is depend on created semaphore successed;
+    // LOSCFG_KERNEL_SMP_TASK_SYNC is opened ,create task success is depend on created semaphore succeeded;
     ItLosSem039();
     ItLosSem040();
     ItLosSem041();

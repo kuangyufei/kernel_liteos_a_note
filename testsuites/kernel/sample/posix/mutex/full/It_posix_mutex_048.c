@@ -43,7 +43,7 @@ extern "C" {
  *   -[EBUSY]   The mutex could not be acquired because it was already locked.
 
  * Steps:
- *   -- Initilize a mutex object
+ *   -- initialize a mutex object
  *   -- Lock the mutex using pthread_mutex_lock()
  *   -- Try to lock the mutex using pthread_mutex_trylock() and expect EBUSY
  *

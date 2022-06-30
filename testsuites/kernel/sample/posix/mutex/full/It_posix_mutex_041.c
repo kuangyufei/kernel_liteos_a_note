@@ -39,7 +39,7 @@ extern "C" {
 
 /* pthread_mutex_unlock 3-1.c
  * Test that pthread_mutex_unlock()
- * Upon succesful completion, it shall return zero
+ * Upon successful completion, it shall return zero
  *
  */
 static UINT32 Testcase(VOID)

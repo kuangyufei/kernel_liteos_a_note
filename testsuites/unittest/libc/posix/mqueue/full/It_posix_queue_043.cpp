@@ -82,10 +82,10 @@ EXIT:
 4. use the mq_close to close the mqueue;
 5. use the mq_unlink to delete the mqueue.
 *-@texpect
-1. Return successed
-2. Return successed
-3. Return successed
-4. Return successed
+1. Return succeeded
+2. Return succeeded
+3. Return succeeded
+4. Return succeeded
 5. Successful operation
 *-@tprior 1
 *-@tauto TRUE

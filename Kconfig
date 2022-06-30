@@ -265,7 +265,7 @@ config MEM_LEAKCHECK
     default n
     depends on DEBUG_VERSION && MEM_DEBUG
     help
-      Answer Y to enable record the LR of Function call stack of Mem operation, it can check the mem leak through the informations of mem node.
+      Answer Y to enable record the LR of Function call stack of Mem operation, it can check the mem leak through the information of mem node.
 config BASE_MEM_NODE_INTEGRITY_CHECK
     bool "Enable integrity check or not"
     default n

@@ -137,7 +137,7 @@ void ProcFdInit(void)
 {
     struct ProcDirEntry *pde = CreateProcEntry("fd", 0, NULL);
     if (pde == NULL) {
-        PRINT_ERR("creat /proc/fd error.\n");
+        PRINT_ERR("create /proc/fd error.\n");
         return;
     }
 

@@ -72,7 +72,7 @@ static UINT32 Testcase(void)
     TSK_INIT_PARAM_S task1 = { 0 };
     g_testCount = 0;
 
-    // 5, lengh of the queue; 50, max queue msg size.
+    // 5, length of the queue; 50, max queue msg size.
     ret = LOS_QueueCreate("queue", 5, &g_queue, 0, 50);
 
     TEST_TASK_PARAM_INIT(task1, "it_smp_task_068", (TSK_ENTRY_FUNC)TaskF01, TASK_PRIO_TEST_TASK - 1);

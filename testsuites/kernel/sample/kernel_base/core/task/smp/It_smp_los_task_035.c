@@ -51,7 +51,7 @@ static UINT32 Testcase(void)
     g_testCount = 0;
     TEST_TASK_PARAM_INIT(task1, "it_smp_task_035", (TSK_ENTRY_FUNC)TaskF02Preempt, TASK_PRIO_TEST_TASK - 1);
 
-    /* creat preempt task */
+    /* create preempt task */
     task1.usCpuAffiMask = 0;
     ret = LOS_TaskCreate(&g_testTaskID01, &task1);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);

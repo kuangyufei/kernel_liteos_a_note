@@ -31,7 +31,7 @@
 #include "it_test_signal.h"
 #include "signal.h"
 
-static void SigHandler(int sig) // 信号处理程序
+static void SigHandler(int sig) // 藕糯
 {
     if (sig == SIGINT) {
         printf("SIGINT sig\n");
@@ -74,8 +74,8 @@ static int TestSigSuspend()
         if (retValue != 0) {
             exit(retValue);
         }
-        printf("newset 1 = %x\n", newset.__bits[0]);
-        printf("old 1 = %x\n", old.__bits[0]);
+        printf("newset 1 = %lx\n", newset.__bits[0]);
+        printf("old 1 = %lx\n", old.__bits[0]);
 
         retValue = sigemptyset(&newset);
         if (retValue != 0) {
@@ -89,8 +89,8 @@ static int TestSigSuspend()
         if (retValue != 0) {
             exit(retValue);
         }
-        printf("newset 2 = %x\n", newset.__bits[0]);
-        printf("old 2 = %x\n", old.__bits[0]);
+        printf("newset 2 = %lx\n", newset.__bits[0]);
+        printf("old 2 = %lx\n", old.__bits[0]);
 
         retValue = sigemptyset(&newset);
         if (retValue != 0) {
@@ -105,8 +105,8 @@ static int TestSigSuspend()
         if (retValue != 0) {
             exit(retValue);
         }
-        printf("newset 1 = %x\n", newset.__bits[0]);
-        printf("old 1 = %x\n", old.__bits[0]);
+        printf("newset 1 = %lx\n", newset.__bits[0]);
+        printf("old 1 = %lx\n", old.__bits[0]);
 
         retValue = sigemptyset(&wait);
         if (retValue != 0) {
@@ -116,7 +116,7 @@ static int TestSigSuspend()
         if (retValue != 0) {
             exit(retValue);
         }
-        printf("wait = %x\n", wait.__bits[0]);
+        printf("wait = %lx\n", wait.__bits[0]);
 
         if (sigsuspend(&wait) != -1) {
             printf("sigsuspend error\n");
@@ -126,14 +126,14 @@ static int TestSigSuspend()
         if (retValue != 0) {
             exit(retValue);
         }
-        printf("old 2= %x\n", old.__bits[0]);
+        printf("old 2= %lx\n", old.__bits[0]);
 
         sigset_t pending;
         retValue = sigemptyset(&pending);
         if (retValue != 0) {
             exit(retValue);
         }
-        printf("pending 1= %x\n", pending.__bits[0]);
+        printf("pending 1= %lx\n", pending.__bits[0]);
         retValue = raise(SIGINT);
         if (retValue != 0) {
             exit(retValue);
@@ -142,7 +142,7 @@ static int TestSigSuspend()
         if (retValue != 0) {
             exit(retValue);
         }
-        printf("pending 2= %x\n", pending.__bits[0]);
+        printf("pending 2= %lx\n", pending.__bits[0]);
 
         retValue = raise(SIGALRM);
         if (retValue != 0) {
@@ -152,7 +152,7 @@ static int TestSigSuspend()
         if (retValue != 0) {
             exit(retValue);
         }
-        printf("pending 3= %x\n", pending.__bits[0]);
+        printf("pending 3= %lx\n", pending.__bits[0]);
         exit(0);
     }
 
@@ -192,8 +192,8 @@ static int TestSigSuspend()
         if (retValue != 0) {
             exit(retValue);
         }
-        printf("new 1 = %x\n", new1.__bits[0]);
-        printf("old 1 = %x\n", old1.__bits[0]);
+        printf("new 1 = %lx\n", new1.__bits[0]);
+        printf("old 1 = %lx\n", old1.__bits[0]);
 
         retValue = kill(getpid(), SIGINT);
         if (retValue != 0) {
@@ -203,7 +203,7 @@ static int TestSigSuspend()
         if (retValue != 0) {
             exit(retValue);
         }
-        printf("raise 1 = %x\n", new1.__bits[0]);
+        printf("raise 1 = %lx\n", new1.__bits[0]);
 
         exit(0);
     }
