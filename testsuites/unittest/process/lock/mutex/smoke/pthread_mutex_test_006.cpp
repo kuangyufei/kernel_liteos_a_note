@@ -48,8 +48,6 @@ static void *ThreadFuncTest3(void *a)
 {
     int ret;
     int tid = Gettid();
-    int currThreadPri, currThreadPolicy;
-    struct sched_param param = { 0 };
     pthread_t thread = pthread_self();
 
     ret = pthread_detach(thread);
@@ -118,18 +116,14 @@ static void *ThreadFuncTest1(void *a)
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
 EXIT:
-    return nullptr;
+return nullptr;
 }
 
 static int Testcase(void)
 {
-    struct sched_param param = { 0 };
     int ret;
-    void *res = nullptr;
-    pthread_attr_t a = { 0 };
-    pthread_t newPthread, newPthread1;
+    pthread_t newPthread;
     pthread_mutexattr_t mutex;
-    int index = 0;
     pthread_mutexattr_settype(&mutex, PTHREAD_MUTEX_NORMAL);
     pthread_mutex_init(&g_mutexLock001, &mutex);
     pthread_mutex_init(&g_mutexLock002, &mutex);

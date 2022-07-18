@@ -134,7 +134,8 @@ reset_vector: //内核启动入口
     /* do some early cpu setup: i/d cache disable, mmu disabled */
     mrc     p15, 0, r0, c1, c0, 0	//System Control Register-SCTLR | 读取系统控制寄存器内容
     bic     r0, #(1<<12)			//禁用指令缓存功能
-    bic     r0, #(1<<2 | 1<<0)		//禁用数据和TLB的缓存功能(bit2) | mmu功能(bit0)
+    bic     r0, #(1<<2)		//禁用数据和TLB的缓存功能(bit2) | mmu功能(bit0)
+    bic     r0, #(1 << 0)           /* mmu */
     mcr     p15, 0, r0, c1, c0, 0	//写系统控制寄存器
 
     /* enable fpu+neon 一些系统寄存器的操作
@@ -198,8 +199,7 @@ reloc_img_to_bottom_loop://重定位镜像到内核物理内存基地址,将内�
 //内核总大小 __bss_start - __exception_handlers
 reloc_img_to_bottom_done:
 #ifdef LOSCFG_KERNEL_MMU 
-    ldr     r4, =g_firstPageTable               /* r4: physical address of translation table and clear it
-												   内核页表是用数组g_firstPageTable存储 见于los_arch_mmu.c */
+    ldr     r4, =g_firstPageTable               /* r4: physical address of translation table and clear it | 内核页表是用数组g_firstPageTable存储 见于los_arch_mmu.c */
     add     r4, r4, r11                         //计算g_firstPageTable页表物理地址
     mov     r0, r4								//因为默认r0 将作为memset_optimized的第一个参数
     mov     r1, #0								//第二个参数,清0
@@ -227,7 +227,7 @@ init_mmu_done:
      */
     mov     r6, pc
     mov     r7, r6                              /* r7: pa (MB aligned)*/
-    lsr     r6, r6, #20                         /* r6: pa l1 index */
+    lsr     r6, r6, #20                         /* r6: va l1 index */
     ldr     r10, =MMU_DESCRIPTOR_KERNEL_L1_PTE_FLAGS
     add     r12, r10, r6, lsl #20               /* r12: pa |flags */
     str     r12, [r4, r7, lsr #(20 - 2)]        /* jumpTable[paIndex] = pt entry */
@@ -472,14 +472,14 @@ pa_va_offset:	//物理地址和虚拟地址偏移量
     .word   .   ////定义一个4字节的pa_va_offset 变量， 链接器生成一个链接地址， . 表示 pa_va_offset = 链接地址 举例: 在地址 0x17321796 中保存了 0x17321796 值
 
 /*
- * set magic num to stack bottom for all cpu | 给所有CPU核设置魔法数字到栈底
- * r0 is stack bottom, r1 is stack size, r2 is magic num
+ * set magic num to stack top for all cpu | 给所有CPU核设置魔法数字到栈顶
+ * r0 is stack top, r1 is stack size, r2 is magic num
  */
 excstack_magic:
     mov     r3, #0 //r3 = 0
 excstack_magic_loop:
     str     r2, [r0]   //栈顶设置魔法数字
-    add     r0, r0, r1 //定位到栈底
+    add     r0, r0, r1 //定位到栈顶
     add     r3, r3, #1 //r3++
     cmp     r3, #CORE_NUM //栈空间等分成core_num个空间，所以每个core的栈顶需要magic num
     blt     excstack_magic_loop

@@ -43,7 +43,6 @@ static void *ThreadFuncTest3(void *a)
 {
     int ret;
     pthread_t thread = pthread_self();
-    int currThreadPri, currThreadPolicy;
     struct sched_param param = { 0 };
     struct timespec time;
     struct timeval timeVal = { 0 };
@@ -62,7 +61,7 @@ static void *ThreadFuncTest3(void *a)
     g_testToCount003++;
 
     while (g_testToCount002 == 0) {
-        SLEEP_AND_YIELD(2); // 2, delay enouge time
+        SLEEP_AND_YIELD(2); // 2, delay enough time
     }
 
     ret = pthread_mutex_unlock(&g_muxLock003);
@@ -96,7 +95,7 @@ static void *ThreadFuncTest2(void *a)
     g_testToCount002++;
 
     while (g_testToCount001 == 0) {
-        SLEEP_AND_YIELD(2); // 2, delay enouge time
+        SLEEP_AND_YIELD(2); // 2, delay enough time
     }
 
     ret = pthread_mutex_unlock(&g_muxLock002);
@@ -141,12 +140,8 @@ EXIT:
 
 static int Testcase(void)
 {
-    struct sched_param param = { 0 };
     int ret;
-    void *res = nullptr;
-    pthread_attr_t a = { 0 };
-    pthread_t thread = pthread_self();
-    pthread_t newPthread, newPthread1;
+    pthread_t newPthread;
     pthread_mutexattr_t mutex = { 0 };
     int index = TEST_COUNT;
 

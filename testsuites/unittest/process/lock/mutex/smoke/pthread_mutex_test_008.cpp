@@ -41,8 +41,6 @@ static void *ThreadFuncTest3(void *a)
 {
     int ret;
     pthread_t thread = pthread_self();
-    int currThreadPri, currThreadPolicy;
-    struct sched_param param = { 0 };
     struct timespec time;
     struct timeval timeVal = { 0 };
 
@@ -120,12 +118,8 @@ EXIT:
 
 static int Testcase(void)
 {
-    struct sched_param param = { 0 };
     int ret;
-    void *res = nullptr;
-    pthread_attr_t a = { 0 };
-    pthread_t thread = pthread_self();
-    pthread_t newPthread, newPthread1;
+    pthread_t newPthread;
     pthread_mutexattr_t mutex;
     int index = TEST_COUNT;
 

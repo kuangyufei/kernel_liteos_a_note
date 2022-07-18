@@ -243,9 +243,6 @@ warm_reset:
     LDR    r0, =__exception_handlers
     MCR    p15, 0, r0, c12, c0, 0
 
-    cmp    r11, #0 @是否为0号CPU,注意0号CPU为主寄存器
-    bne    cpu_start @不是0号时,跳到cpu_start启动次级CPU
-
 clear_bss:
     ldr    r0, =__bss_start
     ldr    r2, =__bss_end
@@ -340,11 +337,6 @@ reset_platform:
     mov    r0, #0
     mov    pc, r0   // Jump to reset vector
 #endif
-cpu_start:	/* 启动次级CPU */
-    bl     secondary_cpu_start @此处用了BL,说明执行完后要回到这里继续执行
-    b      . @B为无条件跳转,跳到当前地址,意思就是进入死循环
-
-
 
 /*
  * set sp for current cpu

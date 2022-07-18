@@ -38,7 +38,6 @@ static int g_testBackCount = 0;
 static void *ThreadFuncTest3(void *a)
 {
     int ret;
-    int tid = Gettid();
     pthread_t thread = pthread_self();
 
     ret = pthread_detach(thread);
@@ -59,8 +58,6 @@ EXIT:
 static void *ThreadFuncTest2(void *a)
 {
     int ret;
-    int tid = Gettid();
-    pthread_t thread = pthread_self();
 
     g_testBackCount++;
     ret = pthread_mutex_lock(&g_mutexLock);
@@ -78,10 +75,8 @@ static int TestCase(void)
 {
     struct sched_param param = { 0 };
     int ret;
-    void *res = nullptr;
     int currThreadPri, currThreadPolicy;
     pthread_attr_t a = { 0 };
-    pthread_t thread = pthread_self();
     pthread_t newPthread;
     pthread_mutexattr_t mutex;
     pthread_mutexattr_settype(&mutex, PTHREAD_MUTEX_NORMAL);

@@ -45,8 +45,6 @@ static void *ThreadFuncTest2(void *a)
 {
     int ret;
     pthread_t thread = pthread_self();
-    struct timespec time;
-    struct timeval timeVal = { 0 };
 
     ret = pthread_detach(thread);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
@@ -69,9 +67,6 @@ EXIT:
 static void *ThreadFuncTest1(void *a)
 {
     int ret;
-    pthread_t thread = pthread_self();
-    struct timespec time;
-    struct timeval timeVal = { 0 };
 
     ret = pthread_mutex_lock(&g_muxLock001);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
@@ -96,7 +91,6 @@ EXIT:
 static void *ThreadFuncTest0(void *a)
 {
     int ret;
-    pthread_t thread = pthread_self();
     struct timespec time;
     struct timeval timeVal = { 0 };
 
@@ -136,9 +130,7 @@ static int Testcase(void)
     struct sched_param param = { 0 };
     int ret;
     int threadCount;
-    void *res = nullptr;
     pthread_attr_t a = { 0 };
-    pthread_t thread = pthread_self();
     pthread_t newPthread[10], newPthread1;
     pthread_mutexattr_t mutex;
     int index = TEST_COUNT;
