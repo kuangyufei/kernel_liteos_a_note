@@ -547,7 +547,7 @@ STATIC INLINE VOID OsLmsReallocMergeNodeMark(struct OsMemNodeHead *node)
     }
 
     g_lms->simpleMark((UINTPTR)node + OS_MEM_NODE_HEAD_SIZE, (UINTPTR)OS_MEM_NEXT_NODE(node),
-        LMS_SHADOW_ACCESSABLE_U8);
+        LMS_SHADOW_ACCESSIBLE_U8);
 }
 
 STATIC INLINE VOID OsLmsReallocSplitNodeMark(struct OsMemNodeHead *node)

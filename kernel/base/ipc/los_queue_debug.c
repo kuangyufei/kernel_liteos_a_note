@@ -40,7 +40,7 @@
 #ifdef LOSCFG_DEBUG_QUEUE
 
 typedef struct {
-    TSK_ENTRY_FUNC creater; /* The task entry who created this queue */
+    TSK_ENTRY_FUNC creator; /* The task entry who created this queue */
     UINT64  lastAccessTime; /* The last access time */
 } QueueDebugCB;
 STATIC QueueDebugCB *g_queueDebugArray = NULL;
@@ -74,7 +74,7 @@ VOID OsQueueDbgTimeUpdate(UINT32 queueID)
 VOID OsQueueDbgUpdate(UINT32 queueID, TSK_ENTRY_FUNC entry)
 {
     QueueDebugCB *queueDebug = &g_queueDebugArray[GET_QUEUE_INDEX(queueID)];
-    queueDebug->creater = entry;
+    queueDebug->creator = entry;
     queueDebug->lastAccessTime = LOS_TickCountGet();
     return;
 }
@@ -91,8 +91,8 @@ STATIC INLINE VOID OsQueueInfoOutPut(const LosQueueCB *node)
 
 STATIC INLINE VOID OsQueueOpsOutput(const QueueDebugCB *node)
 {
-    PRINTK("TaskEntry of creater:0x%p, Latest operation time: 0x%llx\n",
-           node->creater, node->lastAccessTime);
+    PRINTK("TaskEntry of creator:0x%p, Latest operation time: 0x%llx\n",
+           node->creator, node->lastAccessTime);
 }
 
 STATIC VOID SortQueueIndexArray(UINT32 *indexArray, UINT32 count)
@@ -149,7 +149,7 @@ VOID OsQueueCheck(VOID)
                        &g_queueDebugArray[index], sizeof(QueueDebugCB));
         SCHEDULER_UNLOCK(intSave);
         if ((queueNode.queueState == OS_QUEUE_UNUSED) ||
-            ((queueNode.queueState == OS_QUEUE_INUSED) && (queueDebugNode.creater == NULL))) {
+            ((queueNode.queueState == OS_QUEUE_INUSED) && (queueDebugNode.creator == NULL))) {
             continue;
         }
         if ((queueNode.queueState == OS_QUEUE_INUSED) &&

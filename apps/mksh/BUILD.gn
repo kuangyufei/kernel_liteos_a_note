@@ -42,7 +42,7 @@ copy("copy_mksh_src") {
 
 build_ext_component("build_mksh") {
   deps = [ ":copy_mksh_src" ]
-  deps += [ "//prebuilts/lite/sysroot" ]
+  deps += [ "//third_party/musl:sysroot_lite" ]
   exec_path = rebase_path("$target_out_dir/mksh_build")
 
   cflags = [

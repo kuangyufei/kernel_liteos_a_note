@@ -61,11 +61,11 @@ STATIC INLINE VOID OsSemDbgTimeUpdateHook(UINT32 semID)
     return;
 }
 /* Update the SEM_DEBUG_CB of the semaphore when created or deleted */
-extern VOID OsSemDbgUpdate(UINT32 semID, TSK_ENTRY_FUNC creater, UINT16 count);
-STATIC INLINE VOID OsSemDbgUpdateHook(UINT32 semID, TSK_ENTRY_FUNC creater, UINT16 count)
+extern VOID OsSemDbgUpdate(UINT32 semID, TSK_ENTRY_FUNC creator, UINT16 count);
+STATIC INLINE VOID OsSemDbgUpdateHook(UINT32 semID, TSK_ENTRY_FUNC creator, UINT16 count)
 {
 #ifdef LOSCFG_DEBUG_SEMAPHORE
-    OsSemDbgUpdate(semID, creater, count);
+    OsSemDbgUpdate(semID, creator, count);
 #endif
     return;
 }

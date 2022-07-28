@@ -45,7 +45,7 @@ ATTRIBUTE_NO_SANITIZE_ADDRESS void LmsFree(void *ptr)
     if (LmsIsShadowAddrMapped(shadowAddr, shadowAddr) == LMS_OK) {
         uint32_t acShadowValue;
         LmsGetShadowValue((uintptr_t)ptr, &acShadowValue);
-        if (acShadowValue != LMS_SHADOW_ACCESSABLE) {
+        if (acShadowValue != LMS_SHADOW_ACCESSIBLE) {
             char erroMode = (acShadowValue == LMS_SHADOW_AFTERFREE ? FREE_ERRORMODE : UNKNOWN_ERROR);
             LmsReportError((uintptr_t)ptr, MEM_REGION_SIZE_1, erroMode);
             goto UNLOCK_OUT;

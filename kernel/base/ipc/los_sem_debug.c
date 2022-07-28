@@ -80,7 +80,7 @@ STATIC VOID OsSemPendedTaskNamePrint(LosSemCB *semNode)
 typedef struct {
     UINT16  origSemCount;   /* Number of orignal available semaphores *///原始可用信号量数
     UINT64  lastAccessTime; /* The last operation time */				//最后操作时间
-    TSK_ENTRY_FUNC creater; /* The task entry who created this sem */	//由哪个task的入口函数创建了这个任务
+    TSK_ENTRY_FUNC creator; /* The task entry who created this sem */	//由哪个task的入口函数创建了这个任务
 } SemDebugCB;
 STATIC SemDebugCB *g_semDebugArray = NULL;//默认1024个SemDebugCB debug信号量池
 
@@ -110,10 +110,10 @@ VOID OsSemDbgTimeUpdate(UINT32 semID)
     return;
 }
 ///更新信号量
-VOID OsSemDbgUpdate(UINT32 semID, TSK_ENTRY_FUNC creater, UINT16 count)
+VOID OsSemDbgUpdate(UINT32 semID, TSK_ENTRY_FUNC creator, UINT16 count)
 {
     SemDebugCB *semDebug = &g_semDebugArray[GET_SEM_INDEX(semID)];
-    semDebug->creater = creater;	//改为由参数入口函数创建了这个任务
+    semDebug->creator = creator;	//改为由参数入口函数创建了这个任务
     semDebug->lastAccessTime = LOS_TickCountGet();//获取tick总数
     semDebug->origSemCount = count;//原始信号量改变
     return;
@@ -133,7 +133,7 @@ STATIC VOID OsSemSort(UINT32 *semIndexArray, UINT32 usedCount)
 
     /* It will Print out ALL the Used Semaphore List. */
     PRINTK("Used Semaphore List: \n");
-    PRINTK("\r\n   SemID    Count    OriginalCount   Creater(TaskEntry)    LastAccessTime\n");
+    PRINTK("\r\n   SemID    Count    OriginalCount   Creator(TaskEntry)    LastAccessTime\n");
     PRINTK("   ------   ------   -------------   ------------------    --------------   \n");
 
     SCHEDULER_LOCK(intSave);
@@ -145,11 +145,11 @@ STATIC VOID OsSemSort(UINT32 *semIndexArray, UINT32 usedCount)
         (VOID)memcpy_s(&semNode, sizeof(LosSemCB), semCB, sizeof(LosSemCB));
         (VOID)memcpy_s(&semDebug, sizeof(SemDebugCB), &g_semDebugArray[semIndexArray[i]], sizeof(SemDebugCB));
         SCHEDULER_UNLOCK(intSave);
-        if ((semNode.semStat != OS_SEM_USED) || (semDebug.creater == NULL)) {
+        if ((semNode.semStat != OS_SEM_USED) || (semDebug.creator == NULL)) {
             continue;
         }
         PRINTK("   0x%-07x0x%-07u0x%-14u%-22p0x%llx\n", semNode.semID, semDebug.origSemCount,
-               semNode.semCount, semDebug.creater, semDebug.lastAccessTime);
+               semNode.semCount, semDebug.creator, semDebug.lastAccessTime);
         if (!LOS_ListEmpty(&semNode.semList)) {
             OsSemPendedTaskNamePrint(semCB);
         }
@@ -170,7 +170,7 @@ UINT32 OsSemInfoGetFullData(VOID)
     for (i = 0; i < LOSCFG_BASE_IPC_SEM_LIMIT; i++) {
         semNode = GET_SEM(i);
         semDebug = &g_semDebugArray[i];
-        if ((semNode->semStat == OS_SEM_USED) && (semDebug->creater != NULL)) {
+        if ((semNode->semStat == OS_SEM_USED) && (semDebug->creator != NULL)) {
             usedSemCnt++;
         }
     }
@@ -190,7 +190,7 @@ UINT32 OsSemInfoGetFullData(VOID)
         for (i = 0; i < LOSCFG_BASE_IPC_SEM_LIMIT; i++) {
             semNode = GET_SEM(i);
             semDebug = &g_semDebugArray[i];
-            if ((semNode->semStat != OS_SEM_USED) || (semDebug->creater == NULL)) {
+            if ((semNode->semStat != OS_SEM_USED) || (semDebug->creator == NULL)) {
                 continue;
             }
             *(semIndexArray + count) = i;

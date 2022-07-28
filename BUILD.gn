@@ -323,7 +323,7 @@ group("liteos_a") {
     deps += [
       ":apps",
       ":tests",
-      "//prebuilts/lite/sysroot/build:strip",
+      "//third_party/musl/scripts/build_lite:strip",
     ]
     if (liteos_skip_make == false) {
       deps += [ ":make" ]

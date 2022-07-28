@@ -354,7 +354,7 @@ VOID OsLmsLosMallocMark(const VOID *curNodeStart, const VOID *nextNodeStart, UIN
     }
 
     OsLmsSetShadowValue(node, curNodeStartAddr, curNodeStartAddr + nodeHeadSize, LMS_SHADOW_REDZONE_U8);
-    OsLmsSetShadowValue(node, curNodeStartAddr + nodeHeadSize, nextNodeStartAddr, LMS_SHADOW_ACCESSABLE_U8);
+    OsLmsSetShadowValue(node, curNodeStartAddr + nodeHeadSize, nextNodeStartAddr, LMS_SHADOW_ACCESSIBLE_U8);
     OsLmsSetShadowValue(node, nextNodeStartAddr, nextNodeStartAddr + nodeHeadSize, LMS_SHADOW_REDZONE_U8);
     LMS_UNLOCK(intSave);
 }
@@ -372,7 +372,7 @@ VOID OsLmsCheckValid(UINTPTR checkAddr, BOOL isFreeCheck)
 
     OsLmsGetShadowValue(node, checkAddr, &shadowValue);
     LMS_UNLOCK(intSave);
-    if ((shadowValue == LMS_SHADOW_ACCESSABLE) || ((isFreeCheck) && (shadowValue == LMS_SHADOW_PAINT))) {
+    if ((shadowValue == LMS_SHADOW_ACCESSIBLE) || ((isFreeCheck) && (shadowValue == LMS_SHADOW_PAINT))) {
         return;
     }
 
@@ -395,7 +395,7 @@ VOID OsLmsLosFreeMark(const VOID *curNodeStart, const VOID *nextNodeStart, UINT3
     UINTPTR nextNodeStartAddr = (UINTPTR)nextNodeStart;
 
     OsLmsGetShadowValue(node, curNodeStartAddr + nodeHeadSize, &shadowValue);
-    if ((shadowValue != LMS_SHADOW_ACCESSABLE) && (shadowValue != LMS_SHADOW_PAINT)) {
+    if ((shadowValue != LMS_SHADOW_ACCESSIBLE) && (shadowValue != LMS_SHADOW_PAINT)) {
         LMS_UNLOCK(intSave);
         OsLmsReportError(curNodeStartAddr + nodeHeadSize, MEM_REGION_SIZE_1, FREE_ERRORMODE);
         return;
@@ -436,7 +436,7 @@ VOID LOS_LmsAddrDisableProtect(UINTPTR addrStart, UINTPTR addrEnd)
     LMS_LOCK(intSave);
     LmsMemListNode *node = OsLmsGetPoolNodeFromAddr(addrStart);
     if (node != NULL) {
-        OsLmsSetShadowValue(node, addrStart, addrEnd, LMS_SHADOW_ACCESSABLE_U8);
+        OsLmsSetShadowValue(node, addrStart, addrEnd, LMS_SHADOW_ACCESSIBLE_U8);
     }
     LMS_UNLOCK(intSave);
 }
@@ -454,7 +454,7 @@ STATIC UINT32 OsLmsCheckAddr(UINTPTR addr)
     LmsMemListNode *node = OsLmsGetPoolNodeFromAddr(addr);
     if (node == NULL) {
         LMS_UNLOCK(intSave);
-        return LMS_SHADOW_ACCESSABLE_U8;
+        return LMS_SHADOW_ACCESSIBLE_U8;
     }
 
     OsLmsGetShadowValue(node, addr, &shadowValue);
@@ -570,7 +570,7 @@ STATIC VOID OsLmsGetErrorInfo(UINTPTR addr, UINT32 size, LmsAddrInfo *info)
 {
     LmsMemListNode *node = OsLmsGetPoolNodeFromAddr(addr);
     OsLmsGetShadowInfo(node, addr, info);
-    if (info->shadowValue != LMS_SHADOW_ACCESSABLE_U8) {
+    if (info->shadowValue != LMS_SHADOW_ACCESSIBLE_U8) {
         return;
     } else {
         OsLmsGetShadowInfo(node, addr + size - 1, info);
@@ -586,7 +586,7 @@ STATIC VOID OsLmsPrintErrInfo(LmsAddrInfo *info, UINT32 errMod)
         case LMS_SHADOW_REDZONE:
             PRINT_ERR("Heap buffer overflow error detected\n");
             break;
-        case LMS_SHADOW_ACCESSABLE:
+        case LMS_SHADOW_ACCESSIBLE:
             PRINT_ERR("No error\n");
             break;
         default:
@@ -642,7 +642,7 @@ VOID OsLmsReportError(UINTPTR p, UINT32 size, UINT32 errMod)
 #ifdef LOSCFG_LMS_STORE_CHECK
 VOID __asan_store1_noabort(UINTPTR p)
 {
-    if (OsLmsCheckAddr(p) != LMS_SHADOW_ACCESSABLE_U8) {
+    if (OsLmsCheckAddr(p) != LMS_SHADOW_ACCESSIBLE_U8) {
         OsLmsReportError(p, MEM_REGION_SIZE_1, STORE_ERRMODE);
     }
 }
@@ -718,7 +718,7 @@ VOID __asan_storeN_noabort(UINTPTR p, UINT32 size)
 #ifdef LOSCFG_LMS_LOAD_CHECK
 VOID __asan_load1_noabort(UINTPTR p)
 {
-    if (OsLmsCheckAddr(p) != LMS_SHADOW_ACCESSABLE_U8) {
+    if (OsLmsCheckAddr(p) != LMS_SHADOW_ACCESSIBLE_U8) {
         OsLmsReportError(p, MEM_REGION_SIZE_1, LOAD_ERRMODE);
     }
 }

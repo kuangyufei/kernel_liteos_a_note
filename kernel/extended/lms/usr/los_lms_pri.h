@@ -50,7 +50,7 @@ extern "C" {
 #define SANITIZER_INTERFACE_ATTRIBUTE
 #define ATTRIBUTE_NO_SANITIZE_ADDRESS   __attribute__((no_sanitize_address))
 
-#define LMS_SHADOW_ACCESSABLE           0x00
+#define LMS_SHADOW_ACCESSIBLE           0x00
 #define LMS_SHADOW_AFTERFREE            0x03
 #define LMS_SHADOW_REDZONE              0x02
 #define LMS_SHADOW_PAINT                0x01
@@ -61,7 +61,7 @@ extern "C" {
 #define LMS_SHADOW_U8_CELL_NUM          4
 #define LMS_SHADOW_U8_REFER_BYTES       16
 
-#define LMS_SHADOW_ACCESSABLE_U8        0x00
+#define LMS_SHADOW_ACCESSIBLE_U8        0x00
 #define LMS_SHADOW_AFTERFREE_U8         0xFF
 #define LMS_SHADOW_REDZONE_U8           0xAA
 #define LMS_SHADOW_MASK_U8              0xFF

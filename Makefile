@@ -121,7 +121,7 @@ sysroot:
 	$(HIDE)echo "sysroot:" $(abspath $(SYSROOT_PATH))
 ifeq ($(origin SYSROOT_PATH),file)
 	$(HIDE)mkdir -p $(SYSROOT_PATH)/build && cd $(SYSROOT_PATH)/build && \
-	ln -snf $(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/build/Makefile && \
+	ln -snf $(LITEOSTOPDIR)/../../third_party/musl/scripts/build_lite/Makefile && \
 	$(MAKE) TARGETS=liteos_a_user \
 		ARCH=$(ARCH) \
 		TARGET=$(LOSCFG_LLVM_TARGET) \

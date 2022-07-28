@@ -174,7 +174,7 @@ ATTRIBUTE_NO_SANITIZE_ADDRESS void LmsGetShadowValue(uintptr_t addr, uint32_t *s
     LmsMem2Shadow(addr, &shadowAddr, &shadowOffset);
     /* If the shadow addr is not mapped then regarded as legal access */
     if (LmsIsShadowAddrMapped(shadowAddr, shadowAddr) != LMS_OK) {
-        *shadowValue = LMS_SHADOW_ACCESSABLE_U8;
+        *shadowValue = LMS_SHADOW_ACCESSIBLE_U8;
         return;
     }
 
@@ -185,7 +185,7 @@ ATTRIBUTE_NO_SANITIZE_ADDRESS void LmsMallocMark(uintptr_t preRzStart, uintptr_t
     uintptr_t RzEndAddr)
 {
     LmsSetShadowValue(preRzStart, accessMemStart, LMS_SHADOW_REDZONE_U8);
-    LmsSetShadowValue(accessMemStart, nextRzStart, LMS_SHADOW_ACCESSABLE_U8);
+    LmsSetShadowValue(accessMemStart, nextRzStart, LMS_SHADOW_ACCESSIBLE_U8);
     LmsSetShadowValue(nextRzStart, RzEndAddr, LMS_SHADOW_REDZONE_U8);
 }
 
@@ -300,7 +300,7 @@ ATTRIBUTE_NO_SANITIZE_ADDRESS static inline void LmsGetShadowInfo(uintptr_t memA
 ATTRIBUTE_NO_SANITIZE_ADDRESS static void LmsGetErrorInfo(uintptr_t addr, size_t size, LmsAddrInfo *info)
 {
     LmsGetShadowInfo(addr, info);
-    if (info->shadowValue != LMS_SHADOW_ACCESSABLE_U8) {
+    if (info->shadowValue != LMS_SHADOW_ACCESSIBLE_U8) {
         return;
     } else {
         LmsGetShadowInfo(addr + size - 1, info);
@@ -316,7 +316,7 @@ ATTRIBUTE_NO_SANITIZE_ADDRESS static void LmsPrintErrInfo(LmsAddrInfo *info, uin
         case LMS_SHADOW_REDZONE:
             LMS_OUTPUT_ERROR("Heap buffer overflow error detected!\n");
             break;
-        case LMS_SHADOW_ACCESSABLE:
+        case LMS_SHADOW_ACCESSIBLE:
             LMS_OUTPUT_ERROR("No error!\n");
             break;
         default:
@@ -343,7 +343,7 @@ ATTRIBUTE_NO_SANITIZE_ADDRESS static void LmsPrintErrInfo(LmsAddrInfo *info, uin
         info->shadowOffset, info->shadowValue);
 
     LMS_OUTPUT_INFO("\n");
-    LMS_OUTPUT_INFO("%-25s%d\n", "Accessable heap addr", LMS_SHADOW_ACCESSABLE);
+    LMS_OUTPUT_INFO("%-25s%d\n", "Accessible heap addr", LMS_SHADOW_ACCESSIBLE);
     LMS_OUTPUT_INFO("%-25s%d\n", "Heap red zone", LMS_SHADOW_REDZONE);
     LMS_OUTPUT_INFO("%-25s%d\n", "Heap freed buffer", LMS_SHADOW_AFTERFREE);
     LMS_OUTPUT_INFO("\n");
@@ -373,23 +373,23 @@ ATTRIBUTE_NO_SANITIZE_ADDRESS void LmsReportError(uintptr_t p, size_t size, uint
 
 void LmsCheckValid(const char *dest, const char *src)
 {
-    if (LmsCheckAddr((uintptr_t)dest) != LMS_SHADOW_ACCESSABLE_U8) {
+    if (LmsCheckAddr((uintptr_t)dest) != LMS_SHADOW_ACCESSIBLE_U8) {
         LmsReportError((uintptr_t)dest, MEM_REGION_SIZE_1, STORE_ERRMODE);
         return;
     }
 
-    if (LmsCheckAddr((uintptr_t)src) != LMS_SHADOW_ACCESSABLE_U8) {
+    if (LmsCheckAddr((uintptr_t)src) != LMS_SHADOW_ACCESSIBLE_U8) {
         LmsReportError((uintptr_t)src, MEM_REGION_SIZE_1, LOAD_ERRMODE);
         return;
     }
 
     for (uint32_t i = 0; *(src + i) != '\0'; i++) {
-        if (LmsCheckAddr((uintptr_t)dest + i + 1) != LMS_SHADOW_ACCESSABLE_U8) {
+        if (LmsCheckAddr((uintptr_t)dest + i + 1) != LMS_SHADOW_ACCESSIBLE_U8) {
             LmsReportError((uintptr_t)dest + i + 1, MEM_REGION_SIZE_1, STORE_ERRMODE);
             return;
         }
 
-        if (LmsCheckAddr((uintptr_t)src + i + 1) != LMS_SHADOW_ACCESSABLE_U8) {
+        if (LmsCheckAddr((uintptr_t)src + i + 1) != LMS_SHADOW_ACCESSIBLE_U8) {
             LmsReportError((uintptr_t)src + i + 1, MEM_REGION_SIZE_1, LOAD_ERRMODE);
             return;
         }
@@ -398,7 +398,7 @@ void LmsCheckValid(const char *dest, const char *src)
 
 void __asan_store1_noabort(uintptr_t p)
 {
-    if (LmsCheckAddr(p) != LMS_SHADOW_ACCESSABLE_U8) {
+    if (LmsCheckAddr(p) != LMS_SHADOW_ACCESSIBLE_U8) {
         LmsReportError(p, MEM_REGION_SIZE_1, STORE_ERRMODE);
     }
 }
@@ -440,7 +440,7 @@ void __asan_storeN_noabort(uintptr_t p, size_t size)
 
 void __asan_load1_noabort(uintptr_t p)
 {
-    if (LmsCheckAddr(p) != LMS_SHADOW_ACCESSABLE_U8) {
+    if (LmsCheckAddr(p) != LMS_SHADOW_ACCESSIBLE_U8) {
         LmsReportError(p, MEM_REGION_SIZE_1, LOAD_ERRMODE);
     }
 }

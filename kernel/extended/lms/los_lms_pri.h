@@ -59,13 +59,13 @@ extern "C" {
 #define LMS_POOL_RESIZE(size)          ((size) / (LMS_SHADOW_U8_REFER_BYTES + 1) * LMS_SHADOW_U8_REFER_BYTES)
 #define LMS_ADDR_ALIGN(p)              (((UINTPTR)(p) + sizeof(UINTPTR) - 1) & ~((UINTPTR)(sizeof(UINTPTR) - 1)))
 
-#define LMS_SHADOW_ACCESSABLE          0x00
+#define LMS_SHADOW_ACCESSIBLE          0x00
 #define LMS_SHADOW_AFTERFREE           0x03
 #define LMS_SHADOW_REDZONE             0x02
 #define LMS_SHADOW_PAINT               0x01
 #define LMS_SHADOW_MASK                0x03
 
-#define LMS_SHADOW_ACCESSABLE_U8       0x00
+#define LMS_SHADOW_ACCESSIBLE_U8       0x00
 #define LMS_SHADOW_AFTERFREE_U8        0xFF
 #define LMS_SHADOW_REDZONE_U8          0xAA
 #define LMS_SHADOW_MASK_U8             0xFF

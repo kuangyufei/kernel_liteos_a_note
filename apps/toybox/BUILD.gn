@@ -51,7 +51,7 @@ build_ext_component("build_toybox") {
     ":copy_toybox_config",
     ":copy_toybox_src",
   ]
-  deps += [ "//prebuilts/lite/sysroot" ]
+  deps += [ "//third_party/musl:sysroot_lite" ]
   exec_path = rebase_path("$target_out_dir/toybox_build")
 
   cflags = [
