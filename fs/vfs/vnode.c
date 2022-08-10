@@ -280,7 +280,7 @@ BOOL VnodeInUseIter(const struct Mount *mount)
     return FALSE;
 }
 ///拿锁,封装互斥量
-int VnodeHold()
+int VnodeHold(void)
 {
     int ret = LOS_MuxLock(&g_vnodeMux, LOS_WAIT_FOREVER);
     if (ret != LOS_OK) {
@@ -289,7 +289,7 @@ int VnodeHold()
     return ret;
 }
 ///归还锁
-int VnodeDrop()
+int VnodeDrop(void)
 {
     int ret = LOS_MuxUnlock(&g_vnodeMux);
     if (ret != LOS_OK) {
@@ -624,7 +624,7 @@ int VnodeCreate(struct Vnode *parent, const char *name, int mode, struct Vnode *
     return 0;
 }
 ///设备初始化,设备结点：/dev目录下，对应一个设备，如/dev/mmcblk0
-int VnodeDevInit()
+int VnodeDevInit(void)
 {
     struct Vnode *devNode = NULL;
     struct Mount *devMount = NULL;
@@ -657,7 +657,7 @@ int VnodeGetattr(struct Vnode *vnode, struct stat *buf)
     return LOS_OK;
 }
 
-struct Vnode *VnodeGetRoot()
+struct Vnode *VnodeGetRoot(void)
 {
     return g_rootVnode;
 }
@@ -738,7 +738,7 @@ LIST_HEAD* GetVnodeActiveList()
     return &g_vnodeActiveList;
 }
 
-int VnodeClearCache()
+int VnodeClearCache(void)
 {
     struct Vnode *item = NULL;
     struct Vnode *nextItem = NULL;

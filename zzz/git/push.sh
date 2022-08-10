@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 纠正拼写错误变量
+git commit -m  ' 代码格式对齐
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com

@@ -199,7 +199,8 @@ reloc_img_to_bottom_loop://重定位镜像到内核物理内存基地址,将内�
 //内核总大小 __bss_start - __exception_handlers
 reloc_img_to_bottom_done:
 #ifdef LOSCFG_KERNEL_MMU 
-    ldr     r4, =g_firstPageTable               /* r4: physical address of translation table and clear it | 内核页表是用数组g_firstPageTable存储 见于los_arch_mmu.c */
+    ldr     r4, =g_firstPageTable               /* r4: physical address of translation table and clear it | 内核页表是用数组g_firstPageTable存储 见于los_arch_mmu.c */
+
     add     r4, r4, r11                         //计算g_firstPageTable页表物理地址
     mov     r0, r4								//因为默认r0 将作为memset_optimized的第一个参数
     mov     r1, #0								//第二个参数,清0

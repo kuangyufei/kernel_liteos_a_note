@@ -154,7 +154,8 @@ static int FsCacheInfoFill(struct SeqBuf *buf, void *arg)
 
     VnodeHold();
     LosBufPrintf(buf, "\n=================================================================\n");
-    LosBufPrintf(buf, "VnodeAddr     ParentAddr     DataAddr      VnodeOps      Hash          Ref    Type    Gid    Uid    Mode\n");
+    LosBufPrintf(buf,
+        "VnodeAddr     ParentAddr     DataAddr      VnodeOps      Hash           Ref    Type    Gid    Uid    Mode\n");
     vnodeVirtual = VnodeListProcess(buf, GetVnodeVirtualList());
     vnodeFree = VnodeListProcess(buf, GetVnodeFreeList());
     vnodeActive = VnodeListProcess(buf, GetVnodeActiveList());

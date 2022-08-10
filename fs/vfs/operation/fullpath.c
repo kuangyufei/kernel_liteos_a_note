@@ -258,11 +258,10 @@ int vfs_normalize_path(const char *directory, const char *filename, char **pathn
     }
 
 #ifdef VFS_USING_WORKDIR
-    if (directory == NULL)
-      {
+    if (directory == NULL) {
         spin_lock_irqsave(&curr->files->workdir_lock, lock_flags);
         directory = curr->files->workdir;
-      }
+    }
 #else
     if ((directory == NULL) && (filename[0] != '/')) {
         PRINT_ERR("NO_WORKING_DIR\n");
@@ -275,20 +274,18 @@ int vfs_normalize_path(const char *directory, const char *filename, char **pathn
 
     if ((filename[0] != '/') && (strlen(directory) + namelen + 2 > TEMP_PATH_MAX)) {
 #ifdef VFS_USING_WORKDIR
-        if (dir_flags == TRUE)
-          {
+        if (dir_flags == TRUE) {
             spin_unlock_irqrestore(&curr->files->workdir_lock, lock_flags);
-          }
+        }
 #endif
         return -ENAMETOOLONG;
     }
 
     fullpath = vfs_normalize_fullpath(directory, filename, pathname, namelen);
 #ifdef VFS_USING_WORKDIR
-    if (dir_flags == TRUE)
-      {
+    if (dir_flags == TRUE) {
         spin_unlock_irqrestore(&curr->files->workdir_lock, lock_flags);
-      }
+    }
 #endif
     if (fullpath == NULL) {
         return -get_errno();

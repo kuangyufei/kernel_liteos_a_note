@@ -37,7 +37,7 @@ static UINT32 TestCase(VOID)
     long x;
 
     x = random();
-    if (x > labs(MAX_RANDOM - 1)) {
+    if (x > static_cast<long>(MAX_RANDOM - 1)) {
         printf("[IN %s][line %d] x = %ld\n", __FUNCTION__, __LINE__, x);
         goto EXIT;
     }

@@ -363,7 +363,8 @@ static FRESULT init_cluster(DIR_FILE *pdfp, DIR *dp_new, FATFS *fs, int type, co
     return FR_OK;
 }
 
-static int fatfs_create_obj(struct Vnode *parent, const char *name, int mode, struct Vnode **vpp, BYTE type, const char *target)
+static int fatfs_create_obj(struct Vnode *parent, const char *name, int mode, struct Vnode **vpp,
+                            BYTE type,  const char *target)
 {
     struct Vnode *vp = NULL;
     FATFS *fs = (FATFS *)parent->originMount->data;
