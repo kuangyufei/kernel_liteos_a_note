@@ -65,7 +65,8 @@ static int TimerTest(void)
     int ret;
     int i;
 
-    (void)memset(&sev, 0, sizeof(struct sigevent));
+    ret = memset_s(&sev, sizeof(struct sigevent), 0, sizeof(struct sigevent));
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     sev.sigev_notify = SIGEV_THREAD;
     sev.sigev_notify_function = TempSigHandler;
     sev.sigev_value.sival_ptr = (void *)TempSigHandler01;

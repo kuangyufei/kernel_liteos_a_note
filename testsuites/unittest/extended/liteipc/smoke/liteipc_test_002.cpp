@@ -78,7 +78,7 @@ static int CallTestServiceLoop(uint32_t id)
 #endif
         data1.flag = SEND | RECV;
         data1.outMsg = &dataOut;
-        memset(data1.outMsg, 0, sizeof(IpcMsg));
+        (void)memset_s(data1.outMsg, sizeof(IpcMsg), 0, sizeof(IpcMsg));
         data1.outMsg->type = MT_REQUEST;
         data1.outMsg->target.handle = serviceHandle;
         data1.outMsg->dataSz = 4;
@@ -98,7 +98,7 @@ static int CallTestServiceLoop(uint32_t id)
     char tmpBuff[2048];
     data1.flag = SEND | RECV;
     data1.outMsg = &dataOut;
-    memset(data1.outMsg, 0, sizeof(IpcMsg));
+    (void)memset_s(data1.outMsg, sizeof(IpcMsg), 0, sizeof(IpcMsg));
     data1.outMsg->type = MT_REQUEST;
     data1.outMsg->target.handle = serviceHandle;
     data1.outMsg->dataSz = 1024;

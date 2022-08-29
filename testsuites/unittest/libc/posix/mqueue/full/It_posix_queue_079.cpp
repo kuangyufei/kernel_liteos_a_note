@@ -91,8 +91,10 @@ static UINT32 Testcase(VOID)
     pthread_attr_t attr1;
     struct sched_param schedparam;
 
-    memset(g_gqname, 0, MQUEUE_STANDARD_NAME_LENGTH);
-    snprintf(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq079_%d", LosCurTaskIDGet());
+    ret = memset_s(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, 0, MQUEUE_STANDARD_NAME_LENGTH);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    (void)snprintf_s(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq079_%d", LosCurTaskIDGet());
 
     g_testCount = 0;
 

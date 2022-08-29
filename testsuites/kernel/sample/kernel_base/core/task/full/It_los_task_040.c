@@ -58,7 +58,7 @@ static UINT32 Testcase(void)
     // 32, number of cycles
     for (index = 0; index < 32; index++) {
         task1.usTaskPrio = index;
-        snprintf(acName, 10, "Tsk040A%2d", index); // 10, snprintf size.
+        (void)snprintf_s(acName, TASK_NAME_NUM, TASK_NAME_NUM - 1, "Tsk040A%2d", index);
         task1.pcName = acName;
         task1.uwResved = LOS_TASK_STATUS_DETACHED;
 

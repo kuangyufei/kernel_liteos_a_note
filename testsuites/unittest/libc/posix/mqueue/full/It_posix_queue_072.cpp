@@ -43,7 +43,9 @@ static UINT32 Testcase(VOID)
     msgAttr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     msgAttr.mq_maxmsg = MQUEUE_STANDARD_NAME_LENGTH;
 
-    snprintf(qName, MQUEUE_STANDARD_NAME_LENGTH, "/mq072_%d", LosCurTaskIDGet());
+    ret = snprintf_s(qName, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq072_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT);
 
     msgQId = mq_open(qName, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &msgAttr);
     ICUNIT_GOTO_NOT_EQUAL(msgQId, (mqd_t)-1, msgQId, EXIT);

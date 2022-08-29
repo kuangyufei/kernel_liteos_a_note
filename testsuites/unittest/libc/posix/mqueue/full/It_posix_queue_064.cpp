@@ -38,9 +38,12 @@ static UINT32 Testcase(VOID)
     mqd_t mqueue;
     struct mq_attr mqstat;
 
-    snprintf(mqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq064_%d", LosCurTaskIDGet());
+    ret = snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq064_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT2);
 
-    memset(&mqstat, 0, sizeof(mqstat));
+    ret = memset_s(&mqstat, sizeof(mqstat), 0, sizeof(mqstat));
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     mqstat.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     mqstat.mq_maxmsg = MQUEUE_STANDARD_NAME_LENGTH;
     mqueue = mq_open(mqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &mqstat);
@@ -50,7 +53,8 @@ static UINT32 Testcase(VOID)
         ret = mq_send(mqueue, msgptr, strlen(msgptr), 0);
         ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
     }
-    memset(&mqstat, 0, sizeof(mqstat));
+    ret = memset_s(&mqstat, sizeof(mqstat), 0, sizeof(mqstat));
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
     ret = mq_getattr(mqueue, &mqstat);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
     ICUNIT_GOTO_EQUAL(mqstat.mq_curmsgs, 5, mqstat.mq_curmsgs, EXIT1); // 5, assert the curmsgs.
@@ -66,6 +70,7 @@ EXIT1:
     mq_close(mqueue);
 EXIT:
     mq_unlink(mqname);
+EXIT2:
     return MQUEUE_NO_ERROR;
 }
 

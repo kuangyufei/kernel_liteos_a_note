@@ -37,11 +37,15 @@ static UINT32 Testcase(VOID)
     unsigned int nPos;
     int ret;
     char pathname[50]; // 50, enough space.
-    (void)strncpy_s(pathname, sizeof(pathname), g_ioTestPath, sizeof(pathname));
     char *filename = "/crt_getc_unlocked_test1";
     FILE *testFile = NULL;
 
-    strcat(pathname, filename);
+    ret = strncpy_s(pathname, sizeof(pathname), g_ioTestPath, sizeof(pathname));
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+
+    ret = strcat_s(pathname, 50, filename); // 50, path name buffer size
+    ICUNIT_ASSERT_EQUAL(ret, EOK, ret);
+
     testFile = fopen(pathname, "w+");
     ICUNIT_ASSERT_NOT_EQUAL(testFile, NULL, LOS_NOK);
     ret = fputs("0123456789abcdefghijklmnopqrstuvwxyz", testFile);

@@ -40,8 +40,9 @@ static UINT32 Testcase(VOID)
     struct sigaction act;
     time_t currsec;
 
-    snprintf(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq093_%d", LosCurTaskIDGet());
-
+    ret = snprintf_s(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq093_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT2);
     attr.mq_maxmsg = MQUEUE_SHORT_ARRAY_LENGTH;
     attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
 
@@ -71,6 +72,7 @@ EXIT1:
     mq_close(g_gqueue);
 EXIT:
     mq_unlink(g_gqname);
+EXIT2:
     return MQUEUE_NO_ERROR;
 }
 

@@ -55,7 +55,8 @@ static int Testcase(VOID)
 
         buf = (char *)malloc(MOUSE_DATA_LEN);
         ICUNIT_ASSERT_NOT_EQUAL(buf, NULL, buf);
-        (void)memset_s(buf, MOUSE_DATA_LEN, 0, MOUSE_DATA_LEN);
+        ret = memset_s(buf, MOUSE_DATA_LEN, 0, MOUSE_DATA_LEN);
+        ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
         ret = ioctl(fd, USB_GET_REPORT_ID, &id);
         ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);

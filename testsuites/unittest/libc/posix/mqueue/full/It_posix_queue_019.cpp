@@ -39,7 +39,9 @@ static UINT32 Testcase(VOID)
     mqd_t mqueue1, mqueue2;
     struct mq_attr attr = { 0 };
 
-    snprintf(mqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq019_%d", LosCurTaskIDGet());
+    ret = snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1,
+                     "/mq019_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT3);
 
     attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     attr.mq_maxmsg = MQUEUE_STANDARD_NAME_LENGTH;
@@ -76,6 +78,7 @@ EXIT1:
     mq_close(mqueue1);
 EXIT:
     mq_unlink(mqname);
+EXIT3:
     return MQUEUE_NO_ERROR;
 }
 

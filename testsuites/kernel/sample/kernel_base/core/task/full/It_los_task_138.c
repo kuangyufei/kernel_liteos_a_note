@@ -142,7 +142,8 @@ static UINT32 Testcase(void)
     ret = LOS_TaskCreate(&g_testTaskID01, &task1);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    memset(&task1, 0, sizeof(TSK_INIT_PARAM_S));
+    ret = memset_s(&task1, sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     task1.pfnTaskEntry = (TSK_ENTRY_FUNC)TaskF02;
     task1.uwStackSize = TASK_STACK_SIZE_TEST;
     task1.pcName = "Tsk118B";

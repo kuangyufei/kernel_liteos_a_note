@@ -76,7 +76,6 @@ static UINT32 Testcase(VOID)
 {
     INT32 oflag, i, ret = 0;
     INT32 pthreadCount[MQUEUE_PTHREAD_NUM_TEST];
-
     CHAR mqname[MQUEUE_STANDARD_NAME_LENGTH] = "";
     pthread_t pthreadSend[MQUEUE_PTHREAD_NUM_TEST];
     pthread_t pthreadRecev[MQUEUE_PTHREAD_NUM_TEST];
@@ -88,18 +87,16 @@ static UINT32 Testcase(VOID)
 
     g_testCount = 0;
 
-    snprintf(mqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq162_%d", LosCurTaskIDGet());
-
-    memset(&mqstat, 0, sizeof(mqstat));
+    (void)snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1,
+                     "/mq162_%d", LosCurTaskIDGet());
+    (void)memset_s(&mqstat, sizeof(mqstat), 0, sizeof(mqstat));
     mqstat.mq_maxmsg = MQUEUE_PTHREAD_NUM_TEST;
     mqstat.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     mqstat.mq_flags = 0;
 
     oflag = O_CREAT | O_NONBLOCK | O_RDWR;
-
     g_gqueue = mq_open(mqname, oflag,  S_IRWXU | S_IRWXG | S_IRWXO, &mqstat);
     ICUNIT_GOTO_NOT_EQUAL(g_gqueue, (mqd_t)-1, g_gqueue, EXIT1);
-
     for (i = 0; i < MQUEUE_PTHREAD_NUM_TEST; i++) {
         pthreadCount[i] = i;
         ret = pthread_create(&pthreadSend[i], &attr1, PthreadF01, NULL);

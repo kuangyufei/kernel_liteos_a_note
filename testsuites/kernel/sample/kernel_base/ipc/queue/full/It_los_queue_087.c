@@ -57,7 +57,8 @@ static UINT32 Testcase(VOID)
         ret = LOS_QueueWrite(g_testQueueID01, filebuf, count, 0);
         ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-        memset(readbuf, 0, 260); // 260, Read buf size.
+        ret = memset_s(readbuf, 260, 0, 260); // 260, Read buf size.
+        ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
         ret = LOS_QueueRead(g_testQueueID01, readbuf, count, 0);
         ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 

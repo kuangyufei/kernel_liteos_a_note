@@ -37,7 +37,8 @@ static UINT32 Testcase(VOID)
     INT32 i, unresolved = 0, failure = 0, numqueues = 0, ret;
 
     for (i = 0; (i < _POSIX_OPEN_MAX) && (i < _POSIX_MQ_OPEN_MAX); i++, numqueues++) {
-        snprintf(qname, MQUEUE_STANDARD_NAME_LENGTH, "/mq090%d_%d", i, LosCurTaskIDGet());
+        (void)snprintf_s(qname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                         "/mq090%d_%d", i, LosCurTaskIDGet());
 
         queue[i] = mq_open(qname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, NULL);
         if (queue[i] == (mqd_t)-1) {
@@ -59,12 +60,14 @@ static UINT32 Testcase(VOID)
         ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     }
     for (i = 0; i < numqueues; i++) {
-        snprintf(qname, MQUEUE_STANDARD_NAME_LENGTH, "/mq090%d_%d", i, LosCurTaskIDGet());
+        (void)snprintf_s(qname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                         "/mq090%d_%d", i, LosCurTaskIDGet());
         ret = mq_unlink(qname);
         ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     }
 
-    snprintf(qname, MQUEUE_STANDARD_NAME_LENGTH, "/mq090%d_%d", numqueues, LosCurTaskIDGet());
+    (void)snprintf_s(qname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq090%d_%d", numqueues, LosCurTaskIDGet());
     ret = mq_unlink(qname);
     ICUNIT_GOTO_EQUAL(ret, -1, ret, EXIT);
 

@@ -38,11 +38,15 @@ static UINT32 Testcase(VOID)
     long nPos;
     int nType, i;
     FILE *putwcFile = NULL;
-    char pathname[50];                   // 50, pathname size
-    strncpy(pathname, g_ioTestPath, 50); // 50, pathname size
+    char pathname[50]; // 50, pathname size
     char *filename = "/crtputwctest1";
+    int ret;
 
-    strcat(pathname, filename);
+    ret = strncpy_s(pathname, 50, g_ioTestPath, 50); // 50, pathname size
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+
+    ret = strcat_s(pathname, 50, filename); // 50, path name buffer size
+    ICUNIT_ASSERT_EQUAL(ret, EOK, ret);
 
     for (nType = 0; nType < 6; nType++) { // 6, loop test num
         putwcFile = fopen(pathname, "w+");

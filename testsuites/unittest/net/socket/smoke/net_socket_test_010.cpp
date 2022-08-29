@@ -77,7 +77,8 @@ static unsigned IfName2Index(int fd, const char *name)
     struct ifreq ifr;
     int ret;
 
-    (void)strncpy_s(ifr.ifr_name, sizeof(ifr.ifr_name) - 1, name, sizeof(ifr.ifr_name) - 1);
+    ret = strncpy_s(ifr.ifr_name, sizeof(ifr.ifr_name) - 1, name, sizeof(ifr.ifr_name) - 1);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
     ret = ioctl(fd, SIOCGIFINDEX, &ifr);
     return ret < 0 ? 0 : ifr.ifr_ifindex;

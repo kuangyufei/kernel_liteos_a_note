@@ -38,12 +38,14 @@ static UINT32 Testcase(VOID)
     int nRet;
     unsigned int nPos;
     int nType;
-    char pathname[50];                   // 50, path name buffer size
-    strncpy(pathname, g_ioTestPath, 50); // 50, path name buffer size
+    char pathname[50];  // 50, path name buffer size
+    (void)strncpy_s(pathname, 50, g_ioTestPath, 50); // 50, path name buffer size
     char *filename = "/crtfwprintftest1";
     FILE *testFile = NULL;
+    int ret;
 
-    strcat(pathname, filename);
+    ret = strcat_s(pathname, 50, filename); // 50, path name buffer size
+    ICUNIT_ASSERT_EQUAL(ret, EOK, ret);
 
     for (nType = 0; nType < 6; nType++) { // 6, loop test num
         testFile = fopen(pathname, "w+");
@@ -52,7 +54,7 @@ static UINT32 Testcase(VOID)
         nPos = (unsigned int)ftell(testFile);
 
         nRet = fwprintf(testFile, L"hello world %d", 666); // 666, for test, print to testFile
-        ICUNIT_GOTO_EQUAL(nRet, 15, nRet, EXIT);           // 15， total write size
+        ICUNIT_GOTO_EQUAL(nRet, 15, nRet, EXIT);  // 15， total write size
 
         if ((nPos + 15) != (unsigned int)ftell(testFile)) { // 15， total write size
             ICUNIT_GOTO_EQUAL(1, 0, 1, EXIT);

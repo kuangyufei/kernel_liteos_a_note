@@ -194,7 +194,7 @@ iUINT32 ICunitInit(void)
     g_iCunitCaseCnt = 0x0000;
     g_iCunitCaseFailedCnt = 0;
     g_iCunitErrLogAddCase = 0;
-    memset(g_iCunitCaseArray, 0, sizeof(g_iCunitCaseArray));
+    (void)memset_s(g_iCunitCaseArray, sizeof(g_iCunitCaseArray), 0, sizeof(g_iCunitCaseArray));
     g_iCunitCaseRun = 1;
 
     return (iUINT32)ICUNIT_SUCCESS;
@@ -233,12 +233,12 @@ iUINT32 ICunitRunF(ICUNIT_CASE_S *psubCase)
     static LosSemCB *semNode;
     UINT32 muxCnt[ARRAY_SIZE];
 
-    memset(gUwSwtNum, 0, sizeof(gUwSwtNum));
-    memset(gUwHwiNum, 0, sizeof(gUwHwiNum));
-    memset(gUwTskNum, 0, sizeof(gUwTskNum));
-    memset(gAuwMemuse, 0, sizeof(gAuwMemuse));
-    memset(gUwQueueNum, 0, sizeof(gUwQueueNum));
-    memset(gUwSemNum, 0, sizeof(gUwSemNum));
+    (void)memset_s(gUwSwtNum, sizeof(gUwSwtNum), 0, sizeof(gUwSwtNum));
+    (void)memset_s(gUwHwiNum, sizeof(gUwHwiNum), 0, sizeof(gUwHwiNum));
+    (void)memset_s(gUwTskNum, sizeof(gUwTskNum), 0, sizeof(gUwTskNum));
+    (void)memset_s(gAuwMemuse, sizeof(gAuwMemuse), 0, sizeof(gAuwMemuse));
+    (void)memset_s(gUwQueueNum, sizeof(gUwQueueNum), 0, sizeof(gUwQueueNum));
+    (void)memset_s(gUwSemNum, sizeof(gUwSemNum), 0, sizeof(gUwSemNum));
 
     curTestTaskID = LOS_CurTaskIDGet();
 
@@ -577,7 +577,7 @@ iUINT32 ICunitRunTestArrayRandom(iUINT32 testcaseNum, iUINT32 testcaseLayer, iUI
     iUINT32 failedCount;
     iUINT32 successCount;
 
-    memset(&subCaseArrayTemp, 0, sizeof(ICUNIT_CASE_S));
+    (void)memset_s(&subCaseArrayTemp, sizeof(ICUNIT_CASE_S), 0, sizeof(ICUNIT_CASE_S));
 
     idx1 = g_iCunitCaseCnt;
 
@@ -586,7 +586,7 @@ iUINT32 ICunitRunTestArrayRandom(iUINT32 testcaseNum, iUINT32 testcaseLayer, iUI
         successCount = g_passResult;
 
         for (idx = idx1 - 1; idx > 1; idx--) {
-            memset(&subCaseArrayTemp, 0, sizeof(ICUNIT_CASE_S));
+            (void)memset_s(&subCaseArrayTemp, sizeof(ICUNIT_CASE_S), 0, sizeof(ICUNIT_CASE_S));
 
             randIdx = ICunitRand() % idx;
             subCaseArrayTemp = g_iCunitCaseArray[randIdx];
@@ -611,12 +611,12 @@ iUINT32 ICunitRunTestOne(const char *tcId)
     iUINT32 idx1;
     ICUNIT_CASE_S subCaseArrayTemp;
 
-    memset(&subCaseArrayTemp, 0, sizeof(ICUNIT_CASE_S));
+    (void)memset_s(&subCaseArrayTemp, sizeof(ICUNIT_CASE_S), 0, sizeof(ICUNIT_CASE_S));
 
     idx1 = g_iCunitCaseCnt;
 
     for (idx = 0; idx < idx1; idx++) {
-        memset(&subCaseArrayTemp, 0, sizeof(ICUNIT_CASE_S));
+        (void)memset_s(&subCaseArrayTemp, sizeof(ICUNIT_CASE_S), 0, sizeof(ICUNIT_CASE_S));
         subCaseArrayTemp = g_iCunitCaseArray[idx];
 
         if (strcmp(subCaseArrayTemp.pcCaseID, tcId) == 0) {

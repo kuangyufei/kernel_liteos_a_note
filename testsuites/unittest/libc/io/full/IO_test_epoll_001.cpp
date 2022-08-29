@@ -51,6 +51,7 @@ static UINT32 testcase(VOID)
     sigset_t mask;
     struct epoll_event ev;
     struct epoll_event evWait[2]; /* 2, evs num */
+    UINT32 ret;
 
     retval = pipe(pipeFd);
     ICUNIT_GOTO_EQUAL(retval, 0, retval, OUT);
@@ -71,7 +72,8 @@ static UINT32 testcase(VOID)
     if (pid == 0) {
         close(pipeFd[1]);
 
-        memset(evWait, 0, sizeof(struct epoll_event) * 2); /* 2, evs num */
+        ret = memset_s(evWait, sizeof(struct epoll_event) * 2, 0, sizeof(struct epoll_event) * 2); /* 2, evs num */
+        ICUNIT_ASSERT_EQUAL(ret, 0, ret);
         retval = epoll_wait(epFd, evWait, 2, 3000); /* 2, num of wait fd. 3000, wait time */
         close(pipeFd[0]);
 

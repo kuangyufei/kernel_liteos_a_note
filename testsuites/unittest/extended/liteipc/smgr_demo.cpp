@@ -48,7 +48,7 @@ BOOL g_cmsRunningFlag = FALSE;
 
 static void InitCms()
 {
-    memset(g_serviceNameMap, 0, sizeof(g_serviceNameMap));
+    (void)memset_s(g_serviceNameMap, sizeof(g_serviceNameMap), 0, sizeof(g_serviceNameMap));
 }
 
 uint32_t SetCms(int fd)
@@ -66,7 +66,7 @@ void SendReply(int fd, IpcMsg *dataIn, uint32_t result, uint32_t serviceHandle)
     data1.flag = SEND | BUFF_FREE;
     data1.buffToFree = dataIn;
     data1.outMsg = &dataOut;
-    memset(data1.outMsg, 0, sizeof(IpcMsg));
+    (void)memset_s(data1.outMsg, sizeof(IpcMsg), 0, sizeof(IpcMsg));
     data1.outMsg->type = MT_REPLY;
     data1.outMsg->target.handle = dataIn->taskID;
     data1.outMsg->target.token = dataIn->target.token;
@@ -118,12 +118,12 @@ uint32_t RegService(int fd, char *serviceName, uint32_t nameLen, uint32_t *servi
     if (nameLen > NAME_LEN_MAX) {
         return -1;
     }
-    memcpy(name.serviceName, serviceName, nameLen);
+    (void)memcpy_s(name.serviceName, nameLen, serviceName, nameLen);
     name.nameLen = nameLen;
 
     data1.flag = SEND | RECV;
     data1.outMsg = &dataOut;
-    memset(data1.outMsg, 0, sizeof(IpcMsg));
+    (void)memset_s(data1.outMsg, sizeof(IpcMsg), 0, sizeof(IpcMsg));
     data1.outMsg->type = MT_REQUEST;
     data1.outMsg->target.handle = 0;
     data1.outMsg->code = REG_CODE;
@@ -153,12 +153,12 @@ uint32_t GetService(int fd, char *serviceName, uint32_t nameLen, uint32_t *servi
     if (nameLen > NAME_LEN_MAX) {
         return -1;
     }
-    memcpy(name.serviceName, serviceName, nameLen);
+    (void)memcpy_s(name.serviceName, nameLen, serviceName, nameLen);
     name.nameLen = nameLen;
 
     data1.flag = SEND | RECV;
     data1.outMsg = &dataOut;
-    memset(data1.outMsg, 0, sizeof(IpcMsg));
+    (void)memset_s(data1.outMsg, sizeof(IpcMsg), 0, sizeof(IpcMsg));
     data1.outMsg->type = MT_REQUEST;
     data1.outMsg->target.handle = 0;
     data1.outMsg->code = GET_CODE;
@@ -210,7 +210,8 @@ static void HandleServiceRegAndGet(int fd, IpcMsg *data)
                     printf("the task has already a service named:%s\n", g_serviceNameMap[content.serviceHandle].serviceName);
                     goto ERROR_REG;
                 } else {
-                    (void)memcpy_s(g_serviceNameMap[content.serviceHandle].serviceName, info->nameLen, info->serviceName, info->nameLen);
+                    (void)memcpy_s(g_serviceNameMap[content.serviceHandle].serviceName, info->nameLen,
+                                   info->serviceName, info->nameLen);
                     g_serviceNameMap[content.serviceHandle].nameLen = info->nameLen;
                     SendReply(fd, data, 0, content.serviceHandle);
                 }
@@ -281,7 +282,7 @@ void StopCms(int fd)
 
     data1.flag = SEND;
     data1.outMsg = &dataOut;
-    memset(data1.outMsg, 0, sizeof(IpcMsg));
+    (void)memset_s(data1.outMsg, sizeof(IpcMsg), 0, sizeof(IpcMsg));
     data1.outMsg->type = MT_REQUEST;
     data1.outMsg->target.handle = 0;
     data1.outMsg->code = STOP_CODE;

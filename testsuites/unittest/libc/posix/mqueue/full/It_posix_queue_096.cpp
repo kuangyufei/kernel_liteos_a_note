@@ -40,9 +40,12 @@ static UINT32 Testcase(VOID)
     struct mq_attr attr;
     struct timespec ts;
 
-    snprintf(mqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq096_%d", LosCurTaskIDGet());
+    ret = snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq096_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT2);
 
-    memset(&attr, 0, sizeof(attr));
+    ret = memset_s(&attr, sizeof(attr), 0, sizeof(attr));
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     attr.mq_msgsize = 20 + 1; // 20, queue message size.
     attr.mq_maxmsg = 20 + 1; // 20, queue max message size.
 
@@ -69,6 +72,7 @@ EXIT1:
     mq_close(mqueue);
 EXIT:
     mq_unlink(mqname);
+EXIT2:
     return MQUEUE_NO_ERROR;
 }
 

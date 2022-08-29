@@ -42,13 +42,15 @@ static UINT32 Testcase(VOID)
     attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     attr.mq_maxmsg = MQUEUE_STANDARD_NAME_LENGTH;
     for (i = 0; i < (count); i++) {
-        snprintf(mqname[i], MQUEUE_STANDARD_NAME_LENGTH, "/mq163_%d_%d", LosCurTaskIDGet(), i);
+        (void)snprintf_s(mqname[i], MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                         "/mq163_%d_%d", LosCurTaskIDGet(), i);
         mqueue[i] = mq_open(mqname[i], O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attr);
         ICUNIT_GOTO_NOT_EQUAL(mqueue[i], (mqd_t)-1, mqueue[i], EXIT);
     }
 
 #ifndef LOSCFG_DEBUG_QUEUE
-    snprintf(mqname[i], MQUEUE_STANDARD_NAME_LENGTH, "/mq163_%d_%d", LosCurTaskIDGet(), i);
+    (void)snprintf_s(mqname[i], MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq163_%d_%d", LosCurTaskIDGet(), i);
     mqueue[i] = mq_open(mqname[i], O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attr);
     ICUNIT_GOTO_EQUAL(mqueue[i], (mqd_t)-1, mqueue[i], EXIT1);
     ICUNIT_GOTO_EQUAL(errno, ENFILE, errno, EXIT1);

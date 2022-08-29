@@ -53,7 +53,8 @@ static int Testcase(VOID)
 
         buf = (char *)malloc(STORAGE_DATA_LEN);
         ICUNIT_ASSERT_NOT_EQUAL(buf, NULL, buf);
-        (void)memset_s(buf, STORAGE_DATA_LEN, 0, STORAGE_DATA_LEN);
+        ret = memset_s(buf, STORAGE_DATA_LEN, 0, STORAGE_DATA_LEN);
+        ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
         ret = ioctl(fd, DIOC_GETPRIV, &bch);
         printf("bch = %#x, &bch = %#x, errno = %d\n", bch, &bch, errno);

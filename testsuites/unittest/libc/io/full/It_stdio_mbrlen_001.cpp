@@ -38,9 +38,11 @@ static UINT32 Testcase(VOID)
     const char *str = "水";
     size_t sz = strlen(str);
     int len1, len2, len3;
+    UINT32 ret;
 
     mbstate_t mb;
-    memset(&mb, 0, sizeof(mb));
+    ret = memset_s(&mb, sizeof(mb), 0, sizeof(mb));
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     len1 = mbrlen(str, 1, &mb);
     ICUNIT_GOTO_EQUAL(len1, -2, len1, EXIT); // -2, except return value
 

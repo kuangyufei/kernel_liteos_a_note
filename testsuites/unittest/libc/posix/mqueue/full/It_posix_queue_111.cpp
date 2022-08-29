@@ -59,7 +59,9 @@ static VOID *PthreadF02(VOID *arg)
 
     attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     attr.mq_maxmsg = MQUEUE_STANDARD_NAME_LENGTH;
-    snprintf(mqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq111_%d", LosCurTaskIDGet());
+    ret = snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq111_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT3);
 
     g_gqueue = mq_open(mqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attr);
     ICUNIT_GOTO_NOT_EQUAL(g_gqueue, (mqd_t)-1, g_gqueue, EXIT2);
@@ -95,6 +97,7 @@ EXIT1:
     mq_unlink(mqname);
 EXIT:
     pthread_join(pthread1, NULL);
+EXIT3:
     return NULL;
 }
 

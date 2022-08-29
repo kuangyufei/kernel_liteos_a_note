@@ -86,14 +86,14 @@ extern "C" {
 #endif /* __cpluscplus */
 #endif /* __cpluscplus */
 
-#define TEST_TASK_PARAM_INIT(testTask, task_name, entry, prio)     \
-    do {                                                           \
-        memset(&testTask, 0, sizeof(TSK_INIT_PARAM_S));            \
-        testTask.pfnTaskEntry = (TSK_ENTRY_FUNC)entry;             \
-        testTask.uwStackSize = 0x1000;                             \
-        testTask.pcName = task_name;                               \
-        testTask.usTaskPrio = prio;                                \
-        testTask.uwResved = LOS_TASK_STATUS_DETACHED;              \
+#define TEST_TASK_PARAM_INIT(testTask, task_name, entry, prio)                              \
+    do {                                                                                    \
+        (void)memset_s(&(testTask), sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S)); \
+        testTask.pfnTaskEntry = (TSK_ENTRY_FUNC)entry;                                      \
+        testTask.uwStackSize = 0x1000;                                                      \
+        testTask.pcName = task_name;                                                        \
+        testTask.usTaskPrio = prio;                                                         \
+        testTask.uwResved = LOS_TASK_STATUS_DETACHED;                                       \
     } while (0);
 
 #ifdef LOSCFG_KERNEL_SMP

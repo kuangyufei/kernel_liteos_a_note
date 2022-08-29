@@ -87,7 +87,8 @@ static UINT32 Testcase(VOID)
     pthread_attr_t attr1;
     pthread_t newTh1, newTh2;
 
-    snprintf(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq053_%d", LosCurTaskIDGet());
+    (void)snprintf_s(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1,
+                     "/mq053_%d", LosCurTaskIDGet());
 
     attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     attr.mq_maxmsg = MQUEUE_STANDARD_NAME_LENGTH;

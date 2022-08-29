@@ -91,7 +91,9 @@ static UINT32 Testcase(VOID)
     pthread_attr_t attr1;
     pthread_t newTh1, newTh2;
 
-    snprintf(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq041_%d", LosCurTaskIDGet());
+    ret = snprintf_s(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq041_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT3);
 
     attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     attr.mq_maxmsg = 5; // 5, queue max message size.
@@ -135,6 +137,7 @@ EXIT1:
 EXIT:
     mq_close(g_gqueue);
     mq_unlink(g_gqname);
+EXIT3:
     return MQUEUE_NO_ERROR;
 }
 

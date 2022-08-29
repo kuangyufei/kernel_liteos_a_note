@@ -103,7 +103,9 @@ static UINT32 Testcase(VOID)
 
     g_testCount = 0;
 
-    snprintf(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq125_%d", LosCurTaskIDGet());
+    ret = snprintf_s(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq125_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT3);
 
     ret = pthread_attr_init(&attr1);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
@@ -145,6 +147,7 @@ EXIT1:
     pthread_join(pthread1, NULL);
 EXIT:
     pthread_attr_destroy(&attr1);
+EXIT3:
     return MQUEUE_NO_ERROR;
 }
 

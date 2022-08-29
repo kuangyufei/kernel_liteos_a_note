@@ -98,7 +98,8 @@ static UINT32 Testcase(VOID)
 
     oflag = O_CREAT | O_NONBLOCK | O_RDWR;
 
-    memset(&mqstat, 0, sizeof(mqstat));
+    ret = memset_s(&mqstat, sizeof(mqstat), 0, sizeof(mqstat));
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     mqstat.mq_maxmsg = MQUEUE_SHORT_ARRAY_LENGTH;
     mqstat.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     mqstat.mq_flags = 0;

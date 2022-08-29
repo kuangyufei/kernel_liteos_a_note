@@ -44,7 +44,8 @@ static VOID *PthreadF01(VOID *arg)
 
     uret = g_index % count;
 
-    snprintf(g_mqueueName[uret], MQUEUE_STANDARD_NAME_LENGTH, "/mqueue_161_%d_%d", LosCurTaskIDGet(), (uret));
+    (void)snprintf_s(g_mqueueName[uret], MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mqueue_161_%d_%d", LosCurTaskIDGet(), (uret));
     g_mqueueId[uret] = mq_open(g_mqueueName[uret], O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attr);
     ICUNIT_GOTO_NOT_EQUAL(g_mqueueId[uret], (mqd_t)-1, g_mqueueId[uret], EXIT);
 

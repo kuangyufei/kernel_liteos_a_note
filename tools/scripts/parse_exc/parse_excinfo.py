@@ -1,8 +1,8 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -66,47 +66,43 @@ def parse_string_line(excinfo_file, string):
 
 def parse_kernel_pc_klr(excinfo_file, ohos_image_file, string, addr2line_cmd, objdump_cmd):
     #parse pc
-    f = open(excinfo_file, 'r+')
-    start = 0
-    for lines in f.readlines():
-        if 'excFrom: kernel' in lines:
-            if start == 1:
-                break
-            start = 1
-        if start and string in lines:
-            lines = lines[lines.find(string):]
-            strlist = lines.split()
-            cmd = objdump_cmd + ohos_image_file + ' | grep ' + strlist[2][2:] + ': -B 10 -A 5 -w'
-            ret = commands.getoutput(cmd)
-            print(ret)
-            cmd = addr2line_cmd + ohos_image_file + ' ' + strlist[2]
-            ret = commands.getoutput(cmd)
-            ret = ret.split('\n')
-            print('<' + string + '>' + ret[0] + ' <' + strlist[2] + '>\n')
-            f.close() 
-            return 0
-    f.close()
+    with open(excinfo_file, 'r+') as f:
+        start = 0
+        for lines in f.readlines():
+            if 'excFrom: kernel' in lines:
+                if start == 1:
+                    break
+                start = 1
+            if start and string in lines:
+                lines = lines[lines.find(string):]
+                strlist = lines.split()
+                cmd = "%s%s | grep %s: -B 10 -A 5 -w" % (objdump_cmd, ohos_image_file, strlist[2][2:])
+                ret = commands.getoutput(cmd)
+                print(ret)
+                cmd = "%s%s %s" % (addr2line_cmd, ohos_image_file, strlist[2])
+                ret = commands.getoutput(cmd)
+                ret = ret.split('\n')
+                print("<%s>%s<%s>\n") % (string, ret[0], strlist[2])
+                return 0
     return -1
 
 def parse_kernel_lr(excinfo_file, ohos_image_file, addr2line_cmd):
-    f = open(excinfo_file, 'r+')
-    start = 0
-    index = 1
-    for lines in f.readlines():
-        if 'excFrom: kernel' in lines:
-            if start == 1:
-                break
-            start = 1
-        if start and 'lr =' in lines:
-            lines = lines[lines.find('lr ='):]
-            strlist = lines.split()
-            cmd = addr2line_cmd + ohos_image_file + ' ' + strlist[2]
-            ret = commands.getoutput(cmd)
-            ret = ret.split('\n')
-            print('<%.2d'%index + '>' + ret[0] + ' <' + strlist[2] + '>')
-            index = index + 1
-
-    f.close()
+    with open(excinfo_file, 'r+') as f:
+        start = 0
+        index = 1
+        for lines in f.readlines():
+            if 'excFrom: kernel' in lines:
+                if start == 1:
+                    break
+                start = 1
+            if start and 'lr =' in lines:
+                lines = lines[lines.find('lr ='):]
+                strlist = lines.split()
+                cmd = "%s%s %s" % (addr2line_cmd, ohos_image_file, strlist[2])
+                ret = commands.getoutput(cmd)
+                ret = ret.split('\n')
+                print("<%.2d>%s<%s>" % (index, ret[0], strlist[2]))
+                index = index + 1
 
 def parse_kernel_exc(excinfo_file, ohos_image_file, addr2line_cmd, objdump_cmd):
     #parse pc, klr
@@ -118,56 +114,50 @@ def parse_kernel_exc(excinfo_file, ohos_image_file, addr2line_cmd, objdump_cmd):
 
 def parse_user_pc_ulr(excinfo_file, rootfs_dir, string, addr2line_cmd, objdump_cmd):
     #parse pc
-    f = open(excinfo_file, 'r+')
-    start = 0
-    for lines in f.readlines():
-        if 'excFrom: User' in lines:
-            if start == 1:
-                break
-            start = 1
-        if start and string in lines:
-            lines = lines[lines.find(string):]
-            strlist = lines.split()
-            if len(strlist) < 7:
-                print('%s is error'%string)
-                f.close()
+    with open(excinfo_file, 'r+') as f:
+        start = 0
+        for lines in f.readlines():
+            if 'excFrom: User' in lines:
+                if start == 1:
+                    break
+                start = 1
+            if start and string in lines:
+                lines = lines[lines.find(string):]
+                strlist = lines.split()
+                if len(strlist) < 7:
+                    print('%s is error'%string)
+                    return 0
+                cmd = "%s%s%s | grep %s: -B 10 -A 5 -w" % (objdump_cmd, rootfs_dir, strlist[4], strlist[6][2:])
+                ret = commands.getoutput(cmd)
+                print(ret)
+                cmd = "%s%s%s %s" % (addr2line_cmd, rootfs_dir, strlist[4], strlist[6])
+                #print(cmd)
+                ret = commands.getoutput(cmd)
+                ret = ret.split('\n')
+                print("<%s>%s<%s><%s>\n" % (string, ret[0], strlist[6], strlist[4]))
                 return 0
-            cmd = objdump_cmd + rootfs_dir + strlist[4] + ' | grep ' + strlist[6][2:] + ': -B 10 -A 5 -w'
-            ret = commands.getoutput(cmd)
-            print(ret)
-            cmd = addr2line_cmd + rootfs_dir + strlist[4] + ' ' + strlist[6]
-            #print(cmd)
-            ret = commands.getoutput(cmd)
-            ret = ret.split('\n')
-            print('<' + string + '>' + ret[0] + ' <' + strlist[6] + '>' + '<' + strlist[4] + '>\n')
-            f.close() 
-            return 0
-    f.close()
     return -1
 
 def parse_user_lr(excinfo_file, rootfs_dir, addr2line_cmd):
-    f = open(excinfo_file, 'r+')
-    start = 0
-    index = 1
-    for lines in f.readlines():
-        if 'excFrom: User' in lines:
-            if start == 1:
-                break
-            start = 1
-        if start and 'lr =' in lines:
-            lines = lines[lines.find('lr ='):]
-            strlist = lines.split()
-            if len(strlist) < 11:
-                print('%s is error'%strlist)
-                f.close()
-                return
-            cmd = addr2line_cmd + rootfs_dir + strlist[8] + ' ' + strlist[10]
-            res = commands.getoutput(cmd)
-            res = res.split('\n')
-            print('<%.2d>'%index + res[0] + ' <' + strlist[10] + '>' + '<' + strlist[8] + '>')
-            index = index + 1
-
-    f.close()
+    with open(excinfo_file, 'r+') as f:
+        start = 0
+        index = 1
+        for lines in f.readlines():
+            if 'excFrom: User' in lines:
+                if start == 1:
+                    break
+                start = 1
+            if start and 'lr =' in lines:
+                lines = lines[lines.find('lr ='):]
+                strlist = lines.split()
+                if len(strlist) < 11:
+                    print('%s is error' % strlist)
+                    return
+                cmd = "%s%s%s %s" % (addr2line_cmd, rootfs_dir, strlist[8], strlist[10])
+                res = commands.getoutput(cmd)
+                res = res.split('\n')
+                print("<%.2d>%s<%s><%s>" % (index, res[0], strlist[10], strlist[8]))
+                index = index + 1
 
 def parse_user_exc(excinfo_file, rootfs_dir, addr2line_cmd, objdump_cmd):
     #parse pc ulr
@@ -178,30 +168,29 @@ def parse_user_exc(excinfo_file, rootfs_dir, addr2line_cmd, objdump_cmd):
     return ret1 and ret2
 
 def parse_backtrace(backtrace_file, ohos_image_file, addr2line_cmd):
-    f = open(backtrace_file, 'r+')
-    find = -1
-    start = 0
-    index = 1
-    for lines in f.readlines():
-        if 'backtrace begin' in lines:
-            if start == 1:
-                break
-            start = 1
-        if start and 'lr =' in lines:
-            lines = lines[lines.find('lr ='):]
-            strlist = lines.split()
-            cmd = addr2line_cmd + ohos_image_file + ' ' + strlist[2]
-            ret = commands.getoutput(cmd)
-            ret = ret.split('\n')
-            print('\n<%.2d'%index + '>' + ret[0] + ' <' + strlist[2] + '>')
-            index = index + 1
-            find = 0
+    with open(backtrace_file, 'r+') as f:
+        find = -1
+        start = 0
+        index = 1
+        for lines in f.readlines():
+            if 'backtrace begin' in lines:
+                if start == 1:
+                    break
+                start = 1
+            if start and 'lr =' in lines:
+                lines = lines[lines.find('lr ='):]
+                strlist = lines.split()
+                cmd = "%s%s %s" % (addr2line_cmd, ohos_image_file, strlist[2])
+                ret = commands.getoutput(cmd)
+                ret = ret.split('\n')
+                print("\n<%.2d>%s<%s>" % (index, ret[0], strlist[2]))
+                index = index + 1
+                find = 0
 
-    f.close()
     return find
 
 def parse_excinfo(excinfo_file, ohos_image_file, rootfs_dir, addr2line_cmd, objdump_cmd):
-    cmd = 'dos2unix ' + excinfo_file
+    cmd = "dos2unix %s" % (excinfo_file)
     commands.getoutput(cmd)
     kernel_exc = is_kernel_exc(excinfo_file)
     user_exc = is_user_exc(excinfo_file)
@@ -225,7 +214,7 @@ def parse_compiler(compiler):
     addr2line_cmd = ''
     objdump = ''
     objdump_cmd = ''
-    cmd = 'which ' + compiler
+    cmd = "which %s" % (compiler)
     ret = commands.getoutput(cmd)
     if ret == '':
         print('%s is not exist'%compiler)

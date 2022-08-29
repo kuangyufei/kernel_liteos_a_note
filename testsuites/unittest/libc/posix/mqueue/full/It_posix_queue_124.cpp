@@ -98,10 +98,13 @@ EXIT:
 static UINT32 Testcase(VOID)
 {
     UINT32 uret;
+    INT32 ret;
 
     g_testCount = 0;
 
-    snprintf(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq124_%d", LosCurTaskIDGet());
+    ret = snprintf_s(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq124_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT);
 
     uret = LOS_HwiCreate(HWI_NUM_TEST1, 1, 0, (HWI_PROC_FUNC)HwiF02, 0);
     ICUNIT_GOTO_EQUAL(uret, MQUEUE_NO_ERROR, uret, EXIT);

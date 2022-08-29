@@ -37,13 +37,16 @@ static UINT32 Testcase(VOID)
     mqd_t mqueue, mqdesInvalid;
     struct mq_attr mqstat;
 
-    snprintf(mqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq065_%d", LosCurTaskIDGet());
+    ret = snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq065_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT2);
 
     mqueue = mq_open(mqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 0);
     ICUNIT_GOTO_NOT_EQUAL(mqueue, (mqd_t)-1, mqueue, EXIT1);
 
     mqdesInvalid = (mqd_t)((UINTPTR)mqueue + PER_ADDED_VALUE);
-    memset(&mqstat, 0, sizeof(mqstat));
+    ret = memset_s(&mqstat, sizeof(mqstat), 0, sizeof(mqstat));
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 
     ret = mq_getattr(mqdesInvalid, &mqstat);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
@@ -60,6 +63,7 @@ EXIT1:
     mq_close(mqueue);
 EXIT:
     mq_unlink(mqname);
+EXIT2:
     return MQUEUE_NO_ERROR;
 }
 

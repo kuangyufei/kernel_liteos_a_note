@@ -99,7 +99,8 @@ static UINT32 Testcase(void)
     currCpuid = (ArchCurrCpuid() + 1) % LOSCFG_KERNEL_CORE_NUM;
 #endif
 
-    memset(&task, 0, sizeof(TSK_INIT_PARAM_S));
+    ret = memset_s(&task, sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     task.pfnTaskEntry = (TSK_ENTRY_FUNC)ItTimeslice002F01;
     task.usTaskPrio = TASK_PRIO_TEST_TASK + 1;
     task.pcName = "it_timeslice_002_f01";

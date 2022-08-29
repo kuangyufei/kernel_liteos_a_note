@@ -42,13 +42,15 @@ static VOID *PthreadF01(VOID *arg)
     attr.mq_maxmsg = 5; // 5, queue max message size.
 
     for (i = 0; i < count; i++, g_testCount++) {
-        snprintf(g_mqueueName[i], MQUEUE_STANDARD_NAME_LENGTH, "/mq160_%d_%d", LosCurTaskIDGet(), i);
+        (void)snprintf_s(g_mqueueName[i], MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                         "/mq160_%d_%d", LosCurTaskIDGet(), i);
         g_mqueueId[i] = mq_open(g_mqueueName[i], O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attr);
         ICUNIT_GOTO_NOT_EQUAL(g_mqueueId[i], (mqd_t)-1, g_mqueueId[i], EXIT);
     }
 
 #ifndef LOSCFG_DEBUG_QUEUE
-    snprintf(g_mqueueName[i], MQUEUE_STANDARD_NAME_LENGTH, "/mq160_%d_%d", LosCurTaskIDGet(), i);
+    (void)snprintf_s(g_mqueueName[i], MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq160_%d_%d", LosCurTaskIDGet(), i);
     g_mqueueId[i] = mq_open(g_mqueueName[i], O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attr);
     ICUNIT_GOTO_EQUAL(g_mqueueId[i], (mqd_t)-1, g_mqueueId[i], EXIT);
 #endif

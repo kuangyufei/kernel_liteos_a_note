@@ -13,6 +13,9 @@
 <img src="https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/11.png" alt="" width="400px" height="420px" align="bottom" />
 <img src="https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/12.png" alt="" width="400px" height="420px" align="bottom" />
 <img src="https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/13.png" alt="" width="400px" height="420px" align="bottom" />
+<img src="https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/14.png" alt="" width="400px" height="420px" align="bottom" />
+<img src="https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/15.png" alt="" width="400px" height="420px" align="bottom" />
+<img src="https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/16.png" alt="" width="400px" height="420px" align="bottom" />
 
 ### 捐助方式
 

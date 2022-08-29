@@ -44,8 +44,10 @@ static UINT32 Testcase(VOID)
     mqueue = mq_open(mqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, NULL);
     ICUNIT_GOTO_NOT_EQUAL(mqueue, (mqd_t)-1, mqueue, EXIT1);
 
-    (void)memset_s(&mqstat1, sizeof(mqstat1), 0, sizeof(mqstat1));
-    (void)memset_s(&mqstat2, sizeof(mqstat2), 0, sizeof(mqstat2));
+    ret = memset_s(&mqstat1, sizeof(mqstat1), 0, sizeof(mqstat1));
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
+    ret = memset_s(&mqstat2, sizeof(mqstat2), 0, sizeof(mqstat2));
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
     ret = mq_getattr(mqueue, &mqstat1);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);

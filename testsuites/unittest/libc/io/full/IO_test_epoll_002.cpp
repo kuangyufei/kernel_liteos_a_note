@@ -97,7 +97,7 @@ static UINT32 testcase(VOID)
     if (pid == 0) {
         close(pipeFd[1]);
 
-        memset(evWait, 0, sizeof(struct epoll_event) * 2); /* 2, evs num */
+        (void)memset_s(evWait, sizeof(struct epoll_event) * 2, 0, sizeof(struct epoll_event) * 2); /* 2, evs num */
         evWait[0].data.fd = pipeFd[0];
 
         retval = epoll_pwait(epFd, evWait, 2, 3000, &mask); /* 2, num of wait fd. 3000, wait time */

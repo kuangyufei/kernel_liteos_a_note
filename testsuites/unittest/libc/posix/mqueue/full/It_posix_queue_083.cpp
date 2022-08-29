@@ -39,8 +39,9 @@ static UINT32 Testcase(VOID)
     mqd_t queue;
     INT32 unresolved = 0, failure = 0, i, maxreached = 0, ret = 0;
 
-    snprintf(qname, MQUEUE_STANDARD_NAME_LENGTH, "/mq083-1_%d", LosCurTaskIDGet());
-
+    ret = snprintf_s(qname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq083-1_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
     attr.mq_msgsize = 100; // 100, queue message size.
     attr.mq_maxmsg = MAXMSG5;
     queue = mq_open(qname, O_CREAT | O_RDWR | O_NONBLOCK, S_IRUSR | S_IWUSR, &attr);
@@ -49,12 +50,14 @@ static UINT32 Testcase(VOID)
     ts.tv_sec = 1;
     ts.tv_nsec = 0;
     for (i = 0; i < MAXMSG5; i++) {
-        snprintf(msgptr, MQUEUE_STANDARD_NAME_LENGTH, "message %d", i);
+        ret = snprintf_s(msgptr, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, "message %d", i);
+        ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT);
         ret = mq_timedsend(queue, msgptr, strlen(msgptr), 0, &ts);
         ICUNIT_GOTO_NOT_EQUAL(ret, -1, ret, EXIT);
     }
 
-    snprintf(msgptr, MQUEUE_STANDARD_NAME_LENGTH, "message %d", i);
+    ret = snprintf_s(msgptr, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, "message %d", i);
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
     ret = mq_timedsend(queue, msgptr, strlen(msgptr), 0, &ts);
     ICUNIT_GOTO_EQUAL(ret, -1, ret, EXIT);
     ICUNIT_GOTO_EQUAL(errno, EAGAIN, errno, EXIT);
@@ -69,6 +72,7 @@ static UINT32 Testcase(VOID)
 EXIT:
     mq_close(queue);
     mq_unlink(qname);
+EXIT1:
     return MQUEUE_NO_ERROR;
 }
 

@@ -41,14 +41,16 @@ static UINT32 Testcase(VOID)
     struct iovec iov[2]; // 2, read 2 block
     ssize_t nread;
     const int testStrLen = 10;
+    UINT32 ret;
 
     iov[0].iov_base = buf1;
     iov[0].iov_len = sizeof(buf1) - 1;
     iov[1].iov_base = buf2;
     iov[1].iov_len = sizeof(buf2) - 1;
 
-    strncpy(pathname, g_ioTestPath, 50); // 50, path name size
-    strcat(pathname, filename);
+    (void)strncpy_s(pathname, 50, g_ioTestPath, 50); // 50, path name size
+    ret = strcat_s(pathname, 50, filename); // 50, path name buffer size
+    ICUNIT_ASSERT_EQUAL(ret, EOK, ret);
     fd = open(pathname, O_CREAT | O_RDWR | O_TRUNC, 0666); // 0666, file authority
     if (fd < 0) {
         printf("error: can`t open file\n");

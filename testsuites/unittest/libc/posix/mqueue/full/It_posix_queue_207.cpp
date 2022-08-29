@@ -59,7 +59,8 @@ static void Child(void)
     attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     attr.mq_maxmsg = 1;
 
-    (void)snprintf_s(g_mqname, MQUEUE_STANDARD_NAME_LENGTH - 1, MQUEUE_STANDARD_NAME_LENGTH, "/mq207_%d", getpid());
+    ret = snprintf_s(g_mqname, MQUEUE_STANDARD_NAME_LENGTH - 1, MQUEUE_STANDARD_NAME_LENGTH, "/mq207_%d", getpid());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
 
     g_mqueue = mq_open(g_mqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attr);
     ICUNIT_GOTO_NOT_EQUAL(g_mqueue, (mqd_t)-1, g_mqueue, EXIT);
@@ -86,6 +87,7 @@ static void Child(void)
 EXIT:
     mq_close(g_mqueue);
     mq_unlink(g_mqname);
+EXIT1:
     return;
 }
 

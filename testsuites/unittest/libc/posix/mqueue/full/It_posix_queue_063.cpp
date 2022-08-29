@@ -38,15 +38,19 @@ static UINT32 Testcase(VOID)
     INT32 unresolved = 0;
     INT32 failure = 0, ret = 0;
 
-    snprintf(mqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq063-1_%d", LosCurTaskIDGet());
+    ret = snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq063-1_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
 
-    memset(&mqstat, 0, sizeof(mqstat));
+    ret = memset_s(&mqstat, sizeof(mqstat), 0, sizeof(mqstat));
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     mqstat.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     mqstat.mq_maxmsg = 40; // 40, queue max message size.
     mqdes = mq_open(mqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &mqstat);
     ICUNIT_GOTO_NOT_EQUAL(mqdes, (mqd_t)-1, mqdes, EXIT);
 
-    memset(&nmqstat, 0, sizeof(nmqstat));
+    ret = memset_s(&nmqstat, sizeof(nmqstat), 0, sizeof(nmqstat));
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
     ret = mq_getattr(mqdes, &nmqstat);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
@@ -66,6 +70,7 @@ static UINT32 Testcase(VOID)
 EXIT:
     mq_close(mqdes);
     mq_unlink(mqname);
+EXIT1:
     return MQUEUE_NO_ERROR;
 }
 

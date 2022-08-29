@@ -134,7 +134,8 @@ static int Testcase(void)
     int index = 0;
     int curThreadPri, curThreadPolicy;
 
-    (void)memset_s((void *)g_spinlockData, sizeof(int) * TEST_DATA_SIZE, 0, sizeof(int) * TEST_DATA_SIZE);
+    ret = memset_s((void *)g_spinlockData, sizeof(int) * TEST_DATA_SIZE, 0, sizeof(int) * TEST_DATA_SIZE);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     g_spinlockMask = 0;
 
     pthread_spin_init(&g_spinlockLock, 0);

@@ -42,7 +42,9 @@ static UINT32 Testcase(VOID)
     msgAttr.mq_msgsize = 0xFFF0;
     msgAttr.mq_maxmsg = 0xFFF0;
 
-    snprintf(qName, MQUEUE_STANDARD_NAME_LENGTH, "/mq148_%d", LosCurTaskIDGet());
+    ret = snprintf_s(qName, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq148_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
 
     g_messageQId = mq_open(qName, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &msgAttr);
     ICUNIT_GOTO_EQUAL(g_messageQId, (mqd_t)-1, g_messageQId, EXIT);
@@ -57,6 +59,7 @@ static UINT32 Testcase(VOID)
 EXIT:
     mq_close(g_messageQId);
     mq_unlink(qName);
+EXIT1:
     return MQUEUE_NO_ERROR;
 }
 

@@ -37,7 +37,7 @@ static UINT32 Testcase(VOID)
     char buffer[20];          // 20, target buffer size
     int *sharedflag = NULL;
     int shmid;
-    
+
     ret = pipe(pipeFd);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
     shmid = shmget((key_t)IPC_PRIVATE, sizeof(int), 0666 | IPC_CREAT); // 0666 the authority of the shm

@@ -63,7 +63,8 @@ static UINT32 Testcase(VOID)
     TSK_INIT_PARAM_S taskInitParam;
     UINT32 ret;
 
-    (VOID)memset_s((void *)(&taskInitParam), sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
+    ret = memset_s((void *)(&taskInitParam), sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)Task01;
     taskInitParam.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
     taskInitParam.pcName = "SmpCpup002_task01";

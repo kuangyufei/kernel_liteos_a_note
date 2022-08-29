@@ -50,7 +50,7 @@ VOID RecordIntrTrace(INT32 irq, INT32 direction)
 VOID ResetIntrTrace(VOID)
 {
     g_traceIdx = 0;
-    memset(g_intrTrace, 0, RECORD_SIZE);
+    (void)memset_s(g_intrTrace, RECORD_SIZE, 0, RECORD_SIZE);
 }
 
 UINT32 CheckIntrTrace(UINT32 *expect, UINT32 num)

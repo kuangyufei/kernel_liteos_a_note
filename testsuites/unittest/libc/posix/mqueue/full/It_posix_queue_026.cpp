@@ -32,10 +32,13 @@
 
 static UINT32 Testcase(VOID)
 {
+    INT32 ret;
     CHAR qname[MQUEUE_STANDARD_NAME_LENGTH] = "";
     mqd_t queue;
 
-    snprintf(qname, MQUEUE_STANDARD_NAME_LENGTH, "/mq026-1_%d", LosCurTaskIDGet());
+    ret = snprintf_s(qname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq026-1_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
 
     queue = mq_open(qname, O_RDWR, S_IRUSR | S_IWUSR, NULL);
     ICUNIT_GOTO_EQUAL(queue, (mqd_t)-1, queue, EXIT);
@@ -45,6 +48,7 @@ static UINT32 Testcase(VOID)
 EXIT:
     mq_close(queue);
     mq_unlink(qname);
+EXIT1:
     return MQUEUE_NO_ERROR;
 }
 

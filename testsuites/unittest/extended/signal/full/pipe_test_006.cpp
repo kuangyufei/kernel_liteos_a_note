@@ -31,6 +31,8 @@
 #include "it_test_signal.h"
 #include "signal.h"
 
+static const int NAME_LEN  = 60;
+
 static const int MAX_PIPES = 32;
 
 static int PipeUnlinkTest()
@@ -41,7 +43,7 @@ static int PipeUnlinkTest()
     int retValue = -1;
 
     int status, ret;
-    char devName[60]; // 60, array subscript
+    char devName[NAME_LEN]; // 60, array subscript
     pid = fork();
     if (pid == -1) {
         printf("Fork Error!\n");
@@ -54,7 +56,7 @@ static int PipeUnlinkTest()
         retValue = pipe(tmpFd);
         ICUNIT_ASSERT_EQUAL_EXIT(retValue, -1, __LINE__);
         for (int i = 0; i < MAX_PIPES; i++) {
-            snprintf(devName, 60, "/dev/pipe%d", i); // 60, len of max size
+            (void)snprintf_s(devName, NAME_LEN, NAME_LEN - 1, "/dev/pipe%d", i); // 60, len of max size
             retValue = unlink(devName);
             ICUNIT_ASSERT_EQUAL_EXIT(retValue, -1, __LINE__);
             retValue = close(pipefd[i][0]);

@@ -58,9 +58,10 @@ EXIT:
 static UINT32 Testcase(void)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S task1;
+    TSK_INIT_PARAM_S task1 = {0};
+
     LOS_EventInit(&g_eventCb01);
-    memset(&task1, 0, sizeof(TSK_INIT_PARAM_S));
+
     task1.pfnTaskEntry = (TSK_ENTRY_FUNC)TaskF01;
     task1.pcName = "Tsk082A";
     task1.uwStackSize = TASK_STACK_SIZE_TEST;

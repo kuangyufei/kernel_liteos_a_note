@@ -104,13 +104,12 @@ EXIT:
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    TSK_INIT_PARAM_S task1;
+    TSK_INIT_PARAM_S task1 = {0};
     LOS_EventInit(&g_event);
     LOS_EventInit(&g_pevent2);
 
     g_testCount = 0;
 
-    memset(&task1, 0, sizeof(TSK_INIT_PARAM_S));
     task1.pfnTaskEntry = (TSK_ENTRY_FUNC)TaskF01;
     task1.pcName = "EventTsk38A";
     task1.uwStackSize = TASK_STACK_SIZE_TEST;

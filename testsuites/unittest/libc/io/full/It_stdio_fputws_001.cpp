@@ -40,9 +40,13 @@ static UINT32 Testcase(VOID)
     int nType;
     char pathname[50]; // 50, path name buffer size
     FILE *testFile;
-    (void)strncpy_s(pathname, 50, g_ioTestPath, 50); // 50, path name buffer size
+    int ret;
+
+    ret = strncpy_s(pathname, 50, g_ioTestPath, 50); // 50, path name buffer size
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     char *filename = "/crtfputwstest1";
-    strcat(pathname, filename);
+    ret = strcat_s(pathname, 50, filename); // 50, path name buffer size
+    ICUNIT_ASSERT_EQUAL(ret, EOK, ret);
     for (nType = 0; nType < 6; nType++) { // 6, test loop num
         testFile = fopen(pathname, "a");
 

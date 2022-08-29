@@ -44,14 +44,16 @@ static UINT32 Testcase(VOID)
     attr.mq_maxmsg = 20;
 
     for (i = 0; i < count; i++) {
-        snprintf(mqname[i], MQUEUE_STANDARD_NAME_LENGTH, "mq158_%d_%d", LosCurTaskIDGet(), i);
+        (void)snprintf_s(mqname[i], MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                         "mq158_%d_%d", LosCurTaskIDGet(), i);
 
         mqueue[i] = mq_open(mqname[i], O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attr);
         ICUNIT_GOTO_NOT_EQUAL(mqueue[i], (mqd_t)-1, mqueue[i], EXIT);
     }
 
 #ifndef LOSCFG_DEBUG_QUEUE
-    snprintf(mqname[i], MQUEUE_STANDARD_NAME_LENGTH, "/mq158_%d", i);
+    (void)snprintf_s(mqname[i], MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq158_%d", i);
     mqueue[i] = mq_open(mqname[i], O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attr);
     ICUNIT_GOTO_EQUAL(mqueue[i], (mqd_t)(-1), mqueue[i], EXIT);
 #else

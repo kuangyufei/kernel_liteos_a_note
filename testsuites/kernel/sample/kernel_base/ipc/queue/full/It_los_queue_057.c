@@ -46,7 +46,8 @@ static UINT32 Testcase(VOID)
 
     g_testQueueID01 = 0;
 
-    memset(bufname, 'a', 5001); // 5001, buffer size.
+    ret = memset_s(bufname, 5001, 'a', 5001); // 5001, buffer size.
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     bufname[5001] = '\0'; // 5001, buffer size.
     ret = LOS_QueueCreate(bufname, 3, &g_testQueueID01, 0, sizeof(UINTPTR)); // 3, Set the queue length.
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);

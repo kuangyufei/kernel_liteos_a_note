@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -28,6 +28,7 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+set -e
 
 LOAD_BASE="0x2000000"
 LLVM_ADDR2LINE=llvm-addr2line
@@ -36,12 +37,12 @@ GCC_ADDR2LINE=addr2line
 get_line()
 {
     SYM_ADDR=$(echo $1 | awk '{print $2}')
-    ELF_OFFSET=`echo ${SYM_ADDR} | cut -d '[' -f2 | cut -d ']' -f1`
-    FILE_LINE=`${ADDR2LINE} -f -e $2 ${ELF_OFFSET} | awk 'NR==2'`
+    ELF_OFFSET=$(echo ${SYM_ADDR} | cut -d '[' -f2 | cut -d ']' -f1)
+    FILE_LINE=$(${ADDR2LINE} -f -e $2 ${ELF_OFFSET} | awk 'NR==2'`)
     if [[ "${FILE_LINE}" == *"?"* ]]; then
         typeset ELF_OFFSET=$((ELF_OFFSET+LOAD_BASE))
         ELF_OFFSET=$(echo "obase=16;${ELF_OFFSET}" | bc)
-        FILE_LINE=`${ADDR2LINE} -f -e $2 ${ELF_OFFSET} | awk 'NR==2'`
+        FILE_LINE=$(${ADDR2LINE} -f -e $2 ${ELF_OFFSET} | awk 'NR==2')
     fi
     echo ${FILE_LINE}
 }
@@ -58,14 +59,14 @@ parse_line()
                 echo "Error: no such file: $i"
                 exit 1
             fi
-            FILE_LINE=`get_line "$1" $i`
-            if [[ "${FILE_LINE}" == *"?"* ]] || [ -z "${FILE_LINE}" ]; then
+            ELF_FILE_LINE=$(get_line "$1" $i)
+            if [[ "${ELF_FILE_LINE}" == *"?"* ]] || [ -z "${ELF_FILE_LINE}" ]; then
                 echo "        * Error: you need ensure whether file: "$i" was compiled with -g or not! *"
                 exit 1
             fi
-            LINE=`echo $1 | tr -d '\r'`
+            LINE=$(echo $1 | tr -d '\r')
             LINE=$(echo ${LINE} | awk '{print $1,$2}')
-            echo "        "${LINE}" at "${FILE_LINE}
+            echo "        "${LINE}" at "${ELF_FILE_LINE}
             FLAG=true
             break
         fi
@@ -81,7 +82,7 @@ if [ $# -le 1 ]; then
 fi
 
 read -n5 -p "Compiler is [gcc/llvm]: " ANSWER
-case ${ANSWER} in
+case "${ANSWER}" in
 (gcc | GCC)
     which ${GCC_ADDR2LINE} >/dev/null 2>&1
     if [ $? -eq 0 ]; then

@@ -63,7 +63,9 @@ static UINT32 Testcase(VOID)
     g_testCount = 0;
 
     LOS_TaskLock();
-    snprintf(qName, MQUEUE_STANDARD_NAME_LENGTH, "/mq117_%d", LosCurTaskIDGet());
+    ret = snprintf_s(qName, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq117_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT);
 
     g_messageQId = mq_open(qName, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &msgAttr);
     ICUNIT_GOTO_NOT_EQUAL(g_messageQId, (mqd_t)-1, g_messageQId, EXIT2);

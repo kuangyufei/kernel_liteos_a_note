@@ -63,7 +63,9 @@ static VOID *PthreadF02(VOID *arg)
     attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     attr.mq_maxmsg = 2; // 2, queue max message size.
 
-    snprintf(mqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq076_%d", LosCurTaskIDGet());
+    ret = snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq076_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT2);
 
     g_gqueue = mq_open(mqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attr);
     ICUNIT_GOTO_NOT_EQUAL(g_gqueue, (mqd_t)-1, g_gqueue, EXIT1);
@@ -103,6 +105,7 @@ EXIT1:
 EXIT:
     PosixPthreadDestroy(&attr1, thread1);
     g_testCount = 0;
+EXIT2:
     return NULL;
 }
 

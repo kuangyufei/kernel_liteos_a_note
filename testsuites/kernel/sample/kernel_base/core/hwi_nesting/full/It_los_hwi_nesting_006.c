@@ -44,7 +44,7 @@ static VOID NestingPrioHigh(INT32 irq, VOID *data)
 {
     g_intrHandleEnd = 1;
     UINT32 temp[0x100][2] = {0};
-    memset(temp, 1, sizeof(UINT32) * 0x100 * 2); // 2, buffer size.
+    (void)memset_s(temp, sizeof(UINT32) * 0x100 * 2, 1, sizeof(UINT32) * 0x100 * 2); // 2, buffer size.
 }
 
 static VOID TaskF01(VOID)

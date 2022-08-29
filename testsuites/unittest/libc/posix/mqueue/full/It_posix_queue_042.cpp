@@ -39,7 +39,9 @@ static UINT32 Testcase(VOID)
     mqd_t mqueue;
     struct mq_attr attr = { 0 };
 
-    snprintf(mqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq042_%d", LosCurTaskIDGet());
+    ret = snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1,
+                     "/mq042_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT2);
 
     attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     attr.mq_maxmsg = MQUEUE_SHORT_ARRAY_LENGTH;
@@ -48,7 +50,8 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_NOT_EQUAL(mqueue, (mqd_t)-1, mqueue, EXIT1);
 
     while (1) {
-        snprintf(msgptr, MQUEUE_STANDARD_NAME_LENGTH, "message %d", i);
+        ret = snprintf_s(msgptr, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, "message %d", i);
+        ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
         ret = mq_send(mqueue, msgptr, strlen(msgptr), 0);
         if (ret == -1) {
             ICUNIT_GOTO_EQUAL(errno, EAGAIN, errno, EXIT1);
@@ -59,7 +62,8 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(i, MQUEUE_SHORT_ARRAY_LENGTH, i, EXIT1);
 
     i = 0;
-    snprintf(msgptr, MQUEUE_STANDARD_NAME_LENGTH, "message %d", i);
+    ret = snprintf_s(msgptr, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, "message %d", i);
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
     ret = mq_receive(mqueue, msgrcd, MQUEUE_STANDARD_NAME_LENGTH, NULL);
     ICUNIT_GOTO_EQUAL(ret, strlen(msgptr), ret, EXIT1);
 
@@ -77,6 +81,7 @@ EXIT1:
     mq_close(mqueue);
 EXIT:
     mq_unlink(mqname);
+EXIT2:
     return MQUEUE_NO_ERROR;
 }
 

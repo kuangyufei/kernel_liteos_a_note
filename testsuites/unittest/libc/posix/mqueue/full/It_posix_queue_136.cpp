@@ -46,7 +46,8 @@ static UINT32 Testcase(VOID)
     msgAttr.mq_maxmsg = 20; // 20, mqueue message size.
 
     for (index = 0; index < (LOSCFG_BASE_IPC_QUEUE_CONFIG - QUEUE_EXISTED_NUM); index++) {
-        snprintf(qName[index], MQUEUE_STANDARD_NAME_LENGTH, "/mq136_%d", index);
+        (void)snprintf_s(qName[index], MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                         "/mq136_%d", index);
         queueID[index] = mq_open(qName[index], O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &msgAttr);
         ICUNIT_GOTO_NOT_EQUAL(queueID[index], (mqd_t)-1, queueID[index], EXIT);
     }

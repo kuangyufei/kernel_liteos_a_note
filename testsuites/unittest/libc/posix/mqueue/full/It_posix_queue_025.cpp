@@ -30,16 +30,23 @@
  */
 #include "It_posix_queue.h"
 
+#define QUEUE_NAME_MAX_LEN (MQUEUE_NAME_MAX_TEST * 2)
+
 static UINT32 Testcase(VOID)
 {
-    CHAR mqname[MQUEUE_NAME_MAX_TEST * 2];
+    CHAR mqname[QUEUE_NAME_MAX_LEN];
     mqd_t mqueue;
+    UINT32 ret;
     INT32 i;
 
-    snprintf(mqname, MQUEUE_NAME_MAX_TEST * 2, "/mq025_%d", LosCurTaskIDGet()); // 2, mqname length.
+    ret = snprintf_s(mqname, QUEUE_NAME_MAX_LEN, QUEUE_NAME_MAX_LEN - 1, \
+                     "/mq025_%d", LosCurTaskIDGet()); // 2, mqname length.
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
 
-    for (i = 0; i < MQUEUE_NAME_MAX_TEST; i++)
-        strcat(mqname, "0");
+    for (i = 0; i < MQUEUE_NAME_MAX_TEST; i++) {
+        ret = strcat_s(mqname, QUEUE_NAME_MAX_LEN, "0");
+        ICUNIT_ASSERT_EQUAL(ret, EOK, ret);
+    }
 
     mqueue = mq_open(mqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, NULL);
     ICUNIT_GOTO_EQUAL(mqueue, (mqd_t)-1, mqueue, EXIT);
@@ -49,6 +56,7 @@ static UINT32 Testcase(VOID)
 EXIT:
     mq_close(mqueue);
     mq_unlink(mqname);
+EXIT1:
     return MQUEUE_NO_ERROR;
 }
 

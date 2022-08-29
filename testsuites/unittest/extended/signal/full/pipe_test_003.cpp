@@ -59,7 +59,7 @@ int TestPipeSingleProcessFcntl()
             char sentence1[15] = "Hello World";
             char a[4] = {0};
             (void)sprintf_s(a, sizeof(a), "%d", i);
-            strcat(sentence1, a);
+            (void)strcat_s(sentence1, 15, a); // 15, sizeof sentence1
             int ret = write(*writeFd, sentence1, strlen(sentence1) + 1);
             usleep(100000); // 100000, Used to calculate the delay time.
         }
@@ -67,7 +67,7 @@ int TestPipeSingleProcessFcntl()
         char a[4] = {0};
         usleep(10000); // 10000, Used to calculate the delay time.
         printf("read\n");
-        memset(readbuffer, 0, sizeof(readbuffer));
+        (void)memset_s(readbuffer, sizeof(readbuffer), 0, sizeof(readbuffer));
         retValue = read(*readFd, readbuffer, sizeof(readbuffer));
         printf("Receive %d bytes data : %s,%d\n", retValue, readbuffer, errno);
         printf("Receive %d bytes data : %s,%d\n", retValue, readbuffer + 13, errno); // 13, readbuffer offset.
@@ -78,7 +78,7 @@ int TestPipeSingleProcessFcntl()
         usleep(100000); // 100000, Used to calculate the delay time.
 
         printf("read\n");
-        memset(readbuffer, 0, sizeof(readbuffer));
+        (void)memset_s(readbuffer, sizeof(readbuffer), 0, sizeof(readbuffer));
         fcntl(*readFd, F_SETFL, O_NONBLOCK);
         ret = fcntl(*readFd, F_GETFL, O_NONBLOCK);
         printf("fctrl ret=%d,O_NONBLOCK=%d\n", ret, O_NONBLOCK);

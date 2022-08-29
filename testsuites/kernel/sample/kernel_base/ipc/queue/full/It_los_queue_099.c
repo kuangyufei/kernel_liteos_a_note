@@ -55,7 +55,8 @@ static UINT32 Testcase(VOID)
     ret = LOS_QueueDelete(queueID);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ret = memset_s(buff2, QUEUE_SHORT_BUFFER_LENGTH, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     readSize = 8; // 8, Read the setting size of queue buffer.
     ret = LOS_QueueReadCopy(queueID, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_NOT_CREATE, ret, EXIT);

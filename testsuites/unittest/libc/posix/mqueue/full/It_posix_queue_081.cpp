@@ -40,7 +40,9 @@ static UINT32 Testcase(VOID)
     INT32 unresolved = 0, ret;
     unsigned pri;
 
-    snprintf(qname, MQUEUE_STANDARD_NAME_LENGTH, "/mq081-1_%d", LosCurTaskIDGet());
+    ret = snprintf_s(qname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq081-1_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
 
     attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     attr.mq_maxmsg = MAXMSG5;
@@ -68,6 +70,7 @@ static UINT32 Testcase(VOID)
 EXIT:
     mq_close(queue);
     mq_unlink(qname);
+EXIT1:
     return MQUEUE_NO_ERROR;
 }
 

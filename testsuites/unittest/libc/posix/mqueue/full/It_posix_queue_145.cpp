@@ -125,12 +125,14 @@ static UINT32 Testcase(VOID)
     struct mq_attr mqstat;
     pthread_t pthreadSend1, pthreadSend2, pthreadRecev1, pthreadRecev2;
 
-    snprintf(mqname1, MQUEUE_STANDARD_NAME_LENGTH, "/mqueue145_1_%d", LosCurTaskIDGet());
-    snprintf(mqname2, MQUEUE_STANDARD_NAME_LENGTH, "/mqueue145_2_%d", LosCurTaskIDGet());
+    (void)snprintf_s(mqname1, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mqueue145_1_%d", LosCurTaskIDGet());
+    (void)snprintf_s(mqname2, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mqueue145_2_%d", LosCurTaskIDGet());
 
     g_testCount = 0;
 
-    memset(&mqstat, 0, sizeof(mqstat));
+    (void)memset_s(&mqstat, sizeof(mqstat), 0, sizeof(mqstat));
     mqstat.mq_maxmsg = MQUEUE_SHORT_ARRAY_LENGTH;
     mqstat.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     mqstat.mq_flags = 0;

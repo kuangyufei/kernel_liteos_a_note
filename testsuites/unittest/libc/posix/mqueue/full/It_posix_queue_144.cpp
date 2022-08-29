@@ -92,12 +92,15 @@ static UINT32 Testcase(VOID)
     pthread_attr_t attr1;
     pthread_t newTh, newTh2;
 
-    memset(&mqstat, 0, sizeof(mqstat));
+    ret = memset_s(&mqstat, sizeof(mqstat), 0, sizeof(mqstat));
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     mqstat.mq_maxmsg = MQUEUE_SHORT_ARRAY_LENGTH;
     mqstat.mq_msgsize = MQUEUE_SHORT_ARRAY_LENGTH * 2; // 2, mqueue message size.
     mqstat.mq_flags = 0;
 
-    snprintf(mqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq144_%d", LosCurTaskIDGet());
+    ret = snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq144_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT3);
 
     g_gqueue = mq_open(mqname, O_CREAT | O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO, &mqstat);
     ICUNIT_GOTO_NOT_EQUAL(g_gqueue, (mqd_t)-1, g_gqueue, EXIT);
@@ -144,6 +147,7 @@ EXIT1:
 EXIT:
     mq_close(g_gqueue);
     mq_unlink(mqname);
+EXIT3:
     return MQUEUE_NO_ERROR;
 }
 

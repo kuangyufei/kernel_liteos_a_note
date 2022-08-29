@@ -89,7 +89,8 @@ static UINT32 Testcase(VOID)
 
     g_testCount = 0;
 
-    snprintf(mqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq120_%d", LosCurTaskIDGet());
+    (void)snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1,
+                     "/mq120_%d", LosCurTaskIDGet());
 
     g_gqueue = mq_open(mqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attr);
     ICUNIT_GOTO_NOT_EQUAL(g_gqueue, (mqd_t)-1, g_gqueue, EXIT1);

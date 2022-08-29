@@ -51,7 +51,8 @@ static UINT32 Testcase(VOID)
     ret = LOS_QueueWrite(queueID, &buff1, 8, 0); // 8, Write the setting size of queue buffer.
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ret = memset_s(buff2, QUEUE_SHORT_BUFFER_LENGTH, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     readSize = sizeof(buff1);
     ret = LOS_QueueReadCopy(queueID, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
@@ -59,7 +60,8 @@ static UINT32 Testcase(VOID)
     ret = LOS_QueueWrite(queueID, &buff1, 8, 0); // 8, Write the setting size of queue buffer.
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ret = memset_s(buff2, QUEUE_SHORT_BUFFER_LENGTH, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     readSize = sizeof(buff1) + 1;
     ret = LOS_QueueReadCopy(queueID, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
@@ -67,7 +69,8 @@ static UINT32 Testcase(VOID)
     ret = LOS_QueueWrite(queueID, &buff1, 8, 0); // 8, Write the setting size of queue buffer.
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ret = memset_s(buff2, QUEUE_SHORT_BUFFER_LENGTH, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     readSize = sizeof(buff1);
     ret = LOS_QueueReadCopy(queueID, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
@@ -75,7 +78,8 @@ static UINT32 Testcase(VOID)
     ret = LOS_QueueWrite(queueID, &buff1, 8, 0); // 8, Write the setting size of queue buffer.
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ret = memset_s(buff2, QUEUE_SHORT_BUFFER_LENGTH, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     readSize = 0;
     ret = LOS_QueueReadCopy(queueID, &buff2, &readSize, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_READSIZE_IS_INVALID, ret, EXIT);

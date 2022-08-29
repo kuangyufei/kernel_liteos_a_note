@@ -66,7 +66,8 @@ static UINT32 Testcase(VOID)
         ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_ISFULL, ret, EXIT);
 
         for (i = 0; i < 1000; i++) { // 1000, The loop frequency.
-            memset(readbuf, 0, 260); // 260, Read buf size.
+            ret = memset_s(readbuf, 260, 0, 260); // 260, Read buf size.
+            ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
             ret = LOS_QueueRead(g_testQueueID01, readbuf, QUEUE_SHORT_BUFFER_LENGTH, 0);
             ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
         }

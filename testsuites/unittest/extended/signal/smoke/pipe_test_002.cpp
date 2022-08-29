@@ -68,7 +68,7 @@ static int TestPipeMultiProcess()
             char sentence1[15] = "Hello World";
             char a[2] = {0};
             (void)sprintf_s(a, sizeof(a), "%d", i);
-            strcat(sentence1, a);
+            (void)strcat_s(sentence1, 15, a); // 15, sizeof sentence1
             int ret = write(*writeFd, sentence1, strlen(sentence1) + 1);
             ICUNIT_ASSERT_EQUAL(ret, strlen(sentence1) + 1, ret);
             usleep(10000); // 10000, Used to calculate the delay time.
@@ -88,8 +88,8 @@ static int TestPipeMultiProcess()
             char sentence1[15] = "Hello World";
             char a[2] = {0};
             (void)sprintf_s(a, sizeof(a), "%d", i);
-            strcat(sentence1, a);
-            memset(readbuffer, 0, sizeof(readbuffer));
+            (void)strcat_s(sentence1, 15, a); // 15, sizeof sentence1
+            (void)memset_s(readbuffer, sizeof(readbuffer), 0, sizeof(readbuffer));
             retValue = read(*readFd, readbuffer, strlen(sentence1) + 1);
             printf("Receive %d bytes data : %s, errno : %d\n", retValue, readbuffer, errno);
             ICUNIT_ASSERT_SIZE_STRING_EQUAL(readbuffer, sentence1, strlen(sentence1), errno);

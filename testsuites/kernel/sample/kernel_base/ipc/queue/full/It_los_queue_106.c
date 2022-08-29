@@ -51,14 +51,16 @@ static UINT32 Testcase(VOID)
     ret = LOS_QueueWriteCopy(queueID, NULL, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_WRITE_PTR_NULL, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ret = memset_s(buff2, QUEUE_SHORT_BUFFER_LENGTH, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_ERRNO_QUEUE_ISEMPTY, ret, EXIT);
 
     ret = LOS_QueueWriteCopy(queueID, &buff1, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 
-    memset(buff2, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ret = memset_s(buff2, QUEUE_SHORT_BUFFER_LENGTH, 0, QUEUE_SHORT_BUFFER_LENGTH);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     ret = LOS_QueueRead(queueID, &buff2, QUEUE_SHORT_BUFFER_LENGTH, 0);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
 

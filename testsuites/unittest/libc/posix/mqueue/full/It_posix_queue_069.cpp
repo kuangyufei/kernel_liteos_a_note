@@ -38,16 +38,20 @@ static UINT32 Testcase(VOID)
     struct mq_attr mqstat1;
     struct mq_attr mqstat2;
 
-    snprintf(mqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq069_%d", LosCurTaskIDGet());
-
+    ret = snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq069_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT3);
+    
     mqueue1 = mq_open(mqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 0);
     ICUNIT_GOTO_NOT_EQUAL(mqueue1, (mqd_t)-1, mqueue1, EXIT1);
 
     mqueue2 = mqueue1;
     mqueue1 = (mqd_t)((UINTPTR)mqueue1 + PER_ADDED_VALUE);
 
-    memset(&mqstat1, 0, sizeof(mqstat1));
-    memset(&mqstat2, 0, sizeof(mqstat2));
+    ret = memset_s(&mqstat1, sizeof(mqstat1), 0, sizeof(mqstat1));
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
+    ret = memset_s(&mqstat2, sizeof(mqstat2), 0, sizeof(mqstat2));
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     mqstat2.mq_flags = 1;
 
     ret = mq_setattr(mqueue1, &mqstat1, NULL);
@@ -73,6 +77,7 @@ EXIT1:
     mq_close(mqueue1);
 EXIT:
     mq_unlink(mqname);
+EXIT3:
     return MQUEUE_NO_ERROR;
 }
 

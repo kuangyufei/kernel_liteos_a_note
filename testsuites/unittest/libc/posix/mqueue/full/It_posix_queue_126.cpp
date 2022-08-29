@@ -100,7 +100,9 @@ static UINT32 Testcase(VOID)
 
     g_testCount = 0;
 
-    snprintf(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq126_%d", LosCurTaskIDGet());
+    ret = snprintf_s(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
+                     "/mq126_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT3);
 
     uret = LOS_HwiCreate(HWI_NUM_TEST, 0, 0, (HWI_PROC_FUNC)HwiF01, 0);
     ICUNIT_GOTO_EQUAL(uret, MQUEUE_NO_ERROR, uret, EXIT);
@@ -142,6 +144,7 @@ EXIT1:
     pthread_attr_destroy(&attr1);
 EXIT:
     TEST_HwiDelete(HWI_NUM_TEST);
+EXIT3:
     return MQUEUE_NO_ERROR;
 }
 

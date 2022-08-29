@@ -74,7 +74,9 @@ STATIC UINT32 Testcase(VOID)
     pthread_t pthread1, pthread2;
     pthread_attr_t attr1, attr2;
 
-    snprintf(g_mqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq204_%d", LosCurTaskIDGet());
+    ret = snprintf_s(g_mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH,
+                     "/mq204_%d", LosCurTaskIDGet());
+    ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
     g_attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     g_attr.mq_maxmsg = MQUEUE_STANDARD_NAME_LENGTH;
 
@@ -93,6 +95,7 @@ STATIC UINT32 Testcase(VOID)
 EXIT:
     (VOID)pthread_join(pthread1, NULL);
     (VOID)pthread_join(pthread2, NULL);
+EXIT1:
     return LOS_OK;
 }
 

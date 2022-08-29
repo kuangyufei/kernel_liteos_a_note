@@ -44,6 +44,6 @@ if [ -d "${BIN_DIR}" ] && [ "$(ls -A "${BIN_DIR}")" != "" ]; then
 fi
 cp -f ${LIB_DIR}/* ${ROOTFS_DIR}/lib
 
-if [ -e ${ETC_DIR}/.mkshrc ]; then
+if [ -e "${ETC_DIR}"/.mkshrc ]; then
 cp -f ${ETC_DIR}/.mkshrc ${ROOTFS_DIR}/etc
 fi
