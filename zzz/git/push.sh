@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 完善测试用例
+git commit -m  ' 更新因备案引发的问题
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com
