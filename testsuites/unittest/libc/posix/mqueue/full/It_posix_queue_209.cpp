@@ -41,7 +41,7 @@ static VOID *Pthread(VOID *temp)
     CHAR msgrcd[MQUEUE_STANDARD_NAME_LENGTH] = {0};
     g_cnt = 1;
 
-    (void *)(temp);
+    (void)(temp);
     ret = mq_receive(g_mqueue, msgrcd, MQUEUE_STANDARD_NAME_LENGTH, nullptr);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_SHORT_ARRAY_LENGTH, ret, EXIT);
     ICUNIT_GOTO_STRING_EQUAL(msgrcd, MQUEUE_SEND_STRING_TEST, msgrcd, EXIT);

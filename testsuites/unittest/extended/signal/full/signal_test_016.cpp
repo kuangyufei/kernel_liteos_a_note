@@ -49,10 +49,10 @@ static void *ThreadSetFunc2(void *arg)
     ICUNIT_ASSERT_EQUAL_NULL(retValue, 0, retValue);
     retValue = sigaddset(&set, SIGUSR1);
     ICUNIT_ASSERT_EQUAL_NULL(retValue, 0, retValue);
-    int count;
 
     retValue = sigwait(&set, &sig);
     ICUNIT_ASSERT_EQUAL_NULL(retValue, 0, retValue);
+    return NULL;
 }
 
 static void *ThreadSetDfl(void *arg)
@@ -67,14 +67,15 @@ static void *ThreadSetDfl(void *arg)
     ICUNIT_ASSERT_EQUAL_NULL(retValue, 0, retValue);
     retValue = sigaddset(&set, SIGUSR1);
     ICUNIT_ASSERT_EQUAL_NULL(retValue, 0, retValue);
-    int count;
 
     retValue = sigwait(&set, &sig);
     ICUNIT_ASSERT_EQUAL_NULL(retValue, 0, retValue);
+    return NULL;
 }
 
 static void *ThreadKill(void *arg)
 {
+    (void)arg;
     while (1) {
         sleep(1);
     }
@@ -118,7 +119,6 @@ static int TestMultiPthreadKillPendNormal()
         if (retValue != 0) {
             exit(retValue);
         }
-        int count;
 
         retValue = sigwait(&set, &sig);
         if (retValue != 0) {

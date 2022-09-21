@@ -30,7 +30,10 @@
  */
 #include "it_pthread_test.h"
 
-static VOID *PthreadTest115(VOID *arg) {}
+static VOID *PthreadTest115(VOID *arg)
+{
+    return NULL;
+}
 
 static int GroupProcess(void)
 {

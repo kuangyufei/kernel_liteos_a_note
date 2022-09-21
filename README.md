@@ -202,6 +202,7 @@
   
 ### 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [gitcode](https://gitcode.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
+* `2022/09/21` -- 主线代码没有变化,只完善了测试用例
 * `2022/08/28` -- 完善测试用例
 * `2022/07/18` -- 开机代码微调
 * `2022/06/03` -- 增加 jffs2 编译选项
