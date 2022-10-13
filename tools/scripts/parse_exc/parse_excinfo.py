@@ -33,8 +33,8 @@
 import sys
 import os
 import argparse
-import commands
 import io
+import commands
 
 def find_string(excinfo_file, string):
     res = ''

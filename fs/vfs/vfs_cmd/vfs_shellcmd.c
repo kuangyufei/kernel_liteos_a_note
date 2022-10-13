@@ -963,11 +963,6 @@ static int os_shell_cmd_do_rmdir(const char *pathname)
         }
         if (strcmp(dirent->d_name, "..") && strcmp(dirent->d_name, ".")) {
             size_t fullpath_buf_size = strlen(pathname) + strlen(dirent->d_name) + SEPARATOR_EOF_LEN;
-            if (fullpath_buf_size <= 0) {
-                PRINTK("buffer size is invalid!\n");
-                (void)closedir(d);
-                return -1;
-            }
             fullpath = (char *)malloc(fullpath_buf_size);
             if (fullpath == NULL) {
                 PRINTK("malloc failure!\n");

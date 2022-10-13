@@ -1430,7 +1430,7 @@ DWORD fattime_format(time_t time)
     ftime |= ((DWORD)((st.tm_year > YEAR_OFFSET) ? (st.tm_year - YEAR_OFFSET) : 0)) << FTIME_YEAR_OFFSET;
     ftime <<= FTIME_DATE_OFFSET;
 
-    ftime = (DWORD)st.tm_sec / SEC_MULTIPLIER;
+    ftime |= (DWORD)st.tm_sec / SEC_MULTIPLIER;
     ftime |= ((DWORD)st.tm_min) << FTIME_MIN_OFFSET;
     ftime |= ((DWORD)st.tm_hour) << FTIME_HR_OFFSET;
 
@@ -2187,7 +2187,7 @@ int fatfs_symlink(struct Vnode *parentVnode, struct Vnode **newVnode, const char
 ssize_t fatfs_readlink(struct Vnode *vnode, char *buffer, size_t bufLen)
 {
     int ret;
-    FRESULT res = FR_OK;
+    FRESULT res;
     DWORD clust;
     QWORD sect;
     DIR_FILE *dfp = (DIR_FILE *)(vnode->data);

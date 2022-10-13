@@ -41,11 +41,11 @@ static VOID *PthreadF01(VOID *arg)
     }
     LOS_AtomicInc(&g_testCount);
 
-    pthread_exit((void *)0);
+    pthread_exit(nullptr);
 
     return NULL;
 EXIT:
-    pthread_exit((void *)0);
+    pthread_exit(nullptr);
     g_testCount = 0;
     return NULL;
 }
@@ -63,12 +63,12 @@ static VOID *PthreadF02(VOID *arg)
 
     LOS_AtomicInc(&g_testCount);
 
-    pthread_exit((void *)0);
+    pthread_exit(nullptr);
 
     return NULL;
 EXIT:
     g_testCount = 0;
-    pthread_exit((void *)0);
+    pthread_exit(nullptr);
     return NULL;
 }
 

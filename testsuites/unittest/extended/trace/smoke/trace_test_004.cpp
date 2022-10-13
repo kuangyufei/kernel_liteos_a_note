@@ -43,7 +43,7 @@ static UINT32 TestCase(VOID)
 
     ioctl(fd, TRACE_STOP, NULL);
 
-    buffer= (char *)malloc(size);
+    buffer = static_cast<char *>(malloc(size));
     if (buffer == NULL) {
         printf("Read buffer malloc failed!\n");
         goto EXIT;

@@ -76,8 +76,9 @@ static UINT32 Testcase(VOID)
     ret = pthread_create(&newTh, NULL, PthreadF01, NULL);
     ICUNIT_ASSERT_EQUAL(ret, PTHREAD_NO_ERROR, ret);
 
-    while (g_pthreadSem == 0)
+    while (g_pthreadSem == 0) {
         sleep(1);
+    }
 
     ret = pthread_cancel(newTh);
     ICUNIT_ASSERT_EQUAL(ret, PTHREAD_NO_ERROR, ret);

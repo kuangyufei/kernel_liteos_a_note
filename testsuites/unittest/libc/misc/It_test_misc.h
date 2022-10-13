@@ -38,7 +38,7 @@
 #include "unistd.h"
 #include "search.h"
 #define MISC_OK 0
-#define MISC_NOK -1
+#define MISC_NOK (-1)
 
 extern VOID ItTestMisc001(VOID);
 extern VOID ItTestMisc002(VOID);

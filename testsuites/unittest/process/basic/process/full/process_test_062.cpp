@@ -95,12 +95,12 @@ static int TestCase(void)
     status = WEXITSTATUS(status);
     ICUNIT_GOTO_EQUAL(status, 10, status, EXIT); // 10, assert that function Result is equal to this.
 
-    shmdt((void *)g_shmptr);
+    shmdt(static_cast<void *>(const_cast<int *>(g_shmptr)));
     shmctl(shmid, IPC_RMID, NULL);
 
     return 0;
 EXIT:
-    shmdt((void *)g_shmptr);
+    shmdt(static_cast<void *>(const_cast<int *>(g_shmptr)));
     shmctl(shmid, IPC_RMID, NULL);
     return 1;
 }

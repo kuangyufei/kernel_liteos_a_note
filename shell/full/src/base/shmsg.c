@@ -345,7 +345,7 @@ END:
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntry(UINTPTR param)
 {
     CHAR ch;
-    INT32 n = 0;
+    INT32 n;
     ShellCB *shellCB = (ShellCB *)param;
 
     CONSOLE_CB *consoleCB = OsGetConsoleByID((INT32)shellCB->consoleID);//获取绑定的控制台,目的是从控制台读数据

@@ -68,7 +68,7 @@ static int SampleTcpServer()
     srvAddr.sin_family = AF_INET;
     srvAddr.sin_addr.s_addr = inet_addr(STACK_IP);
     srvAddr.sin_port = htons(STACK_PORT);
-    ret = bind(lsfd, (struct sockaddr*)&srvAddr, sizeof(srvAddr));
+    ret = bind(lsfd, reinterpret_cast<struct sockaddr *>(&srvAddr), sizeof(srvAddr));
     LogPrintln("bind socket %d to %s:%d: %d", lsfd, inet_ntoa(srvAddr.sin_addr), ntohs(srvAddr.sin_port), ret);
     ICUNIT_ASSERT_EQUAL(ret, 0, Wait() + ret);
 
@@ -78,7 +78,7 @@ static int SampleTcpServer()
 
     Wait();
 
-    sfd = accept(lsfd, (struct sockaddr*)&clnAddr, &clnAddrLen);
+    sfd = accept(lsfd, reinterpret_cast<struct sockaddr *>(&clnAddr), &clnAddrLen);
     LogPrintln("accept socket %d: %d <%s:%d>", lsfd, sfd, inet_ntoa(clnAddr.sin_addr), ntohs(clnAddr.sin_port));
     ICUNIT_ASSERT_NOT_EQUAL(sfd, -1, sfd);
 
@@ -175,25 +175,27 @@ static int SampleTcpClient()
     srvAddr.sin_family = AF_INET;
     srvAddr.sin_addr.s_addr = inet_addr(PEER_IP);
     srvAddr.sin_port = htons(PEER_PORT);
-    ret = connect(sfd, (struct sockaddr*)&srvAddr, sizeof(srvAddr));
+    ret = connect(sfd, reinterpret_cast<struct sockaddr *>(&srvAddr), sizeof(srvAddr));
     LogPrintln("connect socket %d to %s:%d: %d", sfd, inet_ntoa(srvAddr.sin_addr), ntohs(srvAddr.sin_port), ret);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     /* test getpeername */
     ret = getpeername(sfd, &addr, &addrLen);
-    LogPrintln("getpeername %d %s:%d: %d", sfd, inet_ntoa(((struct sockaddr_in*)&addr)->sin_addr), ntohs(((struct sockaddr_in*)&addr)->sin_port), ret);
+    LogPrintln("getpeername %d %s:%d: %d", sfd, inet_ntoa((reinterpret_cast<struct sockaddr_in *>(&addr))->sin_addr),
+        ntohs((reinterpret_cast<struct sockaddr_in *>(&addr))->sin_port), ret);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     ICUNIT_ASSERT_EQUAL(addrLen, sizeof(struct sockaddr_in), addrLen);
-    ICUNIT_ASSERT_EQUAL(((struct sockaddr_in*)&addr)->sin_addr.s_addr,
-        inet_addr(PEER_IP), ((struct sockaddr_in*)&addr)->sin_addr.s_addr);
+    ICUNIT_ASSERT_EQUAL((reinterpret_cast<struct sockaddr_in *>(&addr))->sin_addr.s_addr,
+        inet_addr(PEER_IP), (static_cast<struct sockaddr_in *>(&addr))->sin_addr.s_addr);
 
     /* test getsockname */
     ret = getsockname(sfd, &addr, &addrLen);
-    LogPrintln("getsockname %d %s:%d: %d", sfd, inet_ntoa(((struct sockaddr_in*)&addr)->sin_addr), ntohs(((struct sockaddr_in*)&addr)->sin_port), ret);
+    LogPrintln("getsockname %d %s:%d: %d", sfd, inet_ntoa((reinterpret_cast<struct sockaddr_in *>(&addr))->sin_addr),
+        ntohs((reinterpret_cast<struct sockaddr_in *>(&addr))->sin_port), ret);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     ICUNIT_ASSERT_EQUAL(addrLen, sizeof(struct sockaddr_in), addrLen);
-    ICUNIT_ASSERT_EQUAL(((struct sockaddr_in*)&addr)->sin_addr.s_addr,
-        inet_addr(STACK_IP), ((struct sockaddr_in*)&addr)->sin_addr.s_addr);
+    ICUNIT_ASSERT_EQUAL((reinterpret_cast<struct sockaddr_in *>(&addr))->sin_addr.s_addr,
+        inet_addr(STACK_IP), (static_cast<struct sockaddr_in *>(&addr))->sin_addr.s_addr);
 
     /* send */
     ret = memset_s(gBuf, BUF_SIZE + 1, 0, BUF_SIZE + 1);
@@ -267,13 +269,13 @@ static int SampleTcpClient()
 static void* TcpServerRoutine(void *p)
 {
     int ret = SampleTcpServer();
-    return (void*)(intptr_t)ret;
+    return reinterpret_cast<void *>(ret);
 }
 
 static void* TcpClientRoutine(void *p)
 {
     int ret = SampleTcpClient();
-    return (void*)(intptr_t)ret;
+    return reinterpret_cast<void *>(ret);
 }
 
 static int TcpTest()
@@ -312,7 +314,7 @@ static int TcpTest()
     ret = pthread_barrier_destroy(&gBarrier);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    return (int)(intptr_t)(sret) + (int)(intptr_t)(cret);
+    return static_cast<int>(reinterpret_cast<intptr_t>(sret)) + static_cast<int>(reinterpret_cast<intptr_t>(cret));
 }
 
 void NetSocketTest003(void)

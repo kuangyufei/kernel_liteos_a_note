@@ -47,7 +47,7 @@ static int Testcase(void)
     ret = fork();
     if (ret == 0) {
         usleep(100000);
-        if ((shared = (char *)shmat(shmid, 0, 0)) == (void *)-1) {
+        if ((shared = static_cast<char *>(shmat(shmid, 0, 0))) == reinterpret_cast<void *>(-1)) {
             printf("child : error: shmat()\n");
             exit(1);
         }
@@ -72,8 +72,8 @@ static int Testcase(void)
         pid = ret;
         usleep(50000);
 
-        shared = (char *)shmat(shmid, 0, 0);
-        ICUNIT_ASSERT_NOT_EQUAL(shared, (void *)-1, shared);
+        shared = static_cast<char *>(shmat(shmid, 0, 0));
+        ICUNIT_ASSERT_NOT_EQUAL(shared, reinterpret_cast<void *>(-1), shared);
 
         ret = strncpy_s(shared, memSize, testStr, sizeof(testStr));
         ICUNIT_ASSERT_EQUAL(ret, 0, ret);

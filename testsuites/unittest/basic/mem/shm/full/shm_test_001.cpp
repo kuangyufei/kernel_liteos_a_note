@@ -91,7 +91,7 @@ VOID *ShmWriteFunc(VOID *ptr)
     shmid = shmget((key_t)1234, sizeof(struct shared_use_st), 0666 | IPC_CREAT);
     ICUNIT_ASSERT_NOT_EQUAL_NULL_VOID(shmid, -1, shmid);
 
-    shm = shmat(shmid, (void *)0, 0);
+    shm = shmat(shmid, nullptr, 0);
     ICUNIT_ASSERT_NOT_EQUAL_NULL_VOID(shm, INVALID_PTR, shm);
 
     printf("Memory attached at %p\n", shm);

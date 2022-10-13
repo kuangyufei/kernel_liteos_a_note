@@ -88,14 +88,14 @@ static int Testcase(void)
     int ret;
     int pid;
 
-    void *ptr = (void *)signal(SIGTERM, ExitChildren);
+    void *ptr = reinterpret_cast<void *>(signal(SIGTERM, ExitChildren));
     ICUNIT_ASSERT_NOT_EQUAL(ptr, NULL, ptr);
 
     shmid = shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | 0600);
     ICUNIT_ASSERT_NOT_EQUAL(shmid, -1, shmid);
 
     g_shmptr = (int *)shmat(shmid, 0, 0);
-    ICUNIT_ASSERT_NOT_EQUAL(g_shmptr, (int *)-1, g_shmptr);
+    ICUNIT_ASSERT_NOT_EQUAL(g_shmptr, reinterpret_cast<int *>(-1), g_shmptr);
 
     *g_shmptr = 0;
 

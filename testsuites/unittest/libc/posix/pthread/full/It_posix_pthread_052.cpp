@@ -53,7 +53,7 @@ static VOID *pthread_f01(void *argument)
     g_testCount++;
     ICUNIT_GOTO_EQUAL(g_testCount, 4, g_testCount, EXIT);
 EXIT:
-    return (void *)9;
+    return static_cast<void *>(9); // 9: return value for testing
 }
 
 static VOID *pthread_f02(void *argument)
@@ -79,7 +79,7 @@ static VOID *pthread_f02(void *argument)
     g_testCount++;
     ICUNIT_GOTO_EQUAL(g_testCount, 6, g_testCount, EXIT);
 EXIT:
-    return (void *)8;
+    return static_cast<void *>(8); // 8: return value for testing
 }
 
 static VOID *PthreadF03(void *argument)
@@ -107,7 +107,7 @@ static VOID *PthreadF03(void *argument)
     ICUNIT_GOTO_EQUAL(g_testCount, 8, g_testCount, EXIT);
 
 EXIT:
-    return (void *)7;
+    return static_cast<void *>(7); // 7: return value for testing
 }
 
 static void PthreadKeyF01(void *threadLog)

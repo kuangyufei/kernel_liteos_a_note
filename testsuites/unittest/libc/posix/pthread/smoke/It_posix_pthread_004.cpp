@@ -32,7 +32,7 @@
 
 static void *ThreadF01(void *arg)
 {
-    pthread_exit((void *)2);
+    pthread_exit(static_cast<void *>(2)); // 2: return value for testing
     return NULL;
 }
 static UINT32 Testcase(VOID)

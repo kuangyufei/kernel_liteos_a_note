@@ -45,7 +45,7 @@ static int Testcase(void)
     ret = fork();
     if (ret == 0) {
         shared = (int *)shmat(shmid, NULL, 0);
-        if (shared == (int *)-1) {
+        if (shared == reinterpret_cast<int *>(-1)) {
             exit(1);
         }
         *shared = 2;
@@ -55,7 +55,7 @@ static int Testcase(void)
     } else {
         usleep(20000);
         shared = (int *)shmat(shmid, NULL, 0);
-        ICUNIT_ASSERT_NOT_EQUAL(shared, (int *)-1, shared);
+        ICUNIT_ASSERT_NOT_EQUAL(shared, reinterpret_cast<int *>(-1), shared);
 
         ICUNIT_ASSERT_EQUAL(*shared, 2, *shared);
 

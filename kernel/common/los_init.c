@@ -88,7 +88,6 @@ STATIC VOID InitLevelCall(const CHAR *name, const UINT32 level, struct ModuleIni
         LOS_SpinUnlock(&g_initLock);
         if (module->hook != NULL) {
 #ifdef LOS_INIT_DEBUG
-            ret = LOS_OK;
             startNsec = LOS_CurrNanosec();
             ret = (UINT32)module->hook();
             endNsec = LOS_CurrNanosec();

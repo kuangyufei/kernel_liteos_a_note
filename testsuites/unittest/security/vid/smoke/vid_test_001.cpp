@@ -122,7 +122,7 @@ static void ChildFunc()
     ret1 = (INT32 *)timer_delete(tid);
     ICUNIT_ASSERT_EQUAL_VOID(ret1, 0, ret1);
 
-    exit((int)(intptr_t)tid);
+    exit(static_cast<int>(reinterpret_cast<intptr_t>(tid)));
 }
 
 static UINT32 TestCase(VOID)

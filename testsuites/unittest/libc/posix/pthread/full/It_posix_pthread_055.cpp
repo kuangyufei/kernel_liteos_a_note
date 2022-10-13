@@ -51,7 +51,7 @@ static VOID *pthread_f01(void *argument)
 
     pthread_testcancel();
 EXIT:
-    return (void *)9;
+    return static_cast<void *>(9); // 9: return value for testing
 }
 
 static void PthreadKeyF01(void *threadLog)

@@ -37,7 +37,7 @@ static void *ThreadF01(void *arg)
     // while (1)
     sleep(1);
 
-    pthread_exit((void *)0);
+    pthread_exit(nullptr);
     return NULL;
 }
 

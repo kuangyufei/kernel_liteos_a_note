@@ -94,8 +94,9 @@ static int SetTimerTest(void)
         ret = clock_gettime(CLOCKID, &end);
         ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-        expected = its.it_value.tv_sec * (int64_t)1e9 + its.it_value.tv_nsec;
-        escaped = end.tv_sec * (int64_t)1e9 + end.tv_nsec - start.tv_sec * (int64_t)1e9 - start.tv_nsec;
+        expected = its.it_value.tv_sec * static_cast<int64_t>(1e9) + its.it_value.tv_nsec;
+        escaped = end.tv_sec * static_cast<int64_t>(1e9) + end.tv_nsec - start.tv_sec * static_cast<int64_t>(1e9) -
+                  start.tv_nsec;
 
         failed += (escaped < expected || (escaped - expected) >= 20000000); // 20000000, 2 ticks.
     }

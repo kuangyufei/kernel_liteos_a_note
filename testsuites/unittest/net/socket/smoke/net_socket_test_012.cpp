@@ -43,11 +43,11 @@ static int SocketNullTestInternal(int sfd)
 {
     int ret;
     struct sockaddr addr = {0};
-    struct sockaddr *bad = (struct sockaddr *)0xbad;
+    struct sockaddr *bad = reinterpret_cast<struct sockaddr *>(0xbad);
     socklen_t addrlen = sizeof(addr);
     socklen_t zero = 0;
     struct msghdr message = {0};
-    void *badUserAddr = (void*)0x3effffff;
+    void *badUserAddr = reinterpret_cast<void *>(0x3effffff);
 
     /**
      * accept
@@ -216,13 +216,13 @@ static int SocketNullTestInternal(int sfd)
     LogPrintln("recvmsg: %d, errno=%d", ret, errno);
     ICUNIT_ASSERT_EQUAL(ret, -1, errno);
 
-    message.msg_iov = (struct iovec *)((void *)0xbad);
+    message.msg_iov = reinterpret_cast<struct iovec *>(0xbad);
     message.msg_iovlen = 1;
     ret = recvmsg(sfd, &message, MSG_DONTWAIT);
     LogPrintln("recvmsg: %d, errno=%d", ret, errno);
     ICUNIT_ASSERT_EQUAL(ret, -1, errno);
 
-    message.msg_iov = (struct iovec *)((void *)0xbad);
+    message.msg_iov = reinterpret_cast<struct iovec *>(0xbad);
     message.msg_iovlen = 0;
     ret = recvmsg(sfd, &message, MSG_DONTWAIT);
     LogPrintln("recvmsg: %d, errno=%d", ret, errno);
@@ -264,13 +264,13 @@ static int SocketNullTestInternal(int sfd)
     LogPrintln("sendmsg: %d, errno=%d", ret, errno);
     ICUNIT_ASSERT_EQUAL(ret, -1, errno);
 
-    message.msg_iov = (struct iovec *)0xbad;
+    message.msg_iov = reinterpret_cast<struct iovec *>(0xbad);
     message.msg_iovlen = 1;
     ret = sendmsg(sfd, &message, MSG_NOSIGNAL);
     LogPrintln("sendmsg: %d, errno=%d", ret, errno);
     ICUNIT_ASSERT_EQUAL(ret, -1, errno);
 
-    message.msg_iov = (struct iovec *)0xbad;
+    message.msg_iov = reinterpret_cast<struct iovec *>(0xbad);
     message.msg_iovlen = 0;
     ret = sendmsg(sfd, &message, MSG_NOSIGNAL);
     LogPrintln("sendmsg: %d, errno=%d", ret, errno);
@@ -326,11 +326,11 @@ static int SocketNullTestInternal(int sfd)
     LogPrintln("read: %d, errno=%d", ret, errno);
     ICUNIT_ASSERT_EQUAL((ret == 0 || ret == -1), 1, errno);
 
-    ret = readv(sfd, (struct iovec *)bad, 0);
+    ret = readv(sfd, reinterpret_cast<struct iovec *>(bad), 0);
     LogPrintln("readv: %d, errno=%d", ret, errno);
     ICUNIT_ASSERT_EQUAL((ret == 0 || ret == -1), 1, errno);
 
-    ret = readv(sfd, (struct iovec *)bad, 1);
+    ret = readv(sfd, reinterpret_cast<struct iovec *>(bad), 1);
     LogPrintln("readv: %d, errno=%d", ret, errno);
     ICUNIT_ASSERT_EQUAL(ret, -1, errno);
 
@@ -377,11 +377,11 @@ static int SocketNullTestInternal(int sfd)
     LogPrintln("write: %d, errno=%d", ret, errno);
     ICUNIT_ASSERT_EQUAL((ret == 0 || ret == -1), 1, errno);
 
-    ret = writev(sfd, (struct iovec *)bad, 0);
+    ret = writev(sfd, reinterpret_cast<struct iovec *>(bad), 0);
     LogPrintln("writev: %d, errno=%d", ret, errno);
     ICUNIT_ASSERT_EQUAL((ret == 0 || ret == -1), 1, errno);
 
-    ret = writev(sfd, (struct iovec *)bad, 1);
+    ret = writev(sfd, reinterpret_cast<struct iovec *>(bad), 1);
     LogPrintln("writev: %d, errno=%d", ret, errno);
     ICUNIT_ASSERT_EQUAL(ret, -1, errno);
 

@@ -227,7 +227,7 @@ static int PthreadRwlockTest(void)
     int index = 0;
     int curThreadPri, curThreadPolicy;
 
-    ret = memset_s((void *)g_rwlockData, sizeof(int) * TEST_DATA_SIZE, 0, sizeof(int) * TEST_DATA_SIZE);
+    ret = memset_s(static_cast<void *>(g_rwlockData), sizeof(int) * TEST_DATA_SIZE, 0, sizeof(int) * TEST_DATA_SIZE);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     g_rwlockMask = 0;
 

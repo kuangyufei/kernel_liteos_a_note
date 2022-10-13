@@ -105,8 +105,9 @@ static UINT32 Testcase(VOID)
     ret = pthread_create(&newTh3, NULL, PthreadF03, NULL);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    while (g_testCount < 6) // 6, wait until g_testCount is equal to 6.
+    while (g_testCount < 6) { // 6, wait until g_testCount is equal to 6.
         sleep(1);
+    }
 
     ICUNIT_ASSERT_EQUAL(g_testCount, 6, g_testCount); // 6, here assert the result.
 

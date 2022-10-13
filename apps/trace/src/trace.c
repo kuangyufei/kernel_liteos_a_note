@@ -127,7 +127,7 @@ static void TraceRead(int fd, size_t size)
 {
     ssize_t i;
     ssize_t len;
-    if (size <= 0) {
+    if (size == 0) {
         return;
     }
 

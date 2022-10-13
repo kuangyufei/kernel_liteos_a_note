@@ -77,7 +77,7 @@ static int GroupProcess(void)
     stackSize = 3000; // 3000, change stackSize, test again.
 
     pthread_attr_init(&attr);
-    stack = (void *)0x1000;
+    stack = reinterpret_cast<void *>(0x1000);
 
     ret = pthread_attr_setstack(&attr, stack, stackSize);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);

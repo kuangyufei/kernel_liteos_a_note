@@ -42,11 +42,11 @@
 
 static inline int Syscall(int nbr, int parm1, int parm2, int parm3, int parm4)
 {
-    register int reg7 __asm__("r7") = (int)(nbr);
-    register int reg3 __asm__("r3") = (int)(parm4);
-    register int reg2 __asm__("r2") = (int)(parm3);
-    register int reg1 __asm__("r1") = (int)(parm2);
-    register int reg0 __asm__("r0") = (int)(parm1);
+    register int reg7 __asm__("r7") = nbr;
+    register int reg3 __asm__("r3") = parm4;
+    register int reg2 __asm__("r2") = parm3;
+    register int reg1 __asm__("r1") = parm2;
+    register int reg0 __asm__("r0") = parm1;
 
     __asm__ __volatile__("svc 0" : "=r"(reg0) : "r"(reg7), "r"(reg0), "r"(reg1), "r"(reg2), "r"(reg3) : "memory");
 

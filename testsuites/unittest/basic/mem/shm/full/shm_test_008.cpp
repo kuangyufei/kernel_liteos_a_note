@@ -42,11 +42,11 @@ static int Testcase(void)
     ICUNIT_ASSERT_NOT_EQUAL(shmid, -1, shmid);
 
     shared = shmat(shmid, 0, 0);
-    ICUNIT_ASSERT_EQUAL(shared, (void *)-1, shared);
+    ICUNIT_ASSERT_EQUAL(shared, reinterpret_cast<void *>(-1), shared);
     ICUNIT_ASSERT_EQUAL(errno, EACCES, errno);
 
     shared = shmat(shmid, 0, SHM_RDONLY);
-    ICUNIT_ASSERT_NOT_EQUAL(shared, (void *)-1, shared);
+    ICUNIT_ASSERT_NOT_EQUAL(shared, reinterpret_cast<void *>(-1), shared);
 
     ret = shmdt(shared);
     ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);

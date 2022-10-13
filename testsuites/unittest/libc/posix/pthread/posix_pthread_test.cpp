@@ -62,24 +62,24 @@ sem_t g_pthreadSem1;
 sem_t g_pthreadSem2;
 
 __scenario g_scenarii[] = {
-    CASE_POS(0, 0, 0, 0, 0, 0, 0, 0, (char *)"default"),
-    CASE_POS(1, 0, 0, 0, 0, 0, 0, 0, (char *)"detached"),
-    CASE_POS(0, 1, 0, 0, 0, 0, 0, 0, (char *)"Explicit sched"),
-    CASE_UNK(0, 0, 1, 0, 0, 0, 0, 0, (char *)"FIFO Policy"),
-    CASE_UNK(0, 0, 2, 0, 0, 0, 0, 0, (char *)"RR Policy"),
-    CASE_UNK(0, 0, 0, 1, 0, 0, 0, 0, (char *)"Max sched param"),
-    CASE_UNK(0, 0, 0, -1, 0, 0, 0, 0, (char *)"Min sched param"),
-    CASE_POS(0, 0, 0, 0, 1, 0, 0, 0, (char *)"Alternative contension scope"),
-    CASE_POS(0, 0, 0, 0, 0, 1, 0, 0, (char *)"Alternative stack"),
-    CASE_POS(0, 0, 0, 0, 0, 0, 1, 0, (char *)"No guard size"),
-    CASE_UNK(0, 0, 0, 0, 0, 0, 2, 0, (char *)"1p guard size"),
-    CASE_POS(0, 0, 0, 0, 0, 0, 0, 1, (char *)"Min stack size"),
+    CASE_POS(0, 0, 0, 0, 0, 0, 0, 0, const_cast<char *>("default")),
+    CASE_POS(1, 0, 0, 0, 0, 0, 0, 0, const_cast<char *>("detached")),
+    CASE_POS(0, 1, 0, 0, 0, 0, 0, 0, const_cast<char *>("Explicit sched")),
+    CASE_UNK(0, 0, 1, 0, 0, 0, 0, 0, const_cast<char *>("FIFO Policy")),
+    CASE_UNK(0, 0, 2, 0, 0, 0, 0, 0, const_cast<char *>("RR Policy")),
+    CASE_UNK(0, 0, 0, 1, 0, 0, 0, 0, const_cast<char *>("Max sched param")),
+    CASE_UNK(0, 0, 0, -1, 0, 0, 0, 0, const_cast<char >("Min sched param")),
+    CASE_POS(0, 0, 0, 0, 1, 0, 0, 0, const_cast<char *>("Alternative contension scope")),
+    CASE_POS(0, 0, 0, 0, 0, 1, 0, 0, const_cast<char *>("Alternative stack")),
+    CASE_POS(0, 0, 0, 0, 0, 0, 1, 0, const_cast<char *>("No guard size")),
+    CASE_UNK(0, 0, 0, 0, 0, 0, 2, 0, const_cast<char *>("1p guard size")),
+    CASE_POS(0, 0, 0, 0, 0, 0, 0, 1, const_cast<char *>("Min stack size")),
     /* Stack play */
-    CASE_POS(0, 0, 0, 0, 0, 0, 1, 1, (char *)"Min stack size, no guard"),
-    CASE_UNK(0, 0, 0, 0, 0, 0, 2, 1, (char *)"Min stack size, 1p guard"),
-    CASE_POS(1, 0, 0, 0, 0, 1, 0, 0, (char *)"Detached, Alternative stack"),
-    CASE_POS(1, 0, 0, 0, 0, 0, 1, 1, (char *)"Detached, Min stack size, no guard"),
-    CASE_UNK(1, 0, 0, 0, 0, 0, 2, 1, (char *)"Detached, Min stack size, 1p guard"),
+    CASE_POS(0, 0, 0, 0, 0, 0, 1, 1, const_cast<char *>("Min stack size, no guard")),
+    CASE_UNK(0, 0, 0, 0, 0, 0, 2, 1, const_cast<char *>("Min stack size, 1p guard")),
+    CASE_POS(1, 0, 0, 0, 0, 1, 0, 0, const_cast<char *>("Detached, Alternative stack")),
+    CASE_POS(1, 0, 0, 0, 0, 0, 1, 1, const_cast<char *>("Detached, Min stack size, no guard")),
+    CASE_UNK(1, 0, 0, 0, 0, 0, 2, 1, const_cast<char *>("Detached, Min stack size, 1p guard")),
 };
 
 pthread_t g_pthreadTestTh;

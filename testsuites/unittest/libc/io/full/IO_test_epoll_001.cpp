@@ -54,7 +54,7 @@ static UINT32 testcase(VOID)
     UINT32 ret;
 
     retval = pipe(pipeFd);
-    ICUNIT_GOTO_EQUAL(retval, 0, retval, OUT);
+    ICUNIT_GOTO_EQUAL(retval, 0, retval, OUT4);
 
     /* Watch fd to see when it has input. */
     FD_ZERO(&rfds);
@@ -62,11 +62,11 @@ static UINT32 testcase(VOID)
 
     /* Wait up to three seconds. */
     epFd = epoll_create1(100); /* 100, cretae input, */
-    ICUNIT_GOTO_NOT_EQUAL(epFd, -1, epFd, OUT);
+    ICUNIT_GOTO_NOT_EQUAL(epFd, -1, epFd, OUT2);
 
     ev.events = EPOLLIN | EPOLLOUT | EPOLLRDNORM | EPOLLWRNORM;
     retval = epoll_ctl(epFd, EPOLL_CTL_ADD, pipeFd[0], &ev);
-    ICUNIT_GOTO_NOT_EQUAL(retval, -1, retval, OUT);
+    ICUNIT_GOTO_NOT_EQUAL(retval, -1, retval, OUT1);
 
     pid = fork();
     if (pid == 0) {
@@ -86,7 +86,7 @@ static UINT32 testcase(VOID)
         sleep(1);
         close(pipeFd[0]);
         retval = write(pipeFd[1], "0123456789012345678901234567890123456789", 40); /* write 40 bytes to stdin(fd 0) */
-        ICUNIT_GOTO_EQUAL(retval, 40, retval, OUT);
+        ICUNIT_GOTO_EQUAL(retval, 40, retval, OUT3);
         close(pipeFd[1]);
 
         wait(&status);
@@ -95,10 +95,20 @@ static UINT32 testcase(VOID)
     }
 
     return LOS_OK;
-OUT:
+OUT1:
+    close(epFd);
     close(pipeFd[0]);
     close(pipeFd[1]);
+    return LOS_NOK;
+OUT2:
+    close(pipeFd[0]);
+    close(pipeFd[1]);
+    return LOS_NOK;
+OUT3:
     close(epFd);
+    close(pipeFd[1]);
+    return LOS_NOK;
+OUT4:
     return LOS_NOK;
 }
 

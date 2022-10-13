@@ -64,7 +64,7 @@ static int UdpTest(void)
     srvAddr.sin_family = AF_INET;
     srvAddr.sin_addr.s_addr = inet_addr(STACK_IP);
     srvAddr.sin_port = htons(STACK_PORT);
-    ret = bind(sfd, (struct sockaddr*)&srvAddr, sizeof(srvAddr));
+    ret = bind(sfd, reinterpret_cast<struct sockaddr *>(&srvAddr), sizeof(srvAddr));
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     /* send */
@@ -75,14 +75,14 @@ static int UdpTest(void)
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     ret = strcpy_s(g_buf, BUF_SIZE, MSG);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    ret = sendto(sfd, g_buf, strlen(MSG), 0, (struct sockaddr*)&clnAddr,
-        (socklen_t)sizeof(clnAddr));
+    ret = sendto(sfd, g_buf, strlen(MSG), 0, reinterpret_cast<struct sockaddr *>(&clnAddr),
+        static_cast<socklen_t>(sizeof(clnAddr)));
     ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);
 
     /* recv */
     ret = memset_s(g_buf, BUF_SIZE, 0, BUF_SIZE);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    ret = recvfrom(sfd, g_buf, sizeof(g_buf), 0, (struct sockaddr*)&clnAddr,
+    ret = recvfrom(sfd, g_buf, sizeof(g_buf), 0, reinterpret_cast<struct sockaddr *>(&clnAddr),
         &clnAddrLen);
     ICUNIT_ASSERT_EQUAL(ret, strlen(MSG), ret);
 

@@ -71,7 +71,7 @@ static void *ThreadFunc4(void *arg)
             ret = pthread_cancel(pthread);
         }
     }
-    return (void *)i;
+    return reinterpret_cast<void *>(i);
 
 EXIT:
     return NULL;
@@ -100,7 +100,7 @@ static void *ThreadFunc3(void *arg)
     }
 
     ICUNIT_GOTO_EQUAL(i, 10, i, EXIT); // 10, here assert the result.
-    return (void *)i;
+    return reinterpret_cast<void *>(i);
 EXIT:
     return NULL;
 }
@@ -132,7 +132,7 @@ static void *ThreadFunc6(void *arg)
     ICUNIT_GOTO_EQUAL(g_pthreadTestCount, 12, g_pthreadTestCount, EXIT); // 12, here assert the result.
     g_pthreadTestCount++;                                                // 13
 
-    return (void *)pthread_self();
+    return reinterpret_cast<void *>(pthread_self());
 
 EXIT:
     return NULL;

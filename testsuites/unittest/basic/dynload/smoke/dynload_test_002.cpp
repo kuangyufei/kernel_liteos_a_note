@@ -55,7 +55,7 @@ static int Testcase(void)
     handle = dlopen(LIBCSO_REAL_PATH, RTLD_NOW);
     ICUNIT_ASSERT_NOT_EQUAL(handle, NULL, handle);
 
-    func = (int (*)(int))dlsym(handle, SYMBOL_TO_FIND);
+    func = reinterpret_cast<int (*)(int)>(dlsym(handle, SYMBOL_TO_FIND));
     ICUNIT_GOTO_NOT_EQUAL(func, NULL, func, EXIT);
     ICUNIT_GOTO_EQUAL(func, SYMBOL_TO_MATCH, func, EXIT);
 
@@ -65,7 +65,7 @@ static int Testcase(void)
     handle = dlopen(LIBCSO_RELATIVE_PATH, RTLD_NOW);
     ICUNIT_ASSERT_NOT_EQUAL(handle, NULL, handle);
 
-    func = (int (*)(int))dlsym(handle, SYMBOL_TO_FIND);
+    func = reinterpret_cast<int (*)(int)>(dlsym(handle, SYMBOL_TO_FIND));
     ICUNIT_GOTO_NOT_EQUAL(func, NULL, func, EXIT);
 
     ret = dlclose(handle);

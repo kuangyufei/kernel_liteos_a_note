@@ -49,13 +49,13 @@ static int Testcase(VOID)
     shm = shmat(shmid, NULL, SHM_REMAP);
     ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
 
-    shm = shmat(shmid, (const void *)0x100, 0);
+    shm = shmat(shmid, reinterpret_cast<const void *>(0x100), 0);
     ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
 
     shm = shmat(shmid, NULL, 0);
-    ICUNIT_ASSERT_NOT_EQUAL(shm, (void *)-1, shm);
+    ICUNIT_ASSERT_NOT_EQUAL(shm, reinterpret_cast<void *>(-1), shm);
 
-    ret = shmdt((const void *)0x100);
+    ret = shmdt(reinterpret_cast<const void *>(0x100));
     ICUNIT_ASSERT_EQUAL(ret, -1, shmid);
     ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
 

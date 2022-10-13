@@ -49,7 +49,7 @@ static int Testcase(void)
     fd = open(file, O_CREAT | O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
     ICUNIT_ASSERT_NOT_EQUAL(fd, -1, fd);
 
-    invalueAddr = (void *)(VALIDE_ADDR | ADDR_OFFSET);
+    invalueAddr = reinterpret_cast<void *>(VALIDE_ADDR | ADDR_OFFSET);
     mem = mmap(invalueAddr, len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
     ICUNIT_GOTO_EQUAL(mem, MAP_FAILED, mem, EXIT);
     ICUNIT_GOTO_EQUAL(errno, EINVAL, errno, EXIT);

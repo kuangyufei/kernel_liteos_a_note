@@ -56,7 +56,7 @@ static int PipecommonWrite()
         printf("signal error\n");
     }
 
-    shmid = shmget((key_t)IPC_PRIVATE, sizeof(int), 0666 | IPC_CREAT); // 0666 the authority of the shm
+    shmid = shmget(static_cast<key_t>(IPC_PRIVATE), sizeof(int), 0666 | IPC_CREAT); // 0666 the authority of the shm
     ICUNIT_ASSERT_NOT_EQUAL(shmid, -1, shmid);
     sharedflag = (int *)shmat(shmid, NULL, 0);
     *sharedflag = 0;

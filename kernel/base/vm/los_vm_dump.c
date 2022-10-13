@@ -207,13 +207,10 @@ UINT32 OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
     PADDR_T paddr;
     STATUS_T ret;
     INT32 shareRef;
+    UINT32 pmSize = 0;
 
     if (sharePm != NULL) {
         *sharePm = 0;
-    }
-
-    if (actualPm != NULL) {
-        *actualPm = 0;
     }
 
     ret = LOS_MuxAcquire(&space->regionMux);
@@ -239,18 +236,20 @@ UINT32 OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
                 if (sharePm != NULL) {
                     *sharePm += PAGE_SIZE;//一页 4K 字节
                 }
-                if (actualPm != NULL) {
-                    *actualPm += PAGE_SIZE / shareRef;//这个就有点意思了，碰到共享内存的情况，平分！哈哈。。。
-                }
+                pmSize += PAGE_SIZE / shareRef;
             } else {
-                if (actualPm != NULL) {
-                    *actualPm += PAGE_SIZE;//算自己的
-                }
+                pmSize += PAGE_SIZE;
             }
         }
     RB_SCAN_SAFE_END(&oldVmSpace->regionRbTree, pstRbNode, pstRbNodeNext)
+
     (VOID)LOS_MuxRelease(&space->regionMux);
-    return *actualPm;
+
+    if (actualPm != NULL) {
+        *actualPm = pmSize;
+    }
+
+    return pmSize;
 }
 ///通过虚拟空间获取进程实体
 LosProcessCB *OsGetPIDByAspace(LosVmSpace *space)

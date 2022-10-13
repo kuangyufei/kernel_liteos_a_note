@@ -180,7 +180,8 @@ static void LmsStrcpyTest(void)
         return;
     }
     char *testStr = "bbbbbbbbbbbbbbbbb";
-    printf("[LmsStrcpyTest] strcpy overflow error should be triggered, src string buf size:%d\n", strlen(testStr) + 1);
+    printf("[LmsStrcpyTest] strcpy overflow error should be triggered, src string buf size:%d\n",
+           (int)strlen(testStr) + 1);
     strcpy(buf, testStr);
     free(buf);
     printf("\n-------- LmsStrcpyTest End --------\n");

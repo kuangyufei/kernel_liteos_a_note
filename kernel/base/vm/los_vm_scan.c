@@ -301,7 +301,7 @@ int OsTryShrinkMemory(size_t nPage)//尝试收缩文件页
     LosFilePage *fpage = NULL;
     LosFilePage *fnext = NULL;
 
-    if (nPage <= 0) {
+    if (nPage == 0) {
         nPage = VM_FILEMAP_MIN_SCAN;//
     }
 

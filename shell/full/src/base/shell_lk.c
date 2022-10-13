@@ -162,7 +162,7 @@ INT32 CmdLog(INT32 argc, const CHAR **argv)
         }
     } else if (!strncmp(argv[0], "module", strlen(argv[0]) + 1)) {
         module = strtoul(argv[1], &p, 0);
-        if ((*p != 0) || (module > MODULE4) || (module < MODULE0)) {
+        if ((*p != 0) || (module > MODULE4)) {
             PRINTK("log %s can't access %s\n", argv[0], argv[1]);
             PRINTK("not support yet\n");
             return -1;

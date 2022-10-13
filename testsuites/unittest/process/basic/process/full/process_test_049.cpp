@@ -88,14 +88,14 @@ static int Testcase(void)
     ICUNIT_ASSERT_NOT_EQUAL(shmid, -1, shmid);
 
     g_shmptr = (int *)shmat(shmid, nullptr, 0);
-    ICUNIT_ASSERT_NOT_EQUAL(g_shmptr, (int *)-1, g_shmptr);
+    ICUNIT_ASSERT_NOT_EQUAL(g_shmptr, reinterpret_cast<int *>(-1), g_shmptr);
 
     *g_shmptr = 0;
 
-    stack = (char *)malloc(arg);
+    stack = static_cast<char *>(malloc(arg));
     ICUNIT_GOTO_NOT_EQUAL(stack, NULL, stack, EXIT1);
 
-    stackTop = (char *)((unsigned long)stack + arg);
+    stackTop = reinterpret_cast<char *>(reinterpret_cast<unsigned long>(stack) + arg);
     pid = clone(TestThread, (void *)stackTop, CLONE_VFORK, &arg);
 
     ICUNIT_GOTO_EQUAL(*g_shmptr, arg, *g_shmptr, EXIT2);

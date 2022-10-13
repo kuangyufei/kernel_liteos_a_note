@@ -121,7 +121,7 @@ static int HandleAccept(int lsfd)
 {
     struct sockaddr_in sa;
     int saLen = sizeof(sa);
-    int fd = accept(lsfd, (struct sockaddr *)&sa, (socklen_t *)&saLen);
+    int fd = accept(lsfd, reinterpret_cast<struct sockaddr *>(&sa), reinterpret_cast<socklen_t *>(&saLen));
     if (fd == INVALID_SOCKET) {
         perror("accept");
         return -1;
@@ -168,7 +168,7 @@ static void *ClientsThread(void *param)
     sa.sin_family = AF_INET;
     sa.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     sa.sin_port = htons(SERVER_PORT);
-    if (connect(fd, (struct sockaddr *)&sa, sizeof(sa)) == -1) {
+    if (connect(fd, reinterpret_cast<struct sockaddr *>(&sa), sizeof(sa)) == -1) {
         perror("connect");
         return NULL;
     }
@@ -224,7 +224,7 @@ static int SelectTest(void)
     sa.sin_family = AF_INET;
     sa.sin_addr.s_addr = htonl(INADDR_ANY);
     sa.sin_port = htons(SERVER_PORT);
-    ret = bind(lsfd, (struct sockaddr *)&sa, sizeof(sa));
+    ret = bind(lsfd, reinterpret_cast<struct sockaddr *>(&sa), sizeof(sa));
     ICUNIT_ASSERT_NOT_EQUAL(ret, -1, errno + CloseAllFd());
 
     ret = listen(lsfd, BACKLOG);

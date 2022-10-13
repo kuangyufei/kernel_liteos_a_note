@@ -43,11 +43,11 @@ static VOID *pthread_f01(void *argument)
     g_testCount++;
     LosTaskDelay(5);
 
-    pthread_cleanup_push(PthreadCleanF01, (void *)8);
+    pthread_cleanup_push(PthreadCleanF01, static_cast<void *>(8)); // 8: arg that routine is called with
     pthread_testcancel();
     pthread_cleanup_pop(1);
 
-    return (void *)9;
+    return static_cast<void *>(9); // 9: return value for testing
 }
 
 static UINT32 Testcase(VOID)

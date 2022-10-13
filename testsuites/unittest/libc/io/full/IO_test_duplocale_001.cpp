@@ -118,7 +118,7 @@ static UINT32 testcase(VOID)
     locale_t newloc = nullptr;
 
     char *pathList[] = {"/storage/zh_CN.UTF-8"};
-    char *streamList[] = {(char *)fileWords};
+    char *streamList[] = {reinterpret_cast<char *>(fileWords)};
     int streamLen[] = {sizeof(fileWords) - 2};
 
     newloc = duplocale(oldloc);

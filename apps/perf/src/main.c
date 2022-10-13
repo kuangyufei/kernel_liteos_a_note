@@ -62,7 +62,7 @@ int main(int argc, char **argv)
         PerfStop(fd);
     } else if ((argc == THREE_ARGS) && strcmp(argv[1], "read") == 0) {
         size_t size = strtoul(argv[THREE_ARGS - 1], NULL, 0);
-        if (size <= 0) {
+        if (size == 0) {
             goto EXIT:
         }
 

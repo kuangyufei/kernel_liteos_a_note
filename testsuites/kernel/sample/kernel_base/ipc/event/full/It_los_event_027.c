@@ -48,8 +48,9 @@ static VOID SwtmrF01(VOID)
 
     g_eventMask = g_eventMask | (1 << g_testCount);
 
-    if (g_testCount > 17) // g_testCount > 17, do noting return
+    if (g_testCount > 17) { // g_testCount > 17, do noting return
         return;
+    }
 
     ret = LOS_EventWrite(&g_event, g_eventMask);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_OK, ret);

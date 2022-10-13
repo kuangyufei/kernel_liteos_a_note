@@ -50,7 +50,7 @@ static VOID *pthread_f02(void *argument)
 
     g_testCnt1++;
 EXIT:
-    return (void *)9;
+    return reinterpret_cast<void *>(9); // 9: return value for testing
 }
 
 static VOID *pthread_f01(void *argument)
@@ -83,7 +83,7 @@ static VOID *pthread_f01(void *argument)
     g_testCnt1++;
 
 EXIT:
-    return (void *)9;
+    return static_cast<void *>(9); // 9: return value for testing
 }
 
 static UINT32 Testcase(VOID)

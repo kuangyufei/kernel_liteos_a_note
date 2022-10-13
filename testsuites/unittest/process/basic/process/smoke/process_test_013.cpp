@@ -35,7 +35,7 @@ static int TestCase()
 {
 #define PROCESS_TEST_PRI1 (currProcessPri + 1)
     struct sched_param param = { 0 };
-    int ret;
+    int ret = OS_ERROR;
     int val, currPolicy;
     int currProcessPri = getpriority(PRIO_PROCESS, getpid());
     ICUNIT_GOTO_WITHIN_EQUAL(currProcessPri, 0, 31, currProcessPri, ERROR_OUT); // 31, assert currProcessPri equal to this.

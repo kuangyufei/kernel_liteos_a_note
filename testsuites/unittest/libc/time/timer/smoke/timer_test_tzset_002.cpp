@@ -42,7 +42,7 @@ static UINT32 testcase(VOID)
     int ret = 0;
 
     errno = 0;
-    ret = putenv((char *) "TZ=GMT-100");
+    ret = putenv(const_cast<char *>("TZ=GMT-100"));
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     tzset();
 

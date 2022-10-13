@@ -34,9 +34,9 @@
 #include "los_typedef.h"
 #include "los_process_pri.h"
 
-#define INT_BIT_COUNT 32
-#define INT_BIT_SHIFT 5
-#define VID_MAP_MAX_NUM 32
+#define INT_BIT_COUNT 32U
+#define INT_BIT_SHIFT 5U
+#define VID_MAP_MAX_NUM 32U
 
 #define MAX_INVALID_TIMER_VID (VID_MAP_MAX_NUM * INT_BIT_COUNT)
 

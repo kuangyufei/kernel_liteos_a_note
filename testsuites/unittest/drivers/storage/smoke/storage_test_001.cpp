@@ -51,7 +51,7 @@ static int Testcase(VOID)
         fd = open(STORAGE_DEV_PATH, O_RDWR, 0666);
         ICUNIT_ASSERT_NOT_EQUAL(fd, -1, fd);
 
-        buf = (char *)malloc(STORAGE_DATA_LEN);
+        buf = static_cast<char *>(malloc(STORAGE_DATA_LEN));
         ICUNIT_ASSERT_NOT_EQUAL(buf, NULL, buf);
         ret = memset_s(buf, STORAGE_DATA_LEN, 0, STORAGE_DATA_LEN);
         ICUNIT_ASSERT_EQUAL(ret, 0, ret);

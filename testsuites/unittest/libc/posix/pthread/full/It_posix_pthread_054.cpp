@@ -49,9 +49,9 @@ static VOID *pthread_f01(void *argument)
     g_testCount++;
     ICUNIT_GOTO_EQUAL(g_testCount, 2, g_testCount, EXIT);
 
-    pthread_exit((void *)7);
+    pthread_exit(static_cast<void *>(7)); // 7: exit value for testing
 EXIT:
-    return (void *)9;
+    return static_cast<void *>(9); // 9: return value for testing
 }
 
 static void PthreadKeyF01(void *threadLog)

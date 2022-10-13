@@ -31,9 +31,9 @@
 #include "It_test_misc.h"
 #include "sys/utsname.h"
 
-#define INVALID_ADDR_FIRST_PAGE ((struct utsname *)0x1200000)
-#define INVALID_ADDR_USER_ADDR ((struct utsname *)0x1000000)
-#define INVALID_ADDR_KERNEL_READONLY_ADDR ((struct utsname *)0x4016c75c)
+#define INVALID_ADDR_FIRST_PAGE (reinterpret_cast<struct utsname *>(0x1200000))
+#define INVALID_ADDR_USER_ADDR (reinterpret_cast<struct utsname *>(0x1000000))
+#define INVALID_ADDR_KERNEL_READONLY_ADDR (reinterpret_cast<struct utsname *>(0x4016c75c))
 
 static UINT32 TestCase(VOID)
 {

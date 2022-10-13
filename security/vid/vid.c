@@ -160,7 +160,7 @@ static VOID ReleaseVid(UINT16 vid)
     a = vid >> INT_BIT_SHIFT;
     b = vid & (INT_BIT_COUNT - 1);
 
-    idMap->bitMap[a] &= ~(1 << b);
+    idMap->bitMap[a] &= ~(1U << b);
 
     /* shrink bit map */
     if (mapMaxNum > 1) {

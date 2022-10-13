@@ -38,7 +38,7 @@ struct q {
 
 static struct q *New(int i)
 {
-    struct q *q = (struct q *)malloc(sizeof *q);
+    struct q *q = static_cast<struct q *>(malloc(sizeof *q));
     if (q != NULL) {
         q->i = i;
     }

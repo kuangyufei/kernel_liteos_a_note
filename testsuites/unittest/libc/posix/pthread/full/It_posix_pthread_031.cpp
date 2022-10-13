@@ -39,7 +39,7 @@ static VOID *pthread_f01(void *argument)
     ret = pthread_join(g_newTh, NULL);
     ICUNIT_GOTO_NOT_EQUAL(ret, 0, ret, EXIT);
 EXIT:
-    return (void *)9;
+    return static_cast<void *>(9); // 9: return value for testing
 }
 
 static UINT32 Testcase(VOID)

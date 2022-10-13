@@ -39,8 +39,9 @@ extern "C" {
 
 static UINT32 TaskF02(VOID)
 {
-    UINT32 ret, cpupUse;
+    UINT32 ret = OS_ERROR, cpupUse;
     g_cpupTestCount++;
+
     // 2, Here, assert that g_cpupTestCount is equal to the expected value.
     ICUNIT_GOTO_EQUAL(g_cpupTestCount, 2, g_cpupTestCount, EXIT);
     cpupUse = LOS_HistoryProcessCpuUsage(g_testTaskID01, CPUP_ALL_TIME);

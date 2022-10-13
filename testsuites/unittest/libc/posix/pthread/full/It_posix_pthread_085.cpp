@@ -68,8 +68,9 @@ static UINT32 Testcase(VOID)
     rc = pthread_create(&thread1, NULL, pthread_f01, NULL);
     ICUNIT_ASSERT_EQUAL(rc, 0, rc);
 
-    while (!g_t1Start) /* wait for thread1 started */
+    while (!g_t1Start) { /* wait for thread1 started */
         usleep(1000 * 10 * 2);
+    }
 
     /* acquire the mutex released by pthread_cond_wait() within thread 1 */
     rc = pthread_mutex_lock(&g_td.mutex);

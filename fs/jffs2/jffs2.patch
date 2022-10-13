@@ -2311,7 +2311,7 @@ diff -Nupr old/fs/jffs2/erase.c new/fs/jffs2/erase.c
 diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 --- old/fs/jffs2/file.c	2022-05-09 17:22:53.000000000 +0800
 +++ new/fs/jffs2/file.c	2022-05-10 09:43:14.250000000 +0800
-@@ -9,325 +9,34 @@
+@@ -9,335 +9,30 @@
   * For licensing information, see the file 'LICENCE' in this directory.
   *
   */
@@ -2336,32 +2336,35 @@ diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 -			loff_t pos, unsigned len, unsigned flags,
 -			struct page **pagep, void **fsdata);
 -static int jffs2_readpage (struct file *filp, struct page *pg);
--
--int jffs2_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
--{
--	struct inode *inode = filp->f_mapping->host;
--	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
--	int ret;
--
--	ret = file_write_and_wait_range(filp, start, end);
--	if (ret)
--		return ret;
- 
--	inode_lock(inode);
--	/* Trigger GC to flush any pending writes for this inode */
--	jffs2_flush_wbuf_gc(c, inode->i_ino);
--	inode_unlock(inode);
 +static unsigned char gc_buffer[PAGE_SIZE];	//avoids malloc when user may be under memory pressure
  
--	return 0;
--}
- 
--const struct file_operations jffs2_file_operations =
+-int jffs2_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
 +unsigned char *jffs2_gc_fetch_page(struct jffs2_sb_info *c,
 +				   struct jffs2_inode_info *f,
 +				   unsigned long offset,
 +				   unsigned long *priv)
  {
+-	struct inode *inode = filp->f_mapping->host;
+-	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
++	/* FIXME: This works only with one file system mounted at a time */
+ 	int ret;
+-
+-	ret = file_write_and_wait_range(filp, start, end);
++	ret = jffs2_read_inode_range(c, f, gc_buffer,
++			 offset & ~(PAGE_SIZE-1), PAGE_SIZE);
+ 	if (ret)
+-		return ret;
+-
+-	inode_lock(inode);
+-	/* Trigger GC to flush any pending writes for this inode */
+-	jffs2_flush_wbuf_gc(c, inode->i_ino);
+-	inode_unlock(inode);
+-
+-	return 0;
+-}
+-
+-const struct file_operations jffs2_file_operations =
+-{
 -	.llseek =	generic_file_llseek,
 -	.open =		generic_file_open,
 - 	.read_iter =	generic_file_read_iter,
@@ -2395,9 +2398,8 @@ diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 -	struct jffs2_inode_info *f = JFFS2_INODE_INFO(inode);
 -	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
 -	unsigned char *pg_buf;
-+	/* FIXME: This works only with one file system mounted at a time */
- 	int ret;
- 
+-	int ret;
+-
 -	jffs2_dbg(2, "%s(): ino #%lu, page at offset 0x%lx\n",
 -		  __func__, inode->i_ino, pg->index << PAGE_SHIFT);
 -
@@ -2436,18 +2438,15 @@ diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 -{
 -	struct jffs2_inode_info *f = JFFS2_INODE_INFO(pg->mapping->host);
 -	int ret;
-+	ret = jffs2_read_inode_range(c, f, gc_buffer,
-+			 offset & ~(PAGE_SIZE-1), PAGE_SIZE);
-+	if (ret)
-+		return ERR_PTR(ret);
- 
+-
 -	mutex_lock(&f->sem);
 -	ret = jffs2_do_readpage_unlock(pg->mapping->host, pg);
 -	mutex_unlock(&f->sem);
 -	return ret;
++		return ERR_PTR(ret);
 +	return gc_buffer;
  }
--
+ 
 -static int jffs2_write_begin(struct file *filp, struct address_space *mapping,
 -			loff_t pos, unsigned len, unsigned flags,
 -			struct page **pagep, void **fsdata)
@@ -2458,20 +2457,15 @@ diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 -	struct page *pg;
 -	struct inode *inode = mapping->host;
 -	struct jffs2_inode_info *f = JFFS2_INODE_INFO(inode);
+-	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
 -	pgoff_t index = pos >> PAGE_SHIFT;
 -	uint32_t pageofs = index << PAGE_SHIFT;
 -	int ret = 0;
--
--	pg = grab_cache_page_write_begin(mapping, index, flags);
--	if (!pg)
--		return -ENOMEM;
--	*pagep = pg;
 -
 -	jffs2_dbg(1, "%s()\n", __func__);
 -
 -	if (pageofs > inode->i_size) {
 -		/* Make new hole frag from old EOF to new page */
--		struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
 -		struct jffs2_raw_inode ri;
 -		struct jffs2_full_dnode *fn;
 -		uint32_t alloc_len;
@@ -2482,7 +2476,7 @@ diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 -		ret = jffs2_reserve_space(c, sizeof(ri), &alloc_len,
 -					  ALLOC_NORMAL, JFFS2_SUMMARY_INODE_SIZE);
 -		if (ret)
--			goto out_page;
+-			goto out_err;
 -
 -		mutex_lock(&f->sem);
 -		memset(&ri, 0, sizeof(ri));
@@ -2512,7 +2506,7 @@ diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 -			ret = PTR_ERR(fn);
 -			jffs2_complete_reservation(c);
 -			mutex_unlock(&f->sem);
--			goto out_page;
+-			goto out_err;
 -		}
 -		ret = jffs2_add_full_dnode_to_inode(c, f, fn);
 -		if (f->metadata) {
@@ -2527,12 +2521,25 @@ diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 -			jffs2_free_full_dnode(fn);
 -			jffs2_complete_reservation(c);
 -			mutex_unlock(&f->sem);
--			goto out_page;
+-			goto out_err;
 -		}
 -		jffs2_complete_reservation(c);
 -		inode->i_size = pageofs;
 -		mutex_unlock(&f->sem);
 -	}
+-
+-	/*
+-	 * While getting a page and reading data in, lock c->alloc_sem until
+-	 * the page is Uptodate. Otherwise GC task may attempt to read the same
+-	 * page in read_cache_page(), which causes a deadlock.
+-	 */
+-	mutex_lock(&c->alloc_sem);
+-	pg = grab_cache_page_write_begin(mapping, index, flags);
+-	if (!pg) {
+-		ret = -ENOMEM;
+-		goto release_sem;
+-	}
+-	*pagep = pg;
 -
 -	/*
 -	 * Read in the page if it wasn't already present. Cannot optimize away
@@ -2543,19 +2550,20 @@ diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 -		mutex_lock(&f->sem);
 -		ret = jffs2_do_readpage_nolock(inode, pg);
 -		mutex_unlock(&f->sem);
--		if (ret)
--			goto out_page;
+-		if (ret) {
+-			unlock_page(pg);
+-			put_page(pg);
+-			goto release_sem;
+-		}
 -	}
 -	jffs2_dbg(1, "end write_begin(). pg->flags %lx\n", pg->flags);
--	return ret;
 -
--out_page:
--	unlock_page(pg);
--	put_page(pg);
+-release_sem:
+-	mutex_unlock(&c->alloc_sem);
+-out_err:
 -	return ret;
-+	/* Do nothing */
- }
- 
+-}
+-
 -static int jffs2_write_end(struct file *filp, struct address_space *mapping,
 -			loff_t pos, unsigned len, unsigned copied,
 -			struct page *pg, void *fsdata)
@@ -2653,7 +2661,8 @@ diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 -	unlock_page(pg);
 -	put_page(pg);
 -	return writtenlen > 0 ? writtenlen : ret;
--}
++	/* Do nothing */
+ }
 diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
 --- old/fs/jffs2/fs.c	2022-05-09 17:22:53.000000000 +0800
 +++ new/fs/jffs2/fs.c	2022-05-10 16:13:37.830000000 +0800

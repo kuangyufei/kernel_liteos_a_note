@@ -271,7 +271,7 @@ VOID OsLockDepCheckOut(SPIN_LOCK_S *lock)
 {
     UINT32 intSave;
     INT32 depth;
-    enum LockDepErrType checkResult = LOCKDEP_SUCCESS;
+    enum LockDepErrType checkResult;
     VOID *requestAddr = (VOID *)__builtin_return_address(1);
     LosTaskCB *current = OsCurrTaskGet();
     LosTaskCB *owner = NULL;

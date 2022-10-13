@@ -202,10 +202,11 @@ iUINT32 ICunitInit(void)
 
 iUINT32 ICunitRunSingle(ICUNIT_CASE_S *psubCase)
 {
-    if ((g_isSpinorInit == FALSE) && (psubCase->testcase_module == TEST_JFFS))
+    if ((g_isSpinorInit == FALSE) && (psubCase->testcase_module == TEST_JFFS)) {
         dprintf("****** Jffs is not support ! ******  \n");
-    else
+    } else {
         ICunitRunF(psubCase);
+    }
 
     return (iUINT32)ICUNIT_SUCCESS;
 }

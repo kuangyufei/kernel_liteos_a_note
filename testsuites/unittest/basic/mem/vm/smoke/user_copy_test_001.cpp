@@ -40,24 +40,26 @@ static int Testcase(void)
     const char *str = "Hi, OHOS.";
 
     /* sigprocmask 内核系统调用接口通过arch_copy_from_user拷贝用户参数 */
-    ret = sigprocmask(SIG_BLOCK, (sigset_t *)1, &oldset);
+    ret = sigprocmask(SIG_BLOCK, reinterpret_cast<sigset_t *>(1), &oldset);
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
     ICUNIT_ASSERT_EQUAL(errno, EFAULT, errno);
 
-    ret = sigprocmask(SIG_BLOCK, (sigset_t *)INVALID_USER_VADDR, &oldset);
+    ret = sigprocmask(SIG_BLOCK, reinterpret_cast<sigset_t *>(INVALID_USER_VADDR), &oldset);
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
     ICUNIT_ASSERT_EQUAL(errno, EFAULT, errno);
 
     /* sigprocmask 内核系统调用接口通过arch_copy_to_user将内核参数拷贝至用户 */
-    ret = sigprocmask(SIG_BLOCK, (sigset_t *)INVALID_USER_VADDR, (sigset_t *)1);
+    ret = sigprocmask(SIG_BLOCK, reinterpret_cast<sigset_t *>(INVALID_USER_VADDR), reinterpret_cast<sigset_t *>(1));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
     ICUNIT_ASSERT_EQUAL(errno, EFAULT, errno);
 
-    ret = sigprocmask(SIG_BLOCK, (sigset_t *)INVALID_USER_VADDR, (sigset_t *)INVALID_USER_VADDR);
+    ret = sigprocmask(SIG_BLOCK, reinterpret_cast<sigset_t *>(INVALID_USER_VADDR),
+                      reinterpret_cast<sigset_t *>(INVALID_USER_VADDR));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
     ICUNIT_ASSERT_EQUAL(errno, EFAULT, errno);
 
-    ret = sigprocmask(SIG_BLOCK, (sigset_t *)INVALID_USER_VADDR, (sigset_t *)str);
+    ret = sigprocmask(SIG_BLOCK, reinterpret_cast<sigset_t *>(INVALID_USER_VADDR),
+                      reinterpret_cast<sigset_t *>(const_cast<char *>(str)));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
     ICUNIT_ASSERT_EQUAL(errno, EFAULT, errno);
 

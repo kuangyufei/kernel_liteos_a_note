@@ -36,7 +36,7 @@ static int Testcase()
 #define CURRENT_PROCESS_POLICY SCHED_RR
 
     struct sched_param param = { 0 };
-    int ret;
+    int ret = OS_ERROR;
 
     int currProcessPri = getpriority(PRIO_PROCESS, getpid());
     ICUNIT_GOTO_WITHIN_EQUAL(currProcessPri, 0, 31, currProcessPri, ERROR_OUT); // 31, assert function Result equal to this.

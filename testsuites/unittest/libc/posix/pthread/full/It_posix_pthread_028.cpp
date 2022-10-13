@@ -34,7 +34,7 @@ static VOID *pthread_f01(void *argument)
 {
     g_testCount++;
 
-    return (void *)9;
+    return static_cast<void *>(9); // 9: return value for testing
 }
 
 static UINT32 Testcase(VOID)

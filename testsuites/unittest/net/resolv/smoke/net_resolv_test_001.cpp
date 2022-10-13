@@ -47,32 +47,32 @@ static int DnCompTest(void)
     unsigned char **lastdnptr = &dnptrs[6];
     int offset, ret;
 
-    offset = strlen((const char *)dnptrs[0])+1;
-    ret = dn_comp("x.y.z.example.com", comp_dn+offset, sizeof(comp_dn)-offset, dnptrs, lastdnptr);
-    dump(comp_dn+offset, ret);
+    offset = strlen(reinterpret_cast<const char *>(dnptrs[0])) + 1;
+    ret = dn_comp("x.y.z.example.com", comp_dn + offset, sizeof(comp_dn) - offset, dnptrs, lastdnptr);
+    dump(comp_dn + offset, ret);
     ICUNIT_ASSERT_EQUAL(ret, 19, ret);
-    ICUNIT_ASSERT_EQUAL(dnptrs[1], comp_dn+offset, dnptrs[1]);
+    ICUNIT_ASSERT_EQUAL(dnptrs[1], comp_dn + offset, dnptrs[1]);
 
     offset += ret+1;
-    ret = dn_comp("zz.example.com", comp_dn+offset, sizeof(comp_dn)-offset, dnptrs, lastdnptr);
+    ret = dn_comp("zz.example.com", comp_dn + offset, sizeof(comp_dn) - offset, dnptrs, lastdnptr);
     dump(comp_dn+offset, ret);
     ICUNIT_ASSERT_EQUAL(ret, 5, ret);
-    ICUNIT_ASSERT_EQUAL(dnptrs[2], comp_dn+offset, dnptrs[2]);
+    ICUNIT_ASSERT_EQUAL(dnptrs[2], comp_dn + offset, dnptrs[2]);
 
     offset += ret+1;
-    ret = dn_comp("a.example.com", comp_dn+offset, sizeof(comp_dn)-offset, dnptrs, lastdnptr);
+    ret = dn_comp("a.example.com", comp_dn + offset, sizeof(comp_dn) - offset, dnptrs, lastdnptr);
     dump(comp_dn+offset, ret);
     ICUNIT_ASSERT_EQUAL(ret, 4, ret);
-    ICUNIT_ASSERT_EQUAL(dnptrs[3], comp_dn+offset, dnptrs[3]);
+    ICUNIT_ASSERT_EQUAL(dnptrs[3], comp_dn + offset, dnptrs[3]);
 
     offset += ret+1;
-    ret = dn_comp("example.com.cn", comp_dn+offset, sizeof(comp_dn)-offset, dnptrs, lastdnptr);
+    ret = dn_comp("example.com.cn", comp_dn + offset, sizeof(comp_dn) - offset, dnptrs, lastdnptr);
     dump(comp_dn+offset, ret);
     ICUNIT_ASSERT_EQUAL(ret, 16, ret);
-    ICUNIT_ASSERT_EQUAL(dnptrs[4], comp_dn+offset, dnptrs[4]);
+    ICUNIT_ASSERT_EQUAL(dnptrs[4], comp_dn + offset, dnptrs[4]);
 
     offset += ret+1;
-    ret = dn_comp("2example.com", comp_dn+offset, sizeof(comp_dn)-offset, dnptrs, lastdnptr);
+    ret = dn_comp("2example.com", comp_dn + offset, sizeof(comp_dn) - offset, dnptrs, lastdnptr);
     dump(comp_dn+offset, ret);
     ICUNIT_ASSERT_EQUAL(ret, 11, ret);
     ICUNIT_ASSERT_EQUAL(dnptrs[5], /*comp_dn+offset*/ NULL, dnptrs[5]); //last one is always NULL
@@ -80,7 +80,7 @@ static int DnCompTest(void)
     for (int i = 0; i < 6; ++i) {
         printf("%p: %s\n", dnptrs[i], dnptrs[i]);
     }
-    ICUNIT_ASSERT_EQUAL(offset+ret<100, 1, ret);
+    ICUNIT_ASSERT_EQUAL(offset + ret < 100, 1, ret);
     return ICUNIT_SUCCESS;
 }
 

@@ -32,7 +32,7 @@
 
 static VOID *pthread_f01(void *t)
 {
-    long myId = (long)t;
+    long myId = static_cast<long>(t);
     int rc;
 
     rc = pthread_mutex_lock(&g_pthreadMutexTest1);
@@ -58,7 +58,7 @@ EXIT:
 static VOID *pthread_f02(void *t)
 {
     int i;
-    long myId = (long)t;
+    long myId = static_cast<long>(t);
     int rc;
 
     ICUNIT_GOTO_EQUAL(g_testCount, 1, g_testCount, EXIT);
@@ -74,7 +74,7 @@ static VOID *pthread_f02(void *t)
     ICUNIT_GOTO_EQUAL(g_testCount, 4, g_testCount, EXIT);
     g_testCount++;
 
-    rc = pthread_mutex_unlock(&g_pthreadMutexTest1); /* ÎªÏß³ÌÂÖÑ¯»¥³âËøÔö¼ÓÑÓÊ± */
+    rc = pthread_mutex_unlock(&g_pthreadMutexTest1); /* Îªï¿½ß³ï¿½ï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê± */
     ICUNIT_GOTO_EQUAL(rc, 0, rc, EXIT);
     LosTaskDelay(2);
 
@@ -87,11 +87,11 @@ static UINT32 Testcase(VOID)
     long t1 = 1, t2 = 2, t3 = 3;
     int rc;
     pthread_t threads[3];
-    pthread_attr_t attr; /* ³õÊ¼»¯»¥³âÁ¿ºÍÌõ¼þ±äÁ¿¶ÔÏó */
+    pthread_attr_t attr; /* ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 
     g_testCount = 0;
     pthread_mutex_init(&g_pthreadMutexTest1, NULL);
-    pthread_cond_init(&g_pthreadCondTest1, NULL); /* ´´½¨Ïß³ÌÊ±ÉèÎª¿ÉÁ¬½Ó×´Ì¬£¬±ãÓÚÒÆÖ² */
+    pthread_cond_init(&g_pthreadCondTest1, NULL); /* ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½Ê±ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö² */
     pthread_attr_init(&attr);
 
     rc = pthread_create(&threads[0], &attr, pthread_f01, (void *)t1);
@@ -101,13 +101,13 @@ static UINT32 Testcase(VOID)
     ICUNIT_ASSERT_EQUAL(rc, 0, rc);
 
 
-    /* µÈ´ýËùÓÐÏß³ÌÍê³É */
+    /* ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½ */
     for (i = 0; i < 2; i++) {
         rc = pthread_join(threads[i], NULL);
         ICUNIT_ASSERT_EQUAL(rc, 0, rc);
     }
 
-    /* Çå³ý²¢ÍË³ö */
+    /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë³ï¿½ */
     rc = pthread_attr_destroy(&attr);
     ICUNIT_ASSERT_EQUAL(rc, 0, rc);
 

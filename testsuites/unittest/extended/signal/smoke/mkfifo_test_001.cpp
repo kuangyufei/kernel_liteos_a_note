@@ -59,7 +59,7 @@ static int TestMkfifo()
         if (fd < 0) {
             return -1;
         }
-        write(fd, sentence, sizeof(sentence) + 1);
+        write(fd, sentence, sizeof(sentence));
         close(fd);
         exit(0);
     } else {

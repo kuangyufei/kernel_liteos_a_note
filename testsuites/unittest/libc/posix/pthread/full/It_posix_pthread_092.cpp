@@ -42,8 +42,9 @@ static void *pthread_f01(void *arg)
     ICUNIT_GOTO_EQUAL(rc, 0, rc, EXIT);
 
     g_startNum++;
-    if (g_startNum > 5)
+    if (g_startNum > 5) { // 5: threshold for calling usleep
         usleep(1000 * 10 * 2);
+    }
 
     printf("pthread start_num: %d \n", g_startNum);
     rc = pthread_cond_wait(&g_td.cond, &g_td.mutex);

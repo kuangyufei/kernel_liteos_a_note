@@ -58,8 +58,9 @@ static UINT32 Testcase(VOID)
     ICUNIT_ASSERT_EQUAL(ret, PTHREAD_NO_ERROR, ret);
 
     /* Make sure the thread was created before we join it. */
-    while (g_pthreadSem == PTHREAD_INTHREAD_TEST)
+    while (g_pthreadSem == PTHREAD_INTHREAD_TEST) {
         sleep(1);
+    }
 
     ret = pthread_join(newTh, &valuePtr);
     ICUNIT_ASSERT_EQUAL(ret, PTHREAD_NO_ERROR, ret);

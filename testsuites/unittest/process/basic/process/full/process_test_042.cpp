@@ -38,7 +38,7 @@ static void Child2(int shmid)
 {
     int count = 2; // 2, Set the calculation number to determine the cycle status.
     int *shared = (int *)shmat(shmid, nullptr, 0);
-    ICUNIT_ASSERT_NOT_EQUAL_VOID(shared, (void *)-1, shared);
+    ICUNIT_ASSERT_NOT_EQUAL_VOID(shared, reinterpret_cast<void *>(-1), shared);
 
     while ((*shared) < (TEST_LOOP + 2)) { // 2, Set the cycle number.
         ICUNIT_ASSERT_EQUAL_VOID(*shared, count, *shared);
@@ -55,7 +55,7 @@ static void Child1(int shmid)
 {
     int count = 1;
     int *shared = (int *)shmat(shmid, nullptr, 0);
-    ICUNIT_ASSERT_NOT_EQUAL_VOID(shared, (void *)-1, shared);
+    ICUNIT_ASSERT_NOT_EQUAL_VOID(shared, reinterpret_cast<void *>(-1), shared);
 
     while ((*shared) < (TEST_LOOP + 1)) {
         ICUNIT_ASSERT_EQUAL_VOID(*shared, count, *shared);
@@ -92,7 +92,8 @@ static int GroupProcess(void)
     ret = pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    shmid = shmget((key_t)1234, memSize, 0666 | IPC_CREAT); // 1234, Sets the shmget key; 0666 config of shmget
+    /* 1234, Sets the shmget key; 0666 config of shmget */
+    shmid = shmget(static_cast<key_t>(1234), memSize, 0666 | IPC_CREAT);
     ICUNIT_ASSERT_NOT_EQUAL(shmid, -1, shmid);
 
     pid = fork();
@@ -112,7 +113,7 @@ static int GroupProcess(void)
     }
 
     shared = (int *)shmat(shmid, nullptr, 0);
-    ICUNIT_ASSERT_NOT_EQUAL(shared, (void *)-1, shared);
+    ICUNIT_ASSERT_NOT_EQUAL(shared, reinterpret_cast<void *>(-1), shared);
 
     (*shared) = 0;
 

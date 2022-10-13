@@ -69,7 +69,7 @@ static int TimerTest(void)
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     sev.sigev_notify = SIGEV_THREAD;
     sev.sigev_notify_function = TempSigHandler;
-    sev.sigev_value.sival_ptr = (void *)TempSigHandler01;
+    sev.sigev_value.sival_ptr = reinterpret_cast<void *>(TempSigHandler01);
 
     /* Start the timer */
     its.it_value.tv_sec = 3; // 3, timer time 3 seconds.
@@ -89,7 +89,7 @@ static int TimerTest(void)
     its.it_interval.tv_sec = its.it_value.tv_sec;
     its.it_interval.tv_nsec = its.it_value.tv_nsec;
 
-    sev.sigev_value.sival_ptr = (void *)TempSigHandler02;
+    sev.sigev_value.sival_ptr = reinterpret_cast<void *>(TempSigHandler02);
     ret = timer_create(CLOCK_REALTIME, &sev, &timerid02);
     LogPrintln("timer_settime %p: %d", timerid02, ret);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);

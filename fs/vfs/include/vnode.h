@@ -229,7 +229,7 @@ typedef int VfsHashCmp(struct Vnode *vnode, void *arg);
 
 int VnodesInit(void);
 int VnodeDevInit(void);
-int VnodeAlloc(struct VnodeOps *vop, struct Vnode **vnode);
+int VnodeAlloc(struct VnodeOps *vop, struct Vnode **newVnode);
 int VnodeFree(struct Vnode *vnode);
 int VnodeLookup(const char *path, struct Vnode **vnode, uint32_t flags);
 int VnodeLookupFullpath(const char *fullpath, struct Vnode **vnode, uint32_t flags);

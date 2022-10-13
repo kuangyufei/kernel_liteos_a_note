@@ -434,7 +434,7 @@ STATIC VOID OsBufFullWrite(const CHAR *dst, UINT32 logLen)
 /// 从头写入 
 STATIC VOID OsWriteTailToHead(const CHAR *dst, UINT32 logLen)
 {
-    UINT32 writeLen = 0;
+    UINT32 writeLen;
     UINT32 bufSize = g_logBufSize;
     UINT32 logSize = g_dmesgInfo->logSize;
     UINT32 tail = g_dmesgInfo->logTail;

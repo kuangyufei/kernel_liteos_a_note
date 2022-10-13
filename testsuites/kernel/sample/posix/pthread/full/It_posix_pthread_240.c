@@ -48,8 +48,9 @@ static VOID *PthreadF01(VOID *argument)
 
     g_pthreadSem = PTHREAD_INMAIN_TEST;
 
-    while (g_pthreadSem == PTHREAD_INMAIN_TEST)
+    while (g_pthreadSem == PTHREAD_INMAIN_TEST) {
         sleep(1);
+    }
 
     pthread_testcancel();
 
@@ -70,8 +71,9 @@ static UINT32 Testcase(VOID)
     ret = pthread_create(&newTh, NULL, PthreadF01, NULL);
     ICUNIT_ASSERT_EQUAL(ret, PTHREAD_NO_ERROR, ret);
 
-    while (g_pthreadSem == PTHREAD_INTHREAD_TEST)
+    while (g_pthreadSem == PTHREAD_INTHREAD_TEST) {
         sleep(1);
+    }
 
     ret = pthread_cancel(newTh);
     ICUNIT_ASSERT_EQUAL(ret, PTHREAD_NO_ERROR, ret);

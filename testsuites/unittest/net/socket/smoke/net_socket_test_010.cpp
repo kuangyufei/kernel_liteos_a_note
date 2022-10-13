@@ -117,11 +117,11 @@ static int IoctlTestInternal(int sfd)
     LogPrintln("ifindex %u: %s", lanIndex, p);
     ICUNIT_ASSERT_NOT_EQUAL(p, NULL, errno);
 
-    ret = strncpy_s(gDefaultNetif, sizeof(gDefaultNetif) -1, p, sizeof(gDefaultNetif) - 1);
+    ret = strncpy_s(gDefaultNetif, sizeof(gDefaultNetif) - 1, p, sizeof(gDefaultNetif) - 1);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     gDefaultNetif[sizeof(gDefaultNetif) - 1] = '\0';
 
-    ret = (int)IfName2Index(sfd, p);
+    ret = static_cast<int>(IfName2Index(sfd, p));
     LogPrintln("index of %s: %d", p, ret);
     ICUNIT_ASSERT_NOT_EQUAL(ret, 0, errno);
 

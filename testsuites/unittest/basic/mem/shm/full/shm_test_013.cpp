@@ -43,9 +43,9 @@ static int testcase(void)
     shmfd = shm_open("test_1", O_RDWR | O_CREAT | O_EXCL, 0644);
     ICUNIT_ASSERT_NOT_EQUAL(shmfd, -1, shmfd);
 
-    writebuf = (char*)malloc(pageSize);
+    writebuf = static_cast<char *>(malloc(pageSize));
     ICUNIT_ASSERT_NOT_EQUAL(writebuf, NULL, writebuf);
-    readbuf = (char*)malloc(pageSize);
+    readbuf = static_cast<char *>(malloc(pageSize));
     ICUNIT_GOTO_NOT_EQUAL(readbuf, NULL, readbuf, EXIT);
 
     (void)memset_s(writebuf, pageSize, 0xf, pageSize);

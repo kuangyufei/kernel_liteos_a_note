@@ -51,7 +51,7 @@ STATIC BOOL g_srandInit;
 /// 打开ELF文件
 STATIC INT32 OsELFOpen(const CHAR *fileName, INT32 oflags)
 {
-    INT32 ret = -LOS_NOK;
+    INT32 ret;
     INT32 procFd;
 
     procFd = AllocProcessFd();//分配一个文件描述符

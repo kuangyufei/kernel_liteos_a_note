@@ -124,8 +124,8 @@ ATTRIBUTE_NO_SANITIZE_ADDRESS void LmsSetShadowValue(uintptr_t startAddr, uintpt
     uint32_t startOffset;
     uint32_t endOffset;
 
-    char shadowValueMask;
-    char shadowValue;
+    unsigned char shadowValueMask;
+    unsigned char shadowValue;
 
     /* endAddr - 1, then we mark [startAddr, endAddr) to value */
     LmsMem2Shadow(startAddr, &shadowStart, &startOffset);
@@ -266,7 +266,7 @@ ATTRIBUTE_NO_SANITIZE_ADDRESS void LmsPrintMemInfo(uintptr_t addr)
             }
         }
 
-        LMS_OUTPUT_INFO("|\t[0x%x | %2d]: ", shadowAddr, shadowOffset);
+        LMS_OUTPUT_INFO("|\t[0x%x | %2u]: ", shadowAddr, shadowOffset);
 
         for (int x = 0; x < printX; x += LMS_MEM_BYTES_PER_SHADOW_CELL) {
             LmsGetShadowValue(dumpAddr + x, &shadowValue);
@@ -339,7 +339,7 @@ ATTRIBUTE_NO_SANITIZE_ADDRESS static void LmsPrintErrInfo(LmsAddrInfo *info, uin
             break;
     }
 
-    LMS_OUTPUT_INFO("Shadow memory address: [0x%x : %d]  Shadow memory value: [%d] \n", info->shadowAddr,
+    LMS_OUTPUT_INFO("Shadow memory address: [0x%x : %u]  Shadow memory value: [%u] \n", info->shadowAddr,
         info->shadowOffset, info->shadowValue);
 
     LMS_OUTPUT_INFO("\n");

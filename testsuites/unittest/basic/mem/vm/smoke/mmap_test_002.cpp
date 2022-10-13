@@ -71,7 +71,7 @@ static int Testcase(void)
         printf("err: malloc size invalid\n");
         return -1;
     }
-    buf = (char *)malloc(pageSize);
+    buf = static_cast<char *>(malloc(pageSize));
     ICUNIT_ASSERT_NOT_EQUAL(buf, NULL, buf);
     (void)memset_s(buf, pageSize, 0xf, pageSize);
 

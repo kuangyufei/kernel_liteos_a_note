@@ -47,7 +47,7 @@ static VOID *pthread_f01(void *argument)
     g_testCnt1++;
     ICUNIT_GOTO_EQUAL(g_testCnt1, 4, g_testCnt1, EXIT);
 EXIT:
-    return (void *)9;
+    return reinterpret_cast<void *>(9); // 9: return value for testing
 }
 
 static VOID *pthread_f02(void *argument)
@@ -67,7 +67,7 @@ static VOID *pthread_f02(void *argument)
     g_testCnt1++;
     ICUNIT_GOTO_EQUAL(g_testCnt1, 5, g_testCnt1, EXIT);
 EXIT:
-    return (void *)8;
+    return reinterpret_cast<void *>(8); // 8:return value for testing
 }
 
 static VOID *PthreadF03(void *argument)
@@ -88,7 +88,7 @@ static VOID *PthreadF03(void *argument)
     ICUNIT_GOTO_EQUAL(g_testCnt1, 6, g_testCnt1, EXIT);
 
 EXIT:
-    return (void *)7;
+    return reinterpret_cast<void *>(7); // 7: return value for testing
 }
 static UINT32 Testcase(VOID)
 {
@@ -108,8 +108,9 @@ static UINT32 Testcase(VOID)
     ret = pthread_create(&newTh3, NULL, PthreadF03, NULL);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    while (g_testCnt1 < 6)
+    while (g_testCnt1 < 6) { // 6: threshold for calling sleep
         sleep(1);
+    }
 
     ICUNIT_ASSERT_EQUAL(g_testCnt1, 6, g_testCnt1);
 

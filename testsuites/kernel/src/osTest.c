@@ -315,8 +315,9 @@ VOID TestTestHwiDelete(unsigned int irq, VOID *devId)
 {
     HwiIrqParam stuwIrqPara;
 
-    if (OS_INT_ACTIVE)
+    if (OS_INT_ACTIVE) {
         return;
+    }
 
     stuwIrqPara.swIrq = irq;
     stuwIrqPara.pDevId = devId;

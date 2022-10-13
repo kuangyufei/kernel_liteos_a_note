@@ -44,7 +44,7 @@ static UINT32 testcase(VOID)
 
     char fileWords[] = "/dev/disk/by-uuid/c4992556-a86e-45e8-ba5f-190b16a9073x /usr1 ext3 errors=remount-ro,nofail 0 1";
     char *pathList[] = {"/etc/fstab"};
-    char *streamList[] = {(char *)fileWords};
+    char *streamList[] = {static_cast<char *>(fileWords)};
     int streamLen[] = {sizeof(fileWords)};
 
     int flag = PrepareFileEnv(pathList, streamList, streamLen, 1);

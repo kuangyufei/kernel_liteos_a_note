@@ -163,7 +163,7 @@ static void *ThreadFunc4(void *arg)
             ret = pthread_cancel(pthread);
         }
     }
-    return (void *)i;
+    return reinterpret_cast<void *>(i);
 
 EXIT:
     return NULL;
@@ -196,7 +196,7 @@ static void *ThreadFunc3(void *arg)
     }
 
     ICUNIT_GOTO_EQUAL(i, 10, i, EXIT); // 10, here assert the result.
-    return (void *)i;
+    return reinterpret_cast<void *>(i);
 
 EXIT:
     return NULL;

@@ -53,7 +53,7 @@ static UINT32 testcase(VOID)
     int i = 0;
     int status;
 
-    int epFd;
+    int epFd = 0;
     sigset_t mask;
     void (*retSig)(int);
     struct epoll_event ev;
@@ -75,7 +75,7 @@ static UINT32 testcase(VOID)
     ICUNIT_ASSERT_EQUAL(retval, 0, retval);
 
     retval = pipe(pipeFd);
-    ICUNIT_GOTO_EQUAL(retval, 0, retval, OUT);
+    ICUNIT_GOTO_EQUAL(retval, 0, retval, OUT3);
 
     /* Watch fd to see when it has input. */
     FD_ZERO(&rfds);
@@ -86,12 +86,12 @@ static UINT32 testcase(VOID)
     tv.tv_nsec = 5; /* 5, wait timer, nano second */
 
     epFd = epoll_create1(100); /* 100, cretae input, */
-    ICUNIT_GOTO_NOT_EQUAL(epFd, -1, epFd, OUT);
+    ICUNIT_GOTO_NOT_EQUAL(epFd, -1, epFd, OUT2);
 
     ev.events = EPOLLRDNORM;
     retval = epoll_ctl(epFd, EPOLL_CTL_ADD, pipeFd[0], &ev);
 
-    ICUNIT_GOTO_NOT_EQUAL(retval, -1, retval, OUT);
+    ICUNIT_GOTO_NOT_EQUAL(retval, -1, retval, OUT1);
 
     pid = fork();
     if (pid == 0) {
@@ -125,10 +125,12 @@ static UINT32 testcase(VOID)
     }
 
     return LOS_OK;
-OUT:
+OUT1:
+    close(epFd);
+OUT2:
     close(pipeFd[0]);
     close(pipeFd[1]);
-    close(epFd);
+OUT3:
     return LOS_NOK;
 }
 

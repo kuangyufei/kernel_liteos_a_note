@@ -140,7 +140,7 @@ static unsigned int GetIp(int sfd, const char *ifname)
     ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
     ret = ioctl(sfd, SIOCGIFADDR, &ifr);
     if (ret == 0) {
-        ip = ((struct sockaddr_in *)&(ifr.ifr_addr))->sin_addr.s_addr;
+        ip = (reinterpret_cast<struct sockaddr_in *>(&(ifr.ifr_addr)))->sin_addr.s_addr;
     }
     return ip;
 }
@@ -156,7 +156,7 @@ static unsigned int GetNetmask(int sfd, const char *ifname)
     ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
     ret = ioctl(sfd, SIOCGIFNETMASK, &ifr);
     if (ret == 0) {
-        msk = ((struct sockaddr_in *)&(ifr.ifr_addr))->sin_addr.s_addr;
+        msk = (reinterpret_cast<struct sockaddr_in *>(&(ifr.ifr_addr)))->sin_addr.s_addr;
     }
     return msk;
 }
@@ -207,7 +207,7 @@ static void *ClientsThread(void *param)
     sa.sin_family = AF_INET;
     sa.sin_addr.s_addr = brdcast;
     sa.sin_port = htons(SERVER_PORT);
-    if (connect(fd, (struct sockaddr *)&sa, sizeof(sa)) == -1) {
+    if (connect(fd, reinterpret_cast<struct sockaddr *>(&sa), sizeof(sa)) == -1) {
         perror("connect");
         return NULL;
     }
@@ -263,7 +263,7 @@ static int UdpBrdcastSelectTest(void)
     sa.sin_family = AF_INET;
     sa.sin_addr.s_addr = htonl(INADDR_ANY);
     sa.sin_port = htons(SERVER_PORT);
-    ret = bind(lsfd, (struct sockaddr *)&sa, sizeof(sa));
+    ret = bind(lsfd, reinterpret_cast<struct sockaddr *>(&sa), sizeof(sa));
     ICUNIT_ASSERT_NOT_EQUAL(ret, -1, errno + CloseAllFd());
 
     int broadcast = 1;

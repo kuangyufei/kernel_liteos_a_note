@@ -37,6 +37,12 @@ static int Testcase(VOID)
     int shmid[SHMID_MAX + 1] = {-1};
     int ret;
     int i;
+    struct shm_info shmInfo;
+    int leftShmIds;
+
+    ret = shmctl(0, SHM_INFO, reinterpret_cast<struct shmid_ds *>(&shmInfo));
+    ICUNIT_ASSERT_EQUAL(ret, SHMID_MAX, ret);
+    leftShmIds = SHMID_MAX - shmInfo.used_ids;
 
     shmid[0] = shmget((key_t)0x1234, PAGE_SIZE, 0777 | IPC_CREAT);
     ICUNIT_ASSERT_NOT_EQUAL(shmid[0], -1, shmid[0]);
@@ -50,20 +56,20 @@ static int Testcase(VOID)
     ret = shmctl(shmid[0], IPC_RMID, NULL);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    for (i = 0; i < SHMID_MAX; i++) {
+    for (i = 0; i < leftShmIds; i++) {
         shmid[i] = shmget(IPC_PRIVATE, PAGE_SIZE, 0777 | IPC_CREAT);
         ICUNIT_ASSERT_NOT_EQUAL(shmid[i], -1, shmid[i]);
     }
 
-    shmid[SHMID_MAX] = shmget(IPC_PRIVATE, PAGE_SIZE, 0777 | IPC_CREAT);
-    ICUNIT_ASSERT_EQUAL(shmid[SHMID_MAX], -1, shmid[SHMID_MAX]);
+    shmid[leftShmIds] = shmget(IPC_PRIVATE, PAGE_SIZE, 0777 | IPC_CREAT);
+    ICUNIT_ASSERT_EQUAL(shmid[leftShmIds], -1, shmid[leftShmIds]);
 
-    for (i = 0; i < SHMID_MAX; i++) {
+    for (i = 0; i < leftShmIds; i++) {
         ret = shmctl(shmid[i], IPC_RMID, NULL);
         ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     }
 
-    for (i = 0; i < SHMID_MAX; i++) {
+    for (i = 0; i < leftShmIds; i++) {
         ret = shmctl(shmid[i], IPC_RMID, NULL);
         ICUNIT_ASSERT_EQUAL(ret, -1, ret);
     }

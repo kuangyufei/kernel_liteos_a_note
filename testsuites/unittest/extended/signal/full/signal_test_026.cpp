@@ -80,7 +80,7 @@ static UINT32 TestCase(VOID)
         sigaddset(&newset, SIGCHLD);
         timeout.tv_nsec = 1;
         timeout.tv_sec = 3; // 3, set the sec of timeout.
-        ret = sigtimedwait(&newset, (siginfo_t *)2, &timeout); // 2, wait for signal num
+        ret = sigtimedwait(&newset, reinterpret_cast<siginfo_t *>(2), &timeout); // 2, wait for signal num
         printf("ret = %d    errno = %d   EFAULT = %d\n", ret, errno, EFAULT);
         if (ret != -1) {
             exit(ret);

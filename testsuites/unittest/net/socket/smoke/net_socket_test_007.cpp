@@ -45,90 +45,100 @@ static int TcpTest()
     lsfd = socket(AF_INET, SOCK_STREAM, 0);
     ICUNIT_ASSERT_NOT_EQUAL(lsfd, -1, lsfd);
 
-    ret = bind(lsfd, (const struct sockaddr *)INVALID_USER_ADDR, sizeof(struct sockaddr_in));
+    ret = bind(lsfd, reinterpret_cast<const struct sockaddr *>(INVALID_USER_ADDR), sizeof(struct sockaddr_in));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = bind(lsfd, (const struct sockaddr *)INVALID_KERNEL_ADDR, sizeof(struct sockaddr_in));
+    ret = bind(lsfd, reinterpret_cast<const struct sockaddr *>(INVALID_KERNEL_ADDR), sizeof(struct sockaddr_in));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = connect(lsfd, (struct sockaddr*)INVALID_USER_ADDR, sizeof(struct sockaddr_in));
+    ret = connect(lsfd, reinterpret_cast<struct sockaddr *>(INVALID_USER_ADDR), sizeof(struct sockaddr_in));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = connect(lsfd, (struct sockaddr*)INVALID_KERNEL_ADDR, sizeof(struct sockaddr_in));
+    ret = connect(lsfd, reinterpret_cast<struct sockaddr *>(INVALID_KERNEL_ADDR), sizeof(struct sockaddr_in));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = accept(lsfd, (struct sockaddr*)INVALID_USER_ADDR, (socklen_t *)INVALID_USER_ADDR);
+    ret = accept(lsfd, reinterpret_cast<struct sockaddr *>(INVALID_USER_ADDR),
+                 reinterpret_cast<socklen_t *>(INVALID_USER_ADDR));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = accept(lsfd, (struct sockaddr*)INVALID_KERNEL_ADDR, (socklen_t *)INVALID_KERNEL_ADDR);
+    ret = accept(lsfd, reinterpret_cast<struct sockaddr *>(INVALID_KERNEL_ADDR),
+                 reinterpret_cast<socklen_t *>(INVALID_KERNEL_ADDR));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = getsockname(lsfd, (struct sockaddr*)INVALID_USER_ADDR, (socklen_t *)INVALID_USER_ADDR);
+    ret = getsockname(lsfd, reinterpret_cast<struct sockaddr *>(INVALID_USER_ADDR),
+                      reinterpret_cast<socklen_t *>(INVALID_USER_ADDR));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = getsockname(lsfd, (struct sockaddr*)INVALID_KERNEL_ADDR, (socklen_t *)INVALID_KERNEL_ADDR);
+    ret = getsockname(lsfd, reinterpret_cast<struct sockaddr *>(INVALID_KERNEL_ADDR),
+                      reinterpret_cast<socklen_t *>(INVALID_KERNEL_ADDR));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = getpeername(lsfd, (struct sockaddr*)INVALID_USER_ADDR, (socklen_t *)INVALID_USER_ADDR);
+    ret = getpeername(lsfd, reinterpret_cast<struct sockaddr *>(INVALID_USER_ADDR),
+                      reinterpret_cast<socklen_t *>(INVALID_USER_ADDR));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = getpeername(lsfd, (struct sockaddr*)INVALID_KERNEL_ADDR, (socklen_t *)INVALID_KERNEL_ADDR);
+    ret = getpeername(lsfd, reinterpret_cast<struct sockaddr *>(INVALID_KERNEL_ADDR),
+                      reinterpret_cast<socklen_t *>(INVALID_KERNEL_ADDR));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = send(lsfd, (char *)INVALID_USER_ADDR, strlen(SRV_MSG), 0);
+    ret = send(lsfd, reinterpret_cast<char *>(INVALID_USER_ADDR), strlen(SRV_MSG), 0);
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = send(lsfd, (char *)INVALID_KERNEL_ADDR, strlen(SRV_MSG), 0);
+    ret = send(lsfd, reinterpret_cast<char *>(INVALID_KERNEL_ADDR), strlen(SRV_MSG), 0);
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = sendto(lsfd, (char *)INVALID_USER_ADDR, strlen(SRV_MSG), 0, (struct sockaddr*)INVALID_USER_ADDR,
-        (socklen_t)sizeof(struct sockaddr_in));
+    ret = sendto(lsfd, reinterpret_cast<char *>(INVALID_USER_ADDR), strlen(SRV_MSG), 0,
+        reinterpret_cast<struct sockaddr *>(INVALID_USER_ADDR), static_cast<socklen_t>(sizeof(struct sockaddr_in)));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = sendto(lsfd, (char *)INVALID_KERNEL_ADDR, strlen(SRV_MSG), 0, (struct sockaddr*)INVALID_KERNEL_ADDR,
-        (socklen_t)sizeof(struct sockaddr_in));
+    ret = sendto(lsfd, reinterpret_cast<char *>(INVALID_KERNEL_ADDR), strlen(SRV_MSG), 0,
+        reinterpret_cast<struct sockaddr *>(INVALID_KERNEL_ADDR), static_cast<socklen_t>(sizeof(struct sockaddr_in)));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = recv(lsfd, (char *)INVALID_USER_ADDR, sizeof(SRV_MSG), 0);
+    ret = recv(lsfd, reinterpret_cast<char *>(INVALID_USER_ADDR), sizeof(SRV_MSG), 0);
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = recv(lsfd, (char *)INVALID_KERNEL_ADDR, sizeof(SRV_MSG), 0);
+    ret = recv(lsfd, reinterpret_cast<char *>(INVALID_KERNEL_ADDR), sizeof(SRV_MSG), 0);
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = recvfrom(lsfd, (char *)INVALID_USER_ADDR, sizeof(SRV_MSG), 0, (struct sockaddr*)INVALID_USER_ADDR,
-        (socklen_t *)INVALID_USER_ADDR);
+    ret = recvfrom(lsfd, reinterpret_cast<char *>(INVALID_USER_ADDR), sizeof(SRV_MSG), 0,
+        reinterpret_cast<struct sockaddr *>(INVALID_USER_ADDR), reinterpret_cast<socklen_t *>(INVALID_USER_ADDR));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = recvfrom(lsfd, (char *)INVALID_KERNEL_ADDR, sizeof(SRV_MSG), 0, (struct sockaddr*)INVALID_KERNEL_ADDR,
-        (socklen_t *)INVALID_KERNEL_ADDR);
+    ret = recvfrom(lsfd, reinterpret_cast<char *>(INVALID_KERNEL_ADDR), sizeof(SRV_MSG), 0,
+        reinterpret_cast<struct sockaddr *>(INVALID_KERNEL_ADDR), reinterpret_cast<socklen_t *>(INVALID_KERNEL_ADDR));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = setsockopt(lsfd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)INVALID_USER_ADDR, (socklen_t)sizeof(struct timeval));
+    ret = setsockopt(lsfd, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<struct timeval *>(INVALID_USER_ADDR),
+                     static_cast<socklen_t>(sizeof(struct timeval)));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = setsockopt(lsfd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)INVALID_KERNEL_ADDR, (socklen_t)sizeof(struct timeval));
+    ret = setsockopt(lsfd, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<struct timeval *>(INVALID_KERNEL_ADDR),
+                     static_cast<socklen_t>(sizeof(struct timeval)));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = getsockopt(lsfd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)INVALID_USER_ADDR, (socklen_t*)sizeof(struct timeval));
+    ret = getsockopt(lsfd, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<struct timeval *>(INVALID_USER_ADDR),
+                     reinterpret_cast<socklen_t *>(sizeof(struct timeval)));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = getsockopt(lsfd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)INVALID_KERNEL_ADDR, (socklen_t*)sizeof(struct timeval));
+    ret = getsockopt(lsfd, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<struct timeval *>(INVALID_KERNEL_ADDR),
+                     reinterpret_cast<socklen_t *>(sizeof(struct timeval)));
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = sendmsg(lsfd, (struct msghdr *)INVALID_USER_ADDR, 0);
+    ret = sendmsg(lsfd, reinterpret_cast<struct msghdr *>(INVALID_USER_ADDR), 0);
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = sendmsg(lsfd, (struct msghdr *)INVALID_KERNEL_ADDR, 0);
+    ret = sendmsg(lsfd, reinterpret_cast<struct msghdr *>(INVALID_KERNEL_ADDR), 0);
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    msg.msg_name = (char *)INVALID_USER_ADDR;
+    msg.msg_name = reinterpret_cast<char *>(INVALID_USER_ADDR);
     msg.msg_namelen = sizeof(struct sockaddr_in);
-    msg.msg_iov = (struct iovec *)INVALID_KERNEL_ADDR;
+    msg.msg_iov = reinterpret_cast<struct iovec *>(INVALID_KERNEL_ADDR);
     msg.msg_iovlen = 2;
-    ret = recvmsg(lsfd, (struct msghdr *)&msg, 0);
+    ret = recvmsg(lsfd, static_cast<struct msghdr *>(&msg), 0);
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
-    ret = recvmsg(lsfd, (struct msghdr *)&msg, 0);
+    ret = recvmsg(lsfd, static_cast<struct msghdr *>(&msg), 0);
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
 #ifdef TEST_BIG_MEM

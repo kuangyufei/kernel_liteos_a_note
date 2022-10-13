@@ -143,7 +143,7 @@ static void *ClientsThread(void *param)
     sa.sin_family = AF_INET;
     sa.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     sa.sin_port = htons(SERVER_PORT);
-    if (connect(fd, (struct sockaddr *)&sa, sizeof(sa)) == -1) {
+    if (connect(fd, reinterpret_cast<struct sockaddr *>(&sa), sizeof(sa)) == -1) {
         perror("connect");
         return NULL;
     }
@@ -204,7 +204,7 @@ static int UdpSelectTest(void)
     sa.sin_family = AF_INET;
     sa.sin_addr.s_addr = htonl(INADDR_ANY);
     sa.sin_port = htons(SERVER_PORT);
-    ret = bind(lsfd, (struct sockaddr *)&sa, sizeof(sa));
+    ret = bind(lsfd, reinterpret_cast<struct sockaddr *>(&sa), sizeof(sa));
     ICUNIT_ASSERT_NOT_EQUAL(ret, -1, errno + CloseAllFd());
 
     InitFds();

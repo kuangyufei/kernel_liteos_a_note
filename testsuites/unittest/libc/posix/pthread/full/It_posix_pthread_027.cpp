@@ -46,13 +46,13 @@ static VOID *pthread_f01(void *argument)
 {
     g_testCount++;
 
-    pthread_cleanup_push(PthreadCleanF01, (void *)9);
-    pthread_cleanup_push(PthreadCleanF01, (void *)8);
-    pthread_exit((void *)8);
+    pthread_cleanup_push(PthreadCleanF01, static_cast<void *>(9)); // 9: arg that routine is called with
+    pthread_cleanup_push(PthreadCleanF01, static_cast<void *>(8)); // 8: arg that routine is called with
+    pthread_exit(static_cast<void *>(8)); // 8: exit value for testing
     pthread_cleanup_pop(1);
     pthread_cleanup_pop(1);
 
-    return (void *)9;
+    return static_cast<void *>(9); // 9: return value for testing
 }
 
 static UINT32 Testcase(VOID)

@@ -38,7 +38,7 @@ static void *ThreadF01(void *arg)
      * function did not succeed. */
     // uart_printf_func("Could not send cancel request correctly\n");
     // ICUNIT_TRACK_EQUAL(1, 0, errno);
-    pthread_exit((void *)0);
+    pthread_exit(nullptr);
     return NULL;
 }
 static UINT32 Testcase(VOID)

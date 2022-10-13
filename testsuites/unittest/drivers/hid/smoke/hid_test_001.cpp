@@ -53,7 +53,7 @@ static int Testcase(VOID)
         fd = open(MOUSE_DEV_PATH, O_RDWR, 0666);
         ICUNIT_ASSERT_NOT_EQUAL(fd, -1, fd);
 
-        buf = (char *)malloc(MOUSE_DATA_LEN);
+        buf = static_cast<char *>(malloc(MOUSE_DATA_LEN));
         ICUNIT_ASSERT_NOT_EQUAL(buf, NULL, buf);
         ret = memset_s(buf, MOUSE_DATA_LEN, 0, MOUSE_DATA_LEN);
         ICUNIT_ASSERT_EQUAL(ret, 0, ret);

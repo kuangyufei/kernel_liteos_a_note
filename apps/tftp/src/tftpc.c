@@ -189,7 +189,7 @@ u32_t lwip_tftp_recv_from_server(s32_t iSockNum, u32_t *pulSize, TFTPC_PACKET_S 
     if (iRet == -1) {
         return TFTPC_SELECT_ERROR;
     } else if (iRet == 0) {
-        return TFTPC_TIMEOUT_ERROR;         /* Select timeout occured */
+        return TFTPC_TIMEOUT_ERROR;         /* Select timeout occurred */
     }
 
     if (!FD_ISSET(iSockNum, &stReadfds)) {
@@ -218,7 +218,7 @@ u32_t lwip_tftp_recv_from_server(s32_t iSockNum, u32_t *pulSize, TFTPC_PACKET_S 
     usOpcode = ntohs(pstRecvBuf->usOpcode);
     /* if this packet is ERROR packet */
     if (usOpcode == TFTPC_OP_ERROR) {
-        ulError = ntohs (pstRecvBuf->u.stTFTP_Err.usErrNum);
+        ulError = ntohs(pstRecvBuf->u.stTFTP_Err.usErrNum);
 
         /*If the error is according to RFC,then convert to lwip error codes.
         Constant values are used in the cases as these error codes are as per
@@ -268,7 +268,7 @@ u32_t lwip_tftp_recv_from_server(s32_t iSockNum, u32_t *pulSize, TFTPC_PACKET_S 
     *pulSize = (u32_t)iRet;
 
     /* If received packet is first block of data(for get operation) or if
-       received packet is acknowledgement for write request (put operation)
+       received packet is acknowledgment for write request (put operation)
        store the received port number */
     if (((usOpcode == TFTPC_OP_DATA) &&
          (ntohs(pstRecvBuf->u.stTFTP_Data.usBlknum) == 1)) ||
@@ -500,7 +500,7 @@ static void lwip_tftp_send_error(s32_t iSockNum, u32_t ulError, const char *szEr
     }
 }
 
-/* INTEFACE to get a file using filename
+/* INTERFACE to get a file using filename
     ulHostAddr - IP address of Host
     szSrcFileName - Source file
     szDestDirPath - Destination file path
@@ -687,7 +687,7 @@ u32_t lwip_tftp_get_file_by_filename(u32_t ulHostAddr,
 
         ulErrCode = lwip_tftp_recv_from_server(iSockNum, &ulRecvSize, pstRecvBuf,
                                                &ulIgnorePkt, &stServerAddr, pstSendBuf);
-        /* If select timeout occured */
+        /* If select timeout occurred */
         if (ulErrCode == TFTPC_TIMEOUT_ERROR) {
             ulTotalTime++;
             if (ulTotalTime < TFTPC_MAX_SEND_REQ_ATTEMPTS) {
@@ -727,7 +727,7 @@ u32_t lwip_tftp_get_file_by_filename(u32_t ulHostAddr,
         }
 
         /* if this packet is unkonwn or incorrect packet */
-        if (ntohs (pstRecvBuf->usOpcode) != TFTPC_OP_DATA) {
+        if (ntohs(pstRecvBuf->usOpcode) != TFTPC_OP_DATA) {
             /* Send error packet to server */
             lwip_tftp_send_error(iSockNum,
                                  TFTPC_PROTOCOL_PROTO_ERROR,
@@ -982,7 +982,7 @@ u32_t lwip_tftp_put_file_by_filename(u32_t ulHostAddr, u16_t usTftpServPort, u8_
         return TFTPC_MEMALLOC_ERROR;
     }
 
-    /* First time intialize the buffer */
+    /* First time initialize the buffer */
     (void)memset_s((void *)pstSendBuf, sizeof(TFTPC_PACKET_S), 0, sizeof(TFTPC_PACKET_S));
 
     /* The destination path can only be one of the following:
@@ -1221,7 +1221,7 @@ u32_t lwip_tftp_inner_put_file(s32_t iSockNum,
         return TFTPC_MEMALLOC_ERROR;
     }
 
-    /* First time intialize the buffer */
+    /* First time initialize the buffer */
     (void)memset_s((void *)pstRecvBuf, sizeof(TFTPC_PACKET_S), 0, sizeof(TFTPC_PACKET_S));
 
     /* Initialize from address to the server address at first */
@@ -1235,7 +1235,7 @@ u32_t lwip_tftp_inner_put_file(s32_t iSockNum,
         ulError = lwip_tftp_recv_from_server(iSockNum, &ulPktSize,
                                              pstRecvBuf, &ulIgnorePkt,
                                              pstServerAddr, pstSendBuf);
-        /* If select timeout occured */
+        /* If select timeout occurred */
         if (ulError == TFTPC_TIMEOUT_ERROR) {
             ulTotalTime++;
             if (ulTotalTime < TFTPC_MAX_SEND_REQ_ATTEMPTS) {
@@ -1419,7 +1419,7 @@ err_handler:
 }
 
 #ifdef TFTP_TO_RAWMEM
-/* INTEFACE to get a file using filename
+/* INTERFACE to get a file using filename
     ulHostAddr - IP address of Host
     szSrcFileName - Source file
     szDestMemAddr - The target memory address in the client
@@ -1437,10 +1437,8 @@ u32_t lwip_tftp_get_file_by_filename_to_rawmem(u32_t ulHostAddr,
 {
     s32_t iSockNum = TFTP_NULL_INT32;
     u32_t ulSrcStrLen;
-    u32_t lDestStrLen;
     u32_t ulSize;
     u32_t ulRecvSize = TFTP_NULL_UINT32;
-    s32_t iErrCode;
     u32_t ulErrCode;
     u16_t usReadReq;
     u16_t usTempServPort;
@@ -1526,7 +1524,7 @@ u32_t lwip_tftp_get_file_by_filename_to_rawmem(u32_t ulHostAddr,
 
         ulErrCode = lwip_tftp_recv_from_server(iSockNum, &ulRecvSize, pstRecvBuf, &ulIgnorePkt,
                                                &stServerAddr, pstSendBuf);
-        /* If select timeout occured */
+        /* If select timeout occurred */
         if (ulErrCode == TFTPC_TIMEOUT_ERROR) {
             ulTotalTime++;
             if (ulTotalTime < TFTPC_MAX_SEND_REQ_ATTEMPTS) {
@@ -1557,7 +1555,7 @@ u32_t lwip_tftp_get_file_by_filename_to_rawmem(u32_t ulHostAddr,
         }
 
         /* if this packet is unkonwn or incorrect packet */
-        if (ntohs (pstRecvBuf->usOpcode) != TFTPC_OP_DATA) {
+        if (ntohs(pstRecvBuf->usOpcode) != TFTPC_OP_DATA) {
             /* Send error packet to server */
             lwip_tftp_send_error(iSockNum,
                                  TFTPC_PROTOCOL_PROTO_ERROR,

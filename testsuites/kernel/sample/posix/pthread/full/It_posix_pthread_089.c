@@ -115,8 +115,9 @@ static void *PthreadF02(void *tmp)
     clock_gettime(CLOCK_REALTIME, &startTime);
     while (1) {
         clock_gettime(CLOCK_REALTIME, &currentTime);
-        if (PthreadTimeF01(currentTime, startTime) > RUNTIME)
+        if (PthreadTimeF01(currentTime, startTime) > RUNTIME) {
             break;
+        }
     }
     g_lowDone = 1;
 EXIT:

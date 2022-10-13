@@ -210,7 +210,7 @@ MMAP_DONE:
 ///解除映射关系
 STATUS_T LOS_UnMMap(VADDR_T addr, size_t size)
 {
-    if ((addr <= 0) || (size <= 0)) {
+    if ((addr <= 0) || (size == 0)) {
         return -EINVAL;
     }
 

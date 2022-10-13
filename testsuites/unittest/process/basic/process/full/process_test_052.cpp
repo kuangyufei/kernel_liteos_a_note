@@ -58,17 +58,17 @@ static int Testcase(void)
     ICUNIT_ASSERT_NOT_EQUAL(shmid, -1, shmid);
 
     g_shmptr = (int *)shmat(shmid, nullptr, 0);
-    ICUNIT_ASSERT_NOT_EQUAL(g_shmptr, (int *)-1, g_shmptr);
+    ICUNIT_ASSERT_NOT_EQUAL(g_shmptr, static_cast<int *>(-1), g_shmptr);
 
     *g_shmptr = 0;
 
     g_ppid = getppid();
     printf("testcase ppid : %d\n", g_ppid);
 
-    void *stack = (void *)malloc(arg);
+    void *stack = malloc(arg);
     ICUNIT_GOTO_NOT_EQUAL(stack, NULL, stack, EXIT1);
 
-    char *stackTop = (char *)((unsigned long)stack + arg);
+    char *stackTop = static_cast<char *>(static_cast<unsigned long>(stack) + arg);
     pid_t pid = clone(TestThread, (char *)stackTop, CLONE_PARENT | CLONE_VFORK | CLONE_FILES, &arg);
 
     ICUNIT_GOTO_EQUAL(*g_shmptr, 100, *g_shmptr, EXIT2); // 100, assert g_shmptr equal to this.

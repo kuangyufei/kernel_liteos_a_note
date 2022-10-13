@@ -39,9 +39,9 @@ static UINT32 TestCase(VOID)
     int cflags;
     regex_t reg;
     char *a = NULL;
-    char *b = (char *)"No error";
-    char *testStr = (char *)"Hello World";
-    char *regStr = (char *)"H.*";
+    char *b = const_cast<char *>("No error");
+    char *testStr = const_cast<char *>("Hello World");
+    char *regStr = const_cast<char *>("H.*");
 
     cflags = REG_EXTENDED | REG_ICASE | REG_NOSUB;
 

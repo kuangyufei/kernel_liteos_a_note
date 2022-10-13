@@ -70,8 +70,9 @@ static UINT32 Testcase(VOID)
         ICUNIT_ASSERT_EQUAL(rc, 0, rc);
     }
 
-    while (g_startNum < THREAD_NUM)
+    while (g_startNum < THREAD_NUM) {
         usleep(1000 * 10 * 2);
+    }
 
     /*
      * Acquire the mutex to make sure that all waiters are currently

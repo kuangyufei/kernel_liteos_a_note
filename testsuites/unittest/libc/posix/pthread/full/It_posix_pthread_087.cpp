@@ -57,7 +57,7 @@ static void *pthread_f01(void *arg)
     rc = pthread_mutex_unlock(&g_td.mutex);
     ICUNIT_GOTO_EQUAL(rc, 0, rc, EXIT);
 EXIT:
-    pthread_exit((void *)5);
+    pthread_exit(static_cast<void *>(5)); // 5: return value for testing
 }
 
 static UINT32 Testcase(VOID)
@@ -78,9 +78,9 @@ static UINT32 Testcase(VOID)
     rc = pthread_create(&thread1, NULL, pthread_f01, NULL);
     ICUNIT_ASSERT_EQUAL(rc, 0, rc);
 
-    while (!g_t1Start) /* wait for thread1 started */
+    while (!g_t1Start) { /* wait for thread1 started */
         usleep(1000 * 10 * 2);
-
+    }
 
     /* acquire the mutex released by pthread_cond_wait() within thread 1 */
     rc = pthread_mutex_lock(&g_td.mutex);
@@ -92,7 +92,7 @@ static UINT32 Testcase(VOID)
     g_signaled = 1;
     rc = pthread_join(thread1, &thRet);
     ICUNIT_ASSERT_EQUAL(rc, 0, rc);
-    ICUNIT_ASSERT_EQUAL((long)thRet, 5, (long)thRet);
+    ICUNIT_ASSERT_EQUAL(static_cast<long>(thRet), 5, static_cast<long>(thRet)); // 5: return value for testing
     g_signaled = 0;
 
     rc = pthread_cond_destroy(&g_td.cond);

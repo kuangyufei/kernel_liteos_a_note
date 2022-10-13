@@ -52,12 +52,12 @@ static void GetRandomData(char **buf, int bufSize)
     char *p = *buf;
     int i;
 
-    srand((unsigned)time(0));
+    srand(static_cast<unsigned>(time(0)));
     for (i = 0; i < bufSize - 1; ++i) {
         int r = GetRandomNumber(RANDOM_MAX);
-        *(p + i) = (char)r;
+        *(p + i) = static_cast<char>(r);
     }
-    *(p + i) = (char)0;
+    *(p + i) = static_cast<char>(0);
 }
 
 static int TestCase(VOID)
@@ -70,25 +70,25 @@ static int TestCase(VOID)
     char **childArgv = NULL;
     char **childEnvp = NULL;
 
-    childArgv = (char **)1;
+    childArgv = reinterpret_cast<char **>(1);
     ret = posix_spawnp(&pid, "/usr/bin/testsuits_app", NULL, NULL, childArgv, NULL);
     ICUNIT_ASSERT_EQUAL(ret, EINVAL, ret);
 
-    childEnvp = (char **)1;
+    childEnvp = reinterpret_cast<char **>(1);
     ret = posix_spawnp(&pid, "/usr/bin/testsuits_app", NULL, NULL, NULL, childEnvp);
     ICUNIT_ASSERT_EQUAL(ret, EINVAL, ret);
 
     ret = posix_spawnp(&pid, "/bin", NULL, NULL, NULL, NULL);
     ICUNIT_ASSERT_EQUAL(ret, ENOENT, ret);
 
-    fileName = (char *)malloc(FILE_NAME_BYTES);
+    fileName = static_cast<char *>(malloc(FILE_NAME_BYTES));
     ICUNIT_ASSERT_NOT_EQUAL(fileName, NULL, fileName);
     GetRandomData(&fileName, FILE_NAME_BYTES);
     ret = posix_spawnp(&pid, fileName, NULL, NULL, NULL, NULL);
     free(fileName);
     ICUNIT_ASSERT_EQUAL(ret, ENOENT, ret);
 
-    fileName = (char *)malloc(LONG_FILE_NAME_BYTES);
+    fileName = static_cast<char *>(malloc(LONG_FILE_NAME_BYTES));
     ICUNIT_ASSERT_NOT_EQUAL(fileName, NULL, fileName);
     GetRandomData(&fileName, LONG_FILE_NAME_BYTES);
     ret = posix_spawnp(&pid, fileName, NULL, NULL, NULL, NULL);

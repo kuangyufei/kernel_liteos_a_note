@@ -62,20 +62,20 @@ static int LiteIpcTest(void)
 
     /* testing mmap liteipc mem pool with different size and flag */
     retptr = mmap(nullptr, 1024 * 4096, PROT_READ, MAP_PRIVATE, fd, 0);
-    ICUNIT_ASSERT_EQUAL((int)(intptr_t)retptr, -1, retptr);
+    ICUNIT_ASSERT_EQUAL(static_cast<int>(static_cast<intptr_t>(retptr)), -1, retptr);
     //retptr = mmap(nullptr, 0, PROT_READ, MAP_PRIVATE, fd, 0);
     //ICUNIT_ASSERT_EQUAL((int)(intptr_t)retptr, -1, retptr);
     retptr = mmap(nullptr, -1, PROT_READ, MAP_PRIVATE, fd, 0);
-    ICUNIT_ASSERT_EQUAL((int)(intptr_t)retptr, -1, retptr);
+    ICUNIT_ASSERT_EQUAL(static_cast<int>(static_cast<intptr_t>(retptr)), -1, retptr);
     retptr = mmap(nullptr, 4096, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-    ICUNIT_ASSERT_EQUAL((int)(intptr_t)retptr, -1, retptr);
+    ICUNIT_ASSERT_EQUAL(static_cast<int>(static_cast<intptr_t>(retptr)), -1, retptr);
     retptr = mmap(nullptr, 4096, PROT_READ, MAP_SHARED, fd, 0);
-    ICUNIT_ASSERT_EQUAL((int)(intptr_t)retptr, -1, retptr);
+    ICUNIT_ASSERT_EQUAL(static_cast<int>(static_cast<intptr_t>(retptr)), -1, retptr);
 
     retptr = mmap(nullptr, 1, PROT_READ, MAP_PRIVATE, fd, 0);
-    ICUNIT_ASSERT_NOT_EQUAL((int)(intptr_t)retptr, -1, retptr);
+    ICUNIT_ASSERT_NOT_EQUAL(static_cast<int>(static_cast<intptr_t>(retptr)), -1, retptr);
     retptr = mmap(nullptr, 4095, PROT_READ, MAP_PRIVATE, fd, 0);
-    ICUNIT_ASSERT_EQUAL((int)(intptr_t)retptr, -1, retptr);
+    ICUNIT_ASSERT_EQUAL(static_cast<int>(static_cast<intptr_t>(retptr)), -1, retptr);
 
     /* testing read/write api */
     char buf[10] = {0};
@@ -121,7 +121,7 @@ static int TestCase(void)
     ICUNIT_ASSERT_NOT_EQUAL(fd, -1, fd);
 
     retptr = mmap(nullptr, 16 * 4096, PROT_READ, MAP_PRIVATE, fd, 0);
-    ICUNIT_ASSERT_NOT_EQUAL((int)(intptr_t)retptr, -1, retptr);
+    ICUNIT_ASSERT_NOT_EQUAL(static_cast<int>(static_cast<intptr_t>(retptr)), -1, retptr);
     ret = ioctl(fd, IPC_SET_CMS, 0);
     ICUNIT_ASSERT_NOT_EQUAL(ret, 0, ret);
     ret = ioctl(fd, IPC_SET_CMS, 200);

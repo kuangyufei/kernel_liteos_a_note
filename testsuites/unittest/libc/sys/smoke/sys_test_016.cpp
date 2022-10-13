@@ -35,7 +35,7 @@ static UINT32 TestCase(VOID)
     char *ptr = NULL;
     int ret;
 
-    ptr = basename((char *)".");
+    ptr = basename(const_cast<char *>("."));
     ret = strcmp(ptr, ".");
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 

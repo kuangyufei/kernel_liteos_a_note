@@ -52,7 +52,7 @@ static void SigHandler(int sig, siginfo_t *si, void *uc)
 #ifdef TEST_ON_LINUX
     timer_t timerid = *(timer_t *)si->si_value.sival_ptr;
 #else // SA_SIGINFO not compatible with POSIX on HMOS
-    timer_t timerid = *(timer_t *)si;
+    timer_t timerid = *reinterpret_cast<timer_t *>(si);
 #endif
 
     g_tmrOverrun += timer_getoverrun(timerid);

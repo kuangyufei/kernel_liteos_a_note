@@ -44,7 +44,7 @@ static void *Threadfunc(void *parm)
     int err;
     err = pthread_once(&g_onceCtrl, InitRoutine);
     ICUNIT_GOTO_EQUAL(err, 0, err, EXIT);
-    return (void *)g_okStatus;
+    return reinterpret_cast<void *>(g_okStatus);
 EXIT:
     return NULL;
 }

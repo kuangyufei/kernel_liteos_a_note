@@ -39,9 +39,10 @@ extern "C" {
 
 static UINT32 TaskF01(VOID)
 {
-    UINT32 ret;
+    UINT32 ret = OS_ERROR;
     UINT32 cpupUse;
     g_cpupTestCount++;
+
     ICUNIT_GOTO_EQUAL(g_cpupTestCount, 1, g_cpupTestCount, EXIT);
 
     cpupUse = LOS_HistoryProcessCpuUsage(LOS_GetCurrProcessID(), CPU_USE_MODE0);

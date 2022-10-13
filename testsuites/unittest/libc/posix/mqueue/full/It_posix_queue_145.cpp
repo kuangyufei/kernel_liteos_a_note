@@ -43,11 +43,11 @@ static VOID *PthreadF01(VOID *mq)
 
     LOS_AtomicInc(&g_testCount);
 
-    pthread_exit((void *)0);
+    pthread_exit(nullptr);
 
     return NULL;
 EXIT:
-    pthread_exit((void *)0);
+    pthread_exit(nullptr);
     g_testCount = 0;
     return NULL;
 }
@@ -64,11 +64,11 @@ static VOID *PthreadF02(VOID *mq)
     }
     LOS_AtomicInc(&g_testCount);
 
-    pthread_exit((void *)0);
+    pthread_exit(nullptr);
 
     return NULL;
 EXIT:
-    pthread_exit((void *)0);
+    pthread_exit(nullptr);
     g_testCount = 0;
     return NULL;
 }
@@ -85,11 +85,11 @@ static VOID *PthreadF03(VOID *mq)
     }
     LOS_AtomicInc(&g_testCount);
 
-    pthread_exit((void *)0);
+    pthread_exit(nullptr);
 
     return NULL;
 EXIT:
-    pthread_exit((void *)0);
+    pthread_exit(nullptr);
     g_testCount = 0;
     return NULL;
 }
@@ -107,11 +107,11 @@ static VOID *PthreadF04(VOID *mq)
 
     LOS_AtomicInc(&g_testCount);
 
-    pthread_exit((void *)0);
+    pthread_exit(nullptr);
 
     return NULL;
 EXIT:
-    pthread_exit((void *)0);
+    pthread_exit(nullptr);
     g_testCount = 0;
     return NULL;
 }

@@ -49,10 +49,10 @@ static void *Xmalloc(unsigned n)
 
 static int Compare(const void *pa, const void *pb)
 {
-    if (*(int *)pa < *(int *)pb) {
+    if (*static_cast<int *>(const_cast<void *>(pa)) < *static_cast<int *>(const_cast<void *>(pb))) {
         return -1;
     }
-    if (*(int *)pa > *(int *)pb) {
+    if (*static_cast<int *>(const_cast<void *>(pa)) > *static_cast<int *>(const_cast<void *>(pb))) {
         return 1;
     }
     return 0;
@@ -66,12 +66,14 @@ static void Action(const void *nodep, VISIT which, int depth)
         case preorder:
             break;
         case postorder:
-            datap = *(int **)nodep;
+            datap = *static_cast<int **>(const_cast<void *>(nodep));
             break;
         case endorder:
             break;
         case leaf:
-            datap = *(int **)nodep;
+            datap = *static_cast<int **>(const_cast<void *>(nodep));
+            break;
+        default:
             break;
     }
 }
@@ -86,7 +88,7 @@ static UINT32 TestCase(VOID)
     for (i = 0; i < 12; i++) {
         ptr = (int *)Xmalloc(sizeof(int));
         *ptr = rand() & 0xff;
-        val = tsearch((void *)ptr, &g_root, Compare);
+        val = tsearch(static_cast<void *>(ptr), &g_root, Compare);
         if (val == NULL) {
             exit(EXIT_FAILURE);
         } else if ((*(int **)val) != ptr) {

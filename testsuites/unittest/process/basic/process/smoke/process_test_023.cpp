@@ -46,7 +46,7 @@ static void *ThreadFunc(void *arg)
     ICUNIT_ASSERT_NOT_EQUAL_NULL(g_thread002, 0, g_thread002);
     g_thread001++;
 
-    return (void *)9; // 9, set thread return value.
+    return reinterpret_cast<void *>(9); // 9, set thread return value.
 EXIT:
     return NULL;
 }
@@ -61,7 +61,7 @@ static void *ThreadFunc2(void *arg)
     ICUNIT_ASSERT_NOT_EQUAL_NULL(ret, -1, ret);
     ICUNIT_ASSERT_NOT_EQUAL_NULL(g_thread001, 0, g_thread001);
 
-    return (void *)9; // 9, set thread return value.
+    return reinterpret_cast<void *>(9); // 9, set thread return value.
 EXIT:
     return NULL;
 }

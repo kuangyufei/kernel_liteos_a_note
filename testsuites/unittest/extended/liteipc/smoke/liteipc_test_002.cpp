@@ -65,7 +65,7 @@ static int CallTestServiceLoop(uint32_t id)
     ret = GetService(g_ipcFd, g_serviceName, sizeof(g_serviceName), &serviceHandle);
     ICUNIT_ASSERT_NOT_EQUAL(ret, 0, ret);
     retptr = mmap(NULL, 4096, PROT_READ, MAP_PRIVATE, g_ipcFd, 0);
-    ICUNIT_ASSERT_NOT_EQUAL((int)(intptr_t)retptr, -1, retptr);
+    ICUNIT_ASSERT_NOT_EQUAL(static_cast<int>(static_cast<intptr_t>(retptr)), -1, retptr);
     ret = GetService(g_ipcFd, g_serviceName, sizeof(g_serviceName), &serviceHandle);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
@@ -141,7 +141,7 @@ static int TestServiceLoop(void)
     ret = RegService(g_ipcFd, g_serviceName, sizeof(g_serviceName), &serviceHandle);
     ICUNIT_ASSERT_NOT_EQUAL(ret, 0, ret);
     retptr = mmap(NULL, 4096, PROT_READ, MAP_PRIVATE, g_ipcFd, 0);
-    ICUNIT_ASSERT_NOT_EQUAL((int)(intptr_t)retptr, -1, retptr);
+    ICUNIT_ASSERT_NOT_EQUAL(static_cast<int>(static_cast<intptr_t>(retptr)), -1, retptr);
     ret = RegService(g_ipcFd, g_serviceName, sizeof(g_serviceName), &serviceHandle);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 

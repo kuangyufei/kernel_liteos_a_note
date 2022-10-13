@@ -84,6 +84,10 @@ int GetFullpath(int fd, const char *path, char **fullpath)
             fd = GetAssociatedSystemFd(fd);
         }
         ret = fs_getfilep(fd, &file);
+        if (ret < 0) {
+            ret = -EPERM;
+            goto OUT;
+        }
         if (file) {
             ret = stat(file->f_path, &bufRet);
             if (!ret) {

@@ -62,8 +62,9 @@ static struct ProcDirEntry g_procRootDirEntry = { //proc 根部 即 /proc
 
 int ProcMatch(unsigned int len, const char *name, struct ProcDirEntry *pn)
 {
-    if (len != pn->nameLen)
+    if (len != pn->nameLen) {
         return 0;
+    }
     return !strncmp(name, pn->name, len);
 }
 
@@ -387,8 +388,9 @@ static void FreeProcEntry(struct ProcDirEntry *entry)
 ///释放
 void ProcFreeEntry(struct ProcDirEntry *pn)
 {
-    if (atomic_dec_and_test(&pn->count))
+    if (atomic_dec_and_test(&pn->count)) {
         FreeProcEntry(pn);
+    }
 }
 
 static void RemoveProcEntryTravalsal(struct ProcDirEntry *pn)

@@ -47,7 +47,7 @@ static int TestRaiseIgnore(void)
 
     g_sigCount = 0;
     // trigger one
-    ret = (void *)signal(sig, SigPrint);
+    ret = reinterpret_cast<void *>(signal(sig, SigPrint));
     ICUNIT_ASSERT_NOT_EQUAL(ret, NULL, ret);
 
     retValue = raise(sig);
@@ -55,13 +55,13 @@ static int TestRaiseIgnore(void)
 
     usleep(1000); // 1000, Used to calculate the delay time.
     // trigger ignore
-    ret = (void *)signal(sig, SIG_IGN);
+    ret = reinterpret_cast<void *>(signal(sig, SIG_IGN));
     ICUNIT_ASSERT_NOT_EQUAL(ret, NULL, ret);
 
     retValue = raise(sig);
     ICUNIT_ASSERT_EQUAL(retValue, 0, retValue);
     // trigger one
-    ret = (void *)signal(sig, SigPrint);
+    ret = reinterpret_cast<void *>(signal(sig, SigPrint));
     ICUNIT_ASSERT_NOT_EQUAL(ret, NULL, ret);
     retValue = raise(sig);
     ICUNIT_ASSERT_EQUAL(retValue, 0, retValue);

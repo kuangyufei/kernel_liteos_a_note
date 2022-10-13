@@ -45,7 +45,6 @@ static int TestMkfifoReturn()
     int retValue, i;
     int status = 0;
     pid_t pid;
-    char pathname[NAME_BUF_SIZE];
 
     retValue = mkfifo("/dev/fifo0", 0777); // 0777, mkfifo config.
     ICUNIT_ASSERT_EQUAL(retValue, 0, retValue);
@@ -57,7 +56,6 @@ static int TestMkfifoReturn()
     unlink("/dev/fifo0/fifo1");
     unlink("/dev/usr/fifo0");
     rmdir("/dev/usr");
-    unlink(pathname);
     unlink("/dev/fifo0");
     return LOS_OK;
 
@@ -66,7 +64,6 @@ EXIT:
     unlink("/dev/fifo0/fifo1");
     unlink("/dev/usr/fifo0");
     rmdir("/dev/usr");
-    unlink(pathname);
     unlink("/dev/fifo0");
     return LOS_NOK;
 }

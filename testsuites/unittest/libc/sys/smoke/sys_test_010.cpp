@@ -33,7 +33,7 @@
 static UINT32 TestCase(VOID)
 {
     char *plocale = NULL;
-    char *buffer = (char *)"C";
+    char *buffer = const_cast<char *>("C");
     int ret;
 
     plocale = setlocale(LC_ALL, NULL);

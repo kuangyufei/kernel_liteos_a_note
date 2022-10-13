@@ -63,8 +63,8 @@ static void *ThreadSetFunc2(void *arg)
     pthread_exit((void *)NULL);
     return NULL;
 EXIT:
-    pthread_exit((void *)-1);
-    return (void *)-1;
+    pthread_exit(reinterpret_cast<void *>(-1));
+    return reinterpret_cast<void *>(-1);
 }
 
 static void *ThreadSetDfl(void *arg)
@@ -76,8 +76,8 @@ static void *ThreadSetDfl(void *arg)
     pthread_exit((void *)NULL);
     return NULL;
 EXIT:
-    pthread_exit((void *)-1);
-    return (void *)-1;
+    pthread_exit(reinterpret_cast<void *>(-1));
+    return reinterpret_cast<void *>(-1);
 }
 
 static void *ThreadKill(void *arg)
@@ -90,8 +90,8 @@ static void *ThreadKill(void *arg)
     pthread_exit((void *)NULL);
     return NULL;
 EXIT:
-    pthread_exit((void *)-1);
-    return (void *)-1;
+    pthread_exit(reinterpret_cast<void *>(-1));
+    return reinterpret_cast<void *>(-1);
 }
 
 static int TestSigMultiPthread(void)
@@ -119,15 +119,15 @@ static int TestSigMultiPthread(void)
             exit(ret);
         }
 
-        pthread_join(thread, (void **)&status1);
+        pthread_join(thread, reinterpret_cast<void **>(&status1));
         if ((int)(intptr_t)status1 != 0) {
             exit(-1);
         }
-        pthread_join(thread1, (void **)&status1);
+        pthread_join(thread1, reinterpret_cast<void **>(&status1));
         if ((int)(intptr_t)status1 != 0) {
             exit(-1);
         }
-        pthread_join(thread2, (void **)&status1);
+        pthread_join(thread2, reinterpret_cast<void **>(&status1));
         if ((int)(intptr_t)status1 != 0) {
             exit(-1);
         }

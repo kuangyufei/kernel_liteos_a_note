@@ -41,8 +41,8 @@ static UINT32 testcase(VOID) {
     setlocale(LC_NUMERIC, "");
 
     /* echo the nl_langinfo_l */
-    printf("%s\n", nl_langinfo_l(CODESET, (locale_t)"en_US.UTF-8"));
-    printf("%s\n", nl_langinfo_l(RADIXCHAR, (locale_t)"en_US.UTF-8"));
+    printf("%s\n", nl_langinfo_l(CODESET, reinterpret_cast<locale_t>(const_cast<char *>("en_US.UTF-8"))));
+    printf("%s\n", nl_langinfo_l(RADIXCHAR, reinterpret_cast<locale_t>(const_cast<char *>("en_US.UTF-8"))));
 
     /* set the locale info */
     setenv("MUSL_LOCPATH", "/storage", 1);
@@ -53,10 +53,10 @@ static UINT32 testcase(VOID) {
     setlocale(LC_NUMERIC, "");
 
     /* echo the nl_langinfo */
-    printf("%s\n", nl_langinfo_l(CODESET, (locale_t)"zh_CN.UTF-8"));
-    printf("%s\n", nl_langinfo_l(RADIXCHAR, (locale_t)"zh_CN.UTF-8"));
+    printf("%s\n", nl_langinfo_l(CODESET, reinterpret_cast<locale_t>(const_cast<char *>("zh_CN.UTF-8"))));
+    printf("%s\n", nl_langinfo_l(RADIXCHAR, reinterpret_cast<locale_t>(const_cast<char *>("zh_CN.UTF-8"))));
 
-    char *string = nl_langinfo_l(CRNCYSTR, (locale_t)"zh_CN.UTF-8");
+    char *string = nl_langinfo_l(CRNCYSTR, reinterpret_cast<locale_t>(const_cast<char *>("zh_CN.UTF-8")));
     ICUNIT_ASSERT_NOT_EQUAL_NULL(string, NULL, string);
     setlocale(LC_ALL, "C");
 

@@ -49,7 +49,7 @@ static UINT32 TestCase(VOID)
         ICUNIT_ASSERT_EQUAL(retval, -1, retval);
         ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
         printf("----------------------------------\n");
-        retval = sigprocmask(SIG_BLOCK, (sigset_t *)1, &oldset);
+        retval = sigprocmask(SIG_BLOCK, reinterpret_cast<sigset_t *>(1), &oldset);
         ICUNIT_ASSERT_EQUAL(retval, -1, retval);
         ICUNIT_ASSERT_EQUAL(errno, EFAULT, errno);
         printf("----------------------------------\n");

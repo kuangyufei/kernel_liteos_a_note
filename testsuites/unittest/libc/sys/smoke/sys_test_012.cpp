@@ -34,8 +34,8 @@ static UINT32 TestCase(VOID)
 {
     char *val = NULL;
     char *val2 = NULL;
-    const char *name = (char *)"ABC";
-    char *env = (char *)"test-test";
+    const char *name = "ABC";
+    char *env = "test-test";
     int ret;
 
     val = getenv(name);

@@ -73,7 +73,7 @@ static UINT32 TestCase(VOID)
             exit(errno);
         }
 
-        ret = sigsuspend((sigset_t *)2); // 2, suspend signal num.
+        ret = sigsuspend(reinterpret_cast<sigset_t *>(2)); // 2, suspend signal num.
         if (ret != -1) {
             exit(ret);
         }
@@ -89,7 +89,7 @@ static UINT32 TestCase(VOID)
             exit(errno);
         }
 
-        ret = sigpending((sigset_t *)2); // 2, pending signal num.
+        ret = sigpending(reinterpret_cast<sigset_t *>(2)); // 2, pending signal num.
         if (ret != -1) {
             exit(ret);
         }

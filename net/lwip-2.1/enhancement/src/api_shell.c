@@ -342,7 +342,7 @@ int print_netif(struct netif *netif, char *print_buf, unsigned int buf_len)
     buf_len -= (unsigned int)ret;
 
     ret = snprintf_s(tmp, buf_len, (buf_len - 1), " MTU:%d %s", netif->mtu,
-                     netif->flags & NETIF_FLAG_UP ? "Running" : "Stop");
+                     (netif->flags & NETIF_FLAG_UP) ? "Running" : "Stop");
     if ((ret <= 0) || ((unsigned int)ret >= buf_len))
         goto out;
     tmp += ret;
@@ -356,7 +356,8 @@ int print_netif(struct netif *netif, char *print_buf, unsigned int buf_len)
         buf_len -= (unsigned int)ret;
     }
 
-    ret = snprintf_s(tmp, buf_len, (buf_len - 1), " %s\n", netif->flags & NETIF_FLAG_LINK_UP ? "Link UP" : "Link Down");
+    ret = snprintf_s(tmp, buf_len, (buf_len - 1), " %s\n", 
+                     (netif->flags & NETIF_FLAG_LINK_UP) ? "Link UP" : "Link Down");
     if ((ret <= 0) || ((unsigned int)ret >= buf_len))
         goto out;
     tmp += ret;
@@ -3019,8 +3020,8 @@ int netstat_netconn_sendq(struct netconn *conn)
 #if PF_PKT_SUPPORT
         case NETCONN_PKT_RAW:
             retVal = 0; /* always be 0 as frame send to driver directly */
-#endif
             break;
+#endif
         case NETCONN_UDP:
             retVal = netstat_udp_sendq(conn->pcb.udp);
             break;
@@ -3796,8 +3797,9 @@ u32_t osShellIpDebug(int argc, const char **argv)
             PRINTK("%-50s ", acIPv6Addr);
 
             if (snprintf_s(aclladdr, sizeof(aclladdr), sizeof(aclladdr) - 1, "%02X:%02X:%02X:%02X:%02X:%02X",
-                           neighbor_cache[i].lladdr[0], neighbor_cache[i].lladdr[1], neighbor_cache[i].lladdr[2],
-                           neighbor_cache[i].lladdr[3], neighbor_cache[i].lladdr[4], neighbor_cache[i].lladdr[5]) < 0) {
+                           neighbor_cache[i].lladdr[0], neighbor_cache[i].lladdr[1], /* 0, 1, member number */
+                           neighbor_cache[i].lladdr[2], neighbor_cache[i].lladdr[3], /* 2, 3, member number */
+                           neighbor_cache[i].lladdr[4], neighbor_cache[i].lladdr[5]) < 0) { /* 4, 5, member number */
                 return LOS_NOK;
             }
             PRINTK("%-25s ", aclladdr);

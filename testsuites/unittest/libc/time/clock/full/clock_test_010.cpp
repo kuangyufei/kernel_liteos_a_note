@@ -51,8 +51,8 @@ static int SleepTest(int64_t expectTime)
     ret = clock_gettime(clk, &oldtp);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    tp.tv_sec = expectTime / (long)1e9;
-    tp.tv_nsec = expectTime % (long)1e9;
+    tp.tv_sec = expectTime / static_cast<long>(1e9);
+    tp.tv_nsec = expectTime % static_cast<long>(1e9);
     ret = clock_nanosleep(clk, 0, &tp, nullptr);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
@@ -60,7 +60,7 @@ static int SleepTest(int64_t expectTime)
     ret = clock_gettime(clk, &tp);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    escapeTime = (tp.tv_sec - oldtp.tv_sec) * (int64_t)1e9  + (tp.tv_nsec - oldtp.tv_nsec);
+    escapeTime = (tp.tv_sec - oldtp.tv_sec) * static_cast<int64_t>(1e9)  + (tp.tv_nsec - oldtp.tv_nsec);
     LogPrintln("slept time (expected --> actual): %" PRId64 "ns --> %" PRId64 "ns, delta: %" PRId64 "ns\n", expectTime,
         escapeTime, escapeTime - expectTime);
 
