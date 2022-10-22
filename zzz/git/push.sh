@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 同步主线修复的一些小bug
+git commit -m  ' weharmonyos.com 完成备案
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com
