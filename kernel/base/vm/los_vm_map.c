@@ -306,7 +306,7 @@ LosVmSpace *OsCreateUserVmSpace(VOID)
     return space;
 }
 
-STATIC BOOL OsVmSpaceParamCheck(LosVmSpace *vmSpace)//这么简单也要写个函数?
+STATIC BOOL OsVmSpaceParamCheck(const LosVmSpace *vmSpace)//这么简单也要写个函数?
 {
     if (vmSpace == NULL) {
         return FALSE;

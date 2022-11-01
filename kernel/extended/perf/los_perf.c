@@ -289,7 +289,7 @@ STATIC UINT32 OsPerfCollectData(Event *event, PerfSampleData *data, PerfRegs *re
  * return TRUE if user haven't specified any taskId(which is supposed
  * to instrument the whole system)
  */
-STATIC INLINE BOOL OsFilterId(UINT32 id, UINT32 *ids, UINT8 idsNr)
+STATIC INLINE BOOL OsFilterId(UINT32 id, const UINT32 *ids, UINT8 idsNr)
 {
     UINT32 i;
     if (!idsNr) {

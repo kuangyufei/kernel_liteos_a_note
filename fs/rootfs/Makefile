@@ -33,10 +33,6 @@ MODULE_NAME := rootfs
 
 LOCAL_SRCS := $(wildcard los_rootfs.c los_bootargs.c)
 
-ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
-LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/../../device/qemu/drivers/cfiflash
-endif
-
 LOCAL_FLAGS := $(LOCAL_INCLUDE)
 
 include $(MODULE)

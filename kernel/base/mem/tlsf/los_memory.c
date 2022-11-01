@@ -979,7 +979,7 @@ STATIC UINT32 OsMemPoolAdd(VOID *pool, UINT32 size)
     return LOS_OK;
 }
 /// 删除内存池
-STATIC UINT32 OsMemPoolDelete(VOID *pool)
+STATIC UINT32 OsMemPoolDelete(const VOID *pool)
 {
     UINT32 ret = LOS_NOK;
     VOID *nextPool = NULL;

@@ -116,8 +116,8 @@ static UINT16 GetFreeVid(VOID)
     for (i = 0; i < mapMaxNum; i++) {
         num = idMap->bitMap[i];
         for (j = 0; j < INT_BIT_COUNT; j++) {
-            if ((num & (1 << j)) == 0) {
-                num |= 1 << j;
+            if ((num & (1U << j)) == 0) {
+                num |= 1U << j;
                 idMap->bitMap[i] = num;
                 return (INT_BIT_COUNT * i + j);
             }

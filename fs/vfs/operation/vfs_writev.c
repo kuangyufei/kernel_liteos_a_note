@@ -66,7 +66,6 @@ static int iov_trans_to_buf(char *buf, ssize_t totallen, const struct iovec *iov
             } else {
                 writepart = bytestowrite - ret;
                 curbuf += writepart;
-                totallen -= writepart;
                 break;
             }
         }

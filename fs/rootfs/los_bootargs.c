@@ -32,12 +32,8 @@
 #include "los_base.h"
 #include "string.h"
 
-#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND) || defined(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)
+#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND)
 #include "mtd_list.h"
-#endif
-
-#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
-#include "cfiflash.h"
 #endif
 
 #ifdef LOSCFG_STORAGE_EMMC
@@ -93,19 +89,6 @@ INT32 LOS_GetCmdLine(VOID)
     }
     g_alignSize = mtd->eraseSize;
     ret = mtd->read(mtd, COMMAND_LINE_ADDR, COMMAND_LINE_SIZE, g_cmdLine);//读取nand下的命令行内容
-    if (ret == COMMAND_LINE_SIZE) {
-        return LOS_OK;
-    }
-#endif
-
-#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
-    struct MtdDev *mtd = GetCfiMtdDev();
-    if (mtd == NULL) {
-        PRINT_ERR("Get CFI mtd failed!\n");
-        goto ERROUT;
-    }
-    g_alignSize = mtd->eraseSize;
-    ret = mtd->read(mtd, CFIFLASH_BOOTARGS_ADDR, COMMAND_LINE_SIZE, g_cmdLine);
     if (ret == COMMAND_LINE_SIZE) {
         return LOS_OK;
     }

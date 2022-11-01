@@ -84,12 +84,6 @@ VFS是一种机制、是每一种文件系统都必须按照这个机制去实�
 #define ROOTFS_ADDR             0x600000
 #define ROOTFS_SIZE             0x800000
 #define USERFS_SIZE             0x80000
-#elif defined (LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)
-#define ROOT_DEV_NAME           "/dev/cfiflash0"
-#define USER_DEV_NAME           "/dev/cfiflash2"
-#define ROOTFS_ADDR             CFIFLASH_ROOT_ADDR
-#define ROOTFS_SIZE             0x1B00000
-#define USERFS_SIZE             (CFIFLASH_CAPACITY - ROOTFS_ADDR - ROOTFS_SIZE)
 #elif defined (LOSCFG_STORAGE_EMMC)
 #define ROOT_DEV_NAME           "/dev/mmcblk0p0"
 #ifdef LOSCFG_PLATFORM_PATCHFS

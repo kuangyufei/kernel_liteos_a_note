@@ -70,7 +70,7 @@ VOID OsVmPhysDump(VOID);
 VOID OsVmPhysUsedInfoGet(UINT32 *usedCount, UINT32 *totalCount);
 INT32 OsRegionOverlapCheck(LosVmSpace *space, LosVmMapRegion *region);
 VOID OsDumpPte(VADDR_T vaddr);
-LosProcessCB *OsGetPIDByAspace(LosVmSpace *space);
+LosProcessCB *OsGetPIDByAspace(const LosVmSpace *space);
 CHAR *OsArchFlagsToStr(const UINT32 archFlags);
 
 #ifdef __cplusplus

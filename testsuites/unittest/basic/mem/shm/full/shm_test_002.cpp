@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,6 +31,7 @@
 #include "it_test_shm.h"
 
 #define SHMID_MAX 192
+#define SHM_FLAG 0777
 
 static int Testcase(VOID)
 {
@@ -44,24 +45,24 @@ static int Testcase(VOID)
     ICUNIT_ASSERT_EQUAL(ret, SHMID_MAX, ret);
     leftShmIds = SHMID_MAX - shmInfo.used_ids;
 
-    shmid[0] = shmget((key_t)0x1234, PAGE_SIZE, 0777 | IPC_CREAT);
+    shmid[0] = shmget((key_t)0x1234, PAGE_SIZE, SHM_FLAG | IPC_CREAT); // 0x1234: a key used to create shared memory
     ICUNIT_ASSERT_NOT_EQUAL(shmid[0], -1, shmid[0]);
 
     ret = shmctl(shmid[0], IPC_RMID, NULL);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    shmid[0] = shmget(IPC_PRIVATE, PAGE_SIZE, 0777 | IPC_CREAT);
+    shmid[0] = shmget(IPC_PRIVATE, PAGE_SIZE, SHM_FLAG | IPC_CREAT);
     ICUNIT_ASSERT_NOT_EQUAL(shmid[0], -1, shmid[0]);
 
     ret = shmctl(shmid[0], IPC_RMID, NULL);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     for (i = 0; i < leftShmIds; i++) {
-        shmid[i] = shmget(IPC_PRIVATE, PAGE_SIZE, 0777 | IPC_CREAT);
+        shmid[i] = shmget(IPC_PRIVATE, PAGE_SIZE, SHM_FLAG | IPC_CREAT);
         ICUNIT_ASSERT_NOT_EQUAL(shmid[i], -1, shmid[i]);
     }
 
-    shmid[leftShmIds] = shmget(IPC_PRIVATE, PAGE_SIZE, 0777 | IPC_CREAT);
+    shmid[leftShmIds] = shmget(IPC_PRIVATE, PAGE_SIZE, SHM_FLAG | IPC_CREAT);
     ICUNIT_ASSERT_EQUAL(shmid[leftShmIds], -1, shmid[leftShmIds]);
 
     for (i = 0; i < leftShmIds; i++) {

@@ -858,7 +858,6 @@ ssize_t VfsJffs2Readlink(struct Vnode *vnode, char *buffer, size_t bufLen)
 
     cnt = (bufLen - 1) < targetLen ? (bufLen - 1) : targetLen;
     if (LOS_CopyFromKernel(buffer, bufLen, (const char *)f->target, cnt) != 0) {
-        cnt = 0;
         LOS_MuxUnlock(&g_jffs2FsLock);
         return -EFAULT;
     }

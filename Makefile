@@ -82,9 +82,6 @@ endif
 ifeq ($(LOSCFG_STORAGE_SPINAND), y)
 FSTYPE = yaffs2
 endif
-ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
-FSTYPE = jffs2
-endif
 ROOTFS_DIR = $(OUT)/rootfs
 ROOTFS_ZIP = $(OUT)/rootfs.zip
 

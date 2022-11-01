@@ -76,7 +76,7 @@ static void Task01(void)
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT2);
 
     ret = memset_s((void *)(&taskInitParam), sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
-    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT2;
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT2);
     taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)Task04;
     taskInitParam.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
     taskInitParam.pcName = "SmpCpup005_task04";

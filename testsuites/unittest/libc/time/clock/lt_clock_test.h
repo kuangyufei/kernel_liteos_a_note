@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -41,7 +41,7 @@
 #define CLOCK_RES_NSEC 1000
 #define CLOCK_COARSE_RES_SEC 0
 #define CLOCK_COARSE_RES_NSEC 1000000
-#define CLOCK_GET_CPU_CLOCKID(pid) ((-pid - 1) * 8U + 2)
+#define CLOCK_GET_CPU_CLOCKID(pid) ((-(pid) - 1) * 8U + 2)
 
 void ClockTestSmoke(void);
 void ClockTest001(void);

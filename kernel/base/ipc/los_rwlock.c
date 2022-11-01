@@ -123,7 +123,7 @@ UINT32 LOS_RwlockDestroy(LosRwlock *rwlock)
     return LOS_OK;
 }
 /// 读写锁检查
-STATIC UINT32 OsRwlockCheck(LosRwlock *rwlock)
+STATIC UINT32 OsRwlockCheck(const LosRwlock *rwlock)
 {
     if (rwlock == NULL) {
         return LOS_EINVAL;

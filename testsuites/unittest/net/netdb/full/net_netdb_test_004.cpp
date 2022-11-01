@@ -65,7 +65,7 @@ static int GetHostByAddrTest(void)
     addr = gethostbyaddr(&ia, sizeof ia, AF_INET);
     ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
 
-    RecoveryFileEnv(pathList, file_number);
+    RecoveryFileEnv(pathList, file_number);
     return ICUNIT_SUCCESS;
 }
 

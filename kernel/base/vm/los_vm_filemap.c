@@ -141,10 +141,10 @@ VOID OsAddMapInfo(LosFilePage *page, LosArchMmu *archMmu, VADDR_T vaddr)
     page->n_maps++;//映射总数++
 }
 ///通过虚拟地址获取文件页映射信息,archMmu每个进程都有属于自己的mmu
-LosMapInfo *OsGetMapInfo(LosFilePage *page, LosArchMmu *archMmu, VADDR_T vaddr)
+LosMapInfo *OsGetMapInfo(const LosFilePage *page, const LosArchMmu *archMmu, VADDR_T vaddr)
 {
     LosMapInfo *info = NULL;
-    LOS_DL_LIST *immap = &page->i_mmap;//一个文件页被多个进程映射
+    const LOS_DL_LIST *immap = &page->i_mmap;//一个文件页被多个进程映射
 
     LOS_DL_LIST_FOR_EACH_ENTRY(info, immap, LosMapInfo, node) {//遍历每个节点
         if ((info->archMmu == archMmu) && (info->vaddr == vaddr) && (info->page == page)) {//全等时返回
@@ -230,7 +230,7 @@ VOID OsVmmFileRemove(LosVmMapRegion *region, LosArchMmu *archMmu, VM_OFFSET_T pg
     return;
 }
 ///标记page为脏页 进程修改了高速缓存里的数据时，该页就被内核标记为脏页
-VOID OsMarkPageDirty(LosFilePage *fpage, LosVmMapRegion *region, INT32 off, INT32 len)
+VOID OsMarkPageDirty(LosFilePage *fpage, const LosVmMapRegion *region, INT32 off, INT32 len)
 {
     if (region != NULL) {
         OsSetPageDirty(fpage->vmPage);//设置为脏页

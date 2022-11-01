@@ -49,13 +49,13 @@ static VOID NestingPrioHigh(INT32 irq, VOID *data)
     UINT64 curTime;
     curTime = LOS_CurrNanosec();
     g_recordTime[g_saveIndex] = curTime - g_intPendTime;
-    if (g_saveIndex == MAX_RECORD_SIZE) {
-        g_saveIndex = 0;
-    }
     dprintf("curTime = %lld, pendTime = %lld \n", curTime, g_intPendTime);
     dprintf("%lld\n", curTime - g_intPendTime);
     dprintf("[swtmr] hwi response time : ##%lld \n", g_recordTime[g_saveIndex]);
     g_saveIndex++;
+    if (g_saveIndex == MAX_RECORD_SIZE) {
+        g_saveIndex = 0;
+    }
 }
 
 static VOID DumpResult()

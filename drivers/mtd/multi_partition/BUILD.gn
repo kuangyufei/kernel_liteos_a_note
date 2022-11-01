@@ -39,10 +39,6 @@ kernel_module(module_name) {
 
   include_dirs = [ "$LITEOSTOPDIR/fs/jffs2/include" ]
 
-  if (defined(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)) {
-    include_dirs += [ "//device/qemu/drivers/cfiflash" ]
-  }
-
   public_configs = [ ":public" ]
 }
 

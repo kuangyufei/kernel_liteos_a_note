@@ -37,13 +37,9 @@
 #include "sys/stat.h"
 #include "sys/types.h"
 
-#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND) || defined(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)
+#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND)
 #include "mtd_list.h"
 #include "mtd_partition.h"
-#endif
-
-#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
-#include "cfiflash.h"
 #endif
 
 #ifdef LOSCFG_STORAGE_EMMC
@@ -128,14 +124,7 @@ STATIC INT32 AddEmmcParts(INT32 rootAddr, INT32 rootSize, INT32 userAddr, INT32 
 //增加一个分
 STATIC INT32 AddPartitions(CHAR *dev, UINT64 rootAddr, UINT64 rootSize, UINT64 userAddr, UINT64 userSize)
 {
-#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
-    if ((strcmp(dev, "cfi-flash") == 0) && (rootAddr != CFIFLASH_ROOT_ADDR)) {
-        PRINT_ERR("Error rootAddr, must be %#0x!\n", CFIFLASH_ROOT_ADDR);
-        return LOS_NOK;
-    }
-#endif
-
-#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND) || defined(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)
+#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND)
     INT32 ret;
     INT32 blk0 = 0;
     INT32 blk2 = 2;

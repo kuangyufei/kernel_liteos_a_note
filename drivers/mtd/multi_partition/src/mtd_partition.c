@@ -39,10 +39,6 @@
 #include "fs/driver.h"
 #include "mtd/mtd_legacy_lite.h"
 
-#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
-#include "cfiflash.h"
-#endif
-
 
 #define DRIVER_NAME_ADD_SIZE    3 // 0p0 所以加三个字节
 pthread_mutex_t g_mtdPartitionLock = PTHREAD_MUTEX_INITIALIZER;
@@ -148,17 +144,10 @@ static VOID MtdNorParamAssign(partition_param *spinorParam, const struct MtdDev 
      * you can change the SPIBLK_NAME or SPICHR_NAME to NULL.
      *///如果用户不想使用 block mtd 或 char mtd ，您可以将 SPIBLK_NAME 或 SPICHR_NAME 更改为 NULL。
     spinorParam->flash_mtd = (struct MtdDev *)spinorMtd;
-#ifndef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7 //QEMU开关
     spinorParam->flash_ops = GetDevSpinorOps();//块操作
     spinorParam->char_ops = GetMtdCharFops();//字符操作
     spinorParam->blockname = SPIBLK_NAME;
     spinorParam->charname = SPICHR_NAME;
-#else
-    spinorParam->flash_ops = GetCfiBlkOps();
-    spinorParam->char_ops = NULL;
-    spinorParam->blockname = CFI_DRIVER;
-    spinorParam->charname = NULL;
-#endif
     spinorParam->partition_head = g_spinorPartitionHead;//头分区节点
     spinorParam->block_size = spinorMtd->eraseSize;//4K, 读/写/擦除 的最小单位
 }
@@ -172,11 +161,7 @@ static VOID MtdDeinitSpinorParam(VOID)
 ///spi nor flash 参数初始化
 static partition_param *MtdInitSpinorParam(partition_param *spinorParam)
 {
-#ifndef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7 //
     struct MtdDev *spinorMtd = GetMtd("spinor");
-#else
-    struct MtdDev *spinorMtd = GetCfiMtdDev();
-#endif
     if (spinorMtd == NULL) {
         return NULL;
     }

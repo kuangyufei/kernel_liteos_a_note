@@ -353,7 +353,7 @@ static struct file_operations_vfs g_errorFileOps = {
     .unlink = ErrorFopUnlink,
 };
 
-static struct Mount* GetDevMountPoint(struct Vnode *dev)
+static struct Mount* GetDevMountPoint(const struct Vnode *dev)
 {
     struct Mount *mnt = NULL;
     LIST_HEAD *mntList = GetMountList();
@@ -394,7 +394,7 @@ static void FilePreClose(struct file *filep, const struct file_operations_vfs *o
     }
 }
 
-static void FileDisableAndClean(struct Mount *mnt)
+static void FileDisableAndClean(const struct Mount *mnt)
 {
     struct filelist *flist = &tg_filelist;
     struct file *filep = NULL;
@@ -435,7 +435,7 @@ static void VnodeTryFree(struct Vnode *vnode)
     vnode->fop = &g_errorFileOps;
 }
 
-static void VnodeTryFreeAll(struct Mount *mount)
+static void VnodeTryFreeAll(const struct Mount *mount)
 {
     struct Vnode *vnode = NULL;
     struct Vnode *nextVnode = NULL;

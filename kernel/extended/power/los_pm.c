@@ -339,7 +339,7 @@ UINT32 LOS_PmRegister(LOS_PmNodeType type, VOID *node)
     return LOS_EINVAL;
 }
 
-STATIC UINT32 OsPmDeviceUnregister(LosPmCB *pm, LosPmDevice *device)
+STATIC UINT32 OsPmDeviceUnregister(LosPmCB *pm, const LosPmDevice *device)
 {
     LOS_SpinLock(&g_pmSpin);
     if (pm->device == device) {
