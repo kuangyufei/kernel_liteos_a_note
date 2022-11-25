@@ -252,7 +252,7 @@ UINT32 OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
     return pmSize;
 }
 ///通过虚拟空间获取进程实体
-LosProcessCB *OsGetPIDByAspace(LosVmSpace *space)
+LosProcessCB *OsGetPIDByAspace(const LosVmSpace *space)
 {
     UINT32 pid;
     UINT32 intSave;

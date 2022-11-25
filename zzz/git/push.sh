@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 同步主线,删除 PLATFORM_QEMU_ARM_VIRT_CA7 侵入内核的所有代码
+git commit -m  ' 更新内核架构图
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com

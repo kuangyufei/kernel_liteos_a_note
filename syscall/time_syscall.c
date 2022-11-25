@@ -109,7 +109,7 @@ int SysSetiTimer(int which, const struct itimerval *value, struct itimerval *ova
 {
     int ret;
     struct itimerval svalue;
-    struct itimerval sovalue;
+    struct itimerval sovalue = { 0 };
 
     if (value == NULL) {
         errno = EINVAL;
@@ -137,7 +137,7 @@ int SysSetiTimer(int which, const struct itimerval *value, struct itimerval *ova
 int SysGetiTimer(int which, struct itimerval *value)
 {
     int ret;
-    struct itimerval svalue;
+    struct itimerval svalue = { 0 };
 
     if (value == NULL) {
         errno = EINVAL;
@@ -189,7 +189,7 @@ int SysTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID)
 int SysTimerGettime(timer_t timerID, struct itimerspec *value)
 {
     int ret;
-    struct itimerspec svalue;
+    struct itimerspec svalue = { 0 };
 
     if (value == NULL) {
         errno = EINVAL;
@@ -213,7 +213,7 @@ int SysTimerSettime(timer_t timerID, int flags, const struct itimerspec *value, 
 {
     int ret;
     struct itimerspec svalue;
-    struct itimerspec soldValue;
+    struct itimerspec soldValue = { 0 };
 
     if (value == NULL) {
         errno = EINVAL;
@@ -281,11 +281,11 @@ int SysClockSettime(clockid_t clockID, const struct timespec *tp)
     }
     return ret;
 }
-/// 获取系统时间
+
 int SysClockGettime(clockid_t clockID, struct timespec *tp)
 {
     int ret;
-    struct timespec stp;
+    struct timespec stp = { 0 };
 
     if (tp == NULL) {
         errno = EINVAL;
@@ -308,7 +308,7 @@ int SysClockGettime(clockid_t clockID, struct timespec *tp)
 int SysClockGetres(clockid_t clockID, struct timespec *tp)
 {
     int ret;
-    struct timespec stp;
+    struct timespec stp = { 0 };
 
     if (tp == NULL) {
         errno = EINVAL;
@@ -356,7 +356,7 @@ int SysNanoSleep(const struct timespec *rqtp, struct timespec *rmtp)
 {
     int ret;
     struct timespec srqtp;
-    struct timespec srmtp;
+    struct timespec srmtp = { 0 };
 
     if (!rqtp || LOS_ArchCopyFromUser(&srqtp, rqtp, sizeof(struct timespec))) {
         errno = EFAULT;
@@ -384,7 +384,7 @@ int SysNanoSleep(const struct timespec *rqtp, struct timespec *rmtp)
 clock_t SysTimes(struct tms *buf)
 {
     clock_t ret;
-    struct tms sbuf;
+    struct tms sbuf = { 0 };
 
     if (buf == NULL) {
         errno = EFAULT;
@@ -436,7 +436,7 @@ int SysClockGettime64(clockid_t clockID, struct timespec64 *tp)
 {
     int ret;
     struct timespec t;
-    struct timespec64 stp;
+    struct timespec64 stp = { 0 };
 
     if (tp == NULL) {
         errno = EINVAL;
@@ -463,7 +463,7 @@ int SysClockGetres64(clockid_t clockID, struct timespec64 *tp)
 {
     int ret;
     struct timespec t;
-    struct timespec64 stp;
+    struct timespec64 stp = { 0 };
 
     if (tp == NULL) {
         errno = EINVAL;
@@ -525,7 +525,7 @@ int SysTimerGettime64(timer_t timerID, struct itimerspec64 *value)
 {
     int ret;
     struct itimerspec val;
-    struct itimerspec64 svalue;
+    struct itimerspec64 svalue = { 0 };
 
     if (value == NULL) {
         errno = EINVAL;
@@ -584,6 +584,7 @@ int SysTimerSettime64(timer_t timerID, int flags, const struct itimerspec64 *val
     }
 
     if (oldValue != NULL) {
+        (void)memset_s(&soldValue, sizeof(struct itimerspec64), 0, sizeof(struct itimerspec64));
         soldValue.it_interval.tv_sec = oldVal.it_interval.tv_sec;
         soldValue.it_interval.tv_nsec = oldVal.it_interval.tv_nsec;
         soldValue.it_value.tv_sec = oldVal.it_value.tv_sec;
