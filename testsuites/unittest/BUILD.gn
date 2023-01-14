@@ -151,5 +151,15 @@ group("unittest") {
         deps += [ "security:liteos_a_security_unittest" ]
       }
     }
+
+    # container test
+    if (LOSCFG_USER_TEST_CONTAINER == true) {
+      if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
+        deps += [ "container:liteos_a_container_unittest_door" ]
+      }
+      if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
+        deps += [ "container:liteos_a_container_unittest" ]
+      }
+    }
   }
 }

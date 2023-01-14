@@ -52,6 +52,9 @@
 #include "hm_liteipc.h"
 #endif
 #include "los_mp.h"
+#ifdef LOSCFG_KERNEL_CONTAINER
+#include "los_container_pri.h"
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -100,7 +103,7 @@ typedef struct {
     HPFRunqueue       *hpfRunqueue;
     UINT64            responseTime;          /* Response time for current CPU tick interrupts */
     UINT32            responseID;            /* The response ID of the current CPU tick interrupt */
-    UINT32            idleTaskID;            /* idle task id */
+    LosTaskCB         *idleTask;   /* idle task id */
     UINT32            taskLockCnt;           /* task lock flag */
     UINT32            schedFlag;             /* pending scheduler flag */
 } SchedRunqueue;
@@ -199,9 +202,9 @@ STATIC INLINE BOOL OsPreemptableInSched(VOID)
     return preemptible;
 }
 
-STATIC INLINE UINT32 OsSchedRunqueueIdleGet(VOID)
+STATIC INLINE LosTaskCB *OsSchedRunqueueIdleGet(VOID)
 {
-    return OsSchedRunqueue()->idleTaskID;
+    return OsSchedRunqueue()->idleTask;
 }
 
 STATIC INLINE VOID OsSchedRunqueuePendingSet(VOID)
@@ -410,7 +413,7 @@ typedef struct TagTaskCB {
     UINT32          userMapSize;        /**< user thread stack size ,real size : userMapSize + USER_STACK_MIN_SIZE | 用户栈大小 */
     FutexNode       futex;				///< 指明任务在等待哪把快锁，一次只等一锁，锁和任务的关系是(1:N)关系
 #endif
-    UINT32          processID;          /**< Which belong process */
+    UINTPTR         processCB;          /**< Which belong process */
     LOS_DL_LIST     joinList;           /**< join list | 联结链表,允许任务之间相互释放彼此 */
     LOS_DL_LIST     lockList;           /**< Hold the lock list | 该链表上挂的都是已持有的锁 */
     UINTPTR         waitID;             /**< Wait for the PID or GID of the child process | 等待子进程的PID或GID */
@@ -423,6 +426,9 @@ typedef struct TagTaskCB {
 #ifdef LOSCFG_KERNEL_PERF
     UINTPTR         pc;	///< pc寄存器
     UINTPTR         fp; ///< fp寄存器
+#endif
+#ifdef LOSCFG_PID_CONTAINER
+    PidContainer    *pidContainer;
 #endif
 } LosTaskCB;
 
@@ -663,7 +669,7 @@ VOID OsSchedTick(VOID);
 UINT32 OsSchedInit(VOID);
 VOID OsSchedStart(VOID);
 
-VOID OsSchedRunqueueIdleInit(UINT32 idleTaskID);
+VOID OsSchedRunqueueIdleInit(LosTaskCB *idleTask);
 VOID OsSchedRunqueueInit(VOID);
 
 /*

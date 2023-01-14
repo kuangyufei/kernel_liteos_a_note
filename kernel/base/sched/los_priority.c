@@ -342,7 +342,7 @@ STATIC VOID HPFWake(LosTaskCB *resumedTask)
 
 STATIC BOOL BasePriorityModify(SchedRunqueue *rq, LosTaskCB *taskCB, UINT16 priority)
 {
-    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
+    LosProcessCB *processCB = OS_PCB_FROM_TCB(taskCB);
     BOOL needSched = FALSE;
 
     LOS_DL_LIST_FOR_EACH_ENTRY(taskCB, &processCB->threadSiblingList, LosTaskCB, threadList) {

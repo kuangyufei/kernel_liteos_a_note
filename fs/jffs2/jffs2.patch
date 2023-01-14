@@ -2778,7 +2778,11 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
  	ri->version = cpu_to_je32(++f->highest_version);
 +	ri->uid = cpu_to_je16(inode->i_uid);
 +	ri->gid = cpu_to_je16(inode->i_gid);
-+
+ 
+-	ri->uid = cpu_to_je16((ivalid & ATTR_UID)?
+-		from_kuid(&init_user_ns, iattr->ia_uid):i_uid_read(inode));
+-	ri->gid = cpu_to_je16((ivalid & ATTR_GID)?
+-		from_kgid(&init_user_ns, iattr->ia_gid):i_gid_read(inode));
 +	if (ivalid & CHG_UID) {
 +		if (((c_uid != inode->i_uid) || (attr->attr_chg_uid != inode->i_uid)) && (!IsCapPermit(CAP_CHOWN))) {
 +			jffs2_complete_reservation(c);
@@ -2800,16 +2804,7 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
 +			ri->gid = cpu_to_je16(attr->attr_chg_gid);
 +		}
 +	}
- 
--	ri->uid = cpu_to_je16((ivalid & ATTR_UID)?
--		from_kuid(&init_user_ns, iattr->ia_uid):i_uid_read(inode));
--	ri->gid = cpu_to_je16((ivalid & ATTR_GID)?
--		from_kgid(&init_user_ns, iattr->ia_gid):i_gid_read(inode));
--
--	if (ivalid & ATTR_MODE)
--		ri->mode = cpu_to_jemode(iattr->ia_mode);
--	else
--		ri->mode = cpu_to_jemode(inode->i_mode);
++
 +	if (ivalid & CHG_MODE) {
 +		if (!IsCapPermit(CAP_FOWNER) && (c_uid != inode->i_uid)) {
 +			jffs2_complete_reservation(c);
@@ -2823,6 +2818,10 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
 +		}
 +	}
  
+-	if (ivalid & ATTR_MODE)
+-		ri->mode = cpu_to_jemode(iattr->ia_mode);
+-	else
+-		ri->mode = cpu_to_jemode(inode->i_mode);
 +	if (ivalid & CHG_ATIME) {
 +		if ((c_uid != inode->i_uid) || (attr->attr_chg_uid != inode->i_uid)) {
 +			return -EPERM;
@@ -2832,7 +2831,7 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
 +	} else {
 +		ri->atime = cpu_to_je32(inode->i_atime);
 +	}
-+
+ 
 +	if (ivalid & CHG_MTIME) {
 +		if ((c_uid != inode->i_uid) || (attr->attr_chg_uid != inode->i_uid)) {
 +			return -EPERM;
@@ -2884,7 +2883,7 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
  	if (IS_ERR(new_metadata)) {
  		jffs2_complete_reservation(c);
  		jffs2_free_raw_inode(ri);
-@@ -147,23 +140,20 @@ int jffs2_do_setattr (struct inode *inod
+@@ -147,23 +140,20 @@ int jffs2_do_setattr (struct inode *inode, struct iattr *iattr)
  		return PTR_ERR(new_metadata);
  	}
  	/* It worked. Update the inode */
@@ -2917,7 +2916,7 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
  		f->metadata = NULL;
  	} else {
  		f->metadata = new_metadata;
-@@ -182,315 +172,201 @@ int jffs2_do_setattr (struct inode *inod
+@@ -182,315 +172,201 @@ int jffs2_do_setattr (struct inode *inode, struct iattr *iattr)
  	   We are protected from a simultaneous write() extending i_size
  	   back past iattr->ia_size, because do_truncate() holds the
  	   generic inode semaphore. */
@@ -2936,31 +2935,43 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
  {
 -	struct inode *inode = d_inode(dentry);
 -	int rc;
--
--	rc = setattr_prepare(dentry, iattr);
--	if (rc)
--		return rc;
--
--	rc = jffs2_do_setattr(inode, iattr);
--	if (!rc && (iattr->ia_valid & ATTR_MODE))
--		rc = posix_acl_chmod(inode, inode->i_mode);
 +	/* We can forget about this inode for now - drop all
 +	 *  the nodelists associated with it, etc.
 +	 */
 +	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
 +	struct jffs2_inode_info *f = JFFS2_INODE_INFO(inode);
++
++	jffs2_do_clear_inode(c, f);
++}
+ 
+-	rc = setattr_prepare(dentry, iattr);
+-	if (rc)
+-		return rc;
++static struct jffs2_inode *ilookup(struct super_block *sb, uint32_t ino)
++{
++	struct jffs2_inode *node = NULL;
+ 
+-	rc = jffs2_do_setattr(inode, iattr);
+-	if (!rc && (iattr->ia_valid & ATTR_MODE))
+-		rc = posix_acl_chmod(inode, inode->i_mode);
++	if (sb->s_root == NULL) {
++		return NULL;
++	}
  
 -	return rc;
-+	jffs2_do_clear_inode(c, f);
++	// Check for this inode in the cache
++	Jffs2NodeLock();
++	(void)Jffs2HashGet(&sb->s_node_hash_lock, &sb->s_node_hash[0], sb, ino, &node);
++	Jffs2NodeUnlock();
++	return node;
  }
  
 -int jffs2_statfs(struct dentry *dentry, struct kstatfs *buf)
-+static struct jffs2_inode *ilookup(struct super_block *sb, uint32_t ino)
++struct jffs2_inode *new_inode(struct super_block *sb)
  {
 -	struct jffs2_sb_info *c = JFFS2_SB_INFO(dentry->d_sb);
 -	unsigned long avail;
-+	struct jffs2_inode *node = NULL;
- 
+-
 -	buf->f_type = JFFS2_SUPER_MAGIC;
 -	buf->f_bsize = 1 << PAGE_SHIFT;
 -	buf->f_blocks = c->flash_size >> PAGE_SHIFT;
@@ -2979,47 +2990,35 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
 -	spin_unlock(&c->erase_completion_lock);
 -
 -	buf->f_bavail = buf->f_bfree = avail >> PAGE_SHIFT;
-+	if (sb->s_root == NULL) {
-+		return NULL;
-+	}
++	struct jffs2_inode *inode = NULL;
  
 -	return 0;
-+	// Check for this inode in the cache
-+	Jffs2NodeLock();
-+	(void)Jffs2HashGet(&sb->s_node_hash_lock, &sb->s_node_hash[0], sb, ino, &node);
-+	Jffs2NodeUnlock();
-+	return node;
- }
+-}
++	inode = zalloc(sizeof (struct jffs2_inode));
++	if (inode == NULL)
++		return 0;
  
--
++	D2(PRINTK("malloc new_inode %x ####################################\n",
++		inode));
+ 
 -void jffs2_evict_inode (struct inode *inode)
-+struct jffs2_inode *new_inode(struct super_block *sb)
- {
+-{
 -	/* We can forget about this inode for now - drop all
 -	 *  the nodelists associated with it, etc.
 -	 */
 -	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
 -	struct jffs2_inode_info *f = JFFS2_INODE_INFO(inode);
-+	struct jffs2_inode *inode = NULL;
++	inode->i_sb = sb;
++	inode->i_ino = 1;
++	inode->i_nlink = 1;    // Let JFFS2 manage the link count
++	inode->i_size = 0;
++	LOS_ListInit((&(inode->i_hashlist)));
  
 -	jffs2_dbg(1, "%s(): ino #%lu mode %o\n",
 -		  __func__, inode->i_ino, inode->i_mode);
 -	truncate_inode_pages_final(&inode->i_data);
 -	clear_inode(inode);
 -	jffs2_do_clear_inode(c, f);
-+	inode = zalloc(sizeof (struct jffs2_inode));
-+	if (inode == NULL)
-+		return 0;
-+
-+	D2(PRINTK("malloc new_inode %x ####################################\n",
-+		inode));
-+
-+	inode->i_sb = sb;
-+	inode->i_ino = 1;
-+	inode->i_nlink = 1;    // Let JFFS2 manage the link count
-+	inode->i_size = 0;
-+	LOS_ListInit((&(inode->i_hashlist)));
-+
 +	return inode;
  }
  
@@ -3084,16 +3083,16 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
 -	inode->i_ctime = ITIME(je32_to_cpu(latest_node.ctime));
 -
 -	set_nlink(inode, f->inocache->pino_nlink);
+-
+-	inode->i_blocks = (inode->i_size + 511) >> 9;
 +	inode->i_atime = je32_to_cpu(latest_node.atime);
 +	inode->i_mtime = je32_to_cpu(latest_node.mtime);
 +	inode->i_ctime = je32_to_cpu(latest_node.ctime);
 +	inode->i_nlink = f->inocache->pino_nlink;
  
--	inode->i_blocks = (inode->i_size + 511) >> 9;
+-	switch (inode->i_mode & S_IFMT) {
 +	(void)mutex_unlock(&f->sem);
  
--	switch (inode->i_mode & S_IFMT) {
--
 -	case S_IFLNK:
 -		inode->i_op = &jffs2_symlink_inode_operations;
 -		inode->i_link = f->target;
@@ -3163,20 +3162,21 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
  	jffs2_dbg(1, "jffs2_read_inode() returning\n");
 -	unlock_new_inode(inode);
 -	return inode;
--
++	Jffs2NodeUnlock();
+ 
 -error_io:
 -	ret = -EIO;
 -error:
 -	mutex_unlock(&f->sem);
 -	iget_failed(inode);
 -	return ERR_PTR(ret);
--}
-+	Jffs2NodeUnlock();
++	return inode;
+ }
  
 -void jffs2_dirty_inode(struct inode *inode, int flags)
 -{
 -	struct iattr iattr;
--
+ 
 -	if (!(inode->i_state & I_DIRTY_DATASYNC)) {
 -		jffs2_dbg(2, "%s(): not calling setattr() for ino #%lu\n",
 -			  __func__, inode->i_ino);
@@ -3195,16 +3195,19 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
 -	iattr.ia_ctime = inode->i_ctime;
 -
 -	jffs2_do_setattr(inode, &iattr);
-+	return inode;
- }
+-}
++// -------------------------------------------------------------------------
++// Decrement the reference count on an inode. If this makes the ref count
++// zero, then this inode can be freed.
  
 -int jffs2_do_remount_fs(struct super_block *sb, struct fs_context *fc)
--{
++int jffs2_iput(struct jffs2_inode *i)
+ {
 -	struct jffs2_sb_info *c = JFFS2_SB_INFO(sb);
 -
 -	if (c->flags & JFFS2_SB_FLAG_RO && !sb_rdonly(sb))
 -		return -EROFS;
- 
+-
 -	/* We stop if it was running, then restart if it needs to.
 -	   This also catches the case where it was stopped and this
 -	   is just a remount to restart it.
@@ -3215,12 +3218,9 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
 -		jffs2_flush_wbuf_pad(c);
 -		mutex_unlock(&c->alloc_sem);
 -	}
-+// -------------------------------------------------------------------------
-+// Decrement the reference count on an inode. If this makes the ref count
-+// zero, then this inode can be freed.
-+
-+int jffs2_iput(struct jffs2_inode *i)
-+{
+-
+-	if (!(fc->sb_flags & SB_RDONLY))
+-		jffs2_start_garbage_collect_thread(c);
 +	// Called in jffs2_find
 +	// (and jffs2_open and jffs2_ops_mkdir?)
 +	// super.c jffs2_fill_super,
@@ -3242,9 +3242,6 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
 +	free(i);
 +	Jffs2NodeUnlock();
  
--	if (!(fc->sb_flags & SB_RDONLY))
--		jffs2_start_garbage_collect_thread(c);
--
 -	fc->sb_flags |= SB_NOATIME;
  	return 0;
  }
@@ -3351,7 +3348,7 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
  {
  	/*
  	 * Pick a inocache hash size based on the size of the medium.
-@@ -510,117 +386,17 @@ static int calculate_inocache_hashsize(u
+@@ -510,118 +386,17 @@ static int calculate_inocache_hashsize(uint32_t flash_size)
  	return hashsize;
  }
  
@@ -3447,8 +3444,9 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
 -	jffs2_free_ino_caches(c);
 -	jffs2_free_raw_node_refs(c);
 -	kvfree(c->blocks);
-- out_inohash:
 -	jffs2_clear_xattr_subsystem(c);
+-	jffs2_sum_exit(c);
+- out_inohash:
 -	kfree(c->inocache_list);
 - out_wbuf:
 -	jffs2_flash_cleanup(c);
@@ -3457,8 +3455,7 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
 -}
 -
  void jffs2_gc_release_inode(struct jffs2_sb_info *c,
--				   struct jffs2_inode_info *f)
-+		   	    struct jffs2_inode_info *f)
+ 				   struct jffs2_inode_info *f)
  {
 -	iput(OFNI_EDONI_2SFFJ(f));
 +	struct jffs2_inode *node = OFNI_EDONI_2SFFJ(f);
@@ -3473,7 +3470,7 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
  	struct jffs2_inode_cache *ic;
  
  	if (unlinked) {
-@@ -668,72 +444,9 @@ struct jffs2_inode_info *jffs2_gc_fetch_
+@@ -669,72 +444,9 @@ struct jffs2_inode_info *jffs2_gc_fetch_inode(struct jffs2_sb_info *c,
  		   Just iget() it, and if read_inode() is necessary that's OK.
  		*/
  		inode = jffs2_iget(OFNI_BS_2SFFJ(c), inum);
@@ -5565,7 +5562,7 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  
  #define DEFAULT_EMPTY_SCAN_SIZE 256
  
-@@ -74,7 +73,7 @@ static int file_dirty(struct jffs2_sb_in
+@@ -74,7 +73,7 @@ static int file_dirty(struct jffs2_sb_info *c, struct jffs2_eraseblock *jeb)
  		return ret;
  	if ((ret = jffs2_scan_dirty_space(c, jeb, jeb->free_size)))
  		return ret;
@@ -5574,15 +5571,13 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  	   think it's recoverable now. */
  	jeb->dirty_size += jeb->wasted_size;
  	c->dirty_size += jeb->wasted_size;
-@@ -95,40 +94,26 @@ int jffs2_scan_medium(struct jffs2_sb_in
+@@ -95,40 +94,26 @@ int jffs2_scan_medium(struct jffs2_sb_info *c)
  	unsigned char *flashbuf = NULL;
  	uint32_t buf_size = 0;
  	struct jffs2_summary *s = NULL; /* summary info collected by the scan process */
 -#ifndef __ECOS
 -	size_t pointlen, try_size;
-+	struct super_block *sb = NULL;
-+	struct MtdNorDev *device = NULL;
- 
+-
 -	ret = mtd_point(c->mtd, 0, c->mtd->size, &pointlen,
 -			(void **)&flashbuf, NULL);
 -	if (!ret && pointlen < c->mtd->size) {
@@ -5595,6 +5590,9 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
 -	if (ret && ret != -EOPNOTSUPP)
 -		jffs2_dbg(1, "MTD point failed %d\n", ret);
 -#endif
++	struct super_block *sb = NULL;
++	struct MtdNorDev *device = NULL;
++
  	if (!flashbuf) {
  		/* For NAND it's quicker to read a whole eraseblock at a time,
  		   apparently */
@@ -5622,7 +5620,7 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  	}
  
  	if (jffs2_sum_active()) {
-@@ -140,7 +125,9 @@ int jffs2_scan_medium(struct jffs2_sb_in
+@@ -140,7 +125,9 @@ int jffs2_scan_medium(struct jffs2_sb_info *c)
  		}
  	}
  
@@ -5633,7 +5631,7 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  		struct jffs2_eraseblock *jeb = &c->blocks[i];
  
  		cond_resched();
-@@ -269,19 +256,12 @@ int jffs2_scan_medium(struct jffs2_sb_in
+@@ -269,14 +256,10 @@ int jffs2_scan_medium(struct jffs2_sb_info *c)
  			ret = -EIO;
  			goto out;
  		}
@@ -5643,20 +5641,13 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  	}
  	ret = 0;
   out:
--	if (buf_size)
--		kfree(flashbuf);
--#ifndef __ECOS
--	else
--		mtd_unpoint(c->mtd, 0, c->mtd->size);
--#endif
+-	jffs2_sum_reset_collected(s);
 -	kfree(s);
-+
 +	kfree(flashbuf);
-+
- 	return ret;
- }
- 
-@@ -411,7 +391,7 @@ static int jffs2_scan_xref_node(struct j
+  out_buf:
+ 	if (buf_size)
+ 		kfree(flashbuf);
+@@ -413,7 +396,7 @@ static int jffs2_scan_xref_node(struct jffs2_sb_info *c, struct jffs2_eraseblock
  	if (!ref)
  		return -ENOMEM;
  
@@ -5665,7 +5656,7 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  	 * and AFTER xattr_ref is marked as a dead xref,
  	 * ref->xid is used to store 32bit xid, xd is not used
  	 * ref->ino is used to store 32bit inode-number, ic is not used
-@@ -484,10 +464,10 @@ static int jffs2_scan_eraseblock (struct
+@@ -486,10 +469,10 @@ static int jffs2_scan_eraseblock (struct jffs2_sb_info *c, struct jffs2_eraseblo
  		struct jffs2_sum_marker *sm;
  		void *sumptr = NULL;
  		uint32_t sumlen;
@@ -5678,7 +5669,7 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  			if (je32_to_cpu(sm->magic) == JFFS2_SUM_MAGIC) {
  				sumptr = buf + je32_to_cpu(sm->offset);
  				sumlen = c->sector_size - je32_to_cpu(sm->offset);
-@@ -500,13 +480,13 @@ static int jffs2_scan_eraseblock (struct
+@@ -502,13 +485,13 @@ static int jffs2_scan_eraseblock (struct jffs2_sb_info *c, struct jffs2_eraseblo
  				buf_len = sizeof(*sm);
  
  			/* Read as much as we want into the _end_ of the preallocated buffer */
@@ -5695,7 +5686,7 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  			if (je32_to_cpu(sm->magic) == JFFS2_SUM_MAGIC) {
  				sumlen = c->sector_size - je32_to_cpu(sm->offset);
  				sumptr = buf + buf_size - sumlen;
-@@ -521,18 +501,15 @@ static int jffs2_scan_eraseblock (struct
+@@ -523,18 +506,15 @@ static int jffs2_scan_eraseblock (struct jffs2_sb_info *c, struct jffs2_eraseblo
  					sumptr = kmalloc(sumlen, GFP_KERNEL);
  					if (!sumptr)
  						return -ENOMEM;
@@ -5718,7 +5709,7 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  				}
  			}
  
-@@ -543,7 +520,7 @@ static int jffs2_scan_eraseblock (struct
+@@ -545,7 +525,7 @@ static int jffs2_scan_eraseblock (struct jffs2_sb_info *c, struct jffs2_eraseblo
  
  			if (buf_size && sumlen > buf_size)
  				kfree(sumptr);
@@ -5727,7 +5718,7 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  			   If it returns positive, that's a block classification
  			   (i.e. BLK_STATE_xxx) so return that too.
  			   If it returns zero, fall through to full scan. */
-@@ -605,7 +582,7 @@ full_scan:
+@@ -607,7 +587,7 @@ static int jffs2_scan_eraseblock (struct jffs2_sb_info *c, struct jffs2_eraseblo
  	/* Now ofs is a complete physical flash offset as it always was... */
  	ofs += jeb->offset;
  
@@ -5736,7 +5727,7 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  
  	dbg_summary("no summary found in jeb 0x%08x. Apply original scan.\n",jeb->offset);
  
-@@ -698,7 +675,7 @@ scan_more:
+@@ -700,7 +680,7 @@ static int jffs2_scan_eraseblock (struct jffs2_sb_info *c, struct jffs2_eraseblo
  				scan_end = buf_len;
  				goto more_empty;
  			}
@@ -5745,7 +5736,7 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  			/* See how much more there is to read in this eraseblock... */
  			buf_len = min_t(uint32_t, buf_size, jeb->offset + c->sector_size - ofs);
  			if (!buf_len) {
-@@ -948,7 +925,7 @@ scan_more:
+@@ -950,7 +930,7 @@ static int jffs2_scan_eraseblock (struct jffs2_sb_info *c, struct jffs2_eraseblo
  	jffs2_dbg(1, "Block at 0x%08x: free 0x%08x, dirty 0x%08x, unchecked 0x%08x, used 0x%08x, wasted 0x%08x\n",
  		  jeb->offset, jeb->free_size, jeb->dirty_size,
  		  jeb->unchecked_size, jeb->used_size, jeb->wasted_size);
@@ -5754,7 +5745,7 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  	/* mark_node_obsolete can add to wasted !! */
  	if (jeb->wasted_size) {
  		jeb->dirty_size += jeb->wasted_size;
-@@ -976,7 +953,6 @@ struct jffs2_inode_cache *jffs2_scan_mak
+@@ -978,7 +958,6 @@ struct jffs2_inode_cache *jffs2_scan_make_ino_cache(struct jffs2_sb_info *c, uin
  		pr_notice("%s(): allocation of inode cache failed\n", __func__);
  		return NULL;
  	}
@@ -5762,7 +5753,7 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  
  	ic->ino = ino;
  	ic->nodes = (void *)ic;
-@@ -1067,7 +1043,7 @@ static int jffs2_scan_dirent_node(struct
+@@ -1069,7 +1048,7 @@ static int jffs2_scan_dirent_node(struct jffs2_sb_info *c, struct jffs2_eraseblo
  	pseudo_random += je32_to_cpu(rd->version);
  
  	/* Should never happen. Did. (OLPC trac #4184)*/
@@ -5771,7 +5762,7 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  	if (checkedlen < rd->nsize) {
  		pr_err("Dirent at %08x has zeroes in name. Truncating to %d chars\n",
  		       ofs, checkedlen);
-@@ -1079,7 +1055,7 @@ static int jffs2_scan_dirent_node(struct
+@@ -1081,7 +1060,7 @@ static int jffs2_scan_dirent_node(struct jffs2_sb_info *c, struct jffs2_eraseblo
  	memcpy(&fd->name, rd->name, checkedlen);
  	fd->name[checkedlen] = 0;
  
@@ -5780,7 +5771,248 @@ diff -Nupr old/fs/jffs2/scan.c new/fs/jffs2/scan.c
  	if (crc != je32_to_cpu(rd->name_crc)) {
  		pr_notice("%s(): Name CRC failed on node at 0x%08x: Read 0x%08x, calculated 0x%08x\n",
  			  __func__, ofs, je32_to_cpu(rd->name_crc), crc);
-@@ -1104,7 +1080,7 @@ static int jffs2_scan_dirent_node(struct
+@@ -1106,7 +1085,7 @@ static int jffs2_scan_dirent_node(struct jffs2_sb_info *c, struct jffs2_eraseblo
+ 	fd->next = NULL;
+ 	fd->version = je32_to_cpu(rd->version);
+ 	fd->ino = je32_to_cpu(rd->ino);
+-	fd->nhash = full_name_hash(NULL, fd->name, checkedlen);
++	fd->nhash = full_name_hash(fd->name, checkedlen);
+ 	fd->type = rd->type;
+ 	jffs2_add_fd_to_list(c, fd, &ic->scan_dents);
+ 
+diff
+@@ -9,18 +9,17 @@
+  *
+  */
+ 
+-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+-
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+-#include <linux/mtd/mtd.h>
+ #include <linux/pagemap.h>
+-#include <linux/crc32.h>
+ #include <linux/compiler.h>
+ #include "nodelist.h"
+ #include "summary.h"
+ #include "debug.h"
++#include "mtd_dev.h"
++#include "los_typedef.h"
++#include "los_crc32.h"
+ 
+ #define DEFAULT_EMPTY_SCAN_SIZE 256
+ 
+@@ -74,7 +73,7 @@ static int file_dirty(struct jffs2_sb_info *c, struct jffs2_eraseblock *jeb)
+ 		return ret;
+ 	if ((ret = jffs2_scan_dirty_space(c, jeb, jeb->free_size)))
+ 		return ret;
+-	/* Turned wasted size into dirty, since we apparently 
++	/* Turned wasted size into dirty, since we apparently
+ 	   think it's recoverable now. */
+ 	jeb->dirty_size += jeb->wasted_size;
+ 	c->dirty_size += jeb->wasted_size;
+@@ -95,40 +94,26 @@ int jffs2_scan_medium(struct jffs2_sb_info *c)
+ 	unsigned char *flashbuf = NULL;
+ 	uint32_t buf_size = 0;
+ 	struct jffs2_summary *s = NULL; /* summary info collected by the scan process */
+-#ifndef __ECOS
+-	size_t pointlen, try_size;
+-
+-	ret = mtd_point(c->mtd, 0, c->mtd->size, &pointlen,
+-			(void **)&flashbuf, NULL);
+-	if (!ret && pointlen < c->mtd->size) {
+-		/* Don't muck about if it won't let us point to the whole flash */
+-		jffs2_dbg(1, "MTD point returned len too short: 0x%zx\n",
+-			  pointlen);
+-		mtd_unpoint(c->mtd, 0, pointlen);
+-		flashbuf = NULL;
+-	}
+-	if (ret && ret != -EOPNOTSUPP)
+-		jffs2_dbg(1, "MTD point failed %d\n", ret);
+-#endif
++	struct super_block *sb = NULL;
++	struct MtdNorDev *device = NULL;
++
+ 	if (!flashbuf) {
+ 		/* For NAND it's quicker to read a whole eraseblock at a time,
+ 		   apparently */
+ 		if (jffs2_cleanmarker_oob(c))
+-			try_size = c->sector_size;
++			buf_size = c->sector_size;
+ 		else
+-			try_size = PAGE_SIZE;
++			buf_size = PAGE_SIZE;
+ 
+ 		jffs2_dbg(1, "Trying to allocate readbuf of %zu "
+-			  "bytes\n", try_size);
++			  "bytes\n", buf_size);
+ 
+-		flashbuf = mtd_kmalloc_up_to(c->mtd, &try_size);
++		flashbuf = kmalloc(buf_size, GFP_KERNEL);
+ 		if (!flashbuf)
+ 			return -ENOMEM;
+ 
+ 		jffs2_dbg(1, "Allocated readbuf of %zu bytes\n",
+-			  try_size);
+-
+-		buf_size = (uint32_t)try_size;
++			  buf_size);
+ 	}
+ 
+ 	if (jffs2_sum_active()) {
+@@ -140,7 +125,9 @@ int jffs2_scan_medium(struct jffs2_sb_info *c)
+ 		}
+ 	}
+ 
+-	for (i=0; i<c->nr_blocks; i++) {
++	sb = OFNI_BS_2SFFJ(c);
++	device = (struct MtdNorDev*)(sb->s_dev);
++	for (i=device->blockStart; i<c->nr_blocks + device->blockStart; i++) {
+ 		struct jffs2_eraseblock *jeb = &c->blocks[i];
+ 
+ 		cond_resched();
+@@ -269,14 +256,10 @@ int jffs2_scan_medium(struct jffs2_sb_info *c)
+ 			ret = -EIO;
+ 			goto out;
+ 		}
+-		spin_lock(&c->erase_completion_lock);
+-		jffs2_garbage_collect_trigger(c);
+-		spin_unlock(&c->erase_completion_lock);
+ 	}
+ 	ret = 0;
+  out:
+-	jffs2_sum_reset_collected(s);
+-	kfree(s);
++	kfree(flashbuf);
+  out_buf:
+ 	if (buf_size)
+ 		kfree(flashbuf);
+@@ -413,7 +396,7 @@ static int jffs2_scan_xref_node(struct jffs2_sb_info *c, struct jffs2_eraseblock
+ 	if (!ref)
+ 		return -ENOMEM;
+ 
+-	/* BEFORE jffs2_build_xattr_subsystem() called, 
++	/* BEFORE jffs2_build_xattr_subsystem() called,
+ 	 * and AFTER xattr_ref is marked as a dead xref,
+ 	 * ref->xid is used to store 32bit xid, xd is not used
+ 	 * ref->ino is used to store 32bit inode-number, ic is not used
+@@ -486,10 +469,10 @@ static int jffs2_scan_eraseblock (struct jffs2_sb_info *c, struct jffs2_eraseblo
+ 		struct jffs2_sum_marker *sm;
+ 		void *sumptr = NULL;
+ 		uint32_t sumlen;
+-	      
++
+ 		if (!buf_size) {
+ 			/* XIP case. Just look, point at the summary if it's there */
+-			sm = (void *)buf + c->sector_size - sizeof(*sm);
++			sm = (struct jffs2_sum_marker *)((uint8_t *)buf + c->sector_size - sizeof(*sm));
+ 			if (je32_to_cpu(sm->magic) == JFFS2_SUM_MAGIC) {
+ 				sumptr = buf + je32_to_cpu(sm->offset);
+ 				sumlen = c->sector_size - je32_to_cpu(sm->offset);
+@@ -502,13 +485,13 @@ static int jffs2_scan_eraseblock (struct jffs2_sb_info *c, struct jffs2_eraseblo
+ 				buf_len = sizeof(*sm);
+ 
+ 			/* Read as much as we want into the _end_ of the preallocated buffer */
+-			err = jffs2_fill_scan_buf(c, buf + buf_size - buf_len, 
++			err = jffs2_fill_scan_buf(c, buf + buf_size - buf_len,
+ 						  jeb->offset + c->sector_size - buf_len,
+-						  buf_len);				
++						  buf_len);
+ 			if (err)
+ 				return err;
+ 
+-			sm = (void *)buf + buf_size - sizeof(*sm);
++			sm = (struct jffs2_sum_marker *)((uint8_t *)buf + buf_size - sizeof(*sm));
+ 			if (je32_to_cpu(sm->magic) == JFFS2_SUM_MAGIC) {
+ 				sumlen = c->sector_size - je32_to_cpu(sm->offset);
+ 				sumptr = buf + buf_size - sumlen;
+@@ -523,18 +506,15 @@ static int jffs2_scan_eraseblock (struct jffs2_sb_info *c, struct jffs2_eraseblo
+ 					sumptr = kmalloc(sumlen, GFP_KERNEL);
+ 					if (!sumptr)
+ 						return -ENOMEM;
+-					memcpy(sumptr + sumlen - buf_len, buf + buf_size - buf_len, buf_len);
++					memcpy((uint8_t *)sumptr + sumlen - buf_len, buf + buf_size - buf_len, buf_len);
+ 				}
+ 				if (buf_len < sumlen) {
+ 					/* Need to read more so that the entire summary node is present */
+-					err = jffs2_fill_scan_buf(c, sumptr, 
++					err = jffs2_fill_scan_buf(c, sumptr,
+ 								  jeb->offset + c->sector_size - sumlen,
+-								  sumlen - buf_len);				
+-					if (err) {
+-						if (sumlen > buf_size)
+-							kfree(sumptr);
++								  sumlen - buf_len);
++					if (err)
+ 						return err;
+-					}
+ 				}
+ 			}
+ 
+@@ -545,7 +525,7 @@ static int jffs2_scan_eraseblock (struct jffs2_sb_info *c, struct jffs2_eraseblo
+ 
+ 			if (buf_size && sumlen > buf_size)
+ 				kfree(sumptr);
+-			/* If it returns with a real error, bail. 
++			/* If it returns with a real error, bail.
+ 			   If it returns positive, that's a block classification
+ 			   (i.e. BLK_STATE_xxx) so return that too.
+ 			   If it returns zero, fall through to full scan. */
+@@ -607,7 +587,7 @@ static int jffs2_scan_eraseblock (struct jffs2_sb_info *c, struct jffs2_eraseblo
+ 	/* Now ofs is a complete physical flash offset as it always was... */
+ 	ofs += jeb->offset;
+ 
+-	noise = 10;
++	noise = 1;
+ 
+ 	dbg_summary("no summary found in jeb 0x%08x. Apply original scan.\n",jeb->offset);
+ 
+@@ -700,7 +680,7 @@ static int jffs2_scan_eraseblock (struct jffs2_sb_info *c, struct jffs2_eraseblo
+ 				scan_end = buf_len;
+ 				goto more_empty;
+ 			}
+-			
++
+ 			/* See how much more there is to read in this eraseblock... */
+ 			buf_len = min_t(uint32_t, buf_size, jeb->offset + c->sector_size - ofs);
+ 			if (!buf_len) {
+@@ -950,7 +930,7 @@ static int jffs2_scan_eraseblock (struct jffs2_sb_info *c, struct jffs2_eraseblo
+ 	jffs2_dbg(1, "Block at 0x%08x: free 0x%08x, dirty 0x%08x, unchecked 0x%08x, used 0x%08x, wasted 0x%08x\n",
+ 		  jeb->offset, jeb->free_size, jeb->dirty_size,
+ 		  jeb->unchecked_size, jeb->used_size, jeb->wasted_size);
+-	
++
+ 	/* mark_node_obsolete can add to wasted !! */
+ 	if (jeb->wasted_size) {
+ 		jeb->dirty_size += jeb->wasted_size;
+@@ -978,7 +958,6 @@ struct jffs2_inode_cache *jffs2_scan_make_ino_cache(struct jffs2_sb_info *c, uin
+ 		pr_notice("%s(): allocation of inode cache failed\n", __func__);
+ 		return NULL;
+ 	}
+-	memset(ic, 0, sizeof(*ic));
+ 
+ 	ic->ino = ino;
+ 	ic->nodes = (void *)ic;
+@@ -1069,7 +1048,7 @@ static int jffs2_scan_dirent_node(struct jffs2_sb_info *c, struct jffs2_eraseblo
+ 	pseudo_random += je32_to_cpu(rd->version);
+ 
+ 	/* Should never happen. Did. (OLPC trac #4184)*/
+-	checkedlen = strnlen(rd->name, rd->nsize);
++	checkedlen = strnlen((const char *)rd->name, rd->nsize);
+ 	if (checkedlen < rd->nsize) {
+ 		pr_err("Dirent at %08x has zeroes in name. Truncating to %d chars\n",
+ 		       ofs, checkedlen);
+@@ -1081,7 +1060,7 @@ static int jffs2_scan_dirent_node(struct jffs2_sb_info *c, struct jffs2_eraseblo
+ 	memcpy(&fd->name, rd->name, checkedlen);
+ 	fd->name[checkedlen] = 0;
+ 
+-	crc = crc32(0, fd->name, checkedlen);
++	crc = crc32(0, fd->name, rd->nsize);
+ 	if (crc != je32_to_cpu(rd->name_crc)) {
+ 		pr_notice("%s(): Name CRC failed on node at 0x%08x: Read 0x%08x, calculated 0x%08x\n",
+ 			  __func__, ofs, je32_to_cpu(rd->name_crc), crc);
+@@ -1106,7 +1085,7 @@ static int jffs2_scan_dirent_node(struct jffs2_sb_info *c, struct jffs2_eraseblo
  	fd->next = NULL;
  	fd->version = je32_to_cpu(rd->version);
  	fd->ino = je32_to_cpu(rd->ino);

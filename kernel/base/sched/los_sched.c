@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -204,10 +204,10 @@ VOID OsSchedRunqueueInit(VOID)
     }
 }
 
-VOID OsSchedRunqueueIdleInit(UINT32 idleTaskID)
+VOID OsSchedRunqueueIdleInit(LosTaskCB *idleTask)
 {
     SchedRunqueue *rq = OsSchedRunqueue();
-    rq->idleTaskID = idleTaskID;
+    rq->idleTask = idleTask;
 }
 
 UINT32 OsSchedInit(VOID)
@@ -284,7 +284,7 @@ STATIC LosTaskCB *TopTaskGet(SchedRunqueue *rq)
     LosTaskCB *newTask = HPFRunqueueTopTaskGet(rq->hpfRunqueue);
 
     if (newTask == NULL) {
-        newTask = OS_TCB_FROM_TID(rq->idleTaskID);
+        newTask = rq->idleTask;
     }
 
     newTask->ops->start(rq, newTask);
@@ -307,14 +307,14 @@ VOID OsSchedStart(VOID)
     newTask->taskStatus |= OS_TASK_STATUS_RUNNING;
 
 #ifdef LOSCFG_KERNEL_SMP
-    /* 注意：需要设置当前cpu，以防第一个任务删除失败，因为这个标志与真实的当前cpu不匹配
+    /*
      * attention: current cpu needs to be set, in case first task deletion
      * may fail because this flag mismatch with the real current cpu.
      */
-    newTask->currCpu = cpuid;//记录本次运行交给哪个CPU核
+    newTask->currCpu = cpuid;
 #endif
 
-    OsCurrTaskSet((VOID *)newTask);//设置新任务,背后的逻辑是将新任务的地址交给硬件保存
+    OsCurrTaskSet((VOID *)newTask);
 
     newTask->startTime = OsGetCurrSchedTimeCycle();
 
@@ -384,7 +384,7 @@ STATIC VOID SchedTaskSwitch(SchedRunqueue *rq, LosTaskCB *runTask, LosTaskCB *ne
 #endif
 
 #ifdef LOSCFG_KERNEL_CPUP
-    OsCpupCycleEndStart(runTask->taskID, newTask->taskID);
+    OsCpupCycleEndStart(runTask, newTask);
 #endif
 
 #ifdef LOSCFG_SCHED_DEBUG

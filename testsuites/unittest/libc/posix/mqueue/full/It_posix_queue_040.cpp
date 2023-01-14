@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -85,7 +85,7 @@ static UINT32 Testcase(VOID)
     UINT32 ret;
     CHAR msgrcd[MQUEUE_STANDARD_NAME_LENGTH] = "";
     const CHAR *msgptr = MQUEUE_SEND_STRING_TEST;
-    struct mq_attr attr = { 0 };
+    struct mq_attr attr = {0};
     pthread_attr_t attr1;
 
     ret = snprintf_s(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
@@ -98,7 +98,7 @@ static UINT32 Testcase(VOID)
     g_testCount = 0;
 
     g_gqueue = mq_open(g_gqname, O_CREAT | O_RDWR | O_EXCL, S_IRUSR | S_IWUSR, &attr);
-    ICUNIT_GOTO_NOT_EQUAL(g_gqueue, (mqd_t)-1, g_gqueue, EXIT);
+    ICUNIT_GOTO_NOT_EQUAL(g_gqueue, (mqd_t)-1, g_gqueue, EXIT3);
 
     ret = PosixPthreadInit(&attr1, MQUEUE_PTHREAD_PRIORITY_TEST1);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
@@ -121,10 +121,10 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(g_testCount, 4, g_testCount, EXIT2); // 4, Here, assert the g_testCount.
 
     ret = PosixPthreadDestroy(&attr1, newTh2);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
 
     ret = PosixPthreadDestroy(&attr1, newTh1);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
 
     return MQUEUE_NO_ERROR;
 
@@ -136,10 +136,10 @@ EXIT:
     mq_close(g_gqueue);
     mq_unlink(g_gqname);
 EXIT3:
-    return MQUEUE_NO_ERROR;
+    return MQUEUE_IS_ERROR;
 }
 
-VOID ItPosixQueue040(VOID) // IT_Layer_ModuleORFeature_No
+VOID ItPosixQueue040(VOID)
 {
     TEST_ADD_CASE("IT_POSIX_QUEUE_040", Testcase, TEST_POSIX, TEST_QUE, TEST_LEVEL2, TEST_FUNCTION);
 }

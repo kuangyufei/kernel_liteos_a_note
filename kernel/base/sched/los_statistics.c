@@ -145,7 +145,7 @@ UINT32 OsShellShowSchedStatistics(VOID)
     for (UINT32 tid = 0; tid < g_taskMaxNum; tid++) {
         LosTaskCB *taskCB = g_taskCBArray + tid;
         SCHEDULER_LOCK(intSave);
-        if (OsTaskIsUnused(taskCB) || (taskCB->processID == OsGetIdleProcessID())) {
+        if (OsTaskIsUnused(taskCB) || (taskCB->processCB == (UINTPTR)OsGetIdleProcess())) {
             SCHEDULER_UNLOCK(intSave);
             continue;
         }

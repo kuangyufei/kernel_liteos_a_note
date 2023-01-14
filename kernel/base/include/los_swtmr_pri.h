@@ -109,7 +109,7 @@ extern UINT32 OsSwtmrGetNextTimeout(VOID);
 extern BOOL OsIsSwtmrTask(const LosTaskCB *taskCB);
 extern VOID OsSwtmrResponseTimeReset(UINT64 startTime);
 extern UINT32 OsSwtmrInit(VOID);
-extern VOID OsSwtmrRecycle(UINT32 processID);
+extern VOID OsSwtmrRecycle(UINTPTR ownerID);
 extern BOOL OsSwtmrWorkQueueFind(SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg);
 extern SPIN_LOCK_S g_swtmrSpin;
 extern UINT32 OsSwtmrTaskIDGetByCpuid(UINT16 cpuid);

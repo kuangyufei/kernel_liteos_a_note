@@ -1500,7 +1500,7 @@ INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
     ret = VnodeLookup(diskName, &blkDriver, 0);
     if (ret < 0) {
         VnodeDrop();
-        ret = ENOENT;
+        PRINT_ERR("disk_init : %s, failed to find the vnode, ERRNO=%d\n", diskName, ret);
         goto DISK_FIND_ERROR;
     }
     struct block_operations *bops2 = (struct block_operations *)((struct drv_data *)blkDriver->data)->ops;

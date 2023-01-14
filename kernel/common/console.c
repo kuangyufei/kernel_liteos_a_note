@@ -1457,7 +1457,7 @@ INT32 ConsoleTaskReg(INT32 consoleID, UINT32 taskID)
     if (!IsShellEntryRunning(g_console[consoleID - 1]->shellEntryId)) {//如果控制台还没有捆绑shell客户端任务 
         g_console[consoleID - 1]->shellEntryId = taskID;	//给控制台捆绑一个shell客户端任务,接受终端输入.
         LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
-        (VOID)OsSetCurrProcessGroupID(OsGetUserInitProcessID());// @notethinking 为何要在此处设置当前进程的组ID?
+        (VOID)OsSetCurrProcessGroupID(OS_USER_ROOT_PROCESS_ID);
         return LOS_OK;
     }
     LOS_SpinUnlockRestore(&g_consoleSpin, intSave);

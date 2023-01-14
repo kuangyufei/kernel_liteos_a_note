@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -37,7 +37,7 @@ static UINT32 Testcase(VOID)
     CHAR msgrcd[MQUEUE_STANDARD_NAME_LENGTH] = {0};
     const CHAR *msgptr = MQUEUE_SEND_STRING_TEST;
     mqd_t mqueue1, mqueue2;
-    struct mq_attr attr = { 0 };
+    struct mq_attr attr = {0};
 
     ret = snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1,
                      "/mq019_%d", LosCurTaskIDGet());
@@ -47,7 +47,7 @@ static UINT32 Testcase(VOID)
     attr.mq_maxmsg = MQUEUE_STANDARD_NAME_LENGTH;
 
     mqueue1 = mq_open(mqname, O_CREAT | O_RDWR | O_NONBLOCK, S_IRUSR | S_IWUSR, &attr);
-    ICUNIT_GOTO_NOT_EQUAL(mqueue1, (mqd_t)-1, mqueue1, EXIT1);
+    ICUNIT_GOTO_NOT_EQUAL(mqueue1, (mqd_t)-1, mqueue1, EXIT3);
 
     ret = mq_receive(mqueue1, msgrcd, MQUEUE_STANDARD_NAME_LENGTH, NULL);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
@@ -56,7 +56,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
 
     mqueue2 = mq_open(mqname, O_RDWR | O_NONBLOCK, S_IRUSR | S_IWUSR, NULL);
-    ICUNIT_GOTO_NOT_EQUAL(mqueue1, (mqd_t)-1, mqueue1, EXIT2);
+    ICUNIT_GOTO_NOT_EQUAL(mqueue1, (mqd_t)-1, mqueue1, EXIT1);
 
     ret = mq_receive(mqueue1, msgrcd, MQUEUE_STANDARD_NAME_LENGTH, NULL);
     ICUNIT_GOTO_EQUAL(ret, strlen(msgptr), ret, EXIT2);
@@ -79,10 +79,10 @@ EXIT1:
 EXIT:
     mq_unlink(mqname);
 EXIT3:
-    return MQUEUE_NO_ERROR;
+    return MQUEUE_IS_ERROR;
 }
 
-VOID ItPosixQueue019(VOID) // IT_Layer_ModuleORFeature_No
+VOID ItPosixQueue019(VOID)
 {
     TEST_ADD_CASE("IT_POSIX_QUEUE_019", Testcase, TEST_POSIX, TEST_QUE, TEST_LEVEL2, TEST_FUNCTION);
 }

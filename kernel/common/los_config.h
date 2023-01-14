@@ -374,6 +374,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  */
 #define _T(x)                                   x
 #define KERNEL_NAME                            "Huawei LiteOS"
+#define KERNEL_NODE_NAME                       "hisilicon"
 #define KERNEL_SEP                             " "
 #define _V(v)                                  _T(KERNEL_NAME)_T(KERNEL_SEP)_T(v)
 

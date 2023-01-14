@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,7 +35,7 @@ static UINT32 Testcase(VOID)
     CHAR qname[MQUEUE_STANDARD_NAME_LENGTH] = "";
     const CHAR *msgptr = MQUEUE_SEND_STRING_TEST;
     mqd_t queue;
-    INT32 unresolved = 0, failure = 0, ret = 0;
+    INT32 ret;
 
     ret = snprintf_s(qname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
                      "/mq046-1_%d", LosCurTaskIDGet());
@@ -49,10 +49,10 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(errno, EBADF, errno, EXIT2);
 
     ret = mq_close(queue);
-    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT2);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 
     ret = mq_unlink(qname);
-    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
     return MQUEUE_NO_ERROR;
 EXIT2:
@@ -60,10 +60,10 @@ EXIT2:
 EXIT1:
     mq_unlink(qname);
 EXIT:
-    return MQUEUE_NO_ERROR;
+    return MQUEUE_IS_ERROR;
 }
 
-VOID ItPosixQueue046(VOID) // IT_Layer_ModuleORFeature_No
+VOID ItPosixQueue046(VOID)
 {
     TEST_ADD_CASE("IT_POSIX_QUEUE_046", Testcase, TEST_POSIX, TEST_QUE, TEST_LEVEL2, TEST_FUNCTION);
 }

@@ -102,7 +102,7 @@ typedef struct {//任务中断上下文
  * Return      : pointer to the task context
  */
 extern VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOID *topStack, BOOL initFlag);
-extern VOID OsUserCloneParentStack(VOID *childStack, UINTPTR parentTopOfStask, UINT32 parentStackSize);
+extern VOID OsUserCloneParentStack(VOID *childStack, UINTPTR sp, UINTPTR parentTopOfStask, UINT32 parentStackSize);
 extern VOID OsUserTaskStackInit(TaskContext *context, UINTPTR taskEntry, UINTPTR stack);
 extern VOID OsInitSignalContext(const VOID *sp, VOID *signalContext, UINTPTR sigHandler, UINT32 signo, UINT32 param);
 extern void arm_clean_cache_range(UINTPTR start, UINTPTR end);

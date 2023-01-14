@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -42,25 +42,25 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT3);
     
     mqueue1 = mq_open(mqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, NULL);
-    ICUNIT_GOTO_NOT_EQUAL(mqueue1, (mqd_t)-1, mqueue1, EXIT1);
+    ICUNIT_GOTO_NOT_EQUAL(mqueue1, (mqd_t)-1, mqueue1, EXIT3);
 
     ret = mq_send(mqueue1, msgptr, strlen(msgptr), 0);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
 
     mqueue2 = mq_open(mqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, NULL);
-    ICUNIT_GOTO_NOT_EQUAL(mqueue2, (mqd_t)-1, mqueue2, EXIT2);
+    ICUNIT_GOTO_NOT_EQUAL(mqueue2, (mqd_t)-1, mqueue2, EXIT1);
 
     ret = mq_send(mqueue2, msgptr, strlen(msgptr), 0);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
-
-    ret = mq_close(mqueue1);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
 
     ret = mq_close(mqueue2);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
 
-    ret = mq_unlink(mqname);
+    ret = mq_close(mqueue1);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
+
+    ret = mq_unlink(mqname);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT3);
 
     return MQUEUE_NO_ERROR;
 EXIT2:
@@ -70,10 +70,10 @@ EXIT1:
 EXIT:
     mq_unlink(mqname);
 EXIT3:
-    return MQUEUE_NO_ERROR;
+    return MQUEUE_IS_ERROR;
 }
 
-VOID ItPosixQueue013(VOID) // IT_Layer_ModuleORFeature_No
+VOID ItPosixQueue013(VOID)
 {
     TEST_ADD_CASE("IT_POSIX_QUEUE_013", Testcase, TEST_POSIX, TEST_QUE, TEST_LEVEL2, TEST_FUNCTION);
 }

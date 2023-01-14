@@ -411,10 +411,10 @@ LITE_OS_SEC_TEXT_INIT STATIC IpcTaskInfo *LiteIpcTaskInit(VOID)
 
 /* Only when kernel no longer access ipc node content, can user free the ipc node 
 | 使能一个空闲的IPC节点 */
-LITE_OS_SEC_TEXT STATIC VOID EnableIpcNodeFreeByUser(UINT32 processID, VOID *buf)
+LITE_OS_SEC_TEXT STATIC VOID EnableIpcNodeFreeByUser(LosProcessCB *pcb, VOID *buf)
 {
     UINT32 intSave;
-    ProcIpcInfo *ipcInfo = OS_PCB_FROM_PID(processID)->ipcInfo;
+    ProcIpcInfo *ipcInfo = pcb->ipcInfo;
     IpcUsedNode *node = (IpcUsedNode *)malloc(sizeof(IpcUsedNode));//申请一个可使用的节点,这里是向内核堆空间申请内存
     if (node != NULL) {
         node->ptr = buf;//指向参数缓存
@@ -424,26 +424,26 @@ LITE_OS_SEC_TEXT STATIC VOID EnableIpcNodeFreeByUser(UINT32 processID, VOID *buf
     }
 }
 /// 注意这可是从内核空间的IPC池中申请内存
-LITE_OS_SEC_TEXT STATIC VOID *LiteIpcNodeAlloc(UINT32 processID, UINT32 size)
+LITE_OS_SEC_TEXT STATIC VOID *LiteIpcNodeAlloc(LosProcessCB *pcb, UINT32 size)
 {
-    VOID *ptr = LOS_MemAlloc(OS_PCB_FROM_PID(processID)->ipcInfo->pool.kvaddr, size);//kvaddr实际指向了内核空间
+    VOID *ptr = LOS_MemAlloc(pcb->ipcInfo->pool.kvaddr, size);
     PRINT_INFO("LiteIpcNodeAlloc pid:%d, pool:%x buf:%x size:%d\n",
-               processID, OS_PCB_FROM_PID(processID)->ipcInfo->pool.kvaddr, ptr, size);
+               pcb->processID, pcb->ipcInfo->pool.kvaddr, ptr, size);
     return ptr;
 }
 /// 从IPC内存池中释放一个IPC节点
-LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcNodeFree(UINT32 processID, VOID *buf)
+LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcNodeFree(LosProcessCB *pcb, VOID *buf)
 {
     PRINT_INFO("LiteIpcNodeFree pid:%d, pool:%x buf:%x\n",
-               processID, OS_PCB_FROM_PID(processID)->ipcInfo->pool.kvaddr, buf);
-    return LOS_MemFree(OS_PCB_FROM_PID(processID)->ipcInfo->pool.kvaddr, buf);
+               pcb->processID, pcb->ipcInfo->pool.kvaddr, buf);
+    return LOS_MemFree(pcb->ipcInfo->pool.kvaddr, buf);
 }
 ///指定buf 是否是IPC节点,这个函数不应该命名为 Is...容易误导 ,应改为 Free... @note_thinking
-LITE_OS_SEC_TEXT STATIC BOOL IsIpcNode(UINT32 processID, const VOID *buf)
+LITE_OS_SEC_TEXT STATIC BOOL IsIpcNode(LosProcessCB *pcb, const VOID *buf)
 {
     IpcUsedNode *node = NULL;
     UINT32 intSave;
-    ProcIpcInfo *ipcInfo = OS_PCB_FROM_PID(processID)->ipcInfo;//获取进程的IPC信息
+    ProcIpcInfo *ipcInfo = pcb->ipcInfo;
     IPC_LOCK(intSave);
     LOS_DL_LIST_FOR_EACH_ENTRY(node, &ipcInfo->ipcUsedNodelist, IpcUsedNode, list) {//遍历已使用IPC节点
         if (node->ptr == buf) {//如果一致
@@ -457,16 +457,16 @@ LITE_OS_SEC_TEXT STATIC BOOL IsIpcNode(UINT32 processID, const VOID *buf)
     return FALSE;
 }
 /// 获得IPC用户空间地址
-LITE_OS_SEC_TEXT STATIC INTPTR GetIpcUserAddr(UINT32 processID, INTPTR kernelAddr)
+LITE_OS_SEC_TEXT STATIC INTPTR GetIpcUserAddr(const LosProcessCB *pcb, INTPTR kernelAddr)
 {
-    IpcPool pool = OS_PCB_FROM_PID(processID)->ipcInfo->pool;
+    IpcPool pool = pcb->ipcInfo->pool;
     INTPTR offset = (INTPTR)(pool.uvaddr) - (INTPTR)(pool.kvaddr);//先计算偏移量,注意这里应该是个负数,因为内核空间在高地址位
     return kernelAddr + offset; //再获取用户空间地址
 }
 /// 获得IPC内核空间地址
-LITE_OS_SEC_TEXT STATIC INTPTR GetIpcKernelAddr(UINT32 processID, INTPTR userAddr)
+LITE_OS_SEC_TEXT STATIC INTPTR GetIpcKernelAddr(const LosProcessCB *pcb, INTPTR userAddr)
 {
-    IpcPool pool = OS_PCB_FROM_PID(processID)->ipcInfo->pool;
+    IpcPool pool = pcb->ipcInfo->pool;
     INTPTR offset = (INTPTR)(pool.uvaddr) - (INTPTR)(pool.kvaddr); //先计算偏移量,注意这里应该是个负数,因为用户空间在低地址位
     return userAddr - offset;
 }
@@ -480,8 +480,8 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckUsedBuffer(const VOID *node, IpcListNode **o
         ((INTPTR)node > (INTPTR)(pool.uvaddr) + pool.poolSize)) {
         return -EINVAL;
     }
-    ptr = (VOID *)GetIpcKernelAddr(pcb->processID, (INTPTR)(node));//通过用户空间地址获取内核空间地址
-    if (IsIpcNode(pcb->processID, ptr) != TRUE) {//检查是否为IPC节点
+    ptr = (VOID *)GetIpcKernelAddr(pcb, (INTPTR)(node));
+    if (IsIpcNode(pcb, ptr) != TRUE) {
         return -EFAULT;
     }
     *outPtr = (IpcListNode *)ptr;//参数带走节点,内核空间地址
@@ -565,21 +565,20 @@ LITE_OS_SEC_TEXT STATIC UINT32 AddServiceAccess(UINT32 taskID, UINT32 serviceHan
         return ret;
     }
     LosTaskCB *tcb = OS_TCB_FROM_TID(serviceTid);
-    UINT32 processID = OS_TCB_FROM_TID(taskID)->processID;
-    LosProcessCB *pcb = OS_PCB_FROM_PID(processID);
+    LosProcessCB *pcb = OS_PCB_FROM_TID(taskID);
     if ((tcb->ipcTaskInfo == NULL) || (pcb->ipcInfo == NULL)) {
-        PRINT_ERR("Liteipc AddServiceAccess ipc not create! pid %u tid %u\n", processID, tcb->taskID);
+        PRINT_ERR("Liteipc AddServiceAccess ipc not create! pid %u tid %u\n", pcb->processID, tcb->taskID);
         return -EINVAL;
     }
-    tcb->ipcTaskInfo->accessMap[processID] = TRUE;//允许任务访问所属进程,此处为任务所在的进程
-    pcb->ipcInfo->access[serviceTid] = TRUE;//允许所属进程访问任务
+    tcb->ipcTaskInfo->accessMap[pcb->processID] = TRUE;
+    pcb->ipcInfo->access[serviceTid] = TRUE;
     return LOS_OK;
 }
 /// 参数服务是否有访问当前进程的权限,实际中会有A进程的任务去给B进程发送IPC信息,所以需要鉴权 
 LITE_OS_SEC_TEXT STATIC BOOL HasServiceAccess(UINT32 serviceHandle)
 {
     UINT32 serviceTid = 0;
-    UINT32 curProcessID = LOS_GetCurrProcessID();//获取当前进程ID
+    LosProcessCB *curr = OsCurrProcessGet();
     UINT32 ret;
     if (serviceHandle >= MAX_SERVICE_NUM) {
         return FALSE;
@@ -587,20 +586,21 @@ LITE_OS_SEC_TEXT STATIC BOOL HasServiceAccess(UINT32 serviceHandle)
     if (serviceHandle == 0) {
         return TRUE;
     }
-    ret = GetTid(serviceHandle, &serviceTid);//获取参数服务所属任务ID
+    ret = GetTid(serviceHandle, &serviceTid);
     if (ret != LOS_OK) {
         PRINT_ERR("Liteipc HasServiceAccess GetTid failed\n");
         return FALSE;
     }
-    if (OS_TCB_FROM_TID(serviceTid)->processID == curProcessID) {//如果任务所在进程就是当前进程,直接返回OK
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(serviceTid);
+    if (taskCB->processCB == (UINTPTR)curr) {
         return TRUE;
     }
 
-    if (OS_TCB_FROM_TID(serviceTid)->ipcTaskInfo == NULL) {//如果参数任务没有开通处理IPC信息功能
+    if (taskCB->ipcTaskInfo == NULL) {
         return FALSE;
     }
 
-    return OS_TCB_FROM_TID(serviceTid)->ipcTaskInfo->accessMap[curProcessID];//返回任务访问进程的权限
+    return taskCB->ipcTaskInfo->accessMap[curr->processID];
 }
 ///将当前任务设置成进程ipc的任务ID
 LITE_OS_SEC_TEXT STATIC UINT32 SetIpcTask(VOID)
@@ -621,12 +621,12 @@ LITE_OS_SEC_TEXT BOOL IsIpcTaskSet(VOID)
     return TRUE;
 }
 /// 获取IPC任务ID
-LITE_OS_SEC_TEXT STATIC UINT32 GetIpcTaskID(UINT32 processID, UINT32 *ipcTaskID)
+LITE_OS_SEC_TEXT STATIC UINT32 GetIpcTaskID(LosProcessCB *pcb, UINT32 *ipcTaskID)
 {
-    if (OS_PCB_FROM_PID(processID)->ipcInfo->ipcTaskID == INVAILD_ID) {
+    if (pcb->ipcInfo->ipcTaskID == INVAILD_ID) {
         return LOS_NOK;
     }
-    *ipcTaskID = OS_PCB_FROM_PID(processID)->ipcInfo->ipcTaskID;
+    *ipcTaskID = pcb->ipcInfo->ipcTaskID;
     return LOS_OK;
 }
 /// serviceHandle 给 processID 发送死亡/结束消息, serviceHandle 为 taskID
@@ -644,7 +644,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 SendDeathMsg(UINT32 processID, UINT32 serviceHand
 
     pcb->ipcInfo->access[serviceHandle] = FALSE;
 
-    ret = GetIpcTaskID(processID, &ipcTaskID);//获取操作该进程IPC的任务ID, processID 下的某个 taskID 
+    ret = GetIpcTaskID(pcb, &ipcTaskID);
     if (ret != LOS_OK) {
         return -EINVAL;
     }
@@ -673,7 +673,7 @@ LITE_OS_SEC_TEXT VOID LiteIpcRemoveServiceHandle(UINT32 taskID)
     LOS_DL_LIST *listHead = NULL;
     LOS_DL_LIST *listNode = NULL;
     IpcListNode *node = NULL;
-    UINT32 processID = taskCB->processID;
+    LosProcessCB *pcb = OS_PCB_FROM_TCB(taskCB);
 
     listHead = &(ipcTaskInfo->msgListHead);// ipc 节点链表
     do {// 循环删除 任务IPC上挂的各个节点
@@ -687,12 +687,12 @@ LITE_OS_SEC_TEXT VOID LiteIpcRemoveServiceHandle(UINT32 taskID)
             node = LOS_DL_LIST_ENTRY(listNode, IpcListNode, listNode);//获取节点所在结构体 IpcListNode
             SCHEDULER_UNLOCK(intSave);
             (VOID)HandleSpecialObjects(taskCB->taskID, node, TRUE);//处理节点
-            (VOID)LiteIpcNodeFree(processID, (VOID *)node);//释放节点占用的进程空间
+            (VOID)LiteIpcNodeFree(pcb, (VOID *)node);
         }
     } while (1);
 
-    ipcTaskInfo->accessMap[processID] = FALSE;
-    for (j = 0; j < MAX_SERVICE_NUM; j++) {
+    ipcTaskInfo->accessMap[pcb->processID] = FALSE;
+    for (j = 0; j < LOSCFG_BASE_CORE_PROCESS_LIMIT; j++) {
         if (ipcTaskInfo->accessMap[j] == TRUE) {
             ipcTaskInfo->accessMap[j] = FALSE;
             (VOID)SendDeathMsg(j, taskCB->taskID); //给进程发送taskCB死亡的消息
@@ -710,7 +710,7 @@ LITE_OS_SEC_TEXT VOID LiteIpcRemoveServiceHandle(UINT32 taskID)
     (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
     /* run deathHandler */
     if (i < MAX_SERVICE_NUM) {
-        for (j = 0; j < MAX_SERVICE_NUM; j++) {
+        for (j = 0; j < LOSCFG_BASE_CORE_PROCESS_LIMIT; j++) {
             if (ipcTaskInfo->accessMap[j] == TRUE) {
                 (VOID)SendDeathMsg(j, i);
             }
@@ -767,10 +767,10 @@ LITE_OS_SEC_TEXT STATIC BOOL IsCmsTask(UINT32 taskID)
     BOOL ret;
     (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
 #if (USE_TASKID_AS_HANDLE == 1)
-    ret = IsCmsSet() ? (OS_TCB_FROM_TID(taskID)->processID == OS_TCB_FROM_TID(g_cmsTask.taskID)->processID) : FALSE;//对比任务的进程和已注册ServiceManager是否一致
+    ret = IsCmsSet() ? (OS_TCB_FROM_TID(taskID)->processCB == OS_TCB_FROM_TID(g_cmsTask.taskID)->processCB) : FALSE;//对比任务的进程和已注册ServiceManager是否一致
 #else
-    ret = IsCmsSet() ? (OS_TCB_FROM_TID(taskID)->processID ==
-        OS_TCB_FROM_TID(g_serviceHandleMap[0].taskID)->processID) : FALSE; // g_serviceHandleMap[0] 为 ServiceManager, 把ServiceManager和service放一块很怪!!! @note_thinking 
+    ret = IsCmsSet() ? (OS_TCB_FROM_TID(taskID)->processCB ==
+        OS_TCB_FROM_TID(g_serviceHandleMap[0].taskID)->processCB) : FALSE; // g_serviceHandleMap[0] 为 ServiceManager, 把ServiceManager和service放一块很怪!!! @note_thinking 
 #endif
     (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
     return ret;
@@ -783,29 +783,29 @@ LITE_OS_SEC_TEXT STATIC BOOL IsTaskAlive(UINT32 taskID)
         return FALSE;
     }
     tcb = OS_TCB_FROM_TID(taskID); //获取任务控制块
-    if (!OsTaskIsUserMode(tcb)) {
-        return FALSE;
-    }
     if (OsTaskIsUnused(tcb)) {
         return FALSE;
     }
-    if (OsTaskIsInactive(tcb)) {//任务是否活跃
+    if (OsTaskIsInactive(tcb)) {
+        return FALSE;
+    }
+    if (!OsTaskIsUserMode(tcb)) {
         return FALSE;
     }
     return TRUE;
 }
 /// 按句柄方式处理, 参数 processID 往往不是当前进程
-LITE_OS_SEC_TEXT STATIC UINT32 HandleFd(UINT32 processID, SpecialObj *obj, BOOL isRollback)
+LITE_OS_SEC_TEXT STATIC UINT32 HandleFd(const LosProcessCB *pcb, SpecialObj *obj, BOOL isRollback)
 {
     int ret;
     if (isRollback == FALSE) { // 不回滚
-        ret = CopyFdToProc(obj->content.fd, processID);//目的是将两个不同进程fd都指向同一个系统fd,共享FD的感觉
+        ret = CopyFdToProc(obj->content.fd, pcb->processID);
         if (ret < 0) {//返回 processID 的 新 fd
             return ret;
         }
         obj->content.fd = ret; // 记录 processID 的新FD, 可用于回滚
     } else {// 回滚时关闭进程FD
-        ret = CloseProcFd(obj->content.fd, processID);
+        ret = CloseProcFd(obj->content.fd, pcb->processID);
         if (ret < 0) {
             return ret;
         }
@@ -814,7 +814,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleFd(UINT32 processID, SpecialObj *obj, BOOL 
     return LOS_OK;
 }
 /// 按指针方式处理
-LITE_OS_SEC_TEXT STATIC UINT32 HandlePtr(UINT32 processID, SpecialObj *obj, BOOL isRollback)
+LITE_OS_SEC_TEXT STATIC UINT32 HandlePtr(LosProcessCB *pcb, SpecialObj *obj, BOOL isRollback)
 {
     VOID *buf = NULL;
     UINT32 ret;
@@ -826,20 +826,20 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandlePtr(UINT32 processID, SpecialObj *obj, BOOL
             PRINT_ERR("Liteipc Bad ptr address\n"); //不在用户空间时
             return -EINVAL;
         }
-        buf = LiteIpcNodeAlloc(processID, obj->content.ptr.buffSz);//在内核空间分配内存接受来自用户空间的数据
+        buf = LiteIpcNodeAlloc(pcb, obj->content.ptr.buffSz);
         if (buf == NULL) {
             PRINT_ERR("Liteipc DealPtr alloc mem failed\n");
             return -EINVAL;
         }
         ret = copy_from_user(buf, obj->content.ptr.buff, obj->content.ptr.buffSz);//从用户空间拷贝数据到内核空间
         if (ret != LOS_OK) {
-            LiteIpcNodeFree(processID, buf);
+            LiteIpcNodeFree(pcb, buf);
             return ret;
         }//这里要说明下 obj->content.ptr.buff的变化,虽然都是用户空间的地址,但第二次已经意义变了,虽然数据一样,但指向的是申请经过拷贝后的内核空间
-        obj->content.ptr.buff = (VOID *)GetIpcUserAddr(processID, (INTPTR)buf);//获取进程 processID的用户空间地址,如此用户空间操作buf其实操作的是内核空间
-        EnableIpcNodeFreeByUser(processID, (VOID *)buf);//创建一个IPC节点,挂到可使用链表上,供读取
+        obj->content.ptr.buff = (VOID *)GetIpcUserAddr(pcb, (INTPTR)buf);
+        EnableIpcNodeFreeByUser(pcb, (VOID *)buf);
     } else {
-        (VOID)LiteIpcNodeFree(processID, (VOID *)GetIpcKernelAddr(processID, (INTPTR)obj->content.ptr.buff));//在内核空间释放IPC节点
+        (VOID)LiteIpcNodeFree(pcb, (VOID *)GetIpcKernelAddr(pcb, (INTPTR)obj->content.ptr.buff));
     }
     return LOS_OK;
 }
@@ -891,13 +891,13 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleSvc(UINT32 dstTid, SpecialObj *obj, BOOL is
 LITE_OS_SEC_TEXT STATIC UINT32 HandleObj(UINT32 dstTid, SpecialObj *obj, BOOL isRollback)
 {
     UINT32 ret;
-    UINT32 processID = OS_TCB_FROM_TID(dstTid)->processID;//获取目标任务所在进程
+    LosProcessCB *pcb = OS_PCB_FROM_TID(dstTid);
     switch (obj->type) {
         case OBJ_FD://fd:文件描述符
-            ret = HandleFd(processID, obj, isRollback);
+            ret = HandleFd(pcb, obj, isRollback);
             break;
         case OBJ_PTR://指针方式消息
-            ret = HandlePtr(processID, obj, isRollback);
+            ret = HandlePtr(pcb, obj, isRollback);
             break;
         case OBJ_SVC://服务类消息
             ret = HandleSvc(dstTid, (SpecialObj *)obj, isRollback);
@@ -1029,8 +1029,8 @@ LITE_OS_SEC_TEXT STATIC UINT32 CopyDataFromUser(IpcListNode *node, UINT32 bufSz,
 /// 是否有效回复
 LITE_OS_SEC_TEXT STATIC BOOL IsValidReply(const IpcContent *content)
 {
-    UINT32 curProcessID = LOS_GetCurrProcessID();
-    IpcListNode *node = (IpcListNode *)GetIpcKernelAddr(curProcessID, (INTPTR)(content->buffToFree));//通过用户空间地址获取内核地址
+    LosProcessCB *curr = OsCurrProcessGet();
+    IpcListNode *node = (IpcListNode *)GetIpcKernelAddr(curr, (INTPTR)(content->buffToFree));
     IpcMsg *requestMsg = &node->msg;
     IpcMsg *replyMsg = content->outMsg;
     UINT32 reqDstTid = 0;
@@ -1040,7 +1040,7 @@ LITE_OS_SEC_TEXT STATIC BOOL IsValidReply(const IpcContent *content)
         (replyMsg->timestamp != requestMsg->timestamp) ||
         (replyMsg->target.handle != requestMsg->taskID) ||
         (GetTid(requestMsg->target.handle, &reqDstTid) != 0) ||
-        (OS_TCB_FROM_TID(reqDstTid)->processID != curProcessID)) {
+        (OS_TCB_FROM_TID(reqDstTid)->processCB != (UINTPTR)curr)) {
         return FALSE;
     }
     return TRUE;
@@ -1093,7 +1093,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
                 }
 #endif
                 OsHookCall(LOS_HOOK_TYPE_IPC_WRITE_DROP, msg, *dstTid,
-                 (*dstTid == INVAILD_ID) ? INVAILD_ID : OS_TCB_FROM_TID(*dstTid)->processID, 0);
+                           (*dstTid == INVAILD_ID) ? INVAILD_ID : OS_PCB_FROM_TID(*dstTid)->processID, 0);
                 PRINT_ERR("Liteipc A timeout reply, request timestamp:%lld, now:%lld\n", msg->timestamp, now);
                 return -ETIME;
             }
@@ -1130,14 +1130,14 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcWrite(IpcContent *content)
     }
 
     LosTaskCB *tcb = OS_TCB_FROM_TID(dstTid);//目标任务实体
-    LosProcessCB *pcb = OS_PCB_FROM_PID(tcb->processID);//目标进程实体
+    LosProcessCB *pcb = OS_PCB_FROM_TCB(tcb);
     if (pcb->ipcInfo == NULL) {
-        PRINT_ERR("pid %u Liteipc not create\n", tcb->processID);
+        PRINT_ERR("pid %u Liteipc not create\n", pcb->processID);
         return -EINVAL;
     }
 	//这里为什么要申请msg->dataSz,因为IpcMsg中的真正数据体 data是个指针,它的大小是dataSz . 同时申请存储偏移量空间
     UINT32 bufSz = sizeof(IpcListNode) + msg->dataSz + msg->spObjNum * sizeof(UINT32);//这句话是理解上层消息在内核空间数据存放的关键!!! @note_good
-    IpcListNode *buf = (IpcListNode *)LiteIpcNodeAlloc(tcb->processID, bufSz);//向内核空间申请bufSz大小内存
+    IpcListNode *buf = (IpcListNode *)LiteIpcNodeAlloc(pcb, bufSz);
     if (buf == NULL) {
         PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
         return -ENOMEM;
@@ -1160,7 +1160,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcWrite(IpcContent *content)
     /* add data to list and wake up dest task *///向列表添加数据并唤醒目标任务
     SCHEDULER_LOCK(intSave);
     LOS_ListTailInsert(&(tcb->ipcTaskInfo->msgListHead), &(buf->listNode));//把消息控制体挂到目标任务的IPC链表头上
-    OsHookCall(LOS_HOOK_TYPE_IPC_WRITE, &buf->msg, dstTid, tcb->processID, tcb->waitFlag);
+    OsHookCall(LOS_HOOK_TYPE_IPC_WRITE, &buf->msg, dstTid, pcb->processID, tcb->waitFlag);
     if (tcb->waitFlag == OS_TASK_WAIT_LITEIPC) {//如果这个任务在等这个消息,注意这个tcb可不是当前任务
         OsTaskWakeClearPendMask(tcb);//撕掉对应标签
         tcb->ops->wake(tcb);
@@ -1173,7 +1173,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcWrite(IpcContent *content)
     }
     return LOS_OK;
 ERROR_COPY:
-    LiteIpcNodeFree(OS_TCB_FROM_TID(dstTid)->processID, buf);//拷贝发生错误就要释放内核堆内存,那可是好大一块堆内存啊
+    LiteIpcNodeFree(pcb, buf);
     return ret;
 }
 /// 检查收到的消息
@@ -1220,7 +1220,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckRecievedMsg(IpcListNode *node, IpcContent *c
     if (ret != LOS_OK) {
         OsHookCall(LOS_HOOK_TYPE_IPC_READ_DROP, &node->msg, tcb->waitFlag);
         (VOID)HandleSpecialObjects(LOS_CurTaskIDGet(), node, TRUE);
-        (VOID)LiteIpcNodeFree(LOS_GetCurrProcessID(), (VOID *)node);
+        (VOID)LiteIpcNodeFree(OsCurrProcessGet(), (VOID *)node);
     } else {
         OsHookCall(LOS_HOOK_TYPE_IPC_READ, &node->msg, tcb->waitFlag);
     }
@@ -1277,10 +1277,10 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcRead(IpcContent *content)
             }
         }
     } while (1);
-    node->msg.data = (VOID *)GetIpcUserAddr(LOS_GetCurrProcessID(), (INTPTR)(node->msg.data));//转成用户空间地址
-    node->msg.offsets = (VOID *)GetIpcUserAddr(LOS_GetCurrProcessID(), (INTPTR)(node->msg.offsets));//转成用户空间的偏移量
-    content->inMsg = (VOID *)GetIpcUserAddr(LOS_GetCurrProcessID(), (INTPTR)(&(node->msg)));//转成用户空间数据结构
-    EnableIpcNodeFreeByUser(LOS_GetCurrProcessID(), (VOID *)node);//创建一个空闲节点,并挂到进程IPC已使用节点链表上
+    node->msg.data = (VOID *)GetIpcUserAddr(OsCurrProcessGet(), (INTPTR)(node->msg.data));
+    node->msg.offsets = (VOID *)GetIpcUserAddr(OsCurrProcessGet(), (INTPTR)(node->msg.offsets));
+    content->inMsg = (VOID *)GetIpcUserAddr(OsCurrProcessGet(), (INTPTR)(&(node->msg)));
+    EnableIpcNodeFreeByUser(OsCurrProcessGet(), (VOID *)node);
     return LOS_OK;
 }
 /// 处理 IPC 消息
@@ -1331,7 +1331,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcMsgHandle(IpcContent *con)
     }
 BUFFER_FREE:
     if (nodeNeedFree != NULL) {
-        UINT32 freeRet = LiteIpcNodeFree(LOS_GetCurrProcessID(), nodeNeedFree);
+        UINT32 freeRet = LiteIpcNodeFree(OsCurrProcessGet(), nodeNeedFree);
         ret = (freeRet == LOS_OK) ? ret : freeRet;
     }
     if (ret != LOS_OK) {

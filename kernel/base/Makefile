@@ -1,5 +1,5 @@
 # Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -38,7 +38,9 @@ LOCAL_SRCS := 	$(wildcard ipc/*.c) $(wildcard core/*.c) $(wildcard mem/membox/*.
 		$(wildcard mem/tlsf/*.c) \
 		$(wildcard mp/*.c) \
 		$(wildcard sched/*.c) \
-		$(wildcard vm/*.c)
+		$(wildcard vm/*.c) \
+		$(wildcard container/*.c)
+
 
 LOCAL_FLAGS := $(LITEOS_CFLAGS_INTERWORK) -Wno-frame-address
 

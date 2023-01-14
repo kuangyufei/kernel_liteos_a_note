@@ -112,7 +112,7 @@ static ssize_t QuickstartIoctl(struct file *filep, int cmd, unsigned long arg)
         return QuickstartNotify(arg);
     }
 
-    if (OsGetUserInitProcessID() != LOS_GetCurrProcessID()) {
+    if (LOS_GetCurrProcessID() != OS_USER_ROOT_PROCESS_ID) {
         PRINT_ERR("Permission denios!\n");
         return -EACCES;
     }

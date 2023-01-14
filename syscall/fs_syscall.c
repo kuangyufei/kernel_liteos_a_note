@@ -1647,7 +1647,7 @@ ssize_t SysPread64(int fd, void *buf, size_t nbytes, off64_t offset)
     if (bufRet == NULL) {
         return -ENOMEM;
     }
-
+    (void)memset_s(bufRet, nbytes, 0, nbytes);
     ret = pread64(fd, (buf ? bufRet : NULL), nbytes, offset);
     if (ret < 0) {
         (void)LOS_MemFree(OS_SYS_MEM_ADDR, bufRet);

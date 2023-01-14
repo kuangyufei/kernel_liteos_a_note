@@ -45,11 +45,13 @@ STATIC VOID OsSmpSecondaryInit(VOID *arg)
 {
     UNUSED(arg);
 
+    OsCurrTaskSet(OsGetMainTask());
+
 #ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
     OsSwtmrInit();
 #endif
 
-    OsIdleTaskCreate();//每个核都有一个空闲任务
+    OsIdleTaskCreate((UINTPTR)OsGetIdleProcess());
     OsInitCall(LOS_INIT_LEVEL_KMOD_TASK);
 
     OsSchedStart();

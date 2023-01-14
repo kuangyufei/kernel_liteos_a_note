@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,13 +32,13 @@
 
 static UINT32 Testcase(VOID)
 {
-    INT32 ret = 0;
+    INT32 ret;
     CHAR mqname[MQUEUE_STANDARD_NAME_LENGTH] = {0};
     CHAR msgrv[MQUEUE_STANDARD_NAME_LENGTH] = {0};
     const CHAR *msgptr = "test message";
     mqd_t mqueue;
     struct timespec ts;
-    struct mq_attr attr = { 0 };
+    struct mq_attr attr = {0};
 
     ret = snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1, \
                      "/mq048_%d", LosCurTaskIDGet());
@@ -47,7 +47,7 @@ static UINT32 Testcase(VOID)
     attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     attr.mq_maxmsg = MQUEUE_STANDARD_NAME_LENGTH;
     mqueue = mq_open(mqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attr);
-    ICUNIT_GOTO_NOT_EQUAL(mqueue, (mqd_t)-1, mqueue, EXIT1);
+    ICUNIT_GOTO_NOT_EQUAL(mqueue, (mqd_t)-1, mqueue, EXIT2);
 
     ret = mq_send(mqueue, msgptr, strlen(msgptr), 0);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
@@ -59,10 +59,10 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(errno, EINVAL, errno, EXIT1);
 
     ret = mq_close(mqueue);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
 
     ret = mq_unlink(mqname);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
 
     return MQUEUE_NO_ERROR;
 EXIT1:
@@ -70,10 +70,10 @@ EXIT1:
 EXIT:
     mq_unlink(mqname);
 EXIT2:
-    return MQUEUE_NO_ERROR;
+    return MQUEUE_IS_ERROR;
 }
 
-VOID ItPosixQueue048(VOID) // IT_Layer_ModuleORFeature_No
+VOID ItPosixQueue048(VOID)
 {
     TEST_ADD_CASE("IT_POSIX_QUEUE_048", Testcase, TEST_POSIX, TEST_QUE, TEST_LEVEL2, TEST_FUNCTION);
 }

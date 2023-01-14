@@ -97,7 +97,7 @@ typedef struct {
 } ProcIpcInfo;
 typedef struct {
     LOS_DL_LIST     msgListHead;///< 上面挂的是一个个的 ipc节点 上面挂 IpcListNode,申请IpcListNode的内存来自进程IPC内存池
-    BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT]; ///< 此处是不是应该用 LOSCFG_BASE_CORE_PROCESS_LIMIT ? @note_thinking 
+    BOOL            accessMap[LOSCFG_BASE_CORE_PROCESS_LIMIT]; ///< 此处是不是应该用 LOSCFG_BASE_CORE_PROCESS_LIMIT ? @note_thinking 
     				///< 任务是否可以给其他进程发送IPC消息
 } IpcTaskInfo;
 

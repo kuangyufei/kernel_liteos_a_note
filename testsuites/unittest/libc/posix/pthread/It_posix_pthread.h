@@ -56,7 +56,7 @@
 #define TEST_HwiTrigger(HWI_NUM_TEST)
 #define LOS_TaskLock()
 #define LOS_TaskUnlock()
-#define LOS_MS2Tick(ms) (ms / 10)
+#define LOS_MS2Tick(ms) ((ms) / 10)
 #define OS_TASK_PRIORITY_HIGHEST 0
 #define OS_TASK_PRIORITY_LOWEST 31
 
@@ -228,12 +228,7 @@ struct testdata {
 };
 extern struct testdata g_td;
 
-
-extern unsigned int sleep(unsigned int seconds);
-extern unsigned int alarm(unsigned int seconds);
-
 extern int map_errno(UINT32 err);
-extern long sysconf(int name);
 extern void posix_signal_start(void);
 
 VOID ScenarInit(VOID);

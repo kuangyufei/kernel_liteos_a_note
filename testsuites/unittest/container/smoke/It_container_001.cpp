@@ -1,0 +1,71 @@
+/*
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this list of
+ * conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice, this list
+ * of conditions and the following disclaimer in the documentation and/or other materials
+ * provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors may be used
+ * to endorse or promote products derived from this software without specific prior written
+ * permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+#include "It_container_test.h"
+using namespace std;
+
+const int TIMER_INTERVAL_3S = 3;
+
+static int ChildFunc(void *arg)
+{
+    int value = *((int *)arg);
+    if (value != CHILD_FUNC_ARG) {
+        return EXIT_CODE_ERRNO_1;
+    }
+    sleep(TIMER_INTERVAL_3S);
+    return 0;
+}
+
+void ItContainer001(void)
+{
+    int ret;
+    int status = 0;
+    int childReturn = 0;
+    int arg = CHILD_FUNC_ARG;
+    char *stack = nullptr;
+    char *stackTop = nullptr;
+    stack = (char *)mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
+    ASSERT_NE(stack, MAP_FAILED);
+    stackTop = stack + STACK_SIZE;
+
+    auto pid = clone(ChildFunc, stackTop, SIGCHLD, &arg);
+    (void)munmap(stack, STACK_SIZE);
+    ASSERT_NE(pid, -1);
+
+    ret = waitpid(pid, &status, 0);
+    childReturn = (status >> BIT_ON_RETURN_VALUE) & 0xff;
+    ASSERT_EQ(childReturn, 0);
+    ASSERT_EQ(ret, pid);
+
+    ret = WIFEXITED(status);
+    ASSERT_NE(ret, 0);
+
+    int exitCode = WEXITSTATUS(status);
+    ASSERT_EQ(exitCode, 0);
+}

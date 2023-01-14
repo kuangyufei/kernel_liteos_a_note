@@ -217,7 +217,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsMain(VOID)
     startNsec = LOS_CurrNanosec();
 #endif
 
-    ret = OsTaskInit();//任务池初始化
+    ret = OsProcessInit();
     if (ret != LOS_OK) {
         return ret;
     }

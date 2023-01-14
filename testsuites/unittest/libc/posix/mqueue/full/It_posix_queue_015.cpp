@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,7 +35,7 @@ static UINT32 Testcase(VOID)
     INT32 ret;
     CHAR mqname[MQUEUE_STANDARD_NAME_LENGTH] = "";
     mqd_t mqueue;
-    struct mq_attr attr = { 0 };
+    struct mq_attr attr = {0};
     struct mq_attr attrget;
 
     ret = snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1,
@@ -45,7 +45,7 @@ static UINT32 Testcase(VOID)
     attr.mq_maxmsg = MQUEUE_SHORT_ARRAY_LENGTH;
     attr.mq_msgsize = 5; // 5, queue message size.
     mqueue = mq_open(mqname, O_CREAT | O_RDWR | O_NONBLOCK, S_IRUSR | S_IWUSR, &attr);
-    ICUNIT_GOTO_NOT_EQUAL(mqueue, (mqd_t)-1, mqueue, EXIT1);
+    ICUNIT_GOTO_NOT_EQUAL(mqueue, (mqd_t)-1, mqueue, EXIT2);
 
     ret = mq_getattr(mqueue, &attrget);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
@@ -54,15 +54,13 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(attrget.mq_maxmsg, attr.mq_maxmsg, attrget.mq_maxmsg, EXIT1);
     ICUNIT_GOTO_EQUAL(attrget.mq_msgsize, attr.mq_msgsize, attrget.mq_msgsize, EXIT1);
 
-    if (!(attrget.mq_flags & O_NONBLOCK)) {
-        goto EXIT1;
-    }
+    ICUNIT_GOTO_NOT_EQUAL(attrget.mq_flags & O_NONBLOCK, 0, MQUEUE_IS_ERROR, EXIT1);
 
     ret = mq_close(mqueue);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
 
     ret = mq_unlink(mqname);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
 
     return MQUEUE_NO_ERROR;
 EXIT1:
@@ -70,10 +68,10 @@ EXIT1:
 EXIT:
     mq_unlink(mqname);
 EXIT2:
-    return MQUEUE_NO_ERROR;
+    return MQUEUE_IS_ERROR;
 }
 
-VOID ItPosixQueue015(VOID) // IT_Layer_ModuleORFeature_No
+VOID ItPosixQueue015(VOID)
 {
     TEST_ADD_CASE("IT_POSIX_QUEUE_015", Testcase, TEST_POSIX, TEST_QUE, TEST_LEVEL2, TEST_FUNCTION);
 }

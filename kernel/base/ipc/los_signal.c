@@ -141,7 +141,7 @@ STATIC INLINE VOID OsSigWaitTaskWake(LosTaskCB *taskCB, INT32 signo)
 ///< 唤醒被挂起的处于等待指定信号的任务
 STATIC UINT32 OsPendingTaskWake(LosTaskCB *taskCB, INT32 signo)
 {
-    if (!OsTaskIsPending(taskCB) || !OsProcessIsUserMode(OS_PCB_FROM_PID(taskCB->processID))) {
+    if (!OsTaskIsPending(taskCB) || !OsProcessIsUserMode(OS_PCB_FROM_TCB(taskCB))) {
         return 0;
     }
 
@@ -397,7 +397,7 @@ int OsSigEmptySet(sigset_t *set)
 /* Privilege process can't send to kernel and privilege process */ //内核进程组和用户特权进程组无法发送
 static int OsSignalPermissionToCheck(const LosProcessCB *spcb)
 {
-    UINT32 gid = spcb->group->groupID;
+    UINTPTR gid = (UINTPTR)OS_GET_PGROUP_LEADER(spcb->pgroup);
 
     if (gid == OS_KERNEL_PROCESS_GROUP) {//内核进程组
         return -EPERM;
@@ -408,19 +408,14 @@ static int OsSignalPermissionToCheck(const LosProcessCB *spcb)
     return 0;
 }
 ///信号分发,发送信号权限/进程组过滤.
-int OsDispatch(pid_t pid, siginfo_t *info, int permission)
+STATIC int SendSigPermissionCheck(LosProcessCB *spcb, int permission)
 {
-    if (OsProcessIDUserCheckInvalid(pid) || pid < 0) {
-        return -ESRCH;
-    }
-    LosProcessCB *spcb = OS_PCB_FROM_PID(pid);//找到这个进程
-    if (OsProcessIsUnused(spcb)) {//进程是否还在使用,不一定是当前进程但必须是个有效进程
+    if (spcb == NULL) {
         return -ESRCH;
     }
 
-    /* If the process you want to kill had been inactive, but still exist. should return LOS_OK */
-    if (OsProcessIsInactive(spcb)) {//不向非活动进程发送信息,但返回OK
-        return LOS_OK;
+    if (OsProcessIsUnused(spcb)) {//进程是否还在使用,不一定是当前进程但必须是个有效进程
+        return -ESRCH;
     }
 
 #ifdef LOSCFG_SECURITY_CAPABILITY	//启用能力安全模式
@@ -435,9 +430,52 @@ int OsDispatch(pid_t pid, siginfo_t *info, int permission)
     if ((permission == OS_USER_KILL_PERMISSION) && (OsSignalPermissionToCheck(spcb) < 0)) {
         return -EPERM;
     }
-    return OsSigProcessSend(spcb, info);//给参数进程发送信号
+    return LOS_OK;
 }
 
+int OsSendSigToProcess(LosProcessCB *spcb, int sig, int permission)
+{
+    siginfo_t info;
+    int ret = SendSigPermissionCheck(spcb, permission);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+
+    /* If the process you want to kill had been inactive, but still exist. should return LOS_OK */
+    if (OsProcessIsInactive(spcb)) {
+        return LOS_OK;
+    }
+
+    if (!GOOD_SIGNO(sig)) {
+        return -EINVAL;
+    }
+
+    info.si_signo = sig;
+    info.si_code = SI_USER;
+    info.si_value.sival_ptr = NULL;
+
+    return OsSigProcessSend(spcb, &info);//给参数进程发送信号
+}
+
+int OsDispatch(pid_t pid, siginfo_t *info, int permission)
+{
+    if (OsProcessIDUserCheckInvalid(pid) || pid < 0) {
+        return -ESRCH;
+    }
+
+    LosProcessCB *spcb = OS_PCB_FROM_PID(pid);
+    int ret = SendSigPermissionCheck(spcb, permission);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+
+    /* If the process you want to kill had been inactive, but still exist. should return LOS_OK */
+    if (OsProcessIsInactive(spcb)) {
+        return LOS_OK;
+    }
+
+    return OsSigProcessSend(spcb, info);
+}
 /**
  * @brief 
  * @verbatim
@@ -748,7 +786,7 @@ VOID *OsSaveSignalContext(VOID *sp, VOID *newSp)
             sigcb->sigFlag = 0;
             process->sigShare = 0;
             SCHEDULER_UNLOCK(intSave);
-            PRINT_ERR("The signal processing function for the current process pid =%d is NULL!\n", task->processID);
+            PRINT_ERR("The signal processing function for the current process pid =%d is NULL!\n", process->processID);
             return sp;
         }
         /* One pthread do the share signal */

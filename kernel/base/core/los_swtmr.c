@@ -388,10 +388,10 @@ BOOL OsIsSwtmrTask(const LosTaskCB *taskCB)
     return FALSE;
 }
 ///回收指定进程的软时钟
-LITE_OS_SEC_TEXT_INIT VOID OsSwtmrRecycle(UINT32 processID)
+LITE_OS_SEC_TEXT_INIT VOID OsSwtmrRecycle(UINTPTR ownerID)
 {
     for (UINT16 index = 0; index < LOSCFG_BASE_CORE_SWTMR_LIMIT; index++) {//一个进程往往会有多个定时器
-        if (g_swtmrCBArray[index].uwOwnerPid == processID) {//找到一个
+        if (g_swtmrCBArray[index].uwOwnerPid == ownerID) {
             LOS_SwtmrDelete(index);//删除定时器
         }
     }
@@ -592,7 +592,7 @@ STATIC INLINE VOID SwtmrDelete(SWTMR_CTRL_S *swtmr)
     /* insert to free list */
     LOS_ListTailInsert(&g_swtmrFreeList, &swtmr->stSortList.sortLinkNode);//直接插入空闲链表中,回收再利用
     swtmr->ucState = OS_SWTMR_STATUS_UNUSED;//又干净着呢
-    swtmr->uwOwnerPid = 0;//谁拥有这个定时器? 是 0号进程
+    swtmr->uwOwnerPid = OS_INVALID_VALUE;
     SwtmrDebugDataClear(swtmr->usTimerID);
 }
 
@@ -747,7 +747,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_SwtmrCreate(UINT32 interval,
     LOS_ListDelete(LOS_DL_LIST_FIRST(&g_swtmrFreeList));//
     SWTMR_UNLOCK(intSave);
 
-    swtmr->uwOwnerPid = OsCurrProcessGet()->processID;//定时器进程归属设定
+    swtmr->uwOwnerPid = (UINTPTR)OsCurrProcessGet();
     swtmr->pfnHandler = handler;//时间到了的回调函数
     swtmr->ucMode = mode;	//定时器模式
     swtmr->uwOverrun = 0;

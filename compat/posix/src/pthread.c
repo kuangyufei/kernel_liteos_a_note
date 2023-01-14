@@ -252,9 +252,9 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
     taskInitParam.usTaskPrio   = (UINT16)userAttr.schedparam.sched_priority;//任务优先级
     taskInitParam.uwStackSize  = userAttr.stacksize;//栈大小
     if (OsProcessIsUserMode(OsCurrProcessGet())) {//@note_thinking 是不是搞反了 ? 
-        taskInitParam.processID = OsGetKernelInitProcessID();//内核进程
+        taskInitParam.processID = (UINTPTR)OsGetKernelInitProcess();
     } else {
-        taskInitParam.processID = OsCurrProcessGet()->processID;//这里可以看出
+        taskInitParam.processID = (UINTPTR)OsCurrProcessGet();
     }
     if (userAttr.detachstate == PTHREAD_CREATE_DETACHED) {
         taskInitParam.uwResved = LOS_TASK_STATUS_DETACHED;//detached状态的线程，在结束的时候，会自动释放该线程所占用的资源。

@@ -65,12 +65,15 @@ typedef struct {
     OsCpupBase cpup;   /**< irq cpup base */
 } OsIrqCpupCB;
 
+typedef struct TagTaskCB LosTaskCB;
+typedef struct TagTaskInfo TaskInfo;
+typedef struct TagProcessInfo ProcessInfo;
+
 extern UINT32 OsCpupInit(VOID);
 extern UINT32 OsCpupGuardCreator(VOID);
-extern VOID OsCpupCycleEndStart(UINT32 runTaskID, UINT32 newTaskID);
-extern UINT32 OsGetAllTaskCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len);
-extern UINT32 OsGetAllProcessCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len);
-extern UINT32 OsGetAllProcessAndTaskCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len);
+extern VOID OsCpupCycleEndStart(LosTaskCB *runTask, LosTaskCB *newTask);
+extern UINT32 OsGetProcessAllCpuUsageUnsafe(OsCpupBase *processCpup, ProcessInfo *processInfo);
+extern UINT32 OsGetTaskAllCpuUsageUnsafe(OsCpupBase *taskCpup, TaskInfo *taskInfo);
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
 extern UINT32 OsGetAllIrqCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len);
 extern VOID OsCpupIrqStart(UINT16);

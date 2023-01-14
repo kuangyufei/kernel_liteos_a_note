@@ -138,7 +138,8 @@ int SysMqNotify(mqd_t personal, const struct sigevent *sigev)
 int SysMqGetSetAttr(mqd_t mqd, const struct mq_attr *new, struct mq_attr *old)
 {
     int ret;
-    struct mq_attr knew, kold;
+    struct mq_attr knew;
+    struct mq_attr kold = { 0 };
 
     if (new != NULL) {
         ret = LOS_ArchCopyFromUser(&knew, new, sizeof(struct mq_attr));
@@ -314,7 +315,7 @@ int SysSigTimedWait(const sigset_t_l *setl, siginfo_t *info, const struct timesp
     sigset_t set;
     unsigned int tick;
     int retVal, ret;
-    siginfo_t infoIntr;
+    siginfo_t infoIntr = { 0 };
     struct timespec timeoutIntr;
 
     retVal = LOS_ArchCopyFromUser(&set, &(setl->sig[0]), sizeof(sigset_t));

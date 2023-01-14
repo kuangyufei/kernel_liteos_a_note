@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -33,18 +33,17 @@
 static UINT32 Testcase(VOID)
 {
     INT32 ret;
-    ret = mq_close((mqd_t)-1);
+    ret = mq_close((mqd_t)-1); // -1: an invalid argument
     ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
 
     ICUNIT_ASSERT_EQUAL(errno, EBADF, errno);
 
     return MQUEUE_NO_ERROR;
 EXIT:
-    mq_close((mqd_t)-1);
-    return MQUEUE_NO_ERROR;
+    return MQUEUE_IS_ERROR;
 }
 
-VOID ItPosixQueue030(VOID) // IT_Layer_ModuleORFeature_No
+VOID ItPosixQueue030(VOID)
 {
     TEST_ADD_CASE("IT_POSIX_QUEUE_030", Testcase, TEST_POSIX, TEST_QUE, TEST_LEVEL2, TEST_FUNCTION);
 }

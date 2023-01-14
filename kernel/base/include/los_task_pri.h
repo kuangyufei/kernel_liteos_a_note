@@ -192,7 +192,12 @@ extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
 * <ul><li>los_task_pri.h: the header file that contains the API declaration.</li></ul>
 * @see
 */
-#define OS_TCB_FROM_TID(taskID) (((LosTaskCB *)g_taskCBArray) + (taskID)) ///< 通过任务ID从任务池中拿到实体
+#define OS_TCB_FROM_RTID(taskID) (((LosTaskCB *)g_taskCBArray) + (taskID))
+#ifdef LOSCFG_PID_CONTAINER
+#define OS_TCB_FROM_TID(taskID) OsGetTCBFromVtid(taskID)
+#else
+#define OS_TCB_FROM_TID(taskID) OS_TCB_FROM_RTID(taskID)
+#endif
 
 #ifndef LOSCFG_STACK_POINT_ALIGN_SIZE
 #define LOSCFG_STACK_POINT_ALIGN_SIZE                       (sizeof(UINTPTR) * 2)
@@ -262,6 +267,10 @@ STATIC INLINE BOOL OsTaskIsKilled(const LosTaskCB *taskCB)
     return ((taskCB->taskStatus & OS_TASK_FLAG_EXIT_KILL) != 0);
 }
 
+STATIC INLINE BOOL OsTaskIsNotDelete(const LosTaskCB *taskCB)
+{
+    return ((taskCB->taskStatus & (OS_TASK_STATUS_UNUSED | OS_TASK_FLAG_SYSTEM_TASK | OS_TASK_FLAG_NO_DELETE)) != 0);
+}
 STATIC INLINE BOOL OsTaskIsUserMode(const LosTaskCB *taskCB)
 {
     return ((taskCB->taskStatus & OS_TASK_FLAG_USER_MODE) != 0);
@@ -308,8 +317,8 @@ extern BOOL OsTaskCpuAffiSetUnsafe(UINT32 taskID, UINT16 newCpuAffiMask, UINT16 
 extern VOID OsTaskSchedule(LosTaskCB *, LosTaskCB *);
 extern VOID OsTaskContextLoad(LosTaskCB *newTask);
 extern VOID OsIdleTask(VOID);
-extern UINT32 OsIdleTaskCreate(VOID);
-extern UINT32 OsTaskInit(VOID);
+extern UINT32 OsIdleTaskCreate(UINTPTR processID);
+extern UINT32 OsTaskInit(UINTPTR processCB);
 extern UINT32 OsShellCmdDumpTask(INT32 argc, const CHAR **argv);
 extern UINT32 OsShellCmdTskInfoGet(UINT32 taskID, VOID *seqfile, UINT16 flag);
 extern LosTaskCB *OsGetMainTask(VOID);
@@ -317,18 +326,20 @@ extern VOID OsSetMainTask(VOID);
 extern UINT32 OsGetIdleTaskId(VOID);
 extern VOID OsTaskEntry(UINT32 taskID);
 extern VOID OsTaskProcSignal(VOID);
-extern UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam);
+extern UINT32 OsCreateUserTask(UINTPTR processID, TSK_INIT_PARAM_S *initParam);
 extern INT32 OsSetTaskName(LosTaskCB *taskCB, const CHAR *name, BOOL setPName);
 extern VOID OsTaskCBRecycleToFree(VOID);
 extern VOID OsRunningTaskToExit(LosTaskCB *runTask, UINT32 status);
 extern INT32 OsUserTaskOperatePermissionsCheck(const LosTaskCB *taskCB);
-extern INT32 OsUserProcessOperatePermissionsCheck(const LosTaskCB *taskCB, UINT32 processID);
+extern INT32 OsUserProcessOperatePermissionsCheck(const LosTaskCB *taskCB, UINTPTR processCB);
 extern INT32 OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info);
 extern VOID OsWriteResourceEvent(UINT32 events);
 extern VOID OsWriteResourceEventUnsafe(UINT32 events);
 extern UINT32 OsResourceFreeTaskCreate(VOID);
 extern VOID OsTaskInsertToRecycleList(LosTaskCB *taskCB);
 extern VOID OsInactiveTaskDelete(LosTaskCB *taskCB);
+extern VOID OsSetMainTaskProcess(UINTPTR processCB);
+extern LosTaskCB *OsGetDefaultTaskCB(VOID);
 
 #ifdef __cplusplus
 #if __cplusplus

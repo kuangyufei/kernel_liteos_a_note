@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 更新内核架构图
+git commit -m  ' 同步官方代码，支持PID容器
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com

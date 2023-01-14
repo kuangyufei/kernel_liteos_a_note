@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -38,7 +38,7 @@ static UINT32 Testcase(VOID)
     CHAR msgrcd2[MQUEUE_STANDARD_NAME_LENGTH] = {0};
     const CHAR *msgptr = MQUEUE_SEND_STRING_TEST;
     mqd_t rdwrqueue, rdwrqueue2;
-    struct mq_attr attr = { 0 };
+    struct mq_attr attr = {0};
 
     ret = snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH, MQUEUE_STANDARD_NAME_LENGTH - 1,
                      "/mq011_%d", LosCurTaskIDGet());
@@ -47,7 +47,7 @@ static UINT32 Testcase(VOID)
     attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     attr.mq_maxmsg = MQUEUE_STANDARD_NAME_LENGTH;
     rdwrqueue = mq_open(mqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attr);
-    ICUNIT_GOTO_NOT_EQUAL(rdwrqueue, (mqd_t)-1, rdwrqueue, EXIT);
+    ICUNIT_GOTO_NOT_EQUAL(rdwrqueue, (mqd_t)-1, rdwrqueue, EXIT2);
 
     ret = mq_send(rdwrqueue, msgptr, strlen(msgptr), 0);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
@@ -56,7 +56,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(ret, strlen(msgptr), ret, EXIT);
 
     rdwrqueue2 = mq_open(mqname, O_RDWR, S_IRUSR | S_IWUSR, &attr);
-    ICUNIT_GOTO_NOT_EQUAL(rdwrqueue2, (mqd_t)-1, rdwrqueue2, EXIT1);
+    ICUNIT_GOTO_NOT_EQUAL(rdwrqueue2, (mqd_t)-1, rdwrqueue2, EXIT);
 
     ret = mq_send(rdwrqueue2, msgptr, strlen(msgptr), 0);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
@@ -65,25 +65,26 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(ret, strlen(msgptr), ret, EXIT1);
 
     ret = mq_close(rdwrqueue2);
-    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
     ret = mq_close(rdwrqueue);
-    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT3);
 
     ret = mq_unlink(mqname);
-    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT2);
 
     return MQUEUE_NO_ERROR;
 EXIT1:
     mq_close(rdwrqueue2);
 EXIT:
     mq_close(rdwrqueue);
+EXIT3:
     mq_unlink(mqname);
 EXIT2:
-    return MQUEUE_NO_ERROR;
+    return MQUEUE_IS_ERROR;
 }
 
-VOID ItPosixQueue011(VOID) // IT_Layer_ModuleORFeature_No
+VOID ItPosixQueue011(VOID)
 {
     TEST_ADD_CASE("IT_POSIX_QUEUE_011", Testcase, TEST_POSIX, TEST_QUE, TEST_LEVEL2, TEST_FUNCTION);
 }

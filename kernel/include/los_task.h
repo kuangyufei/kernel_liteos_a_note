@@ -513,7 +513,7 @@ typedef struct tagTskInitParam {//Task的初始化参数
     UINT32          uwResved;      /**< It is automatically deleted if set to LOS_TASK_STATUS_DETACHED.
                                         It is unable to be deleted if set to 0. | 如果设置为LOS_TASK_STATUS_DETACHED，则自动删除。如果设置为0，则无法删除*/
     UINT16          consoleID;     /**< The console id of task belongs  | 任务的控制台id所属*/
-    UINT32          processID;	///< 进程ID
+    UINTPTR          processID;	///< 进程ID
     UserTaskParam   userParam;	///< 任务用户态运行时任何参数
 } TSK_INIT_PARAM_S;
 

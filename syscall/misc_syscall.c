@@ -47,6 +47,44 @@
 #include "unistd.h"
 
 //这里放的是一些不好归类(或称杂项)的系统调用
+#ifdef LOSCFG_UTS_CONTAINER
+#define HOST_NAME_MAX_LEN 65
+int SysSetHostName(const char *name, size_t len)
+{
+    int ret;
+    char tmpName[HOST_NAME_MAX_LEN];
+    unsigned int intSave;
+
+    if (name == NULL) {
+        return -EFAULT;
+    }
+
+    if ((len < 0) || (len > HOST_NAME_MAX_LEN)) {
+        return -EINVAL;
+    }
+
+    ret = LOS_ArchCopyFromUser(&tmpName, name, len);
+    if (ret != 0) {
+        return -EFAULT;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    struct utsname *currentUtsName = OsGetCurrUtsName();
+    if (currentUtsName == NULL) {
+        SCHEDULER_UNLOCK(intSave);
+        return -EFAULT;
+    }
+
+    (VOID)memset_s(currentUtsName->nodename, sizeof(currentUtsName->nodename), 0, sizeof(currentUtsName->nodename));
+    ret = memcpy_s(currentUtsName->nodename, sizeof(currentUtsName->nodename), tmpName, len);
+    if (ret != EOK) {
+        SCHEDULER_UNLOCK(intSave);
+        return -EFAULT;
+    }
+    SCHEDULER_UNLOCK(intSave);
+    return 0;
+}
+#endif
 
 //uname命令用于显示当前操作系统的名称，版本创建时间，系统名称，版本信息等
 int SysUname(struct utsname *name)
@@ -210,7 +248,7 @@ long SysSysconf(int name)
 int SysUgetrlimit(int resource, unsigned long long k_rlim[2])
 {
     int ret;
-    struct rlimit lim;
+    struct rlimit lim = { 0 };
 
     ret = getrlimit(resource, &lim);
     if (ret < 0) {

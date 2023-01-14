@@ -54,20 +54,27 @@
 //uname命令用于显示当前操作系统的名称，版本创建时间，系统名称，版本信息等
 int uname(struct utsname *name)
 {
-    INT32 ret;
-    const char *cpuInfo = NULL;
     if (name == NULL) {
         return -EFAULT;
     }
+
+#ifdef LOSCFG_UTS_CONTAINER
+    struct utsname *currentUtsName = OsGetCurrUtsName();
+    if (currentUtsName == NULL) {
+        return -EFAULT;
+    }
+    (VOID)memcpy_s(name, sizeof(struct utsname), currentUtsName, sizeof(struct utsname));
+#else
+
     (VOID)strcpy_s(name->sysname, sizeof(name->sysname), KERNEL_NAME);
-    (VOID)strcpy_s(name->nodename, sizeof(name->nodename), "hisilicon");
-    ret = sprintf_s(name->version, sizeof(name->version), "%s %u.%u.%u.%u %s %s",
-                     KERNEL_NAME, KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE, __DATE__, __TIME__);
+    (VOID)strcpy_s(name->nodename, sizeof(name->nodename), KERNEL_NODE_NAME);
+    INT32 ret = sprintf_s(name->version, sizeof(name->version), "%s %u.%u.%u.%u %s %s",
+                          KERNEL_NAME, KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE, __DATE__, __TIME__);
     if (ret < 0) {
         return -EIO;
     }
 
-    cpuInfo = LOS_CpuInfo();
+    const char *cpuInfo = LOS_CpuInfo();
     (VOID)strcpy_s(name->machine, sizeof(name->machine), cpuInfo);
     ret = sprintf_s(name->release, sizeof(name->release), "%u.%u.%u.%u",
                      KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE);
@@ -76,6 +83,7 @@ int uname(struct utsname *name)
     }
 
     name->domainname[0] = '\0';
+#endif
     return 0;
 }
 

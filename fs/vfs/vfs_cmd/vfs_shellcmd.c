@@ -321,7 +321,6 @@ int osShellCmdCat(int argc, const char **argv)
   init_param.uwStackSize  = CAT_TASK_STACK_SIZE;//内核栈大小
   init_param.pcName       = "shellcmd_cat";	//任务名称
   init_param.uwResved     = LOS_TASK_STATUS_DETACHED | OS_TASK_FLAG_SPECIFIES_PROCESS;
-  init_param.processID    = 2; /* 2: kProcess */ //内核任务
 
   ret = (int)LOS_TaskCreate(&ca_task, &init_param);//创建任务显示cat内容
 

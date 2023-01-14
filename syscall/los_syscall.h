@@ -113,6 +113,7 @@ extern int SysWait(int pid, USER int *status, int options, void *rusage);
 extern int SysWaitid(idtype_t type, int pid, USER siginfo_t *info, int options, void *rusage);
 extern int SysFork(void);
 extern int SysVfork(void);
+extern int SysClone(int flags, void *stack, int *parentTid, unsigned long tls, int *childTid);
 extern unsigned int SysGetPID(void);
 extern unsigned int SysGetPPID(void);
 extern int SysSetGroupID(unsigned int gid);
@@ -205,6 +206,9 @@ extern int SysShmCtl(int shmid, int cmd, struct shmid_ds *buf);
 extern int SysShmDt(const void *shmaddr);
 
 /* misc */
+#ifdef LOSCFG_UTS_CONTAINER
+extern int SysSetHostName(const char *name, size_t len);
+#endif
 extern int SysUname(struct utsname *name);
 extern int SysInfo(struct sysinfo *info);
 

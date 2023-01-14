@@ -2176,8 +2176,6 @@ u32_t osShellPing6(int argc, const char **argv)
     /* Setting the start time of the entire ping task for statistics */
     (void)clock_gettime(CLOCK_MONOTONIC_RAW, &first);
 
-    nsent = 0;
-
     for (nsent = 0; nsent < ping6_params.pingcount; nsent++) {
         /* capture the start tick to calculate rtt */
         (void)clock_gettime(CLOCK_MONOTONIC_RAW, &start);
@@ -3170,7 +3168,6 @@ void netstat_internal(void *ctx)
         }
 
         /* For listen PCBs */
-        recvQlen = 0;
         sendQlen = 0;
 
         for (lpcb = tcp_listen_pcbs.listen_pcbs; lpcb != NULL; lpcb = lpcb->next) {

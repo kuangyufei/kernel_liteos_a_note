@@ -127,7 +127,7 @@ STATIC INLINE BOOL ValidTimerID(UINT16 swtmrID)
     }
 
     /* check owner of this timer */
-    if (OS_SWT_FROM_SID(swtmrID)->uwOwnerPid != LOS_GetCurrProcessID()) {
+    if (OS_SWT_FROM_SID(swtmrID)->uwOwnerPid != (UINTPTR)OsCurrProcessGet()) {
         return FALSE;
     }
 
@@ -514,7 +514,7 @@ static int PthreadGetCputime(clockid_t clockID, struct timespec *ats)
 
     LosTaskCB *task = OsGetTaskCB(tid);
 
-    if (OsCurrTaskGet()->processID != task->processID) {
+    if (OsCurrTaskGet()->processCB != task->processCB) {
         return -EINVAL;
     }
 
@@ -778,7 +778,7 @@ static VOID SwtmrProc(UINTPTR tmrArg)
         /* Make sure that the para is valid */
         OS_GOTO_EXIT_IF(OS_TID_CHECK_INVALID(arg->tid), EINVAL);
         stcb = OsGetTaskCB(arg->tid);
-        ret = OsUserProcessOperatePermissionsCheck(stcb, stcb->processID);
+        ret = OsUserProcessOperatePermissionsCheck(stcb, stcb->processCB);
         OS_GOTO_EXIT_IF(ret != LOS_OK, -ret);
 
         /* Dispatch the signal to thread, bypassing normal task group thread
@@ -1117,8 +1117,7 @@ clock_t times(struct tms *buf)
 int setitimer(int which, const struct itimerval *value, struct itimerval *ovalue)
 {
     UINT32 intSave;
-    LosTaskCB *taskCB = OS_TCB_FROM_TID(LOS_CurTaskIDGet());
-    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
+    LosProcessCB *processCB = OsCurrProcessGet();
     timer_t timerID = 0;
     struct itimerspec spec;
     struct itimerspec ospec;
@@ -1171,8 +1170,7 @@ int setitimer(int which, const struct itimerval *value, struct itimerval *ovalue
 
 int getitimer(int which, struct itimerval *value)
 {
-    LosTaskCB *taskCB = OS_TCB_FROM_TID(LOS_CurTaskIDGet());
-    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
+    LosProcessCB *processCB = OsCurrProcessGet();
     struct itimerspec spec = {};
 
     int ret = LOS_OK;

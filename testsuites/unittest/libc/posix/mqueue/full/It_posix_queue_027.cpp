@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,7 +32,7 @@
 
 static UINT32 Testcase(VOID)
 {
-    CHAR qname[50];
+    CHAR qname[MQUEUE_STANDARD_NAME_LENGTH];
     INT32 ret;
     mqd_t queue;
 
@@ -41,25 +41,24 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_NOT_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
 
     queue = mq_open(qname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, NULL);
-    if (queue == (mqd_t)-1) {
-        ICUNIT_ASSERT_NOT_EQUAL(queue, (mqd_t)-1, queue);
-    }
+    ICUNIT_ASSERT_NOT_EQUAL(queue, (mqd_t)-1, queue);
 
     ret = mq_close(queue);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
 
     ret = mq_unlink(qname);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
 
     return MQUEUE_NO_ERROR;
 EXIT:
     mq_close(queue);
+EXIT2:
     mq_unlink(qname);
 EXIT1:
-    return MQUEUE_NO_ERROR;
+    return MQUEUE_IS_ERROR;
 }
 
-VOID ItPosixQueue027(VOID) // IT_Layer_ModuleORFeature_No
+VOID ItPosixQueue027(VOID)
 {
     TEST_ADD_CASE("IT_POSIX_QUEUE_027", Testcase, TEST_POSIX, TEST_QUE, TEST_LEVEL2, TEST_FUNCTION);
 }

@@ -33,6 +33,7 @@
 #define _LOS_PROCESS_PRI_H
 
 #include "los_task_pri.h"
+#include "sched.h"
 #include "los_sem_pri.h"
 #include "los_process.h"
 #include "los_vm_map.h"
@@ -46,6 +47,9 @@
 #include "vid_type.h"
 #endif
 #include "sys/resource.h"
+#ifdef LOSCFG_KERNEL_CONTAINER
+#include "los_container_pri.h"
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -69,8 +73,8 @@ typedef struct {
 } User;
 #endif
 /*! 进程组结构体*/
-typedef struct {
-    UINT32      groupID;         /**< Process group ID is the PID of the process that created the group | 进程组ID是创建进程组的那个进程的ID*/
+typedef struct ProcessGroup {
+    UINTPTR      pgroupLeader;    /**< Process group leader is the the process that created the group */
     LOS_DL_LIST processList;     /**< List of processes under this process group | 属于该进程组的进程链表*/
     LOS_DL_LIST exitProcessList; /**< List of closed processes (zombie processes) under this group | 进程组的僵死进程链表*/
     LOS_DL_LIST groupList;       /**< Process group list | 进程组链表,上面挂的都是进程组*/
@@ -86,15 +90,15 @@ typedef struct ProcessCB {
                                                             running in the process | 这里设计很巧妙.用一个变量表示了两层逻辑 数量和状态,点赞! @note_good 从这里也可以看出一个进程可以有多个正在运行的任务*/
     UINT16               consoleID;                    /**< The console id of task belongs | 任务的控制台id归属 */
     UINT16               processMode;                  /**< Kernel Mode:0; User Mode:1; | 模式指定为内核还是用户进程 */
-    UINT32               parentProcessID;              /**< Parent process ID | 父进程ID*/
+    struct ProcessCB     *parentProcess;               /**< Parent process */
     UINT32               exitCode;                     /**< Process exit status | 进程退出状态码*/
     LOS_DL_LIST          pendList;                     /**< Block list to which the process belongs | 进程所在的阻塞列表,进程因阻塞挂入相应的链表.*/
     LOS_DL_LIST          childrenList;                 /**< Children process list | 孩子进程都挂到这里,形成双循环链表*/
     LOS_DL_LIST          exitChildList;                /**< Exit children process list | 要退出的孩子进程链表，白发人要送黑发人.*/
     LOS_DL_LIST          siblingList;                  /**< Linkage in parent's children list | 兄弟进程链表, 56个民族是一家,来自同一个父进程.*/
-    ProcessGroup         *group;                       /**< Process group to which a process belongs | 所属进程组*/
+    ProcessGroup         *pgroup;                       /**< Process group to which a process belongs | 所属进程组*/
     LOS_DL_LIST          subordinateGroupList;         /**< Linkage in group list | 进程组员链表*/
-    UINT32               threadGroupID;                /**< Which thread group , is the main thread ID of the process */
+    LosTaskCB            *threadGroup;
     LOS_DL_LIST          threadSiblingList;            /**< List of threads under this process | 进程的线程(任务)列表 */
     volatile UINT32      threadNumber; /**< Number of threads alive under this process | 此进程下的活动线程数*/
     UINT32               threadCount;  /**< Total number of threads created under this process | 在此进程下创建的线程总数*/	//
@@ -130,19 +134,23 @@ typedef struct ProcessCB {
     OsCpupBase           *processCpup; /**< Process cpu usage | 进程占用CPU情况统计*/
 #endif
     struct rlimit        *resourceLimit; ///< 每个进程在运行时系统不会无限制的允许单个进程不断的消耗资源，因此都会设置资源限制。
+#ifdef LOSCFG_KERNEL_CONTAINER
+    struct Container     *container;
+#endif
 } LosProcessCB;
 
-#define CLONE_VM       0x00000100	///< 子进程与父进程运行于相同的内存空间
-#define CLONE_FS       0x00000200	///< 子进程与父进程共享相同的文件系统，包括root、当前目录、umask
-#define CLONE_FILES    0x00000400	///< 子进程与父进程共享相同的文件描述符（file descriptor）表
-#define CLONE_SIGHAND  0x00000800	///< 子进程与父进程共享相同的信号处理（signal handler）表
-#define CLONE_PTRACE   0x00002000	///< 若父进程被trace，子进程也被trace
-#define CLONE_VFORK    0x00004000	///< 父进程被挂起，直至子进程释放虚拟内存资源
-#define CLONE_PARENT   0x00008000	///< 创建的子进程的父进程是调用者的父进程，新进程与创建它的进程成了“兄弟”而不是“父子”
-#define CLONE_THREAD   0x00010000	///< Linux 2.4中增加以支持POSIX线程标准，子进程与父进程共享相同的线程群
-//CLONE_NEWNS 在新的namespace启动子进程，namespace描述了进程的文件hierarchy
-//CLONE_PID 子进程在创建时PID与父进程一致
-#define OS_PCB_FROM_PID(processID) (((LosProcessCB *)g_processCBArray) + (processID))///< 通过数组找到LosProcessCB
+extern LosProcessCB *g_processCBArray;
+extern UINT32 g_processMaxNum;
+
+#define OS_PCB_FROM_RPID(processID)     (((LosProcessCB *)g_processCBArray) + (processID))
+#ifdef LOSCFG_PID_CONTAINER
+#define OS_PCB_FROM_PID(processID)      OsGetPCBFromVpid(processID)
+#else
+#define OS_PCB_FROM_PID(processID)      OS_PCB_FROM_RPID(processID)
+#endif
+#define OS_PCB_FROM_TCB(taskCB)         ((LosProcessCB *)((taskCB)->processCB))
+#define OS_PCB_FROM_TID(taskID)         ((LosProcessCB *)(OS_TCB_FROM_TID(taskID)->processCB))
+#define OS_GET_PGROUP_LEADER(pgroup)    ((LosProcessCB *)((pgroup)->pgroupLeader))
 #define OS_PCB_FROM_SIBLIST(ptr)   LOS_DL_LIST_ENTRY((ptr), LosProcessCB, siblingList)///< 通过siblingList节点找到 LosProcessCB
 #define OS_PCB_FROM_PENDLIST(ptr)  LOS_DL_LIST_ENTRY((ptr), LosProcessCB, pendList) ///< 通过pendlist节点找到 LosProcessCB
 
@@ -251,12 +259,17 @@ STATIC INLINE BOOL OsProcessIsInactive(const LosProcessCB *processCB)//查下进
  */ /// 进程死啦死啦的定义: 身上贴有不使用且状态为僵死的进程
 STATIC INLINE BOOL OsProcessIsDead(const LosProcessCB *processCB)//查下进程是否死啦死啦滴?
 {
-    return ((processCB->processStatus & (OS_PROCESS_FLAG_UNUSED | OS_PROCESS_STATUS_ZOMBIES)) != 0);
+    return ((processCB->processStatus & OS_PROCESS_STATUS_ZOMBIES) != 0);
 }
 
 STATIC INLINE BOOL OsProcessIsInit(const LosProcessCB *processCB)
 {
-    return (processCB->processStatus & OS_PROCESS_STATUS_INIT);
+    return ((processCB->processStatus & OS_PROCESS_STATUS_INIT) != 0);
+}
+
+STATIC INLINE BOOL OsProcessIsPGroupLeader(const LosProcessCB *processCB)
+{
+    return ((processCB->processStatus & OS_PROCESS_FLAG_GROUP_LEADER) != 0);
 }
 
 /**
@@ -289,6 +302,23 @@ STATIC INLINE BOOL OsProcessIsInit(const LosProcessCB *processCB)
  */
 #define OS_PROCESS_USERINIT_PRIORITY     28	///< 用户进程默认的优先级,28级好低啊
 
+/**
+ * @ingroup los_process
+ * ID of the kernel idle process
+ */
+#define OS_KERNEL_IDLE_PROCESS_ID       0U
+
+/**
+ * @ingroup los_process
+ * ID of the user root process
+ */
+#define OS_USER_ROOT_PROCESS_ID         1U
+
+/**
+ * @ingroup los_process
+ * ID of the kernel root process
+ */
+#define OS_KERNEL_ROOT_PROCESS_ID       2U
 #define OS_TASK_DEFAULT_STACK_SIZE      0x2000	///< task默认栈大小 8K
 #define OS_USER_TASK_SYSCALL_STACK_SIZE 0x3000	///< 用户通过系统调用的栈大小 12K ,这时是运行在内核模式下
 #define OS_USER_TASK_STACK_SIZE         0x100000	///< 用户任务运行在用户空间的栈大小 1M 
@@ -305,8 +335,8 @@ STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)
 #define LOS_PRIO_PGRP     1U	///< 进程组标识	
 #define LOS_PRIO_USER     2U	///< 用户标识
 
-#define OS_USER_PRIVILEGE_PROCESS_GROUP 1U	///< 用户态进程组ID
-#define OS_KERNEL_PROCESS_GROUP         2U	///< 内核态进程组ID
+#define OS_USER_PRIVILEGE_PROCESS_GROUP ((UINTPTR)OsGetUserInitProcess())
+#define OS_KERNEL_PROCESS_GROUP         ((UINTPTR)OsGetKernelInitProcess())
 
 /*
  * Process exit code
@@ -340,9 +370,6 @@ STATIC INLINE VOID OsProcessExitCodeSet(LosProcessCB *processCB, UINT32 code)
     processCB->exitCode |= ((code & 0x000000FFU) << 8U) & 0x0000FF00U; /* 8: Move 8 bits to the left, exitCode */
 }
 
-extern LosProcessCB *g_processCBArray;///< 进程池 OsProcessInit
-extern UINT32 g_processMaxNum;///< 进程最大数量
-
 #define OS_PID_CHECK_INVALID(pid) (((UINT32)(pid)) >= g_processMaxNum)
 /*! 内联函数 进程ID是否有效 */
 STATIC INLINE BOOL OsProcessIDUserCheckInvalid(UINT32 pid)
@@ -355,7 +382,7 @@ STATIC INLINE LosProcessCB *OsCurrProcessGet(VOID)
     UINT32 intSave;
 
     intSave = LOS_IntLock();
-    LosProcessCB *runProcess = OS_PCB_FROM_PID(OsCurrTaskGet()->processID);
+    LosProcessCB *runProcess = OS_PCB_FROM_TCB(OsCurrTaskGet());
     LOS_IntRestore(intSave);
     return runProcess;
 }
@@ -378,7 +405,7 @@ STATIC INLINE UINT32 OsProcessUserIDGet(const LosTaskCB *taskCB)
     UINT32 intSave = LOS_IntLock();
     UINT32 uid = OS_INVALID;
 
-    LosProcessCB *process = OS_PCB_FROM_PID(taskCB->processID);
+    LosProcessCB *process = OS_PCB_FROM_TCB(taskCB);
     if (process->user != NULL) {
         uid = process->user->userID;
     }
@@ -387,14 +414,14 @@ STATIC INLINE UINT32 OsProcessUserIDGet(const LosTaskCB *taskCB)
 }
 #endif
 
-STATIC INLINE UINT32 OsProcessThreadGroupIDGet(const LosTaskCB *taskCB)
+STATIC INLINE BOOL OsIsProcessThreadGroup(const LosTaskCB *taskCB)
 {
-    return OS_PCB_FROM_PID(taskCB->processID)->threadGroupID;
+    return (OS_PCB_FROM_TCB(taskCB)->threadGroup == taskCB);
 }
 
 STATIC INLINE UINT32 OsProcessThreadNumberGet(const LosTaskCB *taskCB)
 {
-    return OS_PCB_FROM_PID(taskCB->processID)->threadNumber;
+    return OS_PCB_FROM_TCB(taskCB)->threadNumber;
 }
 
 #ifdef LOSCFG_KERNEL_VM
@@ -410,6 +437,17 @@ STATIC INLINE struct Vnode *OsProcessExecVnodeGet(const LosProcessCB *processCB)
     return processCB->execVnode;
 }
 #endif
+
+STATIC INLINE UINT32 OsGetPid(const LosProcessCB *processCB)
+{
+#ifdef LOSCFG_PID_CONTAINER
+    if (OS_PROCESS_CONTAINER_CHECK(processCB, OsCurrProcessGet())) {
+        return OsGetVpidFromCurrContainer(processCB);
+    }
+#endif
+    return processCB->processID;
+}
+
 /*
  * return immediately if no child has exited.
  */
@@ -467,6 +505,7 @@ extern UINTPTR __user_init_entry;	///<  第一个用户态进程(init)的入口�
 extern UINTPTR __user_init_bss;		///<  查看 LITE_USER_SEC_BSS ,赋值由liteos.ld完成
 extern UINTPTR __user_init_end;		///<  init 进程的用户空间初始化结束地址
 extern UINTPTR __user_init_load_addr;///< init 进程的加载地址 ,由链接器赋值
+extern UINT32 OsProcessInit(VOID);
 extern UINT32 OsSystemProcessCreate(VOID);
 extern VOID OsProcessNaturalExit(LosProcessCB *processCB, UINT32 status);
 extern VOID OsProcessCBRecycleToFree(VOID);
@@ -480,20 +519,21 @@ extern UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBas
 extern UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name);
 extern INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio, UINT16 policy);
 extern INT32 OsGetProcessPriority(INT32 which, INT32 pid);
-extern UINT32 OsGetUserInitProcessID(VOID);
-extern UINT32 OsGetIdleProcessID(VOID);
+extern LosProcessCB *OsGetUserInitProcess(VOID);
+extern LosProcessCB *OsGetIdleProcess(VOID);
 extern INT32 OsSetProcessGroupID(UINT32 pid, UINT32 gid);
 extern INT32 OsSetCurrProcessGroupID(UINT32 gid);
-extern UINT32 OsGetKernelInitProcessID(VOID);
+extern LosProcessCB *OsGetKernelInitProcess(VOID);
 extern VOID OsSetSigHandler(UINTPTR addr);
 extern UINTPTR OsGetSigHandler(VOID);
 extern VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID);
 extern INT32 OsSendSignalToProcessGroup(INT32 pid, siginfo_t *info, INT32 permission);
 extern INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permission);
-extern UINT32 OsProcessAddNewTask(UINT32 pid, LosTaskCB *taskCB, SchedParam *param);
+extern UINT32 OsProcessAddNewTask(UINTPTR processID, LosTaskCB *taskCB, SchedParam *param, UINT32 *numCount);
 extern VOID OsDeleteTaskFromProcess(LosTaskCB *taskCB);
 extern VOID OsProcessThreadGroupDestroy(VOID);
-
+extern UINT32 OsGetProcessGroupCB(UINT32 pid, UINTPTR *ppgroupLeader);
+extern LosProcessCB *OsGetDefaultProcessCB(VOID);
 #ifdef __cplusplus
 #if __cplusplus
 }

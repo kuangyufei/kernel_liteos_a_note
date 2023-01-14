@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -30,54 +30,58 @@
  */
 #include "It_posix_queue.h"
 
+const int queue_msg_size = 20;
+const int queue_max_msg_size = 20;
+
 static UINT32 Testcase(VOID)
 {
     INT32 ret;
     CHAR mqname[MQUEUE_STANDARD_NAME_LENGTH] = "";
-    CHAR msgrcd[20] = {0};
-    struct mq_attr attr = { 0 };
-    struct timespec absTimeout = { 0 };
+    CHAR msgrcd[queue_max_msg_size] = {0};
+    struct mq_attr attr = {0};
+    struct timespec absTimeout = {0};
     mqd_t mqueue;
 
     (void)snprintf_s(mqname, MQUEUE_STANDARD_NAME_LENGTH - 1, MQUEUE_STANDARD_NAME_LENGTH, "/mq028_%d",
         LosCurTaskIDGet());
 
-    attr.mq_msgsize = 20; // 20, queue message size.
-    attr.mq_maxmsg = 20; // 20, queue max message size.
+    attr.mq_msgsize = queue_msg_size;
+    attr.mq_maxmsg = queue_max_msg_size;
 
     mqueue = mq_open(mqname, O_CREAT | O_RDWR | O_EXCL, S_IRUSR | S_IWUSR, &attr);
     ICUNIT_ASSERT_NOT_EQUAL(mqueue, (mqd_t)-1, mqueue);
 
-    ret = mq_timedsend(mqueue, "1234567890123456789", 20, 0, &absTimeout); // 20, mqueue message length.
+    ret = mq_timedsend(mqueue, "1234567890123456789", queue_msg_size, 0, &absTimeout);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
 
-    ret = mq_receive(mqueue, msgrcd, 20, NULL); // 20, mqueue message length.
-    ICUNIT_GOTO_EQUAL(ret, 20, ret, EXIT1); // 20, Here, assert the ret.
+    ret = mq_receive(mqueue, msgrcd, queue_msg_size, NULL);
+    ICUNIT_GOTO_EQUAL(ret, queue_msg_size, ret, EXIT1);
 
     ret = mq_close(mqueue);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
 
     mqueue = mq_open(mqname, O_RDWR | O_NONBLOCK, S_IRUSR | S_IWUSR, &attr);
-    ICUNIT_GOTO_NOT_EQUAL(mqueue, (mqd_t)-1, mqueue, EXIT1);
+    ICUNIT_GOTO_NOT_EQUAL(mqueue, (mqd_t)-1, mqueue, EXIT2);
 
-    ret = mq_receive(mqueue, msgrcd, 20, NULL); // 20, mqueue message length.
+    ret = mq_receive(mqueue, msgrcd, queue_msg_size, NULL);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_IS_ERROR, ret, EXIT1);
 
     ret = mq_close(mqueue);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
 
     ret = mq_unlink(mqname);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
 
     return MQUEUE_NO_ERROR;
 EXIT1:
     mq_close(mqueue);
 EXIT:
     mq_unlink(mqname);
-    return MQUEUE_NO_ERROR;
+EXIT2:
+    return MQUEUE_IS_ERROR;
 }
 
-VOID ItPosixQueue028(VOID) // IT_Layer_ModuleORFeature_No
+VOID ItPosixQueue028(VOID)
 {
     TEST_ADD_CASE("IT_POSIX_QUEUE_028", Testcase, TEST_POSIX, TEST_QUE, TEST_LEVEL0, TEST_FUNCTION);
 }

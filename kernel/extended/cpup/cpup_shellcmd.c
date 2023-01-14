@@ -145,7 +145,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdCpup(INT32 argc, const CHAR **argv)
         return LOS_OK;
     }
 
-    if (OsProcessIsDead(OS_PCB_FROM_PID(pid))) {
+    if (OsProcessIsUnused(OS_PCB_FROM_PID(pid)) || OsProcessIsDead(OS_PCB_FROM_PID(pid))) {
         PRINTK("\nUnknown pid: %u\n", pid);
         return LOS_OK;
     }

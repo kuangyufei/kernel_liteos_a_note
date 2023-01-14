@@ -1,5 +1,5 @@
 # Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -32,7 +32,11 @@ import("//kernel/liteos_a/liteos.gni")
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
   sources = [
+    "container/los_container.c",
+    "container/los_pid_container.c",
+    "container/los_uts_container.c",
     "core/los_bitmap.c",
+    "core/los_info.c",
     "core/los_process.c",
     "core/los_smp.c",
     "core/los_swtmr.c",

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -68,10 +68,10 @@ static VOID *PthreadF02(VOID *argument)
 
     TestExtraTaskDelay(2); // 2, Set delay time.
     ret = mq_close(g_gqueue);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
 
     ret = mq_unlink(g_gqname);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
 
     g_testCount = 4; // 4, Init test count value.
 
@@ -80,6 +80,7 @@ EXIT1:
     mq_close(g_gqueue);
 EXIT:
     mq_unlink(g_gqname);
+EXIT2:
     g_testCount = 0;
     return NULL;
 }
@@ -87,7 +88,7 @@ EXIT:
 static UINT32 Testcase(VOID)
 {
     UINT32 ret;
-    struct mq_attr attr = { 0 };
+    struct mq_attr attr = {0};
     pthread_attr_t attr1;
     pthread_t newTh1, newTh2;
 
@@ -98,7 +99,7 @@ static UINT32 Testcase(VOID)
     attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
     attr.mq_maxmsg = 5; // 5, queue max message size.
     g_gqueue = mq_open(g_gqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attr);
-    ICUNIT_GOTO_NOT_EQUAL(g_gqueue, (mqd_t)-1, g_gqueue, EXIT);
+    ICUNIT_GOTO_NOT_EQUAL(g_gqueue, (mqd_t)-1, g_gqueue, EXIT3);
 
     g_testCount = 0;
 
@@ -123,10 +124,10 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(g_testCount, 4, g_testCount, EXIT2); // 4, Here, assert the g_testCount.
 
     ret = PosixPthreadDestroy(&attr1, newTh2);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
 
     ret = PosixPthreadDestroy(&attr1, newTh1);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
 
     return MQUEUE_NO_ERROR;
 
@@ -138,10 +139,10 @@ EXIT:
     mq_close(g_gqueue);
     mq_unlink(g_gqname);
 EXIT3:
-    return MQUEUE_NO_ERROR;
+    return MQUEUE_IS_ERROR;
 }
 
-VOID ItPosixQueue041(VOID) // IT_Layer_ModuleORFeature_No
+VOID ItPosixQueue041(VOID)
 {
     TEST_ADD_CASE("IT_POSIX_QUEUE_041", Testcase, TEST_POSIX, TEST_QUE, TEST_LEVEL2, TEST_FUNCTION);
 }

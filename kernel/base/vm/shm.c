@@ -704,7 +704,7 @@ INT32 ShmCtl(INT32 shmid, INT32 cmd, struct shmid_ds *buf)
 {
     struct shmIDSource *seg = NULL;
     INT32 ret = 0;
-    struct shm_info shmInfo;
+    struct shm_info shmInfo = { 0 };
     struct ipc_perm shm_perm;
 
     cmd = ((UINT32)cmd & ~IPC_64);

@@ -145,7 +145,6 @@ UINT32 OsKProcessPmUsage(LosVmSpace *kSpace, UINT32 *actualPm)
     LosVmSpace *space = NULL;
     LOS_DL_LIST *spaceList = NULL;
     UINT32 UProcessUsed = 0;
-    UINT32 pmTmp;
 
     if (actualPm == NULL) {
         return 0;
@@ -166,8 +165,7 @@ UINT32 OsKProcessPmUsage(LosVmSpace *kSpace, UINT32 *actualPm)
         if (space == LOS_GetKVmSpace()) {//内核空间不统计
             continue;
         }
-        (VOID)OsUProcessPmUsage(space, NULL, &pmTmp);//统计用户空间物理内存的使用情况
-        UProcessUsed += pmTmp;//用户空间物理内存叠加
+        UProcessUsed += OsUProcessPmUsage(space, NULL, NULL);
     }
     (VOID)LOS_MuxRelease(vmSpaceListMux);
 

@@ -234,14 +234,8 @@ static int HiLogWriteRingBuffer(unsigned char *buffer, size_t bufLen)
 ///hilog实体初始化
 static void HiLogHeadInit(struct HiLogEntry *header, size_t len)
 {
-    struct timespec now;//标准C库函数,时间格式,包含秒数和纳秒数
-    int ret;
-
-    ret = clock_gettime(CLOCK_REALTIME, &now);//获取系统实时时间
-    if (ret != 0) {
-        PRINTK("In %s line %d,clock_gettime fail\n", __FUNCTION__, __LINE__);
-        return;
-    }
+    struct timespec now = {0};
+    (void)clock_gettime(CLOCK_REALTIME, &now);
 
     header->len = len;//写入buffer的内容长度
     header->pid = LOS_GetCurrProcessID();//当前进程ID

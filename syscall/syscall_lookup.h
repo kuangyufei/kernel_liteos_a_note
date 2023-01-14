@@ -139,6 +139,7 @@ SYSCALL_HAND_DEF(__NR_shellexec, SysShellExec, UINT32, ARG_NUM_2)
 SYSCALL_HAND_DEF(__NR_exit, SysThreadExit, void, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_fork, SysFork, int, ARG_NUM_0)
 SYSCALL_HAND_DEF(__NR_vfork, SysVfork, int, ARG_NUM_0)
+SYSCALL_HAND_DEF(__NR_clone, SysClone, int, ARG_NUM_5)
 SYSCALL_HAND_DEF(__NR_getpid, SysGetPID, unsigned int, ARG_NUM_0)
 SYSCALL_HAND_DEF(__NR_pause, SysPause, int, ARG_NUM_0)
 
@@ -160,6 +161,9 @@ SYSCALL_HAND_DEF(__NR_getitimer, SysGetiTimer, int, ARG_NUM_2)
 SYSCALL_HAND_DEF(__NR_wait4, SysWait, int, ARG_NUM_4)
 SYSCALL_HAND_DEF(__NR_waitid, SysWaitid, int, ARG_NUM_5)
 SYSCALL_HAND_DEF(__NR_uname, SysUname, int, ARG_NUM_1)
+#ifdef LOSCFG_UTS_CONTAINER
+SYSCALL_HAND_DEF(__NR_sethostname, SysSetHostName, int, ARG_NUM_2)
+#endif
 SYSCALL_HAND_DEF(__NR_mprotect, SysMprotect, int, ARG_NUM_3)
 SYSCALL_HAND_DEF(__NR_getpgid, SysGetProcessGroupID, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_sched_setparam, SysSchedSetParam, int, ARG_NUM_3)
