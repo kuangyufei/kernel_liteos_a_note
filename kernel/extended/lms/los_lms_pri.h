@@ -95,6 +95,7 @@ typedef struct {
 
 typedef struct {
     UINT32 (*init)(const VOID *pool, UINT32 size);
+    VOID (*deInit)(const VOID *pool);
     VOID (*mallocMark)(const VOID *curNodeStart, const VOID *nextNodeStart, UINT32 nodeHeadSize);
     VOID (*freeMark)(const VOID *curNodeStart, const VOID *nextNodeStart, UINT32 nodeHeadSize);
     VOID (*simpleMark)(UINTPTR startAddr, UINTPTR endAddr, UINT32 value);

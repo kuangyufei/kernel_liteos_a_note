@@ -482,7 +482,7 @@ exit_with_nomem:
     return (char *)NULL;
 }
 
-static void PrintFileInfo64(const struct stat64 *stat64Info, const char *name)
+static void PrintFileInfo64(const struct stat64 *stat64Info, const char *name, const char *linkName)
 {
     mode_t mode;
     char str[UGO_NUMS][UGO_NUMS + 1] = {0};
@@ -504,11 +504,18 @@ static void PrintFileInfo64(const struct stat64 *stat64Info, const char *name)
         dirFlag = '-';
     }
 
-    PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s\n", dirFlag,
-           str[0], str[1], str[UGO_NUMS - 1], stat64Info->st_size, stat64Info->st_uid, stat64Info->st_gid, name);
+    if (S_ISLNK(stat64Info->st_mode)) {
+        PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s -> %s\n", dirFlag,
+               str[0], str[1], str[UGO_NUMS - 1], stat64Info->st_size,
+               stat64Info->st_uid, stat64Info->st_gid, name, linkName);
+    } else {
+        PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s\n", dirFlag,
+               str[0], str[1], str[UGO_NUMS - 1], stat64Info->st_size,
+               stat64Info->st_uid, stat64Info->st_gid, name);
+    }
 }
 
-static void PrintFileInfo(const struct stat *statInfo, const char *name)
+static void PrintFileInfo(const struct stat *statInfo, const char *name, const char *linkName)
 {
     mode_t mode;
     char str[UGO_NUMS][UGO_NUMS + 1] = {0};
@@ -530,19 +537,33 @@ static void PrintFileInfo(const struct stat *statInfo, const char *name)
         dirFlag = '-';
     }
 
-    PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s\n", dirFlag,
-           str[0], str[1], str[UGO_NUMS - 1], statInfo->st_size, statInfo->st_uid, statInfo->st_gid, name);
+    if (S_ISLNK(statInfo->st_mode)) {
+        PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s -> %s\n", dirFlag,
+               str[0], str[1], str[UGO_NUMS - 1], statInfo->st_size,
+               statInfo->st_uid, statInfo->st_gid, name, linkName);
+    } else {
+        PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s\n", dirFlag,
+               str[0], str[1], str[UGO_NUMS - 1], statInfo->st_size,
+               statInfo->st_uid, statInfo->st_gid, name);
+    }
 }
 
 int LsFile(const char *path)
 {
     struct stat64 stat64Info;
     struct stat statInfo;
+    char linkName[NAME_MAX] = { 0 };
 
     if (stat64(path, &stat64Info) == 0) {
-        PrintFileInfo64(&stat64Info, path);
+        if (S_ISLNK(stat64Info.st_mode)) {
+            readlink(path, linkName, NAME_MAX);
+        }
+        PrintFileInfo64(&stat64Info, path, (const char *)linkName);
     } else if (stat(path, &statInfo) == 0) {
-        PrintFileInfo(&statInfo, path);
+        if (S_ISLNK(statInfo.st_mode)) {
+            readlink(path, linkName, NAME_MAX);
+        }
+        PrintFileInfo(&statInfo, path, (const char *)linkName);
     } else {
         return -1;
     }
@@ -554,6 +575,7 @@ int LsDir(const char *path)
 {
     struct stat statInfo = { 0 };
     struct stat64 stat64Info = { 0 };
+    char linkName[NAME_MAX] = { 0 };
     DIR *d = NULL;
     char *fullpath = NULL;
     char *fullpath_bak = NULL;
@@ -569,28 +591,34 @@ int LsDir(const char *path)
         pdirent = readdir(d);
         if (pdirent == NULL) {
             break;
-        } else {
-            if (!strcmp(pdirent->d_name, ".") || !strcmp(pdirent->d_name, "..")) {
-                continue;
-            }
-            (void)memset_s(&statInfo, sizeof(struct stat), 0, sizeof(struct stat));
-            (void)memset_s(&stat64Info, sizeof(struct stat), 0, sizeof(struct stat));
-            fullpath = ls_get_fullpath(path, pdirent);
-            if (fullpath == NULL) {
-                (void)closedir(d);
-                return -1;
-            }
-
-            fullpath_bak = fullpath;
-            if (stat64(fullpath, &stat64Info) == 0) {
-                PrintFileInfo64(&stat64Info, pdirent->d_name);
-            } else if (stat(fullpath, &statInfo) == 0) {
-                PrintFileInfo(&statInfo, pdirent->d_name);
-            } else {
-                PRINTK("BAD file: %s\n", pdirent->d_name);
-            }
-            free(fullpath_bak);
         }
+        if (!strcmp(pdirent->d_name, ".") || !strcmp(pdirent->d_name, "..")) {
+            continue;
+        }
+        (void)memset_s(&statInfo, sizeof(struct stat), 0, sizeof(struct stat));
+        (void)memset_s(&stat64Info, sizeof(struct stat), 0, sizeof(struct stat));
+        (void)memset_s(&linkName, sizeof(linkName), 0, sizeof(linkName));
+        fullpath = ls_get_fullpath(path, pdirent);
+        if (fullpath == NULL) {
+            (void)closedir(d);
+            return -1;
+        }
+
+        fullpath_bak = fullpath;
+        if (stat64(fullpath, &stat64Info) == 0) {
+            if (S_ISLNK(stat64Info.st_mode)) {
+                readlink(fullpath, linkName, NAME_MAX);
+            }
+            PrintFileInfo64(&stat64Info, pdirent->d_name, linkName);
+        } else if (stat(fullpath, &statInfo) == 0) {
+            if (S_ISLNK(statInfo.st_mode)) {
+                readlink(fullpath, linkName, NAME_MAX);
+            }
+            PrintFileInfo(&statInfo, pdirent->d_name, linkName);
+        } else {
+            PRINTK("BAD file: %s\n", pdirent->d_name);
+        }
+        free(fullpath_bak);
     } while (1);
     (void)closedir(d);
 
@@ -730,3 +758,45 @@ mode_t SysUmask(mode_t mask)
     return oldUmask;
 }
 
+#ifdef LOSCFG_CHROOT
+int chroot(const char *path)
+{
+    int ret;
+    struct Vnode *vnode = NULL;
+
+    if (!path) {
+        set_errno(EFAULT);
+        return VFS_ERROR;
+    }
+
+    if (!strlen(path)) {
+        set_errno(ENOENT);
+        return VFS_ERROR;
+    }
+
+    if (strlen(path) > PATH_MAX) {
+        set_errno(ENAMETOOLONG);
+        return VFS_ERROR;
+    }
+    VnodeHold();
+    ret = VnodeLookup(path, &vnode, 0);
+    if (ret != LOS_OK) {
+        VnodeDrop();
+        return ret;
+    }
+
+    LosProcessCB *curr = OsCurrProcessGet();
+    if ((curr->files == NULL) || (curr->files->rootVnode == NULL)) {
+        VnodeDrop();
+        return VFS_ERROR;
+    }
+    if (curr->files->rootVnode->useCount > 0) {
+        curr->files->rootVnode->useCount--;
+    }
+    vnode->useCount++;
+    curr->files->rootVnode = vnode;
+
+    VnodeDrop();
+    return LOS_OK;
+}
+#endif

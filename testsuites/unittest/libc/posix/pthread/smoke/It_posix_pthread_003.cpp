@@ -51,10 +51,6 @@ static UINT32 Testcase(VOID)
 
     tmp = pthread_equal(a, b);
 
-    // pthread_join(a, NULL);
-
-    // pthread_detach(a);
-
     pthread_attr_init(&aa);
 
     pthread_attr_getdetachstate(&aa, &detachstate);
@@ -63,19 +59,6 @@ static UINT32 Testcase(VOID)
 
     pthread_attr_destroy(&aa);
 
-    // pthread_mutex_init(&c, NULL);
-
-    // pthread_mutex_destroy(&c);
-
-    // pthread_mutex_lock(&c);
-
-    // pthread_mutex_trylock(&c);
-
-    // pthread_mutex_unlock(&c);
-
-    // pthread_mutexattr_init(&c);
-
-    // pthread_mutexattr_destroy(&c);
     ret = pthread_join(aThread, NULL);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 

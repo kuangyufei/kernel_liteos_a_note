@@ -430,8 +430,10 @@ typedef struct TagTaskCB {
 #ifdef LOSCFG_PID_CONTAINER
     PidContainer    *pidContainer;
 #endif
+#ifdef LOSCFG_IPC_CONTAINER
+   BOOL             cloneIpc;
+#endif
 } LosTaskCB;
-
 
 STATIC INLINE BOOL OsTaskIsRunning(const LosTaskCB *taskCB)
 {

@@ -176,16 +176,5 @@ HWTEST_F(NetSocketTest, NetSocketTest012, TestSize.Level0)
     NetSocketTest012();
 }
 
-/* *
- * @tc.name: NetSocketTest013
- * @tc.desc: function for NetSocketTest
- * @tc.type: FUNC
- */
-/*
-HWTEST_F(NetSocketTest, NetSocketTest013, TestSize.Level0)
-{
-    //NetSocketTest013(); // broadcast to self to be supported.
-}
-*/
 #endif
 }

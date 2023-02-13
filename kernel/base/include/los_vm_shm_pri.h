@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,6 +34,7 @@
 
 #include "los_typedef.h"
 #include "los_vm_map.h"
+#include "los_process_pri.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -41,10 +42,28 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+/* The upper limit size of total shared memory is default 16M */
+#define SHM_MAX_PAGES 4096
+#define SHM_MAX (SHM_MAX_PAGES * PAGE_SIZE)
+#define SHM_MIN 1
+#define SHM_MNI 192
+#define SHM_SEG 128
+#define SHM_ALL (SHM_MAX_PAGES)
+
+struct shmIDSource {
+    struct shmid_ds ds;
+    UINT32 status;
+    LOS_DL_LIST node;
+#ifdef LOSCFG_SHELL
+    CHAR ownerName[OS_PCB_NAME_LEN];
+#endif
+};
+
 VOID OsShmFork(LosVmSpace *space, LosVmMapRegion *oldRegion, LosVmMapRegion *newRegion);
 VOID OsShmRegionFree(LosVmSpace *space, LosVmMapRegion *region);
 BOOL OsIsShmRegion(LosVmMapRegion *region);
-
+struct shmIDSource *OsShmCBInit(LosMux *sysvShmMux, struct shminfo *shmInfo, UINT32 *shmUsedPageCount);
+VOID OsShmCBDestroy(struct shmIDSource *shmSegs, struct shminfo *shmInfo, LosMux *sysvShmMux);
 #ifdef __cplusplus
 #if __cplusplus
 }

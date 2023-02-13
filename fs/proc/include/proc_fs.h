@@ -82,7 +82,7 @@ typedef unsigned short fmode_t;
 #define FMODE_READ        ((fmode_t)0x1)
 
 struct ProcFile;
-
+struct ProcDirEntry;
 /**
  * @brief 真正最后能操作pro file的接口,proc本质是个内存文件系统, vfs - > ProcFileOperations
  */
@@ -92,6 +92,7 @@ struct ProcFileOperations {
     int (*open)(struct Vnode *vnode, struct ProcFile *pf);
     int (*release)(struct Vnode *vnode, struct ProcFile *pf);
     int (*read)(struct SeqBuf *m, void *v);
+    ssize_t (*readLink)(struct ProcDirEntry *pde, char *buf, size_t bufLen);
 };
 
 /**
@@ -255,6 +256,35 @@ extern struct ProcDirEntry *ProcCreate(const char *name, mode_t mode,
 
 /**
  * @ingroup  procfs
+ * @brief create a proc node
+ *
+ * @par Description:
+ * This API is used to create the node by 'name' and parent vnode,
+ * And assignment operation function
+ *
+ * @attention
+ * <ul>
+ * <li>This interface should be called after system initialization.</li>
+ * <li>The parameter name should be a valid string.</li>
+ * </ul>
+ *
+ * @param  name      [IN] Type #const char * The name of the node to be created.
+ * @param  mode      [IN] Type #mode_t the mode of create's node.
+ * @param  parent    [IN] Type #struct ProcDirEntry * the parent node of the node to be created.
+ * @param  procFops  [IN] Type #const struct ProcFileOperations * operation function of the node.
+ * @param  data      [IN] Type #void * data of the node.
+ *
+ * @retval #NULL               Create failed.
+ * @retval #ProcDirEntry*    Create successfully.
+ * @par Dependency:
+ * <ul><li>proc_fs.h: the header file that contains the API declaration.</li></ul>
+ * @see
+ *
+ */
+extern struct ProcDirEntry *ProcCreateData(const char *name, mode_t mode, struct ProcDirEntry *parent,
+                                           const struct ProcFileOperations *procFileOps, void *data);
+/**
+ * @ingroup  procfs
  * @brief init proc fs
  *
  * @par Description:
@@ -275,6 +305,7 @@ extern struct ProcDirEntry *ProcCreate(const char *name, mode_t mode,
  */
 extern void ProcFsInit(void);
 
+extern struct ProcDirEntry *VnodeToEntry(struct Vnode *node);
 #ifdef __cplusplus
 #if __cplusplus
 }

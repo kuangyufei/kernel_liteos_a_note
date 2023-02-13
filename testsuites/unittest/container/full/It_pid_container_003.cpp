@@ -41,7 +41,7 @@ static int ChildFunClone2()
     if (pstk == NULL) {
         return -1;
     }
-    int childPid = clone(ChildFun, (char *)pstk + STACK_SIZE, CLONE_NEWUTS | SIGCHLD, NULL);
+    int childPid = clone(ChildFun, (char *)pstk + STACK_SIZE, SIGCHLD, NULL);
 
     free(pstk);
     return childPid;

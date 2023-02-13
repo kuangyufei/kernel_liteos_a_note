@@ -37,7 +37,6 @@ static UINT32 testcase(VOID)
     time_t currtime;
     struct tm *timer = {nullptr};
     char buffer[80];
-    //locale_t loc = malloc(sizeof(locale_t);
 
     time(&currtime);
     timer = localtime(&currtime);
@@ -46,17 +45,17 @@ static UINT32 testcase(VOID)
     printf("getenv MUSL_LOCPATH=%s\n", getenv("MUSL_LOCPATH"));
 
     printf("Locale is: %s\n", setlocale(LC_TIME, "en_US.UTF-8"));
-    strftime(buffer, 80, "%c", timer);
+    (void)strftime(buffer, sizeof(buffer), "%c", timer);
     printf("Date is: %s\n", buffer);
     ICUNIT_ASSERT_NOT_EQUAL_NULL(buffer, NULL, -1);
 
     printf("Locale is: %s\n", setlocale(LC_TIME, "zh_CN.UTF-8"));
-    strftime(buffer, 80, "%c", timer);
+    (void)strftime(buffer, sizeof(buffer), "%c", timer);
     printf("Date is: %s\n", buffer);
     ICUNIT_ASSERT_NOT_EQUAL_NULL(buffer, NULL, -1);
 
     printf("Locale is: %s\n", setlocale(LC_TIME, ""));
-    strftime(buffer, 80, "%c", timer);
+    (void)strftime(buffer, sizeof(buffer), "%c", timer);
     printf("Date is: %s\n", buffer);
     ICUNIT_ASSERT_NOT_EQUAL_NULL(buffer, NULL, -1);
     setlocale(LC_ALL, "C");

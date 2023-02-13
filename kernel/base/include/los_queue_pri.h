@@ -85,7 +85,7 @@ typedef enum {
  * Queue information block structure
  * @attention 读写队列分离
  */
-typedef struct {
+typedef struct TagQueueCB{
     UINT8 *queueHandle; /**< Pointer to a queue handle | 队列消息内存空间的指针*/
     UINT16 queueState; 	/**< Queue state | 队列状态*/	
     UINT16 queueLen; 	/**< Queue length | 队列中消息节点个数，即队列长度,由创建时确定,不再改变*/
@@ -130,6 +130,9 @@ typedef struct {
  *  Queue information control block
  */
 extern LosQueueCB *g_allQueue;
+#ifndef LOSCFG_IPC_CONTAINER
+#define IPC_ALL_QUEUE g_allQueue
+#endif
 
 /**
  * @ingroup los_queue
@@ -159,7 +162,7 @@ extern LosQueueCB *g_allQueue;
  * Obtain a handle of the queue that has a specified ID.
  *
  */
-#define GET_QUEUE_HANDLE(queueID)       (((LosQueueCB *)g_allQueue) + GET_QUEUE_INDEX(queueID))
+#define GET_QUEUE_HANDLE(queueID)       (((LosQueueCB *)IPC_ALL_QUEUE) + GET_QUEUE_INDEX(queueID))
 
 /**
  * @ingroup los_queue
@@ -217,6 +220,8 @@ extern VOID *OsQueueMailAlloc(UINT32 queueID, VOID *mailPool, UINT32 timeout);
  * @see OsQueueMailAlloc
  */
 extern UINT32 OsQueueMailFree(UINT32 queueID, VOID *mailPool, VOID *mailMem);
+
+extern LosQueueCB *OsAllQueueCBInit(LOS_DL_LIST *freeQueueList);
 
 extern UINT32 OsQueueInit(VOID);
 

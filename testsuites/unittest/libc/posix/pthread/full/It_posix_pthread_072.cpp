@@ -34,7 +34,6 @@ static void *pthread_f01(void *tmp)
 {
     int rc = 0;
     g_testCount++;
-    // printf("www\n");
 
     /* acquire the mutex */
     rc = pthread_mutex_lock(&g_pthreadMutexTest1);
@@ -69,7 +68,7 @@ static UINT32 Testcase(VOID)
 
     /* Let the other thread run */
     LosTaskDelay(2);
-    ICUNIT_ASSERT_EQUAL(g_testCount, 2, g_testCount);
+    ICUNIT_ASSERT_EQUAL(g_testCount, 2, g_testCount); // 2: expected value of g_testCount
 
     /* Try to destroy the cond var. This should return an error */
     rc = pthread_cond_destroy(&g_pthreadCondTest1);
@@ -79,7 +78,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_ASSERT_EQUAL(rc, 0, rc);
 
     LosTaskDelay(2);
-    ICUNIT_ASSERT_EQUAL(g_testCount, 4, g_testCount);
+    ICUNIT_ASSERT_EQUAL(g_testCount, 4, g_testCount); // 4: expected value of g_testCount
 
     rc = pthread_cond_destroy(&g_pthreadCondTest1);
     ICUNIT_ASSERT_EQUAL(rc, 0, rc);

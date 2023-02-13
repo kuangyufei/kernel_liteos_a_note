@@ -629,13 +629,22 @@ int clock_gettime(clockid_t clockID, struct timespec *tp)
 
     switch (clockID) {
         case CLOCK_MONOTONIC_RAW:
+#ifdef LOSCFG_TIME_CONTAINER
+            tmp = OsTimeSpecAdd(hwTime, CLOCK_MONOTONIC_TIME_BASE);
+            tp->tv_sec = tmp.tv_sec;
+            tp->tv_nsec = tmp.tv_nsec;
+#else
             tp->tv_sec = hwTime.tv_sec;
             tp->tv_nsec = hwTime.tv_nsec;
+#endif
             break;
         case CLOCK_MONOTONIC:
             LOS_SpinLockSave(&g_timeSpin, &intSave);
             tmp = OsTimeSpecAdd(hwTime, g_accDeltaFromAdj);
             LOS_SpinUnlockRestore(&g_timeSpin, intSave);
+#ifdef LOSCFG_TIME_CONTAINER
+            tmp = OsTimeSpecAdd(tmp, CLOCK_MONOTONIC_TIME_BASE);
+#endif
             tp->tv_sec = tmp.tv_sec;
             tp->tv_nsec = tmp.tv_nsec;
             break;

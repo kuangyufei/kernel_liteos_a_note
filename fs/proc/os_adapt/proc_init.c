@@ -67,6 +67,10 @@ void ProcFsInit(void)
 #ifdef LOSCFG_KERNEL_PM
     ProcPmInit();
 #endif
+#ifdef LOSCFG_PROC_PROCESS_DIR
+    ProcSysMemInfoInit();
+    ProcFileSysInit();
+#endif
 }
 
 LOS_MODULE_INIT(ProcFsInit, LOS_INIT_LEVEL_KMOD_EXTENDED);

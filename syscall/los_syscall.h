@@ -114,6 +114,8 @@ extern int SysWaitid(idtype_t type, int pid, USER siginfo_t *info, int options, 
 extern int SysFork(void);
 extern int SysVfork(void);
 extern int SysClone(int flags, void *stack, int *parentTid, unsigned long tls, int *childTid);
+extern int SysUnshare(int flags);
+extern int SysSetns(int fd, int type);
 extern unsigned int SysGetPID(void);
 extern unsigned int SysGetPPID(void);
 extern int SysSetGroupID(unsigned int gid);
@@ -346,5 +348,8 @@ extern int SysGetrusage(int what, struct rusage *ru);
 extern long SysSysconf(int name);
 extern int SysUgetrlimit(int resource, unsigned long long k_rlim[2]);
 extern int SysSetrlimit(int resource, unsigned long long k_rlim[2]);
+#ifdef LOSCFG_CHROOT
+extern int SysChroot(const char *path);
+#endif
 #endif
 #endif /* _LOS_SYSCALL_H */

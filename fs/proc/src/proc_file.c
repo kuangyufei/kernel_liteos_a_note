@@ -352,6 +352,11 @@ static struct ProcDirEntry *ProcCreateFile(struct ProcDirEntry *parent, const ch
 
     pn->procFileOps = procFileOps;//驱动程序
     pn->type = VNODE_TYPE_REG;	//文件类型
+#ifdef LOSCFG_PROC_PROCESS_DIR
+    if (S_ISLNK(mode)) {
+        pn->type = VNODE_TYPE_VIR_LNK;
+    }
+#endif
     ret = ProcAddNode(parent, pn);
     if (ret != 0) {
         free(pn->pf);
@@ -373,15 +378,41 @@ struct ProcDirEntry *CreateProcEntry(const char *name, mode_t mode, struct ProcD
     }
     return pde;
 }
+
+static void ProcEntryClearVnode(struct ProcDirEntry *entry)
+{
+    struct Vnode *item = NULL;
+    struct Vnode *nextItem = NULL;
+
+    VnodeHold();
+    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, GetVnodeActiveList(), struct Vnode, actFreeEntry) {
+        if ((struct ProcDirEntry *)item->data != entry) {
+            continue;
+        }
+
+        if (VnodeFree(item) != LOS_OK) {
+            PRINT_ERR("ProcEntryClearVnode free failed, entry: %s\n", entry->name);
+        }
+    }
+    VnodeDrop();
+    return;
+}
 ///释放proc
 static void FreeProcEntry(struct ProcDirEntry *entry)
 {
     if (entry == NULL) {
         return;
     }
+
+    ProcEntryClearVnode(entry);
+
     if (entry->pf != NULL) {
         free(entry->pf);
         entry->pf = NULL;
+    }
+    if (entry->data != NULL) {
+        free(entry->data);
+        entry->data = NULL;
     }
     free(entry);
 }
@@ -529,7 +560,7 @@ static int ProcRead(struct ProcDirEntry *pde, char *buf, size_t len)
 
     if (sb->buf == NULL) {
         // only read once to build the storage buffer
-        if (pde->procFileOps->read(sb, NULL) != 0) {
+        if (pde->procFileOps->read(sb, pde->data) != 0) {
             return PROC_ERROR;
         }
     }
@@ -554,21 +585,17 @@ static int ProcRead(struct ProcDirEntry *pde, char *buf, size_t len)
 
 struct ProcDirEntry *OpenProcFile(const char *fileName, int flags, ...)
 {
-    unsigned int intSave;
     struct ProcDirEntry *pn = ProcFindEntry(fileName);
     if (pn == NULL) {
         return NULL;
     }
 
-    SCHEDULER_LOCK(intSave);
     if (S_ISREG(pn->mode) && (pn->count != 1)) {
-        SCHEDULER_UNLOCK(intSave);
         return NULL;
     }
 
     pn->flags = (unsigned int)(pn->flags) | (unsigned int)flags;
     atomic_set(&pn->count, PROC_INUSE);
-    SCHEDULER_UNLOCK(intSave);
     if (ProcOpen(pn->pf) != OK) {
         return NULL;
     }

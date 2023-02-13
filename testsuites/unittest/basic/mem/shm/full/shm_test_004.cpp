@@ -55,7 +55,6 @@ static int Testcase(VOID)
     ICUNIT_GOTO_EQUAL(ds.shm_perm.uid, getuid(), ds.shm_perm.uid, ERROR_OUT);
 
     ret = shmctl(shmid, SHM_STAT, &ds);
-    // ICUNIT_GOTO_EQUAL(ret, 0x10000, ret, ERROR_OUT);
     ICUNIT_GOTO_NOT_EQUAL(ret, -1, ret, ERROR_OUT);
     ICUNIT_GOTO_NOT_EQUAL(ret, 0, ret, ERROR_OUT);
 
@@ -70,7 +69,7 @@ static int Testcase(VOID)
     ICUNIT_GOTO_EQUAL(info.shmmax, 0x1000000, info.shmmax, ERROR_OUT);
     ICUNIT_GOTO_EQUAL(info.shmmin, 1, info.shmmin, ERROR_OUT);
     ICUNIT_GOTO_EQUAL(info.shmmni, 192, info.shmmni, ERROR_OUT);
-    ICUNIT_GOTO_EQUAL(info.shmseg, 128, info.shmseg, ERROR_OUT);
+    ICUNIT_GOTO_EQUAL(info.shmseg, 128, info.shmseg, ERROR_OUT); // 128: expected value of shmseg
     ICUNIT_GOTO_EQUAL(info.shmall, 0x1000, info.shmall, ERROR_OUT);
 
     ret = shmdt(shm);

@@ -1,0 +1,81 @@
+# Copyright (c) 2023-2023 Huawei Device Co., Ltd. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import("//build/lite/config/test.gni")
+import("//kernel/liteos_a/testsuites/unittest/config.gni")
+
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../../common/include",
+]
+
+sources_entry = [ "../../common/osTest.cpp" ]
+
+sources_smoke = []
+
+sources_full = []
+
+process_fs_include_dirs = [ "$TEST_UNITTEST_DIR/process/fs" ]
+
+process_fs_sources_entry =
+    [ "$TEST_UNITTEST_DIR/process/fs/process_fs_test.cpp" ]
+
+process_fs_sources_smoke = [
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_001.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_002.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_003.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_004.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_005.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_006.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_007.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_008.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_009.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_010.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_011.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_012.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_013.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_014.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_015.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_016.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_017.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_018.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_019.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_020.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_021.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_022.cpp",
+]
+
+process_fs_sources_full = []
+
+# fs module
+if (LOSCFG_USER_TEST_PROCESS_FS == true) {
+  common_include_dirs += process_fs_include_dirs
+  sources_entry += process_fs_sources_entry
+  sources_smoke += process_fs_sources_smoke
+  sources_full += process_fs_sources_full
+}

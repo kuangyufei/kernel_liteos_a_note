@@ -135,7 +135,10 @@ typedef struct ProcessCB {
 #endif
     struct rlimit        *resourceLimit; ///< 每个进程在运行时系统不会无限制的允许单个进程不断的消耗资源，因此都会设置资源限制。
 #ifdef LOSCFG_KERNEL_CONTAINER
-    struct Container     *container;
+    Container            *container;
+#endif
+#ifdef LOSCFG_PROC_PROCESS_DIR
+    struct ProcDirEntry *procDir;
 #endif
 } LosProcessCB;
 
@@ -448,6 +451,15 @@ STATIC INLINE UINT32 OsGetPid(const LosProcessCB *processCB)
     return processCB->processID;
 }
 
+STATIC INLINE UINT32 OsGetRootPid(const LosProcessCB *processCB)
+{
+#ifdef LOSCFG_PID_CONTAINER
+    return OsGetVpidFromRootContainer(processCB);
+#else
+    return processCB->processID;
+#endif
+}
+
 /*
  * return immediately if no child has exited.
  */
@@ -534,6 +546,7 @@ extern VOID OsDeleteTaskFromProcess(LosTaskCB *taskCB);
 extern VOID OsProcessThreadGroupDestroy(VOID);
 extern UINT32 OsGetProcessGroupCB(UINT32 pid, UINTPTR *ppgroupLeader);
 extern LosProcessCB *OsGetDefaultProcessCB(VOID);
+extern ProcessGroup *OsCreateProcessGroup(LosProcessCB *processCB);
 #ifdef __cplusplus
 #if __cplusplus
 }

@@ -231,7 +231,7 @@ int main(int argc, char * const *argv)
     printf("\n############### Lms Test start ###############\n");
     char *tmp = (char *)malloc(5000); /* 5000: test mem size */
     if (tmp == NULL) {
-        return;
+        return -1;
     }
     LmsMallocTest();
     LmsReallocTest();
@@ -246,4 +246,5 @@ int main(int argc, char * const *argv)
     LmsFreeTest();
     free(tmp);
     printf("\n############### Lms Test End ###############\n");
+    return 0;
 }

@@ -70,11 +70,17 @@ static int ChildFunClone1(void *p)
     }
 
     ret = waitpid(childPid, &status, 0);
+    if (ret != childPid) {
+        return EXIT_CODE_ERRNO_4;
+    }
     ret = WIFEXITED(status);
+    if (ret == 0) {
+        return EXIT_CODE_ERRNO_5;
+    }
     ret = WEXITSTATUS(status);
     if (ret != 0) {
         free(pstk);
-        return EXIT_CODE_ERRNO_4;
+        return EXIT_CODE_ERRNO_6;
     }
 
     free(pstk);

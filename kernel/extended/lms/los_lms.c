@@ -106,20 +106,25 @@ EXIT:
 STATIC LmsMemListNode *OsLmsGetPoolNodeFromAddr(UINTPTR addr)
 {
     LmsMemListNode *current = NULL;
+    LmsMemListNode *previous = NULL;
     LOS_DL_LIST *listHead = &g_lmsCheckPoolList;
 
     if (LOS_ListEmpty(&g_lmsCheckPoolList)) {
-        goto EXIT;
+        return NULL;
     }
 
     LOS_DL_LIST_FOR_EACH_ENTRY(current, listHead, LmsMemListNode, node) {
-        if ((addr >= current->poolAddr) && (addr < current->poolAddr + current->poolSize)) {
-            return current;
+        if ((addr < current->poolAddr) || (addr >= (current->poolAddr + current->poolSize))) {
+            continue;
+        }
+        if ((previous == NULL) ||
+            ((previous->poolAddr <= current->poolAddr) &&
+            ((current->poolAddr + current->poolSize) <= (previous->poolAddr + previous->poolSize)))) {
+            previous = current;
         }
     }
 
-EXIT:
-    return NULL;
+    return previous;
 }
 
 STATIC LmsMemListNode *OsLmsCheckPoolCreate(VOID)
@@ -151,18 +156,12 @@ UINT32 LOS_LmsCheckPoolAdd(const VOID *pool, UINT32 size)
 
     LMS_LOCK(intSave);
 
-    lmsPoolNode = OsLmsGetPoolNodeFromAddr((UINTPTR)pool);
-    if (lmsPoolNode != NULL) { /* if pool range already on checklist */
-        if (lmsPoolNode->poolAddr != (UINTPTR)pool) { /* pool is a subset of lmsPoolNode->poolAddr */
-            /* do not add it again, just return */
-            PRINT_DEBUG("[LMS]pool %p already on lms checklist !\n", pool);
-            LMS_UNLOCK(intSave);
-            return size; /* return size indicate the shadow memory init successful */
-        } else { /* Re-initialize the same pool, maybe with different size */
-            /* delete the old node, then add a new one */
-            lmsPoolNode->used = LMS_POOL_UNUSED;
-            LOS_ListDelete(&(lmsPoolNode->node));
-        }
+    lmsPoolNode = OsLmsGetPoolNode(pool);
+    if (lmsPoolNode != NULL) { /* if pool already on checklist */
+        /* Re-initialize the same pool, maybe with different size */
+        /* delete the old node, then add a new one */
+        lmsPoolNode->used = LMS_POOL_UNUSED;
+        LOS_ListDelete(&(lmsPoolNode->node));
     }
 
     lmsPoolNode = OsLmsCheckPoolCreate();
@@ -178,7 +177,8 @@ UINT32 LOS_LmsCheckPoolAdd(const VOID *pool, UINT32 size)
     lmsPoolNode->shadowStart = (UINTPTR)poolAddr + realSize;
     lmsPoolNode->shadowSize = poolAddr + size - lmsPoolNode->shadowStart;
     /* init shadow value */
-    (VOID)memset((VOID *)lmsPoolNode->shadowStart, LMS_SHADOW_AFTERFREE_U8, lmsPoolNode->shadowSize);
+    (VOID)memset_s((VOID *)lmsPoolNode->shadowStart, lmsPoolNode->shadowSize,
+                   LMS_SHADOW_AFTERFREE_U8, lmsPoolNode->shadowSize);
 
     LOS_ListAdd(&g_lmsCheckPoolList, &(lmsPoolNode->node));
 
@@ -207,10 +207,11 @@ Release:
 /// 初始化 LMS全称为Lite Memory Sanitizer，是一种实时检测内存操作合法性的调测工具
 STATIC UINT32 OsLmsInit(VOID)
 {
-    (VOID)memset(g_lmsCheckPoolArray, 0, sizeof(g_lmsCheckPoolArray));
+    (VOID)memset_s(g_lmsCheckPoolArray, sizeof(g_lmsCheckPoolArray), 0, sizeof(g_lmsCheckPoolArray));
     LOS_ListInit(&g_lmsCheckPoolList);
     static LmsHook hook = {
         .init = LOS_LmsCheckPoolAdd,
+        .deInit = LOS_LmsCheckPoolDel,
         .mallocMark = OsLmsLosMallocMark,
         .freeMark = OsLmsLosFreeMark,
         .simpleMark = OsLmsSimpleMark,
@@ -623,7 +624,7 @@ VOID OsLmsReportError(UINTPTR p, UINT32 size, UINT32 errMod)
 
     (VOID)LOS_AtomicAdd(&g_checkDepth, 1);
     LMS_LOCK(intSave);
-    (VOID)memset(&info, 0, sizeof(LmsAddrInfo));
+    (VOID)memset_s(&info, sizeof(LmsAddrInfo), 0, sizeof(LmsAddrInfo));
 
     PRINT_ERR("*****  Kernel Address Sanitizer Error Detected Start *****\n");
 

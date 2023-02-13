@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -71,8 +71,12 @@ extern "C" {
 /* CONSTANTS */
 
 #define MQ_USE_MAGIC  0x89abcdef
-/* not suppurt prio */
+/* not support prio */
 #define MQ_PRIO_MAX 1
+
+#ifndef MAX_MQ_FD
+#define MAX_MQ_FD CONFIG_NQUEUE_DESCRIPTORS
+#endif
 
 typedef union send_receive_t {
     unsigned oth : 3;
@@ -297,7 +301,7 @@ extern int mq_send(mqd_t personal, const char *msg, size_t msgLen, unsigned int 
  * <li><b>EAGAIN</b>: The message queue is empty.</li>
  * <li><b>EINVAL</b>: invalid parameter.</li>
  * <li><b>EMSGSIZE</b>: The message to be received is too long.</li>
- * <li><b>ETIMEDOUT</b>: The operaton times out.</li>
+ * <li><b>ETIMEDOUT</b>: The operation times out.</li>
  * </ul>
  *
  * @par Dependency:
@@ -424,6 +428,7 @@ extern ssize_t mq_timedreceive(mqd_t personal, char *msg, size_t msgLen,
 
 extern void MqueueRefer(int sysFd);
 extern int OsMqNotify(mqd_t personal, const struct sigevent *sigev);
+extern VOID OsMqueueCBDestroy(struct mqarray *queueTable);
 
 #ifdef __cplusplus
 #if __cplusplus

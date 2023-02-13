@@ -34,7 +34,6 @@ static void *ThreadF01(void *arg)
 {
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 
-    // while (1)
     sleep(1);
 
     pthread_exit(nullptr);
@@ -48,7 +47,6 @@ static UINT32 Testcase(VOID)
     pthread_t a;
 
     /* SIGALRM will be sent in 5 seconds. */
-    // alarm(5);//alarm NOT SUPPORT
 
     /* Create a new thread. */
     if (pthread_create(&a, NULL, ThreadF01, NULL) != 0) {
@@ -61,7 +59,6 @@ static UINT32 Testcase(VOID)
     /* If 'main' has reached here, then the test passed because it means
      * that the thread is truly asynchronise, and main isn't waiting for
      * it to return in order to move on. */
-    // printf("Test PASSED\n");
 
     ret = pthread_join(a, &temp);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);

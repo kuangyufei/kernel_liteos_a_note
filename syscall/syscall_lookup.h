@@ -140,6 +140,8 @@ SYSCALL_HAND_DEF(__NR_exit, SysThreadExit, void, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_fork, SysFork, int, ARG_NUM_0)
 SYSCALL_HAND_DEF(__NR_vfork, SysVfork, int, ARG_NUM_0)
 SYSCALL_HAND_DEF(__NR_clone, SysClone, int, ARG_NUM_5)
+SYSCALL_HAND_DEF(__NR_unshare, SysUnshare, int, ARG_NUM_1)
+SYSCALL_HAND_DEF(__NR_setns, SysSetns, int, ARG_NUM_2)
 SYSCALL_HAND_DEF(__NR_getpid, SysGetPID, unsigned int, ARG_NUM_0)
 SYSCALL_HAND_DEF(__NR_pause, SysPause, int, ARG_NUM_0)
 
@@ -262,6 +264,10 @@ SYSCALL_HAND_DEF(__NR_shmctl, SysShmCtl, int, ARG_NUM_3)
 #endif
 
 SYSCALL_HAND_DEF(__NR_statx, SysStatx, int, ARG_NUM_5)
+
+#ifdef LOSCFG_CHROOT
+SYSCALL_HAND_DEF(__NR_chroot, SysChroot, int, ARG_NUM_1)
+#endif
 
 /* LiteOS customized syscalls, not compatible with ARM EABI */
 SYSCALL_HAND_DEF(__NR_pthread_set_detach, SysUserThreadSetDetach, int, ARG_NUM_1)

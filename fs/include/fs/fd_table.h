@@ -99,6 +99,9 @@ struct files_struct {
     spinlock_t workdir_lock;	///< 工作区目录自旋锁
     char workdir[PATH_MAX];		///< 工作区路径,最大 256个字符
 #endif
+#ifdef LOSCFG_CHROOT
+    struct Vnode *rootVnode;
+#endif
 };
 
 

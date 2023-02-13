@@ -29,6 +29,10 @@
 
 import("$root_out_dir/config.gni")
 TEST_UNITTEST_DIR = rebase_path(".")
+declare_args() {
+  liteos_container_test_enable = false
+  liteos_fuzz_test_enable = false
+}
 
 TEST_LEVEL_LOW = 1
 TEST_LEVEL_MIDDLE = 3
@@ -126,16 +130,39 @@ LOSCFG_USER_TEST_SECURITY_CAPABILITY = true
 LOSCFG_USER_TEST_SECURITY_REUGID = true
 LOSCFG_USER_TEST_SECURITY_VID = true
 
+LOSCFG_USER_TEST_PROCESS_FS = false
+if (defined(LOSCFG_PROC_PROCESS_DIR) || liteos_container_test_enable == true) {
+  LOSCFG_USER_TEST_PROCESS_FS = true
+}
+
 ########## container test ##########
 LOSCFG_USER_TEST_CONTAINER = false
 LOSCFG_USER_TEST_PID_CONTAINER = false
 LOSCFG_USER_TEST_UTS_CONTAINER = false
-if (defined(LOSCFG_KERNEL_CONTAINER)) {
+LOSCFG_USER_TEST_MNT_CONTAINER = false
+LOSCFG_USER_TEST_IPC_CONTAINER = false
+LOSCFG_USER_TEST_TIME_CONTAINER = false
+if (defined(LOSCFG_KERNEL_CONTAINER) || liteos_container_test_enable == true) {
   LOSCFG_USER_TEST_CONTAINER = true
-  if (defined(LOSCFG_PID_CONTAINER)) {
+  if (defined(LOSCFG_PID_CONTAINER) || liteos_container_test_enable == true) {
     LOSCFG_USER_TEST_PID_CONTAINER = true
   }
-  if (defined(LOSCFG_UTS_CONTAINER)) {
+  if (defined(LOSCFG_UTS_CONTAINER) || liteos_container_test_enable == true) {
     LOSCFG_USER_TEST_UTS_CONTAINER = true
   }
+  if (defined(LOSCFG_MNT_CONTAINER) || liteos_container_test_enable == true) {
+    LOSCFG_USER_TEST_MNT_CONTAINER = true
+  }
+  if (defined(LOSCFG_IPC_CONTAINER) || liteos_container_test_enable == true) {
+    LOSCFG_USER_TEST_IPC_CONTAINER = true
+  }
+  if (defined(LOSCFG_TIME_CONTAINER) || liteos_container_test_enable == true) {
+    LOSCFG_USER_TEST_TIME_CONTAINER = true
+  }
+}
+
+########## fuzz test ##########
+LOSCFG_USER_FUZZ_TEST = false
+if (liteos_fuzz_test_enable == true) {
+  LOSCFG_USER_FUZZ_TEST = true
 }

@@ -4,3 +4,8 @@ config FS_PROC
     depends on FS_VFS
     help
       Answer Y to enable LiteOS support proc filesystem.
+
+config PROC_PROCESS_DIR
+    bool "Enable Process mount directory"
+    default n
+    depends on FS_PROC

@@ -290,18 +290,136 @@ ssize_t SysWrite(int fd, const void *buf, size_t nbytes)
     }
     return ret;
 }
+
+// int vfs_normalize_path(const char *directory, const char *filename, char **pathname)
+#ifdef LOSCFG_PID_CONTAINER
+#ifdef LOSCFG_PROC_PROCESS_DIR
+#define PROCESS_DIR_ROOT   "/proc"
+static char *NextName(char *pos, uint8_t *len)
+{
+    char *name = NULL;
+    while (*pos != 0 && *pos == '/') {
+        pos++;
+    }
+    if (*pos == '\0') {
+        return NULL;
+    }
+    name = (char *)pos;
+    while (*pos != '\0' && *pos != '/') {
+        pos++;
+    }
+    *len = pos - name;
+    return name;
+}
+
+static unsigned int ProcRealProcessIDGet(unsigned int pid)
+{
+    unsigned int intSave;
+    if (OS_PID_CHECK_INVALID(pid)) {
+        return 0;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    LosProcessCB *pcb = OsGetPCBFromVpid(pid);
+    if (pcb == NULL) {
+        SCHEDULER_UNLOCK(intSave);
+        return 0;
+    }
+
+    int rootPid = OsGetRootPid(pcb);
+    SCHEDULER_UNLOCK(intSave);
+    if ((rootPid == OS_INVALID_VALUE) || (rootPid == pid)) {
+        return 0;
+    }
+
+    return rootPid;
+}
+
+static int ProcRealProcessDirGet(char *path)
+{
+    char pidBuf[PATH_MAX] = {0};
+    char *fullPath = NULL;
+    uint8_t strLen = 0;
+    int pid, rootPid;
+    int ret = vfs_normalize_path(NULL, path, &fullPath);
+    if (ret < 0) {
+        return ret;
+    }
+
+    int procLen = strlen(PROCESS_DIR_ROOT);
+    if (strncmp(fullPath, PROCESS_DIR_ROOT, procLen) != 0) {
+        free(fullPath);
+        return 0;
+    }
+
+    char *pidStr = NextName(fullPath + procLen, &strLen);
+    if (pidStr == NULL) {
+        free(fullPath);
+        return 0;
+    }
+
+    if ((*pidStr <= '0') || (*pidStr > '9')) {
+        free(fullPath);
+        return 0;
+    }
+
+    if (memcpy_s(pidBuf, PATH_MAX, pidStr, strLen) != EOK) {
+        free(fullPath);
+        return 0;
+    }
+    pidBuf[strLen] = '\0';
+
+    pid = atoi(pidBuf);
+    if (pid == 0) {
+        free(fullPath);
+        return 0;
+    }
+
+    rootPid = ProcRealProcessIDGet((unsigned)pid);
+    if (rootPid == 0) {
+        free(fullPath);
+        return 0;
+    }
+
+    if (snprintf_s(path, PATH_MAX + 1, PATH_MAX, "/proc/%d%s", rootPid, (pidStr + strLen)) < 0) {
+        free(fullPath);
+        return -EFAULT;
+    }
+
+    free(fullPath);
+    return 0;
+}
+#endif
+#endif
+
+static int GetPath(const char *path, char **pathRet)
+{
+    int ret = UserPathCopy(path, pathRet);
+    if (ret != 0) {
+        return ret;
+    }
+#ifdef LOSCFG_PID_CONTAINER
+#ifdef LOSCFG_PROC_PROCESS_DIR
+    ret = ProcRealProcessDirGet(*pathRet);
+    if (ret != 0) {
+        return ret;
+    }
+#endif
+#endif
+    return 0;
+}
 ///系统调用|打开文件, 正常情况下返回进程的FD值
 int SysOpen(const char *path, int oflags, ...)
 {
     int ret;
-    int procFd;
+    int procFd = -1;
     mode_t mode = DEFAULT_FILE_MODE; /* 0666: File read-write properties. */
     char *pathRet = NULL;
 
     if (path != NULL) {
-        ret = UserPathCopy(path, &pathRet);
+        ret = GetPath(path, &pathRet);
         if (ret != 0) {
-            return ret;
+            goto ERROUT;
         }
     }
 
@@ -452,6 +570,15 @@ ssize_t SysReadlink(const char *pathname, char *buf, size_t bufsize)
         if (ret != 0) {
             goto OUT;
         }
+
+#ifdef LOSCFG_PID_CONTAINER
+#ifdef LOSCFG_PROC_PROCESS_DIR
+        ret = ProcRealProcessDirGet(pathRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+#endif
+#endif
     }
 
     if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buf, bufsize)) {
@@ -1967,6 +2094,15 @@ ssize_t SysReadlinkat(int dirfd, const char *pathname, char *buf, size_t bufsize
         if (ret != 0) {
             goto OUT;
         }
+
+#ifdef LOSCFG_PID_CONTAINER
+#ifdef LOSCFG_PROC_PROCESS_DIR
+        ret = ProcRealProcessDirGet(pathRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+#endif
+#endif
     }
 
     if (dirfd != AT_FDCWD) {
@@ -2844,4 +2980,28 @@ OUT:
     return (ret == -1) ? -get_errno() : ret;
 }
 
+#ifdef LOSCFG_CHROOT
+int SysChroot(const char *path)
+{
+    int ret;
+    char *pathRet = NULL;
+
+    if (path != NULL) {
+        ret = UserPathCopy(path, &pathRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
+
+    ret = chroot(path ? pathRet : NULL);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+OUT:
+    if (pathRet != NULL) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+    }
+    return ret;
+}
+#endif
 #endif

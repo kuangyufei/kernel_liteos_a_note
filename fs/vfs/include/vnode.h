@@ -140,6 +140,9 @@ enum VnodeType {
     VNODE_TYPE_BCHR,          /*! block char mix device | 块和字符设备混合*/
     VNODE_TYPE_FIFO,          /*! pipe | 管道文件*/			
     VNODE_TYPE_LNK,           /*! link | 链接,这里的链接指的是上层硬链接概念*/
+#ifdef LOSCFG_PROC_PROCESS_DIR
+    VNODE_TYPE_VIR_LNK,       /* virtual link */
+#endif
 };
 
 struct fs_dirent_s;
@@ -181,6 +184,9 @@ struct Vnode {
     struct Mount *newMount;             /* fs info about who mount on this vnode | 其他挂载在这个节点上文件系统信息*/	
     char *filePath;                     /* file path of the vnode */
     struct page_mapping mapping;        /* page mapping of the vnode */
+#ifdef LOSCFG_MNT_CONTAINER
+    int mntCount;                       /* ref count of mounts */
+#endif
 };
 /*!
 	虚拟节点操作接口,具体的文件系统只需实现这些接口函数来操作vnode.
@@ -254,5 +260,8 @@ LIST_HEAD* GetVnodeFreeList(void);
 LIST_HEAD* GetVnodeActiveList(void);
 LIST_HEAD* GetVnodeVirtualList(void);
 int VnodeClearCache(void);
-
+struct Vnode *GetCurrRootVnode(void);
+#ifdef LOSCFG_PROC_PROCESS_DIR
+struct Vnode *VnodeFind(int fd);
+#endif
 #endif /* !_VNODE_H_ */

@@ -63,7 +63,7 @@ static struct VnodeOps g_procfsVops; /// proc 文件系统
 static struct file_operations_vfs g_procfsFops;
 
 /// 通过节点获取私有内存对象,注意要充分理解 node->data 的作用,那是个可以通天的神奇变量. 
-static struct ProcDirEntry *VnodeToEntry(struct Vnode *node)
+struct ProcDirEntry *VnodeToEntry(struct Vnode *node)
 {
     return (struct ProcDirEntry *)(node->data);
 }
@@ -143,10 +143,16 @@ int VfsProcfsRead(struct file *filep, char *buffer, size_t buflen)
         return -EINVAL;
     }
 
+    VnodeHold();
     entry = VnodeToEntry(filep->f_vnode);
+    if (entry == NULL) {
+        VnodeDrop();
+        return -EPERM;
+    }
+
     size = (ssize_t)ReadProcFile(entry, (void *)buffer, buflen);
     filep->f_pos = entry->pf->fPos;
-
+    VnodeDrop();
     return size;
 }
 
@@ -158,10 +164,16 @@ int VfsProcfsWrite(struct file *filep, const char *buffer, size_t buflen)
         return -EINVAL;
     }
 
+    VnodeHold();
     entry = VnodeToEntry(filep->f_vnode);
+    if (entry == NULL) {
+        VnodeDrop();
+        return -EPERM;
+    }
+
     size = (ssize_t)WriteProcFile(entry, (void *)buffer, buflen);
     filep->f_pos = entry->pf->fPos;
-
+    VnodeDrop();
     return size;
 }
 
@@ -232,11 +244,15 @@ int VfsProcfsUnmount(void *handle, struct Vnode **blkdriver)
 
 int VfsProcfsStat(struct Vnode *node, struct stat *buf)
 {
+    VnodeHold();
     struct ProcDirEntry *entry = VnodeToEntry(node);
-
+    if (entry == NULL) {
+        VnodeDrop();
+        return -EPERM;
+    }
     (void)memset_s(buf, sizeof(struct stat), 0, sizeof(struct stat));
     buf->st_mode = entry->mode;
-
+    VnodeDrop();
     return LOS_OK;
 }
 
@@ -244,9 +260,7 @@ int VfsProcfsReaddir(struct Vnode *node, struct fs_dirent_s *dir)
 {
     int result;
     char *buffer = NULL;
-    int buflen = NAME_MAX;
-    unsigned int min_size;
-    unsigned int dst_name_size;
+    unsigned int minSize, dstNameSize;
     struct ProcDirEntry *pde = NULL;
     int i = 0;
 
@@ -256,28 +270,35 @@ int VfsProcfsReaddir(struct Vnode *node, struct fs_dirent_s *dir)
     if (node->type != VNODE_TYPE_DIR) {
         return -ENOTDIR;
     }
+    VnodeHold();
     pde = VnodeToEntry(node);
+    if (pde == NULL) {
+        VnodeDrop();
+        return -EPERM;
+    }
 
     while (i < dir->read_cnt) {
         buffer = (char *)zalloc(sizeof(char) * NAME_MAX);
         if (buffer == NULL) {
+            VnodeDrop();
             PRINT_ERR("malloc failed\n");
             return -ENOMEM;
         }
 
-        result = ReadProcFile(pde, (void *)buffer, buflen);
+        result = ReadProcFile(pde, (void *)buffer, NAME_MAX);
         if (result != ENOERR) {
             free(buffer);
             break;
         }
-        dst_name_size = sizeof(dir->fd_dir[i].d_name);
-        min_size = (dst_name_size < NAME_MAX) ? dst_name_size : NAME_MAX;
-        result = strncpy_s(dir->fd_dir[i].d_name, dst_name_size, buffer, min_size);
+        dstNameSize = sizeof(dir->fd_dir[i].d_name);
+        minSize = (dstNameSize < NAME_MAX) ? dstNameSize : NAME_MAX;
+        result = strncpy_s(dir->fd_dir[i].d_name, dstNameSize, buffer, minSize);
         if (result != EOK) {
+            VnodeDrop();
             free(buffer);
             return -ENAMETOOLONG;
         }
-        dir->fd_dir[i].d_name[dst_name_size - 1] = '\0';
+        dir->fd_dir[i].d_name[dstNameSize - 1] = '\0';
         dir->fd_position++;
         dir->fd_dir[i].d_off = dir->fd_position;
         dir->fd_dir[i].d_reclen = (uint16_t)sizeof(struct dirent);
@@ -285,19 +306,26 @@ int VfsProcfsReaddir(struct Vnode *node, struct fs_dirent_s *dir)
         i++;
         free(buffer);
     }
-
+    VnodeDrop();
     return i;
 }
 ///proc 打开目录
 int VfsProcfsOpendir(struct Vnode *node,  struct fs_dirent_s *dir)
 {
+    VnodeHold();
     struct ProcDirEntry *pde = VnodeToEntry(node);
     if (pde == NULL) {
+        VnodeDrop();
         return -EINVAL;
     }
-    pde->pdirCurrent = pde->subdir;
-    pde->pf->fPos = 0;
 
+    pde->pdirCurrent = pde->subdir;
+    if (pde->pf == NULL) {
+        VnodeDrop();
+        return -EINVAL;
+    }
+    pde->pf->fPos = 0;
+    VnodeDrop();
     return LOS_OK;
 }
 ///proc 打开文件
@@ -306,8 +334,14 @@ int VfsProcfsOpen(struct file *filep)
     if (filep == NULL) {
         return -EINVAL;
     }
+    VnodeHold();
     struct Vnode *node = filep->f_vnode;//找到vnode节点
     struct ProcDirEntry *pde = VnodeToEntry(node);//拿到私有数据(内存对象)
+    if (pde == NULL) {
+        VnodeDrop();
+        return -EPERM;
+    }
+
     if (ProcOpen(pde->pf) != OK) {
         return -ENOMEM;
     }
@@ -319,6 +353,7 @@ int VfsProcfsOpen(struct file *filep)
         pde->pf->fPos = 0;
     }
     filep->f_priv = (void *)pde;
+    VnodeDrop();
     return LOS_OK;
 }
 
@@ -328,15 +363,22 @@ int VfsProcfsClose(struct file *filep)
     if (filep == NULL) {
         return -EINVAL;
     }
+
+    VnodeHold();
     struct Vnode *node = filep->f_vnode;
     struct ProcDirEntry *pde = VnodeToEntry(node);
+    if (pde == NULL) {
+        VnodeDrop();
+        return -EPERM;
+    }
+
     pde->pf->fPos = 0;
     if ((pde->procFileOps != NULL) && (pde->procFileOps->release != NULL)) {
         result = pde->procFileOps->release((struct Vnode *)pde, pde->pf);
     }
     LosBufRelease(pde->pf->sbuf);
     pde->pf->sbuf = NULL;
-
+    VnodeDrop();
     return result;
 }
 ///统计信息接口,简单实现
@@ -352,6 +394,24 @@ int VfsProcfsClosedir(struct Vnode *vp, struct fs_dirent_s *dir)
 {
     return LOS_OK;
 }
+
+ssize_t VfsProcfsReadlink(struct Vnode *vnode, char *buffer, size_t bufLen)
+{
+    int result = -EINVAL;
+    if (vnode == NULL) {
+        return result;
+    }
+
+    struct ProcDirEntry *pde = VnodeToEntry(vnode);
+    if (pde == NULL) {
+        return -EPERM;
+    }
+
+    if ((pde->procFileOps != NULL) && (pde->procFileOps->readLink != NULL)) {
+        result = pde->procFileOps->readLink(pde, buffer, bufLen);
+    }
+    return result;
+}
 /// proc 对 MountOps 接口实现
 const struct MountOps procfs_operations = {
     .Mount = VfsProcfsMount,//装载
@@ -365,7 +425,8 @@ static struct VnodeOps g_procfsVops = {
     .Readdir = VfsProcfsReaddir,
     .Opendir = VfsProcfsOpendir,
     .Closedir = VfsProcfsClosedir,
-    .Truncate = VfsProcfsTruncate
+    .Truncate = VfsProcfsTruncate,
+    .Readlink = VfsProcfsReadlink,
 };
 // proc 对 file_operations_vfs 接口实现
 static struct file_operations_vfs g_procfsFops = {

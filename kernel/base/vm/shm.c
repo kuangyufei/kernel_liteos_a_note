@@ -21,7 +21,7 @@
  */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -54,7 +54,6 @@
 #include "string.h"
 #include "time.h"
 #include "sys/types.h"
-#include "sys/shm.h"
 #include "sys/stat.h"
 #include "los_config.h"
 #include "los_init.h"
@@ -67,24 +66,15 @@
 #include "los_process.h"
 #include "los_process_pri.h"
 #include "user_copy.h"
+#include "los_vm_shm_pri.h"
+#include "sys/shm.h"
 #ifdef LOSCFG_SHELL
 #include "shcmd.h"
 #include "shell.h"
-#endif /* __cplusplus */
+#endif
+
 
 #ifdef LOSCFG_KERNEL_SHM
-STATIC LosMux g_sysvShmMux; //互斥锁,共享内存本身并不保证操作的同步性,所以需用互斥锁
-
-/* private macro */
-#define SYSV_SHM_LOCK()     (VOID)LOS_MuxLock(&g_sysvShmMux, LOS_WAIT_FOREVER)	//申请永久等待锁
-#define SYSV_SHM_UNLOCK()   (VOID)LOS_MuxUnlock(&g_sysvShmMux)	//释放锁
-
-#define SHM_MAX_PAGES 4096
-#define SHM_MAX (SHM_MAX_PAGES * PAGE_SIZE) // 最大共享空间,4096*4K = 16M
-#define SHM_MIN 1	//	
-#define SHM_MNI 192
-#define SHM_SEG 128
-#define SHM_ALL (SHM_MAX_PAGES)
 
 #define SHM_SEG_FREE    0x2000	//空闲未使用
 #define SHM_SEG_USED    0x4000	//已使用
@@ -106,6 +96,22 @@ STATIC LosMux g_sysvShmMux; //互斥锁,共享内存本身并不保证操作的�
 #define SHM_S_IXUGO (S_IXUSR | S_IXGRP | S_IXOTH)
 #define SHM_GROUPE_TO_USER  3
 #define SHM_OTHER_TO_USER   6
+#ifndef LOSCFG_IPC_CONTAINER
+STATIC LosMux g_sysvShmMux;
+/* private data */
+STATIC struct shminfo g_shmInfo;
+STATIC struct shmIDSource *g_shmSegs = NULL;
+STATIC UINT32 g_shmUsedPageCount;
+
+#define IPC_SHM_INFO            g_shmInfo
+#define IPC_SHM_SYS_VSHM_MUTEX  g_sysvShmMux
+#define IPC_SHM_SEGS            g_shmSegs
+#define IPC_SHM_USED_PAGE_COUNT g_shmUsedPageCount
+#endif
+
+/* private macro */
+#define SYSV_SHM_LOCK()     (VOID)LOS_MuxLock(&IPC_SHM_SYS_VSHM_MUTEX, LOS_WAIT_FOREVER)
+#define SYSV_SHM_UNLOCK()   (VOID)LOS_MuxUnlock(&IPC_SHM_SYS_VSHM_MUTEX)
 
 #if 0 // @note_#if0
 
@@ -138,10 +144,6 @@ struct shmid_ds {
 struct shminfo {
 	unsigned long shmmax, shmmin, shmmni, shmseg, shmall, __unused[4];
 };
-
-#endif
-
-
 struct shmIDSource {//共享内存描述符
     struct shmid_ds ds; //是内核为每一个共享内存段维护的数据结构
     UINT32 status;	//状态 SHM_SEG_FREE ...
@@ -162,38 +164,59 @@ STATIC struct shminfo g_shmInfo = { //描述共享内存范围的全局变量
 
 STATIC struct shmIDSource *g_shmSegs = NULL;
 STATIC UINT32 g_shmUsedPageCount;
+#endif
+
 //共享内存初始化
-UINT32 ShmInit(VOID)
+struct shmIDSource *OsShmCBInit(LosMux *sysvShmMux, struct shminfo *shmInfo, UINT32 *shmUsedPageCount)
 {
     UINT32 ret;
     UINT32 i;
 
-    ret = LOS_MuxInit(&g_sysvShmMux, NULL);//初始化互斥锁
+    if ((sysvShmMux == NULL) || (shmInfo == NULL) || (shmUsedPageCount == NULL)) {
+        return NULL;
+    }
+    ret = LOS_MuxInit(sysvShmMux, NULL);
     if (ret != LOS_OK) {
         goto ERROR;
     }
 
-    g_shmSegs = LOS_MemAlloc((VOID *)OS_SYS_MEM_ADDR, sizeof(struct shmIDSource) * g_shmInfo.shmmni);//分配shm段数组
-    if (g_shmSegs == NULL) {
-        (VOID)LOS_MuxDestroy(&g_sysvShmMux);
+    shmInfo->shmmax = SHM_MAX;
+    shmInfo->shmmin = SHM_MIN;
+    shmInfo->shmmni = SHM_MNI;
+    shmInfo->shmseg = SHM_SEG;
+    shmInfo->shmall = SHM_ALL;
+    struct shmIDSource *shmSegs = LOS_MemAlloc((VOID *)OS_SYS_MEM_ADDR, sizeof(struct shmIDSource) * shmInfo->shmmni);
+    if (shmSegs == NULL) {
+        (VOID)LOS_MuxDestroy(sysvShmMux);
         goto ERROR;
     }
-    (VOID)memset_s(g_shmSegs, (sizeof(struct shmIDSource) * g_shmInfo.shmmni),
-                   0, (sizeof(struct shmIDSource) * g_shmInfo.shmmni));//数组清零
+    (VOID)memset_s(shmSegs, (sizeof(struct shmIDSource) * shmInfo->shmmni),
+                   0, (sizeof(struct shmIDSource) * shmInfo->shmmni));
 
-    for (i = 0; i < g_shmInfo.shmmni; i++) {
-        g_shmSegs[i].status = SHM_SEG_FREE;//节点初始状态为空闲
-        g_shmSegs[i].ds.shm_perm.seq = i + 1;//struct ipc_perm shm_perm;系统为每一个IPC对象保存一个ipc_perm结构体,结构说明了IPC对象的权限和所有者
-        LOS_ListInit(&g_shmSegs[i].node);//初始化节点
+    for (i = 0; i < shmInfo->shmmni; i++) {
+        shmSegs[i].status = SHM_SEG_FREE;//节点初始状态为空闲
+        shmSegs[i].ds.shm_perm.seq = i + 1;//struct ipc_perm shm_perm;系统为每一个IPC对象保存一个ipc_perm结构体,结构说明了IPC对象的权限和所有者
+        LOS_ListInit(&shmSegs[i].node);//初始化节点
     }
-    g_shmUsedPageCount = 0;
+    *shmUsedPageCount = 0;
 
-    return LOS_OK;
+    return shmSegs;
 
 ERROR:
     VM_ERR("ShmInit fail\n");
-    return LOS_NOK;
+    return NULL;
 }
+UINT32 ShmInit(VOID)
+{
+#ifndef LOSCFG_IPC_CONTAINER
+    g_shmSegs = OsShmCBInit(&IPC_SHM_SYS_VSHM_MUTEX, &IPC_SHM_INFO, &IPC_SHM_USED_PAGE_COUNT);
+    if (g_shmSegs == NULL) {
+        return LOS_NOK;
+    }
+#endif
+    return LOS_OK;
+}
+
 
 LOS_MODULE_INIT(ShmInit, LOS_INIT_LEVEL_VM_COMPLETE);//共享内存模块初始化
 //共享内存反初始化
@@ -201,10 +224,10 @@ UINT32 ShmDeinit(VOID)
 {
     UINT32 ret;
 
-    (VOID)LOS_MemFree((VOID *)OS_SYS_MEM_ADDR, g_shmSegs);//归还内存池
-    g_shmSegs = NULL;
+    (VOID)LOS_MemFree((VOID *)OS_SYS_MEM_ADDR, IPC_SHM_SEGS);
+    IPC_SHM_SEGS = NULL;
 
-    ret = LOS_MuxDestroy(&g_sysvShmMux);//销毁互斥量
+    ret = LOS_MuxDestroy(&IPC_SHM_SYS_VSHM_MUTEX);
     if (ret != LOS_OK) {
         return -1;
     }
@@ -255,18 +278,18 @@ STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
     struct shmIDSource *seg = NULL;
     size_t count;
 
-    if ((size == 0) || (size < g_shmInfo.shmmin) ||
-        (size > g_shmInfo.shmmax)) {
+    if ((size == 0) || (size < IPC_SHM_INFO.shmmin) ||
+        (size > IPC_SHM_INFO.shmmax)) {
         return -EINVAL;
     }
     size = LOS_Align(size, PAGE_SIZE);//必须对齐 
-    if ((g_shmUsedPageCount + (size >> PAGE_SHIFT)) > g_shmInfo.shmall) {
+    if ((IPC_SHM_USED_PAGE_COUNT + (size >> PAGE_SHIFT)) > IPC_SHM_INFO.shmall) {
         return -ENOMEM;
     }
 
     for (i = 0; i < g_shmInfo.shmmni; i++) {//试图找到一个空闲段与参数key绑定
-        if (g_shmSegs[i].status & SHM_SEG_FREE) {//找到空闲段
-            g_shmSegs[i].status &= ~SHM_SEG_FREE;//变成非空闲状态
+        if (IPC_SHM_SEGS[i].status & SHM_SEG_FREE) {//找到空闲段
+            IPC_SHM_SEGS[i].status &= ~SHM_SEG_FREE;//变成非空闲状态
             segNum = i;//标号
             break;
         }
@@ -276,7 +299,7 @@ STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
         return -ENOSPC;
     }
 
-    seg = &g_shmSegs[segNum];
+    seg = &IPC_SHM_SEGS[segNum];
     count = LOS_PhysPagesAlloc(size >> PAGE_SHIFT, &seg->node);//分配共享页面,函数内部把node都挂好了.
     if (count != (size >> PAGE_SHIFT)) {//当未分配到足够的内存时,处理方式是:不稀罕给那么点,舍弃!
         (VOID)LOS_PhysPagesFree(&seg->node);//释放节点上的物理页框
@@ -284,7 +307,7 @@ STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
         return -ENOMEM;
     }
     ShmSetSharedFlag(seg);//将node的每个页面设置为共享页
-    g_shmUsedPageCount += size >> PAGE_SHIFT;
+    IPC_SHM_USED_PAGE_COUNT += size >> PAGE_SHIFT;
 
     seg->status |= SHM_SEG_USED;	//共享段贴上已在使用的标签
     seg->ds.shm_perm.mode = (UINT32)shmflg & ACCESSPERMS;
@@ -307,7 +330,7 @@ STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
     return segNum;
 }
 ///释放seg->node 所占物理页框,seg本身重置
-STATIC INLINE VOID ShmFreeSeg(struct shmIDSource *seg)
+STATIC INLINE VOID ShmFreeSeg(struct shmIDSource *seg, UINT32 *shmUsedPageCount)
 {
     UINT32 count;
 
@@ -317,7 +340,9 @@ STATIC INLINE VOID ShmFreeSeg(struct shmIDSource *seg)
         VM_ERR("free physical pages failed, count = %d, size = %d", count, seg->ds.shm_segsz >> PAGE_SHIFT);
         return;
     }
-    g_shmUsedPageCount -= seg->ds.shm_segsz >> PAGE_SHIFT;
+    if (shmUsedPageCount != NULL) {
+        (*shmUsedPageCount) -= seg->ds.shm_segsz >> PAGE_SHIFT;
+    }
     seg->status = SHM_SEG_FREE;//seg恢复自由之身
     LOS_ListInit(&seg->node);//重置node
 }
@@ -328,7 +353,7 @@ STATIC INT32 ShmFindSegByKey(key_t key)
     struct shmIDSource *seg = NULL;
 
     for (i = 0; i < g_shmInfo.shmmni; i++) {//遍历共享段池,找到与key绑定的共享ID
-        seg = &g_shmSegs[i];
+        seg = &IPC_SHM_SEGS[i];
         if ((seg->status & SHM_SEG_USED) &&
             (seg->ds.shm_perm.key == key)) {//满足两个条件,找到后返回
             return i;
@@ -340,7 +365,7 @@ STATIC INT32 ShmFindSegByKey(key_t key)
 ///共享内存段有效性检查
 STATIC INT32 ShmSegValidCheck(INT32 segNum, size_t size, INT32 shmFlg)
 {
-    struct shmIDSource *seg = &g_shmSegs[segNum];//拿到shmID
+    struct shmIDSource *seg = &IPC_SHM_SEGS[segNum];//拿到shmID
 
     if (size > seg->ds.shm_segsz) {//段长
         return -EINVAL;
@@ -358,12 +383,12 @@ STATIC struct shmIDSource *ShmFindSeg(int shmid)
 {
     struct shmIDSource *seg = NULL;
 
-    if ((shmid < 0) || (shmid >= g_shmInfo.shmmni)) {
+    if ((shmid < 0) || (shmid >= IPC_SHM_INFO.shmmni)) {
         set_errno(EINVAL);
         return NULL;
     }
 
-    seg = &g_shmSegs[shmid];
+    seg = &IPC_SHM_SEGS[shmid];
     if ((seg->status & SHM_SEG_FREE) || ((seg->ds.shm_nattch == 0) && (seg->status & SHM_SEG_REMOVE))) {
         set_errno(EIDRM);
         return NULL;
@@ -424,7 +449,7 @@ VOID OsShmRegionFree(LosVmSpace *space, LosVmMapRegion *region)
     ShmPagesRefDec(seg);//ref -- 
     seg->ds.shm_nattch--;//附在共享线性区上的进程数--
     if (seg->ds.shm_nattch <= 0 && (seg->status & SHM_SEG_REMOVE)) {
-        ShmFreeSeg(seg);//就释放掉物理内存!注意是:物理内存
+        ShmFreeSeg(seg, &IPC_SHM_USED_PAGE_COUNT);//就释放掉物理内存!注意是:物理内存
     } else {
         seg->ds.shm_dtime = time(NULL);
         seg->ds.shm_lpid = LOS_GetCurrProcessID(); /* may not be the space's PID. */
@@ -443,8 +468,8 @@ STATIC INT32 ShmSegUsedCount(VOID)
     INT32 count = 0;
     struct shmIDSource *seg = NULL;
 
-    for (i = 0; i < g_shmInfo.shmmni; i++) {
-        seg = &g_shmSegs[i];
+    for (i = 0; i < IPC_SHM_INFO.shmmni; i++) {
+        seg = &IPC_SHM_SEGS[i];
         if (seg->status & SHM_SEG_USED) {//找到一个
             count++;
         }
@@ -772,16 +797,16 @@ INT32 ShmCtl(INT32 shmid, INT32 cmd, struct shmid_ds *buf)
 
             seg->status |= SHM_SEG_REMOVE;
             if (seg->ds.shm_nattch <= 0) {//没有任何进程在使用了
-                ShmFreeSeg(seg);//释放 归还内存
+                ShmFreeSeg(seg, &IPC_SHM_USED_PAGE_COUNT);
             }
             break;
         case IPC_INFO://把内核空间的共享页数据拷贝到用户空间
-            ret = LOS_ArchCopyToUser(buf, &g_shmInfo, sizeof(struct shminfo));
+            ret = LOS_ArchCopyToUser(buf, &IPC_SHM_INFO, sizeof(struct shminfo));
             if (ret != 0) {
                 ret = EFAULT;
                 goto ERROR;
             }
-            ret = g_shmInfo.shmmni;
+            ret = IPC_SHM_INFO.shmmni;
             break;
         case SHM_INFO:
             shmInfo.shm_rss = 0;
@@ -795,7 +820,7 @@ INT32 ShmCtl(INT32 shmid, INT32 cmd, struct shmid_ds *buf)
                 ret = EFAULT;
                 goto ERROR;
             }
-            ret = g_shmInfo.shmmni;
+            ret = IPC_SHM_INFO.shmmni;
             break;
         default:
             VM_ERR("the cmd(%d) is not supported!", cmd);
@@ -866,9 +891,8 @@ INT32 ShmDt(const VOID *shmaddr)
     seg->ds.shm_nattch--;//使用共享内存的进程数少了一个
     if ((seg->ds.shm_nattch <= 0) && //无任何进程使用共享内存
         (seg->status & SHM_SEG_REMOVE)) {//状态为删除时需要释放物理页内存了,否则其他进程还要继续使用共享内存
-        ShmFreeSeg(seg);//释放seg 页框链表中的页框内存,再重置seg状态
+        ShmFreeSeg(seg, &IPC_SHM_USED_PAGE_COUNT);//释放seg 页框链表中的页框内存,再重置seg状态
     } else {
-
     seg->ds.shm_dtime = time(NULL);//记录分离的时间
     seg->ds.shm_lpid = LOS_GetCurrProcessID();//记录操作进程ID
     }
@@ -884,6 +908,27 @@ ERROR:
     return -1;
 }
 
+VOID OsShmCBDestroy(struct shmIDSource *shmSegs, struct shminfo *shmInfo, LosMux *sysvShmMux)
+{
+    if ((shmSegs == NULL) || (shmInfo == NULL) || (sysvShmMux == NULL)) {
+        return;
+    }
+
+    for (UINT32 index = 0; index < shmInfo->shmmni; index++) {
+        struct shmIDSource *seg = &shmSegs[index];
+        if (seg->status == SHM_SEG_FREE) {
+            continue;
+        }
+
+        (VOID)LOS_MuxLock(sysvShmMux, LOS_WAIT_FOREVER);
+        ShmFreeSeg(seg, NULL);
+        (VOID)LOS_MuxUnlock(sysvShmMux);
+    }
+
+    (VOID)LOS_MemFree((VOID *)OS_SYS_MEM_ADDR, shmSegs);
+    (VOID)LOS_MuxDestroy(sysvShmMux);
+}
+
 #ifdef LOSCFG_SHELL
 STATIC VOID OsShmInfoCmd(VOID)
 {
@@ -893,8 +938,8 @@ STATIC VOID OsShmInfoCmd(VOID)
     PRINTK("\r\n------- Shared Memory Segments -------\n");
     PRINTK("key      shmid    perms      bytes      nattch     status     owner\n");
     SYSV_SHM_LOCK();
-    for (i = 0; i < g_shmInfo.shmmni; i++) {
-        seg = &g_shmSegs[i];
+    for (i = 0; i < IPC_SHM_INFO.shmmni; i++) {
+        seg = &IPC_SHM_SEGS[i];
         if (!(seg->status & SHM_SEG_USED)) {
             continue;
         }
@@ -909,7 +954,7 @@ STATIC VOID OsShmDeleteCmd(INT32 shmid)
 {
     struct shmIDSource *seg = NULL;
 
-    if ((shmid < 0) || (shmid >= g_shmInfo.shmmni)) {
+    if ((shmid < 0) || (shmid >= IPC_SHM_INFO.shmmni)) {
         PRINT_ERR("shmid is invalid: %d\n", shmid);
         return;
     }
@@ -922,7 +967,7 @@ STATIC VOID OsShmDeleteCmd(INT32 shmid)
     }
 
     if (seg->ds.shm_nattch <= 0) {
-        ShmFreeSeg(seg);
+        ShmFreeSeg(seg, &IPC_SHM_USED_PAGE_COUNT);
     }
     SYSV_SHM_UNLOCK();
 }

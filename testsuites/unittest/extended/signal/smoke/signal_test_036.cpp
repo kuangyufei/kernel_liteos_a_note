@@ -60,17 +60,6 @@ static int TestCase()
         exit(0);
     }
 
-    /*    sig = SIGTERM;
-    ret = sigaction(sig, (struct sigaction *)1, &oldAct);
-    printf("ret == %d\n", ret);
-    ICUNIT_ASSERT_EQUAL(ret, -1, ret);
-    ICUNIT_ASSERT_EQUAL(errno, EFAULT, errno);
-
-    ret = sigaction(sig, &sigAct, (struct sigaction *)1);
-    printf("ret === %d\n", ret);
-    ICUNIT_ASSERT_EQUAL(ret, -1, ret);
-    ICUNIT_ASSERT_EQUAL(errno, EFAULT, errno); */
-
     ret = waitpid(fpid, &status, 0);
     ICUNIT_ASSERT_EQUAL(ret, fpid, ret);
     ICUNIT_ASSERT_EQUAL(WEXITSTATUS(status), 0, WEXITSTATUS(status));

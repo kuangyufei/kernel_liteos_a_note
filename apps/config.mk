@@ -58,6 +58,10 @@ APP_SUBDIRS += mksh
 APP_SUBDIRS += toybox
 endif
 
+ifeq ($(LOSCFG_KERNEL_LMS), y)
+APP_SUBDIRS += lms
+endif
+
 ifeq ($(LOSCFG_USER_INIT_DEBUG), y)
 APP_SUBDIRS += init
 endif

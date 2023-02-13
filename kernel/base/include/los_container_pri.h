@@ -39,14 +39,46 @@
 #ifdef LOSCFG_UTS_CONTAINER
 #include "los_uts_container_pri.h"
 #endif
+#ifdef LOSCFG_MNT_CONTAINER
+#include "los_mnt_container_pri.h"
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+#include "los_ipc_container_pri.h"
+#endif
+#ifdef LOSCFG_TIME_CONTAINER
+#include "los_time_container_pri.h"
+#endif
+
+typedef enum {
+    CONTAINER = 0,
+    PID_CONTAINER,
+    PID_CHILD_CONTAINER,
+    UTS_CONTAINER,
+    MNT_CONTAINER,
+    IPC_CONTAINER,
+    TIME_CONTAINER,
+    TIME_CHILD_CONTAINER,
+    CONTAINER_MAX,
+} ContainerType;
 
 typedef struct Container {
     Atomic   rc;
 #ifdef LOSCFG_PID_CONTAINER
     struct PidContainer *pidContainer;
+    struct PidContainer *pidForChildContainer;
 #endif
 #ifdef LOSCFG_UTS_CONTAINER
     struct UtsContainer *utsContainer;
+#endif
+#ifdef LOSCFG_MNT_CONTAINER
+    struct MntContainer *mntContainer;
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+    struct IpcContainer *ipcContainer;
+#endif
+#ifdef LOSCFG_TIME_CONTAINER
+    struct TimeContainer *timeContainer;
+    struct TimeContainer *timeForChildContainer;
 #endif
 } Container;
 
@@ -57,5 +89,16 @@ VOID OsInitRootContainer(VOID);
 UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent, UINT32 *processID);
 
 VOID OsContainersDestroy(LosProcessCB *processCB);
+
+VOID OsContainerFree(LosProcessCB *processCB);
+
+UINT32 OsAllocContainerID(VOID);
+
+UINT32 OsGetContainerID(Container *container, ContainerType type);
+
+INT32 OsUnshare(UINT32 flags);
+
+INT32 OsSetNs(INT32 fd, INT32 type);
+
 #endif
 #endif /* _LOS_CONTAINER_PRI_H */

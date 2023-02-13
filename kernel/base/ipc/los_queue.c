@@ -89,42 +89,63 @@
 #include "los_mp.h"
 #include "los_percpu_pri.h"
 #include "los_hook.h"
+#ifdef LOSCFG_IPC_CONTAINER
+#include "los_ipc_container_pri.h"
+#endif
 
 #ifdef LOSCFG_BASE_IPC_QUEUE
 #if (LOSCFG_BASE_IPC_QUEUE_LIMIT <= 0)
 #error "queue maxnum cannot be zero"
 #endif /* LOSCFG_BASE_IPC_QUEUE_LIMIT <= 0 */
 
+#ifndef LOSCFG_IPC_CONTAINER
 LITE_OS_SEC_BSS LosQueueCB *g_allQueue = NULL;///< 消息队列池
 LITE_OS_SEC_BSS STATIC LOS_DL_LIST g_freeQueueList;///< 空闲队列链表,管分配的,需要队列从这里申请
+#define FREE_QUEUE_LIST g_freeQueueList
+#endif
 
+LITE_OS_SEC_TEXT_INIT LosQueueCB *OsAllQueueCBInit(LOS_DL_LIST *freeQueueList)
+{
+    UINT32 index;
+
+    if (freeQueueList == NULL) {
+        return NULL;
+    }
+
+    UINT32 size = LOSCFG_BASE_IPC_QUEUE_LIMIT * sizeof(LosQueueCB);
+    /* system resident memory, don't free */
+    LosQueueCB *allQueue = (LosQueueCB *)LOS_MemAlloc(m_aucSysMem0, size);
+    if (allQueue == NULL) {
+        return NULL;
+    }
+    (VOID)memset_s(allQueue, size, 0, size);
+    LOS_ListInit(freeQueueList);
+    for (index = 0; index < LOSCFG_BASE_IPC_QUEUE_LIMIT; index++) {
+        LosQueueCB *queueNode = ((LosQueueCB *)allQueue) + index;
+        queueNode->queueID = index;
+        LOS_ListTailInsert(freeQueueList, &queueNode->readWriteList[OS_QUEUE_WRITE]);
+    }
+
+#ifndef LOSCFG_IPC_CONTAINER
+    if (OsQueueDbgInitHook() != LOS_OK) {
+        (VOID)LOS_MemFree(m_aucSysMem0, allQueue);
+        return NULL;
+    }
+#endif
+    return allQueue;
+}
 /*
  * Description : queue initial | 消息队列模块初始化
  * Return      : LOS_OK on success or error code on failure
  */
 LITE_OS_SEC_TEXT_INIT UINT32 OsQueueInit(VOID)
 {
-    LosQueueCB *queueNode = NULL;
-    UINT32 index;
-    UINT32 size;
-
-    size = LOSCFG_BASE_IPC_QUEUE_LIMIT * sizeof(LosQueueCB);//支持1024个IPC队列
-    /* system resident memory, don't free */
-    g_allQueue = (LosQueueCB *)LOS_MemAlloc(m_aucSysMem0, size);//常驻内存
+#ifndef LOSCFG_IPC_CONTAINER
+    g_allQueue = OsAllQueueCBInit(&g_freeQueueList);
     if (g_allQueue == NULL) {
         return LOS_ERRNO_QUEUE_NO_MEMORY;
     }
-    (VOID)memset_s(g_allQueue, size, 0, size);//清0
-    LOS_ListInit(&g_freeQueueList);//初始化空闲链表
-    for (index = 0; index < LOSCFG_BASE_IPC_QUEUE_LIMIT; index++) {//循环初始化每个消息队列
-        queueNode = ((LosQueueCB *)g_allQueue) + index;//一个一个来
-        queueNode->queueID = index;//这可是 队列的身份证
-        LOS_ListTailInsert(&g_freeQueueList, &queueNode->readWriteList[OS_QUEUE_WRITE]);//通过写节点挂到空闲队列链表上
-    }//这里要注意是用 readWriteList 挂到 g_freeQueueList链上的,所以要通过 GET_QUEUE_LIST 来找到 LosQueueCB
-
-    if (OsQueueDbgInitHook() != LOS_OK) {//调试队列使用的.
-        return LOS_ERRNO_QUEUE_NO_MEMORY;
-    }
+#endif
     return LOS_OK;
 }
 ///创建一个队列,根据用户传入队列长度和消息节点大小来开辟相应的内存空间以供该队列使用，参数queueID带走队列ID
@@ -163,15 +184,14 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueCreate(CHAR *queueName, UINT16 len, UINT32
     }
 
     SCHEDULER_LOCK(intSave);
-    if (LOS_ListEmpty(&g_freeQueueList)) {//没有空余的队列ID的处理,注意软时钟定时器是由 g_swtmrCBArray统一管理的,里面有正在使用和可分配空闲的队列
+    if (LOS_ListEmpty(&FREE_QUEUE_LIST)) {//没有空余的队列ID的处理,注意软时钟定时器是由 g_swtmrCBArray统一管理的,里面有正在使用和可分配空闲的队列
         SCHEDULER_UNLOCK(intSave);//g_freeQueueList是管理可用于分配的队列链表,申请消息队列的ID需要向它要
         OsQueueCheckHook();
         (VOID)LOS_MemFree(m_aucSysMem1, queue);//没有就要释放 queue申请的内存
         return LOS_ERRNO_QUEUE_CB_UNAVAILABLE;
     }
 
-    unusedQueue = LOS_DL_LIST_FIRST(&g_freeQueueList);//找到一个没有被使用的队列
-    LOS_ListDelete(unusedQueue);//将自己从g_freeQueueList中摘除, unusedQueue只是个 LOS_DL_LIST 结点.
+    unusedQueue = LOS_DL_LIST_FIRST(&FREE_QUEUE_LIST);//找到一个没有被使用的队列    LOS_ListDelete(unusedQueue);//将自己从g_freeQueueList中摘除, unusedQueue只是个 LOS_DL_LIST 结点.
     queueCB = GET_QUEUE_LIST(unusedQueue);//通过unusedQueue找到整个消息队列(LosQueueCB)
     queueCB->queueLen = len;	//队列中消息的总个数,注意这个一旦创建是不能变的.
     queueCB->queueSize = msgSize;//消息节点的大小,注意这个一旦创建也是不能变的.
@@ -528,7 +548,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueDelete(UINT32 queueID)
     queueCB->queueID = SET_QUEUE_ID(GET_QUEUE_COUNT(queueCB->queueID) + 1, GET_QUEUE_INDEX(queueCB->queueID));//@note_why 这里需要这样做吗?
     OsQueueDbgUpdateHook(queueCB->queueID, NULL);
 
-    LOS_ListTailInsert(&g_freeQueueList, &queueCB->readWriteList[OS_QUEUE_WRITE]);//回收，将节点挂入可分配链表,等待重新被分配再利用
+    LOS_ListTailInsert(&FREE_QUEUE_LIST, &queueCB->readWriteList[OS_QUEUE_WRITE]);//回收，将节点挂入可分配链表,等待重新被分配再利用
     SCHEDULER_UNLOCK(intSave);									
     OsHookCall(LOS_HOOK_TYPE_QUEUE_DELETE, queueCB);
     ret = LOS_MemFree(m_aucSysMem1, (VOID *)queue);//释放队列句柄

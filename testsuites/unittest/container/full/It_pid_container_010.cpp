@@ -35,6 +35,7 @@ static int ChildFun(void *p)
     int ret;
     int currGid = getpgrp();
     if (currGid != CONTAINER_FIRST_PID) {
+        printf("ChildFun pid %d currGid %d\n", getpid(), currGid);
         return EXIT_CODE_ERRNO_1;
     }
 

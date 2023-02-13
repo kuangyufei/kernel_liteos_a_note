@@ -131,7 +131,6 @@ def parse_user_pc_ulr(excinfo_file, rootfs_dir, string, addr2line_cmd, objdump_c
                 ret = commands.getoutput(cmd)
                 print(ret)
                 cmd = "%s%s%s %s" % (addr2line_cmd, rootfs_dir, strlist[4], strlist[6])
-                #print(cmd)
                 ret = commands.getoutput(cmd)
                 ret = ret.split('\n')
                 print("<%s>%s<%s><%s>\n" % (string, ret[0], strlist[6], strlist[4]))

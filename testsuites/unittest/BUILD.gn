@@ -1,5 +1,5 @@
 # Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -135,10 +135,16 @@ group("unittest") {
       if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
         deps += [ "process/basic:liteos_a_process_basic_unittest_door" ]
         deps += [ "process/lock:liteos_a_process_lock_unittest_door" ]
+        if (LOSCFG_USER_TEST_PROCESS_FS == true) {
+          deps += [ "process/fs:liteos_a_process_fs_unittest_door" ]
+        }
       }
       if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
         deps += [ "process/basic:liteos_a_process_basic_unittest" ]
         deps += [ "process/lock:liteos_a_process_lock_unittest" ]
+        if (LOSCFG_USER_TEST_PROCESS_FS == true) {
+          deps += [ "process/fs:liteos_a_process_fs_unittest" ]
+        }
       }
     }
 
@@ -160,6 +166,11 @@ group("unittest") {
       if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
         deps += [ "container:liteos_a_container_unittest" ]
       }
+    }
+
+    # fuzz test
+    if (LOSCFG_USER_FUZZ_TEST == true) {
+      deps += [ "fuzz:liteos_a_fuzztest" ]
     }
   }
 }

@@ -217,6 +217,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsCpupGuard(VOID)
         processCB = OS_PCB_FROM_TCB(runTask);
         if (processCB->processCpup != NULL) {
             processCB->processCpup->historyTime[prevPos] += cycleIncrement;
+        }
     }
 
     SCHEDULER_UNLOCK(intSave);

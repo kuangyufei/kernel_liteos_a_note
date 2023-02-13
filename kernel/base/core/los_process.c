@@ -59,6 +59,7 @@
 #ifdef LOSCFG_FS_VFS
 #include "fs/fd_table.h"
 #include "fs/fs_operation.h"
+#include "internal.h"
 #endif
 #include "time.h"
 #include "user_copy.h"
@@ -96,7 +97,7 @@ LITE_OS_SEC_BSS ProcessGroup *g_processGroup = NULL;///< 全局进程组,负责�
 STATIC INLINE VOID OsInsertPCBToFreeList(LosProcessCB *processCB)
 {
 #ifdef LOSCFG_PID_CONTAINER
-    OsPidContainersDestroy(processCB);
+    OsPidContainerDestroy(processCB->container, processCB);
 #endif
     UINT32 pid = processCB->processID;//获取进程ID
     (VOID)memset_s(processCB, sizeof(LosProcessCB), 0, sizeof(LosProcessCB));//进程描述符数据清0
@@ -165,7 +166,7 @@ UINT32 OsProcessAddNewTask(UINTPTR processID, LosTaskCB *taskCB, SchedParam *par
  * @return  函数执行结果
  * - ProcessGroup   返回进程组
 */
-STATIC ProcessGroup *CreateProcessGroup(LosProcessCB *processCB)
+ProcessGroup *OsCreateProcessGroup(LosProcessCB *processCB)
 {
     ProcessGroup *pgroup = LOS_MemAlloc(m_aucSysMem1, sizeof(ProcessGroup));
     if (pgroup == NULL) {
@@ -197,9 +198,15 @@ STATIC VOID ExitProcessGroup(LosProcessCB *processCB, ProcessGroup **pgroup)
 
     LOS_ListDelete(&processCB->subordinateGroupList);//从进程组进程链表上摘出去
     if (LOS_ListEmpty(&processCB->pgroup->processList) && LOS_ListEmpty(&processCB->pgroup->exitProcessList)) {//进程组进程链表和退出进程链表都为空时
+#ifdef LOSCFG_PID_CONTAINER
+        if (processCB->pgroup != OS_ROOT_PGRP(processCB)) {
+#endif
         LOS_ListDelete(&processCB->pgroup->groupList);//从全局进程组链表上把自己摘出去 记住它是 LOS_ListTailInsert(&g_processGroup->groupList, &group->groupList) 挂上去的
-        pgroupCB->processStatus &= ~OS_PROCESS_FLAG_GROUP_LEADER;//贴上不是组长的标签
         *pgroup = processCB->pgroup;//????? 这步操作没看明白,谁能告诉我为何要这么做?
+#ifdef LOSCFG_PID_CONTAINER
+        }
+#endif
+        pgroupCB->processStatus &= ~OS_PROCESS_FLAG_GROUP_LEADER;
         if (OsProcessIsUnused(pgroupCB) && !(pgroupCB->processStatus & OS_PROCESS_FLAG_EXIT)) {//组长进程时退出的标签
             LOS_ListDelete(&pgroupCB->pendList);//进程从全局进程链表上摘除
             OsInsertPCBToFreeList(pgroupCB);//释放进程的资源,回到freelist再利用
@@ -437,12 +444,6 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
         (VOID)OsVmSpaceRegionFree(processCB->vmSpace);
     }
 #endif
-#ifdef LOSCFG_FS_VFS
-    if (OsProcessIsUserMode(processCB)) {//用户进程
-        delete_files(processCB->files);//归还进程占用的进程描述符`profd`,如果是最后一个占用的系统描述符的进程,则同时归还系统文件描述符`sysfd`
-    }
-    processCB->files = NULL;	//重置指针为空
-#endif
 
 #ifdef LOSCFG_SECURITY_CAPABILITY //安全开关
     if (processCB->user != NULL) {
@@ -476,10 +477,21 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
     (VOID)LOS_MemFree(m_aucSysMem1, processCpup);
 #endif
 
+#ifdef LOSCFG_PROC_PROCESS_DIR
+    ProcFreeProcessDir(processCB->procDir);
+    processCB->procDir = NULL;
+#endif
+
 #ifdef LOSCFG_KERNEL_CONTAINER
     OsContainersDestroy(processCB);
 #endif
 
+#ifdef LOSCFG_FS_VFS
+    if (OsProcessIsUserMode(processCB)) {
+        delete_files(processCB->files);
+    }
+    processCB->files = NULL;
+#endif
     if (processCB->resourceLimit != NULL) {
         (VOID)LOS_MemFree((VOID *)m_aucSysMem0, processCB->resourceLimit);
         processCB->resourceLimit = NULL;
@@ -900,7 +912,7 @@ STATIC UINT32 OsSystemProcessInit(LosProcessCB *processCB, UINT32 flags, const C
     }
 #endif
 
-    ProcessGroup *pgroup = CreateProcessGroup(processCB);
+    ProcessGroup *pgroup = OsCreateProcessGroup(processCB);
     if (pgroup == NULL) {
         ret = LOS_ENOMEM;
         goto EXIT;
@@ -1139,25 +1151,28 @@ STATIC VOID OsWaitInsertWaitListInOrder(LosTaskCB *runTask, LosProcessCB *proces
     return;
 }
 /// 设置等待子进程退出方式方法
-STATIC UINT32 OsWaitSetFlag(const LosProcessCB *processCB, INT32 pid, LosProcessCB **child)
+STATIC UINT32 WaitFindSpecifiedProcess(UINT32 pid, LosTaskCB *runTask,
+                                       const LosProcessCB *processCB, LosProcessCB **childCB)
 {
-    LosProcessCB *childCB = NULL;
-    LosTaskCB *runTask = OsCurrTaskGet();
+    if (OS_PID_CHECK_INVALID((UINT32)pid)) {
+        return LOS_ECHILD;
+    }
 
-    if (pid > 0) {
-        if (OS_PID_CHECK_INVALID((UINT32)pid)) {
-            return LOS_ECHILD;
-        }
+    LosProcessCB *waitProcess = OS_PCB_FROM_PID(pid);
+    if (OsProcessIsUnused(waitProcess)) {
+        return LOS_ECHILD;
+    }
 
-        LosProcessCB *waitProcess = OS_PCB_FROM_PID(pid);
-        if (OsProcessIsUnused(waitProcess)) {
-            return LOS_ECHILD;
-        }
-
-        /* Wait for the child process whose process number is pid. */
-        childCB = OsFindExitChildProcess(processCB, waitProcess);
-        if (childCB != NULL) {//找到了,确实有一个已经退出的PID,注意一个进程退出时会挂到父进程的exitChildList上
-            goto WAIT_BACK;//直接成功返回
+#ifdef LOSCFG_PID_CONTAINER
+    if (OsPidContainerProcessParentIsRealParent(waitProcess, processCB)) {
+        *childCB = (LosProcessCB *)processCB;
+        return LOS_OK;
+    }
+#endif
+    /* Wait for the child process whose process number is pid. */
+    *childCB = OsFindExitChildProcess(processCB, waitProcess);
+        if (*childCB != NULL) {//找到了,确实有一个已经退出的PID,注意一个进程退出时会挂到父进程的exitChildList上
+        return LOS_OK;
         }
 
         if (OsFindChildProcess(processCB, waitProcess) != LOS_OK) {
@@ -1165,6 +1180,23 @@ STATIC UINT32 OsWaitSetFlag(const LosProcessCB *processCB, INT32 pid, LosProcess
         }
         runTask->waitFlag = OS_PROCESS_WAIT_PRO;//设置当前任务的等待类型
         runTask->waitID = (UINTPTR)waitProcess;
+    return LOS_OK;
+}
+
+STATIC UINT32 OsWaitSetFlag(const LosProcessCB *processCB, INT32 pid, LosProcessCB **child)
+{
+    UINT32 ret;
+    LosProcessCB *childCB = NULL;
+    LosTaskCB *runTask = OsCurrTaskGet();
+
+    if (pid > 0) {
+        ret = WaitFindSpecifiedProcess((UINT32)pid, runTask, processCB, &childCB);
+        if (ret != LOS_OK) {
+            return ret;
+        }
+        if (childCB != NULL) {
+            goto WAIT_BACK;
+        }
     } else if (pid == 0) {//等待同一进程组中的任何子进程
         /* Wait for any child process in the same process group */
         childCB = OsFindGroupExitProcess(processCB->pgroup, OS_INVALID_VALUE);
@@ -1303,6 +1335,15 @@ STATIC INT32 OsWait(INT32 pid, USER INT32 *status, USER siginfo_t *info, UINT32 
     }
 
     if (childCB != NULL) {//找到了进程
+#ifdef LOSCFG_PID_CONTAINER
+        if (childCB == processCB) {
+            SCHEDULER_UNLOCK(intSave);
+            if (status != NULL) {
+                (VOID)LOS_ArchCopyToUser((VOID *)status, (const VOID *)(&ret), sizeof(INT32));
+            }
+            return pid;
+        }
+#endif
         return (INT32)OsWaitRecycleChildProcess(childCB, intSave, status, info);
     }
 	//没有找到,看是否要返回还是去做个登记
@@ -1469,7 +1510,7 @@ STATIC UINT32 OsSetProcessGroupIDUnsafe(UINT32 pid, UINT32 gid, ProcessGroup **p
         return LOS_OK;
     }
 
-    newPGroup = CreateProcessGroup(pgroupCB);
+    newPGroup = OsCreateProcessGroup(pgroupCB);
     if (newPGroup == NULL) {
         LOS_ListTailInsert(&oldPGroup->processList, &processCB->subordinateGroupList);
         processCB->pgroup = oldPGroup;
@@ -1910,33 +1951,26 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
 //拷贝父亲大人的遗传基因信息
 STATIC UINT32 OsCopyParent(UINT32 flags, LosProcessCB *childProcessCB, LosProcessCB *runProcessCB)
 {
-    UINT32 ret;
     UINT32 intSave;
     LosProcessCB *parentProcessCB = NULL;
 
     SCHEDULER_LOCK(intSave);
-
-    if (flags & CLONE_PARENT) { //这里指明 childProcessCB 和 runProcessCB 有同一个父亲，是兄弟关系
-        parentProcessCB = runProcessCB->parentProcess;
-    } else {
-        parentProcessCB = runProcessCB;         
+    if (childProcessCB->parentProcess == NULL) {
+	    if (flags & CLONE_PARENT) { //这里指明 childProcessCB 和 runProcessCB 有同一个父亲，是兄弟关系
+	        parentProcessCB = runProcessCB->parentProcess;
+	    } else {
+	        parentProcessCB = runProcessCB;         
+	    }
+	        childProcessCB->parentProcess = parentProcessCB;//指认父亲，这个赋值代表从此是你儿了
+	        LOS_ListTailInsert(&parentProcessCB->childrenList, &childProcessCB->siblingList);//通过我的兄弟姐妹节点，挂到父亲的孩子链表上，于我而言，父亲的这个链表上挂的都是我的兄弟姐妹
+	        													//不会被排序，老大，老二，老三 老天爷指定了。
     }
-        childProcessCB->parentProcess = parentProcessCB;//指认父亲，这个赋值代表从此是你儿了
-        LOS_ListTailInsert(&parentProcessCB->childrenList, &childProcessCB->siblingList);//通过我的兄弟姐妹节点，挂到父亲的孩子链表上，于我而言，父亲的这个链表上挂的都是我的兄弟姐妹
-        													//不会被排序，老大，老二，老三 老天爷指定了。
-    if (!(flags & CLONE_NEWPID)) {
+    if (childProcessCB->pgroup == NULL) {
         childProcessCB->pgroup = parentProcessCB->pgroup;
         LOS_ListTailInsert(&parentProcessCB->pgroup->processList, &childProcessCB->subordinateGroupList);
-    } else {
-        if (CreateProcessGroup(childProcessCB) == NULL) {
-            SCHEDULER_UNLOCK(intSave);
-            return LOS_ENOMEM;
-        }
     }
-        ret = OsCopyUser(childProcessCB, parentProcessCB);
-
     SCHEDULER_UNLOCK(intSave);
-    return ret;
+    return LOS_OK;
 }
 //拷贝虚拟空间
 STATIC UINT32 OsCopyMM(UINT32 flags, LosProcessCB *childProcessCB, LosProcessCB *runProcessCB)
@@ -1956,7 +1990,7 @@ STATIC UINT32 OsCopyMM(UINT32 flags, LosProcessCB *childProcessCB, LosProcessCB 
         return LOS_OK;
     }
 
-    status = LOS_VmSpaceClone(runProcessCB->vmSpace, childProcessCB->vmSpace);//虚拟空间clone
+    status = LOS_VmSpaceClone(flags, runProcessCB->vmSpace, childProcessCB->vmSpace);//虚拟空间clone
     if (status != LOS_OK) {
         return LOS_ENOMEM;
     }
@@ -1969,11 +2003,27 @@ STATIC UINT32 OsCopyFile(UINT32 flags, LosProcessCB *childProcessCB, LosProcessC
     if (flags & CLONE_FILES) {
         childProcessCB->files = runProcessCB->files;
     } else {
+#ifdef LOSCFG_IPC_CONTAINER
+        if (flags & CLONE_NEWIPC) {
+            OsCurrTaskGet()->cloneIpc = TRUE;
+        }
+#endif
         childProcessCB->files = dup_fd(runProcessCB->files);
+#ifdef LOSCFG_IPC_CONTAINER
+        OsCurrTaskGet()->cloneIpc = FALSE;
+#endif
     }
     if (childProcessCB->files == NULL) {
         return LOS_ENOMEM;
     }
+
+#ifdef LOSCFG_PROC_PROCESS_DIR
+    INT32 ret = ProcCreateProcessDir(OsGetRootPid(childProcessCB), (UINTPTR)childProcessCB);
+    if (ret < 0) {
+        PRINT_ERR("ProcCreateProcessDir failed, pid = %u\n", childProcessCB->processID);
+        return LOS_EBADF;
+    }
+#endif
 #endif
 
     childProcessCB->consoleID = runProcessCB->consoleID;//控制台也是文件
@@ -1985,11 +2035,6 @@ STATIC UINT32 OsForkInitPCB(UINT32 flags, LosProcessCB *child, const CHAR *name,
 {
     UINT32 ret;
     LosProcessCB *run = OsCurrProcessGet();//获取当前进程
-
-    ret = OsInitPCB(child, run->processMode, name);
-    if (ret != LOS_OK) {
-        return ret;
-    }
 
     ret = OsCopyParent(flags, child, run);//拷贝父亲大人的基因信息
     if (ret != LOS_OK) {
@@ -2027,6 +2072,11 @@ STATIC UINT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProce
 {
     UINT32 ret;
 
+    ret = OsCopyUser(child, run);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+
     ret = OsCopyMM(flags, child, run);//拷贝虚拟空间
     if (ret != LOS_OK) {
         return ret;
@@ -2063,6 +2113,11 @@ STATIC INT32 OsCopyProcess(UINT32 flags, const CHAR *name, UINTPTR sp, UINT32 si
         return -LOS_EAGAIN;
     }
     processID = child->processID;
+
+    ret = OsInitPCB(child, run->processMode, name);
+    if (ret != LOS_OK) {
+        goto ERROR_INIT;
+    }
 
 #ifdef LOSCFG_KERNEL_CONTAINER
     ret = OsCopyContainers(flags, child, run, &processID);
@@ -2115,13 +2170,33 @@ LITE_OS_SEC_TEXT INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size)
 #ifdef LOSCFG_KERNEL_CONTAINER
 #ifdef LOSCFG_PID_CONTAINER
     cloneFlag |= CLONE_NEWPID;
-
+    LosProcessCB *curr = OsCurrProcessGet();
     if (((flags & CLONE_NEWPID) != 0) && ((flags & (CLONE_PARENT | CLONE_THREAD)) != 0)) {
+        return -LOS_EINVAL;
+    }
+
+    if (OS_PROCESS_PID_FOR_CONTAINER_CHECK(curr) && ((flags & CLONE_NEWPID) != 0)) {
+        return -LOS_EINVAL;
+    }
+
+    if (OS_PROCESS_PID_FOR_CONTAINER_CHECK(curr) && ((flags & (CLONE_PARENT | CLONE_THREAD)) != 0)) {
         return -LOS_EINVAL;
     }
 #endif
 #ifdef LOSCFG_UTS_CONTAINER
     cloneFlag |= CLONE_NEWUTS;
+#endif
+#ifdef LOSCFG_MNT_CONTAINER
+    cloneFlag |= CLONE_NEWNS;
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+    cloneFlag |= CLONE_NEWIPC;
+    if (((flags & CLONE_NEWIPC) != 0) && ((flags & CLONE_FILES) != 0)) {
+        return -LOS_EINVAL;
+    }
+#endif
+#ifdef LOSCFG_TIME_CONTAINER
+    cloneFlag |= CLONE_NEWTIME;
 #endif
 #endif
 

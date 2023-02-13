@@ -35,6 +35,9 @@
 #include "los_queue_pri.h"
 #include "los_swtmr_pri.h"
 #include "los_task_pri.h"
+#ifdef LOSCFG_IPC_CONTAINER
+#include "los_ipc_container_pri.h"
+#endif
 
 #ifdef LOSCFG_SHELL
 #include "shcmd.h"
@@ -88,7 +91,7 @@ UINT32 OsShellCmdQueueCntGet(VOID)
     LosQueueCB *queueCB = NULL;
 
     intSave = LOS_IntLock();
-    queueCB = g_allQueue;
+    queueCB = IPC_ALL_QUEUE;
     for (loop = 0; loop < LOSCFG_BASE_IPC_QUEUE_LIMIT; loop++, queueCB++) {
         if (queueCB->queueState == OS_QUEUE_INUSED) {
             queueCnt++;

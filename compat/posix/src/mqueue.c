@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -44,15 +44,18 @@
 
 #define FNONBLOCK   O_NONBLOCK
 
-#ifndef MAX_MQ_FD
-#define MAX_MQ_FD CONFIG_NQUEUE_DESCRIPTORS
-#endif
-
+#ifndef LOSCFG_IPC_CONTAINER
 /* GLOBALS */
 STATIC fd_set g_queueFdSet;
 STATIC struct mqarray g_queueTable[LOSCFG_BASE_IPC_QUEUE_LIMIT];
 STATIC pthread_mutex_t g_mqueueMutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 STATIC struct mqpersonal *g_mqPrivBuf[MAX_MQ_FD];
+
+#define IPC_QUEUE_FD_SET g_queueFdSet
+#define IPC_QUEUE_TABLE  g_queueTable
+#define IPC_QUEUE_MUTEX  g_mqueueMutex
+#define IPC_QUEUE_MQ_PRIV_BUF g_mqPrivBuf
+#endif
 
 /* LOCAL FUNCTIONS */
 STATIC INLINE INT32 MqNameCheck(const CHAR *mqName)
@@ -96,12 +99,12 @@ STATIC INLINE struct mqarray *GetMqueueCBByName(const CHAR *name)
     UINT32 mylen = strlen(name);
 
     for (index = 0; index < LOSCFG_BASE_IPC_QUEUE_LIMIT; index++) {
-        if ((g_queueTable[index].mq_name == NULL) || (strlen(g_queueTable[index].mq_name) != mylen)) {
+        if ((IPC_QUEUE_TABLE[index].mq_name == NULL) || (strlen(IPC_QUEUE_TABLE[index].mq_name) != mylen)) {
             continue;
         }
 
-        if (strncmp(name, (const CHAR *)(g_queueTable[index].mq_name), mylen) == 0) {
-            return &(g_queueTable[index]);
+        if (strncmp(name, (const CHAR *)(IPC_QUEUE_TABLE[index].mq_name), mylen) == 0) {
+            return &(IPC_QUEUE_TABLE[index]);
         }
     }
     return NULL;
@@ -170,8 +173,8 @@ STATIC struct mqpersonal *DoMqueueCreate(const struct mq_attr *attr, const CHAR 
         goto ERROUT;
     }
 
-    if (g_queueTable[GET_QUEUE_INDEX(mqueueID)].mqcb == NULL) {
-        mqueueCB = &(g_queueTable[GET_QUEUE_INDEX(mqueueID)]);
+    if (IPC_QUEUE_TABLE[GET_QUEUE_INDEX(mqueueID)].mqcb == NULL) {
+        mqueueCB = &(IPC_QUEUE_TABLE[GET_QUEUE_INDEX(mqueueID)]);
         mqueueCB->mq_id = mqueueID;
     }
 
@@ -297,7 +300,7 @@ STATIC struct mqpersonal *MqGetPrivDataBuff(mqd_t personal)
         errno = EBADF;
         return NULL;
     }
-    return g_mqPrivBuf[id];
+    return IPC_QUEUE_MQ_PRIV_BUF[id];
 }
 
 /**
@@ -311,13 +314,13 @@ STATIC struct mqpersonal *MqGetPrivDataBuff(mqd_t personal)
 STATIC INT32 MqAllocSysFd(int maxfdp, struct mqpersonal *privateMqPersonal)
 {
     INT32 i;
-    fd_set *fdset = &g_queueFdSet;
+    fd_set *fdset = &IPC_QUEUE_FD_SET;
     for (i = 0; i < maxfdp; i++) {
         /* sysFd: used bit setting, and get the index of swtmrID buffer */
         if (fdset && !(FD_ISSET(i + MQUEUE_FD_OFFSET, fdset))) {
             FD_SET(i + MQUEUE_FD_OFFSET, fdset);
-            if (!g_mqPrivBuf[i]) {
-                g_mqPrivBuf[i] = privateMqPersonal;
+            if (!IPC_QUEUE_MQ_PRIV_BUF[i]) {
+                IPC_QUEUE_MQ_PRIV_BUF[i] = privateMqPersonal;
                 return i + MQUEUE_FD_OFFSET;
             }
         }
@@ -328,10 +331,10 @@ STATIC INT32 MqAllocSysFd(int maxfdp, struct mqpersonal *privateMqPersonal)
 STATIC VOID MqFreeSysFd(mqd_t personal)
 {
     INT32 sysFd = (INT32)personal;
-    fd_set *fdset = &g_queueFdSet;
+    fd_set *fdset = &IPC_QUEUE_FD_SET;
     if (fdset && FD_ISSET(sysFd, fdset)) {
         FD_CLR(sysFd, fdset);
-        g_mqPrivBuf[sysFd - MQUEUE_FD_OFFSET] = NULL;
+        IPC_QUEUE_MQ_PRIV_BUF[sysFd - MQUEUE_FD_OFFSET] = NULL;
     }
 }
 
@@ -341,7 +344,7 @@ void MqueueRefer(int sysFd)
     struct mqarray *mqueueCB = NULL;
     struct mqpersonal *privateMqPersonal = NULL;
 
-    (VOID)pthread_mutex_lock(&g_mqueueMutex);
+    (VOID)pthread_mutex_lock(&IPC_QUEUE_MUTEX);
     /* Get the personal sysFd and reset personal fd -1 */
     privateMqPersonal = MqGetPrivDataBuff((mqd_t)sysFd);
     if (privateMqPersonal == NULL) {
@@ -354,7 +357,7 @@ void MqueueRefer(int sysFd)
 
     privateMqPersonal->mq_refcount++;
 OUT_UNLOCK:
-    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
     return;
 }
 
@@ -498,7 +501,7 @@ mqd_t mq_open(const char *mqName, int openFlag, ...)
         return (mqd_t)-1;
     }
 
-    (VOID)pthread_mutex_lock(&g_mqueueMutex);
+    (VOID)pthread_mutex_lock(&IPC_QUEUE_MUTEX);
     mqueueCB = GetMqueueCBByName(mqName);
     if ((UINT32)openFlag & (UINT32)O_CREAT) {
         if (mqueueCB != NULL) {
@@ -543,7 +546,7 @@ mqd_t mq_open(const char *mqName, int openFlag, ...)
         mqFd = (mqd_t)sysFd;
     }
 OUT:
-    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
     return mqFd;
 }
 
@@ -552,7 +555,7 @@ int mq_close(mqd_t personal)
     INT32 ret = -1;
     struct mqpersonal *privateMqPersonal = NULL;
 
-    (VOID)pthread_mutex_lock(&g_mqueueMutex);
+    (VOID)pthread_mutex_lock(&IPC_QUEUE_MUTEX);
 
     /* Get the personal sysFd and reset personal fd -1 */
     privateMqPersonal = MqGetPrivDataBuff(personal);
@@ -577,7 +580,7 @@ int mq_close(mqd_t personal)
     MqFreeSysFd(personal);
 
 OUT_UNLOCK:
-    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
     return ret;
 }
 
@@ -596,10 +599,10 @@ int OsMqGetAttr(mqd_t personal, struct mq_attr *mqAttr)
         return -1;
     }
 
-    (VOID)pthread_mutex_lock(&g_mqueueMutex);
+    (VOID)pthread_mutex_lock(&IPC_QUEUE_MUTEX);
     if (privateMqPersonal->mq_status != MQ_USE_MAGIC) {
         errno = EBADF;
-        (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+        (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
         return -1;
     }
 
@@ -608,7 +611,7 @@ int OsMqGetAttr(mqd_t personal, struct mq_attr *mqAttr)
     mqAttr->mq_msgsize = mqueueCB->mqcb->queueSize - sizeof(UINT32);
     mqAttr->mq_curmsgs = mqueueCB->mqcb->readWriteableCnt[OS_QUEUE_READ];
     mqAttr->mq_flags = privateMqPersonal->mq_flags;
-    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
     return 0;
 }
 
@@ -626,10 +629,10 @@ int OsMqSetAttr(mqd_t personal, const struct mq_attr *mqSetAttr, struct mq_attr 
         return -1;
     }
 
-    (VOID)pthread_mutex_lock(&g_mqueueMutex);
+    (VOID)pthread_mutex_lock(&IPC_QUEUE_MUTEX);
     if (privateMqPersonal->mq_status != MQ_USE_MAGIC) {
         errno = EBADF;
-        (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+        (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
         return -1;
     }
 
@@ -641,7 +644,7 @@ int OsMqSetAttr(mqd_t personal, const struct mq_attr *mqSetAttr, struct mq_attr 
     if (((UINT32)mqSetAttr->mq_flags & (UINT32)FNONBLOCK) == (UINT32)FNONBLOCK) {
         privateMqPersonal->mq_flags = (INT32)((UINT32)privateMqPersonal->mq_flags | (UINT32)FNONBLOCK);
     }
-    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
     return 0;
 }
 
@@ -662,7 +665,7 @@ int mq_unlink(const char *mqName)
         return -1;
     }
 
-    (VOID)pthread_mutex_lock(&g_mqueueMutex);
+    (VOID)pthread_mutex_lock(&IPC_QUEUE_MUTEX);
     mqueueCB = GetMqueueCBByName(mqName);
     if (mqueueCB == NULL) {
         errno = ENOENT;
@@ -675,11 +678,11 @@ int mq_unlink(const char *mqName)
         ret = DoMqueueDelete(mqueueCB);
     }
 
-    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
     return ret;
 
 ERROUT_UNLOCK:
-    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
     return -1;
 }
 
@@ -767,7 +770,7 @@ int mq_timedsend(mqd_t personal, const char *msg, size_t msgLen, unsigned int ms
     OS_MQ_GOTO_ERROUT_IF(!MqParamCheck(personal, msg, msgLen), errno);
     OS_MQ_GOTO_ERROUT_IF(msgPrio > (MQ_PRIO_MAX - 1), EINVAL);
 
-    (VOID)pthread_mutex_lock(&g_mqueueMutex);
+    (VOID)pthread_mutex_lock(&IPC_QUEUE_MUTEX);
     privateMqPersonal = MqGetPrivDataBuff(personal);
 
     OS_MQ_GOTO_ERROUT_UNLOCK_IF(privateMqPersonal == NULL || privateMqPersonal->mq_status != MQ_USE_MAGIC, EBADF);
@@ -781,7 +784,7 @@ int mq_timedsend(mqd_t personal, const char *msg, size_t msgLen, unsigned int ms
 
     OS_MQ_GOTO_ERROUT_UNLOCK_IF(ConvertTimeout(privateMqPersonal->mq_flags, absTimeout, &absTicks) == -1, errno);
     mqueueID = mqueueCB->mq_id;
-    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
 
     if (LOS_ListEmpty(&mqueueCB->mqcb->readWriteList[OS_QUEUE_READ])) {
         MqSendNotify(mqueueCB);
@@ -793,7 +796,7 @@ int mq_timedsend(mqd_t personal, const char *msg, size_t msgLen, unsigned int ms
     }
     return 0;
 ERROUT_UNLOCK:
-    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
 ERROUT:
     return -1;
 }
@@ -815,7 +818,7 @@ ssize_t mq_timedreceive(mqd_t personal, char *msg, size_t msgLen, unsigned int *
         *msgPrio = 0;
     }
 
-    (VOID)pthread_mutex_lock(&g_mqueueMutex);
+    (VOID)pthread_mutex_lock(&IPC_QUEUE_MUTEX);
     privateMqPersonal = MqGetPrivDataBuff(personal);
     if (privateMqPersonal == NULL || privateMqPersonal->mq_status != MQ_USE_MAGIC) {
         errno = EBADF;
@@ -839,7 +842,7 @@ ssize_t mq_timedreceive(mqd_t personal, char *msg, size_t msgLen, unsigned int *
 
     receiveLen = msgLen;
     mqueueID = mqueueCB->mq_id;
-    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
 
     err = LOS_QueueReadCopy(mqueueID, (VOID *)msg, &receiveLen, (UINT32)absTicks);
     if (map_errno(err) == ENOERR) {
@@ -849,7 +852,7 @@ ssize_t mq_timedreceive(mqd_t personal, char *msg, size_t msgLen, unsigned int *
     }
 
 ERROUT_UNLOCK:
-    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
 ERROUT:
     return -1;
 }
@@ -898,7 +901,7 @@ int OsMqNotify(mqd_t personal, const struct sigevent *sigev)
         goto ERROUT;
     }
 
-    (VOID)pthread_mutex_lock(&g_mqueueMutex);
+    (VOID)pthread_mutex_lock(&IPC_QUEUE_MUTEX);
     privateMqPersonal = MqGetPrivDataBuff(personal);
     if (privateMqPersonal == NULL) {
         goto OUT_UNLOCK;
@@ -936,11 +939,26 @@ int OsMqNotify(mqd_t personal, const struct sigevent *sigev)
         mqnotify->pid = LOS_GetCurrProcessID();
     }
 
-    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
     return 0;
 OUT_UNLOCK:
-    (VOID)pthread_mutex_unlock(&g_mqueueMutex);
+    (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
 ERROUT:
     return -1;
+}
+
+VOID OsMqueueCBDestroy(struct mqarray *queueTable)
+{
+    if (queueTable == NULL) {
+        return;
+    }
+
+    for (UINT32 index = 0; index < LOSCFG_BASE_IPC_QUEUE_LIMIT; index++) {
+        struct mqarray *mqueueCB = &(queueTable[index]);
+        if (mqueueCB->mq_name == NULL) {
+            continue;
+        }
+        (VOID)DoMqueueClose(mqueueCB->mq_personal);
+    }
 }
 #endif

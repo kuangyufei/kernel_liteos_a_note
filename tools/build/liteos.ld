@@ -139,7 +139,7 @@ SECTIONS
 
     .ctors : ALIGN(0x4) {
         __ctor_list__ = .;
-        KEEP (*(.ctors .init_array))
+        KEEP (*(.ctors .init_array.* .init_array))
         __ctor_end__ = .;
     } > ram
     .dtors : ALIGN(0x4) {

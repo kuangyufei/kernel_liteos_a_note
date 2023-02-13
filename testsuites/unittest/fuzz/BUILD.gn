@@ -1,0 +1,88 @@
+# Copyright (c) 2022-2023 Huawei Device Co., Ltd. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import("//build/lite/config/test.gni")
+
+fuzztest("liteos_a_user_fuzz_test") {
+  output_extension = "bin"
+  sources = [
+    "adjtime_fuzzer.cpp",
+    "chroot_fuzzer.cpp",
+    "clone_fuzzer.cpp",
+    "epoll_create_fuzzer.cpp",
+    "epoll_ctl_fuzzer.cpp",
+    "epoll_wait_fuzzer.cpp",
+    "fesetenv_fuzzer.cpp",
+    "getrlimit_fuzzer.cpp",
+    "main.cpp",
+    "mlock_fuzzer.cpp",
+    "mlockall_fuzzer.cpp",
+    "posix_spawn_file_actions_addchdir_np_fuzzer.cpp",
+    "posix_spawn_file_actions_adddup2_fuzzer.cpp",
+    "posix_spawn_file_actions_addfchdir_np_fuzzer.cpp",
+    "posix_spawn_file_actions_addopen_fuzzer.cpp",
+    "posix_spawn_file_actions_destroy_fuzzer.cpp",
+    "posix_spawn_file_actions_init_fuzzer.cpp",
+    "posix_spawn_fuzzer.cpp",
+    "posix_spawnattr_destroy_fuzzer.cpp",
+    "posix_spawnattr_getflags_fuzzer.cpp",
+    "posix_spawnattr_getpgroup_fuzzer.cpp",
+    "posix_spawnattr_getschedparam_fuzzer.cpp",
+    "posix_spawnattr_getschedpolicy_fuzzer.cpp",
+    "posix_spawnattr_getsigdefault_fuzzer.cpp",
+    "posix_spawnattr_getsigmask_fuzzer.cpp",
+    "posix_spawnattr_init_fuzzer.cpp",
+    "posix_spawnattr_setflags_fuzzer.cpp",
+    "posix_spawnattr_setpgroup_fuzzer.cpp",
+    "posix_spawnattr_setschedparam_fuzzer.cpp",
+    "posix_spawnattr_setschedpolicy_fuzzer.cpp",
+    "posix_spawnattr_setsigdefault_fuzzer.cpp",
+    "posix_spawnattr_setsigmask_fuzzer.cpp",
+    "posix_spawnp_fuzzer.cpp",
+    "pthread_mutex_consistent_fuzzer.cpp",
+    "pthread_mutex_getprioceiling_fuzzer.cpp",
+    "pthread_mutexattr_setprotocol_fuzzer.cpp",
+    "pthread_mutexattr_setrobust_fuzzer.cpp",
+    "pthread_mutexattr_settype_fuzzer.cpp",
+    "pthread_setconcurrency_fuzzer.cpp",
+    "readlink_fuzzer.cpp",
+    "readlinkat_fuzzer.cpp",
+    "sem_open_fuzzer.cpp",
+    "sethostname_fuzzer.cpp",
+    "setns_fuzzer.cpp",
+    "syslog_fuzzer.cpp",
+    "system_fuzzer.cpp",
+    "times_fuzzer.cpp",
+    "unshare_fuzzer.cpp",
+  ]
+  include_dirs = []
+  deps = []
+}
+group("liteos_a_fuzztest") {
+  deps = [ ":liteos_a_user_fuzz_test" ]
+}

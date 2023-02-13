@@ -29,9 +29,11 @@
  */
 
 #include "los_mux.h"
-#include "vnode.h"
 #include "fs/dirent_fs.h"
 #include "path_cache.h"
+#include "vnode.h"
+#include "los_process.h"
+#include "los_process_pri.h"
 
 /**
  * @brief 
@@ -108,6 +110,13 @@ int VnodesInit(void)
     g_rootVnode->type = VNODE_TYPE_DIR;//节点类型为目录
     g_rootVnode->filePath = "/";
 
+#ifdef LOSCFG_CHROOT
+    LosProcessCB *processCB = OsGetKernelInitProcess();
+    if (processCB->files != NULL) {
+        g_rootVnode->useCount++;
+        processCB->files->rootVnode = g_rootVnode;
+    }
+#endif
     return LOS_OK;
 }
 ///获取空闲节点链表,分配的节点从空闲链表里出
@@ -322,7 +331,7 @@ static int PreProcess(const char *originPath, struct Vnode **startVnode, char **
 	//通过相对路径找到绝对路径
     ret = vfs_normalize_path(NULL, originPath, &absolutePath);
     if (ret == LOS_OK) {//成功
-        *startVnode = g_rootVnode;//根节点为开始节点
+        *startVnode = GetCurrRootVnode();//根节点为开始节点
         *path = absolutePath;//返回绝对路径
     }
 
@@ -334,7 +343,21 @@ static struct Vnode *ConvertVnodeIfMounted(struct Vnode *vnode)
     if ((vnode == NULL) || !(vnode->flag & VNODE_FLAG_MOUNT_ORIGIN)) {
         return vnode;
     }
+#ifdef LOSCFG_MNT_CONTAINER
+    LIST_HEAD *mntList = GetMountList();
+    struct Mount *mnt = NULL;
+    LOS_DL_LIST_FOR_EACH_ENTRY(mnt, mntList, struct Mount, mountList) {
+        if ((mnt != NULL) && (mnt->vnodeBeCovered == vnode)) {
+            return mnt->vnodeCovered;
+        }
+    }
+    if (strcmp(vnode->filePath, "/dev") == 0) {
+        return vnode->newMount->vnodeCovered;
+    }
+    return vnode;
+#else
     return vnode->newMount->vnodeCovered;
+#endif
 }
 ///刷新虚拟节点
 static void RefreshLRU(struct Vnode *vnode)
@@ -434,7 +457,7 @@ int VnodeLookupAt(const char *path, struct Vnode **result, uint32_t flags, struc
     }
 
     if (normalizedPath[1] == '\0' && normalizedPath[0] == '/') {
-        *result = g_rootVnode;//啥也不说了,还找啥呀,直接返回根节点
+        *result = GetCurrRootVnode();//啥也不说了,还找啥呀,直接返回根节点
         free(normalizedPath);
         return LOS_OK;
     }
@@ -495,7 +518,7 @@ int VnodeLookup(const char *path, struct Vnode **vnode, uint32_t flags)
 ///根节点内部改变
 int VnodeLookupFullpath(const char *fullpath, struct Vnode **vnode, uint32_t flags)
 {
-    return VnodeLookupAt(fullpath, vnode, flags, g_rootVnode);
+    return VnodeLookupAt(fullpath, vnode, flags, GetCurrRootVnode());
 }
 
 static void ChangeRootInternal(struct Vnode *rootOld, char *dirname)
@@ -537,6 +560,16 @@ void ChangeRoot(struct Vnode *rootNew)
 {
     struct Vnode *rootOld = g_rootVnode;
     g_rootVnode = rootNew;
+#ifdef LOSCFG_CHROOT
+    LosProcessCB *curr = OsCurrProcessGet();
+    if ((curr->files != NULL) &&
+        (curr->files->rootVnode != NULL) &&
+        (curr->files->rootVnode->useCount > 0)) {
+        curr->files->rootVnode->useCount--;
+    }
+    rootNew->useCount++;
+    curr->files->rootVnode = rootNew;
+#endif
     ChangeRootInternal(rootOld, "proc");
     ChangeRootInternal(rootOld, "dev");
 }
@@ -723,6 +756,27 @@ void VnodeMemoryDump(void)
     PRINTK("Vnode memory size = %d(B)\n", vnodeCount * sizeof(struct Vnode));
 }
 
+#ifdef LOSCFG_PROC_PROCESS_DIR
+struct Vnode *VnodeFind(int fd)
+{
+    INT32 sysFd;
+
+    if (fd < 0) {
+        PRINT_ERR("Error. fd is invalid as %d\n", fd);
+        return NULL;
+    }
+
+    /* Process fd convert to system global fd */
+    sysFd = GetAssociatedSystemFd(fd);
+    if (sysFd < 0) {
+        PRINT_ERR("Error. sysFd is invalid as %d\n", sysFd);
+        return NULL;
+    }
+
+    return files_get_openfile((int)sysFd);
+}
+#endif
+
 LIST_HEAD* GetVnodeFreeList()
 {
     return &g_vnodeFreeList;
@@ -759,4 +813,14 @@ int VnodeClearCache(void)
     VnodeDrop();
 
     return count;
+}
+
+struct Vnode *GetCurrRootVnode(void)
+{
+#ifdef LOSCFG_CHROOT
+    LosProcessCB *curr = OsCurrProcessGet();
+    return curr->files->rootVnode;
+#else
+    return g_rootVnode;
+#endif
 }

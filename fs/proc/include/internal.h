@@ -45,6 +45,16 @@ extern "C" {
 extern spinlock_t procfsLock;
 extern bool procfsInit;
 
+#ifdef LOSCFG_PROC_PROCESS_DIR
+int ProcCreateProcessDir(UINT32 pid, uintptr_t process);
+
+void ProcFreeProcessDir(struct ProcDirEntry *processDir);
+
+void ProcSysMemInfoInit(void);
+
+void ProcFileSysInit(void);
+#endif
+
 void ProcPmInit(void);
 
 void ProcVmmInit(void);
@@ -57,15 +67,19 @@ struct ProcDirEntry *ProcFindEntry(const char *path);
 
 void ProcFreeEntry(struct ProcDirEntry *pde);
 
-extern int ProcStat(const char *file, struct ProcStat *buf);
+int ProcStat(const char *file, struct ProcStat *buf);
 
-extern void ProcMountsInit(void);
+void ProcMountsInit(void);
 
-extern void ProcUptimeInit(void);
+void ProcUptimeInit(void);
 
-extern void ProcFsCacheInit(void);
+void ProcFsCacheInit(void);
 
-extern void ProcFdInit(void);
+void ProcFdInit(void);
+
+#ifdef LOSCFG_KERNEL_CONTAINER
+void *ProcfsContainerGet(int fd, unsigned int *containerType);
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus

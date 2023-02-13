@@ -146,26 +146,6 @@ HWTEST_F(MiscTest, ItTestMisc009, TestSize.Level0)
 }
 
 /* *
- * @tc.name: IT_TEST_MISC_010
- * @tc.desc: function for MiscTest
- * @tc.type: FUNC
- */
-/*HWTEST_F(MiscTest, ItTestMisc010, TestSize.Level0)
-{
-    ItTestMisc010();
-}*/
-
-/* *
- * @tc.name: IT_TEST_MISC_011
- * @tc.desc: function for MiscTest
- * @tc.type: FUNC
- */
-/*HWTEST_F(MiscTest, ItTestMisc011, TestSize.Level0)
-{
-    ItTestMisc011();
-}*/
-
-/* *
  * @tc.name: IT_TEST_MISC_012
  * @tc.desc: function for MiscTest
  * @tc.type: FUNC
@@ -174,16 +154,6 @@ HWTEST_F(MiscTest, ItTestMisc012, TestSize.Level0)
 {
     ItTestMisc012();
 }
-
-/* *
- * @tc.name: IT_TEST_MISC_013
- * @tc.desc: function for MiscTest
- * @tc.type: FUNC
- */
-/*HWTEST_F(MiscTest, ItTestMisc013, TestSize.Level0)
-{
-    ItTestMisc013();
-}*/
 #endif
 
 } // namespace OHOS

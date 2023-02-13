@@ -34,6 +34,7 @@ LITEOS_MENUCONFIG_H = rebase_path("$root_out_dir/config.h")
 declare_args() {
   tee_enable = false
   liteos_name = "OHOS_Image"
+  liteos_container_enable = false
   liteos_skip_make = false
   liteos_is_mini = false
 }
@@ -239,6 +240,21 @@ config("misc_config") {
   asmflags = cflags
 }
 
+config("container_config") {
+  if (liteos_container_enable) {
+    cflags = [
+      "-DLOSCFG_KERNEL_CONTAINER",
+      "-DLOSCFG_PID_CONTAINER",
+      "-DLOSCFG_UTS_CONTAINER",
+      "-DLOSCFG_MNT_CONTAINER",
+      "-DLOSCFG_CHROOT",
+      "-DLOSCFG_IPC_CONTAINER",
+      "-DLOSCFG_TIME_CONTAINER",
+      "-DLOSCFG_PROC_PROCESS_DIR",
+    ]
+  }
+}
+
 config("los_config") {
   configs = [
     ":arch_config",
@@ -249,6 +265,7 @@ config("los_config") {
     ":ssp_config",
     ":warn_config",
     ":misc_config",
+    ":container_config",
   ]
 }
 

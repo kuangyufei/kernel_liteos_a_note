@@ -37,7 +37,13 @@
 #include "stdlib.h"
 #endif
 
+#ifdef LOSCFG_MNT_CONTAINER
+#include "los_mnt_container_pri.h"
+static LIST_HEAD *g_mountCache = NULL;
+#else
 static LIST_HEAD *g_mountList = NULL;//挂载点链表,上面挂的是系统所有挂载点
+#endif
+
 /*	在内核MountAlloc只被VnodeDevInit调用,但真实情况下它还将被系统调用 mount()调用
 * int mount(const char *source, const char *target,
           const char *filesystemtype, unsigned long mountflags,
@@ -45,9 +51,9 @@ static LIST_HEAD *g_mountList = NULL;//挂载点链表,上面挂的是系统所�
   mount见于..\code-2.0-canary\third_party\NuttX\fs\mount\fs_mount.c
   vnodeBeCovered: /dev/mmcblk0 
 */
-struct Mount* MountAlloc(struct Vnode* vnodeBeCovered, struct MountOps* fsop)
+struct Mount *MountAlloc(struct Vnode *vnodeBeCovered, struct MountOps *fsop)
 {
-    struct Mount* mnt = (struct Mount*)zalloc(sizeof(struct Mount));//申请一个mount结构体内存,小内存分配用 zalloc
+    struct Mount *mnt = (struct Mount*)zalloc(sizeof(struct Mount));//申请一个mount结构体内存,小内存分配用 zalloc
     if (mnt == NULL) {
         PRINT_ERR("MountAlloc failed no memory!\n");
         return NULL;
@@ -67,8 +73,28 @@ struct Mount* MountAlloc(struct Vnode* vnodeBeCovered, struct MountOps* fsop)
 #endif
     return mnt;
 }
+
+#ifdef LOSCFG_MNT_CONTAINER
+LIST_HEAD *GetMountList(void)
+{
+    return GetContainerMntList();
+}
+
+LIST_HEAD *GetMountCache(void)
+{
+    if (g_mountCache == NULL) {
+        g_mountCache = zalloc(sizeof(LIST_HEAD));
+        if (g_mountCache == NULL) {
+            PRINT_ERR("init cache mount list failed, no memory.");
+            return NULL;
+        }
+        LOS_ListInit(g_mountCache);
+    }
+    return g_mountCache;
+}
+#else
 ///获取装载链表,并初始化
-LIST_HEAD* GetMountList()
+LIST_HEAD* GetMountList(void)
 {
     if (g_mountList == NULL) {
         g_mountList = zalloc(sizeof(LIST_HEAD));//分配内存, 小内存分配用 zalloc
@@ -80,3 +106,4 @@ LIST_HEAD* GetMountList()
     }
     return g_mountList;//所有文件系统的挂载信息
 }
+#endif

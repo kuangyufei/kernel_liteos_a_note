@@ -36,80 +36,9 @@
 
 STATIC UINT32 g_currentUtsContainerNum;
 
-STATIC UINT32 CreateUtsContainer(UtsContainer **newUtsContainer)
-{
-    UINT32 intSave;
-    UINT32 size = sizeof(UtsContainer);
-    UtsContainer *utsContainer = LOS_MemAlloc(m_aucSysMem1, size);
-    if (utsContainer == NULL) {
-        return ENOMEM;
-    }
-    (VOID)memset_s(utsContainer, sizeof(UtsContainer), 0, sizeof(UtsContainer));
-
-    LOS_AtomicSet(&utsContainer->rc, 1);
-
-    SCHEDULER_LOCK(intSave);
-    g_currentUtsContainerNum += 1;
-    *newUtsContainer = utsContainer;
-    SCHEDULER_UNLOCK(intSave);
-    return LOS_OK;
-}
-
-UINT32 OsCopyUtsContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent)
-{
-    UINT32 intSave;
-    UINT32 ret;
-    UtsContainer *newUtsContainer = NULL;
-    UtsContainer *currUtsContainer = parent->container->utsContainer;
-
-    if (!(flags & CLONE_NEWUTS)) {
-        SCHEDULER_LOCK(intSave);
-        LOS_AtomicInc(&currUtsContainer->rc);
-        child->container->utsContainer = currUtsContainer;
-        SCHEDULER_UNLOCK(intSave);
-        return LOS_OK;
-    }
-
-    ret = CreateUtsContainer(&newUtsContainer);
-    if (ret != LOS_OK) {
-        return ret;
-    }
-
-    SCHEDULER_LOCK(intSave);
-    (VOID)memcpy_s(&newUtsContainer->utsName, sizeof(newUtsContainer->utsName),
-                   &currUtsContainer->utsName, sizeof(currUtsContainer->utsName));
-    child->container->utsContainer = newUtsContainer;
-    SCHEDULER_UNLOCK(intSave);
-    return LOS_OK;
-}
-
-VOID OsUtsContainersDestroy(LosProcessCB *curr)
-{
-    UINT32 intSave;
-    if (curr->container == NULL) {
-        return;
-    }
-
-    SCHEDULER_LOCK(intSave);
-    UtsContainer *utsContainer = curr->container->utsContainer;
-    if (utsContainer != NULL) {
-        if (LOS_AtomicRead(&utsContainer->rc) == 0) {
-            g_currentUtsContainerNum--;
-            curr->container->utsContainer = NULL;
-            SCHEDULER_UNLOCK(intSave);
-            (VOID)LOS_MemFree(m_aucSysMem1, utsContainer);
-            return;
-        }
-    }
-    SCHEDULER_UNLOCK(intSave);
-    return;
-}
-
 STATIC UINT32 InitUtsContainer(struct utsname *name)
 {
-    UINT32 ret;
-
-    ret = sprintf_s(name->sysname, sizeof(name->sysname), "%s", KERNEL_NAME);
+    INT32 ret = sprintf_s(name->sysname, sizeof(name->sysname), "%s", KERNEL_NAME);
     if (ret < 0) {
         return LOS_NOK;
     }
@@ -136,14 +65,143 @@ STATIC UINT32 InitUtsContainer(struct utsname *name)
     return LOS_OK;
 }
 
-UINT32 OsInitRootUtsContainer(UtsContainer **utsContainer)
+STATIC UtsContainer *CreateNewUtsContainer(UtsContainer *parent)
 {
-    UINT32 ret = CreateUtsContainer(utsContainer);
+    UINT32 ret;
+    UINT32 size = sizeof(UtsContainer);
+    UtsContainer *utsContainer = (UtsContainer *)LOS_MemAlloc(m_aucSysMem1, size);
+    if (utsContainer == NULL) {
+        return NULL;
+    }
+    (VOID)memset_s(utsContainer, sizeof(UtsContainer), 0, sizeof(UtsContainer));
+
+    utsContainer->containerID = OsAllocContainerID();
+    if (parent != NULL) {
+        LOS_AtomicSet(&utsContainer->rc, 1);
+        return utsContainer;
+    }
+    LOS_AtomicSet(&utsContainer->rc, 3); /* 3: Three system processes */
+    ret = InitUtsContainer(&utsContainer->utsName);
     if (ret != LOS_OK) {
-        return ret;
+        (VOID)LOS_MemFree(m_aucSysMem1, utsContainer);
+        return NULL;
+    }
+    return utsContainer;
+}
+
+STATIC UINT32 CreateUtsContainer(LosProcessCB *child, LosProcessCB *parent)
+{
+    UINT32 intSave;
+    UtsContainer *parentContainer = parent->container->utsContainer;
+    UtsContainer *newUtsContainer = CreateNewUtsContainer(parentContainer);
+    if (newUtsContainer == NULL) {
+        return ENOMEM;
     }
 
-    return InitUtsContainer(&(*utsContainer)->utsName);
+    SCHEDULER_LOCK(intSave);
+    g_currentUtsContainerNum++;
+    (VOID)memcpy_s(&newUtsContainer->utsName, sizeof(newUtsContainer->utsName),
+                   &parentContainer->utsName, sizeof(parentContainer->utsName));
+    child->container->utsContainer = newUtsContainer;
+    SCHEDULER_UNLOCK(intSave);
+    return LOS_OK;
+}
+
+UINT32 OsInitRootUtsContainer(UtsContainer **utsContainer)
+{
+    UINT32 intSave;
+    UtsContainer *newUtsContainer = CreateNewUtsContainer(NULL);
+    if (newUtsContainer == NULL) {
+        return ENOMEM;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    g_currentUtsContainerNum++;
+    *utsContainer = newUtsContainer;
+    SCHEDULER_UNLOCK(intSave);
+    return LOS_OK;
+}
+
+UINT32 OsCopyUtsContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent)
+{
+    UINT32 intSave;
+    UtsContainer *currUtsContainer = parent->container->utsContainer;
+
+    if (!(flags & CLONE_NEWUTS)) {
+        SCHEDULER_LOCK(intSave);
+        LOS_AtomicInc(&currUtsContainer->rc);
+        child->container->utsContainer = currUtsContainer;
+        SCHEDULER_UNLOCK(intSave);
+        return LOS_OK;
+    }
+
+    return CreateUtsContainer(child, parent);
+}
+
+UINT32 OsUnshareUtsContainer(UINTPTR flags, LosProcessCB *curr, Container *newContainer)
+{
+    UINT32 intSave;
+    UtsContainer *parentContainer = curr->container->utsContainer;
+
+    if (!(flags & CLONE_NEWUTS)) {
+        SCHEDULER_LOCK(intSave);
+        newContainer->utsContainer = parentContainer;
+        LOS_AtomicInc(&parentContainer->rc);
+        SCHEDULER_UNLOCK(intSave);
+        return LOS_OK;
+    }
+
+    UtsContainer *utsContainer = CreateNewUtsContainer(parentContainer);
+    if (utsContainer == NULL) {
+        return ENOMEM;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    newContainer->utsContainer = utsContainer;
+    g_currentUtsContainerNum++;
+    (VOID)memcpy_s(&utsContainer->utsName, sizeof(utsContainer->utsName),
+                   &parentContainer->utsName, sizeof(parentContainer->utsName));
+    SCHEDULER_UNLOCK(intSave);
+    return LOS_OK;
+}
+
+UINT32 OsSetNsUtsContainer(UINT32 flags, Container *container, Container *newContainer)
+{
+    if (flags & CLONE_NEWUTS) {
+        newContainer->utsContainer = container->utsContainer;
+        LOS_AtomicInc(&container->utsContainer->rc);
+        return LOS_OK;
+    }
+
+    newContainer->utsContainer = OsCurrProcessGet()->container->utsContainer;
+    LOS_AtomicInc(&newContainer->utsContainer->rc);
+    return LOS_OK;
+}
+
+VOID OsUtsContainerDestroy(Container *container)
+{
+    UINT32 intSave;
+    if (container == NULL) {
+        return;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    UtsContainer *utsContainer = container->utsContainer;
+    if (utsContainer == NULL) {
+        SCHEDULER_UNLOCK(intSave);
+        return;
+    }
+
+    LOS_AtomicDec(&utsContainer->rc);
+    if (LOS_AtomicRead(&utsContainer->rc) > 0) {
+        SCHEDULER_UNLOCK(intSave);
+        return;
+    }
+    g_currentUtsContainerNum--;
+    container->utsContainer = NULL;
+    SCHEDULER_UNLOCK(intSave);
+    (VOID)LOS_MemFree(m_aucSysMem1, utsContainer);
+    return;
 }
 
 struct utsname *OsGetCurrUtsName(VOID)
@@ -158,4 +216,14 @@ struct utsname *OsGetCurrUtsName(VOID)
     }
     return &utsContainer->utsName;
 }
+
+UINT32 OsGetUtsContainerID(UtsContainer *utsContainer)
+{
+    if (utsContainer == NULL) {
+        return OS_INVALID_VALUE;
+    }
+
+    return utsContainer->containerID;
+}
+
 #endif

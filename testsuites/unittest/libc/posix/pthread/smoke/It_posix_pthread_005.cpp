@@ -36,8 +36,6 @@ static void *ThreadF01(void *arg)
 
     /* Shouldn't reach here.  If we do, then the pthread_cancel()
      * function did not succeed. */
-    // uart_printf_func("Could not send cancel request correctly\n");
-    // ICUNIT_TRACK_EQUAL(1, 0, errno);
     pthread_exit(nullptr);
     return NULL;
 }
@@ -62,7 +60,6 @@ static UINT32 Testcase(VOID)
 
     ret = pthread_join(newTh, (void **)&temp);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    // ICUNIT_ASSERT_EQUAL(temp, (UINTPTR)PTHREAD_CANCELED, temp);
     return PTHREAD_NO_ERROR;
 }
 

@@ -63,13 +63,11 @@ static int LiteIpcTest(void)
     /* testing mmap liteipc mem pool with different size and flag */
     retptr = mmap(nullptr, 1024 * 4096, PROT_READ, MAP_PRIVATE, fd, 0);
     ICUNIT_ASSERT_EQUAL(static_cast<int>(static_cast<intptr_t>(retptr)), -1, retptr);
-    //retptr = mmap(nullptr, 0, PROT_READ, MAP_PRIVATE, fd, 0);
-    //ICUNIT_ASSERT_EQUAL((int)(intptr_t)retptr, -1, retptr);
     retptr = mmap(nullptr, -1, PROT_READ, MAP_PRIVATE, fd, 0);
     ICUNIT_ASSERT_EQUAL(static_cast<int>(static_cast<intptr_t>(retptr)), -1, retptr);
     retptr = mmap(nullptr, 4096, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
     ICUNIT_ASSERT_EQUAL(static_cast<int>(static_cast<intptr_t>(retptr)), -1, retptr);
-    retptr = mmap(nullptr, 4096, PROT_READ, MAP_SHARED, fd, 0);
+    retptr = mmap(nullptr, 4096, PROT_READ, MAP_SHARED, fd, 0); // 4096: length of mapped memory
     ICUNIT_ASSERT_EQUAL(static_cast<int>(static_cast<intptr_t>(retptr)), -1, retptr);
 
     retptr = mmap(nullptr, 1, PROT_READ, MAP_PRIVATE, fd, 0);
@@ -81,7 +79,7 @@ static int LiteIpcTest(void)
     char buf[10] = {0};
     ret = read(fd, buf, 10);
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
-    ret = write(fd, buf, 10);
+    ret = write(fd, buf, 10); // 10: size of buf
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
 
     /* before set cms, testing ioctl cmd */
@@ -96,7 +94,7 @@ static int LiteIpcTest(void)
 
     sleep(2);
     /* after set cms, testing set cms cmd */
-    ret = ioctl(fd, IPC_SET_CMS, 200);
+    ret = ioctl(fd, IPC_SET_CMS, 200); // 200: use 200 for set cms cmd testing
     ICUNIT_ASSERT_NOT_EQUAL(ret, 0, ret);
 
     exit(0);

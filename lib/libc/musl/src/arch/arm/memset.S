@@ -131,6 +131,10 @@ Lreturn:
     pop     {r4}
     bx      lr
 Lfunc_end:
+#if defined(LOSCFG_KERNEL_LMS)
+    .size __memset, Lfunc_end - __memset
+#else
     .size memset, Lfunc_end - memset
+#endif
     .cantunwind
     .fnend                      @ -- End function

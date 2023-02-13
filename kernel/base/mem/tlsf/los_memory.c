@@ -896,6 +896,9 @@ STATIC UINT32 OsMemPoolInit(VOID *pool, UINT32 size)
     struct OsMemPoolHead *poolHead = (struct OsMemPoolHead *)pool;
     struct OsMemNodeHead *newNode = NULL;
     struct OsMemNodeHead *endNode = NULL;
+
+    (VOID)memset_s(poolHead, sizeof(struct OsMemPoolHead), 0, sizeof(struct OsMemPoolHead));
+
 #ifdef LOSCFG_KERNEL_LMS
     UINT32 resize = 0;
     if (g_lms != NULL) {
@@ -907,7 +910,6 @@ STATIC UINT32 OsMemPoolInit(VOID *pool, UINT32 size)
         size = (resize == 0) ? size : resize;
     }
 #endif
-    (VOID)memset(poolHead, 0, sizeof(struct OsMemPoolHead));
 
     LOS_SpinInit(&poolHead->spinlock);
     poolHead->info.pool = pool;	//内存池的起始地址,但注意真正的内存并不是从此处分配,它只是用来记录这个内存块的开始位置而已.
@@ -946,9 +948,14 @@ STATIC UINT32 OsMemPoolInit(VOID *pool, UINT32 size)
 }
 
 #ifdef LOSCFG_MEM_MUL_POOL
-STATIC VOID OsMemPoolDeinit(VOID *pool)
+STATIC VOID OsMemPoolDeinit(const VOID *pool, UINT32 size)
 {
-    (VOID)memset(pool, 0, sizeof(struct OsMemPoolHead));
+#ifdef LOSCFG_KERNEL_LMS
+    if (g_lms != NULL) {
+        g_lms->deInit(pool);
+    }
+#endif
+    (VOID)memset_s(pool, size, 0, sizeof(struct OsMemPoolHead));
 }
 /// 新增内存池
 STATIC UINT32 OsMemPoolAdd(VOID *pool, UINT32 size)
@@ -1031,7 +1038,7 @@ UINT32 LOS_MemInit(VOID *pool, UINT32 size)
 
 #ifdef LOSCFG_MEM_MUL_POOL //多内存池开关
     if (OsMemPoolAdd(pool, size)) {
-        (VOID)OsMemPoolDeinit(pool);
+        (VOID)OsMemPoolDeInit(pool, size);
         return OS_ERROR;
     }
 #endif
@@ -1044,17 +1051,21 @@ UINT32 LOS_MemInit(VOID *pool, UINT32 size)
 /// 删除指定内存池
 UINT32 LOS_MemDeInit(VOID *pool)
 {
-    if (pool == NULL) {
+    struct OsMemPoolHead *tmpPool = (struct OsMemPoolHead *)pool;
+
+    if ((tmpPool == NULL) ||
+        (tmpPool->info.pool != pool) ||
+        (tmpPool->info.totalSize <= OS_MEM_MIN_POOL_SIZE)) {
         return OS_ERROR;
     }
 
-    if (OsMemPoolDelete(pool)) {
+    if (OsMemPoolDelete(tmpPool)) {
         return OS_ERROR;
     }
 
-    OsMemPoolDeinit(pool);
+    OsMemPoolDeInit(tmpPool, tmpPool->info.totalSize);
 
-    OsHookCall(LOS_HOOK_TYPE_MEM_DEINIT, pool);
+    OsHookCall(LOS_HOOK_TYPE_MEM_DEINIT, tmpPool);
     return LOS_OK;
 }
 /// 打印系统中已初始化的所有内存池，包括内存池的起始地址、内存池大小、空闲内存总大小、已使用内存总大小、最大的空闲内存块大小、空闲内存块数量、已使用的内存块数量。
@@ -1976,7 +1987,7 @@ UINT32 LOS_MemInfoGet(VOID *pool, LOS_MEM_POOL_STATUS *poolStatus)
         return LOS_NOK;
     }
 
-    (VOID)memset(poolStatus, 0, sizeof(LOS_MEM_POOL_STATUS));
+    (VOID)memset_s(poolStatus, sizeof(LOS_MEM_POOL_STATUS), 0, sizeof(LOS_MEM_POOL_STATUS));
 
     struct OsMemNodeHead *tmpNode = NULL;
     struct OsMemNodeHead *endNode = NULL;
