@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -46,6 +46,11 @@ typedef enum {
 #ifdef LOSCFG_KERNEL_CPUP
     PROC_PID_CPUP,
 #endif
+#ifdef LOSCFG_USER_CONTAINER
+    PROC_UID_MAP,
+    PROC_GID_MAP,
+#endif
+    PROC_P_TYPE_MAX,
 } ProcessDataType;
 
 struct ProcProcess {
@@ -84,6 +89,10 @@ static ssize_t ProcessContainerLink(unsigned int containerID, ContainerType type
         count = snprintf_s(buffer, bufLen, bufLen - 1, "'ipc:[%u]'", containerID);
     } else if ((type == TIME_CONTAINER) || (type == TIME_CHILD_CONTAINER)) {
         count = snprintf_s(buffer, bufLen, bufLen - 1, "'time:[%u]'", containerID);
+    } else if (type == USER_CONTAINER) {
+        count = snprintf_s(buffer, bufLen, bufLen - 1, "'user:[%u]'", containerID);
+    }  else if (type == NET_CONTAINER) {
+        count = snprintf_s(buffer, bufLen, bufLen - 1, "'net:[%u]'", containerID);
     }
 
     if (count < 0) {
@@ -105,7 +114,7 @@ static ssize_t ProcessContainerReadLink(struct ProcDirEntry *entry, char *buffer
     }
     LosProcessCB *processCB = ProcGetProcessCB(data);
     SCHEDULER_LOCK(intSave);
-    UINT32 containerID = OsGetContainerID(processCB->container, (ContainerType)data->type);
+    UINT32 containerID = OsGetContainerID(processCB, (ContainerType)data->type);
     SCHEDULER_UNLOCK(intSave);
     if (containerID != OS_INVALID_VALUE) {
         return ProcessContainerLink(containerID, (ContainerType)data->type, buffer, bufLen);
@@ -320,6 +329,121 @@ static const struct ProcFileOperations TIME_CONTAINER_FOPS = {
 };
 #endif
 
+#ifdef LOSCFG_USER_CONTAINER
+
+static void *MemdupUserNul(const void *src, size_t len)
+{
+    char *des = NULL;
+    if (len <= 0) {
+        return NULL;
+    }
+    des = LOS_MemAlloc(OS_SYS_MEM_ADDR, len + 1);
+    if (des == NULL) {
+        return NULL;
+    }
+
+    if (LOS_ArchCopyFromUser(des, src, len) != 0) {
+        (VOID)LOS_MemFree(OS_SYS_MEM_ADDR, des);
+        return NULL;
+    }
+
+    des[len] = '\0';
+    return des;
+}
+
+static LosProcessCB *ProcUidGidMapWriteCheck(struct ProcFile *pf, const char *buf, size_t size,
+                                             char **kbuf, ProcessDataType *type)
+{
+    if ((pf == NULL) || (size <= 0) || (size >= PAGE_SIZE)) {
+        return NULL;
+    }
+
+    struct ProcDirEntry *entry = pf->pPDE;
+    if (entry == NULL) {
+        return NULL;
+    }
+
+    struct ProcessData *data = (struct ProcessData *)entry->data;
+    if (data == NULL) {
+        return NULL;
+    }
+
+    *kbuf = MemdupUserNul(buf, size);
+    if (*kbuf == NULL) {
+        return NULL;
+    }
+    *type = (ProcessDataType)data->type;
+    return ProcGetProcessCB(data);
+}
+
+static ssize_t ProcIDMapWrite(struct ProcFile *file, const char *buf, size_t size, loff_t *ppos)
+{
+    (void)ppos;
+    char *kbuf = NULL;
+    int ret;
+    unsigned int intSave;
+    ProcessDataType type = PROC_P_TYPE_MAX;
+    LosProcessCB *processCB = ProcUidGidMapWriteCheck(file, buf, size, &kbuf, &type);
+    if (processCB == NULL) {
+        return -EINVAL;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    if ((processCB->credentials == NULL) || (processCB->credentials->userContainer == NULL)) {
+        SCHEDULER_UNLOCK(intSave);
+        (void)LOS_MemFree(m_aucSysMem1, kbuf);
+        return -EINVAL;
+    }
+    UserContainer *userContainer = processCB->credentials->userContainer;
+    if (userContainer->parent == NULL) {
+        SCHEDULER_UNLOCK(intSave);
+        (void)LOS_MemFree(m_aucSysMem1, kbuf);
+        return -EPERM;
+    }
+    if (type == PROC_UID_MAP) {
+        ret = OsUserContainerMapWrite(file, kbuf, size, CAP_SETUID,
+                                      &userContainer->uidMap, &userContainer->parent->uidMap);
+    } else {
+        ret = OsUserContainerMapWrite(file, kbuf, size, CAP_SETGID,
+                                      &userContainer->gidMap, &userContainer->parent->gidMap);
+    }
+    SCHEDULER_UNLOCK(intSave);
+    (void)LOS_MemFree(m_aucSysMem1, kbuf);
+    return ret;
+}
+
+static int ProcIDMapRead(struct SeqBuf *seqBuf, void *v)
+{
+    unsigned int intSave;
+    if ((seqBuf == NULL) || (v == NULL)) {
+        return -EINVAL;
+    }
+    struct ProcessData *data = (struct ProcessData *)v;
+    LosProcessCB *processCB = ProcGetProcessCB(data);
+
+    SCHEDULER_LOCK(intSave);
+    if ((processCB->credentials == NULL) || (processCB->credentials->userContainer == NULL)) {
+        SCHEDULER_UNLOCK(intSave);
+        return -EINVAL;
+    }
+    UserContainer *userContainer = processCB->credentials->userContainer;
+    if ((userContainer != NULL) && (userContainer->parent == NULL)) {
+        UidGidExtent uidGidExtent = userContainer->uidMap.extent[0];
+        SCHEDULER_UNLOCK(intSave);
+        (void)LosBufPrintf(seqBuf, "%d %d %u\n", uidGidExtent.first, uidGidExtent.lowerFirst,
+                           uidGidExtent.count);
+        return 0;
+    }
+    SCHEDULER_LOCK(intSave);
+    return 0;
+}
+
+static const struct ProcFileOperations UID_GID_MAP_FOPS = {
+    .read = ProcIDMapRead,
+    .write = ProcIDMapWrite,
+};
+#endif
+
 static int ProcProcessRead(struct SeqBuf *m, void *v)
 {
     if ((m == NULL) || (v == NULL)) {
@@ -432,6 +556,34 @@ static struct ProcProcess g_procProcess[] = {
         .fileOps = &TIME_CONTAINER_FOPS
     },
 #endif
+#ifdef LOSCFG_IPC_CONTAINER
+    {
+        .name = "container/user",
+        .mode = S_IFLNK,
+        .type = USER_CONTAINER,
+        .fileOps = &PID_CONTAINER_FOPS
+    },
+    {
+        .name = "uid_map",
+        .mode = 0,
+        .type = PROC_UID_MAP,
+        .fileOps = &UID_GID_MAP_FOPS
+    },
+    {
+        .name = "gid_map",
+        .mode = 0,
+        .type = PROC_GID_MAP,
+        .fileOps = &UID_GID_MAP_FOPS
+    },
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+    {
+        .name = "container/net",
+        .mode = S_IFLNK,
+        .type = NET_CONTAINER,
+        .fileOps = &PID_CONTAINER_FOPS
+    },
+#endif
 #endif
 };
 
@@ -446,6 +598,7 @@ void ProcFreeProcessDir(struct ProcDirEntry *processDir)
 static struct ProcDirEntry *ProcCreatePorcess(UINT32 pid, struct ProcProcess *porcess, uintptr_t processCB)
 {
     int ret;
+    struct ProcDataParm dataParm;
     char pidName[PROC_PID_DIR_LEN] = {0};
     struct ProcessData *data = (struct ProcessData *)malloc(sizeof(struct ProcessData));
     if (data == NULL) {
@@ -471,7 +624,9 @@ static struct ProcDirEntry *ProcCreatePorcess(UINT32 pid, struct ProcProcess *po
 
     data->process = processCB;
     data->type = porcess->type;
-    struct ProcDirEntry *container = ProcCreateData(pidName, porcess->mode, NULL, porcess->fileOps, (void *)data);
+    dataParm.data = data;
+    dataParm.dataType = PROC_DATA_FREE;
+    struct ProcDirEntry *container = ProcCreateData(pidName, porcess->mode, NULL, porcess->fileOps, &dataParm);
     if (container == NULL) {
         free(data);
         PRINT_ERR("create /proc/%s error!\n", pidName);

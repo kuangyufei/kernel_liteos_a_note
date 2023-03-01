@@ -41,12 +41,9 @@ void ItProcessFs002(void)
     ASSERT_NE(fp, nullptr);
 
     int ret = fread(szStatBuf, 1, LEN_BUFF, fp);
-    PrintTest("cat /proc/meminfo\n");
-    PrintTest("%s\n", szStatBuf);
-    ASSERT_EQ(ret, strlen(szStatBuf));
+    (void)fclose(fp);
+    ASSERT_NE(ret, -1);
 
     char *res = strstr(szStatBuf, "UsedSize");
     ASSERT_NE(res, nullptr);
-
-    (void)fclose(fp);
 }

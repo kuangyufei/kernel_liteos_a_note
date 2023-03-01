@@ -60,5 +60,6 @@ struct utsname *OsGetCurrUtsName(VOID);
 
 UINT32 OsGetUtsContainerID(UtsContainer *utsContainer);
 
+UINT32 OsGetUtsContainerCount(VOID);
 #endif
 #endif /* _LOS_UTS_CONTAINER_PRI_H */

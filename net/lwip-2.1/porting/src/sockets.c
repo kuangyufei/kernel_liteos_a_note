@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,7 +32,6 @@
 #include <lwip/sockets.h>
 #include <lwip/priv/tcpip_priv.h>
 #include <lwip/fixme.h>
-//https://blog.csdn.net/zhaozhiyuan111/article/details/79197692
 
 #if LWIP_ENABLE_NET_CAPABILITY
 #include "capability_type.h"
@@ -405,7 +404,11 @@ int get_unused_socket_num(void)
 
 #include <net/route.h>
 
+#ifdef LOSCFG_NET_CONTAINER
+static u8_t lwip_ioctl_internal_SIOCADDRT(struct rtentry *rmten, struct net_group *group)
+#else
 static u8_t lwip_ioctl_internal_SIOCADDRT(struct rtentry *rmten)
+#endif
 {
     struct netif *netif = NULL;
     ip_addr_t rtgw_addr;
@@ -430,7 +433,11 @@ static u8_t lwip_ioctl_internal_SIOCADDRT(struct rtentry *rmten)
     }
 
     /* check if reachable */
+#ifdef LOSCFG_NET_CONTAINER
+    for (netif = group->netif_list; netif != NULL; netif = netif->next) {
+#else
     for (netif = netif_list; netif != NULL; netif = netif->next) {
+#endif
         if (ip_addr_netcmp(&rtgw_addr, &netif->ip_addr, ip_2_ip4(&netif->netmask))) {
             break;
         }
@@ -451,9 +458,15 @@ static u8_t lwip_ioctl_internal_SIOCADDRT(struct rtentry *rmten)
     }
 
     /* Add validation */
+#ifdef LOSCFG_NET_CONTAINER
+    if ((group->netif_default != NULL) && (group->netif_default != netif)) {
+        ip_addr_set_zero(&group->netif_default->gw);
+        (void)netif_set_default(netif, group);
+#else
     if ((netif_default != NULL) && (netif_default != netif)) {
         ip_addr_set_zero(&netif_default->gw);
         (void)netif_set_default(netif);
+#endif
     }
     netif_set_gw(netif, ip_2_ip4(&rtgw_addr));
 
@@ -463,8 +476,11 @@ static u8_t lwip_ioctl_internal_SIOCADDRT(struct rtentry *rmten)
 #endif
 
 #if LWIP_IOCTL_IF
-
+#ifdef LOSCFG_NET_CONTAINER
+static u8_t lwip_ioctl_internal_SIOCGIFCONF(struct ifreq *ifr, struct net_group *group)
+#else
 static u8_t lwip_ioctl_internal_SIOCGIFCONF(struct ifreq *ifr)
+#endif
 {
     struct ifconf *ifc = NULL;
     struct netif *netif = NULL;
@@ -480,7 +496,11 @@ static u8_t lwip_ioctl_internal_SIOCGIFCONF(struct ifreq *ifr)
 
     /* Loop over the interfaces, and write an info block for each. */
     pos = 0;
+#ifdef LOSCFG_NET_CONTAINER
+    for (netif = group->netif_list; netif != NULL; netif = netif->next) {
+#else
     for (netif = netif_list; netif != NULL; netif = netif->next) {
+#endif
         if (ifc->ifc_buf == NULL) {
             pos = (pos + (int)sizeof(struct ifreq));
             continue;
@@ -555,7 +575,11 @@ static u8_t lwip_ioctl_internal_SIOCSIFADDR_6(struct ifreq *ifr)
     return ENOSYS;
 }
 
+#ifdef LOSCFG_NET_CONTAINER
+static u8_t lwip_ioctl_internal_SIOCSIFADDR(struct ifreq *ifr, struct net_group *group)
+#else
 static u8_t lwip_ioctl_internal_SIOCSIFADDR(struct ifreq *ifr)
+#endif
 {
     struct netif *netif = NULL;
 
@@ -592,13 +616,22 @@ static u8_t lwip_ioctl_internal_SIOCSIFADDR(struct ifreq *ifr)
         /* reset gateway if new and previous ipaddr not in same net */
         if (ip_addr_netcmp(&taget_addr, &netif->ip_addr, ip_2_ip4(&netif->netmask)) == 0) {
             ip_addr_set_zero(&netif->gw);
+#ifdef LOSCFG_NET_CONTAINER
+            if (netif == group->netif_default) {
+                (void)netif_set_default(NULL, group);
+#else
             if (netif == netif_default) {
                 (void)netif_set_default(NULL);
+#endif
             }
         }
 
         /* lwip disallow two netif sit in same net at the same time */
+#ifdef LOSCFG_NET_CONTAINER
+        loc_netif = group->netif_list;
+#else
         loc_netif = netif_list;
+#endif
         while (loc_netif != NULL) {
             if (loc_netif == netif) {
                 loc_netif = loc_netif->next;
@@ -638,7 +671,11 @@ static u8_t lwip_ioctl_internal_SIOCDIFADDR_6(struct ifreq *ifr)
     return ENOSYS;
 }
 
+#ifdef LOSCFG_NET_CONTAINER
+static u8_t lwip_ioctl_internal_SIOCDIFADDR(struct ifreq *ifr, struct net_group *group)
+#else
 static u8_t lwip_ioctl_internal_SIOCDIFADDR(struct ifreq *ifr)
+#endif
 {
     struct netif *netif = NULL;
 
@@ -679,8 +716,13 @@ static u8_t lwip_ioctl_internal_SIOCDIFADDR(struct ifreq *ifr)
     ip_addr_set_zero(&netif->gw);
     ip_addr_set_zero(&netif->ip_addr);
     ip_addr_set_zero(&netif->netmask);
+#ifdef LOSCFG_NET_CONTAINER
+    if (netif == group->netif_default) {
+        (void)netif_set_default(NULL, group);
+#else
     if (netif == netif_default) {
         (void)netif_set_default(NULL);
+#endif
     }
 
 #if LWIP_IPV4 && LWIP_ARP
@@ -709,7 +751,11 @@ static u8_t lwip_ioctl_internal_SIOCGIFNETMASK(struct ifreq *ifr)
     }
 }
 
+#ifdef LOSCFG_NET_CONTAINER
+static u8_t lwip_ioctl_internal_SIOCSIFNETMASK(struct ifreq *ifr, struct net_group *group)
+#else
 static u8_t lwip_ioctl_internal_SIOCSIFNETMASK(struct ifreq *ifr)
+#endif
 {
     struct netif *netif = NULL;
 
@@ -743,12 +789,20 @@ static u8_t lwip_ioctl_internal_SIOCSIFNETMASK(struct ifreq *ifr)
             return 0;
         }
         /* check data valid */
+#ifdef LOSCFG_NET_CONTAINER
+        if (ip_addr_netmask_valid(ip_2_ip4(&taget_addr)) == 0) {
+#else
         if (ip_addr_netmask_valid(ip_2_ip4(&taget_addr)) != 0) {
+#endif
             return EINVAL;
         }
 
         /* lwip disallow two netif sit in same net at the same time */
+#ifdef LOSCFG_NET_CONTAINER
+        loc_netif = group->netif_list;
+#else
         loc_netif = netif_list;
+#endif
         while (loc_netif != NULL) {
             if (loc_netif == netif) {
                 loc_netif = loc_netif->next;
@@ -774,8 +828,13 @@ static u8_t lwip_ioctl_internal_SIOCSIFNETMASK(struct ifreq *ifr)
         /* check if gateway still reachable */
         if (!ip_addr_netcmp(&netif->gw, &netif->ip_addr, ip_2_ip4(&taget_addr))) {
             ip_addr_set_zero(&(netif->gw));
+#ifdef LOSCFG_NET_CONTAINER
+            if (netif == group->netif_default) {
+                (void)netif_set_default(NULL, group);
+#else
             if (netif == netif_default) {
                 (void)netif_set_default(NULL);
+#endif
             }
         }
         return 0;
@@ -804,12 +863,10 @@ static u8_t lwip_ioctl_internal_SIOCSIFHWADDR(struct ifreq *ifr)
     }
 #endif
     else {
-
         /* bring netif down to clear all Neighbor Cache Entry */
         (void)netif_set_down(netif);
 
         ret = netif_set_hwaddr(netif, (const unsigned char *)ifr->ifr_hwaddr.sa_data, netif->hwaddr_len);
-
         if (ret != ERR_OK) {
             (void)netif_set_up(netif);
             return err_to_errno(ret);
@@ -980,7 +1037,6 @@ static u8_t lwip_ioctl_internal_SIOCGIFFLAGS(struct ifreq *ifr)
 #endif /* LWIP_IGMP || LWIP_IPV6_MLD */
 
 #if LWIP_DHCP
-        //if ((netif->flags & NETIF_FLAG_DHCP) != 0) {
         if (dhcp_supplied_address(netif)) {
             ifr->ifr_flags = (short)((unsigned short)ifr->ifr_flags | IFF_DYNAMIC);
         } else {
@@ -1006,12 +1062,19 @@ static u8_t lwip_ioctl_internal_SIOCGIFFLAGS(struct ifreq *ifr)
     }
 }
 
+#ifdef LOSCFG_NET_CONTAINER
+static u8_t lwip_ioctl_internal_SIOCGIFNAME(struct ifreq *ifr, struct net_group *group)
+#else
 static u8_t lwip_ioctl_internal_SIOCGIFNAME(struct ifreq *ifr)
+#endif
 {
     struct netif *netif = NULL;
     int ret;
-
+#ifdef LOSCFG_NET_CONTAINER
+    for (netif = group->netif_list; netif != NULL; netif = netif->next) {
+#else
     for (netif = netif_list; netif != NULL; netif = netif->next) {
+#endif
         if (ifr->ifr_ifindex == netif_get_index(netif)) {
             break;
         }
@@ -1091,7 +1154,6 @@ static u8_t lwip_ioctl_internal_SIOCSIFNAME(struct ifreq *ifr)
 #endif
 
     netif = netif_find(ifr->ifr_name);
-
     if (netif == NULL) {
         return ENODEV;
     } else if (netif->link_layer_type == LOOPBACK_IF) {
@@ -1166,7 +1228,6 @@ static u8_t lwip_ioctl_internal_SIOCGIFMTU(struct ifreq *ifr)
 
     /* get netif hw addr */
     netif = netif_find(ifr->ifr_name);
-
     if (netif == NULL) {
         return ENODEV;
     } else {
@@ -1331,7 +1392,9 @@ static u8_t lwip_ioctl_impl(const struct lwip_sock *sock, long cmd, void *argp)
     /* allow it only on IPv6 sockets... */
     is_ipv6 = NETCONNTYPE_ISIPV6((unsigned int)(sock->conn->type));
 #endif
-
+#ifdef LOSCFG_NET_CONTAINER
+    struct net_group *group = get_net_group_from_ippcb(sock->conn->pcb.ip);
+#endif
     switch ((u32_t)cmd) {
 #if LWIP_IPV6
 #if LWIP_IPV6_DUP_DETECT_ATTEMPTS
@@ -1377,7 +1440,11 @@ static u8_t lwip_ioctl_impl(const struct lwip_sock *sock, long cmd, void *argp)
             if (is_ipv6 != 0) {
                 err = EINVAL;
             } else {
+#ifdef LOSCFG_NET_CONTAINER
+                err = lwip_ioctl_internal_SIOCADDRT(rmten, group);
+#else
                 err = lwip_ioctl_internal_SIOCADDRT(rmten);
+#endif
             }
             break;
 #endif
@@ -1387,7 +1454,11 @@ static u8_t lwip_ioctl_impl(const struct lwip_sock *sock, long cmd, void *argp)
             if (is_ipv6 != 0) {
                 err = EINVAL;
             } else {
+#ifdef LOSCFG_NET_CONTAINER
+                err = lwip_ioctl_internal_SIOCGIFCONF(ifr, group);
+#else
                 err = lwip_ioctl_internal_SIOCGIFCONF(ifr);
+#endif
             }
             break;
         case SIOCGIFADDR:
@@ -1401,7 +1472,11 @@ static u8_t lwip_ioctl_impl(const struct lwip_sock *sock, long cmd, void *argp)
             if (is_ipv6 != 0) {
                 err = lwip_ioctl_internal_SIOCSIFADDR_6(ifr);
             } else {
+#ifdef LOSCFG_NET_CONTAINER
+                err = lwip_ioctl_internal_SIOCSIFADDR(ifr, group);
+#else
                 err = lwip_ioctl_internal_SIOCSIFADDR(ifr);
+#endif
             }
             break;
         case SIOCDIFADDR:
@@ -1409,7 +1484,11 @@ static u8_t lwip_ioctl_impl(const struct lwip_sock *sock, long cmd, void *argp)
             if (is_ipv6 != 0) {
                 err = lwip_ioctl_internal_SIOCDIFADDR_6(ifr);
             } else {
+#ifdef LOSCFG_NET_CONTAINER
+                err = lwip_ioctl_internal_SIOCDIFADDR(ifr, group);
+#else
                 err = lwip_ioctl_internal_SIOCDIFADDR(ifr);
+#endif
             }
             break;
         case SIOCGIFNETMASK:
@@ -1423,7 +1502,11 @@ static u8_t lwip_ioctl_impl(const struct lwip_sock *sock, long cmd, void *argp)
             if (is_ipv6 != 0) {
                 err = EINVAL;
             } else {
+#ifdef LOSCFG_NET_CONTAINER
+                err = lwip_ioctl_internal_SIOCSIFNETMASK(ifr, group);
+#else
                 err = lwip_ioctl_internal_SIOCSIFNETMASK(ifr);
+#endif
             }
             break;
         case SIOCSIFHWADDR:
@@ -1439,7 +1522,11 @@ static u8_t lwip_ioctl_impl(const struct lwip_sock *sock, long cmd, void *argp)
             err = lwip_ioctl_internal_SIOCGIFFLAGS(ifr);
             break;
         case SIOCGIFNAME:
+#ifdef LOSCFG_NET_CONTAINER
+            err = lwip_ioctl_internal_SIOCGIFNAME(ifr, group);
+#else
             err = lwip_ioctl_internal_SIOCGIFNAME(ifr);
+#endif
             break;
         case SIOCSIFNAME:
             err = lwip_ioctl_internal_SIOCSIFNAME(ifr);

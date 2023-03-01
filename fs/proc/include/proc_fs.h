@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -60,7 +60,7 @@ typedef unsigned short fmode_t;
 #define FMODE_64BITHASH   ((fmode_t)0x400)
 /* 32bit hashes as llseek() offset (for directories) */
 #define FMODE_32BITHASH   ((fmode_t)0x200)
-/* File is opened using open(.., 3, ..) and is writeable only for ioctls
+/* File is opened using open(.., 3, ..) and is writable only for ioctls
  *     (specialy hack for floppy.c)
  */
 #define FMODE_WRITE_IOCTL ((fmode_t)0x100)
@@ -95,6 +95,15 @@ struct ProcFileOperations {
     ssize_t (*readLink)(struct ProcDirEntry *pde, char *buf, size_t bufLen);
 };
 
+#ifdef LOSCFG_KERNEL_PLIMITS
+struct ProcDirOperations {
+    int (*rmdir)(struct ProcDirEntry *parent, struct ProcDirEntry *pde, const char *name);
+    int (*mkdir)(struct ProcDirEntry *parent, const char *dirName, mode_t mode, struct ProcDirEntry **pde);
+};
+#endif
+
+#define PROC_DATA_STATIC 0
+#define PROC_DATA_FREE   1
 /**
  * @brief proc 目录/文件项, @notethinking 直接叫 ProcEntry不香吗 ?
  * \n 操作 /proc的 真正结构体
@@ -107,15 +116,24 @@ struct ProcDirEntry {
     const struct ProcFileOperations *procFileOps; ///< 驱动程序,每个 /proc 下目录的驱动程序都不一样
     struct ProcFile *pf; ///<proc文件指针
     struct ProcDirEntry *next, *parent, *subdir; ///<当前目录项的关系项
+#ifdef LOSCFG_KERNEL_PLIMITS
+    const struct ProcDirOperations *procDirOps;
+#endif
+    int dataType;
     void *data;
     atomic_t count; /* open file count | 打开文件的数量*/
     spinlock_t pdeUnloadLock;
+
     int nameLen;
     struct ProcDirEntry *pdirCurrent; ///<当前目录
     char name[NAME_MAX];
     enum VnodeType type;	///<节点类型
 };
 
+struct ProcDataParm {
+    void *data;
+    int dataType;
+};
 /**
  * @brief Proc文件结构体,对标 FILE 结构体
  */
@@ -282,7 +300,7 @@ extern struct ProcDirEntry *ProcCreate(const char *name, mode_t mode,
  *
  */
 extern struct ProcDirEntry *ProcCreateData(const char *name, mode_t mode, struct ProcDirEntry *parent,
-                                           const struct ProcFileOperations *procFileOps, void *data);
+                                           const struct ProcFileOperations *procFileOps, struct ProcDataParm *param);
 /**
  * @ingroup  procfs
  * @brief init proc fs

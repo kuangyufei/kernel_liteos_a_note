@@ -194,6 +194,13 @@ ifeq ($(LOSCFG_KERNEL_SYSCALL), y)
     LITEOS_BASELIB += -lsyscall
     LIB_SUBDIRS += syscall
 endif
+
+ifeq ($(LOSCFG_KERNEL_PLIMITS), y)
+    LITEOS_BASELIB        += -lplimit
+    LIB_SUBDIRS           += kernel/extended/plimit
+    LITEOS_PLIMITS_INCLUDE = -I $(LITEOSTOPDIR)/kernel/extended/plimit
+endif
+
 LIB_SUBDIRS += kernel/user
 
 ################################### Kernel Option End ################################
@@ -517,7 +524,7 @@ LITEOS_EXTKERNEL_INCLUDE   := $(LITEOS_CPPSUPPORT_INCLUDE) $(LITEOS_DYNLOAD_INCL
                               $(LITEOS_VDSO_INCLUDE)       $(LITEOS_LITEIPC_INCLUDE) \
                               $(LITEOS_PIPE_INCLUDE)       $(LITEOS_CPUP_INCLUDE) \
                               $(LITEOS_PERF_INCLUDE)       $(LITEOS_LMS_INCLUDE) \
-                              $(LITEOS_PM_INCLUDE)
+                              $(LITEOS_PM_INCLUDE)         $(LITEOS_PLIMITS_INCLUDE)
 LITEOS_COMPAT_INCLUDE      := $(LITEOS_POSIX_INCLUDE) $(LITEOS_LINUX_INCLUDE) \
                               $(LITEOS_BSD_INCLUDE)
 LITEOS_FS_INCLUDE          := $(LITEOS_VFS_INCLUDE)        $(LITEOS_FAT_CACHE_INCLUDE) \

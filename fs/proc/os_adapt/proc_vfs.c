@@ -256,6 +256,53 @@ int VfsProcfsStat(struct Vnode *node, struct stat *buf)
     return LOS_OK;
 }
 
+#ifdef LOSCFG_KERNEL_PLIMITS
+int VfsProcfsMkdir(struct Vnode *parent, const char *dirName, mode_t mode, struct Vnode **vnode)
+{
+    struct ProcDirEntry *parentEntry = VnodeToEntry(parent);
+    struct ProcDirEntry *pde = NULL;
+    if ((parentEntry->procDirOps == NULL) || (parentEntry->procDirOps->mkdir == NULL)) {
+        return -ENOSYS;
+    }
+
+    int ret = parentEntry->procDirOps->mkdir(parentEntry, dirName, mode, &pde);
+    if ((ret < 0) || (pde == NULL)) {
+        return ret;
+    }
+
+    *vnode = EntryToVnode(pde);
+    (*vnode)->vop = parent->vop;
+    (*vnode)->parent = parent;
+    (*vnode)->originMount = parent->originMount;
+    if ((*vnode)->type == VNODE_TYPE_DIR) {
+        (*vnode)->mode = S_IFDIR | PROCFS_DEFAULT_MODE;
+    } else {
+        (*vnode)->mode = S_IFREG | PROCFS_DEFAULT_MODE;
+    }
+    return ret;
+}
+
+int VfsProcfsRmdir(struct Vnode *parent, struct Vnode *vnode, const char *dirName)
+{
+    if (parent == NULL) {
+        return -EINVAL;
+    }
+
+    struct ProcDirEntry *parentEntry = VnodeToEntry(parent);
+    if ((parentEntry->procDirOps == NULL) || (parentEntry->procDirOps->rmdir == NULL)) {
+        return -ENOSYS;
+    }
+
+    struct ProcDirEntry *dirEntry = VnodeToEntry(vnode);
+    int ret = parentEntry->procDirOps->rmdir(parentEntry, dirEntry, dirName);
+    if (ret < 0) {
+        return ret;
+    }
+    vnode->data = NULL;
+    return 0;
+}
+#endif
+
 int VfsProcfsReaddir(struct Vnode *node, struct fs_dirent_s *dir)
 {
     int result;
@@ -367,7 +414,7 @@ int VfsProcfsClose(struct file *filep)
     VnodeHold();
     struct Vnode *node = filep->f_vnode;
     struct ProcDirEntry *pde = VnodeToEntry(node);
-    if (pde == NULL) {
+    if ((pde == NULL) || (pde->pf == NULL)) {
         VnodeDrop();
         return -EPERM;
     }
@@ -427,6 +474,10 @@ static struct VnodeOps g_procfsVops = {
     .Closedir = VfsProcfsClosedir,
     .Truncate = VfsProcfsTruncate,
     .Readlink = VfsProcfsReadlink,
+#ifdef LOSCFG_KERNEL_PLIMITS
+    .Mkdir = VfsProcfsMkdir,
+    .Rmdir = VfsProcfsRmdir,
+#endif
 };
 // proc 对 file_operations_vfs 接口实现
 static struct file_operations_vfs g_procfsFops = {

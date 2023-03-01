@@ -91,6 +91,10 @@ extern "C" {
 #define CLONE_NEWTIME   0x00000080
 }
 
+int WriteFile(const char *filepath, const char *buf);
+int ReadFile(const char *filepath, char *buf);
+int GetLine(char *buf, int count, int maxLen, char **array);
+
 int ChildFunction(void *args);
 
 pid_t CloneWrapper(int (*func)(void *), int flag, void *args);
@@ -137,11 +141,16 @@ private:
     int m_shmid;
 };
 
-#if defined(LOSCFG_USER_TEST_SMOKE)
+void ItUserContainer001(void);
+void ItUserContainer002(void);
+void ItUserContainer003(void);
+void ItUserContainer004(void);
+void ItUserContainer005(void);
+void ItUserContainer006(void);
+void ItUserContainer007(void);
 void ItContainer001(void);
 void ItContainerChroot001(void);
 void ItContainerChroot002(void);
-#if defined(LOSCFG_USER_TEST_PID_CONTAINER)
 void ItPidContainer023(void);
 void ItPidContainer025(void);
 void ItPidContainer026(void);
@@ -150,15 +159,15 @@ void ItPidContainer028(void);
 void ItPidContainer029(void);
 void ItPidContainer030(void);
 void ItPidContainer031(void);
-#endif
-#if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
+void ItPidContainer032(void);
+void ItPidContainer033(void);
 void ItUtsContainer001(void);
 void ItUtsContainer002(void);
 void ItUtsContainer004(void);
 void ItUtsContainer005(void);
 void ItUtsContainer006(void);
-#endif
-#if defined(LOSCFG_USER_TEST_MNT_CONTAINER)
+void ItUtsContainer007(void);
+void ItUtsContainer008(void);
 void ItMntContainer001(void);
 void ItMntContainer002(void);
 void ItMntContainer003(void);
@@ -167,16 +176,16 @@ void ItMntContainer005(void);
 void ItMntContainer006(void);
 void ItMntContainer007(void);
 void ItMntContainer008(void);
-#endif
-#if defined(LOSCFG_USER_TEST_IPC_CONTAINER)
+void ItMntContainer009(void);
+void ItMntContainer010(void);
 void ItIpcContainer001(void);
 void ItIpcContainer002(void);
 void ItIpcContainer003(void);
 void ItIpcContainer004(void);
 void ItIpcContainer005(void);
 void ItIpcContainer006(void);
-#endif
-#if defined(LOSCFG_USER_TEST_TIME_CONTAINER)
+void ItIpcContainer007(void);
+void ItIpcContainer008(void);
 void ItTimeContainer001(void);
 void ItTimeContainer002(void);
 void ItTimeContainer003(void);
@@ -187,11 +196,6 @@ void ItTimeContainer007(void);
 void ItTimeContainer008(void);
 void ItTimeContainer009(void);
 void ItTimeContainer010(void);
-#endif
-#endif
-
-#if defined(LOSCFG_USER_TEST_FULL)
-#if defined(LOSCFG_USER_TEST_PID_CONTAINER)
 void ItPidContainer001(void);
 void ItPidContainer002(void);
 void ItPidContainer003(void);
@@ -215,10 +219,17 @@ void ItPidContainer020(void);
 void ItPidContainer021(void);
 void ItPidContainer022(void);
 void ItPidContainer024(void);
-#endif
-#if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
 void ItUtsContainer003(void);
-#endif
-#endif
-
+void ItNetContainer001(void);
+void ItNetContainer002(void);
+void ItNetContainer003(void);
+void ItNetContainer004(void);
+void ItNetContainer005(void);
+void ItNetContainer006(void);
+void ItNetContainer007(void);
+void ItNetContainer008(void);
+void ItNetContainer009(void);
+void ItNetContainer010(void);
+void ItNetContainer011(void);
+void ItNetContainer012(void);
 #endif /* _IT_CONTAINER_TEST_H */

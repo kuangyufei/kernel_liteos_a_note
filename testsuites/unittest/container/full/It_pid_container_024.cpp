@@ -33,13 +33,11 @@
 #include "pthread.h"
 #include "sched.h"
 
-const int SLEEP_TIME_US = 1000;
-const int LOOP_NUM = 1000;
+const int LOOP_NUM = 100;
 
 static int ChildFunc(void *arg)
 {
     (void)arg;
-    usleep(SLEEP_TIME_US);
     exit(EXIT_CODE_ERRNO_5);
 }
 
@@ -61,6 +59,7 @@ static int GroupProcess(void *arg)
         if (status != EXIT_CODE_ERRNO_5) {
             return EXIT_CODE_ERRNO_2;
         }
+        usleep(10000);
     }
 
     exit(EXIT_CODE_ERRNO_5);

@@ -72,6 +72,8 @@ UINT32 OsGetIpcContainerID(IpcContainer *ipcContainer);
 
 IpcContainer *OsGetCurrIpcContainer(VOID);
 
+UINT32 OsGetIpcContainerCount(VOID);
+
 #define IPC_ALL_QUEUE (OsGetCurrIpcContainer()->allQueue)
 
 #define FREE_QUEUE_LIST (OsGetCurrIpcContainer()->freeQueueList)

@@ -55,6 +55,16 @@ void ProcSysMemInfoInit(void);
 void ProcFileSysInit(void);
 #endif
 
+#ifdef LOSCFG_KERNEL_PLIMITS
+void ProcLimitsInit(void);
+#endif
+
+void ProcEntryClearVnode(struct ProcDirEntry *entry);
+
+void ProcDetachNode(struct ProcDirEntry *pn);
+
+void RemoveProcEntryTravalsal(struct ProcDirEntry *pn);
+
 void ProcPmInit(void);
 
 void ProcVmmInit(void);
@@ -79,6 +89,7 @@ void ProcFdInit(void);
 
 #ifdef LOSCFG_KERNEL_CONTAINER
 void *ProcfsContainerGet(int fd, unsigned int *containerType);
+void ProcSysUserInit(void);
 #endif
 
 #ifdef __cplusplus

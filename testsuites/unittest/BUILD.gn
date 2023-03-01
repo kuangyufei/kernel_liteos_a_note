@@ -138,12 +138,18 @@ group("unittest") {
         if (LOSCFG_USER_TEST_PROCESS_FS == true) {
           deps += [ "process/fs:liteos_a_process_fs_unittest_door" ]
         }
+        if (LOSCFG_USER_TEST_PROCESS_PLIMITS == true) {
+          deps += [ "process/plimits:liteos_a_process_plimits_unittest_door" ]
+        }
       }
       if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
         deps += [ "process/basic:liteos_a_process_basic_unittest" ]
         deps += [ "process/lock:liteos_a_process_lock_unittest" ]
         if (LOSCFG_USER_TEST_PROCESS_FS == true) {
           deps += [ "process/fs:liteos_a_process_fs_unittest" ]
+        }
+        if (LOSCFG_USER_TEST_PROCESS_PLIMITS == true) {
+          deps += [ "process/plimits:liteos_a_process_plimits_unittest" ]
         }
       }
     }

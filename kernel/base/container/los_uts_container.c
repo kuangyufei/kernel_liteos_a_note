@@ -28,11 +28,10 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef LOSCFG_UTS_CONTAINER
 #include "internal.h"
 #include "los_uts_container_pri.h"
 #include "los_process_pri.h"
-
-#ifdef LOSCFG_UTS_CONTAINER
 
 STATIC UINT32 g_currentUtsContainerNum;
 
@@ -135,6 +134,10 @@ UINT32 OsCopyUtsContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *pare
         return LOS_OK;
     }
 
+    if (OsContainerLimitCheck(UTS_CONTAINER, &g_currentUtsContainerNum) != LOS_OK) {
+        return EPERM;
+    }
+
     return CreateUtsContainer(child, parent);
 }
 
@@ -149,6 +152,10 @@ UINT32 OsUnshareUtsContainer(UINTPTR flags, LosProcessCB *curr, Container *newCo
         LOS_AtomicInc(&parentContainer->rc);
         SCHEDULER_UNLOCK(intSave);
         return LOS_OK;
+    }
+
+    if (OsContainerLimitCheck(UTS_CONTAINER, &g_currentUtsContainerNum) != LOS_OK) {
+        return EPERM;
     }
 
     UtsContainer *utsContainer = CreateNewUtsContainer(parentContainer);
@@ -226,4 +233,8 @@ UINT32 OsGetUtsContainerID(UtsContainer *utsContainer)
     return utsContainer->containerID;
 }
 
+UINT32 OsGetUtsContainerCount(VOID)
+{
+    return g_currentUtsContainerNum;
+}
 #endif

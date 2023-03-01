@@ -29,35 +29,70 @@
  */
 #include "It_container_test.h"
 
-void ItUtsContainer006(void)
+static int UtsContainerTest(void *arg)
 {
+    (void)arg;
     std::string containerType = "uts";
 
     int parentPid = getpid();
     auto parentlink = ReadlinkContainer(parentPid, containerType);
 
     int childsPid = CloneWrapper(ChildFunction, CLONE_NEWUTS, NULL);
-    ASSERT_NE(childsPid, -1);
+    if (childsPid == -1) {
+        return EXIT_CODE_ERRNO_1;
+    }
     auto childlink = ReadlinkContainer(childsPid, containerType);
 
     std::string filePath = GenContainerLinkPath(childsPid, containerType);
     int fd = open(filePath.c_str(), O_RDONLY);
-    ASSERT_NE(fd, -1);
+    if (fd == -1) {
+        return EXIT_CODE_ERRNO_2;
+    }
 
     int ret = setns(fd, CLONE_NEWUTS);
-    ASSERT_NE(ret, -1);
     (void)close(fd);
+    if (ret == -1) {
+        return EXIT_CODE_ERRNO_3;
+    }
 
     auto parentlink1 = ReadlinkContainer(parentPid, containerType);
 
     ret = parentlink.compare(parentlink1);
-    ASSERT_NE(ret, 0);
+    if (ret == 0) {
+        return EXIT_CODE_ERRNO_4;
+    }
     ret = parentlink1.compare(childlink);
-    ASSERT_EQ(ret, 0);
+    if (ret != 0) {
+        return EXIT_CODE_ERRNO_5;
+    }
 
     int status;
     ret = waitpid(childsPid, &status, 0);
-    ASSERT_EQ(ret, childsPid);
+    if (ret != childsPid) {
+        return EXIT_CODE_ERRNO_6;
+    }
+
+    int exitCode = WEXITSTATUS(status);
+    if (exitCode != 0) {
+        return EXIT_CODE_ERRNO_7;
+    }
+    return 0;
+}
+
+void ItUtsContainer006(void)
+{
+    int ret;
+
+    int arg = CHILD_FUNC_ARG;
+    auto pid = CloneWrapper(UtsContainerTest, CLONE_NEWUTS, &arg);
+    ASSERT_NE(pid, -1);
+
+    int status;
+    ret = waitpid(pid, &status, 0);
+    ASSERT_EQ(ret, pid);
+
+    ret = WIFEXITED(status);
+    ASSERT_NE(ret, 0);
 
     int exitCode = WEXITSTATUS(status);
     ASSERT_EQ(exitCode, 0);

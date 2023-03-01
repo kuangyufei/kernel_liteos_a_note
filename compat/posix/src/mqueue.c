@@ -113,7 +113,9 @@ STATIC INLINE struct mqarray *GetMqueueCBByName(const CHAR *name)
 STATIC INT32 DoMqueueDelete(struct mqarray *mqueueCB)
 {
     UINT32 ret;
-
+#ifdef LOSCFG_KERNEL_IPC_PLIMIT
+    OsIPCLimitMqFree();
+#endif
     if (mqueueCB->mq_name != NULL) {
         LOS_MemFree(OS_SYS_MEM_ADDR, mqueueCB->mq_name);
         mqueueCB->mq_name = NULL;
@@ -163,11 +165,29 @@ STATIC int SaveMqueueName(const CHAR *mqName, struct mqarray *mqueueCB)
     return LOS_OK;
 }
 
+STATIC VOID MqueueCBInit(struct mqarray *mqueueCB, const struct mq_attr *attr, INT32 openFlag, UINT32 mode)
+{
+    mqueueCB->unlinkflag = FALSE;
+    mqueueCB->unlink_ref = 0;
+    mqueueCB->mq_personal->mq_status = MQ_USE_MAGIC;
+    mqueueCB->mq_personal->mq_next = NULL;
+    mqueueCB->mq_personal->mq_posixdes = mqueueCB;
+    mqueueCB->mq_personal->mq_flags = (INT32)((UINT32)openFlag | ((UINT32)attr->mq_flags & (UINT32)FNONBLOCK));
+    mqueueCB->mq_personal->mq_mode = mode;
+    mqueueCB->mq_personal->mq_refcount = 0;
+    mqueueCB->mq_notify.pid = 0;
+}
+
 STATIC struct mqpersonal *DoMqueueCreate(const struct mq_attr *attr, const CHAR *mqName, INT32 openFlag, UINT32 mode)
 {
     struct mqarray *mqueueCB = NULL;
     UINT32 mqueueID;
 
+#ifdef LOSCFG_KERNEL_IPC_PLIMIT
+    if (OsIPCLimitMqAlloc() != LOS_OK) {
+        return (struct mqpersonal *)-1;
+    }
+#endif
     UINT32 err = LOS_QueueCreate(NULL, attr->mq_maxmsg, &mqueueID, 0, attr->mq_msgsize);
     if (map_errno(err) != ENOERR) {
         goto ERROUT;
@@ -201,15 +221,7 @@ STATIC struct mqpersonal *DoMqueueCreate(const struct mq_attr *attr, const CHAR 
         goto ERROUT;
     }
 
-    mqueueCB->unlinkflag = FALSE;
-    mqueueCB->unlink_ref = 0;
-    mqueueCB->mq_personal->mq_status = MQ_USE_MAGIC;
-    mqueueCB->mq_personal->mq_next = NULL;
-    mqueueCB->mq_personal->mq_posixdes = mqueueCB;
-    mqueueCB->mq_personal->mq_flags = (INT32)((UINT32)openFlag | ((UINT32)attr->mq_flags & (UINT32)FNONBLOCK));
-    mqueueCB->mq_personal->mq_mode = mode;
-    mqueueCB->mq_personal->mq_refcount = 0;
-    mqueueCB->mq_notify.pid = 0;
+    MqueueCBInit(mqueueCB, attr, openFlag, mode);
 
     return mqueueCB->mq_personal;
 ERROUT:
@@ -218,6 +230,9 @@ ERROUT:
         LOS_MemFree(OS_SYS_MEM_ADDR, mqueueCB->mq_name);
         mqueueCB->mq_name = NULL;
     }
+#ifdef LOSCFG_KERNEL_IPC_PLIMIT
+    OsIPCLimitMqFree();
+#endif
     return (struct mqpersonal *)-1;
 }
 

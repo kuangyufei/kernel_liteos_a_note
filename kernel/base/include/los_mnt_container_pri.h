@@ -61,5 +61,6 @@ VOID OsMntContainerDestroy(struct Container *container);
 
 UINT32 OsGetMntContainerID(MntContainer *mntContainer);
 
+UINT32 OsGetMntContainerCount(VOID);
 #endif
 #endif

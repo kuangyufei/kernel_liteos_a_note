@@ -42,6 +42,7 @@ group("extended") {
     "lms",
     "perf",
     "pipes",
+    "plimit",
     "power",
     "trace",
     "vdso",
@@ -62,5 +63,6 @@ config("public") {
     "perf:public",
     "lms:public",
     "power:public",
+    "plimit:public",
   ]
 }

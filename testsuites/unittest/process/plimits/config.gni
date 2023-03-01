@@ -1,0 +1,100 @@
+# Copyright (c) 2023-2023 Huawei Device Co., Ltd. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import("//build/lite/config/test.gni")
+import("//kernel/liteos_a/testsuites/unittest/config.gni")
+
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../../common/include",
+]
+
+sources_entry = [ "../../common/osTest.cpp" ]
+
+sources_smoke = []
+
+sources_full = []
+
+process_plimits_include_dirs = [ "$TEST_UNITTEST_DIR/process/plimits" ]
+
+process_plimits_sources_entry =
+    [ "$TEST_UNITTEST_DIR/process/plimits/process_plimits_test.cpp" ]
+
+process_plimits_sources_smoke = [
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_001.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_002.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_003.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_004.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_005.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_006.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_007.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_008.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_pid_001.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_pid_002.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_pid_003.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_pid_004.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_pid_005.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_pid_006.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_memory_001.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_memory_002.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_sched_001.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_sched_002.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_sched_003.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_sched_004.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_devices_001.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_devices_002.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_devices_003.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_devices_004.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_devices_005.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_devices_006.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_devices_007.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_devices_008.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_devices_009.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_ipc_002.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_ipc_003.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_ipc_004.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_ipc_005.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_ipc_006.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_ipc_007.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_ipc_008.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_ipc_009.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_ipc_010.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_ipc_011.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_ipc_012.cpp",
+  "$TEST_UNITTEST_DIR/process/plimits/smoke/It_process_plimits_ipc_013.cpp",
+]
+
+process_plimits_sources_full = []
+
+# plimits module
+if (LOSCFG_USER_TEST_PROCESS == true) {
+  common_include_dirs += process_plimits_include_dirs
+  sources_entry += process_plimits_sources_entry
+  sources_smoke += process_plimits_sources_smoke
+  sources_full += process_plimits_sources_full
+}

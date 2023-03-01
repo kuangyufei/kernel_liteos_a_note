@@ -372,6 +372,12 @@ STATUS_T OsVmPageFaultHandler(VADDR_T vaddr, UINT32 flags, ExcContext *frame)
         return LOS_ERRNO_VM_ACCESS_DENIED;//拒绝访问
     }
 
+#ifdef LOSCFG_KERNEL_PLIMITS
+    if (OsMemLimitCheckAndMemAdd(PAGE_SIZE) != LOS_OK) {
+        return LOS_ERRNO_VM_NO_MEMORY;
+    }
+#endif
+
     (VOID)LOS_MuxAcquire(&space->regionMux);
     region = LOS_RegionFind(space, vaddr);//通过虚拟地址找到所在线性区
     if (region == NULL) {
@@ -463,6 +469,9 @@ VMM_MAP_FAILED:
     }
 CHECK_FAILED:
     OsFaultTryFixup(frame, excVaddr, &status);
+#ifdef LOSCFG_KERNEL_PLIMITS
+    OsMemLimitMemFree(PAGE_SIZE);
+#endif
 DONE:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return status;

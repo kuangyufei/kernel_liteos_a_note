@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -202,7 +202,11 @@ void netifapi_netif_rmv_ip6_address(struct netif *netif, ip_addr_t *ipaddr)
     (void)err;
 }
 
+#ifdef LOSCFG_NET_CONTAINER
+static struct netif *netif_find_by_name(const char *name, struct net_group *group)
+#else
 static struct netif *netif_find_by_name(const char *name)
+#endif
 {
     struct netif *netif = NULL;
 
@@ -212,7 +216,11 @@ static struct netif *netif_find_by_name(const char *name)
         return NULL;
     }
 
+#ifdef LOSCFG_NET_CONTAINER
+    NETIF_FOREACH(netif, group) {
+#else
     NETIF_FOREACH(netif) {
+#endif
         if (strcmp("lo", name) == 0 && (netif->name[0] == 'l' && netif->name[1] == 'o')) {
             LWIP_DEBUGF(NETIF_DEBUG, ("netif_find_by_name: found lo\n"));
             return netif;
@@ -234,7 +242,12 @@ static err_t netifapi_do_find_by_name(struct tcpip_api_call_data *m)
      * We know it works because the structs have been instantiated as struct netifapi_msg */
     struct netifapi_msg *msg = (struct netifapi_msg *)(void *)m;
 
+#ifdef LOSCFG_NET_CONTAINER
+    struct net_group *group = get_curr_process_net_group();
+    msg->netif = netif_find_by_name(msg->msg.ifs.name, group);
+#else
     msg->netif = netif_find_by_name(msg->msg.ifs.name);
+#endif
     return ERR_OK;
 }
 
@@ -341,7 +354,6 @@ err_t etharp_delete_arp_entry(struct netif *netif, ip4_addr_t *ipaddr)
     return 0;
 }
 
-
 err_t lwip_dns_setserver(u8_t numdns, ip_addr_t *dnsserver)
 {
     (void)numdns;
@@ -412,7 +424,7 @@ int ip6addr_aton(const char *cp, ip6_addr_t *addr)
     int squash_pos = ipv6_blocks;
     int i;
     const char *s = cp;
-    const char *ss = cp-1;
+    const char *ss = cp - 1;
 
     for (; ; s++) {
         if (current_block_index >= ipv6_blocks) {

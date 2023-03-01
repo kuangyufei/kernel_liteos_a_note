@@ -121,6 +121,10 @@ UINT32 OsCopyIpcContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *pare
         return LOS_OK;
     }
 
+    if (OsContainerLimitCheck(IPC_CONTAINER, &g_currentIpcContainerNum) != LOS_OK) {
+        return EPERM;
+    }
+
     return CreateIpcContainer(child, parent);
 }
 
@@ -135,6 +139,10 @@ UINT32 OsUnshareIpcContainer(UINTPTR flags, LosProcessCB *curr, Container *newCo
         LOS_AtomicInc(&parentContainer->rc);
         SCHEDULER_UNLOCK(intSave);
         return LOS_OK;
+    }
+
+    if (OsContainerLimitCheck(IPC_CONTAINER, &g_currentIpcContainerNum) != LOS_OK) {
+        return EPERM;
     }
 
     IpcContainer *ipcContainer = CreateNewIpcContainer(parentContainer);
@@ -205,5 +213,10 @@ UINT32 OsGetIpcContainerID(IpcContainer *ipcContainer)
 IpcContainer *OsGetCurrIpcContainer(VOID)
 {
     return OsCurrProcessGet()->container->ipcContainer;
+}
+
+UINT32 OsGetIpcContainerCount(VOID)
+{
+    return g_currentIpcContainerNum;
 }
 #endif

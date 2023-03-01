@@ -106,4 +106,6 @@ UINT32 OsAllocVtid(LosTaskCB *taskCB, const LosProcessCB *processCB);
 UINT32 OsGetPidContainerID(PidContainer *pidContainer);
 
 BOOL OsPidContainerProcessParentIsRealParent(const LosProcessCB *processCB, const LosProcessCB *curr);
+
+UINT32 OsGetPidContainerCount(VOID);
 #endif /* _LOS_PID_CONTAINER_PRI_H */

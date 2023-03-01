@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,6 +35,9 @@
 #include <lwip/etharp.h>
 #include <lwip/sockets.h>
 #include <lwip/ethip6.h>
+#ifdef LOSCFG_NET_CONTAINER
+#include <lwip/tcpip.h>
+#endif
 
 #define LWIP_NETIF_HOSTNAME_DEFAULT         "default"
 #define LINK_SPEED_OF_YOUR_NETIF_IN_BPS     100000000 // 100Mbps
@@ -62,7 +65,11 @@ driverif_init_ifname(struct netif *netif)
                        "%s%d", prefix, i) < 0) {
             break;
         }
+#ifdef LOSCFG_NET_CONTAINER
+        NETIF_FOREACH(tmpnetif, get_net_group_from_netif(netif)) {
+#else
         NETIF_FOREACH(tmpnetif) {
+#endif
             if (strcmp(tmpnetif->full_name, netif->full_name) == 0) {
                 break;
             }
@@ -98,10 +105,10 @@ driverif_output(struct netif *netif, struct pbuf *p)
 
 #if PF_PKT_SUPPORT
     if (all_pkt_raw_pcbs != NULL) {
-    p->flags = (u16_t)(p->flags & ~(PBUF_FLAG_LLMCAST | PBUF_FLAG_LLBCAST | PBUF_FLAG_HOST));
-    p->flags |= PBUF_FLAG_OUTGOING;
-    (void)raw_pkt_input(p, netif, NULL);
-  }
+        p->flags = (u16_t)(p->flags & ~(PBUF_FLAG_LLMCAST | PBUF_FLAG_LLBCAST | PBUF_FLAG_HOST));
+        p->flags |= PBUF_FLAG_OUTGOING;
+        (void)raw_pkt_input(p, netif, NULL);
+    }
 #endif
 
 #if ETH_PAD_SIZE
@@ -314,3 +321,60 @@ driverif_init(struct netif *netif)
     LWIP_DEBUGF(DRIVERIF_DEBUG, ("driverif_init : Initialized netif 0x%p\n", (void *)netif));
     return ERR_OK;
 }
+
+#ifdef LOSCFG_NET_CONTAINER
+static err_t netif_veth_output(struct netif *netif, struct pbuf *p, const ip4_addr_t *addr)
+{
+    LWIP_UNUSED_ARG(addr);
+    return netif_loop_output(netif->peer, p);
+}
+
+static void veth_init_fullname(struct netif *netif)
+{
+    struct netif *tmpnetif = NULL;
+
+    for (int i = 0; i < LWIP_NETIF_IFINDEX_MAX_EX; ++i) {
+        if (snprintf_s(netif->full_name, sizeof(netif->full_name), sizeof(netif->full_name) - 1,
+                       "%s%d", "veth", i) < 0) {
+            break;
+        }
+        NETIF_FOREACH(tmpnetif, get_net_group_from_netif(netif)) {
+            if (strcmp(tmpnetif->full_name, netif->full_name) == 0) {
+                break;
+            }
+        }
+        if (tmpnetif == NULL) {
+            return;
+        }
+    }
+    netif->full_name[0] = '\0';
+}
+
+static err_t netif_vethif_init(struct netif *netif)
+{
+    LWIP_ASSERT("netif_vethif_init: invalid netif", netif != NULL);
+
+    /* initialize the snmp variables and counters inside the struct netif
+     * ifSpeed: no assumption can be made!
+     */
+    MIB2_INIT_NETIF(netif, snmp_ifType_other, 0);
+    netif->link_layer_type = VETH_DRIVER_IF;
+
+    netif->name[0] = 'v';
+    netif->name[1] = 'e';
+
+    veth_init_fullname(netif);
+    netif->output = netif_veth_output;
+
+    netif_set_flags(netif, NETIF_FLAG_IGMP);
+    NETIF_SET_CHECKSUM_CTRL(netif, NETIF_CHECKSUM_DISABLE_ALL);
+    return ERR_OK;
+}
+
+void veth_init(struct netif *netif, struct net_group *group)
+{
+    netif_add_noaddr(netif, group, NULL, netif_vethif_init, tcpip_input);
+    netif_set_link_up(netif);
+    netif_set_up(netif);
+}
+#endif

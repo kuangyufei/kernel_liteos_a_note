@@ -41,12 +41,27 @@
 #define LWIP_NETIF_CLIENT_DATA_INDEX_DHCP   LWIP_NETIF_CLIENT_DATA_INDEX_DHCP, \
                                             LWIP_NETIF_CLIENT_DATA_INDEX_DHCPS
 #endif
+
+#ifdef LOSCFG_NET_CONTAINER
+#include "lwip/net_group.h"
+#define VETH_DRIVER_IF  2
+void veth_init(struct netif *netif, struct net_group *group);
+#define linkoutput      linkoutput; \
+                        void (*drv_send)(struct netif *netif, struct pbuf *p); \
+                        u8_t (*drv_set_hwaddr)(struct netif *netif, u8_t *addr, u8_t len); \
+                        void (*drv_config)(struct netif *netif, u32_t config_flags, u8_t setBit); \
+                        char full_name[IFNAMSIZ]; \
+                        struct net_group *group; \
+                        struct netif *peer; \
+                        u16_t link_layer_type
+#else
 #define linkoutput      linkoutput; \
                         void (*drv_send)(struct netif *netif, struct pbuf *p); \
                         u8_t (*drv_set_hwaddr)(struct netif *netif, u8_t *addr, u8_t len); \
                         void (*drv_config)(struct netif *netif, u32_t config_flags, u8_t setBit); \
                         char full_name[IFNAMSIZ]; \
                         u16_t link_layer_type
+#endif
 #include_next <lwip/netif.h>
 #undef linkoutput
 #if LWIP_DHCPS

@@ -142,6 +142,8 @@ LOSCFG_USER_TEST_UTS_CONTAINER = false
 LOSCFG_USER_TEST_MNT_CONTAINER = false
 LOSCFG_USER_TEST_IPC_CONTAINER = false
 LOSCFG_USER_TEST_TIME_CONTAINER = false
+LOSCFG_USER_TEST_USER_CONTAINER = false
+LOSCFG_USER_TEST_NET_CONTAINER = false
 if (defined(LOSCFG_KERNEL_CONTAINER) || liteos_container_test_enable == true) {
   LOSCFG_USER_TEST_CONTAINER = true
   if (defined(LOSCFG_PID_CONTAINER) || liteos_container_test_enable == true) {
@@ -159,6 +161,17 @@ if (defined(LOSCFG_KERNEL_CONTAINER) || liteos_container_test_enable == true) {
   if (defined(LOSCFG_TIME_CONTAINER) || liteos_container_test_enable == true) {
     LOSCFG_USER_TEST_TIME_CONTAINER = true
   }
+  if (defined(LOSCFG_USER_CONTAINER) || liteos_container_test_enable == true) {
+    LOSCFG_USER_TEST_USER_CONTAINER = true
+  }
+  if (defined(LOSCFG_NET_CONTAINER) || liteos_container_test_enable == true) {
+    LOSCFG_USER_TEST_NET_CONTAINER = true
+  }
+}
+
+LOSCFG_USER_TEST_PROCESS_PLIMITS = false
+if (defined(LOSCFG_KERNEL_PLIMITS) || liteos_container_test_enable == true) {
+  LOSCFG_USER_TEST_PROCESS_PLIMITS = true
 }
 
 ########## fuzz test ##########

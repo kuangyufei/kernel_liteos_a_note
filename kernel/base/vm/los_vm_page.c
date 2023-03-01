@@ -34,7 +34,9 @@
 #include "los_vm_phys.h"
 #include "los_vm_boot.h"
 #include "los_vm_filemap.h"
-
+#ifdef LOSCFG_KERNEL_MEM_PLIMIT
+#include "los_plimits.h"
+#endif
 
 #ifdef LOSCFG_KERNEL_VM
 
@@ -84,7 +86,8 @@ VOID OsVmPageStartup(VOID)
      * struct LosVmPage occupied, which satisfies the equation:
      * nPage * sizeof(LosVmPage) + nPage * PAGE_SIZE = OsVmPhysPageNumGet() * PAGE_SIZE.
      */
-    nPage = OsVmPhysPageNumGet() * PAGE_SIZE / (sizeof(LosVmPage) + PAGE_SIZE);
+    UINT32 pageNum = OsVmPhysPageNumGet();
+    nPage = pageNum * PAGE_SIZE / (sizeof(LosVmPage) + PAGE_SIZE);
     g_vmPageArraySize = nPage * sizeof(LosVmPage);//页表总大小
     g_vmPageArray = (LosVmPage *)OsVmBootMemAlloc(g_vmPageArraySize);//实模式下申请内存,此时还没有初始化MMU
 
@@ -92,6 +95,9 @@ VOID OsVmPageStartup(VOID)
 
     OsVmPhysSegAdd();// 完成对段的初始化
     OsVmPhysInit();// 加入空闲链表和设置置换算法,LRU(最近最久未使用)算法
+#ifdef LOSCFG_KERNEL_PLIMITS
+    OsMemLimitSetLimit(pageNum * PAGE_SIZE);
+#endif
 
     for (segID = 0; segID < g_vmPhysSegNum; segID++) {//遍历物理段,将段切成一页一页
         seg = &g_vmPhysSeg[segID];

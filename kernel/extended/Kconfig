@@ -76,6 +76,31 @@ config KERNEL_PIPE
     help
       Answer Y to enable LiteOS support pipes.
 
+config KERNEL_PLIMITS
+    bool "Enable plimits Feature"
+    default n
+    depends on KERNEL_EXTKERNEL
+
+config KERNEL_MEM_PLIMIT
+    bool "Enable mem limits Feature"
+    default n
+    depends on KERNEL_PLIMITS
+
+config KERNEL_IPC_PLIMIT
+    bool "Enable ipc limits Feature"
+    default n
+    depends on KERNEL_PLIMITS
+
+config KERNEL_DEV_PLIMIT
+    bool "Enable dev limits Feature"
+    default n
+    depends on KERNEL_PLIMITS
+
+config KERNEL_SCHED_PLIMIT
+    bool "Enable sched limits Feature"
+    default n
+    depends on KERNEL_PLIMITS
+
 config BASE_CORE_HILOG
     bool "Enable Hilog"
     default y

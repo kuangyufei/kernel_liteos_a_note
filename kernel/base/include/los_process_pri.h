@@ -50,6 +50,9 @@
 #ifdef LOSCFG_KERNEL_CONTAINER
 #include "los_container_pri.h"
 #endif
+#ifdef LOSCFG_KERNEL_PLIMITS
+#include "los_plimits.h"
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -136,9 +139,17 @@ typedef struct ProcessCB {
     struct rlimit        *resourceLimit; ///< 每个进程在运行时系统不会无限制的允许单个进程不断的消耗资源，因此都会设置资源限制。
 #ifdef LOSCFG_KERNEL_CONTAINER
     Container            *container;
+#ifdef LOSCFG_USER_CONTAINER
+    struct Credentials   *credentials;
+#endif
 #endif
 #ifdef LOSCFG_PROC_PROCESS_DIR
     struct ProcDirEntry *procDir;
+#endif
+#ifdef LOSCFG_KERNEL_PLIMITS
+    ProcLimiterSet *plimits;
+    LOS_DL_LIST    plimitsList;  /* plimit process list */
+    PLimitsData    limitStat;
 #endif
 } LosProcessCB;
 

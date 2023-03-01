@@ -38,54 +38,83 @@ static int ChildFun(void *p)
     return EXIT_CODE_ERRNO_3;
 }
 
-void ItUtsContainer005(void)
+static int UtsContainerTest(void *arg)
 {
+    (void)arg;
     pid_t callerPid;
     int childPid;
     int fd = -1;
-    int ret;
-    int status;
-    int setFlag;
+    int ret, status, setFlag;
     char targetpath[100];
-    char old_uts_link[100];
-    char new_uts_link[100];
     const char *containerType = "uts";
 
     callerPid = getpid();
     childPid = clone(ChildFun, NULL, CLONE_NEWUTS | SIGCHLD, NULL);
-    ASSERT_NE(childPid, -1);
+    if (childPid == -1) {
+        return EXIT_CODE_ERRNO_1;
+    }
 
-    auto linkBuffer = ReadlinkContainer(callerPid, containerType);
-    ASSERT_TRUE(linkBuffer.c_str() != NULL);
-    ret = sprintf_s(old_uts_link, sizeof(old_uts_link), "%s", linkBuffer.c_str());
-    ASSERT_NE(ret, -1);
+    auto linkBuffer1 = ReadlinkContainer(callerPid, containerType);
+    if (linkBuffer1.c_str() == NULL) {
+        return EXIT_CODE_ERRNO_2;
+    }
 
     ret = sprintf_s(targetpath, sizeof(targetpath), "/proc/%d/container/uts", childPid);
-    ASSERT_NE(ret, -1);
+    if (ret == -1) {
+        return EXIT_CODE_ERRNO_4;
+    }
+
     fd = open(targetpath, O_RDONLY | O_CLOEXEC);
-    ASSERT_NE(fd, -1);
+    if (fd == -1) {
+        return EXIT_CODE_ERRNO_5;
+    }
 
     setFlag = CLONE_NEWUTS;
     ret = setns(fd, setFlag);
-    ASSERT_NE(ret, -1);
+    (void)close(fd);
+    if (ret == -1) {
+        return EXIT_CODE_ERRNO_6;
+    }
 
-    /* NOTE: close fd, otherwise test fail */
-    ret = close(fd);
-    fd = -1;
-    ASSERT_NE(ret, -1);
+    auto linkBuffer2 = ReadlinkContainer(callerPid, containerType);
 
-    linkBuffer = ReadlinkContainer(callerPid, containerType);
-
-    ret = sprintf_s(new_uts_link, sizeof(new_uts_link), "%s", linkBuffer.c_str());
-    ASSERT_NE(ret, -1);
-    ASSERT_STRNE(old_uts_link, new_uts_link);
+    ret = linkBuffer2.compare(linkBuffer1);
+    if (ret == 0) {
+        return EXIT_CODE_ERRNO_7;
+    }
 
     ret = waitpid(childPid, &status, 0);
-    ASSERT_EQ(ret, childPid);
+    if (ret != childPid) {
+        return EXIT_CODE_ERRNO_8;
+    }
 
     int exitCode = WEXITSTATUS(status);
-    ASSERT_EQ(exitCode, EXIT_CODE_ERRNO_3);
+    if (exitCode != EXIT_CODE_ERRNO_3) {
+        return EXIT_CODE_ERRNO_9;
+    }
 
     ret = setns(fd, setFlag);
-    ASSERT_EQ(ret, -1);
+    if (ret != -1) {
+        return EXIT_CODE_ERRNO_10;
+    }
+    return 0;
+}
+
+void ItUtsContainer005(void)
+{
+    int ret;
+
+    int arg = CHILD_FUNC_ARG;
+    auto pid = CloneWrapper(UtsContainerTest, CLONE_NEWUTS, &arg);
+    ASSERT_NE(pid, -1);
+
+    int status;
+    ret = waitpid(pid, &status, 0);
+    ASSERT_EQ(ret, pid);
+
+    ret = WIFEXITED(status);
+    ASSERT_NE(ret, 0);
+
+    int exitCode = WEXITSTATUS(status);
+    ASSERT_EQ(exitCode, 0);
 }

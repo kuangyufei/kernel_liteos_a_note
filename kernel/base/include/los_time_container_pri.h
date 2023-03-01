@@ -62,6 +62,8 @@ UINT32 OsGetTimeContainerMonotonic(LosProcessCB *processCB, struct timespec64 *o
 
 UINT32 OsSetTimeContainerMonotonic(LosProcessCB *processCB, struct timespec64 *offsets);
 
+UINT32 OsGetTimeContainerCount(VOID);
+
 #define CLOCK_MONOTONIC_TIME_BASE (OsGetCurrTimeContainer()->monotonic)
 
 #endif

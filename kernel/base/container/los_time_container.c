@@ -96,6 +96,10 @@ UINT32 OsCopyTimeContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *par
         return LOS_OK;
     }
 
+    if (OsContainerLimitCheck(TIME_CONTAINER, &g_currentTimeContainerNum) != LOS_OK) {
+        return EPERM;
+    }
+
     return CreateTimeContainer(child, parent);
 }
 
@@ -112,6 +116,10 @@ UINT32 OsUnshareTimeContainer(UINTPTR flags, LosProcessCB *curr, Container *newC
         }
         SCHEDULER_UNLOCK(intSave);
         return LOS_OK;
+    }
+
+    if (OsContainerLimitCheck(TIME_CONTAINER, &g_currentTimeContainerNum) != LOS_OK) {
+        return EPERM;
     }
 
     TimeContainer *timeForChild = CreateNewTimeContainer(curr->container->timeContainer);
@@ -241,5 +249,10 @@ UINT32 OsSetTimeContainerMonotonic(LosProcessCB *processCB, struct timespec64 *o
     timeContainer->monotonic.tv_sec = offsets->tv_sec;
     timeContainer->monotonic.tv_nsec = offsets->tv_nsec;
     return LOS_OK;
+}
+
+UINT32 OsGetTimeContainerCount(VOID)
+{
+    return g_currentTimeContainerNum;
 }
 #endif

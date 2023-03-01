@@ -483,7 +483,7 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 #endif
 
 #ifdef LOSCFG_KERNEL_CONTAINER
-    OsContainersDestroy(processCB);
+    OsOsContainersDestroyEarly(processCB);
 #endif
 
 #ifdef LOSCFG_FS_VFS
@@ -491,6 +491,14 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
         delete_files(processCB->files);
     }
     processCB->files = NULL;
+#endif
+
+#ifdef LOSCFG_KERNEL_CONTAINER
+    OsContainersDestroy(processCB);
+#endif
+
+#ifdef LOSCFG_KERNEL_PLIMITS
+    OsPLimitsDeleteProcess(processCB);
 #endif
     if (processCB->resourceLimit != NULL) {
         (VOID)LOS_MemFree((VOID *)m_aucSysMem0, processCB->resourceLimit);
@@ -651,7 +659,9 @@ UINT32 OsProcessInit(VOID)
 #ifdef LOSCFG_KERNEL_CONTAINER
     OsInitRootContainer();
 #endif
-
+#ifdef LOSCFG_KERNEL_PLIMITS
+    OsProcLimiterSetInit();
+#endif
     SystemProcessEarlyInit(OsGetIdleProcess());
     SystemProcessEarlyInit(OsGetUserInitProcess());
     SystemProcessEarlyInit(OsGetKernelInitProcess());
@@ -871,7 +881,11 @@ LITE_OS_SEC_TEXT INT32 LOS_GetUserID(VOID)
     INT32 uid;
 
     SCHEDULER_LOCK(intSave);
+#ifdef LOSCFG_USER_CONTAINER
+    uid = OsFromKuidMunged(OsCurrentUserContainer(), CurrentCredentials()->uid);
+#else
     uid = (INT32)OsCurrUserGet()->userID;
+#endif
     SCHEDULER_UNLOCK(intSave);
     return uid;
 #else
@@ -887,7 +901,11 @@ LITE_OS_SEC_TEXT INT32 LOS_GetGroupID(VOID)
     INT32 gid;
 
     SCHEDULER_LOCK(intSave);
+#ifdef LOSCFG_USER_CONTAINER
+    gid = OsFromKgidMunged(OsCurrentUserContainer(), CurrentCredentials()->gid);
+#else
     gid = (INT32)OsCurrUserGet()->gid;
+#endif
     SCHEDULER_UNLOCK(intSave);
 
     return gid;
@@ -926,6 +944,13 @@ STATIC UINT32 OsSystemProcessInit(LosProcessCB *processCB, UINT32 flags, const C
     }
 #endif
 
+#ifdef LOSCFG_KERNEL_PLIMITS
+    ret = OsPLimitsAddProcess(NULL, processCB);
+    if (ret != LOS_OK) {
+        ret = LOS_ENOMEM;
+        goto EXIT;
+    }
+#endif
     return LOS_OK;
 
 EXIT:
@@ -2124,6 +2149,12 @@ STATIC INT32 OsCopyProcess(UINT32 flags, const CHAR *name, UINTPTR sp, UINT32 si
     if (ret != LOS_OK) {
         goto ERROR_INIT;
     }
+#ifdef LOSCFG_KERNEL_PLIMITS
+    ret = OsPLimitsAddProcess(run->plimits, child);
+    if (ret != LOS_OK) {
+        goto ERROR_INIT;
+    }
+#endif
 #endif
     ret = OsForkInitPCB(flags, child, name, sp, size);//初始化进程控制块
     if (ret != LOS_OK) {
@@ -2197,6 +2228,12 @@ LITE_OS_SEC_TEXT INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size)
 #endif
 #ifdef LOSCFG_TIME_CONTAINER
     cloneFlag |= CLONE_NEWTIME;
+#endif
+#ifdef LOSCFG_USER_CONTAINER
+    cloneFlag |= CLONE_NEWUSER;
+#endif
+#ifdef LOSCFG_NET_CONTAINER
+    cloneFlag |= CLONE_NEWNET;
 #endif
 #endif
 

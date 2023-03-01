@@ -28,6 +28,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef LOSCFG_MNT_CONTAINER
 #include <unistd.h>
 #include "los_mnt_container_pri.h"
 #include "los_container_pri.h"
@@ -36,7 +37,6 @@
 #include "vnode.h"
 #include "internal.h"
 
-#ifdef LOSCFG_MNT_CONTAINER
 STATIC UINT32 g_currentMntContainerNum;
 
 LIST_HEAD *GetContainerMntList(VOID)
@@ -124,6 +124,10 @@ UINT32 OsCopyMntContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *pare
         return LOS_OK;
     }
 
+    if (OsContainerLimitCheck(MNT_CONTAINER, &g_currentMntContainerNum) != LOS_OK) {
+        return EPERM;
+    }
+
     ret = CreateMntContainer(child, parent);
     if (ret != LOS_OK) {
         return ret;
@@ -144,6 +148,10 @@ UINT32 OsUnshareMntContainer(UINTPTR flags, LosProcessCB *curr, Container *newCo
         LOS_AtomicInc(&parentContainer->rc);
         SCHEDULER_UNLOCK(intSave);
         return LOS_OK;
+    }
+
+    if (OsContainerLimitCheck(MNT_CONTAINER, &g_currentMntContainerNum) != LOS_OK) {
+        return EPERM;
     }
 
     MntContainer *mntContainer = CreateNewMntContainer(parentContainer);
@@ -236,5 +244,10 @@ UINT32 OsGetMntContainerID(MntContainer *mntContainer)
     }
 
     return mntContainer->containerID;
+}
+
+UINT32 OsGetMntContainerCount(VOID)
+{
+    return g_currentMntContainerNum;
 }
 #endif

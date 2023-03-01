@@ -166,6 +166,18 @@ HWTEST_F(ProcessFsTest, ItProcessFs010, TestSize.Level0)
 }
 
 /**
+* @tc.name: Process_fs_Test_011
+* @tc.desc: Process mount directory test
+* @tc.type: FUNC
+* @tc.require: issueI6E2LG
+* @tc.author:
+*/
+HWTEST_F(ProcessFsTest, ItProcessFs011, TestSize.Level0)
+{
+    ItProcessFs011();
+}
+
+/**
 * @tc.name: Process_fs_Test_012
 * @tc.desc: Process mount directory test
 * @tc.type: FUNC

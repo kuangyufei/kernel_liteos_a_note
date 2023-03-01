@@ -271,39 +271,56 @@ STATIC VOID ShmPagesRefDec(struct shmIDSource *seg)
  * @param shmflg 
  * @return STATIC 
  */
-STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
+STATIC INT32 ShmAllocSegCheck(key_t key, size_t *size, INT32 *segNum)
 {
     INT32 i;
-    INT32 segNum = -1;
-    struct shmIDSource *seg = NULL;
-    size_t count;
-
-    if ((size == 0) || (size < IPC_SHM_INFO.shmmin) ||
-        (size > IPC_SHM_INFO.shmmax)) {
+    if ((*size == 0) || (*size < IPC_SHM_INFO.shmmin) ||
+        (*size > IPC_SHM_INFO.shmmax)) {
         return -EINVAL;
     }
-    size = LOS_Align(size, PAGE_SIZE);//必须对齐 
-    if ((IPC_SHM_USED_PAGE_COUNT + (size >> PAGE_SHIFT)) > IPC_SHM_INFO.shmall) {
+
+    *size = LOS_Align(*size, PAGE_SIZE);//必须对齐
+    if ((IPC_SHM_USED_PAGE_COUNT + (*size >> PAGE_SHIFT)) > IPC_SHM_INFO.shmall) {
         return -ENOMEM;
     }
 
-    for (i = 0; i < g_shmInfo.shmmni; i++) {//试图找到一个空闲段与参数key绑定
+#ifdef LOSCFG_KERNEL_IPC_PLIMIT
+    if (OsIPCLimitShmAlloc(*size) != LOS_OK) {
+        return -ENOMEM;
+    }
+#endif
+    for (i = 0; i < IPC_SHM_INFO.shmmni; i++) {//试图找到一个空闲段与参数key绑定
         if (IPC_SHM_SEGS[i].status & SHM_SEG_FREE) {//找到空闲段
             IPC_SHM_SEGS[i].status &= ~SHM_SEG_FREE;//变成非空闲状态
-            segNum = i;//标号
+            *segNum = i;//标号
             break;
         }
     }
 
-    if (segNum < 0) {
+    if (*segNum < 0) {
         return -ENOSPC;
     }
+    return 0;
+}
 
+STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
+{
+    INT32 segNum = -1;
+    struct shmIDSource *seg = NULL;
+    size_t count;
+
+    INT32 ret = ShmAllocSegCheck(key, &size, &segNum);
+    if (ret < 0) {
+        return ret;
+    }
     seg = &IPC_SHM_SEGS[segNum];
     count = LOS_PhysPagesAlloc(size >> PAGE_SHIFT, &seg->node);//分配共享页面,函数内部把node都挂好了.
     if (count != (size >> PAGE_SHIFT)) {//当未分配到足够的内存时,处理方式是:不稀罕给那么点,舍弃!
         (VOID)LOS_PhysPagesFree(&seg->node);//释放节点上的物理页框
         seg->status = SHM_SEG_FREE;//共享段变回空闲状态
+#ifdef LOSCFG_KERNEL_IPC_PLIMIT
+        OsIPCLimitShmFree(size);
+#endif
         return -ENOMEM;
     }
     ShmSetSharedFlag(seg);//将node的每个页面设置为共享页
@@ -340,6 +357,9 @@ STATIC INLINE VOID ShmFreeSeg(struct shmIDSource *seg, UINT32 *shmUsedPageCount)
         VM_ERR("free physical pages failed, count = %d, size = %d", count, seg->ds.shm_segsz >> PAGE_SHIFT);
         return;
     }
+#ifdef LOSCFG_KERNEL_IPC_PLIMIT
+    OsIPCLimitShmFree(seg->ds.shm_segsz);
+#endif
     if (shmUsedPageCount != NULL) {
         (*shmUsedPageCount) -= seg->ds.shm_segsz >> PAGE_SHIFT;
     }
@@ -352,7 +372,7 @@ STATIC INT32 ShmFindSegByKey(key_t key)
     INT32 i;
     struct shmIDSource *seg = NULL;
 
-    for (i = 0; i < g_shmInfo.shmmni; i++) {//遍历共享段池,找到与key绑定的共享ID
+    for (i = 0; i < IPC_SHM_INFO.shmmni; i++) {//遍历共享段池,找到与key绑定的共享ID
         seg = &IPC_SHM_SEGS[i];
         if ((seg->status & SHM_SEG_USED) &&
             (seg->ds.shm_perm.key == key)) {//满足两个条件,找到后返回

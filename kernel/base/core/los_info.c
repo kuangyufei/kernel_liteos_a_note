@@ -109,6 +109,7 @@ STATIC VOID GetProcessInfo(ProcessInfo *pcbInfo, const LosProcessCB *processCB)
     (VOID)memcpy_s(pcbInfo->name, OS_PCB_NAME_LEN, processCB->processName, OS_PCB_NAME_LEN);
 }
 
+#ifdef LOSCFG_KERNEL_VM
 STATIC VOID GetProcessMemInfo(ProcessInfo *pcbInfo, const LosProcessCB *processCB, LosVmSpace *vmSpace)
 {
     /* Process memory usage statistics, idle task defaults to 0 */
@@ -130,6 +131,7 @@ STATIC VOID GetProcessMemInfo(ProcessInfo *pcbInfo, const LosProcessCB *processC
         }
     }
 }
+#endif
 
 STATIC VOID GetThreadInfo(ProcessThreadInfo *threadInfo, LosProcessCB *processCB)
 {
@@ -182,7 +184,9 @@ UINT32 OsGetProcessThreadInfo(UINT32 pid, ProcessThreadInfo *threadInfo)
         return LOS_NOK;
     }
 
+#ifdef LOSCFG_KERNEL_VM
     GetProcessMemInfo(&threadInfo->processInfo, processCB, processCB->vmSpace);
+#endif
 
     SCHEDULER_LOCK(intSave);
     GetProcessInfo(&threadInfo->processInfo, processCB);
@@ -210,11 +214,14 @@ STATIC VOID ProcessMemUsageGet(ProcessInfo *pcbArray)
             pcbInfo->status = OS_PROCESS_FLAG_UNUSED;
             continue;
         }
-
+#ifdef LOSCFG_KERNEL_VM
         LosVmSpace *vmSpace  = processCB->vmSpace;
+#endif
         SCHEDULER_UNLOCK(intSave);
 
+#ifdef LOSCFG_KERNEL_VM
         GetProcessMemInfo(pcbInfo, processCB, vmSpace);
+#endif
     }
 }
 

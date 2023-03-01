@@ -100,6 +100,9 @@ STATIC VOID HPFTimeSliceUpdate(SchedRunqueue *rq, LosTaskCB *taskCB, UINT64 curr
         taskCB->schedStat.timeSliceRealTime += incTime;
 #endif
     }
+#ifdef LOSCFG_KERNEL_SCHED_PLIMIT
+    OsSchedLimitUpdateRuntime(taskCB, currTime, incTime);
+#endif
     taskCB->irqUsedTime = 0;
     taskCB->startTime = currTime;
     if (taskCB->timeSlice <= OS_TIME_SLICE_MIN) {

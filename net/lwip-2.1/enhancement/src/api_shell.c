@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -243,7 +243,7 @@ struct ifconfig_option {
     unsigned char ethaddr[6];
     u16_t mtu;
     /* when using telnet, print to the telnet socket will result in system  */
-    /* deadlock. So we cahe the prinf data to a buf, and when the tcpip      */
+    /* deadlock. So we cache the print data to a buf, and when the tcpip    */
     /* callback returns, then print the data out to the telnet socket       */
     sys_sem_t cb_completed;
     char cb_print_buf[PRINT_BUF_LEN];
@@ -273,7 +273,9 @@ int print_netif(struct netif *netif, char *print_buf, unsigned int buf_len)
 #if LWIP_IPV6
     char *addr = NULL;
 #endif
-
+#ifdef LOSCFG_NET_CONTAINER
+    struct net_group *group = get_net_group_from_netif(netif);
+#endif
     if (buf_len < 1) {
         goto out;
     }
@@ -348,7 +350,11 @@ int print_netif(struct netif *netif, char *print_buf, unsigned int buf_len)
     tmp += ret;
     buf_len -= (unsigned int)ret;
 
+#ifdef LOSCFG_NET_CONTAINER
+    if ((group->netif_default == netif) && (netif_is_up(netif))) {
+#else
     if (netif_default == netif && netif_is_up(netif)) {
+#endif
         ret = snprintf_s(tmp, buf_len, (buf_len - 1), " %s", "Default");
         if ((ret <= 0) || ((unsigned int)ret >= buf_len))
             goto out;
@@ -356,7 +362,7 @@ int print_netif(struct netif *netif, char *print_buf, unsigned int buf_len)
         buf_len -= (unsigned int)ret;
     }
 
-    ret = snprintf_s(tmp, buf_len, (buf_len - 1), " %s\n", 
+    ret = snprintf_s(tmp, buf_len, (buf_len - 1), " %s\n",
                      (netif->flags & NETIF_FLAG_LINK_UP) ? "Link UP" : "Link Down");
     if ((ret <= 0) || ((unsigned int)ret >= buf_len))
         goto out;
@@ -366,19 +372,19 @@ int print_netif(struct netif *netif, char *print_buf, unsigned int buf_len)
     ret = snprintf_s(tmp, buf_len, (buf_len - 1), "\tRX packets:%u ",
                      netif->mib2_counters.ifinucastpkts + netif->mib2_counters.ifinnucastpkts);
     if ((ret <= 0) || ((unsigned int)ret >= buf_len))
-      goto out;
+        goto out;
     tmp += ret;
     buf_len -= (unsigned int)ret;
 
     ret = snprintf_s(tmp, buf_len, (buf_len - 1), "errors:%u ", netif->mib2_counters.ifinerrors);
     if ((ret <= 0) || ((unsigned int)ret >= buf_len))
-      goto out;
+        goto out;
     tmp += ret;
     buf_len -= (unsigned int)ret;
 
     ret = snprintf_s(tmp, buf_len, (buf_len - 1), "dropped:%u ", netif->mib2_counters.ifindiscards);
     if ((ret <= 0) || ((unsigned int)ret >= buf_len))
-      goto out;
+        goto out;
     tmp += ret;
     buf_len -= (unsigned int)ret;
 
@@ -432,8 +438,12 @@ void lwip_ifconfig_show_internal(void *arg)
     struct netif *netif = NULL;
     struct ifconfig_option *ifconfig_cmd = (struct ifconfig_option *)arg;
     int ret;
-
+#ifdef LOSCFG_NET_CONTAINER
+    struct net_group *group = get_curr_process_net_group();
+    if (group->netif_list == NULL) {
+#else
     if (netif_list == NULL) {
+#endif
         ret = snprintf_s(ifconfig_cmd->cb_print_buf, PRINT_BUF_LEN - ifconfig_cmd->print_len,
                          ((PRINT_BUF_LEN - ifconfig_cmd->print_len) - 1), "Device not init\n");
         if ((ret > 0) && ((unsigned int)ret < (PRINT_BUF_LEN - ifconfig_cmd->print_len))) {
@@ -445,7 +455,11 @@ void lwip_ifconfig_show_internal(void *arg)
 
     if (ifconfig_cmd->iface[0] == '\0') {
         /* display all netif */
+#ifdef LOSCFG_NET_CONTAINER
+        for (netif = group->netif_list; netif != NULL; netif = netif->next) {
+#else
         for (netif = netif_list; netif != NULL; netif = netif->next) {
+#endif
             ret = print_netif(netif, ifconfig_cmd->cb_print_buf + ifconfig_cmd->print_len,
                               PRINT_BUF_LEN - ifconfig_cmd->print_len);
             ifconfig_cmd->print_len += (unsigned int)ret;
@@ -486,7 +500,9 @@ void lwip_ifconfig_internal(void *arg)
     int ret;
     s8_t idx;
     err_t err;
-
+#ifdef LOSCFG_NET_CONTAINER
+    struct net_group *group = get_curr_process_net_group();
+#endif
     ifconfig_cmd = (struct ifconfig_option *)arg;
     netif = netif_find(ifconfig_cmd->iface);
     if (netif == NULL) {
@@ -521,13 +537,22 @@ void lwip_ifconfig_internal(void *arg)
             /* reset gateway if new and previous ipaddr not in same net */
             if (!ip_addr_netcmp_val(&ip_addr, &netif->ip_addr, ip_2_ip4(&netif->netmask))) {
                 ip_addr_set_zero(&netif->gw);
+#ifdef LOSCFG_NET_CONTAINER
+                if (netif == group->netif_default) {
+                    (void)netif_set_default(NULL, group);
+#else
                 if (netif == netif_default) {
                     (void)netif_set_default(NULL);
+#endif
                 }
             }
 
             /* lwip disallow two netif sit in same net at the same time */
+#ifdef LOSCFG_NET_CONTAINER
+            loc_netif = group->netif_list;
+#else
             loc_netif = netif_list;
+#endif
             while (loc_netif != NULL) {
                 if (loc_netif == netif) {
                     loc_netif = loc_netif->next;
@@ -577,7 +602,11 @@ void lwip_ifconfig_internal(void *arg)
 #endif
         if (netif_ip4_netmask(netif)->addr != ip_2_ip4(&netmask)->addr) {
             /* lwip disallow two netif sit in same net at the same time */
+#ifdef LOSCFG_NET_CONTAINER
+            loc_netif = group->netif_list;
+#else
             loc_netif = netif_list;
+#endif
             while (loc_netif != NULL) {
                 if (loc_netif == netif) {
                     loc_netif = loc_netif->next;
@@ -594,8 +623,13 @@ void lwip_ifconfig_internal(void *arg)
             /* check if gateway still reachable */
             if (!ip_addr_netcmp(&netif->gw, &netif->ip_addr, ip_2_ip4(&netmask))) {
                 ip_addr_set_zero(&(netif->gw));
+#ifdef LOSCFG_NET_CONTAINER
+                if (netif == group->netif_default) {
+                    (void)netif_set_default(NULL, group);
+#else
                 if (netif == netif_default) {
                     (void)netif_set_default(NULL);
+#endif
                 }
             }
         }
@@ -630,9 +664,15 @@ void lwip_ifconfig_internal(void *arg)
             goto out;
         }
 
+#ifdef LOSCFG_NET_CONTAINER
+        if (group->netif_default != netif) {
+            ip_addr_set_zero(&netif->gw);
+            (void)netif_set_default(netif, group);
+#else
         if (netif_default != netif) {
             ip_addr_set_zero(&netif->gw);
             (void)netif_set_default(netif);
+#endif
         }
 
 #if LWIP_DHCP
@@ -1032,12 +1072,12 @@ u32_t lwip_ifconfig(int argc, const char **argv)
 #if LWIP_ARP && LWIP_ENABLE_IP_CONFLICT_SIGNAL
     if ((ifconfig_cmd.option & IFCONFIG_OPTION_SET_IP) && IP_IS_V4_VAL((ifconfig_cmd.ip_addr))) {
       /* Create the semaphore for ip conflict detection. */
-      if (sys_sem_new(&ip_conflict_detect, 0) != ERR_OK) {
-        sys_sem_free(&ifconfig_cmd.cb_completed);
-        PRINTK("ifconfig: internal error\n");
-        return 1;
-      }
-      is_ip_conflict_signal = 1;
+        if (sys_sem_new(&ip_conflict_detect, 0) != ERR_OK) {
+            sys_sem_free(&ifconfig_cmd.cb_completed);
+            PRINTK("ifconfig: internal error\n");
+            return 1;
+        }
+        is_ip_conflict_signal = 1;
     }
 #endif /* LWIP_ARP && LWIP_ENABLE_IP_CONFLICT_SIGNAL */
 
@@ -1058,8 +1098,8 @@ u32_t lwip_ifconfig(int argc, const char **argv)
         sys_sem_free(&ifconfig_cmd.cb_completed);
 #if LWIP_ARP && LWIP_ENABLE_IP_CONFLICT_SIGNAL
         if ((ifconfig_cmd.option & IFCONFIG_OPTION_SET_IP) && IP_IS_V4_VAL((ifconfig_cmd.ip_addr))) {
-          is_ip_conflict_signal = 0;
-          sys_sem_free(&ip_conflict_detect);
+            is_ip_conflict_signal = 0;
+            sys_sem_free(&ip_conflict_detect);
         }
 #endif /* LWIP_ARP && LWIP_ENABLE_IP_CONFLICT_SIGNAL */
 
@@ -1077,37 +1117,37 @@ u32_t lwip_ifconfig(int argc, const char **argv)
     ifconfig_cmd.cb_print_buf[PRINT_BUF_LEN - 1] = '\0';
     PRINTK("%s", ifconfig_cmd.cb_print_buf);
 #if LWIP_ARP && LWIP_ENABLE_IP_CONFLICT_SIGNAL
-    /* Pend 2 seconds for waiting the arp reply if the ip is already in use.*/
+    /* Pend 2 seconds for waiting the arp reply if the ip is already in use. */
     if ((ifconfig_cmd.option & IFCONFIG_OPTION_SET_IP) && IP_IS_V4_VAL((ifconfig_cmd.ip_addr))) {
-      err = (err_t)sys_arch_sem_wait(&ip_conflict_detect, DUP_ARP_DETECT_TIME);
-      is_ip_conflict_signal = 0;
-      sys_sem_free(&ip_conflict_detect);
-      if (err < 0) {
-        /* The result neither conflict nor timeout. */
-        PRINT_ERR("ifconfig: internal error\n");
-        sys_sem_free(&ifconfig_cmd.cb_completed);
-        return 1;
-      } else if (err < DUP_ARP_DETECT_TIME) {
-        /* Duplicate use of new ip, restore it to the old one. */
-        PRINT_ERR("ifconfig: ip conflict!\n");
-        ip_addr_set_ip4_u32_val(ifconfig_cmd.ip_addr, old_ip4addr);
-        ret = tcpip_callback(lwip_ifconfig_internal, &ifconfig_cmd);
-        if (ret != ERR_OK) {
-          sys_sem_free(&ifconfig_cmd.cb_completed);
-          PRINTK("%s : tcpip_callback failed in line %d : errnu %d", __FUNCTION__, __LINE__, ret);
-          return 1;
+        err = (err_t)sys_arch_sem_wait(&ip_conflict_detect, DUP_ARP_DETECT_TIME);
+        is_ip_conflict_signal = 0;
+        sys_sem_free(&ip_conflict_detect);
+        if (err < 0) {
+            /* The result neither conflict nor timeout. */
+            PRINT_ERR("ifconfig: internal error\n");
+            sys_sem_free(&ifconfig_cmd.cb_completed);
+            return 1;
+        } else if (err < DUP_ARP_DETECT_TIME) {
+            /* Duplicate use of new ip, restore it to the old one. */
+            PRINT_ERR("ifconfig: ip conflict!\n");
+            ip_addr_set_ip4_u32_val(ifconfig_cmd.ip_addr, old_ip4addr);
+            ret = tcpip_callback(lwip_ifconfig_internal, &ifconfig_cmd);
+            if (ret != ERR_OK) {
+                sys_sem_free(&ifconfig_cmd.cb_completed);
+                PRINTK("%s : tcpip_callback failed in line %d : errnu %d", __FUNCTION__, __LINE__, ret);
+                return 1;
+            }
+            (void)sys_arch_sem_wait(&ifconfig_cmd.cb_completed, 0);
+            sys_sem_free(&ifconfig_cmd.cb_completed);
+            ifconfig_cmd.cb_print_buf[PRINT_BUF_LEN - 1] = '\0';
+            PRINTK("%s", ifconfig_cmd.cb_print_buf);
+            return 1;
         }
-        (void)sys_arch_sem_wait(&ifconfig_cmd.cb_completed, 0);
-        sys_sem_free(&ifconfig_cmd.cb_completed);
-        ifconfig_cmd.cb_print_buf[PRINT_BUF_LEN - 1] = '\0';
-        PRINTK("%s", ifconfig_cmd.cb_print_buf);
-        return 1;
-      }
     }
 #endif /* LWIP_ARP && LWIP_ENABLE_IP_CONFLICT_SIGNAL */
 #if LWIP_IPV6
     if ((ifconfig_cmd.option & IFCONFIG_OPTION_SET_IP) && IP_IS_V6_VAL(ifconfig_cmd.ip_addr)) {
-        /* Pend 2 seconds for waiting the arp reply if the ip is already in use.*/
+        /* Pend 2 seconds for waiting the arp reply if the ip is already in use. */
         retval = sys_arch_sem_wait(&dup_addr_detect, DUP_ARP_DETECT_TIME);
         is_dup_detect_initialized = 0;
         sys_sem_free(&dup_addr_detect);
@@ -1159,9 +1199,9 @@ struct arp_option {
     unsigned int ipaddr;
     /* hw addr */
     unsigned char ethaddr[6];
-    /* when using telnet, printf to the telnet socket will result in system  */
-    /* deadlock.so don't do it.cahe the data to prinf to a buf, and when     */
-    /* callback returns, then printf the data out to the telnet socket       */
+    /* when using telnet, print to the telnet socket will result in system  */
+    /* deadlock.so don't do it. cache the data to print to a buf, and when  */
+    /* callback returns, then print the data out to the telnet socket       */
     sys_sem_t cb_completed;
     char cb_print_buf[PRINT_BUF_LEN];
     int print_buf_len;
@@ -1192,7 +1232,6 @@ void lwip_arp_show_internal(struct netif *netif, char *printf_buf, unsigned int 
                  || (state == ETHARP_STATE_STATIC)
 #endif /* ETHARP_SUPPORT_STATIC_ENTRIES */
                 ) && arp_table[i].netif) {
-
                 if (strcmp(netif_get_name(netif), netif_get_name(arp_table[i].netif)) != 0) {
                     continue;
                 }
@@ -1256,7 +1295,9 @@ void lwip_arp_internal(void *arg)
     ip4_addr_t ipaddr;
     err_t ret = 0;
     int type = 0;
-
+#ifdef LOSCFG_NET_CONTAINER
+    struct net_group *group = get_curr_process_net_group();
+#endif
     if (arp_cmd->iface[0] == 'd' && arp_cmd->iface[1] == 'e') {
         netif = NULL;
     } else {
@@ -1303,10 +1344,14 @@ void lwip_arp_internal(void *arg)
             if (netif != NULL) {
                 ret = etharp_delete_arp_entry(netif, &ipaddr);
             } else {
+#ifdef LOSCFG_NET_CONTAINER
+                for (netif = group->netif_list; netif != NULL; netif = netif->next) {
+#else
                 for (netif = netif_list; netif != NULL; netif = netif->next) {
+#endif
                     ret = etharp_delete_arp_entry(netif, &ipaddr);
                     if (ret == ERR_OK) {
-                        /*only can del success one time*/
+                        /* only can del success one time */
                         break;
                     }
                 }
@@ -1388,7 +1433,7 @@ u32_t lwip_arp(int argc, const char **argv)
                 goto arp_error;
             }
             i += 2;
-            argc -= 2;
+            argc -= 2; // 2: number of used parameters
         } else if (strcmp("-d", argv[i]) == 0 && (argc > 1)) {
             /* arp delete */
             arp_cmd.option = ARP_OPTION_DEL;
@@ -1400,8 +1445,8 @@ u32_t lwip_arp(int argc, const char **argv)
             }
 
             i += 2;
-            argc -= 2;
-        } else if (strcmp("-s", argv[i]) == 0 && (argc > 2)) {
+            argc -= 2; // 2: number of used parameters
+        } else if (strcmp("-s", argv[i]) == 0 && (argc > 2)) { // 2: require more than 2 parameters
             /* arp add */
             char *digit = NULL;
             u32_t macaddrlen = strlen(argv[i + 2]) + 1;
@@ -1419,7 +1464,7 @@ u32_t lwip_arp(int argc, const char **argv)
                 goto arp_error;
             }
 
-            /*cannot add an arp entry of 127.*.*.* */
+            /* cannot add an arp entry of 127.*.*.* */
             if ((arp_cmd.ipaddr & (u32_t)0x0000007fUL) == (u32_t)0x0000007fUL) {
                 PRINTK("IP address is not correct!\n");
                 goto arp_error;
@@ -1453,7 +1498,7 @@ u32_t lwip_arp(int argc, const char **argv)
             }
 
             i += 3;
-            argc -= 3;
+            argc -= 3; // 3: number of used parameters
         } else {
             goto arp_error;
         }
@@ -1728,7 +1773,7 @@ LWIP_STATIC int osPingFunc(u32_t destip, u32_t cnt, u32_t interval, u32_t data_l
                             break;
                         }
                         intrvl -= 1000;
-                        sys_msleep(1000);
+                        sys_msleep(1000); // 1000: delay 1 s
                         if (ping_kill == 1)
                             break;
                     } while (intrvl > 0);
@@ -1820,7 +1865,7 @@ u32_t osShellPing(int argc, const char **argv)
             count = ret;
             count_set = 1;
             i += 2;
-            argc -= 2;
+            argc -= 2; // 2: nuber of arguments that has been checked
         } else if (strcmp("-t", argv[i]) == 0) {
             count = 0; /* ping forerver */
             count_set = 1;
@@ -1835,7 +1880,7 @@ u32_t osShellPing(int argc, const char **argv)
 
             interval = ret;
             i += 2;
-            argc -= 2;
+            argc -= 2; // 2:number of arguments that has been checked
         } else if (strcmp("-l", argv[i]) == 0 && (argc > 1)) {
             ret = atoi(argv[i + 1]);
             if (ret < 0 || ret > (int)(LWIP_MAX_UDP_RAW_SEND_SIZE - sizeof(struct icmp_echo_hdr))) {
@@ -1845,7 +1890,7 @@ u32_t osShellPing(int argc, const char **argv)
             }
             data_len = ret;
             i += 2;
-            argc -= 2;
+            argc -= 2; // 2: number of elements has been checked
         } else if (strcmp("-k", argv[i]) == 0) {
             if (ping_taskid > 0) {
                 ping_kill = 1; /* stop the current ping task */
@@ -1897,7 +1942,7 @@ u32_t osShellPing(int argc, const char **argv)
         stPingTask.auwArgs[0] = dst_ipaddr.addr; /* network order */
         stPingTask.auwArgs[1] = count;
         stPingTask.auwArgs[2] = interval;
-        stPingTask.auwArgs[3] = data_len;
+        stPingTask.auwArgs[3] = data_len; // 3: index of data length
         ret = LOS_TaskCreate((UINT32 *)(&ping_taskid), &stPingTask);
         if (ret != LOS_OK) {
             PRINTK("ping_task create failed 0x%08x.\n", ret);
@@ -1924,7 +1969,7 @@ ping_error:
 SHELLCMD_ENTRY(ping_shellcmd, CMD_TYPE_EX, "ping", XARGS, (CmdCallBackFunc)osShellPing);
 #endif /* LOSCFG_SHELL */
 
-#else /* LWIP_EXT_POLL_SUPPORT*/
+#else /* LWIP_EXT_POLL_SUPPORT */
 
 u32_t osShellPing(int argc, const char **argv)
 {
@@ -2077,7 +2122,7 @@ FAILURE:
 SHELLCMD_ENTRY(ping_shellcmd, CMD_TYPE_EX, "ping", XARGS, (CmdCallBackFunc)osShellPing);
 #endif /* LOSCFG_SHELL */
 
-#endif /* LWIP_EXT_POLL_SUPPORT*/
+#endif /* LWIP_EXT_POLL_SUPPORT */
 
 #if LWIP_IPV6
 u32_t osShellPing6(int argc, const char **argv)
@@ -2179,7 +2224,7 @@ u32_t osShellPing6(int argc, const char **argv)
     for (nsent = 0; nsent < ping6_params.pingcount; nsent++) {
         /* capture the start tick to calculate rtt */
         (void)clock_gettime(CLOCK_MONOTONIC_RAW, &start);
-        /* Initialize Memory To Prevent Unintialized Memory Read Write Issues */
+        /* Initialize Memory To Prevent Uninitialized Memory Read Write Issues */
         if (memset_s(pbuf_req->payload, pbuf_req->len, (int)(start.tv_nsec), pbuf_req->len) != 0) {
             goto exit;
         }
@@ -2233,13 +2278,13 @@ u32_t osShellPing6(int argc, const char **argv)
             }
 
             if ((u32_t)ret < sizeof(struct icmp6_echo_hdr *)) {
-                /* Drop the packet if its too short [Doesnot contain even the header !!] */
+                /* Drop the packet if its too short [Doesn't contain even the header !!] */
                 PRINTK("ping6 : received ICMP echo response too short\n");
                 goto REDUCE_SELECT_TIME;
             }
 
             /* Acceping the ICMPv6 payload. */
-            /* Here, pbuf_resp->payload wont contain IPv6 Header since its an AF_INET6 RAW Socket */
+            /* Here, pbuf_resp->payload won't contain IPv6 Header since its an AF_INET6 RAW Socket */
             iecho_resp = (struct icmp6_echo_hdr *)pbuf_resp->payload;
 
             if (iecho_resp->id == icmpv6_id) {
@@ -2282,7 +2327,7 @@ u32_t osShellPing6(int argc, const char **argv)
 
                     /* Checking if its a delayed packet */
                     if ((iecho_resp->seqno != icmpv6_seq) && (nsent < ping6_params.pingcount)) {
-                        /* Incase of delayed packet wait on socket for other response before sending a new PING */
+                        /* In case of delayed packet wait on socket for other response before sending a new PING */
                         /* We have to reduce the timeout value now when selecting on socket */
                         goto REDUCE_SELECT_TIME;
                     }
@@ -2310,9 +2355,10 @@ REDUCE_SELECT_TIME:
     PRINTK("--- %s ping statistics ---\n", argv[ping6_params.host_index]);
     PRINTK("%d packets transmitted, %d received, %.2f%% packet loss, time %dms\n",
            nsent, nrecieve, (float)(((float)(nsent - nrecieve)) * ((float)(100)) / ((float)(nsent))),
+           /* 1000: convert seconds to milliseconds, 1000000: convert nanoseconds to milliseconds */
            ((last.tv_sec - first.tv_sec) * 1000 + (last.tv_nsec - first.tv_nsec) / 1000000));
     if (nrecieve) {
-        /* Display rtt stats only if atleast one packet is recieved */
+        /* Display rtt stats only if at least one packet is received */
         PRINTK("rtt min/avg/max = %u/%.2f/%u ms\n", ping6_stats.min_rtt, ping6_stats.avg_rtt, ping6_stats.max_rtt);
     }
 
@@ -2376,11 +2422,11 @@ LWIP_STATIC int create_ping6_socket(u8_t type, const void *param)
     }
 
     /* Setting socket filter since we are interested only in ECHO REPLY and ERROR messages */
-    ICMP6_FILTER_SETBLOCKALL (&icmp6_sock_filter);
-    ICMP6_FILTER_SETPASS (ICMP6_TYPE_EREP, &icmp6_sock_filter);
-    ICMP6_FILTER_SETPASS (ICMP6_TYPE_DUR, &icmp6_sock_filter);
-    ICMP6_FILTER_SETPASS (ICMP6_TYPE_PTB, &icmp6_sock_filter);
-    ICMP6_FILTER_SETPASS (ICMP6_TYPE_TE, &icmp6_sock_filter);
+    ICMP6_FILTER_SETBLOCKALL(&icmp6_sock_filter);
+    ICMP6_FILTER_SETPASS(ICMP6_TYPE_EREP, &icmp6_sock_filter);
+    ICMP6_FILTER_SETPASS(ICMP6_TYPE_DUR, &icmp6_sock_filter);
+    ICMP6_FILTER_SETPASS(ICMP6_TYPE_PTB, &icmp6_sock_filter);
+    ICMP6_FILTER_SETPASS(ICMP6_TYPE_TE, &icmp6_sock_filter);
 
     ret = lwip_setsockopt(sfd, IPPROTO_ICMPV6, ICMP6_FILTER, &icmp6_sock_filter, sizeof(struct icmp6_filter));
     if (ret == -1) {
@@ -2628,7 +2674,7 @@ usage:
 SHELLCMD_ENTRY(ntpdate_shellcmd, CMD_TYPE_EX, "ntpdate", XARGS, (CmdCallBackFunc)osShellNtpdate);
 #endif /* LOSCFG_SHELL_CMD_DEBUG */
 
-#endif /* LWIP_SNTP*/
+#endif /* LWIP_SNTP */
 
 #if LWIP_DNS
 u32_t osShellDns(int argc, const char **argv)
@@ -2777,7 +2823,7 @@ int netstat_get_udp_sendQLen6(struct udp_pcb *udppcb, struct pbuf *udpbuf)
         goto FUNC_OUT;
     }
 
-    /* check if there is enough space for atleast udp header available */
+    /* check if there is enough space for at least udp header available */
     if (udpbuf->tot_len < UDP_HLEN) {
         goto FUNC_OUT;
     }
@@ -2865,7 +2911,7 @@ int netstat_tcp_recvq(struct tcp_pcb *tpcb)
             case NETCONN_UDP_IPV6:
 #endif
             case NETCONN_UDP:
-                SYS_ARCH_GET(((unsigned int)conn->recv_avail /*+ conn->lrcv_left*/), retVal);
+                SYS_ARCH_GET(((unsigned int)conn->recv_avail), retVal); // + conn->lrcv_left
                 break;
             default:
                 retVal = 0; /* ur... very ugly, damn DHCP DNS and SNTP */
@@ -2921,7 +2967,7 @@ int netstat_udp_sendq6(struct udp_pcb *upcb)
 #else
     ret = netstat_get_udp_sendQLen6(upcb, neighbor_cache[idx].q);
     if (ret >= 0) {
-      retLen += ret;
+        retLen += ret;
     }
 #endif
     return retLen;
@@ -2965,10 +3011,10 @@ int netstat_udp_sendq(struct udp_pcb *upcb)
 #else
         ret = netstat_get_udp_sendQLen(upcb, arp_table[arpidx].q);
         if (ret > 0) {
-          retLen += ret;
-          if (retLen <= 0) { // overflow, set rteLen = -1 to indicate
-            retLen = -1;
-          }
+            retLen += ret;
+            if (retLen <= 0) { // overflow, set rteLen = -1 to indicate
+                retLen = -1;
+            }
         }
 #endif
     }
@@ -2991,7 +3037,7 @@ int netstat_netconn_recvq(const struct netconn *conn)
         case NETCONN_PKT_RAW:
 #endif
         case NETCONN_UDP:
-            SYS_ARCH_GET(((unsigned int)conn->recv_avail /*+ conn->lrcv_left*/), retVal);
+            SYS_ARCH_GET(((unsigned int)conn->recv_avail), retVal); // + conn->lrcv_left
             break;
         default:
             retVal = 0; /* ur... very ugly, damn DHCP DNS and SNTP */
@@ -3269,10 +3315,10 @@ void netstat_internal(void *ctx)
             recvQlen = netstat_netconn_recvq(rpcb->recv_arg);
             sendQlen = netstat_netconn_sendq(rpcb->recv_arg);
 
-            proto = rpcb->protocol;//raw_proto;
+            proto = rpcb->protocol; // raw_proto;
             iRet = snprintf_s((char *)(entry_buf + entry_buf_offset), entry_buf_len, entry_buf_len - 1,
                               "%-8s%-12d%-12d%-20s%-20s%-16u%-16d\n",
-                              "raw", recvQlen, sendQlen, local_ip_port, remote_ip_port, proto, /*rpcb->hdrincl*/0);
+                              "raw", recvQlen, sendQlen, local_ip_port, remote_ip_port, proto, 0); // rpcb->hdrincl
             if ((iRet <= 0) || ((u32_t)(iRet) >= entry_buf_len)) {
                 goto out;
             }
@@ -3295,7 +3341,8 @@ void netstat_internal(void *ctx)
             sendQlen = netstat_netconn_sendq(rpcb->recv_arg);
 
             for (netif = netif_list; netif != NULL; netif = netif->next) {
-                if (netif_get_index(netif)/*netif->ifindex*/ == rpcb->netif_idx/*index*/) {
+                /* netif->ifindex and index */
+                if (netif_get_index(netif) == rpcb->netif_idx) {
                     (void)snprintf_s((char *)netif_name, IFNAMSIZ, IFNAMSIZ - 1, "%s", netif_get_name(netif));
                     break;
                 }
@@ -3305,7 +3352,7 @@ void netstat_internal(void *ctx)
                 (void)snprintf_s((char *)netif_name, IFNAMSIZ, IFNAMSIZ - 1, "%s", "None");
             }
 
-            proto = rpcb->protocol;//ntohs(rpcb->proto.eth_proto);
+            proto = rpcb->protocol; // ntohs(rpcb->proto.eth_proto);
 
             iRet = snprintf_s((char *)(entry_buf + entry_buf_offset), entry_buf_len, entry_buf_len - 1,
                               "%-12s%-12d%-12d%-16x%-12s\n", "pkt-raw", recvQlen, sendQlen, proto, netif_name);
@@ -3666,7 +3713,7 @@ u32_t netdebug_sock(int argc, const char **argv)
     int idx;
     u32_t ret = LOS_NOK;
 
-    if (argc == 2) {
+    if (argc == 2) { /* 2: Number of command parameters */
         if (!strcmp("-i", argv[1])) {
             /* netdebug sock -i */
             for (idx = 0; idx < (int)LWIP_CONFIG_NUM_SOCKETS; idx++) {
@@ -3674,10 +3721,9 @@ u32_t netdebug_sock(int argc, const char **argv)
             }
             ret = LOS_OK;
         }
-    } else if (argc == 3) {
+    } else if (argc == 3) { /* 3: Number of command parameters */
         if (!strcmp("-d", argv[1])) {
-            /* netdebug sock -d <idx> */
-            idx = atoi(argv[2]);
+            idx = atoi(argv[2]); /* 2: netdebug sock -d <idx> */
             if (idx >= 0) {
                 debug_socket_info(idx, 1, 1);
                 ret = LOS_OK;
@@ -3883,4 +3929,4 @@ SHELLCMD_ENTRY(reboot_shellcmd, CMD_TYPE_EX, "reboot", XARGS, (CmdCallBackFunc)o
 #endif /* LOSCFG_SHELL_CMD_DEBUG */
 #endif
 
-#endif //LWIP_ENABLE_LOS_SHELL_CMD
+#endif // LWIP_ENABLE_LOS_SHELL_CMD
