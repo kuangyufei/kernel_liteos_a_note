@@ -289,7 +289,6 @@
 
 据说喜欢 **点赞 + 分享** 的,后来都成了大神。:) [ >> 查看捐助名单](./donate.md)
 ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/so1so.png)
-
 ```
 互联网从业十五年，计算机硕士，技术副总裁
 关注我，持续更新四十年，即聊技术也谈人生

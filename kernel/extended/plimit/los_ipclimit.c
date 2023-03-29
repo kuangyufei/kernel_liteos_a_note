@@ -34,7 +34,7 @@
 
 STATIC ProcIPCLimit *g_rootIPCLimit = NULL;
 #define PLIMIT_IPC_SHM_LIMIT_MAX 0xFFFFFFFF
-
+//IPC限额初始化
 VOID OsIPCLimitInit(UINTPTR limite)
 {
     ProcIPCLimit *plimite = (ProcIPCLimit *)limite;

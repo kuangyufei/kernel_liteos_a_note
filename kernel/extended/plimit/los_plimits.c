@@ -27,16 +27,24 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+ 
+/*
+http://open.weharmonyos.com/zh-cn/device-dev/kernel/kernel-small-plimits.html
+面对进程越来越多，应用环境越来越复杂的状况，需要对容器做限制，若不做限制，会发生资源浪费、争夺等。
+容器配额plimits（Process Limits）是内核提供的一种可以限制单个进程或者多个进程所使用资源的机制，
+可以对cpu，内存等资源实现精细化控制。plimits的接口通过plimitsfs的伪文件系统提供。
+通过操作文件对进程及进程资源进行分组管理，通过配置plimits组内限制器Plimiter限制进程组的memory、sched等资源的使用。
+*/
 
 #ifdef LOSCFG_KERNEL_PLIMITS
 #include "los_base.h"
 #include "los_process_pri.h"
 #include "hal_timer.h"
 #include "los_plimits.h"
-
+//容器限额统一接口
 typedef struct PlimiteOperations {
-    VOID (*LimiterInit)(UINTPTR);
-    VOID *(*LimiterAlloc)(VOID);
+    VOID (*LimiterInit)(UINTPTR);//初始化
+    VOID (*LimiterAlloc)(VOID);//分配
     VOID (*LimiterFree)(UINTPTR);
     VOID (*LimiterCopy)(UINTPTR, UINTPTR);
     BOOL (*LimiterAddProcessCheck)(UINTPTR, UINTPTR);

@@ -168,14 +168,14 @@ UINT32 OsProcessAddNewTask(UINTPTR processID, LosTaskCB *taskCB, SchedParam *par
 */
 ProcessGroup *OsCreateProcessGroup(LosProcessCB *processCB)
 {
-    ProcessGroup *pgroup = LOS_MemAlloc(m_aucSysMem1, sizeof(ProcessGroup));
+    ProcessGroup *pgroup = LOS_MemAlloc(m_aucSysMem1, sizeof(ProcessGroup));//分配一个进程组
     if (pgroup == NULL) {
         return NULL;
     }
 
-    pgroup->pgroupLeader = (UINTPTR)processCB;
-    LOS_ListInit(&pgroup->processList);
-    LOS_ListInit(&pgroup->exitProcessList);
+    pgroup->pgroupLeader = (UINTPTR)processCB;//指定进程组负责人
+    LOS_ListInit(&pgroup->processList);//初始化组员链表
+    LOS_ListInit(&pgroup->exitProcessList);//初始化僵死进程链表
 
     LOS_ListTailInsert(&pgroup->processList, &processCB->subordinateGroupList);
     processCB->pgroup = pgroup;
@@ -617,8 +617,8 @@ STATIC VOID SystemProcessEarlyInit(LosProcessCB *processCB)
 #ifdef LOSCFG_KERNEL_CONTAINER
     OsContainerInitSystemProcess(processCB);
 #endif
-    if (processCB == OsGetKernelInitProcess()) {
-        OsSetMainTaskProcess((UINTPTR)processCB);
+    if (processCB == OsGetKernelInitProcess()) {//2号进程
+        OsSetMainTaskProcess((UINTPTR)processCB);//将内核根进程设为主任务所属进程
     }
 }
 /*! 进程模块初始化,被编译放在代码段 .init 中*/
@@ -662,7 +662,7 @@ UINT32 OsProcessInit(VOID)
 #ifdef LOSCFG_KERNEL_PLIMITS
     OsProcLimiterSetInit();
 #endif
-    SystemProcessEarlyInit(OsGetIdleProcess());
+    SystemProcessEarlyInit(OsGetIdleProcess());//初始化 0,1,2号进程
     SystemProcessEarlyInit(OsGetUserInitProcess());
     SystemProcessEarlyInit(OsGetKernelInitProcess());
     return LOS_OK;
@@ -2435,7 +2435,7 @@ LITE_OS_SEC_TEXT LosProcessCB *OsGetKernelInitProcess(VOID)
 {
     return &g_processCBArray[OS_KERNEL_ROOT_PROCESS_ID];
 }
-
+/// 获取空闲进程，0号进程为空闲进程，该进程不干活，专给CPU休息的。
 LITE_OS_SEC_TEXT LosProcessCB *OsGetIdleProcess(VOID)
 {
     return &g_processCBArray[OS_KERNEL_IDLE_PROCESS_ID];

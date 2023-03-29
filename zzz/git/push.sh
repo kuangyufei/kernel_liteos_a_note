@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 增加支持网络容器和容器限额功能
+git commit -m  ' 进程模块注释完善
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com

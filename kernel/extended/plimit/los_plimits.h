@@ -65,19 +65,19 @@ enum ProcLimiterID {
 #ifdef LOSCFG_KERNEL_IPC_PLIMIT
     PROCESS_LIMITER_ID_IPC,
 #endif
-    PROCESS_LIMITER_COUNT,
+    PROCESS_LIMITER_COUNT,//进程
 };
-
+//容器限额情况
 typedef struct {
 #ifdef LOSCFG_KERNEL_MEM_PLIMIT
-    UINT64 memUsed;
+    UINT64 memUsed;//内存使用情况
 #endif
 #ifdef LOSCFG_KERNEL_IPC_PLIMIT
-    UINT32 mqCount;
-    UINT32 shmSize;
+    UINT32 mqCount;//
+    UINT32 shmSize;//共享内存大小
 #endif
 #ifdef LOSCFG_KERNEL_SCHED_PLIMIT
-    UINT64  allRuntime;
+    UINT64  allRuntime;//调度运行时情况
 #endif
 } PLimitsData;
 

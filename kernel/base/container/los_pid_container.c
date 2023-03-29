@@ -36,7 +36,7 @@
 
 #ifdef LOSCFG_PID_CONTAINER
 
-STATIC UINT32 g_currentPidContainerNum;
+STATIC UINT32 g_currentPidContainerNum;//进程类容器当前数量
 STATIC LosProcessCB *g_defaultProcessCB = NULL;
 STATIC LosTaskCB *g_defaultTaskCB = NULL;
 
@@ -252,7 +252,7 @@ VOID OsPidContainerDestroyAllProcess(LosProcessCB *curr)
         }
     }
 }
-
+//创建一个新的进程容器
 STATIC PidContainer *CreateNewPidContainer(PidContainer *parent)
 {
     UINT32 index;

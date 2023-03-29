@@ -77,7 +77,7 @@ typedef struct {
 #endif
 /*! 进程组结构体*/
 typedef struct ProcessGroup {
-    UINTPTR      pgroupLeader;    /**< Process group leader is the the process that created the group */
+    UINTPTR      pgroupLeader;    /**< Process group leader is the the process that created the group | 负责创建进程组的进程首地址*/
     LOS_DL_LIST processList;     /**< List of processes under this process group | 属于该进程组的进程链表*/
     LOS_DL_LIST exitProcessList; /**< List of closed processes (zombie processes) under this group | 进程组的僵死进程链表*/
     LOS_DL_LIST groupList;       /**< Process group list | 进程组链表,上面挂的都是进程组*/
@@ -138,13 +138,13 @@ typedef struct ProcessCB {
 #endif
     struct rlimit        *resourceLimit; ///< 每个进程在运行时系统不会无限制的允许单个进程不断的消耗资源，因此都会设置资源限制。
 #ifdef LOSCFG_KERNEL_CONTAINER
-    Container            *container;
+    Container            *container;	///< 内核容器
 #ifdef LOSCFG_USER_CONTAINER
-    struct Credentials   *credentials;
+    struct Credentials   *credentials;	///< 用户身份证
 #endif
 #endif
 #ifdef LOSCFG_PROC_PROCESS_DIR
-    struct ProcDirEntry *procDir;
+    struct ProcDirEntry *procDir;	///< 目录文件项
 #endif
 #ifdef LOSCFG_KERNEL_PLIMITS
     ProcLimiterSet *plimits;
@@ -320,19 +320,19 @@ STATIC INLINE BOOL OsProcessIsPGroupLeader(const LosProcessCB *processCB)
  * @ingroup los_process
  * ID of the kernel idle process
  */
-#define OS_KERNEL_IDLE_PROCESS_ID       0U
+#define OS_KERNEL_IDLE_PROCESS_ID       0U //0号进程为空闲进程
 
 /**
  * @ingroup los_process
  * ID of the user root process
  */
-#define OS_USER_ROOT_PROCESS_ID         1U
+#define OS_USER_ROOT_PROCESS_ID         1U //1号为用户态根进程
 
 /**
  * @ingroup los_process
  * ID of the kernel root process
  */
-#define OS_KERNEL_ROOT_PROCESS_ID       2U
+#define OS_KERNEL_ROOT_PROCESS_ID       2U //1号为内核态根进程
 #define OS_TASK_DEFAULT_STACK_SIZE      0x2000	///< task默认栈大小 8K
 #define OS_USER_TASK_SYSCALL_STACK_SIZE 0x3000	///< 用户通过系统调用的栈大小 12K ,这时是运行在内核模式下
 #define OS_USER_TASK_STACK_SIZE         0x100000	///< 用户任务运行在用户空间的栈大小 1M 
