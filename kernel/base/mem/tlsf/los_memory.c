@@ -105,7 +105,7 @@
 #define OS_MEM_COLUMN_NUM       8
 
 UINT8 *m_aucSysMem0 = NULL;	///< 异常交互动态内存池地址的起始地址，当不支持异常交互特性时，m_aucSysMem0等于m_aucSysMem1。
-UINT8 *m_aucSysMem1 = NULL;	///< 系统动态内存池地址的起始地址 @note_thinking 能否不要用 0,1来命名核心变量 ??? 
+UINT8 *m_aucSysMem1 = NULL;	///< （内核态）系统动态内存池地址的起始地址 @note_thinking 能否不要用 0,1来命名核心变量 ??? 
 
 #ifdef LOSCFG_MEM_MUL_POOL
 VOID *g_poolHead = NULL;	///内存池头,由它牵引多个内存池

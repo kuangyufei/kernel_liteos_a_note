@@ -42,13 +42,13 @@ typedef struct TagQueueCB LosQueueCB;
 typedef struct OsMux LosMux;
 typedef LosMux pthread_mutex_t;
 typedef struct ProcessCB LosProcessCB;
-
+//IPC容器
 typedef struct IpcContainer {
     Atomic rc;
-    LosQueueCB *allQueue;
-    LOS_DL_LIST freeQueueList;
+    LosQueueCB *allQueue;	//队列控制块（读写分离模式）
+    LOS_DL_LIST freeQueueList;//空闲队列链表
     fd_set queueFdSet;
-    struct mqarray queueTable[LOSCFG_BASE_IPC_QUEUE_LIMIT];
+    struct mqarray queueTable[LOSCFG_BASE_IPC_QUEUE_LIMIT];//队列池
     pthread_mutex_t mqueueMutex;
     struct mqpersonal *mqPrivBuf[MAX_MQ_FD];
     struct shminfo shmInfo;

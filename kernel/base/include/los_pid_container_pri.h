@@ -40,27 +40,27 @@ struct ProcessGroup;
 struct Container;
 
 typedef struct {
-    UINT32            vid;  /* Virtual ID */
-    UINT32            vpid; /* Virtual parent ID */
-    UINTPTR           cb;   /* Control block */
-    LosProcessCB      *realParent; /* process real parent */
+    UINT32            vid;  /* Virtual ID | 虚拟ID*/
+    UINT32            vpid; /* Virtual parent ID | 父进程虚拟ID*/
+    UINTPTR           cb;   /* Control block | 控制块*/
+    LosProcessCB      *realParent; /* process real parent | 进程真实的父进程 */
     LOS_DL_LIST       node;
 } ProcessVid;
 
 #define PID_CONTAINER_LEVEL_LIMIT 3
-
+//进程容器
 typedef struct PidContainer {
-    Atomic              rc;
-    Atomic              level;
-    Atomic              lock;
-    BOOL                referenced;
-    UINT32              containerID;
-    struct PidContainer *parent;
-    struct ProcessGroup *rootPGroup;
-    LOS_DL_LIST         tidFreeList;
-    ProcessVid          tidArray[LOSCFG_BASE_CORE_TSK_LIMIT];
-    LOS_DL_LIST         pidFreeList;
-    ProcessVid          pidArray[LOSCFG_BASE_CORE_PROCESS_LIMIT];
+    Atomic              rc;				//原子操作
+    Atomic              level;			//等级
+    Atomic              lock;			//锁
+    BOOL                referenced;		//引用次数
+    UINT32              containerID; 	//容器ID
+    struct PidContainer *parent;		//父进程容器
+    struct ProcessGroup *rootPGroup;	//进程组
+    LOS_DL_LIST         tidFreeList;	//任务空闲链表
+    ProcessVid          tidArray[LOSCFG_BASE_CORE_TSK_LIMIT];//任务池
+    LOS_DL_LIST         pidFreeList;	//进程空闲链表
+    ProcessVid          pidArray[LOSCFG_BASE_CORE_PROCESS_LIMIT];//进程池
 } PidContainer;
 
 #define OS_PID_CONTAINER_FROM_PCB(processCB) ((processCB)->container->pidContainer)

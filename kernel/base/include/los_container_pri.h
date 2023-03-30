@@ -59,7 +59,7 @@ typedef enum {
     CONTAINER = 0,
     PID_CONTAINER,	//进程容器
     PID_CHILD_CONTAINER,	//子进程容器
-    UTS_CONTAINER,
+    UTS_CONTAINER,	//
     MNT_CONTAINER,	//挂载容器
     IPC_CONTAINER,
     USER_CONTAINER,
@@ -70,29 +70,29 @@ typedef enum {
 } ContainerType;
 
 typedef struct Container {
-    Atomic   rc;
+    Atomic   rc;	//原子操作
 #ifdef LOSCFG_PID_CONTAINER
-    struct PidContainer *pidContainer;
-    struct PidContainer *pidForChildContainer;
+    struct PidContainer *pidContainer; //进程容器
+    struct PidContainer *pidForChildContainer;//进程的孩子容器
 #endif
 #ifdef LOSCFG_UTS_CONTAINER
-    struct UtsContainer *utsContainer;
+    struct UtsContainer *utsContainer; //
 #endif
 #ifdef LOSCFG_MNT_CONTAINER
-    struct MntContainer *mntContainer;
+    struct MntContainer *mntContainer; //挂载容器
 #endif
 #ifdef LOSCFG_IPC_CONTAINER
-    struct IpcContainer *ipcContainer;
+    struct IpcContainer *ipcContainer; //IPC容器
 #endif
 #ifdef LOSCFG_TIME_CONTAINER
-    struct TimeContainer *timeContainer;
-    struct TimeContainer *timeForChildContainer;
+    struct TimeContainer *timeContainer; //时间容器
+    struct TimeContainer *timeForChildContainer; 
 #endif
 #ifdef LOSCFG_NET_CONTAINER
-    struct NetContainer *netContainer;
+    struct NetContainer *netContainer; //网络容器
 #endif
 } Container;
-
+//容器数量上限
 typedef struct TagContainerLimit {
 #ifdef LOSCFG_PID_CONTAINER
     UINT32 pidLimit;

@@ -35,11 +35,11 @@
 
 STATIC Container g_rootContainer;//根容器
 STATIC ContainerLimit g_containerLimit;//所有类型容器上限
-STATIC Atomic g_containerCount = 0xF0000000U;//容器数量
+STATIC Atomic g_containerCount = 0xF0000000U;//容器总数量
 #ifdef LOSCFG_USER_CONTAINER
 STATIC Credentials *g_rootCredentials = NULL;
 #endif
-//获取一个容器
+//分配一个容器
 UINT32 OsAllocContainerID(VOID)
 {
     return LOS_AtomicIncRet(&g_containerCount);
@@ -57,7 +57,7 @@ VOID OsContainerInitSystemProcess(LosProcessCB *processCB)
 #endif
     return;
 }
-
+//获取指定容器上限值
 UINT32 OsGetContainerLimit(ContainerType type)
 {
     switch (type) {
@@ -368,7 +368,7 @@ CREATE_CONTAINER:
 COPY_CONTAINERS:
     return CopyContainers(flags, child, parent, processID);
 }
-
+//释放进程容器
 VOID OsContainerFree(LosProcessCB *processCB)
 {
     LOS_AtomicDec(&processCB->container->rc);

@@ -31,15 +31,15 @@
 #include "los_info_pri.h"
 #include "los_task_pri.h"
 #include "los_vm_dump.h"
-
+//获取当前进程的父进程ID
 STATIC UINT32 GetCurrParentPid(UINT32 pid, const LosProcessCB *processCB)
 {
     if (processCB->parentProcess == NULL) {
         return 0;
     }
 
-#ifdef LOSCFG_PID_CONTAINER
-    if (pid == OS_USER_ROOT_PROCESS_ID) {
+#ifdef LOSCFG_PID_CONTAINER //从容器中获取
+    if (pid == OS_USER_ROOT_PROCESS_ID) {//从这里可以看出 0号进程（kidle）是，1,2号进程的父进程
         return 0;
     }
 
@@ -49,7 +49,7 @@ STATIC UINT32 GetCurrParentPid(UINT32 pid, const LosProcessCB *processCB)
 #endif
     return processCB->parentProcess->processID;
 }
-
+//获取当前任务ID
 STATIC INLINE UINT32 GetCurrTid(const LosTaskCB *taskCB)
 {
 #ifdef LOSCFG_PID_CONTAINER

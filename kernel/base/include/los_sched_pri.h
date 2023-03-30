@@ -428,10 +428,10 @@ typedef struct TagTaskCB {
     UINTPTR         fp; ///< fp寄存器
 #endif
 #ifdef LOSCFG_PID_CONTAINER
-    PidContainer    *pidContainer;
+    PidContainer    *pidContainer;//进程容器
 #endif
 #ifdef LOSCFG_IPC_CONTAINER
-   BOOL             cloneIpc;
+   BOOL             cloneIpc;//是否克隆过IPC    （flags & CLONE_NEWIPC）
 #endif
 } LosTaskCB;
 

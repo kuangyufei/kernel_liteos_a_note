@@ -526,7 +526,7 @@ UINT32 OsInitRootPidContainer(PidContainer **pidContainer)
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
-
+//从当前容器中获取父进程ID
 UINT32 OsGetVpidFromCurrContainer(const LosProcessCB *processCB)
 {
     UINT32 vpid = processCB->processID;

@@ -208,7 +208,7 @@ LITE_OS_SEC_TEXT WEAK VOID OsIdleTask(VOID)
 
 VOID OsTaskInsertToRecycleList(LosTaskCB *taskCB)
 {
-    LOS_ListTailInsert(&g_taskRecycleList, &taskCB->pendList);
+    LOS_ListTailInsert(&g_taskRecycleList, &taskCB->pendList);//将任务挂入回收链表，等待回收
 }
 
 /*!
@@ -431,14 +431,14 @@ STATIC INLINE VOID OsInsertTCBToFreeList(LosTaskCB *taskCB)
     taskCB->taskStatus = OS_TASK_STATUS_UNUSED;
     LOS_ListAdd(&g_losFreeTask, &taskCB->pendList);
 }
-
+//释放任务在内核态下占用的资源
 STATIC VOID OsTaskKernelResourcesToFree(UINT32 syncSignal, UINTPTR topOfStack)
 {
-    OsTaskSyncDestroy(syncSignal);
+    OsTaskSyncDestroy(syncSignal);//任务销毁，同步信息
 
-    (VOID)LOS_MemFree((VOID *)m_aucSysMem1, (VOID *)topOfStack);
+    (VOID)LOS_MemFree((VOID *)m_aucSysMem1, (VOID *)topOfStack);//释放内核态空间
 }
-
+//释放任务资源
 STATIC VOID OsTaskResourcesToFree(LosTaskCB *taskCB)
 {
     UINT32 syncSignal = LOSCFG_BASE_IPC_SEM_LIMIT;
@@ -446,7 +446,7 @@ STATIC VOID OsTaskResourcesToFree(LosTaskCB *taskCB)
     UINTPTR topOfStack;
 
 #ifdef LOSCFG_KERNEL_VM
-    if ((taskCB->taskStatus & OS_TASK_FLAG_USER_MODE) && (taskCB->userMapBase != 0)) {
+    if ((taskCB->taskStatus & OS_TASK_FLAG_USER_MODE) && (taskCB->userMapBase != 0)) {//释放用户态栈
         SCHEDULER_LOCK(intSave);
         UINT32 mapBase = (UINTPTR)taskCB->userMapBase;
         UINT32 mapSize = taskCB->userMapSize;
@@ -456,48 +456,48 @@ STATIC VOID OsTaskResourcesToFree(LosTaskCB *taskCB)
 
         LosProcessCB *processCB = OS_PCB_FROM_TCB(taskCB);
         LOS_ASSERT(!(OsProcessVmSpaceGet(processCB) == NULL));
-        UINT32 ret = OsUnMMap(OsProcessVmSpaceGet(processCB), (UINTPTR)mapBase, mapSize);
+        UINT32 ret = OsUnMMap(OsProcessVmSpaceGet(processCB), (UINTPTR)mapBase, mapSize);//解除映射
         if ((ret != LOS_OK) && (mapBase != 0) && !OsProcessIsInit(processCB)) {
             PRINT_ERR("process(%u) unmmap user task(%u) stack failed! mapbase: 0x%x size :0x%x, error: %d\n",
                       processCB->processID, taskCB->taskID, mapBase, mapSize, ret);
         }
 
 #ifdef LOSCFG_KERNEL_LITEIPC
-        LiteIpcRemoveServiceHandle(taskCB->taskID);
+        LiteIpcRemoveServiceHandle(taskCB->taskID);//详见百篇博客之IPC篇
 #endif
     }
 #endif
 
-    if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {
+    if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {//任务还没有使用情况
         topOfStack = taskCB->topOfStack;
         taskCB->topOfStack = 0;
 #ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
         syncSignal = taskCB->syncSignal;
         taskCB->syncSignal = LOSCFG_BASE_IPC_SEM_LIMIT;
 #endif
-        OsTaskKernelResourcesToFree(syncSignal, topOfStack);
+        OsTaskKernelResourcesToFree(syncSignal, topOfStack);//释放内核态所占内存，即内核态的栈空间
 
         SCHEDULER_LOCK(intSave);
 #ifdef LOSCFG_KERNEL_VM
-        OsClearSigInfoTmpList(&(taskCB->sig));
+        OsClearSigInfoTmpList(&(taskCB->sig));//归还信号控制块的内存
 #endif
         OsInsertTCBToFreeList(taskCB);
         SCHEDULER_UNLOCK(intSave);
     }
     return;
 }
-
+//批量回收任务
 LITE_OS_SEC_TEXT VOID OsTaskCBRecycleToFree()
 {
     UINT32 intSave;
 
     SCHEDULER_LOCK(intSave);
-    while (!LOS_ListEmpty(&g_taskRecycleList)) {
-        LosTaskCB *taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_taskRecycleList));
-        LOS_ListDelete(&taskCB->pendList);
+    while (!LOS_ListEmpty(&g_taskRecycleList)) {//遍历回收链表
+        LosTaskCB *taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_taskRecycleList));//取出任务
+        LOS_ListDelete(&taskCB->pendList);//重置节点
         SCHEDULER_UNLOCK(intSave);
 
-        OsTaskResourcesToFree(taskCB);
+        OsTaskResourcesToFree(taskCB);//释放任务所占资源
 
         SCHEDULER_LOCK(intSave);
     }
