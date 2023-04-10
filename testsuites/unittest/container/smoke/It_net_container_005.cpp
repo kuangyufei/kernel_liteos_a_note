@@ -44,61 +44,6 @@ static const int DATA_LEN = 128;
 static const char *SERVER_MSG = "===Hi, I'm Server.===";
 static const char *PEER_MSG = "===Hi, I'm Peer.===";
 static const int TRY_COUNT = 5;
-static const int OFFSET = 2;
-
-static int TryResetNetaddr(const char *ifname, const char *ip, const char *netmask, const char *gw)
-{
-    int ret;
-    struct ifreq ifr;
-    struct rtentry rt;
-
-    int fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-    if (fd < 0) {
-        return -1;
-    }
-    ret = strncpy_s(ifr.ifr_name, sizeof(ifr.ifr_name), ifname, IFNAMSIZ);
-    if (ret != EOK) {
-        (void)close(fd);
-        return -1;
-    }
-    ifr.ifr_addr.sa_family = AF_INET;
-
-    inet_pton(AF_INET, netmask, ifr.ifr_addr.sa_data + OFFSET);
-    ret = ioctl(fd, SIOCSIFNETMASK, &ifr);
-    if (ret == 0) {
-        inet_pton(AF_INET, ip, ifr.ifr_addr.sa_data + OFFSET);
-        ret = ioctl(fd, SIOCSIFADDR, &ifr);
-        if (ret == 0) {
-            struct sockaddr_in* addr = reinterpret_cast<struct sockaddr_in *>(&rt.rt_gateway);
-            addr->sin_family = AF_INET;
-            addr->sin_addr.s_addr = inet_addr(GW);
-            rt.rt_flags = RTF_GATEWAY;
-            ret = ioctl(fd, SIOCADDRT, &rt);
-        }
-    }
-    if (ret != 0) {
-        (void)close(fd);
-        return ret;
-    }
-    ret = close(fd);
-    return ret;
-}
-
-static int ResetNetaddr(const char *ifname, const char *ip, const char *netmask, const char *gw)
-{
-    int ret;
-    int try_count = TRY_COUNT;
-
-    while (try_count--) {
-        ret = TryResetNetaddr(ifname, ip, netmask, gw);
-        if (ret == 0) {
-            break;
-        }
-        sleep(1);
-    }
-
-    return ret;
-}
 
 static int UdpClient(void)
 {
@@ -162,7 +107,7 @@ static int UdpClient(void)
 
 static int ChildFunc(void *arg)
 {
-    int ret = ResetNetaddr(IFNAME, PEER_IP, NETMASK, GW);
+    int ret = NetContainerResetNetAddr(IFNAME, PEER_IP, NETMASK, GW);
     if (ret != 0) {
         return EXIT_CODE_ERRNO_1;
     }
@@ -219,9 +164,7 @@ static int UdpServer(void)
 
 static void *UdpServerThread(void *arg)
 {
-    int ret;
-
-    ret = ResetNetaddr(IFNAME, SERVER_IP, NETMASK, GW);
+    int ret = NetContainerResetNetAddr(IFNAME, SERVER_IP, NETMASK, GW);
     if (ret != 0) {
         return (void *)(intptr_t)ret;
     }

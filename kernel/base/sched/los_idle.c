@@ -48,6 +48,7 @@ STATIC VOID IdlePriorityRestore(LosTaskCB *owner, const LOS_DL_LIST *list, const
 const STATIC SchedOps g_idleOps = {
     .dequeue = IdleDequeue,
     .enqueue = IdleEnqueue,
+    .waitTimeGet = NULL,
     .wait = IdleWait,
     .wake = IdleWake,
     .schedParamModify = NULL,

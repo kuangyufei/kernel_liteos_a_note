@@ -540,7 +540,7 @@ extern LosVmSpace *OsExecProcessVmSpaceReplace(LosVmSpace *newSpace, UINTPTR sta
 extern UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR *name, LosVmSpace *oldAspace, UINTPTR oldFiles);
 extern UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBase, UINT32 mapSize);
 extern UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name);
-extern INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio, UINT16 policy);
+extern INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 policy, const LosSchedParam *param);
 extern INT32 OsGetProcessPriority(INT32 which, INT32 pid);
 extern LosProcessCB *OsGetUserInitProcess(VOID);
 extern LosProcessCB *OsGetIdleProcess(VOID);
@@ -558,6 +558,7 @@ extern VOID OsProcessThreadGroupDestroy(VOID);
 extern UINT32 OsGetProcessGroupCB(UINT32 pid, UINTPTR *ppgroupLeader);
 extern LosProcessCB *OsGetDefaultProcessCB(VOID);
 extern ProcessGroup *OsCreateProcessGroup(LosProcessCB *processCB);
+INT32 OsSchedulerParamCheck(UINT16 policy, BOOL isThread, const LosSchedParam *param);
 #ifdef __cplusplus
 #if __cplusplus
 }

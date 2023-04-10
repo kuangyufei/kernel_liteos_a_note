@@ -1177,7 +1177,7 @@ ERROR_COPY:
     return ret;
 }
 /// 检查收到的消息
-LITE_OS_SEC_TEXT STATIC UINT32 CheckRecievedMsg(IpcListNode *node, IpcContent *content, LosTaskCB *tcb)
+LITE_OS_SEC_TEXT STATIC UINT32 CheckReceivedMsg(IpcListNode *node, IpcContent *content, LosTaskCB *tcb)
 {
     UINT32 ret = LOS_OK;
     if (node == NULL) {
@@ -1268,7 +1268,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcRead(IpcContent *content)
             LOS_ListDelete(listNode);//从链表上摘掉节点,读后即焚
             node = LOS_DL_LIST_ENTRY(listNode, IpcListNode, listNode);//获取节点实体
             SCHEDULER_UNLOCK(intSave);
-            ret = CheckRecievedMsg(node, content, tcb);//检查收到的信息
+            ret = CheckReceivedMsg(node, content, tcb);//检查收到的信息
             if (ret == LOS_OK) {//信息没问题
                 break;
             }

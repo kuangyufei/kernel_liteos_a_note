@@ -30,6 +30,10 @@
 #include <climits>
 #include <gtest/gtest.h>
 #include <cstdio>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <net/if.h>
+#include <net/route.h>
 #include "It_container_test.h"
 
 const char *USERDATA_DIR_NAME = "/userdata";
@@ -41,6 +45,8 @@ const char *FS_TYPE           = "vfat";
 const int BIT_ON_RETURN_VALUE  = 8;
 const int STACK_SIZE           = 1024 * 1024;
 const int CHILD_FUNC_ARG       = 0x2088;
+static const int TRY_COUNT = 5;
+static const int OFFSET = 2;
 
 int ChildFunction(void *args)
 {
@@ -143,6 +149,98 @@ int GetLine(char *buf, int count, int maxLen, char **array)
         tail++;
     }
     return (index + 1);
+}
+
+static int TryResetNetAddr(const char *ifname, const char *ip, const char *netmask, const char *gw)
+{
+    int ret;
+    struct ifreq ifr;
+    struct rtentry rt;
+
+    int fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+    if (fd < 0) {
+        return -1;
+    }
+    ret = strncpy_s(ifr.ifr_name, sizeof(ifr.ifr_name), ifname, IFNAMSIZ);
+    if (ret != EOK) {
+        (void)close(fd);
+        return -1;
+    }
+    ifr.ifr_addr.sa_family = AF_INET;
+    inet_pton(AF_INET, netmask, ifr.ifr_addr.sa_data + OFFSET);
+    ret = ioctl(fd, SIOCSIFNETMASK, &ifr);
+    if (ret != 0) {
+        printf("[ERR][%s:%d] ioctl SIOCSIFNETMASK failed, %s!\n", __FUNCTION__, __LINE__, strerror(errno));
+        (void)close(fd);
+        return -1;
+    }
+    inet_pton(AF_INET, ip, ifr.ifr_addr.sa_data + OFFSET);
+    ret = ioctl(fd, SIOCSIFADDR, &ifr);
+    if (ret != 0) {
+        (void)close(fd);
+        printf("[ERR][%s:%d] ioctl SIOCGIFADDR failed, %s!\n", __FUNCTION__, __LINE__, strerror(errno));
+        return -1;
+    }
+    struct sockaddr_in *addr = reinterpret_cast<struct sockaddr_in *>(&rt.rt_gateway);
+    addr->sin_family = AF_INET;
+    addr->sin_addr.s_addr = inet_addr(gw);
+    rt.rt_flags = RTF_GATEWAY;
+    ret = ioctl(fd, SIOCADDRT, &rt);
+    if (ret != 0) {
+        (void)close(fd);
+        printf("[ERR][%s:%d] ioctl SIOCADDRT failed, %s!\n", __FUNCTION__, __LINE__, strerror(errno));
+        return ret;
+    }
+    ret = close(fd);
+    if (ret != 0) {
+        printf("[ERR][%s:%d] close failed, %s!\n", __FUNCTION__, __LINE__, strerror(errno));
+        return ret;
+    }
+    return ret;
+}
+
+int NetContainerResetNetAddr(const char *ifname, const char *ip, const char *netmask, const char *gw)
+{
+    int ret;
+    int try_count = TRY_COUNT;
+
+    while (try_count--) {
+        ret = TryResetNetAddr(ifname, ip, netmask, gw);
+        if (ret == 0) {
+            break;
+        }
+        sleep(1);
+    }
+    return ret;
+}
+
+int NetContainerGetLocalIP(const char *ifname, char *ip, int ipLen)
+{
+    struct ifreq ifr = {0};
+    int ret = strcpy_s(ifr.ifr_name, sizeof(ifr.ifr_name), ifname);
+    if (ret != EOK) {
+        return -1; /* -1: errno */
+    }
+    int inet_sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (inet_sock < 0) {
+        return -2; /* -2: errno */
+    }
+    ret = ioctl(inet_sock, SIOCGIFADDR, &ifr);
+    if (ret != 0) {
+        (void)close(inet_sock);
+        printf("[ERR][%s:%d] ioctl SIOCGIFADDR failed, %s!\n", __FUNCTION__, __LINE__, strerror(errno));
+        return -3; /* -3: errno */
+    }
+    ret = close(inet_sock);
+    if (ret != 0) {
+        return -4; /* -4: errno */
+    }
+    ret = strcpy_s(ip, ipLen, inet_ntoa((reinterpret_cast<struct sockaddr_in *>(&ifr.ifr_addr))->sin_addr));
+    if (ret != EOK) {
+        (void)close(inet_sock);
+        return -5; /* -5: errno */
+    }
+    return 0;
 }
 
 std::string GenContainerLinkPath(int pid, const std::string& containerType)
@@ -291,18 +389,6 @@ HWTEST_F(ContainerTest, ItNetContainer009, TestSize.Level0)
 }
 
 /**
-* @tc.name: Container_NET_Test_010
-* @tc.desc: uts container function test case
-* @tc.type: FUNC
-* @tc.require: issueI6HPH2
-* @tc.author:
-*/
-HWTEST_F(ContainerTest, ItNetContainer010, TestSize.Level0)
-{
-    ItNetContainer010();
-}
-
-/**
 * @tc.name: Container_NET_Test_011
 * @tc.desc: uts container function test case
 * @tc.type: FUNC
@@ -401,6 +487,30 @@ HWTEST_F(ContainerTest, ItUserContainer007, TestSize.Level0)
 #endif
 #if defined(LOSCFG_USER_TEST_PID_CONTAINER)
 /**
+* @tc.name: Container_Pid_Test_032
+* @tc.desc: pid container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6HDQK
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItPidContainer032, TestSize.Level0)
+{
+    ItPidContainer032();
+}
+
+/**
+* @tc.name: Container_Pid_Test_033
+* @tc.desc: pid container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6HDQK
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItPidContainer033, TestSize.Level0)
+{
+    ItPidContainer033();
+}
+
+/**
 * @tc.name: Container_Pid_Test_023
 * @tc.desc: pid container function test case
 * @tc.type: FUNC
@@ -494,30 +604,6 @@ HWTEST_F(ContainerTest, ItPidContainer030, TestSize.Level0)
 HWTEST_F(ContainerTest, ItPidContainer031, TestSize.Level0)
 {
     ItPidContainer031();
-}
-
-/**
-* @tc.name: Container_Pid_Test_032
-* @tc.desc: pid container function test case
-* @tc.type: FUNC
-* @tc.require: issueI6HDQK
-* @tc.author:
-*/
-HWTEST_F(ContainerTest, ItPidContainer032, TestSize.Level0)
-{
-    ItPidContainer032();
-}
-
-/**
-* @tc.name: Container_Pid_Test_033
-* @tc.desc: pid container function test case
-* @tc.type: FUNC
-* @tc.require: issueI6HDQK
-* @tc.author:
-*/
-HWTEST_F(ContainerTest, ItPidContainer033, TestSize.Level0)
-{
-    ItPidContainer033();
 }
 #endif
 #if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
@@ -1277,6 +1363,19 @@ HWTEST_F(ContainerTest, ItUtsContainer003, TestSize.Level0)
 HWTEST_F(ContainerTest, ItUserContainer005, TestSize.Level0)
 {
     ItUserContainer005();
+}
+#endif
+#if defined(LOSCFG_USER_TEST_NET_CONTAINER)
+/**
+* @tc.name: Container_NET_Test_010
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6HPH2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItNetContainer010, TestSize.Level0)
+{
+    ItNetContainer010();
 }
 #endif
 #endif

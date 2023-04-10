@@ -187,6 +187,104 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread019, TestSize.Level0)
 }
 
 /* *
+ * @tc.name: it_test_pthread_020
+ * @tc.desc: function for ProcessPthreadTest
+ * @tc.type: FUNC
+ * @tc.require: issueI6T3P3
+ * @tc.author:
+ */
+HWTEST_F(ProcessPthreadTest, ItTestPthread020, TestSize.Level0)
+{
+    ItTestPthread020();
+}
+
+/* *
+ * @tc.name: it_test_pthread_021
+ * @tc.desc: function for ProcessPthreadTest
+ * @tc.type: FUNC
+ * @tc.require: issueI6T3P3
+ * @tc.author:
+ */
+HWTEST_F(ProcessPthreadTest, ItTestPthread021, TestSize.Level0)
+{
+    ItTestPthread021();
+}
+
+/* *
+ * @tc.name: it_test_pthread_022
+ * @tc.desc: function for ProcessPthreadTest
+ * @tc.type: FUNC
+ * @tc.require: issueI6T3P3
+ * @tc.author:
+ */
+HWTEST_F(ProcessPthreadTest, ItTestPthread022, TestSize.Level0)
+{
+    ItTestPthread022();
+}
+
+/* *
+ * @tc.name: it_test_pthread_024
+ * @tc.desc: function for ProcessPthreadTest
+ * @tc.type: FUNC
+ * @tc.require: issueI6T3P3
+ * @tc.author:
+ */
+HWTEST_F(ProcessPthreadTest, ItTestPthread024, TestSize.Level0)
+{
+    ItTestPthread024();
+}
+
+/* *
+ * @tc.name: it_test_pthread_026
+ * @tc.desc: function for ProcessPthreadTest
+ * @tc.type: FUNC
+ * @tc.require: issueI6T3P3
+ * @tc.author:
+ */
+HWTEST_F(ProcessPthreadTest, ItTestPthread026, TestSize.Level0)
+{
+    ItTestPthread026();
+}
+
+/* *
+ * @tc.name: it_test_pthread_027
+ * @tc.desc: function for ProcessPthreadTest
+ * @tc.type: FUNC
+ * @tc.require: issueI6T3P3
+ * @tc.author:
+ */
+HWTEST_F(ProcessPthreadTest, ItTestPthread027, TestSize.Level0)
+{
+    ItTestPthread027();
+}
+
+
+/* *
+ * @tc.name: it_test_pthread_023
+ * @tc.desc: function for ProcessPthreadTest
+ * @tc.type: FUNC
+ * @tc.require: issueI6T3P3
+ * @tc.author:
+ */
+HWTEST_F(ProcessPthreadTest, ItTestPthread023, TestSize.Level0)
+{
+    ItTestPthread023();
+}
+
+
+/* *
+ * @tc.name: it_test_pthread_025
+ * @tc.desc: function for ProcessPthreadTest
+ * @tc.type: FUNC
+ * @tc.require: issueI6T3P3
+ * @tc.author:
+ */
+HWTEST_F(ProcessPthreadTest, ItTestPthread025, TestSize.Level0)
+{
+    ItTestPthread025();
+}
+
+/* *
  * @tc.name: it_test_pthread_017
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC

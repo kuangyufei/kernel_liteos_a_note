@@ -53,6 +53,9 @@
 #include "los_sched_pri.h"
 #include "los_swtmr_pri.h"
 #include "los_info_pri.h"
+#ifdef LOSCFG_SCHED_DEBUG
+#include "los_statistics_pri.h"
+#endif
 
 #define OS_PROCESS_MEM_INFO 0x2U
 #undef SHOW
@@ -93,6 +96,8 @@ STATIC UINT8 *ConvertSchedPolicyToString(UINT16 policy)
         return (UINT8 *)"RR";
     } else if (policy == LOS_SCHED_FIFO) {
         return (UINT8 *)"FIFO";
+    } else if (policy == LOS_SCHED_DEADLINE) {
+        return (UINT8 *)"EDF";
     } else if (policy == LOS_SCHED_IDLE) {
         return (UINT8 *)"IDLE";
     }
@@ -200,12 +205,10 @@ STATIC UINT8 *ConvertTaskStatusToString(UINT16 taskStatus)
         return (UINT8 *)"Suspended";
     } else if (taskStatus & OS_TASK_STATUS_DELAY) {
         return (UINT8 *)"Delay";
+    } else if (taskStatus & OS_TASK_STATUS_PEND_TIME) {
+        return (UINT8 *)"PendTime";
     } else if (taskStatus & OS_TASK_STATUS_PENDING) {
-        if (taskStatus & OS_TASK_STATUS_PEND_TIME) {
-            return (UINT8 *)"PendTime";
-        } else {
-            return (UINT8 *)"Pending";
-        }
+        return (UINT8 *)"Pending";
     } else if (taskStatus & OS_TASK_STATUS_EXIT) {
         return (UINT8 *)"Exit";
     }
@@ -413,11 +416,20 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpTask(INT32 argc, const CHAR **argv)
         }
         goto TASK_HELP;
 #endif
+#ifdef LOSCFG_SCHED_HPF_DEBUG
     } else if (strcmp("-t", argv[0]) == 0) {
         if (!OsShellShowSchedStatistics()) {
             return LOS_OK;
         }
         goto TASK_HELP;
+#endif
+#ifdef LOSCFG_SCHED_EDF_DEBUG
+    } else if (strcmp("-e", argv[0]) == 0) {
+        if (!OsShellShowEdfSchedStatistics()) {
+            return LOS_OK;
+        }
+        goto TASK_HELP;
+#endif
 #endif
     } else {
         goto TASK_HELP;

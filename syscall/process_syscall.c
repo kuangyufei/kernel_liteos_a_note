@@ -62,23 +62,44 @@ static int OsPermissionToCheck(unsigned int pid, unsigned int who)
     return 0;
 }
 ///设置用户级任务调度信息
-static int OsUserTaskSchedulerSet(unsigned int tid, unsigned short policy, unsigned short priority, bool policyFlag)
+static int UserTaskSchedulerCheck(unsigned int tid, int policy, const LosSchedParam *schedParam, bool policyFlag)
+{
+    int ret;
+    int processPolicy;
+
+    if (OS_TID_CHECK_INVALID(tid)) {
+        return EINVAL;
+    }
+
+    ret = OsSchedulerParamCheck(policy, TRUE, schedParam);
+    if (ret != 0) {
+        return ret;
+    }
+
+    if (policyFlag) {
+        ret = LOS_GetProcessScheduler(LOS_GetCurrProcessID(), &processPolicy, NULL);
+        if (ret < 0) {
+            return -ret;
+        }
+        if ((processPolicy != LOS_SCHED_DEADLINE) && (policy == LOS_SCHED_DEADLINE)) {
+            return EPERM;
+        } else if ((processPolicy == LOS_SCHED_DEADLINE) && (policy != LOS_SCHED_DEADLINE)) {
+            return EPERM;
+        }
+    }
+    return 0;
+}
+
+static int OsUserTaskSchedulerSet(unsigned int tid, int policy, const LosSchedParam *schedParam, bool policyFlag)
 {
     int ret;
     unsigned int intSave;
     bool needSched = false;
     SchedParam param = { 0 };
 
-    if (OS_TID_CHECK_INVALID(tid)) {
-        return EINVAL;
-    }
-
-    if (priority > OS_TASK_PRIORITY_LOWEST) {
-        return EINVAL;
-    }
-
-    if ((policy != LOS_SCHED_FIFO) && (policy != LOS_SCHED_RR)) {
-        return EINVAL;
+    ret = UserTaskSchedulerCheck(tid, policy, schedParam, policyFlag);
+    if (ret != 0) {
+        return ret;
     }
 
     LosTaskCB *taskCB = OS_TCB_FROM_TID(tid);
@@ -90,8 +111,22 @@ static int OsUserTaskSchedulerSet(unsigned int tid, unsigned short policy, unsig
     }
 
     taskCB->ops->schedParamGet(taskCB, &param);
-    param.policy = (policyFlag == true) ? policy : param.policy;
-    param.priority = priority;
+    param.policy = (policyFlag == true) ? (UINT16)policy : param.policy;
+    if ((param.policy == LOS_SCHED_RR) || (param.policy == LOS_SCHED_FIFO)) {
+        param.priority = schedParam->priority;
+    } else if (param.policy == LOS_SCHED_DEADLINE) {
+#ifdef LOSCFG_SECURITY_CAPABILITY
+        /* user mode process with privilege of CAP_SCHED_SETPRIORITY can change the priority */
+        if (!IsCapPermit(CAP_SCHED_SETPRIORITY)) {
+            SCHEDULER_UNLOCK(intSave);
+            return EPERM;
+        }
+#endif
+        param.runTimeUs = schedParam->runTimeUs;
+        param.deadlineUs = schedParam->deadlineUs;
+        param.periodUs = schedParam->periodUs;
+    }
+
     needSched = taskCB->ops->schedParamModify(taskCB, &param);
     SCHEDULER_UNLOCK(intSave);
 
@@ -115,6 +150,7 @@ int SysSchedGetScheduler(int id, int flag)
 {
     unsigned int intSave;
     SchedParam param = { 0 };
+    int policy;
     int ret;
 
     if (flag < 0) {
@@ -139,42 +175,57 @@ int SysSchedGetScheduler(int id, int flag)
         id = (int)LOS_GetCurrProcessID();
     }
 
-    return LOS_GetProcessScheduler(id);
-}
-
-int SysSchedSetScheduler(int id, int policy, int prio, int flag)
-{
-    int ret;
-
-    if (flag < 0) {
-        return -OsUserTaskSchedulerSet(id, policy, prio, true);
+    ret = LOS_GetProcessScheduler(id, &policy, NULL);
+    if (ret < 0) {
+        return ret;
     }
 
-    if (prio < OS_USER_PROCESS_PRIORITY_HIGHEST) {
-        return -EINVAL;
+    return policy;
+}
+
+int SysSchedSetScheduler(int id, int policy, const LosSchedParam *userParam, int flag)
+{
+    int ret;
+    LosSchedParam param;
+
+    if (LOS_ArchCopyFromUser(&param, userParam, sizeof(LosSchedParam)) != 0) {
+        return -EFAULT;
+    }
+
+    if (flag < 0) {
+        return -OsUserTaskSchedulerSet(id, policy, &param, true);
+    }
+
+    if (policy == LOS_SCHED_RR) {
+#ifdef LOSCFG_KERNEL_PLIMITS
+        if (param.priority < OsPidLimitGetPriorityLimit()) {
+            return -EINVAL;
+        }
+#else
+        if (param.priority < OS_USER_PROCESS_PRIORITY_HIGHEST) {
+            return -EINVAL;
+        }
+#endif
     }
 
     if (id == 0) {
         id = (int)LOS_GetCurrProcessID();
     }
 
-#ifdef LOSCFG_KERNEL_PLIMITS
-    if (prio < OsPidLimitGetPriorityLimit()) {
-        return -EINVAL;
-    }
-#endif
     ret = OsPermissionToCheck(id, LOS_GetCurrProcessID());
     if (ret < 0) {
         return ret;
     }
 
-    return OsSetProcessScheduler(LOS_PRIO_PROCESS, id, prio, policy);
+    return OsSetProcessScheduler(LOS_PRIO_PROCESS, id, policy, &param);
 }
 
-int SysSchedGetParam(int id, int flag)
+int SysSchedGetParam(int id, LosSchedParam *userParam, int flag)
 {
+    LosSchedParam schedParam = {0};
     SchedParam param = { 0 };
     unsigned int intSave;
+    int ret;
 
     if (flag < 0) {
         if (OS_TID_CHECK_INVALID(id)) {
@@ -183,7 +234,7 @@ int SysSchedGetParam(int id, int flag)
 
         LosTaskCB *taskCB = OS_TCB_FROM_TID(id);
         SCHEDULER_LOCK(intSave);
-        int ret = OsUserTaskOperatePermissionsCheck(taskCB);
+        ret = OsUserTaskOperatePermissionsCheck(taskCB);
         if (ret != LOS_OK) {
             SCHEDULER_UNLOCK(intSave);
             return -ret;
@@ -191,25 +242,39 @@ int SysSchedGetParam(int id, int flag)
 
         taskCB->ops->schedParamGet(taskCB, &param);
         SCHEDULER_UNLOCK(intSave);
-        return (int)param.priority;
+        if (param.policy == LOS_SCHED_DEADLINE) {
+            schedParam.runTimeUs = param.runTimeUs;
+            schedParam.deadlineUs = param.deadlineUs;
+            schedParam.periodUs = param.periodUs;
+        } else {
+            schedParam.priority = param.priority;
+        }
+    } else {
+        if (id == 0) {
+            id = (int)LOS_GetCurrProcessID();
+        }
+
+        if (OS_PID_CHECK_INVALID(id)) {
+            return -EINVAL;
+        }
+
+        ret = LOS_GetProcessScheduler(id, NULL, &schedParam);
+        if (ret < 0) {
+            return ret;
+        }
     }
 
-    if (id == 0) {
-        id = (int)LOS_GetCurrProcessID();
+    if (LOS_ArchCopyToUser(userParam, &schedParam, sizeof(LosSchedParam))) {
+        return -EFAULT;
     }
-
-    if (OS_PID_CHECK_INVALID(id)) {
-        return -EINVAL;
-    }
-
-    return OsGetProcessPriority(LOS_PRIO_PROCESS, id);
+    return 0;
 }
 
-int SysSetProcessPriority(int which, int who, unsigned int prio)
+int SysSetProcessPriority(int which, int who, int prio)
 {
     int ret;
 
-    if (prio < OS_USER_PROCESS_PRIORITY_HIGHEST) {
+    if (which != LOS_PRIO_PROCESS) {
         return -EINVAL;
     }
 
@@ -221,6 +286,10 @@ int SysSetProcessPriority(int which, int who, unsigned int prio)
     if (prio < OsPidLimitGetPriorityLimit()) {
         return -EINVAL;
     }
+#else
+    if (prio < OS_USER_PROCESS_PRIORITY_HIGHEST) {
+        return -EINVAL;
+    }
 #endif
 
     ret = OsPermissionToCheck(who, LOS_GetCurrProcessID());
@@ -228,22 +297,31 @@ int SysSetProcessPriority(int which, int who, unsigned int prio)
         return ret;
     }
 
-    return OsSetProcessScheduler(which, who, prio, LOS_GetProcessScheduler(who));
+    return LOS_SetProcessPriority(who, prio);
 }
 
-int SysSchedSetParam(int id, unsigned int prio, int flag)
+int SysSchedSetParam(int id, const LosSchedParam *userParam, int flag)
 {
+    int ret, policy;
+    LosSchedParam param;
+
     if (flag < 0) {
-        return -OsUserTaskSchedulerSet(id, LOS_SCHED_RR, prio, false);
+        if (LOS_ArchCopyFromUser(&param, userParam, sizeof(LosSchedParam)) != 0) {
+            return -EFAULT;
+        }
+        return -OsUserTaskSchedulerSet(id, LOS_SCHED_RR, &param, false);
     }
 
-#ifdef LOSCFG_KERNEL_PLIMITS
-    if (prio < OsPidLimitGetPriorityLimit()) {
-        return -EINVAL;
+    if (id == 0) {
+        id = (int)LOS_GetCurrProcessID();
     }
-#endif
 
-    return SysSetProcessPriority(LOS_PRIO_PROCESS, id, prio);
+    ret = LOS_GetProcessScheduler(id, &policy, NULL);
+    if (ret < 0) {
+        return ret;
+    }
+
+    return SysSchedSetScheduler(id, policy, userParam, flag);
 }
 
 int SysGetProcessPriority(int which, int who)

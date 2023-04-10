@@ -57,9 +57,11 @@ typedef struct {
 #ifdef LOSCFG_SCHED_TICK_DEBUG
 VOID OsSchedDebugRecordData(VOID);
 UINT32 OsShellShowTickResponse(VOID);
-UINT32 OsShellShowSchedStatistics(VOID);
 UINT32 OsSchedDebugInit(VOID);
 #endif
+UINT32 OsShellShowSchedStatistics(VOID);
+UINT32 OsShellShowEdfSchedStatistics(VOID);
+VOID EDFDebugRecord(UINTPTR *taskCB, UINT64 oldFinish);
 #endif
 
 #ifdef __cplusplus

@@ -49,6 +49,7 @@ STATIC HPFRunqueue g_schedHPF;
 
 STATIC VOID HPFDequeue(SchedRunqueue *rq, LosTaskCB *taskCB);
 STATIC VOID HPFEnqueue(SchedRunqueue *rq, LosTaskCB *taskCB);
+STATIC UINT64 HPFWaitTimeGet(LosTaskCB *taskCB);
 STATIC UINT32 HPFWait(LosTaskCB *runTask, LOS_DL_LIST *list, UINT32 ticks);
 STATIC VOID HPFWake(LosTaskCB *resumedTask);
 STATIC BOOL HPFSchedParamModify(LosTaskCB *taskCB, const SchedParam *param);
@@ -68,6 +69,7 @@ STATIC VOID HPFPriorityRestore(LosTaskCB *owner, const LOS_DL_LIST *list, const 
 const STATIC SchedOps g_priorityOps = {
     .dequeue = HPFDequeue,
     .enqueue = HPFEnqueue,
+    .waitTimeGet = HPFWaitTimeGet,
     .wait = HPFWait,
     .wake = HPFWake,
     .schedParamModify = HPFSchedParamModify,
@@ -96,7 +98,7 @@ STATIC VOID HPFTimeSliceUpdate(SchedRunqueue *rq, LosTaskCB *taskCB, UINT64 curr
 
     if (sched->policy == LOS_SCHED_RR) {
         taskCB->timeSlice -= incTime;
-#ifdef LOSCFG_SCHED_DEBUG
+#ifdef LOSCFG_SCHED_HPF_DEBUG
         taskCB->schedStat.timeSliceRealTime += incTime;
 #endif
     }
@@ -109,7 +111,7 @@ STATIC VOID HPFTimeSliceUpdate(SchedRunqueue *rq, LosTaskCB *taskCB, UINT64 curr
         rq->schedFlag |= INT_PEND_RESCH;
     }
 
-#ifdef LOSCFG_SCHED_DEBUG
+#ifdef LOSCFG_SCHED_HPF_DEBUG
     taskCB->schedStat.allRuntime += incTime;
 #endif
 }
@@ -217,7 +219,7 @@ STATIC INLINE VOID PriQueInsert(HPFRunqueue *rq, LosTaskCB *taskCB)
                 sched->initTimeSlice = TimeSliceCalculate(rq, sched->basePrio, sched->priority);
                 taskCB->timeSlice = sched->initTimeSlice;
                 PriQueTailInsert(rq, sched->basePrio, &taskCB->pendList, sched->priority);
-#ifdef LOSCFG_SCHED_DEBUG
+#ifdef LOSCFG_SCHED_HPF_DEBUG
                 taskCB->schedStat.timeSliceTime = taskCB->schedStat.timeSliceRealTime;
                 taskCB->schedStat.timeSliceCount++;
 #endif
@@ -246,7 +248,7 @@ STATIC INLINE VOID PriQueInsert(HPFRunqueue *rq, LosTaskCB *taskCB)
 //入就绪队列
 STATIC VOID HPFEnqueue(SchedRunqueue *rq, LosTaskCB *taskCB)
 {
-#ifdef LOSCFG_SCHED_DEBUG
+#ifdef LOSCFG_SCHED_HPF_DEBUG
     if (!(taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {
         taskCB->startTime = OsGetCurrSchedTimeCycle();
     }
@@ -303,6 +305,12 @@ STATIC UINT32 HPFDelay(LosTaskCB *runTask, UINT64 waitTime)
     return LOS_OK;
 }
 
+STATIC UINT64 HPFWaitTimeGet(LosTaskCB *taskCB)
+{
+    taskCB->waitTime += taskCB->startTime;
+    return taskCB->waitTime;
+}
+
 STATIC UINT32 HPFWait(LosTaskCB *runTask, LOS_DL_LIST *list, UINT32 ticks)
 {
     runTask->taskStatus |= OS_TASK_STATUS_PENDING;
@@ -335,7 +343,7 @@ STATIC VOID HPFWake(LosTaskCB *resumedTask)
     }
 
     if (!(resumedTask->taskStatus & OS_TASK_STATUS_SUSPENDED)) {
-#ifdef LOSCFG_SCHED_DEBUG
+#ifdef LOSCFG_SCHED_HPF_DEBUG
         resumedTask->schedStat.pendTime += OsGetCurrSchedTimeCycle() - resumedTask->startTime;
         resumedTask->schedStat.pendCount++;
 #endif
@@ -510,13 +518,13 @@ STATIC VOID HPFPriorityRestore(LosTaskCB *owner, const LOS_DL_LIST *list, const 
 
 VOID HPFTaskSchedParamInit(LosTaskCB *taskCB, UINT16 policy,
                            const SchedParam *parentParam,
-                           const TSK_INIT_PARAM_S *param)
+                           const LosSchedParam *param)
 {
     SchedHPF *sched = (SchedHPF *)&taskCB->sp;
 
     sched->policy = policy;
     if (param != NULL) {
-        sched->priority = param->usTaskPrio;
+        sched->priority = param->priority;
     } else {
         sched->priority = parentParam->priority;
     }

@@ -100,6 +100,16 @@ extern "C" {
  */
 #define OS_NS_PER_TICK          (OS_SYS_NS_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND) ///< 一个tick的纳秒数
 
+#define OS_US_TO_CYCLE(time, freq)  ((((time) / OS_SYS_US_PER_SECOND) * (freq)) + \
+    (((time) % OS_SYS_US_PER_SECOND) * (freq) / OS_SYS_US_PER_SECOND))
+
+#define OS_SYS_US_TO_CYCLE(time) OS_US_TO_CYCLE((time), OS_SYS_CLOCK)
+
+#define OS_CYCLE_TO_US(cycle, freq) ((((cycle) / (freq)) * OS_SYS_US_PER_SECOND) + \
+    ((cycle) % (freq) * OS_SYS_US_PER_SECOND / (freq)))
+
+#define OS_SYS_CYCLE_TO_US(cycle) OS_CYCLE_TO_US((cycle), OS_SYS_CLOCK)
+
 /**
  * @ingroup los_sys
  * The maximum length of name.

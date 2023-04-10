@@ -85,4 +85,6 @@ void ItUserContainer005(void)
 
     status = WEXITSTATUS(status);
     ASSERT_EQ(status, EXIT_TRUE_CODE);
+
+    sleep(5); /* 5: Wait for process resources to be reclaimed */
 }

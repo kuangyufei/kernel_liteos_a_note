@@ -47,17 +47,17 @@ static UINT32 testcase(VOID)
     printf("Locale is: %s\n", setlocale(LC_TIME, "en_US.UTF-8"));
     (void)strftime(buffer, sizeof(buffer), "%c", timer);
     printf("Date is: %s\n", buffer);
-    ICUNIT_ASSERT_NOT_EQUAL_NULL(buffer, NULL, -1);
+    ICUNIT_ASSERT_NOT_EQUAL(buffer, NULL, -1);
 
     printf("Locale is: %s\n", setlocale(LC_TIME, "zh_CN.UTF-8"));
     (void)strftime(buffer, sizeof(buffer), "%c", timer);
     printf("Date is: %s\n", buffer);
-    ICUNIT_ASSERT_NOT_EQUAL_NULL(buffer, NULL, -1);
+    ICUNIT_ASSERT_NOT_EQUAL(buffer, NULL, -1);
 
     printf("Locale is: %s\n", setlocale(LC_TIME, ""));
     (void)strftime(buffer, sizeof(buffer), "%c", timer);
     printf("Date is: %s\n", buffer);
-    ICUNIT_ASSERT_NOT_EQUAL_NULL(buffer, NULL, -1);
+    ICUNIT_ASSERT_NOT_EQUAL(buffer, NULL, -1);
     setlocale(LC_ALL, "C");
 
     return LOS_OK;

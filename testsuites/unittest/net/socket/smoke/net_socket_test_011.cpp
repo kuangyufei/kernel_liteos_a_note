@@ -181,6 +181,9 @@ static int StartClients(pthread_t *cli, int cliNum)
     for (int i = 0; i < cliNum; ++i) {
         ret = pthread_attr_init(&attr);
         param.sched_priority = param.sched_priority + 1;
+        if (param.sched_priority > 31) {    /* 31: prio */
+            param.sched_priority = 31;  /* 31: prio */
+        }
         pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
         pthread_attr_setschedparam(&attr, &param);
 

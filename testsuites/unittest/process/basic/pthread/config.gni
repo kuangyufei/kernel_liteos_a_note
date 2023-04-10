@@ -55,6 +55,14 @@ pthread_sources_smoke = [
   "$TEST_UNITTEST_DIR/process/basic/pthread/smoke/pthread_test_017.cpp",
   "$TEST_UNITTEST_DIR/process/basic/pthread/smoke/pthread_test_018.cpp",
   "$TEST_UNITTEST_DIR/process/basic/pthread/smoke/pthread_test_019.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/pthread/smoke/pthread_test_020.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/pthread/smoke/pthread_test_021.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/pthread/smoke/pthread_test_022.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/pthread/smoke/pthread_test_023.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/pthread/smoke/pthread_test_024.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/pthread/smoke/pthread_test_025.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/pthread/smoke/pthread_test_026.cpp",
+  "$TEST_UNITTEST_DIR/process/basic/pthread/smoke/pthread_test_027.cpp",
 ]
 
 pthread_sources_full = [

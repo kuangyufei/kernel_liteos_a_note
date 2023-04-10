@@ -77,7 +77,7 @@ static UINT32 testcase(VOID)
     if (mnt && !(feof(fp) || ferror(fp))) {
         ret =  hasmntopt(mnt, opt);
         printf("hasmntopt=%s\n", ret);
-        ICUNIT_ASSERT_NOT_EQUAL_NULL(ret, NULL, -1);
+        ICUNIT_ASSERT_NOT_EQUAL(ret, NULL, -1);
         mnt = getmntent(fp);
     }
 

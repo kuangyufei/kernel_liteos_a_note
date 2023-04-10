@@ -99,6 +99,7 @@ UINT32 OsShellShowTickResponse(VOID)
 }
 #endif
 
+#ifdef LOSCFG_SCHED_HPF_DEBUG
 STATIC VOID SchedDataGet(const LosTaskCB *taskCB, UINT64 *runTime, UINT64 *timeSlice,
                          UINT64 *pendTime, UINT64 *schedWait)
 {
@@ -128,6 +129,7 @@ UINT32 OsShellShowSchedStatistics(VOID)
     UINT32 taskLinkNum[LOSCFG_KERNEL_CORE_NUM];
     UINT32 intSave;
     LosTaskCB task;
+    SchedEDF *sched = NULL;
 
     SCHEDULER_LOCK(intSave);
     for (UINT16 cpu = 0; cpu < LOSCFG_KERNEL_CORE_NUM; cpu++) {
@@ -146,6 +148,12 @@ UINT32 OsShellShowSchedStatistics(VOID)
         LosTaskCB *taskCB = g_taskCBArray + tid;
         SCHEDULER_LOCK(intSave);
         if (OsTaskIsUnused(taskCB) || (taskCB->processCB == (UINTPTR)OsGetIdleProcess())) {
+            SCHEDULER_UNLOCK(intSave);
+            continue;
+        }
+
+        sched = (SchedEDF *)&taskCB->sp;
+        if (sched->policy == LOS_SCHED_DEADLINE) {
             SCHEDULER_UNLOCK(intSave);
             continue;
         }
@@ -170,3 +178,168 @@ UINT32 OsShellShowSchedStatistics(VOID)
 }
 #endif
 
+#ifdef LOSCFG_SCHED_EDF_DEBUG
+#define EDF_DEBUG_NODE 20
+typedef struct {
+    UINT32 tid;
+    INT32 runTimeUs;
+    UINT64 deadlineUs;
+    UINT64 periodUs;
+    UINT64 startTime;
+    UINT64 finishTime;
+    UINT64 nextfinishTime;
+    UINT64 timeSliceUnused;
+    UINT64 timeSliceRealTime;
+    UINT64 allRuntime;
+    UINT64 pendTime;
+} EDFDebug;
+
+STATIC EDFDebug g_edfNode[EDF_DEBUG_NODE];
+STATIC INT32 g_edfNodePointer = 0;
+
+VOID EDFDebugRecord(UINTPTR *task, UINT64 oldFinish)
+{
+    LosTaskCB *taskCB = (LosTaskCB *)task;
+    SchedEDF *sched = (SchedEDF *)&taskCB->sp;
+    SchedParam param;
+
+    // when print edf info, will stop record
+    if (g_edfNodePointer == (EDF_DEBUG_NODE + 1)) {
+        return;
+    }
+
+    taskCB->ops->schedParamGet(taskCB, &param);
+    g_edfNode[g_edfNodePointer].tid = taskCB->taskID;
+    g_edfNode[g_edfNodePointer].runTimeUs =param.runTimeUs;
+    g_edfNode[g_edfNodePointer].deadlineUs =param.deadlineUs;
+    g_edfNode[g_edfNodePointer].periodUs =param.periodUs;
+    g_edfNode[g_edfNodePointer].startTime = taskCB->startTime;
+    if (taskCB->timeSlice <= 0) {
+        taskCB->irqUsedTime = 0;
+        g_edfNode[g_edfNodePointer].timeSliceUnused = 0;
+    } else {
+        g_edfNode[g_edfNodePointer].timeSliceUnused = taskCB->timeSlice;
+    }
+    g_edfNode[g_edfNodePointer].finishTime = oldFinish;
+    g_edfNode[g_edfNodePointer].nextfinishTime = sched->finishTime;
+    g_edfNode[g_edfNodePointer].timeSliceRealTime = taskCB->schedStat.timeSliceRealTime;
+    g_edfNode[g_edfNodePointer].allRuntime = taskCB->schedStat.allRuntime;
+    g_edfNode[g_edfNodePointer].pendTime = taskCB->schedStat.pendTime;
+
+    g_edfNodePointer++;
+    if (g_edfNodePointer == EDF_DEBUG_NODE) {
+        g_edfNodePointer = 0;
+    }
+}
+
+STATIC VOID EDFInfoPrint(int idx)
+{
+    INT32 runTimeUs;
+    UINT64 deadlineUs;
+    UINT64 periodUs;
+    UINT64 startTime;
+    UINT64 timeSlice;
+    UINT64 finishTime;
+    UINT64 nextfinishTime;
+    UINT64 pendTime;
+    UINT64 allRuntime;
+    UINT64 timeSliceRealTime;
+    CHAR *status = NULL;
+
+    startTime = OS_SYS_CYCLE_TO_US(g_edfNode[idx].startTime);
+    timeSlice = OS_SYS_CYCLE_TO_US(g_edfNode[idx].timeSliceUnused);
+    finishTime = OS_SYS_CYCLE_TO_US(g_edfNode[idx].finishTime);
+    nextfinishTime = OS_SYS_CYCLE_TO_US(g_edfNode[idx].nextfinishTime);
+    pendTime = OS_SYS_CYCLE_TO_US(g_edfNode[idx].pendTime);
+    allRuntime = OS_SYS_CYCLE_TO_US(g_edfNode[idx].allRuntime);
+    timeSliceRealTime = OS_SYS_CYCLE_TO_US(g_edfNode[idx].timeSliceRealTime);
+    runTimeUs = g_edfNode[idx].runTimeUs;
+    deadlineUs = g_edfNode[idx].deadlineUs;
+    periodUs = g_edfNode[idx].periodUs;
+
+    if (timeSlice > 0) {
+        status = "TIMEOUT";
+    } else if (nextfinishTime == finishTime) {
+        status = "NEXT PERIOD";
+    } else {
+        status = "WAIT RUN";
+    }
+
+    PRINTK("%4u%9d%9llu%9llu%12llu%12llu%12llu%9llu%9llu%9llu%9llu %-12s\n",
+           g_edfNode[idx].tid, runTimeUs, deadlineUs, periodUs,
+           startTime, finishTime, nextfinishTime, allRuntime, timeSliceRealTime,
+           timeSlice, pendTime, status);
+}
+
+VOID OsEDFDebugPrint(VOID)
+{
+    INT32 max;
+    UINT32 intSave;
+    INT32 i;
+
+    SCHEDULER_LOCK(intSave);
+    max = g_edfNodePointer;
+    g_edfNodePointer = EDF_DEBUG_NODE + 1;
+    SCHEDULER_UNLOCK(intSave);
+
+    PRINTK("\r\nlast %d sched is: (in microsecond)\r\n", EDF_DEBUG_NODE);
+
+    PRINTK(" TID  RunTime Deadline   Period   StartTime   "
+           "CurPeriod  NextPeriod   AllRun  RealRun  TimeOut WaitTime Status\n");
+
+    for (i = max; i < EDF_DEBUG_NODE; i++) {
+        EDFInfoPrint(i);
+    }
+
+    for (i = 0; i < max; i++) {
+        EDFInfoPrint(i);
+    }
+
+    SCHEDULER_LOCK(intSave);
+    g_edfNodePointer = max;
+    SCHEDULER_UNLOCK(intSave);
+}
+
+UINT32 OsShellShowEdfSchedStatistics(VOID)
+{
+    UINT32 intSave;
+    LosTaskCB task;
+    UINT64 curTime;
+    UINT64 deadline;
+    UINT64 finishTime;
+    SchedEDF *sched = NULL;
+
+    PRINTK("Now Alive EDF Thread:\n");
+    PRINTK("TID        CurTime       DeadTime     FinishTime  taskName\n");
+
+    for (UINT32 tid = 0; tid < g_taskMaxNum; tid++) {
+        LosTaskCB *taskCB = g_taskCBArray + tid;
+        SCHEDULER_LOCK(intSave);
+        if (OsTaskIsUnused(taskCB)) {
+            SCHEDULER_UNLOCK(intSave);
+            continue;
+        }
+
+        sched = (SchedEDF *)&taskCB->sp;
+        if (sched->policy != LOS_SCHED_DEADLINE) {
+            SCHEDULER_UNLOCK(intSave);
+            continue;
+        }
+
+        (VOID)memcpy_s(&task, sizeof(LosTaskCB), taskCB, sizeof(LosTaskCB));
+
+        curTime = OS_SYS_CYCLE_TO_US(HalClockGetCycles());
+        finishTime = OS_SYS_CYCLE_TO_US(sched->finishTime);
+        deadline = OS_SYS_CYCLE_TO_US(taskCB->ops->deadlineGet(taskCB));
+        SCHEDULER_UNLOCK(intSave);
+
+        PRINTK("%3u%15llu%15llu%15llu  %-32s\n",
+               task.taskID, curTime, deadline, finishTime, task.taskName);
+    }
+
+    OsEDFDebugPrint();
+
+    return LOS_OK;
+}
+#endif
+#endif

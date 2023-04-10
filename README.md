@@ -202,6 +202,7 @@
   
 ### 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [gitcode](https://gitcode.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
+* `2023/04/10` -- 调度算法优化，加入deadline
 * `2023/03/01` -- 增加网络容器和容器限额功能
 * `2023/02/13` -- 支持proc/self目录
 * `2023/01/14` -- 同步官方代码，支持PID容器

@@ -51,6 +51,8 @@ void ItPidContainer032(void)
     char *array[g_arryLen] = { nullptr };
     char buf[g_buffSize] = { 0 };
 
+    sleep(2); /* 2: Wait for cache resource reclamation */
+
     int ret = ReadFile(path.c_str(), buf);
     ASSERT_NE(ret, -1);
 

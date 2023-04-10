@@ -38,7 +38,7 @@ get_line()
 {
     SYM_ADDR=$(echo $1 | awk '{print $2}')
     ELF_OFFSET=$(echo ${SYM_ADDR} | cut -d '[' -f2 | cut -d ']' -f1)
-    FILE_LINE=$(${ADDR2LINE} -f -e $2 ${ELF_OFFSET} | awk 'NR==2'`)
+    FILE_LINE=$(${ADDR2LINE} -f -e $2 ${ELF_OFFSET} | awk 'NR==2')
     if [[ "${FILE_LINE}" == *"?"* ]]; then
         typeset ELF_OFFSET=$((ELF_OFFSET+LOAD_BASE))
         ELF_OFFSET=$(echo "obase=16;${ELF_OFFSET}" | bc)

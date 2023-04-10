@@ -77,4 +77,6 @@ void ItPidContainer024(void)
     ASSERT_EQ(ret, pid);
     status = WEXITSTATUS(status);
     ASSERT_EQ(status, EXIT_CODE_ERRNO_5);
+
+    sleep(5); /* 5: Wait for process resources to be reclaimed */
 }

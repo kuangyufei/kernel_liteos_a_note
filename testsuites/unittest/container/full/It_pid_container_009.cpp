@@ -46,7 +46,7 @@ static int ChildFun(void *p)
     for (int i = 0; i < count; i++) {
         pid = fork();
         if (pid == 0) {
-            sleep(5); /* delay 5s */
+            sleep(2); /* delay 2s */
             exit(0);
         } else if (pid < 0) {
             if (errno != EAGAIN) {
@@ -91,4 +91,6 @@ void ItPidContainer009(void)
     ASSERT_NE(ret, 0);
     ret = WEXITSTATUS(status);
     ASSERT_EQ(ret, EXIT_CODE_ERRNO_255);
+
+    sleep(5); /* 5: Wait for process resources to be reclaimed */
 }

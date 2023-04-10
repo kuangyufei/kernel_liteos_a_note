@@ -565,6 +565,8 @@ LITEOS_COPTS_BASE   += -fno-aggressive-loop-optimizations
 endif
 
 LITEOS_COPTS_EXTRA  += -std=c99 -Wpointer-arith -Wstrict-prototypes -ffunction-sections -fdata-sections -fno-exceptions -fno-short-enums
+LITEOS_COPTS_EXTRA  += -Wno-strict-prototypes -Wno-deprecated-non-prototype -Wno-unused-but-set-variable
+
 ifeq ($(LOSCFG_ARCH_ARM_AARCH32), y)
 ifneq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 LITEOS_COPTS_EXTRA  += -mthumb-interwork

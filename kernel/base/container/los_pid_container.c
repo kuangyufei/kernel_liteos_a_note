@@ -37,8 +37,8 @@
 #ifdef LOSCFG_PID_CONTAINER
 
 STATIC UINT32 g_currentPidContainerNum;//进程类容器当前数量
-STATIC LosProcessCB *g_defaultProcessCB = NULL;
-STATIC LosTaskCB *g_defaultTaskCB = NULL;
+STATIC LosProcessCB *g_defaultProcessCB = NULL;//默认进程控制块 由OsInitRootPidContainer赋初值
+STATIC LosTaskCB *g_defaultTaskCB = NULL;//默认任务控制块 由OsInitRootPidContainer赋初值
 
 STATIC VOID FreeVpid(LosProcessCB *processCB)
 {
@@ -256,42 +256,42 @@ VOID OsPidContainerDestroyAllProcess(LosProcessCB *curr)
 STATIC PidContainer *CreateNewPidContainer(PidContainer *parent)
 {
     UINT32 index;
-    PidContainer *newPidContainer = (PidContainer *)LOS_MemAlloc(m_aucSysMem1, sizeof(PidContainer));
+    PidContainer *newPidContainer = (PidContainer *)LOS_MemAlloc(m_aucSysMem1, sizeof(PidContainer));//从内核动态内存分配
     if (newPidContainer == NULL) {
         return NULL;
     }
-    (VOID)memset_s(newPidContainer, sizeof(PidContainer), 0, sizeof(PidContainer));
+    (VOID)memset_s(newPidContainer, sizeof(PidContainer), 0, sizeof(PidContainer));//初始化内存块
 
-    newPidContainer->containerID = OsAllocContainerID();
-    LOS_ListInit(&newPidContainer->pidFreeList);
-    for (index = 0; index < LOSCFG_BASE_CORE_PROCESS_LIMIT; index++) {
+    newPidContainer->containerID = OsAllocContainerID();//分配一个容器ID
+    LOS_ListInit(&newPidContainer->pidFreeList);//初始化虚拟进程池空闲链表
+    for (index = 0; index < LOSCFG_BASE_CORE_PROCESS_LIMIT; index++) {//初始化容器的虚拟进程池
         ProcessVid *vpid = &newPidContainer->pidArray[index];
-        vpid->vid = index;
+        vpid->vid = index;//进程ID序号
         vpid->vpid = OS_INVALID_VALUE;
-        vpid->cb = (UINTPTR)g_defaultProcessCB;
-        LOS_ListTailInsert(&newPidContainer->pidFreeList, &vpid->node);
+        vpid->cb = (UINTPTR)g_defaultProcessCB;//默认进程控制块
+        LOS_ListTailInsert(&newPidContainer->pidFreeList, &vpid->node);//挂入链表
     }
 
-    LOS_ListInit(&newPidContainer->tidFreeList);
+    LOS_ListInit(&newPidContainer->tidFreeList);//初始化虚拟任务池空闲链表
     for (index = 0; index < LOSCFG_BASE_CORE_TSK_LIMIT; index++) {
         ProcessVid *vtid = &newPidContainer->tidArray[index];
-        vtid->vid = index;
+        vtid->vid = index;//任务ID序号
         vtid->vpid = OS_INVALID_VALUE;
         vtid->cb = (UINTPTR)g_defaultTaskCB;
-        LOS_ListTailInsert(&newPidContainer->tidFreeList, &vtid->node);
+        LOS_ListTailInsert(&newPidContainer->tidFreeList, &vtid->node);//挂入链表
     }
 
-    newPidContainer->parent = parent;
+    newPidContainer->parent = parent;//指定父容器
     if (parent != NULL) {
-        LOS_AtomicSet(&newPidContainer->level, parent->level + 1);
+        LOS_AtomicSet(&newPidContainer->level, parent->level + 1);//子比父优先级低一级
         newPidContainer->referenced = FALSE;
     } else {
-        LOS_AtomicSet(&newPidContainer->level, 0);
+        LOS_AtomicSet(&newPidContainer->level, 0);//此处说明0位最高优先级
         newPidContainer->referenced = TRUE;
     }
     return newPidContainer;
 }
-
+//销毁容器
 VOID OsPidContainerDestroy(Container *container, LosProcessCB *processCB)
 {
     if (container == NULL) {
@@ -321,21 +321,21 @@ VOID OsPidContainerDestroy(Container *container, LosProcessCB *processCB)
         container->pidContainer = NULL;
         container->pidForChildContainer = NULL;
         (VOID)LOS_MemFree(m_aucSysMem1, pidContainer->rootPGroup);
-        (VOID)LOS_MemFree(m_aucSysMem1, pidContainer);
+        (VOID)LOS_MemFree(m_aucSysMem1, pidContainer);//释放结构体内存块
     }
 
     if (processCB != NULL) {
         OsContainerFree(processCB);
     }
 }
-
+/// 创建进程容器
 STATIC UINT32 CreatePidContainer(LosProcessCB *child, LosProcessCB *parent)
 {
     UINT32 ret;
     UINT32 intSave;
 
-    PidContainer *parentContainer = parent->container->pidContainer;
-    PidContainer *newPidContainer = CreateNewPidContainer(parentContainer);
+    PidContainer *parentContainer = parent->container->pidContainer;//先获取父进程容器
+    PidContainer *newPidContainer = CreateNewPidContainer(parentContainer);//从父进程容器中创建一个新容器
     if (newPidContainer == NULL) {
         return ENOMEM;
     }
@@ -508,21 +508,21 @@ UINT32 OsSetNsPidContainer(UINT32 flags, Container *container, Container *newCon
     }
     return LOS_OK;
 }
-
+///初始化进程根容器
 UINT32 OsInitRootPidContainer(PidContainer **pidContainer)
 {
     UINT32 intSave;
     g_defaultTaskCB = OsGetDefaultTaskCB();
     g_defaultProcessCB = OsGetDefaultProcessCB();
 
-    PidContainer *newPidContainer = CreateNewPidContainer(NULL);
+    PidContainer *newPidContainer = CreateNewPidContainer(NULL);//无父进程
     if (newPidContainer == NULL) {
         return ENOMEM;
     }
 
     SCHEDULER_LOCK(intSave);
-    g_currentPidContainerNum++;
-    *pidContainer = newPidContainer;
+    g_currentPidContainerNum++;//当前进程容器数量增加
+    *pidContainer = newPidContainer;//成为根进程容器，由参数带回
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }

@@ -160,8 +160,9 @@ if (defined(LOSCFG_USER_TEST_NET_CONTAINER)) {
     "$TEST_UNITTEST_DIR/container/smoke/It_net_container_007.cpp",
     "$TEST_UNITTEST_DIR/container/smoke/It_net_container_008.cpp",
     "$TEST_UNITTEST_DIR/container/smoke/It_net_container_009.cpp",
-    "$TEST_UNITTEST_DIR/container/smoke/It_net_container_010.cpp",
     "$TEST_UNITTEST_DIR/container/smoke/It_net_container_011.cpp",
     "$TEST_UNITTEST_DIR/container/smoke/It_net_container_012.cpp",
   ]
+  sources_full +=
+      [ "$TEST_UNITTEST_DIR/container/full/It_net_container_010.cpp" ]
 }

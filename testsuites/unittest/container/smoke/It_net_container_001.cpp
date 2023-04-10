@@ -32,32 +32,11 @@
 #include "It_container_test.h"
 
 using namespace std;
-const int IpLen = 16;
-
-static int GetLocalIP(char *ip)
-{
-    struct ifreq ifr;
-    int inet_sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (inet_sock < 0) {
-        return -1;
-    }
-    int ret = strcpy_s(ifr.ifr_name, sizeof(ifr.ifr_name), "eth0");
-    if (ret != EOK) {
-        (void)close(inet_sock);
-        return -1;
-    }
-    ioctl(inet_sock, SIOCGIFADDR, &ifr);
-    ret = strcpy_s(ip, IpLen, inet_ntoa((reinterpret_cast<struct sockaddr_in *>(&ifr.ifr_addr))->sin_addr));
-    if (ret != EOK) {
-        (void)close(inet_sock);
-        return -1;
-    }
-    ret = close(inet_sock);
-    if (ret != 0) {
-        return -1;
-    }
-    return 0;
-}
+static const int IpLen = 16;
+static const char *NETMASK = "255.255.255.0";
+static const char *GW = "192.168.100.1";
+static const char *IFNAME = "veth0";
+static const char *PEER_IP = "192.168.100.5";
 
 static int SetIP(char *ip)
 {
@@ -73,7 +52,13 @@ static int SetIP(char *ip)
     }
     ifr.ifr_addr.sa_family = AF_INET;
     inet_pton(AF_INET, ip, ifr.ifr_addr.sa_data + 2); /* 2: offset */
-    ioctl(fd, SIOCSIFADDR, &ifr);
+    ret = ioctl(fd, SIOCSIFADDR, &ifr);
+    if (ret != 0) {
+        (void)close(fd);
+        printf("[ERR][%s:%d] ioctl SIOCSIFADDR failed, %s!\n", __FUNCTION__, __LINE__, strerror(errno));
+        return -1;
+    }
+
     ret = close(fd);
     if (ret != 0) {
         return -1;
@@ -88,27 +73,31 @@ static int ChildFunc(void *arg)
     char oldIp[IpLen] = {NULL};
     char newIp[IpLen] = {NULL};
 
-    ret = GetLocalIP(oldIp);
-    if (ret != 0) {
+    ret = NetContainerGetLocalIP("eth0", oldIp, IpLen);
+    if (ret == 0) {
         return EXIT_CODE_ERRNO_1;
     }
 
     ret = SetIP("192.168.1.233");
-    if (ret != 0) {
+    if (ret == 0) {
         return EXIT_CODE_ERRNO_2;
     }
 
-    ret = GetLocalIP(newIp);
+    ret = NetContainerResetNetAddr(IFNAME, PEER_IP, NETMASK, GW);
     if (ret != 0) {
         return EXIT_CODE_ERRNO_3;
     }
 
-    ret = strcmp(oldIp, newIp);
-    if (ret == 0) {
+    (void)memset_s(newIp, IpLen, 0, IpLen);
+    ret = NetContainerGetLocalIP(IFNAME, newIp, IpLen);
+    if (ret != 0) {
         return EXIT_CODE_ERRNO_4;
     }
 
-    printf("%s %d\n", __FUNCTION__, __LINE__);
+    if (strcmp(PEER_IP, newIp) != 0) {
+        return EXIT_CODE_ERRNO_5;
+    }
+    printf("######## [%s:%d] %s: %s ########\n", __FUNCTION__, __LINE__, IFNAME, newIp);
     return 0;
 }
 
@@ -122,11 +111,10 @@ void ItNetContainer001(void)
     EXPECT_STRNE(stack, NULL);
     char *stackTop = stack + STACK_SIZE;
 
-    ret = GetLocalIP(oldIp);
+    ret = NetContainerGetLocalIP("eth0", oldIp, IpLen);
     ASSERT_EQ(ret, 0);
 
-    int arg = CHILD_FUNC_ARG;
-    auto pid = clone(ChildFunc, stackTop, SIGCHLD | CLONE_NEWNET, &arg);
+    auto pid = clone(ChildFunc, stackTop, SIGCHLD | CLONE_NEWNET, NULL);
     ASSERT_NE(pid, -1);
 
     int status;
@@ -136,7 +124,7 @@ void ItNetContainer001(void)
     int exitCode = WEXITSTATUS(status);
     ASSERT_EQ(exitCode, 0);
 
-    ret = GetLocalIP(newIp);
+    ret = NetContainerGetLocalIP("eth0", newIp, IpLen);
     ASSERT_EQ(ret, 0);
 
     ret = strcmp(oldIp, newIp);

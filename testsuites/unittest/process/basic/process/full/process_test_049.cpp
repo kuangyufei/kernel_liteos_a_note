@@ -45,11 +45,11 @@ static int TestThread(void *arg)
     int ret = 0;
     pthread_t gTh;
     ret = pthread_create(&gTh, NULL, PthreadTest115, NULL);
-    ICUNIT_ASSERT_EQUAL_NULL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     ret = pthread_join(gTh, NULL);
-    ICUNIT_ASSERT_EQUAL_NULL(ret, 0, ret);
-    ICUNIT_ASSERT_EQUAL_NULL(g_usetTestCount, 1, g_usetTestCount);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(g_usetTestCount, 1, g_usetTestCount);
 
     *g_shmptr = 100; // 100, set shared num.
 
@@ -66,11 +66,11 @@ static int TestThread(void *arg)
     ret = waitpid(pid, NULL, 0);
     printf("waitpid ret : %d errno : %d pid : %d getpid : %d\n", ret, errno, pid, getpid());
 
-    ICUNIT_ASSERT_EQUAL_NULL(ret, pid, ret);
+    ICUNIT_ASSERT_EQUAL(ret, pid, ret);
 
     *g_shmptr = data;
 EXIT:
-    return NULL;
+    return 0;
 }
 
 // This testcase us used for undefination of LOSCFG_USER_TEST_SMP
@@ -100,7 +100,7 @@ static int Testcase(void)
 
     ICUNIT_GOTO_EQUAL(*g_shmptr, arg, *g_shmptr, EXIT2);
 
-    ret = waitpid(pid, &status, NULL);
+    ret = waitpid(pid, &status, 0);
     ICUNIT_GOTO_EQUAL(ret, pid, ret, EXIT2);
 
 EXIT2:

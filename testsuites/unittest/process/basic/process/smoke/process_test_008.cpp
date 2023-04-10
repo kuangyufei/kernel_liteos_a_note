@@ -34,6 +34,7 @@ static const int TEST_COUNT = 10;
 
 static void *ThreadFunc2(void *arg)
 {
+    printf("111111111111111: exit\n");
     exit(254); // 254, exit args
 }
 
@@ -65,7 +66,7 @@ static int ProcessTest001(void)
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     ret = pthread_attr_init(&a);
-    param.sched_priority += 1;
+    param.sched_priority = 26;  /* 26: prio */
     pthread_attr_setschedparam(&a, &param);
     pthread_attr_setinheritsched(&a, PTHREAD_EXPLICIT_SCHED);
     ret = pthread_create(&newPthread, &a, ThreadFunc3, &data);
@@ -75,6 +76,7 @@ static int ProcessTest001(void)
     ret = pthread_create(&newPthread, NULL, ThreadFunc2, &data);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
+    printf("222222222222222: exit\n");
     exit(255); // 255, exit args
     return 0;
 }

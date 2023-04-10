@@ -112,4 +112,6 @@ void ItPidContainer020(void)
     ASSERT_NE(ret, 0);
     ret = WEXITSTATUS(status);
     ASSERT_EQ(ret, 0);
+
+    sleep(5); /* 5: Wait for process resources to be reclaimed */
 }

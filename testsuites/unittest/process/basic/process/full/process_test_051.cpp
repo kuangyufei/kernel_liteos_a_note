@@ -41,7 +41,7 @@ static int TestThread(void *arg)
 
     printf("TestThread ppid : %d g_ppid : %d\n", ppid, g_ppid);
 
-    ICUNIT_ASSERT_EQUAL_NULL(ppid, g_ppid, g_ppid);
+    ICUNIT_ASSERT_EQUAL(ppid, g_ppid, g_ppid);
 
     *g_shmptr = 1000; // 1000, set shared num.
 
@@ -54,11 +54,11 @@ static int TestThread(void *arg)
     }
 
     ret = waitpid(pid, NULL, 0);
-    ICUNIT_ASSERT_EQUAL_NULL(ret, pid, ret);
+    ICUNIT_ASSERT_EQUAL(ret, pid, ret);
 
     *g_shmptr = 100; // 100, set shared num.
 EXIT:
-    return NULL;
+    return 0;
 }
 
 // This testcase us used for undefination of LOSCFG_USER_TEST_SMP
@@ -70,7 +70,7 @@ static int Testcase(void)
     void *stack;
     char *stackTop;
     int ret;
-    
+
     int shmid = shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | 0600); // 0600 config of shmget
     ICUNIT_ASSERT_NOT_EQUAL(shmid, -1, shmid);
 
@@ -90,7 +90,7 @@ static int Testcase(void)
 
     ICUNIT_GOTO_EQUAL(*g_shmptr, 100, *g_shmptr, EXIT2); // 100, assert g_shmptr equal to this.
 
-    ret = waitpid(pid, &status, NULL);
+    ret = waitpid(pid, &status, 0);
     ICUNIT_GOTO_EQUAL(ret, -1, ret, EXIT2);
 
 EXIT2:

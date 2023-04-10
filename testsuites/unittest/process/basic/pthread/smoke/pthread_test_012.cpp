@@ -33,7 +33,7 @@
 static int Testcase(void)
 {
     int ret;
-    ret = Syscall(SYS_set_thread_area, NULL, 0, 0, 0);
+    ret = Syscall(SYS_set_thread_area, 0x0, 0, 0, 0);
     ICUNIT_ASSERT_EQUAL(ret, EINVAL, ret);
 
     ret = Syscall(SYS_set_thread_area, 0x100, 0, 0, 0);

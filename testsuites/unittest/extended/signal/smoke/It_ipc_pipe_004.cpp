@@ -53,7 +53,7 @@ static UINT32 TestCase(VOID)
             char sentence1[15] = "Hello World";
             char a[4] = {0};
             retValue = sprintf_s(a, sizeof(a), "%d", i);
-            ICUNIT_ASSERT_NOT_EQUAL(retValue, NULL, retValue);
+            ICUNIT_ASSERT_NOT_EQUAL(retValue, 0, retValue);
             retValue = strcat_s(sentence1, sizeof(sentence1), a);
             ICUNIT_ASSERT_EQUAL(retValue, 0, retValue);
             ret = write(*writeFd, sentence1, strlen(sentence1) + 1);

@@ -102,15 +102,26 @@ VOID OsSchedExpireTimeUpdate(VOID)
 
 STATIC INLINE VOID SchedTimeoutTaskWake(SchedRunqueue *rq, UINT64 currTime, LosTaskCB *taskCB, BOOL *needSched)
 {
-#ifndef LOSCFG_SCHED_DEBUG
-    (VOID)currTime;
-#endif
-
     LOS_SpinLock(&g_taskSpin);
+    if (OsSchedPolicyIsEDF(taskCB)) {
+        SchedEDF *sched = (SchedEDF *)&taskCB->sp;
+        if (sched->finishTime <= currTime) {
+            if (taskCB->timeSlice >= 0) {
+                PrintExcInfo("EDF task: %u name: %s is timeout, timeout for %llu us.\n",
+                             taskCB->taskID, taskCB->taskName, OS_SYS_CYCLE_TO_US(currTime - sched->finishTime));
+            }
+            taskCB->timeSlice = 0;
+        }
+        if (sched->flags == EDF_WAIT_FOREVER) {
+            taskCB->taskStatus &= ~OS_TASK_STATUS_PEND_TIME;
+            sched->flags = EDF_UNUSED;
+        }
+    }
+
     UINT16 tempStatus = taskCB->taskStatus;
-    if (tempStatus & (OS_TASK_STATUS_PENDING | OS_TASK_STATUS_DELAY)) {
+    if (tempStatus & (OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY)) {
         taskCB->taskStatus &= ~(OS_TASK_STATUS_PENDING | OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY);
-        if (tempStatus & OS_TASK_STATUS_PENDING) {
+        if (tempStatus & OS_TASK_STATUS_PEND_TIME) {
             taskCB->taskStatus |= OS_TASK_STATUS_TIMEOUT;
             LOS_ListDelete(&taskCB->pendList);
             taskCB->taskMux = NULL;
@@ -118,7 +129,7 @@ STATIC INLINE VOID SchedTimeoutTaskWake(SchedRunqueue *rq, UINT64 currTime, LosT
         }
 
         if (!(tempStatus & OS_TASK_STATUS_SUSPENDED)) {
-#ifdef LOSCFG_SCHED_DEBUG
+#ifdef LOSCFG_SCHED_HPF_DEBUG
             taskCB->schedStat.pendTime += currTime - taskCB->startTime;
             taskCB->schedStat.pendCount++;
 #endif
@@ -212,8 +223,10 @@ VOID OsSchedRunqueueIdleInit(LosTaskCB *idleTask)
 
 UINT32 OsSchedInit(VOID)
 {
-    for (UINT16 cpuId = 0; cpuId < LOSCFG_KERNEL_CORE_NUM; cpuId++) {
-        HPFSchedPolicyInit(OsSchedRunqueueByID(cpuId));
+    for (UINT16 cpuid = 0; cpuid < LOSCFG_KERNEL_CORE_NUM; cpuid++) {
+        SchedRunqueue *rq = OsSchedRunqueueByID(cpuid);
+        EDFSchedPolicyInit(rq);
+        HPFSchedPolicyInit(rq);
     }
 
 #ifdef LOSCFG_SCHED_TICK_DEBUG
@@ -247,13 +260,15 @@ INT32 OsSchedParamCompare(const LosTaskCB *task1, const LosTaskCB *task2)
     return 0;
 }
 
-UINT32 OsSchedParamInit(LosTaskCB *taskCB, UINT16 policy, const SchedParam *parentParam, const TSK_INIT_PARAM_S *param)
+UINT32 OsSchedParamInit(LosTaskCB *taskCB, UINT16 policy, const SchedParam *parentParam, const LosSchedParam *param)
 {
     switch (policy) {
         case LOS_SCHED_FIFO:
         case LOS_SCHED_RR:
             HPFTaskSchedParamInit(taskCB, policy, parentParam, param);
             break;
+        case LOS_SCHED_DEADLINE:
+            return EDFTaskSchedParamInit(taskCB, policy, parentParam, param);
         case LOS_SCHED_IDLE:
             IdleTaskSchedParamInit(taskCB);
             break;
@@ -271,6 +286,9 @@ VOID OsSchedProcessDefaultSchedParamGet(UINT16 policy, SchedParam *param)
         case LOS_SCHED_RR:
             HPFProcessDefaultSchedParamGet(param);
             break;
+        case LOS_SCHED_DEADLINE:
+            EDFProcessDefaultSchedParamGet(param);
+            break;
         case LOS_SCHED_IDLE:
         default:
             PRINT_ERR("Invalid process-level scheduling policy, %u\n", policy);
@@ -281,12 +299,19 @@ VOID OsSchedProcessDefaultSchedParamGet(UINT16 policy, SchedParam *param)
 
 STATIC LosTaskCB *TopTaskGet(SchedRunqueue *rq)
 {
-    LosTaskCB *newTask = HPFRunqueueTopTaskGet(rq->hpfRunqueue);
-
-    if (newTask == NULL) {
-        newTask = rq->idleTask;
+    LosTaskCB *newTask = EDFRunqueueTopTaskGet(rq->edfRunqueue);
+    if (newTask != NULL) {
+        goto FIND;
     }
 
+    newTask = HPFRunqueueTopTaskGet(rq->hpfRunqueue);
+    if (newTask != NULL) {
+        goto FIND;
+    }
+
+    newTask = rq->idleTask;
+
+FIND:
     newTask->ops->start(rq, newTask);
     return newTask;
 }
@@ -387,7 +412,7 @@ STATIC VOID SchedTaskSwitch(SchedRunqueue *rq, LosTaskCB *runTask, LosTaskCB *ne
     OsCpupCycleEndStart(runTask, newTask);
 #endif
 
-#ifdef LOSCFG_SCHED_DEBUG
+#ifdef LOSCFG_SCHED_HPF_DEBUG
     UINT64 waitStartTime = newTask->startTime;
 #endif
     if (runTask->taskStatus & OS_TASK_STATUS_READY) {
@@ -400,14 +425,14 @@ STATIC VOID SchedTaskSwitch(SchedRunqueue *rq, LosTaskCB *runTask, LosTaskCB *ne
         runTask->ops->timeSliceUpdate(rq, runTask, newTask->startTime);
 
         if (runTask->taskStatus & (OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY)) {
-            OsSchedTimeoutQueueAdd(runTask, runTask->startTime + runTask->waitTime);
+            OsSchedTimeoutQueueAdd(runTask, runTask->ops->waitTimeGet(runTask));
         }
     }
 
     UINT64 deadline = newTask->ops->deadlineGet(newTask);
     SchedNextExpireTimeSet(newTask->taskID, deadline, runTask->taskID);
 
-#ifdef LOSCFG_SCHED_DEBUG
+#ifdef LOSCFG_SCHED_HPF_DEBUG
     newTask->schedStat.waitSchedTime += newTask->startTime - waitStartTime;
     newTask->schedStat.waitSchedCount++;
     runTask->schedStat.runTime = runTask->schedStat.allRuntime;

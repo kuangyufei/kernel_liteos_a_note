@@ -43,61 +43,7 @@ static const char *SERVER_MSG = "===Hi, I'm Server.===";
 static const char *PEER_MSG = "===Hi, I'm Peer.===";
 static const int TRY_COUNT = 5;
 static const int DATA_LEN = 128;
-
-static int TryResetNetaddr(const char *ifname, const char *ip, const char *netmask, const char *gw)
-{
-    int ret;
-    struct ifreq ifr;
-    struct rtentry rt;
-
-    int fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-    if (fd < 0) {
-        return -1;
-    }
-    ret = strncpy_s(ifr.ifr_name, sizeof(ifr.ifr_name), ifname, IFNAMSIZ);
-    if (ret != EOK) {
-        close(fd);
-        return -1;
-    }
-    ifr.ifr_addr.sa_family = AF_INET;
-
-    inet_pton(AF_INET, netmask, ifr.ifr_addr.sa_data + 2); /* 2: offset */
-    ret = ioctl(fd, SIOCSIFNETMASK, &ifr);
-    if (ret == 0) {
-        inet_pton(AF_INET, ip, ifr.ifr_addr.sa_data + 2); /* 2: offset */
-        ret = ioctl(fd, SIOCSIFADDR, &ifr);
-        if (ret == 0) {
-            struct sockaddr_in* addr = reinterpret_cast<struct sockaddr_in *>(&rt.rt_gateway);
-            addr->sin_family = AF_INET;
-            addr->sin_addr.s_addr = inet_addr(GW);
-            rt.rt_flags = RTF_GATEWAY;
-            ret = ioctl(fd, SIOCADDRT, &rt);
-        }
-    }
-
-    if (ret != 0) {
-        (void)close(fd);
-        return ret;
-    }
-    ret = close(fd);
-    return ret;
-}
-
-static int ResetNetaddr(const char *ifname, const char *ip, const char *netmask, const char *gw)
-{
-    int ret;
-    int try_count = TRY_COUNT;
-
-    while (try_count--) {
-        ret = TryResetNetaddr(ifname, ip, netmask, gw);
-        if (ret == 0) {
-            break;
-        }
-        sleep(1);
-    }
-
-    return ret;
-}
+static const int IpLen = 16;
 
 static int TcpClient(void)
 {
@@ -124,26 +70,30 @@ static int TcpClient(void)
     } while (ret !=0 && (try_count--));
 
     if (ret < 0) {
+        (void)close(peer);
+        printf("[ERR][%s:%d] connect failed, %s!\n", __FUNCTION__, __LINE__, strerror(errno));
         return EXIT_CODE_ERRNO_2;
     }
 
     ret = send(peer, PEER_MSG, strlen(PEER_MSG) + 1, 0);
     if (ret < 0) {
+        (void)close(peer);
+        printf("[ERR][%s:%d] send failed, %s!\n", __FUNCTION__, __LINE__, strerror(errno));
         return EXIT_CODE_ERRNO_3;
     }
 
     ret = recv(peer, recv_data, sizeof(recv_data), 0);
     if (ret < 0) {
+        (void)close(peer);
+        printf("[ERR][%s:%d] recv failed, %s!\n", __FUNCTION__, __LINE__, strerror(errno));
         return EXIT_CODE_ERRNO_4;
     }
+    (void)close(peer);
 
     ret = strcmp(recv_data, SERVER_MSG);
     if (ret != 0) {
         return EXIT_CODE_ERRNO_5;
     }
-
-    (void)close(peer);
-
     return 0;
 }
 
@@ -154,7 +104,6 @@ static int TcpServer(void)
     int peer;
     char recv_data[DATA_LEN];
     struct sockaddr_in server_addr;
-    socklen_t client_addr_len = sizeof(struct sockaddr);
 
     server = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (server < 0) {
@@ -169,16 +118,19 @@ static int TcpServer(void)
     ret = bind(server, const_cast<struct sockaddr *>(reinterpret_cast<struct sockaddr *>(&server_addr)),
                sizeof(struct sockaddr));
     if (ret != 0) {
+        printf("[ERR][%s:%d] bind failed, %s!\n", __FUNCTION__, __LINE__, strerror(errno));
         return EXIT_CODE_ERRNO_2;
     }
 
     ret = listen(server, 1);
     if (ret < 0) {
+        printf("[ERR][%s:%d] listen failed, %s!\n", __FUNCTION__, __LINE__, strerror(errno));
         return EXIT_CODE_ERRNO_3;
     }
 
     peer = accept(server, nullptr, nullptr);
     if (peer < 0) {
+        printf("[ERR][%s:%d] accept failed, %s!\n", __FUNCTION__, __LINE__, strerror(errno));
         return EXIT_CODE_ERRNO_4;
     }
 
@@ -186,6 +138,7 @@ static int TcpServer(void)
 
     ret = recv(peer, recv_data, sizeof(recv_data), 0);
     if (ret < 0) {
+        printf("[ERR][%s:%d] recv failed, %s!\n", __FUNCTION__, __LINE__, strerror(errno));
         return EXIT_CODE_ERRNO_5;
     }
 
@@ -196,31 +149,54 @@ static int TcpServer(void)
 
     ret = send(peer, SERVER_MSG, strlen(SERVER_MSG) + 1, 0);
     if (ret < 0) {
+        printf("[ERR][%s:%d] send failed, %s!\n", __FUNCTION__, __LINE__, strerror(errno));
         return EXIT_CODE_ERRNO_7;
     }
 
     (void)close(peer);
-
     return 0;
 }
 
 static void *TcpClientThread(void *arg)
 {
-    int ret = ResetNetaddr(IFNAME, PEER_IP, NETMASK, GW);
-    if (ret == 0) {
-        ret = TcpClient();
+    char newIp[IpLen] = {NULL};
+    int ret = NetContainerResetNetAddr(IFNAME, PEER_IP, NETMASK, GW);
+    if (ret != 0) {
+        return (void *)(intptr_t)EXIT_CODE_ERRNO_1;
     }
 
+    ret = NetContainerGetLocalIP(IFNAME, newIp, IpLen);
+    if (ret != 0) {
+        return (void *)(intptr_t)EXIT_CODE_ERRNO_2;
+    }
+
+    if (strncmp(PEER_IP, newIp, strlen(PEER_IP)) != 0) {
+        return (void *)(intptr_t)EXIT_CODE_ERRNO_3;
+    }
+    printf("######## [%s:%d] %s: %s ########\n", __FUNCTION__, __LINE__, IFNAME, newIp);
+
+    ret = TcpClient();
     return (void *)(intptr_t)ret;
 }
 
 static int ChildFunc(void *arg)
 {
-    int ret = ret = ResetNetaddr(IFNAME, SERVER_IP, NETMASK, GW);
+    char newIp[IpLen] = {NULL};
+    int ret = NetContainerResetNetAddr(IFNAME, SERVER_IP, NETMASK, GW);
     if (ret != 0) {
-        return EXIT_CODE_ERRNO_1;
+        return EXIT_CODE_ERRNO_8;
     }
 
+    ret = NetContainerGetLocalIP(IFNAME, newIp, IpLen);
+    if (ret != 0) {
+        return EXIT_CODE_ERRNO_9;
+    }
+
+    if (strncmp(SERVER_IP, newIp, strlen(SERVER_IP)) != 0) {
+        return EXIT_CODE_ERRNO_10;
+    }
+
+    printf("######## [%s:%d] %s: %s ########\n", __FUNCTION__, __LINE__, IFNAME, newIp);
     return TcpServer();
 }
 
@@ -247,6 +223,9 @@ VOID ItNetContainer009(void)
     ASSERT_EQ(ret, 0);
 
     ret = pthread_join(srv, &tret);
+    ASSERT_EQ(ret, 0);
+
+    ret = (uintptr_t)tret;
     ASSERT_EQ(ret, 0);
 
     ret = pthread_attr_destroy(&attr);

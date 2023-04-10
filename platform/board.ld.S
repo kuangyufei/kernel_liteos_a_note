@@ -31,7 +31,10 @@
 /***********************************************
 本文件经过
 python build.py ipcamera_hi3516dv300 
+
 编译后生成 board.ld,内容如下:
+#include "los_vm_zone.h"
+
 #define TEXT_BASE  KERNEL_VADDR_BASE //代码区为内核起始地址
 
 OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
@@ -39,7 +42,7 @@ OUTPUT_ARCH(arm)
 
 MEMORY
 {
-    ram : ORIGIN = 0x40000000, LENGTH = 0x20000000
+    ram : ORIGIN = KERNEL_VADDR_BASE, LENGTH = KERNEL_VADDR_SIZE
     sram : ORIGIN = 0x40000000, LENGTH = 0x1000
     user_ram : ORIGIN = 0x1000000, LENGTH = 0x100000
 }
@@ -47,7 +50,7 @@ SECTIONS
 {
     /DISCARD/ : { *(.comment .note) }
 
-    .ram_vectors 0x40000000 : {
+    .ram_vectors TEXT_BASE : {
         __ram_vectors_vma = .;
         KEEP (*(.vectors))
     } > ram

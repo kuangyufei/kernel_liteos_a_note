@@ -515,7 +515,20 @@ typedef struct tagTskInitParam {//Task的初始化参数
     UINT16          consoleID;     /**< The console id of task belongs  | 任务的控制台id所属*/
     UINTPTR          processID;	///< 进程ID
     UserTaskParam   userParam;	///< 任务用户态运行时任何参数
+    /* edf parameters */
+    UINT32          runTimeUs;
+    UINT64          deadlineUs;
+    UINT64          periodUs;
 } TSK_INIT_PARAM_S;
+
+typedef struct {
+    union {
+        INT32 priority;
+        INT32 runTimeUs;
+    };
+    INT32 deadlineUs;
+    INT32 periodUs;
+} LosSchedParam;
 
 /**
  * @ingroup los_task

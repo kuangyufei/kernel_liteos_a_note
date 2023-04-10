@@ -76,6 +76,7 @@ kernel_module(module_name) {
     "mp/los_percpu.c",
     "mp/los_spinlock.c",
     "om/los_err.c",
+    "sched/los_deadline.c",
     "sched/los_idle.c",
     "sched/los_priority.c",
     "sched/los_sched.c",

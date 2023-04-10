@@ -101,6 +101,10 @@ pid_t CloneWrapper(int (*func)(void *), int flag, void *args);
 
 int WaitChild(pid_t pid, int *status, int errNo1, int errNo2);
 
+int NetContainerResetNetAddr(const char *ifname, const char *ip, const char *netmask, const char *gw);
+
+int NetContainerGetLocalIP(const char *ifname, char *ip, int ipLen);
+
 std::string GenContainerLinkPath(int pid, const std::string& containerType);
 
 extern std::string ReadlinkContainer(int pid, const std::string& containerType);

@@ -30,7 +30,7 @@
  */
 
 #include "it_test_process.h"
- 
+
 static const int PROCESS_PRIORITY_MAX = 10;
 static const int PROCESS_PRIORITY_MIN = 31;
 static const int PROCESS_SCHED_RR_INTERVAL = 20000000;

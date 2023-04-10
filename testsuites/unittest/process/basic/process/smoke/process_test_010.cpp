@@ -105,7 +105,7 @@ static int Testcase(void)
         exit(Child());
     } else if (ret > 0) {
         pid = ret;
-        ret = waitpid(pid, &status, NULL);
+        ret = waitpid(pid, &status, 0);
         status = WEXITSTATUS(status);
         ICUNIT_ASSERT_EQUAL(ret, pid, ret);
         ICUNIT_ASSERT_EQUAL(status, 0, status);

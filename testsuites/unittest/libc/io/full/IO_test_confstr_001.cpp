@@ -44,7 +44,7 @@ static UINT32 testcase(VOID)
         return LOS_NOK;
     }
     confstr(_CS_PATH, pathbuf, n);
-    ICUNIT_ASSERT_NOT_EQUAL_NULL(pathbuf, NULL, -1);
+    ICUNIT_ASSERT_NOT_EQUAL(pathbuf, NULL, -1);
     free(pathbuf);
     pathbuf = NULL;
 
@@ -57,7 +57,7 @@ static UINT32 testcase(VOID)
         return LOS_NOK;
     }
     confstr(_CS_GNU_LIBPTHREAD_VERSION, gun_libpthread_version_buf, n);
-    ICUNIT_ASSERT_NOT_EQUAL_NULL(gun_libpthread_version_buf, NULL, -1);
+    ICUNIT_ASSERT_NOT_EQUAL(gun_libpthread_version_buf, NULL, -1);
     free(gun_libpthread_version_buf);
     gun_libpthread_version_buf = NULL;
 
@@ -70,7 +70,7 @@ static UINT32 testcase(VOID)
         return LOS_NOK;
     }
     confstr(_CS_GNU_LIBC_VERSION, gun_libc_version_buf, n);
-    ICUNIT_ASSERT_NOT_EQUAL_NULL(gun_libc_version_buf, NULL, -1);
+    ICUNIT_ASSERT_NOT_EQUAL(gun_libc_version_buf, NULL, -1);
     free(gun_libc_version_buf);
     gun_libc_version_buf = NULL;
 

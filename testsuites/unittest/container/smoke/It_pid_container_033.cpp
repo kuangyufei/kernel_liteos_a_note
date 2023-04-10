@@ -55,6 +55,8 @@ void ItPidContainer033(void)
     char buf[g_buffSize] = { 0 };
     int status = 0;
 
+    sleep(2); /* 2: Wait for cache resource reclamation */
+
     int ret = ReadFile(path.c_str(), buf);
     ASSERT_NE(ret, -1);
 

@@ -27,18 +27,18 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "It_container_test.h"
 #include "sys/resource.h"
 #include "sys/wait.h"
 #include "pthread.h"
 #include "sched.h"
+#include "It_container_test.h"
 
+const int MAX_PID_RANGE = 100000;
 const int SLEEP_TIME_US = 1000;
 const int LOOP_NUM = 100;
 
 static int ChildFunc(void *arg)
 {
-    (void)arg;
     usleep(SLEEP_TIME_US);
     exit(EXIT_CODE_ERRNO_5);
 }
@@ -51,11 +51,10 @@ static int GroupProcess(void *arg)
 
     for (int i = 0; i < LOOP_NUM; i++) {
         int argTmp = CHILD_FUNC_ARG;
-        auto pid = CloneWrapper(ChildFunc, CLONE_NEWUTS, &argTmp);
+        auto pid = CloneWrapper(ChildFunc, CLONE_NEWNET, &argTmp);
         if (pid == -1) {
             return EXIT_CODE_ERRNO_1;
         }
-
         ret = waitpid(pid, &status, 0);
         status = WEXITSTATUS(status);
         if (status != EXIT_CODE_ERRNO_5) {
@@ -66,12 +65,12 @@ static int GroupProcess(void *arg)
     exit(EXIT_CODE_ERRNO_5);
 }
 
-void ItUtsContainer003(void)
+void ItNetContainer010(void)
 {
     int ret;
     int status = 0;
     int arg = CHILD_FUNC_ARG;
-    auto pid = CloneWrapper(GroupProcess, CLONE_NEWUTS, &arg);
+    auto pid = CloneWrapper(GroupProcess, CLONE_NEWNET, &arg);
     ASSERT_NE(pid, -1);
 
     ret = waitpid(pid, &status, 0);

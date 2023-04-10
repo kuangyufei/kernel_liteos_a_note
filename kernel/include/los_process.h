@@ -47,13 +47,13 @@
 
 extern INT32 LOS_Fork(UINT32 flags, const CHAR *name, const TSK_ENTRY_FUNC entry, UINT32 stackSize);
 
-extern INT32 LOS_SetProcessPriority(INT32 pid, UINT16 prio);
+extern INT32 LOS_SetProcessPriority(INT32 pid, INT32 prio);
 
 extern INT32 LOS_GetProcessPriority(INT32 pid);
 
-extern INT32 LOS_GetProcessScheduler(INT32 pid);
+extern INT32 LOS_GetProcessScheduler(INT32 pid, INT32 *policy, LosSchedParam *schedParam);
 
-extern INT32 LOS_SetProcessScheduler(INT32 pid, UINT16 policy, UINT16 prio);
+extern INT32 LOS_SetProcessScheduler(INT32 pid, UINT16 policy, const LosSchedParam *schedParam);
 
 extern UINT32 LOS_GetCurrProcessID(VOID);
 

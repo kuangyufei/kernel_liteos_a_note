@@ -27,57 +27,64 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "It_container_test.h"
-#include "sys/resource.h"
-#include "sys/wait.h"
-#include "pthread.h"
-#include "sched.h"
+#include "it_pthread_test.h"
 
-const int SLEEP_TIME_US = 1000;
-const int LOOP_NUM = 100;
-
-static int ChildFunc(void *arg)
+static void *ThreadFuncTest(void *args)
 {
-    (void)arg;
-    usleep(SLEEP_TIME_US);
-    exit(EXIT_CODE_ERRNO_5);
+    (void)args;
+    printf("hpf thread run...\r\n");
+    return NULL;
 }
 
-static int GroupProcess(void *arg)
+static int ChildProcess(void)
 {
-    (void)arg;
-    int ret;
-    int status = 0;
+    int ret, currThreadPolicy;
+    pthread_attr_t a = { 0 };
+    struct sched_param hpfparam = { 0 };
+    pthread_t newUserThread;
+    volatile unsigned int count = 0;
+    int currTID = Syscall(SYS_gettid, 0, 0, 0, 0);
+    struct sched_param param = {
+        .sched_deadline = 3000000,  /* 3000000, 3s */
+        .sched_runtime = 200000,    /* 200000, 200ms */
+        .sched_period = 5000000,    /* 5000000, 5s */
+    };
 
-    for (int i = 0; i < LOOP_NUM; i++) {
-        int argTmp = CHILD_FUNC_ARG;
-        auto pid = CloneWrapper(ChildFunc, CLONE_NEWUTS, &argTmp);
-        if (pid == -1) {
-            return EXIT_CODE_ERRNO_1;
-        }
+    ret = pthread_getschedparam(pthread_self(), &currThreadPolicy, &hpfparam);
+    ICUNIT_ASSERT_EQUAL(ret, 0, -ret);
+    ret = pthread_attr_init(&a);
+    hpfparam.sched_priority = hpfparam.sched_priority - 1;
+    pthread_attr_setschedparam(&a, &hpfparam);
+    ret = pthread_create(&newUserThread, &a, ThreadFuncTest, (void *)currTID);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-        ret = waitpid(pid, &status, 0);
-        status = WEXITSTATUS(status);
-        if (status != EXIT_CODE_ERRNO_5) {
-            return EXIT_CODE_ERRNO_2;
+    ret = sched_setscheduler(getpid(), SCHED_DEADLINE, &param);
+    ICUNIT_ASSERT_EQUAL(ret, -1, ret);
+
+    return 0;
+}
+
+static int TestCase(void)
+{
+    int ret, pid, status;
+
+    pid = fork();
+    if (pid == 0) {
+        ret = ChildProcess();
+        if (ret != 0) {
+            exit(-1);
         }
+        exit(0);
+    } else if (pid > 0) {
+        waitpid(pid, &status, 0);
+    } else {
+        exit(__LINE__);
     }
 
-    exit(EXIT_CODE_ERRNO_5);
+    return WEXITSTATUS(status) == 0 ? 0 : -1;
 }
 
-void ItUtsContainer003(void)
+void ItTestPthread024(void)
 {
-    int ret;
-    int status = 0;
-    int arg = CHILD_FUNC_ARG;
-    auto pid = CloneWrapper(GroupProcess, CLONE_NEWUTS, &arg);
-    ASSERT_NE(pid, -1);
-
-    ret = waitpid(pid, &status, 0);
-    ASSERT_EQ(ret, pid);
-    status = WEXITSTATUS(status);
-    ASSERT_EQ(status, EXIT_CODE_ERRNO_5);
-
-    sleep(5); /* 5: Wait for process resources to be reclaimed */
+    TEST_ADD_CASE("IT_POSIX_PTHREAD_024", TestCase, TEST_POSIX, TEST_MEM, TEST_LEVEL0, TEST_FUNCTION);
 }

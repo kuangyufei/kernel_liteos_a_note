@@ -64,5 +64,6 @@ else
 LOCAL_FLAGS += -frounding-math -Wno-unused-but-set-variable
 endif
 LOCAL_FLAGS += -Wno-shift-op-parentheses -Wno-logical-op-parentheses -Wno-bitwise-op-parentheses -Wno-unknown-pragmas
+LOCAL_FLAGS += -Wno-unused-but-set-variable
 
 include $(MODULE)

@@ -87,7 +87,7 @@ STATIC struct VmPhysArea g_physArea[] = {///< 这里只有一个区域,即只生
 struct VmPhysSeg g_vmPhysSeg[VM_PHYS_SEG_MAX]; ///< 最大32段
 INT32 g_vmPhysSegNum = 0;	///< 段数
 /// 获取段数组,全局变量,变量放在 .bbs 区
-LosVmPhysSeg *OsGVmPhysSegGet()
+LosVmPhysSeg *OsGVmPhysSegGet(void)
 {
     return g_vmPhysSeg;
 }

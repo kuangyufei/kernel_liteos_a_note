@@ -44,7 +44,7 @@
 
 ShellCB *g_shellCB = NULL;	///< 全部shell控制块
 /// 获取shell控制块
-ShellCB *OsGetShellCb()
+ShellCB *OsGetShellCb(void)
 {
     return g_shellCB;
 }
