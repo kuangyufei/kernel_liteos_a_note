@@ -30,7 +30,7 @@ import("//build/lite/config/test.gni")
 import("//kernel/liteos_a/testsuites/unittest/config.gni")
 
 common_include_dirs = [
-  "//third_party/googletest/googletest/include",
+  "$THIRDPARTY_GOOGLETEST_DIR/googletest/include",
   "../../common/include",
 ]
 

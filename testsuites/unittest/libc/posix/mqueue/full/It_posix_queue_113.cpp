@@ -53,7 +53,6 @@ EXIT:
 static UINT32 Testcase(VOID)
 {
     INT32 ret;
-    UINT32 uret;
     CHAR mqname[MQUEUE_STANDARD_NAME_LENGTH] = "";
     const CHAR *msgptr = MQUEUE_SEND_STRING_TEST;
     pthread_t pthread1;
@@ -92,7 +91,6 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
 
     usleep(0);
-    ICUNIT_GOTO_EQUAL(uret, MQUEUE_NO_ERROR, uret, EXIT2);
 
     ret = pthread_join(pthread1, NULL);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);

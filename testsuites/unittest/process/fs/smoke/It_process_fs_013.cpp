@@ -30,19 +30,13 @@
 #include <gtest/gtest.h>
 #include "It_process_fs_test.h"
 
-static const int ini_process_max = 3;
-
 void ItProcessFs013(void)
 {
     std::string path;
     DIR *dirp = nullptr;
-    for (int i = 1; i <= ini_process_max; i++) {
-        if (i != 2) { /* 2: skip kernel process */
-            path = GenProcPidPath(i);
-            printf("path: %s\n", path.c_str());
-            dirp = opendir(path.data());
-            ASSERT_NE(dirp, nullptr);
-            (void)closedir(dirp);
-        };
-    }
+    path = GenProcPidPath(1);
+    printf("path: %s\n", path.c_str());
+    dirp = opendir(path.data());
+    ASSERT_NE(dirp, nullptr);
+    (void)closedir(dirp);
 }

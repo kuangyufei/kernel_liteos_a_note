@@ -26,8 +26,6 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import("//build/lite/config/test.gni")
-import("//kernel/liteos_a/testsuites/unittest/config.gni")
 import("./config.gni")
 
 config("net_config") {
@@ -55,7 +53,7 @@ if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
     sources += sources_full
     configs = [ "..:public_config_for_door" ]
     configs += [ ":net_config" ]
-    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+    deps = [ "$THIRDPARTY_BOUNDS_CHECKING_FUNCTION_DIR:libsec_shared" ]
   }
 }
 
@@ -69,6 +67,6 @@ if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
     sources += sources_full
     configs = [ "..:public_config_for_all" ]
     configs += [ ":net_config" ]
-    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+    deps = [ "$THIRDPARTY_BOUNDS_CHECKING_FUNCTION_DIR:libsec_shared" ]
   }
 }

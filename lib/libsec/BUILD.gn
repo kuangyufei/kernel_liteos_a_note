@@ -28,7 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
-import("//third_party/bounds_checking_function/libsec_src.gni")
+import("$THIRDPARTY_BOUNDS_CHECKING_FUNCTION_DIR/libsec_src.gni")
 
 module_switch = defined(LOSCFG_LIB_LIBC)
 module_name = get_path_info(rebase_path("."), "name")

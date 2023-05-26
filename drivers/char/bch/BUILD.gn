@@ -28,7 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
-import("//third_party/NuttX/NuttX.gni")
+import("$THIRDPARTY_NUTTX_DIR/NuttX.gni")
 
 module_switch = defined(LOSCFG_FS_VFS_BLOCK_DEVICE)
 module_name = get_path_info(rebase_path("."), "name")

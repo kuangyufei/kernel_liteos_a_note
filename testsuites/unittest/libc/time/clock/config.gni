@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2022 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2022-2023 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -26,17 +26,18 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import("//build/lite/config/test.gni")
 import("//kernel/liteos_a/testsuites/unittest/config.gni")
 
-time_clock_include_dirs = [ "$TEST_UNITTEST_DIR/libc/time/clock" ]
+libc_time_clock_include_dirs = [ "$TEST_UNITTEST_DIR/libc/time/clock" ]
 
-time_clock_sources_entry =
+libc_time_clock_sources_entry =
     [ "$TEST_UNITTEST_DIR/libc/time/clock/time_clock_test.cpp" ]
 
-time_clock_sources_smoke =
+libc_time_clock_sources_smoke =
     [ "$TEST_UNITTEST_DIR/libc/time/clock/smoke/clock_test_smoke.cpp" ]
 
-time_clock_sources_full = [
+libc_time_clock_sources_full = [
   "$TEST_UNITTEST_DIR/libc/time/clock/full/clock_test_001.cpp",
   "$TEST_UNITTEST_DIR/libc/time/clock/full/clock_test_002.cpp",
   "$TEST_UNITTEST_DIR/libc/time/clock/full/clock_test_003.cpp",

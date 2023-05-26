@@ -103,6 +103,8 @@ static ssize_t ProcessContainerLink(unsigned int containerID, ContainerType type
 
 static ssize_t ProcessContainerReadLink(struct ProcDirEntry *entry, char *buffer, size_t bufLen)
 {
+    char *freeBuf = NULL;
+    char *buf = buffer;
     ssize_t count;
     unsigned int intSave;
     if (entry == NULL) {
@@ -112,17 +114,41 @@ static ssize_t ProcessContainerReadLink(struct ProcDirEntry *entry, char *buffer
     if (data == NULL) {
         return -EINVAL;
     }
+
+    if (LOS_IsUserAddressRange((VADDR_T)(UINTPTR)buffer, bufLen)) {
+        buf = LOS_MemAlloc(m_aucSysMem1, bufLen);
+        if (buf == NULL) {
+            return -ENOMEM;
+        }
+        (void)memset_s(buf, bufLen, 0, bufLen);
+        freeBuf = buf;
+    }
+
     LosProcessCB *processCB = ProcGetProcessCB(data);
     SCHEDULER_LOCK(intSave);
     UINT32 containerID = OsGetContainerID(processCB, (ContainerType)data->type);
     SCHEDULER_UNLOCK(intSave);
     if (containerID != OS_INVALID_VALUE) {
-        return ProcessContainerLink(containerID, (ContainerType)data->type, buffer, bufLen);
+        count = ProcessContainerLink(containerID, (ContainerType)data->type, buf, bufLen);
+    } else {
+        count = strlen("(unknown)");
+        if (memcpy_s(buf, bufLen, "(unknown)", count + 1) != EOK) {
+            (void)LOS_MemFree(m_aucSysMem1, freeBuf);
+            return -EBADF;
+        }
     }
-    count = strlen("(unknown)");
-    if (memcpy_s(buffer, bufLen, "(unknown)", count + 1) != EOK) {
-        return -EBADF;
+    if (count < 0) {
+        (void)LOS_MemFree(m_aucSysMem1, freeBuf);
+        return count;
     }
+
+    if (LOS_IsUserAddressRange((VADDR_T)(UINTPTR)buffer, bufLen)) {
+        if (LOS_ArchCopyToUser(buffer, buf, bufLen) != 0) {
+            (void)LOS_MemFree(m_aucSysMem1, freeBuf);
+            return -EFAULT;
+        }
+    }
+    (void)LOS_MemFree(m_aucSysMem1, freeBuf);
     return count;
 }
 

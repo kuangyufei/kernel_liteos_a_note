@@ -27,6 +27,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("//kernel/liteos_a/liteos.gni")
 import("//kernel/liteos_a/testsuites/unittest/config.gni")
 import("./config.gni")
 
@@ -69,7 +70,7 @@ if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
       "..:public_config_for_door",
       ":container_config",
     ]
-    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+    deps = [ "$THIRDPARTY_BOUNDS_CHECKING_FUNCTION_DIR:libsec_shared" ]
   }
 }
 
@@ -85,6 +86,6 @@ if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
       "..:public_config_for_all",
       ":container_config",
     ]
-    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+    deps = [ "$THIRDPARTY_BOUNDS_CHECKING_FUNCTION_DIR:libsec_shared" ]
   }
 }

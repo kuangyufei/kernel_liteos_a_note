@@ -30,7 +30,7 @@
  */
 #include "It_posix_queue.h"
 
-static VOID *PthreadF01(VOID *argument)
+__attribute__((optnone)) static VOID *PthreadF01(VOID *argument)
 {
     INT32 i;
     INT32 ret;
@@ -54,7 +54,7 @@ EXIT:
     return NULL;
 }
 
-static VOID *PthreadF02(VOID *argument)
+__attribute__((optnone)) static VOID *PthreadF02(VOID *argument)
 {
     INT32 j, ret;
 
@@ -79,7 +79,7 @@ EXIT:
     return NULL;
 }
 
-static UINT32 Testcase(VOID)
+__attribute__((optnone)) static UINT32 Testcase(VOID)
 {
     pthread_t newTh1, newTh2;
     UINT32 ret;

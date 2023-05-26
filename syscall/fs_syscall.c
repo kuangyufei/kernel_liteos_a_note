@@ -321,7 +321,7 @@ static unsigned int ProcRealProcessIDGet(unsigned int pid)
 
     SCHEDULER_LOCK(intSave);
     LosProcessCB *pcb = OsGetPCBFromVpid(pid);
-    if (pcb == NULL) {
+    if (OsProcessIsInactive(pcb)) {
         SCHEDULER_UNLOCK(intSave);
         return 0;
     }

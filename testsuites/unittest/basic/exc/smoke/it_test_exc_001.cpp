@@ -30,7 +30,7 @@
  */
 #include "it_test_exc.h"
 
-static int TestCase(void)
+__attribute__((optnone)) static int TestCase(void)
 {
     int ret;
     int status = 0;

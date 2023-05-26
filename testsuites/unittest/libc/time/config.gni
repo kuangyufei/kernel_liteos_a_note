@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2023 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2023 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -29,31 +29,32 @@
 import("//build/lite/config/test.gni")
 import("//kernel/liteos_a/liteos.gni")
 import("//kernel/liteos_a/testsuites/unittest/config.gni")
-import("./config.gni")
 
-if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
-  unittest("liteos_a_process_fs_unittest_door") {
-    output_extension = "bin"
-    output_dir = "$root_out_dir/test/unittest/kernel"
-    include_dirs = common_include_dirs
-    sources = sources_entry
-    sources += sources_smoke
-    sources_full = []
-    sources += sources_full
-    configs = [ "../..:public_config_for_door" ]
-    deps = [ "$THIRDPARTY_BOUNDS_CHECKING_FUNCTION_DIR:libsec_shared" ]
-  }
+common_include_dirs = [
+  "$THIRDPARTY_GOOGLETEST_DIR/googletest/include",
+  "../../common/include",
+]
+
+sources_entry = [ "../../common/osTest.cpp" ]
+
+sources_smoke = []
+
+sources_full = []
+
+# libc time clock module
+if (LOSCFG_USER_TEST_LIBC_TIME_CLOCK == true) {
+  import("./clock/config.gni")
+  common_include_dirs += libc_time_clock_include_dirs
+  sources_entry += libc_time_clock_sources_entry
+  sources_smoke += libc_time_clock_sources_smoke
+  sources_full += libc_time_clock_sources_full
 }
 
-if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
-  unittest("liteos_a_process_fs_unittest") {
-    output_extension = "bin"
-    output_dir = "$root_out_dir/test/unittest/kernel"
-    include_dirs = common_include_dirs
-    sources = sources_entry
-    sources += sources_smoke
-    sources += sources_full
-    configs = [ "../..:public_config_for_all" ]
-    deps = [ "$THIRDPARTY_BOUNDS_CHECKING_FUNCTION_DIR:libsec_shared" ]
-  }
+# libc time timer module
+if (LOSCFG_USER_TEST_LIBC_TIME_TIMER == true) {
+  import("./timer/config.gni")
+  common_include_dirs += libc_time_timer_include_dirs
+  sources_entry += libc_time_timer_sources_entry
+  sources_smoke += libc_time_timer_sources_smoke
+  sources_full += libc_time_timer_sources_full
 }

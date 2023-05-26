@@ -33,7 +33,7 @@
 
 #define TEST_THREAD_COUNT 5
 
-static int TestThread(void)
+__attribute__((optnone)) static int TestThread(void)
 {
     int ret;
     int *test = nullptr; // For triggering an exceptioin
@@ -53,7 +53,7 @@ static int TestThread(void)
     return 0;
 }
 
-static int TestCase(void)
+__attribute__((optnone)) static int TestCase(void)
 {
     int count = 5;
     int status = 0;

@@ -31,7 +31,7 @@ import("//kernel/liteos_a/liteos.gni")
 
 module_switch = defined(LOSCFG_FS_JFFS)
 module_name = get_path_info(rebase_path("."), "name")
-linux_path = rebase_path("//kernel/linux/linux-5.10")
+linux_path = rebase_path("$KERNEL_LINUX_DIR")
 out_path = rebase_path(target_out_dir)
 
 kernel_module(module_name) {

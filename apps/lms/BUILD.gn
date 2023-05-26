@@ -73,5 +73,5 @@ executable("sample_usr_lms") {
     "-Wl,--wrap=strcpy",
     "-Wl,--wrap=strcat",
   ]
-  deps = [ "//kernel/liteos_a/kernel/extended/lms/usr:usrlmslib" ]
+  deps = [ "$LITEOSTOPDIR/kernel/extended/lms/usr:usrlmslib" ]
 }

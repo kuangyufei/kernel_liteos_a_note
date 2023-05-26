@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 同步官方源码，调度算法优化，加入deadline
+git commit -m  ' 同步官方源码，BUILD.gn 相关
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com

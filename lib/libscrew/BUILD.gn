@@ -28,7 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
-import("//third_party/FreeBSD/FreeBSD.gni")
+import("$THIRDPARTY_FREEBSD_DIR/FreeBSD.gni")
 
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {

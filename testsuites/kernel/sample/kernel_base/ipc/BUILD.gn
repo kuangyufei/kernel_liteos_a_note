@@ -107,5 +107,5 @@ kernel_module("test_ipc") {
   ]
 
   public_configs =
-      [ "//kernel/liteos_a/testsuites/kernel:liteos_kernel_test_public" ]
+      [ "$LITEOSTOPDIR/testsuites/kernel:liteos_kernel_test_public" ]
 }

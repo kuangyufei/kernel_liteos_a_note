@@ -30,7 +30,7 @@
  */
 #include "it_test_exc.h"
 
-static void Child(void)
+__attribute__((optnone)) static void Child(void)
 {
     while (1) {
         printf("@@@@@@@@@@@@@ pid : %d getppid : %d @@@@@@@@@@@@@@@@\n", getpid(), getppid());
@@ -41,7 +41,7 @@ static void TestKill(int sig)
     exit(0);
 }
 
-static int TestCase(void)
+__attribute__((optnone)) static int TestCase(void)
 {
     int ret;
     void (*retptr)(int) = NULL;

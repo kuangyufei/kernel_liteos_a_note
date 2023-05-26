@@ -63,7 +63,7 @@ static int GetHostByAddrTest(void)
     errno = 0;
     ia.s_addr = inet_addr("127.0.0.0");
     addr = gethostbyaddr(&ia, sizeof ia, AF_INET);
-    ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
+    ICUNIT_ASSERT_EQUAL(errno, ENOENT, errno);
 
     RecoveryFileEnv(pathList, file_number);
     return ICUNIT_SUCCESS;

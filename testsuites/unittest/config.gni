@@ -1,5 +1,5 @@
 # Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -64,11 +64,11 @@ LOSCFG_USER_TEST_MEM_VM = true
 LOSCFG_USER_TEST_PROCESS_THREAD = true
 
 # Module list
-LOSCFG_USER_TEST_MUTEX = true
-LOSCFG_USER_TEST_PROCESS = true
-LOSCFG_USER_TEST_PTHREAD = true
-LOSCFG_USER_TEST_RWLOCK = true
-LOSCFG_USER_TEST_SPINLOCK = true
+LOSCFG_USER_TEST_PROCESS_BASIC_PROCESS = true
+LOSCFG_USER_TEST_PROCESS_BASIC_PTHREAD = true
+LOSCFG_USER_TEST_PROCESS_LOCK_MUTEX = true
+LOSCFG_USER_TEST_PROCESS_LOCK_RWLOCK = true
+LOSCFG_USER_TEST_PROCESS_LOCK_SPINLOCK = true
 
 ########## extended test ##########
 # Control switch for extended function test
@@ -102,15 +102,15 @@ LOSCFG_USER_TEST_FS_VFAT = false
 LOSCFG_USER_TEST_LIBC = true
 
 # Module list
-LOSCFG_USER_TEST_IO = true
-LOSCFG_USER_TEST_MISC = true
-LOSCFG_USER_TEST_POSIX_MEM = true
-LOSCFG_USER_TEST_POSIX_MQUEUE = true
-LOSCFG_USER_TEST_POSIX_PTHREAD = false
-LOSCFG_USER_TEST_SYS = true
-LOSCFG_USER_TEST_TIME_CLOCK = true
-LOSCFG_USER_TEST_TIME_TIMER = true
-LOSCFG_USER_TEST_UTIL = true
+LOSCFG_USER_TEST_LIBC_IO = true
+LOSCFG_USER_TEST_LIBC_MISC = true
+LOSCFG_USER_TEST_LIBC_POSIX_MEM = true
+LOSCFG_USER_TEST_LIBC_POSIX_MQUEUE = true
+LOSCFG_USER_TEST_LIBC_POSIX_PTHREAD = false
+LOSCFG_USER_TEST_LIBC_SYS = true
+LOSCFG_USER_TEST_LIBC_TIME_CLOCK = true
+LOSCFG_USER_TEST_LIBC_TIME_TIMER = true
+LOSCFG_USER_TEST_LIBC_UTIL = true
 
 ########## net test ##########
 # Control switch for network function test

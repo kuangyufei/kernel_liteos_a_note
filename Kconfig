@@ -235,7 +235,12 @@ config SCHED_DEBUG
     depends on DEBUG_VERSION
     help
       If you wish to build LiteOS with support for sched debug.
-
+config SCHED_EDF_DEBUG
+    bool "Enable sched EDF debug Feature"
+    default n
+    depends on SCHED_DEBUG
+    help
+      If you wish to build LiteOS with support for sched debug.
 config USER_INIT_DEBUG
     bool "Enable user init Debug"
     default n

@@ -29,7 +29,7 @@
 
 import("//build/lite/config/component/lite_component.gni")
 import("//kernel/liteos_a/liteos.gni")
-import("//third_party/toybox/toybox.gni")
+import("$THIRDPARTY_TOYBOX_DIR/toybox.gni")
 
 group("toybox") {
   deps = [ ":build_toybox" ]
@@ -51,7 +51,7 @@ build_ext_component("build_toybox") {
     ":copy_toybox_config",
     ":copy_toybox_src",
   ]
-  deps += [ "//third_party/musl:sysroot_lite" ]
+  deps += [ "$THIRDPARTY_MUSL_DIR:sysroot_lite" ]
   exec_path = rebase_path("$target_out_dir/toybox_build")
 
   cflags = [

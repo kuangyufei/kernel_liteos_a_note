@@ -85,22 +85,22 @@ STATIC INT32 TestCase1(void)
 
     INT32 ret = getgrgid_r(-1, &getNam1, buf, len, &getNam2);
     ICUNIT_ASSERT_NOT_EQUAL(ret, 0, ret);
-    ICUNIT_ASSERT_EQUAL(errno, EAFNOSUPPORT, errno);
+    ICUNIT_ASSERT_EQUAL(errno, ENOENT, errno);
     errno = 0;
 
     groupRet = getgrgid(-1);
     ICUNIT_ASSERT_EQUAL(groupRet, 0, groupRet);
-    ICUNIT_ASSERT_EQUAL(errno, EAFNOSUPPORT, errno);
+    ICUNIT_ASSERT_EQUAL(errno, ENOENT, errno);
     errno = 0;
 
     groupRet = getgrnam("null");
     ICUNIT_ASSERT_EQUAL(groupRet, nullptr, groupRet);
-    ICUNIT_ASSERT_EQUAL(errno, EAFNOSUPPORT, errno);
+    ICUNIT_ASSERT_EQUAL(errno, ENOENT, errno);
     errno = 0;
 
     ret = getgrnam_r("null", &getData1, buf, len, &getData2);
     ICUNIT_ASSERT_NOT_EQUAL(ret, 0, ret);
-    ICUNIT_ASSERT_EQUAL(errno, EAFNOSUPPORT, errno);
+    ICUNIT_ASSERT_EQUAL(errno, ENOENT, errno);
     errno = 0;
 
     return 0;

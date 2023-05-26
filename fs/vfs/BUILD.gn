@@ -28,17 +28,14 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
-import("//third_party/NuttX/NuttX.gni")
+import("$THIRDPARTY_NUTTX_DIR/NuttX.gni")
 
 module_switch = defined(LOSCFG_FS_VFS)
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
   sources = [
-    "$LITEOSTOPDIR/fs/vfs/epoll/fs_epoll.c",
-    "$LITEOSTOPDIR/fs/vfs/mount.c",
-    "$LITEOSTOPDIR/fs/vfs/path_cache.c",
-    "$LITEOSTOPDIR/fs/vfs/vnode.c",
-    "$LITEOSTOPDIR/fs/vfs/vnode_hash.c",
+    "epoll/fs_epoll.c",
+    "mount.c",
     "operation/fullpath.c",
     "operation/vfs_chattr.c",
     "operation/vfs_check.c",
@@ -55,7 +52,10 @@ kernel_module(module_name) {
     "operation/vfs_readv.c",
     "operation/vfs_utime.c",
     "operation/vfs_writev.c",
+    "path_cache.c",
     "vfs_cmd/vfs_shellcmd.c",
+    "vnode.c",
+    "vnode_hash.c",
   ]
   sources += NUTTX_FS_DIRENT_SRC_FILES
   sources += NUTTX_FS_DRIVER_SRC_FILES

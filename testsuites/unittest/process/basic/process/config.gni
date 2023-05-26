@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2022 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2022-2023 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -26,14 +26,28 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import("//build/lite/config/test.gni")
+import("//kernel/liteos_a/liteos.gni")
 import("//kernel/liteos_a/testsuites/unittest/config.gni")
 
-process_include_dirs = [ "$TEST_UNITTEST_DIR/process/basic/process" ]
+common_include_dirs = [
+  "$THIRDPARTY_GOOGLETEST_DIR/googletest/include",
+  "../../../common/include",
+]
 
-process_sources_entry =
+sources_entry = [ "../../../common/osTest.cpp" ]
+
+sources_smoke = []
+
+sources_full = []
+
+process_basic_process_include_dirs =
+    [ "$TEST_UNITTEST_DIR/process/basic/process" ]
+
+process_basic_process_sources_entry =
     [ "$TEST_UNITTEST_DIR/process/basic/process/process_process_test.cpp" ]
 
-process_sources_smoke = [
+process_basic_process_sources_smoke = [
   "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_001.cpp",
   "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_002.cpp",
   "$TEST_UNITTEST_DIR/process/basic/process/smoke/process_test_004.cpp",
@@ -81,7 +95,7 @@ process_sources_smoke = [
   "$TEST_UNITTEST_DIR/process/basic/process/smp/process_test_smp_008.cpp",
 ]
 
-process_sources_full = [
+process_basic_process_sources_full = [
   "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_007.cpp",
   "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_031.cpp",
   "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_032.cpp",
@@ -112,3 +126,11 @@ process_sources_full = [
   "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_053.cpp",
   "$TEST_UNITTEST_DIR/process/basic/process/full/process_test_062.cpp",
 ]
+
+# process basic process module
+if (LOSCFG_USER_TEST_PROCESS_BASIC_PROCESS == true) {
+  common_include_dirs += process_basic_process_include_dirs
+  sources_entry += process_basic_process_sources_entry
+  sources_smoke += process_basic_process_sources_smoke
+  sources_full += process_basic_process_sources_full
+}

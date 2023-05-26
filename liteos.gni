@@ -32,6 +32,19 @@ import("$root_out_dir/config.gni")
 LITEOSTOPDIR = "//kernel/liteos_a"
 LITEOSTHIRDPARTY = "//third_party"
 HDFTOPDIR = "//drivers/hdf_core/adapter/khdf/liteos"
+HIVIEWDFX_HILOG_LITE_DIR = "//base/hiviewdfx/hilog_lite"
+DRIVERS_LITEOS_DIR = "//drivers/liteos"
+THIRDPARTY_BOUNDS_CHECKING_FUNCTION_DIR =
+    "//third_party/bounds_checking_function"
+THIRDPARTY_FATFS_DIR = "//third_party/FatFs"
+THIRDPARTY_NUTTX_DIR = "//third_party/NuttX"
+THIRDPARTY_MUSL_DIR = "//third_party/musl"
+THIRDPARTY_TOYBOX_DIR = "//third_party/toybox"
+THIRDPARTY_MKSH_DIR = "//third_party/mksh"
+THIRDPARTY_FREEBSD_DIR = "//third_party/FreeBSD"
+THIRDPARTY_OPTIMIZED_ROUTINES_DIR = "//third_party/optimized-routines"
+THIRDPARTY_GOOGLETEST_DIR = "//third_party/googletest"
+KERNEL_LINUX_DIR = "//kernel/linux/linux-5.10"
 
 ARCH = ""
 if (defined(LOSCFG_ARCH_ARM_AARCH32)) {
@@ -135,8 +148,8 @@ set_defaults("kernel_module") {
     "$LITEOSTOPDIR:los_config",
   ]
   visibility = [
-    "$LITEOSTOPDIR:*",
     ":*",
+    "$LITEOSTOPDIR:*",
     "..:*",
     "../..:*",
   ]

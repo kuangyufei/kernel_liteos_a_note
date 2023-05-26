@@ -278,6 +278,7 @@ typedef struct {//调度接口函数
     VOID (*enqueue)(SchedRunqueue *rq, LosTaskCB *taskCB); 	///< 入队列
     VOID (*start)(SchedRunqueue *rq, LosTaskCB *taskCB); 	///< 开始执行任务
     VOID (*exit)(LosTaskCB *taskCB);	///< 任务退出
+    UINT64 (*waitTimeGet)(LosTaskCB *taskCB);
     UINT32 (*wait)(LosTaskCB *runTask, LOS_DL_LIST *list, UINT32 timeout); ///< 任务等待
     VOID (*wake)(LosTaskCB *taskCB);///< 任务唤醒
     BOOL (*schedParamModify)(LosTaskCB *taskCB, const SchedParam *param);///< 修改调度参数

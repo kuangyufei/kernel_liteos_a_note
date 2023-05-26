@@ -45,9 +45,9 @@ static int ChildProcess(void)
     volatile unsigned int count = 0;
     int currTID = Syscall(SYS_gettid, 0, 0, 0, 0);
     struct sched_param param = {
-        .sched_deadline = 3000000,  /* 3000000, 3s */
-        .sched_runtime = 200000,    /* 200000, 200ms */
-        .sched_period = 5000000,    /* 5000000, 5s */
+        .sched_deadline = 1000000,  /* 1000000, 1s */
+        .sched_runtime = 20000,    /* 20000, 20ms */
+        .sched_period = 1000000,    /* 1000000, 1s */
     };
 
     ret = pthread_getschedparam(pthread_self(), &currThreadPolicy, &hpfparam);

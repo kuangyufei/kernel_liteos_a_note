@@ -31,7 +31,7 @@
 #include "it_test_exc.h"
 #include "pthread.h"
 
-static void *ThreadFunc2(void *arg)
+__attribute__((optnone)) static void *ThreadFunc2(void *arg)
 {
     while (1) {
     }
@@ -39,7 +39,7 @@ static void *ThreadFunc2(void *arg)
     return nullptr;
 }
 
-static void *ThreadFunc1(void *arg)
+__attribute__((optnone)) static void *ThreadFunc1(void *arg)
 {
     int *test = nullptr;
     *test = 0x1;
@@ -77,7 +77,8 @@ static int TestThread(void)
     return 0;
 }
 
-static int TestCase(void)
+
+__attribute__((optnone)) static int TestCase(void)
 {
     int *test = nullptr;
     int count = 5;

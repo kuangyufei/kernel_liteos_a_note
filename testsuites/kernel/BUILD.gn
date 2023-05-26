@@ -39,21 +39,21 @@ declare_args() {
 config("liteos_kernel_test_public") {
   cflags = [ "-Wno-error" ]
   include_dirs = [
-    "//kernel/liteos_a/kernel/include",
-    "//kernel/liteos_a/kernel/base/include",
-    "//kernel/liteos_a/kernel/common",
-    "//kernel/liteos_a/arch/arm/arm/include",
-    "//kernel/liteos_a/arch/arm/include",
-    "//kernel/liteos_a/extended/include",
-    "//third_party/musl/porting/liteos_a/kernel/include",
-    "//third_party/bounds_checking_function/include/",
-    "//kernel/liteos_a/lib/libscrew/include",
-    "//kernel/liteos_a/fs/vfs",
-    "//kernel/liteos_a/fs/proc/include",
-    "//kernel/liteos_a/fs/jffs2/include",
-    "//kernel/liteos_a/fs/nfs/include",
-    "//kernel/liteos_a/bsd/compat/linuxkpi/include",
-    "//kernel/liteos_a/testsuites/kernel/include",
+    "$LITEOSTOPDIR/kernel/include",
+    "$LITEOSTOPDIR/kernel/base/include",
+    "$LITEOSTOPDIR/kernel/common",
+    "$LITEOSTOPDIR/arch/arm/arm/include",
+    "$LITEOSTOPDIR/arch/arm/include",
+    "$LITEOSTOPDIR/extended/include",
+    "$THIRDPARTY_MUSL_DIR/porting/liteos_a/kernel/include",
+    "$THIRDPARTY_BOUNDS_CHECKING_FUNCTION_DIR/include/",
+    "$LITEOSTOPDIR/lib/libscrew/include",
+    "$LITEOSTOPDIR/fs/vfs",
+    "$LITEOSTOPDIR/fs/proc/include",
+    "$LITEOSTOPDIR/fs/jffs2/include",
+    "$LITEOSTOPDIR/fs/nfs/include",
+    "$LITEOSTOPDIR/bsd/compat/linuxkpi/include",
+    "include",
   ]
 
   if (LOSCFG_TEST_KERNEL_BASE) {

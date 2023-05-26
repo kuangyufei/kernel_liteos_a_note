@@ -36,9 +36,9 @@ static int ChildProcess(void)
     volatile unsigned int count = 0;
     struct sched_param currSchedParam = { 0 };
     struct sched_param param = {
-        .sched_deadline = 4000000,  /* 4000000, 4s */
-        .sched_runtime = 200000,    /* 200000, 200ms */
-        .sched_period = 5000000,    /* 5000000, 5s */
+        .sched_deadline = 1000000,  /* 1000000, 1s */
+        .sched_runtime = 20000,     /* 20000, 20ms */
+        .sched_period = 1000000,    /* 1000000, 1s */
     };
 
     ret = sched_getparam(getpid(), &currSchedParam);
@@ -59,22 +59,22 @@ static int ChildProcess(void)
 
     ret = sched_getparam(getpid(), &currSchedParam);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    ICUNIT_ASSERT_EQUAL(currSchedParam.sched_deadline, 4000000, LOS_NOK);    /* 4000000, 4s */
-    ICUNIT_ASSERT_EQUAL(currSchedParam.sched_runtime, 200000, LOS_NOK);      /* 200000, 200ms */
-    ICUNIT_ASSERT_EQUAL(currSchedParam.sched_period, 5000000, LOS_NOK);      /* 5000000, 5s */
+    ICUNIT_ASSERT_EQUAL(currSchedParam.sched_deadline, 1000000, LOS_NOK);    /* 1000000, 1s */
+    ICUNIT_ASSERT_EQUAL(currSchedParam.sched_runtime, 20000, LOS_NOK);       /* 20000, 20ms */
+    ICUNIT_ASSERT_EQUAL(currSchedParam.sched_period, 1000000, LOS_NOK);      /* 1000000, 1s */
 
     printf("--- 1 edf thread start ---\n\r");
     do {
-        for (volatile int i = 0; i < 100000; i++) { /* 100000, no special meaning */
-            for (volatile int j = 0; j < 10; j++) { /* 10, no special meaning */
+        for (volatile int i = 0; i < 10000; i++) { /* 10000, no special meaning */
+            for (volatile int j = 0; j < 5; j++) { /* 5, no special meaning */
                 int tmp = i - j;
             }
         }
-        if (count % 20 == 0) {  /* 20, no special meaning */
+        if (count % 3 == 0) {  /* 3, no special meaning */
             printf("--- 2 edf thread running ---\n\r");
         }
         count++;
-    } while (count <= 100); /* 100, no special meaning */
+    } while (count <= 6); /* 6, no special meaning */
     printf("--- 3 edf thread end ---\n\r");
 
     return 0;

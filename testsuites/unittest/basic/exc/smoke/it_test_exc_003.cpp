@@ -34,14 +34,15 @@
 #define TEST_THREAD_COUNT 5
 static volatile int g_testCondFlag;
 static int g_count[TEST_THREAD_COUNT];
-static void *ThreadFunc2(void *arg)
+
+__attribute__((optnone)) static void *ThreadFunc2(void *arg)
 {
     int count = *(int *)arg;
     int *test = nullptr;
 
     g_testCondFlag++;
 
-    while (g_testCondFlag < 2) {
+    while (g_testCondFlag < 2) { /* 2, no special meaning  */
     }
 
     *test = 0x1;
@@ -83,7 +84,7 @@ static int TestThread(void)
     return 0;
 }
 
-static int TestCase(void)
+__attribute__((optnone)) static int TestCase(void)
 {
     int *test = nullptr;
     int count = 5;

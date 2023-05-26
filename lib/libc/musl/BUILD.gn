@@ -28,11 +28,8 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
-
-MUSLDIR = "$LITEOSTHIRDPARTY/musl"
-
-import("//third_party/optimized-routines/optimized-routines.gni")
-import("$MUSLDIR/porting/liteos_a/kernel/musl.gni")
+import("$THIRDPARTY_MUSL_DIR/porting/liteos_a/kernel/musl.gni")
+import("$THIRDPARTY_OPTIMIZED_ROUTINES_DIR/optimized-routines.gni")
 
 module_switch = defined(LOSCFG_LIBC_MUSL)
 module_name = get_path_info(rebase_path("."), "name")

@@ -29,7 +29,7 @@
 
 import("//build/lite/config/component/lite_component.gni")
 import("//kernel/liteos_a/liteos.gni")
-import("//third_party/mksh/mksh.gni")
+import("$THIRDPARTY_MKSH_DIR/mksh.gni")
 
 group("mksh") {
   deps = [ ":build_mksh" ]
@@ -42,7 +42,7 @@ copy("copy_mksh_src") {
 
 build_ext_component("build_mksh") {
   deps = [ ":copy_mksh_src" ]
-  deps += [ "//third_party/musl:sysroot_lite" ]
+  deps += [ "$THIRDPARTY_MUSL_DIR:sysroot_lite" ]
   exec_path = rebase_path("$target_out_dir/mksh_build")
 
   cflags = [

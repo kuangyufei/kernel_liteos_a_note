@@ -27,7 +27,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
-import("//third_party/musl/porting/liteos_a_newlib/kernel/newlib.gni")
+import("$THIRDPARTY_MUSL_DIR/porting/liteos_a_newlib/kernel/newlib.gni")
 
 module_switch = defined(LOSCFG_LIBC_NEWLIB)
 module_name = get_path_info(rebase_path("."), "name")

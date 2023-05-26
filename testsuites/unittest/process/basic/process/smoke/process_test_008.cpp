@@ -32,19 +32,19 @@
 
 static const int TEST_COUNT = 10;
 
-static void *ThreadFunc2(void *arg)
+__attribute__((optnone)) static void *ThreadFunc2(void *arg)
 {
     printf("111111111111111: exit\n");
     exit(254); // 254, exit args
 }
 
-static void *ThreadFunc3(void *arg)
+__attribute__((optnone)) static void *ThreadFunc3(void *arg)
 {
     while (1) {
     }
 }
 
-static int ProcessTest001(void)
+__attribute__((optnone)) static int ProcessTest001(void)
 {
     int ret;
     int status;
@@ -81,7 +81,7 @@ static int ProcessTest001(void)
     return 0;
 }
 
-static int Testcase(void)
+__attribute__((optnone)) static int Testcase(void)
 {
     int ret;
     int status;

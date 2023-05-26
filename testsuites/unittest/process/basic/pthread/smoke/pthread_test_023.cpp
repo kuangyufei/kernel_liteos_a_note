@@ -46,9 +46,9 @@ static int ChildProcess(void)
     struct sched_param currSchedParam = { 0 };
     int currTID = Syscall(SYS_gettid, 0, 0, 0, 0);
     struct sched_param param = {
-        .sched_deadline = 3000000,  /* 3000000, 3s */
-        .sched_runtime = 200000,    /* 200000, 200ms */
-        .sched_period = 5000000,    /* 5000000, 5s */
+        .sched_deadline = 1000000,  /* 1000000, 1s */
+        .sched_runtime = 20000,     /* 20000, 20ms */
+        .sched_period = 1000000,    /* 1000000, 1s */
     };
 
     ret = pthread_getschedparam(pthread_self(), &oldPolicy, &hpfparam);
@@ -60,9 +60,9 @@ static int ChildProcess(void)
     ret = pthread_getschedparam(pthread_self(), &currPolicy, &currSchedParam);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     ICUNIT_ASSERT_EQUAL(currPolicy, SCHED_DEADLINE, LOS_NOK);
-    ICUNIT_ASSERT_EQUAL(currSchedParam.sched_deadline, 3000000, LOS_NOK);    /* 3000000, 3s */
-    ICUNIT_ASSERT_EQUAL(currSchedParam.sched_runtime, 200000, LOS_NOK);      /* 200000, 200ms */
-    ICUNIT_ASSERT_EQUAL(currSchedParam.sched_period, 5000000, LOS_NOK);      /* 5000000, 5s */
+    ICUNIT_ASSERT_EQUAL(currSchedParam.sched_deadline, 1000000, LOS_NOK);    /* 1000000, 1s */
+    ICUNIT_ASSERT_EQUAL(currSchedParam.sched_runtime, 20000, LOS_NOK);       /* 20000, 20ms */
+    ICUNIT_ASSERT_EQUAL(currSchedParam.sched_period, 1000000, LOS_NOK);      /* 1000000, 1s */
 
     ret = pthread_attr_init(&a);
     pthread_attr_setschedpolicy(&a, SCHED_RR);

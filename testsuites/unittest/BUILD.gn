@@ -113,10 +113,24 @@ group("unittest") {
     # libc test
     if (LOSCFG_USER_TEST_LIBC == true) {
       if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
-        deps += [ "libc:liteos_a_libc_unittest_door" ]
+        deps += [
+          "libc/io:liteos_a_libc_io_unittest_door",
+          "libc/misc:liteos_a_libc_misc_unittest_door",
+          "libc/posix:liteos_a_libc_posix_unittest_door",
+          "libc/sys:liteos_a_libc_sys_unittest_door",
+          "libc/time:liteos_a_libc_time_unittest_door",
+          "libc/util:liteos_a_libc_util_unittest_door",
+        ]
       }
       if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
-        deps += [ "libc:liteos_a_libc_unittest" ]
+        deps += [
+          "libc/io:liteos_a_libc_io_unittest",
+          "libc/misc:liteos_a_libc_misc_unittest",
+          "libc/posix:liteos_a_libc_posix_unittest",
+          "libc/sys:liteos_a_libc_sys_unittest",
+          "libc/time:liteos_a_libc_time_unittest",
+          "libc/util:liteos_a_libc_util_unittest",
+        ]
       }
     }
 
@@ -133,8 +147,11 @@ group("unittest") {
     # process test
     if (LOSCFG_USER_TEST_PROCESS_THREAD == true) {
       if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
-        deps += [ "process/basic:liteos_a_process_basic_unittest_door" ]
-        deps += [ "process/lock:liteos_a_process_lock_unittest_door" ]
+        deps += [
+          "process/basic/process:liteos_a_process_basic_process_unittest_door",
+          "process/basic/pthread:liteos_a_process_basic_pthread_unittest_door",
+          "process/lock:liteos_a_process_lock_unittest_door",
+        ]
         if (LOSCFG_USER_TEST_PROCESS_FS == true) {
           deps += [ "process/fs:liteos_a_process_fs_unittest_door" ]
         }
@@ -143,8 +160,11 @@ group("unittest") {
         }
       }
       if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
-        deps += [ "process/basic:liteos_a_process_basic_unittest" ]
-        deps += [ "process/lock:liteos_a_process_lock_unittest" ]
+        deps += [
+          "process/basic/process:liteos_a_process_basic_process_unittest",
+          "process/basic/pthread:liteos_a_process_basic_pthread_unittest",
+          "process/lock:liteos_a_process_lock_unittest",
+        ]
         if (LOSCFG_USER_TEST_PROCESS_FS == true) {
           deps += [ "process/fs:liteos_a_process_fs_unittest" ]
         }

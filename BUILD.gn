@@ -202,6 +202,10 @@ config("warn_config") {
   ]
   if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
     cflags += [ "-Wno-address-of-packed-member" ]
+    cflags += [
+      "-Wno-unused-but-set-variable",
+      "-Wno-strict-prototypes",
+    ]
   }
   asmflags = cflags
 }
@@ -295,7 +299,7 @@ config("public") {
 
   configs += [
     "$HDFTOPDIR:public",
-    "//drivers/liteos:public",
+    "$DRIVERS_LITEOS_DIR:public",
   ]
 
   if (HAVE_DEVICE_SDK) {
@@ -320,8 +324,8 @@ group("modules") {
   ]
 
   deps += [
-    "//drivers/liteos",
-    HDFTOPDIR,
+    "$DRIVERS_LITEOS_DIR",
+    "$HDFTOPDIR",
   ]
 
   if (HAVE_DEVICE_SDK) {
@@ -347,7 +351,7 @@ group("liteos_a") {
     deps += [
       ":apps",
       ":tests",
-      "//third_party/musl/scripts/build_lite:strip",
+      "$THIRDPARTY_MUSL_DIR/scripts/build_lite:strip",
     ]
     if (liteos_skip_make == false) {
       deps += [ ":make" ]

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -42,40 +42,52 @@ static int Testcase(void)
     char *workingPath = "/usr/bin";
     void *handle = nullptr;
     int (*func)(int);
+    char curPath[1024] = { 0 }; /* 1024, buffer size */
+
+    handle = getcwd(curPath, sizeof(curPath));
+    ICUNIT_ASSERT_NOT_EQUAL(handle, NULL, handle);
 
     ret = chdir(workingPath);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     handle = dlopen(NULL, RTLD_NOW | RTLD_LOCAL);
-    ICUNIT_ASSERT_NOT_EQUAL(handle, NULL, handle);
+    ICUNIT_GOTO_NOT_EQUAL(handle, NULL, 1, EXIT1);  /* 1, return value */
 
     ret = dlclose(handle);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
     handle = dlopen(LIBCSO_REAL_PATH, RTLD_NOW);
-    ICUNIT_ASSERT_NOT_EQUAL(handle, NULL, handle);
+    ICUNIT_GOTO_NOT_EQUAL(handle, NULL, 1, EXIT1);  /* 1, return value */
 
     func = reinterpret_cast<int (*)(int)>(dlsym(handle, SYMBOL_TO_FIND));
     ICUNIT_GOTO_NOT_EQUAL(func, NULL, func, EXIT);
     ICUNIT_GOTO_EQUAL(func, SYMBOL_TO_MATCH, func, EXIT);
 
     ret = dlclose(handle);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
     handle = dlopen(LIBCSO_RELATIVE_PATH, RTLD_NOW);
-    ICUNIT_ASSERT_NOT_EQUAL(handle, NULL, handle);
+    ICUNIT_GOTO_NOT_EQUAL(handle, NULL, 1, EXIT1);  /* 1, return value */
 
     func = reinterpret_cast<int (*)(int)>(dlsym(handle, SYMBOL_TO_FIND));
     ICUNIT_GOTO_NOT_EQUAL(func, NULL, func, EXIT);
 
     ret = dlclose(handle);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
+
+    ret = chdir(curPath);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 
     return 0;
 
 EXIT:
     dlclose(handle);
-    return 0;
+
+EXIT1:
+    ret = chdir(curPath);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+
+    return 1;   /* 1, return value */
 }
 
 void ItTestDynload002(void)
