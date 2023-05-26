@@ -202,6 +202,7 @@
   
 ### 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [gitcode](https://gitcode.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
+* `2023/05/26` -- 同步官方源码，BUILD.gn 相关
 * `2023/04/10` -- 调度算法优化，加入deadline
 * `2023/03/01` -- 增加网络容器和容器限额功能
 * `2023/02/13` -- 支持proc/self目录
@@ -288,13 +289,5 @@
 
 ### 关注不迷路 | 代码即人生
 
-据说喜欢 **点赞 + 分享** 的,后来都成了大神。:) [ >> 查看捐助名单](./donate.md)
 ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/so1so.png)
-```
-互联网从业十五年，计算机硕士，技术副总裁
-关注我，持续更新四十年，即聊技术也谈人生
-交有趣靠谱的人；做难而正确的事
-不做作，不炒作，只唯真
-不唯上，不唯书，只唯实
-```
-
+据说喜欢 **点赞 + 分享** 的,后来都成了大神。:) [ >> 查看捐助名单](./donate.md)
