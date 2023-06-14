@@ -27,6 +27,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("//kernel/liteos_a/liteos.gni")
 import("//kernel/liteos_a/testsuites/unittest/config.gni")
 
 common_include_dirs = [
@@ -92,7 +93,7 @@ process_plimits_sources_smoke = [
 process_plimits_sources_full = []
 
 # plimits module
-if (LOSCFG_USER_TEST_PROCESS == true) {
+if (LOSCFG_USER_TEST_PROCESS_PLIMITS == true) {
   common_include_dirs += process_plimits_include_dirs
   sources_entry += process_plimits_sources_entry
   sources_smoke += process_plimits_sources_smoke

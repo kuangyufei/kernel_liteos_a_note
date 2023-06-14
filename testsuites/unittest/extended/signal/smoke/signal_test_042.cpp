@@ -67,7 +67,7 @@ static UINT32 TestCase()
     sigemptyset(&set);
     sigprocmask(SIG_SETMASK, &set, NULL);
 
-    printf("check invlid sigset ...\n");
+    printf("check invalid sigset ...\n");
     int rt = sigaddset(&set, 0);
     ICUNIT_ASSERT_EQUAL(rt, -1, rt);
     ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
@@ -79,19 +79,19 @@ static UINT32 TestCase()
 
     siginfo_t si;
     time1.tv_sec = -1;
-    printf("check invlid timespec: tv_sec=-1 ...\n");
+    printf("check invalid timespec: tv_sec=-1 ...\n");
     ret = SigtimedwaitFailTest(&set, &si, &time1, EINVAL);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     time1.tv_sec = 1;
     time1.tv_nsec = -1;
-    printf("check invlid timespec: tv_nsec=-1 ...\n");
+    printf("check invalid timespec: tv_nsec=-1 ...\n");
     ret = SigtimedwaitFailTest(&set, &si, &time1, EINVAL);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     time1.tv_sec = 1;
     time1.tv_nsec = 1000 * 1000 * 1000 + 1; // 1000, set the nsec of time.
-    printf("check invlid timespec: tv_nsec overflow ...\n");
+    printf("check invalid timespec: tv_nsec overflow ...\n");
     ret = SigtimedwaitFailTest(&set, &si, &time1, EINVAL);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 

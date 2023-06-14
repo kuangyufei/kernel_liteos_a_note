@@ -67,51 +67,6 @@ config PAGE_TABLE_FINE_LOCK
     help
       This option will enable fine lock for page table.
 
-######################### config options of container ####################
-config KERNEL_CONTAINER
-    bool "Enable container Feature"
-    default n
-    depends on KERNEL_VM
-
-config PID_CONTAINER
-    bool "Enable pid container Feature"
-    default n
-    depends on KERNEL_CONTAINER
-
-config UTS_CONTAINER
-    bool "Enable uts container Feature"
-    default n
-    depends on KERNEL_CONTAINER
-
-config MNT_CONTAINER
-    bool "Enable mnt container Feature"
-    default n
-    depends on KERNEL_CONTAINER
-
-config CHROOT
-    bool "Enable chroot"
-    default n
-    depends on MNT_CONTAINER
-
-config IPC_CONTAINER
-    bool "Enable ipc container Feature"
-    default n
-    depends on KERNEL_CONTAINER
-
-config TIME_CONTAINER
-    bool "Enable time container"
-    default n
-    depends on KERNEL_CONTAINER
-
-config USER_CONTAINER
-    bool "Enable user container"
-    default n
-    depends on KERNEL_CONTAINER
-
-config NET_CONTAINER
-    bool "Enable net container"
-    default n
-    depends on KERNEL_CONTAINER
 
 ######################### config options of extended #####################
 source "kernel/extended/Kconfig"

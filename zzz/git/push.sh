@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 同步官方源码，BUILD.gn 相关
+git commit -m  ' 容器模块迁移，由base --> extended
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com

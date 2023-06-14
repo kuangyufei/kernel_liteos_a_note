@@ -1,5 +1,4 @@
-# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2023-2023 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -29,42 +28,38 @@
 
 import("//kernel/liteos_a/liteos.gni")
 
-group("extended") {
-  deps = [
-    "blackbox",
-    "container",
-    "cppsupport",
-    "cpup",
-    "dynload",
-    "hidumper",
-    "hilog",
-    "hook",
-    "liteipc",
-    "lms",
-    "perf",
-    "pipes",
-    "plimit",
-    "power",
-    "trace",
-    "vdso",
-  ]
+module_switch = defined(LOSCFG_KERNEL_CONTAINER)
+module_name = get_path_info(rebase_path("."), "name")
+kernel_module(module_name) {
+  sources = [ "los_container.c" ]
+  if (defined(LOSCFG_IPC_CONTAINER)) {
+    sources += [ "los_ipc_container.c" ]
+  }
+  if (defined(LOSCFG_MNT_CONTAINER)) {
+    sources += [ "los_mnt_container.c" ]
+  }
+  if (defined(LOSCFG_NET_CONTAINER)) {
+    sources += [ "los_net_container.c" ]
+  }
+  if (defined(LOSCFG_PID_CONTAINER)) {
+    sources += [ "los_pid_container.c" ]
+  }
+  if (defined(LOSCFG_TIME_CONTAINER)) {
+    sources += [ "los_time_container.c" ]
+  }
+  if (defined(LOSCFG_USER_CONTAINER)) {
+    sources += [
+      "los_credentials.c",
+      "los_user_container.c",
+    ]
+  }
+  if (defined(LOSCFG_UTS_CONTAINER)) {
+    sources += [ "los_uts_container.c" ]
+  }
+
+  public_configs = [ ":public" ]
 }
 
 config("public") {
-  configs = [
-    "blackbox:public",
-    "container:public",
-    "cpup:public",
-    "dynload:public",
-    "hidumper:public",
-    "hilog:public",
-    "hook:public",
-    "liteipc:public",
-    "pipes:public",
-    "vdso:public",
-    "perf:public",
-    "lms:public",
-    "power:public",
-    "plimit:public",
-  ]
+  include_dirs = [ "." ]
 }

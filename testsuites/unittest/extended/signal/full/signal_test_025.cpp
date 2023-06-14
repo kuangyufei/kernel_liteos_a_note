@@ -88,7 +88,7 @@ static int TestBlock()
         printf("\n\n");
 
         printf("Signal Pause(2)\n");
-        printf("To test whether pause can relese the signal\n");
+        printf("To test whether pause can release the signal\n");
         alarm(clock);
         retValue = sighold(sig);
         if (retValue != 0) {

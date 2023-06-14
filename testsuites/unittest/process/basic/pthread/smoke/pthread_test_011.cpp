@@ -46,7 +46,7 @@ void child1(void)
     while (1) {
         ret = pthread_getschedparam(pthread, &newPolicy, &param);
         if (ret != 0) {
-            printf("pthread_getschedparam failed  ! %d erro: %d\n", __LINE__, errno);
+            printf("pthread_getschedparam failed  ! %d error: %d\n", __LINE__, errno);
             exit(255); // 255, set a special exit code.
         }
 

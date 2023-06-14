@@ -1,5 +1,4 @@
-# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2023-2023 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -27,44 +26,38 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import("//kernel/liteos_a/liteos.gni")
+include $(LITEOSTOPDIR)/config.mk
 
-group("extended") {
-  deps = [
-    "blackbox",
-    "container",
-    "cppsupport",
-    "cpup",
-    "dynload",
-    "hidumper",
-    "hilog",
-    "hook",
-    "liteipc",
-    "lms",
-    "perf",
-    "pipes",
-    "plimit",
-    "power",
-    "trace",
-    "vdso",
-  ]
-}
+MODULE_NAME := $(notdir $(shell pwd))
 
-config("public") {
-  configs = [
-    "blackbox:public",
-    "container:public",
-    "cpup:public",
-    "dynload:public",
-    "hidumper:public",
-    "hilog:public",
-    "hook:public",
-    "liteipc:public",
-    "pipes:public",
-    "vdso:public",
-    "perf:public",
-    "lms:public",
-    "power:public",
-    "plimit:public",
-  ]
-}
+LOCAL_SRCS := $(wildcard *.c)
+
+ifneq ($(LOSCFG_IPC_CONTAINER), y)
+LOCAL_SRCS += $(filter-out los_ipc_container.c, $(LOCAL_SRCS))
+endif
+
+ifneq ($(LOSCFG_MNT_CONTAINER), y)
+LOCAL_SRCS += $(filter-out los_mnt_container.c, $(LOCAL_SRCS))
+endif
+
+ifneq ($(LOSCFG_NET_CONTAINER), y)
+LOCAL_SRCS += $(filter-out los_net_container.c, $(LOCAL_SRCS))
+endif
+
+ifneq ($(LOSCFG_PID_CONTAINER), y)
+LOCAL_SRCS += $(filter-out los_pid_container.c, $(LOCAL_SRCS))
+endif
+
+ifneq ($(LOSCFG_TIME_CONTAINER), y)
+LOCAL_SRCS += $(filter-out los_time_container.c, $(LOCAL_SRCS))
+endif
+
+ifneq ($(LOSCFG_USER_CONTAINER), y)
+LOCAL_SRCS += $(filter-out los_credentials.c los_user_container.c, $(LOCAL_SRCS))
+endif
+
+ifneq ($(LOSCFG_UTS_CONTAINER), y)
+LOCAL_SRCS += $(filter-out los_uts_container.c, $(LOCAL_SRCS))
+endif
+
+include $(MODULE)

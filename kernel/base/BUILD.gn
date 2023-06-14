@@ -32,15 +32,6 @@ import("//kernel/liteos_a/liteos.gni")
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
   sources = [
-    "container/los_container.c",
-    "container/los_credentials.c",
-    "container/los_ipc_container.c",
-    "container/los_mnt_container.c",
-    "container/los_net_container.c",
-    "container/los_pid_container.c",
-    "container/los_time_container.c",
-    "container/los_user_container.c",
-    "container/los_uts_container.c",
     "core/los_bitmap.c",
     "core/los_info.c",
     "core/los_process.c",

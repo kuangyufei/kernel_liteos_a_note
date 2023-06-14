@@ -26,9 +26,6 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import("//build/lite/config/test.gni")
-import("//kernel/liteos_a/liteos.gni")
-import("//kernel/liteos_a/testsuites/unittest/config.gni")
 import("./config.gni")
 
 config("container_config") {

@@ -55,7 +55,7 @@ static UINT32 Testcase(VOID)
         ret = write(pipeFd[1], "Hello world", TAR_STR_LEN);
         printf("write first status: %d\n", ret);
         if (ret != TAR_STR_LEN) {
-            exit(11); // 11, the value of son process unexpect exit, convenient to debug
+            exit(11); // 11, the value of son process unexpected exit, convenient to debug
         }
         *sharedflag = 1;
         close(pipeFd[1]);

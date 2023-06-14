@@ -38,7 +38,7 @@ void SigChildResponse(int signo)
     wait(nullptr);
 }
 
-/* Register SIGCHLD, through signal to restore the child memery */
+/* Register SIGCHLD, through signal to restore the child memory */
 static int TestSigKillWaitFromSigChild()
 {
     void (*ret)(int);

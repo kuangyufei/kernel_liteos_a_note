@@ -53,7 +53,7 @@ static UINT32 Testcase(VOID)
         ret = write(pipeFd[1], "hello world", 12); // 12, "hello world" length and '\0'
         printf("write first status: %d\n", ret);
         if (ret != 12) { // 12, "hello world" length and '\0'
-            exit(11);    // 11, the value of son process unexpect exit, convenient to debug
+            exit(11);    // 11, the value of son process unexpected exit, convenient to debug
         }
         *sharedflag = 1;
         close(pipeFd[1]);

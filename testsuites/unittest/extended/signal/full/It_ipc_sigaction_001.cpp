@@ -69,7 +69,7 @@ static UINT32 Testcase(VOID)
 
         ret = sigaction(SIGCHLD, &oldact, NULL);
         if (ret == -1) {
-            exit(6); // 6, the value of son process unexpect exit, convenient to debug
+            exit(6); // 6, the value of son process unexpected exit, convenient to debug
         }
         sleep(1);
         printf("---son--cnt check----%d--------\n", g_actionCnt1);

@@ -90,31 +90,31 @@ static int TestCase(void)
             printf("errline  = %d\n", __LINE__);
             exit(-1);
         }
-        ret = kill(10, 31); // 10, kill process pid; 31, sigal.
+        ret = kill(10, 31); // 10, kill process pid; 31, signal.
         if (retValue != -1 || errno != EINVAL) {
             printf("errline  = %d\n", __LINE__);
             exit(-1);
         }
-        ret = kill(10, 32); // 10, kill process pid; 32, sigal.
+        ret = kill(10, 32); // 10, kill process pid; 32, signal.
         if (retValue != -1 || errno != EINVAL) {
             printf("errline  = %d\n", __LINE__);
             exit(-1);
         }
 
-        ret = kill(2, 32); // 2, kill process pid; 32, sigal.
+        ret = kill(2, 32); // 2, kill process pid; 32, signal.
         if (retValue != -1 || errno != EINVAL) {
             printf("errline  = %d\n", __LINE__);
             exit(-1);
         }
 
         printf("test EPERM begin\n");
-        ret = kill(2, 5); // 2, kill process pid; 5, sigal.
+        ret = kill(2, 5); // 2, kill process pid; 5, signal.
         if (retValue != -1 || errno != EPERM) {
             printf("errline  = %d\n", __LINE__);
             exit(-1);
         }
 
-        ret = kill(3, 5); // 3, kill process pid; 5, sigal.
+        ret = kill(3, 5); // 3, kill process pid; 5, signal.
         if (retValue != -1 || errno != EPERM) {
             printf("errline  = %d\n", __LINE__);
             exit(-1);
@@ -126,7 +126,7 @@ static int TestCase(void)
             exit(-1);
         }
 
-        ret = kill(1, 5); // 5, kill sigal num .
+        ret = kill(1, 5); // 5, kill signal num .
         if (retValue != -1 || errno != EPERM) {
             printf("errline  = %d\n", __LINE__);
             exit(-1);

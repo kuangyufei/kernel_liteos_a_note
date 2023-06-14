@@ -39,7 +39,6 @@ LOCAL_SRCS := 	$(wildcard ipc/*.c) $(wildcard core/*.c) $(wildcard mem/membox/*.
 		$(wildcard mp/*.c) \
 		$(wildcard sched/*.c) \
 		$(wildcard vm/*.c) \
-		$(wildcard container/*.c)
 
 
 LOCAL_FLAGS := $(LITEOS_CFLAGS_INTERWORK) -Wno-frame-address
