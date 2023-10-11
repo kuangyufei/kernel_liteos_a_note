@@ -485,29 +485,35 @@ UINT32 OsDevLimitWriteDeny(ProcLimitSet *plimit, const CHAR *buf, UINT32 size)
     return DevLimitUpdateAccess(plimit, buf, DEVLIMIT_DENY);
 }
 
-STATIC VOID DevLimitItemSetAccess(CHAR *acc, INT16 access)
+STATIC VOID DevLimitItemSetAccess(CHAR *accArray, INT16 access)
 {
     INT32 index = 0;
     (VOID)memset_s(acc, ACCLEN, 0, ACCLEN);
     if (access & DEVLIMIT_ACC_READ) {
-        acc[index++] = 'r';
+        accArray[index] = 'r';
+        index++;
     }
     if (access & DEVLIMIT_ACC_WRITE) {
-        acc[index++] = 'w';
+        accArray[index] = 'w';
+        index++;
     }
     if (access & DEVLIMIT_ACC_MKNOD) {
-        acc[index++] = 'm';
+        accArray[index] = 'm';
+        index++;
     }
 }
 
 STATIC CHAR DevLimitItemTypeToChar(INT16 type)
 {
-    if (type == DEVLIMIT_DEV_ALL) {
-        return 'a';
-    } else if (type == DEVLIMIT_DEV_CHAR) {
-        return 'c';
-    } else if (type == DEVLIMIT_DEV_BLOCK) {
-        return 'b';
+    switch (type) {
+        case DEVLIMIT_DEV_ALL:
+            return 'a';
+        case DEVLIMIT_DEV_CHAR:
+            return 'c';
+        case DEVLIMIT_DEV_BLOCK:
+            return 'b';
+        default:
+            break;
     }
     return 'X';
 }

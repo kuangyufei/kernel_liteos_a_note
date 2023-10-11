@@ -116,12 +116,19 @@ int SysMqClose(mqd_t personal)
     FreeProcessFd(ufd);
     return ret;
 }
+
 int SysMqNotify(mqd_t personal, const struct sigevent *sigev)
 {
     int ret;
+    struct sigevent ksigev;
+
+    ret = LOS_ArchCopyFromUser(&ksigev, sigev, sizeof(struct sigevent));
+    if (ret != 0) {
+        return -EFAULT;
+    }
 
     MQUEUE_FD_U2K(personal);
-    ret = OsMqNotify(personal, sigev);
+    ret = OsMqNotify(personal, &ksigev);
     if (ret < 0) {
         return -get_errno();
     }

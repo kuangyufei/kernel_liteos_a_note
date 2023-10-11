@@ -650,7 +650,7 @@ STATIC INLINE BOOL SwtmrRunqueueFind(SortLinkAttribute *swtmrSortLink, SCHED_TL_
 STATIC BOOL SwtmrTimeListFind(SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg)
 {
     for (UINT16 cpuid = 0; cpuid < LOSCFG_KERNEL_CORE_NUM; cpuid++) {
-        SortLinkAttribute *swtmrSortLink = &g_swtmrRunqueue[ArchCurrCpuid()].swtmrSortLink;
+        SortLinkAttribute *swtmrSortLink = &g_swtmrRunqueue[cpuid].swtmrSortLink;
         if (SwtmrRunqueueFind(swtmrSortLink, checkFunc, arg)) {
             return TRUE;
         }

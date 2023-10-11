@@ -567,12 +567,12 @@ off_t VfsJffs2Seek(struct file *filep, off_t offset, int whence)
     filePos = filep->f_pos;
 
     switch (whence) {
-        case SEEK_SET:
-            filePos = offset;
-            break;
-
         case SEEK_CUR:
             filePos += offset;
+            break;
+
+        case SEEK_SET:
+            filePos = offset;
             break;
 
         case SEEK_END:

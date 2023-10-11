@@ -1,4 +1,4 @@
- ### 温暖记录
+ ### 捐赠记录
 
 <img src="https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/1.png" alt="" width="400px" height="420px" align="bottom" />
 <img src="https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/2.png" alt="" width="400px" height="420px" align="bottom" />
@@ -17,11 +17,11 @@
 <img src="https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/15.png" alt="" width="400px" height="420px" align="bottom" />
 <img src="https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/16.png" alt="" width="400px" height="420px" align="bottom" />
 <img src="https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/17.png" alt="" width="400px" height="420px" align="bottom" />
+<img src="https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/18.png" alt="" width="400px" height="420px" align="bottom" />
 
-### 捐助方式
+### 谢谢支持
 
-<img src="https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/donate.png" alt="" width="400px" height="400px" align="bottom" />
-<img src="https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/zzwx.png" alt="" width="400px" height="400px" align="bottom" />
+<img src="https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/so1so.png" align="bottom" />
 
 
 

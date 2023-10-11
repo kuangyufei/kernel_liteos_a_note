@@ -67,6 +67,8 @@ config("public_config_for_pressure") {
 group("unittest") {
   deps = []
   if (ohos_build_type == "debug") {
+    deps += [ "tools:liteos_unittest_run" ]
+
     # basic test
     if (LOSCFG_USER_TEST_BASIC == true) {
       if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {

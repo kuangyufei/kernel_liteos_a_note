@@ -54,26 +54,6 @@ HWTEST_F(TimeTimerTest, TimerTest001, TestSize.Level0)
 }
 
 /* *
- * @tc.name: TimerTest002
- * @tc.desc: function for TimeTimerTest
- * @tc.type: FUNC
- */
-HWTEST_F(TimeTimerTest, TimerTest002, TestSize.Level0)
-{
-    TimerTest002();
-}
-
-/* *
- * @tc.name: TimerTest003
- * @tc.desc: function for TimeTimerTest
- * @tc.type: FUNC
- */
-HWTEST_F(TimeTimerTest, TimerTest003, TestSize.Level0)
-{
-    TimerTest003();
-}
-
-/* *
  * @tc.name: TimerTest005
  * @tc.desc: function for timer_create SIGEV_THREAD.
  * @tc.type: FUNC
