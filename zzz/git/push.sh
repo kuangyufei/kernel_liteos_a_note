@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 同步官方源码，官方更新很少
+git commit -m  ' 又到了一年一次吃橙子的季节
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com
