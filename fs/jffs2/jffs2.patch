@@ -2311,7 +2311,7 @@ diff -Nupr old/fs/jffs2/erase.c new/fs/jffs2/erase.c
 diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 --- old/fs/jffs2/file.c	2022-05-09 17:22:53.000000000 +0800
 +++ new/fs/jffs2/file.c	2022-05-10 09:43:14.250000000 +0800
-@@ -9,335 +9,30 @@
+@@ -9,334 +9,31 @@
   * For licensing information, see the file 'LICENCE' in this directory.
   *
   */
@@ -2348,7 +2348,7 @@ diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 -	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
 +	/* FIXME: This works only with one file system mounted at a time */
  	int ret;
--
+ 
 -	ret = file_write_and_wait_range(filp, start, end);
 +	ret = jffs2_read_inode_range(c, f, gc_buffer,
 +			 offset & ~(PAGE_SIZE-1), PAGE_SIZE);
@@ -2361,8 +2361,10 @@ diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 -	inode_unlock(inode);
 -
 -	return 0;
--}
--
++		return ERR_PTR(ret);
++	return gc_buffer;
+ }
+ 
 -const struct file_operations jffs2_file_operations =
 -{
 -	.llseek =	generic_file_llseek,
@@ -2387,7 +2389,10 @@ diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 -};
 -
 -const struct address_space_operations jffs2_file_address_operations =
--{
++void jffs2_gc_release_page(struct jffs2_sb_info *c,
++			   unsigned char *ptr,
++			   unsigned long *priv)
+ {
 -	.readpage =	jffs2_readpage,
 -	.write_begin =	jffs2_write_begin,
 -	.write_end =	jffs2_write_end,
@@ -2443,35 +2448,29 @@ diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 -	ret = jffs2_do_readpage_unlock(pg->mapping->host, pg);
 -	mutex_unlock(&f->sem);
 -	return ret;
-+		return ERR_PTR(ret);
-+	return gc_buffer;
- }
- 
+-}
+-
 -static int jffs2_write_begin(struct file *filp, struct address_space *mapping,
 -			loff_t pos, unsigned len, unsigned flags,
 -			struct page **pagep, void **fsdata)
-+void jffs2_gc_release_page(struct jffs2_sb_info *c,
-+			   unsigned char *ptr,
-+			   unsigned long *priv)
- {
+-{
 -	struct page *pg;
 -	struct inode *inode = mapping->host;
 -	struct jffs2_inode_info *f = JFFS2_INODE_INFO(inode);
 -	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
 -	pgoff_t index = pos >> PAGE_SHIFT;
--	uint32_t pageofs = index << PAGE_SHIFT;
 -	int ret = 0;
 -
 -	jffs2_dbg(1, "%s()\n", __func__);
 -
--	if (pageofs > inode->i_size) {
--		/* Make new hole frag from old EOF to new page */
+-	if (pos > inode->i_size) {
+-		/* Make new hole frag from old EOF to new position */
 -		struct jffs2_raw_inode ri;
 -		struct jffs2_full_dnode *fn;
 -		uint32_t alloc_len;
 -
--		jffs2_dbg(1, "Writing new hole frag 0x%x-0x%x between current EOF and new page\n",
--			  (unsigned int)inode->i_size, pageofs);
+-		jffs2_dbg(1, "Writing new hole frag 0x%x-0x%x between current EOF and new position\n",
+-			  (unsigned int)inode->i_size, (uint32_t)pos);
 -
 -		ret = jffs2_reserve_space(c, sizeof(ri), &alloc_len,
 -					  ALLOC_NORMAL, JFFS2_SUMMARY_INODE_SIZE);
@@ -2491,10 +2490,10 @@ diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 -		ri.mode = cpu_to_jemode(inode->i_mode);
 -		ri.uid = cpu_to_je16(i_uid_read(inode));
 -		ri.gid = cpu_to_je16(i_gid_read(inode));
--		ri.isize = cpu_to_je32(max((uint32_t)inode->i_size, pageofs));
+-		ri.isize = cpu_to_je32((uint32_t)pos);
 -		ri.atime = ri.ctime = ri.mtime = cpu_to_je32(JFFS2_NOW());
 -		ri.offset = cpu_to_je32(inode->i_size);
--		ri.dsize = cpu_to_je32(pageofs - inode->i_size);
+-		ri.dsize = cpu_to_je32((uint32_t)pos - inode->i_size);
 -		ri.csize = cpu_to_je32(0);
 -		ri.compr = JFFS2_COMPR_ZERO;
 -		ri.node_crc = cpu_to_je32(crc32(0, &ri, sizeof(ri)-8));
@@ -2524,7 +2523,7 @@ diff -Nupr old/fs/jffs2/file.c new/fs/jffs2/file.c
 -			goto out_err;
 -		}
 -		jffs2_complete_reservation(c);
--		inode->i_size = pageofs;
+-		inode->i_size = pos;
 -		mutex_unlock(&f->sem);
 -	}
 -

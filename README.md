@@ -291,4 +291,4 @@
 ### 捐助名单 | 支持作者
 
 * [ >> 历史捐助](./donate.md)
-* 作者是个怪人，不愿走寻常路，一边是理想，一边是生活，自家种的橙子已熟，一年一次的机会，如果您也喜欢吃橙子，请多多支持，订单请备注 鸿蒙666 ，让作者感受下来自社区的温暖 ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/chengzi.jpg)
+* 一边是理想，一边是生活，作者自家种的橙子已熟，一年一次的机会，京东配送，礼盒包装，适合自己吃更适合送人，请多多支持，订单请备注 鸿蒙666 ，让作者感受下来自社区的温暖 ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/chengzi.jpg)

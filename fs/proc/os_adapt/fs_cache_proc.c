@@ -207,7 +207,7 @@ static const struct ProcFileOperations FS_CACHE_PROC_FOPS = {
 
 void ProcFsCacheInit(void)
 {
-    struct ProcDirEntry *pde = CreateProcEntry("fs_cache", 0, NULL);
+    struct ProcDirEntry *pde = CreateProcEntry("fs_cache", 0400, NULL);
     if (pde == NULL) {
         PRINT_ERR("create fs_cache error!\n");
         return;
