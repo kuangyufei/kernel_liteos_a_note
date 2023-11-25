@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 同步主线
+git commit -m  ' 奋斗者永远年轻
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com

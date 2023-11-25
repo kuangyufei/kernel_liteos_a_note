@@ -202,8 +202,9 @@
   
 ### 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [gitcode](https://gitcode.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
-* `2023/10/11` -- 同步官方源码，近五个月官方很少更新
-* `2023/05/26` -- 同步官方源码，BUILD.gn 相关
+* `2023/11/24` -- 几处小的修改
+* `2023/10/11` -- 近五个月官方很少更新
+* `2023/05/26` -- BUILD.gn 相关
 * `2023/04/10` -- 调度算法优化，加入deadline
 * `2023/03/01` -- 增加网络容器和容器限额功能
 * `2023/02/13` -- 支持proc/self目录
@@ -288,7 +289,9 @@
 * 左侧导航栏，右边索引区
   ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/52/4.png)
 
-### 捐助名单 | 支持作者
+### 好物推荐 | 捐助名单
+
+* 奋斗者永远年轻！推荐一本能让您少走十年弯路的好书，只需一段饭钱
+   ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/huawei/69.jpg)
 
 * [ >> 历史捐助](./donate.md)
-* 一边是理想，一边是生活，作者自家种的橙子已熟，一年一次的机会，京东配送，礼盒包装，适合自己吃更适合送人，请多多支持，订单请备注 鸿蒙666 ，让作者感受下来自社区的温暖 ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/chengzi.jpg)
