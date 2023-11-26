@@ -291,7 +291,7 @@
 
 ### 好物推荐 | 捐助名单
 
-* 奋斗者永远年轻！推荐一本能让您少走十年弯路的好书，只需一段饭钱
+* 奋斗者永远年轻！推荐一本能让您少走十年弯路的好书，只需一顿饭钱
    ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/huawei/69.jpg)
 
 * [ >> 历史捐助](./donate.md)
