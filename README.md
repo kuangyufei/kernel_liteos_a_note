@@ -293,7 +293,7 @@
 
 ### 好物推荐 | 捐助名单
 * 咱们搞技术的光搞好技术还不够，得学点管理，读点大师的文章，任总无疑是目前国内最伟大的企业家，读他的文章，可以让您少奋斗十年，我只恨自己读到的太晚，白白浪费了大好时光，痛定思痛，整理了任总历年的文章，共440余篇供您阅读，也可以扫码购买一本纸质书，一来能方便阅读，二来也支持下作者，放在床头，时刻进步，只需您一顿饭钱
-  [![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/huawei/xueren.png)](http://weharmonyos.com/ren/summary.html)
+  [![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/huawei/xueren.png)](http://weharmonyos.com/ren)
   ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/huawei/mini69.png)
 
 * [ >> 历史捐助](./donate.md)
