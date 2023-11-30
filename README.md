@@ -243,7 +243,7 @@
 ### 关于 zzz 目录
 中文加注版比官方版无新增文件，只多了一个`zzz`的目录，里面放了一些加注所需文件，它与内核代码无关，可以忽略它，取名`zzz`是为了排在最后，减少对原有代码目录级的侵入，`zzz` 的想法源于微信中名称为`AAA`的那帮朋友，你的微信里应该也有他们熟悉的身影吧 :-)
 ```
-/kernel/liteos_a
+/kernel/liteos_a_note
 ├── apps                   # 用户态的init和shell应用程序
 ├── arch                   # 体系架构的目录，如arm等
 │   └── arm                # arm架构代码
@@ -256,6 +256,7 @@
 │       ├── quickstart     # 系统快速启动接口目录
 │       ├── random         # 随机数设备驱动
 │       └── video          # framebuffer驱动框架
+├── figures                # 内核架构图
 ├── fs                     # 文件系统模块，主要来源于NuttX开源项目
 │   ├── fat                # fat文件系统
 │   ├── jffs2              # jffs2文件系统
@@ -277,8 +278,9 @@
 │   ├── include            # 对外暴露头文件存放目录
 │   └── uart               # 串口相关逻辑代码
 ├── security               # 安全特性相关的代码，包括进程权限管理和虚拟id映射管理
-├── syscall                # 系统调用 
-├── testsuites             # 单元测试用例 
+├── shell                  # 接收用户输入的命令，内核去执行
+├── syscall                # 系统调用
+├── testsuilts             # 测试套件
 ├── tools                  # 构建工具及相关配置和代码
 └── zzz                    # 中文注解版新增目录
 ```
@@ -290,8 +292,8 @@
   ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/52/4.png)
 
 ### 好物推荐 | 捐助名单
-
-* 奋斗者永远年轻！推荐一本能让您少走十年弯路的好书，只需一顿饭钱
-   ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/huawei/69.jpg)
+* 咱们搞技术的光搞好技术还不够，得学点管理，读点大师的文章，任总无疑是目前国内最伟大的企业家，读他的文章，可以让您少奋斗十年，我只恨自己读到的太晚，白白浪费了大好时光，痛定思痛，整理了任总历年的文章，共440余篇供您阅读，也可以扫码购买一本纸质书，一来能方便阅读，二来也支持下作者，放在床头，时刻进步，只需您一顿饭钱
+  [![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/huawei/xueren.png)](http://weharmonyos.com/ren/summary.html)
+  ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/huawei/mini69.png)
 
 * [ >> 历史捐助](./donate.md)

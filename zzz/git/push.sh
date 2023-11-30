@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 奋斗者永远年轻
+git commit -m  ' 整理了任总演讲稿供大家阅读，进步
     鸿蒙研究站 | http://weharmonyos.com (国内) 
               | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com
