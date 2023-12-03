@@ -296,7 +296,8 @@
 
   ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/huawei/mini69.png)
 
-* [读任总讲话 少奋斗二十年](http://weharmonyos.com/ren/README.html)
+* [总目录 | 奋斗者永远年轻](http://weharmonyos.com/ren/sum.html)
+* [读任总讲话 少奋斗十年](http://weharmonyos.com/ren/)
 * [从任正非思想看华为研发管理变革成长之路](http://weharmonyos.com/ren/R&D.html)
 #### 1994年
 * [赴美考察散记](http://weharmonyos.com/ren/1994/19940118_赴美考察散记.html)
