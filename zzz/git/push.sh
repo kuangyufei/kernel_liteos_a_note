@@ -1,7 +1,7 @@
 git add -A
-git commit -m  ' 添加公众号
-    鸿蒙研究站 | http://weharmonyos.com (国内) 
-              | https://weharmony.github.io (国外)
+git commit -m  ' 修改 readme
+    站点访问 | http://weharmonyos.com (国内) 
+            | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com
     文档中心 | http://open.weharmonyos.com
     参考手册 | http://doxygen.weharmonyos.com
