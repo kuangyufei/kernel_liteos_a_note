@@ -286,17 +286,12 @@
 ```
 ## 官方文档 | 静态站点呈现
 
-* 研究鸿蒙需不断的翻阅资料，吸取精华，其中官方文档必不可少， 为更好的呈现 **OpenHarmony开发文档** ， 特意做了静态站点 [ >> weharmonyos.com | 官方文档](http://open.weharmonyos.com) 来方便查阅官方资料，与官方资料保持同步更新。
+* 研究鸿蒙需不断的翻阅资料，吸取精华，其中官方文档必不可少， 为更好的呈现 **OpenHarmony开发文档** ， 制作了[ >> openharmony 文档中心](http://open.weharmonyos.com) 来方便查阅官方资料，支持中英文，支持检索，稳定的LTS版本，内容与官方资料保持同步。
 
-* 左侧导航栏，右边索引区
-  ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/52/4.png)
+  ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/opio.png)
 
 ## 任正非演讲稿【1994-2019】
-* 咱们搞技术的光搞好技术还不够，得学点管理，读点大师的文章，任总无疑是目前国内最伟大的企业家，读他的文章，可以让您少奋斗十年，只恨自己读到的太晚，白白浪费了大好时光，痛定思痛，整理了任总历年的文章，共440余篇供您阅读，也可以扫码购买一本纸质书，一来能方便阅读，二来也支持下作者，放在床头，时刻进步，只需您一顿饭钱
-
-* [总目录 | 奋斗者永远年轻](http://weharmonyos.com/#/ren/sum.md)
-* [读任总讲话 少奋斗十年](http://weharmonyos.com/#/ren/)
-* [从任正非思想看华为研发管理变革成长之路](http://weharmonyos.com/#/ren/R&D.md)
+* 搞技术的光搞好技术还不够，得学点管理，读点大师级的文章，任总无疑是目前国内最伟大的企业家，读他的文章，可以让您少奋斗十年，只恨自己读到的太晚，白白浪费了大好时光，痛定思痛，整理了任总历年的文章，共440余篇供您阅读。
 ### 1994年
 * [赴美考察散记](http://weharmonyos.com/#/ren/1994/19940118_赴美考察散记.md)
 * [团结奋斗 再创华为佳绩](http://weharmonyos.com/#/ren/1994/19940126_团结奋斗_再创华为佳绩.md)
