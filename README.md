@@ -32,136 +32,13 @@
 
 * 百文相当于摸出内核的肌肉和器官系统，让人开始丰满有立体感，因是直接从注释源码起步，在加注释过程中，每每有心得处就整理,慢慢形成了以下文章。内容立足源码，常以生活场景打比方尽可能多的将内核知识点置入某种场景，具有画面感，容易理解记忆。说别人能听得懂的话很重要! 百篇博客绝不是百度教条式的在说一堆诘屈聱牙的概念，那没什么意思。更希望让内核变得栩栩如生，倍感亲切。
 * 与代码需不断`debug`一样，文章内容会存在不少错漏之处，请多包涵，但会反复修正，持续更新，`v**.xx` 代表文章序号和修改的次数，精雕细琢，言简意赅，力求打造精品内容。
-* 百文在 < weharmonyos.com | 开源中国 | 博客园 | 51cto | csdn | 知乎 | 掘金 > 站点发布，公众号回复 **百文** 可方便阅读。
+* 百文在 < weharmonyos.com | 开源中国 | 博客园 | 51cto | csdn | 知乎 | 掘金 > 站点发布。
   
-* ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/cate.png)
-  
+  ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/cate.png)
 
-**基础知识** 
-* [v01.12 鸿蒙轻内核源码分析(双向链表) | 谁是内核最重要结构体](https://weharmonyos.com/#/blog/01.md)
-* [v02.01 鸿蒙轻内核源码分析(内核概念) | 名不正则言不顺](https://weharmonyos.com/#/blog/02.md)
-* [v03.02 鸿蒙轻内核源码分析(源码结构) | 宏观尺度看内核结构](https://weharmonyos.com/#/blog/03.md)
-* [v04.01 鸿蒙轻内核源码分析(地址空间) | 内核如何看待空间](https://weharmonyos.com/#/blog/04.md)
-* [v05.03 鸿蒙轻内核源码分析(计时单位) | 内核如何看待时间](https://weharmonyos.com/#/blog/05.md)
-* [v06.01 鸿蒙轻内核源码分析(优雅的宏) | 编译器也喜欢复制粘贴 ](https://weharmonyos.com/#/blog/06.md)
-* [v07.01 鸿蒙轻内核源码分析(钩子框架) | 万物皆可HOOK ](https://weharmonyos.com/#/blog/07.md)
-* [v08.04 鸿蒙轻内核源码分析(位图管理) | 一分钱被掰成八半使用](https://weharmonyos.com/#/blog/08.md)
-* [v09.01 鸿蒙轻内核源码分析(POSIX) | 操作系统界的话事人 ](https://weharmonyos.com/#/blog/09.md)
-* [v10.01 鸿蒙轻内核源码分析(main函数) | 要走了无数码农的第一次 ](https://weharmonyos.com/#/blog/10.md)
+  [>> 进入详细了解](./zzz/blog.md)
 
-**进程管理** 
-* [v11.04 鸿蒙轻内核源码分析(调度故事) | 大郎，该喝药了](https://weharmonyos.com/#/blog/11.md)
-* [v12.03 鸿蒙轻内核源码分析(进程控制块) | 可怜天下父母心](https://weharmonyos.com/#/blog/12.md)
-* [v13.01 鸿蒙轻内核源码分析(进程空间) | 有爱的地方才叫家 ](https://weharmonyos.com/#/blog/13.md)
-* [v14.01 鸿蒙轻内核源码分析(线性区) | 人要有空间才能好好相处](https://weharmonyos.com/#/blog/14.md)
-* [v15.01 鸿蒙轻内核源码分析(红黑树) | 众里寻他千百度 ](https://weharmonyos.com/#/blog/15.md)
-* [v16.06 鸿蒙轻内核源码分析(进程管理) | 家家有本难念的经](https://weharmonyos.com/#/blog/16.md)
-* [v17.05 鸿蒙轻内核源码分析(Fork进程) | 一次调用 两次返回](https://weharmonyos.com/#/blog/17.md)
-* [v18.02 鸿蒙轻内核源码分析(进程回收) | 临终托孤的短命娃](https://weharmonyos.com/#/blog/18.md)
-* [v19.03 鸿蒙轻内核源码分析(Shell编辑) | 两个任务 三个阶段](https://weharmonyos.com/#/blog/19.md)
-* [v20.01 鸿蒙轻内核源码分析(Shell解析) | 应用窥伺内核的窗口](https://weharmonyos.com/#/blog/20.md)
 
-**任务管理** 
-* [v21.07 鸿蒙轻内核源码分析(任务控制块) | 内核最重要的概念](https://weharmonyos.com/#/blog/21.md)
-* [v22.05 鸿蒙轻内核源码分析(并发并行) | 如何搞清楚它俩区分](https://weharmonyos.com/#/blog/22.md)
-* [v23.03 鸿蒙轻内核源码分析(就绪队列) | 美好的事物永远值得等待](https://weharmonyos.com/#/blog/23.md)
-* [v24.08 鸿蒙轻内核源码分析(调度机制) | 公平是相对的](https://weharmonyos.com/#/blog/24.md)
-* [v25.05 鸿蒙轻内核源码分析(任务管理) | 如何管理任务池](https://weharmonyos.com/#/blog/25.md)
-* [v26.03 鸿蒙轻内核源码分析(用栈方式) | 谁来提供程序运行场地](https://weharmonyos.com/#/blog/26.md)
-* [v27.02 鸿蒙轻内核源码分析(软件定时器) | 内核最高级任务竟是它](https://weharmonyos.com/#/blog/27.md)
-* [v28.01 鸿蒙轻内核源码分析(控制台) | 一个让很多人模糊的概念](https://weharmonyos.com/#/blog/28.md)
-* [v29.01 鸿蒙轻内核源码分析(远程登录) | 内核如何接待远方的客人](https://weharmonyos.com/#/blog/29.md)
-* [v30.01 鸿蒙轻内核源码分析(协议栈) | 正在制作中 ... ](https://weharmonyos.com/#/blog/30.md)
-
-**内存管理** 
-* [v31.02 鸿蒙轻内核源码分析(内存规则) | 内存管理到底在管什么](https://weharmonyos.com/#/blog/31.md)
-* [v32.04 鸿蒙轻内核源码分析(物理内存) | 真实的可不一定精彩](https://weharmonyos.com/#/blog/32.md)
-* [v33.04 鸿蒙轻内核源码分析(内存概念) | RAM & ROM & Flash](https://weharmonyos.com/#/blog/33.md)
-* [v34.03 鸿蒙轻内核源码分析(虚实映射) | 映射是伟大的发明](https://weharmonyos.com/#/blog/34.md)
-* [v35.02 鸿蒙轻内核源码分析(页表管理) | 映射关系保存在哪](https://weharmonyos.com/#/blog/35.md)
-* [v36.03 鸿蒙轻内核源码分析(静态分配) | 很简单的一位小朋友](https://weharmonyos.com/#/blog/36.md)
-* [v37.01 鸿蒙轻内核源码分析(TLFS算法) | 图表解读TLFS原理 ](https://weharmonyos.com/#/blog/37.md)
-* [v38.01 鸿蒙轻内核源码分析(内存池管理) | 如何高效切割合并内存块 ](https://weharmonyos.com/#/blog/38.md)
-* [v39.04 鸿蒙轻内核源码分析(原子操作) | 谁在守护指令执行的完整性](https://weharmonyos.com/#/blog/39.md)
-* [v40.01 鸿蒙轻内核源码分析(圆整对齐) | 正在制作中 ... ](https://weharmonyos.com/#/blog/40.md)
-
-**通讯机制** 
-* [v41.04 鸿蒙轻内核源码分析(通讯总览) | 内核跟人一样都喜欢八卦](https://weharmonyos.com/#/blog/41.md)
-* [v42.08 鸿蒙轻内核源码分析(自旋锁) | 死等丈夫归来的贞洁烈女](https://weharmonyos.com/#/blog/42.md)
-* [v43.05 鸿蒙轻内核源码分析(互斥锁) | 有你没她 相安无事](https://weharmonyos.com/#/blog/43.md)
-* [v44.02 鸿蒙轻内核源码分析(快锁使用) | 用户态负责快锁逻辑](https://weharmonyos.com/#/blog/44.md)
-* [v45.02 鸿蒙轻内核源码分析(快锁实现) | 内核态负责快锁调度](https://weharmonyos.com/#/blog/45.md)
-* [v46.01 鸿蒙轻内核源码分析(读写锁) | 内核如何实现多读单写](https://weharmonyos.com/#/blog/46.md)
-* [v47.05 鸿蒙轻内核源码分析(信号量) | 谁在解决任务间的同步](https://weharmonyos.com/#/blog/47.md)
-* [v48.07 鸿蒙轻内核源码分析(事件机制) | 多对多任务如何同步](https://weharmonyos.com/#/blog/48.md)
-* [v49.05 鸿蒙轻内核源码分析(信号生产) | 年过半百 活力十足](https://weharmonyos.com/#/blog/49.md)
-* [v50.03 鸿蒙轻内核源码分析(信号消费) | 谁让CPU连续四次换栈运行](https://weharmonyos.com/#/blog/50.md)
-* [v51.03 鸿蒙轻内核源码分析(消息队列) | 进程间如何异步传递大数据](https://weharmonyos.com/#/blog/51.md)
-* [v52.02 鸿蒙轻内核源码分析(消息封装) | 剖析LiteIpc(上)进程通讯内容](https://weharmonyos.com/#/blog/52.md)
-* [v53.01 鸿蒙轻内核源码分析(消息映射) | 剖析LiteIpc(下)进程通讯机制](https://weharmonyos.com/#/blog/53.md)
-* [v54.01 鸿蒙轻内核源码分析(共享内存) | 进程间最快通讯方式](https://weharmonyos.com/#/blog/54.md)
-
-**文件系统** 
-* [v55.02 鸿蒙轻内核源码分析(文件概念) | 为什么说一切皆是文件](https://weharmonyos.com/#/blog/55.md)
-* [v56.04 鸿蒙轻内核源码分析(文件故事) | 用图书管理说文件系统](https://weharmonyos.com/#/blog/56.md)
-* [v57.06 鸿蒙轻内核源码分析(索引节点) | 谁是文件系统最重要的概念](https://weharmonyos.com/#/blog/57.md)
-* [v58.02 鸿蒙轻内核源码分析(VFS) | 文件系统的话事人](https://weharmonyos.com/#/blog/58.md)
-* [v59.04 鸿蒙轻内核源码分析(文件句柄) | 你为什么叫句柄](https://weharmonyos.com/#/blog/59.md)
-* [v60.07 鸿蒙轻内核源码分析(根文件系统) | 谁先挂到`/`谁就是老大](https://weharmonyos.com/#/blog/60.md)
-* [v61.05 鸿蒙轻内核源码分析(挂载机制) | 谁根逐流不掉队](https://weharmonyos.com/#/blog/61.md)
-* [v62.05 鸿蒙轻内核源码分析(管道文件) | 如何降低数据流动成本](https://weharmonyos.com/#/blog/62.md)
-* [v63.03 鸿蒙轻内核源码分析(文件映射) | 正在制作中 ... ](https://weharmonyos.com/#/blog/63.md)
-* [v64.01 鸿蒙轻内核源码分析(写时拷贝) | 正在制作中 ... ](https://weharmonyos.com/#/blog/64.md)
-
-**硬件架构** 
-* [v65.01 鸿蒙轻内核源码分析(芯片模式) | 回顾芯片行业各位大佬](https://weharmonyos.com/#/blog/65.md)
-* [v66.03 鸿蒙轻内核源码分析(ARM架构) | ARMv7 & Cortex(A|R|M)](https://weharmonyos.com/#/blog/66.md)
-* [v67.01 鸿蒙轻内核源码分析(指令集) | CICS PK RICS](https://weharmonyos.com/#/blog/67.md)
-* [v68.01 鸿蒙轻内核源码分析(协处理器) | CPU的好帮手 ](https://weharmonyos.com/#/blog/68.md)
-* [v69.05 鸿蒙轻内核源码分析(工作模式) | 角色不同 责任不同](https://weharmonyos.com/#/blog/69.md)
-* [v70.06 鸿蒙轻内核源码分析(寄存器) | 世界被它们玩出了花](https://weharmonyos.com/#/blog/70.md)
-* [v71.03 鸿蒙轻内核源码分析(多核管理) | 并发真正的基础](https://weharmonyos.com/#/blog/71.md)
-* [v72.05 鸿蒙轻内核源码分析(中断概念) | 海公公的日常工作](https://weharmonyos.com/#/blog/72.md)
-* [v73.04 鸿蒙轻内核源码分析(中断管理) | 没中断太可怕](https://weharmonyos.com/#/blog/73.md)
-
-**内核汇编** 
-* [v74.01 鸿蒙轻内核源码分析(编码方式) | 机器指令是如何编码的 ](https://weharmonyos.com/#/blog/74.md)
-* [v75.03 鸿蒙轻内核源码分析(汇编基础) | CPU上班也要打卡](https://weharmonyos.com/#/blog/75.md)
-* [v76.04 鸿蒙轻内核源码分析(汇编传参) | 如何传递复杂的参数](https://weharmonyos.com/#/blog/76.md)
-* [v77.01 鸿蒙轻内核源码分析(链接脚本) | 正在制作中 ... ](https://weharmonyos.com/#/blog/77.md)
-* [v78.01 鸿蒙轻内核源码分析(内核启动) | 从汇编到main()](https://weharmonyos.com/#/blog/78.md)
-* [v79.01 鸿蒙轻内核源码分析(进程切换) | 正在制作中 ... ](https://weharmonyos.com/#/blog/79.md)
-* [v80.03 鸿蒙轻内核源码分析(任务切换) | 看汇编如何切换任务](https://weharmonyos.com/#/blog/80.md)
-* [v81.05 鸿蒙轻内核源码分析(中断切换) | 系统因中断活力四射](https://weharmonyos.com/#/blog/81.md)
-* [v82.06 鸿蒙轻内核源码分析(异常接管) | 社会很单纯 复杂的是人](https://weharmonyos.com/#/blog/82.md)
-* [v83.01 鸿蒙轻内核源码分析(缺页中断) | 正在制作中 ... ](https://weharmonyos.com/#/blog/83.md)
-
-**编译运行** 
-* [v84.02 鸿蒙轻内核源码分析(编译过程) | 简单案例说透中间过程](https://weharmonyos.com/#/blog/84.md)
-* [v85.03 鸿蒙轻内核源码分析(编译构建) | 编译鸿蒙防掉坑指南](https://weharmonyos.com/#/blog/85.md)
-* [v86.04 鸿蒙轻内核源码分析(GN语法) | 如何构建鸿蒙系统](https://weharmonyos.com/#/blog/86.md)
-* [v87.03 鸿蒙轻内核源码分析(忍者无敌) | 忍者的特点就是一个字](https://weharmonyos.com/#/blog/87.md)
-* [v88.04 鸿蒙轻内核源码分析(ELF格式) | 应用程序入口并非main](https://weharmonyos.com/#/blog/88.md)
-* [v89.03 鸿蒙轻内核源码分析(ELF解析) | 敢忘了她姐俩你就不是银](https://weharmonyos.com/#/blog/89.md)
-* [v90.04 鸿蒙轻内核源码分析(静态链接) | 一个小项目看中间过程](https://weharmonyos.com/#/blog/90.md)
-* [v91.04 鸿蒙轻内核源码分析(重定位) | 与国际接轨的对外发言人](https://weharmonyos.com/#/blog/91.md)
-* [v92.01 鸿蒙轻内核源码分析(动态链接) | 正在制作中 ... ](https://weharmonyos.com/#/blog/92.md)
-* [v93.05 鸿蒙轻内核源码分析(进程映像) | 程序是如何被加载运行的](https://weharmonyos.com/#/blog/93.md)
-* [v94.01 鸿蒙轻内核源码分析(应用启动) | 正在制作中 ... ](https://weharmonyos.com/#/blog/94.md)
-* [v95.06 鸿蒙轻内核源码分析(系统调用) | 开发者永远的口头禅](https://weharmonyos.com/#/blog/95.md)
-* [v96.01 鸿蒙轻内核源码分析(VDSO) | 正在制作中 ... ](https://weharmonyos.com/#/blog/96.md)
-
-**调测工具** 
-* [v97.01 鸿蒙轻内核源码分析(模块监控) | 正在制作中 ... ](https://weharmonyos.com/#/blog/97.md)
-* [v98.01 鸿蒙轻内核源码分析(日志跟踪) | 正在制作中 ... ](https://weharmonyos.com/#/blog/98.md)
-* [v99.01 鸿蒙轻内核源码分析(系统安全) | 正在制作中 ... ](https://weharmonyos.com/#/blog/99.md)
-* [v100.01 鸿蒙轻内核源码分析(测试用例) | 正在制作中 ... ](https://weharmonyos.com/#/blog/100.md)
-
-**前因后果** 
-* [v101.03 鸿蒙轻内核源码分析(总目录) | 精雕细琢 锤炼精品](https://weharmonyos.com/#/blog/101.md)
-* [v102.05 鸿蒙轻内核源码分析(源码注释) | 每天死磕一点点](https://weharmonyos.com/#/blog/102.md)
-* [v103.05 鸿蒙轻内核源码分析(静态站点) | 码农都不爱写注释和文档](https://weharmonyos.com/#/blog/103.md)
-* [v104.01 鸿蒙轻内核源码分析(参考手册) | 阅读内核源码必备工具](https://weharmonyos.com/#/blog/104.md)
 
 ### 三： 百万注内核 | 处处扣细节 | 细胞血管
 * 百万汉字注解内核目的是要看清楚其毛细血管，细胞结构，等于在拿放大镜看内核。内核并不神秘，带着问题去源码中找答案是很容易上瘾的，你会发现很多文章对一些问题的解读是错误的，或者说不深刻难以自圆其说，你会慢慢形成自己新的解读，而新的解读又会碰到新的问题，如此层层递进，滚滚向前，拿着放大镜根本不愿意放手。
@@ -288,13 +165,15 @@
 
 * 研究鸿蒙需不断的翻阅资料，吸取精华，其中官方文档必不可少， 为更好的呈现 **OpenHarmony开发文档** ， 制作了[ >> openharmony 文档中心](https://open.weharmonyos.com) 来方便查阅官方资料，支持中英文，支持检索，稳定的LTS版本，内容与官方资料保持同步。
 
-  [![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/opio.png)](https://open.weharmonyos.com)
-
+  ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/opio.png)
+  [>> 进入详细了解](https://open.weharmonyos.com)
 
 ## 任正非演讲稿【1994-2019】
 * 搞技术的光搞好技术还不够，得学点管理，读点大师级的文章，任总无疑是目前国内最伟大的企业家，读他的文章，可以让您少奋斗十年，只恨自己读到的太晚，白白浪费了大好时光，痛定思痛，整理了任总历年的文章，共440余篇供您阅读。
 
-  [![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/ren.png)](./zzz/ren.md)
+  ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/ren.png)
+
+  [>> 进入详细了解](./zzz/ren.md)
 
 ## 请保护好颈椎
 
