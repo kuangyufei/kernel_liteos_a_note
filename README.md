@@ -185,9 +185,11 @@
 
 ## 特此感谢
 
-特此感谢过程中（**统计至 2024/1/22**）无私赞助的 **22** 位热心朋友，有企事业单位职工，有在校学生，有行业内资深大佬，也有非专业的纯粹爱好者，在此一并谢过，作者将带着这份温暖继续前行。[ >> 详细名单](./zzz/donate.md)
+特此感谢过程中（**统计至 2024/1/23**）无私赞助的 **23** 位热心朋友，有企事业单位职工，有在校学生，有行业内资深大佬，也有非专业的纯粹爱好者，在此一并谢过，作者将带着这份温暖继续前行。 [ >> 详细名单](./zzz/donate.md)
 
-![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/pay.gif)
+|历史捐赠|最新捐赠|
+|:-:|:-:|
+|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/pay.gif)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/23.png)|
 
 ## 链接
 
