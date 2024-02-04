@@ -458,7 +458,6 @@
 * [任总接受《金融时报》采访纪要](https://weharmonyos.com/#/ren/2019/20190624_任总接受《金融时报》采访纪要.md)
 * [任正非接受《经济学人》采访纪要](https://weharmonyos.com/#/ren/2019/20190910任正非接受《经济学人》采访纪要.md)
 
-![](httpss://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/huawei/mini69.png)
 
 
 

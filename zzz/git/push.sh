@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 修改 readme，感谢捐赠
+git commit -m  ' 修改 readme
     站点访问 | http://weharmonyos.com (国内) 
             | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com
