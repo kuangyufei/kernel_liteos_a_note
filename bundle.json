@@ -27,9 +27,6 @@
     "component": {
         "name": "liteos_a",
         "subsystem": "kernel",
-        "syscap": [
-            "SystemCapability.Kernel.Liteos-A"
-        ],
         "features": [],
         "adapted_system_type": [
             "small"

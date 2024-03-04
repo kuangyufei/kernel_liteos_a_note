@@ -10,5 +10,5 @@
 |![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/13.png)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/14.png)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/15.png)|
 |![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/16.png)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/17.png)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/18.png)|
 |![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/19.png)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/20.png)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/21.png)|
-|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/22.png)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/23.png)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/weixin.jpg)|
-|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/zfb.jpg)|||
+|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/22.png)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/23.png)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/24.png)
+|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/weixin.jpg)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/zfb.jpg)|||

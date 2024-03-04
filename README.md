@@ -80,6 +80,7 @@
   
 ## 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [gitcode](https://gitcode.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
+* `2024/03/04` -- 官方修改很小
 * `2023/11/24` -- 几处小的修改
 * `2023/10/11` -- 近五个月官方很少更新
 * `2023/05/26` -- BUILD.gn 相关
@@ -174,27 +175,17 @@
 
   ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/ren.png)
 
-  
-
-## 请保护好颈椎
-
-作者受颈椎病困扰多年，长期保持一个姿势敲代码，调BUG，导致富贵包越来越大，经常性的头晕目眩，眼花眼干，经深入了解大部分这类问题是由颈椎错位和软组织长期紧张导致的僵硬，钙化引起，龙氏疗法有很好的效果 [>> 进入详细了解](./zzz/pillow.md)
-
-|龙氏治脊创始人|龙氏传人沈主任|联系作者|
-|:-:|:-:|:-:|
-|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/龙脊康/long.jpg)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/龙脊康/shen.jpg)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/龙脊康/youxiu1.jpg)![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/zzwx.png)|
-
 ## 特此感谢
 
-特此感谢过程中（**统计至 2024/1/23**）无私赞助的 **23** 位热心朋友，有企事业单位职工，有在校学生，有行业内资深大佬，也有非专业的纯粹爱好者，在此一并谢过，作者将带着这份温暖继续前行。 [ >> 进入详细了解](./zzz/donate.md)
+特此感谢过程中（**统计至 2024/3/04**）无私赞助的 **24** 位热心朋友，有企事业单位职工，有在校学生，有行业内资深大佬，也有非专业的纯粹爱好者，在此一并谢过，作者将带着这份温暖继续前行。 [ >> 进入详细了解](./zzz/donate.md)
 
 |历史捐赠|最新捐赠|
 |:-:|:-:|
-|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/pay.gif)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/23.png)|
+|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/pay.gif)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/24.png)|
 
 ## 链接
 
 * [ >> 公众号 | 微信号](./zzz/qrcode.md)
 * [ >> 任正非历史演讲稿 共440余篇](./zzz/ren.md)
-* [ >> 保护颈椎，产品享受代理价](./zzz/pillow.md)
+* [ >> 保护颈椎，龙氏护脊](./zzz/pillow.md)
 * [ >> 历史捐助名单](./zzz/donate.md)
