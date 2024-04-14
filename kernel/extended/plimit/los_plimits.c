@@ -44,7 +44,7 @@ http://open.weharmonyos.com/zh-cn/device-dev/kernel/kernel-small-plimits.html
 //容器限额统一接口
 typedef struct PlimiteOperations {
     VOID (*LimiterInit)(UINTPTR);//初始化
-    VOID (*LimiterAlloc)(VOID);//分配
+    VOID *(*LimiterAlloc)(VOID);
     VOID (*LimiterFree)(UINTPTR);
     VOID (*LimiterCopy)(UINTPTR, UINTPTR);
     BOOL (*LimiterAddProcessCheck)(UINTPTR, UINTPTR);

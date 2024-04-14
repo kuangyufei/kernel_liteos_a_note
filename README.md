@@ -80,6 +80,7 @@
   
 ## 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [gitcode](https://gitcode.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
+* `2024/04/13` -- 官方几处小修正
 * `2024/03/04` -- 官方修改很小
 * `2023/11/24` -- 几处小的修改
 * `2023/10/11` -- 近五个月官方很少更新
@@ -177,11 +178,11 @@
 
 ## 特此感谢
 
-特此感谢过程中（**统计至 2024/3/04**）无私赞助的 **24** 位热心朋友，有企事业单位职工，有在校学生，有行业内资深大佬，也有非专业的纯粹爱好者，在此一并谢过，作者将带着这份温暖继续前行。 [ >> 进入详细了解](./zzz/donate.md)
+特此感谢过程中（**统计至 2024/4/13**）无私赞助的 **25** 位热心朋友，有企事业单位职工，有在校学生，有行业内资深大佬，也有非专业的纯粹爱好者，在此一并谢过，作者将带着这份温暖继续前行。 [ >> 进入详细了解](./zzz/donate.md)
 
 |历史捐赠|最新捐赠|
 |:-:|:-:|
-|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/pay.gif)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/24.png)|
+|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/pay.gif)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/25.png)|
 
 ## 链接
 

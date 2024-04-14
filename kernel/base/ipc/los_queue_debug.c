@@ -103,7 +103,7 @@ STATIC VOID SortQueueIndexArray(UINT32 *indexArray, UINT32 count)
     IpcSortParam queueSortParam;
     queueSortParam.buf = (CHAR *)g_queueDebugArray;
     queueSortParam.ipcDebugCBSize = sizeof(QueueDebugCB);
-    queueSortParam.ipcDebugCBCnt = LOSCFG_BASE_IPC_SEM_LIMIT;
+    queueSortParam.ipcDebugCBCnt = LOSCFG_BASE_IPC_QUEUE_LIMIT;
     queueSortParam.sortElemOff = LOS_OFF_SET_OF(QueueDebugCB, lastAccessTime);
 
     if (count > 0) {
