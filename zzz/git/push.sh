@@ -1,5 +1,5 @@
 git add -A
-git commit -m  ' 同步官方几处修改
+git commit -m  ' 去掉一些不必要的内容
     站点访问 | http://weharmonyos.com (国内) 
             | https://weharmony.github.io (国外)
     论坛 | http://bbs.weharmonyos.com
