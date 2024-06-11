@@ -1,6 +1,6 @@
 
 ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/io.png)
-[ >> 进入 weharmonyos.com ](https://weharmonyos.com/)
+[ >> 进入 weharmony.github.io ](https://weharmony.github.io)
 
 **中文注解鸿蒙轻内核 | [kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在 `OpenHarmony` 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) 基础上给内核源码加上中文注解的版本，同步官方代码迭代推进。
 
@@ -33,7 +33,7 @@
 
 * 百文相当于摸出内核的肌肉和器官系统，让人开始丰满有立体感，因是直接从注释源码起步，在加注释过程中，每每有心得处就整理,慢慢形成了以下文章。内容立足源码，常以生活场景打比方尽可能多的将内核知识点置入某种场景，具有画面感，容易理解记忆。说别人能听得懂的话很重要! 百篇博客绝不是百度教条式的在说一堆诘屈聱牙的概念，那没什么意思。更希望让内核变得栩栩如生，倍感亲切。
 * 与代码需不断`debug`一样，文章内容会存在不少错漏之处，请多包涵，但会反复修正，持续更新，`v**.xx` 代表文章序号和修改的次数，精雕细琢，言简意赅，力求打造精品内容。
-* 百文在 < weharmonyos.com | 开源中国 | 博客园 | 51cto | csdn | 知乎 | 掘金 > 站点发布。
+* 百文在 < weharmony.github.io | 开源中国 | 博客园 | 51cto | csdn | 知乎 | 掘金 > 站点发布。
   
   ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/cate.png)
 
@@ -68,15 +68,13 @@
 在中文加注版基础上构建了参考手册，如此可以看到毛细血管级的网络图，注解支持 [doxygen](https://www.doxygen.nl) 格式标准。
 * 图为内核`main`的调用关系直观展现，如果没有这张图，光`main`一个函数就够喝一壶。 `main`本身是由汇编指令 `bl main`调用
   ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/73/1.png)
-  可前往 >> [weharmonyos.com | 参考手册 ](https://doxygen.weharmonyos.com/index.md) 体验
+  可前往 >> [doxygen.weharmonyos.com | 参考手册 ](http://doxygen.weharmonyos.com/index.md) 体验
 
 * 图为内核所有结构体索引，点击可查看每个结构变量细节
   ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/73/6.png)
-  可前往 >> [weharmonyos.com | 结构体索引 ](https://doxygen.weharmonyos.com/classes.md) 体验
+  可前往 >> [doxygen.weharmonyos.com | 结构体索引 ](http://doxygen.weharmonyos.com/classes.md) 体验
 
-## 鸿蒙论坛 | 干净.营养.不盲从
-* 搭个论坛貌似不合时宜, 但站长却固执的认为它是技术人最好的沟通方式, 它不像群各种叨絮使人焦虑被逼的屏蔽它, 它更像个异性知己,懂你给你留足空间思考,从不扰乱你的生活,鸿蒙论坛会一直存在,并坚持自己的风格(干净.营养.不盲从)。选择 Discuz 是因为它太优秀, 一个沉淀了20年的开源平台,被所谓的时代遗忘实在是太过可惜。哪天您得空了就去逛逛吧 , 它可能并没有那么糟糕。
-*  [![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/bbs/bbs.png)](https://bbs.weharmonyos.com)
+
   
 ## 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [gitcode](https://gitcode.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
@@ -166,7 +164,7 @@
 ```
 ## 官方文档 | 静态站点呈现
 
-* 研究鸿蒙需不断的翻阅资料，吸取精华，其中官方文档必不可少， 为更好的呈现 **OpenHarmony开发文档** ， 制作了[ >> openharmony 文档中心](https://open.weharmonyos.com) 来方便查阅官方资料，支持中英文，支持检索，稳定的LTS版本，内容与官方资料保持同步。[>> 进入详细了解](https://open.weharmonyos.com)
+* 研究鸿蒙需不断的翻阅资料，吸取精华，其中官方文档必不可少， 为更好的呈现 **OpenHarmony开发文档** ， 制作了[ >> openharmony 文档中心](http://open.weharmonyos.com) 来方便查阅官方资料，支持中英文，支持检索，稳定的LTS版本，内容与官方资料保持同步。[>> 进入详细了解](http://open.weharmonyos.com)
 
   ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/opio.png)
   

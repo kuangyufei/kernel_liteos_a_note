@@ -1,7 +1,6 @@
 git add -A
 git commit -m  ' 去掉一些不必要的内容
-    站点访问 | http://weharmonyos.com (国内) 
-            | https://weharmony.github.io (国外)
+    站点访问 | https://weharmony.github.io
     论坛 | http://bbs.weharmonyos.com
     文档中心 | http://open.weharmonyos.com
     参考手册 | http://doxygen.weharmonyos.com

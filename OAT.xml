@@ -65,6 +65,8 @@
                 <!--filteritem type="filepath" name="projectroot/[a-zA-Z0-9]{20,}.sh" desc="Temp files"/-->
             </filefilter>
             <filefilter name="binaryFileTypePolicyFilter" desc="Filters for binary file policies">
+                <filteritem type="filepath" name="figures/architecture-of-the-openharmony-liteos-cortex-a-kernel.png" desc="architecture-of-the-openharmony-liteos-cortex-a-kernel"/>
+                <filteritem type="filepath" name="figures/OpenHarmony-LiteOS-A内核架构图.png" desc="LiteOS-A内核架构图"/>
                 <!--filteritem type="filename" name="*.uvwxyz" desc="Describe the reason for filtering scan results"/-->
                 <!--filteritem type="filepath" name="abcdefg/.*.uvwxyz" desc="Describe the reason for filtering scan results"/-->
                 <!--filteritem type="filepath" name="projectroot/[a-zA-Z0-9]{20,}.sh" desc="Temp files"/-->

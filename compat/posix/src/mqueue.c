@@ -604,17 +604,19 @@ int OsMqGetAttr(mqd_t personal, struct mq_attr *mqAttr)
     struct mqarray *mqueueCB = NULL;
     struct mqpersonal *privateMqPersonal = NULL;
 
+    (VOID)pthread_mutex_lock(&IPC_QUEUE_MUTEX);
     privateMqPersonal = MqGetPrivDataBuff(personal);
     if (privateMqPersonal == NULL) {
+        (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
         return -1;
     }
 
     if (mqAttr == NULL) {
         errno = EINVAL;
+        (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
         return -1;
     }
 
-    (VOID)pthread_mutex_lock(&IPC_QUEUE_MUTEX);
     if (privateMqPersonal->mq_status != MQ_USE_MAGIC) {
         errno = EBADF;
         (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
@@ -634,17 +636,19 @@ int OsMqSetAttr(mqd_t personal, const struct mq_attr *mqSetAttr, struct mq_attr 
 {
     struct mqpersonal *privateMqPersonal = NULL;
 
+    (VOID)pthread_mutex_lock(&IPC_QUEUE_MUTEX);
     privateMqPersonal = MqGetPrivDataBuff(personal);
     if (privateMqPersonal == NULL) {
+        (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
         return -1;
     }
 
     if (mqSetAttr == NULL) {
         errno = EINVAL;
+        (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
         return -1;
     }
 
-    (VOID)pthread_mutex_lock(&IPC_QUEUE_MUTEX);
     if (privateMqPersonal->mq_status != MQ_USE_MAGIC) {
         errno = EBADF;
         (VOID)pthread_mutex_unlock(&IPC_QUEUE_MUTEX);
