@@ -1,6 +1,6 @@
 
 ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/io.png)
-[ >> 进入 weharmony.github.io ](https://weharmony.github.io)
+访问 >> [ 国内  ](http://weharmonyos.com)  |  [国外 ](https://weharmony.github.io)
 
 **中文注解鸿蒙轻内核 | [kernel_liteos_a_note](https://gitee.com/weharmony/kernel_liteos_a_note)** 是在 `OpenHarmony` 的 [kernel_liteos_a](https://gitee.com/openharmony/kernel_liteos_a) 基础上给内核源码加上中文注解的版本，同步官方代码迭代推进。
 
@@ -180,7 +180,7 @@
 
 |历史捐赠|最新捐赠|
 |:-:|:-:|
-|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/pay.gif)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/25.png)|
+|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/pay.gif)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/26.png)|
 
 ## 链接
 
