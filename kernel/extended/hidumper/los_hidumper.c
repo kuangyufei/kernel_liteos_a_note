@@ -278,7 +278,6 @@ static void DumpFaultLog(void)
 
 static void DumpMemData(struct MemDumpParam *param)
 {
-    PRINTK("\nDumpType: %d\n", param->type);
     PRINTK("Unsupported now!\n");
 }
 

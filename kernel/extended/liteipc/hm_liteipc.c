@@ -839,7 +839,10 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandlePtr(LosProcessCB *pcb, SpecialObj *obj, BOO
         obj->content.ptr.buff = (VOID *)GetIpcUserAddr(pcb, (INTPTR)buf);
         EnableIpcNodeFreeByUser(pcb, (VOID *)buf);
     } else {
-        (VOID)LiteIpcNodeFree(pcb, (VOID *)GetIpcKernelAddr(pcb, (INTPTR)obj->content.ptr.buff));
+        buf = (VOID *)GetIpcKernelAddr(pcb, (INTPTR)obj->content.ptr.buff);
+        if (IsIpcNode(pcb, buf) == TRUE) {
+            (VOID)LiteIpcNodeFree(pcb, buf);
+        }
     }
     return LOS_OK;
 }

@@ -664,6 +664,11 @@ INT32 OsDmesgWrite2File(const CHAR *fullpath, const CHAR *buf, UINT32 logSize)
 {
     INT32 ret;
 
+    const CHAR *prefix = "/temp/";
+    INT32 prefixLen = strlen(prefix);
+    if (strncmp(fullpath, prefix, prefixLen) != 0) {
+        return -1;
+    }
     INT32 fd = open(fullpath, O_CREAT | O_RDWR | O_APPEND, 0644); /* 0644:file right */
     if (fd < 0) {
         return -1;

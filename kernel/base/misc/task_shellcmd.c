@@ -379,6 +379,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdTskInfoGet(UINT32 processID, VOID *seqBu
     (VOID)memset_s(threadInfo, sizeof(ProcessThreadInfo), 0, sizeof(ProcessThreadInfo));
 
     if (OsGetProcessThreadInfo(processID, threadInfo) != LOS_OK) {
+        (VOID)LOS_MemFree(m_aucSysMem1, threadInfo);
         return LOS_NOK;
     }
 

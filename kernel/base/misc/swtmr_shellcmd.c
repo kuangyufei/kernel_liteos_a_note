@@ -174,6 +174,7 @@ SWTMR_HELP:
     PRINTK(" swtmr ID   --- Specifies information about a software timer.\n");
     return LOS_OK;
 }
+
 SHELLCMD_ENTRY(swtmr_shellcmd, CMD_TYPE_EX, "swtmr", 1, (CmdCallBackFunc)OsShellCmdSwtmrInfoGet);//采用shell命令静态注册方式
 
 #endif /* LOSCFG_SHELL */

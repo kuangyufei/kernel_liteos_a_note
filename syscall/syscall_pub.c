@@ -46,7 +46,6 @@ int CheckRegion(const LosVmSpace *space, VADDR_T ptr, size_t len)
 void *DupUserMem(const void *ptr, size_t len, int needCopy)
 {
     void *p = LOS_MemAlloc(OS_SYS_MEM_ADDR, len);
-
     if (p == NULL) {
         set_errno(ENOMEM);
         return NULL;

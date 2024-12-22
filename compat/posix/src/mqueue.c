@@ -270,6 +270,7 @@ STATIC INT32 DoMqueueClose(struct mqpersonal *privateMqPersonal)
 {
     struct mqarray *mqueueCB = NULL;
     struct mqpersonal *tmp = NULL;
+    INT32 ret;
 
     mqueueCB = privateMqPersonal->mq_posixdes;
     if (mqueueCB == NULL || mqueueCB->mq_personal == NULL) {
@@ -277,6 +278,12 @@ STATIC INT32 DoMqueueClose(struct mqpersonal *privateMqPersonal)
         return LOS_NOK;
     }
 
+    if ((mqueueCB->unlinkflag == TRUE) && (privateMqPersonal->mq_next == NULL)) {
+        ret = DoMqueueDelete(mqueueCB);
+        if (ret < 0) {
+            return ret;
+        }
+    }
     /* find the personal and remove */
     if (mqueueCB->mq_personal == privateMqPersonal) {
         mqueueCB->mq_personal = privateMqPersonal->mq_next;
@@ -298,9 +305,6 @@ STATIC INT32 DoMqueueClose(struct mqpersonal *privateMqPersonal)
     /* free the personal */
     (VOID)LOS_MemFree(OS_SYS_MEM_ADDR, privateMqPersonal);
 
-    if ((mqueueCB->unlinkflag == TRUE) && (mqueueCB->mq_personal == NULL)) {
-        return DoMqueueDelete(mqueueCB);
-    }
     return LOS_OK;
 }
 

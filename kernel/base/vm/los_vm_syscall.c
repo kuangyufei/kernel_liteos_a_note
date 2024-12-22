@@ -329,6 +329,8 @@ STATIC UINT32 OsInheritOldRegionName(UINT32 oldRegionFlags)
         vmFlags |= VM_MAP_REGION_FLAG_MMAP;
     } else if (oldRegionFlags & VM_MAP_REGION_FLAG_SHM) {
         vmFlags |= VM_MAP_REGION_FLAG_SHM;
+    } else if (oldRegionFlags & VM_MAP_REGION_FLAG_LITEIPC) {
+        vmFlags |= VM_MAP_REGION_FLAG_LITEIPC;
     }
 
     return vmFlags;
@@ -354,7 +356,9 @@ INT32 LOS_DoMprotect(VADDR_T vaddr, size_t len, unsigned long prot)
         goto OUT_MPROTECT;
     }
 	//如果是堆区或VDSO区,说明区内容是不能修改的
-    if ((region->regionFlags & VM_MAP_REGION_FLAG_VDSO) || (region->regionFlags & VM_MAP_REGION_FLAG_HEAP)) {
+    if ((region->regionFlags & VM_MAP_REGION_FLAG_VDSO) ||
+        (region->regionFlags & VM_MAP_REGION_FLAG_HEAP) ||
+        (region->regionFlags & VM_MAP_REGION_FLAG_LITEIPC)) {
         ret = -EPERM;
         goto OUT_MPROTECT;
     }

@@ -277,7 +277,7 @@ STATIC UINT32 GetDirtySize(LosFilePage *fpage, struct Vnode *vnode)
 ///冲洗脏页，回写磁盘
 STATIC INT32 OsFlushDirtyPage(LosFilePage *fpage)
 {
-    UINT32 ret;
+    ssize_t ret;
     size_t len;
     char *buff = NULL;
     struct Vnode *vnode = fpage->mapping->host;/* owner of this mapping */ //此映射属于哪个文件,注意<file,page_mapping>是1:1的关系.

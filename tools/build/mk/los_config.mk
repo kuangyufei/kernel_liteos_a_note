@@ -124,6 +124,11 @@ LITEOS_BASELIB += -lcommon
 LIB_SUBDIRS       += kernel/common
 LITEOS_KERNEL_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/common
 
+ifeq ($(LOSCFG_KERNEL_CONTAINER), y)
+    LITEOS_BASELIB    += -lcontainer
+    LIB_SUBDIRS       += kernel/extended/container
+endif
+
 ifeq ($(LOSCFG_KERNEL_CPPSUPPORT), y)
     LITEOS_BASELIB += -lcppsupport
     LIB_SUBDIRS       += kernel/extended/cppsupport

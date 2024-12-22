@@ -708,7 +708,7 @@ STATIC ssize_t ConsoleRead(struct file *filep, CHAR *buffer, size_t bufLen)
     }
 
     if (userBuf) {
-        if (LOS_ArchCopyToUser(buffer, sbuffer, bufLen) != 0) {
+        if (LOS_ArchCopyToUser(buffer, sbuffer, ret) != 0) {
             ret = -EFAULT;
             goto ERROUT;
         }

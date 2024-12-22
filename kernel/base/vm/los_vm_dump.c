@@ -76,6 +76,8 @@ const CHAR *OsGetRegionNameOrFilePath(LosVmMapRegion *region)
         return "MMAP";
     } else if (region->regionFlags & VM_MAP_REGION_FLAG_SHM) {//共享区
         return "SHM";
+    } else if (region->regionFlags & VM_MAP_REGION_FLAG_LITEIPC) {
+        return "LITEIPC";
     } else {
         return "";
     }

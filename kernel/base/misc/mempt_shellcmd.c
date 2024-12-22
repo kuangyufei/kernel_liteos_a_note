@@ -193,7 +193,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdUname(INT32 argc, const CHAR *argv[])
 
     if (argc == 1) {
         if (strcmp(argv[0], "-a") == 0) {
-            PRINTK("%s %d.%d.%d.%d %s %s\n", KERNEL_NAME, KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE,\
+            PRINTK("%s %d.%d.%d.%d %s %s\n", KERNEL_NAME, KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE, \
                 __DATE__, __TIME__);
             return 0;
         } else if (strcmp(argv[0], "-s") == 0) {

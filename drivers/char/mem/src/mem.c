@@ -61,7 +61,7 @@ static ssize_t MemMap(struct file *filep, LosVmMapRegion *region)
     VADDR_T vaddr = region->range.base;
     LosVmSpace *space = LOS_SpaceGet(vaddr);
 
-    if ((paddr >= SYS_MEM_BASE) && (paddr < SYS_MEM_END)) {
+    if (((paddr + size) >= SYS_MEM_BASE) && (paddr < SYS_MEM_END)) {
         return -EINVAL;
     }
 

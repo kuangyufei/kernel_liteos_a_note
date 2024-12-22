@@ -488,7 +488,7 @@ UINT32 OsDevLimitWriteDeny(ProcLimitSet *plimit, const CHAR *buf, UINT32 size)
 STATIC VOID DevLimitItemSetAccess(CHAR *accArray, INT16 access)
 {
     INT32 index = 0;
-    (VOID)memset_s(acc, ACCLEN, 0, ACCLEN);
+    (VOID)memset_s(accArray, ACCLEN, 0, ACCLEN);
     if (access & DEVLIMIT_ACC_READ) {
         accArray[index] = 'r';
         index++;

@@ -156,7 +156,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdV2P(INT32 argc, const CHAR *argv[])
             return OS_ERROR;
         } else {
             if (pid >= 0) {
-                if (pid < g_taskMaxNum) {
+                if (pid < g_processMaxNum) {
                     LosProcessCB *processCB = OS_PCB_FROM_PID(pid);
                     if (!OsProcessIsUnused(processCB)) {
                         paddr = 0;
