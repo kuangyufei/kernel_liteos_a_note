@@ -8,7 +8,7 @@ git commit -m  ' 同步最新官方代码
 '
 
 #git push  gitee_origin master
-#git push  github_origin master
+git push  github_origin master
 #git push  gitcode_origin master
 #git push  coding_origin master
 #git
