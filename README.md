@@ -180,7 +180,7 @@
 
 |历史捐赠|最新捐赠|
 |:-:|:-:|
-|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/pay.gif)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/26.png)|
+|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/pay.gif)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/28.png)|
 
 ## 链接
 

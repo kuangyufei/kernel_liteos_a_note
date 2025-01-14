@@ -1,11 +1,12 @@
 git add -A
-git commit -m  ' 同步最新官方代码
-    站点访问 | https://weharmony.github.io
-    论坛 | http://bbs.weharmonyos.com
-    文档中心 | http://open.weharmonyos.com
-    参考手册 | http://doxygen.weharmonyos.com
-    
+git commit -m  ' 一些记录的更新
+    站点国内访问 | http://weharmonyos.com
+    站点国外访问 | https://weharmony.github.io
 '
+
+#    论坛 | http://bbs.weharmonyos.com
+#    文档中心 | http://open.weharmonyos.com
+#    参考手册 | http://doxygen.weharmonyos.com
 
 git push  gitee_origin master
 #git push  github_origin master
