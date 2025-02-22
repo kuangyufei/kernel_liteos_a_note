@@ -1,13 +1,10 @@
 git add -A
-git commit -m  ' 同步最新官方代码
-    站点访问 | https://weharmony.github.io
-    论坛 | http://bbs.weharmonyos.com
-    文档中心 | http://open.weharmonyos.com
-    参考手册 | http://doxygen.weharmonyos.com
+git commit -m  ' 震撼 ！！！来自deepseek的注解
+    博客 | http://weharmonyos.com
     
 '
 
-#git push  gitee_origin master
+git push  gitee_origin master
 git push  github_origin master
 #git push  gitcode_origin master
 #git push  coding_origin master

@@ -78,6 +78,7 @@
   
 ## 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [gitcode](https://gitcode.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
+* `2025/02/22` -- 震撼！！！来自deepseek的注解
 * `2024/04/13` -- 官方几处小修正
 * `2024/03/04` -- 官方修改很小
 * `2023/11/24` -- 几处小的修改

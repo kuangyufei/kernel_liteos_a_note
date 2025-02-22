@@ -103,37 +103,55 @@ LITE_OS_SEC_BSS LosQueueCB *g_allQueue = NULL;///< 消息队列池
 LITE_OS_SEC_BSS STATIC LOS_DL_LIST g_freeQueueList;///< 空闲队列链表,管分配的,需要队列从这里申请
 #define FREE_QUEUE_LIST g_freeQueueList
 #endif
-
+/**
+ * 初始化消息队列控制块池
+ * 
+ * @param freeQueueList 空闲队列链表指针
+ * @return 成功返回消息队列控制块池指针，失败返回NULL
+ */
 LITE_OS_SEC_TEXT_INIT LosQueueCB *OsAllQueueCBInit(LOS_DL_LIST *freeQueueList)
 {
     UINT32 index;
 
+    /* 参数检查 */
     if (freeQueueList == NULL) {
         return NULL;
     }
 
+    /* 计算所需内存大小 */
     UINT32 size = LOSCFG_BASE_IPC_QUEUE_LIMIT * sizeof(LosQueueCB);
-    /* system resident memory, don't free */
+    
+    /* 从系统内存池分配内存 */
     LosQueueCB *allQueue = (LosQueueCB *)LOS_MemAlloc(m_aucSysMem0, size);
     if (allQueue == NULL) {
         return NULL;
     }
+
+    /* 初始化分配的内存 */
     (VOID)memset_s(allQueue, size, 0, size);
+
+    /* 初始化空闲队列链表 */
     LOS_ListInit(freeQueueList);
+
+    /* 初始化每个队列控制块 */
     for (index = 0; index < LOSCFG_BASE_IPC_QUEUE_LIMIT; index++) {
         LosQueueCB *queueNode = ((LosQueueCB *)allQueue) + index;
-        queueNode->queueID = index;
+        queueNode->queueID = index;  // 设置队列ID
+        /* 将队列控制块加入空闲队列链表 */
         LOS_ListTailInsert(freeQueueList, &queueNode->readWriteList[OS_QUEUE_WRITE]);
     }
 
 #ifndef LOSCFG_IPC_CONTAINER
+    /* 初始化调试钩子函数 */
     if (OsQueueDbgInitHook() != LOS_OK) {
         (VOID)LOS_MemFree(m_aucSysMem0, allQueue);
         return NULL;
     }
 #endif
+
     return allQueue;
 }
+
 /*
  * Description : queue initial | 消息队列模块初始化
  * Return      : LOS_OK on success or error code on failure
@@ -191,7 +209,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueCreate(CHAR *queueName, UINT16 len, UINT32
         return LOS_ERRNO_QUEUE_CB_UNAVAILABLE;
     }
 
-    unusedQueue = LOS_DL_LIST_FIRST(&FREE_QUEUE_LIST);//找到一个没有被使用的队列    LOS_ListDelete(unusedQueue);//将自己从g_freeQueueList中摘除, unusedQueue只是个 LOS_DL_LIST 结点.
+    unusedQueue = LOS_DL_LIST_FIRST(&FREE_QUEUE_LIST);//找到一个没有被使用的队列
+    LOS_ListDelete(unusedQueue);//将自己从g_freeQueueList中摘除, unusedQueue只是个 LOS_DL_LIST 结点.
     queueCB = GET_QUEUE_LIST(unusedQueue);//通过unusedQueue找到整个消息队列(LosQueueCB)
     queueCB->queueLen = len;	//队列中消息的总个数,注意这个一旦创建是不能变的.
     queueCB->queueSize = msgSize;//消息节点的大小,注意这个一旦创建也是不能变的.

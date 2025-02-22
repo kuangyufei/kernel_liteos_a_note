@@ -54,27 +54,42 @@
 static bool g_isLogPartReady = FALSE;
 
 /* ------------ function definitions ------------ */
+/**
+ * 完整写入文件内容（支持追加/覆盖模式）
+ * 
+ * @param filePath  目标文件路径
+ * @param buf       要写入的数据缓冲区
+ * @param bufSize   数据缓冲区大小（字节）
+ * @param isAppend  是否追加模式（1=追加，0=覆盖）
+ * @return          操作结果（0成功，-1失败）
+ */
 int FullWriteFile(const char *filePath, const char *buf, size_t bufSize, int isAppend)
 {
-#ifdef LOSCFG_FS_VFS
+#ifdef LOSCFG_FS_VFS  // 文件系统特性是否启用
     int fd;
-    int totalToWrite = (int)bufSize;
-    int totalWrite = 0;
+    int totalToWrite = (int)bufSize;  // 剩余待写入字节数
+    int totalWrite = 0;               // 已写入字节数
 
+    /* 参数有效性检查 */
     if (filePath == NULL || buf == NULL || bufSize == 0) {
         BBOX_PRINT_ERR("filePath: %p, buf: %p, bufSize: %lu!\n", filePath, buf, bufSize);
         return -1;
     }
 
+    /* 检查日志分区挂载状态 */
     if (!IsLogPartReady()) {
         BBOX_PRINT_ERR("log path [%s] isn't ready to be written!\n", LOSCFG_BLACKBOX_LOG_ROOT_PATH);
         return -1;
     }
+
+    /* 打开/创建文件（追加模式使用O_APPEND，覆盖模式使用O_TRUNC） */
     fd = open(filePath, O_CREAT | O_RDWR | (isAppend ? O_APPEND : O_TRUNC), BBOX_FILE_MODE);
     if (fd < 0) {
         BBOX_PRINT_ERR("Create file [%s] failed, fd: %d!\n", filePath, fd);
         return -1;
     }
+
+    /* 循环写入直至全部数据写入完成 */
     while (totalToWrite > 0) {
         int writeThisTime = write(fd, buf, totalToWrite);
         if (writeThisTime < 0) {
@@ -82,15 +97,18 @@ int FullWriteFile(const char *filePath, const char *buf, size_t bufSize, int isA
             (void)close(fd);
             return -1;
         }
-        buf += writeThisTime;
-        totalToWrite -= writeThisTime;
-        totalWrite += writeThisTime;
+        /* 调整缓冲指针和剩余写入量 */
+        buf += writeThisTime;         // 移动缓冲区指针
+        totalToWrite -= writeThisTime; // 减少剩余写入量
+        totalWrite += writeThisTime;  // 累计已写入量
     }
-    (void)fsync(fd);
+
+    /* 确保数据落盘并关闭文件 */
+    (void)fsync(fd);  // 强制刷新到存储介质
     (void)close(fd);
 
-    return (totalWrite == (int)bufSize) ? 0 : -1;
-#else
+    return (totalWrite == (int)bufSize) ? 0 : -1; // 验证写入完整性
+#else  // 文件系统特性未启用
     (VOID)filePath;
     (VOID)buf;
     (VOID)bufSize;
@@ -98,7 +116,6 @@ int FullWriteFile(const char *filePath, const char *buf, size_t bufSize, int isA
     return -1;
 #endif
 }
-
 int SaveBasicErrorInfo(const char *filePath, const struct ErrorInfo *info)
 {
     char *buf = NULL;

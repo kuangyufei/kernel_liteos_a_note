@@ -47,153 +47,216 @@
 #include "los_mp.h"
 
 SchedRunqueue g_schedRunqueue[LOSCFG_KERNEL_CORE_NUM];
-
+/**
+ * 设置调度器的下一个到期时间
+ * 
+ * @param responseID   当前任务的ID
+ * @param taskEndTime  当前任务的时间片结束时间
+ * @param oldResponseID 上一个任务的ID
+ */
 STATIC INLINE VOID SchedNextExpireTimeSet(UINT32 responseID, UINT64 taskEndTime, UINT32 oldResponseID)
 {
-    SchedRunqueue *rq = OsSchedRunqueue();
-    BOOL isTimeSlice = FALSE;
-    UINT64 currTime = OsGetCurrSchedTimeCycle();
-    UINT64 nextExpireTime = OsGetSortLinkNextExpireTime(&rq->timeoutQueue, currTime, OS_TICK_RESPONSE_PRECISION);
+    SchedRunqueue *rq = OsSchedRunqueue();  // 获取当前CPU的运行队列
+    BOOL isTimeSlice = FALSE;              // 是否是时间片到期
+    UINT64 currTime = OsGetCurrSchedTimeCycle();  // 获取当前调度时间
+    UINT64 nextExpireTime = OsGetSortLinkNextExpireTime(&rq->timeoutQueue, currTime, OS_TICK_RESPONSE_PRECISION);  // 获取下一个超时时间
 
-    rq->schedFlag &= ~INT_PEND_TICK;
+    rq->schedFlag &= ~INT_PEND_TICK;  // 清除tick中断挂起标志
+
+    /* 如果当前响应ID与旧ID相同，说明该时间已过期，将响应时间设置为最大值 */
     if (rq->responseID == oldResponseID) {
-        /* This time has expired, and the next time the theory has expired is infinite */
         rq->responseTime = OS_SCHED_MAX_RESPONSE_TIME;
     }
 
-    /* The current thread's time slice has been consumed, but the current system lock task cannot
-     * trigger the schedule to release the CPU
-     */
+    /* 如果下一个超时时间大于任务结束时间，并且差值大于最小周期，则使用任务结束时间 */
     if ((nextExpireTime > taskEndTime) && ((nextExpireTime - taskEndTime) > OS_SCHED_MINI_PERIOD)) {
         nextExpireTime = taskEndTime;
-        isTimeSlice = TRUE;
+        isTimeSlice = TRUE;  // 标记为时间片到期
     }
 
+    /* 如果当前响应时间小于等于下一个超时时间，或者差值小于响应精度，则直接返回 */
     if ((rq->responseTime <= nextExpireTime) ||
         ((rq->responseTime - nextExpireTime) < OS_TICK_RESPONSE_PRECISION)) {
         return;
     }
 
+    /* 如果是时间片到期，设置响应ID为当前任务ID，否则设置为无效值 */
     if (isTimeSlice) {
-        /* The expiration time of the current system is the thread's slice expiration time */
         rq->responseID = responseID;
     } else {
         rq->responseID = OS_INVALID_VALUE;
     }
 
+    /* 计算并设置下一个响应时间 */
     UINT64 nextResponseTime = nextExpireTime - currTime;
     rq->responseTime = currTime + HalClockTickTimerReload(nextResponseTime);
 }
-
+/**
+ * 更新调度器的到期时间
+ * 
+ * 该函数用于在任务时间片到期或任务超时时，更新调度器的下一个到期时间。
+ * 如果调度器未激活或处于中断上下文中，则设置挂起标志并返回。
+ */
 VOID OsSchedExpireTimeUpdate(VOID)
 {
     UINT32 intSave;
+    
+    /* 检查调度器是否激活或是否处于中断上下文 */
     if (!OS_SCHEDULER_ACTIVE || OS_INT_ACTIVE) {
-        OsSchedRunqueuePendingSet();
+        OsSchedRunqueuePendingSet();  // 设置调度器挂起标志
         return;
     }
 
+    /* 获取当前运行的任务控制块 */
     LosTaskCB *runTask = OsCurrTaskGet();
+    
+    /* 加锁获取任务的截止时间 */
     SCHEDULER_LOCK(intSave);
     UINT64 deadline = runTask->ops->deadlineGet(runTask);
     SCHEDULER_UNLOCK(intSave);
+    
+    /* 设置下一个到期时间 */
     SchedNextExpireTimeSet(runTask->taskID, deadline, runTask->taskID);
 }
 
+/**
+ * 唤醒超时任务
+ * 
+ * @param rq       运行队列指针
+ * @param currTime 当前时间
+ * @param taskCB   任务控制块指针
+ * @param needSched 是否需要调度的标志位
+ */
 STATIC INLINE VOID SchedTimeoutTaskWake(SchedRunqueue *rq, UINT64 currTime, LosTaskCB *taskCB, BOOL *needSched)
 {
-    LOS_SpinLock(&g_taskSpin);
+    LOS_SpinLock(&g_taskSpin);  // 加锁保护任务状态
+    
+    /* 处理EDF调度策略的任务 */
     if (OsSchedPolicyIsEDF(taskCB)) {
         SchedEDF *sched = (SchedEDF *)&taskCB->sp;
+        
+        /* 如果任务完成时间已到 */
         if (sched->finishTime <= currTime) {
             if (taskCB->timeSlice >= 0) {
                 PrintExcInfo("EDF task: %u name: %s is timeout, timeout for %llu us.\n",
                              taskCB->taskID, taskCB->taskName, OS_SYS_CYCLE_TO_US(currTime - sched->finishTime));
             }
-            taskCB->timeSlice = 0;
+            taskCB->timeSlice = 0;  // 重置时间片
         }
+        
+        /* 处理永久等待标志 */
         if (sched->flags == EDF_WAIT_FOREVER) {
-            taskCB->taskStatus &= ~OS_TASK_STATUS_PEND_TIME;
-            sched->flags = EDF_UNUSED;
+            taskCB->taskStatus &= ~OS_TASK_STATUS_PEND_TIME;  // 清除等待时间标志
+            sched->flags = EDF_UNUSED;  // 设置标志为未使用
         }
     }
 
+    /* 处理任务状态 */
     UINT16 tempStatus = taskCB->taskStatus;
     if (tempStatus & (OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY)) {
+        /* 清除相关状态标志 */
         taskCB->taskStatus &= ~(OS_TASK_STATUS_PENDING | OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY);
+        
+        /* 处理超时状态 */
         if (tempStatus & OS_TASK_STATUS_PEND_TIME) {
-            taskCB->taskStatus |= OS_TASK_STATUS_TIMEOUT;
-            LOS_ListDelete(&taskCB->pendList);
-            taskCB->taskMux = NULL;
-            OsTaskWakeClearPendMask(taskCB);
+            taskCB->taskStatus |= OS_TASK_STATUS_TIMEOUT;  // 设置超时标志
+            LOS_ListDelete(&taskCB->pendList);  // 从挂起链表中删除
+            taskCB->taskMux = NULL;  // 清除互斥锁指针
+            OsTaskWakeClearPendMask(taskCB);  // 清除挂起掩码
         }
 
+        /* 如果任务未被挂起，则将其加入就绪队列 */
         if (!(tempStatus & OS_TASK_STATUS_SUSPENDED)) {
 #ifdef LOSCFG_SCHED_HPF_DEBUG
+            /* 调试信息：更新挂起时间和计数 */
             taskCB->schedStat.pendTime += currTime - taskCB->startTime;
             taskCB->schedStat.pendCount++;
 #endif
-            taskCB->ops->enqueue(rq, taskCB);
-            *needSched = TRUE;
+            taskCB->ops->enqueue(rq, taskCB);  // 将任务加入就绪队列
+            *needSched = TRUE;  // 设置需要调度标志
         }
     }
 
-    LOS_SpinUnlock(&g_taskSpin);
+    LOS_SpinUnlock(&g_taskSpin);  // 解锁
 }
 
+/**
+ * 扫描超时队列并唤醒超时任务
+ * 
+ * @param rq 运行队列指针
+ * @return 是否需要调度的标志（TRUE需要调度，FALSE不需要）
+ */
 STATIC INLINE BOOL SchedTimeoutQueueScan(SchedRunqueue *rq)
 {
-    BOOL needSched = FALSE;
-    SortLinkAttribute *timeoutQueue = &rq->timeoutQueue;
-    LOS_DL_LIST *listObject = &timeoutQueue->sortLink;
-    /*
-     * When task is pended with timeout, the task block is on the timeout sortlink
-     * (per cpu) and ipc(mutex,sem and etc.)'s block at the same time, it can be waken
-     * up by either timeout or corresponding ipc it's waiting.
-     *
-     * Now synchronize sortlink procedure is used, therefore the whole task scan needs
-     * to be protected, preventing another core from doing sortlink deletion at same time.
-     */
+    BOOL needSched = FALSE;  // 是否需要调度的标志
+    SortLinkAttribute *timeoutQueue = &rq->timeoutQueue;  // 超时队列
+    LOS_DL_LIST *listObject = &timeoutQueue->sortLink;  // 排序链表
+
+    /* 加锁保护超时队列，防止多核同时操作 */
     LOS_SpinLock(&timeoutQueue->spinLock);
 
+    /* 如果超时队列为空，直接返回 */
     if (LOS_ListEmpty(listObject)) {
         LOS_SpinUnlock(&timeoutQueue->spinLock);
         return needSched;
     }
 
+    /* 获取队列中的第一个任务 */
     SortLinkList *sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-    UINT64 currTime = OsGetCurrSchedTimeCycle();
+    UINT64 currTime = OsGetCurrSchedTimeCycle();  // 获取当前时间
+
+    /* 遍历超时队列，处理所有已超时的任务 */
     while (sortList->responseTime <= currTime) {
+        /* 获取任务控制块 */
         LosTaskCB *taskCB = LOS_DL_LIST_ENTRY(sortList, LosTaskCB, sortList);
+        
+        /* 从超时队列中删除该任务 */
         OsDeleteNodeSortLink(timeoutQueue, &taskCB->sortList);
         LOS_SpinUnlock(&timeoutQueue->spinLock);
 
+        /* 唤醒超时任务 */
         SchedTimeoutTaskWake(rq, currTime, taskCB, &needSched);
 
+        /* 重新加锁，继续处理下一个任务 */
         LOS_SpinLock(&timeoutQueue->spinLock);
+        
+        /* 如果队列为空，则退出循环 */
         if (LOS_ListEmpty(listObject)) {
             break;
         }
 
+        /* 获取下一个任务 */
         sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
     }
 
+    /* 解锁超时队列 */
     LOS_SpinUnlock(&timeoutQueue->spinLock);
 
-    return needSched;
+    return needSched;  // 返回是否需要调度的标志
 }
 
+/**
+ * 处理调度器的tick中断
+ * 
+ * 该函数在每个tick中断时被调用，用于检查超时任务并触发调度。
+ */
 VOID OsSchedTick(VOID)
 {
-    SchedRunqueue *rq = OsSchedRunqueue();
+    SchedRunqueue *rq = OsSchedRunqueue();  // 获取当前CPU的运行队列
 
+    /* 如果当前响应ID为无效值，扫描超时队列 */
     if (rq->responseID == OS_INVALID_VALUE) {
+        /* 如果扫描到超时任务并需要调度，则触发多核调度 */
         if (SchedTimeoutQueueScan(rq)) {
-            LOS_MpSchedule(OS_MP_CPU_ALL);
-            rq->schedFlag |= INT_PEND_RESCH;
+            LOS_MpSchedule(OS_MP_CPU_ALL);  // 触发多核调度
+            rq->schedFlag |= INT_PEND_RESCH;  // 设置重新调度标志
         }
     }
+
+    /* 设置tick中断挂起标志 */
     rq->schedFlag |= INT_PEND_TICK;
+    
+    /* 重置响应时间为最大值 */
     rq->responseTime = OS_SCHED_MAX_RESPONSE_TIME;
 }
 
@@ -388,88 +451,123 @@ STATIC INLINE VOID SchedSwitchCheck(LosTaskCB *runTask, LosTaskCB *newTask)
     OsHookCall(LOS_HOOK_TYPE_TASK_SWITCHEDIN, newTask, runTask);
 }
 
+/**
+ * 执行任务切换
+ * 
+ * @param rq       运行队列指针
+ * @param runTask  当前正在运行的任务
+ * @param newTask  将要切换到的任务
+ */
 STATIC VOID SchedTaskSwitch(SchedRunqueue *rq, LosTaskCB *runTask, LosTaskCB *newTask)
 {
+    /* 检查任务栈并调用任务切换钩子函数 */
     SchedSwitchCheck(runTask, newTask);
 
+    /* 更新任务状态：当前任务停止运行，新任务开始运行 */
     runTask->taskStatus &= ~OS_TASK_STATUS_RUNNING;
     newTask->taskStatus |= OS_TASK_STATUS_RUNNING;
 
 #ifdef LOSCFG_KERNEL_SMP
-    /* mask new running task's owner processor */
+    /* 在多核环境下更新任务的CPU绑定信息 */
     runTask->currCpu = OS_TASK_INVALID_CPUID;
     newTask->currCpu = ArchCurrCpuid();
 #endif
 
+    /* 设置新任务为当前任务 */
     OsCurrTaskSet((VOID *)newTask);
+
 #ifdef LOSCFG_KERNEL_VM
+    /* 如果新任务的内存管理单元不同，则进行上下文切换 */
     if (newTask->archMmu != runTask->archMmu) {
         LOS_ArchMmuContextSwitch((LosArchMmu *)newTask->archMmu);
     }
 #endif
 
 #ifdef LOSCFG_KERNEL_CPUP
+    /* 更新CPU使用率统计 */
     OsCpupCycleEndStart(runTask, newTask);
 #endif
 
 #ifdef LOSCFG_SCHED_HPF_DEBUG
+    /* 记录任务等待调度的时间 */
     UINT64 waitStartTime = newTask->startTime;
 #endif
+
+    /* 处理任务时间片 */
     if (runTask->taskStatus & OS_TASK_STATUS_READY) {
-        /* When a thread enters the ready queue, its slice of time is updated */
+        /* 如果当前任务仍在就绪状态，继承其开始时间 */
         newTask->startTime = runTask->startTime;
     } else {
-        /* The currently running task is blocked */
+        /* 如果当前任务被阻塞，更新开始时间并处理时间片 */
         newTask->startTime = OsGetCurrSchedTimeCycle();
-        /* The task is in a blocking state and needs to update its time slice before pend */
         runTask->ops->timeSliceUpdate(rq, runTask, newTask->startTime);
 
+        /* 如果任务处于超时等待状态，将其加入超时队列 */
         if (runTask->taskStatus & (OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY)) {
             OsSchedTimeoutQueueAdd(runTask, runTask->ops->waitTimeGet(runTask));
         }
     }
 
+    /* 设置下一个到期时间 */
     UINT64 deadline = newTask->ops->deadlineGet(newTask);
     SchedNextExpireTimeSet(newTask->taskID, deadline, runTask->taskID);
 
 #ifdef LOSCFG_SCHED_HPF_DEBUG
+    /* 更新调度统计信息 */
     newTask->schedStat.waitSchedTime += newTask->startTime - waitStartTime;
     newTask->schedStat.waitSchedCount++;
     runTask->schedStat.runTime = runTask->schedStat.allRuntime;
     runTask->schedStat.switchCount++;
 #endif
-    /* do the task context switch */
+
+    /* 执行任务上下文切换 */
     OsTaskSchedule(newTask, runTask);
 }
 
+/**
+ * 在中断结束时检查是否需要调度
+ * 
+ * 该函数在中断处理结束时被调用，用于检查当前任务是否需要被调度出去，
+ * 并处理相关的调度逻辑。
+ */
 VOID OsSchedIrqEndCheckNeedSched(VOID)
 {
-    SchedRunqueue *rq = OsSchedRunqueue();
-    LosTaskCB *runTask = OsCurrTaskGet();
+    SchedRunqueue *rq = OsSchedRunqueue();  // 获取当前CPU的运行队列
+    LosTaskCB *runTask = OsCurrTaskGet();   // 获取当前运行的任务
 
+    /* 更新当前任务的时间片 */
     runTask->ops->timeSliceUpdate(rq, runTask, OsGetCurrSchedTimeCycle());
 
+    /* 如果当前任务可被抢占且设置了重新调度标志 */
     if (OsPreemptable() && (rq->schedFlag & INT_PEND_RESCH)) {
-        rq->schedFlag &= ~INT_PEND_RESCH;
+        rq->schedFlag &= ~INT_PEND_RESCH;  // 清除重新调度标志
 
+        /* 加锁保护任务队列 */
         LOS_SpinLock(&g_taskSpin);
 
+        /* 将当前任务重新加入就绪队列 */
         runTask->ops->enqueue(rq, runTask);
 
+        /* 获取下一个要运行的任务 */
         LosTaskCB *newTask = TopTaskGet(rq);
+        
+        /* 如果当前任务与下一个任务不同，则进行任务切换 */
         if (runTask != newTask) {
             SchedTaskSwitch(rq, runTask, newTask);
             LOS_SpinUnlock(&g_taskSpin);
             return;
         }
 
+        /* 解锁任务队列 */
         LOS_SpinUnlock(&g_taskSpin);
     }
 
+    /* 如果设置了tick中断挂起标志，则更新调度器的到期时间 */
     if (rq->schedFlag & INT_PEND_TICK) {
         OsSchedExpireTimeUpdate();
     }
 }
+
 
 VOID OsSchedResched(VOID)
 {
@@ -491,73 +589,120 @@ VOID OsSchedResched(VOID)
     SchedTaskSwitch(rq, runTask, newTask);
 }
 
+/**
+ * 触发任务调度
+ * 
+ * 该函数是调度器的核心函数，用于在任务主动放弃CPU或需要调度时触发任务切换。
+ * 它会更新当前任务的时间片，将其重新加入就绪队列，并选择下一个要运行的任务。
+ */
 VOID LOS_Schedule(VOID)
 {
-    UINT32 intSave;
-    LosTaskCB *runTask = OsCurrTaskGet();
-    SchedRunqueue *rq = OsSchedRunqueue();
+    UINT32 intSave;  // 用于保存中断状态
+    LosTaskCB *runTask = OsCurrTaskGet();  // 获取当前正在运行的任务
+    SchedRunqueue *rq = OsSchedRunqueue();  // 获取当前CPU的运行队列
 
+    /* 如果当前处于中断上下文，设置挂起标志并返回 */
     if (OS_INT_ACTIVE) {
         OsSchedRunqueuePendingSet();
         return;
     }
 
+    /* 如果当前任务不可被抢占，直接返回 */
     if (!OsPreemptable()) {
         return;
     }
 
     /*
-     * trigger schedule in task will also do the slice check
-     * if necessary, it will give up the timeslice more in time.
-     * otherwise, there's no other side effects.
+     * 在任务中触发调度时也会进行时间片检查
+     * 如果需要，它会及时放弃时间片
+     * 否则，不会有其他副作用
      */
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_LOCK(intSave);  // 加锁保护调度器
 
+    /* 更新当前任务的时间片 */
     runTask->ops->timeSliceUpdate(rq, runTask, OsGetCurrSchedTimeCycle());
 
-    /* add run task back to ready queue */
+    /* 将当前任务重新加入就绪队列 */
     runTask->ops->enqueue(rq, runTask);
 
-    /* reschedule to new thread */
+    /* 重新调度到新线程 */
     OsSchedResched();
 
-    SCHEDULER_UNLOCK(intSave);
+    SCHEDULER_UNLOCK(intSave);  // 解锁调度器
 }
 
+/**
+ * 在挂起链表中查找合适的位置插入当前任务（子函数）
+ * 
+ * @param runTask  当前任务控制块
+ * @param lockList 挂起链表
+ * @return 返回合适位置的链表节点指针，如果未找到则返回NULL
+ */
 STATIC INLINE LOS_DL_LIST *SchedLockPendFindPosSub(const LosTaskCB *runTask, const LOS_DL_LIST *lockList)
 {
-    LosTaskCB *pendedTask = NULL;
+    LosTaskCB *pendedTask = NULL;  // 用于遍历的挂起任务指针
 
+    /* 遍历挂起链表中的每个任务 */
     LOS_DL_LIST_FOR_EACH_ENTRY(pendedTask, lockList, LosTaskCB, pendList) {
+        /* 比较当前任务与挂起任务的优先级 */
         INT32 ret = OsSchedParamCompare(pendedTask, runTask);
+        
+        /* 如果当前任务优先级低于挂起任务，继续查找 */
         if (ret < 0) {
             continue;
-        } else if (ret > 0) {
+        } 
+        /* 如果当前任务优先级高于挂起任务，返回该任务的位置 */
+        else if (ret > 0) {
             return &pendedTask->pendList;
-        } else {
+        } 
+        /* 如果优先级相同，返回该任务的下一个位置 */
+        else {
             return pendedTask->pendList.pstNext;
         }
     }
+    
+    /* 如果没有找到合适的位置，返回NULL */
     return NULL;
 }
 
+
+/**
+ * 在挂起链表中找到合适的位置插入当前任务
+ * 
+ * @param runTask 当前任务控制块
+ * @param lockList 挂起链表
+ * @return 返回合适位置的链表节点指针
+ */
 LOS_DL_LIST *OsSchedLockPendFindPos(const LosTaskCB *runTask, LOS_DL_LIST *lockList)
 {
+    /* 如果挂起链表为空，直接返回链表头 */
     if (LOS_ListEmpty(lockList)) {
         return lockList;
     }
 
+    /* 获取挂起链表中的第一个任务 */
     LosTaskCB *pendedTask1 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(lockList));
+    
+    /* 比较当前任务与第一个任务的优先级 */
     INT32 ret = OsSchedParamCompare(pendedTask1, runTask);
+    
+    /* 如果当前任务优先级高于第一个任务，则插入到链表头部 */
     if (ret > 0) {
         return lockList->pstNext;
     }
 
+    /* 获取挂起链表中的最后一个任务 */
     LosTaskCB *pendedTask2 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_LAST(lockList));
+    
+    /* 比较当前任务与最后一个任务的优先级 */
     ret = OsSchedParamCompare(pendedTask2, runTask);
+    
+    /* 如果当前任务优先级低于或等于最后一个任务，则插入到链表尾部 */
     if (ret <= 0) {
         return lockList;
     }
 
+    /* 如果以上条件都不满足，则在链表中查找合适的位置 */
     return SchedLockPendFindPosSub(runTask, lockList);
 }
+
