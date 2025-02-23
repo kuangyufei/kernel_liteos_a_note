@@ -359,63 +359,67 @@ VOID OsSchedProcessDefaultSchedParamGet(UINT16 policy, SchedParam *param)
     }
     return;
 }
-
 STATIC LosTaskCB *TopTaskGet(SchedRunqueue *rq)
 {
+    // 首先尝试从EDF运行队列中获取最高优先级任务
     LosTaskCB *newTask = EDFRunqueueTopTaskGet(rq->edfRunqueue);
     if (newTask != NULL) {
-        goto FIND;
+        goto FIND;  // 如果找到任务，跳转到FIND标签
     }
 
+    // 如果EDF队列中没有任务，尝试从HPF运行队列中获取最高优先级任务
     newTask = HPFRunqueueTopTaskGet(rq->hpfRunqueue);
     if (newTask != NULL) {
-        goto FIND;
+        goto FIND;  // 如果找到任务，跳转到FIND标签
     }
 
+    // 如果以上队列都没有任务，则返回空闲任务
     newTask = rq->idleTask;
 
 FIND:
+    // 调用任务的start操作，准备运行该任务
     newTask->ops->start(rq, newTask);
-    return newTask;
+    return newTask;  // 返回找到的任务
 }
 
 VOID OsSchedStart(VOID)
 {
-    UINT32 cpuid = ArchCurrCpuid();
-    UINT32 intSave;
+    UINT32 cpuid = ArchCurrCpuid();        // 获取当前CPU核心ID
+    UINT32 intSave;                        // 中断状态保存变量
 
-    PRINTK("cpu %d entering scheduler\n", cpuid);
+    PRINTK("cpu %d entering scheduler\n", cpuid);  // 打印调度器启动日志
 
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_LOCK(intSave);               // 加调度器锁，进入临界区
 
-    OsTickStart();
+    OsTickStart();                          // 启动系统tick定时器
 
-    SchedRunqueue *rq = OsSchedRunqueue();
-    LosTaskCB *newTask = TopTaskGet(rq);
-    newTask->taskStatus |= OS_TASK_STATUS_RUNNING;
+    SchedRunqueue *rq = OsSchedRunqueue();  // 获取当前CPU的运行队列
+    LosTaskCB *newTask = TopTaskGet(rq);   // 获取最高优先级任务
+    newTask->taskStatus |= OS_TASK_STATUS_RUNNING;  // 设置任务为运行状态
 
 #ifdef LOSCFG_KERNEL_SMP
-    /*
-     * attention: current cpu needs to be set, in case first task deletion
-     * may fail because this flag mismatch with the real current cpu.
+    /* 
+     * 设置任务绑定的CPU核心，防止首次任务删除时
+     * 当前CPU标志与实际运行CPU不匹配导致问题
      */
-    newTask->currCpu = cpuid;
+    newTask->currCpu = cpuid;              // 设置任务当前运行的CPU核心
 #endif
 
-    OsCurrTaskSet((VOID *)newTask);
+    OsCurrTaskSet((VOID *)newTask);        // 将新任务设置为当前运行任务
 
-    newTask->startTime = OsGetCurrSchedTimeCycle();
+    newTask->startTime = OsGetCurrSchedTimeCycle();  // 记录任务启动时间
 
-    OsSwtmrResponseTimeReset(newTask->startTime);
+    OsSwtmrResponseTimeReset(newTask->startTime);  // 重置软件定时器响应时间
 
-    /* System start schedule */
-    OS_SCHEDULER_SET(cpuid);
+    /* 系统正式启动调度 */
+    OS_SCHEDULER_SET(cpuid);               // 设置调度器激活标志
 
-    rq->responseID = OS_INVALID;
-    UINT64 deadline = newTask->ops->deadlineGet(newTask);
-    SchedNextExpireTimeSet(newTask->taskID, deadline, OS_INVALID);
-    OsTaskContextLoad(newTask);
+    rq->responseID = OS_INVALID;           // 重置运行队列响应ID
+    UINT64 deadline = newTask->ops->deadlineGet(newTask);  // 获取任务截止时间
+    SchedNextExpireTimeSet(newTask->taskID, deadline, OS_INVALID);  // 设置下次到期时间
+    OsTaskContextLoad(newTask);            // 加载任务上下文，开始执行任务
 }
+
 
 #ifdef LOSCFG_KERNEL_SMP
 VOID OsSchedToUserReleaseLock(VOID)
@@ -571,22 +575,22 @@ VOID OsSchedIrqEndCheckNeedSched(VOID)
 
 VOID OsSchedResched(VOID)
 {
-    LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));
-    SchedRunqueue *rq = OsSchedRunqueue();
+    LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));  // 确保当前持有任务自旋锁
+    SchedRunqueue *rq = OsSchedRunqueue();  // 获取当前CPU的运行队列
 #ifdef LOSCFG_KERNEL_SMP
-    LOS_ASSERT(rq->taskLockCnt == 1);
+    LOS_ASSERT(rq->taskLockCnt == 1);  // 在SMP模式下，任务锁计数应为1
 #else
-    LOS_ASSERT(rq->taskLockCnt == 0);
+    LOS_ASSERT(rq->taskLockCnt == 0);  // 在单核模式下，任务锁计数应为0
 #endif
 
-    rq->schedFlag &= ~INT_PEND_RESCH;
-    LosTaskCB *runTask = OsCurrTaskGet();
-    LosTaskCB *newTask = TopTaskGet(rq);
+    rq->schedFlag &= ~INT_PEND_RESCH;  // 清除重新调度标志
+    LosTaskCB *runTask = OsCurrTaskGet();  // 获取当前正在运行的任务
+    LosTaskCB *newTask = TopTaskGet(rq);  // 从运行队列中获取最高优先级的任务
     if (runTask == newTask) {
-        return;
+        return;  // 如果当前任务仍然是最高优先级任务，则直接返回
     }
 
-    SchedTaskSwitch(rq, runTask, newTask);
+    SchedTaskSwitch(rq, runTask, newTask);  // 执行任务切换
 }
 
 /**

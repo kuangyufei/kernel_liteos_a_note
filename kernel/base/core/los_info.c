@@ -40,24 +40,26 @@ STATIC UINT32 GetCurrParentPid(UINT32 pid, const LosProcessCB *processCB)
 
 #ifdef LOSCFG_PID_CONTAINER //从容器中获取
     if (pid == OS_USER_ROOT_PROCESS_ID) {//从这里可以看出 0号进程（kidle）是，1,2号进程的父进程
-        return 0;
+        return 0;  // 返回0，表示没有父进程
     }
 
+    // 检查父进程是否在当前容器中
     if (OS_PROCESS_CONTAINER_CHECK(processCB->parentProcess, OsCurrProcessGet())) {
-        return OsGetVpidFromCurrContainer(processCB->parentProcess);
+        return OsGetVpidFromCurrContainer(processCB->parentProcess); // 从当前容器中获取虚拟PID
     }
 #endif
-    return processCB->parentProcess->processID;
+    return processCB->parentProcess->processID; // 返回父进程的实际PID
 }
 //获取当前任务ID
 STATIC INLINE UINT32 GetCurrTid(const LosTaskCB *taskCB)
 {
 #ifdef LOSCFG_PID_CONTAINER
+    // 如果任务不在当前容器中
     if (taskCB->pidContainer != OsCurrTaskGet()->pidContainer) {
-        return OsGetVtidFromCurrContainer(taskCB);
+        return OsGetVtidFromCurrContainer(taskCB); // 从当前容器中获取虚拟TID
     }
 #endif
-    return taskCB->taskID;
+    return taskCB->taskID; // 返回任务的实际ID
 }
 
 STATIC UINT16 GetProcessStatus(LosProcessCB *processCB)
@@ -133,41 +135,53 @@ STATIC VOID GetProcessMemInfo(ProcessInfo *pcbInfo, const LosProcessCB *processC
 }
 #endif
 
+/*
+该函数用于获取指定进程的所有线程信息
+遍历进程的线程列表，收集每个线程的详细信息
+包括线程ID、状态、调度信息、栈信息、CPU使用率等
+使用了条件编译来处理SMP和CPUP相关的功能
+*/
 STATIC VOID GetThreadInfo(ProcessThreadInfo *threadInfo, LosProcessCB *processCB)
 {
     SchedParam param = {0};
     LosTaskCB *taskCB = NULL;
+    
+    // 如果线程列表为空，设置线程计数为0并返回
     if (LOS_ListEmpty(&processCB->threadSiblingList)) {
         threadInfo->threadCount = 0;
         return;
     }
 
-    threadInfo->threadCount = 0;
+    threadInfo->threadCount = 0;  // 初始化线程计数
+    // 遍历进程的线程列表
     LOS_DL_LIST_FOR_EACH_ENTRY(taskCB, &processCB->threadSiblingList, LosTaskCB, threadList) {
-        TaskInfo *taskInfo = &threadInfo->taskInfo[threadInfo->threadCount];
-        taskInfo->tid = GetCurrTid(taskCB);
-        taskInfo->pid = OsGetPid(processCB);
-        taskInfo->status = taskCB->taskStatus;
-        taskCB->ops->schedParamGet(taskCB, &param);
-        taskInfo->policy = param.policy;
-        taskInfo->priority = param.priority;
+        TaskInfo *taskInfo = &threadInfo->taskInfo[threadInfo->threadCount];  // 获取当前线程信息结构体
+        taskInfo->tid = GetCurrTid(taskCB);  // 获取线程ID
+        taskInfo->pid = OsGetPid(processCB);  // 获取进程ID
+        taskInfo->status = taskCB->taskStatus;  // 获取线程状态
+        taskCB->ops->schedParamGet(taskCB, &param);  // 获取调度参数
+        taskInfo->policy = param.policy;  // 获取调度策略
+        taskInfo->priority = param.priority;  // 获取线程优先级
 #ifdef LOSCFG_KERNEL_SMP
-        taskInfo->currCpu = taskCB->currCpu;
-        taskInfo->cpuAffiMask = taskCB->cpuAffiMask;
+        taskInfo->currCpu = taskCB->currCpu;  // 获取当前运行的CPU
+        taskInfo->cpuAffiMask = taskCB->cpuAffiMask;  // 获取CPU亲和性掩码
 #endif
-        taskInfo->stackPoint = (UINTPTR)taskCB->stackPointer;
-        taskInfo->topOfStack = taskCB->topOfStack;
-        taskInfo->stackSize = taskCB->stackSize;
-        taskInfo->waitFlag = taskCB->waitFlag;
-        taskInfo->waitID = taskCB->waitID;
-        taskInfo->taskMux = taskCB->taskMux;
+        taskInfo->stackPoint = (UINTPTR)taskCB->stackPointer;  // 获取栈指针
+        taskInfo->topOfStack = taskCB->topOfStack;  // 获取栈顶
+        taskInfo->stackSize = taskCB->stackSize;  // 获取栈大小
+        taskInfo->waitFlag = taskCB->waitFlag;  // 获取等待标志
+        taskInfo->waitID = taskCB->waitID;  // 获取等待ID
+        taskInfo->taskMux = taskCB->taskMux;  // 获取任务互斥量
+        // 获取栈水位线
         (VOID)OsStackWaterLineGet((const UINTPTR *)(taskCB->topOfStack + taskCB->stackSize),
                                   (const UINTPTR *)taskCB->topOfStack, &taskInfo->waterLine);
 #ifdef LOSCFG_KERNEL_CPUP
+        // 获取CPU使用率
         (VOID)OsGetTaskAllCpuUsageUnsafe(&taskCB->taskCpup, taskInfo);
 #endif
+        // 复制任务名称
         (VOID)memcpy_s(taskInfo->name, OS_TCB_NAME_LEN, taskCB->taskName, OS_TCB_NAME_LEN);
-        threadInfo->threadCount++;
+        threadInfo->threadCount++;  // 增加线程计数
     }
 }
 
@@ -225,32 +239,35 @@ STATIC VOID ProcessMemUsageGet(ProcessInfo *pcbArray)
     }
 }
 
+// 获取所有进程的信息
 UINT32 OsGetAllProcessInfo(ProcessInfo *pcbArray)
 {
     UINT32 intSave;
     if (pcbArray == NULL) {
-        return LOS_NOK;
+        return LOS_NOK;  // 如果传入的数组为空，返回错误
     }
 
-    ProcessMemUsageGet(pcbArray);
+    ProcessMemUsageGet(pcbArray);  // 获取所有进程的内存使用信息
 
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_LOCK(intSave);  // 加锁，保证线程安全
 #ifdef LOSCFG_PID_CONTAINER
-    PidContainer *pidContainer = OsCurrTaskGet()->pidContainer;
+    // 如果启用了PID容器功能
+    PidContainer *pidContainer = OsCurrTaskGet()->pidContainer;  // 获取当前任务的PID容器
     for (UINT32 index = 0; index < LOSCFG_BASE_CORE_PROCESS_LIMIT; index++) {
-        ProcessVid *processVid = &pidContainer->pidArray[index];
-        LosProcessCB *processCB = (LosProcessCB *)processVid->cb;
+        ProcessVid *processVid = &pidContainer->pidArray[index];  // 获取进程虚拟ID
+        LosProcessCB *processCB = (LosProcessCB *)processVid->cb;  // 获取进程控制块
 #else
+    // 未启用PID容器功能
     for (UINT32 index = 0; index < LOSCFG_BASE_CORE_PROCESS_LIMIT; index++) {
-        LosProcessCB *processCB = OS_PCB_FROM_RPID(index);
+        LosProcessCB *processCB = OS_PCB_FROM_RPID(index);  // 直接通过索引获取进程控制块
 #endif
-        ProcessInfo *pcbInfo = pcbArray + index;
+        ProcessInfo *pcbInfo = pcbArray + index;  // 获取当前进程的信息结构体
         if (OsProcessIsUnused(processCB)) {
-            pcbInfo->status = OS_PROCESS_FLAG_UNUSED;
+            pcbInfo->status = OS_PROCESS_FLAG_UNUSED;  // 如果进程未使用，标记状态为未使用
             continue;
         }
-        GetProcessInfo(pcbInfo, processCB);
+        GetProcessInfo(pcbInfo, processCB);  // 获取进程的详细信息
     }
-    SCHEDULER_UNLOCK(intSave);
-    return LOS_OK;
+    SCHEDULER_UNLOCK(intSave);  // 解锁
+    return LOS_OK;  // 返回成功
 }

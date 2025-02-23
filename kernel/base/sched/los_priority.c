@@ -87,34 +87,36 @@ const STATIC SchedOps g_priorityOps = {
     .priorityRestore = HPFPriorityRestore,
 };
 
+// 更新时间片
 STATIC VOID HPFTimeSliceUpdate(SchedRunqueue *rq, LosTaskCB *taskCB, UINT64 currTime)
 {
     SchedHPF *sched = (SchedHPF *)&taskCB->sp;
-    LOS_ASSERT(currTime >= taskCB->startTime);
+    LOS_ASSERT(currTime >= taskCB->startTime);  // 断言当前时间不小于任务开始时间
 
-    INT32 incTime = (currTime - taskCB->startTime - taskCB->irqUsedTime);
+    INT32 incTime = (currTime - taskCB->startTime - taskCB->irqUsedTime);  // 计算任务实际运行时间
 
-    LOS_ASSERT(incTime >= 0);
+    LOS_ASSERT(incTime >= 0);  // 断言运行时间不小于0
 
-    if (sched->policy == LOS_SCHED_RR) {
-        taskCB->timeSlice -= incTime;
+    if (sched->policy == LOS_SCHED_RR) {  // 如果是RR调度策略
+        taskCB->timeSlice -= incTime;  // 减少时间片
 #ifdef LOSCFG_SCHED_HPF_DEBUG
-        taskCB->schedStat.timeSliceRealTime += incTime;
+        taskCB->schedStat.timeSliceRealTime += incTime;  // 调试模式下记录实际运行时间
 #endif
     }
 #ifdef LOSCFG_KERNEL_SCHED_PLIMIT
-    OsSchedLimitUpdateRuntime(taskCB, currTime, incTime);
+    OsSchedLimitUpdateRuntime(taskCB, currTime, incTime);  // 更新任务运行时间限制
 #endif
-    taskCB->irqUsedTime = 0;
-    taskCB->startTime = currTime;
-    if (taskCB->timeSlice <= OS_TIME_SLICE_MIN) {
-        rq->schedFlag |= INT_PEND_RESCH;
+    taskCB->irqUsedTime = 0;  // 重置中断使用时间
+    taskCB->startTime = currTime;  // 更新任务开始时间为当前时间
+    if (taskCB->timeSlice <= OS_TIME_SLICE_MIN) {  // 如果时间片小于等于最小时间片
+        rq->schedFlag |= INT_PEND_RESCH;  // 设置重新调度标志
     }
 
 #ifdef LOSCFG_SCHED_HPF_DEBUG
-    taskCB->schedStat.allRuntime += incTime;
+    taskCB->schedStat.allRuntime += incTime;  // 调试模式下记录总运行时间
 #endif
 }
+
 
 STATIC UINT64 HPFTimeSliceGet(const LosTaskCB *taskCB)
 {
@@ -139,30 +141,32 @@ STATIC INLINE UINT32 TimeSliceCalculate(HPFRunqueue *rq, UINT16 basePrio, UINT16
     return (time + OS_SCHED_TIME_SLICES_MIN);
 }
 
+// 将任务插入到优先级队列的头部
 STATIC INLINE VOID PriQueHeadInsert(HPFRunqueue *rq, UINT32 basePrio, LOS_DL_LIST *priQue, UINT32 priority)
 {
-    HPFQueue *queueList = &rq->queueList[basePrio];
-    LOS_DL_LIST *priQueList = &queueList->priQueList[0];
-    UINT32 *bitmap = &queueList->queueBitmap;
+    HPFQueue *queueList = &rq->queueList[basePrio];  // 获取指定基础优先级的队列
+    LOS_DL_LIST *priQueList = &queueList->priQueList[0];  // 获取优先级队列列表
+    UINT32 *bitmap = &queueList->queueBitmap;  // 获取队列位图
 
     /*
-     * Task control blocks are inited as zero. And when task is deleted,
-     * and at the same time would be deleted from priority queue or
-     * other lists, task pend node will restored as zero.
+     * 任务控制块初始化为零。当任务被删除时，
+     * 同时会从优先级队列或其他列表中删除，
+     * 任务挂起节点将被重置为零。
      */
-    LOS_ASSERT(priQue->pstNext == NULL);
+    LOS_ASSERT(priQue->pstNext == NULL);  // 断言任务节点未链接到其他列表
 
-    if (*bitmap == 0) {
-        rq->queueBitmap |= PRIQUEUE_PRIOR0_BIT >> basePrio;
+    if (*bitmap == 0) {  // 如果队列位图为空
+        rq->queueBitmap |= PRIQUEUE_PRIOR0_BIT >> basePrio;  // 设置基础优先级位
     }
 
-    if (LOS_ListEmpty(&priQueList[priority])) {
-        *bitmap |= PRIQUEUE_PRIOR0_BIT >> priority;
+    if (LOS_ListEmpty(&priQueList[priority])) {  // 如果指定优先级的队列为空
+        *bitmap |= PRIQUEUE_PRIOR0_BIT >> priority;  // 设置优先级位
     }
 
-    LOS_ListHeadInsert(&priQueList[priority], priQue);
-    queueList->readyTasks[priority]++;
+    LOS_ListHeadInsert(&priQueList[priority], priQue);  // 将任务插入到队列头部
+    queueList->readyTasks[priority]++;  // 增加就绪任务计数
 }
+
 
 STATIC INLINE VOID PriQueTailInsert(HPFRunqueue *rq, UINT32 basePrio, LOS_DL_LIST *priQue, UINT32 priority)
 {
@@ -205,46 +209,47 @@ STATIC INLINE VOID PriQueDelete(HPFRunqueue *rq, UINT32 basePrio, LOS_DL_LIST *p
         rq->queueBitmap &= ~(PRIQUEUE_PRIOR0_BIT >> basePrio);
     }
 }
-
+// 将任务插入到就绪队列
 STATIC INLINE VOID PriQueInsert(HPFRunqueue *rq, LosTaskCB *taskCB)
 {
-    LOS_ASSERT(!(taskCB->taskStatus & OS_TASK_STATUS_READY));
-    SchedHPF *sched = (SchedHPF *)&taskCB->sp;
+    LOS_ASSERT(!(taskCB->taskStatus & OS_TASK_STATUS_READY));  // 断言任务当前不处于就绪状态
+    SchedHPF *sched = (SchedHPF *)&taskCB->sp;  // 获取任务的调度参数
 
-    switch (sched->policy) {
-        case LOS_SCHED_RR: {
-            if (taskCB->timeSlice > OS_TIME_SLICE_MIN) {
-                PriQueHeadInsert(rq, sched->basePrio, &taskCB->pendList, sched->priority);
-            } else {
-                sched->initTimeSlice = TimeSliceCalculate(rq, sched->basePrio, sched->priority);
-                taskCB->timeSlice = sched->initTimeSlice;
-                PriQueTailInsert(rq, sched->basePrio, &taskCB->pendList, sched->priority);
+    switch (sched->policy) {  // 根据调度策略进行处理
+        case LOS_SCHED_RR: {  // 如果是RR调度策略
+            if (taskCB->timeSlice > OS_TIME_SLICE_MIN) {  // 如果时间片大于最小时间片
+                PriQueHeadInsert(rq, sched->basePrio, &taskCB->pendList, sched->priority);  // 插入到队列头部
+            } else {  // 如果时间片不足
+                sched->initTimeSlice = TimeSliceCalculate(rq, sched->basePrio, sched->priority);  // 重新计算时间片
+                taskCB->timeSlice = sched->initTimeSlice;  // 重置时间片
+                PriQueTailInsert(rq, sched->basePrio, &taskCB->pendList, sched->priority);  // 插入到队列尾部
 #ifdef LOSCFG_SCHED_HPF_DEBUG
-                taskCB->schedStat.timeSliceTime = taskCB->schedStat.timeSliceRealTime;
-                taskCB->schedStat.timeSliceCount++;
+                taskCB->schedStat.timeSliceTime = taskCB->schedStat.timeSliceRealTime;  // 调试模式下记录时间片时间
+                taskCB->schedStat.timeSliceCount++;  // 增加时间片计数
 #endif
             }
             break;
         }
-        case LOS_SCHED_FIFO: {
-            /* The time slice of FIFO is always greater than 0 unless the yield is called */
-            if ((taskCB->timeSlice > OS_TIME_SLICE_MIN) && (taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {
-                PriQueHeadInsert(rq, sched->basePrio, &taskCB->pendList, sched->priority);
-            } else {
-                sched->initTimeSlice = OS_SCHED_FIFO_TIMEOUT;
-                taskCB->timeSlice = sched->initTimeSlice;
-                PriQueTailInsert(rq, sched->basePrio, &taskCB->pendList, sched->priority);
+        case LOS_SCHED_FIFO: {  // 如果是FIFO调度策略
+            /* FIFO的时间片总是大于0，除非调用了yield */
+            if ((taskCB->timeSlice > OS_TIME_SLICE_MIN) && (taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {  // 如果时间片足够且任务正在运行
+                PriQueHeadInsert(rq, sched->basePrio, &taskCB->pendList, sched->priority);  // 插入到队列头部
+            } else {  // 如果时间片不足或任务未运行
+                sched->initTimeSlice = OS_SCHED_FIFO_TIMEOUT;  // 设置FIFO的超时时间片
+                taskCB->timeSlice = sched->initTimeSlice;  // 重置时间片
+                PriQueTailInsert(rq, sched->basePrio, &taskCB->pendList, sched->priority);  // 插入到队列尾部
             }
             break;
         }
         default:
-            LOS_ASSERT(0);
+            LOS_ASSERT(0);  // 其他调度策略断言失败
             break;
     }
 
-    taskCB->taskStatus &= ~OS_TASK_STATUS_BLOCKED;
-    taskCB->taskStatus |= OS_TASK_STATUS_READY;
+    taskCB->taskStatus &= ~OS_TASK_STATUS_BLOCKED;  // 清除阻塞状态
+    taskCB->taskStatus |= OS_TASK_STATUS_READY;  // 设置为就绪状态
 }
+
 //入就绪队列
 STATIC VOID HPFEnqueue(SchedRunqueue *rq, LosTaskCB *taskCB)
 {
@@ -373,41 +378,43 @@ STATIC BOOL BasePriorityModify(SchedRunqueue *rq, LosTaskCB *taskCB, UINT16 prio
     return needSched;
 }
 
+// 修改任务的调度参数
 STATIC BOOL HPFSchedParamModify(LosTaskCB *taskCB, const SchedParam *param)
 {
-    SchedRunqueue *rq = OsSchedRunqueue();
-    BOOL needSched = FALSE;
-    SchedHPF *sched = (SchedHPF *)&taskCB->sp;
+    SchedRunqueue *rq = OsSchedRunqueue();  // 获取当前运行队列
+    BOOL needSched = FALSE;  // 是否需要重新调度的标志
+    SchedHPF *sched = (SchedHPF *)&taskCB->sp;  // 获取任务的调度参数
 
-    if (sched->policy != param->policy) {
-        sched->policy = param->policy;
-        taskCB->timeSlice = 0;
+    if (sched->policy != param->policy) {  // 如果调度策略发生变化
+        sched->policy = param->policy;  // 更新调度策略
+        taskCB->timeSlice = 0;  // 重置时间片
     }
 
-    if (sched->basePrio != param->basePrio) {
-        needSched = BasePriorityModify(rq, taskCB, param->basePrio);
+    if (sched->basePrio != param->basePrio) {  // 如果基础优先级发生变化
+        needSched = BasePriorityModify(rq, taskCB, param->basePrio);  // 修改基础优先级
     }
 
-    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {
-        HPFDequeue(rq, taskCB);
-        sched->priority = param->priority;
-        HPFEnqueue(rq, taskCB);
-        return TRUE;
+    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {  // 如果任务处于就绪状态
+        HPFDequeue(rq, taskCB);  // 将任务从队列中移除
+        sched->priority = param->priority;  // 更新优先级
+        HPFEnqueue(rq, taskCB);  // 将任务重新加入队列
+        return TRUE;  // 返回需要重新调度
     }
 
-    sched->priority = param->priority;
-    OsHookCall(LOS_HOOK_TYPE_TASK_PRIMODIFY, taskCB, sched->priority);
-    if (taskCB->taskStatus & OS_TASK_STATUS_INIT) {
-        HPFEnqueue(rq, taskCB);
-        return TRUE;
+    sched->priority = param->priority;  // 更新优先级
+    OsHookCall(LOS_HOOK_TYPE_TASK_PRIMODIFY, taskCB, sched->priority);  // 调用优先级修改钩子函数
+    if (taskCB->taskStatus & OS_TASK_STATUS_INIT) {  // 如果任务处于初始化状态
+        HPFEnqueue(rq, taskCB);  // 将任务加入队列
+        return TRUE;  // 返回需要重新调度
     }
 
-    if (taskCB->taskStatus & OS_TASK_STATUS_RUNNING) {
-        return TRUE;
+    if (taskCB->taskStatus & OS_TASK_STATUS_RUNNING) {  // 如果任务正在运行
+        return TRUE;  // 返回需要重新调度
     }
 
-    return needSched;
+    return needSched;  // 返回是否需要重新调度
 }
+
 
 STATIC UINT32 HPFSchedParamGet(const LosTaskCB *taskCB, SchedParam *param)
 {

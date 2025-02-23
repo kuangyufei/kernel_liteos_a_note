@@ -75,41 +75,60 @@ const STATIC SchedOps g_deadlineOps = {
     .priorityInheritance = EDFPriorityInheritance,
     .priorityRestore = EDFPriorityRestore,
 };
+/*
+主要功能说明：
 
+更新EDF调度任务的时间片状态
+计算任务实际运行时间
+处理任务超时情况
+调试模式下记录运行统计信息
+设置调度标志，触发重新调度
+代码执行流程： 获取调度参数 → 检查时间片状态 → 计算运行时间 → 更新任务状态 → 检查超时 → 设置调度标志 → 处理超时情况
+*/
 STATIC VOID EDFTimeSliceUpdate(SchedRunqueue *rq, LosTaskCB *taskCB, UINT64 currTime)
 {
-    SchedEDF *sched = (SchedEDF *)&taskCB->sp;
+    SchedEDF *sched = (SchedEDF *)&taskCB->sp;  // 获取任务的EDF调度参数
 
-    LOS_ASSERT(currTime >= taskCB->startTime);
+    LOS_ASSERT(currTime >= taskCB->startTime);  // 断言当前时间不小于任务开始时间
 
+    // 如果任务时间片已用完，直接返回
     if (taskCB->timeSlice <= 0) {
-        taskCB->irqUsedTime = 0;
+        taskCB->irqUsedTime = 0;  // 重置中断使用时间
         return;
     }
 
+    // 计算任务实际运行时间（当前时间 - 开始时间 - 中断时间）
     INT32 incTime = (currTime - taskCB->startTime - taskCB->irqUsedTime);
-    LOS_ASSERT(incTime >= 0);
+    LOS_ASSERT(incTime >= 0);  // 断言运行时间不小于0
 
 #ifdef LOSCFG_SCHED_EDF_DEBUG
+    // 调试模式下记录实际运行时间和总运行时间
     taskCB->schedStat.timeSliceRealTime += incTime;
     taskCB->schedStat.allRuntime += (currTime - taskCB->startTime);
 #endif
 
-    taskCB->timeSlice -= incTime;
-    taskCB->irqUsedTime = 0;
-    taskCB->startTime = currTime;
+    // 更新任务剩余时间片和状态
+    taskCB->timeSlice -= incTime;  // 扣除已用时间片
+    taskCB->irqUsedTime = 0;       // 重置中断使用时间
+    taskCB->startTime = currTime;  // 更新任务开始时间
 
+    // 如果任务未超时且还有剩余时间片，直接返回
     if ((sched->finishTime > currTime) && (taskCB->timeSlice > 0)) {
         return;
     }
 
+    // 设置调度标志，表示需要重新调度
     rq->schedFlag |= INT_PEND_RESCH;
+
+    // 如果任务已超时
     if (sched->finishTime <= currTime) {
 #ifdef LOSCFG_SCHED_EDF_DEBUG
+        // 调试模式下记录超时信息
         EDFDebugRecord((UINTPTR *)taskCB, sched->finishTime);
 #endif
 
-        taskCB->timeSlice = 0;
+        taskCB->timeSlice = 0;  // 清空剩余时间片
+        // 打印任务超时信息
         PrintExcInfo("EDF task %u is timeout, runTime: %d us period: %llu us\n", taskCB->taskID,
                      (INT32)OS_SYS_CYCLE_TO_US((UINT64)sched->runTime), OS_SYS_CYCLE_TO_US(sched->period));
     }
@@ -142,45 +161,58 @@ STATIC VOID DeadlineQueueInsert(EDFRunqueue *rq, LosTaskCB *taskCB)
 
     LOS_ListHeadInsert(list, &taskCB->pendList);
 }
+/*
+主要功能说明：
 
+将任务加入EDF调度队列
+处理任务时间片用完的情况
+计算并更新任务的周期信息
+将任务加入等待队列或就绪队列
+更新任务状态和调试信息
+代码执行流程： 检查任务状态 → 处理时间片用完 → 计算下一个周期 → 加入等待队列或就绪队列 → 更新任务状态
+*/
 STATIC VOID EDFEnqueue(SchedRunqueue *rq, LosTaskCB *taskCB)
 {
-    LOS_ASSERT(!(taskCB->taskStatus & OS_TASK_STATUS_READY));
+    LOS_ASSERT(!(taskCB->taskStatus & OS_TASK_STATUS_READY));  // 断言任务当前不处于就绪状态
 
-    EDFRunqueue *erq = rq->edfRunqueue;
-    SchedEDF *sched = (SchedEDF *)&taskCB->sp;
+    EDFRunqueue *erq = rq->edfRunqueue;  // 获取EDF运行队列
+    SchedEDF *sched = (SchedEDF *)&taskCB->sp;  // 获取任务的EDF调度参数
+
+    // 如果任务时间片已用完
     if (taskCB->timeSlice <= 0) {
 #ifdef LOSCFG_SCHED_EDF_DEBUG
-        UINT64 oldFinish = sched->finishTime;
+        UINT64 oldFinish = sched->finishTime;  // 调试模式下记录旧的完成时间
 #endif
-        UINT64 currTime = OsGetCurrSchedTimeCycle();
+        UINT64 currTime = OsGetCurrSchedTimeCycle();  // 获取当前调度时间
+
+        // 初始化或计算下一个周期的开始时间
         if (sched->flags == EDF_INIT) {
-            sched->finishTime = currTime;
+            sched->finishTime = currTime;  // 初始化完成时间为当前时间
         } else if (sched->flags != EDF_NEXT_PERIOD) {
-            /* The start time of the next period */
+            // 计算下一个周期的开始时间
             sched->finishTime = (sched->finishTime - sched->deadline) + sched->period;
         }
 
-        /* Calculate the start time of the next period */
+        // 计算下一个周期的开始时间，确保满足最小运行时间要求
         while (1) {
-            /* The deadline of the next period */
-            UINT64 finishTime = sched->finishTime + sched->deadline;
+            UINT64 finishTime = sched->finishTime + sched->deadline;  // 计算下一个周期的截止时间
+            // 如果当前周期已过或无法满足最小运行时间，迁移到下一个周期
             if ((finishTime <= currTime) || ((sched->finishTime + sched->runTime) > finishTime)) {
-                /* This period cannot meet the minimum running time, so it is migrated to the next period */
-                sched->finishTime += sched->period;
+                sched->finishTime += sched->period;  // 迁移到下一个周期
                 continue;
             }
             break;
         }
 
+        // 如果下一个周期还未开始，将任务加入等待队列
         if (sched->finishTime > currTime) {
-            /* Wait for the next period to start */
-            LOS_ListTailInsert(&erq->waitList, &taskCB->pendList);
-            taskCB->waitTime = OS_SCHED_MAX_RESPONSE_TIME;
+            LOS_ListTailInsert(&erq->waitList, &taskCB->pendList);  // 将任务插入等待队列
+            taskCB->waitTime = OS_SCHED_MAX_RESPONSE_TIME;  // 设置最大等待时间
             if (!OsTaskIsRunning(taskCB)) {
-                OsSchedTimeoutQueueAdd(taskCB, sched->finishTime);
+                OsSchedTimeoutQueueAdd(taskCB, sched->finishTime);  // 将任务加入超时队列
             }
 #ifdef LOSCFG_SCHED_EDF_DEBUG
+            // 调试模式下记录状态变化
             if (oldFinish != sched->finishTime) {
                 EDFDebugRecord((UINTPTR *)taskCB, oldFinish);
                 taskCB->schedStat.allRuntime = 0;
@@ -188,20 +220,23 @@ STATIC VOID EDFEnqueue(SchedRunqueue *rq, LosTaskCB *taskCB)
                 taskCB->schedStat.pendTime = 0;
             }
 #endif
-            taskCB->taskStatus |= OS_TASK_STATUS_PEND_TIME;
-            sched->flags = EDF_NEXT_PERIOD;
+            taskCB->taskStatus |= OS_TASK_STATUS_PEND_TIME;  // 设置任务状态为等待时间
+            sched->flags = EDF_NEXT_PERIOD;  // 设置标志为下一个周期
             return;
         }
 
-        sched->finishTime += sched->deadline;
-        taskCB->timeSlice = sched->runTime;
-        sched->flags = EDF_UNUSED;
+        // 更新任务的时间片和状态
+        sched->finishTime += sched->deadline;  // 更新完成时间
+        taskCB->timeSlice = sched->runTime;  // 重置时间片
+        sched->flags = EDF_UNUSED;  // 设置标志为未使用
     }
 
-    DeadlineQueueInsert(erq, taskCB);
-    taskCB->taskStatus &= ~(OS_TASK_STATUS_BLOCKED | OS_TASK_STATUS_TIMEOUT);
-    taskCB->taskStatus |= OS_TASK_STATUS_READY;
+    // 将任务插入就绪队列并更新状态
+    DeadlineQueueInsert(erq, taskCB);  // 将任务插入EDF就绪队列
+    taskCB->taskStatus &= ~(OS_TASK_STATUS_BLOCKED | OS_TASK_STATUS_TIMEOUT);  // 清除阻塞和超时状态
+    taskCB->taskStatus |= OS_TASK_STATUS_READY;  // 设置任务状态为就绪
 }
+
 
 STATIC VOID EDFDequeue(SchedRunqueue *rq, LosTaskCB *taskCB)
 {
@@ -223,17 +258,20 @@ STATIC VOID EDFExit(LosTaskCB *taskCB)
         taskCB->taskStatus &= ~(OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME);
     }
 }
-
+/*
+该函数用于实现EDF调度策略下的任务主动让出CPU
+通过将时间片置0并重新入队，使任务进入就绪状态
+最后触发重新调度，让调度器选择下一个要运行的任务
+*/
 STATIC VOID EDFYield(LosTaskCB *runTask)
 {
-    SchedRunqueue *rq = OsSchedRunqueue();
-    runTask->timeSlice = 0;
+    SchedRunqueue *rq = OsSchedRunqueue();  // 获取当前调度运行队列
+    runTask->timeSlice = 0;  // 将任务的时间片置为0，表示主动放弃CPU
 
-    runTask->startTime = OsGetCurrSchedTimeCycle();
-    EDFEnqueue(rq, runTask);
-    OsSchedResched();
+    runTask->startTime = OsGetCurrSchedTimeCycle();  // 更新任务开始时间为当前调度周期
+    EDFEnqueue(rq, runTask);  // 将任务重新加入EDF就绪队列
+    OsSchedResched();  // 触发重新调度
 }
-
 STATIC UINT32 EDFDelay(LosTaskCB *runTask, UINT64 waitTime)
 {
     runTask->taskStatus |= OS_TASK_STATUS_DELAY;

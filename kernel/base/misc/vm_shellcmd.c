@@ -135,51 +135,53 @@ LITE_OS_SEC_TEXT_MINOR VOID V2PPrintUsage(VOID)
     PRINTK("pid vaddr(0x1000000~0x3e000000),     print physical address of virtual address\n"
            "-h | --help,                     print v2p command usage\n");
 }
-///v2p 虚拟内存对应的物理内存
+// 将虚拟地址转换为物理地址
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdV2P(INT32 argc, const CHAR *argv[])
 {
     UINT32 vaddr;
     PADDR_T paddr;
     CHAR *endPtr = NULL;
 
-    if (argc == 0) {
+    if (argc == 0) {  // 如果没有参数，打印使用说明
         V2PPrintUsage();
-    } else if (argc == 1) {
-        if (strcmp(argv[0], "-h") == 0 || strcmp(argv[0], "--help") == 0) {
-            V2PPrintUsage();
+    } else if (argc == 1) {  // 如果只有一个参数
+        if (strcmp(argv[0], "-h") == 0 || strcmp(argv[0], "--help") == 0) {  // 如果是帮助参数
+            V2PPrintUsage();  // 打印使用说明
         }
-    } else if (argc == 2) {
-        pid_t pid = OsPid(argv[0]);
-        vaddr = strtoul((CHAR *)argv[1], &endPtr, 0);
-        if ((endPtr == NULL) || (*endPtr != 0) || !LOS_IsUserAddress(vaddr)) {
+    } else if (argc == 2) {  // 如果有两个参数
+        pid_t pid = OsPid(argv[0]);  // 获取进程ID
+        vaddr = strtoul((CHAR *)argv[1], &endPtr, 0);  // 将虚拟地址字符串转换为无符号长整型
+        if ((endPtr == NULL) || (*endPtr != 0) || !LOS_IsUserAddress(vaddr)) {  // 检查虚拟地址是否有效
             PRINTK("vaddr %s invalid. should be in range(0x1000000~0x3e000000) \n", argv[1]);
             return OS_ERROR;
         } else {
-            if (pid >= 0) {
-                if (pid < g_processMaxNum) {
-                    LosProcessCB *processCB = OS_PCB_FROM_PID(pid);
-                    if (!OsProcessIsUnused(processCB)) {
+            if (pid >= 0) {  // 如果进程ID有效
+                if (pid < g_processMaxNum) {  // 检查进程ID是否在有效范围内
+                    LosProcessCB *processCB = OS_PCB_FROM_PID(pid);  // 获取进程控制块
+                    if (!OsProcessIsUnused(processCB)) {  // 检查进程是否处于活动状态
                         paddr = 0;
+                        // 查询虚拟地址对应的物理地址
                         LOS_ArchMmuQuery(&processCB->vmSpace->archMmu, (VADDR_T)vaddr, &paddr, 0);
-                        if (paddr == 0) {
+                        if (paddr == 0) {  // 如果物理地址为0，表示未映射
                             PRINTK("vaddr %#x is not in range or mapped\n", vaddr);
-                        } else {
+                        } else {  // 打印虚拟地址和物理地址
                             PRINTK("vaddr %#x is paddr %#x\n", vaddr, paddr);
                         }
-                    } else {
+                    } else {  // 进程不活动
                         PRINTK("\tThe process [%d] not active\n", pid);
                     }
-                } else {
+                } else {  // 进程ID无效
                     PRINTK("\tThe process [%d] not valid\n", pid);
                 }
-            } else {
+            } else {  // 进程ID无效
                 PRINTK("%s: invalid option: %s %s\n", VMM_PMM_CMD, argv[0], argv[1]);
             }
         }
     }
 
-    return LOS_OK;
+    return LOS_OK;  // 返回成功
 }
+
 ///查看系统内存物理页及pagecache物理页使用情况 ,             Debug版本才具备的命令 # pmm
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpPmm(VOID)
 {

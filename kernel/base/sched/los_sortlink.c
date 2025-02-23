@@ -100,21 +100,31 @@ VOID OsDeleteFromSortLink(SortLinkAttribute *head, SortLinkList *node)
     }
     LOS_SpinUnlock(&head->spinLock);
 }
-
+/*
+主要功能说明：
+线程安全的节点时间调整操作（通过自旋锁保护）
+先删除节点，再重新插入以保持链表有序
+返回操作结果，便于调用者判断是否成功
+代码执行流程： 初始化返回值 → 加锁 → 检查节点有效性 → 删除节点 → 设置新时间 → 重新插入 → 设置成功标志 → 解锁 → 返回结果
+*/
 UINT32 OsSortLinkAdjustNodeResponseTime(SortLinkAttribute *head, SortLinkList *node, UINT64 responseTime)
 {
-    UINT32 ret = LOS_NOK;
+    UINT32 ret = LOS_NOK;  // 初始化返回值为失败
 
-    LOS_SpinLock(&head->spinLock);
+    LOS_SpinLock(&head->spinLock);  // 获取排序链表自旋锁，保证原子操作
+    
+    // 检查节点是否有效（responseTime不为无效值）
     if (node->responseTime != OS_SORT_LINK_INVALID_TIME) {
-        OsDeleteNodeSortLink(head, node);
-        SET_SORTLIST_VALUE(node, responseTime);
-        AddNode2SortLink(head, node);
-        ret = LOS_OK;
+        OsDeleteNodeSortLink(head, node);  // 从链表中删除该节点
+        SET_SORTLIST_VALUE(node, responseTime);  // 设置节点的新响应时间
+        AddNode2SortLink(head, node);  // 将节点重新插入链表，保持时间顺序
+        ret = LOS_OK;  // 操作成功，设置返回值为成功
     }
-    LOS_SpinUnlock(&head->spinLock);
-    return ret;
+    
+    LOS_SpinUnlock(&head->spinLock);  // 释放自旋锁
+    return ret;  // 返回操作结果
 }
+
 
 UINT64 OsSortLinkGetTargetExpireTime(UINT64 currTime, const SortLinkList *targetSortList)
 {
@@ -127,13 +137,15 @@ UINT64 OsSortLinkGetTargetExpireTime(UINT64 currTime, const SortLinkList *target
 
 UINT64 OsSortLinkGetNextExpireTime(UINT64 currTime, const SortLinkAttribute *sortLinkHeader)
 {
-    LOS_DL_LIST *head = (LOS_DL_LIST *)&sortLinkHeader->sortLink;
-
-    if (LOS_ListEmpty(head)) {
-        return OS_SORT_LINK_INVALID_TIME;
+    LOS_DL_LIST *head = (LOS_DL_LIST *)&sortLinkHeader->sortLink;  // 获取排序链表的头节点
+    if (LOS_ListEmpty(head)) {  // 如果链表为空
+        return OS_SORT_LINK_INVALID_TIME;  // 返回无效时间值
     }
-
+    
+    // 获取链表中第一个节点（最早到期的任务）
     SortLinkList *listSorted = LOS_DL_LIST_ENTRY(head->pstNext, SortLinkList, sortLinkNode);
+    
+    // 计算并返回该任务的剩余到期时间
     return OsSortLinkGetTargetExpireTime(currTime, listSorted);
 }
 

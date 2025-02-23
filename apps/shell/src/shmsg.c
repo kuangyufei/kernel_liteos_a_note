@@ -406,57 +406,67 @@ int CheckExit(const char *cmdName, const CmdParsed *cmdParsed)
     exit(ret);
 }
 
+// 执行命令
 static void DoCmdExec(const char *cmdName, const char *cmdline, unsigned int len, CmdParsed *cmdParsed)
 {
-    bool foreground = FALSE;
+    bool foreground = FALSE;  // 是否在前台运行的标志
     int ret;
-    pid_t forkPid;
+    pid_t forkPid;  // 子进程ID
 
+    // 检查是否是 exec 命令
     if (strncmp(cmdline, CMD_EXEC_COMMAND, CMD_EXEC_COMMAND_BYTES) == 0) {
+        // 检查是否有后台运行标志 "&"
         if ((cmdParsed->paramCnt > 1) && (strcmp(cmdParsed->paramArray[cmdParsed->paramCnt - 1], "&") == 0)) {
-            free(cmdParsed->paramArray[cmdParsed->paramCnt - 1]);
-            cmdParsed->paramArray[cmdParsed->paramCnt - 1] = NULL;
-            cmdParsed->paramCnt--;
-            foreground = TRUE;
+            free(cmdParsed->paramArray[cmdParsed->paramCnt - 1]);  // 释放参数内存
+            cmdParsed->paramArray[cmdParsed->paramCnt - 1] = NULL;  // 置空参数
+            cmdParsed->paramCnt--;  // 参数数量减一
+            foreground = TRUE;  // 设置为后台运行
         }
 
+        // 创建子进程
         forkPid = fork();
-        if (forkPid < 0) {
+        if (forkPid < 0) {  // 创建失败
             printf("Failed to fork from shell\n");
             return;
-        } else if (forkPid == 0) {
-            ChildExec(cmdParsed->paramArray[0], cmdParsed->paramArray, foreground);
-        } else {
-            if (!foreground) {
-                (void)waitpid(forkPid, 0, 0);
+        } else if (forkPid == 0) {  // 子进程
+            ChildExec(cmdParsed->paramArray[0], cmdParsed->paramArray, foreground);  // 执行命令
+        } else {  // 父进程
+            if (!foreground) {  // 如果是前台运行
+                (void)waitpid(forkPid, 0, 0);  // 等待子进程结束
             }
+            // 恢复终端控制权
             ret = tcsetpgrp(STDIN_FILENO, getpid());
             if (ret != 0) {
                 printf("tcsetpgrp failed, errno %d\n", errno);
             }
         }
-    } else {
-        if (CheckExit(cmdName, cmdParsed) < 0) {
+    } else {  // 不是 exec 命令
+        if (CheckExit(cmdName, cmdParsed) < 0) {  // 检查是否是 exit 命令
             return;
         }
+        // 通过系统调用执行命令
         (void)syscall(__NR_shellexec, cmdName, cmdline);
     }
 }
 
+
+// 解析并执行命令行
 static void ParseAndExecCmdline(CmdParsed *cmdParsed, const char *cmdline, unsigned int len)
 {
     int i;
     unsigned int ret;
-    char shellWorkingDirectory[PATH_MAX + 1] = { 0 };
-    char *cmdlineOrigin = NULL;
-    char *cmdName = NULL;
+    char shellWorkingDirectory[PATH_MAX + 1] = { 0 };  // 存储当前工作目录
+    char *cmdlineOrigin = NULL;  // 原始命令行字符串
+    char *cmdName = NULL;  // 命令名称
 
+    // 复制命令行字符串
     cmdlineOrigin = strdup(cmdline);
     if (cmdlineOrigin == NULL) {
         printf("malloc failure in %s[%d]\n", __FUNCTION__, __LINE__);
         return;
     }
 
+    // 获取命令名称
     cmdName = GetCmdName(cmdline, len);
     if (cmdName == NULL) {
         free(cmdlineOrigin);
@@ -464,28 +474,34 @@ static void ParseAndExecCmdline(CmdParsed *cmdParsed, const char *cmdline, unsig
         return;
     }
 
+    // 解析命令行参数
     ret = OsCmdParse((char *)cmdline, cmdParsed);
     if (ret != SH_OK) {
         printf("cmd parse failure in %s[%d]\n", __FUNCTION__, __LINE__);
-        goto OUT;
+        goto OUT;  // 解析失败跳转到清理代码
     }
 
+    // 执行命令
     DoCmdExec(cmdName, cmdlineOrigin, len, cmdParsed);
 
+    // 获取并设置当前工作目录
     if (getcwd(shellWorkingDirectory, PATH_MAX) != NULL) {
         (void)OsShellSetWorkingDirectory(shellWorkingDirectory, (PATH_MAX + 1));
     }
 
-OUT:
+OUT:  // 清理代码
+    // 释放参数数组内存
     for (i = 0; i < cmdParsed->paramCnt; i++) {
         if (cmdParsed->paramArray[i] != NULL) {
             free(cmdParsed->paramArray[i]);
             cmdParsed->paramArray[i] = NULL;
         }
     }
+    // 释放命令名称和原始命令行字符串内存
     free(cmdName);
     free(cmdlineOrigin);
 }
+
 
 unsigned int PreHandleCmdline(const char *input, char **output, unsigned int *outputlen)
 {

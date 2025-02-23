@@ -61,25 +61,30 @@ static int QuickstartNotify(unsigned int events)
 }
 
 #define WAITLIMIT    300000 /* 5min = 5*60*1000*1tick(1ms) */
-
+// 监听事件
 static int QuickstartListen(unsigned long arg)
 {
     QuickstartListenArgs args;
+    // 从用户空间拷贝参数
     if (copy_from_user(&args, (QuickstartListenArgs __user *)arg, sizeof(QuickstartListenArgs)) != LOS_OK) {
         PRINT_ERR("%s,%d,failed!\n", __FUNCTION__, __LINE__);
-        return -EINVAL;
+        return -EINVAL;  // 拷贝失败返回错误
     }
+    // 检查等待时间是否超过最大限制
     if (args.wait > WAITLIMIT) {
-        args.wait = WAITLIMIT;
+        args.wait = WAITLIMIT;  // 超过限制则设置为最大等待时间
         PRINT_ERR("%s wait arg is too longer, set to WAITLIMIT!\n", __FUNCTION__);
     }
+    // 读取事件
     int ret = LOS_EventRead((PEVENT_CB_S)&g_qsEvent, args.events, LOS_WAITMODE_AND | LOS_WAITMODE_CLR, args.wait);
+    // 检查读取结果
     if (ret != args.events && ret != 0) {  /* 0: nowait is normal case */
         PRINT_ERR("%s,%d:0x%x\n", __FUNCTION__, __LINE__, ret);
-        ret = -EINVAL;
+        ret = -EINVAL;  // 读取失败返回错误
     }
-    return ret;
+    return ret;  // 返回读取结果
 }
+
 
 void QuickstartHookRegister(LosSysteminitHook hooks)
 {
