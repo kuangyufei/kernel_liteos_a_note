@@ -171,7 +171,6 @@ INT32 CmdLog(INT32 argc, const CHAR **argv)
             PRINTK("not support yet\n");
         }
     } else if (!strncmp(argv[0], "path", strlen(argv[0]) + 1)) {
-        OsLkLogFileSet(argv[1]);
         PRINTK("not support yet\n");
     } else {
         PRINTK("Usage: log level <num>\n");

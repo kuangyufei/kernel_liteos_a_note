@@ -322,8 +322,9 @@ out:
 static ssize_t HiLogWrite(struct file *filep, const char *buffer, size_t bufLen)
 {
     (void)filep;
-    if (bufLen + sizeof(struct HiLogEntry) > HILOG_BUFFER) {
-        PRINTK("input too large\n");
+    size_t totalBufLen = bufLen + sizeof(struct HiLogEntry);
+    if ((totalBufLen < bufLen) || (totalBufLen > HILOG_BUFFER)) {
+        PRINTK("input bufLen %lld too large\n", bufLen);
         return -ENOMEM;
     }
 

@@ -49,7 +49,7 @@ STATIC UINT32 g_curIrqNum = 0;
  */
 STATIC VOID GicWriteSgi(UINT32 vector, UINT32 cpuMask, UINT32 filter)
 {
-    UINT32 val = ((filter & 0x3) << 24) | ((cpuMask & 0xFF) << 16) |
+    UINT32 val = ((filter & 0x3) << 24) | ((cpuMask & 0xFF) << 16) | /* 24, 16: Register bit offset */
                  (vector & 0xF);
 
     GIC_REG_32(GICD_SGIR) = val;
@@ -62,7 +62,7 @@ VOID HalIrqSendIpi(UINT32 target, UINT32 ipi)
 
 VOID HalIrqSetAffinity(UINT32 vector, UINT32 cpuMask)
 {
-    UINT32 offset = vector / 4;
+    UINT32 offset = vector / 4; /* 4: Interrupt bit width */
     UINT32 index = vector & 0x3;
 
     GIC_REG_8(GICD_ITARGETSR(offset) + index) = cpuMask;
@@ -80,7 +80,7 @@ VOID HalIrqMask(UINT32 vector)
         return;
     }
 
-    GIC_REG_32(GICD_ICENABLER(vector / 32)) = 1U << (vector % 32);
+    GIC_REG_32(GICD_ICENABLER(vector / 32)) = 1U << (vector % 32); /* 32: Interrupt bit width */
 }
 /// 撤销中断屏蔽
 VOID HalIrqUnmask(UINT32 vector)
@@ -89,7 +89,7 @@ VOID HalIrqUnmask(UINT32 vector)
         return;
     }
 
-    GIC_REG_32(GICD_ISENABLER(vector >> 5)) = 1U << (vector % 32);
+    GIC_REG_32(GICD_ISENABLER(vector >> 5)) = 1U << (vector % 32); /* 5, 32: Register bit offset */
 }
 
 VOID HalIrqPending(UINT32 vector)
@@ -98,7 +98,7 @@ VOID HalIrqPending(UINT32 vector)
         return;
     }
 
-    GIC_REG_32(GICD_ISPENDR(vector >> 5)) = 1U << (vector % 32);
+    GIC_REG_32(GICD_ISPENDR(vector >> 5)) = 1U << (vector % 32); /* 5, 32: Register bit offset */
 }
 
 VOID HalIrqClear(UINT32 vector)
@@ -120,23 +120,23 @@ VOID HalIrqInit(VOID)
     UINT32 i;
 
     /* set externel interrupts to be level triggered, active low. | 设置外部中断为电平触发，低电平有效。*/
-    for (i = 32; i < OS_HWI_MAX_NUM; i += 16) {
-        GIC_REG_32(GICD_ICFGR(i / 16)) = 0;
+    for (i = 32; i < OS_HWI_MAX_NUM; i += 16) { /* 32: Start interrupt number, 16: Interrupt bit width */
+        GIC_REG_32(GICD_ICFGR(i / 16)) = 0; /* 16: Register bit offset */
     }
 
     /* set externel interrupts to CPU 0 | 将外部中断设置为 CPU 0*/
-    for (i = 32; i < OS_HWI_MAX_NUM; i += 4) {
+    for (i = 32; i < OS_HWI_MAX_NUM; i += 4) { /* 32: Start interrupt number, 4: Interrupt bit width */
         GIC_REG_32(GICD_ITARGETSR(i / 4)) = 0x01010101;
     }
 
     /* set priority on all interrupts | 设置所有中断的优先级*/
-    for (i = 0; i < OS_HWI_MAX_NUM; i += 4) {
+    for (i = 0; i < OS_HWI_MAX_NUM; i += 4) { /* 4: Interrupt bit width */
         GIC_REG_32(GICD_IPRIORITYR(i / 4)) = GICD_INT_DEF_PRI_X4;
     }
 
     /* disable all interrupts. | 禁止所有中断*/
-    for (i = 0; i < OS_HWI_MAX_NUM; i += 32) {
-        GIC_REG_32(GICD_ICENABLER(i / 32)) = ~0;
+    for (i = 0; i < OS_HWI_MAX_NUM; i += 32) { /* 32: Interrupt bit width */
+        GIC_REG_32(GICD_ICENABLER(i / 32)) = ~0; /* 32: Interrupt bit width */
     }
 
     HalIrqInitPercpu();//启动和CPU之间关系
@@ -172,7 +172,7 @@ VOID HalIrqHandler(VOID)
 
     OsInterrupt(vector);
 
-    /* use orignal iar to do the EOI */
+    /* use original iar to do the EOI */
     GIC_REG_32(GICC_EOIR) = iar;
 }
 

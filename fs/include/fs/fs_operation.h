@@ -98,7 +98,7 @@ extern char *rindex(const char *s, int c);
  * @ingroup fs
  *
  * @par Description:
- * The set_label() function shall set the value of a global varible,
+ * The set_label() function shall set the value of a global variable,
  * the value will be used to set the label of SD card in format().
  *
  * @param name  [IN] label to set, the length must be less than 12
@@ -244,8 +244,9 @@ extern int chattr(const char *pathname, struct IATTR *attr);
  *
  * @retval #0  On success.
  * @retval #-1 On failure with errno set.
- * @retval CONTINE_NUTTX_FCNTL doesn't support some cmds in VfsFcntl, needs to continue going through Nuttx vfs operation.</li>
- *
+ * @retval CONTINE_NUTTX_FCNTL doesn't support some cmds in VfsFcntl, needs to continue going through 
+ * Nuttx vfs operation.</li>
+ *     
  * @par Dependency:
  * <ul><li>fs.h</li></ul>
  * @see None

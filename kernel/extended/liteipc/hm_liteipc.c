@@ -274,7 +274,7 @@ LITE_OS_SEC_TEXT STATIC int LiteIpcMmap(struct file *filep, LosVmMapRegion *regi
     }
     if (ipcInfo->pool.uvaddr != NULL) {//ipc池已在进程空间有地址
         regionTemp = LOS_RegionFind(pcb->vmSpace, (VADDR_T)(UINTPTR)ipcInfo->pool.uvaddr);//在指定进程空间中找到所在线性区
-        if (regionTemp != NULL) {
+        if ((regionTemp != NULL) && (regionTemp != region)) {
             (VOID)LOS_RegionFree(pcb->vmSpace, regionTemp);//先释放线性区
         }
 		// 建议加上 ipcInfo->pool.uvaddr = NULL; 同下
@@ -301,6 +301,7 @@ LITE_OS_SEC_TEXT STATIC int LiteIpcMmap(struct file *filep, LosVmMapRegion *regi
         goto ERROR_MAP_OUT;
     }
     ipcInfo->pool.poolSize = region->range.size;//ipc池大小为线性区大小
+    region->regionFlags |= VM_MAP_REGION_FLAG_LITEIPC;
     return 0;
 ERROR_MAP_OUT:
     LOS_VFree(ipcInfo->pool.kvaddr);

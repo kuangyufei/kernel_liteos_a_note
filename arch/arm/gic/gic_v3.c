@@ -42,9 +42,9 @@ STATIC UINT32 g_curIrqNum = 0;
 
 STATIC INLINE UINT64 MpidrToAffinity(UINT64 mpidr)
 {
-    return ((MPIDR_AFF_LEVEL(mpidr, 3) << 32) |
-            (MPIDR_AFF_LEVEL(mpidr, 2) << 16) |
-            (MPIDR_AFF_LEVEL(mpidr, 1) << 8)  |
+    return ((MPIDR_AFF_LEVEL(mpidr, 3) << 32) | /* 3: Serial number, 32: Register bit offset */
+            (MPIDR_AFF_LEVEL(mpidr, 2) << 16) | /* 2: Serial number, 16: Register bit offset */
+            (MPIDR_AFF_LEVEL(mpidr, 1) << 8)  | /* 1: Serial number, 8: Register bit offset */
             (MPIDR_AFF_LEVEL(mpidr, 0)));
 }
 
@@ -106,10 +106,10 @@ STATIC VOID GicSgi(UINT32 irq, UINT32 cpuMask)
             tList = GicTargetList(&cpu, cpuMask, cluster);
 
             /* Generates a Group 1 interrupt for the current security state */
-            val = ((MPIDR_AFF_LEVEL(cluster, 3) << 48) |
-                   (MPIDR_AFF_LEVEL(cluster, 2) << 32) |
-                   (MPIDR_AFF_LEVEL(cluster, 1) << 16) |
-                   (irq << 24) | tList);
+            val = ((MPIDR_AFF_LEVEL(cluster, 3) << 48) | /* 3: Serial number, 48: Register bit offset */
+                   (MPIDR_AFF_LEVEL(cluster, 2) << 32) | /* 2: Serial number, 32: Register bit offset */
+                   (MPIDR_AFF_LEVEL(cluster, 1) << 16) | /* 1: Serial number, 16: Register bit offset */
+                   (irq << 24) | tList); /* 24: Register bit offset */
 
             GiccSetSgi1r(val);
         }
@@ -150,9 +150,9 @@ STATIC INLINE VOID GicdSetGroup(UINT32 irq)
 {
     /* configure spi as group 0 on secure mode and group 1 on unsecure mode */
 #ifdef LOSCFG_ARCH_SECURE_MONITOR_MODE
-    GIC_REG_32(GICD_IGROUPR(irq / 32)) = 0;
+    GIC_REG_32(GICD_IGROUPR(irq / 32)) = 0; /* 32: Interrupt bit width */
 #else
-    GIC_REG_32(GICD_IGROUPR(irq / 32)) = 0xffffffff;
+    GIC_REG_32(GICD_IGROUPR(irq / 32)) = 0xffffffff; /* 32: Interrupt bit width */
 #endif
 }
 
@@ -248,13 +248,13 @@ UINT32 HalCurIrqGet(VOID)
 VOID HalIrqMask(UINT32 vector)
 {
     INT32 i;
-    const UINT32 mask = 1U << (vector % 32);
+    const UINT32 mask = 1U << (vector % 32); /* 32: Interrupt bit width */
 
     if ((vector > OS_USER_HWI_MAX) || (vector < OS_USER_HWI_MIN)) {
         return;
     }
 
-    if (vector < 32) {
+    if (vector < 32) { /* 32: Interrupt bit width */
         for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
             GIC_REG_32(GICR_ICENABLER0(i)) = mask;
             GicWaitForRwp(GICR_CTLR(i));
@@ -268,19 +268,19 @@ VOID HalIrqMask(UINT32 vector)
 VOID HalIrqUnmask(UINT32 vector)
 {
     INT32 i;
-    const UINT32 mask = 1U << (vector % 32);
+    const UINT32 mask = 1U << (vector % 32); /* 32: Interrupt bit width */
 
     if ((vector > OS_USER_HWI_MAX) || (vector < OS_USER_HWI_MIN)) {
         return;
     }
 
-    if (vector < 32) {
+    if (vector < 32) { /* 32: Interrupt bit width */
         for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
             GIC_REG_32(GICR_ISENABLER0(i)) = mask;
             GicWaitForRwp(GICR_CTLR(i));
         }
     } else {
-        GIC_REG_32(GICD_ISENABLER(vector >> 5)) = mask;
+        GIC_REG_32(GICD_ISENABLER(vector >> 5)) = mask; /* 5: Register bit offset */
         GicWaitForRwp(GICD_CTLR);
     }
 }
@@ -291,7 +291,7 @@ VOID HalIrqPending(UINT32 vector)
         return;
     }
 
-    GIC_REG_32(GICD_ISPENDR(vector >> 5)) = 1U << (vector % 32);
+    GIC_REG_32(GICD_ISPENDR(vector >> 5)) = 1U << (vector % 32); /* 5: Register bit offset, 32: Interrupt bit width */
 }
 
 VOID HalIrqClear(UINT32 vector)
@@ -362,30 +362,30 @@ VOID HalIrqInit(VOID)
     GicWaitForRwp(GICD_CTLR);
     ISB;
 
-    /* set externel interrupts to be level triggered, active low. */
-    for (i = 32; i < OS_HWI_MAX_NUM; i += 16) {
+    /* set external interrupts to be level triggered, active low. */
+    for (i = 32; i < OS_HWI_MAX_NUM; i += 16) { /* 32: Start interrupt number, 16: Interrupt bit width */
         GIC_REG_32(GICD_ICFGR(i / 16)) = 0;
     }
 
     /* config distributer, mask and clear all spis, set group x */
-    for (i = 32; i < OS_HWI_MAX_NUM; i += 32) {
-        GIC_REG_32(GICD_ICENABLER(i / 32)) = 0xffffffff;
-        GIC_REG_32(GICD_ICPENDR(i / 32)) = 0xffffffff;
-        GIC_REG_32(GICD_IGRPMODR(i / 32)) = 0;
+    for (i = 32; i < OS_HWI_MAX_NUM; i += 32) { /* 32: Start interrupt number, 32: Interrupt bit width */
+        GIC_REG_32(GICD_ICENABLER(i / 32)) = 0xffffffff; /* 32: Interrupt bit width */
+        GIC_REG_32(GICD_ICPENDR(i / 32)) = 0xffffffff; /* 32: Interrupt bit width */
+        GIC_REG_32(GICD_IGRPMODR(i / 32)) = 0; /* 32: Interrupt bit width */
 
         GicdSetGroup(i);
     }
 
     /* set spi priority as default */
-    for (i = 32; i < OS_HWI_MAX_NUM; i++) {
+    for (i = 32; i < OS_HWI_MAX_NUM; i++) { /* 32: Start interrupt number */
         GicdSetPmr(i, MIN_INTERRUPT_PRIORITY);
     }
 
     GicWaitForRwp(GICD_CTLR);
 
     /* disable all interrupts. */
-    for (i = 0; i < OS_HWI_MAX_NUM; i += 32) {
-        GIC_REG_32(GICD_ICENABLER(i / 32)) = 0xffffffff;
+    for (i = 0; i < OS_HWI_MAX_NUM; i += 32) { /* 32: Interrupt bit width */
+        GIC_REG_32(GICD_ICENABLER(i / 32)) = 0xffffffff; /* 32: Interrupt bit width */
     }
 
     /* enable distributor with ARE, group 1 enabled */
@@ -393,7 +393,7 @@ VOID HalIrqInit(VOID)
 
     /* set spi to boot cpu only. ARE must be enabled */
     affinity = MpidrToAffinity(AARCH64_SYSREG_READ(mpidr_el1));
-    for (i = 32; i < OS_HWI_MAX_NUM; i++) {
+    for (i = 32; i < OS_HWI_MAX_NUM; i++) { /* 32: Start interrupt number */
         GIC_REG_64(GICD_IROUTER(i)) = affinity;
     }
 

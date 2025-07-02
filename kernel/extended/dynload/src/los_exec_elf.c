@@ -128,6 +128,7 @@ STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *
 {
     UINT32 strLen;
     errno_t err;
+    static UINT32 userFirstInitFlag = 0;
 
     if (LOS_IsUserAddress((VADDR_T)(UINTPTR)fileName)) {//在用户空间
         err = LOS_StrncpyFromUser(kfileName, fileName, PATH_MAX + 1);//拷贝至内核空间
@@ -137,7 +138,12 @@ STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *
             PRINT_ERR("%s[%d], filename len exceeds maxlen: %d\n", __FUNCTION__, __LINE__, PATH_MAX);
             return -ENAMETOOLONG;
         }
-    } else if (LOS_IsKernelAddress((VADDR_T)(UINTPTR)fileName)) {//已经在内核空间
+    } else if (LOS_IsKernelAddress((VADDR_T)(UINTPTR)fileName) && (userFirstInitFlag == 0)) {
+        /**
+         * the first user process is created by the function OsUserInit->execve(/bin/init) in the kernel space
+         * after the first user process is created, this branch should not enter again
+         */
+        userFirstInitFlag = 1;
         strLen = strlen(fileName);
         err = memcpy_s(kfileName, PATH_MAX, fileName, strLen);//拷贝至内核空间
         if (err != EOK) {

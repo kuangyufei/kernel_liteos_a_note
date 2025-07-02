@@ -1034,23 +1034,25 @@ static int GetGroups(int size, int list[])
 
     SCHEDULER_LOCK(intSave);
     groupCount = OsCurrUserGet()->groupNumber;
-    SCHEDULER_UNLOCK(intSave);
 
     listSize = groupCount * sizeof(int);
     if (size == 0) {
+        SCHEDULER_UNLOCK(intSave);
         return groupCount;
     } else if (list == NULL) {
+        SCHEDULER_UNLOCK(intSave);
         return -EFAULT;
     } else if (size < groupCount) {
+        SCHEDULER_UNLOCK(intSave);
         return -EINVAL;
     }
 
     safeList = LOS_MemAlloc(m_aucSysMem1, listSize);
     if (safeList == NULL) {
+        SCHEDULER_UNLOCK(intSave);
         return -ENOMEM;
     }
 
-    SCHEDULER_LOCK(intSave);
     (void)memcpy_s(safeList, listSize, &OsCurrProcessGet()->user->groups[0], listSize);
     SCHEDULER_UNLOCK(intSave);
 

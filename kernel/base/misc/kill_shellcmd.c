@@ -90,7 +90,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdKill(INT32 argc, const CHAR **argv)
             goto ERROR;
         }
 
-        ret = OsKill(pidNo, abs(sigNo), OS_USER_KILL_PERMISSION);
+        ret = OsKillLock(pidNo, abs(sigNo));
         HILOG_INFO(LOG_CORE, "Send signal(%d) to pidNo = %d!\n", abs(sigNo), pidNo);
         if (ret == -1) {
             HILOG_ERROR(LOG_CORE, "Kill fail ret = %d! Operation not permitted\n", ret);

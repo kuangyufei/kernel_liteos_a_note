@@ -225,7 +225,6 @@ static char *vfs_normalize_fullpath(const char *directory, const char *filename,
         /* it's a absolute path, use it directly */
 
         fullpath = strdup(filename); /* copy string */
-
         if (fullpath == NULL) {
             *pathname = NULL;
             set_errno(ENOMEM);
@@ -305,7 +304,7 @@ int vfs_normalize_path(const char *directory, const char *filename, char **pathn
 
 int vfs_normalize_pathat(int dirfd, const char *filename, char **pathname)
 {
-    /* Get path by dirfd*/
+    /* Get path by dirfd */
     char *relativeoldpath = NULL;
     char *fullpath = NULL;
     int ret = 0;

@@ -91,8 +91,8 @@ int OsShellCmdWriteProc(int argc, char **argv)
     const char *rootProcDir = "/proc/";
 
     if (argc == WRITEPROC_ARGC) {//argv[0] = ">>"
-        value = argv[0];//test
-        path = argv[2];///proc/uptime
+        value = argv[0];
+        path = argv[2]; // 2: index of path
         len = strlen(value) + 1;  /* +1:add the \0 */
         if (strncmp(argv[1], ">>", strlen(">>")) == 0) { //  第二个参数必须得是 >>
             if ((realpath(path, realPath) == NULL) || (strncmp(realPath, rootProcDir, strlen(rootProcDir)) != 0)) {

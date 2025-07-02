@@ -40,7 +40,7 @@
  */
 
 void *calloc(size_t nitems, size_t size)
-{ /*lint !e578*/
+{
     size_t real_size;
     void *ptr = NULL;
 
@@ -89,7 +89,7 @@ void *malloc(size_t size)
 /// 分配请求的内存并返回指向它的指针。 请求的大小是 size 字节。 内存值是0。
 /// 原来 zalloc的含义是 zero malloc  
 void *zalloc(size_t size)
-{ /*lint !e10*/
+{
     void *ptr = NULL;
 
     if (size == 0) {

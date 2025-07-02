@@ -850,6 +850,7 @@ int timer_create(clockid_t clockID, struct sigevent *restrict evp, timer_t *rest
 
 int OsTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID)
 {
+    UINT32 intSave;
     UINT32 ret;
     UINT16 swtmrID;
     swtmr_proc_arg *arg = NULL;
@@ -858,23 +859,20 @@ int OsTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID)
     UINT16 vid;
 #endif
 
-    if ((clockID != CLOCK_REALTIME) || (timerID == NULL)) {
+    signo = evp ? evp->sigev_signo : SIGALRM;
+    if ((clockID != CLOCK_REALTIME) || (timerID == NULL) || (signo > SIGRTMAX) || (signo < 1)) {
         errno = EINVAL;
         return -1;
     }
 
-    signo = evp ? evp->sigev_signo : SIGALRM;
-    if (signo > SIGRTMAX || signo < 1) {
-        errno = EINVAL;
-        return -1;
-    }
     if (evp && (evp->sigev_notify != SIGEV_SIGNAL && evp->sigev_notify != SIGEV_THREAD_ID)) {
         errno = ENOTSUP;
         return -1;
     }
 
-    arg = (swtmr_proc_arg *)malloc(sizeof(swtmr_proc_arg));
-    if (arg == NULL) {
+    LOS_SpinLockSave(&g_timeSpin, &intSave);
+    if ((arg = (swtmr_proc_arg *)malloc(sizeof(swtmr_proc_arg))) == NULL) {
+        LOS_SpinUnlockRestore(&g_timeSpin, intSave);
         errno = ENOMEM;
         return -1;
     }
@@ -883,29 +881,31 @@ int OsTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID)
     arg->sigev_signo = signo;
     arg->pid = LOS_GetCurrProcessID();
     arg->sigev_value.sival_ptr = evp ? evp->sigev_value.sival_ptr : NULL;
-    ret = LOS_SwtmrCreate(1, LOS_SWTMR_MODE_ONCE, SwtmrProc, &swtmrID, (UINTPTR)arg);
-    if (ret != LOS_OK) {
+    if ((ret = LOS_SwtmrCreate(1, LOS_SWTMR_MODE_ONCE, SwtmrProc, &swtmrID, (UINTPTR)arg)) != LOS_OK) {
         errno = (ret == LOS_ERRNO_SWTMR_MAXSIZE) ? EAGAIN : EINVAL;
         free(arg);
+        LOS_SpinUnlockRestore(&g_timeSpin, intSave);
         return -1;
     }
 
 #ifdef LOSCFG_SECURITY_VID
-    vid = AddNodeByRid(swtmrID);
-    if (vid == MAX_INVALID_TIMER_VID) {
+    if ((vid = AddNodeByRid(swtmrID)) == MAX_INVALID_TIMER_VID) {
         free(arg);
         (VOID)LOS_SwtmrDelete(swtmrID);
+        LOS_SpinUnlockRestore(&g_timeSpin, intSave);
         return -1;
     }
     swtmrID = vid;
 #endif
     *timerID = (timer_t)(UINTPTR)swtmrID;
+    LOS_SpinUnlockRestore(&g_timeSpin, intSave);
     return 0;
 }
 
 int timer_delete(timer_t timerID)
 {
     UINT16 swtmrID = (UINT16)(UINTPTR)timerID;
+    UINT32 intSave;
     VOID *arg = NULL;
     UINTPTR swtmrProc;
 
@@ -916,14 +916,17 @@ int timer_delete(timer_t timerID)
         goto ERROUT;
     }
 
+    LOS_SpinLockSave(&g_timeSpin, &intSave);
     arg = (VOID *)OS_SWT_FROM_SID(swtmrID)->uwArg;
     swtmrProc = (UINTPTR)OS_SWT_FROM_SID(swtmrID)->pfnHandler;
     if (LOS_SwtmrDelete(swtmrID)) {
+        LOS_SpinUnlockRestore(&g_timeSpin, intSave);
         goto ERROUT;
     }
     if ((swtmrProc == (UINTPTR)SwtmrProc) && (arg != NULL)) {
         free(arg);
     }
+    LOS_SpinUnlockRestore(&g_timeSpin, intSave);
 
 #ifdef LOSCFG_SECURITY_VID
     RemoveNodeByVid((UINT16)(UINTPTR)timerID);

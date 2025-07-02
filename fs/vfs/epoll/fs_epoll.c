@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -220,14 +220,18 @@ int epoll_close(int epfd)
 {
     struct epoll_head *epHead = NULL;
 
+    (VOID)pthread_mutex_lock(&g_epollMutex);
     epHead = EpollGetDataBuff(epfd);
     if (epHead == NULL) {
+        (VOID)pthread_mutex_unlock(&g_epollMutex);
         set_errno(EBADF);
         return -1;
     }
 
     DoEpollClose(epHead);
-    return EpollFreeSysFd(epfd);
+    int ret = EpollFreeSysFd(epfd);
+    (VOID)pthread_mutex_unlock(&g_epollMutex);
+    return ret;
 }
 
 int epoll_ctl(int epfd, int op, int fd, struct epoll_event *ev)
@@ -236,15 +240,16 @@ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *ev)
     int i;
     int ret = -1;
 
+    (VOID)pthread_mutex_lock(&g_epollMutex);
     epHead = EpollGetDataBuff(epfd);
     if (epHead == NULL) {
         set_errno(EBADF);
-        return ret;
+        goto OUT_RELEASE;
     }
 
     if (ev == NULL) {
         set_errno(EINVAL);
-        return -1;
+        goto OUT_RELEASE;
     }
 
     switch (op) {
@@ -252,18 +257,19 @@ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *ev)
             ret = CheckFdExist(epHead, fd);
             if (ret == -1) {
                 set_errno(EEXIST);
-                return -1;
+                goto OUT_RELEASE;
             }
 
             if (epHead->nodeCount == EPOLL_DEFAULT_SIZE) {
                 set_errno(ENOMEM);
-                return -1;
+                goto OUT_RELEASE;
             }
 
             epHead->evs[epHead->nodeCount].events = ev->events | POLLERR | POLLHUP;
             epHead->evs[epHead->nodeCount].data.fd = fd;
             epHead->nodeCount++;
-            return 0;
+            ret = 0;
+            break;
         case EPOLL_CTL_DEL:
             for (i = 0; i < epHead->nodeCount; i++) {
                 if (epHead->evs[i].data.fd != fd) {
@@ -275,43 +281,50 @@ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *ev)
                               epHead->nodeCount - i);
                 }
                 epHead->nodeCount--;
-                return 0;
+                ret = 0;
+                goto OUT_RELEASE;
             }
             set_errno(ENOENT);
-            return -1;
+            break;
         case EPOLL_CTL_MOD:
             for (i = 0; i < epHead->nodeCount; i++) {
                 if (epHead->evs[i].data.fd == fd) {
                     epHead->evs[i].events = ev->events | POLLERR | POLLHUP;
-                    return 0;
+                    ret = 0;
+                    goto OUT_RELEASE;
                 }
             }
             set_errno(ENOENT);
-            return -1;
+            break;
         default:
             set_errno(EINVAL);
-            return -1;
+            break;
     }
+
+OUT_RELEASE:
+    (VOID)pthread_mutex_unlock(&g_epollMutex);
+    return ret;
 }
 
 int epoll_wait(int epfd, FAR struct epoll_event *evs, int maxevents, int timeout)
 {
     struct epoll_head *epHead = NULL;
-    int ret;
+    int ret = -1;
     int counter;
     int i;
     struct pollfd *pFd = NULL;
     int pollSize;
 
+    (VOID)pthread_mutex_lock(&g_epollMutex);
     epHead = EpollGetDataBuff(epfd);
-    if (epHead== NULL) {
+    if (epHead == NULL) {
         set_errno(EBADF);
-        return -1;
+        goto OUT_RELEASE;
     }
 
     if ((maxevents <= 0) || (evs == NULL)) {
         set_errno(EINVAL);
-        return -1;
+        goto OUT_RELEASE;
     }
 
     if (maxevents > epHead->nodeCount) {
@@ -323,10 +336,10 @@ int epoll_wait(int epfd, FAR struct epoll_event *evs, int maxevents, int timeout
     pFd = malloc(sizeof(struct pollfd) * pollSize);
     if (pFd == NULL) {
         set_errno(EINVAL);
-        return -1;
+        goto OUT_RELEASE;
     }
 
-    for (i = 0; i < epHead->nodeCount; i++) {
+    for (i = 0; i < pollSize; i++) {
         pFd[i].fd = epHead->evs[i].data.fd;
         pFd[i].events = (short)epHead->evs[i].events;
     }
@@ -335,7 +348,8 @@ int epoll_wait(int epfd, FAR struct epoll_event *evs, int maxevents, int timeout
     ret = poll(pFd, pollSize, timeout);
     if (ret <= 0) {
         free(pFd);
-        return 0;
+        ret = 0;
+        goto OUT_RELEASE;
     }
 
     for (i = 0, counter = 0; i < ret && counter < pollSize; counter++) {
@@ -347,6 +361,10 @@ int epoll_wait(int epfd, FAR struct epoll_event *evs, int maxevents, int timeout
     }
 
     free(pFd);
-    return i;
+    ret = i;
+
+OUT_RELEASE:
+    (VOID)pthread_mutex_unlock(&g_epollMutex);
+    return ret;
 }
 

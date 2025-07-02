@@ -6340,7 +6340,7 @@ diff -Nupr old/fs/jffs2/summary.h new/fs/jffs2/summary.h
 diff -Nupr old/fs/jffs2/super.c new/fs/jffs2/super.c
 --- old/fs/jffs2/super.c	2022-05-09 17:22:53.000000000 +0800
 +++ new/fs/jffs2/super.c	2022-05-09 20:09:32.170000000 +0800
-@@ -9,433 +9,188 @@
+@@ -9,434 +9,188 @@
   *
   */
  
@@ -6418,6 +6418,7 @@ diff -Nupr old/fs/jffs2/super.c new/fs/jffs2/super.c
 +	c->cleanmarker_size = sizeof(struct jffs2_unknown_node);
  
 -	mutex_init(&f->sem);
+-	f->target = NULL;
 -	inode_init_once(&f->vfs_inode);
 -}
 +	ret = jffs2_do_mount_fs(c);

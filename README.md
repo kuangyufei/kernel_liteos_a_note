@@ -78,6 +78,7 @@
   
 ## 四大码仓发布 | 源码同步官方
 内核注解同时在 [gitee](https://gitee.com/weharmony/kernel_liteos_a_note) | [github](https://github.com/kuangyufei/kernel_liteos_a_note) | [coding](https://weharmony.coding.net/public/harmony/kernel_liteos_a_note/git/files) | [gitcode](https://gitcode.net/kuangyufei/kernel_liteos_a_note) 发布，并与官方源码按月保持同步，同步历史如下:
+* `2025/07/02` -- 同步最新代码,对 epoll，process,mem 模块有少量修改
 * `2025/02/22` -- 震撼！！！来自deepseek的注解
 * `2024/04/13` -- 官方几处小修正
 * `2024/03/04` -- 官方修改很小
@@ -110,14 +111,6 @@
 * `2021/04/21` -- 官方优化了很多之前吐槽的地方，点赞
 * `2020/09/16` -- 中文注解版起点
 
-## 注解子系统仓库
-  
-在给鸿蒙轻内核源码加注过程中发现仅仅注解内核仓库还不够，因为它关联了其他子系统，若对这些子系统不了解是很难完整的注解鸿蒙轻内核，所以也对这些关联仓库进行了部分注解，这些仓库包括:
-
-* [编译构建子系统 | build_lite](https://gitee.com/weharmony/build_lite_note)  
-* [协议栈 | lwip](https://gitee.com/weharmony/third_party_lwip) 
-* [文件系统 | NuttX](https://gitee.com/weharmony/third_party_NuttX)
-* [标准库 | musl](https://gitee.com/weharmony/third_party_musl) 
 
 ## 关于 zzz 目录
 中文加注版比官方版无新增文件，只多了一个`zzz`的目录，里面放了一些加注所需文件，它与内核代码无关，可以忽略它，取名`zzz`是为了排在最后，减少对原有代码目录级的侵入，`zzz` 的想法源于微信中名称为`AAA`的那帮朋友，你的微信里应该也有他们熟悉的身影吧 :-)
@@ -163,25 +156,19 @@
 ├── tools                  # 构建工具及相关配置和代码
 └── zzz                    # 中文注解版新增目录
 ```
-## 官方文档 | 静态站点呈现
-
-* 研究鸿蒙需不断的翻阅资料，吸取精华，其中官方文档必不可少， 为更好的呈现 **OpenHarmony开发文档** ， 制作了[ >> openharmony 文档中心](http://open.weharmonyos.com) 来方便查阅官方资料，支持中英文，支持检索，稳定的LTS版本，内容与官方资料保持同步。[>> 进入详细了解](http://open.weharmonyos.com)
-
-  ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/opio.png)
-  
 
 ## 任正非演讲稿【1994-2019】
-* 搞技术的光搞好技术还不够，得学点管理，读点大师级的文章，任总无疑是目前国内最伟大的企业家，读他的文章，可以让您少奋斗十年，只恨自己读到的太晚，白白浪费了大好时光，痛定思痛，整理了任总历年的文章，共440余篇供您阅读。[>> 进入详细了解](./zzz/ren.md)
+* 搞技术的光搞好技术还不够，得学点管理，读点大师级的文章，任总无疑是目前国内最伟大的企业家，读他的文章，可以让您少奋斗十年，整理了历年的文章，共440余篇供您阅读。[>> 进入详细了解](./zzz/ren.md)
 
   ![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/common/ren.png)
 
 ## 特此感谢
 
-特此感谢过程中（**统计至 2024/4/13**）无私赞助的 **25** 位热心朋友，有企事业单位职工，有在校学生，有行业内资深大佬，也有非专业的纯粹爱好者，在此一并谢过，作者将带着这份温暖继续前行。 [ >> 进入详细了解](./zzz/donate.md)
+特此感谢过程中（**统计至 2025/07/02**）无私赞助的 **29** 位热心朋友，有企事业单位职工，有在校学生，有行业内资深大佬，也有非专业的纯粹爱好者，在此一并谢过，作者将带着这份温暖继续前行。 [ >> 进入详细了解](./zzz/donate.md)
 
 |历史捐赠|最新捐赠|
 |:-:|:-:|
-|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/pay.gif)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/28.png)|
+|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/pay.gif)|![](https://weharmonyos.oss-cn-hangzhou.aliyuncs.com/resources/donate/29.png)|
 
 ## 链接
 

@@ -60,8 +60,15 @@ static ssize_t MemMap(struct file *filep, LosVmMapRegion *region)
     PADDR_T paddr = region->pgOff << PAGE_SHIFT;
     VADDR_T vaddr = region->range.base;
     LosVmSpace *space = LOS_SpaceGet(vaddr);
-
-    if (((paddr + size) >= SYS_MEM_BASE) && (paddr < SYS_MEM_END)) {
+    PADDR_T paddrEnd = paddr + size;
+    /*
+     * Only the following two conditions are valid:
+     * [paddr, paddrEnd] < [SYS_MEM_BASE, SYS_MEM_END]
+     * or
+     * [SYS_MEM_BASE, SYS_MEM_END] < [paddr, paddrEnd]
+     * otherwise is invalid
+     */
+    if (!((paddrEnd > paddr) && ((paddrEnd < SYS_MEM_BASE) || (paddr >= SYS_MEM_END)))) {
         return -EINVAL;
     }
 

@@ -307,6 +307,24 @@ config("public") {
   }
 }
 
+sysroot_path = rebase_path(ohos_current_sysroot)
+config("sysroot_flags") {
+  if (ohos_build_compiler == "clang") {
+    cflags = [
+      "--target=$target_triple",
+      "--sysroot=$sysroot_path",
+    ]
+  } else {
+    cflags = [
+      "--sysroot=$sysroot_path",
+      "-specs=musl-gcc.specs",
+    ]
+  }
+  cflags_cc = cflags
+  ldflags = cflags
+  asmflags = cflags
+}
+
 group("modules") {
   deps = [
     "arch",
@@ -363,7 +381,10 @@ executable("liteos") {
   configs = []  # clear default configs
   configs += [ ":arch_config" ]
   configs += [ ":public" ]
-
+  if (is_lite_system && current_os == "ohos" && !is_mini_system &&
+      !ohos_kernel_is_prebuilt) {
+    configs += [ ":sysroot_flags" ]
+  }
   ldflags = [
     "-static",
     "-nostdlib",

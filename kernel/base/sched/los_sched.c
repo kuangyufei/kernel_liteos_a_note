@@ -654,13 +654,11 @@ STATIC INLINE LOS_DL_LIST *SchedLockPendFindPosSub(const LosTaskCB *runTask, con
         /* 如果当前任务优先级低于挂起任务，继续查找 */
         if (ret < 0) {
             continue;
-        } 
         /* 如果当前任务优先级高于挂起任务，返回该任务的位置 */
-        else if (ret > 0) {
+        } else if (ret > 0) {
             return &pendedTask->pendList;
-        } 
         /* 如果优先级相同，返回该任务的下一个位置 */
-        else {
+        } else {
             return pendedTask->pendList.pstNext;
         }
     }

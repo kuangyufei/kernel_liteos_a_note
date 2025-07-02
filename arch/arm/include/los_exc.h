@@ -55,7 +55,6 @@ extern "C" {
  */ //在LPC2458平台上发生异常时存储的寄存器信息 以下不带uw的寄存器名是芯片手册中使用的寄存器名
 #ifdef LOSCFG_ARCH_ARM_AARCH64
 #define EXC_GEN_REGS_NUM     30
-
 typedef struct {
     UINT64 X[EXC_GEN_REGS_NUM]; /**< Register X0-X29 */
     UINT64 LR;                  /**< Program returning address. X30 */
@@ -64,6 +63,7 @@ typedef struct {
     UINT64 SPSR;
 } ExcContext;
 #else
+/* It has the same structure as TaskContext */
 typedef struct { //异常上下文,任务被中断需切换上下文,就是一种异常
     UINT32 R4;      /**< Register R4 */
     UINT32 R5;      /**< Register R5 */
@@ -74,7 +74,7 @@ typedef struct { //异常上下文,任务被中断需切换上下文,就是一�
     UINT32 R10;     /**< Register R10 */
     UINT32 R11;     /**< Register R11 */
 
-    UINT32 SP;      /**< Stack pointer */	//内核态栈指针
+    UINT32 SP;      /**< svc sp */	//内核态栈指针
     UINT32 reserved; /**< Reserved, multiplexing register */
     UINT32 USP;
     UINT32 ULR;

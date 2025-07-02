@@ -948,7 +948,7 @@ STATIC UINT32 OsMemPoolInit(VOID *pool, UINT32 size)
 }
 
 #ifdef LOSCFG_MEM_MUL_POOL
-STATIC VOID OsMemPoolDeinit(const VOID *pool, UINT32 size)
+STATIC VOID OsMemPoolDeInit(const VOID *pool, UINT32 size)
 {
 #ifdef LOSCFG_KERNEL_LMS
     if (g_lms != NULL) {

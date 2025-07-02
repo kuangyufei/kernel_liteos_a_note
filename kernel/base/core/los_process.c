@@ -1990,13 +1990,18 @@ ERROR:
 STATIC UINT32 OsCopyUser(LosProcessCB *childCB, LosProcessCB *parentCB)
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY
-    UINT32 size = sizeof(User) + sizeof(UINT32) * (parentCB->user->groupNumber - 1);
+    UINT32 intSave;
+    UINT32 size;
+    SCHEDULER_LOCK(intSave);
+    size = sizeof(User) + sizeof(UINT32) * (parentCB->user->groupNumber - 1);
     childCB->user = LOS_MemAlloc(m_aucSysMem1, size);
     if (childCB->user == NULL) {
+        SCHEDULER_UNLOCK(intSave);
         return LOS_ENOMEM;
     }
 
     (VOID)memcpy_s(childCB->user, size, parentCB->user, size);
+    SCHEDULER_UNLOCK(intSave);
 #endif
     return LOS_OK;
 }

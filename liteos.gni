@@ -90,6 +90,7 @@ template("kernel_module") {
   } else {
     source_set(target_name) {
       public_configs = []
+      configs = []
       forward_variables_from(invoker, "*")
       if (has_public_config) {
         included_public_config = false
@@ -102,6 +103,10 @@ template("kernel_module") {
         if (!included_public_config) {
           public_configs += [ ":public" ]
         }
+      }
+      if (is_lite_system && current_os == "ohos" && !is_mini_system &&
+          !ohos_kernel_is_prebuilt) {
+        configs += [ "$LITEOSTOPDIR:sysroot_flags" ]
       }
     }
   }

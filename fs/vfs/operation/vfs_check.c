@@ -63,7 +63,7 @@ int fscheck(const char *path)
 
     dir = (struct fs_dirent_s *)zalloc(sizeof(struct fs_dirent_s));
     if (!dir) {
-        /* Insufficient memory to complete the operation.*/
+        /* Insufficient memory to complete the operation. */
         ret = -ENOMEM;
         VnodeDrop();
         goto errout;

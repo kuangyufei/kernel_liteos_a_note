@@ -64,7 +64,6 @@
     .global   __stack_chk_guard_setup
 #endif
 
-
     .fpu vfpv4
 
 .macro PUSH_FPU_REGS reg1
