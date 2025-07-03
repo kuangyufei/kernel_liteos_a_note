@@ -75,30 +75,46 @@ STATIC SPIN_LOCK_INIT(g_cpuAsidLock); ///< asid专属自旋锁
 STATIC UINTPTR g_asidPool[BITMAP_NUM_WORDS(1UL << MMU_ARM_ASID_BITS)]; ///< 地址空间ID池 , 2^8 = 256 个
 
 /* allocate and free asid | 分配地址空间ID */
+/**
+ * @brief 分配一个地址空间 ID (ASID)。
+ *
+ * 该函数会从 ASID 池中查找第一个未被使用的 ASID，将其标记为已使用，
+ * 并通过参数返回分配到的 ASID。如果 ASID 池已满，则返回错误状态。
+ *
+ * @param asid 用于存储分配到的 ASID 的指针。
+ * @return status_t 分配成功返回 LOS_OK，失败返回相应错误状态。
+ */
 status_t OsAllocAsid(UINT32 *asid)
 {
     UINT32 flags;
-    LOS_SpinLockSave(&g_cpuAsidLock, &flags);
-    UINT32 firstZeroBit = LOS_BitmapFfz(g_asidPool, 1UL << MMU_ARM_ASID_BITS);//找到第一个0位,即可分配位
+    LOS_SpinLockSave(&g_cpuAsidLock, &flags); // 加自旋锁，保护 ASID 池的访问，防止多线程竞争
+    UINT32 firstZeroBit = LOS_BitmapFfz(g_asidPool, 1UL << MMU_ARM_ASID_BITS); // 查找 ASID 池中的第一个未使用位（值为 0 的位）
     if (firstZeroBit >= 0 && firstZeroBit < (1UL << MMU_ARM_ASID_BITS)) {
-        LOS_BitmapSetNBits(g_asidPool, firstZeroBit, 1);//设为已分配
-        *asid = firstZeroBit;//由参数带走
-        LOS_SpinUnlockRestore(&g_cpuAsidLock, flags);
+        LOS_BitmapSetNBits(g_asidPool, firstZeroBit, 1); // 将找到的未使用位标记为已使用（设置为 1）
+        *asid = firstZeroBit; // 将分配到的 ASID 通过参数返回
+        LOS_SpinUnlockRestore(&g_cpuAsidLock, flags); // 解锁自旋锁，恢复中断状态
         return LOS_OK;
     }
 
-    LOS_SpinUnlockRestore(&g_cpuAsidLock, flags);
-    return firstZeroBit;
+    LOS_SpinUnlockRestore(&g_cpuAsidLock, flags); // 解锁自旋锁，恢复中断状态
+    return firstZeroBit; // ASID 池已满，返回错误状态
 }
 
-
 /// 释放 asid
+/**
+ * @brief 释放一个已分配的地址空间 ID (ASID)。
+ *
+ * 该函数会将指定的 ASID 标记为未使用状态，使其可以被重新分配。
+ * 在操作过程中会使用自旋锁保证对 ASID 池的访问是线程安全的。
+ *
+ * @param asid 要释放的地址空间 ID。
+ */
 VOID OsFreeAsid(UINT32 asid)
 {
     UINT32 flags;
-    LOS_SpinLockSave(&g_cpuAsidLock, &flags);
-    LOS_BitmapClrNBits(g_asidPool, asid, 1);//清空对应位,可继续分配给其他进程
-    LOS_SpinUnlockRestore(&g_cpuAsidLock, flags);
+    LOS_SpinLockSave(&g_cpuAsidLock, &flags); // 加自旋锁，保护 ASID 池的访问，防止多线程竞争
+    LOS_BitmapClrNBits(g_asidPool, asid, 1); // 清空对应位，可继续分配给其他进程
+    LOS_SpinUnlockRestore(&g_cpuAsidLock, flags); // 解锁自旋锁，恢复中断状态
 }
 #endif
 

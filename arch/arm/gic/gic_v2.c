@@ -41,17 +41,29 @@ STATIC_ASSERT(OS_USER_HWI_MAX <= 1020, "hwi max is too large!");
 STATIC UINT32 g_curIrqNum = 0;
 
 #ifdef LOSCFG_KERNEL_SMP
-/*
- * filter description
- *   0b00: forward to the cpu interfaces specified in cpu_mask
- *   0b01: forward to all cpu interfaces
- *   0b10: forward only to the cpu interface that request the irq
+/**
+ * @brief 向通用中断控制器（GIC）的软件生成中断寄存器（SGIR）写入值，触发软件生成中断（SGI）。
+ *
+ * 此函数将中断向量号、CPU 掩码和过滤规则组合成一个 32 位的值，
+ * 然后将该值写入 GIC 的软件生成中断寄存器，从而触发软件生成中断。
+ *
+ * @param vector 中断向量号，取低 4 位有效，范围为 0 - 15。
+ * @param cpuMask CPU 掩码，取低 8 位有效，用于指定中断的目标 CPU。
+ * @param filter 过滤规则，取低 2 位有效，决定中断转发的目标。
+ *               0b00: 转发到 cpuMask 指定的 CPU 接口
+ *               0b01: 转发到所有 CPU 接口
+ *               0b10: 仅转发到请求中断的 CPU 接口
  */
 STATIC VOID GicWriteSgi(UINT32 vector, UINT32 cpuMask, UINT32 filter)
 {
+    // 组合 filter、cpuMask 和 vector 为一个 32 位的值
+    // filter 取低 2 位，左移 24 位
+    // cpuMask 取低 8 位，左移 16 位
+    // vector 取低 4 位
     UINT32 val = ((filter & 0x3) << 24) | ((cpuMask & 0xFF) << 16) | /* 24, 16: Register bit offset */
                  (vector & 0xF);
 
+    // 将组合好的值写入 GIC 的软件生成中断寄存器（SGIR）
     GIC_REG_32(GICD_SGIR) = val;
 }
 

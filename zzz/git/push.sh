@@ -1,6 +1,6 @@
 git add -A
 
-git commit -m  ' 同步最新代码,对 epoll，process,mem 模块有修改 
+git commit -m  ' 注释中断控制器、异常接管 
     博客 | http://weharmonyos.com
 '
 git push  gitee_origin master

@@ -40,8 +40,7 @@
    注意事项 
 	   要查看调用栈信息，必须添加编译选项宏-fno-omit-frame-pointer支持stack frame，否则编译时FP寄存器是关闭的。 
    
-   参考 
-	   http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/%E7%94%A8%E6%88%B7%E6%80%81%E5%BC%82%E5%B8%B8%E4%BF%A1%E6%81%AF%E8%AF%B4%E6%98%8E.html
+
 	@endverbatim   
 
  * @version 
@@ -228,65 +227,83 @@ STATIC INT32 OsDecodeInstructionFSR(UINT32 regIFSR)
     return ret;
 }
 
+/**
+ * @brief 解析数据异常状态寄存器 (DFSR) 的值，输出异常原因信息。
+ *
+ * 该函数会根据 DFSR 寄存器的值判断异常是由读指令还是写指令引起的，
+ * 并进一步判断异常类型，如对齐错误或其他类型的错误，最后调用 OsDecodeFS 函数解析错误码。
+ *
+ * @param regDFSR 数据异常状态寄存器 (DFSR) 的值。
+ * @return INT32 操作结果，成功返回 0，失败返回相应错误码。
+ */
 STATIC INT32 OsDecodeDataFSR(UINT32 regDFSR)
 {
-    INT32 ret = 0;
-    UINT32 bitWnR = GET_WNR(regDFSR); /* WnR bit[11] */
-    UINT32 bitsFS = GET_FS(regDFSR);  /* FS bits[4]+[3:0] */
+    INT32 ret = 0; // 初始化返回值为 0，表示操作成功
+    UINT32 bitWnR = GET_WNR(regDFSR); /* WnR bit[11]，获取写/读标志位，1 表示写操作，0 表示读操作 */
+    UINT32 bitsFS = GET_FS(regDFSR);  /* FS bits[4]+[3:0]，获取错误状态位 */
 
-    if (bitWnR) {
-        PrintExcInfo("Abort caused by a write instruction. ");
+    if (bitWnR) { // 判断是否为写操作引起的异常
+        PrintExcInfo("Abort caused by a write instruction. "); // 输出写操作引起异常的信息
     } else {
-        PrintExcInfo("Abort caused by a read instruction. ");
+        PrintExcInfo("Abort caused by a read instruction. "); // 输出读操作引起异常的信息
     }
 
-    if (bitsFS == 0x01) { /* 0b00001 */
-        PrintExcInfo("Alignment fault.\n");
-        return ret;
+    if (bitsFS == 0x01) { /* 0b00001，判断是否为对齐错误 */
+        PrintExcInfo("Alignment fault.\n"); // 输出对齐错误信息
+        return ret; // 直接返回结果
     }
-    ret = OsDecodeFS(bitsFS);
-    return ret;
+    ret = OsDecodeFS(bitsFS); // 调用 OsDecodeFS 函数解析错误状态位
+    return ret; // 返回解析结果
 }
 
 #ifdef LOSCFG_KERNEL_VM
 
 /**
- * @brief 共享页缺失异常
- * @param excType 
- * @param frame 
- * @param far 异常状态寄存器(Fault Status Register -FAR)
- * @param fsr 异常地址寄存器(Fault Address Register -FSR) 
- * @return UINT32 
+ * @brief 处理 ARM 架构下的共享页错误异常。
+ *
+ * 该函数会根据异常类型、异常上下文、错误地址和错误状态寄存器的值，
+ * 对共享页错误异常进行处理。处理过程中会根据不同的错误状态进行不同的操作，
+ * 如调用页错误处理函数或刷新 TLB 等。
+ *
+ * @param excType 异常类型，如预取指令异常、数据异常等。
+ * @param frame 异常上下文，包含寄存器等信息。
+ * @param far 错误地址寄存器的值，指示发生错误的地址。
+ * @param fsr 错误状态寄存器的值，包含错误的详细信息。
+ * @return UINT32 处理结果，成功返回 LOS_OK，失败返回相应错误码。
  */
 UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT32 fsr)
 {
-    BOOL instructionFault = FALSE;
-    UINT32 pfFlags = 0;
-    UINT32 fsrFlag;
-    BOOL write = FALSE;
-    UINT32 ret;
+    BOOL instructionFault = FALSE; // 标记是否为取指异常
+    UINT32 pfFlags = 0;            // 页错误标志
+    UINT32 fsrFlag;                // 从 FSR 寄存器提取的标志
+    BOOL write = FALSE;            // 标记是否为写操作引起的异常
+    UINT32 ret;                    // 函数返回值
 
-    PRINT_INFO("page fault entry!!!\n");
-    if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) {
-        return LOS_ERRNO_VM_NOT_FOUND;
+    PRINT_INFO("page fault entry!!!\n"); // 打印页错误进入信息
+
+    if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) { // 检查当前系统是否处于当前 CPU 异常状态
+        return LOS_ERRNO_VM_NOT_FOUND; // 若是，返回虚拟内存未找到错误
     }
+
 #if defined(LOSCFG_KERNEL_SMP) && defined(LOSCFG_DEBUG_VERSION)
-    BOOL irqEnable = !(LOS_SpinHeld(&g_taskSpin) && OsSchedIsLock());
+    BOOL irqEnable = !(LOS_SpinHeld(&g_taskSpin) && OsSchedIsLock()); // 判断中断是否应该启用
     if (irqEnable) {
-        ArchIrqEnable();
+        ArchIrqEnable(); // 启用中断
     } else {
         PrintExcInfo("[ERR][%s] may be held scheduler lock when entering [%s] on cpu [%u]\n",
-                     OsCurrTaskGet()->taskName, __FUNCTION__, ArchCurrCpuid());
+                     OsCurrTaskGet()->taskName, __FUNCTION__, ArchCurrCpuid()); // 打印可能持有调度锁的错误信息
     }
 #else
-    ArchIrqEnable();
+    ArchIrqEnable(); // 启用中断
 #endif
-    if (excType == OS_EXCEPT_PREFETCH_ABORT) {
-        instructionFault = TRUE;
+
+    if (excType == OS_EXCEPT_PREFETCH_ABORT) { // 判断是否为预取指令异常
+        instructionFault = TRUE; // 标记为取指异常
     } else {
-        write = !!BIT_GET(fsr, WNR_BIT);
+        write = !!BIT_GET(fsr, WNR_BIT); // 从 FSR 寄存器获取写/读标志，判断是否为写操作引起的异常
     }
 
+    // 从 FSR 寄存器提取标志位
     fsrFlag = ((BIT_GET(fsr, FSR_FLAG_OFFSET_BIT) ? 0b10000 : 0) | BITS_GET(fsr, FSR_BITS_BEGIN_BIT, 0));
     switch (fsrFlag) {
         case 0b00101:
@@ -297,49 +314,62 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
         /* permission fault */
         case 0b01111: {
         /* permission fault */
-            BOOL user = (frame->regCPSR & CPSR_MODE_MASK) == CPSR_MODE_USR;
-            pfFlags |= write ? VM_MAP_PF_FLAG_WRITE : 0;
-            pfFlags |= user ? VM_MAP_PF_FLAG_USER : 0;
-            pfFlags |= instructionFault ? VM_MAP_PF_FLAG_INSTRUCTION : 0;
-            pfFlags |= VM_MAP_PF_FLAG_NOT_PRESENT;
-            OsSigIntLock();
-            ret = OsVmPageFaultHandler(far, pfFlags, frame);
-            OsSigIntUnlock();
+            BOOL user = (frame->regCPSR & CPSR_MODE_MASK) == CPSR_MODE_USR; // 判断是否为用户模式
+            pfFlags |= write ? VM_MAP_PF_FLAG_WRITE : 0; // 根据是否为写操作设置标志
+            pfFlags |= user ? VM_MAP_PF_FLAG_USER : 0;   // 根据是否为用户模式设置标志
+            pfFlags |= instructionFault ? VM_MAP_PF_FLAG_INSTRUCTION : 0; // 根据是否为取指异常设置标志
+            pfFlags |= VM_MAP_PF_FLAG_NOT_PRESENT; // 设置页面不存在标志
+
+            OsSigIntLock(); // 锁定信号中断
+            ret = OsVmPageFaultHandler(far, pfFlags, frame); // 调用页错误处理函数
+            OsSigIntUnlock(); // 解锁信号中断
             break;
         }
         default:
-            OsArmWriteTlbimvaais(ROUNDDOWN(far, PAGE_SIZE));
-            ret = LOS_OK;
+            OsArmWriteTlbimvaais(ROUNDDOWN(far, PAGE_SIZE)); // 刷新 TLB
+            ret = LOS_OK; // 返回成功
             break;
     }
+
 #if defined(LOSCFG_KERNEL_SMP) && defined(LOSCFG_DEBUG_VERSION)
     if (irqEnable) {
-        ArchIrqDisable();
+        ArchIrqDisable(); // 禁用中断
     }
 #else
-    ArchIrqDisable();
+    ArchIrqDisable(); // 禁用中断
 #endif
-    return ret;
+
+    return ret; // 返回处理结果
 }
 #endif
-/// 异常类型
+/**
+ * @brief 根据异常类型处理异常，并打印异常信息。
+ *
+ * 该函数会根据不同的异常类型，对异常上下文进行调整，
+ * 并打印相应的异常信息，同时解析异常状态寄存器的值。
+ *
+ * @param excType 异常类型，如未定义指令异常、软件中断异常等。
+ * @param excBufAddr 异常上下文，包含寄存器等信息。
+ * @param far 错误地址寄存器的值，指示发生错误的地址。
+ * @param fsr 错误状态寄存器的值，包含错误的详细信息。
+ */
 STATIC VOID OsExcType(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 {
-    /* undefinited exception handling or software interrupt | 未定义的异常处理或软件中断 */
+    // 未定义的异常处理或软件中断
     if ((excType == OS_EXCEPT_UNDEF_INSTR) || (excType == OS_EXCEPT_SWI)) {
-        if ((excBufAddr->regCPSR & INSTR_SET_MASK) == 0) { /* work status: ARM */
-            excBufAddr->PC = excBufAddr->PC - ARM_INSTR_LEN;
-        } else if ((excBufAddr->regCPSR & INSTR_SET_MASK) == 0x20) { /* work status: Thumb */
-            excBufAddr->PC = excBufAddr->PC - THUMB_INSTR_LEN;
+        if ((excBufAddr->regCPSR & INSTR_SET_MASK) == 0) { // 判断工作状态是否为 ARM 模式
+            excBufAddr->PC = excBufAddr->PC - ARM_INSTR_LEN; // 在 ARM 模式下，PC 回退 ARM 指令长度（4 字节）
+        } else if ((excBufAddr->regCPSR & INSTR_SET_MASK) == 0x20) { // 判断工作状态是否为 Thumb 模式
+            excBufAddr->PC = excBufAddr->PC - THUMB_INSTR_LEN; // 在 Thumb 模式下，PC 回退 Thumb 指令长度（2 字节）
         }
     }
 
-    if (excType == OS_EXCEPT_PREFETCH_ABORT) { //取指异常
-        PrintExcInfo("prefetch_abort fault fsr:0x%x, far:0x%0+8x\n", fsr, far);
-        (VOID) OsDecodeInstructionFSR(fsr);
-    } else if (excType == OS_EXCEPT_DATA_ABORT) { // 数据异常
-        PrintExcInfo("data_abort fsr:0x%x, far:0x%0+8x\n", fsr, far);
-        (VOID) OsDecodeDataFSR(fsr);
+    if (excType == OS_EXCEPT_PREFETCH_ABORT) { // 处理取指异常
+        PrintExcInfo("prefetch_abort fault fsr:0x%x, far:0x%0+8x\n", fsr, far); // 打印取指异常信息，包含错误状态寄存器和错误地址寄存器的值
+        (VOID) OsDecodeInstructionFSR(fsr); // 解析指令异常状态寄存器的值
+    } else if (excType == OS_EXCEPT_DATA_ABORT) { // 处理数据异常
+        PrintExcInfo("data_abort fsr:0x%x, far:0x%0+8x\n", fsr, far); // 打印数据异常信息，包含错误状态寄存器和错误地址寄存器的值
+        (VOID) OsDecodeDataFSR(fsr); // 解析数据异常状态寄存器的值
     }
 }
 
@@ -356,39 +386,54 @@ STATIC const CHAR *g_excTypeString[] = {
 };
 
 #ifdef LOSCFG_KERNEL_VM
+/**
+ * @brief 获取文本段区域的基地址。
+ *
+ * 该函数会根据给定的虚拟内存映射区域和进程控制块，查找并返回文本段区域的基地址。
+ * 如果区域无效或关联文件无效，则直接返回区域的起始地址。
+ *
+ * @param region 虚拟内存映射区域指针。
+ * @param runProcess 进程控制块指针。
+ * @return VADDR_T 文本段区域的基地址，若参数无效则返回 0。
+ */
 STATIC VADDR_T OsGetTextRegionBase(LosVmMapRegion *region, LosProcessCB *runProcess)
 {
-    struct Vnode *curVnode = NULL;
-    struct Vnode *lastVnode = NULL;
-    LosVmMapRegion *curRegion = NULL;
-    LosVmMapRegion *lastRegion = NULL;
+    struct Vnode *curVnode = NULL;  // 当前区域关联的虚拟节点指针
+    struct Vnode *lastVnode = NULL; // 上一个区域关联的虚拟节点指针
+    LosVmMapRegion *curRegion = NULL;  // 当前虚拟内存映射区域指针
+    LosVmMapRegion *lastRegion = NULL; // 上一个虚拟内存映射区域指针
 
+    // 检查传入的区域指针和进程控制块指针是否有效，若无效则返回 0
     if ((region == NULL) || (runProcess == NULL)) {
         return 0;
     }
 
+    // 检查区域关联的文件是否有效，若无效则直接返回区域的起始地址
     if (!LOS_IsRegionFileValid(region)) {
         return region->range.base;
     }
 
-    lastRegion = region;
+    lastRegion = region; // 初始化上一个区域为传入的区域
     do {
-        curRegion = lastRegion;
+        curRegion = lastRegion; // 当前区域等于上一个区域
+        // 查找上一个区域起始地址减 1 处的区域
         lastRegion = LOS_RegionFind(runProcess->vmSpace, curRegion->range.base - 1);
+        // 若上一个区域无效或关联文件无效，则跳出循环
         if ((lastRegion == NULL) || !LOS_IsRegionFileValid(lastRegion)) {
             goto DONE;
         }
-        curVnode = curRegion->unTypeData.rf.vnode;
-        lastVnode = lastRegion->unTypeData.rf.vnode;
-    } while (curVnode == lastVnode);
+        curVnode = curRegion->unTypeData.rf.vnode; // 获取当前区域关联的虚拟节点
+        lastVnode = lastRegion->unTypeData.rf.vnode; // 获取上一个区域关联的虚拟节点
+    } while (curVnode == lastVnode); // 若当前和上一个区域关联的虚拟节点相同，则继续循环
 
 DONE:
 #ifdef LOSCFG_KERNEL_DYNLOAD
+    // 若当前区域的起始地址等于动态加载的基地址，则返回 0
     if (curRegion->range.base == EXEC_MMAP_BASE) {
         return 0;
     }
 #endif
-    return curRegion->range.base;
+    return curRegion->range.base; // 返回当前区域的起始地址
 }
 #endif
 /**
