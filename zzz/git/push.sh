@@ -1,6 +1,6 @@
 git add -A
 
-git commit -m  ' 注释中断控制器、异常接管 
+git commit -m  ' 注释单CPU开机代码和几个汇编文件 
     博客 | http://weharmonyos.com
 '
 git push  gitee_origin master
