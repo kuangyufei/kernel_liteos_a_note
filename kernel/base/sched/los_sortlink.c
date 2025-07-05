@@ -28,11 +28,7 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-/**
-* 为内核调度器提供了 时间驱动的任务排队机制 ，特别是在 los_deadline.c 中实现的EDF调度策略中，通过维护任务的截止时间顺序，确保最早截止时间的任务优先被调度执行。
-*
-*
-*/
+ 
 #include "los_sortlink_pri.h"
 /// 排序链表初始化
 VOID OsSortLinkInit(SortLinkAttribute *sortLinkHeader)

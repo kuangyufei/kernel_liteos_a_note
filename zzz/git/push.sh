@@ -1,6 +1,6 @@
 git add -A
 
-git commit -m  ' 完善arch下关于arm的注解
+git commit -m  ' 注释调度算法（EDF、HDF、RR）和内存模块（OOM、dump、iomap）
     博客 | http://weharmonyos.com
 '
 git push  gitee_origin master

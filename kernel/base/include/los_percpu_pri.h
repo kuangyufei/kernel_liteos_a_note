@@ -42,41 +42,72 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_SMP
+
+/**
+ * @enum ExcFlag
+ * @brief CPU异常状态枚举
+ * @details 定义CPU可能处于的运行状态
+ */
 typedef enum {
-    CPU_RUNNING = 0,   ///< cpu is running | CPU正在运行状态
-    CPU_HALT,          ///< cpu in the halt | CPU处于暂停状态
-    CPU_EXC            ///< cpu in the exc | CPU处于异常状态
+    CPU_RUNNING = 0,   ///< CPU正在运行状态
+    CPU_HALT,          ///< CPU处于暂停状态
+    CPU_EXC            ///< CPU处于异常状态
 } ExcFlag;
 
+/**
+ * @struct Percpu
+ * @brief 每CPU核心私有数据结构
+ * @details 存储特定CPU核心的运行状态和相关信息
+ */
 typedef struct {
-    UINT32      excFlag;               /* cpu halt or exc flag */
+    UINT32      excFlag;               /* CPU暂停或异常标志 */
 #ifdef LOSCFG_KERNEL_SMP_CALL
-    LOS_DL_LIST funcLink;              /* mp function call link */
+    LOS_DL_LIST funcLink;              /* 多处理器函数调用链表 */
 #endif
 } Percpu;
 
-/*! the kernel per-cpu structure | 每个cpu的内核描述符 */
+/*! 内核每CPU结构数组 | 每个CPU核心的内核描述符 */
 extern Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM];
-/*! 获得当前运行CPU的信息 */
+
+/**
+ * @brief 获取当前运行CPU的私有数据
+ * @return Percpu* 当前CPU的私有数据指针
+ */
 STATIC INLINE Percpu *OsPercpuGet(VOID)
 {
-    return &g_percpu[ArchCurrCpuid()];	
+    return &g_percpu[ArchCurrCpuid()];  /* 获取当前CPU ID对应的私有数据 */
 }
-/*! 获得参数CPU的信息 */
+
+/**
+ * @brief 通过CPU ID获取指定CPU的私有数据
+ * @param cpuid CPU核心ID
+ * @return Percpu* 指定CPU的私有数据指针
+ */
 STATIC INLINE Percpu *OsPercpuGetByID(UINT32 cpuid)
 {
-    return &g_percpu[cpuid];
+    return &g_percpu[cpuid];            /* 返回指定CPU ID的私有数据 */
 }
 
+/**
+ * @brief 检查指定CPU是否处于暂停状态
+ * @param cpuid CPU核心ID
+ * @return UINT32 1-暂停状态，0-非暂停状态
+ */
 STATIC INLINE UINT32 OsCpuStatusIsHalt(UINT16 cpuid)
 {
-    return (OsPercpuGetByID(cpuid)->excFlag == CPU_HALT);
+    return (OsPercpuGetByID(cpuid)->excFlag == CPU_HALT);  /* 比较CPU状态标志 */
 }
 
+/**
+ * @brief 设置当前CPU的运行状态
+ * @param flag 要设置的CPU状态(ExcFlag枚举值)
+ * @return VOID
+ */
 STATIC INLINE VOID OsCpuStatusSet(ExcFlag flag)
 {
-    OsPercpuGet()->excFlag = flag;
+    OsPercpuGet()->excFlag = flag;      /* 设置当前CPU的状态标志 */
 }
+
 
 VOID OsAllCpuStatusOutput(VOID);
 #endif

@@ -48,14 +48,24 @@
 
 typedef UINT32 (*OomFn)(UINTPTR param);
 
+/**
+ * @struct OomCB 
+ * @brief OOM控制块结构
+ * @details OOM 是Out of Memory 的缩写，指的是内存不足的情况。
+ * 当系统内存不足时，OOM 机制会根据一定的策略选择一些进程进行终止，以释放内存空间。
+ * 这些进程的选择策略和终止顺序是由 OOM 算法和调度器决定的。
+ * OOM 算法根据进程的优先级、占用内存大小、运行时间等因素进行评分，
+ * 评分高的进程优先被选择终止。
+ * 调度器则根据 OOM 算法选择的进程终止顺序，依次终止进程，直到系统内存恢复正常。
+ */
 typedef struct {
-    UINT32       lowMemThreshold;       /* byte */
-    UINT32       reclaimMemThreshold;   /* byte */
-    UINT32       checkInterval;         /* microsecond */
-    OomFn        processVictimCB;       /* process victim process cb function */
-    OomFn        scoreCB;               /* out of memory, the process score function */
-    UINT16       swtmrID;
-    BOOL         enabled;               /* oom is enabled or not */
+    UINT32       lowMemThreshold;       /* 低内存阈值(字节) */
+    UINT32       reclaimMemThreshold;   /* 内存回收阈值(字节) */
+    UINT32       checkInterval;         /* 检查间隔(0.1秒为单位) */
+    OomFn        processVictimCB;       /* 进程终止回调函数 */
+    OomFn        scoreCB;               /* 进程OOM分数计算回调函数 */
+    UINT16       swtmrID;               /* 定时器ID */
+    BOOL         enabled;               /* OOM功能使能标志 */
 } OomCB;
 
 LITE_OS_SEC_TEXT_MINOR UINT32 OomTaskInit(VOID);

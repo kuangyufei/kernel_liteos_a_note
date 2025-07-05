@@ -47,8 +47,8 @@
 
 #ifdef LOSCFG_KERNEL_VM
 
-LITE_OS_SEC_BSS OomCB *g_oomCB = NULL; //全局内存溢出控制块
-static SPIN_LOCK_INIT(g_oomSpinLock);//内存溢出自旋锁
+LITE_OS_SEC_BSS OomCB *g_oomCB = NULL; 
+static SPIN_LOCK_INIT(g_oomSpinLock);
 
 LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomScoreProcess(LosProcessCB *candidateProcess)
 {
@@ -70,7 +70,7 @@ LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomKillProcess(UINTPTR param)
     /* we will not kill process, and do nothing here */
     return LOS_OK;
 }
-///强制收缩内存
+
 LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomForceShrinkMemory(VOID)
 {
     UINT32 i;
@@ -87,7 +87,7 @@ LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OomForceShrinkMemory(VOID)
 
     return reclaimMemPages;
 }
-///内存不足时回收页高速缓存
+
 LITE_OS_SEC_TEXT_MINOR STATIC BOOL OomReclaimPageCache(VOID)
 {
     UINT32 totalPm = 0;
@@ -120,16 +120,17 @@ LITE_OS_SEC_TEXT_MINOR STATIC BOOL OomReclaimPageCache(VOID)
 /*
  * check is low memory or not, if low memory, try to kill process. 
  * return is kill process or not. 
+ * 检查内存是否不足，如果内存不足，请尝试终止进程,返回是否kill进程
  */
-LITE_OS_SEC_TEXT_MINOR BOOL OomCheckProcess(VOID)//检查内存是否不足，如果内存不足，请尝试终止进程,返回是否kill进程
+LITE_OS_SEC_TEXT_MINOR BOOL OomCheckProcess(VOID)
 {
     UINT32 totalPm;
     UINT32 usedPm;
     BOOL isLowMemory = FALSE;
 
     /*
-     * spinlock the current core schedule, make sure oom process atomic //旋转锁定当前核心计划，确保oom进程原子化
-     * spinlock other place entering OomCheckProcess, make sure oom process mutex //旋转锁定其他进入OomCheckProcess的地方，确保oom进程互斥
+     * spinlock the current core schedule, make sure oom process atomic | 旋转锁定当前核心计划，确保oom进程原子化
+     * spinlock other place entering OomCheckProcess, make sure oom process mutex | 旋转锁定其他进入OomCheckProcess的地方，确保oom进程互斥
      */
     LOS_SpinLock(&g_oomSpinLock);
 
@@ -161,8 +162,8 @@ STATIC VOID OomWriteEvent(VOID) // OomTaskInit中创建的定时器回调
     OsWriteResourceEvent(OS_RESOURCE_EVENT_OOM);//广播内存溢出事件
 }
 #endif
-//打印内存不足时的信息
-LITE_OS_SEC_TEXT_MINOR VOID OomInfodump(VOID) //打印内存溢出信息
+
+LITE_OS_SEC_TEXT_MINOR VOID OomInfodump(VOID) 
 {
     PRINTK("[oom] oom loop task status: %s\n"
            "      oom low memory threshold: %#x(byte)\n"
@@ -172,7 +173,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OomInfodump(VOID) //打印内存溢出信息
            g_oomCB->lowMemThreshold, g_oomCB->reclaimMemThreshold,
            g_oomCB->checkInterval);
 }
-///设置低内存门槛
+
 LITE_OS_SEC_TEXT_MINOR VOID OomSetLowMemThreashold(UINT32 lowMemThreshold)
 {
     if ((lowMemThreshold > OOM_DEFAULT_LOW_MEM_THRESHOLD_MAX)) {
@@ -186,7 +187,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OomSetLowMemThreashold(UINT32 lowMemThreshold)
                g_oomCB->lowMemThreshold);
     }
 }
-///设置回收内存的门槛
+
 LITE_OS_SEC_TEXT_MINOR VOID OomSetReclaimMemThreashold(UINT32 reclaimMemThreshold)
 {
     UINT32 totalPm = 0;
@@ -204,7 +205,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OomSetReclaimMemThreashold(UINT32 reclaimMemThreshol
                g_oomCB->reclaimMemThreshold);
     }
 }
-///设置监控间隔
+
 LITE_OS_SEC_TEXT_MINOR VOID OomSetCheckInterval(UINT32 checkInterval)
 {
     if ((checkInterval >= OOM_CHECK_MIN) && (checkInterval <= OOM_CHECK_MAX)) {
@@ -216,7 +217,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OomSetCheckInterval(UINT32 checkInterval)
                g_oomCB->checkInterval, OOM_CHECK_MIN, OOM_CHECK_MAX);
     }
 }
-///内存不足监控任务初始化, OOM 通过开一个软件定时器来检查内存的使用情况
+
 LITE_OS_SEC_TEXT_MINOR UINT32 OomTaskInit(VOID)
 {
     g_oomCB = (OomCB *)LOS_MemAlloc(m_aucSysMem0, sizeof(OomCB));
@@ -246,7 +247,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OomTaskInit(VOID)
 #endif
 }
 
-LOS_MODULE_INIT(OomTaskInit, LOS_INIT_LEVEL_KMOD_TASK);//初始化内存监控模块
+LOS_MODULE_INIT(OomTaskInit, LOS_INIT_LEVEL_KMOD_TASK);
 
 #endif
 

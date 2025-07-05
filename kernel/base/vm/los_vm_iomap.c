@@ -1,3 +1,33 @@
+/*
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this list of
+ *    conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice, this list
+ *    of conditions and the following disclaimer in the documentation and/or other materials
+ *    provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors may be used
+ *    to endorse or promote products derived from this software without specific prior written
+ *    permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 /*!
  * @file  los_vm_iomap.c
  * @brief DMA
@@ -43,38 +73,6 @@
  * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
  * @date    2022-04-02
  */
-
-/*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this list of
- *    conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- *    of conditions and the following disclaimer in the documentation and/or other materials
- *    provided with the distribution.
- *
- * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- *    to endorse or promote products derived from this software without specific prior written
- *    permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 #include "los_vm_iomap.h"
 #include "los_printf.h"
 #include "los_vm_zone.h"
@@ -82,71 +80,91 @@
 #include "los_vm_map.h"
 #include "los_memory.h"
 
-/// 分配DMA空间
+
+/**
+ * @brief DMA内存分配函数
+ * @param[out] dmaAddr 输出参数，返回分配的DMA物理地址
+ * @param[in] size 申请的内存大小
+ * @param[in] align 内存对齐要求
+ * @param[in] type DMA内存类型（DMA_CACHE或DMA_NOCACHE）
+ * @return 成功返回虚拟地址，失败返回NULL
+ * @details 根据指定类型分配DMA内存，支持缓存和非缓存两种模式
+ */
 VOID *LOS_DmaMemAlloc(DMA_ADDR_T *dmaAddr, size_t size, size_t align, enum DmaMemType type)
 {
-    VOID *kVaddr = NULL;
+    VOID *kVaddr = NULL;  // 虚拟地址指针
 
-    if (size == 0) {
-        return NULL;
+    if (size == 0) {  // 检查申请大小是否为0
+        return NULL;  // 无效大小，返回NULL
     }
 
-    if ((type != DMA_CACHE) && (type != DMA_NOCACHE)) {
-        VM_ERR("The dma type = %d is not supported!", type);
-        return NULL;
+    if ((type != DMA_CACHE) && (type != DMA_NOCACHE)) {  // 检查DMA类型是否支持
+        VM_ERR("The dma type = %d is not supported!", type);  // 打印不支持类型错误
+        return NULL;  // 返回NULL
     }
 
 #ifdef LOSCFG_KERNEL_VM
-    kVaddr = LOS_KernelMallocAlign(size, align);//不走内存池方式, 直接申请物理页
+    kVaddr = LOS_KernelMallocAlign(size, align);  // 不走内存池方式, 直接申请物理页
 #else
-    kVaddr = LOS_MemAllocAlign(OS_SYS_MEM_ADDR, size, align);//从内存池中申请
+    kVaddr = LOS_MemAllocAlign(OS_SYS_MEM_ADDR, size, align);  // 从内存池中申请
 #endif
-    if (kVaddr == NULL) {
-        VM_ERR("failed, size = %u, align = %u", size, align);
-        return NULL;
+    if (kVaddr == NULL) {  // 检查内存申请是否成功
+        VM_ERR("failed, size = %u, align = %u", size, align);  // 打印申请失败错误
+        return NULL;  // 返回NULL
     }
 
-    if (dmaAddr != NULL) {
-        *dmaAddr = (DMA_ADDR_T)LOS_PaddrQuery(kVaddr);//查询物理地址, DMA直接将数据灌到物理地址
+    if (dmaAddr != NULL) {  // 如果需要返回物理地址
+        *dmaAddr = (DMA_ADDR_T)LOS_PaddrQuery(kVaddr);  // 查询物理地址, DMA直接将数据灌到物理地址
     }
 
-    if (type == DMA_NOCACHE) {//无缓存模式 , 计算新的虚拟地址
-        kVaddr = (VOID *)VMM_TO_UNCACHED_ADDR((UINTPTR)kVaddr);
+    if (type == DMA_NOCACHE) {  // 无缓存模式
+        kVaddr = (VOID *)VMM_TO_UNCACHED_ADDR((UINTPTR)kVaddr);  // 计算新的虚拟地址
     }
 
-    return kVaddr;
+    return kVaddr;  // 返回分配的虚拟地址
 }
-/// 释放 DMA指针
+
+/**
+ * @brief DMA内存释放函数
+ * @param[in] vaddr 需要释放的DMA内存虚拟地址
+ * @details 根据虚拟地址所在区域（缓存/非缓存）执行相应的释放操作
+ */
 VOID LOS_DmaMemFree(VOID *vaddr)
 {
-    UINTPTR addr;
+    UINTPTR addr;  // 地址变量
 
-    if (vaddr == NULL) {
-        return;
+    if (vaddr == NULL) {  // 检查地址是否为NULL
+        return;  // 直接返回
     }
-    addr = (UINTPTR)vaddr;
-	// 未缓存区
-    if ((addr >= UNCACHED_VMM_BASE) && (addr < UNCACHED_VMM_BASE + UNCACHED_VMM_SIZE)) {
-        addr = UNCACHED_TO_VMM_ADDR(addr); //转换成未缓存区地址
+    addr = (UINTPTR)vaddr;  // 转换为无符号整数地址
+    // 未缓存区
+    if ((addr >= UNCACHED_VMM_BASE) && (addr < UNCACHED_VMM_BASE + UNCACHED_VMM_SIZE)) {  // 检查是否在非缓存区
+        addr = UNCACHED_TO_VMM_ADDR(addr);  // 转换成缓存区虚拟地址
 #ifdef LOSCFG_KERNEL_VM
-        LOS_KernelFree((VOID *)addr);// 
+        LOS_KernelFree((VOID *)addr);  // 内核方式释放
 #else
-        LOS_MemFree(OS_SYS_MEM_ADDR, (VOID *)addr);//内存池方式释放
+        LOS_MemFree(OS_SYS_MEM_ADDR, (VOID *)addr);  // 内存池方式释放
 #endif
-    } else if ((addr >= KERNEL_VMM_BASE) && (addr < KERNEL_VMM_BASE + KERNEL_VMM_SIZE)) {
+    } else if ((addr >= KERNEL_VMM_BASE) && (addr < KERNEL_VMM_BASE + KERNEL_VMM_SIZE)) {  // 检查是否在缓存区
 #ifdef LOSCFG_KERNEL_VM
-        LOS_KernelFree((VOID *)addr);
+        LOS_KernelFree((VOID *)addr);  // 内核方式释放
 #else
-        LOS_MemFree(OS_SYS_MEM_ADDR, (VOID *)addr);
+        LOS_MemFree(OS_SYS_MEM_ADDR, (VOID *)addr);  // 内存池方式释放
 #endif
-    } else {
-        VM_ERR("addr %#x not in dma area!!!", vaddr);
+    } else {  // 地址不在DMA区域
+        VM_ERR("addr %#x not in dma area!!!", vaddr);  // 打印地址无效错误
     }
-    return;
+    return;  // 返回
 }
-/// 将DMA虚拟地址转成物理地址
+
+/**
+ * @brief DMA虚拟地址转物理地址
+ * @param[in] vaddr DMA虚拟地址
+ * @return 对应的物理地址
+ * @details 通过查询页表将DMA虚拟地址转换为物理地址
+ */
 DMA_ADDR_T LOS_DmaVaddrToPaddr(VOID *vaddr)
 {
-    return (DMA_ADDR_T)LOS_PaddrQuery(vaddr);
+    return (DMA_ADDR_T)LOS_PaddrQuery(vaddr);  // 查询并返回物理地址
 }
 
