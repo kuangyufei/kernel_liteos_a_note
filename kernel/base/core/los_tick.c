@@ -37,30 +37,39 @@
 #endif
 
 
-LITE_OS_SEC_DATA_INIT UINT32 g_sysClock;		///< 系统时钟,是绝大部分部件工作的时钟源，也是其他所有外设的时钟的来源 
-LITE_OS_SEC_DATA_INIT UINT32 g_tickPerSecond;	///< 每秒Tick数,鸿蒙默认是每秒100次,即:10ms
-LITE_OS_SEC_BSS DOUBLE g_cycle2NsScale;			///< 周期转纳秒级
+// 系统时钟频率 (Hz)，由系统初始化时配置
+LITE_OS_SEC_DATA_INIT UINT32 g_sysClock;        
+// 每秒的系统滴答数，即系统定时器中断频率
+LITE_OS_SEC_DATA_INIT UINT32 g_tickPerSecond;    
+// 周期数到纳秒的转换比例 (ns = cycle * g_cycle2NsScale)
+LITE_OS_SEC_BSS DOUBLE g_cycle2NsScale;            
 
-/* spinlock for task module */
-LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_tickSpin); ///< 节拍器自旋锁
+/* 任务模块的自旋锁，用于保护滴答相关操作的原子性 */
+LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_tickSpin); 
 
-/*
- * Description : Tick interruption handler | 节拍中断处理函数 ,鸿蒙默认1ms触发一次
+
+/**
+ * @brief 系统滴答中断处理函数
+ * @details 由定时器中断触发，负责处理滴答相关的核心逻辑，包括调试信息记录、
+ *          VDSO时间更新、硬件时钟中断清除和调度器滴答处理
+ * @return 无
  */
 LITE_OS_SEC_TEXT VOID OsTickHandler(VOID)
 {
 #ifdef LOSCFG_SCHED_TICK_DEBUG 
-    OsSchedDebugRecordData();
+    OsSchedDebugRecordData();  /* 记录调度调试数据，用于性能分析和问题定位 */
 #endif
 
 #ifdef LOSCFG_KERNEL_VDSO
-    OsVdsoTimevalUpdate();//更新vdso数据页时间,vdso可以直接在用户进程空间绕过系统调用获取系统时间(例如:gettimeofday)
+    // 更新VDSO(虚拟动态共享对象)数据页时间
+    // VDSO允许用户进程直接访问内核时间信息，无需系统调用(如:gettimeofday)
+    OsVdsoTimevalUpdate();
 #endif
 
 #ifdef LOSCFG_BASE_CORE_TICK_HW_TIME
-    HalClockIrqClear(); /* diff from every platform */
+    HalClockIrqClear(); /* 清除硬件时钟中断标志，平台相关实现 */
 #endif
 
-    OsSchedTick();//由时钟发起的调度
+    OsSchedTick();  /* 调用调度器滴答处理函数，进行任务调度决策 */
 }
 

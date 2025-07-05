@@ -28,11 +28,6 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#include "los_bitmap.h"
-#include "los_printf.h"
-#include "los_toolchain.h" //GCC 编译器的内置函数
-
 /**
  * @brief
  * @verbatim
@@ -48,6 +43,11 @@
         https://www.geeksforgeeks.org/builtin-functions-gcc-compiler/
  * @endverbatim 
  */
+ 
+#include "los_bitmap.h"
+#include "los_printf.h"
+#include "los_toolchain.h" //GCC 编译器的内置函数
+
 #define OS_BITMAP_MASK 0x1FU //
 #define OS_BITMAP_WORD_MASK ~0UL
 

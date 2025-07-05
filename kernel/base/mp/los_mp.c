@@ -1,32 +1,3 @@
-/*!
- * @file    los_mp.c
- * @brief
- * @link
- * @verbatim
-	 多CPU核的操作系统3种处理模式(SMP+AMP+BMP) 鸿蒙实现的是 SMP 的方式
-		非对称多处理（Asymmetric multiprocessing，AMP）每个CPU内核
-		运行一个独立的操作系统或同一操作系统的独立实例（instantiation）。
-		
-		对称多处理（Symmetric multiprocessing，SMP）一个操作系统的实例
-		可以同时管理所有CPU内核，且应用并不绑定某一个内核。
-		
-		混合多处理（Bound multiprocessing，BMP）一个操作系统的实例可以
-		同时管理所有CPU内核，但每个应用被锁定于某个指定的核心。
-
-	多核多线程处理器的中断
-		由 PIC(Programmable Interrupt Controller）统一控制。PIC 允许一个
-		硬件线程中断其他的硬件线程，这种方式被称为核间中断(Inter-Processor Interrupts,IPI）
-		
-	SGI:软件触发中断(Software Generated Interrupt)。在arm处理器中，
-		SGI共有16个,硬件中断号分别为ID0~ID15。它通常用于多核间通讯。
- * @endverbatim
- * @version 
- * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
- * @date    2021-11-18
- *
- * @history
- *
- */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -57,14 +28,38 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+/*!
+ * @file    los_mp.c
+ * @brief
+ * @link
+ * @verbatim
+	 多CPU核的操作系统3种处理模式(SMP+AMP+BMP) 鸿蒙实现的是 SMP 的方式
+		非对称多处理（Asymmetric multiprocessing，AMP）每个CPU内核
+		运行一个独立的操作系统或同一操作系统的独立实例（instantiation）。
+		
+		对称多处理（Symmetric multiprocessing，SMP）一个操作系统的实例
+		可以同时管理所有CPU内核，且应用并不绑定某一个内核。
+		
+		混合多处理（Bound multiprocessing，BMP）一个操作系统的实例可以
+		同时管理所有CPU内核，但每个应用被锁定于某个指定的核心。
 
+	多核多线程处理器的中断
+		由 PIC(Programmable Interrupt Controller）统一控制。PIC 允许一个
+		硬件线程中断其他的硬件线程，这种方式被称为核间中断(Inter-Processor Interrupts,IPI）
+		
+	SGI:软件触发中断(Software Generated Interrupt)。在arm处理器中，
+		SGI共有16个,硬件中断号分别为ID0~ID15。它通常用于多核间通讯。
+ * @endverbatim
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2021-11-18
+ */
 #include "los_mp.h"
 #include "los_init.h"
 #include "los_percpu_pri.h"
 #include "los_sched_pri.h"
 #include "los_swtmr.h"
 #include "los_task_pri.h"
-
 
 #ifdef LOSCFG_KERNEL_SMP
 //给参数CPU发送调度信号

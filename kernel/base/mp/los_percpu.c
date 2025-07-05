@@ -33,27 +33,38 @@
 #include "los_printf.h"
 
 #ifdef LOSCFG_KERNEL_SMP
-Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM]; ///< CPU池,池大小由CPU核数决定
+/**
+ * @brief 全局每个CPU数据结构数组
+ * @details 存储系统中每个CPU核心的私有数据，数组大小由配置项 LOSCFG_KERNEL_CORE_NUM 决定
+ */
+Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM];
 
+/**
+ * @brief 输出所有CPU核心的运行状态信息
+ * @details 遍历所有CPU核心，根据其异常标志位输出对应的运行状态（运行中/已停止/异常中），最后输出当前处理异常的CPU编号
+ */
 VOID OsAllCpuStatusOutput(VOID)
 {
-    UINT32 i;
+    UINT32 i;  // 循环计数器，用于遍历所有CPU核心
 
+    // 遍历系统中所有CPU核心
     for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
+        // 根据CPU的异常标志位判断并输出对应状态
         switch (g_percpu[i].excFlag) {
-            case CPU_RUNNING:
+            case CPU_RUNNING:  // CPU处于运行状态
                 PrintExcInfo("cpu%u is running.\n", i);
                 break;
-            case CPU_HALT:
+            case CPU_HALT:     // CPU处于停止状态
                 PrintExcInfo("cpu%u is halted.\n", i);
                 break;
-            case CPU_EXC:
+            case CPU_EXC:      // CPU处于异常状态
                 PrintExcInfo("cpu%u is in exc.\n", i);
                 break;
-            default:
+            default:           // 未定义的状态，不输出信息
                 break;
         }
     }
+    // 输出当前正在处理异常的CPU编号
     PrintExcInfo("The current handling the exception is cpu%u !\n", ArchCurrCpuid());
 }
 #endif

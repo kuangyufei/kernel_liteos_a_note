@@ -1,6 +1,6 @@
 git add -A
 
-git commit -m  ' 注释调度算法（EDF、HDF、RR）和内存模块（OOM、dump、iomap）
+git commit -m  ' 注释shell命令的内核实现
     博客 | http://weharmonyos.com
 '
 git push  gitee_origin master

@@ -48,38 +48,54 @@
 
 #ifdef LOSCFG_KERNEL_VM
 
-#define ARGC_2             2
-#define ARGC_1             1
-#define ARGC_0             0
-#define VMM_CMD            "vmm"
-#define OOM_CMD            "oom"
-#define VMM_PMM_CMD        "v2p"
-//dump内核空间
+// 参数数量常量定义
+#define ARGC_2             2  // 两个参数
+#define ARGC_1             1  // 一个参数
+#define ARGC_0             0  // 无参数
+// 命令名称常量定义
+#define VMM_CMD            "vmm"       // 虚拟内存管理命令
+#define OOM_CMD            "oom"       // 内存溢出管理命令
+#define VMM_PMM_CMD        "v2p"       // 虚拟地址转物理地址命令
+
+/**
+ * @brief 转储内核虚拟地址空间信息
+ * @details 调用 OsDumpAspace 函数打印内核地址空间的详细映射情况
+ */
 LITE_OS_SEC_TEXT_MINOR VOID OsDumpKernelAspace(VOID)
 {
-    LosVmSpace *kAspace = LOS_GetKVmSpace();
-    if (kAspace != NULL)  {
-        OsDumpAspace(kAspace);
+    LosVmSpace *kAspace = LOS_GetKVmSpace();  // 获取内核虚拟地址空间
+    if (kAspace != NULL)  {                   // 检查内核地址空间是否有效
+        OsDumpAspace(kAspace);                // 转储内核地址空间信息
     } else {
-        VM_ERR("kernel aspace is NULL");
+        VM_ERR("kernel aspace is NULL");     // 内核地址空间为空时输出错误
     }
     return;
 }
 
+/**
+ * @brief 验证并转换进程ID字符串
+ * @param str 输入的进程ID字符串
+ * @return 有效的进程ID（0~63），无效时返回-1
+ * @note 进程ID范围限制为0~63，因此字符串长度最多为2位
+ */
 LITE_OS_SEC_TEXT_MINOR INT32 OsPid(const CHAR *str)
 {
     UINT32 len = strlen(str);
     if (len <= 2) { // pid range is 0~63, max pid string length is 2
         for (UINT32 i = 0; i < len; i++) {
-            if (isdigit(str[i]) == 0) {
+            if (isdigit(str[i]) == 0) {       // 检查每个字符是否为数字
                 return -1;
             }
         }
-        return atoi(str);
+        return atoi(str);                     // 转换为整数PID返回
     }
-    return -1;
+    return -1;                                // 长度超过2位视为无效
 }
 
+/**
+ * @brief 打印vmm命令的使用帮助
+ * @details 输出vmm命令支持的所有选项及其功能说明
+ */
 LITE_OS_SEC_TEXT_MINOR VOID OsPrintUsage(VOID)
 {
     PRINTK("-a,            print all vm address space information\n"
@@ -88,59 +104,83 @@ LITE_OS_SEC_TEXT_MINOR VOID OsPrintUsage(VOID)
            "-h | --help,   print vmm command usage\n");
 }
 
+/**
+ * @brief 转储指定进程的虚拟地址空间信息
+ * @param pid 目标进程ID
+ * @details 验证进程有效性后，调用OsDumpAspace打印进程地址空间映射
+ */
 LITE_OS_SEC_TEXT_MINOR VOID OsDoDumpVm(pid_t pid)
 {
     LosProcessCB *processCB = NULL;
 
-    if (OsProcessIDUserCheckInvalid(pid)) {
+    if (OsProcessIDUserCheckInvalid(pid)) {    // 检查PID是否在有效范围内
         PRINTK("\tThe process [%d] not valid\n", pid);
         return;
     }
 
-    processCB = OS_PCB_FROM_PID(pid);
+    processCB = OS_PCB_FROM_PID(pid);         // 通过PID获取进程控制块
+    // 检查进程是否活动且虚拟地址空间有效
     if (!OsProcessIsUnused(processCB) && (processCB->vmSpace != NULL)) {
-        OsDumpAspace(processCB->vmSpace);
+        OsDumpAspace(processCB->vmSpace);     // 转储进程虚拟地址空间
     } else {
         PRINTK("\tThe process [%d] not active\n", pid);
     }
 }
-///查看进程的虚拟内存使用情况。vmm [-a / -h / --help]， vmm [pid]
+
+/**
+ * @brief vmm命令处理函数
+ * @param argc 参数数量
+ * @param argv 参数数组
+ * @return 始终返回OS_ERROR（命令处理状态码）
+ * @details 支持查看所有进程、内核或指定进程的虚拟内存信息
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpVm(INT32 argc, const CHAR *argv[])
 {
     if (argc == 0) { //没有参数 使用 # vmm 查看所有进程使用虚拟内存的情况
-        OsDumpAllAspace();
+        OsDumpAllAspace();                    // 转储所有进程地址空间
     } else if (argc == 1) {
-        pid_t pid = OsPid(argv[0]);
+        pid_t pid = OsPid(argv[0]);           // 解析PID参数
         if (strcmp(argv[0], "-a") == 0) {	//# vmm -a 查看所有进程使用虚拟内存的情况
-            OsDumpAllAspace();
+            OsDumpAllAspace();                // 转储所有进程地址空间
         } else if (strcmp(argv[0], "-k") == 0) {//# vmm -k 查看内核进程使用虚拟内存的情况
-            OsDumpKernelAspace();
+            OsDumpKernelAspace();             // 转储内核地址空间
         } else if (pid >= 0) { //# vmm 3 查看3号进程使用虚拟内存的情况
-            OsDoDumpVm(pid);
+            OsDoDumpVm(pid);                  // 转储指定进程地址空间
         } else if (strcmp(argv[0], "-h") == 0 || strcmp(argv[0], "--help") == 0) { //# vmm -h 或者  vmm --help
-            OsPrintUsage();
+            OsPrintUsage();                   // 打印帮助信息
         } else {
             PRINTK("%s: invalid option: %s\n", VMM_CMD, argv[0]);	//格式错误，输出规范格式
             OsPrintUsage();
         }
     } else {	//多于一个参数 例如 # vmm 3 9
-        OsPrintUsage();
+        OsPrintUsage();                       // 参数数量错误时打印帮助
     }
 
     return OS_ERROR;
 }
 
+/**
+ * @brief v2p命令的使用帮助
+ * @details 输出虚拟地址转物理地址命令的参数格式和使用说明
+ */
 LITE_OS_SEC_TEXT_MINOR VOID V2PPrintUsage(VOID)
 {
     PRINTK("pid vaddr(0x1000000~0x3e000000),     print physical address of virtual address\n"
            "-h | --help,                     print v2p command usage\n");
 }
-// 将虚拟地址转换为物理地址
+
+/**
+ * @brief 虚拟地址转物理地址命令处理函数
+ * @param argc 参数数量
+ * @param argv 参数数组（格式：pid vaddr）
+ * @return 成功返回LOS_OK，失败返回OS_ERROR
+ * @details 解析进程ID和虚拟地址，查询并打印对应的物理地址
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdV2P(INT32 argc, const CHAR *argv[])
 {
-    UINT32 vaddr;
-    PADDR_T paddr;
-    CHAR *endPtr = NULL;
+    UINT32 vaddr;                             // 虚拟地址
+    PADDR_T paddr;                            // 物理地址
+    CHAR *endPtr = NULL;                      // 字符串转换结束指针
 
     if (argc == 0) {  // 如果没有参数，打印使用说明
         V2PPrintUsage();
@@ -150,8 +190,10 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdV2P(INT32 argc, const CHAR *argv[])
         }
     } else if (argc == 2) {  // 如果有两个参数
         pid_t pid = OsPid(argv[0]);  // 获取进程ID
-        vaddr = strtoul((CHAR *)argv[1], &endPtr, 0);  // 将虚拟地址字符串转换为无符号长整型
-        if ((endPtr == NULL) || (*endPtr != 0) || !LOS_IsUserAddress(vaddr)) {  // 检查虚拟地址是否有效
+        // 将虚拟地址字符串转换为无符号长整型
+        vaddr = strtoul((CHAR *)argv[1], &endPtr, 0);
+        // 检查虚拟地址是否有效（转换成功且在用户地址范围内）
+        if ((endPtr == NULL) || (*endPtr != 0) || !LOS_IsUserAddress(vaddr)) {
             PRINTK("vaddr %s invalid. should be in range(0x1000000~0x3e000000) \n", argv[1]);
             return OS_ERROR;
         } else {
@@ -182,16 +224,24 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdV2P(INT32 argc, const CHAR *argv[])
     return LOS_OK;  // 返回成功
 }
 
-///查看系统内存物理页及pagecache物理页使用情况 ,             Debug版本才具备的命令 # pmm
+
+/**
+ * @brief 转储物理内存管理信息
+ * @return 始终返回OS_ERROR
+ * @details 依次调用物理内存、路径缓存和虚拟节点的内存转储函数
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpPmm(VOID)
 {
-    OsVmPhysDump();
-
-    PathCacheMemoryDump();
-    VnodeMemoryDump();
+    OsVmPhysDump();          // 转储物理内存信息
+    PathCacheMemoryDump();   // 转储路径缓存内存信息
+    VnodeMemoryDump();       // 转储虚拟节点内存信息
     return OS_ERROR;
 }
 
+/**
+ * @brief oom命令的使用帮助
+ * @details 输出OOM管理命令支持的参数选项及其功能说明
+ */
 LITE_OS_SEC_TEXT_MINOR VOID OomPrintUsage(VOID)
 {
     PRINTK("\t-i [interval],     set oom check interval (ms)\n"	//设置oom线程任务检查的时间间隔。
@@ -199,56 +249,62 @@ LITE_OS_SEC_TEXT_MINOR VOID OomPrintUsage(VOID)
            "\t-r [mem byte],     set page cache reclaim memory threshold (Byte)\n"	//设置pagecache内存回收阈值。
            "\t-h | --help,       print vmm command usage\n");	//使用帮助。
 }
-///查看和设置低内存阈值以及pagecache内存回收阈值。参数缺省时，显示oom功能当前配置信息。 
-//当系统内存不足时，会打印出内存不足的提示信息。
+
+/**
+ * @brief OOM管理命令处理函数
+ * @param argc 参数数量
+ * @param argv 参数数组
+ * @return 成功返回LOS_OK，失败返回OS_ERROR
+ * @details 支持设置OOM检查间隔、低内存阈值和页缓存回收阈值
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdOom(INT32 argc, const CHAR *argv[])
 {
-    UINT32 lowMemThreshold;
-    UINT32 reclaimMemThreshold;
-    UINT32 checkInterval;
-    CHAR *endPtr = NULL;
+    UINT32 lowMemThreshold;      // 低内存阈值
+    UINT32 reclaimMemThreshold;  // 内存回收阈值
+    UINT32 checkInterval;        // 检查间隔
+    CHAR *endPtr = NULL;         // 字符串转换结束指针
 
     if (argc == ARGC_0) {
-        OomInfodump();
+        OomInfodump();           // 无参数时转储OOM当前信息
     } else if (argc == ARGC_1) {
+        // 单个参数且非帮助选项时提示错误
         if (strcmp(argv[0], "-h") != 0 && strcmp(argv[0], "--help") != 0) {
             PRINTK("%s: invalid option: %s\n", OOM_CMD, argv[0]);
         }
-        OomPrintUsage();
+        OomPrintUsage();         // 打印帮助信息
     } else if (argc == ARGC_2) {
-        if (strcmp(argv[0], "-m") == 0) {
+        if (strcmp(argv[0], "-m") == 0) {  // 设置低内存阈值
             lowMemThreshold = strtoul((CHAR *)argv[1], &endPtr, 0);
-            if ((endPtr == NULL) || (*endPtr != 0)) {
+            if ((endPtr == NULL) || (*endPtr != 0)) {  // 检查参数有效性
                 PRINTK("[oom] low mem threshold %s(byte) invalid.\n", argv[1]);
                 return OS_ERROR;
             } else {
                 OomSetLowMemThreashold(lowMemThreshold);//设置低内存阈值
             }
-        } else if (strcmp(argv[0], "-i") == 0) {
+        } else if (strcmp(argv[0], "-i") == 0) {  // 设置检查间隔
             checkInterval = strtoul((CHAR *)argv[1], &endPtr, 0);
-            if ((endPtr == NULL) || (*endPtr != 0)) {
+            if ((endPtr == NULL) || (*endPtr != 0)) {  // 检查参数有效性
                 PRINTK("[oom] check interval %s(us) invalid.\n", argv[1]);
                 return OS_ERROR;
             } else {
                 OomSetCheckInterval(checkInterval);//设置oom线程任务检查的时间间隔
             }
-        } else if (strcmp(argv[0], "-r") == 0) {
+        } else if (strcmp(argv[0], "-r") == 0) {  // 设置回收阈值
             reclaimMemThreshold = strtoul((CHAR *)argv[1], &endPtr, 0);
-            if ((endPtr == NULL) || (*endPtr != 0)) {
+            if ((endPtr == NULL) || (*endPtr != 0)) {  // 检查参数有效性
                 PRINTK("[oom] reclaim mem threshold %s(byte) invalid.\n", argv[1]);
                 return OS_ERROR;
             } else {
                 OomSetReclaimMemThreashold(reclaimMemThreshold);//设置pagecache内存回收阈值
             }
-        } else {
+        } else {  // 未知选项
             PRINTK("%s: invalid option: %s %s\n", OOM_CMD, argv[0], argv[1]);
             OomPrintUsage();
         }
-    } else {
+    } else {  // 参数数量错误
         PRINTK("%s: invalid option\n", OOM_CMD);
         OomPrintUsage();
     }
-
     return OS_ERROR;
 }
 

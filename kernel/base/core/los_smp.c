@@ -39,39 +39,64 @@
 #include "los_swtmr_pri.h"
 
 #ifdef LOSCFG_KERNEL_SMP
+/**
+ * @brief SMP(对称多处理)操作接口指针
+ * @details 指向平台特定的SMP操作实现，包括CPU启动、中断分发等功能
+ */
 STATIC struct SmpOps *g_smpOps = NULL;
-/// 多核中次级CPU核初始化,每个核都会调用一次
+
+/**
+ * @brief  secondary CPU初始化函数
+ * @param  arg - 传递给secondary CPU的参数(未使用)
+ * @details 完成secondary CPU的核心初始化工作，包括任务设置、定时器初始化和调度启动
+ */
 STATIC VOID OsSmpSecondaryInit(VOID *arg)
 {
-    UNUSED(arg);
+    UNUSED(arg);  /* 未使用的参数，避免编译警告 */
 
+    /* 设置当前任务为系统主任务 */
     OsCurrTaskSet(OsGetMainTask());
 
 #ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
-    OsSwtmrInit();
+    OsSwtmrInit();  /* 初始化软件定时器模块 */
 #endif
 
+    /* 为当前CPU创建空闲任务 */
     OsIdleTaskCreate((UINTPTR)OsGetIdleProcess());
+    /* 执行LEVEL_KMOD_TASK级别的初始化回调 */
     OsInitCall(LOS_INIT_LEVEL_KMOD_TASK);
 
-    OsSchedStart();
+    OsSchedStart();  /* 启动CPU调度器，开始任务调度 */
 }
-/// 设置多核操作接口, 通过外部注册
+
+/**
+ * @brief 设置SMP操作接口
+ * @param  ops - SMP操作接口实现
+ * @details 注册平台特定的SMP操作函数集，必须在SMP初始化前调用
+ */
 VOID LOS_SmpOpsSet(struct SmpOps *ops)
 {
-    g_smpOps = ops;
+    g_smpOps = ops;  /* 保存SMP操作接口指针 */
 }
 
+/**
+ * @brief SMP系统初始化函数
+ * @details 启动所有secondary CPU并完成多处理器系统的初始化
+ * @note 必须先调用LOS_SmpOpsSet注册SMP操作接口
+ */
 VOID OsSmpInit(VOID)
 {
-    UINT32 cpuNum = 1;  /* Start the secondary cpus. */
+    UINT32 cpuNum = 1;  /* 从CPU 1开始初始化secondary CPU */
 
+    /* 检查SMP操作接口是否已注册 */
     if (g_smpOps == NULL) {
         PRINT_ERR("Must call the interface(LOS_SmpOpsSet) to register smp operations firstly!\n");
         return;
     }
 
+    /* 遍历并启动所有secondary CPU */
     for (; cpuNum < CORE_NUM; cpuNum++) {
+        /* 调用硬件接口启动指定CPU，传入初始化函数和参数 */
         HalArchCpuOn(cpuNum, OsSmpSecondaryInit, g_smpOps, 0);
     }
 

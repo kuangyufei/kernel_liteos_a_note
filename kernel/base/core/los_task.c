@@ -28,42 +28,6 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#include "los_task_pri.h"
-#include "los_base_pri.h"
-#include "los_event_pri.h"
-#include "los_exc.h"
-#include "los_hw_pri.h"
-#include "los_init.h"
-#include "los_memstat_pri.h"
-#include "los_mp.h"
-#include "los_mux_pri.h"
-#include "los_sched_pri.h"
-#include "los_sem_pri.h"
-#include "los_spinlock.h"
-#include "los_strncpy_from_user.h"
-#include "los_percpu_pri.h"
-#include "los_process_pri.h"
-#include "los_vm_map.h"
-#include "los_vm_syscall.h"
-#include "los_signal.h"
-#include "los_hook.h"
-
-#ifdef LOSCFG_KERNEL_CPUP
-#include "los_cpup_pri.h"
-#endif
-#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
-#include "los_swtmr_pri.h"
-#endif
-#ifdef LOSCFG_KERNEL_LITEIPC
-#include "hm_liteipc.h"
-#endif
-#ifdef LOSCFG_ENABLE_OOM_LOOP_TASK
-#include "los_oom.h"
-#endif
-#ifdef LOSCFG_KERNEL_CONTAINER
-#include "los_container_pri.h"
-#endif
 /**
  * @file los_task.c
  * @brief 
@@ -141,6 +105,41 @@
  * @param pathname 
  * @return int 
  */
+#include "los_task_pri.h"
+#include "los_base_pri.h"
+#include "los_event_pri.h"
+#include "los_exc.h"
+#include "los_hw_pri.h"
+#include "los_init.h"
+#include "los_memstat_pri.h"
+#include "los_mp.h"
+#include "los_mux_pri.h"
+#include "los_sched_pri.h"
+#include "los_sem_pri.h"
+#include "los_spinlock.h"
+#include "los_strncpy_from_user.h"
+#include "los_percpu_pri.h"
+#include "los_process_pri.h"
+#include "los_vm_map.h"
+#include "los_vm_syscall.h"
+#include "los_signal.h"
+#include "los_hook.h"
+
+#ifdef LOSCFG_KERNEL_CPUP
+#include "los_cpup_pri.h"
+#endif
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
+#include "los_swtmr_pri.h"
+#endif
+#ifdef LOSCFG_KERNEL_LITEIPC
+#include "hm_liteipc.h"
+#endif
+#ifdef LOSCFG_ENABLE_OOM_LOOP_TASK
+#include "los_oom.h"
+#endif
+#ifdef LOSCFG_KERNEL_CONTAINER
+#include "los_container_pri.h"
+#endif
 
 #if (LOSCFG_BASE_CORE_TSK_LIMIT <= 0)
 #error "task maxnum cannot be zero"
@@ -896,170 +895,213 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsTaskSuspend(LosTaskCB *taskCB)
 
     return taskCB->ops->suspend(taskCB);
 }
-///外部接口，对OsTaskSuspend的封装
+
+/**
+ * @brief  挂起指定任务
+ * @details 验证任务ID有效性，检查是否为系统任务，通过调度锁保护任务挂起操作
+ * @param[in]  taskID - 任务ID
+ * @return UINT32 - 执行结果（LOS_OK表示成功，其他值表示失败）
+ */
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskSuspend(UINT32 taskID)
 {
-    UINT32 intSave;
-    UINT32 errRet;
+    UINT32 intSave;                       // 中断状态保存变量
+    UINT32 errRet;                        // 错误返回值
 
-    if (OS_TID_CHECK_INVALID(taskID)) {
-        return LOS_ERRNO_TSK_ID_INVALID;
+    if (OS_TID_CHECK_INVALID(taskID)) {   // 检查任务ID是否有效
+        return LOS_ERRNO_TSK_ID_INVALID;  // 返回无效任务ID错误
     }
 
-    LosTaskCB *taskCB = OS_TCB_FROM_TID(taskID);
-    if (taskCB->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {
-        return LOS_ERRNO_TSK_OPERATE_SYSTEM_TASK;
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(taskID);  // 通过任务ID获取任务控制块
+    if (taskCB->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {  // 检查是否为系统任务
+        return LOS_ERRNO_TSK_OPERATE_SYSTEM_TASK;  // 返回不允许操作系统任务错误
     }
 
-    SCHEDULER_LOCK(intSave);
-    errRet = OsTaskSuspend(taskCB);
-    SCHEDULER_UNLOCK(intSave);
-    return errRet;
+    SCHEDULER_LOCK(intSave);              // 获取调度锁，禁止任务调度
+    errRet = OsTaskSuspend(taskCB);       // 调用内部函数执行实际挂起操作
+    SCHEDULER_UNLOCK(intSave);            // 释放调度锁，恢复任务调度
+    return errRet;                        // 返回执行结果
 }
-///设置任务为不使用状态
+
+/**
+ * @brief  将任务状态设置为未使用
+ * @details 标记任务为未使用状态，清除事件掩码和任务ID
+ * @param[in]  taskCB - 任务控制块指针
+ */
 STATIC INLINE VOID OsTaskStatusUnusedSet(LosTaskCB *taskCB)
 {
-    taskCB->taskStatus |= OS_TASK_STATUS_UNUSED;
-    taskCB->eventMask = 0;
+    taskCB->taskStatus |= OS_TASK_STATUS_UNUSED;  // 设置未使用状态标志
+    taskCB->eventMask = 0;                 // 清除事件掩码
 
-    OS_MEM_CLEAR(taskCB->taskID);
+    OS_MEM_CLEAR(taskCB->taskID);          // 清除任务ID（内存清零）
 }
 
+/**
+ * @brief  释放任务持有的锁资源
+ * @details 遍历释放任务持有的所有互斥锁，清理Futex节点，唤醒等待该任务的线程
+ * @param[in]  taskCB - 任务控制块指针
+ */
 STATIC VOID OsTaskReleaseHoldLock(LosTaskCB *taskCB)
 {
-    LosMux *mux = NULL;
-    UINT32 ret;
+    LosMux *mux = NULL;                    // 互斥锁指针
+    UINT32 ret;                           // 函数返回值
 
+    // 遍历任务持有的所有互斥锁
     while (!LOS_ListEmpty(&taskCB->lockList)) {
+        // 获取链表中的第一个互斥锁
         mux = LOS_DL_LIST_ENTRY(LOS_DL_LIST_FIRST(&taskCB->lockList), LosMux, holdList);
+        // 不安全地解锁互斥锁（已在调度锁保护下）
         ret = OsMuxUnlockUnsafe(taskCB, mux, NULL);
-        if (ret != LOS_OK) {
-            LOS_ListDelete(&mux->holdList);
-            PRINT_ERR("mux ulock failed! : %u\n", ret);
+        if (ret != LOS_OK) {              // 解锁失败
+            LOS_ListDelete(&mux->holdList);  // 从持有列表中删除该锁
+            PRINT_ERR("mux ulock failed! : %u\n", ret);  // 输出错误信息
         }
     }
 
-#ifdef LOSCFG_KERNEL_VM
-    if (taskCB->taskStatus & OS_TASK_FLAG_USER_MODE) {
+#ifdef LOSCFG_KERNEL_VM                   // 如果启用虚拟内存配置
+    if (taskCB->taskStatus & OS_TASK_FLAG_USER_MODE) {  // 如果是用户模式任务
+        // 从Futex哈希表中删除该任务的Futex节点
         OsFutexNodeDeleteFromFutexHash(&taskCB->futex, TRUE, NULL, NULL);
     }
 #endif
 
-    OsTaskJoinPostUnsafe(taskCB);
+    OsTaskJoinPostUnsafe(taskCB);         // 处理任务join等待（不安全操作）
 
-    OsTaskSyncWake(taskCB);
+    OsTaskSyncWake(taskCB);               // 唤醒等待该任务同步的线程
 }
 
+/**
+ * @brief  处理运行中任务的退出流程
+ * @details 释放任务和进程资源，处理进程最后一个线程退出场景，触发调度
+ * @param[in]  runTask - 正在运行的任务控制块指针
+ * @param[in]  status - 退出状态码
+ */
 LITE_OS_SEC_TEXT VOID OsRunningTaskToExit(LosTaskCB *runTask, UINT32 status)
 {
-    UINT32 intSave;
+    UINT32 intSave;                       // 中断状态保存变量
 
-    if (OsIsProcessThreadGroup(runTask)) {
-        OsProcessThreadGroupDestroy();
+    if (OsIsProcessThreadGroup(runTask)) {  // 如果是进程的线程组
+        OsProcessThreadGroupDestroy();    // 销毁线程组
     }
 
-    OsHookCall(LOS_HOOK_TYPE_TASK_DELETE, runTask);
+    OsHookCall(LOS_HOOK_TYPE_TASK_DELETE, runTask);  // 调用任务删除钩子函数
 
-    SCHEDULER_LOCK(intSave);
-    if (OsProcessThreadNumberGet(runTask) == 1) { /* 1: The last task of the process exits */
-        SCHEDULER_UNLOCK(intSave);
+    SCHEDULER_LOCK(intSave);              // 获取调度锁
+    // 如果是进程的最后一个线程（1: 最后一个线程）
+    if (OsProcessThreadNumberGet(runTask) == 1) {
+        SCHEDULER_UNLOCK(intSave);        // 临时释放调度锁
 
-        OsTaskResourcesToFree(runTask);
+        OsTaskResourcesToFree(runTask);   // 释放任务资源
+        // 释放进程资源（从任务控制块获取进程控制块）
         OsProcessResourcesToFree(OS_PCB_FROM_TCB(runTask));
 
-        SCHEDULER_LOCK(intSave);
+        SCHEDULER_LOCK(intSave);          // 重新获取调度锁
 
+        // 处理进程自然退出
         OsProcessNaturalExit(OS_PCB_FROM_TCB(runTask), status);
-        OsTaskReleaseHoldLock(runTask);
-        OsTaskStatusUnusedSet(runTask);
-    } else if (runTask->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {
-        OsTaskReleaseHoldLock(runTask);
+        OsTaskReleaseHoldLock(runTask);   // 释放任务持有的锁
+        OsTaskStatusUnusedSet(runTask);   // 将任务状态设置为未使用
+    } else if (runTask->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {  // 如果任务允许join
+        OsTaskReleaseHoldLock(runTask);   // 释放任务持有的锁
     } else {
-        SCHEDULER_UNLOCK(intSave);
+        SCHEDULER_UNLOCK(intSave);        // 临时释放调度锁
 
-        OsTaskResourcesToFree(runTask);
+        OsTaskResourcesToFree(runTask);   // 释放任务资源
 
-        SCHEDULER_LOCK(intSave);
-        OsInactiveTaskDelete(runTask);
+        SCHEDULER_LOCK(intSave);          // 重新获取调度锁
+        OsInactiveTaskDelete(runTask);    // 删除非活动任务
+        // 写入资源释放事件（无需等待）
         OsEventWriteUnsafe(&g_resourceEvent, OS_RESOURCE_EVENT_FREE, FALSE, NULL);
     }
 
-    OsSchedResched();
-    SCHEDULER_UNLOCK(intSave);
+    OsSchedResched();                     // 触发任务重新调度
+    SCHEDULER_UNLOCK(intSave);            // 释放调度锁
     return;
 }
 
+/**
+ * @brief  删除非活动状态的任务
+ * @details 释放任务持有的锁，调用架构相关退出函数，清理任务状态并从进程中移除
+ * @param[in]  taskCB - 任务控制块指针
+ */
 LITE_OS_SEC_TEXT VOID OsInactiveTaskDelete(LosTaskCB *taskCB)
 {
-    UINT16 taskStatus = taskCB->taskStatus;
+    UINT16 taskStatus = taskCB->taskStatus;  // 保存当前任务状态
 
-    OsTaskReleaseHoldLock(taskCB);
+    OsTaskReleaseHoldLock(taskCB);         // 释放任务持有的锁
 
-    taskCB->ops->exit(taskCB);
-    if (taskStatus & OS_TASK_STATUS_PENDING) {
-        LosMux *mux = (LosMux *)taskCB->taskMux;
-        if (LOS_MuxIsValid(mux) == TRUE) {
+    taskCB->ops->exit(taskCB);             // 调用架构相关的任务退出函数
+    if (taskStatus & OS_TASK_STATUS_PENDING) {  // 如果任务处于等待状态
+        LosMux *mux = (LosMux *)taskCB->taskMux;  // 获取任务等待的互斥锁
+        if (LOS_MuxIsValid(mux) == TRUE) {  // 如果互斥锁有效
+            // 恢复互斥锁的位图（唤醒等待线程）
             OsMuxBitmapRestore(mux, NULL, taskCB);
         }
     }
 
-    OsTaskStatusUnusedSet(taskCB);
+    OsTaskStatusUnusedSet(taskCB);         // 将任务状态设置为未使用
 
-    OsDeleteTaskFromProcess(taskCB);
+    OsDeleteTaskFromProcess(taskCB);       // 从所属进程中删除任务
 
-    OsHookCall(LOS_HOOK_TYPE_TASK_DELETE, taskCB);
+    OsHookCall(LOS_HOOK_TYPE_TASK_DELETE, taskCB);  // 调用任务删除钩子函数
 }
 
+/**
+ * @brief  删除指定任务
+ * @details 支持删除自身或其他任务，处理SMP多核场景下的跨核调度，释放任务资源并触发调度
+ * @param[in]  taskID - 任务ID
+ * @return UINT32 - 执行结果（LOS_OK表示成功，其他值表示失败）
+ */
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskDelete(UINT32 taskID)
 {
-    UINT32 intSave;
-    UINT32 ret = LOS_OK;
+    UINT32 intSave;                       // 中断状态保存变量
+    UINT32 ret = LOS_OK;                  // 函数返回值，默认成功
 
-    if (OS_TID_CHECK_INVALID(taskID)) {
-        return LOS_ERRNO_TSK_ID_INVALID;
+    if (OS_TID_CHECK_INVALID(taskID)) {   // 检查任务ID是否有效
+        return LOS_ERRNO_TSK_ID_INVALID;  // 返回无效任务ID错误
     }
 
-    if (OS_INT_ACTIVE) {
-        return LOS_ERRNO_TSK_YIELD_IN_INT;
+    if (OS_INT_ACTIVE) {                  // 如果当前处于中断上下文
+        return LOS_ERRNO_TSK_YIELD_IN_INT;  // 返回中断中不允许删除任务错误
     }
 
-    LosTaskCB *taskCB = OS_TCB_FROM_TID(taskID);
-    if (taskCB == OsCurrTaskGet()) {
-        if (!OsPreemptable()) {
-            return LOS_ERRNO_TSK_DELETE_LOCKED;
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(taskID);  // 通过任务ID获取任务控制块
+    if (taskCB == OsCurrTaskGet()) {      // 如果是当前运行任务（自删除）
+        if (!OsPreemptable()) {           // 如果当前不可抢占
+            return LOS_ERRNO_TSK_DELETE_LOCKED;  // 返回禁止删除错误
         }
-        OsRunningTaskToExit(taskCB, OS_PRO_EXIT_OK);
-        return LOS_NOK;
+        OsRunningTaskToExit(taskCB, OS_PRO_EXIT_OK);  // 处理运行中任务退出
+        return LOS_NOK;                   // 自删除后不会执行到此处，返回失败
     }
 
-    SCHEDULER_LOCK(intSave);
-    if (OsTaskIsNotDelete(taskCB)) {
-        if (OsTaskIsUnused(taskCB)) {
-            ret = LOS_ERRNO_TSK_NOT_CREATED;
+    SCHEDULER_LOCK(intSave);              // 获取调度锁
+    if (OsTaskIsNotDelete(taskCB)) {      // 检查任务是否不允许删除
+        if (OsTaskIsUnused(taskCB)) {     // 如果任务未创建
+            ret = LOS_ERRNO_TSK_NOT_CREATED;  // 返回任务未创建错误
         } else {
-            ret = LOS_ERRNO_TSK_OPERATE_SYSTEM_TASK;
+            ret = LOS_ERRNO_TSK_OPERATE_SYSTEM_TASK;  // 返回系统任务不允许操作错误
         }
-        OS_GOTO_ERREND();
+        OS_GOTO_ERREND();                 // 跳转到错误处理
     }
 
-#ifdef LOSCFG_KERNEL_SMP
-    if (taskCB->taskStatus & OS_TASK_STATUS_RUNNING) {
-        taskCB->signal = SIGNAL_KILL;
-        LOS_MpSchedule(taskCB->currCpu);
-        ret = OsTaskSyncWait(taskCB);
-        OS_GOTO_ERREND();
+#ifdef LOSCFG_KERNEL_SMP                  // 如果启用SMP多核配置
+    if (taskCB->taskStatus & OS_TASK_STATUS_RUNNING) {  // 如果任务正在其他核运行
+        taskCB->signal = SIGNAL_KILL;     // 设置终止信号
+        LOS_MpSchedule(taskCB->currCpu);  // 触发目标CPU调度
+        ret = OsTaskSyncWait(taskCB);     // 等待任务同步退出
+        OS_GOTO_ERREND();                 // 跳转到错误处理
     }
 #endif
 
-    OsInactiveTaskDelete(taskCB);
+    OsInactiveTaskDelete(taskCB);         // 删除非活动任务
+    // 写入资源释放事件（无需等待）
     OsEventWriteUnsafe(&g_resourceEvent, OS_RESOURCE_EVENT_FREE, FALSE, NULL);
 
-LOS_ERREND:
-    SCHEDULER_UNLOCK(intSave);
-    if (ret == LOS_OK) {
-        LOS_Schedule();
+LOS_ERREND:                              // 错误处理标签
+    SCHEDULER_UNLOCK(intSave);            // 释放调度锁
+    if (ret == LOS_OK) {                  // 如果执行成功
+        LOS_Schedule();                   // 触发任务调度
     }
-    return ret;
+    return ret;                           // 返回执行结果
 }
 ///任务延时等待，释放CPU，等待时间到期后该任务会重新进入ready状态
 LITE_OS_SEC_TEXT UINT32 LOS_TaskDelay(UINT32 tick)
