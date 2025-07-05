@@ -29,7 +29,11 @@
 			通过LOS_ArchMmuChangeProt修改映射属性；
 			通过LOS_ArchMmuMove做虚拟地址区间的重映射。
 		3. 通过LOS_ArchMmuUnmap解除映射关系。
-
+ * @details
+ *   - 主要实现了虚拟地址到物理地址的映射、解除映射、权限修改、映射迁移、MMU上下文切换等功能。
+ *   - 支持二级页表，LiteOS-A内核采用二级页表描述进程空间。
+ *   - 支持页表锁、TLB失效、ASID分配与回收等机制。
+ *   - 代码中包含大量注释，详细说明了每个函数的作用和关键实现细节。
  * @endverbatim
  * @version 
  * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
@@ -86,28 +90,31 @@
 #include "los_process_pri.h"
 
 #ifdef LOSCFG_KERNEL_MMU
+// MMU映射相关结构体，保存映射参数
 typedef struct {
-    LosArchMmu *archMmu;
-    VADDR_T *vaddr;
-    PADDR_T *paddr;
-    UINT32 *flags;
+    LosArchMmu *archMmu;   // MMU结构体指针
+    VADDR_T *vaddr;        // 虚拟地址指针
+    PADDR_T *paddr;        // 物理地址指针
+    UINT32 *flags;         // 映射属性标识
 } MmuMapInfo;
 
 #define TRY_MAX_TIMES 10
-
+// 一级页表存储区，4K对齐，放在.bss.prebss.translation_table段
 __attribute__((aligned(MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS))) \
     __attribute__((section(".bss.prebss.translation_table"))) UINT8 \
     g_firstPageTable[MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS];
 #ifdef LOSCFG_KERNEL_SMP
+// SMP下临时页表
 __attribute__((aligned(MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS))) \
     __attribute__((section(".bss.prebss.translation_table"))) UINT8 \
     g_tempPageTable[MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS];
 UINT8 *g_mmuJumpPageTable = g_tempPageTable;
 #else
+// 单核下临时页表
 extern CHAR __mmu_ttlb_begin; /* defined in .ld script | 内核临时页表在系统使能mmu到使用虚拟地址运行这段期间使用,其虚拟地址保存在g_mmuJumpPageTable这个指针中*/
 UINT8 *g_mmuJumpPageTable = (UINT8 *)&__mmu_ttlb_begin; /* temp page table, this is only used when system power up | 临时页表,用于系统启动阶段*/
 #endif
-
+// 获取页表锁（支持细粒度锁和全局锁）
 STATIC SPIN_LOCK_S *OsGetPteLock(LosArchMmu *archMmu, PADDR_T paddr, UINT32 *intSave)
 {
     SPIN_LOCK_S *lock = NULL;
@@ -126,12 +133,12 @@ STATIC SPIN_LOCK_S *OsGetPteLock(LosArchMmu *archMmu, PADDR_T paddr, UINT32 *int
     LOS_SpinLockSave(lock, intSave);
     return lock;
 }
-
+// 获取一级页表锁
 STATIC SPIN_LOCK_S *OsGetPte1Lock(LosArchMmu *archMmu, PADDR_T paddr, UINT32 *intSave)
 {
     return OsGetPteLock(archMmu, paddr, intSave);
 }
-
+// 解锁一级页表
 STATIC INLINE VOID OsUnlockPte1(SPIN_LOCK_S *lock, UINT32 intSave)
 {
     if (lock == NULL) {

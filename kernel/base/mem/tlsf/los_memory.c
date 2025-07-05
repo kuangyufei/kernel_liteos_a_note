@@ -211,58 +211,46 @@ struct OsMemPoolHead {
 #endif
 };
 
-/* Spinlock for mem module, only available on SMP mode */
-#define MEM_LOCK(pool, state)       LOS_SpinLockSave(&(pool)->spinlock, &(state))
-#define MEM_UNLOCK(pool, state)     LOS_SpinUnlockRestore(&(pool)->spinlock, (state))
+#define MEM_LOCK(pool, state)       LOS_SpinLockSave(&(pool)->spinlock, &(state))  ///< 对内存模块使用的自旋锁，仅在多核（SMP）模式下有效
+#define MEM_UNLOCK(pool, state)     LOS_SpinUnlockRestore(&(pool)->spinlock, (state))  ///< 对内存模块使用的自旋锁解锁
 
-/* The memory pool support expand. */
-#define OS_MEM_POOL_EXPAND_ENABLE  0x01	///< 支持扩展
-/* The memory pool support no lock. */
-#define OS_MEM_POOL_LOCK_ENABLE    0x02	///< 加锁
+#define OS_MEM_POOL_EXPAND_ENABLE  0x01	///< 内存池支持扩展的标志位
+#define OS_MEM_POOL_LOCK_ENABLE    0x02	///< 内存池支持无锁操作的标志位
 
-#define OS_MEM_NODE_MAGIC        0xABCDDCBA ///< 内存节点的魔法数字
-#define OS_MEM_MIN_ALLOC_SIZE    (sizeof(struct OsMemFreeNodeHead) - sizeof(struct OsMemUsedNodeHead)) //最小分配空间
-// 必须给指向空闲块的指针留位置
-#define OS_MEM_NODE_USED_FLAG      0x80000000U ///< 已使用标签
-#define OS_MEM_NODE_ALIGNED_FLAG   0x40000000U ///< 对齐标签
-#define OS_MEM_NODE_LAST_FLAG      0x20000000U  /* Sentinel Node | 哨兵节点标签*/
-#define OS_MEM_NODE_ALIGNED_AND_USED_FLAG (OS_MEM_NODE_USED_FLAG | OS_MEM_NODE_ALIGNED_FLAG | OS_MEM_NODE_LAST_FLAG)
+#define OS_MEM_NODE_MAGIC        0xABCDDCBA ///< 内存节点的魔法数字，用于校验节点有效性
+#define OS_MEM_MIN_ALLOC_SIZE    (sizeof(struct OsMemFreeNodeHead) - sizeof(struct OsMemUsedNodeHead)) ///< 最小分配空间，确保给指向空闲块的指针留有足够空间
 
-#define OS_MEM_NODE_GET_ALIGNED_FLAG(sizeAndFlag) \
-            ((sizeAndFlag) & OS_MEM_NODE_ALIGNED_FLAG)
-#define OS_MEM_NODE_SET_ALIGNED_FLAG(sizeAndFlag) \
-            ((sizeAndFlag) = ((sizeAndFlag) | OS_MEM_NODE_ALIGNED_FLAG))
-#define OS_MEM_NODE_GET_ALIGNED_GAPSIZE(sizeAndFlag) \
-            ((sizeAndFlag) & ~OS_MEM_NODE_ALIGNED_FLAG)
-#define OS_MEM_NODE_GET_USED_FLAG(sizeAndFlag) \
-            ((sizeAndFlag) & OS_MEM_NODE_USED_FLAG)
-#define OS_MEM_NODE_SET_USED_FLAG(sizeAndFlag) \
-            ((sizeAndFlag) = ((sizeAndFlag) | OS_MEM_NODE_USED_FLAG))
-#define OS_MEM_NODE_GET_SIZE(sizeAndFlag) \
-            ((sizeAndFlag) & ~OS_MEM_NODE_ALIGNED_AND_USED_FLAG)
-#define OS_MEM_NODE_SET_LAST_FLAG(sizeAndFlag) \
-                        ((sizeAndFlag) = ((sizeAndFlag) | OS_MEM_NODE_LAST_FLAG))
-#define OS_MEM_NODE_GET_LAST_FLAG(sizeAndFlag) \
-            ((sizeAndFlag) & OS_MEM_NODE_LAST_FLAG)
+#define OS_MEM_NODE_USED_FLAG      0x80000000U ///< 内存节点已使用标志
+#define OS_MEM_NODE_ALIGNED_FLAG   0x40000000U ///< 内存节点对齐标志
+#define OS_MEM_NODE_LAST_FLAG      0x20000000U ///< 内存节点哨兵标志
+#define OS_MEM_NODE_ALIGNED_AND_USED_FLAG (OS_MEM_NODE_USED_FLAG | OS_MEM_NODE_ALIGNED_FLAG | OS_MEM_NODE_LAST_FLAG) ///< 对齐且已使用且哨兵标志的组合
 
-#define OS_MEM_ALIGN_SIZE           sizeof(UINTPTR)
-#define OS_MEM_IS_POW_TWO(value)    ((((UINTPTR)(value)) & ((UINTPTR)(value) - 1)) == 0)
-#define OS_MEM_ALIGN(p, alignSize)  (((UINTPTR)(p) + (alignSize) - 1) & ~((UINTPTR)((alignSize) - 1)))
-#define OS_MEM_IS_ALIGNED(a, b)     (!(((UINTPTR)(a)) & (((UINTPTR)(b)) - 1)))
-#define OS_MEM_NODE_HEAD_SIZE       sizeof(struct OsMemUsedNodeHead)
-#define OS_MEM_MIN_POOL_SIZE        (OS_MEM_NODE_HEAD_SIZE + sizeof(struct OsMemPoolHead))
-#define OS_MEM_NEXT_NODE(node) \
-    ((struct OsMemNodeHead *)(VOID *)((UINT8 *)(node) + OS_MEM_NODE_GET_SIZE((node)->sizeAndFlag)))
-#define OS_MEM_FIRST_NODE(pool) \
-    (struct OsMemNodeHead *)((UINT8 *)(pool) + sizeof(struct OsMemPoolHead))
-#define OS_MEM_END_NODE(pool, size) \
-    (struct OsMemNodeHead *)((UINT8 *)(pool) + (size) - OS_MEM_NODE_HEAD_SIZE)
-#define OS_MEM_MIDDLE_ADDR_OPEN_END(startAddr, middleAddr, endAddr) \
-    (((UINT8 *)(startAddr) <= (UINT8 *)(middleAddr)) && ((UINT8 *)(middleAddr) < (UINT8 *)(endAddr)))
-#define OS_MEM_MIDDLE_ADDR(startAddr, middleAddr, endAddr) \
-    (((UINT8 *)(startAddr) <= (UINT8 *)(middleAddr)) && ((UINT8 *)(middleAddr) <= (UINT8 *)(endAddr)))
-#define OS_MEM_SET_MAGIC(node)      ((node)->magic = OS_MEM_NODE_MAGIC)
-#define OS_MEM_MAGIC_VALID(node)    ((node)->magic == OS_MEM_NODE_MAGIC)
+#define OS_MEM_NODE_GET_ALIGNED_FLAG(sizeAndFlag) ((sizeAndFlag) & OS_MEM_NODE_ALIGNED_FLAG) ///< 获取对齐标志
+#define OS_MEM_NODE_SET_ALIGNED_FLAG(sizeAndFlag) ((sizeAndFlag) = ((sizeAndFlag) | OS_MEM_NODE_ALIGNED_FLAG)) ///< 设置对齐标志
+#define OS_MEM_NODE_GET_ALIGNED_GAPSIZE(sizeAndFlag) ((sizeAndFlag) & ~OS_MEM_NODE_ALIGNED_FLAG) ///< 获取对齐间隙大小
+#define OS_MEM_NODE_GET_USED_FLAG(sizeAndFlag) ((sizeAndFlag) & OS_MEM_NODE_USED_FLAG) ///< 获取已使用标志
+#define OS_MEM_NODE_SET_USED_FLAG(sizeAndFlag) ((sizeAndFlag) = ((sizeAndFlag) | OS_MEM_NODE_USED_FLAG)) ///< 设置已使用标志
+#define OS_MEM_NODE_GET_SIZE(sizeAndFlag) ((sizeAndFlag) & ~OS_MEM_NODE_ALIGNED_AND_USED_FLAG) ///< 获取节点大小（去除标志位）
+#define OS_MEM_NODE_SET_LAST_FLAG(sizeAndFlag) ((sizeAndFlag) = ((sizeAndFlag) | OS_MEM_NODE_LAST_FLAG)) ///< 设置哨兵标志
+#define OS_MEM_NODE_GET_LAST_FLAG(sizeAndFlag) ((sizeAndFlag) & OS_MEM_NODE_LAST_FLAG) ///< 获取哨兵标志
+
+#define OS_MEM_ALIGN_SIZE           sizeof(UINTPTR) ///< 内存对齐大小，通常为指针大小
+#define OS_MEM_IS_POW_TWO(value)    ((((UINTPTR)(value)) & ((UINTPTR)(value) - 1)) == 0) ///< 判断是否为2的幂
+#define OS_MEM_ALIGN(p, alignSize)  (((UINTPTR)(p) + (alignSize) - 1) & ~((UINTPTR)((alignSize) - 1))) ///< 对地址p按alignSize对齐
+#define OS_MEM_IS_ALIGNED(a, b)     (!(((UINTPTR)(a)) & (((UINTPTR)(b)) - 1))) ///< 判断a是否按b对齐
+
+#define OS_MEM_NODE_HEAD_SIZE       sizeof(struct OsMemUsedNodeHead) ///< 内存节点头大小
+#define OS_MEM_MIN_POOL_SIZE        (OS_MEM_NODE_HEAD_SIZE + sizeof(struct OsMemPoolHead)) ///< 内存池最小大小
+
+#define OS_MEM_NEXT_NODE(node) ((struct OsMemNodeHead *)(VOID *)((UINT8 *)(node) + OS_MEM_NODE_GET_SIZE((node)->sizeAndFlag))) ///< 获取下一个内存节点地址
+#define OS_MEM_FIRST_NODE(pool) (struct OsMemNodeHead *)((UINT8 *)(pool) + sizeof(struct OsMemPoolHead)) ///< 获取内存池中的第一个节点
+#define OS_MEM_END_NODE(pool, size) (struct OsMemNodeHead *)((UINT8 *)(pool) + (size) - OS_MEM_NODE_HEAD_SIZE) ///< 获取内存池末尾节点
+
+#define OS_MEM_MIDDLE_ADDR_OPEN_END(startAddr, middleAddr, endAddr) (((UINT8 *)(startAddr) <= (UINT8 *)(middleAddr)) && ((UINT8 *)(middleAddr) < (UINT8 *)(endAddr))) ///< 判断middleAddr是否在[startAddr, endAddr)区间内（开区间）
+#define OS_MEM_MIDDLE_ADDR(startAddr, middleAddr, endAddr) (((UINT8 *)(startAddr) <= (UINT8 *)(middleAddr)) && ((UINT8 *)(middleAddr) <= (UINT8 *)(endAddr))) ///< 判断middleAddr是否在[startAddr, endAddr]区间内（闭区间）
+
+#define OS_MEM_SET_MAGIC(node)      ((node)->magic = OS_MEM_NODE_MAGIC) ///< 设置节点魔法数字
+#define OS_MEM_MAGIC_VALID(node)    ((node)->magic == OS_MEM_NODE_MAGIC) ///< 验证节点魔法数字是否有效
 
 STATIC INLINE VOID OsMemFreeNodeAdd(VOID *pool, struct OsMemFreeNodeHead *node);
 STATIC INLINE UINT32 OsMemFree(struct OsMemPoolHead *pool, struct OsMemNodeHead *node);

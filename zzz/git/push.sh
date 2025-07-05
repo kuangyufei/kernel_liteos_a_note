@@ -1,12 +1,12 @@
 git add -A
 
-git commit -m  ' 注释单CPU开机代码和几个汇编文件 
+git commit -m  ' 完善arch下关于arm的注解
     博客 | http://weharmonyos.com
 '
 git push  gitee_origin master
 git push  github_origin master
-#git push  gitcode_origin master
-#git push  coding_origin master
+git push  gitcode_origin master
+git push  coding_origin master
 #git
 #git remote add gitee_origin git@gitee.com:weharmony/kernel_liteos_a_note.git
 #git remote add github_origin git@github.com:kuangyufei/kernel_liteos_a_note.git 

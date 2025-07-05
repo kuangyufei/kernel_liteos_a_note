@@ -31,22 +31,31 @@
 
 #include "asm.h"
 
-FUNCTION(longjmp)
-        ldmfd   r0,{r4-r12}
-        add     r0,#(4 * 9)
-        ldr     r13,[r0]
-        add     r0,#4
-        ldr     r14,[r0]
-        cmp     r1,#0
-        moveq   r1,#1
-        mov     r0,r1
-        mov     pc,lr
+/*
+实现 longjmp 和 setjmp 的 ARM 汇编代码
+longjmp/setjmp 用于保存和恢复程序上下文，实现非局部跳转
 
+longjmp(jmp_buf env, int val)
+恢复由 setjmp 保存的寄存器环境，并返回 val（若 val 为 0 则返回 1）
+*/
+FUNCTION(longjmp)
+        ldmfd   r0,{r4-r12}        @ 从 env 恢复 r4-r12
+        add     r0,#(4 * 9)        @ r0 指向 env 中保存的 sp
+        ldr     r13,[r0]           @ 恢复 sp (r13)
+        add     r0,#4              @ r0 指向 env 中保存的 lr
+        ldr     r14,[r0]           @ 恢复 lr (r14)
+        cmp     r1,#0              @ 检查 val 是否为 0
+        moveq   r1,#1              @ 如果 val 为 0，返回 1
+        mov     r0,r1              @ 返回值放入 r0
+        mov     pc,lr              @ 返回调用点
+
+@ setjmp(jmp_buf env)
+@ 保存当前寄存器环境到 env，返回 0
 FUNCTION(setjmp)
-        stmea   r0,{r4-r12}
-        add     r0,#(4 * 9)
-        str     r13,[r0]
-        add     r0,#4
-        str     r14,[r0]
-        mov     r0,#0
-        mov     pc,lr
+        stmea   r0,{r4-r12}        @ 保存 r4-r12 到 env
+        add     r0,#(4 * 9)        @ r0 指向 env 中保存 sp 的位置
+        str     r13,[r0]           @ 保存 sp (r13)
+        add     r0,#4              @ r0 指向 env 中保存 lr 的位置
+        str     r14,[r0]           @ 保存 lr (r14)
+        mov     r0,#0              @ 返回 0
+        mov     pc,lr              @ 返回调用点

@@ -35,65 +35,65 @@
 
 // size_t _arm_clear_user(void *addr, size_t bytes)
 FUNCTION(_arm_clear_user)
-    push    {r0-r6, lr}
-    cmp     r1, #0
-    beq     .Lclear_user_return
-    tst     r0, #7
-    beq     .Lclear_user_aligned
+    push    {r0-r6, lr}          @ 保存寄存器r0-r6和链接寄存器lr
+    cmp     r1, #0               @ 比较字节数是否为0
+    beq     .Lclear_user_return  @ 如果为0，跳转返回
+    tst     r0, #7               @ 测试地址是否8字节对齐
+    beq     .Lclear_user_aligned @ 如果对齐，跳转对齐处理
 
 .Lclear_user_byte:
-    mov     r2, #0
-0:  strb    r2, [r0], #1
-    subs    r1, r1, #1
-    beq     .Lclear_user_return
-    tst     r0, #7
-    bne     0b
+    mov     r2, #0               @ 将0加载到r2，用于清零
+0:  strb    r2, [r0], #1         @ 存储字节0到地址，地址自增1
+    subs    r1, r1, #1           @ 字节数减1
+    beq     .Lclear_user_return  @ 如果字节数为0，返回
+    tst     r0, #7               @ 测试地址是否对齐
+    bne     0b                   @ 如果未对齐，继续字节清零
 
 .Lclear_user_aligned:
-    eor     r3, r3
-    eor     r4, r4
-    bics    r2, r1, #15
-    bne     .Lclear_user_16bytes
-    bics    r2, r1, #7
-    bne     .Lclear_user_8bytes
-    b       .Lclear_user_remaining
+    eor     r3, r3               @ 清零r3
+    eor     r4, r4               @ 清零r4
+    bics    r2, r1, #15          @ 计算16字节块数
+    bne     .Lclear_user_16bytes @ 如果有16字节块，跳转处理
+    bics    r2, r1, #7           @ 计算8字节块数
+    bne     .Lclear_user_8bytes  @ 如果有8字节块，跳转处理
+    b       .Lclear_user_remaining @ 跳转处理剩余字节
 
 .Lclear_user_16bytes:
-    eor     r5, r5
-    eor     r6, r6
-1:  stmia   r0!, {r3, r4, r5, r6}
-    subs    r2, r2, #16
-    bne     1b
-    ands    r1, r1, #15
-    beq     .Lclear_user_return
-    bics    r2, r1, #7
-    beq     .Lclear_user_remaining
+    eor     r5, r5               @ 清零r5
+    eor     r6, r6               @ 清零r6
+1:  stmia   r0!, {r3, r4, r5, r6} @ 存储16字节(4个寄存器)并地址自增
+    subs    r2, r2, #16          @ 减少16字节计数
+    bne     1b                   @ 如果未完成，继续循环
+    ands    r1, r1, #15          @ 计算剩余字节数
+    beq     .Lclear_user_return  @ 如果无剩余，返回
+    bics    r2, r1, #7           @ 计算8字节块数
+    beq     .Lclear_user_remaining @ 如果无8字节块，跳转剩余处理
 
 .Lclear_user_8bytes:
-2:  stmia   r0!, {r3, r4}
-    ands    r1, r1, #7
-    beq     .Lclear_user_return
+2:  stmia   r0!, {r3, r4}        @ 存储8字节(2个寄存器)并地址自增
+    ands    r1, r1, #7           @ 计算剩余字节数
+    beq     .Lclear_user_return  @ 如果无剩余，返回
 
 .Lclear_user_remaining:
-    mov     r2, #0
-3:  strb    r2, [r0], #1
-    subs    r1, r1, #1
-    bne     3b
+    mov     r2, #0               @ 清零r2
+3:  strb    r2, [r0], #1        @ 存储字节0并地址自增
+    subs    r1, r1, #1           @ 剩余字节数减1
+    bne     3b                   @ 如果未完成，继续循环
 
 .Lclear_user_return:
-    pop     {r0-r6, lr}
-    mov     r0, #0
-    bx      lr
+    pop     {r0-r6, lr}          @ 恢复寄存器r0-r6和lr
+    mov     r0, #0               @ 返回值0
+    bx      lr                   @ 返回调用者
 
 .Lclear_user_err:
-    pop     {r0, r1}
-    sub     r0, r2, r0
-    sub     r0, r1, r0
-    pop     {r2-r6, lr}
-    bx      lr
+    pop     {r0, r1}             @ 异常处理，恢复r0和r1
+    sub     r0, r2, r0           @ 计算错误偏移
+    sub     r0, r1, r0           @ 计算错误偏移
+    pop     {r2-r6, lr}          @ 恢复其他寄存器和lr
+    bx      lr                   @ 返回调用者
 
 .pushsection __exc_table, "a"
-    .long   0b,  .Lclear_user_err
+    .long   0b,  .Lclear_user_err @ 异常表，指向错误处理
     .long   1b,  .Lclear_user_err
     .long   2b,  .Lclear_user_err
     .long   3b,  .Lclear_user_err

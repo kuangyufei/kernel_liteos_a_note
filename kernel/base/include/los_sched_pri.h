@@ -256,7 +256,7 @@ typedef struct {//记录任务调度信息
 #define EDF_NEXT_PERIOD  1
 #define EDF_WAIT_FOREVER 2
 #define EDF_INIT         3
-typedef struct { //调度策略
+typedef struct { 
     UINT16 policy;
     UINT16 cpuid;
     UINT32 flags;
@@ -265,11 +265,11 @@ typedef struct { //调度策略
     UINT64 period;     /* period >= deadline */
     UINT64 finishTime; /* startTime + deadline */
 } SchedEDF;
-
+//调度策略
 typedef struct {
     union {
         SchedEDF edf;
-        SchedHPF hpf; // 目前只支持 优先级策略（Highest-Priority-First，HPF）
+        SchedHPF hpf; // 优先级策略（Highest-Priority-First，HPF）
     };
 } SchedPolicy;
 

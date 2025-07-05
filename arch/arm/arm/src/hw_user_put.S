@@ -36,42 +36,47 @@
 //将内核空间数据拷贝用户空间汇编实现
 // errno_t _arm_put_user(void *dst, const void *src, size_t dstTypeLen, size_t srcTypeLen)
 FUNCTION(_arm_put_user)
-    stmdb   sp!, {r0, r1, r2, r3, lr}
-    cmp     r2, #0
-    beq     .Lget_user_return
-    cmp     r2, r3
-    bne     .Lget_user_err
-    cmp     r2, #1
-    bhi     .Lget_user_half
+    stmdb   sp!, {r0, r1, r2, r3, lr}      @ 保存现场，入栈r0-r3和lr
+    cmp     r2, #0                         @ 检查长度是否为0
+    beq     .Lget_user_return              @ 长度为0，直接返回成功
+    cmp     r2, r3                         @ 检查目标长度和源长度是否一致
+    bne     .Lget_user_err                 @ 不一致，返回错误
+    cmp     r2, #1                         @ 判断长度类型
+    bhi     .Lget_user_half                @ 长度大于1，跳转处理半字（2字节）
+
 .Lget_user_byte:
-0:  ldrb    r3, [r1], #0
-1:  strbt   r3, [r0], #0
-    b       .Lget_user_return
+0:  ldrb    r3, [r1], #0                   @ 按字节从src读取到r3
+1:  strbt   r3, [r0], #0                   @ 按字节写入到dst
+    b       .Lget_user_return              @ 完成后返回
+
 .Lget_user_half:
-    cmp     r2, #2
-    bhi     .Lget_user_word
-2:  ldrh    r3, [r1], #0
-3:  strht   r3, [r0], #0
-    b       .Lget_user_return
+    cmp     r2, #2                         @ 判断是否为2字节
+    bhi     .Lget_user_word                @ 大于2字节，跳转处理字（4字节）
+2:  ldrh    r3, [r1], #0                   @ 按半字从src读取到r3
+3:  strht   r3, [r0], #0                   @ 按半字写入到dst
+    b       .Lget_user_return              @ 完成后返回
+
 .Lget_user_word:
-    cmp     r2, #4
-    bhi     .Lget_user_err
-4:  ldr    r3, [r1], #0
-5:  strt   r3, [r0], #0
+    cmp     r2, #4                         @ 判断是否为4字节
+    bhi     .Lget_user_err                 @ 大于4字节，不支持，返回错误
+4:  ldr    r3, [r1], #0                    @ 按字从src读取到r3
+5:  strt   r3, [r0], #0                    @ 按字写入到dst
+
 .Lget_user_return:
-    ldmia   sp!, {r0, r1, r2, r3, lr}
-    mov     r0, 0
-    bx      lr
+    ldmia   sp!, {r0, r1, r2, r3, lr}      @ 恢复现场
+    mov     r0, 0                          @ 返回0表示成功
+    bx      lr                             @ 返回
+
 .Lget_user_err:
-    ldmia   sp!, {r0, r1, r2, r3, lr}
-    mov     r0, #-14
-    bx      lr
+    ldmia   sp!, {r0, r1, r2, r3, lr}      @ 恢复现场
+    mov     r0, #-14                       @ 返回-14（EFAULT，内存访问错误）
+    bx      lr                             @ 返回
 
 .pushsection __exc_table, "a"
-    .long   0b,  .Lget_user_err
-    .long   1b,  .Lget_user_err
-    .long   2b,  .Lget_user_err
-    .long   3b,  .Lget_user_err
-    .long   4b,  .Lget_user_err
-    .long   5b,  .Lget_user_err
+    .long   0b,  .Lget_user_err            @ ldrb异常处理
+    .long   1b,  .Lget_user_err            @ strbt异常处理
+    .long   2b,  .Lget_user_err            @ ldrh异常处理
+    .long   3b,  .Lget_user_err            @ strht异常处理
+    .long   4b,  .Lget_user_err            @ ldr异常处理
+    .long   5b,  .Lget_user_err            @ strt异常处理
 .popsection

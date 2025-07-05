@@ -55,35 +55,49 @@ STATIC INT32 EDFParamCompare(const SchedPolicy *sp1, const SchedPolicy *sp2);
 STATIC VOID EDFPriorityInheritance(LosTaskCB *owner, const SchedParam *param);
 STATIC VOID EDFPriorityRestore(LosTaskCB *owner, const LOS_DL_LIST *list, const SchedParam *param);
 
+/**
+* 定义了一个类型为 SchedOps 的静态常量结构体 g_deadlineOps ，通过函数指针数组的形式，集中封装了 EDF 调度策略所需的所有核心操作。
+* 这是内核调度框架的典型设计模式，允许不同调度策略（如 HPF、RR）通过实现统一的 SchedOps 接口实现插拔式替换。
+* 接口抽象 ：通过 SchedOps 结构体标准化调度器行为，使内核可无缝切换不同调度策略
+* EDF核心逻辑 ：
+    排序关键： schedParamCompare 实现基于截止时间的优先级比较
+    队列管理： enqueue / dequeue 操作维护按截止时间排序的就绪队列
+    实时保障： priorityInheritance / priorityRestore 解决优先级反转问题
+    功能完整性 ：覆盖任务生命周期全流程（创建/阻塞/唤醒/退出）及参数管理
+* 与其他模块的关联
+    排序链表依赖 ： EDFEnqueue 等操作依赖 `los_sortlink.c` 提供的时间有序链表管理
+    调度统计 ：调度行为数据会被 `los_statistics.c` 中的 EDFDebugRecord 函数记录，用于调试分析
+    任务控制块 ：所有操作最终作用于 LosTaskCB 结构体（任务控制块）中的 EDF 专用字段
+* 该结构体是 EDF 调度器的"大脑"，通过统一接口对外提供服务，同时内部实现了 deadline 驱动的调度逻辑，是 LiteOS-A 实时性保障的核心组件之一。
+*/
 const STATIC SchedOps g_deadlineOps = {
-    .dequeue = EDFDequeue,
-    .enqueue = EDFEnqueue,
-    .waitTimeGet = EDFWaitTimeGet,
-    .wait = EDFWait,
-    .wake = EDFWake,
-    .schedParamModify = EDFSchedParamModify,
-    .schedParamGet = EDFSchedParamGet,
-    .delay = EDFDelay,
-    .yield = EDFYield,
-    .start = EDFDequeue,
-    .exit = EDFExit,
-    .suspend = EDFSuspend,
-    .resume = EDFResume,
-    .deadlineGet = EDFTimeSliceGet,
-    .timeSliceUpdate = EDFTimeSliceUpdate,
-    .schedParamCompare = EDFParamCompare,
-    .priorityInheritance = EDFPriorityInheritance,
-    .priorityRestore = EDFPriorityRestore,
+    .dequeue = EDFDequeue,          // 从EDF就绪队列移除任务
+    .enqueue = EDFEnqueue,          // 将任务加入EDF就绪队列（按截止时间排序）
+    .waitTimeGet = EDFWaitTimeGet,  // 获取任务等待时间
+    .wait = EDFWait,                // 任务等待操作（阻塞时调用）
+    .wake = EDFWake,                // 任务唤醒操作（解除阻塞时调用）
+    .schedParamModify = EDFSchedParamModify, // 修改任务调度参数（周期、截止时间等）
+    .schedParamGet = EDFSchedParamGet,       // 获取任务调度参数
+    .delay = EDFDelay,              // 任务延迟调度
+    .yield = EDFYield,              // 任务主动让出CPU
+    .start = EDFDequeue,            // 任务启动调度（复用出队逻辑）
+    .exit = EDFExit,                // 任务退出调度
+    .suspend = EDFSuspend,          // 任务挂起
+    .resume = EDFResume,            // 任务恢复
+    .deadlineGet = EDFTimeSliceGet, // 获取任务剩余截止时间（时间片）
+    .timeSliceUpdate = EDFTimeSliceUpdate, // 更新任务时间片
+    .schedParamCompare = EDFParamCompare,   // 比较两个任务的调度参数（核心排序逻辑）
+    .priorityInheritance = EDFPriorityInheritance, // 优先级继承（实时系统关键特性）
+    .priorityRestore = EDFPriorityRestore,         // 优先级恢复
 };
-/*
-主要功能说明：
-
-更新EDF调度任务的时间片状态
-计算任务实际运行时间
-处理任务超时情况
-调试模式下记录运行统计信息
-设置调度标志，触发重新调度
-代码执行流程： 获取调度参数 → 检查时间片状态 → 计算运行时间 → 更新任务状态 → 检查超时 → 设置调度标志 → 处理超时情况
+/**
+* 主要功能说明：
+* 更新EDF调度任务的时间片状态
+* 计算任务实际运行时间
+* 处理任务超时情况
+* 调试模式下记录运行统计信息
+* 设置调度标志，触发重新调度
+* 代码执行流程： 获取调度参数 → 检查时间片状态 → 计算运行时间 → 更新任务状态 → 检查超时 → 设置调度标志 → 处理超时情况
 */
 STATIC VOID EDFTimeSliceUpdate(SchedRunqueue *rq, LosTaskCB *taskCB, UINT64 currTime)
 {
