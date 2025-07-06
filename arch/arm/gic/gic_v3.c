@@ -38,35 +38,40 @@
 
 #ifdef LOSCFG_ARCH_GIC_V3
 
-STATIC UINT32 g_curIrqNum = 0;  // 当前中断号
+STATIC UINT32 g_curIrqNum = 0;
 
 /**
- * @brief 将MPIDR寄存器值转换为GICv3亲和性值
- * @param mpidr MPIDR寄存器值，包含CPU亲和性信息
- * @return 转换后的64位亲和性值，格式为[AFF3:AFF2:AFF1:AFF0]
+ * @brief 将多核处理器的 MPIDR（Multiprocessor Affinity Register）值转换为中断亲和性值。
+ *
+ * 该函数从 MPIDR 寄存器值中提取不同级别的亲和性信息，并将其组合成一个 64 位的中断亲和性值。
+ * 中断亲和性值用于指定中断应该被路由到哪些处理器核心。
+ *
+ * @param mpidr 64 位的 MPIDR 寄存器值，包含多核处理器的亲和性信息。
+ * @return UINT64 组合后的 64 位中断亲和性值。
  */
 STATIC INLINE UINT64 MpidrToAffinity(UINT64 mpidr)
 {
-    return ((MPIDR_AFF_LEVEL(mpidr, 3) << 32) |  // 提取AFF3字段并左移32位
-            (MPIDR_AFF_LEVEL(mpidr, 2) << 16) |  // 提取AFF2字段并左移16位
-            (MPIDR_AFF_LEVEL(mpidr, 1) << 8)  |  // 提取AFF1字段并左移8位
-            (MPIDR_AFF_LEVEL(mpidr, 0)));        // 提取AFF0字段
+    // 提取 MPIDR 中的 Affinity Level 3 信息，并左移 32 位
+    // 3 表示 Affinity Level 的序号，32 是该信息在最终亲和性值中的位偏移
+    return ((MPIDR_AFF_LEVEL(mpidr, 3) << 32) | 
+            // 提取 MPIDR 中的 Affinity Level 2 信息，并左移 16 位
+            // 2 表示 Affinity Level 的序号，16 是该信息在最终亲和性值中的位偏移
+            (MPIDR_AFF_LEVEL(mpidr, 2) << 16) | 
+            // 提取 MPIDR 中的 Affinity Level 1 信息，并左移 8 位
+            // 1 表示 Affinity Level 的序号，8 是该信息在最终亲和性值中的位偏移
+            (MPIDR_AFF_LEVEL(mpidr, 1) << 8)  | 
+            // 提取 MPIDR 中的 Affinity Level 0 信息
+            (MPIDR_AFF_LEVEL(mpidr, 0)));
 }
 
 #ifdef LOSCFG_KERNEL_SMP
 
-/**
- * @brief 查找下一个有效的CPU核心
- * @param cpu 当前CPU核心号
- * @param cpuMask CPU掩码，表示可用的CPU核心
- * @return 下一个有效的CPU核心号，若不存在则返回LOSCFG_KERNEL_CORE_NUM
- */
 STATIC UINT32 NextCpu(UINT32 cpu, UINT32 cpuMask)
 {
-    UINT32 next = cpu + 1;  // 从当前CPU的下一个核心开始查找
+    UINT32 next = cpu + 1;
 
     while (next < LOSCFG_KERNEL_CORE_NUM) {
-        if (cpuMask & (1U << next)) {  // 检查下一个CPU核心是否在可用掩码中
+        if (cpuMask & (1U << next)) {
             goto OUT;
         }
 
@@ -77,211 +82,160 @@ OUT:
     return next;
 }
 
-/**
- * @brief 生成GIC中断目标CPU列表
- * @param base [in/out] 起始CPU索引，输出时为当前处理到的CPU索引
- * @param cpuMask CPU掩码，表示目标CPU核心
- * @param cluster 集群ID
- * @return 16位目标CPU列表，每一位代表一个CPU核心
- */
 STATIC UINT16 GicTargetList(UINT32 *base, UINT32 cpuMask, UINT64 cluster)
 {
     UINT32 nextCpu;
-    UINT16 tList = 0;  // 目标CPU列表，初始化为0
-    UINT32 cpu = *base;  // 从起始CPU开始处理
-    UINT64 mpidr = CPU_MAP_GET(cpu);  // 获取当前CPU的MPIDR值
+    UINT16 tList = 0;
+    UINT32 cpu = *base;
+    UINT64 mpidr = CPU_MAP_GET(cpu);
     while (cpu < LOSCFG_KERNEL_CORE_NUM) {
-        tList |= 1U << (mpidr & 0xf);  // 将当前CPU添加到目标列表
+        tList |= 1U << (mpidr & 0xf);
 
-        nextCpu = NextCpu(cpu, cpuMask);  // 获取下一个有效的CPU
+        nextCpu = NextCpu(cpu, cpuMask);
         if (nextCpu >= LOSCFG_KERNEL_CORE_NUM) {
             goto out;
         }
 
         cpu = nextCpu;
-        mpidr = CPU_MAP_GET(cpu);  // 获取下一个CPU的MPIDR值
-        if (cluster != (mpidr & ~0xffUL)) {  // 检查是否属于同一集群
+        mpidr = CPU_MAP_GET(cpu);
+        if (cluster != (mpidr & ~0xffUL)) {
             cpu--;
             goto out;
         }
     }
 
 out:
-    *base = cpu;  // 更新输出CPU索引
+    *base = cpu;
     return tList;
 }
 
-/**
- * @brief 发送SGI中断到指定CPU核心
- * @param irq SGI中断号(0-15)
- * @param cpuMask CPU掩码，表示目标CPU核心
- */
 STATIC VOID GicSgi(UINT32 irq, UINT32 cpuMask)
 {
     UINT16 tList;
-    UINT32 cpu = 0;  // 从CPU 0开始处理
+    UINT32 cpu = 0;
     UINT64 val, cluster;
 
     while (cpuMask && (cpu < LOSCFG_KERNEL_CORE_NUM)) {
-        if (cpuMask & (1U << cpu)) {  // 检查当前CPU是否在目标掩码中
-            cluster = CPU_MAP_GET(cpu) & ~0xffUL;  // 获取集群ID
+        if (cpuMask & (1U << cpu)) {
+            cluster = CPU_MAP_GET(cpu) & ~0xffUL;
 
-            tList = GicTargetList(&cpu, cpuMask, cluster);  // 生成目标CPU列表
+            tList = GicTargetList(&cpu, cpuMask, cluster);
 
             /* Generates a Group 1 interrupt for the current security state */
-            val = ((MPIDR_AFF_LEVEL(cluster, 3) << 48) |  // 设置AFF3字段
-                   (MPIDR_AFF_LEVEL(cluster, 2) << 32) |  // 设置AFF2字段
-                   (MPIDR_AFF_LEVEL(cluster, 1) << 16) |  // 设置AFF1字段
-                   (irq << 24) | tList);  // 设置中断号和目标列表
+            val = ((MPIDR_AFF_LEVEL(cluster, 3) << 48) | /* 3: Serial number, 48: Register bit offset */
+                   (MPIDR_AFF_LEVEL(cluster, 2) << 32) | /* 2: Serial number, 32: Register bit offset */
+                   (MPIDR_AFF_LEVEL(cluster, 1) << 16) | /* 1: Serial number, 16: Register bit offset */
+                   (irq << 24) | tList); /* 24: Register bit offset */
 
-            GiccSetSgi1r(val);  // 写入SGI1R寄存器发送中断
+            GiccSetSgi1r(val);
         }
 
         cpu++;
     }
 }
 
-/**
- * @brief 发送IPI中断到指定CPU核心
- * @param target 目标CPU掩码
- * @param ipi IPI中断号
- */
 VOID HalIrqSendIpi(UINT32 target, UINT32 ipi)
 {
-    GicSgi(ipi, target);  // 调用GicSgi发送IPI中断
+    GicSgi(ipi, target);
 }
 
-/**
- * @brief 设置中断的CPU亲和性
- * @param irq 中断号
- * @param cpuMask CPU掩码，表示中断可以发送到的CPU核心
- */
 VOID HalIrqSetAffinity(UINT32 irq, UINT32 cpuMask)
 {
-    UINT64 affinity = MpidrToAffinity(NextCpu(0, cpuMask));  // 获取目标CPU的亲和性值
+    UINT64 affinity = MpidrToAffinity(NextCpu(0, cpuMask));
 
     /* When ARE is on, use router */
-    GIC_REG_64(GICD_IROUTER(irq)) = affinity;  // 设置中断路由寄存器
+    GIC_REG_64(GICD_IROUTER(irq)) = affinity;
 }
 
 #endif
 
-/**
- * @brief 等待GIC寄存器写入完成
- * @param reg 要等待的寄存器地址
- */
 STATIC VOID GicWaitForRwp(UINT64 reg)
 {
-    INT32 count = 1000000;  /* 1s超时计数 */
+    INT32 count = 1000000; /* 1s */
 
-    while (GIC_REG_32(reg) & GICD_CTLR_RWP) {  // 检查RWP位是否清除
+    while (GIC_REG_32(reg) & GICD_CTLR_RWP) {
         count -= 1;
-        if (!count) {  // 超时检查
+        if (!count) {
             PRINTK("gic_v3: rwp timeout 0x%x\n", GIC_REG_32(reg));
             return;
         }
     }
 }
 
-/**
- * @brief 设置GICD中断组
- * @param irq 中断号
- */
 STATIC INLINE VOID GicdSetGroup(UINT32 irq)
 {
     /* configure spi as group 0 on secure mode and group 1 on unsecure mode */
 #ifdef LOSCFG_ARCH_SECURE_MONITOR_MODE
-    GIC_REG_32(GICD_IGROUPR(irq / 32)) = 0;  /* 32: 中断位宽度，安全模式下设置为组0 */
+    GIC_REG_32(GICD_IGROUPR(irq / 32)) = 0; /* 32: Interrupt bit width */
 #else
-    GIC_REG_32(GICD_IGROUPR(irq / 32)) = 0xffffffff;  /* 32: 中断位宽度，非安全模式下设置为组1 */
+    GIC_REG_32(GICD_IGROUPR(irq / 32)) = 0xffffffff; /* 32: Interrupt bit width */
 #endif
 }
 
-/**
- * @brief 设置GICR唤醒状态
- * @param cpu CPU核心号
- */
 STATIC INLINE VOID GicrSetWaker(UINT32 cpu)
 {
-    GIC_REG_32(GICR_WAKER(cpu)) &= ~GICR_WAKER_PROCESSORSLEEP;  // 清除处理器睡眠位
-    DSB;  // 数据同步屏障
-    ISB;  // 指令同步屏障
-    while ((GIC_REG_32(GICR_WAKER(cpu)) & 0x4) == GICR_WAKER_CHILDRENASLEEP);  // 等待子控制器唤醒
+    GIC_REG_32(GICR_WAKER(cpu)) &= ~GICR_WAKER_PROCESSORSLEEP;
+    DSB;
+    ISB;
+    while ((GIC_REG_32(GICR_WAKER(cpu)) & 0x4) == GICR_WAKER_CHILDRENASLEEP);
 }
 
-/**
- * @brief 设置GICR中断组
- * @param cpu CPU核心号
- */
 STATIC INLINE VOID GicrSetGroup(UINT32 cpu)
 {
     /* configure sgi/ppi as group 0 on secure mode and group 1 on unsecure mode */
 #ifdef LOSCFG_ARCH_SECURE_MONITOR_MODE
-    GIC_REG_32(GICR_IGROUPR0(cpu)) = 0;  // 安全模式下设置SGI/PPI为组0
-    GIC_REG_32(GICR_IGRPMOD0(cpu)) = 0;  // 安全模式下设置中断模式
+    GIC_REG_32(GICR_IGROUPR0(cpu)) = 0;
+    GIC_REG_32(GICR_IGRPMOD0(cpu)) = 0;
 #else
-    GIC_REG_32(GICR_IGROUPR0(cpu)) = 0xffffffff;  // 非安全模式下设置SGI/PPI为组1
+    GIC_REG_32(GICR_IGROUPR0(cpu)) = 0xffffffff;
 #endif
 }
 
-/**
- * @brief 设置GICD中断优先级
- * @param irq 中断号
- * @param priority 中断优先级(0-255)
- */
 STATIC VOID GicdSetPmr(UINT32 irq, UINT8 priority)
 {
-    UINT32 pos = irq >> 2;  /* 每个寄存器包含4个中断的优先级字段 */
-    UINT32 newPri = GIC_REG_32(GICD_IPRIORITYR(pos));  // 读取当前优先级寄存器值
+    UINT32 pos = irq >> 2; /* one irq have the 8-bit interrupt priority field */
+    UINT32 newPri = GIC_REG_32(GICD_IPRIORITYR(pos));
 
     /* Shift and mask the correct bits for the priority */
-    newPri &= ~(GIC_PRIORITY_MASK << ((irq % 4) * GIC_PRIORITY_OFFSET));  // 清除当前中断的优先级位
-    newPri |= priority << ((irq % 4) * GIC_PRIORITY_OFFSET);  // 设置新的优先级
+    newPri &= ~(GIC_PRIORITY_MASK << ((irq % 4) * GIC_PRIORITY_OFFSET));
+    newPri |= priority << ((irq % 4) * GIC_PRIORITY_OFFSET);
 
-    GIC_REG_32(GICD_IPRIORITYR(pos)) = newPri;  // 写入优先级寄存器
+    GIC_REG_32(GICD_IPRIORITYR(pos)) = newPri;
 }
 
-/**
- * @brief 设置GICR中断优先级
- * @param irq 中断号
- * @param priority 中断优先级(0-255)
- */
 STATIC VOID GicrSetPmr(UINT32 irq, UINT8 priority)
 {
-    UINT32 cpu = ArchCurrCpuid();  // 获取当前CPU核心号
-    UINT32 pos = irq >> 2;  /* 每个寄存器包含4个中断的优先级字段 */
-    UINT32 newPri = GIC_REG_32(GICR_IPRIORITYR0(cpu) + pos * 4);  // 读取当前优先级寄存器值
+    UINT32 cpu = ArchCurrCpuid();
+    UINT32 pos = irq >> 2; /* one irq have the 8-bit interrupt priority field */
+    UINT32 newPri = GIC_REG_32(GICR_IPRIORITYR0(cpu) + pos * 4);
 
     /* Clear priority offset bits and set new priority */
-    newPri &= ~(GIC_PRIORITY_MASK << ((irq % 4) * GIC_PRIORITY_OFFSET));  // 清除当前中断的优先级位
-    newPri |= priority << ((irq % 4) * GIC_PRIORITY_OFFSET);  // 设置新的优先级
+    newPri &= ~(GIC_PRIORITY_MASK << ((irq % 4) * GIC_PRIORITY_OFFSET));
+    newPri |= priority << ((irq % 4) * GIC_PRIORITY_OFFSET);
 
-    GIC_REG_32(GICR_IPRIORITYR0(cpu) + pos * 4) = newPri;  // 写入优先级寄存器
+    GIC_REG_32(GICR_IPRIORITYR0(cpu) + pos * 4) = newPri;
 }
 
-/**
- * @brief 每CPU初始化GICC
- */
 STATIC VOID GiccInitPercpu(VOID)
 {
     /* enable system register interface */
-    UINT32 sre = GiccGetSre();  // 读取系统寄存器使能状态
-    if (!(sre & 0x1)) {  // 检查系统寄存器接口是否已使能
-        GiccSetSre(sre | 0x1);  // 使能系统寄存器接口
+    UINT32 sre = GiccGetSre();
+    if (!(sre & 0x1)) {
+        GiccSetSre(sre | 0x1);
 
         /*
          * Need to check that the SRE bit has actually been set. If
          * not, it means that SRE is disabled at up EL level. We're going to
          * die painfully, and there is nothing we can do about it.
          */
-        sre = GiccGetSre();  // 重新读取SRE状态
-        LOS_ASSERT(sre & 0x1);  // 断言检查SRE是否已成功使能
+        sre = GiccGetSre();
+        LOS_ASSERT(sre & 0x1);
     }
 
 #ifdef LOSCFG_ARCH_SECURE_MONITOR_MODE
     /* Enable group 0 and disable grp1ns grp1s interrupts */
-    GiccSetIgrpen0(1);  // 使能组0中断
-    GiccSetIgrpen1(0);  // 禁用组1中断
+    GiccSetIgrpen0(1);
+    GiccSetIgrpen1(0);
 
     /*
      * For priority grouping.
@@ -289,162 +243,213 @@ STATIC VOID GiccInitPercpu(VOID)
      * is split into a group priority field, that determines interrupt preemption,
      * and a subpriority field.
      */
-    GiccSetBpr0(MAX_BINARY_POINT_VALUE);  // 设置优先级分组
+    GiccSetBpr0(MAX_BINARY_POINT_VALUE);
 #else
     /* enable group 1 interrupts */
-    GiccSetIgrpen1(1);  // 使能组1中断
+    GiccSetIgrpen1(1);
 #endif
 
     /* set priority threshold to max */
-    GiccSetPmr(0xff);  // 设置优先级阈值为最低(所有中断都可抢占)
+    GiccSetPmr(0xff);
 
     /* EOI deactivates interrupt too (mode 0) */
-    GiccSetCtlr(0);  // 设置GICC控制寄存器
+    GiccSetCtlr(0);
 }
 
-/**
- * @brief 获取当前中断号
- * @return 当前处理的中断号
- */
 UINT32 HalCurIrqGet(VOID)
 {
-    return g_curIrqNum;  // 返回当前中断号
+    return g_curIrqNum;
 }
 
 /**
- * @brief 屏蔽指定中断
- * @param vector 中断号
+ * @brief 屏蔽指定中断向量对应的中断。
+ *
+ * 该函数根据传入的中断向量号，判断中断类型（SGI/PPI 或 SPI），
+ * 并对相应的中断进行屏蔽操作。对于 SGI/PPI 中断，会在所有 CPU 上进行屏蔽；
+ * 对于 SPI 中断，会在 GIC 分发器上进行屏蔽。
+ *
+ * @param vector 要屏蔽的中断向量号。
  */
 VOID HalIrqMask(UINT32 vector)
 {
+    // 循环计数器，用于遍历所有 CPU
     INT32 i;
-    const UINT32 mask = 1U << (vector % 32);  /* 32: 中断位宽度，计算中断掩码 */
+    // 计算用于屏蔽中断的掩码，将 1 左移 vector 对 32 取余的位数
+    const UINT32 mask = 1U << (vector % 32); /* 32: Interrupt bit width */
 
-    if ((vector > OS_USER_HWI_MAX) || (vector < OS_USER_HWI_MIN)) {  // 检查中断号是否有效
+    // 检查中断向量号是否在用户可操作的中断范围之外
+    if ((vector > OS_USER_HWI_MAX) || (vector < OS_USER_HWI_MIN)) {
+        // 若不在范围内，则不进行屏蔽操作，直接返回
         return;
     }
 
-    if (vector < 32) {  /* 32: 中断位宽度，判断是否为SGI/PPI中断 */
-        for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {  // 遍历所有CPU核心
-            GIC_REG_32(GICR_ICENABLER0(i)) = mask;  // 禁用该CPU上的中断
-            GicWaitForRwp(GICR_CTLR(i));  // 等待写入完成
+    // 判断中断类型，若中断向量号小于 32，则为 SGI/PPI 中断
+    if (vector < 32) { /* 32: Interrupt bit width */
+        // 遍历所有 CPU
+        for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
+            // 对当前 CPU 的 GICR（GIC Redistributor）的 ICENABLER0 寄存器写入掩码，屏蔽相应中断
+            GIC_REG_32(GICR_ICENABLER0(i)) = mask;
+            // 等待 GICR 寄存器写操作完成，确保屏蔽操作生效
+            GicWaitForRwp(GICR_CTLR(i));
         }
     } else {
-        GIC_REG_32(GICD_ICENABLER(vector >> 5)) = mask;  // 禁用SPI中断
-        GicWaitForRwp(GICD_CTLR);  // 等待写入完成
+        // 若中断向量号大于等于 32，则为 SPI 中断
+        // 对 GICD（GIC Distributor）的 ICENABLER 寄存器写入掩码，屏蔽相应中断
+        // vector >> 5 等同于 vector / 32，用于计算寄存器偏移
+        GIC_REG_32(GICD_ICENABLER(vector >> 5)) = mask;
+        // 等待 GICD 寄存器写操作完成，确保屏蔽操作生效
+        GicWaitForRwp(GICD_CTLR);
     }
 }
 
 /**
- * @brief 解除屏蔽指定中断
- * @param vector 中断号
+ * @brief 取消屏蔽指定中断向量对应的中断。
+ *
+ * 该函数根据传入的中断向量号，判断中断类型（SGI/PPI 或 SPI），
+ * 并对相应的中断进行取消屏蔽操作。对于 SGI/PPI 中断，会在所有 CPU 上进行取消屏蔽；
+ * 对于 SPI 中断，会在 GIC 分发器上进行取消屏蔽。
+ *
+ * @param vector 要取消屏蔽的中断向量号。
  */
 VOID HalIrqUnmask(UINT32 vector)
 {
+    // 循环计数器，用于遍历所有 CPU
     INT32 i;
-    const UINT32 mask = 1U << (vector % 32);  /* 32: 中断位宽度，计算中断掩码 */
+    // 计算用于取消屏蔽中断的掩码，将 1 左移 vector 对 32 取余的位数
+    const UINT32 mask = 1U << (vector % 32); /* 32: Interrupt bit width */
 
-    if ((vector > OS_USER_HWI_MAX) || (vector < OS_USER_HWI_MIN)) {  // 检查中断号是否有效
+    // 检查中断向量号是否在用户可操作的中断范围之外
+    if ((vector > OS_USER_HWI_MAX) || (vector < OS_USER_HWI_MIN)) {
+        // 若不在范围内，则不进行取消屏蔽操作，直接返回
         return;
     }
 
-    if (vector < 32) {  /* 32: 中断位宽度，判断是否为SGI/PPI中断 */
-        for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {  // 遍历所有CPU核心
-            GIC_REG_32(GICR_ISENABLER0(i)) = mask;  // 使能该CPU上的中断
-            GicWaitForRwp(GICR_CTLR(i));  // 等待写入完成
+    // 判断中断类型，若中断向量号小于 32，则为 SGI/PPI 中断
+    if (vector < 32) { /* 32: Interrupt bit width */
+        // 遍历所有 CPU
+        for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
+            // 对当前 CPU 的 GICR（GIC Redistributor）的 ISENABLER0 寄存器写入掩码，取消屏蔽相应中断
+            GIC_REG_32(GICR_ISENABLER0(i)) = mask;
+            // 等待 GICR 寄存器写操作完成，确保取消屏蔽操作生效
+            GicWaitForRwp(GICR_CTLR(i));
         }
     } else {
-        GIC_REG_32(GICD_ISENABLER(vector >> 5)) = mask;  /* 5: 右移5位计算寄存器索引，使能SPI中断 */
-        GicWaitForRwp(GICD_CTLR);  // 等待写入完成
+        // 若中断向量号大于等于 32，则为 SPI 中断
+        // 对 GICD（GIC Distributor）的 ISENABLER 寄存器写入掩码，取消屏蔽相应中断
+        // vector >> 5 等同于 vector / 32，用于计算寄存器偏移
+        GIC_REG_32(GICD_ISENABLER(vector >> 5)) = mask; /* 5: Register bit offset */
+        // 等待 GICD 寄存器写操作完成，确保取消屏蔽操作生效
+        GicWaitForRwp(GICD_CTLR);
     }
 }
 
 /**
- * @brief 挂起指定中断
- * @param vector 中断号
+ * @brief 将指定中断向量对应的中断置为挂起状态。
+ *
+ * 该函数会检查传入的中断向量号是否在用户可操作的中断范围之内，
+ * 若在范围内，则将对应的中断置为挂起状态。挂起状态表示该中断已发生，
+ * 等待 GIC 进行处理。
+ *
+ * @param vector 要置为挂起状态的中断向量号。
  */
 VOID HalIrqPending(UINT32 vector)
 {
-    if ((vector > OS_USER_HWI_MAX) || (vector < OS_USER_HWI_MIN)) {  // 检查中断号是否有效
+    // 检查中断向量号是否在用户可操作的中断范围之外
+    if ((vector > OS_USER_HWI_MAX) || (vector < OS_USER_HWI_MIN)) {
+        // 若不在范围内，则不进行置挂起操作，直接返回
         return;
     }
 
-    GIC_REG_32(GICD_ISPENDR(vector >> 5)) = 1U << (vector % 32);  /* 5: 寄存器索引位移，32: 中断位宽度，设置中断挂起位 */
+    // 将指定中断向量对应的中断置为挂起状态
+    // vector >> 5 等同于 vector / 32，用于计算 GICD_ISPENDR 寄存器的偏移
+    // 5 表示寄存器的位偏移，32 表示每个寄存器管理 32 个中断
+    // 1U << (vector % 32) 生成用于置位的掩码，将对应中断位置 1
+    GIC_REG_32(GICD_ISPENDR(vector >> 5)) = 1U << (vector % 32); /* 5: Register bit offset, 32: Interrupt bit width */
 }
 
-/**
- * @brief 清除指定中断
- * @param vector 中断号
- */
 VOID HalIrqClear(UINT32 vector)
 {
-    GiccSetEoir(vector);  // 写入EOIR寄存器，结束中断
-    ISB;  // 指令同步屏障
+    GiccSetEoir(vector);
+    ISB;
 }
 
-/**
- * @brief 设置中断优先级
- * @param vector 中断号
- * @param priority 中断优先级(0-255)
- * @return 成功返回LOS_OK，失败返回LOS_NOK
- */
 UINT32 HalIrqSetPrio(UINT32 vector, UINT8 priority)
 {
     UINT8 prio = priority;
 
-    if (vector > OS_HWI_MAX_NUM) {  // 检查中断号是否超出最大范围
+    if (vector > OS_HWI_MAX_NUM) {
         PRINT_ERR("Invalid irq value %u, max irq is %u\n", vector, OS_HWI_MAX_NUM);
         return LOS_NOK;
     }
 
-    prio = prio & (UINT8)GIC_INTR_PRIO_MASK;  // 确保优先级在有效范围内
+    prio = prio & (UINT8)GIC_INTR_PRIO_MASK;
 
-    if (vector >= GIC_MIN_SPI_NUM) {  // 判断是否为SPI中断
-        GicdSetPmr(vector, prio);  // 设置SPI中断优先级
+    if (vector >= GIC_MIN_SPI_NUM) {
+        GicdSetPmr(vector, prio);
     } else {
-        GicrSetPmr(vector, prio);  // 设置SGI/PPI中断优先级
+        GicrSetPmr(vector, prio);
     }
 
     return LOS_OK;
 }
 
 /**
- * @brief 每CPU初始化GIC
+ * @brief 初始化每个 CPU 的 GIC（Generic Interrupt Controller）相关设置。
+ *
+ * 该函数对每个 CPU 的 GIC  Redistributor（GICR）和 CPU Interface（GICC）进行初始化操作，
+ * 包括设置唤醒状态、中断分组、清除和屏蔽中断、设置中断优先级，以及在 SMP 系统中取消屏蔽特定中断。
  */
 VOID HalIrqInitPercpu(VOID)
 {
+    // 循环计数器，用于遍历中断号
     INT32 idx;
-    UINT32 cpu = ArchCurrCpuid();  // 获取当前CPU核心号
+    // 获取当前 CPU 的 ID
+    UINT32 cpu = ArchCurrCpuid();
 
     /* GICR init */
-    GicrSetWaker(cpu);  // 设置GICR唤醒状态
-    GicrSetGroup(cpu);  // 设置GICR中断组
-    GicWaitForRwp(GICR_CTLR(cpu));  // 等待GICR配置完成
+    // 设置 GICR 的唤醒状态，确保 GICR 处于唤醒状态
+    GicrSetWaker(cpu);
+    // 配置 GICR 的中断分组，将 SGI/PPI 中断分组
+    GicrSetGroup(cpu);
+    // 等待 GICR 寄存器写操作完成，确保配置生效
+    GicWaitForRwp(GICR_CTLR(cpu));
 
     /* GICR: clear and mask sgi/ppi */
-    GIC_REG_32(GICR_ICENABLER0(cpu)) = 0xffffffff;  // 禁用所有SGI/PPI中断
-    GIC_REG_32(GICR_ICPENDR0(cpu)) = 0xffffffff;  // 清除所有SGI/PPI中断挂起位
+    // 屏蔽所有 SGI（Software Generated Interrupts）和 PPI（Private Peripheral Interrupts）中断
+    GIC_REG_32(GICR_ICENABLER0(cpu)) = 0xffffffff;
+    // 清除所有 SGI 和 PPI 中断的挂起状态
+    GIC_REG_32(GICR_ICPENDR0(cpu)) = 0xffffffff;
 
-    GIC_REG_32(GICR_ISENABLER0(cpu)) = 0xffffffff;  // 使能所有SGI/PPI中断
+    // 使能所有 SGI 和 PPI 中断
+    GIC_REG_32(GICR_ISENABLER0(cpu)) = 0xffffffff;
 
-    for (idx = 0; idx < GIC_MIN_SPI_NUM; idx += 1) {  // 遍历所有SGI/PPI中断
-        GicrSetPmr(idx, MIN_INTERRUPT_PRIORITY);  // 设置默认优先级
+    // 遍历所有 SGI 和 PPI 中断，为其设置默认优先级
+    for (idx = 0; idx < GIC_MIN_SPI_NUM; idx += 1) {
+        // 调用 GicrSetPmr 函数设置中断优先级为最低默认优先级
+        GicrSetPmr(idx, MIN_INTERRUPT_PRIORITY);
     }
 
-    GicWaitForRwp(GICR_CTLR(cpu));  // 等待GICR配置完成
+    // 等待 GICR 寄存器写操作完成，确保优先级设置生效
+    GicWaitForRwp(GICR_CTLR(cpu));
 
     /* GICC init */
-    GiccInitPercpu();  // 初始化GICC
+    // 初始化 GIC 的 CPU 接口
+    GiccInitPercpu();
 
 #ifdef LOSCFG_KERNEL_SMP
     /* unmask ipi interrupts */
-    HalIrqUnmask(LOS_MP_IPI_WAKEUP);  // 解除IPI唤醒中断屏蔽
-    HalIrqUnmask(LOS_MP_IPI_HALT);  // 解除IPI停止中断屏蔽
+    // 取消屏蔽处理器间唤醒中断
+    HalIrqUnmask(LOS_MP_IPI_WAKEUP);
+    // 取消屏蔽处理器间停止中断
+    HalIrqUnmask(LOS_MP_IPI_HALT);
 #endif
 }
 
 /**
- * @brief 初始化GIC中断控制器
+ * @brief 初始化 GIC（Generic Interrupt Controller）中断控制器。
+ *
+ * 该函数完成 GIC 分发器和中断的一系列初始化操作，包括禁用分发器、设置中断触发方式、
+ * 配置中断分组、设置中断优先级、启用分发器以及注册处理器间中断等。
  */
 VOID HalIrqInit(VOID)
 {
@@ -452,99 +457,151 @@ VOID HalIrqInit(VOID)
     UINT64 affinity;
 
     /* disable distributor */
-    GIC_REG_32(GICD_CTLR) = 0;  // 禁用GICD
-    GicWaitForRwp(GICD_CTLR);  // 等待GICD配置完成
-    ISB;  // 指令同步屏障
+    // 禁用 GIC 分发器，停止分发中断
+    GIC_REG_32(GICD_CTLR) = 0;
+    // 等待分发器寄存器写操作完成
+    GicWaitForRwp(GICD_CTLR);
+    // 确保指令同步屏障，保证之前的写操作完成后再执行后续指令
+    ISB;
 
     /* set external interrupts to be level triggered, active low. */
-    for (i = 32; i < OS_HWI_MAX_NUM; i += 16) { /* 32: 起始中断号，16: 中断位宽度，配置中断触发方式 */
-        GIC_REG_32(GICD_ICFGR(i / 16)) = 0;  // 设置为电平触发
+    // 从第 32 个中断开始，以 16 个中断为一组，设置外部中断为低电平触发
+    for (i = 32; i < OS_HWI_MAX_NUM; i += 16) { /* 32: Start interrupt number, 16: Interrupt bit width */
+        // 配置中断触发方式寄存器，将对应中断设置为低电平触发
+        GIC_REG_32(GICD_ICFGR(i / 16)) = 0;
     }
 
     /* config distributer, mask and clear all spis, set group x */
-    for (i = 32; i < OS_HWI_MAX_NUM; i += 32) { /* 32: 起始中断号，32: 中断位宽度，配置SPI中断 */
-        GIC_REG_32(GICD_ICENABLER(i / 32)) = 0xffffffff; /* 32: 中断位宽度，禁用SPI中断 */
-        GIC_REG_32(GICD_ICPENDR(i / 32)) = 0xffffffff; /* 32: 中断位宽度，清除SPI中断挂起位 */
-        GIC_REG_32(GICD_IGRPMODR(i / 32)) = 0; /* 32: 中断位宽度，设置中断模式 */
+    // 从第 32 个中断开始，以 32 个中断为一组，配置分发器
+    for (i = 32; i < OS_HWI_MAX_NUM; i += 32) { /* 32: Start interrupt number, 32: Interrupt bit width */
+        // 屏蔽所有 SPI（Shared Peripheral Interrupts）中断
+        GIC_REG_32(GICD_ICENABLER(i / 32)) = 0xffffffff; /* 32: Interrupt bit width */
+        // 清除所有 SPI 中断的挂起状态
+        GIC_REG_32(GICD_ICPENDR(i / 32)) = 0xffffffff; /* 32: Interrupt bit width */
+        // 设置中断组模式寄存器
+        GIC_REG_32(GICD_IGRPMODR(i / 32)) = 0; /* 32: Interrupt bit width */
 
-        GicdSetGroup(i);  // 设置SPI中断组
+        // 设置中断分组
+        GicdSetGroup(i);
     }
 
     /* set spi priority as default */
-    for (i = 32; i < OS_HWI_MAX_NUM; i++) { /* 32: 起始中断号，设置SPI中断优先级 */
-        GicdSetPmr(i, MIN_INTERRUPT_PRIORITY);  // 设置默认优先级
+    // 从第 32 个中断开始，为所有 SPI 中断设置默认优先级
+    for (i = 32; i < OS_HWI_MAX_NUM; i++) { /* 32: Start interrupt number */
+        // 调用 GicdSetPmr 函数设置中断优先级为最低默认优先级
+        GicdSetPmr(i, MIN_INTERRUPT_PRIORITY);
     }
 
-    GicWaitForRwp(GICD_CTLR);  // 等待GICD配置完成
+    // 等待分发器寄存器写操作完成
+    GicWaitForRwp(GICD_CTLR);
 
     /* disable all interrupts. */
-    for (i = 0; i < OS_HWI_MAX_NUM; i += 32) { /* 32: 中断位宽度，禁用所有中断 */
-        GIC_REG_32(GICD_ICENABLER(i / 32)) = 0xffffffff; /* 32: 中断位宽度 */
+    // 以 32 个中断为一组，禁用所有中断
+    for (i = 0; i < OS_HWI_MAX_NUM; i += 32) { /* 32: Interrupt bit width */
+        // 屏蔽对应中断
+        GIC_REG_32(GICD_ICENABLER(i / 32)) = 0xffffffff; /* 32: Interrupt bit width */
     }
 
     /* enable distributor with ARE, group 1 enabled */
-    GIC_REG_32(GICD_CTLR) = CTLR_ENALBE_G0 | CTLR_ENABLE_G1NS | CTLR_ARE_S;  // 使能GICD并配置ARE
+    // 启用 GIC 分发器，同时启用地址路由扩展（ARE）和组 1 非安全中断
+    GIC_REG_32(GICD_CTLR) = CTLR_ENALBE_G0 | CTLR_ENABLE_G1NS | CTLR_ARE_S;
 
     /* set spi to boot cpu only. ARE must be enabled */
-    affinity = MpidrToAffinity(AARCH64_SYSREG_READ(mpidr_el1));  // 获取启动CPU的亲和性值
-    for (i = 32; i < OS_HWI_MAX_NUM; i++) { /* 32: 起始中断号，设置SPI中断路由 */
-        GIC_REG_64(GICD_IROUTER(i)) = affinity;  // 设置中断路由到启动CPU
+    // 将 MPIDR_EL1 寄存器的值转换为中断亲和性值
+    affinity = MpidrToAffinity(AARCH64_SYSREG_READ(mpidr_el1));
+    // 从第 32 个中断开始，将所有 SPI 中断路由到启动 CPU
+    for (i = 32; i < OS_HWI_MAX_NUM; i++) { /* 32: Start interrupt number */
+        // 设置中断路由寄存器，指定中断亲和性
+        GIC_REG_64(GICD_IROUTER(i)) = affinity;
     }
 
-    HalIrqInitPercpu();  // 初始化每CPU GIC配置
+    // 初始化每个 CPU 的 GIC 相关设置
+    HalIrqInitPercpu();
 
 #ifdef LOSCFG_KERNEL_SMP
     /* register inter-processor interrupt */
-    (VOID)LOS_HwiCreate(LOS_MP_IPI_WAKEUP, 0xa0, 0, OsMpWakeHandler, 0);  // 创建IPI唤醒中断
-    (VOID)LOS_HwiCreate(LOS_MP_IPI_SCHEDULE, 0xa0, 0, OsMpScheduleHandler, 0);  // 创建IPI调度中断
-    (VOID)LOS_HwiCreate(LOS_MP_IPI_HALT, 0xa0, 0, OsMpScheduleHandler, 0);  // 创建IPI停止中断
+    // 创建并注册处理器间唤醒中断
+    (VOID)LOS_HwiCreate(LOS_MP_IPI_WAKEUP, 0xa0, 0, OsMpWakeHandler, 0);
+    // 创建并注册处理器间调度中断
+    (VOID)LOS_HwiCreate(LOS_MP_IPI_SCHEDULE, 0xa0, 0, OsMpScheduleHandler, 0);
+    // 创建并注册处理器间停止中断
+    (VOID)LOS_HwiCreate(LOS_MP_IPI_HALT, 0xa0, 0, OsMpScheduleHandler, 0);
 #ifdef LOSCFG_KERNEL_SMP_CALL
-    (VOID)LOS_HwiCreate(LOS_MP_IPI_FUNC_CALL, 0xa0, 0, OsMpFuncCallHandler, 0);  // 创建IPI函数调用中断
+    // 创建并注册处理器间函数调用中断
+    (VOID)LOS_HwiCreate(LOS_MP_IPI_FUNC_CALL, 0xa0, 0, OsMpFuncCallHandler, 0);
 #endif
 #endif
 }
 
 /**
- * @brief GIC中断处理函数
+ * @brief 处理 GIC 中断的主函数。
+ *
+ * 该函数从 GIC CPU 接口寄存器中读取中断确认寄存器（IAR）的值，
+ * 提取出中断向量号，然后对该中断进行有效性检查。
+ * 如果中断向量号有效，则调用操作系统的中断处理函数，
+ * 最后向 GIC 发送中断结束信号（EOI）。
  */
 VOID HalIrqHandler(VOID)
 {
-    UINT32 iar = GiccGetIar();  // 读取中断确认寄存器
-    UINT32 vector = iar & 0x3FFU;  // 提取中断号
+    // 从 GIC CPU 接口寄存器中读取中断确认寄存器（IAR）的值
+    // 该寄存器包含了当前正在处理的中断的相关信息
+    UINT32 iar = GiccGetIar();
+    // 从 IAR 中提取出中断向量号，通过与 0x3FFU 进行按位与操作
+    // 0x3FFU 对应的二进制为 1111111111，可提取出低 10 位的中断向量号
+    UINT32 vector = iar & 0x3FFU;
 
     /*
-     * invalid irq number, mainly the spurious interrupts 0x3ff,
-     * valid irq ranges from 0~1019, we use OS_HWI_MAX_NUM to do
-     * the checking.
+     * 检查中断向量号是否无效，主要是处理伪中断（spurious interrupts）0x3FF
+     * 有效的中断向量号范围是 0 到 1019，这里使用 OS_HWI_MAX_NUM 进行检查
+     * 如果中断向量号超出有效范围，则不处理该中断，直接返回
      */
-    if (vector >= OS_HWI_MAX_NUM) {  // 检查中断号是否有效
+    if (vector >= OS_HWI_MAX_NUM) {
         return;
     }
-    g_curIrqNum = vector;  // 更新当前中断号
+    // 将当前有效的中断向量号保存到全局变量 g_curIrqNum 中
+    g_curIrqNum = vector;
 
-    OsInterrupt(vector);  // 调用内核中断处理函数
-    GiccSetEoir(vector);  // 写入EOIR寄存器，结束中断
+    // 调用操作系统的中断处理函数，传入有效的中断向量号
+    // 该函数会根据中断向量号执行相应的中断处理逻辑
+    OsInterrupt(vector);
+    // 向 GIC 发送中断结束信号（EOI），通知 GIC 当前中断处理完毕
+    // 以便 GIC 可以继续处理其他中断
+    GiccSetEoir(vector);
 }
 
 /**
- * @brief 获取GIC版本信息
- * @return GIC版本字符串
+ * @brief 获取 GIC（Generic Interrupt Controller）的版本信息。
+ *
+ * 该函数通过读取 GIC 分发器的 PIDR2V3 寄存器值，根据寄存器中的版本信息，
+ * 返回对应的 GIC 版本字符串。如果版本信息未知，则返回 "unknown"。
+ *
+ * @return CHAR* 指向表示 GIC 版本信息的字符串指针。
  */
 CHAR *HalIrqVersion(VOID)
 {
-    UINT32 pidr = GIC_REG_32(GICD_PIDR2V3);  // 读取GICD版本寄存器
+    // 读取 GIC 分发器的 PIDR2V3 寄存器值
+    UINT32 pidr = GIC_REG_32(GICD_PIDR2V3);
+    // 用于存储表示 GIC 版本信息的字符串指针，初始化为 NULL
     CHAR *irqVerString = NULL;
 
-    switch (pidr >> GIC_REV_OFFSET) {  // 提取版本字段
+    // 根据 PIDR2V3 寄存器值右移 GIC_REV_OFFSET 位后的结果判断 GIC 版本
+    switch (pidr >> GIC_REV_OFFSET) {
+        // 如果版本为 GICv3
         case GICV3:
-            irqVerString = "GICv3";  // GICv3版本
+            // 将版本字符串设置为 "GICv3"
+            irqVerString = "GICv3";
             break;
+        // 如果版本为 GICv4
         case GICV4:
-            irqVerString = "GICv4";  // GICv4版本
+            // 将版本字符串设置为 "GICv4"
+            irqVerString = "GICv4";
             break;
+        // 如果版本信息未知
         default:
-            irqVerString = "unknown";  // 未知版本
+            // 将版本字符串设置为 "unknown"
+            irqVerString = "unknown";
     }
+    // 返回表示 GIC 版本信息的字符串指针
     return irqVerString;
 }
 
