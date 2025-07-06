@@ -96,533 +96,590 @@
 #endif /* LOSCFG_BASE_IPC_QUEUE_LIMIT <= 0 */
 
 #ifndef LOSCFG_IPC_CONTAINER
-LITE_OS_SEC_BSS LosQueueCB *g_allQueue = NULL;///< 消息队列池
-LITE_OS_SEC_BSS STATIC LOS_DL_LIST g_freeQueueList;///< 空闲队列链表,管分配的,需要队列从这里申请
+LITE_OS_SEC_BSS LosQueueCB *g_allQueue = NULL;  // 队列控制块数组指针
+LITE_OS_SEC_BSS STATIC LOS_DL_LIST g_freeQueueList;  // 空闲队列链表
 #define FREE_QUEUE_LIST g_freeQueueList
 #endif
+
 /**
- * 初始化消息队列控制块池
- * 
+ * @brief 初始化所有队列控制块
  * @param freeQueueList 空闲队列链表指针
- * @return 成功返回消息队列控制块池指针，失败返回NULL
+ * @return 成功返回队列控制块数组指针，失败返回NULL
  */
 LITE_OS_SEC_TEXT_INIT LosQueueCB *OsAllQueueCBInit(LOS_DL_LIST *freeQueueList)
 {
-    UINT32 index;
+    UINT32 index;  // 循环索引
 
-    /* 参数检查 */
-    if (freeQueueList == NULL) {
+    if (freeQueueList == NULL) {  // 检查空闲队列链表指针是否为空
         return NULL;
     }
 
-    /* 计算所需内存大小 */
-    UINT32 size = LOSCFG_BASE_IPC_QUEUE_LIMIT * sizeof(LosQueueCB);
-    
-    /* 从系统内存池分配内存 */
-    LosQueueCB *allQueue = (LosQueueCB *)LOS_MemAlloc(m_aucSysMem0, size);
-    if (allQueue == NULL) {
+    UINT32 size = LOSCFG_BASE_IPC_QUEUE_LIMIT * sizeof(LosQueueCB);  // 计算队列控制块数组大小
+    /* system resident memory, don't free */
+    LosQueueCB *allQueue = (LosQueueCB *)LOS_MemAlloc(m_aucSysMem0, size);  // 分配队列控制块数组内存
+    if (allQueue == NULL) {  // 检查内存分配是否成功
         return NULL;
     }
-
-    /* 初始化分配的内存 */
-    (VOID)memset_s(allQueue, size, 0, size);
-
-    /* 初始化空闲队列链表 */
-    LOS_ListInit(freeQueueList);
-
-    /* 初始化每个队列控制块 */
-    for (index = 0; index < LOSCFG_BASE_IPC_QUEUE_LIMIT; index++) {
-        LosQueueCB *queueNode = ((LosQueueCB *)allQueue) + index;
+    (VOID)memset_s(allQueue, size, 0, size);  // 初始化队列控制块数组内存
+    LOS_ListInit(freeQueueList);  // 初始化空闲队列链表
+    for (index = 0; index < LOSCFG_BASE_IPC_QUEUE_LIMIT; index++) {  // 遍历队列控制块数组
+        LosQueueCB *queueNode = ((LosQueueCB *)allQueue) + index;  // 获取当前队列控制块
         queueNode->queueID = index;  // 设置队列ID
-        /* 将队列控制块加入空闲队列链表 */
-        LOS_ListTailInsert(freeQueueList, &queueNode->readWriteList[OS_QUEUE_WRITE]);
+        LOS_ListTailInsert(freeQueueList, &queueNode->readWriteList[OS_QUEUE_WRITE]);  // 将队列控制块插入空闲队列链表尾部
     }
 
 #ifndef LOSCFG_IPC_CONTAINER
-    /* 初始化调试钩子函数 */
-    if (OsQueueDbgInitHook() != LOS_OK) {
-        (VOID)LOS_MemFree(m_aucSysMem0, allQueue);
+    if (OsQueueDbgInitHook() != LOS_OK) {  // 调试钩子初始化
+        (VOID)LOS_MemFree(m_aucSysMem0, allQueue);  // 释放已分配的内存
         return NULL;
     }
 #endif
-
-    return allQueue;
+    return allQueue;  // 返回队列控制块数组指针
 }
 
 /*
- * Description : queue initial | 消息队列模块初始化
+ * Description : queue initial
  * Return      : LOS_OK on success or error code on failure
+ */
+/**
+ * @brief 队列模块初始化
+ * @return 成功返回LOS_OK，失败返回错误码
  */
 LITE_OS_SEC_TEXT_INIT UINT32 OsQueueInit(VOID)
 {
 #ifndef LOSCFG_IPC_CONTAINER
-    g_allQueue = OsAllQueueCBInit(&g_freeQueueList);
-    if (g_allQueue == NULL) {
-        return LOS_ERRNO_QUEUE_NO_MEMORY;
+    g_allQueue = OsAllQueueCBInit(&g_freeQueueList);  // 初始化所有队列控制块
+    if (g_allQueue == NULL) {  // 检查队列控制块数组是否初始化成功
+        return LOS_ERRNO_QUEUE_NO_MEMORY;  // 返回内存不足错误
     }
 #endif
-    return LOS_OK;
-}
-///创建一个队列,根据用户传入队列长度和消息节点大小来开辟相应的内存空间以供该队列使用，参数queueID带走队列ID
-LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueCreate(CHAR *queueName, UINT16 len, UINT32 *queueID,
-                                             UINT32 flags, UINT16 maxMsgSize)
-{
-    LosQueueCB *queueCB = NULL;
-    UINT32 intSave;
-    LOS_DL_LIST *unusedQueue = NULL;
-    UINT8 *queue = NULL;
-    UINT16 msgSize;
-
-    (VOID)queueName;
-    (VOID)flags;
-
-    if (queueID == NULL) {
-        return LOS_ERRNO_QUEUE_CREAT_PTR_NULL;
-    }
-
-    if (maxMsgSize > (OS_NULL_SHORT - sizeof(UINT32))) {// maxMsgSize上限 为啥要减去 sizeof(UINT32) ,因为前面存的是队列的大小
-        return LOS_ERRNO_QUEUE_SIZE_TOO_BIG;
-    }
-
-    if ((len == 0) || (maxMsgSize == 0)) {
-        return LOS_ERRNO_QUEUE_PARA_ISZERO;
-    }
-
-    msgSize = maxMsgSize + sizeof(UINT32);//总size = 消息体内容长度 + 消息大小(UINT32) 
-    /*
-     * Memory allocation is time-consuming, to shorten the time of disable interrupt,
-     * move the memory allocation to here.
-     *///内存分配非常耗时，为了缩短禁用中断的时间，将内存分配移到此处,用的时候分配队列内存
-    queue = (UINT8 *)LOS_MemAlloc(m_aucSysMem1, (UINT32)len * msgSize);//从系统内存池中分配,由这里提供读写队列的内存
-    if (queue == NULL) {//这里是一次把队列要用到的所有最大内存都申请下来了,能保证不会出现后续使用过程中内存不够的问题出现
-        return LOS_ERRNO_QUEUE_CREATE_NO_MEMORY;//调用处有 OsSwtmrInit sys_mbox_new DoMqueueCreate ==
-    }
-
-    SCHEDULER_LOCK(intSave);
-    if (LOS_ListEmpty(&FREE_QUEUE_LIST)) {//没有空余的队列ID的处理,注意软时钟定时器是由 g_swtmrCBArray统一管理的,里面有正在使用和可分配空闲的队列
-        SCHEDULER_UNLOCK(intSave);//g_freeQueueList是管理可用于分配的队列链表,申请消息队列的ID需要向它要
-        OsQueueCheckHook();
-        (VOID)LOS_MemFree(m_aucSysMem1, queue);//没有就要释放 queue申请的内存
-        return LOS_ERRNO_QUEUE_CB_UNAVAILABLE;
-    }
-
-    unusedQueue = LOS_DL_LIST_FIRST(&FREE_QUEUE_LIST);//找到一个没有被使用的队列
-    LOS_ListDelete(unusedQueue);//将自己从g_freeQueueList中摘除, unusedQueue只是个 LOS_DL_LIST 结点.
-    queueCB = GET_QUEUE_LIST(unusedQueue);//通过unusedQueue找到整个消息队列(LosQueueCB)
-    queueCB->queueLen = len;	//队列中消息的总个数,注意这个一旦创建是不能变的.
-    queueCB->queueSize = msgSize;//消息节点的大小,注意这个一旦创建也是不能变的.
-    queueCB->queueHandle = queue;	//队列句柄,队列内容存储区. 
-    queueCB->queueState = OS_QUEUE_INUSED;	//队列状态使用中
-    queueCB->readWriteableCnt[OS_QUEUE_READ] = 0;//可读资源计数，OS_QUEUE_READ(0):可读.
-    queueCB->readWriteableCnt[OS_QUEUE_WRITE] = len;//可些资源计数 OS_QUEUE_WRITE(1):可写, 默认len可写.
-    queueCB->queueHead = 0;//队列头节点
-    queueCB->queueTail = 0;//队列尾节点
-    LOS_ListInit(&queueCB->readWriteList[OS_QUEUE_READ]);//初始化可读队列任务链表
-    LOS_ListInit(&queueCB->readWriteList[OS_QUEUE_WRITE]);//初始化可写队列任务链表
-    LOS_ListInit(&queueCB->memList);//
-
-    OsQueueDbgUpdateHook(queueCB->queueID, OsCurrTaskGet()->taskEntry);//在创建或删除队列调试信息时更新任务条目
-    SCHEDULER_UNLOCK(intSave);
-
-    *queueID = queueCB->queueID;//带走队列ID
-    OsHookCall(LOS_HOOK_TYPE_QUEUE_CREATE, queueCB);
-    return LOS_OK;
-}
-///读队列参数检查
-STATIC LITE_OS_SEC_TEXT UINT32 OsQueueReadParameterCheck(UINT32 queueID, const VOID *bufferAddr,
-                                                         const UINT32 *bufferSize, UINT32 timeout)
-{
-    if (GET_QUEUE_INDEX(queueID) >= LOSCFG_BASE_IPC_QUEUE_LIMIT) {//队列ID不能超上限
-        return LOS_ERRNO_QUEUE_INVALID;
-    }
-    if ((bufferAddr == NULL) || (bufferSize == NULL)) {//缓存地址和大小参数判断
-        return LOS_ERRNO_QUEUE_READ_PTR_NULL;
-    }
-
-    if ((*bufferSize == 0) || (*bufferSize > (OS_NULL_SHORT - sizeof(UINT32)))) {//限制了读取数据的上限64K, sizeof(UINT32)代表的是队列的长度
-        return LOS_ERRNO_QUEUE_READSIZE_IS_INVALID;					//所以要减去
-    }
-
-    OsQueueDbgTimeUpdateHook(queueID);
-
-    if (timeout != LOS_NO_WAIT) {//等待一定时间再读取
-        if (OS_INT_ACTIVE) {//如果碰上了硬中断
-            return LOS_ERRNO_QUEUE_READ_IN_INTERRUPT;//意思是:硬中断发生时是不能读消息队列的
-        }
-    }
-    return LOS_OK;
-}
-///写队列参数检查
-STATIC LITE_OS_SEC_TEXT UINT32 OsQueueWriteParameterCheck(UINT32 queueID, const VOID *bufferAddr,
-                                                          const UINT32 *bufferSize, UINT32 timeout)
-{
-    if (GET_QUEUE_INDEX(queueID) >= LOSCFG_BASE_IPC_QUEUE_LIMIT) {//队列ID不能超上限
-        return LOS_ERRNO_QUEUE_INVALID;
-    }
-
-    if (bufferAddr == NULL) {//没有数据源
-        return LOS_ERRNO_QUEUE_WRITE_PTR_NULL;
-    }
-
-    if (*bufferSize == 0) {//这里没有限制写队列的大小,如果写入一个很大buf 会怎样?
-        return LOS_ERRNO_QUEUE_WRITESIZE_ISZERO;
-    }
-
-    OsQueueDbgTimeUpdateHook(queueID);
-
-    if (timeout != LOS_NO_WAIT) {
-        if (OS_INT_ACTIVE) {
-            return LOS_ERRNO_QUEUE_WRITE_IN_INTERRUPT;
-        }
-    }
-    return LOS_OK;
-}
-///队列buf操作,注意队列数据是按顺序来读取的,要不从头,要不从尾部,不会出现从中间读写,所有可由 head 和 tail 来管理队列.
-STATIC VOID OsQueueBufferOperate(LosQueueCB *queueCB, UINT32 operateType, VOID *bufferAddr, UINT32 *bufferSize)
-{
-    UINT8 *queueNode = NULL;
-    UINT32 msgDataSize;
-    UINT16 queuePosition;
-
-    /* get the queue position | 先找到队列的位置*/
-    switch (OS_QUEUE_OPERATE_GET(operateType)) {//获取操作类型
-        case OS_QUEUE_READ_HEAD://从列队头开始读
-            queuePosition = queueCB->queueHead;//拿到头部位置
-            ((queueCB->queueHead + 1) == queueCB->queueLen) ? (queueCB->queueHead = 0) : (queueCB->queueHead++);//调整队列头部位置
-            break;
-        case OS_QUEUE_WRITE_HEAD://从列队头开始写
-            (queueCB->queueHead == 0) ? (queueCB->queueHead = queueCB->queueLen - 1) : (--queueCB->queueHead);//调整队列头部位置
-            queuePosition = queueCB->queueHead;//拿到头部位置
-            break;
-        case OS_QUEUE_WRITE_TAIL://从列队尾部开始写
-            queuePosition = queueCB->queueTail;//设置队列位置为尾部位置
-            ((queueCB->queueTail + 1) == queueCB->queueLen) ? (queueCB->queueTail = 0) : (queueCB->queueTail++);//调整队列尾部位置
-            break;
-        default:  /* read tail, reserved. */
-            PRINT_ERR("invalid queue operate type!\n");
-            return;
-    }
-	//queueHandle是create队列时,由外界参数申请的一块内存. 用于copy 使用
-    queueNode = &(queueCB->queueHandle[(queuePosition * (queueCB->queueSize))]);//拿到队列节点
-
-    if (OS_QUEUE_IS_READ(operateType)) {//读操作处理,读队列分两步走
-        if (memcpy_s(&msgDataSize, sizeof(UINT32), queueNode + queueCB->queueSize - sizeof(UINT32),
-            sizeof(UINT32)) != EOK) {//1.先读出队列大小,由队列头四个字节表示
-            PRINT_ERR("get msgdatasize failed\n");
-            return;
-        }
-        msgDataSize = (*bufferSize < msgDataSize) ? *bufferSize : msgDataSize;
-        if (memcpy_s(bufferAddr, *bufferSize, queueNode, msgDataSize) != EOK) {//2.读表示读走已有数据,所以相当于bufferAddr接着了queueNode的数据
-            PRINT_ERR("copy message to buffer failed\n");
-            return;
-        }
-
-        *bufferSize = msgDataSize;//通过入参 带走消息的大小
-    } else {//只有读写两种操作,这里就是写队列了.写也分两步走 , @note_thinking 这里建议鸿蒙加上 OS_QUEUE_IS_WRITE 判断 
-        if (memcpy_s(queueNode, queueCB->queueSize, bufferAddr, *bufferSize) != EOK) {//1.写入消息内容
-            PRINT_ERR("store message failed\n");//表示把外面数据写进来,所以相当于queueNode接着了bufferAddr的数据
-            return;
-        }
-        if (memcpy_s(queueNode + queueCB->queueSize - sizeof(UINT32), sizeof(UINT32), bufferSize,
-            sizeof(UINT32)) != EOK) {//2.写入消息数据的长度,sizeof(UINT32)
-            PRINT_ERR("store message size failed\n");
-            return;
-        }
-    }
-}
-///队列操作参数检查
-STATIC UINT32 OsQueueOperateParamCheck(const LosQueueCB *queueCB, UINT32 queueID,
-                                       UINT32 operateType, const UINT32 *bufferSize)
-{
-    if ((queueCB->queueID != queueID) || (queueCB->queueState == OS_QUEUE_UNUSED)) {//队列ID和状态判断
-        return LOS_ERRNO_QUEUE_NOT_CREATE;
-    }
-
-    if (OS_QUEUE_IS_WRITE(operateType) && (*bufferSize > (queueCB->queueSize - sizeof(UINT32)))) {//写时判断
-        return LOS_ERRNO_QUEUE_WRITE_SIZE_TOO_BIG;//塞进来的数据太大,大于队列节点能承受的范围
-    }
-    return LOS_OK;
+    return LOS_OK;  // 返回成功
 }
 
 /**
- * @brief 队列操作.是读是写由operateType定
-    本函数是消息队列最重要的一个函数,可以分析出读取消息过程中
-    发生的细节,涉及任务的唤醒和阻塞,阻塞链表任务的相互提醒.
- * @param queueID 
- * @param operateType 
- * @param bufferAddr 
- * @param bufferSize 
- * @param timeout 
- * @return UINT32 
+ * @brief 创建消息队列
+ * @param queueName 队列名称
+ * @param len 队列长度
+ * @param queueID 输出参数，返回创建的队列ID
+ * @param flags 队列标志
+ * @param maxMsgSize 最大消息大小
+ * @return 成功返回LOS_OK，失败返回错误码
+ */
+LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueCreate(CHAR *queueName, UINT16 len, UINT32 *queueID,
+                                             UINT32 flags, UINT16 maxMsgSize)
+{
+    LosQueueCB *queueCB = NULL;  // 队列控制块指针
+    UINT32 intSave;  // 中断状态保存变量
+    LOS_DL_LIST *unusedQueue = NULL;  // 未使用队列节点
+    UINT8 *queue = NULL;  // 队列内存指针
+    UINT16 msgSize;  // 消息大小（包含消息头）
+
+    (VOID)queueName;  // 未使用的参数
+    (VOID)flags;  // 未使用的参数
+
+    if (queueID == NULL) {  // 检查队列ID指针是否为空
+        return LOS_ERRNO_QUEUE_CREAT_PTR_NULL;  // 返回指针为空错误
+    }
+
+    if (maxMsgSize > (OS_NULL_SHORT - sizeof(UINT32))) {  // 检查最大消息大小是否超过限制
+        return LOS_ERRNO_QUEUE_SIZE_TOO_BIG;  // 返回消息大小过大错误
+    }
+
+    if ((len == 0) || (maxMsgSize == 0)) {  // 检查队列长度和消息大小是否为零
+        return LOS_ERRNO_QUEUE_PARA_ISZERO;  // 返回参数为零错误
+    }
+
+    msgSize = maxMsgSize + sizeof(UINT32);  // 计算消息总大小（包含消息长度字段）
+    /*
+     * Memory allocation is time-consuming, to shorten the time of disable interrupt,
+     * move the memory allocation to here.
+     */
+    queue = (UINT8 *)LOS_MemAlloc(m_aucSysMem1, (UINT32)len * msgSize);  // 分配队列内存
+    if (queue == NULL) {  // 检查内存分配是否成功
+        return LOS_ERRNO_QUEUE_CREATE_NO_MEMORY;  // 返回内存不足错误
+    }
+
+    SCHEDULER_LOCK(intSave);  // 关调度器
+    if (LOS_ListEmpty(&FREE_QUEUE_LIST)) {  // 检查是否有空闲队列控制块
+        SCHEDULER_UNLOCK(intSave);  // 开调度器
+        OsQueueCheckHook();  // 队列检查钩子
+        (VOID)LOS_MemFree(m_aucSysMem1, queue);  // 释放已分配的队列内存
+        return LOS_ERRNO_QUEUE_CB_UNAVAILABLE;  // 返回队列控制块不可用错误
+    }
+
+    unusedQueue = LOS_DL_LIST_FIRST(&FREE_QUEUE_LIST);  // 获取第一个空闲队列控制块
+    LOS_ListDelete(unusedQueue);  // 从空闲队列链表中删除该节点
+    queueCB = GET_QUEUE_LIST(unusedQueue);  // 获取队列控制块指针
+    queueCB->queueLen = len;  // 设置队列长度
+    queueCB->queueSize = msgSize;  // 设置消息大小
+    queueCB->queueHandle = queue;  // 设置队列内存指针
+    queueCB->queueState = OS_QUEUE_INUSED;  // 设置队列状态为使用中
+    queueCB->readWriteableCnt[OS_QUEUE_READ] = 0;  // 初始化可读计数
+    queueCB->readWriteableCnt[OS_QUEUE_WRITE] = len;  // 初始化可写计数
+    queueCB->queueHead = 0;  // 初始化队列头指针
+    queueCB->queueTail = 0;  // 初始化队列尾指针
+    LOS_ListInit(&queueCB->readWriteList[OS_QUEUE_READ]);  // 初始化读等待链表
+    LOS_ListInit(&queueCB->readWriteList[OS_QUEUE_WRITE]);  // 初始化写等待链表
+    LOS_ListInit(&queueCB->memList);  // 初始化内存等待链表
+
+    OsQueueDbgUpdateHook(queueCB->queueID, OsCurrTaskGet()->taskEntry);  // 更新调试信息
+    SCHEDULER_UNLOCK(intSave);  // 开调度器
+
+    *queueID = queueCB->queueID;  // 设置输出队列ID
+    OsHookCall(LOS_HOOK_TYPE_QUEUE_CREATE, queueCB);  // 调用队列创建钩子
+    return LOS_OK;  // 返回成功
+}
+
+/**
+ * @brief 队列读操作参数检查
+ * @param queueID 队列ID
+ * @param bufferAddr 缓冲区地址
+ * @param bufferSize 缓冲区大小
+ * @param timeout 超时时间
+ * @return 成功返回LOS_OK，失败返回错误码
+ */
+STATIC LITE_OS_SEC_TEXT UINT32 OsQueueReadParameterCheck(UINT32 queueID, const VOID *bufferAddr,
+                                                         const UINT32 *bufferSize, UINT32 timeout)
+{
+    if (GET_QUEUE_INDEX(queueID) >= LOSCFG_BASE_IPC_QUEUE_LIMIT) {  // 检查队列ID是否有效
+        return LOS_ERRNO_QUEUE_INVALID;  // 返回队列无效错误
+    }
+    if ((bufferAddr == NULL) || (bufferSize == NULL)) {  // 检查缓冲区地址和大小指针是否为空
+        return LOS_ERRNO_QUEUE_READ_PTR_NULL;  // 返回指针为空错误
+    }
+
+    if ((*bufferSize == 0) || (*bufferSize > (OS_NULL_SHORT - sizeof(UINT32)))) {  // 检查缓冲区大小是否有效
+        return LOS_ERRNO_QUEUE_READSIZE_IS_INVALID;  // 返回缓冲区大小无效错误
+    }
+
+    OsQueueDbgTimeUpdateHook(queueID);  // 更新调试时间
+
+    if (timeout != LOS_NO_WAIT) {  // 检查是否需要超时等待
+        if (OS_INT_ACTIVE) {  // 检查是否在中断上下文中
+            return LOS_ERRNO_QUEUE_READ_IN_INTERRUPT;  // 返回中断中不允许等待错误
+        }
+    }
+    return LOS_OK;  // 返回成功
+}
+
+/**
+ * @brief 队列写操作参数检查
+ * @param queueID 队列ID
+ * @param bufferAddr 缓冲区地址
+ * @param bufferSize 缓冲区大小
+ * @param timeout 超时时间
+ * @return 成功返回LOS_OK，失败返回错误码
+ */
+STATIC LITE_OS_SEC_TEXT UINT32 OsQueueWriteParameterCheck(UINT32 queueID, const VOID *bufferAddr,
+                                                          const UINT32 *bufferSize, UINT32 timeout)
+{
+    if (GET_QUEUE_INDEX(queueID) >= LOSCFG_BASE_IPC_QUEUE_LIMIT) {  // 检查队列ID是否有效
+        return LOS_ERRNO_QUEUE_INVALID;  // 返回队列无效错误
+    }
+
+    if (bufferAddr == NULL) {  // 检查缓冲区地址是否为空
+        return LOS_ERRNO_QUEUE_WRITE_PTR_NULL;  // 返回指针为空错误
+    }
+
+    if (*bufferSize == 0) {  // 检查缓冲区大小是否为零
+        return LOS_ERRNO_QUEUE_WRITESIZE_ISZERO;  // 返回缓冲区大小为零错误
+    }
+
+    OsQueueDbgTimeUpdateHook(queueID);  // 更新调试时间
+
+    if (timeout != LOS_NO_WAIT) {  // 检查是否需要超时等待
+        if (OS_INT_ACTIVE) {  // 检查是否在中断上下文中
+            return LOS_ERRNO_QUEUE_WRITE_IN_INTERRUPT;  // 返回中断中不允许等待错误
+        }
+    }
+    return LOS_OK;  // 返回成功
+}
+
+/**
+ * @brief 队列缓冲区操作（读/写）
+ * @param queueCB 队列控制块指针
+ * @param operateType 操作类型（读/写，头/尾）
+ * @param bufferAddr 缓冲区地址
+ * @param bufferSize 缓冲区大小
+ */
+STATIC VOID OsQueueBufferOperate(LosQueueCB *queueCB, UINT32 operateType, VOID *bufferAddr, UINT32 *bufferSize)
+{
+    UINT8 *queueNode = NULL;  // 队列节点指针
+    UINT32 msgDataSize;  // 消息数据大小
+    UINT16 queuePosition;  // 队列位置
+
+    /* get the queue position */
+    switch (OS_QUEUE_OPERATE_GET(operateType)) {  // 根据操作类型获取队列位置
+        case OS_QUEUE_READ_HEAD:  // 从头部读
+            queuePosition = queueCB->queueHead;  // 获取当前头位置
+            ((queueCB->queueHead + 1) == queueCB->queueLen) ? (queueCB->queueHead = 0) : (queueCB->queueHead++);  // 更新头指针
+            break;
+        case OS_QUEUE_WRITE_HEAD:  // 向头部写
+            (queueCB->queueHead == 0) ? (queueCB->queueHead = queueCB->queueLen - 1) : (--queueCB->queueHead);  // 更新头指针
+            queuePosition = queueCB->queueHead;  // 获取当前头位置
+            break;
+        case OS_QUEUE_WRITE_TAIL:  // 向尾部写
+            queuePosition = queueCB->queueTail;  // 获取当前尾位置
+            ((queueCB->queueTail + 1) == queueCB->queueLen) ? (queueCB->queueTail = 0) : (queueCB->queueTail++);  // 更新尾指针
+            break;
+        default:  /* read tail, reserved. */
+            PRINT_ERR("invalid queue operate type!\n");  // 打印无效操作类型错误
+            return;
+    }
+
+    queueNode = &(queueCB->queueHandle[(queuePosition * (queueCB->queueSize))]);  // 计算队列节点地址
+
+    if (OS_QUEUE_IS_READ(operateType)) {  // 读操作
+        if (memcpy_s(&msgDataSize, sizeof(UINT32), queueNode + queueCB->queueSize - sizeof(UINT32),
+            sizeof(UINT32)) != EOK) {  // 读取消息大小
+            PRINT_ERR("get msgdatasize failed\n");  // 打印读取消息大小失败错误
+            return;
+        }
+        msgDataSize = (*bufferSize < msgDataSize) ? *bufferSize : msgDataSize;  // 确定实际读取大小
+        if (memcpy_s(bufferAddr, *bufferSize, queueNode, msgDataSize) != EOK) {  // 读取消息数据
+            PRINT_ERR("copy message to buffer failed\n");  // 打印消息复制失败错误
+            return;
+        }
+
+        *bufferSize = msgDataSize;  // 设置实际读取大小
+    } else {  // 写操作
+        if (memcpy_s(queueNode, queueCB->queueSize, bufferAddr, *bufferSize) != EOK) {  // 写入消息数据
+            PRINT_ERR("store message failed\n");  // 打印消息存储失败错误
+            return;
+        }
+        if (memcpy_s(queueNode + queueCB->queueSize - sizeof(UINT32), sizeof(UINT32), bufferSize,
+            sizeof(UINT32)) != EOK) {  // 写入消息大小
+            PRINT_ERR("store message size failed\n");  // 打印消息大小存储失败错误
+            return;
+        }
+    }
+}
+
+/**
+ * @brief 队列操作参数检查
+ * @param queueCB 队列控制块指针
+ * @param queueID 队列ID
+ * @param operateType 操作类型
+ * @param bufferSize 缓冲区大小
+ * @return 成功返回LOS_OK，失败返回错误码
+ */
+STATIC UINT32 OsQueueOperateParamCheck(const LosQueueCB *queueCB, UINT32 queueID,
+                                       UINT32 operateType, const UINT32 *bufferSize)
+{
+    if ((queueCB->queueID != queueID) || (queueCB->queueState == OS_QUEUE_UNUSED)) {  // 检查队列是否存在且处于使用中
+        return LOS_ERRNO_QUEUE_NOT_CREATE;  // 返回队列未创建错误
+    }
+
+    if (OS_QUEUE_IS_WRITE(operateType) && (*bufferSize > (queueCB->queueSize - sizeof(UINT32)))) {  // 检查写操作消息大小是否超过限制
+        return LOS_ERRNO_QUEUE_WRITE_SIZE_TOO_BIG;  // 返回消息大小过大错误
+    }
+    return LOS_OK;  // 返回成功
+}
+
+/**
+ * @brief 队列操作（读/写）
+ * @param queueID 队列ID
+ * @param operateType 操作类型
+ * @param bufferAddr 缓冲区地址
+ * @param bufferSize 缓冲区大小
+ * @param timeout 超时时间
+ * @return 成功返回LOS_OK，失败返回错误码
  */
 UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT32 *bufferSize, UINT32 timeout)
 {
-    UINT32 ret;
-    UINT32 readWrite = OS_QUEUE_READ_WRITE_GET(operateType);//获取读/写操作标识
-    UINT32 intSave;
-    OsHookCall(LOS_HOOK_TYPE_QUEUE_READ, (LosQueueCB *)GET_QUEUE_HANDLE(queueID), operateType, *bufferSize, timeout);
+    UINT32 ret;  // 返回值
+    UINT32 readWrite = OS_QUEUE_READ_WRITE_GET(operateType);  // 获取读写类型
+    UINT32 intSave;  // 中断状态保存变量
+    OsHookCall(LOS_HOOK_TYPE_QUEUE_READ, (LosQueueCB *)GET_QUEUE_HANDLE(queueID), operateType, *bufferSize, timeout);  // 调用队列读钩子
 
-    SCHEDULER_LOCK(intSave);
-    LosQueueCB *queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);//获取对应的队列控制块
-    ret = OsQueueOperateParamCheck(queueCB, queueID, operateType, bufferSize);//参数检查
-    if (ret != LOS_OK) {
-        goto QUEUE_END;
+    SCHEDULER_LOCK(intSave);  // 关调度器
+    LosQueueCB *queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);  // 获取队列控制块
+    ret = OsQueueOperateParamCheck(queueCB, queueID, operateType, bufferSize);  // 检查操作参数
+    if (ret != LOS_OK) {  // 参数检查失败
+        goto QUEUE_END;  // 跳转到结束处理
     }
 
-    if (queueCB->readWriteableCnt[readWrite] == 0) {//根据readWriteableCnt判断队列是否有消息读/写
-        if (timeout == LOS_NO_WAIT) {//不等待直接退出
-            ret = OS_QUEUE_IS_READ(operateType) ? LOS_ERRNO_QUEUE_ISEMPTY : LOS_ERRNO_QUEUE_ISFULL;
-            goto QUEUE_END;
+    if (queueCB->readWriteableCnt[readWrite] == 0) {  // 检查是否有可读写空间
+        if (timeout == LOS_NO_WAIT) {  // 非阻塞模式
+            ret = OS_QUEUE_IS_READ(operateType) ? LOS_ERRNO_QUEUE_ISEMPTY : LOS_ERRNO_QUEUE_ISFULL;  // 设置队列为空或满错误
+            goto QUEUE_END;  // 跳转到结束处理
         }
 
-        if (!OsPreemptableInSched()) {//不支持抢占式调度
-            ret = LOS_ERRNO_QUEUE_PEND_IN_LOCK;
-            goto QUEUE_END;
+        if (!OsPreemptableInSched()) {  // 检查是否允许抢占
+            ret = LOS_ERRNO_QUEUE_PEND_IN_LOCK;  // 返回锁中不允许等待错误
+            goto QUEUE_END;  // 跳转到结束处理
         }
-		//任务等待,这里很重要啊,将自己从就绪列表摘除,让出了CPU并发起了调度,并挂在readWriteList[readWrite]上,挂的都等待读/写消息的task
-        LosTaskCB *runTask = OsCurrTaskGet();
-        OsTaskWaitSetPendMask(OS_TASK_WAIT_QUEUE, queueCB->queueID, timeout);
-        ret = runTask->ops->wait(runTask, &queueCB->readWriteList[readWrite], timeout);
-        if (ret == LOS_ERRNO_TSK_TIMEOUT) {//唤醒后如果超时了,返回读/写消息失败
-            ret = LOS_ERRNO_QUEUE_TIMEOUT;
-            goto QUEUE_END;//
+
+        LosTaskCB *runTask = OsCurrTaskGet();  // 获取当前任务
+        OsTaskWaitSetPendMask(OS_TASK_WAIT_QUEUE, queueCB->queueID, timeout);  // 设置任务等待掩码
+        ret = runTask->ops->wait(runTask, &queueCB->readWriteList[readWrite], timeout);  // 等待队列
+        if (ret == LOS_ERRNO_TSK_TIMEOUT) {  // 等待超时
+            ret = LOS_ERRNO_QUEUE_TIMEOUT;  // 设置队列超时错误
+            goto QUEUE_END;  // 跳转到结束处理
         }
-    } else {
-        queueCB->readWriteableCnt[readWrite]--;//对应队列中计数器--,说明一条消息只能被读/写一次
+    } else {  // 有可读写空间
+        queueCB->readWriteableCnt[readWrite]--;  // 减少可读写计数
     }
 
-    OsQueueBufferOperate(queueCB, operateType, bufferAddr, bufferSize);//发起读或写队列操作
+    OsQueueBufferOperate(queueCB, operateType, bufferAddr, bufferSize);  // 执行缓冲区操作
 
-    if (!LOS_ListEmpty(&queueCB->readWriteList[!readWrite])) {//如果还有任务在排着队等待读/写入消息(当时不能读/写的原因有可能当时队列满了==)
-        LosTaskCB *resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&queueCB->readWriteList[!readWrite]));//取出要读/写消息的任务
-        OsTaskWakeClearPendMask(resumedTask);
-        resumedTask->ops->wake(resumedTask);
-        SCHEDULER_UNLOCK(intSave);
-        LOS_MpSchedule(OS_MP_CPU_ALL);//让所有CPU发出调度申请,因为很可能那个要读/写消息的队列是由其他CPU执行
-        LOS_Schedule();//申请调度
-        return LOS_OK;
-    } else {
-        queueCB->readWriteableCnt[!readWrite]++;//对应队列读/写中计数器++
+    if (!LOS_ListEmpty(&queueCB->readWriteList[!readWrite])) {  // 检查是否有等待的对立操作任务
+        LosTaskCB *resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&queueCB->readWriteList[!readWrite]));  // 获取第一个等待任务
+        OsTaskWakeClearPendMask(resumedTask);  // 清除任务等待掩码
+        resumedTask->ops->wake(resumedTask);  // 唤醒任务
+        SCHEDULER_UNLOCK(intSave);  // 开调度器
+        LOS_MpSchedule(OS_MP_CPU_ALL);  // 多处理器调度
+        LOS_Schedule();  // 任务调度
+        return LOS_OK;  // 返回成功
+    } else {  // 没有等待的对立操作任务
+        queueCB->readWriteableCnt[!readWrite]++;  // 增加对立操作可读写计数
     }
 
 QUEUE_END:
-    SCHEDULER_UNLOCK(intSave);
-    return ret;
+    SCHEDULER_UNLOCK(intSave);  // 开调度器
+    return ret;  // 返回结果
 }
-///接口函数定时读取消息队列
+
+/**
+ * @brief 从队列头部读取消息（复制模式）
+ * @param queueID 队列ID
+ * @param bufferAddr 缓冲区地址
+ * @param bufferSize 缓冲区大小
+ * @param timeout 超时时间
+ * @return 成功返回LOS_OK，失败返回错误码
+ */
 LITE_OS_SEC_TEXT UINT32 LOS_QueueReadCopy(UINT32 queueID,
                                           VOID *bufferAddr,
                                           UINT32 *bufferSize,
                                           UINT32 timeout)
 {
-    UINT32 ret;
-    UINT32 operateType;
+    UINT32 ret;  // 返回值
+    UINT32 operateType;  // 操作类型
 
-    ret = OsQueueReadParameterCheck(queueID, bufferAddr, bufferSize, timeout);//参数检查
-    if (ret != LOS_OK) {
-        return ret;
+    ret = OsQueueReadParameterCheck(queueID, bufferAddr, bufferSize, timeout);  // 检查读参数
+    if (ret != LOS_OK) {  // 参数检查失败
+        return ret;  // 返回错误码
     }
 
-    operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_READ, OS_QUEUE_HEAD);//从头开始读
-    return OsQueueOperate(queueID, operateType, bufferAddr, bufferSize, timeout);//定时执行读操作
+    operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_READ, OS_QUEUE_HEAD);  // 设置操作类型为从头部读
+    return OsQueueOperate(queueID, operateType, bufferAddr, bufferSize, timeout);  // 执行队列操作
 }
-///接口函数从队列头开始写
+
+/**
+ * @brief 向队列头部写入消息（复制模式）
+ * @param queueID 队列ID
+ * @param bufferAddr 缓冲区地址
+ * @param bufferSize 缓冲区大小
+ * @param timeout 超时时间
+ * @return 成功返回LOS_OK，失败返回错误码
+ */
 LITE_OS_SEC_TEXT UINT32 LOS_QueueWriteHeadCopy(UINT32 queueID,
                                                VOID *bufferAddr,
                                                UINT32 bufferSize,
                                                UINT32 timeout)
 {
-    UINT32 ret;
-    UINT32 operateType;
+    UINT32 ret;  // 返回值
+    UINT32 operateType;  // 操作类型
 
-    ret = OsQueueWriteParameterCheck(queueID, bufferAddr, &bufferSize, timeout);//参数检查
-    if (ret != LOS_OK) {
-        return ret;
+    ret = OsQueueWriteParameterCheck(queueID, bufferAddr, &bufferSize, timeout);  // 检查写参数
+    if (ret != LOS_OK) {  // 参数检查失败
+        return ret;  // 返回错误码
     }
 
-    operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_WRITE, OS_QUEUE_HEAD);//从头开始写
-    return OsQueueOperate(queueID, operateType, bufferAddr, &bufferSize, timeout);//执行写操作
+    operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_WRITE, OS_QUEUE_HEAD);  // 设置操作类型为向头部写
+    return OsQueueOperate(queueID, operateType, bufferAddr, &bufferSize, timeout);  // 执行队列操作
 }
-///接口函数 从队列尾部开始写
+
+/**
+ * @brief 向队列尾部写入消息（复制模式）
+ * @param queueID 队列ID
+ * @param bufferAddr 缓冲区地址
+ * @param bufferSize 缓冲区大小
+ * @param timeout 超时时间
+ * @return 成功返回LOS_OK，失败返回错误码
+ */
 LITE_OS_SEC_TEXT UINT32 LOS_QueueWriteCopy(UINT32 queueID,
                                            VOID *bufferAddr,
                                            UINT32 bufferSize,
                                            UINT32 timeout)
 {
-    UINT32 ret;
-    UINT32 operateType;
+    UINT32 ret;  // 返回值
+    UINT32 operateType;  // 操作类型
 
-    ret = OsQueueWriteParameterCheck(queueID, bufferAddr, &bufferSize, timeout);//参数检查
-    if (ret != LOS_OK) {
-        return ret;
+    ret = OsQueueWriteParameterCheck(queueID, bufferAddr, &bufferSize, timeout);  // 检查写参数
+    if (ret != LOS_OK) {  // 参数检查失败
+        return ret;  // 返回错误码
     }
 
-    operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_WRITE, OS_QUEUE_TAIL);//从尾部开始写
-    return OsQueueOperate(queueID, operateType, bufferAddr, &bufferSize, timeout);//执行写操作
+    operateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_WRITE, OS_QUEUE_TAIL);  // 设置操作类型为向尾部写
+    return OsQueueOperate(queueID, operateType, bufferAddr, &bufferSize, timeout);  // 执行队列操作
 }
 
 /**
- * @brief 
- * @verbatim
-    外部接口 读一个队列数据
-    读队列时，根据Head找到最先写入队列中的消息节点进行读取。如果Head已经指向队列尾则采用回卷方式。
-    根据usReadableCnt判断队列是否有消息读取，对全部空闲（usReadableCnt为0）队列进行读队列操作会引起任务挂起。
- * @endverbatim
+ * @brief 从队列头部读取消息
+ * @param queueID 队列ID
+ * @param bufferAddr 缓冲区地址
+ * @param bufferSize 缓冲区大小
+ * @param timeout 超时时间
+ * @return 成功返回LOS_OK，失败返回错误码
  */
 LITE_OS_SEC_TEXT UINT32 LOS_QueueRead(UINT32 queueID, VOID *bufferAddr, UINT32 bufferSize, UINT32 timeout)
 {
-    return LOS_QueueReadCopy(queueID, bufferAddr, &bufferSize, timeout);
+    return LOS_QueueReadCopy(queueID, bufferAddr, &bufferSize, timeout);  // 调用复制模式读操作
 }
 
 /**
- * @brief 
- * @verbatim
-    外部接口 写一个队列数据
-    根据Tail找到被占用消息节点末尾的空闲节点作为数据写入对象。如果Tail已经指向队列尾则采用回卷方式。
-    根据usWritableCnt判断队列是否可以写入，不能对已满（usWritableCnt为0）队列进行写队列操作
- * @endverbatim
+ * @brief 向队列尾部写入消息
+ * @param queueID 队列ID
+ * @param bufferAddr 缓冲区地址
+ * @param bufferSize 缓冲区大小
+ * @param timeout 超时时间
+ * @return 成功返回LOS_OK，失败返回错误码
  */
 LITE_OS_SEC_TEXT UINT32 LOS_QueueWrite(UINT32 queueID, VOID *bufferAddr, UINT32 bufferSize, UINT32 timeout)
 {
-    if (bufferAddr == NULL) {
-        return LOS_ERRNO_QUEUE_WRITE_PTR_NULL;
+    if (bufferAddr == NULL) {  // 检查缓冲区地址是否为空
+        return LOS_ERRNO_QUEUE_WRITE_PTR_NULL;  // 返回指针为空错误
     }
-    bufferSize = sizeof(CHAR *);
-    return LOS_QueueWriteCopy(queueID, &bufferAddr, bufferSize, timeout);
+    bufferSize = sizeof(CHAR *);  // 设置缓冲区大小为指针大小
+    return LOS_QueueWriteCopy(queueID, &bufferAddr, bufferSize, timeout);  // 调用复制模式写操作
 }
 
 /**
- * @brief 
- * @verbatim
-    外部接口 从头部写入
-    写队列时，根据Tail找到被占用消息节点末尾的空闲节点作为数据写入对象。如果Tail已经指向队列尾则采用回卷方式。
-    根据usWritableCnt判断队列是否可以写入，不能对已满（usWritableCnt为0）队列进行写队列操作
- * @endverbatim
+ * @brief 向队列头部写入消息
+ * @param queueID 队列ID
+ * @param bufferAddr 缓冲区地址
+ * @param bufferSize 缓冲区大小
+ * @param timeout 超时时间
+ * @return 成功返回LOS_OK，失败返回错误码
  */
 LITE_OS_SEC_TEXT UINT32 LOS_QueueWriteHead(UINT32 queueID,
                                            VOID *bufferAddr,
                                            UINT32 bufferSize,
                                            UINT32 timeout)
 {
-    if (bufferAddr == NULL) {
-        return LOS_ERRNO_QUEUE_WRITE_PTR_NULL;
+    if (bufferAddr == NULL) {  // 检查缓冲区地址是否为空
+        return LOS_ERRNO_QUEUE_WRITE_PTR_NULL;  // 返回指针为空错误
     }
-    bufferSize = sizeof(CHAR *);
-    return LOS_QueueWriteHeadCopy(queueID, &bufferAddr, bufferSize, timeout);
+    bufferSize = sizeof(CHAR *);  // 设置缓冲区大小为指针大小
+    return LOS_QueueWriteHeadCopy(queueID, &bufferAddr, bufferSize, timeout);  // 调用复制模式头部写操作
 }
 
 /**
- * @brief 
- * @verbatim
-    外部接口 删除队列,还有任务要读/写消息时不能删除
-    删除队列时，根据传入的队列ID寻找到对应的队列，把队列状态置为未使用，
-    释放原队列所占的空间，对应的队列控制头置为初始状态。
- * @endverbatim
+ * @brief 删除消息队列
+ * @param queueID 队列ID
+ * @return 成功返回LOS_OK，失败返回错误码
  */
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueDelete(UINT32 queueID)
 {
-    LosQueueCB *queueCB = NULL;
-    UINT8 *queue = NULL;
-    UINT32 intSave;
-    UINT32 ret;
+    LosQueueCB *queueCB = NULL;  // 队列控制块指针
+    UINT8 *queue = NULL;  // 队列内存指针
+    UINT32 intSave;  // 中断状态保存变量
+    UINT32 ret;  // 返回值
 
-    if (GET_QUEUE_INDEX(queueID) >= LOSCFG_BASE_IPC_QUEUE_LIMIT) {
-        return LOS_ERRNO_QUEUE_NOT_FOUND;
+    if (GET_QUEUE_INDEX(queueID) >= LOSCFG_BASE_IPC_QUEUE_LIMIT) {  // 检查队列ID是否有效
+        return LOS_ERRNO_QUEUE_NOT_FOUND;  // 返回队列未找到错误
     }
 
-    SCHEDULER_LOCK(intSave);
-    queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);//拿到队列实体
-    if ((queueCB->queueID != queueID) || (queueCB->queueState == OS_QUEUE_UNUSED)) {
-        ret = LOS_ERRNO_QUEUE_NOT_CREATE;
-        goto QUEUE_END;
+    SCHEDULER_LOCK(intSave);  // 关调度器
+    queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);  // 获取队列控制块
+    if ((queueCB->queueID != queueID) || (queueCB->queueState == OS_QUEUE_UNUSED)) {  // 检查队列是否存在且处于使用中
+        ret = LOS_ERRNO_QUEUE_NOT_CREATE;  // 返回队列未创建错误
+        goto QUEUE_END;  // 跳转到结束处理
     }
 
-    if (!LOS_ListEmpty(&queueCB->readWriteList[OS_QUEUE_READ])) {//尚有任务要读数据
-        ret = LOS_ERRNO_QUEUE_IN_TSKUSE;
-        goto QUEUE_END;
+    if (!LOS_ListEmpty(&queueCB->readWriteList[OS_QUEUE_READ])) {  // 检查读等待链表是否为空
+        ret = LOS_ERRNO_QUEUE_IN_TSKUSE;  // 返回队列被任务使用错误
+        goto QUEUE_END;  // 跳转到结束处理
     }
 
-    if (!LOS_ListEmpty(&queueCB->readWriteList[OS_QUEUE_WRITE])) {//尚有任务要写数据
-        ret = LOS_ERRNO_QUEUE_IN_TSKUSE;
-        goto QUEUE_END;
+    if (!LOS_ListEmpty(&queueCB->readWriteList[OS_QUEUE_WRITE])) {  // 检查写等待链表是否为空
+        ret = LOS_ERRNO_QUEUE_IN_TSKUSE;  // 返回队列被任务使用错误
+        goto QUEUE_END;  // 跳转到结束处理
     }
 
-    if (!LOS_ListEmpty(&queueCB->memList)) {//
-        ret = LOS_ERRNO_QUEUE_IN_TSKUSE;
-        goto QUEUE_END;
+    if (!LOS_ListEmpty(&queueCB->memList)) {  // 检查内存等待链表是否为空
+        ret = LOS_ERRNO_QUEUE_IN_TSKUSE;  // 返回队列被任务使用错误
+        goto QUEUE_END;  // 跳转到结束处理
     }
 
     if ((queueCB->readWriteableCnt[OS_QUEUE_WRITE] + queueCB->readWriteableCnt[OS_QUEUE_READ]) !=
-        queueCB->queueLen) {//读写队列的内容长度不等于总长度
-        ret = LOS_ERRNO_QUEUE_IN_TSKWRITE;
-        goto QUEUE_END;
+        queueCB->queueLen) {  // 检查队列是否有未处理消息
+        ret = LOS_ERRNO_QUEUE_IN_TSKWRITE;  // 返回队列有未处理消息错误
+        goto QUEUE_END;  // 跳转到结束处理
     }
 
-    queue = queueCB->queueHandle;	//队列buf
-    queueCB->queueHandle = NULL;	//
-    queueCB->queueState = OS_QUEUE_UNUSED;//重置队列状态
-    queueCB->queueID = SET_QUEUE_ID(GET_QUEUE_COUNT(queueCB->queueID) + 1, GET_QUEUE_INDEX(queueCB->queueID));//@note_why 这里需要这样做吗?
-    OsQueueDbgUpdateHook(queueCB->queueID, NULL);
+    queue = queueCB->queueHandle;  // 保存队列内存指针
+    queueCB->queueHandle = NULL;  // 清空队列内存指针
+    queueCB->queueState = OS_QUEUE_UNUSED;  // 设置队列状态为未使用
+    queueCB->queueID = SET_QUEUE_ID(GET_QUEUE_COUNT(queueCB->queueID) + 1, GET_QUEUE_INDEX(queueCB->queueID));  // 更新队列ID
+    OsQueueDbgUpdateHook(queueCB->queueID, NULL);  // 更新调试信息
 
-    LOS_ListTailInsert(&FREE_QUEUE_LIST, &queueCB->readWriteList[OS_QUEUE_WRITE]);//回收，将节点挂入可分配链表,等待重新被分配再利用
-    SCHEDULER_UNLOCK(intSave);									
-    OsHookCall(LOS_HOOK_TYPE_QUEUE_DELETE, queueCB);
-    ret = LOS_MemFree(m_aucSysMem1, (VOID *)queue);//释放队列句柄
-    return ret;
+    LOS_ListTailInsert(&FREE_QUEUE_LIST, &queueCB->readWriteList[OS_QUEUE_WRITE]);  // 将队列控制块插入空闲队列链表
+    SCHEDULER_UNLOCK(intSave);  // 开调度器
+    OsHookCall(LOS_HOOK_TYPE_QUEUE_DELETE, queueCB);  // 调用队列删除钩子
+    ret = LOS_MemFree(m_aucSysMem1, (VOID *)queue);  // 释放队列内存
+    return ret;  // 返回结果
 
 QUEUE_END:
-    SCHEDULER_UNLOCK(intSave);
-    return ret;
+    SCHEDULER_UNLOCK(intSave);  // 开调度器
+    return ret;  // 返回结果
 }
-///外部接口, 获取队列信息,用queueInfo 把 LosQueueCB数据接走,QUEUE_INFO_S对内部数据的封装 
+
+/**
+ * @brief 获取队列信息
+ * @param queueID 队列ID
+ * @param queueInfo 队列信息结构体指针
+ * @return 成功返回LOS_OK，失败返回错误码
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_QueueInfoGet(UINT32 queueID, QUEUE_INFO_S *queueInfo)
 {
-    UINT32 intSave;
-    UINT32 ret = LOS_OK;
-    LosQueueCB *queueCB = NULL;
-    LosTaskCB *tskCB = NULL;
+    UINT32 intSave;  // 中断状态保存变量
+    UINT32 ret = LOS_OK;  // 返回值
+    LosQueueCB *queueCB = NULL;  // 队列控制块指针
+    LosTaskCB *tskCB = NULL;  // 任务控制块指针
 
-    if (queueInfo == NULL) {
-        return LOS_ERRNO_QUEUE_PTR_NULL;
+    if (queueInfo == NULL) {  // 检查队列信息结构体指针是否为空
+        return LOS_ERRNO_QUEUE_PTR_NULL;  // 返回指针为空错误
     }
 
-    if (GET_QUEUE_INDEX(queueID) >= LOSCFG_BASE_IPC_QUEUE_LIMIT) {//1024
-        return LOS_ERRNO_QUEUE_INVALID;
+    if (GET_QUEUE_INDEX(queueID) >= LOSCFG_BASE_IPC_QUEUE_LIMIT) {  // 检查队列ID是否有效
+        return LOS_ERRNO_QUEUE_INVALID;  // 返回队列无效错误
     }
 
-    (VOID)memset_s((VOID *)queueInfo, sizeof(QUEUE_INFO_S), 0, sizeof(QUEUE_INFO_S));//接走数据之前先清0
-    SCHEDULER_LOCK(intSave);
+    (VOID)memset_s((VOID *)queueInfo, sizeof(QUEUE_INFO_S), 0, sizeof(QUEUE_INFO_S));  // 初始化队列信息结构体
+    SCHEDULER_LOCK(intSave);  // 关调度器
 
-    queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);//通过队列ID获取 QCB
-    if ((queueCB->queueID != queueID) || (queueCB->queueState == OS_QUEUE_UNUSED)) {
-        ret = LOS_ERRNO_QUEUE_NOT_CREATE;
-        goto QUEUE_END;
+    queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);  // 获取队列控制块
+    if ((queueCB->queueID != queueID) || (queueCB->queueState == OS_QUEUE_UNUSED)) {  // 检查队列是否存在且处于使用中
+        ret = LOS_ERRNO_QUEUE_NOT_CREATE;  // 返回队列未创建错误
+        goto QUEUE_END;  // 跳转到结束处理
     }
 
-    queueInfo->uwQueueID = queueID;
-    queueInfo->usQueueLen = queueCB->queueLen;
-    queueInfo->usQueueSize = queueCB->queueSize;
-    queueInfo->usQueueHead = queueCB->queueHead;
-    queueInfo->usQueueTail = queueCB->queueTail;
-    queueInfo->usReadableCnt = queueCB->readWriteableCnt[OS_QUEUE_READ];//可读数
-    queueInfo->usWritableCnt = queueCB->readWriteableCnt[OS_QUEUE_WRITE];//可写数
+    queueInfo->uwQueueID = queueID;  // 设置队列ID
+    queueInfo->usQueueLen = queueCB->queueLen;  // 设置队列长度
+    queueInfo->usQueueSize = queueCB->queueSize;  // 设置消息大小
+    queueInfo->usQueueHead = queueCB->queueHead;  // 设置队列头指针
+    queueInfo->usQueueTail = queueCB->queueTail;  // 设置队列尾指针
+    queueInfo->usReadableCnt = queueCB->readWriteableCnt[OS_QUEUE_READ];  // 设置可读计数
+    queueInfo->usWritableCnt = queueCB->readWriteableCnt[OS_QUEUE_WRITE];  // 设置可写计数
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->readWriteList[OS_QUEUE_READ], LosTaskCB, pendList) {//找出哪些task需要读消息
-        queueInfo->uwWaitReadTask |= 1ULL << tskCB->taskID;//记录等待读消息的任务号, uwWaitReadTask 每一位代表一个任务编号
-    }//0b..011011011 代表   0,1,3,4,6,7 号任务有数据等待读消息.
+    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->readWriteList[OS_QUEUE_READ], LosTaskCB, pendList) {  // 遍历读等待任务
+        queueInfo->uwWaitReadTask |= 1ULL << tskCB->taskID;  // 设置读等待任务掩码
+    }
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->readWriteList[OS_QUEUE_WRITE], LosTaskCB, pendList) {//找出哪些task需要写消息
-        queueInfo->uwWaitWriteTask |= 1ULL << tskCB->taskID;//记录等待写消息的任务号, uwWaitWriteTask 每一位代表一个任务编号
-    }////0b..011011011 代表   0,1,3,4,6,7 号任务有数据等待写消息.
+    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->readWriteList[OS_QUEUE_WRITE], LosTaskCB, pendList) {  // 遍历写等待任务
+        queueInfo->uwWaitWriteTask |= 1ULL << tskCB->taskID;  // 设置写等待任务掩码
+    }
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->memList, LosTaskCB, pendList) {//同上
-        queueInfo->uwWaitMemTask |= 1ULL << tskCB->taskID; //MailBox模块使用
+    LOS_DL_LIST_FOR_EACH_ENTRY(tskCB, &queueCB->memList, LosTaskCB, pendList) {  // 遍历内存等待任务
+        queueInfo->uwWaitMemTask |= 1ULL << tskCB->taskID;  // 设置内存等待任务掩码
     }
 
 QUEUE_END:
-    SCHEDULER_UNLOCK(intSave);
-    return ret;
+    SCHEDULER_UNLOCK(intSave);  // 开调度器
+    return ret;  // 返回结果
 }
 
-#endif /* (LOSCFG_BASE_IPC_QUEUE == YES) */
+#endif /* LOSCFG_BASE_IPC_QUEUE */
 

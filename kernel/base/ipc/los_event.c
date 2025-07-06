@@ -77,7 +77,7 @@
    @endverbatim
  * @version 
  * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
- * @date    2022-1-15
+ * @date    2025-07-06
  */
 #include "los_event_pri.h"
 #include "los_task_pri.h"
@@ -90,37 +90,58 @@
 #include "los_exc.h"
 #endif
 
-/// 初始化一个事件控制块
+/**
+ * @brief   初始化事件控制块
+ * @details 初始化事件ID为0并初始化事件等待链表
+ * @param   eventCB [IN] 事件控制块指针
+ * @return  UINT32 - 操作结果
+ *          LOS_OK：初始化成功
+ *          LOS_ERRNO_EVENT_PTR_NULL：事件控制块指针为空
+ */
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventInit(PEVENT_CB_S eventCB)
 {
-    UINT32 intSave;
+    UINT32 intSave;  // 用于保存中断状态
 
-    if (eventCB == NULL) {
+    if (eventCB == NULL) {  // 检查事件控制块指针是否为空
         return LOS_ERRNO_EVENT_PTR_NULL;
     }
 
-    intSave = LOS_IntLock();//锁中断
-    eventCB->uwEventID = 0;//事件类型初始化
-    LOS_ListInit(&eventCB->stEventList);//事件链表初始化
-    LOS_IntRestore(intSave);//恢复中断
-    OsHookCall(LOS_HOOK_TYPE_EVENT_INIT, eventCB);
+    intSave = LOS_IntLock();  // 关中断，保护临界区
+    eventCB->uwEventID = 0;  // 初始化事件ID为0
+    LOS_ListInit(&eventCB->stEventList);  // 初始化事件等待链表
+    LOS_IntRestore(intSave);  // 恢复中断状态
+    OsHookCall(LOS_HOOK_TYPE_EVENT_INIT, eventCB);  // 调用事件初始化钩子函数
     return LOS_OK;
 }
-///事件参数检查
+
+/**
+ * @brief   事件参数检查
+ * @details 检查事件控制块指针、事件掩码和等待模式的有效性
+ * @param   ptr [IN] 事件控制块指针
+ * @param   eventMask [IN] 事件掩码
+ * @param   mode [IN] 等待模式
+ * @return  UINT32 - 操作结果
+ *          LOS_OK：参数有效
+ *          LOS_ERRNO_EVENT_PTR_NULL：指针为空
+ *          LOS_ERRNO_EVENT_EVENTMASK_INVALID：事件掩码无效
+ *          LOS_ERRNO_EVENT_SETBIT_INVALID：事件位设置无效
+ *          LOS_ERRNO_EVENT_FLAGS_INVALID：等待模式标志无效
+ */
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventParamCheck(const VOID *ptr, UINT32 eventMask, UINT32 mode)
 {
-    if (ptr == NULL) {
+    if (ptr == NULL) {  // 检查指针是否为空
         return LOS_ERRNO_EVENT_PTR_NULL;
     }
 
-    if (eventMask == 0) {
+    if (eventMask == 0) {  // 检查事件掩码是否为0
         return LOS_ERRNO_EVENT_EVENTMASK_INVALID;
     }
 
-    if (eventMask & LOS_ERRTYPE_ERROR) {
+    if (eventMask & LOS_ERRTYPE_ERROR) {  // 检查事件掩码是否包含错误位(第25位)
         return LOS_ERRNO_EVENT_SETBIT_INVALID;
     }
 
+    // 检查等待模式是否合法：只能是AND、OR、CLR的组合，且必须包含AND或OR之一
     if (((mode & LOS_WAITMODE_OR) && (mode & LOS_WAITMODE_AND)) ||
         (mode & ~(LOS_WAITMODE_OR | LOS_WAITMODE_AND | LOS_WAITMODE_CLR)) ||
         !(mode & (LOS_WAITMODE_OR | LOS_WAITMODE_AND))) {
@@ -128,267 +149,406 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventParamCheck(const VOID *ptr, UINT32 eventMa
     }
     return LOS_OK;
 }
-///根据用户传入的事件值、事件掩码及校验模式，返回用户传入的事件是否符合预期
+
+/**
+ * @brief   事件轮询检查
+ * @details 根据事件掩码和等待模式检查事件是否满足条件，支持清除事件标志
+ * @param   eventID [IN/OUT] 事件ID指针
+ * @param   eventMask [IN] 事件掩码
+ * @param   mode [IN] 等待模式
+ * @return  UINT32 - 满足条件的事件掩码，0表示不满足
+ */
 LITE_OS_SEC_TEXT UINT32 OsEventPoll(UINT32 *eventID, UINT32 eventMask, UINT32 mode)
 {
-    UINT32 ret = 0;
+    UINT32 ret = 0;  // 初始化返回值为0
 
-    LOS_ASSERT(OsIntLocked());//断言不允许中断了
-    LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));//任务自旋锁
+    LOS_ASSERT(OsIntLocked());  // 断言：当前处于中断锁定状态
+    LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));  // 断言：任务自旋锁已被持有
 
-    if (mode & LOS_WAITMODE_OR) {//如果模式是读取掩码中任意事件
+    if (mode & LOS_WAITMODE_OR) {  // 逻辑或模式：任一事件满足即可
         if ((*eventID & eventMask) != 0) {
-            ret = *eventID & eventMask;
+            ret = *eventID & eventMask;  // 返回满足条件的事件掩码
         }
-    } else {//等待全部事件发生
-        if ((eventMask != 0) && (eventMask == (*eventID & eventMask))) {//必须满足全部事件发生
-            ret = *eventID & eventMask;
+    } else {  // 逻辑与模式：所有事件都需满足
+        if ((eventMask != 0) && (eventMask == (*eventID & eventMask))) {
+            ret = *eventID & eventMask;  // 返回满足条件的事件掩码
         }
     }
 
-    if (ret && (mode & LOS_WAITMODE_CLR)) {//读取完成后清除事件
+    if (ret && (mode & LOS_WAITMODE_CLR)) {  // 如果设置了清除标志，则清除已满足的事件位
         *eventID = *eventID & ~ret;
     }
 
     return ret;
 }
-///检查读事件
+
+/**
+ * @brief   事件读取前检查
+ * @details 检查事件读取的前置条件，包括参数合法性、中断状态和任务类型
+ * @param   eventCB [IN] 事件控制块指针
+ * @param   eventMask [IN] 事件掩码
+ * @param   mode [IN] 等待模式
+ * @return  UINT32 - 操作结果
+ *          LOS_OK：检查通过
+ *          其他错误码：检查失败
+ */
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadCheck(const PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode)
 {
-    UINT32 ret;
-    LosTaskCB *runTask = NULL;
-
-    ret = OsEventParamCheck(eventCB, eventMask, mode);//事件参数检查
+    UINT32 ret;  // 保存检查结果
+    LosTaskCB *runTask = NULL;  // 当前运行任务控制块指针
+    ret = OsEventParamCheck(eventCB, eventMask, mode);  // 检查事件参数
     if (ret != LOS_OK) {
         return ret;
     }
 
-    if (OS_INT_ACTIVE) {//中断正在进行
-        return LOS_ERRNO_EVENT_READ_IN_INTERRUPT;//不能在中断发送时读事件
+    if (OS_INT_ACTIVE) {  // 检查是否在中断中调用
+        return LOS_ERRNO_EVENT_READ_IN_INTERRUPT;
     }
 
-    runTask = OsCurrTaskGet();//获取当前任务
-    if (runTask->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {//任务属于系统任务
-        OsBackTrace();
-        return LOS_ERRNO_EVENT_READ_IN_SYSTEM_TASK;//不能在系统任务中读取事件
+    runTask = OsCurrTaskGet();  // 获取当前运行任务
+    if (runTask->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {  // 检查是否为系统任务
+        OsBackTrace();  // 打印回溯信息
+        return LOS_ERRNO_EVENT_READ_IN_SYSTEM_TASK;
     }
     return LOS_OK;
 }
-/// 读取指定事件类型的实现函数，超时时间为相对时间：单位为Tick
+
+/**
+ * @brief   事件读取实现函数
+ * @details 实现事件读取的核心逻辑，支持阻塞等待和超时机制
+ * @param   eventCB [IN] 事件控制块指针
+ * @param   eventMask [IN] 事件掩码
+ * @param   mode [IN] 等待模式
+ * @param   timeout [IN] 超时时间(节拍数)
+ * @param   once [IN] 是否只唤醒一个等待任务
+ * @return  UINT32 - 满足条件的事件掩码或错误码
+ */
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadImp(PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode,
                                               UINT32 timeout, BOOL once)
 {
-    UINT32 ret = 0;
-    LosTaskCB *runTask = OsCurrTaskGet();
-    OsHookCall(LOS_HOOK_TYPE_EVENT_READ, eventCB, eventMask, mode, timeout);
+    UINT32 ret = 0;  // 初始化返回值为0
+    LosTaskCB *runTask = OsCurrTaskGet();  // 获取当前运行任务
+    OsHookCall(LOS_HOOK_TYPE_EVENT_READ, eventCB, eventMask, mode, timeout);  // 调用事件读取钩子函数
 
-    if (once == FALSE) {
-        ret = OsEventPoll(&eventCB->uwEventID, eventMask, mode);//检测事件是否符合预期
+    if (once == FALSE) {  // 如果不是只读取一次，则先轮询检查事件
+        ret = OsEventPoll(&eventCB->uwEventID, eventMask, mode);
     }
 
-    if (ret == 0) {//不符合预期时
-        if (timeout == 0) {//不等待的情况
+    if (ret == 0) {  // 如果事件未满足
+        if (timeout == 0) {  // 非阻塞模式，直接返回0
             return ret;
         }
 
-        if (!OsPreemptableInSched()) {//不能抢占式调度
+        if (!OsPreemptableInSched()) {  // 检查是否在不可抢占区域
             return LOS_ERRNO_EVENT_READ_IN_LOCK;
         }
 
-        runTask->eventMask = eventMask;	//等待事件
-        runTask->eventMode = mode;		//事件模式
-        runTask->taskEvent = eventCB;	//事件控制块
-        OsTaskWaitSetPendMask(OS_TASK_WAIT_EVENT, eventMask, timeout);//任务进入等待状态,等待事件的到来并设置时长和掩码
-        ret = runTask->ops->wait(runTask, &eventCB->stEventList, timeout);
-        if (ret == LOS_ERRNO_TSK_TIMEOUT) {
+        runTask->eventMask = eventMask;  // 保存事件掩码到任务控制块
+        runTask->eventMode = mode;  // 保存等待模式到任务控制块
+        runTask->taskEvent = eventCB;  // 保存事件控制块指针到任务控制块
+        OsTaskWaitSetPendMask(OS_TASK_WAIT_EVENT, eventMask, timeout);  // 设置任务等待掩码
+        ret = runTask->ops->wait(runTask, &eventCB->stEventList, timeout);  // 将任务加入等待队列
+        if (ret == LOS_ERRNO_TSK_TIMEOUT) {  // 等待超时
             return LOS_ERRNO_EVENT_READ_TIMEOUT;
         }
 
-        ret = OsEventPoll(&eventCB->uwEventID, eventMask, mode);//检测事件是否符合预期
+        ret = OsEventPoll(&eventCB->uwEventID, eventMask, mode);  // 再次轮询检查事件
     }
     return ret;
 }
-///读取指定事件类型，超时时间为相对时间：单位为Tick
+
+/**
+ * @brief   事件读取函数
+ * @details 读取指定事件，支持阻塞等待和超时机制
+ * @param   eventCB [IN] 事件控制块指针
+ * @param   eventMask [IN] 事件掩码
+ * @param   mode [IN] 等待模式
+ * @param   timeout [IN] 超时时间(节拍数)
+ * @param   once [IN] 是否只唤醒一个等待任务
+ * @return  UINT32 - 满足条件的事件掩码或错误码
+ */
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventRead(PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode, UINT32 timeout,
                                            BOOL once)
 {
-    UINT32 ret;
-    UINT32 intSave;
+    UINT32 ret;  // 保存返回值
+    UINT32 intSave;  // 用于保存中断状态
 
-    ret = OsEventReadCheck(eventCB, eventMask, mode);//读取事件检查
+    ret = OsEventReadCheck(eventCB, eventMask, mode);  // 检查事件读取条件
     if (ret != LOS_OK) {
         return ret;
     }
 
-    SCHEDULER_LOCK(intSave);
-    ret = OsEventReadImp(eventCB, eventMask, mode, timeout, once);//读事件实现函数
-    SCHEDULER_UNLOCK(intSave);
+    SCHEDULER_LOCK(intSave);  // 锁定调度器
+    ret = OsEventReadImp(eventCB, eventMask, mode, timeout, once);  // 调用事件读取实现函数
+    SCHEDULER_UNLOCK(intSave);  // 解锁调度器
     return ret;
 }
-///事件恢复操作
+
+/**
+ * @brief   恢复等待事件的任务
+ * @details 检查等待任务是否满足事件条件，如果满足则唤醒任务
+ * @param   resumedTask [IN] 等待任务控制块指针
+ * @param   eventCB [IN] 事件控制块指针
+ * @param   events [IN] 触发的事件掩码
+ * @return  UINT8 - 是否唤醒任务
+ *          1：唤醒成功
+ *          0：唤醒失败
+ */
 LITE_OS_SEC_TEXT STATIC UINT8 OsEventResume(LosTaskCB *resumedTask, const PEVENT_CB_S eventCB, UINT32 events)
 {
-    UINT8 exitFlag = 0;//是否唤醒
+    UINT8 exitFlag = 0;  // 初始化唤醒标志为0
 
+    // 检查任务等待模式和事件是否满足条件
     if (((resumedTask->eventMode & LOS_WAITMODE_OR) && ((resumedTask->eventMask & events) != 0)) ||
         ((resumedTask->eventMode & LOS_WAITMODE_AND) &&
-        ((resumedTask->eventMask & eventCB->uwEventID) == resumedTask->eventMask))) {//逻辑与 和 逻辑或 的处理
-        exitFlag = 1; 
+        ((resumedTask->eventMask & eventCB->uwEventID) == resumedTask->eventMask))) {
+        exitFlag = 1;  // 设置唤醒标志
 
-        resumedTask->taskEvent = NULL;
-        OsTaskWakeClearPendMask(resumedTask);
-        resumedTask->ops->wake(resumedTask);
+        resumedTask->taskEvent = NULL;  // 清除任务的事件控制块指针
+        OsTaskWakeClearPendMask(resumedTask);  // 清除任务的等待掩码
+        resumedTask->ops->wake(resumedTask);  // 唤醒任务
     }
 
     return exitFlag;
 }
-///以不安全的方式写事件
+
+/**
+ * @brief   不安全的事件写入函数(无锁)
+ * @details 在无锁保护的情况下写入事件并唤醒等待任务
+ * @param   eventCB [IN] 事件控制块指针
+ * @param   events [IN] 要写入的事件掩码
+ * @param   once [IN] 是否只唤醒一个等待任务
+ * @param   exitFlag [OUT] 是否需要调度的标志
+ */
 LITE_OS_SEC_TEXT VOID OsEventWriteUnsafe(PEVENT_CB_S eventCB, UINT32 events, BOOL once, UINT8 *exitFlag)
 {
-    LosTaskCB *resumedTask = NULL;
-    LosTaskCB *nextTask = NULL;
-    BOOL schedFlag = FALSE;
-    OsHookCall(LOS_HOOK_TYPE_EVENT_WRITE, eventCB, events);
-    eventCB->uwEventID |= events;//对应位贴上标签
-    if (!LOS_ListEmpty(&eventCB->stEventList)) {//等待事件链表判断,处理等待事件的任务
+    LosTaskCB *resumedTask = NULL;  // 要恢复的任务控制块指针
+    LosTaskCB *nextTask = NULL;  // 下一个任务控制块指针
+    BOOL schedFlag = FALSE;  // 是否需要调度的标志
+    OsHookCall(LOS_HOOK_TYPE_EVENT_WRITE, eventCB, events);  // 调用事件写入钩子函数
+    eventCB->uwEventID |= events;  // 设置事件位
+    if (!LOS_ListEmpty(&eventCB->stEventList)) {  // 如果事件等待链表不为空
+        // 遍历等待链表
         for (resumedTask = LOS_DL_LIST_ENTRY((&eventCB->stEventList)->pstNext, LosTaskCB, pendList);
-             &resumedTask->pendList != &eventCB->stEventList;) {//循环获取任务链表
-            nextTask = LOS_DL_LIST_ENTRY(resumedTask->pendList.pstNext, LosTaskCB, pendList);//获取任务实体
-            if (OsEventResume(resumedTask, eventCB, events)) {//是否恢复任务
-                schedFlag = TRUE;//任务已加至就绪队列,申请发生一次调度
+             &resumedTask->pendList != &eventCB->stEventList;) {
+            nextTask = LOS_DL_LIST_ENTRY(resumedTask->pendList.pstNext, LosTaskCB, pendList);  // 获取下一个任务
+            if (OsEventResume(resumedTask, eventCB, events)) {  // 尝试恢复当前任务
+                schedFlag = TRUE;  // 设置需要调度标志
             }
-            if (once == TRUE) {//是否只处理一次任务
-                break;//退出循环
+            if (once == TRUE) {  // 如果只唤醒一个任务，则跳出循环
+                break;
             }
-            resumedTask = nextTask;//检查链表中下一个任务
+            resumedTask = nextTask;  // 移动到下一个任务
         }
     }
 
-    if ((exitFlag != NULL) && (schedFlag == TRUE)) {//是否让外面调度
+    if ((exitFlag != NULL) && (schedFlag == TRUE)) {  // 如果需要调度且exitFlag有效
         *exitFlag = 1;
     }
 }
-///写入事件
+
+/**
+ * @brief   事件写入函数
+ * @details 写入指定事件并唤醒等待任务，支持单次唤醒和多次唤醒
+ * @param   eventCB [IN] 事件控制块指针
+ * @param   events [IN] 要写入的事件掩码
+ * @param   once [IN] 是否只唤醒一个等待任务
+ * @return  UINT32 - 操作结果
+ *          LOS_OK：写入成功
+ *          LOS_ERRNO_EVENT_PTR_NULL：事件控制块指针为空
+ *          LOS_ERRNO_EVENT_SETBIT_INVALID：事件位设置无效
+ */
 LITE_OS_SEC_TEXT STATIC UINT32 OsEventWrite(PEVENT_CB_S eventCB, UINT32 events, BOOL once)
 {
-    UINT32 intSave;
-    UINT8 exitFlag = 0;
+    UINT32 intSave;  // 用于保存中断状态
+    UINT8 exitFlag = 0;  // 是否需要调度的标志
 
-    if (eventCB == NULL) {
+    if (eventCB == NULL) {  // 检查事件控制块指针是否为空
         return LOS_ERRNO_EVENT_PTR_NULL;
     }
 
-    if (events & LOS_ERRTYPE_ERROR) {
+    if (events & LOS_ERRTYPE_ERROR) {  // 检查事件掩码是否包含错误位(第25位)
         return LOS_ERRNO_EVENT_SETBIT_INVALID;
     }
 
-    SCHEDULER_LOCK(intSave);	//禁止调度
-    OsEventWriteUnsafe(eventCB, events, once, &exitFlag);//写入事件
-    SCHEDULER_UNLOCK(intSave);	//允许调度
+    SCHEDULER_LOCK(intSave);  // 锁定调度器
+    OsEventWriteUnsafe(eventCB, events, once, &exitFlag);  // 调用不安全的事件写入函数
+    SCHEDULER_UNLOCK(intSave);  // 解锁调度器
 
-    if (exitFlag == 1) { //需要发生调度
-        LOS_MpSchedule(OS_MP_CPU_ALL);//通知所有CPU调度
-        LOS_Schedule();//执行调度
+    if (exitFlag == 1) {  // 如果需要调度
+        LOS_MpSchedule(OS_MP_CPU_ALL);  // 多处理器调度
+        LOS_Schedule();  // 触发任务调度
     }
     return LOS_OK;
 }
-///根据用户传入的事件值、事件掩码及校验模式，返回用户传入的事件是否符合预期
+
+/**
+ * @brief   事件轮询接口
+ * @details 非阻塞方式检查事件是否满足条件
+ * @param   eventID [IN/OUT] 事件ID指针
+ * @param   eventMask [IN] 事件掩码
+ * @param   mode [IN] 等待模式
+ * @return  UINT32 - 满足条件的事件掩码或错误码
+ */
 LITE_OS_SEC_TEXT UINT32 LOS_EventPoll(UINT32 *eventID, UINT32 eventMask, UINT32 mode)
 {
-    UINT32 ret;
-    UINT32 intSave;
-	//事件参数检查
-    ret = OsEventParamCheck((VOID *)eventID, eventMask, mode);
+    UINT32 ret;  // 保存返回值
+    UINT32 intSave;  // 用于保存中断状态
+
+    ret = OsEventParamCheck((VOID *)eventID, eventMask, mode);  // 检查事件参数
     if (ret != LOS_OK) {
         return ret;
     }
 
-    SCHEDULER_LOCK(intSave);//申请任务自旋锁
-    ret = OsEventPoll(eventID, eventMask, mode);
-    SCHEDULER_UNLOCK(intSave);
+    SCHEDULER_LOCK(intSave);  // 锁定调度器
+    ret = OsEventPoll(eventID, eventMask, mode);  // 调用事件轮询检查函数
+    SCHEDULER_UNLOCK(intSave);  // 解锁调度器
     return ret;
 }
-///读取指定事件类型，超时时间为相对时间：单位为Tick
+
+/**
+ * @brief   事件读取接口
+ * @details 读取指定事件，支持阻塞等待和超时机制
+ * @param   eventCB [IN] 事件控制块指针
+ * @param   eventMask [IN] 事件掩码
+ * @param   mode [IN] 等待模式
+ * @param   timeout [IN] 超时时间(节拍数)
+ * @return  UINT32 - 满足条件的事件掩码或错误码
+ */
 LITE_OS_SEC_TEXT UINT32 LOS_EventRead(PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode, UINT32 timeout)
 {
     return OsEventRead(eventCB, eventMask, mode, timeout, FALSE);
 }
-///写指定的事件类型
+
+/**
+ * @brief   事件写入接口
+ * @details 写入指定事件并唤醒所有等待任务
+ * @param   eventCB [IN] 事件控制块指针
+ * @param   events [IN] 要写入的事件掩码
+ * @return  UINT32 - 操作结果
+ *          LOS_OK：写入成功
+ *          其他错误码：写入失败
+ */
 LITE_OS_SEC_TEXT UINT32 LOS_EventWrite(PEVENT_CB_S eventCB, UINT32 events)
 {
     return OsEventWrite(eventCB, events, FALSE);
 }
-///只读一次事件
+
+/**
+ * @brief   单次事件读取接口
+ * @details 读取指定事件，只唤醒一个等待任务
+ * @param   eventCB [IN] 事件控制块指针
+ * @param   eventMask [IN] 事件掩码
+ * @param   mode [IN] 等待模式
+ * @param   timeout [IN] 超时时间(节拍数)
+ * @return  UINT32 - 满足条件的事件掩码或错误码
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 OsEventReadOnce(PEVENT_CB_S eventCB, UINT32 eventMask, UINT32 mode,
                                               UINT32 timeout)
 {
     return OsEventRead(eventCB, eventMask, mode, timeout, TRUE);
 }
-///只写一次事件
+
+/**
+ * @brief   单次事件写入接口
+ * @details 写入指定事件并只唤醒一个等待任务
+ * @param   eventCB [IN] 事件控制块指针
+ * @param   events [IN] 要写入的事件掩码
+ * @return  UINT32 - 操作结果
+ *          LOS_OK：写入成功
+ *          其他错误码：写入失败
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 OsEventWriteOnce(PEVENT_CB_S eventCB, UINT32 events)
 {
     return OsEventWrite(eventCB, events, TRUE);
 }
-///销毁指定的事件控制块
+
+/**
+ * @brief   销毁事件控制块
+ * @details 从系统中销毁指定的事件控制块，只有当没有任务等待时才能销毁
+ * @param   eventCB [IN] 事件控制块指针
+ * @return  UINT32 - 操作结果
+ *          LOS_OK：销毁成功
+ *          LOS_ERRNO_EVENT_PTR_NULL：事件控制块指针为空
+ *          LOS_ERRNO_EVENT_SHOULD_NOT_DESTROY：有任务在等待该事件，无法销毁
+ */
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventDestroy(PEVENT_CB_S eventCB)
 {
-    UINT32 intSave;
+    UINT32 intSave;  // 用于保存中断状态
 
-    if (eventCB == NULL) {
+    if (eventCB == NULL) {  // 检查事件控制块指针是否为空
         return LOS_ERRNO_EVENT_PTR_NULL;
     }
 
-    SCHEDULER_LOCK(intSave);
-    if (!LOS_ListEmpty(&eventCB->stEventList)) {
-        SCHEDULER_UNLOCK(intSave);
+    SCHEDULER_LOCK(intSave);  // 锁定调度器
+    if (!LOS_ListEmpty(&eventCB->stEventList)) {  // 检查是否有任务在等待该事件
+        SCHEDULER_UNLOCK(intSave);  // 解锁调度器
         return LOS_ERRNO_EVENT_SHOULD_NOT_DESTROY;
     }
 
-    eventCB->uwEventID = 0;
-    LOS_ListDelInit(&eventCB->stEventList);
-    SCHEDULER_UNLOCK(intSave);
-    OsHookCall(LOS_HOOK_TYPE_EVENT_DESTROY, eventCB);
+    eventCB->uwEventID = 0;  // 清除事件ID
+    LOS_ListDelInit(&eventCB->stEventList);  // 初始化事件等待链表
+    SCHEDULER_UNLOCK(intSave);  // 解锁调度器
+    OsHookCall(LOS_HOOK_TYPE_EVENT_DESTROY, eventCB);  // 调用事件销毁钩子函数
     return LOS_OK;
 }
-///清除指定的事件类型
+
+/**
+ * @brief   清除事件
+ * @details 清除事件控制块中的指定事件位
+ * @param   eventCB [IN] 事件控制块指针
+ * @param   eventMask [IN] 要清除的事件掩码(注意：需传入要清除事件位的反码)
+ * @return  UINT32 - 操作结果
+ *          LOS_OK：清除成功
+ *          LOS_ERRNO_EVENT_PTR_NULL：事件控制块指针为空
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_EventClear(PEVENT_CB_S eventCB, UINT32 eventMask)
 {
-    UINT32 intSave;
+    UINT32 intSave;  // 用于保存中断状态
 
-    if (eventCB == NULL) {
+    if (eventCB == NULL) {  // 检查事件控制块指针是否为空
         return LOS_ERRNO_EVENT_PTR_NULL;
     }
-    OsHookCall(LOS_HOOK_TYPE_EVENT_CLEAR, eventCB, eventMask);
-    SCHEDULER_LOCK(intSave);
-    eventCB->uwEventID &= eventMask;
-    SCHEDULER_UNLOCK(intSave);
+    OsHookCall(LOS_HOOK_TYPE_EVENT_CLEAR, eventCB, eventMask);  // 调用事件清除钩子函数
+    SCHEDULER_LOCK(intSave);  // 锁定调度器
+    eventCB->uwEventID &= eventMask;  // 清除事件位(与操作)
+    SCHEDULER_UNLOCK(intSave);  // 解锁调度器
 
     return LOS_OK;
 }
-///有条件式读事件
+
 #ifdef LOSCFG_COMPAT_POSIX
+/**
+ * @brief   带条件的事件读取接口
+ * @details 结合条件变量读取事件，用于POSIX兼容性
+ * @param   cond [IN] 条件变量指针
+ * @param   eventCB [IN] 事件控制块指针
+ * @param   eventMask [IN] 事件掩码
+ * @param   mode [IN] 等待模式
+ * @param   timeout [IN] 超时时间(节拍数)
+ * @return  UINT32 - 满足条件的事件掩码或错误码
+ */
 LITE_OS_SEC_TEXT UINT32 OsEventReadWithCond(const EventCond *cond, PEVENT_CB_S eventCB,
                                             UINT32 eventMask, UINT32 mode, UINT32 timeout)
 {
-    UINT32 ret;
-    UINT32 intSave;
+    UINT32 ret;  // 保存返回值
+    UINT32 intSave;  // 用于保存中断状态
 
-    ret = OsEventReadCheck(eventCB, eventMask, mode);
+    ret = OsEventReadCheck(eventCB, eventMask, mode);  // 检查事件读取条件
     if (ret != LOS_OK) {
         return ret;
     }
 
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_LOCK(intSave);  // 锁定调度器
 
-    if (*cond->realValue != cond->value) {
-        eventCB->uwEventID &= cond->clearEvent;
-        goto OUT;
+    if (*cond->realValue != cond->value) {  // 检查条件是否满足
+        eventCB->uwEventID &= cond->clearEvent;  // 清除事件
+        goto OUT;  // 跳转到退出
     }
 
-    ret = OsEventReadImp(eventCB, eventMask, mode, timeout, FALSE);
+    ret = OsEventReadImp(eventCB, eventMask, mode, timeout, FALSE);  // 调用事件读取实现函数
 OUT:
-    SCHEDULER_UNLOCK(intSave);
+    SCHEDULER_UNLOCK(intSave);  // 解锁调度器
     return ret;
 }
 #endif
-

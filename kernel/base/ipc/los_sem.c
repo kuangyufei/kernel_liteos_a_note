@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -85,250 +85,282 @@
 #include "los_percpu_pri.h"
 #include "los_hook.h"
 
-
 #ifdef LOSCFG_BASE_IPC_SEM
 
-#if (LOSCFG_BASE_IPC_SEM_LIMIT <= 0)
-#error "sem maxnum cannot be zero"
-#endif /* LOSCFG_BASE_IPC_SEM_LIMIT <= 0 */
+#if (LOSCFG_BASE_IPC_SEM_LIMIT <= 0)  // 如果信号量最大数量配置小于等于0
+#error "sem maxnum cannot be zero"  // 编译错误：信号量最大数量不能为零
+#endif /* LOSCFG_BASE_IPC_SEM_LIMIT <= 0 */  // 条件编译结束
+// @note 可用的信号量列表,其他地方用free，这里不用freeSemList? 可以看出这里是另一个人写的代码
+LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_unusedSemList;  // 未使用信号量链表，静态全局变量
+LITE_OS_SEC_BSS LosSemCB *g_allSem = NULL;  // 所有信号量控制块数组指针，静态全局变量
 
-LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_unusedSemList; ///< 可用的信号量列表,干嘛不用freeList? 可以看出这里是另一个人写的代码
-LITE_OS_SEC_BSS LosSemCB *g_allSem = NULL; ///< 信号池,一次分配 LOSCFG_BASE_IPC_SEM_LIMIT 个信号量
-
-/*
- * Description  : Initialize the semaphore doubly linked list | 信号量初始化
- * Return       : LOS_OK on success, or error code on failure
+/**
+ * @brief 初始化信号量双向链表
+ * @return LOS_OK 初始化成功；错误码 初始化失败
  */
-LITE_OS_SEC_TEXT_INIT UINT32 OsSemInit(VOID)
+LITE_OS_SEC_TEXT_INIT UINT32 OsSemInit(VOID)  // 信号量初始化函数
 {
-    LosSemCB *semNode = NULL;
-    UINT32 index;
+    LosSemCB *semNode = NULL;  // 信号量控制块指针
+    UINT32 index;  // 循环索引
 
-    LOS_ListInit(&g_unusedSemList);//初始化链表,链表上挂未使用的信号量,用于分配信号量,鸿蒙信号量的个数是有限的,默认1024个
-    /* system resident memory, don't free */
-    g_allSem = (LosSemCB *)LOS_MemAlloc(m_aucSysMem0, (LOSCFG_BASE_IPC_SEM_LIMIT * sizeof(LosSemCB)));//分配信号池
-    if (g_allSem == NULL) {
-        return LOS_ERRNO_SEM_NO_MEMORY;
+    LOS_ListInit(&g_unusedSemList);  // 初始化未使用信号量链表
+    /* system resident memory, don't free */  // 系统常驻内存，不释放
+    g_allSem = (LosSemCB *)LOS_MemAlloc(m_aucSysMem0, (LOSCFG_BASE_IPC_SEM_LIMIT * sizeof(LosSemCB)));  // 分配信号量控制块数组内存
+    if (g_allSem == NULL) {  // 如果内存分配失败
+        return LOS_ERRNO_SEM_NO_MEMORY;  // 返回信号量无内存错误码
     }
 
-    for (index = 0; index < LOSCFG_BASE_IPC_SEM_LIMIT; index++) {
-        semNode = ((LosSemCB *)g_allSem) + index;//拿信号控制块, 可以直接g_allSem[index]来嘛
-        semNode->semID = SET_SEM_ID(0, index);//保存ID
-        semNode->semStat = OS_SEM_UNUSED;//标记未使用
-        LOS_ListTailInsert(&g_unusedSemList, &semNode->semList);//通过semList把 信号块挂到空闲链表上
+    for (index = 0; index < LOSCFG_BASE_IPC_SEM_LIMIT; index++) {  // 遍历所有信号量控制块
+        semNode = ((LosSemCB *)g_allSem) + index;  // 获取当前索引的信号量控制块
+        semNode->semID = SET_SEM_ID(0, index);  // 设置信号量ID
+        semNode->semStat = OS_SEM_UNUSED;  // 设置信号量状态为未使用
+        LOS_ListTailInsert(&g_unusedSemList, &semNode->semList);  // 将信号量控制块插入未使用链表尾部
     }
 
-    if (OsSemDbgInitHook() != LOS_OK) {
-        return LOS_ERRNO_SEM_NO_MEMORY;
+    if (OsSemDbgInitHook() != LOS_OK) {  // 如果调试钩子初始化失败
+        return LOS_ERRNO_SEM_NO_MEMORY;  // 返回信号量无内存错误码
     }
-    return LOS_OK;
+    return LOS_OK;  // 返回成功
 }
 
-/*
- * Description  : Create a semaphore,
- * Input        : count     --- semaphore count,
- *                maxCount  --- Max number of available semaphores,
- *                semHandle --- Index of semaphore,
- * Return       : LOS_OK on success ,or error code on failure
+/**
+ * @brief 创建信号量
+ * @param count 信号量初始计数
+ * @param maxCount 信号量最大计数
+ * @param semHandle 输出参数，返回创建的信号量句柄
+ * @return LOS_OK 创建成功；错误码 创建失败
  */
-LITE_OS_SEC_TEXT_INIT UINT32 OsSemCreate(UINT16 count, UINT16 maxCount, UINT32 *semHandle)
+LITE_OS_SEC_TEXT_INIT UINT32 OsSemCreate(UINT16 count, UINT16 maxCount, UINT32 *semHandle)  // 创建信号量函数
 {
-    UINT32 intSave;
-    LosSemCB *semCreated = NULL;
-    LOS_DL_LIST *unusedSem = NULL;
-    UINT32 errNo;
-    UINT32 errLine;
+    UINT32 intSave;  // 中断状态保存变量
+    LosSemCB *semCreated = NULL;  // 要创建的信号量控制块指针
+    LOS_DL_LIST *unusedSem = NULL;  // 未使用信号量节点指针
+    UINT32 errNo;  // 错误码
+    UINT32 errLine;  // 错误行号
 
-    if (semHandle == NULL) {
-        return LOS_ERRNO_SEM_PTR_NULL;
+    if (semHandle == NULL) {  // 如果信号量句柄指针为空
+        return LOS_ERRNO_SEM_PTR_NULL;  // 返回信号量指针为空错误码
     }
 
-    if (count > maxCount) {//信号量不能大于最大值,两参数都是外面给的
-        OS_GOTO_ERR_HANDLER(LOS_ERRNO_SEM_OVERFLOW);
+    if (count > maxCount) {  // 如果初始计数大于最大计数
+        OS_GOTO_ERR_HANDLER(LOS_ERRNO_SEM_OVERFLOW);  // 跳转到错误处理，溢出错误
     }
 
-    SCHEDULER_LOCK(intSave);//进入临界区,拿自旋锁
+    SCHEDULER_LOCK(intSave);  // 调度器加锁，保存中断状态
 
-    if (LOS_ListEmpty(&g_unusedSemList)) {//没有可分配的空闲信号提供
-        SCHEDULER_UNLOCK(intSave);
-        OsSemInfoGetFullDataHook();
-        OS_GOTO_ERR_HANDLER(LOS_ERRNO_SEM_ALL_BUSY);
+    if (LOS_ListEmpty(&g_unusedSemList)) {  // 如果未使用信号量链表为空
+        SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+        OsSemInfoGetFullDataHook();  // 获取信号量已满信息钩子
+        OS_GOTO_ERR_HANDLER(LOS_ERRNO_SEM_ALL_BUSY);  // 跳转到错误处理，所有信号量繁忙
     }
 
-    unusedSem = LOS_DL_LIST_FIRST(&g_unusedSemList);//从未使用信号量池中取首个
-    LOS_ListDelete(unusedSem);//从空闲链表上摘除
-    SCHEDULER_UNLOCK(intSave);
-    semCreated = GET_SEM_LIST(unusedSem);//通过semList挂到链表上的,这里也要通过它把LosSemCB头查到. 进程,线程等结构体也都是这么干的.
-    semCreated->semCount = count;//设置数量
-    semCreated->semStat = OS_SEM_USED;//设置可用状态
-    semCreated->maxSemCount = maxCount;//设置最大信号数量
-    LOS_ListInit(&semCreated->semList);//初始化链表,后续阻塞任务通过task->pendList挂到semList链表上,就知道哪些任务在等它了.
-    *semHandle = semCreated->semID;//参数带走 semID
-    OsHookCall(LOS_HOOK_TYPE_SEM_CREATE, semCreated);
-    OsSemDbgUpdateHook(semCreated->semID, OsCurrTaskGet()->taskEntry, count);
+    unusedSem = LOS_DL_LIST_FIRST(&g_unusedSemList);  // 获取未使用链表的第一个节点
+    LOS_ListDelete(unusedSem);  // 从链表中删除该节点
+    SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+    semCreated = GET_SEM_LIST(unusedSem);  // 将节点指针转换为信号量控制块指针
+    semCreated->semCount = count;  // 设置信号量初始计数
+    semCreated->semStat = OS_SEM_USED;  // 设置信号量状态为已使用
+    semCreated->maxSemCount = maxCount;  // 设置信号量最大计数
+    LOS_ListInit(&semCreated->semList);  // 初始化信号量的等待任务链表
+    *semHandle = semCreated->semID;  // 设置输出参数信号量句柄
+    OsHookCall(LOS_HOOK_TYPE_SEM_CREATE, semCreated);  // 调用信号量创建钩子
+    OsSemDbgUpdateHook(semCreated->semID, OsCurrTaskGet()->taskEntry, count);  // 更新调试信息
+    return LOS_OK;  // 返回成功
 
-    return LOS_OK;
-
-ERR_HANDLER:
-    OS_RETURN_ERROR_P2(errLine, errNo);
+ERR_HANDLER:  // 错误处理标签
+    OS_RETURN_ERROR_P2(errLine, errNo);  // 返回错误码和错误行号
 }
-///对外接口 创建信号量 
-LITE_OS_SEC_TEXT_INIT UINT32 LOS_SemCreate(UINT16 count, UINT32 *semHandle)
+
+/**
+ * @brief 创建计数信号量（默认最大计数为OS_SEM_COUNT_MAX）
+ * @param count 信号量初始计数
+ * @param semHandle 输出参数，返回创建的信号量句柄
+ * @return LOS_OK 创建成功；错误码 创建失败
+ */
+LITE_OS_SEC_TEXT_INIT UINT32 LOS_SemCreate(UINT16 count, UINT32 *semHandle)  // 计数信号量创建函数
 {
-    return OsSemCreate(count, OS_SEM_COUNT_MAX, semHandle);
+    return OsSemCreate(count, OS_SEM_COUNT_MAX, semHandle);  // 调用通用信号量创建函数
 }
-///对外接口 创建二值信号量，其计数值最大为1，可以当互斥锁用
-LITE_OS_SEC_TEXT_INIT UINT32 LOS_BinarySemCreate(UINT16 count, UINT32 *semHandle)
+
+/**
+ * @brief 创建二进制信号量（最大计数为OS_SEM_BINARY_COUNT_MAX）
+ * @param count 信号量初始计数（0或1）
+ * @param semHandle 输出参数，返回创建的信号量句柄
+ * @return LOS_OK 创建成功；错误码 创建失败
+ */
+LITE_OS_SEC_TEXT_INIT UINT32 LOS_BinarySemCreate(UINT16 count, UINT32 *semHandle)  // 二进制信号量创建函数
 {
-    return OsSemCreate(count, OS_SEM_BINARY_COUNT_MAX, semHandle);
+    return OsSemCreate(count, OS_SEM_BINARY_COUNT_MAX, semHandle);  // 调用通用信号量创建函数
 }
-///对外接口 删除指定的信号量,参数就是 semID 
-LITE_OS_SEC_TEXT_INIT UINT32 LOS_SemDelete(UINT32 semHandle)
+
+/**
+ * @brief 删除信号量
+ * @param semHandle 要删除的信号量句柄
+ * @return LOS_OK 删除成功；错误码 删除失败
+ */
+LITE_OS_SEC_TEXT_INIT UINT32 LOS_SemDelete(UINT32 semHandle)  // 信号量删除函数
 {
-    UINT32 intSave;
-    LosSemCB *semDeleted = NULL;
-    UINT32 errNo;
-    UINT32 errLine;
+    UINT32 intSave;  // 中断状态保存变量
+    LosSemCB *semDeleted = NULL;  // 要删除的信号量控制块指针
+    UINT32 errNo;  // 错误码
+    UINT32 errLine;  // 错误行号
 
-    if (GET_SEM_INDEX(semHandle) >= (UINT32)LOSCFG_BASE_IPC_SEM_LIMIT) {
-        OS_GOTO_ERR_HANDLER(LOS_ERRNO_SEM_INVALID);
+    if (GET_SEM_INDEX(semHandle) >= (UINT32)LOSCFG_BASE_IPC_SEM_LIMIT) {  // 如果信号量索引超出范围
+        OS_GOTO_ERR_HANDLER(LOS_ERRNO_SEM_INVALID);  // 跳转到错误处理，信号量无效
     }
 
-    semDeleted = GET_SEM(semHandle);//通过ID拿到信号量实体
+    semDeleted = GET_SEM(semHandle);  // 获取信号量控制块指针
 
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_LOCK(intSave);  // 调度器加锁，保存中断状态
 
-    if ((semDeleted->semStat == OS_SEM_UNUSED) || (semDeleted->semID != semHandle)) {//参数判断
-        SCHEDULER_UNLOCK(intSave);
-        OS_GOTO_ERR_HANDLER(LOS_ERRNO_SEM_INVALID);
+    if ((semDeleted->semStat == OS_SEM_UNUSED) || (semDeleted->semID != semHandle)) {  // 如果信号量未使用或ID不匹配
+        SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+        OS_GOTO_ERR_HANDLER(LOS_ERRNO_SEM_INVALID);  // 跳转到错误处理，信号量无效
     }
 
-    if (!LOS_ListEmpty(&semDeleted->semList)) {//当前还有任务挂在这个信号上面,当然不能删除
-        SCHEDULER_UNLOCK(intSave);
-        OS_GOTO_ERR_HANDLER(LOS_ERRNO_SEM_PENDED);//这个宏很有意思,里面goto到ERR_HANDLER
+    if (!LOS_ListEmpty(&semDeleted->semList)) {  // 如果信号量的等待任务链表非空
+        SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+        OS_GOTO_ERR_HANDLER(LOS_ERRNO_SEM_PENDED);  // 跳转到错误处理，信号量有等待任务
     }
 
-    LOS_ListTailInsert(&g_unusedSemList, &semDeleted->semList);//通过semList从尾部插入空闲链表
-    semDeleted->semStat = OS_SEM_UNUSED;//状态变成了未使用
-    semDeleted->semID = SET_SEM_ID(GET_SEM_COUNT(semDeleted->semID) + 1, GET_SEM_INDEX(semDeleted->semID));//设置ID
+    LOS_ListTailInsert(&g_unusedSemList, &semDeleted->semList);  // 将信号量控制块插入未使用链表尾部
+    semDeleted->semStat = OS_SEM_UNUSED;  // 设置信号量状态为未使用
+    semDeleted->semID = SET_SEM_ID(GET_SEM_COUNT(semDeleted->semID) + 1, GET_SEM_INDEX(semDeleted->semID));  // 更新信号量ID版本号
 
-    OsHookCall(LOS_HOOK_TYPE_SEM_DELETE, semDeleted);
-    OsSemDbgUpdateHook(semDeleted->semID, NULL, 0);
+    OsHookCall(LOS_HOOK_TYPE_SEM_DELETE, semDeleted);  // 调用信号量删除钩子
+    OsSemDbgUpdateHook(semDeleted->semID, NULL, 0);  // 更新调试信息
 
-    SCHEDULER_UNLOCK(intSave);
-    return LOS_OK;
+    SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+    return LOS_OK;  // 返回成功
 
-ERR_HANDLER:
-    OS_RETURN_ERROR_P2(errLine, errNo);
+ERR_HANDLER:  // 错误处理标签
+    OS_RETURN_ERROR_P2(errLine, errNo);  // 返回错误码和错误行号
 }
-///对外接口 申请指定的信号量，并设置超时时间
-LITE_OS_SEC_TEXT UINT32 LOS_SemPend(UINT32 semHandle, UINT32 timeout)
+
+/**
+ * @brief 等待信号量（P操作）
+ * @param semHandle 信号量句柄
+ * @param timeout 超时时间（单位：系统滴答）
+ * @return LOS_OK 成功获取信号量；错误码 获取失败
+ */
+LITE_OS_SEC_TEXT UINT32 LOS_SemPend(UINT32 semHandle, UINT32 timeout)  // 信号量等待函数
 {
-    UINT32 intSave;
-    LosSemCB *semPended = GET_SEM(semHandle);//通过ID拿到信号体
-    UINT32 retErr = LOS_OK;
-    LosTaskCB *runTask = NULL;
+    UINT32 intSave;  // 中断状态保存变量
+    LosSemCB *semPended = GET_SEM(semHandle);  // 信号量控制块指针
+    UINT32 retErr = LOS_OK;  // 返回错误码，默认为成功
+    LosTaskCB *runTask = NULL;  // 当前运行任务控制块指针
 
-    if (GET_SEM_INDEX(semHandle) >= (UINT32)LOSCFG_BASE_IPC_SEM_LIMIT) {
-        OS_RETURN_ERROR(LOS_ERRNO_SEM_INVALID);
+    if (GET_SEM_INDEX(semHandle) >= (UINT32)LOSCFG_BASE_IPC_SEM_LIMIT) {  // 如果信号量索引超出范围
+        OS_RETURN_ERROR(LOS_ERRNO_SEM_INVALID);  // 返回信号量无效错误码
     }
 
-    if (OS_INT_ACTIVE) {
-        PRINT_ERR("!!!LOS_ERRNO_SEM_PEND_INTERR!!!\n");
-        OsBackTrace();
-        return LOS_ERRNO_SEM_PEND_INTERR;
+    if (OS_INT_ACTIVE) {  // 如果当前在中断上下文中
+        PRINT_ERR("!!!LOS_ERRNO_SEM_PEND_INTERR!!!\n");  // 打印中断中等待错误
+        OsBackTrace();  // 打印调用栈
+        return LOS_ERRNO_SEM_PEND_INTERR;  // 返回中断中等待错误码
     }
 
-    runTask = OsCurrTaskGet();//获取当前任务
-    if (runTask->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {
-        OsBackTrace();
-        return LOS_ERRNO_SEM_PEND_IN_SYSTEM_TASK;
+    runTask = OsCurrTaskGet();  // 获取当前运行任务
+    if (runTask->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) {  // 如果是系统任务
+        OsBackTrace();  // 打印调用栈
+        return LOS_ERRNO_SEM_PEND_IN_SYSTEM_TASK;  // 返回系统任务等待错误码
     }
 
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_LOCK(intSave);  // 调度器加锁，保存中断状态
 
-    if ((semPended->semStat == OS_SEM_UNUSED) || (semPended->semID != semHandle)) {
-        retErr = LOS_ERRNO_SEM_INVALID;
-        goto OUT;
+    if ((semPended->semStat == OS_SEM_UNUSED) || (semPended->semID != semHandle)) {  // 如果信号量未使用或ID不匹配
+        retErr = LOS_ERRNO_SEM_INVALID;  // 设置返回错误码为信号量无效
+        goto OUT;  // 跳转到退出标签
+    }
+    /* Update the operate time, no matter the actual Pend success or not */  // 更新操作时间，无论等待是否成功
+    OsSemDbgTimeUpdateHook(semHandle);  // 更新调试时间戳
+
+    if (semPended->semCount > 0) {  // 如果信号量计数大于0
+        semPended->semCount--;  // 信号量计数减1
+        OsHookCall(LOS_HOOK_TYPE_SEM_PEND, semPended, runTask, timeout);  // 调用信号量等待钩子
+        goto OUT;  // 跳转到退出标签
+    } else if (!timeout) {  // 如果超时时间为0（非阻塞）
+        retErr = LOS_ERRNO_SEM_UNAVAILABLE;  // 设置返回错误码为信号量不可用
+        goto OUT;  // 跳转到退出标签
     }
 
-    /* Update the operate time, no matter the actual Pend success or not */
-    OsSemDbgTimeUpdateHook(semHandle);
-
-    if (semPended->semCount > 0) {//还有资源可用,返回肯定得成功,semCount=0时代表没资源了,task会必须去睡眠了
-        semPended->semCount--;//资源少了一个
-        OsHookCall(LOS_HOOK_TYPE_SEM_PEND, semPended, runTask, timeout);
-        goto OUT;//注意这里 retErr = LOS_OK ,所以返回是OK的 
-    } else if (!timeout) {
-        retErr = LOS_ERRNO_SEM_UNAVAILABLE;
-        goto OUT;
+    if (!OsPreemptableInSched()) {  // 如果当前不可抢占
+        PRINT_ERR("!!!LOS_ERRNO_SEM_PEND_IN_LOCK!!!\n");  // 打印锁中等待错误
+        OsBackTrace();  // 打印调用栈
+        retErr = LOS_ERRNO_SEM_PEND_IN_LOCK;  // 设置返回错误码为锁中等待
+        goto OUT;  // 跳转到退出标签
     }
 
-    if (!OsPreemptableInSched()) {//不能申请调度 (不能调度的原因是因为没有持有调度任务自旋锁)
-        PRINT_ERR("!!!LOS_ERRNO_SEM_PEND_IN_LOCK!!!\n");
-        OsBackTrace();
-        retErr = LOS_ERRNO_SEM_PEND_IN_LOCK;
-        goto OUT;
+    OsHookCall(LOS_HOOK_TYPE_SEM_PEND, semPended, runTask, timeout);  // 调用信号量等待钩子
+    OsTaskWaitSetPendMask(OS_TASK_WAIT_SEM, semPended->semID, timeout);  // 设置任务等待掩码
+    retErr = runTask->ops->wait(runTask, &semPended->semList, timeout);  // 将任务加入等待链表
+    if (retErr == LOS_ERRNO_TSK_TIMEOUT) {  // 如果返回任务超时错误
+        retErr = LOS_ERRNO_SEM_TIMEOUT;  // 转换为信号量超时错误码
     }
 
-    OsHookCall(LOS_HOOK_TYPE_SEM_PEND, semPended, runTask, timeout);
-    OsTaskWaitSetPendMask(OS_TASK_WAIT_SEM, semPended->semID, timeout);
-    retErr = runTask->ops->wait(runTask, &semPended->semList, timeout);
-    if (retErr == LOS_ERRNO_TSK_TIMEOUT) {//注意:这里是涉及到task切换的,把自己挂起,唤醒其他task 
-        retErr = LOS_ERRNO_SEM_TIMEOUT;
-    }
-
-OUT:
-    SCHEDULER_UNLOCK(intSave);
-    return retErr;
+OUT:  // 退出标签
+    SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+    return retErr;  // 返回错误码
 }
-///以不安全的方式释放指定的信号量,所谓不安全指的是不用自旋锁
-LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)
+
+/**
+ * @brief 不安全的信号量释放（V操作），需外部加锁
+ * @param semHandle 信号量句柄
+ * @param needSched 输出参数，是否需要调度
+ * @return LOS_OK 释放成功；错误码 释放失败
+ */
+LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)  // 不安全的信号量释放函数
 {
-    LosTaskCB *resumedTask = NULL;
-    LosSemCB *semPosted = GET_SEM(semHandle);
-    if ((semPosted->semID != semHandle) || (semPosted->semStat == OS_SEM_UNUSED)) {
-        return LOS_ERRNO_SEM_INVALID;
+    LosTaskCB *resumedTask = NULL;  // 要唤醒的任务控制块指针
+    LosSemCB *semPosted = GET_SEM(semHandle);  // 信号量控制块指针
+    if ((semPosted->semID != semHandle) || (semPosted->semStat == OS_SEM_UNUSED)) {  // 如果信号量ID不匹配或未使用
+        return LOS_ERRNO_SEM_INVALID;  // 返回信号量无效错误码
     }
 
-    /* Update the operate time, no matter the actual Post success or not */
-    OsSemDbgTimeUpdateHook(semHandle);
+    /* Update the operate time, no matter the actual Post success or not */  // 更新操作时间，无论释放是否成功
+    OsSemDbgTimeUpdateHook(semHandle);  // 更新调试时间戳
 
-    if (semPosted->semCount == OS_SEM_COUNT_MAX) {//当前信号资源不能大于最大资源量
-        return LOS_ERRNO_SEM_OVERFLOW;
+    if (semPosted->semCount == OS_SEM_COUNT_MAX) {  // 如果信号量计数达到最大值
+        return LOS_ERRNO_SEM_OVERFLOW;  // 返回信号量溢出错误码
     }
-    if (!LOS_ListEmpty(&semPosted->semList)) {//当前有任务挂在semList上,要去唤醒任务
-        resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(semPosted->semList)));//semList上面挂的都是task->pendlist节点,取第一个task下来唤醒
-        OsTaskWakeClearPendMask(resumedTask);
-        resumedTask->ops->wake(resumedTask);
-        if (needSched != NULL) {//参数不为空,就返回需要调度的标签
-            *needSched = TRUE;//TRUE代表需要调度
+    if (!LOS_ListEmpty(&semPosted->semList)) {  // 如果信号量的等待任务链表非空
+        resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(semPosted->semList)));  // 获取第一个等待任务
+        OsTaskWakeClearPendMask(resumedTask);  // 清除任务等待掩码
+        resumedTask->ops->wake(resumedTask);  // 唤醒任务
+        if (needSched != NULL) {  // 如果需要调度标志指针非空
+            *needSched = TRUE;  // 设置需要调度
         }
-    } else {//当前没有任务挂在semList上,
-        semPosted->semCount++;//信号资源多一个
+    } else {  // 如果等待任务链表为空
+        semPosted->semCount++;  // 信号量计数加1
     }
-    OsHookCall(LOS_HOOK_TYPE_SEM_POST, semPosted, resumedTask);
-    return LOS_OK;
+    OsHookCall(LOS_HOOK_TYPE_SEM_POST, semPosted, resumedTask);  // 调用信号量释放钩子
+    return LOS_OK;  // 返回成功
 }
-///对外接口 释放指定的信号量
-LITE_OS_SEC_TEXT UINT32 LOS_SemPost(UINT32 semHandle)
+
+/**
+ * @brief 安全的信号量释放（V操作），内部加锁
+ * @param semHandle 信号量句柄
+ * @return LOS_OK 释放成功；错误码 释放失败
+ */
+LITE_OS_SEC_TEXT UINT32 LOS_SemPost(UINT32 semHandle)  // 信号量释放函数
 {
-    UINT32 intSave;
-    UINT32 ret;
-    BOOL needSched = FALSE;
+    UINT32 intSave;  // 中断状态保存变量
+    UINT32 ret;  // 返回值
+    BOOL needSched = FALSE;  // 是否需要调度标志
 
-    if (GET_SEM_INDEX(semHandle) >= LOSCFG_BASE_IPC_SEM_LIMIT) {
-        return LOS_ERRNO_SEM_INVALID;
-    }
-    SCHEDULER_LOCK(intSave);
-    ret = OsSemPostUnsafe(semHandle, &needSched);
-        SCHEDULER_UNLOCK(intSave);
-    if (needSched) {//需要调度的情况
-        LOS_MpSchedule(OS_MP_CPU_ALL);//向所有CPU发送调度指令
-        LOS_Schedule();////发起调度
+    if (GET_SEM_INDEX(semHandle) >= LOSCFG_BASE_IPC_SEM_LIMIT) {  // 如果信号量索引超出范围
+        return LOS_ERRNO_SEM_INVALID;  // 返回信号量无效错误码
     }
 
-    return ret;
+    SCHEDULER_LOCK(intSave);  // 调度器加锁，保存中断状态
+    ret = OsSemPostUnsafe(semHandle, &needSched);  // 调用不安全的信号量释放函数
+        SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+    if (needSched) {  // 如果需要调度
+        LOS_MpSchedule(OS_MP_CPU_ALL);  // 多CPU调度
+        LOS_Schedule();  // 触发调度
+    }
+
+    return ret;  // 返回结果
 }
-#endif /* (LOSCFG_BASE_IPC_SEM == YES) */
+#endif /* LOSCFG_BASE_IPC_SEM */
 

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -93,33 +93,82 @@
 #include "los_mux_pri.h"
 #include "user_copy.h"
 
-
 #ifdef LOSCFG_KERNEL_VM
 
-#define OS_FUTEX_FROM_FUTEXLIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, futexList) // 通过快锁节点找到结构体
-#define OS_FUTEX_FROM_QUEUELIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, queueList) // 通过队列节点找到结构体
-#define OS_FUTEX_KEY_BASE USER_ASPACE_BASE	///< 进程用户空间基址
-#define OS_FUTEX_KEY_MAX (USER_ASPACE_BASE + USER_ASPACE_SIZE) ///< 进程用户空间尾址
+/**
+ * @brief 从futexList链表项获取FutexNode指针
+ * @param ptr LOS_DL_LIST链表项指针
+ * @return FutexNode* - 指向FutexNode结构体的指针
+ */
+#define OS_FUTEX_FROM_FUTEXLIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, futexList)
+
+/**
+ * @brief 从queueList链表项获取FutexNode指针
+ * @param ptr LOS_DL_LIST链表项指针
+ * @return FutexNode* - 指向FutexNode结构体的指针
+ */
+#define OS_FUTEX_FROM_QUEUELIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, queueList)
+
+/**
+ * @brief 用户地址空间基地址
+ */
+#define OS_FUTEX_KEY_BASE USER_ASPACE_BASE
+
+/**
+ * @brief 用户地址空间最大地址
+ */
+#define OS_FUTEX_KEY_MAX (USER_ASPACE_BASE + USER_ASPACE_SIZE)
 
 /* private: 0~63    hash index_num
  * shared:  64~79   hash index_num */
-#define FUTEX_INDEX_PRIVATE_MAX     64	///< 0~63号桶用于存放私有锁（以虚拟地址进行哈希）,同一进程不同线程共享futex变量，表明变量在进程地址空间中的位置
-///< 它告诉内核，这个futex是进程专有的，不可以与其他进程共享。它仅仅用作同一进程的线程间同步。
-#define FUTEX_INDEX_SHARED_MAX      16	///< 64~79号桶用于存放共享锁（以物理地址进行哈希）,不同进程间通过文件共享futex变量，表明该变量在文件中的位置
-#define FUTEX_INDEX_MAX             (FUTEX_INDEX_PRIVATE_MAX + FUTEX_INDEX_SHARED_MAX) ///< 80个哈希桶
+/**
+ * @brief 私有futex哈希表索引最大值
+ */
+#define FUTEX_INDEX_PRIVATE_MAX     64
 
-#define FUTEX_INDEX_SHARED_POS      FUTEX_INDEX_PRIVATE_MAX ///< 共享锁开始位置
+/**
+ * @brief 共享futex哈希表索引最大值
+ */
+#define FUTEX_INDEX_SHARED_MAX      16
+
+/**
+ * @brief 哈希表索引最大值
+ */
+#define FUTEX_INDEX_MAX             (FUTEX_INDEX_PRIVATE_MAX + FUTEX_INDEX_SHARED_MAX)
+
+/**
+ * @brief 共享futex哈希表起始索引位置
+ */
+#define FUTEX_INDEX_SHARED_POS      FUTEX_INDEX_PRIVATE_MAX
+
+/**
+ * @brief 私有futex哈希掩码
+ */
 #define FUTEX_HASH_PRIVATE_MASK     (FUTEX_INDEX_PRIVATE_MAX - 1)
+
+/**
+ * @brief 共享futex哈希掩码
+ */
 #define FUTEX_HASH_SHARED_MASK      (FUTEX_INDEX_SHARED_MAX - 1)
-/// 单独哈希桶,上面挂了一个个 FutexNode
+
+/**
+ * @brief Futex哈希表节点结构体
+ */
 typedef struct {
-    LosMux      listLock;///< 内核操作lockList的互斥锁
-    LOS_DL_LIST lockList;///< 用于挂载 FutexNode (Fast userspace mutex，用户态快速互斥锁)
+    LosMux      listLock;         /**< 哈希表项链表锁 */
+    LOS_DL_LIST lockList;         /**< futex节点链表 */
 } FutexHash;
 
-FutexHash g_futexHash[FUTEX_INDEX_MAX];///< 80个哈希桶
+/**
+ * @brief Futex哈希表全局实例
+ */
+FutexHash g_futexHash[FUTEX_INDEX_MAX];
 
-/// 对互斥锁封装
+/**
+ * @brief 加锁futex哈希表锁
+ * @param lock 指向LosMux的指针
+ * @return INT32 - 操作结果，LOS_OK表示成功，其他值表示失败
+ */
 STATIC INT32 OsFutexLock(LosMux *lock)
 {
     UINT32 ret = LOS_MuxLock(lock, LOS_WAIT_FOREVER);
@@ -130,6 +179,11 @@ STATIC INT32 OsFutexLock(LosMux *lock)
     return LOS_OK;
 }
 
+/**
+ * @brief 解锁futex哈希表锁
+ * @param lock 指向LosMux的指针
+ * @return INT32 - 操作结果，LOS_OK表示成功，其他值表示失败
+ */
 STATIC INT32 OsFutexUnlock(LosMux *lock)
 {
     UINT32 ret = LOS_MuxUnlock(lock);
@@ -139,15 +193,21 @@ STATIC INT32 OsFutexUnlock(LosMux *lock)
     }
     return LOS_OK;
 }
-///< 初始化Futex(Fast userspace mutex，用户态快速互斥锁)模块
+
+/**
+ * @brief 初始化futex哈希表
+ * @details 初始化所有哈希表项的链表和互斥锁
+ * @return UINT32 - 操作结果，LOS_OK表示成功，其他值表示失败
+ */
 UINT32 OsFutexInit(VOID)
 {
     INT32 count;
     UINT32 ret;
-	// 初始化 80个哈希桶 
+
+    // 遍历所有哈希表项，初始化链表和互斥锁
     for (count = 0; count < FUTEX_INDEX_MAX; count++) {
-        LOS_ListInit(&g_futexHash[count].lockList); // 初始化双向链表,上面挂 FutexNode
-        ret = LOS_MuxInit(&(g_futexHash[count].listLock), NULL);//初始化互斥锁
+        LOS_ListInit(&g_futexHash[count].lockList);
+        ret = LOS_MuxInit(&(g_futexHash[count].listLock), NULL);
         if (ret) {
             return ret;
         }
@@ -156,9 +216,14 @@ UINT32 OsFutexInit(VOID)
     return LOS_OK;
 }
 
-LOS_MODULE_INIT(OsFutexInit, LOS_INIT_LEVEL_KMOD_EXTENDED);///< 注册Futex模块
+// 将OsFutexInit注册为内核扩展模块初始化函数
+LOS_MODULE_INIT(OsFutexInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
 
 #ifdef LOS_FUTEX_DEBUG
+/**
+ * @brief 显示futex节点的任务属性
+ * @param futexList 指向futex链表的指针
+ */
 STATIC VOID OsFutexShowTaskNodeAttr(const LOS_DL_LIST *futexList)
 {
     FutexNode *tempNode = NULL;
@@ -169,6 +234,7 @@ STATIC VOID OsFutexShowTaskNodeAttr(const LOS_DL_LIST *futexList)
     tempNode = OS_FUTEX_FROM_FUTEXLIST(futexList);
     PRINTK("key(pid)           : 0x%x(%u) : ->", tempNode->key, tempNode->pid);
 
+    // 遍历队列链表，打印任务ID
     for (queueList = &tempNode->queueList; ;) {
         lastNode = OS_FUTEX_FROM_QUEUELIST(queueList);
         if (!LOS_ListEmpty(&(lastNode->pendList))) {
@@ -186,6 +252,9 @@ STATIC VOID OsFutexShowTaskNodeAttr(const LOS_DL_LIST *futexList)
     PRINTK("\n");
 }
 
+/**
+ * @brief 显示futex哈希表内容
+ */
 VOID OsFutexHashShow(VOID)
 {
     LOS_DL_LIST *futexList = NULL;
@@ -193,6 +262,7 @@ VOID OsFutexHashShow(VOID)
     /* The maximum number of barrels of a hash table */
     INT32 hashNodeMax = FUTEX_INDEX_MAX;
     PRINTK("#################### los_futex_pri.hash ####################\n");
+    // 遍历所有哈希表项，显示非空链表的内容
     for (count = 0; count < hashNodeMax; count++) {
         futexList = &(g_futexHash[count].lockList);
         if (LOS_ListEmpty(futexList)) {
@@ -207,73 +277,117 @@ VOID OsFutexHashShow(VOID)
     }
 }
 #endif
-/// 通过用户空间地址获取哈希key
+
+/**
+ * @brief 根据标志生成futex键
+ * @param userVaddr 用户空间地址
+ * @param flags futex标志
+ * @return UINTPTR - 生成的futex键
+ */
 STATIC INLINE UINTPTR OsFutexFlagsToKey(const UINT32 *userVaddr, const UINT32 flags)
 {
     UINTPTR futexKey;
 
+    // 私有futex使用虚拟地址作为键，共享futex使用物理地址作为键
     if (flags & FUTEX_PRIVATE) {
-        futexKey = (UINTPTR)userVaddr;//私有锁（以虚拟地址进行哈希）
+        futexKey = (UINTPTR)userVaddr;
     } else {
-        futexKey = (UINTPTR)LOS_PaddrQuery((UINT32 *)userVaddr);//共享锁（以物理地址进行哈希）
+        futexKey = (UINTPTR)LOS_PaddrQuery((UINT32 *)userVaddr);
     }
 
     return futexKey;
 }
-/// 通过哈希key获取索引
+
+/**
+ * @brief 将futex键转换为哈希表索引
+ * @param futexKey futex键
+ * @param flags futex标志
+ * @return UINT32 - 哈希表索引
+ */
 STATIC INLINE UINT32 OsFutexKeyToIndex(const UINTPTR futexKey, const UINT32 flags)
 {
-    UINT32 index = LOS_HashFNV32aBuf(&futexKey, sizeof(UINTPTR), FNV1_32A_INIT);//获取哈希桶索引
+    UINT32 index = LOS_HashFNV32aBuf(&futexKey, sizeof(UINTPTR), FNV1_32A_INIT);
 
+    // 根据私有/共享标志计算不同的哈希索引
     if (flags & FUTEX_PRIVATE) {
-        index &= FUTEX_HASH_PRIVATE_MASK;//将index锁定在 0 ~ 63号 
+        index &= FUTEX_HASH_PRIVATE_MASK;
     } else {
         index &= FUTEX_HASH_SHARED_MASK;
-        index += FUTEX_INDEX_SHARED_POS;//共享锁索引,将index锁定在 64 ~ 79号
+        index += FUTEX_INDEX_SHARED_POS;
     }
 
     return index;
 }
-/// 设置快锁哈希key
+
+/**
+ * @brief 设置futex节点的键信息
+ * @param futexKey futex键
+ * @param flags futex标志
+ * @param node 指向FutexNode的指针
+ */
 STATIC INLINE VOID OsFutexSetKey(UINTPTR futexKey, UINT32 flags, FutexNode *node)
 {
-    node->key = futexKey;//哈希key
-    node->index = OsFutexKeyToIndex(futexKey, flags);//哈希桶索引
-    node->pid = (flags & FUTEX_PRIVATE) ? LOS_GetCurrProcessID() : OS_INVALID;//获取进程ID,共享快锁时 快锁节点没有进程ID
+    node->key = futexKey;
+    node->index = OsFutexKeyToIndex(futexKey, flags);
+    // 私有futex设置当前进程ID，共享futex设置为无效值
+    node->pid = (flags & FUTEX_PRIVATE) ? LOS_GetCurrProcessID() : OS_INVALID;
 }
-//析构参数节点
+
+/**
+ * @brief 反初始化futex节点
+ * @param node 指向FutexNode的指针
+ */
 STATIC INLINE VOID OsFutexDeinitFutexNode(FutexNode *node)
 {
     node->index = OS_INVALID_VALUE;
     node->pid = 0;
     LOS_ListDelete(&node->queueList);
 }
-/// 新旧两个节点交换 futexList 位置 
+
+/**
+ * @brief 替换队列链表的头节点
+ * @param oldHeadNode 旧头节点
+ * @param newHeadNode 新头节点
+ */
 STATIC INLINE VOID OsFutexReplaceQueueListHeadNode(FutexNode *oldHeadNode, FutexNode *newHeadNode)
 {
     LOS_DL_LIST *futexList = oldHeadNode->futexList.pstPrev;
-    LOS_ListDelete(&oldHeadNode->futexList);//将旧节点从futexList链表上摘除
-    LOS_ListHeadInsert(futexList, &newHeadNode->futexList);//将新节点从头部插入futexList链表
-    if ((newHeadNode->queueList.pstNext == NULL) || (newHeadNode->queueList.pstPrev == NULL)) {//新节点前后没有等待这把锁的任务
-        LOS_ListInit(&newHeadNode->queueList);//初始化等锁任务链表
+    LOS_ListDelete(&oldHeadNode->futexList);
+    LOS_ListHeadInsert(futexList, &newHeadNode->futexList);
+    // 如果新头节点的队列链表未初始化，则进行初始化
+    if ((newHeadNode->queueList.pstNext == NULL) || (newHeadNode->queueList.pstPrev == NULL)) {
+        LOS_ListInit(&newHeadNode->queueList);
     }
 }
-/// 将参数节点从futexList上摘除
+
+/**
+ * @brief 从futex链表中删除节点
+ * @param node 指向FutexNode的指针
+ */
 STATIC INLINE VOID OsFutexDeleteKeyFromFutexList(FutexNode *node)
 {
     LOS_ListDelete(&node->futexList);
 }
-/// 从哈希桶中删除快锁节点
+
+/**
+ * @brief 从哈希表中删除futex键节点
+ * @param node 指向FutexNode的指针
+ * @param isDeleteHead 是否删除头节点
+ * @param headNode 头节点指针的指针
+ * @param queueFlags 队列标志的指针
+ */
 STATIC VOID OsFutexDeleteKeyNodeFromHash(FutexNode *node, BOOL isDeleteHead, FutexNode **headNode, BOOL *queueFlags)
 {
     FutexNode *nextNode = NULL;
 
+    // 检查索引是否有效
     if (node->index >= FUTEX_INDEX_MAX) {
         return;
     }
 
-    if (LOS_ListEmpty(&node->queueList)) {//如果没有任务在等锁
-        OsFutexDeleteKeyFromFutexList(node);//从快锁链表上摘除
+    // 如果队列为空，直接从哈希表中删除该节点
+    if (LOS_ListEmpty(&node->queueList)) {
+        OsFutexDeleteKeyFromFutexList(node);
         if (queueFlags != NULL) {
             *queueFlags = TRUE;
         }
@@ -281,10 +395,10 @@ STATIC VOID OsFutexDeleteKeyNodeFromHash(FutexNode *node, BOOL isDeleteHead, Fut
     }
 
     /* FutexList is not NULL, but the header node of queueList */
-    if (node->futexList.pstNext != NULL) {//是头节点
-        if (isDeleteHead == TRUE) {//是否要删除头节点
-            nextNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_FIRST(&node->queueList));//取出第一个快锁节点
-            OsFutexReplaceQueueListHeadNode(node, nextNode);//两个节点交换位置
+    if (node->futexList.pstNext != NULL) {
+        if (isDeleteHead == TRUE) {
+            nextNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_FIRST(&node->queueList));
+            OsFutexReplaceQueueListHeadNode(node, nextNode);
             if (headNode != NULL) {
                 *headNode = nextNode;
             }
@@ -297,22 +411,30 @@ EXIT:
     OsFutexDeinitFutexNode(node);
     return;
 }
-/// 从哈希桶上删除快锁
+
+/**
+ * @brief 从futex哈希表中删除节点
+ * @param node 指向FutexNode的指针
+ * @param isDeleteHead 是否删除头节点
+ * @param headNode 头节点指针的指针
+ * @param queueFlags 队列标志的指针
+ */
 VOID OsFutexNodeDeleteFromFutexHash(FutexNode *node, BOOL isDeleteHead, FutexNode **headNode, BOOL *queueFlags)
 {
     FutexHash *hashNode = NULL;
-	//通过key找到桶号
+
     UINT32 index = OsFutexKeyToIndex(node->key, (node->pid == OS_INVALID) ? 0 : FUTEX_PRIVATE);
     if (index >= FUTEX_INDEX_MAX) {
         return;
     }
 
-    hashNode = &g_futexHash[index];//找到hash桶
+    hashNode = &g_futexHash[index];
     if (OsMuxLockUnsafe(&hashNode->listLock, LOS_WAIT_FOREVER)) {
         return;
     }
 
-    if (node->index != index) {//快锁节点桶号需和哈希桶号一致
+    // 验证节点索引是否匹配当前哈希表索引
+    if (node->index != index) {
         goto EXIT;
     }
 
@@ -325,13 +447,21 @@ EXIT:
 
     return;
 }
-/// 这块代码谁写的? 这种命名 ... 
+
+/**
+ * @brief 删除已唤醒的任务并获取下一个节点
+ * @param node 指向FutexNode的指针
+ * @param headNode 头节点指针的指针
+ * @param isDeleteHead 是否删除头节点
+ * @return FutexNode* - 下一个有效的FutexNode指针
+ */
 STATIC FutexNode *OsFutexDeleteAlreadyWakeTaskAndGetNext(const FutexNode *node, FutexNode **headNode, BOOL isDeleteHead)
 {
     FutexNode *tempNode = (FutexNode *)node;
     FutexNode *nextNode = NULL;
     BOOL queueFlag = FALSE;
 
+    // 循环删除已唤醒的任务节点（pendList为空表示已唤醒）
     while (LOS_ListEmpty(&(tempNode->pendList))) {     /* already weak */
         if (!LOS_ListEmpty(&(tempNode->queueList))) { /* It's not a head node */
             nextNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_FIRST(&(tempNode->queueList)));
@@ -347,7 +477,11 @@ STATIC FutexNode *OsFutexDeleteAlreadyWakeTaskAndGetNext(const FutexNode *node, 
 
     return tempNode;
 }
-/// 插入一把新Futex锁到哈希桶中,只有是新的key时才会插入,因为其实存在多个FutexNode是一个key 
+
+/**
+ * @brief 将新的futex键插入哈希表
+ * @param node 指向FutexNode的指针
+ */
 STATIC VOID OsFutexInsertNewFutexKeyToHash(FutexNode *node)
 {
     FutexNode *headNode = NULL;
@@ -355,6 +489,7 @@ STATIC VOID OsFutexInsertNewFutexKeyToHash(FutexNode *node)
     LOS_DL_LIST *futexList = NULL;
     FutexHash *hashNode = &g_futexHash[node->index];
 
+    // 如果哈希表项为空，直接插入头节点
     if (LOS_ListEmpty(&hashNode->lockList)) {
         LOS_ListHeadInsert(&(hashNode->lockList), &(node->futexList));
         goto EXIT;
@@ -373,26 +508,34 @@ STATIC VOID OsFutexInsertNewFutexKeyToHash(FutexNode *node)
         goto EXIT;
     }
 
+    // 按key值大小插入到合适位置
     for (futexList = hashNode->lockList.pstNext;
          futexList != &(hashNode->lockList);
          futexList = futexList->pstNext) {
         headNode = OS_FUTEX_FROM_FUTEXLIST(futexList);
-        if (node->key <= headNode->key) {                 
+        if (node->key <= headNode->key) {
             LOS_ListTailInsert(&(headNode->futexList), &(node->futexList));
             break;
         }
-        
     }
 
 EXIT:
     return;
 }
-///< 从后往前插入快锁 Form写错了 @note_thinking 
+
+/**
+ * @brief 从后向前查找并插入任务到队列
+ * @param queueList 队列链表
+ * @param runTask 当前运行任务的TCB
+ * @param node 要插入的FutexNode
+ * @return INT32 - 操作结果，LOS_OK表示成功，其他值表示失败
+ */
 STATIC INT32 OsFutexInsertFindFormBackToFront(LOS_DL_LIST *queueList, const LosTaskCB *runTask, FutexNode *node)
 {
     LOS_DL_LIST *listHead = queueList;
     LOS_DL_LIST *listTail = queueList->pstPrev;
 
+    // 从后向前遍历队列，找到合适位置插入
     for (; listHead != listTail; listTail = listTail->pstPrev) {
         FutexNode *tempNode = OS_FUTEX_FROM_QUEUELIST(listTail);
         tempNode = OsFutexDeleteAlreadyWakeTaskAndGetNext(tempNode, NULL, FALSE);
@@ -415,11 +558,19 @@ STATIC INT32 OsFutexInsertFindFormBackToFront(LOS_DL_LIST *queueList, const LosT
     return LOS_NOK;
 }
 
+/**
+ * @brief 从前向后查找并插入任务到队列
+ * @param queueList 队列链表
+ * @param runTask 当前运行任务的TCB
+ * @param node 要插入的FutexNode
+ * @return INT32 - 操作结果，LOS_OK表示成功，其他值表示失败
+ */
 STATIC INT32 OsFutexInsertFindFromFrontToBack(LOS_DL_LIST *queueList, const LosTaskCB *runTask, FutexNode *node)
 {
     LOS_DL_LIST *listHead = queueList;
     LOS_DL_LIST *listTail = queueList->pstPrev;
 
+    // 从前向后遍历队列，找到合适位置插入
     for (; listHead != listTail; listHead = listHead->pstNext) {
         FutexNode *tempNode = OS_FUTEX_FROM_QUEUELIST(listHead);
         tempNode = OsFutexDeleteAlreadyWakeTaskAndGetNext(tempNode, NULL, FALSE);
@@ -446,6 +597,13 @@ STATIC INT32 OsFutexInsertFindFromFrontToBack(LOS_DL_LIST *queueList, const LosT
     return LOS_NOK;
 }
 
+/**
+ * @brief 回收并查找头节点
+ * @param headNode 头节点指针
+ * @param node 新节点指针
+ * @param firstNode 输出参数，指向找到的第一个有效节点
+ * @return INT32 - 操作结果，LOS_OK表示成功，其他值表示失败
+ */
 STATIC INT32 OsFutexRecycleAndFindHeadNode(FutexNode *headNode, FutexNode *node, FutexNode **firstNode)
 {
     UINT32 intSave;
@@ -463,55 +621,73 @@ STATIC INT32 OsFutexRecycleAndFindHeadNode(FutexNode *headNode, FutexNode *node,
 
     return LOS_OK;
 }
-///< 将快锁挂到任务的阻塞链表上
+
+/**
+ * @brief 将任务插入到等待队列
+ * @param firstNode 第一个有效节点指针的指针
+ * @param node 要插入的节点
+ * @param run 当前运行任务的TCB
+ * @return INT32 - 操作结果，LOS_OK表示成功，其他值表示失败
+ */
 STATIC INT32 OsFutexInsertTasktoPendList(FutexNode **firstNode, FutexNode *node, const LosTaskCB *run)
 {
-    LosTaskCB *taskHead = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&((*firstNode)->pendList)));//获取阻塞链表首个任务
+    LosTaskCB *taskHead = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&((*firstNode)->pendList)));
     LOS_DL_LIST *queueList = &((*firstNode)->queueList);
 
     INT32 ret1 = OsSchedParamCompare(run, taskHead);
     if (ret1 < 0) {
         /* The one with the highest priority is inserted at the top of the queue */
-        LOS_ListTailInsert(queueList, &(node->queueList));//查到queueList的尾部
-        OsFutexReplaceQueueListHeadNode(*firstNode, node);//同时交换futexList链表上的位置
+        LOS_ListTailInsert(queueList, &(node->queueList));
+        OsFutexReplaceQueueListHeadNode(*firstNode, node);
         *firstNode = node;
         return LOS_OK;
     }
-	//如果等锁链表上没有任务或者当前任务大于链表首个任务
+
     if (LOS_ListEmpty(queueList) && (ret1 >= 0)) {
         /* Insert the next position in the queue with equal priority */
-        LOS_ListHeadInsert(queueList, &(node->queueList));//从头部插入当前任务,当前任务是要被挂起的
+        LOS_ListHeadInsert(queueList, &(node->queueList));
         return LOS_OK;
     }
-	
-    FutexNode *tailNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_LAST(queueList));//获取尾部节点
-    LosTaskCB *taskTail = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(tailNode->pendList)));//获取阻塞任务的最后一个
+
+    FutexNode *tailNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_LAST(queueList));
+    LosTaskCB *taskTail = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(tailNode->pendList)));
     INT32 ret2 = OsSchedParamCompare(taskTail, run);
     if ((ret2 <= 0) || (ret1 > ret2)) {
-        return OsFutexInsertFindFormBackToFront(queueList, run, node);//从后往前插入
+        return OsFutexInsertFindFormBackToFront(queueList, run, node);
     }
 
-    return OsFutexInsertFindFromFrontToBack(queueList, run, node);//否则从前往后插入
+    return OsFutexInsertFindFromFrontToBack(queueList, run, node);
 }
-/// 由指定快锁找到对应哈希桶
+
+/**
+ * @brief 查找futex节点
+ * @param node 要查找的节点信息
+ * @return FutexNode* - 找到的节点指针，NULL表示未找到
+ */
 STATIC FutexNode *OsFindFutexNode(const FutexNode *node)
 {
-    FutexHash *hashNode = &g_futexHash[node->index];//先找到所在哈希桶
+    FutexHash *hashNode = &g_futexHash[node->index];
     LOS_DL_LIST *futexList = &(hashNode->lockList);
     FutexNode *headNode = NULL;
 
+    // 遍历哈希表项的链表，查找key和pid匹配的节点
     for (futexList = futexList->pstNext;
-         futexList != &(hashNode->lockList);//判断循环结束条件,相等时说明跑完一轮了
+         futexList != &(hashNode->lockList);
          futexList = futexList->pstNext) {
-        headNode = OS_FUTEX_FROM_FUTEXLIST(futexList);//拿到快锁节点实体
-        if ((headNode->key == node->key) && (headNode->pid == node->pid)) {//已经存在这个节点,注意这里的比较
-            return headNode;//是key和pid 一起比较,因为只有这样才能确定唯一性
-        }//详细讲解请查看 鸿蒙内核源码分析(内核态锁篇) | 如何实现快锁Futex(下)
+        headNode = OS_FUTEX_FROM_FUTEXLIST(futexList);
+        if ((headNode->key == node->key) && (headNode->pid == node->pid)) {
+            return headNode;
+        }
     }
 
     return NULL;
 }
-///< 查找快锁并插入哈希桶中
+
+/**
+ * @brief 查找并插入节点到哈希表
+ * @param node 要插入的节点
+ * @return INT32 - 操作结果，LOS_OK表示成功，其他值表示失败
+ */
 STATIC INT32 OsFindAndInsertToHash(FutexNode *node)
 {
     FutexNode *headNode = NULL;
@@ -520,12 +696,14 @@ STATIC INT32 OsFindAndInsertToHash(FutexNode *node)
     INT32 ret;
 
     headNode = OsFindFutexNode(node);
-    if (headNode == NULL) {//没有找到,说明这是一把新锁
+    if (headNode == NULL) {
+        // 未找到节点，插入新节点
         OsFutexInsertNewFutexKeyToHash(node);
         LOS_ListInit(&(node->queueList));
         return LOS_OK;
     }
 
+    // 回收并查找头节点
     ret = OsFutexRecycleAndFindHeadNode(headNode, node, &firstNode);
     if (ret != LOS_OK) {
         return ret;
@@ -533,551 +711,706 @@ STATIC INT32 OsFindAndInsertToHash(FutexNode *node)
         return ret;
     }
 
+    // 加调度锁，插入任务到等待队列
     SCHEDULER_LOCK(intSave);
     ret = OsFutexInsertTasktoPendList(&firstNode, node, OsCurrTaskGet());
     SCHEDULER_UNLOCK(intSave);
 
     return ret;
 }
-/// 共享内存检查
+/**
+ * @brief 检查共享内存互斥锁权限
+ * @details 验证共享内存区域的互斥锁键是否具有正确的访问权限
+ * @param userVaddr 用户空间地址指针
+ * @param flags futex操作标志
+ * @return 成功返回LOS_OK，失败返回LOS_NOK
+ */
 STATIC INT32 OsFutexKeyShmPermCheck(const UINT32 *userVaddr, const UINT32 flags)
 {
-    PADDR_T paddr;
+    PADDR_T paddr; // 物理地址变量
 
-    /* Check whether the futexKey is a shared lock */
-    if (!(flags & FUTEX_PRIVATE)) {//非私有快锁
-        paddr = (UINTPTR)LOS_PaddrQuery((UINT32 *)userVaddr);//能否查询到物理地址
-        if (paddr == 0) return LOS_NOK;
+    /* 检查futexKey是否为共享锁 */
+    if (!(flags & FUTEX_PRIVATE)) {
+        // 查询用户空间地址对应的物理地址
+        paddr = (UINTPTR)LOS_PaddrQuery((UINT32 *)userVaddr);
+        if (paddr == 0) return LOS_NOK; // 物理地址无效，返回错误
     }
 
-    return LOS_OK;
+    return LOS_OK; // 权限检查通过
 }
 
+/**
+ * @brief 检查Futex等待操作的参数有效性
+ * @details 验证futex等待操作的输入参数，包括地址对齐、权限和标志位
+ * @param userVaddr 用户空间地址指针
+ * @param flags futex操作标志
+ * @param absTime 绝对超时时间
+ * @return 成功返回LOS_OK，失败返回相应错误码
+ */
 STATIC INT32 OsFutexWaitParamCheck(const UINT32 *userVaddr, UINT32 flags, UINT32 absTime)
 {
-    VADDR_T vaddr = (VADDR_T)(UINTPTR)userVaddr;
+    VADDR_T vaddr = (VADDR_T)(UINTPTR)userVaddr; // 转换为虚拟地址
 
-    if (OS_INT_ACTIVE) {
-        return LOS_EINTR;
+    if (OS_INT_ACTIVE) { // 检查是否在中断上下文中
+        return LOS_EINTR; // 中断上下文中不允许等待，返回中断错误
     }
 
+    // 检查标志位是否包含无效标志
     if (flags & (~FUTEX_PRIVATE)) {
         PRINT_ERR("Futex wait param check failed! error flags: 0x%x\n", flags);
-        return LOS_EINVAL;
+        return LOS_EINVAL; // 返回无效参数错误
     }
 
+    // 检查地址是否按INT32对齐且在有效范围内
     if ((vaddr % sizeof(INT32)) || (vaddr < OS_FUTEX_KEY_BASE) || (vaddr >= OS_FUTEX_KEY_MAX)) {
         PRINT_ERR("Futex wait param check failed! error userVaddr: 0x%x\n", vaddr);
-        return LOS_EINVAL;
+        return LOS_EINVAL; // 返回无效地址错误
     }
 
+    // 检查共享内存权限
     if (flags && (OsFutexKeyShmPermCheck(userVaddr, flags) != LOS_OK)) {
         PRINT_ERR("Futex wait param check failed! error shared memory perm userVaddr: 0x%x\n", userVaddr);
-        return LOS_EINVAL;
+        return LOS_EINVAL; // 返回权限错误
     }
 
-    if (!absTime) {
-        return LOS_ETIMEDOUT;
+    if (!absTime) { // 检查超时时间是否有效
+        return LOS_ETIMEDOUT; // 返回超时错误
     }
 
-    return LOS_OK;
+    return LOS_OK; // 参数检查通过
 }
 
+/**
+ * @brief 删除超时的Futex任务节点
+ * @details 从Futex哈希表中移除已超时的任务节点并清理资源
+ * @param hashNode 哈希表节点指针
+ * @param node 要删除的Futex节点
+ * @return 始终返回LOS_ETIMEDOUT表示超时
+ */
 STATIC INT32 OsFutexDeleteTimeoutTaskNode(FutexHash *hashNode, FutexNode *node)
 {
-    UINT32 intSave;
-    if (OsFutexLock(&hashNode->listLock)) {
-        return LOS_EINVAL;
+    UINT32 intSave; // 中断状态保存变量
+    if (OsFutexLock(&hashNode->listLock)) { // 获取哈希表列表锁
+        return LOS_EINVAL; // 加锁失败，返回错误
     }
 
-    if (node->index < FUTEX_INDEX_MAX) {
-        SCHEDULER_LOCK(intSave);
+    if (node->index < FUTEX_INDEX_MAX) { // 检查节点索引是否有效
+        SCHEDULER_LOCK(intSave); // 锁定调度器
+        // 删除已唤醒的任务并获取下一个节点
         (VOID)OsFutexDeleteAlreadyWakeTaskAndGetNext(node, NULL, TRUE);
-        SCHEDULER_UNLOCK(intSave);
+        SCHEDULER_UNLOCK(intSave); // 解锁调度器
     }
 
 #ifdef LOS_FUTEX_DEBUG
-    OsFutexHashShow();
+    OsFutexHashShow(); // 调试模式下显示哈希表状态
 #endif
 
-    if (OsFutexUnlock(&hashNode->listLock)) {
-        return LOS_EINVAL;
+    if (OsFutexUnlock(&hashNode->listLock)) { // 释放哈希表列表锁
+        return LOS_EINVAL; // 解锁失败，返回错误
     }
-    return LOS_ETIMEDOUT;
+    return LOS_ETIMEDOUT; // 返回超时状态
 }
-/// 将快锁节点插入任务
+
+/**
+ * @brief 将任务插入Futex哈希表
+ * @details 初始化任务的Futex节点并将其插入到对应的哈希表项中
+ * @param taskCB 任务控制块指针的指针
+ * @param node Futex节点指针的指针
+ * @param futexKey Futex键值
+ * @param flags futex操作标志
+ * @return 成功返回LOS_OK，失败返回LOS_NOK
+ */
 STATIC INT32 OsFutexInsertTaskToHash(LosTaskCB **taskCB, FutexNode **node, const UINTPTR futexKey, const UINT32 flags)
 {
-    INT32 ret;
-    *taskCB = OsCurrTaskGet(); //获取当前任务
-    *node = &((*taskCB)->futex); //获取当前任务的快锁节点 
-    OsFutexSetKey(futexKey, flags, *node);//设置参数 key index pid 
+    INT32 ret; // 返回值
+    *taskCB = OsCurrTaskGet(); // 获取当前任务控制块
+    *node = &((*taskCB)->futex); // 获取任务的Futex节点
+    OsFutexSetKey(futexKey, flags, *node); // 设置Futex键值
 
-    ret = OsFindAndInsertToHash(*node);
+    ret = OsFindAndInsertToHash(*node); // 查找并插入到哈希表
     if (ret) {
-        return LOS_NOK;
+        return LOS_NOK; // 插入失败，返回错误
     }
 
-    LOS_ListInit(&((*node)->pendList));
-    return LOS_OK;
+    LOS_ListInit(&((*node)->pendList)); // 初始化等待列表
+    return LOS_OK; // 插入成功
 }
-/// 将当前任务挂入等待链表中
+
+/**
+ * @brief 执行Futex等待操作
+ * @details 实现futex等待逻辑，包括加锁、参数验证、任务阻塞和超时处理
+ * @param userVaddr 用户空间地址指针
+ * @param flags futex操作标志
+ * @param val 预期的futex值
+ * @param timeout 超时时间（滴答数）
+ * @return 成功返回LOS_OK，失败返回相应错误码
+ */
 STATIC INT32 OsFutexWaitTask(const UINT32 *userVaddr, const UINT32 flags, const UINT32 val, const UINT32 timeout)
 {
-    INT32 futexRet;
-    UINT32 intSave, lockVal;
-    LosTaskCB *taskCB = NULL;
-    FutexNode *node = NULL;
-    UINTPTR futexKey = OsFutexFlagsToKey(userVaddr, flags);//通过地址和flags 找到 key
-    UINT32 index = OsFutexKeyToIndex(futexKey, flags);//通过key找到哈希桶
-    FutexHash *hashNode = &g_futexHash[index];
+    INT32 futexRet; // futex操作返回值
+    UINT32 intSave, lockVal; // 中断状态和锁值
+    LosTaskCB *taskCB = NULL; // 任务控制块指针
+    FutexNode *node = NULL; // Futex节点指针
+    UINTPTR futexKey = OsFutexFlagsToKey(userVaddr, flags); // 生成futex键
+    UINT32 index = OsFutexKeyToIndex(futexKey, flags); // 计算哈希索引
+    FutexHash *hashNode = &g_futexHash[index]; // 获取哈希表节点
 
-    if (OsFutexLock(&hashNode->listLock)) {//操作快锁节点链表前先上互斥锁
-        return LOS_EINVAL;
+    if (OsFutexLock(&hashNode->listLock)) { // 获取哈希表列表锁
+        return LOS_EINVAL; // 加锁失败，返回错误
     }
-	//userVaddr必须是用户空间虚拟地址
-    if (LOS_ArchCopyFromUser(&lockVal, userVaddr, sizeof(UINT32))) {//将值拷贝到内核空间
+
+    // 从用户空间复制锁值
+    if (LOS_ArchCopyFromUser(&lockVal, userVaddr, sizeof(UINT32))) {
         PRINT_ERR("Futex wait param check failed! copy from user failed!\n");
         futexRet = LOS_EINVAL;
-        goto EXIT_ERR;
+        goto EXIT_ERR; // 复制失败，跳转到错误处理
     }
 
-    if (lockVal != val) {//对参数内部逻辑检查
+    if (lockVal != val) { // 检查锁值是否与预期一致
         futexRet = LOS_EBADF;
-        goto EXIT_ERR;
+        goto EXIT_ERR; // 值不匹配，跳转到错误处理
     }
-	//注意第二个参数 FutexNode *node = NULL 
-    if (OsFutexInsertTaskToHash(&taskCB, &node, futexKey, flags)) {// node = taskCB->futex
+
+    // 将任务插入哈希表
+    if (OsFutexInsertTaskToHash(&taskCB, &node, futexKey, flags)) {
         futexRet = LOS_NOK;
-        goto EXIT_ERR;
+        goto EXIT_ERR; // 插入失败，跳转到错误处理
     }
 
-    SCHEDULER_LOCK(intSave);
-    OsSchedLock();
+    SCHEDULER_LOCK(intSave); // 锁定调度器
+    OsSchedLock(); // 锁定调度
+    // 设置任务等待掩码和超时
     OsTaskWaitSetPendMask(OS_TASK_WAIT_FUTEX, futexKey, timeout);
+    // 将任务加入等待队列
     taskCB->ops->wait(taskCB, &(node->pendList), timeout);
-    LOS_SpinUnlock(&g_taskSpin);
+    LOS_SpinUnlock(&g_taskSpin); // 解锁任务自旋锁
 
-    futexRet = OsFutexUnlock(&hashNode->listLock);//
-    if (futexRet) {
-        OsSchedUnlock();
-        LOS_IntRestore(intSave);
-        goto EXIT_UNLOCK_ERR;
+    futexRet = OsFutexUnlock(&hashNode->listLock); // 释放哈希表列表锁
+    if (futexRet) { // 解锁失败处理
+        OsSchedUnlock(); // 解锁调度
+        LOS_IntRestore(intSave); // 恢复中断
+        goto EXIT_UNLOCK_ERR; // 跳转到解锁错误处理
     }
 
-    LOS_SpinLock(&g_taskSpin);
-    OsSchedUnlock();
+    LOS_SpinLock(&g_taskSpin); // 锁定任务自旋锁
+    OsSchedUnlock(); // 解锁调度
 
     /*
-     * it will immediately do the scheduling, so there's no need to release the
-     * task spinlock. when this task's been rescheduled, it will be holding the spinlock.
+     * 立即进行调度，因此不需要释放任务自旋锁。
+     * 当任务被重新调度时，它将持有自旋锁。
      */
-    OsSchedResched();
+    OsSchedResched(); // 触发调度
 
+    // 检查任务是否超时
     if (taskCB->taskStatus & OS_TASK_STATUS_TIMEOUT) {
-        taskCB->taskStatus &= ~OS_TASK_STATUS_TIMEOUT;
-        SCHEDULER_UNLOCK(intSave);
+        taskCB->taskStatus &= ~OS_TASK_STATUS_TIMEOUT; // 清除超时标志
+        SCHEDULER_UNLOCK(intSave); // 解锁调度器
+        // 删除超时任务节点
         return OsFutexDeleteTimeoutTaskNode(hashNode, node);
     }
 
-    SCHEDULER_UNLOCK(intSave);
-    return LOS_OK;
+    SCHEDULER_UNLOCK(intSave); // 解锁调度器
+    return LOS_OK; // 等待成功
 
 EXIT_ERR:
-    (VOID)OsFutexUnlock(&hashNode->listLock);
+    (VOID)OsFutexUnlock(&hashNode->listLock); // 释放哈希表列表锁
 EXIT_UNLOCK_ERR:
-    return futexRet;
+    return futexRet; // 返回错误码
 }
-/// 设置线程等待 | 向Futex表中插入代表被阻塞的线程的node
+
+/**
+ * @brief Futex等待系统调用实现
+ * @details 提供用户空间的futex等待接口，处理超时转换和参数验证
+ * @param userVaddr 用户空间地址指针
+ * @param flags futex操作标志
+ * @param val 预期的futex值
+ * @param absTime 绝对超时时间（微秒）
+ * @return 成功返回LOS_OK，失败返回相应错误码
+ */
 INT32 OsFutexWait(const UINT32 *userVaddr, UINT32 flags, UINT32 val, UINT32 absTime)
 {
-    INT32 ret;
-    UINT32 timeout = LOS_WAIT_FOREVER;
+    INT32 ret; // 返回值
+    UINT32 timeout = LOS_WAIT_FOREVER; // 超时时间（默认永久等待）
 
-    ret = OsFutexWaitParamCheck(userVaddr, flags, absTime);//参数检查
+    // 检查等待参数
+    ret = OsFutexWaitParamCheck(userVaddr, flags, absTime);
     if (ret) {
-        return ret;
+        return ret; // 参数错误，返回错误码
     }
-    if (absTime != LOS_WAIT_FOREVER) {//转换时间 , 内核的时间单位是 tick
-        timeout = OsNS2Tick((UINT64)absTime * OS_SYS_NS_PER_US); //转成 tick
+    // 转换绝对时间为滴答数
+    if (absTime != LOS_WAIT_FOREVER) {
+        timeout = OsNS2Tick((UINT64)absTime * OS_SYS_NS_PER_US);
     }
 
-    return OsFutexWaitTask(userVaddr, flags, val, timeout);//将任务挂起 timeOut 时长
+    // 执行等待任务
+    return OsFutexWaitTask(userVaddr, flags, val, timeout);
 }
 
+/**
+ * @brief 检查Futex唤醒操作的参数有效性
+ * @details 验证futex唤醒操作的输入参数，包括地址对齐、权限和标志位
+ * @param userVaddr 用户空间地址指针
+ * @param flags futex操作标志
+ * @return 成功返回LOS_OK，失败返回LOS_EINVAL
+ */
 STATIC INT32 OsFutexWakeParamCheck(const UINT32 *userVaddr, UINT32 flags)
 {
-    VADDR_T vaddr = (VADDR_T)(UINTPTR)userVaddr;
+    VADDR_T vaddr = (VADDR_T)(UINTPTR)userVaddr; // 转换为虚拟地址
 
+    // 检查标志位是否有效
     if ((flags & (~FUTEX_PRIVATE)) != FUTEX_WAKE) {
         PRINT_ERR("Futex wake param check failed! error flags: 0x%x\n", flags);
-        return LOS_EINVAL;
+        return LOS_EINVAL; // 标志无效，返回错误
     }
-	//地址必须在用户空间
+
+    // 检查地址是否按INT32对齐且在有效范围内
     if ((vaddr % sizeof(INT32)) || (vaddr < OS_FUTEX_KEY_BASE) || (vaddr >= OS_FUTEX_KEY_MAX)) {
         PRINT_ERR("Futex wake param check failed! error userVaddr: 0x%x\n", userVaddr);
-        return LOS_EINVAL;
+        return LOS_EINVAL; // 地址无效，返回错误
     }
-	//必须得是个共享内存地址
+
+    // 检查共享内存权限
     if (flags && (OsFutexKeyShmPermCheck(userVaddr, flags) != LOS_OK)) {
         PRINT_ERR("Futex wake param check failed! error shared memory perm userVaddr: 0x%x\n", userVaddr);
-        return LOS_EINVAL;
+        return LOS_EINVAL; // 权限错误，返回错误
     }
 
-    return LOS_OK;
+    return LOS_OK; // 参数检查通过
 }
 
-/* Check to see if the task to be awakened has timed out
- * if time out, to weak next pend task. 
- * | 查看要唤醒的任务是否超时，如果超时，就唤醒,并查看下一个挂起的任务。
+/**
+ * @brief 检查并唤醒等待的Futex任务
+ * @details 遍历等待队列，唤醒指定数量的任务，并处理超时情况
+ * @param headNode 等待队列头节点
+ * @param wakeNumber 要唤醒的任务数量
+ * @param hashNode 哈希表节点
+ * @param nextNode 下一个节点指针的指针
+ * @param wakeAny 是否有任务被唤醒的标志指针
  */
 STATIC VOID OsFutexCheckAndWakePendTask(FutexNode *headNode, const INT32 wakeNumber,
                                         FutexHash *hashNode, FutexNode **nextNode, BOOL *wakeAny)
 {
-    INT32 count;
-    LosTaskCB *taskCB = NULL;
-    FutexNode *node = headNode;
+    INT32 count; // 计数器
+    LosTaskCB *taskCB = NULL; // 任务控制块指针
+    FutexNode *node = headNode; // 当前节点
     for (count = 0; count < wakeNumber; count++) {
-        /* Ensure the integrity of the head */
+        /* 确保头部完整性 */
+        // 删除已唤醒任务并获取下一个节点
         *nextNode = OsFutexDeleteAlreadyWakeTaskAndGetNext(node, NULL, FALSE);
         if (*nextNode == NULL) {
-            /* The last node in queuelist is invalid or the entire list is invalid */
+            /* 队列中的最后一个节点无效或整个列表无效 */
             return;
         }
-        node = *nextNode;
+        node = *nextNode; // 移动到下一个节点
+        // 从等待列表获取任务控制块
         taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(node->pendList)));
-        OsTaskWakeClearPendMask(taskCB);
-        taskCB->ops->wake(taskCB);
-        *wakeAny = TRUE;
+        OsTaskWakeClearPendMask(taskCB); // 清除任务等待掩码
+        taskCB->ops->wake(taskCB); // 唤醒任务
+        *wakeAny = TRUE; // 设置唤醒标志
+        // 获取队列列表中的下一个节点
         *nextNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_FIRST(&(node->queueList)));
         if (node != headNode) {
-            OsFutexDeinitFutexNode(node);
+            OsFutexDeinitFutexNode(node); // 释放非头节点资源
         }
 
         if (LOS_ListEmpty(&headNode->queueList)) {
-            /* Wakes up the entire linked list node */
+            /* 唤醒整个链表节点 */
             *nextNode = NULL;
             return;
         }
 
-        node = *nextNode;
+        node = *nextNode; // 移动到下一个节点
     }
     return;
 }
- 
-/*!
- * @brief OsFutexWakeTask	唤醒任务
- *
- * @param flags	
- * @param futexKey	
- * @param newHeadNode	
- * @param wakeAny	
- * @param wakeNumber 唤醒数量	
- * @return	
- *
- * @see
+
+/**
+ * @brief 执行Futex唤醒操作
+ * @details 根据futex键查找并唤醒指定数量的等待任务
+ * @param futexKey Futex键值
+ * @param flags futex操作标志
+ * @param wakeNumber 要唤醒的任务数量
+ * @param newHeadNode 新的头节点指针的指针
+ * @param wakeAny 是否有任务被唤醒的标志指针
+ * @return 成功返回LOS_OK，失败返回LOS_EBADF
  */
 STATIC INT32 OsFutexWakeTask(UINTPTR futexKey, UINT32 flags, INT32 wakeNumber, FutexNode **newHeadNode, BOOL *wakeAny)
 {
-    UINT32 intSave;
-    FutexNode *node = NULL;
-    FutexNode *headNode = NULL;
-    UINT32 index = OsFutexKeyToIndex(futexKey, flags);
-    FutexHash *hashNode = &g_futexHash[index];
-    FutexNode tempNode = { //先组成一个临时快锁节点,目的是为了找到哈希桶中是否有这个节点
+    UINT32 intSave; // 中断状态保存变量
+    FutexNode *node = NULL; // Futex节点指针
+    FutexNode *headNode = NULL; // 头节点指针
+    UINT32 index = OsFutexKeyToIndex(futexKey, flags); // 计算哈希索引
+    FutexHash *hashNode = &g_futexHash[index]; // 获取哈希表节点
+    // 初始化临时Futex节点
+    FutexNode tempNode = {
         .key = futexKey,
         .index = index,
         .pid = (flags & FUTEX_PRIVATE) ? LOS_GetCurrProcessID() : OS_INVALID,
     };
 
-    node = OsFindFutexNode(&tempNode);//找快锁节点
+    node = OsFindFutexNode(&tempNode); // 查找Futex节点
     if (node == NULL) {
-        return LOS_EBADF;
+        return LOS_EBADF; // 节点不存在，返回错误
     }
 
-    headNode = node;
+    headNode = node; // 设置头节点
 
-    SCHEDULER_LOCK(intSave);
-    OsFutexCheckAndWakePendTask(headNode, wakeNumber, hashNode, newHeadNode, wakeAny);//再找到等这把锁的唤醒指向数量的任务
+    SCHEDULER_LOCK(intSave); // 锁定调度器
+    // 检查并唤醒等待任务
+    OsFutexCheckAndWakePendTask(headNode, wakeNumber, hashNode, newHeadNode, wakeAny);
     if ((*newHeadNode) != NULL) {
+        // 替换队列列表头节点
         OsFutexReplaceQueueListHeadNode(headNode, *newHeadNode);
-        OsFutexDeinitFutexNode(headNode);
+        OsFutexDeinitFutexNode(headNode); // 释放旧头节点资源
     } else if (headNode->index < FUTEX_INDEX_MAX) {
+        // 从Futex列表中删除键
         OsFutexDeleteKeyFromFutexList(headNode);
-        OsFutexDeinitFutexNode(headNode);
+        OsFutexDeinitFutexNode(headNode); // 释放头节点资源
     }
-    SCHEDULER_UNLOCK(intSave);
+    SCHEDULER_UNLOCK(intSave); // 解锁调度器
 
-    return LOS_OK;
+    return LOS_OK; // 唤醒成功
 }
-/// 唤醒一个被指定锁阻塞的线程
+
+/**
+ * @brief Futex唤醒系统调用实现
+ * @details 提供用户空间的futex唤醒接口，唤醒指定数量的等待任务
+ * @param userVaddr 用户空间地址指针
+ * @param flags futex操作标志
+ * @param wakeNumber 要唤醒的任务数量
+ * @return 成功返回LOS_OK，失败返回相应错误码
+ */
 INT32 OsFutexWake(const UINT32 *userVaddr, UINT32 flags, INT32 wakeNumber)
 {
-    INT32 ret, futexRet;
-    UINTPTR futexKey;
-    UINT32 index;
-    FutexHash *hashNode = NULL;
-    FutexNode *headNode = NULL;
-    BOOL wakeAny = FALSE;
-	//1.检查参数
-    if (OsFutexWakeParamCheck(userVaddr, flags)) {
-        return LOS_EINVAL;
-    }
-	//2.找到指定用户空间地址对应的桶
-    futexKey = OsFutexFlagsToKey(userVaddr, flags);
-    index = OsFutexKeyToIndex(futexKey, flags);
+    INT32 ret, futexRet; // 返回值
+    UINTPTR futexKey; // Futex键值
+    UINT32 index; // 哈希索引
+    FutexHash *hashNode = NULL; // 哈希表节点指针
+    FutexNode *headNode = NULL; // 头节点指针
+    BOOL wakeAny = FALSE; // 是否有任务被唤醒的标志
 
-    hashNode = &g_futexHash[index];
-    if (OsFutexLock(&hashNode->listLock)) {
-        return LOS_EINVAL;
+    if (OsFutexWakeParamCheck(userVaddr, flags)) { // 检查唤醒参数
+        return LOS_EINVAL; // 参数错误，返回错误码
     }
-	//3.换起等待该锁的进程
+
+    futexKey = OsFutexFlagsToKey(userVaddr, flags); // 生成futex键
+    index = OsFutexKeyToIndex(futexKey, flags); // 计算哈希索引
+
+    hashNode = &g_futexHash[index]; // 获取哈希表节点
+    if (OsFutexLock(&hashNode->listLock)) { // 获取哈希表列表锁
+        return LOS_EINVAL; // 加锁失败，返回错误
+    }
+
+    // 执行唤醒任务
     ret = OsFutexWakeTask(futexKey, flags, wakeNumber, &headNode, &wakeAny);
     if (ret) {
-        goto EXIT_ERR;
+        goto EXIT_ERR; // 唤醒失败，跳转到错误处理
     }
 
 #ifdef LOS_FUTEX_DEBUG
-    OsFutexHashShow();
+    OsFutexHashShow(); // 调试模式下显示哈希表状态
 #endif
 
-    futexRet = OsFutexUnlock(&hashNode->listLock);
+    futexRet = OsFutexUnlock(&hashNode->listLock); // 释放哈希表列表锁
     if (futexRet) {
-        goto EXIT_UNLOCK_ERR;
-    }
-	//4.根据指定参数决定是否发起调度
-    if (wakeAny == TRUE) {
-        LOS_MpSchedule(OS_MP_CPU_ALL);
-        LOS_Schedule();
+        goto EXIT_UNLOCK_ERR; // 解锁失败，跳转到错误处理
     }
 
-    return LOS_OK;
+    if (wakeAny == TRUE) { // 如果有任务被唤醒
+        LOS_MpSchedule(OS_MP_CPU_ALL); // 多处理器调度
+        LOS_Schedule(); // 触发调度
+    }
+
+    return LOS_OK; // 唤醒成功
 
 EXIT_ERR:
-    futexRet = OsFutexUnlock(&hashNode->listLock);
+    futexRet = OsFutexUnlock(&hashNode->listLock); // 释放哈希表列表锁
 EXIT_UNLOCK_ERR:
     if (futexRet) {
-        return futexRet;
+        return futexRet; // 返回解锁错误
     }
-    return ret;
+    return ret; // 返回错误码
 }
 
+/**
+ * @brief 将任务重新排队到新的Futex键
+ * @details 将任务从旧的Futex键等待队列移动到新的Futex键等待队列
+ * @param newFutexKey 新的Futex键值
+ * @param newIndex 新的哈希索引
+ * @param oldHeadNode 旧的头节点指针
+ * @return 成功返回LOS_OK，失败返回错误码
+ */
 STATIC INT32 OsFutexRequeueInsertNewKey(UINTPTR newFutexKey, INT32 newIndex, FutexNode *oldHeadNode)
 {
-    BOOL queueListIsEmpty = FALSE;
-    INT32 ret;
-    UINT32 intSave;
-    LosTaskCB *task = NULL;
-    FutexNode *nextNode = NULL;
+    BOOL queueListIsEmpty = FALSE; // 队列是否为空标志
+    INT32 ret; // 返回值
+    UINT32 intSave; // 中断状态保存变量
+    LosTaskCB *task = NULL; // 任务控制块指针
+    FutexNode *nextNode = NULL; // 下一个节点指针
+    // 初始化新的临时Futex节点
     FutexNode newTempNode = {
         .key = newFutexKey,
         .index = newIndex,
         .pid = (newIndex < FUTEX_INDEX_SHARED_POS) ? LOS_GetCurrProcessID() : OS_INVALID,
     };
-    LOS_DL_LIST *queueList = &oldHeadNode->queueList;
+    LOS_DL_LIST *queueList = &oldHeadNode->queueList; // 队列列表指针
+    // 查找新的Futex节点
     FutexNode *newHeadNode = OsFindFutexNode(&newTempNode);
     if (newHeadNode == NULL) {
+        // 插入新的Futex键到哈希表
         OsFutexInsertNewFutexKeyToHash(oldHeadNode);
-        return LOS_OK;
+        return LOS_OK; // 插入成功
     }
 
     do {
-        nextNode = OS_FUTEX_FROM_QUEUELIST(queueList);
-        SCHEDULER_LOCK(intSave);
-        if (LOS_ListEmpty(&nextNode->pendList)) {
-            if (LOS_ListEmpty(queueList)) {
+        nextNode = OS_FUTEX_FROM_QUEUELIST(queueList); // 获取下一个节点
+        SCHEDULER_LOCK(intSave); // 锁定调度器
+        if (LOS_ListEmpty(&nextNode->pendList)) { // 检查等待列表是否为空
+            if (LOS_ListEmpty(queueList)) { // 检查队列是否为空
                 queueListIsEmpty = TRUE;
             } else {
-                queueList = queueList->pstNext;
+                queueList = queueList->pstNext; // 移动到下一个队列元素
             }
-            OsFutexDeinitFutexNode(nextNode);
-            SCHEDULER_UNLOCK(intSave);
+            OsFutexDeinitFutexNode(nextNode); // 释放Futex节点
+            SCHEDULER_UNLOCK(intSave); // 解锁调度器
             if (queueListIsEmpty) {
-                return LOS_OK;
+                return LOS_OK; // 队列为空，返回成功
             }
 
-            continue;
+            continue; // 继续处理下一个节点
         }
 
+        // 从等待列表获取任务控制块
         task = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(nextNode->pendList)));
-        if (LOS_ListEmpty(queueList)) {
+        if (LOS_ListEmpty(queueList)) { // 检查队列是否为空
             queueListIsEmpty = TRUE;
         } else {
-            queueList = queueList->pstNext;
+            queueList = queueList->pstNext; // 移动到下一个队列元素
         }
-        LOS_ListDelete(&nextNode->queueList);
+        LOS_ListDelete(&nextNode->queueList); // 从队列中删除节点
+        // 将任务插入到新的等待列表
         ret = OsFutexInsertTasktoPendList(&newHeadNode, nextNode, task);
-        SCHEDULER_UNLOCK(intSave);
+        SCHEDULER_UNLOCK(intSave); // 解锁调度器
         if (ret != LOS_OK) {
             PRINT_ERR("Futex requeue insert new key failed!\n");
         }
-    } while (!queueListIsEmpty);
+    } while (!queueListIsEmpty); // 直到队列为空
 
-    return LOS_OK;
+    return LOS_OK; // 重新排队成功
 }
 
+/**
+ * @brief 将Futex队列分割为两个列表
+ * @details 根据指定数量将Futex等待队列分割为两个独立的列表
+ * @param oldHashNode 旧的哈希表节点
+ * @param oldHeadNode 旧的头节点
+ * @param flags futex操作标志
+ * @param futexKey Futex键值
+ * @param count 分割数量
+ */
 STATIC VOID OsFutexRequeueSplitTwoLists(FutexHash *oldHashNode, FutexNode *oldHeadNode,
                                         UINT32 flags, UINTPTR futexKey, INT32 count)
 {
-    LOS_DL_LIST *queueList = &oldHeadNode->queueList;
+    LOS_DL_LIST *queueList = &oldHeadNode->queueList; // 队列列表指针
+    // 获取队列列表的尾节点
     FutexNode *tailNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_LAST(queueList));
-    INT32 newIndex = OsFutexKeyToIndex(futexKey, flags);
-    FutexNode *nextNode = NULL;
-    FutexNode *newHeadNode = NULL;
-    LOS_DL_LIST *futexList = NULL;
-    BOOL isAll = FALSE;
-    INT32 i;
+    INT32 newIndex = OsFutexKeyToIndex(futexKey, flags); // 计算新的哈希索引
+    FutexNode *nextNode = NULL; // 下一个节点指针
+    FutexNode *newHeadNode = NULL; // 新的头节点指针
+    LOS_DL_LIST *futexList = NULL; // Futex列表指针
+    BOOL isAll = FALSE; // 是否处理所有节点的标志
+    INT32 i; // 计数器
 
-    for (i = 0; i < count; i++) {
-        nextNode = OS_FUTEX_FROM_QUEUELIST(queueList);
-        nextNode->key = futexKey;
-        nextNode->index = newIndex;
-        if (queueList->pstNext == &oldHeadNode->queueList) {
-            isAll = TRUE;
+    for (i = 0; i < count; i++) { // 遍历指定数量的节点
+        nextNode = OS_FUTEX_FROM_QUEUELIST(queueList); // 获取下一个节点
+        nextNode->key = futexKey; // 更新节点的键值
+        nextNode->index = newIndex; // 更新节点的索引
+        if (queueList->pstNext == &oldHeadNode->queueList) { // 检查是否到达队列末尾
+            isAll = TRUE; // 已处理所有节点
             break;
         }
 
-        queueList = queueList->pstNext;
+        queueList = queueList->pstNext; // 移动到下一个队列元素
     }
 
-    futexList = oldHeadNode->futexList.pstPrev;
-    LOS_ListDelete(&oldHeadNode->futexList);
-    if (isAll == TRUE) {
+    futexList = oldHeadNode->futexList.pstPrev; // 获取Futex列表的前一个节点
+    LOS_ListDelete(&oldHeadNode->futexList); // 从Futex列表中删除旧头节点
+    if (isAll == TRUE) { // 如果已处理所有节点
         return;
     }
 
-    newHeadNode = OS_FUTEX_FROM_QUEUELIST(queueList);
+    newHeadNode = OS_FUTEX_FROM_QUEUELIST(queueList); // 获取新的头节点
+    // 将新头节点插入到Futex列表
     LOS_ListHeadInsert(futexList, &newHeadNode->futexList);
+    // 更新旧头节点的队列指针
     oldHeadNode->queueList.pstPrev = &nextNode->queueList;
     nextNode->queueList.pstNext = &oldHeadNode->queueList;
+    // 更新新头节点的队列指针
     newHeadNode->queueList.pstPrev = &tailNode->queueList;
     tailNode->queueList.pstNext = &newHeadNode->queueList;
     return;
 }
-/// 删除旧key并获取头节点
+
+/**
+ * @brief 移除旧的Futex键并获取头节点
+ * @details 唤醒指定数量的任务，然后为重新排队准备旧的头节点
+ * @param oldFutexKey 旧的Futex键值
+ * @param flags futex操作标志
+ * @param wakeNumber 要唤醒的任务数量
+ * @param newFutexKey 新的Futex键值
+ * @param requeueCount 要重新排队的任务数量
+ * @param wakeAny 是否有任务被唤醒的标志指针
+ * @return 成功返回旧的头节点指针，失败返回NULL
+ */
 STATIC FutexNode *OsFutexRequeueRemoveOldKeyAndGetHead(UINTPTR oldFutexKey, UINT32 flags, INT32 wakeNumber,
                                                        UINTPTR newFutexKey, INT32 requeueCount, BOOL *wakeAny)
 {
-    INT32 ret;
-    INT32 oldIndex = OsFutexKeyToIndex(oldFutexKey, flags);
-    FutexNode *oldHeadNode = NULL;
-    FutexHash *oldHashNode = &g_futexHash[oldIndex];
+    INT32 ret; // 返回值
+    INT32 oldIndex = OsFutexKeyToIndex(oldFutexKey, flags); // 计算旧的哈希索引
+    FutexNode *oldHeadNode = NULL; // 旧的头节点指针
+    FutexHash *oldHashNode = &g_futexHash[oldIndex]; // 获取旧的哈希表节点
+    // 初始化旧的临时Futex节点
     FutexNode oldTempNode = {
         .key = oldFutexKey,
         .index = oldIndex,
         .pid = (flags & FUTEX_PRIVATE) ? LOS_GetCurrProcessID() : OS_INVALID,
     };
 
-    if (wakeNumber > 0) {
+    if (wakeNumber > 0) { // 如果需要唤醒任务
+        // 唤醒指定数量的任务
         ret = OsFutexWakeTask(oldFutexKey, flags, wakeNumber, &oldHeadNode, wakeAny);
         if ((ret != LOS_OK) || (oldHeadNode == NULL)) {
-            return NULL;
+            return NULL; // 唤醒失败或头节点为空，返回NULL
         }
     }
 
-    if (requeueCount <= 0) {
+    if (requeueCount <= 0) { // 如果不需要重新排队
         return NULL;
     }
 
-    if (oldHeadNode == NULL) {
-        oldHeadNode = OsFindFutexNode(&oldTempNode);
+    if (oldHeadNode == NULL) { // 如果头节点为空
+        oldHeadNode = OsFindFutexNode(&oldTempNode); // 查找Futex节点
         if (oldHeadNode == NULL) {
-            return NULL;
+            return NULL; // 节点不存在，返回NULL
         }
     }
 
+    // 分割两个列表准备重新排队
     OsFutexRequeueSplitTwoLists(oldHashNode, oldHeadNode, flags, newFutexKey, requeueCount);
 
-    return oldHeadNode;
+    return oldHeadNode; // 返回旧的头节点
 }
-/// 检查锁在Futex表中的状态
+
+/**
+ * @brief 检查Futex重新排队操作的参数有效性
+ * @details 验证futex重新排队操作的输入参数，包括地址和标志位
+ * @param oldUserVaddr 旧的用户空间地址指针
+ * @param flags futex操作标志
+ * @param newUserVaddr 新的用户空间地址指针
+ * @return 成功返回LOS_OK，失败返回LOS_EINVAL
+ */
 STATIC INT32 OsFutexRequeueParamCheck(const UINT32 *oldUserVaddr, UINT32 flags, const UINT32 *newUserVaddr)
 {
-    VADDR_T oldVaddr = (VADDR_T)(UINTPTR)oldUserVaddr;
-    VADDR_T newVaddr = (VADDR_T)(UINTPTR)newUserVaddr;
+    VADDR_T oldVaddr = (VADDR_T)(UINTPTR)oldUserVaddr; // 旧地址转换为虚拟地址
+    VADDR_T newVaddr = (VADDR_T)(UINTPTR)newUserVaddr; // 新地址转换为虚拟地址
 
-    if (oldVaddr == newVaddr) {
-        return LOS_EINVAL;
+    if (oldVaddr == newVaddr) { // 检查新旧地址是否相同
+        return LOS_EINVAL; // 地址相同，返回错误
     }
-	//检查标记
+
+    // 检查标志位是否有效
     if ((flags & (~FUTEX_PRIVATE)) != FUTEX_REQUEUE) {
         PRINT_ERR("Futex requeue param check failed! error flags: 0x%x\n", flags);
-        return LOS_EINVAL;
+        return LOS_EINVAL; // 标志无效，返回错误
     }
-	//检查地址范围,必须在用户空间
+
+    // 检查旧地址是否按INT32对齐且在有效范围内
     if ((oldVaddr % sizeof(INT32)) || (oldVaddr < OS_FUTEX_KEY_BASE) || (oldVaddr >= OS_FUTEX_KEY_MAX)) {
         PRINT_ERR("Futex requeue param check failed! error old userVaddr: 0x%x\n", oldUserVaddr);
-        return LOS_EINVAL;
+        return LOS_EINVAL; // 旧地址无效，返回错误
     }
 
+    // 检查新地址是否按INT32对齐且在有效范围内
     if ((newVaddr % sizeof(INT32)) || (newVaddr < OS_FUTEX_KEY_BASE) || (newVaddr >= OS_FUTEX_KEY_MAX)) {
         PRINT_ERR("Futex requeue param check failed! error new userVaddr: 0x%x\n", newUserVaddr);
-        return LOS_EINVAL;
+        return LOS_EINVAL; // 新地址无效，返回错误
     }
 
-    return LOS_OK;
+    return LOS_OK; // 参数检查通过
 }
-/// 调整指定锁在Futex表中的位置
+
+/**
+ * @brief Futex重新排队系统调用实现
+ * @details 将等待任务从一个Futex键重新排队到另一个Futex键
+ * @param userVaddr 旧的用户空间地址指针
+ * @param flags futex操作标志
+ * @param wakeNumber 要唤醒的任务数量
+ * @param count 要重新排队的任务数量
+ * @param newUserVaddr 新的用户空间地址指针
+ * @return 成功返回LOS_OK，失败返回相应错误码
+ */
 INT32 OsFutexRequeue(const UINT32 *userVaddr, UINT32 flags, INT32 wakeNumber, INT32 count, const UINT32 *newUserVaddr)
 {
-    INT32 ret;
-    UINTPTR oldFutexKey;
-    UINTPTR newFutexKey;
-    INT32 oldIndex;
-    INT32 newIndex;
-    FutexHash *oldHashNode = NULL;
-    FutexHash *newHashNode = NULL;
-    FutexNode *oldHeadNode = NULL;
-    BOOL wakeAny = FALSE;
+    INT32 ret; // 返回值
+    UINTPTR oldFutexKey; // 旧的Futex键值
+    UINTPTR newFutexKey; // 新的Futex键值
+    INT32 oldIndex; // 旧的哈希索引
+    INT32 newIndex; // 新的哈希索引
+    FutexHash *oldHashNode = NULL; // 旧的哈希表节点指针
+    FutexHash *newHashNode = NULL; // 新的哈希表节点指针
+    FutexNode *oldHeadNode = NULL; // 旧的头节点指针
+    BOOL wakeAny = FALSE; // 是否有任务被唤醒的标志
 
+    // 检查重新排队参数
     if (OsFutexRequeueParamCheck(userVaddr, flags, newUserVaddr)) {
-        return LOS_EINVAL;
+        return LOS_EINVAL; // 参数错误，返回错误码
     }
 
-    oldFutexKey = OsFutexFlagsToKey(userVaddr, flags);//先拿key
-    newFutexKey = OsFutexFlagsToKey(newUserVaddr, flags);
-    oldIndex = OsFutexKeyToIndex(oldFutexKey, flags);//再拿所在哈希桶位置,共有80个哈希桶
-    newIndex = OsFutexKeyToIndex(newFutexKey, flags);
+    oldFutexKey = OsFutexFlagsToKey(userVaddr, flags); // 生成旧的futex键
+    newFutexKey = OsFutexFlagsToKey(newUserVaddr, flags); // 生成新的futex键
+    oldIndex = OsFutexKeyToIndex(oldFutexKey, flags); // 计算旧的哈希索引
+    newIndex = OsFutexKeyToIndex(newFutexKey, flags); // 计算新的哈希索引
 
-    oldHashNode = &g_futexHash[oldIndex];//拿到对应哈希桶实体
-    if (OsFutexLock(&oldHashNode->listLock)) {
-        return LOS_EINVAL;
+    oldHashNode = &g_futexHash[oldIndex]; // 获取旧的哈希表节点
+    if (OsFutexLock(&oldHashNode->listLock)) { // 获取旧哈希表列表锁
+        return LOS_EINVAL; // 加锁失败，返回错误
     }
 
+    // 移除旧键并获取头节点
     oldHeadNode = OsFutexRequeueRemoveOldKeyAndGetHead(oldFutexKey, flags, wakeNumber, newFutexKey, count, &wakeAny);
-    if (oldHeadNode == NULL) {
-        (VOID)OsFutexUnlock(&oldHashNode->listLock);
-        if (wakeAny == TRUE) {
+    if (oldHeadNode == NULL) { // 如果头节点为空
+        (VOID)OsFutexUnlock(&oldHashNode->listLock); // 释放旧哈希表列表锁
+        if (wakeAny == TRUE) { // 如果有任务被唤醒
             ret = LOS_OK;
-            goto EXIT;
+            goto EXIT; // 跳转到出口
         }
-        return LOS_EBADF;
+        return LOS_EBADF; // 返回错误
     }
 
-    newHashNode = &g_futexHash[newIndex];
-    if (oldIndex != newIndex) {
-        if (OsFutexUnlock(&oldHashNode->listLock)) {
-            return LOS_EINVAL;
+    newHashNode = &g_futexHash[newIndex]; // 获取新的哈希表节点
+    if (oldIndex != newIndex) { // 如果新旧索引不同
+        if (OsFutexUnlock(&oldHashNode->listLock)) { // 释放旧哈希表列表锁
+            return LOS_EINVAL; // 解锁失败，返回错误
         }
 
-        if (OsFutexLock(&newHashNode->listLock)) {
-            return LOS_EINVAL;
+        if (OsFutexLock(&newHashNode->listLock)) { // 获取新哈希表列表锁
+            return LOS_EINVAL; // 加锁失败，返回错误
         }
     }
 
+    // 将任务插入新键
     ret = OsFutexRequeueInsertNewKey(newFutexKey, newIndex, oldHeadNode);
 
-    if (OsFutexUnlock(&newHashNode->listLock)) {
-        return LOS_EINVAL;
+    if (OsFutexUnlock(&newHashNode->listLock)) { // 释放新哈希表列表锁
+        return LOS_EINVAL; // 解锁失败，返回错误
     }
 
 EXIT:
-    if (wakeAny == TRUE) {
-        LOS_MpSchedule(OS_MP_CPU_ALL);
-        LOS_Schedule();
+    if (wakeAny == TRUE) { // 如果有任务被唤醒
+        LOS_MpSchedule(OS_MP_CPU_ALL); // 多处理器调度
+        LOS_Schedule(); // 触发调度
     }
 
-    return ret;
+    return ret; // 返回结果
 }
 #endif
-

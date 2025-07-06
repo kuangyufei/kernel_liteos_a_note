@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -41,807 +41,987 @@
 #include "los_atomic.h"
 
 #ifdef LOSCFG_KERNEL_VM
-
+/**
+ * @brief 发送信号给当前进程（未实现）
+ * @details 该函数用于向当前进程发送指定信号，但当前版本未支持此功能
+ * @param sig 要发送的信号编号
+ * @return 始终返回-1表示不支持
+ */
 int raise(int sig)
 {
-    (VOID)sig;
-    PRINT_ERR("%s NOT SUPPORT\n", __FUNCTION__);
-    errno = ENOSYS;
-    return -1;
+    (VOID)sig;  // 未使用的参数，避免编译警告
+    PRINT_ERR("%s NOT SUPPORT\n", __FUNCTION__);  // 打印不支持的错误信息
+    errno = ENOSYS;  // 设置错误号为功能未实现
+    return -1;  // 返回-1表示失败
 }
 
-#define GETUNMASKSET(procmask, pendFlag) ((~(procmask)) & (sigset_t)(pendFlag))
-#define UINT64_BIT_SIZE 64
+#define GETUNMASKSET(procmask, pendFlag) ((~(procmask)) & (sigset_t)(pendFlag))  // 计算未屏蔽的待处理信号集
+#define UINT64_BIT_SIZE 64  // 64位无符号整数的位数
 
 /**
- * @brief 判定信号signo是否存在信号集中。如果信号集里已有该信号则返回1，否则返回0。如果有错误则返回-1
- * @param set 
- * @param signo 
- * @return int 
+ * @brief 检查信号是否在信号集中
+ * @details 判断指定的信号是否存在于给定的信号集中
+ * @param set 指向信号集的指针
+ * @param signo 要检查的信号编号
+ * @return 1表示信号在集中，0表示不在，LOS_NOK表示信号无效
  */
 int OsSigIsMember(const sigset_t *set, int signo)
 {
-    int ret = LOS_NOK;
-    /* In musl, sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */ 
-	//在musl中，sig No bits 00000100表示sig No 3，但是在SIGNO2SET中 1<<3 = 00001000,因此signo需要减1
-    signo -= 1;
+    int ret = LOS_NOK;  // 初始化返回值为失败
+    /* In musl, sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */
+    signo -= 1;  // 调整信号编号以匹配musl库的位表示
     /* Verify the signal */
-    if (GOOD_SIGNO(signo)) {//有效信号判断
+    if (GOOD_SIGNO(signo)) {  // 检查信号编号是否有效
         /* Check if the signal is in the set */
-        ret = ((*set & SIGNO2SET((unsigned int)signo)) != 0);//检查信号是否还在集合中
+        ret = ((*set & SIGNO2SET((unsigned int)signo)) != 0);  // 检查信号对应的位是否被设置
     }
 
-    return ret;
+    return ret;  // 返回检查结果
 }
 
+/**
+ * @brief 将临时信号信息移动到未阻塞信息
+ * @details 从临时信号信息列表中查找指定信号并移动到未阻塞信号信息结构
+ * @param sigcb 指向信号控制块的指针
+ * @param signo 要查找的信号编号
+ */
 STATIC VOID OsMoveTmpInfoToUnbInfo(sig_cb *sigcb, INT32 signo)
 {
-    SigInfoListNode *tmpInfoNode = sigcb->tmpInfoListHead;
-    SigInfoListNode **prevHook = &sigcb->tmpInfoListHead;
-    while (tmpInfoNode != NULL) {
-        if (tmpInfoNode->info.si_signo == signo) {
+    SigInfoListNode *tmpInfoNode = sigcb->tmpInfoListHead;  // 临时信号信息列表头指针
+    SigInfoListNode **prevHook = &sigcb->tmpInfoListHead;  // 前一个节点的钩子指针
+    while (tmpInfoNode != NULL) {  // 遍历临时信号信息列表
+        if (tmpInfoNode->info.si_signo == signo) {  // 找到匹配的信号
             /* copy tmpinfo to unbinfo. */
-            (VOID)memcpy_s(&sigcb->sigunbinfo, sizeof(siginfo_t), &tmpInfoNode->info, sizeof(siginfo_t));
+            (VOID)memcpy_s(&sigcb->sigunbinfo, sizeof(siginfo_t), &tmpInfoNode->info, sizeof(siginfo_t));  // 复制信号信息
             /* delete tmpinfo from tmpList. */
-            *prevHook = tmpInfoNode->next;
-            (VOID)LOS_MemFree(m_aucSysMem0, tmpInfoNode);
-            break;
+            *prevHook = tmpInfoNode->next;  // 从列表中移除节点
+            (VOID)LOS_MemFree(m_aucSysMem0, tmpInfoNode);  // 释放节点内存
+            break;  // 跳出循环
         }
-        prevHook = &tmpInfoNode->next;
-        tmpInfoNode = tmpInfoNode->next;
-    }
-}
-
-STATIC INT32 OsAddSigInfoToTmpList(sig_cb *sigcb, siginfo_t *info)
-{
-    /* try to find the old siginfo */
-    SigInfoListNode *tmp = sigcb->tmpInfoListHead;
-    while (tmp != NULL) {
-        if (tmp->info.si_signo == info->si_signo) {
-            /* found it, break. */
-            break;
-        }
-        tmp = tmp->next;
-    }
-
-    if (tmp == NULL) {
-        /* none, alloc new one */
-        tmp = (SigInfoListNode *)LOS_MemAlloc(m_aucSysMem0, sizeof(SigInfoListNode));
-        if (tmp == NULL) {
-            return LOS_NOK;
-        }
-        tmp->next = sigcb->tmpInfoListHead;
-        sigcb->tmpInfoListHead = tmp;
-    }
-
-    (VOID)memcpy_s(&tmp->info, sizeof(siginfo_t), info, sizeof(siginfo_t));
-
-    return LOS_OK;
-}
-
-VOID OsClearSigInfoTmpList(sig_cb *sigcb)
-{
-    while (sigcb->tmpInfoListHead != NULL) {
-        SigInfoListNode *tmpInfoNode = sigcb->tmpInfoListHead;
-        sigcb->tmpInfoListHead = sigcb->tmpInfoListHead->next;
-        (VOID)LOS_MemFree(m_aucSysMem0, tmpInfoNode);
-    }
-}
-STATIC INLINE VOID OsSigWaitTaskWake(LosTaskCB *taskCB, INT32 signo)
-{
-    sig_cb *sigcb = &taskCB->sig;
-
-    if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, signo)) {
-        OsMoveTmpInfoToUnbInfo(sigcb, signo);
-        OsTaskWakeClearPendMask(taskCB);
-        taskCB->ops->wake(taskCB);
-        OsSigEmptySet(&sigcb->sigwaitmask);
-    }
-}
-///< 唤醒被挂起的处于等待指定信号的任务
-STATIC UINT32 OsPendingTaskWake(LosTaskCB *taskCB, INT32 signo)
-{
-    if (!OsTaskIsPending(taskCB) || !OsProcessIsUserMode(OS_PCB_FROM_TCB(taskCB))) {
-        return 0;
-    }
-
-    if ((signo != SIGKILL) && (taskCB->waitFlag != OS_TASK_WAIT_SIGNAL)) { // @note_thinking 这个判断会不会有问题 ?
-        return 0;
-    }
-
-    switch (taskCB->waitFlag) {
-        case OS_TASK_WAIT_PROCESS:
-        case OS_TASK_WAIT_GID:
-        case OS_TASK_WAIT_ANYPROCESS:
-            OsWaitWakeTask(taskCB, OS_INVALID_VALUE);
-            break;
-        case OS_TASK_WAIT_JOIN:
-            OsTaskWakeClearPendMask(taskCB);
-            taskCB->ops->wake(taskCB);
-            break;
-        case OS_TASK_WAIT_SIGNAL://等待普通信号
-            OsSigWaitTaskWake(taskCB, signo);
-            break;
-        case OS_TASK_WAIT_LITEIPC://等待liteipc信号
-            OsTaskWakeClearPendMask(taskCB);//重置任务的等待信息
-            taskCB->ops->wake(taskCB);
-            break;
-        case OS_TASK_WAIT_FUTEX://等待快锁信号
-            OsFutexNodeDeleteFromFutexHash(&taskCB->futex, TRUE, NULL, NULL);//从哈希桶中删除快锁
-            OsTaskWakeClearPendMask(taskCB);//重置任务的等待信息
-            taskCB->ops->wake(taskCB);
-            break;
-        default:
-            break;
-    }
-
-    return 0;
-}
-///给任务(线程)发送一个信号
-int OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info)
-{
-    bool masked = FALSE;
-    sig_cb *sigcb = &stcb->sig;
-
-    OS_RETURN_IF_NULL(sigcb);
-    /* If signo is 0, not send signal, just check process or pthread exist */
-    if (info->si_signo == 0) {//如果信号为0,则不发送信号,只是作为检查进程和线程是否还存在.
-        return 0;
-    }
-    masked = (bool)OsSigIsMember(&sigcb->sigprocmask, info->si_signo);//@note_thinking 这里还有 masked= -1的情况要处理!!!
-    if (masked) {//如果信号被屏蔽了,要看等待信号集,sigwaitmask
-        /* If signal is in wait list and mask list, need unblock it */ //如果信号在等待列表和掩码列表中，需要解除阻止
-        if (LOS_ListEmpty(&sigcb->waitList)  ||
-           (!LOS_ListEmpty(&sigcb->waitList) && !OsSigIsMember(&sigcb->sigwaitmask, info->si_signo))) {
-            OsSigAddSet(&sigcb->sigPendFlag, info->si_signo);//将信号加入挂起/待办集
-        }
-    } else {//信号没有被屏蔽的处理
-        /* unmasked signal actions */
-        OsSigAddSet(&sigcb->sigFlag, info->si_signo);//不屏蔽的信号集
-    }
-
-    if (OsAddSigInfoToTmpList(sigcb, info) == LOS_NOK) {
-        return -ENOMEM;
-    }
-
-    return OsPendingTaskWake(stcb, info->si_signo);
-}
-
-void OsSigMaskSwitch(LosTaskCB * const rtcb, sigset_t set)
-{
-    sigset_t unmaskset;
-
-    rtcb->sig.sigprocmask = set;
-    unmaskset = GETUNMASKSET(rtcb->sig.sigprocmask, rtcb->sig.sigPendFlag);//过滤出没有被屏蔽的信号集
-    if (unmaskset != NULL_SIGNAL_SET) {
-        /* pendlist do */
-        rtcb->sig.sigFlag |= unmaskset;	//加入不屏蔽信号集
-        rtcb->sig.sigPendFlag ^= unmaskset;//从挂起/待办集中去掉unmaskset
+        prevHook = &tmpInfoNode->next;  // 更新前一个节点钩子
+        tmpInfoNode = tmpInfoNode->next;  // 移动到下一个节点
     }
 }
 
 /**
- * @brief 
- * @verbatim
-    向信号集设置信号屏蔽的方法
-        SIG_BLOCK：将set指向信号集中的信号，添加到进程阻塞信号集；
-        SIG_UNBLOCK：将set指向信号集中的信号，从进程阻塞信号集删除；
-        SIG_SETMASK：将set指向信号集中的信号，设置成进程阻塞信号集；
- * @endverbatim
+ * @brief 添加信号信息到临时列表
+ * @details 将信号信息添加到临时信号信息列表，如果信号已存在则更新
+ * @param sigcb 指向信号控制块的指针
+ * @param info 指向要添加的信号信息的指针
+ * @return LOS_OK表示成功，LOS_NOK表示内存分配失败
+ */
+STATIC INT32 OsAddSigInfoToTmpList(sig_cb *sigcb, siginfo_t *info)
+{
+    /* try to find the old siginfo */
+    SigInfoListNode *tmp = sigcb->tmpInfoListHead;  // 临时信号信息列表头指针
+    while (tmp != NULL) {  // 遍历列表查找已有信号
+        if (tmp->info.si_signo == info->si_signo) {  // 找到相同信号
+            /* found it, break. */
+            break;  // 跳出循环
+        }
+        tmp = tmp->next;  // 移动到下一个节点
+    }
+
+    if (tmp == NULL) {  // 如果未找到信号
+        /* none, alloc new one */
+        tmp = (SigInfoListNode *)LOS_MemAlloc(m_aucSysMem0, sizeof(SigInfoListNode));  // 分配新节点内存
+        if (tmp == NULL) {  // 内存分配失败
+            return LOS_NOK;  // 返回失败
+        }
+        tmp->next = sigcb->tmpInfoListHead;  // 新节点指向当前列表头
+        sigcb->tmpInfoListHead = tmp;  // 更新列表头为新节点
+    }
+
+    (VOID)memcpy_s(&tmp->info, sizeof(siginfo_t), info, sizeof(siginfo_t));  // 复制信号信息到节点
+
+    return LOS_OK;  // 返回成功
+}
+
+/**
+ * @brief 清除临时信号信息列表
+ * @details 释放临时信号信息列表中的所有节点内存
+ * @param sigcb 指向信号控制块的指针
+ */
+VOID OsClearSigInfoTmpList(sig_cb *sigcb)
+{
+    while (sigcb->tmpInfoListHead != NULL) {  // 遍历临时信号信息列表
+        SigInfoListNode *tmpInfoNode = sigcb->tmpInfoListHead;  // 当前节点指针
+        sigcb->tmpInfoListHead = sigcb->tmpInfoListHead->next;  // 更新列表头
+        (VOID)LOS_MemFree(m_aucSysMem0, tmpInfoNode);  // 释放当前节点内存
+    }
+}
+
+/**
+ * @brief 唤醒等待信号的任务
+ * @details 如果任务正在等待指定信号，则唤醒任务并清除等待状态
+ * @param taskCB 指向任务控制块的指针
+ * @param signo 要处理的信号编号
+ */
+STATIC INLINE VOID OsSigWaitTaskWake(LosTaskCB *taskCB, INT32 signo)
+{
+    sig_cb *sigcb = &taskCB->sig;  // 获取任务的信号控制块
+
+    if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, signo)) {  // 如果任务正在等待信号且信号在等待集中
+        OsMoveTmpInfoToUnbInfo(sigcb, signo);  // 移动信号信息到未阻塞信息
+        OsTaskWakeClearPendMask(taskCB);  // 清除任务的等待掩码并唤醒
+        taskCB->ops->wake(taskCB);  // 调用唤醒操作
+        OsSigEmptySet(&sigcb->sigwaitmask);  // 清空信号等待集
+    }
+}
+
+/**
+ * @brief 唤醒等待中的任务
+ * @details 根据信号类型和任务等待状态唤醒相应的等待任务
+ * @param taskCB 指向任务控制块的指针
+ * @param signo 要处理的信号编号
+ * @return 0表示成功
+ */
+STATIC UINT32 OsPendingTaskWake(LosTaskCB *taskCB, INT32 signo)
+{
+    if (!OsTaskIsPending(taskCB) || !OsProcessIsUserMode(OS_PCB_FROM_TCB(taskCB))) {  // 如果任务未在等待或不是用户模式进程
+        return 0;  // 返回0
+    }
+
+    if ((signo != SIGKILL) && (taskCB->waitFlag != OS_TASK_WAIT_SIGNAL)) {  // 如果不是SIGKILL信号且任务不是等待信号
+        return 0;  // 返回0
+    }
+
+    switch (taskCB->waitFlag) {  // 根据任务等待标志处理
+        case OS_TASK_WAIT_PROCESS:  // 等待进程
+        case OS_TASK_WAIT_GID:  // 等待组ID
+        case OS_TASK_WAIT_ANYPROCESS:  // 等待任意进程
+            OsWaitWakeTask(taskCB, OS_INVALID_VALUE);  // 唤醒等待任务
+            break;  // 跳出switch
+        case OS_TASK_WAIT_JOIN:  // 等待连接
+            OsTaskWakeClearPendMask(taskCB);  // 清除等待掩码并唤醒
+            taskCB->ops->wake(taskCB);  // 调用唤醒操作
+            break;  // 跳出switch
+        case OS_TASK_WAIT_SIGNAL:  // 等待信号
+            OsSigWaitTaskWake(taskCB, signo);  // 唤醒等待信号的任务
+            break;  // 跳出switch
+        case OS_TASK_WAIT_LITEIPC:  // 等待轻量级IPC
+            OsTaskWakeClearPendMask(taskCB);  // 清除等待掩码并唤醒
+            taskCB->ops->wake(taskCB);  // 调用唤醒操作
+            break;  // 跳出switch
+        case OS_TASK_WAIT_FUTEX:  // 等待Futex
+            OsFutexNodeDeleteFromFutexHash(&taskCB->futex, TRUE, NULL, NULL);  // 从Futex哈希中删除节点
+            OsTaskWakeClearPendMask(taskCB);  // 清除等待掩码并唤醒
+            taskCB->ops->wake(taskCB);  // 调用唤醒操作
+            break;  // 跳出switch
+        default:  // 默认情况
+            break;  // 跳出switch
+    }
+
+    return 0;  // 返回0
+}
+
+/**
+ * @brief 向任务控制块分发信号
+ * @details 处理信号分发逻辑，包括信号屏蔽检查和等待任务唤醒
+ * @param stcb 指向任务控制块的指针
+ * @param info 指向信号信息的指针
+ * @return 0表示成功，-ENOMEM表示内存分配失败
+ */
+int OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info)
+{
+    bool masked = FALSE;  // 信号是否被屏蔽的标志
+    sig_cb *sigcb = &stcb->sig;  // 获取任务的信号控制块
+
+    OS_RETURN_IF_NULL(sigcb);  // 如果信号控制块为空则返回
+    /* If signo is 0, not send signal, just check process or pthread exist */
+    if (info->si_signo == 0) {  // 如果信号编号为0
+        return 0;  // 返回0，不发送信号
+    }
+    masked = (bool)OsSigIsMember(&sigcb->sigprocmask, info->si_signo);  // 检查信号是否被屏蔽
+    if (masked) {  // 如果信号被屏蔽
+        /* If signal is in wait list and mask list, need unblock it */
+        if (LOS_ListEmpty(&sigcb->waitList)  ||  // 如果等待列表为空
+            (!LOS_ListEmpty(&sigcb->waitList) && !OsSigIsMember(&sigcb->sigwaitmask, info->si_signo))) {  // 或等待列表非空但信号不在等待集中
+            OsSigAddSet(&sigcb->sigPendFlag, info->si_signo);  // 将信号添加到待处理标志
+        }
+    } else {  // 如果信号未被屏蔽
+        /* unmasked signal actions */
+        OsSigAddSet(&sigcb->sigFlag, info->si_signo);  // 将信号添加到信号标志
+    }
+
+    if (OsAddSigInfoToTmpList(sigcb, info) == LOS_NOK) {  // 添加信号信息到临时列表
+        return -ENOMEM;  // 如果失败返回内存不足错误
+    }
+
+    return OsPendingTaskWake(stcb, info->si_signo);  // 唤醒等待任务并返回结果
+}
+
+/**
+ * @brief 切换信号掩码
+ * @details 更新任务的信号掩码并处理未屏蔽的待处理信号
+ * @param rtcb 指向当前任务控制块的指针
+ * @param set 新的信号掩码
+ */
+void OsSigMaskSwitch(LosTaskCB * const rtcb, sigset_t set)
+{
+    sigset_t unmaskset;  // 未屏蔽的信号集
+
+    rtcb->sig.sigprocmask = set;  // 更新信号掩码
+    unmaskset = GETUNMASKSET(rtcb->sig.sigprocmask, rtcb->sig.sigPendFlag);  // 计算未屏蔽的待处理信号
+    if (unmaskset != NULL_SIGNAL_SET) {  // 如果存在未屏蔽的待处理信号
+        /* pendlist do */
+        rtcb->sig.sigFlag |= unmaskset;  // 将未屏蔽信号添加到信号标志
+        rtcb->sig.sigPendFlag ^= unmaskset;  // 从未处理标志中清除这些信号
+    }
+}
+
+/**
+ * @brief 设置或获取信号掩码
+ * @details 更改或检查当前进程的信号掩码
+ * @param how 操作类型(SIG_BLOCK, SIG_UNBLOCK, SIG_SETMASK)
+ * @param setl 指向新信号集的指针，NULL表示不更改
+ * @param oldsetl 指向用于存储旧信号集的指针，NULL表示不获取
+ * @return LOS_OK表示成功，-EINVAL表示参数无效
  */
 int OsSigprocMask(int how, const sigset_t_l *setl, sigset_t_l *oldsetl)
 {
-    LosTaskCB *spcb = NULL;
-    int ret = LOS_OK;
-    unsigned int intSave;
-    sigset_t set;
+    LosTaskCB *spcb = NULL;  // 当前任务控制块指针
+    int ret = LOS_OK;  // 返回值
+    unsigned int intSave;  // 中断保存变量
+    sigset_t set;  // 信号集
 
-    SCHEDULER_LOCK(intSave);
-    spcb = OsCurrTaskGet();
-    /* If requested, copy the old mask to user. | 如果需要，请将旧掩码复制给用户*/
-    if (oldsetl != NULL) {
-        *(sigset_t *)oldsetl = spcb->sig.sigprocmask;
+    SCHEDULER_LOCK(intSave);  // 调度器加锁
+    spcb = OsCurrTaskGet();  // 获取当前任务
+    /* If requested, copy the old mask to user. */
+    if (oldsetl != NULL) {  // 如果需要获取旧信号掩码
+        *(sigset_t *)oldsetl = spcb->sig.sigprocmask;  // 复制旧信号掩码
     }
-    /* If requested, modify the current signal mask. | 如有要求，修改当前信号屏蔽*/
-    if (setl != NULL) {
-        set = *(sigset_t *)setl;
+    /* If requested, modify the current signal mask. */
+    if (setl != NULL) {  // 如果需要设置新信号掩码
+        set = *(sigset_t *)setl;  // 获取新信号集
         /* Okay, determine what we are supposed to do */
-        switch (how) {
+        switch (how) {  // 根据操作类型处理
             /* Set the union of the current set and the signal
-             * set pointed to by set as the new sigprocmask.
-             */
-            case SIG_BLOCK:
-                spcb->sig.sigprocmask |= set;//增加信号屏蔽位
-                break;
+             * set pointed to by set as the new sigprocmask. */
+            case SIG_BLOCK:  // 阻塞信号
+                spcb->sig.sigprocmask |= set;  // 当前掩码与新掩码取或
+                break;  // 跳出switch
             /* Set the intersection of the current set and the
-             * signal set pointed to by set as the new sigprocmask.
-             */
-            case SIG_UNBLOCK:
-                spcb->sig.sigprocmask &= ~(set);//解除信号屏蔽位
-                break;
+             * signal set pointed to by set as the new sigprocmask. */
+            case SIG_UNBLOCK:  // 解除阻塞
+                spcb->sig.sigprocmask &= ~(set);  // 当前掩码与新掩码的非取与
+                break;  // 跳出switch
             /* Set the signal set pointed to by set as the new sigprocmask. */
-            case SIG_SETMASK:
-                spcb->sig.sigprocmask = set;//设置一个新的屏蔽掩码
-                break;
-            default:
-                ret = -EINVAL;
-                break;
+            case SIG_SETMASK:  // 设置掩码
+                spcb->sig.sigprocmask = set;  // 直接设置为新掩码
+                break;  // 跳出switch
+            default:  // 无效操作
+                ret = -EINVAL;  // 返回参数无效错误
+                break;  // 跳出switch
         }
         /* If pending mask not in sigmask, need set sigflag. */
-        OsSigMaskSwitch(spcb, spcb->sig.sigprocmask);//更新与屏蔽信号相关的变量
+        OsSigMaskSwitch(spcb, spcb->sig.sigprocmask);  // 切换信号掩码
     }
-    SCHEDULER_UNLOCK(intSave);
+    SCHEDULER_UNLOCK(intSave);  // 调度器解锁
 
-    return ret;
+    return ret;  // 返回结果
 }
-///让进程的每一个task执行参数函数
+
+/**
+ * @brief 遍历进程的所有子任务
+ * @details 对进程的每个子任务调用指定的处理函数
+ * @param spcb 指向进程控制块的指针
+ * @param handler 处理函数指针
+ * @param arg 传递给处理函数的参数
+ * @return LOS_OK表示成功，其他值表示失败
+ */
 int OsSigProcessForeachChild(LosProcessCB *spcb, ForEachTaskCB handler, void *arg)
 {
-    int ret;
+    int ret;  // 返回值
 
     /* Visit the main thread last (if present) */
-    LosTaskCB *taskCB = NULL;//遍历进程的 threadList 链表,里面存放的都是task节点
-    LOS_DL_LIST_FOR_EACH_ENTRY(taskCB, &(spcb->threadSiblingList), LosTaskCB, threadList) {//遍历进程的任务列表
-        ret = handler(taskCB, arg);//回调参数函数
-        OS_RETURN_IF(ret != 0, ret);//这个宏的意思就是只有ret = 0时,啥也不处理.其余就返回 ret
+    LosTaskCB *taskCB = NULL;  // 任务控制块指针
+    LOS_DL_LIST_FOR_EACH_ENTRY(taskCB, &(spcb->threadSiblingList), LosTaskCB, threadList) {  // 遍历线程列表
+        ret = handler(taskCB, arg);  // 调用处理函数
+        OS_RETURN_IF(ret != 0, ret);  // 如果处理函数返回非0则返回
     }
-    return LOS_OK;
+    return LOS_OK;  // 返回成功
 }
-///信号处理函数,这里就是上面的 handler =  SigProcessSignalHandler,见于 OsSigProcessSend
+
+/**
+ * @brief 进程信号处理函数
+ * @details 处理发送给进程的信号，唤醒等待信号的任务
+ * @param tcb 指向任务控制块的指针
+ * @param arg 指向ProcessSignalInfo结构的指针
+ * @return 0表示继续遍历，其他值表示停止遍历
+ */
 static int SigProcessSignalHandler(LosTaskCB *tcb, void *arg)
 {
-    struct ProcessSignalInfo *info = (struct ProcessSignalInfo *)arg;//先把参数解出来
-    int ret;
-    int isMember;
+    struct ProcessSignalInfo *info = (struct ProcessSignalInfo *)arg;  // 信号信息结构指针
+    int ret;  // 返回值
+    int isMember;  // 是否为成员的标志
 
-    if (tcb == NULL) {
-        return 0;
+    if (tcb == NULL) {  // 如果任务控制块为空
+        return 0;  // 返回0
     }
 
-    /* If the default tcb is not setted, then set this one as default. */
-    if (!info->defaultTcb) {//如果没有默认发送方的任务,即默认参数任务.
-        info->defaultTcb = tcb;
+    /* If the default tcb is not set, then set this one as default. */
+    if (!info->defaultTcb) {  // 如果默认任务控制块未设置
+        info->defaultTcb = tcb;  // 设置为当前任务
     }
 
-    isMember = OsSigIsMember(&tcb->sig.sigwaitmask, info->sigInfo->si_signo);//任务是否在等待这个信号
-    if (isMember && (!info->awakenedTcb)) {//是在等待,并尚未向该任务时发送信号时
+    isMember = OsSigIsMember(&tcb->sig.sigwaitmask, info->sigInfo->si_signo);  // 检查信号是否在等待集中
+    if (isMember && (!info->awakenedTcb)) {  // 如果信号在等待集中且未唤醒任务
         /* This means the task is waiting for this signal. Stop looking for it and use this tcb.
          * The requirement is: if more than one task in this task group is waiting for the signal,
-         * then only one indeterminate task in the group will receive the signal.
-         */
-        ret = OsTcbDispatch(tcb, info->sigInfo);//发送信号,注意这是给其他任务发送信号,tcb不是当前任务
-        OS_RETURN_IF(ret < 0, ret);//这种写法很有意思
+         * then only one indeterminate task in the group will receive the signal. */
+        ret = OsTcbDispatch(tcb, info->sigInfo);  // 分发信号到任务
+        OS_RETURN_IF(ret < 0, ret);  // 如果失败返回错误
 
         /* set this tcb as awakenedTcb */
-        info->awakenedTcb = tcb;
-        OS_RETURN_IF(info->receivedTcb != NULL, SIG_STOP_VISIT); /* Stop search */
+        info->awakenedTcb = tcb;  // 设置唤醒的任务
+        OS_RETURN_IF(info->receivedTcb != NULL, SIG_STOP_VISIT);  // 如果已接收任务则停止访问
     }
     /* Is this signal unblocked on this thread? */
-    isMember = OsSigIsMember(&tcb->sig.sigprocmask, info->sigInfo->si_signo);//任务是否屏蔽了这个信号
-    if ((!isMember) && (!info->receivedTcb) && (tcb != info->awakenedTcb)) {//没有屏蔽,有唤醒任务没有接收任务.
-        /* if unblockedTcb of this signal is not setted, then set it. */
-        if (!info->unblockedTcb) {
-            info->unblockedTcb = tcb;
+    isMember = OsSigIsMember(&tcb->sig.sigprocmask, info->sigInfo->si_signo);  // 检查信号是否未被屏蔽
+    if ((!isMember) && (!info->receivedTcb) && (tcb != info->awakenedTcb)) {  // 如果信号未被屏蔽且未接收任务且不是已唤醒任务
+        /* if unblockedTcb of this signal is not set, then set it. */
+        if (!info->unblockedTcb) {  // 如果未设置未屏蔽任务
+            info->unblockedTcb = tcb;  // 设置为当前任务
         }
 
-        ret = OsTcbDispatch(tcb, info->sigInfo);//向任务发送信号
-        OS_RETURN_IF(ret < 0, ret);
+        ret = OsTcbDispatch(tcb, info->sigInfo);  // 分发信号到任务
+        OS_RETURN_IF(ret < 0, ret);  // 如果失败返回错误
         /* set this tcb as receivedTcb */
-        info->receivedTcb = tcb;//设置这个任务为接收任务
-        OS_RETURN_IF(info->awakenedTcb != NULL, SIG_STOP_VISIT); /* Stop search */
+        info->receivedTcb = tcb;  // 设置接收任务
+        OS_RETURN_IF(info->awakenedTcb != NULL, SIG_STOP_VISIT);  // 如果已唤醒任务则停止访问
     }
-    return 0; /* Keep searching */
+    return 0;  /* Keep searching */  // 返回0继续搜索
 }
-///进程收到 SIGKILL 信号后,通知任务tcb处理.
+
+/**
+ * @brief SIGKILL信号处理函数
+ * @details 处理SIGKILL信号，唤醒相关等待任务
+ * @param tcb 指向任务控制块的指针
+ * @param arg 指向ProcessSignalInfo结构的指针
+ * @return 0表示成功
+ */
 static int SigProcessKillSigHandler(LosTaskCB *tcb, void *arg)
 {
-    struct ProcessSignalInfo *info = (struct ProcessSignalInfo *)arg;//转参
+    struct ProcessSignalInfo *info = (struct ProcessSignalInfo *)arg;  // 信号信息结构指针
 
-    return OsPendingTaskWake(tcb, info->sigInfo->si_signo);
+    return OsPendingTaskWake(tcb, info->sigInfo->si_signo);  // 唤醒等待任务并返回结果
 }
 
-//处理信号发送
+/**
+ * @brief 加载任务控制块处理信号
+ * @details 选择合适的任务控制块并分发信号
+ * @param info 指向ProcessSignalInfo结构的指针
+ * @param sigInfo 指向信号信息的指针
+ */
 static void SigProcessLoadTcb(struct ProcessSignalInfo *info, siginfo_t *sigInfo)
 {
-    LosTaskCB *tcb = NULL;
+    LosTaskCB *tcb = NULL;  // 任务控制块指针
 
-    if (info->awakenedTcb == NULL && info->receivedTcb == NULL) {//信号即没有指定接收task 也没有指定被唤醒task
-        if (info->unblockedTcb) {//如果进程信号信息体中有阻塞task
-            tcb = info->unblockedTcb;//
-        } else if (info->defaultTcb) {//如果有默认的发送方task
-            tcb = info->defaultTcb;
-        } else {
-            return;
+    if (info->awakenedTcb == NULL && info->receivedTcb == NULL) {  // 如果未唤醒任务且未接收任务
+        if (info->unblockedTcb) {  // 如果存在未屏蔽任务
+            tcb = info->unblockedTcb;  // 使用未屏蔽任务
+        } else if (info->defaultTcb) {  // 如果存在默认任务
+            tcb = info->defaultTcb;  // 使用默认任务
+        } else {  // 否则
+            return;  // 返回
         }
         /* Deliver the signal to the selected task */
-        (void)OsTcbDispatch(tcb, sigInfo);//向所选任务发送信号
+        (void)OsTcbDispatch(tcb, sigInfo);  // 分发信号到选中的任务
     }
 }
-///给参数进程发送参数信号
+
+/**
+ * @brief 向进程发送信号
+ * @details 将信号发送给指定进程的适当任务
+ * @param spcb 指向进程控制块的指针
+ * @param sigInfo 指向信号信息的指针
+ * @return 0表示成功，-EFAULT表示参数无效
+ */
 int OsSigProcessSend(LosProcessCB *spcb, siginfo_t *sigInfo)
 {
-    int ret;
-    struct ProcessSignalInfo info = {
-        .sigInfo = sigInfo, //信号内容
-        .defaultTcb = NULL, //以下四个值将在OsSigProcessForeachChild中根据条件完善
+    int ret;  // 返回值
+    struct ProcessSignalInfo info = {  // 进程信号信息结构初始化
+        .sigInfo = sigInfo,
+        .defaultTcb = NULL,
         .unblockedTcb = NULL,
         .awakenedTcb = NULL,
         .receivedTcb = NULL
     };
-	//总之是要从进程中找个至少一个任务来接受这个信号,优先级
-	//awakenedTcb > receivedTcb > unblockedTcb > defaultTcb
-    if (info.sigInfo == NULL){
-        return -EFAULT;
+
+    if (info.sigInfo == NULL) {  // 如果信号信息为空
+        return -EFAULT;  // 返回参数错误
     }
-    /* visit all taskcb and dispatch signal */ //访问所有任务和分发信号
-    if (info.sigInfo->si_signo == SIGKILL) {//需要干掉进程时 SIGKILL = 9， #linux kill 9 14
-        OsSigAddSet(&spcb->sigShare, info.sigInfo->si_signo);//信号集中增加信号
-        (void)OsSigProcessForeachChild(spcb, SigProcessKillSigHandler, &info);
-        return 0;
-    } else {
-        ret = OsSigProcessForeachChild(spcb, SigProcessSignalHandler, &info);//进程通知所有task处理信号
+
+    /* visit all taskcb and dispatch signal */
+    if (info.sigInfo->si_signo == SIGKILL) {  // 如果是SIGKILL信号
+        OsSigAddSet(&spcb->sigShare, info.sigInfo->si_signo);  // 添加到共享信号集
+        (void)OsSigProcessForeachChild(spcb, SigProcessKillSigHandler, &info);  // 遍历子任务处理
+        return 0;  // 返回成功
+    } else {  // 其他信号
+        ret = OsSigProcessForeachChild(spcb, SigProcessSignalHandler, &info);  // 遍历子任务处理
     }
-    if (ret < 0) {
-        return ret;
+    if (ret < 0) {  // 如果处理失败
+        return ret;  // 返回错误
     }
-    SigProcessLoadTcb(&info, sigInfo);//确保能给一个任务发送信号
-    return 0;
+    SigProcessLoadTcb(&info, sigInfo);  // 加载任务控制块处理信号
+    return 0;  // 返回成功
 }
-///信号集全部清0
+
+/**
+ * @brief 清空信号集
+ * @details 将指定的信号集初始化为空集
+ * @param set 指向信号集的指针
+ * @return 0表示成功
+ */
 int OsSigEmptySet(sigset_t *set)
 {
-    *set = NULL_SIGNAL_SET;
-    return 0;
+    *set = NULL_SIGNAL_SET;  // 将信号集设置为空
+    return 0;  // 返回成功
 }
 
-/* Privilege process can't send to kernel and privilege process */ //内核进程组和用户特权进程组无法发送
+/* Privilege process can't send to kernel and privilege process */
+/**
+ * @brief 检查信号发送权限
+ * @details 验证是否允许向指定进程发送信号
+ * @param spcb 指向进程控制块的指针
+ * @return 0表示有权限，-EPERM表示无权限
+ */
 static int OsSignalPermissionToCheck(const LosProcessCB *spcb)
 {
-    UINTPTR gid = (UINTPTR)OS_GET_PGROUP_LEADER(spcb->pgroup);
-
-    if (gid == OS_KERNEL_PROCESS_GROUP) {//内核进程组
-        return -EPERM;
-    } else if (gid == OS_USER_PRIVILEGE_PROCESS_GROUP) {//用户特权进程组
-        return -EPERM;
+    UINTPTR gid = (UINTPTR)OS_GET_PGROUP_LEADER(spcb->pgroup);  // 获取进程组领导ID
+    if (gid == OS_KERNEL_PROCESS_GROUP) {  // 如果是内核进程组
+        return -EPERM;  // 返回无权限
+    } else if (gid == OS_USER_PRIVILEGE_PROCESS_GROUP) {  // 如果是用户特权进程组
+        return -EPERM;  // 返回无权限
     }
 
-    return 0;
+    return 0;  // 返回有权限
 }
-///信号分发,发送信号权限/进程组过滤.
+
+/**
+ * @brief 发送信号权限检查
+ * @details 综合检查发送信号的各种权限条件
+ * @param spcb 指向进程控制块的指针
+ * @param permission 权限类型
+ * @return LOS_OK表示有权限，其他值表示无权限
+ */
 STATIC int SendSigPermissionCheck(LosProcessCB *spcb, int permission)
 {
-    if (spcb == NULL) {
-        return -ESRCH;
+    if (spcb == NULL) {  // 如果进程控制块为空
+        return -ESRCH;  // 返回进程不存在
     }
 
-    if (OsProcessIsUnused(spcb)) {//进程是否还在使用,不一定是当前进程但必须是个有效进程
-        return -ESRCH;
+    if (OsProcessIsUnused(spcb)) {  // 如果进程未使用
+        return -ESRCH;  // 返回进程不存在
     }
 
-#ifdef LOSCFG_SECURITY_CAPABILITY	//启用能力安全模式
-    LosProcessCB *current = OsCurrProcessGet();//获取当前进程,检查当前进程是否有发送信号的权限.
-    /* Kernel process always has kill permission and user process should check permission *///内核进程总是有kill权限，用户进程需要检查权限
-    if (OsProcessIsUserMode(current) && !(current->processStatus & OS_PROCESS_FLAG_EXIT)) {//用户进程检查能力范围
-        if ((current != spcb) && (!IsCapPermit(CAP_KILL)) && (current->user->userID != spcb->user->userID)) {
-            return -EPERM;
+#ifdef LOSCFG_SECURITY_CAPABILITY
+    LosProcessCB *current = OsCurrProcessGet();  // 获取当前进程
+    /* Kernel process always has kill permission and user process should check permission */
+    if (OsProcessIsUserMode(current) && !(current->processStatus & OS_PROCESS_FLAG_EXIT)) {  // 如果是用户模式且未退出
+        if ((current != spcb) && (!IsCapPermit(CAP_KILL)) && (current->user->userID != spcb->user->userID)) {  // 权限检查
+            return -EPERM;  // 返回无权限
         }
     }
 #endif
-    if ((permission == OS_USER_KILL_PERMISSION) && (OsSignalPermissionToCheck(spcb) < 0)) {
-        return -EPERM;
+    if ((permission == OS_USER_KILL_PERMISSION) && (OsSignalPermissionToCheck(spcb) < 0)) {  // 检查用户杀死权限
+        return -EPERM;  // 返回无权限
     }
-    return LOS_OK;
-}
-
-int OsSendSigToProcess(LosProcessCB *spcb, int sig, int permission)
-{
-    siginfo_t info;
-    int ret = SendSigPermissionCheck(spcb, permission);
-    if (ret != LOS_OK) {
-        return ret;
-    }
-
-    /* If the process you want to kill had been inactive, but still exist. should return LOS_OK */
-    if (OsProcessIsInactive(spcb)) {
-        return LOS_OK;
-    }
-
-    if (!GOOD_SIGNO(sig)) {
-        return -EINVAL;
-    }
-
-    info.si_signo = sig;
-    info.si_code = SI_USER;
-    info.si_value.sival_ptr = NULL;
-
-    return OsSigProcessSend(spcb, &info);//给参数进程发送信号
-}
-
-int OsDispatch(pid_t pid, siginfo_t *info, int permission)
-{
-    if (OsProcessIDUserCheckInvalid(pid) || pid < 0) {
-        return -ESRCH;
-    }
-
-    LosProcessCB *spcb = OS_PCB_FROM_PID(pid);
-    int ret = SendSigPermissionCheck(spcb, permission);
-    if (ret != LOS_OK) {
-        return ret;
-    }
-
-    /* If the process you want to kill had been inactive, but still exist. should return LOS_OK */
-    if (OsProcessIsInactive(spcb)) {
-        return LOS_OK;
-    }
-
-    return OsSigProcessSend(spcb, info);
+    return LOS_OK;  // 返回有权限
 }
 /**
- * @brief 
- * @verbatim
-    用于向进程或进程组发送信号
-    shell命令 kill 14 7（kill -14 7效果相同）
-    发送信号14（SIGALRM默认行为为进程终止）给7号进程
- * @endverbatim
+ * @brief 向进程发送信号
+ * @details 检查权限后向指定进程发送信号，支持处理非活动进程
+ * @param spcb 进程控制块指针
+ * @param sig 信号编号
+ * @param permission 权限标志
+ * @return 成功返回LOS_OK，失败返回错误码
+ */
+int OsSendSigToProcess(LosProcessCB *spcb, int sig, int permission)
+{
+    siginfo_t info;  // 信号信息结构体
+    int ret = SendSigPermissionCheck(spcb, permission);  // 检查发送权限
+    if (ret != LOS_OK) {  // 权限检查失败
+        return ret;  // 返回错误码
+    }
+
+    /* If the process you want to kill had been inactive, but still exist. should return LOS_OK */
+    if (OsProcessIsInactive(spcb)) {  // 进程已非活动但存在
+        return LOS_OK;  // 返回成功
+    }
+
+    if (!GOOD_SIGNO(sig)) {  // 信号编号无效
+        return -EINVAL;  // 返回参数错误
+    }
+
+    info.si_signo = sig;  // 设置信号编号
+    info.si_code = SI_USER;  // 设置信号来源为用户
+    info.si_value.sival_ptr = NULL;  // 信号附加数据为空
+
+    return OsSigProcessSend(spcb, &info);  // 发送信号并返回结果
+}
+
+/**
+ * @brief 向指定进程分发信号
+ * @details 根据进程ID查找进程并发送信号，支持权限检查
+ * @param pid 进程ID
+ * @param info 信号信息指针
+ * @param permission 权限标志
+ * @return 成功返回LOS_OK，失败返回错误码
+ */
+int OsDispatch(pid_t pid, siginfo_t *info, int permission)
+{
+    if (OsProcessIDUserCheckInvalid(pid) || pid < 0) {  // 进程ID无效或为负
+        return -ESRCH;  // 返回进程不存在
+    }
+
+    LosProcessCB *spcb = OS_PCB_FROM_PID(pid);  // 通过PID获取进程控制块
+    int ret = SendSigPermissionCheck(spcb, permission);  // 检查发送权限
+    if (ret != LOS_OK) {  // 权限检查失败
+        return ret;  // 返回错误码
+    }
+
+    /* If the process you want to kill had been inactive, but still exist. should return LOS_OK */
+    if (OsProcessIsInactive(spcb)) {  // 进程已非活动但存在
+        return LOS_OK;  // 返回成功
+    }
+
+    return OsSigProcessSend(spcb, info);  // 发送信号并返回结果
+}
+
+/**
+ * @brief 向进程发送信号的入口函数
+ * @details 支持向指定进程、所有进程或进程组发送信号
+ * @param pid 进程ID，正数表示指定进程，-1表示所有进程，其他负数表示进程组
+ * @param sig 信号编号
+ * @param permission 权限标志
+ * @return 成功返回LOS_OK，失败返回错误码
  */
 int OsKill(pid_t pid, int sig, int permission)
 {
-    siginfo_t info;
-    int ret;
+    siginfo_t info;  // 信号信息结构体
+    int ret;  // 返回值
 
     /* Make sure that the para is valid */
-    if (!GOOD_SIGNO(sig)) {
-        return -EINVAL;
-    }
-
-    /* Create the siginfo structure */ //创建信号结构体
-    info.si_signo = sig;	//信号编号
-    info.si_code = SI_USER;	//来自用户进程信号
-    info.si_value.sival_ptr = NULL;
-
-    if (pid > 0) {
-        /* Send the signal to the specify process */
-    ret = OsDispatch(pid, &info, permission);//发送信号
-    } else if (pid == -1) {
-        /* Send SIG to all processes */
-        ret = OsSendSignalToAllProcess(&info, permission);
-    } else {
-        /* Send SIG to all processes in process group PGRP.
-           If PGRP is zero, send SIG to all processes in
-           the current process's process group. */
-        ret = OsSendSignalToProcessGroup(pid, &info, permission);
-    }
-    return ret;
-}
-///给发送信号过程加锁
-int OsKillLock(pid_t pid, int sig)
-{
-    int ret;
-    unsigned int intSave;
-
-    SCHEDULER_LOCK(intSave);
-    ret = OsKill(pid, sig, OS_USER_KILL_PERMISSION);//用户权限向进程发送信号
-    SCHEDULER_UNLOCK(intSave);
-    return ret;
-}
-INT32 OsTaskKillUnsafe(UINT32 taskID, INT32 signo)
-{
-    siginfo_t info;
-    LosTaskCB *taskCB = OsGetTaskCB(taskID);
-    INT32 ret = OsUserTaskOperatePermissionsCheck(taskCB);
-    if (ret != LOS_OK) {
-        return -ret;
+    if (!GOOD_SIGNO(sig)) {  // 信号编号无效
+        return -EINVAL;  // 返回参数错误
     }
 
     /* Create the siginfo structure */
-    info.si_signo = signo;
-    info.si_code = SI_USER;
-    info.si_value.sival_ptr = NULL;
+    info.si_signo = sig;  // 设置信号编号
+    info.si_code = SI_USER;  // 设置信号来源为用户
+    info.si_value.sival_ptr = NULL;  // 信号附加数据为空
+
+    if (pid > 0) {  // 向指定进程发送
+        /* Send the signal to the specify process */
+        ret = OsDispatch(pid, &info, permission);  // 调用分发函数
+    } else if (pid == -1) {  // 向所有进程发送
+        /* Send SIG to all processes */
+        ret = OsSendSignalToAllProcess(&info, permission);  // 发送给所有进程
+    } else {  // 向进程组发送
+        /* Send SIG to all processes in process group PGRP.
+           If PGRP is zero, send SIG to all processes in
+           the current process's process group. */
+        ret = OsSendSignalToProcessGroup(pid, &info, permission);  // 发送给进程组
+    }
+    return ret;  // 返回结果
+}
+
+/**
+ * @brief 加锁发送信号
+ * @details 加锁保护下调用OsKill发送信号
+ * @param pid 进程ID
+ * @param sig 信号编号
+ * @return 成功返回LOS_OK，失败返回错误码
+ */
+int OsKillLock(pid_t pid, int sig)
+{
+    int ret;  // 返回值
+    unsigned int intSave;  // 中断状态保存变量
+
+    SCHEDULER_LOCK(intSave);  // 调度器加锁
+    ret = OsKill(pid, sig, OS_USER_KILL_PERMISSION);  // 调用OsKill发送信号
+    SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+    return ret;  // 返回结果
+}
+
+/**
+ * @brief 不安全的任务杀死函数
+ * @details 向指定任务发送杀死信号，不进行加锁保护
+ * @param taskID 任务ID
+ * @param signo 信号编号
+ * @return 成功返回LOS_OK，失败返回错误码
+ */
+INT32 OsTaskKillUnsafe(UINT32 taskID, INT32 signo)
+{
+    siginfo_t info;  // 信号信息结构体
+    LosTaskCB *taskCB = OsGetTaskCB(taskID);  // 获取任务控制块
+    INT32 ret = OsUserTaskOperatePermissionsCheck(taskCB);  // 检查用户任务操作权限
+    if (ret != LOS_OK) {  // 权限检查失败
+        return -ret;  // 返回错误码
+    }
+
+    /* Create the siginfo structure */
+    info.si_signo = signo;  // 设置信号编号
+    info.si_code = SI_USER;  // 设置信号来源为用户
+    info.si_value.sival_ptr = NULL;  // 信号附加数据为空
 
     /* Dispatch the signal to thread, bypassing normal task group thread
      * dispatch rules. */
-    return OsTcbDispatch(taskCB, &info);
+    return OsTcbDispatch(taskCB, &info);  // 直接分发信号到任务控制块
 }
-///发送信号
+
+/**
+ * @brief 向线程发送信号
+ * @details 向指定线程ID发送信号，包含加锁保护
+ * @param tid 线程ID
+ * @param signo 信号编号
+ * @return 成功返回LOS_OK，失败返回错误码
+ */
 int OsPthreadKill(UINT32 tid, int signo)
 {
-    int ret;
-    UINT32 intSave;
+    int ret;  // 返回值
+    UINT32 intSave;  // 中断状态保存变量
 
     /* Make sure that the signal is valid */
-    OS_RETURN_IF(!GOOD_SIGNO(signo), -EINVAL);
-    if (OS_TID_CHECK_INVALID(tid)) {
-        return -ESRCH;
+    OS_RETURN_IF(!GOOD_SIGNO(signo), -EINVAL);  // 信号无效返回错误
+    if (OS_TID_CHECK_INVALID(tid)) {  // 线程ID无效
+        return -ESRCH;  // 返回线程不存在
     }
 
     /* Keep things stationary through the following */
-    SCHEDULER_LOCK(intSave);
-    ret = OsTaskKillUnsafe(tid, signo);
-    SCHEDULER_UNLOCK(intSave);
-    return ret;
+    SCHEDULER_LOCK(intSave);  // 调度器加锁
+    ret = OsTaskKillUnsafe(tid, signo);  // 调用不安全的任务杀死函数
+    SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+    return ret;  // 返回结果
 }
-///向信号集中加入signo信号
+
+/**
+ * @brief 添加信号到信号集
+ * @details 将指定信号添加到信号集中，处理musl库的位表示差异
+ * @param set 信号集指针
+ * @param signo 信号编号
+ * @return 成功返回LOS_OK，失败返回-EINVAL
+ */
 int OsSigAddSet(sigset_t *set, int signo)
 {
     /* Verify the signal */
-    if (!GOOD_SIGNO(signo)) {
-        return -EINVAL;
-    } else {
+    if (!GOOD_SIGNO(signo)) {  // 信号编号无效
+        return -EINVAL;  // 返回参数错误
+    } else {  // 信号编号有效
         /* In musl, sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */
-        signo -= 1;// 信号范围是 [1 ~ 64 ],而保存变量位的范围是[0 ~ 63]
+        signo -= 1;  // 调整信号编号以匹配musl库的位表示
         /* Add the signal to the set */
-        *set |= SIGNO2SET((unsigned int)signo);//填充信号集
-        return LOS_OK;
+        *set |= SIGNO2SET((unsigned int)signo);  // 将信号对应的位设置为1
+        return LOS_OK;  // 返回成功
     }
 }
-///获取阻塞当前任务的信号集
+
+/**
+ * @brief 获取待处理信号集
+ * @details 获取当前任务的待处理信号集
+ * @param set 用于存储结果的信号集指针
+ * @return 成功返回LOS_OK，失败返回-EFAULT
+ */
 int OsSigPending(sigset_t *set)
 {
-    LosTaskCB *tcb = NULL;
-    unsigned int intSave;
+    LosTaskCB *tcb = NULL;  // 任务控制块指针
+    unsigned int intSave;  // 中断状态保存变量
 
-    if (set == NULL) {
-        return -EFAULT;
+    if (set == NULL) {  // 参数为空指针
+        return -EFAULT;  // 返回错误
     }
 
-    SCHEDULER_LOCK(intSave);
-    tcb = OsCurrTaskGet();
-    *set = tcb->sig.sigPendFlag;//被阻塞的信号集
-    SCHEDULER_UNLOCK(intSave);
-    return LOS_OK;
+    SCHEDULER_LOCK(intSave);  // 调度器加锁
+    tcb = OsCurrTaskGet();  // 获取当前任务
+    *set = tcb->sig.sigPendFlag;  // 复制待处理信号集
+    SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+    return LOS_OK;  // 返回成功
 }
 
+/**
+ * @brief 查找64位整数中第一个置位的位
+ * @details 从低位到高位查找第一个值为1的位位置
+ * @param n 待检查的64位整数
+ * @return 成功返回位位置，失败返回-1
+ */
 STATIC int FindFirstSetedBit(UINT64 n)
 {
-    int count;
+    int count;  // 位计数器
 
-    if (n == 0) {
-        return -1;
+    if (n == 0) {  // 输入为0
+        return -1;  // 返回-1表示无置位
     }
-    for (count = 0; (count < UINT64_BIT_SIZE) && (n ^ 1ULL); n >>= 1, count++) {}
-    return (count < UINT64_BIT_SIZE) ? count : (-1);
+    for (count = 0; (count < UINT64_BIT_SIZE) && (n ^ 1ULL); n >>= 1, count++) {}  // 循环查找第一个置位
+    return (count < UINT64_BIT_SIZE) ? count : (-1);  // 返回位位置或-1
 }
-///等待信号时间
+
+/**
+ * @brief 无锁的定时信号等待
+ * @details 在无锁情况下等待指定信号，支持超时
+ * @param set 等待的信号集
+ * @param info 用于存储信号信息的指针
+ * @param timeout 超时时间(毫秒)
+ * @return 成功返回信号编号，失败返回错误码
+ */
 int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
 {
-    LosTaskCB *task = NULL;
-    sig_cb *sigcb = NULL;
-    int ret;
+    LosTaskCB *task = NULL;  // 任务控制块指针
+    sig_cb *sigcb = NULL;  // 信号控制块指针
+    int ret;  // 返回值
 
-    task = OsCurrTaskGet();
-    sigcb = &task->sig;
+    task = OsCurrTaskGet();  // 获取当前任务
+    sigcb = &task->sig;  // 获取信号控制块
 
-    if (sigcb->waitList.pstNext == NULL) {
-        LOS_ListInit(&sigcb->waitList);//初始化信号等待链表
+    if (sigcb->waitList.pstNext == NULL) {  // 等待列表未初始化
+        LOS_ListInit(&sigcb->waitList);  // 初始化等待列表
     }
-    /* If pendingflag & set > 0, shound clear pending flag */
-    sigset_t clear = sigcb->sigPendFlag & *set;
-    if (clear) {
-        sigcb->sigPendFlag ^= clear;
-        ret = FindFirstSetedBit((UINT64)clear) + 1;
-        OsMoveTmpInfoToUnbInfo(sigcb, ret);
-    } else {
-        OsSigAddSet(set, SIGKILL);//kill 9 14 必须要处理
-        OsSigAddSet(set, SIGSTOP);//终止进程的信号也必须处理
+    /* If pendingflag & set > 0, should clear pending flag */
+    sigset_t clear = sigcb->sigPendFlag & *set;  // 计算待处理且在等待集中的信号
+    if (clear) {  // 存在待处理信号
+        sigcb->sigPendFlag ^= clear;  // 清除待处理标志
+        ret = FindFirstSetedBit((UINT64)clear) + 1;  // 查找第一个信号编号
+        OsMoveTmpInfoToUnbInfo(sigcb, ret);  // 移动信号信息
+    } else {  // 无待处理信号
+        OsSigAddSet(set, SIGKILL);  // 添加SIGKILL到等待集
+        OsSigAddSet(set, SIGSTOP);  // 添加SIGSTOP到等待集
 
-        sigcb->sigwaitmask |= *set;//按位加到等待集上,也就是说sigwaitmask的信号来了都是要处理的.
-        OsTaskWaitSetPendMask(OS_TASK_WAIT_SIGNAL, sigcb->sigwaitmask, timeout);
-        ret = task->ops->wait(task, &sigcb->waitList, timeout);
-        if (ret == LOS_ERRNO_TSK_TIMEOUT) {
-            ret = -EAGAIN;
+        sigcb->sigwaitmask |= *set;  // 设置等待掩码
+        OsTaskWaitSetPendMask(OS_TASK_WAIT_SIGNAL, sigcb->sigwaitmask, timeout);  // 设置任务等待状态
+        ret = task->ops->wait(task, &sigcb->waitList, timeout);  // 等待信号
+        if (ret == LOS_ERRNO_TSK_TIMEOUT) {  // 超时
+            ret = -EAGAIN;  // 返回重试错误
         }
-        sigcb->sigwaitmask = NULL_SIGNAL_SET;
+        sigcb->sigwaitmask = NULL_SIGNAL_SET;  // 清空等待掩码
     }
-    if (info != NULL) {
-        (VOID)memcpy_s(info, sizeof(siginfo_t), &sigcb->sigunbinfo, sizeof(siginfo_t));
+    if (info != NULL) {  // 需要返回信号信息
+        (VOID)memcpy_s(info, sizeof(siginfo_t), &sigcb->sigunbinfo, sizeof(siginfo_t));  // 复制信号信息
     }
-    return ret;
+    return ret;  // 返回结果
 }
-///让当前任务等待的信号
+
+/**
+ * @brief 定时信号等待
+ * @details 加锁保护的定时信号等待函数
+ * @param set 等待的信号集
+ * @param info 用于存储信号信息的指针
+ * @param timeout 超时时间(毫秒)
+ * @return 成功返回信号编号，失败返回错误码
+ */
 int OsSigTimedWait(sigset_t *set, siginfo_t *info, unsigned int timeout)
 {
-    int ret;
-    unsigned int intSave;
+    int ret;  // 返回值
+    unsigned int intSave;  // 中断状态保存变量
 
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_LOCK(intSave);  // 调度器加锁
 
-    ret = OsSigTimedWaitNoLock(set, info, timeout);//以不加锁的方式等待
+    ret = OsSigTimedWaitNoLock(set, info, timeout);  // 调用无锁版本的定时等待
 
-    SCHEDULER_UNLOCK(intSave);
-    return ret;
+    SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+    return ret;  // 返回结果
 }
-///通过信号挂起当前任务
+
+/**
+ * @brief 暂停进程直到信号到达
+ * @details 暂停当前进程，保存旧信号掩码并调用挂起函数
+ * @return 始终返回-EINTR
+ */
 int OsPause(void)
 {
-    LosTaskCB *spcb = NULL;
-    sigset_t oldSigprocmask;
+    LosTaskCB *spcb = NULL;  // 任务控制块指针
+    sigset_t oldSigprocmask;  // 旧信号掩码
 
-    spcb = OsCurrTaskGet();
-    oldSigprocmask = spcb->sig.sigprocmask;
-    return OsSigSuspend(&oldSigprocmask);
+    spcb = OsCurrTaskGet();  // 获取当前任务
+    oldSigprocmask = spcb->sig.sigprocmask;  // 保存旧信号掩码
+    return OsSigSuspend(&oldSigprocmask);  // 挂起进程
 }
-///用参数set代替进程的原有掩码，并暂停进程执行，直到收到信号再恢复原有掩码并继续执行进程。
+
+/**
+ * @brief 挂起进程直到信号到达
+ * @details 根据信号集挂起进程，处理待处理信号
+ * @param set 信号集指针
+ * @return 成功返回0，失败返回错误码
+ */
 int OsSigSuspend(const sigset_t *set)
 {
-    unsigned int intSave;
-    LosTaskCB *rtcb = NULL;
-    sigset_t setSuspend;
-    int ret;
+    unsigned int intSave;  // 中断状态保存变量
+    LosTaskCB *rtcb = NULL;  // 任务控制块指针
+    sigset_t setSuspend;  // 挂起信号集
+    int ret;  // 返回值
 
-    if (set == NULL) {
-        return -EINVAL;
+    if (set == NULL) {  // 参数为空指针
+        return -EINVAL;  // 返回参数错误
     }
-    SCHEDULER_LOCK(intSave);
-    rtcb = OsCurrTaskGet();
+    SCHEDULER_LOCK(intSave);  // 调度器加锁
+    rtcb = OsCurrTaskGet();  // 获取当前任务
 
     /* Wait signal calc */
-    setSuspend = FULL_SIGNAL_SET & (~(*set));
+    setSuspend = FULL_SIGNAL_SET & (~(*set));  // 计算挂起信号集
 
     /* If pending mask not in sigmask, need set sigflag */
-    OsSigMaskSwitch(rtcb, *set);
+    OsSigMaskSwitch(rtcb, *set);  // 切换信号掩码
 
-    if (rtcb->sig.sigFlag > 0) {
-        SCHEDULER_UNLOCK(intSave);
+    if (rtcb->sig.sigFlag > 0) {  // 存在待处理信号
+        SCHEDULER_UNLOCK(intSave);  // 调度器解锁
 
         /*
          * If rtcb->sig.sigFlag > 0, it means that some signal have been
          * received, and we need to do schedule to handle the signal directly.
          */
-        LOS_Schedule();
-        return -EINTR;
-    } else {
-        ret = OsSigTimedWaitNoLock(&setSuspend, NULL, LOS_WAIT_FOREVER);
-        if (ret < 0) {
-            PRINT_ERR("FUNC %s LINE = %d, ret = %x\n", __FUNCTION__, __LINE__, ret);
+        LOS_Schedule();  // 触发调度
+        return -EINTR;  // 返回中断错误
+    } else {  // 无待处理信号
+        ret = OsSigTimedWaitNoLock(&setSuspend, NULL, LOS_WAIT_FOREVER);  // 无限期等待信号
+        if (ret < 0) {  // 等待失败
+            PRINT_ERR("FUNC %s LINE = %d, ret = %x\n", __FUNCTION__, __LINE__, ret);  // 打印错误信息
         }
     }
 
-    SCHEDULER_UNLOCK(intSave);
-    return -EINTR;
+    SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+    return -EINTR;  // 返回中断错误
 }
 
 /**
- * @brief 
- * @verbatim
-    信号安装,函数用于改变进程接收到特定信号后的行为。
-    sig:信号的值，可以为除SIGKILL及SIGSTOP外的任何一个特定有效的信号（为这两个信号定义自己的处理函数，将导致信号安装错误）。
-    act:设置对signal信号的新处理方式。
-    oldact:原来对信号的处理方式。
-    如果把第二、第三个参数都设为NULL，那么该函数可用于检查信号的有效性。
-    返回值：0 表示成功，-1 表示有错误发生。
- * @endverbatim
+ * @brief 设置信号处理动作
+ * @details 设置指定信号的处理函数，仅支持SIGSYS信号
+ * @param sig 信号编号
+ * @param act 新的信号处理动作
+ * @param oact 用于存储旧的信号处理动作
+ * @return 成功返回LOS_OK，失败返回错误码
  */
 int OsSigAction(int sig, const sigaction_t *act, sigaction_t *oact)
 {
-    UINTPTR addr;
-    sigaction_t action;
+    UINTPTR addr;  // 地址变量
+    sigaction_t action;  // 信号处理动作结构体
 
-    if (!GOOD_SIGNO(sig) || sig < 1 || act == NULL) {
-        return -EINVAL;
+    if (!GOOD_SIGNO(sig) || sig < 1 || act == NULL) {  // 信号无效或参数为空
+        return -EINVAL;  // 返回参数错误
     }
-	//将数据从用户空间拷贝到内核空间
-	if (LOS_ArchCopyFromUser(&action, act, sizeof(sigaction_t)) != LOS_OK) {
-		return -EFAULT;
-	}
-	
-	if (sig == SIGSYS) {//鸿蒙此处通过错误的系统调用 来安装信号处理函数,有点巧妙. 
-		addr = OsGetSigHandler();//是否已存在信号处理函数
-		if (addr == 0) {//进程没有设置信号处理函数时
-			OsSetSigHandler((unsigned long)(UINTPTR)action.sa_handler);//设置进程信号处理函数
-			//void (*sa_handler)(int); //信号处理函数——普通版
-			//void (*sa_sigaction)(int, siginfo_t *, void *);//信号处理函数——高级版
-            return LOS_OK;
+    if (LOS_ArchCopyFromUser(&action, act, sizeof(sigaction_t)) != LOS_OK) {  // 从用户空间复制数据失败
+        return -EFAULT;  // 返回错误
+    }
+
+    if (sig == SIGSYS) {  // 处理系统调用信号
+        addr = OsGetSigHandler();  // 获取当前信号处理函数
+        if (addr == 0) {  // 未设置处理函数
+            OsSetSigHandler((unsigned long)(UINTPTR)action.sa_handler);  // 设置新的处理函数
+            return LOS_OK;  // 返回成功
         }
-        return -EINVAL;
+        return -EINVAL;  // 已设置处理函数，返回错误
     }
 
-    return LOS_OK;
+    return LOS_OK;  // 返回成功
 }
 
+/**
+ * @brief 锁定信号中断
+ * @details 增加信号中断锁定计数，防止信号处理中断系统调用
+ */
 VOID OsSigIntLock(VOID)
 {
-    LosTaskCB *task = OsCurrTaskGet();
-    sig_cb *sigcb = &task->sig;
+    LosTaskCB *task = OsCurrTaskGet();  // 获取当前任务
+    sig_cb *sigcb = &task->sig;  // 获取信号控制块
 
-    (VOID)LOS_AtomicAdd((Atomic *)&sigcb->sigIntLock, 1);
+    (VOID)LOS_AtomicAdd((Atomic *)&sigcb->sigIntLock, 1);  // 原子增加锁定计数
 }
 
+/**
+ * @brief 解锁信号中断
+ * @details 减少信号中断锁定计数
+ */
 VOID OsSigIntUnlock(VOID)
 {
-    LosTaskCB *task = OsCurrTaskGet();
-    sig_cb *sigcb = &task->sig;
+    LosTaskCB *task = OsCurrTaskGet();  // 获取当前任务
+    sig_cb *sigcb = &task->sig;  // 获取信号控制块
 
-    (VOID)LOS_AtomicSub((Atomic *)&sigcb->sigIntLock, 1);
+    (VOID)LOS_AtomicSub((Atomic *)&sigcb->sigIntLock, 1);  // 原子减少锁定计数
 }
 
 /**
  * @brief 保存信号上下文
- * @verbatim
-    产生系统调用时,也就是软中断时,保存用户栈寄存器现场信息
-    改写PC寄存器的值
- * @endverbatim
+ * @details 在信号处理前保存当前上下文，准备信号处理环境
+ * @param sp 当前栈指针
+ * @param newSp 新的栈指针
+ * @return 新的栈指针或原栈指针
  */
 VOID *OsSaveSignalContext(VOID *sp, VOID *newSp)
 {
-    UINTPTR sigHandler;
-    UINT32 intSave;
-    LosTaskCB *task = OsCurrTaskGet();
-    LosProcessCB *process = OsCurrProcessGet();
-    sig_cb *sigcb = &task->sig;
+    UINTPTR sigHandler;  // 信号处理函数地址
+    UINT32 intSave;  // 中断状态保存变量
+
+    LosTaskCB *task = OsCurrTaskGet();  // 获取当前任务
+    LosProcessCB *process = OsCurrProcessGet();  // 获取当前进程
+    sig_cb *sigcb = &task->sig;  // 获取信号控制块
 
     /* A thread is not allowed to interrupt the processing of its signals during a system call */
-    if (sigcb->sigIntLock > 0) {
-        return sp;
+    if (sigcb->sigIntLock > 0) {  // 信号中断已锁定
+        return sp;  // 返回原栈指针
     }
 
-    if (OsTaskIsKilled(task)) {
-        OsRunningTaskToExit(task, 0);
-        return sp;
+    if (OsTaskIsKilled(task)) {  // 任务已被杀死
+        OsRunningTaskToExit(task, 0);  // 退出任务
+        return sp;  // 返回原栈指针
     }
 
-    SCHEDULER_LOCK(intSave);
-    if ((sigcb->count == 0) && ((sigcb->sigFlag != 0) || (process->sigShare != 0))) {
-        sigHandler = OsGetSigHandler();
-        if (sigHandler == 0) {
-            sigcb->sigFlag = 0;
-            process->sigShare = 0;
-            SCHEDULER_UNLOCK(intSave);
-            PRINT_ERR("The signal processing function for the current process pid =%d is NULL!\n", process->processID);
-            return sp;
+    SCHEDULER_LOCK(intSave);  // 调度器加锁
+    if ((sigcb->count == 0) && ((sigcb->sigFlag != 0) || (process->sigShare != 0))) {  // 可以处理信号
+        sigHandler = OsGetSigHandler();  // 获取信号处理函数
+        if (sigHandler == 0) {  // 未设置信号处理函数
+            sigcb->sigFlag = 0;  // 清除信号标志
+            process->sigShare = 0;  // 清除共享信号
+            SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+            PRINT_ERR("The signal processing function for the current process pid =%d is NULL!\n", process->processID);  // 打印错误
+            return sp;  // 返回原栈指针
         }
         /* One pthread do the share signal */
-        sigcb->sigFlag |= process->sigShare;
-        UINT32 signo = (UINT32)FindFirstSetedBit(sigcb->sigFlag) + 1;
-        UINT32 sigVal = (UINT32)(UINTPTR)(sigcb->sigunbinfo.si_value.sival_ptr);
-        OsMoveTmpInfoToUnbInfo(sigcb, signo);
-        OsProcessExitCodeSignalSet(process, signo);
-        sigcb->sigContext = sp;
+        sigcb->sigFlag |= process->sigShare;  // 合并共享信号
+        UINT32 signo = (UINT32)FindFirstSetedBit(sigcb->sigFlag) + 1;  // 获取第一个信号编号
+        UINT32 sigVal = (UINT32)(UINTPTR)(sigcb->sigunbinfo.si_value.sival_ptr);  // 获取信号值
+        OsMoveTmpInfoToUnbInfo(sigcb, signo);  // 移动信号信息
+        OsProcessExitCodeSignalSet(process, signo);  // 设置进程退出码信号
+        sigcb->sigContext = sp;  // 保存当前上下文
 
-        OsInitSignalContext(sp, newSp, sigHandler, signo, sigVal);//初始化信号上下文
+        OsInitSignalContext(sp, newSp, sigHandler, signo, sigVal);  // 初始化信号上下文
 
         /* sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */
-        sigcb->sigFlag ^= 1ULL << (signo - 1);
-        sigcb->count++;
-        SCHEDULER_UNLOCK(intSave);
-        return newSp;
+        sigcb->sigFlag ^= 1ULL << (signo - 1);  // 清除已处理信号
+        sigcb->count++;  // 增加信号嵌套计数
+        SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+        return newSp;  // 返回新栈指针
     }
 
-    SCHEDULER_UNLOCK(intSave);
-    return sp;
+    SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+    return sp;  // 返回原栈指针
 }
 
 /**
- * @brief 
- * @verbatim
-    恢复信号上下文,由系统调用之__NR_sigreturn产生,这是一个内部产生的系统调用.
-    为什么要恢复呢?
-    因为系统调用的执行由任务内核态完成,使用的栈也是内核栈,CPU相关寄存器记录的都是内核栈的内容,
-    而系统调用完成后,需返回任务的用户栈执行,这时需将CPU各寄存器回到用户态现场
-    所以函数的功能就变成了还原寄存器的值
- * @endverbatim
+ * @brief 恢复信号上下文
+ * @details 信号处理完成后恢复之前保存的上下文
+ * @param sp 当前栈指针
+ * @return 保存的上下文栈指针
  */
 VOID *OsRestorSignalContext(VOID *sp)
 {
-    UINT32 intSave;
+    UINT32 intSave;  // 中断状态保存变量
 
-    LosTaskCB *task = OsCurrTaskGet();
-    sig_cb *sigcb = &task->sig;
+    LosTaskCB *task = OsCurrTaskGet();  // 获取当前任务
+    sig_cb *sigcb = &task->sig;  // 获取信号控制块
 
-    SCHEDULER_LOCK(intSave);
-    if (sigcb->count != 1) {
-        SCHEDULER_UNLOCK(intSave);
-        PRINT_ERR("sig error count : %d\n", sigcb->count);
-        return sp;
+    SCHEDULER_LOCK(intSave);  // 调度器加锁
+    if (sigcb->count != 1) {  // 信号嵌套计数不正确
+        SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+        PRINT_ERR("sig error count : %d\n", sigcb->count);  // 打印错误
+        return sp;  // 返回原栈指针
     }
 
-    LosProcessCB *process = OsCurrProcessGet();
-    VOID *saveContext = sigcb->sigContext;
-    sigcb->sigContext = NULL;
-    sigcb->count--;
-    process->sigShare = 0;	//回到用户态,信号共享清0
-    OsProcessExitCodeSignalClear(process);//清空进程退出码
-    SCHEDULER_UNLOCK(intSave);
-    return saveContext;
+    LosProcessCB *process = OsCurrProcessGet();  // 获取当前进程
+    VOID *saveContext = sigcb->sigContext;  // 获取保存的上下文
+    sigcb->sigContext = NULL;  // 清空上下文
+    sigcb->count--;  // 减少信号嵌套计数
+    process->sigShare = 0;  // 清除共享信号
+    OsProcessExitCodeSignalClear(process);  // 清除进程退出码信号
+    SCHEDULER_UNLOCK(intSave);  // 调度器解锁
+    return saveContext;  // 返回保存的上下文
 }
-
 #endif
