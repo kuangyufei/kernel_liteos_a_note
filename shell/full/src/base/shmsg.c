@@ -45,328 +45,380 @@
 #ifdef LOSCFG_FS_VFS
 #include "console.h"
 #endif
-
-//获取输入命令buf
+/**
+ * @brief 获取Shell输入缓冲区内容
+ * @param shellCB Shell控制块指针
+ * @return 成功返回命令字符串指针，失败返回NULL
+ */
 CHAR *ShellGetInputBuf(ShellCB *shellCB)
 {
-    CmdKeyLink *cmdkey = shellCB->cmdKeyLink;//待处理的shell命令链表
-    CmdKeyLink *cmdNode = NULL;
+    CmdKeyLink *cmdkey = shellCB->cmdKeyLink;  // 命令链表指针
+    CmdKeyLink *cmdNode = NULL;                // 命令节点指针
 
-    (VOID)pthread_mutex_lock(&shellCB->keyMutex);
-    if ((cmdkey == NULL) || LOS_ListEmpty(&cmdkey->list)) {//链表为空的处理
-        (VOID)pthread_mutex_unlock(&shellCB->keyMutex);
-        return NULL;
+    (VOID)pthread_mutex_lock(&shellCB->keyMutex);  // 加锁保护命令链表操作
+    if ((cmdkey == NULL) || LOS_ListEmpty(&cmdkey->list)) {  // 检查链表是否为空
+        (VOID)pthread_mutex_unlock(&shellCB->keyMutex);  // 解锁
+        return NULL;  // 返回空
     }
 
-    cmdNode = LOS_DL_LIST_ENTRY(cmdkey->list.pstNext, CmdKeyLink, list);//获取当前命令项
-    LOS_ListDelete(&(cmdNode->list)); /* 'cmdNode' freed in history save process *///将自己摘出去,但在历史记录中还存在
-    (VOID)pthread_mutex_unlock(&shellCB->keyMutex);
+    cmdNode = LOS_DL_LIST_ENTRY(cmdkey->list.pstNext, CmdKeyLink, list);  // 获取第一个命令节点
+    LOS_ListDelete(&(cmdNode->list)); /* 'cmdNode'在历史记录保存过程中释放 */
+    (VOID)pthread_mutex_unlock(&shellCB->keyMutex);  // 解锁
 
-    return cmdNode->cmdString;//返回命令内容
+    return cmdNode->cmdString;  // 返回命令字符串
 }
-///保存命令历史记录,这个函数写的不太好
+
+/**
+ * @brief 保存命令历史记录
+ * @param string 命令字符串
+ * @param shellCB Shell控制块指针
+ */
 STATIC VOID ShellSaveHistoryCmd(const CHAR *string, ShellCB *shellCB)
 {
-    CmdKeyLink *cmdHistory = shellCB->cmdHistoryKeyLink;//获取历史记录的源头
-    CmdKeyLink *cmdkey = LOS_DL_LIST_ENTRY(string, CmdKeyLink, cmdString);// @note_good ,获取CmdKeyLink,这里挺秒的,通过局部字符串找到整体
-    CmdKeyLink *cmdNxt = NULL;
+    CmdKeyLink *cmdHistory = shellCB->cmdHistoryKeyLink;  // 历史命令链表指针
+    CmdKeyLink *cmdkey = LOS_DL_LIST_ENTRY(string, CmdKeyLink, cmdString);  // 命令节点指针
+    CmdKeyLink *cmdNxt = NULL;  // 下一个命令节点指针
 
-    if ((string == NULL) || (strlen(string) == 0)) {
-        return;
+    if ((string == NULL) || (strlen(string) == 0)) {  // 检查命令字符串是否为空
+        return;  // 直接返回
     }
 
-    (VOID)pthread_mutex_lock(&shellCB->historyMutex);//对链表的操作都要拿互斥锁
-    if (cmdHistory->count != 0) { //有历史记录的情况
-        cmdNxt = LOS_DL_LIST_ENTRY(cmdHistory->list.pstPrev, CmdKeyLink, list);//获取最老的历史记录
-        if (strcmp(string, cmdNxt->cmdString) == 0) {//比较是否一样,这个地方感觉很怪,只比较一个吗?
-            (VOID)LOS_MemFree(m_aucSysMem0, (VOID *)cmdkey);
-            (VOID)pthread_mutex_unlock(&shellCB->historyMutex);
-            return;
+    (VOID)pthread_mutex_lock(&shellCB->historyMutex);  // 加锁保护历史记录操作
+    if (cmdHistory->count != 0) {  // 检查历史记录是否不为空
+        cmdNxt = LOS_DL_LIST_ENTRY(cmdHistory->list.pstPrev, CmdKeyLink, list);  // 获取最后一个历史命令
+        if (strcmp(string, cmdNxt->cmdString) == 0) {  // 检查是否与最后一条命令相同
+            (VOID)LOS_MemFree(m_aucSysMem0, (VOID *)cmdkey);  // 释放内存
+            (VOID)pthread_mutex_unlock(&shellCB->historyMutex);  // 解锁
+            return;  // 直接返回
         }
     }
 
-    if (cmdHistory->count == CMD_HISTORY_LEN) {//历史记录已满,一删一添导致历史记录永远是满的,所以一旦跑进来了
-        cmdNxt = LOS_DL_LIST_ENTRY(cmdHistory->list.pstNext, CmdKeyLink, list);//后续 ShellSaveHistoryCmd都会跑进来执行
-        LOS_ListDelete(&(cmdNxt->list));//先删除一个最早插入的
-        LOS_ListTailInsert(&(cmdHistory->list), &(cmdkey->list));//再从尾部挂入新的节点,变成最新的记录
-        (VOID)LOS_MemFree(m_aucSysMem0, (VOID *)cmdNxt);//释放已经删除的节点, @note_thinking     , 建议和上一句换个位置,保证逻辑上的完整性
-        (VOID)pthread_mutex_unlock(&shellCB->historyMutex);//释放互斥锁
-        return;
+    if (cmdHistory->count == CMD_HISTORY_LEN) {  // 检查历史记录是否达到最大长度
+        cmdNxt = LOS_DL_LIST_ENTRY(cmdHistory->list.pstNext, CmdKeyLink, list);  // 获取第一个历史命令
+        LOS_ListDelete(&(cmdNxt->list));  // 删除第一个历史命令
+        LOS_ListTailInsert(&(cmdHistory->list), &(cmdkey->list));  // 将新命令插入尾部
+        (VOID)LOS_MemFree(m_aucSysMem0, (VOID *)cmdNxt);  // 释放内存
+        (VOID)pthread_mutex_unlock(&shellCB->historyMutex);  // 解锁
+        return;  // 返回
     }
-	//未满的情况下执行到此处
-    LOS_ListTailInsert(&(cmdHistory->list), &(cmdkey->list));//从尾部插入
-    cmdHistory->count++;//历史记录增加
 
-    (VOID)pthread_mutex_unlock(&shellCB->historyMutex);//释放互斥锁
+    LOS_ListTailInsert(&(cmdHistory->list), &(cmdkey->list));  // 将新命令插入历史链表尾部
+    cmdHistory->count++;  // 历史记录计数加1
+
+    (VOID)pthread_mutex_unlock(&shellCB->historyMutex);  // 解锁
     return;
 }
-///发送解析事件
+
+/**
+ * @brief 发送Shell事件通知
+ * @param shellCB Shell控制块指针
+ */
 STATIC VOID ShellNotify(ShellCB *shellCB)
 {
-    (VOID)LOS_EventWrite(&shellCB->shellEvent, SHELL_CMD_PARSE_EVENT);
+    (VOID)LOS_EventWrite(&shellCB->shellEvent, SHELL_CMD_PARSE_EVENT);  // 写入命令解析事件
 }
 
+/**
+ * @brief 按键状态枚举
+ * @details 定义Shell支持的按键状态类型
+ */
 enum {
-    STAT_NORMAL_KEY,	///< 普通的按键
-    STAT_ESC_KEY,	//<ESC>键在VT控制规范中时控制的起始键
-    STAT_MULTI_KEY	//组合键
+    STAT_NORMAL_KEY,  // 普通按键状态
+    STAT_ESC_KEY,     // ESC按键状态
+    STAT_MULTI_KEY    // 组合按键状态
 };
-//解析上下左右键
-/* https://www.cnblogs.com/Spiro-K/p/6592518.html
-#!/bin/bash
-#字符颜色显示
-#-e:允许echo使用转义
-#\033[:开始位
-#\033[0m:结束位
-#\033等同于\e
-echo -e "\033[30m黑色字\033[0m"  
-echo -e "\033[31m红色字\033[0m"  
-echo -e "\033[32m绿色字\033[0m"  
-echo -e "\033[33m黄色字\033[0m"  
-echo -e "\033[34m蓝色字\033[0m"  
-echo -e "\033[35m紫色字\033[0m"  
-echo -e "\033[36m天蓝字\033[0m"  
-echo -e "\033[37m白色字\033[0m" 
+
+/** https://www.cnblogs.com/Spiro-K/p/6592518.html
+ * #!/bin/bash
+ * #字符颜色显示
+ * #-e:允许echo使用转义
+ * #\033[:开始位
+ * #\033[0m:结束位
+ * #\033等同于\e
+ * echo -e "\033[30m黑色字\033[0m"  
+ * echo -e "\033[31m红色字\033[0m"  
+ * echo -e "\033[32m绿色字\033[0m"  
+ * echo -e "\033[33m黄色字\033[0m"  
+ * echo -e "\033[34m蓝色字\033[0m"  
+ * echo -e "\033[35m紫色字\033[0m"  
+ * echo -e "\033[36m天蓝字\033[0m"  
+ * echo -e "\033[37m白色字\033[0m" 
 */
+/**
+ * @brief 检查上下左右方向键
+ * @param ch 输入字符
+ * @param shellCB Shell控制块指针
+ * @return 成功返回LOS_OK，失败返回LOS_NOK
+ */
 STATIC INT32 ShellCmdLineCheckUDRL(const CHAR ch, ShellCB *shellCB)
 {
-    INT32 ret = LOS_OK;
-    if (ch == 0x1b) { /* 0x1b: ESC *///按下<ESC>键(逃逸键)
-        shellCB->shellKeyType = STAT_ESC_KEY;//代表控制开始
-        return ret;
-    } else if (ch == 0x5b) { /* 0x5b: first Key combination */ //为[键 ,遵循 vt100 规则
-        if (shellCB->shellKeyType == STAT_ESC_KEY) {
-            shellCB->shellKeyType = STAT_MULTI_KEY;
-            return ret;
+    INT32 ret = LOS_OK;  // 返回值
+    if (ch == 0x1b) { /* 0x1b: ESC键 */
+        shellCB->shellKeyType = STAT_ESC_KEY;  // 设置为ESC按键状态
+        return ret;  // 返回成功
+    } else if (ch == 0x5b) { /* 0x5b: 组合键前缀 */
+        if (shellCB->shellKeyType == STAT_ESC_KEY) {  // 检查是否为ESC后跟随的组合键
+            shellCB->shellKeyType = STAT_MULTI_KEY;  // 设置为组合按键状态
+            return ret;  // 返回成功
         }
-    } else if (ch == 0x41) { /* up */	//上方向键
-        if (shellCB->shellKeyType == STAT_MULTI_KEY) {
-            OsShellHistoryShow(CMD_KEY_UP, shellCB);
-            shellCB->shellKeyType = STAT_NORMAL_KEY;
-            return ret;
+    } else if (ch == 0x41) { /* 上方向键 */
+        if (shellCB->shellKeyType == STAT_MULTI_KEY) {  // 检查是否为组合键
+            OsShellHistoryShow(CMD_KEY_UP, shellCB);  // 显示上一条历史命令
+            shellCB->shellKeyType = STAT_NORMAL_KEY;  // 恢复普通按键状态
+            return ret;  // 返回成功
         }
-    } else if (ch == 0x42) { /* down *///下方向键
-        if (shellCB->shellKeyType == STAT_MULTI_KEY) {
-            shellCB->shellKeyType = STAT_NORMAL_KEY;
-            OsShellHistoryShow(CMD_KEY_DOWN, shellCB);
-            return ret;
+    } else if (ch == 0x42) { /* 下方向键 */
+        if (shellCB->shellKeyType == STAT_MULTI_KEY) {  // 检查是否为组合键
+            shellCB->shellKeyType = STAT_NORMAL_KEY;  // 恢复普通按键状态
+            OsShellHistoryShow(CMD_KEY_DOWN, shellCB);  // 显示下一条历史命令
+            return ret;  // 返回成功
         }
-    } else if (ch == 0x43) { /* right *///右方向键
-        if (shellCB->shellKeyType == STAT_MULTI_KEY) {
-            shellCB->shellKeyType = STAT_NORMAL_KEY;
-            return ret;
+    } else if (ch == 0x43) { /* 右方向键 */
+        if (shellCB->shellKeyType == STAT_MULTI_KEY) {  // 检查是否为组合键
+            shellCB->shellKeyType = STAT_NORMAL_KEY;  // 恢复普通按键状态
+            return ret;  // 返回成功
         }
-    } else if (ch == 0x44) { /* left *///左方向键
-        if (shellCB->shellKeyType == STAT_MULTI_KEY) {
-            shellCB->shellKeyType = STAT_NORMAL_KEY;
-            return ret;
+    } else if (ch == 0x44) { /* 左方向键 */
+        if (shellCB->shellKeyType == STAT_MULTI_KEY) {  // 检查是否为组合键
+            shellCB->shellKeyType = STAT_NORMAL_KEY;  // 恢复普通按键状态
+            return ret;  // 返回成功
         }
     }
-    return LOS_NOK;
+    return LOS_NOK;  // 返回失败
 }
-///对命令行内容解析
+
+/**
+ * @brief Shell命令行解析函数
+ * @param c 输入字符
+ * @param outputFunc 输出函数指针
+ * @param shellCB Shell控制块指针
+ */
 LITE_OS_SEC_TEXT_MINOR VOID ShellCmdLineParse(CHAR c, pf_OUTPUT outputFunc, ShellCB *shellCB)
 {
-    const CHAR ch = c;
-    INT32 ret;
-	//不是回车键和字符串结束,且偏移量为0
-    if ((shellCB->shellBufOffset == 0) && (ch != '\n') && (ch != '\0')) {
-        (VOID)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);//重置buf
-    }
-	//遇到回车或换行
-    if ((ch == '\r') || (ch == '\n')) {
-        if (shellCB->shellBufOffset < (SHOW_MAX_LEN - 1)) {
-            shellCB->shellBuf[shellCB->shellBufOffset] = '\0';//字符串结束
-        }
-        shellCB->shellBufOffset = 0;
-        (VOID)pthread_mutex_lock(&shellCB->keyMutex);
-        OsShellCmdPush(shellCB->shellBuf, shellCB->cmdKeyLink);//解析回车或换行
-        (VOID)pthread_mutex_unlock(&shellCB->keyMutex);
-        ShellNotify(shellCB);//通知任务解析shell命令
-        return;
-    } else if ((ch == '\b') || (ch == 0x7F)) { /* backspace or delete(0x7F) */ //遇到删除键
-        if ((shellCB->shellBufOffset > 0) && (shellCB->shellBufOffset < (SHOW_MAX_LEN - 1))) {
-            shellCB->shellBuf[shellCB->shellBufOffset - 1] = '\0';//填充`\0`
-            shellCB->shellBufOffset--;//buf减少
-            outputFunc("\b \b");//回调入参函数
-        }
-        return;
-    } else if (ch == 0x09) { /* 0x09: tab *///遇到tab键
-        if ((shellCB->shellBufOffset > 0) && (shellCB->shellBufOffset < (SHOW_MAX_LEN - 1))) {
-            ret = OsTabCompletion(shellCB->shellBuf, &shellCB->shellBufOffset);//解析tab键
-            if (ret > 1) {
-                outputFunc("OHOS # %s", shellCB->shellBuf);//回调入参函数
-            }
-        }
-        return;
-    }
-    /* parse the up/down/right/left key */
-    ret = ShellCmdLineCheckUDRL(ch, shellCB);//解析上下左右键
-    if (ret == LOS_OK) {
-        return;
-    }
-	
-    if ((ch != '\n') && (ch != '\0')) {//普通的字符的处理
-        if (shellCB->shellBufOffset < (SHOW_MAX_LEN - 1)) {//buf范围
-            shellCB->shellBuf[shellCB->shellBufOffset] = ch;//直接加入
-        } else {
-            shellCB->shellBuf[SHOW_MAX_LEN - 1] = '\0';//加入字符串结束符
-        }
-        shellCB->shellBufOffset++;//偏移量增加
-        outputFunc("%c", ch);//向终端输出字符
+    const CHAR ch = c;  // 输入字符
+    INT32 ret;  // 返回值
+
+    if ((shellCB->shellBufOffset == 0) && (ch != '
+') && (ch != '\0')) {  // 检查缓冲区是否为空且输入不为换行/空字符
+        (VOID)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);  // 清空缓冲区
     }
 
-    shellCB->shellKeyType = STAT_NORMAL_KEY;//普通字符
+    if ((ch == '\r') || (ch == '\n')) {  // 回车或换行
+        if (shellCB->shellBufOffset < (SHOW_MAX_LEN - 1)) {  // 检查缓冲区是否未满
+            shellCB->shellBuf[shellCB->shellBufOffset] = '\0';  // 添加字符串结束符
+        }
+        shellCB->shellBufOffset = 0;  // 重置缓冲区偏移
+        (VOID)pthread_mutex_lock(&shellCB->keyMutex);  // 加锁
+        OsShellCmdPush(shellCB->shellBuf, shellCB->cmdKeyLink);  // 将命令压入链表
+        (VOID)pthread_mutex_unlock(&shellCB->keyMutex);  // 解锁
+        ShellNotify(shellCB);  // 发送通知
+        return;  // 返回
+    } else if ((ch == '\b') || (ch == 0x7F)) { /* 退格键或删除键(0x7F) */
+        if ((shellCB->shellBufOffset > 0) && (shellCB->shellBufOffset < (SHOW_MAX_LEN - 1))) {  // 检查缓冲区偏移是否有效
+            shellCB->shellBuf[shellCB->shellBufOffset - 1] = '\0';  // 删除前一个字符
+            shellCB->shellBufOffset--;  // 偏移减1
+            outputFunc("\b \b");  // 输出退格控制字符
+        }
+        return;  // 返回
+    } else if (ch == 0x09) { /* 0x09: Tab键 */
+        if ((shellCB->shellBufOffset > 0) && (shellCB->shellBufOffset < (SHOW_MAX_LEN - 1))) {  // 检查缓冲区偏移是否有效
+            ret = OsTabCompletion(shellCB->shellBuf, &shellCB->shellBufOffset);  // 命令补全
+            if (ret > 1) {  // 补全多个结果
+                outputFunc("OHOS # %s", shellCB->shellBuf);  // 输出补全后的命令
+            }
+        }
+        return;  // 返回
+    }
+    /* 解析上下左右方向键 */
+    ret = ShellCmdLineCheckUDRL(ch, shellCB);  // 检查方向键
+    if (ret == LOS_OK) {  // 方向键处理成功
+        return;  // 返回
+    }
+
+    if ((ch != '\n') && (ch != '\0')) {  // 非换行和空字符
+        if (shellCB->shellBufOffset < (SHOW_MAX_LEN - 1)) {  // 缓冲区未满
+            shellCB->shellBuf[shellCB->shellBufOffset] = ch;  // 保存字符到缓冲区
+        } else {
+            shellCB->shellBuf[SHOW_MAX_LEN - 1] = '\0';  // 缓冲区已满，添加结束符
+        }
+        shellCB->shellBufOffset++;  // 偏移加1
+        outputFunc("%c", ch);  // 输出字符
+    }
+
+    shellCB->shellKeyType = STAT_NORMAL_KEY;  // 恢复普通按键状态
 }
-///获取shell消息类型
+
+/**
+ * @brief 获取Shell消息类型
+ * @param cmdParsed 命令解析结构体指针
+ * @param cmdType 命令类型字符串
+ * @return 成功返回LOS_OK，失败返回OS_INVALID
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellMsgTypeGet(CmdParsed *cmdParsed, const CHAR *cmdType)
 {
-    CmdItemNode *curCmdItem = (CmdItemNode *)NULL;
-    UINT32 len;
-    UINT32 minLen;
-    CmdModInfo *cmdInfo = OsCmdInfoGet();//获取全局变量
+    CmdItemNode *curCmdItem = (CmdItemNode *)NULL;  // 当前命令项节点
+    UINT32 len;  // 命令类型长度
+    UINT32 minLen;  // 最小长度
+    CmdModInfo *cmdInfo = OsCmdInfoGet();  // 获取命令信息
 
-    if ((cmdParsed == NULL) || (cmdType == NULL)) {
-        return OS_INVALID;
+    if ((cmdParsed == NULL) || (cmdType == NULL)) {  // 参数检查
+        return OS_INVALID;  // 返回无效
     }
 
-    len = strlen(cmdType);
-    LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(cmdInfo->cmdList.list), CmdItemNode, list) {
-        if ((len == strlen(curCmdItem->cmd->cmdKey)) &&
-            (strncmp((CHAR *)(curCmdItem->cmd->cmdKey), cmdType, len) == 0)) {
-            minLen = (len < CMD_KEY_LEN) ? len : CMD_KEY_LEN;
-            (VOID)memcpy_s((CHAR *)(cmdParsed->cmdKeyword), CMD_KEY_LEN, cmdType, minLen);
-            cmdParsed->cmdType = curCmdItem->cmd->cmdType;
-            return LOS_OK;
+    len = strlen(cmdType);  // 获取命令类型长度
+    LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(cmdInfo->cmdList.list), CmdItemNode, list) {  // 遍历命令列表
+        if ((len == strlen(curCmdItem->cmd->cmdKey)) &&  // 长度匹配
+            (strncmp((CHAR *)(curCmdItem->cmd->cmdKey), cmdType, len) == 0)) {  // 内容匹配
+            minLen = (len < CMD_KEY_LEN) ? len : CMD_KEY_LEN;  // 取较小长度
+            (VOID)memcpy_s((CHAR *)(cmdParsed->cmdKeyword), CMD_KEY_LEN, cmdType, minLen);  // 复制命令关键字
+            cmdParsed->cmdType = curCmdItem->cmd->cmdType;  // 设置命令类型
+            return LOS_OK;  // 返回成功
         }
     }
 
-    return OS_INVALID;
+    return OS_INVALID;  // 返回无效
 }
-///获取命令名称和参数,并执行
+
+/**
+ * @brief 获取消息名称并执行命令
+ * @param cmdParsed 命令解析结构体指针
+ * @param output 输出字符串
+ * @param len 字符串长度
+ * @return 成功返回LOS_OK，失败返回OS_INVALID
+ */
 STATIC UINT32 ShellMsgNameGetAndExec(CmdParsed *cmdParsed, const CHAR *output, UINT32 len)
 {
-    UINT32 loop;
-    UINT32 ret;
-    const CHAR *tmpStr = NULL;
-    BOOL quotes = FALSE;
-    CHAR *msgName = (CHAR *)LOS_MemAlloc(m_aucSysMem0, len + 1);
-    if (msgName == NULL) {
-        PRINTK("malloc failure in %s[%d]\n", __FUNCTION__, __LINE__);
-        return OS_INVALID;
+    UINT32 loop;  // 循环变量
+    UINT32 ret;  // 返回值
+    const CHAR *tmpStr = NULL;  // 临时字符串指针
+    BOOL quotes = FALSE;  // 引号匹配标志
+    CHAR *msgName = (CHAR *)LOS_MemAlloc(m_aucSysMem0, len + 1);  // 分配内存
+    if (msgName == NULL) {  // 内存分配检查
+        PRINTK("malloc failure in %s[%d]\n", __FUNCTION__, __LINE__);  // 打印错误信息
+        return OS_INVALID;  // 返回无效
     }
-    /* Scan the 'output' string for command */
-    /* Notice: Command string must not have any special name */
-    for (tmpStr = output, loop = 0; (*tmpStr != '\0') && (loop < len);) {
-        /* If reach a double quotes, switch the quotes matching status */
-        if (*tmpStr == '\"') {
-            SWITCH_QUOTES_STATUS(quotes);
-            /* Ignore the double quote CHARactor itself */
-            tmpStr++;
-            continue;
+    /* 扫描'output'字符串获取命令 */
+    /* 注意: 命令字符串不能包含任何特殊名称 */
+    for (tmpStr = output, loop = 0; (*tmpStr != '\0') && (loop < len);) {  // 遍历字符串
+        /* 如果遇到双引号，切换引号匹配状态 */
+        if (*tmpStr == '\"') {  // 双引号
+            SWITCH_QUOTES_STATUS(quotes);  // 切换引号状态
+            /* 忽略双引号字符本身 */
+            tmpStr++;  // 指针后移
+            continue;  // 继续循环
         }
-        /* If detected a space which the quotes matching status is false */
-        /* which said has detected the first space for seperator, finish this scan operation */
-        if ((*tmpStr == ' ') && (QUOTES_STATUS_CLOSE(quotes))) {
-            break;
+        /* 如果检测到空格且引号匹配状态为关闭 */
+        /* 表示已检测到第一个分隔空格，结束扫描 */
+        if ((*tmpStr == ' ') && (QUOTES_STATUS_CLOSE(quotes))) {  // 空格且未在引号内
+            break;  // 跳出循环
         }
-        msgName[loop] = *tmpStr++;
-        loop++;
+        msgName[loop] = *tmpStr++;  // 复制字符
+        loop++;  // 计数器加1
     }
-    msgName[loop] = '\0';
-    /* Scan the command list to check whether the command can be found */
-    ret = ShellMsgTypeGet(cmdParsed, msgName);
-    PRINTK("\n");
-    if (ret != LOS_OK) {
-        PRINTK("%s:command not found", msgName);
+    msgName[loop] = '\0';  // 添加结束符
+    /* 扫描命令列表检查是否能找到命令 */
+    ret = ShellMsgTypeGet(cmdParsed, msgName);  // 获取命令类型
+    PRINTK("\n");  // 打印换行
+    if (ret != LOS_OK) {  // 命令未找到
+        PRINTK("%s:command not found", msgName);  // 打印错误信息
     } else {
-        (VOID)OsCmdExec(cmdParsed, (CHAR *)output);//真正的执行命令 output为输出设备
+        (VOID)OsCmdExec(cmdParsed, (CHAR *)output);  // 执行命令
     }
-    (VOID)LOS_MemFree(m_aucSysMem0, msgName);
-    return ret;
+    (VOID)LOS_MemFree(m_aucSysMem0, msgName);  // 释放内存
+    return ret;  // 返回结果
 }
-///命令内容解析
+
+/**
+ * @brief Shell消息解析函数
+ * @param msg 消息指针
+ * @return 成功返回LOS_OK，失败返回OS_INVALID
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellMsgParse(const VOID *msg)
 {
-    CHAR *output = NULL;
-    UINT32 len, cmdLen, newLen;
-    CmdParsed cmdParsed;
-    UINT32 ret = OS_INVALID;
-    CHAR *buf = (CHAR *)msg;
-    CHAR *newMsg = NULL;
-    CHAR *cmd = "exec";
+    CHAR *output = NULL;  // 输出缓冲区
+    UINT32 len, cmdLen, newLen;  // 长度变量
+    CmdParsed cmdParsed;  // 命令解析结构体
+    UINT32 ret = OS_INVALID;  // 返回值
+    CHAR *buf = (CHAR *)msg;  // 消息缓冲区
+    CHAR *newMsg = NULL;  // 新消息缓冲区
+    CHAR *cmd = "exec";  // 执行命令
 
-    if (msg == NULL) {
-        goto END;
+    if (msg == NULL) {  // 参数检查
+        goto END;  // 跳转到结束
     }
 
-    len = strlen(msg);
+    len = strlen(msg);  // 获取消息长度
     /* 2: strlen("./") */
-    if ((len > 2) && (buf[0] == '.') && (buf[1] == '/')) {
-        cmdLen = strlen(cmd);
-        newLen = len + 1 + cmdLen + 1;
-        newMsg = (CHAR *)LOS_MemAlloc(m_aucSysMem0, newLen);
-        if (newMsg == NULL) {
-            PRINTK("malloc failure in %s[%d]\n", __FUNCTION__, __LINE__);
-            goto END;
+    if ((len > 2) && (buf[0] == '.') && (buf[1] == '/')) {  // 检查是否为./开头的路径
+        cmdLen = strlen(cmd);  // 获取命令长度
+        newLen = len + 1 + cmdLen + 1;  // 计算新消息长度
+        newMsg = (CHAR *)LOS_MemAlloc(m_aucSysMem0, newLen);  // 分配内存
+        if (newMsg == NULL) {  // 内存分配检查
+            PRINTK("malloc failure in %s[%d]\n", __FUNCTION__, __LINE__);  // 打印错误信息
+            goto END;  // 跳转到结束
         }
-        (VOID)memcpy_s(newMsg, newLen, cmd, cmdLen);
-        newMsg[cmdLen] = ' ';
-        (VOID)memcpy_s(newMsg + cmdLen + 1, newLen - cmdLen - 1,  (CHAR *)msg + 1, len);
-        msg = newMsg;
-        len = newLen - 1;
+        (VOID)memcpy_s(newMsg, newLen, cmd, cmdLen);  // 复制命令
+        newMsg[cmdLen] = ' ';  // 添加空格
+        (VOID)memcpy_s(newMsg + cmdLen + 1, newLen - cmdLen - 1,  (CHAR *)msg + 1, len);  // 复制消息内容
+        msg = newMsg;  // 更新消息指针
+        len = newLen - 1;  // 更新长度
     }
-    output = (CHAR *)LOS_MemAlloc(m_aucSysMem0, len + 1);
-    if (output == NULL) {
-        PRINTK("malloc failure in %s[%d]\n", __FUNCTION__, __LINE__);
-        goto END;
-    }//对字符串缓冲区,调用函数“OsCmdKeyShift”来挤压和清除无用或过多的空间
-    /* Call function 'OsCmdKeyShift' to squeeze and clear useless or overmuch space if string buffer */
-    ret = OsCmdKeyShift((CHAR *)msg, output, len + 1);
-    if ((ret != LOS_OK) || (strlen(output) == 0)) {
-        ret = OS_INVALID;
-        goto END_FREE_OUTPUT;
+    output = (CHAR *)LOS_MemAlloc(m_aucSysMem0, len + 1);  // 分配输出缓冲区
+    if (output == NULL) {  // 内存分配检查
+        PRINTK("malloc failure in %s[%d]\n", __FUNCTION__, __LINE__);  // 打印错误信息
+        goto END;  // 跳转到结束
+    }
+    /* 调用函数'OtCmdKeyShift'压缩并清除字符串缓冲区中无用或过多的空格 */
+    ret = OsCmdKeyShift((CHAR *)msg, output, len + 1);  // 处理命令字符串
+    if ((ret != LOS_OK) || (strlen(output) == 0)) {  // 处理失败或输出为空
+        ret = OS_INVALID;  // 设置返回值
+        goto END_FREE_OUTPUT;  // 跳转到释放输出
     }
 
-    (VOID)memset_s(&cmdParsed, sizeof(CmdParsed), 0, sizeof(CmdParsed));
+    (VOID)memset_s(&cmdParsed, sizeof(CmdParsed), 0, sizeof(CmdParsed));  // 初始化命令解析结构体
 
-    ret = ShellMsgNameGetAndExec(&cmdParsed, output, len);////获取命令名称和参数,并执行
+    ret = ShellMsgNameGetAndExec(&cmdParsed, output, len);  // 获取命令名称并执行
 
 END_FREE_OUTPUT:
-    (VOID)LOS_MemFree(m_aucSysMem0, output);
+    (VOID)LOS_MemFree(m_aucSysMem0, output);  // 释放输出缓冲区
 END:
-    if (newMsg != NULL) {
-        (VOID)LOS_MemFree(m_aucSysMem0, newMsg);
+    if (newMsg != NULL) {  // 检查新消息缓冲区
+        (VOID)LOS_MemFree(m_aucSysMem0, newMsg);  // 释放新消息缓冲区
     }
-    return ret;
+    return ret;  // 返回结果
 }
-///读取命令行内容
+
 #ifdef LOSCFG_FS_VFS
+/**
+ * @brief Shell入口函数
+ * @param param 参数指针
+ * @return 成功返回0，失败返回1
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntry(UINTPTR param)
 {
-    CHAR ch;
-    INT32 n;
-    ShellCB *shellCB = (ShellCB *)param;
+    CHAR ch;  // 输入字符
+    INT32 n;  // 读取字节数
+    ShellCB *shellCB = (ShellCB *)param;  // Shell控制块指针
 
-    CONSOLE_CB *consoleCB = OsGetConsoleByID((INT32)shellCB->consoleID);//获取绑定的控制台,目的是从控制台读数据
-    if (consoleCB == NULL) {
-        PRINT_ERR("Shell task init error!\n");
-        return 1;
+    CONSOLE_CB *consoleCB = OsGetConsoleByID((INT32)shellCB->consoleID);  // 获取控制台CB
+    if (consoleCB == NULL) {  // 控制台CB检查
+        PRINT_ERR("Shell task init error!\n");  // 打印错误信息
+        return 1;  // 返回失败
     }
 
-    (VOID)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);//重置shell命令buf
+    (VOID)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);  // 清空Shell缓冲区
 
-    while (1) {
+    while (1) {  // 无限循环
 #ifdef LOSCFG_PLATFORM_CONSOLE
-        if (!IsConsoleOccupied(consoleCB)) {//控制台是否被占用
+        if (!IsConsoleOccupied(consoleCB)) {  // 检查控制台是否被占用
 #endif
-            /* is console ready for shell ? */
-            n = read(consoleCB->fd, &ch, 1);//系统调用,从控制台读取一个字符内容,字符一个个处理
-            if (n == 1) {//如果能读到一个字符
-                ShellCmdLineParse(ch, (pf_OUTPUT)dprintf, shellCB);
+            /* 控制台是否准备好接收Shell输入？ */
+            n = read(consoleCB->fd, &ch, 1);  // 读取一个字符
+            if (n == 1) {  // 读取成功
+                ShellCmdLineParse(ch, (pf_OUTPUT)dprintf, shellCB);  // 解析命令行
             }
-            if (is_nonblock(consoleCB)) {//在非阻塞模式下暂停 50ms
-                LOS_Msleep(50); /* 50: 50MS for sleep */
+            if (is_nonblock(consoleCB)) {  // 检查是否为非阻塞模式
+                LOS_Msleep(50); /* 50: 休眠50毫秒 */
             }
 #ifdef LOSCFG_PLATFORM_CONSOLE
         }
@@ -374,105 +426,126 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntry(UINTPTR param)
     }
 }
 #endif
-//处理shell 命令
+
+/**
+ * @brief Shell命令处理函数
+ * @param shellCB Shell控制块指针
+ */
 STATIC VOID ShellCmdProcess(ShellCB *shellCB)
 {
-    CHAR *buf = NULL;
-    while (1) {
-        buf = ShellGetInputBuf(shellCB);//获取命令buf
-        if (buf == NULL) {
-            break;
+    CHAR *buf = NULL;  // 命令缓冲区
+    while (1) {  // 循环处理命令
+        buf = ShellGetInputBuf(shellCB);  // 获取输入缓冲区
+        if (buf == NULL) {  // 缓冲区为空
+            break;  // 跳出循环
         }
-        (VOID)ShellMsgParse(buf);//解析buf
-        ShellSaveHistoryCmd(buf, shellCB);//保存到历史记录中
-        shellCB->cmdMaskKeyLink = shellCB->cmdHistoryKeyLink;
+        (VOID)ShellMsgParse(buf);  // 解析消息
+        ShellSaveHistoryCmd(buf, shellCB);  // 保存历史命令
+        shellCB->cmdMaskKeyLink = shellCB->cmdHistoryKeyLink;  // 更新命令掩码链表
     }
 }
-///shell 任务,处理解析,执行命令
+
+/**
+ * @brief Shell任务函数
+ * @param param1 参数1
+ * @param param2 参数2
+ * @param param3 参数3
+ * @param param4 参数4
+ * @return 0
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellTask(UINTPTR param1,
                                         UINTPTR param2,
                                         UINTPTR param3,
                                         UINTPTR param4)
 {
-    UINT32 ret;
-    ShellCB *shellCB = (ShellCB *)param1;
-    (VOID)param2;
-    (VOID)param3;
-    (VOID)param4;
+    UINT32 ret;  // 返回值
+    ShellCB *shellCB = (ShellCB *)param1;  // Shell控制块指针
+    (VOID)param2;  // 未使用参数
+    (VOID)param3;  // 未使用参数
+    (VOID)param4;  // 未使用参数
 
-    while (1) {
-        PRINTK("\nOHOS # ");//在没有事件的时候,会一直停留在此, 读取shell 输入事件 例如: cat weharmony.net 命令
-        ret = LOS_EventRead(&shellCB->shellEvent,
+    while (1) {  // 无限循环
+        PRINTK("\nOHOS # ");  // 打印命令提示符
+        ret = LOS_EventRead(&shellCB->shellEvent,  // 读取事件
                             0xFFF, LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
-        if (ret == SHELL_CMD_PARSE_EVENT) {//获得解析命令事件
-            ShellCmdProcess(shellCB);//处理命令 
-        } else if (ret == CONSOLE_SHELL_KEY_EVENT) {//退出shell事件
-            break;
+        if (ret == SHELL_CMD_PARSE_EVENT) {  // 命令解析事件
+            ShellCmdProcess(shellCB);  // 处理命令
+        } else if (ret == CONSOLE_SHELL_KEY_EVENT) {  // 控制台Shell按键事件
+            break;  // 跳出循环
         }
     }
-    OsShellKeyDeInit((CmdKeyLink *)shellCB->cmdKeyLink);//
-    OsShellKeyDeInit((CmdKeyLink *)shellCB->cmdHistoryKeyLink);
-    (VOID)LOS_EventDestroy(&shellCB->shellEvent);//注销事件
-    (VOID)LOS_MemFree((VOID *)m_aucSysMem0, shellCB);//释放shell控制块
-    return 0;
+    OsShellKeyDeInit((CmdKeyLink *)shellCB->cmdKeyLink);  // 反初始化命令链表
+    OsShellKeyDeInit((CmdKeyLink *)shellCB->cmdHistoryKeyLink);  // 反初始化历史命令链表
+    (VOID)LOS_EventDestroy(&shellCB->shellEvent);  // 销毁事件
+    (VOID)LOS_MemFree((VOID *)m_aucSysMem0, shellCB);  // 释放Shell控制块内存
+    return 0;  // 返回成功
 }
 
-#define SERIAL_SHELL_TASK_NAME "SerialShellTask"
-#define SERIAL_ENTRY_TASK_NAME "SerialEntryTask"
-#define TELNET_SHELL_TASK_NAME "TelnetShellTask"
-#define TELNET_ENTRY_TASK_NAME "TelnetEntryTask"
-//shell 服务端任务初始化,这个任务负责解析和执行命令
+#define SERIAL_SHELL_TASK_NAME "SerialShellTask"  // 串口Shell任务名称
+#define SERIAL_ENTRY_TASK_NAME "SerialEntryTask"  // 串口入口任务名称
+#define TELNET_SHELL_TASK_NAME "TelnetShellTask"  // Telnet Shell任务名称
+#define TELNET_ENTRY_TASK_NAME "TelnetEntryTask"  // Telnet入口任务名称
+
+/**
+ * @brief Shell任务初始化
+ * @param shellCB Shell控制块指针
+ * @return 成功返回LOS_OK，失败返回LOS_NOK
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellTaskInit(ShellCB *shellCB)
 {
-    CHAR *name = NULL;
-    TSK_INIT_PARAM_S initParam = {0};
-	//输入Shell命令的两种方式
-    if (shellCB->consoleID == CONSOLE_SERIAL) {	//通过串口工具
-        name = SERIAL_SHELL_TASK_NAME;
-    } else if (shellCB->consoleID == CONSOLE_TELNET) {//通过远程工具
-        name = TELNET_SHELL_TASK_NAME;
+    CHAR *name = NULL;  // 任务名称
+    TSK_INIT_PARAM_S initParam = {0};  // 任务初始化参数
+
+    if (shellCB->consoleID == CONSOLE_SERIAL) {  // 串口控制台
+        name = SERIAL_SHELL_TASK_NAME;  // 设置串口Shell任务名称
+    } else if (shellCB->consoleID == CONSOLE_TELNET) {  // Telnet控制台
+        name = TELNET_SHELL_TASK_NAME;  // 设置Telnet Shell任务名称
     } else {
-        return LOS_NOK;
+        return LOS_NOK;  // 返回失败
     }
 
-    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ShellTask;//任务入口函数,主要是解析shell命令
-    initParam.usTaskPrio   = 9; /* 9:shell task priority */
-    initParam.auwArgs[0]   = (UINTPTR)shellCB;
-    initParam.uwStackSize  = 0x3000;
-    initParam.pcName       = name;
-    initParam.uwResved     = LOS_TASK_STATUS_DETACHED;
+    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ShellTask;  // 设置任务入口函数
+    initParam.usTaskPrio   = 9; /* 9:Shell任务优先级 */
+    initParam.auwArgs[0]   = (UINTPTR)shellCB;  // 设置任务参数
+    initParam.uwStackSize  = 0x3000;  // 设置栈大小
+    initParam.pcName       = name;  // 设置任务名称
+    initParam.uwResved     = LOS_TASK_STATUS_DETACHED;  // 设置任务分离状态
 
-    (VOID)LOS_EventInit(&shellCB->shellEvent);//初始化事件,以事件方式通知任务解析命令
+    (VOID)LOS_EventInit(&shellCB->shellEvent);  // 初始化事件
 
-    return LOS_TaskCreate(&shellCB->shellTaskHandle, &initParam);//创建任务
+    return LOS_TaskCreate(&shellCB->shellTaskHandle, &initParam);  // 创建任务
 }
-///进入shell客户端任务初始化,这个任务负责编辑命令,处理命令产生的过程,例如如何处理方向键,退格键,回车键等
+
+/**
+ * @brief Shell入口初始化
+ * @param shellCB Shell控制块指针
+ * @return 成功返回LOS_OK，失败返回LOS_NOK
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntryInit(ShellCB *shellCB)
 {
-    UINT32 ret;
-    CHAR *name = NULL;
-    TSK_INIT_PARAM_S initParam = {0};
+    UINT32 ret;  // 返回值
+    CHAR *name = NULL;  // 任务名称
+    TSK_INIT_PARAM_S initParam = {0};  // 任务初始化参数
 
-    if (shellCB->consoleID == CONSOLE_SERIAL) {//带串口功能的控制台
-        name = SERIAL_ENTRY_TASK_NAME;
-    } else if (shellCB->consoleID == CONSOLE_TELNET) {//带远程登录功能的控制台
-        name = TELNET_ENTRY_TASK_NAME;
+    if (shellCB->consoleID == CONSOLE_SERIAL) {  // 串口控制台
+        name = SERIAL_ENTRY_TASK_NAME;  // 设置串口入口任务名称
+    } else if (shellCB->consoleID == CONSOLE_TELNET) {  // Telnet控制台
+        name = TELNET_ENTRY_TASK_NAME;  // 设置Telnet入口任务名称
     } else {
-        return LOS_NOK;
+        return LOS_NOK;  // 返回失败
     }
 
-    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ShellEntry;//任务入口函数
-    initParam.usTaskPrio   = 9; /* 9:shell task priority */
-    initParam.auwArgs[0]   = (UINTPTR)shellCB;
-    initParam.uwStackSize  = 0x1000;
-    initParam.pcName       = name;	//任务名称
-    initParam.uwResved     = LOS_TASK_STATUS_DETACHED;
+    initParam.pfnTaskEntry = (TSK_ENTRY_FUNC)ShellEntry;  // 设置任务入口函数
+    initParam.usTaskPrio   = 9; /* 9:Shell任务优先级 */
+    initParam.auwArgs[0]   = (UINTPTR)shellCB;  // 设置任务参数
+    initParam.uwStackSize  = 0x1000;  // 设置栈大小
+    initParam.pcName       = name;  // 设置任务名称
+    initParam.uwResved     = LOS_TASK_STATUS_DETACHED;  // 设置任务分离状态
 
-    ret = LOS_TaskCreate(&shellCB->shellEntryHandle, &initParam);//创建shell任务
+    ret = LOS_TaskCreate(&shellCB->shellEntryHandle, &initParam);  // 创建任务
 #ifdef LOSCFG_PLATFORM_CONSOLE
-    (VOID)ConsoleTaskReg((INT32)shellCB->consoleID, shellCB->shellEntryHandle);//将shell注册到控制台
+    (VOID)ConsoleTaskReg((INT32)shellCB->consoleID, shellCB->shellEntryHandle);  // 注册控制台任务
 #endif
 
-    return ret;
+    return ret;  // 返回结果
 }
-

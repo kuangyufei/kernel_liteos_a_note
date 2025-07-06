@@ -48,31 +48,39 @@ reset         rm            rmdir         sem           statfs        su        
 systeminfo    task          telnet        tftp          touch         umount        uname         watch         
 writeproc     
 */
+/**
+ * @brief  shell帮助命令实现，用于显示所有支持的shell命令
+ * @param  argc [IN] 命令参数个数
+ * @param  argv [IN] 命令参数列表
+ * @return UINT32 成功返回0，失败返回OS_ERROR
+ */
 UINT32 OsShellCmdHelp(UINT32 argc, const CHAR **argv)
 {
-    UINT32 loop = 0;
-    CmdItemNode *curCmdItem = NULL;
-    CmdModInfo *cmdInfo = OsCmdInfoGet();
+    UINT32 loop = 0;                                 // 循环计数器，用于命令列表格式化输出
+    CmdItemNode *curCmdItem = NULL;                  // 命令项节点指针，用于遍历命令列表
+    CmdModInfo *cmdInfo = OsCmdInfoGet();            // 获取命令模块信息，包含所有已注册的命令
 
-    (VOID)argv;
-    if (argc > 0) {
-        PRINTK("\nUsage: help\n");
-        return OS_ERROR;
+    (VOID)argv;                                      // 未使用参数，避免编译警告
+    if (argc > 0) {                                  // 检查是否有多余参数
+        PRINTK("\nUsage: help\n");                   // 输出命令使用方法
+        return OS_ERROR;                             // 参数错误，返回错误码
     }
 
-    PRINTK("*******************shell commands:*************************\n");
-    LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(cmdInfo->cmdList.list), CmdItemNode, list) {//遍历命令链表
-        if ((loop % CMD_ITEM_PER_LINE) == 0) { /* just align print */
+    PRINTK("*******************shell commands:*************************\n");  // 打印命令列表标题
+    // 遍历命令链表，获取每个命令项节点
+    LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(cmdInfo->cmdList.list), CmdItemNode, list) {
+        if ((loop % CMD_ITEM_PER_LINE) == 0) {       // 每CMD_ITEM_PER_LINE个命令换行，实现格式化输出
             PRINTK("\n");
         }
-        PRINTK("%-12s ", curCmdItem->cmd->cmdKey);
+        PRINTK("%-12s ", curCmdItem->cmd->cmdKey);   // 左对齐输出命令关键字，占12个字符宽度
 
         loop++;
     }
+    // 打印shell使用说明
     PRINTK("\n\nAfter shell prompt \"OHOS # \":\n"
            "Use `<cmd> [args ...]` to run built-in shell commands listed above.\n"
            "Use `exec <cmd> [args ...]` or `./<cmd> [args ...]` to run external commands.\n");
-    return 0;
+    return 0;                                       // 成功返回
 }
 
 SHELLCMD_ENTRY(help_shellcmd, CMD_TYPE_EX, "help", 0, (CmdCallBackFunc)OsShellCmdHelp);

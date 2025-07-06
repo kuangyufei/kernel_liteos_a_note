@@ -40,857 +40,987 @@
 #include "los_memory.h"
 #include "los_typedef.h"
 
+#define SHELL_INIT_MAGIC_FLAG 0xABABABAB  // Shell初始化魔术标志
+#define CTRL_C 0x03 /* 0x03: ctrl+c ASCII码值 */
 
-#define SHELL_INIT_MAGIC_FLAG 0xABABABAB ///< shell的魔法数字
-#define CTRL_C 0x03 /* 0x03: ctrl+c ASCII */
+STATIC CmdModInfo g_cmdInfo;  // 命令模块信息全局变量
 
-STATIC CmdModInfo g_cmdInfo; ///< shell 命令模块信息,上面挂了所有的命令项(ls,cd ,cp ==)
+LOS_HAL_TABLE_BEGIN(g_shellcmd, shellcmd);  // 声明shell命令表开始
+LOS_HAL_TABLE_END(g_shellcmdEnd, shellcmd);  // 声明shell命令表结束
 
-LOS_HAL_TABLE_BEGIN(g_shellcmd, shellcmd);
-LOS_HAL_TABLE_END(g_shellcmdEnd, shellcmd);
-/// 获取全局变量
+/**
+ * @brief 获取命令模块信息
+ * @return CmdModInfo* 命令模块信息指针
+ */
 CmdModInfo *OsCmdInfoGet(VOID)
 {
-    return &g_cmdInfo;
+    return &g_cmdInfo;  // 返回全局命令模块信息指针
 }
-/// 释放命令行参数所占内存
+
+/**
+ * @brief 释放命令解析参数内存
+ * @param cmdParsed 命令解析结构体指针
+ */
 STATIC VOID OsFreeCmdPara(CmdParsed *cmdParsed)
 {
-    UINT32 i;
-    for (i = 0; i < cmdParsed->paramCnt; i++) {//遍历参数个数
-        if ((cmdParsed->paramArray[i]) != NULL) {//一个个释放内存
-            (VOID)LOS_MemFree(m_aucSysMem0, (cmdParsed->paramArray[i]));
-            cmdParsed->paramArray[i] = NULL;//重新初始化
+    UINT32 i;  // 循环计数器
+    for (i = 0; i < cmdParsed->paramCnt; i++) {  // 遍历所有参数
+        if ((cmdParsed->paramArray[i]) != NULL) {  // 如果参数不为空
+            (VOID)LOS_MemFree(m_aucSysMem0, (cmdParsed->paramArray[i]));  // 释放参数内存
+            cmdParsed->paramArray[i] = NULL;  // 置空指针防止野指针
         }
     }
 }
 
+/**
+ * @brief 处理Tab补全字符串获取
+ * @param tabStr 输入字符串指针的指针
+ * @param parsed 命令解析结构体指针
+ * @param tabStrLen 输入字符串长度
+ * @return INT32 操作结果，LOS_OK表示成功，其他值表示失败
+ */
 STATIC INT32 OsStrSeparateTabStrGet(CHAR **tabStr, CmdParsed *parsed, UINT32 tabStrLen)
 {
-    CHAR *shiftStr = NULL;
-    CHAR *tempStr = (CHAR *)LOS_MemAlloc(m_aucSysMem0, SHOW_MAX_LEN << 1);
-    if (tempStr == NULL) {
-        return (INT32)OS_ERROR;
+    CHAR *shiftStr = NULL;  // 处理后的字符串指针
+    CHAR *tempStr = (CHAR *)LOS_MemAlloc(m_aucSysMem0, SHOW_MAX_LEN << 1);  // 分配临时内存 (SHOW_MAX_LEN * 2)
+    if (tempStr == NULL) {  // 内存分配失败检查
+        return (INT32)OS_ERROR;  // 返回错误
     }
 
-    (VOID)memset_s(tempStr, SHOW_MAX_LEN << 1, 0, SHOW_MAX_LEN << 1);
-    shiftStr = tempStr + SHOW_MAX_LEN;
+    (VOID)memset_s(tempStr, SHOW_MAX_LEN << 1, 0, SHOW_MAX_LEN << 1);  // 初始化临时内存为0
+    shiftStr = tempStr + SHOW_MAX_LEN;  // 设置shiftStr指向临时内存后半部分
 
-    if (strncpy_s(tempStr, SHOW_MAX_LEN - 1, *tabStr, tabStrLen)) {
-        (VOID)LOS_MemFree(m_aucSysMem0, tempStr);
-        return (INT32)OS_ERROR;
+    if (strncpy_s(tempStr, SHOW_MAX_LEN - 1, *tabStr, tabStrLen)) {  // 复制输入字符串到tempStr
+        (VOID)LOS_MemFree(m_aucSysMem0, tempStr);  // 复制失败，释放内存
+        return (INT32)OS_ERROR;  // 返回错误
     }
 
-    parsed->cmdType = CMD_TYPE_STD;
+    parsed->cmdType = CMD_TYPE_STD;  // 设置命令类型为标准命令
 
-    /* cut useless or repeat space */
-    if (OsCmdKeyShift(tempStr, shiftStr, SHOW_MAX_LEN - 1)) {
-        (VOID)LOS_MemFree(m_aucSysMem0, tempStr);
-        return (INT32)OS_ERROR;
+    /* 去除无用或重复空格 */
+    if (OsCmdKeyShift(tempStr, shiftStr, SHOW_MAX_LEN - 1)) {  // 调用字符串处理函数
+        (VOID)LOS_MemFree(m_aucSysMem0, tempStr);  // 处理失败，释放内存
+        return (INT32)OS_ERROR;  // 返回错误
     }
 
-    /* get exact position of string to complete */
-    /* situation different if end space lost or still exist */
+    /* 获取需要补全的字符串准确位置 */
+    /* 根据末尾是否有空格处理不同情况 */
     if ((strlen(shiftStr) == 0) || (tempStr[strlen(tempStr) - 1] != shiftStr[strlen(shiftStr) - 1])) {
-        *tabStr = "";
+        *tabStr = "";  // 设置tabStr为空字符串
     } else {
-        if (OsCmdTokenSplit(shiftStr, ' ', parsed)) {
-            (VOID)LOS_MemFree(m_aucSysMem0, tempStr);
-            return (INT32)OS_ERROR;
+        if (OsCmdTokenSplit(shiftStr, ' ', parsed)) {  // 分割字符串为令牌
+            (VOID)LOS_MemFree(m_aucSysMem0, tempStr);  // 分割失败，释放内存
+            return (INT32)OS_ERROR;  // 返回错误
         }
-        *tabStr = parsed->paramArray[parsed->paramCnt - 1];
+        *tabStr = parsed->paramArray[parsed->paramCnt - 1];  // 设置tabStr为最后一个参数
     }
 
-    (VOID)LOS_MemFree(m_aucSysMem0, tempStr);
-    return LOS_OK;
+    (VOID)LOS_MemFree(m_aucSysMem0, tempStr);  // 释放临时内存
+    return LOS_OK;  // 返回成功
 }
 
+/**
+ * @brief 分离路径和文件名
+ * @param tabStr 输入字符串
+ * @param strPath 输出路径缓冲区
+ * @param nameLooking 输出文件名缓冲区
+ * @param tabStrLen 输入字符串长度
+ * @return INT32 操作结果，LOS_OK表示成功，其他值表示失败
+ */
 STATIC INT32 OsStrSeparate(CHAR *tabStr, CHAR *strPath, CHAR *nameLooking, UINT32 tabStrLen)
 {
-    CHAR *strEnd = NULL;
-    CHAR *cutPos = NULL;
-    CmdParsed parsed = {0};
-    CHAR *shellWorkingDirectory = OsShellGetWorkingDirectory();
-    INT32 ret;
+    CHAR *strEnd = NULL;  // 字符串结束指针
+    CHAR *cutPos = NULL;  // 分割位置指针
+    CmdParsed parsed = {0};  // 命令解析结构体初始化
+    CHAR *shellWorkingDirectory = OsShellGetWorkingDirectory();  // 获取shell工作目录
+    INT32 ret;  // 函数返回值
 
-    ret = OsStrSeparateTabStrGet(&tabStr, &parsed, tabStrLen);
-    if (ret != LOS_OK) {
-        return ret;
+    ret = OsStrSeparateTabStrGet(&tabStr, &parsed, tabStrLen);  // 处理Tab补全字符串
+    if (ret != LOS_OK) {  // 检查处理结果
+        return ret;  // 返回错误
     }
 
-    /* get fullpath str *///获取全路径
-    if (*tabStr != '/') {
-        if (strncpy_s(strPath, CMD_MAX_PATH, shellWorkingDirectory, CMD_MAX_PATH - 1)) {
-            OsFreeCmdPara(&parsed);
-            return (INT32)OS_ERROR;
+    /* 获取完整路径字符串 */
+    if (*tabStr != '/') {  // 如果不是绝对路径
+        if (strncpy_s(strPath, CMD_MAX_PATH, shellWorkingDirectory, CMD_MAX_PATH - 1)) {  // 复制工作目录到路径
+            OsFreeCmdPara(&parsed);  // 释放参数
+            return (INT32)OS_ERROR;  // 返回错误
         }
-        if (strcmp(shellWorkingDirectory, "/")) {
-            if (strncat_s(strPath, CMD_MAX_PATH, "/", CMD_MAX_PATH - strlen(strPath) - 1)) {
-                OsFreeCmdPara(&parsed);
-                return (INT32)OS_ERROR;
+        if (strcmp(shellWorkingDirectory, "/")) {  // 如果工作目录不是根目录
+            if (strncat_s(strPath, CMD_MAX_PATH, "/", CMD_MAX_PATH - strlen(strPath) - 1)) {  // 添加路径分隔符
+                OsFreeCmdPara(&parsed);  // 释放参数
+                return (INT32)OS_ERROR;  // 返回错误
             }
         }
     }
 
-    if (strncat_s(strPath, CMD_MAX_PATH, tabStr, CMD_MAX_PATH - strlen(strPath) - 1)) {
-        OsFreeCmdPara(&parsed);//释放命令行中参数所占内存
-        return (INT32)OS_ERROR;
+    if (strncat_s(strPath, CMD_MAX_PATH, tabStr, CMD_MAX_PATH - strlen(strPath) - 1)) {  // 拼接路径
+        OsFreeCmdPara(&parsed);  // 释放参数
+        return (INT32)OS_ERROR;  // 返回错误
     }
 
-    /* split str by last '/' */
-    strEnd = strrchr(strPath, '/');
-    cutPos = strEnd;
-    if (strEnd != NULL) {
-        if (strncpy_s(nameLooking, CMD_MAX_PATH, strEnd + 1, CMD_MAX_PATH - 1)) { /* get cmp str */
-            OsFreeCmdPara(&parsed);
-            return (INT32)OS_ERROR;
+    /* 按最后一个'/'分割字符串 */
+    strEnd = strrchr(strPath, '/');  // 查找最后一个'/'
+    cutPos = strEnd;  // 保存分割位置
+    if (strEnd != NULL) {  // 如果找到'/'
+        if (strncpy_s(nameLooking, CMD_MAX_PATH, strEnd + 1, CMD_MAX_PATH - 1)) { /* 获取比较字符串 */
+            OsFreeCmdPara(&parsed);  // 释放参数
+            return (INT32)OS_ERROR;  // 返回错误
         }
-        *(cutPos + 1) = '\0';
+        *(cutPos + 1) = '\0';  // 在'/'后添加结束符
     }
 
-    OsFreeCmdPara(&parsed);
-    return LOS_OK;
+    OsFreeCmdPara(&parsed);  // 释放参数
+    return LOS_OK;  // 返回成功
 }
-/// 输出内容
+
+/**
+ * @brief 分页显示输入控制
+ * @return INT32 操作结果，1表示继续，0表示退出，OS_ERROR表示错误
+ */
 STATIC INT32 OsShowPageInputControl(VOID)
 {
-    CHAR readChar;
+    CHAR readChar;  // 读取的字符
 
-    while (1) {//从 stdin 中读取内容字符
-        if (read(STDIN_FILENO, &readChar, 1) != 1) { /* get one CHAR from stdin */
-            PRINTK("\n");
-            return (INT32)OS_ERROR;
+    while (1) {  // 无限循环等待输入
+        if (read(STDIN_FILENO, &readChar, 1) != 1) { /* 从标准输入读取一个字符 */
+            PRINTK("\n");  // 输出换行
+            return (INT32)OS_ERROR;  // 返回错误
         }
-        if ((readChar == 'q') || (readChar == 'Q') || (readChar == CTRL_C)) {
-            PRINTK("\n");
-            return 0;
-        } else if (readChar == '\r') {
-            PRINTK("\b \b\b \b\b \b\b \b\b \b\b \b\b \b\b \b");
-            return 1;
+        if ((readChar == 'q') || (readChar == 'Q') || (readChar == CTRL_C)) {  // 如果是q/Q或Ctrl+C
+            PRINTK("\n");  // 输出换行
+            return 0;  // 返回退出
+        } else if (readChar == '\r') {  // 如果是回车
+            PRINTK("\b \b\b \b\b \b\b \b\b \b\b \b\b \b\b \b");  // 清除--More--提示
+            return 1;  // 返回继续
         }
     }
 }
-///显示页内容控制器
+
+/**
+ * @brief 分页显示控制
+ * @param timesPrint 已打印次数
+ * @param lineCap 每行容量
+ * @param count 总数量
+ * @return INT32 操作结果，1表示继续，0表示退出，其他值表示错误
+ */
 STATIC INT32 OsShowPageControl(UINT32 timesPrint, UINT32 lineCap, UINT32 count)
 {
-    if (NEED_NEW_LINE(timesPrint, lineCap)) {//是否新开一行
-        PRINTK("\n");
-        if (SCREEN_IS_FULL(timesPrint, lineCap) && (timesPrint < count)) {
-            PRINTK("--More--");
-            return OsShowPageInputControl();//打印内容
+    if (NEED_NEW_LINE(timesPrint, lineCap)) {  // 需要新行
+        PRINTK("\n");  // 输出换行
+        if (SCREEN_IS_FULL(timesPrint, lineCap) && (timesPrint < count)) {  // 如果屏幕已满且未打印完
+            PRINTK("--More--");  // 显示--More--提示
+            return OsShowPageInputControl();  // 调用输入控制
         }
     }
-    return 1;
+    return 1;  // 返回继续
 }
-///是否打印所有内容
+
+/**
+ * @brief 确认是否显示所有内容
+ * @param count 项目数量
+ * @return INT32 操作结果，1表示显示，0表示不显示，OS_ERROR表示错误
+ */
 STATIC INT32 OsSurePrintAll(UINT32 count)
 {
-    CHAR readChar = 0;
-    PRINTK("\nDisplay all %u possibilities?(y/n)", count);
-    while (1) {//死循环等待输入
-        if (read(0, &readChar, 1) != 1) {//从标准输入中 读取字符
-            return (INT32)OS_ERROR;
+    CHAR readChar = 0;  // 读取的字符
+    PRINTK("\nDisplay all %u possibilities?(y/n)", count);  // 显示确认信息
+    while (1) {  // 无限循环等待输入
+        if (read(0, &readChar, 1) != 1) {  // 从标准输入读取一个字符
+            return (INT32)OS_ERROR;  // 返回错误
         }
-        if ((readChar == 'n') || (readChar == 'N') || (readChar == CTRL_C)) {//输入N
-            PRINTK("\n");
-            return 0;
-        } else if ((readChar == 'y') || (readChar == 'Y') || (readChar == '\r')) {//输入 Y
-            return 1;
+        if ((readChar == 'n') || (readChar == 'N') || (readChar == CTRL_C)) {  // 如果是n/N或Ctrl+C
+            PRINTK("\n");  // 输出换行
+            return 0;  // 返回不显示
+        } else if ((readChar == 'y') || (readChar == 'Y') || (readChar == '\r')) {  // 如果是y/Y或回车
+            return 1;  // 返回显示
         }
     }
 }
-///打印匹配的列表数据
+
+/**
+ * @brief 打印匹配列表
+ * @param count 匹配数量
+ * @param strPath 路径
+ * @param nameLooking 查找的名称
+ * @param printLen 打印长度
+ * @return INT32 操作结果，LOS_OK表示成功，其他值表示失败
+ */
 STATIC INT32 OsPrintMatchList(UINT32 count, const CHAR *strPath, const CHAR *nameLooking, UINT32 printLen)
 {
-    UINT32 timesPrint = 0;
-    UINT32 lineCap;
-    INT32 ret;
-    DIR *openDir = NULL;
-    struct dirent *readDir = NULL;
-    CHAR formatChar[10] = {0}; /* 10:for formatChar length */
+    UINT32 timesPrint = 0;  // 已打印次数
+    UINT32 lineCap;  // 每行容量
+    INT32 ret;  // 函数返回值
+    DIR *openDir = NULL;  // 目录指针
+    struct dirent *readDir = NULL;  // 目录项指针
+    CHAR formatChar[10] = {0}; /* 10:格式字符串长度 */
 
-    printLen = (printLen > (DEFAULT_SCREEN_WIDTH - 2)) ? (DEFAULT_SCREEN_WIDTH - 2) : printLen; /* 2:revered 2 bytes */
-    lineCap = DEFAULT_SCREEN_WIDTH / (printLen + 2); /* 2:DEFAULT_SCREEN_WIDTH revered 2 bytes */
-    if (snprintf_s(formatChar, sizeof(formatChar) - 1, 7, "%%-%us  ", printLen) < 0) { /* 7:format-len */
-        return (INT32)OS_ERROR;
+    printLen = (printLen > (DEFAULT_SCREEN_WIDTH - 2)) ? (DEFAULT_SCREEN_WIDTH - 2) : printLen; /* 2:保留2字节 */
+    lineCap = DEFAULT_SCREEN_WIDTH / (printLen + 2); /* 2:DEFAULT_SCREEN_WIDTH保留2字节 */
+    if (snprintf_s(formatChar, sizeof(formatChar) - 1, 7, "%%-%us  ", printLen) < 0) { /* 7:格式长度 */
+        return (INT32)OS_ERROR;  // 格式化字符串失败，返回错误
     }
 
-    if (count > (lineCap * DEFAULT_SCREEN_HEIGHT)) {
-        ret = OsSurePrintAll(count);//确认打印内容,等待用户输入 N/Y
-        if (ret != 1) {
-            return ret;
+    if (count > (lineCap * DEFAULT_SCREEN_HEIGHT)) {  // 如果数量超过一屏
+        ret = OsSurePrintAll(count);  // 确认是否显示所有
+        if (ret != 1) {  // 如果不显示所有
+            return ret;  // 返回结果
         }
     }
-    openDir = opendir(strPath);//打开目录
-    if (openDir == NULL) {
-        return (INT32)OS_ERROR;
+    openDir = opendir(strPath);  // 打开目录
+    if (openDir == NULL) {  // 打开目录失败检查
+        return (INT32)OS_ERROR;  // 返回错误
     }
 
-    PRINTK("\n");
-    for (readDir = readdir(openDir); readDir != NULL; readDir = readdir(openDir)) {
-        if (strncmp(nameLooking, readDir->d_name, strlen(nameLooking)) != 0) {
-            continue;
+    PRINTK("\n");  // 输出换行
+    for (readDir = readdir(openDir); readDir != NULL; readDir = readdir(openDir)) {  // 遍历目录
+        if (strncmp(nameLooking, readDir->d_name, strlen(nameLooking)) != 0) {  // 比较名称
+            continue;  // 不匹配则跳过
         }
-        PRINTK(formatChar, readDir->d_name);
-        timesPrint++;
-        ret = OsShowPageControl(timesPrint, lineCap, count);
-        if (ret != 1) {
-            if (closedir(openDir) < 0) {
-                return (INT32)OS_ERROR;
+        PRINTK(formatChar, readDir->d_name);  // 打印匹配的名称
+        timesPrint++;  // 增加打印次数
+        ret = OsShowPageControl(timesPrint, lineCap, count);  // 分页控制
+        if (ret != 1) {  // 如果需要退出
+            if (closedir(openDir) < 0) {  // 关闭目录
+                return (INT32)OS_ERROR;  // 返回错误
             }
-            return ret;
+            return ret;  // 返回结果
         }
     }
 
-    PRINTK("\n");
-    if (closedir(openDir) < 0) {
-        return (INT32)OS_ERROR;
+    PRINTK("\n");  // 输出换行
+    if (closedir(openDir) < 0) {  // 关闭目录
+        return (INT32)OS_ERROR;  // 返回错误
     }
 
-    return LOS_OK;
+    return LOS_OK;  // 返回成功
 }
 
+/**
+ * @brief 比较字符串并截断
+ * @param s1 源字符串1
+ * @param s2 源字符串2
+ * @param n 比较长度
+ */
 STATIC VOID strncmp_cut(const CHAR *s1, CHAR *s2, size_t n)
 {
-    if ((n == 0) || (s1 == NULL) || (s2 == NULL)) {
-        return;
+    if ((n == 0) || (s1 == NULL) || (s2 == NULL)) {  // 参数检查
+        return;  // 直接返回
     }
     do {
-        if (*s1 && *s2 && (*s1 == *s2)) {
-            s1++;
-            s2++;
+        if (*s1 && *s2 && (*s1 == *s2)) {  // 如果字符相等且不为结束符
+            s1++;  // 移动s1指针
+            s2++;  // 移动s2指针
         } else {
-            break;
+            break;  // 不相等则跳出循环
         }
-    } while (--n != 0);
-    if (n > 0) {
-        /* NULL pad the remaining n-1 bytes */
+    } while (--n != 0);  // 循环直到n为0
+    if (n > 0) {  // 如果还有剩余长度
+        /* 用NULL填充剩余的n-1字节 */
         while (n-- != 0)
-            *s2++ = 0;
+            *s2++ = 0;  // 设置为结束符
     }
-    return;
+    return;  // 返回
 }
 
-//匹配文件
+/**
+ * @brief 执行名称匹配
+ * @param strPath 路径
+ * @param nameLooking 查找的名称
+ * @param strObj 输出匹配的对象
+ * @param maxLen 输出最大长度
+ * @return INT32 匹配数量，OS_ERROR表示失败
+ */
 STATIC INT32 OsExecNameMatch(const CHAR *strPath, const CHAR *nameLooking, CHAR *strObj, UINT32 *maxLen)
 {
-    INT32 count = 0;
-    DIR *openDir = NULL;
-    struct dirent *readDir = NULL;
+    INT32 count = 0;  // 匹配计数
+    DIR *openDir = NULL;  // 目录指针
+    struct dirent *readDir = NULL;  // 目录项指针
 
-    openDir = opendir(strPath);
-    if (openDir == NULL) {
-        return (INT32)OS_ERROR;
+    openDir = opendir(strPath);  // 打开目录
+    if (openDir == NULL) {  // 打开目录失败检查
+        return (INT32)OS_ERROR;  // 返回错误
     }
-	//遍历目录下的文件夹
-    for (readDir = readdir(openDir); readDir != NULL; readDir = readdir(openDir)) {
-        if (strncmp(nameLooking, readDir->d_name, strlen(nameLooking)) != 0) {//不存在字符,
-            continue;
+
+    for (readDir = readdir(openDir); readDir != NULL; readDir = readdir(openDir)) {  // 遍历目录
+        if (strncmp(nameLooking, readDir->d_name, strlen(nameLooking)) != 0) {  // 比较名称
+            continue;  // 不匹配则跳过
         }
-        if (count == 0) {
-            if (strncpy_s(strObj, CMD_MAX_PATH, readDir->d_name, CMD_MAX_PATH - 1)) {
-                (VOID)closedir(openDir);
-                return (INT32)OS_ERROR;
+        if (count == 0) {  // 第一个匹配项
+            if (strncpy_s(strObj, CMD_MAX_PATH, readDir->d_name, CMD_MAX_PATH - 1)) {  // 复制名称
+                (VOID)closedir(openDir);  // 关闭目录
+                return (INT32)OS_ERROR;  // 返回错误
             }
-            *maxLen = strlen(readDir->d_name);
-        } else {
-            /* strncmp&cut the same strings of name matched */
-            strncmp_cut(readDir->d_name, strObj, strlen(strObj));
-            if (strlen(readDir->d_name) > *maxLen) {
-                *maxLen = strlen(readDir->d_name);
+            *maxLen = strlen(readDir->d_name);  // 设置最大长度
+        } else {  // 后续匹配项
+            /* 比较并截断匹配名称的相同字符串 */
+            strncmp_cut(readDir->d_name, strObj, strlen(strObj));  // 截断字符串
+            if (strlen(readDir->d_name) > *maxLen) {  // 更新最大长度
+                *maxLen = strlen(readDir->d_name);  // 设置新的最大长度
             }
         }
-        count++;//找到一个
+        count++;  // 增加计数
     }
 
-    if (closedir(openDir) < 0) {
-        return (INT32)OS_ERROR;
+    if (closedir(openDir) < 0) {  // 关闭目录
+        return (INT32)OS_ERROR;  // 返回错误
     }
 
-    return count;
+    return count;  // 返回匹配数量
 }
 
+/**
+ * @brief 补全字符串
+ * @param result 结果字符串
+ * @param target 目标字符串
+ * @param cmdKey 命令键
+ * @param len 长度指针
+ */
 STATIC VOID OsCompleteStr(const CHAR *result, const CHAR *target, CHAR *cmdKey, UINT32 *len)
 {
-    UINT32 size = strlen(result) - strlen(target);
-    CHAR *des = cmdKey + *len;
-    CHAR *src = (CHAR *)result + strlen(target);
+    UINT32 size = strlen(result) - strlen(target);  // 计算需要补全的大小
+    CHAR *des = cmdKey + *len;  // 目标位置指针
+    CHAR *src = (CHAR *)result + strlen(target);  // 源位置指针
 
-    while (size-- > 0) {
-        PRINTK("%c", *src);
-        if (*len == (SHOW_MAX_LEN - 1)) {
-            *des = '\0';
-            break;
+    while (size-- > 0) {  // 循环补全字符
+        PRINTK("%c", *src);  // 打印字符
+        if (*len == (SHOW_MAX_LEN - 1)) {  // 检查长度是否达到最大值
+            *des = '\0';  // 添加结束符
+            break;  // 跳出循环
         }
-        *des++ = *src++;
-        (*len)++;
+        *des++ = *src++;  // 复制字符
+        (*len)++;  // 增加长度
     }
 }
-///使用tab键去匹配命令
-/*例如:
-root@iZ7xv0x7yrn6s2or5pzw58Z:~# ls
-ls           lsblk        lscpu        lsinitramfs  lslocks      lsmem        lsns         lspci        lsusb
-lsattr       lsb_release  lshw         lsipc        lslogins     lsmod        lsof         lspgpot
-*/
+
+/**
+ * @brief Tab匹配命令
+ * @param cmdKey 命令键
+ * @param len 长度指针
+ * @return INT32 匹配数量，负数表示错误
+ */
 STATIC INT32 OsTabMatchCmd(CHAR *cmdKey, UINT32 *len)
 {
-    INT32 count = 0;
-    INT32 ret;
-    CmdItemNode *cmdItemGuard = NULL;
-    CmdItemNode *curCmdItem = NULL;
-    const CHAR *cmdMajor = (const CHAR *)cmdKey;
+    INT32 count = 0;  // 匹配计数
+    INT32 ret;  // 函数返回值
+    CmdItemNode *cmdItemGuard = NULL;  // 命令项守卫指针
+    CmdItemNode *curCmdItem = NULL;  // 当前命令项指针
+    const CHAR *cmdMajor = (const CHAR *)cmdKey;  // 命令主串
 
-    while (*cmdMajor == 0x20) { /* cut left space */
-        cmdMajor++;
+    while (*cmdMajor == 0x20) { /* 去除左侧空格 */
+        cmdMajor++;  // 移动指针
     }
 
-    if (LOS_ListEmpty(&(g_cmdInfo.cmdList.list))) {
-        return (INT32)OS_ERROR;
+    if (LOS_ListEmpty(&(g_cmdInfo.cmdList.list))) {  // 检查命令列表是否为空
+        return (INT32)OS_ERROR;  // 返回错误
     }
-	//遍历现有命令
-    LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(g_cmdInfo.cmdList.list), CmdItemNode, list) {
-        if ((curCmdItem == NULL) || (curCmdItem->cmd == NULL)) {
-            return -1;
-        }
-		
-        if (strncmp(cmdMajor, curCmdItem->cmd->cmdKey, strlen(cmdMajor)) > 0) {
-            continue;
+
+    LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(g_cmdInfo.cmdList.list), CmdItemNode, list) {  // 遍历命令列表
+        if ((curCmdItem == NULL) || (curCmdItem->cmd == NULL)) {  // 检查命令项是否有效
+            return -1;  // 返回错误
         }
 
-        if (strncmp(cmdMajor, curCmdItem->cmd->cmdKey, strlen(cmdMajor)) != 0) {
-            break;
+        if (strncmp(cmdMajor, curCmdItem->cmd->cmdKey, strlen(cmdMajor)) > 0) {  // 比较命令键
+            continue;  // 不匹配则跳过
         }
 
-        if (count == 0) {
-            cmdItemGuard = curCmdItem;
+        if (strncmp(cmdMajor, curCmdItem->cmd->cmdKey, strlen(cmdMajor)) != 0) {  // 比较命令键
+            break;  // 不匹配则跳出循环
         }
-        ++count;//匹配到一个
-    }
 
-    if (cmdItemGuard == NULL) {
-        return 0;
-    }
-
-    if (count == 1) {//只有一个的情况,直接补充完整
-        OsCompleteStr(cmdItemGuard->cmd->cmdKey, cmdMajor, cmdKey, len);
-    }
-
-    ret = count;
-    if (count > 1) {
-        PRINTK("\n");
-        while (count--) {//打印已经匹配到的命令
-            PRINTK("%s  ", cmdItemGuard->cmd->cmdKey);
-            cmdItemGuard = LOS_DL_LIST_ENTRY(cmdItemGuard->list.pstNext, CmdItemNode, list);//取下一个
+        if (count == 0) {  // 第一个匹配项
+            cmdItemGuard = curCmdItem;  // 设置守卫指针
         }
-        PRINTK("\n");
+        ++count;  // 增加计数
     }
 
-    return ret;
+    if (cmdItemGuard == NULL) {  // 没有匹配项
+        return 0;  // 返回0
+    }
+
+    if (count == 1) {  // 只有一个匹配项
+        OsCompleteStr(cmdItemGuard->cmd->cmdKey, cmdMajor, cmdKey, len);  // 补全字符串
+    }
+
+    ret = count;  // 保存计数
+    if (count > 1) {  // 多个匹配项
+        PRINTK("\n");  // 输出换行
+        while (count--) {  // 遍历所有匹配项
+            PRINTK("%s  ", cmdItemGuard->cmd->cmdKey);  // 打印命令键
+            cmdItemGuard = LOS_DL_LIST_ENTRY(cmdItemGuard->list.pstNext, CmdItemNode, list);  // 移动到下一个
+        }
+        PRINTK("\n");  // 输出换行
+    }
+
+    return ret;  // 返回匹配数量
 }
-///使用tab键去匹配关键字文件
+
+/**
+ * @brief Tab匹配文件
+ * @param cmdKey 命令键
+ * @param len 长度指针
+ * @return INT32 匹配数量，OS_ERROR表示失败
+ */
 STATIC INT32 OsTabMatchFile(CHAR *cmdKey, UINT32 *len)
 {
-    UINT32 maxLen = 0;
-    INT32 count;
-    CHAR *strOutput = NULL;
-    CHAR *strCmp = NULL;
+    UINT32 maxLen = 0;  // 最大长度
+    INT32 count;  // 匹配数量
+    CHAR *strOutput = NULL;  // 输出字符串指针
+    CHAR *strCmp = NULL;  // 比较字符串指针
     CHAR *dirOpen = (CHAR *)LOS_MemAlloc(m_aucSysMem0, CMD_MAX_PATH * 3); /* 3:dirOpen\strOutput\strCmp */
-    if (dirOpen == NULL) {
-        return (INT32)OS_ERROR;
+    if (dirOpen == NULL) {  // 内存分配失败检查
+        return (INT32)OS_ERROR;  // 返回错误
     }
 
     (VOID)memset_s(dirOpen, CMD_MAX_PATH * 3, 0, CMD_MAX_PATH * 3); /* 3:dirOpen\strOutput\strCmp */
-    strOutput = dirOpen + CMD_MAX_PATH;
-    strCmp = strOutput + CMD_MAX_PATH;
+    strOutput = dirOpen + CMD_MAX_PATH;  // 设置输出字符串指针
+    strCmp = strOutput + CMD_MAX_PATH;  // 设置比较字符串指针
 
-    if (OsStrSeparate(cmdKey, dirOpen, strCmp, *len)) {
-        (VOID)LOS_MemFree(m_aucSysMem0, dirOpen);
-        return (INT32)OS_ERROR;
-    }
-	//匹配名字
-    count = OsExecNameMatch(dirOpen, strCmp, strOutput, &maxLen);
-    /* one or more matched */
-    if (count >= 1) {
-        OsCompleteStr(strOutput, strCmp, cmdKey, len);
-
-        if (count == 1) {
-            (VOID)LOS_MemFree(m_aucSysMem0, dirOpen);
-            return 1;
-        }
-        if (OsPrintMatchList((UINT32)count, dirOpen, strCmp, maxLen) == -1) {
-            (VOID)LOS_MemFree(m_aucSysMem0, dirOpen);
-            return (INT32)OS_ERROR;
-        }
+    if (OsStrSeparate(cmdKey, dirOpen, strCmp, *len)) {  // 分离路径和文件名
+        (VOID)LOS_MemFree(m_aucSysMem0, dirOpen);  // 释放内存
+        return (INT32)OS_ERROR;  // 返回错误
     }
 
-    (VOID)LOS_MemFree(m_aucSysMem0, dirOpen);
-    return count;
+    count = OsExecNameMatch(dirOpen, strCmp, strOutput, &maxLen);  // 执行名称匹配
+    /* 一个或多个匹配 */
+    if (count >= 1) {  // 如果有匹配项
+        OsCompleteStr(strOutput, strCmp, cmdKey, len);  // 补全字符串
+
+        if (count == 1) {  // 只有一个匹配项
+            (VOID)LOS_MemFree(m_aucSysMem0, dirOpen);  // 释放内存
+            return 1;  // 返回1
+        }
+        if (OsPrintMatchList((UINT32)count, dirOpen, strCmp, maxLen) == -1) {  // 打印匹配列表
+            (VOID)LOS_MemFree(m_aucSysMem0, dirOpen);  // 释放内存
+            return (INT32)OS_ERROR;  // 返回错误
+        }
+    }
+
+    (VOID)LOS_MemFree(m_aucSysMem0, dirOpen);  // 释放内存
+    return count;  // 返回匹配数量
 }
 
-/*
- * Description: Pass in the string and clear useless space ,which inlcude:
- *                1) The overmatch space which is not be marked by Quote's area
- *                   Squeeze the overmatch space into one space
- *                2) Clear all space before first vaild charatctor
- * Input:       cmdKey : Pass in the buff string, which is ready to be operated
- *              cmdOut : Pass out the buffer string ,which has already been operated
- *              size : cmdKey length
+/**
+ * @brief 处理命令字符串，清除无用空格
+ * @param cmdKey 输入字符串
+ * @param cmdOut 输出字符串
+ * @param size 输出缓冲区大小
+ * @return UINT32 操作结果，LOS_OK表示成功，其他值表示失败
+ * @note 清除规则：
+ *       1) 清除引号区域外的多余空格，将多个空格压缩为一个
+ *       2) 清除第一个有效字符前的所有空格
  */
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdKeyShift(const CHAR *cmdKey, CHAR *cmdOut, UINT32 size)
 {
-    CHAR *output = NULL;
-    CHAR *outputBak = NULL;
-    UINT32 len;
-    INT32 ret;
-    BOOL quotes = FALSE;
+    CHAR *output = NULL;  // 输出缓冲区指针
+    CHAR *outputBak = NULL;  // 输出缓冲区备份指针
+    UINT32 len;  // 字符串长度
+    INT32 ret;  // 函数返回值
+    BOOL quotes = FALSE;  // 引号状态标志
 
-    if ((cmdKey == NULL) || (cmdOut == NULL)) {
-        return (UINT32)OS_ERROR;
+    if ((cmdKey == NULL) || (cmdOut == NULL)) {  // 参数检查
+        return (UINT32)OS_ERROR;  // 返回错误
     }
 
-    len = strlen(cmdKey);
-    if (len >= size) {
-        return (UINT32)OS_ERROR;
+    len = strlen(cmdKey);  // 获取输入字符串长度
+    if (len >= size) {  // 检查长度是否超过输出缓冲区大小
+        return (UINT32)OS_ERROR;  // 返回错误
     }
-    output = (CHAR*)LOS_MemAlloc(m_aucSysMem0, len + 1);
-    if (output == NULL) {
-        PRINTK("malloc failure in %s[%d]", __FUNCTION__, __LINE__);
-        return (UINT32)OS_ERROR;
+    output = (CHAR*)LOS_MemAlloc(m_aucSysMem0, len + 1);  // 分配输出缓冲区
+    if (output == NULL) {  // 内存分配失败检查
+        PRINTK("malloc failure in %s[%d]", __FUNCTION__, __LINE__);  // 打印错误信息
+        return (UINT32)OS_ERROR;  // 返回错误
     }
-    /* Backup the 'output' start address */
-    outputBak = output;
-    /* Scan each charactor in 'cmdKey',and squeeze the overmuch space and ignore invaild charactor */
-    for (; *cmdKey != '\0'; cmdKey++) {
-        /* Detected a Double Quotes, switch the matching status */
-        if (*(cmdKey) == '\"') {
-            SWITCH_QUOTES_STATUS(quotes);
+    /* 备份output起始地址 */
+    outputBak = output;  // 保存输出缓冲区起始地址
+    /* 扫描cmdKey中的每个字符，压缩多余空格并忽略无效字符 */
+    for (; *cmdKey != '\0'; cmdKey++) {  // 遍历输入字符串
+        /* 检测到双引号，切换匹配状态 */
+        if (*(cmdKey) == '\"') {  // 如果是双引号
+            SWITCH_QUOTES_STATUS(quotes);  // 切换引号状态
         }
-        /* Ignore the current charactor in following situation */
-        /* 1) Quotes matching status is FALSE (which said that the space is not been marked by double quotes) */
-        /* 2) Current charactor is a space */
-        /* 3) Next charactor is a space too, or the string is been seeked to the end already(\0) */
-        /* 4) Invaild charactor, such as single quotes */
+        /* 在以下情况忽略当前字符 */
+        /* 1) 引号匹配状态为FALSE（表示空格不在双引号标记范围内） */
+        /* 2) 当前字符是空格 */
+        /* 3) 下一个字符也是空格，或者字符串已到达末尾(\0) */
+        /* 4) 无效字符，如单引号 */
         if ((*cmdKey == ' ') && ((*(cmdKey + 1) == ' ') || (*(cmdKey + 1) == '\0')) && QUOTES_STATUS_CLOSE(quotes)) {
-            continue;
+            continue;  // 忽略当前字符
         }
-        if (*cmdKey == '\'') {
-            continue;
+        if (*cmdKey == '\'') {  // 如果是单引号
+            continue;  // 忽略当前字符
         }
-        *output = *cmdKey;
-        output++;
+        *output = *cmdKey;  // 复制字符到输出缓冲区
+        output++;  // 移动输出指针
     }
-    *output = '\0';
-    /* Restore the 'output' start address */
-    output = outputBak;
-    len = strlen(output);
-    /* Clear the space which is located at the first charactor in buffer */
-    if (*outputBak == ' ') {
-        output++;
-        len--;
+    *output = '\0';  // 添加结束符
+    /* 恢复output起始地址 */
+    output = outputBak;  // 恢复输出缓冲区起始地址
+    len = strlen(output);  // 获取处理后字符串长度
+    /* 清除缓冲区第一个字符处的空格 */
+    if (*outputBak == ' ') {  // 如果第一个字符是空格
+        output++;  // 移动输出指针
+        len--;  // 减少长度
     }
-    /* Copy out the buffer which is been operated already */
-    ret = strncpy_s(cmdOut, size, output, len);
-    if (ret != EOK) {
-        PRINT_ERR("%s,%d strncpy_s failed, err:%d!\n", __FUNCTION__, __LINE__, ret);
-        (VOID)LOS_MemFree(m_aucSysMem0, output);
-        return OS_ERROR;
+    /* 复制处理后的缓冲区 */
+    ret = strncpy_s(cmdOut, size, output, len);  // 复制到输出缓冲区
+    if (ret != EOK) {  // 检查复制结果
+        PRINT_ERR("%s,%d strncpy_s failed, err:%d!\n", __FUNCTION__, __LINE__, ret);  // 打印错误信息
+        (VOID)LOS_MemFree(m_aucSysMem0, output);  // 释放内存
+        return OS_ERROR;  // 返回错误
     }
-    cmdOut[len] = '\0';
+    cmdOut[len] = '\0';  // 添加结束符
 
-    (VOID)LOS_MemFree(m_aucSysMem0, output);
+    (VOID)LOS_MemFree(m_aucSysMem0, output);  // 释放内存
 
-    return LOS_OK;
+    return LOS_OK;  // 返回成功
 }
-///类型变量命名,必须是数字字母下划线,首字母不能是数字
+/**
+ * @brief 检查命令关键字合法性
+ * @param cmdKey 命令关键字字符串
+ * @return BOOL 合法性结果，TRUE表示合法，FALSE表示非法
+ */
 LITE_OS_SEC_TEXT_MINOR BOOL OsCmdKeyCheck(const CHAR *cmdKey)
 {
-    const CHAR *temp = cmdKey;
-    enum Stat {
-        STAT_NONE,	//普通
-        STAT_DIGIT,	//数字
-        STAT_OTHER	//其余
-    } state = STAT_NONE;
+    const CHAR *temp = cmdKey;  // 临时指针用于遍历字符串
+    enum Stat {  // 状态枚举：无状态、数字状态、其他字符状态
+        STAT_NONE,
+        STAT_DIGIT,
+        STAT_OTHER
+    } state = STAT_NONE;  // 初始状态为无状态
 
-    if (strlen(cmdKey) >= CMD_KEY_LEN) {//长度不能超 16个字符
-        return FALSE;
+    if (strlen(cmdKey) >= CMD_KEY_LEN) {  // 检查命令关键字长度是否超过限制
+        return FALSE;  // 超过长度限制，返回非法
     }
-	//命令只支持数字,字母,下划线,中划线
-    while (*temp != '\0') {
+
+    while (*temp != '\0') {  // 遍历命令关键字字符串
+        // 检查字符是否为数字、字母、下划线或连字符
         if (!((*temp <= '9') && (*temp >= '0')) &&
             !((*temp <= 'z') && (*temp >= 'a')) &&
             !((*temp <= 'Z') && (*temp >= 'A')) &&
             (*temp != '_') && (*temp != '-')) {
-            return FALSE;
+            return FALSE;  // 包含非法字符，返回非法
         }
-		//数字
-        if ((*temp >= '0') && (*temp <= '9')) {
-            if (state == STAT_NONE) {
-                state = STAT_DIGIT;
+
+        if ((*temp >= '0') && (*temp <= '9')) {  // 如果是数字
+            if (state == STAT_NONE) {  // 且当前状态为无状态
+                state = STAT_DIGIT;  // 切换到数字状态
             }
-        } else {
-            state = STAT_OTHER;
+        } else {  // 如果是字母、下划线或连字符
+            state = STAT_OTHER;  // 切换到其他字符状态
         }
 
-        temp++;
+        temp++;  // 移动到下一个字符
     }
 
-    if (state == STAT_DIGIT) {
-        return FALSE;
+    if (state == STAT_DIGIT) {  // 如果最终状态为数字状态（命令关键字全为数字）
+        return FALSE;  // 返回非法
     }
 
-    return TRUE;
+    return TRUE;  // 命令关键字合法，返回TRUE
 }
-///tab键
+
+/**
+ * @brief Tab补全功能实现
+ * @param cmdKey 命令关键字字符串
+ * @param len 字符串长度指针
+ * @return INT32 补全结果数量，负数表示错误
+ */
 LITE_OS_SEC_TEXT_MINOR INT32 OsTabCompletion(CHAR *cmdKey, UINT32 *len)
 {
-    INT32 count = 0;
-    CHAR *space = NULL;
-    CHAR *cmdMainStr = cmdKey;
+    INT32 count = 0;  // 补全结果计数
+    CHAR *space = NULL;  // 空格指针
+    CHAR *cmdMainStr = cmdKey;  // 命令主字符串指针
 
-    if ((cmdKey == NULL) || (len == NULL)) {
-        return (INT32)OS_ERROR;
+    if ((cmdKey == NULL) || (len == NULL)) {  // 参数检查
+        return (INT32)OS_ERROR;  // 参数无效，返回错误
     }
 
-    /* cut left space */
-    while (*cmdMainStr == 0x20) {//空格键
-        cmdMainStr++;
+    /* 去除左侧空格 */
+    while (*cmdMainStr == 0x20) {  // 遍历空格字符
+        cmdMainStr++;  // 移动指针跳过空格
     }
 
-    /* try to find space in remain */
-    space = strrchr(cmdMainStr, 0x20);
-    if ((space == NULL) && (*cmdMainStr != '\0')) {
-        count = OsTabMatchCmd(cmdKey, len);
+    /* 尝试在剩余字符串中查找空格 */
+    space = strrchr(cmdMainStr, 0x20);  // 查找最后一个空格
+    if ((space == NULL) && (*cmdMainStr != '\0')) {  // 如果没有空格且字符串非空
+        count = OsTabMatchCmd(cmdKey, len);  // 尝试匹配命令
     }
 
-    if (count == 0) {
-        count = OsTabMatchFile(cmdKey, len);
+    if (count == 0) {  // 如果命令匹配数量为0
+        count = OsTabMatchFile(cmdKey, len);  // 尝试匹配文件
     }
 
-    return count;
+    return count;  // 返回匹配数量
 }
-///按升序插入到链表中
+
+/**
+ * @brief 按升序插入命令项到链表
+ * @param cmd 要插入的命令项节点
+ */
 LITE_OS_SEC_TEXT_MINOR VOID OsCmdAscendingInsert(CmdItemNode *cmd)
 {
-    CmdItemNode *cmdItem = NULL;
-    CmdItemNode *cmdNext = NULL;
+    CmdItemNode *cmdItem = NULL;  // 当前命令项节点
+    CmdItemNode *cmdNext = NULL;  // 下一个命令项节点
 
-    if (cmd == NULL) {
-        return;
+    if (cmd == NULL) {  // 参数检查
+        return;  // 命令项为空，直接返回
     }
-	//遍历注册的命令项链表
+
+    // 从链表尾部开始遍历，寻找插入位置
     for (cmdItem = LOS_DL_LIST_ENTRY((&g_cmdInfo.cmdList.list)->pstPrev, CmdItemNode, list);
          &cmdItem->list != &(g_cmdInfo.cmdList.list);) {
-        cmdNext = LOS_DL_LIST_ENTRY(cmdItem->list.pstPrev, CmdItemNode, list);//获取实体,一个个比较
-        if (&cmdNext->list != &(g_cmdInfo.cmdList.list)) {
+        cmdNext = LOS_DL_LIST_ENTRY(cmdItem->list.pstPrev, CmdItemNode, list);  // 获取前一个节点
+        if (&cmdNext->list != &(g_cmdInfo.cmdList.list)) {  // 如果不是头节点
+            // 找到插入位置：当前节点关键字 >= 待插入关键字 且 前一个节点关键字 < 待插入关键字
             if ((strncmp(cmdItem->cmd->cmdKey, cmd->cmd->cmdKey, strlen(cmd->cmd->cmdKey)) >= 0) &&
                 (strncmp(cmdNext->cmd->cmdKey, cmd->cmd->cmdKey, strlen(cmd->cmd->cmdKey)) < 0)) {
-                LOS_ListTailInsert(&(cmdItem->list), &(cmd->list));//从尾部插入
-                return;
+                LOS_ListTailInsert(&(cmdItem->list), &(cmd->list));  // 插入节点
+                return;  // 插入完成，返回
             }
-            cmdItem = cmdNext;
-        } else {
+            cmdItem = cmdNext;  // 移动到前一个节点
+        } else {  // 如果是头节点
+            // 如果待插入关键字大于当前节点关键字
             if (strncmp(cmd->cmd->cmdKey, cmdItem->cmd->cmdKey, strlen(cmd->cmd->cmdKey)) > 0) {
-                cmdItem = cmdNext;
+                cmdItem = cmdNext;  // 移动到前一个节点（头节点）
             }
-            break;
+            break;  // 跳出循环
         }
     }
 
-    LOS_ListTailInsert(&(cmdItem->list), &(cmd->list));
+    LOS_ListTailInsert(&(cmdItem->list), &(cmd->list));  // 插入节点到链表尾部
 }
-///shell 命令初始化
+
+/**
+ * @brief 初始化Shell按键相关资源
+ * @param shellCB Shell控制块指针
+ * @return UINT32 操作结果，LOS_OK表示成功，其他值表示失败
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellKeyInit(ShellCB *shellCB)
 {
-    CmdKeyLink *cmdKeyLink = NULL;
-    CmdKeyLink *cmdHistoryLink = NULL;
+    CmdKeyLink *cmdKeyLink = NULL;  // 命令关键字链表
+    CmdKeyLink *cmdHistoryLink = NULL;  // 命令历史链表
 
-    if (shellCB == NULL) {
-        return OS_ERROR;
+    if (shellCB == NULL) {  // 参数检查
+        return OS_ERROR;  // Shell控制块为空，返回错误
     }
-    cmdKeyLink = (CmdKeyLink *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdKeyLink));
-    if (cmdKeyLink == NULL) {
-        PRINT_ERR("Shell CmdKeyLink memory alloc error!\n");
-        return OS_ERROR;
+    cmdKeyLink = (CmdKeyLink *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdKeyLink));  // 分配命令关键字链表内存
+    if (cmdKeyLink == NULL) {  // 内存分配检查
+        PRINT_ERR("Shell CmdKeyLink memory alloc error!\n");  // 打印错误信息
+        return OS_ERROR;  // 返回错误
     }
-    cmdHistoryLink = (CmdKeyLink *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdKeyLink));
-    if (cmdHistoryLink == NULL) {
-        (VOID)LOS_MemFree(m_aucSysMem0, cmdKeyLink);
-        PRINT_ERR("Shell CmdHistoryLink memory alloc error!\n");
-        return OS_ERROR;
+    cmdHistoryLink = (CmdKeyLink *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdKeyLink));  // 分配命令历史链表内存
+    if (cmdHistoryLink == NULL) {  // 内存分配检查
+        (VOID)LOS_MemFree(m_aucSysMem0, cmdKeyLink);  // 释放已分配的命令关键字链表内存
+        PRINT_ERR("Shell CmdHistoryLink memory alloc error!\n");  // 打印错误信息
+        return OS_ERROR;  // 返回错误
     }
 
-    cmdKeyLink->count = 0;
-    LOS_ListInit(&(cmdKeyLink->list));//待处理命令链表初始化
-    shellCB->cmdKeyLink = (VOID *)cmdKeyLink;//链表源头
+    cmdKeyLink->count = 0;  // 初始化计数为0
+    LOS_ListInit(&(cmdKeyLink->list));  // 初始化链表
+    shellCB->cmdKeyLink = (VOID *)cmdKeyLink;  // 设置Shell控制块中的命令关键字链表
 
-    cmdHistoryLink->count = 0;
-    LOS_ListInit(&(cmdHistoryLink->list));//历史记录链表初始化
-    shellCB->cmdHistoryKeyLink = (VOID *)cmdHistoryLink;//链表源头
-    shellCB->cmdMaskKeyLink = (VOID *)cmdHistoryLink;//掩码命令链表同历史记录链表,标识上下键位置.
-    return LOS_OK;
+    cmdHistoryLink->count = 0;  // 初始化计数为0
+    LOS_ListInit(&(cmdHistoryLink->list));  // 初始化链表
+    shellCB->cmdHistoryKeyLink = (VOID *)cmdHistoryLink;  // 设置Shell控制块中的命令历史链表
+    shellCB->cmdMaskKeyLink = (VOID *)cmdHistoryLink;  // 设置Shell控制块中的命令掩码链表
+    return LOS_OK;  // 返回成功
 }
-///shell的析构函数
+
+/**
+ * @brief 反初始化命令关键字链表
+ * @param cmdKeyLink 命令关键字链表指针
+ */
 LITE_OS_SEC_TEXT_MINOR VOID OsShellKeyDeInit(CmdKeyLink *cmdKeyLink)
 {
-    CmdKeyLink *cmdtmp = NULL;
-    if (cmdKeyLink == NULL) {
-        return;
+    CmdKeyLink *cmdtmp = NULL;  // 临时命令关键字链表节点
+    if (cmdKeyLink == NULL) {  // 参数检查
+        return;  // 链表为空，直接返回
     }
 
-    while (!LOS_ListEmpty(&(cmdKeyLink->list))) {//清空待处理命令列表
-        cmdtmp = LOS_DL_LIST_ENTRY(cmdKeyLink->list.pstNext, CmdKeyLink, list);
-        LOS_ListDelete(&cmdtmp->list);//将自己从链表中摘出去
-        (VOID)LOS_MemFree(m_aucSysMem0, cmdtmp);//释放内核内存空间
+    while (!LOS_ListEmpty(&(cmdKeyLink->list))) {  // 遍历链表直到为空
+        cmdtmp = LOS_DL_LIST_ENTRY(cmdKeyLink->list.pstNext, CmdKeyLink, list);  // 获取下一个节点
+        LOS_ListDelete(&cmdtmp->list);  // 从链表中删除节点
+        (VOID)LOS_MemFree(m_aucSysMem0, cmdtmp);  // 释放节点内存
     }
 
-    cmdKeyLink->count = 0;//链表为空,个数清0
-    (VOID)LOS_MemFree(m_aucSysMem0, cmdKeyLink);
+    cmdKeyLink->count = 0;  // 重置计数
+    (VOID)LOS_MemFree(m_aucSysMem0, cmdKeyLink);  // 释放链表内存
 }
-///注册系统自带的shell命令
+
+/**
+ * @brief 注册系统命令到Shell
+ * @return UINT32 操作结果，LOS_OK表示成功，其他值表示失败
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellSysCmdRegister(VOID)
 {
-    UINT32 i;
-    UINT8 *cmdItemGroup = NULL;
-    UINT32 index = ((UINTPTR)(&g_shellcmdEnd) - (UINTPTR)(&g_shellcmd[0])) / sizeof(CmdItem);//获取个数
-    CmdItemNode *cmdItem = NULL;
+    UINT32 i;  // 循环计数器
+    UINT8 *cmdItemGroup = NULL;  // 命令项组指针
+    // 计算命令项数量：(命令表结束地址 - 命令表开始地址) / 单个命令项大小
+    UINT32 index = ((UINTPTR)(&g_shellcmdEnd) - (UINTPTR)(&g_shellcmd[0])) / sizeof(CmdItem);
+    CmdItemNode *cmdItem = NULL;  // 命令项节点指针
 
-    cmdItemGroup = (UINT8 *)LOS_MemAlloc(m_aucSysMem0, index * sizeof(CmdItemNode));//分配命令项
-    if (cmdItemGroup == NULL) {
-        PRINT_ERR("[%s]System memory allocation failure!\n", __FUNCTION__);
-        return (UINT32)OS_ERROR;
+    // 分配命令项组内存：命令项数量 * 单个命令项节点大小
+    cmdItemGroup = (UINT8 *)LOS_MemAlloc(m_aucSysMem0, index * sizeof(CmdItemNode));
+    if (cmdItemGroup == NULL) {  // 内存分配检查
+        PRINT_ERR("[%s]System memory allocation failure!\n", __FUNCTION__);  // 打印错误信息
+        return (UINT32)OS_ERROR;  // 返回错误
     }
 
-    for (i = 0; i < index; ++i) {//循环插入
-        cmdItem = (CmdItemNode *)(cmdItemGroup + i * sizeof(CmdItemNode));
-        cmdItem->cmd = &g_shellcmd[i];//一个个取
-        OsCmdAscendingInsert(cmdItem);//按升序插入到链表中
+    for (i = 0; i < index; ++i) {  // 遍历所有命令项
+        cmdItem = (CmdItemNode *)(cmdItemGroup + i * sizeof(CmdItemNode));  // 获取当前命令项节点
+        cmdItem->cmd = &g_shellcmd[i];  // 设置命令项
+        OsCmdAscendingInsert(cmdItem);  // 按升序插入命令项到链表
     }
-    g_cmdInfo.listNum += index;//命令数量叠加
-    return LOS_OK;
+    g_cmdInfo.listNum += index;  // 更新命令列表数量
+    return LOS_OK;  // 返回成功
 }
-///将shell命令 string 以 CmdKeyLink 方式加入链表
+
+/**
+ * @brief 将命令字符串推入命令链表
+ * @param string 命令字符串
+ * @param cmdKeyLink 命令链表指针
+ */
 LITE_OS_SEC_TEXT_MINOR VOID OsShellCmdPush(const CHAR *string, CmdKeyLink *cmdKeyLink)
 {
-    CmdKeyLink *cmdNewNode = NULL;
-    UINT32 len;
+    CmdKeyLink *cmdNewNode = NULL;  // 新命令节点
+    UINT32 len;  // 字符串长度
 
-    if ((string == NULL) || (strlen(string) == 0)) {
-        return;
+    if ((string == NULL) || (strlen(string) == 0)) {  // 参数检查
+        return;  // 字符串为空，直接返回
     }
 
-    len = strlen(string);//获取string的长度,注意CmdKeyLink结构体中,cmdString[0],可变数组的实现.
-    cmdNewNode = (CmdKeyLink *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdKeyLink) + len + 1);//申请内核内存
-    if (cmdNewNode == NULL) {
-        return;
+    len = strlen(string);  // 获取字符串长度
+    // 分配新节点内存：命令链表节点大小 + 字符串长度 + 1（结束符）
+    cmdNewNode = (CmdKeyLink *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdKeyLink) + len + 1);
+    if (cmdNewNode == NULL) {  // 内存分配检查
+        return;  // 分配失败，直接返回
     }
 
+    // 初始化新节点内存
     (VOID)memset_s(cmdNewNode, sizeof(CmdKeyLink) + len + 1, 0, sizeof(CmdKeyLink) + len + 1);
-    if (strncpy_s(cmdNewNode->cmdString, len + 1, string, len)) {//将string拷贝至cmdString中
-        (VOID)LOS_MemFree(m_aucSysMem0, cmdNewNode);
-        return;
+    if (strncpy_s(cmdNewNode->cmdString, len + 1, string, len)) {  // 复制命令字符串到新节点
+        (VOID)LOS_MemFree(m_aucSysMem0, cmdNewNode);  // 复制失败，释放内存
+        return;  // 返回
     }
 
-    LOS_ListTailInsert(&(cmdKeyLink->list), &(cmdNewNode->list));//从尾部插入链表
+    LOS_ListTailInsert(&(cmdKeyLink->list), &(cmdNewNode->list));  // 将新节点插入链表尾部
 
-    return;
+    return;  // 返回
 }
-///显示shell命令历史记录,支持上下键方式
+
+/**
+ * @brief 显示命令历史记录
+ * @param value 操作类型，CMD_KEY_UP表示上翻，CMD_KEY_DOWN表示下翻
+ * @param shellCB Shell控制块指针
+ */
 LITE_OS_SEC_TEXT_MINOR VOID OsShellHistoryShow(UINT32 value, ShellCB *shellCB)
 {
-    CmdKeyLink *cmdtmp = NULL;
-    CmdKeyLink *cmdNode = shellCB->cmdHistoryKeyLink;
-    CmdKeyLink *cmdMask = shellCB->cmdMaskKeyLink;
-    errno_t ret;
+    CmdKeyLink *cmdtmp = NULL;  // 临时命令节点
+    CmdKeyLink *cmdNode = shellCB->cmdHistoryKeyLink;  // 命令历史链表头节点
+    CmdKeyLink *cmdMask = shellCB->cmdMaskKeyLink;  // 当前命令掩码节点
+    errno_t ret;  // 函数返回值
 
-    (VOID)pthread_mutex_lock(&shellCB->historyMutex);
-    if (value == CMD_KEY_DOWN) {//方向下键切换下一条历史
-        if (cmdMask == cmdNode) {
-            goto END;
+    (VOID)pthread_mutex_lock(&shellCB->historyMutex);  // 加锁保护历史记录
+    if (value == CMD_KEY_DOWN) {  // 如果是下翻操作
+        if (cmdMask == cmdNode) {  // 如果当前节点是头节点
+            goto END;  // 跳转到结束
         }
 
-        cmdtmp = LOS_DL_LIST_ENTRY(cmdMask->list.pstNext, CmdKeyLink, list);//下一条命令
-        if (cmdtmp != cmdNode) {
-            cmdMask = cmdtmp;
-        } else {
-            goto END;
+        // 获取下一个节点
+        cmdtmp = LOS_DL_LIST_ENTRY(cmdMask->list.pstNext, CmdKeyLink, list);
+        if (cmdtmp != cmdNode) {  // 如果下一个节点不是头节点
+            cmdMask = cmdtmp;  // 更新当前节点为下一个节点
+        } else {  // 如果下一个节点是头节点
+            goto END;  // 跳转到结束
         }
-    } else if (value == CMD_KEY_UP) {
-        cmdtmp = LOS_DL_LIST_ENTRY(cmdMask->list.pstPrev, CmdKeyLink, list);//上一条命令
-        if (cmdtmp != cmdNode) {
-            cmdMask = cmdtmp;
-        } else {
-            goto END;
+    } else if (value == CMD_KEY_UP) {  // 如果是上翻操作
+        // 获取上一个节点
+        cmdtmp = LOS_DL_LIST_ENTRY(cmdMask->list.pstPrev, CmdKeyLink, list);
+        if (cmdtmp != cmdNode) {  // 如果上一个节点不是头节点
+            cmdMask = cmdtmp;  // 更新当前节点为上一个节点
+        } else {  // 如果上一个节点是头节点
+            goto END;  // 跳转到结束
         }
     }
 
-    while (shellCB->shellBufOffset--) {//@note_why 这段代码不知道啥意思
-        PRINTK("\b \b");
+    while (shellCB->shellBufOffset--) {  // 清除当前输入缓冲区
+        PRINTK("\b \b");  // 退格并清除字符
     }
-    PRINTK("%s", cmdMask->cmdString);//打印命令
-    shellCB->shellBufOffset = strlen(cmdMask->cmdString);//获取命令长度
-    (VOID)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);//整个buf进行重置,
-    ret = memcpy_s(shellCB->shellBuf, SHOW_MAX_LEN, cmdMask->cmdString, shellCB->shellBufOffset);//将命令拷贝进buf,以便继续添加内容
-    if (ret != EOK) {
-        PRINT_ERR("%s, %d memcpy failed!\n", __FUNCTION__, __LINE__);
-        goto END;
+    PRINTK("%s", cmdMask->cmdString);  // 打印当前历史命令
+    shellCB->shellBufOffset = strlen(cmdMask->cmdString);  // 更新缓冲区偏移
+    (VOID)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);  // 清空缓冲区
+    // 复制历史命令到缓冲区
+    ret = memcpy_s(shellCB->shellBuf, SHOW_MAX_LEN, cmdMask->cmdString, shellCB->shellBufOffset);
+    if (ret != EOK) {  // 复制检查
+        PRINT_ERR("%s, %d memcpy failed!\n", __FUNCTION__, __LINE__);  // 打印错误信息
+        goto END;  // 跳转到结束
     }
-    shellCB->cmdMaskKeyLink = (VOID *)cmdMask;//记录按上下键命令的位置
+    shellCB->cmdMaskKeyLink = (VOID *)cmdMask;  // 更新当前掩码节点
 
 END:
-    (VOID)pthread_mutex_unlock(&shellCB->historyMutex);
-    return;
+    (VOID)pthread_mutex_unlock(&shellCB->historyMutex);  // 解锁
+    return;  // 返回
 }
-///执行命令,shell是运行程序的程序.
+
+/**
+ * @brief 执行命令
+ * @param cmdParsed 命令解析结构体指针
+ * @param cmdStr 命令字符串
+ * @return UINT32 执行结果，LOS_OK表示成功，其他值表示失败
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdExec(CmdParsed *cmdParsed, CHAR *cmdStr)
 {
-    UINT32 ret;
-    CmdCallBackFunc cmdHook = NULL;
-    CmdItemNode *curCmdItem = NULL;
-    UINT32 i;
-    const CHAR *cmdKey = NULL;
+    UINT32 ret;  // 函数返回值
+    CmdCallBackFunc cmdHook = NULL;  // 命令回调函数
+    CmdItemNode *curCmdItem = NULL;  // 当前命令项节点
+    UINT32 i;  // 循环计数器
+    const CHAR *cmdKey = NULL;  // 命令关键字
 
-    if ((cmdParsed == NULL) || (cmdStr == NULL) || (strlen(cmdStr) == 0)) {
-        return (UINT32)OS_ERROR;
+    if ((cmdParsed == NULL) || (cmdStr == NULL) || (strlen(cmdStr) == 0)) {  // 参数检查
+        return (UINT32)OS_ERROR;  // 参数无效，返回错误
     }
 
-    ret = OsCmdParse(cmdStr, cmdParsed);//解析出命令关键字,参数
-    if (ret != LOS_OK) {
-        goto OUT;
+    ret = OsCmdParse(cmdStr, cmdParsed);  // 解析命令字符串
+    if (ret != LOS_OK) {  // 解析检查
+        goto OUT;  // 跳转到清理
     }
-	//遍历命令注册全局链表
+
+    // 遍历命令列表查找匹配的命令
     LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(g_cmdInfo.cmdList.list), CmdItemNode, list) {
-        cmdKey = curCmdItem->cmd->cmdKey;
+        cmdKey = curCmdItem->cmd->cmdKey;  // 获取命令关键字
+        // 检查命令类型和关键字是否匹配
         if ((cmdParsed->cmdType == curCmdItem->cmd->cmdType) &&
             (strlen(cmdKey) == strlen(cmdParsed->cmdKeyword)) &&
-            (strncmp(cmdKey, (CHAR *)(cmdParsed->cmdKeyword), strlen(cmdKey)) == 0)) {//找到命令的回调函数 例如: ls <-> osShellCmdLs
-            cmdHook = curCmdItem->cmd->cmdHook;
-            break;
+            (strncmp(cmdKey, (CHAR *)(cmdParsed->cmdKeyword), strlen(cmdKey)) == 0)) {
+            cmdHook = curCmdItem->cmd->cmdHook;  // 获取命令回调函数
+            break;  // 找到匹配命令，跳出循环
         }
     }
 
-    ret = OS_ERROR;
-    if (cmdHook != NULL) {//执行命令,即回调函数
+    ret = OS_ERROR;  // 默认返回错误
+    if (cmdHook != NULL) {  // 如果找到命令回调函数
+        // 调用命令回调函数，传入参数数量和参数数组
         ret = (cmdHook)(cmdParsed->paramCnt, (const CHAR **)cmdParsed->paramArray);
     }
 
 OUT:
-    for (i = 0; i < cmdParsed->paramCnt; i++) {//无效的命令要释放掉保存参数的内存
-        if (cmdParsed->paramArray[i] != NULL) {
-            (VOID)LOS_MemFree(m_aucSysMem0, cmdParsed->paramArray[i]);
-            cmdParsed->paramArray[i] = NULL;
+    for (i = 0; i < cmdParsed->paramCnt; i++) {  // 遍历参数数组
+        if (cmdParsed->paramArray[i] != NULL) {  // 如果参数不为空
+            (VOID)LOS_MemFree(m_aucSysMem0, cmdParsed->paramArray[i]);  // 释放参数内存
+            cmdParsed->paramArray[i] = NULL;  // 置空指针防止野指针
         }
     }
 
-    return (UINT32)ret;
+    return (UINT32)ret;  // 返回执行结果
 }
-/*!	命令初始化,用于存放支持的命令,目前鸿蒙支持如下命令 
-arp           cat           cd            chgrp         chmod         chown         cp            cpup          
-date          dhclient      dmesg         dns           format        free          help          hwi           
-ifconfig      ipdebug       kill          log           ls            lsfd          memcheck      mkdir         
-mount         netstat       oom           partinfo      partition     ping          ping6         pwd           
-reset         rm            rmdir         sem           statfs        su            swtmr         sync          
-systeminfo    task          telnet        test          tftp          touch         umount        uname         
-watch         writeproc     
-*/
+
+/**
+ * @brief 初始化命令模块
+ * @return UINT32 操作结果，LOS_OK表示成功，其他值表示失败
+ */
 LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdInit(VOID)
 {
-    UINT32 ret;
-    LOS_ListInit(&(g_cmdInfo.cmdList.list));//初始化双向链表
-    g_cmdInfo.listNum = 0;	//命令数量
-    g_cmdInfo.initMagicFlag = SHELL_INIT_MAGIC_FLAG;//魔法数字
-    ret = LOS_MuxInit(&g_cmdInfo.muxLock, NULL);//初始化互斥量,确保链表安全访问
-    if (ret != LOS_OK) {
-        PRINT_ERR("Create mutex for shell cmd info failed\n");
-        return OS_ERROR;
+    UINT32 ret;  // 函数返回值
+    LOS_ListInit(&(g_cmdInfo.cmdList.list));  // 初始化命令列表
+    g_cmdInfo.listNum = 0;  // 初始化命令数量为0
+    g_cmdInfo.initMagicFlag = SHELL_INIT_MAGIC_FLAG;  // 设置初始化魔术标志
+    ret = LOS_MuxInit(&g_cmdInfo.muxLock, NULL);  // 初始化互斥锁
+    if (ret != LOS_OK) {  // 初始化检查
+        PRINT_ERR("Create mutex for shell cmd info failed\n");  // 打印错误信息
+        return OS_ERROR;  // 返回错误
     }
-    return LOS_OK;
+    return LOS_OK;  // 返回成功
 }
-///创建一个命令项,例如 chmod
+
+/**
+ * @brief 创建命令项
+ * @param cmdType 命令类型
+ * @param cmdKey 命令关键字
+ * @param paraNum 参数数量
+ * @param cmdProc 命令处理函数
+ * @return UINT32 操作结果，LOS_OK表示成功，其他值表示失败
+ */
 STATIC UINT32 OsCmdItemCreate(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNum, CmdCallBackFunc cmdProc)
 {
-    CmdItem *cmdItem = NULL;
-    CmdItemNode *cmdItemNode = NULL;
-	//1.构造命令节点过程
-    cmdItem = (CmdItem *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdItem));
-    if (cmdItem == NULL) {
-        return OS_ERRNO_SHELL_CMDREG_MEMALLOC_ERROR;
-    }
-    (VOID)memset_s(cmdItem, sizeof(CmdItem), '\0', sizeof(CmdItem));
+    CmdItem *cmdItem = NULL;  // 命令项指针
+    CmdItemNode *cmdItemNode = NULL;  // 命令项节点指针
 
+    cmdItem = (CmdItem *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdItem));  // 分配命令项内存
+    if (cmdItem == NULL) {  // 内存分配检查
+        return OS_ERRNO_SHELL_CMDREG_MEMALLOC_ERROR;  // 返回内存分配错误
+    }
+    (VOID)memset_s(cmdItem, sizeof(CmdItem), '\0', sizeof(CmdItem));  // 初始化命令项内存
+
+    // 分配命令项节点内存
     cmdItemNode = (CmdItemNode *)LOS_MemAlloc(m_aucSysMem0, sizeof(CmdItemNode));
-    if (cmdItemNode == NULL) {
-        (VOID)LOS_MemFree(m_aucSysMem0, cmdItem);
-        return OS_ERRNO_SHELL_CMDREG_MEMALLOC_ERROR;
+    if (cmdItemNode == NULL) {  // 内存分配检查
+        (VOID)LOS_MemFree(m_aucSysMem0, cmdItem);  // 释放命令项内存
+        return OS_ERRNO_SHELL_CMDREG_MEMALLOC_ERROR;  // 返回内存分配错误
     }
-    (VOID)memset_s(cmdItemNode, sizeof(CmdItemNode), '\0', sizeof(CmdItemNode));
-    cmdItemNode->cmd = cmdItem;			//命令项 
-    cmdItemNode->cmd->cmdHook = cmdProc;//回调函数 osShellCmdLs
-    cmdItemNode->cmd->paraNum = paraNum;//`777`,'/home'
-    cmdItemNode->cmd->cmdType = cmdType;//关键字类型
-    cmdItemNode->cmd->cmdKey = cmdKey;	//`chmod`
-	//2.完成构造后挂入全局链表
-    (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);
-    OsCmdAscendingInsert(cmdItemNode);//按升序方式插入
-    g_cmdInfo.listNum++;//命令总数增加
-    (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
+    (VOID)memset_s(cmdItemNode, sizeof(CmdItemNode), '\0', sizeof(CmdItemNode));  // 初始化命令项节点内存
+    cmdItemNode->cmd = cmdItem;  // 设置命令项节点关联的命令项
+    cmdItemNode->cmd->cmdHook = cmdProc;  // 设置命令回调函数
+    cmdItemNode->cmd->paraNum = paraNum;  // 设置参数数量
+    cmdItemNode->cmd->cmdType = cmdType;  // 设置命令类型
+    cmdItemNode->cmd->cmdKey = cmdKey;  // 设置命令关键字
 
-    return LOS_OK;
+    (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);  // 加锁保护命令列表
+    OsCmdAscendingInsert(cmdItemNode);  // 按升序插入命令项节点到链表
+    g_cmdInfo.listNum++;  // 增加命令列表数量
+    (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);  // 解锁
+
+    return LOS_OK;  // 返回成功
 }
 
-/* open API */
-/*!
- * @brief osCmdReg	以动态方式注册命令
- *
- * @param cmdKey	命令关键字，函数在Shell中访问的名称。
- * @param cmdProc	命令执行函数地址，即命令实际执行函数。
- * @param cmdType	CMD_TYPE_EX：不支持标准命令参数输入，会把用户填写的命令关键字屏蔽掉，
- 						例如：输入ls /ramfs，传入给注册函数的参数只有/ramfs，而ls命令关键字并不会被传入。
-					CMD_TYPE_STD：支持的标准命令参数输入，所有输入的字符都会通过命令解析后被传入。
- * @param paraNum	调用的执行函数的入参最大个数，暂不支持该参数；当前为默认值XARGS(0xFFFFFFFF)。
- * @attention 命令关键字必须是唯一的，也即两个不同的命令项不能拥有相同的命令关键字，否则只会执行其中一个。
- 	Shell在执行用户命令时，如果存在多个命令关键字相同的命令，只会执行其中在"help"命令中排序在最前面的一个。
- * @return	
- *
- * @see
+/* 公开API */
+/**
+ * @brief 注册命令到Shell
+ * @param cmdType 命令类型
+ * @param cmdKey 命令关键字
+ * @param paraNum 参数数量
+ * @param cmdProc 命令处理函数
+ * @return UINT32 操作结果，LOS_OK表示成功，其他值表示失败
  */
 LITE_OS_SEC_TEXT_MINOR UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT32 paraNum, CmdCallBackFunc cmdProc)
 {
-    CmdItemNode *cmdItemNode = NULL;
-	//1.确保先拿到锁,魔法数字检查
-    (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);
-    if (g_cmdInfo.initMagicFlag != SHELL_INIT_MAGIC_FLAG) {	//验证全局变量的有效性
-        (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
-        PRINT_ERR("[%s] shell is not yet initialized!\n", __FUNCTION__);
-        return OS_ERRNO_SHELL_NOT_INIT;
+    CmdItemNode *cmdItemNode = NULL;  // 命令项节点指针
+
+    (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);  // 加锁
+    if (g_cmdInfo.initMagicFlag != SHELL_INIT_MAGIC_FLAG) {  // 检查命令模块是否已初始化
+        (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);  // 解锁
+        PRINT_ERR("[%s] shell is not yet initialized!\n", __FUNCTION__);  // 打印错误信息
+        return OS_ERRNO_SHELL_NOT_INIT;  // 返回未初始化错误
     }
-    (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
-	//2.参数检查
+    (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);  // 解锁
+
+    // 参数合法性检查
     if ((cmdProc == NULL) || (cmdKey == NULL) ||
         (cmdType >= CMD_TYPE_BUTT) || (strlen(cmdKey) >= CMD_KEY_LEN) || !strlen(cmdKey)) {
-        return OS_ERRNO_SHELL_CMDREG_PARA_ERROR;
+        return OS_ERRNO_SHELL_CMDREG_PARA_ERROR;  // 返回参数错误
     }
 
-    if (paraNum > CMD_MAX_PARAS) {
-        if (paraNum != XARGS) {
-            return OS_ERRNO_SHELL_CMDREG_PARA_ERROR;
+    if (paraNum > CMD_MAX_PARAS) {  // 检查参数数量是否超过最大值
+        if (paraNum != XARGS) {  // 如果不是可变参数
+            return OS_ERRNO_SHELL_CMDREG_PARA_ERROR;  // 返回参数错误
         }
     }
-	//3.关键字检查 ;例如:'chmod 777 /home' ,此处检查 'chmod'的合法性
-    if (OsCmdKeyCheck(cmdKey) != TRUE) {
-        return OS_ERRNO_SHELL_CMDREG_CMD_ERROR;
+
+    if (OsCmdKeyCheck(cmdKey) != TRUE) {  // 检查命令关键字合法性
+        return OS_ERRNO_SHELL_CMDREG_CMD_ERROR;  // 返回命令关键字错误
     }
-	//4.遍历链表节点,验证是否命令存在
-    (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);
+
+    (VOID)LOS_MuxLock(&g_cmdInfo.muxLock, LOS_WAIT_FOREVER);  // 加锁
+    // 遍历命令列表检查命令是否已存在
     LOS_DL_LIST_FOR_EACH_ENTRY(cmdItemNode, &(g_cmdInfo.cmdList.list), CmdItemNode, list) {
-        if ((cmdType == cmdItemNode->cmd->cmdType) &&
-            ((strlen(cmdKey) == strlen(cmdItemNode->cmd->cmdKey)) &&
-            (strncmp((CHAR *)(cmdItemNode->cmd->cmdKey), cmdKey, strlen(cmdKey)) == 0))) {
-            (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
-            return OS_ERRNO_SHELL_CMDREG_CMD_EXIST;//已存在就退出
+        if ((cmdType == cmdItemNode->cmd->cmdType) &&  // 命令类型匹配
+            ((strlen(cmdKey) == strlen(cmdItemNode->cmd->cmdKey)) &&  // 关键字长度匹配
+            (strncmp((CHAR *)(cmdItemNode->cmd->cmdKey), cmdKey, strlen(cmdKey)) == 0))) {  // 关键字内容匹配
+            (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);  // 解锁
+            return OS_ERRNO_SHELL_CMDREG_CMD_EXIST;  // 返回命令已存在错误
         }
     }
-    (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);
-	//5.正式创建命令,挂入链表
-    return OsCmdItemCreate(cmdType, cmdKey, paraNum, cmdProc);
-}
+    (VOID)LOS_MuxUnlock(&g_cmdInfo.muxLock);  // 解锁
 
+    return OsCmdItemCreate(cmdType, cmdKey, paraNum, cmdProc);  // 创建并插入命令项
+}

@@ -46,54 +46,60 @@
 #define QUICKSTART_INITSTEP2    _IO(QUICKSTART_IOC_MAGIC, 0)
 #define WAIT_FOR_SAMPLE         300000  // wait 300ms for sample
 #endif
+/**
+ * @brief 系统初始化主函数
+ * @param argc 参数数量
+ * @param argv 参数数组
+ * @return int 执行结果，0表示成功
+ */
 int main(int argc, char * const *argv)
 {
-    (void)argv;
-    int ret;
-    pid_t gid;
-    const char *shellPath = "/bin/mksh";
+    (void)argv;  // 未使用的参数
+    int ret;     // 返回值变量
+    pid_t gid;   // 进程组ID
+    const char *shellPath = "/bin/mksh";  // shell程序路径
 
-#ifdef LOSCFG_QUICK_START
-    const char *samplePath = "/dev/shm/sample_quickstart";
+#ifdef LOSCFG_QUICK_START  // 快速启动配置
+    const char *samplePath = "/dev/shm/sample_quickstart";  // 快速启动示例程序路径
 
-    ret = fork();
-    if (ret < 0) {
-        printf("Failed to fork for sample_quickstart\n");
-    } else if (ret == 0) {
-        (void)execve(samplePath, NULL, NULL);
-        exit(0);
+    ret = fork();  // 创建子进程运行快速启动示例
+    if (ret < 0) {  // 检查fork是否失败
+        printf("Failed to fork for sample_quickstart\n");  // 输出fork失败信息
+    } else if (ret == 0) {  // 子进程分支
+        (void)execve(samplePath, NULL, NULL);  // 执行快速启动示例程序
+        exit(0);  // 退出子进程
     }
 
-    usleep(WAIT_FOR_SAMPLE);
+    usleep(WAIT_FOR_SAMPLE);  // 等待示例程序执行
 
-    int fd = open("/dev/quickstart", O_RDONLY);
-    if (fd != -1) {
-        ioctl(fd, QUICKSTART_INITSTEP2);
-        close(fd);
+    int fd = open("/dev/quickstart", O_RDONLY);  // 打开快速启动设备
+    if (fd != -1) {  // 检查设备是否打开成功
+        ioctl(fd, QUICKSTART_INITSTEP2);  // 执行快速启动第二步初始化
+        close(fd);  // 关闭设备文件描述符
     }
 #endif
-    ret = fork();
-    if (ret < 0) {
-        printf("Failed to fork for shell\n");
-    } else if (ret == 0) {
-        gid = getpgrp();
-        if (gid < 0) {
-            printf("get group id failed, pgrpid %d, errno %d\n", gid, errno);
-            exit(0);
+    ret = fork();  // 创建子进程运行shell
+    if (ret < 0) {  // 检查fork是否失败
+        printf("Failed to fork for shell\n");  // 输出fork失败信息
+    } else if (ret == 0) {  // 子进程分支
+        gid = getpgrp();  // 获取进程组ID
+        if (gid < 0) {  // 检查获取进程组ID是否失败
+            printf("get group id failed, pgrpid %d, errno %d\n", gid, errno);  // 输出错误信息
+            exit(0);  // 退出子进程
         }
-        ret = tcsetpgrp(STDIN_FILENO, gid);
-        if (ret != 0) {
-            printf("tcsetpgrp failed, errno %d\n", errno);
-            exit(0);
+        ret = tcsetpgrp(STDIN_FILENO, gid);  // 设置控制终端进程组
+        if (ret != 0) {  // 检查设置是否失败
+            printf("tcsetpgrp failed, errno %d\n", errno);  // 输出错误信息
+            exit(0);  // 退出子进程
         }
-        (void)execve(shellPath, NULL, NULL);
-        exit(0);
+        (void)execve(shellPath, NULL, NULL);  // 执行shell程序
+        exit(0);  // 退出子进程
     }
 
-    while (1) {
-        ret = waitpid(-1, 0, WNOHANG);
-        if (ret == 0) {
-            sleep(1);
+    while (1) {  // 无限循环等待子进程退出
+        ret = waitpid(-1, 0, WNOHANG);  // 非阻塞等待任意子进程
+        if (ret == 0) {  // 没有子进程退出
+            sleep(1);  // 休眠1秒后重试
         }
     };
 }

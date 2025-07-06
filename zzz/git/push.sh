@@ -1,6 +1,6 @@
 git add -A
 
-git commit -m  ' 注释基础内核之通信机制 < 事件、消息队列、读写锁、信号、信号量 >
+git commit -m  ' 注释shell命令集的实现 < arp、cat、cd、chgrp、chmod、chown、cp、cpup ... >
     博客 | http://weharmonyos.com
 '
 git push  gitee_origin master
