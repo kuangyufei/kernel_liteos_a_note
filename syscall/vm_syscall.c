@@ -37,168 +37,144 @@
 #include "fs/file.h"
 
 /**
- * @brief 系统调用|申请虚拟内存(分配线性地址区间) 
- * \n 鸿蒙与Linux标准库的差异 http://weharmonyos.com/zh-cn/device-dev/kernel/%E4%B8%8ELinux%E6%A0%87%E5%87%86%E5%BA%93%E7%9A%84%E5%B7%AE%E5%BC%82/
- * @param addr 用来请求使用某个特定的虚拟内存地址。如果取NULL，结果地址就将自动分配（这是推荐的做法），
-		否则会降低程序的可移植性，因为不同系统的可用地址范围不一样。
- * @param size 内存段的大小。
- * @param prot 用于设置内存段的访问权限，有如下权限：
-		\n PROT_READ：允许读该内存段。
-		\n PROT_WRITE：允许写该内存段。
-		\n PROT_EXEC：允许执行该内存段。
-		\n PROT_NONE：不能访问。
- * @param flags 控制程序对内存段的改变所造成的影响，有如下属性：
-		\n MAP_PRIVATE：标志指定线性区中的页可以被进程独享
-		\n MAP_SHARED：标志指定线性区中的页可以被几个进程共享
- * @param fd 打开的文件描述符,如果新的线性区将把一个文件映射到内存的情况
- * @param offset 用以改变经共享内存段访问的文件中数据的起始偏移值。
- * @return void*   成功返回：虚拟内存地址，这地址是页对齐。
-                \n 失败返回：(void *)-1。
+ * @brief 系统调用：内存映射
+ * @param addr 用户指定的映射起始地址，可为NULL由系统自动分配
+ * @param size 映射区域大小（字节）
+ * @param prot 内存保护标志（PROT_READ/PROT_WRITE等）
+ * @param flags 映射标志（MAP_SHARED/MAP_PRIVATE等）
+ * @param fd 要映射的文件描述符
+ * @param offset 文件偏移量（必须是页大小的整数倍）
+ * @return 成功返回映射区域起始地址，失败返回MAP_FAILED
  */
 void *SysMmap(void *addr, size_t size, int prot, int flags, int fd, size_t offset)
 {
-    /* Process fd convert to system global fd */
+    /* 将用户空间文件描述符转换为系统全局文件描述符 */
     fd = GetAssociatedSystemFd(fd);
 
-    return (void *)LOS_MMap((uintptr_t)addr, size, prot, flags, fd, offset);//分配线性地址区间
+    return (void *)LOS_MMap((uintptr_t)addr, size, prot, flags, fd, offset);  // 调用内核MMAP接口完成映射
 }
 
 /**
- * @brief 释放虚拟内存
- * @param addr 虚拟内存起始位置
- * @param size 内存段的大小
- * @return int 成功返回0		失败返回-1。
+ * @brief 系统调用：解除内存映射
+ * @param addr 要解除映射的内存起始地址
+ * @param size 要解除映射的内存大小（字节）
+ * @return 成功返回0，失败返回-1并设置errno
  */
 int SysMunmap(void *addr, size_t size)
 {
-    return LOS_UnMMap((uintptr_t)addr, size);
+    return LOS_UnMMap((uintptr_t)addr, size);  // 调用内核UNMAP接口解除映射
 }
 
 /**
- * @brief 
- * @param oldAddr 需要扩大（或缩小）的内存段的原始地址。注意old_address必须是页对齐。
- * @param oldLen 内存段的原始大小。
- * @param newLen 新内存段的大小。
- * @param flags 如果没有足够的空间在当前位置展开映射，则返回失败
-				\n MREMAP_MAYMOVE：允许内核将映射重定位到新的虚拟地址。
-				\n MREMAP_FIXED：mremap()接受第五个参数，void *new_address，该参数指定映射地址必须页对齐；			
- * @param newAddr 在new_address和new_size指定的地址范围内的所有先前映射都被解除映射。如果指定了MREMAP_FIXED，
-							\n 还必须指定MREMAP_MAYMOVE。
- * @return void* 成功返回：重新映射后的虚拟内存地址	
-                \n 失败返回：((void *)-1)。
+ * @brief 系统调用：重新映射内存区域
+ * @param oldAddr 旧映射区域起始地址
+ * @param oldLen 旧映射区域大小
+ * @param newLen 新映射区域大小
+ * @param flags 重映射标志（MREMAP_MAYMOVE等）
+ * @param newAddr 建议的新映射地址（可为NULL）
+ * @return 成功返回新映射区域起始地址，失败返回(void *)-1
  */
 void *SysMremap(void *oldAddr, size_t oldLen, size_t newLen, int flags, void *newAddr)
 {
-    return (void *)LOS_DoMremap((vaddr_t)oldAddr, oldLen, newLen, flags, (vaddr_t)newAddr);
+    return (void *)LOS_DoMremap((vaddr_t)oldAddr, oldLen, newLen, flags, (vaddr_t)newAddr);  // 调用内核MREMAP接口
 }
-/**
- * @brief 修改访问权限
- * @param addr 
- * @return void* 
- */
 
+/**
+ * @brief 系统调用：修改内存保护属性
+ * @param vaddr 内存区域起始地址
+ * @param len 内存区域长度
+ * @param prot 新的内存保护标志
+ * @return 成功返回0，失败返回-1并设置errno
+ */
 int SysMprotect(void *vaddr, size_t len, int prot)
 {
-    return LOS_DoMprotect((uintptr_t)vaddr, len, (unsigned long)prot);
+    return LOS_DoMprotect((uintptr_t)vaddr, len, (unsigned long)prot);  // 调用内核MPROTECT接口
 }
 
 /**
- * @brief brk也是申请堆内存的一种方式,一般小于 128K 会使用它
- * @param addr 
- * @return void* 
+ * @brief 系统调用：调整程序数据段大小（brk机制）
+ * @param addr 新的程序断点地址，为NULL时返回当前断点
+ * @return 成功返回新的断点地址，失败返回(void *)-1
  */
 void *SysBrk(void *addr)
 {
-    return LOS_DoBrk(addr);
+    return LOS_DoBrk(addr);  // 调用内核BRK接口调整断点
 }
 
-#ifdef LOSCFG_KERNEL_SHM
+#ifdef LOSCFG_KERNEL_SHM  // 若启用共享内存配置
 /**
- * @brief 得到一个共享内存标识符或创建一个共享内存对象
- * @param key 建立新共享内存对象 标识符是IPC对象的内部名。为使多个合作进程能够在同一IPC对象上汇聚，需要提供一个外部命名方案。
-		\n 为此，每个IPC对象都与一个键（key）相关联，这个键作为该对象的外部名,无论何时创建IPC结构（通过msgget、semget、shmget创建），
-		\n 都应给IPC指定一个键, key_t由ftok创建,ftok当然在本工程里找不到,所以要写这么多.
- * @param size 新建的共享内存大小，以字节为单位
- * @param shmflg IPC_CREAT IPC_EXCL
-		\n IPC_CREAT：	在创建新的IPC时，如果key参数是IPC_PRIVATE或者和当前某种类型的IPC结构无关，则需要指明flag参数的IPC_CREAT标志位，
-			\n		则用来创建一个新的IPC结构。（如果IPC结构已存在，并且指定了IPC_CREAT，则IPC_CREAT什么都不做，函数也不出错）
-		\n IPC_EXCL：	此参数一般与IPC_CREAT配合使用来创建一个新的IPC结构。如果创建的IPC结构已存在函数就出错返回，
-			\n		返回EEXIST（这与open函数指定O_CREAT和O_EXCL标志原理相同）
- * @return int 
+ * @brief 系统调用：获取共享内存标识符
+ * @param key 共享内存键值
+ * @param size 共享内存大小
+ * @param shmflg 创建标志（IPC_CREAT/IPC_EXCL等）和权限位
+ * @return 成功返回共享内存ID，失败返回-1并设置errno
  */
 int SysShmGet(key_t key, size_t size, int shmflg)
 {
     int ret;
 
-    ret = ShmGet(key, size, shmflg);
-    if (ret < 0) {
-        return -get_errno();
+    ret = ShmGet(key, size, shmflg);  // 调用共享内存获取接口
+    if (ret < 0) {  // 检查返回值，小于0表示失败
+        return -get_errno();  // 返回错误码（取反）
     }
 
-    return ret;
+    return ret;  // 返回共享内存ID
 }
 
 /**
- * @brief @verbatim 
-    连接共享内存标识符为shmid的共享内存，连接成功后把共享内存区对象映射到调用进程的地址空间，随后可像本地空间一样访问
-    一旦创建/引用了一个共享存储段，那么进程就可调用shmat函数将其连接到它的地址空间中
-    如果shmat成功执行，那么内核将使与该共享存储相关的shmid_ds结构中的shm_nattch计数器值加1
-    @endverbatim 
- * @param shmid 
- * @param shmaddr 
- * @param shmflg 
- * @return void* 
+ * @brief 系统调用：将共享内存附加到进程地址空间
+ * @param shmid 共享内存标识符
+ * @param shmaddr 建议的附加地址（可为NULL由系统分配）
+ * @param shmflg 附加标志（SHM_RDONLY等）
+ * @return 成功返回附加地址，失败返回(void *)-1并设置errno
  */
 void *SysShmAt(int shmid, const void *shmaddr, int shmflg)
 {
     void *ret = NULL;
 
-    ret = ShmAt(shmid, shmaddr, shmflg);
-    if (ret == (void *)-1) {
-        return (void *)(intptr_t)-get_errno();
+    ret = ShmAt(shmid, shmaddr, shmflg);  // 调用共享内存附加接口
+    if (ret == (void *)-1) {  // 检查是否附加失败
+        return (void *)(intptr_t)-get_errno();  // 返回错误码（取反）
     }
 
-    return ret;
+    return ret;  // 返回附加地址
 }
 
 /**
- * @brief 完成对共享内存的控制
-    此函数可以对shmid指定的共享存储进行多种操作（删除、取信息、加锁、解锁等）
+ * @brief 系统调用：控制共享内存（查询/设置属性）
  * @param shmid 共享内存标识符
- * @param cmd IPC_STAT：得到共享内存的状态，把共享内存的shmid_ds结构复制到buf中
-		\n IPC_SET：改变共享内存的状态，把buf所指的shmid_ds结构中的uid、gid、mode复制到共享内存的shmid_ds结构内
-		\n IPC_RMID：删除这片共享内存
- * @param buf 共享内存管理结构体。
- * @return int 
+ * @param cmd 控制命令（IPC_STAT/IPC_SET/IPC_RMID等）
+ * @param buf 共享内存属性结构体指针
+ * @return 成功返回0或命令特定值，失败返回-1并设置errno
  */
 int SysShmCtl(int shmid, int cmd, struct shmid_ds *buf)
 {
     int ret;
 
-    ret = ShmCtl(shmid, cmd, buf);
-    if (ret < 0) {
-        return -get_errno();
+    ret = ShmCtl(shmid, cmd, buf);  // 调用共享内存控制接口
+    if (ret < 0) {  // 检查返回值，小于0表示失败
+        return -get_errno();  // 返回错误码（取反）
     }
 
-    return ret;
+    return ret;  // 返回控制结果
 }
 
 /**
- * @brief 与shmat函数相反，是用来断开与共享内存附加点的地址，禁止本进程访问此片共享内存
- * @param shmaddr 连接的共享内存的起始地址
- * \n 本函数调用并不删除所指定的共享内存区，而只是将先前用shmat函数连接（attach）好的共享内存脱离（detach）目前的进程
- * @return int 返回值	成功：0	出错：-1，错误原因存于error中
+ * @brief 系统调用：将共享内存从进程地址空间分离
+ * @param shmaddr 要分离的共享内存地址
+ * @return 成功返回0，失败返回-1并设置errno
  */
 int SysShmDt(const void *shmaddr)
 {
     int ret;
 
-    ret = ShmDt(shmaddr);
-    if (ret < 0) {
-        return -get_errno();
+    ret = ShmDt(shmaddr);  // 调用共享内存分离接口
+    if (ret < 0) {  // 检查返回值，小于0表示失败
+        return -get_errno();  // 返回错误码（取反）
     }
 
-    return ret;
+    return ret;  // 返回分离结果
 }
+#endif
 #endif
 

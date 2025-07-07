@@ -33,16 +33,24 @@
 #define VID_TYPE_H
 #include "los_mux.h"
 
+/**
+ * @brief 定时器ID映射结构
+ * @details 管理进程的虚拟ID与真实ID映射关系，包含互斥锁、链表头、位图计数和位图指针
+ */
 typedef struct {
-    LosMux vidMapLock;
-    LOS_DL_LIST head;
-    UINT16 mapCount;
-    UINT32 *bitMap;
+    LosMux vidMapLock;        // 保护映射操作的互斥锁
+    LOS_DL_LIST head;         // 映射节点链表头
+    UINT16 mapCount;          // 位图数量
+    UINT32 *bitMap;           // 用于分配虚拟ID的位图指针
 } TimerIdMap;
 
+/**
+ * @brief 定时器ID映射节点结构
+ * @details 存储单个虚拟ID与真实ID的映射关系，用于链表存储
+ */
 typedef struct {
-    LOS_DL_LIST node;
-    UINT16 rid;
-    UINT16 vid;
+    LOS_DL_LIST node;         // 链表节点
+    UINT16 rid;               // 真实ID
+    UINT16 vid;               // 虚拟ID
 } TimerIdMapNode;
 #endif

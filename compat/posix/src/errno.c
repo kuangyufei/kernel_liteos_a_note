@@ -34,18 +34,32 @@
 #include "los_task_pri.h"
 
 /* the specific errno get or set in interrupt service routine */
+/**
+ * @brief   ISR(中断服务程序)环境下的全局错误码变量
+ * @note    在中断上下文中使用，避免与任务上下文的错误码冲突
+ */
 static int errno_isr;
 
+/**
+ * @brief   获取当前上下文的错误码指针
+ * @return  指向当前上下文错误码的指针
+ * @note    根据当前是否在中断环境中返回不同的错误码存储位置
+ */
 int *__errno_location(void)
 {
-    LosTaskCB *runTask = NULL;
+    LosTaskCB *runTask = NULL;  // 当前运行任务的控制块指针
 
+    // 判断当前是否处于非中断状态(任务上下文)
     if (OS_INT_INACTIVE) {
-        runTask = OsCurrTaskGet();
-        return &runTask->errorNo;
+        runTask = OsCurrTaskGet();  // 获取当前运行的任务控制块
+        return &runTask->errorNo;   // 返回任务控制块中的错误码地址
     } else {
-        return &errno_isr;
+        return &errno_isr;          // 返回中断环境下的全局错误码地址
     }
 }
 
+/**
+ * @brief   __errno_location函数的弱别名
+ * @note    提供与POSIX标准兼容的错误码访问接口，实际调用__errno_location
+ */
 int *__errno(void) __attribute__((__weak__, __alias__("__errno_location")));

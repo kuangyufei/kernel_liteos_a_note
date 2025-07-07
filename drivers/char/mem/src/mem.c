@@ -52,57 +52,71 @@ static ssize_t MemWrite(struct file *filep, const char *buffer, size_t buflen)
 {
     return 0;
 }
-///文件和线性区的映射关系
+/**
+ * @brief   内存映射函数，用于将物理地址映射到虚拟地址空间
+ * @param   filep   文件操作指针
+ * @param   region  虚拟内存映射区域结构体指针
+ * @return  0表示成功，负数表示失败
+ */
 static ssize_t MemMap(struct file *filep, LosVmMapRegion *region)
 {
 #ifdef LOSCFG_KERNEL_VM
-    size_t size = region->range.size;
-    PADDR_T paddr = region->pgOff << PAGE_SHIFT;
-    VADDR_T vaddr = region->range.base;
-    LosVmSpace *space = LOS_SpaceGet(vaddr);
-    PADDR_T paddrEnd = paddr + size;
+    size_t size = region->range.size;                     // 映射区域大小
+    PADDR_T paddr = region->pgOff << PAGE_SHIFT;         // 物理地址（页偏移转换为字节地址）
+    VADDR_T vaddr = region->range.base;                  // 虚拟地址起始
+    LosVmSpace *space = LOS_SpaceGet(vaddr);             // 获取虚拟地址空间
+    PADDR_T paddrEnd = paddr + size;                     // 物理地址结束位置
     /*
-     * Only the following two conditions are valid:
-     * [paddr, paddrEnd] < [SYS_MEM_BASE, SYS_MEM_END]
-     * or
-     * [SYS_MEM_BASE, SYS_MEM_END] < [paddr, paddrEnd]
-     * otherwise is invalid
+     * 仅以下两种情况有效：
+     * [paddr, paddrEnd] < [SYS_MEM_BASE, SYS_MEM_END]（映射区域在系统内存之前）
+     * 或
+     * [SYS_MEM_BASE, SYS_MEM_END] < [paddr, paddrEnd]（映射区域在系统内存之后）
+     * 否则无效
      */
     if (!((paddrEnd > paddr) && ((paddrEnd < SYS_MEM_BASE) || (paddr >= SYS_MEM_END)))) {
-        return -EINVAL;
+        return -EINVAL;                                  // 地址范围无效，返回错误
     }
 
-    /* Peripheral register memory adds strongly ordered attributes */
+    /* 外设寄存器内存添加强序属性 */
     region->regionFlags |= VM_MAP_REGION_FLAG_STRONGLY_ORDERED;
 
     if (space == NULL) {
-        return -EAGAIN;
-    }//映射
+        return -EAGAIN;                                  // 虚拟地址空间获取失败
+    }
+    // 执行MMU映射操作
     if (LOS_ArchMmuMap(&space->archMmu, vaddr, paddr, size >> PAGE_SHIFT, region->regionFlags) <= 0) {
-        return -EAGAIN;
+        return -EAGAIN;                                  // 映射失败返回错误
     }
 #else
-    UNUSED(filep);
+    UNUSED(filep);                                       // 未启用内核VM时，标记参数未使用
     UNUSED(region);
 #endif
-    return 0;
+    return 0;                                            // 映射成功
 }
-/// vfs 接口实现
+
+/**
+ * @brief   内存设备文件操作结构体
+ */
 static const struct file_operations_vfs g_memDevOps = {
-    MemOpen,  /* open */
-    MemClose, /* close */
-    MemRead,  /* read */
-    MemWrite, /* write */
-    NULL,      /* seek */
-    NULL,      /* ioctl */
-    MemMap,   /* mmap */
+    MemOpen,  /* open：打开文件操作 */
+    MemClose, /* close：关闭文件操作 */
+    MemRead,  /* read：读取文件操作 */
+    MemWrite, /* write：写入文件操作 */
+    NULL,      /* seek：未实现的定位操作 */
+    NULL,      /* ioctl：未实现的I/O控制操作 */
+    MemMap,   /* mmap：内存映射操作 */
 #ifndef CONFIG_DISABLE_POLL
-    NULL,      /* poll */
+    NULL,      /* poll：未实现的轮询操作 */
 #endif
-    NULL,      /* unlink */
+    NULL,      /* unlink：未实现的删除操作 */
 };
-// 注册/dev/mem 的驱动程序
+
+/**
+ * @brief   注册内存设备驱动
+ * @return  0表示成功，负数表示失败
+ */
 int DevMemRegister(void)
 {
-    return register_driver("/dev/mem", &g_memDevOps, 0644, 0); /* 0644: file mode */
+    // 注册字符设备，设备名为/dev/mem，文件权限为0644
+    return register_driver("/dev/mem", &g_memDevOps, 0644, 0); /* 0644: 文件权限 */
 }

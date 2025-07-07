@@ -36,58 +36,52 @@
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 #include "shcmd.h"
-/***********************************************************
-*	partition命令用来查看flash分区信息
-*	partition [nand / spinor]
-
-参数		参数说明						取值范围
-nand	显示nand flash分区信息。			N/A
-spinor	显示spinor flash分区信息。			N/A
-
-partition命令用来查看flash分区信息。
-仅当使能yaffs文件系统时才可以查看nand flash分区信息，
-使能jffs或romfs文件系统时可以查看spinor flash分区信息。
-
-举例：partition spinor
-https://weharmony.github.io/openharmony/zh-cn/device-dev/kernel/partition.html
-*
-***********************************************************/
+/**
+ * @brief   显示指定类型Flash的分区信息
+ * @param   argc    命令参数个数
+ * @param   argv    命令参数列表，需指定"nand"或"spinor"
+ * @return  成功返回ENOERR，失败返回错误码
+ */
 INT32 osShellCmdPartitionShow(INT32 argc, const CHAR **argv)
 {
-    mtd_partition *node = NULL;
-    const CHAR *fs = NULL;
-    partition_param *param = NULL;
+    mtd_partition *node = NULL;        // 分区节点指针
+    const CHAR *fs = NULL;             // Flash类型字符串指针
+    partition_param *param = NULL;     // 分区参数结构体指针
 
-    if (argc != 1) {//只接受一个参数
-        PRINT_ERR("partition [nand/spinor]\n");
-        return -EPERM;
+    // 检查参数个数是否正确
+    if (argc != 1) {
+        PRINT_ERR("partition [nand/spinor]\n");  // 打印命令使用方法
+        return -EPERM;                            // 返回权限错误
     } else {
-        fs = argv[0];
+        fs = argv[0];                             // 获取Flash类型参数
     }
 
-    if (strcmp(fs, "nand") == 0) { // #partition nand
-        param = GetNandPartParam(); //获取 nand flash 信息
-    } else if (strcmp(fs, "spinor") == 0) { // #partition spinor
-        param = GetSpinorPartParam(); //获取 spi nor flash 信息
+    // 根据Flash类型获取对应的分区参数
+    if (strcmp(fs, "nand") == 0) {
+        param = GetNandPartParam();               // 获取NAND Flash分区参数
+    } else if (strcmp(fs, "spinor") == 0) {
+        param = GetSpinorPartParam();             // 获取SPINOR Flash分区参数
     } else {
-        PRINT_ERR("not supported!\n");
-        return -EINVAL;
+        PRINT_ERR("not supported!\n");           // 打印不支持的类型错误
+        return -EINVAL;                           // 返回无效参数错误
     }
 
+    // 检查分区参数是否有效
     if ((param == NULL) || (param->flash_mtd == NULL)) {
-        PRINT_ERR("no partition!\n");
-        return -EINVAL;
+        PRINT_ERR("no partition!\n");            // 打印无分区错误
+        return -EINVAL;                           // 返回无效参数错误
     }
 
+    // 遍历分区链表并打印分区信息
     LOS_DL_LIST_FOR_EACH_ENTRY(node, &param->partition_head->node_info, mtd_partition, node_info) {
         PRINTK("%s partition num:%u, blkdev name:%s, mountpt:%s, startaddr:0x%08x, length:0x%08x\n",
             fs, node->patitionnum, node->blockdriver_name, node->mountpoint_name,
-            (node->start_block * param->block_size),
-            ((node->end_block - node->start_block) + 1) * param->block_size);
+            (node->start_block * param->block_size),  // 计算分区起始地址
+            ((node->end_block - node->start_block) + 1) * param->block_size);  // 计算分区大小
     }
-    return ENOERR;
+    return ENOERR;  // 返回成功
 }
 
+// 注册分区显示命令到shell
 SHELLCMD_ENTRY(partition_shellcmd, CMD_TYPE_EX, "partition", XARGS, (CmdCallBackFunc)osShellCmdPartitionShow);
-
 #endif /* LOSCFG_SHELL */

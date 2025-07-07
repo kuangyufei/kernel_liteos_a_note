@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -38,13 +38,12 @@
 #include "los_process_pri.h"
 #include "los_sched_pri.h"
 
-// 本文件实现 liteos task 适配 pthread 
 
 /*
  * Array of pthread control structures. A pthread_t object is
  * "just" an index into this array.
  */
-STATIC _pthread_data g_pthreadData[LOSCFG_BASE_CORE_TSK_LIMIT + 1];//
+STATIC _pthread_data g_pthreadData[LOSCFG_BASE_CORE_TSK_LIMIT + 1];
 
 /* Count of number of threads that have exited and not been reaped. */
 STATIC INT32 g_pthreadsExited = 0;
@@ -59,14 +58,14 @@ UINTPTR g_pthreadCanceledDummyVar;
  * Private version of pthread_self() that returns a pointer to our internal
  * control structure.
  */
-_pthread_data *pthread_get_self_data(void)//获取当前线程信息
+_pthread_data *pthread_get_self_data(void)
 {
-    UINT32 runningTaskPID = ((LosTaskCB *)(OsCurrTaskGet()))->taskID;//当前线程
+    UINT32 runningTaskPID = ((LosTaskCB *)(OsCurrTaskGet()))->taskID;
     _pthread_data *data = &g_pthreadData[runningTaskPID];
 
     return data;
 }
-///获取线程控制块
+
 _pthread_data *pthread_get_data(pthread_t id)
 {
     _pthread_data *data = NULL;
@@ -137,7 +136,7 @@ STATIC VOID PthreadReap(VOID)
         }
     }
 }
-///设置线程的属性
+
 STATIC VOID SetPthreadAttr(const _pthread_data *self, const pthread_attr_t *attr, pthread_attr_t *outAttr)
 {
     /*
@@ -185,7 +184,7 @@ STATIC VOID SetPthreadDataAttr(const pthread_attr_t *userAttr, const pthread_t t
     created->stackmem     = taskCB->topOfStack;
     created->thread_data  = NULL;
 }
-///线程控制块初始化
+
 STATIC UINT32 InitPthreadData(pthread_t threadID, pthread_attr_t *userAttr,
                               const CHAR name[], size_t len)
 {
@@ -199,7 +198,7 @@ STATIC UINT32 InitPthreadData(pthread_t threadID, pthread_attr_t *userAttr,
         PRINT_ERR("%s: %d, err: %d\n", __FUNCTION__, __LINE__, err);
         return LOS_NOK;
     }
-    userAttr->stacksize   = taskCB->stackSize;//内核栈大小
+    userAttr->stacksize   = taskCB->stackSize;
     err = OsSetTaskName(taskCB, created->name, FALSE);
     if (err != LOS_OK) {
         PRINT_ERR("%s: %d, err: %d\n", __FUNCTION__, __LINE__, err);
@@ -207,7 +206,7 @@ STATIC UINT32 InitPthreadData(pthread_t threadID, pthread_attr_t *userAttr,
     }
 #ifdef LOSCFG_KERNEL_SMP
     if (userAttr->cpuset.__bits[0] > 0) {
-        taskCB->cpuAffiMask = (UINT16)userAttr->cpuset.__bits[0];//CPU亲和力掩码
+        taskCB->cpuAffiMask = (UINT16)userAttr->cpuset.__bits[0];
     }
 #endif
 
@@ -215,17 +214,6 @@ STATIC UINT32 InitPthreadData(pthread_t threadID, pthread_attr_t *userAttr,
     return ret;
 }
 
-/*!
- * @brief pthread_create	
- * 创建线程
- * @param arg 传递给线程入口函数的参数	
- * @param attr 指向线程属性的指针，如果使用 NULL，则使用默认的线程属性	
- * @param startRoutine 线程入口函数地址
- * @param thread 指向线程句柄 (线程标识符) 的指针，不能为 NULL	
- * @return	
- *
- * @see
- */
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
                    void *(*startRoutine)(void *), void *arg)
 {
@@ -233,7 +221,7 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
     UINT32 ret;
     CHAR name[PTHREAD_DATA_NAME_MAX] = {0};
     STATIC UINT16 pthreadNumber = 1;
-    TSK_INIT_PARAM_S taskInitParam = {0};//posix线程对标鸿蒙内核的任务
+    TSK_INIT_PARAM_S taskInitParam = {0};
     UINT32 taskHandle;
     _pthread_data *self = pthread_get_self_data();
 
@@ -241,37 +229,37 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
         return EINVAL;
     }
 
-    SetPthreadAttr(self, attr, &userAttr);//设置线程属性(包括栈信息 ==)
+    SetPthreadAttr(self, attr, &userAttr);
 
     (VOID)snprintf_s(name, sizeof(name), sizeof(name) - 1, "pth%02d", pthreadNumber);
     pthreadNumber++;
 
     taskInitParam.pcName       = name;
-    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)startRoutine;//线程入口函数 类似 Java thread 的 run()函数
-    taskInitParam.auwArgs[0]   = (UINTPTR)arg;//参数
-    taskInitParam.usTaskPrio   = (UINT16)userAttr.schedparam.sched_priority;//任务优先级
-    taskInitParam.uwStackSize  = userAttr.stacksize;//栈大小
-    if (OsProcessIsUserMode(OsCurrProcessGet())) {//@note_thinking 是不是搞反了 ? 
+    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)startRoutine;
+    taskInitParam.auwArgs[0]   = (UINTPTR)arg;
+    taskInitParam.usTaskPrio   = (UINT16)userAttr.schedparam.sched_priority;
+    taskInitParam.uwStackSize  = userAttr.stacksize;
+    if (OsProcessIsUserMode(OsCurrProcessGet())) {
         taskInitParam.processID = (UINTPTR)OsGetKernelInitProcess();
     } else {
         taskInitParam.processID = (UINTPTR)OsCurrProcessGet();
     }
     if (userAttr.detachstate == PTHREAD_CREATE_DETACHED) {
-        taskInitParam.uwResved = LOS_TASK_STATUS_DETACHED;//detached状态的线程，在结束的时候，会自动释放该线程所占用的资源。
+        taskInitParam.uwResved = LOS_TASK_STATUS_DETACHED;
     } else {
         /* Set the pthread default joinable */
-        taskInitParam.uwResved = LOS_TASK_ATTR_JOINABLE;//如果使用 PTHREAD_CREATE_JOINABLE 创建非分离线程，
-    }//则假设应用程序将等待线程完成。也就是说，程序将对线程执行 pthread_join()。
+        taskInitParam.uwResved = LOS_TASK_ATTR_JOINABLE;
+    }
 
     PthreadReap();
-    ret = LOS_TaskCreateOnly(&taskHandle, &taskInitParam);//创建线程但不调度
+    ret = LOS_TaskCreateOnly(&taskHandle, &taskInitParam);
     if (ret == LOS_OK) {
         *thread = (pthread_t)taskHandle;
         ret = InitPthreadData(*thread, &userAttr, name, PTHREAD_DATA_NAME_MAX);
         if (ret != LOS_OK) {
             goto ERROR_OUT_WITH_TASK;
         }
-        (VOID)LOS_SetTaskScheduler(taskHandle, SCHED_RR, taskInitParam.usTaskPrio);//设置调度器,等待调度
+        (VOID)LOS_SetTaskScheduler(taskHandle, SCHED_RR, taskInitParam.usTaskPrio);
     }
 
     if (ret == LOS_OK) {
@@ -287,7 +275,7 @@ ERROR_OUT:
 
     return map_errno(ret);
 }
-/// 线程退出
+
 void pthread_exit(void *retVal)
 {
     _pthread_data *self = pthread_get_self_data();
@@ -424,8 +412,6 @@ int pthread_join(pthread_t thread, void **retVal)
 /*
  * Set the detachstate of the thread to "detached". The thread then does not
  * need to be joined and its resources will be freed when it exits.
- * 调用此函数，如果 pthread 线程没有结束，则将 thread 线程属性的分离状态设置为 detached；
- * 当 thread 线程已经结束时，系统将回收 pthread 线程占用的资源。
  */
 int pthread_detach(pthread_t thread)
 {
@@ -470,7 +456,7 @@ int pthread_detach(pthread_t thread)
 
     return ret;
 }
-///设置调度参数
+
 int pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *param)
 {
     _pthread_data *data = NULL;
@@ -761,7 +747,7 @@ void pthread_testcancel(void)
 }
 
 /* Get current thread id. */
-pthread_t pthread_self(void)//获取当前线程ID
+pthread_t pthread_self(void)
 {
     _pthread_data *data = pthread_get_self_data();
 
@@ -793,7 +779,7 @@ void pthread_cleanup_pop_inner(struct pthread_cleanup_buffer *buffer, int execut
 }
 
 /*
- * Set the cpu affinity mask for the thread | 设置线程与CPU的亲和性
+ * Set the cpu affinity mask for the thread
  */
 int pthread_setaffinity_np(pthread_t thread, size_t cpusetsize, const cpu_set_t* cpuset)
 {
@@ -806,7 +792,7 @@ int pthread_setaffinity_np(pthread_t thread, size_t cpusetsize, const cpu_set_t*
 }
 
 /*
- * Get the cpu affinity mask from the thread | 获取线程与CPU的亲和性
+ * Get the cpu affinity mask from the thread
  */
 int pthread_getaffinity_np(pthread_t thread, size_t cpusetsize, cpu_set_t* cpuset)
 {

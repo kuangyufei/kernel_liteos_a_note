@@ -56,37 +56,44 @@ part dev name		:	mmcblk0p0
 part sec start		:	8192
 part sec count		:	31108096
 */
+/**
+ * @brief 分区信息查询命令实现
+ * @param argc 参数数量
+ * @param argv 参数列表
+ * @return 成功返回LOS_OK，失败返回-LOS_NOK
+ */
 INT32 osShellCmdPartInfo(INT32 argc, const CHAR **argv)
 {
-    struct Vnode *node = NULL;
-    los_part *part = NULL;
-    const CHAR *str = "/dev";
-    int ret;
+    struct Vnode *node = NULL;  // Vnode结构体指针，用于表示文件系统节点
+    los_part *part = NULL;      // 分区结构体指针
+    const CHAR *str = "/dev";  // 设备路径前缀
+    int ret;                    // 返回值
 
-    if ((argc != 1) || (strncmp(argv[0], str, strlen(str)) != 0)) {//参数必须是 /dev 开头
-        PRINTK("Usage  :\n");
-        PRINTK("        partinfo <dev_vnodename>\n");
-        PRINTK("        dev_vnodename : the name of dev\n");
-        PRINTK("Example:\n");
-        PRINTK("        partinfo /dev/sdap0 \n");
+    // 检查参数数量是否为1且参数以/dev开头
+    if ((argc != 1) || (strncmp(argv[0], str, strlen(str)) != 0)) {
+        PRINTK("Usage  :\n");  // 打印使用方法
+        PRINTK("        partinfo <dev_vnodename>\n");  // 命令格式
+        PRINTK("        dev_vnodename : the name of dev\n");  // 参数说明
+        PRINTK("Example:\n");  // 示例
+        PRINTK("        partinfo /dev/sdap0 \n");  // 具体示例
 
-        set_errno(EINVAL);
-        return -LOS_NOK;
+        set_errno(EINVAL);  // 设置错误码为参数无效
+        return -LOS_NOK;    // 返回失败
     }
-    VnodeHold();
-    ret = VnodeLookup(argv[0], &node, 0);//通过设备名称找到索引节点
-    if (ret < 0) {
-        PRINT_ERR("no part found\n");
-        VnodeDrop();
-        set_errno(ENOENT);
-        return -LOS_NOK;
+    VnodeHold();  // 持有Vnode，防止被释放
+    ret = VnodeLookup(argv[0], &node, 0);  // 查找设备对应的Vnode
+    if (ret < 0) {  // 查找失败
+        PRINT_ERR("no part found\n");  // 打印错误信息
+        VnodeDrop();  // 释放Vnode
+        set_errno(ENOENT);  // 设置错误码为设备不存在
+        return -LOS_NOK;    // 返回失败
     }
 
-    part = los_part_find(node);//通过索引节点找到分区信息
-    VnodeDrop();
-    show_part(part);
+    part = los_part_find(node);  // 根据Vnode查找分区信息
+    VnodeDrop();  // 释放Vnode
+    show_part(part);  // 显示分区详细信息
 
-    return LOS_OK;
+    return LOS_OK;  // 返回成功
 }
 
 SHELLCMD_ENTRY(partinfo_shellcmd, CMD_TYPE_EX, "partinfo", XARGS, (CmdCallBackFunc)osShellCmdPartInfo);

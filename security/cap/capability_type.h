@@ -40,39 +40,63 @@ https://blog.csdn.net/alex_yangchuansheng/article/details/102796001
 */
 #ifndef CAPABILITY_TYPE_H
 #define CAPABILITY_TYPE_H
-
+/**
+ * @brief POSIX标准能力集
+ */
 // posix capabilities
-#define CAP_CHOWN                       0	//修改文件所有者的权限
-#define CAP_DAC_EXECUTE                 1	//具有执行权限
-#define CAP_DAC_WRITE                   2	//具有写权限
-#define CAP_DAC_READ_SEARCH             3	//忽略文件读及目录搜索的 DAC 访问限制
-#define CAP_FOWNER                      4	//忽略文件属主 ID 必须和进程用户 ID 相匹配的限制
-#define CAP_KILL                        5	//允许向其他进程发生信号
-#define CAP_SETGID                      6	//允许设置其他进程组ID
-#define CAP_SETUID                      7	//允许设置其他进程用户ID
+#define CAP_CHOWN                       0  // 修改文件所有者权限
+#define CAP_DAC_EXECUTE                 1  // 绕过文件执行权限检查
+#define CAP_DAC_WRITE                   2  // 绕过文件写权限检查
+#define CAP_DAC_READ_SEARCH             3  // 绕过文件读和搜索权限检查
+#define CAP_FOWNER                      4  // 忽略文件所有者ID检查
+#define CAP_KILL                        5  // 允许发送信号给任意进程
+#define CAP_SETGID                      6  // 允许设置进程GID
+#define CAP_SETUID                      7  // 允许设置进程UID
 
+/**
+ * @brief 网络相关能力集
+ */
 // socket capabilities
-#define CAP_NET_BIND_SERVICE            8	//允许绑定端口权限
-#define CAP_NET_BROADCAST               9	//允许广播
-#define CAP_NET_ADMIN                   10
-#define CAP_NET_RAW                     11
+#define CAP_NET_BIND_SERVICE            8  // 允许绑定特权端口(<1024)
+#define CAP_NET_BROADCAST               9  // 允许网络广播和多播访问
+#define CAP_NET_ADMIN                   10 // 允许网络管理操作
+#define CAP_NET_RAW                     11 // 允许使用原始套接字
 
+/**
+ * @brief 文件系统相关能力集
+ */
 // fs capabilities
-#define CAP_FS_MOUNT                    12	//允许挂载
-#define CAP_FS_FORMAT                   13	//允许格式化
+#define CAP_FS_MOUNT                    12 // 允许挂载文件系统
+#define CAP_FS_FORMAT                   13 // 允许格式化文件系统
 
+/**
+ * @brief 进程调度相关能力集
+ */
 // process capabilities
-#define CAP_SCHED_SETPRIORITY           14	//允许设置调度优先级
+#define CAP_SCHED_SETPRIORITY           14 // 允许设置进程优先级
 
+/**
+ * @brief 系统时间相关能力集
+ */
 // time capabilities
-#define CAP_SET_TIMEOFDAY               15	
-#define CAP_CLOCK_SETTIME               16
+#define CAP_SET_TIMEOFDAY               15 // 允许设置系统时间
+#define CAP_CLOCK_SETTIME               16 // 允许设置时钟时间
 
+/**
+ * @brief 能力集管理相关能力
+ */
 // process capabilities
-#define CAP_CAPSET                      17	//允许改变进程自身的权限集
+#define CAP_CAPSET                      17 // 允许修改进程能力集
 
+/**
+ * @brief 系统重启相关能力
+ */
 // reboot capability
-#define CAP_REBOOT                      18	//允许重新启动系统
-// self deined privileged syscalls
-#define CAP_SHELL_EXEC                  19	//自我定义的特权系统调用
+#define CAP_REBOOT                      18 // 允许系统重启
+
+/**
+ * @brief 自定义特权系统调用能力
+ */
+// self defined privileged syscalls
+#define CAP_SHELL_EXEC                  19 // 允许执行shell特权命令
 #endif

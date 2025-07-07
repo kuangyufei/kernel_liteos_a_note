@@ -32,18 +32,25 @@
 #include "los_typedef.h"
 #include "los_memory.h"
 
-//支持posix方式内存对齐
+/**
+ * @brief 按指定对齐方式分配内存
+ * @param memAddr 用于存储分配的内存地址的指针
+ * @param alignment 内存对齐要求（必须是2的幂且是void*大小的倍数）
+ * @param size 要分配的内存大小（字节）
+ * @return 成功返回ENOERR，失败返回错误码（EINVAL或ENOMEM）
+ */
 int posix_memalign(void **memAddr, size_t alignment, size_t size)
 {
+    // 检查对齐参数是否有效：非零、2的幂、且是指针大小的倍数
     if ((alignment == 0) || ((alignment & (alignment - 1)) != 0) || ((alignment % sizeof(void *)) != 0)) {
-        return EINVAL;
+        return EINVAL;  // 对齐参数无效，返回EINVAL
     }
 
+    // 从系统内存区域按指定对齐方式分配内存
     *memAddr = LOS_MemAllocAlign(OS_SYS_MEM_ADDR, size, alignment);
-    if (*memAddr == NULL) {
-        return ENOMEM;
+    if (*memAddr == NULL) {  // 检查内存分配是否成功
+        return ENOMEM;       // 分配失败，返回ENOMEM
     }
 
-    return ENOERR;
+    return ENOERR;  // 成功返回ENOERR
 }
-

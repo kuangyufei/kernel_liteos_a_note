@@ -1,29 +1,3 @@
-/*!
- * @file    los_syscall.c
- * @brief
- * @link kernel-small-bundles-system http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-bundles-system.html @endlink
-   @verbatim
-   OpenHarmony LiteOS-A实现了用户态与内核态的区分隔离，用户态程序不能直接访问内核资源，
-   而系统调用则为用户态程序提供了一种访问内核资源、与内核进行交互的通道。
-
-   新增系统调用的典型开发流程如下：
-   
-	   1. 在LibC库中确定并添加新增的系统调用号。
-	   2. 在LibC库中新增用户态的函数接口声明及实现。
-	   3. 在内核系统调用头文件中确定并添加新增的系统调用号及对应内核处理函数的声明。
-	   4. 在内核中新增该系统调用对应的内核处理函数。
-
-   如图所示，用户程序通过调用System API（系统API，通常是系统提供的POSIX接口）进行内核资源访问与交互请求，POSIX接口内部会触发SVC/SWI异常，
-   完成系统从用户态到内核态的切换，然后对接到内核的Syscall Handler（系统调用统一处理接口）进行参数解析，最终分发至具体的内核处理函数。
-   @endverbatim
- * @image html https://gitee.com/weharmonyos/resources/raw/master/37/sys_call.png   
- * @attention 系统调用提供基础的用户态程序与内核的交互功能，不建议开发者直接使用系统调用接口，推荐使用内核提供的对外POSIX接口，
-	 若需要新增系统调用接口，详见开发指导。内核向用户态提供的系统调用接口清单详见kernel/liteos_a/syscall/syscall_lookup.h，
-	 内核相应的系统调用对接函数清单详见kernel/liteos_a/syscall/los_syscall.h。
- * @version 
- * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
- * @date    2021-11-19
- */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -53,6 +27,32 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+/*!
+ * @file    los_syscall.c
+ * @brief
+ * @link kernel-small-bundles-system http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-bundles-system.html @endlink
+   @verbatim
+   OpenHarmony LiteOS-A实现了用户态与内核态的区分隔离，用户态程序不能直接访问内核资源，
+   而系统调用则为用户态程序提供了一种访问内核资源、与内核进行交互的通道。
+
+   新增系统调用的典型开发流程如下：
+   
+	   1. 在LibC库中确定并添加新增的系统调用号。
+	   2. 在LibC库中新增用户态的函数接口声明及实现。
+	   3. 在内核系统调用头文件中确定并添加新增的系统调用号及对应内核处理函数的声明。
+	   4. 在内核中新增该系统调用对应的内核处理函数。
+
+   如图所示，用户程序通过调用System API（系统API，通常是系统提供的POSIX接口）进行内核资源访问与交互请求，POSIX接口内部会触发SVC/SWI异常，
+   完成系统从用户态到内核态的切换，然后对接到内核的Syscall Handler（系统调用统一处理接口）进行参数解析，最终分发至具体的内核处理函数。
+   @endverbatim
+ * @image html https://gitee.com/weharmonyos/resources/raw/master/37/sys_call.png   
+ * @attention 系统调用提供基础的用户态程序与内核的交互功能，不建议开发者直接使用系统调用接口，推荐使用内核提供的对外POSIX接口，
+	 若需要新增系统调用接口，详见开发指导。内核向用户态提供的系统调用接口清单详见kernel/liteos_a/syscall/syscall_lookup.h，
+	 内核相应的系统调用对接函数清单详见kernel/liteos_a/syscall/los_syscall.h。
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2025-07-07
  */
 
 #define _GNU_SOURCE

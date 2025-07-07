@@ -46,7 +46,6 @@
 #include "user_copy.h"
 #include "unistd.h"
 
-//这里放的是一些不好归类(或称杂项)的系统调用
 #ifdef LOSCFG_UTS_CONTAINER
 #define HOST_NAME_MAX_LEN 65
 int SysSetHostName(const char *name, size_t len)
@@ -86,7 +85,6 @@ int SysSetHostName(const char *name, size_t len)
 }
 #endif
 
-//uname命令用于显示当前操作系统的名称，版本创建时间，系统名称，版本信息等
 int SysUname(struct utsname *name)
 {
     int ret;
@@ -105,7 +103,7 @@ int SysUname(struct utsname *name)
     }
     return ret;
 }
-///系统信息
+
 int SysInfo(struct sysinfo *info)
 {
     int ret;
@@ -124,7 +122,7 @@ int SysInfo(struct sysinfo *info)
     }
     return 0;
 }
-///重启系统
+
 int SysReboot(int magic, int magic2, int type)
 {
     (void)magic;
@@ -139,10 +137,10 @@ int SysReboot(int magic, int magic2, int type)
     }
     return -EFAULT;
 }
-///执行 shell 命令
+
 #ifdef LOSCFG_SHELL
 int SysShellExec(const char *msgName, const char *cmdString)
-{ 
+{
     int ret;
     unsigned int uintRet;
     errno_t err;
@@ -150,10 +148,10 @@ int SysShellExec(const char *msgName, const char *cmdString)
     char msgNameDup[CMD_KEY_LEN + 1] = { 0 };
     char cmdStringDup[CMD_MAX_LEN + 1] = { 0 };
 
-    if (!IsCapPermit(CAP_SHELL_EXEC)) {//1.先鉴权
+    if (!IsCapPermit(CAP_SHELL_EXEC)) {
         return -EPERM;
     }
-	//2.由内核栈空间接走用户空间的参数,注意还是同一个任务,只是从任务的用户空间移到内核栈.
+
     ret = LOS_StrncpyFromUser(msgNameDup, msgName, CMD_KEY_LEN + 1);
     if (ret < 0) {
         return -EFAULT;
@@ -172,13 +170,13 @@ int SysShellExec(const char *msgName, const char *cmdString)
     if (err != EOK) {
         return -EFAULT;
     }
-	//获取消息类型
+
     uintRet = ShellMsgTypeGet(&cmdParsed, msgNameDup);
     if (uintRet != LOS_OK) {
         PRINTK("%s:command not found\n", msgNameDup);
         return -EFAULT;
     } else {
-        (void)OsCmdExec(&cmdParsed, (char *)cmdStringDup);//执行shell命令,回调命令注册时的 函数指针
+        (void)OsCmdExec(&cmdParsed, (char *)cmdStringDup);
     }
 
     return 0;
@@ -232,7 +230,7 @@ int SysGetrusage(int what, struct rusage *ru)
     }
     return 0;
 }
-///系统配置
+
 long SysSysconf(int name)
 {
     long ret;

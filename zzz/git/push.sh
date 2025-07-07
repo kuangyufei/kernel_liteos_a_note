@@ -1,6 +1,6 @@
 git add -A
 
-git commit -m  ' 注释shell命令集的实现 < arp、cat、cd、chgrp、chmod、chown、cp、cpup ... >
+git commit -m  ' 注释扩展内核、安全、系统调用
     博客 | http://weharmonyos.com
 '
 git push  gitee_origin master

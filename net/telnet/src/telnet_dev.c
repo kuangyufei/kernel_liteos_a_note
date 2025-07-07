@@ -50,367 +50,401 @@
 #include "fs/driver.h"
 
 /* event: there are more commands left in the FIFO to run */
-#define TELNET_EVENT_MORE_CMD   0x01 ///< 还有很多命令在FIFO中等待执行的事件
-#define TELNET_DEV_DRV_MODE     0666 ///< 文件权限 chmod = 666 
 
-STATIC TELNET_DEV_S g_telnetDev;	///< 远程登录设备
-STATIC EVENT_CB_S *g_event;
-STATIC struct Vnode *g_currentVnode;
+#define TELNET_EVENT_MORE_CMD   0x01  // 表示有更多命令的事件标志
+#define TELNET_DEV_DRV_MODE     0666  // telnet设备驱动模式，权限为0666
 
+STATIC TELNET_DEV_S g_telnetDev;       // telnet设备全局实例
+STATIC EVENT_CB_S *g_event;            // 事件回调指针
+STATIC struct Vnode *g_currentVnode;   // 当前Vnode指针
+
+/**
+ * @brief 通过文件指针获取telnet设备实例
+ * @param file 文件指针
+ * @param isOpenOp 是否为打开操作
+ * @return 成功返回TELNET_DEV_S指针，失败返回NULL
+ */
 STATIC INLINE TELNET_DEV_S *GetTelnetDevByFile(const struct file *file, BOOL isOpenOp)
 {
     struct Vnode *telnetInode = NULL;
     TELNET_DEV_S *telnetDev = NULL;
 
-    if (file == NULL) {
+    if (file == NULL) {  // 文件指针为空检查
         return NULL;
     }
-    telnetInode = file->f_vnode;
-    if (telnetInode == NULL) {
+    telnetInode = file->f_vnode;  // 获取文件对应的Vnode
+    if (telnetInode == NULL) {  // Vnode为空检查
         return NULL;
     }
     /*
-     * Check if the f_vnode is valid here for non-open ops (open is supposed to get invalid f_vnode):
-     * when telnet is disconnected, there still may be 'TelentShellTask' tasks trying to write
-     * to the file, but the file has illegal f_vnode because the file is used by others.
+     * 非打开操作时检查f_vnode是否有效（打开操作应获取无效f_vnode）：
+     * 当telnet断开连接时，可能仍有'TelentShellTask'任务尝试写入文件，
+     * 但文件因被其他进程使用而具有非法f_vnode
      */
     if (!isOpenOp) {
-        if (telnetInode != g_currentVnode) {
+        if (telnetInode != g_currentVnode) {  // 检查Vnode是否为当前有效Vnode
             return NULL;
         }
     }
-    telnetDev = (TELNET_DEV_S *)((struct drv_data*)telnetInode->data)->priv;
+    telnetDev = (TELNET_DEV_S *)((struct drv_data*)telnetInode->data)->priv;  // 从Vnode数据中获取telnet设备实例
     return telnetDev;
 }
 
-/*
- * Description : When receive user's input commands, first copy commands to the FIFO of the telnet device.
- *               Then, notify a command resolver task (an individual shell task) to take out and run commands.
-	 当接收到用户输入的命令时，首先将命令复制到telnet设备的FIFO中，然后通知一个命令解析器任务
-	 （一个单独的shell任务）取出并运行命令。
- * Return      : -1                   --- On failure
- *               Non-negative integer --- length of written commands
+/**
+ * @brief 接收用户输入命令，将命令复制到telnet设备的FIFO，然后通知命令解析任务（独立的shell任务）取出并运行命令
+ * @param buf 命令缓冲区
+ * @param bufLen 缓冲区长度
+ * @return 失败返回-1，成功返回写入的命令长度
  */
 INT32 TelnetTx(const CHAR *buf, UINT32 bufLen)
 {
     UINT32 i;
     TELNET_DEV_S *telnetDev = NULL;
 
-    TelnetLock();
+    TelnetLock();  // 加锁保护临界区
 
     telnetDev = &g_telnetDev;
-    if ((buf == NULL) || (telnetDev->cmdFifo == NULL)) {
-        TelnetUnlock();
+    if ((buf == NULL) || (telnetDev->cmdFifo == NULL)) {  // 缓冲区或FIFO为空检查
+        TelnetUnlock();  // 解锁
         return -1;
     }
 
-    /* size limited */
-    if (bufLen > telnetDev->cmdFifo->fifoNum) {//一次拿不完数据的情况
-        bufLen = telnetDev->cmdFifo->fifoNum;//只能装满
+    /* 大小限制 */
+    if (bufLen > telnetDev->cmdFifo->fifoNum) {  // 如果请求长度超过FIFO可用空间，截断为可用空间
+        bufLen = telnetDev->cmdFifo->fifoNum;
     }
 
-    if (bufLen == 0) { //参数要先判断 @note_thinking
-        TelnetUnlock();
+    if (bufLen == 0) {  // 空数据检查
+        TelnetUnlock();  // 解锁
         return 0;
     }
 
-    /* copy commands to the fifo of the telnet device | 复制命令到telnet设备的fifo*/
+    /* 将命令复制到telnet设备的FIFO */
     for (i = 0; i < bufLen; i++) {
-        telnetDev->cmdFifo->rxBuf[telnetDev->cmdFifo->rxIndex] = *buf;
-        telnetDev->cmdFifo->rxIndex++;
-        telnetDev->cmdFifo->rxIndex %= FIFO_MAX;
+        telnetDev->cmdFifo->rxBuf[telnetDev->cmdFifo->rxIndex] = *buf;  // 复制数据到FIFO缓冲区
+        telnetDev->cmdFifo->rxIndex++;  // 递增接收索引
+        telnetDev->cmdFifo->rxIndex %= FIFO_MAX;  // 循环索引
         buf++;
     }
-    telnetDev->cmdFifo->fifoNum -= bufLen;
+    telnetDev->cmdFifo->fifoNum -= bufLen;  // 更新FIFO可用空间
 
     if (telnetDev->eventPend) {
-        /* signal that there are some works to do */
-        (VOID)LOS_EventWrite(&telnetDev->eventTelnet, TELNET_EVENT_MORE_CMD);
+        /* 发送有工作要做的信号 */
+        (VOID)LOS_EventWrite(&telnetDev->eventTelnet, TELNET_EVENT_MORE_CMD);  // 写入事件
     }
-    /* notify the command resolver task */
-    notify_poll(&telnetDev->wait);
-    TelnetUnlock();
+    /* 通知命令解析任务 */
+    notify_poll(&telnetDev->wait);  // 通知轮询等待队列
+    TelnetUnlock();  // 解锁
 
     return (INT32)bufLen;
 }
 
-/*
- * Description : When open the telnet device, init the FIFO, wait queue etc.
+/**
+ * @brief 打开telnet设备时，初始化FIFO、等待队列等
+ * @param file 文件指针
+ * @return 成功返回0，失败返回-1
  */
 STATIC INT32 TelnetOpen(struct file *file)
 {
     struct wait_queue_head *wait = NULL;
     TELNET_DEV_S *telnetDev = NULL;
 
-    TelnetLock();
+    TelnetLock();  // 加锁保护临界区
 
-    telnetDev = GetTelnetDevByFile(file, TRUE);//获取标准file私有数据
+    telnetDev = GetTelnetDevByFile(file, TRUE);  // 获取telnet设备实例
     if (telnetDev == NULL) {
-        TelnetUnlock();
+        TelnetUnlock();  // 解锁
         return -1;
     }
 
-    if (telnetDev->cmdFifo == NULL) {
+    if (telnetDev->cmdFifo == NULL) {  // 如果FIFO未初始化
         wait = &telnetDev->wait;
-        (VOID)LOS_EventInit(&telnetDev->eventTelnet);//初始化事件
-        g_event = &telnetDev->eventTelnet;
-        telnetDev->cmdFifo = (TELNTE_FIFO_S *)malloc(sizeof(TELNTE_FIFO_S));
-        if (telnetDev->cmdFifo == NULL) {
-            TelnetUnlock();
+        (VOID)LOS_EventInit(&telnetDev->eventTelnet);  // 初始化事件
+        g_event = &telnetDev->eventTelnet;  // 设置全局事件指针
+        telnetDev->cmdFifo = (TELNTE_FIFO_S *)malloc(sizeof(TELNTE_FIFO_S));  // 分配FIFO内存
+        if (telnetDev->cmdFifo == NULL) {  // 内存分配失败检查
+            TelnetUnlock();  // 解锁
             return -1;
         }
-        (VOID)memset_s(telnetDev->cmdFifo, sizeof(TELNTE_FIFO_S), 0, sizeof(TELNTE_FIFO_S));
-        telnetDev->cmdFifo->fifoNum = FIFO_MAX;
-        LOS_ListInit(&wait->poll_queue);
+        (VOID)memset_s(telnetDev->cmdFifo, sizeof(TELNTE_FIFO_S), 0, sizeof(TELNTE_FIFO_S));  // 初始化FIFO内存
+        telnetDev->cmdFifo->fifoNum = FIFO_MAX;  // 设置FIFO最大容量
+        LOS_ListInit(&wait->poll_queue);  // 初始化轮询等待队列
     }
-    g_currentVnode = file->f_vnode;
-    TelnetUnlock();
+    g_currentVnode = file->f_vnode;  // 更新当前Vnode
+    TelnetUnlock();  // 解锁
     return 0;
 }
 
-/*
- * Description : When close the telnet device, free the FIFO, wait queue etc.
+/**
+ * @brief 关闭telnet设备时，释放FIFO、等待队列等资源
+ * @param file 文件指针
+ * @return 成功返回0
  */
 STATIC INT32 TelnetClose(struct file *file)
 {
     struct wait_queue_head *wait = NULL;
     TELNET_DEV_S *telnetDev = NULL;
 
-    TelnetLock();
+    TelnetLock();  // 加锁保护临界区
 
-    telnetDev = GetTelnetDevByFile(file, FALSE);
+    telnetDev = GetTelnetDevByFile(file, FALSE);  // 获取telnet设备实例
     if (telnetDev != NULL) {
         wait = &telnetDev->wait;
-        LOS_ListDelete(&wait->poll_queue);
-        free(telnetDev->cmdFifo);
-        telnetDev->cmdFifo = NULL;
-        (VOID)LOS_EventDestroy(&telnetDev->eventTelnet);
-        g_event = NULL;
+        LOS_ListDelete(&wait->poll_queue);  // 删除轮询等待队列
+        free(telnetDev->cmdFifo);  // 释放FIFO内存
+        telnetDev->cmdFifo = NULL;  // 置空FIFO指针
+        (VOID)LOS_EventDestroy(&telnetDev->eventTelnet);  // 销毁事件
+        g_event = NULL;  // 置空全局事件指针
     }
-    g_currentVnode = NULL;
-    TelnetUnlock();
+    g_currentVnode = NULL;  // 重置当前Vnode
+    TelnetUnlock();  // 解锁
     return 0;
 }
 
-/*
- * Description : When a command resolver task trys to read the telnet device,
- *               this method is called, and it will take out user's commands from the FIFO to run.
- * 当命令解析器任务尝试读取 telnet 设备时，调用这个方法，它会从FIFO中取出用户的命令来运行。
- * 读取远程终端输入的命令,比如: # task 
- * Return      : -1                   --- On failure
- *               Non-negative integer --- length of commands taken out from the FIFO of the telnet device.
+/**
+ * @brief 当命令解析任务尝试读取telnet设备时调用，从FIFO中取出用户命令运行
+ * @param file 文件指针
+ * @param buf 接收缓冲区
+ * @param bufLen 缓冲区长度
+ * @return 失败返回-1，成功返回从FIFO取出的命令长度
  */
 STATIC ssize_t TelnetRead(struct file *file, CHAR *buf, size_t bufLen)
 {
     UINT32 i;
     TELNET_DEV_S *telnetDev = NULL;
 
-    TelnetLock();
+    TelnetLock();  // 加锁保护临界区
 
-    telnetDev = GetTelnetDevByFile(file, FALSE);//通过文件获取远程登录实体
-    if ((buf == NULL) || (telnetDev == NULL) || (telnetDev->cmdFifo == NULL)) {
-        TelnetUnlock();
+    telnetDev = GetTelnetDevByFile(file, FALSE);  // 获取telnet设备实例
+    if ((buf == NULL) || (telnetDev == NULL) || (telnetDev->cmdFifo == NULL)) {  // 参数有效性检查
+        TelnetUnlock();  // 解锁
         return -1;
     }
 
-    if (telnetDev->eventPend) {//挂起时,说明没有数据可读,等待事件发生
-        TelnetUnlock();
-        (VOID)LOS_EventRead(g_event, TELNET_EVENT_MORE_CMD, LOS_WAITMODE_OR, LOS_WAIT_FOREVER);//等待读取 TELNET_EVENT_MORE_CMD 事件
-        TelnetLock();
+    if (telnetDev->eventPend) {
+        TelnetUnlock();  // 解锁
+        (VOID)LOS_EventRead(g_event, TELNET_EVENT_MORE_CMD, LOS_WAITMODE_OR, LOS_WAIT_FOREVER);  // 等待事件
+        TelnetLock();  // 重新加锁
     }
 
-    if (bufLen > (FIFO_MAX - telnetDev->cmdFifo->fifoNum)) {
+    if (bufLen > (FIFO_MAX - telnetDev->cmdFifo->fifoNum)) {  // 如果请求长度超过FIFO数据量，截断为实际数据量
         bufLen = FIFO_MAX - telnetDev->cmdFifo->fifoNum;
     }
-	//把远程终端过来的数据接走, 一般由 Shell Entry 任务中的 read(fd,&buf)读走数据
+
     for (i = 0; i < bufLen; i++) {
-        *buf++ = telnetDev->cmdFifo->rxBuf[telnetDev->cmdFifo->rxOutIndex++];
-        if (telnetDev->cmdFifo->rxOutIndex >= FIFO_MAX) {
+        *buf++ = telnetDev->cmdFifo->rxBuf[telnetDev->cmdFifo->rxOutIndex++];  // 从FIFO读取数据到缓冲区
+        if (telnetDev->cmdFifo->rxOutIndex >= FIFO_MAX) {  // 循环索引
             telnetDev->cmdFifo->rxOutIndex = 0;
         }
     }
-    telnetDev->cmdFifo->fifoNum += bufLen;
-    /* check if no more commands left to run | 检查是否没有更多命令可以运行 */
-    if (telnetDev->cmdFifo->fifoNum == FIFO_MAX) {
-        (VOID)LOS_EventClear(&telnetDev->eventTelnet, ~TELNET_EVENT_MORE_CMD);//清除读取内容事件
+    telnetDev->cmdFifo->fifoNum += bufLen;  // 更新FIFO可用空间
+    /* 检查是否没有更多命令需要运行 */
+    if (telnetDev->cmdFifo->fifoNum == FIFO_MAX) {  // FIFO为空
+        (VOID)LOS_EventClear(&telnetDev->eventTelnet, ~TELNET_EVENT_MORE_CMD);  // 清除事件
     }
 
-    TelnetUnlock();
+    TelnetUnlock();  // 解锁
     return (ssize_t)bufLen;
 }
 
-/*
- * Description : When a command resolver task trys to write command results to the telnet device,
- *               just use lwIP send function to send out results.
- * Return      : -1                   --- buffer is NULL
- *               Non-negative integer --- length of written data, maybe 0.
+/**
+ * @brief 当命令解析任务尝试将命令结果写入telnet设备时，使用lwIP send函数发送结果
+ * @param file 文件指针
+ * @param buf 发送缓冲区
+ * @param bufLen 缓冲区长度
+ * @return 缓冲区为空返回-1，成功返回写入的数据长度（可能为0）
  */
 STATIC ssize_t TelnetWrite(struct file *file, const CHAR *buf, const size_t bufLen)
 {
     INT32 ret = 0;
     TELNET_DEV_S *telnetDev = NULL;
 
-    TelnetLock();
+    TelnetLock();  // 加锁保护临界区
 
-    telnetDev = GetTelnetDevByFile(file, FALSE);
-    if ((buf == NULL) || (telnetDev == NULL) || (telnetDev->cmdFifo == NULL)) {
-        TelnetUnlock();
+    telnetDev = GetTelnetDevByFile(file, FALSE);  // 获取telnet设备实例
+    if ((buf == NULL) || (telnetDev == NULL) || (telnetDev->cmdFifo == NULL)) {  // 参数有效性检查
+        TelnetUnlock();  // 解锁
         return -1;
     }
 
-    if (OS_INT_ACTIVE) {
-        TelnetUnlock();
+    if (OS_INT_ACTIVE) {  // 中断上下文检查
+        TelnetUnlock();  // 解锁
         return ret;
     }
 
-    if (!OsPreemptable()) {//@note_thinking 这里为何要有这个判断?
-        TelnetUnlock();
+    if (!OsPreemptable()) {  // 不可抢占检查
+        TelnetUnlock();  // 解锁
         return ret;
     }
 
-    if (telnetDev->clientFd != 0) {
+    if (telnetDev->clientFd != 0) {  // 客户端文件描述符有效
 #ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
-         /* DO NOT call blocking API in software timer task | 不要在软件定时器任务中调用阻塞 API */
-        if (OsIsSwtmrTask(OsCurrTaskGet())) {
-            TelnetUnlock();
+         /* 不要在软件定时器任务中调用阻塞API */
+        if (OsIsSwtmrTask(OsCurrTaskGet())) {  // 检查是否为软件定时器任务
+            TelnetUnlock();  // 解锁
             return ret;
         }
 #endif
-        ret = send(telnetDev->clientFd, buf, bufLen, 0);//向 socket 发送
+        ret = send(telnetDev->clientFd, buf, bufLen, 0);  // 发送数据
     }
-    TelnetUnlock();
+    TelnetUnlock();  // 解锁
     return ret;
 }
-/// 远程登录控制操作
+
+/**
+ * @brief telnet设备IO控制函数
+ * @param file 文件指针
+ * @param cmd 控制命令
+ * @param arg 命令参数
+ * @return 成功返回0，失败返回-1
+ */
 STATIC INT32 TelnetIoctl(struct file *file, const INT32 cmd, unsigned long arg)
 {
     TELNET_DEV_S *telnetDev = NULL;
 
-    TelnetLock();
+    TelnetLock();  // 加锁保护临界区
 
-    telnetDev = GetTelnetDevByFile(file, FALSE);
+    telnetDev = GetTelnetDevByFile(file, FALSE);  // 获取telnet设备实例
     if (telnetDev == NULL) {
-        TelnetUnlock();
+        TelnetUnlock();  // 解锁
         return -1;
     }
 
-    if (cmd == CFG_TELNET_EVENT_PEND) {
+    if (cmd == CFG_TELNET_EVENT_PEND) {  // 设置事件等待标志
         if (arg == 0) {
             telnetDev->eventPend = FALSE;
-            (VOID)LOS_EventWrite(&(telnetDev->eventTelnet), TELNET_EVENT_MORE_CMD);
-            (VOID)LOS_EventClear(&(telnetDev->eventTelnet), ~TELNET_EVENT_MORE_CMD);
+            (VOID)LOS_EventWrite(&(telnetDev->eventTelnet), TELNET_EVENT_MORE_CMD);  // 写入事件
+            (VOID)LOS_EventClear(&(telnetDev->eventTelnet), ~TELNET_EVENT_MORE_CMD);  // 清除事件
         } else {
             telnetDev->eventPend = TRUE;
         }
-    } else if (cmd == CFG_TELNET_SET_FD) {
-        if (arg >= (FD_SETSIZE - 1)) {
-            TelnetUnlock();
+    } else if (cmd == CFG_TELNET_SET_FD) {  // 设置客户端文件描述符
+        if (arg >= (FD_SETSIZE - 1)) {  // 文件描述符有效性检查
+            TelnetUnlock();  // 解锁
             return -1;
         }
-        telnetDev->clientFd = (INT32)arg;
+        telnetDev->clientFd = (INT32)arg;  // 设置客户端文件描述符
     }
-    TelnetUnlock();
+    TelnetUnlock();  // 解锁
     return 0;
 }
 
+/**
+ * @brief telnet设备轮询函数
+ * @param file 文件指针
+ * @param table 轮询表
+ * @return 有命令时返回POLLIN | POLLRDNORM，失败返回-1，无命令返回0
+ */
 STATIC INT32 TelnetPoll(struct file *file, poll_table *table)
 {
     TELNET_DEV_S *telnetDev = NULL;
 
-    TelnetLock();
+    TelnetLock();  // 加锁保护临界区
 
-    telnetDev = GetTelnetDevByFile(file, FALSE);
-    if ((telnetDev == NULL) || (telnetDev->cmdFifo == NULL)) {
-        TelnetUnlock();
+    telnetDev = GetTelnetDevByFile(file, FALSE);  // 获取telnet设备实例
+    if ((telnetDev == NULL) || (telnetDev->cmdFifo == NULL)) {  // 参数有效性检查
+        TelnetUnlock();  // 解锁
         return -1;
     }
 
-    poll_wait(file, &telnetDev->wait, table);
+    poll_wait(file, &telnetDev->wait, table);  // 将等待队列添加到轮询表
 
-    /* check if there are some commands to run */
-    if (telnetDev->cmdFifo->fifoNum != FIFO_MAX) {
-        TelnetUnlock();
-        return POLLIN | POLLRDNORM;
+    /* 检查是否有命令需要运行 */
+    if (telnetDev->cmdFifo->fifoNum != FIFO_MAX) {  // FIFO非空
+        TelnetUnlock();  // 解锁
+        return POLLIN | POLLRDNORM;  // 返回可读事件
     }
-    TelnetUnlock();
+    TelnetUnlock();  // 解锁
     return 0;
 }
-//远程登录操作命令
+
+// 文件操作结构体，定义telnet设备的各种操作接口
 STATIC const struct file_operations_vfs g_telnetOps = {
-    TelnetOpen,
-    TelnetClose,
-    TelnetRead,
-    TelnetWrite,
-    NULL,
-    TelnetIoctl,
-    NULL,
+    TelnetOpen,    // 打开操作
+    TelnetClose,   // 关闭操作
+    TelnetRead,    // 读取操作
+    TelnetWrite,   // 写入操作
+    NULL,          // 定位操作
+    TelnetIoctl,   // IO控制操作
+    NULL,          // 刷新操作
 #ifndef CONFIG_DISABLE_POLL
-    TelnetPoll,
+    TelnetPoll,    // 轮询操作
 #endif
-    NULL,
+    NULL,          // 读目录操作
 };
 
-/* Once the telnet server stopped, remove the telnet device file. */
+/**
+ * @brief telnet服务器停止时，移除telnet设备文件
+ * @return 成功返回0
+ */
 INT32 TelnetedUnregister(VOID)
 {
-    free(g_telnetDev.cmdFifo);
-    g_telnetDev.cmdFifo = NULL;
-    (VOID)unregister_driver(TELNET);//注销字符设备驱动
+    free(g_telnetDev.cmdFifo);  // 释放FIFO内存
+    g_telnetDev.cmdFifo = NULL;  // 置空FIFO指针
+    (VOID)unregister_driver(TELNET);  // 注销驱动
 
     return 0;
 }
 
-/* Once the telnet server started, setup the telnet device file. 
-| telnet 服务器启动后，设置 telnet 设备文件*/
+/**
+ * @brief telnet服务器启动时，注册telnet设备文件
+ * @return 成功返回0，失败返回非0
+ */
 INT32 TelnetedRegister(VOID)
 {
     INT32 ret;
 
-    g_telnetDev.id = 0;
-    g_telnetDev.cmdFifo = NULL;
-    g_telnetDev.eventPend = TRUE;
-	//注册 telnet 驱动, g_telnetDev为私有数据
-    ret = register_driver(TELNET, &g_telnetOps, TELNET_DEV_DRV_MODE, &g_telnetDev);//翻译过来是当读TELNET时,真正要去操作的是 g_telnetDev
+    g_telnetDev.id = 0;  // 设备ID初始化
+    g_telnetDev.cmdFifo = NULL;  // FIFO指针初始化
+    g_telnetDev.eventPend = TRUE;  // 事件等待标志初始化
+
+    ret = register_driver(TELNET, &g_telnetOps, TELNET_DEV_DRV_MODE, &g_telnetDev);  // 注册驱动
     if (ret != 0) {
-        PRINT_ERR("Telnet register driver error.\n");
+        PRINT_ERR("Telnet register driver error.\n");  // 注册失败打印错误信息
     }
     return ret;
 }
 
-/* When a telnet client connection established, update the output console for tasks. 
-| 建立 telnet 客户端连接后，更新任务的输出控制台 */
+/**
+ * @brief telnet客户端连接建立时，更新任务的输出控制台
+ * @param clientFd 客户端文件描述符
+ * @return 成功返回0，失败返回-1
+ */
 INT32 TelnetDevInit(INT32 clientFd)
 {
     INT32 ret;
 
-    if (clientFd < 0) {
-        PRINT_ERR("Invalid telnet clientFd.\n");
+    if (clientFd < 0) {  // 文件描述符有效性检查
+        PRINT_ERR("Invalid telnet clientFd.\n");  // 打印错误信息
         return -1;
     }
-    ret = system_console_init(TELNET);//创建一个带远程登录功能的控制台
+    ret = system_console_init(TELNET);  // 初始化系统控制台
     if (ret != 0) {
-        PRINT_ERR("Telnet console init error.\n");
+        PRINT_ERR("Telnet console init error.\n");  // 初始化失败打印错误信息
         return ret;
     }
-    ret = ioctl(STDIN_FILENO, CFG_TELNET_SET_FD, clientFd);//绑定FD,相当于shell和控制台绑定
+    ret = ioctl(STDIN_FILENO, CFG_TELNET_SET_FD, clientFd);  // 设置文件描述符
     if (ret != 0) {
-        PRINT_ERR("Telnet device ioctl error.\n");
-        (VOID)system_console_deinit(TELNET);
+        PRINT_ERR("Telnet device ioctl error.\n");  // IO控制失败打印错误信息
+        (VOID)system_console_deinit(TELNET);  // 反初始化系统控制台
     }
     return ret;
 }
 
-/* When closing the telnet client connection, reset the output console for tasks. | 
-关闭 telnet 客户端连接时，重置任务的控制台信息。*/
+/**
+ * @brief 关闭telnet客户端连接时，重置任务的输出控制台
+ * @return 成功返回0，失败返回非0
+ */
 INT32 TelnetDevDeinit(VOID)
 {
     INT32 ret;
 
-    ret = system_console_deinit(TELNET);
+    ret = system_console_deinit(TELNET);  // 反初始化系统控制台
     if (ret != 0) {
-        PRINT_ERR("Telnet console deinit error.\n");
+        PRINT_ERR("Telnet console deinit error.\n");  // 反初始化失败打印错误信息
     }
     return ret;
 }
+
 #endif
 

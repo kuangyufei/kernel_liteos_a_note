@@ -41,11 +41,12 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifdef LOSCFG_NET_TELNET
-#define TELNETD_PORT        23	///< telnet 端口,默认 23
-#define TELNET_KEEPALIVE    1	///< 保持链接
-#define TELNET_KEEPIDLE     60	///< 
-#define TELNET_KEEPINTV     2	///< 
-#define TELNET_KEEPCNT      5   ///< 重连次数
+
+#define TELNETD_PORT        23  // telnet服务器默认监听端口号（标准telnet端口）
+#define TELNET_KEEPALIVE    1   // 启用telnet连接保活机制（1=启用，0=禁用）
+#define TELNET_KEEPIDLE     60  // 连接空闲多久后开始发送保活探测包（单位：秒）
+#define TELNET_KEEPINTV     2   // 保活探测包发送间隔（单位：秒）
+#define TELNET_KEEPCNT      5   // 保活探测失败后最大重试次数
 
 extern INT32 TelnetCmd(UINT32 argc, const CHAR **argv);
 #endif

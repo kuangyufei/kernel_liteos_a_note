@@ -42,32 +42,67 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifdef LOSCFG_NET_TELNET
+// ... existing code ...
+/**
+ * @brief telnet设备文件路径定义
+ */
+#define TELNET                 "/dev/telnet"  // telnet设备在文件系统中的路径
 
-#define TELNET                 "/dev/telnet"	//远程登录文件路径
+/**
+ * @brief FIFO缓冲区大小定义
+ */
+#define FIFO_MAX               1024  // 命令缓冲区FIFO的最大容量（字节）
 
-#define FIFO_MAX               1024	//缓冲区大小
-#define TELNET_IOC_MAGIC       't'
-#define CFG_TELNET_SET_FD      _IO(TELNET_IOC_MAGIC, 1)
-#define CFG_TELNET_EVENT_PEND  CONSOLE_CMD_RD_BLOCK_TELNET
-#define BLOCK_DISABLE          0
-#define BLOCK_ENABLE           1
-//远程登录接发数据结构体.管理缓冲区
+/**
+ * @brief telnet IO控制命令魔数
+ */
+#define TELNET_IOC_MAGIC       't'  // telnet设备IO控制命令的魔数
+
+/**
+ * @brief 设置telnet客户端文件描述符的IO控制命令
+ */
+#define CFG_TELNET_SET_FD      _IO(TELNET_IOC_MAGIC, 1)  // 设置telnet客户端文件描述符的IOCTL命令
+
+/**
+ * @brief 设置telnet事件等待模式的IO控制命令
+ */
+#define CFG_TELNET_EVENT_PEND  CONSOLE_CMD_RD_BLOCK_TELNET  // 设置telnet事件阻塞/非阻塞模式的IOCTL命令
+
+/**
+ * @brief 阻塞模式禁用标志
+ */
+#define BLOCK_DISABLE          0  // 禁用阻塞模式
+
+/**
+ * @brief 阻塞模式启用标志
+ */
+#define BLOCK_ENABLE           1  // 启用阻塞模式
+
+/**
+ * @brief telnet命令FIFO结构体
+ * @details 用于存储telnet客户端发送的命令，采用先进先出机制
+ */
 typedef struct {
-    UINT32 rxIndex;         /* index for receiving user's commands | 接收用户命令的索引位置 */
-    UINT32 rxOutIndex;      /* index for taking out commands by a shell task to run | 用于通过 shell 任务取出命令以运行的索引 */
-    UINT32 fifoNum;         /* unused size of the cmdBuf | 剩余buf大小*/
-    UINT32 lock;			//锁用于保证buf数据一致性
-    CHAR rxBuf[FIFO_MAX];   /* the real buffer to store user's commands | 存储用户命令的真实缓冲区 */
+    UINT32 rxIndex;         /* 接收用户命令的索引（写入指针） */
+    UINT32 rxOutIndex;      /* shell任务取出命令的索引（读取指针） */
+    UINT32 fifoNum;         /* cmdBuf的未使用大小（剩余空间） */
+    UINT32 lock;            /* FIFO操作互斥锁 */
+    CHAR rxBuf[FIFO_MAX];   /* 存储用户命令的实际缓冲区 */
 } TELNTE_FIFO_S;
-//远程登录设备结构体
+
+/**
+ * @brief telnet设备结构体
+ * @details 包含telnet设备的核心信息，包括客户端连接、事件、等待队列和命令缓冲区
+ */
 typedef struct {
-    INT32 clientFd;	///< 打开终端文件句柄
-    UINT32 id;	
-    BOOL eventPend;	///< 任务是否处于挂起
-    EVENT_CB_S eventTelnet;	///< 远程登录事件
-    wait_queue_head_t wait; ///< 等待队列
-    TELNTE_FIFO_S *cmdFifo;  /* use a FIFO to store user's commands | 使用先进先出保存用户的命令*/
+    INT32 clientFd;         /* telnet客户端文件描述符 */
+    UINT32 id;              /* 设备ID */
+    BOOL eventPend;         /* 事件等待标志（TRUE表示阻塞等待事件） */
+    EVENT_CB_S eventTelnet; /* telnet事件控制块 */
+    wait_queue_head_t wait; /* 等待队列头，用于IO多路复用 */
+    TELNTE_FIFO_S *cmdFifo; /* 存储用户命令的FIFO指针 */
 } TELNET_DEV_S;
+// ... existing code ...
 
 extern INT32 TelnetTx(const CHAR *buf, UINT32 len);
 extern INT32 TelnetDevInit(INT32 fd);

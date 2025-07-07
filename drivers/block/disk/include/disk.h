@@ -167,69 +167,85 @@ extern "C" {
 #define DISK_DIRECT_BUFFER_SIZE 4   /* los_disk direct io buffer when bcache is off */
 #endif
 
+/**
+ * @brief 磁盘状态枚举
+ * @details 定义磁盘可能的三种状态：未使用、使用中、未就绪
+ */
 typedef enum _disk_status_ {
-    STAT_UNUSED,
-    STAT_INUSED,
-    STAT_UNREADY
+    STAT_UNUSED,   // 磁盘未使用
+    STAT_INUSED,   // 磁盘使用中
+    STAT_UNREADY   // 磁盘未就绪
 } disk_status_e;
 
+/**
+ * @brief 磁盘结构体
+ * @details 表示物理磁盘的基本信息和状态，包含分区链表头和缓存信息
+ */
 typedef struct _los_disk_ {
-    UINT32 disk_id : 8;     /* physics disk number */
-    UINT32 disk_status : 2; /* status of disk */
-    UINT32 part_count : 8;  /* current partition count */
-    UINT32 reserved : 14;
-    struct Vnode *dev;      /* device */
+    UINT32 disk_id : 8;     /* 物理磁盘编号 */
+    UINT32 disk_status : 2; /* 磁盘状态，取值为disk_status_e枚举 */
+    UINT32 part_count : 8;  /* 当前分区数量 */
+    UINT32 reserved : 14;   /* 保留位 */
+    struct Vnode *dev;      /* 设备Vnode指针 */
 #ifdef LOSCFG_FS_FAT_CACHE
-    OsBcache *bcache;       /* cache of the disk, shared in all partitions */
+    OsBcache *bcache;       /* 磁盘缓存，所有分区共享 */
 #endif
-    UINT32 sector_size;     /* disk sector size */
-    UINT64 sector_start;    /* disk start sector */
-    UINT64 sector_count;    /* disk sector number */
-    UINT8 type;
-    CHAR *disk_name;
-    LOS_DL_LIST head;       /* link head of all the partitions */
-    struct pthread_mutex disk_mutex;
+    UINT32 sector_size;     /* 磁盘扇区大小（字节） */
+    UINT64 sector_start;    /* 磁盘起始扇区 */
+    UINT64 sector_count;    /* 磁盘扇区总数 */
+    UINT8 type;             /* 磁盘类型 */
+    CHAR *disk_name;        /* 磁盘名称 */
+    LOS_DL_LIST head;       /* 所有分区的链表头 */
+    struct pthread_mutex disk_mutex; /* 磁盘互斥锁 */
 #ifndef LOSCFG_FS_FAT_CACHE
-    UINT8 *buff;
+    UINT8 *buff;            /* 直接缓冲区（未启用FAT缓存时使用） */
 #endif
 } los_disk;
 
+/**
+ * @brief 分区结构体
+ * @details 表示磁盘分区的详细信息，包含分区在磁盘和系统中的编号、文件系统类型等
+ */
 typedef struct _los_part_ {
-    UINT32 disk_id : 8;      /* physics disk number */
-    UINT32 part_id : 8;      /* partition number in the system */
-    UINT32 part_no_disk : 8; /* partition number in the disk */
-    UINT32 part_no_mbr : 5;  /* partition number in the mbr */
-    UINT32 reserved : 3;
-    UINT8 filesystem_type;   /* filesystem used in the partition */
-    UINT8 type;
-    struct Vnode *dev;      /* dev devices used in the partition */
-    CHAR *part_name;
-    UINT64 sector_start;     /*
-                              * offset of a partition to the primary devices
-                              * (multi-mbr partitions are seen as same parition)
-                              */
-    UINT64 sector_count;     /*
-                              * sector numbers of a partition. If there is no addpartition operation,
-                              * then all the mbr devices equal to the primary device count.
-                              */
-    LOS_DL_LIST list;        /* linklist of partition */
+    UINT32 disk_id : 8;      /* 所属物理磁盘编号 */
+    UINT32 part_id : 8;      /* 系统中的分区编号 */
+    UINT32 part_no_disk : 8; /* 磁盘中的分区编号 */
+    UINT32 part_no_mbr : 5;  /* MBR中的分区编号 */
+    UINT32 reserved : 3;     /* 保留位 */
+    UINT8 filesystem_type;   /* 分区使用的文件系统类型 */
+    UINT8 type;              /* 分区类型 */
+    struct Vnode *dev;       /* 分区设备Vnode指针 */
+    CHAR *part_name;         /* 分区名称 */
+    UINT64 sector_start;     /* 分区相对于主设备的起始扇区偏移量
+                              *（多MBR分区视为同一分区） */
+    UINT64 sector_count;     /* 分区扇区总数
+                              * 如果未执行addpartition操作，则等于主设备扇区数 */
+    LOS_DL_LIST list;        /* 分区链表节点 */
 } los_part;
 
+/**
+ * @brief 分区信息结构体
+ * @details 存储单个分区的基本信息：类型、起始扇区和扇区数量
+ */
 struct partition_info {
-    UINT8 type;
-    UINT64 sector_start;
-    UINT64 sector_count;
+    UINT8 type;              /* 分区类型 */
+    UINT64 sector_start;     /* 分区起始扇区 */
+    UINT64 sector_count;     /* 分区扇区数量 */
 };
 
+/**
+ * @brief 磁盘分区划分信息结构体
+ * @details 存储磁盘分区划分的完整信息，包括总扇区数、扇区大小和分区列表
+ */
 struct disk_divide_info {
-    UINT64 sector_count;
-    UINT32 sector_size;
-    UINT32 part_count;
+    UINT64 sector_count;     /* 磁盘总扇区数 */
+    UINT32 sector_size;      /* 扇区大小（字节） */
+    UINT32 part_count;       /* 分区数量 */
     /*
-     * The primary partition place should be reversed and set to 0 in case all the partitions are
-     * logical partition (maximum 16 currently). So the maximum part number should be 4 + 16.
+     * 保留主分区位置并设置为0，以防所有分区都是逻辑分区（当前最多16个）
+     * 因此最大分区数应为4（主分区）+ 16（逻辑分区）
      */
-    struct partition_info part[MAX_DIVIDE_PART_PER_DISK + MAX_PRIMARY_PART_PER_DISK];
+    struct partition_info part[MAX_DIVIDE_PART_PER_DISK + MAX_PRIMARY_PART_PER_DISK]; /* 分区信息数组 */
 };
 
 /**
