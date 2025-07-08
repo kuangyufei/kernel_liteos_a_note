@@ -1,7 +1,6 @@
 /*!
  * @file    vfs_init.c
  * @brief
- * @link vfs http://weharmonyos.com/openharmony/zh-cn/device-dev/kernel/kernel-small-bundles-fs-virtual.html @endlink
    @verbatim
    VFS是Virtual File System（虚拟文件系统）的缩写，它不是一个实际的文件系统，而是一个异构文件系统之上的软件粘合层，
    为用户提供统一的类Unix文件操作接口。
@@ -65,9 +64,7 @@
 #include "unistd.h"
 #include "vnode.h"
 
-
-
-void los_vfs_init(void)//只能调用一次，多次调用将会造成文件系统异常
+void los_vfs_init(void)
 {
     uint retval;
     static bool g_vfs_init = false;
@@ -75,25 +72,25 @@ void los_vfs_init(void)//只能调用一次，多次调用将会造成文件系�
         return;
     }
 
-#ifdef LOSCFG_FS_FAT_DISK //两个自旋锁
+#ifdef LOSCFG_FS_FAT_DISK
     spin_lock_init(&g_diskSpinlock);
     spin_lock_init(&g_diskFatBlockSpinlock);
 #endif
     files_initialize();
     files_initlist(&tg_filelist);
 
-    retval = VnodesInit();//索引节点初始化
+    retval = VnodesInit();
     if (retval != LOS_OK) {
         PRINT_ERR("los_vfs_init VnodeInit failed error %d\n", retval);
         return;
     }
 
-    retval = PathCacheInit();//路径缓存初始化
+    retval = PathCacheInit();
     if (retval != LOS_OK) {
         PRINT_ERR("los_vfs_init PathCacheInit failed error %d\n", retval);
         return;
     }
-    retval = VnodeHashInit();//哈希列表初始化
+    retval = VnodeHashInit();
     if (retval != LOS_OK) {
         PRINT_ERR("los_vfs_init VnodeHashInit failed error %d\n", retval);
         return;
@@ -108,4 +105,4 @@ void los_vfs_init(void)//只能调用一次，多次调用将会造成文件系�
     g_vfs_init = true;
 }
 
-LOS_MODULE_INIT(los_vfs_init, LOS_INIT_LEVEL_KMOD_BASIC);//文件模块初始化
+LOS_MODULE_INIT(los_vfs_init, LOS_INIT_LEVEL_KMOD_BASIC);

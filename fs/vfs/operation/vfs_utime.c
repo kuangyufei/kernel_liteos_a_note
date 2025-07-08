@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -46,83 +46,94 @@
 /****************************************************************************
  * Global Functions
  ****************************************************************************/
-//更新时间
+/**
+ * @brief 修改文件的访问时间和修改时间
+ * @param path 文件路径
+ * @param ptimes 指向utimbuf结构体的指针，包含新的访问时间和修改时间，为NULL时使用当前时间
+ * @return 成功返回OK，失败返回VFS_ERROR并设置errno
+ */
 int utime(const char *path, const struct utimbuf *ptimes)
 {
-    int ret;
-    char *fullpath = NULL;
-    struct Vnode *vnode = NULL;
-    time_t cur_sec;
-    struct IATTR attr = {0};
+    int ret;                                  // 函数返回值，用于错误处理和状态判断
+    char *fullpath = NULL;                    // 规范化后的文件全路径
+    struct Vnode *vnode = NULL;               // 文件对应的vnode结构体指针
+    time_t cur_sec;                           // 当前时间戳，用于ptimes为NULL时
+    struct IATTR attr = {0};                  // 文件属性结构体，用于存储要修改的时间属性
 
-    /* Sanity checks *///健全性检查
+    /* Sanity checks */                       // 参数合法性检查
 
-
-    if (path == NULL) {
-        ret = -EINVAL;
-        goto errout;
+    if (path == NULL) {                       // 检查路径是否为NULL指针
+        ret = -EINVAL;                        // 设置错误码为无效参数
+        goto errout;                          // 跳转到错误处理流程
     }
 
-    if (!path[0]) {
-        ret = -ENOENT;
-        goto errout;
+    if (!path[0]) {                           // 检查路径是否为空字符串
+        ret = -ENOENT;                        // 设置错误码为文件不存在
+        goto errout;                          // 跳转到错误处理流程
     }
-	//找到绝对路径
+
+    // 规范化文件路径，获取绝对路径
     ret = vfs_normalize_path((const char *)NULL, path, &fullpath);
-    if (ret < 0) {
-        goto errout;
+    if (ret < 0) {                            // 检查路径规范化是否失败
+        goto errout;                          // 跳转到错误处理流程
     }
 
-    /* Get the vnode for this file */
-    VnodeHold();
-    ret = VnodeLookup(fullpath, &vnode, 0);//找到vnode节点
-    if (ret != LOS_OK) {
-        VnodeDrop();
-        goto errout_with_path;
+    /* Get the vnode for this file */         // 获取文件对应的vnode
+    VnodeHold();                              // 获取vnode全局锁，保护vnode操作
+    // 查找文件对应的vnode
+    ret = VnodeLookup(fullpath, &vnode, 0);
+    if (ret != LOS_OK) {                      // 检查vnode查找是否失败
+        VnodeDrop();                          // 释放vnode全局锁
+        goto errout_with_path;                // 跳转到带路径释放的错误处理流程
     }
 
+    // 检查文件所在文件系统是否为只读
     if ((vnode->originMount) && (vnode->originMount->mountFlags & MS_RDONLY)) {
-        VnodeDrop();
-        ret = -EROFS;
-        goto errout_with_path;
+        VnodeDrop();                          // 释放vnode全局锁
+        ret = -EROFS;                         // 设置错误码为只读文件系统
+        goto errout_with_path;                // 跳转到带路径释放的错误处理流程
     }
 
-    if (vnode->vop && vnode->vop->Chattr) {//验证接口都已经实现
-        if (ptimes == NULL) {//参数没有给时间
-            /* get current seconds */
-            cur_sec = time(NULL);//获取当前秒
-            attr.attr_chg_atime = cur_sec;//更新访问时间
-            attr.attr_chg_mtime = cur_sec;//更新修改时间
-        } else {//采用参数时间
-            attr.attr_chg_atime = ptimes->actime;//更新访问时间
+    // 检查vnode操作集和Chattr函数是否存在
+    if (vnode->vop && vnode->vop->Chattr) {
+        if (ptimes == NULL) {                 // 如果ptimes为NULL，使用当前时间
+            /* get current seconds */         // 获取当前时间戳
+            cur_sec = time(NULL);
+            attr.attr_chg_atime = cur_sec;    // 设置访问时间为当前时间
+            attr.attr_chg_mtime = cur_sec;    // 设置修改时间为当前时间
+        } else {
+            // 使用ptimes参数指定的访问时间和修改时间
+            attr.attr_chg_atime = ptimes->actime;
             attr.attr_chg_mtime = ptimes->modtime;
         }
-        attr.attr_chg_valid = CHG_ATIME | CHG_MTIME;//更新了两个时间
-        ret = vnode->vop->Chattr(vnode, &attr);//调用接口更新数据
-        if (ret != OK) {
-            VnodeDrop();
-            goto errout_with_path;
+        // 设置属性修改标志，标识需要修改访问时间和修改时间
+        attr.attr_chg_valid = CHG_ATIME | CHG_MTIME;
+        // 调用vnode的Chattr方法修改文件时间属性
+        ret = vnode->vop->Chattr(vnode, &attr);
+        if (ret != OK) {                      // 检查属性修改是否失败
+            VnodeDrop();                      // 释放vnode全局锁
+            goto errout_with_path;            // 跳转到带路径释放的错误处理流程
         }
     } else {
-        ret = -ENOSYS;
-        VnodeDrop();
-        goto errout_with_path;
+        ret = -ENOSYS;                        // 设置错误码为不支持的操作
+        VnodeDrop();                          // 释放vnode全局锁
+        goto errout_with_path;                // 跳转到带路径释放的错误处理流程
     }
-    VnodeDrop();
+    VnodeDrop();                              // 释放vnode全局锁
 
-    /* Successfully stat'ed the file */
-    free(fullpath);
+    /* Successfully stat'ed the file */       // 文件时间属性修改成功
+    free(fullpath);                           // 释放规范化路径内存
 
-    return OK;
+    return OK;                                // 返回成功
 
     /* Failure conditions always set the errno appropriately */
 
-errout_with_path:
-    free(fullpath);
-errout:
+errout_with_path:                             // 带路径释放的错误处理标签
+    free(fullpath);                           // 释放规范化路径内存
+errout:                                      // 错误处理标签
 
-    if (ret != 0) {
-        set_errno(-ret);
+    if (ret != 0) {                           // 如果存在错误码
+        set_errno(-ret);                      // 设置全局错误码
     }
-    return VFS_ERROR;
+    return VFS_ERROR;                         // 返回错误
 }

@@ -45,95 +45,98 @@
 /****************************************************************************
  * Name: file_fallocate
  ****************************************************************************/
-
+/**
+ * @brief   文件预分配辅助函数
+ * @param   filep 文件结构体指针
+ * @param   mode  操作模式（仅支持FALLOC_FL_KEEP_SIZE）
+ * @param   offset 文件内偏移量
+ * @param   len    要分配的长度
+ * @return  成功返回0，失败返回错误码
+ */
 static ssize_t file_fallocate(struct file *filep, int mode, off_t offset, off_t len)
 {
-    int ret;
+    int ret;  // 用于存储函数调用返回值
 
+    // 检查分配长度是否合法（必须大于0）
     if (len <= 0) {
-        ret = EINVAL;
-        goto errout;
+        ret = EINVAL;             // 设置无效参数错误
+        goto errout;              // 跳转到错误处理
     }
 
     /* Was this file opened for write access? */
 
+    // 检查文件是否以可写模式打开
     if (((unsigned int)(filep->f_oflags) & O_ACCMODE) == O_RDONLY) {
-        ret = -EACCES;
-        goto errout;
+        ret = -EACCES;            // 设置权限拒绝错误
+        goto errout;              // 跳转到错误处理
     }
 
+    // 检查文件操作集是否存在且包含fallocate方法
     if (!filep->ops || !filep->ops->fallocate) {
-        ret = -EBADF;
-        goto errout;
+        ret = -EBADF;             // 设置错误的文件描述符错误
+        goto errout;              // 跳转到错误处理
     }
 
     /* Yes, then let the driver perform the fallocate */
 
+    // 调用具体文件系统的fallocate实现进行空间预分配
     ret = filep->ops->fallocate(filep, mode, offset, len);
-    if (ret < 0) {
-        goto errout;
+    if (ret < 0) {                // 检查预分配是否成功
+        goto errout;              // 跳转到错误处理
     }
 
-    return ret;
+    return ret;                   // 预分配成功，返回0
 
-errout:
-    set_errno(-ret);
-    return VFS_ERROR;
+errout:                         // 错误处理标签
+    set_errno(-ret);              // 将返回值转换为errno并设置
+    return VFS_ERROR;             // 返回VFS错误
 }
 
-/***************************************************************************
- * Name: fallocate
- *
- * Description:
- * The fallocate() function prepares or allocates a contiguous data area to the file.
- * Thus the write file is guaranteed be contiguous and no allocation delay until the
- * size reaches that size at least unless any other changes to the volume is performed.
- *
- * Parameters:
- * fp Pointer to the open file object.
- * mode Operation mode. only support FALLOC_FL_KEEP_SIZE.
- * offset offset of the file to allocated.
- * len The size to allocate for the file.
- *
- * Returned Value:
- *  On success, allocate contiguous data area to the file . On error, -1 is returned, and errno is set appro-
- *  priately:
- *
- *
- ********************************************************************************************/
-
+/**
+ * @brief   文件空间预分配函数
+ * @param   fd     文件描述符
+ * @param   mode   操作模式（仅支持FALLOC_FL_KEEP_SIZE）
+ * @param   offset 文件内偏移量
+ * @param   len    要分配的长度
+ * @return  成功返回0，失败返回-1并设置errno
+ * @note    该函数为文件预分配连续的数据区域，确保写入操作时不会因空间分配延迟
+ */
 int fallocate(int fd, int mode, off_t offset, off_t len)
 {
 #if CONFIG_NFILE_DESCRIPTORS > 0
-    struct file *filep = NULL;
+    struct file *filep = NULL;    // 文件结构体指针
 #endif
 
 /* Did we get a valid file descriptor? */
 
+// 检查文件描述符是否在有效范围内
 #if CONFIG_NFILE_DESCRIPTORS > 0
     if ((unsigned int)fd >= CONFIG_NFILE_DESCRIPTORS)
 #endif
     {
-        set_errno(EBADF);
-        return VFS_ERROR;
+        set_errno(EBADF);         // 设置错误的文件描述符错误
+        return VFS_ERROR;         // 返回VFS错误
     }
 
 #if CONFIG_NFILE_DESCRIPTORS > 0
 
     /* The descriptor is in the right range to be a file descriptor... write to the file. */
 
+    // 通过文件描述符获取文件结构体指针
     int ret = fs_getfilep(fd, &filep);
-    if (ret < 0) {
+    if (ret < 0) {                // 检查获取是否成功
         /* The errno value has already been set */
-        return VFS_ERROR;
+        return VFS_ERROR;         // 返回VFS错误
     }
 
+    // 检查文件是否为目录（目录不支持预分配操作）
     if (filep->f_oflags & O_DIRECTORY) {
-        set_errno(EBADF);
-        return VFS_ERROR;
+        set_errno(EBADF);         // 设置错误的文件描述符错误
+        return VFS_ERROR;         // 返回VFS错误
     }
 
     /* Perform the fallocate operation using the file descriptor as an index */
+    // 调用辅助函数执行实际的预分配操作
     return file_fallocate(filep, mode, offset, len);
 #endif
 }

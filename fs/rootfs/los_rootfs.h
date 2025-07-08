@@ -59,56 +59,57 @@ VFS是一种机制、是每一种文件系统都必须按照这个机制去实�
 
 #include "los_typedef.h"
 
-#define ROOT_DIR_NAME           "/"
-#define STORAGE_DIR_NAME        "/storage"
-#ifdef LOSCFG_STORAGE_EMMC
-#define USERDATA_DIR_NAME       "/userdata"
-#ifdef LOSCFG_PLATFORM_PATCHFS
-#define PATCH_DIR_NAME          "/patch"
+#define ROOT_DIR_NAME           "/"  // 根目录路径名
+#define STORAGE_DIR_NAME        "/storage"  // 存储目录路径名
+#ifdef LOSCFG_STORAGE_EMMC  // 如果配置了EMMC存储
+#define USERDATA_DIR_NAME       "/userdata"  // 用户数据目录路径名
+#ifdef LOSCFG_PLATFORM_PATCHFS  // 如果配置了补丁文件系统
+#define PATCH_DIR_NAME          "/patch"  // 补丁目录路径名
 #endif
 #endif
-#define DEFAULT_MOUNT_DIR_MODE  0755
-#define DEFAULT_MOUNT_DATA      NULL
+#define DEFAULT_MOUNT_DIR_MODE  0755  // 默认挂载目录权限模式
+#define DEFAULT_MOUNT_DATA      NULL  // 默认挂载数据
 
-#ifdef LOSCFG_STORAGE_SPINOR //外部开关定 使用哪种flash
-#define FLASH_TYPE              "spinor" ///< flash类型
-#define ROOT_DEV_NAME          "/dev/spinorblk0" ///< 根设备名称,将挂载到 `/` 目录下
-#define USER_DEV_NAME           "/dev/spinorblk2"
-#define ROOTFS_ADDR             0x600000
-#define ROOTFS_SIZE             0x800000
-#define USERFS_SIZE             0x80000
-#elif defined(LOSCFG_STORAGE_SPINAND)
-#define FLASH_TYPE              "nand"
-#define ROOT_DEV_NAME          "/dev/nandblk0"	///< 设备名称
-#define USER_DEV_NAME           "/dev/nandblk2"
-#define ROOTFS_ADDR             0x600000
-#define ROOTFS_SIZE             0x800000
-#define USERFS_SIZE             0x80000
-#elif defined (LOSCFG_STORAGE_EMMC)
-#define ROOT_DEV_NAME           "/dev/mmcblk0p0"
-#ifdef LOSCFG_PLATFORM_PATCHFS
-#define PATCH_DEV_NAME          "/dev/mmcblk0p1"
-#define USER_DEV_NAME           "/dev/mmcblk0p2"
-#define USERDATA_DEV_NAME       "/dev/mmcblk0p3"
+#ifdef LOSCFG_STORAGE_SPINOR  // 如果配置了SPI NOR闪存
+#define FLASH_TYPE              "spinor"  // 闪存类型：spinor
+#define ROOT_DEV_NAME           "/dev/spinorblk0"  // 根设备名称
+#define USER_DEV_NAME           "/dev/spinorblk2"  // 用户设备名称
+#define ROOTFS_ADDR             0x600000  // 根文件系统起始地址
+#define ROOTFS_SIZE             0x800000  // 根文件系统大小
+#define USERFS_SIZE             0x80000  // 用户文件系统大小
+#elif defined (LOSCFG_STORAGE_SPINAND)  // 否则如果配置了SPI NAND闪存
+#define FLASH_TYPE              "nand"  // 闪存类型：nand
+#define ROOT_DEV_NAME           "/dev/nandblk0"  // 根设备名称
+#define USER_DEV_NAME           "/dev/nandblk2"  // 用户设备名称
+#define ROOTFS_ADDR             0x600000  // 根文件系统起始地址
+#define ROOTFS_SIZE             0x800000  // 根文件系统大小
+#define USERFS_SIZE             0x80000  // 用户文件系统大小
+#elif defined (LOSCFG_STORAGE_EMMC)  // 否则如果配置了EMMC存储
+#define ROOT_DEV_NAME           "/dev/mmcblk0p0"  // 根设备名称
+#ifdef LOSCFG_PLATFORM_PATCHFS  // 如果配置了补丁文件系统
+#define PATCH_DEV_NAME          "/dev/mmcblk0p1"  // 补丁设备名称
+#define USER_DEV_NAME           "/dev/mmcblk0p2"  // 用户设备名称
+#define USERDATA_DEV_NAME       "/dev/mmcblk0p3"  // 用户数据设备名称
 #else
-#define USER_DEV_NAME           "/dev/mmcblk0p1"
-#define USERDATA_DEV_NAME       "/dev/mmcblk0p2"
+#define USER_DEV_NAME           "/dev/mmcblk0p1"  // 用户设备名称
+#define USERDATA_DEV_NAME       "/dev/mmcblk0p2"  // 用户数据设备名称
 #endif
-#define ROOTFS_ADDR             0xA00000
-#define ROOTFS_SIZE             0x1400000
-#define USERFS_SIZE             0x3200000
-#ifdef LOSCFG_PLATFORM_PATCHFS
-#define PATCH_SIZE              0x200000
+#define ROOTFS_ADDR             0xA00000  // 根文件系统起始地址
+#define ROOTFS_SIZE             0x1400000  // 根文件系统大小
+#define USERFS_SIZE             0x3200000  // 用户文件系统大小
+#ifdef LOSCFG_PLATFORM_PATCHFS  // 如果配置了补丁文件系统
+#define PATCH_SIZE              0x200000  // 补丁大小
 #endif
-#ifdef DEFAULT_MOUNT_DIR_MODE
-#undef DEFAULT_MOUNT_DIR_MODE
+#ifdef DEFAULT_MOUNT_DIR_MODE  // 如果已定义默认挂载目录权限模式
+#undef DEFAULT_MOUNT_DIR_MODE  // 取消定义默认挂载目录权限模式
 #endif
-#ifdef DEFAULT_MOUNT_DATA
-#undef DEFAULT_MOUNT_DATA
+#ifdef DEFAULT_MOUNT_DATA  // 如果已定义默认挂载数据
+#undef DEFAULT_MOUNT_DATA  // 取消定义默认挂载数据
 #endif
-#define DEFAULT_MOUNT_DIR_MODE  0777
-#define DEFAULT_MOUNT_DATA      "umask=000"
-#endif
+#define DEFAULT_MOUNT_DIR_MODE  0777  // 重新定义默认挂载目录权限模式为0777
+#define DEFAULT_MOUNT_DATA      "umask=000"  // 重新定义默认挂载数据为umask=000
+#endif  // LOSCFG_STORAGE_EMMC条件编译结束
+
 
 INT32 OsMountRootfs(VOID);
 

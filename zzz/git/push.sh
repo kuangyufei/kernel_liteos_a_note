@@ -1,6 +1,6 @@
 git add -A
 
-git commit -m  ' 注释扩展内核、安全、系统调用
+git commit -m  ' 注释文件系统，vfs、proc、rootfs，注释 posix
     博客 | http://weharmonyos.com
 '
 git push  gitee_origin master

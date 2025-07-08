@@ -32,107 +32,158 @@
 #include "vnode.h"
 #include "fs/mount.h"
 
-
+// 虚拟节点哈希表桶数量
 #define VNODE_HASH_BUCKETS 128
-//用哈希表只有一个目的,就是加快对索引节点对象的搜索
-LIST_HEAD g_vnodeHashEntrys[VNODE_HASH_BUCKETS];//哈希桶链表组
-uint32_t g_vnodeHashMask = VNODE_HASH_BUCKETS - 1;	//哈希掩码
-uint32_t g_vnodeHashSize = VNODE_HASH_BUCKETS;	//哈希大小
 
-static LosMux g_vnodeHashMux;//哈希表互斥量
-//索引节点哈希表初始化
+// 虚拟节点哈希表数组，每个元素为链表头
+LIST_HEAD g_vnodeHashEntrys[VNODE_HASH_BUCKETS];
+// 哈希掩码，用于计算哈希表索引（桶数量-1）
+uint32_t g_vnodeHashMask = VNODE_HASH_BUCKETS - 1;
+// 哈希表大小（桶数量）
+uint32_t g_vnodeHashSize = VNODE_HASH_BUCKETS;
+
+// 虚拟节点哈希表互斥锁，用于线程安全访问
+static LosMux g_vnodeHashMux;
+
+/**
+ * @brief 初始化虚拟节点哈希表
+ * @return 成功返回LOS_OK，失败返回错误码
+ */
 int VnodeHashInit(void)
 {
     int ret;
-    for (int i = 0; i < g_vnodeHashSize; i++) {//遍历初始化 128个双向链表
+    // 初始化哈希表所有桶的链表头
+    for (int i = 0; i < g_vnodeHashSize; i++) {
         LOS_ListInit(&g_vnodeHashEntrys[i]);
     }
 
+    // 初始化哈希表互斥锁
     ret = LOS_MuxInit(&g_vnodeHashMux, NULL);
-    if (ret != LOS_OK) {
-        PRINT_ERR("Create mutex for vnode hash list fail, status: %d", ret);
-        return ret;
+    if (ret != LOS_OK) {  // 检查互斥锁初始化是否失败
+        PRINT_ERR("Create mutex for vnode hash list fail, status: %d", ret);  // 输出错误信息
+        return ret;                                                          // 返回错误码
     }
 
-    return LOS_OK;
+    return LOS_OK;  // 返回初始化成功
 }
-///打印全部 hash 表
+
+/**
+ * @brief 打印虚拟节点哈希表内容（调试用）
+ */
 void VnodeHashDump(void)
 {
-    PRINTK("-------->VnodeHashDump in\n");
-    (void)LOS_MuxLock(&g_vnodeHashMux, LOS_WAIT_FOREVER);//拿锁方式,永等
+    PRINTK("-------->VnodeHashDump in\n");               // 打印dump开始标记
+    (void)LOS_MuxLock(&g_vnodeHashMux, LOS_WAIT_FOREVER);  // 加锁保护哈希表访问
+    // 遍历哈希表所有桶
     for (int i = 0; i < g_vnodeHashSize; i++) {
-        LIST_HEAD *nhead = &g_vnodeHashEntrys[i];
-        struct Vnode *node = NULL;
+        LIST_HEAD *nhead = &g_vnodeHashEntrys[i];          // 当前桶的链表头
+        struct Vnode *node = NULL;                         // 虚拟节点指针
 
-        LOS_DL_LIST_FOR_EACH_ENTRY(node, nhead, struct Vnode, hashEntry) {//循环打印链表
-            PRINTK("    vnode dump: col %d item %p\n", i, node);//类似矩阵
+        // 遍历当前桶中的所有虚拟节点
+        LOS_DL_LIST_FOR_EACH_ENTRY(node, nhead, struct Vnode, hashEntry) {
+            // 打印虚拟节点信息：桶索引、虚拟节点地址
+            PRINTK("    vnode dump: col %d item %p\n", i, node);
         }
     }
-    (void)LOS_MuxUnlock(&g_vnodeHashMux);
-    PRINTK("-------->VnodeHashDump out\n");
+    (void)LOS_MuxUnlock(&g_vnodeHashMux);                  // 解锁哈希表
+    PRINTK("-------->VnodeHashDump out\n");              // 打印dump结束标记
 }
-///通过节点获取哈希索引值
+
+/**
+ * @brief 计算虚拟节点的哈希索引
+ * @param vnode 虚拟节点指针
+ * @return 成功返回哈希索引，失败返回-EINVAL
+ */
 uint32_t VfsHashIndex(struct Vnode *vnode)
 {
-    if (vnode == NULL) {
-        return -EINVAL;
+    if (vnode == NULL) {  // 检查虚拟节点指针是否有效
+        return -EINVAL;   // 返回参数无效错误码
     }
-    return (vnode->hash + vnode->originMount->hashseed);//用于定位在哈希表的下标
+    // 哈希索引 = 虚拟节点哈希值 + 挂载点哈希种子
+    return (vnode->hash + vnode->originMount->hashseed);
 }
-///通过哈希值和装载设备哈希种子获取哈希表索引
+
+/**
+ * @brief 获取哈希表中对应的桶
+ * @param mp 挂载点结构体指针
+ * @param hash 哈希值
+ * @return 哈希桶的链表头指针
+ */
 static LOS_DL_LIST *VfsHashBucket(const struct Mount *mp, uint32_t hash)
 {
-    return (&g_vnodeHashEntrys[(hash + mp->hashseed) & g_vnodeHashMask]);//g_vnodeHashMask确保始终范围在[0~g_vnodeHashMask]之间
+    // 计算桶索引并返回对应桶的链表头
+    return (&g_vnodeHashEntrys[(hash + mp->hashseed) & g_vnodeHashMask]);
 }
-///通过哈希值获取节点信息
+
+/**
+ * @brief 在哈希表中查找虚拟节点
+ * @param mount 挂载点结构体指针
+ * @param hash 要查找的哈希值
+ * @param vnode [输出] 找到的虚拟节点指针
+ * @param fn 比较函数指针（可为NULL）
+ * @param arg 比较函数的参数
+ * @return 成功返回LOS_OK，未找到返回LOS_NOK，参数无效返回-EINVAL
+ */
 int VfsHashGet(const struct Mount *mount, uint32_t hash, struct Vnode **vnode, VfsHashCmp *fn, void *arg)
 {
-    struct Vnode *curVnode = NULL;
+    struct Vnode *curVnode = NULL;  // 当前遍历的虚拟节点
 
-    if (mount == NULL || vnode == NULL) {
-        return -EINVAL;
+    if (mount == NULL || vnode == NULL) {  // 检查挂载点和输出指针是否有效
+        return -EINVAL;                    // 返回参数无效错误码
     }
 
-    (void)LOS_MuxLock(&g_vnodeHashMux, LOS_WAIT_FOREVER);//先上锁
-    LOS_DL_LIST *list = VfsHashBucket(mount, hash);//获取哈希表对应的链表项
-    LOS_DL_LIST_FOR_EACH_ENTRY(curVnode, list, struct Vnode, hashEntry) {//遍历链表
-        if (curVnode->hash != hash) {//对比哈希值找
+    (void)LOS_MuxLock(&g_vnodeHashMux, LOS_WAIT_FOREVER);  // 加锁保护哈希表访问
+    LOS_DL_LIST *list = VfsHashBucket(mount, hash);         // 获取目标哈希桶
+    // 遍历哈希桶中的所有虚拟节点
+    LOS_DL_LIST_FOR_EACH_ENTRY(curVnode, list, struct Vnode, hashEntry) {
+        if (curVnode->hash != hash) {                       // 哈希值不匹配，跳过
             continue;
         }
-        if (curVnode->originMount != mount) {//对比原始mount值必须一致
+        if (curVnode->originMount != mount) {               // 挂载点不匹配，跳过
             continue;
         }
-        if (fn != NULL && fn(curVnode, arg)) {//哈希值比较函数,fn由具体的文件系统提供.
+        // 如果提供了比较函数且返回非0（不匹配），跳过
+        if (fn != NULL && fn(curVnode, arg)) {
             continue;
         }
-        (void)LOS_MuxUnlock(&g_vnodeHashMux);
-        *vnode = curVnode;//找到对应索引节点
-        return LOS_OK;
+        (void)LOS_MuxUnlock(&g_vnodeHashMux);               // 找到匹配节点，解锁
+        *vnode = curVnode;                                  // 设置输出虚拟节点
+        return LOS_OK;                                      // 返回查找成功
     }
-    (void)LOS_MuxUnlock(&g_vnodeHashMux);
-    *vnode = NULL;
-    return LOS_NOK;
+    (void)LOS_MuxUnlock(&g_vnodeHashMux);                   // 遍历结束，解锁
+    *vnode = NULL;                                          // 未找到节点，输出NULL
+    return LOS_NOK;                                         // 返回未找到
 }
-///从哈希链表中摘除索引节点
+
+/**
+ * @brief 从哈希表中移除虚拟节点
+ * @param vnode 要移除的虚拟节点
+ */
 void VfsHashRemove(struct Vnode *vnode)
 {
-    if (vnode == NULL) {
+    if (vnode == NULL) {  // 检查虚拟节点指针是否有效
         return;
     }
-    (void)LOS_MuxLock(&g_vnodeHashMux, LOS_WAIT_FOREVER);
-    LOS_ListDelete(&vnode->hashEntry);//直接把自己摘掉就行了
-    (void)LOS_MuxUnlock(&g_vnodeHashMux);
+    (void)LOS_MuxLock(&g_vnodeHashMux, LOS_WAIT_FOREVER);  // 加锁保护哈希表访问
+    LOS_ListDelete(&vnode->hashEntry);                      // 从哈希链表中删除节点
+    (void)LOS_MuxUnlock(&g_vnodeHashMux);                   // 解锁哈希表
 }
-///插入哈希表
+
+/**
+ * @brief 将虚拟节点插入哈希表
+ * @param vnode 要插入的虚拟节点
+ * @param hash 虚拟节点的哈希值
+ * @return 成功返回LOS_OK，失败返回-EINVAL
+ */
 int VfsHashInsert(struct Vnode *vnode, uint32_t hash)
 {
-    if (vnode == NULL) {
-        return -EINVAL;
+    if (vnode == NULL) {  // 检查虚拟节点指针是否有效
+        return -EINVAL;   // 返回参数无效错误码
     }
-    (void)LOS_MuxLock(&g_vnodeHashMux, LOS_WAIT_FOREVER);
-    vnode->hash = hash;//设置节点哈希值
-    LOS_ListHeadInsert(VfsHashBucket(vnode->originMount, hash), &vnode->hashEntry);//通过节点hashEntry 挂入哈希表对于索引链表中
-    (void)LOS_MuxUnlock(&g_vnodeHashMux);
-    return LOS_OK;
+    (void)LOS_MuxLock(&g_vnodeHashMux, LOS_WAIT_FOREVER);  // 加锁保护哈希表访问
+    vnode->hash = hash;                                    // 设置虚拟节点的哈希值
+    // 将虚拟节点插入到对应哈希桶的头部
+    LOS_ListHeadInsert(VfsHashBucket(vnode->originMount, hash), &vnode->hashEntry);
+    (void)LOS_MuxUnlock(&g_vnodeHashMux);                   // 解锁哈希表
+    return LOS_OK;                                          // 返回插入成功
 }

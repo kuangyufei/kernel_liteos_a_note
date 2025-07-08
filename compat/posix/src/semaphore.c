@@ -34,161 +34,230 @@
 #include "map_error.h"
 #include "time_posix.h"
 
-//创建并初始化一个无名信号量
+
 /* Initialize semaphore to value, shared is not supported in Huawei LiteOS. */
-int sem_init(sem_t *sem, int shared, unsigned int value)//初始化信号量，Huawei LiteOS 不支持共享
+/**
+ * @brief 初始化无名信号量
+ * @param[in,out] sem 信号量对象指针
+ * @param[in] shared 进程间共享标志(当前未使用)
+ * @param[in] value 信号量初始值
+ * @return 成功返回0，失败返回-1并设置errno
+ */
+int sem_init(sem_t *sem, int shared, unsigned int value)
 {
-    UINT32 semHandle = 0;
-    UINT32 ret;
+    UINT32 semHandle = 0;  // 信号量句柄
+    UINT32 ret;            // 返回值
 
-    (VOID)shared;
+    (VOID)shared;  // 未使用进程间共享功能，忽略该参数
+    // 检查信号量指针有效性和初始值范围
     if ((sem == NULL) || (value > OS_SEM_COUNT_MAX)) {
-        errno = EINVAL;
-        return -1;
+        errno = EINVAL;  // 设置错误码为参数无效
+        return -1;       // 返回错误
     }
 
+    // 调用内核接口创建信号量，初始值为value
     ret = LOS_SemCreate(value, &semHandle);
-    if (map_errno(ret) != ENOERR) {
-        return -1;
+    if (map_errno(ret) != ENOERR) {  // 检查创建结果
+        return -1;                   // 创建失败返回-1
     }
 
-    sem->sem = GET_SEM(semHandle);
+    sem->sem = GET_SEM(semHandle);  // 将信号量句柄转换为信号量控制块指针
 
-    return 0;
+    return 0;  // 初始化成功返回0
 }
-///销毁指定的信号量
+
+/**
+ * @brief 销毁无名信号量
+ * @param[in] sem 信号量对象指针
+ * @return 成功返回0，失败返回-1并设置errno
+ */
 int sem_destroy(sem_t *sem)
 {
-    UINT32 ret;
+    UINT32 ret;  // 返回值
 
+    // 检查信号量指针及其控制块有效性
     if ((sem == NULL) || (sem->sem == NULL)) {
-        errno = EINVAL;
-        return -1;
+        errno = EINVAL;  // 设置错误码为参数无效
+        return -1;       // 返回错误
     }
 
+    // 调用内核接口删除信号量
     ret = LOS_SemDelete(sem->sem->semID);
-    if (map_errno(ret) != ENOERR) {
-        return -1;
+    if (map_errno(ret) != ENOERR) {  // 检查删除结果
+        return -1;                   // 删除失败返回-1
     }
-    return 0;
+    return 0;  // 销毁成功返回0
 }
-///获取信号量
+
 /* Decrement value if >0 or wait for a post. */
+/**
+ * @brief 等待信号量(若信号量值>0则减1，否则阻塞等待)
+ * @param[in] sem 信号量对象指针
+ * @return 成功返回0，失败返回-1并设置errno
+ */
 int sem_wait(sem_t *sem)
 {
-    UINT32 ret;
+    UINT32 ret;  // 返回值
 
+    // 检查信号量指针及其控制块有效性
     if ((sem == NULL) || (sem->sem == NULL)) {
-        errno = EINVAL;
-        return -1;
+        errno = EINVAL;  // 设置错误码为参数无效
+        return -1;       // 返回错误
     }
 
+    // 调用内核接口等待信号量，永久阻塞(LOS_WAIT_FOREVER)
     ret = LOS_SemPend(sem->sem->semID, LOS_WAIT_FOREVER);
-    if (map_errno(ret) == ENOERR) {
-        return 0;
+    if (map_errno(ret) == ENOERR) {  // 检查等待结果
+        return 0;                    // 成功获取信号量返回0
     } else {
-        return -1;
+        return -1;                   // 获取失败返回-1
     }
 }
-///尝试获取信号量
+
 /* Decrement value if >0, return -1 if not. */
+/**
+ * @brief 尝试等待信号量(若信号量值>0则减1，否则立即返回)
+ * @param[in] sem 信号量对象指针
+ * @return 成功返回0，失败返回-1并设置errno
+ */
 int sem_trywait(sem_t *sem)
 {
-    UINT32 ret;
+    UINT32 ret;  // 返回值
 
+    // 检查信号量指针及其控制块有效性
     if ((sem == NULL) || (sem->sem == NULL)) {
-        errno = EINVAL;
-        return -1;
+        errno = EINVAL;  // 设置错误码为参数无效
+        return -1;       // 返回错误
     }
 
+    // 调用内核接口尝试等待信号量，不阻塞(LOS_NO_WAIT)
     ret = LOS_SemPend(sem->sem->semID, LOS_NO_WAIT);
-    if (map_errno(ret) == ENOERR) {
-        return 0;
+    if (map_errno(ret) == ENOERR) {  // 检查尝试结果
+        return 0;                    // 成功获取信号量返回0
     } else {
+        // 若不是无效参数错误且信号量不可用，设置错误码为EAGAIN
         if ((errno != EINVAL) || (ret == LOS_ERRNO_SEM_UNAVAILABLE)) {
-            errno = EAGAIN;
+            errno = EAGAIN;  // 资源暂时不可用
         }
-        return -1;
+        return -1;           // 获取失败返回-1
     }
 }
-///设置获取信号量时间,时间到了不管是否获取也返回.
+
+/**
+ * @brief 带超时的信号量等待
+ * @param[in] sem 信号量对象指针
+ * @param[in] timeout 超时时间结构体指针
+ * @return 成功返回0，失败返回-1并设置errno
+ */
 int sem_timedwait(sem_t *sem, const struct timespec *timeout)
 {
-    UINT32 ret;
-    UINT32 tickCnt;
+    UINT32 ret;       // 返回值
+    UINT32 tickCnt;   // 超时时间( ticks )
 
+    // 检查信号量指针及其控制块有效性
     if ((sem == NULL) || (sem->sem == NULL)) {
-        errno = EINVAL;
-        return -1;
+        errno = EINVAL;  // 设置错误码为参数无效
+        return -1;       // 返回错误
     }
 
+    // 检查超时时间结构体有效性
     if (!ValidTimeSpec(timeout)) {
-        errno = EINVAL;
-        return -1;
+        errno = EINVAL;  // 设置错误码为参数无效
+        return -1;       // 返回错误
     }
 
-    tickCnt = OsTimeSpec2Tick(timeout);
+    tickCnt = OsTimeSpec2Tick(timeout);  // 将timespec转换为系统ticks
+    // 调用内核接口等待信号量，带超时时间
     ret = LOS_SemPend(sem->sem->semID, tickCnt);
-    if (map_errno(ret) == ENOERR) {
-        return 0;
+    if (map_errno(ret) == ENOERR) {  // 检查等待结果
+        return 0;                    // 成功获取信号量返回0
     } else {
-        return -1;
+        return -1;                   // 获取失败返回-1
     }
 }
-///增加信号量计数
+
+/**
+ * @brief 发布信号量(信号量值加1)
+ * @param[in] sem 信号量对象指针
+ * @return 成功返回0，失败返回-1并设置errno
+ */
 int sem_post(sem_t *sem)
 {
-    UINT32 ret;
+    UINT32 ret;  // 返回值
 
+    // 检查信号量指针及其控制块有效性
     if ((sem == NULL) || (sem->sem == NULL)) {
-        errno = EINVAL;
-        return -1;
+        errno = EINVAL;  // 设置错误码为参数无效
+        return -1;       // 返回错误
     }
 
+    // 调用内核接口释放信号量
     ret = LOS_SemPost(sem->sem->semID);
-    if (map_errno(ret) != ENOERR) {
-        return -1;
+    if (map_errno(ret) != ENOERR) {  // 检查释放结果
+        return -1;                   // 释放失败返回-1
     }
 
-    return 0;
+    return 0;  // 发布成功返回0
 }
 
+/**
+ * @brief 获取信号量当前值
+ * @param[in] sem 信号量对象指针
+ * @param[out] currVal 当前信号量值输出指针
+ * @return 成功返回0，失败返回-1并设置errno
+ */
 int sem_getvalue(sem_t *sem, int *currVal)
 {
-    INT32 val;
+    INT32 val;  // 临时存储信号量值
 
+    // 检查信号量指针和输出指针有效性
     if ((sem == NULL) || (currVal == NULL)) {
-        errno = EINVAL;
-        return -1;
+        errno = EINVAL;  // 设置错误码为参数无效
+        return -1;       // 返回错误
     }
-    val = sem->sem->semCount;
-    if (val < 0) {
-        val = 0;
+    val = sem->sem->semCount;  // 获取信号量计数值
+    if (val < 0) {             // 若计数值为负(有等待线程)
+        val = 0;               // POSIX标准要求返回0
     }
 
-    *currVal = val;
-    return 0;
+    *currVal = val;  // 将结果存入输出参数
+    return 0;        // 成功返回0
 }
 
+/**
+ * @brief 打开命名信号量(当前未实现)
+ * @param[in] name 信号量名称
+ * @param[in] openFlag 打开标志
+ * @return 始终返回NULL并设置errno为ENOSYS
+ */
 sem_t *sem_open(const char *name, int openFlag, ...)
 {
-    (VOID)name;
+    (VOID)name;    // 未使用参数，避免编译警告
     (VOID)openFlag;
-    errno = ENOSYS;
-    return NULL;
+    errno = ENOSYS;  // 设置错误码为功能未实现
+    return NULL;     // 返回NULL表示失败
 }
 
+/**
+ * @brief 关闭命名信号量(当前未实现)
+ * @param[in] sem 信号量对象指针
+ * @return 始终返回-1并设置errno为ENOSYS
+ */
 int sem_close(sem_t *sem)
 {
-    (VOID)sem;
-    errno = ENOSYS;
-    return -1;
+    (VOID)sem;     // 未使用参数，避免编译警告
+    errno = ENOSYS;  // 设置错误码为功能未实现
+    return -1;       // 返回-1表示失败
 }
 
+/**
+ * @brief 删除命名信号量(当前未实现)
+ * @param[in] name 信号量名称
+ * @return 始终返回-1并设置errno为ENOSYS
+ */
 int sem_unlink(const char *name)
 {
-    (VOID)name;
-    errno = ENOSYS;
-    return -1;
+    (VOID)name;    // 未使用参数，避免编译警告
+    errno = ENOSYS;  // 设置错误码为功能未实现
+    return -1;       // 返回-1表示失败
 }
-

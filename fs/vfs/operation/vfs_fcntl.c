@@ -40,65 +40,78 @@
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
+/**
+ * @brief   复制文件描述符
+ * @param   procfd     进程文件描述符
+ * @param   leastFd    新文件描述符的最小值
+ * @return  成功返回新的文件描述符，失败返回错误码
+ */
 static int FcntlDupFd(int procfd, int leastFd)
 {
-    int sysfd = GetAssociatedSystemFd(procfd);
-    if ((sysfd < 0) || (sysfd >= CONFIG_NFILE_DESCRIPTORS)) {
-        return -EBADF;
+    int sysfd = GetAssociatedSystemFd(procfd);  // 获取与进程文件描述符关联的系统文件描述符
+    if ((sysfd < 0) || (sysfd >= CONFIG_NFILE_DESCRIPTORS)) {  // 检查系统文件描述符是否有效
+        return -EBADF;  // 返回文件描述符错误
     }
 
-    if (CheckProcessFd(leastFd) != OK) {
-        return -EINVAL;
+    if (CheckProcessFd(leastFd) != OK) {  // 检查最小文件描述符是否合法
+        return -EINVAL;  // 返回参数无效错误
     }
 
-    int dupFd = AllocLowestProcessFd(leastFd);
-    if (dupFd < 0) {
-        return -EMFILE;
+    int dupFd = AllocLowestProcessFd(leastFd);  // 分配最小可用的进程文件描述符
+    if (dupFd < 0) {  // 检查分配是否成功
+        return -EMFILE;  // 返回打开文件过多错误
     }
 
-    files_refer(sysfd);
-    AssociateSystemFd(dupFd, sysfd);
+    files_refer(sysfd);  // 增加系统文件描述符的引用计数
+    AssociateSystemFd(dupFd, sysfd);  // 将新的进程文件描述符与系统文件描述符关联
 
-    return dupFd;
+    return dupFd;  // 返回新的文件描述符
 }
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
+/**
+ * @brief   文件控制操作
+ * @param   procfd     进程文件描述符
+ * @param   cmd        控制命令
+ * @param   ...        可变参数，根据命令不同而不同
+ * @return  成功返回0或相应值，失败返回错误码
+ */
 int VfsFcntl(int procfd, int cmd, ...)
 {
-    va_list ap;
-    int ret = 0;
+    va_list ap;  // 可变参数列表
+    int ret = 0;  // 返回值
 
-    va_start(ap, cmd);
-    switch (cmd) {
-        case F_DUPFD:
+    va_start(ap, cmd);  // 初始化可变参数
+    switch (cmd) {  // 根据命令类型处理
+        case F_DUPFD:  // 复制文件描述符命令
             {
-                int arg = va_arg(ap, int);
-                ret = FcntlDupFd(procfd, arg);
+                int arg = va_arg(ap, int);  // 获取最小文件描述符参数
+                ret = FcntlDupFd(procfd, arg);  // 调用复制文件描述符函数
             }
             break;
-        case F_GETFD:
+        case F_GETFD:  // 获取文件描述符标志命令
             {
-                bool isCloexec = CheckCloexecFlag(procfd);
-                ret = isCloexec ? FD_CLOEXEC : 0;
+                bool isCloexec = CheckCloexecFlag(procfd);  // 检查CLOEXEC标志
+                ret = isCloexec ? FD_CLOEXEC : 0;  // 返回标志状态
             }
             break;
-        case F_SETFD:
+        case F_SETFD:  // 设置文件描述符标志命令
             {
-                int oflags = va_arg(ap, int);
-                if (oflags & FD_CLOEXEC) {
-                    SetCloexecFlag(procfd);
+                int oflags = va_arg(ap, int);  // 获取标志参数
+                if (oflags & FD_CLOEXEC) {  // 检查是否设置CLOEXEC标志
+                    SetCloexecFlag(procfd);  // 设置CLOEXEC标志
                 } else {
-                    ClearCloexecFlag(procfd);
+                    ClearCloexecFlag(procfd);  // 清除CLOEXEC标志
                 }
             }
             break;
-        default:
-            ret = CONTINE_NUTTX_FCNTL;
+        default:  // 不支持的命令
+            ret = CONTINE_NUTTX_FCNTL;  // 继续执行NUTTX的fcntl处理
             break;
     }
 
-    va_end(ap);
-    return ret;
+    va_end(ap);  // 结束可变参数处理
+    return ret;  // 返回结果
 }

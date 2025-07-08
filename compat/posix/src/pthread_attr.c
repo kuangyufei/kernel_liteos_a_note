@@ -32,250 +32,357 @@
 #include "pthread.h"
 #include "pprivate.h"
 //https://docs.oracle.com/cd/E19253-01/819-7051/6n919hpac/index.html
-//线程属性初始化
+/**
+ * @brief 初始化线程属性对象
+ * @param[in,out] attr 线程属性对象指针
+ * @return 成功返回ENOERR，失败返回EINVAL
+ * @note 初始化后属性值为默认值：可连接状态、RR调度策略、默认优先级、继承调度属性、进程作用域、默认栈大小
+ */
 int pthread_attr_init(pthread_attr_t *attr)
 {
-    if (attr == NULL) {
-        return EINVAL;
+    if (attr == NULL) {  // 检查属性对象指针是否为空
+        return EINVAL;   // 空指针返回参数无效错误
     }
 
-    attr->detachstate                 = PTHREAD_CREATE_JOINABLE;//
-    attr->schedpolicy                 = SCHED_RR;//抢占式调度
-    attr->schedparam.sched_priority   = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;//调度优先级
-    attr->inheritsched                = PTHREAD_INHERIT_SCHED;//继承调度
-    attr->scope                       = PTHREAD_SCOPE_PROCESS;//进程范围
-    attr->stackaddr_set               = 0;	//暂未内核栈开始地址
-    attr->stackaddr                   = NULL;//内核栈地址
-    attr->stacksize_set               = 1;//已设置内核栈大小
-    attr->stacksize                   = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;//默认16K
+    // 设置默认线程属性值
+    attr->detachstate                 = PTHREAD_CREATE_JOINABLE;  // 默认可连接状态
+    attr->schedpolicy                 = SCHED_RR;                 // 默认RR调度策略
+    attr->schedparam.sched_priority   = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;  // 默认优先级
+    attr->inheritsched                = PTHREAD_INHERIT_SCHED;    // 默认继承调度属性
+    attr->scope                       = PTHREAD_SCOPE_PROCESS;    // 默认进程作用域
+    attr->stackaddr_set               = 0;                        // 未设置栈地址
+    attr->stackaddr                   = NULL;                     // 栈地址为空
+    attr->stacksize_set               = 1;                        // 已设置栈大小
+    attr->stacksize                   = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;  // 默认栈大小
 
 #ifdef LOSCFG_KERNEL_SMP
-    attr->cpuset.__bits[0] = 0;
+    attr->cpuset.__bits[0] = 0;  // SMP配置下初始化CPU亲和性掩码
 #endif
 
-    return ENOERR;
+    return ENOERR;  // 初始化成功
 }
 
+/**
+ * @brief 销毁线程属性对象
+ * @param[in] attr 线程属性对象指针
+ * @return 成功返回ENOERR，失败返回EINVAL
+ * @note 本实现中无需释放资源，仅检查参数有效性
+ */
 int pthread_attr_destroy(pthread_attr_t *attr)
 {
-    if (attr == NULL) {
-        return EINVAL;
+    if (attr == NULL) {  // 检查属性对象指针是否为空
+        return EINVAL;   // 空指针返回参数无效错误
     }
 
-    /* Nothing to do here... */
-    return ENOERR;
+    /* Nothing to do here... */  // 无需执行实际销毁操作
+    return ENOERR;  // 销毁成功
 }
-///设置分离状态(分离和联合) 如果创建分离线程 (PTHREAD_CREATE_DETACHED)，则该线程一退出，便可重用其线程 ID 和其他资源。
+
+/**
+ * @brief 设置线程分离状态属性
+ * @param[in,out] attr 线程属性对象指针
+ * @param[in] detachState 分离状态：PTHREAD_CREATE_JOINABLE（可连接）或PTHREAD_CREATE_DETACHED（分离）
+ * @return 成功返回ENOERR，失败返回EINVAL
+ */
 int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachState)
 {
+    // 检查参数有效性并验证分离状态值
     if ((attr != NULL) && ((detachState == PTHREAD_CREATE_JOINABLE) || (detachState == PTHREAD_CREATE_DETACHED))) {
-        attr->detachstate = (UINT32)detachState;
-        return ENOERR;
+        attr->detachstate = (UINT32)detachState;  // 设置分离状态
+        return ENOERR;                            // 设置成功
     }
 
-    return EINVAL;
+    return EINVAL;  // 参数无效或分离状态值非法
 }
-///获取分离状态
+
+/**
+ * @brief 获取线程分离状态属性
+ * @param[in] attr 线程属性对象指针
+ * @param[out] detachState 分离状态输出指针
+ * @return 成功返回ENOERR，失败返回EINVAL
+ */
 int pthread_attr_getdetachstate(const pthread_attr_t *attr, int *detachState)
 {
-    if ((attr == NULL) || (detachState == NULL)) {
-        return EINVAL;
+    if ((attr == NULL) || (detachState == NULL)) {  // 检查输入输出指针是否为空
+        return EINVAL;                               // 空指针返回参数无效错误
     }
 
-    *detachState = (int)attr->detachstate;
+    *detachState = (int)attr->detachstate;  // 获取分离状态值
 
-    return ENOERR;
+    return ENOERR;  // 获取成功
 }
-///设置线程的竞争范围（PTHREAD_SCOPE_SYSTEM 或 PTHREAD_SCOPE_PROCESS）。 
-//使用 PTHREAD_SCOPE_SYSTEM 时，此线程将与系统中的所有线程进行竞争。
-//使用 PTHREAD_SCOPE_PROCESS 时，此线程将与进程中的其他线程进行竞争。
+
+/**
+ * @brief 设置线程作用域属性
+ * @param[in,out] attr 线程属性对象指针
+ * @param[in] scope 作用域：PTHREAD_SCOPE_PROCESS（进程内）或PTHREAD_SCOPE_SYSTEM（系统级）
+ * @return 成功返回ENOERR，不支持返回ENOTSUP，失败返回EINVAL
+ * @note 仅支持PTHREAD_SCOPE_PROCESS作用域
+ */
 int pthread_attr_setscope(pthread_attr_t *attr, int scope)
 {
-    if (attr == NULL) {
-        return EINVAL;
+    if (attr == NULL) {  // 检查属性对象指针是否为空
+        return EINVAL;   // 空指针返回参数无效错误
     }
 
-    if (scope == PTHREAD_SCOPE_PROCESS) {
-        attr->scope = (unsigned int)scope;
-        return ENOERR;
+    if (scope == PTHREAD_SCOPE_PROCESS) {  // 进程内作用域
+        attr->scope = (unsigned int)scope;  // 设置作用域
+        return ENOERR;                      // 设置成功
     }
 
-    if (scope == PTHREAD_SCOPE_SYSTEM) {
-        return ENOTSUP;
+    if (scope == PTHREAD_SCOPE_SYSTEM) {  // 系统级作用域
+        return ENOTSUP;                   // 不支持系统级作用域
     }
 
-    return EINVAL;
+    return EINVAL;  // 作用域值非法
 }
-///获取线程的竞争范围
+
+/**
+ * @brief 获取线程作用域属性
+ * @param[in] attr 线程属性对象指针
+ * @param[out] scope 作用域输出指针
+ * @return 成功返回ENOERR，失败返回EINVAL
+ */
 int pthread_attr_getscope(const pthread_attr_t *attr, int *scope)
 {
-    if ((attr == NULL) || (scope == NULL)) {
-        return EINVAL;
+    if ((attr == NULL) || (scope == NULL)) {  // 检查输入输出指针是否为空
+        return EINVAL;                         // 空指针返回参数无效错误
     }
 
-    *scope = (int)attr->scope;
+    *scope = (int)attr->scope;  // 获取作用域值
 
-    return ENOERR;
+    return ENOERR;  // 获取成功
 }
-///设置继承的调度策略, PTHREAD_INHERIT_SCHED 表示新建的线程将继承创建者线程中定义的调度策略。
-//将忽略在 pthread_create() 调用中定义的所有调度属性。如果使用缺省值 PTHREAD_EXPLICIT_SCHED，则将使用 pthread_create() 调用中的属性
+
+/**
+ * @brief 设置线程调度继承属性
+ * @param[in,out] attr 线程属性对象指针
+ * @param[in] inherit 继承方式：PTHREAD_INHERIT_SCHED（继承）或PTHREAD_EXPLICIT_SCHED（显式）
+ * @return 成功返回ENOERR，失败返回EINVAL
+ */
 int pthread_attr_setinheritsched(pthread_attr_t *attr, int inherit)
 {
+    // 检查参数有效性并验证继承方式
     if ((attr != NULL) && ((inherit == PTHREAD_INHERIT_SCHED) || (inherit == PTHREAD_EXPLICIT_SCHED))) {
-        attr->inheritsched = (UINT32)inherit;
-        return ENOERR;
+        attr->inheritsched = (UINT32)inherit;  // 设置继承方式
+        return ENOERR;                         // 设置成功
     }
 
-    return EINVAL;
+    return EINVAL;  // 参数无效或继承方式非法
 }
-///获取继承的调度策略
+
+/**
+ * @brief 获取线程调度继承属性
+ * @param[in] attr 线程属性对象指针
+ * @param[out] inherit 继承方式输出指针
+ * @return 成功返回ENOERR，失败返回EINVAL
+ */
 int pthread_attr_getinheritsched(const pthread_attr_t *attr, int *inherit)
 {
-    if ((attr == NULL) || (inherit == NULL)) {
-        return EINVAL;
+    if ((attr == NULL) || (inherit == NULL)) {  // 检查输入输出指针是否为空
+        return EINVAL;                          // 空指针返回参数无效错误
     }
 
-    *inherit = (int)attr->inheritsched;
+    *inherit = (int)attr->inheritsched;  // 获取继承方式
 
-    return ENOERR;
+    return ENOERR;  // 获取成功
 }
-///设置调度策略,POSIX 标准指定 SCHED_FIFO（先入先出）、SCHED_RR（抢占）或 SCHED_OTHER（实现定义的方法）的调度策略属性。
+
+/**
+ * @brief 设置线程调度策略
+ * @param[in,out] attr 线程属性对象指针
+ * @param[in] policy 调度策略：仅支持SCHED_RR（轮转调度）
+ * @return 成功返回ENOERR，失败返回EINVAL
+ * @note 目前仅实现SCHED_RR调度策略
+ */
 int pthread_attr_setschedpolicy(pthread_attr_t *attr, int policy)
 {
-    if ((attr != NULL) && (policy == SCHED_RR)) {
-        attr->schedpolicy = SCHED_RR;
-        return ENOERR;
+    if ((attr != NULL) && (policy == SCHED_RR)) {  // 检查参数并验证为RR调度
+        attr->schedpolicy = SCHED_RR;              // 设置RR调度策略
+        return ENOERR;                             // 设置成功
     }
 
-    return EINVAL;
+    return EINVAL;  // 参数无效或不支持的调度策略
 }
-///获取调度策略
+
+/**
+ * @brief 获取线程调度策略
+ * @param[in] attr 线程属性对象指针
+ * @param[out] policy 调度策略输出指针
+ * @return 成功返回ENOERR，失败返回EINVAL
+ */
 int pthread_attr_getschedpolicy(const pthread_attr_t *attr, int *policy)
 {
-    if ((attr == NULL) || (policy == NULL)) {
-        return EINVAL;
+    if ((attr == NULL) || (policy == NULL)) {  // 检查输入输出指针是否为空
+        return EINVAL;                          // 空指针返回参数无效错误
     }
 
-    *policy = (int)attr->schedpolicy;
+    *policy = (int)attr->schedpolicy;  // 获取调度策略
 
-    return ENOERR;
+    return ENOERR;  // 获取成功
 }
-///设置线程属性对象的调度参数属性,调度参数是在 param 结构中定义的。仅支持优先级参数。新创建的线程使用此优先级运行。
+
+/**
+ * @brief 设置线程调度参数（优先级）
+ * @param[in,out] attr 线程属性对象指针
+ * @param[in] param 调度参数结构体，包含优先级信息
+ * @return 成功返回ENOERR，不支持返回ENOTSUP，失败返回EINVAL
+ * @note 优先级需在[0, OS_TASK_PRIORITY_LOWEST]范围内
+ */
 int pthread_attr_setschedparam(pthread_attr_t *attr, const struct sched_param *param)
 {
-    if ((attr == NULL) || (param == NULL)) {
-        return EINVAL;
-    } else if ((param->sched_priority < 0) || (param->sched_priority > OS_TASK_PRIORITY_LOWEST)) {
-        return ENOTSUP;
+    if ((attr == NULL) || (param == NULL)) {  // 检查参数指针是否为空
+        return EINVAL;                         // 空指针返回参数无效错误
+    } else if ((param->sched_priority < 0) || (param->sched_priority > OS_TASK_PRIORITY_LOWEST)) {  // 检查优先级范围
+        return ENOTSUP;                                                                           // 优先级超出范围
     }
 
-    attr->schedparam = *param;
+    attr->schedparam = *param;  // 设置调度参数
 
-    return ENOERR;
+    return ENOERR;  // 设置成功
 }
-///获取线程属性对象的调度参数属性
+
+/**
+ * @brief 获取线程调度参数（优先级）
+ * @param[in] attr 线程属性对象指针
+ * @param[out] param 调度参数结构体输出指针
+ * @return 成功返回ENOERR，失败返回EINVAL
+ */
 int pthread_attr_getschedparam(const pthread_attr_t *attr, struct sched_param *param)
 {
-    if ((attr == NULL) || (param == NULL)) {
-        return EINVAL;
+    if ((attr == NULL) || (param == NULL)) {  // 检查输入输出指针是否为空
+        return EINVAL;                         // 空指针返回参数无效错误
     }
 
-    *param = attr->schedparam;
+    *param = attr->schedparam;  // 获取调度参数
 
-    return ENOERR;
+    return ENOERR;  // 获取成功
 }
 
-/*
- * Set starting address of stack. Whether this is at the start or end of
- * the memory block allocated for the stack depends on whether the stack
- * grows up or down.
+/**
+ * @brief 设置线程栈地址
+ * @param[in,out] attr 线程属性对象指针
+ * @param[in] stackAddr 栈起始地址
+ * @return 成功返回ENOERR，失败返回EINVAL
+ * @note 栈地址的实际位置（栈顶/栈底）取决于栈增长方向（向上/向下）
  */
-//设置栈起始地址,在开始还是结束为堆栈分配的内存块取决于堆栈是向上增长还是向下增长。
 int pthread_attr_setstackaddr(pthread_attr_t *attr, void *stackAddr)
 {
-    if (attr == NULL) {
-        return EINVAL;
+    if (attr == NULL) {  // 检查属性对象指针是否为空
+        return EINVAL;   // 空指针返回参数无效错误
     }
 
-    attr->stackaddr_set = 1;
-    attr->stackaddr     = stackAddr;
+    attr->stackaddr_set = 1;  // 标记栈地址已设置
+    attr->stackaddr     = stackAddr;  // 设置栈地址
 
-    return ENOERR;
+    return ENOERR;  // 设置成功
 }
-///获取栈起始地址
+
+/**
+ * @brief 获取线程栈地址
+ * @param[in] attr 线程属性对象指针
+ * @param[out] stackAddr 栈地址输出指针
+ * @return 成功返回ENOERR，失败返回EINVAL
+ * @note 仅当栈地址已设置（stackaddr_set=1）时返回成功
+ */
 int pthread_attr_getstackaddr(const pthread_attr_t *attr, void **stackAddr)
 {
+    // 检查参数有效性并确认栈地址已设置
     if (((attr != NULL) && (stackAddr != NULL)) && attr->stackaddr_set) {
-        *stackAddr = attr->stackaddr;
-        return ENOERR;
+        *stackAddr = attr->stackaddr;  // 获取栈地址
+        return ENOERR;                 // 获取成功
     }
 
-    return EINVAL; /* Stack address not set, return EINVAL. */
+    return EINVAL;  // Stack address not set, return EINVAL.  // 栈地址未设置或参数无效
 }
-///设置栈大小
+
+/**
+ * @brief 设置线程栈大小
+ * @param[in,out] attr 线程属性对象指针
+ * @param[in] stackSize 栈大小（字节），需大于等于PTHREAD_STACK_MIN
+ * @return 成功返回ENOERR，失败返回EINVAL
+ * @note 拒绝过小的栈大小请求
+ */
 int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stackSize)
 {
-    /* Reject inadequate stack sizes *///拒绝不合适的堆栈尺寸
-    if ((attr == NULL) || (stackSize < PTHREAD_STACK_MIN)) {//size 不应小于系统定义的最小栈大小
-        return EINVAL;
+    /* Reject inadequate stack sizes */  // 拒绝不充足的栈大小
+    if ((attr == NULL) || (stackSize < PTHREAD_STACK_MIN)) {  // 检查参数和栈大小最小值
+        return EINVAL;                                       // 参数无效或栈大小不足
     }
 
-    attr->stacksize_set = 1;
-    attr->stacksize     = stackSize;
+    attr->stacksize_set = 1;  // 标记栈大小已设置
+    attr->stacksize     = stackSize;  // 设置栈大小
 
-    return ENOERR;
+    return ENOERR;  // 设置成功
 }
-///获取栈大小
+
+/**
+ * @brief 获取线程栈大小
+ * @param[in] attr 线程属性对象指针
+ * @param[out] stackSize 栈大小输出指针
+ * @return 成功返回ENOERR，失败返回EINVAL
+ * @note 仅当栈大小已设置（stacksize_set=1）时返回成功
+ */
 int pthread_attr_getstacksize(const pthread_attr_t *attr, size_t *stackSize)
 {
-    /* Reject attempts to get a stack size when one has not been set. */
-    if ((attr == NULL) || (stackSize == NULL) || (!attr->stacksize_set)) {
-        return EINVAL;
+    /* Reject attempts to get a stack size when one has not been set. */  // 栈大小未设置时拒绝获取
+    if ((attr == NULL) || (stackSize == NULL) || (!attr->stacksize_set)) {  // 检查参数和栈大小设置状态
+        return EINVAL;                                                     // 参数无效或栈大小未设置
     }
 
-    *stackSize = attr->stacksize;
+    *stackSize = attr->stacksize;  // 获取栈大小
 
-    return ENOERR;
+    return ENOERR;  // 获取成功
 }
 
-/*
- * Set the cpu affinity mask
- *///cpu集可以认为是一个掩码，每个设置的位都对应一个可以合法调度的 cpu，而未设置的位则对应一个不可调度的 CPU。
+/**
+ * @brief 设置线程CPU亲和性掩码
+ * @param[in,out] attr 线程属性对象指针
+ * @param[in] cpusetsize 掩码大小（字节）
+ * @param[in] cpuset CPU亲和性掩码指针
+ * @return 成功返回ENOERR，失败返回EINVAL
+ * @note 仅在LOSCFG_KERNEL_SMP配置下有效
+ */
 int pthread_attr_setaffinity_np(pthread_attr_t* attr, size_t cpusetsize, const cpu_set_t* cpuset)
 {
-#ifdef LOSCFG_KERNEL_SMP
-    if (attr == NULL) {
-        return EINVAL;
+#ifdef LOSCFG_KERNEL_SMP  // SMP配置下才支持CPU亲和性
+    if (attr == NULL) {  // 检查属性对象指针是否为空
+        return EINVAL;   // 空指针返回参数无效错误
     }
 
-    if ((cpuset == NULL) || (cpusetsize == 0)) {
-        attr->cpuset.__bits[0] = 0;
-        return ENOERR;
+    if ((cpuset == NULL) || (cpusetsize == 0)) {  // 空掩码或大小为0
+        attr->cpuset.__bits[0] = 0;               // 清空亲和性掩码
+        return ENOERR;                            // 设置成功
     }
-///cpu_set_t这个结构体的理解类似于select中的fd_set，可以理解为cpu集，也是通过约定好的宏来进行清除、设置以及判断
+
+    // 检查掩码大小和CPU范围有效性
     if ((cpusetsize != sizeof(cpu_set_t)) || (cpuset->__bits[0] > LOSCFG_KERNEL_CPU_MASK)) {
-        return EINVAL;
+        return EINVAL;  // 掩码大小不匹配或CPU超出范围
     }
 
-    attr->cpuset = *cpuset;
+    attr->cpuset = *cpuset;  // 设置CPU亲和性掩码
 #endif
 
-    return ENOERR;
+    return ENOERR;  // 非SMP配置下直接返回成功
 }
 
-/*
- * Get the cpu affinity mask
+/**
+ * @brief 获取线程CPU亲和性掩码
+ * @param[in] attr 线程属性对象指针
+ * @param[in] cpusetsize 掩码大小（字节）
+ * @param[out] cpuset CPU亲和性掩码输出指针
+ * @return 成功返回ENOERR，失败返回EINVAL
+ * @note 仅在LOSCFG_KERNEL_SMP配置下有效
  */
 int pthread_attr_getaffinity_np(const pthread_attr_t* attr, size_t cpusetsize, cpu_set_t* cpuset)
 {
-#ifdef LOSCFG_KERNEL_SMP
-    if ((attr == NULL) || (cpuset == NULL) || (cpusetsize != sizeof(cpu_set_t))) {
-        return EINVAL;
+#ifdef LOSCFG_KERNEL_SMP  // SMP配置下才支持CPU亲和性
+    if ((attr == NULL) || (cpuset == NULL) || (cpusetsize != sizeof(cpu_set_t))) {  // 检查参数有效性
+        return EINVAL;                                                             // 参数无效
     }
 
-    *cpuset = attr->cpuset;
+    *cpuset = attr->cpuset;  // 获取CPU亲和性掩码
 #endif
 
-    return ENOERR;
+    return ENOERR;  // 非SMP配置下直接返回成功
 }
-

@@ -44,7 +44,15 @@
  * Public Functions
  ****************************************************************************/
 
+/**
+ * @brief 从文件的指定偏移量处读取数据到多个缓冲区（向量读取）
+ * @param fd 文件描述符
+ * @param iov 指向iovec结构体数组的指针，每个结构体描述一个缓冲区
+ * @param iovcnt iov数组中的元素个数
+ * @param offset 文件读取的起始偏移量（不修改文件当前读写位置）
+ * @return 成功返回读取的字节数，失败返回-1并设置errno
+ */
 ssize_t preadv(int fd, const struct iovec *iov, int iovcnt, off_t offset)
 {
-    return vfs_readv(fd, iov, iovcnt, &offset);
+    return vfs_readv(fd, iov, iovcnt, &offset);  // 调用vfs_readv执行向量读取操作，传入偏移量指针
 }

@@ -43,8 +43,15 @@
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-
+/**
+ * @brief 从指定位置写入分散的缓冲区数据到文件
+ * @param fd 文件描述符
+ * @param iov 指向iovec结构体数组的指针，每个结构体包含缓冲区地址和长度
+ * @param iovcnt iovec结构体数组的元素个数
+ * @param offset 文件写入起始偏移量（绝对位置）
+ * @return 成功返回写入的总字节数，失败返回-1并设置errno
+ */
 ssize_t pwritev(int fd, const struct iovec *iov, int iovcnt, off_t offset)
 {
-    return vfs_writev(fd, iov, iovcnt, &offset);
+    return vfs_writev(fd, iov, iovcnt, &offset);  // 调用vfs_writev执行带偏移量的分散写入
 }

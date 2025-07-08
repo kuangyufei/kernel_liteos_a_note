@@ -79,50 +79,61 @@
  * @endverbatim 
  * @brief 
  */
+
+/**
+ * @brief shell命令处理函数：向proc文件写入数据
+ * @param argc 命令行参数数量
+ * @param argv 命令行参数数组
+ * @return 成功返回LOS_OK，失败返回PROC_ERROR
+ */
 int OsShellCmdWriteProc(int argc, char **argv)
 {
-    int i;
-    int ret;
-    const char *path = NULL;
-    const char *value = NULL;
-    unsigned int len;
-    struct ProcDirEntry *handle = NULL;
-    char realPath[PATH_MAX] = {'\0'};
-    const char *rootProcDir = "/proc/";
+    int i;  // 循环计数器
+    int ret;  // 函数返回值/错误码
+    const char *path = NULL;  // 目标文件路径
+    const char *value = NULL;  // 要写入的数据
+    unsigned int len;  // 数据长度
+    struct ProcDirEntry *handle = NULL;  // proc文件句柄
+    char realPath[PATH_MAX] = {'\0'};  // 解析后的绝对路径缓冲区
+    const char *rootProcDir = "/proc/";  // proc文件系统根目录
 
-    if (argc == WRITEPROC_ARGC) {//argv[0] = ">>"
-        value = argv[0];
-        path = argv[2]; // 2: index of path
-        len = strlen(value) + 1;  /* +1:add the \0 */
-        if (strncmp(argv[1], ">>", strlen(">>")) == 0) { //  第二个参数必须得是 >>
+    if (argc == WRITEPROC_ARGC) {  // 检查参数数量是否符合要求
+        value = argv[0];  // 获取要写入的数据
+        path = argv[2]; // 2: 路径参数的索引位置
+        len = strlen(value) + 1;  /* + 1:add the \0 */  // 计算数据长度，包含终止符
+        if (strncmp(argv[1], ">>", strlen(">>")) == 0) {  // 检查操作符是否为">>"
+            // 解析路径并检查是否位于/proc目录下
             if ((realpath(path, realPath) == NULL) || (strncmp(realPath, rootProcDir, strlen(rootProcDir)) != 0)) {
-                PRINT_ERR("No such file or directory\n");
-                return PROC_ERROR;
+                PRINT_ERR("No such file or directory\n");  // 打印路径错误信息
+                return PROC_ERROR;  // 返回错误
             }
 
-            handle = OpenProcFile(realPath, O_TRUNC);//打开 proc 文件
-            if (handle == NULL) {
-                PRINT_ERR("No such file or directory\n");
-                return PROC_ERROR;
+            handle = OpenProcFile(realPath, O_TRUNC);  // 打开proc文件，O_TRUNC表示截断模式
+            if (handle == NULL) {  // 检查文件是否打开成功
+                PRINT_ERR("No such file or directory\n");  // 打印打开失败信息
+                return PROC_ERROR;  // 返回错误
             }
 
-            ret = WriteProcFile(handle, value, len);
-            if (ret < 0) {
-                (void)CloseProcFile(handle);
-                PRINT_ERR("write error\n");
-                return PROC_ERROR;
+            ret = WriteProcFile(handle, value, len);  // 向proc文件写入数据
+            if (ret < 0) {  // 检查写入是否成功
+                (void)CloseProcFile(handle);  // 关闭文件句柄
+                PRINT_ERR("write error\n");  // 打印写入错误信息
+                return PROC_ERROR;  // 返回错误
             }
+            // 打印命令回显
             for (i = 0; i < argc; i++) {
                 PRINTK("%s%s", i > 0 ? " " : "", argv[i]);
             }
             PRINTK("\n");
-            (void)CloseProcFile(handle);
-            return LOS_OK;
+            (void)CloseProcFile(handle);  // 关闭文件句柄
+            return LOS_OK;  // 返回成功
         }
     }
-    PRINT_ERR("writeproc [data] [>>] [path]\n");
-    return PROC_ERROR;
+    PRINT_ERR("writeproc [data] [>>] [path]\n");  // 打印命令用法提示
+    return PROC_ERROR;  // 返回错误
 }
 
+// 注册shell命令：writeproc，关联处理函数OsShellCmdWriteProc
 SHELLCMD_ENTRY(writeproc_shellcmd, CMD_TYPE_EX, "writeproc", XARGS, (CmdCallBackFunc)OsShellCmdWriteProc);
-#endif
+#endif  // 条件编译结束
+

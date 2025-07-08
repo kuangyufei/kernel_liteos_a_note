@@ -39,62 +39,85 @@
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
+/**
+ * @brief   执行exec时关闭设置了CLOEXEC标志的文件描述符
+ * @param   files 指向进程文件描述符集合的指针
+ * @return  无返回值
+ */
 void CloseOnExec(struct files_struct *files)
 {
-    int sysFd;
+    int sysFd;  // 系统文件描述符
+    // 参数合法性检查：文件描述符集合或其表为空则直接返回
     if ((files == NULL) || (files->fdt == NULL)) {
         return;
     }
 
+    // 遍历所有可能的文件描述符
     for (int i = 0; i < files->fdt->max_fds; i++) {
+        // 检查文件描述符是否有效且设置了CLOEXEC标志
         if (FD_ISSET(i, files->fdt->proc_fds) &&
             FD_ISSET(i, files->fdt->cloexec_fds)) {
-            sysFd = DisassociateProcessFd(i);
-            if (sysFd >= 0) {
-                close(sysFd);
+            sysFd = DisassociateProcessFd(i);  // 解除进程文件描述符与系统文件描述符的关联
+            if (sysFd >= 0) {                 // 检查系统文件描述符是否有效
+                close(sysFd);                 // 关闭系统文件描述符
             }
 
-            FreeProcessFd(i);
+            FreeProcessFd(i);  // 释放进程文件描述符
         }
     }
 }
 
+/**
+ * @brief   为指定进程文件描述符设置CLOEXEC标志
+ * @param   procFd 进程文件描述符
+ * @return  无返回值
+ */
 void SetCloexecFlag(int procFd)
 {
-    struct fd_table_s *fdt = GetFdTable();
-    if (fdt == NULL) {
+    struct fd_table_s *fdt = GetFdTable();  // 获取文件描述符表
+    if (fdt == NULL) {                      // 检查文件描述符表是否获取成功
         return;
     }
 
-    FileTableLock(fdt);
-    FD_SET(procFd, fdt->cloexec_fds);
-    FileTableUnLock(fdt);
+    FileTableLock(fdt);                     // 加锁保护文件描述符表操作
+    FD_SET(procFd, fdt->cloexec_fds);       // 设置CLOEXEC标志
+    FileTableUnLock(fdt);                   // 解锁
     return;
 }
 
+/**
+ * @brief   检查指定进程文件描述符是否设置了CLOEXEC标志
+ * @param   procFd 进程文件描述符
+ * @return  设置了返回true，否则返回false
+ */
 bool CheckCloexecFlag(int procFd)
 {
-    bool isCloexec = 0;
-    struct fd_table_s *fdt = GetFdTable();
-    if (fdt == NULL) {
+    bool isCloexec = 0;                     // 用于存储检查结果
+    struct fd_table_s *fdt = GetFdTable();  // 获取文件描述符表
+    if (fdt == NULL) {                      // 检查文件描述符表是否获取成功
         return false;
     }
 
-    FileTableLock(fdt);
-    isCloexec = FD_ISSET(procFd, fdt->cloexec_fds);
-    FileTableUnLock(fdt);
+    FileTableLock(fdt);                     // 加锁保护文件描述符表操作
+    isCloexec = FD_ISSET(procFd, fdt->cloexec_fds);  // 检查CLOEXEC标志状态
+    FileTableUnLock(fdt);                   // 解锁
     return isCloexec;
 }
 
+/**
+ * @brief   清除指定进程文件描述符的CLOEXEC标志
+ * @param   procFd 进程文件描述符
+ * @return  无返回值
+ */
 void ClearCloexecFlag(int procFd)
 {
-    struct fd_table_s *fdt = GetFdTable();
-    if (fdt == NULL) {
+    struct fd_table_s *fdt = GetFdTable();  // 获取文件描述符表
+    if (fdt == NULL) {                      // 检查文件描述符表是否获取成功
         return;
     }
 
-    FileTableLock(fdt);
-    FD_CLR(procFd, fdt->cloexec_fds);
-    FileTableUnLock(fdt);
+    FileTableLock(fdt);                     // 加锁保护文件描述符表操作
+    FD_CLR(procFd, fdt->cloexec_fds);       // 清除CLOEXEC标志
+    FileTableUnLock(fdt);                   // 解锁
     return;
 }

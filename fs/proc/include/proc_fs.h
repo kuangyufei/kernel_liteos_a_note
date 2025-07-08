@@ -83,9 +83,7 @@ typedef unsigned short fmode_t;
 
 struct ProcFile;
 struct ProcDirEntry;
-/**
- * @brief 真正最后能操作pro file的接口,proc本质是个内存文件系统, vfs - > ProcFileOperations
- */
+
 struct ProcFileOperations {
     char *name;
     ssize_t (*write)(struct ProcFile *pf, const char *buf, size_t count, loff_t *ppos);
@@ -104,48 +102,42 @@ struct ProcDirOperations {
 
 #define PROC_DATA_STATIC 0
 #define PROC_DATA_FREE   1
-/**
- * @brief proc 目录/文件项, @notethinking 直接叫 ProcEntry不香吗 ?
- * \n 操作 /proc的 真正结构体
- */
 struct ProcDirEntry {
     uint uid;
     uint gid;
-    mode_t mode;	///<模式(读|写...)
-    int flags;	///<标签
-    const struct ProcFileOperations *procFileOps; ///< 驱动程序,每个 /proc 下目录的驱动程序都不一样
-    struct ProcFile *pf; ///<proc文件指针
-    struct ProcDirEntry *next, *parent, *subdir; ///<当前目录项的关系项
+    mode_t mode;
+    int flags;
+    const struct ProcFileOperations *procFileOps;
+    struct ProcFile *pf;
+    struct ProcDirEntry *next, *parent, *subdir;
 #ifdef LOSCFG_KERNEL_PLIMITS
     const struct ProcDirOperations *procDirOps;
 #endif
     int dataType;
     void *data;
-    atomic_t count; /* open file count | 打开文件的数量*/
+    atomic_t count; /* open file count */
     spinlock_t pdeUnloadLock;
 
     int nameLen;
-    struct ProcDirEntry *pdirCurrent; ///<当前目录
+    struct ProcDirEntry *pdirCurrent;
     char name[NAME_MAX];
-    enum VnodeType type;	///<节点类型
+    enum VnodeType type;
 };
 
 struct ProcDataParm {
     void *data;
     int dataType;
 };
-/**
- * @brief Proc文件结构体,对标 FILE 结构体
- */
+
 struct ProcFile {
-    fmode_t fMode;		///< 操作文件的模式
-    spinlock_t fLock;	///< 自旋锁
-    atomic_t fCount;	///< 原子操作
-    struct SeqBuf *sbuf; ///< 序列号BUF
-    struct ProcDirEntry *pPDE; ///< 目录项
-    unsigned long long fVersion; ///< 版本号
-    loff_t fPos;	///<文件操作偏移位
-    char name[NAME_MAX]; ///<文件名
+    fmode_t fMode;
+    spinlock_t fLock;
+    atomic_t fCount;
+    struct SeqBuf *sbuf;
+    struct ProcDirEntry *pPDE;
+    unsigned long long fVersion;
+    loff_t fPos;
+    char name[NAME_MAX];
 };
 
 struct ProcStat {
@@ -165,7 +157,7 @@ struct ProcData {
 #define S_IALLUGO (S_ISUID | S_ISGID | S_ISVTX | S_IRWXU | S_IRWXG | S_IRWXO)
 
 /**
- * Interface for modules using proc below internal proc moudule;
+ * Interface for modules using proc below internal proc module;
  */
 /**
  * @ingroup  procfs

@@ -47,47 +47,56 @@
 /****************************************************************************
  * Name: fscheck
  ****************************************************************************/
+/**
+ * @brief   文件系统检查函数
+ * @param   path  要检查的文件系统路径
+ * @return  成功返回0，失败返回VFS_ERROR并设置errno
+ */
 int fscheck(const char *path)
 {
-    int ret;
-    struct Vnode *vnode = NULL;
-    struct fs_dirent_s *dir = NULL;
+    int ret;                         // 用于存储函数调用返回值
+    struct Vnode *vnode = NULL;      // 用于存储查找到的vnode结构体指针
+    struct fs_dirent_s *dir = NULL;  // 目录项结构体指针，用于文件系统检查
 
     /* Find the node matching the path. */
-    VnodeHold();
+    VnodeHold();                     // 获取vnode操作锁，确保线程安全
+    // 查找路径对应的vnode，第三个参数0表示不创建文件
     ret = VnodeLookup(path, &vnode, 0);
-    if (ret != OK) {
-        VnodeDrop();
-        goto errout;
+    if (ret != OK) {                 // 检查vnode查找是否成功
+        VnodeDrop();                 // 释放vnode操作锁
+        goto errout;                 // 跳转到错误处理
     }
 
+    // 分配目录项结构体内存，zalloc会初始化为0
     dir = (struct fs_dirent_s *)zalloc(sizeof(struct fs_dirent_s));
-    if (!dir) {
+    if (!dir) {                      // 检查内存分配是否成功
         /* Insufficient memory to complete the operation. */
-        ret = -ENOMEM;
-        VnodeDrop();
-        goto errout;
+        ret = -ENOMEM;               // 设置返回值为内存不足错误
+        VnodeDrop();                 // 释放vnode操作锁
+        goto errout;                 // 跳转到错误处理
     }
 
+    // 检查vnode操作集是否存在且包含Fscheck方法
     if (vnode->vop && vnode->vop->Fscheck) {
+        // 调用具体文件系统的Fscheck实现进行文件系统检查
         ret = vnode->vop->Fscheck(vnode, dir);
-        if (ret != OK) {
-            VnodeDrop();
-            goto errout_with_direntry;
+        if (ret != OK) {             // 检查文件系统检查是否成功
+            VnodeDrop();             // 释放vnode操作锁
+            goto errout_with_direntry;  // 跳转到带目录项的错误处理
         }
     } else {
-        ret = -ENOSYS;
-        VnodeDrop();
-        goto errout_with_direntry;
+        ret = -ENOSYS;               // 设置返回值为操作未实现错误
+        VnodeDrop();                 // 释放vnode操作锁
+        goto errout_with_direntry;   // 跳转到带目录项的错误处理
     }
-    VnodeDrop();
+    VnodeDrop();                     // 释放vnode操作锁
 
-    free(dir);
-    return 0;
+    free(dir);                       // 释放目录项结构体内存
+    return 0;                        // 文件系统检查成功，返回0
 
-errout_with_direntry:
-    free(dir);
-errout:
-    set_errno(-ret);
-    return VFS_ERROR;
+errout_with_direntry:                // 带目录项的错误处理标签
+    free(dir);                       // 释放目录项结构体内存
+errout:                             // 错误处理标签
+    set_errno(-ret);                 // 将返回值转换为errno并设置
+    return VFS_ERROR;                // 返回VFS错误
 }

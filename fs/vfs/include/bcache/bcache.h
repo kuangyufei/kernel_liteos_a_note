@@ -43,82 +43,82 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define ALIGN_LIB(x)          (((x) + (HALARC_ALIGNMENT - 1)) & ~(HALARC_ALIGNMENT - 1))
-#define ALIGN_DISP(x)         (HALARC_ALIGNMENT - ((x) & (HALARC_ALIGNMENT - 1)))
-#define BCACHE_PREREAD_PRIO   12
-#define UNSIGNED_INTEGER_BITS 32
-#define UNINT_MAX_SHIFT_BITS  31
-#define UNINT_LOG2_SHIFT      5
-#define PREREAD_BLOCK_NUM     2
-#define EVEN_JUDGED           2
-#define PERCENTAGE            100
-#define PREREAD_EVENT_MASK    0xf
+#define ALIGN_LIB(x)          (((x) + (HALARC_ALIGNMENT - 1)) & ~(HALARC_ALIGNMENT - 1))  // 内存对齐宏，将x按HALARC_ALIGNMENT大小对齐
+#define ALIGN_DISP(x)         (HALARC_ALIGNMENT - ((x) & (HALARC_ALIGNMENT - 1)))  // 计算对齐偏移量
+#define BCACHE_PREREAD_PRIO   12  // 预读任务优先级
+#define UNSIGNED_INTEGER_BITS 32  // 无符号整数位数
+#define UNINT_MAX_SHIFT_BITS  31  // 无符号整数最大移位位数
+#define UNINT_LOG2_SHIFT      5  // 用于计算log2的移位值
+#define PREREAD_BLOCK_NUM     2  // 预读块数量
+#define EVEN_JUDGED           2  // 偶数判断值
+#define PERCENTAGE            100  // 百分比基数
+#define PREREAD_EVENT_MASK    0xf  // 预读事件掩码
 
-#if CONFIG_FS_FAT_SECTOR_PER_BLOCK < UNSIGNED_INTEGER_BITS
-#error cache too small
+#if CONFIG_FS_FAT_SECTOR_PER_BLOCK < UNSIGNED_INTEGER_BITS  // 检查每块扇区数是否小于无符号整数位数
+#error cache too small  // 缓存太小错误
 #else
-#define BCACHE_BLOCK_FLAGS (CONFIG_FS_FAT_SECTOR_PER_BLOCK / UNSIGNED_INTEGER_BITS)
+#define BCACHE_BLOCK_FLAGS (CONFIG_FS_FAT_SECTOR_PER_BLOCK / UNSIGNED_INTEGER_BITS)  // 计算块标志数组大小
 #endif
 
-typedef struct {
-    LOS_DL_LIST listNode;   /* list node */
-    LOS_DL_LIST numNode;    /* num node */
-    struct rb_node rbNode;  /* red-black tree node */
-    UINT64 num;             /* block number */
-    UINT32 flag[BCACHE_BLOCK_FLAGS];
-    UINT32 pgHit;
-    UINT8 *data;            /* block data */
-    BOOL modified;          /* is this block data modified (needs write) */
-    BOOL readFlag;          /* is the block data have read from sd(real data) */
-    BOOL readBuff;          /* read write buffer */
-    BOOL used;              /* used or free for write buf */
-    BOOL allDirty;          /* the whole block is dirty */
+typedef struct {  // 缓存块结构体，代表一个缓存块的元数据和数据
+    LOS_DL_LIST listNode;   /* list node */  // 链表节点
+    LOS_DL_LIST numNode;    /* num node */  // 块号链表节点
+    struct rb_node rbNode;  /* red-black tree node */  // 红黑树节点
+    UINT64 num;             /* block number */  // 块号
+    UINT32 flag[BCACHE_BLOCK_FLAGS];  // 块标志数组
+    UINT32 pgHit;  // 页面命中次数
+    UINT8 *data;            /* block data */  // 块数据指针
+    BOOL modified;          /* is this block data modified (needs write) */  // 数据是否被修改
+    BOOL readFlag;          /* is the block data have read from sd(real data) */  // 是否已从SD卡读取真实数据
+    BOOL readBuff;          /* read write buffer */  // 读写缓冲区标志
+    BOOL used;              /* used or free for write buf */  // 是否被写缓冲区使用
+    BOOL allDirty;          /* the whole block is dirty */  // 整个块是否为脏数据
 } OsBcacheBlock;
 
-typedef INT32 (*BcacheReadFun)(struct Vnode *, /* private data */
-                               UINT8 *,        /* block buffer */
-                               UINT32,         /* number of blocks to read */
-                               UINT64);        /* starting block number */
+typedef INT32 (*BcacheReadFun)(struct Vnode *, /* private data */  // 块读取函数指针类型
+                               UINT8 *,        /* block buffer */  // 块缓冲区
+                               UINT32,         /* number of blocks to read */  // 要读取的块数
+                               UINT64);        /* starting block number */  // 起始块号
 
-typedef INT32 (*BcacheWriteFun)(struct Vnode *, /* private data */
-                                const UINT8 *,  /* block buffer */
-                                UINT32,         /* number of blocks to write */
-                                UINT64);        /* starting block number */
+typedef INT32 (*BcacheWriteFun)(struct Vnode *, /* private data */  // 块写入函数指针类型
+                                const UINT8 *,  /* block buffer */  // 块缓冲区
+                                UINT32,         /* number of blocks to write */  // 要写入的块数
+                                UINT64);        /* starting block number */  // 起始块号
 
-struct tagOsBcache;
+struct tagOsBcache;  // 前向声明块缓存结构体
 
-typedef VOID (*BcachePrereadFun)(struct tagOsBcache *,   /* block cache instance space holder */
-                                 const OsBcacheBlock *); /* block data */
+typedef VOID (*BcachePrereadFun)(struct tagOsBcache *,   /* block cache instance space holder */  // 块预读函数指针类型
+                                 const OsBcacheBlock *); /* block data */  // 块数据
 
-typedef struct tagOsBcache {
-    VOID *priv;                   /* private data */
-    LOS_DL_LIST listHead;         /* head of block list */
-    LOS_DL_LIST numHead;          /* block num list */
-    struct rb_root rbRoot;        /* block red-black tree root */
-    UINT32 blockSize;             /* block size in bytes */
-    UINT32 blockSizeLog2;         /* block size log2 */
-    UINT64 blockCount;            /* block count of the disk */
-    UINT32 sectorSize;            /* device sector size in bytes */
-    UINT32 sectorPerBlock;        /* sector count per block */
-    UINT8 *memStart;              /* memory base */
-    UINT32 prereadTaskId;         /* preread task id */
-    UINT64 curBlockNum;           /* current preread block number */
-    LOS_DL_LIST freeListHead;     /* list of free blocks */
-    BcacheReadFun breadFun;       /* block read function */
-    BcacheWriteFun bwriteFun;     /* block write function */
-    BcachePrereadFun prereadFun;  /* block preread function */
-    UINT8 *rwBuffer;              /* buffer for bcache block */
-    pthread_mutex_t bcacheMutex;  /* mutex for bcache */
-    EVENT_CB_S bcacheEvent;       /* event for bcache */
-    UINT32 modifiedBlock;         /* number of modified blocks */
+typedef struct tagOsBcache {  // 块缓存实例结构体，管理整个块缓存系统
+    VOID *priv;                   /* private data */  // 私有数据
+    LOS_DL_LIST listHead;         /* head of block list */  // 块列表头
+    LOS_DL_LIST numHead;          /* block num list */  // 块号列表头
+    struct rb_root rbRoot;        /* block red-black tree root */  // 块红黑树的根
+    UINT32 blockSize;             /* block size in bytes */  // 块大小(字节)
+    UINT32 blockSizeLog2;         /* block size log2 */  // 块大小的log2值
+    UINT64 blockCount;            /* block count of the disk */  // 磁盘总块数
+    UINT32 sectorSize;            /* device sector size in bytes */  // 设备扇区大小(字节)
+    UINT32 sectorPerBlock;        /* sector count per block */  // 每块包含的扇区数
+    UINT8 *memStart;              /* memory base */  // 内存起始地址
+    UINT32 prereadTaskId;         /* preread task id */  // 预读任务ID
+    UINT64 curBlockNum;           /* current preread block number */  // 当前预读块号
+    LOS_DL_LIST freeListHead;     /* list of free blocks */  // 空闲块列表头
+    BcacheReadFun breadFun;       /* block read function */  // 块读取函数
+    BcacheWriteFun bwriteFun;     /* block write function */  // 块写入函数
+    BcachePrereadFun prereadFun;  /* block preread function */  // 块预读函数
+    UINT8 *rwBuffer;              /* buffer for bcache block */  // 块缓存读写缓冲区
+    pthread_mutex_t bcacheMutex;  /* mutex for bcache */  // 块缓存互斥锁
+    EVENT_CB_S bcacheEvent;       /* event for bcache */  // 块缓存事件
+    UINT32 modifiedBlock;         /* number of modified blocks */  // 修改过的块数量
 #ifdef LOSCFG_FS_FAT_CACHE_SYNC_THREAD
-    UINT32 syncTaskId;            /* sync task id */
+    UINT32 syncTaskId;            /* sync task id */  // 同步任务ID
 #endif
-    OsBcacheBlock *wStart;        /* write start block */
-    OsBcacheBlock *wEnd;          /* write end block */
-    UINT64 sumNum;                /* block num sum val */
-    UINT32 nBlock;                /* current block count */
-} OsBcache;
+    OsBcacheBlock *wStart;        /* write start block */  // 写起始块
+    OsBcacheBlock *wEnd;          /* write end block */  // 写结束块
+    UINT64 sumNum;                /* block num sum val */  // 块号总和值
+    UINT32 nBlock;                /* current block count */  // 当前块数量
+} OsBcache;  // 块缓存结构体结束
 
 /**
  * @ingroup  bcache

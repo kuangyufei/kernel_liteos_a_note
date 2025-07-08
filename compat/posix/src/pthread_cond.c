@@ -58,181 +58,240 @@ https://docs.oracle.com/cd/E19253-01/819-7051/sync-13528/index.html
 https://docs.oracle.com/cd/E19253-01/819-7051/6n919hpai/index.html#sync-59145
  * @endverbatim
  */
-
+// 广播事件标志
 #define BROADCAST_EVENT     1
+// 条件变量计数器步长
 #define COND_COUNTER_STEP   0x0004U
+// 条件变量标志掩码（用于提取标志位）
 #define COND_FLAGS_MASK     0x0003U
+// 条件变量计数器掩码（用于提取计数器部分）
 #define COND_COUNTER_MASK   (~COND_FLAGS_MASK)
 
+/**
+ * @brief 检查条件变量是否已初始化
+ * @param cond 条件变量指针
+ * @return 未初始化返回1，已初始化返回0
+ */
 STATIC INLINE INT32 CondInitCheck(const pthread_cond_t *cond)
 {
+    // 检查事件链表是否为空（未初始化状态）
     if ((cond->event.stEventList.pstPrev == NULL) &&
         (cond->event.stEventList.pstNext == NULL)) {
-        return 1;
+        return 1;  // 未初始化
     }
-    return 0;
+    return 0;  // 已初始化
 }
-///获取条件变量的范围，目前只支持获取PTHREAD_PROCESS_PRIVATE条件变量属性  
+
+/**
+ * @brief 获取条件变量属性的进程共享属性
+ * @param attr 条件变量属性指针
+ * @param shared 输出参数，返回共享属性（仅支持PTHREAD_PROCESS_PRIVATE）
+ * @return 成功返回0，失败返回EINVAL
+ */
 int pthread_condattr_getpshared(const pthread_condattr_t *attr, int *shared)
 {
-    if ((attr == NULL) || (shared == NULL)) {
-        return EINVAL;
+    if ((attr == NULL) || (shared == NULL)) {  // 参数校验
+        return EINVAL;  // 返回参数无效错误
     }
 
-    *shared = PTHREAD_PROCESS_PRIVATE;// PTHREAD_PROCESS_PRIVATE，则仅有那些由同一个进程创建的线程才能够处理该互斥锁。
+    *shared = PTHREAD_PROCESS_PRIVATE;  // 仅支持进程内私有
 
-    return 0;
+    return 0;  // 成功返回
 }
-///设置条件变量的范围  
+
+/**
+ * @brief 设置条件变量属性的进程共享属性
+ * @param attr 条件变量属性指针
+ * @param shared 共享属性（仅支持PTHREAD_PROCESS_PRIVATE）
+ * @return 成功返回0，不支持返回ENOSYS，参数无效返回EINVAL
+ */
 int pthread_condattr_setpshared(pthread_condattr_t *attr, int shared)
 {
-    (VOID)attr;
+    (VOID)attr;  // 未使用参数
+    // 校验共享属性值
     if ((shared != PTHREAD_PROCESS_PRIVATE) && (shared != PTHREAD_PROCESS_SHARED)) {
-        return EINVAL;
-    }
-///如果 pshared 属性在共享内存中设置为 PTHREAD_PROCESS_SHARED，则其所创建的条件变量可以在多个进程中的线程之间共享。
-    if (shared != PTHREAD_PROCESS_PRIVATE) {
-        return ENOSYS;
+        return EINVAL;  // 参数无效
     }
 
-    return 0;
+    if (shared != PTHREAD_PROCESS_PRIVATE) {  // 仅支持私有属性
+        return ENOSYS;  // 不支持进程间共享
+    }
+
+    return 0;  // 成功返回
 }
-///销毁条件变量属性对象
+
+/**
+ * @brief 销毁条件变量属性对象
+ * @param attr 条件变量属性指针
+ * @return 成功返回0，参数无效返回EINVAL
+ */
 int pthread_condattr_destroy(pthread_condattr_t *attr)
 {
-    if (attr == NULL) {
-        return EINVAL;
+    if (attr == NULL) {  // 参数校验
+        return EINVAL;  // 返回参数无效错误
     }
 
-    return 0;
+    return 0;  // 成功返回（无实际资源需要释放）
 }
-///初始化条件变量属性对象
+
+/**
+ * @brief 初始化条件变量属性对象
+ * @param attr 条件变量属性指针
+ * @return 成功返回0，参数无效返回EINVAL
+ */
 int pthread_condattr_init(pthread_condattr_t *attr)
 {
-    if (attr == NULL) {
-        return EINVAL;
+    if (attr == NULL) {  // 参数校验
+        return EINVAL;  // 返回参数无效错误
     }
 
-    return 0;
+    return 0;  // 成功返回（无特殊属性需要初始化）
 }
-///销毁条件变量
+
+/**
+ * @brief 销毁条件变量
+ * @param cond 条件变量指针
+ * @return 成功返回0，参数无效返回EINVAL，资源忙返回EBUSY
+ */
 int pthread_cond_destroy(pthread_cond_t *cond)
 {
-    if (cond == NULL) {
-        return EINVAL;
+    if (cond == NULL) {  // 参数校验
+        return EINVAL;  // 返回参数无效错误
     }
 
-    if (CondInitCheck(cond)) {
-        return ENOERR;
+    if (CondInitCheck(cond)) {  // 检查是否未初始化
+        return ENOERR;  // 未初始化状态直接返回成功
     }
 
-    if (LOS_EventDestroy(&cond->event) != LOS_OK) {
-        return EBUSY;
+    if (LOS_EventDestroy(&cond->event) != LOS_OK) {  // 销毁事件
+        return EBUSY;  // 事件资源忙
     }
-    if (pthread_mutex_destroy(cond->mutex) != ENOERR) {
-        PRINT_ERR("%s mutex destroy fail!\n", __FUNCTION__);
-        return EINVAL;
+    if (pthread_mutex_destroy(cond->mutex) != ENOERR) {  // 销毁内部互斥锁
+        PRINT_ERR("%s mutex destroy fail!\n", __FUNCTION__);  // 打印错误信息
+        return EINVAL;  // 返回互斥锁销毁失败
     }
-    free(cond->mutex);
-    cond->mutex = NULL;
-    return ENOERR;
+    free(cond->mutex);  // 释放互斥锁内存
+    cond->mutex = NULL;  // 置空指针
+    return ENOERR;  // 成功返回
 }
 
-/*!
- * @brief pthread_cond_init	初始化条件变量
- *
- * @param attr	指向条件变量属性的指针，若为 NULL 则使用默认属性值
- * @param cond	条件变量句柄，不能为 NULL
- * @return	
- *
- * @see
+/**
+ * @brief 初始化条件变量
+ * @param cond 条件变量指针
+ * @param attr 条件变量属性（未使用）
+ * @return 成功返回0，参数无效返回EINVAL，内存不足返回ENOMEM
  */
 int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
 {
-    int ret = ENOERR;
+    int ret = ENOERR;  // 返回值
 
-    if (cond == NULL) {
-        return EINVAL;
+    if (cond == NULL) {  // 参数校验
+        return EINVAL;  // 返回参数无效错误
     }
-    (VOID)attr;
-    (VOID)LOS_EventInit(&(cond->event));
+    (VOID)attr;  // 未使用属性参数
+    (VOID)LOS_EventInit(&(cond->event));  // 初始化事件
 
+    // 分配内部互斥锁内存
     cond->mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-    if (cond->mutex == NULL) {
-        return ENOMEM;
+    if (cond->mutex == NULL) {  // 内存分配失败
+        return ENOMEM;  // 返回内存不足错误
     }
 
-    (VOID)pthread_mutex_init(cond->mutex, NULL);
+    (VOID)pthread_mutex_init(cond->mutex, NULL);  // 初始化互斥锁
 
-    cond->value = 0;
-    (VOID)pthread_mutex_lock(cond->mutex);
-    cond->count = 0;
-    (VOID)pthread_mutex_unlock(cond->mutex);
+    cond->value = 0;  // 初始化条件变量值
+    (VOID)pthread_mutex_lock(cond->mutex);  // 加互斥锁
+    cond->count = 0;  // 初始化等待计数
+    (VOID)pthread_mutex_unlock(cond->mutex);  // 解互斥锁
 
-    return ret;
+    return ret;  // 成功返回
 }
 
+/**
+ * @brief 修改条件变量值（原子操作）
+ * @param cond 条件变量指针
+ */
 STATIC VOID PthreadCondValueModify(pthread_cond_t *cond)
 {
-    UINT32 flags = ((UINT32)cond->value & COND_FLAGS_MASK);
-    INT32 oldVal, newVal;
+    UINT32 flags = ((UINT32)cond->value & COND_FLAGS_MASK);  // 提取标志位
+    INT32 oldVal, newVal;  // 旧值和新值
 
-    while (true) {
-        oldVal = cond->value;
+    while (true) {  // 循环直到原子操作成功
+        oldVal = cond->value;  // 获取当前值
+        // 计算新值：计数器减步长，保留标志位
         newVal = (INT32)(((UINT32)(oldVal - COND_COUNTER_STEP) & COND_COUNTER_MASK) | flags);
+        // 原子比较并交换值
         if (LOS_AtomicCmpXchg32bits(&cond->value, newVal, oldVal) == 0) {
-            break;
+            break;  // 交换成功，退出循环
         }
     }
 }
-///解除若干已被等待条件阻塞的线程 
+
+/**
+ * @brief 广播唤醒所有等待在条件变量上的线程
+ * @param cond 条件变量指针
+ * @return 成功返回0，参数无效返回EINVAL
+ */
 int pthread_cond_broadcast(pthread_cond_t *cond)
 {
-    int ret = ENOERR;
+    int ret = ENOERR;  // 返回值
 
-    if (cond == NULL) {
-        return EINVAL;
+    if (cond == NULL) {  // 参数校验
+        return EINVAL;  // 返回参数无效错误
     }
 
-    (VOID)pthread_mutex_lock(cond->mutex);
-    if (cond->count > 0) {
-        cond->count = 0;
-        (VOID)pthread_mutex_unlock(cond->mutex);
+    (VOID)pthread_mutex_lock(cond->mutex);  // 加互斥锁
+    if (cond->count > 0) {  // 有等待线程
+        cond->count = 0;  // 重置等待计数
+        (VOID)pthread_mutex_unlock(cond->mutex);  // 解互斥锁
 
-        PthreadCondValueModify(cond);
+        PthreadCondValueModify(cond);  // 修改条件变量值
 
-        (VOID)LOS_EventWrite(&(cond->event), BROADCAST_EVENT);//写事件
-        return ret;
+        (VOID)LOS_EventWrite(&(cond->event), BROADCAST_EVENT);  // 写入广播事件
+        return ret;  // 返回成功
     }
-    (VOID)pthread_mutex_unlock(cond->mutex);
+    (VOID)pthread_mutex_unlock(cond->mutex);  // 解互斥锁
 
-    return ret;
+    return ret;  // 无等待线程，直接返回
 }
-///解除被阻塞的线程/发送满足条件信号量
+
+/**
+ * @brief 唤醒一个等待在条件变量上的线程
+ * @param cond 条件变量指针
+ * @return 成功返回0，参数无效返回EINVAL
+ */
 int pthread_cond_signal(pthread_cond_t *cond)
 {
-    int ret = ENOERR;
+    int ret = ENOERR;  // 返回值
 
-    if (cond == NULL) {
-        return EINVAL;
+    if (cond == NULL) {  // 参数校验
+        return EINVAL;  // 返回参数无效错误
     }
 
-    (VOID)pthread_mutex_lock(cond->mutex);
-    if (cond->count > 0) {
-        cond->count--;
-        (VOID)pthread_mutex_unlock(cond->mutex);
-        PthreadCondValueModify(cond);
-        (VOID)OsEventWriteOnce(&(cond->event), 0x01);//只写一次,也就是解除一个线程的阻塞
+    (VOID)pthread_mutex_lock(cond->mutex);  // 加互斥锁
+    if (cond->count > 0) {  // 有等待线程
+        cond->count--;  // 等待计数减1
+        (VOID)pthread_mutex_unlock(cond->mutex);  // 解互斥锁
+        PthreadCondValueModify(cond);  // 修改条件变量值
+        (VOID)OsEventWriteOnce(&(cond->event), 0x01);  // 写入信号事件（确保只唤醒一个线程）
 
-        return ret;
+        return ret;  // 返回成功
     }
-    (VOID)pthread_mutex_unlock(cond->mutex);
+    (VOID)pthread_mutex_unlock(cond->mutex);  // 解互斥锁
 
-    return ret;
+    return ret;  // 无等待线程，直接返回
 }
 
+/**
+ * @brief 条件变量等待子函数（内部实现）
+ * @param cond 条件变量指针
+ * @param value 条件变量期望值
+ * @param ticks 等待超时时间（ticks）
+ * @return 事件值或错误码
+ */
 STATIC INT32 PthreadCondWaitSub(pthread_cond_t *cond, INT32 value, UINT32 ticks)
 {
+    // 事件条件结构体：检查条件变量值是否变化
     EventCond eventCond = { &cond->value, value, ~0x01U };
     /*
      * When the scheduling lock is held:
@@ -244,147 +303,160 @@ STATIC INT32 PthreadCondWaitSub(pthread_cond_t *cond, INT32 value, UINT32 ticks)
      * (2) value is equal to cond->value, block the current thread
      * and wait to be awakened by other threads.
      */
+    // 带条件的事件读取：若条件变量值变化则不阻塞
     return (int)OsEventReadWithCond(&eventCond, &(cond->event), 0x0fU,
                                     LOS_WAITMODE_OR | LOS_WAITMODE_CLR, ticks);
 }
+
+/**
+ * @brief 减少条件变量等待计数
+ * @param cond 条件变量指针
+ */
 STATIC VOID PthreadCountSub(pthread_cond_t *cond)
 {
-    (VOID)pthread_mutex_lock(cond->mutex);
-    if (cond->count > 0) {
-        cond->count--;
+    (VOID)pthread_mutex_lock(cond->mutex);  // 加互斥锁
+    if (cond->count > 0) {  // 等待计数大于0
+        cond->count--;  // 计数减1
     }
-    (VOID)pthread_mutex_unlock(cond->mutex);
+    (VOID)pthread_mutex_unlock(cond->mutex);  // 解互斥锁
 }
 
+/**
+ * @brief 处理等待返回值
+ * @param cond 条件变量指针
+ * @param val 原始返回值
+ * @return 转换后的错误码
+ */
 STATIC INT32 ProcessReturnVal(pthread_cond_t *cond, INT32 val)
 {
-    INT32 ret;
+    INT32 ret;  // 处理后的返回值
     switch (val) {
         /* 0: event does not occur */
-        case 0:
-        case BROADCAST_EVENT:
-            ret = ENOERR;
+        case 0:               // 事件未发生
+        case BROADCAST_EVENT: // 广播事件
+            ret = ENOERR;     // 成功返回
             break;
-        case LOS_ERRNO_EVENT_READ_TIMEOUT:
-            PthreadCountSub(cond);
-            ret = ETIMEDOUT;
+        case LOS_ERRNO_EVENT_READ_TIMEOUT:  // 超时错误
+            PthreadCountSub(cond);          // 减少等待计数
+            ret = ETIMEDOUT;                // 返回超时错误
             break;
-        default:
-            PthreadCountSub(cond);
-            ret = EINVAL;
+        default:  // 其他错误
+            PthreadCountSub(cond);  // 减少等待计数
+            ret = EINVAL;           // 返回参数无效错误
             break;
     }
-    return ret;
+    return ret;  // 返回处理后的结果
 }
 
-/*!
- * @brief pthread_cond_timedwait	
- * 等待条件 在指定的时间之前阻塞,函数会一直阻塞，直到该条件获得信号，或者最后一个参数所指定的时间已过为止。
- * @param absTime	指定的等待时间，单位是操作系统时钟节拍（OS Tick）
- * @param cond	条件变量句柄，不能为 NULL
- * @param mutex	指向互斥锁控制块的指针，不能为 NULL
- * @return	
- *		此函数和 pthread_cond_wait() 函数唯一的差别在于，如果条件变量不可用，线程将被阻塞 abstime 时长，
- *		超时后函数将直接返回 ETIMEDOUT 错误码，线程将会被唤醒进入就绪态。
- * @see
+/**
+ * @brief 带超时的条件变量等待
+ * @param cond 条件变量指针
+ * @param mutex 关联的互斥锁
+ * @param absTime 绝对超时时间
+ * @return 成功返回0，错误返回对应的错误码
  */
 int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
                            const struct timespec *absTime)
 {
-    UINT32 absTicks;
-    INT32 ret;
-    INT32 oldValue;
+    UINT32 absTicks;  // 绝对超时时间（ticks）
+    INT32 ret;        // 返回值
+    INT32 oldValue;   // 条件变量旧值
 
-    pthread_testcancel();
-    if ((cond == NULL) || (mutex == NULL) || (absTime == NULL)) {
-        return EINVAL;
+    pthread_testcancel();  // 检查取消请求
+    if ((cond == NULL) || (mutex == NULL) || (absTime == NULL)) {  // 参数校验
+        return EINVAL;  // 返回参数无效错误
     }
 
-    if (CondInitCheck(cond)) {
-        ret = pthread_cond_init(cond, NULL);
-        if (ret != ENOERR) {
-            return ret;
+    if (CondInitCheck(cond)) {  // 检查条件变量是否未初始化
+        ret = pthread_cond_init(cond, NULL);  // 自动初始化
+        if (ret != ENOERR) {  // 初始化失败
+            return ret;       // 返回错误
         }
     }
-    oldValue = cond->value;
+    oldValue = cond->value;  // 保存条件变量当前值
 
-    (VOID)pthread_mutex_lock(cond->mutex);
-    cond->count++;
-    (VOID)pthread_mutex_unlock(cond->mutex);
+    (VOID)pthread_mutex_lock(cond->mutex);  // 加内部互斥锁
+    cond->count++;  // 等待计数加1
+    (VOID)pthread_mutex_unlock(cond->mutex);  // 解内部互斥锁
 
-    if ((absTime->tv_sec == 0) && (absTime->tv_nsec == 0)) {
-        return ETIMEDOUT;
+    if ((absTime->tv_sec == 0) && (absTime->tv_nsec == 0)) {  // 超时时间为0
+        return ETIMEDOUT;  // 直接返回超时
     }
 
-    if (!ValidTimeSpec(absTime)) {
-        return EINVAL;
+    if (!ValidTimeSpec(absTime)) {  // 校验时间格式
+        return EINVAL;  // 返回参数无效错误
     }
 
-    absTicks = OsTimeSpec2Tick(absTime);
-    if (pthread_mutex_unlock(mutex) != ENOERR) {
-        PRINT_ERR("%s: %d failed\n", __FUNCTION__, __LINE__);
+    absTicks = OsTimeSpec2Tick(absTime);  // 将timespec转换为ticks
+    if (pthread_mutex_unlock(mutex) != ENOERR) {  // 释放用户提供的互斥锁
+        PRINT_ERR("%s: %d failed\n", __FUNCTION__, __LINE__);  // 打印错误信息
     }
 
-#ifndef LOSCFG_ARCH_CORTEX_M7
-    ret = PthreadCondWaitSub(cond, oldValue, absTicks);
-#else
+#ifndef LOSCFG_ARCH_CORTEX_M7  // 非Cortex-M7架构
+    ret = PthreadCondWaitSub(cond, oldValue, absTicks);  // 带条件等待事件
+#else  // Cortex-M7架构特殊处理
     ret = (INT32)LOS_EventRead(&(cond->event), 0x0f, LOS_WAITMODE_OR | LOS_WAITMODE_CLR, absTicks);
 #endif
-    if (pthread_mutex_lock(mutex) != ENOERR) {
-        PRINT_ERR("%s: %d failed\n", __FUNCTION__, __LINE__);
+    if (pthread_mutex_lock(mutex) != ENOERR) {  // 重新获取用户提供的互斥锁
+        PRINT_ERR("%s: %d failed\n", __FUNCTION__, __LINE__);  // 打印错误信息
     }
 
-    ret = ProcessReturnVal(cond, ret);
-    pthread_testcancel();
-    return ret;
+    ret = ProcessReturnVal(cond, ret);  // 处理返回值
+    pthread_testcancel();  // 检查取消请求
+    return ret;  // 返回结果
 }
-///阻塞方式获取条件变量,阻塞的线程可以通过 pthread_cond_signal() 或 pthread_cond_broadcast() 唤醒
+
+/**
+ * @brief 无条件等待条件变量
+ * @param cond 条件变量指针
+ * @param mutex 关联的互斥锁
+ * @return 成功返回0，错误返回对应的错误码
+ */
 int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
-    int ret;
-    int oldValue;
+    int ret;         // 返回值
+    int oldValue;    // 条件变量旧值
 
-    if ((cond == NULL) || (mutex == NULL)) {
-        return EINVAL;
+    if ((cond == NULL) || (mutex == NULL)) {  // 参数校验
+        return EINVAL;  // 返回参数无效错误
     }
 
-    if (CondInitCheck(cond)) {
-        ret = pthread_cond_init(cond, NULL);
-        if (ret != ENOERR) {
-            return ret;
+    if (CondInitCheck(cond)) {  // 检查条件变量是否未初始化
+        ret = pthread_cond_init(cond, NULL);  // 自动初始化
+        if (ret != ENOERR) {  // 初始化失败
+            return ret;       // 返回错误
         }
     }
-    oldValue = cond->value;
+    oldValue = cond->value;  // 保存条件变量当前值
 
-    (VOID)pthread_mutex_lock(cond->mutex);
-    cond->count++;
-    (VOID)pthread_mutex_unlock(cond->mutex);
+    (VOID)pthread_mutex_lock(cond->mutex);  // 加内部互斥锁
+    cond->count++;  // 等待计数加1
+    (VOID)pthread_mutex_unlock(cond->mutex);  // 解内部互斥锁
 
-    if (pthread_mutex_unlock(mutex) != ENOERR) {
-        PRINT_ERR("%s: %d failed\n", __FUNCTION__, __LINE__);
+    if (pthread_mutex_unlock(mutex) != ENOERR) {  // 释放用户提供的互斥锁
+        PRINT_ERR("%s: %d failed\n", __FUNCTION__, __LINE__);  // 打印错误信息
     }
 
-#ifndef LOSCFG_ARCH_CORTEX_M7
-    ret = PthreadCondWaitSub(cond, oldValue, LOS_WAIT_FOREVER);
-#else
+#ifndef LOSCFG_ARCH_CORTEX_M7  // 非Cortex-M7架构
+    ret = PthreadCondWaitSub(cond, oldValue, LOS_WAIT_FOREVER);  // 永久等待
+#else  // Cortex-M7架构特殊处理
     ret = (INT32)LOS_EventRead(&(cond->event), 0x0f, LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
 #endif
-    if (pthread_mutex_lock(mutex) != ENOERR) {
-        PRINT_ERR("%s: %d failed\n", __FUNCTION__, __LINE__);
+    if (pthread_mutex_lock(mutex) != ENOERR) {  // 重新获取用户提供的互斥锁
+        PRINT_ERR("%s: %d failed\n", __FUNCTION__, __LINE__);  // 打印错误信息
     }
 
-    switch (ret) {
+    switch (ret) {  // 处理返回值
         /* 0: event does not occur */
-        case 0:
-        case BROADCAST_EVENT:
-            ret = ENOERR;
+        case 0:               // 事件未发生
+        case BROADCAST_EVENT: // 广播事件
+            ret = ENOERR;     // 成功返回
             break;
-        default:
-            PthreadCountSub(cond);
-            ret = EINVAL;
+        default:  // 其他错误
+            PthreadCountSub(cond);  // 减少等待计数
+            ret = EINVAL;           // 返回参数无效错误
             break;
     }
 
-    return ret;
+    return ret;  // 返回结果
 }
-

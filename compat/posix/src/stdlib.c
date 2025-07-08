@@ -34,38 +34,64 @@
 #include <errno.h>
 #include "los_printf.h"
 #include "los_exc.h"
-
+/**
+ * @brief   获取环境变量的值
+ * @param   name 环境变量名
+ * @return  成功返回环境变量值的指针，当前未实现返回NULL
+ */
 char *getenv(const char *name)
 {
-    return NULL;
+    return NULL;  // 当前未实现环境变量功能，直接返回NULL
 }
-/// 初始化随机数生成器
+
+/**
+ * @brief   设置随机数生成器的种子
+ * @param   s 随机数种子值
+ */
 void srand(unsigned s)
 {
-    return srandom(s);
+    return srandom(s);  // 调用srandom函数设置随机数种子
 }
-/// 生成伪随机数
+
+/**
+ * @brief   生成一个随机整数
+ * @return  返回生成的随机整数
+ */
 int rand(void)
 {
-   return random();
+    return random();  // 调用random函数获取随机数
 }
 
+/**
+ * @brief   终止当前进程（不执行清理操作）
+ * @param   status 进程退出状态
+ * @note    当前未支持，会打印错误信息并进入死循环
+ */
 void _exit(int status)
 {
-    PRINT_ERR("%s NOT SUPPORT\n", __FUNCTION__);
-    errno = ENOSYS;
-    while (1);
+    PRINT_ERR("%s NOT SUPPORT\n", __FUNCTION__);  // 打印不支持的错误信息
+    errno = ENOSYS;                               // 设置错误码为系统调用未实现
+    while (1);                                    // 进入死循环，防止程序继续执行
 }
 
+/**
+ * @brief   终止当前进程（执行清理操作）
+ * @param   status 进程退出状态
+ * @note    当前未支持，会打印错误信息并进入死循环
+ */
 void exit(int status)
 {
-    PRINT_ERR("%s NOT SUPPORT\n", __FUNCTION__);
-    errno = ENOSYS;
-    while (1);
+    PRINT_ERR("%s NOT SUPPORT\n", __FUNCTION__);  // 打印不支持的错误信息
+    errno = ENOSYS;                               // 设置错误码为系统调用未实现
+    while (1);                                    // 进入死循环，防止程序继续执行
 }
-/// 中止线程执行
+
+/**
+ * @brief   异常终止当前进程
+ * @note    调用LOS_Panic打印中止信息并进入死循环
+ */
 void abort(void)
 {
-    LOS_Panic("System was being aborted\n");
-    while (1);
+    LOS_Panic("System was being aborted\n");  // 打印系统中止信息
+    while (1);                                // 进入死循环，防止程序继续执行
 }

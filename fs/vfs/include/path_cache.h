@@ -35,17 +35,21 @@
 #include "fs/mount.h"
 #include "vnode.h"
 
-struct PathCache {//路径缓存
-    struct Vnode *parentVnode;    /* vnode points to the cache */	
-    struct Vnode *childVnode;     /* vnode the cache points to */
-    LIST_ENTRY parentEntry;       /* list entry for cache list in the parent vnode */
-    LIST_ENTRY childEntry;        /* list entry for cache list in the child vnode */
-    LIST_ENTRY hashEntry;         /* list entry for buckets in the hash table */
-    uint8_t nameLen;              /* length of path component */
+/**
+ * @brief 路径缓存结构体
+ * @details 用于缓存文件系统路径与vnode之间的映射关系，提高路径查找效率
+ */
+struct PathCache {
+    struct Vnode *parentVnode;    /* 指向父vnode的指针，即缓存项所属的目录vnode */
+    struct Vnode *childVnode;     /* 指向子vnode的指针，即缓存项指向的目标vnode */
+    LIST_ENTRY parentEntry;       /* 父vnode中缓存列表的链表项 */
+    LIST_ENTRY childEntry;        /* 子vnode中缓存列表的链表项 */
+    LIST_ENTRY hashEntry;         /* 哈希表桶中的链表项，用于快速查找 */
+    uint8_t nameLen;              /* 路径组件名称的长度 */
 #ifdef LOSCFG_DEBUG_VERSION
-    int hit;                      /* cache hit count*/
+    int hit;                      /* 缓存命中计数器，调试版本有效 */
 #endif
-    char name[0];                 /* path component name */
+    char name[0];                 /* 路径组件名称，柔性数组存储实际字符串 */
 };
 
 int PathCacheInit(void);

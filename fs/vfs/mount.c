@@ -36,74 +36,84 @@
 #else
 #include "stdlib.h"
 #endif
-
-#ifdef LOSCFG_MNT_CONTAINER
-#include "los_mnt_container_pri.h"
-static LIST_HEAD *g_mountCache = NULL;
-#else
-static LIST_HEAD *g_mountList = NULL;//挂载点链表,上面挂的是系统所有挂载点
+#ifdef LOSCFG_MNT_CONTAINER                          // 如果启用容器挂载功能
+#include "los_mnt_container_pri.h"                  // 包含容器挂载私有头文件
+static LIST_HEAD *g_mountCache = NULL;               // 挂载缓存列表指针
+#else                                                // 否则(不启用容器挂载功能)
+static LIST_HEAD *g_mountList = NULL;                // 挂载列表指针
 #endif
 
-/*	在内核MountAlloc只被VnodeDevInit调用,但真实情况下它还将被系统调用 mount()调用
-* int mount(const char *source, const char *target,
-          const char *filesystemtype, unsigned long mountflags,
-          const void *data)
-  mount见于..\code-2.0-canary\third_party\NuttX\fs\mount\fs_mount.c
-  vnodeBeCovered: /dev/mmcblk0 
-*/
+/**
+ * @brief 分配并初始化挂载结构体
+ * @param vnodeBeCovered 被覆盖的虚拟节点
+ * @param fsop 文件系统操作集
+ * @return 成功返回挂载结构体指针，失败返回NULL
+ */
 struct Mount *MountAlloc(struct Vnode *vnodeBeCovered, struct MountOps *fsop)
 {
-    struct Mount *mnt = (struct Mount*)zalloc(sizeof(struct Mount));//申请一个mount结构体内存,小内存分配用 zalloc
-    if (mnt == NULL) {
-        PRINT_ERR("MountAlloc failed no memory!\n");
-        return NULL;
+    struct Mount *mnt = (struct Mount *)zalloc(sizeof(struct Mount));  // 分配挂载结构体内存
+    if (mnt == NULL) {                                                // 检查内存分配是否失败
+        PRINT_ERR("MountAlloc failed no memory!\n");                   // 输出内存分配失败错误信息
+        return NULL;                                                  // 返回NULL表示失败
     }
 
-    LOS_ListInit(&mnt->activeVnodeList);//初始化激活索引节点链表
-    LOS_ListInit(&mnt->vnodeList);//初始化索引节点链表
+    LOS_ListInit(&mnt->activeVnodeList);  // 初始化活跃虚拟节点链表
+    LOS_ListInit(&mnt->vnodeList);        // 初始化虚拟节点链表
 
-    mnt->vnodeBeCovered = vnodeBeCovered;//设备将装载到vnodeBeCovered节点上
-    vnodeBeCovered->newMount = mnt;//该节点不再是虚拟节点,而作为 设备结点
-#ifdef LOSCFG_DRIVERS_RANDOM	//随机值	驱动模块
-    HiRandomHwInit();//随机值初始化
-    (VOID)HiRandomHwGetInteger(&mnt->hashseed);//用于生成哈希种子
-    HiRandomHwDeinit();//随机值反初始化
-#else
-    mnt->hashseed = (uint32_t)random(); //随机生成哈子种子
+    mnt->vnodeBeCovered = vnodeBeCovered;  // 设置被覆盖的虚拟节点
+    vnodeBeCovered->newMount = mnt;        // 将挂载结构体指针保存到虚拟节点
+#ifdef LOSCFG_DRIVERS_RANDOM               // 如果启用随机数驱动
+    HiRandomHwInit();                      // 初始化硬件随机数生成器
+    (VOID)HiRandomHwGetInteger(&mnt->hashseed);  // 获取硬件随机数作为哈希种子
+    HiRandomHwDeinit();                    // 反初始化硬件随机数生成器
+#else                                      // 否则(不启用随机数驱动)
+    mnt->hashseed = (uint32_t)random();    // 使用软件随机数作为哈希种子
 #endif
-    return mnt;
+    return mnt;                            // 返回初始化后的挂载结构体指针
 }
 
-#ifdef LOSCFG_MNT_CONTAINER
+#ifdef LOSCFG_MNT_CONTAINER                          // 如果启用容器挂载功能
+/**
+ * @brief 获取容器挂载列表
+ * @return 容器挂载列表头指针
+ */
 LIST_HEAD *GetMountList(void)
 {
-    return GetContainerMntList();
+    return GetContainerMntList();  // 返回容器挂载列表
 }
 
+/**
+ * @brief 获取挂载缓存列表
+ * @return 挂载缓存列表头指针
+ */
 LIST_HEAD *GetMountCache(void)
 {
-    if (g_mountCache == NULL) {
-        g_mountCache = zalloc(sizeof(LIST_HEAD));
-        if (g_mountCache == NULL) {
-            PRINT_ERR("init cache mount list failed, no memory.");
-            return NULL;
+    if (g_mountCache == NULL) {                       // 如果挂载缓存列表未初始化
+        g_mountCache = zalloc(sizeof(LIST_HEAD));     // 分配挂载缓存列表内存
+        if (g_mountCache == NULL) {                   // 检查内存分配是否失败
+            PRINT_ERR("init cache mount list failed, no memory.");  // 输出初始化失败错误信息
+            return NULL;                              // 返回NULL表示失败
         }
-        LOS_ListInit(g_mountCache);
+        LOS_ListInit(g_mountCache);                   // 初始化挂载缓存列表
     }
-    return g_mountCache;
+    return g_mountCache;                              // 返回挂载缓存列表头指针
 }
-#else
-///获取装载链表,并初始化
+#else                                                // 否则(不启用容器挂载功能)
+/**
+ * @brief 获取挂载列表
+ * @return 挂载列表头指针
+ */
 LIST_HEAD* GetMountList(void)
 {
-    if (g_mountList == NULL) {
-        g_mountList = zalloc(sizeof(LIST_HEAD));//分配内存, 小内存分配用 zalloc
-        if (g_mountList == NULL) {
-            PRINT_ERR("init mount list failed, no memory.");
-            return NULL;
+    if (g_mountList == NULL) {                        // 如果挂载列表未初始化
+        g_mountList = zalloc(sizeof(LIST_HEAD));      // 分配挂载列表内存
+        if (g_mountList == NULL) {                    // 检查内存分配是否失败
+            PRINT_ERR("init mount list failed, no memory.");  // 输出初始化失败错误信息
+            return NULL;                              // 返回NULL表示失败
         }
-        LOS_ListInit(g_mountList);//初始化全局链表
+        LOS_ListInit(g_mountList);                    // 初始化挂载列表
     }
-    return g_mountList;//所有文件系统的挂载信息
+    return g_mountList;                               // 返回挂载列表头指针
 }
+#endif
 #endif
