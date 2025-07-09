@@ -37,21 +37,38 @@
 #include "errcode_fat.h"
 #include "integer.h"
 #ifdef LOSCFG_FS_FAT
-
+/**
+ * @brief 存储文件系统卷标
+ * @note 长度由LABEL_LEN宏定义，用于格式化时设置卷标信息
+ */
 char FatLabel[LABEL_LEN];
+
+/**
+ * @brief 设备名称前缀长度定义
+ * @note 用于判断输入设备路径是否以"/dev"开头
+ */
 #define DEV_NAME_SIZE 4
 
+/**
+ * @brief 文件系统格式化主函数
+ * @param dev 设备节点路径（必须以"/dev"开头）
+ * @param sectors 分配单元大小（字节或扇区为单位，0表示使用默认大小）
+ * @param option 文件系统类型选项（1:FAT, 2:FAT32, 7:自动选择, 8:擦除设备）
+ * @return 成功返回0，失败返回-1并设置errno
+ * @note 函数会调用fatfs_mkfs执行实际格式化操作，并处理虚拟分区错误
+ */
 int format(const char *dev, int sectors, int option)
 {
-    struct Vnode *device = NULL;
-    INT err;
-    if (dev == NULL) {
-        set_errno(EINVAL);
-        return -1;
+    struct Vnode *device = NULL;  // 设备节点指针
+    INT err;                      // 错误码变量
+    if (dev == NULL) {            // 检查设备路径是否为空
+        set_errno(EINVAL);        // 设置参数无效错误
+        return -1;                // 返回错误
     }
 
+    // 检查设备路径是否以"/dev"开头
     if (strncmp(dev, "/dev", DEV_NAME_SIZE) != 0) {
-        PRINTK("Usage  :\n");
+        PRINTK("Usage  :\n");  // 打印使用说明
         PRINTK("        format <dev_vnodename> <sectors> <option> <label>\n");
         PRINTK("        dev_vnodename : the name of dev\n");
         PRINTK("        sectors       : Size of allocation unit in unit of byte or sector, ");
@@ -59,57 +76,68 @@ int format(const char *dev, int sectors, int option)
         PRINTK("        options       : Index of filesystem. 1 for FAT filesystem, 2 for FAT32 filesystem, ");
         PRINTK("7 for any, 8 for erase\n");
         PRINTK("        label         : The volume of device. It will be emptyed when this parameter is null\n");
-        PRINTK("Example:\n");
+        PRINTK("Example:\n");       // 打印示例命令
         PRINTK("        format /dev/mmcblk0 128 2\n");
 
-        set_errno(EINVAL);
-        return -1;
+        set_errno(EINVAL);        // 设置参数无效错误
+        return -1;                // 返回错误
     }
-    VnodeHold();
+    VnodeHold();                  // 获取Vnode锁
+    // 查找设备节点
     err = VnodeLookup(dev, &device, 0);
+    // 处理设备不存在或不支持的情况
     if (err == -ENOENT || err == -ENOSYS) {
-        VnodeDrop();
-        set_errno(ENODEV);
-        return -1;
-    } else if (err < 0) {
-        VnodeDrop();
-        set_errno(-err);
-        return -1;
+        VnodeDrop();              // 释放Vnode锁
+        set_errno(ENODEV);        // 设置设备不存在错误
+        return -1;                // 返回错误
+    } else if (err < 0) {         // 处理其他查找错误
+        VnodeDrop();              // 释放Vnode锁
+        set_errno(-err);          // 设置错误码
+        return -1;                // 返回错误
     }
+    // 调用fatfs_mkfs执行格式化
     err = fatfs_mkfs(device, sectors, option);
-    if (err < 0) {
-        VnodeDrop();
-        set_errno(-err);
-        return -1;
+    if (err < 0) {                // 处理格式化错误
+        VnodeDrop();              // 释放Vnode锁
+        set_errno(-err);          // 设置错误码
+        return -1;                // 返回错误
     }
 #ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
+    // 处理虚拟分区错误
     else if (err >= VIRERR_BASE) {
-        set_errno(err);
+        set_errno(err);           // 设置虚拟分区错误码
     }
 #endif
-    VnodeDrop();
-    return 0;
+    VnodeDrop();                  // 释放Vnode锁
+    return 0;                     // 返回成功
 }
 
+/**
+ * @brief 设置文件系统卷标
+ * @param name 卷标名称字符串（可为空）
+ * @note 卷标长度限制为LABEL_LEN-1，超出部分会被截断
+ */
 void set_label(const char *name)
 {
-    INT len;
-    INT err;
+    INT len;                      // 字符串长度变量
+    INT err;                      // 错误码变量
 
+    // 初始化卷标缓冲区
     (void)memset_s(FatLabel, LABEL_LEN, 0, LABEL_LEN);
 
-    if (name == NULL || *name == '\0') {
-        return;
+    if (name == NULL || *name == '\0') {  // 检查卷标是否为空
+        return;                     // 直接返回
     }
 
-    len = strlen(name);
-    if (len >= LABEL_LEN) {
-        len = LABEL_LEN - 1;
+    len = strlen(name);            // 获取卷标长度
+    if (len >= LABEL_LEN) {        // 检查长度是否超出限制
+        len = LABEL_LEN - 1;       // 截断到最大允许长度
     }
 
+    // 复制卷标到缓冲区
     err = strncpy_s(FatLabel, LABEL_LEN, name, len);
-    if (err != EOK) {
-        PRINT_ERR("Fat set_label error");
+    if (err != EOK) {              // 检查复制是否成功
+        PRINT_ERR("Fat set_label error");  // 打印错误信息
     }
 }
 #endif    /* #ifdef CONFIG_FS_FAT */

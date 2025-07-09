@@ -244,7 +244,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdQueueInfoGet(UINT32 argc, const CHAR **a
     OsQueueCheck();  // 检查并输出队列信息
     return LOS_OK;  // 返回成功
 }
-#endif
+
 SHELLCMD_ENTRY(queue_shellcmd, CMD_TYPE_EX, "queue", 0, (CmdCallBackFunc)OsShellCmdQueueInfoGet);
 #endif /* LOSCFG_SHELL */
 #endif /* LOSCFG_DEBUG_QUEUE */

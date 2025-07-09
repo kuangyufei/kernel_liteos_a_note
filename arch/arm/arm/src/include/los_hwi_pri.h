@@ -44,15 +44,17 @@ extern "C" {
  * @ingroup los_hwi
  * The hwi form does not contain exceptions for Aarch32
  */
-#define OS_HWI_FORM_EXC_NUM 0
-#if OS_HWI_FORM_EXC_NUM != 0
-#error "OS_HWI_FORM_EXC_NUM must be zero"
+/* 硬件中断表单异常数量定义 */
+#define OS_HWI_FORM_EXC_NUM 0                               /* 异常中断数量，必须为0 */
+#if OS_HWI_FORM_EXC_NUM != 0                                /* 条件编译：检查异常中断数量是否为0 */
+#error "OS_HWI_FORM_EXC_NUM must be zero"                   /* 编译错误：异常中断数量必须为0 */
 #endif
 
-#ifdef LOSCFG_NO_SHARED_IRQ	//不共享中断
-#define HWI_IS_REGISTED(num)             ((&g_hwiForm[num])->pfnHook != NULL)
-#else
-#define HWI_IS_REGISTED(num)             ((&g_hwiForm[num])->pstNext != NULL)
+/* 硬件中断注册状态判断宏 */
+#ifdef LOSCFG_NO_SHARED_IRQ                                 /* 条件编译：禁用中断共享功能时 */
+#define HWI_IS_REGISTED(num)             ((&g_hwiForm[num])->pfnHook != NULL)  /* 判断中断是否注册：检查中断钩子函数是否为空 */
+#else                                                        /* 条件编译：启用中断共享功能时 */
+#define HWI_IS_REGISTED(num)             ((&g_hwiForm[num])->pstNext != NULL)  /* 判断中断是否注册：检查中断链表下一个节点是否为空 */
 #endif
 extern VOID OsHwiInit(VOID);
 extern VOID OsIncHwiFormCnt(UINT16 cpuid, UINT32 index);

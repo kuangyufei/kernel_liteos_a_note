@@ -694,7 +694,9 @@ STATIC VOID HPFPriorityRestore(LosTaskCB *owner, const LOS_DL_LIST *list, const 
  * @param param 任务调度参数
  * @details 初始化任务的HPF调度参数，包括策略、优先级和基础优先级
  */
-VOID HPFTaskSchedParamInit(LosTaskCB *taskCB, UINT16 policy, const SchedParam *parentParam, const LosSchedParam *param)
+VOID HPFTaskSchedParamInit(LosTaskCB *taskCB, UINT16 policy,
+                           const SchedParam *parentParam,
+                           const LosSchedParam *param)
 {
     SchedHPF *sched = (SchedHPF *)&taskCB->sp;  // 获取HPF调度参数
 

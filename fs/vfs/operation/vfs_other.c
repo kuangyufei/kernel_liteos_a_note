@@ -471,7 +471,9 @@ static struct dirent **scandir_get_file_list(const char *dir, int *num, int(*fil
  * @param compar 比较函数（用于排序）
  * @return 成功返回文件数量，失败返回-1
  */
-int scandir(const char *dir, struct dirent ***namelist, int(*filter)(const struct dirent *), int(*compar)(const struct dirent **, const struct dirent **))
+int scandir(const char *dir, struct dirent ***namelist,
+            int(*filter)(const struct dirent *),
+            int(*compar)(const struct dirent **, const struct dirent **))
 {
     int n = 0;  // 文件数量
     struct dirent **list = NULL;  // 文件列表
@@ -550,7 +552,8 @@ static char *ls_get_fullpath(const char *path, struct dirent *pdirent)
         }
 
         /* 2，路径字符的位置：/ 和结束字符'\0' */
-        ret = snprintf_s(fullpath, strlen(path) + strlen(pdirent->d_name) + 2, strlen(path) + strlen(pdirent->d_name) + 1, "%s/%s", path, pdirent->d_name);  // 构建完整路径
+        ret = snprintf_s(fullpath, strlen(path) + strlen(pdirent->d_name) + 2,
+                         strlen(path) + strlen(pdirent->d_name) + 1, "%s/%s", path, pdirent->d_name);
         if (ret < 0) {  // 检查构建是否成功
             free(fullpath);  // 释放内存
             set_errno(ENAMETOOLONG);  // 设置错误码
@@ -564,7 +567,8 @@ static char *ls_get_fullpath(const char *path, struct dirent *pdirent)
         }
 
         /* 2，路径字符的位置：/ 和结束字符'\0' */
-        ret = snprintf_s(fullpath, strlen(pdirent->d_name) + 2, strlen(pdirent->d_name) + 1, "/%s", pdirent->d_name);  // 构建完整路径
+        ret = snprintf_s(fullpath, strlen(pdirent->d_name) + 2, strlen(pdirent->d_name) + 1,
+                         "/%s", pdirent->d_name);
         if (ret < 0) {  // 检查构建是否成功
             free(fullpath);  // 释放内存
             set_errno(ENAMETOOLONG);  // 设置错误码
@@ -606,10 +610,14 @@ static void PrintFileInfo64(const struct stat64 *stat64Info, const char *name, c
         dirFlag = '-';
     }
 
-    if (S_ISLNK(stat64Info->st_mode)) {  // 如果是符号链接
-        PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s -> %s\n", dirFlag, str[0], str[1], str[UGO_NUMS - 1], stat64Info->st_size, stat64Info->st_uid, stat64Info->st_gid, name, linkName);  // 打印带链接目标的信息
-    } else {  // 其他文件类型
-        PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s\n", dirFlag, str[0], str[1], str[UGO_NUMS - 1], stat64Info->st_size, stat64Info->st_uid, stat64Info->st_gid, name);  // 打印文件信息
+    if (S_ISLNK(stat64Info->st_mode)) {
+        PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s -> %s\n", dirFlag,
+               str[0], str[1], str[UGO_NUMS - 1], stat64Info->st_size,
+               stat64Info->st_uid, stat64Info->st_gid, name, linkName);
+    } else {
+        PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s\n", dirFlag,
+               str[0], str[1], str[UGO_NUMS - 1], stat64Info->st_size,
+               stat64Info->st_uid, stat64Info->st_gid, name);
     }
 }
 
@@ -641,10 +649,14 @@ static void PrintFileInfo(const struct stat *statInfo, const char *name, const c
         dirFlag = '-';
     }
 
-    if (S_ISLNK(statInfo->st_mode)) {  // 如果是符号链接
-        PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s -> %s\n", dirFlag, str[0], str[1], str[UGO_NUMS - 1], statInfo->st_size, statInfo->st_uid, statInfo->st_gid, name, linkName);  // 打印带链接目标的信息
-    } else {  // 其他文件类型
-        PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s\n", dirFlag, str[0], str[1], str[UGO_NUMS - 1], statInfo->st_size, statInfo->st_uid, statInfo->st_gid, name);  // 打印文件信息
+    if (S_ISLNK(statInfo->st_mode)) {
+        PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s -> %s\n", dirFlag,
+               str[0], str[1], str[UGO_NUMS - 1], statInfo->st_size,
+               statInfo->st_uid, statInfo->st_gid, name, linkName);
+    } else {
+        PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s\n", dirFlag,
+               str[0], str[1], str[UGO_NUMS - 1], statInfo->st_size,
+               statInfo->st_uid, statInfo->st_gid, name);
     }
 }
 

@@ -33,35 +33,54 @@
 #include "los_user_get.h"
 #include "los_vm_map.h"
 
-
-/*************************************************
-从用户空间到内核空间的数据拷贝
-*************************************************/
+/**
+ * @brief 从用户空间复制字符串到内核空间（带长度限制）
+ *
+ * 安全地将字符串从用户空间复制到内核空间，进行地址有效性检查，并限制最大复制长度
+ * 当遇到字符串结束符'\0'或达到最大长度时停止复制
+ *
+ * @param[in]  dst   内核空间目标缓冲区指针
+ * @param[in]  src   用户空间源字符串指针
+ * @param[in]  count 最大复制字节数（包含结束符）
+ *
+ * @return 成功时返回实际复制的字节数（不含结束符）；失败时返回-EFAULT
+ */
 INT32 LOS_StrncpyFromUser(CHAR *dst, const CHAR *src, INT32 count)
 {
-    CHAR character;
-    INT32 i;
-    INT32 maxCount;
-    size_t offset = 0;
+    CHAR character;               // 临时存储从用户空间读取的字符
+    INT32 i;                      // 循环计数器
+    INT32 maxCount;               // 实际允许的最大复制长度
+    size_t offset = 0;            // 复制偏移量（已复制字节数）
 
+    // 参数合法性检查：
+    // 1. 目标地址必须是内核空间地址
+    // 2. 源地址必须是用户空间地址
+    // 3. 复制长度必须大于0
     if ((!LOS_IsKernelAddress((VADDR_T)(UINTPTR)dst)) || (!LOS_IsUserAddress((VADDR_T)(UINTPTR)src)) || (count <= 0)) {
-        return -EFAULT;//判断是否在各自空间
+        return -EFAULT;           // 地址非法或长度无效，返回错误码
     }
 
+    // 计算实际可安全复制的最大长度：
+    // 如果用户空间源地址范围有效（长度count内无越界），则使用count
+    // 否则使用从src到用户空间顶部的剩余字节数作为最大长度
     maxCount = (LOS_IsUserAddressRange((VADDR_T)(UINTPTR)src, (size_t)count)) ? \
-                count : (INT32)(USER_ASPACE_TOP_MAX - (UINTPTR)src);//最大能拷贝的数据量,结束地址不能超过 USER_ASPACE_TOP_MAX
-															//USER_ASPACE_TOP_MAX 是用户空间能触及的最大虚拟内存空间地址
-    for (i = 0; i < maxCount; ++i) {//一个个字符拷贝
+                count : (INT32)(USER_ASPACE_TOP_MAX - (UINTPTR)src);
+
+    // 逐个字节从用户空间复制到内核空间
+    for (i = 0; i < maxCount; ++i) {
+        // 安全读取用户空间字符（包含地址有效性检查）
         if (LOS_GetUser(&character, src + offset) != LOS_OK) {
-            return -EFAULT;
+            return -EFAULT;       // 读取失败（地址越界或访问异常）
         }
+        // 将字符写入内核空间缓冲区
         *(CHAR *)(dst + offset) = character;
+        // 检查是否遇到字符串结束符
         if (character == '\0') {
-            return offset;
+            return offset;        // 成功复制，返回实际字节数（不含结束符）
         }
-        ++offset;
+        ++offset;                 // 偏移量递增
     }
 
+    // 达到最大长度仍未遇到结束符，返回实际复制的字节数
     return offset;
 }
-

@@ -82,8 +82,8 @@ static char *pread_buf_and_check(int fd, const struct iovec *iov, int iovcnt, ss
         return buf;  // 返回NULL
     }
 
-    // 根据offset是否为NULL选择read或pread系统调用
-    *totalbytesread = (offset == NULL) ? read(fd, buf, buflen) : pread(fd, buf, buflen, *offset);
+    *totalbytesread = (offset == NULL) ? read(fd, buf, buflen)
+                                       : pread(fd, buf, buflen, *offset);
     if ((*totalbytesread == VFS_ERROR) || (*totalbytesread == 0)) {  // 检查读取结果
 #ifdef LOSCFG_KERNEL_VM
         LOS_VFree(buf);  // 释放内核内存

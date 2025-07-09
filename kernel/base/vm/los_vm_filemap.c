@@ -272,7 +272,7 @@ VOID OsVmmFileRemove(LosVmMapRegion *region, LosArchMmu *archMmu, VM_OFFSET_T pg
             tmpPage = OsDumpDirtyPage(fpage); // 转储脏页
         }
     }
-    LOS_SpinUnlockRestore(&mapping->list_lock, &intSave); // 释放自旋锁
+    LOS_SpinUnlockRestore(&mapping->list_lock, intSave);
 
     if (tmpPage) {
         OsDoFlushDirtyPage(tmpPage);   // 刷新脏页

@@ -49,15 +49,24 @@
 static char* VnodeTypeToStr(enum VnodeType type)
 {
     switch (type) {
-        case VNODE_TYPE_UNKNOWN: return "UKN";  // 未知类型
-        case VNODE_TYPE_REG:     return "REG";  // 普通文件
-        case VNODE_TYPE_DIR:     return "DIR";  // 目录文件
-        case VNODE_TYPE_BLK:     return "BLK";  // 块设备文件
-        case VNODE_TYPE_CHR:     return "CHR";  // 字符设备文件
-        case VNODE_TYPE_BCHR:    return "BCH";  // 缓冲字符设备
-        case VNODE_TYPE_FIFO:    return "FIF";  // 管道文件
-        case VNODE_TYPE_LNK:     return "LNK";  // 符号链接
-        default:                 return "BAD";  // 无效类型
+        case VNODE_TYPE_UNKNOWN:
+            return "UKN";
+        case VNODE_TYPE_REG:
+            return "REG";
+        case VNODE_TYPE_DIR:
+            return "DIR";
+        case VNODE_TYPE_BLK:
+            return "BLK";
+        case VNODE_TYPE_CHR:
+            return "CHR";
+        case VNODE_TYPE_BCHR:
+            return "BCH";
+        case VNODE_TYPE_FIFO:
+            return "FIF";
+        case VNODE_TYPE_LNK:
+            return "LNK";
+        default:
+            return "BAD";
     }
 }
 

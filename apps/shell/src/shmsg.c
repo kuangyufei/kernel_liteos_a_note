@@ -48,7 +48,7 @@
 #define CHAR_CTRL_DEL '\x7F'
 
 #define VISIABLE_CHAR(ch) ((ch) > 0x1F && (ch) < 0x7F)
-//获取命令行
+
 char *GetCmdline(ShellCB *shellCB)
 {
     CmdKeyLink *cmdkey = shellCB->cmdKeyLink;
@@ -76,7 +76,7 @@ char *GetCmdline(ShellCB *shellCB)
 
     return cmdNode->cmdString;
 }
-///保存shell命令历史
+
 static void ShellSaveHistoryCmd(char *string, ShellCB *shellCB)
 {
     CmdKeyLink *cmdHistory = shellCB->cmdHistoryKeyLink;
@@ -89,7 +89,7 @@ static void ShellSaveHistoryCmd(char *string, ShellCB *shellCB)
     }
 
     (void)pthread_mutex_lock(&shellCB->historyMutex);
-    if (cmdHistory->count != 0) {//这个分支的目的是去重,又不遍历整个链表,感觉没多大意义.
+    if (cmdHistory->count != 0) {
         cmdNxt = SH_LIST_ENTRY(cmdHistory->list.pstPrev, CmdKeyLink, list);
         if (strcmp(string, cmdNxt->cmdString) == 0) {
             free((void *)cmdkey);
@@ -98,22 +98,22 @@ static void ShellSaveHistoryCmd(char *string, ShellCB *shellCB)
         }
     }
 
-    if (cmdHistory->count >= CMD_HISTORY_LEN) {//已经满了的处理,则需要删除一条再插入新的,数量不变,所以不存在 count的 +-
-        cmdNxt = SH_LIST_ENTRY(cmdHistory->list.pstNext, CmdKeyLink, list);//拿到下一条命令行记录
-        SH_ListDelete(&(cmdNxt->list));//将自己摘出去
-        SH_ListTailInsert(&(cmdHistory->list), &(cmdkey->list));//尾部插入新的命令
-        free((void *)cmdNxt);//释放旧数据
+    if (cmdHistory->count >= CMD_HISTORY_LEN) {
+        cmdNxt = SH_LIST_ENTRY(cmdHistory->list.pstNext, CmdKeyLink, list);
+        SH_ListDelete(&(cmdNxt->list));
+        SH_ListTailInsert(&(cmdHistory->list), &(cmdkey->list));
+        free((void *)cmdNxt);
         (void)pthread_mutex_unlock(&shellCB->historyMutex);
         return;
     }
 
-    SH_ListTailInsert(&(cmdHistory->list), &(cmdkey->list));//从尾部插入
-    cmdHistory->count++;//历史记录的数量增加
+    SH_ListTailInsert(&(cmdHistory->list), &(cmdkey->list));
+    cmdHistory->count++;
 
     (void)pthread_mutex_unlock(&shellCB->historyMutex);
     return;
 }
-//// shell挂起
+
 int ShellPend(ShellCB *shellCB)
 {
     if (shellCB == NULL) {
@@ -122,7 +122,7 @@ int ShellPend(ShellCB *shellCB)
 
     return sem_wait(&shellCB->shellSem);
 }
-//// shell通知
+
 int ShellNotify(ShellCB *shellCB)
 {
     if (shellCB == NULL) {
@@ -133,11 +133,11 @@ int ShellNotify(ShellCB *shellCB)
 }
 
 enum {
-    STAT_NORMAL_KEY,	///< 普通按键
-    STAT_ESC_KEY,	///< <ESC>键,支持VT规范
-    STAT_MULTI_KEY	///< 组合键 例如: <ESC>[30m
+    STAT_NORMAL_KEY,
+    STAT_ESC_KEY,
+    STAT_MULTI_KEY
 };
-///检查上下左右键
+
 static int ShellCmdLineCheckUDRL(const char ch, ShellCB *shellCB)
 {
     int ret = SH_OK;
@@ -174,7 +174,7 @@ static int ShellCmdLineCheckUDRL(const char ch, ShellCB *shellCB)
     }
     return SH_NOK;
 }
-//// 通知任务解析shell命令
+
 void ShellTaskNotify(ShellCB *shellCB)
 {
     int ret;
@@ -183,12 +183,12 @@ void ShellTaskNotify(ShellCB *shellCB)
     OsShellCmdPush(shellCB->shellBuf, shellCB->cmdKeyLink);
     (void)pthread_mutex_unlock(&shellCB->keyMutex);
 
-    ret = ShellNotify(shellCB);//通知解析shell命令的任务
+    ret = ShellNotify(shellCB);
     if (ret != SH_OK) {
         printf("command execute failed, \"%s\"", shellCB->shellBuf);
     }
 }
-//// 解析回车键 , 按回车后的处理
+
 void ParseEnterKey(OutputFunc outputFunc, ShellCB *shellCB)
 {
     if ((shellCB == NULL) || (outputFunc == NULL)) {
@@ -223,7 +223,7 @@ void ParseCancelKey(OutputFunc outputFunc, ShellCB *shellCB)
     shellCB->shellBufOffset = 0;
     ShellTaskNotify(shellCB);
 }
-///解析删除键 
+
 void ParseDeleteKey(OutputFunc outputFunc, ShellCB *shellCB)
 {
     if ((shellCB == NULL) || (outputFunc == NULL)) {
@@ -236,7 +236,7 @@ void ParseDeleteKey(OutputFunc outputFunc, ShellCB *shellCB)
         outputFunc("\b \b");
     }
 }
-//// 解析tab键
+
 void ParseTabKey(OutputFunc outputFunc, ShellCB *shellCB)
 {
     int ret;
@@ -252,7 +252,7 @@ void ParseTabKey(OutputFunc outputFunc, ShellCB *shellCB)
         }
     }
 }
-//// 解析普通字符
+
 void ParseNormalChar(char ch, OutputFunc outputFunc, ShellCB *shellCB)
 {
     if ((shellCB == NULL) || (outputFunc == NULL) || !VISIABLE_CHAR(ch)) {
@@ -334,12 +334,12 @@ char *GetCmdName(const char *cmdline, unsigned int len)
         /* If reach a double quotes, switch the quotes matching status */
         if (*tmpStr == '\"') {
             SWITCH_QUOTES_STATUS(quotes);
-            /* Ignore the double quote charactor itself */
+            /* Ignore the double quote character itself */
             tmpStr++;
             continue;
         }
         /* If detected a space which the quotes matching status is false */
-        /* which said has detected the first space for seperator, finish this scan operation */
+        /* which said has detected the first space for separator, finish this scan operation */
         if ((*tmpStr == ' ') && (QUOTES_STATUS_CLOSE(quotes))) {
             break;
         }
@@ -406,67 +406,57 @@ int CheckExit(const char *cmdName, const CmdParsed *cmdParsed)
     exit(ret);
 }
 
-// 执行命令
 static void DoCmdExec(const char *cmdName, const char *cmdline, unsigned int len, CmdParsed *cmdParsed)
 {
-    bool foreground = FALSE;  // 是否在前台运行的标志
+    bool foreground = FALSE;
     int ret;
-    pid_t forkPid;  // 子进程ID
+    pid_t forkPid;
 
-    // 检查是否是 exec 命令
     if (strncmp(cmdline, CMD_EXEC_COMMAND, CMD_EXEC_COMMAND_BYTES) == 0) {
-        // 检查是否有后台运行标志 "&"
         if ((cmdParsed->paramCnt > 1) && (strcmp(cmdParsed->paramArray[cmdParsed->paramCnt - 1], "&") == 0)) {
-            free(cmdParsed->paramArray[cmdParsed->paramCnt - 1]);  // 释放参数内存
-            cmdParsed->paramArray[cmdParsed->paramCnt - 1] = NULL;  // 置空参数
-            cmdParsed->paramCnt--;  // 参数数量减一
-            foreground = TRUE;  // 设置为后台运行
+            free(cmdParsed->paramArray[cmdParsed->paramCnt - 1]);
+            cmdParsed->paramArray[cmdParsed->paramCnt - 1] = NULL;
+            cmdParsed->paramCnt--;
+            foreground = TRUE;
         }
 
-        // 创建子进程
         forkPid = fork();
-        if (forkPid < 0) {  // 创建失败
+        if (forkPid < 0) {
             printf("Failed to fork from shell\n");
             return;
-        } else if (forkPid == 0) {  // 子进程
-            ChildExec(cmdParsed->paramArray[0], cmdParsed->paramArray, foreground);  // 执行命令
-        } else {  // 父进程
-            if (!foreground) {  // 如果是前台运行
-                (void)waitpid(forkPid, 0, 0);  // 等待子进程结束
+        } else if (forkPid == 0) {
+            ChildExec(cmdParsed->paramArray[0], cmdParsed->paramArray, foreground);
+        } else {
+            if (!foreground) {
+                (void)waitpid(forkPid, 0, 0);
             }
-            // 恢复终端控制权
             ret = tcsetpgrp(STDIN_FILENO, getpid());
             if (ret != 0) {
                 printf("tcsetpgrp failed, errno %d\n", errno);
             }
         }
-    } else {  // 不是 exec 命令
-        if (CheckExit(cmdName, cmdParsed) < 0) {  // 检查是否是 exit 命令
+    } else {
+        if (CheckExit(cmdName, cmdParsed) < 0) {
             return;
         }
-        // 通过系统调用执行命令
         (void)syscall(__NR_shellexec, cmdName, cmdline);
     }
 }
 
-
-// 解析并执行命令行
 static void ParseAndExecCmdline(CmdParsed *cmdParsed, const char *cmdline, unsigned int len)
 {
     int i;
     unsigned int ret;
-    char shellWorkingDirectory[PATH_MAX + 1] = { 0 };  // 存储当前工作目录
-    char *cmdlineOrigin = NULL;  // 原始命令行字符串
-    char *cmdName = NULL;  // 命令名称
+    char shellWorkingDirectory[PATH_MAX + 1] = { 0 };
+    char *cmdlineOrigin = NULL;
+    char *cmdName = NULL;
 
-    // 复制命令行字符串
     cmdlineOrigin = strdup(cmdline);
     if (cmdlineOrigin == NULL) {
         printf("malloc failure in %s[%d]\n", __FUNCTION__, __LINE__);
         return;
     }
 
-    // 获取命令名称
     cmdName = GetCmdName(cmdline, len);
     if (cmdName == NULL) {
         free(cmdlineOrigin);
@@ -474,34 +464,28 @@ static void ParseAndExecCmdline(CmdParsed *cmdParsed, const char *cmdline, unsig
         return;
     }
 
-    // 解析命令行参数
     ret = OsCmdParse((char *)cmdline, cmdParsed);
     if (ret != SH_OK) {
         printf("cmd parse failure in %s[%d]\n", __FUNCTION__, __LINE__);
-        goto OUT;  // 解析失败跳转到清理代码
+        goto OUT;
     }
 
-    // 执行命令
     DoCmdExec(cmdName, cmdlineOrigin, len, cmdParsed);
 
-    // 获取并设置当前工作目录
     if (getcwd(shellWorkingDirectory, PATH_MAX) != NULL) {
         (void)OsShellSetWorkingDirectory(shellWorkingDirectory, (PATH_MAX + 1));
     }
 
-OUT:  // 清理代码
-    // 释放参数数组内存
+OUT:
     for (i = 0; i < cmdParsed->paramCnt; i++) {
         if (cmdParsed->paramArray[i] != NULL) {
             free(cmdParsed->paramArray[i]);
             cmdParsed->paramArray[i] = NULL;
         }
     }
-    // 释放命令名称和原始命令行字符串内存
     free(cmdName);
     free(cmdlineOrigin);
 }
-
 
 unsigned int PreHandleCmdline(const char *input, char **output, unsigned int *outputlen)
 {
@@ -531,7 +515,7 @@ unsigned int PreHandleCmdline(const char *input, char **output, unsigned int *ou
     *output = shiftStr;
     *outputlen = shiftLen;
 
-    /* Check and parse "./", located at the first two charaters of the cmd */
+    /* Check and parse "./", located at the first two characters of the cmd */
     if ((shiftLen > removeLen) && (shiftStr[0] == '.') && (shiftStr[1] == '/')) {
         execLen = strlen(execCmd);
         newLen = execLen + shiftLen - removeLen; /* i.e., newLen - execLen == shiftLen - removeLen */
@@ -666,10 +650,10 @@ int ShellTaskInit(ShellCB *shellCB)
 
     return ret;
 }
-///< 给控制台注册一个shell客户端任务
+
 static int ShellKernelReg(unsigned int shellHandle)
 {
-    return ioctl(STDIN_FILENO, CONSOLE_CONTROL_REG_USERTASK, shellHandle);//Shell Entry 任务将从标准输入中读取数据
+    return ioctl(STDIN_FILENO, CONSOLE_CONTROL_REG_USERTASK, shellHandle);
 }
 
 void ShellEntry(ShellCB *shellCB)
@@ -677,7 +661,7 @@ void ShellEntry(ShellCB *shellCB)
     char ch;
     int ret;
     int n;
-    pid_t tid = syscall(__NR_gettid);//获取当前任务/线程ID, 即 "Shell Entry" 任务的ID
+    pid_t tid = syscall(__NR_gettid);
 
     if (shellCB == NULL) {
         return;
@@ -685,16 +669,16 @@ void ShellEntry(ShellCB *shellCB)
 
     (void)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);
 
-    ret = ShellKernelReg((int)tid);//向内核注册shell,和控制台捆绑在一块
+    ret = ShellKernelReg((int)tid);
     if (ret != 0) {
         printf("another shell is already running!\n");
         exit(-1);
     }
 
     while (1) {
-        n = read(0, &ch, 1);//读取输入字符
+        n = read(0, &ch, 1);
         if (n == 1) {
-            ShellCmdLineParse(ch, (OutputFunc)printf, shellCB);//对命令行内容进行解析
+            ShellCmdLineParse(ch, (OutputFunc)printf, shellCB);
         }
     }
     return;

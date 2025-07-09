@@ -75,7 +75,7 @@
         PRINTK(arg);                                         \
     }                                                        \
     SaveExcInfo(arg);                                        \
-} while (0)                                                  \
+} while (0)
 #else
 #define SHOW(arg...) PRINTK(arg)  // 如果未启用VFS，直接使用PRINTK输出
 #endif

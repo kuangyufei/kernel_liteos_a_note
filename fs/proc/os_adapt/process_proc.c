@@ -458,7 +458,8 @@ static void *MemdupUserNul(const void *src, size_t len)
  * @param type 输出参数，数据类型
  * @return 成功返回进程PCB指针，失败返回NULL
  */
-static LosProcessCB *ProcUidGidMapWriteCheck(struct ProcFile *pf, const char *buf, size_t size, char **kbuf, ProcessDataType *type)
+static LosProcessCB *ProcUidGidMapWriteCheck(struct ProcFile *pf, const char *buf, size_t size,
+                                             char **kbuf, ProcessDataType *type)
 {
     if ((pf == NULL) || (size <= 0) || (size >= PAGE_SIZE)) {  // 参数无效
         return NULL;                                           // 返回NULL
@@ -515,9 +516,11 @@ static ssize_t ProcIDMapWrite(struct ProcFile *file, const char *buf, size_t siz
         return -EPERM;                                 // 返回权限错误
     }
     if (type == PROC_UID_MAP) {                        // UID映射
-        ret = OsUserContainerMapWrite(file, kbuf, size, CAP_SETUID, &userContainer->uidMap, &userContainer->parent->uidMap);
+        ret = OsUserContainerMapWrite(file, kbuf, size, CAP_SETUID,
+                                      &userContainer->uidMap, &userContainer->parent->uidMap);
     } else {                                           // GID映射
-        ret = OsUserContainerMapWrite(file, kbuf, size, CAP_SETGID, &userContainer->gidMap, &userContainer->parent->gidMap);
+        ret = OsUserContainerMapWrite(file, kbuf, size, CAP_SETGID,
+                                      &userContainer->gidMap, &userContainer->parent->gidMap);
     }
     SCHEDULER_UNLOCK(intSave);                         // 开调度器
     (void)LOS_MemFree(m_aucSysMem1, kbuf);             // 释放缓冲区
@@ -548,7 +551,8 @@ static int ProcIDMapRead(struct SeqBuf *seqBuf, void *v)
     if ((userContainer != NULL) && (userContainer->parent == NULL)) {  // 无父容器
         UidGidExtent uidGidExtent = userContainer->uidMap.extent[0];   // 获取UID映射范围
         SCHEDULER_UNLOCK(intSave);                      // 开调度器
-        (void)LosBufPrintf(seqBuf, "%d %d %u\n", uidGidExtent.first, uidGidExtent.lowerFirst, uidGidExtent.count);  // 输出映射信息
+        (void)LosBufPrintf(seqBuf, "%d %d %u\n", uidGidExtent.first, uidGidExtent.lowerFirst,
+                           uidGidExtent.count);
         return 0;                                       // 返回成功
     }
     SCHEDULER_LOCK(intSave);                            // 关调度器（此处应为解锁，代码可能存在错误）
@@ -644,7 +648,79 @@ static struct ProcProcess g_procProcess[] = {
         .fileOps = &PID_CONTAINER_FOPS  // 关联容器文件操作结构体
     },
 #endif
-// ... 其他容器相关节点定义（UTS、MNT、IPC等） ...
+#ifdef LOSCFG_UTS_CONTAINER
+    {
+        .name = "container/uts",
+        .mode = S_IFLNK,
+        .type = UTS_CONTAINER,
+        .fileOps = &PID_CONTAINER_FOPS
+    },
+#endif
+#ifdef LOSCFG_MNT_CONTAINER
+    {
+        .name = "container/mnt",
+        .mode = S_IFLNK,
+        .type = MNT_CONTAINER,
+        .fileOps = &PID_CONTAINER_FOPS
+    },
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+    {
+        .name = "container/ipc",
+        .mode = S_IFLNK,
+        .type = IPC_CONTAINER,
+        .fileOps = &PID_CONTAINER_FOPS
+    },
+#endif
+#ifdef LOSCFG_TIME_CONTAINER
+    {
+        .name = "container/time",
+        .mode = S_IFLNK,
+        .type = TIME_CONTAINER,
+        .fileOps = &PID_CONTAINER_FOPS
+    },
+    {
+        .name = "container/time_for_children",
+        .mode = S_IFLNK,
+        .type = TIME_CHILD_CONTAINER,
+        .fileOps = &PID_CONTAINER_FOPS
+    },
+    {
+        .name = "time_offsets",
+        .mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH,
+        .type = TIME_CONTAINER,
+        .fileOps = &TIME_CONTAINER_FOPS
+    },
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+    {
+        .name = "container/user",
+        .mode = S_IFLNK,
+        .type = USER_CONTAINER,
+        .fileOps = &PID_CONTAINER_FOPS
+    },
+    {
+        .name = "uid_map",
+        .mode = 0,
+        .type = PROC_UID_MAP,
+        .fileOps = &UID_GID_MAP_FOPS
+    },
+    {
+        .name = "gid_map",
+        .mode = 0,
+        .type = PROC_GID_MAP,
+        .fileOps = &UID_GID_MAP_FOPS
+    },
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+    {
+        .name = "container/net",
+        .mode = S_IFLNK,
+        .type = NET_CONTAINER,
+        .fileOps = &PID_CONTAINER_FOPS
+    },
+#endif
+#endif
 };
 
 /**

@@ -316,8 +316,6 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemUsed(INT32 argc, const CHAR *argv[])
     return 0;
 }
 #endif
-#endif
-#endif
 
 #ifdef LOSCFG_MEM_LEAKCHECK
 SHELLCMD_ENTRY(memused_shellcmd, CMD_TYPE_EX, "memused", 0, (CmdCallBackFunc)OsShellCmdMemUsed);

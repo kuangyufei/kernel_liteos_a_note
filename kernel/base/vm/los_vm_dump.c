@@ -269,7 +269,7 @@ UINT32 OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
                 pmSize += PAGE_SIZE;               /* 独占页直接累加 */
             }
         }
-    RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNode, pstRbNodeNext)  /* 修正原代码中oldVmSpace变量错误 */
+    RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNode, pstRbNodeNext)  /* 修正原代码中oldVmSpace变量错误 @doubao太神奇了 */
 
     (VOID)LOS_MuxRelease(&space->regionMux);      /* 释放区域链表互斥锁 */
 
@@ -389,30 +389,30 @@ CHAR *OsArchFlagsToStr(const UINT32 archFlags)
     // 解析缓存类型标志并转换为字符串
     switch (cacheFlags) {
         case 0UL:
-            (VOID)strcat_s(archMmuFlagsStr, flagSize, " CH");  // 可缓存 (Cached)
+            (VOID)strcat_s(archMmuFlagsStr, flagSize, " CH\0");
             break;
         case 1UL:
-            (VOID)strcat_s(archMmuFlagsStr, flagSize, " UC");  // 不可缓存 (Uncached)
+            (VOID)strcat_s(archMmuFlagsStr, flagSize, " UC\0");
             break;
         case 2UL:
-            (VOID)strcat_s(archMmuFlagsStr, flagSize, " UD");  // 不可缓存且不可分配 (Undefined)
+            (VOID)strcat_s(archMmuFlagsStr, flagSize, " UD\0");
             break;
         case 3UL:
-            (VOID)strcat_s(archMmuFlagsStr, flagSize, " WC");  // 写合并 (Write Combine)
+            (VOID)strcat_s(archMmuFlagsStr, flagSize, " WC\0");
             break;
         default:
-            break;  // 未知缓存类型不处理
+            break;
     }
-    // 权限标志与字符串映射表（使用位位置作为索引）
+
     static const CHAR FLAGS[BITMAP_BITS_PER_WORD][FLAG_SIZE] = {
-        [0 ... (__builtin_ffsl(VM_MAP_REGION_FLAG_PERM_USER) - 2)] = "???",
-        [__builtin_ffsl(VM_MAP_REGION_FLAG_PERM_USER) - 1] = " US",  // 用户空间 (User)
-        [__builtin_ffsl(VM_MAP_REGION_FLAG_PERM_READ) - 1] = " RD",  // 读权限 (Read)
-        [__builtin_ffsl(VM_MAP_REGION_FLAG_PERM_WRITE) - 1] = " WR", // 写权限 (Write)
-        [__builtin_ffsl(VM_MAP_REGION_FLAG_PERM_EXECUTE) - 1] = " EX", // 执行权限 (Execute)
-        [__builtin_ffsl(VM_MAP_REGION_FLAG_NS) - 1] = " NS",        // 非安全模式 (Non-Secure)
-        [__builtin_ffsl(VM_MAP_REGION_FLAG_INVALID) - 1] = " IN",   // 无效标志 (Invalid)
-        [__builtin_ffsl(VM_MAP_REGION_FLAG_INVALID) ... (BITMAP_BITS_PER_WORD - 1)] = "???",
+        [0 ... (__builtin_ffsl(VM_MAP_REGION_FLAG_PERM_USER) - 2)] = "???\0",
+        [__builtin_ffsl(VM_MAP_REGION_FLAG_PERM_USER) - 1] = " US\0",
+        [__builtin_ffsl(VM_MAP_REGION_FLAG_PERM_READ) - 1] = " RD\0",
+        [__builtin_ffsl(VM_MAP_REGION_FLAG_PERM_WRITE) - 1] = " WR\0",
+        [__builtin_ffsl(VM_MAP_REGION_FLAG_PERM_EXECUTE) - 1] = " EX\0",
+        [__builtin_ffsl(VM_MAP_REGION_FLAG_NS) - 1] = " NS\0",
+        [__builtin_ffsl(VM_MAP_REGION_FLAG_INVALID) - 1] = " IN\0",
+        [__builtin_ffsl(VM_MAP_REGION_FLAG_INVALID) ... (BITMAP_BITS_PER_WORD - 1)] = "???\0",
     };
 
     // 遍历权限标志位并拼接对应字符串

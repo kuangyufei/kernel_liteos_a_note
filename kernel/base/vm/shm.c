@@ -884,7 +884,7 @@ INT32 ShmDt(const VOID *shmaddr)
 
     (VOID)LOS_MuxAcquire(&space->regionMux);
     region = LOS_RegionFind(space, (VADDR_T)(UINTPTR)shmaddr);//找到线性区
-    if (region == NULL) {
+    if ((region == NULL) || !OsIsShmRegion(region)) {
         ret = EINVAL;
         goto ERROR_WITH_LOCK;
     }

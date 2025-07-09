@@ -146,7 +146,6 @@ EXC_RESET_HELP:                             // 帮助信息标签
     PRINTK("usage: panicreset [on/off]\n"); // 输出命令用法
     return LOS_OK;                          // 返回成功
 }
-#endif  // LOSCFG_DRIVERS_HDF_PLATFORM_WATCHDOG
 
 SHELLCMD_ENTRY(panic_reset_shellcmd, CMD_TYPE_EX, "panicreset", 1, (CmdCallBackFunc)OsShellCmdSystemExcReset);
 #endif

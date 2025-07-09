@@ -181,18 +181,14 @@ INT32 OsWatchOptionParsed(UINT32 argc, UINT32 *argoff, const CHAR **argv, WatchC
             watchItem->interval = g_tickPerSecond * (UINT32)tmpVal;  // 设置间隔(ticks)
             argcount -= 2; /* 2:参数偏移 */
             (*argoff) += 2; /* 2:参数偏移 */
-        } 
-        // 解析无标题选项
-        else if ((strcmp(argv[*argoff], "-t") == 0) || (strcmp(argv[*argoff], "-no-title") == 0)) {
-            watchItem->title = FALSE;      // 设置不显示标题
+        } else if ((strcmp(argv[*argoff], "-t") == 0) || (strcmp(argv[*argoff], "-no-title") == 0)) {
+            watchItem->title = FALSE;
             argcount--;
             (*argoff)++;
-        } 
-        // 解析次数选项
-        else if ((strcmp(argv[*argoff], "-c") == 0) || (strcmp(argv[*argoff], "--count") == 0)) {
-            if (argcount <= 2) { /* 2:参数个数检查 */
-                OsWatchCmdUsage();         // 打印用法
-                return -1;                 // 返回错误
+        } else if ((strcmp(argv[*argoff], "-c") == 0) || (strcmp(argv[*argoff], "--count") == 0)) {
+            if (argcount <= 2) { /* 2:count of parameter */
+                OsWatchCmdUsage();
+                return -1;
             }
             // 转换次数值
             tmpVal = (long)strtoul(argv[*argoff + 1], &strPtr, 0);
@@ -205,9 +201,7 @@ INT32 OsWatchOptionParsed(UINT32 argc, UINT32 *argoff, const CHAR **argv, WatchC
             watchItem->count = (UINT32)tmpVal;  // 设置执行次数
             argcount -= 2; /* 2:参数偏移 */
             (*argoff) += 2; /* 2:参数偏移 */
-        } 
-        // 未知选项
-        else {
+        } else {
             PRINTK("Unknown option.\n");  // 打印错误信息
             return -1;                     // 返回错误
         }
@@ -344,6 +338,6 @@ WATCH_ERROR:                               // 错误处理标签
     free(watchItem);                       // 释放控制块内存
     return OS_ERROR;                       // 返回错误
 }
-#endif
+
 SHELLCMD_ENTRY(watch_shellcmd, CMD_TYPE_EX, "watch", XARGS, (CmdCallBackFunc)OsShellCmdWatch);
 #endif

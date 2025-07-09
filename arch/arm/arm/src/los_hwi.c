@@ -1,3 +1,33 @@
+/*
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this list of
+ *    conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice, this list
+ *    of conditions and the following disclaimer in the documentation and/or other materials
+ *    provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors may be used
+ *    to endorse or promote products derived from this software without specific prior written
+ *    permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 /*!
  * @file    los_hwi.c 
  * @brief 硬中断主文件
@@ -104,37 +134,6 @@
  * @history
  *
  */
-/*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this list of
- *    conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- *    of conditions and the following disclaimer in the documentation and/or other materials
- *    provided with the distribution.
- *
- * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- *    to endorse or promote products derived from this software without specific prior written
- *    permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 #include "los_hwi.h"
 #include "los_memory.h"
 #include "los_spinlock.h"
@@ -144,286 +143,335 @@
 #include "los_sched_pri.h"
 #include "los_hook.h"
 
-
 /* spinlock for hwi module, only available on SMP mode */
-LITE_OS_SEC_BSS  SPIN_LOCK_INIT(g_hwiSpin); ///< 注意全局变量 g_hwiSpin 是在宏里面定义的
-#define HWI_LOCK(state)       LOS_SpinLockSave(&g_hwiSpin, &(state))
-#define HWI_UNLOCK(state)     LOS_SpinUnlockRestore(&g_hwiSpin, (state))
+LITE_OS_SEC_BSS  SPIN_LOCK_INIT(g_hwiSpin);  // 硬件中断模块自旋锁，仅SMP模式可用
+#define HWI_LOCK(state)       LOS_SpinLockSave(&g_hwiSpin, &(state))  // 获取硬件中断自旋锁并保存中断状态
+#define HWI_UNLOCK(state)     LOS_SpinUnlockRestore(&g_hwiSpin, (state))  // 恢复中断状态并释放硬件中断自旋锁
 
-size_t g_intCount[LOSCFG_KERNEL_CORE_NUM] = {0};///< 记录每个CPUcore的中断数量 
-HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];		///< 中断注册表        @note_why 用 form 来表示？有种写 HTML的感觉
-STATIC CHAR *g_hwiFormName[OS_HWI_MAX_NUM] = {0};///< 记录每个硬中断的名称
-STATIC UINT32 g_hwiFormCnt[LOSCFG_KERNEL_CORE_NUM][OS_HWI_MAX_NUM] = {0};
+size_t g_intCount[LOSCFG_KERNEL_CORE_NUM] = {0};  // 每个CPU核心的中断计数器，初始化为0 (LOSCFG_KERNEL_CORE_NUM为CPU核心数)
+HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];  // 硬件中断句柄数组，大小为最大中断数 (OS_HWI_MAX_NUM通常为256)
+STATIC CHAR *g_hwiFormName[OS_HWI_MAX_NUM] = {0};  // 中断名称数组，与中断号对应
+STATIC UINT32 g_hwiFormCnt[LOSCFG_KERNEL_CORE_NUM][OS_HWI_MAX_NUM] = {0};  // 每个CPU核心的中断触发计数矩阵
 
 /**
- * @brief 获取某个中断的中断次数
- * 
- * @param index 
- * @return UINT32 
+ * @brief 获取指定CPU核心的中断触发次数
+ * @param cpuid CPU核心ID
+ * @param index 中断号
+ * @return 中断触发次数
  */
 UINT32 OsGetHwiFormCnt(UINT16 cpuid, UINT32 index)
 {
     return g_hwiFormCnt[cpuid][index];
 }
 
-CHAR *OsGetHwiFormName(UINT32 index)//获取某个中断的名称
+/**
+ * @brief 获取指定中断号的名称
+ * @param index 中断号
+ * @return 中断名称字符串
+ */
+CHAR *OsGetHwiFormName(UINT32 index)
 {
     return g_hwiFormName[index];
 }
-/// 获取系统支持的最大中断数
+
+/**
+ * @brief 获取系统支持的最大硬件中断数
+ * @return 最大中断数 OS_HWI_MAX_NUM
+ */
 UINT32 LOS_GetSystemHwiMaximum(VOID)
 {
-    return OS_HWI_MAX_NUM;
+    return OS_HWI_MAX_NUM;  // 返回系统定义的最大中断数，十进制值通常为256
 }
-typedef VOID (*HWI_PROC_FUNC0)(VOID);
-typedef VOID (*HWI_PROC_FUNC2)(INT32, VOID *);
-VOID OsInterrupt(UINT32 intNum)//中断实际处理函数
+
+typedef VOID (*HWI_PROC_FUNC0)(VOID);  // 无参数的中断处理函数指针类型
+typedef VOID (*HWI_PROC_FUNC2)(INT32, VOID *);  // 带两个参数的中断处理函数指针类型
+
+/**
+ * @brief 中断处理入口函数
+ * @param intNum 中断号
+ * @details 负责中断分发、计数更新和钩子函数调用
+ *          必须保持接口开头和结尾的中断计数操作
+ */
+VOID OsInterrupt(UINT32 intNum)
 {
-    HwiHandleForm *hwiForm = NULL;
-    UINT32 *intCnt = NULL;
-    UINT16 cpuid = ArchCurrCpuid();
+    HwiHandleForm *hwiForm = NULL;  // 中断句柄指针
+    UINT32 *intCnt = NULL;  // 中断计数器指针
+    UINT16 cpuid = ArchCurrCpuid();  // 获取当前CPU核心ID
 
     /* Must keep the operation at the beginning of the interface */
-    intCnt = &g_intCount[cpuid];//当前CPU的中断总数量 ++
-    *intCnt = *intCnt + 1;//@note_why 这里没看明白为什么要 +1
+    intCnt = &g_intCount[cpuid];
+    *intCnt = *intCnt + 1;  // 递增当前CPU的中断计数器
 
-#ifdef LOSCFG_CPUP_INCLUDE_IRQ //开启查询系统CPU的占用率的中断
-    OsCpupIrqStart(cpuid);
+#ifdef LOSCFG_CPUP_INCLUDE_IRQ
+    OsCpupIrqStart(cpuid);  // 如果启用CPU性能统计，记录中断开始时间
 #endif
-    OsSchedIrqStartTime();
-    OsHookCall(LOS_HOOK_TYPE_ISR_ENTER, intNum);
-    hwiForm = (&g_hwiForm[intNum]);//获取对应中断的实体
-#ifndef LOSCFG_NO_SHARED_IRQ	//如果没有定义不共享中断 ，意思就是如果是共享中断
-    while (hwiForm->pstNext != NULL) { //一直撸到最后
-        hwiForm = hwiForm->pstNext;//下一个继续撸
+
+    OsSchedIrqStartTime();  // 记录调度器中断开始时间
+    OsHookCall(LOS_HOOK_TYPE_ISR_ENTER, intNum);  // 调用中断进入钩子函数
+    hwiForm = (&g_hwiForm[intNum]);  // 获取中断号对应的句柄
+#ifndef LOSCFG_NO_SHARED_IRQ
+    while (hwiForm->pstNext != NULL) {  // 遍历共享中断链表
+        hwiForm = hwiForm->pstNext;
 #endif
-        if (hwiForm->uwParam) {//有参数的情况
-            HWI_PROC_FUNC2 func = (HWI_PROC_FUNC2)hwiForm->pfnHook;//获取回调函数
+        if (hwiForm->uwParam) {  // 检查是否有参数
+            HWI_PROC_FUNC2 func = (HWI_PROC_FUNC2)hwiForm->pfnHook;  // 转换为带参数的函数指针
             if (func != NULL) {
-                UINTPTR *param = (UINTPTR *)(hwiForm->uwParam);
-                func((INT32)(*param), (VOID *)(*(param + 1)));//运行带参数的回调函数
+                UINTPTR *param = (UINTPTR *)(hwiForm->uwParam);  // 获取参数指针
+                func((INT32)(*param), (VOID *)(*(param + 1)));  // 调用带参数的中断处理函数
             }
-        } else {//没有参数的情况
-            HWI_PROC_FUNC0 func = (HWI_PROC_FUNC0)hwiForm->pfnHook;//获取回调函数
+        } else {
+            HWI_PROC_FUNC0 func = (HWI_PROC_FUNC0)hwiForm->pfnHook;  // 转换为无参数的函数指针
             if (func != NULL) {
-                func();//运行回调函数
+                func();  // 调用无参数的中断处理函数
             }
         }
 #ifndef LOSCFG_NO_SHARED_IRQ
     }
 #endif
-    ++g_hwiFormCnt[cpuid][intNum];
+    ++g_hwiFormCnt[cpuid][intNum];  // 递增当前CPU上该中断的触发计数
 
-    OsHookCall(LOS_HOOK_TYPE_ISR_EXIT, intNum);
-    OsSchedIrqUsedTimeUpdate();
+    OsHookCall(LOS_HOOK_TYPE_ISR_EXIT, intNum);  // 调用中断退出钩子函数
+    OsSchedIrqUsedTimeUpdate();  // 更新调度器中断使用时间
 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
-    OsCpupIrqEnd(cpuid, intNum);
+    OsCpupIrqEnd(cpuid, intNum);  // 如果启用CPU性能统计，记录中断结束时间
 #endif
     /* Must keep the operation at the end of the interface */
-    *intCnt = *intCnt - 1;
+    *intCnt = *intCnt - 1;  // 递减当前CPU的中断计数器
 }
+
 /**
- * @brief 申请内核空间并拷贝硬中断参数;
- * 
- * 该函数用于为传入的硬中断参数结构体分配内核空间，并将参数内容复制到新分配的空间中。如果传入的参数指针为 NULL，则直接返回 0。;
- * 
- * @param irqParam 指向原始硬中断参数结构体的常量指针。;
- * @return HWI_ARG_T 若内存分配成功，返回新分配内存的地址；若内存分配失败，返回 LOS_NOK；若 irqParam 为 NULL，返回 0。;
+ * @brief 复制中断参数
+ * @param irqParam 原始中断参数指针
+ * @return 复制后的参数指针，内存分配失败返回LOS_NOK
  */
 STATIC HWI_ARG_T OsHwiCpIrqParam(const HwiIrqParam *irqParam)
 {
-    HwiIrqParam *paramByAlloc = NULL; // 用于存储新分配内存的指针，指向新的硬中断参数结构体;
+    HwiIrqParam *paramByAlloc = NULL;  // 分配的参数副本指针
 
-    if (irqParam != NULL) { // 检查传入的硬中断参数指针是否不为 NULL;
-        paramByAlloc = (HwiIrqParam *)LOS_MemAlloc(m_aucSysMem0, sizeof(HwiIrqParam)); // 调用内存分配函数，从 m_aucSysMem0 内存池分配 sizeof(HwiIrqParam) 大小的内存;
-        if (paramByAlloc == NULL) { // 检查内存分配是否失败;
-            return LOS_NOK; // 内存分配失败，返回错误码 LOS_NOK;
+    if (irqParam != NULL) {
+        paramByAlloc = (HwiIrqParam *)LOS_MemAlloc(m_aucSysMem0, sizeof(HwiIrqParam));  // 分配内存
+        if (paramByAlloc == NULL) {
+            return LOS_NOK;  // 内存分配失败
         }
-        (VOID)memcpy_s(paramByAlloc, sizeof(HwiIrqParam), irqParam, sizeof(HwiIrqParam)); // 内存分配成功，将原始参数内容复制到新分配的内存中;
+        (VOID)memcpy_s(paramByAlloc, sizeof(HwiIrqParam), irqParam, sizeof(HwiIrqParam));  // 复制参数内容
     }
-    /* 当 "irqParam" 为 NULL 时，函数返回 0(LOS_OK)。 */
-    return (HWI_ARG_T)paramByAlloc; // 将新分配内存的地址（或 0）转换为 HWI_ARG_T 类型返回;
+    /* When "irqParam" is NULL, the function return 0(LOS_OK). */
+    return (HWI_ARG_T)paramByAlloc;  // 返回参数副本指针或NULL
 }
 
-#ifdef LOSCFG_NO_SHARED_IRQ
+#ifdef LOSCFG_NO_SHARED_IRQ  // 如果禁用共享中断功能
+/**
+ * @brief 删除非共享中断
+ * @param hwiNum 中断号
+ * @return 操作结果，LOS_OK表示成功
+ */
 STATIC UINT32 OsHwiDelNoShared(HWI_HANDLE_T hwiNum)
 {
-    UINT32 intSave;
+    UINT32 intSave;  // 中断状态保存变量
 
-    HWI_LOCK(intSave);//申请硬中断自旋锁
-    g_hwiForm[hwiNum].pfnHook = NULL;//回调函数直接NULL
-    if (g_hwiForm[hwiNum].uwParam) {//如有参数
-        (VOID)LOS_MemFree(m_aucSysMem0, (VOID *)g_hwiForm[hwiNum].uwParam);//释放内存
+    HWI_LOCK(intSave);  // 获取中断锁
+    g_hwiForm[hwiNum].pfnHook = NULL;  // 清除中断处理函数
+    if (g_hwiForm[hwiNum].uwParam) {
+        (VOID)LOS_MemFree(m_aucSysMem0, (VOID *)g_hwiForm[hwiNum].uwParam);  // 释放参数内存
     }
-    g_hwiForm[hwiNum].uwParam = 0; //NULL
+    g_hwiForm[hwiNum].uwParam = 0;  // 清除参数
 
-    HWI_UNLOCK(intSave);//释放硬中断自旋锁
+    HWI_UNLOCK(intSave);  // 释放中断锁
     return LOS_OK;
 }
+
 /**
- * @brief 删除一个共享中断
- * 
- * 该函数用于删除指定中断号的共享中断。会遍历共享中断链表，
- * 找到与传入设备 ID 匹配的中断处理节点并删除。
- * 
- * @param hwiNum 硬中断句柄编号
- * @param irqParam 硬中断参数，包含设备 ID 等信息
- * @return UINT32 操作结果，成功返回 LOS_OK，失败返回相应错误码
+ * @brief 创建非共享中断
+ * @param hwiNum 中断号
+ * @param hwiMode 中断模式
+ * @param hwiHandler 中断处理函数
+ * @param irqParam 中断参数
+ * @return 操作结果，成功返回LOS_OK，失败返回错误码
+ */
+STATIC UINT32 OsHwiCreateNoShared(HWI_HANDLE_T hwiNum, HWI_MODE_T hwiMode,
+                                  HWI_PROC_FUNC hwiHandler, const HwiIrqParam *irqParam)
+{
+    HWI_ARG_T retParam;  // 参数复制结果
+    UINT32 intSave;  // 中断状态保存变量
+
+    HWI_LOCK(intSave);  // 获取中断锁
+    if (g_hwiForm[hwiNum].pfnHook == NULL) {  // 检查中断是否未被创建
+        g_hwiForm[hwiNum].pfnHook = hwiHandler;  // 设置中断处理函数
+
+        retParam = OsHwiCpIrqParam(irqParam);  // 复制中断参数
+        if (retParam == LOS_NOK) {  // 参数复制失败
+            HWI_UNLOCK(intSave);  // 释放中断锁
+            return OS_ERRNO_HWI_NO_MEMORY;  // 返回内存不足错误
+        }
+        g_hwiForm[hwiNum].uwParam = retParam;  // 设置中断参数
+    } else {
+        HWI_UNLOCK(intSave);  // 释放中断锁
+        return OS_ERRNO_HWI_ALREADY_CREATED;  // 返回中断已存在错误
+    }
+    HWI_UNLOCK(intSave);  // 释放中断锁
+    return LOS_OK;
+}
+#else  // 如果启用共享中断功能
+/**
+ * @brief 删除共享中断
+ * @param hwiNum 中断号
+ * @param irqParam 中断参数，包含设备ID
+ * @return 操作结果，成功返回LOS_OK，失败返回错误码
  */
 STATIC UINT32 OsHwiDelShared(HWI_HANDLE_T hwiNum, const HwiIrqParam *irqParam)
 {
-    HwiHandleForm *hwiForm = NULL; // 指向当前遍历到的中断处理节点
-    HwiHandleForm *hwiFormtmp = NULL; // 指向当前遍历节点的前一个节点
-    UINT32 hwiValid = FALSE; // 标记是否找到要删除的中断节点
-    UINT32 intSave; // 用于保存中断状态
+    HwiHandleForm *hwiForm = NULL;  // 中断句柄指针
+    HwiHandleForm *hwiFormtmp = NULL;  // 临时中断句柄指针
+    UINT32 hwiValid = FALSE;  // 中断是否找到标志
+    UINT32 intSave;  // 中断状态保存变量
 
-    HWI_LOCK(intSave); // 加自旋锁，保护共享中断数据结构
-    hwiForm = &g_hwiForm[hwiNum]; // 从全局注册的中断向量表中获取中断项
+    HWI_LOCK(intSave);  // 获取中断锁
+    hwiForm = &g_hwiForm[hwiNum];
     hwiFormtmp = hwiForm;
 
-    // 检查是否为共享中断且传入参数是否有效
-    if ((hwiForm->uwParam & IRQF_SHARED) && ((irqParam == NULL) || (irqParam->pDevId == NULL))) {
-        HWI_UNLOCK(intSave); // 解锁自旋锁
-        return OS_ERRNO_HWI_SHARED_ERROR; // 返回共享中断参数错误码
+    if ((hwiForm->uwParam & IRQF_SHARED) && ((irqParam == NULL) || (irqParam->pDevId == NULL))) {  // 共享中断必须提供设备ID
+        HWI_UNLOCK(intSave);
+        return OS_ERRNO_HWI_SHARED_ERROR;  // 返回共享中断错误
     }
 
-    // 处理非共享中断但有后续节点的情况
-    if ((hwiForm->pstNext != NULL) && !(hwiForm->uwParam & IRQF_SHARED)) {
-        hwiForm = hwiForm->pstNext; // 指向下一个中断处理节点
-        if (hwiForm->uwParam) { // 如果节点有参数
-            (VOID)LOS_MemFree(m_aucSysMem0, (VOID *)hwiForm->uwParam); // 释放参数占用的内存
+    if ((hwiForm->pstNext != NULL) && !(hwiForm->uwParam & IRQF_SHARED)) {  // 非共享中断处理
+        hwiForm = hwiForm->pstNext;
+        if (hwiForm->uwParam) {
+            (VOID)LOS_MemFree(m_aucSysMem0, (VOID *)hwiForm->uwParam);  // 释放参数内存
         }
-        (VOID)LOS_MemFree(m_aucSysMem0, hwiForm); // 释放当前中断处理节点的内存
-        hwiFormtmp->pstNext = NULL; // 前一个节点的下一个节点指针置空
+        (VOID)LOS_MemFree(m_aucSysMem0, hwiForm);  // 释放句柄内存
+        hwiFormtmp->pstNext = NULL;  // 断开链表
 
-        g_hwiFormName[hwiNum] = NULL; // 清除该中断的名称
+        g_hwiFormName[hwiNum] = NULL;  // 清除中断名称
 
-        HWI_UNLOCK(intSave); // 解锁自旋锁
-        return LOS_OK; // 返回操作成功
+        HWI_UNLOCK(intSave);
+        return LOS_OK;
     }
-
-    hwiForm = hwiForm->pstNext; // 指向下一个中断处理节点
-    // 遍历共享中断链表
-    while (hwiForm != NULL) {
-        // 检查当前节点的设备 ID 是否与传入的设备 ID 不匹配
-        if (((HwiIrqParam *)(hwiForm->uwParam))->pDevId != irqParam->pDevId) {
-            hwiFormtmp = hwiForm; // 更新前一个节点指针
-            hwiForm = hwiForm->pstNext; // 指向下一个节点
+    hwiForm = hwiForm->pstNext;
+    while (hwiForm != NULL) {  // 遍历共享中断链表
+        if (((HwiIrqParam *)(hwiForm->uwParam))->pDevId != irqParam->pDevId) {  // 匹配设备ID
+            hwiFormtmp = hwiForm;
+            hwiForm = hwiForm->pstNext;
         } else {
-            hwiFormtmp->pstNext = hwiForm->pstNext; // 跳过当前节点
-            (VOID)LOS_MemFree(m_aucSysMem0, (VOID *)hwiForm->uwParam); // 释放参数占用的内存
-            (VOID)LOS_MemFree(m_aucSysMem0, hwiForm); // 释放当前中断处理节点的内存
+            hwiFormtmp->pstNext = hwiForm->pstNext;  // 移除当前节点
+            (VOID)LOS_MemFree(m_aucSysMem0, (VOID *)hwiForm->uwParam);  // 释放参数内存
+            (VOID)LOS_MemFree(m_aucSysMem0, hwiForm);  // 释放句柄内存
 
-            hwiValid = TRUE; // 标记找到要删除的节点
-            break; // 跳出循环
+            hwiValid = TRUE;  // 标记找到中断
+            break;
         }
     }
 
-    // 如果未找到要删除的节点
-    if (hwiValid != TRUE) {
-        HWI_UNLOCK(intSave); // 解锁自旋锁
-        return OS_ERRNO_HWI_HWINUM_UNCREATE; // 返回中断号未创建错误码
+    if (hwiValid != TRUE) {  // 未找到指定中断
+        HWI_UNLOCK(intSave);
+        return OS_ERRNO_HWI_HWINUM_UNCREATE;  // 返回中断未创建错误
     }
 
-    // 如果该中断号的共享中断链表为空
-    if (g_hwiForm[hwiNum].pstNext == NULL) {
-        g_hwiForm[hwiNum].uwParam = 0; // 清除中断参数
-        g_hwiFormName[hwiNum] = NULL; // 清除该中断的名称
+    if (g_hwiForm[hwiNum].pstNext == NULL) {  // 如果链表为空
+        g_hwiForm[hwiNum].uwParam = 0;  // 清除参数
+        g_hwiFormName[hwiNum] = NULL;  // 清除名称
     }
 
-    HWI_UNLOCK(intSave); // 解锁自旋锁
-    return LOS_OK; // 返回操作成功
+    HWI_UNLOCK(intSave);  // 释放中断锁
+    return LOS_OK;
 }
-///创建一个共享硬件中断,共享中断就是一个中断能触发多个响应函数
+
+/**
+ * @brief 创建共享中断
+ * @param hwiNum 中断号
+ * @param hwiMode 中断模式
+ * @param hwiHandler 中断处理函数
+ * @param irqParam 中断参数，包含设备ID
+ * @return 操作结果，成功返回LOS_OK，失败返回错误码
+ */
 STATIC UINT32 OsHwiCreateShared(HWI_HANDLE_T hwiNum, HWI_MODE_T hwiMode,
                                 HWI_PROC_FUNC hwiHandler, const HwiIrqParam *irqParam)
 {
-    UINT32 intSave;
-    HwiHandleForm *hwiFormNode = NULL;
-    HwiHandleForm *hwiForm = NULL;
-    HwiIrqParam *hwiParam = NULL;
-    HWI_MODE_T modeResult = hwiMode & IRQF_SHARED;
+    UINT32 intSave;  // 中断状态保存变量
+    HwiHandleForm *hwiFormNode = NULL;  // 新中断节点
+    HwiHandleForm *hwiForm = NULL;  // 中断句柄指针
+    HwiIrqParam *hwiParam = NULL;  // 中断参数指针
+    HWI_MODE_T modeResult = hwiMode & IRQF_SHARED;  // 提取共享模式标志
 
-    if (modeResult && ((irqParam == NULL) || (irqParam->pDevId == NULL))) {
-        return OS_ERRNO_HWI_SHARED_ERROR;
+    if (modeResult && ((irqParam == NULL) || (irqParam->pDevId == NULL))) {  // 共享中断必须提供设备ID
+        return OS_ERRNO_HWI_SHARED_ERROR;  // 返回共享中断错误
     }
 
-    HWI_LOCK(intSave);//中断自旋锁
+    HWI_LOCK(intSave);  // 获取中断锁
 
-    hwiForm = &g_hwiForm[hwiNum];//获取中断处理项
-    if ((hwiForm->pstNext != NULL) && ((modeResult == 0) || (!(hwiForm->uwParam & IRQF_SHARED)))) {
+    hwiForm = &g_hwiForm[hwiNum];
+    if ((hwiForm->pstNext != NULL) && ((modeResult == 0) || (!(hwiForm->uwParam & IRQF_SHARED)))) {  // 检查模式兼容性
         HWI_UNLOCK(intSave);
-        return OS_ERRNO_HWI_SHARED_ERROR;
+        return OS_ERRNO_HWI_SHARED_ERROR;  // 返回共享中断错误
     }
 
-    while (hwiForm->pstNext != NULL) {//pstNext指向 共享中断的各处理函数节点,此处一直撸到最后一个
-        hwiForm = hwiForm->pstNext;//找下一个中断
-        hwiParam = (HwiIrqParam *)(hwiForm->uwParam);//获取中断参数,用于检测该设备ID是否已经有中断处理函数
-        if (hwiParam->pDevId == irqParam->pDevId) {//设备ID一致时,说明设备对应的中断处理函数已经存在了.
+    while (hwiForm->pstNext != NULL) {  // 遍历链表检查设备ID是否已存在
+        hwiForm = hwiForm->pstNext;
+        hwiParam = (HwiIrqParam *)(hwiForm->uwParam);
+        if (hwiParam->pDevId == irqParam->pDevId) {  // 设备ID已存在
             HWI_UNLOCK(intSave);
-            return OS_ERRNO_HWI_ALREADY_CREATED;
+            return OS_ERRNO_HWI_ALREADY_CREATED;  // 返回中断已创建错误
         }
     }
 
-    hwiFormNode = (HwiHandleForm *)LOS_MemAlloc(m_aucSysMem0, sizeof(HwiHandleForm));//创建一个中断处理节点
-    if (hwiFormNode == NULL) {
+    hwiFormNode = (HwiHandleForm *)LOS_MemAlloc(m_aucSysMem0, sizeof(HwiHandleForm));  // 分配新节点内存
+    if (hwiFormNode == NULL) {  // 内存分配失败
         HWI_UNLOCK(intSave);
-        return OS_ERRNO_HWI_NO_MEMORY;
+        return OS_ERRNO_HWI_NO_MEMORY;  // 返回内存不足错误
     }
 
-    hwiFormNode->uwParam = OsHwiCpIrqParam(irqParam);//获取中断处理函数的参数
-    if (hwiFormNode->uwParam == LOS_NOK) {
+    hwiFormNode->uwParam = OsHwiCpIrqParam(irqParam);  // 复制中断参数
+    if (hwiFormNode->uwParam == LOS_NOK) {  // 参数复制失败
         HWI_UNLOCK(intSave);
-        (VOID)LOS_MemFree(m_aucSysMem0, hwiFormNode);
-        return OS_ERRNO_HWI_NO_MEMORY;
+        (VOID)LOS_MemFree(m_aucSysMem0, hwiFormNode);  // 释放节点内存
+        return OS_ERRNO_HWI_NO_MEMORY;  // 返回内存不足错误
     }
 
-    hwiFormNode->pfnHook = hwiHandler;//绑定中断处理函数
-    hwiFormNode->pstNext = (struct tagHwiHandleForm *)NULL;//指定下一个中断为NULL,用于后续遍历找到最后一个中断项(见于以上 while (hwiForm->pstNext != NULL)处)
-    hwiForm->pstNext = hwiFormNode;//共享中断
+    hwiFormNode->pfnHook = hwiHandler;  // 设置中断处理函数
+    hwiFormNode->pstNext = (struct tagHwiHandleForm *)NULL;  // 初始化链表指针
+    hwiForm->pstNext = hwiFormNode;  // 添加到链表尾部
 
     if ((irqParam != NULL) && (irqParam->pName != NULL)) {
-        g_hwiFormName[hwiNum] = (CHAR *)irqParam->pName;
+        g_hwiFormName[hwiNum] = (CHAR *)irqParam->pName;  // 设置中断名称
     }
 
-    g_hwiForm[hwiNum].uwParam = modeResult;
+    g_hwiForm[hwiNum].uwParam = modeResult;  // 设置中断模式
 
-    HWI_UNLOCK(intSave);
+    HWI_UNLOCK(intSave);  // 释放中断锁
     return LOS_OK;
 }
 #endif
 
-/*
- * Description : initialization of the hardware interrupt
+/**
+ * @brief 硬件中断初始化
+ * @details 初始化中断句柄数组、名称数组，并调用硬件层中断初始化
  */
-LITE_OS_SEC_TEXT_INIT VOID OsHwiInit(VOID)//硬件中断初始化
+LITE_OS_SEC_TEXT_INIT VOID OsHwiInit(VOID)
 {
-    UINT32 hwiNum;
+    UINT32 hwiNum;  // 中断号循环变量
 
-    for (hwiNum = 0; hwiNum < OS_HWI_MAX_NUM; hwiNum++) {//初始化中断向量表,默认128个中断
-        g_hwiForm[hwiNum].pfnHook = NULL;
-        g_hwiForm[hwiNum].uwParam = 0;
-        g_hwiForm[hwiNum].pstNext = NULL;
+    for (hwiNum = 0; hwiNum < OS_HWI_MAX_NUM; hwiNum++) {  // 初始化所有中断句柄
+        g_hwiForm[hwiNum].pfnHook = NULL;  // 清除处理函数
+        g_hwiForm[hwiNum].uwParam = 0;  // 清除参数
+        g_hwiForm[hwiNum].pstNext = NULL;  // 清除链表指针
     }
 
-    (VOID)memset_s(g_hwiFormName, (sizeof(CHAR *) * OS_HWI_MAX_NUM), 0, (sizeof(CHAR *) * OS_HWI_MAX_NUM));
+    (VOID)memset_s(g_hwiFormName, (sizeof(CHAR *) * OS_HWI_MAX_NUM), 0, (sizeof(CHAR *) * OS_HWI_MAX_NUM));  // 初始化名称数组
 
-    HalIrqInit();
+    HalIrqInit();  // 调用硬件抽象层中断初始化
 
     return;
 }
 
 /**
- * @brief  创建一个硬中断
-    \n 中断创建，注册中断号、中断触发模式、中断优先级、中断处理程序。中断被触发时，
-    \n handleIrq会调用该中断处理程序
- * @param hwiNum 硬中断句柄编号 默认范围[0-127]
- * @param hwiPrio 硬中断优先级	
- * @param hwiMode 硬中断模式 共享和非共享
- * @param hwiHandler 硬中断处理函数
- * @param irqParam 硬中断处理函数参数
- * @return LITE_OS_SEC_TEXT_INIT 
+ * @brief 创建硬件中断
+ * @param hwiNum 中断号
+ * @param hwiPrio 中断优先级 (当前未使用)
+ * @param hwiMode 中断模式
+ * @param hwiHandler 中断处理函数
+ * @param irqParam 中断参数
+ * @return 操作结果，成功返回LOS_OK，失败返回错误码
  */
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_HwiCreate(HWI_HANDLE_T hwiNum,
                                            HWI_PRIOR_T hwiPrio,
@@ -431,37 +479,42 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_HwiCreate(HWI_HANDLE_T hwiNum,
                                            HWI_PROC_FUNC hwiHandler,
                                            HwiIrqParam *irqParam)
 {
-    UINT32 ret;
+    UINT32 ret;  // 返回结果
 
-    (VOID)hwiPrio;
-    if (hwiHandler == NULL) {//中断处理函数不能为NULL
-        return OS_ERRNO_HWI_PROC_FUNC_NULL;
+    (VOID)hwiPrio;  // 未使用的参数
+    if (hwiHandler == NULL) {  // 检查处理函数是否为空
+        return OS_ERRNO_HWI_PROC_FUNC_NULL;  // 返回处理函数为空错误
     }
-    if ((hwiNum > OS_USER_HWI_MAX) || ((INT32)hwiNum < OS_USER_HWI_MIN)) {//中断数区间限制 [32,96]
-        return OS_ERRNO_HWI_NUM_INVALID;
+    if ((hwiNum > OS_USER_HWI_MAX) || ((INT32)hwiNum < OS_USER_HWI_MIN)) {  // 检查中断号范围
+        return OS_ERRNO_HWI_NUM_INVALID;  // 返回中断号无效错误
     }
 
-#ifdef LOSCFG_NO_SHARED_IRQ	//不支持共享中断
-    ret = OsHwiCreateNoShared(hwiNum, hwiMode, hwiHandler, irqParam);
+#ifdef LOSCFG_NO_SHARED_IRQ
+    ret = OsHwiCreateNoShared(hwiNum, hwiMode, hwiHandler, irqParam);  // 创建非共享中断
 #else
-    ret = OsHwiCreateShared(hwiNum, hwiMode, hwiHandler, irqParam);
+    ret = OsHwiCreateShared(hwiNum, hwiMode, hwiHandler, irqParam);  // 创建共享中断
 #endif
     return ret;
 }
-///删除一个硬中断
+
+/**
+ * @brief 删除硬件中断
+ * @param hwiNum 中断号
+ * @param irqParam 中断参数，共享中断需要提供设备ID
+ * @return 操作结果，成功返回LOS_OK，失败返回错误码
+ */
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_HwiDelete(HWI_HANDLE_T hwiNum, HwiIrqParam *irqParam)
 {
-    UINT32 ret;
+    UINT32 ret;  // 返回结果
 
-    if ((hwiNum > OS_USER_HWI_MAX) || ((INT32)hwiNum < OS_USER_HWI_MIN)) {
-        return OS_ERRNO_HWI_NUM_INVALID;
+    if ((hwiNum > OS_USER_HWI_MAX) || ((INT32)hwiNum < OS_USER_HWI_MIN)) {  // 检查中断号范围
+        return OS_ERRNO_HWI_NUM_INVALID;  // 返回中断号无效错误
     }
 
-#ifdef LOSCFG_NO_SHARED_IRQ	//不支持共享中断
-    ret = OsHwiDelNoShared(hwiNum);
+#ifdef LOSCFG_NO_SHARED_IRQ
+    ret = OsHwiDelNoShared(hwiNum);  // 删除非共享中断
 #else
-    ret = OsHwiDelShared(hwiNum, irqParam);
+    ret = OsHwiDelShared(hwiNum, irqParam);  // 删除共享中断
 #endif
     return ret;
 }
-

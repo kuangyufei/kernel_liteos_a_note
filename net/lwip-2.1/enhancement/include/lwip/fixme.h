@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -58,7 +58,7 @@
 
 #define ip_addr_set_val(dest, src)  do { \
                                         IP_SET_TYPE_VAL(*dest, IP_GET_TYPE(src)); \
-                                        if(IP_IS_V6_VAL(*(src))) { \
+                                        if (IP_IS_V6_VAL(*(src))) { \
                                             ip6_addr_set(ip_2_ip6(dest), ip_2_ip6(src)); \
                                         } else { \
                                             ip4_addr_set(ip_2_ip4(dest), ip_2_ip4(src)); \

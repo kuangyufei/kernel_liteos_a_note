@@ -1641,7 +1641,8 @@ void SysThreadExit(int status)
  * @param newUserAddr 新用户空间地址
  * @return 成功返回0，失败返回错误码
  */
-int SysFutex(const unsigned int *uAddr, unsigned int flags, int val, unsigned int absTime, const unsigned int *newUserAddr)
+int SysFutex(const unsigned int *uAddr, unsigned int flags, int val,
+             unsigned int absTime, const unsigned int *newUserAddr)
 {
     if ((flags & FUTEX_MASK) == FUTEX_REQUEUE) {  // 重新排队操作
         return -OsFutexRequeue(uAddr, flags, val, absTime, newUserAddr);

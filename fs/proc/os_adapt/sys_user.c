@@ -162,9 +162,6 @@ static int ProcSysUserRead(struct SeqBuf *seqBuf, void *v)
     if (ret == OS_INVALID_VALUE) {  // 获取失败
         return EINVAL;              // 返回错误码
     }
-    // 输出限制值和当前计数（格式：limit: 值
-count: 值
-）
     (void)LosBufPrintf(seqBuf, "\nlimit: %u\n", ret);
     (void)LosBufPrintf(seqBuf, "count: %u\n", OsGetContainerCount(type));
     return 0;                       // 成功返回0

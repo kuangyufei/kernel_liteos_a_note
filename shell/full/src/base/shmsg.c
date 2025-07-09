@@ -198,8 +198,7 @@ LITE_OS_SEC_TEXT_MINOR VOID ShellCmdLineParse(CHAR c, pf_OUTPUT outputFunc, Shel
     const CHAR ch = c;  // 输入字符
     INT32 ret;  // 返回值
 
-    if ((shellCB->shellBufOffset == 0) && (ch != '
-') && (ch != '\0')) {  // 检查缓冲区是否为空且输入不为换行/空字符
+    if ((shellCB->shellBufOffset == 0) && (ch != '\n') && (ch != '\0')) {
         (VOID)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);  // 清空缓冲区
     }
 

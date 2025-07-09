@@ -781,8 +781,7 @@ static INT32 BcacheSync(OsBcache *bc)
     OsBcacheBlock *block = NULL;  // 缓存块结构体指针
     INT32 ret = ENOERR;  // 函数返回值，默认为成功
 
-    D(("bcache cache sync
-"));  // 调试日志：缓存同步开始
+    D(("bcache cache sync\n"));
 
     (VOID)pthread_mutex_lock(&bc->bcacheMutex);  // 加锁保护缓存操作
     node = bc->listHead.pstPrev;  // 从链表尾部开始遍历（LRU策略：最近最少使用的块在尾部）

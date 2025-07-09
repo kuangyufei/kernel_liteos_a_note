@@ -179,8 +179,8 @@ extern int SysBind(int s, const struct sockaddr *name, socklen_t namelen);
 extern int SysConnect(int s, const struct sockaddr *name, socklen_t namelen);
 extern int SysListen(int sockfd, int backlog);
 extern int SysAccept(int socket, struct sockaddr *address, socklen_t *addressLen);
-extern int SysGetSockName (int s, struct sockaddr *name, socklen_t *namelen);
-extern int SysGetPeerName (int s, struct sockaddr *name, socklen_t *namelen);
+extern int SysGetSockName(int s, struct sockaddr *name, socklen_t *namelen);
+extern int SysGetPeerName(int s, struct sockaddr *name, socklen_t *namelen);
 extern ssize_t SysSend(int s, const void *dataptr, size_t size, int flags);
 extern ssize_t SysSendTo(int s, const void *dataptr, size_t size, int flags,
                          const struct sockaddr *to, socklen_t tolen);
@@ -248,7 +248,7 @@ extern int do_mkdir(int dirfd, const char *pathname, mode_t mode);
 extern int do_rmdir(int dirfd, const char *pathname);
 extern int do_rename(int oldfd, const char *oldpath, int newfd, const char *newpath);
 extern int do_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
-    struct timeval *timeout, PollFun poll);
+                     struct timeval *timeout, PollFun poll);
 extern int do_readdir(int fd, struct dirent **de, unsigned int count);
 extern ssize_t preadv(int __fd, const struct iovec *__iov, int __count, off_t __offset);
 extern ssize_t pwritev(int __fd, const struct iovec *__iov, int __count, off_t __offset);
@@ -315,7 +315,7 @@ extern int SysFstatat64(int fd, const char *restrict path, struct kstat *restric
 extern int SysFcntl64(int fd, int cmd, void *arg);
 extern int SysPoll(struct pollfd *fds, nfds_t nfds, int timeout);
 extern int SysPpoll(struct pollfd *fds, nfds_t nfds, const struct timespec *tmo_p,
-		                    const sigset_t *sigmask, int nsig);
+                    const sigset_t *sigmask, int nsig);
 extern int SysPrctl(int option, ...);
 extern ssize_t SysPread64(int fd, void *buf, size_t nbytes, off64_t offset);
 extern ssize_t SysPwrite64(int fd, const void *buf, size_t nbytes, off64_t offset);

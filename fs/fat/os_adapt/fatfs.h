@@ -48,70 +48,72 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
+// 文件系统核心常量定义
+#define MAX_LFNAME_LENGTH       256  // 长文件名最大长度（字符）
+#define LABEL_LEN              12  // 卷标名称长度（字符）
+#define FAT_RESERVED_NUM       2  // FAT表保留数量
+#define FAT32_MAXSIZE          0x100000000  // FAT32最大支持容量（4GB，0x100000000字节）
+#define BAD_CLUSTER            0x7FFFFFFF  // 坏簇标记值
+#define DISK_ERROR             0xFFFFFFFF  // 磁盘错误标记值
+#define FAT12_END_OF_CLUSTER   0x00000FFF  // FAT12文件结束簇标记
+#define FAT16_END_OF_CLUSTER   0x0000FFFF  // FAT16文件结束簇标记
+#define FAT32_END_OF_CLUSTER   0x0FFFFFFF  // FAT32文件结束簇标记
+#define FAT_ERROR              (-1)  // FAT操作错误返回值
 
-#define MAX_LFNAME_LENGTH       256
-#define LABEL_LEN              12
-#define FAT_RESERVED_NUM       2
-#define FAT32_MAXSIZE          0x100000000
-#define BAD_CLUSTER            0x7FFFFFFF
-#define DISK_ERROR             0xFFFFFFFF
-#define FAT12_END_OF_CLUSTER   0x00000FFF
-#define FAT16_END_OF_CLUSTER   0x0000FFFF
-#define FAT32_END_OF_CLUSTER   0x0FFFFFFF
-#define FAT_ERROR              (-1)
+/* MBR分区表相关定义 */
+#define MBR_PRIMARY_PART_NUM 4  // MBR主分区表项数量，最多支持4个主分区
+#define JUMP_CODE "\xEB\xFE\x90"  // 引导扇区跳转指令，跳转到引导代码执行
 
-/* MBR */
-#define MBR_PRIMARY_PART_NUM 4
-#define JUMP_CODE "\xEB\xFE\x90"
+/* 分区类型标识（MBR分区表中的类型字段） */
+#define FAT12                  0x01  // FAT12文件系统，用于第一个32MB物理分区
+#define FAT16                  0x04  // FAT16文件系统，小于65536个扇区（32MB）
+#define EXTENDED_PARTITION_CHS  0x05  // CHS寻址模式的扩展分区
+#define FAT16B                 0x06  // FAT16B文件系统，65536个扇区及以上
+#define FAT32_CHS              0x0B  // CHS寻址模式的FAT32文件系统
+#define FAT32_LBA              0x0C  // LBA寻址模式的FAT32文件系统
+#define EXTENDED_PARTITION_LBA 0x0F  // LBA寻址模式的扩展分区
+#define GPT_PROTECTIVE_MBR     0xEE  // GPT磁盘的保护性MBR类型
 
-/* Partiton type | 分区类型*/
-#define FAT12                  0x01 /* FAT12 as primary partition in first physical 32MB */
-#define FAT16                  0x04 /* FAT16 with less than 65536 sectors(32MB) */
-#define EXTENDED_PARTITION_CHS  0x05
-#define FAT16B                 0x06 /* FAT16B with 65536 or more sectors */
-#define FAT32_CHS              0x0B
-#define FAT32_LBA              0x0C
-#define EXTENDED_PARTITION_LBA 0x0F
-#define GPT_PROTECTIVE_MBR     0xEE
+/* 卷引导记录(VBR)类型 */
+#define VBR_FAT                0  // 有效的FAT卷引导记录
+#define VBR_BS_NOT_FAT         2  // 引导扇区但不是FAT文件系统
+#define VBR_NOT_BS             3  // 不是引导扇区
+#define VBR_DISK_ERR           4  // 磁盘错误
 
-/* volume boot record type | 卷引导记录类型 */
-#define VBR_FAT                0
-#define VBR_BS_NOT_FAT         2
-#define VBR_NOT_BS             3
-#define VBR_DISK_ERR           4
+/* 文件系统限制与边界值 */
+#define FAT_MAX_CLUSTER_SIZE     64  // FAT最大簇大小（扇区）
+#define FAT32_MAX_CLUSTER_SIZE   128  // FAT32最大簇大小（扇区）
+#define FAT32_ENTRY_SIZE         4  // FAT32表项大小（字节）
+#define FAT16_ENTRY_SIZE         2  // FAT16表项大小（字节）
+#define VOL_MIN_SIZE             128  // 卷最小大小（扇区）
+#define SFD_START_SECTOR         63  //  superfloppy磁盘起始扇区
+#define MAX_BLOCK_SIZE         32768  // 最大块大小（扇区）
 
-/* Limit and boundary | 限制和边界*/
-#define FAT_MAX_CLUSTER_SIZE     64  /* (sectors) */
-#define FAT32_MAX_CLUSTER_SIZE   128 /* (sectors) */
-#define FAT32_ENTRY_SIZE         4 /* (bytes) */
-#define FAT16_ENTRY_SIZE         2 /* (bytes) */
-#define VOL_MIN_SIZE             128 /* (sectors) */
-#define SFD_START_SECTOR         63
-#define MAX_BLOCK_SIZE         32768 /* (sectors) */
+/* 保留扇区数量定义 */
+#define FAT32_RESERVED_SECTOR  32  // FAT32文件系统保留扇区数
+#define FAT_RESERVED_SECTOR    1  // FAT12/FAT16文件系统保留扇区数
 
-/* Sector | 扇区*/
-#define FAT32_RESERVED_SECTOR  32 
-#define FAT_RESERVED_SECTOR    1
+// 目录相关常量
+#define DIR_NAME_LEN           11  // 短文件名长度（8.3格式，共11字符）
+#define DIR_READ_COUNT         7  // 目录项读取计数
 
-#define DIR_NAME_LEN           11
-#define DIR_READ_COUNT         7 
+#define VOLUME_CHAR_LENGTH     4  // 卷字符长度
 
-#define VOLUME_CHAR_LENGTH     4
-
-#define FAT_DEBUG
+// 调试功能开关与宏定义
+#define FAT_DEBUG  // FAT调试功能开关，取消注释启用调试
 #ifdef FAT_DEBUG
-#define FDEBUG(format, ...) do { \
+#define FDEBUG(format, ...) do { \  // 调试打印宏
     PRINTK("[%s:%d]"format"\n", __func__, __LINE__, ##__VA_ARGS__); \
 } while (0)
 #else
-#define FDEBUG(...)
+#define FDEBUG(...)  // 调试功能关闭时为空宏
 #endif
 
-/* Format options (3rd argument of format) */
-#define FMT_FAT      0x01
-#define FMT_FAT32    0x02
-#define FMT_ANY      0x07
-#define FMT_ERASE    0x08
+/* 格式化选项（format函数的第三个参数） */
+#define FMT_FAT      0x01  // 格式化FAT12/FAT16标志
+#define FMT_FAT32    0x02  // 格式化FAT32标志
+#define FMT_ANY      0x07  // 自动选择FAT类型标志
+#define FMT_ERASE    0x08  // 格式化时擦除介质标志
 
 extern char FatLabel[LABEL_LEN];
 
@@ -137,7 +139,7 @@ int fatfs_readdir(struct Vnode *vnode, struct fs_dirent_s *idir);
 int fatfs_rewinddir(struct Vnode *vnode, struct fs_dirent_s *dir);
 int fatfs_closedir(struct Vnode *vnode, struct fs_dirent_s *dir);
 int fatfs_rename(struct Vnode *oldvnode, struct Vnode *newparent, const char *oldname, const char *newname);
-int fatfs_mkfs (struct Vnode *device, int sectors, int option);
+int fatfs_mkfs(struct Vnode *device, int sectors, int option);
 int fatfs_mkdir(struct Vnode *parent, const char *name, mode_t mode, struct Vnode **vpp);
 int fatfs_rmdir(struct Vnode *parent, struct Vnode *vp, const char *name);
 int fatfs_unlink(struct Vnode *parent, struct Vnode *vp, const char *name);

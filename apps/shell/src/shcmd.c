@@ -36,7 +36,6 @@
 #include "dirent.h"
 #include "securec.h"
 
-
 #define SHELL_INIT_MAGIC_FLAG 0xABABABAB
 #define CTRL_C 0x03 /* 0x03: ctrl+c ASCII */
 
@@ -378,7 +377,7 @@ static int OsTabMatchFile(char *cmdKey, unsigned int *len)
  * Description: Pass in the string and clear useless space ,which include:
  *                1) The overmatch space which is not be marked by Quote's area
  *                   Squeeze the overmatch space into one space
- *                2) Clear all space before first valid charatctor
+ *                2) Clear all space before first valid character
  * Input:       cmdKey : Pass in the buff string, which is ready to be operated
  *              cmdOut : Pass out the buffer string ,which has already been operated
  *              size : cmdKey length
@@ -407,17 +406,17 @@ unsigned int OsCmdKeyShift(const char *cmdKey, char *cmdOut, unsigned int size)
 
     /* Backup the 'output' start address */
     outputBak = output;
-    /* Scan each charactor in 'cmdKey',and squeeze the overmuch space and ignore invalid charactor */
+    /* Scan each character in 'cmdKey',and squeeze the overmuch space and ignore invalid character */
     for (; *cmdKey != '\0'; cmdKey++) {
         /* Detected a Double Quotes, switch the matching status */
         if (*(cmdKey) == '\"') {
             SWITCH_QUOTES_STATUS(quotes);
         }
-        /* Ignore the current charactor in following situation */
+        /* Ignore the current character in following situation */
         /* 1) Quotes matching status is FALSE (which said that the space is not been marked by double quotes) */
-        /* 2) Current charactor is a space */
-        /* 3) Next charactor is a space too, or the string is been seeked to the end already(\0) */
-        /* 4) Invalid charactor, such as single quotes */
+        /* 2) Current character is a space */
+        /* 3) Next character is a space too, or the string is been seeked to the end already(\0) */
+        /* 4) Invalid character, such as single quotes */
         if ((*cmdKey == ' ') && ((*(cmdKey + 1) == ' ') || (*(cmdKey + 1) == '\0')) && QUOTES_STATUS_CLOSE(quotes)) {
             continue;
         }
@@ -431,7 +430,7 @@ unsigned int OsCmdKeyShift(const char *cmdKey, char *cmdOut, unsigned int size)
     /* Restore the 'output' start address */
     output = outputBak;
     len = strlen(output);
-    /* Clear the space which is located at the first charactor in buffer */
+    /* Clear the space which is located at the first character in buffer */
     if (*output == ' ') {
         output++;
         len--;
@@ -585,7 +584,6 @@ END:
 
 unsigned int OsCmdExec(CmdParsed *cmdParsed, char *cmdStr)
 {
-    /* TODO: complete the usrspace command */
     unsigned int ret = SH_OK;
     if (cmdParsed && cmdStr) {
         ret = SH_NOK;

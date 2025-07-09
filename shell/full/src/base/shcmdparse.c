@@ -49,7 +49,7 @@ LITE_OS_SEC_TEXT_MINOR CHAR *OsCmdParseStrdup(const CHAR *str)
 
     tempStr = newStr;  // 保存字符串起始地址
     for (; *str != '\0'; str++) {  // 遍历输入字符串
-        if ((*str == '"') || (*str == '\'')) {  // 跳过双引号和单引号
+        if ((*str == '\"') || (*str == '\'')) {
             continue;  // 继续下一个字符
         }
         *newStr = *str;  // 复制有效字符
@@ -136,7 +136,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdTokenSplit(CHAR *cmdStr, CHAR split, CmdParse
     }
 
     for (p = cmdStr; (*p != '\0') && (ret == LOS_OK); p++) {  // 遍历命令字符串
-        if (*p == '"') {  // 遇到双引号
+        if (*p == '\"') {
             SWITCH_QUOTES_STATUS(quotes);  // 切换引号状态
         }
         switch (state) {  // 根据当前状态处理

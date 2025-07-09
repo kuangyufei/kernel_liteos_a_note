@@ -36,92 +36,140 @@
 #include "los_memory.h"
 #include "los_vm_map.h"
 
-
-
 /**
- * @brief 
- * @verbatim
-    从用户空间拷贝到内核空间
-    请思考个问题,系统调用时为什么一定要copy_from_user ? 为什么不直接用memcpy？
-    https://mp.weixin.qq.com/s/H3nXlOpP_XyF7M-1B4qreQ
- * @endverbatim
- * @param dst 
- * @param src 
- * @param len 
- * @return size_t 
+ * @brief   用户空间到内核空间数据复制的架构层包装函数
+ * @param   dst     内核空间目标地址
+ * @param   src     用户空间源地址
+ * @param   len     要复制的字节数
+ * @return  成功复制的字节数，失败返回剩余未复制字节数
+ * @note    实际调用LOS_ArchCopyFromUser实现核心逻辑
  */
 size_t arch_copy_from_user(void *dst, const void *src, size_t len)
 {
     return LOS_ArchCopyFromUser(dst, src, len);
 }
 
+/**
+ * @brief   用户空间到内核空间数据复制的实际实现
+ * @param   dst     内核空间目标地址
+ * @param   src     用户空间源地址
+ * @param   len     要复制的字节数
+ * @return  0表示成功，非0表示失败（返回未复制的字节数）
+ * @note    首先验证用户空间地址范围合法性，非法则直接返回len表示复制失败
+ */
 size_t LOS_ArchCopyFromUser(void *dst, const void *src, size_t len)
 {
-    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)src, len)) {//[src,src+len]在内核空间
-        return len;
+    // 检查源地址是否完全位于用户空间
+    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)src, len)) {
+        return len;  // 地址非法，返回未复制字节数
     }
 
-    return _arm_user_copy(dst, src, len);//完成从用户空间到内核空间的拷贝
-}
-///拷贝到用户空间
-size_t arch_copy_to_user(void *dst, const void *src, size_t len)
-{
-    return LOS_ArchCopyToUser(dst, src, len);//
+    // 调用ARM架构专用的用户空间复制函数
+    return _arm_user_copy(dst, src, len);
 }
 
 /**
- * @brief 从内核空间拷贝到用户空间
- * @param dst 必须在用户空间
- * @param src 必须在内核空间
- * @param len 
- * @return size_t 
+ * @brief   内核空间到用户空间数据复制的架构层包装函数
+ * @param   dst     用户空间目标地址
+ * @param   src     内核空间源地址
+ * @param   len     要复制的字节数
+ * @return  成功复制的字节数，失败返回剩余未复制字节数
+ * @note    实际调用LOS_ArchCopyToUser实现核心逻辑
+ */
+size_t arch_copy_to_user(void *dst, const void *src, size_t len)
+{
+    return LOS_ArchCopyToUser(dst, src, len);
+}
+
+/**
+ * @brief   内核空间到用户空间数据复制的实际实现
+ * @param   dst     用户空间目标地址
+ * @param   src     内核空间源地址
+ * @param   len     要复制的字节数
+ * @return  0表示成功，非0表示失败（返回未复制的字节数）
+ * @note    首先验证用户空间地址范围合法性，非法则直接返回len表示复制失败
  */
 size_t LOS_ArchCopyToUser(void *dst, const void *src, size_t len)
-{//先判断地址是不是在用户空间
-    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dst, len)) {//[dest,dest+count] 不在用户空间
-        return len;//必须在用户空间
+{
+    // 检查目标地址是否完全位于用户空间
+    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dst, len)) {
+        return len;  // 地址非法，返回未复制字节数
     }
 
-    return _arm_user_copy(dst, src, len);//完成从内核空间到用户空间的拷贝
+    // 调用ARM架构专用的用户空间复制函数
+    return _arm_user_copy(dst, src, len);
 }
-///将内核数据拷贝到用户空间
+
+/**
+ * @brief   从内核空间复制数据到用户空间（带长度检查）
+ * @param   dest    用户空间目标缓冲区
+ * @param   max     目标缓冲区最大容量
+ * @param   src     内核空间源数据地址
+ * @param   count   要复制的数据字节数
+ * @return  0表示成功，非0表示失败（EFAULT/ERANGE）
+ * @note    根据目标地址空间类型选择不同复制策略，确保安全边界检查
+ */
 INT32 LOS_CopyFromKernel(VOID *dest, UINT32 max, const VOID *src, UINT32 count)
 {
-    INT32 ret;
+    INT32 ret;  // 复制操作返回值
 
-    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dest, count)) {//[dest,dest+count] 不在用户空间
+    // 判断目标地址是否为内核空间
+    if (!LOS_IsUserAddressRange((VADDR_T)(UINTPTR)dest, count)) {
+        // 内核空间复制：使用安全的memcpy_s（带缓冲区溢出检查）
         ret = memcpy_s(dest, max, src, count);
-    } else {//[dest,dest+count] 在用户空间
-        ret = ((max >= count) ? _arm_user_copy(dest, src, count) : ERANGE_AND_RESET);//用户空间copy
-    }
-
-    return ret;
-}
-///将用户空间的数据拷贝到内核空间
-INT32 LOS_CopyToKernel(VOID *dest, UINT32 max, const VOID *src, UINT32 count)
-{
-    INT32 ret;
-
-    if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)src, count)) {//[src,src+count] 在内核空间的情况
-        ret = memcpy_s(dest, max, src, count);
-    } else {//[src,src+count] 在内核空间的情况
+    } else {
+        // 用户空间复制：先检查缓冲区容量，足够则调用架构复制函数
         ret = ((max >= count) ? _arm_user_copy(dest, src, count) : ERANGE_AND_RESET);
     }
 
     return ret;
 }
-///清除用户空间数据
+
+/**
+ * @brief   从用户空间复制数据到内核空间（带长度检查）
+ * @param   dest    内核空间目标缓冲区
+ * @param   max     目标缓冲区最大容量
+ * @param   src     用户空间源数据地址
+ * @param   count   要复制的数据字节数
+ * @return  0表示成功，非0表示失败（EFAULT/ERANGE）
+ * @note    根据源地址空间类型选择不同复制策略，确保安全边界检查
+ */
+INT32 LOS_CopyToKernel(VOID *dest, UINT32 max, const VOID *src, UINT32 count)
+{
+    INT32 ret;  // 复制操作返回值
+
+    // 判断源地址是否为内核空间
+    if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)src, count)) {
+        // 内核空间复制：使用安全的memcpy_s（带缓冲区溢出检查）
+        ret = memcpy_s(dest, max, src, count);
+    } else {
+        // 用户空间复制：先检查缓冲区容量，足够则调用架构复制函数
+        ret = ((max >= count) ? _arm_user_copy(dest, src, count) : ERANGE_AND_RESET);
+    }
+
+    return ret;
+}
+
+/**
+ * @brief   清除用户空间内存区域（填充0）
+ * @param   buf     用户空间内存起始地址
+ * @param   len     要清除的字节数
+ * @return  0表示成功，-EFAULT表示失败
+ * @note    根据地址空间类型选择不同清除策略，确保操作安全性
+ */
 INT32 LOS_UserMemClear(unsigned char *buf, UINT32 len)
 {
-    INT32 ret = 0;
-    if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buf, len)) {//[buf,buf+len] 不在用户空间
-        (VOID)memset_s(buf, len, 0, len);//清0
-    } else {//在用户空间
+    INT32 ret = 0;  // 清除操作返回值
+    // 判断缓冲区是否为内核空间
+    if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buf, len)) {
+        // 内核空间清除：使用安全的memset_s（带缓冲区溢出检查）
+        (VOID)memset_s(buf, len, 0, len);
+    } else {
+        // 用户空间清除：调用ARM架构专用清除函数，失败返回-EFAULT
         if (_arm_clear_user(buf, len)) {
             return -EFAULT;
         }
     }
     return ret;
 }
-
 

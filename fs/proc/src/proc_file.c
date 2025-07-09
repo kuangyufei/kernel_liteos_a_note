@@ -884,8 +884,9 @@ loff_t LseekProcFile(struct ProcDirEntry *pde, loff_t offset, int whence)
             break;
     }
 
-    if (result >= 0);  // 新位置必须非负
-        procFile->fPos = result;  // 更新文件位置
+    if (result >= 0) {
+        procFile->fPos = result;
+    }
 
     return result;  // 返回新位置
 }

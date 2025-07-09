@@ -121,10 +121,10 @@ STATIC VOID OsCmdUsageDate(INT32 order)
     PRINTK("  %%m     The month as a decimal number (range 01 to 12).\n");
     PRINTK("  %%M     The minute as a decimal number (range 00 to 59).\n");
     PRINTK("  %%n     A newline character. (SU)\n");
-    PRINTK("  %%p     Either "AM" or "PM" according to the given time  value, \n");
+    PRINTK("  %%p     Either \"AM\" or \"PM\" according to the given time  value, \n");
     PRINTK("         or the corresponding  strings  for the current locale.\n");
-    PRINTK("         Noon is treated as "PM" and midnight as "AM".\n");
-    PRINTK("  %%P     Like %%p but in lowercase: "am" or "pm" \n");
+    PRINTK("         Noon is treated as \"PM\" and midnight as \"AM\".\n");
+    PRINTK("  %%P     Like %%p but in lowercase: \"am\" or \"pm\" \n");
     PRINTK("         or a corresponding string for the current locale. (GNU)\n");
     PRINTK("  %%s     The number of seconds since the Epoch, that is,\n");
     PRINTK("         since 1970-01-01 00:00:00 UTC. (TZ)\n");
@@ -157,21 +157,21 @@ STATIC INT32 OsStrToTm(const CHAR *str, struct tm *tm)
     // 根据字符串长度和格式特征判断时间格式
     if (strLen == 8) { /* 8:时间格式字符串长度，如hh:mm:ss或yyyymmdd */
         if (str[2] == ':') { /* 2:特征字符索引 */
-            ret = strptime(str, "%%H:%%M:%%S", tm);  // 解析时分秒格式(hh:mm:ss)
+            ret = strptime(str, "%H:%M:%S", tm);
         } else {
-            ret = strptime(str, "%%Y%%m%%d", tm);   // 解析年月日格式(yyyymmdd)
+            ret = strptime(str, "%Y%m%d", tm);
         }
-    } else if (strLen == 10) { /* 10:时间格式字符串长度，如yyyy/mm/dd */
-        ret = strptime(str, "%%Y/%%m/%%d", tm);       // 解析带斜杠的年月日格式
-    } else if (strLen == 5) { /* 5:时间格式字符串长度，如hh:mm或mm/dd */
-        if (str[2] == ':') { /* 2:特征字符索引 */
-            ret = strptime(str, "%%H:%%M", tm);      // 解析时分格式(hh:mm)
-        } else if (str[2] == '/') { /* 2:特征字符索引 */
-            ret = strptime(str, "%%m/%%d", tm);      // 解析月日格式(mm/dd)
+    } else if (strLen == 10) { /* 10:Time format string length,such as yyyy/mm/dd  */
+        ret = strptime(str, "%Y/%m/%d", tm);
+    } else if (strLen == 5) { /* 5:Time format string length,such as hh:mm or mm/dd */
+        if (str[2] == ':') { /* 2:Index of Eigenvalues */
+            ret = strptime(str, "%H:%M", tm);
+        } else if (str[2] == '/') { /* 2:Index of Eigenvalues */
+            ret = strptime(str, "%m/%d", tm);
         }
-    } else if (strLen == 7) { /* 7:时间格式字符串长度，如yyyy/mm */
-        if (str[4] == '/') { /* 4:特征字符索引 */
-            ret = strptime(str, "%%Y/%%m", tm);      // 解析年月格式(yyyy/mm)
+    } else if (strLen == 7) { /* 7:Time format string length,such as yyyy/mm */
+        if (str[4] == '/') { /* 4:Index of Eigenvalues */
+            ret = strptime(str, "%Y/%m", tm);
         }
     }
 

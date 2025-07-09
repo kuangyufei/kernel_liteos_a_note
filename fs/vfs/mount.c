@@ -116,4 +116,3 @@ LIST_HEAD* GetMountList(void)
     return g_mountList;                               // 返回挂载列表头指针
 }
 #endif
-#endif

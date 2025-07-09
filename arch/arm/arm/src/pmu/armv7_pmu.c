@@ -29,10 +29,10 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "armv7_pmu_pri.h"; // 包含 ARMv7 性能监控单元的私有头文件
-#include "perf_pmu_pri.h";  // 包含性能监控单元的私有头文件
-#include "los_hw_cpu.h";    // 包含硬件 CPU 相关的头文件
-#include "asm/platform.h";  // 包含平台相关的汇编头文件
+#include "armv7_pmu_pri.h"
+#include "perf_pmu_pri.h"
+#include "los_hw_cpu.h"
+#include "asm/platform.h"
 
 OS_PMU_INTS(LOSCFG_KERNEL_CORE_NUM, g_pmuIrqNr); // 调用 OS_PMU_INTS 宏，传入内核核心数和 PMU 中断号数组
 STATIC HwPmu g_armv7Pmu; // 静态定义一个 ARMv7 性能监控单元结构体实例

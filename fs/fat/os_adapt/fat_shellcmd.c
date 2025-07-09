@@ -38,43 +38,53 @@
 #include "shcmd.h"
 #include "shell.h"
 #include "fatfs.h"
-
+/**
+ * @brief 处理shell格式化命令的入口函数
+ * @details 解析格式化命令参数，验证参数合法性，并调用底层格式化函数
+ * @param argc 命令参数个数
+ * @param argv 命令参数字符串数组
+ * @return 0 - 执行成功，非0 - 执行失败
+ */
 int osShellCmdFormat(int argc, char **argv)
 {
-    if (argc < 3) { /* 3, at least 3 params for this shell command. */
-        perror("format error");
-        PRINTK("Usage  :\n");
-        PRINTK("        format <dev_vnodename> <sectors> <option> <label>\n");
-        PRINTK("        dev_vnodename : the name of dev\n");
-        PRINTK("        sectors       : Size of allocation unit in unit of byte or sector, ");
-        PRINTK("0 instead of default size\n");
-        PRINTK("        options       : Index of filesystem. 1 for FAT filesystem, ");
-        PRINTK("2 for FAT32 filesystem, 7 for any, 8 for erase\n");
-        PRINTK("        label         : The volume of device. It will be emptyed when this parameter is null\n");
-        PRINTK("Example:\n");
-        PRINTK("        format /dev/mmcblk0 128 2\n");
+    if (argc < 3) { /* 参数数量检查：至少需要3个参数 */
+        perror("format error");  // 输出错误信息
+        PRINTK("Usage  :\n");  // 打印使用说明
+        PRINTK("        format <dev_vnodename> <sectors> <option> <label>\n");  // 命令格式
+        PRINTK("        dev_vnodename : the name of dev\n");  // 设备节点名参数说明
+        PRINTK("        sectors       : Size of allocation unit in unit of byte or sector, ");  // 扇区大小参数说明
+        PRINTK("0 instead of default size\n");  // 0表示使用默认大小
+        PRINTK("        options       : Index of filesystem. 1 for FAT filesystem, ");  // 文件系统类型参数说明
+        PRINTK("2 for FAT32 filesystem, 7 for any, 8 for erase\n");  // 各数值对应的文件系统类型
+        PRINTK("        label         : The volume of device. It will be emptyed when this parameter is null\n");  // 卷标参数说明
+        PRINTK("Example:\n");  // 示例用法
+        PRINTK("        format /dev/mmcblk0 128 2\n");  // 格式化示例命令
 
-        set_errno(EINVAL);
-        return 0;
+        set_errno(EINVAL);  // 设置错误号为参数无效
+        return 0;  // 返回
     }
 
-    if (argc == 4) { /* 4, if the params count is equal to 4, then do this. */
-        /* 3, get the param and check. */
+    if (argc == 4) { /* 参数数量为4时处理卷标 */
+        /* 检查卷标参数是否为NULL或null */
         if (strncmp(argv[3], "NULL", strlen(argv[3])) == 0 || strncmp(argv[3], "null", strlen(argv[3])) == 0) {
-            set_label(NULL);
+            set_label(NULL);  // 设置卷标为空
         } else {
-            set_label(argv[3]);
+            set_label(argv[3]);  // 设置卷标为输入值
         }
     }
-        /* 0, 1, 2, get the param and check it. */
+        /* 调用格式化函数，传入设备名、扇区大小和文件系统类型 */
     if (format(argv[0], atoi(argv[1]), atoi(argv[2])) == 0) {
-        PRINTK("format %s Success \n", argv[0]);
+        PRINTK("format %s Success \n", argv[0]);  // 格式化成功提示
     } else {
-        perror("format error");
+        perror("format error");  // 格式化失败提示
     }
 
-    return 0;
+    return 0;  // 函数返回
 }
 
-SHELLCMD_ENTRY(format_shellcmd, CMD_TYPE_EX, "format", XARGS, (CmdCallBackFunc)osShellCmdFormat);
+/**
+ * @brief 注册shell格式化命令
+ * @details 将format命令添加到shell命令表，指定命令类型和回调函数
+ */
+SHELLCMD_ENTRY(format_shellcmd, CMD_TYPE_EX, "format", XARGS, (CmdCallBackFunc)osShellCmdFormat);  // 注册format命令到shell
 #endif

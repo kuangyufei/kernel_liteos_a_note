@@ -801,13 +801,13 @@ int pthread_cancel(pthread_t thread)
 {
     _pthread_data *data = NULL;  // 线程数据
 
-    if (pthread_mutex_lock(&g_pthreadsDataMutex)) {  // 加锁
+    if (pthread_mutex_lock(&g_pthreadsDataMutex) != ENOERR) {
         PRINT_ERR("%s: %d failed\n", __FUNCTION__, __LINE__);
     }
 
     data = pthread_get_data(thread);  // 获取线程数据
     if (data == NULL) {  // 线程不存在
-        if (pthread_mutex_unlock(&g_pthreadsDataMutex)) {  // 解锁
+        if (pthread_mutex_unlock(&g_pthreadsDataMutex) != ENOERR) {
             PRINT_ERR("%s: %d failed\n", __FUNCTION__, __LINE__);
         }
         return ESRCH;  // 返回线程不存在错误
@@ -831,13 +831,13 @@ int pthread_cancel(pthread_t thread)
      * 否则线程禁用了取消，这种情况下
      * 由线程自行启用取消
      */
-    if (pthread_mutex_unlock(&g_pthreadsDataMutex)) {  // 解锁
+    if (pthread_mutex_unlock(&g_pthreadsDataMutex) != ENOERR) {
         PRINT_ERR("%s: %d failed\n", __FUNCTION__, __LINE__);
     }
 
     return ENOERR;  // 成功
 ERROR_OUT:
-    if (pthread_mutex_unlock(&g_pthreadsDataMutex)) {  // 解锁
+    if (pthread_mutex_unlock(&g_pthreadsDataMutex) != ENOERR) {
         PRINT_ERR("%s: %d failed\n", __FUNCTION__, __LINE__);
     }
     return ESRCH;  // 返回错误

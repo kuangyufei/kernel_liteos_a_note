@@ -742,7 +742,8 @@ int VfsJffs2Readdir(struct Vnode *pVnode, struct fs_dirent_s *dir)
     /* set jffs2_d */
     while (i < dir->read_cnt) {               // 循环读取，直到达到请求的目录项数量
         // 调用JFFS2目录读取函数
-        ret = jffs2_readdir((struct jffs2_inode *)pVnode->data, &dir->fd_position, &dir->fd_int_offset, &dir->fd_dir[i]);
+        ret = jffs2_readdir((struct jffs2_inode *)pVnode->data, &dir->fd_position,
+                            &dir->fd_int_offset, &dir->fd_dir[i]);
         if (ret) {                            // 读取失败或到达目录末尾
             break;
         }

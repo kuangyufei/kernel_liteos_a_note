@@ -39,22 +39,27 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
+/* 系统状态宏定义 */
+#define OS_SYSTEM_NORMAL        0                           /* 系统正常运行状态 */
+#define OS_SYSTEM_EXC_CURR_CPU  1                           /* 当前CPU发生异常状态 */
+#define OS_SYSTEM_EXC_OTHER_CPU 2                           /* 其他CPU发生异常状态 */
 
-#define OS_SYSTEM_NORMAL        0	//当前CPU都处于正常状态
-#define OS_SYSTEM_EXC_CURR_CPU  1	//当前CPU处于异常状态
-#define OS_SYSTEM_EXC_OTHER_CPU 2	//其他CPU处于异常状态
+/* 路径长度宏定义 */
+#define REGION_PATH_MAX 32                                  /* 内存区域路径最大长度，单位：字节 */
 
-#define REGION_PATH_MAX 32
-
+/**
+ * @brief 指令指针信息结构体
+ * 用于存储异常发生时的指令指针及相关路径信息
+ */
 typedef struct {
-#ifdef LOSCFG_KERNEL_VM
-    UINTPTR ip;
-    UINT32 len; /* f_path length */
-    CHAR f_path[REGION_PATH_MAX];
-#else
-    UINTPTR ip;
+#ifdef LOSCFG_KERNEL_VM                                      /* 条件编译：启用内核虚拟内存管理时 */
+    UINTPTR ip;                                             /* 指令指针地址 */
+    UINT32 len; /* f_path length */                         /* 文件路径长度 */
+    CHAR f_path[REGION_PATH_MAX];                           /* 文件路径缓冲区，最大长度REGION_PATH_MAX */
+#else                                                       /* 条件编译：未启用内核虚拟内存管理时 */
+    UINTPTR ip;                                             /* 指令指针地址 */
 #endif
-} IpInfo;
+} IpInfo;                                                    /* 指令指针信息结构体类型 */
 
 extern UINT32 OsGetSystemStatus(VOID);
 extern VOID BackTraceSub(UINTPTR regFP);

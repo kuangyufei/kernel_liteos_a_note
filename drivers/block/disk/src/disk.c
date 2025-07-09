@@ -118,7 +118,7 @@ typedef VOID *(*StorageHookFunction)(VOID *);
 // 添加磁盘引用的钩子函数（弱引用osReHookFuncAdd）
 // 参数：handler - 钩子函数，param - 函数参数
 // 返回值：操作结果
-static UINT32 OsReHookFuncAddDiskRef(StorageHookFunction handler,          \
+static UINT32 OsReHookFuncAddDiskRef(StorageHookFunction handler,
                                      VOID *param) __attribute__((weakref("osReHookFuncAdd")));
 
 // 删除磁盘引用的钩子函数（弱引用osReHookFuncDel）
@@ -152,8 +152,8 @@ UINT32 GetFatSectorsPerBlock(VOID)
 VOID SetFatSectorsPerBlock(UINT32 sectorsPerBlock)
 {
     // 检查扇区数是否为32的倍数（UNSIGNED_INTEGER_BITS通常为32）且移位后不超过缓存块标志位
-    if (((sectorsPerBlock % UNSIGNED_INTEGER_BITS) == 0) &&                \
-        ((sectorsPerBlock >> UNINT_LOG2_SHIFT) <= BCACHE_BLOCK_FLAGS)) {   \
+    if (((sectorsPerBlock % UNSIGNED_INTEGER_BITS) == 0) &&
+        ((sectorsPerBlock >> UNINT_LOG2_SHIFT) <= BCACHE_BLOCK_FLAGS)) {
         g_uwFatSectorsPerBlock = sectorsPerBlock;  // 满足条件则更新全局变量
     }
 }
@@ -278,8 +278,7 @@ los_disk *los_get_mmcdisk_bytype(UINT8 type)
         los_disk *disk = get_disk(diskId);  // 获取当前ID对应的磁盘结构体
         if (disk == NULL) {
             continue;  // 磁盘不存在，跳过
-        } else if ((disk->type == type) &&  // 类型匹配且名称前缀匹配
-                   (strncmp(disk->disk_name, mmcDevHead, strlen(mmcDevHead)) == 0)) {
+        } else if ((disk->type == type) && (strncmp(disk->disk_name, mmcDevHead, strlen(mmcDevHead)) == 0)) {
             return disk;  // 找到目标磁盘，返回指针
         }
     }
@@ -1708,54 +1707,54 @@ static INT32 DiskDivideAndPartitionRegister(struct disk_divide_info *info, los_d
  */
 static INT32 DiskDeinit(los_disk *disk)
 {
-    los_part *part = NULL;  // 分区指针
-    char *diskName = NULL;td>  // 磁盘名称
-    CHAR devName[DEV_NAME_BUFF_SIZE];  // 设备名称缓冲区
-    INT32 ret;  // 返回值
+    los_part *part = NULL;
+    char *diskName = NULL;
+    CHAR devName[DEV_NAME_BUFF_SIZE];
+    INT32 ret;
 
-    if (LOS_ListEmpty(&disk->head) == FALSE) {  // 如果分区链表非空
-        part = LOS_DL_LIST_ENTRY(disk->head.pstNext, los_part, list);  // 获取第一个分区
-        while (&part->list != &disk->head) {  // 遍历分区链表
-            diskName = (disk->disk_name == NULL) ? "null" : disk->disk_name;  // 获取磁盘名称
+    if (LOS_ListEmpty(&disk->head) == FALSE) {
+        part = LOS_DL_LIST_ENTRY(disk->head.pstNext, los_part, list);
+        while (&part->list != &disk->head) {
+            diskName = (disk->disk_name == NULL) ? "null" : disk->disk_name;
             ret = snprintf_s(devName, sizeof(devName), sizeof(devName) - 1, "%s%c%d",
-                             diskName, 'p', disk->part_count - 1);  // 格式化设备名称
-            if (ret < 0) {  // 格式化失败返回错误
+                             diskName, 'p', disk->part_count - 1);
+            if (ret < 0) {
                 return -ENAMETOOLONG;
             }
-            DiskPartDelFromDisk(disk, part);  // 从磁盘中删除分区
-            (VOID)unregister_blockdriver(devName);  // 注销块设备
-            DiskPartRelease(part);  // 释放分区
+            DiskPartDelFromDisk(disk, part);
+            (VOID)unregister_blockdriver(devName);
+            DiskPartRelease(part);
 
-            part = LOS_DL_LIST_ENTRY(disk->headtd>.pstNext, los_part, list);  // 获取下一个分区
+            part = LOS_DL_LIST_ENTRY(disk->head.pstNext, los_part, list);
         }
     }
 
-    DISK_LOCK(&disk->disk_mutex);  // 加锁保护磁盘操作
+    DISK_LOCK(&disk->disk_mutex);
 
 #ifdef LOSCFG_FS_FAT_CACHE
-    DiskCacheDeinit(disk);  // 反初始化磁盘缓存
+    DiskCacheDeinit(disk);
 #else
-    if (disk->buff != NULL) {  // 如果缓冲区存在则释放
+    if (disk->buff != NULL) {
         free(disk->buff);
     }
 #endif
 
-    disk->dev = NULL;  // 块设备指针置空
-    DISK_UNLOCK(&disk->disk_mutex); td>// 解锁磁盘
-    (VOID)unregister_blockdriver(disk->disk_name);  // 注销块设备
-    if (disk->disk_name != NULL) {  // 如果磁盘名称存在则释放内存
-        LOS_MemFreetd>(m_aucSysMem0, disk->disk_name);
+    disk->dev = NULL;
+    DISK_UNLOCK(&disk->disk_mutex);
+    (VOID)unregister_blockdriver(disk->disk_name);
+    if (disk->disk_name != NULL) {
+        LOS_MemFree(m_aucSysMem0, disk->disk_name);
         disk->disk_name = NULL;
     }
-    ret = pthread_mutex_destroy(&disk->disk_mutex);  // 销毁互斥锁
-    if (ret != 0) {  // 销毁失败时打印错误信息
+    ret = pthread_mutex_destroy(&disk->disk_mutex);
+    if (ret != 0) {
         PRINT_ERR("%s %d, mutex destroy failed, ret = %d\n", __FUNCTION__, __LINE__, ret);
         return -EFAULT;
     }
-td>
-    disk->disk_status = STAT_UNUSED;  // 设置磁盘状态为未使用
 
-    return ENOERR;  // 返回成功
+    disk->disk_status = STAT_UNUSED;
+
+    return ENOERR;
 }
 
 /**
@@ -1796,423 +1795,357 @@ static UINT32 OsDiskInitSub(const CHAR *diskName, INT32 diskID, los_disk *disk,
     return ENOERR;  // 返回成功
 }
 
-/**
- * @brief 磁盘初始化
- * @param diskName 磁盘名称
- * @param bops 块设备操作结构体
- * @param priv 私有数据
- * @param diskID 磁盘ID
-td> * @param info 磁盘分区信息
- * @return 成功返回ENOERR，失败返回错误码
- */
 INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
                     VOID *priv, INT32 diskID, VOID *info)
 {
-    struct geometry diskInfo;  // 磁盘几何信息结构体
-    struct Vnode *blkDriver = NULL;  // 块设备Vnode指针
-    los_disk *disk = get_disk(diskID);  // 获取磁盘结构体
-    INT32 ret;  // 返回值
+    struct geometry diskInfo;
+    struct Vnode *blkDriver = NULL;
+    los_disk *disk = get_disk(diskID);
+    INT32 ret;
 
     if ((diskName == NULL) || (disk == NULL) ||
-        (disk->disk_status != STAT_UNREADY) || (strlen(diskName) > DISK_NAME)) {  // 参数检查
+        (disk->disk_status != STAT_UNREADY) || (strlen(diskName) > DISK_NAME)) {
         return VFS_ERROR;
     }
 
-    if (register_blockdriver(diskName, bops, RWEtdtd>_RW_RW, priv) != 0) {  // 注册块设备
+    if (register_blockdriver(diskName, bops, RWE_RW_RW, priv) != 0) {
         PRINT_ERR("disk_init : register %s fail!\n", diskName);
         return VFS_ERROR;
     }
 
-    VnodeHold();  // 持有Vnode
-    ret = VnodeLookup(dtd>iskName, &blkDriver, 0);  // 查找Vnode
-    if (ret < 0) {  // 查找失败
-        VnodeDrop();  // 释放Vnode
+    VnodeHold();
+    ret = VnodeLookup(diskName, &blkDriver, 0);
+    if (ret < 0) {
+        VnodeDrop();
         PRINT_ERR("disk_init : %s, failed to find the vnode, ERRNO=%d\n", diskName, ret);
-        goto DISK_FIND_ERROR;  // 跳转到错误处理
+        goto DISK_FIND_ERROR;
     }
-    struct block_operations *bops2 = (struct block_operations *)((struct drv_datatd>)blkDriver->data)->ops;  // 获取块设备操作
+    struct block_operations *bops2 = (struct block_operations *)((struct drv_data *)blkDriver->data)->ops;
 
-    if ((bops2 == NULL) || (bops2->geometry == NULL) || (bops2->geometry(blkDriver, &tdtd>iskInfo) != 0)) {  // 检查几何信息获取函数
-        goto DISK_BLKDRIVER_ERROR;  // 跳转到错误处理
-    }
-
-    if (diskInfo.geo_sectorsize < DISK_MAX_SECTOR_SIZE) {  // 检查扇区大小
-        goto DISK_BLKDRIVER_ERROR;  // 跳转到错误处理
+    if ((bops2 == NULL) || (bops2->geometry == NULL) || (bops2->geometry(blkDriver, &diskInfo) != 0)) {
+        goto DISK_BLKDRIVER_ERROR;
     }
 
-    ret = OsDiskInitSub(diskName, diskID, disk, &diskInfo, blkDriver);  // 调用初始化子函数
-    if (tdtd>et != ENOERR)td> {  // 子函数失败
-        (VOID)DiskDeinit(disk);  // 反初始化磁盘
-        VnodeDrop();  // 释放Vnode
+    if (diskInfo.geo_sectorsize < DISK_MAX_SECTOR_SIZE) {
+        goto DISK_BLKDRIVER_ERROR;
+    }
+
+    ret = OsDiskInitSub(diskName, diskID, disk, &diskInfo, blkDriver);
+    if (ret != ENOERR) {
+        (VOID)DiskDeinit(disk);
+        VnodeDrop();
         return VFS_ERROR;
     }
-    Vtd>nodeDrop();  // 释放Vnode
-    if (DiskDivideAndPartitionRegister(infotd>, disk) != ENOERR) {  // 划分和注册分区
-        (VOID)DiskDeinit(disk);  // 反初始化磁盘
+    VnodeDrop();
+    if (DiskDivideAndPartitionRegister(info, disk) != ENOERR) {
+        (VOID)DiskDeinit(disk);
         return VFS_ERROR;
     }
 
-    disk->disk_status = STAT_INUSED;  // 设置磁盘状态为使用中
-    if (info != NULL) {  // 设置td>磁盘类型
+    disk->disk_status = STAT_INUSED;
+    if (info != NULL) {
         disk->type = EMMC;
     } else {
         disk->type = OTHERS;
     }
-    return ENOERR;  // 返回成功
+    return ENOERR;
 
 DISK_BLKDRIVER_ERROR:
-    PRINT_ERR("disk_init : register %s ok but get disk info fail!td>\n", diskName);
-    VnodeDrop();  // 释放Vnode
+    PRINT_ERR("disk_init : register %s ok but get disk info fail!\n", diskName);
+    VnodeDrop();
 DISK_FIND_ERROR:
-    (VOID)unregister_blockdriver(diskName);  // 注销块设备
-    return Vtd>FS_ERROR;
+    (VOID)unregister_blockdriver(diskName);
+    return VFS_ERROR;
 }
 
-/**
- * @brief 磁盘反初始化
- * @param diskID 磁盘ID
- * @return 成功返回ENOERR，失败返回错误码
- */
-INTtd>32 los_disk_deinit(td>INT32 diskID)
+INT32 los_disk_deinit(INT32 diskID)
 {
-    int ret;  // 返回值
-    los_disk *disk = get_disk(diskID);  // 获取磁盘结构体td>
-    if (disk == NULL) {  // 磁盘不存在返回错误
+    int ret;
+    los_disk *disk = get_disk(diskID);
+    if (disk == NULL) {
         return -EINVAL;
     }
-    ret = ForceUmountDev(disk->dev);  // 强制卸载设备
-    PRINTK("warning: %s losttd>, force umount ret = %d\n", disk->disk_name, ret);  // 打印警告信息
+    ret = ForceUmountDev(disk->dev);
+    PRINTK("warning: %s lost, force umount ret = %d\n", disk->disk_name, ret);
 
-    DISK_LOCK(&disk->disk_mutex);  // 加锁保护磁盘操作
+    DISK_LOCK(&disk->disk_mutex);
 
-    if (disk->disk_status != STAT_INUSED) {  // 磁盘未使用时返回错误
+    if (disk->disk_status != STAT_INUSED) {
         DISK_UNLOCK(&disk->disk_mutex);
         return -EINVAL;
     }
 
-    disk->disk_status = STAT_UNREADY;  // 设置磁盘状态为未就绪
-    DISK_UNLOCK(&disk->disk_mutex);  // 解锁磁盘
+    disk->disk_status = STAT_UNREADY;
+    DISK_UNLOCK(&disk->disk_mutex);
 
-    return DiskDeinit(disktd>);  // td>反初始化磁盘
+    return DiskDeinit(disk);
 }
 
-/**
- * @brief 同步磁盘数据
- * @param drvID 驱动ID
- * @return 成功返回ENOERR，失败返回错误码
- */
 INT32 los_disk_sync(INT32 drvID)
 {
-    INT32 ret = ENOERR;  // 初始化结果为成功
-    los_disk *disk = get_disk(drvID);  // 获取磁盘结构体
-    if (disk == NULL) {  // 磁盘不存在返回错误
+    INT32 ret = ENOERR;
+    los_disk *disk = get_disk(drvID);
+    if (disk == NULL) {
         return EINVAL;
     }
 
-    DISK_LOCK(&disk->disk_mutex);  // 加锁保护磁盘操作
-    if (disk->disk_status != STAT_INUSED) {  // 磁盘未使用td>时返回错误
-        DISK_UNLOCK(&disk->disktd>_mutex);
+    DISK_LOCK(&disk->disk_mutex);
+    if (disk->disk_status != STAT_INUSED) {
+        DISK_UNLOCK(&disk->disk_mutex);
         return EINVAL;
     }
 
 #ifdef LOSCFG_FS_FAT_CACHE
-        if (disk->bcache != NULL) {  // 如果缓存存在则同步缓存
+        if (disk->bcache != NULL) {
             ret = BlockCacheSync(disk->bcache);
         }
 #endif
 
-    DISK_UNLOCK(&disk->disk_mutex);  // 解锁磁盘
-    return ret;  // 返回操作结果
+    DISK_UNLOCK(&disk->disk_mutex);
+    return ret;
 }
 
-/**
- * @brief 设置磁盘缓存
- * @param drvID 驱动ID
- * @param sectorPerBlock 每块扇区数
- * @param blocktd>Num 块数量
- * @return 成功返回ENOERR，失败返回错误码
- */
 INT32 los_disk_set_bcache(INT32 drvID, UINT32 sectorPerBlock, UINT32 blockNum)
 {
 #ifdef LOSCFG_FS_FAT_CACHE
 
-    INT32 ret;  // 返回值
-    UINT32 intSave;  // 中断状态
-    OsBcache *bc = NULL;  // 块缓存结构体指针
-    los_disk *disk = get_disk(drvID);  // 获取磁盘结构体
-    if ((disk == NULL) || (sectorPerBlock == 0)) {  // 参数检查
+    INT32 ret;
+    UINT32 intSave;
+    OsBcache *bc = NULL;
+    los_disk *disk = get_disk(drvID);
+    if ((disk == NULL) || (sectorPerBlock == 0)) {
         return EINVAL;
     }
 
     /*
-     * 由于在bcache中使用UINT32 flag[BCACHE_BLOCK_FLAGS]作为扇区位图标记，因此必须
-     * 小于32 * BCACHE_BLOCK_FLAGS。
+     * Because we use UINT32 flag[BCACHE_BLOCK_FLAGS] in bcache for sectors bitmap tag, so it must
+     * be less than 32 * BCACHE_BLOCK_FLAGS.
      */
     if (((sectorPerBlock % UNSIGNED_INTEGER_BITS) != 0) ||
-        ((sectorPerBlock >> UNINT_LOG2_SHIFT) > BCACHE_BLOCK_FLAGS)) {  // 检查扇区数有效性td>
+        ((sectorPerBlock >> UNINT_LOG2_SHIFT) > BCACHE_BLOCK_FLAGS)) {
         return EINVAL;
     }
 
-    DISK_LOCKtd>(&disk->tdtd>isk_mutex);  // 加锁保护磁盘操作
+    DISK_LOCK(&disk->disk_mutex);
 
-    if (disk->disk_status != STAT_INUSED) {  // 磁盘未使用时返回错误
+    if (disk->disk_status != STAT_INUSED) {
         goto ERROR_HANDLE;
     }
 
-    if (disk->bcache != NULL) {  // 如果缓存存在则同步缓存
+    if (disk->bcache != NULL) {
         ret = BlockCacheSync(disk->bcache);
-        if (ret != ENOERR) {  // 同步失败时返回错误
+        if (ret != ENOERR) {
             DISK_UNLOCK(&disk->disk_mutex);
             return ret;
         }
     }
 
-    spin_lock_irqsave(&g_diskFatBlocktd>Spinlock, intSave);  // 关中断并加自旋锁
-    DiskCacheDeinit(disk);  // 反初始化磁盘缓存
+    spin_lock_irqsave(&g_diskFatBlockSpinlock, intSave);
+    DiskCacheDeinit(disk);
 
-    g_uwFatBlockNums = blockNum;  // 设置块数量
-    g_uwFatSectorsPerBlock = sectorPerBlock;  // 设置每块扇区数
-td>
-    bctd> = BlockCacheInit(disk->dev, disk->sector_size, sectorPerBlock, blockNum, disk->sector_count /td> sectorPerBlock);  // 初始化块缓存
-    if ((bctd> == NULL) && (blockNum != 0)) {  // 缓存初始化失败且块数量不为0
-        spin_unlock_irqrestore(&g_diskFatBlockSpinlock, intSave);  // 恢复中断并解锁自旋锁
-        DISK_UNLOCK(&disk->disk_mutex);  // 解锁磁盘
-        return ENOMEM;  // 返回内存不足错误
+    g_uwFatBlockNums = blockNum;
+    g_uwFatSectorsPerBlock = sectorPerBlock;
+
+    bc = BlockCacheInit(disk->dev, disk->sector_size, sectorPerBlock, blockNum, disk->sector_count / sectorPerBlock);
+    if ((bc == NULL) && (blockNum != 0)) {
+        spin_unlock_irqrestore(&g_diskFatBlockSpinlock, intSave);
+        DISK_UNLOCK(&disk->disk_mutex);
+        return ENOMEM;
     }
 
-    if (bc != NULL) {  // 如果缓存初始化成功则初始化缓存线程
+    if (bc != NULL) {
         DiskCacheThreadInit((UINT32)drvID, bc);
     }
 
-    disk->bcache = bc;  // 设置块缓存指针
-    spin_unlock_irqrestore(&g_diskFatBlockSpinlock, intSave);  // 恢复中断并解锁自旋锁
-    DISK_UNLOCK(&disk->disk_mutex);  // 解锁磁盘
-    return ENOERR;  // 返回成功
+    disk->bcache = bc;
+    spin_unlock_irqrestore(&g_diskFatBlockSpinlock, intSave);
+    DISK_UNLOCK(&disk->disk_mutex);
+    return ENOERR;
 
 ERROR_HANDLE:
-    DISK_UNLOCK(&disk->disk_mutex);  // 解锁磁盘
-    return EINVAL;  // 返回错误
+    DISK_UNLOCK(&disk->disk_mutex);
+    return EINVAL;
 #else
-    return VFS_ERROR;  // 未启用FAT缓存时返回错误
+    return VFS_ERROR;
 #endif
 }
 
-/**
- * @brief 在磁盘中查找分区
- * @param disk 磁盘结构体指针
- * @param blkDriver 块设备Vnode指针
- * @return 成功返回分区结构体指针，失败返回NULL
- */
 static los_part *OsPartFind(los_disk *disk, const struct Vnode *blkDriver)
 {
-    los_part *part = NULL;  // 分区指针
+    los_part *part = NULL;
 
-    DISK_LOCK(&disk->disk_mutex);  // 加锁保护磁盘操作
-    if ((disk->disk_status != STAT_INUSED) || (LOS_ListEmpty(&disk->head) == TRUE)) {  // 磁盘未使用或分区链表为空
-        goto EXIT;  // 跳转到退出
+    DISK_LOCK(&disk->disk_mutex);
+    if ((disk->disk_status != STAT_INUSED) || (LOS_ListEmpty(&disk->head) == TRUE)) {
+        goto EXIT;
     }
-    part = LOS_DL_LIST_ENTRY(disk->head.pstNext,td> los_part, list);  // 获取第一个分区
-    if (disk->dev == blkDriver) {  // 如果块设备匹配则返回分区
+    part = LOS_DL_LIST_ENTRY(disk->head.pstNext, los_part, list);
+    if (disk->dev == blkDriver) {
         goto EXIT;
     }
 
-    while (&part->list != &disk->head) {  // 遍历分区链表
-        if (part->dev == blkDriver) {  // 如果块设备匹配则返回分区
+    while (&part->list != &disk->head) {
+        if (part->dev == blkDriver) {
             goto EXIT;
         }
-        parttd> = LOS_DL_LIST_ENTRY(part->list.pstNext, los_part, list);  // 获取下一个分区
+        part = LOS_DL_LIST_ENTRY(part->list.pstNext, los_part, list);
     }
-    part = NULL;  // 未找到分区时置空
+    part = NULL;
 
 EXIT:
-    DISK_UNLOCK(&disk->disk_mutex);  // 解锁磁盘
-    return part;  //td> 返回分区指针
+    DISK_UNLOCK(&disk->disk_mutex);
+    return part;
 }
 
-/**
- * @brief 查找分区
- * @param blkDriver 块设备Vnode指针
- * @return 成功返回分区结构体指针，失败返回NULL
- */
 los_part *los_part_find(struct Vnode *blkDriver)
 {
-    INT32 i;  // 循环变量
-    los_disk *disk = NULL;  // 磁盘结构体指针
-    los_part *part = NULL;  // 分区结构体指针
+    INT32 i;
+    los_disk *disk = NULL;
+    los_part *part = NULL;
 
-    if (blkDriver == NULL) {  // td>块设备为空时返回NULL
+    if (blkDriver == NULL) {
         return NULL;
     }
 
-    for (i = 0; i < SYS_MAX_DISK; i++) {  // 遍历所有磁盘
-        disk = get_disk(i);  // 获取磁盘结构体
-        if (disktd> == NULL) {  // 磁盘不存在则继续
+    for (i = 0; i < SYS_MAX_DISK; i++) {
+        disk = get_disk(i);
+        if (disk == NULL) {
             continue;
         }
-td>        part = OsPartFind(disk, blkDriver);  // 在td>磁盘中查找分区
-        if (part != NULL) {  // 找到分区则返回
+        part = OsPartFind(disk, blkDriver);
+        if (part != NULL) {
             return part;
         }
     }
 
-    return NULL;  // 未找到分区时返回NULL
+    return NULL;
 }
 
-/**
- * @brief 访问分区
- * @param dev 设备名称
- * @param mode 访问模式
- * @return 成功返回ENOERR，失败返回错误码
- */
 INT32 los_part_access(const CHAR *dev, mode_t mode)
 {
-    los_part *part = NULL;  // 分区结构体指针
-    struct Vnode *node = NULL;  // Vnode指针
+    los_part *part = NULL;
+    struct Vnode *node = NULL;
 
-    VnodeHold();  // 持有Vnode
-    if (VnodeLookup(dev, &node, 0) < 0) {  // 查找Vnode失败
-        VnodeDrop();  // 释放Vnode
+    VnodeHold();
+    if (VnodeLookup(dev, &node, 0) < 0) {
+        VnodeDrop();
         return VFS_ERROR;
     }
 
-    part = los_part_find(node);  // 查找分区
-    VnodeDrop();  // 释放Vnode
-    if (part == NULL) {  // 分区不存在返回错误
+    part = los_part_find(node);
+    VnodeDrop();
+    if (part == NULL) {
         return VFS_ERROR;
     }
 
-    return ENOERR;  // 返回成功
+    return ENOERR;
 }
 
-/**
- * @brief 设置磁盘分区名称
- * @param part 分区结构体指针
- * @param src 分区td>名称
- * @return 成功返回ENOERR，失败返回错误码
- */
 INT32 SetDiskPartName(los_part *part, const CHAR *src)
 {
-    size_t len;  // 名称长度
-    los_disk *disk = NULL;  // 磁盘结构体指针
+    size_t len;
+    los_disk *disk = NULL;
 
-    if ((part == NULL) || (src == NULL)) {  // 参数检查
+    if ((part == NULL) || (src == NULL)) {
         return VFS_ERROR;
     }
 
-    len = strlen(src);  // 获取名称长度
-    if ((len == 0) || (len >= DISK_NAME)) {  // 名称长度无效
+    len = strlen(src);
+    if ((len == 0) || (len >= DISK_NAME)) {
         return VFS_ERROR;
     }
 
-    disk = get_disk((INT32)part->disk_id);  // 获取磁盘结构体
-    if (disk == NULL) {  // 磁盘不存在返回错误
+    disk = get_disk((INT32)part->disk_id);
+    if (disk == NULL) {
         return VFS_ERROR;
     }
 
-    DISK_LOCK(&disk->disk_mutex);  // 加锁保护磁盘操作
-    if (disk->disk_status != STAT_INUSED) {  // 磁盘未使用时返回错误
+    DISK_LOCK(&disk->disk_mutex);
+    if (disk->disk_status != STAT_INUSED) {
         goto ERROR_HANDLE;
     }
 
-    part->part_name = (td>CHAR *)zalloc(len + 1);  // 分配名称内存
-    if (part->parttd>_name == NULL) {td>  // 分配失败时打印错误信息
-        PRINT_ERR("%s[%d] zalloc failuretd>\n", __FUNCTION__, __LINE__);
-        goto ERROR_HANDLEtd>;
+    part->part_name = (CHAR *)zalloc(len + 1);
+    if (part->part_name == NULL) {
+        PRINT_ERR("%s[%d] zalloc failure\n", __FUNCTION__, __LINE__);
+        goto ERROR_HANDLE;
     }
 
-    if (strcpy_s(part->part_name, len + 1, src) != EOK) {  // 复制名称
-        free(part->part_name);  // 复制失败时释放内存td>
+    if (strcpy_s(part->part_name, len + 1, src) != EOK) {
+        free(part->part_name);
         part->part_name = NULL;
         goto ERROR_HANDLE;
     }
 
-    DISK_UNLOCK(&disk->disk_mutex);  // 解锁磁盘
-    return ENOERR;td>  // 返回成功
+    DISK_UNLOCK(&disk->disk_mutex);
+    return ENOERR;
 
 ERROR_HANDLE:
-    DISK_UNLOCK(&disk->disk_mutex);  //td> 解锁磁盘
-    return VFS_ERROR;  // 返回错误
+    DISK_UNLOCK(&disk->disk_mutex);
+    return VFS_ERROR;
 }
 
-/**
- * @brief 添加MMC分区
- * @param info 分区信息结构体
- * @param sectorStart 起始扇区
- * @param sectorCount 扇区数量
- * @return 成功返回ENOERR，失败返回错误码
- */
 INT32 add_mmc_partition(struct disk_divide_info *info, size_t sectorStart, size_t sectorCount)
 {
-    UINT32 indextd>, i;  // 索引和循环变量
+    UINT32 index, i;
 
-    if (info == NULL) {  // 参数检查
+    if (info == NULL) {
         return VFS_ERROR;
     }
 
-    if ((info->part_count >= MAX_DIVIDE_PART_PER_DISK) || (sectorCount == 0)) {  // 分区数量超限或扇区数量为0
+    if ((info->part_count >= MAX_DIVIDE_PART_PER_DISK) || (sectorCount == 0)) {
         return VFS_ERROR;
     }
 
-    if ((sectorCount > info->sector_count) || ((info->sector_count - sectorCount) < sectorStart)) {  // 扇区范围无效
+    if ((sectorCount > info->sector_count) || ((info->sector_count - sectorCount) < sectorStart)) {
         return VFS_ERROR;
     }
 
-    index = info->part_count;  // 获取当前分区数量
-    for (i = 0; i < index; i++) {  // 检查分区是否重叠
-        if (sectorStart < (info->part[i].sector_start + info->part[i].sector_count)) {  // 扇区重叠
+    index = info->part_count;
+    for (i = 0; i < index; i++) {
+        if (sectorStart < (info->part[i].sector_start + info->part[i].sector_count)) {
             return VFS_ERROR;
         }
     }
 
-    info->part[index].sector_start = sectorStart;  // 设置起始扇区
-    info->part[index].sector_count = sectorCount;  // 设置扇区数量
-    info->part[index].type = EMMC;  // 设置分区类型
-    info->part_count++;  // 分区数量加1
+    info->part[index].sector_start = sectorStart;
+    info->part[index].sector_count = sectorCount;
+    info->part[index].type = EMMC;
+    info->part_count++;
 
-    return ENOERR;  // 返回成功
+    return ENOERR;
 }
 
-/**
- * @brief 显示分区信息
- * @param part 分区结构体指针
- */
 VOID show_part(los_part *part)
 {
-    if ((part == NULL) || (part->dev == NULL)) {  // 参数检查
+    if ((part == NULL) || (part->dev == NULL)) {
         PRINT_ERR("part is NULL\n");
         return;
     }
 
-    PRINTK("\npart info :\n");  // 打印分区信息标题
-    PRINTK("disk id          : %u\n", part->disk_id);  // 磁盘ID
-    PRINTK("part_id in system: %u\n", part->part_id);  // 系统中的分区ID
-    PRINTK("part no in disk  : %u\n", part->part_no_disk);  // 磁盘中的分区号
-    PRINTK("part no in mbr   : %u\n", part->part_no_mbr);  // MBR中的分区号
-    PRINTK("part filesystem  : %02X\n", part->filesystem_type);  // 文件系统类型
-    PRINTK("part sec start   : %llu\n", part->sector_start);  // 起始扇区
-    PRINTK("part sec count   : %llu\n", part->sector_count);  // 扇区数量
+    PRINTK("\npart info :\n");
+    PRINTK("disk id          : %u\n", part->disk_id);
+    PRINTK("part_id in system: %u\n", part->part_id);
+    PRINTK("part no in disk  : %u\n", part->part_no_disk);
+    PRINTK("part no in mbr   : %u\n", part->part_no_mbr);
+    PRINTK("part filesystem  : %02X\n", part->filesystem_type);
+    PRINTK("part sec start   : %llu\n", part->sector_start);
+    PRINTK("part sec count   : %llu\n", part->sector_count);
 }
 
 #ifdef LOSCFG_DRIVERS_MMC
-size_t StorageBlockMmcErase(uint32_t blockId, size_t secStart, size_t secNr);  // MMC擦除函数声明
+ssize_t StorageBlockMmcErase(uint32_t blockId, size_t secStart, size_t secNr);
 #endif
 
-/**
- * @brief 根据ID擦除磁盘
- * @param diskID 磁盘ID
- * @param startSector 起始扇区
- * @param sectors 扇区数量
- * @return 成功返回ENOERR，失败返回错误码
- */
 INT32 EraseDiskByID(UINT32 diskID, size_t startSector, UINT32 sectors)
 {
-    INT32 ret = VFS_ERROR;  // 初始化结果为失败
+    INT32 ret = VFS_ERROR;
 #ifdef LOSCFG_DRIVERS_MMC
-    los_disk *disk = get_disk((INT32)diskID);  // 获取磁盘结构体
-    if (disk != NULL) {  // 磁盘存在时擦除
+    los_disk *disk = get_disk((INT32)diskID);
+    if (disk != NULL) {
         ret = StorageBlockMmcErase(diskID, startSector, sectors);
     }
 #endif
 
-    return ret;  // 返回操作结果
+    return ret;
 }
+

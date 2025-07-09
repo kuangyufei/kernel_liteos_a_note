@@ -161,45 +161,46 @@ typedef struct VmSpace {
 #endif
 } LosVmSpace;
 
-#define     VM_MAP_REGION_TYPE_NONE                 (0x0) ///< 初始化使用
-#define     VM_MAP_REGION_TYPE_ANON                 (0x1) ///< 匿名映射线性区
-#define     VM_MAP_REGION_TYPE_FILE                 (0x2) ///< 文件映射线性区
-#define     VM_MAP_REGION_TYPE_DEV                  (0x4) ///< 设备映射线性区
-#define     VM_MAP_REGION_TYPE_MASK                 (0x7) ///< 映射线性区掩码
+#define     VM_MAP_REGION_TYPE_NONE                 (0x0)
+#define     VM_MAP_REGION_TYPE_ANON                 (0x1)
+#define     VM_MAP_REGION_TYPE_FILE                 (0x2)
+#define     VM_MAP_REGION_TYPE_DEV                  (0x4)
+#define     VM_MAP_REGION_TYPE_MASK                 (0x7)
 
 /* the high 8 bits(24~31) should reserved, shm will use it */
-#define     VM_MAP_REGION_FLAG_CACHED               (0<<0)		///< 缓冲区
-#define     VM_MAP_REGION_FLAG_UNCACHED             (1<<0)		///< 非缓冲区
+#define     VM_MAP_REGION_FLAG_CACHED               (0<<0)
+#define     VM_MAP_REGION_FLAG_UNCACHED             (1<<0)
 #define     VM_MAP_REGION_FLAG_UNCACHED_DEVICE      (2<<0) /* only exists on some arches, otherwise UNCACHED */
 #define     VM_MAP_REGION_FLAG_STRONGLY_ORDERED     (3<<0) /* only exists on some arches, otherwise UNCACHED */
-#define     VM_MAP_REGION_FLAG_CACHE_MASK           (3<<0)		///< 缓冲区掩码
-#define     VM_MAP_REGION_FLAG_PERM_USER            (1<<2)		///< 用户空间永久区,PERM表示常驻区,可理解为非栈,非堆区
-#define     VM_MAP_REGION_FLAG_PERM_READ            (1<<3)		///< 永久可读取区
-#define     VM_MAP_REGION_FLAG_PERM_WRITE           (1<<4)		///< 永久可写入区
-#define     VM_MAP_REGION_FLAG_PERM_EXECUTE         (1<<5)		///< 永久可被执行区
-#define     VM_MAP_REGION_FLAG_PROT_MASK            (0xF<<2)	///< 访问权限掩码
-#define     VM_MAP_REGION_FLAG_NS                   (1<<6) 		/* NON-SECURE */
-#define     VM_MAP_REGION_FLAG_SHARED               (1<<7)		///< MAP_SHARED：把对该内存段的修改保存到磁盘文件中 详见 OsCvtProtFlagsToRegionFlags ,要和 VM_MAP_REGION_FLAG_SHM区别理解
-#define     VM_MAP_REGION_FLAG_PRIVATE              (1<<8)		///< MAP_PRIVATE：内存段私有，对它的修改值仅对本进程有效,详见 OsCvtProtFlagsToRegionFlags。
-#define     VM_MAP_REGION_FLAG_FLAG_MASK            (3<<7)		///< 掩码
-#define     VM_MAP_REGION_FLAG_STACK                (1<<9)		///< 线性区的类型:栈区
-#define     VM_MAP_REGION_FLAG_HEAP                 (1<<10)		///< 线性区的类型:堆区
-#define     VM_MAP_REGION_FLAG_DATA                 (1<<11)		///< data数据区 编译在ELF中
-#define     VM_MAP_REGION_FLAG_TEXT                 (1<<12)		///< 代码区
-#define     VM_MAP_REGION_FLAG_BSS                  (1<<13)		///< bbs数据区 由运行时动态分配,bss段（Block Started by Symbol segment）通常是指用来存放程序中未初始化的全局变量的一块内存区域。
-#define     VM_MAP_REGION_FLAG_VDSO                 (1<<14)		///< VDSO（Virtual Dynamic Shared Object，虚拟动态共享库）由内核提供的虚拟.so文件，它不在磁盘上，而在内核里，内核将其映射到一个地址空间中，被所有程序共享，正文段大小为一个页面。
-#define     VM_MAP_REGION_FLAG_MMAP                 (1<<15)		///< 映射区,虚拟空间内有专门用来存储<虚拟地址-物理地址>映射的区域
-#define     VM_MAP_REGION_FLAG_SHM                  (1<<16) 	///< 共享内存区, 被多个进程线性区映射
-#define     VM_MAP_REGION_FLAG_FIXED                (1<<17)		///< 线性区被填满
-#define     VM_MAP_REGION_FLAG_FIXED_NOREPLACE      (1<<18)		///< 线性区不被替换	
-#define     VM_MAP_REGION_FLAG_INVALID              (1<<19) /* indicates that flags are not specified */
-/// 从外部权限标签转化为线性区权限标签
+#define     VM_MAP_REGION_FLAG_CACHE_MASK           (3<<0)
+#define     VM_MAP_REGION_FLAG_PERM_USER            (1<<2)
+#define     VM_MAP_REGION_FLAG_PERM_READ            (1<<3)
+#define     VM_MAP_REGION_FLAG_PERM_WRITE           (1<<4)
+#define     VM_MAP_REGION_FLAG_PERM_EXECUTE         (1<<5)
+#define     VM_MAP_REGION_FLAG_PROT_MASK            (0xF<<2)
+#define     VM_MAP_REGION_FLAG_NS                   (1<<6) /* NON-SECURE */
+#define     VM_MAP_REGION_FLAG_SHARED               (1<<7)
+#define     VM_MAP_REGION_FLAG_PRIVATE              (1<<8)
+#define     VM_MAP_REGION_FLAG_FLAG_MASK            (3<<7)
+#define     VM_MAP_REGION_FLAG_STACK                (1<<9)
+#define     VM_MAP_REGION_FLAG_HEAP                 (1<<10)
+#define     VM_MAP_REGION_FLAG_DATA                 (1<<11)
+#define     VM_MAP_REGION_FLAG_TEXT                 (1<<12)
+#define     VM_MAP_REGION_FLAG_BSS                  (1<<13)
+#define     VM_MAP_REGION_FLAG_VDSO                 (1<<14)
+#define     VM_MAP_REGION_FLAG_MMAP                 (1<<15)
+#define     VM_MAP_REGION_FLAG_SHM                  (1<<16)
+#define     VM_MAP_REGION_FLAG_FIXED                (1<<17)
+#define     VM_MAP_REGION_FLAG_FIXED_NOREPLACE      (1<<18)
+#define     VM_MAP_REGION_FLAG_LITEIPC              (1<<19)
+#define     VM_MAP_REGION_FLAG_INVALID              (1<<20) /* indicates that flags are not specified */
+
 STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned long flags)
 {
     UINT32 regionFlags = 0;
 
-    regionFlags |= VM_MAP_REGION_FLAG_PERM_USER;								//必须是用户空间区
-    regionFlags |= (prot & PROT_READ) ? VM_MAP_REGION_FLAG_PERM_READ : 0; 		//映射区可被读
+    regionFlags |= VM_MAP_REGION_FLAG_PERM_USER;
+    regionFlags |= (prot & PROT_READ) ? VM_MAP_REGION_FLAG_PERM_READ : 0;
     regionFlags |= (prot & PROT_WRITE) ? (VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE) : 0;
     regionFlags |= (prot & PROT_EXEC) ? (VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_EXECUTE) : 0;
     regionFlags |= (flags & MAP_SHARED) ? VM_MAP_REGION_FLAG_SHARED : 0;
@@ -209,87 +210,86 @@ STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned lo
 
     return regionFlags;
 }
-/// 虚拟地址是否在内核空间
+
 STATIC INLINE BOOL LOS_IsKernelAddress(VADDR_T vaddr)
 {
     return ((vaddr >= (VADDR_T)KERNEL_ASPACE_BASE) &&
             (vaddr <= ((VADDR_T)KERNEL_ASPACE_BASE + ((VADDR_T)KERNEL_ASPACE_SIZE - 1))));
 }
-/// 给定地址范围是否都在内核空间中
+
 STATIC INLINE BOOL LOS_IsKernelAddressRange(VADDR_T vaddr, size_t len)
 {
     return (vaddr + len > vaddr) && LOS_IsKernelAddress(vaddr) && (LOS_IsKernelAddress(vaddr + len - 1));
 }
-/// 获取线性区的结束地址
+
 STATIC INLINE VADDR_T LOS_RegionEndAddr(LosVmMapRegion *region)
 {
     return (region->range.base + region->range.size - 1);
 }
-/// 获取线性区大小
+
 STATIC INLINE size_t LOS_RegionSize(VADDR_T start, VADDR_T end)
 {
     return (end - start + 1);
 }
-/// 是否为文件映射区
+
 STATIC INLINE BOOL LOS_IsRegionTypeFile(LosVmMapRegion* region)
 {
     return region->regionType == VM_MAP_REGION_TYPE_FILE;
 }
-/// permanent 用户进程永久/常驻区
+
 STATIC INLINE BOOL LOS_IsRegionPermUserReadOnly(LosVmMapRegion* region)
 {
     return ((region->regionFlags & VM_MAP_REGION_FLAG_PROT_MASK) ==
             (VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ));
 }
-/// 是否为私有线性区
+
 STATIC INLINE BOOL LOS_IsRegionFlagPrivateOnly(LosVmMapRegion* region)
 {
     return ((region->regionFlags & VM_MAP_REGION_FLAG_FLAG_MASK) == VM_MAP_REGION_FLAG_PRIVATE);
 }
-/// 设置线性区为文件映射
+
 STATIC INLINE VOID LOS_SetRegionTypeFile(LosVmMapRegion* region)
 {
     region->regionType = VM_MAP_REGION_TYPE_FILE;
 }
-/// 是否为设备映射线性区 /dev/...
+
 STATIC INLINE BOOL LOS_IsRegionTypeDev(LosVmMapRegion* region)
 {
     return region->regionType == VM_MAP_REGION_TYPE_DEV;
 }
-/// 设为设备映射线性区
+
 STATIC INLINE VOID LOS_SetRegionTypeDev(LosVmMapRegion* region)
 {
     region->regionType = VM_MAP_REGION_TYPE_DEV;
 }
-/// 是否为匿名swap映射线性区
+
 STATIC INLINE BOOL LOS_IsRegionTypeAnon(LosVmMapRegion* region)
 {
     return region->regionType == VM_MAP_REGION_TYPE_ANON;
 }
-/// 设为匿名swap映射线性区
+
 STATIC INLINE VOID LOS_SetRegionTypeAnon(LosVmMapRegion* region)
 {
     region->regionType = VM_MAP_REGION_TYPE_ANON;
 }
-/// 虚拟地址是否在用户空间
+
 STATIC INLINE BOOL LOS_IsUserAddress(VADDR_T vaddr)
 {
     return ((vaddr >= USER_ASPACE_BASE) &&
             (vaddr <= (USER_ASPACE_BASE + (USER_ASPACE_SIZE - 1))));
 }
-/// 虚拟地址[vaddr,vaddr + len]是否在用户空间
+
 STATIC INLINE BOOL LOS_IsUserAddressRange(VADDR_T vaddr, size_t len)
 {
     return (vaddr + len > vaddr) && LOS_IsUserAddress(vaddr) && (LOS_IsUserAddress(vaddr + len - 1));
 }
 
-//是否是一个动态分配的地址(通过vmalloc申请的)
 STATIC INLINE BOOL LOS_IsVmallocAddress(VADDR_T vaddr)
 {
     return ((vaddr >= VMALLOC_START) &&
             (vaddr <= (VMALLOC_START + (VMALLOC_SIZE - 1))));
 }
-/// 是否为一个空线性区
+
 STATIC INLINE BOOL OsIsVmRegionEmpty(LosVmSpace *vmSpace)
 {
     if (vmSpace->regionRbTree.ulNodes == 0) {
@@ -330,6 +330,7 @@ STATUS_T LOS_VmSpaceClone(UINT32 cloneFlags, LosVmSpace *oldVmSpace, LosVmSpace 
 LosMux *OsGVmSpaceMuxGet(VOID);
 STATUS_T OsUnMMap(LosVmSpace *space, VADDR_T addr, size_t size);
 STATUS_T OsVmSpaceRegionFree(LosVmSpace *space);
+
 /**
  * thread safety
  * it is used to malloc continuous virtual memory, no sure for continuous physical memory.

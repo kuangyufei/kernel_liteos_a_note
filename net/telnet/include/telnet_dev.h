@@ -42,7 +42,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifdef LOSCFG_NET_TELNET
-// ... existing code ...
+
 /**
  * @brief telnet设备文件路径定义
  */
@@ -102,7 +102,7 @@ typedef struct {
     wait_queue_head_t wait; /* 等待队列头，用于IO多路复用 */
     TELNTE_FIFO_S *cmdFifo; /* 存储用户命令的FIFO指针 */
 } TELNET_DEV_S;
-// ... existing code ...
+
 
 extern INT32 TelnetTx(const CHAR *buf, UINT32 len);
 extern INT32 TelnetDevInit(INT32 fd);

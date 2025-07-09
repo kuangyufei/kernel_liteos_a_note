@@ -1,6 +1,6 @@
 git add -A
 
-git commit -m  ' 注释文件系统，vfs、proc、rootfs，注释 posix
+git commit -m  ' 注释开机代码、MMU、init
     博客 | http://weharmonyos.com
 '
 git push  gitee_origin master
