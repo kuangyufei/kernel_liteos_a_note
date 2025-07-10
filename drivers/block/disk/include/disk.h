@@ -51,120 +51,126 @@ extern "C" {
 #endif
 #endif /* __cplusplus */
 
-#define SYS_MAX_DISK                5
-#define MAX_DIVIDE_PART_PER_DISK    16
-#define MAX_PRIMARY_PART_PER_DISK   4
-#define SYS_MAX_PART                (SYS_MAX_DISK * MAX_DIVIDE_PART_PER_DISK)
-#define DISK_NAME                   255
-#define DISK_MAX_SECTOR_SIZE        512
+/* 磁盘与分区数量限制宏定义 */
+#define SYS_MAX_DISK                5                   /* 系统支持的最大磁盘数量 */
+#define MAX_DIVIDE_PART_PER_DISK    16                  /* 每个磁盘支持的最大逻辑分区数 */
+#define MAX_PRIMARY_PART_PER_DISK   4                   /* 每个磁盘支持的最大主分区数 (MBR规范) */
+#define SYS_MAX_PART                (SYS_MAX_DISK * MAX_DIVIDE_PART_PER_DISK) /* 系统支持的总分区数 */
+#define DISK_NAME                   255                 /* 磁盘名称最大长度 (字符) */
+#define DISK_MAX_SECTOR_SIZE        512                 /* 磁盘扇区最大尺寸 (字节) */
 
-#define PAR_OFFSET           446     /* MBR: Partition table offset (2) */
-#define BS_SIG55AA           510     /* Signature word (2) */
-#define BS_FILSYSTEMTYPE32   82      /* File system type (1) */
-#define BS_JMPBOOT           0       /* x86 jump instruction (3-byte) */
-#define BS_FILSYSTYPE        0x36    /* File system type (2) */
-#define BS_SIG55AA_VALUE     0xAA55
+/* MBR分区表相关偏移量定义 */
+#define PAR_OFFSET           446     /* MBR分区表起始偏移量 (字节) */
+#define BS_SIG55AA           510     /* MBR结束签名偏移量 (0xAA55) */
+#define BS_FILSYSTEMTYPE32   82      /* 32位文件系统类型标识偏移量 */
+#define BS_JMPBOOT           0       /* x86跳转指令偏移量 (3字节) */
+#define BS_FILSYSTYPE        0x36    /* 文件系统类型字段偏移量 */
+#define BS_SIG55AA_VALUE     0xAA55  /* MBR有效签名值 (小端格式) */
 
-#define PAR_TYPE_OFFSET      4
-#define PAR_START_OFFSET     8
-#define PAR_COUNT_OFFSET     12
-#define PAR_TABLE_SIZE       16
-#define EXTENDED_PAR         0x0F
-#define EXTENDED_8G          0x05
-#define EMMC                 0xEC
-#define OTHERS               0x01    /* sdcard or umass */
+/* 分区表项字段偏移量 */
+#define PAR_TYPE_OFFSET      4       /* 分区类型字段偏移量 (相对于分区表项起始) */
+#define PAR_START_OFFSET     8       /* 分区起始扇区偏移量 */
+#define PAR_COUNT_OFFSET     12      /* 分区扇区数量偏移量 */
+#define PAR_TABLE_SIZE       16      /* 单个分区表项大小 (字节) */
+#define EXTENDED_PAR         0x0F    /* 扩展分区类型标识 */
+#define EXTENDED_8G          0x05    /* 大于8GB的扩展分区标识 */
+#define EMMC                 0xEC    /* eMMC设备分区标识 */
+#define OTHERS               0x01    /* 其他存储设备 (SD卡/U盘) 分区标识 */
 
-#define BS_FS_TYPE_MASK      0xFFFFFF
-#define BS_FS_TYPE_VALUE     0x544146
-#define BS_FS_TYPE_FAT       0x0B
-#define BS_FS_TYPE_NTFS      0x07
+/* 文件系统类型验证宏 */
+#define BS_FS_TYPE_MASK      0xFFFFFF        /* 文件系统类型掩码 (3字节) */
+#define BS_FS_TYPE_VALUE     0x544146        /* 文件系统类型特征值 (ASCII: FAT) */
+#define BS_FS_TYPE_FAT       0x0B            /* FAT32文件系统类型值 */
+#define BS_FS_TYPE_NTFS      0x07            /* NTFS文件系统类型值 */
 
-#define FIRST_BYTE       1
-#define SECOND_BYTE      2
-#define THIRD_BYTE       3
-#define FOURTH_BYTE      4
+/* 字节位置定义 */
+#define FIRST_BYTE       1   /* 第一个字节索引 */
+#define SECOND_BYTE      2   /* 第二个字节索引 */
+#define THIRD_BYTE       3   /* 第三个字节索引 */
+#define FOURTH_BYTE      4   /* 第四个字节索引 */
 
-#define BIT_FOR_BYTE     8
+#define BIT_FOR_BYTE     8   /* 每字节位数 */
 
+/* 磁盘数据读取宏 (小端格式转换) */
 #define LD_WORD_DISK(ptr)    (UINT16)(((UINT16)*((UINT8 *)(ptr) + FIRST_BYTE) << (BIT_FOR_BYTE * FIRST_BYTE)) | \
-                                      (UINT16)*(UINT8 *)(ptr))
+                                      (UINT16)*(UINT8 *)(ptr)) /* 从磁盘读取16位无符号整数 */
 #define LD_DWORD_DISK(ptr)   (UINT32)(((UINT32)*((UINT8 *)(ptr) + THIRD_BYTE) << (BIT_FOR_BYTE * THIRD_BYTE)) |   \
                                       ((UINT32)*((UINT8 *)(ptr) + SECOND_BYTE) << (BIT_FOR_BYTE * SECOND_BYTE)) | \
                                       ((UINT16)*((UINT8 *)(ptr) + FIRST_BYTE) << (BIT_FOR_BYTE * FIRST_BYTE)) |   \
-                                      (*(UINT8 *)(ptr)))
+                                      (*(UINT8 *)(ptr))) /* 从磁盘读取32位无符号整数 */
 
 #define LD_QWORD_DISK(ptr)   ((UINT64)(((UINT64)LD_DWORD_DISK(&(ptr)[FOURTH_BYTE]) << (BIT_FOR_BYTE * FOURTH_BYTE)) | \
-                              LD_DWORD_DISK(ptr)))
+                              LD_DWORD_DISK(ptr))) /* 从磁盘读取64位无符号整数 */
 
-/* Check VBR string, including FAT, NTFS */
+/* 文件系统验证宏 */
 #define VERIFY_FS(ptr)       (((LD_DWORD_DISK(&(ptr)[BS_FILSYSTEMTYPE32]) & BS_FS_TYPE_MASK) == BS_FS_TYPE_VALUE) || \
                               !strncmp(&(ptr)[BS_FILSYSTYPE], "FAT", strlen("FAT")) || \
                               !strncmp(&(ptr)[BS_JMPBOOT], "\xEB\x52\x90" "NTFS    ",  \
-                                       strlen("\xEB\x52\x90" "NTFS    ")))
+                                       strlen("\xEB\x52\x90" "NTFS    "))) /* 验证FAT/NTFS文件系统签名 */
 
-#define PARTION_MODE_BTYE    (PAR_OFFSET + PAR_TYPE_OFFSET) /* 0xEE: GPT(GUID), else: MBR */
-#define PARTION_MODE_GPT     0xEE /* 0xEE: GPT(GUID), else: MBR */
-#define SIGNATURE_OFFSET     0    /* The offset of GPT partition header signature */
-#define SIGNATURE_LEN        8    /* The length of GPT signature */
-#define HEADER_SIZE_OFFSET   12   /* The offset of GPT header size */
-#define TABLE_SIZE_OFFSET    84   /* The offset of GPT table size */
-#define TABLE_NUM_OFFSET     80   /* The number of GPT table */
-#define TABLE_START_SECTOR   2
-#define TABLE_MAX_NUM        128
-#define TABLE_SIZE           128
-#define GPT_PAR_START_OFFSET      32
-#define GPT_PAR_END_OFFSET        40
-#define PAR_ENTRY_NUM_PER_SECTOR  4
-#define HEADER_SIZE_MASK          0xFFFFFFFF
-#define HEADER_SIZE               0x5C
-#define HARD_DISK_GUID_OFFSET     56
-#define HARD_DISK_GUID_FOR_ESP    0x0020004900460045
-#define HARD_DISK_GUID_FOR_MSP    0x007200630069004D
-#define PAR_VALID_OFFSET0         0
-#define PAR_VALID_OFFSET1         4
-#define PAR_VALID_OFFSET2         8
-#define PAR_VALID_OFFSET3         12
+#define PARTION_MODE_BTYE    (PAR_OFFSET + PAR_TYPE_OFFSET) /* 分区模式标识偏移量 */
+#define PARTION_MODE_GPT     0xEE /* GPT分区表标识 (0xEE表示GPT分区模式) */
+#define SIGNATURE_OFFSET     0    /* GPT头部签名偏移量 */
+#define SIGNATURE_LEN        8    /* GPT签名长度 (字节) */
+#define HEADER_SIZE_OFFSET   12   /* GPT头部大小偏移量 */
+#define TABLE_SIZE_OFFSET    84   /* GPT分区表项大小偏移量 */
+#define TABLE_NUM_OFFSET     80   /* GPT分区表项数量偏移量 */
+#define TABLE_START_SECTOR   2    /* GPT分区表起始扇区 */
+#define TABLE_MAX_NUM        128  /* GPT最大分区表项数量 */
+#define TABLE_SIZE           128  /* GPT分区表项大小 (字节) */
+#define GPT_PAR_START_OFFSET      32  /* GPT分区起始地址偏移量 */
+#define GPT_PAR_END_OFFSET        40  /* GPT分区结束地址偏移量 */
+#define PAR_ENTRY_NUM_PER_SECTOR  4   /* 每扇区GPT分区表项数量 */
+#define HEADER_SIZE_MASK          0xFFFFFFFF /* GPT头部大小掩码 */
+#define HEADER_SIZE               0x5C      /* GPT头部标准大小 (92字节) */
+#define HARD_DISK_GUID_OFFSET     56       /* 硬盘GUID偏移量 */
+#define HARD_DISK_GUID_FOR_ESP    0x0020004900460045 /* ESP分区GUID标识 */
+#define HARD_DISK_GUID_FOR_MSP    0x007200630069004D /* MSP分区GUID标识 */
+#define PAR_VALID_OFFSET0         0        /* 分区有效性校验偏移量0 */
+#define PAR_VALID_OFFSET1         4        /* 分区有效性校验偏移量1 */
+#define PAR_VALID_OFFSET2         8        /* 分区有效性校验偏移量2 */
+#define PAR_VALID_OFFSET3         12       /* 分区有效性校验偏移量3 */
 
 #define VERIFY_GPT(ptr) ((!strncmp(&(ptr)[SIGNATURE_OFFSET], "EFI PART", SIGNATURE_LEN)) && \
-                         ((LD_DWORD_DISK(&(ptr)[HEADER_SIZE_OFFSET]) & HEADER_SIZE_MASK) == HEADER_SIZE))
+                         ((LD_DWORD_DISK(&(ptr)[HEADER_SIZE_OFFSET]) & HEADER_SIZE_MASK) == HEADER_SIZE)) /* 验证GPT分区表有效性 */
 
 #define VERITY_PAR_VALID(ptr) ((LD_DWORD_DISK(&(ptr)[PAR_VALID_OFFSET0]) + \
                                 LD_DWORD_DISK(&(ptr)[PAR_VALID_OFFSET1]) + \
                                 LD_DWORD_DISK(&(ptr)[PAR_VALID_OFFSET2]) + \
-                                LD_DWORD_DISK(&(ptr)[PAR_VALID_OFFSET3])) != 0)
+                                LD_DWORD_DISK(&(ptr)[PAR_VALID_OFFSET3])) != 0) /* 验证分区表项有效性 */
 
-/* ESP MSP */
+/* ESP/MSP分区过滤 */
 #define VERITY_AVAILABLE_PAR(ptr) ((LD_QWORD_DISK(&(ptr)[HARD_DISK_GUID_OFFSET]) != HARD_DISK_GUID_FOR_ESP) && \
-                                   (LD_QWORD_DISK(&(ptr)[HARD_DISK_GUID_OFFSET]) != HARD_DISK_GUID_FOR_MSP))
+                                   (LD_QWORD_DISK(&(ptr)[HARD_DISK_GUID_OFFSET]) != HARD_DISK_GUID_FOR_MSP)) /* 排除ESP和MSP分区 */
 
-/* Command code for disk_ioctrl function */
-/* Generic command (Used by FatFs) */
-#define DISK_CTRL_SYNC          0   /* Complete pending write process */
-#define DISK_GET_SECTOR_COUNT   1   /* Get media size */
-#define DISK_GET_SECTOR_SIZE    2   /* Get sector size */
-#define DISK_GET_BLOCK_SIZE     3   /* Get erase block size */
-#define DISK_CTRL_TRIM          4   /* Inform device that the data on the block of sectors is no longer used */
+/* disk_ioctrl函数命令码定义 */
+/* 通用命令 (FatFs使用) */
+#define DISK_CTRL_SYNC          0   /* 完成挂起的写操作 */
+#define DISK_GET_SECTOR_COUNT   1   /* 获取介质总扇区数 */
+#define DISK_GET_SECTOR_SIZE    2   /* 获取扇区大小 (字节) */
+#define DISK_GET_BLOCK_SIZE     3   /* 获取擦除块大小 (扇区数) */
+#define DISK_CTRL_TRIM          4   /* 通知设备扇区数据不再使用 */
 
-/* Generic command (Not used by FatFs) */
-#define DISK_CTRL_POWER         5   /* Get/Set power status */
-#define DISK_CTRL_LOCK          6   /* Lock/Unlock media removal */
-#define DISK_CTRL_EJECT         7   /* Eject media */
-#define DISK_CTRL_FORMAT        8   /* Create physical format on the media */
+/* 通用命令 (非FatFs使用) */
+#define DISK_CTRL_POWER         5   /* 获取/设置电源状态 */
+#define DISK_CTRL_LOCK          6   /* 锁定/解锁介质移除 */
+#define DISK_CTRL_EJECT         7   /* 弹出介质 */
+#define DISK_CTRL_FORMAT        8   /* 格式化介质 */
 
-/* MMC/SDC specific ioctl command */
-#define DISK_MMC_GET_TYPE       10  /* Get card type */
-#define DISK_MMC_GET_CSD        11  /* Get CSD */
-#define DISK_MMC_GET_CID        12  /* Get CID */
-#define DISK_MMC_GET_OCR        13  /* Get OCR */
-#define DISK_MMC_GET_SDSTAT     14  /* Get SD status */
+/* MMC/SDC专用命令 */
+#define DISK_MMC_GET_TYPE       10  /* 获取卡类型 */
+#define DISK_MMC_GET_CSD        11  /* 获取CSD寄存器值 */
+#define DISK_MMC_GET_CID        12  /* 获取CID寄存器值 */
+#define DISK_MMC_GET_OCR        13  /* 获取OCR寄存器值 */
+#define DISK_MMC_GET_SDSTAT     14  /* 获取SD状态 */
 
-/* ATA/CF specific ioctl command */
-#define DISK_ATA_GET_REV        20  /* Get F/W revision */
-#define DISK_ATA_GET_MODEL      21  /* Get model name */
-#define DISK_ATA_GET_SN         22  /* Get serial number */
+/* ATA/CF专用命令 */
+#define DISK_ATA_GET_REV        20  /* 获取固件版本 */
+#define DISK_ATA_GET_MODEL      21  /* 获取型号名称 */
+#define DISK_ATA_GET_SN         22  /* 获取序列号 */
 
 #ifndef LOSCFG_FS_FAT_CACHE
-#define DISK_DIRECT_BUFFER_SIZE 4   /* los_disk direct io buffer when bcache is off */
+#define DISK_DIRECT_BUFFER_SIZE 4   /* 禁用缓存时的直接IO缓冲区大小 */
 #endif
 
 /**

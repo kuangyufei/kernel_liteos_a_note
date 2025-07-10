@@ -41,21 +41,39 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define RAMDOM_IOC_MAGIC    'r'
-#define RANDOM_SET_MAX      _IO(RAMDOM_IOC_MAGIC, 1)
 
-int DevRandomRegister(void);
-int DevUrandomRegister(void);
+/* 随机数设备IO控制宏定义 */
+#define RAMDOM_IOC_MAGIC    'r'                     /* 随机数设备IO控制幻数 (ASCII: 'r') */
+#define RANDOM_SET_MAX      _IO(RAMDOM_IOC_MAGIC, 1) /* 设置随机数最大值命令 (命令编号1) */
 
-typedef struct {//随机数操作集
-    int (*support)(void); /* Whether hard random numbers are supported */
-    void (*init)(void);   /* Initializing the hard random number generator */
-    void (*deinit)(void); /* Deinitializing the hard random number generator */
-    int (*read)(char *buffer, size_t buflen); /* Read hard random number */
-    int (*ioctl)(int cmd, unsigned long arg); /* Control hard random number generator  */
+/* 随机数设备注册函数 */
+int DevRandomRegister(void);                        /* 注册/dev/random设备 */
+int DevUrandomRegister(void);                       /* 注册/dev/urandom设备 */
+
+/**
+ * @brief 硬件随机数生成器操作接口结构体
+ * @details 定义硬件随机数生成器的标准操作集合，包括设备检测、初始化、去初始化、数据读取和控制命令
+ */
+typedef struct {
+    int (*support)(void);        /* 检测硬件随机数支持状态 (返回0表示支持) */
+    void (*init)(void);          /* 初始化硬件随机数生成器 */
+    void (*deinit)(void);        /* 去初始化硬件随机数生成器 */
+    int (*read)(char *buffer, size_t buflen); /* 读取随机数到缓冲区
+                                              @param buffer [out] 接收随机数的缓冲区
+                                              @param buflen [in] 期望读取的字节数
+                                              @return 实际读取的字节数，负数表示失败 */
+    int (*ioctl)(int cmd, unsigned long arg); /* 硬件随机数控制命令
+                                              @param cmd [in] 控制命令码
+                                              @param arg [in/out] 命令参数
+                                              @return 0表示成功，负数表示失败 */
 } RandomOperations;
 
+/**
+ * @brief 初始化随机数操作接口
+ * @param r [in] 指向RandomOperations结构体的指针
+ */
 void RandomOperationsInit(const RandomOperations *r);
+
 
 #ifdef __cplusplus
 #if __cplusplus

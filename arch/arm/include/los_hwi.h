@@ -45,16 +45,19 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
+/**
+ * @ingroup los_hwi
+ * 中断计数器数组，记录每个CPU核的中断嵌套次数
+ * 数组索引对应CPU核ID，值为当前中断嵌套深度
+ */
+extern size_t g_intCount[];
 
 /**
  * @ingroup los_hwi
- * Count of interrupts.
- */ 
-extern size_t g_intCount[];///< 中断次数,每个CPU都会记录响应中断的次数
-
-/**
- * @ingroup los_hwi
- * An interrupt is active. | 中断处于活动状态
+ * 判断当前是否处于中断活跃状态
+ *
+ * @return size_t 中断嵌套次数，0表示无中断活跃，>0表示中断活跃
+ * @note 通过读取当前CPU核的中断计数器实现，操作过程关中断保证原子性
  */
 #define OS_INT_ACTIVE ({                    \
     size_t intCount;                        \
@@ -66,333 +69,354 @@ extern size_t g_intCount[];///< 中断次数,每个CPU都会记录响应中断�
 
 /**
  * @ingroup los_hwi
- * An interrupt is inactive. | 中断处于非活动状态
+ * 判断当前是否处于中断非活跃状态
+ *
+ * @return bool true表示无中断活跃，false表示中断活跃
+ * @note 本质是对OS_INT_ACTIVE取反操作
  */
 #define OS_INT_INACTIVE (!(OS_INT_ACTIVE))
 
 /**
  * @ingroup los_hwi
- * Highest priority of a hardware interrupt. | 硬件中断的最高优先级
+ * 硬件中断最高优先级
+ *
+ * 值为0（十进制），表示系统中可设置的最高中断优先级
  */
 #define OS_HWI_PRIO_HIGHEST 0
 
 /**
  * @ingroup los_hwi
- * Lowest priority of a hardware interrupt. | 硬件中断的最低优先级
+ * 硬件中断最低优先级
+ *
+ * 值为31（十进制），表示系统中可设置的最低中断优先级
+ * @note 优先级数值越大，实际优先级越低
  */
 #define OS_HWI_PRIO_LOWEST 31
 
 /**
  * @ingroup los_hwi
- * Max name length of a hardware interrupt. | 硬件中断的最大名称长度
+ * 硬件中断名称最大长度
+ *
+ * 值为10（十进制），表示中断名称字符串的最大字符数（含终止符）
  */
 #define OS_HWI_MAX_NAMELEN 10
 
 /**
  * @ingroup los_hwi
- * Hardware interrupt error code: Invalid interrupt number. | 创建或删除中断时，传入了无效中断号
+ * 硬件中断错误码：无效的中断号
  *
- * Value: 0x02000900
+ * 值：0x02000900（十进制536873216）
  *
- * Solution: Ensure that the interrupt number is valid.
+ * 解决方案：确保传入的中断号在系统支持的有效范围内
  */
 #define OS_ERRNO_HWI_NUM_INVALID                LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x00)
 
 /**
  * @ingroup los_hwi
- * Hardware interrupt error code: Null hardware interrupt handling function.
+ * 硬件中断错误码：中断处理函数为空
  *
- * Value: 0x02000901
+ * 值：0x02000901（十进制536873217）
  *
- * Solution: Pass in a valid non-null hardware interrupt handling function.
- */	//创建中断时，传入的中断处理程序指针为空
+ * 解决方案：传入有效的非空硬件中断处理函数
+ */
 #define OS_ERRNO_HWI_PROC_FUNC_NULL             LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x01)
 
 /**
  * @ingroup los_hwi
- * Hardware interrupt error code: Insufficient interrupt resources for hardware interrupt creation.
+ * 硬件中断错误码：创建中断时资源不足
  *
- * Value: 0x02000902
+ * 值：0x02000902（十进制536873218）
  *
- * Solution: Increase the configured maximum number of supported hardware interrupts.
- */	//无可用中断资源
+ * 解决方案：增加配置的最大支持硬件中断数量
+ */
 #define OS_ERRNO_HWI_CB_UNAVAILABLE             LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x02)
 
 /**
  * @ingroup los_hwi
- * Hardware interrupt error code: Insufficient memory for hardware interrupt initialization.
+ * 硬件中断错误码：初始化中断时内存不足
  *
- * Value: 0x02000903
+ * 值：0x02000903（十进制536873219）
  *
- * Solution: Expand the configured memory.
- */	//创建中断时，出现内存不足的情况
+ * 解决方案：扩展配置的系统内存大小
+ */
 #define OS_ERRNO_HWI_NO_MEMORY                  LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x03)
 
 /**
  * @ingroup los_hwi
- * Hardware interrupt error code: The interrupt has already been created.
+ * 硬件中断错误码：中断已创建
  *
- * Value: 0x02000904
+ * 值：0x02000904（十进制536873220）
  *
- * Solution: Check whether the interrupt specified by the passed-in interrupt number has already been created.
- */	//创建中断时，发现要注册的中断号已经创建
+ * 解决方案：检查传入的中断号对应的中断是否已创建
+ */
 #define OS_ERRNO_HWI_ALREADY_CREATED            LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x04)
 
 /**
  * @ingroup los_hwi
- * Hardware interrupt error code: Invalid interrupt priority.
+ * 硬件中断错误码：无效的中断优先级
  *
- * Value: 0x02000905
+ * 值：0x02000905（十进制536873221）
  *
- * Solution: Ensure that the interrupt priority is valid.
- */	//创建中断时，传入的中断优先级无效
+ * 解决方案：确保中断优先级在有效范围内（0-31）
+ */
 #define OS_ERRNO_HWI_PRIO_INVALID               LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x05)
-
 /**
  * @ingroup los_hwi
- * Hardware interrupt error code: Incorrect interrupt creation mode.
+ * 硬件中断错误码：中断创建模式不正确
  *
- * Value: 0x02000906
+ * 值：0x02000906（十进制536873222）
  *
- * Solution: The interrupt creation mode can be only set to OS_HWI_MODE_COMM or OS_HWI_MODE_FAST of
- * which the value can be 0 or 1.
- */	//中断模式无效
+ * 解决方案：中断创建模式只能设置为OS_HWI_MODE_COMM（0）或OS_HWI_MODE_FAST（1）
+ */
 #define OS_ERRNO_HWI_MODE_INVALID               LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x06)
 
 /**
  * @ingroup los_hwi
- * Hardware interrupt error code: The interrupt has already been created as a fast interrupt.
+ * 硬件中断错误码：中断已创建为快速中断
  *
- * Value: 0x02000907
+ * 值：0x02000907（十进制536873223）
  *
- * Solution: Check whether the interrupt specified by the passed-in interrupt number has already been created.
- */	//创建硬中断时，发现要注册的中断号，已经创建为快速中断
+ * 解决方案：检查传入的中断号对应的中断是否已创建为快速中断
+ */
 #define OS_ERRNO_HWI_FASTMODE_ALREADY_CREATED LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x07)
 
 /**
  * @ingroup los_hwi
- * Hardware interrupt error code: The API is called during an interrupt, which is forbidden.
+ * 硬件中断错误码：在中断中调用禁止的API
  *
- * Value: 0x02000908
+ * 值：0x02000908（十进制536873224）
  *
- * * Solution: Do not call the API during an interrupt.
- */	//接口在中断中调用
+ * 解决方案：不要在中断处理过程中调用此API
+ */
 #define OS_ERRNO_HWI_INTERR                     LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x08)
 
 /**
  * @ingroup los_hwi
- * Hardware interrupt error code:the hwi support SHARED error.
+ * 硬件中断错误码：不支持共享中断模式
  *
- * Value: 0x02000909
+ * 值：0x02000909（十进制536873225）
  *
- * * Solution: Check the input params hwiMode and irqParam of LOS_HwiCreate or
- * LOS_HwiDelete whether adapt the current hwi.
- */ //中断共享出现错误
+ * 解决方案：检查LOS_HwiCreate或LOS_HwiDelete的hwiMode和irqParam参数是否适配当前中断
+ */
 #define OS_ERRNO_HWI_SHARED_ERROR               LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x09)
 
 /**
  * @ingroup los_hwi
- * Hardware interrupt error code:Invalid interrupt Arg when interrupt mode is IRQF_SHARED.
+ * 硬件中断错误码：共享中断模式下参数无效
  *
- * Value: 0x0200090a
+ * 值：0x0200090a（十进制536873226）
  *
- * * Solution: Check the interrupt Arg, Arg should not be NULL and pDevId should not be NULL.
- */ //注册中断入参有误
+ * 解决方案：检查中断参数Arg和pDevId，两者都不应为NULL
+ */
 #define OS_ERRNO_HWI_ARG_INVALID                LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x0a)
 
 /**
  * @ingroup los_hwi
- * Hardware interrupt error code:The interrupt corresponded to the hwi number or devid  has not been created.
+ * 硬件中断错误码：中断号或设备ID对应的中断未创建
  *
- * Value: 0x0200090b
+ * 值：0x0200090b（十进制536873227）
  *
- * * Solution: Check the hwi number or devid, make sure the hwi number or devid need to delete.
- */	//中断共享情况下，删除中断时，中断号对应的链表中，无法匹配到相应的设备ID
+ * 解决方案：检查中断号或设备ID，确保要删除的中断已创建
+ */
 #define OS_ERRNO_HWI_HWINUM_UNCREATE            LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x0b)
 
 /**
  * @ingroup los_hwi
- * Define the type of a hardware interrupt number.		//定义硬件中断号的类型
+ * 硬件中断号类型定义
+ *
+ * 用于标识一个硬件中断的唯一编号，不同平台支持的范围不同
  */
 typedef UINT32 HWI_HANDLE_T;
 
 /**
  * @ingroup los_hwi
- * Define the type of a hardware interrupt priority.	//定义硬件中断优先级的类型
+ * 硬件中断优先级类型定义
+ *
+ * 用于表示中断的优先级级别，数值越小优先级越高
  */
-typedef UINT16 HWI_PRIOR_T; //定义
+typedef UINT16 HWI_PRIOR_T;
 
 /**
  * @ingroup los_hwi
- * Define the type of hardware interrupt mode configurations.	//定义硬件中断配置的类型
+ * 硬件中断模式配置类型定义
+ *
+ * 用于指定中断的工作模式（如快速中断/普通中断、共享/独占等）
  */
 typedef UINT16 HWI_MODE_T;
 
 /**
  * @ingroup los_hwi
- * Define the type of the parameter used for the hardware interrupt creation function.
- * The function of this parameter varies among platforms.
- */							//定义用于硬件中断创建功能的参数类型。此参数的功能因平台而异
+ * 硬件中断创建函数参数类型定义
+ *
+ * 该参数的具体功能因平台而异，通常用于传递中断特定的配置信息
+ */
 typedef UINTPTR HWI_ARG_T;
 
 /**
  * @ingroup  los_hwi
- * Define the type of a hardware interrupt handling function. //定义硬件中断处理函数的类型
+ * 硬件中断处理函数类型定义
+ *
+ * 中断触发时执行的回调函数原型，无返回值且无参数
  */
 typedef VOID (*HWI_PROC_FUNC)(VOID);
 
 /*
- * These flags used only by the kernel as part of the
- * irq handling routines.
+ * 内核中断处理例程专用标志
  *
- * IRQF_SHARED - allow sharing the irq among several devices
+ * IRQF_SHARED - 允许多个设备共享同一个中断号
  */
-#define IRQF_SHARED 0x8000U	//IRQF_SHARED-允许在多个设备之间共享irq
+#define IRQF_SHARED 0x8000U  /* 共享中断标志（十六进制0x8000，十进制32768） */
 
-typedef struct tagHwiHandleForm {	
-    HWI_PROC_FUNC pfnHook;	///< 中断处理函数
-    HWI_ARG_T uwParam;		///< 中断处理函数参数
-    struct tagHwiHandleForm *pstNext;	///< 节点，指向下一个中断,用于共享中断的情况
+/**
+ * @ingroup los_hwi
+ * 硬件中断句柄表单结构
+ *
+ * 用于管理中断处理函数链表，支持共享中断功能
+ */
+typedef struct tagHwiHandleForm {
+    HWI_PROC_FUNC pfnHook;       /* 中断处理函数指针 */
+    HWI_ARG_T uwParam;           /* 中断处理函数参数 */
+    struct tagHwiHandleForm *pstNext; /* 指向下一个中断句柄的链表指针，用于共享中断 */
 } HwiHandleForm;
 
-typedef struct tagIrqParam {	//中断参数
-    int swIrq;				///<	软件中断
-    VOID *pDevId;			///<	设备ID
-    const CHAR *pName;		///< 名称
+/**
+ * @ingroup los_hwi
+ * 中断参数结构
+ *
+ * 用于传递中断相关的软件信息，如软件中断号、设备ID和名称
+ */
+typedef struct tagIrqParam {
+    int swIrq;                   /* 软件中断号 */
+    VOID *pDevId;                /* 设备ID，用于共享中断时标识特定设备 */
+    const CHAR *pName;           /* 中断名称字符串 */
 } HwiIrqParam;
 
-extern HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];//中断注册表
+extern HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];  /* 中断句柄表单数组，大小为OS_HWI_MAX_NUM */
 
 /**
  * @ingroup los_hwi
- * @brief Disable all interrupts. | 关闭当前处理器所有中断响应
+ * @brief 关闭所有中断
  *
- * @par Description:
+ * @par 描述
  * <ul>
- * <li>This API is used to disable all IRQ and FIQ interrupts in the CPSR.</li>
+ * <li>此API用于关闭CPSR中的所有IRQ和FIQ中断</li>
  * </ul>
  * @attention
  * <ul>
- * <li>None.</li>
+ * <li>关闭中断后应尽快恢复，避免影响系统实时性</li>
  * </ul>
  *
- * @param None.
+ * @param 无
  *
- * @retval #UINT32 CPSR value obtained before all interrupts are disabled.
- * @par Dependency:
- * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
+ * @retval #UINT32 关闭所有中断前获取的CPSR值，用于后续恢复
+ * @par 依赖
+ * <ul><li>los_hwi.h: 包含API声明的头文件</li></ul>
  * @see LOS_IntRestore
- */ 
+ */
 STATIC INLINE UINT32 LOS_IntLock(VOID)
-{//此API用于禁用CPSR中的所有IRQ和FIQ中断。CPSR:程序状态寄存器(current program status register)
+{
     return ArchIntLock();
-}//IRQ(Interrupt Request)：指中断模式。FIQ(Fast Interrupt Request)：指快速中断模式。
+}
 
 /**
  * @ingroup los_hwi
- * @brief Enable all interrupts. | 打开当前处理器所有中断响应
+ * @brief 开启所有中断
  *
- * @par Description:
+ * @par 描述
  * <ul>
- * <li>This API is used to enable all IRQ and FIQ interrupts in the CPSR.</li>
+ * <li>此API用于开启CPSR中的所有IRQ和FIQ中断</li>
  * </ul>
  * @attention
  * <ul>
- * <li>None.</li>
+ * <li>开启中断前应确保系统处于安全状态</li>
  * </ul>
  *
- * @param None.
+ * @param 无
  *
- * @retval #UINT32 CPSR value obtained after all interrupts are enabled.
- * @par Dependency:
- * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
+ * @retval #UINT32 开启所有中断后获取的CPSR值
+ * @par 依赖
+ * <ul><li>los_hwi.h: 包含API声明的头文件</li></ul>
  * @see LOS_IntLock
  */
 STATIC INLINE UINT32 LOS_IntUnLock(VOID)
-{//此API用于启用CPSR中的所有IRQ和FIQ中断。
+{
     return ArchIntUnlock();
 }
 
 /**
  * @ingroup los_hwi
- * @brief Restore interrupts. | 恢复到使用LOS_IntLock关闭所有中断之前的状态
+ * @brief 恢复中断状态
  *
- * @par Description:
+ * @par 描述
  * <ul>
- * <li>This API is used to restore the CPSR value obtained before all interrupts are disabled.</li>
+ * <li>此API用于恢复调用LOS_IntLock前的CPSR值</li>
  * </ul>
  * @attention
  * <ul>
- * <li>This API can be called only after all interrupts are disabled, and the input parameter value should be
- * the value returned by LOS_IntLock.</li>
+ * <li>只能在关闭中断后调用此API，输入参数必须是LOS_IntLock返回的值</li>
  * </ul>
  *
- * @param intSave [IN] Type #UINT32 : CPSR value obtained before all interrupts are disabled.
+ * @param intSave [IN] Type #UINT32 : 关闭所有中断前获取的CPSR值
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
+ * @retval 无
+ * @par 依赖
+ * <ul><li>los_hwi.h: 包含API声明的头文件</li></ul>
  * @see LOS_IntLock
  */
 STATIC INLINE VOID LOS_IntRestore(UINT32 intSave)
-{//只有在禁用所有中断之后才能调用此API，并且输入参数值应为LOS_IntLock返回的值。
+{
     ArchIntRestore(intSave);
 }
 
 /**
  * @ingroup los_hwi
- * @brief Gets the maximum number of interrupts supported by the system.
+ * @brief 获取系统支持的最大中断数
  *
- * @par Description:
+ * @par 描述
  * <ul>
- * <li>This API is used to gets the maximum number of interrupts supported by the system.</li>
+ * <li>此API用于获取系统配置支持的最大中断数量</li>
  * </ul>
  *
- * @param  None.
+ * @param 无
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
+ * @retval UINT32 系统支持的最大中断数
+ * @par 依赖
+ * <ul><li>los_hwi.h: 包含API声明的头文件</li></ul>
  */
 extern UINT32 LOS_GetSystemHwiMaximum(VOID);
 
 /**
  * @ingroup  los_hwi
- * @brief Create a hardware interrupt.
+ * @brief 创建硬件中断
  *
- * @par Description:
- * This API is used to configure a hardware interrupt and register a hardware interrupt handling function.
+ * @par 描述
+ * 此API用于配置硬件中断并注册硬件中断处理函数
  *
  * @attention
  * <ul>
- * <li>The hardware interrupt module is usable only when the configuration item for
- * hardware interrupt tailoring is enabled.</li>
- * <li>Hardware interrupt number value range: [OS_USER_HWI_MIN,OS_USER_HWI_MAX]. </li>
- * <li>OS_HWI_MAX_NUM specifies the maximum number of interrupts that can be created.</li>
- * <li>Before executing an interrupt on a platform, refer to the chip manual of the platform.</li>
- * <li>The parameter handler of this interface is a interrupt handler, it should be correct, otherwise,
- * the system may be abnormal.</li>
- * <li>The input irqParam could be NULL, if not, it should be address which point to a struct HwiIrqParam</li>
+ * <li>只有当中断裁剪配置项启用时，硬件中断模块才可用</li>
+ * <li>硬件中断号取值范围: [OS_USER_HWI_MIN, OS_USER_HWI_MAX]</li>
+ * <li>OS_HWI_MAX_NUM指定可创建的最大中断数</li>
+ * <li>在平台上执行中断前，请参考该平台的芯片手册</li>
+ * <li>此接口的handler参数是中断处理函数，必须正确设置，否则系统可能异常</li>
+ * <li>输入参数irqParam可以为NULL，若不为NULL，则必须指向HwiIrqParam结构体</li>
  * </ul>
  *
- * @param  hwiNum     [IN] Type #HWI_HANDLE_T: hardware interrupt number.
- *                                             for an ARM926 platform is [0,31].
- * @param  hwiPrio    [IN] Type #HWI_PRIOR_T: hardware interrupt priority. The value range is
- *                                            [0, GIC_MAX_INTERRUPT_PREEMPTION_LEVEL - 1] << PRIORITY_SHIFT.
- * @param  hwiMode    [IN] Type #HWI_MODE_T: hardware interrupt mode. Ignore this parameter temporarily.
- * @param  hwiHandler [IN] Type #HWI_PROC_FUNC: interrupt handler used when a hardware interrupt is triggered.
- * @param  irqParam   [IN] Type #HwiIrqParam: input parameter of the interrupt handler used when
- *                                                a hardware interrupt is triggered.
+ * @param  hwiNum     [IN] Type #HWI_HANDLE_T: 硬件中断号，ARM926平台范围是[0,31]
+ * @param  hwiPrio    [IN] Type #HWI_PRIOR_T: 硬件中断优先级，取值范围为[0, GIC_MAX_INTERRUPT_PREEMPTION_LEVEL - 1] << PRIORITY_SHIFT
+ * @param  hwiMode    [IN] Type #HWI_MODE_T: 硬件中断模式，暂时忽略此参数
+ * @param  hwiHandler [IN] Type #HWI_PROC_FUNC: 硬件中断触发时使用的中断处理函数
+ * @param  irqParam   [IN] Type #HwiIrqParam*: 硬件中断触发时使用的中断处理函数的输入参数
  *
- * @retval #OS_ERRNO_HWI_PROC_FUNC_NULL              Null hardware interrupt handling function.
- * @retval #OS_ERRNO_HWI_NUM_INVALID                 Invalid interrupt number.
- * @retval #OS_ERRNO_HWI_NO_MEMORY                   Insufficient memory for hardware interrupt creation.
- * @retval #OS_ERRNO_HWI_ALREADY_CREATED             The interrupt handler being created has already been created.
- * @retval #LOS_OK                                   The interrupt is successfully created.
- * @par Dependency:
- * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
- * @see None.
- */ //中断创建，注册中断号、中断触发模式、中断优先级、中断处理程序。中断被触发时，handleIrq会调用该中断处理程序
+ * @retval #OS_ERRNO_HWI_PROC_FUNC_NULL      硬件中断处理函数为空
+ * @retval #OS_ERRNO_HWI_NUM_INVALID         无效的中断号
+ * @retval #OS_ERRNO_HWI_NO_MEMORY           创建硬件中断内存不足
+ * @retval #OS_ERRNO_HWI_ALREADY_CREATED     要创建的中断处理函数已存在
+ * @retval #LOS_OK                           中断创建成功
+ * @par 依赖
+ * <ul><li>los_hwi.h: 包含API声明的头文件</li></ul>
+ * @see LOS_HwiDelete
+ */
 extern UINT32 LOS_HwiCreate(HWI_HANDLE_T hwiNum,
                             HWI_PRIOR_T hwiPrio,
                             HWI_MODE_T hwiMode,
@@ -401,33 +425,30 @@ extern UINT32 LOS_HwiCreate(HWI_HANDLE_T hwiNum,
 
 /**
  * @ingroup  los_hwi
- * @brief delete a hardware interrupt.
+ * @brief 删除硬件中断
  *
- * @par Description:
- * This API is used to delete a hardware interrupt.
+ * @par 描述
+ * 此API用于删除已创建的硬件中断
  *
  * @attention
  * <ul>
- * <li>The hardware interrupt module is usable only when the configuration item for
- * hardware interrupt tailoring is enabled.</li>
- * <li>Hardware interrupt number value range: [OS_USER_HWI_MIN,OS_USER_HWI_MAX].</li>
- * <li>OS_HWI_MAX_NUM specifies the maximum number of interrupts that can be created.</li>
- * <li>Before executing an interrupt on a platform, refer to the chip manual of the platform.</li>
+ * <li>只有当中断裁剪配置项启用时，硬件中断模块才可用</li>
+ * <li>硬件中断号取值范围: [OS_USER_HWI_MIN, OS_USER_HWI_MAX]</li>
+ * <li>OS_HWI_MAX_NUM指定可创建的最大中断数</li>
+ * <li>在平台上执行中断前，请参考该平台的芯片手册</li>
  * </ul>
  *
- * @param  hwiNum   [IN] Type #HWI_HANDLE_T: hardware interrupt number.
- * @param  irqParam [IN] Type #HwiIrqParam *: id of hardware interrupt which will base on
- *                                                when delete the hardware interrupt.
+ * @param  hwiNum   [IN] Type #HWI_HANDLE_T: 硬件中断号
+ * @param  irqParam [IN] Type #HwiIrqParam*: 删除硬件中断时使用的设备ID，用于共享中断场景
  *
- * @retval #OS_ERRNO_HWI_NUM_INVALID         Invalid interrupt number.
- * @retval #OS_ERRNO_HWI_SHARED_ERROR        Invalid interrupt mode.
- * @retval #LOS_OK                           The interrupt is successfully deleted.
- * @retval #LOS_NOK                          The interrupt is failed deleted based on the pDev_ID.
-
- * @par Dependency:
- * <ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
- * @see None.
- */ //删除中断
+ * @retval #OS_ERRNO_HWI_NUM_INVALID         无效的中断号
+ * @retval #OS_ERRNO_HWI_SHARED_ERROR        无效的中断模式
+ * @retval #LOS_OK                           中断删除成功
+ * @retval #LOS_NOK                          根据pDev_ID删除中断失败
+ * @par 依赖
+ * <ul><li>los_hwi.h: 包含API声明的头文件</li></ul>
+ * @see LOS_HwiCreate
+ */
 extern UINT32 LOS_HwiDelete(HWI_HANDLE_T hwiNum, HwiIrqParam *irqParam);
 
 #ifdef __cplusplus

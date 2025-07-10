@@ -41,32 +41,79 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+
+/**
+ * @brief 命令参数最大数量宏定义
+ * @note 定义了perf命令支持的最大参数个数为10个
+ */
 #define CMD_MAX_PARAMS 10
+
+/**
+ * @brief 选项解析回调函数类型定义
+ * @param[in] argv 命令行参数字符串
+ * @return 成功返回0，失败返回非0值
+ * @note 用于处理需要自定义解析逻辑的命令行选项
+ */
 typedef int (*CALL_BACK)(const char *argv);
 
+/**
+ * @brief 选项类型枚举
+ * @details 定义perf支持的命令行选项数据类型
+ */
 enum OptionType {
-    OPTION_TYPE_UINT,
-    OPTION_TYPE_STRING,
-    OPTION_TYPE_CALLBACK,
+    OPTION_TYPE_UINT,       // 无符号整数类型选项
+    OPTION_TYPE_STRING,     // 字符串类型选项
+    OPTION_TYPE_CALLBACK,   // 回调函数类型选项
 };
 
+/**
+ * @brief 性能工具选项结构体
+ * @details 用于描述perf命令支持的命令行选项及其属性
+ */
 typedef struct {
-    int type;
-    const char *name;
-    const char **str;
-    unsigned int *value;
-    CALL_BACK cb;
+    int type;               // 选项类型，对应OptionType枚举
+    const char *name;       // 选项名称（如"-e"、"-t"）
+    const char **str;       // 字符串类型选项的值指针
+    unsigned int *value;    // 无符号整数类型选项的值指针
+    CALL_BACK cb;           // 回调函数类型选项的函数指针
 } PerfOption;
 
+/**
+ * @brief 子命令结构体
+ * @details 存储解析后的子命令路径及其参数列表
+ */
 typedef struct {
-    const char *path;
-    char *params[CMD_MAX_PARAMS];
+    const char *path;               // 子命令可执行文件路径
+    char *params[CMD_MAX_PARAMS];   // 子命令参数数组，最大长度为CMD_MAX_PARAMS
 } SubCmd;
 
+/**
+ * @brief 选项数组结束标记宏
+ * @note 用于标记PerfOption数组的结束，需放在数组最后一项
+ */
 #define OPTION_END()          {.name = ""}
+
+/**
+ * @brief 无符号整数类型选项初始化宏
+ * @param[in] n 选项名称（如"-p"）
+ * @param[in] v 存储选项值的无符号整数指针
+ */
 #define OPTION_UINT(n, v)     {.type = OPTION_TYPE_UINT,     .name = (n), .value = (v)}
+
+/**
+ * @brief 字符串类型选项初始化宏
+ * @param[in] n 选项名称（如"-o"）
+ * @param[in] s 存储选项值的字符串指针
+ */
 #define OPTION_STRING(n, s)   {.type = OPTION_TYPE_STRING,   .name = (n), .str = (s)}
+
+/**
+ * @brief 回调函数类型选项初始化宏
+ * @param[in] n 选项名称（如"-e"）
+ * @param[in] c 处理该选项的回调函数指针
+ */
 #define OPTION_CALLBACK(n, c) {.type = OPTION_TYPE_CALLBACK, .name = (n), .cb = (c)}
+
 
 int ParseOptions(int argc, char **argv, PerfOption *opt, SubCmd *cmd);
 int ParseEvents(const char *argv, PerfEventConfig *eventsCfg, unsigned int *len);

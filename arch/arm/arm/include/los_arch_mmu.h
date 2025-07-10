@@ -81,15 +81,19 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-/// 内存管理单元（英语：memory management unit，缩写为MMU），有时称作分页内存管理单元（英语：paged memory management unit，缩写为PMMU）。
-typedef struct ArchMmu {//内存管理单元
+
+/**
+ * @brief ARM架构MMU（内存管理单元）控制块结构
+ * @details 该结构用于管理ARM处理器的内存管理单元相关资源，包括页表基地址、ASID和页表链表等
+ */
+typedef struct ArchMmu {
 #ifndef LOSCFG_PAGE_TABLE_FINE_LOCK
-    SPIN_LOCK_S         lock;           /**< arch mmu page table entry modification spin lock */
+    SPIN_LOCK_S         lock;           /**< 页表项修改自旋锁，用于多核心环境下的页表操作同步 */
 #endif
-    VADDR_T             *virtTtb;       /**< translation table base virtual addr | 注意:这里是个指针,内核操作都用这个地址*/
-    PADDR_T             physTtb;        /**< translation table base phys addr | 注意:这里是个值,这个值是记录给MMU使用的,MMU只认它,内核是无法使用的*/
-    UINT32              asid;           /**< TLB asid | 标识进程用的，由mmu初始化阶段申请分配，有了它在mmu层面才知道是哪个进程的虚拟地址*/
-    LOS_DL_LIST         ptList;         /**< page table vm page list | L1 为表头，后面挂的是n多L2*/
+    VADDR_T             *virtTtb;       /**< 转换表基址虚拟地址，指向页表的虚拟内存起始位置 */
+    PADDR_T             physTtb;        /**< 转换表基址物理地址，硬件MMU实际使用的物理页表基地址 */
+    UINT32              asid;           /**< 地址空间标识符(Address Space Identifier)，用于TLB上下文隔离 */
+    LOS_DL_LIST         ptList;         /**< 页表虚拟内存页面链表，管理所有已分配的页表页面节点 */
 } LosArchMmu;
 
 BOOL OsArchMmuInit(LosArchMmu *archMmu, VADDR_T *virtTtb);

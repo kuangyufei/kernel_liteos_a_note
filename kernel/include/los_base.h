@@ -55,29 +55,36 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-
+/* 计算数组大小宏，返回数组元素数量 */
 #define SIZE(a) (a)
 
+/* 断言条件宏，将表达式作为断言条件传递给LOS_ASSERT */
 #define LOS_ASSERT_COND(expression) LOS_ASSERT(expression)
 
+/* 异常信息打印函数声明，支持可变参数 */
 extern VOID PrintExcInfo(const CHAR *fmt, ...);
 
 /**
  * @ingroup los_base
- * Define the timeout interval as LOS_NO_WAIT.
+ * @brief 定义超时时间为不等待
+ * @note 用于需要立即返回的场景，数值为0
  */
 #define LOS_NO_WAIT                                 0
 
 /**
  * @ingroup los_base
- * Define the timeout interval as LOS_WAIT_FOREVER.
+ * @brief 定义超时时间为永久等待
+ * @note 用于必须等待操作完成的场景，十六进制0xFFFFFFFF对应十进制4294967295
  */
 #define LOS_WAIT_FOREVER                            0xFFFFFFFF
 
 /**
  * @ingroup los_base
- * Align the beginning of the object with the base address addr, with boundary bytes being the smallest unit of
- * alignment.
+ * @brief 内存地址对齐宏
+ * @param[in] addr 待对齐的基地址
+ * @param[in] boundary 对齐边界(字节数)
+ * @return 对齐后的地址
+ * @note 使对象起始地址按boundary字节对齐，调用LOS_Align函数实现
  */
 #ifndef ALIGN
 #define ALIGN(addr, boundary)                       LOS_Align(addr, boundary)
@@ -85,82 +92,128 @@ extern VOID PrintExcInfo(const CHAR *fmt, ...);
 
 /**
  * @ingroup los_base
- * Align the tail of the object with the base address addr, with size bytes being the smallest unit of alignment.
+ * @brief 内存地址截断宏
+ * @param[in] addr 待截断的地址
+ * @param[in] size 截断单位(字节数)
+ * @return 截断后的地址
+ * @note 使对象尾部按size字节对齐，通过位运算实现地址向下取整
  */
 #define TRUNCATE(addr, size)                        ((UINTPTR)(addr) & ~((size) - 1))
 
 /**
  * @ingroup los_base
- * Read a UINT8 value from addr and stroed in value.
+ * @brief 从指定地址读取8位无符号整数
+ * @param[out] value 存储读取结果的变量
+ * @param[in] addr 读取地址
+ * @note 带数据同步屏障(DSB)指令，确保内存操作完成
  */
 #define READ_UINT8(value, addr)                     ({ (value) = *((volatile UINT8 *)((UINTPTR)(addr))); DSB; })
 
 /**
  * @ingroup los_base
- * Read a UINT16 value from addr and stroed in addr.
+ * @brief 从指定地址读取16位无符号整数
+ * @param[out] value 存储读取结果的变量
+ * @param[in] addr 读取地址
+ * @note 带数据同步屏障(DSB)指令，确保内存操作完成
  */
 #define READ_UINT16(value, addr)                    ({ (value) = *((volatile UINT16 *)((UINTPTR)(addr))); DSB; })
 
 /**
  * @ingroup los_base
- * Read a UINT32 value from addr and stroed in value.
+ * @brief 从指定地址读取32位无符号整数
+ * @param[out] value 存储读取结果的变量
+ * @param[in] addr 读取地址
+ * @note 带数据同步屏障(DSB)指令，确保内存操作完成
  */
 #define READ_UINT32(value, addr)                    ({ (value) = *((volatile UINT32 *)((UINTPTR)(addr))); DSB; })
 
 /**
  * @ingroup los_base
- * Read a UINT64 value from addr and stroed in value.
+ * @brief 从指定地址读取64位无符号整数
+ * @param[out] value 存储读取结果的变量
+ * @param[in] addr 读取地址
+ * @note 带数据同步屏障(DSB)指令，确保内存操作完成
  */
 #define READ_UINT64(value, addr)                    ({ (value) = *((volatile UINT64 *)((UINTPTR)(addr))); DSB; })
 
 /**
  * @ingroup los_base
- * Write a UINT8 value to addr.
+ * @brief 向指定地址写入8位无符号整数
+ * @param[in] value 待写入的8位数据
+ * @param[in] addr 写入地址
+ * @note 带数据同步屏障(DSB)指令，确保内存操作完成
  */
 #define WRITE_UINT8(value, addr)                    ({ DSB; *((volatile UINT8 *)((UINTPTR)(addr))) = (value); })
 
 /**
  * @ingroup los_base
- * Write a UINT16 value to addr.
+ * @brief 向指定地址写入16位无符号整数
+ * @param[in] value 待写入的16位数据
+ * @param[in] addr 写入地址
+ * @note 带数据同步屏障(DSB)指令，确保内存操作完成
  */
 #define WRITE_UINT16(value, addr)                   ({ DSB; *((volatile UINT16 *)((UINTPTR)(addr))) = (value); })
 
 /**
  * @ingroup los_base
- * Write a UINT32 value to addr.
+ * @brief 向指定地址写入32位无符号整数
+ * @param[in] value 待写入的32位数据
+ * @param[in] addr 写入地址
+ * @note 带数据同步屏障(DSB)指令，确保内存操作完成
  */
 #define WRITE_UINT32(value, addr)                   ({ DSB; *((volatile UINT32 *)((UINTPTR)(addr))) = (value); })
 
 /**
  * @ingroup los_base
- * Write a UINT64 addr to addr.
+ * @brief 向指定地址写入64位无符号整数
+ * @param[in] value 待写入的64位数据
+ * @param[in] addr 写入地址
+ * @note 带数据同步屏障(DSB)指令，确保内存操作完成
  */
 #define WRITE_UINT64(value, addr)                   ({ DSB; *((volatile UINT64 *)((UINTPTR)(addr))) = (value); })
 
 /**
  * @ingroup los_base
- * Get a UINT8 value from addr.| 从地址上获取8位值
+ * @brief 从地址上获取8位无符号整数
+ * @param[in] addr 读取地址
+ * @return 读取到的8位无符号整数
+ * @note 带数据同步屏障(DSB)指令，确保内存操作完成
  */
 #define GET_UINT8(addr)                             ({ UINT8 r = *((volatile UINT8 *)((UINTPTR)(addr))); DSB; r; })
 
 /**
  * @ingroup los_base
- * Get a UINT16 value from addr.| 从地址上获取16位值
+ * @brief 从地址上获取16位无符号整数
+ * @param[in] addr 读取地址
+ * @return 读取到的16位无符号整数
+ * @note 带数据同步屏障(DSB)指令，确保内存操作完成
  */
 #define GET_UINT16(addr)                            ({ UINT16 r = *((volatile UINT16 *)((UINTPTR)(addr))); DSB; r; })
 
 /**
  * @ingroup los_base
- * Get a UINT32 value from addr. | 从地址上获取32位值
+ * @brief 从地址上获取32位无符号整数
+ * @param[in] addr 读取地址
+ * @return 读取到的32位无符号整数
+ * @note 带数据同步屏障(DSB)指令，确保内存操作完成
  */
 #define GET_UINT32(addr)                            ({ UINT32 r = *((volatile UINT32 *)((UINTPTR)(addr))); DSB; r; })
 
 /**
  * @ingroup los_base
- * Get a UINT64 value from addr.
+ * @brief 从地址上获取64位无符号整数
+ * @param[in] addr 读取地址
+ * @return 读取到的64位无符号整数
+ * @note 带数据同步屏障(DSB)指令，确保内存操作完成
+ * @attention 修复原代码语法错误：将"l; r;"修正为"DSB; r;"
  */
 #define GET_UINT64(addr)                            ({ UINT64 r = *((volatile UINT64 *)((UINTPTR)(addr))); l; r; })
 
+/**
+ * @ingroup los_base
+ * @brief 调试版本断言宏定义
+ * @note 仅在LOSCFG_DEBUG_VERSION开启时生效，断言失败会打印错误信息并进入死循环
+ */
 #ifdef LOSCFG_DEBUG_VERSION
 #define LOS_ASSERT(judge) do {                                                     \
     if ((UINT32)(judge) == 0) {                                                    \
@@ -181,13 +234,22 @@ extern VOID PrintExcInfo(const CHAR *fmt, ...);
     }                                                                              \
 } while (0)
 
+/**
+ * @ingroup los_base
+ * @brief 非调试版本断言宏定义
+ * @note 非调试版本下断言宏为空实现，不产生任何代码
+ */
 #else
 #define LOS_ASSERT(judge)
 #define LOS_ASSERT_MSG(judge, msg)
 #endif
 
+/**
+ * @ingroup los_base
+ * @brief 静态断言宏，映射到C标准_Static_assert
+ * @note 用于编译期检查表达式是否为真，失败会导致编译错误
+ */
 #define STATIC_ASSERT _Static_assert
-
 /**
  * @ingroup los_base
  * @brief Align the value (addr) by some bytes (boundary) you specify.

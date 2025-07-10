@@ -41,371 +41,369 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+/**
+ * @ingroup shell_list
+ * @brief 布尔类型定义 (使用size_t实现)
+ * @note 此处将bool定义为size_t类型，1表示真，0表示假
+ */
 typedef size_t bool;
 
 /**
  * @ingroup shell_list
- * Structure of a node in a doubly linked list.
+ * @brief 双向链表节点结构
+ * @par 描述
+ * 定义双向链表的基本节点，包含指向前一个节点和后一个节点的指针
  */
 typedef struct SH_List {
-    struct SH_List *pstPrev; /**< Current node's pointer to the previous node */
-    struct SH_List *pstNext; /**< Current node's pointer to the next node */
+    struct SH_List *pstPrev; /**< 当前节点指向前一个节点的指针 */
+    struct SH_List *pstNext; /**< 当前节点指向后一个节点的指针 */
 } SH_List;
 
 /**
  * @ingroup shell_list
+ * @brief 初始化双向链表
  *
- * @par Description:
- * This API is used to initialize a doubly linked list.
+ * @par 描述
+ * 该API用于初始化一个双向链表，将链表节点的前后指针均指向自身
  * @attention
  * <ul>
- * <li>The parameter passed in should be ensured to be a legal pointer.</li>
+ * <li>传入的参数应确保为合法指针，否则可能导致未定义行为</li>
  * </ul>
  *
- * @param list    [IN] Node in a doubly linked list.
+ * @param list    [IN] 双向链表节点指针
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
- * @see
+ * @retval None
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此API声明的头文件</li></ul>
+ * @see SH_ListAdd | SH_ListDelete
  */
 static inline void SH_ListInit(SH_List *list)
 {
-    list->pstNext = list;
-    list->pstPrev = list;
+    list->pstNext = list;  // 后向指针指向自身
+    list->pstPrev = list;  // 前向指针指向自身
 }
 
 /**
  * @ingroup shell_list
- * @brief Point to the next node pointed to by the current node.
+ * @brief 获取当前节点指向的下一个节点
  *
- * @par Description:
- * <ul>
- * <li>This API is used to point to the next node pointed to by the current node.</li>
- * </ul>
+ * @par 描述
+ * 该宏用于获取双向链表中当前节点的下一个节点指针
  * @attention
  * <ul>
- * <li>None.</li>
+ * <li>无特殊注意事项</li>
  * </ul>
  *
- * @param object  [IN] Node in the doubly linked list.
+ * @param object  [IN] 双向链表节点指针
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
- * @see
+ * @retval 返回当前节点的下一个节点指针
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此宏定义的头文件</li></ul>
+ * @see SH_LIST_LAST
  */
 #define SH_LIST_FIRST(object) ((object)->pstNext)
 
 /**
  * @ingroup shell_list
- * @brief Point to the previous node pointed to by the current node.
+ * @brief 获取当前节点指向的前一个节点
  *
- * @par Description:
- * <ul>
- * <li>This API is used to point to the previous node pointed to by the current node.</li>
- * </ul>
+ * @par 描述
+ * 该宏用于获取双向链表中当前节点的前一个节点指针
  * @attention
  * <ul>
- * <li>None.</li>
+ * <li>无特殊注意事项</li>
  * </ul>
  *
- * @param object  [IN] Node in the doubly linked list.
+ * @param object  [IN] 双向链表节点指针
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
- * @see
+ * @retval 返回当前节点的前一个节点指针
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此宏定义的头文件</li></ul>
+ * @see SH_LIST_FIRST
  */
 #define SH_LIST_LAST(object) ((object)->pstPrev)
 
 /**
  * @ingroup shell_list
- * @brief Insert a new node to a doubly linked list.
+ * @brief 向双向链表中插入新节点
  *
- * @par Description:
- * This API is used to insert a new node to a doubly linked list.
+ * @par 描述
+ * 该API用于在指定节点后插入新节点，新节点将成为指定节点的直接后继
  * @attention
  * <ul>
- * <li>The parameters passed in should be ensured to be legal pointers.</li>
+ * <li>传入的参数应确保为合法指针，否则可能导致链表损坏</li>
  * </ul>
  *
- * @param list    [IN] Doubly linked list where the new node is inserted.
- * @param node    [IN] New node to be inserted.
+ * @param list    [IN] 双向链表节点指针 (新节点将插入到此节点之后)
+ * @param node    [IN] 待插入的新节点指针
  *
  * @retval None
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
- * @see SH_ListDelete
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此API声明的头文件</li></ul>
+ * @see SH_ListDelete | SH_ListTailInsert
  */
 static inline void SH_ListAdd(SH_List *list, SH_List *node)
 {
-    node->pstNext = list->pstNext;
-    node->pstPrev = list;
-    list->pstNext->pstPrev = node;
-    list->pstNext = node;
+    node->pstNext = list->pstNext;  // 新节点的后向指针指向list的原后继节点
+    node->pstPrev = list;          // 新节点的前向指针指向list
+    list->pstNext->pstPrev = node;  // list原后继节点的前向指针指向新节点
+    list->pstNext = node;          // list的后向指针指向新节点
 }
 
 /**
  * @ingroup shell_list
- * @brief Insert a node to the tail of a doubly linked list.
+ * @brief 将节点插入到双向链表的尾部
  *
- * @par Description:
- * This API is used to insert a new node to the tail of a doubly linked list.
+ * @par 描述
+ * 该API用于将新节点插入到双向链表的尾部，成为链表的最后一个节点
  * @attention
  * <ul>
- * <li>The parameters passed in should be ensured to be legal pointers.</li>
+ * <li>传入的参数应确保为合法指针，否则可能导致未定义行为</li>
  * </ul>
  *
- * @param list     [IN] Doubly linked list where the new node is inserted.
- * @param node     [IN] New node to be inserted.
+ * @param list     [IN] 双向链表头节点指针
+ * @param node     [IN] 待插入的新节点指针
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
+ * @retval None
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此API声明的头文件</li></ul>
  * @see SH_ListAdd | SH_ListHeadInsert
  */
 static inline void SH_ListTailInsert(SH_List *list, SH_List *node)
 {
-    if ((list == NULL) || (node == NULL)) {
-        return;
+    if ((list == NULL) || (node == NULL)) {  // 参数合法性检查
+        return;                             // 非法指针，直接返回
     }
 
-    SH_ListAdd(list->pstPrev, node);
+    SH_ListAdd(list->pstPrev, node);  // 在链表尾节点后插入新节点
 }
 
 /**
  * @ingroup shell_list
- * @brief Insert a node to the head of a doubly linked list.
+ * @brief 将节点插入到双向链表的头部
  *
- * @par Description:
- * This API is used to insert a new node to the head of a doubly linked list.
+ * @par 描述
+ * 该API用于将新节点插入到双向链表的头部，成为链表的第一个有效节点
  * @attention
  * <ul>
- * <li>The parameters passed in should be ensured to be legal pointers.</li>
+ * <li>传入的参数应确保为合法指针，否则可能导致未定义行为</li>
  * </ul>
  *
- * @param list     [IN] Doubly linked list where the new node is inserted.
- * @param node     [IN] New node to be inserted.
+ * @param list     [IN] 双向链表头节点指针
+ * @param node     [IN] 待插入的新节点指针
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
+ * @retval None
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此API声明的头文件</li></ul>
  * @see SH_ListAdd | SH_ListTailInsert
  */
 static inline void SH_ListHeadInsert(SH_List *list, SH_List *node)
 {
-    if ((list == NULL) || (node == NULL)) {
-        return;
+    if ((list == NULL) || (node == NULL)) {  // 参数合法性检查
+        return;                             // 非法指针，直接返回
     }
 
-    SH_ListAdd(list, node);
+    SH_ListAdd(list, node);  // 在链表头节点后插入新节点
 }
 
 /**
  * @ingroup shell_list
+ * @brief 从双向链表中删除指定节点
  *
- * @par Description:
- * <ul>
- * <li>This API is used to delete a specified node from a doubly linked list.</li>
- * </ul>
+ * @par 描述
+ * 该API用于从双向链表中删除指定节点，并将该节点的前后指针置空
  * @attention
  * <ul>
- * <li>The parameter passed in should be ensured to be a legal pointer.</li>
+ * <li>传入的参数应确保为合法指针且节点已在链表中，否则可能导致链表损坏</li>
  * </ul>
  *
- * @param node    [IN] Node to be deleted.
+ * @param node    [IN] 待删除的节点指针
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
+ * @retval None
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此API声明的头文件</li></ul>
  * @see SH_ListAdd
  */
 static inline void SH_ListDelete(SH_List *node)
 {
-    node->pstNext->pstPrev = node->pstPrev;
-    node->pstPrev->pstNext = node->pstNext;
-    node->pstNext = NULL;
-    node->pstPrev = NULL;
+    node->pstNext->pstPrev = node->pstPrev;  // 待删除节点的后继节点的前向指针指向待删除节点的前驱节点
+    node->pstPrev->pstNext = node->pstNext;  // 待删除节点的前驱节点的后向指针指向待删除节点的后继节点
+    node->pstNext = NULL;                    // 待删除节点的后向指针置空
+    node->pstPrev = NULL;                    // 待删除节点的前向指针置空
 }
 
 /**
  * @ingroup shell_list
- * @brief Identify whether a specified doubly linked list is empty.
+ * @brief 判断双向链表是否为空
  *
- * @par Description:
- * <ul>
- * <li>This API is used to return whether a doubly linked list is empty.</li>
- * </ul>
+ * @par 描述
+ * 该API用于判断指定的双向链表是否为空链表
  * @attention
  * <ul>
- * <li>The parameter passed in should be ensured to be a legal pointer.</li>
+ * <li>传入的参数应确保为合法指针，否则返回FALSE</li>
  * </ul>
  *
- * @param list  [IN] Doubly linked list.
+ * @param list  [IN] 双向链表头节点指针
  *
- * @retval TRUE The doubly linked list is empty.
- * @retval FALSE The doubly linked list is not empty.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
- * @see
+ * @retval TRUE  双向链表为空
+ * @retval FALSE 双向链表不为空
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此API声明的头文件</li></ul>
+ * @see SH_ListInit
  */
 static inline bool SH_ListEmpty(SH_List *list)
 {
-    if (list == NULL) {
-        return FALSE;
+    if (list == NULL) {          // 参数合法性检查
+        return FALSE;            // 非法指针，返回FALSE
     }
 
-    return (bool)(list->pstNext == list);
+    return (bool)(list->pstNext == list);  // 头节点的后向指针指向自身表示链表为空
 }
 
 /**
  * @ingroup shell_list
- * @brief Insert a new list to a doubly linked list.
+ * @brief 将一个链表插入到另一个链表中
  *
- * @par Description:
- * This API is used to insert a new list to a doubly linked list.
+ * @par 描述
+ * 该API用于将新链表(newList)整体插入到旧链表(oldList)中，插入位置在oldList的当前位置之后
  * @attention
  * <ul>
- * <li>The parameters passed in should be ensured to be legal pointers.</li>
+ * <li>传入的参数应确保为合法指针，否则可能导致链表损坏</li>
  * </ul>
  *
- * @param oldList    [IN] Doubly linked list where the new list is inserted.
- * @param newList    [IN] New list to be inserted.
+ * @param oldList    [IN] 目标链表指针
+ * @param newList    [IN] 待插入的新链表指针
  *
  * @retval None
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此API声明的头文件</li></ul>
  * @see SH_ListDelete
  */
 static inline void SH_ListAddList(SH_List *oldList, SH_List *newList)
 {
-    SH_List *oldListHead = oldList->pstNext;
-    SH_List *oldListTail = oldList;
-    SH_List *newListHead = newList;
-    SH_List *newListTail = newList->pstPrev;
+    SH_List *oldListHead = oldList->pstNext;  // 保存oldList的原头节点
+    SH_List *oldListTail = oldList;           // oldList的当前节点作为尾节点
+    SH_List *newListHead = newList;           // newList的头节点
+    SH_List *newListTail = newList->pstPrev;  // newList的尾节点
 
-    oldListTail->pstNext = newListHead;
-    newListHead->pstPrev = oldListTail;
-    oldListHead->pstPrev = newListTail;
-    newListTail->pstNext = oldListHead;
+    oldListTail->pstNext = newListHead;       // oldList尾节点的后向指针指向newList头节点
+    newListHead->pstPrev = oldListTail;       // newList头节点的前向指针指向oldList尾节点
+    oldListHead->pstPrev = newListTail;       // oldList原头节点的前向指针指向newList尾节点
+    newListTail->pstNext = oldListHead;       // newList尾节点的后向指针指向oldList原头节点
 }
 
 /**
  * @ingroup shell_list
- * @brief Insert a doubly list to the tail of a doubly linked list.
+ * @brief 将一个链表插入到另一个链表的尾部
  *
- * @par Description:
- * This API is used to insert a new doubly list to the tail of a doubly linked list.
+ * @par 描述
+ * 该API用于将新链表(newList)整体插入到旧链表(oldList)的尾部
  * @attention
  * <ul>
- * <li>The parameters passed in should be ensured to be legal pointers.</li>
+ * <li>传入的参数应确保为合法指针，否则可能导致链表损坏</li>
  * </ul>
  *
- * @param oldList     [IN] Doubly linked list where the new list is inserted.
- * @param newList     [IN] New list to be inserted.
+ * @param oldList     [IN] 目标链表指针
+ * @param newList     [IN] 待插入的新链表指针
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
+ * @retval None
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此API声明的头文件</li></ul>
  * @see SH_ListAddList | SH_ListHeadInsertList
  */
 static inline void SH_ListTailInsertList(SH_List *oldList, SH_List *newList)
 {
-    SH_ListAddList(oldList->pstPrev, newList);
+    SH_ListAddList(oldList->pstPrev, newList);  // 在oldList的尾节点后插入newList
 }
 
 /**
  * @ingroup shell_list
- * @brief Insert a doubly list to the head of a doubly linked list.
+ * @brief 将一个链表插入到另一个链表的头部
  *
- * @par Description:
- * This API is used to insert a new doubly list to the head of a doubly linked list.
+ * @par 描述
+ * 该API用于将新链表(newList)整体插入到旧链表(oldList)的头部
  * @attention
  * <ul>
- * <li>The parameters passed in should be ensured to be legal pointers.</li>
+ * <li>传入的参数应确保为合法指针，否则可能导致链表损坏</li>
  * </ul>
  *
- * @param oldList     [IN] Doubly linked list where the new list is inserted.
- * @param newList     [IN] New list to be inserted.
+ * @param oldList     [IN] 目标链表指针
+ * @param newList     [IN] 待插入的新链表指针
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
+ * @retval None
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此API声明的头文件</li></ul>
  * @see SH_ListAddList | SH_ListTailInsertList
  */
 static inline void SH_ListHeadInsertList(SH_List *oldList, SH_List *newList)
 {
-    SH_ListAddList(oldList, newList);
+    SH_ListAddList(oldList, newList);  // 在oldList的头节点后插入newList
 }
 
 /**
  * @ingroup shell_list
- * @brief Obtain the offset of a field to a structure address.
+ * @brief 获取结构体中某个成员相对于结构体起始地址的偏移量
  *
- * @par  Description:
- * This API is used to obtain the offset of a field to a structure address.
+ * @par 描述
+ * 该宏用于计算结构体中指定成员的偏移量，通常用于从成员指针反推结构体指针
  * @attention
  * <ul>
- * <li>None.</li>
+ * <li>无特殊注意事项</li>
  * </ul>
  *
- * @param type    [IN] Structure name.
- * @param member  [IN] Name of the member of which the offset is to be measured.
+ * @param type    [IN] 结构体类型名
+ * @param member  [IN] 结构体成员名
  *
- * @retval Offset of the field to the structure address.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
- * @see
- *///获取指定结构体内的成员相对于结构体起始地址的偏移量
+ * @retval 返回成员相对于结构体起始地址的偏移量(字节数)
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此宏定义的头文件</li></ul>
+ * @see SH_LIST_ENTRY
+ */
 #define LOS_OFF_SET_OF(type, member) ((uintptr_t)&((type *)0)->member)
 
 /**
  * @ingroup shell_list
- * @brief Obtain the pointer to a structure that contains a doubly linked list.
+ * @brief 从链表节点指针获取包含该节点的结构体指针
  *
- * @par Description:
- * This API is used to obtain the pointer to a structure that contains a doubly linked list.
- * <ul>
- * <li>None.</li>
- * </ul>
+ * @par 描述
+ * 该宏用于通过结构体中包含的链表节点成员指针，反推得到整个结构体的指针
  * @attention
  * <ul>
- * <li>None.</li>
+ * <li>确保传入的item指针有效，且member参数正确指定了结构体中的链表成员</li>
  * </ul>
  *
- * @param item    [IN] Current node's pointer to the next node.
- * @param type    [IN] Structure name.
- * @param member  [IN] Member name of the doubly linked list in the structure.
+ * @param item    [IN] 链表节点指针
+ * @param type    [IN] 结构体类型名
+ * @param member  [IN] 结构体中链表成员的名称
  *
- * @retval Pointer to the structure that contains the doubly linked list.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
- * @see
+ * @retval 返回包含该链表节点的结构体指针
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此宏定义的头文件</li></ul>
+ * @see LOS_OFF_SET_OF
  */
 #define SH_LIST_ENTRY(item, type, member) \
     ((type *)(void *)((char *)(item) - LOS_OFF_SET_OF(type, member)))
 
 /**
  * @ingroup shell_list
- * @brief Iterate over a doubly linked list of given type.
+ * @brief 遍历包含双向链表的结构体
  *
- * @par Description:
- * This API is used to iterate over a doubly linked list of given type.
+ * @par 描述
+ * 该宏用于遍历包含双向链表节点的结构体数组，通过链表节点将结构体串联起来
  * @attention
  * <ul>
- * <li>None.</li>
+ * <li>遍历时不要修改链表结构，否则可能导致遍历异常</li>
  * </ul>
  *
- * @param item           [IN] Pointer to the structure that contains the doubly linked list that is to be traversed.
- * @param list           [IN] Pointer to the doubly linked list to be traversed.
- * @param type           [IN] Structure name.
- * @param member         [IN] Member name of the doubly linked list in the structure.
+ * @param item           [IN] 结构体指针变量，用于存储当前遍历到的结构体
+ * @param list           [IN] 双向链表头节点指针
+ * @param type           [IN] 结构体类型名
+ * @param member         [IN] 结构体中链表成员的名称
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
- * @see
+ * @retval None
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此宏定义的头文件</li></ul>
+ * @see SH_LIST_FOR_EACH_ENTRY_SAFE
  */
 #define SH_LIST_FOR_EACH_ENTRY(item, list, type, member)             \
     for (item = SH_LIST_ENTRY((list)->pstNext, type, member);        \
@@ -414,25 +412,25 @@ static inline void SH_ListHeadInsertList(SH_List *oldList, SH_List *newList)
 
 /**
  * @ingroup shell_list
- * @brief iterate over a doubly linked list safe against removal of list entry.
+ * @brief 安全遍历包含双向链表的结构体(允许遍历中删除节点)
  *
- * @par Description:
- * This API is used to iterate over a doubly linked list safe against removal of list entry.
+ * @par 描述
+ * 该宏用于安全遍历包含双向链表节点的结构体数组，在遍历过程中可以删除节点而不导致遍历异常
  * @attention
  * <ul>
- * <li>None.</li>
+ * <li>需要额外提供一个next变量用于保存下一个节点信息</li>
  * </ul>
  *
- * @param item           [IN] Pointer to the structure that contains the doubly linked list that is to be traversed.
- * @param next           [IN] Save the next node.
- * @param list           [IN] Pointer to the doubly linked list to be traversed.
- * @param type           [IN] Structure name.
- * @param member         [IN] Member name of the doubly linked list in the structure.
+ * @param item           [IN] 结构体指针变量，用于存储当前遍历到的结构体
+ * @param next           [IN] 结构体指针变量，用于保存下一个结构体节点
+ * @param list           [IN] 双向链表头节点指针
+ * @param type           [IN] 结构体类型名
+ * @param member         [IN] 结构体中链表成员的名称
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
- * @see
+ * @retval None
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此宏定义的头文件</li></ul>
+ * @see SH_LIST_FOR_EACH_ENTRY
  */
 #define SH_LIST_FOR_EACH_ENTRY_SAFE(item, next, list, type, member)               \
     for (item = SH_LIST_ENTRY((list)->pstNext, type, member),                     \
@@ -442,47 +440,47 @@ static inline void SH_ListHeadInsertList(SH_List *oldList, SH_List *newList)
 
 /**
  * @ingroup shell_list
- * @brief Delete initialize a doubly linked list.
+ * @brief 删除节点并初始化该节点
  *
- * @par Description:
- * This API is used to delete initialize a doubly linked list.
+ * @par 描述
+ * 该API用于从双向链表中删除指定节点，并将该节点重新初始化为空链表
  * @attention
  * <ul>
- * <li>The parameter passed in should be ensured to be s legal pointer.</li>
+ * <li>传入的参数应确保为合法指针，否则可能导致未定义行为</li>
  * </ul>
  *
- * @param list    [IN] Doubly linked list.
+ * @param list    [IN] 待删除并初始化的节点指针
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
- * @see
+ * @retval None
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此API声明的头文件</li></ul>
+ * @see SH_ListDelete | SH_ListInit
  */
 static inline void SH_ListDelInit(SH_List *list)
 {
-    list->pstNext->pstPrev = list->pstPrev;
-    list->pstPrev->pstNext = list->pstNext;
-    SH_ListInit(list);
+    list->pstNext->pstPrev = list->pstPrev;  // 待删除节点的后继节点的前向指针指向待删除节点的前驱节点
+    list->pstPrev->pstNext = list->pstNext;  // 待删除节点的前驱节点的后向指针指向待删除节点的后继节点
+    SH_ListInit(list);                       // 初始化该节点为新的空链表
 }
 
 /**
  * @ingroup shell_list
- * @brief iterate over a doubly linked list.
+ * @brief 遍历双向链表节点
  *
- * @par Description:
- * This API is used to iterate over a doubly linked list.
+ * @par 描述
+ * 该宏用于遍历双向链表的所有节点
  * @attention
  * <ul>
- * <li>None.</li>
+ * <li>遍历时不要修改链表结构，否则可能导致遍历异常</li>
  * </ul>
  *
- * @param item           [IN] Pointer to the structure that contains the doubly linked list that is to be traversed.
- * @param list           [IN] Pointer to the doubly linked list to be traversed.
+ * @param item           [IN] 链表节点指针变量，用于存储当前遍历到的节点
+ * @param list           [IN] 双向链表头节点指针
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
- * @see
+ * @retval None
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此宏定义的头文件</li></ul>
+ * @see SH_LIST_FOR_EACH_SAFE
  */
 #define SH_LIST_FOR_EACH(item, list) \
     for (item = (list)->pstNext;         \
@@ -491,23 +489,23 @@ static inline void SH_ListDelInit(SH_List *list)
 
 /**
  * @ingroup shell_list
- * @brief Iterate over a doubly linked list safe against removal of list entry.
+ * @brief 安全遍历双向链表节点(允许遍历中删除节点)
  *
- * @par Description:
- * This API is used to iterate over a doubly linked list safe against removal of list entry.
+ * @par 描述
+ * 该宏用于安全遍历双向链表的所有节点，在遍历过程中可以删除节点而不导致遍历异常
  * @attention
  * <ul>
- * <li>None.</li>
+ * <li>需要额外提供一个next变量用于保存下一个节点信息</li>
  * </ul>
  *
- * @param item           [IN] Pointer to the structure that contains the doubly linked list that is to be traversed.
- * @param next           [IN] Save the next node.
- * @param list           [IN] Pointer to the doubly linked list to be traversed.
+ * @param item           [IN] 链表节点指针变量，用于存储当前遍历到的节点
+ * @param next           [IN] 链表节点指针变量，用于保存下一个节点
+ * @param list           [IN] 双向链表头节点指针
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
- * @see
+ * @retval None
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此宏定义的头文件</li></ul>
+ * @see SH_LIST_FOR_EACH
  */
 #define SH_LIST_FOR_EACH_SAFE(item, next, list)      \
     for (item = (list)->pstNext, next = (item)->pstNext; \
@@ -516,24 +514,44 @@ static inline void SH_ListDelInit(SH_List *list)
 
 /**
  * @ingroup shell_list
- * @brief Initialize a double linked list.
+ * @brief 定义并初始化一个双向链表头节点
  *
- * @par Description:
- * This API is used to initialize a double linked list.
+ * @par 描述
+ * 该宏用于定义一个双向链表头节点并初始化为空链表
  * @attention
  * <ul>
- * <li>None.</li>
+ * <li>无特殊注意事项</li>
  * </ul>
  *
- * @param list           [IN] Pointer to the doubly linked list to be traversed.
+ * @param list           [IN] 要定义的链表头节点名称
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>shell_list.h: the header file that contains the API declaration.</li></ul>
- * @see
+ * @retval None
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此宏定义的头文件</li></ul>
+ * @see SH_ListInit
  */
 #define SH_LIST_HEAD(list) SH_List list = { &(list), &(list) }
 
+/**
+ * @ingroup shell_list
+ * @brief 获取链表头部的结构体指针
+ *
+ * @par 描述
+ * 该宏用于获取链表头部的第一个结构体元素指针，若链表为空则返回NULL
+ * @attention
+ * <ul>
+ * <li>此宏在do-while(0)循环中实现，确保可以在条件语句中安全使用</li>
+ * </ul>
+ *
+ * @param list           [IN] 双向链表头节点指针
+ * @param type           [IN] 结构体类型名
+ * @param element        [IN] 结构体中链表成员的名称
+ *
+ * @retval 返回链表头部的结构体指针，若链表为空则返回NULL
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此宏定义的头文件</li></ul>
+ * @see SH_ListRemoveHeadType
+ */
 #define SH_ListPeekHeadType(list, type, element) do {            \
     type *__t;                                                  \
     if ((list)->pstNext == list) {                              \
@@ -544,6 +562,26 @@ static inline void SH_ListDelInit(SH_List *list)
     __t;                                                        \
 } while (0)
 
+/**
+ * @ingroup shell_list
+ * @brief 移除并获取链表头部的结构体指针
+ *
+ * @par 描述
+ * 该宏用于移除链表头部的第一个结构体元素并返回其指针，若链表为空则返回NULL
+ * @attention
+ * <ul>
+ * <li>此宏在do-while(0)循环中实现，确保可以在条件语句中安全使用</li>
+ * </ul>
+ *
+ * @param list           [IN] 双向链表头节点指针
+ * @param type           [IN] 结构体类型名
+ * @param element        [IN] 结构体中链表成员的名称
+ *
+ * @retval 返回被移除的结构体指针，若链表为空则返回NULL
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此宏定义的头文件</li></ul>
+ * @see SH_ListPeekHeadType
+ */
 #define SH_ListRemoveHeadType(list, type, element) do {          \
     type *__t;                                                  \
     if ((list)->pstNext == list) {                              \
@@ -555,6 +593,27 @@ static inline void SH_ListDelInit(SH_List *list)
     __t;                                                        \
 } while (0)
 
+/**
+ * @ingroup shell_list
+ * @brief 获取当前结构体的下一个结构体指针
+ *
+ * @par 描述
+ * 该宏用于获取当前结构体在链表中的下一个结构体指针，若当前已是最后一个则返回NULL
+ * @attention
+ * <ul>
+ * <li>此宏在do-while(0)循环中实现，确保可以在条件语句中安全使用</li>
+ * </ul>
+ *
+ * @param list           [IN] 双向链表头节点指针
+ * @param item           [IN] 当前结构体指针
+ * @param type           [IN] 结构体类型名
+ * @param element        [IN] 结构体中链表成员的名称
+ *
+ * @retval 返回下一个结构体指针，若已是最后一个则返回NULL
+ * @par 依赖
+ * <ul><li>shell_list.h: 包含此宏定义的头文件</li></ul>
+ * @see SH_ListPeekHeadType
+ */
 #define SH_ListNextType(list, item, type, element) do {          \
     type *__t;                                                  \
     if ((item)->pstNext == list) {                              \

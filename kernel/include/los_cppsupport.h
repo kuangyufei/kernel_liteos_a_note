@@ -47,34 +47,34 @@ extern "C" {
 
 /**
  * @ingroup los_cppsupport
- * If scatter load is disabled, this flag should be passed as the third parameter when LOS_CppSystemInit() is called.
+ * @brief 禁用分散加载标志
+ * @note 当禁用分散加载功能时，调用LOS_CppSystemInit()函数时应将此标志作为第三个参数传入
+ * @value 2 (十进制)
  */
 #define NO_SCATTER 2
 
 /**
  * @ingroup los_cppsupport
- * @brief System cppsupport initialization.
+ * @brief C++运行时支持系统初始化
  *
- * @par Description:
- * This API is used to initialize the cppsupport .
+ * @par 描述
+ * 该API用于初始化C++运行时环境，主要负责调用全局对象构造函数和初始化相关数据段
  * @attention
  * <ul>
- * <li>initArrayStart is the start address of .init_array section,
- * initArrayEnd is the end address of .init_array section.</li>
- * <li>initArrayStart must be smaller than initArrayEnd,
- * initArrayStart and initArrayEnd should be 4(32 bits platform) or 8(64 bits platform) bytes alignment.</li>
+ * <li>initArrayStart是.init_array节区的起始地址，initArrayEnd是.init_array节区的结束地址</li>
+ * <li>initArrayStart必须小于initArrayEnd，且两者地址需满足平台对齐要求：32位平台4字节对齐，64位平台8字节对齐</li>
+ * <li>flag参数必须是以下预定义值之一：BEFORE_SCATTER(分散加载前)、AFTER_SCATTER(分散加载后)或NO_SCATTER(禁用分散加载)</li>
  * </ul>
  *
- * @param  initArrayStart  [IN] Start address of init_array section.
- * @param  initArrayEnd    [IN] End address of init_array section.
- * @param  flag            [IN] Under what circumstances when LOS_CppSystemInit() is called,
- *                              BEFORE_SCATTER, AFTER_SCATTER or NO_SCATTER.
+ * @param[in] initArrayStart  .init_array节区的起始地址，存储C++全局构造函数指针数组
+ * @param[in] initArrayEnd    .init_array节区的结束地址，用于计算构造函数数量
+ * @param[in] flag            初始化时机标志，指定在分散加载过程的哪个阶段执行初始化
  *
- * @retval 0 always return 0.
- * @par Dependency:
- * <ul><li>los_cppsupport.h: the header file that contains the API declaration.</li></ul>
- * @see None.
- */	//初始化C++构造函数
+ * @retval 0 始终返回0，表示初始化成功
+ * @par 依赖
+ * <ul><li>los_cppsupport.h: 包含该API声明的头文件</li></ul>
+ * @see None
+ */
 extern INT32 LOS_CppSystemInit(UINTPTR initArrayStart, UINTPTR initArrayEnd, INT32 flag);
 
 #ifdef __cplusplus

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -43,268 +43,335 @@ extern "C" {
 
 /**
  * @ingroup los_task
- * Define task siginal types.
- *
- * Task siginal types.
+ * @brief 任务信号类型定义
+ * @par 信号类型说明：
+ * - 信号采用位掩码方式定义，支持多信号组合
+ * - 未使用的信号位应保持为0
  */
-#define SIGNAL_NONE                 0U			///< 无信号
-#define SIGNAL_KILL                 (1U << 0)	///< 干掉
-#define SIGNAL_SUSPEND              (1U << 1)	///< 挂起
-#define SIGNAL_AFFI                 (1U << 2)	///< CPU 亲和性,一个任务被切换后被同一个CPU再次执行,则亲和力高
+#define SIGNAL_NONE                 0U                  /**< 无信号 */
+#define SIGNAL_KILL                 (1U << 0)           /**< 终止任务信号 (位0) */
+#define SIGNAL_SUSPEND              (1U << 1)           /**< 挂起任务信号 (位1) */
+#define SIGNAL_AFFI                 (1U << 2)           /**< CPU亲和性变更信号 (位2) */
 
-/* scheduler lock */
-extern SPIN_LOCK_S g_taskSpin;//任务自旋锁
+/** @name 调度器锁操作宏 */
+/** @{ */
+extern SPIN_LOCK_S g_taskSpin;                          /**< 任务调度器自旋锁 */
+
+/**
+ * @brief 检查调度器锁是否被持有
+ * @return 1-已持有，0-未持有
+ */
 #define SCHEDULER_HELD()            LOS_SpinHeld(&g_taskSpin)
+
+/**
+ * @brief 获取调度器锁并保存中断状态
+ * @param state [OUT] 用于保存中断状态的变量
+ * @note 必须与SCHEDULER_UNLOCK配对使用
+ */
 #define SCHEDULER_LOCK(state)       LOS_SpinLockSave(&g_taskSpin, &(state))
+
+/**
+ * @brief 释放调度器锁并恢复中断状态
+ * @param state [IN] 之前保存的中断状态
+ * @note 必须与SCHEDULER_LOCK配对使用
+ */
 #define SCHEDULER_UNLOCK(state)     LOS_SpinUnlockRestore(&g_taskSpin, state)
+/** @} */
 
-/* default and non-running task's ownership id */
-#define OS_TASK_INVALID_CPUID       0xFFFF
+/** @name 任务ID与CPUID定义 */
+/** @{ */
+#define OS_TASK_INVALID_CPUID       0xFFFF              /**< 无效CPU ID (十进制65535) */
 
 /**
  * @ingroup los_task
- * Null task ID
- *
+ * @brief 无效任务ID
+ * @note 用于表示任务创建或查找失败
  */
-#define OS_TASK_ERRORID             0xFFFFFFFF 
+#define OS_TASK_ERRORID             0xFFFFFFFF          /**< 无效任务ID (十进制4294967295) */
+/** @} */
 
+/** @name 任务状态与属性标志位 */
+/** @{ */
 /**
  * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The task control block is unused.
+ * @brief 任务控制块未使用标志
+ * @note 当TCB状态为该值时，表示此TCB可分配给新任务
  */
-#define OS_TASK_STATUS_UNUSED       0x0400U ///< 任务状态:未使用
+#define OS_TASK_STATUS_UNUSED       0x0400U             /**< TCB未使用 (十进制1024) */
 
 /**
  * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The task is joinable.
+ * @brief 任务可连接标志
+ * @note 设置此标志的任务在退出后会保留TCB，直到其他任务调用join获取其退出状态
  */
-#define OS_TASK_FLAG_PTHREAD_JOIN   0x0800U ///< 主task和子task连在一块不分离
+#define OS_TASK_FLAG_PTHREAD_JOIN   0x0800U             /**< 可连接任务标志 (十进制2048) */
+
+#define OS_TASK_FLAG_USER_MODE      0x1000U             /**< 用户模式任务标志 (十进制4096) */
+#define OS_TASK_FLAG_SYSTEM_TASK    0x2000U             /**< 系统任务标志 (十进制8192)，如idle、swtmr任务 */
+#define OS_TASK_FLAG_NO_DELETE      0x4000U             /**< 禁止删除标志 (十进制16384)，如resourceTask任务 */
+#define OS_TASK_FLAG_EXIT_KILL      0x8000U             /**< 进程退出时终止标志 (十进制32768) */
+#define OS_TASK_FLAG_SPECIFIES_PROCESS 0x0U             /**< 进程创建任务标志 */
+/** @} */
+
+/** @name 任务栈对齐定义 */
+/** @{ */
+#define OS_TASK_STACK_SIZE_ALIGN    16U                 /**< 栈大小对齐边界 (16字节) */
+#define OS_TASK_STACK_ADDR_ALIGN    8U                  /**< 栈地址对齐边界 (8字节) */
+/** @} */
 
 /**
  * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The task is user mode task.
- */
-#define OS_TASK_FLAG_USER_MODE      0x1000U
-
-/**
- * @ingroup los_task
- * Flag that indicates the task property.
- *
- * The task is system-level task, like idle, swtmr and etc.
- */
-#define OS_TASK_FLAG_SYSTEM_TASK    0x2000U	///< 系统任务
-
-/**
- * @ingroup los_task
- * Flag that indicates the task property.
- *
- * The task is no-delete system task, like resourceTask. 
- */
-#define OS_TASK_FLAG_NO_DELETE    0x4000U ///< 该任务是不可删除的系统任务，如资源回收任务
-
-/**
- * @ingroup los_task
- * Flag that indicates the task property.
- *
- * Kills the thread during process exit.
- */
-#define OS_TASK_FLAG_EXIT_KILL       0x8000U ///< 在进程退出期间一同被干掉的任务
-
-/**
- * @ingroup los_task
- * Flag that indicates the task property.
- *
- * Specifies the process creation task.
- */
-#define OS_TASK_FLAG_SPECIFIES_PROCESS 0x0U ///< 创建指定任务 例如: cat weharmony.net 的实现 
-
-/**
- * @ingroup los_task
- * Boundary on which the stack size is aligned.
- *
- */
-#define OS_TASK_STACK_SIZE_ALIGN    16U ///< 堆栈大小对齐
-
-/**
- * @ingroup los_task
- * Boundary on which the stack address is aligned.
- *
- */
-#define OS_TASK_STACK_ADDR_ALIGN    8U ///< 堆栈地址对齐
-
-/**
- * @ingroup los_task
- * Number of usable task priorities. | 任务优先级数量
+ * @brief 可用任务优先级数量
+ * @note 计算公式：最低优先级 - 最高优先级 + 1
  */
 #define OS_TSK_PRINUM               (OS_TASK_PRIORITY_LOWEST - OS_TASK_PRIORITY_HIGHEST + 1)
 
 /**
 * @ingroup  los_task
-* @brief Check whether a task ID is valid.
-*
-* @par Description:
-* This API is used to check whether a task ID, excluding the idle task ID, is valid.
-* @attention None.
-*
-* @param  taskID [IN] Task ID.
-*
-* @retval 0 or 1. One indicates that the task ID is invalid, whereas zero indicates that the task ID is valid.
-* @par Dependency:
-* <ul><li>los_task_pri.h: the header file that contains the API declaration.</li></ul>
-* @see
+* @brief 获取任务索引
+* @par 描述：将任务ID直接作为任务索引使用
+* @param  taskID [IN] 任务ID
+* @return 任务索引值，等于输入的taskID
+* @par 依赖：
+* <ul><li>los_task_pri.h: 包含此API声明的头文件</li></ul>
 */
 #define OS_TSK_GET_INDEX(taskID) (taskID)
 
 /**
 * @ingroup  los_task
-* @brief Obtain the pointer to a task control block.
-*
-* @par Description:
-* This API is used to obtain the pointer to a task control block using a corresponding parameter.
-* @attention None.
-*
-* @param  ptr [IN] Parameter used for obtaining the task control block.
-*
-* @retval Pointer to the task control block.
-* @par Dependency:
-* <ul><li>los_task_pri.h: the header file that contains the API declaration.</li></ul>
-* @see
-*/ ///通过pendList取出TCB,用于挂入链表节点时使用 pendList的情况
+* @brief 从等待链表项获取任务控制块指针
+* @par 描述：通过等待链表节点反向获取对应的任务控制块
+* @param  ptr [IN] 等待链表节点指针
+* @return 任务控制块指针
+* @see LosTaskCB, LOS_DL_LIST_ENTRY
+*/
 #define OS_TCB_FROM_PENDLIST(ptr) LOS_DL_LIST_ENTRY(ptr, LosTaskCB, pendList)
- 
+
 /**
 * @ingroup  los_task
-* @brief Obtain the pointer to a task control block.
-*
-* @par Description:
-* This API is used to obtain the pointer to a task control block that has a specified task ID.
-* @attention None.
-*
-* @param  TaskID [IN] Task ID.
-*
-* @retval Pointer to the task control block.
-* @par Dependency:
-* <ul><li>los_task_pri.h: the header file that contains the API declaration.</li></ul>
-* @see
+* @brief 从真实任务ID获取任务控制块指针
+* @par 描述：通过全局任务控制块数组计算指定任务ID对应的TCB地址
+* @param  TaskID [IN] 真实任务ID (系统内唯一)
+* @return 任务控制块指针
+* @see g_taskCBArray, LosTaskCB
 */
 #define OS_TCB_FROM_RTID(taskID) (((LosTaskCB *)g_taskCBArray) + (taskID))
+
 #ifdef LOSCFG_PID_CONTAINER
+/**
+* @brief 支持PID容器时，从虚拟任务ID获取TCB
+* @note 通过OsGetTCBFromVtid函数进行虚拟ID到真实ID的转换
+*/
 #define OS_TCB_FROM_TID(taskID) OsGetTCBFromVtid(taskID)
 #else
+/**
+* @brief 不支持PID容器时，直接使用真实ID获取TCB
+* @note 虚拟ID与真实ID相同，直接调用OS_TCB_FROM_RTID
+*/
 #define OS_TCB_FROM_TID(taskID) OS_TCB_FROM_RTID(taskID)
 #endif
 
+/**
+ * @brief 栈指针对齐大小配置
+ * @note 默认为指针大小的2倍，确保栈指针按架构要求对齐
+ */
 #ifndef LOSCFG_STACK_POINT_ALIGN_SIZE
 #define LOSCFG_STACK_POINT_ALIGN_SIZE                       (sizeof(UINTPTR) * 2)
 #endif
 
-#define OS_TASK_RESOURCE_STATIC_SIZE    0x1000	///< 4K
-#define OS_TASK_RESOURCE_FREE_PRIORITY  5		///< 回收资源任务的优先级
-#define OS_RESOURCE_EVENT_MASK          0xFF	///< 资源事件的掩码
-#define OS_RESOURCE_EVENT_OOM           0x02	///< 内存溢出事件
-#define OS_RESOURCE_EVENT_FREE          0x04	///< 资源释放事件
+/** @name 任务资源管理常量 */
+/** @{ */
+#define OS_TASK_RESOURCE_STATIC_SIZE    0x1000             /**< 静态资源大小 (4096字节) */
+#define OS_TASK_RESOURCE_FREE_PRIORITY  5                  /**< 资源释放任务优先级 */
+#define OS_RESOURCE_EVENT_MASK          0xFF               /**< 资源事件掩码 (8位) */
+#define OS_RESOURCE_EVENT_OOM           0x02               /**< 内存不足事件 (位1) */
+#define OS_RESOURCE_EVENT_FREE          0x04               /**< 资源释放事件 (位2) */
+/** @} */
 
-///< LosTask结构体是给外部使用的
+/**
+ * @ingroup los_task
+ * @brief 任务调度信息结构体
+ * @note 用于保存调度过程中的任务切换信息
+ */
 typedef struct {
-    LosTaskCB *runTask;
-    LosTaskCB *newTask;
+    LosTaskCB *runTask;       /**< 当前运行任务控制块指针 */
+    LosTaskCB *newTask;       /**< 即将运行的新任务控制块指针 */
 } LosTask;
 
-///< 进程信号描述符
+/**
+ * @ingroup los_task
+ * @brief 进程信号信息结构体
+ * @note 用于在进程内分发信号时保存相关任务信息
+ */
 struct ProcessSignalInfo {
-    siginfo_t *sigInfo;       /**< Signal to be dispatched |  要发送的信号*/
-    LosTaskCB *defaultTcb;    /**< Default TCB | 默认task,默认接收信号的任务. */
-    LosTaskCB *unblockedTcb;  /**< The signal unblock on this TCB | 信号在此TCB上解除阻塞  */
-    LosTaskCB *awakenedTcb;   /**< This TCB was awakened |  即 任务在等待这个信号,此信号一来任务被唤醒.*/
-    LosTaskCB *receivedTcb;   /**< This TCB received the signal | 如果没有屏蔽信号,任务将接收这个信号. */
+    siginfo_t *sigInfo;       /**< 待分发的信号信息 */
+    LosTaskCB *defaultTcb;    /**< 默认任务控制块 (通常为进程主线程) */
+    LosTaskCB *unblockedTcb;  /**< 被信号解除阻塞的任务控制块 */
+    LosTaskCB *awakenedTcb;   /**< 被信号唤醒的任务控制块 */
+    LosTaskCB *receivedTcb;   /**< 最终接收信号的任务控制块 */
 };
-
-typedef int (*ForEachTaskCB)(LosTaskCB *tcb, void *arg);///< 回调任务函数,例如:进程被kill 9 时,通知所有任务善后处理
-
 /**
  * @ingroup los_task
- * Maximum number of tasks.
+ * @brief 任务遍历回调函数类型定义
  *
+ * @param tcb 任务控制块指针，指向当前遍历到的任务
+ * @param arg 用户传入的参数，用于回调函数内部处理
+ * @return int 回调函数返回值，通常0表示继续遍历，非0表示停止遍历
  */
-extern UINT32 g_taskMaxNum;///< 任务最大数量 默认128个
-
+typedef int (*ForEachTaskCB)(LosTaskCB *tcb, void *arg);
 
 /**
  * @ingroup los_task
- * Starting address of a task.
+ * @brief 最大任务数量
  *
+ * 系统支持的最大任务数，任务ID不能超过此值
  */
-extern LosTaskCB *g_taskCBArray;///< 外部变量 任务池 默认128个
+extern UINT32 g_taskMaxNum;
 
 /**
  * @ingroup los_task
- * Time slice structure.
+ * @brief 任务控制块数组起始地址
+ *
+ * 指向系统中所有任务控制块组成的数组的首地址
  */
-typedef struct {//时间片结构体，任务轮询
-    LosTaskCB *task; /**< Current running task | 当前运行着的任务*/
-    UINT16 time;     /**< Expiration time point | 到期时间点*/
-    UINT16 timeout;  /**< Expiration duration | 有效期*/
+extern LosTaskCB *g_taskCBArray;
+
+/**
+ * @ingroup los_task
+ * @brief 时间片轮转结构体
+ *
+ * 用于记录和管理任务的时间片信息，包括当前运行任务、过期时间点和持续时长
+ */
+typedef struct {
+    LosTaskCB *task; /**< 当前运行的任务控制块指针 */
+    UINT16 time;     /**< 时间片过期时间点，单位：系统时钟滴答数 */
+    UINT16 timeout;  /**< 时间片持续时长，单位：系统时钟滴答数 */
 } OsTaskRobin;
 
-/// 通过任务ID获取任务实体，task由任务池分配，本质是个数组，彼此都挨在一块
+/**
+ * @ingroup los_task
+ * @brief 根据任务ID获取任务控制块指针
+ *
+ * @param taskID 任务ID
+ * @return LosTaskCB* 任务控制块指针，若任务ID无效则返回NULL
+ * @note 内部使用宏OS_TCB_FROM_TID实现，需确保taskID有效
+ */
 STATIC INLINE LosTaskCB *OsGetTaskCB(UINT32 taskID)
 {
     return OS_TCB_FROM_TID(taskID);
 }
-/// 任务是否在使用
+
+/**
+ * @ingroup los_task
+ * @brief 检查任务是否未使用
+ *
+ * @param taskCB 任务控制块指针
+ * @return BOOL 若任务状态为未使用则返回TRUE，否则返回FALSE
+ * @note 任务未使用状态由OS_TASK_STATUS_UNUSED标志位表示
+ */
 STATIC INLINE BOOL OsTaskIsUnused(const LosTaskCB *taskCB)
 {
     return ((taskCB->taskStatus & OS_TASK_STATUS_UNUSED) != 0);
 }
 
+/**
+ * @ingroup los_task
+ * @brief 检查任务是否已被杀死
+ *
+ * @param taskCB 任务控制块指针
+ * @return BOOL 若任务被标记为杀死状态则返回TRUE，否则返回FALSE
+ * @note 任务杀死状态由OS_TASK_FLAG_EXIT_KILL标志位表示
+ */
 STATIC INLINE BOOL OsTaskIsKilled(const LosTaskCB *taskCB)
 {
-    return ((taskCB->taskStatus & OS_TASK_FLAG_EXIT_KILL) != 0);
+    return((taskCB->taskStatus & OS_TASK_FLAG_EXIT_KILL) != 0);
 }
 
+/**
+ * @ingroup los_task
+ * @brief 检查任务是否不可删除
+ *
+ * @param taskCB 任务控制块指针
+ * @return BOOL 若任务不可删除则返回TRUE，否则返回FALSE
+ * @note 满足以下任一条件的任务不可删除：
+ *       1. 任务状态为未使用(OS_TASK_STATUS_UNUSED)
+ *       2. 任务为系统任务(OS_TASK_FLAG_SYSTEM_TASK)
+ *       3. 任务被标记为不可删除(OS_TASK_FLAG_NO_DELETE)
+ */
 STATIC INLINE BOOL OsTaskIsNotDelete(const LosTaskCB *taskCB)
 {
     return ((taskCB->taskStatus & (OS_TASK_STATUS_UNUSED | OS_TASK_FLAG_SYSTEM_TASK | OS_TASK_FLAG_NO_DELETE)) != 0);
 }
+
+/**
+ * @ingroup los_task
+ * @brief 检查任务是否运行在用户模式
+ *
+ * @param taskCB 任务控制块指针
+ * @return BOOL 若任务运行在用户模式则返回TRUE，否则返回FALSE
+ * @note 用户模式由OS_TASK_FLAG_USER_MODE标志位表示
+ */
 STATIC INLINE BOOL OsTaskIsUserMode(const LosTaskCB *taskCB)
 {
     return ((taskCB->taskStatus & OS_TASK_FLAG_USER_MODE) != 0);
 }
 
-#define OS_TID_CHECK_INVALID(taskID) ((UINT32)(taskID) >= g_taskMaxNum)//是否有无效的任务 > 128
+/**
+ * @ingroup los_task
+ * @brief 检查任务ID是否无效
+ *
+ * @param taskID 任务ID
+ * @return BOOL 若任务ID无效则返回TRUE，否则返回FALSE
+ * @note 任务ID有效范围为[0, g_taskMaxNum-1]，大于等于g_taskMaxNum的ID视为无效
+ */
+#define OS_TID_CHECK_INVALID(taskID) ((UINT32)(taskID) >= g_taskMaxNum)
 
-/* get task info */
-#define OS_ALL_TASK_MASK  0xFFFFFFFF
-/// 任务的等待事件/信号列表
-#define OS_TASK_WAIT_ANYPROCESS (1 << 0U)					///< 等待任意进程出现
-#define OS_TASK_WAIT_PROCESS    (1 << 1U)					///< 等待指定进程出现
-#define OS_TASK_WAIT_GID        (1 << 2U)					///< 等待组ID
-#define OS_TASK_WAIT_SEM        (OS_TASK_WAIT_GID + 1)		///< 等待信号量发生
-#define OS_TASK_WAIT_QUEUE      (OS_TASK_WAIT_SEM + 1)		///< 等待队列到来
-#define OS_TASK_WAIT_JOIN       (OS_TASK_WAIT_QUEUE + 1)	///< 等待联结到来
-#define OS_TASK_WAIT_SIGNAL     (OS_TASK_WAIT_JOIN + 1) 	///< 等待普通信号到来
-#define OS_TASK_WAIT_LITEIPC    (OS_TASK_WAIT_SIGNAL + 1)	///< 等待liteipc到来
-#define OS_TASK_WAIT_MUTEX      (OS_TASK_WAIT_LITEIPC + 1)	///< 等待MUTEX到来
-#define OS_TASK_WAIT_FUTEX      (OS_TASK_WAIT_MUTEX + 1)	///< 等待FUTEX到来
-#define OS_TASK_WAIT_EVENT      (OS_TASK_WAIT_FUTEX + 1) 	///< 等待事件发生
-#define OS_TASK_WAIT_COMPLETE   (OS_TASK_WAIT_EVENT + 1)	///< 等待结束信号
+/* 获取任务信息相关宏定义 */
+#define OS_ALL_TASK_MASK  0xFFFFFFFF /**< 所有任务掩码，表示匹配系统中所有任务 */
 
-/// 设置事件阻塞掩码,即设置任务的等待事件.
+/**
+ * @ingroup los_task
+ * @brief 任务等待类型掩码定义
+ *
+ * 用于标识任务正在等待的资源类型，不同的掩码值对应不同的等待对象
+ */
+#define OS_TASK_WAIT_ANYPROCESS (1 << 0U)  /**< 等待任意进程，值为1(0x0001) */
+#define OS_TASK_WAIT_PROCESS    (1 << 1U)  /**< 等待特定进程，值为2(0x0002) */
+#define OS_TASK_WAIT_GID        (1 << 2U)  /**< 等待组ID，值为4(0x0004) */
+#define OS_TASK_WAIT_SEM        (OS_TASK_WAIT_GID + 1)        /**< 等待信号量，值为5(0x0005) */
+#define OS_TASK_WAIT_QUEUE      (OS_TASK_WAIT_SEM + 1)        /**< 等待消息队列，值为6(0x0006) */
+#define OS_TASK_WAIT_JOIN       (OS_TASK_WAIT_QUEUE + 1)       /**< 等待任务连接，值为7(0x0007) */
+#define OS_TASK_WAIT_SIGNAL     (OS_TASK_WAIT_JOIN + 1)       /**< 等待信号，值为8(0x0008) */
+#define OS_TASK_WAIT_LITEIPC    (OS_TASK_WAIT_SIGNAL + 1)     /**< 等待轻量级IPC，值为9(0x0009) */
+#define OS_TASK_WAIT_MUTEX      (OS_TASK_WAIT_LITEIPC + 1)    /**< 等待互斥锁，值为10(0x000A) */
+#define OS_TASK_WAIT_FUTEX      (OS_TASK_WAIT_MUTEX + 1)      /**< 等待Futex，值为11(0x000B) */
+#define OS_TASK_WAIT_EVENT      (OS_TASK_WAIT_FUTEX + 1)      /**< 等待事件，值为12(0x000C) */
+#define OS_TASK_WAIT_COMPLETE   (OS_TASK_WAIT_EVENT + 1)      /**< 等待完成量，值为13(0x000D) */
+
+/**
+ * @ingroup los_task
+ * @brief 设置任务等待状态的挂起掩码
+ *
+ * @param mask 等待类型掩码，取值为OS_TASK_WAIT_xxx系列宏
+ * @param lockID 等待的锁ID，标识具体等待的同步对象
+ * @param timeout 超时时间，单位：系统时钟滴答数
+ * @note 该函数会修改当前运行任务的waitID和waitFlag字段
+ */
 STATIC INLINE VOID OsTaskWaitSetPendMask(UINT16 mask, UINTPTR lockID, UINT32 timeout)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
-    runTask->waitID = lockID; //
-    runTask->waitFlag = mask; //当前任务在等待什么东东到来 例如: OS_TASK_WAIT_LITEIPC
-    (VOID)timeout;
+    runTask->waitID = lockID;
+    runTask->waitFlag = mask;
+    (VOID)timeout; /**< 未使用超时参数，此处显式转换为VOID避免编译警告 */
 }
 
-/// 清除事件阻塞掩码,即任务不再等待任何事件.
+/**
+ * @ingroup los_task
+ * @brief 清除任务唤醒时的挂起掩码
+ *
+ * @param resumeTask 被唤醒的任务控制块指针
+ * @note 该函数会将任务的waitID和waitFlag字段清零，表示任务不再等待任何对象
+ */
 STATIC INLINE VOID OsTaskWakeClearPendMask(LosTaskCB *resumeTask)
 {
     resumeTask->waitID = 0;

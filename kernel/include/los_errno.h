@@ -28,23 +28,6 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-/**
- * @defgroup los_errno Error code
- * @ingroup kernel
- */
-
-#ifndef _LOS_ERRNO_H
-#define _LOS_ERRNO_H
-
-#include "los_typedef.h"
-
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
-
 /**
  * @brief 
  * @verbatim 
@@ -75,61 +58,104 @@ extern "C" {
  * @endverbatim
  */
 
+/**
+ * @defgroup los_errno Error code
+ * @ingroup kernel
+ */
+
+#ifndef _LOS_ERRNO_H
+#define _LOS_ERRNO_H
+
+#include "los_typedef.h"
+
+#ifdef __cplusplus
+#if __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+#endif /* __cplusplus */
+
+
 
 /**
  * @ingroup los_errno
- * OS error code flag.
+ * OS错误码标志位，用于标识错误码属于操作系统模块
+ * 取值：0x00U << 16 = 0x00000000（十进制0）
+ * 说明：占据32位错误码的16-23位（共8位），当前未启用子系统区分
  */
 #define LOS_ERRNO_OS_ID (0x00U << 16)
 
 /**
  * @ingroup los_errno
- * Define the error level as informative.
+ * 定义信息性错误级别（最低严重程度）
+ * 取值：0x00U << 24 = 0x00000000（十进制0）
+ * 说明：占据32位错误码的24-31位（高8位），用于表示非错误性状态信息
  */
 #define LOS_ERRTYPE_NORMAL (0x00U << 24)
 
 /**
  * @ingroup los_errno
- * Define the error level as warning.
+ * 定义警告级错误级别
+ * 取值：0x01U << 24 = 0x01000000（十进制16777216）
+ * 说明：表示不影响主流程但需要关注的异常情况
  */
 #define LOS_ERRTYPE_WARN (0x01U << 24)
 
 /**
  * @ingroup los_errno
- * Define the error level as critical.
+ * 定义严重级错误级别
+ * 取值：0x02U << 24 = 0x02000000（十进制33554432）
+ * 说明：表示功能模块异常但系统仍可运行的错误状态
  */
 #define LOS_ERRTYPE_ERROR (0x02U << 24)
 
 /**
  * @ingroup los_errno
- * Define the error level as fatal.
+ * 定义致命级错误级别（最高严重程度）
+ * 取值：0x03U << 24 = 0x03000000（十进制50331648）
+ * 说明：表示可能导致系统崩溃或无法恢复的严重错误
  */
 #define LOS_ERRTYPE_FATAL (0x03U << 24)
 
 /**
  * @ingroup los_errno
- * Define fatal OS errors.
+ * 构造致命级OS错误码
+ * @param MID 模块ID，取值范围参考<mcfile name="los_err.h" path="d:/project/kernel_liteos_a_note/kernel/include/los_err.h"></mcfile>中的LOS_MOUDLE_ID枚举
+ * @param ERRNO 模块内错误编号（0-255）
+ * @return 32位错误码，格式为：[错误级别(8位)][OS标志(8位)][模块ID(8位)][错误编号(8位)]
+ * @example LOS_ERRNO_OS_FATAL(LOS_MOD_MEM, 0x05) = 0x03000105（十进制50331909）
  */
 #define LOS_ERRNO_OS_FATAL(MID, ERRNO) \
     (LOS_ERRTYPE_FATAL | LOS_ERRNO_OS_ID | ((UINT32)(MID) << 8) | ((UINT32)(ERRNO)))
 
 /**
  * @ingroup los_errno
- * Define critical OS errors.
+ * 构造严重级OS错误码
+ * @param MID 模块ID（参考LOS_MOUDLE_ID枚举）
+ * @param ERRNO 模块内错误编号（0-255）
+ * @return 32位错误码，格式同上
+ * @example LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x0A) = 0x0200020A（十进制33554954）
  */
 #define LOS_ERRNO_OS_ERROR(MID, ERRNO) \
     (LOS_ERRTYPE_ERROR | LOS_ERRNO_OS_ID | ((UINT32)(MID) << 8) | ((UINT32)(ERRNO)))
 
 /**
  * @ingroup los_errno
- * Define warning OS errors.
+ * 构造警告级OS错误码
+ * @param MID 模块ID（参考LOS_MOUDLE_ID枚举）
+ * @param ERRNO 模块内错误编号（0-255）
+ * @return 32位错误码，格式同上
+ * @example LOS_ERRNO_OS_WARN(LOS_MOD_SEM, 0x03) = 0x01000703（十进制16779011）
  */
 #define LOS_ERRNO_OS_WARN(MID, ERRNO) \
     (LOS_ERRTYPE_WARN | LOS_ERRNO_OS_ID | ((UINT32)(MID) << 8) | ((UINT32)(ERRNO)))
 
 /**
  * @ingroup los_errno
- * Define informative OS errors.
+ * 构造信息级OS错误码
+ * @param MID 模块ID（参考LOS_MOUDLE_ID枚举）
+ * @param ERRNO 模块内错误编号（0-255）
+ * @return 32位错误码，格式同上
+ * @example LOS_ERRNO_OS_NORMAL(LOS_MOD_LOG, 0x00) = 0x00000E00（十进制3584）
  */
 #define LOS_ERRNO_OS_NORMAL(MID, ERRNO) \
     (LOS_ERRTYPE_NORMAL | LOS_ERRNO_OS_ID | ((UINT32)(MID) << 8) | ((UINT32)(ERRNO)))

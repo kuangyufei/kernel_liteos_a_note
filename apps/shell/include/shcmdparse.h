@@ -41,14 +41,15 @@ extern "C" {
 #endif
 #endif
 
-/*
- * Description: the info struct after cmd parser
+/**
+ * @brief   命令解析后的信息结构体
+ * @details 存储命令解析后的关键信息，包括参数数量、命令类型、命令关键字和参数数组
  */
-typedef struct {//命令解析器
-    unsigned int paramCnt;          /**< count of para \n 参数数量*/
-    CmdType      cmdType;           /**< cmd type, judge cmd keyword \n 命令类型*/
-    char cmdKeyword[CMD_KEY_LEN];   /**< cmd keyword str \n 关键字,最多16个字符*/
-    char *paramArray[CMD_MAX_PARAS];/**< 参数内容,最多32个参数 */
+typedef struct {
+    unsigned int paramCnt;          /* 参数数量，记录命令中包含的参数个数 */
+    CmdType      cmdType;           /* 命令类型，用于判断命令关键字的类型 */
+    char cmdKeyword[CMD_KEY_LEN];   /* 命令关键字字符串，存储解析出的命令名称 */
+    char *paramArray[CMD_MAX_PARAS];/* 参数数组，存储指向各参数字符串的指针数组 */
 } CmdParsed;
 
 extern unsigned int OsCmdParse(char *cmdStr, CmdParsed *cmdParsed);

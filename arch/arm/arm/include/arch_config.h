@@ -86,34 +86,43 @@
 		2、用户模式和系统模式下SPSR不可用,所以SPSR寄存器只有5个
  * @endverbatim
  */
+/**
+ * @brief CPSR (Current Program Status Register) 状态位掩码定义
+ * @note ARM处理器状态寄存器用于控制处理器模式、中断使能状态等
+ */
+#define CPSR_INT_DISABLE         0xC0  /* 禁用FIQ和IRQ中断（二进制11000000，十进制192） */
+#define CPSR_IRQ_DISABLE         0x80  /* 禁用IRQ中断（二进制10000000，十进制128） */
+#define CPSR_FIQ_DISABLE         0x40  /* 禁用FIQ中断（二进制01000000，十进制64） */
+#define CPSR_THUMB_ENABLE        0x20  /* 使能Thumb模式（二进制00100000，十进制32） */
+#define CPSR_USER_MODE           0x10  /* 用户模式（十进制16） */
+#define CPSR_FIQ_MODE            0x11  /* 快速中断模式（十进制17） */
+#define CPSR_IRQ_MODE            0x12  /* 外部中断模式（十进制18） */
+#define CPSR_SVC_MODE            0x13  /* 管理模式（十进制19） */
+#define CPSR_ABT_MODE            0x17  /* 数据访问终止模式（十进制23） */
+#define CPSR_UNDEF_MODE          0x1B  /* 未定义指令模式（十进制27） */
+#define CPSR_MASK_MODE           0x1F  /* 模式位掩码（取低5位，十进制31） */
 
-#define CPSR_INT_DISABLE         0xC0 /**< Disable both FIQ and IRQ | 禁止IRQ和FIQ中断,因为0xC0 = 0x80 + 0x40 */
-#define CPSR_IRQ_DISABLE         0x80 /**<*< IRQ disabled when =1 | 禁止IRQ 中断*/		
-#define CPSR_FIQ_DISABLE         0x40 /**< FIQ disabled when =1 | 禁止FIQ中断*/		
-#define CPSR_THUMB_ENABLE        0x20 /**< Thumb mode when   =1 | 使能Thumb模式 1:CPU处于Thumb状态， 0:CPU处于ARM状态*/		
-#define CPSR_USER_MODE           0x10	///< 用户模式,除了用户模式，其余模式也叫特权模式,特权模式中除了系统模式以外的其余5种模式称为异常模式；
-#define CPSR_FIQ_MODE            0x11	///< 快中断模式 用于高速数据传输或通道处理
-#define CPSR_IRQ_MODE            0x12	///< 中断模式 用于通用的中断处理
-#define CPSR_SVC_MODE            0x13	///< 管理模式 操作系统使用的保护模式
-#define CPSR_ABT_MODE            0x17	///< ABT模式 当数据或指令预取终止时进入该模式，用于虚拟存储及存储保护
-#define CPSR_UNDEF_MODE          0x1B	///< 未定义模式（其他模式）当未定义的指令执行时进入该模式，用于支持硬件协处理器的软件仿真
-#define CPSR_MASK_MODE           0x1F
+/**
+ * @brief 异常类型ID定义
+ * @note 用于标识不同类型的处理器异常
+ */
+#define OS_EXCEPT_RESET          0x00  /* 复位异常 */
+#define OS_EXCEPT_UNDEF_INSTR    0x01  /* 未定义指令异常 */
+#define OS_EXCEPT_SWI            0x02  /* 软件中断异常（系统调用） */
+#define OS_EXCEPT_PREFETCH_ABORT 0x03  /* 预取指令终止异常 */
+#define OS_EXCEPT_DATA_ABORT     0x04  /* 数据访问终止异常 */
+#define OS_EXCEPT_FIQ            0x05  /* 快速中断请求异常 */
+#define OS_EXCEPT_ADDR_ABORT     0x06  /* 地址终止异常 */
+#define OS_EXCEPT_IRQ            0x07  /* 外部中断请求异常 */
 
-/* Define exception type ID | ARM处理器一共有7种工作模式，除了用户和系统模式其余都叫异常工作模式*/
-#define OS_EXCEPT_RESET          0x00	///< 重置功能，例如：开机就进入CPSR_SVC_MODE模式
-#define OS_EXCEPT_UNDEF_INSTR    0x01	///< 未定义的异常，就是others
-#define OS_EXCEPT_SWI            0x02	///< 软中断
-#define OS_EXCEPT_PREFETCH_ABORT 0x03	///< 预取异常(取指异常), 指令三步骤: 取指,译码,执行, 
-#define OS_EXCEPT_DATA_ABORT     0x04	///< 数据异常
-#define OS_EXCEPT_FIQ            0x05	///< 快中断异常
-#define OS_EXCEPT_ADDR_ABORT     0x06	///< 地址异常
-#define OS_EXCEPT_IRQ            0x07	///< 普通中断异常
-
-/* Define core num */
-#ifdef LOSCFG_KERNEL_SMP
-#define CORE_NUM                 LOSCFG_KERNEL_SMP_CORE_NUM ///< CPU 核数
-#else
-#define CORE_NUM                 1
+/**
+ * @brief 核心数量定义
+ * @note 根据SMP（对称多处理）配置决定系统核心数
+ */
+#ifdef LOSCFG_KERNEL_SMP                /* 若启用SMP多核心配置 */
+#define CORE_NUM                 LOSCFG_KERNEL_SMP_CORE_NUM  /* 使用配置的核心数 */
+#else                                   /* 单核心配置 */
+#define CORE_NUM                 1                           /* 默认核心数为1 */
 #endif
 
 /* Initial bit32 stack value. */
@@ -148,37 +157,44 @@
 	+-------------------+0x000001000 <---- stack bottom
  * @endverbatim
  */
-
-#ifdef LOSCFG_GDB
-#define OS_EXC_UNDEF_STACK_SIZE  512
-#define OS_EXC_ABT_STACK_SIZE    512
-#else
-#define OS_EXC_UNDEF_STACK_SIZE  40
-#define OS_EXC_ABT_STACK_SIZE    40
+/**
+ * @brief 异常模式栈大小定义
+ * @note 根据调试配置和异常类型定义不同的栈空间大小（单位：字节）
+ */
+#ifdef LOSCFG_GDB                /* 若启用GDB调试 */
+#define OS_EXC_UNDEF_STACK_SIZE  512  /* 未定义指令异常栈大小（512字节） */
+#define OS_EXC_ABT_STACK_SIZE    512  /* 终止异常栈大小（512字节） */
+#else                               /* 非调试模式 */
+#define OS_EXC_UNDEF_STACK_SIZE  40   /* 未定义指令异常栈大小（40字节） */
+#define OS_EXC_ABT_STACK_SIZE    40   /* 终止异常栈大小（40字节） */
 #endif
-#define OS_EXC_FIQ_STACK_SIZE    64
-#define OS_EXC_IRQ_STACK_SIZE    64
-#define OS_EXC_SVC_STACK_SIZE    0x2000	///< 8K ,每个CPU核都有自己的 SVC 栈
-#define OS_EXC_STACK_SIZE        0x1000	///< 4K ,每个CPU核都有自己的 EXC 栈
+#define OS_EXC_FIQ_STACK_SIZE    64   /* 快速中断模式栈大小（64字节） */
+#define OS_EXC_IRQ_STACK_SIZE    64   /* 外部中断模式栈大小（64字节） */
+#define OS_EXC_SVC_STACK_SIZE    0x2000  /* 管理模式栈大小（8192字节） */
+#define OS_EXC_STACK_SIZE        0x1000  /* 通用异常栈大小（4096字节） */
 
-#define REG_R0   0 			///< 高频寄存器,传参/保存返回值
-#define REG_R1   1
-#define REG_R2   2
-#define REG_R3   3
-#define REG_R4   4
-#define REG_R5   5
-#define REG_R6   6
-#define REG_R7   7			///< 特殊情况下用于保存系统调用号
-#define REG_R8   8
-#define REG_R9   9
-#define REG_R10  10
-#define REG_R11  11			///< 特殊情况下用于 FP寄存器
-#define REG_R12  12
-#define REG_R13  13	        ///< SP	
-#define REG_R14  14			///< LR
-#define REG_R15  15			///< PC
-#define REG_CPSR 16 		///< 程序状态寄存器(current program status register) (当前程序状态寄存器)
-#define REG_SP   REG_R13 	///< 堆栈指针 当不使用堆栈时，R13 也可以用做通用数据寄存器
-#define REG_LR   REG_R14 	///< 连接寄存器。当执行子程序或者异常中断时，跳转指令会自动将当前地址存入LR寄存器中，当执行完子程 序或者中断后，根据LR中的值，恢复或者说是返回之前被打断的地址继续执行
-#define REG_PC   REG_R15  	///< 指令寄存器
+/**
+ * @brief ARM寄存器索引定义
+ * @note 用于标识寄存器在上下文保存/恢复时的数组索引位置
+ */
+#define REG_R0   0   /* R0通用寄存器索引 */
+#define REG_R1   1   /* R1通用寄存器索引 */
+#define REG_R2   2   /* R2通用寄存器索引 */
+#define REG_R3   3   /* R3通用寄存器索引 */
+#define REG_R4   4   /* R4通用寄存器索引 */
+#define REG_R5   5   /* R5通用寄存器索引 */
+#define REG_R6   6   /* R6通用寄存器索引 */
+#define REG_R7   7   /* R7通用寄存器索引 */
+#define REG_R8   8   /* R8通用寄存器索引 */
+#define REG_R9   9   /* R9通用寄存器索引 */
+#define REG_R10  10  /* R10通用寄存器索引 */
+#define REG_R11  11  /* R11通用寄存器索引（FP帧指针） */
+#define REG_R12  12  /* R12通用寄存器索引（IP内部过程调用寄存器） */
+#define REG_R13  13  /* R13寄存器索引（SP栈指针） */
+#define REG_R14  14  /* R14寄存器索引（LR链接寄存器） */
+#define REG_R15  15  /* R15寄存器索引（PC程序计数器） */
+#define REG_CPSR 16  /* CPSR状态寄存器索引 */
+#define REG_SP   REG_R13  /* 栈指针寄存器（R13别名） */
+#define REG_LR   REG_R14  /* 链接寄存器（R14别名） */
+#define REG_PC   REG_R15  /* 程序计数器（R15别名） */
 #endif

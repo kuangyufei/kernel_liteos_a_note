@@ -39,11 +39,17 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+
+/**
+ * @brief 性能事件描述结构体
+ * @details 用于定义和描述perf工具支持的各类性能事件，包含事件名称、ID和类型信息
+ */
 typedef struct {
-    const char *name;
-    int event;
-    int type;
+    const char *name;  // 事件名称（如"cpu-cycles"、"instructions"）
+    int event;         // 事件ID，唯一标识特定性能事件
+    int type;          // 事件类型，对应PERF_EVENT_TYPE_HW/SW/TIMED等
 } PerfEvent;
+
 
 extern const PerfEvent g_events[];
 void PerfList(void);

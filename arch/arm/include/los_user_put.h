@@ -41,20 +41,27 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-/*
- * @brief put data from kernelspace into userspace
+/**
+ * @ingroup los_user
+ * @brief 将数据从内核空间拷贝到用户空间
  *
- * This function validates that usermode has access to dst before copying the
- * data.
+ * @par 描述
+ * 此函数在拷贝数据前会先验证用户模式是否有权限访问目标地址空间，
+ * 确保内核空间数据安全地拷贝到用户空间，防止非法内存访问
  *
- * @param dst The destination buffer in user space.
- * @param src The source buffer in kernel space.
+ * @param dst [OUT] 类型 #用户空间指针: 用户空间的目标缓冲区地址
+ * @param src [IN]  类型 #内核空间指针: 内核空间的源缓冲区地址
  *
- * @note The data type is simple such as char, short, int, long in 32bits platform.
+ * @note
+ * <ul>
+ * <li>仅支持32位平台上的简单数据类型，如char(1字节)、short(2字节)、int(4字节)、long(4字节)</li>
+ * <li>复杂数据类型或结构体需使用其他内存拷贝接口</li>
+ * </ul>
  *
- * @return Return -EFAULT if error. Return 0 if success.
+ * @retval #-EFAULT (-14) 拷贝失败，通常是由于用户空间地址无效或不可访问
+ * @retval #0 拷贝成功
  */
-#define LOS_PutUser(src, dst) _arm_put_user((dst), (src), sizeof(*(dst)), sizeof(*(src)))
+#define LOS_PutUser(src, dst) _arm_put_user((dst), (src), sizeof(*(dst)), sizeof(*(src)))  /* 调用ARM架构专用实现，传递目标地址、源地址及两者数据大小 */
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -50,433 +50,560 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-//cpuid转换 2 -> 0100
+
+/**
+ * @ingroup los_task
+ * @brief 将CPU ID转换为亲和性掩码
+ * @param cpuid CPU核心编号（从0开始）
+ * @return UINT32 亲和性掩码（仅对应CPU ID的位为1，其余为0）
+ * @par 计算示例：
+ * CPU ID为0时返回0x00000001（二进制00000001）
+ * CPU ID为3时返回0x00000008（二进制00001000）
+ * @note 用于设置任务的CPU亲和性，指定任务可在哪些CPU上运行
+ */
 #define CPUID_TO_AFFI_MASK(cpuid)               (0x1u << (cpuid))
 
 /**
  * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The task is automatically deleted.
+ * @brief 任务状态标志：任务自动删除
+ * @note 当任务退出时，系统会自动回收其资源，无需手动调用删除接口
  */
-#define LOS_TASK_STATUS_DETACHED                0x0U //独立模式,自动删除
+#define LOS_TASK_STATUS_DETACHED                0x0U
 
 /**
  * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The task is joinable.
+ * @brief 任务属性标志：任务可连接
+ * @note 置位此标志后，其他任务可通过LOS_TaskJoin()接口等待该任务结束并获取退出状态
+ * @attention 与LOS_TASK_STATUS_DETACHED互斥，两者不能同时设置
  */
-#define LOS_TASK_ATTR_JOINABLE                  0x80000000 //联合模式,可由其他任务删除
+#define LOS_TASK_ATTR_JOINABLE                  0x80000000
 
 /**
  * @ingroup los_task
- * Task error code: Insufficient memory for task creation.
- *
- * Value: 0x03000200
- *
- * Solution: Allocate bigger memory partition to task creation.
+ * @brief 任务错误码：创建任务时内存不足
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_FATAL (致命错误)
+ * - 错误编号: 0x00
+ * @par 十六进制值: 0x03000200 (十进制: 50331904)
+ * @par 解决方案：
+ * 增大任务创建内存分区大小，或通过LOSCFG_BASE_MEM_TSK_LIMIT调整系统任务内存池配置
  */
 #define LOS_ERRNO_TSK_NO_MEMORY                 LOS_ERRNO_OS_FATAL(LOS_MOD_TSK, 0x00)
 
 /**
  * @ingroup los_task
- * Task error code: Null parameter.
- *
- * Value: 0x02000201
- *
- * Solution: Check the parameter.
+ * @brief 任务错误码：输入参数为空指针
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x01
+ * @par 十六进制值: 0x02000201 (十进制: 33554945)
+ * @par 解决方案：
+ * 检查任务创建/控制接口的输入参数（如任务属性、入口函数等）是否为有效指针
  */
 #define LOS_ERRNO_TSK_PTR_NULL                  LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x01)
 
 /**
  * @ingroup los_task
- * Task error code: The task stack is not aligned.
- *
- * Value: 0x02000202
- *
- * Solution: Align the task stack.
+ * @brief 任务错误码：任务栈大小未按系统字长对齐
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x02
+ * @par 十六进制值: 0x02000202 (十进制: 33554946)
+ * @par 解决方案：
+ * 将栈大小调整为系统字长的整数倍（32位系统对齐4字节，64位系统对齐8字节）
+ * @note 可使用LOS_MEMBOX_ALIGNED()宏进行自动对齐
  */
 #define LOS_ERRNO_TSK_STKSZ_NOT_ALIGN           LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x02)
 
 /**
  * @ingroup los_task
- * Task error code: Incorrect task priority.
- *
- * Value: 0x02000203
- *
- * Solution: Re-configure the task priority by referring to the priority range.
+ * @brief 任务错误码：任务优先级设置错误
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x03
+ * @par 十六进制值: 0x02000203 (十进制: 33554947)
+ * @par 解决方案：
+ * 按系统配置的优先级范围设置（默认0-31，0为最高优先级）
+ * @note 优先级范围由LOSCFG_BASE_CORE_TSK_PRIORITY_LEVEL宏定义
  */
 #define LOS_ERRNO_TSK_PRIOR_ERROR               LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x03)
 
 /**
  * @ingroup los_task
- * Task error code: The task entrance is NULL.
- *
- * Value: 0x02000204
- *
- * Solution: Define the task entrance function.
+ * @brief 任务错误码：任务入口函数为空
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x04
+ * @par 十六进制值: 0x02000204 (十进制: 33554948)
+ * @par 解决方案：
+ * 定义有效的任务入口函数，函数原型为：VOID (*TSK_ENTRY_FUNC)(VOID *param)
  */
 #define LOS_ERRNO_TSK_ENTRY_NULL                LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x04)
 
 /**
  * @ingroup los_task
- * Task error code: The task name is NULL.
- *
- * Value: 0x02000205
- *
- * Solution: Set the task name.
+ * @brief 任务错误码：任务名称为空
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x05
+ * @par 十六进制值: 0x02000205 (十进制: 33554949)
+ * @par 解决方案：
+ * 通过TSK_ATTR_T结构体的pcName成员设置非空任务名称（建议不超过16字符）
  */
 #define LOS_ERRNO_TSK_NAME_EMPTY                LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x05)
 
 /**
  * @ingroup los_task
- * Task error code: The task stack size is too small.
- *
- * Value: 0x02000206
- *
- * Solution: Expand the task stack.
+ * @brief 任务错误码：任务栈大小过小
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x06
+ * @par 十六进制值: 0x02000206 (十进制: 33554950)
+ * @par 解决方案：
+ * 增大栈大小参数，最小值需满足：
+ * 系统最小栈大小（LOSCFG_BASE_CORE_TSK_MINSTACK_SIZE） + 任务上下文大小
  */
 #define LOS_ERRNO_TSK_STKSZ_TOO_SMALL           LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x06)
 
 /**
  * @ingroup los_task
- * Task error code: Invalid task ID.
- *
- * Value: 0x02000207
- *
- * Solution: Check the task ID.
+ * @brief 任务错误码：无效的任务ID
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x07
+ * @par 十六进制值: 0x02000207 (十进制: 33554951)
+ * @par 解决方案：
+ * 检查任务ID是否在有效范围内（1 ~ LOSCFG_BASE_CORE_TSK_LIMIT - 1），0为无效ID
  */
 #define LOS_ERRNO_TSK_ID_INVALID                LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x07)
 
 /**
  * @ingroup los_task
- * Task error code: The task is already suspended.
- *
- * Value: 0x02000208
- *
- * Solution: Suspend the task after it is resumed.
+ * @brief 任务错误码：任务已处于挂起状态
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x08
+ * @par 十六进制值: 0x02000208 (十进制: 33554952)
+ * @par 解决方案：
+ * 调用LOS_TaskResume()恢复任务后，再执行挂起操作
+ * @note 系统维护挂起计数，多次挂起需对应多次恢复
  */
 #define LOS_ERRNO_TSK_ALREADY_SUSPENDED         LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x08)
 
 /**
  * @ingroup los_task
- * Task error code: The task is not suspended.
- *
- * Value: 0x02000209
- *
- * Solution: Suspend the task.
+ * @brief 任务错误码：任务未处于挂起状态
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x09
+ * @par 十六进制值: 0x02000209 (十进制: 33554953)
+ * @par 解决方案：
+ * 先调用LOS_TaskSuspend()挂起任务，再执行恢复操作
  */
 #define LOS_ERRNO_TSK_NOT_SUSPENDED             LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x09)
 
 /**
  * @ingroup los_task
- * Task error code: The task is not created.
- *
- * Value: 0x0200020a
- *
- * Solution: Create the task.
+ * @brief 任务错误码：任务未创建
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x0a
+ * @par 十六进制值: 0x0200020a (十进制: 33554954)
+ * @par 解决方案：
+ * 通过LOS_TaskCreate()或LOS_TaskCreateOnly()接口先创建任务
  */
 #define LOS_ERRNO_TSK_NOT_CREATED               LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x0a)
 
 /**
  * @ingroup los_task
- * Task error code: The task is locked when it is being deleted.
- *
- * Value: 0x0300020b
- *
- * Solution: Unlock the task.
+ * @brief 任务错误码：删除已加锁的任务
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_FATAL (致命错误)
+ * - 错误编号: 0x0b
+ * @par 十六进制值: 0x0300020b (十进制: 50331915)
+ * @par 解决方案：
+ * 调用LOS_TaskUnlock()释放任务锁后再执行删除操作
+ * @attention 任务锁通常用于临界区保护，强制删除可能导致系统状态不一致
  */
 #define LOS_ERRNO_TSK_DELETE_LOCKED             LOS_ERRNO_OS_FATAL(LOS_MOD_TSK, 0x0b)
 
 /**
  * @ingroup los_task
- * Task error code: The task message is nonzero.
- *
- * Value: 0x0200020c
- *
- * Solution: This error code is not in use temporarily.
+ * @brief 任务错误码：任务消息非空
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x0c
+ * @par 十六进制值: 0x0200020c (十进制: 33554956)
+ * @par 解决方案：
+ * 当前版本暂未使用此错误码，预留用于任务消息队列相关错误
  */
 #define LOS_ERRNO_TSK_MSG_NONZERO               LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x0c)
 
 /**
  * @ingroup los_task
- * Task error code: The task delay occurs during an interrupt.
- *
- * Value: 0x0300020d
- *
- * Solution: Perform this operation after exiting from the interrupt.
+ * @brief 任务错误码：在中断中调用任务延迟
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_FATAL (致命错误)
+ * - 错误编号: 0x0d
+ * @par 十六进制值: 0x0300020d (十进制: 50331917)
+ * @par 解决方案：
+ * 中断上下文不允许阻塞操作，如需延迟可使用定时器或中断底半部机制
  */
 #define LOS_ERRNO_TSK_DELAY_IN_INT              LOS_ERRNO_OS_FATAL(LOS_MOD_TSK, 0x0d)
 
 /**
  * @ingroup los_task
- * Task error code: The task delay occurs when the task is locked.
- *
- * Value: 0x0200020e
- *
- * Solution: Perform this operation after unlocking the task.
+ * @brief 任务错误码：任务加锁状态下调用延迟
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x0e
+ * @par 十六进制值: 0x0200020e (十进制: 33554958)
+ * @par 解决方案：
+ * 调用LOS_TaskUnlock()释放任务锁后再调用LOS_TaskDelay()
  */
 #define LOS_ERRNO_TSK_DELAY_IN_LOCK             LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x0e)
 
 /**
  * @ingroup los_task
- * Task error code: The task yeild occurs when the task is locked.
- * Value: 0x0200020f
- *
- * Solution: Check the task.
+ * @brief 任务错误码：任务加锁状态下调用让出CPU
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x0f
+ * @par 十六进制值: 0x0200020f (十进制: 33554959)
+ * @par 解决方案：
+ * 调用LOS_TaskUnlock()释放任务锁后再调用LOS_TaskYield()
  */
 #define LOS_ERRNO_TSK_YIELD_IN_LOCK             LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x0f)
 
 /**
  * @ingroup los_task
- * Task error code: Only one task or no task is available for scheduling.
- *
- * Value: 0x02000210
- *
- * Solution: Increase the number of tasks.
+ * @brief 任务错误码：可调度任务数量不足
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x10
+ * @par 十六进制值: 0x02000210 (十进制: 33554960)
+ * @par 解决方案：
+ * 创建更多就绪状态的任务，或检查其他任务是否异常占用CPU
  */
 #define LOS_ERRNO_TSK_YIELD_NOT_ENOUGH_TASK     LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x10)
 
 /**
  * @ingroup los_task
- * Task error code: No free task control block is available.
- *
- * Value: 0x02000211
- *
- * Solution: Increase the number of task control blocks.
+ * @brief 任务错误码：无可用任务控制块(TCB)
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x11
+ * @par 十六进制值: 0x02000211 (十进制: 33554961)
+ * @par 解决方案：
+ * 通过LOSCFG_BASE_CORE_TSK_LIMIT宏增大系统最大任务数配置
  */
 #define LOS_ERRNO_TSK_TCB_UNAVAILABLE           LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x11)
 
 /**
  * @ingroup los_task
- * Task error code: The task hook function is not matchable.
- *
- * Value: 0x02000212
- *
- * Solution: This error code is not in use temporarily.
+ * @brief 任务错误码：任务钩子函数不匹配
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x12
+ * @par 十六进制值: 0x02000212 (十进制: 33554962)
+ * @par 解决方案：
+ * 当前版本暂未使用此错误码，预留用于任务钩子注册/卸载相关错误
  */
 #define LOS_ERRNO_TSK_HOOK_NOT_MATCH            LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x12)
 
 /**
  * @ingroup los_task
- * Task error code: The number of task hook functions exceeds the permitted upper limit.
- *
- * Value: 0x02000213
- *
- * Solution: This error code is not in use temporarily.
+ * @brief 任务错误码：任务钩子函数数量超出上限
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x13
+ * @par 十六进制值: 0x02000213 (十进制: 33554963)
+ * @par 解决方案：
+ * 当前版本暂未使用此错误码，预留用于任务钩子数量限制相关错误
  */
 #define LOS_ERRNO_TSK_HOOK_IS_FULL              LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x13)
 
 /**
  * @ingroup los_task
- * Task error code: The operation is performed on the system-level task.
- *       old usage: The operation is performed on the idle task (LOS_ERRNO_TSK_OPERATE_IDLE)
- *
- * Value: 0x02000214
- *
- * Solution: Check the task ID and do not operate on the system-level task.
+ * @brief 任务错误码：操作系统级任务
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x14
+ * @par 十六进制值: 0x02000214 (十进制: 33554964)
+ * @par 历史版本：
+ * 早期版本用于标识操作空闲任务错误(LOS_ERRNO_TSK_OPERATE_IDLE)
+ * @par 解决方案：
+ * 检查任务ID，不允许对系统关键任务（如空闲任务、定时器任务）执行删除/挂起等操作
  */
 #define LOS_ERRNO_TSK_OPERATE_SYSTEM_TASK       LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x14)
 
 /**
  * @ingroup los_task
- * Task error code: The task that is being suspended is locked.
- *
- * Value: 0x03000215
- *
- * Solution: Suspend the task after unlocking the task.
+ * @brief 任务错误码：挂起已加锁的任务
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_FATAL (致命错误)
+ * - 错误编号: 0x15
+ * @par 十六进制值: 0x03000215 (十进制: 50331925)
+ * @par 解决方案：
+ * 调用LOS_TaskUnlock()释放任务锁后再执行挂起操作
  */
 #define LOS_ERRNO_TSK_SUSPEND_LOCKED            LOS_ERRNO_OS_FATAL(LOS_MOD_TSK, 0x15)
 
 /**
  * @ingroup los_task
- * Task error code: The task stack fails to be freed.
- *
- * Value: 0x02000217
- *
- * Solution: This error code is not in use temporarily.
+ * @brief 任务错误码：任务栈释放失败
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x17
+ * @par 十六进制值: 0x02000217 (十进制: 33554967)
+ * @par 解决方案：
+ * 当前版本暂未使用此错误码，预留用于任务栈内存释放相关错误
  */
 #define LOS_ERRNO_TSK_FREE_STACK_FAILED         LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x17)
 
 /**
  * @ingroup los_task
- * Task error code: The task stack area is too small.
- *
- * Value: 0x02000218
- *
- * Solution: This error code is not in use temporarily.
+ * @brief 任务错误码：任务栈区域过小
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x18
+ * @par 十六进制值: 0x02000218 (十进制: 33554968)
+ * @par 解决方案：
+ * 当前版本暂未使用此错误码，预留用于任务栈区域检查相关错误
  */
 #define LOS_ERRNO_TSK_STKAREA_TOO_SMALL         LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x18)
 
 /**
  * @ingroup los_task
- * Task error code: The task fails to be activated.
- *
- * Value: 0x03000219
- *
- * Solution: Perform task switching after creating an idle task.
+ * @brief 任务错误码：任务激活失败
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_FATAL (致命错误)
+ * - 错误编号: 0x19
+ * @par 十六进制值: 0x03000219 (十进制: 50331929)
+ * @par 解决方案：
+ * 创建空闲任务后再执行任务切换操作，确保系统至少有一个可调度任务
  */
 #define LOS_ERRNO_TSK_ACTIVE_FAILED             LOS_ERRNO_OS_FATAL(LOS_MOD_TSK, 0x19)
 
 /**
  * @ingroup los_task
- * Task error code: Too many task configuration items.
- *
- * Value: 0x0200021a
- *
- * Solution: This error code is not in use temporarily.
+ * @brief 任务错误码：任务配置项过多
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x1a
+ * @par 十六进制值: 0x0200021a (十进制: 33554970)
+ * @par 解决方案：
+ * 当前版本暂未使用此错误码，预留用于任务配置项数量检查相关错误
  */
 #define LOS_ERRNO_TSK_CONFIG_TOO_MANY           LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x1a)
 
 /**
  * @ingroup los_task
- * Task error code:
- *
- * Value: 0x0200021b
- *
- * Solution: This error code is not in use temporarily.
+ * @brief 任务错误码：CPU上下文保存区域未对齐
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x1b
+ * @par 十六进制值: 0x0200021b (十进制: 33554971)
+ * @par 解决方案：
+ * 当前版本暂未使用此错误码，预留用于CPU上下文保存区域对齐检查相关错误
  */
 #define LOS_ERRNO_TSK_CP_SAVE_AREA_NOT_ALIGN    LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x1b)
 
 /**
  * @ingroup los_task
- * Task error code:
- *
- * Value: 0x0200021d
- *
- * Solution: This error code is not in use temporarily.
+ * @brief 任务错误码：任务消息队列数量过多
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x1d
+ * @par 十六进制值: 0x0200021d (十进制: 33554973)
+ * @par 解决方案：
+ * 当前版本暂未使用此错误码，预留用于任务消息队列数量检查相关错误
  */
 #define LOS_ERRNO_TSK_MSG_Q_TOO_MANY            LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x1d)
 
 /**
  * @ingroup los_task
- * Task error code:
- *
- * Value: 0x0200021e
- *
- * Solution: This error code is not in use temporarily.
+ * @brief 任务错误码：CPU上下文保存区域为空
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x1e
+ * @par 十六进制值: 0x0200021e (十进制: 33554974)
+ * @par 解决方案：
+ * 当前版本暂未使用此错误码，预留用于CPU上下文保存区域有效性检查相关错误
  */
 #define LOS_ERRNO_TSK_CP_SAVE_AREA_NULL         LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x1e)
 
 /**
  * @ingroup los_task
- * Task error code:
- *
- * Value: 0x0200021f
- *
- * Solution: This error code is not in use temporarily.
+ * @brief 任务错误码：任务自删除错误
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x1f
+ * @par 十六进制值: 0x0200021f (十进制: 33554975)
+ * @par 解决方案：
+ * 当前版本暂未使用此错误码，预留用于任务自删除操作相关错误
  */
 #define LOS_ERRNO_TSK_SELF_DELETE_ERR           LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x1f)
 
 /**
  * @ingroup los_task
- * Task error code: The task stack size is too large.
- *
- * Value: 0x02000220
- *
- * Solution: shrink the task stack size parameter.
+ * @brief 任务错误码：任务栈大小过大
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x20
+ * @par 十六进制值: 0x02000220 (十进制: 33554976)
+ * @par 解决方案：
+ * 减小栈大小参数，最大值不能超过系统配置的单个任务最大栈限制
+ * @note 最大栈限制由LOSCFG_BASE_CORE_TSK_MAXSTACK_SIZE宏定义
  */
 #define LOS_ERRNO_TSK_STKSZ_TOO_LARGE           LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x20)
 
 /**
  * @ingroup los_task
- * Task error code: Suspending software timer task is not allowed.
- *
- * Value: 0x02000221
- *
- * Solution: Check the task ID and do not suspend software timer task.
+ * @brief 任务错误码：不允许挂起软件定时器任务
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_ERROR (一般错误)
+ * - 错误编号: 0x21
+ * @par 十六进制值: 0x02000221 (十进制: 33554977)
+ * @par 解决方案：
+ * 检查任务ID，软件定时器任务是系统关键任务，不允许执行挂起操作
  */
 #define LOS_ERRNO_TSK_SUSPEND_SWTMR_NOT_ALLOWED LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x21)
 
 /**
  * @ingroup los_task
- * Task error code: The task delay occurs in software timer task.
- *
- * Value: 0x03000222
- *
- * Solution: Don't call Los_TaskDelay in software timer callback.
+ * @brief 任务错误码：在软件定时器任务中调用延迟
+ * @par 错误码构成：
+ * - 模块ID: LOS_MOD_TSK (任务模块)
+ * - 错误级别: LOS_ERRTYPE_FATAL (致命错误)
+ * - 错误编号: 0x22
+ * @par 十六进制值: 0x03000222 (十进制: 50331938)
+ * @par 解决方案：
+ * 软件定时器回调函数中不允许调用阻塞接口，可改用定时器嵌套或事件触发机制
  */
 #define LOS_ERRNO_TSK_DELAY_IN_SWTMR_TSK        LOS_ERRNO_OS_FATAL(LOS_MOD_TSK, 0x22)
 
+
 /**
  * @ingroup los_task
- * Task error code: The cpu affinity mask is incorrect.
+ * @brief 任务错误码：CPU亲和性掩码不正确
  *
- * Value: 0x03000223
- *
- * Solution: Please set the correct cpu affinity mask.
+ * @note 当设置的CPU亲和性掩码不符合系统要求时触发此错误
+ * @par 错误值
+ * 0x03000223（十进制：50332195）
+ * @par 解决方案
+ * 请设置正确的CPU亲和性掩码，确保与系统支持的CPU核心数量匹配
  */
 #define LOS_ERRNO_TSK_CPU_AFFINITY_MASK_ERR     LOS_ERRNO_OS_FATAL(LOS_MOD_TSK, 0x23)
 
 /**
  * @ingroup los_task
- * Task error code: Task yeild in int is not permited, which will result in unexpected result.
+ * @brief 任务错误码：不允许在中断中调用任务让出CPU
  *
- * Value: 0x02000224
- *
- * Solution: Don't call LOS_TaskYield in Interrupt.
+ * @note 在中断上下文中调用LOS_TaskYield()会导致不可预期的系统行为
+ * @par 错误值
+ * 0x02000224（十进制：33554980）
+ * @par 解决方案
+ * 请勿在中断服务程序中调用LOS_TaskYield()接口
  */
 #define LOS_ERRNO_TSK_YIELD_IN_INT              LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x24)
 
 /**
-* @ingroup los_task
-* Task error code: Task sync resource (semaphore) allocated failed.
-*
-* Value: 0x02000225
-*
-* Solution: Expand LOSCFG_BASE_IPC_SEM_LIMIT.
-*/
+ * @ingroup los_task
+ * @brief 任务错误码：任务同步资源（信号量）分配失败
+ *
+ * @note 多处理器环境下任务同步所需的信号量资源不足时触发
+ * @par 错误值
+ * 0x02000225（十进制：33554981）
+ * @par 解决方案
+ * 增大LOSCFG_BASE_IPC_SEM_LIMIT配置项的值以扩展信号量资源上限
+ */
 #define LOS_ERRNO_TSK_MP_SYNC_RESOURCE          LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x25)
 
 /**
-* @ingroup los_task
-* Task error code: Task sync failed on operating running task across cores.
-* 
-* Value: 0x02000226
-*
-* Solution: Check task delete can be handled in user's scenario.
-*/ //跨核心运行任务时任务同步失败,检查任务删除可以在用户场景中处理
+ * @ingroup los_task
+ * @brief 任务错误码：跨核心操作运行中任务同步失败
+ *
+ * @note 在多处理器系统中删除或操作其他核心上的运行中任务时同步失败
+ * @par 错误值
+ * 0x02000226（十进制：33554982）
+ * @par 解决方案
+ * 检查用户场景中任务删除逻辑是否需要特殊处理跨核心同步情况
+ */
 #define LOS_ERRNO_TSK_MP_SYNC_FAILED            LOS_ERRNO_OS_ERROR(LOS_MOD_TSK, 0x26)
 
 /**
-* @ingroup los_task
-* Task error code: Task wait and timeout.
-*
-* Value: 0x02000227
-*
-* Solution: Returns the timeout.
-*/
+ * @ingroup los_task
+ * @brief 任务错误码：任务等待超时
+ *
+ * @note 任务等待资源或事件时超过设定的超时时间
+ * @par 错误值
+ * 0x02000227（十进制：33554983）
+ * @par 解决方案
+ * 此为正常超时返回，应用程序需处理超时逻辑
+ */
 #define LOS_ERRNO_TSK_TIMEOUT                   LOS_ERRNO_OS_FATAL(LOS_MOD_TSK, 0x27)
 
 /**
-* @ingroup los_task
-* Task error code: A task that is not in the current process.
-*
-* Value: 0x02000228
-*
-* Solution: tasks that are not part of the current process are not allowed to operate.
-*/
+ * @ingroup los_task
+ * @brief 任务错误码：操作非当前进程的任务
+ *
+ * @note 尝试操作不属于当前进程上下文的任务时触发
+ * @par 错误值
+ * 0x02000228（十进制：33554984）
+ * @par 解决方案
+ * 仅允许操作当前进程内创建的任务，检查任务ID所属进程
+ */
 #define LOS_ERRNO_TSK_NOT_SELF_PROCESS          LOS_ERRNO_OS_FATAL(LOS_MOD_TSK, 0x28)
 
+
 /**
-* @ingroup  los_task
-* @brief Define the type of a task entrance function.
-*
-* @par Description:
-* This API is used to define the type of a task entrance function and call it after a task is created and triggered.
-* @attention None.
-*
-* @param  param1 [IN] Type #UINTPTR The first parameter passed to the task handling function.
-* @param  param2 [IN] Type #UINTPTR The second parameter passed to the task handling function.
-* @param  param3 [IN] Type #UINTPTR The third parameter passed to the task handling function.
-* @param  param4 [IN] Type #UINTPTR The fourth parameter passed to the task handling function.
-*
-* @retval None.
-* @par Dependency:
-* <ul><li>los_task.h: the header file that contains the API declaration.</li></ul>
-* @see
-*/
+ * @ingroup los_task
+ * @brief 任务入口函数类型定义
+ * @par 描述:
+ * 定义任务入口函数的标准类型，任务创建并触发后将调用此函数
+ * @attention 函数参数和返回值需严格遵循此定义，否则可能导致任务调度异常
+ * @param param1 [IN] 类型 #UINTPTR 传递给任务处理函数的第一个参数
+ * @param param2 [IN] 类型 #UINTPTR 传递给任务处理函数的第二个参数
+ * @param param3 [IN] 类型 #UINTPTR 传递给任务处理函数的第三个参数
+ * @param param4 [IN] 类型 #UINTPTR 传递给任务处理函数的第四个参数
+ * @retval VOID* 任务退出时的返回值，若任务为分离状态(LOS_TASK_STATUS_DETACHED)，返回值将被忽略
+ * @par 依赖:
+ * <ul><li>los_task.h: 包含此API声明的头文件</li></ul>
+ * @see TSK_INIT_PARAM_S::pfnTaskEntry
+ */
 typedef VOID *(*TSK_ENTRY_FUNC)(UINTPTR param1,
                                 UINTPTR param2,
                                 UINTPTR param3,
@@ -484,81 +611,102 @@ typedef VOID *(*TSK_ENTRY_FUNC)(UINTPTR param1,
 
 /**
  * @ingroup los_task
- * You are not allowed to add any fields and adjust fields to the structure 
- 	| 不允许在结构中添加任何字段和调整字段 @note_thinking 为什么呢 ?
+ * @brief 用户态任务参数结构体
+ * @attention 禁止添加、删除或调整此结构体中的任何字段顺序，以免破坏用户态任务上下文
  */
-typedef struct {//用户态栈信息,(按递减满栈方式注解)
-    UINTPTR         userArea;	///< 用户空间的堆区开始位置
-    UINTPTR         userSP;		///< 用户空间当前栈指针位置
-    UINTPTR         userMapBase;///< 用户空间的栈顶位置.
-    UINT32          userMapSize;///< 用户空间的栈大小,栈底 = userMapBase + userMapSize
+typedef struct {
+    UINTPTR         userArea;       /**< 用户态内存区域基地址 */
+    UINTPTR         userSP;         /**< 用户态栈指针 */
+    UINTPTR         userMapBase;    /**< 用户态内存映射基地址 */
+    UINT32          userMapSize;    /**< 用户态内存映射大小(字节) */
 } UserTaskParam;
 
 /**
  * @ingroup los_task
- * Define the structure of the parameters used for task creation.
- *
- * Information of specified parameters passed in during task creation.
+ * @brief 任务创建参数结构体
+ * @par 描述:
+ * 任务创建时传入的指定参数集合，包含任务入口、优先级、栈大小等关键信息
  */
-typedef struct tagTskInitParam {//Task的初始化参数
-    TSK_ENTRY_FUNC  pfnTaskEntry;  /**< Task entrance function | 任务的入口函数*/
-    UINT16          usTaskPrio;    /**< Task priority | 任务优先级*/
-    UINT16          policy;        /**< Task policy | 任务调度方式*/
-    UINTPTR         auwArgs[4];    /**< Task parameters, of which the maximum number is four | 入口函数的参数,最多四个*/
-    UINT32          uwStackSize;   /**< Task stack size | 栈大小*/
-    CHAR            *pcName;       /**< Task name | 任务名称*/
+typedef struct tagTskInitParam {
+    TSK_ENTRY_FUNC  pfnTaskEntry;   /**< 任务入口函数指针，指向任务执行的起始函数 */
+    UINT16          usTaskPrio;     /**< 任务优先级，取值范围: 0 ~ LOSCFG_BASE_CORE_TSK_PRIORITY_LEVEL-1，0为最高优先级 */
+    UINT16          policy;         /**< 任务调度策略，当前支持的策略包括:
+                                         - SCHED_RR: 时间片轮转调度
+                                         - SCHED_FIFO: 先来先服务调度
+                                         - SCHED_EDF: 最早截止时间优先调度(实时任务) */
+    UINTPTR         auwArgs[4];     /**< 任务参数数组，最多支持4个参数，通过TSK_ENTRY_FUNC传递给任务 */
+    UINT32          uwStackSize;    /**< 任务栈大小(字节)，必须按系统字长对齐，最小值由LOSCFG_BASE_CORE_TSK_MINSTACK_SIZE定义 */
+    CHAR            *pcName;        /**< 任务名称，建议长度不超过32字节，通过TSK_INFO_S::acName可查询 */
 #ifdef LOSCFG_KERNEL_SMP
-    UINT16          usCpuAffiMask; /**< Task cpu affinity mask | 任务cpu亲和力掩码        */
+    UINT16          usCpuAffiMask;  /**< 任务CPU亲和性掩码，bit0对应CPU0，bit1对应CPU1，以此类推
+                                         例如: 0x03表示任务可在CPU0和CPU1上运行 */
 #endif
-    UINT32          uwResved;      /**< It is automatically deleted if set to LOS_TASK_STATUS_DETACHED.
-                                        It is unable to be deleted if set to 0. | 如果设置为LOS_TASK_STATUS_DETACHED，则自动删除。如果设置为0，则无法删除*/
-    UINT16          consoleID;     /**< The console id of task belongs  | 任务的控制台id所属*/
-    UINTPTR          processID;	///< 进程ID
-    UserTaskParam   userParam;	///< 任务用户态运行时任何参数
-    /* edf parameters */
-    UINT32          runTimeUs;
-    UINT64          deadlineUs;
-    UINT64          periodUs;
+    UINT32          uwResved;       /**< 任务属性保留字段:
+                                         - 设置为LOS_TASK_STATUS_DETACHED: 任务退出时自动删除
+                                         - 设置为0: 任务不可自动删除，需调用LOS_TaskDelete()手动删除 */
+    UINT16          consoleID;      /**< 任务所属控制台ID，用于多控制台系统中区分任务输出设备 */
+    UINTPTR         processID;      /**< 进程ID，用于任务与进程的关联，0表示内核任务 */
+    UserTaskParam   userParam;      /**< 用户态任务参数，仅用户态任务有效 */
+    /* EDF调度参数，当policy为SCHED_EDF时有效 */
+    UINT32          runTimeUs;      /**< 任务运行时间(微秒)，EDF调度算法使用 */
+    UINT64          deadlineUs;     /**< 任务截止时间(微秒)，相对于系统启动时间的绝对时间戳 */
+    UINT64          periodUs;       /**< 任务周期(微秒)，周期任务的时间间隔 */
 } TSK_INIT_PARAM_S;
 
+/**
+ * @ingroup los_task
+ * @brief 调度参数结构体
+ * @par 描述:
+ * 用于设置任务的调度相关参数，根据调度策略不同，使用不同的联合成员
+ */
 typedef struct {
     union {
-        INT32 priority;
-        INT32 runTimeUs;
+        INT32 priority;     /**< 优先级，用于SCHED_RR和SCHED_FIFO调度策略，取值范围同TSK_INIT_PARAM_S::usTaskPrio */
+        INT32 runTimeUs;    /**< 运行时间(微秒)，用于SCHED_EDF调度策略，同TSK_INIT_PARAM_S::runTimeUs */
     };
-    INT32 deadlineUs;
-    INT32 periodUs;
+    INT32 deadlineUs;       /**< 截止时间(微秒)，用于SCHED_EDF调度策略，同TSK_INIT_PARAM_S::deadlineUs */
+    INT32 periodUs;         /**< 周期(微秒)，用于SCHED_EDF调度策略，同TSK_INIT_PARAM_S::periodUs */
 } LosSchedParam;
 
 /**
  * @ingroup los_task
- * Task name length
- *
+ * @brief 任务名称长度
+ * @note 包含字符串结束符'\0'，实际可显示的任务名称长度为31字节
  */
 #define LOS_TASK_NAMELEN                        32
 
 /**
  * @ingroup los_task
- * Task information structure.
- *
+ * @brief 任务信息结构体
+ * @par 描述:
+ * 包含任务的基本信息和运行状态，通过LOS_TaskInfoGet()接口获取
  */
-typedef struct tagTskInfo { //主要用于 shell task -a 使用 
-    CHAR                acName[LOS_TASK_NAMELEN];   /**< Task entrance function                                     */
-    UINT32              uwTaskID;                   /**< Task ID                                                    */
-    UINT16              usTaskStatus;               /**< Task status                                                */
-    UINT16              usTaskPrio;                 /**< Task priority                                              */
-    VOID                *pTaskSem;                  /**< Semaphore pointer                                          */
-    VOID                *pTaskMux;                  /**< Mutex pointer                                              */
-    VOID                *taskEvent;                 /**< Event                                                      */
-    UINT32              uwEventMask;                /**< Event mask                                                 */
-    UINT32              uwStackSize;                /**< Task stack size                                            */
-    UINTPTR             uwTopOfStack;               /**< Task stack top                                             */
-    UINTPTR             uwBottomOfStack;            /**< Task stack bottom                                          */
-    UINTPTR             uwSP;                       /**< Task SP pointer                                            */
-    UINT32              uwCurrUsed;                 /**< Current task stack usage                                   */
-    UINT32              uwPeakUsed;                 /**< Task stack usage peak                                      */
-    BOOL                bOvf;                       /**< Flag that indicates whether a task stack overflow occurs   */
+typedef struct tagTskInfo {
+    CHAR                acName[LOS_TASK_NAMELEN];   /**< 任务名称，长度由LOS_TASK_NAMELEN定义 */
+    UINT32              uwTaskID;                   /**< 任务ID，系统唯一标识，创建任务时由内核分配 */
+    UINT16              usTaskStatus;               /**< 任务状态，取值范围:
+                                                       - OS_TASK_STATUS_RUNNING: 运行态
+                                                       - OS_TASK_STATUS_READY: 就绪态
+                                                       - OS_TASK_STATUS_BLOCKED: 阻塞态
+                                                       - OS_TASK_STATUS_SUSPENDED: 挂起态
+                                                       - OS_TASK_STATUS_DELAY: 延时态
+                                                       - OS_TASK_STATUS_PENDING: 等待态 */
+    UINT16              usTaskPrio;                 /**< 任务当前优先级，动态调整后的值可能与创建时不同 */
+    VOID                *pTaskSem;                  /**< 任务等待的信号量指针，为NULL表示未等待任何信号量 */
+    VOID                *pTaskMux;                  /**< 任务等待的互斥锁指针，为NULL表示未等待任何互斥锁 */
+    VOID                *taskEvent;                 /**< 任务等待的事件控制块指针，为NULL表示未等待任何事件 */
+    UINT32              uwEventMask;                /**< 任务等待的事件掩码，与taskEvent配合使用 */
+    UINT32              uwStackSize;                /**< 任务栈总大小(字节)，创建时指定的值 */
+    UINTPTR             uwTopOfStack;               /**< 任务栈顶地址，高地址端 */
+    UINTPTR             uwBottomOfStack;            /**< 任务栈底地址，低地址端，栈从高地址向低地址增长 */
+    UINTPTR             uwSP;                       /**< 任务当前栈指针(Stack Pointer)，指向栈顶位置 */
+    UINT32              uwCurrUsed;                 /**< 当前栈使用量(字节)，实时反映栈内存使用情况 */
+    UINT32              uwPeakUsed;                 /**< 栈使用峰值(字节)，记录任务运行过程中的最大栈使用量 */
+    BOOL                bOvf;                       /**< 栈溢出标志:
+                                                       - TRUE: 发生栈溢出
+                                                       - FALSE: 未发生栈溢出 */
 } TSK_INFO_S;
+
 
 /**
  * @ingroup  los_task
@@ -991,7 +1139,7 @@ extern UINT32 LOS_TaskInfoGet(UINT32 taskID, TSK_INFO_S *taskInfo);
  *
  * @attention
  * <ul>
- * <li>If any low LOSCFG_KERNEL_CORE_NUM bit of the mask is not setted, an error is reported.</li>
+ * <li>If any low LOSCFG_KERNEL_CORE_NUM bit of the mask is not set, an error is reported.</li>
  * </ul>
  *
  * @param  uwTaskID      [IN]  Type  #UINT32 Task ID. The task id value is obtained from task creation.
@@ -1001,7 +1149,7 @@ extern UINT32 LOS_TaskInfoGet(UINT32 taskID, TSK_INFO_S *taskInfo);
  * @retval #LOS_ERRNO_TSK_ID_INVALID                Invalid task ID.
  * @retval #LOS_ERRNO_TSK_NOT_CREATED               The task is not created.
  * @retval #LOS_ERRNO_TSK_CPU_AFFINITY_MASK_ERR     The task cpu affinity mask is incorrect.
- * @retval #LOS_OK                                  The task cpu affinity mask is successfully setted.
+ * @retval #LOS_OK                                  The task cpu affinity mask is successfully set.
  * @par Dependency:
  * <ul><li>los_task.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_TaskCpuAffiGet

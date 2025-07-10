@@ -45,15 +45,36 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-/*! 一个shell命令的结构体,命令有长有短,鸿蒙采用了可变数组的方式实现 */ 
+
+
+/**
+ * @brief   命令键链表节点结构
+ * @details 用于存储命令历史记录或命令键相关信息的链表节点
+ *          采用柔性数组设计，节省内存空间
+ */
 typedef struct {
-    unsigned int count;	///< 字符数量
-    SH_List list;		///< 双向链表
-    char cmdString[0];	///< 字符串,可变数组的一种实现方式.
+    unsigned int count;       // 节点计数或引用次数
+    SH_List list;             // 链表节点，用于连接多个CmdKeyLink结构
+    char cmdString[0];        // 柔性数组，存储命令字符串（长度为0的数组不占内存空间）
 } CmdKeyLink;
 
+/**
+ * @brief   判断是否需要换行
+ * @param   timesPrint  当前已打印次数
+ * @param   lineCap     每行可容纳的打印项数
+ * @return  需要换行返回true，否则返回false
+ */
 #define NEED_NEW_LINE(timesPrint, lineCap) ((timesPrint) % (lineCap) == 0)
+
+/**
+ * @brief   判断屏幕是否已满
+ * @param   timesPrint      当前已打印次数
+ * @param   lineCap         每行可容纳的打印项数
+ * @return  屏幕已满返回true，否则返回false
+ * @note    DEFAULT_SCREEN_HEIGHT为默认屏幕高度常量
+ */
 #define SCREEN_IS_FULL(timesPrint, lineCap) ((timesPrint) >= ((lineCap) * DEFAULT_SCREEN_HEIGHT))
+
 
 extern unsigned int OsCmdExec(CmdParsed *cmdParsed, char *cmdStr);
 extern unsigned int OsCmdKeyShift(const char *cmdKey, char *cmdOut, unsigned int size);

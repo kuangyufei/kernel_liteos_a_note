@@ -46,92 +46,95 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
 /**
  * @ingroup los_cpup
- * CPU usage error code: The request for memory fails.
+ * CPU使用率错误码：内存请求失败
  *
- * Value: 0x02001e00
+ * 值：0x02001e00 (十进制33558272)
  *
- * Solution: Decrease the maximum number of processes.
+ * 解决方案：减少最大进程数量
  */
 #define LOS_ERRNO_CPUP_NO_MEMORY     LOS_ERRNO_OS_ERROR(LOS_MOD_CPUP, 0x00)
 
 /**
  * @ingroup los_cpup
- * CPU usage error code: The pointer to an input parameter is error.
+ * CPU使用率错误码：输入参数指针错误
  *
- * Value: 0x02001e01
+ * 值：0x02001e01 (十进制33558273)
  *
- * Solution: Check whether input parameter is valid.
+ * 解决方案：检查输入参数是否有效
  */
 #define LOS_ERRNO_CPUP_PTR_ERR       LOS_ERRNO_OS_ERROR(LOS_MOD_CPUP, 0x01)
 
 /**
  * @ingroup los_cpup
- * CPU usage error code: The CPU usage is not initialized.
+ * CPU使用率错误码：CPU使用率未初始化
  *
- * Value: 0x02001e02
+ * 值：0x02001e02 (十进制33558274)
  *
- * Solution: Check whether the CPU usage is initialized.
+ * 解决方案：检查CPU使用率是否已初始化
  */
 #define LOS_ERRNO_CPUP_NO_INIT       LOS_ERRNO_OS_ERROR(LOS_MOD_CPUP, 0x02)
 
 /**
  * @ingroup los_cpup
- * CPU usage error code: The target cpup is not created.
+ * CPU使用率错误码：目标CPU使用率监控未创建
  *
- * Value: 0x02001e03
+ * 值：0x02001e03 (十进制33558275)
  *
- * Solution: Check whether the target cpup is created.
+ * 解决方案：检查目标CPU使用率监控是否已创建
  */
 #define LOS_ERRNO_CPUP_NO_CREATED    LOS_ERRNO_OS_ERROR(LOS_MOD_CPUP, 0x03)
 
 /**
  * @ingroup los_cpup
- * CPU usage error code: The target cpup ID is invalid.
+ * CPU使用率错误码：目标CPU使用率ID无效
  *
- * Value: 0x02001e04
+ * 值：0x02001e04 (十进制33558276)
  *
- * Solution: Check whether the target cpup ID is applicable for the current operation.
+ * 解决方案：检查目标CPU使用率ID是否适用于当前操作
  */
 #define LOS_ERRNO_CPUP_ID_INVALID    LOS_ERRNO_OS_ERROR(LOS_MOD_CPUP, 0x04)
 
 /**
  * @ingroup los_cpup
- * Sum of single core cpup with all processes and tasks. It means the value of cpup is a permillage.
+ * 单核CPU所有进程和任务的使用率总和，单位为万分之一（0.01%）
+ * 取值范围：[0, 10000]，对应0%到100%
  */
 #define LOS_CPUP_SINGLE_CORE_PRECISION       10000
 
 /**
  * @ingroup los_cpup
- * Multiple of current cpup precision change to percent.
+ * 当前CPU使用率精度转换为百分比的倍数
+ * 计算方式：10000 / 100 = 100，用于将万分之一精度值转换为百分比（除以100）
  */
 #define LOS_CPUP_PRECISION_MULT              (LOS_CPUP_SINGLE_CORE_PRECISION / 100)
 
 /**
  * @ingroup los_cpup
- * Sum of all core cpup with all processes. It means the value of cpup is a permillage.
+ * 所有核心CPU所有进程的使用率总和
+ * 计算方式：单核精度 × 核心数，单位为万分之一
+ * 例如：双核系统中取值范围为[0, 20000]，对应0%到200%
  */
 #define LOS_CPUP_PRECISION                   (LOS_CPUP_SINGLE_CORE_PRECISION * LOSCFG_KERNEL_CORE_NUM)
 
 /**
  * @ingroup los_cpup
- * Count the CPU usage structures of all cpup.
+ * CPU使用率信息结构体，记录所有CPU核心的使用率数据
  */
 typedef struct tagCpupInfo {
-    UINT16 status; /**< Save the cur cpup status     */
-    UINT32 usage;  /**< Usage. The value range is [0, LOS_CPUP_SINGLE_CORE_PRECISION].   */
+    UINT16 status; /**< 当前CPU使用率监控状态（0：未使用，1：已启用等） */
+    UINT32 usage;  /**< CPU使用率值，取值范围[0, LOS_CPUP_SINGLE_CORE_PRECISION]，单位为万分之一 */
 } CPUP_INFO_S;
 
 /**
  * @ingroup los_cpup
- * Query the CPU usage of the system.
+ * 系统CPU使用率查询时间范围枚举
  */
 enum {
-    CPUP_LAST_TEN_SECONDS = 0, /**< Display CPU usage in the last ten seconds. */
-    CPUP_LAST_ONE_SECONDS = 1, /**< Display CPU usage in the last one seconds. */
-    CPUP_ALL_TIME = 0xffff     /**< Display CPU usage from system startup to now. */
+    CPUP_LAST_TEN_SECONDS = 0, /**< 查询最近10秒的CPU使用率 */
+    CPUP_LAST_ONE_SECONDS = 1, /**< 查询最近1秒的CPU使用率 */
+    CPUP_ALL_TIME = 0xffff     /**< 查询从系统启动到当前的CPU使用率（0xffff表示最大无符号16位整数） */
 };
 
 /**

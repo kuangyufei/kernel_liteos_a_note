@@ -56,72 +56,123 @@ extern "C" {
 #endif /* __cplusplus */
 
 /**
+ * @file mqueue.h
+ * @brief POSIX消息队列兼容层头文件
+ * @details 定义消息队列相关的宏、数据结构和接口，实现POSIX标准的消息队列功能
+ *          提供进程间通信的消息传递机制，支持消息优先级和异步通知
+ */
+
+/**
+ * @defgroup MQUEUE_MACROS 消息队列宏定义
+ * @{ 
+ */
+
+/**
  * @ingroup mqueue
- * Maximum number of messages in a message queue
+ * @brief 消息队列中最大消息数量
+ * @note 定义一个消息队列可容纳的最大消息条数，固定值为16
  */
 #define MQ_MAX_MSG_NUM    16
 
 /**
  * @ingroup mqueue
- * Maximum size of a single message in a message queue
+ * @brief 单条消息的最大长度
+ * @note 定义消息队列中每条消息的最大字节数，固定值为64字节
  */
 #define MQ_MAX_MSG_LEN    64
 
 
-/* CONSTANTS */
+/* 常量定义 */
 
+/**
+ * @brief 消息队列魔术数
+ * @note 用于消息队列验证的魔术值，十六进制0x89abcdef
+ */
 #define MQ_USE_MAGIC  0x89abcdef
-/* not support prio */
+
+/**
+ * @brief 最大优先级值
+ * @note 当前不支持消息优先级功能，固定值为1
+ */
 #define MQ_PRIO_MAX 1
 
+/**
+ * @brief 最大消息队列文件描述符数量
+ * @note 如果未定义，则使用配置项CONFIG_NQUEUE_DESCRIPTORS的值
+ */
 #ifndef MAX_MQ_FD
 #define MAX_MQ_FD CONFIG_NQUEUE_DESCRIPTORS
 #endif
 
+/** @} */ // end of MQUEUE_MACROS
+
+/**
+ * @defgroup MQUEUE_TYPES 数据类型定义
+ * @{ 
+ */
+
+/**
+ * @brief 权限模式联合体
+ * @details 用于存储消息队列的访问权限位，支持按位操作
+ */
 typedef union send_receive_t {
-    unsigned oth : 3;
-    unsigned grp : 6;
-    unsigned usr : 9;
-    short data;
+    unsigned oth : 3;  /**< 其他用户权限位（3位） */
+    unsigned grp : 6;  /**< 组用户权限位（6位） */
+    unsigned usr : 9;  /**< 用户权限位（9位） */
+    short data;        /**< 整体权限数据（16位） */
 } mode_s;
 
+/**
+ * @brief 消息队列通知结构体
+ * @details 用于设置消息到达时的通知方式
+ */
 struct mqnotify {
-    pid_t pid;
-    struct sigevent notify;
+    pid_t pid;                 /**< 接收通知的进程ID */
+    struct sigevent notify;    /**< 信号事件结构，定义通知方式 */
 };
 
-/* TYPE DEFINITIONS */
+/* 类型定义 */
+
+/**
+ * @brief 消息队列数组结构
+ * @details 描述系统级消息队列的核心属性和状态
+ */
 struct mqarray {
-    UINT32 mq_id : 31;
-    UINT32 unlinkflag : 1;
-    char *mq_name;
-    UINT32 unlink_ref;
-    mode_s mode_data; /* mode data of mqueue */
-    uid_t euid; /* euid of mqueue */
-    gid_t egid; /* egid of mqueue */
-    struct mqnotify mq_notify;
-    LosQueueCB *mqcb;
-    struct mqpersonal *mq_personal;
+    UINT32 mq_id : 31;         /**< 消息队列ID（31位） */
+    UINT32 unlinkflag : 1;     /**< 解除链接标志（1位）：0-未解除，1-已解除 */
+    char *mq_name;             /**< 消息队列名称（以'/'开头的字符串） */
+    UINT32 unlink_ref;         /**< 解除链接引用计数 */
+    mode_s mode_data;          /**< 消息队列权限数据 */
+    uid_t euid;                /**< 有效用户ID */
+    gid_t egid;                /**< 有效组ID */
+    struct mqnotify mq_notify; /**< 通知结构，用于异步消息通知 */
+    LosQueueCB *mqcb;          /**< 指向LiteOS内核队列控制块的指针 */
+    struct mqpersonal *mq_personal; /**< 指向个人消息队列结构的指针 */
 };
 
+/**
+ * @brief 个人消息队列结构
+ * @details 描述进程打开的消息队列实例属性
+ */
 struct mqpersonal {
-    struct mqarray *mq_posixdes;
-    struct mqpersonal *mq_next;
-    int mq_flags;
-    int mq_mode;  /* Mode of mqueue */
-    UINT32 mq_status;
-    UINT32 mq_refcount;
+    struct mqarray *mq_posixdes; /**< 指向系统级消息队列结构的指针 */
+    struct mqpersonal *mq_next;  /**< 指向下一个个人消息队列结构的指针（链表） */
+    int mq_flags;                /**< 打开标志（如O_NONBLOCK等） */
+    int mq_mode;                 /**< 访问模式（如O_RDONLY, O_WRONLY, O_RDWR） */
+    UINT32 mq_status;            /**< 状态标志 */
+    UINT32 mq_refcount;          /**< 引用计数 */
 };
 
 /**
  * @ingroup mqueue
- * Message queue attribute structure
+ * @brief 消息队列属性结构
+ * @details 用于获取或设置消息队列的属性信息
  */
 struct mq_attr {
-    long mq_flags;    /**< Message queue flags */
-    long mq_maxmsg;   /**< Maximum number of messages */
-    long mq_msgsize;  /**< Maximum size of a message */
-    long mq_curmsgs;  /**< Number of messages in the current message queue */
+    long mq_flags;    /**< 消息队列标志（如O_NONBLOCK） */
+    long mq_maxmsg;   /**< 最大消息数量（受MQ_MAX_MSG_NUM限制） */
+    long mq_msgsize;  /**< 最大消息长度（受MQ_MAX_MSG_LEN限制） */
+    long mq_curmsgs;  /**< 当前消息队列中的消息数 */
 };
 
 /**

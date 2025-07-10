@@ -49,13 +49,13 @@ extern "C" {
 #ifdef LOSCFG_KERNEL_HOOK
 /**
  * @ingroup los_hook
- * Hook error code: The hook pool is insufficient. 
+ * Hook error code: The hook pool is insufficient.
  *
  * Value: 0x02001f00
  *
  * Solution: Deregister the registered hook.
  */
-#define LOS_ERRNO_HOOK_POOL_IS_FULL             LOS_ERRNO_OS_ERROR(LOS_MOD_HOOK, 0x00) ///< 钩子池满了
+#define LOS_ERRNO_HOOK_POOL_IS_FULL             LOS_ERRNO_OS_ERROR(LOS_MOD_HOOK, 0x00)
 
 /**
  * @ingroup los_hook
@@ -65,7 +65,7 @@ extern "C" {
  *
  * Solution: Check the input parameters of LOS_HookReg.
  */
-#define LOS_ERRNO_HOOK_REG_INVALID              LOS_ERRNO_OS_ERROR(LOS_MOD_HOOK, 0x01) ///< 钩子函数参数无效
+#define LOS_ERRNO_HOOK_REG_INVALID              LOS_ERRNO_OS_ERROR(LOS_MOD_HOOK, 0x01)
 
 /**
  * @ingroup los_hook
@@ -97,7 +97,7 @@ extern "C" {
  * <ul><li>los_hook.h: the header file that contains the API declaration.</li></ul>
  * @see
  */
-#define LOS_HookReg(hookType, hookFn)           hookType##_RegHook(hookFn) ///< 注册钩子函数
+#define LOS_HookReg(hookType, hookFn)           hookType##_RegHook(hookFn)
 
 /**
  * @ingroup los_hook
@@ -119,12 +119,12 @@ extern "C" {
  * <ul><li>los_hook.h: the header file that contains the API declaration.</li></ul>
  * @see
  */
-#define LOS_HookUnReg(hookType, hookFn)         hookType##_UnRegHook(hookFn) ///< 注销钩子函数
+#define LOS_HookUnReg(hookType, hookFn)         hookType##_UnRegHook(hookFn)
 
 /**
  * Call hook functions.
  */
-#define OsHookCall(hookType, ...)               hookType##_CallHook(__VA_ARGS__) ///< 回调钩子函数
+#define OsHookCall(hookType, ...)               hookType##_CallHook(__VA_ARGS__)
 
 #else
 #define LOS_HookReg(hookType, hookFn)

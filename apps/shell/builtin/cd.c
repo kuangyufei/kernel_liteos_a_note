@@ -36,19 +36,30 @@
 #include "sherr.h"
 
 
+/**
+ * @brief 切换当前工作目录
+ * @param tgtDir 目标目录路径字符串
+ * @return 成功返回0(SH_OK)，失败返回-1(SH_ERROR)
+ * @note 该函数会更新Shell的工作目录记录
+ */
 int Chdir(const char *tgtDir)
 {
-    int ret;
+    int ret;  // 函数返回值，0表示成功，非0表示失败
 
+    // 检查目标目录路径是否为空
     if (!tgtDir) {
-        return SH_ERROR;
+        return SH_ERROR;  // 路径为空，返回错误
     }
 
+    // 调用系统函数切换目录
     ret = chdir(tgtDir);
+    // 如果切换目录成功，更新Shell的工作目录记录
     if (ret == 0) {
+        // 保存新的工作目录到Shell控制块
+        // 参数1:目标目录路径  参数2:路径长度(包含字符串结束符'\0')
         ret = OsShellSetWorkingDirectory(tgtDir, strlen(tgtDir) + 1); /* 1: the length of '\0' */
     }
 
-    return ret;
+    return ret;  // 返回操作结果
 }
 

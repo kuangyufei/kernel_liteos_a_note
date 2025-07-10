@@ -52,37 +52,61 @@
  * @endverbatim 
  * @brief 
  */
-#define MTD_NORFLASH        3	///< 存储空间一般比较小，但它可以不用初始化，可以在其内部运行程序，一般在其存储一些初始化内存的固件代码；
-#define MTD_NANDFLASH       4
-#define MTD_DATAFLASH       6
-#define MTD_MLCNANDFLASH    8
+
+/* MTD设备类型定义 */
+#define MTD_NORFLASH        3       /* NOR闪存类型标识 */
+#define MTD_NANDFLASH       4       /* NAND闪存类型标识 */
+#define MTD_DATAFLASH       6       /* 数据闪存类型标识 */
+#define MTD_MLCNANDFLASH    8       /* 多层单元NAND闪存类型标识 */
 
 /**
- * @brief
- * @verbatim
-    扇区是对硬盘而言，而块是对文件系统而言
-    文件系统不是一个扇区一个扇区的来读数据，一个扇区512个字节,太慢了，所以有了block（块）的概念，
-    文件系统是一个块一个块的读取的，block才是文件存取的最小单位。
-    一个block是4K，即:文件系统中1个块是由连续的8个扇区组成
- * @endverbatim  
+ * @brief NOR闪存设备结构
+ * @details 定义NOR闪存的块大小和地址范围信息
  */
 struct MtdNorDev {
-    unsigned long blockSize;	///< 块大小,不用猜也知道,是4K,和内存的页等同,如此方便置换
-    unsigned long blockStart;	///< 开始块索引
-    unsigned long blockEnd;		///< 结束块索引
+    unsigned long blockSize;        /* 块大小 (字节) */
+    unsigned long blockStart;       /* 起始块地址 (物理地址) */
+    unsigned long blockEnd;         /* 结束块地址 (物理地址) */
 };
 
-/// flash MTD 层 描述符
+/**
+ * @brief MTD设备抽象结构
+ * @details 定义各类MTD设备的通用接口和属性，包含设备类型、大小信息及操作函数指针
+ */
 struct MtdDev {
-    VOID *priv;
-    UINT32 type;
+    VOID *priv;                     /* 私有数据指针，指向具体设备的扩展信息 */
+    UINT32 type;                    /* 设备类型，取值为MTD_xxx系列宏定义 */
 
-    UINT64 size;
-    UINT32 eraseSize; ///< 4K, 跟PAGE_CACHE_SIZE对应
-	
-    int (*erase)(struct MtdDev *mtd, UINT64 start, UINT64 len, UINT64 *failAddr);///< 擦除flash操作
-    int (*read)(struct MtdDev *mtd, UINT64 start, UINT64 len, const char *buf);  ///< 读操作
-    int (*write)(struct MtdDev *mtd, UINT64 start, UINT64 len, const char *buf); ///< 写操作
+    UINT64 size;                    /* 设备总大小 (字节) */
+    UINT32 eraseSize;               /* 擦除块大小 (字节) */
+
+    /**
+     * @brief 擦除设备指定区域
+     * @param mtd [in] MTD设备指针
+     * @param start [in] 起始地址 (字节)
+     * @param len [in] 擦除长度 (字节)
+     * @param failAddr [out] 擦除失败地址，NULL表示不返回
+     * @return 0表示成功，负数表示失败
+     */
+    int (*erase)(struct MtdDev *mtd, UINT64 start, UINT64 len, UINT64 *failAddr);
+    /**
+     * @brief 从设备读取数据
+     * @param mtd [in] MTD设备指针
+     * @param start [in] 起始地址 (字节)
+     * @param len [in] 读取长度 (字节)
+     * @param buf [out] 接收数据的缓冲区
+     * @return 0表示成功，负数表示失败
+     */
+    int (*read)(struct MtdDev *mtd, UINT64 start, UINT64 len, const char *buf);
+    /**
+     * @brief 向设备写入数据
+     * @param mtd [in] MTD设备指针
+     * @param start [in] 起始地址 (字节)
+     * @param len [in] 写入长度 (字节)
+     * @param buf [in] 待写入数据的缓冲区
+     * @return 0表示成功，负数表示失败
+     */
+    int (*write)(struct MtdDev *mtd, UINT64 start, UINT64 len, const char *buf);
 };
 
 

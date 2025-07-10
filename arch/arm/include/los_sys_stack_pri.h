@@ -44,10 +44,10 @@ extern "C" {
 extern UINTPTR __stack_startup;
 extern UINTPTR __stack_startup_top;
 #else
-extern UINTPTR __svc_stack_top;//svc栈底,您没看错,这是栈底, top表高地址位
-extern UINTPTR __exc_stack_top;//exc栈底
-extern UINTPTR __svc_stack; //svc栈顶
-extern UINTPTR __exc_stack;	//exc栈顶
+extern UINTPTR __svc_stack_top;
+extern UINTPTR __exc_stack_top;
+extern UINTPTR __svc_stack;
+extern UINTPTR __exc_stack;
 #endif
 
 #ifdef __cplusplus

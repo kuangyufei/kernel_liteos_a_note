@@ -44,64 +44,93 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
 /**
  * @ingroup los_exc
- * Register information structure
+ * @brief 异常发生时的寄存器上下文结构
  *
- * Description: register information stored when an exception occurs on an LPC2458 platform.
+ * @par 描述
+ * 当LPC2458平台发生异常时，用于存储CPU寄存器状态的结构。根据ARM架构位数不同，包含的寄存器组有所差异。
  *
- * Note: The following register names without uw are the register names used in the chip manual.
- */ //在LPC2458平台上发生异常时存储的寄存器信息 以下不带uw的寄存器名是芯片手册中使用的寄存器名
+ * @attention
+ * - AArch64架构下包含X0-X29通用寄存器及ELR、SPSR等系统寄存器
+ * - 32位架构下寄存器组与TaskContext保持一致，便于任务切换时的上下文保存
+ * @par 相关模块
+ * @li los_exc 异常处理模块
+ */
 #ifdef LOSCFG_ARCH_ARM_AARCH64
+/**
+ * @brief AArch64架构通用寄存器数量
+ * @note 对应X0-X29共30个通用寄存器
+ */
 #define EXC_GEN_REGS_NUM     30
+/**
+ * @struct ExcContext
+ * @brief AArch64架构异常上下文结构
+ */
 typedef struct {
-    UINT64 X[EXC_GEN_REGS_NUM]; /**< Register X0-X29 */
-    UINT64 LR;                  /**< Program returning address. X30 */
-    UINT64 SP;
-    UINT64 regELR;
-    UINT64 SPSR;
+    UINT64 X[EXC_GEN_REGS_NUM]; /**< 通用寄存器X0-X29，数组索引对应寄存器编号 */
+    UINT64 LR;                  /**< 链接寄存器X30，存储程序返回地址 */
+    UINT64 SP;                  /**< 栈指针寄存器 */
+    UINT64 regELR;              /**< 异常链接寄存器，存储异常发生前的PC值 */
+    UINT64 SPSR;                /**< 保存程序状态寄存器，记录异常发生时的处理器状态 */
 } ExcContext;
 #else
-/* It has the same structure as TaskContext */
-typedef struct { //异常上下文,任务被中断需切换上下文,就是一种异常
-    UINT32 R4;      /**< Register R4 */
-    UINT32 R5;      /**< Register R5 */
-    UINT32 R6;      /**< Register R6 */
-    UINT32 R7;      /**< Register R7 */
-    UINT32 R8;      /**< Register R8 */
-    UINT32 R9;      /**< Register R9 */
-    UINT32 R10;     /**< Register R10 */
-    UINT32 R11;     /**< Register R11 */
+/**
+ * @struct ExcContext
+ * @brief 32位ARM架构异常上下文结构
+ * @note 与TaskContext结构布局完全一致，便于任务切换时的上下文复用
+ */
+typedef struct {
+    UINT32 R4;                  /**< 通用寄存器R4 */
+    UINT32 R5;                  /**< 通用寄存器R5 */
+    UINT32 R6;                  /**< 通用寄存器R6 */
+    UINT32 R7;                  /**< 通用寄存器R7 */
+    UINT32 R8;                  /**< 通用寄存器R8 */
+    UINT32 R9;                  /**< 通用寄存器R9 */
+    UINT32 R10;                 /**< 通用寄存器R10 */
+    UINT32 R11;                 /**< 通用寄存器R11 (FP) */
 
-    UINT32 SP;      /**< svc sp */	//内核态栈指针
-    UINT32 reserved; /**< Reserved, multiplexing register */
-    UINT32 USP;
-    UINT32 ULR;
-    UINT32 R0;      /**< Register R0 */
-    UINT32 R1;      /**< Register R1 */
-    UINT32 R2;      /**< Register R2 */
-    UINT32 R3;      /**< Register R3 */
-    UINT32 R12;     /**< Register R12 */
-    UINT32 LR;      /**< Program returning address. */	//用户态下程序返回地址
-    UINT32 PC;      /**< PC pointer of the exceptional function */ //异常函数的程序计数器PC位置
-    UINT32 regCPSR;
+    UINT32 SP;                  /**< SVC模式下的栈指针 */
+    UINT32 reserved;            /**< 保留字段，用于结构对齐 */
+    UINT32 USP;                 /**< 用户模式下的栈指针 */
+    UINT32 ULR;                 /**< 用户模式下的链接寄存器 */
+    UINT32 R0;                  /**< 通用寄存器R0，函数调用的第一个参数寄存器 */
+    UINT32 R1;                  /**< 通用寄存器R1，函数调用的第二个参数寄存器 */
+    UINT32 R2;                  /**< 通用寄存器R2，函数调用的第三个参数寄存器 */
+    UINT32 R3;                  /**< 通用寄存器R3，函数调用的第四个参数寄存器 */
+    UINT32 R12;                 /**< 通用寄存器R12 (IP)， intra-procedural call scratch register */
+    UINT32 LR;                  /**< 链接寄存器，存储程序返回地址 */
+    UINT32 PC;                  /**< 程序计数器，指向发生异常的指令地址 */
+    UINT32 regCPSR;             /**< 当前程序状态寄存器，记录异常发生时的处理器状态 */
 } ExcContext;
 #endif
 
 /**
  * @ingroup los_exc
- * Exception information structure
+ * @brief 异常信息结构
  *
- * Description: exception information stored when an exception occurs on an LPC2458 platform.
+ * @par 描述
+ * 存储异常发生时的详细信息，包括异常类型、嵌套计数和硬件上下文指针。
+ * 用于异常处理函数获取异常相关信息并进行诊断和恢复。
  *
+ * @attention 该结构在异常处理的全过程中保持有效，包含完整的异常现场信息
  */
-typedef struct {//异常信息结构体
-    UINT16 phase;        /**< Phase in which an exception occurs *///异常发生的阶段
-    UINT16 type;         /**< Exception type *///异常类型
-    UINT16 nestCnt;      /**< Count of nested exception *///嵌套异常计数
-    UINT16 reserved;     /**< Reserved for alignment */ //为对齐而保留
-    ExcContext *context; /**< Hardware context when an exception occurs *///异常发生时的硬件上下文
+typedef struct {
+    UINT16 phase;               /**< 异常发生的阶段
+                                  *   - 0: 系统启动阶段
+                                  *   - 1: 任务调度阶段
+                                  *   - 2: 中断处理阶段 */
+    UINT16 type;                /**< 异常类型编码
+                                  *   - 0x00: 未定义指令异常
+                                  *   - 0x01: 软件中断异常
+                                  *   - 0x02: 预取指令中止异常
+                                  *   - 0x03: 数据访问中止异常
+                                  *   - 0x04: IRQ中断异常
+                                  *   - 0x05: FIQ中断异常 */
+    UINT16 nestCnt;             /**< 异常嵌套计数器，最大支持65535层嵌套 */
+    UINT16 reserved;            /**< 保留字段，用于16位对齐 */
+    ExcContext *context;        /**< 指向异常发生时的硬件上下文结构
+                                  *   @see ExcContext */
 } ExcInfo;
 
 /**
@@ -120,7 +149,7 @@ typedef struct {//异常信息结构体
  * los_exc.h: the header file that contains the API declaration.
  * @see None.
  */
-STATIC INLINE UINTPTR Get_Fp(VOID)//获取内核FP寄存器地址
+STATIC INLINE UINTPTR Get_Fp(VOID)
 {
     UINTPTR regFp;
 
@@ -150,8 +179,8 @@ STATIC INLINE UINTPTR Get_Fp(VOID)//获取内核FP寄存器地址
  * los_exc.h: the header file that contains the API declaration.
  * @see None.
  */
-typedef VOID (*EXC_PROC_FUNC)(UINT32, ExcContext *, UINT32, UINT32);//定义异常处理函数钩子
-//此API用于根据异常处理函数的类型定义异常处理函数钩子并记录异常
+typedef VOID (*EXC_PROC_FUNC)(UINT32, ExcContext *, UINT32, UINT32);
+
 /**
  * @ingroup los_exc
  * @brief Register an exception handling hook.
@@ -168,7 +197,7 @@ typedef VOID (*EXC_PROC_FUNC)(UINT32, ExcContext *, UINT32, UINT32);//定义异�
  * los_exc.h: the header file that contains the API declaration.
  * @see None.
  */
-extern UINT32 LOS_ExcRegHook(EXC_PROC_FUNC excHook);//注册异常处理钩子
+extern UINT32 LOS_ExcRegHook(EXC_PROC_FUNC excHook);
 
 /**
  * @ingroup los_exc
