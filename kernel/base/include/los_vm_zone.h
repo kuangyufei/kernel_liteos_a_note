@@ -127,69 +127,130 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
-
-
-#ifdef LOSCFG_KERNEL_MMU	//
-#ifdef LOSCFG_TEE_ENABLE
-#define KERNEL_VADDR_BASE       0x41000000 //用于链接器层面的宏配置 | 基地址
+/**
+ * @defgroup kernel_vm_addr 内核虚拟地址空间配置
+ * @brief 定义内核虚拟地址空间的基础参数，依赖MMU和TEE使能状态
+ * @{ 
+ */
+#ifdef LOSCFG_KERNEL_MMU          /* 若使能内存管理单元(MMU) */
+#ifdef LOSCFG_TEE_ENABLE          /* 若使能可信执行环境(TEE) */
+#define KERNEL_VADDR_BASE       0x41000000  /*!< 内核虚拟地址基址：65MB (0x41000000 = 65 * 1024 * 1024) */
 #else
-#define KERNEL_VADDR_BASE       0x40000000		
+#define KERNEL_VADDR_BASE       0x40000000  /*!< 内核虚拟地址基址：64MB (0x40000000 = 64 * 1024 * 1024) */
 #endif
-#else	//没有MMU时,内核运行基址 = 内存的基地址,因为没有了MMU,所以也没有了虚拟内存和物理内存的说法,统一就是物理内存. 
-#define KERNEL_VADDR_BASE       DDR_MEM_ADDR	///< 内核运行基址 等于内存(        Double Data Rate SDRAM)基地址
+#else
+#define KERNEL_VADDR_BASE       DDR_MEM_ADDR /*!< 无MMU时，内核虚拟地址直接映射物理DDR地址 */
 #endif
-#define KERNEL_VADDR_SIZE       DDR_MEM_SIZE	///< 真实主存的大小
+#define KERNEL_VADDR_SIZE       DDR_MEM_SIZE /*!< 内核虚拟地址空间大小：等于DDR物理内存大小 */
+/** @} */
 
-#define SYS_MEM_BASE            DDR_MEM_ADDR	///< 物理内存基地址
-#define SYS_MEM_END             (SYS_MEM_BASE + SYS_MEM_SIZE_DEFAULT)	///< 物理内存结束地址
+/**
+ * @defgroup system_mem 系统内存范围定义
+ * @brief 定义物理内存的基础地址和范围
+ * @{ 
+ */
+#define SYS_MEM_BASE            DDR_MEM_ADDR        /*!< 系统物理内存基址：等于DDR物理起始地址 */
+#define SYS_MEM_END             (SYS_MEM_BASE + SYS_MEM_SIZE_DEFAULT) /*!< 系统物理内存结束地址 */
+/** @} */
 
+/**
+ * @defgroup type_utils 类型转换工具宏
+ * @brief 提供无符号32位类型转换功能
+ * @{ 
+ */
+#define _U32_C(X)  X##U         /*!< 内部宏：为数值添加无符号后缀U */
+#define U32_C(X)   _U32_C(X)    /*!< 无符号32位类型转换宏：将X转换为uint32_t类型 */
+/** @} */
 
-#define _U32_C(X)  X##U
-#define U32_C(X)   _U32_C(X)
+/**
+ * @defgroup kernel_vmm 内核虚拟内存管理(VMM)配置
+ * @brief 定义内核虚拟内存管理器的地址空间参数
+ * @{ 
+ */
+#define KERNEL_VMM_BASE         U32_C(KERNEL_VADDR_BASE) /*!< 内核VMM基址：带类型转换的内核虚拟地址基址 */
+#define KERNEL_VMM_SIZE         U32_C(KERNEL_VADDR_SIZE) /*!< 内核VMM大小：带类型转换的内核虚拟地址空间大小 */
 
-#define KERNEL_VMM_BASE         U32_C(KERNEL_VADDR_BASE) ///< 内核内存管理层面的宏配置 | 基地址
-#define KERNEL_VMM_SIZE         U32_C(KERNEL_VADDR_SIZE) ///< 内核大小
+#define KERNEL_ASPACE_BASE      KERNEL_VMM_BASE         /*!< 内核地址空间基址：与VMM基址相同 */
+#define KERNEL_ASPACE_SIZE      KERNEL_VMM_SIZE         /*!< 内核地址空间大小：与VMM大小相同 */
+/** @} */
 
-#define KERNEL_ASPACE_BASE      KERNEL_VMM_BASE ///< 内核运行空间层面的宏配置 | 基地址
-#define KERNEL_ASPACE_SIZE      KERNEL_VMM_SIZE ///< 内核空间大小
+/**
+ * @defgroup uncached_vmm 非缓存虚拟内存配置
+ * @brief 定义非缓存区域的虚拟地址空间参数
+ * @{ 
+ */
+#define UNCACHED_VMM_BASE       (KERNEL_VMM_BASE + KERNEL_VMM_SIZE) /*!< 非缓存VMM基址：紧跟内核VMM之后 */
+#define UNCACHED_VMM_SIZE       DDR_MEM_SIZE                        /*!< 非缓存VMM大小：等于DDR物理内存大小 */
+/** @} */
 
-/* Uncached vmm aspace */
-#define UNCACHED_VMM_BASE       (KERNEL_VMM_BASE + KERNEL_VMM_SIZE) ///< 未缓存虚拟空间基地址,适用于DMA,LCD framebuf,
-#define UNCACHED_VMM_SIZE       DDR_MEM_SIZE ///<未缓存虚拟空间大小
+/**
+ * @defgroup vmalloc_region 动态虚拟内存区域
+ * @brief 定义内核动态分配虚拟内存的地址范围
+ * @{ 
+ */
+#define VMALLOC_START           (UNCACHED_VMM_BASE + UNCACHED_VMM_SIZE) /*!< VMALLOC起始地址：紧跟非缓存VMM之后 */
+#define VMALLOC_SIZE            0x08000000                              /*!< VMALLOC区域大小：128MB (0x08000000 = 128 * 1024 * 1024) */
+/** @} */
 
-#define VMALLOC_START           (UNCACHED_VMM_BASE + UNCACHED_VMM_SIZE) ///< 内核堆空间基地址
-#define VMALLOC_SIZE            0x08000000 ///< 内核堆空间大小, 128M
-//UART,LCD,摄像头,I2C,中断控制器统称为外部设备, 统一编址
-#ifdef LOSCFG_KERNEL_MMU	//使用MMU时,只是虚拟地址不一样,但映射的物理设备空间一致.
-#define PERIPH_DEVICE_BASE      (VMALLOC_START + VMALLOC_SIZE)	///< 不使用buffer,cache
-#define PERIPH_DEVICE_SIZE      U32_C(PERIPH_PMM_SIZE)
-#define PERIPH_CACHED_BASE      (PERIPH_DEVICE_BASE + PERIPH_DEVICE_SIZE) ///< 使用cache但不用buffer
-#define PERIPH_CACHED_SIZE      U32_C(PERIPH_PMM_SIZE)
-#define PERIPH_UNCACHED_BASE    (PERIPH_CACHED_BASE + PERIPH_CACHED_SIZE) ///< 不使用cache但使用buffer
-#define PERIPH_UNCACHED_SIZE    U32_C(PERIPH_PMM_SIZE)
-#else	//不使用MMU时,外部设备空间地址一致.
-#define PERIPH_DEVICE_BASE      PERIPH_PMM_BASE
-#define PERIPH_DEVICE_SIZE      U32_C(PERIPH_PMM_SIZE)
-#define PERIPH_CACHED_BASE      PERIPH_PMM_BASE
-#define PERIPH_CACHED_SIZE      U32_C(PERIPH_PMM_SIZE)
-#define PERIPH_UNCACHED_BASE    PERIPH_PMM_BASE
-#define PERIPH_UNCACHED_SIZE    U32_C(PERIPH_PMM_SIZE)
+/**
+ * @defgroup peripheral_addr 外设地址空间配置
+ * @brief 定义外设寄存器的虚拟地址映射参数，区分MMU使能状态
+ * @{ 
+ */
+#ifdef LOSCFG_KERNEL_MMU          /* 若使能MMU */
+#define PERIPH_DEVICE_BASE      (VMALLOC_START + VMALLOC_SIZE) /*!< 外设设备基址：紧跟VMALLOC区域之后 */
+#define PERIPH_DEVICE_SIZE      U32_C(PERIPH_PMM_SIZE)         /*!< 外设设备空间大小：带类型转换的外设物理内存大小 */
+#define PERIPH_CACHED_BASE      (PERIPH_DEVICE_BASE + PERIPH_DEVICE_SIZE) /*!< 外设缓存基址：紧跟设备区域之后 */
+#define PERIPH_CACHED_SIZE      U32_C(PERIPH_PMM_SIZE)         /*!< 外设缓存空间大小：等于外设物理内存大小 */
+#define PERIPH_UNCACHED_BASE    (PERIPH_CACHED_BASE + PERIPH_CACHED_SIZE) /*!< 外设非缓存基址：紧跟缓存区域之后 */
+#define PERIPH_UNCACHED_SIZE    U32_C(PERIPH_PMM_SIZE)         /*!< 外设非缓存空间大小：等于外设物理内存大小 */
+#else
+/* 无MMU时，外设虚拟地址直接映射物理地址 */
+#define PERIPH_DEVICE_BASE      PERIPH_PMM_BASE                /*!< 外设设备基址：等于外设物理基址 */
+#define PERIPH_DEVICE_SIZE      U32_C(PERIPH_PMM_SIZE)         /*!< 外设设备空间大小：带类型转换的外设物理内存大小 */
+#define PERIPH_CACHED_BASE      PERIPH_PMM_BASE                /*!< 外设缓存基址：等于外设物理基址 */
+#define PERIPH_CACHED_SIZE      U32_C(PERIPH_PMM_SIZE)         /*!< 外设缓存空间大小：等于外设物理内存大小 */
+#define PERIPH_UNCACHED_BASE    PERIPH_PMM_BASE                /*!< 外设非缓存基址：等于外设物理基址 */
+#define PERIPH_UNCACHED_SIZE    U32_C(PERIPH_PMM_SIZE)         /*!< 外设非缓存空间大小：等于外设物理内存大小 */
 #endif
+/** @} */
 
-#define IO_DEVICE_ADDR(paddr)        ((paddr) - PERIPH_PMM_BASE + PERIPH_DEVICE_BASE)		///< 通过物理地址获取IO设备虚拟地址
-#define IO_CACHED_ADDR(paddr)        ((paddr) - PERIPH_PMM_BASE + PERIPH_CACHED_BASE)		///< 通过物理地址获取IO设备虚拟缓存地址
-#define IO_UNCACHED_ADDR(paddr)      ((paddr) - PERIPH_PMM_BASE + PERIPH_UNCACHED_BASE)	///< 通过物理地址获取IO设备虚拟未缓存地址
-//DDR_MEM_ADDRDDR内存全称是DDR SDRAM(Double Data Rate SDRAM，双倍速率SDRAM)
+/**
+ * @defgroup io_addr_convert I/O地址转换宏
+ * @brief 提供外设物理地址到各类虚拟地址的转换
+ * @{ 
+ */
+#define IO_DEVICE_ADDR(paddr)        ((paddr) - PERIPH_PMM_BASE + PERIPH_DEVICE_BASE)  /*!< 外设物理地址转设备虚拟地址 */
+#define IO_CACHED_ADDR(paddr)        ((paddr) - PERIPH_PMM_BASE + PERIPH_CACHED_BASE)  /*!< 外设物理地址转缓存虚拟地址 */
+#define IO_UNCACHED_ADDR(paddr)      ((paddr) - PERIPH_PMM_BASE + PERIPH_UNCACHED_BASE)/*!< 外设物理地址转非缓存虚拟地址 */
+/** @} */
 
-#define MEM_CACHED_ADDR(paddr)       ((paddr) - DDR_MEM_ADDR + KERNEL_VMM_BASE)
-#define MEM_UNCACHED_ADDR(paddr)     ((paddr) - DDR_MEM_ADDR + UNCACHED_VMM_BASE)
+/**
+ * @defgroup mem_addr_convert 内存地址转换宏
+ * @brief 提供DDR物理地址到虚拟地址的转换
+ * @{ 
+ */
+#define MEM_CACHED_ADDR(paddr)       ((paddr) - DDR_MEM_ADDR + KERNEL_VMM_BASE)  /*!< DDR物理地址转缓存虚拟地址 */
+#define MEM_UNCACHED_ADDR(paddr)     ((paddr) - DDR_MEM_ADDR + UNCACHED_VMM_BASE)/*!< DDR物理地址转非缓存虚拟地址 */
+/** @} */
 
-#define VMM_TO_UNCACHED_ADDR(vaddr)  ((vaddr) - KERNEL_VMM_BASE + UNCACHED_VMM_BASE)
-#define UNCACHED_TO_VMM_ADDR(vaddr)  ((vaddr) - UNCACHED_VMM_BASE + KERNEL_VMM_BASE)
+/**
+ * @defgroup vmm_addr_convert VMM地址转换宏
+ * @brief 提供不同缓存属性的虚拟地址之间的转换
+ * @{ 
+ */
+#define VMM_TO_UNCACHED_ADDR(vaddr)  ((vaddr) - KERNEL_VMM_BASE + UNCACHED_VMM_BASE) /*!< 缓存虚拟地址转非缓存虚拟地址 */
+#define UNCACHED_TO_VMM_ADDR(vaddr)  ((vaddr) - UNCACHED_VMM_BASE + KERNEL_VMM_BASE) /*!< 非缓存虚拟地址转缓存虚拟地址 */
+/** @} */
 
-#define VMM_TO_DMA_ADDR(vaddr)  ((vaddr) - KERNEL_VMM_BASE + SYS_MEM_BASE)
-#define DMA_TO_VMM_ADDR(vaddr)  ((vaddr) - SYS_MEM_BASE + KERNEL_VMM_BASE)
+/**
+ * @defgroup dma_addr_convert DMA地址转换宏
+ * @brief 提供虚拟地址与DMA物理地址之间的转换
+ * @{ 
+ */
+#define VMM_TO_DMA_ADDR(vaddr)  ((vaddr) - KERNEL_VMM_BASE + SYS_MEM_BASE) /*!< 虚拟地址转DMA物理地址 */
+#define DMA_TO_VMM_ADDR(vaddr)  ((vaddr) - SYS_MEM_BASE + KERNEL_VMM_BASE) /*!< DMA物理地址转虚拟地址 */
+/** @} */
 
 #if (PERIPH_UNCACHED_BASE >= (0xFFFFFFFFU - PERIPH_UNCACHED_SIZE))
 #error "Kernel virtual memory space has overflowed!"

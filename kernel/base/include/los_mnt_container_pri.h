@@ -41,10 +41,14 @@
 typedef struct ProcessCB LosProcessCB;
 struct Container;
 
+/**
+ * @brief 挂载容器结构体，用于管理文件系统挂载点集合
+ * @note 每个容器对应一组独立的挂载命名空间，实现文件系统隔离
+ */
 typedef struct MntContainer {
-    Atomic rc;
-    UINT32 containerID;
-    LIST_HEAD mountList;
+    Atomic rc;               /* 引用计数，原子操作确保并发安全 */
+    UINT32 containerID;      /* 容器ID，唯一标识一个挂载容器 */
+    LIST_HEAD mountList;     /* 挂载点链表头，用于链接该容器内所有挂载项 */
 } MntContainer;
 
 LIST_HEAD *GetContainerMntList(VOID);

@@ -42,20 +42,30 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-/* The upper limit size of total shared memory is default 16M */
-#define SHM_MAX_PAGES 4096
-#define SHM_MAX (SHM_MAX_PAGES * PAGE_SIZE)
-#define SHM_MIN 1
-#define SHM_MNI 192
-#define SHM_SEG 128
-#define SHM_ALL (SHM_MAX_PAGES)
+/**
+ * @defgroup shm_config 共享内存(Shared Memory)配置参数
+ * @brief 定义共享内存系统的资源限制和管理参数
+ * @{ 
+ */
+/* 系统共享内存总上限默认值：16MB (由SHM_MAX_PAGES和PAGE_SIZE计算得出) */
+#define SHM_MAX_PAGES 4096                      /*!< 共享内存最大页数：4096页 (4096 * 4KB = 16MB) */
+#define SHM_MAX       (SHM_MAX_PAGES * PAGE_SIZE)/*!< 共享内存最大总大小：16MB (PAGE_SIZE通常为4KB) */
+#define SHM_MIN       1                          /*!< 共享内存最小分配粒度：1字节 */
+#define SHM_MNI       192                        /*!< 系统最大共享内存标识符数量：192个 */
+#define SHM_SEG       128                        /*!< 每个进程最大共享内存段数量：128个 */
+#define SHM_ALL       (SHM_MAX_PAGES)            /*!< 系统共享内存总页数：等于SHM_MAX_PAGES */
+/** @} */
 
+/**
+ * @brief 共享内存ID资源管理结构体
+ * @details 用于跟踪和管理系统中的共享内存段元数据
+ */
 struct shmIDSource {
-    struct shmid_ds ds;
-    UINT32 status;
-    LOS_DL_LIST node;
+    struct shmid_ds ds;                          /*!< 共享内存段描述符，符合POSIX标准 */
+    UINT32 status;                              /*!< 共享内存段状态：0-未使用，1-已分配，2-销毁中 */
+    LOS_DL_LIST node;                           /*!< 双向链表节点，用于链接所有共享内存ID */
 #ifdef LOSCFG_SHELL
-    CHAR ownerName[OS_PCB_NAME_LEN];
+    CHAR ownerName[OS_PCB_NAME_LEN];             /*!< 共享内存创建者进程名，仅在SHELL使能时有效 */
 #endif
 };
 

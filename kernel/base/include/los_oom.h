@@ -33,19 +33,28 @@
 #define _LOS_OOM_H
 #include "los_typedef.h"
 
-#define OOM_TASK_PRIORITY                   9
-#define OOM_TASK_STACK_SIZE                 0x1000
+/**
+ * @brief OOM（内存溢出）管理相关宏定义
+ * @details 包含OOM检测任务属性、内存检查参数及阈值配置
+ */
+#define OOM_TASK_PRIORITY                   9               /* OOM检测任务的优先级，数值越小优先级越高 */
+#define OOM_TASK_STACK_SIZE                 0x1000          /* OOM检测任务的栈大小，十六进制0x1000对应十进制4096字节 */
 
-#define OOM_CHECK_MIN                       10      /* 0.1s */
-#define OOM_DEFAULT_CHECK_INTERVAL          100     /* 1s */
-#define OOM_CHECK_MAX                       1000    /* 10s */
+#define OOM_CHECK_MIN                       10              /* 最小检查间隔，单位为10ms，10表示0.1秒 */
+#define OOM_DEFAULT_CHECK_INTERVAL          100             /* 默认内存检查间隔，单位为10ms，100表示1秒 */
+#define OOM_CHECK_MAX                       1000            /* 最大检查间隔，单位为10ms，1000表示10秒 */
 
-#define OOM_DEFAULT_LOW_MEM_THRESHOLD       0x80000  /* 512KByte */
-#define OOM_DEFAULT_LOW_MEM_THRESHOLD_MIN   0        /* 0, means always no memory */
-#define OOM_DEFAULT_LOW_MEM_THRESHOLD_MAX   0x100000 /* 1MByte */
+#define OOM_DEFAULT_LOW_MEM_THRESHOLD       0x80000         /* 默认低内存阈值，十六进制0x80000对应十进制524288字节（512KB） */
+#define OOM_DEFAULT_LOW_MEM_THRESHOLD_MIN   0               /* 低内存阈值最小值，0表示始终触发内存不足检测 */
+#define OOM_DEFAULT_LOW_MEM_THRESHOLD_MAX   0x100000        /* 低内存阈值最大值，十六进制0x100000对应十进制1048576字节（1MB） */
 
-#define OOM_DEFAULT_RECLAIM_MEM_THRESHOLD   0x500000 /* 5MByte */
+#define OOM_DEFAULT_RECLAIM_MEM_THRESHOLD   0x500000        /* 默认内存回收阈值，十六进制0x500000对应十进制5242880字节（5MB） */
 
+/**
+ * @brief OOM处理函数指针类型定义
+ * @param param 传递给OOM处理函数的参数
+ * @return UINT32 处理结果，0表示成功，非0表示失败
+ */
 typedef UINT32 (*OomFn)(UINTPTR param);
 
 /**

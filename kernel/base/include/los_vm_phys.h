@@ -42,66 +42,107 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
-/*!
- * @brief 
- * @verbatim
-    LRU是Least Recently Used的缩写，即最近最少使用页面置换算法，是为虚拟页式存储管理服务的，
-    是根据页面调入内存后的使用情况进行决策了。由于无法预测各页面将来的使用情况，只能利用
-    “最近的过去”作为“最近的将来”的近似，因此，LRU算法就是将最近最久未使用的页面予以淘汰。
- * @endverbatim
+/**
+ * @defgroup vm_phys_macro 物理内存管理宏定义
+ * @ingroup kernel_vm
+ * @{ 
  */
-#define VM_LIST_ORDER_MAX    9	///< 伙伴算法分组数量,从 2^0,2^1,...,2^8 (256*4K)=1M 
-#define VM_PHYS_SEG_MAX    32	///< 最大支持32个段
+/**
+ * @brief 伙伴系统支持的最大阶数
+ * @note 阶数表示连续页块的数量为2^order，最大值9表示最大支持512个连续页块(2^9=512)
+ */
+#define VM_LIST_ORDER_MAX    9
+/**
+ * @brief 物理内存段的最大数量
+ * @note 系统支持的物理内存区域分段上限，用于管理不连续的物理内存块
+ */
+#define VM_PHYS_SEG_MAX    32
 
+/**
+ * @brief 最小值计算宏
+ * @note 若系统未定义min宏，则在此定义，用于比较两个数的大小并返回较小值
+ */
 #ifndef min
-#define min(x, y) ((x) < (y) ? (x) : (y)) 
+#define min(x, y) ((x) < (y) ? (x) : (y))
 #endif
 
-#define VM_PAGE_TO_PHYS(page)    ((page)->physAddr) ///< 获取物理页框的物理基地址
-#define VM_ORDER_TO_PAGES(order) (1 << (order)) ///< 伙伴算法由order 定位到该块组的页面单位,例如:order=2时，page[4]
-#define VM_ORDER_TO_PHYS(order)  (1 << (PAGE_SHIFT + (order))) ///< 通过order块组跳到物理地址
-#define VM_PHYS_TO_ORDER(phys)   (min(LOS_LowBitGet((phys) >> PAGE_SHIFT), VM_LIST_ORDER_MAX - 1)) ///< 通过物理地址定位到order
-
-struct VmFreeList {
-    LOS_DL_LIST node;	///< 双循环链表用于挂空闲物理内框节点,通过 VmPage->node 挂上来
-    UINT32 listCnt;		///< 空闲物理页总数
-};
-
-/*!
- * @brief Lru全称是Least Recently Used，即最近最久未使用的意思 针对匿名页和文件页各拆成对应链表。
+/**
+ * @brief 将页结构体指针转换为物理地址
+ * @param page 页结构体指针
+ * @return 对应的物理地址值
  */
-enum OsLruList {// 页属性
-    VM_LRU_INACTIVE_ANON = 0,	///< 非活动匿名页（swap）
-    VM_LRU_ACTIVE_ANON,			///< 活动匿名页（swap）
-    VM_LRU_INACTIVE_FILE,		///< 非活动文件页（磁盘）
-    VM_LRU_ACTIVE_FILE,			///< 活动文件页（磁盘）
-    VM_LRU_UNEVICTABLE,			///< 禁止换出的页
-    VM_NR_LRU_LISTS
+#define VM_PAGE_TO_PHYS(page)    ((page)->physAddr)
+/**
+ * @brief 将阶数转换为页数
+ * @param order 阶数(0~VM_LIST_ORDER_MAX)
+ * @return 页数，计算公式：1 << order (2^order)
+ */
+#define VM_ORDER_TO_PAGES(order) (1 << (order))
+/**
+ * @brief 将阶数转换为物理内存大小
+ * @param order 阶数(0~VM_LIST_ORDER_MAX)
+ * @return 物理内存大小(字节)，计算公式：1 << (PAGE_SHIFT + order)
+ * @note PAGE_SHIFT为页大小的位移值，例如4KB页对应PAGE_SHIFT=12
+ */
+#define VM_ORDER_TO_PHYS(order)  (1 << (PAGE_SHIFT + (order)))
+/**
+ * @brief 将物理内存大小转换为阶数
+ * @param phys 物理内存大小(字节)
+ * @return 阶数，取phys/PAGE_SIZE的低比特位和最大阶数的较小值
+ * @note 使用LOS_LowBitGet获取最低置位比特位置，确保不超过VM_LIST_ORDER_MAX-1
+ */
+#define VM_PHYS_TO_ORDER(phys)   (min(LOS_LowBitGet((phys) >> PAGE_SHIFT), VM_LIST_ORDER_MAX - 1))
+/** @} */
+
+/**
+ * @brief 伙伴系统空闲页链表结构
+ * @note 用于管理特定阶数的连续空闲页块
+ */
+struct VmFreeList {
+    LOS_DL_LIST node;          /* 双向链表节点，用于连接相同阶数的空闲页块 */
+    UINT32 listCnt;            /* 该阶数空闲页块的数量计数 */
 };
-/*!
- * @brief 物理段描述符
+
+/**
+ * @brief LRU(最近最少使用)页面链表类型枚举
+ * @note 用于页面回收算法中对不同类型页面进行分类管理
+ */
+enum OsLruList {
+    VM_LRU_INACTIVE_ANON = 0,  /* 非活跃匿名页链表(未关联文件的内存页) */
+    VM_LRU_ACTIVE_ANON,        /* 活跃匿名页链表 */
+    VM_LRU_INACTIVE_FILE,      /* 非活跃文件页链表(关联文件的内存页) */
+    VM_LRU_ACTIVE_FILE,        /* 活跃文件页链表 */
+    VM_LRU_UNEVICTABLE,        /* 不可回收页链表(如内核关键数据页) */
+    VM_NR_LRU_LISTS            /* LRU链表类型总数 */
+};
+
+/**
+ * @brief 物理内存段结构
+ * @note 描述系统中的一段连续物理内存区域及其管理结构
  */
 typedef struct VmPhysSeg {
-    PADDR_T start;            /* The start of physical memory area | 物理内存段的开始地址*/
-    size_t size;              /* The size of physical memory area | 物理内存段的大小*/
-    LosVmPage *pageBase;      /* The first page address of this area | 本段首个物理页框地址*/
-    SPIN_LOCK_S freeListLock; /* The buddy list spinlock | 伙伴算法自旋锁,用于操作freeList链表*/
-    struct VmFreeList freeList[VM_LIST_ORDER_MAX];  /* The free pages in the buddy list | 伙伴算法的分组,默认分成10组 2^0,2^1,...,2^VM_LIST_ORDER_MAX*/
-    SPIN_LOCK_S lruLock;		///< 用于置换的自旋锁,用于操作lruList
-    size_t lruSize[VM_NR_LRU_LISTS];		///< 5个双循环链表大小，如此方便得到size
-    LOS_DL_LIST lruList[VM_NR_LRU_LISTS];	///< 页面置换算法,5个双循环链表头，它们分别描述五中不同类型的链表
+    PADDR_T start;            /* 物理内存区域起始地址 */
+    size_t size;              /* 物理内存区域大小(字节) */
+    LosVmPage *pageBase;      /* 该区域首个页结构体的地址 */
+
+    SPIN_LOCK_S freeListLock; /* 伙伴链表自旋锁，保护空闲页操作的原子性 */
+    struct VmFreeList freeList[VM_LIST_ORDER_MAX];  /* 伙伴系统空闲页链表数组，按阶数索引 */
+
+    SPIN_LOCK_S lruLock;      /* LRU链表自旋锁，保护LRU页面操作的原子性 */
+    size_t lruSize[VM_NR_LRU_LISTS]; /* 各类型LRU链表的页面数量 */
+    LOS_DL_LIST lruList[VM_NR_LRU_LISTS]; /* LRU页面链表数组，按OsLruList类型索引 */
 } LosVmPhysSeg;
-/*!
- * @brief 物理区描述,仅用于方案商配置范围使用
+
+/**
+ * @brief 物理内存区域描述结构
+ * @note 用于定义系统中的一段物理内存范围
  */
 struct VmPhysArea {
-    PADDR_T start; ///< 物理内存区基地址
-    size_t size; ///< 物理内存总大小
+    PADDR_T start;            /* 物理内存区域起始地址 */
+    size_t size;              /* 物理内存区域大小(字节) */
 };
-
-extern struct VmPhysSeg g_vmPhysSeg[VM_PHYS_SEG_MAX]; ///< 物理内存采用段页式管理,先切段后伙伴算法页
-extern INT32 g_vmPhysSegNum; ///< 段总数 
+extern struct VmPhysSeg g_vmPhysSeg[VM_PHYS_SEG_MAX];
+extern INT32 g_vmPhysSegNum;
 
 UINT32 OsVmPagesToOrder(size_t nPages);
 struct VmPhysSeg *OsVmPhysSegGet(LosVmPage *page);

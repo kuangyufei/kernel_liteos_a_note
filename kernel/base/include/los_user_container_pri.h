@@ -50,13 +50,13 @@ typedef struct UidGidMap {
         UidGidExtent extent[UID_GID_MAP_MAX_EXTENTS];
     };
 } UidGidMap;
-//用户容器
+
 typedef struct UserContainer {
     Atomic rc;
     INT32 level;
     UINT32 owner;
     UINT32 group;
-    struct UserContainer *parent;	
+    struct UserContainer *parent;
     UidGidMap uidMap;
     UidGidMap gidMap;
     UINT32 containerID;

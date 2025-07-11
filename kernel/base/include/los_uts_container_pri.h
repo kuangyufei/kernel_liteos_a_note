@@ -45,9 +45,9 @@ struct Container;
 * setting hostname, domainname will not affect rest of the system (CLONE_NEWUTS flag)
 ****************************************/
 typedef struct UtsContainer {
-    Atomic  rc; //原子操作 LDREX 和 STREX 指令保证了原子操作的底层实现
-    UINT32  containerID;	//容器ID
-    struct  utsname utsName; //存放系统信息的缓冲区
+    Atomic  rc;
+    UINT32  containerID;
+    struct  utsname utsName;
 } UtsContainer;
 
 UINT32 OsInitRootUtsContainer(UtsContainer **utsContainer);

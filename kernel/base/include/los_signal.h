@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,21 +28,6 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#ifndef _LOS_SIGNAL_H
-#define _LOS_SIGNAL_H
-
-#include <stddef.h>
-#include <limits.h>
-#include <sys/types.h>
-#include <signal.h>
-#include "los_event.h"
-
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 /**
  * @file los_signal.h
  * @brief 
@@ -105,65 +90,218 @@ extern "C" {
  * @return int 
  */
 
-#define LOS_BIT_SET(val, bit) ((val) = (val) | (1ULL << (UINT32)(bit))) 	///< 按位设置
-#define LOS_BIT_CLR(val, bit) ((val) = (val) & ~(1ULL << (UINT32)(bit)))	///< 按位清除
-#define LOS_IS_BIT_SET(val, bit) (bool)((((val) >> (UINT32)(bit)) & 1ULL))	///< 位是否设置为1
+#ifndef _LOS_SIGNAL_H
+#define _LOS_SIGNAL_H
 
+#include <stddef.h>
+#include <limits.h>
+#include <sys/types.h>
+#include <signal.h>
+#include "los_event.h"
+
+#ifdef __cplusplus
+#if __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+#endif /* __cplusplus */
+
+/**
+ * @brief 设置变量指定位为1
+ * @details 将val参数的第bit位设置为1，支持64位操作
+ * @param[in,out] val 待操作的变量
+ * @param[in] bit 要设置的位位置（0-63）
+ * @note 使用1ULL确保64位无符号运算，避免移位溢出
+ */
+#define LOS_BIT_SET(val, bit) ((val) = (val) | (1ULL << (UINT32)(bit)))
+
+/**
+ * @brief 清除变量指定位为0
+ * @details 将val参数的第bit位清除为0，支持64位操作
+ * @param[in,out] val 待操作的变量
+ * @param[in] bit 要清除的位位置（0-63）
+ * @note 使用1ULL确保64位无符号运算，避免移位溢出
+ */
+#define LOS_BIT_CLR(val, bit) ((val) = (val) & ~(1ULL << (UINT32)(bit)))
+
+/**
+ * @brief 检查变量指定位是否为1
+ * @details 检查val参数的第bit位是否为1，返回布尔值
+ * @param[in] val 待检查的变量
+ * @param[in] bit 要检查的位位置（0-63）
+ * @return bool - 位为1返回true，否则返回false
+ * @note 使用1ULL确保64位无符号运算
+ */
+#define LOS_IS_BIT_SET(val, bit) (bool)((((val) >> (UINT32)(bit)) & 1ULL))
+
+/**
+ * @brief 信号遍历停止标志
+ * @details 用于信号链表遍历时表示停止遍历的返回值
+ * @note 该值在信号处理回调函数中使用
+ */
 #define SIG_STOP_VISIT 1
 
-#define OS_KERNEL_KILL_PERMISSION 0U	///< 内核态 kill 权限
-#define OS_USER_KILL_PERMISSION   3U	///< 用户态 kill 权限
+/**
+ * @brief 内核态进程杀死权限
+ * @details 表示内核态进程拥有杀死其他进程的权限等级
+ * @note 值为0表示最高权限
+ */
+#define OS_KERNEL_KILL_PERMISSION 0U
 
+/**
+ * @brief 用户态进程杀死权限
+ * @details 表示用户态进程拥有杀死其他进程的权限等级
+ * @note 值为3表示普通用户权限
+ */
+#define OS_USER_KILL_PERMISSION   3U
+
+/**
+ * @brief 条件返回宏
+ * @details 如果表达式expr为真，则返回错误码errcode
+ * @param[in] expr 条件表达式
+ * @param[in] errcode 错误码
+ * @note 通常用于函数入口参数检查
+ */
 #define OS_RETURN_IF(expr, errcode) \
     if ((expr)) {                   \
         return errcode;             \
     }
 
+/**
+ * @brief 无返回值条件返回宏
+ * @details 如果表达式expr为真，则执行return语句
+ * @param[in] expr 条件表达式
+ * @note 用于返回类型为void的函数
+ */
 #define OS_RETURN_IF_VOID(expr) \
     if ((expr)) {               \
         return;                 \
     }
+
+/**
+ * @brief 条件跳转宏
+ * @details 如果表达式expr为真，则设置错误码并跳转到EXIT标签
+ * @param[in] expr 条件表达式
+ * @param[in] errcode 错误码
+ * @note 假设函数内已定义ret变量和EXIT标签
+ */
 #define OS_GOTO_EXIT_IF(expr, errcode) \
     if (expr) {                        \
         ret = errcode;                 \
         goto EXIT;                     \
     }
+
+/**
+ * @brief 无条件跳转宏
+ * @details 如果表达式expr为真，则直接跳转到EXIT标签
+ * @param[in] expr 条件表达式
+ * @note 假设函数内已定义EXIT标签
+ */
 #define OS_GOTO_EXIT_IF_ONLY(expr) \
     if (expr) {                    \
         goto EXIT;                 \
     }
 
+/**
+ * @brief 空指针检查返回宏（无返回值）
+ * @details 如果指针pPara为NULL，则执行return语句
+ * @param[in] pPara 待检查的指针
+ * @note 用于返回类型为void的函数参数检查
+ */
 #define OS_RETURN_VOID_IF_NULL(pPara) \
     if (NULL == (pPara)) {            \
         return;                       \
     }
+
+/**
+ * @brief 空指针检查返回宏
+ * @details 如果指针pPara为NULL，则返回-EINVAL错误码
+ * @param[in] pPara 待检查的指针
+ * @return -EINVAL - 表示无效参数
+ * @note 用于标准错误码返回的函数
+ */
 #define OS_RETURN_IF_NULL(pPara) \
     if (NULL == (pPara)) {       \
         return (-EINVAL);          \
     }
 
+/**
+ * @brief 空指针检查跳转宏
+ * @details 如果指针pPara为NULL，则设置ret为-EINVAL并跳转到EXIT标签
+ * @param[in] pPara 待检查的指针
+ * @note 假设函数内已定义ret变量和EXIT标签
+ */
 #define OS_GOTO_EXIT_IF_NULL(pPara) \
     if (NULL == (pPara)) {          \
         ret = -EINVAL;              \
         goto EXIT;                  \
     }
 
+/**
+ * @brief 信号处理函数指针类型
+ * @details 标准信号处理函数原型，仅接收信号编号
+ * @param[in] signo 信号编号
+ */
 typedef void (*sa_sighandler_t)(int);
+
+/**
+ * @brief 带信号信息的处理函数指针类型
+ * @details 扩展信号处理函数原型，可接收信号编号、信号信息和上下文
+ * @param[in] signo 信号编号
+ * @param[in] info 信号详细信息结构体指针
+ * @param[in] context 信号处理上下文指针
+ */
 typedef void (*sa_siginfoaction_t)(int, siginfo_t *, void *);
 
+/**
+ * @brief 将信号编号转换为信号集
+ * @details 将信号编号s转换为对应的信号集（仅该信号位为1）
+ * @param[in] s 信号编号（1-64）
+ * @return sigset_t - 包含指定信号的信号集
+ * @note 信号编号从1开始，对应位0不使用
+ */
 #define SIGNO2SET(s) ((sigset_t)1ULL << (s))
-#define NULL_SIGNAL_SET ((sigset_t)0ULL)	///< 信号集全部清0
-#define FULL_SIGNAL_SET ((sigset_t)~0ULL)	///< 信号集全部置1
-///信号ID是否有效
+
+/**
+ * @brief 空信号集
+ * @details 所有位均为0的信号集，表示无任何信号
+ * @note 用于初始化信号集变量
+ */
+#define NULL_SIGNAL_SET ((sigset_t)0ULL)
+
+/**
+ * @brief 全信号集
+ * @details 所有位均为1的信号集，表示包含所有信号
+ * @note 值为~0ULL（十进制为18446744073709551615）
+ */
+#define FULL_SIGNAL_SET ((sigset_t)~0ULL)
+
+/**
+ * @brief 检查信号编号是否有效
+ * @details 判断信号编号是否在有效范围内（小于_NSIG）
+ * @param[in] sig 信号编号
+ * @return int - 有效返回1，无效返回0
+ * @note _NSIG通常定义为65，表示最大信号编号为64
+ */
 static inline int GOOD_SIGNO(unsigned int sig)
 {
-    return (sig < _NSIG) ? 1 : 0;// 
+    return (sig < _NSIG) ? 1 : 0;
 }
 
-#define MAX_SIG_ARRAY_IN_MUSL 128 ///< 128个信号
+/**
+ * @brief MUSL库信号数组最大长度
+ * @details 定义MUSL标准库中信号集数组的最大长度
+ * @note 值为128，与MUSL库实现保持兼容
+ */
+#define MAX_SIG_ARRAY_IN_MUSL 128
 
+/**
+ * @brief 信号集结构体（MUSL兼容）
+ * @details 用于存储信号集的结构体，与MUSL库接口兼容
+ * @core 通过unsigned long数组实现，每个元素表示64个信号
+ * @note 数组大小为MAX_SIG_ARRAY_IN_MUSL / sizeof(unsigned long)，通常为2个元素
+ */
 typedef struct {
-    unsigned long sig[MAX_SIG_ARRAY_IN_MUSL / sizeof(unsigned long)];
+    unsigned long sig[MAX_SIG_ARRAY_IN_MUSL / sizeof(unsigned long)]; /* 信号集存储数组 */
 } sigset_t_l;
 
 /***************************************************
@@ -185,53 +323,82 @@ struct sigaction {
 ****************************************************/
 typedef struct sigaction sigaction_t;
 
-struct sigactq {
-    struct sigactq *flink; /* Forward link */
-    sigaction_t act;       /* Sigaction data */
-    uint8_t signo;         /* Signal associated with action */
-};
-typedef struct sigactq sigactq_t;
-
-struct sq_entry_s {
-    struct sq_entry_s *flink;
-};
-typedef struct sq_entry_s sq_entry_t;
-
-struct sigpendq {
-    struct sigpendq *flink; /* Forward link */
-    siginfo_t info;         /* Signal information */
-    uint8_t type;           /* (Used to manage allocations) */
-};
-typedef struct sigpendq sigpendq_t;
-
-struct sq_queue_s {//信号队列
-    sq_entry_t *head;
-    sq_entry_t *tail;
-};
-typedef struct sq_queue_s sq_queue_t;
-
-typedef struct SigInfoListNode {
-    struct SigInfoListNode *next;
-    siginfo_t info;
-} SigInfoListNode;
 /**
- * @brief 信号控制块(描述符)
+ * @brief 信号操作队列节点结构体
+ * @details 用于管理任务的信号处理动作，形成链表结构存储多个信号的处理方式
+ * @attention 该结构体通过flink成员形成单向链表，不应直接修改链表指针
+ */
+struct sigactq {
+    struct sigactq *flink; /* 前向链接指针，指向下一个信号操作队列节点 */
+    sigaction_t act;       /* 信号操作结构体，包含信号处理函数、掩码等信息 */
+    uint8_t signo;         /* 关联的信号编号，取值范围1-64（标准信号） */
+}; 
+typedef struct sigactq sigactq_t; /* 信号操作队列节点类型定义 */
+
+/**
+ * @brief 信号队列入口结构体
+ * @details 作为信号队列的基础节点结构，用于构建各种信号相关队列
+ * @note 所有基于信号的队列结构都应使用此入口结构
+ */
+struct sq_entry_s {
+    struct sq_entry_s *flink; /* 前向链接指针，指向下一个队列节点 */
+}; 
+typedef struct sq_entry_s sq_entry_t; /* 信号队列入口类型定义 */
+
+/**
+ * @brief 待处理信号队列结构体
+ * @details 存储等待被处理的信号信息，形成链表结构管理多个待处理信号
+ * @attention 内核会定期扫描该队列并分发信号，用户不应直接操作
+ */
+struct sigpendq {
+    struct sigpendq *flink; /* 前向链接指针，指向下一个待处理信号节点 */
+    siginfo_t info;         /* 信号信息结构体，包含信号类型、发送者PID等详细信息 */
+    uint8_t type;           /* 信号分配管理类型，0表示动态分配，1表示静态分配 */
+}; 
+typedef struct sigpendq sigpendq_t; /* 待处理信号队列类型定义 */
+
+/**
+ * @brief 信号队列结构
+ * @details 用于管理信号相关节点的队列，采用头尾指针实现高效的入队出队操作
+ * @note 此结构适用于FIFO（先进先出）类型的信号处理场景
+ */
+struct sq_queue_s {
+    sq_entry_t *head; /* 队列头指针，指向队列中的第一个节点 */
+    sq_entry_t *tail; /* 队列尾指针，指向队列中的最后一个节点 */
+}; 
+typedef struct sq_queue_s sq_queue_t; /* 信号队列类型定义 */
+
+/**
+ * @brief 信号信息链表节点
+ * @details 用于临时存储信号信息，形成链表结构处理批量信号
+ * @attention 该链表在信号处理完成后需及时释放，避免内存泄漏
+ */
+typedef struct SigInfoListNode {
+    struct SigInfoListNode *next; /* 指向下一个信号信息节点的指针 */
+    siginfo_t info;               /* 信号信息结构体，包含信号的详细信息 */
+} SigInfoListNode; 
+
+/**
+ * @brief 信号控制块结构体
+ * @details 每个任务对应一个信号控制块，管理任务的信号掩码、待处理信号和信号处理队列
+ * @core 负责任务信号的整体管理，包括信号阻塞、挂起、等待和分发机制
+ * @constraint 每个任务只能有一个信号控制块，由内核自动创建和释放
  */
 typedef struct {
-    sigset_t sigFlag;		///< 不屏蔽的信号集
-    sigset_t sigPendFlag;	///< 信号阻塞标签集,记录那些信号来过,任务依然阻塞的集合.即:这些信号不能唤醒任务
-    sigset_t sigprocmask;   ///< Signals that are blocked | 任务屏蔽了哪些信号
-    sq_queue_t sigactionq;	///< 信号捕捉队列					
-    LOS_DL_LIST waitList;	///< 待链表,上面挂的是等待信号到来的任务, 请查找 OsTaskWait(&sigcb->waitList, timeout, TRUE)	理解						
-    sigset_t sigwaitmask; /*! Waiting for pending signals   | 任务在等待哪些信号的到来 */
-    siginfo_t sigunbinfo; /*! Signal info when task unblocked   | 任务解锁时的信号信息  */
-    SigInfoListNode *tmpInfoListHead; /*! Signal info List */
-    unsigned int sigIntLock;///< 信号中断锁
-    void *sigContext; ///< 信号上下文
-    unsigned int count;///< 信号数量
-} sig_cb;
-
+    sigset_t sigFlag;              /* 信号标志集，表示当前已处理的信号 */
+    sigset_t sigPendFlag;          /* 待处理信号标志集，bit位置1表示对应信号待处理 */
+    sigset_t sigprocmask;          /* 信号阻塞掩码，bit位置1表示对应信号被阻塞 */
+    sq_queue_t sigactionq;         /* 信号操作队列，存储该任务注册的所有信号处理动作 */
+    LOS_DL_LIST waitList;          /* 等待信号的任务链表，使用双向循环链表实现 */
+    sigset_t sigwaitmask;          /* 等待的信号掩码，表示任务正在等待的信号集合 */
+    siginfo_t sigunbinfo;          /* 任务解除阻塞时的信号信息，记录唤醒任务的信号 */
+    SigInfoListNode *tmpInfoListHead; /* 临时信号信息链表头指针，用于批量处理信号 */
+    unsigned int sigIntLock;       /* 信号中断锁，0表示未锁定，非0表示锁定计数 */
+    void *sigContext;              /* 信号上下文指针，指向信号处理时的CPU上下文 */
+    unsigned int count;            /* 信号处理计数，记录当前正在处理的信号数量 */
+} sig_cb; 
 typedef struct ProcessCB LosProcessCB;
+
 #define SIGEV_THREAD_ID 4
 
 int sys_sigqueue(pid_t, int, const union sigval);

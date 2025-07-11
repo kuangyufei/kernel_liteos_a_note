@@ -45,16 +45,29 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+/**
+ * @brief 获取互斥锁，永久等待直到成功
+ * @param m [IN] 指向互斥锁结构体LosMux的指针
+ * @return STATUS_T 操作结果，成功返回LOS_OK，失败返回错误码
+ * @note 此函数调用LOS_MuxLock并传入LOS_WAIT_FOREVER参数，表示无限期等待锁
+ * @see LOS_MuxLock
+ */
 STATIC INLINE STATUS_T LOS_MuxAcquire(LosMux *m)
 {
-    return LOS_MuxLock(m, LOS_WAIT_FOREVER);
+    return LOS_MuxLock(m, LOS_WAIT_FOREVER); // 调用带永久等待参数的互斥锁锁定函数
 }
 
+/**
+ * @brief 释放互斥锁
+ * @param m [IN] 指向互斥锁结构体LosMux的指针
+ * @return STATUS_T 操作结果，成功返回LOS_OK，失败返回错误码
+ * @note 此函数直接调用LOS_MuxUnlock完成锁释放
+ * @see LOS_MuxUnlock
+ */
 STATIC INLINE STATUS_T LOS_MuxRelease(LosMux *m)
 {
-    return LOS_MuxUnlock(m);
+    return LOS_MuxUnlock(m); // 调用互斥锁解锁函数
 }
-
 #ifdef __cplusplus
 #if __cplusplus
 }
