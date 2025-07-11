@@ -40,17 +40,22 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+/**
+ * @brief 调度统计信息结构体
+ * @core 记录任务调度相关的运行时统计数据，用于性能分析和调度优化
+ * @attention 所有时间相关字段单位为系统时钟周期，需根据系统主频换算为实际时间
+ */
 typedef struct {
-    UINT64      allRuntime;
-    UINT64      runTime;
-    UINT64      switchCount;          /* sched switch count */
-    UINT64      timeSliceRealTime;    /* The actual usage time of each time slice */
-    UINT64      timeSliceTime;
-    UINT64      timeSliceCount;       /* The number of time slices allocated */
-    UINT64      pendTime;
-    UINT64      pendCount;
-    UINT64      waitSchedTime;        /* task status is ready to running times */
-    UINT64      waitSchedCount;
+    UINT64      allRuntime;           /* 总运行时间，任务从创建到当前的累计运行时钟周期数 */
+    UINT64      runTime;              /* 本轮运行时间，任务从上次调度到当前的运行时钟周期数 */
+    UINT64      switchCount;          /* 调度切换次数，记录任务调度器切换上下文的总次数 */
+    UINT64      timeSliceRealTime;    /* 时间片实际使用时间，每个时间片内任务实际运行的时钟周期数 */
+    UINT64      timeSliceTime;        /* 时间片配置时间，系统为任务分配的单个时间片时钟周期数 */
+    UINT64      timeSliceCount;       /* 时间片分配次数，任务累计获得的时间片总数 */
+    UINT64      pendTime;             /* 等待时间，任务处于阻塞状态的累计时钟周期数 */
+    UINT64      pendCount;            /* 等待次数，任务进入阻塞状态的累计次数 */
+    UINT64      waitSchedTime;        /* 调度等待时间，任务从就绪到运行状态的累计等待时钟周期数 */
+    UINT64      waitSchedCount;       /* 调度等待次数，任务从就绪到运行状态的转换次数 */
 } SchedStat;
 
 #ifdef LOSCFG_SCHED_DEBUG

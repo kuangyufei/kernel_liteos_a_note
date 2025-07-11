@@ -39,13 +39,17 @@ struct Container;
 struct UserContainer;
 typedef struct ProcessCB LosProcessCB;
 
+/**
+ * @brief 进程凭证结构体
+ * @details 存储进程的用户身份凭证信息，包括用户ID、组ID及相关容器引用
+ */
 typedef struct Credentials {
-    Atomic rc;
-    UINT32 uid;
-    UINT32 gid;
-    UINT32 euid;
-    UINT32 egid;
-    struct UserContainer *userContainer;
+    Atomic rc;                      ///< 原子引用计数，用于凭证对象的生命周期管理
+    UINT32 uid;                     ///< 实际用户ID，标识进程的创建者身份
+    UINT32 gid;                     ///< 实际组ID，标识进程所属的主组
+    UINT32 euid;                    ///< 有效用户ID，用于权限检查的主要依据
+    UINT32 egid;                    ///< 有效组ID，用于组权限检查
+    struct UserContainer *userContainer; ///< 指向用户容器的指针，关联进程所属的用户命名空间
 } Credentials;
 
 UINT32 OsCopyCredentials(unsigned long flags,  LosProcessCB *child, LosProcessCB *parent);

@@ -42,69 +42,96 @@ extern "C" {
 
 /**
  * @ingroup los_sem
- * Semaphore control structure.
+ * @brief 信号量控制块结构体
+ * @details 用于管理和描述系统中的信号量资源，包含信号量状态、计数、等待队列等关键信息
+ * @note 每个信号量对应一个LosSemCB实例，由内核统一管理
  */
 typedef struct {
-    UINT8 semStat; /**< Semaphore state | 信号量的状态 */
-    UINT16 semCount; /**< Number of available semaphores | 有效信号量的数量 */
-    UINT16 maxSemCount;  /**< Max number of available semaphores | 有效信号量的最大数量 */
-    UINT32 semID; /**< Semaphore control structure ID | 信号量索引号 */
-    LOS_DL_LIST semList; /**< Queue of tasks that are waiting on a semaphore | 挂接阻塞于该信号量的任务 */
+    UINT8 semStat;         /**< 信号量状态：OS_SEM_UNUSED(0)表示未使用，OS_SEM_USED(1)表示已使用 */
+    UINT16 semCount;       /**< 当前可用信号量数量，取值范围[0, maxSemCount] */
+    UINT16 maxSemCount;    /**< 最大信号量数量，创建时指定且不可修改 */
+    UINT32 semID;          /**< 信号量ID，系统中唯一标识信号量的编号 */
+    LOS_DL_LIST semList;   /**< 等待该信号量的任务双向链表，按优先级排序 */
 } LosSemCB;
 
 /**
  * @ingroup los_sem
- * The semaphore is not in use.
- *
+ * @brief 信号量未使用状态
+ * @note 用于semStat字段，表示该信号量控制块未被分配使用
  */
 #define OS_SEM_UNUSED        0
+
 /**
  * @ingroup los_sem
- * The semaphore is used.
- *
+ * @brief 信号量已使用状态
+ * @note 用于semStat字段，表示该信号量控制块已被分配使用
  */
 #define OS_SEM_USED          1
+
 /**
  * @ingroup los_sem
- * Obtain the head node in a semaphore doubly linked list.
- *
+ * @brief 从信号量双向链表节点获取信号量控制块指针
+ * @param ptr 信号量链表节点指针（通常为semList成员地址）
+ * @return LosSemCB* 信号量控制块指针
+ * @note 通过容器_of机制实现，用于遍历信号量链表时获取完整控制块
  */
 #define GET_SEM_LIST(ptr) LOS_DL_LIST_ENTRY(ptr, LosSemCB, semList)
-extern LosSemCB *g_allSem;
+
 /**
  * @ingroup los_sem
- * COUNT | INDEX  split bit
+ * @brief 全局信号量控制块数组指针
+ * @note 指向系统中所有信号量控制块的起始地址，通过信号量索引访问具体控制块
+ */
+extern LosSemCB *g_allSem;
+
+/**
+ * @ingroup los_sem
+ * @brief 信号量ID中计数与索引的分隔位
+ * @note 用于将32位semID划分为两部分：高16位表示计数，低16位表示索引
  */
 #define SEM_SPLIT_BIT        16
+
 /**
  * @ingroup los_sem
- * Set the semaphore id
+ * @brief 组合信号量计数和索引生成信号量ID
+ * @param count 信号量计数（高16位）
+ * @param semID 信号量索引（低16位）
+ * @return UINT32 组合后的32位信号量ID
+ * @note 计算公式：(count << 16) | (semID & 0xFFFF)
  */
 #define SET_SEM_ID(count, semID)    (((count) << SEM_SPLIT_BIT) | (semID))
 
 /**
  * @ingroup los_sem
- * get the semaphore index
+ * @brief 从信号量ID中提取索引
+ * @param semID 完整的32位信号量ID
+ * @return UINT32 信号量索引（低16位），范围[0, 65535]
+ * @note 计算公式：semID & 0xFFFF
  */
 #define GET_SEM_INDEX(semID)        ((semID) & ((1U << SEM_SPLIT_BIT) - 1))
 
 /**
  * @ingroup los_sem
- * get the semaphore count
+ * @brief 从信号量ID中提取计数
+ * @param semID 完整的32位信号量ID
+ * @return UINT32 信号量计数（高16位），范围[0, 65535]
+ * @note 计算公式：semID >> 16
  */
 #define GET_SEM_COUNT(semID)        ((semID) >> SEM_SPLIT_BIT)
 
 /**
  * @ingroup los_sem
- * Obtain a semaphore ID.
- *
+ * @brief 通过信号量ID获取信号量控制块指针
+ * @param semID 完整的32位信号量ID
+ * @return LosSemCB* 信号量控制块指针，NULL表示无效ID
+ * @note 实现逻辑：g_allSem[GET_SEM_INDEX(semID)]
  */
 #define GET_SEM(semID)              (((LosSemCB *)g_allSem) + GET_SEM_INDEX(semID))
 
 /**
  * @ingroup los_sem
- * Maximum value of task information.
- *
+ * @brief 最大等待任务信息数量
+ * @note 表示可记录的等待信号量任务的最大数量，用于调试和信息查询
  */
 #define OS_MAX_PENDTASK_INFO 4
 

@@ -40,8 +40,22 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_GOTO_ERREND() do { \
-        goto LOS_ERREND;      \
+/**
+ * @ingroup los_base
+ * @brief 跳转到错误处理标签
+ * @note 定义一个do-while(0)循环包裹的goto语句，跳转到LOS_ERREND标签处执行错误处理
+ * @par 用法示例
+ * @code
+ * if (condition) {
+ *     OS_GOTO_ERREND(); // 条件不满足时跳转到错误处理
+ * }
+ * // 正常逻辑
+ * LOS_ERREND:
+ * // 错误处理逻辑
+ * @endcode
+ */
+#define OS_GOTO_ERREND() do { \ 
+        goto LOS_ERREND;      \ 
 } while (0)
 
 #ifdef __cplusplus

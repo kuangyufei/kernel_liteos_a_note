@@ -43,29 +43,26 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
-/*!
- * @brief 物理页框描述符 虚拟内存体现的是程序对内存资源的需求，而物理内存是对该请求的供应。
- 伙伴算法的思想是：把内存中连续的空闲页框空间看成是空闲页框块，并按照它们的大小（连续页框的数目）分组
- * @attention vmPage 中并没有虚拟地址，只有物理地址
- \n 关于nPages和order的关系说明,当请求分配为5页时,order是等于3的,因为只有2^3才能满足5页的请求
+/**
+ * @brief 物理页面管理结构体
+ * @details 描述系统中单个物理页面的元数据信息，包括物理地址、引用计数、状态标志等
+ * @ingroup kernel_vm
  */
 typedef struct VmPage {
-    LOS_DL_LIST         node;        /**< vm object dl list | 物理内框节点,通过它挂/摘到全局g_vmPhysSeg[segID]->freeList[order]物理页框链表 或被使用的链表
-    									上, 例如 共享内存的shmIDSource.node*/
-    PADDR_T             physAddr;    /**< vm page physical addr | 物理页框起始物理地址,只能用于计算,不会用于操作(读/写数据==)*/
-    Atomic              refCounts;   /**< vm page ref count | 被引用次数,共享内存会有多次引用*/
-    UINT32              flags;       /**< vm page flags | 页标签，同时可以有多个标签（共享/引用/活动/被锁==）*/
-    UINT8               order;       /**< vm page in which order list | 被安置在伙伴算法的几号序列(              2^0,2^1,2^2,...,2^order)*/
-    UINT8               segID;       /**< the segment id of vm page | 所属物理内存段编号ID*/
-    UINT16              nPages;      /**< the vm page is used for kernel heap | 分配页数,标识从本页开始连续的几页将一块被分配*/
+    LOS_DL_LIST         node;        /**< 双向链表节点，用于将页面链接到不同状态的链表(如空闲链表、LRU链表) */
+    PADDR_T             physAddr;    /**< 物理页面地址，存储该页面在物理内存中的起始地址 */
+    Atomic              refCounts;   /**< 页面引用计数，原子变量确保并发安全，记录页面被引用的次数 */
+    UINT32              flags;       /**< 页面状态标志位，用于表示页面的各种属性(如脏页、锁定、活跃等) */
+    UINT8               order;       /**< 伙伴系统阶数，表示该页面属于2^order大小的连续页块 */
+    UINT8               segID;       /**< 内存段ID，标识该页面所属的物理内存段(LosVmPhysSeg)索引 */
+    UINT16              nPages;      /**< 页面数量，用于内核堆分配时标识连续分配的页面数 */
 #ifdef LOSCFG_PAGE_TABLE_FINE_LOCK
-    SPIN_LOCK_S         lock;        /**< lock for page table entry */
+    SPIN_LOCK_S         lock;        /**< 页表项精细锁，用于多处理器环境下保护单个页表项的并发访问 */
 #endif
 } LosVmPage;
 
-extern LosVmPage *g_vmPageArray;    ///< 物理页框(page frame)池,在g_vmPageArray中:不可能存在两个物理地址一样的物理页框,
-extern size_t g_vmPageArraySize;    ///< 物理总页框(page frame)数
+extern LosVmPage *g_vmPageArray;
+extern size_t g_vmPageArraySize;
 
 LosVmPage *LOS_VmPageGet(PADDR_T paddr);
 VOID OsVmPageStartup(VOID);

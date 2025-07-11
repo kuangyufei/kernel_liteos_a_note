@@ -41,10 +41,14 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifdef LOSCFG_COMPAT_POSIX
+/**
+ * @brief 事件条件结构体
+ * @details 用于事件等待机制中的条件判断，存储实际值指针、比较值和事件清除标志
+ */
 typedef struct {
-    volatile INT32 *realValue;
-    INT32 value;
-    UINT32 clearEvent;
+    volatile INT32 *realValue;  ///< 指向实际值的指针，使用volatile关键字确保内存可见性
+    INT32 value;                ///< 条件比较值，用于与realValue指向的实际值进行比较
+    UINT32 clearEvent;          ///< 事件清除标志，指示事件触发后是否需要清除对应标志位
 } EventCond;
 
 extern UINT32 OsEventReadWithCond(const EventCond *cond, PEVENT_CB_S eventCB,

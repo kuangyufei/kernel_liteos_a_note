@@ -45,15 +45,29 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-//是否非匿名映射 文件映射：映射和实际文件相关联，通常是把文件的内容映射到进程地址空间，这样应用程序就可以像操作进程地址空间一样读写文件。
+
+/**
+ * @brief 判断是否为命名映射
+ * @param[in] flags 内存映射标志位，通常为mmap系统调用的flags参数
+ * @return BOOL 是命名映射返回TRUE，否则返回FALSE
+ * @note 命名映射指与文件关联的映射，需通过文件描述符指定映射源
+ * @see MAP_ANONYMOUS, LOS_IsAnonymousMapping
+ */
 STATIC INLINE BOOL LOS_IsNamedMapping(unsigned long flags)
 {
-    return ((flags & MAP_ANONYMOUS) == 0);
+    return ((flags & MAP_ANONYMOUS) == 0); // 无MAP_ANONYMOUS标志即为命名映射
 }
-///是否匿名映射 匿名映射：没有映射对应的相关文件，这种映射的内存区域的内容会被初始化为0
+
+/**
+ * @brief 判断是否为匿名映射
+ * @param[in] flags 内存映射标志位，通常为mmap系统调用的flags参数
+ * @return BOOL 是匿名映射返回TRUE，否则返回FALSE
+ * @note 匿名映射不与任何文件关联，内容初始化为0，常用于进程间共享内存
+ * @see MAP_ANONYMOUS, LOS_IsNamedMapping
+ */
 STATIC INLINE BOOL LOS_IsAnonymousMapping(unsigned long flags)
 {
-    return ((flags & MAP_ANONYMOUS) == MAP_ANONYMOUS);
+    return ((flags & MAP_ANONYMOUS) == MAP_ANONYMOUS); // 存在MAP_ANONYMOUS标志即为匿名映射
 }
 
 VADDR_T LOS_MMap(VADDR_T vaddr, size_t len, unsigned prot, unsigned long flags, int fd, unsigned long pgoff);

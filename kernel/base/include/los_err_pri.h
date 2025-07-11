@@ -42,27 +42,28 @@ extern "C" {
 
 /**
  * @ingroup los_err
- * Define the error magic word.
+ * @brief 错误处理魔法字定义
+ * @details 用于标识错误处理相关操作的特殊标记值，十六进制0xa1b2c3f8对应十进制2712847352
  */
-#define OS_ERR_MAGIC_WORD 0xa1b2c3f8
+#define OS_ERR_MAGIC_WORD 0xa1b2c3f8  ///< 错误处理魔法字，十六进制值：0xa1b2c3f8（十进制：2712847352）
 
 /**
  * @ingroup los_err
- * @brief Error handling macro capable of returning error codes.
+ * @brief 能够返回错误码的错误处理宏
  *
- * @par Description:
- * This API is used to call the error handling function by using an error code and return the same error code.
+ * @par 描述
+ * 此API用于通过错误码调用错误处理函数，并返回相同的错误码
  * @attention
  * <ul>
- * <li>None.</li>
+ * <li>无特殊注意事项</li>
  * </ul>
  *
- * @param  errNo   [IN] Error code.
+ * @param  errNo   [IN] 错误码
  *
- * @retval errNo
- * @par Dependency:
- * <ul><li>los_err_pri.h: the header file that contains the API declaration.</li></ul>
- * @see None.
+ * @retval errNo 返回输入的错误码
+ * @par 依赖
+ * <ul><li>los_err_pri.h: 包含此API声明的头文件</li></ul>
+ * @see None
  */
 #define OS_RETURN_ERROR(errNo) do {                                               \
     (VOID)LOS_ErrHandle("os_unspecific_file", OS_ERR_MAGIC_WORD, errNo, 0, NULL); \
@@ -71,23 +72,22 @@ extern "C" {
 
 /**
  * @ingroup los_err
- * @brief Error handling macro capable of returning error codes.
+ * @brief 带行号的错误处理宏
  *
- * @par Description:
- * This API is used to call the error handling function by using an error code and the line number of
- * the erroneous line, and return the same error code.
+ * @par 描述
+ * 此API用于通过错误码和错误发生的行号调用错误处理函数，并返回相同的错误码
  * @attention
  * <ul>
- * <li>None.</li>
+ * <li>errLine参数应传入__LINE__宏以获取准确行号</li>
  * </ul>
  *
- * @param  errLine   [IN] Line number of the erroneous line.
- * @param  errNo   [IN] Error code.
+ * @param  errLine   [IN] 错误发生的行号
+ * @param  errNo     [IN] 错误码
  *
- * @retval errNo
- * @par Dependency:
- * <ul><li>los_err_pri.h: the header file that contains the API declaration.</li></ul>
- * @see None.
+ * @retval errNo 返回输入的错误码
+ * @par 依赖
+ * <ul><li>los_err_pri.h: 包含此API声明的头文件</li></ul>
+ * @see None
  */
 #define OS_RETURN_ERROR_P2(errLine, errNo) do {                          \
     (VOID)LOS_ErrHandle("os_unspecific_file", errLine, errNo, 0, NULL);  \
@@ -96,21 +96,22 @@ extern "C" {
 
 /**
  * @ingroup los_err
- * @brief Macro for jumping to error handler.
+ * @brief 跳转到错误处理程序的宏
  *
- * @par Description:
- * This API is used to call the error handling function by using an error code.
+ * @par 描述
+ * 此API用于通过错误码调用错误处理函数，并跳转到ERR_HANDLER标签处
  * @attention
  * <ul>
- * <li>None.</li>
+ * <li>使用前必须定义errNo和errLine变量</li>
+ * <li>必须存在ERR_HANDLER标签作为错误处理入口</li>
  * </ul>
  *
- * @param  errorNo   [IN] Error code.
+ * @param  errorNo   [IN] 错误码
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>los_err_pri.h: the header file that contains the API declaration.</li></ul>
- * @see None.
+ * @retval None
+ * @par 依赖
+ * <ul><li>los_err_pri.h: 包含此API声明的头文件</li></ul>
+ * @see None
  */
 #define OS_GOTO_ERR_HANDLER(errorNo) do { \
     errNo = errorNo;                      \

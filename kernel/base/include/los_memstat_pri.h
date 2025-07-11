@@ -41,19 +41,57 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+/**
+ * @brief 任务内存使用信息结构体，用于记录单个任务的内存使用情况
+ * @note 该结构体通常用于内存统计和任务资源监控
+ */
 typedef struct {
-    UINT32 memUsed; ///< 记录任务内存使用量
+    UINT32 memUsed;          /* 任务已使用内存大小，单位：字节 */
 } TskMemUsedInfo;
 
+/**
+ * @brief 增加任务内存使用量
+ * @param[in] usedSize 增加的内存大小，单位：字节
+ * @param[in] taskID 任务ID
+ * @note 该函数会原子地更新指定任务的内存使用统计信息
+ */
 extern VOID OsTaskMemUsedInc(UINT32 usedSize, UINT32 taskID);
+
+/**
+ * @brief 减少任务内存使用量
+ * @param[in] usedSize 减少的内存大小，单位：字节
+ * @param[in] taskID 任务ID
+ * @note 该函数会原子地更新指定任务的内存使用统计信息
+ */
 extern VOID OsTaskMemUsedDec(UINT32 usedSize, UINT32 taskID);
+
+/**
+ * @brief 获取任务当前内存使用量
+ * @param[in] taskID 任务ID
+ * @return UINT32 当前内存使用量，单位：字节
+ */
 extern UINT32 OsTaskMemUsage(UINT32 taskID);
+
+/**
+ * @brief 清除任务内存使用统计信息
+ * @param[in] taskID 任务ID
+ * @note 通常在任务销毁或重置时调用，将内存使用量清零
+ */
 extern VOID OsTaskMemClear(UINT32 taskID);
+
+/**
+ * @brief 启用内存统计功能的宏定义
+ * @note 当定义此宏时，系统会开启任务级别的内存使用统计功能
+ */
 #define OS_MEM_ENABLE_MEM_STATISTICS
 
 #ifdef LOS_MEM_SLAB
+/**
+ * @brief 任务 slab 内存使用信息结构体，用于记录单个任务的 slab 内存使用情况
+ * @note 仅在启用 slab 内存分配器（LOS_MEM_SLAB）时有效
+ */
 typedef struct {
-    UINT32 slabUsed; ///< 任务占用以slab分配方式内存量
+    UINT32 slabUsed;         /* 任务已使用 slab 内存大小，单位：字节 */
 } TskSlabUsedInfo;
 
 extern VOID OsTaskSlabUsedInc(UINT32 usedSize, UINT32 taskID);

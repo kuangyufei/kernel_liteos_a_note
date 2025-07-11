@@ -55,65 +55,77 @@
 #include "los_net_container_pri.h"
 #endif
 
+/**
+ * @brief 容器类型枚举定义
+ * @details 定义了系统支持的各类容器类型，用于容器管理和标识
+ */
 typedef enum {
-    CONTAINER = 0,
-    PID_CONTAINER,	//进程容器
-    PID_CHILD_CONTAINER,	//子进程容器
-    UTS_CONTAINER,	//
-    MNT_CONTAINER,	//挂载容器
-    IPC_CONTAINER,
-    USER_CONTAINER,
-    TIME_CONTAINER,
-    TIME_CHILD_CONTAINER,
-    NET_CONTAINER,
-    CONTAINER_MAX,
+    CONTAINER = 0,                  ///< 基础容器类型，作为其他容器的基类
+    PID_CONTAINER,                  ///< 进程ID容器，管理进程ID命名空间
+    PID_CHILD_CONTAINER,            ///< 子进程容器，管理子进程的命名空间
+    UTS_CONTAINER,                  ///< UTS容器，管理主机名和域名等系统标识信息
+    MNT_CONTAINER,                  ///< 挂载容器，管理文件系统挂载点
+    IPC_CONTAINER,                  ///< IPC容器，管理进程间通信资源
+    USER_CONTAINER,                 ///< 用户容器，管理用户和用户组ID映射
+    TIME_CONTAINER,                 ///< 时间容器，管理系统时间相关资源
+    TIME_CHILD_CONTAINER,           ///< 子时间容器，管理子进程的时间资源
+    NET_CONTAINER,                  ///< 网络容器，管理网络命名空间和网络资源
+    CONTAINER_MAX,                  ///< 容器类型总数，用于数组边界检查和容器类型有效性验证
 } ContainerType;
 
+/**
+ * @brief 容器结构体定义
+ * @details 系统容器的基础结构，包含各类具体容器的指针和引用计数
+ */
 typedef struct Container {
-    Atomic   rc;	//原子操作
+    Atomic   rc;                    ///< 原子引用计数，用于容器的生命周期管理
 #ifdef LOSCFG_PID_CONTAINER
-    struct PidContainer *pidContainer; //进程容器
-    struct PidContainer *pidForChildContainer;//进程的孩子容器
+    struct PidContainer *pidContainer; ///< 指向进程ID容器的指针，仅在使能PID容器配置时有效
+    struct PidContainer *pidForChildContainer; ///< 指向子进程ID容器的指针，用于管理子进程命名空间
 #endif
 #ifdef LOSCFG_UTS_CONTAINER
-    struct UtsContainer *utsContainer; //
+    struct UtsContainer *utsContainer; ///< 指向UTS容器的指针，仅在使能UTS容器配置时有效
 #endif
 #ifdef LOSCFG_MNT_CONTAINER
-    struct MntContainer *mntContainer; //挂载容器
+    struct MntContainer *mntContainer; ///< 指向挂载容器的指针，仅在使能挂载容器配置时有效
 #endif
 #ifdef LOSCFG_IPC_CONTAINER
-    struct IpcContainer *ipcContainer; //IPC容器
+    struct IpcContainer *ipcContainer; ///< 指向IPC容器的指针，仅在使能IPC容器配置时有效
 #endif
 #ifdef LOSCFG_TIME_CONTAINER
-    struct TimeContainer *timeContainer; //时间容器
-    struct TimeContainer *timeForChildContainer; 
+    struct TimeContainer *timeContainer; ///< 指向时间容器的指针，仅在使能时间容器配置时有效
+    struct TimeContainer *timeForChildContainer; ///< 指向子进程时间容器的指针
 #endif
 #ifdef LOSCFG_NET_CONTAINER
-    struct NetContainer *netContainer; //网络容器
+    struct NetContainer *netContainer; ///< 指向网络容器的指针，仅在使能网络容器配置时有效
 #endif
 } Container;
-//容器数量上限
+
+/**
+ * @brief 容器数量限制结构体
+ * @details 定义各类容器的数量上限，用于资源控制和系统稳定性保障
+ */
 typedef struct TagContainerLimit {
 #ifdef LOSCFG_PID_CONTAINER
-    UINT32 pidLimit;
+    UINT32 pidLimit;                ///< PID容器的最大数量限制
 #endif
 #ifdef LOSCFG_UTS_CONTAINER
-    UINT32 utsLimit;
+    UINT32 utsLimit;                ///< UTS容器的最大数量限制
 #endif
 #ifdef LOSCFG_MNT_CONTAINER
-    UINT32 mntLimit;
+    UINT32 mntLimit;                ///< 挂载容器的最大数量限制
 #endif
 #ifdef LOSCFG_IPC_CONTAINER
-    UINT32 ipcLimit;
+    UINT32 ipcLimit;                ///< IPC容器的最大数量限制
 #endif
 #ifdef LOSCFG_TIME_CONTAINER
-    UINT32 timeLimit;
+    UINT32 timeLimit;               ///< 时间容器的最大数量限制
 #endif
 #ifdef LOSCFG_USER_CONTAINER
-    UINT32 userLimit;
+    UINT32 userLimit;               ///< 用户容器的最大数量限制
 #endif
 #ifdef LOSCFG_NET_CONTAINER
-    UINT32 netLimit;
+    UINT32 netLimit;                ///< 网络容器的最大数量限制
 #endif
 } ContainerLimit;
 

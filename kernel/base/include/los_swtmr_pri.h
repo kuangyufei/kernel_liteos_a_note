@@ -39,7 +39,7 @@
 #ifdef LOSCFG_SECURITY_VID
 #include "vid_api.h"
 #else
-#define MAX_INVALID_TIMER_VID OS_SWTMR_MAX_TIMERID //最大支持的软件定时器数量 < 65535
+#define MAX_INVALID_TIMER_VID OS_SWTMR_MAX_TIMERID
 #endif
 
 #ifdef __cplusplus
@@ -50,37 +50,51 @@ extern "C" {
 
 /**
  * @ingroup los_swtmr_pri
- * Software timer state
+ * @brief 软件定时器状态枚举
+ * @core 定义软件定时器的生命周期状态，用于状态机管理
  */
-enum SwtmrState {	//定时器状态
-    OS_SWTMR_STATUS_UNUSED,     /**< The software timer is not used. | 定时器未使用,系统在定时器模块初始化时，会将系统中所有定时器资源初始化成该状态。   */
-    OS_SWTMR_STATUS_CREATED,    /**< The software timer is created.   | 定时器创建后未启动，或已停止.定时器创建后，不处于计数状态时，定时器将变成该状态。  */
-    OS_SWTMR_STATUS_TICKING     /**< The software timer is timing.    | 定时器处于计数状态,在定时器创建后调用LOS_SwtmrStart接口启动，定时器将变成该状态，是定时器运行时的状态。  */
+enum SwtmrState {
+    OS_SWTMR_STATUS_UNUSED,     /**< 未使用状态：定时器资源未被分配 */
+    OS_SWTMR_STATUS_CREATED,    /**< 已创建状态：定时器已初始化但未启动 */
+    OS_SWTMR_STATUS_TICKING     /**< 计时中状态：定时器正在运行且计时中 */
 };
 
 /**
  * @ingroup los_swtmr_pri
- * Structure of the callback function that handles software timer timeout
+ * @brief 软件定时器超时回调函数结构体
+ * @core 封装定时器超时处理的回调函数及其参数，用于定时器事件分发
  */
-typedef struct {//处理软件定时器超时的回调函数的结构体
-    SWTMR_PROC_FUNC handler;    /**< Callback function that handles software timer timeout  | 处理软件定时器超时的回调函数*/
-    UINTPTR arg;                /**< Parameter passed in when the callback function
-                                     that handles software timer timeout is called | 调用处理软件计时器超时的回调函数时传入的参数*/
-    LOS_DL_LIST node;	///< 挂入定时器超时队列，详见 SwtmrWake( ... )
+typedef struct {
+    SWTMR_PROC_FUNC handler;    /**< 超时回调函数：定时器到期时执行的处理函数 */
+    UINTPTR arg;                /**< 回调参数：传递给超时处理函数的实参，支持指针或整数类型 */
+    LOS_DL_LIST node;           /**< 双向链表节点：用于将回调函数挂载到定时器事件链表 */
 #ifdef LOSCFG_SWTMR_DEBUG
-    UINT32 swtmrID;
+    UINT32 swtmrID;             /**< 定时器ID：调试模式下记录所属定时器ID，用于问题定位 */
 #endif
 } SwtmrHandlerItem;
 
 /**
  * @ingroup los_swtmr_pri
- * Type of the pointer to the structure of the callback function that handles software timer timeout
- */	//指向处理软件计时器超时的回调函数结构的指针的类型
+ * @brief 软件定时器回调函数结构体指针类型
+ * @note 用于函数参数传递或链表操作时的指针声明
+ */
 typedef SwtmrHandlerItem *SwtmrHandlerItemPtr;
 
-extern SWTMR_CTRL_S *g_swtmrCBArray;//软件定时器数组,后续统一注解为定时器池
+/**
+ * @brief 软件定时器控制块数组指针
+ * @note 指向系统中所有软件定时器控制块的首地址，全局唯一
+ */
+extern SWTMR_CTRL_S *g_swtmrCBArray;
 
-//通过参数ID找到对应定时器描述体
+/**
+ * @brief 通过定时器ID获取对应的控制块指针
+ * @param[in] swtmrID 软件定时器ID，由系统统一分配
+ * @return SWTMR_CTRL_S* 对应的定时器控制块指针
+ * @par 实现原理：
+ * 计算公式：控制块地址 = 数组首地址 + (定时器ID % 最大定时器数量)
+ * 其中 LOSCFG_BASE_CORE_SWTMR_LIMIT 为系统配置的最大定时器数量
+ * @warning 仅在定时器ID有效时返回正确指针，无效ID可能导致越界访问
+ */
 #define OS_SWT_FROM_SID(swtmrID) ((SWTMR_CTRL_S *)g_swtmrCBArray + ((swtmrID) % LOSCFG_BASE_CORE_SWTMR_LIMIT))
 
 /**
@@ -114,27 +128,41 @@ extern BOOL OsSwtmrWorkQueueFind(SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg);
 extern SPIN_LOCK_S g_swtmrSpin;
 extern UINT32 OsSwtmrTaskIDGetByCpuid(UINT16 cpuid);
 
+/**
+ * @brief 软件定时器调试功能条件编译块
+ * @core 当配置宏 LOSCFG_SWTMR_DEBUG 启用时，编译以下调试统计结构体
+ * @note 用于记录定时器运行时的详细性能指标，辅助问题定位和性能优化
+ */
 #ifdef LOSCFG_SWTMR_DEBUG
+/**
+ * @brief 软件定时器调试基础统计结构体
+ * @core 记录定时器的核心时间指标和事件计数，构成调试数据的基础
+ */
 typedef struct {
-    UINT64 startTime;
-    UINT64 waitTimeMax;
-    UINT64 waitTime;
-    UINT64 waitCount;
-    UINT64 readyStartTime;
-    UINT64 readyTime;
-    UINT64 readyTimeMax;
-    UINT64 runTime;
-    UINT64 runTimeMax;
-    UINT64 runCount;
-    UINT32 times;
+    UINT64 startTime;           /**< 定时器启动时间戳，单位：系统时钟周期 */
+    UINT64 waitTimeMax;         /**< 最大等待时间，单位：系统时钟周期 */
+    UINT64 waitTime;            /**< 累计等待时间，单位：系统时钟周期 */
+    UINT64 waitCount;           /**< 等待事件计数，记录定时器进入等待状态的次数 */
+    UINT64 readyStartTime;      /**< 就绪状态开始时间戳，单位：系统时钟周期 */
+    UINT64 readyTime;           /**< 累计就绪时间，单位：系统时钟周期 */
+    UINT64 readyTimeMax;        /**< 最大就绪时间，单位：系统时钟周期 */
+    UINT64 runTime;             /**< 累计运行时间，单位：系统时钟周期 */
+    UINT64 runTimeMax;          /**< 最大运行时间，单位：系统时钟周期 */
+    UINT64 runCount;            /**< 运行事件计数，记录定时器回调函数执行次数 */
+    UINT32 times;               /**< 定时器触发总次数，包含周期触发的累计次数 */
 } SwtmrDebugBase;
 
+/**
+ * @brief 软件定时器调试扩展数据结构体
+ * @core 在基础统计信息上增加定时器属性，提供完整调试视图
+ * @note 继承 SwtmrDebugBase 结构体，形成调试数据的层级结构
+ */
 typedef struct {
-    SwtmrDebugBase  base;
-    SWTMR_PROC_FUNC handler;
-    UINT32          period;
-    UINT32          cpuid;
-    BOOL            swtmrUsed;
+    SwtmrDebugBase  base;       /**< 基础统计信息，包含各类时间和计数指标 */
+    SWTMR_PROC_FUNC handler;    /**< 定时器回调函数指针，指向超时处理逻辑 */
+    UINT32          period;     /**< 定时器周期值，单位：系统滴答数 (tick) */
+    UINT32          cpuid;      /**< CPU核心ID，记录定时器运行的核心编号 */
+    BOOL            swtmrUsed;  /**< 定时器使用状态标记：TRUE-正在使用，FALSE-已释放 */
 } SwtmrDebugData;
 
 extern BOOL OsSwtmrDebugDataUsed(UINT32 swtmrID);

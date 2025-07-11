@@ -42,20 +42,24 @@ typedef struct TagQueueCB LosQueueCB;
 typedef struct OsMux LosMux;
 typedef LosMux pthread_mutex_t;
 typedef struct ProcessCB LosProcessCB;
-//IPC容器
+
+/**
+ * @brief IPC容器结构体，用于管理进程间通信资源（消息队列和共享内存）
+ * @note 每个进程容器对应一个IPC容器，负责维护该容器内的所有IPC对象生命周期
+ */
 typedef struct IpcContainer {
-    Atomic rc;
-    LosQueueCB *allQueue;	//队列控制块（读写分离模式）
-    LOS_DL_LIST freeQueueList;//空闲队列链表
-    fd_set queueFdSet;
-    struct mqarray queueTable[LOSCFG_BASE_IPC_QUEUE_LIMIT];//队列池
-    pthread_mutex_t mqueueMutex;
-    struct mqpersonal *mqPrivBuf[MAX_MQ_FD];
-    struct shminfo shmInfo;
-    LosMux sysvShmMux;
-    struct shmIDSource *shmSegs;
-    UINT32 shmUsedPageCount;
-    UINT32 containerID;
+    Atomic rc;                          /* 引用计数，原子操作确保并发安全 */
+    LosQueueCB *allQueue;               /* 指向所有队列控制块的指针 */
+    LOS_DL_LIST freeQueueList;          /* 空闲队列链表，管理可分配的消息队列 */
+    fd_set queueFdSet;                  /* 文件描述符集合，跟踪已使用的队列FD */
+    struct mqarray queueTable[LOSCFG_BASE_IPC_QUEUE_LIMIT]; /* 队列表，大小由最大队列数配置项限制 */
+    pthread_mutex_t mqueueMutex;        /* 消息队列互斥锁，保护队列操作的线程安全 */
+    struct mqpersonal *mqPrivBuf[MAX_MQ_FD]; /* 消息队列私有数据缓冲区，大小由最大FD数限制 */
+    struct shminfo shmInfo;             /* 共享内存信息结构体，记录共享内存使用情况 */
+    LosMux sysvShmMux;                  /* System V共享内存互斥锁，保护共享内存操作 */
+    struct shmIDSource *shmSegs;        /* 共享内存段数组，管理所有活动的共享内存段 */
+    UINT32 shmUsedPageCount;            /* 共享内存已使用页面数，单位：页 */
+    UINT32 containerID;                 /* 容器ID，唯一标识一个IPC容器 */
 } IpcContainer;
 
 UINT32 OsInitRootIpcContainer(IpcContainer **ipcContainer);

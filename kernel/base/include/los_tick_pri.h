@@ -44,39 +44,48 @@ extern "C" {
 
 /**
  * @ingroup los_tick
- * Cycle to nanosecond scale
+ * @brief 时钟周期到纳秒的转换比例因子
+ * @core 用于将硬件时钟周期数转换为纳秒时间单位的全局缩放系数
+ * @note 通常在系统初始化时根据CPU主频计算得出，计算公式：g_cycle2NsScale = 1000000000.0 / CPU_FREQ
  */
 extern DOUBLE g_cycle2NsScale;
 
 /**
 * @ingroup  los_tick
-* @brief Handle the system tick timeout.
-*
-* @par Description:
-* This API is called when the system tick timeout and triggers the interrupt.
-*
+* @brief 系统时钟中断处理函数
+* @par Description
+* 当系统时钟超时产生中断时被调用，负责处理时钟滴答事件，包括任务调度触发、定时器超时检查等核心功能
 * @attention
 * <ul>
-* <li>None.</li>
+* <li>此函数在中断上下文执行，应尽量缩短执行时间</li>
+* <li>禁止在此函数中调用可能引起阻塞的API</li>
 * </ul>
-*
-* @param none.
-*
-* @retval None.
-* @par Dependency:
-* <ul><li>los_tick.h: the header file that contains the API declaration.</li></ul>
-* @see None.
+* @param 无
+* @retval 无
+* @par 依赖
+* <ul><li>los_tick.h: 包含此API声明的头文件</li></ul>
+* @see OsTickInit
 */
 extern VOID OsTickHandler(VOID);
 
 /**
  * @ingroup los_tick
- * Convert from the cycle count to nanosecond.
+ * @brief 将时钟周期数转换为纳秒
+ * @param[in] cycles 输入的时钟周期数，通常来自硬件计数器
+ * @return DOUBLE 转换后的纳秒数，精度取决于g_cycle2NsScale的校准
+ * @par 计算公式
+ * 纳秒数 = 时钟周期数 × 周期-纳秒转换因子
+ * @note 结果为浮点数，如需整数表示需进行四舍五入
  */
 #define CYCLE_TO_NS(cycles) ((cycles) * g_cycle2NsScale)
 
 /**
- * Current system timer register is 32 bit, therefore TIMER_MAXLOAD define just in order to avoid ambiguity.
+ * @ingroup los_tick
+ * @brief 定时器最大加载值
+ * @core 定义32位定时器寄存器的最大计数值
+ * @par 数值说明
+ * 0xffffffff表示32位无符号整数的最大值，十进制为4294967295
+ * @note 此宏定义主要为避免歧义，明确指出系统定时器为32位硬件实现
  */
 #define TIMER_MAXLOAD 0xffffffff
 

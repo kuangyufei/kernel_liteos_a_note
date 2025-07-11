@@ -47,17 +47,17 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_KHEAP_BLOCK_SIZE                 (512 * 1024UL) ///< 内核空间 堆内存部分大小, 512K
-//记录 MMU 映射关系
+#define OS_KHEAP_BLOCK_SIZE                 (512 * 1024UL)
+
 typedef struct ArchMmuInitMapping {
-    PADDR_T phys;///< 物理地址
-    VADDR_T virt;///< 虚拟地址
-    size_t  size;///< 大小
-    unsigned int flags;///< 标识 读/写/.. VM_MAP_REGION_FLAG_PERM_*
-    const char *name;///< 名称
+    PADDR_T phys;
+    VADDR_T virt;
+    size_t  size;
+    unsigned int flags;
+    const char *name;
 } LosArchMmuInitMapping;
 
-extern LosArchMmuInitMapping g_archMmuInitMapping[];//映射关系表
+extern LosArchMmuInitMapping g_archMmuInitMapping[];
 
 extern UINTPTR g_vmBootMemBase;
 extern BOOL g_kHeapInited;

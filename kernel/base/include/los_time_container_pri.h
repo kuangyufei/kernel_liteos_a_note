@@ -37,11 +37,16 @@
 typedef struct ProcessCB LosProcessCB;
 struct Container;
 
+/**
+ * @brief 时间容器结构体，用于管理系统时间相关信息
+ * @core 存储单调时间、容器标识及状态控制，支持多线程安全访问
+ * @attention rc字段需通过原子操作函数访问，禁止直接读写
+ */
 typedef struct TimeContainer {
-    Atomic            rc;
-    BOOL              frozenOffsets;
-    struct timespec64 monotonic;
-    UINT32            containerID;
+    Atomic            rc;                  ///< 原子引用计数，记录当前容器被引用次数，初始值为0
+    BOOL              frozenOffsets;       ///< 时间偏移冻结标志：TRUE表示冻结偏移，FALSE表示允许动态调整
+    struct timespec64 monotonic;           ///< 单调时间结构体，记录自系统启动以来的时间（不受系统时间调整影响）
+    UINT32            containerID;         ///< 容器唯一标识符，用于区分不同的时间容器实例
 } TimeContainer;
 
 UINT32 OsInitRootTimeContainer(TimeContainer **timeContainer);

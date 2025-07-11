@@ -46,16 +46,35 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-typedef struct {
-    VADDR_T excAddr;
-    VADDR_T fixAddr;
-} LosExcTable;
+/**
+ * @brief 异常地址映射表结构体
+ * @core 存储异常发生地址与修复地址的对应关系，用于虚拟内存故障处理
+ * @attention 需确保excAddr与fixAddr的地址空间一致性
+ */
+typedef struct { 
+    VADDR_T excAddr;       ///< 异常发生地址（虚拟地址）
+    VADDR_T fixAddr;       ///< 修复地址，指向异常处理程序入口
+} LosExcTable; 
 
-#define     VM_MAP_PF_FLAG_WRITE            (1U << 0)
-#define     VM_MAP_PF_FLAG_USER             (1U << 1)
-#define     VM_MAP_PF_FLAG_INSTRUCTION      (1U << 2)
-#define     VM_MAP_PF_FLAG_NOT_PRESENT      (1U << 3)
-//缺页中断处理函数
+/**
+ * @defgroup vm_pagefault_flags 页故障标志位定义
+ * @brief 描述页故障类型的标志集合，可通过位或运算组合使用
+ * @{ 
+ */
+#define VM_MAP_PF_FLAG_WRITE       (1U << 0)  ///< 写操作触发页故障（0x01）
+#define VM_MAP_PF_FLAG_USER        (1U << 1)  ///< 用户模式下触发页故障（0x02）
+#define VM_MAP_PF_FLAG_INSTRUCTION (1U << 2)  ///< 取指令操作触发页故障（0x04）
+#define VM_MAP_PF_FLAG_NOT_PRESENT (1U << 3)  ///< 页表项不存在导致故障（0x08）
+/** @} */
+
+/**
+ * @brief 虚拟内存页故障处理函数
+ * @param vaddr 触发故障的虚拟地址
+ * @param flags 故障类型标志组合（见vm_pagefault_flags）
+ * @param frame 异常上下文指针，包含故障发生时的CPU状态
+ * @return STATUS_T 处理结果：LOS_OK表示成功，其他值表示失败
+ * @note 该函数需在中断上下文安全执行，避免使用可能引起阻塞的操作
+ */
 STATUS_T OsVmPageFaultHandler(VADDR_T vaddr, UINT32 flags, ExcContext *frame);
 #ifdef __cplusplus
 #if __cplusplus

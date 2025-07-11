@@ -41,14 +41,25 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_RWLOCK_MAGIC 0xEFDCAU ///< 读写锁魔法数字
+/**
+ * @ingroup los_rwlock
+ * @brief 读写锁魔术字
+ * @details 用于标识读写锁控制块的有效性，防止非法访问或内存 corruption
+ * @note 十六进制值0xEFDCAU对应十进制973258
+ */
+#define OS_RWLOCK_MAGIC 0xEFDCAU
 
+/**
+ * @ingroup los_rwlock
+ * @brief 读写锁工作模式枚举
+ * @details 定义读写锁的不同调度策略，决定读/写操作的优先级和抢占行为
+ */
 enum RwlockMode {
-    RWLOCK_NONE_MODE,	///< 自由模式: 读写链表都没有内容 
-    RWLOCK_READ_MODE,	///< 读模式: 读链表有数据,写链表没有数据
-    RWLOCK_WRITE_MODE,  ///< 写模式: 写链表有数据,读链表没有数据
-    RWLOCK_READFIRST_MODE,	///< 读优先模式: 读链表中的任务最高优先级高于写链表中任务最高优先级
-    RWLOCK_WRITEFIRST_MODE	///< 写优先模式: 写链表中的任务最高优先级高于读链表中任务最高优先级
+    RWLOCK_NONE_MODE,        /**< 无特定模式，默认调度策略 */
+    RWLOCK_READ_MODE,        /**< 读模式，允许多个读操作同时持有锁 */
+    RWLOCK_WRITE_MODE,       /**< 写模式，同一时间仅允许一个写操作持有锁 */
+    RWLOCK_READFIRST_MODE,   /**< 读优先模式，已有读操作时新写操作等待 */
+    RWLOCK_WRITEFIRST_MODE   /**< 写优先模式，写操作请求时阻塞后续读操作 */
 };
 
 extern UINT32 OsRwlockRdUnsafe(LosRwlock *rwlock, UINT32 timeout);

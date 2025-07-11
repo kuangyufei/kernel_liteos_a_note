@@ -39,10 +39,14 @@
 typedef struct ProcessCB LosProcessCB;
 struct Container;
 
+/**
+ * @brief 网络容器结构体，用于管理网络资源的容器化对象
+ * @details 维护网络组关联关系和容器标识，提供线程安全的引用计数机制
+ */
 typedef struct NetContainer {
-    Atomic rc;
-    struct net_group *group;
-    UINT32 containerID;
+    Atomic rc;                  /* 原子操作的引用计数器，用于管理结构体实例的生命周期 */
+    struct net_group *group;    /* 指向网络组的指针，关联该容器所属的网络组 */
+    UINT32 containerID;         /* 容器唯一标识符，用于区分不同的网络容器实例 */
 } NetContainer;
 
 UINT32 OsInitRootNetContainer(NetContainer **ipcContainer);

@@ -47,14 +47,44 @@ extern "C" {
 #endif /* __cplusplus */
 
 /**
- * These macros is used for process memory usage statistics.
- * Include virtual memory, shared memory and physical memory.
+ * @defgroup process_memory_stats 进程内存统计相关宏
+ * @brief 用于进程内存使用情况统计的宏定义，包括虚拟内存、共享内存和物理内存
+ * @{ 
+ */
+
+/**
+ * @brief 进程内存类型索引最大值
+ * @details 定义进程内存统计支持的内存类型总数，当前支持3种类型：虚拟内存、共享内存和物理内存
  */
 #define PROCESS_VM_INDEX_MAX    3
+
+/**
+ * @brief 进程内存信息缓冲区长度
+ * @details 计算进程内存统计信息缓冲区的总长度，每个内存类型使用UINT32类型存储统计值
+ *          计算公式：sizeof(UINT32) * 内存类型总数(PROCESS_VM_INDEX_MAX)
+ *          当PROCESS_VM_INDEX_MAX为3时，缓冲区长度为12字节(32位系统)
+ */
 #define PROCESS_MEMINFO_LEN     (sizeof(UINT32) * PROCESS_VM_INDEX_MAX)
+
+/**
+ * @brief 虚拟内存索引
+ * @details 用于访问内存统计数组中虚拟内存相关数据的索引位置
+ */
 #define PROCESS_VM_INDEX        0
+
+/**
+ * @brief 共享内存索引
+ * @details 用于访问内存统计数组中共享内存相关数据的索引位置
+ */
 #define PROCESS_SM_INDEX        1
+
+/**
+ * @brief 物理内存索引
+ * @details 用于访问内存统计数组中物理内存相关数据的索引位置
+ */
 #define PROCESS_PM_INDEX        2
+
+/** @} */ // process_memory_stats
 
 const CHAR *OsGetRegionNameOrFilePath(LosVmMapRegion *region);
 INT32 OsRegionOverlapCheckUnlock(LosVmSpace *space, LosVmMapRegion *region);
