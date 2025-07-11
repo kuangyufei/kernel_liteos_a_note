@@ -59,10 +59,10 @@
 #define INIT_SECTION(_type, _level, _hook)          __attribute__((section(".rodata.init."#_type"."#_level"."#_hook)))
 #define INIT_ALIGN                                  __attribute__((aligned(alignof(struct ModuleInitInfo))))
 
-typedef UINT32 (*OsInitHook)(VOID);//初始化钩子函数
+typedef UINT32 (*OsInitHook)(VOID);
 
-struct ModuleInitInfo {//模块初始化信息
-    OsInitHook hook;	///< 函数指针,钩子函数
+struct ModuleInitInfo {
+    OsInitHook hook;
 #ifdef LOS_INIT_DEBUG
     const CHAR *name;
 #endif
@@ -94,14 +94,14 @@ struct ModuleInitInfo {//模块初始化信息
 * @par Dependency:
 * <ul><li>los_task_info.h: the header file that contains the API declaration.</li></ul>
 * @see
-*/ //将注册模块添加到启动框架中的指定级别。
+*/
 #define OS_INIT_HOOK_REG(_type, _hook, _level)                              \
     STATIC const struct ModuleInitInfo ModuleInitInfo_##_hook               \
     USED INIT_SECTION(_type, _level, _hook) INIT_ALIGN = {                  \
         .hook = (UINT32 (*)(VOID))&_hook,                                   \
         SET_MODULE_NAME(_hook)                                              \
     };
-//注册到 .rodata.init.
+
 #define EXTERN_LABEL(_type, _level)                 extern struct ModuleInitInfo __##_type##_init_level_##_level;
 #define GET_LABEL(_type, _level)                    &__##_type##_init_level_##_level,
 
@@ -162,7 +162,7 @@ struct ModuleInitInfo {//模块初始化信息
 */
 #define OS_INIT_LEVEL_REG(_type, _num, _list)       \
     INIT_LABEL_REG_##_num(EXTERN_LABEL, _type)      \
-    STATIC struct ModuleInitInfo* _list [] = {      \
+    STATIC struct ModuleInitInfo *_list[] = {       \
         INIT_LABEL_REG_##_num(GET_LABEL, _type)     \
     }
 

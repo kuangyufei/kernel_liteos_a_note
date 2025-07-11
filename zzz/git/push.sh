@@ -1,6 +1,6 @@
 git add -A
 
-git commit -m  ' 注释app代码，内核.h文件
+git commit -m  ' 注释 kernel - base - include
     博客 | http://weharmonyos.com
 '
 git push  gitee_origin master

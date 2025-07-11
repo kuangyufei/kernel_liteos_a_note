@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -46,35 +46,35 @@ extern "C" {
 #endif /* __cplusplus */
 
 /**
- * @ingroup los_config 
- * int stack start addr | 值在链接时赋予,详见liteos.ld文件
+ * @ingroup los_config
+ * int stack start addr
  */
-extern CHAR __int_stack_start;	///< 运行系统函数栈的开始地址 值来自于 liteos.ld中的 __int_stack_start = .;
-extern CHAR __rodata_start;		///< ROM开始地址 只读
-extern CHAR __rodata_end;		///< ROM结束地址
-extern CHAR __bss_start;		///< bss开始地址 __attribute__((section(".__bss_start")));
-extern CHAR __bss_end;			///< bss结束地址 __attribute__((section(".__bss_end")));
-extern CHAR __text_start;		///< 代码区开始地址
-extern CHAR __text_end;			///< 代码区结束地址
-extern CHAR __ram_data_start;	///< RAM开始地址 可读可写
-extern CHAR __ram_data_end;		///< RAM结束地址
-extern UINT32 __heap_start; 	///< 堆区开始地址
-extern UINT32 __heap_end;		///< 堆区结束地址
+extern CHAR __int_stack_start;
+extern CHAR __rodata_start;
+extern CHAR __rodata_end;
+extern CHAR __bss_start;
+extern CHAR __bss_end;
+extern CHAR __text_start;
+extern CHAR __text_end;
+extern CHAR __ram_data_start;
+extern CHAR __ram_data_end;
+extern UINT32 __heap_start;
+extern UINT32 __heap_end;
 
 /****************************** System clock module configuration ****************************/
 /**
  * @ingroup los_config
  * System clock (unit: HZ)
  */
-#ifndef OS_SYS_CLOCK	///< HZ:是每秒中的周期性变动重复次数的计量
-#define OS_SYS_CLOCK (get_bus_clk()) ///< 系统主时钟频率  例如:50000000 即20纳秒 
+#ifndef OS_SYS_CLOCK
+#define OS_SYS_CLOCK (get_bus_clk())
 #endif
 /**
  * @ingroup los_config
  * time timer clock (unit: HZ)
  */
 #ifndef OS_TIME_TIMER_CLOCK
-#define OS_TIME_TIMER_CLOCK OS_SYS_CLOCK ///< 定时器频率
+#define OS_TIME_TIMER_CLOCK OS_SYS_CLOCK
 #endif
 
 /**
@@ -82,10 +82,10 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * limit addr range when search for  'func local(frame pointer)' or 'func name'
  */
 #ifndef OS_SYS_FUNC_ADDR_START
-#define OS_SYS_FUNC_ADDR_START ((UINTPTR)&__int_stack_start)	//
+#define OS_SYS_FUNC_ADDR_START ((UINTPTR)&__int_stack_start)
 #endif
 #ifndef OS_SYS_FUNC_ADDR_END
-#define OS_SYS_FUNC_ADDR_END (KERNEL_VMM_BASE + SYS_MEM_SIZE_DEFAULT) 
+#define OS_SYS_FUNC_ADDR_END (KERNEL_VMM_BASE + SYS_MEM_SIZE_DEFAULT)
 #endif
 
 /**
@@ -93,7 +93,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * Number of Ticks in one second
  */
 #ifndef LOSCFG_BASE_CORE_TICK_PER_SECOND
-#define LOSCFG_BASE_CORE_TICK_PER_SECOND  1000  /* 1ms per tick | 每秒节拍数*/
+#define LOSCFG_BASE_CORE_TICK_PER_SECOND  1000  /* 1ms per tick */
 #endif
 
 /**
@@ -131,15 +131,14 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * External configuration item for timer tailoring
  */
 #if defined(LOSCFG_BASE_CORE_TICK_HW_TIME) && (LOSCFG_BASE_CORE_TICK_HW_TIME == 0)
-#undef LOSCFG_BASE_CORE_TICK_HW_TIME ///< 定时器裁剪的外部配置项
+#undef LOSCFG_BASE_CORE_TICK_HW_TIME
 #endif
-
 /****************************** Hardware interrupt module configuration ******************************/
 /**
  * @ingroup los_config
- * Configuration item for hardware interrupt tailoring 
+ * Configuration item for hardware interrupt tailoring
  */
-#ifndef LOSCFG_PLATFORM_HWI	///< 硬件中断裁剪配置项
+#ifndef LOSCFG_PLATFORM_HWI
 #define LOSCFG_PLATFORM_HWI
 #endif
 
@@ -148,7 +147,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * Maximum number of used hardware interrupts, including Tick timer interrupts.
  */
 #ifndef LOSCFG_PLATFORM_HWI_LIMIT
-#define LOSCFG_PLATFORM_HWI_LIMIT 96 ///< 硬件中断最大数量
+#define LOSCFG_PLATFORM_HWI_LIMIT 96
 #endif
 
 /**
@@ -168,8 +167,8 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * @ingroup los_config
  * Minimum stack size.
  *
- * 0x600 bytes, aligned on a boundary of 8.
- * 0x600 bytes, aligned on a boundary of 4.
+ * 0x800 bytes, aligned on a boundary of 8.
+ * 0x800 bytes, aligned on a boundary of 4.
  */
 #ifndef LOS_TASK_MIN_STACK_SIZE
 #ifdef __LP64__
@@ -183,7 +182,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * @ingroup los_config
  * Default task priority
  */
-#ifndef LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO	///< 内核任务默认优先级
+#ifndef LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO
 #define LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO 10
 #endif
 
@@ -191,7 +190,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * @ingroup los_config
  * Maximum supported number of tasks except the idle task rather than the number of usable tasks
  */
-#ifndef LOSCFG_BASE_CORE_TSK_LIMIT	///< 支持的最大任务数（空闲任务除外，而不是可用任务数）
+#ifndef LOSCFG_BASE_CORE_TSK_LIMIT
 #define LOSCFG_BASE_CORE_TSK_LIMIT 128
 #endif
 
@@ -199,7 +198,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * @ingroup los_config
  * Maximum supported number of process rather than the number of usable processes.
  */
-#ifndef LOSCFG_BASE_CORE_PROCESS_LIMIT	///< 支持的最大进程数，而不是可用进程数
+#ifndef LOSCFG_BASE_CORE_PROCESS_LIMIT
 #define LOSCFG_BASE_CORE_PROCESS_LIMIT 64
 #endif
 
@@ -211,23 +210,23 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * @ingroup los_config
  * Size of the idle task stack
  */
-#ifndef LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE	///< 空闲任务栈大小
-#define LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE SIZE(0x800) ///< 2K
+#ifndef LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE
+#define LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE SIZE(0x800)
 #endif
 
 /**
  * @ingroup los_config
  * Default task stack size
  */
-#ifndef LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE	//内核默认任务栈大小
-#define LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE SIZE(0x4000) ///< 16K 
+#ifndef LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE
+#define LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE SIZE(0x4000)
 #endif
 
 /**
  * @ingroup los_config
  * Longest execution time of tasks with the same priorities
  */
-#ifndef LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT	//相同优先级任务的最长执行时间，时间片
+#ifndef LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT
 #define LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT  20000 /* 20ms */
 #endif
 
@@ -235,7 +234,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * @ingroup los_config
  * Configuration item for task (stack) monitoring module tailoring
  */
-#ifndef LOSCFG_BASE_CORE_TSK_MONITOR //任务（栈）监控模块裁剪配置项
+#ifndef LOSCFG_BASE_CORE_TSK_MONITOR
 #define LOSCFG_BASE_CORE_TSK_MONITOR
 #endif
 
@@ -245,7 +244,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * Configuration item for semaphore module tailoring
  */
 #ifndef LOSCFG_BASE_IPC_SEM
-#define LOSCFG_BASE_IPC_SEM //信号量支持
+#define LOSCFG_BASE_IPC_SEM
 #endif
 
 /**
@@ -253,7 +252,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * Maximum supported number of semaphores
  */
 #ifndef LOSCFG_BASE_IPC_SEM_LIMIT
-#define LOSCFG_BASE_IPC_SEM_LIMIT 1024 //信号量的最大个数
+#define LOSCFG_BASE_IPC_SEM_LIMIT 1024
 #endif
 
 /**
@@ -263,6 +262,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
 #ifndef OS_SEM_COUNT_MAX
 #define OS_SEM_COUNT_MAX 0xFFFE
 #endif
+
 /****************************** Mutex module configuration ******************************/
 /**
  * @ingroup los_config
@@ -295,7 +295,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * Maximum supported number of queues rather than the number of usable queues
  */
 #ifndef LOSCFG_BASE_IPC_QUEUE_LIMIT
-#define LOSCFG_BASE_IPC_QUEUE_LIMIT 1024 //队列个数
+#define LOSCFG_BASE_IPC_QUEUE_LIMIT 1024
 #endif
 /****************************** Software timer module configuration **************************/
 #ifdef LOSCFG_BASE_IPC_QUEUE
@@ -319,23 +319,23 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * Maximum supported number of software timers rather than the number of usable software timers
  */
 #ifndef LOSCFG_BASE_CORE_SWTMR_LIMIT
-#define LOSCFG_BASE_CORE_SWTMR_LIMIT 1024 // 最大支持的软件定时器数
+#define LOSCFG_BASE_CORE_SWTMR_LIMIT 1024
 #endif
 /**
  * @ingroup los_config
  * Max number of software timers ID
  *
- * 0xFFFF: max number of all software timers | 所有软件定时器的最大数量
+ * 0xFFFF: max number of all software timers
  */
 #ifndef OS_SWTMR_MAX_TIMERID
-#define OS_SWTMR_MAX_TIMERID ((0xFFFF / LOSCFG_BASE_CORE_SWTMR_LIMIT) * LOSCFG_BASE_CORE_SWTMR_LIMIT) ///< 65535
+#define OS_SWTMR_MAX_TIMERID ((0xFFFF / LOSCFG_BASE_CORE_SWTMR_LIMIT) * LOSCFG_BASE_CORE_SWTMR_LIMIT)
 #endif
 /**
  * @ingroup los_config
  * Maximum size of a software timer queue
  */
 #ifndef OS_SWTMR_HANDLE_QUEUE_SIZE
-#define OS_SWTMR_HANDLE_QUEUE_SIZE LOSCFG_BASE_CORE_SWTMR_LIMIT ///< 软时钟队列的大小
+#define OS_SWTMR_HANDLE_QUEUE_SIZE LOSCFG_BASE_CORE_SWTMR_LIMIT
 #endif
 #endif
 
@@ -346,27 +346,26 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * Starting address of the system memory
  */
 #ifndef OS_SYS_MEM_ADDR
-#define OS_SYS_MEM_ADDR                        (&m_aucSysMem1[0])//系统内存起始地址(指虚拟地址)
+#define OS_SYS_MEM_ADDR                        (&m_aucSysMem1[0])
 #endif
 
 /**
  * @ingroup los_config
  * Memory size
  */
-#ifndef OS_SYS_MEM_SIZE //系统动态内存池的大小（DDR自适应配置），以byte为单位,从bss段末尾至系统DDR末尾
+#ifndef OS_SYS_MEM_SIZE
 #define OS_SYS_MEM_SIZE \
     ((OS_SYS_FUNC_ADDR_END) - (((UINTPTR)&__bss_end + (64 - 1)) & ~(64 - 1)))
 #endif
 
 /****************************** SMP module configuration **************************/
-//http://www.gotw.ca/publications/concurrency-ddj.htm 免费午餐结束了:软件并发的根本转变
 #ifdef LOSCFG_KERNEL_SMP
-#define LOSCFG_KERNEL_CORE_NUM                          LOSCFG_KERNEL_SMP_CORE_NUM //多核情况下支持的CPU核数
+#define LOSCFG_KERNEL_CORE_NUM                          LOSCFG_KERNEL_SMP_CORE_NUM
 #else
-#define LOSCFG_KERNEL_CORE_NUM                          1	//单核配置
+#define LOSCFG_KERNEL_CORE_NUM                          1
 #endif
 
-#define LOSCFG_KERNEL_CPU_MASK                          ((1 << LOSCFG_KERNEL_CORE_NUM) - 1) //CPU掩码,每一个核占用一个位,用于计算和定位具体CPU核
+#define LOSCFG_KERNEL_CPU_MASK                          ((1 << LOSCFG_KERNEL_CORE_NUM) - 1)
 
 /**
  * @ingroup los_config
@@ -380,11 +379,11 @@ extern UINT32 __heap_end;		///< 堆区结束地址
 
 /**
  * @ingroup los_config
- * The Version number of Public 	//Public的版本号 ,每个占8位,刚好一个字节
+ * The Version number of Public
  */
-#define KERNEL_MAJOR                     2	//主版本号
-#define KERNEL_MINOR                     0	//小版本号
-#define KERNEL_PATCH                     0	//补丁版本号
+#define KERNEL_MAJOR                     2
+#define KERNEL_MINOR                     0
+#define KERNEL_PATCH                     0
 #define KERNEL_ITRE                      37
 
 #define VERSION_NUM(a, b, c, d) (((a) << 24) | ((b) << 16) | (c) << 8 | (d))
@@ -404,7 +403,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * @ingroup los_config
  * the size of space for recording exception information
  */
-#define EXCINFO_RECORD_BUF_SIZE (16 * 1024)	//记录异常信息缓存大小 16K
+#define EXCINFO_RECORD_BUF_SIZE (16 * 1024)
 
 /**
  * @ingroup los_config
@@ -412,11 +411,11 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  * @attention
  * <ul>
  * <li> if uses, the address must be valid in flash, and it should not overlap with other addresses
- * used to store valid information.  </li>
+ * used to store valid information. </li>
  * </ul>
  *
  */
-#define EXCINFO_RECORD_ADDR (0xffffffff) //记录异常信息的空间地址
+#define EXCINFO_RECORD_ADDR (0xffffffff)
 
 /**
  * @ingroup los_config
@@ -424,7 +423,7 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  *
  * @par Description:
  * <ul>
- * <li>This defination is used to declare the type of functions for reading or writing exception information</li>
+ * <li>This definition is used to declare the type of functions for reading or writing exception information</li>
  * </ul>
  * @attention
  * <ul>
@@ -438,9 +437,9 @@ extern UINT32 __heap_end;		///< 堆区结束地址
  *
  * @retval none.
  * @par Dependency:
- * <ul><li>los_config.h: the header file that contains the type defination.</li></ul>
+ * <ul><li>los_config.h: the header file that contains the type definition.</li></ul>
  * @see
- */ //定义用于读取或写入异常信息的指针函数类型
+ */
 typedef VOID (*log_read_write_fn)(UINT32 startAddr, UINT32 space, UINT32 rwFlag, CHAR *buf);
 
 /**
@@ -469,13 +468,6 @@ typedef VOID (*log_read_write_fn)(UINT32 startAddr, UINT32 space, UINT32 rwFlag,
  * <ul><li>los_config.h: the header file that contains the API declaration.</li></ul>
  * @see
  */
-/**
-*	此API用于注册记录异常信息函数，并指定位置、空间和大小
-*	startAddr:	保存发送异常的地址信息的启始地址
-*	space:		buf的大小
-*	buf:		缓存区
-*	hook:		读写异常信息的函数
-*/
 VOID LOS_ExcInfoRegHook(UINT32 startAddr, UINT32 space, CHAR *buf, log_read_write_fn hook);
 #endif
 
@@ -484,6 +476,7 @@ extern UINT32 OsMain(VOID);
 typedef VOID (*SystemRebootFunc)(VOID);
 VOID OsSetRebootHook(SystemRebootFunc func);
 SystemRebootFunc OsGetRebootHook(VOID);
+
 #ifdef __cplusplus
 #if __cplusplus
 }

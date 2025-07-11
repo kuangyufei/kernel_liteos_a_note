@@ -43,23 +43,14 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-/*
-	鸿蒙将 PIN、I2C、SPI、USB、UART 等作为外设设备，统一通过设备注册完成。
-	实现了按名称访问的设备管理子系统，可按照统一的 API 界面访问硬件设备。
-	在设备驱动接口上，根据嵌入式系统的特点，对不同的设备可以挂接相应的事件。
-	当设备事件触发时，由驱动程序通知给上层的应用程序。
-*/
 
-#ifdef LOSCFG_FS_VFS //将设备虚拟为文件统一来操作,对鸿蒙来说一切皆为文件
-#define SERIAL         "/dev/serial"	///< 虚拟串口设备
-#define SERIAL_TTYGS0  "/dev/ttyGS0" 	///< USB类型的串口
-#define SERIAL_UARTDEV "/dev/uartdev"	///< Uart类型的串口 
+#ifdef LOSCFG_FS_VFS
+#define SERIAL         "/dev/serial"
+#define SERIAL_TTYGS0  "/dev/ttyGS0"
+#define SERIAL_UARTDEV "/dev/uartdev"
 
-//UART（Universal Asynchronous Receiver/Transmitter）通用异步收发传输器，UART 作为异步串口通信协议的一种，
-//工作原理是将传输数据的每个字符一位接一位地传输。是在应用程序开发过程中使用频率最高的数据总线。
-
-#define SERIAL_TYPE_UART_DEV   1	///< 两种串口类型之 UART
-#define SERIAL_TYPE_USBTTY_DEV 2	///< 两种串口类型之 USB
+#define SERIAL_TYPE_UART_DEV   1
+#define SERIAL_TYPE_USBTTY_DEV 2
 
 extern INT32 virtual_serial_init(const CHAR *deviceName);
 extern INT32 virtual_serial_deinit(VOID);
