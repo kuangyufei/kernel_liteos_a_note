@@ -260,33 +260,56 @@ STATIC INT32 ConsoleCtrlCaptureLine(CONSOLE_CB *consoleCB)
 }
 
 /** @} */ // console_internal
-
+/**
+ * @brief 配置控制台为字符捕获模式
+ * @details 禁用规范模式和回显功能，使控制台能够捕获单个字符输入
+ * @param[in] consoleCB 控制台控制块指针
+ * @return 操作结果
+ * @retval LOS_OK 成功
+ * @note 该函数使用自旋锁保护控制台属性操作
+ */
 STATIC INT32 ConsoleCtrlCaptureChar(CONSOLE_CB *consoleCB)
 {
     struct termios consoleTermios = {0};
-    UINT32 intSave;
+    UINT32 intSave;  /* 中断状态保存变量 */
 
     LOS_SpinLockSave(&g_consoleSpin, &intSave);
     (VOID)ConsoleTcGetAttr(consoleCB->fd, &consoleTermios);
-    consoleTermios.c_lflag &= ~(ICANON | ECHO);
+    consoleTermios.c_lflag &= ~(ICANON | ECHO);  /* 禁用规范模式和回显 */
     (VOID)ConsoleTcSetAttr(consoleCB->fd, 0, &consoleTermios);
     LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
 
     return LOS_OK;
 }
 
+/**
+ * @brief 获取控制台访问权限
+ * @details 通过信号量实现控制台的互斥访问，必要时挂起shell任务
+ * @param[in] consoleCB 控制台控制块指针
+ * @return 操作结果
+ * @retval LOS_OK 成功获取权限
+ * @note 该函数会无限期等待信号量
+ */
 STATIC INT32 ConsoleCtrlRightsCapture(CONSOLE_CB *consoleCB)
 {
     (VOID)LOS_SemPend(consoleCB->consoleSem, LOS_WAIT_FOREVER);
     if ((ConsoleRefcountGet(consoleCB) == 0) &&
         (OsCurrTaskGet()->taskID != consoleCB->shellEntryId)) {
-        /* not 0:indicate that shellentry is in uart_read, suspend shellentry task directly */
+        /* 非0表示shellentry正在uart_read中，直接挂起shellentry任务 */
         (VOID)LOS_TaskSuspend(consoleCB->shellEntryId);
     }
     ConsoleRefcountSet(consoleCB, TRUE);
     return LOS_OK;
 }
 
+/**
+ * @brief 释放控制台访问权限
+ * @details 释放控制台信号量，必要时恢复shell任务
+ * @param[in] consoleCB 控制台控制块指针
+ * @return 操作结果
+ * @retval LOS_OK 成功释放权限
+ * @retval LOS_NOK 控制台已处于空闲状态
+ */
 STATIC INT32 ConsoleCtrlRightsRelease(CONSOLE_CB *consoleCB)
 {
     if (ConsoleRefcountGet(consoleCB) == 0) {
@@ -304,16 +327,24 @@ STATIC INT32 ConsoleCtrlRightsRelease(CONSOLE_CB *consoleCB)
     return LOS_OK;
 }
 
+/**
+ * @brief 通过设备名获取控制台控制块
+ * @param[in] deviceName 设备名称
+ * @return 控制台控制块指针
+ * @retval 成功 获取到的控制台控制块指针
+ * @retval NULL 获取失败，错误码通过errno设置
+ * @see VnodeLookup
+ */
 STATIC CONSOLE_CB *OsGetConsoleByDevice(const CHAR *deviceName)
 {
     INT32 ret;
-    struct Vnode *vnode = NULL;
+    struct Vnode *vnode = NULL;  /* VFS节点指针 */
 
     VnodeHold();
     ret = VnodeLookup(deviceName, &vnode, 0);
     VnodeDrop();
     if (ret < 0) {
-        set_errno(EACCES);
+        set_errno(EACCES);  /* 权限被拒绝 */
         return NULL;
     }
 
@@ -322,11 +353,19 @@ STATIC CONSOLE_CB *OsGetConsoleByDevice(const CHAR *deviceName)
     } else if (g_console[CONSOLE_TELNET - 1]->devVnode == vnode) {
         return g_console[CONSOLE_TELNET - 1];
     } else {
-        set_errno(ENOENT);
+        set_errno(ENOENT);  /* 没有该文件或目录 */
         return NULL;
     }
 }
 
+/**
+ * @brief 通过设备名获取控制台ID
+ * @param[in] deviceName 设备名称
+ * @return 控制台ID
+ * @retval CONSOLE_SERIAL 串口控制台
+ * @retval CONSOLE_TELNET Telnet控制台(LOSCFG_NET_TELNET启用时)
+ * @retval -1 不支持的控制台类型
+ */
 STATIC INT32 OsGetConsoleID(const CHAR *deviceName)
 {
     if ((deviceName != NULL) &&
@@ -344,12 +383,20 @@ STATIC INT32 OsGetConsoleID(const CHAR *deviceName)
     return -1;
 }
 
+/**
+ * @brief 通过完整路径获取控制台ID
+ * @param[in] fullpath 控制台设备完整路径
+ * @return 控制台ID
+ * @retval CONSOLE_SERIAL 串口控制台(/dev/console1)
+ * @retval CONSOLE_TELNET Telnet控制台(/dev/console2, LOSCFG_NET_TELNET启用时)
+ * @retval -1 不支持的控制台路径
+ */
 STATIC INT32 OsConsoleFullpathToID(const CHAR *fullpath)
 {
-#define CONSOLE_SERIAL_1 "/dev/console1"
-#define CONSOLE_TELNET_2 "/dev/console2"
+#define CONSOLE_SERIAL_1 "/dev/console1"  /* 串口控制台设备路径 */
+#define CONSOLE_TELNET_2 "/dev/console2" /* Telnet控制台设备路径 */
 
-    size_t len;
+    size_t len;  /* 路径长度 */
 
     if (fullpath == NULL) {
         return -1;
@@ -369,11 +416,23 @@ STATIC INT32 OsConsoleFullpathToID(const CHAR *fullpath)
     return -1;
 }
 
+/**
+ * @brief 检查控制台FIFO是否为空
+ * @param[in] console 控制台控制块指针
+ * @return FIFO状态
+ * @retval TRUE FIFO为空
+ * @retval FALSE FIFO不为空
+ */
 STATIC BOOL ConsoleFifoEmpty(const CONSOLE_CB *console)
 {
     return console->fifoOut == console->fifoIn;
 }
 
+/**
+ * @brief 清空控制台FIFO缓冲区
+ * @param[in] console 控制台控制块指针
+ * @note 重置读写指针并清空缓冲区内容
+ */
 STATIC VOID ConsoleFifoClearup(CONSOLE_CB *console)
 {
     console->fifoOut = 0;
@@ -381,15 +440,30 @@ STATIC VOID ConsoleFifoClearup(CONSOLE_CB *console)
     (VOID)memset_s(console->fifo, CONSOLE_FIFO_SIZE, 0, CONSOLE_FIFO_SIZE);
 }
 
+/**
+ * @brief 更新控制台FIFO当前长度
+ * @param[in] console 控制台控制块指针
+ * @note 当前长度 = 写入指针位置 - 读取指针位置
+ */
 STATIC VOID ConsoleFifoLenUpdate(CONSOLE_CB *console)
 {
     console->currentLen = console->fifoIn - console->fifoOut;
 }
 
+/**
+ * @brief 从控制台FIFO读取数据
+ * @param[out] buffer 数据缓冲区
+ * @param[in] console 控制台控制块指针
+ * @param[in] bufLen 缓冲区长度
+ * @return 实际读取字节数
+ * @retval -1 读取失败
+ * @retval 其他值 成功读取的字节数
+ * @see memcpy_s
+ */
 STATIC INT32 ConsoleReadFifo(CHAR *buffer, CONSOLE_CB *console, size_t bufLen)
 {
     INT32 ret;
-    UINT32 readNum;
+    UINT32 readNum;  /* 读取字节数 */
 
     readNum = MIN(bufLen, console->currentLen);
     ret = memcpy_s(buffer, bufLen, console->fifo + console->fifoOut, readNum);
@@ -405,6 +479,17 @@ STATIC INT32 ConsoleReadFifo(CHAR *buffer, CONSOLE_CB *console, size_t bufLen)
     return (INT32)readNum;
 }
 
+/**
+ * @brief 打开文件操作
+ * @details 调用文件操作集中的open函数打开文件
+ * @param[in] filep 文件结构体指针
+ * @param[in] fops 文件操作集指针
+ * @return 操作结果
+ * @retval -EFAULT fops或fops->open为空
+ * @retval -EPERM open操作失败
+ * @retval 其他值 open操作返回值
+ * @note 该函数主要用于打开控制台设备文件
+ */
 INT32 FilepOpen(struct file *filep, const struct file_operations_vfs *fops)
 {
     INT32 ret;
@@ -413,13 +498,20 @@ INT32 FilepOpen(struct file *filep, const struct file_operations_vfs *fops)
     }
 
     /*
-     * adopt uart open function to open filep (filep is
-     * corresponding to filep of /dev/console)
+     * 采用uart open函数打开filep (filep对应/dev/console的filep)
      */
     ret = fops->open(filep);
     return (ret < 0) ? -EPERM : ret;
 }
 
+/**
+ * @brief 处理用户输入结束
+ * @details 添加换行符并更新FIFO长度，启用回显时输出回车符
+ * @param[in] consoleCB 控制台控制块指针
+ * @param[in] filep 文件结构体指针
+ * @param[in] fops 文件操作集指针
+ * @note 内联函数优化频繁调用场景
+ */
 STATIC INLINE VOID UserEndOfRead(CONSOLE_CB *consoleCB, struct file *filep,
                                  const struct file_operations_vfs *fops)
 {
@@ -433,39 +525,54 @@ STATIC INLINE VOID UserEndOfRead(CONSOLE_CB *consoleCB, struct file *filep,
     consoleCB->currentLen = consoleCB->fifoIn;
 }
 
+/**
+ * @brief 键盘输入状态枚举
+ * @details 用于跟踪多字符组合键的解析状态
+ */
 enum {
-    STAT_NORMAL_KEY,
-    STAT_ESC_KEY,
-    STAT_MULTI_KEY
+    STAT_NORMAL_KEY,   /* 正常按键状态 */
+    STAT_ESC_KEY,      /* ESC按键状态 */
+    STAT_MULTI_KEY     /* 组合键状态 */
 };
 
+/**
+ * @brief 检查上下左右方向键
+ * @details 解析ESC序列组合键，识别上下左右方向键输入
+ * @param[in] ch 当前字符
+ * @param[in,out] lastTokenType 上一状态指针
+ * @return 解析结果
+ * @retval LOS_OK 成功识别方向键
+ * @retval LOS_NOK 未识别或识别失败
+ * @note 方向键ESC序列格式: ESC[方向键码
+ *       0x1b: ESC键, 0x5b: '[', 0x41-0x44: 上下左右键
+ */
 STATIC INT32 UserShellCheckUDRL(const CHAR ch, INT32 *lastTokenType)
 {
     INT32 ret = LOS_OK;
-    if (ch == 0x1b) { /* 0x1b: ESC */
+    if (ch == 0x1b) { /* 0x1b: ESC键 */
         *lastTokenType = STAT_ESC_KEY;
         return ret;
-    } else if (ch == 0x5b) { /* 0x5b: first Key combination */
+    } else if (ch == 0x5b) { /* 0x5b: 组合键前缀'[' */
         if (*lastTokenType == STAT_ESC_KEY) {
             *lastTokenType = STAT_MULTI_KEY;
             return ret;
         }
-    } else if (ch == 0x41) { /* up */
+    } else if (ch == 0x41) { /* 上方向键 */
         if (*lastTokenType == STAT_MULTI_KEY) {
             *lastTokenType = STAT_NORMAL_KEY;
             return ret;
         }
-    } else if (ch == 0x42) { /* down */
+    } else if (ch == 0x42) { /* 下方向键 */
         if (*lastTokenType == STAT_MULTI_KEY) {
             *lastTokenType = STAT_NORMAL_KEY;
             return ret;
         }
-    } else if (ch == 0x43) { /* right */
+    } else if (ch == 0x43) { /* 右方向键 */
         if (*lastTokenType == STAT_MULTI_KEY) {
             *lastTokenType = STAT_NORMAL_KEY;
             return ret;
         }
-    } else if (ch == 0x44) { /* left */
+    } else if (ch == 0x44) { /* 左方向键 */
         if (*lastTokenType == STAT_MULTI_KEY) {
             *lastTokenType = STAT_NORMAL_KEY;
             return ret;
