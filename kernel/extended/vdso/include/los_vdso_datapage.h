@@ -39,19 +39,46 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+/**
+ * @brief VDSO数据页结构，用于用户空间高效访问内核时间信息
+ * 
+ * 该结构存储实时时钟和单调时钟的秒级和纳秒级时间戳，
+ * 以及数据页的同步锁状态，确保多线程安全访问
+ */
 typedef struct {
     /* Timeval */
-    INT64 realTimeSec;
-    INT64 realTimeNsec;
-    INT64 monoTimeSec;
-    INT64 monoTimeNsec;
+    INT64 realTimeSec;       /* 实时时钟秒数部分，对应CLOCK_REALTIME */
+    INT64 realTimeNsec;      /* 实时时钟纳秒数部分（0-999,999,999） */
+    INT64 monoTimeSec;       /* 单调时钟秒数部分，对应CLOCK_MONOTONIC */
+    INT64 monoTimeNsec;      /* 单调时钟纳秒数部分（0-999,999,999） */
     /* lock DataPage  0:Unlock State  1:Lock State */
-    UINT64 lockCount;
+    UINT64 lockCount;        /* 数据页自旋锁计数器：0=未锁定，1=已锁定 */
 } VdsoDataPage;
 
+/**
+ * @def ELF_HEAD
+ * @brief ELF文件魔数标识
+ *
+ * ELF（Executable and Linkable Format）文件的前4字节固定标识，
+ * 用于验证文件格式合法性，\177为八进制表示的0x7F
+ */
 #define ELF_HEAD "\177ELF"
+
+/**
+ * @def ELF_HEAD_LEN
+ * @brief ELF魔数标识长度
+ *
+ * 定义ELF文件魔数的字节数，固定为4字节
+ */
 #define ELF_HEAD_LEN 4
+
+/**
+ * @def MAX_PAGES
+ * @brief VDSO最大映射页数
+ *
+ * 指定VDSO（虚拟动态共享对象）可映射的最大内存页数，
+ * 当前配置为5页（通常每页4KB，总计20KB）
+ */
 #define MAX_PAGES 5
 
 #ifdef __cplusplus

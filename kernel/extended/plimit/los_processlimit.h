@@ -39,11 +39,14 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+/**
+ * @brief   进程ID与优先级限制结构体
+ * @details 用于限制进程创建数量和优先级范围，实现系统资源的精细化管控
+ */
 typedef struct PidLimit {
-    UINT32 pidLimit;
-    UINT32 priorityLimit;
-    UINT32 pidCount;
+    UINT32 pidLimit;        // 最大进程ID限制值
+    UINT32 priorityLimit;   // 进程优先级上限值
+    UINT32 pidCount;        // 当前进程数量计数器
 } PidLimit;
 
 VOID PidLimiterInit(UINTPTR limit);

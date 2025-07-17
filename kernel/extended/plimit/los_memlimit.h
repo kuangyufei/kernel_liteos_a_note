@@ -38,12 +38,16 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+/**
+ * @brief 进程内存限制器结构体
+ * @details 用于跟踪和限制单个进程的内存使用情况，包括当前用量、限制阈值、历史峰值和分配失败计数
+ * @note 所有内存相关字段单位为字节(B)
+ */
 typedef struct ProcMemLimiter {
-    UINT64 usage;
-    UINT64 limit;
-    UINT64 peak;
-    UINT32 failcnt;
+    UINT64 usage;   // 当前内存使用量
+    UINT64 limit;   // 内存使用限制阈值
+    UINT64 peak;    // 内存使用峰值
+    UINT32 failcnt; // 内存分配失败次数
 } ProcMemLimiter;
 
 VOID OsMemLimiterInit(UINTPTR limite);

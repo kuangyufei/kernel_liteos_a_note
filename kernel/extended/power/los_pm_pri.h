@@ -35,16 +35,28 @@
 #include "los_config.h"
 #include "los_typedef.h"
 
+/* 条件编译：当使能内核电源管理功能时(LOSCFG_KERNEL_PM为真)，声明电源模式检查函数 */
 #ifdef  LOSCFG_KERNEL_PM
 
+/**
+ * @brief   检查当前系统是否处于电源管理模式
+ * @return  BOOL类型：TRUE表示处于电源管理模式，FALSE表示未处于
+ * @note    该函数在电源管理模块初始化后有效
+ */
 BOOL OsIsPmMode(VOID);
 
 #else
 
+/**
+ * @brief   电源管理功能未使能时的默认内联实现
+ * @return  固定返回FALSE，表示未处于电源管理模式
+ * @note    当LOSCFG_KERNEL_PM配置关闭时使用此轻量级实现
+ */
 STATIC INLINE BOOL OsIsPmMode(VOID)
 {
-    return FALSE;
+    return FALSE;  // 电源管理未使能，始终返回非电源管理模式
 }
+#endif
 
 #endif
 #endif

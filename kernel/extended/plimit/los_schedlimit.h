@@ -38,16 +38,29 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
+/**
+ * @brief   核心时间转换宏定义
+ * @note    1秒 = 1000毫秒 = 1000000微秒，用于CPU时间配额计算
+ * @value   (1000 * 1000) = 1000000微秒/秒
+ */
 #define CORE_US_PER_SECOND (1000 * 1000)  /* 1000 * 1000 us per second */
+
+/**
+ * @brief   任务控制块结构体前向声明
+ * @note    用于避免头文件循环包含，实际定义在任务管理模块
+ */
 typedef struct TagTaskCB LosTaskCB;
 
+/**
+ * @brief   进程调度限制器结构体
+ * @details 用于实现进程级CPU时间配额管理，控制进程在指定周期内的运行时长
+ */
 typedef struct ProcSchedLimiter {
-    UINT64 startTime;
-    UINT64 endTime;
-    UINT64 period;
-    UINT64 quota;
-    UINT64 allRuntime;
+    UINT64 startTime;       // 调度周期开始时间戳(微秒)
+    UINT64 endTime;         // 调度周期结束时间戳(微秒)
+    UINT64 period;          // 调度周期长度(微秒)
+    UINT64 quota;           // 周期内允许的CPU时间配额(微秒)
+    UINT64 allRuntime;      // 累计运行时间(微秒)
 } ProcSchedLimiter;
 
 VOID OsSchedLimitInit(UINTPTR limit);
