@@ -88,36 +88,36 @@
     }                                                       \
 } while (0)
 
-#define OS_PM_LOCK_MAX      0xFFFFU
-#define OS_PM_LOCK_NAME_MAX 28
+#define OS_PM_LOCK_MAX         0xFFFFU
+#define OS_PM_LOCK_NAME_MAX    28
 #define OS_PM_SYS_EARLY        1
 #define OS_PM_SYS_DEVICE_EARLY 2
 
 typedef UINT32 (*Suspend)(UINT32 mode);
-///< 电源锁控制块
+
 typedef struct {
-    CHAR         name[OS_PM_LOCK_NAME_MAX]; ///< 电源锁名称
-    UINT32       count;	///< 数量
+    CHAR         name[OS_PM_LOCK_NAME_MAX];
+    UINT32       count;
     UINT32       swtmrID;
-    LOS_DL_LIST  list;	///< 电源锁链表,上面挂的是 OsPmLockCB
+    LOS_DL_LIST  list;
 } OsPmLockCB;
-///< 电源管理控制块 
+
 typedef struct {
-    LOS_SysSleepEnum  pmMode;		///< 模式类型
+    LOS_SysSleepEnum  pmMode;
     LOS_SysSleepEnum  sysMode;
-    UINT16            lock;		///< 锁数量
+    UINT16            lock;
     BOOL              isWake;
     LosPmDevice       *device;
     LosPmSysctrl      *sysctrl;
     UINT64            enterSleepTime;
-    LOS_DL_LIST       lockList;	///< 电源锁链表头,上面挂的是 OsPmLockCB
+    LOS_DL_LIST       lockList;
 } LosPmCB;
 
 #define PM_EVENT_LOCK_MASK    0xF
 #define PM_EVENT_LOCK_RELEASE 0x1
 STATIC EVENT_CB_S g_pmEvent;
-STATIC LosPmCB g_pmCB; ///< 电源控制块全局遍历
-STATIC SPIN_LOCK_INIT(g_pmSpin); ///< 电源模块自旋锁
+STATIC LosPmCB g_pmCB;
+STATIC SPIN_LOCK_INIT(g_pmSpin);
 STATIC LosPmSysctrl g_sysctrl;
 
 STATIC VOID OsPmSysctrlInit(VOID);
@@ -396,7 +396,7 @@ VOID LOS_PmWakeSet(VOID)
     LOS_SpinUnlock(&g_pmSpin);
     return;
 }
-/// 获取电源模式
+
 LOS_SysSleepEnum LOS_PmModeGet(VOID)
 {
     LOS_SysSleepEnum mode;
@@ -408,6 +408,7 @@ LOS_SysSleepEnum LOS_PmModeGet(VOID)
 
     return mode;
 }
+
 UINT32 LOS_PmModeSet(LOS_SysSleepEnum mode)
 {
     LosPmCB *pm = &g_pmCB;
@@ -439,7 +440,6 @@ UINT32 LOS_PmModeSet(LOS_SysSleepEnum mode)
     return LOS_OK;
 }
 
-///获取电源锁数量
 UINT32 LOS_PmLockCountGet(VOID)
 {
     UINT16 count;
@@ -451,7 +451,7 @@ UINT32 LOS_PmLockCountGet(VOID)
 
     return (UINT32)count;
 }
-///显示所有电源锁信息
+
 VOID LOS_PmLockInfoShow(struct SeqBuf *m)
 {
     LosPmCB *pm = &g_pmCB;
@@ -460,16 +460,16 @@ VOID LOS_PmLockInfoShow(struct SeqBuf *m)
     LOS_DL_LIST *list = head->pstNext;
 
     LOS_SpinLock(&g_pmSpin);
-    while (list != head) {//遍历链表
-        lock = LOS_DL_LIST_ENTRY(list, OsPmLockCB, list);//获取 OsPmLockCB 实体
-        PM_INFO_SHOW(m, "%-30s%5u\n\r", lock->name, lock->count); //打印名称和数量
+    while (list != head) {
+        lock = LOS_DL_LIST_ENTRY(list, OsPmLockCB, list);
+        PM_INFO_SHOW(m, "%-30s%5u\n\r", lock->name, lock->count);
         list = list->pstNext;
     }
     LOS_SpinUnlock(&g_pmSpin);
 
     return;
 }
-///请求获取指定的锁
+
 UINT32 OsPmLockRequest(const CHAR *name, UINT32 swtmrID)
 {
     INT32 len;
@@ -494,7 +494,7 @@ UINT32 OsPmLockRequest(const CHAR *name, UINT32 swtmrID)
         LOS_SpinUnlock(&g_pmSpin);
         return LOS_EINVAL;
     }
-	//遍历找到参数对应的 OsPmLockCB 
+
     while (list != head) {
         OsPmLockCB *listNode = LOS_DL_LIST_ENTRY(list, OsPmLockCB, list);
         if (strcmp(name, listNode->name) == 0) {
@@ -504,25 +504,24 @@ UINT32 OsPmLockRequest(const CHAR *name, UINT32 swtmrID)
 
         list = list->pstNext;
     }
-	
-    if (lock == NULL) {//没有记录则创建记录
+
+    if (lock == NULL) {
         lock = LOS_MemAlloc((VOID *)OS_SYS_MEM_ADDR, sizeof(OsPmLockCB));
         if (lock == NULL) {
             LOS_SpinUnlock(&g_pmSpin);
             return LOS_ENOMEM;
         }
-
         err = memcpy_s(lock->name, OS_PM_LOCK_NAME_MAX, name, len + 1);
         if (err != EOK) {
             LOS_SpinUnlock(&g_pmSpin);
             (VOID)LOS_MemFree((VOID *)OS_SYS_MEM_ADDR, lock);
             return err;
         }
-        lock->count = 1;//数量增加
+        lock->count = 1;
         lock->swtmrID = swtmrID;
-        LOS_ListTailInsert(head, &lock->list);//从尾部插入链表中
+        LOS_ListTailInsert(head, &lock->list);
     } else if (lock->count < OS_PM_LOCK_MAX) {
-        lock->count++;//存在记录时,数量增加
+        lock->count++;
     }
 
     if ((lock->swtmrID != OS_INVALID) && (lock->count > 1)) {
@@ -532,7 +531,7 @@ UINT32 OsPmLockRequest(const CHAR *name, UINT32 swtmrID)
     }
 
     if (pm->lock < OS_PM_LOCK_MAX) {
-    	pm->lock++;//总数量增加
+        pm->lock++;
         ret = LOS_OK;
     }
 
@@ -548,7 +547,7 @@ UINT32 LOS_PmLockRequest(const CHAR *name)
 
     return OsPmLockRequest(name, OS_INVALID);
 }
-//释放方式跟系统描述符(sysfd)很像
+
 UINT32 LOS_PmLockRelease(const CHAR *name)
 {
     UINT32 ret = LOS_EINVAL;
@@ -575,23 +574,23 @@ UINT32 LOS_PmLockRelease(const CHAR *name)
     }
 
     mode = (UINT32)pm->pmMode;
-    while (list != head) {//遍历找到参数对应的 OsPmLockCB
+    while (list != head) {
         OsPmLockCB *listNode = LOS_DL_LIST_ENTRY(list, OsPmLockCB, list);
         if (strcmp(name, listNode->name) == 0) {
             lock = listNode;
-            break;//找到返回
+            break;
         }
 
-        list = list->pstNext;//继续遍历下一个结点
+        list = list->pstNext;
     }
 
     if (lock == NULL) {
         LOS_SpinUnlock(&g_pmSpin);
         return LOS_EINVAL;
-    } else if (lock->count > 0) {//有记录且有数量
-        lock->count--;	//数量减少
-        if (lock->count == 0) {//没有了
-            LOS_ListDelete(&lock->list);//讲自己从链表中摘除
+    } else if (lock->count > 0) {
+        lock->count--;
+        if (lock->count == 0) {
+            LOS_ListDelete(&lock->list);
             lockFree = lock;
         }
     }
@@ -716,10 +715,10 @@ UINT32 OsPmInit(VOID)
 {
     LosPmCB *pm = &g_pmCB;
 
-    (VOID)memset_s(pm, sizeof(LosPmCB), 0, sizeof(LosPmCB));//全局链表置0
+    (VOID)memset_s(pm, sizeof(LosPmCB), 0, sizeof(LosPmCB));
 
     pm->pmMode = LOS_SYS_NORMAL_SLEEP;
-    LOS_ListInit(&pm->lockList);//初始化链表
+    LOS_ListInit(&pm->lockList);
     (VOID)LOS_EventInit(&g_pmEvent);
 
     OsPmSysctrlInit();
@@ -727,5 +726,5 @@ UINT32 OsPmInit(VOID)
     return LOS_OK;
 }
 
-LOS_MODULE_INIT(OsPmInit, LOS_INIT_LEVEL_KMOD_EXTENDED);//以扩展方式初始化电源管理模块
+LOS_MODULE_INIT(OsPmInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
 #endif

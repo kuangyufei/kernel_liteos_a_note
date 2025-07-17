@@ -1,3 +1,33 @@
+/*
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this list of
+ *    conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice, this list
+ *    of conditions and the following disclaimer in the documentation and/or other materials
+ *    provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors may be used
+ *    to endorse or promote products derived from this software without specific prior written
+ *    permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 /*!
  * @file    los_exec_elf.c
  * @brief 
@@ -36,36 +66,6 @@
  * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
  * @date    2021-11-19
  */
-/*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this list of
- *    conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- *    of conditions and the following disclaimer in the documentation and/or other materials
- *    provided with the distribution.
- *
- * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- *    to endorse or promote products derived from this software without specific prior written
- *    permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
 
 #include "los_exec_elf.h"
 #ifdef LOSCFG_SHELL
@@ -74,13 +74,13 @@
 #include "los_vm_phys.h"
 #include "los_vm_map.h"
 #include "los_vm_dump.h"
-/// 运行ELF
+
 STATIC INT32 OsExecve(const ELFLoadInfo *loadInfo)
 {
     if ((loadInfo == NULL) || (loadInfo->elfEntry == 0)) {
         return LOS_NOK;
     }
-	//任务运行的两个硬性要求:1.提供入口指令 2.运行栈空间.
+
     return OsExecStart((TSK_ENTRY_FUNC)(loadInfo->elfEntry), (UINTPTR)loadInfo->stackTop,
                        loadInfo->stackBase, loadInfo->stackSize);
 }
@@ -123,15 +123,15 @@ ERR_FILE:
     return -ENOENT;
 }
 #endif
-//拷贝用户参数至内核空间
+
 STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *kfileName, UINT32 maxSize)
 {
     UINT32 strLen;
     errno_t err;
     static UINT32 userFirstInitFlag = 0;
 
-    if (LOS_IsUserAddress((VADDR_T)(UINTPTR)fileName)) {//在用户空间
-        err = LOS_StrncpyFromUser(kfileName, fileName, PATH_MAX + 1);//拷贝至内核空间
+    if (LOS_IsUserAddress((VADDR_T)(UINTPTR)fileName)) {
+        err = LOS_StrncpyFromUser(kfileName, fileName, PATH_MAX + 1);
         if (err == -EFAULT) {
             return err;
         } else if (err > PATH_MAX) {
@@ -145,7 +145,7 @@ STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *
          */
         userFirstInitFlag = 1;
         strLen = strlen(fileName);
-        err = memcpy_s(kfileName, PATH_MAX, fileName, strLen);//拷贝至内核空间
+        err = memcpy_s(kfileName, PATH_MAX, fileName, strLen);
         if (err != EOK) {
             PRINT_ERR("%s[%d], Copy failed! err: %d\n", __FUNCTION__, __LINE__, err);
             return -EFAULT;
@@ -154,40 +154,30 @@ STATIC INT32 OsCopyUserParam(ELFLoadInfo *loadInfo, const CHAR *fileName, CHAR *
         return -EINVAL;
     }
 
-    loadInfo->fileName = kfileName;//文件名指向内核空间
+    loadInfo->fileName = kfileName;
     return LOS_OK;
 }
 
-/*!
- * @brief LOS_DoExecveFile	
- * 根据fileName执行一个新的用户程序 LOS_DoExecveFile接口一般由用户通过execve系列接口利用系统调用机制调用创建新的进程，内核不能直接调用该接口启动新进程。
- * @param argv	程序执行所需的参数序列，以NULL结尾。无需参数时填入NULL。
- * @param envp	程序执行所需的新的环境变量序列，以NULL结尾。无需新的环境变量时填入NULL。
- * @param fileName	二进制可执行文件名，可以是路径名。
- * @return	
- *
- * @see
- */
 INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *envp)
 {
     ELFLoadInfo loadInfo = { 0 };
-    CHAR kfileName[PATH_MAX + 1] = { 0 };//此时已陷入内核态,所以局部变量都在内核空间
+    CHAR kfileName[PATH_MAX + 1] = { 0 };
     INT32 ret;
 #ifdef LOSCFG_SHELL
     CHAR buf[PATH_MAX + 1] = { 0 };
 #endif
-	//先判断参数地址是否来自用户空间,此处必须要来自用户空间,内核是不能直接调用本函数
+
     if ((fileName == NULL) || ((argv != NULL) && !LOS_IsUserAddress((VADDR_T)(UINTPTR)argv)) ||
         ((envp != NULL) && !LOS_IsUserAddress((VADDR_T)(UINTPTR)envp))) {
         return -EINVAL;
     }
-    ret = OsCopyUserParam(&loadInfo, fileName, kfileName, PATH_MAX);//拷贝用户空间数据至内核空间
+    ret = OsCopyUserParam(&loadInfo, fileName, kfileName, PATH_MAX);
     if (ret != LOS_OK) {
         return ret;
     }
 
 #ifdef LOSCFG_SHELL
-    if (OsGetRealPath(kfileName, buf, (PATH_MAX + 1)) != LOS_OK) {//获取绝对路径
+    if (OsGetRealPath(kfileName, buf, (PATH_MAX + 1)) != LOS_OK) {
         return -ENOENT;
     }
     if (buf[0] != '\0') {
@@ -195,27 +185,27 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
     }
 #endif
 
-    loadInfo.newSpace = OsCreateUserVmSpace();//创建一个用户空间,用于开启新的进程
+    loadInfo.newSpace = OsCreateUserVmSpace();
     if (loadInfo.newSpace == NULL) {
         PRINT_ERR("%s %d, failed to allocate new vm space\n", __FUNCTION__, __LINE__);
         return -ENOMEM;
     }
 
-    loadInfo.argv = argv;//参数数组
-    loadInfo.envp = envp;//环境数组
+    loadInfo.argv = argv;
+    loadInfo.envp = envp;
 
-    ret = OsLoadELFFile(&loadInfo);//加载ELF文件
+    ret = OsLoadELFFile(&loadInfo);
     if (ret != LOS_OK) {
         return ret;
     }
-	//对当前进程旧虚拟空间和文件进行回收
+
     ret = OsExecRecycleAndInit(OsCurrProcessGet(), loadInfo.fileName, loadInfo.oldSpace, loadInfo.oldFiles);
     if (ret != LOS_OK) {
-        (VOID)LOS_VmSpaceFree(loadInfo.oldSpace);//释放虚拟空间
+        (VOID)LOS_VmSpaceFree(loadInfo.oldSpace);
         goto OUT;
     }
 
-    ret = OsExecve(&loadInfo);//运行ELF内容
+    ret = OsExecve(&loadInfo);
     if (ret != LOS_OK) {
         goto OUT;
     }

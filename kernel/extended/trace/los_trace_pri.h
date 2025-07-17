@@ -94,27 +94,27 @@ typedef struct {
 
 /**
  * @ingroup los_trace
- * struct to store the event infomation
+ * struct to store the event information
  */
 typedef struct {
-    UINT32 cmd;     /* trace start or stop cmd | 开始和结束跟踪命令*/
-    UINT32 param;   /* magic numb stand for notify msg | 命令参数*/
+    UINT32 cmd;     /* trace start or stop cmd */
+    UINT32 param;   /* magic numb stand for notify msg */
 } TraceNotifyFrame;
 
 /**
  * @ingroup los_trace
- * struct to store the trace config information. | 离线模式是将数据保存在缓存中,需要信息来记录整体数据.
+ * struct to store the trace config information.
  */
 typedef struct {
-    struct WriteCtrl {//内容控制器
-        UINT16 curIndex;            /* The current record index | 当前帧数据索引位*/
-        UINT16 maxRecordCount;      /* The max num of trace items | 记录帧数据上限数*/
-        UINT16 curObjIndex;         /* The current obj index | 当前对象索引位*/
-        UINT16 maxObjCount;         /* The max num of obj index | 对象上限数*/
-        ObjData *objBuf;            /* Pointer to obj info data | 循环buf,数组保存任务数据 ObjData*/
-        TraceEventFrame *frameBuf;  /* Pointer to the trace items | 循环buf,数组保存帧数据 TraceEventFrame*/
+    struct WriteCtrl {
+        UINT16 curIndex;            /* The current record index */
+        UINT16 maxRecordCount;      /* The max num of track items */
+        UINT16 curObjIndex;         /* The current obj index */
+        UINT16 maxObjCount;         /* The max num of obj index */
+        ObjData *objBuf;            /* Pointer to obj info data */
+        TraceEventFrame *frameBuf;  /* Pointer to the track items */
     } ctrl;
-    OfflineHead *head;///< 离线模式头部信息
+    OfflineHead *head;
 } TraceOfflineHeaderInfo;
 
 extern UINT32 OsTraceGetMaskTid(UINT32 taskId);
@@ -128,13 +128,13 @@ extern OfflineHead *OsTraceRecordGet(VOID);
 extern VOID OsTraceSendHead(VOID);
 extern VOID OsTraceSendObjTable(VOID);
 extern VOID OsTraceSendNotify(UINT32 type, UINT32 value);
-/// 在线模式下,通知系统trace开始
+
 #define OsTraceNotifyStart() do {                                \
         OsTraceSendNotify(SYS_START, TRACE_CTL_MAGIC_NUM);       \
         OsTraceSendHead();                                       \
         OsTraceSendObjTable();                                   \
     } while (0)
-/// 在线模式下,通知系统trace结束
+
 #define OsTraceNotifyStop() do {                                 \
         OsTraceSendNotify(SYS_STOP, TRACE_CTL_MAGIC_NUM);        \
     } while (0)

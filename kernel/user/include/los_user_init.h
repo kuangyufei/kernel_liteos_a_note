@@ -41,23 +41,23 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifndef LITE_USER_SEC_TEXT
-#define LITE_USER_SEC_TEXT   __attribute__((section(".user.text")))//用户态进程文本段
+#define LITE_USER_SEC_TEXT   __attribute__((section(".user.text")))
 #endif
 
 #ifndef LITE_USER_SEC_ENTRY
-#define LITE_USER_SEC_ENTRY   __attribute__((section(".user.entry")))//用户态进程的地址
+#define LITE_USER_SEC_ENTRY   __attribute__((section(".user.entry")))
 #endif
 
 #ifndef LITE_USER_SEC_DATA
-#define LITE_USER_SEC_DATA   __attribute__((section(".user.data")))//用户态进程数据段,放置初始化为0的变量,编译在ELF中
+#define LITE_USER_SEC_DATA   __attribute__((section(".user.data")))
 #endif
 
 #ifndef LITE_USER_SEC_RODATA
-#define LITE_USER_SEC_RODATA   __attribute__((section(".user.rodata")))//用户态进程常量段,编译在ELF中
+#define LITE_USER_SEC_RODATA   __attribute__((section(".user.rodata")))
 #endif
 
 #ifndef LITE_USER_SEC_BSS
-#define LITE_USER_SEC_BSS   __attribute__((section(".user.bss")))//用户态进程全局变量段,放置未初始化变量
+#define LITE_USER_SEC_BSS   __attribute__((section(".user.bss")))
 #endif
 
 

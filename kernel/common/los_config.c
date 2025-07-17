@@ -53,13 +53,13 @@
 #include "los_vm_boot.h"
 #include "los_smp.h"
 
-STATIC SystemRebootFunc g_rebootHook = NULL;///< 系统重启钩子函数
-/// 设置系统重启钩子函数
+STATIC SystemRebootFunc g_rebootHook = NULL;
+
 VOID OsSetRebootHook(SystemRebootFunc func)
 {
     g_rebootHook = func;
 }
-///获取系统重启钩子函数
+
 SystemRebootFunc OsGetRebootHook(VOID)
 {
     return g_rebootHook;
@@ -67,31 +67,31 @@ SystemRebootFunc OsGetRebootHook(VOID)
 
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 EarliestInit(VOID)
 {
-    /* Must be placed at the beginning of the boot process *///必须放在启动过程的开头
-    OsSetMainTask();//为每个CPU核设置临时主任务
-    OsCurrTaskSet(OsGetMainTask());//设置当前任务
-    OsSchedRunqueueInit();//初始化调度队列
+    /* Must be placed at the beginning of the boot process */
+    OsSetMainTask();
+    OsCurrTaskSet(OsGetMainTask());
+    OsSchedRunqueueInit();
 
-    g_sysClock = OS_SYS_CLOCK; //设置系统时钟
-    g_tickPerSecond =  LOSCFG_BASE_CORE_TICK_PER_SECOND; // 设置TICK间隔
+    g_sysClock = OS_SYS_CLOCK;
+    g_tickPerSecond =  LOSCFG_BASE_CORE_TICK_PER_SECOND;
 
     return LOS_OK;
 }
-//硬件早期初始化
+
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 ArchEarlyInit(VOID)
 {
     UINT32 ret;
 
-    /* set system counter freq | 设置系统计数器频率*/
+    /* set system counter freq */
 #ifndef LOSCFG_TEE_ENABLE
-    HalClockFreqWrite(OS_SYS_CLOCK); //写寄存器 MCR p15, 0, <Rt>, c14, c0, 0 ; Write Rt to CNTFRQ
+    HalClockFreqWrite(OS_SYS_CLOCK);
 #endif
 
 #ifdef LOSCFG_PLATFORM_HWI
-    OsHwiInit(); // 硬中断初始化
+    OsHwiInit();
 #endif
 
-    OsExcInit(); // 异常初始化
+    OsExcInit();
 
     ret = OsTickInit(g_sysClock, LOSCFG_BASE_CORE_TICK_PER_SECOND);
     if (ret != LOS_OK) {
@@ -101,11 +101,11 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 ArchEarlyInit(VOID)
 
     return LOS_OK;
 }
-//平台早期初始化
+
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 PlatformEarlyInit(VOID)
 {
 #if defined(LOSCFG_PLATFORM_UART_WITHOUT_VFS) && defined(LOSCFG_DRIVERS)
-    uart_init(); //初始化串口
+    uart_init();
 #endif /* LOSCFG_PLATFORM_UART_WITHOUT_VFS */
 
     return LOS_OK;
@@ -145,11 +145,11 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 PlatformInit(VOID)
 {
     return LOS_OK;
 }
-//内核关键模块初始化
+
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 KModInit(VOID)
 {
 #ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
-    OsSwtmrInit(); //软件定时器模块 , 软定由专门的 0 级任务实现
+    OsSwtmrInit();
 #endif
     return LOS_OK;
 }
@@ -179,10 +179,10 @@ LITE_OS_SEC_TEXT_INIT VOID OsSystemInfo(VOID)
 #ifdef LOSCFG_KERNEL_SMP
                   LOSCFG_KERNEL_SMP_CORE_NUM,
 #endif
-                  HalIrqVersion(), __DATE__, __TIME__,\
+                  HalIrqVersion(), __DATE__, __TIME__, \
                   KERNEL_NAME, KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE, buildType);
 }
-///由汇编调用,鸿蒙C语言层级的入口点 
+
 LITE_OS_SEC_TEXT_INIT UINT32 OsMain(VOID)
 {
     UINT32 ret;
@@ -190,19 +190,19 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsMain(VOID)
     UINT64 startNsec, endNsec, durationUsec;
 #endif
 
-    ret = EarliestInit();//鸿蒙初开，天地混沌
+    ret = EarliestInit();
     if (ret != LOS_OK) {
         return ret;
     }
     OsInitCall(LOS_INIT_LEVEL_EARLIEST);
 
-    ret = ArchEarlyInit(); //架构级初始化,包括硬中断
+    ret = ArchEarlyInit();
     if (ret != LOS_OK) {
         return ret;
     }
     OsInitCall(LOS_INIT_LEVEL_ARCH_EARLY);
 
-    ret = PlatformEarlyInit();//平台级初始化
+    ret = PlatformEarlyInit();
     if (ret != LOS_OK) {
         return ret;
     }
@@ -224,24 +224,24 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsMain(VOID)
 
     OsInitCall(LOS_INIT_LEVEL_KMOD_PREVM);
 
-    ret = OsSysMemInit();//系统内存初始化
+    ret = OsSysMemInit();
     if (ret != LOS_OK) {
         return ret;
     }
 
     OsInitCall(LOS_INIT_LEVEL_VM_COMPLETE);
 
-    ret = OsIpcInit();//进程间通讯模块初始化
+    ret = OsIpcInit();
     if (ret != LOS_OK) {
         return ret;
     }
 
-    ret = OsSystemProcessCreate();//创建系统进程 
+    ret = OsSystemProcessCreate();
     if (ret != LOS_OK) {
         return ret;
     }
 
-    ret = ArchInit();	//MMU架构初始化
+    ret = ArchInit();
     if (ret != LOS_OK) {
         return ret;
     }
@@ -285,8 +285,8 @@ STATIC VOID SystemInit(VOID)
 #else
 extern VOID SystemInit(VOID);
 #endif
+
 #ifndef LOSCFG_ENABLE_KERNEL_TEST
-///创建系统初始任务并申请调度
 STATIC UINT32 OsSystemInitTaskCreate(VOID)
 {
     UINT32 taskID;
@@ -304,7 +304,6 @@ STATIC UINT32 OsSystemInitTaskCreate(VOID)
     return LOS_TaskCreate(&taskID, &sysTask);
 }
 
-//系统任务初始化
 STATIC UINT32 OsSystemInit(VOID)
 {
     UINT32 ret;
@@ -317,5 +316,5 @@ STATIC UINT32 OsSystemInit(VOID)
     return 0;
 }
 
-LOS_MODULE_INIT(OsSystemInit, LOS_INIT_LEVEL_KMOD_TASK);//模块初始化
+LOS_MODULE_INIT(OsSystemInit, LOS_INIT_LEVEL_KMOD_TASK);
 #endif

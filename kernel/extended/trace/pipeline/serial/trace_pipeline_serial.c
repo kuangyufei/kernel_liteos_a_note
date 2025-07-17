@@ -37,7 +37,7 @@ UINT32 SerialPipelineInit(VOID)
 {
     return uart_hwiCreate();
 }
-///< 接收串口数据
+
 UINT32 SerialDataReceive(UINT8 *data, UINT32 size, UINT32 timeout)
 {
     return uart_read(data, size, timeout);
@@ -68,12 +68,12 @@ UINT32 SerialWait(VOID)
     return LOS_OK;
 }
 #endif
-/// 向串口输出数据,如果向串口输出,只需要实现本接口就行
+
 VOID SerialDataSend(UINT16 len, UINT8 *data)
 {
     UartPuts((CHAR *)data, len, 1);
 }
-///< 串口数据处理
+
 STATIC const TracePipelineOps g_serialOps = {
     .init = SerialPipelineInit,
     .dataSend = SerialDataSend,
@@ -83,7 +83,7 @@ STATIC const TracePipelineOps g_serialOps = {
 
 UINT32 OsTracePipelineInit(VOID)
 {
-    OsTracePipelineReg(&g_serialOps);///说明trace将打印到串口上
+    OsTracePipelineReg(&g_serialOps);
     return g_serialOps.init();
 }
 

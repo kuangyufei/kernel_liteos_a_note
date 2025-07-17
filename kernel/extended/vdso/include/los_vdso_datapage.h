@@ -40,18 +40,18 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-typedef struct {//Vdso数据页结构体
+typedef struct {
     /* Timeval */
-    INT64 realTimeSec; 	///< 单位秒: 系统实时时间
-    INT64 realTimeNsec; ///< 单位纳秒: 系统实时时间
-    INT64 monoTimeSec;	///< 系统运行时间，从系统启动时开始计时，速度更快精度更低，系统休眠时不再计时
-    INT64 monoTimeNsec;	///< 
+    INT64 realTimeSec;
+    INT64 realTimeNsec;
+    INT64 monoTimeSec;
+    INT64 monoTimeNsec;
     /* lock DataPage  0:Unlock State  1:Lock State */
-    UINT64 lockCount;///< 数据页被锁数量
+    UINT64 lockCount;
 } VdsoDataPage;
 
-#define ELF_HEAD "\177ELF" ///< ELF格式头
-#define ELF_HEAD_LEN 4	///< 头长度4个字节
+#define ELF_HEAD "\177ELF"
+#define ELF_HEAD_LEN 4
 #define MAX_PAGES 5
 
 #ifdef __cplusplus

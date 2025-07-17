@@ -68,7 +68,7 @@ STATIC UtsContainer *CreateNewUtsContainer(UtsContainer *parent)
 {
     UINT32 ret;
     UINT32 size = sizeof(UtsContainer);
-    UtsContainer *utsContainer = (UtsContainer *)LOS_MemAlloc(m_aucSysMem1, size);//从内核动态内存分配
+    UtsContainer *utsContainer = (UtsContainer *)LOS_MemAlloc(m_aucSysMem1, size);
     if (utsContainer == NULL) {
         return NULL;
     }
@@ -105,7 +105,7 @@ STATIC UINT32 CreateUtsContainer(LosProcessCB *child, LosProcessCB *parent)
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
-//初始化uts容器
+
 UINT32 OsInitRootUtsContainer(UtsContainer **utsContainer)
 {
     UINT32 intSave;

@@ -41,9 +41,9 @@ http://open.weharmonyos.com/zh-cn/device-dev/kernel/kernel-small-plimits.html
 #include "los_process_pri.h"
 #include "hal_timer.h"
 #include "los_plimits.h"
-//容器限额统一接口
+
 typedef struct PlimiteOperations {
-    VOID (*LimiterInit)(UINTPTR);//初始化
+    VOID (*LimiterInit)(UINTPTR);
     VOID *(*LimiterAlloc)(VOID);
     VOID (*LimiterFree)(UINTPTR);
     VOID (*LimiterCopy)(UINTPTR, UINTPTR);

@@ -104,7 +104,7 @@ typedef struct {
 #define PMU_INT(_num)    PMU_LABEL_INT_##_num
 
 #define OS_PMU_INTS(_num, _list)      \
-    STATIC UINT32 _list [_num] = {    \
+    STATIC UINT32 _list[_num] = {     \
         PMU_INT(_num)                 \
     }
 

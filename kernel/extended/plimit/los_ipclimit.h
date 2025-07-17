@@ -40,17 +40,17 @@ extern "C" {
 #endif /* __cplusplus */
 
 typedef struct ProcIPCLimit {
-    UINT32 mqCount;//当前队列个数
+    UINT32 mqCount;
     UINT32 mqFailedCount;
-    UINT32 mqCountLimit;//队列个数上限
-    UINT32 shmSize;//
+    UINT32 mqCountLimit;
+    UINT32 shmSize;
     UINT32 shmFailedCount;
-    UINT32 shmSizeLimit;//共享内存上限
+    UINT32 shmSizeLimit;
 } ProcIPCLimit;
 
 enum IPCStatType {
-    IPC_STAT_TYPE_MQ  = 0,//消息队列
-    IPC_STAT_TYPE_SHM = 3,//共享内存
+    IPC_STAT_TYPE_MQ  = 0,
+    IPC_STAT_TYPE_SHM = 3,
     IPC_STAT_TYPE_BUT   // buttock
 };
 

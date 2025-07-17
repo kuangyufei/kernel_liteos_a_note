@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,39 +34,36 @@
 #include "los_task_pri.h"
 #include "los_process_pri.h"
 
-/// 魔法键依赖于宏LOSCFG_ENABLE_MAGICKEY，使用时通过menuconfig在配置项中开启“Enable MAGIC KEY”：
-/// Debug ---> Enable MAGIC KEY；若关闭该选项，则魔法键失效。
 #ifdef LOSCFG_ENABLE_MAGICKEY
 
 #define MAGIC_KEY_NUM 5
-
 STATIC VOID OsMagicHelp(VOID);
 STATIC VOID OsMagicTaskShow(VOID);
 STATIC VOID OsMagicPanic(VOID);
 STATIC VOID OsMagicMemCheck(VOID);
 
-STATIC MagicKeyOp g_magicMemCheckOp = {//快捷键内存检查
-    .opHandler = OsMagicMemCheck,	//等于执行了一次 shell memcheck 
+STATIC MagicKeyOp g_magicMemCheckOp = {
+    .opHandler = OsMagicMemCheck,
     .helpMsg = "Check system memory(ctrl+e) ",
-    .magicKey = 0x05 /* ctrl + e */ //系统进行简单完整性内存池检查，检查出错会输出相关错误信息，检查正常会输出“system memcheck over, all passed!”
+    .magicKey = 0x05 /* ctrl + e */
 };
 
-STATIC MagicKeyOp g_magicPanicOp = {//panic 表示kernel走到了一个不知道该怎么走下一步的状况，
-    .opHandler = OsMagicPanic,		//一旦到这个情况，kernel就尽可能把它此时能获取的全部信息都打印出来.
+STATIC MagicKeyOp g_magicPanicOp = {
+    .opHandler = OsMagicPanic,
     .helpMsg = "System panic(ctrl+p) ",
-    .magicKey = 0x10 /* ctrl + p */ //系统主动进入panic，输出panic相关信息后，系统会挂住；
+    .magicKey = 0x10 /* ctrl + p */
 };
 
-STATIC MagicKeyOp g_magicTaskShowOp = { //快捷键显示任务操作
-    .opHandler = OsMagicTaskShow,	//等于执行了一次 shell task -a 
+STATIC MagicKeyOp g_magicTaskShowOp = {
+    .opHandler = OsMagicTaskShow,
     .helpMsg = "Show task information(ctrl+t) ",
-    .magicKey = 0x14 /* ctrl + t */ //输出任务相关信息；
+    .magicKey = 0x14 /* ctrl + t */
 };
 
-STATIC MagicKeyOp g_magicHelpOp = {	//快捷键帮助操作
+STATIC MagicKeyOp g_magicHelpOp = {
     .opHandler = OsMagicHelp,
     .helpMsg = "Show all magic op key(ctrl+z) ",
-    .magicKey = 0x1a /* ctrl + z */ //帮助键，输出相关魔法键简单介绍；
+    .magicKey = 0x1a /* ctrl + z */
 };
 
 /*
@@ -77,7 +74,7 @@ STATIC MagicKeyOp g_magicHelpOp = {	//快捷键帮助操作
  * ctrl+n/shift out=0xe,
  * ctrl+o/shift in=0xf,
  * ctrl+[/esc=0x1b,
- * ctrl+] used for telnet commond mode;
+ * ctrl+] used for telnet command mode;
  */
 STATIC MagicKeyOp *g_magicOpTable[MAGIC_KEY_NUM] = {
     &g_magicMemCheckOp, /* ctrl + e */
@@ -87,7 +84,7 @@ STATIC MagicKeyOp *g_magicOpTable[MAGIC_KEY_NUM] = {
     NULL
 };
 
-STATIC VOID OsMagicHelp(VOID)//遍历一下 g_magicOpTable
+STATIC VOID OsMagicHelp(VOID)
 {
     INT32 i;
     PRINTK("HELP: ");
@@ -97,7 +94,7 @@ STATIC VOID OsMagicHelp(VOID)//遍历一下 g_magicOpTable
     PRINTK("\n");
     return;
 }
-///执行 shell task -a 命令 
+
 STATIC VOID OsMagicTaskShow(VOID)
 {
     (VOID)OsShellCmdTskInfoGet(OS_ALL_TASK_MASK, NULL, OS_PROCESS_INFO_ALL);
@@ -109,7 +106,7 @@ STATIC VOID OsMagicPanic(VOID)
     LOS_Panic("Magic key :\n");
     return;
 }
-///快捷键触发内存检查
+
 STATIC VOID OsMagicMemCheck(VOID)
 {
     if (LOS_MemIntegrityCheck(m_aucSysMem1) == LOS_OK) {
@@ -118,10 +115,10 @@ STATIC VOID OsMagicMemCheck(VOID)
     return;
 }
 #endif
-///检查魔法键
+
 INT32 CheckMagicKey(CHAR key, UINT16 consoleId)
 {
-#ifdef LOSCFG_ENABLE_MAGICKEY //魔法键开关
+#ifdef LOSCFG_ENABLE_MAGICKEY
     INT32 i;
     STATIC UINT32 magicKeySwitch = 0;
 
@@ -129,8 +126,6 @@ INT32 CheckMagicKey(CHAR key, UINT16 consoleId)
         KillPgrp(consoleId);
         return 0;
     } else if (key == 0x12) { /* ctrl + r */
-		// 在连接UART或者USB转虚拟串口的情况下，输入“ctrl + r” 键，打开魔法键检测功能，输出 “Magic key on”；再输入一次后，
-		// 则关闭魔法键检测功能，输出“Magic key off”。
         magicKeySwitch = ~magicKeySwitch;
         if (magicKeySwitch != 0) {
             PrintExcInfo("Magic key on\n");
@@ -139,10 +134,10 @@ INT32 CheckMagicKey(CHAR key, UINT16 consoleId)
         }
         return 1;
     }
-    if (magicKeySwitch != 0) {//打开情况下，输出魔法键各回调函数
+    if (magicKeySwitch != 0) {
         for (i = 0; i < MAGIC_KEY_NUM; i++) {
             if (g_magicOpTable[i] != NULL && key == g_magicOpTable[i]->magicKey) {
-                (g_magicOpTable[i])->opHandler();//执行回调函数 OsMagicHelp ，OsMagicTaskShow ==
+                (g_magicOpTable[i])->opHandler();
                 return 1;
             }
         }

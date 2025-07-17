@@ -1,3 +1,34 @@
+
+/*
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this list of
+ *    conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice, this list
+ *    of conditions and the following disclaimer in the documentation and/or other materials
+ *    provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors may be used
+ *    to endorse or promote products derived from this software without specific prior written
+ *    permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 /*!
  * @file    los_cpup.c
  * @brief
@@ -80,37 +111,6 @@
  * @date    2021-11-21
  */
 
-/*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this list of
- *    conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- *    of conditions and the following disclaimer in the documentation and/or other materials
- *    provided with the distribution.
- *
- * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- *    to endorse or promote products derived from this software without specific prior written
- *    permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 #include "los_cpup_pri.h"
 #include "los_base.h"
 #include "los_init.h"
@@ -121,14 +121,14 @@
 
 #ifdef LOSCFG_KERNEL_CPUP
 
-LITE_OS_SEC_BSS STATIC UINT16 cpupSwtmrID;	///< 监测CPU使用情况定时器s
+LITE_OS_SEC_BSS STATIC UINT16 cpupSwtmrID;
 LITE_OS_SEC_BSS STATIC UINT16 cpupInitFlg = 0;
 LITE_OS_SEC_BSS OsIrqCpupCB *g_irqCpup = NULL;
 LITE_OS_SEC_BSS STATIC UINT32 cpupMaxNum;
 LITE_OS_SEC_BSS STATIC UINT16 cpupHisPos = 0; /* current Sampling point of historyTime */
 LITE_OS_SEC_BSS STATIC UINT64 cpuHistoryTime[OS_CPUP_HISTORY_RECORD_NUM + 1];
 LITE_OS_SEC_BSS STATIC LosTaskCB *runningTasks[LOSCFG_KERNEL_CORE_NUM];
-LITE_OS_SEC_BSS STATIC UINT64 cpupStartCycles = 0; ///< 记录
+LITE_OS_SEC_BSS STATIC UINT64 cpupStartCycles = 0;
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
 LITE_OS_SEC_BSS UINT64 timeInIrqSwitch[LOSCFG_KERNEL_CORE_NUM];
 LITE_OS_SEC_BSS STATIC UINT64 cpupIntTimeStart[LOSCFG_KERNEL_CORE_NUM];
@@ -142,14 +142,14 @@ LITE_OS_SEC_BSS STATIC UINT64 cpupIntTimeStart[LOSCFG_KERNEL_CORE_NUM];
 
 #define CPUP_PRE_POS(pos) (((pos) == 0) ? (OS_CPUP_HISTORY_RECORD_NUM - 1) : ((pos) - 1))
 #define CPUP_POST_POS(pos) (((pos) == (OS_CPUP_HISTORY_RECORD_NUM - 1)) ? 0 : ((pos) + 1))
-///< 获取CPU周期
+
 STATIC UINT64 OsGetCpuCycle(VOID)
 {
     UINT32 high;
     UINT32 low;
-    UINT64 cycles;//周期数用 64位计算，读取分成高低位
+    UINT64 cycles;
 
-    LOS_GetCpuCycle(&high, &low);//将64位拆成两个32位
+    LOS_GetCpuCycle(&high, &low);
     cycles = ((UINT64)high << HIGH_BITS) + low;
     if (cpupStartCycles == 0) {
         cpupStartCycles = cycles;
@@ -222,7 +222,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsCpupGuard(VOID)
 
     SCHEDULER_UNLOCK(intSave);
 }
-///创建cpu使用统计定时器
+
 LITE_OS_SEC_TEXT_INIT UINT32 OsCpupGuardCreator(VOID)
 {
     (VOID)LOS_SwtmrCreate(LOSCFG_BASE_CORE_TICK_PER_SECOND, LOS_SWTMR_MODE_PERIOD,
@@ -369,8 +369,8 @@ LITE_OS_SEC_TEXT_MINOR STATIC VOID OsCpupGetPos(UINT16 mode, UINT16 *curPosPoint
     curPos = CPUP_PRE_POS(tmpPos);
 
     /*
-     * The current postion has nothing to do with the CPUP modes,
-     * however, the previous postion differs.
+     * The current position has nothing to do with the CPUP modes,
+     * however, the previous position differs.
      */
     switch (mode) {
         case CPUP_LAST_ONE_SECONDS:
@@ -421,14 +421,6 @@ STATIC UINT32 OsHistorySysCpuUsageUnsafe(UINT16 mode)
     return (LOS_CPUP_PRECISION - OsCalculateCpupUsage(processCpup, pos, prePos, cpuAllCycle));
 }
 
-/**
-  * \brief 获取系统历史CPU占用率
-  * 指周期时间内系统的CPU占用率，用于表示系统一段时间内的闲忙程度，也表示CPU的负载情况。系统CPU
-  * 占用率的有效表示范围为0～100，其精度（可通过配置调整）为百分比。100表示系统满负荷运转。
-  * \param mode
-  *
-  * \return 
-  */
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_HistorySysCpuUsage(UINT16 mode)
 {
     UINT32 cpup;
@@ -470,15 +462,6 @@ STATIC UINT32 OsHistoryProcessCpuUsageUnsafe(UINT32 pid, UINT16 mode)
     return OsCalculateCpupUsage(processCB->processCpup, pos, prePos, cpuAllCycle);
 }
 
-/**
-  * \brief 获取指定进程历史CPU占用率
-  * 指单个进程的CPU占用率，用于表示单个进程在一段时间内的闲忙程度。进程CPU占用率的有效表示范围为0～100，
-  * 其精度（可通过配置调整）为百分比。100表示在一段时间内系统一直在运行该进程。
-  * \param pid
-  * \param mode
-  *
-  * \return 
-  */
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_HistoryProcessCpuUsage(UINT32 pid, UINT16 mode)
 {
     UINT32 cpup;
@@ -515,15 +498,6 @@ STATIC UINT32 OsHistoryTaskCpuUsageUnsafe(UINT32 tid, UINT16 mode)
     return OsCalculateCpupUsage(&taskCB->taskCpup, pos, prePos, cpuAllCycle);
 }
 
-/**
-  * \brief 获取指定任务历史CPU占用率
-  * 指单个任务的CPU占用率，用于表示单个任务在一段时间内的闲忙程度。任务CPU占用率的有效表示范围为0～100，
-  * 其精度（可通过配置调整）为百分比。100表示在一段时间内系统一直在运行该任务。
-  * \param tid
-  * \param mode
-  *
-  * \return 
-  */
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_HistoryTaskCpuUsage(UINT32 tid, UINT16 mode)
 {
     UINT32 intSave;
@@ -577,7 +551,7 @@ STATIC UINT32 GetAllProcessCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S *cpupInfo, UI
 
     return LOS_OK;
 }
-/// 获取系统所有进程的历史CPU占用率
+
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_GetAllProcessCpuUsage(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len)
 {
     UINT32 intSave;
@@ -704,16 +678,6 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsGetAllIrqCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S
     return LOS_OK;
 }
 
-/**
-  * \brief 获取系统所有中断的历史CPU占用率
-  * 指单个中断的CPU占用率，用于表示单个中断在一段时间内的闲忙程度。中断CPU占用率的有效表示范围为0～100，
-  * 其精度（可通过配置调整）为百分比。100表示在一段时间内系统一直在运行该中断。
-  * \param mode
-  * \param cpupInfo
-  * \param len
-  *
-  * \return 
-  */
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_GetAllIrqCpuUsage(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len)
 {
     UINT32 intSave;

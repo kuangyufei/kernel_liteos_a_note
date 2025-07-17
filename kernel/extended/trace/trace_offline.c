@@ -1,21 +1,3 @@
-/*!
- * @file    trace_offline.c
- * @brief
- * @link
-   @verbatim
-   基本概念
-   	Trace调测旨在帮助开发者获取内核的运行流程，各个模块、任务的执行顺序，从而可以辅助开发者定位一些时序问题或者了解内核的代码运行过程。
-
-   运行机制
-   	内核提供一套Hook框架，将Hook点预埋在各个模块的主要流程中, 在内核启动初期完成Trace功能的初始化，并注册Trace的处理函数到Hook中。
-   当系统触发到一个Hook点时，Trace模块会对输入信息进行封装，添加Trace帧头信息，包含事件类型、运行的cpuid、运行的任务id、运行的相对时间戳等信息；
-
-   Trace提供2种工作模式，离线模式和在线模式。此处为离线模式下的实现
-   @endverbatim
- * @version 
- * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
- * @date    2021-11-22
- */
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
  * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
@@ -46,20 +28,38 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+/*!
+ * @file    trace_offline.c
+ * @brief
+ * @link
+   @verbatim
+   基本概念
+   	Trace调测旨在帮助开发者获取内核的运行流程，各个模块、任务的执行顺序，从而可以辅助开发者定位一些时序问题或者了解内核的代码运行过程。
+
+   运行机制
+   	内核提供一套Hook框架，将Hook点预埋在各个模块的主要流程中, 在内核启动初期完成Trace功能的初始化，并注册Trace的处理函数到Hook中。
+   当系统触发到一个Hook点时，Trace模块会对输入信息进行封装，添加Trace帧头信息，包含事件类型、运行的cpuid、运行的任务id、运行的相对时间戳等信息；
+
+   Trace提供2种工作模式，离线模式和在线模式。此处为离线模式下的实现
+   @endverbatim
+ * @version 
+ * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
+ * @date    2021-11-22
+ */
 
 #include "los_trace_pri.h"
 #include "trace_pipeline.h"
 
 #define BITS_NUM_FOR_TASK_ID 16
 
-LITE_OS_SEC_BSS STATIC TraceOfflineHeaderInfo g_traceRecoder; ///< 离线模式下的记录方式
-LITE_OS_SEC_BSS STATIC UINT32 g_tidMask[LOSCFG_BASE_CORE_TSK_LIMIT] = {0};///< 记录屏蔽任务情况
+LITE_OS_SEC_BSS STATIC TraceOfflineHeaderInfo g_traceRecoder;
+LITE_OS_SEC_BSS STATIC UINT32 g_tidMask[LOSCFG_BASE_CORE_TSK_LIMIT] = {0};
 
 UINT32 OsTraceGetMaskTid(UINT32 tid)
 {
     return tid | ((tid < LOSCFG_BASE_CORE_TSK_LIMIT) ? g_tidMask[tid] << BITS_NUM_FOR_TASK_ID : 0); /* tid < 65535 */
 }
-/// trace离线模式初始化
+
 UINT32 OsTraceBufInit(UINT32 size)
 {
     UINT32 headSize;
@@ -71,32 +71,32 @@ UINT32 OsTraceBufInit(UINT32 size)
     }
 
 
-    buf = LOS_MemAlloc(m_aucSysMem0, size);//在内核堆空间中申请内存
+    buf = LOS_MemAlloc(m_aucSysMem0, size);
     if (buf == NULL) {
         return LOS_ERRNO_TRACE_NO_MEMORY;
     }
 
     (VOID)memset_s(buf, size, 0, size);
     g_traceRecoder.head = (OfflineHead *)buf;
-    g_traceRecoder.head->baseInfo.bigLittleEndian = TRACE_BIGLITTLE_WORD;//大小端
-    g_traceRecoder.head->baseInfo.version         = TRACE_VERSION(TRACE_MODE_OFFLINE);//离线模式
-    g_traceRecoder.head->baseInfo.clockFreq       = OS_SYS_CLOCK;//CPU时钟频率
-    g_traceRecoder.head->objSize                  = sizeof(ObjData);//对象大小
-    g_traceRecoder.head->frameSize                = sizeof(TraceEventFrame);//帧大小
-    g_traceRecoder.head->objOffset                = sizeof(OfflineHead);//对象开始位置
-    g_traceRecoder.head->frameOffset              = headSize;//帧开始位置
-    g_traceRecoder.head->totalLen                 = size;//头部大小
+    g_traceRecoder.head->baseInfo.bigLittleEndian = TRACE_BIGLITTLE_WORD;
+    g_traceRecoder.head->baseInfo.version         = TRACE_VERSION(TRACE_MODE_OFFLINE);
+    g_traceRecoder.head->baseInfo.clockFreq       = OS_SYS_CLOCK;
+    g_traceRecoder.head->objSize                  = sizeof(ObjData);
+    g_traceRecoder.head->frameSize                = sizeof(TraceEventFrame);
+    g_traceRecoder.head->objOffset                = sizeof(OfflineHead);
+    g_traceRecoder.head->frameOffset              = headSize;
+    g_traceRecoder.head->totalLen                 = size;
 
-    g_traceRecoder.ctrl.curIndex       = 0;	//当前帧位置
-    g_traceRecoder.ctrl.curObjIndex    = 0;	//当前对象位置
-    g_traceRecoder.ctrl.maxObjCount    = LOSCFG_TRACE_OBJ_MAX_NUM;//最大
-    g_traceRecoder.ctrl.maxRecordCount = (size - headSize) / sizeof(TraceEventFrame);//最大记录数
+    g_traceRecoder.ctrl.curIndex       = 0;
+    g_traceRecoder.ctrl.curObjIndex    = 0;
+    g_traceRecoder.ctrl.maxObjCount    = LOSCFG_TRACE_OBJ_MAX_NUM;
+    g_traceRecoder.ctrl.maxRecordCount = (size - headSize) / sizeof(TraceEventFrame);
     g_traceRecoder.ctrl.objBuf         = (ObjData *)((UINTPTR)buf + g_traceRecoder.head->objOffset);
     g_traceRecoder.ctrl.frameBuf       = (TraceEventFrame *)((UINTPTR)buf + g_traceRecoder.head->frameOffset);
 
     return LOS_OK;
 }
-/// 添加一个任务
+
 VOID OsTraceObjAdd(UINT32 eventType, UINT32 taskId)
 {
     UINT32 intSave;
@@ -125,23 +125,23 @@ VOID OsTraceObjAdd(UINT32 eventType, UINT32 taskId)
     /* add obj end */
     TRACE_UNLOCK(intSave);
 }
-/// 离线模式下保存帧数据 @note_thinking 此处未封装好,会懵逼,文件名中体现了对离线模式的保存或对在线模式的发送这样真的好吗? .
+
 VOID OsTraceWriteOrSendEvent(const TraceEventFrame *frame)
 {
     UINT16 index;
     UINT32 intSave;
 
     TRACE_LOCK(intSave);
-    index = g_traceRecoder.ctrl.curIndex;//获取当前位置,离线模式会将trace frame记录到预先申请好的循环buffer中
-    (VOID)memcpy_s(&g_traceRecoder.ctrl.frameBuf[index], sizeof(TraceEventFrame), frame, sizeof(TraceEventFrame));//保存帧内容至frameBuf中
+    index = g_traceRecoder.ctrl.curIndex;
+    (VOID)memcpy_s(&g_traceRecoder.ctrl.frameBuf[index], sizeof(TraceEventFrame), frame, sizeof(TraceEventFrame));
 
-    g_traceRecoder.ctrl.curIndex++;//当前位置向前滚
-    if (g_traceRecoder.ctrl.curIndex >= g_traceRecoder.ctrl.maxRecordCount) {//循环写入,这里可以看出,如果循环buffer记录的frame过多则可能出现翻转，
-        g_traceRecoder.ctrl.curIndex = 0;//会覆盖之前的记录，保持记录的信息始终是最新的信息。
+    g_traceRecoder.ctrl.curIndex++;
+    if (g_traceRecoder.ctrl.curIndex >= g_traceRecoder.ctrl.maxRecordCount) {
+        g_traceRecoder.ctrl.curIndex = 0;
     }
     TRACE_UNLOCK(intSave);
 }
-/// 重置循环buf
+
 VOID OsTraceReset(VOID)
 {
     UINT32 intSave;
@@ -205,7 +205,7 @@ STATIC VOID OsTraceInfoEventData(VOID)
         UINT32 taskLockCnt = frame->core.taskLockCnt;
 #ifdef LOSCFG_KERNEL_SMP
         /*
-         * For smp systems, TRACE_LOCK will requst taskLock, and this counter
+         * For smp systems, TRACE_LOCK will request taskLock, and this counter
          * will increase by 1 in that case.
          */
         taskLockCnt -= 1;

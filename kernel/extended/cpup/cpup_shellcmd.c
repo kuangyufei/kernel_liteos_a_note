@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -80,31 +80,6 @@ LITE_OS_SEC_TEXT STATIC VOID OsCpupCmdHelp(VOID)
            "  others  SysCpuUsage in all time\n");
 }
 
-/**
- * @brief 
- * @verbatim
-    命令功能
-    cpup命令用于查询系统CPU的占用率。
-    命令格式
-    cpup [mode] [taskID]
-    参数		参数说明		取值范围
-    mode
-            ● 缺省：显示系统最近10s内的CPU占用率。
-            ● 0：显示系统最近10s内的CPU占用率。
-            ● 1：显示系统最近1s内的CPU占用率。
-            ● 其他数字：显示系统启动至今总的CPU 占用率。
-    taskID	任务ID号		[0,0xFFFFFFFF]
-
-    使用指南
-    参数缺省时，显示系统10s前的CPU占用率。
-    只有一个参数时，该参数为mode，显示系统相应时间前的CPU占用率。
-    输入两个参数时，第一个参数为mode，第二个参数为taskID，显示对应ID号任务的相应时间前的CPU占用率。
-
-    举例：输入cpup 1 5 表示 显示5号任务最近1s内的CPU占用率
- * @endverbatim
- * @param pathname 
- * @return int 
- */
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdCpup(INT32 argc, const CHAR **argv)
 {
     size_t mode, pid;
@@ -131,15 +106,15 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdCpup(INT32 argc, const CHAR **argv)
     }
 
     if (mode > CPUP_ALL_TIME) {
-        mode = CPUP_ALL_TIME;//统计所有CPU的耗时
+        mode = CPUP_ALL_TIME;
     }
 
     if (argc == 1) {
-        OsCmdCpupOperateOneParam(mode);//处理只有一个参数的情况 例如 cpup 1
+        OsCmdCpupOperateOneParam(mode);
         return LOS_OK;
     }
 
-    pid = strtoul(argv[1], &bufID, 0);//musl标准库函数,将字符串转成无符号整型
+    pid = strtoul(argv[1], &bufID, 0);
     if (OsProcessIDUserCheckInvalid(pid) || (*bufID != 0)) {
         PRINTK("\nUnknown pid: %s\n", argv[1]);
         return LOS_OK;
@@ -152,7 +127,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdCpup(INT32 argc, const CHAR **argv)
 
     /* when the parameters number is two */
     if (argc == 2) {
-        OsCmdCpupOperateTwoParam(mode, pid);//处理有两个参数的情况 例如 cpup 1 5
+        OsCmdCpupOperateTwoParam(mode, pid);
         return LOS_OK;
     }
 
@@ -160,5 +135,5 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdCpup(INT32 argc, const CHAR **argv)
     return LOS_OK;
 }
 
-SHELLCMD_ENTRY(cpup_shellcmd, CMD_TYPE_EX, "cpup", XARGS, (CmdCallBackFunc)OsShellCmdCpup);//采用shell命令静态注册方式
+SHELLCMD_ENTRY(cpup_shellcmd, CMD_TYPE_EX, "cpup", XARGS, (CmdCallBackFunc)OsShellCmdCpup);
 #endif /* LOSCFG_SHELL */

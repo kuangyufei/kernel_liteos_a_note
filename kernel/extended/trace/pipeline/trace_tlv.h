@@ -43,20 +43,19 @@ extern "C" {
 #define TRACE_TLV_MSG_HEAD  0xFF
 #define TRACE_TLV_TYPE_NULL 0xFF
 
-/// TLV协议 消息头 https://blog.csdn.net/Shallwen_Deng/article/details/88930288
 typedef struct {
-    UINT8 magicNum; ///< 魔法数字
-    UINT8 msgType;	///< 消息类型
-    UINT16 len;		///< 消息长度
-    UINT16 crc;		///< CRC校验
+    UINT8 magicNum;
+    UINT8 msgType;
+    UINT16 len;
+    UINT16 crc;
 } TraceMsgTlvHead;
-/// TLV协议 消息体
+
 typedef struct {
-    UINT8 type;	///< 类型
-    UINT8 len;	///< 长度
-    UINT8 value[];///< 内容 
+    UINT8 type;
+    UINT8 len;
+    UINT8 value[];
 } TraceMsgTlvBody;
-/// TLV表,主要用于TLV的解码阶段
+
 typedef struct {
     UINT8 tag;
     UINT8 elemOffset;

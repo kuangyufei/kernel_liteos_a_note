@@ -41,13 +41,13 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define LITE_VDSO_DATAPAGE __attribute__((section(".data.vdso.datapage")))///< vdso分页数据区
+#define LITE_VDSO_DATAPAGE __attribute__((section(".data.vdso.datapage")))
 
 extern VOID OsVdsoTimeGet(VdsoDataPage *);
 
-extern CHAR __vdso_data_start;	///< 数据区起始地址 __vdso_data_start < __vdso_text_start
-extern CHAR __vdso_text_start;	///< 代码区起始地址
-extern CHAR __vdso_text_end;	///< 代码区结束地址
+extern CHAR __vdso_data_start;
+extern CHAR __vdso_text_start;
+extern CHAR __vdso_text_end;
 
 #ifdef __cplusplus
 #if __cplusplus

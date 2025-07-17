@@ -39,10 +39,10 @@
 #include "los_errno.h"
 
 typedef enum {
-    LOS_SYS_NORMAL_SLEEP = 0,	//普通睡眠
-    LOS_SYS_LIGHT_SLEEP,		//浅度睡眠
-    LOS_SYS_DEEP_SLEEP,			//深度睡眠
-    LOS_SYS_SHUTDOWN,			//关闭电源
+    LOS_SYS_NORMAL_SLEEP = 0,
+    LOS_SYS_LIGHT_SLEEP,
+    LOS_SYS_DEEP_SLEEP,
+    LOS_SYS_SHUTDOWN,
 } LOS_SysSleepEnum;
 
 typedef enum {

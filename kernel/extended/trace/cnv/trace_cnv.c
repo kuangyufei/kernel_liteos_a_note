@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -209,7 +209,7 @@ STATIC VOID LOS_TraceTaskResume(const LosTaskCB *taskCB)
 
 STATIC VOID LOS_TraceTaskSuspend(const LosTaskCB *taskCB)
 {
-    LOS_TRACE(TASK_SUSPEND, taskCB->taskID, taskCB->taskStatus,OsCurrTaskGet()->taskID);
+    LOS_TRACE(TASK_SUSPEND, taskCB->taskID, taskCB->taskStatus, OsCurrTaskGet()->taskID);
 }
 
 STATIC VOID LOS_TraceIsrEnter(UINT32 hwiNum)
@@ -294,7 +294,7 @@ STATIC VOID LOS_TraceUsrEvent(VOID *buffer, UINT32 len)
     LOS_MemFree(m_aucSysMem0, buffer);
 #endif
 }
-///< 将事件的钩子函数注册进HOOK框架 ,但谁能告诉我 cnv 是啥意�??  @note_thinking
+
 VOID OsTraceCnvInit(VOID)
 {
     LOS_HookReg(LOS_HOOK_TYPE_MEM_ALLOC, LOS_TraceMemAlloc);
@@ -319,19 +319,19 @@ VOID OsTraceCnvInit(VOID)
     LOS_HookReg(LOS_HOOK_TYPE_MUX_POST, LOS_TraceMuxPost);
     LOS_HookReg(LOS_HOOK_TYPE_MUX_PEND, LOS_TraceMuxPend);
     LOS_HookReg(LOS_HOOK_TYPE_MUX_DELETE, LOS_TraceMuxDelete);
-    LOS_HookReg(LOS_HOOK_TYPE_TASK_PRIMODIFY, LOS_TraceTaskPriModify);		// 修改任务优先    		
-    LOS_HookReg(LOS_HOOK_TYPE_TASK_DELETE, LOS_TraceTaskDelete);            // 删除任务
-    LOS_HookReg(LOS_HOOK_TYPE_TASK_CREATE, LOS_TraceTaskCreate);			// 创建任务
-    LOS_HookReg(LOS_HOOK_TYPE_TASK_SWITCHEDIN, LOS_TraceTaskSwitchedIn);	// 任务切换   	
-    LOS_HookReg(LOS_HOOK_TYPE_MOVEDTASKTOREADYSTATE, LOS_TraceTaskResume);  // 恢复任务
-    LOS_HookReg(LOS_HOOK_TYPE_MOVEDTASKTOSUSPENDEDLIST, LOS_TraceTaskSuspend);// 暂停任务
-    LOS_HookReg(LOS_HOOK_TYPE_ISR_ENTER, LOS_TraceIsrEnter);			// 进入中断
-    LOS_HookReg(LOS_HOOK_TYPE_ISR_EXIT, LOS_TraceIsrExit);				// 完成中断
-    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_CREATE, LOS_TraceSwtmrCreate);		// 创建定时    	
-    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_DELETE, LOS_TraceSwtmrDelete);  // 删除定时   
-    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_EXPIRED, LOS_TraceSwtmrExpired);	// 定时器时间到
-    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_START, LOS_TraceSwtmrStart);		// 启动定时  
-    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_STOP, LOS_TraceSwtmrStop);		// 停止定时
+    LOS_HookReg(LOS_HOOK_TYPE_TASK_PRIMODIFY, LOS_TraceTaskPriModify);
+    LOS_HookReg(LOS_HOOK_TYPE_TASK_DELETE, LOS_TraceTaskDelete);
+    LOS_HookReg(LOS_HOOK_TYPE_TASK_CREATE, LOS_TraceTaskCreate);
+    LOS_HookReg(LOS_HOOK_TYPE_TASK_SWITCHEDIN, LOS_TraceTaskSwitchedIn);
+    LOS_HookReg(LOS_HOOK_TYPE_MOVEDTASKTOREADYSTATE, LOS_TraceTaskResume);
+    LOS_HookReg(LOS_HOOK_TYPE_MOVEDTASKTOSUSPENDEDLIST, LOS_TraceTaskSuspend);
+    LOS_HookReg(LOS_HOOK_TYPE_ISR_ENTER, LOS_TraceIsrEnter);
+    LOS_HookReg(LOS_HOOK_TYPE_ISR_EXIT, LOS_TraceIsrExit);
+    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_CREATE, LOS_TraceSwtmrCreate);
+    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_DELETE, LOS_TraceSwtmrDelete);
+    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_EXPIRED, LOS_TraceSwtmrExpired);
+    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_START, LOS_TraceSwtmrStart);
+    LOS_HookReg(LOS_HOOK_TYPE_SWTMR_STOP, LOS_TraceSwtmrStop);
     LOS_HookReg(LOS_HOOK_TYPE_USR_EVENT, LOS_TraceUsrEvent);
     LOS_HookReg(LOS_HOOK_TYPE_IPC_WRITE_DROP, LOS_TraceIpcWriteDrop);
     LOS_HookReg(LOS_HOOK_TYPE_IPC_WRITE, LOS_TraceIpcWrite);

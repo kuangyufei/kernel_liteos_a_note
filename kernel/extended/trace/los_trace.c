@@ -1,3 +1,33 @@
+/*
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this list of
+ *    conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice, this list
+ *    of conditions and the following disclaimer in the documentation and/or other materials
+ *    provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors may be used
+ *    to endorse or promote products derived from this software without specific prior written
+ *    permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 /*!
  * @file    los_trace.c
  * @brief
@@ -33,36 +63,6 @@
  * @author  weharmonyos.com | 鸿蒙研究站 | 每天死磕一点点
  * @date    2021-11-20
  */
-/*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this list of
- *    conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- *    of conditions and the following disclaimer in the documentation and/or other materials
- *    provided with the distribution.
- *
- * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- *    to endorse or promote products derived from this software without specific prior written
- *    permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
 
 #include "los_trace_pri.h"
 #include "trace_pipeline.h"
@@ -85,11 +85,11 @@
 
 LITE_OS_SEC_BSS STATIC UINT32 g_traceEventCount;
 LITE_OS_SEC_BSS STATIC volatile enum TraceState g_traceState = TRACE_UNINIT;
-LITE_OS_SEC_DATA_INIT STATIC volatile BOOL g_enableTrace = FALSE; ///< trace开关
-LITE_OS_SEC_BSS STATIC UINT32 g_traceMask = TRACE_DEFAULT_MASK;	///< 全局变量设置事件掩码，仅记录某些模块的事件
+LITE_OS_SEC_DATA_INIT STATIC volatile BOOL g_enableTrace = FALSE;
+LITE_OS_SEC_BSS STATIC UINT32 g_traceMask = TRACE_DEFAULT_MASK;
 
-TRACE_EVENT_HOOK g_traceEventHook = NULL;	///< 事件钩子函数
-TRACE_DUMP_HOOK g_traceDumpHook = NULL;	///< 输出缓冲区数据
+TRACE_EVENT_HOOK g_traceEventHook = NULL;
+TRACE_DUMP_HOOK g_traceDumpHook = NULL;
 
 #ifdef LOSCFG_TRACE_CONTROL_AGENT
 LITE_OS_SEC_BSS STATIC UINT32 g_traceTaskId;
@@ -98,7 +98,7 @@ LITE_OS_SEC_BSS STATIC UINT32 g_traceTaskId;
 #define EVENT_MASK            0xFFFFFFF0
 #define MIN(x, y)             ((x) < (y) ? (x) : (y))
 
-LITE_OS_SEC_BSS STATIC TRACE_HWI_FILTER_HOOK g_traceHwiFilterHook = NULL; ///< 用于跟踪硬中断过滤的钩子函数
+LITE_OS_SEC_BSS STATIC TRACE_HWI_FILTER_HOOK g_traceHwiFilterHook = NULL;
 
 #ifdef LOSCFG_KERNEL_SMP
 LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_traceSpin);
@@ -174,41 +174,30 @@ VOID OsTraceSetObj(ObjData *obj, const LosTaskCB *tcb)
     }
 }
 
-/*!
- * @brief OsTraceHook	
- * 事件统一处理函数
- * @param eventType	
- * @param identity	
- * @param paramCount	
- * @param params	
- * @return	
- *
- * @see
- */
 VOID OsTraceHook(UINT32 eventType, UINTPTR identity, const UINTPTR *params, UINT16 paramCount)
 {
-    TraceEventFrame frame;//离线和在线模式下, trace数据的保存和传送以帧为单位
-    if ((eventType == TASK_CREATE) || (eventType == TASK_PRIOSET)) {//创建任务和设置任务优先级
+    TraceEventFrame frame;
+    if ((eventType == TASK_CREATE) || (eventType == TASK_PRIOSET)) {
         OsTraceObjAdd(eventType, identity); /* handle important obj info, these can not be filtered */
     }
 
-    if ((g_enableTrace == TRUE) && (eventType & g_traceMask)) {//使能跟踪模块且事件未屏蔽
+    if ((g_enableTrace == TRUE) && (eventType & g_traceMask)) {
         UINTPTR id = identity;
-        if (TRACE_GET_MODE_FLAG(eventType) == TRACE_HWI_FLAG) {//关于硬中断的事件
-            if (OsTraceHwiFilter(identity)) {//检查中断号是否过滤掉了,注意:中断控制器本身是可以屏蔽中断号的
+        if (TRACE_GET_MODE_FLAG(eventType) == TRACE_HWI_FLAG) {
+            if (OsTraceHwiFilter(identity)) {
                 return;
             }
-        } else if (TRACE_GET_MODE_FLAG(eventType) == TRACE_TASK_FLAG) {//关于任务的事件
-            id = OsTraceGetMaskTid(identity);//获取任务ID
-        } else if (eventType == MEM_INFO_REQ) {//内存信息事件
+        } else if (TRACE_GET_MODE_FLAG(eventType) == TRACE_TASK_FLAG) {
+            id = OsTraceGetMaskTid(identity);
+        } else if (eventType == MEM_INFO_REQ) {
             LOS_MEM_POOL_STATUS status;
-            LOS_MemInfoGet((VOID *)identity, &status);//获取内存各项信息
-            LOS_TRACE(MEM_INFO, identity, status.totalUsedSize, status.totalFreeSize);//打印信息
+            LOS_MemInfoGet((VOID *)identity, &status);
+            LOS_TRACE(MEM_INFO, identity, status.totalUsedSize, status.totalFreeSize);
             return;
         }
 
-        OsTraceSetFrame(&frame, eventType, id, params, paramCount);//创建帧数据
-        OsTraceWriteOrSendEvent(&frame);//保存(离线模式下)或者发送(在线模式下)帧数据
+        OsTraceSetFrame(&frame, eventType, id, params, paramCount);
+        OsTraceWriteOrSendEvent(&frame);
     }
 }
 
@@ -216,7 +205,7 @@ BOOL OsTraceIsEnable(VOID)
 {
     return g_enableTrace;
 }
-/// 初始化事件处理函数
+
 STATIC VOID OsTraceHookInstall(VOID)
 {
     g_traceEventHook = OsTraceHook;
@@ -239,12 +228,12 @@ STATIC VOID OsTraceCmdHandle(const TraceClientCmd *msg)
 
     switch (msg->cmd) {
         case TRACE_CMD_START:
-            LOS_TraceStart();//启动trace
+            LOS_TraceStart();
             break;
         case TRACE_CMD_STOP:
-            LOS_TraceStop();//关闭trace
+            LOS_TraceStop();
             break;
-        case TRACE_CMD_SET_EVENT_MASK://设置事件掩码
+        case TRACE_CMD_SET_EVENT_MASK:
             /* 4 params(UINT8) composition the mask(UINT32) */
             LOS_TraceEventMaskSet(TRACE_MASK_COMBINE(msg->param1, msg->param2, msg->param3, msg->param4));
             break;
@@ -255,7 +244,7 @@ STATIC VOID OsTraceCmdHandle(const TraceClientCmd *msg)
             break;
     }
 }
-///< trace任务的入口函数,接收串口数据
+
 VOID TraceAgent(VOID)
 {
     UINT32 ret;
@@ -263,39 +252,32 @@ VOID TraceAgent(VOID)
 
     while (1) {
         (VOID)memset_s(&msg, sizeof(TraceClientCmd), 0, sizeof(TraceClientCmd));
-        ret = OsTraceDataWait();//等待数据到来
+        ret = OsTraceDataWait();
         if (ret == LOS_OK) {
             OsTraceDataRecv((UINT8 *)&msg, sizeof(TraceClientCmd), 0);
-            OsTraceCmdHandle(&msg);//处理数据
+            OsTraceCmdHandle(&msg);
         }
     }
 }
 
-/*!
- * @brief OsCreateTraceAgentTask 创建trace任务	
- * 
- * @return	
- *
- * @see
- */
 STATIC UINT32 OsCreateTraceAgentTask(VOID)
 {
     UINT32 ret;
     TSK_INIT_PARAM_S taskInitParam;
 
     (VOID)memset_s((VOID *)(&taskInitParam), sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
-    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)TraceAgent;	//任务入口函数
-    taskInitParam.usTaskPrio = LOSCFG_TRACE_TASK_PRIORITY;	//任务优先级 2
-    taskInitParam.pcName = "TraceAgent";	//任务名称
-    taskInitParam.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE; //内核栈大小 16K
+    taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)TraceAgent;
+    taskInitParam.usTaskPrio = LOSCFG_TRACE_TASK_PRIORITY;
+    taskInitParam.pcName = "TraceAgent";
+    taskInitParam.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
 #ifdef LOSCFG_KERNEL_SMP
-    taskInitParam.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());//指定为当前CPU执行
+    taskInitParam.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
-    ret = LOS_TaskCreate(&g_traceTaskId, &taskInitParam);//创建任务并产生调度
+    ret = LOS_TaskCreate(&g_traceTaskId, &taskInitParam);
     return ret;
 }
 #endif
-/// 跟踪模块初始化
+
 STATIC UINT32 OsTraceInit(VOID)
 {
     UINT32 ret;
@@ -306,14 +288,14 @@ STATIC UINT32 OsTraceInit(VOID)
         goto LOS_ERREND;
     }
 
-#ifdef LOSCFG_TRACE_CLIENT_INTERACT //使能与Trace IDE （dev tools）的交互，包括数据可视化和流程控制
-    ret = OsTracePipelineInit();//在线模式(管道模式)的初始化
+#ifdef LOSCFG_TRACE_CLIENT_INTERACT
+    ret = OsTracePipelineInit();
     if (ret != LOS_OK) {
         goto LOS_ERREND;
     }
 #endif
 
-#ifdef LOSCFG_TRACE_CONTROL_AGENT //trace任务代理开关,所谓代理是创建专门的任务来处理 trace
+#ifdef LOSCFG_TRACE_CONTROL_AGENT
     ret = OsCreateTraceAgentTask();
     if (ret != LOS_OK) {
         TRACE_ERROR("trace init create agentTask error :0x%x\n", ret);
@@ -321,10 +303,8 @@ STATIC UINT32 OsTraceInit(VOID)
     }
 #endif
 
-#ifdef LOSCFG_RECORDER_MODE_OFFLINE //trace离线模式开关
-//离线模式会将trace frame记录到预先申请好的循环buffer中。如果循环buffer记录的frame过多则可能出现翻转，
-//会覆盖之前的记录，故保持记录的信息始终是最新的信息。
-    ret = OsTraceBufInit(LOSCFG_TRACE_BUFFER_SIZE); //离线模式下buf 大小,这个大小决定了装多少 ObjData 和 TraceEventFrame
+#ifdef LOSCFG_RECORDER_MODE_OFFLINE
+    ret = OsTraceBufInit(LOSCFG_TRACE_BUFFER_SIZE);
     if (ret != LOS_OK) {
 #ifdef LOSCFG_TRACE_CONTROL_AGENT
         (VOID)LOS_TaskDelete(g_traceTaskId);
@@ -333,8 +313,8 @@ STATIC UINT32 OsTraceInit(VOID)
     }
 #endif
 
-    OsTraceHookInstall();//安装HOOK框架
-    OsTraceCnvInit();//将事件处理函数注册到HOOK框架
+    OsTraceHookInstall();
+    OsTraceCnvInit();
 
     g_traceEventCount = 0;
 
@@ -349,7 +329,7 @@ STATIC UINT32 OsTraceInit(VOID)
 LOS_ERREND:
     return ret;
 }
-/// 启动Trace
+
 UINT32 LOS_TraceStart(VOID)
 {
     UINT32 intSave;
@@ -360,25 +340,25 @@ UINT32 LOS_TraceStart(VOID)
         goto START_END;
     }
 
-    if (g_traceState == TRACE_UNINIT) {//必须初始化好
+    if (g_traceState == TRACE_UNINIT) {
         TRACE_ERROR("trace not inited, be sure LOS_TraceInit excute success\n");
         ret = LOS_ERRNO_TRACE_ERROR_STATUS;
         goto START_END;
     }
 
-    OsTraceNotifyStart();//通知系统开始
+    OsTraceNotifyStart();
 
-    g_enableTrace = TRUE; //使能trace功能
-    g_traceState = TRACE_STARTED;//设置状态,已开始
+    g_enableTrace = TRUE;
+    g_traceState = TRACE_STARTED;
 
     TRACE_UNLOCK(intSave);
-    LOS_TRACE(MEM_INFO_REQ, m_aucSysMem0);//输出日志
+    LOS_TRACE(MEM_INFO_REQ, m_aucSysMem0);
     return ret;
 START_END:
     TRACE_UNLOCK(intSave);
     return ret;
 }
-/// 停止Trace(跟踪)
+
 VOID LOS_TraceStop(VOID)
 {
     UINT32 intSave;
@@ -394,12 +374,12 @@ VOID LOS_TraceStop(VOID)
 STOP_END:
     TRACE_UNLOCK(intSave);
 }
-/// 设置事件掩码，仅记录某些模块的事件
+
 VOID LOS_TraceEventMaskSet(UINT32 mask)
 {
     g_traceMask = mask & EVENT_MASK;
 }
-/// 输出Trace缓冲区数据
+
 VOID LOS_TraceRecordDump(BOOL toClient)
 {
     if (g_traceState != TRACE_STOPED) {
@@ -408,12 +388,12 @@ VOID LOS_TraceRecordDump(BOOL toClient)
     }
     OsTraceRecordDump(toClient);
 }
-/// 获取Trace缓冲区的首地址
+
 OfflineHead *LOS_TraceRecordGet(VOID)
 {
     return OsTraceRecordGet();
 }
-/// 清除Trace缓冲区中的事件
+
 VOID LOS_TraceReset(VOID)
 {
     if (g_traceState == TRACE_UNINIT) {
@@ -423,18 +403,17 @@ VOID LOS_TraceReset(VOID)
 
     OsTraceReset();
 }
-/// 注册过滤特定中断号事件的钩子函数
+
 VOID LOS_TraceHwiFilterHookReg(TRACE_HWI_FILTER_HOOK hook)
 {
     UINT32 intSave;
 
     TRACE_LOCK(intSave);
-    g_traceHwiFilterHook = hook;// 注册全局钩子函数
+    g_traceHwiFilterHook = hook;
     TRACE_UNLOCK(intSave);
 }
 
 #ifdef LOSCFG_SHELL
-/// 通过shell命令 设置事件掩码，仅记录某些模块的事件
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdTraceSetMask(INT32 argc, const CHAR **argv)
 {
     size_t mask;
@@ -473,9 +452,9 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdTraceDump(INT32 argc, const CHAR **argv)
     return LOS_OK;
 }
 
-SHELLCMD_ENTRY(tracestart_shellcmd,   CMD_TYPE_EX, "trace_start", 0, (CmdCallBackFunc)LOS_TraceStart);//通过shell 启动trace
+SHELLCMD_ENTRY(tracestart_shellcmd,   CMD_TYPE_EX, "trace_start", 0, (CmdCallBackFunc)LOS_TraceStart);
 SHELLCMD_ENTRY(tracestop_shellcmd,    CMD_TYPE_EX, "trace_stop",  0, (CmdCallBackFunc)LOS_TraceStop);
-SHELLCMD_ENTRY(tracesetmask_shellcmd, CMD_TYPE_EX, "trace_mask",  1, (CmdCallBackFunc)OsShellCmdTraceSetMask);//设置事件掩码，仅记录某些模块的事件
+SHELLCMD_ENTRY(tracesetmask_shellcmd, CMD_TYPE_EX, "trace_mask",  1, (CmdCallBackFunc)OsShellCmdTraceSetMask);
 SHELLCMD_ENTRY(tracereset_shellcmd,   CMD_TYPE_EX, "trace_reset", 0, (CmdCallBackFunc)LOS_TraceReset);
 SHELLCMD_ENTRY(tracedump_shellcmd,    CMD_TYPE_EX, "trace_dump", 1, (CmdCallBackFunc)OsShellCmdTraceDump);
 #endif

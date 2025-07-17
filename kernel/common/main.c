@@ -38,18 +38,17 @@
  * up指单核CPU, mp指多核CPU bl        main
  * @return LITE_OS_SEC_TEXT_INIT 
  */
-LITE_OS_SEC_TEXT_INIT INT32 main(VOID)//由主CPU执行,默认0号CPU 为主CPU 
+LITE_OS_SEC_TEXT_INIT INT32 main(VOID)
 {
     UINT32 ret = OsMain();
     if (ret != LOS_OK) {
         return (INT32)LOS_NOK;
     }
+    CPU_MAP_SET(0, OsHwIDGet());
 
-    CPU_MAP_SET(0, OsHwIDGet());//设置主CPU映射信息
-
-    OsSchedStart();//调度开始
+    OsSchedStart();
 
     while (1) {
-        __asm volatile("wfi");//WFI: wait for Interrupt 等待中断，即下一次中断发生前都在此hold住不干活
+        __asm volatile("wfi");
     }
 }

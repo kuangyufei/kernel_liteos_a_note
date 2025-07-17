@@ -56,7 +56,7 @@ void *memcpy(void *dest, const void *src, size_t len)
 }
 
 #undef strcat
-char *strcat (char *s, const char *append)
+char *strcat(char *s, const char *append)
 {
     if ((s == NULL) || (append == NULL)) {
         return NULL;

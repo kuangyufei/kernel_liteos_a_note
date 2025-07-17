@@ -33,13 +33,13 @@
 #include "los_process_pri.h"
 #include "internal.h"
 
-STATIC Container g_rootContainer;//根容器
-STATIC ContainerLimit g_containerLimit;//所有类型容器上限
-STATIC Atomic g_containerCount = 0xF0000000U;//容器总数量
+STATIC Container g_rootContainer;
+STATIC ContainerLimit g_containerLimit;
+STATIC Atomic g_containerCount = 0xF0000000U;
 #ifdef LOSCFG_USER_CONTAINER
 STATIC Credentials *g_rootCredentials = NULL;
 #endif
-//分配一个容器
+
 UINT32 OsAllocContainerID(VOID)
 {
     return LOS_AtomicIncRet(&g_containerCount);
@@ -57,7 +57,7 @@ VOID OsContainerInitSystemProcess(LosProcessCB *processCB)
 #endif
     return;
 }
-//获取指定容器上限值
+
 UINT32 OsGetContainerLimit(ContainerType type)
 {
     switch (type) {
@@ -108,7 +108,7 @@ UINT32 OsContainerLimitCheck(ContainerType type, UINT32 *containerCount)
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
-//设置容器上限
+
 UINT32 OsSetContainerLimit(ContainerType type, UINT32 value)
 {
     UINT32 intSave;
@@ -368,7 +368,7 @@ CREATE_CONTAINER:
 COPY_CONTAINERS:
     return CopyContainers(flags, child, parent, processID);
 }
-//释放进程容器
+
 VOID OsContainerFree(LosProcessCB *processCB)
 {
     LOS_AtomicDec(&processCB->container->rc);

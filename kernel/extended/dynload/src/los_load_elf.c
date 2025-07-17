@@ -48,13 +48,13 @@
 #endif
 
 STATIC BOOL g_srandInit;
-/// 打开ELF文件
+
 STATIC INT32 OsELFOpen(const CHAR *fileName, INT32 oflags)
 {
     INT32 ret;
     INT32 procFd;
 
-    procFd = AllocProcessFd();//分配一个文件描述符
+    procFd = AllocProcessFd();
     if (procFd < 0) {
         return -EMFILE;
     }
@@ -63,13 +63,13 @@ STATIC INT32 OsELFOpen(const CHAR *fileName, INT32 oflags)
         SetCloexecFlag(procFd);
     }
 
-    ret = open(fileName, oflags);//打开文件
+    ret = open(fileName, oflags);
     if (ret < 0) {
         FreeProcessFd(procFd);
         return -get_errno();
     }
 
-    AssociateSystemFd(procFd, ret);//分配一个系统描述符
+    AssociateSystemFd(procFd, ret);
     return procFd;
 }
 
@@ -744,7 +744,7 @@ STATIC VOID OsGetStackProt(ELFLoadInfo *loadInfo)
         }
     }
 }
-/// 分配栈区
+
 STATIC UINT32 OsStackAlloc(LosVmSpace *space, VADDR_T vaddr, UINT32 vsize, UINT32 psize, UINT32 regionFlags)
 {
     LosVmPage *vmPage = NULL;
@@ -805,14 +805,14 @@ STATIC INT32 OsSetArgParams(ELFLoadInfo *loadInfo, CHAR *const *argv, CHAR *cons
     if (((UINT32)loadInfo->stackProt & (PROT_READ | PROT_WRITE)) != (PROT_READ | PROT_WRITE)) {
         return -ENOEXEC;
     }
-    loadInfo->stackTopMax = USER_STACK_TOP_MAX - OsGetRndOffset(loadInfo->randomDevFD);//计算栈底位置
-    loadInfo->stackBase = loadInfo->stackTopMax - USER_STACK_SIZE;//计算栈基位置
-    loadInfo->stackSize = USER_STACK_SIZE; //用户态栈大小
-    loadInfo->stackParamBase = loadInfo->stackTopMax - USER_PARAM_BYTE_MAX; //栈参数空间
+    loadInfo->stackTopMax = USER_STACK_TOP_MAX - OsGetRndOffset(loadInfo->randomDevFD);
+    loadInfo->stackBase = loadInfo->stackTopMax - USER_STACK_SIZE;
+    loadInfo->stackSize = USER_STACK_SIZE;
+    loadInfo->stackParamBase = loadInfo->stackTopMax - USER_PARAM_BYTE_MAX;
     vmFlags = OsCvtProtFlagsToRegionFlags(loadInfo->stackProt, MAP_FIXED);
-    vmFlags |= VM_MAP_REGION_FLAG_STACK; //标记映射区为栈区
+    vmFlags |= VM_MAP_REGION_FLAG_STACK;
     ret = OsStackAlloc((VOID *)loadInfo->newSpace, loadInfo->stackBase, USER_STACK_SIZE,
-                       USER_PARAM_BYTE_MAX, vmFlags);//分配映射区
+                       USER_PARAM_BYTE_MAX, vmFlags);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d], Failed to alloc memory for user stack!\n", __FUNCTION__, __LINE__);
         return -ENOMEM;
@@ -937,7 +937,7 @@ STATIC INT32 OsMakeArgsStack(ELFLoadInfo *loadInfo, UINTPTR interpMapBase)
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_EXECFN, (UINTPTR)loadInfo->execName);
 
 #ifdef LOSCFG_KERNEL_VDSO
-    vdsoLoadAddr = OsVdsoLoad(OsCurrProcessGet());//为当前进程加载 VDSO ELF
+    vdsoLoadAddr = OsVdsoLoad(OsCurrProcessGet());
     if (vdsoLoadAddr != 0) {
         AUX_VEC_ENTRY(auxVector, vecIndex, AUX_SYSINFO_EHDR, vdsoLoadAddr);
     }

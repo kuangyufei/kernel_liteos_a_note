@@ -39,20 +39,20 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-/// trace管道操作
-typedef struct { // 串口实现方式:g_serialOps
-    UINT32 (*init)(VOID);///< 初始化
-    VOID (*dataSend)(UINT16 len, UINT8 *data);///< 将数据发送给串口
-    UINT32 (*dataRecv)(UINT8 *data, UINT32 size, UINT32 timeout);///< 接收数据
-    UINT32 (*wait)(VOID);///< 等待
+
+typedef struct {
+    UINT32 (*init)(VOID);
+    VOID (*dataSend)(UINT16 len, UINT8 *data);
+    UINT32 (*dataRecv)(UINT8 *data, UINT32 size, UINT32 timeout);
+    UINT32 (*wait)(VOID);
 } TracePipelineOps;
 
 /* used as tlv's tag */
 enum TraceMsgType {
-    NOTIFY,		///< 通知信息 即发送 TraceNotifyFrame
-    HEAD,		///< 数据头信息, 即发送 TraceBaseHeaderInfo
-    OBJ,		///< 指对象(例如:任务) 即发送 ObjData
-    EVENT,		///< 指事件(例如:定时器开始) 即发送 TraceEventFrame
+    NOTIFY,
+    HEAD,
+    OBJ,
+    EVENT,
     TRACE_MSG_MAX,
 };
 
