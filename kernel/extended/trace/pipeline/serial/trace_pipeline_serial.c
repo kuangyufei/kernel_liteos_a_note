@@ -122,7 +122,7 @@ STATIC const TracePipelineOps g_serialOps = {
     .init = SerialPipelineInit,    // 初始化函数指针
     .dataSend = SerialDataSend,    // 数据发送函数指针
     .dataRecv = SerialDataReceive, // 数据接收函数指针
-    .wait = SerialWait             // 等待函数指针
+    .wait = SerialWait,             // 等待函数指针
 };
 
 /**

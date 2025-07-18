@@ -29,19 +29,15 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "los_cppsupport.h"
-#include "los_printf.h"
 /**
  * @brief @file los_cppsupport.c
  * @verbatim 
 	基本概念
 		C++作为目前使用最广泛的编程语言之一，支持类、封装、重载等特性，是在C语言基础上
 		开发的一种面向对象的编程语言。
-
 	运作机制
 		STL（Standard Template Library）标准模板库，是一些“容器”的集合，也是算法和其他
 		一些组件的集合。其目的是标准化组件，使用标准化组件后可以不用重新开发，直接使用现成的组件。
-
 	开发流程
 		通过make menuconfig使能C++支持。
 		使用C++特性之前，需要调用函数LOS_CppSystemInit，初始化C++构造函数。
@@ -61,25 +57,33 @@
  * @endverbatim
  */
 
+#include "los_cppsupport.h"
+#include "los_printf.h"
+
+
+/**
+ * @brief 初始化函数指针类型定义
+ * @note 无参数、无返回值的初始化函数原型
+ */
 typedef VOID (*InitFunc)(VOID);
 
 /**
- * @brief 使用C++特性的前置条件 初始化C++构造函数
- * @param initArrayStart init_array段的起始地址
- * @param initArrayEnd init_array段的结束地址
- * @param flag 标记调用C++特性时的场景
- * @return LITE_OS_SEC_TEXT_MINOR 
+ * @brief C++系统初始化函数，执行初始化函数数组
+ * @param initArrayStart 初始化函数数组起始地址
+ * @param initArrayEnd 初始化函数数组结束地址
+ * @param flag 初始化标志（预留参数）
+ * @return 总是返回0，表示成功
  */
 LITE_OS_SEC_TEXT_MINOR INT32 LOS_CppSystemInit(UINTPTR initArrayStart, UINTPTR initArrayEnd, INT32 flag)
 {
-    UINTPTR *start     = (UINTPTR *)initArrayStart;
-    InitFunc initFunc   = NULL;
+    UINTPTR *start     = (UINTPTR *)initArrayStart;  /* 初始化函数数组起始指针 */
+    InitFunc initFunc   = NULL;                      /* 当前要执行的初始化函数 */
 
-    for (; start != (UINTPTR *)initArrayEnd; ++start) {
-        initFunc = (InitFunc)(*start);
-        initFunc();
+    for (; start != (UINTPTR *)initArrayEnd; ++start) {  // 遍历整个初始化函数数组
+        initFunc = (InitFunc)(*start);                   // 将数组元素转换为初始化函数指针
+        initFunc();                                      // 调用初始化函数
     }
 
-    return 0;
+    return 0;  /* 返回成功 */
 }
 

@@ -28,14 +28,6 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#ifndef _LOS_ELF_AUXVEC_H
-#define _LOS_ELF_AUXVEC_H
-
-#define AUX_VECTOR_SIZE_ARCH                 1
-#define AUX_VECTOR_SIZE_BASE                 20
-#define AUX_VECTOR_SIZE                      ((AUX_VECTOR_SIZE_ARCH + AUX_VECTOR_SIZE_BASE + 1) << 1)
-
 /*
 http://articles.manugarg.com/aboutelfauxiliaryvectors.html
 
@@ -49,35 +41,46 @@ ELF二进制加载器在以下文件 /usr/src/linux/fs/binfmt_elf.c中定义。
 ELF加载器解析ELF文件，在内存中映射各个程序段，设置入口点并初始化进程堆栈。
 它将ELF辅助向量与其他信息（如argc，argv，envp）一起放在进程堆栈中。初始化后，进程的堆栈如下所示：
 */
-/* AUX VECTOR */
-#define AUX_NULL             0
-#define AUX_IGNORE           1
-#define AUX_EXECFD           2
-#define AUX_PHDR             3
-#define AUX_PHENT            4
-#define AUX_PHNUM            5
-#define AUX_PAGESZ           6
-#define AUX_BASE             7
-#define AUX_FLAGS            8
-#define AUX_ENTRY            9
-#define AUX_NOTELF           10
-#define AUX_UID              11
-#define AUX_EUID             12
-#define AUX_GID              13
-#define AUX_EGID             14
-#define AUX_PLATFORM         15
-#define AUX_HWCAP            16
-#define AUX_CLKTCK           17
-#define AUX_SECURE           23
-#define AUX_BASE_PLATFORM    24
-#define AUX_RANDOM           25
-#define AUX_HWCAP2           26
-#define AUX_EXECFN           31
-#define AUX_SYSINFO_EHDR     33
+/**
+ * @file los_elf_auxvec_pri.h
+ * @brief ELF辅助向量（Auxiliary Vector）私有头文件
+ */
+#ifndef _LOS_ELF_AUXVEC_H  // 防止头文件重复包含
+#define _LOS_ELF_AUXVEC_H
+
+#define AUX_VECTOR_SIZE_ARCH                 1  // 架构相关的辅助向量数量
+#define AUX_VECTOR_SIZE_BASE                 20  // 基础辅助向量数量
+#define AUX_VECTOR_SIZE                      ((AUX_VECTOR_SIZE_ARCH + AUX_VECTOR_SIZE_BASE + 1) << 1)  // 辅助向量总大小（每个向量包含id和value，因此×2）
+
+
+/* 辅助向量类型定义 */
+#define AUX_NULL             0  // 辅助向量结束标记
+#define AUX_IGNORE           1  // 忽略此条目
+#define AUX_EXECFD           2  // 可执行文件的文件描述符
+#define AUX_PHDR             3  // 程序头表（Program Header Table）地址
+#define AUX_PHENT            4  // 程序头表条目大小
+#define AUX_PHNUM            5  // 程序头表条目数量
+#define AUX_PAGESZ           6  // 系统页面大小
+#define AUX_BASE             7  // 程序加载基地址
+#define AUX_FLAGS            8  // 标志位
+#define AUX_ENTRY            9  // 程序入口地址
+#define AUX_NOTELF           10  // 非ELF格式标记
+#define AUX_UID              11  // 用户ID
+#define AUX_EUID             12  // 有效用户ID
+#define AUX_GID              13  // 组ID
+#define AUX_EGID             14  // 有效组ID
+#define AUX_PLATFORM         15  // 平台名称
+#define AUX_HWCAP            16  // 硬件能力标志
+#define AUX_CLKTCK           17  // 时钟滴答频率
+#define AUX_SECURE           23  // 安全模式标志
+#define AUX_BASE_PLATFORM    24  // 基础平台名称
+#define AUX_RANDOM           25  // 随机数种子
+#define AUX_HWCAP2           26  // 扩展硬件能力标志
+#define AUX_EXECFN           31  // 可执行文件名
+#define AUX_SYSINFO_EHDR     33  // 系统信息头地址
 
 #define AUX_VEC_ENTRY(vecEnt, vecId, auxId, auxVal) do { \
-    (vecEnt)[(vecId)++] = (auxId); \
-    (vecEnt)[(vecId)++] = (auxVal); \
-} while (0)
-
+    (vecEnt)[(vecId)++] = (auxId);    \ // 设置辅助向量ID
+    (vecEnt)[(vecId)++] = (auxVal);   \ // 设置辅助向量值
+} while (0)  // 循环体为空，用于确保宏定义作为单个语句执行
 #endif /* _LOS_ELF_AUXVEC_H */

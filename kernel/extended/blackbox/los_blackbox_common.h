@@ -40,13 +40,12 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
-#define ERROR_INFO_HEADER_FORMAT     "#### error info ####\nevent: %s\nmodule: %s\nerrorDesc: %s\n"
-#define ERROR_INFO_MAX_LEN           768
-#define Min(a, b)                    (((a) > (b)) ? (b) : (a))
+#define ERROR_INFO_HEADER_FORMAT     "#### error info ####\nevent: %s\nmodule: %s\nerrorDesc: %s\n"  // 错误信息头部格式化字符串，包含事件、模块和错误描述字段
+#define ERROR_INFO_MAX_LEN           768                                                         // 错误信息最大长度（字节）
+#define Min(a, b)                    (((a) > (b)) ? (b) : (a))                                 // 取两个数中的较小值
 #define BBOX_PRINT_ERR(format, ...)  PRINTK("bbox: func: %s, line: %d, Err: " \
-    format, __func__, __LINE__, ##__VA_ARGS__)
-#define BBOX_PRINT_INFO(format, ...) PRINTK("bbox: Info: " format, ##__VA_ARGS__)
+    format, __func__, __LINE__, ##__VA_ARGS__)                                                 // 黑盒错误打印宏，包含函数名和行号信息
+#define BBOX_PRINT_INFO(format, ...) PRINTK("bbox: Info: " format, ##__VA_ARGS__)               // 黑盒信息打印宏，用于输出普通日志信息
 
 int FullWriteFile(const char *filePath, const char *buf, size_t bufSize, int isAppend);
 int SaveBasicErrorInfo(const char *filePath, const struct ErrorInfo *info);

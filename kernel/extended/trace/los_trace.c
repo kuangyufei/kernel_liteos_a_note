@@ -153,7 +153,8 @@ STATIC_INLINE BOOL OsTraceHwiFilter(UINT32 hwiNum)
  *   2. 参数数量超过最大限制(LOSCFG_TRACE_FRAME_MAX_PARAMS)时截断
  *   3. 根据配置宏(LOSCFG_TRACE_FRAME_CORE_MSG等)决定是否填充扩展信息
  */
-STATIC VOID OsTraceSetFrame(TraceEventFrame *frame, UINT32 eventType, UINTPTR identity, const UINTPTR *params, UINT16 paramCount)
+STATIC VOID OsTraceSetFrame(TraceEventFrame *frame, UINT32 eventType, UINTPTR identity, const UINTPTR *params,
+    UINT16 paramCount)
 {
     INT32 i;
     UINT32 intSave;

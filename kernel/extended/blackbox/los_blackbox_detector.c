@@ -42,22 +42,33 @@
 /* ------------ global function declarations ------------ */
 /* ------------ local variables ------------ */
 /* ------------ function definitions ------------ */
+/**
+ * @brief 通过文件路径上传事件数据
+ * @param filePath 事件文件的路径字符串，不能为空
+ * @return 成功返回0，失败返回-1
+ */
 int UploadEventByFile(const char *filePath)
 {
-    if (filePath == NULL) {
-        BBOX_PRINT_ERR("filePath is NULL\n");
-        return -1;
+    if (filePath == NULL) {  // 检查文件路径参数是否为空指针
+        BBOX_PRINT_ERR("filePath is NULL\n");  // 打印参数为空错误信息
+        return -1;  // 返回错误码-1表示失败
     }
 
-    return 0;
+    return 0;  // 返回0表示成功
 }
 
+/**
+ * @brief 通过数据流上传事件数据
+ * @param buf 数据缓冲区指针，不能为空
+ * @param bufSize 数据缓冲区大小，必须大于0
+ * @return 成功返回0，失败返回-1
+ */
 int UploadEventByStream(const char *buf, size_t bufSize)
 {
-    if (buf == NULL || bufSize == 0) {
-        BBOX_PRINT_ERR("buf: %p, bufSize: %u\n", buf, (UINT32)bufSize);
-        return -1;
+    if (buf == NULL || bufSize == 0) {  // 检查缓冲区指针和大小是否有效
+        BBOX_PRINT_ERR("buf: %p, bufSize: %u\n", buf, (UINT32)bufSize); // 打印缓冲区无效错误信息
+        return -1;  // 返回错误码-1表示失败
     }
 
-    return 0;
+    return 0;  // 返回0表示成功
 }

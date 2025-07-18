@@ -167,7 +167,7 @@ STATIC TracePipelineOps g_defaultOps = {
     .init = DefaultPipelineInit,    // 初始化函数指针
     .dataSend = DefaultDataSend,    // 数据发送函数指针
     .dataRecv = DefaultDataReceive, // 数据接收函数指针
-    .wait = DefaultWait             // 等待函数指针
+    .wait = DefaultWait,             // 等待函数指针
 };
 
 STATIC const TracePipelineOps *g_tracePipelineOps = &g_defaultOps;  // 跟踪管道操作集指针，初始化为默认操作集

@@ -40,12 +40,14 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
-typedef struct {
-    CirBuf ringbuf;           /* ring buffer */
-    UINT32 waterMark;          /* notify water mark */
-} PerfOutputCB;
-
+/**
+ * @brief 性能输出控制块结构体
+ * @details 管理性能数据输出的循环缓冲区及水位通知阈值
+ */
+typedef struct { 
+    CirBuf ringbuf;           /* 循环缓冲区实例，用于存储性能数据 */
+    UINT32 waterMark;          /* 水位通知阈值，当缓冲区使用量达到此值时触发通知 */
+} PerfOutputCB; 
 extern UINT32 OsPerfOutputInit(VOID *buf, UINT32 size);
 extern UINT32 OsPerfOutputRead(CHAR *dest, UINT32 size);
 extern UINT32 OsPerfOutputWrite(CHAR *data, UINT32 size);

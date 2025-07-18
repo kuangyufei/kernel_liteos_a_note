@@ -42,46 +42,48 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-/*
- * If LMS_CRASH_MODE == 0
- * the program would NOT be crashed once the sanitizer detected an error.
- * If LMS_CRASM_MODE > 0
- * the program would be crashed once the sanitizer detected an error.
+/**
+ * @brief LMS崩溃模式控制宏
+ * @details 控制当sanitizer检测到错误时程序是否崩溃
+ *          - 0: 检测到错误时不崩溃
+ *          - >0: 检测到错误时崩溃
  */
-#define LMS_CRASH_MODE 0
+#define LMS_CRASH_MODE 0  // LMS崩溃模式开关，0表示不崩溃，非0表示崩溃
 
-/*
- * USPACE_MAP_BASE
- * is the start address of user space.
+/**
+ * @brief 用户空间起始地址宏
+ * @details 定义用户空间的起始地址
  */
-#define USPACE_MAP_BASE 0x00000000
+#define USPACE_MAP_BASE 0x00000000  // 用户空间起始地址
 
-/*
- * USPACE_MAP_SIZE
- * is the address size of the user space, and [USPACE_MAP_BASE, USPACE_MAP_BASE + USPACE_MAP_SIZE]
- * must cover the HEAP section.
+/**
+ * @brief 用户空间大小宏
+ * @details 定义用户空间的地址大小，[USPACE_MAP_BASE, USPACE_MAP_BASE + USPACE_MAP_SIZE]必须覆盖堆区域
  */
-#define USPACE_MAP_SIZE 0x3ef00000
+#define USPACE_MAP_SIZE 0x3ef00000  // 用户空间大小
 
-/*
- * LMS_OUTPUT_ERROR can be redefined to redirect output logs.
+/**
+ * @brief 错误日志输出宏
+ * @details 可重定义该宏以重定向错误日志输出，默认输出红色文本
  */
 #ifndef LMS_OUTPUT_ERROR
 #define LMS_OUTPUT_ERROR(fmt, ...)                                             \
     do {                                                                       \
-        (printf("\033[31;1m"), printf(fmt, ##__VA_ARGS__), printf("\033[0m")); \
+        (printf("\033[31;1m"), printf(fmt, ##__VA_ARGS__), printf("\033[0m")); \ // 设置红色文本并输出错误信息，最后重置文本颜色
     } while (0)
 #endif
 
-/*
- * LMS_OUTPUT_INFO can be redefined to redirect output logs.
+/**
+ * @brief 信息日志输出宏
+ * @details 可重定义该宏以重定向信息日志输出，默认输出黄色文本
  */
 #ifndef LMS_OUTPUT_INFO
 #define LMS_OUTPUT_INFO(fmt, ...)                                              \
     do {                                                                       \
-        (printf("\033[33;1m"), printf(fmt, ##__VA_ARGS__), printf("\033[0m")); \
+        (printf("\033[33;1m"), printf(fmt, ##__VA_ARGS__), printf("\033[0m")); \ // 设置黄色文本并输出信息，最后重置文本颜色
     } while (0)
 #endif
+
 
 
 #ifdef __cplusplus

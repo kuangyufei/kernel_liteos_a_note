@@ -47,45 +47,60 @@
 #include "los_task_pri.h"
 #include "securec.h"
 #include "sys/reboot.h"
-
 /* ------------ local macroes ------------ */
-#define LOG_WAIT_TIMES 10
-#define LOG_PART_WAIT_TIME 1000
+#define LOG_WAIT_TIMES 10                                  // 日志分区等待尝试次数
+#define LOG_PART_WAIT_TIME 1000                            // 日志分区等待间隔时间(毫秒)
 
 /* ------------ local prototypes ------------ */
+/**
+ * @brief 黑盒模块操作集结构体
+ * @note 用于管理黑盒系统中各模块的操作接口，通过链表节点挂载到全局操作链表
+ */
 typedef struct BBoxOps {
-    LOS_DL_LIST opsList;
-    struct ModuleOps ops;
+    LOS_DL_LIST opsList;                                    // 链表节点，用于挂载到全局操作链表
+    struct ModuleOps ops;                                   // 模块操作接口集合
 } BBoxOps;
 
 /* ------------ local function declarations ------------ */
 /* ------------ global function declarations ------------ */
 /* ------------ local variables ------------ */
-static bool g_bboxInitSucc = FALSE;
-static UINT32 g_opsListSem = 0;
-static UINT32 g_tempErrInfoSem = 0;
-static UINT32 g_tempErrLogSaveSem = 0;
-static LOS_DL_LIST_HEAD(g_opsList);
-struct ErrorInfo *g_tempErrInfo;
+static bool g_bboxInitSucc = FALSE;                         // 黑盒初始化成功标志：FALSE-未初始化，TRUE-已初始化
+static UINT32 g_opsListSem = 0;                             // 操作链表保护信号量
+static UINT32 g_tempErrInfoSem = 0;                         // 临时错误信息信号量
+static UINT32 g_tempErrLogSaveSem = 0;                      // 临时错误日志保存信号量
+static LOS_DL_LIST_HEAD(g_opsList);                         // 全局操作链表头节点
+struct ErrorInfo *g_tempErrInfo;                            // 临时错误信息结构体指针
 
 /* ------------ function definitions ------------ */
+/**
+ * @brief 格式化错误信息到结构体
+ * @param info 错误信息结构体指针，用于存储格式化后的错误信息
+ * @param event 事件名称字符串，长度不超过EVENT_MAX_LEN
+ * @param module 模块名称字符串，长度不超过MODULE_MAX_LEN
+ * @param errorDesc 错误描述字符串，长度不超过ERROR_DESC_MAX_LEN
+ * @note 所有输入指针参数必须非空，否则会打印错误信息并直接返回
+ */
 static void FormatErrorInfo(struct ErrorInfo *info,
                             const char event[EVENT_MAX_LEN],
                             const char module[MODULE_MAX_LEN],
                             const char errorDesc[ERROR_DESC_MAX_LEN])
 {
+    // 参数有效性检查：任何指针为空则打印错误信息并返回
     if (info == NULL || event == NULL || module == NULL || errorDesc == NULL) {
         BBOX_PRINT_ERR("info: %p, event: %p, module: %p, errorDesc: %p!\n", info, event, module, errorDesc);
         return;
     }
 
-    (void)memset_s(info, sizeof(*info), 0, sizeof(*info));
+    (void)memset_s(info, sizeof(*info), 0, sizeof(*info));  // 清空错误信息结构体
+    // 拷贝事件名称，确保不越界
     if (strncpy_s(info->event, sizeof(info->event), event, Min(strlen(event), sizeof(info->event) - 1)) != EOK) {
         BBOX_PRINT_ERR("info->event is not enough or strncpy_s failed!\n");
     }
+    // 拷贝模块名称，确保不越界
     if (strncpy_s(info->module, sizeof(info->module), module, Min(strlen(module), sizeof(info->module) - 1)) != EOK) {
         BBOX_PRINT_ERR("info->module is not enough or strncpy_s failed!\n");
     }
+    // 拷贝错误描述，确保不越界
     if (strncpy_s(info->errorDesc, sizeof(info->errorDesc), errorDesc,
         Min(strlen(errorDesc), sizeof(info->errorDesc) - 1)) != EOK) {
         BBOX_PRINT_ERR("info->errorDesc is not enough or strncpy_s failed!\n");
@@ -93,61 +108,87 @@ static void FormatErrorInfo(struct ErrorInfo *info,
 }
 
 #ifdef LOSCFG_FS_VFS
+/**
+ * @brief VFS模式下等待日志分区就绪
+ * @note 循环等待直到IsLogPartReady()返回TRUE，表示日志分区已挂载
+ */
 static void WaitForLogPart(void)
 {
     BBOX_PRINT_INFO("wait for log part [%s] begin!\n", LOSCFG_BLACKBOX_LOG_PART_MOUNT_POINT);
-    while (!IsLogPartReady()) {
-        LOS_Msleep(LOG_PART_WAIT_TIME);
+    while (!IsLogPartReady()) {                             // 检查日志分区是否就绪
+        LOS_Msleep(LOG_PART_WAIT_TIME);                     // 未就绪则等待指定间隔
     }
     BBOX_PRINT_INFO("wait for log part [%s] end!\n", LOSCFG_BLACKBOX_LOG_PART_MOUNT_POINT);
 }
 #else
+/**
+ * @brief 非VFS模式下等待日志分区就绪
+ * @note 有限次数等待（LOG_WAIT_TIMES次），每次等待LOG_PART_WAIT_TIME毫秒
+ */
 static void WaitForLogPart(void)
 {
     int i = 0;
 
     BBOX_PRINT_INFO("wait for log part [%s] begin!\n", LOSCFG_BLACKBOX_LOG_PART_MOUNT_POINT);
-    while (i++ < LOG_WAIT_TIMES) {
-        LOS_Msleep(LOG_PART_WAIT_TIME);
+    while (i++ < LOG_WAIT_TIMES) {                          // 最多等待LOG_WAIT_TIMES次
+        LOS_Msleep(LOG_PART_WAIT_TIME);                     // 每次等待指定间隔
     }
     BBOX_PRINT_INFO("wait for log part [%s] end!\n", LOSCFG_BLACKBOX_LOG_PART_MOUNT_POINT);
 }
 #endif
 
+/**
+ * @brief 根据错误信息查找对应的模块操作集
+ * @param info 错误信息结构体，包含目标模块名称
+ * @param ops 输出参数，用于返回找到的模块操作集指针
+ * @return TRUE-找到对应模块操作集，FALSE-未找到
+ * @note 查找过程通过遍历全局操作链表g_opsList实现，匹配模块名称字符串
+ */
 static bool FindModuleOps(struct ErrorInfo *info, BBoxOps **ops)
 {
-    bool found = false;
+    bool found = false;                                     // 查找结果标志
 
+    // 参数有效性检查：info或ops为空则直接返回失败
     if (info == NULL || ops == NULL) {
         BBOX_PRINT_ERR("info: %p, ops: %p!\n", info, ops);
         return found;
     }
 
+    // 遍历全局操作链表，查找模块名称匹配的操作集
     LOS_DL_LIST_FOR_EACH_ENTRY(*ops, &g_opsList, BBoxOps, opsList) {
         if (*ops != NULL && strcmp((*ops)->ops.module, info->module) == 0) {
-            found = true;
+            found = true;                                   // 找到匹配模块，设置标志并退出循环
             break;
         }
     }
     if (!found) {
-        BBOX_PRINT_ERR("[%s] hasn't been registered!\n", info->module);
+        BBOX_PRINT_ERR("[%s] hasn't been registered!\n", info->module); // 未找到时打印错误信息
     }
 
     return found;
 }
 
+/**
+ * @brief 调用模块操作集中的Dump和Reset接口
+ * @param info 错误信息结构体，包含事件和模块信息
+ * @param ops 模块操作集指针，包含要调用的接口函数
+ * @note 仅当接口函数指针非空时才调用对应的操作
+ */
 static void InvokeModuleOps(struct ErrorInfo *info, const BBoxOps *ops)
 {
+    // 参数有效性检查：info或ops为空则直接返回
     if (info == NULL || ops == NULL) {
         BBOX_PRINT_ERR("info: %p, ops: %p!\n", info, ops);
         return;
     }
 
+    // 如果Dump接口存在，则调用模块日志转储功能
     if (ops->ops.Dump != NULL) {
         BBOX_PRINT_INFO("[%s] starts dumping log!\n", ops->ops.module);
         ops->ops.Dump(LOSCFG_BLACKBOX_LOG_ROOT_PATH, info);
         BBOX_PRINT_INFO("[%s] ends dumping log!\n", ops->ops.module);
     }
+    // 如果Reset接口存在，则调用模块重置功能
     if (ops->ops.Reset != NULL) {
         BBOX_PRINT_INFO("[%s] starts resetting!\n", ops->ops.module);
         ops->ops.Reset(info);
@@ -155,39 +196,52 @@ static void InvokeModuleOps(struct ErrorInfo *info, const BBoxOps *ops)
     }
 }
 
+/**
+ * @brief 保存各模块最后日志并触发事件上传
+ * @param logDir 日志保存目录路径
+ * @note 函数会遍历所有已注册模块，调用其GetLastLogInfo和SaveLastLog接口
+ *       操作链表期间会获取g_opsListSem信号量进行互斥保护
+ */
 static void SaveLastLog(const char *logDir)
 {
-    struct ErrorInfo *info = NULL;
-    BBoxOps *ops = NULL;
+    struct ErrorInfo *info = NULL;                          // 错误信息结构体指针
+    BBoxOps *ops = NULL;                                    // 模块操作集指针
 
+    // 分配错误信息结构体内存
     info = LOS_MemAlloc(m_aucSysMem1, sizeof(*info));
     if (info == NULL) {
-        BBOX_PRINT_ERR("LOS_MemAlloc failed!\n");
+        BBOX_PRINT_ERR("LOS_MemAlloc failed!\n");          // 内存分配失败时打印错误
         return;
     }
 
+    // 获取操作链表信号量，确保遍历链表期间的线程安全
     if (LOS_SemPend(g_opsListSem, LOS_WAIT_FOREVER) != LOS_OK) {
         BBOX_PRINT_ERR("Request g_opsListSem failed!\n");
-        (void)LOS_MemFree(m_aucSysMem1, info);
+        (void)LOS_MemFree(m_aucSysMem1, info);              // 释放已分配的内存
         return;
     }
+    // 创建日志根目录，失败则释放资源并返回
     if (CreateLogDir(LOSCFG_BLACKBOX_LOG_ROOT_PATH) != 0) {
-        (void)LOS_SemPost(g_opsListSem);
-        (void)LOS_MemFree(m_aucSysMem1, info);
+        (void)LOS_SemPost(g_opsListSem);                    // 释放信号量
+        (void)LOS_MemFree(m_aucSysMem1, info);              // 释放内存
         BBOX_PRINT_ERR("Create log dir [%s] failed!\n", LOSCFG_BLACKBOX_LOG_ROOT_PATH);
         return;
     }
+    // 遍历所有已注册的模块操作集
     LOS_DL_LIST_FOR_EACH_ENTRY(ops, &g_opsList, BBoxOps, opsList) {
         if (ops == NULL) {
-            BBOX_PRINT_ERR("ops: NULL, please check it!\n");
+            BBOX_PRINT_ERR("ops: NULL, please check it!\n"); // 跳过空操作集
             continue;
         }
+        // 检查模块是否实现了必要的日志接口
         if (ops->ops.GetLastLogInfo != NULL && ops->ops.SaveLastLog != NULL) {
-            (void)memset_s(info, sizeof(*info), 0, sizeof(*info));
+            (void)memset_s(info, sizeof(*info), 0, sizeof(*info)); // 清空错误信息结构体
+            // 获取模块最后日志信息
             if (ops->ops.GetLastLogInfo(info) != 0) {
                 BBOX_PRINT_ERR("[%s] failed to get log info!\n", ops->ops.module);
-                continue;
+                continue;                                   // 获取失败则处理下一个模块
             }
+            // 保存模块最后日志
             BBOX_PRINT_INFO("[%s] starts saving log!\n", ops->ops.module);
             if (ops->ops.SaveLastLog(logDir, info) != 0) {
                 BBOX_PRINT_ERR("[%s] failed to save log!\n", ops->ops.module);
@@ -195,19 +249,20 @@ static void SaveLastLog(const char *logDir)
                 BBOX_PRINT_INFO("[%s] ends saving log!\n", ops->ops.module);
                 BBOX_PRINT_INFO("[%s] starts uploading event [%s]\n", info->module, info->event);
 #ifdef LOSCFG_FS_VFS
-                (void)UploadEventByFile(KERNEL_FAULT_LOG_PATH);
+                (void)UploadEventByFile(KERNEL_FAULT_LOG_PATH); // VFS模式下通过文件上传事件
 #else
-                BBOX_PRINT_INFO("LOSCFG_FS_VFS isn't defined!\n");
+                BBOX_PRINT_INFO("LOSCFG_FS_VFS isn't defined!\n"); // 非VFS模式下不支持文件上传
 #endif
                 BBOX_PRINT_INFO("[%s] ends uploading event [%s]\n", info->module, info->event);
             }
         } else {
+            // 模块未实现必要接口时打印错误信息
             BBOX_PRINT_ERR("module [%s], GetLastLogInfo: %p, SaveLastLog: %p!\n",
                            ops->ops.module, ops->ops.GetLastLogInfo, ops->ops.SaveLastLog);
         }
     }
-    (void)LOS_SemPost(g_opsListSem);
-    (void)LOS_MemFree(m_aucSysMem1, info);
+    (void)LOS_SemPost(g_opsListSem);                        // 释放操作链表信号量
+    (void)LOS_MemFree(m_aucSysMem1, info);                  // 释放错误信息结构体内存
 }
 
 static void SaveLogWithoutReset(struct ErrorInfo *info)

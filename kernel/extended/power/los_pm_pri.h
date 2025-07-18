@@ -59,4 +59,3 @@ STATIC INLINE BOOL OsIsPmMode(VOID)
 #endif
 
 #endif
-#endif
