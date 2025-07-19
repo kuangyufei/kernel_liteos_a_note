@@ -41,21 +41,21 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-//循环buf常用于控制台和socket buf,
 typedef enum {
-    CBUF_UNUSED,//未使用
-    CBUF_USED	//已使用
-} CirBufStatus;
+    CBUF_UNUSED,  // 缓冲区未使用状态
+    CBUF_USED     // 缓冲区已使用状态
+} CirBufStatus;  // 循环缓冲区状态枚举类型
 
 typedef struct {
-    UINT32 startIdx; 	//开始位置
-    UINT32 endIdx;		//结束位置
-    UINT32 size;		//大小
-    UINT32 remain;		//剩余多少
-    SPIN_LOCK_S lock;	//自旋锁
-    CirBufStatus status;//两种状态
-    CHAR *fifo;			//顺序buffer ,1K
-} CirBuf;
+    UINT32 startIdx;       // 缓冲区起始索引
+    UINT32 endIdx;         // 缓冲区结束索引
+    UINT32 size;           // 缓冲区总大小
+    UINT32 remain;         // 缓冲区剩余空间
+    SPIN_LOCK_S lock;      // 自旋锁，用于多线程同步
+    CirBufStatus status;   // 缓冲区状态标识
+    CHAR *fifo;            // 数据存储指针
+} CirBuf;  // 循环缓冲区结构体定义
+
 
 extern UINT32 LOS_CirBufInit(CirBuf *cirbufCB, CHAR *fifo, UINT32 size);
 extern VOID LOS_CirBufDeinit(CirBuf *cirbufCB);

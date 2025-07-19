@@ -88,7 +88,7 @@ const STATIC SchedOps g_priorityOps = {
     .timeSliceUpdate = HPFTimeSliceUpdate, // 更新时间片
     .schedParamCompare = HPFParamCompare, // 比较调度参数
     .priorityInheritance = HPFPriorityInheritance, // 优先级继承
-    .priorityRestore = HPFPriorityRestore  // 优先级恢复
+    .priorityRestore = HPFPriorityRestore,  // 优先级恢复
 };
 
 

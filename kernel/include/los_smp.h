@@ -39,9 +39,19 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
+/**
+ * @brief 设置SMP（对称多处理）操作函数集
+ * @param[in] ops SMP操作函数集结构体指针，包含SMP相关的回调函数
+ * @return 无
+ */
+VOID LOS_SmpOpsSet(struct SmpOps *ops);  // 设置SMP操作函数集
 
-VOID LOS_SmpOpsSet(struct SmpOps *ops);
-VOID OsSmpInit(VOID);
+/**
+ * @brief 初始化SMP系统
+ * @details 负责多处理器系统的初始化工作，包括CPU核启动、中断路由等
+ * @return 无
+ */
+VOID OsSmpInit(VOID);  // 初始化SMP系统
 
 #ifdef __cplusplus
 #if __cplusplus

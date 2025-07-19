@@ -33,22 +33,27 @@
 #include "los_sched_pri.h"
 
 /**
- * @brief 
+ * @brief 内核主入口函数
+ * @details 操作系统启动的第一个C语言函数，完成内核初始化并启动调度器
  * 内核入口函数,由汇编调用,见于reset_vector_up.S 和 reset_vector_mp.S 
  * up指单核CPU, mp指多核CPU bl        main
- * @return LITE_OS_SEC_TEXT_INIT 
+ * @return INT32 理论上永不返回，仅在初始化失败时返回LOS_NOK
+ * @attention 函数使用LITE_OS_SEC_TEXT_INIT属性，确保代码被放置在安全可执行段
+ * @ingroup kernel_bootstrap
  */
 LITE_OS_SEC_TEXT_INIT INT32 main(VOID)
 {
-    UINT32 ret = OsMain();
-    if (ret != LOS_OK) {
-        return (INT32)LOS_NOK;
+    UINT32 ret = OsMain();  // 调用内核主初始化函数
+    if (ret != LOS_OK) {    // 检查初始化结果
+        return (INT32)LOS_NOK;  // 初始化失败，返回错误码
     }
+    // 设置CPU映射表：逻辑CPU 0映射到物理CPU ID
     CPU_MAP_SET(0, OsHwIDGet());
 
-    OsSchedStart();
+    OsSchedStart();  // 启动内核调度器，从此开始多任务调度
 
+    // 调度器启动后应永不返回至此，若返回则进入低功耗等待
     while (1) {
-        __asm volatile("wfi");
+        __asm volatile("wfi");  // 执行等待中断指令，进入低功耗状态
     }
 }

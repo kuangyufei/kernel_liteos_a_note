@@ -45,93 +45,91 @@
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
 #ifdef LOSCFG_KERNEL_HOOK
 /**
  * @ingroup los_hook
- * Hook error code: The hook pool is insufficient.
+ * 钩子错误码：钩子池不足。
  *
- * Value: 0x02001f00
+ * 值：0x02001f00
  *
- * Solution: Deregister the registered hook.
+ * 解决方法：注销已注册的钩子。
  */
-#define LOS_ERRNO_HOOK_POOL_IS_FULL             LOS_ERRNO_OS_ERROR(LOS_MOD_HOOK, 0x00)
+#define LOS_ERRNO_HOOK_POOL_IS_FULL             LOS_ERRNO_OS_ERROR(LOS_MOD_HOOK, 0x00)  // 钩子池已满错误码
 
 /**
  * @ingroup los_hook
- * Hook error code: Invalid parameter.
+ * 钩子错误码：无效参数。
  *
- * Value: 0x02001f01
+ * 值：0x02001f01
  *
- * Solution: Check the input parameters of LOS_HookReg.
+ * 解决方法：检查LOS_HookReg的输入参数。
  */
-#define LOS_ERRNO_HOOK_REG_INVALID              LOS_ERRNO_OS_ERROR(LOS_MOD_HOOK, 0x01)
+#define LOS_ERRNO_HOOK_REG_INVALID              LOS_ERRNO_OS_ERROR(LOS_MOD_HOOK, 0x01)  // 钩子注册参数无效错误码
 
 /**
  * @ingroup los_hook
- * Hook error code: Invalid parameter.
+ * 钩子错误码：无效参数。
  *
- * Value: 0x02001f02
+ * 值：0x02001f02
  *
- * Solution: Check the input parameters of LOS_HookUnReg.
+ * 解决方法：检查LOS_HookUnReg的输入参数。
  */
-#define LOS_ERRNO_HOOK_UNREG_INVALID            LOS_ERRNO_OS_ERROR(LOS_MOD_HOOK, 0x02)
+#define LOS_ERRNO_HOOK_UNREG_INVALID            LOS_ERRNO_OS_ERROR(LOS_MOD_HOOK, 0x02)  // 钩子注销参数无效错误码
 
 /**
  * @ingroup los_hook
- * @brief Registration of hook function.
+ * @brief 钩子函数注册
  *
- * @par Description:
- * This API is used to register hook function.
+ * @par 描述
+ * 本API用于注册钩子函数
  *
  * @attention
  * <ul>
- * <li> None.</li>
+ * <li>无</li>
  * </ul>
  *
- * @param hookType  [IN] Register the type of the hook.
- * @param hookFn  [IN] The function to be registered.
+ * @param hookType  [IN] 要注册的钩子类型
+ * @param hookFn    [IN] 要注册的钩子函数
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>los_hook.h: the header file that contains the API declaration.</li></ul>
+ * @retval 无
+ * @par 依赖
+ * <ul><li>los_hook.h: 包含API声明的头文件</li></ul>
  * @see
  */
-#define LOS_HookReg(hookType, hookFn)           hookType##_RegHook(hookFn)
+#define LOS_HookReg(hookType, hookFn)           hookType##_RegHook(hookFn)  // 注册钩子函数宏，通过钩子类型拼接注册函数名
 
 /**
  * @ingroup los_hook
- * @brief Deregistration of hook function.
+ * @brief 钩子函数注销
  *
- * @par Description:
- * This API is used to deregister hook function.
+ * @par 描述
+ * 本API用于注销钩子函数
  *
  * @attention
  * <ul>
- * <li> None.</li>
+ * <li>无</li>
  * </ul>
  *
- * @param hookType  [IN] Deregister the type of the hook.
- * @param hookFn  [IN] The function to be deregistered.
+ * @param hookType  [IN] 要注销的钩子类型
+ * @param hookFn    [IN] 要注销的钩子函数
  *
- * @retval None.
- * @par Dependency:
- * <ul><li>los_hook.h: the header file that contains the API declaration.</li></ul>
+ * @retval 无
+ * @par 依赖
+ * <ul><li>los_hook.h: 包含API声明的头文件</li></ul>
  * @see
  */
-#define LOS_HookUnReg(hookType, hookFn)         hookType##_UnRegHook(hookFn)
+#define LOS_HookUnReg(hookType, hookFn)         hookType##_UnRegHook(hookFn)  // 注销钩子函数宏，通过钩子类型拼接注销函数名
 
 /**
- * Call hook functions.
+ * 调用钩子函数
  */
-#define OsHookCall(hookType, ...)               hookType##_CallHook(__VA_ARGS__)
+#define OsHookCall(hookType, ...)               hookType##_CallHook(__VA_ARGS__)  // 调用钩子函数宏，支持可变参数
 
 #else
-#define LOS_HookReg(hookType, hookFn)
-#define LOS_HookUnReg(hookType, hookFn)
-#define OsHookCall(hookType, ...)
+#define LOS_HookReg(hookType, hookFn)           // 钩子功能未启用时的空实现
+#define LOS_HookUnReg(hookType, hookFn)         // 钩子功能未启用时的空实现
+#define OsHookCall(hookType, ...)               // 钩子功能未启用时的空实现
 #endif
-
 #ifdef __cplusplus
 #if __cplusplus
 }

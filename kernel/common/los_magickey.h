@@ -40,10 +40,16 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+/**
+ * @brief 魔术键操作结构体
+ * @details 定义魔术键的核心操作单元，包含按键触发后的处理逻辑、帮助信息及对应的物理按键
+ * @attention 结构体实例需通过魔术键管理模块统一注册，禁止直接修改成员值
+ * @ingroup kernel_magickey
+ */
 typedef struct {
-    VOID (*opHandler)(VOID);
-    CHAR *helpMsg;
-    CHAR magicKey;
+    VOID (*opHandler)(VOID);  // 魔术键触发时的处理函数指针，由具体功能模块实现
+    CHAR *helpMsg;            // 魔术键功能描述字符串，用于帮助信息展示，需以\0结尾
+    CHAR magicKey;            // 对应的魔术键ASCII字符，建议使用可打印字符（如'1'-'9','a'-'z'）
 } MagicKeyOp;
 
 extern INT32 CheckMagicKey(CHAR key, UINT16 consoleId);

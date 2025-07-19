@@ -40,14 +40,72 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#ifdef LOSCFG_KERNEL_LMS
-
+#ifdef LOSCFG_KERNEL_LMS  // 若启用内核内存安全检查功能
+/**
+ * @ingroup los_lms
+ * @brief 添加内存池到LMS检查列表
+ *
+ * @par 描述
+ * 将指定内存池添加到LMS（内存安全）模块的检查列表，用于后续内存安全验证
+ *
+ * @param pool  [IN] 指向内存池起始地址的指针
+ * @param size  [IN] 内存池大小（单位：字节）
+ *
+ * @retval #LOS_OK  内存池添加成功
+ * @retval #其他错误码  添加失败（具体含义参见错误码定义）
+ * @par 依赖
+ * <ul><li>los_lms.h: 包含API声明的头文件</li></ul>
+ */
 UINT32 LOS_LmsCheckPoolAdd(const VOID *pool, UINT32 size);
+
+/**
+ * @ingroup los_lms
+ * @brief 从LMS检查列表中删除内存池
+ *
+ * @par 描述
+ * 将指定内存池从LMS（内存安全）模块的检查列表中移除，停止对其进行内存安全验证
+ *
+ * @param pool  [IN] 指向内存池起始地址的指针（必须是已添加的内存池）
+ *
+ * @retval 无
+ * @par 依赖
+ * <ul><li>los_lms.h: 包含API声明的头文件</li></ul>
+ */
 VOID LOS_LmsCheckPoolDel(const VOID *pool);
+
+/**
+ * @ingroup los_lms
+ * @brief 启用指定地址范围的内存保护
+ *
+ * @par 描述
+ * 对指定起始地址和结束地址范围内的内存区域启用保护机制，防止非法访问
+ *
+ * @param addrStart  [IN] 内存保护区域的起始地址（必须对齐）
+ * @param addrEnd    [IN] 内存保护区域的结束地址（必须对齐，不包含在保护范围内）
+ *
+ * @retval 无
+ * @par 依赖
+ * <ul><li>los_lms.h: 包含API声明的头文件</li></ul>
+ */
 VOID LOS_LmsAddrProtect(UINTPTR addrStart, UINTPTR addrEnd);
+
+/**
+ * @ingroup los_lms
+ * @brief 禁用指定地址范围的内存保护
+ *
+ * @par 描述
+ * 对指定起始地址和结束地址范围内的内存区域禁用保护机制，允许正常访问
+ *
+ * @param addrStart  [IN] 内存保护区域的起始地址（必须是已启用保护的地址）
+ * @param addrEnd    [IN] 内存保护区域的结束地址（必须是已启用保护的地址）
+ *
+ * @retval 无
+ * @par 依赖
+ * <ul><li>los_lms.h: 包含API声明的头文件</li></ul>
+ */
 VOID LOS_LmsAddrDisableProtect(UINTPTR addrStart, UINTPTR addrEnd);
 
-#endif /* LOSCFG_KERNEL_LMS */
+#endif /* LOSCFG_KERNEL_LMS */  // 内存安全检查功能条件编译结束
 
 #ifdef __cplusplus
 #if __cplusplus

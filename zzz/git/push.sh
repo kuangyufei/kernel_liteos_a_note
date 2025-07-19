@@ -1,6 +1,6 @@
 git add -A
 
-git commit -m  ' 注释 kernel - extended
+git commit -m  ' 注释 kernel - base、commom、extended
     博客 | http://weharmonyos.com
 '
 git push  gitee_origin master

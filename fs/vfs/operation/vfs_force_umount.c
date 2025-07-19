@@ -606,16 +606,13 @@ static struct Mount* GetDevMountPoint(const struct Vnode *dev)
 {
     struct Mount *mnt = NULL;  // 挂载点结构体指针
     LIST_HEAD *mntList = GetMountList();  // 获取挂载列表
-    if (mntList == NULL)
-    {
+    if (mntList == NULL) {
         return NULL;  // 挂载列表为空，返回NULL
     }
 
     // 遍历挂载列表查找匹配的设备
-    LOS_DL_LIST_FOR_EACH_ENTRY(mnt, mntList, struct Mount, mountList)
-    {
-        if (mnt->vnodeDev == dev)  // 找到匹配的设备
-        {
+    LOS_DL_LIST_FOR_EACH_ENTRY(mnt, mntList, struct Mount, mountList) {
+        if (mnt->vnodeDev == dev) { // 找到匹配的设备
             return mnt;  // 返回挂载点结构体指针
         }
     }
@@ -629,14 +626,12 @@ static struct Mount* GetDevMountPoint(const struct Vnode *dev)
 static void DirPreClose(struct fs_dirent_s *dirp)
 {
     struct Vnode *node = NULL;  // vnode指针
-    if (dirp == NULL || dirp->fd_root == NULL)  // 参数检查
-    {
+    if (dirp == NULL || dirp->fd_root == NULL) {
         return;  // 参数无效，直接返回
     }
 
     node = dirp->fd_root;  // 获取目录根vnode
-    if (node->vop && node->vop->Closedir)  // 检查是否有Closedir操作
-    {
+    if (node->vop && node->vop->Closedir) {
         node->vop->Closedir(node, dirp);  // 调用Closedir操作
     }
 }
@@ -648,14 +643,12 @@ static void DirPreClose(struct fs_dirent_s *dirp)
  */
 static void FilePreClose(struct file *filep, const struct file_operations_vfs *ops)
 {
-    if (filep->f_oflags & O_DIRECTORY)  // 判断是否为目录文件
-    {
-        DirPreClose(filep->f_dir);  // 调用目录预关闭处理
+    if (filep->f_oflags & O_DIRECTORY) {
+        DirPreClose(filep->f_dir);
         return;
     }
 
-    if (ops && ops->close)  // 检查是否有关闭操作
-    {
+    if (ops && ops->close) {
         ops->close(filep);  // 调用关闭操作
     }
 }
@@ -671,20 +664,16 @@ static void FileDisableAndClean(const struct Mount *mnt)
     const struct file_operations_vfs *originOps = NULL;  // 原始文件操作集
 
     // 遍历所有文件描述符
-    for (int i = 3; i < CONFIG_NFILE_DESCRIPTORS; i++)
-    {
-        if (!get_bit(i))  // 检查文件描述符是否使用
-        {
-            continue;  // 未使用，跳过
+    for (int i = 3; i < CONFIG_NFILE_DESCRIPTORS; i++) {
+        if (!get_bit(i)) {
+            continue;
         }
-        filep = &flist->fl_files[i];  // 获取文件结构体
-        if (filep == NULL || filep->f_vnode == NULL)  // 参数检查
-        {
-            continue;  // 参数无效，跳过
+        filep = &flist->fl_files[i];
+        if (filep == NULL || filep->f_vnode == NULL) {
+            continue;
         }
-        if (filep->f_vnode->originMount != mnt)  // 检查是否属于当前挂载点
-        {
-            continue;  // 不属于，跳过
+        if (filep->f_vnode->originMount != mnt) {
+            continue;
         }
         originOps = filep->ops;  // 保存原始文件操作集
         filep->ops = &g_errorFileOps;  // 设置错误处理文件操作集
@@ -698,8 +687,7 @@ static void FileDisableAndClean(const struct Mount *mnt)
  */
 static void VnodeTryFree(struct Vnode *vnode)
 {
-    if (vnode->useCount == 0)  // 检查引用计数是否为0
-    {
+    if (vnode->useCount == 0) { // 检查引用计数是否为0
         VnodeFree(vnode);  // 释放vnode
         return;
     }
@@ -708,8 +696,7 @@ static void VnodeTryFree(struct Vnode *vnode)
     LOS_ListDelete(&(vnode->hashEntry));  // 从哈希表中删除
     LOS_ListDelete(&vnode->actFreeEntry);  // 从活动列表中删除
 
-    if (vnode->vop->Reclaim)  // 检查是否有Reclaim操作
-    {
+    if (vnode->vop->Reclaim) { // 检查是否有Reclaim操作
         vnode->vop->Reclaim(vnode);  // 调用Reclaim操作
     }
     vnode->vop = &g_errorVnodeOps;  // 设置错误处理vnode操作集
@@ -726,11 +713,9 @@ static void VnodeTryFreeAll(const struct Mount *mount)
     struct Vnode *nextVnode = NULL;  // 下一个vnode指针
 
     // 遍历活动vnode列表
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(vnode, nextVnode, GetVnodeActiveList(), struct Vnode, actFreeEntry)
-    {
+    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(vnode, nextVnode, GetVnodeActiveList(), struct Vnode, actFreeEntry) {
         // 检查是否属于当前挂载点且不是新挂载点
-        if ((vnode->originMount != mount) || (vnode->flag & VNODE_FLAG_MOUNT_NEW))
-        {
+        if ((vnode->originMount != mount) || (vnode->flag & VNODE_FLAG_MOUNT_NEW)) {
             continue;  // 不符合条件，跳过
         }
         VnodeTryFree(vnode);  // 尝试释放vnode
@@ -747,8 +732,7 @@ int ForceUmountDev(struct Vnode *dev)
     int ret;  // 返回值
     struct Vnode *origin = NULL;  // 原始vnode
     struct filelist *flist = &tg_filelist;  // 文件列表
-    if (dev == NULL)  // 参数检查
-    {
+    if (dev == NULL) {
         return -EINVAL;  // 参数无效，返回错误
     }
 
@@ -756,8 +740,7 @@ int ForceUmountDev(struct Vnode *dev)
     VnodeHold();  // 持有vnode锁
 
     struct Mount *mnt = GetDevMountPoint(dev);  // 获取设备挂载点
-    if (mnt == NULL)  // 检查挂载点是否存在
-    {
+    if (mnt == NULL) {
         VnodeDrop();  // 释放vnode锁
         (void)sem_post(&flist->fl_sem);  // 释放文件列表信号量
         return -ENXIO;  // 挂载点不存在，返回错误
@@ -767,8 +750,7 @@ int ForceUmountDev(struct Vnode *dev)
     FileDisableAndClean(mnt);  // 禁用并清理文件
     VnodeTryFreeAll(mnt);  // 尝试释放所有vnode
     ret = mnt->ops->Unmount(mnt, &dev);  // 调用文件系统卸载操作
-    if (ret != OK)  // 检查卸载是否成功
-    {
+    if (ret != OK) {
         PRINT_ERR("unmount in fs failed, ret = %d, errno = %d\n", ret, errno);  // 打印错误信息
     }
 

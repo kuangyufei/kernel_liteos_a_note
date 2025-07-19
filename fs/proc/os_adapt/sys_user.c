@@ -173,7 +173,7 @@ static int ProcSysUserRead(struct SeqBuf *seqBuf, void *v)
  */
 static const struct ProcFileOperations SYS_USER_OPT = {
     .read = ProcSysUserRead,   // 读操作回调：读取限制值和计数
-    .write = ProcSysUserWrite  // 写操作回调：设置限制值
+    .write = ProcSysUserWrite,  // 写操作回调：设置限制值
 };
 
 /**

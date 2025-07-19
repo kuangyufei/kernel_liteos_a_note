@@ -536,8 +536,7 @@ unsigned int OsCmdKeyShift(const char *cmdKey, char *cmdOut, unsigned int size)
 
     len = strlen(cmdKey);                          // 获取输入字符串长度
     // 检查输入是否为空或长度超过缓冲区大小
-    if ((*cmdKey == '
-') || (len >= size)) {
+    if ((*cmdKey == '\n') || (len >= size)) {
         return (unsigned int)SH_ERROR;             // 返回错误
     }
     output = (char *)malloc(len + 1);              // 分配临时缓冲区

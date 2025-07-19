@@ -53,7 +53,7 @@ char *OsCmdParseStrdup(const char *str)
 
     tempStr = newStr;                         // 保存字符串起始位置
     for (; *str != '\0'; str++) {            // 遍历输入字符串
-        if ((*str == '"') || (*str == '\'')) {  // 跳过双引号和单引号
+        if ((*str == '\"') || (*str == '\'')) {
             continue;
         }
         *newStr = *str;                       // 复制有效字符
@@ -142,7 +142,7 @@ unsigned int OsCmdTokenSplit(char *cmdStr, char split, CmdParsed *cmdParsed)
 
     // 遍历命令字符串进行令牌分割
     for (p = cmdStr; (*p != '\0') && (ret == SH_OK); p++) {
-        if (*p == '"') {                       // 遇到双引号时切换引号状态
+        if (*p == '\"') {
             SWITCH_QUOTES_STATUS(quotes);
         }
         switch (state) {

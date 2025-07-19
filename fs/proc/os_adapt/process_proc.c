@@ -417,7 +417,7 @@ static int ProcTimeContainerWrite(struct ProcFile *pf, const char *buf, size_t c
 // 时间容器文件操作结构体
 static const struct ProcFileOperations TIME_CONTAINER_FOPS = {
     .read = ProcTimeContainerRead,                         // 读取操作
-    .write = ProcTimeContainerWrite                        // 写入操作
+    .write = ProcTimeContainerWrite,                        // 写入操作
 };
 #endif
 
@@ -562,7 +562,7 @@ static int ProcIDMapRead(struct SeqBuf *seqBuf, void *v)
 // UID/GID映射文件操作结构体
 static const struct ProcFileOperations UID_GID_MAP_FOPS = {
     .read = ProcIDMapRead,                             // 读取操作
-    .write = ProcIDMapWrite                            // 写入操作
+    .write = ProcIDMapWrite,                            // 写入操作
 };
 #endif
 

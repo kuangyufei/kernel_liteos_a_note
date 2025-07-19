@@ -33,34 +33,35 @@
 #include "los_hook_types_parse.h"
 
 #ifdef LOSCFG_KERNEL_HOOK
-#define LOS_HOOK_TYPE_DEF(type, paramList)                  \
-    STATIC type##_FN g_fn##type;                            \
-    UINT32 type##_RegHook(type##_FN func) {                 \
-        if ((func) == NULL) {                               \
-            return LOS_ERRNO_HOOK_REG_INVALID;              \
-        }                                                   \
-        if (g_fn##type) {                                   \
-            return LOS_ERRNO_HOOK_POOL_IS_FULL;             \
-        }                                                   \
-        g_fn##type = (func);                                \
-        return LOS_OK;                                      \
-    }                                                       \
-    UINT32 type##_UnRegHook(type##_FN func) {               \
-        if (((func) == NULL) || (g_fn##type != (func))) {   \
-            return LOS_ERRNO_HOOK_UNREG_INVALID;            \
-        }                                                   \
-        g_fn##type = NULL;                                  \
-        return LOS_OK;                                      \
-    }                                                       \
-    VOID type##_CallHook paramList {                        \
-        if (g_fn##type) {                                   \
-            g_fn##type(PARAM_TO_ARGS paramList);            \
-        }                                                   \
-    }
+#define LOS_HOOK_TYPE_DEF(type, paramList)                  \ /* 定义钩子类型，包含注册/注销/调用函数 */
+    STATIC type##_FN g_fn##type;                            \ /* 静态钩子函数指针，存储注册的钩子函数 */
+    UINT32 type##_RegHook(type##_FN func) {                 \ /* 注册钩子函数，返回错误码 */
+        if ((func) == NULL) {                               \ /* 检查函数指针是否为空 */
+            return LOS_ERRNO_HOOK_REG_INVALID;              \ /* 返回无效注册错误 */
+        }                                                   \ /* 空语句，结束条件判断 */
+        if (g_fn##type) {                                   \ /* 检查钩子是否已注册 */
+            return LOS_ERRNO_HOOK_POOL_IS_FULL;             \ /* 返回钩子池已满错误 */
+        }                                                   \ /* 空语句，结束条件判断 */
+        g_fn##type = (func);                                \ /* 保存钩子函数指针 */
+        return LOS_OK;                                      \ /* 返回成功 */
+    }                                                       \ /* 结束注册函数定义 */
+    UINT32 type##_UnRegHook(type##_FN func) {               \ /* 注销钩子函数，返回错误码 */
+        if (((func) == NULL) || (g_fn##type != (func))) {   \ /* 检查函数指针有效性及匹配性 */
+            return LOS_ERRNO_HOOK_UNREG_INVALID;            \ /* 返回无效注销错误 */
+        }                                                   \ /* 空语句，结束条件判断 */
+        g_fn##type = NULL;                                  \ /* 清除钩子函数指针 */
+        return LOS_OK;                                      \ /* 返回成功 */
+    }                                                       \ /* 结束注销函数定义 */
+    VOID type##_CallHook paramList {                        \ /* 调用钩子函数，无返回值 */
+        if (g_fn##type) {                                   \ /* 检查钩子函数是否已注册 */
+            g_fn##type(PARAM_TO_ARGS paramList);            \ /* 传递参数并调用钩子函数 */
+        }                                                   \ /* 空语句，结束条件判断 */
+    }                                                       /* 结束调用函数定义 */
 
-LOS_HOOK_ALL_TYPES_DEF;
+LOS_HOOK_ALL_TYPES_DEF;                                      /* 展开所有钩子类型定义 */
 
-#undef LOS_HOOK_TYPE_DEF
+#undef LOS_HOOK_TYPE_DEF                                      /* 取消宏定义，避免重复展开 */
+
 
 #endif /* LOSCFG_DEBUG_HOOK */
 

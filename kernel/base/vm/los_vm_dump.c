@@ -326,7 +326,7 @@ UINT32 OsCountRegionPages(LosVmSpace *space, LosVmMapRegion *region, UINT32 *pss
     LosVmPage *page = NULL;  // 物理页面结构指针
 
     // 按页面大小遍历虚拟内存区域
-    for (vaddr = region->range.base; vaddr < region->range.base + region->range.size; vaddr += PAGE_SIZE) {
+    for (vaddr = region->range.base; vaddr < region->range.base + region->range.size; vaddr = vaddr + PAGE_SIZE) {
         status = LOS_ArchMmuQuery(&space->archMmu, vaddr, &paddr, NULL);  // 查询虚拟地址对应的物理地址
         if (status == LOS_OK) {  // 物理地址映射有效
             regionPages++;  // 增加区域页面计数
@@ -336,15 +336,15 @@ UINT32 OsCountRegionPages(LosVmSpace *space, LosVmMapRegion *region, UINT32 *pss
             page = LOS_VmPageGet(paddr);  // 获取物理页面结构
             if (page != NULL) {
                 ref = LOS_AtomicRead(&page->refCounts);  // 原子读取页面引用计数
-                pss += (ref > 0) ? (1.0f / ref) : 1.0f;  // 按引用计数计算PSS贡献值
+                pss += ((ref > 0) ? (1.0 / ref) : 1); // 按引用计数计算PSS贡献值
             } else {
-                pss += 1.0f;  // 物理页面结构不存在，PSS直接加1
+                pss += 1;  // 物理页面结构不存在，PSS直接加1
             }
         }
     }
 
     if (pssPages != NULL) {
-        *pssPages = (UINT32)(pss + 0.5f);  // 四舍五入转换为整数PSS值
+        *pssPages = (UINT32)(pss + 0.5);    /* 0.5, for page alignment */
     }
 
     return regionPages;  // 返回区域映射页面总数

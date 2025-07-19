@@ -70,7 +70,7 @@ HAL层主要功能是实现轻OpenHarmony与芯片的解耦，
  */
 #ifndef LOS_HAL_TABLE_BEGIN
 #define LOS_HAL_TABLE_BEGIN(label, name)                                     \
-    __asm__(".section \".liteos.table." X_STRING(name) \".begin\",\"aw\"\n"   \
+    __asm__(".section \".liteos.table." X_STRING(name) ".begin\",\"aw\"\n"   \
             ".globl " X_STRING(LOS_LABEL_DEFN(label)) "\n"                   \
             ".type    " X_STRING(LOS_LABEL_DEFN(label)) ",object\n"          \
             ".p2align " X_STRING(LOSARC_P2ALIGNMENT) "\n"                    \
@@ -110,7 +110,7 @@ HAL层主要功能是实现轻OpenHarmony与芯片的解耦，
  */
 #ifndef LOS_HAL_TABLE_END
 #define LOS_HAL_TABLE_END(label, name)                                       \
-    __asm__(".section \".liteos.table." X_STRING(name) \".finish\",\"aw\"\n"  \
+    __asm__(".section \".liteos.table." X_STRING(name) ".finish\",\"aw\"\n"  \
             ".globl " X_STRING(LOS_LABEL_DEFN(label)) "\n"                   \
             ".type    " X_STRING(LOS_LABEL_DEFN(label)) ",object\n"          \
             ".p2align " X_STRING(LOSARC_P2ALIGNMENT) "\n"                    \

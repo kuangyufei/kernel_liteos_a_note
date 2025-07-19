@@ -45,24 +45,59 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifdef LOSCFG_FS_VFS
-#define SERIAL         "/dev/serial"
-#define SERIAL_TTYGS0  "/dev/ttyGS0"
-#define SERIAL_UARTDEV "/dev/uartdev"
+/**
+ * @brief 虚拟串口设备路径定义
+ * @details 定义不同类型虚拟串口的标准文件系统路径，用户空间通过这些路径访问串口设备
+ * @note 这些路径需与文件系统挂载点保持一致
+ */
+#define SERIAL         "/dev/serial"         /* 默认虚拟串口设备路径 */
+#define SERIAL_TTYGS0  "/dev/ttyGS0"        /* USB虚拟串口设备路径 */
+#define SERIAL_UARTDEV "/dev/uartdev"       /* 硬件UART串口设备路径 */
 
-#define SERIAL_TYPE_UART_DEV   1
-#define SERIAL_TYPE_USBTTY_DEV 2
+/**
+ * @brief 串口设备类型定义
+ * @details 标识不同类型的串口设备，用于在驱动中区分处理逻辑
+ */
+#define SERIAL_TYPE_UART_DEV   1               /* UART硬件串口类型 */
+#define SERIAL_TYPE_USBTTY_DEV 2               /* USB虚拟串口类型 */
 
+/**
+ * @brief 虚拟串口初始化函数
+ * @details 创建并初始化虚拟串口设备节点，注册文件操作接口
+ * @param[in] deviceName 设备名称，指定要创建的串口设备节点名称
+ * @retval LOS_OK 初始化成功
+ * @retval LOS_NOK 初始化失败，可能原因：设备节点创建失败或资源分配失败
+ * @note 必须在VFS初始化完成后调用
+ */
 extern INT32 virtual_serial_init(const CHAR *deviceName);
+
+/**
+ * @brief 虚拟串口去初始化函数
+ * @details 销毁虚拟串口设备节点，释放相关资源
+ * @retval LOS_OK 去初始化成功
+ * @retval LOS_NOK 去初始化失败，可能原因：设备不存在或资源释放失败
+ * @note 通常在系统关机或串口模块卸载时调用
+ */
 extern INT32 virtual_serial_deinit(VOID);
 
+/**
+ * @brief 获取当前串口设备类型
+ * @details 返回当前系统中激活的串口设备类型，用于上层应用适配不同硬件
+ * @return UINT32 当前串口类型，取值为SERIAL_TYPE_UART_DEV或SERIAL_TYPE_USBTTY_DEV
+ * @note 需在virtual_serial_init之后调用才返回有效结果
+ */
 extern UINT32 SerialTypeGet(VOID);
 
+/**
+ * @brief 虚拟串口控制块结构体
+ * @details 维护虚拟串口的运行时状态信息，包括文件句柄和事件掩码
+ */
 typedef struct {
-    struct file *filep;
-    UINT32 mask;
+    struct file *filep;                        /* 文件操作句柄，关联VFS文件对象 */
+    UINT32 mask;                               /* 事件掩码，记录串口待处理事件 */
 } LOS_VIRSERIAL_CB;
-
 #endif
+
 
 #ifdef __cplusplus
 #if __cplusplus

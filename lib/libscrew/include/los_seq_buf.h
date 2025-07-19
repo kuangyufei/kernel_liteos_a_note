@@ -42,15 +42,15 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define SEQBUF_PAGE_SIZE  4096	//4K 一页
-#define SEQBUF_LIMIT_SIZE (256 * SEQBUF_PAGE_SIZE) //缓冲区最大空间为1M
-//序列化BUF
+#define SEQBUF_PAGE_SIZE  4096                  // 缓冲区页大小，单位为字节
+#define SEQBUF_LIMIT_SIZE (256 * SEQBUF_PAGE_SIZE)  // 缓冲区最大限制大小，256个页
+
 struct SeqBuf {
-    char *buf;	//内容
-    size_t size;//buf大小
-    size_t count;//当前位置
-    void *private;
-};
+    char *buf;           // 缓冲区数据区域指针
+    size_t size;         // 缓冲区总大小
+    size_t count;        // 缓冲区当前已使用大小
+    void *private;       // 私有数据指针，用于扩展功能
+};  // 顺序缓冲区结构体定义
 
 struct SeqBuf *LosBufCreat(void);
 int LosBufPrintf(struct SeqBuf *seqBuf, const char *fmt, ...);

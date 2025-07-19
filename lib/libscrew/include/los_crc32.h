@@ -43,8 +43,8 @@ extern UINT32 LOS_EtherCrc32Accumulate(UINT32 val, UINT8 *src, INT32 len);
 extern UINT32 LOS_Crc32Accumulate(UINT32 val, UINT8 *src, INT32 len);
 extern const UINT32 crc32_tab[];
 
-#define crc32(val, src, len)        LOS_Crc32Accumulate(val, (UINT8 *)src, len)
-#define ether_crc32(val, src, len)  LOS_EtherCrc32Accumulate(val, (UINT8 *)src, len)
+#define crc32(val, src, len)        LOS_Crc32Accumulate(val, (UINT8 *)src, len)  // 标准CRC32计算宏，调用LOS_Crc32Accumulate函数
+#define ether_crc32(val, src, len)  LOS_EtherCrc32Accumulate(val, (UINT8 *)src, len)  // 以太网CRC32计算宏，调用LOS_EtherCrc32Accumulate函数
 
 #ifdef __cplusplus
 #if __cplusplus

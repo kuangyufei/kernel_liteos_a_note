@@ -47,388 +47,381 @@ extern "C" {
 
 /**
  * @ingroup los_perf
- * Perf max sample filter task number.
+ * 性能监控最大样本过滤任务数
  */
-#define PERF_MAX_FILTER_TSKS                32
+#define PERF_MAX_FILTER_TSKS                32  // 最大样本过滤任务数，允许列表容量
 
 /**
  * @ingroup los_perf
- * Perf max sample event counter's number.
+ * 性能监控最大事件计数器数量
  */
-#define PERF_MAX_EVENT                      7
+#define PERF_MAX_EVENT                      7   // 最大事件计数器数量，支持同时监控的事件类型上限
 
 /**
  * @ingroup los_perf
- * Perf max backtrace depth.
+ * 性能监控最大回溯调用链深度
  */
-#define PERF_MAX_CALLCHAIN_DEPTH            10
+#define PERF_MAX_CALLCHAIN_DEPTH            10  // 最大调用链回溯深度，用于函数调用栈分析
 
 /**
  * @ingroup los_perf
- * Perf sample data buffer's water mark 1/N.
+ * 性能采样数据缓冲区水印比例（1/N）
  */
-#define PERF_BUFFER_WATERMARK_ONE_N         2
+#define PERF_BUFFER_WATERMARK_ONE_N         2   // 缓冲区水印比例分母，用于触发数据通知机制
 
 /**
  * @ingroup los_perf
- * Perf status.
+ * 性能监控模块状态枚举
  */
 enum PerfStatus {
-    PERF_UNINIT,   /* perf isn't inited */
-    PERF_STARTED,  /* perf is started */
-    PERF_STOPPED,  /* perf is stopped */
+    PERF_UNINIT,   // 性能监控未初始化状态
+    PERF_STARTED,  // 性能监控已启动状态
+    PERF_STOPPED,  // 性能监控已停止状态
 };
 
 /**
  * @ingroup los_perf
- * Define the type of the perf sample data buffer water mark hook function.
- *
+ * 性能采样数据缓冲区水印通知钩子函数类型定义
+ * 当缓冲区数据达到水印阈值时触发
  */
 typedef VOID (*PERF_BUF_NOTIFY_HOOK)(VOID);
 
 /**
  * @ingroup los_perf
- * Define the type of the perf sample data buffer flush hook function.
- *
+ * 性能采样数据缓冲区刷新钩子函数类型定义
+ * 用于自定义数据刷新策略
+ * @param addr 数据缓冲区地址
+ * @param size 数据大小（字节）
  */
 typedef VOID (*PERF_BUF_FLUSH_HOOK)(VOID *addr, UINT32 size);
 
 /**
  * @ingroup los_perf
- * Perf error code: Bad status.
+ * 性能监控错误码：无效状态
  *
- * Value: 0x02002000
+ * 值：0x02002000
  *
- * Solution: Follow the perf state machine.
+ * 解决方案：遵循性能监控模块状态机流程操作
  */
-#define LOS_ERRNO_PERF_STATUS_INVALID        LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x00)
+#define LOS_ERRNO_PERF_STATUS_INVALID        LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x00)  // 状态无效错误码
 
 /**
  * @ingroup los_perf
- * Perf error code: Hardware pmu init failed.
+ * 性能监控错误码：硬件PMU初始化失败
  *
- * Value: 0x02002001
+ * 值：0x02002001
  *
- * Solution: Check the pmu hwi irq.
+ * 解决方案：检查PMU硬件中断配置
  */
-#define LOS_ERRNO_PERF_HW_INIT_ERROR         LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x01)
+#define LOS_ERRNO_PERF_HW_INIT_ERROR         LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x01)  // 硬件PMU初始化错误码
 
 /**
  * @ingroup los_perf
- * Perf error code: Hrtimer init failed for hrtimer timed pmu init.
+ * 性能监控错误码：高精度定时器初始化失败
  *
- * Value: 0x02002002
+ * 值：0x02002002
  *
- * Solution: Check the Hrtimer init.
+ * 解决方案：检查高精度定时器驱动初始化
  */
-#define LOS_ERRNO_PERF_TIMED_INIT_ERROR      LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x02)
+#define LOS_ERRNO_PERF_TIMED_INIT_ERROR      LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x02)  // 定时器初始化错误码
 
 /**
  * @ingroup los_perf
- * Perf error code: Software pmu init failed.
+ * 性能监控错误码：软件PMU初始化失败
  *
- * Value: 0x02002003
+ * 值：0x02002003
  *
- * Solution: Check the Perf software events init.
+ * 解决方案：检查软件事件跟踪模块初始化
  */
-#define LOS_ERRNO_PERF_SW_INIT_ERROR         LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x03)
+#define LOS_ERRNO_PERF_SW_INIT_ERROR         LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x03)  // 软件PMU初始化错误码
 
 /**
  * @ingroup los_perf
- * Perf error code: Perf buffer init failed.
+ * 性能监控错误码：缓冲区初始化失败
  *
- * Value: 0x02002004
+ * 值：0x02002004
  *
- * Solution: Check the buffer init size.
+ * 解决方案：检查缓冲区初始化大小参数
  */
-#define LOS_ERRNO_PERF_BUF_ERROR             LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x04)
+#define LOS_ERRNO_PERF_BUF_ERROR             LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x04)  // 缓冲区错误码
 
 /**
  * @ingroup los_perf
- * Perf error code: Perf pmu type error.
+ * 性能监控错误码：无效PMU类型
  *
- * Value: 0x02002005
+ * 值：0x02002005
  *
- * Solution: Check whether the corresponding pmu is enabled in the menuconfig.
+ * 解决方案：检查menuconfig中对应PMU模块是否启用
  */
-#define LOS_ERRNO_PERF_INVALID_PMU           LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x05)
+#define LOS_ERRNO_PERF_INVALID_PMU           LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x05)  // PMU类型无效错误码
 
 /**
  * @ingroup los_perf
- * Perf error code: Perf pmu config error.
+ * 性能监控错误码：PMU配置错误
  *
- * Value: 0x02002006
+ * 值：0x02002006
  *
- * Solution: Check the config attr of event id and event period.
+ * 解决方案：检查事件ID和周期参数配置
  */
-#define LOS_ERRNO_PERF_PMU_CONFIG_ERROR      LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x06)
+#define LOS_ERRNO_PERF_PMU_CONFIG_ERROR      LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x06)  // PMU配置错误码
 
 /**
  * @ingroup los_perf
- * Perf error code: Perf pmu config attr is NULL.
+ * 性能监控错误码：配置属性为空
  *
- * Value: 0x02002007
+ * 值：0x02002007
  *
- * Solution: Check if the input params of attr is NULL.
+ * 解决方案：检查输入参数是否为空指针
  */
-#define LOS_ERRNO_PERF_CONFIG_NULL           LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x07)
+#define LOS_ERRNO_PERF_CONFIG_NULL           LOS_ERRNO_OS_ERROR(LOS_MOD_PERF, 0x07)  // 配置属性空指针错误码
 
 /**
  * @ingroup los_perf
- * Perf types
+ * 性能事件类型枚举
  */
 enum PerfEventType {
-    PERF_EVENT_TYPE_HW,      /* boards common hw events */
-    PERF_EVENT_TYPE_TIMED,   /* hrtimer timed events */
-    PERF_EVENT_TYPE_SW,      /* software trace events */
-    PERF_EVENT_TYPE_RAW,     /* boards special hw events, see enum PmuEventType in corresponding arch headfile */
+    PERF_EVENT_TYPE_HW,      // 通用硬件事件类型
+    PERF_EVENT_TYPE_TIMED,   // 高精度定时器事件类型
+    PERF_EVENT_TYPE_SW,      // 软件跟踪事件类型
+    PERF_EVENT_TYPE_RAW,     // 板级专用硬件事件类型，详见对应架构头文件中的PmuEventType枚举
 
-    PERF_EVENT_TYPE_MAX
+    PERF_EVENT_TYPE_MAX      // 事件类型数量上限
 };
 
 /**
  * @ingroup los_perf
- * Common hardware pmu events
+ * 通用硬件PMU事件枚举
  */
 enum PmuHwId {
-    PERF_COUNT_HW_CPU_CYCLES = 0,      /* cpu cycle event */
-    PERF_COUNT_HW_INSTRUCTIONS,        /* instruction event */
-    PERF_COUNT_HW_DCACHE_REFERENCES,   /* dcache access event */
-    PERF_COUNT_HW_DCACHE_MISSES,       /* dcache miss event */
-    PERF_COUNT_HW_ICACHE_REFERENCES,   /* icache access event */
-    PERF_COUNT_HW_ICACHE_MISSES,       /* icache miss event */
-    PERF_COUNT_HW_BRANCH_INSTRUCTIONS, /* software change of pc event */
-    PERF_COUNT_HW_BRANCH_MISSES,       /* branch miss event */
+    PERF_COUNT_HW_CPU_CYCLES = 0,      // CPU周期事件
+    PERF_COUNT_HW_INSTRUCTIONS,        // 指令执行事件
+    PERF_COUNT_HW_DCACHE_REFERENCES,   // 数据缓存访问事件
+    PERF_COUNT_HW_DCACHE_MISSES,       // 数据缓存未命中事件
+    PERF_COUNT_HW_ICACHE_REFERENCES,   // 指令缓存访问事件
+    PERF_COUNT_HW_ICACHE_MISSES,       // 指令缓存未命中事件
+    PERF_COUNT_HW_BRANCH_INSTRUCTIONS, // 分支指令事件
+    PERF_COUNT_HW_BRANCH_MISSES,       // 分支预测失败事件
 
-    PERF_COUNT_HW_MAX,
+    PERF_COUNT_HW_MAX,                  // 硬件事件数量上限
 };
 
 /**
  * @ingroup los_perf
- * Common hrtimer timed events
+ * 高精度定时器事件枚举
  */
 enum PmuTimedId {
-    PERF_COUNT_CPU_CLOCK = 0,      /* hrtimer timed event */
+    PERF_COUNT_CPU_CLOCK = 0,      // CPU时钟定时器事件
 };
 
 /**
  * @ingroup los_perf
- * Common software pmu events
+ * 软件PMU事件枚举
  */
 enum PmuSwId {
-    PERF_COUNT_SW_TASK_SWITCH = 1, /* task switch event */
-    PERF_COUNT_SW_IRQ_RESPONSE,    /* irq response event */
-    PERF_COUNT_SW_MEM_ALLOC,       /* memory alloc event */
-    PERF_COUNT_SW_MUX_PEND,        /* mutex pend event */
+    PERF_COUNT_SW_TASK_SWITCH = 1, // 任务切换事件
+    PERF_COUNT_SW_IRQ_RESPONSE,    // 中断响应事件
+    PERF_COUNT_SW_MEM_ALLOC,       // 内存分配事件
+    PERF_COUNT_SW_MUX_PEND,        // 互斥锁等待事件
 
-    PERF_COUNT_SW_MAX,
+    PERF_COUNT_SW_MAX,              // 软件事件数量上限
 };
 
 /**
  * @ingroup los_perf
- * perf sample data types
- * Config it through PerfConfigAttr->sampleType.
+ * 性能采样数据类型枚举
+ * 通过PerfConfigAttr->sampleType配置采样类型
  */
 enum PerfSampleType {
-    PERF_RECORD_CPU       = 1U << 0, /* record current cpuid */
-    PERF_RECORD_TID       = 1U << 1, /* record current task id */
-    PERF_RECORD_TYPE      = 1U << 2, /* record event type */
-    PERF_RECORD_PERIOD    = 1U << 3, /* record event period */
-    PERF_RECORD_TIMESTAMP = 1U << 4, /* record timestamp */
-    PERF_RECORD_IP        = 1U << 5, /* record instruction pointer */
-    PERF_RECORD_CALLCHAIN = 1U << 6, /* record backtrace */
-    PERF_RECORD_PID       = 1U << 7, /* record current process id */
+    PERF_RECORD_CPU       = 1U << 0, // 记录当前CPU ID
+    PERF_RECORD_TID       = 1U << 1, // 记录当前任务ID
+    PERF_RECORD_TYPE      = 1U << 2, // 记录事件类型
+    PERF_RECORD_PERIOD    = 1U << 3, // 记录事件周期
+    PERF_RECORD_TIMESTAMP = 1U << 4, // 记录时间戳
+    PERF_RECORD_IP        = 1U << 5, // 记录指令指针（当前PC值）
+    PERF_RECORD_CALLCHAIN = 1U << 6, // 记录调用链回溯
+    PERF_RECORD_PID       = 1U << 7, // 记录当前进程ID
 };
 
 /**
  * @ingroup los_perf
- * perf configuration sub event information
- *
- * This structure is used to config specific events attributes.
+ * 性能事件配置结构体
+ * 用于配置特定事件的属性信息
  */
 typedef struct {
-    UINT32 type;              /* enum PerfEventType */
+    UINT32 type;              // 事件类型，取值为PerfEventType枚举
     struct {
-        UINT32 eventId;       /* the specific event corresponds to the PerfEventType */
-        UINT32 period;        /* event period, for every "period"th occurrence of the event a
-                                   sample will be recorded */
-    } events[PERF_MAX_EVENT]; /* perf event list */
-    UINT32 eventsNr;          /* total perf event number */
-    BOOL predivided;          /* whether to prescaler (once every 64 counts),
-                                  which only take effect on cpu cycle hardware event */
+        UINT32 eventId;       // 特定事件ID，与事件类型对应
+        UINT32 period;        // 事件周期，每发生period次事件记录一次样本
+    } events[PERF_MAX_EVENT]; // 性能事件列表，最多支持PERF_MAX_EVENT个事件
+    UINT32 eventsNr;          // 实际配置的事件数量
+    BOOL predivided;          // 是否启用预分频（每64次计数一次），仅对CPU周期硬件事件有效
 } PerfEventConfig;
 
 /**
  * @ingroup los_perf
- * perf configuration main information
- *
- * This structure is used to set perf sampling attributes, including events, tasks and other information.
+ * 性能监控主配置结构体
+ * 用于设置性能采样的整体属性，包括事件、任务过滤等信息
  */
 typedef struct {
-    PerfEventConfig         eventsCfg;                      /* perf event config */
-    UINT32                  taskIds[PERF_MAX_FILTER_TSKS];  /* perf task filter list (allowlist) */
-    UINT32                  taskIdsNr;                      /* task numbers of task filter allowlist,
-                                                                 if set 0 perf will sample all tasks */
-    UINT32                  processIds[PERF_MAX_FILTER_TSKS];  /* perf process filter list (allowlist) */
-    UINT32                  processIdsNr;                      /* process numbers of process filter allowlist,
-                                                                 if set 0 perf will sample all processes */
-    UINT32                  sampleType;                     /* type of data to sample defined in PerfSampleType */
-    BOOL                    needSample;                     /* whether to sample data */
+    PerfEventConfig         eventsCfg;                      // 性能事件配置
+    UINT32                  taskIds[PERF_MAX_FILTER_TSKS];  // 任务过滤列表（允许列表）
+    UINT32                  taskIdsNr;                      // 任务过滤列表数量，0表示监控所有任务
+    UINT32                  processIds[PERF_MAX_FILTER_TSKS];  // 进程过滤列表（允许列表）
+    UINT32                  processIdsNr;                      // 进程过滤列表数量，0表示监控所有进程
+    UINT32                  sampleType;                     // 采样数据类型，取值为PerfSampleType枚举的位掩码组合
+    BOOL                    needSample;                     // 是否需要采样数据
 } PerfConfigAttr;
-
 /**
  * @ingroup los_perf
- * @brief Init perf.
+ * @brief 初始化性能监控模块
  *
- * @par Description:
+ * @par 功能描述
  * <ul>
- * <li>Used to initialize the perf module, including initializing the PMU, allocating memory,
- * etc.,which is called during the phase of system initialization.</li>
+ * <li>用于初始化性能监控模块，包括初始化PMU（性能监控单元）、分配内存等操作，在系统初始化阶段调用</li>
  * </ul>
  * @attention
  * <ul>
- * <li>If buf is not NULL, user must ensure size is not bigger than buf's length.</li>
+ * <li>如果buf不为NULL，用户必须确保size不大于缓冲区实际长度</li>
  * </ul>
  *
- * @param  buf     [IN] Pointer of sample data buffer;Use the dynamically allocated memory if the pointer is NULL.
- * @param  size    [IN] Length of sample data buffer.
+ * @param  buf     [IN] 采样数据缓冲区指针；若为NULL则使用动态分配的内存
+ * @param  size    [IN] 采样数据缓冲区大小（字节）
  *
- * @retval #LOS_ERRNO_PERF_STATUS_INVALID              Perf in a wrong status.
- * @retval #LOS_ERRNO_PERF_HW_INIT_ERROR               Perf hardware pmu init fail.
- * @retval #LOS_ERRNO_PERF_TIMED_INIT_ERROR            Perf timed pmu init fail.
- * @retval #LOS_ERRNO_PERF_SW_INIT_ERROR               Perf software pmu init fail.
- * @retval #LOS_ERRNO_PERF_BUF_ERROR                   Perf buffer init fail.
- * @retval #LOS_OK                                     Perf init success.
- * @par Dependency:
+ * @retval #LOS_ERRNO_PERF_STATUS_INVALID      性能监控模块状态错误
+ * @retval #LOS_ERRNO_PERF_HW_INIT_ERROR       硬件PMU初始化失败
+ * @retval #LOS_ERRNO_PERF_TIMED_INIT_ERROR    定时器事件初始化失败
+ * @retval #LOS_ERRNO_PERF_SW_INIT_ERROR       软件事件初始化失败
+ * @retval #LOS_ERRNO_PERF_BUF_ERROR           缓冲区初始化失败
+ * @retval #LOS_OK                             初始化成功
+ * @par 依赖
  * <ul>
- * <li>los_perf.h: the header file that contains the API declaration.</li>
+ * <li>los_perf.h: 包含本接口声明的头文件</li>
  * </ul>
  */
-UINT32 LOS_PerfInit(VOID *buf, UINT32 size);
+UINT32 LOS_PerfInit(VOID *buf, UINT32 size);  // 初始化性能监控模块
 
 /**
  * @ingroup los_perf
- * @brief Start perf sampling.
+ * @brief 启动性能采样
  *
- * @par Description
- * Start perf sampling.
+ * @par 功能描述
+ * 启动性能数据采样过程，开始记录指定事件
  * @attention
- * None.
+ * 无
  *
- * @param  sectionId          [IN] Set the section id for marking this piece of data in the perf sample data buffer.
- * @retval None.
- * @par Dependency:
+ * @param  sectionId          [IN] 数据段标识ID，用于标记缓冲区中该段采样数据
+ * @retval 无
+ * @par 依赖
  * <ul>
- * <li>los_perf.h: the header file that contains the API declaration.</li>
+ * <li>los_perf.h: 包含本接口声明的头文件</li>
  * </ul>
  */
-VOID LOS_PerfStart(UINT32 sectionId);
+VOID LOS_PerfStart(UINT32 sectionId);  // 启动性能采样
 
 /**
  * @ingroup los_perf
- * @brief Stop perf sampling.
+ * @brief 停止性能采样
  *
- * @par Description
- * Stop perf sampling.
+ * @par 功能描述
+ * 停止性能数据采样过程，暂停记录事件
  * @attention
- * None.
+ * 无
  *
- * @param  None.
+ * @param  无
  *
- * @retval None.
- * @par Dependency:
+ * @retval 无
+ * @par 依赖
  * <ul>
- * <li>los_perf.h: the header file that contains the API declaration.</li>
+ * <li>los_perf.h: 包含本接口声明的头文件</li>
  * </ul>
  */
-VOID LOS_PerfStop(VOID);
+VOID LOS_PerfStop(VOID);  // 停止性能采样
 
 /**
  * @ingroup los_perf
- * @brief Config perf parameters.
+ * @brief 配置性能监控参数
  *
- * @par Description
- * Config perf parameters before sample, for example, sample event, sample task, etc. This interface need to be called
- * before LOS_PerfStart.
+ * @par 功能描述
+ * 在采样前配置性能监控参数，如采样事件、采样任务等。本接口需在LOS_PerfStart前调用
  * @attention
- * None.
+ * 无
  *
- * @param  attr                      [IN] Address of a perf event attr struct.
+ * @param  attr                      [IN] 性能事件属性结构体指针
  *
- * @retval #LOS_ERRNO_PERF_STATUS_INVALID          Perf in a wrong status.
- * @retval #LOS_ERRNO_PERF_CONFIG_NULL             Attr is NULL.
- * @retval #LOS_ERRNO_PERF_INVALID_PMU             Config perf pmu with error type.
- * @retval #LOS_ERRNO_PERF_PMU_CONFIG_ERROR        Config perf events fail with invalid event id or event period.
- * @retval #LOS_OK                                 Config success.
- * @par Dependency:
+ * @retval #LOS_ERRNO_PERF_STATUS_INVALID          性能监控模块状态错误
+ * @retval #LOS_ERRNO_PERF_CONFIG_NULL             属性结构体指针为空
+ * @retval #LOS_ERRNO_PERF_INVALID_PMU             PMU类型配置错误
+ * @retval #LOS_ERRNO_PERF_PMU_CONFIG_ERROR        事件ID或周期配置无效
+ * @retval #LOS_OK                                 配置成功
+ * @par 依赖
  * <ul>
- * <li>los_perf.h: the header file that contains the API declaration.</li>
+ * <li>los_perf.h: 包含本接口声明的头文件</li>
  * </ul>
  */
-UINT32 LOS_PerfConfig(PerfConfigAttr *attr);
+UINT32 LOS_PerfConfig(PerfConfigAttr *attr);  // 配置性能监控参数
 
 /**
  * @ingroup los_perf
- * @brief Read data from perf sample data buffer.
+ * @brief 从性能采样缓冲区读取数据
  *
- * @par Description
- * Because perf sample data buffer is a ringbuffer, the data may be covered after user read ringbuffer.
+ * @par 功能描述
+ * 从性能采样数据缓冲区读取采样结果，由于缓冲区采用环形结构（ringbuffer），读取后数据可能被覆盖
  * @attention
- * None.
+ * 无
  *
- * @param  dest                      [IN] The destination address.
- * @param  size                      [IN] Read size.
- * @retval #UINT32                   The really read bytes.
- * @par Dependency:
+ * @param  dest                      [IN] 目标缓冲区地址
+ * @param  size                      [IN] 读取数据大小（字节）
+ * @retval #UINT32                   实际读取的字节数
+ * @par 依赖
  * <ul>
- * <li>los_perf.h: the header file that contains the API declaration.</li>
+ * <li>los_perf.h: 包含本接口声明的头文件</li>
  * </ul>
  */
-UINT32 LOS_PerfDataRead(CHAR *dest, UINT32 size);
+UINT32 LOS_PerfDataRead(CHAR *dest, UINT32 size);  // 读取采样数据
 
 /**
  * @ingroup los_perf
- * @brief Register perf sample data buffer water mark hook function.
+ * @brief 注册性能采样缓冲区水印通知钩子函数
  *
- * @par Description
+ * @par 功能描述
  * <ul>
- * <li> Register perf sample data buffer water mark hook function.</li>
- * <li> The registered hook will be called when buffer reaches the water mark./li>
+ * <li>注册性能采样数据缓冲区的水印通知钩子函数</li>
+ * <li>当缓冲区数据量达到水印阈值时，注册的钩子函数将被调用</li>
  * </ul>
  * @attention
- * None.
+ * 无
  *
- * @param  func                      [IN] Buffer water mark hook function.
+ * @param  func                      [IN] 缓冲区水印通知钩子函数
  *
- * @retval None.
- * @par Dependency:
+ * @retval 无
+ * @par 依赖
  * <ul>
- * <li>los_perf.h: the header file that contains the API declaration.</li>
+ * <li>los_perf.h: 包含本接口声明的头文件</li>
  * </ul>
  */
-VOID LOS_PerfNotifyHookReg(const PERF_BUF_NOTIFY_HOOK func);
+VOID LOS_PerfNotifyHookReg(const PERF_BUF_NOTIFY_HOOK func);  // 注册水印通知钩子
 
 /**
  * @ingroup los_perf
- * @brief Register perf sample data buffer flush hook function.
+ * @brief 注册性能采样缓冲区刷新钩子函数
  *
- * @par Description
+ * @par 功能描述
  * <ul>
- * <li> Register perf sample data buffer flush hook function.</li>
- * <li> The flush hook will be called when the buffer be read or written.</li>
+ * <li>注册性能采样数据缓冲区的刷新钩子函数</li>
+ * <li>当缓冲区进行读写操作时，刷新钩子函数将被调用</li>
  * </ul>
  * @attention
- * None.
+ * 无
  *
- * @param  func                      [IN] Buffer flush hook function.
+ * @param  func                      [IN] 缓冲区刷新钩子函数
  *
- * @retval None.
- * @par Dependency:
+ * @retval 无
+ * @par 依赖
  * <ul>
- * <li>los_perf.h: the header file that contains the API declaration.</li>
+ * <li>los_perf.h: 包含本接口声明的头文件</li>
  * </ul>
  */
-VOID LOS_PerfFlushHookReg(const PERF_BUF_FLUSH_HOOK func);
+VOID LOS_PerfFlushHookReg(const PERF_BUF_FLUSH_HOOK func);  // 注册刷新钩子
 
 #ifdef __cplusplus
 #if __cplusplus

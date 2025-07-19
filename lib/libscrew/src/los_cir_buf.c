@@ -32,18 +32,21 @@
 #include "los_cir_buf.h"
 #include "los_spinlock.h"
 
-
-/// 返回循环buf已使用的大小
+/**
+ * @brief 获取循环缓冲区已使用大小
+ * @param[in] cirbufCB 循环缓冲区控制块指针
+ * @return 已使用大小
+ */
 UINT32 LOS_CirBufUsedSize(CirBuf *cirbufCB)
 {
-    UINT32 size;
-    UINT32 intSave;
+    UINT32 size;                          // 已使用大小变量
+    UINT32 intSave;                       // 中断状态保存变量
 
-    LOS_SpinLockSave(&cirbufCB->lock, &intSave);
-    size = cirbufCB->size - cirbufCB->remain; //得到已使用大小
-    LOS_SpinUnlockRestore(&cirbufCB->lock, intSave);
+    LOS_SpinLockSave(&cirbufCB->lock, &intSave);  // 获取自旋锁并保存中断状态
+    size = cirbufCB->size - cirbufCB->remain;     // 计算已使用大小：总大小 - 剩余大小
+    LOS_SpinUnlockRestore(&cirbufCB->lock, intSave);  // 恢复中断状态并释放自旋锁
 
-    return size;
+    return size;                          // 返回已使用大小
 }
 
 /* 图形表示写循环buf linear 模式 ，图表示 写之前的样子 @note_pic 
@@ -53,27 +56,35 @@ UINT32 LOS_CirBufUsedSize(CirBuf *cirbufCB)
  *                                    |
  *                                  endIdx
  *///写操作的是endIdx    | X 表示剩余size index 从左到右递减
+/**
+ * @brief 线性模式写入循环缓冲区
+ * @param[in] cirbufCB 循环缓冲区控制块指针
+ * @param[in] buf 待写入数据缓冲区
+ * @param[in] size 待写入数据大小
+ * @return 实际写入大小
+ */
 STATIC UINT32 OsCirBufWriteLinear(CirBuf *cirbufCB, const CHAR *buf, UINT32 size)
 {
-    UINT32 cpSize;
-    errno_t err;
+    UINT32 cpSize;                        // 实际拷贝大小
+    errno_t err;                          // 错误码
 
-    cpSize = (cirbufCB->remain < size) ? cirbufCB->remain : size;//得到cp的大小
+    cpSize = (cirbufCB->remain < size) ? cirbufCB->remain : size;  // 计算可写入大小（取剩余空间与请求大小的较小值）
 
-    if (cpSize == 0) {
-        return 0;
+    if (cpSize == 0) {                    // 无空间可写
+        return 0;                         // 返回0
     }
 
-    err = memcpy_s(cirbufCB->fifo + cirbufCB->endIdx, cirbufCB->remain, buf, cpSize);//完成拷贝
-    if (err != EOK) {
-        return 0;
+    err = memcpy_s(cirbufCB->fifo + cirbufCB->endIdx, cirbufCB->remain, buf, cpSize);  // 拷贝数据到缓冲区
+    if (err != EOK) {                     // 拷贝失败
+        return 0;                         // 返回0
     }
 
-    cirbufCB->remain -= cpSize;//写完了那总剩余size肯定是要减少的
-    cirbufCB->endIdx += cpSize;//结尾变大
+    cirbufCB->remain -= cpSize;           // 更新剩余空间
+    cirbufCB->endIdx += cpSize;           // 更新结束索引
 
-    return cpSize;
+    return cpSize;                        // 返回实际写入大小
 }
+
 /* 图形表示写循环buf        loop 模式 ，图表示 写之前的样子              @note_pic
  *                    endIdx            第二阶段拷贝
  *                    |               |             |
@@ -81,59 +92,74 @@ STATIC UINT32 OsCirBufWriteLinear(CirBuf *cirbufCB, const CHAR *buf, UINT32 size
  *    |               |               |
  *     第一阶段拷贝                         startIdx
  *///写操作的是endIdx | X 表示剩余size index 从左到右递减
+/**
+ * @brief 循环模式写入循环缓冲区
+ * @param[in] cirbufCB 循环缓冲区控制块指针
+ * @param[in] buf 待写入数据缓冲区
+ * @param[in] size 待写入数据大小
+ * @return 实际写入大小
+ */
 STATIC UINT32 OsCirBufWriteLoop(CirBuf *cirbufCB, const CHAR *buf, UINT32 size)
 {
-    UINT32 right, cpSize;
-    errno_t err;
+    UINT32 right, cpSize;                 // right: 从endIdx到缓冲区末尾的空间；cpSize: 实际拷贝大小
+    errno_t err;                          // 错误码
 
-    right = cirbufCB->size - cirbufCB->endIdx;//先计算右边部分
-    cpSize = (right < size) ? right : size;//算出cpSize，很可能要分两次
+    right = cirbufCB->size - cirbufCB->endIdx;  // 计算endIdx到缓冲区末尾的空间
+    cpSize = (right < size) ? right : size;     // 计算第一阶段可写入大小
 
-    err = memcpy_s(cirbufCB->fifo + cirbufCB->endIdx, right, buf, cpSize);//先拷贝一部分
-    if (err != EOK) {
-        return 0;
+    err = memcpy_s(cirbufCB->fifo + cirbufCB->endIdx, right, buf, cpSize);  // 第一阶段拷贝
+    if (err != EOK) {                     // 拷贝失败
+        return 0;                         // 返回0
     }
 
-    cirbufCB->remain -= cpSize;//写完了那总剩余size肯定是要减少的
-    cirbufCB->endIdx += cpSize;//endIdx 增加，一直往后移
-    if (cirbufCB->endIdx == cirbufCB->size) {//这个相当于移到最后一个了
-        cirbufCB->endIdx = 0;//循环从这里开始
+    cirbufCB->remain -= cpSize;           // 更新剩余空间
+    cirbufCB->endIdx += cpSize;           // 更新结束索引
+    if (cirbufCB->endIdx == cirbufCB->size) {  // 若已到缓冲区末尾
+        cirbufCB->endIdx = 0;             // 重置endIdx为0
     }
 
-    if (cpSize == size) {//拷贝完了的情况
-        return size;//返回size
-    } else {
-        cpSize += OsCirBufWriteLinear(cirbufCB, buf + cpSize, size - cpSize);//需第二次拷贝
+    if (cpSize == size) {                 // 若已完成全部数据写入
+        return size;                      // 返回请求大小
+    } else {                              // 若仍有数据未写入
+        cpSize += OsCirBufWriteLinear(cirbufCB, buf + cpSize, size - cpSize);  // 调用线性写入处理剩余数据
     }
 
-    return cpSize;
+    return cpSize;                        // 返回实际写入大小
 }
-///写入数据到循环buf区
+
+/**
+ * @brief 写入循环缓冲区（对外接口）
+ * @param[in] cirbufCB 循环缓冲区控制块指针
+ * @param[in] buf 待写入数据缓冲区
+ * @param[in] size 待写入数据大小
+ * @return 实际写入大小
+ */
 UINT32 LOS_CirBufWrite(CirBuf *cirbufCB, const CHAR *buf, UINT32 size)
 {
-    UINT32 cpSize = 0;
-    UINT32 intSave;
+    UINT32 cpSize = 0;                    // 实际写入大小
+    UINT32 intSave;                       // 中断状态保存变量
 
-    if ((cirbufCB == NULL) || (buf == NULL) || (size == 0) || (cirbufCB->status != CBUF_USED)) {
-        return 0;
+    if ((cirbufCB == NULL) || (buf == NULL) || (size == 0) || (cirbufCB->status != CBUF_USED)) {  // 参数合法性检查
+        return 0;                         // 参数无效，返回0
     }
 
-    LOS_SpinLockSave(&cirbufCB->lock, &intSave);
+    LOS_SpinLockSave(&cirbufCB->lock, &intSave);  // 获取自旋锁并保存中断状态
 
-    if ((cirbufCB->fifo == NULL) || (cirbufCB->remain == 0))  {
-        goto EXIT;;
+    if ((cirbufCB->fifo == NULL) || (cirbufCB->remain == 0))  {  // 缓冲区未初始化或无剩余空间
+        goto EXIT;                        // 跳转到出口 @note_ai goto EXIT;; 
     }
 
-    if (cirbufCB->startIdx <= cirbufCB->endIdx) {//开始位置在前面
-        cpSize = OsCirBufWriteLoop(cirbufCB, buf, size);//循环方式写入，分两次拷贝
+    if (cirbufCB->startIdx <= cirbufCB->endIdx) {  // 判断缓冲区状态，决定写入模式
+        cpSize = OsCirBufWriteLoop(cirbufCB, buf, size);  // 循环模式写入
     } else {
-        cpSize = OsCirBufWriteLinear(cirbufCB, buf, size);//线性方式写入，分一次拷贝
+        cpSize = OsCirBufWriteLinear(cirbufCB, buf, size);  // 线性模式写入
     }
 
 EXIT:
-    LOS_SpinUnlockRestore(&cirbufCB->lock, intSave);
-    return cpSize;
+    LOS_SpinUnlockRestore(&cirbufCB->lock, intSave);  // 恢复中断状态并释放自旋锁
+    return cpSize;                        // 返回实际写入大小
 }
+
 /* 图形表示读线性buf        linear 模式 ，图表示 读之前的样子             @note_pic
  *                    endIdx            
  *                    |               
@@ -141,28 +167,36 @@ EXIT:
  *                   				  |
  *                              	  startIdx
  *///读操作的是startIdx | X 表示剩余size index 从左到右递减
+/**
+ * @brief 线性模式读取循环缓冲区
+ * @param[in] cirbufCB 循环缓冲区控制块指针
+ * @param[out] buf 接收数据缓冲区
+ * @param[in] size 请求读取大小
+ * @return 实际读取大小
+ */
 STATIC UINT32 OsCirBufReadLinear(CirBuf *cirbufCB, CHAR *buf, UINT32 size)
 {
-    UINT32 cpSize, remain;
-    errno_t err;
+    UINT32 cpSize, remain;                // remain: 可读取数据大小；cpSize: 实际读取大小
+    errno_t err;                          // 错误码
 
-    remain = cirbufCB->endIdx - cirbufCB->startIdx;//这里表示剩余可读区
-    cpSize = (remain < size) ? remain : size;
+    remain = cirbufCB->endIdx - cirbufCB->startIdx;  // 计算可读取数据大小
+    cpSize = (remain < size) ? remain : size;        // 计算实际读取大小（取可读取大小与请求大小的较小值）
 
-    if (cpSize == 0) {
-        return 0;
+    if (cpSize == 0) {                    // 无可读取数据
+        return 0;                         // 返回0
     }
 
-    err = memcpy_s(buf, size, cirbufCB->fifo + cirbufCB->startIdx, cpSize);//完成拷贝
-    if (err != EOK) {
-        return 0;
+    err = memcpy_s(buf, size, cirbufCB->fifo + cirbufCB->startIdx, cpSize);  // 拷贝数据到接收缓冲区
+    if (err != EOK) {                     // 拷贝失败
+        return 0;                         // 返回0
     }
 
-    cirbufCB->remain += cpSize;//读完了那总剩余size肯定是要增加的
-    cirbufCB->startIdx += cpSize;//startIdx也要往前移动
+    cirbufCB->remain += cpSize;           // 更新剩余空间
+    cirbufCB->startIdx += cpSize;         // 更新起始索引
 
-    return cpSize;
+    return cpSize;                        // 返回实际读取大小
 }
+
 /* 图形表示读循环buf loop 模式 ，图表示 读之前的样子 @note_pic 
  *                    startIdx
  *                    |
@@ -170,76 +204,100 @@ STATIC UINT32 OsCirBufReadLinear(CirBuf *cirbufCB, CHAR *buf, UINT32 size)
  *                                    |
  *                                  endIdx
  *///读操作的是startIdx    | X 表示剩余size index 从左到右递减
+/**
+ * @brief 循环模式读取循环缓冲区
+ * @param[in] cirbufCB 循环缓冲区控制块指针
+ * @param[out] buf 接收数据缓冲区
+ * @param[in] size 请求读取大小
+ * @return 实际读取大小
+ */
 STATIC UINT32 OsCirBufReadLoop(CirBuf *cirbufCB, CHAR *buf, UINT32 size)
 {
-    UINT32 right, cpSize;
-    errno_t err;
+    UINT32 right, cpSize;                 // right: 从startIdx到缓冲区末尾的空间；cpSize: 实际读取大小
+    errno_t err;                          // 错误码
 
-    right = cirbufCB->size - cirbufCB->startIdx;//先算出要读取的部分
-    cpSize = (right < size) ? right : size;
+    right = cirbufCB->size - cirbufCB->startIdx;  // 计算startIdx到缓冲区末尾的空间
+    cpSize = (right < size) ? right : size;       // 计算第一阶段可读取大小
 
-    err = memcpy_s(buf, size, cirbufCB->fifo + cirbufCB->startIdx, cpSize);//先读第一部分数据
-    if (err != EOK) {
-        return 0;
+    err = memcpy_s(buf, size, cirbufCB->fifo + cirbufCB->startIdx, cpSize);  // 第一阶段拷贝
+    if (err != EOK) {                     // 拷贝失败
+        return 0;                         // 返回0
     }
 
-    cirbufCB->remain += cpSize;//读完了那总剩余size肯定是要增加的
-    cirbufCB->startIdx += cpSize;//startIdx也要往前移动
-    if (cirbufCB->startIdx == cirbufCB->size) {//如果移动到头了
-        cirbufCB->startIdx = 0;//循环buf的关键,新的循环开始了
+    cirbufCB->remain += cpSize;           // 更新剩余空间
+    cirbufCB->startIdx += cpSize;         // 更新起始索引
+    if (cirbufCB->startIdx == cirbufCB->size) {  // 若已到缓冲区末尾
+        cirbufCB->startIdx = 0;           // 重置startIdx为0
     }
 
-    if (cpSize < size) {
-        cpSize += OsCirBufReadLinear(cirbufCB, buf + cpSize, size - cpSize);//剩余的就交给线性方式读取了
+    if (cpSize < size) {                  // 若仍有数据未读取
+        cpSize += OsCirBufReadLinear(cirbufCB, buf + cpSize, size - cpSize);  // 调用线性读取处理剩余数据
     }
 
-    return cpSize;
+    return cpSize;                        // 返回实际读取大小
 }
-///读取循环buf的数据
+
+/**
+ * @brief 读取循环缓冲区（对外接口）
+ * @param[in] cirbufCB 循环缓冲区控制块指针
+ * @param[out] buf 接收数据缓冲区
+ * @param[in] size 请求读取大小
+ * @return 实际读取大小
+ */
 UINT32 LOS_CirBufRead(CirBuf *cirbufCB, CHAR *buf, UINT32 size)
 {
-    UINT32 cpSize = 0;
-    UINT32 intSave;
+    UINT32 cpSize = 0;                    // 实际读取大小
+    UINT32 intSave;                       // 中断状态保存变量
 
-    if ((cirbufCB == NULL) || (buf == NULL) || (size == 0) || (cirbufCB->status != CBUF_USED)) {
-        return 0;
+    if ((cirbufCB == NULL) || (buf == NULL) || (size == 0) || (cirbufCB->status != CBUF_USED)) {  // 参数合法性检查
+        return 0;                         // 参数无效，返回0
     }
 
-    LOS_SpinLockSave(&cirbufCB->lock, &intSave);
+    LOS_SpinLockSave(&cirbufCB->lock, &intSave);  // 获取自旋锁并保存中断状态
 
-    if ((cirbufCB->fifo == NULL) || (cirbufCB->remain == cirbufCB->size)) {
-        goto EXIT;
+    if ((cirbufCB->fifo == NULL) || (cirbufCB->remain == cirbufCB->size)) {  // 缓冲区未初始化或为空
+        goto EXIT;                        // 跳转到出口
     }
 
-    if (cirbufCB->startIdx >= cirbufCB->endIdx) {//开始位置大于结束位置的情况怎么读
-        cpSize = OsCirBufReadLoop(cirbufCB, buf, size);//循环读取buf
-    } else {//开始位置小于结束位置的情况怎么读
-        cpSize = OsCirBufReadLinear(cirbufCB, buf, size);//线性读取，读取 endIdx - startIdx 部分就行了，所以是线性读取 
+    if (cirbufCB->startIdx >= cirbufCB->endIdx) {  // 判断缓冲区状态，决定读取模式
+        cpSize = OsCirBufReadLoop(cirbufCB, buf, size);  // 循环模式读取
+    } else {
+        cpSize = OsCirBufReadLinear(cirbufCB, buf, size);  // 线性模式读取
     }
 
 EXIT:
-    LOS_SpinUnlockRestore(&cirbufCB->lock, intSave);
-    return cpSize;
+    LOS_SpinUnlockRestore(&cirbufCB->lock, intSave);  // 恢复中断状态并释放自旋锁
+    return cpSize;                        // 返回实际读取大小
 }
-///初始化循环buf
+
+/**
+ * @brief 初始化循环缓冲区
+ * @param[in] cirbufCB 循环缓冲区控制块指针
+ * @param[in] fifo 数据存储缓冲区指针
+ * @param[in] size 缓冲区大小
+ * @return 成功返回LOS_OK，失败返回LOS_NOK
+ */
 UINT32 LOS_CirBufInit(CirBuf *cirbufCB, CHAR *fifo, UINT32 size)
 {
-    if ((cirbufCB == NULL) || (fifo == NULL)) {
-        return LOS_NOK;
+    if ((cirbufCB == NULL) || (fifo == NULL)) {  // 参数合法性检查
+        return LOS_NOK;                   // 参数无效，返回失败
     }
 
-    (VOID)memset_s(cirbufCB, sizeof(CirBuf), 0, sizeof(CirBuf));//清0
-    LOS_SpinInit(&cirbufCB->lock);//自旋锁初始化
-    cirbufCB->size = size;	//记录size
-    cirbufCB->remain = size;//剩余size
-    cirbufCB->status = CBUF_USED;//标记为已使用
-    cirbufCB->fifo = fifo;	//顺序buf ,这1K buf 是循环利用
+    (VOID)memset_s(cirbufCB, sizeof(CirBuf), 0, sizeof(CirBuf));  // 初始化控制块
+    LOS_SpinInit(&cirbufCB->lock);        // 初始化自旋锁
+    cirbufCB->size = size;                // 设置缓冲区总大小
+    cirbufCB->remain = size;              // 初始化剩余空间为总大小
+    cirbufCB->status = CBUF_USED;         // 设置缓冲区状态为已使用
+    cirbufCB->fifo = fifo;                // 设置数据存储缓冲区指针
 
-    return LOS_OK;
+    return LOS_OK;                        // 返回成功
 }
-///删除初始化操作，其实就是清0
+
+/**
+ * @brief 反初始化循环缓冲区
+ * @param[in] cirbufCB 循环缓冲区控制块指针
+ */
 VOID LOS_CirBufDeinit(CirBuf *cirbufCB)
 {
-    (VOID)memset_s(cirbufCB, sizeof(CirBuf), 0, sizeof(CirBuf));
+    (VOID)memset_s(cirbufCB, sizeof(CirBuf), 0, sizeof(CirBuf));  // 清空控制块
 }
-

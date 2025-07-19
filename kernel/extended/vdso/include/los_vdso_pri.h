@@ -41,13 +41,39 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define LITE_VDSO_DATAPAGE __attribute__((section(".data.vdso.datapage")))
+/**
+ * @brief VDSO数据页段定义宏
+ * @details 将变量或数据放入名为".data.vdso.datapage"的特殊内存段，用于VDSO（虚拟动态共享对象）机制
+ * @note 该段通常映射到用户空间，供用户进程直接访问内核提供的共享数据
+ */
+#define LITE_VDSO_DATAPAGE __attribute__((section(".data.vdso.datapage")))  // VDSO数据页段属性定义
 
-extern VOID OsVdsoTimeGet(VdsoDataPage *);
+/**
+ * @brief 获取VDSO时间数据
+ * @details 从VDSO数据页中读取时间相关信息，提供用户空间快速访问系统时间的能力
+ * @param[in,out] VdsoDataPage* 指向VDSO数据页结构体的指针，用于存储获取的时间数据
+ * @retval 无
+ * @note 此函数通常由内核实现，通过VDSO机制暴露给用户空间
+ */
+extern VOID OsVdsoTimeGet(VdsoDataPage *);  // 获取VDSO时间数据
 
-extern CHAR __vdso_data_start;
-extern CHAR __vdso_text_start;
-extern CHAR __vdso_text_end;
+/**
+ * @brief VDSO数据段起始地址
+ * @details 标记VDSO数据段在内存中的起始位置，用于VDSO区域的内存管理
+ */
+extern CHAR __vdso_data_start;  // VDSO数据段起始地址
+
+/**
+ * @brief VDSO文本段起始地址
+ * @details 标记VDSO代码段在内存中的起始位置，用于动态加载和地址计算
+ */
+extern CHAR __vdso_text_start;  // VDSO文本段起始地址
+
+/**
+ * @brief VDSO文本段结束地址
+ * @details 标记VDSO代码段在内存中的结束位置，与__vdso_text_start配合计算段大小
+ */
+extern CHAR __vdso_text_end;    // VDSO文本段结束地址
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -67,7 +67,7 @@ const STATIC SchedOps g_idleOps = {
     .timeSliceUpdate = IdleTimeSliceUpdate,// 更新时间片信息
     .schedParamCompare = IdleParamCompare, // 比较调度参数（优先级）
     .priorityInheritance = IdlePriorityInheritance, // 未实现：优先级继承
-    .priorityRestore = IdlePriorityRestore // 未实现：优先级恢复
+    .priorityRestore = IdlePriorityRestore, // 未实现：优先级恢复
 };
 
 /**
