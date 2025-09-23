@@ -1,7 +1,8 @@
 git add -A
 
-git commit -m  ' 注释 kernel - base、commom、extended
-    博客 | http://weharmonyos.com
+git commit -m  ' 内核代码注释已基本完成
+文档重新梳理中 ...
+内核图重新绘制中 ...
 '
 git push  gitee_origin master
 git push  github_origin master

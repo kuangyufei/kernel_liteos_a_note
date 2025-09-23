@@ -902,7 +902,8 @@ INT32 ShmatParamCheck(const VOID *shmaddr, INT32 shmflg)
     }
 
     /* 检查地址对齐：非NULL地址且未指定SHM_RND时必须页对齐 */
-    if ((shmaddr != NULL) && !IS_PAGE_ALIGNED(shmaddr) && (((UINT32)shmflg & SHM_RND) == 0)) {
+    if ((shmaddr != NULL) && !IS_PAGE_ALIGNED(shmaddr) &&
+        (((UINT32)shmflg & SHM_RND) == 0)) {
         return EINVAL;
     }
 
