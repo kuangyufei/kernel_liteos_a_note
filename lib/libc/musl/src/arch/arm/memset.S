@@ -27,6 +27,7 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
     .syntax     unified          @ 使用统一汇编语法
     .arch       armv7-a          @ 目标架构为ARMv7-A
     .fpu        neon             @ 启用NEON浮点指令集，支持SIMD操作

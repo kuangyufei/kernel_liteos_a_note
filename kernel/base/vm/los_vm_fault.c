@@ -293,7 +293,7 @@ status_t OsDoCowFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
     // 获取文件映射互斥锁
     (VOID)LOS_MuxAcquire(&region->unTypeData.rf.vnode->mapping.mux_lock);
     // 调用文件系统fault接口获取原始页面数据
-    ret = region->unTypeData.rf.vmFOps->fault(region->unTypeData.rf.vnode->filePath, vmPgFault); //@note_ai
+    ret = region->unTypeData.rf.vmFOps->fault(region->unTypeData.rf.vnode->filePath, vmPgFault); 
     if (ret != LOS_OK) {
         VM_ERR("call region->vm_ops->fault fail");
         (VOID)LOS_MuxRelease(&region->unTypeData.rf.vnode->mapping.mux_lock);

@@ -310,7 +310,7 @@ LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)  // �
     /* Update the operate time, no matter the actual Post success or not */  // 更新操作时间，无论释放是否成功
     OsSemDbgTimeUpdateHook(semHandle);  // 更新调试时间戳
 
-    if (semPosted->semCount == OS_SEM_COUNT_MAX) {  // 如果信号量计数达到最大值
+    if (semPosted->semCount == semPosted->maxSemCount) {  // 如果信号量计数达到最大值
         return LOS_ERRNO_SEM_OVERFLOW;  // 返回信号量溢出错误码
     }
     if (!LOS_ListEmpty(&semPosted->semList)) {  // 如果信号量的等待任务链表非空

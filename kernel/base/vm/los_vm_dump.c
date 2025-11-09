@@ -269,7 +269,7 @@ UINT32 OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
                 pmSize += PAGE_SIZE;               /* 独占页直接累加 */
             }
         }
-    RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNode, pstRbNodeNext)  /* 修正原代码中oldVmSpace变量错误 @doubao太神奇了 */
+    RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNode, pstRbNodeNext)  /* 修正原代码中oldVmSpace变量错误 */
 
     (VOID)LOS_MuxRelease(&space->regionMux);      /* 释放区域链表互斥锁 */
 
@@ -422,8 +422,9 @@ CHAR *OsArchFlagsToStr(const UINT32 archFlags)
         }
 
         if (archFlags & (1UL << index)) {         // 检查当前标志位是否置位
-            if (strcat_s(archMmuFlagsStr, flagSize, FLAGS[index]) != EOK) {  // 拼接标志字符串
-                PRINTK("flag string concat failed\n");  // 拼接失败打印错误
+            UINT32 status = strcat_s(archMmuFlagsStr, flagSize, FLAGS[index]);
+            if (status != 0) {
+                PRINTK("error\n");
             }
         }
     }

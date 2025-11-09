@@ -329,6 +329,7 @@ _osExceptDataAbortHdl: @数据异常处理,缺页就属于数据异常
     MOV   R0, #OS_EXCEPT_DATA_ABORT
     B     _osExceptDispatch
 #endif
+
 #ifdef LOSCFG_KERNEL_VM
 _osExcPageFaultReturn:
     LDMFD  SP!, {R4-R11}
@@ -361,8 +362,8 @@ _osExceptAddrAbortHdl: @地址异常处理
     MOV     R3, #0
     STMFD   SP!, {R2-R3}                                     @ far and fsr fields, are 0 under this anomaly
     STMFD   SP!, {R4-R11}
-    MOV     R0, #OS_EXCEPT_ADDR_ABORT                        @ Set exception ID to OS_EXCEPT_ADDR_ABORT.
 
+    MOV     R0, #OS_EXCEPT_ADDR_ABORT                        @ Set exception ID to OS_EXCEPT_ADDR_ABORT.
     B       _osExceptDispatch                                @ Branch to global exception handler.
 
 @ Description: Fast interrupt request exception handler

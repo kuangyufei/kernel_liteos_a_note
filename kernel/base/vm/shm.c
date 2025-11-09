@@ -1145,8 +1145,8 @@ INT32 ShmCtl(INT32 shmid, INT32 cmd, struct shmid_ds *buf)
                 break;
             }
             /* 更新所有者名称 */
-            (VOID)memcpy_s(seg->ownerName, OS_PCB_NAME_LEN, 
-                           OS_PCB_FROM_PID(shm_perm.uid)->processName, OS_PCB_NAME_LEN);
+            (VOID)memcpy_s(seg->ownerName, OS_PCB_NAME_LEN, OS_PCB_FROM_PID(shm_perm.uid)->processName,
+                           OS_PCB_NAME_LEN);
 #endif
             break;
 

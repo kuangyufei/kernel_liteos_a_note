@@ -146,7 +146,7 @@ UINT32 LOS_CirBufWrite(CirBuf *cirbufCB, const CHAR *buf, UINT32 size)
     LOS_SpinLockSave(&cirbufCB->lock, &intSave);  // 获取自旋锁并保存中断状态
 
     if ((cirbufCB->fifo == NULL) || (cirbufCB->remain == 0))  {  // 缓冲区未初始化或无剩余空间
-        goto EXIT;                        // 跳转到出口 @note_ai goto EXIT;; 
+        goto EXIT;                        // 跳转到出口
     }
 
     if (cirbufCB->startIdx <= cirbufCB->endIdx) {  // 判断缓冲区状态，决定写入模式
